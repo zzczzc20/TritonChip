@@ -1,0 +1,12 @@
+TNCA — Tensor-Native Compute Array
+Copyright 2026 The TNCA Authors
+
+This product includes software and hardware description source developed by
+the TNCA project, licensed under the Apache License, Version 2.0.
+
+Note on hardware: Apache-2.0 was written for software. It is applied here to
+the RTL, the toolchain and the documentation alike, and its Section 3 patent
+grant is the reason it was chosen over a software-only permissive licence. If
+you fabricate or distribute a device derived from this design, the Section 4
+attribution conditions apply to the source you redistribute, not to the device
+itself.

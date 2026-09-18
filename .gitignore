@@ -1,0 +1,40 @@
+# ---- Simulation / build outputs ----
+sim/build/
+*.vvp
+*.vcd
+*.fst
+*.lxt2
+*.out
+obj_dir/
+verilator.log
+
+# ---- Synthesis outputs ----
+flow/synth/out/
+*.blif
+*.json.gz
+*.edif
+*.ys.log
+yosys.log
+
+# ---- Python ----
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# ---- Editors / OS ----
+.DS_Store
+*.swp
+*~
+.vscode/
+.idea/
+tags
+
+# ---- Generated artifacts ----
+*.hex
+*.bin.txt
+/tmp/

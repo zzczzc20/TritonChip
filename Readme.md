@@ -40,20 +40,22 @@ mbarrier、SFU、原子操作、mesh 与 NUCA。路线图见下文 Roadmap。
 
 ## Status
 
-**Stage 1a — a single core that executes the frozen Stage-1 ISA subset.**
+**Stage 1b — the Stage-1 ISA, pipelined and measured.**
 
 | Area | State |
 |---|---|
 | ISA v0.1 encoding | frozen, machine-readable, enforced by the decoder |
 | Scalar integer + control flow | complete |
 | Vector integer, predicate, shuffle, reduction | complete |
-| IEEE-754 binary32 add / sub / mul / fma / min / max / compare / convert | complete |
+| IEEE-754 binary32 add / sub / mul / fma / min / max / compare / convert | complete, 2-stage pipeline |
+| Pipelined 64×64 multiplier, multi-latency writeback scheduling | complete |
 | FP reduction (bit-reproducible balanced tree) | complete |
 | Load/store unit with a physical-word coalescer | complete |
 | 2 Role Contexts on a shared datapath | complete |
 | Assembler, disassembler, exact FP oracle | complete |
 | Matrix unit, TensorMap, Tensor DMA, mbarrier | **not started** (Stage 2) |
 | SFU (`v.exp2.approx` et al) | **not started**; the capability bit reads 0 and the encodings trap |
+| Synchronous instruction fetch | **not started** (Stage 1c) |
 | Atomics, fences | **not started** (Stage 2) |
 | Mesh, NUCA slices, MSHRs, flow control | **not started** (Stage 3–4) |
 | Triton/MLIR backend | **not started** (Stage 5) |
@@ -241,7 +243,9 @@ FAIL" as a failure rather than a pass.
 | `t04_roles` | two Role Contexts, private scalar state, producer/consumer through memory | 4 checks |
 | `t05_fault` | an unallocated encoding stops exactly one Role Context; the other keeps running and exits, and the core still reaches idle | fault containment |
 | `t06_alu` | randomised integer datapath against a Python model, weighted toward `mulh` and sign boundaries | 186 checks |
-| assembler round-trip | assemble → disassemble → re-assemble reproduces the original word | 2,925 instructions |
+| `tb_bitops` | `tnca_lzc` / `tnca_popc` against the ISA definitions: every single-bit position at three widths, plus random | 60,471 checks |
+| `tb_mul64` | the pipelined 64×64 multiplier against Verilog's own 128-bit multiply, weighted to sign boundaries | 60,000 checks |
+| assembler round-trip | assemble → disassemble → re-assemble reproduces the original word | 5,249 instructions |
 | slow-memory rerun | every core test again at memory latency 7 with pseudo-random `ready` de-assertion | catches any fixed-latency assumption |
 
 Every claim above is also checked in the other direction. Each self-checking
@@ -266,41 +270,39 @@ and would not be a valid FMA reference.
 * **depth** — longest topological path between registers, in gate levels. At
   roughly 15–25 ps per level, a 1 GHz target wants depth under about 50.
 
-| module | gates | flops | depth | |
-|---|---:|---:|---:|---|
-| `tnca_decoder` | 682 | 0 | 17 | ok |
-| `tnca_scalar_alu` | 26,017 | 0 | 128 | **over budget** — the 64×64 multiplier |
-| `tnca_scalar_rf` | 31,033 | 8,192 | 10 | flops; belongs in SRAM |
-| `tnca_pred_rf` | 1,834 | 512 | 6 | ok |
-| `tnca_fp32_fma` | 6,781 | 0 | 207 | **over budget by the largest margin** |
-| `tnca_vector_alu` | 145,334 | 0 | 99 | **over budget**; the largest block |
+| module | gates | flops | depth | floor | |
+|---|---:|---:|---:|---:|---|
+| `tnca_decoder` | 682 | 0 | 17 | — | ok |
+| `tnca_lzc` / `tnca_popc` | 217 / 275 | 0 | 16 / 22 | — | ok |
+| `tnca_scalar_alu` | 3,741 | 0 | 61 | 64 | **at the library floor** |
+| `tnca_mul64` | 23,057 | 768 | 98 | 64 | 3 stages |
+| `tnca_fp32_fma` | 7,120 | 203 | 115 | 71 | 2 stages |
+| `tnca_vector_alu` | 145,334 | 0 | 99 | 65 | the largest block |
+| `tnca_scalar_rf` | 31,033 | 8,192 | 10 | — | flops; belongs in SRAM |
+
+**Read `depth` against the floor, not against 50.** The generic gate set has no
+carry-lookahead cells, so every addition maps to ripple carry: a bare 32-bit
+adder is already 32 levels and a 64-bit one is 64. Any module containing wide
+arithmetic is over a flat budget *by construction*, and no amount of pipelining
+fixes that, because the floor belongs to the library and not to the design.
+`make synth` prints the calibration block above every run so the numbers can be
+read honestly. The useful question is how far a module sits above its own floor.
 
 [`doc/synthesis.md`](doc/synthesis.md) has the full table and the reasoning.
-Two findings matter now:
 
-* **The FP datapath cannot be clocked at 1 GHz as written.** 207 gate levels is
-  3–5 ns of logic. The FP problem here is *depth, not area*: the FMA is only
-  6,781 gates, so sixteen lanes is about 109 k gates, which is affordable —
-  sixteen lanes at 207 levels is not buildable at the target frequency. This is
-  the first Stage-1b task, and the core is already shaped to absorb it.
-* **The register files must not stay flop-based.** 31 k gates for 8 kbit of
-  scalar state is the cost of three asynchronous read ports built from
-  multiplexer trees. §5.3 of the architecture document already specifies the
-  replacement: 16 banks of 64 bit, 1R1W each, with an operand collector, sized
-  *before* the arithmetic is sized.
+Measuring has paid for itself four times over, each one an application of §6.2
+— decide the arithmetic after looking at what it costs:
 
-Neither is a surprise — §6.2 of the architecture document says not to treat a
-MAC-count ceiling as achievable throughput, and §5.3 says to make the RF ports
-real before deciding the compute. The value of measuring is that the numbers
-are now on the record rather than assumed.
+| change | before | after |
+|---|---|---|
+| scalar ALU: multiplier moved to its own pipelined unit | 28,035 gates / 135 levels | **3,741 / 61** |
+| FMA: cut into a 2-stage pipeline | 207 levels | **115** |
+| vector ALU: one multiplier, one crossbar, one comparator | 205,205 gates | **145,334** |
+| `clz`/`popc`: log-depth structures instead of scan loops | W-deep chains | 16 / 22 levels |
 
-Measuring has already paid for itself twice. The vector ALU was first written
-the obvious way and synthesised to **205,205 gates**; applying §6.2 literally —
-deriving the signed high product from the unsigned one instead of building a
-second multiplier array, and sharing one shuffle crossbar and one subtractor
-instead of five and six — brought it to **145,334 gates, −29 %, for identical
-behaviour**, checked by the same 266 vector tests before and after. The scalar
-ALU dropped 23 % the same way.
+Every one of these was verified behaviour-identical by the tests that already
+existed — the 516 k-vector FMA sweep, 266 vector checks, 186 randomised integer
+checks — before and after.
 
 ---
 
@@ -309,30 +311,18 @@ ALU dropped 23 % the same way.
 Stages follow `doc/architecture_overview.md` §21.
 
 * **Stage 1a — done.** Single core, ISA v0.1 subset, verified.
-* **Stage 1b — next.** Close the gap between the ISA that is verified and the
-  clock the design claims. In order:
-
-  1. **Pipeline the FP unit.** Cut `tnca_fp32_fma` into 3–4 stages
-     (unpack/align → multiply/add → normalise/round). Target: FMA depth under
-     60 levels. The core already has a per-unit latency notion and an
-     out-of-band completion path, so this adds a writeback reservation shift
-     register and nothing else. The 516 k-vector differential test is the
-     safety net, and it must still pass unchanged.
-  2. **Pipeline the scalar multiplier**, leaving the rest of the ALU at one
-     cycle. The signed-high correction lands in the last stage, where it costs
-     nothing.
-  3. **Synchronous instruction fetch**: SRAM plus a fetch buffer, removing the
-     one deviation in the front end (`doc/conformance.md` D1).
-  4. **SFU** — `v.exp2.approx`, `v.rcp.approx`, `v.rsqrt.approx`,
-     `v.log2.approx`. Table plus polynomial, with the accuracy **measured over
-     the full input range and the measured bound written into the ISA** before
-     `CAPABILITY0.SFU` is allowed to read 1. §12.7 requires a published error
-     bound, NaN/Inf/zero behaviour and subnormal handling; a capability bit set
-     without those is exactly the dishonesty §1.6 warns about.
-  5. **Dual issue** across resource classes, once the pipelined units make it
-     worth anything.
-  6. **Shrink the integer vector unit** along the lines in `doc/synthesis.md`
-     §3 (shared funnel shifter, shared `clz`/`popc`).
+* **Stage 1b — done.** Pipelined FP (2 stages) and scalar multiply (3 stages),
+  log-depth `clz`/`popc`, and a writeback reservation register in the core so
+  units with different latencies cannot collide on the register-file write port.
+  Library calibration added to the synthesis flow so depth numbers mean
+  something.
+* **Stage 1c.** SFU — `v.exp2.approx`, `v.rcp.approx`, `v.rsqrt.approx`,
+  `v.log2.approx` — with the accuracy **measured over the full input range and
+  the measured bound written into the ISA** before `CAPABILITY0.SFU` is allowed
+  to read 1. §12.7 requires a published error bound, NaN/Inf/zero behaviour and
+  subnormal handling; setting a capability bit without them is exactly the
+  dishonesty §1.6 warns about. Also: synchronous instruction fetch, and dual
+  issue across resource classes.
 * **Stage 2.** Tensor descriptors and Tensor DMA, RF windows, mbarrier with
   the ready/free two-event protocol, the matrix unit (`m.mma.async`,
   M16 N16 K16/32/64), accumulator registers with vector access. Target

@@ -26,10 +26,22 @@
 // touched the scoreboard yet, because the scoreboard is written at the R->X
 // boundary, so a squash needs no undo.
 //
-// Completions that do not come from X (the LSU, and the FP reduction
-// sequencer) take the write port by stalling the front end for one cycle so a
-// bubble reaches X. X therefore never repeats a side effect, and a completion
-// can never be starved for more than one cycle.
+// WRITEBACK SCHEDULING
+//
+// Functional units no longer share one latency. The single-cycle units write
+// back from X; tnca_vector_fpu and tnca_mul64 write back FP_LAT / MUL_LAT
+// cycles later. A reservation shift register books the writeback cycle at issue
+// time, so at most one scheduled result lands per cycle and no result can be
+// dropped for want of a port.
+//
+// Completions that cannot be scheduled -- the LSU, whose latency is a property
+// of the memory system, and the FP reduction sequencer -- take the port in any
+// cycle the reservation register leaves free. When none is free they stall the
+// front end, which drains the reservation within WB_DEPTH cycles, so an
+// unscheduled completion waits a bounded time and is never starved.
+//
+// X therefore never repeats a side effect: a stalled front end inserts a bubble
+// into X rather than freezing it.
 //==============================================================================
 `include "tnca_defs.vh"
 
@@ -45,6 +57,8 @@ module tnca_core #(
     parameter CORE_ID        = 0,
     parameter NUM_CORES      = 1,
     parameter HAS_SFU        = 0,          // Stage-1a ships without the SFU
+    parameter FP_LAT         = 2,          // tnca_vector_fpu result delay, in cycles
+    parameter MUL_LAT        = 3,          // tnca_mul64 result delay, in cycles
     parameter MEM_DW         = 64,
     parameter MEM_BYTES      = 8,
     parameter MEM_SHIFT      = 3
@@ -430,6 +444,14 @@ module tnca_core #(
         endcase
     end
 
+    // s.mul / s.mulh.* run on their own pipelined unit; see tnca_mul64.
+    wire [63:0] mul_lo, mul_hi_s, mul_hi_u;
+    tnca_mul64 u_mul (
+        .clk(clk), .rst_n(rst_n),
+        .a(alu_opa), .b(alu_opb),
+        .lo(mul_lo), .hi_s(mul_hi_s), .hi_u(mul_hi_u)
+    );
+
     wire [63:0] alu_result;
     tnca_scalar_alu u_salu (
         .func(x_func), .mod(x_mod),
@@ -463,7 +485,7 @@ module tnca_core #(
                                (x_major == `TNCA_MAJ_CVT) ||
                                ((x_major == `TNCA_MAJ_RED) && (x_func >= `TNCA_RD_FADD)));
 
-    tnca_vector_fpu #(.VLEN(VLEN), .ELEN(ELEN), .LW(LW)) u_vfpu (
+    tnca_vector_fpu #(.VLEN(VLEN), .ELEN(ELEN), .LW(LW), .FP_LAT(FP_LAT)) u_vfpu (
         .clk(clk), .rst_n(rst_n),
         .major(x_major), .func(x_func), .mod(x_mod), .mask(lane_mask),
         .va(va_data), .vb(vb_data), .vc(vc_data),
@@ -478,6 +500,20 @@ module tnca_core #(
     // array. Both use major 0x15, so the destination is chosen by func.
     wire red_is_fp = (x_major == `TNCA_MAJ_RED) && (x_func >= `TNCA_RD_FADD);
     wire use_fpu   = (x_major == `TNCA_MAJ_VFP) || (x_major == `TNCA_MAJ_CVT) || red_is_fp;
+
+    // Writeback-path classification. `is_mul` and `is_fpnorm` are scheduled
+    // with a delay; reductions and memory ops complete out of band.
+    `define TNCA_IS_MUL(maj, fn) \
+        (((maj) == `TNCA_MAJ_SALU) && (((fn) == `TNCA_S_MUL)    || \
+                                       ((fn) == `TNCA_S_MULI)   || \
+                                       ((fn) == `TNCA_S_MULH_S) || \
+                                       ((fn) == `TNCA_S_MULH_U)))
+    `define TNCA_IS_FPNORM(maj) (((maj) == `TNCA_MAJ_VFP) || ((maj) == `TNCA_MAJ_CVT))
+    `define TNCA_IS_FPRED(maj, fn) (((maj) == `TNCA_MAJ_RED) && ((fn) >= `TNCA_RD_FADD))
+
+    wire x_is_mul    = x_valid && `TNCA_IS_MUL(x_major, x_func);
+    wire x_is_fpnorm = x_valid && `TNCA_IS_FPNORM(x_major);
+    wire x_is_fpred  = x_valid && `TNCA_IS_FPRED(x_major, x_func);
 
     //==========================================================================
     // LSU
@@ -519,6 +555,51 @@ module tnca_core #(
         .mem_req_be(mem_req_be), .mem_req_wdata(mem_req_wdata),
         .mem_rsp_valid(mem_rsp_valid), .mem_rsp_rdata(mem_rsp_rdata)
     );
+
+    //==========================================================================
+    // Scheduled-writeback bookkeeping
+    //
+    // wb_rsv[k] means "a scheduled writeback is already booked for k cycles
+    // from now". An instruction in R will be in X next cycle and will produce
+    // its result d cycles after that, so it books slot (d+1) in this cycle's
+    // frame; after the shift that bit sits at index d, and at index 0 on the
+    // cycle the result actually lands.
+    //==========================================================================
+    localparam WB_DEPTH = 8;
+
+    reg [WB_DEPTH-1:0] wb_rsv;
+
+    // Tag pipelines carry the destination alongside each unit's data pipeline.
+    reg                fp_v    [0:FP_LAT-1];
+    reg [RCTX_W-1:0]   fp_rctx [0:FP_LAT-1];
+    reg [2:0]          fp_dstc [0:FP_LAT-1];
+    reg [7:0]          fp_dsti [0:FP_LAT-1];
+    reg [VLEN-1:0]     fp_len  [0:FP_LAT-1];
+
+    reg                mu_v    [0:MUL_LAT-1];
+    reg [RCTX_W-1:0]   mu_rctx [0:MUL_LAT-1];
+    reg [7:0]          mu_dsti [0:MUL_LAT-1];
+    reg [7:0]          mu_func [0:MUL_LAT-1];
+
+    wire fp_wb  = fp_v[FP_LAT-1];
+    wire mul_wb = mu_v[MUL_LAT-1];
+
+    reg fp_inflight;
+    integer fi;
+    always @(*) begin
+        fp_inflight = 1'b0;
+        for (fi = 0; fi < FP_LAT; fi = fi + 1)
+            if (fp_v[fi]) fp_inflight = 1'b1;
+    end
+
+    reg [63:0] mul_sel;
+    always @(*) begin
+        case (mu_func[MUL_LAT-1])
+        `TNCA_S_MULH_S: mul_sel = mul_hi_s;
+        `TNCA_S_MULH_U: mul_sel = mul_hi_u;
+        default:        mul_sel = mul_lo;
+        endcase
+    end
 
     //==========================================================================
     // Deferred FP-reduction completion (1 deep; only one reduce can be in flight)
@@ -590,16 +671,20 @@ module tnca_core #(
         else                                     x_sres = valu_s;
     end
 
-    // An in-flight memory op or a multi-cycle reduction writes back later.
-    wire x_defers_wb = (x_mem_en) || (use_fpu && fpu_multicycle);
+    // Anything that does not write back from X in this very cycle.
+    wire x_defers_wb = x_mem_en || x_is_fpred || x_is_fpnorm || x_is_mul;
     wire x_has_dest  = x_valid && !x_kill && (x_dstc != `TNCA_DST_NONE) && !x_defers_wb;
 
     //==========================================================================
     // Writeback arbitration
     //==========================================================================
+    // Exactly one scheduled result can land per cycle -- the reservation
+    // register guarantees it -- so these three are mutually exclusive.
+    wire sched_wb  = x_has_dest | fp_wb | mul_wb;
+
     wire cpl_req   = lsu_cpl_valid | red_pend;
-    wire cpl_grant = cpl_req && !x_has_dest;
-    wire wb_steal  = cpl_req &&  x_has_dest;   // force a bubble into X next cycle
+    wire cpl_grant = cpl_req && !sched_wb;
+    wire wb_steal  = cpl_req &&  sched_wb;   // drain the schedule, then retry
 
     always @(*) begin
         nw_en      = 1'b0;
@@ -629,6 +714,20 @@ module tnca_core #(
             nw_sdata   = red_sdata;
             nw_vdata   = red_vdata;
             nw_lane_en = {VLEN{1'b1}};
+        end else if (fp_wb) begin
+            nw_en      = 1'b1;
+            nw_rctx    = fp_rctx[FP_LAT-1];
+            nw_class   = fp_dstc[FP_LAT-1];
+            nw_idx     = fp_dsti[FP_LAT-1];
+            nw_vdata   = fpu_v;
+            nw_pdata   = fpu_p;
+            nw_lane_en = fp_len[FP_LAT-1];
+        end else if (mul_wb) begin
+            nw_en      = 1'b1;
+            nw_rctx    = mu_rctx[MUL_LAT-1];
+            nw_class   = `TNCA_DST_S;
+            nw_idx     = mu_dsti[MUL_LAT-1];
+            nw_sdata   = mul_sel;
         end else if (x_has_dest) begin
             nw_en      = 1'b1;
             nw_rctx    = x_rctx;
@@ -645,10 +744,10 @@ module tnca_core #(
     // Stall and squash
     //==========================================================================
     wire r_needs_lsu = r_valid && r_mem_en;
-    wire r_needs_fpu = r_valid && ((r_major == `TNCA_MAJ_VFP) ||
-                                   (r_major == `TNCA_MAJ_CVT) ||
-                                   ((r_major == `TNCA_MAJ_RED) &&
-                                    (r_func >= `TNCA_RD_FADD)));
+
+    wire r_is_mul    = r_valid && `TNCA_IS_MUL(r_major, r_func);
+    wire r_is_fpnorm = r_valid && `TNCA_IS_FPNORM(r_major);
+    wire r_is_fpred  = r_valid && `TNCA_IS_FPRED(r_major, r_func);
 
     // A unit is claimed from X, one cycle after the check in R. Asking "is the
     // unit free now?" is therefore the wrong question -- it must be free *next*
@@ -657,16 +756,29 @@ module tnca_core #(
     // predecessor had been accepted in the very cycle R looked at req_ready,
     // leaving the load's destination marked busy forever.
     wire lsu_free_next = lsu_req_ready && !x_mem_go;
-    // fpu_done is included so that no FP op -- and in particular no second
-    // reduction -- can issue into the cycle where the finished one is still
-    // holding red_rctx/red_dstc/red_dsti for its deferred writeback.
-    wire fpu_free_next = !fpu_busy && !red_pend && !fpu_done &&
-                         !(x_is_fp && fpu_multicycle);
+
+    // The reduction sequencer hijacks the FMA array's operands, so it may only
+    // start when the array is empty -- otherwise it corrupts a normal FP
+    // operation still in flight. Conversely a normal FP op may not issue into a
+    // running reduction.
+    wire red_busy_next = fpu_busy || red_pend || fpu_done || x_is_fpred;
 
     wire stall_lsu = r_needs_lsu && !lsu_free_next;
-    wire stall_fpu = r_needs_fpu && !fpu_free_next;
+    wire stall_fpu = (r_is_fpnorm && red_busy_next)
+                   | (r_is_fpred  && (red_busy_next || fp_inflight || x_is_fpnorm));
 
-    wire stall_front = hazard | stall_lsu | stall_fpu | wb_steal;
+    // ---- writeback reservation ------------------------------------------------
+    // Delay from "in X" to "result available", per unit.
+    wire [3:0] r_wb_delay = r_is_mul    ? MUL_LAT[3:0] :
+                            r_is_fpnorm ? FP_LAT[3:0]  : 4'd0;
+
+    // Memory ops and FP reductions complete out of band and book nothing.
+    wire r_unscheduled = r_mem_en | r_is_fpred;
+    wire r_books_wb    = r_valid && (r_dstc != `TNCA_DST_NONE) && !r_unscheduled;
+
+    wire stall_rsv = r_books_wb && wb_rsv[r_wb_delay + 4'd1];
+
+    wire stall_front = hazard | stall_lsu | stall_fpu | stall_rsv | wb_steal;
 
     // A redirect kills only the younger entries of the same RCTX.
     wire             squash_en   = x_redirect;
@@ -696,6 +808,9 @@ module tnca_core #(
             sb_p       <= {(NUM_RCTX*16){1'b0}};
             red_pend   <= 1'b0;
             w_en       <= 1'b0;
+            wb_rsv     <= {WB_DEPTH{1'b0}};
+            for (i = 0; i < FP_LAT; i = i + 1)  fp_v[i] <= 1'b0;
+            for (i = 0; i < MUL_LAT; i = i + 1) mu_v[i] <= 1'b0;
             clock_ctr  <= 64'd0;
             fault_valid<= 1'b0;
             fault_code <= 8'd0;
@@ -717,6 +832,41 @@ module tnca_core #(
             end
         end else begin
             clock_ctr <= clock_ctr + 64'd1;
+
+            //------------------------------------------------------------------
+            // Scheduled-writeback pipelines. These advance every cycle,
+            // independently of stall_front: they carry work that has already
+            // been issued, and throttling must never hold up completion
+            // (arch overview sec 2.4).
+            //------------------------------------------------------------------
+            wb_rsv <= {1'b0, wb_rsv[WB_DEPTH-1:1]}
+                    | (( !stall_front && r_valid && !kill_r && r_books_wb )
+                       ? ({{(WB_DEPTH-1){1'b0}}, 1'b1} << r_wb_delay)
+                       : {WB_DEPTH{1'b0}});
+
+            for (i = FP_LAT-1; i > 0; i = i - 1) begin
+                fp_v[i]    <= fp_v[i-1];
+                fp_rctx[i] <= fp_rctx[i-1];
+                fp_dstc[i] <= fp_dstc[i-1];
+                fp_dsti[i] <= fp_dsti[i-1];
+                fp_len[i]  <= fp_len[i-1];
+            end
+            fp_v[0]    <= x_is_fpnorm && !x_kill && (x_dstc != `TNCA_DST_NONE);
+            fp_rctx[0] <= x_rctx;
+            fp_dstc[0] <= x_dstc;
+            fp_dsti[0] <= x_dsti;
+            fp_len[0]  <= x_mask_dst ? lane_mask : {VLEN{1'b1}};
+
+            for (i = MUL_LAT-1; i > 0; i = i - 1) begin
+                mu_v[i]    <= mu_v[i-1];
+                mu_rctx[i] <= mu_rctx[i-1];
+                mu_dsti[i] <= mu_dsti[i-1];
+                mu_func[i] <= mu_func[i-1];
+            end
+            mu_v[0]    <= x_is_mul && !x_kill && (x_dstc != `TNCA_DST_NONE);
+            mu_rctx[0] <= x_rctx;
+            mu_dsti[0] <= x_dsti;
+            mu_func[0] <= x_func;
 
             // latch this cycle's writeback decision; it drives the RF next cycle
             w_en      <= nw_en;
@@ -755,6 +905,9 @@ module tnca_core #(
                 r_valid  <= 1'b0;
                 x_valid  <= 1'b0;
                 w_en     <= 1'b0;
+                wb_rsv   <= {WB_DEPTH{1'b0}};
+                for (i = 0; i < FP_LAT; i = i + 1)  fp_v[i] <= 1'b0;
+                for (i = 0; i < MUL_LAT; i = i + 1) mu_v[i] <= 1'b0;
                 sb_s     <= {(NUM_RCTX*64){1'b0}};
                 sb_v     <= {(NUM_RCTX*VREGS_PER_RCTX){1'b0}};
                 sb_p     <= {(NUM_RCTX*16){1'b0}};
@@ -953,12 +1106,39 @@ module tnca_core #(
     end
 
     //==========================================================================
+    // Scheduling invariants (simulation only)
+    //
+    // The reservation register is the only thing standing between three
+    // independently-timed units and a dropped result. If it is ever wrong, the
+    // symptom is a silently lost writeback -- which looks like a hang three
+    // thousand instructions later, not like a scheduling bug. These checks turn
+    // that into an immediate, located failure.
+    //==========================================================================
+`ifndef SYNTHESIS
+    // synthesis translate_off
+    always @(posedge clk) begin
+        if (rst_n && !launch_valid) begin
+            // The message starts with FAIL so tools/run_test.sh treats it as a
+            // failure: an assertion nobody acts on is decoration.
+            if (({2'd0, x_has_dest} + {2'd0, fp_wb} + {2'd0, mul_wb}) > 3'd1)
+                $display("FAIL tnca_core assert @%0t: two scheduled writebacks in one cycle (alu=%b fp=%b mul=%b)",
+                         $time, x_has_dest, fp_wb, mul_wb);
+            if (sched_wb !== wb_rsv[0])
+                $display("FAIL tnca_core assert @%0t: reservation disagrees with reality (sched=%b rsv0=%b alu=%b fp=%b mul=%b)",
+                         $time, sched_wb, wb_rsv[0], x_has_dest, fp_wb, mul_wb);
+        end
+    end
+    // synthesis translate_on
+`endif
+
+    //==========================================================================
     // Idle
     //==========================================================================
     assign core_idle = (running == {NUM_RCTX{1'b0}})
                     && !d_valid && !r_valid && !x_valid
                     && lsu_req_ready && !lsu_cpl_valid
-                    && !fpu_busy && !red_pend && !w_en;
+                    && !fpu_busy && !red_pend && !w_en
+                    && (wb_rsv == {WB_DEPTH{1'b0}});
 
     // Signals decoded but not consumed by the Stage-1 datapath. They are kept
     // on the bundle because Stage 2 needs them (the FU class for dual issue,

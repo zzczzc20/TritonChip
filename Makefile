@@ -27,8 +27,9 @@ PYTHON     := python3
 
 ASM        := $(PYTHON) $(TOOLS)/asm/tnca_asm.py
 
+RTL_COMMON := $(wildcard $(RTL)/common/*.v)
 RTL_CORE   := $(wildcard $(RTL)/core/*.v)
-RTL_ALL    := $(RTL_CORE) $(wildcard $(RTL)/mem/*.v)
+RTL_ALL    := $(RTL_COMMON) $(RTL_CORE) $(wildcard $(RTL)/mem/*.v)
 
 # Number of random FMA vectors in the default regression. The deep sweep used
 # during bring-up is `make fma-deep`.
@@ -62,7 +63,7 @@ dirs:
 lint: dirs
 	@fail=0; \
 	for f in $(RTL_ALL); do \
-	  if ! $(IVERILOG) $(IVFLAGS) -y $(RTL)/core -t null $$f 2>$(BUILD)/lint.err; then \
+	  if ! $(IVERILOG) $(IVFLAGS) -y $(RTL)/core -y $(RTL)/common -t null $$f 2>$(BUILD)/lint.err; then \
 	    echo "LINT FAIL $$f"; cat $(BUILD)/lint.err; fail=1; \
 	  fi; \
 	done; \
@@ -72,7 +73,14 @@ lint: dirs
 #------------------------------------------------------------------------------
 # Unit tests
 #------------------------------------------------------------------------------
-$(BUILD)/tb_fp32_fma.vvp: $(TB)/core/tb_fp32_fma.v $(RTL)/core/tnca_fp32_fma.v | dirs
+$(BUILD)/tb_fp32_fma.vvp: $(TB)/core/tb_fp32_fma.v $(RTL)/core/tnca_fp32_fma.v \
+                          $(RTL_COMMON) | dirs
+	$(IVERILOG) $(IVFLAGS) -o $@ $^
+
+$(BUILD)/tb_bitops.vvp: $(TB)/core/tb_bitops.v $(RTL_COMMON) | dirs
+	$(IVERILOG) $(IVFLAGS) -o $@ $^
+
+$(BUILD)/tb_mul64.vvp: $(TB)/core/tb_mul64.v $(RTL)/core/tnca_mul64.v | dirs
 	$(IVERILOG) $(IVFLAGS) -o $@ $^
 
 $(BUILD)/fma_vectors.txt: $(TOOLS)/model/gen_fma_vectors.py $(TOOLS)/model/fp32.py | dirs
@@ -86,8 +94,11 @@ $(BUILD)/dec_vectors.txt: $(TOOLS)/model/gen_decoder_vectors.py \
 	$(PYTHON) $< -o $@
 
 unit: $(BUILD)/tb_fp32_fma.vvp $(BUILD)/fma_vectors.txt \
-      $(BUILD)/tb_decoder.vvp $(BUILD)/dec_vectors.txt \
+      $(BUILD)/tb_decoder.vvp $(BUILD)/dec_vectors.txt $(BUILD)/tb_bitops.vvp \
+      $(BUILD)/tb_mul64.vvp \
       $(TB)/core/progs/t03_fp.s $(TB)/core/progs/t06_alu.s
+	@$(TOOLS)/run_test.sh "bitops" "$(VVP) $(BUILD)/tb_bitops.vvp"
+	@$(TOOLS)/run_test.sh "mul64"  "$(VVP) $(BUILD)/tb_mul64.vvp"
 	@$(TOOLS)/run_test.sh "fp32_fma" \
 	   "$(VVP) $(BUILD)/tb_fp32_fma.vvp +vec=$(BUILD)/fma_vectors.txt"
 	@$(TOOLS)/run_test.sh "decoder" \
@@ -105,9 +116,9 @@ fma-deep: $(BUILD)/tb_fp32_fma.vvp
 #------------------------------------------------------------------------------
 # Core tests
 #------------------------------------------------------------------------------
-$(BUILD)/tb_core.vvp: $(TB)/core/tb_tnca_core.v $(RTL_CORE) \
+$(BUILD)/tb_core.vvp: $(TB)/core/tb_tnca_core.v $(RTL_CORE) $(RTL_COMMON) \
                       $(TB)/common/tnca_mem_model.v | dirs
-	$(IVERILOG) $(IVFLAGS) -y $(RTL)/core -y $(TB)/common -o $@ $<
+	$(IVERILOG) $(IVFLAGS) -y $(RTL)/core -y $(RTL)/common -y $(TB)/common -o $@ $<
 
 $(TB)/core/progs/t03_fp.s: $(TB)/core/progs/gen_t03_fp.py $(TOOLS)/model/fp32.py
 	$(PYTHON) $<
@@ -136,7 +147,7 @@ core: $(BUILD)/tb_core.vvp $(CORE_HEX)
 core-slowmem: export ARGS_t04_roles := $(ARGS_t04_roles)
 core-slowmem: export ARGS_t05_fault := $(ARGS_t05_fault)
 core-slowmem: $(CORE_HEX) | dirs
-	$(IVERILOG) $(IVFLAGS) -y $(RTL)/core -y $(TB)/common \
+	$(IVERILOG) $(IVFLAGS) -y $(RTL)/core -y $(RTL)/common -y $(TB)/common \
 	   -P tb_tnca_core.MEM_LATENCY=7 -P tb_tnca_core.RANDOM_STALL=1 \
 	   -o $(BUILD)/tb_core_slow.vvp $(TB)/core/tb_tnca_core.v
 	@for p in $(CORE_PROGS); do \

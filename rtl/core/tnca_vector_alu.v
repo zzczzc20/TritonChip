@@ -74,6 +74,19 @@ module tnca_vector_alu #(
     reg  [ELEN-1:0] lane_res [0:VLEN-1];
     reg             lane_cmp [0:VLEN-1];
 
+    // Per-lane clz/popc as O(log W) structures rather than the loops they were.
+    // Sixteen 32-deep chains in parallel with the rest of the lane is not a
+    // trade worth making for two rarely-used instructions.
+    wire [5:0] lane_clz  [0:VLEN-1];
+    wire [5:0] lane_popc [0:VLEN-1];
+    generate
+        for (g = 0; g < VLEN; g = g + 1) begin : g_bitops
+            tnca_lzc  #(.W(ELEN), .LOGW(5)) u_clz  (.v(a[g]), .clz(lane_clz[g]),
+                                                    .msb_idx(), .any());
+            tnca_popc #(.W(ELEN), .LOGW(5)) u_popc (.v(a[g]), .count(lane_popc[g]));
+        end
+    endgenerate
+
     // ONE subtractor per lane feeds sub, min, max and every compare.
     //
     // Written as separate relational operators these become six independent
@@ -100,8 +113,6 @@ module tnca_vector_alu #(
     // costs, not before.
     reg [2*ELEN-1:0] pu;
     reg [ELEN-1:0]   ps_hi;
-    reg [6:0] cnt;
-    integer k;
 
     always @(*) begin
         for (i = 0; i < VLEN; i = i + 1) begin
@@ -137,19 +148,8 @@ module tnca_vector_alu #(
             `TNCA_V_MAX_S:                   lane_res[i] = c_lts ? y : x;
             `TNCA_V_MIN_U:                   lane_res[i] = c_ltu ? x : y;
             `TNCA_V_MAX_U:                   lane_res[i] = c_ltu ? y : x;
-            `TNCA_V_CLZ: begin
-                cnt = ELEN;
-                for (k = 0; k < ELEN; k = k + 1)
-                    if (x[k]) cnt = ELEN - 1 - k;
-                if (x == {ELEN{1'b0}}) cnt = ELEN;
-                lane_res[i] = {{(ELEN-7){1'b0}}, cnt};
-            end
-            `TNCA_V_POPC: begin
-                cnt = 0;
-                for (k = 0; k < ELEN; k = k + 1)
-                    cnt = cnt + {6'd0, x[k]};
-                lane_res[i] = {{(ELEN-7){1'b0}}, cnt};
-            end
+            `TNCA_V_CLZ:                     lane_res[i] = {{(ELEN-6){1'b0}}, lane_clz[i]};
+            `TNCA_V_POPC:                    lane_res[i] = {{(ELEN-6){1'b0}}, lane_popc[i]};
             `TNCA_V_SEL:                     lane_res[i] = mask[i] ? x : y;
             `TNCA_V_SPLAT:                   lane_res[i] = sa[ELEN-1:0];
             `TNCA_V_IOTA:                    lane_res[i] = i;

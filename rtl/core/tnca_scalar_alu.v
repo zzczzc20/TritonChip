@@ -5,11 +5,11 @@
 // between Sb and the immediate and presented it as opb, so s.add and s.addi are
 // the same operation here.
 //
-// The 64x64 multiplier is combinational in this Stage-1 core. It is by far the
-// largest and deepest block in the scalar datapath; flow/synth/report.py breaks
-// it out separately so the cost is visible rather than buried. Pipelining it is
-// tracked as Stage-2 work and is a local change: only the issue stage's latency
-// table moves.
+// The multiplier is NOT here. s.mul and s.mulh.* are executed by tnca_mul64,
+// which is pipelined, because combinationally that array measured 135 gate
+// levels against a ~50-level budget while everything in this module sits
+// comfortably under it. The core routes multiply results from that unit; this
+// module returns zero for those opcodes and never sees them selected.
 //==============================================================================
 `include "tnca_defs.vh"
 
@@ -47,37 +47,16 @@ module tnca_scalar_alu (
         endcase
     end
 
-    // ---- multiply -----------------------------------------------------------
-    //
-    // One 64x64 array, not two. The signed high half is derived from the
-    // unsigned product: the two correction terms are multiples of 2^64, so they
-    // touch only the high half and there is no borrow out of the low half.
-    //
-    //   s.mulh.s(a,b) = mulh.u(a,b) - (a[63] ? b : 0) - (b[63] ? a : 0)
-    //
-    // This multiplier is still by far the deepest path in the scalar unit
-    // (see doc/synthesis.md); pipelining it is a Stage-1b task.
-    wire [127:0] prod_u = opa * opb;
-    wire [63:0]  prod_s_hi = prod_u[127:64]
-                           - (opa[63] ? opb : 64'd0)
-                           - (opb[63] ? opa : 64'd0);
-
     // ---- count leading zeros / population count -----------------------------
-    reg [6:0] clz_r;
-    reg [6:0] popc_r;
-    integer i;
-    always @(*) begin
-        clz_r = 7'd64;
-        for (i = 0; i < 64; i = i + 1) begin
-            // scan from MSB down; last taken assignment wins, so iterate low->high
-            if (opa[i]) clz_r = 63 - i;
-        end
-        if (opa == 64'd0) clz_r = 7'd64;
+    //
+    // Both are O(log W) structures (rtl/common). Written as the obvious loops
+    // they were a 64-mux chain and a 64-adder chain respectively, and between
+    // them they dominated everything in this unit except the multiplier.
+    wire [6:0] clz_r;
+    wire [6:0] popc_r;
 
-        popc_r = 7'd0;
-        for (i = 0; i < 64; i = i + 1)
-            popc_r = popc_r + {6'd0, opa[i]};
-    end
+    tnca_lzc  #(.W(64), .LOGW(6)) u_clz  (.v(opa), .clz(clz_r), .msb_idx(), .any());
+    tnca_popc #(.W(64), .LOGW(6)) u_popc (.v(opa), .count(popc_r));
 
     // ---- movz / movk / movn shift amount ------------------------------------
     wire [5:0]  mov_sh   = {mod[1:0], 4'b0000};          // 16 * mod[1:0]
@@ -89,9 +68,6 @@ module tnca_scalar_alu (
         `TNCA_S_MOV:                        result = opa;
         `TNCA_S_ADD,  `TNCA_S_ADDI:         result = opa + opb;
         `TNCA_S_SUB,  `TNCA_S_SUBI:         result = opa - opb;
-        `TNCA_S_MUL,  `TNCA_S_MULI:         result = prod_u[63:0];
-        `TNCA_S_MULH_S:                     result = prod_s_hi;
-        `TNCA_S_MULH_U:                     result = prod_u[127:64];
         `TNCA_S_AND,  `TNCA_S_ANDI:         result = opa & opb;
         `TNCA_S_OR,   `TNCA_S_ORI:          result = opa | opb;
         `TNCA_S_XOR,  `TNCA_S_XORI:         result = opa ^ opb;

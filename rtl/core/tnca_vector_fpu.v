@@ -11,6 +11,14 @@
 //     vf.mul a,b  ->  fma(a, b, -) mul_only
 //     vf.fma      ->  fma(a, b, c)
 //
+// LATENCY
+// -------
+// Every operation in this unit produces its result FP_LAT cycles after the
+// operands are presented, reductions excepted. The latency is uniform on
+// purpose: mixing one- and three-cycle results inside a single functional unit
+// would push the difference into the core's writeback scheduler for no benefit,
+// and the non-FMA paths (min/max, compare, convert) are cheap enough to delay.
+//
 // Reductions
 // ----------
 // vf.reduce.* is a LOG2(VLEN)-cycle sequential operation that folds the vector
@@ -27,9 +35,10 @@
 `include "tnca_defs.vh"
 
 module tnca_vector_fpu #(
-    parameter VLEN = 16,
-    parameter ELEN = 32,
-    parameter LW   = 4               // log2(VLEN)
+    parameter VLEN   = 16,
+    parameter ELEN   = 32,
+    parameter LW     = 4,            // log2(VLEN)
+    parameter FP_LAT = 2             // must match tnca_fp32_fma's stage count
 ) (
     input  wire                     clk,
     input  wire                     rst_n,
@@ -165,6 +174,7 @@ module tnca_vector_fpu #(
     generate
         for (g = 0; g < VLEN; g = g + 1) begin : g_fma
             tnca_fp32_fma u_fma (
+                .clk(clk), .rst_n(rst_n),
                 .a(fa[g]), .b(fb[g]), .c(fc[g]),
                 .sub_c(f_sub), .mul_only(f_mul), .ftz(ftz),
                 .y(fma_y[g])
@@ -370,11 +380,18 @@ module tnca_vector_fpu #(
         end
     end
 
+    // The FMA array now has FP_LAT cycles of latency, so a tree level cannot be
+    // captured in the cycle it is presented. Each level takes FP_LAT+1 cycles:
+    // present the operand pairs, wait for them to fall out, capture. The
+    // operands are stable throughout because `acc` only changes at the capture.
+    reg [1:0] rwait;
+
     always @(posedge clk) begin
         if (!rst_n) begin
-            busy <= 1'b0;
-            done <= 1'b0;
-            lvl  <= {LW{1'b0}};
+            busy  <= 1'b0;
+            done  <= 1'b0;
+            lvl   <= {LW{1'b0}};
+            rwait <= 2'd0;
         end else begin
             done <= 1'b0;
             if (!busy) begin
@@ -384,11 +401,15 @@ module tnca_vector_fpu #(
                     red_func <= func;
                     red_mod  <= mod;
                     lvl      <= {LW{1'b0}};
+                    rwait    <= 2'd0;
                     busy     <= 1'b1;
                 end
+            end else if (rwait != FP_LAT[1:0]) begin
+                rwait <= rwait + 2'd1;
             end else begin
                 for (i = 0; i < VLEN/2; i = i + 1)
                     acc[i] <= red_step[i];
+                rwait <= 2'd0;
                 if (lvl == LW-1) begin
                     busy <= 1'b0;
                     done <= 1'b1;
@@ -400,34 +421,88 @@ module tnca_vector_fpu #(
 
     // --------------------------------------------------------------------------
     // Output selection
+    //
+    // The FMA array's results already arrive FP_LAT cycles late. Everything
+    // else is combinational, so the *selected* non-FMA result is delayed by the
+    // same amount -- delaying one chosen 512-bit value rather than all three
+    // candidates, or the three 512-bit inputs.
+    //
+    // The opcode is delayed alongside it: by the time a result emerges, the
+    // opcode inputs belong to whatever else has since reached the execute stage.
     // --------------------------------------------------------------------------
-    always @(*) begin
-        vres = {(VLEN*ELEN){1'b0}};
-        sres = 64'd0;
-        pres = {VLEN{1'b0}};
+    reg [VLEN*ELEN-1:0] nf_v;
+    reg [VLEN-1:0]      nf_p;
 
+    always @(*) begin
+        nf_v = {(VLEN*ELEN){1'b0}};
+        nf_p = {VLEN{1'b0}};
         case (major)
         `TNCA_MAJ_VFP: begin
             for (i = 0; i < VLEN; i = i + 1) begin
                 case (func)
-                `TNCA_VF_MIN, `TNCA_VF_MAX: vres[i*ELEN +: ELEN] = mm[i];
-                `TNCA_VF_NEG, `TNCA_VF_ABS: vres[i*ELEN +: ELEN] = na[i];
-                default:                    vres[i*ELEN +: ELEN] = fma_y[i];
+                `TNCA_VF_MIN, `TNCA_VF_MAX: nf_v[i*ELEN +: ELEN] = mm[i];
+                `TNCA_VF_NEG, `TNCA_VF_ABS: nf_v[i*ELEN +: ELEN] = na[i];
+                default:                    nf_v[i*ELEN +: ELEN] = {ELEN{1'b0}};
                 endcase
-                pres[i] = mask[i] & cmpr[i];
+                nf_p[i] = mask[i] & cmpr[i];
             end
         end
         `TNCA_MAJ_CVT: begin
             for (i = 0; i < VLEN; i = i + 1)
-                vres[i*ELEN +: ELEN] = cvt[i];
-        end
-        `TNCA_MAJ_RED: begin
-            sres = {{(64-ELEN){1'b0}}, acc[0]};
-            for (i = 0; i < VLEN; i = i + 1)
-                vres[i*ELEN +: ELEN] = acc[0];
+                nf_v[i*ELEN +: ELEN] = cvt[i];
         end
         default: ;
         endcase
+    end
+
+    reg [VLEN*ELEN-1:0] dly_v   [0:FP_LAT-1];
+    reg [VLEN-1:0]      dly_p   [0:FP_LAT-1];
+    reg [7:0]           dly_maj [0:FP_LAT-1];
+    reg [7:0]           dly_fn  [0:FP_LAT-1];
+
+    integer d;
+    always @(posedge clk) begin
+        if (!rst_n) begin
+            for (d = 0; d < FP_LAT; d = d + 1) begin
+                dly_v[d]   <= {(VLEN*ELEN){1'b0}};
+                dly_p[d]   <= {VLEN{1'b0}};
+                dly_maj[d] <= 8'd0;
+                dly_fn[d]  <= 8'd0;
+            end
+        end else begin
+            dly_v[0]   <= nf_v;
+            dly_p[0]   <= nf_p;
+            dly_maj[0] <= major;
+            dly_fn[0]  <= func;
+            for (d = 1; d < FP_LAT; d = d + 1) begin
+                dly_v[d]   <= dly_v[d-1];
+                dly_p[d]   <= dly_p[d-1];
+                dly_maj[d] <= dly_maj[d-1];
+                dly_fn[d]  <= dly_fn[d-1];
+            end
+        end
+    end
+
+    wire [7:0] out_maj = dly_maj[FP_LAT-1];
+    wire [7:0] out_fn  = dly_fn[FP_LAT-1];
+
+    // Which of the two sources carries this result: the FMA array for the
+    // arithmetic opcodes, the delayed combinational path for everything else.
+    wire out_from_fma = (out_maj == `TNCA_MAJ_VFP) &&
+                        ((out_fn == `TNCA_VF_ADD) || (out_fn == `TNCA_VF_SUB) ||
+                         (out_fn == `TNCA_VF_MUL) || (out_fn == `TNCA_VF_FMA) ||
+                         (out_fn == `TNCA_VF_FMS));
+
+    always @(*) begin
+        vres = {(VLEN*ELEN){1'b0}};
+        sres = 64'd0;
+        pres = dly_p[FP_LAT-1];
+        if (out_from_fma) begin
+            for (i = 0; i < VLEN; i = i + 1)
+                vres[i*ELEN +: ELEN] = fma_y[i];
+        end else begin
+            vres = dly_v[FP_LAT-1];
+        end
     end
 
     assign red_sres = {{(64-ELEN){1'b0}}, acc[0]};

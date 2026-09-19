@@ -62,6 +62,22 @@ MODULES = [
     ('tnca_decoder',    ['core/tnca_decoder.v'], {}),
     ('tnca_mul64',      ['core/tnca_mul64.v'], {}),
     ('tnca_cvt16_f32',  ['core/tnca_cvt16_f32.v'] + ['common/tnca_lzc.v'], {}),
+    # XLS-generated. Kept beside the hand-written module it supersedes so the
+    # two can be read against each other: tnca_cvt16_f32 converts FP16 and
+    # BF16 to binary32, tnca_cvt_xls converts every pair among five formats
+    # in both directions, so the gate counts are not comparable as like for
+    # like -- what they show is what the extra formats cost.
+    ('tnca_cvt_xls',    ['gen/tnca_cvt_xls.v'], {}),
+    ('tnca_widen_xls',  ['gen/tnca_widen_xls.v'], {}),
+    ('tnca_narrow_xls', ['gen/tnca_narrow_xls.v'], {}),
+    ('tnca_widen_pair_xls', ['gen/tnca_widen_pair_xls.v'], {}),
+    # The SFU. There is nothing hand-written to compare these against: ISA
+    # sec 8.8 specified them and Stage 1a shipped without them, which is why
+    # CAPABILITY0.SFU reads 0. These are the first implementation.
+    ('tnca_sfu_exp2_xls',  ['gen/tnca_sfu_exp2_xls.v'], {}),
+    ('tnca_sfu_log2_xls',  ['gen/tnca_sfu_log2_xls.v'], {}),
+    ('tnca_sfu_rcp_xls',   ['gen/tnca_sfu_rcp_xls.v'], {}),
+    ('tnca_sfu_rsqrt_xls', ['gen/tnca_sfu_rsqrt_xls.v'], {}),
     ('tnca_barrier',    ['core/tnca_barrier.v'], {}),
     ('tnca_mem_mux',    ['core/tnca_mem_mux.v'], {}),
     ('tnca_tensor',     ['core/tnca_tensor.v'], {}),
@@ -72,7 +88,13 @@ MODULES = [
     ('tnca_scalar_alu', ['core/tnca_scalar_alu.v'] + COMMON, {}),
     ('tnca_fp32_fma',   ['core/tnca_fp32_fma.v'] + COMMON, {}),
     ('tnca_vector_alu', ['core/tnca_vector_alu.v'] + COMMON, {}),
-    ('tnca_vector_fpu', ['core/tnca_vector_fpu.v', 'core/tnca_fp32_fma.v'] + COMMON, {}),
+    ('tnca_sfu',        ['core/tnca_sfu.v', 'gen/tnca_sfu_exp2_xls.v',
+                         'gen/tnca_sfu_log2_xls.v', 'gen/tnca_sfu_rcp_xls.v',
+                         'gen/tnca_sfu_rsqrt_xls.v'], {}),
+    ('tnca_vector_fpu', ['core/tnca_vector_fpu.v', 'core/tnca_fp32_fma.v',
+                         'core/tnca_sfu.v', 'gen/tnca_sfu_exp2_xls.v',
+                         'gen/tnca_sfu_log2_xls.v', 'gen/tnca_sfu_rcp_xls.v',
+                         'gen/tnca_sfu_rsqrt_xls.v'] + COMMON, {}),
     ('tnca_lsu',        ['core/tnca_lsu.v'], {}),
     ('tnca_scalar_rf',  ['core/tnca_scalar_rf.v'], {}),
     ('tnca_pred_rf',    ['core/tnca_pred_rf.v'], {}),
@@ -83,7 +105,9 @@ MODULES = [
         'core/tnca_vector_alu.v', 'core/tnca_vector_fpu.v', 'core/tnca_fp32_fma.v',
         'core/tnca_lsu.v', 'core/tnca_mul64.v', 'core/tnca_matrix.v',
         'core/tnca_acc_rf.v', 'core/tnca_cvt16_f32.v', 'core/tnca_barrier.v',
-        'core/tnca_tensor.v', 'core/tnca_mem_mux.v',
+        'core/tnca_tensor.v', 'core/tnca_mem_mux.v', 'core/tnca_sfu.v',
+        'gen/tnca_sfu_exp2_xls.v', 'gen/tnca_sfu_log2_xls.v',
+        'gen/tnca_sfu_rcp_xls.v', 'gen/tnca_sfu_rsqrt_xls.v',
     ] + COMMON, {}),
     ('tnca_fifo',       ['common/tnca_fifo.v'], {}),
     ('tnca_router',     ['noc/tnca_router.v', 'common/tnca_fifo.v'], {}),

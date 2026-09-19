@@ -6,7 +6,7 @@
 .org 0
 start:
     s.rdspecial s1, cap0
-    .assert_eq s1, #0x1e5, #1        // bits: VECTOR_FP32, GATHER_SCATTER, MATRIX_F16, MATRIX_BF16, TENSOR_DMA, MBARRIER
+    .assert_eq s1, #0x1e7, #1        // bits: VECTOR_FP32, GATHER_SCATTER, MATRIX_F16, MATRIX_BF16, TENSOR_DMA, MBARRIER, SFU
 
     // bit 0 VECTOR_FP32 -- a native FP32 vector datapath
     .li       s2, #0x3f800000            // 1.0f
@@ -14,19 +14,25 @@ start:
     vf.add    v2, v1, v1
     .assert_lane v2, #0, #0x40000000, #2
 
+    // bit 1 SFU -- a native approximate datapath, not a library call
+    .li       s2, #0x40800000            // 4.0f
+    v.splat   v1, s2
+    v.rsqrt.approx v2, v1
+    .assert_lane v2, #0, #0x3f000000, #3
+
     // bit 2 GATHER_SCATTER -- native per-lane addressing
     .li       s3, #20992
     v.ld.w    v3, [s3, #0]              // element indices, one per lane
     .li       s4, #21248
     v.ld.gather.w v4, [s4, v3]
-    .assert_lane v4, #0, #0x11111100, #3
-    .assert_lane v4, #15, #0x1111110f, #4
+    .assert_lane v4, #0, #0x11111100, #4
+    .assert_lane v4, #15, #0x1111110f, #5
 
     // bits 5,6 MATRIX_* -- the accumulator file backing m.mma
     m.zero    a0
     .li       s5, #0
     a.vread   v5, a0, s5
-    .assert_lane v5, #0, #0, #5
+    .assert_lane v5, #0, #0, #6
 
     // bits 7,8 TENSOR_DMA + MBARRIER -- the pair that was mis-advertised.
     // The window is pre-filled with a value the source cannot produce, so
@@ -42,9 +48,9 @@ start:
     .li       s11, #0                   // coord1 (consecutive registers)
     t.ld.async.h w0, d0, s10, s7
     mb.wait   s7
-    .assert_lane v32, #0,  #0x3c003c00, #6
-    .assert_lane v32, #15, #0x3c003c00, #7
-    .assert_lane v39, #15, #0x3c003c00, #8
+    .assert_lane v32, #0,  #0x3c003c00, #7
+    .assert_lane v32, #15, #0x3c003c00, #8
+    .assert_lane v39, #15, #0x3c003c00, #9
 
     exit
 

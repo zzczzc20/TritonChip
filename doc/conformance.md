@@ -107,7 +107,11 @@ promise about a *native datapath*, and a clear bit as `ILLEGAL_INSTRUCTION` —
 never "works, but slowly, by some other route". This is enforced, not just
 written down:
 
-* `CAPABILITY0.SFU` reads 0 in Stage 1a and `v.exp2.approx` traps.
+* `CAPABILITY0.SFU` read 0 through Stage 1a, and `v.exp2.approx` trapped. It
+  reads 1 now — but only because the datapath exists and has been measured
+  against §8.8's bound, which is what the bit means. A build with
+  `HAS_SFU = 0` still clears it, still traps, and does not instantiate the
+  slice; the promise and the gates move together.
 * Major `0x21` (atomics) is allocated and normative but decodes as illegal,
   because atomics execute at a home slice that does not exist until Stage 3.
 * `s.wrspecial` traps, because v0.1 defines no writable special register.
@@ -250,8 +254,14 @@ that a simpler reading would have skipped:
 
 4. **§12.4 and §12.7, no silent approximation.** FTZ is an explicit encoded
    mode, never an implementation shortcut; the SFU's accuracy bounds are a
-   published contract, which is why the unit is absent rather than present and
-   unspecified.
+   published contract, which is why the unit was absent rather than present and
+   unspecified — and why it could only be turned on once measured.
+
+   That rule is what kept Google XLS's `apfloat` out of the binary32 FMA.
+   `apfloat::add(1e-45, 0.0)` returns `0.0`: the library flushes subnormals, a
+   defensible choice for ML kernels and an impermissible one here. The SFU is
+   the mirror image — §8.8 *requires* the flush — so the SFU is generated from
+   DSLX and the FMA is not. doc/xls.md has the measurement and the reasoning.
 
 5. **§10.5 and §13.4, forward progress.** A trap stops one role and wakes the
    rest; it never becomes a hang. `t05_fault` tests exactly that, including

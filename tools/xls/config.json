@@ -1,0 +1,75 @@
+{
+  "note": "Modules generated from xls/*.x. See doc/xls.md. Every module is scheduled by XLS against the asap7 delay model at the same 1300 ps target; stage counts are the minimum that meets it, measured with `make xls-report`.",
+  "remote": {
+    "host": "52.91.238.245",
+    "user": "ubuntu",
+    "identity": "~/Documents/denton-nki-key.pem",
+    "xls": "/home/ubuntu/xls/cur",
+    "workdir": "/home/ubuntu/work/tnca"
+  },
+  "modules": [
+    {
+      "module": "tnca_cvt_xls",
+      "source": "tnca_cvt.x",
+      "top": "convert",
+      "pipeline_stages": 4,
+      "why": "All-pairs conversion among the five formats: a widen and a narrow in series, which is why it needs one more stage than narrow alone.",
+      "delay_model": "asap7"
+    },
+    {
+      "module": "tnca_widen_xls",
+      "source": "tnca_cvt.x",
+      "top": "widen",
+      "pipeline_stages": 0,
+      "why": "Narrow format to binary32. Exact by construction, so no rounding logic, and its 1005 ps asap7 path fits the 1300 ps target with no flops at all -- which is what lets tnca_fpu_multi put it in front of the FMA without adding a cycle."
+    },
+    {
+      "module": "tnca_narrow_xls",
+      "source": "tnca_cvt.x",
+      "top": "narrow",
+      "pipeline_stages": 3,
+      "why": "binary32 to a narrow format. This half carries the rounding, saturation and subnormal generation for four target formats, and is 3476 ps combinational, so it is the half that has to be pipelined.",
+      "delay_model": "asap7"
+    },
+    {
+      "module": "tnca_widen_pair_xls",
+      "source": "tnca_fpu.x",
+      "top": "widen_pair",
+      "pipeline_stages": 0,
+      "why": "Widen two narrow operands to binary32 for the matrix unit. No arithmetic: apfloat flushes subnormals and this ISA does not. Combinational for the same reason as tnca_widen_xls."
+    },
+    {
+      "module": "tnca_sfu_exp2_xls",
+      "source": "tnca_sfu.x",
+      "top": "exp2",
+      "pipeline_stages": 7,
+      "why": "SFU exp2: table-indexed quadratic, ISA sec 8.8 bound 2^-22.",
+      "delay_model": "asap7"
+    },
+    {
+      "module": "tnca_sfu_log2_xls",
+      "source": "tnca_sfu.x",
+      "top": "log2",
+      "pipeline_stages": 7,
+      "why": "SFU log2: table-indexed quadratic, ISA sec 8.8 bound 2^-22.",
+      "delay_model": "asap7"
+    },
+    {
+      "module": "tnca_sfu_rcp_xls",
+      "source": "tnca_sfu.x",
+      "top": "rcp",
+      "pipeline_stages": 7,
+      "why": "SFU rcp: table-indexed quadratic, ISA sec 8.8 bound 2^-22. Seven stages, not the six this one alone needs, so all four SFU operations share a latency.",
+      "delay_model": "asap7"
+    },
+    {
+      "module": "tnca_sfu_rsqrt_xls",
+      "source": "tnca_sfu.x",
+      "top": "rsqrt",
+      "pipeline_stages": 7,
+      "why": "SFU rsqrt: table-indexed quadratic, ISA sec 8.8 bound 2^-22. Seven stages, not the six this one alone needs, so all four SFU operations share a latency.",
+      "delay_model": "asap7"
+    }
+  ],
+  "clock_period_ps": 1300
+}

@@ -11,6 +11,9 @@
 #   make tnca-opt   build the MLIR dialect and tnca-opt (needs the pinned LLVM)
 #   make core       core tests only
 #   make synth      Yosys synthesis + PPA proxy report
+#   make xls        regenerate rtl/gen from the DSLX in xls/
+#   make xls-check  fail if rtl/gen has drifted from xls/
+#   make xls-report measure the scheduled clock period of each generated unit
 #   make lint       parse/elaborate every RTL file standalone
 #   make clean
 #
@@ -37,18 +40,25 @@ RTL_CORE   := $(wildcard $(RTL)/core/*.v)
 RTL_NUCA   := $(wildcard $(RTL)/nuca/*.v)
 RTL_NOC    := $(wildcard $(RTL)/noc/*.v)
 RTL_TILE   := $(wildcard $(RTL)/tile/*.v) $(wildcard $(RTL)/*.v)
-RTL_ALL    := $(RTL_COMMON) $(RTL_CORE) $(RTL_NUCA) $(RTL_NOC) $(RTL_TILE)
+RTL_GEN    := $(wildcard $(RTL)/gen/*.v)
+RTL_ALL    := $(RTL_COMMON) $(RTL_CORE) $(RTL_GEN) $(RTL_NUCA) $(RTL_NOC) $(RTL_TILE)
 
 # Every RTL directory, for library search and include paths.
-RTLY       := -y $(RTL)/common -y $(RTL)/core -y $(RTL)/nuca -y $(RTL)/noc \
-              -y $(RTL)/tile -I $(RTL)/noc
+RTLY       := -y $(RTL)/common -y $(RTL)/core -y $(RTL)/gen -y $(RTL)/nuca \
+              -y $(RTL)/noc -y $(RTL)/tile -I $(RTL)/noc
 
 # Number of random FMA vectors in the default regression. The deep sweep used
 # during bring-up is `make fma-deep`.
 FMA_VECTORS ?= 20000
 
+# Vectors for the generated units. The conversion bench is exhaustive over
+# every narrow format regardless of this; the knob only sizes its binary32
+# sample.
+SFU_VECTORS ?= 6000
+FPU_MULTI_VECTORS ?= 1500
+
 CORE_PROGS := t00_scalar t01_vector t02_mem t03_fp t04_roles t05_fault t06_alu \
-              t11_matrix t12_tensor t13_share t14_caps t15_target t16_vecadd t17_descfault t18_squash t19_waitgen0
+              t11_matrix t12_tensor t13_share t14_caps t15_target t16_vecadd t17_descfault t18_squash t19_waitgen0 t20_sfu
 
 # Image size in 64-bit words; must match tb_tnca_core's WORDS parameter.
 IMAGE_WORDS := 16384
@@ -122,7 +132,10 @@ unit: $(BUILD)/tb_fp32_fma.vvp $(BUILD)/fma_vectors.txt \
       $(BUILD)/tb_mul64.vvp \
       $(TB)/core/progs/t03_fp.s $(TB)/core/progs/t06_alu.s \
       $(TB)/core/progs/t11_matrix.s $(TB)/core/progs/t12_tensor.s \
-      $(BUILD)/tb_cvt16.vvp $(BUILD)/cvt16_vectors.txt
+      $(BUILD)/tb_cvt16.vvp $(BUILD)/cvt16_vectors.txt \
+      $(BUILD)/tb_cvt_xls.vvp $(BUILD)/cvt_xls_vectors.txt \
+      $(BUILD)/tb_sfu_xls.vvp $(BUILD)/tb_sfu_core.vvp $(BUILD)/sfu_vectors.txt \
+      $(BUILD)/tb_fpu_multi.vvp $(BUILD)/fpu_multi_vectors.txt
 	@$(TOOLS)/run_test.sh "bitops" "$(VVP) $(BUILD)/tb_bitops.vvp"
 	@$(TOOLS)/run_test.sh "cvt16"  \
 	   "$(VVP) $(BUILD)/tb_cvt16.vvp +vec=$(BUILD)/cvt16_vectors.txt"
@@ -131,6 +144,14 @@ unit: $(BUILD)/tb_fp32_fma.vvp $(BUILD)/fma_vectors.txt \
 	   "$(VVP) $(BUILD)/tb_fp32_fma.vvp +vec=$(BUILD)/fma_vectors.txt"
 	@$(TOOLS)/run_test.sh "decoder" \
 	   "$(VVP) $(BUILD)/tb_decoder.vvp +vec=$(BUILD)/dec_vectors.txt"
+	@$(TOOLS)/run_test.sh "cvt_xls" \
+	   "$(VVP) $(BUILD)/tb_cvt_xls.vvp +vec=$(BUILD)/cvt_xls_vectors.txt"
+	@$(TOOLS)/run_test.sh "sfu_xls" \
+	   "$(VVP) $(BUILD)/tb_sfu_xls.vvp +vec=$(BUILD)/sfu_vectors.txt"
+	@$(TOOLS)/run_test.sh "sfu_core" \
+	   "$(VVP) $(BUILD)/tb_sfu_core.vvp +vec=$(BUILD)/sfu_vectors.txt"
+	@$(TOOLS)/run_test.sh "fpu_multi" \
+	   "$(VVP) $(BUILD)/tb_fpu_multi.vvp +vec=$(BUILD)/fpu_multi_vectors.txt"
 	@$(PYTHON) $(TOOLS)/asm/roundtrip_all.py $(TB)/core/progs/*.s
 
 # Deeper FMA sweep; slow, run it before declaring the unit done.
@@ -146,7 +167,7 @@ fma-deep: $(BUILD)/tb_fp32_fma.vvp
 #------------------------------------------------------------------------------
 $(BUILD)/tb_core.vvp: $(TB)/core/tb_tnca_core.v $(RTL_CORE) $(RTL_COMMON) \
                       $(TB)/common/tnca_mem_model.v | dirs
-	$(IVERILOG) $(IVFLAGS) -y $(RTL)/core -y $(RTL)/common -y $(TB)/common -o $@ $<
+	$(IVERILOG) $(IVFLAGS) -y $(RTL)/core -y $(RTL)/common -y $(RTL)/gen -y $(TB)/common -o $@ $<
 
 $(TB)/core/progs/t03_fp.s: $(TB)/core/progs/gen_t03_fp.py $(TOOLS)/model/fp32.py
 	$(PYTHON) $<
@@ -176,8 +197,71 @@ $(TB)/core/progs/t17_descfault.s: $(TB)/core/progs/gen_t17_descfault.py
 $(TB)/core/progs/t18_squash.s: $(TB)/core/progs/gen_t18_squash.py
 	$(PYTHON) $<
 
+$(TB)/core/progs/t20_sfu.s: $(TB)/core/progs/gen_t20_sfu.py \
+                            $(TOOLS)/model/gen_sfu_vectors.py
+	$(PYTHON) $<
+
 $(TB)/core/progs/t19_waitgen0.s: $(TB)/core/progs/gen_t19_waitgen0.py
 	$(PYTHON) $<
+
+#------------------------------------------------------------------------------
+# XLS-generated RTL
+#
+# The Verilog in rtl/gen is checked in, so simulation and synthesis need no
+# XLS anywhere. `make xls` regenerates it from the DSLX in xls/ and needs the
+# generator host in tools/xls/config.json; `make xls-check` fails if the
+# checked-in files have drifted from the sources. Neither is part of `make
+# test`, on purpose: a clone should be able to run the whole regression
+# without a toolchain that publishes linux-x64 binaries only.
+#------------------------------------------------------------------------------
+GEN_RTL := $(wildcard $(RTL)/gen/*.v)
+
+.PHONY: xls xls-check xls-report
+xls:
+	@$(PYTHON) $(TOOLS)/model/gen_sfu_tables.py
+	@$(PYTHON) $(TOOLS)/xls/xlsgen.py
+
+xls-check:
+	@$(PYTHON) $(TOOLS)/xls/xlsgen.py --check
+
+# What the pipelining bought, in picoseconds under XLS's asap7 delay model.
+# Needs the generator host too; the table it prints is in doc/xls.md.
+xls-report:
+	@$(PYTHON) $(TOOLS)/xls/xlsgen.py --report
+
+$(BUILD)/tb_cvt_xls.vvp: $(TB)/xls/tb_cvt_xls.v $(RTL)/gen/tnca_cvt_xls.v | dirs
+	$(IVERILOG) -g2005 -o $@ $^
+
+$(BUILD)/cvt_xls_vectors.txt: $(TOOLS)/model/gen_cvt_vectors.py \
+                              $(TOOLS)/model/floatfmt.py | dirs
+	$(PYTHON) $< -o $@
+
+$(BUILD)/tb_sfu_xls.vvp: $(TB)/xls/tb_sfu_xls.v $(RTL)/gen/tnca_sfu_exp2_xls.v \
+                         $(RTL)/gen/tnca_sfu_log2_xls.v \
+                         $(RTL)/gen/tnca_sfu_rcp_xls.v \
+                         $(RTL)/gen/tnca_sfu_rsqrt_xls.v | dirs
+	$(IVERILOG) -g2005 -o $@ $^
+
+$(BUILD)/tb_sfu_core.vvp: $(TB)/core/tb_sfu_core.v $(RTL)/core/tnca_sfu.v \
+                          $(RTL)/gen/tnca_sfu_exp2_xls.v \
+                          $(RTL)/gen/tnca_sfu_log2_xls.v \
+                          $(RTL)/gen/tnca_sfu_rcp_xls.v \
+                          $(RTL)/gen/tnca_sfu_rsqrt_xls.v | dirs
+	$(IVERILOG) $(IVFLAGS) -y $(RTL)/core -y $(RTL)/common -y $(RTL)/gen -o $@ $<
+
+$(BUILD)/sfu_vectors.txt: $(TOOLS)/model/gen_sfu_vectors.py | dirs
+	$(PYTHON) $< -o $@ -n $(SFU_VECTORS)
+
+$(BUILD)/tb_fpu_multi.vvp: $(TB)/xls/tb_fpu_multi.v $(RTL)/core/tnca_fpu_multi.v \
+                           $(RTL)/core/tnca_fp32_fma.v $(RTL)/gen/tnca_widen_xls.v \
+                           $(RTL_COMMON) | dirs
+	$(IVERILOG) $(IVFLAGS) -y $(RTL)/core -y $(RTL)/common -y $(RTL)/gen \
+	   -o $@ $(TB)/xls/tb_fpu_multi.v
+
+$(BUILD)/fpu_multi_vectors.txt: $(TOOLS)/model/gen_fpu_multi_vectors.py \
+                                $(TOOLS)/model/floatfmt.py \
+                                $(TOOLS)/model/fp32.py | dirs
+	$(PYTHON) $< -o $@ -n $(FPU_MULTI_VECTORS)
 
 $(BUILD)/%.hex: $(TB)/core/progs/%.s $(TOOLS)/asm/tnca_asm.py $(TOOLS)/asm/tnca_isa.py | dirs
 	$(ASM) $< -o $@ --lst $(BUILD)/$*.lst --size $(IMAGE_WORDS)
@@ -378,12 +462,12 @@ triton-e2e: $(BUILD)/tb_core.vvp
 # when that target last ran -- which silently produced failures against
 # already-fixed bugs.
 $(BUILD)/tb_core_slow.vvp: $(RTL_CORE) $(RTL_COMMON) $(TB)/core/tb_tnca_core.v | dirs
-	$(IVERILOG) $(IVFLAGS) -y $(RTL)/core -y $(RTL)/common -y $(TB)/common \
+	$(IVERILOG) $(IVFLAGS) -y $(RTL)/core -y $(RTL)/common -y $(RTL)/gen -y $(TB)/common \
 	   -P tb_tnca_core.MEM_LATENCY=7 -P tb_tnca_core.RANDOM_STALL=1 \
 	   -o $@ $(TB)/core/tb_tnca_core.v
 
 $(BUILD)/tb_core_ooo.vvp: $(RTL_CORE) $(RTL_COMMON) $(TB)/core/tb_tnca_core.v | dirs
-	$(IVERILOG) $(IVFLAGS) -y $(RTL)/core -y $(RTL)/common -y $(TB)/common \
+	$(IVERILOG) $(IVFLAGS) -y $(RTL)/core -y $(RTL)/common -y $(RTL)/gen -y $(TB)/common \
 	   -P tb_tnca_core.MEM_LATENCY=6 -P tb_tnca_core.RANDOM_STALL=1 \
 	   -P tb_tnca_core.MEM_REORDER=1 \
 	   -o $@ $(TB)/core/tb_tnca_core.v
@@ -394,7 +478,7 @@ $(BUILD)/tb_core_ooo.vvp: $(RTL_CORE) $(RTL_COMMON) $(TB)/core/tb_tnca_core.v | 
 # half as many logical vector registers each to keep the physical file the
 # same size.
 $(BUILD)/tb_core4.vvp: $(RTL_CORE) $(RTL_COMMON) $(TB)/core/tb_tnca_core.v | dirs
-	$(IVERILOG) $(IVFLAGS) -y $(RTL)/core -y $(RTL)/common -y $(TB)/common \
+	$(IVERILOG) $(IVFLAGS) -y $(RTL)/core -y $(RTL)/common -y $(RTL)/gen -y $(TB)/common \
 	   -P tb_tnca_core.NUM_RCTX=4 -P tb_tnca_core.RCTX_W=2 \
 	   -P tb_tnca_core.VREGS_PER_RCTX=32 \
 	   -o $@ $(TB)/core/tb_tnca_core.v

@@ -447,11 +447,14 @@ different association order.
 Approximate, single-precision. Accuracy is a published contract, not an
 implementation detail (§12.7).
 
-**Not implemented in Stage 1a.** `CAPABILITY0.SFU` reads 0 and these encodings
-raise `ILLEGAL_INSTRUCTION`; the error bounds below are the target the Stage-1b
-implementation must be measured against before the bit may be set. A capability
-bit is a promise about a native datapath, never a claim that something "works,
-but slowly, by some other route" (§11).
+**Implemented.** `CAPABILITY0.SFU` reads 1 in the reference build. The bounds
+below were the target the implementation had to be measured against before the
+bit could be set, and it has been: `tb_sfu_xls` checks 16,740 vectors against a
+60-digit-decimal reference, and `tb_sfu_core` checks the same vectors through
+the core's shared slice. A build with `HAS_SFU = 0` still clears the bit and
+raises `ILLEGAL_INSTRUCTION` for these encodings — a capability bit is a promise
+about a native datapath, never a claim that something "works, but slowly, by
+some other route" (§11).
 
 | `func` | Mnemonic | Max relative error | Special values |
 |---:|---|---|---|
@@ -463,6 +466,18 @@ but slowly, by some other route" (§11).
 Subnormal inputs are flushed to zero of the same sign by all SFU operations;
 subnormal results are flushed to zero. This is a *stated* deviation, not a
 silent one, and the strict paths live in the math library.
+
+The flush happens *before* the special-value table is consulted, which is
+visible in one place: `rsqrt` of a negative **normal** is a qNaN, while `rsqrt`
+of a negative **subnormal** is −∞, because by then it is −0. Both are checked.
+
+These operations are architecturally multicycle. The reference implementation
+has one four-function slice shared by all lanes, so a `VLEN`-wide operation
+occupies it for `VLEN + 8` cycles and no other FP instruction may issue in the
+meantime; the slice itself is fully pipelined, so back-to-back SFU instructions
+cost one pass each rather than one pass per lane. Nothing in this section fixes
+that ratio — an implementation may widen the slice — but §11's promise is about
+a native datapath, and a per-lane unit is not required to make it true.
 
 ---
 

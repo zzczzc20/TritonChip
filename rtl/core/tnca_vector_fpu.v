@@ -1,8 +1,8 @@
 //==============================================================================
 // tnca_vector_fpu -- VLEN-lane binary32 unit
 //
-// Covers ISA major 0x11 (vector FP), 0x12 (convert) and the FP subset of
-// 0x15 (reduction).
+// Covers ISA major 0x11 (vector FP), 0x12 (convert), the FP subset of 0x15
+// (reduction) and 0x16 (SFU).
 //
 // Every arithmetic result goes through tnca_fp32_fma, so there is exactly one
 // rounding implementation in the core:
@@ -38,7 +38,12 @@ module tnca_vector_fpu #(
     parameter VLEN   = 16,
     parameter ELEN   = 32,
     parameter LW     = 4,            // log2(VLEN)
-    parameter FP_LAT = 2             // must match tnca_fp32_fma's stage count
+    parameter FP_LAT = 2,            // must match tnca_fp32_fma's stage count
+    parameter SFU_LAT = 6,           // must match rtl/gen/tnca_sfu_*_xls.v
+    // Follows the core's HAS_SFU. A build with the capability bit clear does
+    // not instantiate the slice, so it does not pay ~60 k gates for logic its
+    // decoder rejects.
+    parameter HAS_SFU = 1
 ) (
     input  wire                     clk,
     input  wire                     rst_n,
@@ -54,19 +59,20 @@ module tnca_vector_fpu #(
     // multi-cycle control (reductions only)
     output wire                     is_multicycle,
     input  wire                     start,         // issue pulse, 1 cycle
-    output reg                      busy,
-    output reg                      done,
+    output wire                     busy,
+    output wire                     done,
 
     output reg  [VLEN*ELEN-1:0]     vres,
     output reg  [63:0]              sres,
     output reg  [VLEN-1:0]          pres,
 
-    // Reduction result, valid in the cycle `done` is asserted. It is a separate
-    // port on purpose: vres/sres are muxed by the *current* instruction's
-    // opcode, and by the time a reduction finishes the opcode inputs belong to
-    // whatever else has reached the execute stage.
-    output wire [63:0]              red_sres,
-    output wire [VLEN*ELEN-1:0]     red_vres
+    // Multicycle result, valid in the cycle `done` is asserted. It is a
+    // separate port on purpose: vres/sres are muxed by the *current*
+    // instruction's opcode, and by the time a reduction or an SFU pass
+    // finishes the opcode inputs belong to whatever else has reached the
+    // execute stage.
+    output wire [63:0]              mc_sres,
+    output wire [VLEN*ELEN-1:0]     mc_vres
 );
 
     localparam [31:0] FP_ONE   = 32'h3f800000;
@@ -88,10 +94,19 @@ module tnca_vector_fpu #(
         end
     endgenerate
 
-    // Only FP reductions belong to this unit. Integer reductions share major
-    // 0x15 but run on tnca_vector_alu's tree; claiming them here would start
-    // the sequencer and later retire a write to a stale destination.
-    assign is_multicycle = (major == `TNCA_MAJ_RED) && (func >= `TNCA_RD_FADD);
+    // Two multicycle families share this unit's completion port: FP
+    // reductions, which fold through the FMA array, and the SFU, which has a
+    // datapath of its own. They can never overlap -- one instruction is in
+    // the execute stage at a time, and the core will not issue a second
+    // multicycle op into a busy unit -- so they share `busy`, `done` and the
+    // result port and differ only in which sequencer runs.
+    //
+    // Only FP reductions belong here. Integer reductions share major 0x15 but
+    // run on tnca_vector_alu's tree; claiming them here would start the
+    // sequencer and later retire a write to a stale destination.
+    wire is_red_mc = (major == `TNCA_MAJ_RED) && (func >= `TNCA_RD_FADD);
+    wire is_sfu_mc = (HAS_SFU != 0) && (major == `TNCA_MAJ_SFU);
+    assign is_multicycle = is_red_mc | is_sfu_mc;
 
     // --------------------------------------------------------------------------
     // Reduction sequencer state. Level `lvl` folds 2^(LW-lvl) values into half.
@@ -100,8 +115,11 @@ module tnca_vector_fpu #(
     reg [LW-1:0]   lvl;
     reg [7:0]      red_func;
     reg [9:0]      red_mod;
+    reg            red_busy, red_done;
 
-    wire red_active = busy | (start & is_multicycle);
+    // Keyed on the reduction alone: an SFU pass must not hijack the FMA
+    // operands, and `is_multicycle` now covers both families.
+    wire red_active = red_busy | (start & is_red_mc);
 
     // During a fold the instruction inputs belong to a later instruction, so
     // the rounding mode has to come from the latched copy.
@@ -388,21 +406,21 @@ module tnca_vector_fpu #(
 
     always @(posedge clk) begin
         if (!rst_n) begin
-            busy  <= 1'b0;
-            done  <= 1'b0;
-            lvl   <= {LW{1'b0}};
-            rwait <= 2'd0;
+            red_busy <= 1'b0;
+            red_done <= 1'b0;
+            lvl      <= {LW{1'b0}};
+            rwait    <= 2'd0;
         end else begin
-            done <= 1'b0;
-            if (!busy) begin
-                if (start && is_multicycle) begin
+            red_done <= 1'b0;
+            if (!red_busy) begin
+                if (start && is_red_mc) begin
                     for (i = 0; i < VLEN; i = i + 1)
                         acc[i] <= mask[i] ? a[i] : ident;
                     red_func <= func;
                     red_mod  <= mod;
                     lvl      <= {LW{1'b0}};
                     rwait    <= 2'd0;
-                    busy     <= 1'b1;
+                    red_busy <= 1'b1;
                 end
             end else if (rwait != FP_LAT[1:0]) begin
                 rwait <= rwait + 2'd1;
@@ -411,13 +429,36 @@ module tnca_vector_fpu #(
                     acc[i] <= red_step[i];
                 rwait <= 2'd0;
                 if (lvl == LW-1) begin
-                    busy <= 1'b0;
-                    done <= 1'b1;
+                    red_busy <= 1'b0;
+                    red_done <= 1'b1;
                 end
                 lvl <= lvl + 1'b1;
             end
         end
     end
+
+    // --------------------------------------------------------------------------
+    // The SFU. One slice shared by all lanes; see rtl/core/tnca_sfu.v.
+    // --------------------------------------------------------------------------
+    wire                 sfu_busy, sfu_done;
+    wire [VLEN*ELEN-1:0] sfu_vres;
+
+    generate
+        if (HAS_SFU != 0) begin : g_sfu
+            tnca_sfu #(.VLEN(VLEN), .ELEN(ELEN), .LAT(SFU_LAT)) u_sfu (
+                .clk(clk), .rst_n(rst_n),
+                .start(start & is_sfu_mc), .func(func), .va(va),
+                .busy(sfu_busy), .done(sfu_done), .vres(sfu_vres)
+            );
+        end else begin : g_no_sfu
+            assign sfu_busy = 1'b0;
+            assign sfu_done = 1'b0;
+            assign sfu_vres = {(VLEN*ELEN){1'b0}};
+        end
+    endgenerate
+
+    assign busy = red_busy | sfu_busy;
+    assign done = red_done | sfu_done;
 
     // --------------------------------------------------------------------------
     // Output selection
@@ -505,10 +546,13 @@ module tnca_vector_fpu #(
         end
     end
 
-    assign red_sres = {{(64-ELEN){1'b0}}, acc[0]};
+    // A reduction broadcasts lane 0; an SFU pass returns its own vector. The
+    // two are never done in the same cycle.
+    assign mc_sres = {{(64-ELEN){1'b0}}, acc[0]};
     generate
         for (g = 0; g < VLEN; g = g + 1) begin : g_redbc
-            assign red_vres[g*ELEN +: ELEN] = acc[0];
+            assign mc_vres[g*ELEN +: ELEN] =
+                sfu_done ? sfu_vres[g*ELEN +: ELEN] : acc[0];
         end
     endgenerate
 

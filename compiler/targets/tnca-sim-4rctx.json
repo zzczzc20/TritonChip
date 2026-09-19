@@ -75,7 +75,7 @@
   },
   "capabilities": {
     "vector_fp32": true,
-    "sfu": false,
+    "sfu": true,
     "gather_scatter": true,
     "atomics_device": false,
     "atomics_system": false,

@@ -56,8 +56,13 @@ module tnca_core #(
     parameter PHYS_W         = 7,
     parameter CORE_ID        = 0,
     parameter NUM_CORES      = 1,
-    parameter HAS_SFU        = 0,          // Stage-1a ships without the SFU
+    // ISA sec 8.8 and sec 11: the capability bit may be set only once the
+    // datapath has been measured against the published bound. It has been --
+    // tb_sfu_xls and tb_sfu_core -- so it is on by default. Building with 0
+    // leaves the encodings raising ILLEGAL_INSTRUCTION and removes the slice.
+    parameter HAS_SFU        = 1,
     parameter FP_LAT         = 2,          // tnca_vector_fpu result delay, in cycles
+    parameter SFU_LAT        = 6,          // rtl/gen/tnca_sfu_*_xls.v latency
     parameter MUL_LAT        = 3,          // tnca_mul64 result delay, in cycles
     parameter MEM_DW         = 64,
     parameter MEM_BYTES      = 8,
@@ -552,9 +557,11 @@ module tnca_core #(
 
     wire x_is_fp = x_valid && ((x_major == `TNCA_MAJ_VFP) ||
                                (x_major == `TNCA_MAJ_CVT) ||
+                               (x_major == `TNCA_MAJ_SFU) ||
                                ((x_major == `TNCA_MAJ_RED) && (x_func >= `TNCA_RD_FADD)));
 
-    tnca_vector_fpu #(.VLEN(VLEN), .ELEN(ELEN), .LW(LW), .FP_LAT(FP_LAT)) u_vfpu (
+    tnca_vector_fpu #(.VLEN(VLEN), .ELEN(ELEN), .LW(LW), .FP_LAT(FP_LAT),
+                      .SFU_LAT(SFU_LAT), .HAS_SFU(HAS_SFU)) u_vfpu (
         .clk(clk), .rst_n(rst_n),
         .major(x_major), .func(x_func), .mod(x_mod), .mask(lane_mask),
         .va(va_data), .vb(vb_data), .vc(vc_data),
@@ -562,13 +569,15 @@ module tnca_core #(
         .start(x_is_fp && fpu_multicycle && !x_kill),
         .busy(fpu_busy), .done(fpu_done),
         .vres(fpu_v), .sres(fpu_s), .pres(fpu_p),
-        .red_sres(fpu_red_s), .red_vres(fpu_red_v)
+        .mc_sres(fpu_red_s), .mc_vres(fpu_red_v)
     );
 
     // Integer reductions run on the integer tree; FP reductions run on the FMA
     // array. Both use major 0x15, so the destination is chosen by func.
     wire red_is_fp = (x_major == `TNCA_MAJ_RED) && (x_func >= `TNCA_RD_FADD);
-    wire use_fpu   = (x_major == `TNCA_MAJ_VFP) || (x_major == `TNCA_MAJ_CVT) || red_is_fp;
+    wire use_fpu   = (x_major == `TNCA_MAJ_VFP) || (x_major == `TNCA_MAJ_CVT)
+                                                 || (x_major == `TNCA_MAJ_SFU)
+                                                 || red_is_fp;
 
     // Writeback-path classification. `is_mul` and `is_fpnorm` are scheduled
     // with a delay; reductions and memory ops complete out of band.
@@ -578,11 +587,15 @@ module tnca_core #(
                                        ((fn) == `TNCA_S_MULH_S) || \
                                        ((fn) == `TNCA_S_MULH_U)))
     `define TNCA_IS_FPNORM(maj) (((maj) == `TNCA_MAJ_VFP) || ((maj) == `TNCA_MAJ_CVT))
-    `define TNCA_IS_FPRED(maj, fn) (((maj) == `TNCA_MAJ_RED) && ((fn) >= `TNCA_RD_FADD))
+    // FP work that completes out of band: a reduction fold, or an SFU pass.
+    // Both retire through the vector FPU's multicycle completion port, so both
+    // defer writeback and both hold the unit against the next FP instruction.
+    `define TNCA_IS_FPMC(maj, fn) ((((maj) == `TNCA_MAJ_RED) && ((fn) >= `TNCA_RD_FADD)) \
+                                   || ((maj) == `TNCA_MAJ_SFU))
 
     wire x_is_mul    = x_valid && `TNCA_IS_MUL(x_major, x_func);
     wire x_is_fpnorm = x_valid && `TNCA_IS_FPNORM(x_major);
-    wire x_is_fpred  = x_valid && `TNCA_IS_FPRED(x_major, x_func);
+    wire x_is_fpmc   = x_valid && `TNCA_IS_FPMC(x_major, x_func);
 
     //==========================================================================
     // Mbarrier and matrix engine
@@ -897,7 +910,8 @@ module tnca_core #(
     );
 
     //==========================================================================
-    // Deferred FP-reduction completion (1 deep; only one reduce can be in flight)
+    // Deferred multicycle-FP completion (1 deep; a reduction or an SFU pass,
+    // and only one of either can be in flight -- see red_busy_next)
     //==========================================================================
     reg                  red_pend;
     reg [RCTX_W-1:0]     red_rctx;
@@ -905,6 +919,9 @@ module tnca_core #(
     reg [7:0]            red_dsti;
     reg [63:0]           red_sdata;
     reg [VLEN*ELEN-1:0]  red_vdata;
+    // A reduction broadcasts to every lane; an SFU pass writes only the lanes
+    // its predicate selected, exactly as a one-cycle vector op would.
+    reg [VLEN-1:0]       red_len;
 
     //==========================================================================
     // Special registers
@@ -990,7 +1007,7 @@ module tnca_core #(
     // units and never contend for it.
     wire x_wb_reg = (x_dstc == `TNCA_DST_S) || (x_dstc == `TNCA_DST_V)
                                             || (x_dstc == `TNCA_DST_P);
-    wire x_defers_wb = x_mem_en || x_is_fpred || x_is_fpnorm || x_is_mul;
+    wire x_defers_wb = x_mem_en || x_is_fpmc || x_is_fpnorm || x_is_mul;
     wire x_has_dest  = x_valid && !x_kill && x_wb_reg && !x_defers_wb;
 
     //==========================================================================
@@ -1031,7 +1048,7 @@ module tnca_core #(
             nw_idx     = red_dsti;
             nw_sdata   = red_sdata;
             nw_vdata   = red_vdata;
-            nw_lane_en = {VLEN{1'b1}};
+            nw_lane_en = red_len;
         end else if (fp_wb) begin
             nw_en      = 1'b1;
             nw_rctx    = fp_rctx[FP_LAT-1];
@@ -1065,7 +1082,7 @@ module tnca_core #(
 
     wire r_is_mul    = r_valid && `TNCA_IS_MUL(r_major, r_func);
     wire r_is_fpnorm = r_valid && `TNCA_IS_FPNORM(r_major);
-    wire r_is_fpred  = r_valid && `TNCA_IS_FPRED(r_major, r_func);
+    wire r_is_fpmc   = r_valid && `TNCA_IS_FPMC(r_major, r_func);
 
     // A unit is claimed from X, one cycle after the check in R. Asking "is the
     // unit free now?" is therefore the wrong question -- it must be free *next*
@@ -1078,8 +1095,9 @@ module tnca_core #(
     // The reduction sequencer hijacks the FMA array's operands, so it may only
     // start when the array is empty -- otherwise it corrupts a normal FP
     // operation still in flight. Conversely a normal FP op may not issue into a
-    // running reduction.
-    wire red_busy_next = fpu_busy || red_pend || fpu_done || x_is_fpred;
+    // running reduction. The SFU does not share the FMA array, but it does
+    // share this unit's single completion port, so it obeys the same rule.
+    wire red_busy_next = fpu_busy || red_pend || fpu_done || x_is_fpmc;
 
     // Same "free NEXT cycle" question as the LSU: the engine is claimed from X,
     // one cycle after R looks.
@@ -1126,7 +1144,7 @@ module tnca_core #(
 
     wire stall_lsu = r_needs_lsu && !lsu_free_next;
     wire stall_fpu = (r_is_fpnorm && red_busy_next)
-                   | (r_is_fpred  && (red_busy_next || fp_inflight || x_is_fpnorm));
+                   | (r_is_fpmc   && (red_busy_next || fp_inflight || x_is_fpnorm));
 
     // ---- writeback reservation ------------------------------------------------
     // Delay from "in X" to "result available", per unit.
@@ -1136,7 +1154,7 @@ module tnca_core #(
     // Memory ops and FP reductions complete out of band and book nothing.
     wire r_wb_reg = (r_dstc == `TNCA_DST_S) || (r_dstc == `TNCA_DST_V)
                                              || (r_dstc == `TNCA_DST_P);
-    wire r_unscheduled = r_mem_en | r_is_fpred;
+    wire r_unscheduled = r_mem_en | r_is_fpmc;
     wire r_books_wb    = r_valid && r_wb_reg && !r_unscheduled;
 
     wire stall_rsv = r_books_wb && wb_rsv[r_wb_delay + 4'd1];
@@ -1174,6 +1192,7 @@ module tnca_core #(
             blocked    <= {NUM_RCTX{1'b0}};
             mtx_rctx   <= {RCTX_W{1'b0}};
             red_pend   <= 1'b0;
+            red_len    <= {VLEN{1'b1}};
             w_en       <= 1'b0;
             wb_rsv     <= {WB_DEPTH{1'b0}};
             for (i = 0; i < FP_LAT; i = i + 1)  fp_v[i] <= 1'b0;
@@ -1454,7 +1473,7 @@ module tnca_core #(
                 end
 
             //------------------------------------------------------------------
-            // FP reduction completion capture
+            // Multicycle FP completion capture (reduction or SFU)
             //------------------------------------------------------------------
             if (fpu_done) begin
                 red_pend  <= 1'b1;
@@ -1467,6 +1486,9 @@ module tnca_core #(
                 red_rctx <= x_rctx;
                 red_dstc <= x_dstc;
                 red_dsti <= x_dsti;
+                red_len  <= (x_major == `TNCA_MAJ_SFU)
+                            ? (x_mask_dst ? lane_mask : {VLEN{1'b1}})
+                            : {VLEN{1'b1}};
             end
 
             //------------------------------------------------------------------

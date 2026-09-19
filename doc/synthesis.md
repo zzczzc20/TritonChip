@@ -52,6 +52,41 @@ flag is a pointer to this section, not a verdict.
 | `tnca_mul64` | 23,057 | 768 | 98 | 64 | 1.5× the single-add floor, across 3 stages |
 | `tnca_fp32_fma` | 7,120 | 203 | 115 | 71 | 1.6× the 89-bit-add floor, across 2 stages |
 
+### The generated datapath
+
+These come from DSLX through Google XLS rather than from hand-written Verilog
+(doc/xls.md), and XLS schedules them against its asap7 delay model at a 1300 ps
+target. The stage counts are its answer, not a guess:
+
+| Module | gates | flops | depth | floor | Assessment |
+|---|---:|---:|---:|---:|---|
+| `tnca_widen_xls` | 265 | 0 | 11 | — | combinational; any narrow format to binary32, no rounding to do |
+| `tnca_widen_pair_xls` | 501 | 0 | 11 | — | two of the above |
+| `tnca_narrow_xls` | 2,330 | 211 | 31 | 32 | **at the single-add floor**, across 3 stages |
+| `tnca_cvt_xls` | 2,848 | 253 | 29 | 32 | at the floor, across 4 stages |
+| `tnca_sfu_rcp_xls` | 11,669 | 330 | 42 | 50 | one 32×16 multiply per stage |
+| `tnca_sfu_rsqrt_xls` | 20,223 | 428 | 41 | 50 | two coefficient tables, for even and odd exponents |
+| `tnca_sfu_exp2_xls` | 14,946 | 529 | 69 | 50 | the multiply plus the exponent split |
+| `tnca_sfu_log2_xls` | 13,246 | 447 | 72 | 50 | as above |
+| `tnca_sfu` | — | — | — | — | the four above, one slice shared by all lanes |
+
+Read against the combinational versions of the same modules, which is the
+comparison that says what the scheduling did:
+
+| Module | comb. depth | scheduled depth | comb. gates | scheduled gates |
+|---|---:|---:|---:|---:|
+| `tnca_narrow_xls` | 45 | **31** | 872 | 2,330 |
+| `tnca_cvt_xls` | **54** | **29** | 1,097 | 2,848 |
+| `tnca_sfu_rcp_xls` | **105** | **42** | 10,109 | 11,669 |
+| `tnca_sfu_rsqrt_xls` | *yosys did not finish in 13 min* | 41 | | 20,223 |
+
+`tnca_cvt_xls` was the one module over the 50-level flag that had nothing to do
+with wide arithmetic — it is two conversions in series — and pipelining is what
+fixed it. `exp2` and `log2` remain over the flag at 69 and 72 levels, which is
+one 32×16 multiplier in a library whose 32×32 multiplier is 65 levels by
+itself; XLS's own estimate agrees, putting `exp2` at 1220 ps against a floor of
+1217. Nothing is left there to restructure.
+
 `tnca_lsu`, `tnca_vector_rf`, `tnca_vector_alu`, `tnca_vector_fpu` and
 `tnca_core` are long runs; `make synth` regenerates the full table and
 `sim/build/synth.json` holds the raw per-cell breakdown.

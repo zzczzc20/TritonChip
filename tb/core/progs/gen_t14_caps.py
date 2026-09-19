@@ -23,7 +23,7 @@ import sys
 HERE = os.path.dirname(os.path.abspath(__file__))
 
 # Build configuration of tb/core/tb_tnca_core.v.
-HAS_SFU = 0
+HAS_SFU = 1
 
 CAP = {
     'VECTOR_FP32': 0, 'SFU': 1, 'GATHER_SCATTER': 2,
@@ -95,6 +95,18 @@ w("    vf.add    v2, v1, v1")
 w(f"    .assert_lane v2, #0, #0x40000000, #{n}")
 n += 1
 w("")
+
+# ---- bit 1: SFU -----------------------------------------------------------
+if HAS_SFU:
+    w("    // bit 1 SFU -- a native approximate datapath, not a library call")
+    w("    .li       s2, #0x40800000            // 4.0f")
+    w("    v.splat   v1, s2")
+    w("    v.rsqrt.approx v2, v1")
+    # 0.5 is representable and sec 8.8's band around it contains no other
+    # binary32, so this one lane can be asserted exactly.
+    w(f"    .assert_lane v2, #0, #0x3f000000, #{n}")
+    n += 1
+    w("")
 
 # ---- bit 2: GATHER_SCATTER ------------------------------------------------
 w("    // bit 2 GATHER_SCATTER -- native per-lane addressing")

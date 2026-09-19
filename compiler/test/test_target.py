@@ -6,6 +6,7 @@ IR-independent unit tests for the target contract (compiler_overview.md 16.2,
 These run with nothing installed, which is the point -- they guard the layer
 every later lowering reads, before MLIR is in the picture.
 """
+import copy
 import os
 import sys
 import unittest
@@ -76,12 +77,28 @@ class TestCapabilityGate(unittest.TestCase):
     def setUp(self):
         self.t = TargetInfo.default()
 
+    def without(self, cap):
+        """The default target with one capability cleared.
+
+        The gate has to keep being tested against a capability that really is
+        absent, and the set of those changes as the hardware grows -- the SFU
+        was the example here until it was implemented. Building the target
+        rather than naming another real one keeps the test about the mechanism.
+        """
+        d = copy.deepcopy(self.t._d)
+        d['capabilities'][cap] = False
+        return TargetInfo(d)
+
     def test_require_present_capability_returns(self):
         self.assertTrue(self.t.require('vector_fp32'))
 
+    def test_sfu_is_now_present(self):
+        """ISA sec 8.8 and sec 11: the bit is set, so the encodings run."""
+        self.assertTrue(self.t.require('sfu'))
+
     def test_require_absent_capability_raises(self):
         with self.assertRaises(CapabilityError):
-            self.t.require('sfu')
+            self.t.require('packed_f16')
 
     def test_atomics_refusal_offers_no_fallback(self):
         """A load-store pair is not an atomic, so no remedy may be suggested."""
@@ -91,9 +108,10 @@ class TestCapabilityGate(unittest.TestCase):
 
     def test_sfu_refusal_demands_error_bound_reverification(self):
         """sec 12 warns against assuming an upstream polynomial meets the
-        ISA sec 8.6 accuracy contract."""
+        ISA sec 8.6 accuracy contract. Checked on a build without the SFU,
+        which is still a configuration this compiler has to support."""
         with self.assertRaises(CapabilityError) as cm:
-            self.t.require('sfu')
+            self.without('sfu').require('sfu')
         self.assertIn('error bound', cm.exception.remedy)
 
     def test_nan_padding_refused_not_approximated(self):
@@ -155,14 +173,22 @@ class TestISASource(unittest.TestCase):
                                  (authoring.MAJ[maj], func))
 
     def test_capability_gated_encodings_are_identified(self):
-        """An encoding the target cannot run must be refused before emission."""
+        """An encoding the target cannot run must be refused before emission.
+
+        The gate is what is under test, so the target is one with the
+        capability cleared -- the reference build now has the SFU.
+        """
         t = TargetInfo.default()
+        d = copy.deepcopy(t._d)
+        d['capabilities']['sfu'] = False
+        without_sfu = TargetInfo(d)
         for mnem in ('v.exp2.approx', 'v.rcp.approx'):
             with self.subTest(mnemonic=mnem):
                 cap = ISA.required_capability(mnem)
                 self.assertEqual(cap, 'sfu')
+                self.assertTrue(t.require(cap, f"emit {mnem}"))
                 with self.assertRaises(CapabilityError):
-                    t.require(cap, f"emit {mnem}")
+                    without_sfu.require(cap, f"emit {mnem}")
 
     def test_plain_arithmetic_needs_no_capability(self):
         self.assertIsNone(ISA.required_capability('s.add'))

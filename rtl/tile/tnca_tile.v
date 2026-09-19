@@ -1,0 +1,256 @@
+//==============================================================================
+// tnca_tile -- one core, one NUCA slice, and their network interfaces
+//
+// The local mesh port carries four independent channels and each has exactly
+// one user, so the core and the slice never contend for it:
+//
+//   in  VN_REQ   <- the core's requests, heading for some home slice
+//   in  VN_RSP   <- this slice's responses, heading back to some core
+//   out VN_REQ   -> requests that homed here, into this slice
+//   out VN_RSP   -> responses to this core's earlier requests
+//
+// A core's request usually leaves the tile: the home slice is a function of the
+// address (arch overview sec 10.1), not of who asked, so roughly 3 of every 4
+// accesses in a 2x2 system cross the mesh. That is the design, not a defect --
+// the whole point of a single shared NUCA level is that a line has one home and
+// everyone reaches it, rather than each core keeping its own copy.
+//
+// Instruction fetch is local. Sec 1.1 allows a small instruction buffer
+// explicitly and says the restriction is on the DATA storage hierarchy; if
+// instruction fetch went through the NUCA its traffic would have to be counted
+// in the mesh and slice bandwidth budgets.
+//==============================================================================
+`include "tnca_noc_pkg.vh"
+
+module tnca_tile #(
+    parameter TILE_ID     = 0,
+    parameter NUM_TILES   = 4,
+    parameter XW          = 2,
+    parameter YW          = 2,
+    // core
+    parameter NUM_RCTX    = 2,
+    parameter RCTX_W      = 1,
+    parameter VLEN        = 16,
+    parameter ELEN        = 32,
+    parameter LW          = 4,
+    parameter VREGS_PER_RCTX = 64,
+    parameter PHYS_VREGS  = 128,
+    parameter PHYS_W      = 7,
+    parameter LSU_BEATS   = 8,
+    parameter LSU_TAG_W   = 3,
+    // slice
+    parameter LINE_BYTES  = 64,
+    parameter LINE_BITS   = 512,
+    parameter SETS        = 64,
+    parameter SET_W       = 6,
+    parameter WAYS        = 8,
+    parameter WAY_W       = 3,
+    parameter MSHR_N      = 8,
+    parameter MSHR_W      = 3,
+    parameter TARGET_N    = 16,
+    parameter TARGET_W    = 4,
+    parameter RQ_N        = 8,
+    parameter RQ_W        = 3,
+    parameter SLICE_SRC_W = 4,
+    parameter SLICE_TAG_W = 4
+) (
+    input  wire                     clk,
+    input  wire                     rst_n,
+
+    // ---- launch -------------------------------------------------------------
+    input  wire                     launch_valid,
+    input  wire [63:0]              launch_pc,
+    input  wire [NUM_RCTX-1:0]      launch_role_mask,
+    input  wire [63:0]              launch_arg_base,
+    output wire                     core_idle,
+
+    output wire                     fault_valid,
+    output wire [7:0]               fault_code,
+    output wire [63:0]              fault_pc,
+    output wire [23:0]              fault_detail,
+
+    // ---- instruction port (local; see the header) ---------------------------
+    output wire [63:0]              imem_addr,
+    input  wire [63:0]              imem_data,
+
+    // ---- mesh local port ----------------------------------------------------
+    output wire [`TNCA_NOC_NV-1:0]                          l_in_valid,
+    input  wire [`TNCA_NOC_NV-1:0]                          l_in_ready,
+    output wire [`TNCA_NOC_NV*(XW+YW+`TNCA_NOC_PAYLOAD_W)-1:0] l_in_flit,
+    input  wire [`TNCA_NOC_NV-1:0]                          l_out_valid,
+    output wire [`TNCA_NOC_NV-1:0]                          l_out_ready,
+    input  wire [`TNCA_NOC_NV*(XW+YW+`TNCA_NOC_PAYLOAD_W)-1:0] l_out_flit,
+
+    // ---- this slice's memory port -------------------------------------------
+    output wire                     mem_req_valid,
+    input  wire                     mem_req_ready,
+    output wire [63:0]              mem_req_addr,
+    output wire                     mem_req_we,
+    output wire [LINE_BITS-1:0]     mem_req_wdata,
+    output wire [MSHR_W-1:0]        mem_req_tag,
+    input  wire                     mem_rsp_valid,
+    input  wire [MSHR_W-1:0]        mem_rsp_tag,
+    input  wire [LINE_BITS-1:0]     mem_rsp_rdata,
+
+    // ---- counters -----------------------------------------------------------
+    output wire [63:0]              perf_cycles,
+    output wire [63:0]              perf_issued,
+    output wire [31:0]              perf_hit,
+    output wire [31:0]              perf_miss,
+    output wire [31:0]              perf_merge,
+    output wire [31:0]              perf_wb,
+    output wire [31:0]              perf_mshr_full,
+    output wire [31:0]              perf_hit_past_block
+);
+
+    localparam FW = XW + YW + `TNCA_NOC_PAYLOAD_W;
+    localparam [31:0] TILE_ID_32   = TILE_ID;
+    localparam [31:0] NUM_TILES_32 = NUM_TILES;
+    localparam VR = `TNCA_VN_REQ;
+    localparam VS = `TNCA_VN_RSP;
+
+    //==========================================================================
+    // Core
+    //==========================================================================
+    wire                 c_req_valid, c_req_ready, c_req_we;
+    wire [63:0]          c_req_addr, c_req_wdata;
+    wire [7:0]           c_req_be;
+    wire [LSU_TAG_W-1:0] c_req_tag;
+    wire [1:0]           c_req_hint;
+    wire                 c_rsp_valid;
+    wire [LSU_TAG_W-1:0] c_rsp_tag;
+    wire [63:0]          c_rsp_rdata;
+
+    tnca_core #(
+        .NUM_RCTX(NUM_RCTX), .RCTX_W(RCTX_W), .VLEN(VLEN), .ELEN(ELEN), .LW(LW),
+        .VREGS_PER_RCTX(VREGS_PER_RCTX), .PHYS_VREGS(PHYS_VREGS), .PHYS_W(PHYS_W),
+        .CORE_ID(TILE_ID), .NUM_CORES(NUM_TILES), .HAS_SFU(0),
+        .LSU_BEATS(LSU_BEATS), .LSU_TAG_W(LSU_TAG_W)
+    ) u_core (
+        .clk(clk), .rst_n(rst_n),
+        .launch_valid(launch_valid), .launch_pc(launch_pc),
+        .launch_role_mask(launch_role_mask),
+        .launch_pid_x(TILE_ID_32), .launch_pid_y(32'd0), .launch_pid_z(32'd0),
+        .launch_npid_x(NUM_TILES_32), .launch_npid_y(32'd1), .launch_npid_z(32'd1),
+        .launch_arg_base(launch_arg_base),
+        .core_idle(core_idle),
+        .fault_valid(fault_valid), .fault_code(fault_code),
+        .fault_pc(fault_pc), .fault_rctx(), .fault_detail(fault_detail),
+        .imem_addr(imem_addr), .imem_data(imem_data),
+        .mem_req_valid(c_req_valid), .mem_req_ready(c_req_ready),
+        .mem_req_addr(c_req_addr), .mem_req_we(c_req_we),
+        .mem_req_be(c_req_be), .mem_req_wdata(c_req_wdata),
+        .mem_req_tag(c_req_tag), .mem_req_hint(c_req_hint),
+        .mem_rsp_valid(c_rsp_valid), .mem_rsp_tag(c_rsp_tag),
+        .mem_rsp_rdata(c_rsp_rdata),
+        .perf_cycles(perf_cycles), .perf_issued(perf_issued),
+        .perf_stall_hazard(), .perf_stall_lsu(), .perf_stall_wb(), .perf_squash()
+    );
+
+    //==========================================================================
+    // Network interfaces
+    //==========================================================================
+    wire            ni_in_v_req, ni_in_r_req;
+    wire [FW-1:0]   ni_in_f_req;
+    wire            ni_out_v_rsp, ni_out_r_rsp;
+    wire [FW-1:0]   ni_out_f_rsp;
+
+    tnca_core_ni #(
+        .XW(XW), .YW(YW), .TAG_W(LSU_TAG_W), .SRC_W(SLICE_SRC_W),
+        .MY_ID(TILE_ID), .LINE_SH(6)
+    ) u_cni (
+        .clk(clk), .rst_n(rst_n),
+        .req_valid(c_req_valid), .req_ready(c_req_ready),
+        .req_addr(c_req_addr), .req_we(c_req_we), .req_be(c_req_be),
+        .req_wdata(c_req_wdata), .req_tag(c_req_tag),
+        .rsp_valid(c_rsp_valid), .rsp_tag(c_rsp_tag), .rsp_rdata(c_rsp_rdata),
+        .net_in_valid_req(ni_in_v_req), .net_in_ready_req(ni_in_r_req),
+        .net_in_flit_req(ni_in_f_req),
+        .net_in_valid_rsp(), .net_in_ready_rsp(1'b1), .net_in_flit_rsp(),
+        .net_out_valid_req(1'b0), .net_out_ready_req(), .net_out_flit_req({FW{1'b0}}),
+        .net_out_valid_rsp(ni_out_v_rsp), .net_out_ready_rsp(ni_out_r_rsp),
+        .net_out_flit_rsp(ni_out_f_rsp)
+    );
+
+    wire                    s_req_valid, s_req_ready, s_req_we;
+    wire [63:0]             s_req_addr, s_req_wdata;
+    wire [7:0]              s_req_be;
+    wire [SLICE_SRC_W-1:0]  s_req_src;
+    wire [SLICE_TAG_W-1:0]  s_req_tag;
+    wire                    s_rsp_valid, s_rsp_ready;
+    wire [SLICE_SRC_W-1:0]  s_rsp_src;
+    wire [SLICE_TAG_W-1:0]  s_rsp_tag;
+    wire [63:0]             s_rsp_rdata;
+
+    wire            ni_in_v_rsp, ni_in_r_rsp;
+    wire [FW-1:0]   ni_in_f_rsp;
+    wire            ni_out_v_req, ni_out_r_req;
+    wire [FW-1:0]   ni_out_f_req;
+
+    tnca_slice_ni #(
+        .XW(XW), .YW(YW), .TAG_W(SLICE_TAG_W), .SRC_W(SLICE_SRC_W)
+    ) u_sni (
+        .clk(clk), .rst_n(rst_n),
+        .req_valid(s_req_valid), .req_ready(s_req_ready),
+        .req_addr(s_req_addr), .req_we(s_req_we), .req_be(s_req_be),
+        .req_wdata(s_req_wdata), .req_src(s_req_src), .req_tag(s_req_tag),
+        .rsp_valid(s_rsp_valid), .rsp_ready(s_rsp_ready),
+        .rsp_src(s_rsp_src), .rsp_tag(s_rsp_tag), .rsp_rdata(s_rsp_rdata),
+        .net_in_valid_req(), .net_in_ready_req(1'b1), .net_in_flit_req(),
+        .net_in_valid_rsp(ni_in_v_rsp), .net_in_ready_rsp(ni_in_r_rsp),
+        .net_in_flit_rsp(ni_in_f_rsp),
+        .net_out_valid_req(ni_out_v_req), .net_out_ready_req(ni_out_r_req),
+        .net_out_flit_req(ni_out_f_req),
+        .net_out_valid_rsp(1'b0), .net_out_ready_rsp(), .net_out_flit_rsp({FW{1'b0}})
+    );
+
+    //==========================================================================
+    // NUCA slice
+    //==========================================================================
+    tnca_nuca_slice #(
+        .ADDR_W(64), .LINE_BYTES(LINE_BYTES), .LINE_BITS(LINE_BITS),
+        .WORD_BITS(64), .WORD_BYTES(8),
+        .SETS(SETS), .SET_W(SET_W), .WAYS(WAYS), .WAY_W(WAY_W),
+        .MSHR_N(MSHR_N), .MSHR_W(MSHR_W),
+        .TARGET_N(TARGET_N), .TARGET_W(TARGET_W),
+        .RQ_N(RQ_N), .RQ_W(RQ_W),
+        .SRC_W(SLICE_SRC_W), .TAG_W(SLICE_TAG_W)
+    ) u_slice (
+        .clk(clk), .rst_n(rst_n),
+        .req_ready(s_req_ready), .req_valid(s_req_valid),
+        .req_addr(s_req_addr), .req_we(s_req_we), .req_be(s_req_be),
+        .req_wdata(s_req_wdata), .req_src(s_req_src), .req_tag(s_req_tag),
+        .rsp_valid(s_rsp_valid), .rsp_ready(s_rsp_ready),
+        .rsp_src(s_rsp_src), .rsp_tag(s_rsp_tag), .rsp_rdata(s_rsp_rdata),
+        .mem_req_valid(mem_req_valid), .mem_req_ready(mem_req_ready),
+        .mem_req_addr(mem_req_addr), .mem_req_we(mem_req_we),
+        .mem_req_wdata(mem_req_wdata), .mem_req_tag(mem_req_tag),
+        .mem_rsp_valid(mem_rsp_valid), .mem_rsp_tag(mem_rsp_tag),
+        .mem_rsp_rdata(mem_rsp_rdata),
+        .perf_hit(perf_hit), .perf_miss(perf_miss), .perf_merge(perf_merge),
+        .perf_mshr_full(perf_mshr_full), .perf_target_full(),
+        .perf_wb(perf_wb), .perf_hit_past_block(perf_hit_past_block)
+    );
+
+    //==========================================================================
+    // Local mesh port
+    //==========================================================================
+    assign l_in_valid[VR]            = ni_in_v_req;
+    assign l_in_flit[VR*FW +: FW]    = ni_in_f_req;
+    assign ni_in_r_req               = l_in_ready[VR];
+
+    assign l_in_valid[VS]            = ni_in_v_rsp;
+    assign l_in_flit[VS*FW +: FW]    = ni_in_f_rsp;
+    assign ni_in_r_rsp               = l_in_ready[VS];
+
+    assign ni_out_v_req              = l_out_valid[VR];
+    assign ni_out_f_req              = l_out_flit[VR*FW +: FW];
+    assign l_out_ready[VR]           = ni_out_r_req;
+
+    assign ni_out_v_rsp              = l_out_valid[VS];
+    assign ni_out_f_rsp              = l_out_flit[VS*FW +: FW];
+    assign l_out_ready[VS]           = ni_out_r_rsp;
+
+    wire _unused = &{1'b0, c_req_hint, 1'b0};
+
+endmodule

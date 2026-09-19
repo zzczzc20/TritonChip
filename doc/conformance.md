@@ -13,7 +13,8 @@ Deviations are listed in full. There are three, all Stage-1 simplifications
 with a named replacement, and none of them changes the ISA or the semantics the
 later stages depend on.
 
-Audited against the Stage-1a tree. Re-run this audit whenever a stage closes.
+Audited against the Stage-3 tree (2x2 mesh, four NUCA slices). Re-run this
+audit whenever a stage closes.
 
 ---
 
@@ -21,18 +22,18 @@ Audited against the Stage-1a tree. Re-run this audit whenever a stage closes.
 
 | # | Decision | Status | Evidence |
 |---:|---|---|---|
-| 1 | Data hierarchy is only RF — NUCA — DRAM; no new addressable tensor SRAM | **Held** | The only architectural storage is `S`, `V`, `P` (ISA §1). `tnca_lsu` goes straight to the memory port; there is no staging array, and no instruction can address one. The NUCA level itself is Stage 3 — until then the memory port stands in for it, which adds no storage level. |
+| 1 | Data hierarchy is only RF — NUCA — DRAM; no new addressable tensor SRAM | **Held** | The chain is now complete and real: vector register → LSU beat → core NI → mesh → home NUCA slice → DRAM. Nothing in it is software-addressable except the registers at one end and DRAM at the other. The only architectural storage is `S`, `V`, `P` (ISA §1); the slice's arrays are tag- and index-addressed by physical address and no instruction can name a way, a set or a line. |
 | 2 | At most four RCTXs, each a vector control context, not a scalar thread | **Held** | `tnca_core` is parameterised on `NUM_RCTX` (2 in the test configuration, up to 4). Each has its own PC, scalar file, predicate file and pipeline identity; all share one SIMD datapath and one LSU. There is no per-lane program counter and no SIMT divergence stack — vector control is masks only (ISA §2.2). |
 | 3 | Regular movement goes through Tensor DMA; irregular access keeps a full LSU | **Held (LSU half)** | The full general LSU exists now, including gather/scatter and arbitrary alignment, and it is not a fallback bolted on later — it was built first, exactly so that Tensor DMA can be added as a fast path rather than as the only path. Tensor DMA is Stage 2. |
 | 4 | The matrix unit reads from RF, never cycle-by-cycle from a remote cache | **Held by construction** | No matrix unit yet (Stage 2). The structure it needs is in place: every execute-stage unit takes its operands from the register files, and the memory port is reachable only through the LSU. |
 | 5 | Vector RF and accumulator RF are separate, but accumulators are reachable from the vector unit | **Deferred (Stage 2)** | Accumulator registers do not exist yet. The ISA reserves major `0x41` for accumulator access so the capability is not silently absent. |
 | 6 | TensorMap correctness fields are strictly separated from cache/flow hints | **Held by construction** | No TensorMap yet. The same principle is already applied where it does bite: the LSU's cache-hint field (`mod[5:4]`, ISA §9.1) is defined as performance-only and is carried through the pipeline without reaching any address, value or ordering decision. |
-| 7 | Cache uses a single static home; no replication or migration in v1 | **Deferred (Stage 3)** | |
+| 7 | Cache uses a single static home; no replication or migration in v1 | **Held** | `tnca_core_ni` computes `home = H(physical line address)` and takes no other input — no descriptor, no TensorID, no hint — so two views of one physical line cannot disagree about where it lives (§7.5, §10.2). A line exists in exactly one slice; there is no replication, no migration and consequently no inter-slice coherence protocol at all. |
 | 8 | Throttle admission of new transactions, never completion or resource release | **Held** | `tnca_core`'s stall logic throttles only the front end (`stall_front`), which holds F/D/R and inserts a bubble into X. It never freezes X, the LSU or the FP sequencer. Out-of-band completions take the write port by *causing* a front-end stall, so a completion can never be starved for more than one cycle — the release path has strict priority over new work. |
-| 9 | Manage MSHR entry, target, return, RF and writeback credits separately | **Deferred (Stage 3)** | The Stage-1 precursor is real: the LSU exposes a `req_ready`/`cpl_valid`/`cpl_ack` handshake rather than a fixed latency, and the core asks whether a unit will be free *next* cycle rather than assuming. That is the shape the credit scheme slots into. |
+| 9 | Manage MSHR entry, target, return, RF and writeback credits separately | **Partly held (Stage 4 completes it)** | MSHR entries and targets are now genuinely separate resources with separate exhaustion paths and separate counters, and running out of one does not look like running out of the other — which is the distinction §9.1 exists to make. The return path is reserved before a request is issued (the LSU's beat table), and the writeback buffer is a per-MSHR reservation taken at allocation. What is still missing is the *budget* half: `new_miss_credit` and `merge_credit` as throttled quantities with the fast and slow control loops of §9.5. That is Stage 4, and deliberately so — §21 says to build the baseline first. |
 | 10 | Both "ready" and "free" events belong in the ISA and the compiler's lifetime model | **Deferred (Stage 2)** | mbarrier is Stage 2. Nothing built so far collapses the two: the LSU reports completion explicitly, and the scoreboard releases a destination when it is *written*, not when the instruction issues. |
 | 11 | Build the backend from TTIR and early layout analysis, not from shared-memory TTGIR lowering | **Deferred (Stage 5)** | |
-| 12 | Finish a small verifiable system before scaling the mesh and the dynamic control | **Held** | This is the reason the tree looks the way it does: one core, no mesh, no adaptive policy, and a regression that covers the ISA and the memory semantics before anything is scaled. |
+| 12 | Finish a small verifiable system before scaling the mesh and the dynamic control | **Held** | The order was exactly §21's: ISA and memory semantics on one core, then pipelining, then multiple outstanding transactions, then one slice, then the mesh, then 2×2 — each with its own test before the next was started. No adaptive policy has been added yet, which is the point: Stage 4 measures each mechanism against this baseline one at a time. |
 
 ---
 
@@ -50,7 +51,13 @@ software, and they cannot hold data across instructions.
 
 ### §1.2 — The matrix array must not depend on remote-cache supply per cycle
 
-**Held by construction.** See decision 4.
+**Held by construction**, and now for a concrete reason rather than an abstract
+one. There is no matrix unit yet, but the cost the principle is about is now
+measurable: a NUCA hit costs a mesh traversal each way plus the slice's request
+buffer, tag lookup and data access. In the 2×2 run, 1,792 of 2,048 requests went
+to a remote slice. Feeding a matrix array from that path per cycle was never
+going to work, which is why §1.2 asks for the transfer to land in registers
+first.
 
 ### §1.3 — "≤4 threads" means four vector control contexts
 
@@ -67,6 +74,13 @@ sentence that defines it, and the decoder rejects the unallocated hint value
 rather than treating it as "default". The reserved-bit rule (ISA §2.3) is the
 same principle applied to the encoding itself, and `tb_decoder` enforces it with
 627 vectors.
+
+The Stage-3 cache makes this structural rather than merely stated: the hint
+reaches the LSU and stops there. `tnca_core_ni` does not read it when choosing a
+home, and the slice does not read it at all. There is currently no path by which
+a hint could change an address, a value or an order even if it wanted to, which
+is the strongest form the principle can take before Stage 4 gives hints
+something to do.
 
 ### §1.5 — The ISA should be friendly to TTIR/TTGIR without freezing IR into hardware
 

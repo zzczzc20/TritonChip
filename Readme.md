@@ -27,11 +27,20 @@ TensorMap 如何驱动缓存管理、异步搬运如何定义寄存器所有权�
 以及跨核心进度如何控制请求准入。这些在
 [`doc/architecture_overview.md`](doc/architecture_overview.md) 中有完整论证。
 
-**当前进度：阶段 1a。** 单核、2 个 Role Context、16 lane SIMD、完整标量/向量/
-谓词/shuffle/归约指令、IEEE-754 binary32 运算、带合并器的访存单元。已通过
-51 万组 FMA 差分向量、627 组编码合法性向量和 5 个自检核心程序（含慢速、
-带反压的存储器变体）。**尚未实现**：Matrix 单元、TensorMap/Tensor DMA、
-mbarrier、SFU、原子操作、mesh 与 NUCA。路线图见下文 Roadmap。
+**当前进度：阶段 3。** 4 个 tile 组成 2×2 mesh，每个 tile 含一个核心与一个 NUCA
+slice。物理行的 home slice 由地址哈希唯一确定，无私有数据缓存、无复制、无迁移，
+因此 slice 之间不存在一致性协议。完整链路为
+
+```
+向量寄存器 → LSU beat → core NI → mesh → home NUCA slice → DRAM
+```
+
+其中除两端外没有任何软件可寻址的存储层次。已实现：流水化 FP/乘法器、
+多未完成事务且支持乱序返回的 LSU、带 MSHR/target pool/脏行回写的 NUCA slice、
+XY 路由与请求/响应分离虚拟网络的 mesh。
+
+**尚未实现**：Matrix 单元、TensorMap/Tensor DMA、mbarrier、SFU、原子操作，
+以及 Stage 4 的缓存策略（dead-block、bypass、准入 credit）。路线图见下文。
 
 > 本仓库是一个诚实的在建工程，不是一颗流片过的芯片。凡是没做的，
 > 下面都写明了没做；凡是测过的，都给出了测试规模。
@@ -40,7 +49,7 @@ mbarrier、SFU、原子操作、mesh 与 NUCA。路线图见下文 Roadmap。
 
 ## Status
 
-**Stage 1b — the Stage-1 ISA, pipelined and measured.**
+**Stage 3 — four tiles on a 2×2 mesh over a single-level distributed NUCA cache.**
 
 | Area | State |
 |---|---|
@@ -53,11 +62,15 @@ mbarrier、SFU、原子操作、mesh 与 NUCA。路线图见下文 Roadmap。
 | Load/store unit with a physical-word coalescer | complete |
 | 2 Role Contexts on a shared datapath | complete |
 | Assembler, disassembler, exact FP oracle | complete |
+| Non-blocking LSU, many outstanding transactions, out-of-order returns | complete |
+| NUCA slice: MSHRs, target pool, dirty writeback, hits past a blocked miss | complete |
+| 2×2 mesh: XY routing, separate request/response virtual networks | complete |
+| 4-tile system: cores, slices, mesh, DRAM, static-home addressing | complete |
 | Matrix unit, TensorMap, Tensor DMA, mbarrier | **not started** (Stage 2) |
 | SFU (`v.exp2.approx` et al) | **not started**; the capability bit reads 0 and the encodings trap |
 | Synchronous instruction fetch | **not started** (Stage 1c) |
 | Atomics, fences | **not started** (Stage 2) |
-| Mesh, NUCA slices, MSHRs, flow control | **not started** (Stage 3–4) |
+| Cache/flow policy: dead-block hints, bypass, admission credits | **not started** (Stage 4) |
 | Triton/MLIR backend | **not started** (Stage 5) |
 
 Nothing here has been through a real PDK, static timing, or power analysis.
@@ -84,9 +97,11 @@ That forces four interfaces to be redesigned rather than inherited:
    work entering the system, never to the paths that complete work already in
    flight or release resources.
 
-The Stage-1 core in this repository is the foundation for (1) and (3): it
-establishes the register files, the completion protocol and the memory
-semantics that the tensor machinery will be built on.
+Stages 1 to 3 in this repository build the substrate those four interfaces
+attach to: the register files and completion protocol for (1) and (3), and a
+real single-level NUCA cache behind a mesh for (2) and (4). Stage 4 is where
+the descriptors and the flow control land, and it can now be measured against a
+baseline rather than argued about.
 
 ---
 
@@ -146,24 +161,46 @@ doc/
   conformance.md              audit against the architecture document
   synthesis.md                PPA proxies and the findings from them
 rtl/
-  common/tnca_defs.vh         encoding constants, derived from the ISA doc
+  tnca_top.v                  NX x NY tiles, mesh, memory arbiter
+  common/
+    tnca_defs.vh              encoding constants, derived from the ISA doc
+    tnca_lzc.v tnca_popc.v    log-depth leading-zero and population count
+    tnca_fifo.v               valid/ready FIFO
   core/
-    tnca_core.v               4-stage in-order pipeline, N Role Contexts
+    tnca_core.v               4-stage in-order pipeline, N Role Contexts,
+                              multi-latency writeback scheduling
     tnca_decoder.v            encoding -> control, and encoding legality
     tnca_scalar_alu.v         64-bit integer ALU
+    tnca_mul64.v              3-stage pipelined 64x64 multiplier
     tnca_vector_alu.v         16-lane integer / predicate / shuffle / reduce
     tnca_vector_fpu.v         16-lane binary32, plus the reduction sequencer
-    tnca_fp32_fma.v           IEEE-754 binary32 fused multiply-add
-    tnca_lsu.v                load/store with a physical-word coalescer
+    tnca_fp32_fma.v           IEEE-754 binary32 FMA, 2-stage pipeline
+    tnca_lsu.v                coalescer, many outstanding tagged transactions
     tnca_scalar_rf.v          64 x 64 bit per RCTX, 3R1W, write-first
     tnca_vector_rf.v          physical vector pool, per-lane write enables
     tnca_pred_rf.v            16 x VLEN bit per RCTX
+  nuca/
+    tnca_nuca_slice.v         tags, data, MSHRs, targets, writeback, arbiter
+    tnca_mem_arbiter.v        N slice memory ports onto one DRAM port
+  noc/
+    tnca_router.v             5-port XY router, N virtual networks
+    tnca_mesh.v               NX x NY fabric
+    tnca_core_ni.v            home-slice hashing and request injection
+    tnca_slice_ni.v           request delivery and response addressing
+    tnca_noc_pkg.vh           packet layout
+  tile/
+    tnca_tile.v               one core, one slice, their interfaces
 tb/
+  top/tb_tnca_top.v           the whole 2x2 system running a program
+  nuca/tb_nuca_slice.v        randomised cache test against a shadow memory
+  noc/tb_mesh.v               randomised all-to-all mesh test
   core/tb_tnca_core.v         runs a self-checking program
   core/tb_fp32_fma.v          differential test against the exact oracle
   core/tb_decoder.v           encoding legality
+  core/tb_bitops.v tb_mul64.v unit tests for the shared primitives
   core/progs/*.s              the self-checking test programs
-  common/tnca_mem_model.v     unified memory, parameterised latency/stalls
+  common/tnca_mem_model.v     word memory, parameterised latency/stalls/order
+  common/tnca_dram_model.v    line memory behind the slices
 tools/
   asm/tnca_isa.py             machine-readable encoding tables
   asm/tnca_asm.py             assembler
@@ -172,6 +209,7 @@ tools/
   model/gen_*_vectors.py      test-vector generators
 flow/
   synth/synth.py              Yosys synthesis + PPA proxy report
+  synth/calibration.v         reference structures for reading the depth numbers
 ```
 
 ---
@@ -210,6 +248,56 @@ that testing found:
   X therefore never repeats a side effect, and a completion is never starved
   for more than one cycle.
 
+## The memory system
+
+```
+  lane  ->  vector register  ->  LSU beat  ->  core NI  ->  mesh
+                                                              |
+                                                     home NUCA slice
+                                                              |
+                                                            DRAM
+```
+
+Nothing in that chain is software-addressable except the registers at one end
+and DRAM at the other. That is the architecture's central claim and this is the
+first configuration in which it is actually testable.
+
+**Home selection.** `home = H(physical line address)`, and nothing else —
+no descriptor, no TensorID, no hint. Two views of one physical line cannot
+disagree about where it lives (§7.5, §10.1). A line exists in exactly one slice,
+so there is no replication, no migration, and consequently no coherence protocol
+between slices at all. The interleave is 64 bytes, so a contiguous buffer spans
+every slice: in the 2×2 test, **1,792 of 2,048 requests left their tile**.
+
+**The slice does not stall on a miss.** §9.3 requires that a miss which cannot
+allocate an MSHR must not block hits queued behind it. The request buffer is
+therefore not a FIFO — each cycle the arbiter picks the oldest entry that is
+neither blocked nor shadowed by an older entry to the same line. The shadow rule
+is what serialises conflicting accesses to one address at its home slice
+(§14.1): a correctness property, not a heuristic. A counter records how often a
+hit was selected past a blocked miss, and the test *fails if that never happens*
+— so the property cannot quietly rot into an intention.
+
+**Why the network cannot deadlock.** XY routing removes cyclic channel
+dependencies within a virtual network, and requests and responses have separate
+virtual networks so a backed-up request path cannot stop a response. But §10.4
+is explicit that routing is only half the problem — the endpoint protocol can
+still deadlock. The rule that closes it: a core's response path is
+unconditionally ready, because the LSU reserved a beat-table slot *before*
+issuing, so the landing site already exists and accepting the response needs no
+further allocation (§10.5, rules 1 and 2). The response network therefore always
+drains, which lets the requests occupying the slices retire.
+
+### Deliberate Stage-3 simplifications
+
+| Simplification | Why it is acceptable now | What replaces it |
+|---|---|---|
+| Memory controllers sit below the slices, not on the mesh edge | §10.3 wants every byte crossing a link counted, and DRAM traffic on the mesh changes those numbers; nothing about the cache protocol depends on which it is | MCs on the mesh edge, with the per-link bandwidth model (Stage 4) |
+| Single-flit packets | a reassembly path would not change anything this stage establishes | multi-flit serialisation and per-link accounting (Stage 4) |
+| Two virtual networks, not four | requests and responses are separated, which is the property forward progress needs | the four classes of §10.4 arrive with tensor traffic |
+| Invalid-first then round-robin replacement | a baseline with a policy in it cannot serve as the baseline a policy is measured against (§21) | §8.4's priority scheme (Stage 4) |
+| Instruction fetch is tile-local | §1.1 allows a small instruction buffer explicitly and restricts the *data* hierarchy | fetch through the NUCA, with its traffic counted |
+
 ### Deliberate Stage-1 simplifications
 
 These are simplifications, not oversights. Each is local to fix.
@@ -247,6 +335,10 @@ FAIL" as a failure rather than a pass.
 | `tb_mul64` | the pipelined 64×64 multiplier against Verilog's own 128-bit multiply, weighted to sign boundaries | 60,000 checks |
 | assembler round-trip | assemble → disassemble → re-assemble reproduces the original word | 5,249 instructions |
 | slow-memory rerun | every core test again at memory latency 7 with pseudo-random `ready` de-assertion | catches any fixed-latency assumption |
+| out-of-order rerun | every core test again with responses delivered in pseudo-random order | once requests reach different slices through a mesh, ordered returns stop being a property anything guarantees (§20.3) |
+| `tb_nuca_slice` | randomised reads and writes against a shadow memory, address range 8× the slice capacity so eviction is the common case, under three different memory behaviours | 800 requests: 568 reads checked, 367 hits, 403 misses, 99 dirty writebacks, MSHR file full 295 times, **233 hits selected past a blocked miss** |
+| `tb_mesh` | randomised all-to-all on the 2×2 fabric with random receiver back-pressure; checks delivery, destination, virtual network, and per-flow ordering | 20,000 packets, none lost, none misrouted, none reordered |
+| `t10_mesh` | the whole 2×2 system: per-tile private buffers, a shared table every tile hammers at once, and a streaming pass that forces eviction under cross-tile pressure | 4 tiles × 4,039 instructions; fails if the mesh carried no remote traffic or the slices never missed |
 
 Every claim above is also checked in the other direction. Each self-checking
 program was run once with a deliberately broken expectation, and `t06_alu` was
@@ -279,6 +371,8 @@ and would not be a valid FMA reference.
 | `tnca_fp32_fma` | 7,120 | 203 | 115 | 71 | 2 stages |
 | `tnca_vector_alu` | 145,334 | 0 | 99 | 65 | the largest block |
 | `tnca_scalar_rf` | 31,033 | 8,192 | 10 | — | flops; belongs in SRAM |
+| `tnca_fifo` | 127 | 137 | 4 | — | ok |
+| `tnca_router` | 10,204 | 6,028 | 18 | — | **well under budget** |
 
 **Read `depth` against the floor, not against 50.** The generic gate set has no
 carry-lookahead cells, so every addition maps to ripple carry: a bare 32-bit
@@ -316,20 +410,26 @@ Stages follow `doc/architecture_overview.md` §21.
   units with different latencies cannot collide on the register-file write port.
   Library calibration added to the synthesis flow so depth numbers mean
   something.
+* **Stage 3 — done.** Non-blocking LSU with many outstanding tagged
+  transactions and out-of-order returns; NUCA slice with MSHR entries, a shared
+  target pool, dirty writeback and an arbiter that keeps hits flowing past a
+  blocked miss; 2×2 mesh with XY routing and separate request/response virtual
+  networks; the four-tile system running a program end to end. No adaptive
+  policy — that is the point of a baseline.
+* **Stage 2 (next).** Tensor descriptors and Tensor DMA, RF windows, mbarrier
+  with the ready/free two-event protocol, the matrix unit (`m.mma.async`,
+  M16 N16 K16/32/64), accumulator registers with vector access. Target
+  workloads: asynchronous double-buffered GEMM, small FlashAttention. It comes
+  after Stage 3 rather than before it because Tensor DMA's whole purpose is to
+  keep many line transactions in flight, and there was nothing to keep them in
+  flight *to* until the cache existed.
 * **Stage 1c.** SFU — `v.exp2.approx`, `v.rcp.approx`, `v.rsqrt.approx`,
   `v.log2.approx` — with the accuracy **measured over the full input range and
   the measured bound written into the ISA** before `CAPABILITY0.SFU` is allowed
   to read 1. §12.7 requires a published error bound, NaN/Inf/zero behaviour and
   subnormal handling; setting a capability bit without them is exactly the
-  dishonesty §1.6 warns about. Also: synchronous instruction fetch, and dual
-  issue across resource classes.
-* **Stage 2.** Tensor descriptors and Tensor DMA, RF windows, mbarrier with
-  the ready/free two-event protocol, the matrix unit (`m.mma.async`,
-  M16 N16 K16/32/64), accumulator registers with vector access. Target
-  workloads: asynchronous double-buffered GEMM, small FlashAttention.
-* **Stage 3.** 2×2 mesh, static-home NUCA slices, MSHR entries and targets,
-  separated request/response networks, forward-progress credits. No adaptive
-  policy yet — establish a trustworthy baseline first.
+  dishonesty §1.6 warns about. Also: atomics and fences, synchronous
+  instruction fetch, dual issue.
 * **Stage 4.** Fold in the paper mechanisms one at a time with an independent
   ablation for each: TensorMap metadata, use-complete tracking, dead-block
   hints, coordinated replacement/bypass, MSHR-aware arbitration, request

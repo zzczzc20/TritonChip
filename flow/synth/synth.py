@@ -75,6 +75,12 @@ MODULES = [
         'core/tnca_vector_alu.v', 'core/tnca_vector_fpu.v', 'core/tnca_fp32_fma.v',
         'core/tnca_lsu.v', 'core/tnca_mul64.v',
     ] + COMMON, {}),
+    ('tnca_fifo',       ['common/tnca_fifo.v'], {}),
+    ('tnca_router',     ['noc/tnca_router.v', 'common/tnca_fifo.v'], {}),
+    ('tnca_mesh',       ['noc/tnca_mesh.v', 'noc/tnca_router.v',
+                         'common/tnca_fifo.v'], {}),
+    ('tnca_nuca_slice', ['nuca/tnca_nuca_slice.v'], {}),
+    ('tnca_mem_arbiter',['nuca/tnca_mem_arbiter.v'], {}),
 ]
 
 GATE_SET = "AND,NAND,OR,NOR,XOR,XNOR,MUX,AOI3,OAI3,AOI4,OAI4"
@@ -84,7 +90,7 @@ def run_one(top, sources, params, keep_dir=None):
     srcs = " ".join(os.path.join(RTL, s) for s in sources)
     pset = "\n".join(f"chparam -set {k} {v} {top}" for k, v in params.items())
     script = f"""
-read_verilog -I {INC} {srcs}
+read_verilog -I {INC} -I {os.path.join(RTL, 'noc')} {srcs}
 hierarchy -check -top {top}
 {pset}
 synth -top {top} -flatten

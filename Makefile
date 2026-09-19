@@ -30,7 +30,13 @@ ASM        := $(PYTHON) $(TOOLS)/asm/tnca_asm.py
 RTL_COMMON := $(wildcard $(RTL)/common/*.v)
 RTL_CORE   := $(wildcard $(RTL)/core/*.v)
 RTL_NUCA   := $(wildcard $(RTL)/nuca/*.v)
-RTL_ALL    := $(RTL_COMMON) $(RTL_CORE) $(RTL_NUCA)
+RTL_NOC    := $(wildcard $(RTL)/noc/*.v)
+RTL_TILE   := $(wildcard $(RTL)/tile/*.v) $(wildcard $(RTL)/*.v)
+RTL_ALL    := $(RTL_COMMON) $(RTL_CORE) $(RTL_NUCA) $(RTL_NOC) $(RTL_TILE)
+
+# Every RTL directory, for library search and include paths.
+RTLY       := -y $(RTL)/common -y $(RTL)/core -y $(RTL)/nuca -y $(RTL)/noc \
+              -y $(RTL)/tile -I $(RTL)/noc
 
 # Number of random FMA vectors in the default regression. The deep sweep used
 # during bring-up is `make fma-deep`.
@@ -64,7 +70,7 @@ dirs:
 lint: dirs
 	@fail=0; \
 	for f in $(RTL_ALL); do \
-	  if ! $(IVERILOG) $(IVFLAGS) -y $(RTL)/core -y $(RTL)/common -y $(RTL)/nuca -t null $$f 2>$(BUILD)/lint.err; then \
+	  if ! $(IVERILOG) $(IVFLAGS) $(RTLY) -t null $$f 2>$(BUILD)/lint.err; then \
 	    echo "LINT FAIL $$f"; cat $(BUILD)/lint.err; fail=1; \
 	  fi; \
 	done; \
@@ -210,7 +216,41 @@ nuca: | dirs
 	 done
 
 #------------------------------------------------------------------------------
-test: lint unit core core-slowmem core-ooo nuca
+# Network on chip
+#------------------------------------------------------------------------------
+MESH_PKTS ?= 20000
+
+$(BUILD)/tb_mesh.vvp: $(TB)/noc/tb_mesh.v $(RTL_NOC) $(RTL_COMMON) | dirs
+	$(IVERILOG) -g2012 $(IVFLAGS) $(RTLY) -o $@ $< $(RTL)/noc/tnca_mesh.v
+
+.PHONY: mesh
+mesh: $(BUILD)/tb_mesh.vvp
+	@$(TOOLS)/run_test.sh "mesh 2x2" \
+	   "$(VVP) $(BUILD)/tb_mesh.vvp +npkt=$(MESH_PKTS)"
+
+#------------------------------------------------------------------------------
+# Full 2x2 system: cores, slices, mesh, DRAM
+#------------------------------------------------------------------------------
+TOP_PROGS := t10_mesh
+
+$(BUILD)/tb_top.vvp: $(TB)/top/tb_tnca_top.v $(RTL_ALL) \
+                     $(TB)/common/tnca_dram_model.v | dirs
+	$(IVERILOG) -g2012 $(IVFLAGS) $(RTLY) -o $@ $< $(RTL)/tnca_top.v \
+	   $(TB)/common/tnca_dram_model.v
+
+.PHONY: top
+top: $(BUILD)/tb_top.vvp $(patsubst %,$(BUILD)/%.hex,$(TOP_PROGS))
+	@for p in $(TOP_PROGS); do \
+	   $(TOOLS)/run_test.sh "$$p (2x2, 1 role)" \
+	     "$(VVP) $(BUILD)/tb_top.vvp +hex=$(BUILD)/$$p.hex +maxcycles=2000000" \
+	     || exit 1; \
+	   $(TOOLS)/run_test.sh "$$p (2x2, all roles)" \
+	     "$(VVP) $(BUILD)/tb_top.vvp +hex=$(BUILD)/$$p.hex +maxcycles=2000000 +allroles" \
+	     || exit 1; \
+	 done
+
+#------------------------------------------------------------------------------
+test: lint unit core core-slowmem core-ooo nuca mesh top
 	@echo
 	@echo "=============================================="
 	@echo " TNCA regression: all tests passed"

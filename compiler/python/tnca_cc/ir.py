@@ -284,6 +284,17 @@ class Builder:
         self._emit('window_reg', [v], [window], offset=offset)
         return v
 
+    def window_put(self, window, offset, value):
+        """Place a vector value into a window register.
+
+        The write half of the zero-copy handoff: the producer moves its result
+        into the range both roles name, and the consumer reads it there. One
+        `v.mov`, not a trip through memory -- sec 7.3 puts a shared RF window
+        above every other way of moving a tensor between roles, and TNCA has
+        no scratchpad for the alternatives anyway.
+        """
+        self._emit('window_put', [], [window, value], offset=offset)
+
     def descriptor(self, addr, name=None):
         d = Value(name=name or f"d{len(self.kernel.descriptors)}", kind=DESC)
         self.kernel.descriptors.append(d)

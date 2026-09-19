@@ -14,6 +14,7 @@ that split decides what is usable right now.
 | Bring-up: TNCA IR → assembly → `tools/asm/tnca_asm.py` → RTL (§11.1) | Python. Runs with nothing installed. |
 | MLIR: the `tnca` dialect, `tnca-opt`, the async verifier | **Builds and runs.** |
 | Triton frontend → TTIR → TNCA IR → RTL | **Closed.** `make triton-e2e` |
+| Triton → context-specialised (multi-role) ISA | **Closed.** |
 | Thin LLVM target (§11.2) | Encodings generated; the target itself is deliberately not started. |
 
 ### Building Triton
@@ -254,6 +255,34 @@ it tests is §7.4's: 只有两个 consumer 都释放，producer 才能覆盖该 
 Not done: the literal `P + M0 + M1 + E` split. The mapper *merges* partitions
 when contexts are scarce; splitting the matrix partition across two roles for
 throughput is a different operation, and it does not perform it.
+
+### From Triton to context-specialised ISA
+
+`split_roles` closes the gap between the two halves. It takes the single
+region the Triton frontend produces and emits one region per Role Context,
+following §7.3's order:
+
+- a value whose **whole dependency chain is pure** is recomputed in every role
+  that needs it rather than communicated. This is recursive on purpose: a
+  predicate is one `v.cmp`, but it comes from `pid*BLOCK + arange`, and
+  recomputing the comparison while communicating its inputs would be worse
+  than recomputing all of it;
+- a tensor that cannot be recomputed — anything rooted in memory or in an
+  engine — crosses on a **shared RF window**, which §7.3 ranks above every
+  other option and which is the only one TNCA has;
+- the handoff is ordered by a barrier: the producer arrives after its last
+  write, each consumer waits before its first read, and ISA §9A.5 makes that
+  arrival cover the outstanding register write.
+
+For `add_kernel` that is one crossing (the sum), five operations
+rematerialised, 20 instructions in the producer and 12 in the consumer. The
+test checks the split is structurally real — the epilogue role contains no
+load, the producer contains no store — not merely that the arithmetic comes
+out right.
+
+Limit: straight-line regions, which is what the frontend emits for one program
+id. §7.5's structured-loop cloning exists for the GEMM shape
+(`specialize_gemm_rolled`) but is not yet driven from TTIR.
 
 Communication follows §7.3's order, and on this target nothing falls back to
 a global temporary — which is the point for a machine with no scratchpad.

@@ -32,6 +32,7 @@ from dataclasses import dataclass, field
 from enum import Enum
 
 from .diagnostics import Diagnostic
+from .ir import Op, Value
 
 
 class OpClass(Enum):
@@ -694,3 +695,252 @@ def specialize_gemm_rolled(target, gemm_plan, *, name='cs_gemm_rolled',
     plan = partition_graph(graph, info)
     map_to_rctx(plan, info)
     return k, plan
+
+
+# ---------------------------------------------------------------------------
+# sec 7.5: split one region into per-role regions
+# ---------------------------------------------------------------------------
+
+# Operations with no memory access, no resource effect and no engine command.
+# A pure sub-DAG can be recomputed in whichever role needs it instead of being
+# communicated, which is sec 7.3 steps 1-3 taken to their conclusion: a
+# constant is copied, cheap address arithmetic is rematerialised, and the
+# distinction between the two is not worth drawing when both are free.
+_PURE = {'const', 'program_id', 'special', 'sbin', 'sbini', 'scmp',
+         'arange', 'splat', 'vmovi', 'vbin', 'vcmp', 'vselect',
+         'barrier_token', 'barrier_token_dyn', 'comment'}
+
+
+def _rematerializable(index, ops, producer_of, memo):
+    """True when op `index` and everything it depends on is pure.
+
+    Recursive on purpose. A predicate is one `v.cmp`, but it is computed from
+    `pid*BLOCK + arange`, and recomputing the comparison while communicating
+    its inputs would be worse than recomputing the lot. Anything rooted in
+    memory or in an engine stops the recursion and has to travel as a value.
+    """
+    if index in memo:
+        return memo[index]
+    op = ops[index]
+    if op.kind not in _PURE:
+        memo[index] = False
+        return False
+    memo[index] = True          # provisional, breaks cycles
+    for v in list(op.operands) + [op.attrs.get('mask')]:
+        if v is None or not getattr(v, 'kind', None):
+            continue
+        src = producer_of.get(id(v))
+        if src is None:
+            continue            # a kernel argument: every role has it
+        if not _rematerializable(src, ops, producer_of, memo):
+            memo[index] = False
+            return False
+    return True
+
+
+@dataclass
+class SplitResult:
+    kernel: object
+    plan: PartitionPlan
+    crossings: list = field(default_factory=list)   # (Value, producer, consumers)
+    rematerialised: int = 0
+    windows: int = 0
+
+    def describe(self):
+        lines = [f"roles: {len(self.kernel.roles)}"]
+        for r, labels in sorted(self.plan.roles.items()):
+            workers = [l for l in labels if l not in ('A', 'S')]
+            lines.append(f"  role {r}: {'+'.join(workers) or 'address only'} "
+                         f"({len(self.kernel.role(r).region.ops)} ops)")
+        lines.append(f"values crossing on a shared window: {len(self.crossings)}")
+        for v, prod, cons in self.crossings:
+            lines.append(f"  {v.name} role {prod} -> {sorted(cons)}")
+        lines.append(f"operations rematerialised: {self.rematerialised}")
+        return '\n'.join(lines)
+
+
+def split_roles(kernel, target, *, name=None):
+    """Turn a single-role kernel into one region per Role Context.
+
+    compiler_overview.md sec 7.5 restricts the first version of role-loop
+    construction to structured loops whose trip count every role can derive.
+    This handles the straight-line case, which is what the Triton frontend
+    produces for one program id, and it is the step that makes the path from
+    a @triton.jit kernel to context-specialised ISA continuous rather than
+    two halves that each work.
+
+    What it does, in sec 7.3's order:
+
+      * a value whose whole dependency chain is pure is recomputed in every
+        role that needs it, rather than communicated;
+      * a tensor that cannot be recomputed -- anything rooted in memory or in
+        an engine -- crosses on a shared RF window, which sec 7.3 ranks above
+        every other option and which is the only one TNCA has, there being no
+        scratchpad;
+      * the handoff is ordered by a barrier, not by hope: the producer arrives
+        after its last write and each consumer waits before its first read.
+        ISA sec 9A.5 makes that arrival cover the outstanding register write,
+        which is exactly the guarantee needed.
+    """
+    from .ir import Builder, make_kernel
+
+    region = kernel.role(0).region
+    info = SpecializationTargetInfo(target)
+    graph = build_graph(region, info)
+    plan = partition_graph(graph, info)
+    map_to_rctx(plan, info)
+
+    ops = region.ops
+    producer_of = {}
+    for i, op in enumerate(ops):
+        for v in op.results:
+            producer_of[id(v)] = i
+
+    # Address and synchronisation are not roles; every role carries its own.
+    replicated = {'A', 'S'}
+    owner = {}
+    for i, label in plan.assignment.items():
+        if label in replicated:
+            continue
+        for r, labels in sorted(plan.roles.items()):
+            if label in labels:
+                owner[i] = r
+                break
+
+    n_roles = len(plan.roles)
+    if n_roles < 2:
+        return SplitResult(kernel=kernel, plan=plan)
+
+    memo = {}
+
+    def operands_of(op):
+        out = [v for v in op.operands if getattr(v, 'kind', None)]
+        m = op.attrs.get('mask')
+        if m is not None:
+            out.append(m)
+        return out
+
+    # ---- what each role must contain ------------------------------------
+    # Ops every role must carry whatever its partition: control flow, and
+    # anything with an effect. Pure address arithmetic is NOT seeded -- it is
+    # pulled in only by a role that actually uses it, or the epilogue role
+    # ends up recomputing the load addresses it never reads.
+    structural = {'label', 'branch_nz', 'assign', 'trap', 'exit',
+                  'assert_eq', 'assert_lane', 'sstore', 'barrier_init',
+                  'barrier_arm', 'barrier_wait', 'barrier_arrive',
+                  'window_def', 'desc_snapshot'}
+
+    need = {r: set() for r in plan.roles}          # op indices
+    crossing = {}                                  # op index -> consumer roles
+    for r in plan.roles:
+        work = [i for i, o in owner.items() if o == r]
+        work += [i for i, o in enumerate(ops)
+                 if o.kind in structural and plan.assignment.get(i) in replicated]
+        seen = set()
+        while work:
+            i = work.pop()
+            if i in seen:
+                continue
+            seen.add(i)
+            for v in operands_of(ops[i]):
+                src = producer_of.get(id(v))
+                if src is None or src in seen:
+                    continue
+                if owner.get(src) == r or plan.assignment.get(src) in replicated:
+                    work.append(src)
+                elif _rematerializable(src, ops, producer_of, memo):
+                    work.append(src)
+                else:
+                    crossing.setdefault(src, set()).add(r)
+        need[r] = seen
+
+    # A crossing consumed by its own producing role is not a crossing.
+    for src in list(crossing):
+        crossing[src].discard(owner.get(src))
+        if not crossing[src]:
+            del crossing[src]
+
+    # ---- build the new kernel -------------------------------------------
+    out = make_kernel(name or kernel.name, num_roles=n_roles)
+    shared = Builder(out, out.role(0).region)
+
+    ordered = sorted(crossing)
+    window = None
+    if ordered:
+        window = shared.window(len(ordered), name='xfer')
+    slot_of = {src: k for k, src in enumerate(ordered)}
+
+    # One barrier per producing role. The producer arrives once, after its
+    # last handoff; every consumer waits once, before its first read.
+    producers = sorted({owner[src] for src in ordered if src in owner})
+    ready = {r: shared.barrier(name=f"ready{r}") for r in producers}
+
+    builders = {}
+    for r in range(n_roles):
+        builders[r] = shared if r == 0 else Builder(out, out.role(r).region)
+
+    remat_count = 0
+    for r in range(n_roles):
+        b = builders[r]
+        vmap = {}
+        workers = [l for l in plan.roles[r] if l not in replicated]
+        b.comment(f"role {r}: partition {'+'.join(workers) or 'address'}"
+                  + (", regenerating the pure values it needs (sec 7.3)"
+                     if r else ""))
+
+        tok = None
+        if r in ready:
+            tok = b.barrier_arm(ready[r], arrivals=1, ops=0)
+
+        waited = set()
+        for i, op in enumerate(ops):
+            if i not in need[r]:
+                continue
+            if op.kind == 'exit':
+                continue
+
+            # Before the first use of a value another role produces, wait.
+            for v in operands_of(op):
+                src = producer_of.get(id(v))
+                if src in crossing and r in crossing[src] and src not in waited:
+                    prod = owner[src]
+                    if prod not in waited:
+                        b.comment(f"wait for role {prod}'s handoff")
+                        b.barrier_wait(b.barrier_token(ready[prod], 1))
+                        waited.add(prod)
+                    waited.add(src)
+                    vmap[id(v)] = b.window_reg(window, slot_of[src],
+                                               dtype=v.dtype)
+
+            if plan.assignment.get(i) not in replicated and owner.get(i) != r:
+                remat_count += 1
+
+            clone = Op(kind=op.kind,
+                       results=[Value(name=v.name, kind=v.kind, dtype=v.dtype,
+                                      length=v.length) for v in op.results],
+                       operands=[vmap.get(id(v), v) for v in op.operands],
+                       attrs=dict(op.attrs))
+            m = clone.attrs.get('mask')
+            if m is not None:
+                clone.attrs['mask'] = vmap.get(id(m), m)
+            for old, new in zip(op.results, clone.results):
+                vmap[id(old)] = new
+            b.region.ops.append(clone)
+
+            # Hand off anything this role produces for another.
+            if i in crossing and owner.get(i) == r:
+                b.comment(f"hand {op.results[0].name} to "
+                          f"role(s) {sorted(crossing[i])}")
+                b.window_put(window, slot_of[i], clone.results[0])
+
+        if r in ready:
+            b.comment("release the consumers: the arrival covers this role's "
+                      "outstanding register write (ISA sec 9A.5)")
+            b.barrier_arrive(ready[r])
+        b.exit()
+
+    return SplitResult(kernel=out, plan=plan,
+                       crossings=[(ops[src].results[0], owner[src],
+                                   crossing[src]) for src in ordered],
+                       rematerialised=remat_count,
+                       windows=1 if ordered else 0)

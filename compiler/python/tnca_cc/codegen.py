@@ -433,6 +433,14 @@ class CodeGen:
         # that no copy happens (sec 7.3).
         v.reg = window.reg + op.attrs['offset']
 
+    def _op_window_put(self, op):
+        window, value = op.operands
+        if window.reg is None:
+            raise Diagnostic(f"window {window.name} has no register range")
+        dst = window.reg + op.attrs['offset']
+        self.b.emit('v.mov', f"v{dst}", f"v{value.reg}",
+                    comment='hand off through the shared window (sec 7.3)')
+
     def _op_desc_snapshot(self, op):
         addr = op.operands[0]
         d = op.results[0]

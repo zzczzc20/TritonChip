@@ -94,6 +94,93 @@ class TestTritonToRTL(unittest.TestCase):
         ok, out = H.run(p)
         self.assertTrue(ok, f"Triton kernel failed on the RTL:\n{out}")
 
+    def test_context_specialised_add_kernel(self):
+        """The closure this whole exercise is for: a @triton.jit kernel
+        compiled to context-specialised ISA and run on the machine.
+
+        Triton builds the TTIR; the partitioner classifies it and maps the
+        partitions onto Role Contexts; split_roles turns the single region
+        into one per role, recomputing the pure values each needs (sec 7.3)
+        and handing the one tensor that cannot be recomputed across a shared
+        RF window; the existing assembler assembles it. Nothing is edited in
+        between, and no barrier is added by hand.
+        """
+        import kernels_triton as K
+        from tnca_cc.partition import split_roles
+
+        t = self.target
+        mod, _ctx = triton_bridge.make_ttir(K.add_kernel, SIG,
+                                            {'BLOCK': t.vlen})
+        kernel, _ = TTIRImporter(t, 'add_kernel').run(
+            mod, 'add_kernel', {'x_ptr': X, 'y_ptr': Y, 'o_ptr': O, 'n': N})
+        res = split_roles(kernel, t, name='add_cs')
+
+        self.assertEqual(len(res.kernel.roles), 2)
+        self.assertEqual(len(res.crossings), 1,
+                         'the only value that cannot be recomputed is the sum')
+        self.assertGreater(res.rematerialised, 0,
+                           'the consumer must regenerate its own addresses')
+
+        # The split has to be real. The epilogue role must not be doing the
+        # loads, and the producer must not be doing the store -- otherwise
+        # "two roles" is two copies of the same program.
+        from tnca_cc.codegen import CodeGen
+        texts = []
+        for r in range(2):
+            cg = CodeGen(res.kernel, t, check_protocol=False)
+            cg.assign_shared()
+            cg.run(r)
+            texts.append(cg.b.text())
+        self.assertIn('v.ld.w', texts[0])
+        self.assertNotIn('v.ld.w', texts[1])
+        self.assertIn('v.st.w', texts[1])
+        self.assertNotIn('v.st.w', texts[0])
+        # And the handoff goes through a register, not memory.
+        self.assertIn('v.mov', texts[0])
+
+        p, _peaks = H.multirole_program('triton_cs_add', res.kernel, t)
+        padded = ((N + t.vlen - 1) // t.vlen) * t.vlen
+        p.check_base(O)
+        for i in range(t.vlen):
+            p.check_word(O, i * 4,
+                         f2b(xv(i) + yv(i)) if i < N else SENTINEL)
+        p.words(X, H.pack32([f2b(xv(i)) for i in range(padded)]), 'xs')
+        p.words(Y, H.pack32([f2b(yv(i)) for i in range(padded)]), 'ys')
+        p.words(O, H.pack32([SENTINEL] * padded), 'os')
+
+        ok, out = H.run(p, extra_args=('+allroles', '+aliasvrf'),
+                        max_cycles=200000)
+        self.assertTrue(ok, f"context-specialised Triton kernel failed:\n{out}")
+
+    def test_context_specialised_mul_add_kernel(self):
+        """A longer value graph: a*b + a splits the same way, with one
+        tensor crossing and the address chain recomputed."""
+        import kernels_triton as K
+        from tnca_cc.partition import split_roles
+
+        t = self.target
+        mod, _ctx = triton_bridge.make_ttir(K.mul_add_kernel, SIG,
+                                            {'BLOCK': t.vlen})
+        kernel, _ = TTIRImporter(t, 'mul_add_kernel').run(
+            mod, 'mul_add_kernel',
+            {'x_ptr': X, 'y_ptr': Y, 'o_ptr': O, 'n': N})
+        res = split_roles(kernel, t, name='muladd_cs')
+        self.assertEqual(len(res.crossings), 1)
+
+        p, _ = H.multirole_program('triton_cs_muladd', res.kernel, t)
+        padded = ((N + t.vlen - 1) // t.vlen) * t.vlen
+        p.check_base(O)
+        for i in range(t.vlen):
+            p.check_word(O, i * 4,
+                         f2b(xv(i) * yv(i) + xv(i)) if i < N else SENTINEL)
+        p.words(X, H.pack32([f2b(xv(i)) for i in range(padded)]), 'xs')
+        p.words(Y, H.pack32([f2b(yv(i)) for i in range(padded)]), 'ys')
+        p.words(O, H.pack32([SENTINEL] * padded), 'os')
+
+        ok, out = H.run(p, extra_args=('+allroles', '+aliasvrf'),
+                        max_cycles=200000)
+        self.assertTrue(ok, f"context-specialised mul_add failed:\n{out}")
+
     def test_unsupported_block_is_refused(self):
         """sec 12: a block wider than one register is a diagnostic, not a
         silent lowering of the first register only."""

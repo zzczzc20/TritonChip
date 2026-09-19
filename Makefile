@@ -47,7 +47,7 @@ RTLY       := -y $(RTL)/common -y $(RTL)/core -y $(RTL)/nuca -y $(RTL)/noc \
 FMA_VECTORS ?= 20000
 
 CORE_PROGS := t00_scalar t01_vector t02_mem t03_fp t04_roles t05_fault t06_alu \
-              t11_matrix t12_tensor t13_share t14_caps t15_target
+              t11_matrix t12_tensor t13_share t14_caps t15_target t16_vecadd
 
 # Image size in 64-bit words; must match tb_tnca_core's WORDS parameter.
 IMAGE_WORDS := 16384
@@ -162,6 +162,9 @@ $(TB)/core/progs/t14_caps.s: $(TB)/core/progs/gen_t14_caps.py
 
 $(TB)/core/progs/t15_target.s: $(TB)/core/progs/gen_t15_target.py \
                                compiler/targets/tnca-sim-v0.1.json
+	$(PYTHON) $<
+
+$(TB)/core/progs/t16_vecadd.s: $(TB)/core/progs/gen_t16_vecadd.py $(TOOLS)/model/fp32.py
 	$(PYTHON) $<
 
 $(BUILD)/%.hex: $(TB)/core/progs/%.s $(TOOLS)/asm/tnca_asm.py $(TOOLS)/asm/tnca_isa.py | dirs

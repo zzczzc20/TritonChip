@@ -28,6 +28,9 @@ module tnca_slice_ni #(
     output wire [63:0]              req_wdata,
     output wire [SRC_W-1:0]         req_src,
     output wire [TAG_W-1:0]         req_tag,
+    output wire                     req_amo,
+    output wire [3:0]               req_aop,
+    output wire [63:0]              req_cmp,
 
     // ---- slice response port ------------------------------------------------
     input  wire                     rsp_valid,
@@ -64,6 +67,9 @@ module tnca_slice_ni #(
     assign req_be            = net_out_flit_req[`TNCA_REQ_BE];
     assign req_wdata         = net_out_flit_req[`TNCA_REQ_WDATA];
     assign req_src           = net_out_flit_req[`TNCA_REQ_SRC];
+    assign req_amo           = net_out_flit_req[`TNCA_REQ_AMO];
+    assign req_aop           = net_out_flit_req[`TNCA_REQ_AOP];
+    assign req_cmp           = net_out_flit_req[`TNCA_REQ_CMP];
     // The requester's tag is 3 bits on the wire; the slice's tag field is
     // wider, so zero-extend rather than chain a range onto a range.
     wire [4:0] req_tag_raw = net_out_flit_req[`TNCA_REQ_TAG];

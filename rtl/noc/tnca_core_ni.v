@@ -51,6 +51,9 @@ module tnca_core_ni #(
     input  wire [7:0]               req_be,
     input  wire [63:0]              req_wdata,
     input  wire [TAG_W-1:0]         req_tag,
+    input  wire                     req_amo,
+    input  wire [3:0]               req_aop,
+    input  wire [63:0]              req_cmp,
 
     output reg                      rsp_valid,
     output reg  [TAG_W-1:0]         rsp_tag,
@@ -90,6 +93,10 @@ module tnca_core_ni #(
     assign req_payload[`TNCA_REQ_WDATA] = req_wdata;
     assign req_payload[`TNCA_REQ_SRC]   = MY_ID[3:0];
     assign req_payload[`TNCA_REQ_TAG]   = req_tag;
+    assign req_payload[`TNCA_REQ_AMO]   = req_amo;
+    assign req_payload[`TNCA_REQ_AOP]   = req_aop;
+    assign req_payload[`TNCA_REQ_CMP]   = req_cmp;
+    assign req_payload[PW-1]            = 1'b0;
 
     assign net_in_valid_req = req_valid;
     assign net_in_flit_req  = {home_y, home_x, req_payload};

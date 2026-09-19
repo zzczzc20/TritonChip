@@ -29,6 +29,8 @@ BENCHES = {
     # Four Role Contexts, half the logical vector registers each. sec 15 C4
     # defers the P + M0 + M1 + E check until such a profile exists.
     'rctx4': 'tb_core4.vvp',
+    # The whole machine: four cores, four NUCA slices, the 2x2 mesh and DRAM.
+    'system': 'tb_top.vvp',
 }
 ASM = os.path.join(ROOT, 'tools', 'asm', 'tnca_asm.py')
 BUILD = os.path.join(ROOT, 'sim', 'build')
@@ -137,6 +139,55 @@ def bench_path(which='fast'):
 
 def bench_available(which):
     return os.path.exists(bench_path(which)) and shutil.which('vvp')
+
+
+def run_system(program, *, dump_base, dump_words, max_cycles=2000000,
+               extra_args=()):
+    """Run one image on all four tiles and read results back out of the machine.
+
+    This is the difference between "the compiler produced something the core
+    accepts" and "the machine computed the answer". The program carries no
+    assertions: the checker reads the *coherent* view of memory out of the
+    four-tile system afterwards -- slices first, DRAM behind them, because a
+    freshly written result is dirty in its home slice and not in DRAM yet --
+    and compares it against a reference computed in Python.
+
+    No fence is needed before the dump. The bench waits for every tile to reach
+    idle, and a core is not idle until its LSU is, and the LSU is not idle
+    until every store it issued has been answered by the home slice. The
+    ordering a fence would establish has already happened by the time the
+    dump runs.
+
+    Returns (ok, words, stdout) where `words` is the dumped memory as 64-bit
+    integers.
+    """
+    os.makedirs(BUILD, exist_ok=True)
+    src = os.path.join(BUILD, f"cc_{program.name}.s")
+    hexf = os.path.join(BUILD, f"cc_{program.name}.hex")
+    dumpf = os.path.join(BUILD, f"cc_{program.name}.dump")
+    with open(src, 'w') as fh:
+        fh.write(program.text())
+
+    asm = subprocess.run(
+        [sys.executable, ASM, src, '-o', hexf, '--size', '16384'],
+        capture_output=True, text=True)
+    if asm.returncode != 0:
+        return False, [], f"assembling failed:\n{asm.stderr}{asm.stdout}"
+
+    if os.path.exists(dumpf):
+        os.remove(dumpf)
+    proc = subprocess.run(
+        ['vvp', bench_path('system'), f"+hex={hexf}",
+         f"+maxcycles={max_cycles}", f"+dump={dumpf}",
+         f"+dumpbase={dump_base:x}", f"+dumpwords={dump_words}",
+         *extra_args],
+        capture_output=True, text=True)
+    ok = 'PASS' in proc.stdout and 'FAIL' not in proc.stdout
+    words = []
+    if os.path.exists(dumpf):
+        with open(dumpf) as fh:
+            words = [int(line.strip(), 16) for line in fh if line.strip()]
+    return ok, words, proc.stdout
 
 
 def run(program, *, extra_args=(), max_cycles=200000, bench='fast'):

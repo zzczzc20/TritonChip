@@ -71,6 +71,14 @@ module tnca_nuca_slice #(
     input  wire [WORD_BITS-1:0]     req_wdata,
     input  wire [SRC_W-1:0]         req_src,
     input  wire [TAG_W-1:0]         req_tag,
+    // Atomics execute HERE, at the home slice (ISA sec 9.2, arch sec 12.9),
+    // because that is the only place in the machine where every access to a
+    // physical line is already serialised. The arbiter's "no older entry to
+    // the same line" rule is what makes the read-modify-write indivisible;
+    // no lock, no retry, and nothing added to the miss path.
+    input  wire                     req_amo,
+    input  wire [3:0]               req_aop,
+    input  wire [WORD_BITS-1:0]     req_cmp,
 
     output wire                     rsp_valid,
     input  wire                     rsp_ready,
@@ -113,6 +121,18 @@ module tnca_nuca_slice #(
     integer i, j, w;
 
     //==========================================================================
+    // The atomic ALU (ISA sec 9.2)
+    //
+    // Atomics execute here, at the home slice, because this is the only place
+    // where every access to a physical line is already serialised: the
+    // arbiter will not start a second request to a line while one is in
+    // flight (sec 14.1). So the read-modify-write needs no lock, no retry and
+    // nothing added to the miss path -- it is one more thing the existing
+    // order does for free.
+    //==========================================================================
+`include "tnca_amo.vh"
+
+    //==========================================================================
     // Address decomposition
     //==========================================================================
     `define SLICE_SET(ad)  (ad[OFF_W +: SET_W])
@@ -135,6 +155,9 @@ module tnca_nuca_slice #(
     reg [RQ_N-1:0]          rq_blocked;
     reg [ADDR_W-1:0]        rq_addr  [0:RQ_N-1];
     reg                     rq_we    [0:RQ_N-1];
+    reg                     rq_amo   [0:RQ_N-1];
+    reg [3:0]               rq_aop   [0:RQ_N-1];
+    reg [WORD_BITS-1:0]     rq_cmp   [0:RQ_N-1];
     reg [WORD_BYTES-1:0]    rq_be    [0:RQ_N-1];
     reg [WORD_BITS-1:0]     rq_wdata [0:RQ_N-1];
     reg [SRC_W-1:0]         rq_src   [0:RQ_N-1];
@@ -234,6 +257,9 @@ module tnca_nuca_slice #(
     reg [SRC_W-1:0]         tg_src   [0:TARGET_N-1];
     reg [TAG_W-1:0]         tg_tag   [0:TARGET_N-1];
     reg                     tg_we    [0:TARGET_N-1];
+    reg                     tg_amo   [0:TARGET_N-1];
+    reg [3:0]               tg_aop   [0:TARGET_N-1];
+    reg [WORD_BITS-1:0]     tg_cmp   [0:TARGET_N-1];
     reg [WORD_BYTES-1:0]    tg_be    [0:TARGET_N-1];
     reg [WORD_BITS-1:0]     tg_wdata [0:TARGET_N-1];
     reg [WSEL_W-1:0]        tg_wsel  [0:TARGET_N-1];
@@ -294,6 +320,9 @@ module tnca_nuca_slice #(
     reg [RQ_W-1:0]       cur_rq;
     reg [ADDR_W-1:0]     cur_addr;
     reg                  cur_we;
+    reg                  cur_amo;
+    reg [3:0]            cur_aop;
+    reg [WORD_BITS-1:0]  cur_cmp;
     reg [WORD_BYTES-1:0] cur_be;
     reg [WORD_BITS-1:0]  cur_wdata;
     reg [SRC_W-1:0]      cur_src;
@@ -397,6 +426,7 @@ module tnca_nuca_slice #(
 
     // ---- byte merge helper ---------------------------------------------------
     reg [LINE_BITS-1:0] merged;
+    reg [WORD_BITS-1:0] amo_word, amo_res;
     reg [WORD_BITS-1:0] wordv;
 
     //==========================================================================
@@ -438,6 +468,9 @@ module tnca_nuca_slice #(
                 rq_blocked[rq_free_idx] <= 1'b0;
                 rq_addr[rq_free_idx]    <= req_addr;
                 rq_we[rq_free_idx]      <= req_we;
+                rq_amo[rq_free_idx]     <= req_amo;
+                rq_aop[rq_free_idx]     <= req_aop;
+                rq_cmp[rq_free_idx]     <= req_cmp;
                 rq_be[rq_free_idx]      <= req_be;
                 rq_wdata[rq_free_idx]   <= req_wdata;
                 rq_src[rq_free_idx]     <= req_src;
@@ -475,6 +508,9 @@ module tnca_nuca_slice #(
                     cur_rq    <= sel_idx;
                     cur_addr  <= rq_addr[sel_idx];
                     cur_we    <= rq_we[sel_idx];
+                    cur_amo   <= rq_amo[sel_idx];
+                    cur_aop   <= rq_aop[sel_idx];
+                    cur_cmp   <= rq_cmp[sel_idx];
                     cur_be    <= rq_be[sel_idx];
                     cur_wdata <= rq_wdata[sel_idx];
                     cur_src   <= rq_src[sel_idx];
@@ -493,7 +529,31 @@ module tnca_nuca_slice #(
             //---------------------------------------------------------------
             E_HIT: begin
                 perf_hit <= perf_hit + 1;
-                if (cur_we) begin
+                if (cur_amo) begin
+                    // Read, compute and write in one indivisible step. Nothing
+                    // else can touch this line in between: the arbiter will not
+                    // start a second request to the same line while this one is
+                    // in flight, which is the serialisation sec 14.1 asks for.
+                    merged   = data_mem[cur_set*WAYS + hit_way];
+                    amo_word = merged[cur_wsel*WORD_BITS +: WORD_BITS];
+                    amo_res  = amo_new(cur_aop, cur_be, amo_word, cur_wdata, cur_cmp);
+                    if (cur_aop != `TNCA_AOP_LD) begin
+                        for (i = 0; i < WORD_BYTES; i = i + 1)
+                            if (cur_be[i])
+                                merged[(cur_wsel*WORD_BYTES + i)*8 +: 8] =
+                                    amo_res[i*8 +: 8];
+                        data_mem[cur_set*WAYS + hit_way] <= merged;
+                        d_bits[cur_set*WAYS + hit_way]   <= 1'b1;
+                    end
+                    push_rsp  = 1'b1;
+                    push_src  = cur_src;
+                    push_tag  = cur_tag;
+                    // The whole old word, not the operand right-aligned: the
+                    // requester extracts its bytes from a response exactly as
+                    // it would from a load, and an atomic must not need a
+                    // second rule for that.
+                    push_data = amo_word;
+                end else if (cur_we) begin
                     merged = data_mem[cur_set*WAYS + hit_way];
                     for (i = 0; i < WORD_BYTES; i = i + 1)
                         if (cur_be[i])
@@ -526,6 +586,9 @@ module tnca_nuca_slice #(
                         tg_src[tg_free_idx]   <= cur_src;
                         tg_tag[tg_free_idx]   <= cur_tag;
                         tg_we[tg_free_idx]    <= cur_we;
+                        tg_amo[tg_free_idx]   <= cur_amo;
+                        tg_aop[tg_free_idx]   <= cur_aop;
+                        tg_cmp[tg_free_idx]   <= cur_cmp;
                         tg_be[tg_free_idx]    <= cur_be;
                         tg_wdata[tg_free_idx] <= cur_wdata;
                         tg_wsel[tg_free_idx]  <= cur_wsel;
@@ -623,7 +686,21 @@ module tnca_nuca_slice #(
                     t_cur    = ms_head[cur_ms];
                     fill_set = ms_set[cur_ms];
                     fill_way = ms_way[cur_ms];
-                    if (tg_we[t_cur]) begin
+                    if (tg_amo[t_cur]) begin
+                        merged   = data_mem[fill_set*WAYS + fill_way];
+                        amo_word = merged[tg_wsel[t_cur]*WORD_BITS +: WORD_BITS];
+                        amo_res  = amo_new(tg_aop[t_cur], tg_be[t_cur], amo_word,
+                                           tg_wdata[t_cur], tg_cmp[t_cur]);
+                        if (tg_aop[t_cur] != `TNCA_AOP_LD) begin
+                            for (i = 0; i < WORD_BYTES; i = i + 1)
+                                if (tg_be[t_cur][i])
+                                    merged[(tg_wsel[t_cur]*WORD_BYTES + i)*8 +: 8] =
+                                        amo_res[i*8 +: 8];
+                            data_mem[fill_set*WAYS + fill_way] <= merged;
+                            d_bits[fill_set*WAYS + fill_way]   <= 1'b1;
+                        end
+                        push_data = amo_word;          // the whole old word
+                    end else if (tg_we[t_cur]) begin
                         merged = data_mem[fill_set*WAYS + fill_way];
                         for (i = 0; i < WORD_BYTES; i = i + 1)
                             if (tg_be[t_cur][i])

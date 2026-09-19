@@ -316,6 +316,47 @@
 `define TNCA_L_VGATHER       8'h20
 `define TNCA_L_VSCATTER      8'h28
 
+// Atomic / fence, ISA sec 9.2 (major 0x21)
+`define TNCA_AT_ADD          8'h00
+`define TNCA_AT_AND          8'h01
+`define TNCA_AT_OR           8'h02
+`define TNCA_AT_XOR          8'h03
+`define TNCA_AT_XCHG         8'h04
+`define TNCA_AT_MIN_S        8'h05
+`define TNCA_AT_MAX_S        8'h06
+`define TNCA_AT_MIN_U        8'h07
+`define TNCA_AT_MAX_U        8'h08
+`define TNCA_AT_CAS          8'h10
+`define TNCA_AT_LD           8'h18
+`define TNCA_AT_ST           8'h19
+`define TNCA_AT_FENCE        8'h20
+
+// The op the memory carries. Deliberately a separate, dense encoding from the
+// `func` above: it travels on every request flit, so it is four bits and not
+// eight, and the mapping lives in one place (tnca_decoder).
+`define TNCA_AOP_W           4
+`define TNCA_AOP_ADD         4'd0
+`define TNCA_AOP_AND         4'd1
+`define TNCA_AOP_OR          4'd2
+`define TNCA_AOP_XOR         4'd3
+`define TNCA_AOP_XCHG        4'd4
+`define TNCA_AOP_MIN_S       4'd5
+`define TNCA_AOP_MAX_S       4'd6
+`define TNCA_AOP_MIN_U       4'd7
+`define TNCA_AOP_MAX_U       4'd8
+`define TNCA_AOP_CAS         4'd9
+`define TNCA_AOP_LD          4'd10
+`define TNCA_AOP_ST          4'd11
+
+// mod fields, ISA sec 9.2
+`define TNCA_AMO_ORD_RLX     2'd0
+`define TNCA_AMO_ORD_ACQ     2'd1
+`define TNCA_AMO_ORD_REL     2'd2
+`define TNCA_AMO_ORD_AR      2'd3
+`define TNCA_AMO_SCOPE_CORE  2'd0
+`define TNCA_AMO_SCOPE_DEV   2'd1
+`define TNCA_AMO_SCOPE_SYS   2'd2
+
 `define TNCA_SZ_B            3'd0
 `define TNCA_SZ_H            3'd1
 `define TNCA_SZ_W            3'd2

@@ -89,7 +89,13 @@ module tnca_decoder (
     output reg          o_mem_indexed, // gather / scatter
     output reg  [2:0]   o_mem_size,
     output reg          o_mem_signed,
-    output reg  [1:0]   o_mem_hint
+    output reg  [1:0]   o_mem_hint,
+
+    // ---- atomic (ISA sec 9.2) ------------------------------------------------
+    output reg          o_amo,         // this memory op is an atomic RMW
+    output reg  [`TNCA_AOP_W-1:0] o_aop,
+    output reg          o_amo_cas,     // needs the third operand
+    output reg          o_is_fence
 );
 
     // --------------------------------------------------------------------------
@@ -210,6 +216,10 @@ module tnca_decoder (
         o_mem_size    = 3'd0;
         o_mem_signed  = 1'b0;
         o_mem_hint    = 2'd0;
+        o_amo         = 1'b0;
+        o_aop         = {`TNCA_AOP_W{1'b0}};
+        o_amo_cas     = 1'b0;
+        o_is_fence    = 1'b0;
 
         u_d = 1'b0; u_a = 1'b0; u_b = 1'b0; u_c = 1'b0;
         u_imm16 = 1'b0; u_imm24 = 1'b0; u_pred = 1'b0;
@@ -688,13 +698,87 @@ module tnca_decoder (
                 `TNCA_DEC_DST_A `TNCA_DEC_SRC_SC
                 o_va_idx = f_a; u_a = 1'b1;
                 o_vb_idx = f_b; u_b = 1'b1;
-                u_mod = 10'h00f;
+                u_mod = 10'h01f;
                 // dtype 0..3 are FP16, BF16, E5M2, E4M3 (ISA sec 9C); all
                 // four are implemented, so only the K encoding has a hole.
-                bad = bad | (f_mod[1:0] == 2'd3);       // K reserved
+                //
+                // mod[4] asks for the source-free event on the barrier whose
+                // token is in Sc+1. Sc = S63 is refused for the same reason
+                // sec 9E refuses it for a transfer's coordinates: the next
+                // index is S0, which reads as zero and discards writes, so the
+                // second token could not be written at all and the command
+                // would signal a barrier the program never armed.
+                bad = bad | (f_mod[1:0] == 2'd3)        // K reserved
+                          | (f_mod[4] && (f_c[5:0] == 6'd63));
             end
             default: bad = 1'b1;
             endcase
+        end
+
+        //======================================================================
+        // 0x21 -- Atomic / fence (ISA sec 9.2)
+        //
+        // An atomic is a scalar memory operation that both writes and returns,
+        // so it rides the LSU's scalar path with o_amo set. The value it
+        // returns is the OLD one, which is why the destination is a scalar
+        // register and the completion looks exactly like a load's.
+        //======================================================================
+        `TNCA_MAJ_ATOM: begin
+            o_fu       = `TNCA_FU_LSU;
+            u_mod      = 10'h07f;
+            // size 4B or 8B only; 1B and 2B atomics are not allocated because
+            // the slice's word is 8 bytes and a sub-word RMW would need a read
+            // path this design does not have.
+            bad = bad | (f_mod[2:0] != `TNCA_SZ_W && f_mod[2:0] != `TNCA_SZ_D)
+                      | (f_mod[6:5] == 2'd3);
+
+            if (f_func == `TNCA_AT_FENCE) begin
+                // A fence names no register and moves no data. Its scope and
+                // order live in mod; size is meaningless, so it is not checked.
+                o_is_fence = 1'b1;
+                o_fu       = `TNCA_FU_SALU;
+                u_mod      = 10'h078;
+                bad        = (f_mod[6:5] == 2'd3);
+                `TNCA_DEC_MASK
+            end else begin
+                o_mem_en   = 1'b1;
+                o_mem_size = f_mod[2:0];
+                o_amo      = 1'b1;
+                `TNCA_DEC_MASK
+                case (f_func)
+                `TNCA_AT_ADD:   o_aop = `TNCA_AOP_ADD;
+                `TNCA_AT_AND:   o_aop = `TNCA_AOP_AND;
+                `TNCA_AT_OR:    o_aop = `TNCA_AOP_OR;
+                `TNCA_AT_XOR:   o_aop = `TNCA_AOP_XOR;
+                `TNCA_AT_XCHG:  o_aop = `TNCA_AOP_XCHG;
+                `TNCA_AT_MIN_S: o_aop = `TNCA_AOP_MIN_S;
+                `TNCA_AT_MAX_S: o_aop = `TNCA_AOP_MAX_S;
+                `TNCA_AT_MIN_U: o_aop = `TNCA_AOP_MIN_U;
+                `TNCA_AT_MAX_U: o_aop = `TNCA_AOP_MAX_U;
+                `TNCA_AT_CAS:   o_aop = `TNCA_AOP_CAS;
+                `TNCA_AT_LD:    o_aop = `TNCA_AOP_LD;
+                `TNCA_AT_ST:    o_aop = `TNCA_AOP_ST;
+                default:        bad = 1'b1;
+                endcase
+
+                case (f_func)
+                `TNCA_AT_LD: begin
+                    `TNCA_DEC_DST_S `TNCA_DEC_SRC_SA
+                end
+                `TNCA_AT_ST: begin
+                    // No destination: an atomic store returns nothing.
+                    `TNCA_DEC_SRC_SA `TNCA_DEC_SRC_SB
+                end
+                `TNCA_AT_CAS: begin
+                    o_amo_cas = 1'b1;
+                    `TNCA_DEC_DST_S `TNCA_DEC_SRC_SA `TNCA_DEC_SRC_SB
+                    `TNCA_DEC_SRC_SC
+                end
+                default: begin
+                    `TNCA_DEC_DST_S `TNCA_DEC_SRC_SA `TNCA_DEC_SRC_SB
+                end
+                endcase
+            end
         end
 
         //======================================================================

@@ -34,8 +34,9 @@ CAP = {
 
 # What this build implements. Anything not listed must read 0, and its
 # encodings must raise ILLEGAL_INSTRUCTION -- t05_fault covers that direction.
-IMPLEMENTED = ['VECTOR_FP32', 'GATHER_SCATTER', 'MATRIX_F16', 'MATRIX_BF16',
-               'MATRIX_FP8', 'TENSOR_DMA', 'MBARRIER']
+IMPLEMENTED = ['VECTOR_FP32', 'GATHER_SCATTER', 'ATOMICS_DEVICE',
+               'MATRIX_F16', 'MATRIX_BF16', 'MATRIX_FP8',
+               'TENSOR_DMA', 'MBARRIER']
 if HAS_SFU:
     IMPLEMENTED.append('SFU')
 
@@ -47,6 +48,7 @@ SRC_BASE  = 0x4000      # 16x16 FP16, every element 1.0
 DESC_BASE = 0x5000      # its TensorMap
 IDX_BASE  = 0x5200      # gather offsets
 VAL_BASE  = 0x5300      # gather payload
+ATOM_BASE = 0x5400      # one doubleword the atomic works on
 
 ROWS = COLS = 16
 HALF_ONE = 0x3C00       # FP16 1.0
@@ -110,6 +112,21 @@ if HAS_SFU:
     w(f"    .assert_lane v2, #0, #0x3f000000, #{n}")
     n += 1
     w("")
+
+# ---- bit 3: ATOMICS_DEVICE -------------------------------------------------
+w("    // bit 3 ATOMICS_DEVICE -- a real read-modify-write, old value returned")
+w(f"    .li       s20, #{ATOM_BASE}")
+w("    .li       s21, #100")
+w("    s.st.d    [s20, #0], s21")
+w("    .li       s22, #7")
+w("    atom.add.d.acq_rel.device s23, [s20], s22")
+w(f"    .assert_eq s23, #100, #{n}        // the OLD value")
+n += 1
+w("    s.ld.d    s24, [s20, #0]")
+w(f"    .assert_eq s24, #107, #{n}        // and the sum is in memory")
+n += 1
+w("    fence.acq_rel.device")
+w("")
 
 # ---- bit 2: GATHER_SCATTER ------------------------------------------------
 w("    // bit 2 GATHER_SCATTER -- native per-lane addressing")

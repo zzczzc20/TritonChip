@@ -61,6 +61,11 @@ module tnca_core #(
     // tb_sfu_xls and tb_sfu_core -- so it is on by default. Building with 0
     // leaves the encodings raising ILLEGAL_INSTRUCTION and removes the slice.
     parameter HAS_SFU        = 1,
+    // ISA sec 9.2. Device-scope atomics execute at the home slice, which is
+    // why they could not exist before Stage 3. System scope needs a second
+    // device to be a scope at all, and there is none.
+    parameter HAS_ATOMICS    = 1,
+    parameter HAS_SYS_ATOMICS = 0,
     parameter FP_LAT         = 2,          // tnca_vector_fpu result delay, in cycles
     parameter SFU_LAT        = 6,          // rtl/gen/tnca_sfu_*_xls.v latency
     parameter MUL_LAT        = 3,          // tnca_mul64 result delay, in cycles
@@ -122,6 +127,9 @@ module tnca_core #(
     output wire [MEM_DW-1:0]        mem_req_wdata,
     output wire [LSU_TAG_W-1:0]     mem_req_tag,
     output wire [1:0]               mem_req_hint,
+    output wire                     mem_req_amo,
+    output wire [3:0]               mem_req_aop,
+    output wire [MEM_DW-1:0]        mem_req_cmp,
     input  wire                     mem_rsp_valid,
     input  wire [LSU_TAG_W-1:0]     mem_rsp_tag,
     input  wire [MEM_DW-1:0]        mem_rsp_rdata,
@@ -221,6 +229,10 @@ module tnca_core #(
         reg [2:0]            p``_mem_size;   \
         reg                  p``_mem_signed; \
         reg [1:0]            p``_mem_hint;   \
+        reg                  p``_amo;        \
+        reg [`TNCA_AOP_W-1:0] p``_aop;       \
+        reg                  p``_amo_cas;    \
+        reg                  p``_is_fence;   \
         reg                  p``_illegal;
 
     `TNCA_BUNDLE(r)
@@ -239,6 +251,17 @@ module tnca_core #(
     // issue slots and memory bandwidth that the producer it is waiting for
     // needs.
     reg [NUM_RCTX-1:0] blocked;
+
+    // Roles this launch started. Latched, not derived from `running`, which
+    // drops a context as soon as it exits.
+    reg [NUM_RCTX-1:0] launched;
+    reg [5:0]          n_active;
+    integer na_i;
+    always @(*) begin
+        n_active = 6'd0;
+        for (na_i = 0; na_i < NUM_RCTX; na_i = na_i + 1)
+            if (launched[na_i]) n_active = n_active + 6'd1;
+    end
     wire [NUM_RCTX-1:0] fetchable = running & ~faulted & ~blocked;
 
     always @(*) begin
@@ -254,6 +277,34 @@ module tnca_core #(
     end
 
     assign imem_addr = pc[f_sel];
+
+    //==========================================================================
+    // The instruction memory is SYNCHRONOUS (ISA-neutral, but it is what a
+    // real SRAM is): the address presented this cycle returns its word on the
+    // next. So there is one stage between choosing a PC and holding an
+    // instruction, and a one-deep buffer behind it -- a stalled D cannot
+    // refuse a word that is already on its way.
+    //
+    //   f1_*   a fetch is in flight; its word is on imem_data next cycle
+    //   fb_*   a word arrived while D was stalled, and is waiting for it
+    //
+    // No fetch is issued while the buffer is occupied, so the two are never
+    // both full and one entry is enough. `avail_*` is whichever of them holds
+    // D's next instruction.
+    //==========================================================================
+    reg              f1_valid;
+    reg [RCTX_W-1:0] f1_rctx;
+    reg [63:0]       f1_pc;
+
+    reg              fb_valid;
+    reg [RCTX_W-1:0] fb_rctx;
+    reg [63:0]       fb_pc;
+    reg [63:0]       fb_insn;
+
+    wire              avail      = fb_valid | f1_valid;
+    wire [RCTX_W-1:0] avail_rctx = fb_valid ? fb_rctx : f1_rctx;
+    wire [63:0]       avail_pc   = fb_valid ? fb_pc   : f1_pc;
+    wire [63:0]       avail_insn = fb_valid ? fb_insn : imem_data;
 
     //==========================================================================
     // D: decode
@@ -281,6 +332,8 @@ module tnca_core #(
     wire        dec_mem_en, dec_mem_store, dec_mem_vector, dec_mem_indexed, dec_mem_signed;
     wire [2:0]  dec_mem_size;
     wire [1:0]  dec_mem_hint;
+    wire        dec_amo, dec_amo_cas, dec_is_fence;
+    wire [`TNCA_AOP_W-1:0] dec_aop;
 
     tnca_decoder u_dec (
         .insn(d_insn),
@@ -306,7 +359,9 @@ module tnca_core #(
         .o_mem_en(dec_mem_en), .o_mem_store(dec_mem_store),
         .o_mem_vector(dec_mem_vector), .o_mem_indexed(dec_mem_indexed),
         .o_mem_size(dec_mem_size), .o_mem_signed(dec_mem_signed),
-        .o_mem_hint(dec_mem_hint)
+        .o_mem_hint(dec_mem_hint),
+        .o_amo(dec_amo), .o_aop(dec_aop), .o_amo_cas(dec_amo_cas),
+        .o_is_fence(dec_is_fence)
     );
 
     // Implementation limits are checked here, not in the decoder: the decoder
@@ -325,7 +380,18 @@ module tnca_core #(
     wire wrspecial_unsupported = (dec_major == `TNCA_MAJ_SYS) &&
                                  (dec_func  == `TNCA_SYS_WRSPECIAL);
 
-    wire d_illegal = dec_illegal | vreg_oob | sfu_unsupported | wrspecial_unsupported;
+    // ISA sec 9.2 and sec 12.9: system scope is legal only when
+    // CAPABILITY0.SYSTEM_ATOMICS is set. Refusing it is the point -- silently
+    // executing a system-scope atomic at device scope would give a program
+    // that needs the wider scope a right answer here and a wrong one on a
+    // machine with more than one device in it.
+    wire atomic_unsupported =
+        (dec_major == `TNCA_MAJ_ATOM) &&
+        (((HAS_ATOMICS == 0)) ||
+         ((dec_mod[6:5] == `TNCA_AMO_SCOPE_SYS) && (HAS_SYS_ATOMICS == 0)));
+
+    wire d_illegal = dec_illegal | vreg_oob | sfu_unsupported
+                   | wrspecial_unsupported | atomic_unsupported;
 
     //==========================================================================
     // Register files (read in X)
@@ -368,7 +434,15 @@ module tnca_core #(
         .ra_rctx(x_rctx), .ra_idx(x_sa_idx), .ra_data(sa_data),
         .rb_rctx(x_rctx), .rb_idx(x_sb_idx), .rb_data(sb_data),
         .rc_rctx(x_rctx), .rc_idx(x_sc_idx), .rc_data(sc_data),
-        .rd_rctx(x_rctx), .rd_idx(x_sb_idx + 6'd1), .rd_data(sb2_raw),
+        // One extra scalar read port, shared by the two instructions that read
+        // a consecutive pair: a transfer's coordinates start at Sb (sec 9E)
+        // and m.mma.async's second barrier token is at Sc+1 (sec 9C). They are
+        // different functional units and never issue in the same cycle, so one
+        // port serves both and the index is chosen by the opcode.
+        .rd_rctx(x_rctx),
+        .rd_idx((x_major == `TNCA_MAJ_MATRIX) ? (x_sc_idx + 6'd1)
+                                              : (x_sb_idx + 6'd1)),
+        .rd_data(sb2_raw),
         .w_en(w_en && (w_class == `TNCA_DST_S)),
         .w_rctx(w_rctx), .w_idx(w_idx[5:0]), .w_data(w_sdata)
     );
@@ -457,8 +531,10 @@ module tnca_core #(
     // needs the same dependency check as any other source. Leaving it out would
     // let a transfer read a coordinate its producer had not written yet -- and
     // the wrong address is a wrong answer, not a slow one.
-    wire [5:0] r_sb2_idx = r_sb_idx + 6'd1;
-    wire r_reads_sb2 = r_valid && (r_major == `TNCA_MAJ_TXFER);
+    wire r_mma_sf = r_valid && (r_major == `TNCA_MAJ_MATRIX)
+                            && (r_func == `TNCA_M_MMA) && r_mod[4];
+    wire [5:0] r_sb2_idx = r_mma_sf ? (r_sc_idx + 6'd1) : (r_sb_idx + 6'd1);
+    wire r_reads_sb2 = (r_valid && (r_major == `TNCA_MAJ_TXFER)) | r_mma_sf;
     wire hz_sb2 = r_reads_sb2 && `SB_S_BUSY(r_rctx, r_sb2_idx)
                               && !`AVAIL_S(r_rctx, r_sb2_idx);
 
@@ -622,6 +698,8 @@ module tnca_core #(
     wire [BAR_W-1:0] bar_fault_bar;
 
     wire        mtx_busy, mtx_done, mtx_done_bar_en;
+    wire        mtx_free;
+    wire [BAR_W-1:0] mtx_free_bar;
     wire [ACC_W-1:0] mtx_done_slot;
     wire [BAR_W-1:0] mtx_done_bar;
     wire [7:0]  mtx_vrf_addr;
@@ -661,6 +739,11 @@ module tnca_core #(
         .cmd_va(x_va_idx), .cmd_vb(x_vb_idx),
         .cmd_k(x_mod[1:0]), .cmd_dt(x_mod[3:2]),
         .cmd_bar_en(mtx_bar_en), .cmd_bar(mtx_bar),
+        // ISA sec 9C mod[4]: also signal source-free, on the barrier whose
+        // token sits in Sc+1.
+        .cmd_sf_en((x_major == `TNCA_MAJ_MATRIX) && (x_func == `TNCA_M_MMA)
+                   && x_mod[4]),
+        .cmd_sf_bar(sb2_raw[BAR_W-1:0]),
         .cmd_rowop(mtx_rowop), .cmd_row(sa_data[ACC_ROW_W-1:0]),
         .cmd_vdata(vb_data), .cmd_scale(mtx_scale), .cmd_mask(lane_mask),
         .busy(mtx_busy),
@@ -668,7 +751,8 @@ module tnca_core #(
         .ard_slot(x_ra_idx[ACC_W-1:0]), .ard_row(sb_data[ACC_ROW_W-1:0]),
         .ard_data(acc_rd_data),
         .done(mtx_done), .done_slot(mtx_done_slot),
-        .done_bar_en(mtx_done_bar_en), .done_bar(mtx_done_bar)
+        .done_bar_en(mtx_done_bar_en), .done_bar(mtx_done_bar),
+        .src_free(mtx_free), .src_free_bar(mtx_free_bar)
     );
 
     tnca_barrier #(
@@ -688,6 +772,7 @@ module tnca_core #(
         // One port per engine. Sharing one dropped whichever completion lost
         // the mux when both finished in the same cycle.
         .mtx_done_en(mtx_done && mtx_done_bar_en), .mtx_done_bar(mtx_done_bar),
+        .mtx_free_en(mtx_free), .mtx_free_bar(mtx_free_bar),
         .txf_done_en(txf_done && txf_done_bar_en), .txf_done_bar(txf_done_bar),
         .txf_done_err(txf_done_err),
         .inval_en(x_is_bar && (x_func == `TNCA_MB_INVAL)),
@@ -721,7 +806,18 @@ module tnca_core #(
     wire [VLEN*ELEN-1:0] lsu_cpl_vdata;
     wire [VLEN-1:0]      lsu_cpl_lane_en;
 
-    wire x_mem_go = x_valid && x_mem_en && !x_kill;
+    // ISA sec 9.2: an atomic must be naturally aligned. The LSU splits an
+    // unaligned ordinary access across two words, which is legal and merely
+    // slow; for an atomic it is the one thing that cannot be done at all, so
+    // the encoding faults rather than quietly performing two separate
+    // read-modify-writes.
+    wire [63:0] x_amo_addr = sa_data;
+    wire x_amo_misaligned = x_amo &&
+        ((x_mem_size == `TNCA_SZ_D) ? (x_amo_addr[2:0] != 3'd0)
+                                    : (x_amo_addr[1:0] != 2'd0));
+    wire x_access_fault = x_valid && !x_kill && x_amo_misaligned;
+
+    wire x_mem_go = x_valid && x_mem_en && !x_kill && !x_access_fault;
 
     wire                 lm_req_valid, lm_req_ready, lm_req_we;
     wire [63:0]          lm_req_addr;
@@ -729,6 +825,9 @@ module tnca_core #(
     wire [MEM_DW-1:0]    lm_req_wdata;
     wire [CTAG_W-1:0]    lm_req_tag;
     wire [1:0]           lm_req_hint;
+    wire                 lm_req_amo;
+    wire [3:0]           lm_req_aop;
+    wire [63:0]          lm_req_cmp;
     wire                 lm_rsp_valid;
     wire [CTAG_W-1:0]    lm_rsp_tag;
     wire [MEM_DW-1:0]    lm_rsp_rdata;
@@ -746,7 +845,10 @@ module tnca_core #(
         .req_signed(x_mem_signed), .req_hint(x_mem_hint),
         .req_base(sa_data), .req_offset(x_imm),
         .req_index(vb_data),
-        .req_sdata(sb_data),
+        // atom.cas swaps in Sc and compares against Sb; every other atomic
+        // has one operand and takes Sb.
+        .req_sdata(x_amo_cas ? sc_data : sb_data),
+        .req_amo(x_amo), .req_aop(x_aop), .req_cmp(sb_data),
         .req_vdata(x_mem_indexed ? vc_data : vb_data),
         .req_mask(lane_mask),
         .req_rctx(x_rctx), .req_dst_class(x_dstc), .req_dst_idx(x_dsti),
@@ -758,6 +860,8 @@ module tnca_core #(
         .mem_req_addr(lm_req_addr), .mem_req_we(lm_req_we),
         .mem_req_be(lm_req_be), .mem_req_wdata(lm_req_wdata),
         .mem_req_tag(lm_req_tag), .mem_req_hint(lm_req_hint),
+        .mem_req_amo(lm_req_amo), .mem_req_aop(lm_req_aop),
+        .mem_req_cmp(lm_req_cmp),
         .mem_rsp_valid(lm_rsp_valid), .mem_rsp_tag(lm_rsp_tag),
         .mem_rsp_rdata(lm_rsp_rdata)
     );
@@ -770,6 +874,7 @@ module tnca_core #(
         .a_req_addr(lm_req_addr), .a_req_we(lm_req_we),
         .a_req_be(lm_req_be), .a_req_wdata(lm_req_wdata),
         .a_req_tag(lm_req_tag), .a_req_hint(lm_req_hint),
+        .a_req_amo(lm_req_amo), .a_req_aop(lm_req_aop), .a_req_cmp(lm_req_cmp),
         .a_rsp_valid(lm_rsp_valid), .a_rsp_tag(lm_rsp_tag),
         .a_rsp_rdata(lm_rsp_rdata),
         .b_req_valid(tm_req_valid), .b_req_ready(tm_req_ready),
@@ -782,6 +887,7 @@ module tnca_core #(
         .m_req_addr(mem_req_addr), .m_req_we(mem_req_we),
         .m_req_be(mem_req_be), .m_req_wdata(mem_req_wdata),
         .m_req_tag(mem_req_tag), .m_req_hint(mem_req_hint),
+        .m_req_amo(mem_req_amo), .m_req_aop(mem_req_aop), .m_req_cmp(mem_req_cmp),
         .m_rsp_valid(mem_rsp_valid), .m_rsp_tag(mem_rsp_tag),
         .m_rsp_rdata(mem_rsp_rdata)
     );
@@ -936,7 +1042,13 @@ module tnca_core #(
         `TNCA_SPEC_NPID_Y:    spec_rd = {32'd0, npid_y};
         `TNCA_SPEC_NPID_Z:    spec_rd = {32'd0, npid_z};
         `TNCA_SPEC_ROLE_ID:   spec_rd = {{(64-RCTX_W){1'b0}}, x_rctx};
-        `TNCA_SPEC_NUM_ROLES: spec_rd = NUM_RCTX;
+        // ISA sec 5.1: the ACTIVE count for this launch, not the core's
+        // architectural NUM_RCTX. Reporting the architectural count was wrong
+        // and only looked right because every test launched every context.
+        // A program that synchronises across roles -- which is the whole
+        // reason the register exists -- would then wait for a context the
+        // launch never started, and hang. t24_amo_mesh found this.
+        `TNCA_SPEC_NUM_ROLES: spec_rd = {58'd0, n_active};
         `TNCA_SPEC_CORE_ID:   spec_rd = CORE_ID;
         `TNCA_SPEC_NUM_CORES: spec_rd = NUM_CORES;
         `TNCA_SPEC_NUM_LANES: spec_rd = VLEN;
@@ -954,6 +1066,8 @@ module tnca_core #(
         `TNCA_SPEC_CAP0:      spec_rd = (64'd1 << `TNCA_CAP_VECTOR_FP32)
                                       | (HAS_SFU ? (64'd1 << `TNCA_CAP_SFU) : 64'd0)
                                       | (64'd1 << `TNCA_CAP_GATHER)
+                                      | (HAS_ATOMICS ? (64'd1 << `TNCA_CAP_ATOM_DEV) : 64'd0)
+                                      | (HAS_SYS_ATOMICS ? (64'd1 << `TNCA_CAP_ATOM_SYS) : 64'd0)
                                       | (64'd1 << `TNCA_CAP_MATRIX_F16)
                                       | (64'd1 << `TNCA_CAP_MATRIX_BF16)
                                       | (64'd1 << `TNCA_CAP_MATRIX_FP8)
@@ -981,7 +1095,7 @@ module tnca_core #(
 
     wire x_redirect = x_valid && !x_kill &&
                       ((x_is_branch && br_taken) || x_is_exit || x_is_trap ||
-                       x_illegal || bar_sleep);
+                       x_illegal || x_access_fault || bar_sleep);
 
     //==========================================================================
     // X result mux
@@ -1144,6 +1258,21 @@ module tnca_core #(
     wire stall_mtx = r_needs_mtx && !mtx_free_next;
 
     wire stall_lsu = r_needs_lsu && !lsu_free_next;
+
+    // ISA sec 9.2 `fence`. Every access this core has issued is complete at its
+    // home slice once the LSU is drained: the LSU waits for a response to a
+    // store as well as to a load, and the home slice is where the order between
+    // cores is established (sec 14.1). So draining the LSU *is* the fence at
+    // core and device scope, and there is nothing further to do -- which is
+    // worth saying, because a fence that expanded to nothing would look the
+    // same from outside and would not be the same thing.
+    //
+    // Asynchronous transfers are deliberately not covered: `t.*.async`
+    // completes against an mbarrier (sec 9E.1 step 8), and a fence that also
+    // waited for them would make the barrier redundant and the fence
+    // unpredictably long.
+    wire stall_fence = r_valid && r_is_fence
+                    && (!lsu_req_ready || lsu_cpl_valid || rctx_wr_busy[r_rctx]);
     wire stall_fpu = (r_is_fpnorm && red_busy_next)
                    | (r_is_fpmc   && (red_busy_next || fp_inflight || x_is_fpnorm));
 
@@ -1161,6 +1290,7 @@ module tnca_core #(
     wire stall_rsv = r_books_wb && wb_rsv[r_wb_delay + 4'd1];
 
     wire stall_front = hazard | stall_lsu | stall_fpu | stall_mtx | stall_txf
+                     | stall_fence
                      | stall_arrive | stall_rsv | wb_steal;
 
     // A redirect kills only the younger entries of the same RCTX.
@@ -1168,6 +1298,15 @@ module tnca_core #(
     wire [RCTX_W-1:0] squash_rctx = x_rctx;
     wire kill_f = squash_en && f_hit  && (f_sel  == squash_rctx);
     wire kill_d = squash_en && d_valid && (d_rctx == squash_rctx);
+    // The in-flight fetch and the buffered word are younger than X, so a
+    // redirect kills them on the same rule.
+    wire kill_f1 = squash_en && f1_valid && (f1_rctx == squash_rctx);
+    wire kill_fb = squash_en && fb_valid && (fb_rctx == squash_rctx);
+    wire kill_av = fb_valid ? kill_fb : kill_f1;
+
+    // Issue a fetch unless the buffer is full, or a word is already arriving
+    // into a front end that is stalled and would have nowhere to put a second.
+    wire f_issue = f_hit && !fb_valid && !(stall_front && f1_valid);
     wire kill_r = squash_en && r_valid && (r_rctx == squash_rctx);
 
     // x_kill is never set in this design (X is the oldest in-flight entry), but
@@ -1184,6 +1323,7 @@ module tnca_core #(
             r_valid    <= 1'b0;
             x_valid    <= 1'b0;
             running    <= {NUM_RCTX{1'b0}};
+            launched   <= {NUM_RCTX{1'b0}};
             faulted    <= {NUM_RCTX{1'b0}};
             rr_ptr     <= {RCTX_W{1'b0}};
             sb_s       <= {(NUM_RCTX*64){1'b0}};
@@ -1282,6 +1422,7 @@ module tnca_core #(
                     instret[i] <= 64'd0;
                 end
                 running  <= launch_role_mask;
+                launched <= launch_role_mask;
                 faulted  <= {NUM_RCTX{1'b0}};
                 pid_x    <= launch_pid_x;
                 pid_y    <= launch_pid_y;
@@ -1298,6 +1439,8 @@ module tnca_core #(
                 wb_rsv   <= {WB_DEPTH{1'b0}};
                 for (i = 0; i < FP_LAT; i = i + 1)  fp_v[i] <= 1'b0;
                 for (i = 0; i < MUL_LAT; i = i + 1) mu_v[i] <= 1'b0;
+                f1_valid <= 1'b0;
+                fb_valid <= 1'b0;
                 sb_s     <= {(NUM_RCTX*64){1'b0}};
                 sb_v     <= {(NUM_RCTX*VREGS_PER_RCTX){1'b0}};
                 sb_p     <= {(NUM_RCTX*16){1'b0}};
@@ -1307,17 +1450,39 @@ module tnca_core #(
             end else begin
 
             //------------------------------------------------------------------
+            // F: issue an address, and hold what comes back
+            //
+            // These run whether or not the front end is stalled, because the
+            // memory does: a word whose address went out last cycle arrives
+            // this one regardless of what D is doing with it.
+            //------------------------------------------------------------------
+            f1_valid <= f_issue && !kill_f;
+            if (f_issue) begin
+                f1_rctx <= f_sel;
+                f1_pc   <= pc[f_sel];
+                rr_ptr  <= (f_sel + 1) % NUM_RCTX;
+                if (!kill_f) pc[f_sel] <= pc[f_sel] + 64'd8;
+            end
+
+            if (!stall_front) begin
+                fb_valid <= 1'b0;                  // D took whatever was there
+            end else if (f1_valid && !fb_valid) begin
+                fb_valid <= !kill_f1;
+                fb_rctx  <= f1_rctx;
+                fb_pc    <= f1_pc;
+                fb_insn  <= imem_data;
+            end else if (kill_fb) begin
+                fb_valid <= 1'b0;
+            end
+
+            //------------------------------------------------------------------
             // F -> D
             //------------------------------------------------------------------
             if (!stall_front) begin
-                d_valid <= f_hit && !kill_f;
-                d_rctx  <= f_sel;
-                d_pc    <= pc[f_sel];
-                d_insn  <= imem_data;
-                if (f_hit) begin
-                    rr_ptr <= (f_sel + 1) % NUM_RCTX;
-                    if (!kill_f) pc[f_sel] <= pc[f_sel] + 64'd8;
-                end
+                d_valid <= avail && !kill_av;
+                d_rctx  <= avail_rctx;
+                d_pc    <= avail_pc;
+                d_insn  <= avail_insn;
             end else if (kill_d) begin
                 // The entry HELD in D is the one at risk here, so the test is
                 // on d_rctx (kill_d), not on which context the fetch stage
@@ -1372,6 +1537,10 @@ module tnca_core #(
                 r_mem_size   <= dec_mem_size;
                 r_mem_signed <= dec_mem_signed;
                 r_mem_hint   <= dec_mem_hint;
+                r_amo        <= dec_amo;
+                r_aop        <= dec_aop;
+                r_amo_cas    <= dec_amo_cas;
+                r_is_fence   <= dec_is_fence;
                 r_illegal    <= d_illegal;
             end else if (kill_r) begin
                 r_valid <= 1'b0;
@@ -1419,6 +1588,10 @@ module tnca_core #(
                 x_mem_size   <= r_mem_size;
                 x_mem_signed <= r_mem_signed;
                 x_mem_hint   <= r_mem_hint;
+                x_amo        <= r_amo;
+                x_aop        <= r_aop;
+                x_amo_cas    <= r_amo_cas;
+                x_is_fence   <= r_is_fence;
                 x_illegal    <= r_illegal;
 
                 if (r_valid && !kill_r) perf_issued <= perf_issued + 64'd1;
@@ -1542,6 +1715,17 @@ module tnca_core #(
                     // scalar register, so nothing survives the sleep.
                     blocked[x_rctx] <= 1'b1;
                     pc[x_rctx]      <= x_pc;
+                end else if (x_access_fault) begin
+                    running[x_rctx] <= 1'b0;
+                    faulted[x_rctx] <= 1'b1;
+                    f_code[x_rctx]  <= `TNCA_TRAP_ACCESS;
+                    f_pc[x_rctx]    <= x_pc;
+                    f_detail[x_rctx]<= 24'd0;
+                    fault_valid     <= 1'b1;
+                    fault_code      <= `TNCA_TRAP_ACCESS;
+                    fault_pc        <= x_pc;
+                    fault_rctx      <= x_rctx;
+                    fault_detail    <= 24'd0;
                 end else if (x_illegal) begin
                     running[x_rctx] <= 1'b0;
                     faulted[x_rctx] <= 1'b1;
@@ -1596,6 +1780,12 @@ module tnca_core #(
             if (sched_wb !== wb_rsv[0])
                 $display("FAIL tnca_core assert @%0t: reservation disagrees with reality (sched=%b rsv0=%b alu=%b fp=%b mul=%b)",
                          $time, sched_wb, wb_rsv[0], x_has_dest, fp_wb, mul_wb);
+            // One fetch buffer entry is only enough because no fetch is issued
+            // while it is occupied. If both ever hold a word, an instruction
+            // has been dropped on the floor.
+            if (f1_valid && fb_valid)
+                $display("FAIL tnca_core assert @%0t: a fetch arrived with the buffer already full (pc=%0h and %0h)",
+                         $time, f1_pc, fb_pc);
         end
     end
     // synthesis translate_on
@@ -1605,6 +1795,7 @@ module tnca_core #(
     // Idle
     //==========================================================================
     assign core_idle = (running == {NUM_RCTX{1'b0}})
+                    && !f1_valid && !fb_valid
                     && !d_valid && !r_valid && !x_valid
                     && lsu_req_ready && !lsu_cpl_valid
                     && !fpu_busy && !red_pend && !w_en

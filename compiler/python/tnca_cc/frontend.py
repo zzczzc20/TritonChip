@@ -84,6 +84,17 @@ class TTIRImporter:
     def run(self, module, func_name, arg_values):
         """`arg_values` maps parameter name -> a literal the kernel is
         compiled for (an address for a pointer, an integer for an i32)."""
+        # MLIR's get_function returns a null handle for a name that is not in
+        # the module, and the next call on it segfaults the interpreter with no
+        # message at all. A wrong kernel name is an ordinary mistake -- the
+        # Triton function is `add_kernel` and someone writes `add` -- and it
+        # has to produce a diagnostic, not a crash with nothing to read.
+        if not module.has_function(func_name):
+            raise Diagnostic(
+                f"no function {func_name!r} in the module",
+                because='the name must match the @triton.jit function exactly',
+                remedy='pass the kernel function name, e.g. "add_kernel"',
+                source='compiler_overview.md sec 11.1')
         fn = module.get_function(func_name)
         self._bind_args(fn, arg_values)
 

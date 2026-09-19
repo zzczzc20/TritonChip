@@ -11,6 +11,7 @@
 #   make tnca-opt   build the MLIR dialect and tnca-opt (needs the pinned LLVM)
 #   make core       core tests only
 #   make synth      Yosys synthesis + PPA proxy report
+#   make e2e        Triton source -> the four-tile machine -> checked numbers
 #   make xls        regenerate rtl/gen from the DSLX in xls/
 #   make xls-check  fail if rtl/gen has drifted from xls/
 #   make xls-report measure the scheduled clock period of each generated unit
@@ -58,7 +59,7 @@ SFU_VECTORS ?= 6000
 FPU_MULTI_VECTORS ?= 1500
 
 CORE_PROGS := t00_scalar t01_vector t02_mem t03_fp t04_roles t05_fault t06_alu \
-              t11_matrix t12_tensor t13_share t14_caps t15_target t16_vecadd t17_descfault t18_squash t19_waitgen0 t20_sfu t21_cvt
+              t11_matrix t12_tensor t13_share t14_caps t15_target t16_vecadd t17_descfault t18_squash t19_waitgen0 t20_sfu t21_cvt t22_atomic t23_amofault t25_mmasf
 
 # Image size in 64-bit words; must match tb_tnca_core's WORDS parameter.
 IMAGE_WORDS := 16384
@@ -70,6 +71,11 @@ ARGS_t05_fault := +allroles +expectfault=01
 # t13 needs two contexts AND an aliased vector base: that is the whole point.
 ARGS_t13_share := +allroles +aliasvrf
 ARGS_t17_descfault := +expectfault=04
+ARGS_t23_amofault := +expectfault=03
+# t15 checks target facts against the hardware, and NUM_ROLES is the count this
+# LAUNCH activated (ISA sec 5.1) rather than the core's architectural NUM_RCTX.
+# Those agree only when every context is started, so this one starts them all.
+ARGS_t15_target := +allroles
 ARGS_t18_squash := +allroles
 
 .PHONY: all test unit core synth lint clean dirs help isa target compiler
@@ -195,6 +201,13 @@ $(TB)/core/progs/t21_cvt.s: $(TB)/core/progs/gen_t21_cvt.py \
                             $(TOOLS)/model/floatfmt.py
 	$(PYTHON) $<
 
+$(TB)/core/progs/t22_atomic.s: $(TB)/core/progs/gen_t22_atomic.py
+	$(PYTHON) $<
+
+$(TB)/core/progs/t25_mmasf.s: $(TB)/core/progs/gen_t25_mmasf.py \
+                              $(TOOLS)/model/fp32.py
+	$(PYTHON) $<
+
 $(TB)/core/progs/t19_waitgen0.s: $(TB)/core/progs/gen_t19_waitgen0.py
 	$(PYTHON) $<
 
@@ -267,6 +280,8 @@ core: export ARGS_t04_roles := $(ARGS_t04_roles)
 core: export ARGS_t05_fault := $(ARGS_t05_fault)
 core: export ARGS_t13_share := $(ARGS_t13_share)
 core: export ARGS_t17_descfault := $(ARGS_t17_descfault)
+core: export ARGS_t23_amofault := $(ARGS_t23_amofault)
+core: export ARGS_t15_target := $(ARGS_t15_target)
 core: export ARGS_t18_squash := $(ARGS_t18_squash)
 core: $(BUILD)/tb_core.vvp $(CORE_HEX)
 	@for p in $(CORE_PROGS); do \
@@ -283,6 +298,8 @@ core-slowmem: export ARGS_t04_roles := $(ARGS_t04_roles)
 core-slowmem: export ARGS_t05_fault := $(ARGS_t05_fault)
 core-slowmem: export ARGS_t13_share := $(ARGS_t13_share)
 core-slowmem: export ARGS_t17_descfault := $(ARGS_t17_descfault)
+core-slowmem: export ARGS_t23_amofault := $(ARGS_t23_amofault)
+core-slowmem: export ARGS_t15_target := $(ARGS_t15_target)
 core-slowmem: export ARGS_t18_squash := $(ARGS_t18_squash)
 core-slowmem: $(CORE_HEX) $(BUILD)/tb_core_slow.vvp | dirs
 	@for p in $(CORE_PROGS); do \
@@ -302,6 +319,8 @@ core-ooo: export ARGS_t04_roles := $(ARGS_t04_roles)
 core-ooo: export ARGS_t05_fault := $(ARGS_t05_fault)
 core-ooo: export ARGS_t13_share := $(ARGS_t13_share)
 core-ooo: export ARGS_t17_descfault := $(ARGS_t17_descfault)
+core-ooo: export ARGS_t23_amofault := $(ARGS_t23_amofault)
+core-ooo: export ARGS_t15_target := $(ARGS_t15_target)
 core-ooo: export ARGS_t18_squash := $(ARGS_t18_squash)
 core-ooo: $(CORE_HEX) $(BUILD)/tb_core_ooo.vvp | dirs
 	@for p in $(CORE_PROGS); do \
@@ -358,7 +377,8 @@ mesh: $(BUILD)/tb_mesh.vvp
 #------------------------------------------------------------------------------
 # Full 2x2 system: cores, slices, mesh, DRAM
 #------------------------------------------------------------------------------
-TOP_PROGS := t10_mesh
+TOP_PROGS := t10_mesh t24_amo_mesh
+ARGS_t10_mesh := +needevict
 
 $(BUILD)/tb_top.vvp: $(TB)/top/tb_tnca_top.v $(RTL_ALL) \
                      $(TB)/common/tnca_dram_model.v | dirs
@@ -366,13 +386,15 @@ $(BUILD)/tb_top.vvp: $(TB)/top/tb_tnca_top.v $(RTL_ALL) \
 	   $(TB)/common/tnca_dram_model.v
 
 .PHONY: top
+top: export ARGS_t10_mesh := $(ARGS_t10_mesh)
 top: $(BUILD)/tb_top.vvp $(patsubst %,$(BUILD)/%.hex,$(TOP_PROGS))
 	@for p in $(TOP_PROGS); do \
+	   extra=$$(eval echo \$${ARGS_$$p}); \
 	   $(TOOLS)/run_test.sh "$$p (2x2, 1 role)" \
-	     "$(VVP) $(BUILD)/tb_top.vvp +hex=$(BUILD)/$$p.hex +maxcycles=2000000" \
+	     "$(VVP) $(BUILD)/tb_top.vvp +hex=$(BUILD)/$$p.hex +maxcycles=2000000 $$extra" \
 	     || exit 1; \
 	   $(TOOLS)/run_test.sh "$$p (2x2, all roles)" \
-	     "$(VVP) $(BUILD)/tb_top.vvp +hex=$(BUILD)/$$p.hex +maxcycles=2000000 +allroles" \
+	     "$(VVP) $(BUILD)/tb_top.vvp +hex=$(BUILD)/$$p.hex +maxcycles=2000000 +allroles $$extra" \
 	     || exit 1; \
 	 done
 
@@ -443,12 +465,23 @@ tnca-opt:
 # whatever the system Python has.
 TRITON_PYTHON ?= $(HOME)/src/tritonenv/bin/python
 
-.PHONY: triton-e2e
+.PHONY: triton-e2e e2e
 triton-e2e: $(BUILD)/tb_core.vvp
 	@if [ -x "$(TRITON_PYTHON)" ]; then \
 	   $(TRITON_PYTHON) compiler/test/test_triton_e2e.py 2>&1 | tail -4; \
 	 else \
 	   echo "  triton-e2e             SKIP   no Triton at $(TRITON_PYTHON)"; \
+	 fi
+
+# The whole flow: Triton source, through the compiler, onto the four-tile
+# machine as a grid, with the answers read back out of the machine and checked
+# in Python. `triton-e2e` above stops at one core and lets the program check
+# itself; this does not.
+e2e: $(BUILD)/tb_top.vvp
+	@if [ -x "$(TRITON_PYTHON)" ]; then \
+	   $(TRITON_PYTHON) compiler/test/test_e2e_system.py 2>&1 | tail -4; \
+	 else \
+	   echo "  e2e                    SKIP   no Triton at $(TRITON_PYTHON)"; \
 	 fi
 
 # The slow and reordering memory models, as file targets. They used to be
@@ -488,7 +521,7 @@ compiler-rtl: $(BUILD)/tb_core.vvp $(BUILD)/tb_core4.vvp \
               $(BUILD)/tb_core_slow.vvp $(BUILD)/tb_core_ooo.vvp
 	@$(PYTHON) compiler/test/run_tests.py --rtl
 
-test: lint unit compiler core compiler-rtl triton-e2e core-slowmem core-ooo nuca mesh top
+test: lint unit compiler core compiler-rtl triton-e2e core-slowmem core-ooo nuca mesh top e2e
 	@echo
 	@echo "=============================================="
 	@echo " TNCA regression: all tests passed"

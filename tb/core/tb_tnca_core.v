@@ -41,6 +41,9 @@ module tb_tnca_core;
     wire        mreq_valid, mreq_ready, mreq_we;
     wire [63:0] mreq_addr;
     wire [7:0]  mreq_be;
+    wire        mreq_amo;
+    wire [3:0]  mreq_aop;
+    wire [63:0] mreq_cmp;
     wire [63:0] mreq_wdata;
     wire        mrsp_valid;
     wire [63:0] mrsp_rdata;
@@ -82,6 +85,7 @@ module tb_tnca_core;
         .fault_pc(fault_pc), .fault_rctx(fault_rctx), .fault_detail(fault_detail),
         .imem_addr(imem_addr), .imem_data(imem_data),
         .mem_req_valid(mreq_valid), .mem_req_ready(mreq_ready),
+        .mem_req_amo(mreq_amo), .mem_req_aop(mreq_aop), .mem_req_cmp(mreq_cmp),
         .mem_req_addr(mreq_addr), .mem_req_we(mreq_we),
         .mem_req_be(mreq_be), .mem_req_wdata(mreq_wdata),
         .mem_req_tag(mreq_tag), .mem_req_hint(mreq_hint),
@@ -101,6 +105,7 @@ module tb_tnca_core;
         .req_valid(mreq_valid), .req_ready(mreq_ready),
         .req_addr(mreq_addr), .req_we(mreq_we),
         .req_be(mreq_be), .req_wdata(mreq_wdata), .req_tag(mreq_tag),
+        .req_amo(mreq_amo), .req_aop(mreq_aop), .req_cmp(mreq_cmp),
         .rsp_valid(mrsp_valid), .rsp_tag(mrsp_tag), .rsp_rdata(mrsp_rdata)
     );
 

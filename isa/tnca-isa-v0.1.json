@@ -469,6 +469,161 @@
       "maskable": true
     },
     {
+      "mnemonic": "atom.add",
+      "major": "ATOM",
+      "major_code": 33,
+      "func": 0,
+      "operands": [
+        "sd",
+        "mem_s",
+        "sb"
+      ],
+      "suffix_class": "amo",
+      "maskable": true
+    },
+    {
+      "mnemonic": "atom.and",
+      "major": "ATOM",
+      "major_code": 33,
+      "func": 1,
+      "operands": [
+        "sd",
+        "mem_s",
+        "sb"
+      ],
+      "suffix_class": "amo",
+      "maskable": true
+    },
+    {
+      "mnemonic": "atom.cas",
+      "major": "ATOM",
+      "major_code": 33,
+      "func": 16,
+      "operands": [
+        "sd",
+        "mem_s",
+        "sb",
+        "sc"
+      ],
+      "suffix_class": "amo",
+      "maskable": true
+    },
+    {
+      "mnemonic": "atom.ld",
+      "major": "ATOM",
+      "major_code": 33,
+      "func": 24,
+      "operands": [
+        "sd",
+        "mem_s"
+      ],
+      "suffix_class": "amo",
+      "maskable": true
+    },
+    {
+      "mnemonic": "atom.max.s",
+      "major": "ATOM",
+      "major_code": 33,
+      "func": 6,
+      "operands": [
+        "sd",
+        "mem_s",
+        "sb"
+      ],
+      "suffix_class": "amo",
+      "maskable": true
+    },
+    {
+      "mnemonic": "atom.max.u",
+      "major": "ATOM",
+      "major_code": 33,
+      "func": 8,
+      "operands": [
+        "sd",
+        "mem_s",
+        "sb"
+      ],
+      "suffix_class": "amo",
+      "maskable": true
+    },
+    {
+      "mnemonic": "atom.min.s",
+      "major": "ATOM",
+      "major_code": 33,
+      "func": 5,
+      "operands": [
+        "sd",
+        "mem_s",
+        "sb"
+      ],
+      "suffix_class": "amo",
+      "maskable": true
+    },
+    {
+      "mnemonic": "atom.min.u",
+      "major": "ATOM",
+      "major_code": 33,
+      "func": 7,
+      "operands": [
+        "sd",
+        "mem_s",
+        "sb"
+      ],
+      "suffix_class": "amo",
+      "maskable": true
+    },
+    {
+      "mnemonic": "atom.or",
+      "major": "ATOM",
+      "major_code": 33,
+      "func": 2,
+      "operands": [
+        "sd",
+        "mem_s",
+        "sb"
+      ],
+      "suffix_class": "amo",
+      "maskable": true
+    },
+    {
+      "mnemonic": "atom.st",
+      "major": "ATOM",
+      "major_code": 33,
+      "func": 25,
+      "operands": [
+        "mem_s",
+        "sb"
+      ],
+      "suffix_class": "amo",
+      "maskable": true
+    },
+    {
+      "mnemonic": "atom.xchg",
+      "major": "ATOM",
+      "major_code": 33,
+      "func": 4,
+      "operands": [
+        "sd",
+        "mem_s",
+        "sb"
+      ],
+      "suffix_class": "amo",
+      "maskable": true
+    },
+    {
+      "mnemonic": "atom.xor",
+      "major": "ATOM",
+      "major_code": 33,
+      "func": 3,
+      "operands": [
+        "sd",
+        "mem_s",
+        "sb"
+      ],
+      "suffix_class": "amo",
+      "maskable": true
+    },
+    {
       "mnemonic": "br",
       "major": "CTRL",
       "major_code": 2,
@@ -534,6 +689,15 @@
       "operands": [],
       "suffix_class": null,
       "maskable": false
+    },
+    {
+      "mnemonic": "fence",
+      "major": "ATOM",
+      "major_code": 33,
+      "func": 32,
+      "operands": [],
+      "suffix_class": "amo",
+      "maskable": true
     },
     {
       "mnemonic": "m.mma.async",

@@ -6,6 +6,18 @@
 //                     memory and used to preload DRAM
 //   +maxcycles=<n>
 //   +allroles         launch every role context on every tile
+//   +dump=<file>      after the run, write the machine's COHERENT view of
+//                     [dumpbase, dumpbase+8*dumpwords) as one hex word per
+//                     line. See `read_coherent` below for what that means and
+//                     why a plain DRAM dump would be wrong.
+//   +dumpbase=<hex>   byte address to start the dump at (default 0)
+//   +dumpwords=<n>    64-bit words to dump (default 0, i.e. no dump)
+//   +needevict        additionally require that the slices missed and evicted;
+//                     for programs whose whole point is cache pressure. A test
+//                     that only touches three lines should not be asked to
+//                     evict, and asking it to would mean either weakening the
+//                     check for the program that does need it or bolting a
+//                     stream onto a program that is about something else.
 //
 // The DRAM is preloaded from the same image so the program's .data lands where
 // the cache will fetch it from. The test asserts three things beyond "the
@@ -105,11 +117,13 @@ module tb_tnca_top;
     );
 
     // ---- per-tile instruction memory (sec 1.1 allows a local buffer) --------
+    // Synchronous, like the SRAM it stands for: the word for the address
+    // presented this cycle arrives on the next.
     reg [63:0] imem [0:IWORDS-1];
     integer t;
-    always @(*) begin
+    always @(posedge clk) begin
         for (t = 0; t < N; t = t + 1)
-            imem_data[t*64 +: 64] =
+            imem_data[t*64 +: 64] <=
                 imem[(imem_addr[t*64 +: 64] >> 3) % IWORDS];
     end
 
@@ -133,7 +147,49 @@ module tb_tnca_top;
         end
     end
 
-    reg [1023:0] hexfile;
+    //==========================================================================
+    // The machine's coherent view of one 64-bit word.
+    //
+    // A result a program wrote may not be in DRAM: it is in the data array of
+    // its home slice, dirty, and will stay there until something evicts it.
+    // Dumping DRAM alone would read stale bytes and call the program wrong.
+    //
+    // There is exactly one home per line and no replication (sec 10.1), so at
+    // most one slice can hold a given line -- which is what makes this search
+    // well defined rather than a guess between copies. If no slice holds it,
+    // DRAM is authoritative.
+    //
+    // This is a testbench reaching into the design, which is legitimate here
+    // and nowhere else: it is how the checker reads results out of the machine
+    // without the program under test being asked to report on itself.
+    //==========================================================================
+    //==========================================================================
+    // Reading a result out of the machine
+    //
+    // A result the program wrote may not be in DRAM: it is sitting dirty in
+    // the data array of its home slice and will stay there until something
+    // evicts it. Dumping DRAM alone would read stale bytes and call a correct
+    // program wrong.
+    //
+    // There is exactly one home per line and no replication (sec 10.1), so at
+    // most one slice can hold a given line -- which is what makes this search
+    // well defined rather than a choice between copies. If no slice has it,
+    // DRAM is authoritative.
+    //
+    // Written out four times because a generate index cannot be a variable in
+    // a hierarchical name, and inline rather than in a task because iverilog
+    // will not bind a hierarchical name from inside one.
+    //
+    // This is the bench reaching into the design, which is right here and
+    // nowhere else: it is how the checker reads results out of the machine
+    // without asking the program under test to report on itself.
+    //==========================================================================
+    integer dset, dway, didx;
+    reg [63:0] dba, dword;
+    reg        dfound;
+
+    reg [1023:0] hexfile, dumpfile;
+    integer dumpbase, dumpwords, dumpfh;
     integer maxcycles, cyc, k;
     integer tot_hit, tot_miss, tot_wb, tot_mshr_full, tot_block;
 
@@ -194,6 +250,59 @@ module tb_tnca_top;
                  tot_hit, tot_miss, tot_wb, tot_mshr_full, tot_block);
         $display("mesh: local_home=%0d remote_home=%0d", local_flits, remote_flits);
 
+        if ($value$plusargs("dump=%s", dumpfile)) begin
+            if (!$value$plusargs("dumpbase=%h", dumpbase)) dumpbase = 0;
+            if (!$value$plusargs("dumpwords=%d", dumpwords)) dumpwords = 0;
+            dumpfh = $fopen(dumpfile, "w");
+            for (k = 0; k < dumpwords; k = k + 1) begin
+                dba    = dumpbase + k*8;
+                dset   = (dba >> 6) & 63;
+                dfound = 1'b0;
+                dword  = 64'd0;
+                for (dway = 0; dway < 8; dway = dway + 1) begin
+                    didx = dset*8 + dway;
+                    if (!dfound &&
+                        dut.g_tile[0].u_tile.u_slice.v_bits[didx] &&
+                        (dut.g_tile[0].u_tile.u_slice.tag_mem[didx] ==
+                         dba[63:12])) begin
+                        dfound = 1'b1;
+                        dword  = dut.g_tile[0].u_tile.u_slice.data_mem[didx]
+                                 [dba[5:3]*64 +: 64];
+                    end
+                    if (!dfound &&
+                        dut.g_tile[1].u_tile.u_slice.v_bits[didx] &&
+                        (dut.g_tile[1].u_tile.u_slice.tag_mem[didx] ==
+                         dba[63:12])) begin
+                        dfound = 1'b1;
+                        dword  = dut.g_tile[1].u_tile.u_slice.data_mem[didx]
+                                 [dba[5:3]*64 +: 64];
+                    end
+                    if (!dfound &&
+                        dut.g_tile[2].u_tile.u_slice.v_bits[didx] &&
+                        (dut.g_tile[2].u_tile.u_slice.tag_mem[didx] ==
+                         dba[63:12])) begin
+                        dfound = 1'b1;
+                        dword  = dut.g_tile[2].u_tile.u_slice.data_mem[didx]
+                                 [dba[5:3]*64 +: 64];
+                    end
+                    if (!dfound &&
+                        dut.g_tile[3].u_tile.u_slice.v_bits[didx] &&
+                        (dut.g_tile[3].u_tile.u_slice.tag_mem[didx] ==
+                         dba[63:12])) begin
+                        dfound = 1'b1;
+                        dword  = dut.g_tile[3].u_tile.u_slice.data_mem[didx]
+                                 [dba[5:3]*64 +: 64];
+                    end
+                end
+                if (!dfound)
+                    dword = u_dram.mem[(dba >> 6)][dba[5:3]*64 +: 64];
+                $fdisplay(dumpfh, "%016h", dword);
+            end
+            $fclose(dumpfh);
+            $display("dumped %0d words from 0x%0h to %0s",
+                     dumpwords, dumpbase, dumpfile);
+        end
+
         if (cyc >= maxcycles) begin
             $display("FAIL: timeout after %0d cycles (all_idle never asserted)", cyc);
         end else if (|fault_valid) begin
@@ -204,7 +313,8 @@ module tb_tnca_top;
                              fault_pc[k*64 +: 64]);
         end else if (remote_flits == 0) begin
             $display("FAIL: no request ever left its tile -- the mesh was not tested");
-        end else if (tot_miss == 0 || tot_wb == 0) begin
+        end else if ($test$plusargs("needevict")
+                     && (tot_miss == 0 || tot_wb == 0)) begin
             $display("FAIL: slices never missed or never evicted");
         end else begin
             $display("PASS");

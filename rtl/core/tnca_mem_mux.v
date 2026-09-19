@@ -28,6 +28,11 @@ module tnca_mem_mux #(
     input  wire [MEM_DW-1:0]        a_req_wdata,
     input  wire [CTAG_W-1:0]        a_req_tag,
     input  wire [1:0]               a_req_hint,
+    // Only the LSU issues atomics; the transfer engine moves tiles and has no
+    // read-modify-write to do, so client B has no atomic fields at all.
+    input  wire                     a_req_amo,
+    input  wire [3:0]               a_req_aop,
+    input  wire [MEM_DW-1:0]        a_req_cmp,
     output wire                     a_rsp_valid,
     output wire [CTAG_W-1:0]        a_rsp_tag,
     output wire [MEM_DW-1:0]        a_rsp_rdata,
@@ -53,6 +58,9 @@ module tnca_mem_mux #(
     output wire [MEM_DW-1:0]        m_req_wdata,
     output wire [TAG_W-1:0]         m_req_tag,
     output wire [1:0]               m_req_hint,
+    output wire                     m_req_amo,
+    output wire [3:0]               m_req_aop,
+    output wire [MEM_DW-1:0]        m_req_cmp,
     input  wire                     m_rsp_valid,
     input  wire [TAG_W-1:0]         m_rsp_tag,
     input  wire [MEM_DW-1:0]        m_rsp_rdata
@@ -67,6 +75,9 @@ module tnca_mem_mux #(
     assign m_req_wdata = pick_b ? b_req_wdata : a_req_wdata;
     assign m_req_tag   = pick_b ? {1'b1, b_req_tag} : {1'b0, a_req_tag};
     assign m_req_hint  = pick_b ? 2'd0 : a_req_hint;
+    assign m_req_amo   = !pick_b && a_req_amo;
+    assign m_req_aop   = pick_b ? 4'd0 : a_req_aop;
+    assign m_req_cmp   = pick_b ? {MEM_DW{1'b0}} : a_req_cmp;
 
     assign b_req_ready = pick_b && m_req_ready;
     assign a_req_ready = !pick_b && m_req_ready;

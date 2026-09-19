@@ -51,7 +51,8 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from tnca_isa import (ISA, MAJ, CC, CC_INT, CC_FP, SPECIAL, SIZE, CACHE_HINT,
                       FMINMAX_MODE, RND, MASKABLE_MAJORS, encode,
                       SREG_N, PREG_N, VREG_N, VLEN,
-                      AREG_N, BREG_N, DREG_N, WREG_N, MMA_K, MMA_DT, FMT)
+                      AREG_N, BREG_N, DREG_N, WREG_N, MMA_K, MMA_DT, FMT,
+                      AMO_ORDER, AMO_SCOPE)
 
 
 class AsmError(Exception):
@@ -526,6 +527,34 @@ class Assembler:
                          f"(allowed: {', '.join(sorted(allowed))})")
             return CC[cc], ops
 
+        if sclass == 'amo':
+            # ".w"/".d" size, then any of the order and scope names. A fence
+            # has no size, so it accepts the suffix but does not require it.
+            size = None
+            for sf in sfx:
+                if sf in SIZE:
+                    size = SIZE[sf]
+                elif sf in AMO_ORDER:
+                    mod |= AMO_ORDER[sf] << 3
+                elif sf in AMO_SCOPE:
+                    mod |= AMO_SCOPE[sf] << 5
+                else:
+                    self.err(f"unknown atomic suffix '.{sf}' (expected w/d, "
+                             f"{'/'.join(AMO_ORDER)}, {'/'.join(AMO_SCOPE)})")
+            if mnem == 'fence':
+                # mod[2:0] is the access size and a fence has no access, so it
+                # must read zero -- the decoder rejects a non-zero reserved
+                # field rather than ignoring it (sec 11.4).
+                if size is not None:
+                    self.err("'fence' takes no access size")
+            else:
+                if size is None:
+                    self.err(f"'{mnem}' needs an access size (.w or .d)")
+                if size not in (SIZE['w'], SIZE['d']):
+                    self.err(f"'{mnem}' is 4- or 8-byte only (.w or .d)")
+                mod |= size
+            return mod, ops
+
         if sclass == 'ls':
             if not sfx:
                 self.err(f"'{mnem}' needs an access-size suffix (.b/.h/.w/.d)")
@@ -582,17 +611,19 @@ class Assembler:
             return FMT[sfx[0]] | (FMT[sfx[1]] << 3), ops
 
         if sclass == 'mma':
-            # ".k32", ".bf16" in any order; defaults k16/f16
-            kk, dt = 0, 0
+            # ".k32", ".bf16", ".sf" in any order; defaults k16/f16, no sf
+            kk, dt, sf_bit = 0, 0, 0
             for sf in sfx:
                 if sf in MMA_K:
                     kk = MMA_K[sf]
                 elif sf in MMA_DT:
                     dt = MMA_DT[sf]
+                elif sf == 'sf':
+                    sf_bit = 1
                 else:
-                    self.err(f"unknown m.mma suffix '.{sf}' "
-                             f"(expected k16/k32/k64, f16/bf16)")
-            return kk | (dt << 2), ops
+                    self.err(f"unknown m.mma suffix '.{sf}' (expected "
+                             f"k16/k32/k64, {'/'.join(MMA_DT)}, sf)")
+            return kk | (dt << 2) | (sf_bit << 4), ops
 
         if sclass == 'txf':
             # ".b/.h/.w" element size, optional ".t" transpose

@@ -41,11 +41,21 @@ module tnca_mem_model #(
     input  wire [MEM_BYTES-1:0]     req_be,
     input  wire [MEM_DW-1:0]        req_wdata,
     input  wire [TAG_W-1:0]         req_tag,
+    // Atomics (ISA sec 9.2). In the four-tile system these execute at the home
+    // slice; here there is no slice, so the model performs them -- from the
+    // same rtl/common/tnca_amo.vh the slice uses, because two definitions that
+    // disagreed would mean one of the two test suites was checking the wrong
+    // machine.
+    input  wire                     req_amo,
+    input  wire [3:0]               req_aop,
+    input  wire [MEM_DW-1:0]        req_cmp,
 
     output reg                      rsp_valid,
     output reg  [TAG_W-1:0]         rsp_tag,
     output reg  [MEM_DW-1:0]        rsp_rdata
 );
+
+`include "tnca_amo.vh"
 
     localparam POOL = 16;
 
@@ -57,8 +67,15 @@ module tnca_mem_model #(
     end
 
     // ---- instruction port ---------------------------------------------------
+    //
+    // Synchronous, like the SRAM it stands for: the address presented this
+    // cycle returns its word on the next. tnca_core carries the extra stage
+    // and a one-deep fetch buffer for it.
     wire [63:0] iw = imem_addr >> 3;
-    assign imem_data = (iw < WORDS) ? mem[iw[31:0]] : 64'd0;
+    reg  [63:0] imem_q;
+    always @(posedge clk)
+        imem_q <= (iw < WORDS) ? mem[iw[31:0]] : 64'd0;
+    assign imem_data = imem_q;
 
     // ---- pseudo-random source ------------------------------------------------
     reg [31:0] lfsr;
@@ -81,6 +98,7 @@ module tnca_mem_model #(
     reg [63:0] dw;
     reg        in_range;
     reg [MEM_DW-1:0] rd;
+    reg [63:0]       amo_res;
 
     integer k, slot, pick, nelig;
     reg     found;
@@ -99,7 +117,20 @@ module tnca_mem_model #(
                 dw       = req_addr >> 3;
                 in_range = (dw < WORDS);
                 rd       = in_range ? mem[dw[31:0]] : {MEM_DW{1'b0}};
-                if (req_we && in_range) begin
+                if (req_amo && in_range) begin
+                    // Accepting is one clock edge, so the read-modify-write is
+                    // indivisible here by construction; what it must match is
+                    // the slice's arithmetic, and it does because it is the
+                    // same function.
+                    amo_res = amo_new(req_aop, req_be, rd, req_wdata, req_cmp);
+                    if (req_aop != `TNCA_AOP_LD)
+                        for (k = 0; k < MEM_BYTES; k = k + 1)
+                            if (req_be[k])
+                                mem[dw[31:0]][k*8 +: 8] <= amo_res[k*8 +: 8];
+                    // `rd` already holds the whole old word, which is what the
+                    // response carries: the requester extracts its bytes from
+                    // it exactly as it would from a load.
+                end else if (req_we && in_range) begin
                     for (k = 0; k < MEM_BYTES; k = k + 1)
                         if (req_be[k]) mem[dw[31:0]][k*8 +: 8] <= req_wdata[k*8 +: 8];
                 end

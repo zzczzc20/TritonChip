@@ -79,7 +79,7 @@
     "vector_fp32": true,
     "sfu": true,
     "gather_scatter": true,
-    "atomics_device": false,
+    "atomics_device": true,
     "atomics_system": false,
     "matrix_f16": true,
     "matrix_bf16": true,

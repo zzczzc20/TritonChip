@@ -80,13 +80,14 @@ XY 路由与请求/响应分离虚拟网络的 mesh。
 | Accumulator file, reachable from the vector unit | complete |
 | Matrix unit: `m.mma.async`, bit-reproducible accumulation contract | complete |
 | TensorMap descriptors, RF windows, transfer engine with padding | complete |
-| SFU (`v.exp2.approx` et al) | **not started**; the capability bit reads 0 and the encodings trap |
-| Synchronous instruction fetch | **not started** (Stage 1c) |
-| Atomics, fences | **not started** (Stage 1c) |
-| Transfer rank 3–5, byte-granular window writes | **not started**; rank > 2 raises `DESCRIPTOR_FAULT` |
-| Separate source-reusable completion for `m.mma.async` | **not started** (Stage 2c) |
+| SFU (`v.exp2.approx` et al), measured against the §8.8 bound | complete |
+| Synchronous instruction fetch, with a fetch buffer | complete |
+| Atomics and fences, executed at the home slice | complete |
+| Transfer rank 3–5, byte-granular window writes | **not started**; rank > 2 raises `DESCRIPTOR_FAULT` (the one Stage-2 gap left) |
+| Separate source-reusable completion for `m.mma.async` | complete |
 | Cache/flow policy: dead-block hints, bypass, admission credits | **not started** (Stage 4) |
-| Triton/MLIR backend | **not started** (Stage 5) |
+| Triton source to a verified result on the four-tile machine | complete (`make e2e`) |
+| Triton/MLIR backend (MLIR dialect, TTGIR-free lowering) | **not started** (Stage 5) |
 
 Nothing here has been through a real PDK, static timing, or power analysis.
 The synthesis numbers below are relative proxies and are labelled as such.
@@ -117,6 +118,38 @@ attach to: the register files and completion protocol for (1) and (3), and a
 real single-level NUCA cache behind a mesh for (2) and (4). Stage 4 is where
 the descriptors and the flow control land, and it can now be measured against a
 baseline rather than argued about.
+
+## The loop is closed
+
+```
+make e2e
+```
+
+A `@triton.jit` kernel, through Triton's own frontend, through this
+repository's compiler, onto the **whole machine** — four cores, four NUCA
+slices, the 2×2 mesh, DRAM — as a four-block grid, with the answers read back
+out of the machine and compared against a reference computed in Python.
+
+Three details are what make it a real closure rather than a demo:
+
+- **Nothing edits the compiler's output.** The assembly that runs is what
+  `tnca_cc` emitted; the test appends data and nothing else.
+- **The grid is the machine's.** `tl.program_id(0)` lowers to the `pid.x`
+  special register and each tile reports its own, so the same image covers a
+  different block per tile. No part of the compiler knows how many tiles there
+  are.
+- **The checker reads memory, not assertions.** A self-checking program proves
+  the arithmetic; reading the result out afterwards proves it *reached memory*
+  — which here means it crossed a mesh, landed in some slice's data array, and
+  stayed correct while three other cores were doing the same thing. The bench
+  reads the machine's coherent view (slices first, DRAM behind them), because
+  a freshly written result is dirty in its home slice and not in DRAM at all.
+
+What this deliberately does **not** do is coverage. It is one kernel shape, one
+block size, one grid. Four-tile RTL simulation runs at a few thousand cycles a
+second, and the wide sweeps belong in the unit benches, where they are cheap
+and exhaustive — 866,495 conversion vectors, 41,240 FMA vectors, 16,740 SFU
+vectors. This asserts that the path is closed, not that it is covered.
 
 ---
 

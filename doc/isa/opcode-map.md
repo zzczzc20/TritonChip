@@ -2,7 +2,7 @@
 
 <!-- TNCA ISA v0.1 -- GENERATED FILE, DO NOT EDIT. Source: isa/tnca-isa-v0.1.json (itself generated from tools/asm/tnca_isa.py). Regenerate with `make isa`. Normative text: doc/isa/TNCA-ISA-v0.1.md. -->
 
-156 instructions across 16 allocated majors. Normative semantics live in `doc/isa/TNCA-ISA-v0.1.md`; this file only records which encodings are taken.
+169 instructions across 17 allocated majors. Normative semantics live in `doc/isa/TNCA-ISA-v0.1.md`; this file only records which encodings are taken.
 
 ## `SYS` (major `0x00`)
 
@@ -197,7 +197,21 @@
 
 ## `ATOM` (major `0x21`)
 
-Allocated, no instructions defined yet.
+| func | mnemonic | operands | suffixes | maskable |
+|---|---|---|---|---|
+| `0x00` | `atom.add` | `sd`, `mem_s`, `sb` | `amo` | yes |
+| `0x01` | `atom.and` | `sd`, `mem_s`, `sb` | `amo` | yes |
+| `0x02` | `atom.or` | `sd`, `mem_s`, `sb` | `amo` | yes |
+| `0x03` | `atom.xor` | `sd`, `mem_s`, `sb` | `amo` | yes |
+| `0x04` | `atom.xchg` | `sd`, `mem_s`, `sb` | `amo` | yes |
+| `0x05` | `atom.min.s` | `sd`, `mem_s`, `sb` | `amo` | yes |
+| `0x06` | `atom.max.s` | `sd`, `mem_s`, `sb` | `amo` | yes |
+| `0x07` | `atom.min.u` | `sd`, `mem_s`, `sb` | `amo` | yes |
+| `0x08` | `atom.max.u` | `sd`, `mem_s`, `sb` | `amo` | yes |
+| `0x10` | `atom.cas` | `sd`, `mem_s`, `sb`, `sc` | `amo` | yes |
+| `0x18` | `atom.ld` | `sd`, `mem_s` | `amo` | yes |
+| `0x19` | `atom.st` | `mem_s`, `sb` | `amo` | yes |
+| `0x20` | `fence` | -- | `amo` | yes |
 
 ## `TDESC` (major `0x30`)
 

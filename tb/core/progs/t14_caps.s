@@ -6,7 +6,7 @@
 .org 0
 start:
     s.rdspecial s1, cap0
-    .assert_eq s1, #0x9e7, #1        // bits: VECTOR_FP32, GATHER_SCATTER, MATRIX_F16, MATRIX_BF16, MATRIX_FP8, TENSOR_DMA, MBARRIER, SFU
+    .assert_eq s1, #0x9ef, #1        // bits: VECTOR_FP32, GATHER_SCATTER, ATOMICS_DEVICE, MATRIX_F16, MATRIX_BF16, MATRIX_FP8, TENSOR_DMA, MBARRIER, SFU
 
     // bit 0 VECTOR_FP32 -- a native FP32 vector datapath
     .li       s2, #0x3f800000            // 1.0f
@@ -20,19 +20,30 @@ start:
     v.rsqrt.approx v2, v1
     .assert_lane v2, #0, #0x3f000000, #3
 
+    // bit 3 ATOMICS_DEVICE -- a real read-modify-write, old value returned
+    .li       s20, #21504
+    .li       s21, #100
+    s.st.d    [s20, #0], s21
+    .li       s22, #7
+    atom.add.d.acq_rel.device s23, [s20], s22
+    .assert_eq s23, #100, #4        // the OLD value
+    s.ld.d    s24, [s20, #0]
+    .assert_eq s24, #107, #5        // and the sum is in memory
+    fence.acq_rel.device
+
     // bit 2 GATHER_SCATTER -- native per-lane addressing
     .li       s3, #20992
     v.ld.w    v3, [s3, #0]              // element indices, one per lane
     .li       s4, #21248
     v.ld.gather.w v4, [s4, v3]
-    .assert_lane v4, #0, #0x11111100, #4
-    .assert_lane v4, #15, #0x1111110f, #5
+    .assert_lane v4, #0, #0x11111100, #6
+    .assert_lane v4, #15, #0x1111110f, #7
 
     // bits 5,6 MATRIX_* -- the accumulator file backing m.mma
     m.zero    a0
     .li       s5, #0
     a.vread   v5, a0, s5
-    .assert_lane v5, #0, #0, #6
+    .assert_lane v5, #0, #0, #8
 
     // bits 7,8 TENSOR_DMA + MBARRIER -- the pair that was mis-advertised.
     // The window is pre-filled with a value the source cannot produce, so
@@ -48,9 +59,9 @@ start:
     .li       s11, #0                   // coord1 (consecutive registers)
     t.ld.async.h w0, d0, s10, s7
     mb.wait   s7
-    .assert_lane v32, #0,  #0x3c003c00, #7
-    .assert_lane v32, #15, #0x3c003c00, #8
-    .assert_lane v39, #15, #0x3c003c00, #9
+    .assert_lane v32, #0,  #0x3c003c00, #9
+    .assert_lane v32, #15, #0x3c003c00, #10
+    .assert_lane v39, #15, #0x3c003c00, #11
 
     // bit 11 MATRIX_FP8 -- a real E4M3 product, not a decode check
     .li       s12, #0x38383838      // four E4M3 1.0 bytes
@@ -68,11 +79,11 @@ start:
     mb.wait   s8
     .li       s5, #0
     a.vread   v6, a1, s5
-    .assert_lane v6, #0,  #0x41800000, #10
-    .assert_lane v6, #15, #0x41800000, #11
+    .assert_lane v6, #0,  #0x41800000, #12
+    .assert_lane v6, #15, #0x41800000, #13
     .li       s5, #15
     a.vread   v6, a1, s5
-    .assert_lane v6, #7,  #0x41800000, #12
+    .assert_lane v6, #7,  #0x41800000, #14
 
     exit
 

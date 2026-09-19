@@ -35,6 +35,42 @@ def TNCA_A_VWRITE : TNCAInst<65, 1, "a.vwrite"> {
 def TNCA_A_ZERO : TNCAInst<65, 8, "a.zero"> {
   let Maskable = 1;
 }
+def TNCA_ATOM_ADD : TNCAInst<33, 0, "atom.add"> {
+  let Maskable = 1;
+}
+def TNCA_ATOM_AND : TNCAInst<33, 1, "atom.and"> {
+  let Maskable = 1;
+}
+def TNCA_ATOM_CAS : TNCAInst<33, 16, "atom.cas"> {
+  let Maskable = 1;
+}
+def TNCA_ATOM_LD : TNCAInst<33, 24, "atom.ld"> {
+  let Maskable = 1;
+}
+def TNCA_ATOM_MAX_S : TNCAInst<33, 6, "atom.max.s"> {
+  let Maskable = 1;
+}
+def TNCA_ATOM_MAX_U : TNCAInst<33, 8, "atom.max.u"> {
+  let Maskable = 1;
+}
+def TNCA_ATOM_MIN_S : TNCAInst<33, 5, "atom.min.s"> {
+  let Maskable = 1;
+}
+def TNCA_ATOM_MIN_U : TNCAInst<33, 7, "atom.min.u"> {
+  let Maskable = 1;
+}
+def TNCA_ATOM_OR : TNCAInst<33, 2, "atom.or"> {
+  let Maskable = 1;
+}
+def TNCA_ATOM_ST : TNCAInst<33, 25, "atom.st"> {
+  let Maskable = 1;
+}
+def TNCA_ATOM_XCHG : TNCAInst<33, 4, "atom.xchg"> {
+  let Maskable = 1;
+}
+def TNCA_ATOM_XOR : TNCAInst<33, 3, "atom.xor"> {
+  let Maskable = 1;
+}
 def TNCA_BR : TNCAInst<2, 0, "br"> {
 }
 def TNCA_BR_NZ : TNCAInst<2, 1, "br.nz"> {
@@ -46,6 +82,9 @@ def TNCA_BR_Z : TNCAInst<2, 2, "br.z"> {
 def TNCA_CALL : TNCAInst<2, 8, "call"> {
 }
 def TNCA_EXIT : TNCAInst<2, 31, "exit"> {
+}
+def TNCA_FENCE : TNCAInst<33, 32, "fence"> {
+  let Maskable = 1;
 }
 def TNCA_M_MMA_ASYNC : TNCAInst<64, 1, "m.mma.async"> {
 }

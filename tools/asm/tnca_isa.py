@@ -302,6 +302,24 @@ ISA = {
     't.st.async':  ('TXFER', 0x08, ('wd', 'da', 'sb', 'sc'),      'txf'),
     't.prefetch':  ('TXFER', 0x10, ('da', 'sb'),                  'txf'),
 
+    # ---- atomic / fence (ISA sec 9.2) --------------------------------------
+    # The size suffix is mandatory and only .w and .d exist; order and scope
+    # default to relaxed and core, which are the weakest and therefore the
+    # ones a program must ask to strengthen.
+    'atom.add':      ('ATOM', 0x00, ('sd', 'mem_s', 'sb'),  'amo'),
+    'atom.and':      ('ATOM', 0x01, ('sd', 'mem_s', 'sb'),  'amo'),
+    'atom.or':       ('ATOM', 0x02, ('sd', 'mem_s', 'sb'),  'amo'),
+    'atom.xor':      ('ATOM', 0x03, ('sd', 'mem_s', 'sb'),  'amo'),
+    'atom.xchg':     ('ATOM', 0x04, ('sd', 'mem_s', 'sb'),  'amo'),
+    'atom.min.s':    ('ATOM', 0x05, ('sd', 'mem_s', 'sb'),  'amo'),
+    'atom.max.s':    ('ATOM', 0x06, ('sd', 'mem_s', 'sb'),  'amo'),
+    'atom.min.u':    ('ATOM', 0x07, ('sd', 'mem_s', 'sb'),  'amo'),
+    'atom.max.u':    ('ATOM', 0x08, ('sd', 'mem_s', 'sb'),  'amo'),
+    'atom.cas':      ('ATOM', 0x10, ('sd', 'mem_s', 'sb', 'sc'), 'amo'),
+    'atom.ld':       ('ATOM', 0x18, ('sd', 'mem_s'),        'amo'),
+    'atom.st':       ('ATOM', 0x19, ('mem_s', 'sb'),        'amo'),
+    'fence':         ('ATOM', 0x20, (),                      'amo'),
+
     # ---- load/store (ISA sec 9.1) ------------------------------------------
     's.ld':          ('LSU', 0x00, ('sd', 'mem_si'),          'ls'),
     's.st':          ('LSU', 0x08, ('mem_si', 'sd'),          'ls'),
@@ -321,6 +339,12 @@ MASKABLE_MAJORS = {MAJ['VINT'], MAJ['VFP'], MAJ['CVT'], MAJ['SHUF'],
 # exact oracle cannot disagree about what a 3 means.
 FMT      = {'f32': 0, 'bf16': 1, 'f16': 2, 'e5m2': 3, 'e4m3': 4}
 FMT_NAME = {v: k for k, v in FMT.items()}
+
+# Atomic modifiers (ISA sec 9.2).
+AMO_ORDER = {'relaxed': 0, 'acquire': 1, 'release': 2, 'acq_rel': 3}
+AMO_SCOPE = {'core': 0, 'device': 1, 'system': 2}
+AMO_ORDER_NAME = {v: k for k, v in AMO_ORDER.items()}
+AMO_SCOPE_NAME = {v: k for k, v in AMO_SCOPE.items()}
 
 # Matrix K and input type suffixes (ISA sec 9C). The dtype field is the same
 # five-format vocabulary minus binary32, which a fragment cannot be.

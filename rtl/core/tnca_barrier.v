@@ -67,6 +67,14 @@ module tnca_barrier #(
     // dropped the other, so a barrier waited for ever on an operation that
     // had in fact completed. It took a slow memory model to shift the timing
     // enough for the two to coincide.
+    // ISA sec 9C: m.mma.async signals TWO events. `done` is the result landing
+    // in the accumulator; `free` is the fragments having been read for the
+    // last time, which is what lets a double-buffered producer refill them.
+    // arch overview sec 13.1 calls confusing the two a known hazard, and a
+    // conservative proxy -- waiting for done before refilling -- is what this
+    // replaces.
+    input  wire                     mtx_free_en,
+    input  wire [BAR_W-1:0]         mtx_free_bar,
     input  wire                     mtx_done_en,
     input  wire [BAR_W-1:0]         mtx_done_bar,
 
@@ -153,10 +161,16 @@ module tnca_barrier #(
     // to the block's sensitivity list, so the block goes stale exactly when a
     // completion arrives -- which is the one moment it must not. The same
     // trap cost a pipeline deadlock earlier in this design.
+    // Three ports, not two, and for the same reason there were two: a shared
+    // one drops whichever completion loses the mux when they land together.
+    // The matrix unit can signal both of its events in one cycle -- the last
+    // fragment read and the last accumulate are two cycles apart, and with a
+    // one-element K they can coincide.
     `define OP_DEC(b) \
-        ((((mtx_done_en && (mtx_done_bar == (b))) ? 2'd1 : 2'd0)) + \
+        ((((mtx_done_en && (mtx_done_bar == (b))) ? 3'd1 : 3'd0)) + \
+         (((mtx_free_en && (mtx_free_bar == (b))) ? 3'd1 : 3'd0)) + \
          (((txf_done_en && !txf_done_err && (txf_done_bar == (b))) \
-           ? 2'd1 : 2'd0)))
+           ? 3'd1 : 3'd0)))
 
     //--------------------------------------------------------------------------
     // A barrier reaches zero on both counts in this cycle
@@ -278,7 +292,7 @@ module tnca_barrier #(
             // always @(*) and an always @(posedge) makes the two retrigger
             // each other.
             for (od_i = 0; od_i < BAR_N; od_i = od_i + 1) begin
-                if ((`OP_DEC(od_i[BAR_W-1:0]) != 2'd0) &&
+                if ((`OP_DEC(od_i[BAR_W-1:0]) != 3'd0) &&
                     !(arm_en && (arm_bar == od_i[BAR_W-1:0]))) begin
                     if (n_ops[od_i] < `OP_DEC(od_i[BAR_W-1:0])) begin
                         err[od_i]  <= 1'b1;

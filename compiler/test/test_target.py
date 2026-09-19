@@ -100,10 +100,24 @@ class TestCapabilityGate(unittest.TestCase):
         with self.assertRaises(CapabilityError):
             self.t.require('packed_f16')
 
+    def test_device_atomics_are_now_present(self):
+        """ISA sec 9.2: they execute at the home slice, which exists."""
+        self.assertTrue(self.t.require('atomics_device'))
+
+    def test_system_atomics_are_still_absent(self):
+        """sec 12.9: one device, so system scope has nothing wider to mean,
+        and executing it at device scope instead is the silent degradation
+        the capability model exists to prevent."""
+        with self.assertRaises(CapabilityError):
+            self.t.require('atomics_system')
+
     def test_atomics_refusal_offers_no_fallback(self):
-        """A load-store pair is not an atomic, so no remedy may be suggested."""
+        """A load-store pair is not an atomic, so no remedy may be suggested.
+
+        Checked on a build without them, which is still a configuration this
+        compiler has to support -- HAS_ATOMICS is a core parameter."""
         with self.assertRaises(CapabilityError) as cm:
-            self.t.require('atomics_device')
+            self.without('atomics_device').require('atomics_device')
         self.assertIn('no correct substitute', cm.exception.remedy)
 
     def test_sfu_refusal_demands_error_bound_reverification(self):

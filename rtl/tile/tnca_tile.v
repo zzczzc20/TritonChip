@@ -118,6 +118,9 @@ module tnca_tile #(
     wire [7:0]           c_req_be;
     wire [LSU_TAG_W-1:0] c_req_tag;
     wire [1:0]           c_req_hint;
+    wire                 c_req_amo;
+    wire [3:0]           c_req_aop;
+    wire [63:0]          c_req_cmp;
     wire                 c_rsp_valid;
     wire [LSU_TAG_W-1:0] c_rsp_tag;
     wire [63:0]          c_rsp_rdata;
@@ -142,6 +145,8 @@ module tnca_tile #(
         .mem_req_addr(c_req_addr), .mem_req_we(c_req_we),
         .mem_req_be(c_req_be), .mem_req_wdata(c_req_wdata),
         .mem_req_tag(c_req_tag), .mem_req_hint(c_req_hint),
+        .mem_req_amo(c_req_amo), .mem_req_aop(c_req_aop),
+        .mem_req_cmp(c_req_cmp),
         .mem_rsp_valid(c_rsp_valid), .mem_rsp_tag(c_rsp_tag),
         .mem_rsp_rdata(c_rsp_rdata),
         .perf_cycles(perf_cycles), .perf_issued(perf_issued),
@@ -164,6 +169,7 @@ module tnca_tile #(
         .req_valid(c_req_valid), .req_ready(c_req_ready),
         .req_addr(c_req_addr), .req_we(c_req_we), .req_be(c_req_be),
         .req_wdata(c_req_wdata), .req_tag(c_req_tag),
+        .req_amo(c_req_amo), .req_aop(c_req_aop), .req_cmp(c_req_cmp),
         .rsp_valid(c_rsp_valid), .rsp_tag(c_rsp_tag), .rsp_rdata(c_rsp_rdata),
         .net_in_valid_req(ni_in_v_req), .net_in_ready_req(ni_in_r_req),
         .net_in_flit_req(ni_in_f_req),
@@ -176,6 +182,9 @@ module tnca_tile #(
     wire                    s_req_valid, s_req_ready, s_req_we;
     wire [63:0]             s_req_addr, s_req_wdata;
     wire [7:0]              s_req_be;
+    wire                    s_req_amo;
+    wire [3:0]              s_req_aop;
+    wire [63:0]             s_req_cmp;
     wire [SLICE_SRC_W-1:0]  s_req_src;
     wire [SLICE_TAG_W-1:0]  s_req_tag;
     wire                    s_rsp_valid, s_rsp_ready;
@@ -195,6 +204,7 @@ module tnca_tile #(
         .req_valid(s_req_valid), .req_ready(s_req_ready),
         .req_addr(s_req_addr), .req_we(s_req_we), .req_be(s_req_be),
         .req_wdata(s_req_wdata), .req_src(s_req_src), .req_tag(s_req_tag),
+        .req_amo(s_req_amo), .req_aop(s_req_aop), .req_cmp(s_req_cmp),
         .rsp_valid(s_rsp_valid), .rsp_ready(s_rsp_ready),
         .rsp_src(s_rsp_src), .rsp_tag(s_rsp_tag), .rsp_rdata(s_rsp_rdata),
         .net_in_valid_req(), .net_in_ready_req(1'b1), .net_in_flit_req(),
@@ -221,6 +231,7 @@ module tnca_tile #(
         .req_ready(s_req_ready), .req_valid(s_req_valid),
         .req_addr(s_req_addr), .req_we(s_req_we), .req_be(s_req_be),
         .req_wdata(s_req_wdata), .req_src(s_req_src), .req_tag(s_req_tag),
+        .req_amo(s_req_amo), .req_aop(s_req_aop), .req_cmp(s_req_cmp),
         .rsp_valid(s_rsp_valid), .rsp_ready(s_rsp_ready),
         .rsp_src(s_rsp_src), .rsp_tag(s_rsp_tag), .rsp_rdata(s_rsp_rdata),
         .mem_req_valid(mem_req_valid), .mem_req_ready(mem_req_ready),

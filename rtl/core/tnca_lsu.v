@@ -66,6 +66,12 @@ module tnca_lsu #(
     input  wire [63:0]              req_offset,
     input  wire [VLEN*ELEN-1:0]     req_index,
     input  wire [63:0]              req_sdata,
+    // Atomics (ISA sec 9.2). An atomic is a scalar access that both writes and
+    // returns, so it takes the load return path with `amo` set rather than a
+    // path of its own: the value it brings back is the memory's OLD word.
+    input  wire                     req_amo,
+    input  wire [`TNCA_AOP_W-1:0]   req_aop,
+    input  wire [63:0]              req_cmp,       // atom.cas compare operand
     input  wire [VLEN*ELEN-1:0]     req_vdata,
     input  wire [VLEN-1:0]          req_mask,
     input  wire [RCTX_W-1:0]        req_rctx,
@@ -91,6 +97,9 @@ module tnca_lsu #(
     output wire [MEM_DW-1:0]        mem_req_wdata,
     output wire [BEAT_W-1:0]        mem_req_tag,
     output wire [1:0]               mem_req_hint,
+    output wire                     mem_req_amo,
+    output wire [`TNCA_AOP_W-1:0]   mem_req_aop,
+    output wire [63:0]              mem_req_cmp,
 
     input  wire                     mem_rsp_valid,
     input  wire [BEAT_W-1:0]        mem_rsp_tag,
@@ -107,6 +116,12 @@ module tnca_lsu #(
 
     // ---- latched request -----------------------------------------------------
     reg              r_store, r_vector, r_indexed, r_signed;
+    reg              r_amo;
+    reg [`TNCA_AOP_W-1:0] r_aop;
+    reg [63:0]       r_cmp;
+    // An atomic writes bytes even though it is not a store, so byte enables
+    // and write data are formed for both.
+    wire             wr_bytes = r_store | r_amo;
     reg [2:0]        r_size;
     reg [1:0]        r_hint;
     reg [RCTX_W-1:0] r_rctx;
@@ -192,7 +207,7 @@ module tnca_lsu #(
                             plan_high[i]  = 1'b1;
                             for (b = 0; b < MEM_BYTES; b = b + 1)
                                 if (b < hi_cnt) begin
-                                    plan_be[b] = plan_be[b] | r_store;
+                                    plan_be[b] = plan_be[b] | wr_bytes;
                                     plan_wdata[b*8 +: 8] = plan_wdata[b*8 +: 8] |
                                         lane_wdata[i][(MEM_BYTES - boff + b)*8 +: 8];
                                 end
@@ -204,7 +219,7 @@ module tnca_lsu #(
                         if (w_hi != w_lo) plan_low[i] = 1'b1;
                         for (b = 0; b < MEM_BYTES; b = b + 1)
                             if ((b >= boff) && (b < (boff + lo_cnt))) begin
-                                plan_be[b] = plan_be[b] | r_store;
+                                plan_be[b] = plan_be[b] | wr_bytes;
                                 plan_wdata[b*8 +: 8] = plan_wdata[b*8 +: 8] |
                                     lane_wdata[i][(b - boff)*8 +: 8];
                             end
@@ -234,10 +249,13 @@ module tnca_lsu #(
     assign mem_req_valid = issue_ok;
     assign mem_req_addr  = plan_word;
     assign mem_req_we    = r_store;
-    assign mem_req_be    = r_store ? plan_be : {MEM_BYTES{1'b0}};
+    assign mem_req_be    = wr_bytes ? plan_be : {MEM_BYTES{1'b0}};
     assign mem_req_wdata = plan_wdata;
     assign mem_req_tag   = free_tag;
     assign mem_req_hint  = r_hint;
+    assign mem_req_amo   = r_amo;
+    assign mem_req_aop   = r_aop;
+    assign mem_req_cmp   = r_cmp;
 
     wire issue_fire = mem_req_valid && mem_req_ready;
 
@@ -301,6 +319,9 @@ module tnca_lsu #(
                 cpl_valid <= 1'b0;
                 if (req_valid) begin
                     r_store     <= req_store;
+                    r_amo       <= req_amo;
+                    r_aop       <= req_aop;
+                    r_cmp       <= req_cmp;
                     r_vector    <= req_vector;
                     r_indexed   <= req_indexed;
                     r_signed    <= req_signed;

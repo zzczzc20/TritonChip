@@ -188,7 +188,7 @@ compares.
 | `0x005` | `NUM_PROGRAMS_Y` | R | |
 | `0x006` | `NUM_PROGRAMS_Z` | R | |
 | `0x008` | `ROLE_ID` | R | this RCTX's index, `0..NUM_ROLES-1` |
-| `0x009` | `NUM_ROLES` | R | active RCTX count for this launch |
+| `0x009` | `NUM_ROLES` | R | active RCTX count for **this launch** — the number of Role Contexts started, not the core's architectural maximum. A launch may activate a subset, and a program that synchronises across roles has to know how many there actually are. |
 | `0x00a` | `CORE_ID` | R | tile index |
 | `0x00b` | `NUM_CORES` | R | |
 | `0x00c` | `NUM_LANES` | R | `VLEN`, architecturally 16 in v0.1 |
@@ -550,14 +550,21 @@ Unaligned accesses are split by the LSU and are architecturally legal but may
 be slow. A store that partially covers a word must leave the uncovered bytes
 unchanged (§12.8).
 
-### 9.2 `major = 0x21` — Atomic / fence *(Reserved until Stage 2)*
+### 9.2 `major = 0x21` — Atomic / fence
 
-The encoding below is allocated and normative, but no Stage-1 implementation
-decodes it: `CAPABILITY0.ATOMICS_DEVICE` reads 0 and every encoding in this
-family raises `ILLEGAL_INSTRUCTION`. Atomics execute at the home slice of the
-physical address (§12.9), which does not exist until the NUCA slices land in
-Stage 3; shipping a single-core stand-in would have committed the ISA to
-semantics the real implementation could not keep. `mod`:
+Atomics execute **at the home slice of the physical address** (§12.9). That is
+not an implementation note: it is the reason the family could not exist before
+the NUCA slices did, and it is what makes a read-modify-write indivisible
+without a lock. The slice's arbiter already refuses to start a second request
+to a line while one is in flight (§14.1), so the order between cores is the
+order in which their requests arrive at one slice, and the RMW happens inside
+a step that order already protects.
+
+`CAPABILITY0.ATOMICS_DEVICE` reads 1. `SYSTEM_ATOMICS` reads 0 — there is one
+device, so system scope has nothing wider to mean — and `mod[6:5] = 2` raises
+`ILLEGAL_INSTRUCTION` rather than silently executing at device scope (§12.9).
+
+`mod`:
 
 | bits | Meaning |
 |---|---|
@@ -587,6 +594,24 @@ otherwise it raises `ILLEGAL_INSTRUCTION` rather than silently degrading
 | `0x20` | `fence` | order per `mod[4:3]`, scope per `mod[6:5]` |
 
 FP32 `atom.add` is expanded to a `atom.cas` loop by the compiler in v0.1.
+
+**An atomic must be naturally aligned** — 4 bytes at a 4-byte boundary, 8 at an
+8-byte boundary — and raises `ACCESS_FAULT` otherwise. An unaligned *ordinary*
+access is legal and merely slow, because the LSU splits it across two words
+(§9.1); that split is exactly what an atomic cannot do, so the alternative to
+faulting would be two separate read-modify-writes that no other core could tell
+from one.
+
+1- and 2-byte atomics are not allocated: `mod[2:0]` accepts only `2` and `3`.
+The memory's word is 8 bytes and a narrower RMW would need a sub-word read path
+that nothing else in the design has.
+
+`fence` waits until every access this core has issued is complete at its home
+slice. The LSU waits for a response to a store as well as to a load, so
+draining the LSU *is* the fence at core and device scope. Asynchronous
+transfers are deliberately outside it: `t.*.async` completes against an
+mbarrier (§9E.1 step 8), and a fence that also waited for them would make the
+barrier redundant and the fence unboundedly long.
 
 ---
 
@@ -747,7 +772,7 @@ multiply followed by an add.
 | `func` | Mnemonic | Fields | `mod` |
 |---:|---|---|---|
 | `0x00` | `m.zero Ad` | `d`=A | — |
-| `0x01` | `m.mma.async Ad, Va, Vb, Sc` | `d`=A, `a`=A-fragment base vreg, `b`=B-fragment base vreg, `c`=token | `[1:0]` K, `[3:2]` dtype |
+| `0x01` | `m.mma.async Ad, Va, Vb, Sc` | `d`=A, `a`=A-fragment base vreg, `b`=B-fragment base vreg, `c`=token | `[1:0]` K, `[3:2]` dtype, `[4]` source-free |
 
 ```
 C[16x16] <- C[16x16] + A[16xK] . B[Kx16]
@@ -763,6 +788,35 @@ and BF16, which have separate bits because an implementation could plausibly
 build a datapath for one exponent range and not the other.
 
 The accumulator is binary32 for every input format; §9C.1 applies unchanged.
+
+#### `mod[4]` — the second completion event
+
+A `m.mma.async` finishes twice, and the two are not the same moment:
+
+| event | means | signalled on |
+|---|---|---|
+| **result** | `C` has landed in the accumulator | the barrier token in `Sc` |
+| **source-free** | the A and B fragments have been read for the last time | the barrier token in `Sc+1`, when `mod[4]` is set |
+
+Both are *operations*, counted by `mb.arm`'s operation field, and they must go
+to different barriers — two events on one barrier cannot be waited on
+separately, which is the entire reason for having two.
+
+`Sc = S63` with `mod[4]` set raises `ILLEGAL_INSTRUCTION`, for the same reason
+§9E refuses it for a transfer's coordinates: the next index is `S0`, which
+reads as zero and discards writes, so the second token could not be written at
+all and the command would signal a barrier the program never armed.
+
+**Why this is in the ISA and not left to the compiler.** A double-buffered
+producer wants to refill the fragment registers as early as it legally can.
+Without a source-free event its only safe choice is to wait for the *result*,
+which is later — architecture overview §13.1 names confusing "the data
+arrived", "the computation finished" and "the source may be reused" as a known
+hazard, and permits the conservative proxy only for a first version. This is
+the version that stops needing it. An implementation may signal source-free at
+any point after the last fragment read and no later than the result; the
+reference implementation signals it `FMA_LAT` cycles earlier, at the end of the
+MAC sweep.
 
 `Sc` holds an mbarrier token; the command signals one operation completion on
 that barrier's generation when it finishes.
@@ -1020,7 +1074,7 @@ turn into a silent hang.
 | 0 | `VECTOR_FP32` | native FP32 vector datapath |
 | 1 | `SFU` | native `v.*.approx` |
 | 2 | `GATHER_SCATTER` | native `v.ld.gather` / `v.st.scatter` |
-| 3 | `ATOMICS_DEVICE` | device-scope atomics |
+| 3 | `ATOMICS_DEVICE` | device-scope atomics, executed at the home slice |
 | 4 | `SYSTEM_ATOMICS` | system-scope atomics |
 | 5 | `MATRIX_F16` | native `m.mma` with FP16 inputs |
 | 6 | `MATRIX_BF16` | native `m.mma` with BF16 inputs |

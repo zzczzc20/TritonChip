@@ -75,6 +75,13 @@ module tnca_matrix #(
     input  wire [1:0]               cmd_dt,          // ISA sec 9C mod[3:2]
     input  wire                     cmd_bar_en,
     input  wire [BAR_W-1:0]         cmd_bar,
+    // ISA sec 9C: the SECOND event. `free` fires when the fragments have been
+    // read for the last time, which is earlier than `done` and is what a
+    // double-buffered producer actually needs -- arch overview sec 13.1 names
+    // confusing the two as a hazard, and waiting for `done` is the
+    // conservative proxy this replaces.
+    input  wire                     cmd_sf_en,
+    input  wire [BAR_W-1:0]         cmd_sf_bar,
     // row-op detail
     input  wire [1:0]               cmd_rowop,       // 0 vwrite, 1 mulrow, 2 fmarow
     input  wire [ROW_W-1:0]         cmd_row,
@@ -97,7 +104,9 @@ module tnca_matrix #(
     output reg                      done,            // pulse
     output reg  [ACC_W-1:0]         done_slot,
     output reg                      done_bar_en,
-    output reg  [BAR_W-1:0]         done_bar
+    output reg  [BAR_W-1:0]         done_bar,
+    output reg                      src_free,        // pulse
+    output reg  [BAR_W-1:0]         src_free_bar
 );
 
     localparam S_IDLE  = 3'd0,
@@ -118,6 +127,8 @@ module tnca_matrix #(
     reg [1:0]        r_dt;
     reg              r_bar_en;
     reg [BAR_W-1:0]  r_bar;
+    reg              r_sf_en;
+    reg [BAR_W-1:0]  r_sf_bar;
     reg [1:0]        r_rowop;
     reg [ROW_W-1:0]  r_row;
     reg [VLEN*ELEN-1:0] r_vdata;
@@ -277,12 +288,14 @@ module tnca_matrix #(
         if (!rst_n || flush) begin
             st          <= S_IDLE;
             done        <= 1'b0;
+            src_free    <= 1'b0;
             done_bar_en <= 1'b0;
             z_en        <= 1'b0;
             direct_w    <= 1'b0;
             for (i = 0; i < FMA_LAT; i = i + 1) tg_v[i] <= 1'b0;
         end else begin
             done        <= 1'b0;
+            src_free    <= 1'b0;
             done_bar_en <= 1'b0;
             z_en        <= 1'b0;
             direct_w    <= 1'b0;
@@ -308,6 +321,8 @@ module tnca_matrix #(
                     r_dt     <= cmd_dt;
                     r_bar_en <= cmd_bar_en;
                     r_bar    <= cmd_bar;
+                    r_sf_en  <= cmd_sf_en;
+                    r_sf_bar <= cmd_sf_bar;
                     r_rowop  <= cmd_rowop;
                     r_row    <= cmd_row;
                     r_vdata  <= cmd_vdata;
@@ -360,6 +375,12 @@ module tnca_matrix #(
                 if (mm == ROWS-1) begin
                     mm <= {(ROW_W+1){1'b0}};
                     if (kk == k_limit - 1) begin
+                        // The last A element and the last B row have now been
+                        // read. Nothing in this command will touch the vector
+                        // file again, so the fragments are free from here --
+                        // FMA_LAT cycles before the result lands.
+                        src_free     <= r_sf_en;
+                        src_free_bar <= r_sf_bar;
                         drain <= FMA_LAT[3:0] + 4'd1;
                         st    <= S_DRAIN;
                     end else begin

@@ -32,8 +32,8 @@ a stage closes.
 | 7 | Cache uses a single static home; no replication or migration in v1 | **Held** | `tnca_core_ni` computes `home = H(physical line address)` and takes no other input — no descriptor, no TensorID, no hint — so two views of one physical line cannot disagree about where it lives (§7.5, §10.2). A line exists in exactly one slice; there is no replication, no migration and consequently no inter-slice coherence protocol at all. |
 | 8 | Throttle admission of new transactions, never completion or resource release | **Held** | `tnca_core`'s stall logic throttles only the front end (`stall_front`), which holds F/D/R and inserts a bubble into X. It never freezes X, the LSU or the FP sequencer. Out-of-band completions take the write port by *causing* a front-end stall, so a completion can never be starved for more than one cycle — the release path has strict priority over new work. |
 | 9 | Manage MSHR entry, target, return, RF and writeback credits separately | **Partly held (Stage 4 completes it)** | MSHR entries and targets are now genuinely separate resources with separate exhaustion paths and separate counters, and running out of one does not look like running out of the other — which is the distinction §9.1 exists to make. The return path is reserved before a request is issued (the LSU's beat table), and the writeback buffer is a per-MSHR reservation taken at allocation. What is still missing is the *budget* half: `new_miss_credit` and `merge_credit` as throttled quantities with the fast and slow control loops of §9.5. That is Stage 4, and deliberately so — §21 says to build the baseline first. |
-| 10 | Both "ready" and "free" events belong in the ISA and the compiler's lifetime model | **Partly held** | The mbarrier carries arrivals and operations as separate counts precisely so one generation can mean more than "the data arrived" (§13.1), and `t11_matrix` uses a producer-arrival plus two transfer completions in one generation. What is **not** yet expressed is the *source-reusable* event: `m.mma.async` signals when its result is done, not when it has stopped reading its fragments, so a double-buffered pipeline must currently treat compute-done as the conservative proxy §13.1 permits for a first version. Splitting them is the Stage-2b item, and it is an ISA addition, not a fix. |
-| 11 | Build the backend from TTIR and early layout analysis, not from shared-memory TTGIR lowering | **Deferred (Stage 5)** | |
+| 10 | Both "ready" and "free" events belong in the ISA and the compiler's lifetime model | **Held** | The mbarrier carries arrivals and operations as separate counts so one generation can mean more than "the data arrived" (§13.1), and `t11_matrix` uses a producer arrival plus two transfer completions in one generation. The *source-reusable* event is now expressed too: `m.mma.async` with `mod[4]` signals a second completion, on a second barrier, when it has read its fragments for the last time — earlier than the result by `FMA_LAT` cycles. `t25_mmasf` proves the two are distinct by destroying both fragments the moment source-free fires and checking the product anyway; moving the signal to the command accept turns it red. The conservative proxy §13.1 permitted for a first version is no longer needed. |
+| 11 | Build the backend from TTIR and early layout analysis, not from shared-memory TTGIR lowering | **Held for the path that exists** | The frontend walks **TTIR** and nothing else — there is no TTGIR step and no shared-memory assumption anywhere in it, which is the half of this decision that can be checked before the MLIR dialect exists. `make e2e` runs a `@triton.jit` kernel through it onto the four-tile machine as a grid and checks the numbers in Python. What is still Stage 5 is the *layout analysis*: the lowering handles one element per lane and refuses anything wider (`test_unsupported_block_is_refused`), rather than choosing a layout. |
 | 12 | Finish a small verifiable system before scaling the mesh and the dynamic control | **Held** | The order was exactly §21's: ISA and memory semantics on one core, then pipelining, then multiple outstanding transactions, then one slice, then the mesh, then 2×2 — each with its own test before the next was started. No adaptive policy has been added yet, which is the point: Stage 4 measures each mechanism against this baseline one at a time. |
 
 ---
@@ -119,8 +119,15 @@ written down:
   differ by one parameter in one widening step and share every other gate --
   unlike FP16 and BF16, where an implementation could plausibly build one
   exponent range and not the other.
-* Major `0x21` (atomics) is allocated and normative but decodes as illegal,
-  because atomics execute at a home slice that does not exist until Stage 3.
+* Major `0x21` (atomics) decoded as illegal until the home slice existed to
+  execute them at. It does now, so `CAPABILITY0.ATOMICS_DEVICE` reads 1 and the
+  family runs — `t22_atomic` checks every operation at both widths, and
+  `t24_amo_mesh` checks the property only a multi-core machine can check, by
+  having all four tiles add to one address and then spin until the total is
+  *exactly* right. `SYSTEM_ATOMICS` still reads 0 and system scope still raises
+  `ILLEGAL_INSTRUCTION`: there is one device, so there is nothing wider for the
+  scope to mean, and executing it at device scope instead is exactly the silent
+  degradation §1.6 is about.
 * `s.wrspecial` traps, because v0.1 defines no writable special register.
   Letting it retire as a silent no-op would make a program that depends on it
   look correct here and fail elsewhere.
@@ -129,20 +136,25 @@ written down:
 
 ## Deviations
 
-### D1 — Instruction fetch is a single-cycle asynchronous read
+### D1 — Instruction fetch was a single-cycle asynchronous read
 
 **Document:** §19 lists `instruction_decode.v` and a `role_frontend.v` without
 prescribing the fetch timing, but a real design needs a synchronous SRAM.
 
-**Built:** `tnca_core` drives `imem_addr` combinationally and latches the
-returned word at the end of the same cycle.
+**Was:** `tnca_core` drove `imem_addr` combinationally and latched the returned
+word at the end of the same cycle — an asynchronous memory, which no SRAM is.
 
-**Why:** a synchronous instruction memory adds a stage between F and D and a
-fetch buffer to hold the response across a stall. That is front-end plumbing
-with no bearing on the ISA, the hazard logic or the memory model, which is what
-Stage 1 exists to establish.
+**Status: closed.** The instruction memory is synchronous: the address
+presented this cycle returns its word on the next. The core carries the extra
+stage (`f1_*`) and the one-deep fetch buffer (`fb_*`) that a stall makes
+necessary — a stalled D cannot refuse a word that is already on its way. No
+fetch is issued while the buffer is occupied, which is why one entry is enough,
+and a simulation assertion fires if both ever hold a word at once.
 
-**Replacement:** Stage 1b. The change is local to F/D.
+The cost is visible and small: the same 18 core programs issue exactly the same
+instruction counts and take about 8 % more cycles (`t00_scalar` 544 → 586),
+which is the extra fetch latency appearing on redirects. Nothing else moved,
+because nothing else depended on the timing.
 
 ### D2 — One memory instruction in flight
 
@@ -166,6 +178,11 @@ performance claim is made from it, and none should be.
 **Replacement:** Stage 3, with MSHR entries, targets and the five credit
 classes of §9.1.
 
+**Still open.** The LSU handles one *instruction* at a time. Within it the
+coalescing is real, and the NUCA slice behind it is fully non-blocking, so the
+memory-level parallelism that Stage 3 was about exists — between cores and
+within a vector access, not between two consecutive scalar loads on one core.
+
 ### D4 — The transfer engine handles rank 1 and 2, and only aligned rows
 
 **Document:** §7.2 specifies rank 1 to 5 in hardware, with the compiler
@@ -188,6 +205,15 @@ and tested by `t17_descfault`.
 and the alignment restriction is what lets a returned 8-byte unit land in a
 window register through the existing lane write enables rather than needing
 byte-granular writes.
+
+**This is the one Stage-2 item still open.** The rest of Stage 1, 2 and 3 is
+closed: synchronous instruction fetch (D1), atomics and fences at the home
+slice, the SFU, the five-format datapath, and `m.mma.async`'s second
+completion event. Rank 3–5 needs a coordinate read the core cannot do in one
+cycle — a transfer takes one coordinate per descriptor rank from consecutive
+scalar registers (§9E), and the register file has four read ports — so it is a
+port and a small sequencer, not a rewrite. It is named here rather than
+quietly left off the list.
 
 **Why it is a fault and not an approximation:** this is §1.6 applied to a
 geometry rather than to an instruction. A transfer that quietly did something
@@ -274,7 +300,21 @@ that a simpler reading would have skipped:
    rest; it never becomes a hang. `t05_fault` tests exactly that, including
    that the core still reaches idle.
 
-6. **The compiler plan found three more.** Building
+6. **A multi-core test found an ISA-conformance bug.** `NUM_ROLES` is defined
+   as "active RCTX count for **this launch**" (§5.1), and the core reported
+   the architectural `NUM_RCTX` instead. That only ever looked right because
+   every existing test launched every context. `t24_amo_mesh` synchronises
+   across roles — it spins until an atomic counter reaches exactly
+   `tiles * roles * N`, which is what makes a lost update a hang rather than a
+   silently wrong total — and with one role launched it waited for adds that
+   were never going to happen. The register now reports the launched count,
+   and `t15_target` launches every role so that its target fact still holds.
+
+   The general shape is worth naming: a register whose value is only ever
+   read back by the same program that set it cannot be wrong in a detectable
+   way. It took a program that *acted* on the value to find it.
+
+7. **The compiler plan found three more.** Building
    [`compiler_overview.md`](compiler_overview.md)'s milestone C0 against the
    hardware exposed things no RTL test was asking about, because they are only
    wrong from a compiler's point of view:

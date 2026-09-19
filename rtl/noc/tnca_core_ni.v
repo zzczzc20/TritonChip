@@ -35,7 +35,7 @@ module tnca_core_ni #(
     parameter YW      = 2,
     parameter NX      = 2,
     parameter NY      = 2,
-    parameter TAG_W   = 3,
+    parameter TAG_W   = 5,
     parameter SRC_W   = 4,
     parameter MY_ID   = 0,
     parameter LINE_SH = 6            // log2(line bytes)

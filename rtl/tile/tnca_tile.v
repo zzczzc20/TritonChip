@@ -37,7 +37,7 @@ module tnca_tile #(
     parameter PHYS_VREGS  = 128,
     parameter PHYS_W      = 7,
     parameter LSU_BEATS   = 8,
-    parameter LSU_TAG_W   = 3,
+    parameter LSU_TAG_W   = 5,
     // slice
     parameter LINE_BYTES  = 64,
     parameter LINE_BITS   = 512,
@@ -52,7 +52,7 @@ module tnca_tile #(
     parameter RQ_N        = 8,
     parameter RQ_W        = 3,
     parameter SLICE_SRC_W = 4,
-    parameter SLICE_TAG_W = 4
+    parameter SLICE_TAG_W = 5
 ) (
     input  wire                     clk,
     input  wire                     rst_n,

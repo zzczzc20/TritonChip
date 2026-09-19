@@ -17,6 +17,7 @@
 //   - the slices actually missed, evicted and refilled
 //==============================================================================
 `timescale 1ns/1ps
+`include "tnca_noc_pkg.vh"
 
 module tb_tnca_top;
 
@@ -30,6 +31,7 @@ module tb_tnca_top;
     parameter DRAM_STALL = 1;
     parameter DRAM_OOO   = 1;
     parameter IWORDS     = 4096;
+    localparam FLIT_W    = 2 + 2 + `TNCA_NOC_PAYLOAD_W;
 
     reg clk = 1'b0, rst_n = 1'b0;
     always #5 clk = ~clk;
@@ -118,8 +120,8 @@ module tb_tnca_top;
                 if (dut.li_valid[i*2 + 0] && dut.li_ready[i*2 + 0]) begin
                     // request flit injected by tile i; its destination is in
                     // the flit header
-                    if (({dut.li_flit[(i*2)*148 + 146 +: 2],
-                          dut.li_flit[(i*2)*148 + 144 +: 2]} ==
+                    if (({dut.li_flit[(i*2)*FLIT_W + `TNCA_NOC_PAYLOAD_W + 2 +: 2],
+                          dut.li_flit[(i*2)*FLIT_W + `TNCA_NOC_PAYLOAD_W +: 2]} ==
                          {i[1], i[0]}))
                         local_flits = local_flits + 1;
                     else

@@ -13,7 +13,7 @@
 module tnca_slice_ni #(
     parameter XW    = 2,
     parameter YW    = 2,
-    parameter TAG_W = 4,
+    parameter TAG_W = 5,
     parameter SRC_W = 4
 ) (
     input  wire                     clk,
@@ -66,14 +66,14 @@ module tnca_slice_ni #(
     assign req_src           = net_out_flit_req[`TNCA_REQ_SRC];
     // The requester's tag is 3 bits on the wire; the slice's tag field is
     // wider, so zero-extend rather than chain a range onto a range.
-    wire [2:0] req_tag_raw = net_out_flit_req[`TNCA_REQ_TAG];
-    assign req_tag           = {{(TAG_W-3){1'b0}}, req_tag_raw};
+    wire [4:0] req_tag_raw = net_out_flit_req[`TNCA_REQ_TAG];
+    assign req_tag           = {{(TAG_W-5){1'b0}}, req_tag_raw};
 
     // ---- outbound responses -------------------------------------------------
     wire [PW-1:0] rsp_payload;
     assign rsp_payload[`TNCA_RSP_RDATA] = rsp_rdata;
-    assign rsp_payload[`TNCA_RSP_TAG]   = rsp_tag[2:0];
-    assign rsp_payload[PW-1:67]         = {(PW-67){1'b0}};
+    assign rsp_payload[`TNCA_RSP_TAG]   = rsp_tag[4:0];
+    assign rsp_payload[PW-1:69]         = {(PW-69){1'b0}};
 
     // The requester's tile id decodes to mesh coordinates here, which is the
     // only place in the design that knows the topology.

@@ -13,8 +13,9 @@ Deviations are listed in full. There are three, all Stage-1 simplifications
 with a named replacement, and none of them changes the ISA or the semantics the
 later stages depend on.
 
-Audited against the Stage-3 tree (2x2 mesh, four NUCA slices). Re-run this
-audit whenever a stage closes.
+Audited against the Stage-2 + Stage-3 tree: matrix unit, TensorMap and
+transfer engine on a 2x2 mesh over four NUCA slices. Re-run this audit whenever
+a stage closes.
 
 ---
 
@@ -24,14 +25,14 @@ audit whenever a stage closes.
 |---:|---|---|---|
 | 1 | Data hierarchy is only RF — NUCA — DRAM; no new addressable tensor SRAM | **Held** | The chain is now complete and real: vector register → LSU beat → core NI → mesh → home NUCA slice → DRAM. Nothing in it is software-addressable except the registers at one end and DRAM at the other. The only architectural storage is `S`, `V`, `P` (ISA §1); the slice's arrays are tag- and index-addressed by physical address and no instruction can name a way, a set or a line. |
 | 2 | At most four RCTXs, each a vector control context, not a scalar thread | **Held** | `tnca_core` is parameterised on `NUM_RCTX` (2 in the test configuration, up to 4). Each has its own PC, scalar file, predicate file and pipeline identity; all share one SIMD datapath and one LSU. There is no per-lane program counter and no SIMT divergence stack — vector control is masks only (ISA §2.2). |
-| 3 | Regular movement goes through Tensor DMA; irregular access keeps a full LSU | **Held (LSU half)** | The full general LSU exists now, including gather/scatter and arbitrary alignment, and it is not a fallback bolted on later — it was built first, exactly so that Tensor DMA can be added as a fast path rather than as the only path. Tensor DMA is Stage 2. |
-| 4 | The matrix unit reads from RF, never cycle-by-cycle from a remote cache | **Held by construction** | No matrix unit yet (Stage 2). The structure it needs is in place: every execute-stage unit takes its operands from the register files, and the memory port is reachable only through the LSU. |
-| 5 | Vector RF and accumulator RF are separate, but accumulators are reachable from the vector unit | **Deferred (Stage 2)** | Accumulator registers do not exist yet. The ISA reserves major `0x41` for accumulator access so the capability is not silently absent. |
-| 6 | TensorMap correctness fields are strictly separated from cache/flow hints | **Held by construction** | No TensorMap yet. The same principle is already applied where it does bite: the LSU's cache-hint field (`mod[5:4]`, ISA §9.1) is defined as performance-only and is carried through the pipeline without reaching any address, value or ordering decision. |
+| 3 | Regular movement goes through Tensor DMA; irregular access keeps a full LSU | **Held** | Both halves exist. The general LSU was built first, deliberately, so that the transfer engine could be added as a fast path rather than as the only path — and it remains the path for gather, scatter and arbitrary alignment. `tnca_tensor` handles regular tiles, and the two share the memory port through `tnca_mem_mux` with the transfer engine given priority, because a stalled transfer holds an RF window and a held window blocks the producer that would refill it (§2.4). |
+| 4 | The matrix unit reads from RF, never cycle-by-cycle from a remote cache | **Held** | `tnca_matrix` reads its fragments from the vector file over a dedicated read port and never touches memory. The cost it avoids is now measurable rather than hypothetical: in the 2×2 run a NUCA access crosses the mesh both ways plus a slice's request buffer, tag lookup and data access, and 1,792 of 2,048 requests went to a remote slice. |
+| 5 | Vector RF and accumulator RF are separate, but accumulators are reachable from the vector unit | **Held** | `tnca_acc_rf` is a separate file with its own row-wide ports, and `a.vread` / `a.vwrite` / `a.mul.row` / `a.fma.row` reach it from the vector side. §5.4's reason is the one that mattered: online softmax rescales `O` on every key block, and a round trip through the cache would have cost the design its own argument. |
+| 6 | TensorMap correctness fields are strictly separated from cache/flow hints | **Held, structurally** | The TensorMap's first 128 bytes are semantics and the second 128 are hints. `tnca_tensor` parses the first half and **does not read the second at all** — there is no path by which a hint could reach an address, a value or an order, which is the strongest form the principle can take before Stage 4 gives hints something to do. The same holds for the LSU's cache-hint field. |
 | 7 | Cache uses a single static home; no replication or migration in v1 | **Held** | `tnca_core_ni` computes `home = H(physical line address)` and takes no other input — no descriptor, no TensorID, no hint — so two views of one physical line cannot disagree about where it lives (§7.5, §10.2). A line exists in exactly one slice; there is no replication, no migration and consequently no inter-slice coherence protocol at all. |
 | 8 | Throttle admission of new transactions, never completion or resource release | **Held** | `tnca_core`'s stall logic throttles only the front end (`stall_front`), which holds F/D/R and inserts a bubble into X. It never freezes X, the LSU or the FP sequencer. Out-of-band completions take the write port by *causing* a front-end stall, so a completion can never be starved for more than one cycle — the release path has strict priority over new work. |
 | 9 | Manage MSHR entry, target, return, RF and writeback credits separately | **Partly held (Stage 4 completes it)** | MSHR entries and targets are now genuinely separate resources with separate exhaustion paths and separate counters, and running out of one does not look like running out of the other — which is the distinction §9.1 exists to make. The return path is reserved before a request is issued (the LSU's beat table), and the writeback buffer is a per-MSHR reservation taken at allocation. What is still missing is the *budget* half: `new_miss_credit` and `merge_credit` as throttled quantities with the fast and slow control loops of §9.5. That is Stage 4, and deliberately so — §21 says to build the baseline first. |
-| 10 | Both "ready" and "free" events belong in the ISA and the compiler's lifetime model | **Deferred (Stage 2)** | mbarrier is Stage 2. Nothing built so far collapses the two: the LSU reports completion explicitly, and the scoreboard releases a destination when it is *written*, not when the instruction issues. |
+| 10 | Both "ready" and "free" events belong in the ISA and the compiler's lifetime model | **Partly held** | The mbarrier carries arrivals and operations as separate counts precisely so one generation can mean more than "the data arrived" (§13.1), and `t11_matrix` uses a producer-arrival plus two transfer completions in one generation. What is **not** yet expressed is the *source-reusable* event: `m.mma.async` signals when its result is done, not when it has stopped reading its fragments, so a double-buffered pipeline must currently treat compute-done as the conservative proxy §13.1 permits for a first version. Splitting them is the Stage-2b item, and it is an ISA addition, not a fix. |
 | 11 | Build the backend from TTIR and early layout analysis, not from shared-memory TTGIR lowering | **Deferred (Stage 5)** | |
 | 12 | Finish a small verifiable system before scaling the mesh and the dynamic control | **Held** | The order was exactly §21's: ISA and memory semantics on one core, then pipelining, then multiple outstanding transactions, then one slice, then the mesh, then 2×2 — each with its own test before the next was started. No adaptive policy has been added yet, which is the point: Stage 4 measures each mechanism against this baseline one at a time. |
 
@@ -154,6 +155,29 @@ performance claim is made from it, and none should be.
 **Replacement:** Stage 3, with MSHR entries, targets and the five credit
 classes of §9.1.
 
+### D4 — The transfer engine handles rank 1 and 2, and only aligned rows
+
+**Document:** §7.2 specifies rank 1 to 5 in hardware, with the compiler
+flattening what it can.
+
+**Built:** `tnca_tensor` executes rank 1 and 2. A tile row must also be a whole
+number of 8-byte units with an 8-byte-aligned source. Both conditions are
+checked before a single transaction is issued, and a violation raises
+`DESCRIPTOR_FAULT`.
+
+**Why:** rank 3 to 5 is more coordinate arithmetic, not a different mechanism,
+and the alignment restriction is what lets a returned 8-byte unit land in a
+window register through the existing lane write enables rather than needing
+byte-granular writes.
+
+**Why it is a fault and not an approximation:** this is §1.6 applied to a
+geometry rather than to an instruction. A transfer that quietly did something
+near enough would make a wrong answer look like a right one, which is the single
+failure mode a capability model exists to prevent. `TENSOR_MAX_RANK` reports the
+limit so software can ask rather than discover.
+
+**Replacement:** rank 3–5 and byte-granular window writes, together.
+
 ### D3 — The execute-stage units are combinational
 
 **Document:** §6.2 warns against treating an arithmetic-resource ceiling as
@@ -177,6 +201,9 @@ cannot reach is the least defensible input to any such bound.
 **Replacement:** Stage 1b pipelines the FP unit and the scalar multiplier. The
 core is already shaped for it — a per-unit latency and an out-of-band completion
 path exist — so the addition is a writeback reservation shift register.
+
+**Status: done.** The FMA is a 2-stage pipeline and the multiplier a 3-stage
+one; see `synthesis.md`. The integer vector unit remains combinational.
 
 ---
 

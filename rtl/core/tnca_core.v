@@ -63,7 +63,12 @@ module tnca_core #(
     parameter MEM_BYTES      = 8,
     parameter MEM_SHIFT      = 3,
     parameter LSU_BEATS      = 8,          // outstanding memory beats
-    parameter LSU_TAG_W      = 3,
+    parameter LSU_TAG_W      = 5,          // port tag: 1 owner bit + 4
+    parameter CTAG_W         = 4,          // per-client tag
+    parameter DESC_N         = 16,
+    parameter DESC_W         = 4,
+    parameter WIN_N          = 32,
+    parameter WIN_W          = 5,
     parameter ACC_N          = 16,         // accumulator slots
     parameter ACC_W          = 4,
     parameter ACC_ROWS       = 16,
@@ -314,7 +319,7 @@ module tnca_core #(
     //==========================================================================
     // Register files (read in X)
     //==========================================================================
-    wire [63:0]          sa_data, sb_data, sc_data;
+    wire [63:0]          sa_data, sb_data, sc_data, sb2_raw;
     wire [VLEN*ELEN-1:0] va_data, vb_data, vc_data;
     wire [VLEN-1:0]      pa_data, pb_data, pm_raw;
 
@@ -352,6 +357,7 @@ module tnca_core #(
         .ra_rctx(x_rctx), .ra_idx(x_sa_idx), .ra_data(sa_data),
         .rb_rctx(x_rctx), .rb_idx(x_sb_idx), .rb_data(sb_data),
         .rc_rctx(x_rctx), .rc_idx(x_sc_idx), .rc_data(sc_data),
+        .rd_rctx(x_rctx), .rd_idx(x_sb_idx + 6'd1), .rd_data(sb2_raw),
         .w_en(w_en && (w_class == `TNCA_DST_S)),
         .w_rctx(w_rctx), .w_idx(w_idx[5:0]), .w_data(w_sdata)
     );
@@ -366,7 +372,9 @@ module tnca_core #(
         .rc_rctx(x_rctx), .rc_idx(x_vc_idx), .rc_data(vc_data),
         .rd_rctx(mtx_rctx), .rd_idx(mtx_vrf_addr), .rd_data(mtx_vrf_data),
         .w_en(w_en && (w_class == `TNCA_DST_V)),
-        .w_rctx(w_rctx), .w_idx(w_idx), .w_lane_en(w_lane_en), .w_data(w_vdata)
+        .w_rctx(w_rctx), .w_idx(w_idx), .w_lane_en(w_lane_en), .w_data(w_vdata),
+        .x_en(txf_vw_en), .x_rctx(txf_vw_rctx), .x_idx(txf_vw_idx),
+        .x_lane_en(txf_vw_lane), .x_data(txf_vw_data)
     );
 
     tnca_pred_rf #(.NUM_RCTX(NUM_RCTX), .RCTX_W(RCTX_W), .VLEN(VLEN)) u_prf (
@@ -433,6 +441,15 @@ module tnca_core #(
     wire hz_pb = r_pb_en && `SB_P_BUSY(r_rctx, r_pb_idx) && !`AVAIL_P(r_rctx, r_pb_idx);
     wire hz_pm = r_pm_en && `SB_P_BUSY(r_rctx, r_pm_idx) && !`AVAIL_P(r_rctx, r_pm_idx);
 
+    // A transfer also reads Sb+1 as its second coordinate, so that register
+    // needs the same dependency check as any other source. Leaving it out would
+    // let a transfer read a coordinate its producer had not written yet -- and
+    // the wrong address is a wrong answer, not a slow one.
+    wire [5:0] r_sb2_idx = r_sb_idx + 6'd1;
+    wire r_reads_sb2 = r_valid && (r_major == `TNCA_MAJ_TXFER);
+    wire hz_sb2 = r_reads_sb2 && `SB_S_BUSY(r_rctx, r_sb2_idx)
+                              && !`AVAIL_S(r_rctx, r_sb2_idx);
+
     // WAW uses WB_HIT only, never X_PROD.
     //
     // The scoreboard is one bit per register, so it cannot represent two
@@ -466,7 +483,7 @@ module tnca_core #(
                 | (r_acc_src && !acc_free_s);
 
     wire hazard = r_valid && (hz_sa|hz_sb|hz_sc|hz_va|hz_vb|hz_vc|hz_pa|hz_pb|hz_pm|hz_d)
-                | hz_acc;
+                | hz_acc | hz_sb2;
 
     //==========================================================================
     // Execution units (all read their operands in X)
@@ -502,6 +519,11 @@ module tnca_core #(
     // Vector units take at most one scalar operand; which field it lives in is
     // opcode-determined and the two are never both used.
     wire [63:0] v_sop = x_sb_en ? sb_data : sa_data;
+
+    // A transfer's coordinates come from CONSECUTIVE scalar registers starting
+    // at Sb (ISA sec 9E), so the second one needs its own read. Reusing port C
+    // is free here because a transfer does not use it for anything else.
+    wire [63:0] sb2_data = sb2_raw;
 
     wire [VLEN*ELEN-1:0] valu_v;
     wire [63:0]          valu_s;
@@ -640,8 +662,10 @@ module tnca_core #(
         .arm_token(bar_arm_token),
         .arrive_en(x_is_bar && (x_func == `TNCA_MB_ARRIVE)),
         .arrive_bar(x_ra_idx[BAR_W-1:0]),
-        .opdone_en(mtx_done && mtx_done_bar_en),
-        .opdone_bar(mtx_done_bar),
+        // Both asynchronous engines signal the same way: one completion per
+        // command, whatever it expanded into (sec 13.3).
+        .opdone_en((mtx_done && mtx_done_bar_en) | (txf_done && txf_done_bar_en)),
+        .opdone_bar(mtx_done ? mtx_done_bar : txf_done_bar),
         .inval_en(x_is_bar && (x_func == `TNCA_MB_INVAL)),
         .inval_bar(x_ra_idx[BAR_W-1:0]),
         .test_token(sa_data), .test_done(bar_test_done),
@@ -675,10 +699,20 @@ module tnca_core #(
 
     wire x_mem_go = x_valid && x_mem_en && !x_kill;
 
+    wire                 lm_req_valid, lm_req_ready, lm_req_we;
+    wire [63:0]          lm_req_addr;
+    wire [MEM_BYTES-1:0] lm_req_be;
+    wire [MEM_DW-1:0]    lm_req_wdata;
+    wire [CTAG_W-1:0]    lm_req_tag;
+    wire [1:0]           lm_req_hint;
+    wire                 lm_rsp_valid;
+    wire [CTAG_W-1:0]    lm_rsp_tag;
+    wire [MEM_DW-1:0]    lm_rsp_rdata;
+
     tnca_lsu #(
         .VLEN(VLEN), .ELEN(ELEN), .RCTX_W(RCTX_W),
         .MEM_DW(MEM_DW), .MEM_BYTES(MEM_BYTES), .MEM_SHIFT(MEM_SHIFT),
-        .NUM_BEATS(LSU_BEATS), .BEAT_W(LSU_TAG_W)
+        .NUM_BEATS(LSU_BEATS), .BEAT_W(CTAG_W)
     ) u_lsu (
         .clk(clk), .rst_n(rst_n),
         .req_ready(lsu_req_ready),
@@ -696,12 +730,36 @@ module tnca_core #(
         .cpl_rctx(lsu_cpl_rctx), .cpl_dst_class(lsu_cpl_dstc),
         .cpl_dst_idx(lsu_cpl_dsti), .cpl_sdata(lsu_cpl_sdata),
         .cpl_vdata(lsu_cpl_vdata), .cpl_lane_en(lsu_cpl_lane_en),
-        .mem_req_valid(mem_req_valid), .mem_req_ready(mem_req_ready),
-        .mem_req_addr(mem_req_addr), .mem_req_we(mem_req_we),
-        .mem_req_be(mem_req_be), .mem_req_wdata(mem_req_wdata),
-        .mem_req_tag(mem_req_tag), .mem_req_hint(mem_req_hint),
-        .mem_rsp_valid(mem_rsp_valid), .mem_rsp_tag(mem_rsp_tag),
-        .mem_rsp_rdata(mem_rsp_rdata)
+        .mem_req_valid(lm_req_valid), .mem_req_ready(lm_req_ready),
+        .mem_req_addr(lm_req_addr), .mem_req_we(lm_req_we),
+        .mem_req_be(lm_req_be), .mem_req_wdata(lm_req_wdata),
+        .mem_req_tag(lm_req_tag), .mem_req_hint(lm_req_hint),
+        .mem_rsp_valid(lm_rsp_valid), .mem_rsp_tag(lm_rsp_tag),
+        .mem_rsp_rdata(lm_rsp_rdata)
+    );
+
+    tnca_mem_mux #(
+        .MEM_DW(MEM_DW), .MEM_BYTES(MEM_BYTES),
+        .CTAG_W(CTAG_W), .TAG_W(LSU_TAG_W)
+    ) u_mmux (
+        .a_req_valid(lm_req_valid), .a_req_ready(lm_req_ready),
+        .a_req_addr(lm_req_addr), .a_req_we(lm_req_we),
+        .a_req_be(lm_req_be), .a_req_wdata(lm_req_wdata),
+        .a_req_tag(lm_req_tag), .a_req_hint(lm_req_hint),
+        .a_rsp_valid(lm_rsp_valid), .a_rsp_tag(lm_rsp_tag),
+        .a_rsp_rdata(lm_rsp_rdata),
+        .b_req_valid(tm_req_valid), .b_req_ready(tm_req_ready),
+        .b_req_addr(tm_req_addr), .b_req_we(tm_req_we),
+        .b_req_be(tm_req_be), .b_req_wdata(tm_req_wdata),
+        .b_req_tag(tm_req_tag),
+        .b_rsp_valid(tm_rsp_valid), .b_rsp_tag(tm_rsp_tag),
+        .b_rsp_rdata(tm_rsp_rdata),
+        .m_req_valid(mem_req_valid), .m_req_ready(mem_req_ready),
+        .m_req_addr(mem_req_addr), .m_req_we(mem_req_we),
+        .m_req_be(mem_req_be), .m_req_wdata(mem_req_wdata),
+        .m_req_tag(mem_req_tag), .m_req_hint(mem_req_hint),
+        .m_rsp_valid(mem_rsp_valid), .m_rsp_tag(mem_rsp_tag),
+        .m_rsp_rdata(mem_rsp_rdata)
     );
 
     //==========================================================================
@@ -748,6 +806,79 @@ module tnca_core #(
         default:        mul_sel = mul_lo;
         endcase
     end
+
+    //==========================================================================
+    // Tensor descriptors, RF windows and the transfer engine
+    //==========================================================================
+    wire x_is_txf = x_valid && !x_kill && (x_fu == `TNCA_FU_TXFER);
+
+    wire txf_is_cfg = x_is_txf && (x_major == `TNCA_MAJ_TDESC);
+    wire txf_is_xfr = x_is_txf && (x_major == `TNCA_MAJ_TXFER)
+                               && (x_func != `TNCA_T_PREFETCH);
+
+    // t.prefetch is a hint: completion guarantees nothing about a later hit and
+    // confers no ownership (sec 17.2), so the simplest honest implementation of
+    // it is to drop it. Dropping a hint must not change any result, and here it
+    // demonstrably cannot.
+    wire txf_is_pfetch = x_is_txf && (x_major == `TNCA_MAJ_TXFER)
+                                  && (x_func == `TNCA_T_PREFETCH);
+
+    reg [1:0] txf_cfg_op;
+    always @(*) begin
+        case (x_func)
+        `TNCA_TD_LOAD:    txf_cfg_op = 2'd0;
+        `TNCA_TD_RELEASE: txf_cfg_op = 2'd1;
+        `TNCA_W_DEF:      txf_cfg_op = 2'd2;
+        default:          txf_cfg_op = 2'd3;
+        endcase
+    end
+
+    wire        txf_busy, txf_done, txf_done_bar_en, txf_fault;
+    wire [7:0]  txf_fault_code;
+    wire [BAR_W-1:0] txf_done_bar;
+    wire        txf_vw_en;
+    wire [RCTX_W-1:0] txf_vw_rctx;
+    wire [7:0]  txf_vw_idx;
+    wire [VLEN-1:0] txf_vw_lane;
+    wire [VLEN*ELEN-1:0] txf_vw_data;
+
+    wire                 tm_req_valid, tm_req_ready, tm_req_we;
+    wire [63:0]          tm_req_addr;
+    wire [MEM_BYTES-1:0] tm_req_be;
+    wire [MEM_DW-1:0]    tm_req_wdata;
+    wire [CTAG_W-1:0]    tm_req_tag;
+    wire                 tm_rsp_valid;
+    wire [CTAG_W-1:0]    tm_rsp_tag;
+    wire [MEM_DW-1:0]    tm_rsp_rdata;
+
+    tnca_tensor #(
+        .VLEN(VLEN), .ELEN(ELEN), .RCTX_W(RCTX_W),
+        .DESC_N(DESC_N), .DESC_W(DESC_W), .WIN_N(WIN_N), .WIN_W(WIN_W),
+        .BAR_W(BAR_W), .MEM_DW(MEM_DW), .MEM_BYTES(MEM_BYTES),
+        .TAG_W(CTAG_W), .NTAG(1 << CTAG_W)
+    ) u_txf (
+        .clk(clk), .rst_n(rst_n), .flush(launch_valid),
+        .cfg_valid(txf_is_cfg), .cfg_op(txf_cfg_op),
+        .cfg_desc(x_dsti[DESC_W-1:0]), .cfg_win(x_dsti[WIN_W-1:0]),
+        .cfg_addr(sa_data), .cfg_wbase(x_imm[15:8]), .cfg_wlen(x_imm[7:0]),
+        .cmd_valid(txf_is_xfr), .cmd_store(x_func == `TNCA_T_ST),
+        .cmd_desc(x_ra_idx[DESC_W-1:0]), .cmd_win(x_dsti[WIN_W-1:0]),
+        .cmd_c0(sb_data), .cmd_c1(sb2_data),
+        .cmd_esz(x_mod[2:0]),
+        .cmd_bar_en(1'b1), .cmd_bar(sc_data[BAR_W-1:0]),
+        .cmd_rctx(x_rctx),
+        .busy(txf_busy),
+        .done(txf_done), .done_bar_en(txf_done_bar_en), .done_bar(txf_done_bar),
+        .fault(txf_fault), .fault_code(txf_fault_code),
+        .vw_en(txf_vw_en), .vw_rctx(txf_vw_rctx), .vw_idx(txf_vw_idx),
+        .vw_lane_en(txf_vw_lane), .vw_data(txf_vw_data),
+        .mem_req_valid(tm_req_valid), .mem_req_ready(tm_req_ready),
+        .mem_req_addr(tm_req_addr), .mem_req_we(tm_req_we),
+        .mem_req_be(tm_req_be), .mem_req_wdata(tm_req_wdata),
+        .mem_req_tag(tm_req_tag),
+        .mem_rsp_valid(tm_rsp_valid), .mem_rsp_tag(tm_rsp_tag),
+        .mem_rsp_rdata(tm_rsp_rdata)
+    );
 
     //==========================================================================
     // Deferred FP-reduction completion (1 deep; only one reduce can be in flight)
@@ -926,6 +1057,10 @@ module tnca_core #(
 
     // Same "free NEXT cycle" question as the LSU: the engine is claimed from X,
     // one cycle after R looks.
+    wire r_needs_txf = r_valid && (r_fu == `TNCA_FU_TXFER);
+    wire txf_free_next = !txf_busy && !txf_is_cfg && !txf_is_xfr;
+    wire stall_txf = r_needs_txf && !txf_free_next;
+
     wire r_needs_mtx = r_valid && (r_fu == `TNCA_FU_MATRIX);
     wire mtx_free_next = !mtx_busy && !mtx_cmd_valid;
     wire stall_mtx = r_needs_mtx && !mtx_free_next;
@@ -947,7 +1082,7 @@ module tnca_core #(
 
     wire stall_rsv = r_books_wb && wb_rsv[r_wb_delay + 4'd1];
 
-    wire stall_front = hazard | stall_lsu | stall_fpu | stall_mtx | stall_rsv | wb_steal;
+    wire stall_front = hazard | stall_lsu | stall_fpu | stall_mtx | stall_txf | stall_rsv | wb_steal;
 
     // A redirect kills only the younger entries of the same RCTX.
     wire             squash_en   = x_redirect;
@@ -1259,7 +1394,13 @@ module tnca_core #(
             // otherwise be a hang thousands of cycles later into a located
             // fault (sec 13.4).
             //------------------------------------------------------------------
-            if (bar_fault) begin
+            if (txf_fault) begin
+                fault_valid  <= 1'b1;
+                fault_code   <= txf_fault_code;
+                fault_pc     <= x_pc;
+                fault_rctx   <= x_rctx;
+                fault_detail <= 24'd0;
+            end else if (bar_fault) begin
                 fault_valid  <= 1'b1;
                 fault_code   <= `TNCA_TRAP_BARRIER;
                 fault_pc     <= x_pc;
@@ -1345,7 +1486,7 @@ module tnca_core #(
                     && !d_valid && !r_valid && !x_valid
                     && lsu_req_ready && !lsu_cpl_valid
                     && !fpu_busy && !red_pend && !w_en
-                    && !mtx_busy
+                    && !mtx_busy && !txf_busy
                     && (wb_rsv == {WB_DEPTH{1'b0}});
 
     // Signals decoded but not consumed by the Stage-1 datapath. They are kept

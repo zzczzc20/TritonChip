@@ -31,7 +31,7 @@ module tb_tnca_core;
     parameter MEM_LATENCY    = 1;
     parameter RANDOM_STALL   = 0;
     parameter MEM_REORDER    = 0;
-    parameter LSU_TAG_W      = 3;
+    parameter LSU_TAG_W      = 5;
 
     reg clk = 1'b0;
     reg rst_n = 1'b0;

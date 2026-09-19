@@ -33,7 +33,7 @@ module tnca_top #(
     parameter PHYS_VREGS  = 128,
     parameter PHYS_W      = 7,
     parameter LSU_BEATS   = 8,
-    parameter LSU_TAG_W   = 3,
+    parameter LSU_TAG_W   = 5,
     parameter LINE_BYTES  = 64,
     parameter LINE_BITS   = 512,
     parameter SETS        = 64,

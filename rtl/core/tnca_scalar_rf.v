@@ -29,6 +29,12 @@ module tnca_scalar_rf #(
     input  wire [RCTX_W-1:0]     rc_rctx,
     input  wire [5:0]            rc_idx,
     output wire [63:0]           rc_data,
+    // read port D -- a transfer's coordinates come from CONSECUTIVE scalar
+    // registers (ISA sec 9E), so the second one needs its own read. The scalar
+    // file is small enough that a fourth port is cheaper than a second cycle.
+    input  wire [RCTX_W-1:0]     rd_rctx,
+    input  wire [5:0]            rd_idx,
+    output wire [63:0]           rd_data,
 
     // write port
     input  wire                  w_en,
@@ -58,6 +64,7 @@ module tnca_scalar_rf #(
     wire [RCTX_W+5:0] aa = {ra_rctx, ra_idx};
     wire [RCTX_W+5:0] ab = {rb_rctx, rb_idx};
     wire [RCTX_W+5:0] ac = {rc_rctx, rc_idx};
+    wire [RCTX_W+5:0] ad = {rd_rctx, rd_idx};
 
     assign ra_data = (ra_idx == 6'd0)            ? 64'd0 :
                      (w_real && (aa == wa))      ? w_data : mem[aa];
@@ -65,5 +72,7 @@ module tnca_scalar_rf #(
                      (w_real && (ab == wa))      ? w_data : mem[ab];
     assign rc_data = (rc_idx == 6'd0)            ? 64'd0 :
                      (w_real && (ac == wa))      ? w_data : mem[ac];
+    assign rd_data = (rd_idx == 6'd0)            ? 64'd0 :
+                     (w_real && (ad == wa))      ? w_data : mem[ad];
 
 endmodule

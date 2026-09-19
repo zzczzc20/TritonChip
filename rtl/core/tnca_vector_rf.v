@@ -55,7 +55,19 @@ module tnca_vector_rf #(
     input  wire [RCTX_W-1:0]         w_rctx,
     input  wire [7:0]                w_idx,
     input  wire [VLEN-1:0]           w_lane_en,
-    input  wire [VLEN*ELEN-1:0]      w_data
+    input  wire [VLEN*ELEN-1:0]      w_data,
+
+    // Second write port, for the transfer engine. A transfer lands over many
+    // cycles while the pipeline keeps running; routing it through the execute
+    // stage's write port would make every asynchronous load a source of
+    // pipeline stalls, which is the opposite of what it is for. In a banked
+    // implementation (arch overview sec 5.3) the two ports are usually
+    // different banks and this is not an extra port at all.
+    input  wire                      x_en,
+    input  wire [RCTX_W-1:0]         x_rctx,
+    input  wire [7:0]                x_idx,
+    input  wire [VLEN-1:0]           x_lane_en,
+    input  wire [VLEN*ELEN-1:0]      x_data
 );
 
     reg [VLEN*ELEN-1:0] mem [0:PHYS_VREGS-1];
@@ -69,16 +81,23 @@ module tnca_vector_rf #(
     endfunction
 
     wire [PHYS_W-1:0] wa = phys(w_rctx, w_idx);
+    wire [PHYS_W-1:0] xa = phys(x_rctx, x_idx);
 
     integer i, l;
     always @(posedge clk) begin
         if (!rst_n) begin
             for (i = 0; i < PHYS_VREGS; i = i + 1)
                 mem[i] <= {(VLEN*ELEN){1'b0}};
-        end else if (w_en) begin
-            for (l = 0; l < VLEN; l = l + 1) begin
-                if (w_lane_en[l])
-                    mem[wa][l*ELEN +: ELEN] <= w_data[l*ELEN +: ELEN];
+        end else begin
+            if (w_en) begin
+                for (l = 0; l < VLEN; l = l + 1)
+                    if (w_lane_en[l])
+                        mem[wa][l*ELEN +: ELEN] <= w_data[l*ELEN +: ELEN];
+            end
+            if (x_en) begin
+                for (l = 0; l < VLEN; l = l + 1)
+                    if (x_lane_en[l])
+                        mem[xa][l*ELEN +: ELEN] <= x_data[l*ELEN +: ELEN];
             end
         end
     end

@@ -109,13 +109,24 @@ the compiler, so it is undefined by design, and `footprints.py` models it. The
 happened was a wrong address. That is the difference between a contract the
 compiler can honour and a trap it cannot see.
 
-## Where C0 stops
+## C1: the first closure
 
-No lowering exists yet. `TNCABackend.add_stages` raises rather than returning
-a half pipeline, because a backend that compiles something almost right is
-worse than one that refuses: §11.1 asks for an explicit error when a resource
-does not fit, not a quiet break of an asynchronous lifetime.
+§15 C1 sets the bar plainly — 不修改输出汇编，不人工补 barrier，直接运行编译
+产物. The first case now clears it.
 
-C1 is the first real Triton→RTL closure — vector add, masked elementwise,
-integer and FP32 reduction, simple control flow — with the requirement that
-the emitted assembly runs unmodified, with no hand-added barrier.
+`tnca_cc.lower.lower_elementwise` emits TNCA assembly for a masked elementwise
+kernel. `compiler/test/test_rtl_closure.py` assembles that output with the
+existing `tools/asm/tnca_asm.py` and runs it on the Icarus model of the core,
+appending only data and assertions — never an edit to an emitted instruction.
+It is checked two ways: instruction-for-instruction against the hand-written
+`tb/core/progs/t16_vecadd.s` (§11.1 keeps that comparison available so a
+compiler bug and an encoding bug can be told apart), and by the arithmetic
+itself on the RTL, masked tail included.
+
+Still to do for C1: integer and FP32 reduction, gather/scatter, blocks wider
+than one vector register, and the Triton frontend in front of it. The lowering
+takes a small kernel description rather than TTIR today, which is why it is a
+slice and not the milestone.
+
+Anything not lowered raises rather than approximating. §11.1 is explicit:
+资源不够可以先明确报错，不能为了快速"支持"而偷偷破坏异步生命周期.

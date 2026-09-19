@@ -322,7 +322,7 @@ compiler: $(ISA_SCHEMA) $(TARGET_JSON)
 	@$(PYTHON) $(TOOLS)/isa/gen.py --check all
 	@$(PYTHON) $(TOOLS)/isa/gen_target.py --check
 	@$(PYTHON) $(TOOLS)/isa/check_consistency.py
-	@$(PYTHON) compiler/test/run_tests.py
+	@$(PYTHON) compiler/test/run_tests.py --no-rtl
 	@$(PYTHON) compiler/test/IR/run_ir_tests.py
 
 .PHONY: pin
@@ -348,7 +348,13 @@ tnca-opt:
 	       -DCMAKE_BUILD_TYPE=Release > /dev/null
 	@ninja -C compiler/build
 
-test: lint unit compiler core core-slowmem core-ooo nuca mesh top
+.PHONY: compiler-rtl
+# sec 16.2 third layer: run the compiler's own output on the RTL. Needs
+# sim/build/tb_core.vvp, so it comes after `core`.
+compiler-rtl: $(BUILD)/tb_core.vvp
+	@$(PYTHON) compiler/test/run_tests.py --rtl
+
+test: lint unit compiler core compiler-rtl core-slowmem core-ooo nuca mesh top
 	@echo
 	@echo "=============================================="
 	@echo " TNCA regression: all tests passed"

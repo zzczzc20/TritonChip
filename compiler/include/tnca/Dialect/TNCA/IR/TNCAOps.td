@@ -74,6 +74,7 @@ def TNCA_DMALoadOp : TNCA_Op<"dma.load", [
 
 def TNCA_DMAStoreOp : TNCA_Op<"dma.store", [
     DeclareOpInterfaceMethods<TNCAAsyncOpInterface>,
+    DeclareOpInterfaceMethods<TNCAExecutionResourceInterface>,
     DeclareOpInterfaceMethods<MemoryEffectsOpInterface>]> {
   let summary = "Asynchronous tensor store from an RF window";
   let arguments = (ins TNCA_WindowType:$src, TNCA_DescType:$desc,

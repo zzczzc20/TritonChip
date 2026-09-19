@@ -45,4 +45,5 @@ add_custom_target(tnca-isa-check
 
 add_subdirectory(include/tnca/Dialect/TNCA/IR)
 add_subdirectory(lib/Dialect/TNCA/IR)
+add_subdirectory(lib/Dialect/TNCA/Transforms)
 add_subdirectory(tools/tnca-opt)

@@ -14,9 +14,11 @@
 #include "mlir/Tools/mlir-opt/MlirOptMain.h"
 
 #include "tnca/Dialect/TNCA/IR/TNCADialect.h"
+#include "tnca/Dialect/TNCA/Transforms/Passes.h"
 
 int main(int argc, char **argv) {
   mlir::registerAllPasses();
+  mlir::tnca::registerTNCAPasses();
 
   mlir::DialectRegistry registry;
   mlir::registerAllDialects(registry);

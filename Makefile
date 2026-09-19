@@ -7,6 +7,7 @@
 #   make isa        regenerate every ISA artifact from the single source
 #   make target     regenerate the compiler target description from the RTL
 #   make compiler   compiler unit tests + generated-file staleness checks
+#   make tnca-opt   build the MLIR dialect and tnca-opt (needs the pinned LLVM)
 #   make core       core tests only
 #   make synth      Yosys synthesis + PPA proxy report
 #   make lint       parse/elaborate every RTL file standalone
@@ -319,10 +320,30 @@ compiler: $(ISA_SCHEMA) $(TARGET_JSON)
 	@$(PYTHON) $(TOOLS)/isa/gen_target.py --check
 	@$(PYTHON) $(TOOLS)/isa/check_consistency.py
 	@$(PYTHON) compiler/test/run_tests.py
+	@$(PYTHON) compiler/test/IR/run_ir_tests.py
 
 .PHONY: pin
 pin:
 	@$(PYTHON) $(TOOLS)/isa/verify_pin.py
+
+# The MLIR half. Needs the pinned LLVM, which compiler/pin/fetch_toolchain.sh
+# obtains; `make compiler` skips the IR tests rather than failing when the
+# build is absent, so a checkout with no LLVM still runs everything else.
+LLVM_PREFIX ?= $(HOME)/.triton/llvm/llvm-macos-arm64
+
+.PHONY: tnca-opt llvm-toolchain
+llvm-toolchain:
+	@compiler/pin/fetch_toolchain.sh
+
+tnca-opt:
+	@test -d $(LLVM_PREFIX) || { \
+	   echo "pinned LLVM not found at $(LLVM_PREFIX)"; \
+	   echo "run: make llvm-toolchain"; exit 1; }
+	@cmake -S compiler -B compiler/build -G Ninja \
+	       -DMLIR_DIR=$(LLVM_PREFIX)/lib/cmake/mlir \
+	       -DLLVM_DIR=$(LLVM_PREFIX)/lib/cmake/llvm \
+	       -DCMAKE_BUILD_TYPE=Release > /dev/null
+	@ninja -C compiler/build
 
 test: lint unit compiler core core-slowmem core-ooo nuca mesh top
 	@echo

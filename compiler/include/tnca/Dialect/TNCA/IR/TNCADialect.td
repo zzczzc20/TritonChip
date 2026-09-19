@@ -36,7 +36,9 @@ def TNCA_Dialect : Dialect {
   }];
 
   let useDefaultTypePrinterParser = 1;
-  let useDefaultAttributePrinterParser = 1;
+  // No attributes yet. Asking for the default attribute printer/parser here
+  // declares hooks with nothing behind them, which only shows up at link time.
+  let useDefaultAttributePrinterParser = 0;
   let dependentDialects = ["::mlir::arith::ArithDialect"];
 }
 

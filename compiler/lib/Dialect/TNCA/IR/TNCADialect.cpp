@@ -9,8 +9,10 @@
 
 #include "tnca/Dialect/TNCA/IR/TNCADialect.h"
 
+#include "mlir/Dialect/Arith/IR/Arith.h"
 #include "mlir/IR/Builders.h"
 #include "mlir/IR/DialectImplementation.h"
+#include "llvm/ADT/TypeSwitch.h"
 
 using namespace mlir;
 using namespace mlir::tnca;
@@ -20,29 +22,26 @@ using namespace mlir::tnca;
 #define GET_TYPEDEF_CLASSES
 #include "tnca/Dialect/TNCA/IR/TNCATypes.cpp.inc"
 
+#include "tnca/Dialect/TNCA/IR/TNCAInterfaces.cpp.inc"
+
 #define GET_OP_CLASSES
 #include "tnca/Dialect/TNCA/IR/TNCAOps.cpp.inc"
 
-namespace {
-// The ISA, as generated. Kept in one place so a lowering never spells an
-// opcode literally.
-struct TNCAInstDesc {
-  const char *mnemonic;
-  unsigned major;
-  unsigned func;
-  bool maskable;
-};
+//===----------------------------------------------------------------------===//
+// The generated ISA table
+//===----------------------------------------------------------------------===//
 
-constexpr TNCAInstDesc kInstructions[] = {
+static constexpr InstDesc kInstructions[] = {
 #define TNCA_INST(ID, MNEMONIC, MAJOR, FUNC, MASKABLE)                         \
   {MNEMONIC, MAJOR, FUNC, MASKABLE},
 #include "tnca/ISA/TNCAOpcodes.inc"
 #undef TNCA_INST
 };
-} // namespace
 
-namespace mlir::tnca {
-const TNCAInstDesc *lookupInstruction(llvm::StringRef mnemonic) {
+namespace mlir {
+namespace tnca {
+
+const InstDesc *lookupInstruction(llvm::StringRef mnemonic) {
   for (const auto &desc : kInstructions)
     if (mnemonic == desc.mnemonic)
       return &desc;
@@ -50,7 +49,13 @@ const TNCAInstDesc *lookupInstruction(llvm::StringRef mnemonic) {
 }
 
 unsigned getNumInstructions() { return std::size(kInstructions); }
-} // namespace mlir::tnca
+
+} // namespace tnca
+} // namespace mlir
+
+//===----------------------------------------------------------------------===//
+// Dialect
+//===----------------------------------------------------------------------===//
 
 void TNCADialect::initialize() {
   addOperations<

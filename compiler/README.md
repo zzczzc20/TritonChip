@@ -11,20 +11,28 @@ that split decides what is usable right now.
 
 | Path | Status |
 |---|---|
-| Bring-up: TNCA IR → assembly → `tools/asm/tnca_asm.py` → RTL (§11.1) | Python only. Runs here with nothing installed. |
-| MLIR: the `tnca` dialect, `tnca-opt`, the Triton plugin | Written, **not built**. Needs the pinned LLVM. |
+| Bring-up: TNCA IR → assembly → `tools/asm/tnca_asm.py` → RTL (§11.1) | Python. Runs with nothing installed. |
+| MLIR: the `tnca` dialect, `tnca-opt`, the async verifier | **Builds and runs.** |
+| Triton frontend plugin | Skeleton; needs a Triton build. |
 | Thin LLVM target (§11.2) | Encodings generated; the target itself is deliberately not started. |
 
-This host is macOS arm64 with no LLVM, no MLIR and no Triton, and Triton
-publishes no macOS wheels. So nothing in `lib/`, `tools/tnca-opt/` or the
-TableGen files has been compiled — they are unverified beyond review. The
-Python half, the ISA schema, the target contract and the protocol model are
-tested, and `make compiler` runs them.
+### Getting the MLIR half
 
-Getting to a built MLIR pipeline needs either the prebuilt LLVM that Triton
-publishes for the pinned revision (`compiler/pin/toolchain.json` records the
-per-platform sha256 sums, `macos-arm64` among them) or a source build, and
-then a Linux host for Triton itself.
+```
+make llvm-toolchain     # fetch the pinned LLVM (about 355 MB, sha256 verified)
+make tnca-opt           # configure and build
+make compiler           # unit tests + IR tests
+```
+
+`fetch_toolchain.sh` downloads the prebuilt LLVM that Triton itself uses for
+the pinned revision, into `~/.triton/llvm` — the directory Triton's own build
+searches — so a later Triton build reuses it rather than fetching a second
+copy. The URL is not invented: it is the scheme `python/build_helpers.py`
+constructs, and the sha256 is the one `cmake/llvm-info.json` publishes for the
+platform. A mismatch refuses to unpack.
+
+`make compiler` skips the IR tests rather than failing when `tnca-opt` has not
+been built, so a checkout with no LLVM still runs everything else.
 
 ## Single ISA source (§11.3)
 
@@ -62,13 +70,15 @@ trusts is the file the silicon confirms.
 
 ```
 pin/toolchain.json       pinned Triton + LLVM, verified against upstream
+pin/fetch_toolchain.sh   fetch the prebuilt LLVM, sha256-checked
 targets/                 generated target descriptions
 python/tnca_cc/          the bring-up compiler: target, ISA, diagnostics,
                          implicit footprints (§13.4), protocol model (§16.2)
 backend/                 the Triton out-of-tree plugin
 include/, lib/           the tnca dialect (§5.3) and its two interfaces (§5.4)
-tools/tnca-opt/          the IR driver every §16.2 unit test will run against
-test/                    unit tests; `make compiler`
+lib/Dialect/TNCA/Transforms/  the async-resource verifier of §5.4
+tools/tnca-opt/          the IR driver every §16.2 unit test runs against
+test/                    Python unit tests and `test/IR/*.mlir`; `make compiler`
 ```
 
 ## Commands

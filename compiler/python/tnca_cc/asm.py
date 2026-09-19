@@ -74,6 +74,36 @@ class RegisterAllocator:
     def predicate(self):
         return self._take('p', self._p_free, 'predicate')
 
+    def scalar_run(self, count):
+        """A run of `count` consecutive scalar registers.
+
+        ISA sec 9E takes a transfer's coordinates from consecutive scalar
+        registers starting at Sb, and the instruction names only the first.
+        A scan that hands out whatever is free cannot satisfy that, so the run
+        is found explicitly -- and s63 is excluded as a base, because the next
+        index would be s0, which reads as zero and discards writes, so the
+        second coordinate could never be set.
+        """
+        if count < 1:
+            raise Diagnostic('a coordinate run needs at least one register')
+        free = set(self._s_free)
+        for first in sorted(free):
+            if first + count - 1 >= self.target.sregs_per_rctx:
+                break
+            run = list(range(first, first + count))
+            if all(i in free for i in run):
+                for i in run:
+                    self._s_free.remove(i)
+                self._live['s'].update(run)
+                self.peak['s'] = max(self.peak['s'], len(self._live['s']))
+                return run
+        raise ResourceError(
+            f"no run of {count} consecutive scalar registers is free",
+            because='a transfer reads its coordinates from consecutive '
+                    'registers (ISA sec 9E), so they cannot be scattered',
+            remedy='fewer live scalars across the transfer',
+            source='compiler_overview.md sec 10.1, 13.4')
+
     def reserve_vector(self, first, count):
         """Pin a vector range the planner has already assigned.
 

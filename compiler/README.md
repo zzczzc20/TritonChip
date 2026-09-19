@@ -13,8 +13,27 @@ that split decides what is usable right now.
 |---|---|
 | Bring-up: TNCA IR → assembly → `tools/asm/tnca_asm.py` → RTL (§11.1) | Python. Runs with nothing installed. |
 | MLIR: the `tnca` dialect, `tnca-opt`, the async verifier | **Builds and runs.** |
-| Triton frontend plugin | Skeleton; needs a Triton build. |
+| Triton frontend → TTIR → TNCA IR → RTL | **Closed.** `make triton-e2e` |
 | Thin LLVM target (§11.2) | Encodings generated; the target itself is deliberately not started. |
+
+### Building Triton
+
+Triton 3.8.0 builds on macOS arm64 against the pinned LLVM, though it is not
+officially supported there. What it needed:
+
+```
+GIT_CONFIG_COUNT=2 GIT_CONFIG_KEY_0=http.proxy GIT_CONFIG_VALUE_0= \
+GIT_CONFIG_KEY_1=https.proxy GIT_CONFIG_VALUE_1= \
+TRITON_APPEND_CMAKE_ARGS="-DTRITON_BUILD_UT=OFF" \
+TRITON_BUILD_PROTON=OFF MAX_JOBS=10 \
+  pip install -e . --no-build-isolation
+```
+
+Leave `LLVM_SYSPATH` unset — Triton finds `llvm-<rev>-macos-arm64-1` in
+`~/.triton/llvm` by name. Pointing it at the `llvm-macos-arm64` symlink makes
+`setup.py` link that name onto itself, and every later configure then fails
+with "Too many levels of symbolic links" while reporting only that it could
+not find MLIR.
 
 ### Getting the MLIR half
 

@@ -7,6 +7,7 @@
 #   make isa        regenerate every ISA artifact from the single source
 #   make target     regenerate the compiler target description from the RTL
 #   make compiler   compiler unit tests + generated-file staleness checks
+#   make triton-e2e Triton -> RTL closure (needs the pinned Triton build)
 #   make tnca-opt   build the MLIR dialect and tnca-opt (needs the pinned LLVM)
 #   make core       core tests only
 #   make synth      Yosys synthesis + PPA proxy report
@@ -348,13 +349,26 @@ tnca-opt:
 	       -DCMAKE_BUILD_TYPE=Release > /dev/null
 	@ninja -C compiler/build
 
+# The Triton frontend lives in its own virtualenv, because Triton must be
+# built against its own pinned LLVM (compiler/pin/toolchain.json) rather than
+# whatever the system Python has.
+TRITON_PYTHON ?= $(HOME)/src/tritonenv/bin/python
+
+.PHONY: triton-e2e
+triton-e2e: $(BUILD)/tb_core.vvp
+	@if [ -x "$(TRITON_PYTHON)" ]; then \
+	   $(TRITON_PYTHON) compiler/test/test_triton_e2e.py 2>&1 | tail -4; \
+	 else \
+	   echo "  triton-e2e             SKIP   no Triton at $(TRITON_PYTHON)"; \
+	 fi
+
 .PHONY: compiler-rtl
 # sec 16.2 third layer: run the compiler's own output on the RTL. Needs
 # sim/build/tb_core.vvp, so it comes after `core`.
 compiler-rtl: $(BUILD)/tb_core.vvp
 	@$(PYTHON) compiler/test/run_tests.py --rtl
 
-test: lint unit compiler core compiler-rtl core-slowmem core-ooo nuca mesh top
+test: lint unit compiler core compiler-rtl triton-e2e core-slowmem core-ooo nuca mesh top
 	@echo
 	@echo "=============================================="
 	@echo " TNCA regression: all tests passed"

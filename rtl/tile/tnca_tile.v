@@ -62,6 +62,7 @@ module tnca_tile #(
     input  wire [63:0]              launch_pc,
     input  wire [NUM_RCTX-1:0]      launch_role_mask,
     input  wire [63:0]              launch_arg_base,
+    input  wire [NUM_RCTX*PHYS_W-1:0] launch_vbase,
     output wire                     core_idle,
 
     output wire                     fault_valid,
@@ -132,7 +133,7 @@ module tnca_tile #(
         .launch_role_mask(launch_role_mask),
         .launch_pid_x(TILE_ID_32), .launch_pid_y(32'd0), .launch_pid_z(32'd0),
         .launch_npid_x(NUM_TILES_32), .launch_npid_y(32'd1), .launch_npid_z(32'd1),
-        .launch_arg_base(launch_arg_base),
+        .launch_arg_base(launch_arg_base), .launch_vbase(launch_vbase),
         .core_idle(core_idle),
         .fault_valid(fault_valid), .fault_code(fault_code),
         .fault_pc(fault_pc), .fault_rctx(), .fault_detail(fault_detail),

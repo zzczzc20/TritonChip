@@ -586,7 +586,7 @@ Epoch wrap is only legal when the barrier is quiescent.
 |---:|---|---|---|
 | `0x00` | `mb.init Bd` | `d`=barrier | epoch 0, counts 0, no waiters, error clear |
 | `0x01` | `mb.arm Sd, Ba, #arr, #ops` | `d`=Sd, `a`=barrier, `b`=arrivals, `c`=operations | `current_epoch++`; set both counts; `Sd` ← token |
-| `0x02` | `mb.arrive Ba` | `a`=barrier | release; `pending_arrivals--` |
+| `0x02` | `mb.arrive Ba` | `a`=barrier | release, then `pending_arrivals--` — see §9A.5 |
 | `0x03` | `mb.test Sd, Sa` | `d`=Sd, `a`=token | `Sd` = 1 if that generation has completed |
 | `0x04` | `mb.wait Sa` | `a`=token | acquire; sleep this RCTX until that generation completes |
 | `0x05` | `mb.inval Ba` | `a`=barrier | set error and wake every waiter |
@@ -602,6 +602,33 @@ transactions they expand into; one `m.mma.async` is `operations=1`.
 **A fully predicated-off asynchronous command still completes once** (§13.4), so
 a static operation count stays correct under predication. The compiler still
 has to get the consumer's control flow right.
+
+### 9A.5 What `release` covers
+
+`mb.arrive` carries release semantics, and that has to mean something a
+consumer can rely on. Scalar instructions retire in order, but a vector or FP
+result is still in flight for several cycles after its instruction has left the
+execute stage, and an asynchronous command may run for hundreds. An arrive that
+retired before those landed would make "everything before it is visible" false
+in exactly the cases a consumer cares about.
+
+> **`mb.arrive` does not retire until every register write this RCTX has issued
+> has landed, and no engine is mid-command.**
+
+An implementation may be more precise about which engine commands belong to
+which context; it may not be less precise about the register writes.
+
+This covers what the *arriving context* has done. It deliberately does **not**
+cover asynchronous commands as a class — those are counted as `operations`, not
+signalled by arrivals, precisely so that "the transfer finished" and "the
+producer reached this point" stay distinguishable (§13.1).
+
+### 9A.6 Re-initialising a barrier with a waiter
+
+`mb.init` resets `completed_epoch`, so a context already asleep on that barrier
+could never see its generation complete. Doing it is a program bug, and the
+hardware raises `BARRIER_FAULT` rather than inventing an ordering: no choice the
+hardware could make would be the one the program meant.
 
 ### 9A.4 Completion
 
@@ -663,15 +690,36 @@ that barrier's generation when it finishes.
 
 Precision and order are architectural, not an implementation detail:
 
-> Each product `A[m][k] * B[k][n]` is computed **exactly** — an FP16×FP16 or
-> BF16×BF16 product is exactly representable in binary32 — and added to the
-> binary32 accumulator with **one rounding per addition, in increasing `k`
-> order**.
+> ```
+> C[k+1] = RNE_f32( exact(A[m][k]) * exact(B[k][n]) + C[k] )
+> ```
+>
+> The product is formed at **full width and is never rounded on its own**; there
+> is exactly **one rounding per accumulation step**, applied to the sum, in
+> **increasing `k` order**.
 
 So the result is bit-reproducible across implementations, and an implementation
 may not reassociate for speed. An implementation that wants a faster reduction
 order must expose it as a different opcode, not as this one being faster
 somewhere.
+
+**Why this is stated as a fused operation rather than "the product is exact".**
+An earlier wording of this section claimed an FP16×FP16 *or BF16×BF16* product
+is exactly representable in binary32. That is true for FP16 and **false for
+BF16**: BF16 has the same 8-bit exponent field as binary32, so while its
+significand always fits, the *exponent* of a product need not. Two BF16 values
+near 3.4×10³⁸ multiply to about 10⁷⁷, which binary32 cannot represent at all.
+
+The distinction is observable, not pedantic:
+
+| | `A = 2^127` (BF16), `B = 2.0`, `C = -2^127` |
+|---|---|
+| fused, as specified | `2^127` |
+| product rounded first | `+inf` — because `2^128` overflows binary32 |
+
+A widened-input FP32 FMA gives the first answer. An implementation that
+converts to binary32, multiplies with rounding, then adds, gives the second and
+is **not** conforming. `tb_fp32_fma` carries these cases permanently.
 
 ### 9C.2 Fragment layout
 

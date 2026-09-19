@@ -131,6 +131,14 @@ module tnca_barrier #(
         end
     end
 
+    reg slp_on_init;
+    integer si;
+    always @(*) begin
+        slp_on_init = 1'b0;
+        for (si = 0; si < NUM_RCTX; si = si + 1)
+            if (slp_v[si] && (slp_bar[si] == init_bar)) slp_on_init = 1'b1;
+    end
+
     //--------------------------------------------------------------------------
     always @(posedge clk) begin
         if (!rst_n || flush) begin
@@ -153,7 +161,18 @@ module tnca_barrier #(
             //------------------------------------------------------------------
             // init
             //------------------------------------------------------------------
-            if (init_en) begin
+            // Re-initialising a barrier somebody is asleep on would strand
+            // that waiter forever: init resets completed_epoch to zero, so the
+            // generation it is waiting for can never appear to complete.
+            // doc/compiler_overview.md sec 13.3 asks for a deterministic
+            // start-up protocol; making the race a detected fault is the
+            // honest half of that, since no ordering the hardware could invent
+            // would be the one the program meant.
+            if (init_en && slp_on_init) begin
+                fault     <= 1'b1;
+                fault_bar <= init_bar;
+                err[init_bar] <= 1'b1;
+            end else if (init_en) begin
                 cur_epoch[init_bar]  <= {EPOCH_W{1'b0}};
                 done_epoch[init_bar] <= {EPOCH_W{1'b0}};
                 n_arrive[init_bar]   <= {CNT_W{1'b0}};

@@ -56,6 +56,7 @@ module tnca_top #(
     input  wire [63:0]              launch_pc,
     input  wire [NUM_RCTX-1:0]      launch_role_mask,
     input  wire [63:0]              launch_arg_base,
+    input  wire [NUM_RCTX*PHYS_W-1:0] launch_vbase,
     output wire                     all_idle,
 
     output wire [NX*NY-1:0]         fault_valid,
@@ -128,6 +129,7 @@ module tnca_top #(
                 .launch_valid(launch_valid), .launch_pc(launch_pc),
                 .launch_role_mask(launch_role_mask),
                 .launch_arg_base(launch_arg_base),
+                .launch_vbase(launch_vbase),
                 .core_idle(tile_idle[t]),
                 .fault_valid(fault_valid[t]),
                 .fault_code(fault_code[t*8 +: 8]),

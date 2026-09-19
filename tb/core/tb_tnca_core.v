@@ -53,6 +53,7 @@ module tb_tnca_core;
     reg [31:0]  pid_x = 0, pid_y = 0, pid_z = 0;
     reg [31:0]  npid_x = 1, npid_y = 1, npid_z = 1;
     reg [63:0]  arg_base = 64'd0;
+    reg [NUM_RCTX*PHYS_W-1:0] launch_vbase;
 
     wire        core_idle;
     wire        fault_valid;
@@ -75,6 +76,7 @@ module tb_tnca_core;
         .launch_pid_x(pid_x), .launch_pid_y(pid_y), .launch_pid_z(pid_z),
         .launch_npid_x(npid_x), .launch_npid_y(npid_y), .launch_npid_z(npid_z),
         .launch_arg_base(arg_base),
+        .launch_vbase(launch_vbase),
         .core_idle(core_idle),
         .fault_valid(fault_valid), .fault_code(fault_code),
         .fault_pc(fault_pc), .fault_rctx(fault_rctx), .fault_detail(fault_detail),
@@ -103,7 +105,7 @@ module tb_tnca_core;
     );
 
     reg [1023:0] hexfile, dumpfile, vcdfile;
-    integer maxcycles, dumpfirst, dumpcount;
+    integer maxcycles, dumpfirst, dumpcount, k;
     integer cyc;
     integer expectfault;
     reg do_trace, do_dump, want_fault;
@@ -130,6 +132,13 @@ module tb_tnca_core;
         launch_role_mask = {{(NUM_RCTX-1){1'b0}}, 1'b1};
         if ($test$plusargs("allroles"))
             launch_role_mask = {NUM_RCTX{1'b1}};
+
+        // Per-RCTX physical vector base. Disjoint by default; +aliasvrf gives
+        // every context the same base, which is what a producer/consumer role
+        // pair needs to share a window with no copy.
+        for (k = 0; k < NUM_RCTX; k = k + 1)
+            launch_vbase[k*PHYS_W +: PHYS_W] =
+                $test$plusargs("aliasvrf") ? 0 : (k * VREGS_PER_RCTX);
 
         // Stimulus is driven one delta after the clock edge, never on it: a
         // blocking assignment in the active region of the same edge the DUT

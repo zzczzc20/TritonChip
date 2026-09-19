@@ -40,6 +40,7 @@ module tb_tnca_top;
     reg  [63:0]            launch_pc = 64'd0;
     reg  [NUM_RCTX-1:0]    launch_role_mask;
     reg  [63:0]            launch_arg_base = 64'd0;
+    reg [NUM_RCTX*7-1:0]   launch_vbase;
     wire                   all_idle;
 
     wire [N-1:0]      fault_valid;
@@ -73,6 +74,7 @@ module tb_tnca_top;
         .clk(clk), .rst_n(rst_n),
         .launch_valid(launch_valid), .launch_pc(launch_pc),
         .launch_role_mask(launch_role_mask), .launch_arg_base(launch_arg_base),
+        .launch_vbase(launch_vbase),
         .all_idle(all_idle),
         .fault_valid(fault_valid), .fault_code(fault_code),
         .fault_pc(fault_pc), .fault_detail(fault_detail),
@@ -154,6 +156,8 @@ module tb_tnca_top;
 
         launch_role_mask = $test$plusargs("allroles") ? {NUM_RCTX{1'b1}}
                                                      : {{(NUM_RCTX-1){1'b0}}, 1'b1};
+        for (k = 0; k < NUM_RCTX; k = k + 1)
+            launch_vbase[k*7 +: 7] = k * 64;
 
         repeat (4) @(posedge clk);
         #1 rst_n = 1'b1;

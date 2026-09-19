@@ -75,6 +75,29 @@ def main():
                       mul_only=bool(ctrl & 2), ftz=bool(ctrl & 4))
         lines.append(f"{a:08x} {b:08x} {c:08x} {ctrl:x} {exp:08x}")
 
+    # BF16 exponent-range cases. BF16 shares binary32's exponent field, so a
+    # BF16 x BF16 product can overflow binary32 even though its significand
+    # always fits -- and the FUSED result may still be finite. An
+    # implementation that rounds the product before adding fails every one of
+    # these. See ISA sec 9C.1.
+    def p2(e):
+        return (e + 127) << 23 if -126 <= e <= 127 else None
+
+    bf_cases = [
+        (0x7f000000, F(2.0),     p2(127) | 0x80000000),   # 2^127*2 - 2^127
+        (0x7f7f0000, 0x7f7f0000, 0xff800000),             # huge*huge - inf
+        (0x7f000000, 0x7f000000, 0xff800000),             # 2^254 - inf
+        (0x7f000000, 0x00800000, F(0.0)),                 # 2^127 * 2^-126
+        (0x00800000, 0x00800000, F(1.0)),                 # 2^-252 + 1
+        (0xff000000, F(2.0),     p2(127)),                # -2^128 + 2^127
+        (0x7f000000, 0x7f000000, p2(127) | 0x80000000),   # 2^254 - 2^127
+        (0x7f000000, F(4.0),     0x80000000),             # 2^129 + -0 overflows
+    ]
+    for a, b, c in bf_cases:
+        for ctrl in (0, 1):
+            exp = fma_ref(a, b, c, sub_c=bool(ctrl & 1))
+            lines.append(f"{a:08x} {b:08x} {c:08x} {ctrl:x} {exp:08x}")
+
     # Cancellation sweep: a*b and c chosen to nearly annihilate.
     for _ in range(args.count // 4):
         e = rng.randint(30, 220)

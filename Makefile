@@ -43,7 +43,7 @@ RTLY       := -y $(RTL)/common -y $(RTL)/core -y $(RTL)/nuca -y $(RTL)/noc \
 FMA_VECTORS ?= 20000
 
 CORE_PROGS := t00_scalar t01_vector t02_mem t03_fp t04_roles t05_fault t06_alu \
-              t11_matrix t12_tensor
+              t11_matrix t12_tensor t13_share
 
 # Image size in 64-bit words; must match tb_tnca_core's WORDS parameter.
 IMAGE_WORDS := 16384
@@ -52,6 +52,8 @@ IMAGE_WORDS := 16384
 # test, so a clean run is the failure.
 ARGS_t04_roles := +allroles
 ARGS_t05_fault := +allroles +expectfault=01
+# t13 needs two contexts AND an aliased vector base: that is the whole point.
+ARGS_t13_share := +allroles +aliasvrf
 
 .PHONY: all test unit core synth lint clean dirs help
 
@@ -158,6 +160,7 @@ CORE_HEX := $(patsubst %,$(BUILD)/%.hex,$(CORE_PROGS))
 
 core: export ARGS_t04_roles := $(ARGS_t04_roles)
 core: export ARGS_t05_fault := $(ARGS_t05_fault)
+core: export ARGS_t13_share := $(ARGS_t13_share)
 core: $(BUILD)/tb_core.vvp $(CORE_HEX)
 	@for p in $(CORE_PROGS); do \
 	   extra=$$(eval echo \$${ARGS_$$p}); \
@@ -171,6 +174,7 @@ core: $(BUILD)/tb_core.vvp $(CORE_HEX)
 .PHONY: core-slowmem
 core-slowmem: export ARGS_t04_roles := $(ARGS_t04_roles)
 core-slowmem: export ARGS_t05_fault := $(ARGS_t05_fault)
+core-slowmem: export ARGS_t13_share := $(ARGS_t13_share)
 core-slowmem: $(CORE_HEX) | dirs
 	$(IVERILOG) $(IVFLAGS) -y $(RTL)/core -y $(RTL)/common -y $(TB)/common \
 	   -P tb_tnca_core.MEM_LATENCY=7 -P tb_tnca_core.RANDOM_STALL=1 \
@@ -190,6 +194,7 @@ core-slowmem: $(CORE_HEX) | dirs
 .PHONY: core-ooo
 core-ooo: export ARGS_t04_roles := $(ARGS_t04_roles)
 core-ooo: export ARGS_t05_fault := $(ARGS_t05_fault)
+core-ooo: export ARGS_t13_share := $(ARGS_t13_share)
 core-ooo: $(CORE_HEX) | dirs
 	$(IVERILOG) $(IVFLAGS) -y $(RTL)/core -y $(RTL)/common -y $(TB)/common \
 	   -P tb_tnca_core.MEM_LATENCY=6 -P tb_tnca_core.RANDOM_STALL=1 \

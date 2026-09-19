@@ -1,10 +1,21 @@
 //==============================================================================
 // tnca_vector_rf -- vector register file, PHYS_VREGS x (VLEN * ELEN) bit
 //
-// The physical file is a core-wide pool; each RCTX gets a static contiguous
-// window of VREGS_PER_RCTX logical names into it (arch overview sec 5.1: "物理 RF
-// 在 launch 时静态分配"). The window base is derived from the RCTX id here;
-// the programmable window table arrives in Stage 2 together with RF windows.
+// The physical file is a core-wide pool and each RCTX sees VREGS_PER_RCTX
+// logical names into it through a PROGRAMMABLE base, set at launch (arch
+// overview sec 5.1: "物理 RF 在 launch 时静态分配").
+//
+// The base has to be programmable, not derived from the RCTX id. With
+// `phys = rctx * VREGS_PER_RCTX + idx` two role contexts can never name the
+// same physical register, so a producer role cannot hand a tile to a consumer
+// role through a shared RF window -- and that is the preferred cross-role
+// communication path for tensors. Every transfer would have to go out to the
+// cache and back, which is the cost the whole design exists to avoid.
+//
+// Equal bases alias two contexts completely; disjoint bases reproduce the old
+// behaviour. The kernel manifest states the mapping, so the compiler and the
+// hardware agree on which logical name in which context is which physical
+// register (doc/compiler_overview.md sec 13.1).
 //
 // Per-lane write enables implement the masked-write rule (ISA sec 2.2) without
 // a read-modify-write through the datapath.
@@ -23,6 +34,7 @@
 module tnca_vector_rf #(
     parameter PHYS_VREGS     = 128,
     parameter VREGS_PER_RCTX = 64,
+    parameter NUM_RCTX       = 2,
     parameter VLEN           = 16,
     parameter ELEN           = 32,
     parameter RCTX_W         = 1,
@@ -30,6 +42,9 @@ module tnca_vector_rf #(
 ) (
     input  wire                      clk,
     input  wire                      rst_n,
+
+    // per-RCTX physical base, flattened
+    input  wire [NUM_RCTX*PHYS_W-1:0] vbase,
 
     input  wire [RCTX_W-1:0]         ra_rctx,
     input  wire [7:0]                ra_idx,
@@ -72,16 +87,18 @@ module tnca_vector_rf #(
 
     reg [VLEN*ELEN-1:0] mem [0:PHYS_VREGS-1];
 
-    function [PHYS_W-1:0] phys;
-        input [RCTX_W-1:0] rctx;
-        input [7:0]        idx;
-        begin
-            phys = rctx * VREGS_PER_RCTX + idx;
-        end
-    endfunction
+    // Written as continuous assignments, not a function: a function called from
+    // a continuous assignment is only re-evaluated when its ARGUMENTS change,
+    // so a base read from module scope inside one would go stale.
+    wire [PHYS_W-1:0] base_a = vbase[ra_rctx*PHYS_W +: PHYS_W];
+    wire [PHYS_W-1:0] base_b = vbase[rb_rctx*PHYS_W +: PHYS_W];
+    wire [PHYS_W-1:0] base_c = vbase[rc_rctx*PHYS_W +: PHYS_W];
+    wire [PHYS_W-1:0] base_d = vbase[rd_rctx*PHYS_W +: PHYS_W];
+    wire [PHYS_W-1:0] base_w = vbase[w_rctx*PHYS_W  +: PHYS_W];
+    wire [PHYS_W-1:0] base_x = vbase[x_rctx*PHYS_W  +: PHYS_W];
 
-    wire [PHYS_W-1:0] wa = phys(w_rctx, w_idx);
-    wire [PHYS_W-1:0] xa = phys(x_rctx, x_idx);
+    wire [PHYS_W-1:0] wa = base_w + w_idx;
+    wire [PHYS_W-1:0] xa = base_x + x_idx;
 
     integer i, l;
     always @(posedge clk) begin
@@ -103,10 +120,10 @@ module tnca_vector_rf #(
     end
 
     // Write-first read with per-lane granularity.
-    wire [PHYS_W-1:0] aa = phys(ra_rctx, ra_idx);
-    wire [PHYS_W-1:0] ab = phys(rb_rctx, rb_idx);
-    wire [PHYS_W-1:0] ac = phys(rc_rctx, rc_idx);
-    wire [PHYS_W-1:0] ad = phys(rd_rctx, rd_idx);
+    wire [PHYS_W-1:0] aa = base_a + ra_idx;
+    wire [PHYS_W-1:0] ab = base_b + rb_idx;
+    wire [PHYS_W-1:0] ac = base_c + rc_idx;
+    wire [PHYS_W-1:0] ad = base_d + rd_idx;
 
     wire hit_a = w_en && (aa == wa);
     wire hit_b = w_en && (ab == wa);

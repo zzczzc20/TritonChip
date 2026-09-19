@@ -90,6 +90,11 @@ module tnca_core #(
     input  wire [31:0]              launch_npid_y,
     input  wire [31:0]              launch_npid_z,
     input  wire [63:0]              launch_arg_base,
+    // Per-RCTX physical vector-register base. Equal bases alias two contexts so
+    // a producer role can hand a tile to a consumer through a shared RF window
+    // with no copy; disjoint bases keep them private. The kernel manifest
+    // states which (doc/compiler_overview.md sec 13.1).
+    input  wire [NUM_RCTX*PHYS_W-1:0] launch_vbase,
     output wire                     core_idle,
 
     // ---- fault reporting -----------------------------------------------------
@@ -147,6 +152,7 @@ module tnca_core #(
     reg [63:0]          f_pc    [0:NUM_RCTX-1];
     reg [23:0]          f_detail[0:NUM_RCTX-1];
 
+    reg [NUM_RCTX*PHYS_W-1:0] vbase_q;
     reg [31:0] pid_x, pid_y, pid_z, npid_x, npid_y, npid_z;
     reg [63:0] arg_base;
     reg [63:0] clock_ctr;
@@ -364,9 +370,10 @@ module tnca_core #(
 
     tnca_vector_rf #(
         .PHYS_VREGS(PHYS_VREGS), .VREGS_PER_RCTX(VREGS_PER_RCTX),
+        .NUM_RCTX(NUM_RCTX),
         .VLEN(VLEN), .ELEN(ELEN), .RCTX_W(RCTX_W), .PHYS_W(PHYS_W)
     ) u_vrf (
-        .clk(clk), .rst_n(rst_n),
+        .clk(clk), .rst_n(rst_n), .vbase(vbase_q),
         .ra_rctx(x_rctx), .ra_idx(x_va_idx), .ra_data(va_data),
         .rb_rctx(x_rctx), .rb_idx(x_vb_idx), .rb_data(vb_data),
         .rc_rctx(x_rctx), .rc_idx(x_vc_idx), .rc_data(vc_data),
@@ -1057,6 +1064,39 @@ module tnca_core #(
 
     // Same "free NEXT cycle" question as the LSU: the engine is claimed from X,
     // one cycle after R looks.
+    // ---- mb.arrive release semantics (doc/compiler_overview.md sec 13.2) ----
+    //
+    // `release` has to mean something checkable. Scalar instructions retire in
+    // order, but a vector or FP result is still in flight several cycles after
+    // its instruction left the execute stage, and an asynchronous command may
+    // be running for hundreds. Letting mb.arrive retire before those land would
+    // make "everything before the arrive is visible" false in exactly the cases
+    // a consumer cares about.
+    //
+    // So an arrive drains first: it waits until this RCTX has no outstanding
+    // register write and no engine is mid-command. Conservative -- it also
+    // waits on an engine running another context's command -- and deliberately
+    // so, because the precise version needs per-command ownership that buys
+    // nothing at two contexts.
+    reg [NUM_RCTX-1:0] rctx_wr_busy;
+    integer rb_i, rb_j;
+    always @(*) begin
+        for (rb_i = 0; rb_i < NUM_RCTX; rb_i = rb_i + 1) begin
+            rctx_wr_busy[rb_i] = 1'b0;
+            for (rb_j = 1; rb_j < 64; rb_j = rb_j + 1)
+                if (sb_s[rb_i*64 + rb_j]) rctx_wr_busy[rb_i] = 1'b1;
+            for (rb_j = 0; rb_j < VREGS_PER_RCTX; rb_j = rb_j + 1)
+                if (sb_v[rb_i*VREGS_PER_RCTX + rb_j]) rctx_wr_busy[rb_i] = 1'b1;
+            for (rb_j = 1; rb_j < 16; rb_j = rb_j + 1)
+                if (sb_p[rb_i*16 + rb_j]) rctx_wr_busy[rb_i] = 1'b1;
+        end
+    end
+
+    wire r_is_arrive = r_valid && (r_major == `TNCA_MAJ_MBAR)
+                                && (r_func  == `TNCA_MB_ARRIVE);
+    wire stall_arrive = r_is_arrive && (rctx_wr_busy[r_rctx] || !lsu_req_ready
+                                        || mtx_busy || txf_busy);
+
     wire r_needs_txf = r_valid && (r_fu == `TNCA_FU_TXFER);
     wire txf_free_next = !txf_busy && !txf_is_cfg && !txf_is_xfr;
     wire stall_txf = r_needs_txf && !txf_free_next;
@@ -1082,7 +1122,8 @@ module tnca_core #(
 
     wire stall_rsv = r_books_wb && wb_rsv[r_wb_delay + 4'd1];
 
-    wire stall_front = hazard | stall_lsu | stall_fpu | stall_mtx | stall_txf | stall_rsv | wb_steal;
+    wire stall_front = hazard | stall_lsu | stall_fpu | stall_mtx | stall_txf
+                     | stall_arrive | stall_rsv | wb_steal;
 
     // A redirect kills only the younger entries of the same RCTX.
     wire             squash_en   = x_redirect;
@@ -1130,6 +1171,8 @@ module tnca_core #(
             perf_stall_lsu    <= 64'd0;
             perf_stall_wb     <= 64'd0;
             perf_squash       <= 64'd0;
+            for (i = 0; i < NUM_RCTX; i = i + 1)
+                vbase_q[i*PHYS_W +: PHYS_W] <= i * VREGS_PER_RCTX;
             for (i = 0; i < NUM_RCTX; i = i + 1) begin
                 pc[i]      <= 64'd0;
                 instret[i] <= 64'd0;
@@ -1208,6 +1251,7 @@ module tnca_core #(
                 npid_y   <= launch_npid_y;
                 npid_z   <= launch_npid_z;
                 arg_base <= launch_arg_base;
+                vbase_q  <= launch_vbase;
                 d_valid  <= 1'b0;
                 r_valid  <= 1'b0;
                 x_valid  <= 1'b0;

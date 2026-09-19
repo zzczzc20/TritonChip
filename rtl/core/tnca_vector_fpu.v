@@ -1,8 +1,9 @@
 //==============================================================================
 // tnca_vector_fpu -- VLEN-lane binary32 unit
 //
-// Covers ISA major 0x11 (vector FP), 0x12 (convert), the FP subset of 0x15
-// (reduction) and 0x16 (SFU).
+// Covers ISA major 0x11 (vector FP), 0x12 (convert, including the five-format
+// float-to-float conversion of sec 8.4), the FP subset of 0x15 (reduction)
+// and 0x16 (SFU).
 //
 // Every arithmetic result goes through tnca_fp32_fma, so there is exactly one
 // rounding implementation in the core:
@@ -188,6 +189,27 @@ module tnca_vector_fpu #(
         end
     end
 
+    //--------------------------------------------------------------------------
+    // vf.cvt.<src>.<dst> -- float to float across the five formats.
+    //
+    // One generated converter per lane, unpipelined. The pipelined sibling
+    // exists (rtl/gen/tnca_cvt_xls.v) and is not what belongs here: this
+    // unit's clock is set by its FMA at 115 gate levels and the convert chain
+    // is 54, so a pipelined instance would add 253 flops per lane to buy
+    // timing the unit has no way to use. Both are generated from the same
+    // DSLX and both are checked against the same exact oracle by tb_cvt_xls.
+    //
+    // The result is combinational, so it joins the other non-FMA results on
+    // the FP_LAT delay line below.
+    //--------------------------------------------------------------------------
+    generate
+        for (g = 0; g < VLEN; g = g + 1) begin : g_fcvt
+            tnca_cvt_comb_xls u_cvt (
+                .src(mod[2:0]), .dst(mod[5:3]), .x(a[g]), .out(fcvt[g])
+            );
+        end
+    endgenerate
+
     wire [ELEN-1:0] fma_y [0:VLEN-1];
     generate
         for (g = 0; g < VLEN; g = g + 1) begin : g_fma
@@ -223,6 +245,7 @@ module tnca_vector_fpu #(
     reg [ELEN-1:0] mm  [0:VLEN-1];
     reg            cmpr[0:VLEN-1];
     reg [ELEN-1:0] cvt [0:VLEN-1];
+    wire [ELEN-1:0] fcvt[0:VLEN-1];
     reg [ELEN-1:0] na  [0:VLEN-1];
 
     reg x_nan, y_nan, both_zero, alt, is_max;
@@ -490,7 +513,8 @@ module tnca_vector_fpu #(
         end
         `TNCA_MAJ_CVT: begin
             for (i = 0; i < VLEN; i = i + 1)
-                nf_v[i*ELEN +: ELEN] = cvt[i];
+                nf_v[i*ELEN +: ELEN] = (func == `TNCA_CVT_FMT) ? fcvt[i]
+                                                               : cvt[i];
         end
         default: ;
         endcase

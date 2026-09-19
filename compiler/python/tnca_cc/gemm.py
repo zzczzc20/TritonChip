@@ -33,7 +33,15 @@ from .diagnostics import Diagnostic, ResourceError
 from .footprints import fragment_registers
 from .ir import Builder, make_kernel
 
-_DTYPE_BITS = {'f16': 16, 'bf16': 16}
+# ISA sec 9C's four fragment formats and their element widths. The width is
+# what the transfer plan needs -- an 8-bit element halves the bytes a fragment
+# occupies, and therefore the registers a window must cover.
+_DTYPE_BITS = {'f16': 16, 'bf16': 16, 'e5m2': 8, 'e4m3': 8}
+
+# Which CAPABILITY0 bit each fragment format needs (ISA sec 11). The two FP8
+# encodings share one bit because they share one widening path.
+_DTYPE_CAP = {'f16': 'matrix_f16', 'bf16': 'matrix_bf16',
+              'e5m2': 'matrix_fp8', 'e4m3': 'matrix_fp8'}
 
 
 @dataclass
@@ -146,8 +154,8 @@ def plan_gemm(target, *, m, n, k, dtype='f16'):
             f"no GEMM lowering for {dtype!r}",
             because=f"the matrix unit takes {sorted(_DTYPE_BITS)}",
             source='ISA sec 9C')
-    cap = 'matrix_bf16' if dtype == 'bf16' else 'matrix_f16'
-    target.require(cap, f"emit m.mma.async with {dtype} inputs")
+    target.require(_DTYPE_CAP[dtype],
+                   f"emit m.mma.async with {dtype} inputs")
 
     fm, fn, fk = target.mma_shape
     if m > fm or n > fn:

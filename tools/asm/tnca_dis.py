@@ -17,7 +17,7 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from tnca_isa import (ISA, MAJ, MAJ_NAME, CC_NAME, SPECIAL_NAME, SIZE,
                       CACHE_HINT, FMINMAX_MODE, RND, decode_fields,
-                      MASKABLE_MAJORS, MMA_K, MMA_DT)
+                      MASKABLE_MAJORS, MMA_K, MMA_DT, FMT_NAME)
 
 BY_OPCODE = {}
 for _m, (_maj, _fn, _kinds, _sfx) in ISA.items():
@@ -60,6 +60,9 @@ def disassemble(word, addr=0):
     elif sfx == 'redb':
         if mod & 1:
             name += '.b'
+    elif sfx == 'fmt2':
+        name += '.' + FMT_NAME.get(mod & 7, f'fmt?{mod & 7}')
+        name += '.' + FMT_NAME.get((mod >> 3) & 7, f'fmt?{(mod >> 3) & 7}')
     elif sfx == 'mma':
         k, dt = mod & 3, (mod >> 2) & 3
         if k:

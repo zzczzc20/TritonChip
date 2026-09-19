@@ -9,9 +9,10 @@ which parts, why those and not others, and what the decision cost and bought.
 | Module | From | What it does | Stages | Latency |
 |---|---|---|---:|---:|
 | `tnca_widen_xls` | `xls/tnca_cvt.x` | any narrow format → binary32 | comb. | 0 |
-| `tnca_widen_pair_xls` | `xls/tnca_fpu.x` | two operands at once, for the matrix unit | comb. | 0 |
+| `tnca_widen_pair_xls` | `xls/tnca_fpu.x` | two operands at once | comb. | 0 |
 | `tnca_narrow_xls` | `xls/tnca_cvt.x` | binary32 → any narrow format, RNE | 3 | 2 |
 | `tnca_cvt_xls` | `xls/tnca_cvt.x` | both, for any source/destination pair | 4 | 3 |
+| `tnca_cvt_comb_xls` | `xls/tnca_cvt.x` | the same, unpipelined | comb. | 0 |
 | `tnca_sfu_exp2_xls` | `xls/tnca_sfu.x` | `v.exp2.approx` | 7 | 6 |
 | `tnca_sfu_log2_xls` | `xls/tnca_sfu.x` | `v.log2.approx` | 7 | 6 |
 | `tnca_sfu_rcp_xls` | `xls/tnca_sfu.x` | `v.rcp.approx` | 7 | 6 |
@@ -178,7 +179,30 @@ discovered.
 
 `rtl/core/tnca_fpu_multi.v` puts `tnca_widen_xls` in front of the hand-written
 binary32 FMA, so FP8 and FP16 operands reach one verified multiplier. Because
-widening is combinational, that costs no extra cycle.
+widening is combinational, that costs no extra cycle. **It is the matrix
+unit's MAC**: sixteen of them, with the format code from ISA §9C's `mod[3:2]`,
+which is how `m.mma.async` came to take E5M2 and E4M3 fragments as well as
+FP16 and BF16. An accumulator row op passes `f32`, and `widen(f32, x)` is `x`,
+so one MAC serves both without a bypass.
+
+That replaced the hand-written `tnca_cvt16_f32`, which did FP16 and BF16 to
+binary32 only. It was deleted rather than kept: two conversion implementations
+to keep in agreement is precisely what this document argues against, and the
+generated one is checked exhaustively where the hand-written one was checked
+over 131,072 vectors of two formats. Its last measurement — 140 gates and 14
+levels — stays in doc/synthesis.md as the comparison point.
+
+`tnca_cvt_comb_xls` is one per lane in `tnca_vector_fpu`, implementing
+`vf.cvt.<src>.<dst>` (ISA §8.4 `func = 0x04`): all twenty-five pairs among the
+five formats, lane-wise, with the narrow value right-aligned in its lane.
+
+**Why the unpipelined instance there.** The vector FPU's clock is set by its
+FMA at 115 gate levels; the convert chain is 54. A pipelined instance would
+add 253 flops per lane — about four thousand — to buy timing the unit has no
+way to use. The pipelined sibling exists for a context that does have a clock
+of its own, and `tb_cvt_xls` checks both against the same oracle in the same
+run, so neither can drift from the description or from the other. One DSLX
+file, two implementations, one proof.
 
 `rtl/core/tnca_sfu.v` is the SFU as the core sees it: **one four-function slice
 shared by all VLEN lanes**, one lane per cycle. The ratio comes from the gate
@@ -211,6 +235,8 @@ another implementation.
 | `tb_sfu_core` | The same vectors through `rtl/core/tnca_sfu.v`: 1,042 batches of 16 lanes through one shared slice, checking the handshake and the lane-to-result mapping. |
 | `tb_fpu_multi` | 5,012 vectors against `fp32.fma_ref`, with both FP8 formats exhaustive in one operand. |
 | `t20_sfu` | The SFU from a program: 40 checks, the bands expressed as `vf.cmp` against bound vectors, the specified values as exact lanes, plus a masked write and back-to-back issue. |
+| `t21_cvt` | `vf.cvt.<src>.<dst>` from a program: all twenty-five pairs, sixteen lanes each, compared bit for bit with an integer compare so a stray bit in the unused half of a narrow lane fails. Plus NaN by class and a masked convert. |
+| `t11_matrix` | The same 16×16×16 product through all four `m.mma` fragment formats, against `mma_ref`. The FP8 cases are what a wrong 8-bit fragment stride fails: forcing the 16-bit stride turns them red and leaves FP16 green. |
 
 Each pipelined bench measures its unit's latency instead of assuming it. The
 neighbouring values are not near misses: at LATENCY 5 or 7, `tb_sfu_xls` puts

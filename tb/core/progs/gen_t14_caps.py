@@ -29,13 +29,13 @@ CAP = {
     'VECTOR_FP32': 0, 'SFU': 1, 'GATHER_SCATTER': 2,
     'ATOMICS_DEVICE': 3, 'SYSTEM_ATOMICS': 4,
     'MATRIX_F16': 5, 'MATRIX_BF16': 6, 'TENSOR_DMA': 7,
-    'MBARRIER': 8, 'PACKED_F16': 9, 'CACHE_HINTS': 10,
+    'MBARRIER': 8, 'PACKED_F16': 9, 'CACHE_HINTS': 10, 'MATRIX_FP8': 11,
 }
 
 # What this build implements. Anything not listed must read 0, and its
 # encodings must raise ILLEGAL_INSTRUCTION -- t05_fault covers that direction.
 IMPLEMENTED = ['VECTOR_FP32', 'GATHER_SCATTER', 'MATRIX_F16', 'MATRIX_BF16',
-               'TENSOR_DMA', 'MBARRIER']
+               'MATRIX_FP8', 'TENSOR_DMA', 'MBARRIER']
 if HAS_SFU:
     IMPLEMENTED.append('SFU')
 
@@ -51,6 +51,9 @@ VAL_BASE  = 0x5300      # gather payload
 ROWS = COLS = 16
 HALF_ONE = 0x3C00       # FP16 1.0
 LANE_ONE = (HALF_ONE << 16) | HALF_ONE
+E4M3_ONE = 0x38         # OCP FP8 E4M3 1.0: exponent 7 against a bias of 7
+E4M3_ONE_WORD = int.from_bytes(bytes([E4M3_ONE]) * 4, 'little')
+F32_SIXTEEN = 0x41800000
 
 
 def GVAL(lane):
@@ -149,6 +152,31 @@ n += 1
 w(f"    .assert_lane v32, #15, #{LANE_ONE:#x}, #{n}")
 n += 1
 w(f"    .assert_lane v39, #15, #{LANE_ONE:#x}, #{n}")
+n += 1
+w("")
+
+# ---- bit 11: MATRIX_FP8 ----------------------------------------------------
+# A real 16x16x16 product in E4M3, not a decode check: every element of A and
+# B is 1.0 (E4M3 0x38), so every element of C must be exactly 16.0. An FP8
+# fragment packs four elements to a lane where FP16 packs two, so a unit that
+# kept the 16-bit addressing would read the wrong halves and not get 16.
+w("    // bit 11 MATRIX_FP8 -- a real E4M3 product, not a decode check")
+w(f"    .li       s12, #{E4M3_ONE_WORD:#x}      // four E4M3 1.0 bytes")
+for _v in range(40, 48):
+    w(f"    v.splat   v{_v}, s12")
+w("    m.zero    a1")
+w("    mb.arm    s8, b0, #0, #1")
+w("    m.mma.async.k16.e4m3 a1, v40, v44, s8")
+w("    mb.wait   s8")
+w("    .li       s5, #0")
+w("    a.vread   v6, a1, s5")
+w(f"    .assert_lane v6, #0,  #{F32_SIXTEEN:#x}, #{n}")
+n += 1
+w(f"    .assert_lane v6, #15, #{F32_SIXTEEN:#x}, #{n}")
+n += 1
+w("    .li       s5, #15")
+w("    a.vread   v6, a1, s5")
+w(f"    .assert_lane v6, #7,  #{F32_SIXTEEN:#x}, #{n}")
 n += 1
 w("")
 w("    exit")

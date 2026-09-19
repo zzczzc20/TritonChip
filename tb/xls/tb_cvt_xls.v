@@ -13,12 +13,18 @@
 // NaN is compared by class, not by bit pattern: the ISA does not promise a
 // particular payload, and demanding one would be testing an accident.
 //
-// The DUT is a four-stage pipeline (doc/xls.md), so one vector goes in per
-// cycle and the expectation travels alongside it in a shift register rather
-// than the whole file being held in memory -- there are 866,495 vectors. The
-// shift register is also what makes this a test of the pipeline: with the
-// inputs changing every cycle, a unit that only settled once its input went
-// quiet would fail, and so does any other value of LATENCY.
+// Two instances are checked, not one. The same DSLX is generated twice -- as a
+// four-stage pipeline for a context with a clock of its own, and unpipelined
+// for the sixteen lanes of tnca_vector_fpu -- and both are compared against
+// the same oracle here, so neither can drift from the description or from the
+// other.
+//
+// The pipelined instance takes one vector per cycle and its expectation
+// travels alongside it in a shift register rather than the whole file being
+// held in memory: there are 866,495 vectors. The shift register is also what
+// makes this a test of the pipeline: with the inputs changing every cycle, a
+// unit that only settled once its input went quiet would fail, and so does any
+// other value of LATENCY.
 //==============================================================================
 `timescale 1ns/1ps
 
@@ -38,7 +44,11 @@ module tb_cvt_xls;
 
     tnca_cvt_xls dut(.clk(clk), .rst(rst), .src(src), .dst(dst), .x(x), .out(out));
 
-    integer fh, n, fails, r, k;
+    // The unpipelined sibling, answering about the vector currently driven.
+    wire [31:0] out_comb;
+    tnca_cvt_comb_xls dut_comb(.src(src), .dst(dst), .x(x), .out(out_comb));
+
+    integer fh, n, fails, cfails, r, k;
     reg [2:0] rs, rd;
     reg [31:0] rx, want;
     reg [1023:0] vecfile;
@@ -113,7 +123,7 @@ module tb_cvt_xls;
         if (fh == 0) begin
             $display("FATAL: cannot open %0s", vecfile); $finish;
         end
-        n = 0; fails = 0; r = 4;
+        n = 0; fails = 0; cfails = 0; r = 4;
         for (k = 0; k < DEPTH; k = k + 1) p_val[k] = 1'b0;
         src = F32; dst = F32; x = 32'd0;
 
@@ -125,6 +135,17 @@ module tb_cvt_xls;
             r = $fscanf(fh, "%d %d %h %h", rs, rd, rx, want);
             if (r == 4) begin
                 src = rs; dst = rd; x = rx;
+                #1;
+                // The unpipelined instance answers in the same delta, so it is
+                // checked here rather than through the shift register.
+                if (is_nan(rd, want)) begin
+                    if (!is_nan(rd, out_comb)) cfails = cfails + 1;
+                end else if (out_comb !== want) begin
+                    cfails = cfails + 1;
+                    if (cfails < 4)
+                        $display("FAIL comb src=%0d dst=%0d x=%h got %h want %h",
+                                 rs, rd, rx, out_comb, want);
+                end
                 push(rs, rd, rx, want, 1'b1);
                 n = n + 1;
             end else begin
@@ -141,9 +162,10 @@ module tb_cvt_xls;
             check;
         end
         $fclose(fh);
-        $display("tb_cvt_xls: %0d vectors, %0d failures", n, fails);
-        if (fails == 0) $display("PASS");
-        else            $display("FAIL");
+        $display("tb_cvt_xls: %0d vectors x 2 instances (pipelined, unpipelined), %0d failures",
+                 n, fails + cfails);
+        if (fails + cfails == 0) $display("PASS");
+        else                     $display("FAIL");
         $finish;
     end
 endmodule

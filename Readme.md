@@ -459,7 +459,7 @@ and would not be a valid FMA reference.
 | `tnca_fifo` | 127 | 137 | 4 | — | ok |
 | `tnca_router` | 10,204 | 6,028 | 18 | — | **well under budget** |
 | `tnca_barrier` | 8,748 | 1,652 | 23 | — | ok |
-| `tnca_cvt16_f32` | 140 | 0 | 14 | — | ok |
+| `tnca_cvt_comb_xls` | 1,097 | 0 | 54 | 32 | generated; all 25 format pairs |
 | `tnca_tensor` | 43,048 | 8,572 | 83 | 64 | at the 64-bit multiply floor |
 | `tnca_acc_rf` | 200,381 | 131,072 | 10 | — | 16 KiB as flops; belongs in SRAM |
 | `tnca_matrix` | 316,846 | 135,731 | 190 | 71 | **63 % of it is the accumulator file** |

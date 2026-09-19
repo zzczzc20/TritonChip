@@ -6,7 +6,7 @@
 .org 0
 start:
     s.rdspecial s1, cap0
-    .assert_eq s1, #0x1e7, #1        // bits: VECTOR_FP32, GATHER_SCATTER, MATRIX_F16, MATRIX_BF16, TENSOR_DMA, MBARRIER, SFU
+    .assert_eq s1, #0x9e7, #1        // bits: VECTOR_FP32, GATHER_SCATTER, MATRIX_F16, MATRIX_BF16, MATRIX_FP8, TENSOR_DMA, MBARRIER, SFU
 
     // bit 0 VECTOR_FP32 -- a native FP32 vector datapath
     .li       s2, #0x3f800000            // 1.0f
@@ -51,6 +51,28 @@ start:
     .assert_lane v32, #0,  #0x3c003c00, #7
     .assert_lane v32, #15, #0x3c003c00, #8
     .assert_lane v39, #15, #0x3c003c00, #9
+
+    // bit 11 MATRIX_FP8 -- a real E4M3 product, not a decode check
+    .li       s12, #0x38383838      // four E4M3 1.0 bytes
+    v.splat   v40, s12
+    v.splat   v41, s12
+    v.splat   v42, s12
+    v.splat   v43, s12
+    v.splat   v44, s12
+    v.splat   v45, s12
+    v.splat   v46, s12
+    v.splat   v47, s12
+    m.zero    a1
+    mb.arm    s8, b0, #0, #1
+    m.mma.async.k16.e4m3 a1, v40, v44, s8
+    mb.wait   s8
+    .li       s5, #0
+    a.vread   v6, a1, s5
+    .assert_lane v6, #0,  #0x41800000, #10
+    .assert_lane v6, #15, #0x41800000, #11
+    .li       s5, #15
+    a.vread   v6, a1, s5
+    .assert_lane v6, #7,  #0x41800000, #12
 
     exit
 

@@ -86,6 +86,7 @@ def build_target(core, top, isa, name, description):
         'atomics_system': False,
         'matrix_f16': True,
         'matrix_bf16': True,
+        'matrix_fp8': True,
         'tensor_dma': True,
         'mbarrier': True,
         'packed_f16': False,

@@ -240,6 +240,17 @@
 `define TNCA_CVT_U32_F32     8'h01
 `define TNCA_CVT_F32_S32     8'h02
 `define TNCA_CVT_F32_U32     8'h03
+`define TNCA_CVT_FMT         8'h04
+
+// Float format codes, ISA sec 8.4. These are the numbers xls/tnca_formats.x
+// and tools/model/floatfmt.py use, so the RTL, the generator and the oracle
+// cannot disagree about what a 3 means.
+`define TNCA_FMT_F32         3'd0
+`define TNCA_FMT_BF16        3'd1
+`define TNCA_FMT_F16         3'd2
+`define TNCA_FMT_E5M2        3'd3
+`define TNCA_FMT_E4M3        3'd4
+`define TNCA_FMT_MAX         3'd4
 
 `define TNCA_RND_RTZ         3'd0
 `define TNCA_RND_RNE         3'd1
@@ -380,6 +391,8 @@
 
 `define TNCA_MMA_F16         2'd0
 `define TNCA_MMA_BF16        2'd1
+`define TNCA_MMA_E5M2        2'd2
+`define TNCA_MMA_E4M3        2'd3
 
 //------------------------------------------------------------------------------
 // Tensor descriptor / RF window family (ISA §9D)
@@ -438,6 +451,7 @@
 `define TNCA_CAP_MBARRIER    8
 `define TNCA_CAP_PACKED_F16  9
 `define TNCA_CAP_CACHE_HINTS 10
+`define TNCA_CAP_MATRIX_FP8  11
 
 //------------------------------------------------------------------------------
 // Internal microarchitecture encodings (NOT architectural)

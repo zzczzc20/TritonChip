@@ -220,7 +220,9 @@
   },
   "mma_dtype": {
     "f16": 0,
-    "bf16": 1
+    "bf16": 1,
+    "e5m2": 2,
+    "e4m3": 3
   },
   "operand_kinds": {
     "sd": {
@@ -2120,6 +2122,18 @@
         "vb"
       ],
       "suffix_class": "cc_fp",
+      "maskable": true
+    },
+    {
+      "mnemonic": "vf.cvt",
+      "major": "CVT",
+      "major_code": 18,
+      "func": 4,
+      "operands": [
+        "vd",
+        "va"
+      ],
+      "suffix_class": "fmt2",
       "maskable": true
     },
     {

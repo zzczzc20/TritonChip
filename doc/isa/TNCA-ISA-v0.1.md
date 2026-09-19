@@ -370,6 +370,7 @@ Stated explicitly because leaving it to lowering is a known correctness hazard
 | `0x01` | `vf.cvt.u32.f32` | unsigned int → FP32, RNE | 1 |
 | `0x02` | `vf.cvt.f32.s32` | FP32 → signed int, round mode `mod[2:0]` | 1 |
 | `0x03` | `vf.cvt.f32.u32` | FP32 → unsigned int | 1 |
+| `0x04` | `vf.cvt.<src>.<dst> Vd, Va` | float → float, RNE; `mod[2:0]` source format, `mod[5:3]` destination | 1 |
 | `0x08` | `v.pack.f16` | *Reserved* | 2 |
 | `0x09` | `v.unpack.f16` | *Reserved* | 2 |
 | `0x0a` | `v.pack.bf16` | *Reserved* | 2 |
@@ -378,6 +379,37 @@ Stated explicitly because leaving it to lowering is a known correctness hazard
 FP→int rounding modes in `mod[2:0]`: `0` = toward zero, `1` = RNE,
 `2` = toward −∞, `3` = toward +∞. Out-of-range and NaN inputs saturate to the
 integer extremes; NaN maps to 0.
+
+#### Float formats (`func = 0x04`)
+
+| code | Name | Layout | Infinity |
+|---:|---|---|---|
+| `0` | `f32` | binary32, 1.8.23 | yes |
+| `1` | `bf16` | bfloat16, 1.8.7 | yes |
+| `2` | `f16` | binary16, 1.5.10 | yes |
+| `3` | `e5m2` | OCP FP8 E5M2, 1.5.2 | yes |
+| `4` | `e4m3` | OCP FP8 E4M3, 1.4.3 | **no** |
+
+Codes `5`–`7` are unallocated in either field and raise `ILLEGAL_INSTRUCTION`,
+as do any non-zero bits in `mod[9:6]`. All twenty-five pairs are legal,
+including the five identities, which are moves.
+
+**A narrow value occupies the low bits of its lane and the rest read zero.**
+This instruction is the *unpacked* form: one element per lane whatever the
+format. Packing two or four elements into a lane is `v.pack.*`, `func` `0x08`
+and up, which is why that space is reserved separately. Fragments for the
+matrix unit are packed, and the transfer engine writes them that way (§9C.2).
+
+Rounding is RNE. Every widening is exact — binary32 represents every value of
+all four narrow formats — so `narrow → f32 → narrow` is the identity, and only
+the narrowing direction rounds. **E4M3 overflow saturates to ±448**, which the
+OCP specification permits as an alternative to producing a NaN; the choice is
+stated here rather than left to be discovered.
+
+E4M3 is not an IEEE interchange format and must not be treated as one: it has
+no infinity, its all-ones exponent field is mostly ordinary numbers, and only
+`S.1111.111` is a NaN. Reading it as IEEE-like caps its range at 240 instead
+of 448.
 
 ### 8.5 `major = 0x13` — Predicate
 
@@ -722,7 +754,15 @@ C[16x16] <- C[16x16] + A[16xK] . B[Kx16]
 ```
 
 `mod[1:0]`: `0` = K16, `1` = K32, `2` = K64, `3` reserved.
-`mod[3:2]`: `0` = FP16 inputs, `1` = BF16 inputs, others reserved.
+`mod[3:2]`: `0` = FP16, `1` = BF16, `2` = FP8 E5M2, `3` = FP8 E4M3 inputs.
+
+The two FP8 encodings are gated together by `CAPABILITY0.MATRIX_FP8` (§11).
+They differ by one parameter in one widening step and share every other gate,
+so no implementation can reasonably have one without the other — unlike FP16
+and BF16, which have separate bits because an implementation could plausibly
+build a datapath for one exponent range and not the other.
+
+The accumulator is binary32 for every input format; §9C.1 applies unchanged.
 
 `Sc` holds an mbarrier token; the command signals one operation completion on
 that barrier's generation when it finishes.
@@ -768,15 +808,24 @@ A fragment is a window's registers read as a **flat row-major byte array**: this
 is exactly what the transfer engine writes, so no repacking sits between a
 `t.ld.async` and the `m.mma.async` that consumes it.
 
-For a 16×K FP16 A fragment, element `(m, k)` lives at
+For a 16×K A fragment of elements `E` bytes wide (`E = 2` for FP16 and BF16,
+`E = 1` for both FP8 encodings), element `(m, k)` lives at byte `(m*K + k)*E`
+of the array, that is at
 
 ```
-vreg  = base + (m*K + k)*2 / 64
-lane  = ((m*K + k)*2 % 64) / 4
-half  = (m*K + k) & 1
+vreg   = base + (m*K + k)*E / 64
+byte   = (m*K + k)*E % 64
 ```
 
-and `B[k][n]` follows the same rule with `(k, n)` over a K×16 tile.
+and `B[k][n]` follows the same rule with `(k, n)` over a K×16 tile. A vector
+register is 64 bytes, so a 16×16 FP16 fragment is eight registers and the same
+fragment in FP8 is four.
+
+**The element width is the only thing the dtype changes about the layout.**
+There is no separate FP8 packing rule to get wrong, and an implementation that
+kept the 2-byte stride for an FP8 fragment would read the right registers and
+the wrong halves of them — a wrong `C`, not a fault. `t11_matrix` runs the
+same product through all four dtypes for that reason.
 
 ### 9C.3 What the ISA does not promise
 
@@ -979,6 +1028,7 @@ turn into a silent hang.
 | 8 | `MBARRIER` | native mbarrier |
 | 9 | `PACKED_F16` | Stage 2 |
 | 10 | `CACHE_HINTS` | Stage 4 |
+| 11 | `MATRIX_FP8` | native `m.mma` with OCP FP8 E5M2 **and** E4M3 inputs |
 
 A capability bit being clear means the corresponding encodings raise
 `ILLEGAL_INSTRUCTION`. It never means "works, but slowly, by some other route" —

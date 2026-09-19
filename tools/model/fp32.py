@@ -212,22 +212,30 @@ def f32_to_f16_bits(x: float) -> int:
     return (sign << 15) | m                              # subnormal
 
 
-def mma_ref(a_f16, b_f16, c_f32, M, N, K):
+def mma_ref(a_bits, b_bits, c_f32, M, N, K, widen=None):
     """
     Reference for m.mma.async (ISA sec 9C.1).
 
-    Each product is exact -- FP16 x FP16 is exactly representable in binary32 --
-    and is added to the accumulator with ONE rounding, in increasing k order.
+    The product is formed at full width and never rounded on its own, and each
+    is added to the accumulator with ONE rounding, in increasing k order.
     Deliberately not a numpy matmul: the order and the single rounding are the
     contract, and a reference that reassociates would not be checking them.
+
+    `widen` turns a fragment element into a binary32 bit pattern, and defaults
+    to FP16. ISA sec 9C takes four fragment formats and all four widen to
+    binary32 exactly, so the same loop serves them all -- passing a different
+    `widen` is the only difference between an FP16 and an E4M3 reference, which
+    is also the only difference in the hardware.
     """
+    if widen is None:
+        widen = f16_bits_to_f32_bits
     out = list(c_f32)
     for m in range(M):
         for n in range(N):
             acc = out[m * N + n]
             for k in range(K):
-                av = f16_bits_to_f32_bits(a_f16[m * K + k])
-                bv = f16_bits_to_f32_bits(b_f16[k * N + n])
+                av = widen(a_bits[m * K + k])
+                bv = widen(b_bits[k * N + n])
                 acc = fma_ref(av, bv, acc)
             out[m * N + n] = acc
     return out

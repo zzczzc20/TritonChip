@@ -455,6 +455,17 @@ module tnca_decoder (
                 u_mod = 10'h007;                 // rounding mode
                 bad = bad | (f_mod[2:0] > `TNCA_RND_RPI);
             end
+            // Float-to-float across the five formats. mod[2:0] is the source
+            // format and mod[5:3] the destination; both are checked here
+            // rather than left to produce a quiet NaN in the datapath, because
+            // sec 11.4 makes an unallocated encoding an ILLEGAL_INSTRUCTION
+            // and not an implementation-defined result.
+            `TNCA_CVT_FMT: begin
+                `TNCA_DEC_DST_V `TNCA_DEC_SRC_VA `TNCA_DEC_MASK
+                u_mod = 10'h03f;
+                bad = bad | (f_mod[2:0] > `TNCA_FMT_MAX)
+                          | (f_mod[5:3] > `TNCA_FMT_MAX);
+            end
             default: bad = 1'b1;
             endcase
         end
@@ -678,8 +689,9 @@ module tnca_decoder (
                 o_va_idx = f_a; u_a = 1'b1;
                 o_vb_idx = f_b; u_b = 1'b1;
                 u_mod = 10'h00f;
-                bad = bad | (f_mod[1:0] == 2'd3)        // K reserved
-                          | (f_mod[3:2] >  2'd1);       // dtype reserved
+                // dtype 0..3 are FP16, BF16, E5M2, E4M3 (ISA sec 9C); all
+                // four are implemented, so only the K encoding has a hole.
+                bad = bad | (f_mod[1:0] == 2'd3);       // K reserved
             end
             default: bad = 1'b1;
             endcase

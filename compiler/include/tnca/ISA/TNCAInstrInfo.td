@@ -366,6 +366,9 @@ def TNCA_VF_ADD : TNCAInst<17, 1, "vf.add"> {
 def TNCA_VF_CMP : TNCAInst<17, 24, "vf.cmp"> {
   let Maskable = 1;
 }
+def TNCA_VF_CVT : TNCAInst<18, 4, "vf.cvt"> {
+  let Maskable = 1;
+}
 def TNCA_VF_CVT_F32_S32 : TNCAInst<18, 2, "vf.cvt.f32.s32"> {
   let Maskable = 1;
 }

@@ -34,6 +34,6 @@ start:
     .assert_eq s1, #0x2, #9
     // cap0: which encodings may be emitted at all
     s.rdspecial s1, cap0
-    .assert_eq s1, #0x1e7, #10
+    .assert_eq s1, #0x9e7, #10
 
     exit

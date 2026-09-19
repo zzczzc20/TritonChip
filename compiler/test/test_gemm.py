@@ -26,7 +26,7 @@ sys.path.insert(0, os.path.join(ROOT, 'tools', 'model'))
 import rtl_harness as H  # noqa: E402
 from fp32 import (bf16_bits_to_f32_bits, f16_bits_to_f32_bits, f2b,  # noqa: E402
                   f32_to_f16_bits, fma_ref, mma_ref)
-from tnca_cc import TargetInfo  # noqa: E402
+from tnca_cc import CapabilityError, TargetInfo  # noqa: E402
 from tnca_cc.diagnostics import Diagnostic  # noqa: E402
 from tnca_cc.gemm import (build_gemm, check_descriptor_geometry,  # noqa: E402
                           plan_gemm)
@@ -106,6 +106,32 @@ class TestPlanner(unittest.TestCase):
             with self.subTest(k=k):
                 self.assertEqual(plan_gemm(self.t, m=16, n=16, k=k)
                                  .dma_operations, expect)
+
+    def test_fp8_fragments_halve_the_window(self):
+        """ISA sec 9C's four fragment formats. An 8-bit element packs four to
+        a lane where a 16-bit element packs two, so the same 16x16 fragment
+        takes half the registers -- and the plan has to say so, because the
+        window it reserves is what the transfer lands in."""
+        wide = plan_gemm(self.t, m=16, n=16, k=16, dtype='f16')
+        for dt in ('e5m2', 'e4m3'):
+            with self.subTest(dtype=dt):
+                p = plan_gemm(self.t, m=16, n=16, k=16, dtype=dt)
+                self.assertEqual(p.window_registers * 2, wide.window_registers)
+                self.assertEqual(p.k_steps, wide.k_steps)
+
+    def test_fp8_gemm_is_refused_without_the_capability(self):
+        """sec 12: a missing bit is a diagnostic, never a substitution. Both
+        FP8 encodings ride on one bit, so clearing it must refuse both."""
+        import copy
+        d = copy.deepcopy(self.t._d)
+        d['capabilities']['matrix_fp8'] = False
+        without = TargetInfo(d)
+        for dt in ('e5m2', 'e4m3'):
+            with self.subTest(dtype=dt):
+                with self.assertRaises(CapabilityError):
+                    plan_gemm(without, m=16, n=16, k=16, dtype=dt)
+        # and the FP16 path is untouched by it
+        self.assertTrue(plan_gemm(without, m=16, n=16, k=16, dtype='f16'))
 
     def test_partial_k_is_padded_not_refused(self):
         """sec 15 C2's K tail: the short fragment is padded with zero by the

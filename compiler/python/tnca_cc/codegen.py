@@ -587,9 +587,10 @@ class CodeGen:
 
     def _op_mma_async(self, op):
         acc, aw, bw, token = op.operands
-        cap = 'matrix_bf16' if op.attrs['dtype'] == 'bf16' else 'matrix_f16'
-        self.target.require(cap, f"emit m.mma.async with "
-                                 f"{op.attrs['dtype']} inputs")
+        from .gemm import _DTYPE_CAP
+        self.target.require(_DTYPE_CAP[op.attrs['dtype']],
+                            f"emit m.mma.async with "
+                            f"{op.attrs['dtype']} inputs")
         bar = self._token_barrier[id(token)]
         self._count_operation(bar)
         self.b.emit(f"m.mma.async.{op.attrs['k']}.{op.attrs['dtype']}",

@@ -58,7 +58,7 @@ SFU_VECTORS ?= 6000
 FPU_MULTI_VECTORS ?= 1500
 
 CORE_PROGS := t00_scalar t01_vector t02_mem t03_fp t04_roles t05_fault t06_alu \
-              t11_matrix t12_tensor t13_share t14_caps t15_target t16_vecadd t17_descfault t18_squash t19_waitgen0 t20_sfu
+              t11_matrix t12_tensor t13_share t14_caps t15_target t16_vecadd t17_descfault t18_squash t19_waitgen0 t20_sfu t21_cvt
 
 # Image size in 64-bit words; must match tb_tnca_core's WORDS parameter.
 IMAGE_WORDS := 16384
@@ -110,13 +110,6 @@ $(BUILD)/tb_bitops.vvp: $(TB)/core/tb_bitops.v $(RTL_COMMON) | dirs
 $(BUILD)/tb_mul64.vvp: $(TB)/core/tb_mul64.v $(RTL)/core/tnca_mul64.v | dirs
 	$(IVERILOG) $(IVFLAGS) -o $@ $^
 
-$(BUILD)/tb_cvt16.vvp: $(TB)/core/tb_cvt16.v $(RTL)/core/tnca_cvt16_f32.v \
-                       $(RTL_COMMON) | dirs
-	$(IVERILOG) $(IVFLAGS) -o $@ $^
-
-$(BUILD)/cvt16_vectors.txt: $(TOOLS)/model/gen_cvt16_vectors.py | dirs
-	$(PYTHON) $< -o $@
-
 $(BUILD)/fma_vectors.txt: $(TOOLS)/model/gen_fma_vectors.py $(TOOLS)/model/fp32.py | dirs
 	$(PYTHON) $< -o $@ -n $(FMA_VECTORS)
 
@@ -132,13 +125,10 @@ unit: $(BUILD)/tb_fp32_fma.vvp $(BUILD)/fma_vectors.txt \
       $(BUILD)/tb_mul64.vvp \
       $(TB)/core/progs/t03_fp.s $(TB)/core/progs/t06_alu.s \
       $(TB)/core/progs/t11_matrix.s $(TB)/core/progs/t12_tensor.s \
-      $(BUILD)/tb_cvt16.vvp $(BUILD)/cvt16_vectors.txt \
       $(BUILD)/tb_cvt_xls.vvp $(BUILD)/cvt_xls_vectors.txt \
       $(BUILD)/tb_sfu_xls.vvp $(BUILD)/tb_sfu_core.vvp $(BUILD)/sfu_vectors.txt \
       $(BUILD)/tb_fpu_multi.vvp $(BUILD)/fpu_multi_vectors.txt
 	@$(TOOLS)/run_test.sh "bitops" "$(VVP) $(BUILD)/tb_bitops.vvp"
-	@$(TOOLS)/run_test.sh "cvt16"  \
-	   "$(VVP) $(BUILD)/tb_cvt16.vvp +vec=$(BUILD)/cvt16_vectors.txt"
 	@$(TOOLS)/run_test.sh "mul64"  "$(VVP) $(BUILD)/tb_mul64.vvp"
 	@$(TOOLS)/run_test.sh "fp32_fma" \
 	   "$(VVP) $(BUILD)/tb_fp32_fma.vvp +vec=$(BUILD)/fma_vectors.txt"
@@ -201,6 +191,10 @@ $(TB)/core/progs/t20_sfu.s: $(TB)/core/progs/gen_t20_sfu.py \
                             $(TOOLS)/model/gen_sfu_vectors.py
 	$(PYTHON) $<
 
+$(TB)/core/progs/t21_cvt.s: $(TB)/core/progs/gen_t21_cvt.py \
+                            $(TOOLS)/model/floatfmt.py
+	$(PYTHON) $<
+
 $(TB)/core/progs/t19_waitgen0.s: $(TB)/core/progs/gen_t19_waitgen0.py
 	$(PYTHON) $<
 
@@ -229,7 +223,8 @@ xls-check:
 xls-report:
 	@$(PYTHON) $(TOOLS)/xls/xlsgen.py --report
 
-$(BUILD)/tb_cvt_xls.vvp: $(TB)/xls/tb_cvt_xls.v $(RTL)/gen/tnca_cvt_xls.v | dirs
+$(BUILD)/tb_cvt_xls.vvp: $(TB)/xls/tb_cvt_xls.v $(RTL)/gen/tnca_cvt_xls.v \
+                         $(RTL)/gen/tnca_cvt_comb_xls.v | dirs
 	$(IVERILOG) -g2005 -o $@ $^
 
 $(BUILD)/cvt_xls_vectors.txt: $(TOOLS)/model/gen_cvt_vectors.py \

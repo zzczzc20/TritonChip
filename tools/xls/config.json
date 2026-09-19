@@ -13,8 +13,15 @@
       "source": "tnca_cvt.x",
       "top": "convert",
       "pipeline_stages": 4,
-      "why": "All-pairs conversion among the five formats: a widen and a narrow in series, which is why it needs one more stage than narrow alone.",
+      "why": "All-pairs conversion among the five formats: a widen and a narrow in series, which is why it needs one more stage than narrow alone. This is the timing-driven instance, for a context with a clock of its own.",
       "delay_model": "asap7"
+    },
+    {
+      "module": "tnca_cvt_comb_xls",
+      "source": "tnca_cvt.x",
+      "top": "convert",
+      "pipeline_stages": 0,
+      "why": "The same conversion, unpipelined, for the sixteen lanes of tnca_vector_fpu. That unit's clock is set by its FMA at 115 gate levels and the convert chain is 54, so pipelining it there would add 253 flops per lane to buy timing the unit cannot use. One DSLX description, two implementations, both checked by tb_cvt_xls against the same oracle."
     },
     {
       "module": "tnca_widen_xls",

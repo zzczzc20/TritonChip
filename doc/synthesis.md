@@ -64,6 +64,7 @@ target. The stage counts are its answer, not a guess:
 | `tnca_widen_pair_xls` | 501 | 0 | 11 | — | two of the above |
 | `tnca_narrow_xls` | 2,330 | 211 | 31 | 32 | **at the single-add floor**, across 3 stages |
 | `tnca_cvt_xls` | 2,848 | 253 | 29 | 32 | at the floor, across 4 stages |
+| `tnca_cvt_comb_xls` | 1,097 | 0 | 54 | 32 | the same DSLX unpipelined, one per lane in the vector FPU |
 | `tnca_sfu_rcp_xls` | 11,669 | 330 | 42 | 50 | one 32×16 multiply per stage |
 | `tnca_sfu_rsqrt_xls` | 20,223 | 428 | 41 | 50 | two coefficient tables, for even and odd exponents |
 | `tnca_sfu_exp2_xls` | 14,946 | 529 | 69 | 50 | the multiply plus the exponent split |
@@ -82,7 +83,20 @@ comparison that says what the scheduling did:
 
 `tnca_cvt_xls` was the one module over the 50-level flag that had nothing to do
 with wide arithmetic — it is two conversions in series — and pipelining is what
-fixed it. `exp2` and `log2` remain over the flag at 69 and 72 levels, which is
+fixed it. Its unpipelined sibling is over the flag for the same reason and is
+used anyway: inside `tnca_vector_fpu` the clock is set by the FMA at 115
+levels, so 54 is slack, and a pipelined instance would cost 253 flops per lane
+to buy timing that unit cannot use. Both come from the same DSLX and
+`tb_cvt_xls` checks both in one run.
+
+**`tnca_cvt16_f32` is gone.** It converted FP16 and BF16 to binary32 at 140
+gates and 14 levels — cheaper than `tnca_widen_xls` at 265 and 11, because it
+did two formats where the generated one does four, and only in the widening
+direction. It was deleted when the matrix unit and the vector FPU moved to the
+generated pair: keeping two conversion implementations in agreement is the
+cost the generator exists to avoid, and the surviving one is verified
+exhaustively where this one was verified over 131,072 vectors. Its numbers
+stay here as the comparison point. `exp2` and `log2` remain over the flag at 69 and 72 levels, which is
 one 32×16 multiplier in a library whose 32×32 multiplier is 65 levels by
 itself; XLS's own estimate agrees, putting `exp2` at 1220 ps against a floor of
 1217. Nothing is left there to restructure.

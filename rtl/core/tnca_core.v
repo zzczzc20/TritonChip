@@ -659,7 +659,7 @@ module tnca_core #(
         .cmd_valid(mtx_cmd_valid), .cmd_op(mtx_cmd_op),
         .cmd_slot(x_dsti[ACC_W-1:0]),
         .cmd_va(x_va_idx), .cmd_vb(x_vb_idx),
-        .cmd_k(x_mod[1:0]), .cmd_dt(x_mod[2]),
+        .cmd_k(x_mod[1:0]), .cmd_dt(x_mod[3:2]),
         .cmd_bar_en(mtx_bar_en), .cmd_bar(mtx_bar),
         .cmd_rowop(mtx_rowop), .cmd_row(sa_data[ACC_ROW_W-1:0]),
         .cmd_vdata(vb_data), .cmd_scale(mtx_scale), .cmd_mask(lane_mask),
@@ -956,6 +956,7 @@ module tnca_core #(
                                       | (64'd1 << `TNCA_CAP_GATHER)
                                       | (64'd1 << `TNCA_CAP_MATRIX_F16)
                                       | (64'd1 << `TNCA_CAP_MATRIX_BF16)
+                                      | (64'd1 << `TNCA_CAP_MATRIX_FP8)
                                       // The transfer engine decodes and
                                       // executes TXFER unconditionally, so the
                                       // bit must be set: ISA sec 11 says a

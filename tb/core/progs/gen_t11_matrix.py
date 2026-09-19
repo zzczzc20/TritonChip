@@ -17,12 +17,21 @@ ROOT = os.path.abspath(os.path.join(HERE, '..', '..', '..'))
 sys.path.insert(0, os.path.join(ROOT, 'tools', 'model'))
 from fp32 import (f32_to_f16_bits, f16_bits_to_f32_bits, mma_ref, fma_ref,   # noqa
                   f2b, b2f)
+from floatfmt import convert as fmt_convert, width as fmt_width   # noqa
 
 M = N = 16
 K = 16
 A_BASE = 0x2000
 B_BASE = 0x2400
 P_BASE = 0x2800          # an FP32 pattern for the accumulator tests
+
+# ISA sec 9C takes four fragment formats. FP16 is exercised in full below; the
+# other three get a product of their own, because the thing that differs is not
+# the arithmetic -- all four widen to binary32 exactly and share one FMA -- but
+# the fragment addressing, and an 8-bit element packs four to a lane where a
+# 16-bit element packs two. A unit that kept the 16-bit stride would read the
+# wrong bytes and produce a wrong C, not a NaN.
+FMT_BASE = {'bf16': 0x3000, 'e5m2': 0x3400, 'e4m3': 0x3800}
 
 rng = random.Random(20260919)
 
@@ -165,6 +174,41 @@ for r in (0, 9):
     for c in (0, 15):
         w(f"    .assert_lane v8, #{c}, #0x{C2[r*N+c]:08x}, #{nid()}")
 w("")
+# ---- the other three fragment formats --------------------------------------
+FRAG = {}
+for _fmt, _base in FMT_BASE.items():
+    _bytes = fmt_width(_fmt) // 8
+    _regs = (M * K * _bytes) // 64
+    # Source values that every one of the three formats represents exactly, so
+    # the same value list can be used for all of them and a wrong answer is a
+    # wrong layout rather than a rounding difference.
+    _vals = [rng.choice([-4.0, -2.0, -1.5, -1.0, -0.5, 0.5, 1.0, 1.5, 2.0,
+                         3.0, 4.0, 6.0, 0.25, -0.25, 8.0, -8.0])
+             for _ in range(M * K + K * N)]
+    _a = [fmt_convert('f32', _fmt, f2b(v)) for v in _vals[:M * K]]
+    _b = [fmt_convert('f32', _fmt, f2b(v)) for v in _vals[M * K:]]
+    _widen = (lambda bits, f=_fmt: fmt_convert(f, 'f32', bits))
+    _c = mma_ref(_a, _b, [f2b(0.0)] * (M * N), M, N, K, widen=_widen)
+    FRAG[_fmt] = (_a, _b, _c, _bytes, _regs, _base)
+
+    w(f"    // ---- m.mma.async.{_fmt}: the same contract, a {_bytes}-byte element ----")
+    w(f"    .li       s10, #{_base}")
+    for _i in range(_regs):
+        w(f"    v.ld.w    v{32+_i}, [s10, #{_i*64}]")
+    w(f"    .li       s11, #{_base + M*K*_bytes}")
+    for _i in range(_regs):
+        w(f"    v.ld.w    v{40+_i}, [s11, #{_i*64}]")
+    w("    m.zero    a3")
+    w("    mb.arm    s12, b1, #0, #1")
+    w(f"    m.mma.async.{_fmt} a3, v32, v40, s12")
+    w("    mb.wait   s12")
+    for _r in (0, 1, 15):
+        w(f"    .li       s13, #{_r}")
+        w("    a.vread   v9, a3, s13")
+        for _c2 in (0, 7, 15):
+            w(f"    .assert_lane v9, #{_c2}, #0x{_c[_r*N+_c2]:08x}, #{nid()}")
+    w("")
+
 w("    exit")
 w("")
 
@@ -182,9 +226,18 @@ def pack(h):
     return [(h[2*i+1] << 16) | h[2*i] for i in range(len(h)//2)]
 
 
+def pack_bytes(vals, nbytes):
+    """Flat little-endian byte array, four or two elements to a word."""
+    raw = b''.join(int(v).to_bytes(nbytes, 'little') for v in vals)
+    return [int.from_bytes(raw[i:i+4], 'little') for i in range(0, len(raw), 4)]
+
+
 emit_words("a_frag", A_BASE, pack(A))
 emit_words("b_frag", B_BASE, pack(B))
 emit_words("pat", P_BASE, PAT + PAT2)
+for _fmt, (_a, _b, _c, _bytes, _regs, _base) in FRAG.items():
+    emit_words(f"a_{_fmt}", _base, pack_bytes(_a, _bytes))
+    emit_words(f"b_{_fmt}", _base + M*K*_bytes, pack_bytes(_b, _bytes))
 
 path = os.path.join(HERE, 't11_matrix.s')
 with open(path, 'w') as fh:

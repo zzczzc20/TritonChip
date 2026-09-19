@@ -60,7 +60,9 @@
     },
     "dtypes": {
       "f16": 0,
-      "bf16": 1
+      "bf16": 1,
+      "e5m2": 2,
+      "e4m3": 3
     },
     "k_steps": {
       "k16": 0,
@@ -81,6 +83,7 @@
     "atomics_system": false,
     "matrix_f16": true,
     "matrix_bf16": true,
+    "matrix_fp8": true,
     "tensor_dma": true,
     "mbarrier": true,
     "packed_f16": false,

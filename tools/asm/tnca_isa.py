@@ -225,6 +225,11 @@ ISA = {
     'vf.cvt.u32.f32': ('CVT', 0x01, ('vd', 'va'),             None),
     'vf.cvt.f32.s32': ('CVT', 0x02, ('vd', 'va'),             'rnd'),
     'vf.cvt.f32.u32': ('CVT', 0x03, ('vd', 'va'),             'rnd'),
+    # vf.cvt.<src>.<dst> for any pair of the five float formats. One mnemonic
+    # with two format suffixes rather than twenty-five table entries; the
+    # exact-match rule in resolve_mnemonic keeps the four int conversions
+    # above resolving to themselves.
+    'vf.cvt':         ('CVT', 0x04, ('vd', 'va'),             'fmt2'),
 
     # ---- predicate (ISA sec 8.5) -------------------------------------------
     'p.mov':        ('PRED', 0x00, ('pd', 'pa'),        None),
@@ -311,9 +316,16 @@ MASKABLE_MAJORS = {MAJ['VINT'], MAJ['VFP'], MAJ['CVT'], MAJ['SHUF'],
                    MAJ['RED'], MAJ['SFU'], MAJ['LSU'], MAJ['ATOM'],
                    MAJ['TXFER'], MAJ['ACC']}
 
-# Matrix K and input type suffixes (ISA sec 9C)
+# Float format codes (ISA sec 8.4). The same numbering as xls/tnca_formats.x
+# and tools/model/floatfmt.py, so the assembler, the generated RTL and the
+# exact oracle cannot disagree about what a 3 means.
+FMT      = {'f32': 0, 'bf16': 1, 'f16': 2, 'e5m2': 3, 'e4m3': 4}
+FMT_NAME = {v: k for k, v in FMT.items()}
+
+# Matrix K and input type suffixes (ISA sec 9C). The dtype field is the same
+# five-format vocabulary minus binary32, which a fragment cannot be.
 MMA_K    = {'k16': 0, 'k32': 1, 'k64': 2}
-MMA_DT   = {'f16': 0, 'bf16': 1}
+MMA_DT   = {'f16': 0, 'bf16': 1, 'e5m2': 2, 'e4m3': 3}
 
 
 def encode(major, func, d=0, a=0, b=0, c=0, pred=0, pn=0, mod=0, x=0):

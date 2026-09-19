@@ -5,12 +5,25 @@
 //
 // THE ACCUMULATION CONTRACT (ISA sec 9C.1, arch overview sec 6.3)
 //
-// Each product is exact -- an FP16xFP16 or BF16xBF16 product is exactly
-// representable in binary32 -- and is added to the binary32 accumulator with
-// ONE rounding, in increasing k order. So a MAC here is literally one
-// tnca_fp32_fma with widened inputs, and the result is bit-reproducible across
-// implementations. An implementation that wants a faster reduction order has to
-// expose it as a different opcode; it may not make this one quietly cheaper.
+// The product is formed at full width and never rounded on its own, and there
+// is exactly ONE rounding per accumulation step, applied to the sum, in
+// increasing k order. So a MAC here is literally one tnca_fpu_multi: the
+// operands widen to binary32 exactly, and the binary32 FMA does the rest. The
+// result is bit-reproducible across implementations, and an implementation
+// that wants a faster reduction order has to expose it as a different opcode;
+// it may not make this one quietly cheaper.
+//
+// FOUR INPUT FORMATS, ONE MULTIPLIER
+//
+// FP16, BF16 and both OCP FP8 encodings (E5M2, E4M3) all widen to binary32
+// exactly, so all four are the same datapath with a different format code on
+// the widening step -- ISA sec 9C's mod[3:2]. tnca_fpu_multi is that
+// composition, and it is the same module tb_fpu_multi verifies against an
+// exact oracle, so the matrix unit has no arithmetic of its own to get wrong.
+//
+// What does change with the format is the *fragment layout*: an 8-bit element
+// packs four to a lane and 64 to a vector register, where a 16-bit element
+// packs two and 32. That is one bit of addressing, below.
 //
 // WHY THE LOOP IS k-OUTER, m-INNER
 //
@@ -59,7 +72,7 @@ module tnca_matrix #(
     input  wire [7:0]               cmd_va,
     input  wire [7:0]               cmd_vb,
     input  wire [1:0]               cmd_k,           // 0 K16, 1 K32, 2 K64
-    input  wire                     cmd_dt,          // 0 FP16, 1 BF16
+    input  wire [1:0]               cmd_dt,          // ISA sec 9C mod[3:2]
     input  wire                     cmd_bar_en,
     input  wire [BAR_W-1:0]         cmd_bar,
     // row-op detail
@@ -102,7 +115,7 @@ module tnca_matrix #(
     reg [ACC_W-1:0]  r_slot;
     reg [7:0]        r_va, r_vb;
     reg [1:0]        r_k;
-    reg              r_dt;
+    reg [1:0]        r_dt;
     reg              r_bar_en;
     reg [BAR_W-1:0]  r_bar;
     reg [1:0]        r_rowop;
@@ -118,40 +131,57 @@ module tnca_matrix #(
     wire [6:0] k_limit = (r_k == `TNCA_MMA_K16) ? 7'd16 :
                          (r_k == `TNCA_MMA_K32) ? 7'd32 : 7'd64;
 
+    // The fragment dtype, as the converter's format code. The two vocabularies
+    // are deliberately different -- a fragment cannot be binary32, so sec 9C
+    // needs only two bits -- and this is the one place they meet.
+    reg [2:0] r_fmt;
+    always @(*) begin
+        case (r_dt)
+        `TNCA_MMA_F16:  r_fmt = `TNCA_FMT_F16;
+        `TNCA_MMA_BF16: r_fmt = `TNCA_FMT_BF16;
+        `TNCA_MMA_E5M2: r_fmt = `TNCA_FMT_E5M2;
+        default:        r_fmt = `TNCA_FMT_E4M3;
+        endcase
+    end
+
+    // Both FP8 encodings are one byte per element; FP16 and BF16 are two.
+    wire elem8 = r_dt[1];
+
     assign busy = (st != S_IDLE);
 
     //==========================================================================
     // Fragment addressing
     //
-    // A fragment is a window's registers read as a flat row-major array of
-    // 16-bit elements: element `flat` lives at vector register `flat/32`, bit
-    // `(flat%32)*16`. That is exactly the byte layout the transfer engine
-    // writes, so nothing repacks between a t.ld.async and the m.mma that
-    // consumes it.
+    // A fragment is a window's registers read as a flat row-major *byte*
+    // array, which is exactly the layout the transfer engine writes, so
+    // nothing repacks between a t.ld.async and the m.mma that consumes it.
+    // For a 2-byte element, element `flat` lives at vector register `flat/32`,
+    // bit `(flat%32)*16`; for a 1-byte element, at `flat/64`, bit `(flat%64)*8`.
     //==========================================================================
     wire [10:0] a_flat = mm[ROW_W-1:0] * k_limit + kk;
-    wire [7:0]  a_vreg = r_va + a_flat[10:5];
-    wire [4:0]  a_elem = a_flat[4:0];
+    wire [7:0]  a_vreg = r_va + (elem8 ? {3'd0, a_flat[10:6]}
+                                       : {2'd0, a_flat[10:5]});
+    wire [5:0]  a_elem = elem8 ? a_flat[5:0] : {1'b0, a_flat[4:0]};
 
-    // B[k][.] is 16 consecutive elements starting at k*16, so it is exactly one
-    // half of one vector register.
-    wire [7:0]  b_vreg = r_vb + {2'd0, kk[6:1]};
-    wire        b_half = kk[0];
+    // B[k][.] is 16 consecutive elements starting at k*16: half a vector
+    // register at 16 bits per element, a quarter of one at 8.
+    wire [7:0]  b_vreg = r_vb + (elem8 ? {3'd0, kk[6:2]} : {2'd0, kk[6:1]});
+    wire [1:0]  b_part = elem8 ? kk[1:0] : {kk[0], 1'b0};
 
     assign vrf_addr = (st == S_LOADB) ? b_vreg : a_vreg;
 
-    // B row latch
+    // B row latch. One 16-bit slot per element whatever the format: an 8-bit
+    // element sits right-aligned in its slot, which is where the converter
+    // expects a narrow value to be.
     reg [VLEN*16-1:0] b_row;
 
-    // A element for this cycle
-    wire [15:0] a_elem_v = vrf_data[a_elem*16 +: 16];
+    // A element for this cycle, right-aligned in 32 bits.
+    wire [31:0] a_elem_v = elem8 ? {24'd0, vrf_data[a_elem*8 +: 8]}
+                                 : {16'd0, vrf_data[a_elem[4:0]*16 +: 16]};
 
     //==========================================================================
-    // Widening and the MAC array
+    // The MAC array
     //==========================================================================
-    wire [31:0] a_f32;
-    tnca_cvt16_f32 u_cva (.v(a_elem_v), .mode(r_dt), .y(a_f32));
-
     wire [ELEN-1:0] acc_rd [0:VLEN-1];
     wire [VLEN*ELEN-1:0] acc_rd_bus;
 
@@ -164,21 +194,26 @@ module tnca_matrix #(
     wire row_mul = (st == S_ROW) && (r_rowop == 2'd1);
     wire row_fma = (st == S_ROW) && (r_rowop == 2'd2);
 
+    // An accumulator row op is binary32 on both inputs, and widen(f32, x) is
+    // x, so the same multi-precision MAC serves it with no bypass. The whole
+    // S_ROW state takes this path, a.vwrite included: its FMA result is
+    // discarded, and presenting a fragment format for an operand that is not
+    // a fragment would only be confusing.
+    wire        row_any = (st == S_ROW);
+    wire [2:0]  mac_fmt = row_any ? `TNCA_FMT_F32 : r_fmt;
+
     generate
         for (g = 0; g < VLEN; g = g + 1) begin : g_mac
-            wire [31:0] b_f32;
-            tnca_cvt16_f32 u_cvb (
-                .v(b_row[g*16 +: 16]), .mode(r_dt), .y(b_f32)
-            );
-
-            wire [31:0] fa = (row_mul || row_fma) ? acc_rd[g] : a_f32;
-            wire [31:0] fb = (row_mul || row_fma) ? r_scale   : b_f32;
+            wire [31:0] fa = row_any ? acc_rd[g] : a_elem_v;
+            wire [31:0] fb = row_any ? r_scale
+                                     : {16'd0, b_row[g*16 +: 16]};
             wire [31:0] fc = row_fma ? r_vdata[g*ELEN +: ELEN]
                            : row_mul ? 32'd0
                            : acc_rd[g];
 
-            tnca_fp32_fma u_fma (
+            tnca_fpu_multi u_mac (
                 .clk(clk), .rst_n(rst_n),
+                .fmt(mac_fmt),
                 .a(fa), .b(fb), .c(fc),
                 .sub_c(1'b0), .mul_only(row_mul), .ftz(1'b0),
                 .y(mac_y[g])
@@ -305,10 +340,12 @@ module tnca_matrix #(
             //---------------------------------------------------------------
             // One vector read holds B[k][.] for the whole m sweep.
             S_LOADB: begin
-                if (b_half)
-                    b_row <= vrf_data[VLEN*16 +: VLEN*16];
+                if (elem8)
+                    for (i = 0; i < VLEN; i = i + 1)
+                        b_row[i*16 +: 16] <=
+                            {8'd0, vrf_data[(b_part*VLEN + i)*8 +: 8]};
                 else
-                    b_row <= vrf_data[0 +: VLEN*16];
+                    b_row <= vrf_data[b_part[1]*VLEN*16 +: VLEN*16];
                 mm <= {(ROW_W+1){1'b0}};
                 st <= S_MAC;
             end

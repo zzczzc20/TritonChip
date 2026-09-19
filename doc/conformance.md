@@ -112,6 +112,13 @@ written down:
   against §8.8's bound, which is what the bit means. A build with
   `HAS_SFU = 0` still clears it, still traps, and does not instantiate the
   slice; the promise and the gates move together.
+* `CAPABILITY0.MATRIX_FP8` was added with the datapath that earns it, not
+  before: `m.mma.async` takes E5M2 and E4M3 fragments, `t11_matrix` runs the
+  same product through all four formats against an exact reference, and
+  `t14_caps` exercises the bit. One bit covers both FP8 encodings because they
+  differ by one parameter in one widening step and share every other gate --
+  unlike FP16 and BF16, where an implementation could plausibly build one
+  exponent range and not the other.
 * Major `0x21` (atomics) is allocated and normative but decodes as illegal,
   because atomics execute at a home slice that does not exist until Stage 3.
 * `s.wrspecial` traps, because v0.1 defines no writable special register.

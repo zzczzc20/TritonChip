@@ -51,7 +51,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from tnca_isa import (ISA, MAJ, CC, CC_INT, CC_FP, SPECIAL, SIZE, CACHE_HINT,
                       FMINMAX_MODE, RND, MASKABLE_MAJORS, encode,
                       SREG_N, PREG_N, VREG_N, VLEN,
-                      AREG_N, BREG_N, DREG_N, WREG_N, MMA_K, MMA_DT)
+                      AREG_N, BREG_N, DREG_N, WREG_N, MMA_K, MMA_DT, FMT)
 
 
 class AsmError(Exception):
@@ -572,6 +572,14 @@ class Assembler:
                     self.err(f"'{mnem}' only accepts the '.b' broadcast suffix")
                 mod |= 1
             return mod, ops
+
+        if sclass == 'fmt2':
+            # exactly ".<src>.<dst>", both from the five-format vocabulary
+            if len(sfx) != 2 or sfx[0] not in FMT or sfx[1] not in FMT:
+                self.err(f"'{mnem}' needs a source and a destination format "
+                         f"suffix, e.g. 'vf.cvt.f32.e4m3' "
+                         f"(formats: {', '.join(FMT)})")
+            return FMT[sfx[0]] | (FMT[sfx[1]] << 3), ops
 
         if sclass == 'mma':
             # ".k32", ".bf16" in any order; defaults k16/f16

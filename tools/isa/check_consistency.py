@@ -15,7 +15,7 @@ import sys
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..'))
 sys.path.insert(0, os.path.join(ROOT, 'tools', 'asm'))
-from tnca_isa import ISA, MAJ, CC, SIZE, SPECIAL, MMA_K, MMA_DT   # noqa: E402
+from tnca_isa import ISA, MAJ, CC, SIZE, SPECIAL, MMA_K, MMA_DT, FMT   # noqa: E402
 
 DEFS = os.path.join(ROOT, 'rtl', 'common', 'tnca_defs.vh')
 
@@ -134,12 +134,47 @@ def build_expectations():
         exp['TNCA_MMA_' + k.upper()] = v
     for k, v in MMA_DT.items():
         exp['TNCA_MMA_' + k.upper()] = v
+    # The five float formats. Three tables have to agree about these numbers --
+    # the RTL, the assembler and the DSLX the converter is generated from --
+    # and the third is checked against the first two by tb_cvt_xls, which uses
+    # tools/model/floatfmt.py's copy.
+    for k, v in FMT.items():
+        exp['TNCA_FMT_' + k.upper()] = v
     return exp
+
+
+def check_format_codes():
+    """The five float format codes live in four places, so check all four.
+
+    tnca_defs.vh is covered by the main comparison. The other two are the DSLX
+    the converter is generated from and the exact oracle the converter is
+    tested against; if either drifted, the hardware and the reference would
+    agree with each other about the wrong format and the exhaustive bench
+    would still pass.
+    """
+    bad = []
+
+    dslx = open(os.path.join(ROOT, 'xls', 'tnca_formats.x')).read()
+    for name, want in FMT.items():
+        m = re.search(rf'pub const FMT_{name.upper()}: u3 = u3:(\d+);', dslx)
+        if not m:
+            bad.append(f"xls/tnca_formats.x has no FMT_{name.upper()}")
+        elif int(m.group(1)) != want:
+            bad.append(f"xls/tnca_formats.x FMT_{name.upper()} is "
+                       f"{m.group(1)}, assembler says {want}")
+
+    sys.path.insert(0, os.path.join(ROOT, 'tools', 'model'))
+    import floatfmt
+    if floatfmt.CODE != FMT:
+        bad.append(f"tools/model/floatfmt.py CODE {floatfmt.CODE} "
+                   f"!= assembler FMT {FMT}")
+    return bad
 
 
 def main():
     defs = load_defs()
     exp = build_expectations()
+    fmt_bad = check_format_codes()
 
     missing, mismatch = [], []
     for name, want in sorted(exp.items()):
@@ -154,10 +189,15 @@ def main():
     for name, got, want in mismatch:
         print(f"  MISMATCH {name}: Verilog {got:#x}, Python {want:#x}")
 
-    if missing or mismatch:
-        print(f"FAIL: {len(missing)} missing, {len(mismatch)} disagree")
+    for line in fmt_bad:
+        print(f"  FORMAT CODE: {line}")
+
+    if missing or mismatch or fmt_bad:
+        print(f"FAIL: {len(missing)} missing, {len(mismatch)} disagree, "
+              f"{len(fmt_bad)} format-code problems")
         return 1
-    print("PASS: the RTL defines and the assembler tables agree")
+    print("PASS: the RTL defines, the assembler tables, the DSLX and the "
+          "float oracle agree")
     return 0
 
 

@@ -32,6 +32,7 @@ _CAPABILITY_USE = {
     'gather_scatter': 'emit v.ld.gather / v.st.scatter',
     'matrix_f16': 'emit m.mma.async with FP16 inputs',
     'matrix_bf16': 'emit m.mma.async with BF16 inputs',
+    'matrix_fp8': 'emit m.mma.async with OCP FP8 (E5M2 or E4M3) inputs',
     'tensor_dma': 'emit t.ld.async / t.st.async',
     'mbarrier': 'emit mbarrier operations',
     'vector_fp32': 'emit FP32 vector arithmetic',

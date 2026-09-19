@@ -283,7 +283,10 @@ def main():
     emit(encode(MAJ['TDESC'], 0x11, d=0x20), True, "win32")
     # reserved sub-encodings
     emit(encode(MAJ['MATRIX'], 0x01, d=1, a=2, b=3, c=4, mod=0x3), True, "mma_k3")
-    emit(encode(MAJ['MATRIX'], 0x01, d=1, a=2, b=3, c=4, mod=0x8), True, "mma_dt2")
+    # mod[3:2] = 2 and 3 are E5M2 and E4M3 now that the matrix unit takes
+    # four fragment formats; only the K encoding still has a hole.
+    emit(encode(MAJ['MATRIX'], 0x01, d=1, a=2, b=3, c=4, mod=0x8), False, "mma_e5m2")
+    emit(encode(MAJ['MATRIX'], 0x01, d=1, a=2, b=3, c=4, mod=0xc), False, "mma_e4m3")
     emit(encode(MAJ['TXFER'], 0x00, d=1, a=2, b=3, c=4, mod=0x08), True, "txf_layout1")
 
     # ---- illegal modifiers ----------------------------------------------
@@ -294,6 +297,17 @@ def main():
     emit(encode(MAJ['LSU'], 0x00, d=1, a=2, mod=0x32), True, "cachehint3")
     emit(encode(MAJ['LSU'], 0x10, d=1, a=2, mod=0x03), True, "vector_size64")
     emit(encode(MAJ['CVT'], 0x02, d=1, a=2, mod=0x05), True, "rndmode5")
+    # vf.cvt.<src>.<dst>: mod[2:0] source format, mod[5:3] destination.
+    # 0..4 are the five formats; 5..7 are unallocated in either field.
+    for _s in range(5):
+        for _d in range(5):
+            emit(encode(MAJ['CVT'], 0x04, d=1, a=2, mod=_s | (_d << 3)),
+                 False, f"cvtfmt_{_s}_{_d}")
+    emit(encode(MAJ['CVT'], 0x04, d=1, a=2, mod=0x05), True, "cvtfmt_src5")
+    emit(encode(MAJ['CVT'], 0x04, d=1, a=2, mod=0x07), True, "cvtfmt_src7")
+    emit(encode(MAJ['CVT'], 0x04, d=1, a=2, mod=0x28), True, "cvtfmt_dst5")
+    emit(encode(MAJ['CVT'], 0x04, d=1, a=2, mod=0x38), True, "cvtfmt_dst7")
+    emit(encode(MAJ['CVT'], 0x04, d=1, a=2, mod=0x40), True, "cvtfmt_mod6")
 
     # ---- a transfer's second coordinate register must exist -------------
     # ISA sec 9E: coordinates come from consecutive scalar registers starting

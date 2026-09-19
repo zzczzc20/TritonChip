@@ -1,15 +1,20 @@
 //==============================================================================
-// tnca_mem_model -- behavioural unified memory for Stage-1 bring-up
+// tnca_mem_model -- behavioural tagged memory for bring-up
 //
 // One flat array serves both the instruction port (asynchronous read, matching
-// the core's Stage-1 fetch model) and the data port (valid/ready request,
-// valid response, with a configurable fixed latency).
+// the core's Stage-1 fetch model) and a tagged data port whose responses may
+// return OUT OF ORDER.
 //
-// LATENCY is a parameter on purpose: running the same test at latency 0, 1 and
-// 8 is the cheapest way to catch a core that accidentally assumes a fixed
-// memory response time. RANDOM_STALL additionally drops mem_req_ready at
-// pseudo-random cycles so the request handshake is exercised, not just the
-// happy path.
+// Out-of-order responses are not a nicety: arch overview sec 20.3 lists
+// "arbitrary sub-request return order" as a required correctness test, and once
+// requests go to different NUCA slices through a mesh, ordered returns stop
+// being a property anything guarantees. REORDER=1 makes the model deliver
+// responses from a pool in pseudo-random order, so an LSU that quietly assumes
+// FIFO returns fails here rather than in Stage 3.
+//
+// LATENCY and RANDOM_STALL are parameters for the same reason: running the same
+// test at several latencies is the cheapest way to catch a fixed-latency
+// assumption.
 //==============================================================================
 `timescale 1ns/1ps
 
@@ -17,8 +22,10 @@ module tnca_mem_model #(
     parameter WORDS        = 8192,     // 64-bit words
     parameter MEM_DW       = 64,
     parameter MEM_BYTES    = 8,
+    parameter TAG_W        = 3,
     parameter LATENCY      = 1,
     parameter RANDOM_STALL = 0,
+    parameter REORDER      = 0,
     parameter SEED         = 32'h1234_5678
 ) (
     input  wire                     clk,
@@ -33,9 +40,14 @@ module tnca_mem_model #(
     input  wire                     req_we,
     input  wire [MEM_BYTES-1:0]     req_be,
     input  wire [MEM_DW-1:0]        req_wdata,
+    input  wire [TAG_W-1:0]         req_tag,
+
     output reg                      rsp_valid,
+    output reg  [TAG_W-1:0]         rsp_tag,
     output reg  [MEM_DW-1:0]        rsp_rdata
 );
+
+    localparam POOL = 16;
 
     reg [MEM_DW-1:0] mem [0:WORDS-1];
 
@@ -48,7 +60,7 @@ module tnca_mem_model #(
     wire [63:0] iw = imem_addr >> 3;
     assign imem_data = (iw < WORDS) ? mem[iw[31:0]] : 64'd0;
 
-    // ---- data port ----------------------------------------------------------
+    // ---- pseudo-random source ------------------------------------------------
     reg [31:0] lfsr;
     always @(posedge clk) begin
         if (!rst_n) lfsr <= SEED;
@@ -57,49 +69,81 @@ module tnca_mem_model #(
 
     assign req_ready = (RANDOM_STALL != 0) ? lfsr[3] : 1'b1;
 
-    reg [MEM_DW-1:0] pipe_data [0:15];
-    reg [15:0]       pipe_vld;
+    // ---- in-flight pool ------------------------------------------------------
+    // Each accepted request lands here with a countdown. When the countdown
+    // expires the entry becomes eligible; the responder picks an eligible entry
+    // (the lowest, or a pseudo-random one under REORDER) and retires it.
+    reg [POOL-1:0]       p_valid;
+    reg [MEM_DW-1:0]     p_data  [0:POOL-1];
+    reg [TAG_W-1:0]      p_tag   [0:POOL-1];
+    reg [7:0]            p_cnt   [0:POOL-1];
 
-    wire [63:0] dw = req_addr >> 3;
-    wire        in_range = (dw < WORDS);
-
+    reg [63:0] dw;
+    reg        in_range;
     reg [MEM_DW-1:0] rd;
-    integer k;
+
+    integer k, slot, pick, nelig;
+    reg     found;
 
     always @(posedge clk) begin
         if (!rst_n) begin
-            pipe_vld  <= 16'd0;
+            p_valid   <= {POOL{1'b0}};
             rsp_valid <= 1'b0;
+            rsp_tag   <= {TAG_W{1'b0}};
             rsp_rdata <= {MEM_DW{1'b0}};
         end else begin
-            // shift the response pipeline
-            for (k = 15; k > 0; k = k - 1) begin
-                pipe_vld[k]  <= pipe_vld[k-1];
-                pipe_data[k] <= pipe_data[k-1];
-            end
-            pipe_vld[0]  <= 1'b0;
-            pipe_data[0] <= {MEM_DW{1'b0}};
+            rsp_valid <= 1'b0;
 
+            // ---- accept --------------------------------------------------
             if (req_valid && req_ready) begin
-                rd = in_range ? mem[dw[31:0]] : {MEM_DW{1'b0}};
+                dw       = req_addr >> 3;
+                in_range = (dw < WORDS);
+                rd       = in_range ? mem[dw[31:0]] : {MEM_DW{1'b0}};
                 if (req_we && in_range) begin
                     for (k = 0; k < MEM_BYTES; k = k + 1)
                         if (req_be[k]) mem[dw[31:0]][k*8 +: 8] <= req_wdata[k*8 +: 8];
                 end
-                if (LATENCY == 0) begin
-                    rsp_valid <= 1'b1;
-                    rsp_rdata <= rd;
-                end else begin
-                    pipe_vld[0]  <= 1'b1;
-                    pipe_data[0] <= rd;
+                slot  = -1;
+                for (k = POOL-1; k >= 0; k = k - 1)
+                    if (!p_valid[k]) slot = k;
+                if (slot >= 0) begin
+                    p_valid[slot] <= 1'b1;
+                    p_data[slot]  <= rd;
+                    p_tag[slot]   <= req_tag;
+                    p_cnt[slot]   <= (LATENCY == 0) ? 8'd0 : (LATENCY - 1);
                 end
-            end else if (LATENCY == 0) begin
-                rsp_valid <= 1'b0;
             end
 
-            if (LATENCY > 0) begin
-                rsp_valid <= pipe_vld[LATENCY-1];
-                rsp_rdata <= pipe_data[LATENCY-1];
+            // ---- age -----------------------------------------------------
+            for (k = 0; k < POOL; k = k + 1)
+                if (p_valid[k] && p_cnt[k] != 8'd0)
+                    p_cnt[k] <= p_cnt[k] - 8'd1;
+
+            // ---- retire one eligible entry -------------------------------
+            nelig = 0;
+            for (k = 0; k < POOL; k = k + 1)
+                if (p_valid[k] && p_cnt[k] == 8'd0) nelig = nelig + 1;
+
+            if (nelig > 0) begin
+                if (REORDER != 0) begin
+                    pick = lfsr[7:0] % nelig;     // pseudo-random eligible entry
+                end else begin
+                    pick = 0;                     // oldest-indexed: in order
+                end
+                found = 1'b0;
+                for (k = 0; k < POOL; k = k + 1) begin
+                    if (!found && p_valid[k] && p_cnt[k] == 8'd0) begin
+                        if (pick == 0) begin
+                            rsp_valid  <= 1'b1;
+                            rsp_tag    <= p_tag[k];
+                            rsp_rdata  <= p_data[k];
+                            p_valid[k] <= 1'b0;
+                            found      = 1'b1;
+                        end else begin
+                            pick = pick - 1;
+                        end
+                    end
+                end
             end
         end
     end

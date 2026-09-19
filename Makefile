@@ -157,8 +157,28 @@ core-slowmem: $(CORE_HEX) | dirs
 	     || exit 1; \
 	 done
 
+# And again with responses returning OUT OF ORDER. Once requests reach different
+# NUCA slices through a mesh, ordered returns stop being a property anything
+# guarantees, so arch overview sec 20.3 lists arbitrary return order as a
+# required correctness test. An LSU that silently assumes FIFO passes the two
+# runs above and fails this one.
+.PHONY: core-ooo
+core-ooo: export ARGS_t04_roles := $(ARGS_t04_roles)
+core-ooo: export ARGS_t05_fault := $(ARGS_t05_fault)
+core-ooo: $(CORE_HEX) | dirs
+	$(IVERILOG) $(IVFLAGS) -y $(RTL)/core -y $(RTL)/common -y $(TB)/common \
+	   -P tb_tnca_core.MEM_LATENCY=6 -P tb_tnca_core.RANDOM_STALL=1 \
+	   -P tb_tnca_core.MEM_REORDER=1 \
+	   -o $(BUILD)/tb_core_ooo.vvp $(TB)/core/tb_tnca_core.v
+	@for p in $(CORE_PROGS); do \
+	   extra=$$(eval echo \$${ARGS_$$p}); \
+	   $(TOOLS)/run_test.sh "$$p (ooo mem)" \
+	     "$(VVP) $(BUILD)/tb_core_ooo.vvp +hex=$(BUILD)/$$p.hex +maxcycles=400000 $$extra" \
+	     || exit 1; \
+	 done
+
 #------------------------------------------------------------------------------
-test: lint unit core core-slowmem
+test: lint unit core core-slowmem core-ooo
 	@echo
 	@echo "=============================================="
 	@echo " TNCA regression: all tests passed"

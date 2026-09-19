@@ -30,6 +30,8 @@ module tb_tnca_core;
     parameter WORDS          = 16384;
     parameter MEM_LATENCY    = 1;
     parameter RANDOM_STALL   = 0;
+    parameter MEM_REORDER    = 0;
+    parameter LSU_TAG_W      = 3;
 
     reg clk = 1'b0;
     reg rst_n = 1'b0;
@@ -42,6 +44,8 @@ module tb_tnca_core;
     wire [63:0] mreq_wdata;
     wire        mrsp_valid;
     wire [63:0] mrsp_rdata;
+    wire [LSU_TAG_W-1:0] mreq_tag, mrsp_tag;
+    wire [1:0]  mreq_hint;
 
     reg         launch_valid = 1'b0;
     reg [63:0]  launch_pc = 64'd0;
@@ -78,22 +82,24 @@ module tb_tnca_core;
         .mem_req_valid(mreq_valid), .mem_req_ready(mreq_ready),
         .mem_req_addr(mreq_addr), .mem_req_we(mreq_we),
         .mem_req_be(mreq_be), .mem_req_wdata(mreq_wdata),
-        .mem_rsp_valid(mrsp_valid), .mem_rsp_rdata(mrsp_rdata),
+        .mem_req_tag(mreq_tag), .mem_req_hint(mreq_hint),
+        .mem_rsp_valid(mrsp_valid), .mem_rsp_tag(mrsp_tag),
+        .mem_rsp_rdata(mrsp_rdata),
         .perf_cycles(perf_cycles), .perf_issued(perf_issued),
         .perf_stall_hazard(perf_stall_hazard), .perf_stall_lsu(perf_stall_lsu),
         .perf_stall_wb(perf_stall_wb), .perf_squash(perf_squash)
     );
 
     tnca_mem_model #(
-        .WORDS(WORDS), .MEM_DW(64), .MEM_BYTES(8),
-        .LATENCY(MEM_LATENCY), .RANDOM_STALL(RANDOM_STALL)
+        .WORDS(WORDS), .MEM_DW(64), .MEM_BYTES(8), .TAG_W(LSU_TAG_W),
+        .LATENCY(MEM_LATENCY), .RANDOM_STALL(RANDOM_STALL), .REORDER(MEM_REORDER)
     ) u_mem (
         .clk(clk), .rst_n(rst_n),
         .imem_addr(imem_addr), .imem_data(imem_data),
         .req_valid(mreq_valid), .req_ready(mreq_ready),
         .req_addr(mreq_addr), .req_we(mreq_we),
-        .req_be(mreq_be), .req_wdata(mreq_wdata),
-        .rsp_valid(mrsp_valid), .rsp_rdata(mrsp_rdata)
+        .req_be(mreq_be), .req_wdata(mreq_wdata), .req_tag(mreq_tag),
+        .rsp_valid(mrsp_valid), .rsp_tag(mrsp_tag), .rsp_rdata(mrsp_rdata)
     );
 
     reg [1023:0] hexfile, dumpfile, vcdfile;

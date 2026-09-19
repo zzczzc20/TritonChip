@@ -61,7 +61,9 @@ module tnca_core #(
     parameter MUL_LAT        = 3,          // tnca_mul64 result delay, in cycles
     parameter MEM_DW         = 64,
     parameter MEM_BYTES      = 8,
-    parameter MEM_SHIFT      = 3
+    parameter MEM_SHIFT      = 3,
+    parameter LSU_BEATS      = 8,          // outstanding memory beats
+    parameter LSU_TAG_W      = 3
 ) (
     input  wire                     clk,
     input  wire                     rst_n,
@@ -97,7 +99,10 @@ module tnca_core #(
     output wire                     mem_req_we,
     output wire [MEM_BYTES-1:0]     mem_req_be,
     output wire [MEM_DW-1:0]        mem_req_wdata,
+    output wire [LSU_TAG_W-1:0]     mem_req_tag,
+    output wire [1:0]               mem_req_hint,
     input  wire                     mem_rsp_valid,
+    input  wire [LSU_TAG_W-1:0]     mem_rsp_tag,
     input  wire [MEM_DW-1:0]        mem_rsp_rdata,
 
     // ---- performance counters (arch overview sec 20.2) -----------------------
@@ -532,14 +537,15 @@ module tnca_core #(
 
     tnca_lsu #(
         .VLEN(VLEN), .ELEN(ELEN), .RCTX_W(RCTX_W),
-        .MEM_DW(MEM_DW), .MEM_BYTES(MEM_BYTES), .MEM_SHIFT(MEM_SHIFT)
+        .MEM_DW(MEM_DW), .MEM_BYTES(MEM_BYTES), .MEM_SHIFT(MEM_SHIFT),
+        .NUM_BEATS(LSU_BEATS), .BEAT_W(LSU_TAG_W)
     ) u_lsu (
         .clk(clk), .rst_n(rst_n),
         .req_ready(lsu_req_ready),
         .req_valid(x_mem_go),
         .req_store(x_mem_store), .req_vector(x_mem_vector),
         .req_indexed(x_mem_indexed), .req_size(x_mem_size),
-        .req_signed(x_mem_signed),
+        .req_signed(x_mem_signed), .req_hint(x_mem_hint),
         .req_base(sa_data), .req_offset(x_imm),
         .req_index(vb_data),
         .req_sdata(sb_data),
@@ -553,7 +559,9 @@ module tnca_core #(
         .mem_req_valid(mem_req_valid), .mem_req_ready(mem_req_ready),
         .mem_req_addr(mem_req_addr), .mem_req_we(mem_req_we),
         .mem_req_be(mem_req_be), .mem_req_wdata(mem_req_wdata),
-        .mem_rsp_valid(mem_rsp_valid), .mem_rsp_rdata(mem_rsp_rdata)
+        .mem_req_tag(mem_req_tag), .mem_req_hint(mem_req_hint),
+        .mem_rsp_valid(mem_rsp_valid), .mem_rsp_tag(mem_rsp_tag),
+        .mem_rsp_rdata(mem_rsp_rdata)
     );
 
     //==========================================================================
@@ -1143,7 +1151,7 @@ module tnca_core #(
     // Signals decoded but not consumed by the Stage-1 datapath. They are kept
     // on the bundle because Stage 2 needs them (the FU class for dual issue,
     // the cache hint for the NUCA slice, yield for the fetch arbiter).
-    wire _unused = &{1'b0, x_fu, r_fu, x_is_yield, x_mem_hint,
+    wire _unused = &{1'b0, x_fu, r_fu, x_is_yield,
                      x_va_en, x_vc_en, x_pa_en, x_pb_en, x_sa_en, x_sc_en, 1'b0};
 
 endmodule

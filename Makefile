@@ -29,7 +29,8 @@ ASM        := $(PYTHON) $(TOOLS)/asm/tnca_asm.py
 
 RTL_COMMON := $(wildcard $(RTL)/common/*.v)
 RTL_CORE   := $(wildcard $(RTL)/core/*.v)
-RTL_ALL    := $(RTL_COMMON) $(RTL_CORE) $(wildcard $(RTL)/mem/*.v)
+RTL_NUCA   := $(wildcard $(RTL)/nuca/*.v)
+RTL_ALL    := $(RTL_COMMON) $(RTL_CORE) $(RTL_NUCA)
 
 # Number of random FMA vectors in the default regression. The deep sweep used
 # during bring-up is `make fma-deep`.
@@ -63,7 +64,7 @@ dirs:
 lint: dirs
 	@fail=0; \
 	for f in $(RTL_ALL); do \
-	  if ! $(IVERILOG) $(IVFLAGS) -y $(RTL)/core -y $(RTL)/common -t null $$f 2>$(BUILD)/lint.err; then \
+	  if ! $(IVERILOG) $(IVFLAGS) -y $(RTL)/core -y $(RTL)/common -y $(RTL)/nuca -t null $$f 2>$(BUILD)/lint.err; then \
 	    echo "LINT FAIL $$f"; cat $(BUILD)/lint.err; fail=1; \
 	  fi; \
 	done; \
@@ -178,7 +179,38 @@ core-ooo: $(CORE_HEX) | dirs
 	 done
 
 #------------------------------------------------------------------------------
-test: lint unit core core-slowmem core-ooo
+# NUCA slice
+#------------------------------------------------------------------------------
+NUCA_REQS ?= 2000
+
+$(BUILD)/tb_nuca_slice.vvp: $(TB)/nuca/tb_nuca_slice.v $(RTL)/nuca/tnca_nuca_slice.v \
+                            $(TB)/common/tnca_dram_model.v $(RTL_COMMON) | dirs
+	$(IVERILOG) $(IVFLAGS) -y $(RTL)/common -o $@ $<
+	@true
+
+# Run the slice under three memory behaviours. A cache that quietly assumes
+# ordered returns or a never-stalling memory passes one of these and fails the
+# others.
+$(BUILD)/tb_nuca_slice_%.vvp: $(TB)/nuca/tb_nuca_slice.v $(RTL)/nuca/tnca_nuca_slice.v \
+                              $(TB)/common/tnca_dram_model.v | dirs
+	@true
+
+.PHONY: nuca
+nuca: | dirs
+	@for cfg in "40 1 1 ooo 40" "4 0 0 fast 0" "64 1 0 slow 0"; do \
+	   set -- $$cfg; \
+	   $(IVERILOG) $(IVFLAGS) -y $(RTL)/common \
+	     -P tb_nuca_slice.DRAM_LAT=$$1 -P tb_nuca_slice.DRAM_STALL=$$2 \
+	     -P tb_nuca_slice.DRAM_OOO=$$3 \
+	     -o $(BUILD)/tb_nuca_$$4.vvp $(TB)/nuca/tb_nuca_slice.v \
+	     $(RTL)/nuca/tnca_nuca_slice.v $(TB)/common/tnca_dram_model.v || exit 1; \
+	   $(TOOLS)/run_test.sh "nuca slice ($$4)" \
+	     "$(VVP) $(BUILD)/tb_nuca_$$4.vvp +nreq=$(NUCA_REQS) +min_wb=1 +min_block=$$5" \
+	     || exit 1; \
+	 done
+
+#------------------------------------------------------------------------------
+test: lint unit core core-slowmem core-ooo nuca
 	@echo
 	@echo "=============================================="
 	@echo " TNCA regression: all tests passed"

@@ -107,6 +107,14 @@
 `define TNCA_SPEC_NUM_ACC    10'h00f
 `define TNCA_SPEC_CLOCK      10'h010
 `define TNCA_SPEC_INSTRET    10'h011
+// Shared-resource counts. The compiler allocates barriers, windows,
+// descriptors and physical vector registers for the whole program
+// (compiler_overview.md sec 10.1), so it must be able to interrogate
+// the machine it targets rather than trust a target description file.
+`define TNCA_SPEC_NUM_BAR    10'h012
+`define TNCA_SPEC_NUM_WIN    10'h013
+`define TNCA_SPEC_NUM_DESC   10'h014
+`define TNCA_SPEC_NUM_PHYSV  10'h015
 `define TNCA_SPEC_ARG_BASE   10'h020
 `define TNCA_SPEC_ISA_VER    10'h030
 `define TNCA_SPEC_CAP0       10'h031

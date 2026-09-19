@@ -919,6 +919,10 @@ module tnca_core #(
         `TNCA_SPEC_NUM_ACC:   spec_rd = ACC_N;
         `TNCA_SPEC_CLOCK:     spec_rd = clock_ctr;
         `TNCA_SPEC_INSTRET:   spec_rd = instret[x_rctx];
+        `TNCA_SPEC_NUM_BAR:   spec_rd = BAR_N;
+        `TNCA_SPEC_NUM_WIN:   spec_rd = WIN_N;
+        `TNCA_SPEC_NUM_DESC:  spec_rd = DESC_N;
+        `TNCA_SPEC_NUM_PHYSV: spec_rd = PHYS_VREGS;
         `TNCA_SPEC_ARG_BASE:  spec_rd = arg_base;
         `TNCA_SPEC_ISA_VER:   spec_rd = `TNCA_ISA_VERSION;
         `TNCA_SPEC_CAP0:      spec_rd = (64'd1 << `TNCA_CAP_VECTOR_FP32)
@@ -926,6 +930,12 @@ module tnca_core #(
                                       | (64'd1 << `TNCA_CAP_GATHER)
                                       | (64'd1 << `TNCA_CAP_MATRIX_F16)
                                       | (64'd1 << `TNCA_CAP_MATRIX_BF16)
+                                      // The transfer engine decodes and
+                                      // executes TXFER unconditionally, so the
+                                      // bit must be set: ISA sec 11 says a
+                                      // clear bit means the encoding raises
+                                      // ILLEGAL_INSTRUCTION, and it does not.
+                                      | (64'd1 << `TNCA_CAP_TENSOR_DMA)
                                       | (64'd1 << `TNCA_CAP_MBARRIER);
         `TNCA_SPEC_TRAP_PC:   spec_rd = f_pc[x_rctx];
         `TNCA_SPEC_TRAP_CODE: spec_rd = {32'd0, f_detail[x_rctx], f_code[x_rctx]};

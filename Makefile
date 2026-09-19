@@ -4,6 +4,9 @@
 #   make            build everything and run the full regression
 #   make test       run the full regression
 #   make unit       unit tests only (FMA, decoder)
+#   make isa        regenerate every ISA artifact from the single source
+#   make target     regenerate the compiler target description from the RTL
+#   make compiler   compiler unit tests + generated-file staleness checks
 #   make core       core tests only
 #   make synth      Yosys synthesis + PPA proxy report
 #   make lint       parse/elaborate every RTL file standalone
@@ -43,7 +46,7 @@ RTLY       := -y $(RTL)/common -y $(RTL)/core -y $(RTL)/nuca -y $(RTL)/noc \
 FMA_VECTORS ?= 20000
 
 CORE_PROGS := t00_scalar t01_vector t02_mem t03_fp t04_roles t05_fault t06_alu \
-              t11_matrix t12_tensor t13_share
+              t11_matrix t12_tensor t13_share t14_caps t15_target
 
 # Image size in 64-bit words; must match tb_tnca_core's WORDS parameter.
 IMAGE_WORDS := 16384
@@ -55,7 +58,7 @@ ARGS_t05_fault := +allroles +expectfault=01
 # t13 needs two contexts AND an aliased vector base: that is the whole point.
 ARGS_t13_share := +allroles +aliasvrf
 
-.PHONY: all test unit core synth lint clean dirs help
+.PHONY: all test unit core synth lint clean dirs help isa target compiler
 
 all: test
 
@@ -151,6 +154,13 @@ $(TB)/core/progs/t11_matrix.s: $(TB)/core/progs/gen_t11_matrix.py $(TOOLS)/model
 	$(PYTHON) $<
 
 $(TB)/core/progs/t12_tensor.s: $(TB)/core/progs/gen_t12_tensor.py $(TOOLS)/model/fp32.py
+	$(PYTHON) $<
+
+$(TB)/core/progs/t14_caps.s: $(TB)/core/progs/gen_t14_caps.py
+	$(PYTHON) $<
+
+$(TB)/core/progs/t15_target.s: $(TB)/core/progs/gen_t15_target.py \
+                               compiler/targets/tnca-sim-v0.1.json
 	$(PYTHON) $<
 
 $(BUILD)/%.hex: $(TB)/core/progs/%.s $(TOOLS)/asm/tnca_asm.py $(TOOLS)/asm/tnca_isa.py | dirs
@@ -273,7 +283,48 @@ top: $(BUILD)/tb_top.vvp $(patsubst %,$(BUILD)/%.hex,$(TOP_PROGS))
 	 done
 
 #------------------------------------------------------------------------------
-test: lint unit core core-slowmem core-ooo nuca mesh top
+#==============================================================================
+# The compiler side (doc/compiler_overview.md)
+#==============================================================================
+
+# sec 11.3: one machine-readable ISA source. Everything below is generated
+# from tools/asm/tnca_isa.py; nothing downstream may be edited by hand.
+ISA_SCHEMA  := isa/tnca-isa-v0.1.json
+ISA_GEN     := compiler/include/tnca/ISA/TNCAOpcodes.inc \
+               compiler/include/tnca/ISA/TNCAInstrInfo.td \
+               doc/isa/opcode-map.md
+
+isa:
+	@$(PYTHON) $(TOOLS)/isa/export_schema.py
+	@$(PYTHON) $(TOOLS)/isa/gen.py all
+	@$(PYTHON) $(TOOLS)/isa/check_consistency.py
+
+$(ISA_SCHEMA): $(TOOLS)/asm/tnca_isa.py $(TOOLS)/isa/export_schema.py
+	@$(PYTHON) $(TOOLS)/isa/export_schema.py
+
+# sec 15 C0: the target contract, read out of the RTL rather than retyped.
+TARGET_JSON := compiler/targets/tnca-sim-v0.1.json
+
+target: $(TARGET_JSON)
+
+$(TARGET_JSON): $(RTL)/core/tnca_core.v $(RTL)/tnca_top.v $(ISA_SCHEMA) \
+                $(TOOLS)/isa/gen_target.py
+	@$(PYTHON) $(TOOLS)/isa/gen_target.py
+
+# Generated files are checked, not regenerated, so a stale commit fails here
+# instead of being quietly repaired by the person who runs `make`.
+compiler: $(ISA_SCHEMA) $(TARGET_JSON)
+	@$(PYTHON) $(TOOLS)/isa/export_schema.py --check
+	@$(PYTHON) $(TOOLS)/isa/gen.py --check all
+	@$(PYTHON) $(TOOLS)/isa/gen_target.py --check
+	@$(PYTHON) $(TOOLS)/isa/check_consistency.py
+	@$(PYTHON) compiler/test/run_tests.py
+
+.PHONY: pin
+pin:
+	@$(PYTHON) $(TOOLS)/isa/verify_pin.py
+
+test: lint unit compiler core core-slowmem core-ooo nuca mesh top
 	@echo
 	@echo "=============================================="
 	@echo " TNCA regression: all tests passed"

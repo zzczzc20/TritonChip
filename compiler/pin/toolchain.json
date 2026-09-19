@@ -1,0 +1,31 @@
+{
+  "note": "Pinned upstream toolchain for the TNCA backend (compiler_overview.md sec 15, C0). Values verified against the upstream repository, not transcribed from memory; re-verify with tools/isa/verify_pin.py.",
+  "verified_on": "2026-09-18",
+
+  "triton": {
+    "repository": "https://github.com/triton-lang/triton",
+    "tag": "v3.8.0",
+    "commit": "c01b6774b1865984607d89d89d3a10833de92037",
+    "rationale": "The plan names 3.8.0 as the stable baseline candidate and says not to chase main. 3.8.0 is the newest tagged release and already carries the automatic warp-specialization paths sec 1.2 depends on."
+  },
+
+  "llvm": {
+    "repository": "https://github.com/llvm/llvm-project",
+    "commit": "5f07f818b51b786b0a87b4e514882600ecba112f",
+    "source": "triton v3.8.0 cmake/llvm-info.json",
+    "note": "Triton requires its own pinned LLVM revision, not an arbitrary release. As of 3.8.0 the pin moved out of cmake/llvm-hash.txt into cmake/llvm-info.json, which also carries per-platform sha256 sums for the prebuilt packages.",
+    "prebuilt_sha256": {
+      "macos-arm64": "a6733249e86c6b1d1fd13cbc5b212635e7a136090666c4762c513010175e863b",
+      "ubuntu-arm64": "fbac09853f8dcbdd0b786c368577cefaac9542fc60ed7d2f3ce8dacf97b03aa7",
+      "ubuntu-x64": "62dd9524eed689360882a7ae06132182b4a724ca5dfdca77667556fcef940022",
+      "almalinux-x64": "3336d34f74de830eb1cdb7db82df23266a1601d6c55a4cc7447d6d2a2a58005e"
+    }
+  },
+
+  "host_status": {
+    "platform": "darwin arm64",
+    "triton_installed": false,
+    "mlir_installed": false,
+    "consequence": "The MLIR half of the backend (tnca-opt, the tnca dialect) cannot be built or run on this host until the pinned LLVM is fetched. Triton itself publishes no macOS wheels. The bring-up path of sec 11.1 -- TNCA IR -> assembly -> tools/asm/tnca_asm.py -> RTL -- is pure Python and does run here, which is why it is built first."
+  }
+}

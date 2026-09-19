@@ -38,3 +38,8 @@ tags
 *.hex
 *.bin.txt
 /tmp/
+
+# ---- Compiler ----
+compiler/build/
+compiler/.cache/
+compile_commands.json

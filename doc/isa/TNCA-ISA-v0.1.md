@@ -197,6 +197,10 @@ compares.
 | `0x00f` | `NUM_ACC` | R | accumulator slots |
 | `0x010` | `CLOCK` | R | free-running core cycle counter |
 | `0x011` | `INSTRET` | R | instructions retired by this RCTX |
+| `0x012` | `NUM_BARRIERS` | R | mbarrier slots |
+| `0x013` | `NUM_WINDOWS` | R | RF window handles |
+| `0x014` | `NUM_DESCRIPTORS` | R | tensor descriptor slots |
+| `0x015` | `NUM_PHYS_VREGS` | R | physical vector registers in the core. This is *not* `NUM_VREGS * NUM_ROLES`; the difference is what lets one window be visible to two Role Contexts (§9D.2). |
 | `0x020` | `ARG_BASE` | R | kernel argument buffer base address |
 | `0x030` | `ISA_VERSION` | R | `{major[15:0], minor[15:0]}` = `0x0000_0001` |
 | `0x031` | `CAPABILITY0` | R | feature bitmap, §11 |

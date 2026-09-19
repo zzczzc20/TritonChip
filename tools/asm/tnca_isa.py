@@ -63,6 +63,8 @@ SPECIAL = {
     'core_id': 0x00a, 'num_cores': 0x00b, 'num_lanes': 0x00c,
     'num_vregs': 0x00d, 'tensor_max_rank': 0x00e, 'num_acc': 0x00f,
     'clock': 0x010, 'instret': 0x011,
+    'num_barriers': 0x012, 'num_windows': 0x013,
+    'num_descriptors': 0x014, 'num_phys_vregs': 0x015,
     'arg_base': 0x020,
     'isa_version': 0x030, 'cap0': 0x031,
     'trap_pc': 0x040, 'trap_code': 0x041,

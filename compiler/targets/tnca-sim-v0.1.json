@@ -106,7 +106,14 @@
       "note": "home = H(physical line address); no replication and no migration, so there is no inter-slice coherence protocol to model."
     },
     "gather_index_scaling": "element",
+    "gather_index_bits": 32,
+    "gather_index_signed": true,
     "addressable_scratchpad": false
+  },
+  "scalar": {
+    "width_bits": 64,
+    "has_floating_point": false,
+    "note": "SALU is integer only; move uniform FP through the vector domain or carry it as a bit pattern."
   },
   "trap_codes": {
     "NONE": 0,

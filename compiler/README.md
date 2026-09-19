@@ -63,7 +63,8 @@ trusts is the file the silicon confirms.
 ```
 pin/toolchain.json       pinned Triton + LLVM, verified against upstream
 targets/                 generated target descriptions
-python/tnca_cc/          the bring-up compiler: target, ISA, diagnostics, protocol
+python/tnca_cc/          the bring-up compiler: target, ISA, diagnostics,
+                         implicit footprints (§13.4), protocol model (§16.2)
 backend/                 the Triton out-of-tree plugin
 include/, lib/           the tnca dialect (§5.3) and its two interfaces (§5.4)
 tools/tnca-opt/          the IR driver every §16.2 unit test will run against
@@ -78,6 +79,25 @@ make target     regenerate the target description from the RTL
 make compiler   unit tests + staleness checks for every generated file
 make pin        re-verify the pinned toolchain against upstream (needs network)
 ```
+
+## What building this found in the hardware
+
+The point of doing the compiler now is that it asks questions no RTL test was
+asking. Three so far, recorded in [`../doc/conformance.md`](../doc/conformance.md):
+
+- `CAPABILITY0.TENSOR_DMA` read 0 while the transfer engine executed TXFER.
+- The four whole-program resources (§10.1) were not reportable by the hardware,
+  so a target description could not be checked against the machine.
+- A transfer with its coordinate base at `s63` silently ran at coordinate 0 on
+  its second axis, because the implicit `Sb+1` read wrapped onto `S0`.
+
+The third is worth separating from a related case that was *not* changed.
+Overwriting an `m.mma.async` source fragment while the matrix unit is still
+reading it is also silently wrong — but ISA §9C.3 states that and assigns it to
+the compiler, so it is undefined by design, and `footprints.py` models it. The
+`s63` case was undefined by accident: nothing said what happened, and what
+happened was a wrong address. That is the difference between a contract the
+compiler can honour and a trap it cannot see.
 
 ## Where C0 stops
 

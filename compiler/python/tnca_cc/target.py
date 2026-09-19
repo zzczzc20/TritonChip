@@ -183,6 +183,28 @@ class TargetInfo:
     def has_separate_source_completion(self):
         return bool(self._d['mma'].get('separate_source_completion'))
 
+    # Triton descriptor padding -> TNCA padding mode. sec 12: "descriptor
+    # `nan` padding -- 当前 TNCA zero/clamp/fault 不等价，必须显式补齐或
+    # fallback." Zero is not NaN: a masked softmax that pads with zero scores
+    # a real -0 where it meant "absent", so substituting is a wrong answer.
+    _PADDING_MAP = {'zero': 'zero', 'clamp': 'clamp', 'fault': 'fault'}
+
+    def dma_padding_mode(self, requested):
+        """Map a requested padding behaviour, or refuse it."""
+        available = self._d['dma']['padding_modes']
+        mapped = self._PADDING_MAP.get(requested)
+        if mapped is not None and mapped in available:
+            return mapped
+        raise CapabilityError(
+            f"target {self.name!r} cannot pad a transfer with {requested!r}",
+            because=(f"the transfer engine implements {available}; ISA "
+                     "sec 9E.1 fills padded elements rather than performing a "
+                     "masked access, and no fill value is equivalent to "
+                     f"{requested!r}"),
+            remedy=('materialise the padding explicitly before the transfer, '
+                    'or fall back to a masked LSU loop'),
+            source='compiler_overview.md sec 12')
+
     @property
     def gather_index_scaling(self):
         """'element' -- gather indices are scaled by the access size.
@@ -192,6 +214,30 @@ class TargetInfo:
         exactly the shape of bug that survives a careless test.
         """
         return self._d['memory']['gather_index_scaling']
+
+    @property
+    def has_scalar_fp(self):
+        """False: SALU is integer only.
+
+        sec 12 warns against assuming otherwise. A uniform FP32 value has to
+        travel through the vector domain, or as a bit pattern a scalar
+        register merely carries.
+        """
+        return bool(self._d['scalar']['has_floating_point'])
+
+    @property
+    def gather_index_bits(self):
+        return self._d['memory']['gather_index_bits']
+
+    def gather_reach_elements(self):
+        """How far a gather can reach from its scalar base, in elements.
+
+        sec 12: offsets beyond this need rebasing, grouping or a per-lane
+        scalar fallback. The index is scaled by the access size, so the reach
+        is in elements and the byte reach depends on the dtype.
+        """
+        bits = self.gather_index_bits
+        return (-(1 << (bits - 1)), (1 << (bits - 1)) - 1)
 
     @property
     def has_addressable_scratchpad(self):

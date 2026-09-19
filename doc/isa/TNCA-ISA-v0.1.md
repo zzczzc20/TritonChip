@@ -844,6 +844,21 @@ layout (`0` = flat row-major); `mod[5]` requests a transposed write.
 Coordinates come from **consecutive scalar registers** starting at `Sb`, one per
 descriptor rank (§12.11). The block shape comes from the descriptor.
 
+`t.ld.async` and `t.st.async` with `Sb = S63` raise `ILLEGAL_INSTRUCTION`. The
+next index would be `S0`, which reads as zero and discards writes (§3), so the
+second coordinate could not be written at all and the transfer would run at
+coordinate 0 on that axis while the program believed it had set one. That is a
+wrong address, and a wrong address is a wrong answer rather than a slow one, so
+the encoding is refused instead.
+
+`t.prefetch` is deliberately exempt. It promises nothing (§9E.2) and may be
+dropped entirely, so a coordinate it reads wrongly costs a prefetch and never a
+result — which is precisely the line §1.4 draws between semantics and hints.
+
+This is the kind of implicit wide register read a compiler cannot see in the
+explicit operand fields, and it is why the read set is stated here rather than
+left to be inferred.
+
 ### 9E.1 Order of operations (§12.11)
 
 1. read the descriptor **snapshot**;
@@ -916,3 +931,5 @@ that distinction is the whole point of §6.3.
    v0.1; the bit is reserved and must be 0).
 5. Branch displacements are expressible in the encoded field width.
 6. Writes to `S0` and `P0` assemble fine but have no architectural effect.
+7. A `t.ld.async` / `t.st.async` whose coordinate base is `S63` is illegal,
+   because its second coordinate register would not exist (§9E).

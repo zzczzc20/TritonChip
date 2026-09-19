@@ -182,7 +182,24 @@ def main():
                          'protocol to model.'),
             },
             'gather_index_scaling': DESIGN_FACTS['gather_index_scaling'][0],
+            # Each lane's index is one 32-bit element, sign-extended then
+            # scaled, so the reach is +/- 2^31 elements from the scalar base.
+            # sec 12: a gather whose offsets exceed that needs rebasing,
+            # grouping or a per-lane scalar fallback -- not a silent wrap.
+            'gather_index_bits': 32,
+            'gather_index_signed': True,
             'addressable_scratchpad': False,
+        },
+
+        # sec 12: "uniform FP32 标量 -- 不假定 Scalar ALU 有浮点能力". It does
+        # not: all 36 SALU encodings are integer. A uniform FP32 value moves
+        # through the vector domain or as a bit pattern in a scalar register,
+        # and a lowering that assumes otherwise emits nothing that exists.
+        'scalar': {
+            'width_bits': 64,
+            'has_floating_point': False,
+            'note': ('SALU is integer only; move uniform FP through the '
+                     'vector domain or carry it as a bit pattern.'),
         },
 
         'trap_codes': isa['trap_codes'],

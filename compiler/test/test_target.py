@@ -57,6 +57,14 @@ class TestTargetContract(unittest.TestCase):
         """The architecture's defining constraint, not an incidental one."""
         self.assertFalse(self.t.has_addressable_scratchpad)
 
+    def test_scalar_alu_has_no_floating_point(self):
+        """sec 12: do not assume the Scalar ALU can do FP; it cannot."""
+        self.assertFalse(self.t.has_scalar_fp)
+
+    def test_gather_reach_is_bounded_and_known(self):
+        lo, hi = self.t.gather_reach_elements()
+        self.assertEqual((lo, hi), (-(1 << 31), (1 << 31) - 1))
+
     def test_gather_indices_are_element_scaled(self):
         """ISA sec 9.1 scales by access size; byte offsets are wrong."""
         self.assertEqual(self.t.gather_index_scaling, 'element')
@@ -87,6 +95,16 @@ class TestCapabilityGate(unittest.TestCase):
         with self.assertRaises(CapabilityError) as cm:
             self.t.require('sfu')
         self.assertIn('error bound', cm.exception.remedy)
+
+    def test_nan_padding_refused_not_approximated(self):
+        """sec 12: TNCA's zero/clamp/fault are not equivalent to NaN padding."""
+        from tnca_cc import CapabilityError as _CE
+        for mode in ('zero', 'clamp', 'fault'):
+            with self.subTest(mode=mode):
+                self.assertEqual(self.t.dma_padding_mode(mode), mode)
+        with self.assertRaises(_CE) as cm:
+            self.t.dma_padding_mode('nan')
+        self.assertIn('masked LSU loop', cm.exception.remedy)
 
     def test_unknown_capability_is_an_error_not_a_false(self):
         """Returning False for a typo would silently disable a real feature."""

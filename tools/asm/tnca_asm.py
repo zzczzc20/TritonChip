@@ -424,6 +424,17 @@ class Assembler:
         if oi != len(ops):
             self.err(f"'{mnem}' takes {oi} operand(s), got {len(ops)}")
 
+        # ISA sec 9E / sec 12.7: a transfer takes its coordinates from
+        # consecutive scalar registers starting at Sb, so Sb+1 must exist.
+        # At s63 the index wraps to s0, which reads as zero and discards
+        # writes, so the second coordinate could never be set and the transfer
+        # would silently run at 0 on that axis. The decoder refuses this; say
+        # so here, where the source line is still in hand.
+        if mnem in ('t.ld.async', 't.st.async') and f['b'] == 63:
+            self.err("'%s' cannot take its coordinates from s63: the second "
+                     "coordinate would be s0, which reads as zero (ISA sec 9E)"
+                     % mnem)
+
         return encode(major, func, d=f['d'], a=f['a'], b=f['b'], c=f['c'],
                       pred=pred, pn=pn, mod=mod)
 

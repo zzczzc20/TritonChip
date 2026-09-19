@@ -248,3 +248,26 @@ that a simpler reading would have skipped:
 5. **§10.5 and §13.4, forward progress.** A trap stops one role and wakes the
    rest; it never becomes a hang. `t05_fault` tests exactly that, including
    that the core still reaches idle.
+
+6. **The compiler plan found three more.** Building
+   [`compiler_overview.md`](compiler_overview.md)'s milestone C0 against the
+   hardware exposed things no RTL test was asking about, because they are only
+   wrong from a compiler's point of view:
+
+   - `CAPABILITY0.TENSOR_DMA` read 0 while the transfer engine executed TXFER
+     normally. ISA §11 makes a clear bit a promise of `ILLEGAL_INSTRUCTION`, so
+     a compiler honouring the bitmap would have refused to emit a DMA the
+     hardware performs. `t14_caps` now pins the bitmap and exercises every bit
+     it claims.
+   - The four resources §10.1 of the compiler plan allocates across the whole
+     program — barriers, RF windows, descriptors, physical vector registers —
+     were the ones the hardware did not report, so a compiler could not check
+     its target description against the machine. Four read-only special
+     registers were added in free encoding space, and `t15_target` now closes
+     the chain from RTL parameter to special-register read.
+   - A transfer whose coordinate base was `s63` silently ran at coordinate 0 on
+     its second axis, because the implicit `Sb+1` wrapped to `S0`, which reads
+     as zero and discards writes. Demonstrated, then made
+     `ILLEGAL_INSTRUCTION` in the decoder and rejected in the assembler. This
+     is precisely the implicit wide register read §13.4 of the compiler plan
+     warns cannot be inferred from the explicit operand fields.

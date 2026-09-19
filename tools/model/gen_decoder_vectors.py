@@ -295,6 +295,15 @@ def main():
     emit(encode(MAJ['LSU'], 0x10, d=1, a=2, mod=0x03), True, "vector_size64")
     emit(encode(MAJ['CVT'], 0x02, d=1, a=2, mod=0x05), True, "rndmode5")
 
+    # ---- a transfer's second coordinate register must exist -------------
+    # ISA sec 9E: coordinates come from consecutive scalar registers starting
+    # at Sb. At Sb = S63 the next index wraps to S0, which reads as zero and
+    # discards writes, so the second coordinate cannot be set at all and the
+    # transfer would silently run at coordinate 0 on that axis.
+    emit(encode(MAJ['TXFER'], 0x00, d=1, a=2, b=63, c=4), True, "txf_coord_s63")
+    emit(encode(MAJ['TXFER'], 0x08, d=1, a=2, b=63, c=4), True, "txf_st_coord_s63")
+    emit(encode(MAJ['TXFER'], 0x00, d=1, a=2, b=62, c=4), False, "txf_coord_s62_ok")
+
     # ---- writes to S0 / P0 assemble and decode fine (ISA sec 12.6) ------
     emit(encode(MAJ['SALU'], 0x01, d=0, a=1, b=2), False, "write_s0_ok")
     emit(encode(MAJ['PRED'], 0x01, d=0, a=1, b=2), False, "write_p0_ok")

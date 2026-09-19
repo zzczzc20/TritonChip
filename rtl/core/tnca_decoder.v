@@ -721,6 +721,15 @@ module tnca_decoder (
                 // a = descriptor, b = coordinate base, c = token
                 `TNCA_DEC_DST_W `TNCA_DEC_RA_A `TNCA_DEC_SRC_SB `TNCA_DEC_SRC_SC
                 `TNCA_DEC_MASK
+                // Coordinates come from CONSECUTIVE scalar registers starting
+                // at Sb (ISA sec 9E), so a rank-2 transfer needs Sb+1 to
+                // exist. At Sb = S63 it does not: the index wraps to S0, which
+                // reads as zero and discards writes, so the second coordinate
+                // is structurally unwritable. The transfer would then run at
+                // coordinate 0 on that axis while the program believed it had
+                // set one -- a wrong address, which is a wrong answer rather
+                // than a slow one. Refuse the encoding instead.
+                bad = bad | (f_b[5:0] == 6'd63);
             end
             `TNCA_T_PREFETCH: begin
                 `TNCA_DEC_RA_A `TNCA_DEC_SRC_SB `TNCA_DEC_MASK

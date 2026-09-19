@@ -159,6 +159,42 @@ reductions, in order of value:
 
 Neither changes the ISA.
 
+### The accumulator file dominates the matrix unit, and it is flops
+
+`tnca_matrix` is 316,846 gates, of which `tnca_acc_rf` alone is 200,381 --
+**63% of the matrix unit is storage**, and the 16 MACs that do the arithmetic
+are the smaller half. 131,072 flops is exactly the 16 slots x 16 rows x 16 lanes
+x 32 bits the architecture specifies (§5.1), so the state is right; building it
+from flops is not.
+
+This is the same finding as the register files, and it lands harder here because
+the accumulator is read and written every cycle of an MMA. §5.4 asks for the
+accumulator to be reachable from the vector unit at row granularity, which is a
+port requirement, not an area one — a banked SRAM with a row-wide port satisfies
+it directly.
+
+The 190-level depth is the FMA (115 on its own) plus the accumulator read and
+the operand muxes in front of it. Both halves have the same fix: more pipeline
+stages for the FMA, and a registered SRAM read for the accumulator.
+
+### Walking the row base instead of recomputing it
+
+`tnca_tensor` first computed each row's address as
+
+```
+base + (c0 + row)*stride0 + c1*stride1
+```
+
+which puts a 64x64 multiply in the inner loop of every transfer. Walking it
+instead -- multiply once at setup, add `stride0` per row -- is what a DMA engine
+is supposed to look like, and took the module from 89 to 83 levels.
+
+The remaining 83 is the setup multiply itself, which is at the library's floor
+for 64-bit multiplication and cannot go lower without pipelining it. The core
+already contains a pipelined multiplier (`tnca_mul64`); reusing it for the setup
+cycles is the obvious next step and costs only latency on a path that has none
+to lose.
+
 ### What a real flow would have to confirm
 
 Nothing here substitutes for static timing on a real library. The specific
@@ -169,7 +205,9 @@ claims that need checking first, in order:
 2. that the banked vector RF's operand collector does not become the new
    critical path;
 3. that the flop counts here (`tnca_mul64` at 768, `tnca_fp32_fma` at 203) are
-   not hiding a register-heavy pipeline that a real area model would penalise.
+   not hiding a register-heavy pipeline that a real area model would penalise;
+4. that the accumulator file as banked SRAM still supports a row-wide read and
+   write every cycle, which is what the matrix unit's loop order assumes.
 
 ## Reproducing
 

@@ -144,6 +144,7 @@ module tnca_tensor #(
                S_DWAIT  = 4'd2,
                S_DPARSE = 4'd8,
                S_TSETUP = 4'd3,
+               S_TSET2  = 4'd9,
                S_TRUN   = 4'd4,
                S_TDRAIN = 4'd5,
                S_DONE   = 4'd6,
@@ -193,11 +194,16 @@ module tnca_tensor #(
 
     //==========================================================================
     // Address of the current unit
+    //
+    // The row base is WALKED, not recomputed. Written as
+    //     base + (c0 + row)*stride0 + c1*stride1
+    // every row costs a 64x64 multiply, and the multiplier then sits in the
+    // inner loop of every transfer. The starting address needs the multiplies
+    // once, in a setup cycle where there is no throughput to lose; after that a
+    // row is one add. This is what a DMA engine is supposed to look like.
     //==========================================================================
-    wire [63:0] row_base  = d_base[t_desc]
-                          + (t_c0 + {32'd0, t_row}) * d_s0[t_desc]
-                          + t_c1 * d_s1[t_desc];
-    wire [63:0] unit_addr = row_base + {29'd0, t_unit, 3'd0};
+    reg  [63:0] r_row_base;
+    wire [63:0] unit_addr = r_row_base + {29'd0, t_unit, 3'd0};
 
     // Out of bounds in the row dimension: the whole row is padding.
     wire row_oob  = ((t_c0 + {32'd0, t_row}) >= d_e0[t_desc]);
@@ -381,8 +387,17 @@ module tnca_tensor #(
                       > {24'd0, win_len[t_win]})) begin
                     st <= S_FAULT;
                 end else begin
-                    st <= S_TRUN;
+                    st <= S_TSET2;
                 end
+            end
+
+            //---------------------------------------------------------------
+            // The only place the stride multiplies happen: once per command.
+            S_TSET2: begin
+                r_row_base <= d_base[t_desc]
+                            + t_c0 * d_s0[t_desc]
+                            + t_c1 * d_s1[t_desc];
+                st <= S_TRUN;
             end
 
             //---------------------------------------------------------------
@@ -412,7 +427,8 @@ module tnca_tensor #(
                         t_unit <= 32'd0;
                         if (t_row == t_rows - 1) st <= S_TDRAIN;
                         else begin
-                            t_row <= t_row + 1'b1;
+                            t_row      <= t_row + 1'b1;
+                            r_row_base <= r_row_base + d_s0[t_desc];
                         end
                     end else begin
                         t_unit <= t_unit + 1'b1;

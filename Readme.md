@@ -39,8 +39,18 @@ slice。物理行的 home slice 由地址哈希唯一确定，无私有数据缓
 多未完成事务且支持乱序返回的 LSU、带 MSHR/target pool/脏行回写的 NUCA slice、
 XY 路由与请求/响应分离虚拟网络的 mesh。
 
-**尚未实现**：Matrix 单元、TensorMap/Tensor DMA、mbarrier、SFU、原子操作，
-以及 Stage 4 的缓存策略（dead-block、bypass、准入 credit）。路线图见下文。
+矩阵单元与 TensorMap 传输引擎已完成。一个 tile 的完整取数链路为
+
+```
+全局内存 → NUCA → 向量寄存器 → fragment → m.mma.async
+```
+
+其间不存在任何软件可寻址的中间存储。fragment 的布局与传输引擎写入的
+扁平行主序字节布局完全一致，因此 t.ld.async 与 m.mma.async 之间**不需要任何
+重排**——这正是无 SPM 设计必须回答的布局问题（§15.4）。
+
+**尚未实现**：SFU、原子操作、rank 3–5 传输，以及 Stage 4 的缓存策略
+（dead-block、bypass、准入 credit）。路线图见下文。
 
 > 本仓库是一个诚实的在建工程，不是一颗流片过的芯片。凡是没做的，
 > 下面都写明了没做；凡是测过的，都给出了测试规模。
@@ -49,7 +59,7 @@ XY 路由与请求/响应分离虚拟网络的 mesh。
 
 ## Status
 
-**Stage 3 — four tiles on a 2×2 mesh over a single-level distributed NUCA cache.**
+**Stages 1–3 — four tiles on a 2×2 mesh over a single-level NUCA cache, with the matrix unit and TensorMap transfer engine.**
 
 | Area | State |
 |---|---|
@@ -66,10 +76,15 @@ XY 路由与请求/响应分离虚拟网络的 mesh。
 | NUCA slice: MSHRs, target pool, dirty writeback, hits past a blocked miss | complete |
 | 2×2 mesh: XY routing, separate request/response virtual networks | complete |
 | 4-tile system: cores, slices, mesh, DRAM, static-home addressing | complete |
-| Matrix unit, TensorMap, Tensor DMA, mbarrier | **not started** (Stage 2) |
+| mbarrier: separate arrival and operation counts, sleeping waiters | complete |
+| Accumulator file, reachable from the vector unit | complete |
+| Matrix unit: `m.mma.async`, bit-reproducible accumulation contract | complete |
+| TensorMap descriptors, RF windows, transfer engine with padding | complete |
 | SFU (`v.exp2.approx` et al) | **not started**; the capability bit reads 0 and the encodings trap |
 | Synchronous instruction fetch | **not started** (Stage 1c) |
-| Atomics, fences | **not started** (Stage 2) |
+| Atomics, fences | **not started** (Stage 1c) |
+| Transfer rank 3–5, byte-granular window writes | **not started**; rank > 2 raises `DESCRIPTOR_FAULT` |
+| Separate source-reusable completion for `m.mma.async` | **not started** (Stage 2c) |
 | Cache/flow policy: dead-block hints, bypass, admission credits | **not started** (Stage 4) |
 | Triton/MLIR backend | **not started** (Stage 5) |
 
@@ -248,6 +263,73 @@ that testing found:
   X therefore never repeats a side effect, and a completion is never starved
   for more than one cycle.
 
+## The matrix path
+
+```
+  global memory -> NUCA slice -> vector registers -> fragment -> m.mma.async
+                                                                     |
+                                                            accumulator (FP32)
+                                                                     |
+                                                              a.vread -> vector
+```
+
+**The accumulation contract is architectural** (§6.2). Each product is exact —
+an FP16×FP16 product is exactly representable in binary32 — and is added to the
+accumulator with one rounding per addition, in increasing `k` order. So the
+result is bit-reproducible across implementations, a MAC is literally one
+`tnca_fp32_fma` with widened inputs, and an implementation that wants a faster
+reduction order must expose it as a different opcode rather than making this one
+quietly cheaper.
+
+**The loop is k-outer, m-inner.** Sixteen consecutive cycles touch sixteen
+different accumulator rows, so the FMA pipeline never stalls on its own result
+against the multi-cycle accumulate feedback §6.2 warns about — that section's
+first suggested remedy, and it costs nothing. It is also cheap on register-file
+ports: `B[k][·]` is one vector register held for a whole `m` sweep, and
+`A[m][k]` advances only every second `m`, so the engine averages well under one
+vector read per cycle. §5.3 says to respect that constraint *before* sizing the
+arithmetic, and it is what limits how far the 16-MAC array can be widened — not
+the multipliers.
+
+**Nothing repacks between a transfer and the MMA.** A fragment is a window's
+registers read as a flat row-major byte array, which is exactly what the
+transfer engine writes. §15.4 says a scratchpad-free design has to answer the
+layout question somehow; the answer here is to choose the two to agree.
+
+**`m.mma` names fragment *bases*, not operands.** A command reads a whole
+fragment — many registers — and a scoreboard bit on the base would describe only
+the first of them. §12.12 puts that lifetime on software, where a barrier
+expresses it exactly. A bit that was only sometimes right would be worse than
+none.
+
+## The completion protocol
+
+§13.1 insists three completions are different things — data arrived, computation
+finished, sources released — and a single "done" bit cannot express all three. A
+double-buffered pipeline that implements only the first is the most common way
+to get this wrong (§13.5): *a transfer completing is not the same as the
+consumer having finished reading it.*
+
+So a barrier carries **arrivals** (what software signals) and **operations**
+(what asynchronous commands signal) as separate counts. The counting unit is one
+complete command, not a cache line and not a byte count (§13.3): two
+`t.ld.async` are `operations=2` however many line transactions they expand into,
+and a fully predicated-off command still completes once, so the count in
+`mb.arm` stays a static property a compiler can check.
+
+Underflow is a `BARRIER_FAULT`, not a wrap — an extra arrival means the
+program's own count was wrong, and wrapping turns that into a hang thousands of
+cycles later. `mb.wait` **sleeps** the context: the PC stays on the instruction,
+the RCTX stops fetching entirely, and the barrier wakes it. §13.4 asks for
+exactly this rather than polling, because a spinning waiter consumes the issue
+slots and bandwidth the producer it waits for needs.
+
+What is honestly *not* implemented yet: `m.mma.async` signals when its result is
+done, not when it has stopped reading its fragments, so a double-buffered
+pipeline must treat compute-done as the conservative proxy §13.1 permits for a
+first version. Splitting them is an ISA addition, tracked in
+[`doc/conformance.md`](doc/conformance.md).
+
 ## The memory system
 
 ```
@@ -339,6 +421,9 @@ FAIL" as a failure rather than a pass.
 | `tb_nuca_slice` | randomised reads and writes against a shadow memory, address range 8× the slice capacity so eviction is the common case, under three different memory behaviours | 800 requests: 568 reads checked, 367 hits, 403 misses, 99 dirty writebacks, MSHR file full 295 times, **233 hits selected past a blocked miss** |
 | `tb_mesh` | randomised all-to-all on the 2×2 fabric with random receiver back-pressure; checks delivery, destination, virtual network, and per-flow ordering | 20,000 packets, none lost, none misrouted, none reordered |
 | `t10_mesh` | the whole 2×2 system: per-tile private buffers, a shared table every tile hammers at once, and a streaming pass that forces eviction under cross-tile pressure | 4 tiles × 4,039 instructions; fails if the mesh carried no remote traffic or the slices never missed |
+| `tb_cvt16` | FP16 and BF16 widening — the whole input space fits in a loop, so there is no reason to sample | 131,072 vectors, exhaustive |
+| `t11_matrix` | barriers, accumulators, and a 16×16×16 product against `mma_ref`, which follows the accumulation contract literally rather than calling a library matmul that would reassociate | 44 checks |
+| `t12_tensor` | descriptor load, window definition, an in-bounds tile, a strided tile 16 columns along, and a tile running off the edge — each feeding a real GEMM | 17 checks |
 
 Every claim above is also checked in the other direction. Each self-checking
 program was run once with a deliberately broken expectation, and `t06_alu` was
@@ -373,6 +458,11 @@ and would not be a valid FMA reference.
 | `tnca_scalar_rf` | 31,033 | 8,192 | 10 | — | flops; belongs in SRAM |
 | `tnca_fifo` | 127 | 137 | 4 | — | ok |
 | `tnca_router` | 10,204 | 6,028 | 18 | — | **well under budget** |
+| `tnca_barrier` | 8,748 | 1,652 | 23 | — | ok |
+| `tnca_cvt16_f32` | 140 | 0 | 14 | — | ok |
+| `tnca_tensor` | 43,048 | 8,572 | 83 | 64 | at the 64-bit multiply floor |
+| `tnca_acc_rf` | 200,381 | 131,072 | 10 | — | 16 KiB as flops; belongs in SRAM |
+| `tnca_matrix` | 316,846 | 135,731 | 190 | 71 | **63 % of it is the accumulator file** |
 
 **Read `depth` against the floor, not against 50.** The generic gate set has no
 carry-lookahead cells, so every addition maps to ripple carry: a bare 32-bit
@@ -393,6 +483,7 @@ Measuring has paid for itself four times over, each one an application of §6.2
 | FMA: cut into a 2-stage pipeline | 207 levels | **115** |
 | vector ALU: one multiplier, one crossbar, one comparator | 205,205 gates | **145,334** |
 | `clz`/`popc`: log-depth structures instead of scan loops | W-deep chains | 16 / 22 levels |
+| transfer engine: walk the row base instead of recomputing it | 89 levels | **83**, and no multiply in the inner loop |
 
 Every one of these was verified behaviour-identical by the tests that already
 existed — the 516 k-vector FMA sweep, 266 vector checks, 186 randomised integer

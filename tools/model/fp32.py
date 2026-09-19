@@ -156,3 +156,78 @@ def fma_ref(ab, bb, cb, sub_c=False, mul_only=False, ftz=False):
         return zs << 31
 
     return round_to_f32(total, 0, ftz)
+
+
+# ---------------------------------------------------------------------------
+# Half-precision helpers, for the matrix unit's accumulation contract
+# ---------------------------------------------------------------------------
+
+def f16_bits_to_f32_bits(h):
+    """Widen an FP16 bit pattern to binary32. Exact; there is no rounding."""
+    s = (h >> 15) & 1
+    e = (h >> 10) & 0x1f
+    f = h & 0x3ff
+    if e == 0x1f:
+        return QNAN if f else ((s << 31) | (0xff << 23))
+    if e == 0:
+        if f == 0:
+            return s << 31
+        lz = 10 - f.bit_length()
+        return (s << 31) | ((112 - lz) << 23) | ((((f << (lz + 1)) & 0x3ff) << 13))
+    return (s << 31) | ((e + 112) << 23) | (f << 13)
+
+
+def bf16_bits_to_f32_bits(b):
+    return (b << 16) & 0xffffffff
+
+
+def f32_to_f16_bits(x: float) -> int:
+    """Round a Python float to the nearest FP16 bit pattern, RNE."""
+    v = Fraction(x)
+    if v == 0:
+        return 0 if x >= 0 else 0x8000
+    sign = 1 if v < 0 else 0
+    a = abs(v)
+    e = a.numerator.bit_length() - a.denominator.bit_length()
+    while Fraction(2) ** e > a:
+        e -= 1
+    while Fraction(2) ** (e + 1) <= a:
+        e += 1
+    q = max(e, -14) - 10
+    n = a / (Fraction(2) ** q)
+    m = n.numerator // n.denominator
+    rem = n - m
+    if rem > Fraction(1, 2) or (rem == Fraction(1, 2) and (m & 1)):
+        m += 1
+    if m == (1 << 11):
+        m >>= 1
+        q += 1
+    exp = q + 10
+    if m == 0:
+        return sign << 15
+    if m >= (1 << 10):
+        if exp > 15:
+            return (sign << 15) | (0x1f << 10)          # overflow -> inf
+        return (sign << 15) | ((exp + 15) << 10) | (m & 0x3ff)
+    return (sign << 15) | m                              # subnormal
+
+
+def mma_ref(a_f16, b_f16, c_f32, M, N, K):
+    """
+    Reference for m.mma.async (ISA sec 9C.1).
+
+    Each product is exact -- FP16 x FP16 is exactly representable in binary32 --
+    and is added to the accumulator with ONE rounding, in increasing k order.
+    Deliberately not a numpy matmul: the order and the single rounding are the
+    contract, and a reference that reassociates would not be checking them.
+    """
+    out = list(c_f32)
+    for m in range(M):
+        for n in range(N):
+            acc = out[m * N + n]
+            for k in range(K):
+                av = f16_bits_to_f32_bits(a_f16[m * K + k])
+                bv = f16_bits_to_f32_bits(b_f16[k * N + n])
+                acc = fma_ref(av, bv, acc)
+            out[m * N + n] = acc
+    return out

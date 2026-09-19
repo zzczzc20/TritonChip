@@ -22,7 +22,8 @@ from tnca_asm import Assembler                          # noqa: E402
 # and must be rejected (ISA sec 3).
 IMPLEMENTED = {MAJ[k] for k in
                ('SYS', 'SALU', 'CTRL', 'VINT', 'VFP', 'CVT', 'PRED',
-                'SHUF', 'RED', 'SFU', 'LSU')}
+                'SHUF', 'RED', 'SFU', 'LSU',
+                'TDESC', 'TXFER', 'MATRIX', 'ACC', 'MBAR')}
 
 # One representative, assemblable instruction per mnemonic.
 SAMPLES = """
@@ -141,6 +142,29 @@ v.ld.gather.w v1, [s2, v3]
 v.st.scatter.b [s2, v3], v1
 @p3 v.add v1, v2, v3
 @!p3 v.ld.w v1, [s2, #0]
+mb.init b0
+mb.arm s1, b3, #2, #1
+mb.arrive b7
+mb.test s1, s2
+mb.wait s2
+mb.inval b31
+a.zero a5
+a.vread v1, a2, s3
+a.vwrite a2, s3, v4
+a.mul.row a2, s3, s4
+a.fma.row a2, s3, v4, s5
+m.zero a0
+m.mma.async a1, v8, v16, s2
+m.mma.async.k32 a1, v8, v16, s2
+m.mma.async.k64.bf16 a1, v8, v16, s2
+td.load d0, [s9]
+td.release d15
+w.def w1, #8, #8
+w.release w31
+t.ld.async.h w2, d1, s10, s11
+t.st.async.w w2, d1, s10, s11
+t.prefetch.b d1, s10
+@p2 t.ld.async.h w2, d1, s10, s11
 """
 
 
@@ -155,6 +179,9 @@ def assemble_one(text):
 # not be mutated to prove the reserved-bit rule.
 KIND_FIELDS = {
     'sd': 'd', 'vd': 'd', 'pd': 'd', 'rdst': 'd',
+    'ad': 'd', 'bd': 'd', 'dd': 'd', 'wd': 'd',
+    'aa': 'a', 'ba': 'a', 'da': 'a', 'wa': 'a',
+    'cnt2': 'bc', 'winspec': 'bc', 'mem_s': 'a',
     'sa': 'a', 'va': 'a', 'pa': 'a',
     'sb': 'b', 'vb': 'b', 'pb': 'b',
     'sc': 'c', 'vc': 'c',
@@ -237,8 +264,7 @@ def main():
             emit(wd | (1 << 9), True, f"mod9:{label}")
 
     # ---- unallocated families and functions -----------------------------
-    for major in (0x03, 0x17, 0x22, 0x30, 0x31, 0x32, 0x40, 0x41,
-                  0x50, 0x51, 0x60, 0x7f, 0xff):
+    for major in (0x03, 0x17, 0x22, 0x32, 0x51, 0x60, 0x7f, 0xff):
         emit(encode(major, 0x00, d=1, a=2), True, f"major_{major:02x}")
     for major in sorted(IMPLEMENTED):
         emit(encode(major, 0xfe, d=1, a=2), True, f"func_fe_major_{major:02x}")
@@ -248,6 +274,17 @@ def main():
     emit(encode(MAJ['SALU'], 0x01, d=1, a=0x40, b=2), True, "sreg64_srcA")
     emit(encode(MAJ['PRED'], 0x01, d=0x10, a=1, b=2), True, "preg16_dst")
     emit(encode(MAJ['PRED'], 0x01, d=1, a=0x10, b=2), True, "preg16_srcA")
+    # Stage-2 handle spaces: 16 accumulators and descriptors, 32 barriers/windows
+    emit(encode(MAJ['ACC'], 0x08, d=0x10), True, "acc16_dst")
+    emit(encode(MAJ['MATRIX'], 0x00, d=0x10), True, "acc16_mzero")
+    emit(encode(MAJ['MBAR'], 0x00, d=0x20), True, "bar32_dst")
+    emit(encode(MAJ['MBAR'], 0x02, a=0x20), True, "bar32_src")
+    emit(encode(MAJ['TDESC'], 0x02, d=0x10), True, "desc16")
+    emit(encode(MAJ['TDESC'], 0x11, d=0x20), True, "win32")
+    # reserved sub-encodings
+    emit(encode(MAJ['MATRIX'], 0x01, d=1, a=2, b=3, c=4, mod=0x3), True, "mma_k3")
+    emit(encode(MAJ['MATRIX'], 0x01, d=1, a=2, b=3, c=4, mod=0x8), True, "mma_dt2")
+    emit(encode(MAJ['TXFER'], 0x00, d=1, a=2, b=3, c=4, mod=0x08), True, "txf_layout1")
 
     # ---- illegal modifiers ----------------------------------------------
     emit(encode(MAJ['SALU'], 0x18, d=1, a=2, b=3, mod=0x0a), True, "cc_o_on_int")

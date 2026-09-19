@@ -129,12 +129,12 @@ don't-cares.
 | `0x16` | SFU | 1 |
 | `0x20` | Load / store | 1 |
 | `0x21` | Atomic / fence | 2 *(Reserved)* |
-| `0x30` | Tensor descriptor | 2 *(Reserved)* |
-| `0x31` | Tensor transfer | 2 *(Reserved)* |
+| `0x30` | Tensor descriptor / RF window | 2 |
+| `0x31` | Tensor transfer | 2 |
 | `0x32` | Tensor / cache / flow hints | 4 *(Reserved)* |
-| `0x40` | Matrix | 2 *(Reserved)* |
-| `0x41` | Accumulator access | 2 *(Reserved)* |
-| `0x50` | Mbarrier | 2 *(Reserved)* |
+| `0x40` | Matrix | 2 |
+| `0x41` | Accumulator access | 2 |
+| `0x50` | Mbarrier | 2 |
 | `0x51` | Role control | 2 *(Reserved)* |
 | `0x60` | Debug / performance | 2 *(Reserved)* |
 
@@ -193,6 +193,8 @@ compares.
 | `0x00b` | `NUM_CORES` | R | |
 | `0x00c` | `NUM_LANES` | R | `VLEN`, architecturally 16 in v0.1 |
 | `0x00d` | `NUM_VREGS` | R | logical `V` registers this implementation gives each RCTX; naming one beyond it raises `ILLEGAL_INSTRUCTION` |
+| `0x00e` | `TENSOR_MAX_RANK` | R | highest descriptor rank the transfer engine executes; a higher rank raises `DESCRIPTOR_FAULT` rather than being approximated |
+| `0x00f` | `NUM_ACC` | R | accumulator slots |
 | `0x010` | `CLOCK` | R | free-running core cycle counter |
 | `0x011` | `INSTRET` | R | instructions retired by this RCTX |
 | `0x020` | `ARG_BASE` | R | kernel argument buffer base address |
@@ -537,6 +539,281 @@ FP32 `atom.add` is expanded to a `atom.cas` loop by the compiler in v0.1.
 
 ---
 
+## 9A. `major = 0x50` — Mbarrier
+
+Barriers are **per core**, shared by every RCTX on it, which is what makes them
+the synchronisation between roles (§14.3). There are 32 of them, `B0..B31`.
+
+### 9A.1 Why a barrier is not a counter
+
+§13.1 is explicit that three completions must not be confused:
+
+| Event | Meaning |
+|---|---|
+| **load-ready** | the data is in the destination registers; a consumer may read it |
+| **compute-done** | a result is finished; its destination may be read |
+| **source-reusable** | an operation has stopped reading its sources; a producer may overwrite them |
+
+A single "done" bit cannot express all three, and a double-buffered pipeline
+that only implements load-ready is the most common way to get this wrong
+(§13.5): *a transfer completing is not the same as the consumer having finished
+reading it.* The barrier object below carries arrivals and operations
+separately for exactly this reason — arrivals are what software signals, and
+operations are what asynchronous commands signal.
+
+### 9A.2 Barrier state
+
+| Field | Width | Meaning |
+|---|---:|---|
+| `current_epoch` | 48 | generation currently armed |
+| `completed_epoch` | 48 | highest generation that has completed |
+| `pending_arrivals` | 8 | software arrivals still owed |
+| `pending_operations` | 8 | asynchronous completions still owed |
+| `waiter_mask` | NUM_RCTX | RCTXs asleep on this barrier |
+| `error` | 1 | set by `mb.inval` or by a faulting command |
+
+A **token** identifies one generation and fits in a scalar register:
+
+```
+token = { epoch[47:0], barrier_id[15:0] }
+```
+
+Epoch wrap is only legal when the barrier is quiescent.
+
+### 9A.3 Instructions
+
+| `func` | Mnemonic | Fields | Semantics |
+|---:|---|---|---|
+| `0x00` | `mb.init Bd` | `d`=barrier | epoch 0, counts 0, no waiters, error clear |
+| `0x01` | `mb.arm Sd, Ba, #arr, #ops` | `d`=Sd, `a`=barrier, `b`=arrivals, `c`=operations | `current_epoch++`; set both counts; `Sd` ← token |
+| `0x02` | `mb.arrive Ba` | `a`=barrier | release; `pending_arrivals--` |
+| `0x03` | `mb.test Sd, Sa` | `d`=Sd, `a`=token | `Sd` = 1 if that generation has completed |
+| `0x04` | `mb.wait Sa` | `a`=token | acquire; sleep this RCTX until that generation completes |
+| `0x05` | `mb.inval Ba` | `a`=barrier | set error and wake every waiter |
+
+`mb.arm` fixes both counts for the generation in one instruction. §13.3 prefers
+this to letting an expected byte count grow at arbitrary times, because a count
+that is only correct if every producer ran is not a count you can verify.
+
+**Counting unit: one complete asynchronous command** — not a cache line, and
+not a byte count (§13.3). Two `t.ld.async` are `operations=2` however many line
+transactions they expand into; one `m.mma.async` is `operations=1`.
+
+**A fully predicated-off asynchronous command still completes once** (§13.4), so
+a static operation count stays correct under predication. The compiler still
+has to get the consumer's control flow right.
+
+### 9A.4 Completion
+
+A generation completes when `pending_arrivals == 0 && pending_operations == 0`.
+Required properties, all of them safety rather than performance:
+
+- completion happens **exactly once** per generation;
+- neither count may underflow — an extra arrival or completion is a
+  `BARRIER_FAULT`, not a wrap;
+- an error wakes every waiter and is reported, so a faulting command can never
+  turn into an unbounded wait;
+- `mb.wait` **sleeps** the RCTX. It does not spin (§13.4): a blocked RCTX stops
+  fetching entirely and is woken by the completion.
+
+---
+
+## 9B. `major = 0x41` — Accumulator access
+
+`A0..A15`, each 16 rows × 16 lanes of binary32.
+
+Accumulators are reachable from the vector unit, and §5.4 explains why this is
+not a convenience: FlashAttention rescales `O` by `exp(m - m')` on every key
+block. If that round trip had to go accumulator → cache → vector → cache →
+accumulator, a scratchpad-free design would lose the argument for existing.
+
+| `func` | Mnemonic | Fields | Semantics |
+|---:|---|---|---|
+| `0x00` | `a.vread Vd, Aa, Sb` | `d`=Vd, `a`=A, `b`=row | `Vd[n] = A[row][n]` |
+| `0x01` | `a.vwrite Ad, Sa, Vb` | `d`=A, `a`=row, `b`=Vs | `A[row][n] = Vs[n]` |
+| `0x02` | `a.mul.row Ad, Sa, Sb` | `d`=A, `a`=row, `b`=scale | `A[row][n] *= f32(Sb[31:0])` |
+| `0x03` | `a.fma.row Ad, Sa, Vb, Sc` | `d`=A, `a`=row, `b`=Vx, `c`=scale | `A[row][n] = fma(A[row][n], f32(Sc), Vx[n])` |
+| `0x08` | `a.zero Ad` | `d`=A | every element `+0.0` |
+
+`row` is `Sa[3:0]`. All five are lane-maskable; an inactive lane leaves that
+element unchanged. `a.mul.row` and `a.fma.row` are specified as a single
+rounding per element, so they are `tnca_fp32_fma` operations and not a
+multiply followed by an add.
+
+---
+
+## 9C. `major = 0x40` — Matrix
+
+| `func` | Mnemonic | Fields | `mod` |
+|---:|---|---|---|
+| `0x00` | `m.zero Ad` | `d`=A | — |
+| `0x01` | `m.mma.async Ad, Va, Vb, Sc` | `d`=A, `a`=A-fragment base vreg, `b`=B-fragment base vreg, `c`=token | `[1:0]` K, `[3:2]` dtype |
+
+```
+C[16x16] <- C[16x16] + A[16xK] . B[Kx16]
+```
+
+`mod[1:0]`: `0` = K16, `1` = K32, `2` = K64, `3` reserved.
+`mod[3:2]`: `0` = FP16 inputs, `1` = BF16 inputs, others reserved.
+
+`Sc` holds an mbarrier token; the command signals one operation completion on
+that barrier's generation when it finishes.
+
+### 9C.1 The accumulation contract (§6.2)
+
+Precision and order are architectural, not an implementation detail:
+
+> Each product `A[m][k] * B[k][n]` is computed **exactly** — an FP16×FP16 or
+> BF16×BF16 product is exactly representable in binary32 — and added to the
+> binary32 accumulator with **one rounding per addition, in increasing `k`
+> order**.
+
+So the result is bit-reproducible across implementations, and an implementation
+may not reassociate for speed. An implementation that wants a faster reduction
+order must expose it as a different opcode, not as this one being faster
+somewhere.
+
+### 9C.2 Fragment layout
+
+A fragment is a window's registers read as a **flat row-major byte array**: this
+is exactly what the transfer engine writes, so no repacking sits between a
+`t.ld.async` and the `m.mma.async` that consumes it.
+
+For a 16×K FP16 A fragment, element `(m, k)` lives at
+
+```
+vreg  = base + (m*K + k)*2 / 64
+lane  = ((m*K + k)*2 % 64) / 4
+half  = (m*K + k) & 1
+```
+
+and `B[k][n]` follows the same rule with `(k, n)` over a K×16 tile.
+
+### 9C.3 What the ISA does not promise
+
+A `m.mma.async` that has not completed leaves three things undefined, and the
+compiler owns all three (§12.12):
+
+- its source registers may not be overwritten;
+- its destination accumulator may not be read by the vector unit;
+- that accumulator may not be reassigned to another program.
+
+---
+
+## 9D. `major = 0x30` — Tensor descriptor and RF window
+
+### 9D.1 Two objects, deliberately separate (§7.1)
+
+A **tensor descriptor** says what the data *is* — address, shape, stride,
+dtype, boundary behaviour. An **RF window** says where a transfer may land —
+a range of physical vector registers. They are separate because they have
+different lifetimes: a descriptor outlives many transfers, and a window is
+reused every pipeline stage.
+
+### 9D.2 An RF window is register aliasing, not a scratchpad (§5.2)
+
+A window names a contiguous range of vector registers and nothing else. It
+deliberately does **not** provide:
+
+- an arbitrary byte pointer;
+- a general `load [window + arbitrary_byte_offset]`;
+- residency for arbitrary software objects;
+- any storage of its own.
+
+Without those restrictions it would simply be a scratchpad with a new name, and
+removing the scratchpad is the entire point of the design.
+
+The window is also the transfer engine's **bounds check**: a transfer that
+would write past `len` registers raises `DESCRIPTOR_FAULT` instead of
+corrupting a neighbouring allocation.
+
+| `func` | Mnemonic | Fields | Semantics |
+|---:|---|---|---|
+| `0x00` | `td.load Dd, [Sa]` | `d`=D, `a`=address | snapshot a 256-byte TensorMap into descriptor slot `D` |
+| `0x02` | `td.release Dd` | `d`=D | release the slot; illegal while a transfer still references it |
+| `0x10` | `w.def Wd, #base, #len` | `d`=W, `{b,c}`=imm16 | window `W` = vector registers `[base, base+len)`; `base`=`imm16[15:8]`, `len`=`imm16[7:0]` |
+| `0x11` | `w.release Wd` | `d`=W | |
+
+### 9D.3 TensorMap layout (§7.2)
+
+256 bytes. The first 128 are **semantics that must be executed exactly**; the
+second 128 are **hints that may be ignored entirely**. Nothing in the second
+half may change an address, a value, an access, or an order (§1.4).
+
+| Bytes | Field |
+|---|---|
+| 0–7 | base address |
+| 8–47 | `extent[5]`, 64-bit each |
+| 48–87 | `byte_stride[5]`, signed 64-bit each |
+| 88–107 | default `block_shape[5]`, 32-bit each |
+| 108 | rank |
+| 109 | dtype |
+| 110 | padding mode |
+| 111 | semantic flags |
+| 112–119 | storage object UID |
+| 120–127 | descriptor version |
+| 128–191 | cache/flow hints — **ignorable** |
+| 192–255 | reserved |
+
+```
+addr(i0..i_{r-1}) = base + sum_d  i_d * byte_stride_d
+```
+
+`dtype`: `0` = FP16, `1` = BF16, `2` = FP32, `3` = INT8, others reserved.
+`padding mode`: `0` = zero-fill out-of-bounds elements, `1` = clamp the
+coordinate, `2` = raise `DESCRIPTOR_FAULT`.
+
+### 9D.4 Snapshot semantics (§7.4)
+
+`td.load` takes a **versioned snapshot**. Once a transfer has been issued
+against descriptor `D`:
+
+- a later `td.load` or update to `D` does not change that transfer;
+- no command ever observes a half-updated descriptor;
+- `td.release` on a slot with outstanding references raises
+  `RESOURCE_EXHAUSTED` rather than silently recycling it.
+
+§7.4 puts this above replacement policy in importance, and it is why the engine
+copies the descriptor rather than re-reading it per line.
+
+---
+
+## 9E. `major = 0x31` — Tensor transfer
+
+| `func` | Mnemonic | Fields | Semantics |
+|---:|---|---|---|
+| `0x00` | `t.ld.async Wd, Da, Sb, Sc` | `d`=W dest, `a`=D, `b`=coord base, `c`=token | global → window |
+| `0x08` | `t.st.async Wd, Da, Sb, Sc` | `d`=W **source**, `a`=D, `b`=coord base, `c`=token | window → global |
+| `0x10` | `t.prefetch Da, Sb` | `a`=D, `b`=coord base | performance only; guarantees nothing |
+
+`mod[2:0]` is the transfer's element-size log2; `mod[4:3]` selects the window
+layout (`0` = flat row-major); `mod[5]` requests a transposed write.
+
+Coordinates come from **consecutive scalar registers** starting at `Sb`, one per
+descriptor rank (§12.11). The block shape comes from the descriptor.
+
+### 9E.1 Order of operations (§12.11)
+
+1. read the descriptor **snapshot**;
+2. take the coordinates from the scalar registers;
+3. compute the addresses;
+4. check the bounds against the descriptor's extents;
+5. expand into memory transactions;
+6. write returns into the window according to the transfer configuration;
+7. fill padded elements;
+8. signal **one** completion against the token.
+
+Step 8 happens once per command, whatever step 5 expanded into — that is what
+makes the operation counts in `mb.arm` a static, checkable property.
+
+### 9E.2 `t.prefetch` promises nothing
+
+Completion of a prefetch does not guarantee a later hit, does not create a
+snapshot, and does not confer ownership (§17.2). It is a hint in the sense of
+§1.4: it may be dropped entirely and the program must still be correct.
+
+---
+
 ## 10. Traps
 
 | Code | Name | Cause |
@@ -545,9 +822,9 @@ FP32 `atom.add` is expanded to a `atom.cas` loop by the compiler in v0.1.
 | `0x01` | `ILLEGAL_INSTRUCTION` | unknown encoding, reserved bit set, illegal field |
 | `0x02` | `MISALIGNED_PC` | branch target not 8-byte aligned |
 | `0x03` | `ACCESS_FAULT` | translation or permission failure |
-| `0x04` | `DESCRIPTOR_FAULT` | Stage 2 |
-| `0x05` | `BARRIER_FAULT` | Stage 2 |
-| `0x06` | `RESOURCE_EXHAUSTED` | descriptor/window/barrier table full |
+| `0x04` | `DESCRIPTOR_FAULT` | rank above `TENSOR_MAX_RANK`, transfer larger than its window, or an out-of-bounds access under padding mode 2 |
+| `0x05` | `BARRIER_FAULT` | arrival or operation count underflow, or a waiter woken by `mb.inval` |
+| `0x06` | `RESOURCE_EXHAUSTED` | descriptor/window/barrier table full, or `td.release` with outstanding references |
 | `0x40` | `TRAP_USER` | `trap #imm24`, code in `TRAP_CODE[23:0]` |
 
 A trap stops the raising RCTX, records `TRAP_PC`/`TRAP_CODE`, and **wakes every
@@ -565,10 +842,10 @@ turn into a silent hang.
 | 2 | `GATHER_SCATTER` | native `v.ld.gather` / `v.st.scatter` |
 | 3 | `ATOMICS_DEVICE` | device-scope atomics |
 | 4 | `SYSTEM_ATOMICS` | system-scope atomics |
-| 5 | `MATRIX_F16` | Stage 2 |
-| 6 | `MATRIX_BF16` | Stage 2 |
-| 7 | `TENSOR_DMA` | Stage 2 |
-| 8 | `MBARRIER` | Stage 2 |
+| 5 | `MATRIX_F16` | native `m.mma` with FP16 inputs |
+| 6 | `MATRIX_BF16` | native `m.mma` with BF16 inputs |
+| 7 | `TENSOR_DMA` | native `t.ld.async` / `t.st.async` |
+| 8 | `MBARRIER` | native mbarrier |
 | 9 | `PACKED_F16` | Stage 2 |
 | 10 | `CACHE_HINTS` | Stage 4 |
 

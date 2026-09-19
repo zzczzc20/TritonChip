@@ -12,7 +12,8 @@
 // Reads are asynchronous and write-first, matching tnca_scalar_rf.
 //
 // NOTE ON AREA: at the reference configuration (PHYS_VREGS=512, VLEN=16,
-// ELEN=32) this is 32 KiB of state with 3 read ports. A flop-based
+// ELEN=32) this is 32 KiB of state with 4 read ports -- three for the execute
+// stage and one for the asynchronous engines. A flop-based
 // implementation is only appropriate for simulation and small FPGA bring-up;
 // silicon needs banked SRAM with an operand-collector front end (arch overview
 // sec 5.3). The banked variant is tracked as Stage-2 work.
@@ -41,6 +42,14 @@ module tnca_vector_rf #(
     input  wire [RCTX_W-1:0]         rc_rctx,
     input  wire [7:0]                rc_idx,
     output wire [VLEN*ELEN-1:0]      rc_data,
+
+    // Fourth read port, for the matrix and transfer engines. They run
+    // asynchronously alongside the pipeline, so sharing an operand port with
+    // the execute stage would make every asynchronous command a source of
+    // pipeline stalls -- which is the opposite of what it is for.
+    input  wire [RCTX_W-1:0]         rd_rctx,
+    input  wire [7:0]                rd_idx,
+    output wire [VLEN*ELEN-1:0]      rd_data,
 
     input  wire                      w_en,
     input  wire [RCTX_W-1:0]         w_rctx,
@@ -78,10 +87,12 @@ module tnca_vector_rf #(
     wire [PHYS_W-1:0] aa = phys(ra_rctx, ra_idx);
     wire [PHYS_W-1:0] ab = phys(rb_rctx, rb_idx);
     wire [PHYS_W-1:0] ac = phys(rc_rctx, rc_idx);
+    wire [PHYS_W-1:0] ad = phys(rd_rctx, rd_idx);
 
     wire hit_a = w_en && (aa == wa);
     wire hit_b = w_en && (ab == wa);
     wire hit_c = w_en && (ac == wa);
+    wire hit_d = w_en && (ad == wa);
 
     genvar g;
     generate
@@ -92,6 +103,8 @@ module tnca_vector_rf #(
                 (hit_b && w_lane_en[g]) ? w_data[g*ELEN +: ELEN] : mem[ab][g*ELEN +: ELEN];
             assign rc_data[g*ELEN +: ELEN] =
                 (hit_c && w_lane_en[g]) ? w_data[g*ELEN +: ELEN] : mem[ac][g*ELEN +: ELEN];
+            assign rd_data[g*ELEN +: ELEN] =
+                (hit_d && w_lane_en[g]) ? w_data[g*ELEN +: ELEN] : mem[ad][g*ELEN +: ELEN];
         end
     endgenerate
 

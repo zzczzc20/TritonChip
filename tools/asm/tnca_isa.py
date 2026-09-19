@@ -24,6 +24,10 @@ VLEN = 16
 SREG_N = 64
 PREG_N = 16
 VREG_N = 256
+AREG_N = 16      # accumulator slots
+BREG_N = 32      # mbarriers
+DREG_N = 16      # tensor descriptor handles
+WREG_N = 32      # RF window handles
 
 # ---------------------------------------------------------------------------
 # Major opcodes (ISA sec 3)
@@ -57,7 +61,7 @@ SPECIAL = {
     'npid.x': 0x004, 'npid.y': 0x005, 'npid.z': 0x006,
     'role_id': 0x008, 'num_roles': 0x009,
     'core_id': 0x00a, 'num_cores': 0x00b, 'num_lanes': 0x00c,
-    'num_vregs': 0x00d,
+    'num_vregs': 0x00d, 'tensor_max_rank': 0x00e, 'num_acc': 0x00f,
     'clock': 0x010, 'instret': 0x011,
     'arg_base': 0x020,
     'isa_version': 0x030, 'cap0': 0x031,
@@ -261,6 +265,36 @@ ISA = {
     'v.rsqrt.approx': ('SFU', 0x02, ('vd', 'va'), None),
     'v.log2.approx':  ('SFU', 0x03, ('vd', 'va'), None),
 
+    # ---- mbarrier (ISA sec 9A) ---------------------------------------------
+    'mb.init':     ('MBAR', 0x00, ('bd',),                        None),
+    'mb.arm':      ('MBAR', 0x01, ('sd', 'ba', 'cnt2'),           None),
+    'mb.arrive':   ('MBAR', 0x02, ('ba',),                        None),
+    'mb.test':     ('MBAR', 0x03, ('sd', 'sa'),                   None),
+    'mb.wait':     ('MBAR', 0x04, ('sa',),                        None),
+    'mb.inval':    ('MBAR', 0x05, ('ba',),                        None),
+
+    # ---- accumulator (ISA sec 9B) ------------------------------------------
+    'a.vread':     ('ACC', 0x00, ('vd', 'aa', 'sb'),              None),
+    'a.vwrite':    ('ACC', 0x01, ('ad', 'sa', 'vb'),              None),
+    'a.mul.row':   ('ACC', 0x02, ('ad', 'sa', 'sb'),              None),
+    'a.fma.row':   ('ACC', 0x03, ('ad', 'sa', 'vb', 'sc'),        None),
+    'a.zero':      ('ACC', 0x08, ('ad',),                         None),
+
+    # ---- matrix (ISA sec 9C) -----------------------------------------------
+    'm.zero':      ('MATRIX', 0x00, ('ad',),                      None),
+    'm.mma.async': ('MATRIX', 0x01, ('ad', 'va', 'vb', 'sc'),     'mma'),
+
+    # ---- tensor descriptor / window (ISA sec 9D) ---------------------------
+    'td.load':     ('TDESC', 0x00, ('dd', 'mem_s'),               None),
+    'td.release':  ('TDESC', 0x02, ('dd',),                       None),
+    'w.def':       ('TDESC', 0x10, ('wd', 'winspec'),             None),
+    'w.release':   ('TDESC', 0x11, ('wd',),                       None),
+
+    # ---- tensor transfer (ISA sec 9E) --------------------------------------
+    't.ld.async':  ('TXFER', 0x00, ('wd', 'da', 'sb', 'sc'),      'txf'),
+    't.st.async':  ('TXFER', 0x08, ('wd', 'da', 'sb', 'sc'),      'txf'),
+    't.prefetch':  ('TXFER', 0x10, ('da', 'sb'),                  'txf'),
+
     # ---- load/store (ISA sec 9.1) ------------------------------------------
     's.ld':          ('LSU', 0x00, ('sd', 'mem_si'),          'ls'),
     's.st':          ('LSU', 0x08, ('mem_si', 'sd'),          'ls'),
@@ -273,7 +307,11 @@ ISA = {
 # Instructions that may carry a lane-mask prefix (ISA sec 2.2).
 MASKABLE_MAJORS = {MAJ['VINT'], MAJ['VFP'], MAJ['CVT'], MAJ['SHUF'],
                    MAJ['RED'], MAJ['SFU'], MAJ['LSU'], MAJ['ATOM'],
-                   MAJ['TXFER']}
+                   MAJ['TXFER'], MAJ['ACC']}
+
+# Matrix K and input type suffixes (ISA sec 9C)
+MMA_K    = {'k16': 0, 'k32': 1, 'k64': 2}
+MMA_DT   = {'f16': 0, 'bf16': 1}
 
 
 def encode(major, func, d=0, a=0, b=0, c=0, pred=0, pn=0, mod=0, x=0):

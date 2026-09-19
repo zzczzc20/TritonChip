@@ -102,6 +102,9 @@
 `define TNCA_SPEC_CORE_ID    10'h00a
 `define TNCA_SPEC_NUM_CORES  10'h00b
 `define TNCA_SPEC_NUM_LANES  10'h00c
+`define TNCA_SPEC_NUM_VREGS  10'h00d
+`define TNCA_SPEC_MAX_RANK   10'h00e
+`define TNCA_SPEC_NUM_ACC    10'h00f
 `define TNCA_SPEC_CLOCK      10'h010
 `define TNCA_SPEC_INSTRET    10'h011
 `define TNCA_SPEC_ARG_BASE   10'h020
@@ -330,6 +333,78 @@
 `define TNCA_SCOPE_SYSTEM    2'd2
 
 //------------------------------------------------------------------------------
+// Mbarrier family (ISA §9A)
+//------------------------------------------------------------------------------
+`define TNCA_MB_INIT         8'h00
+`define TNCA_MB_ARM          8'h01
+`define TNCA_MB_ARRIVE       8'h02
+`define TNCA_MB_TEST         8'h03
+`define TNCA_MB_WAIT         8'h04
+`define TNCA_MB_INVAL        8'h05
+
+`define TNCA_BAR_N           32
+`define TNCA_BAR_W           5
+`define TNCA_TOKEN_BAR       15:0
+`define TNCA_TOKEN_EPOCH     63:16
+
+//------------------------------------------------------------------------------
+// Accumulator family (ISA §9B)
+//------------------------------------------------------------------------------
+`define TNCA_A_VREAD         8'h00
+`define TNCA_A_VWRITE        8'h01
+`define TNCA_A_MULROW        8'h02
+`define TNCA_A_FMAROW        8'h03
+`define TNCA_A_ZERO          8'h08
+
+`define TNCA_ACC_N           16
+`define TNCA_ACC_W           4
+`define TNCA_ACC_ROWS        16
+
+//------------------------------------------------------------------------------
+// Matrix family (ISA §9C)
+//------------------------------------------------------------------------------
+`define TNCA_M_ZERO          8'h00
+`define TNCA_M_MMA           8'h01
+
+`define TNCA_MMA_K16         2'd0
+`define TNCA_MMA_K32         2'd1
+`define TNCA_MMA_K64         2'd2
+
+`define TNCA_MMA_F16         2'd0
+`define TNCA_MMA_BF16        2'd1
+
+//------------------------------------------------------------------------------
+// Tensor descriptor / RF window family (ISA §9D)
+//------------------------------------------------------------------------------
+`define TNCA_TD_LOAD         8'h00
+`define TNCA_TD_RELEASE      8'h02
+`define TNCA_W_DEF           8'h10
+`define TNCA_W_RELEASE       8'h11
+
+`define TNCA_DESC_N          16
+`define TNCA_DESC_W          4
+`define TNCA_WIN_N           32
+`define TNCA_WIN_W           5
+
+// TensorMap dtype encodings
+`define TNCA_DT_F16          8'd0
+`define TNCA_DT_BF16         8'd1
+`define TNCA_DT_F32          8'd2
+`define TNCA_DT_I8           8'd3
+
+// padding modes
+`define TNCA_PAD_ZERO        8'd0
+`define TNCA_PAD_CLAMP       8'd1
+`define TNCA_PAD_FAULT       8'd2
+
+//------------------------------------------------------------------------------
+// Tensor transfer family (ISA §9E)
+//------------------------------------------------------------------------------
+`define TNCA_T_LD            8'h00
+`define TNCA_T_ST            8'h08
+`define TNCA_T_PREFETCH      8'h10
+
+//------------------------------------------------------------------------------
 // Traps (ISA §10)
 //------------------------------------------------------------------------------
 `define TNCA_TRAP_NONE       8'h00
@@ -365,6 +440,9 @@
 `define TNCA_DST_V           3'd2
 `define TNCA_DST_P           3'd3
 `define TNCA_DST_PC          3'd4
+`define TNCA_DST_A           3'd5   // accumulator slot
+`define TNCA_DST_B           3'd6   // mbarrier
+`define TNCA_DST_RES         3'd7   // descriptor or window handle
 
 // Functional unit class -- one instruction may issue per class per cycle.
 `define TNCA_FU_NONE         3'd0
@@ -372,7 +450,8 @@
 `define TNCA_FU_VALU         3'd2   // vector int/fp/cvt/pred/shuffle/reduce
 `define TNCA_FU_SFU          3'd3
 `define TNCA_FU_LSU          3'd4
-`define TNCA_FU_MATRIX       3'd5   // Stage 2
-`define TNCA_FU_TXFER        3'd6   // Stage 2
+`define TNCA_FU_MATRIX       3'd5
+`define TNCA_FU_TXFER        3'd6
+`define TNCA_FU_BAR          3'd7
 
 `endif // TNCA_DEFS_VH

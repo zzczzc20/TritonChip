@@ -46,6 +46,14 @@ module tnca_decoder (
     output reg          o_vc_en,
     output reg  [7:0]   o_vc_idx,
 
+    // ---- resource source port -----------------------------------------------
+    // One generic port for the "handle" operand in field a: a barrier, a
+    // tensor descriptor or an accumulator, depending on the family. The ISA
+    // already determines the register class from (major, func), so a separate
+    // port per resource kind would carry no extra information.
+    output reg          o_ra_en,
+    output reg  [7:0]   o_ra_idx,
+
     // ---- predicate source ports (explicit operands, not the lane mask) ------
     output reg          o_pa_en,
     output reg  [3:0]   o_pa_idx,
@@ -127,6 +135,13 @@ module tnca_decoder (
     wire p_a_ok = (f_a[7:4] == 4'b0000);
     wire p_b_ok = (f_b[7:4] == 4'b0000);
 
+    // Stage-2 handle spaces: 16 accumulators and descriptors, 32 barriers and
+    // windows. An index past the table is ILLEGAL_INSTRUCTION, never a wrap.
+    wire a4_d_ok = (f_d[7:4] == 4'b0000);   // accumulator / descriptor in d
+    wire a4_a_ok = (f_a[7:4] == 4'b0000);   // accumulator / descriptor in a
+    wire b5_d_ok = (f_d[7:5] == 3'b000);    // barrier / window in d
+    wire b5_a_ok = (f_a[7:5] == 3'b000);    // barrier / window in a
+
     // Condition-code legality (ISA sec 4).
     wire cc_int_ok = (f_mod[3:0] <= `TNCA_CC_GEU);
     wire cc_fp_ok  = (f_mod[3:0] <= `TNCA_CC_GE) || (f_mod[3:0] == `TNCA_CC_O)
@@ -150,6 +165,14 @@ module tnca_decoder (
     // Lane mask: any predicate register is legal, including P0.
     `define TNCA_DEC_MASK    begin o_pm_en = 1'b1; o_pm_idx = f_pred; o_pm_neg = f_pn; u_pred = 1'b1; end
 
+    // Stage-2 handle operands.
+    `define TNCA_DEC_DST_A   begin o_dst_class = `TNCA_DST_A;   o_dst_idx = {4'd0, f_d[3:0]}; u_d = 1'b1; bad = bad | ~a4_d_ok; end
+    `define TNCA_DEC_DST_B   begin o_dst_class = `TNCA_DST_B;   o_dst_idx = {3'd0, f_d[4:0]}; u_d = 1'b1; bad = bad | ~b5_d_ok; end
+    `define TNCA_DEC_DST_D   begin o_dst_class = `TNCA_DST_RES; o_dst_idx = {4'd0, f_d[3:0]}; u_d = 1'b1; bad = bad | ~a4_d_ok; end
+    `define TNCA_DEC_DST_W   begin o_dst_class = `TNCA_DST_RES; o_dst_idx = {3'd0, f_d[4:0]}; u_d = 1'b1; bad = bad | ~b5_d_ok; end
+    `define TNCA_DEC_RA_A    begin o_ra_en = 1'b1; o_ra_idx = {4'd0, f_a[3:0]}; u_a = 1'b1; bad = bad | ~a4_a_ok; end
+    `define TNCA_DEC_RA_B    begin o_ra_en = 1'b1; o_ra_idx = {3'd0, f_a[4:0]}; u_a = 1'b1; bad = bad | ~b5_a_ok; end
+
     always @(*) begin
         // ---- defaults --------------------------------------------------------
         o_illegal     = 1'b0;
@@ -165,6 +188,7 @@ module tnca_decoder (
         o_va_en       = 1'b0; o_va_idx = 8'd0;
         o_vb_en       = 1'b0; o_vb_idx = 8'd0;
         o_vc_en       = 1'b0; o_vc_idx = 8'd0;
+        o_ra_en       = 1'b0; o_ra_idx = 8'd0;
         o_pa_en       = 1'b0; o_pa_idx = 4'd0;
         o_pb_en       = 1'b0; o_pb_idx = 4'd0;
         o_pm_en       = 1'b0; o_pm_idx = 4'd0; o_pm_neg = 1'b0;
@@ -574,6 +598,137 @@ module tnca_decoder (
             endcase
         end
 
+        //======================================================================
+        // 0x50 -- Mbarrier (ISA sec 9A). Unpredicated: a barrier operation that
+        // only some lanes performed would make the counts meaningless.
+        //======================================================================
+        `TNCA_MAJ_MBAR: begin
+            o_fu = `TNCA_FU_BAR;
+            case (f_func)
+            `TNCA_MB_INIT: begin
+                `TNCA_DEC_DST_B
+            end
+            `TNCA_MB_ARM: begin
+                // d = token destination, a = barrier, b = arrivals, c = ops
+                `TNCA_DEC_DST_S `TNCA_DEC_RA_B
+                o_imm = imm16_z; u_imm16 = 1'b1;
+            end
+            `TNCA_MB_ARRIVE, `TNCA_MB_INVAL: begin
+                `TNCA_DEC_RA_B
+            end
+            `TNCA_MB_TEST: begin
+                `TNCA_DEC_DST_S `TNCA_DEC_SRC_SA
+            end
+            `TNCA_MB_WAIT: begin
+                `TNCA_DEC_SRC_SA
+            end
+            default: bad = 1'b1;
+            endcase
+        end
+
+        //======================================================================
+        // 0x41 -- Accumulator access (ISA sec 9B)
+        //======================================================================
+        `TNCA_MAJ_ACC: begin
+            o_fu = `TNCA_FU_MATRIX;      // shares the accumulator RF port
+            case (f_func)
+            `TNCA_A_VREAD: begin
+                `TNCA_DEC_DST_V `TNCA_DEC_RA_A `TNCA_DEC_SRC_SB `TNCA_DEC_MASK
+            end
+            `TNCA_A_VWRITE: begin
+                `TNCA_DEC_DST_A `TNCA_DEC_SRC_SA `TNCA_DEC_SRC_VB `TNCA_DEC_MASK
+            end
+            `TNCA_A_MULROW: begin
+                `TNCA_DEC_DST_A `TNCA_DEC_SRC_SA `TNCA_DEC_SRC_SB `TNCA_DEC_MASK
+            end
+            `TNCA_A_FMAROW: begin
+                `TNCA_DEC_DST_A `TNCA_DEC_SRC_SA `TNCA_DEC_SRC_VB `TNCA_DEC_SRC_SC
+                `TNCA_DEC_MASK
+            end
+            `TNCA_A_ZERO: begin
+                `TNCA_DEC_DST_A
+            end
+            default: bad = 1'b1;
+            endcase
+        end
+
+        //======================================================================
+        // 0x40 -- Matrix (ISA sec 9C)
+        //======================================================================
+        `TNCA_MAJ_MATRIX: begin
+            o_fu = `TNCA_FU_MATRIX;
+            case (f_func)
+            `TNCA_M_ZERO: begin
+                `TNCA_DEC_DST_A
+            end
+            `TNCA_M_MMA: begin
+                // d = accumulator, a = A fragment base vreg, b = B fragment
+                // base vreg, c = barrier token.
+                //
+                // The vector indices are BASES, not operands: the command reads
+                // a whole fragment, which is many registers, and a scoreboard
+                // bit on the base would describe only the first of them. ISA
+                // sec 9C.3 and arch overview sec 12.12 put that lifetime on
+                // software, where a barrier expresses it exactly -- which is
+                // the point of having the source-reusable event at all
+                // (sec 13.1). So no read port and no dependency is created
+                // here; a bit that was only sometimes right would be worse
+                // than none.
+                `TNCA_DEC_DST_A `TNCA_DEC_SRC_SC
+                o_va_idx = f_a; u_a = 1'b1;
+                o_vb_idx = f_b; u_b = 1'b1;
+                u_mod = 10'h00f;
+                bad = bad | (f_mod[1:0] == 2'd3)        // K reserved
+                          | (f_mod[3:2] >  2'd1);       // dtype reserved
+            end
+            default: bad = 1'b1;
+            endcase
+        end
+
+        //======================================================================
+        // 0x30 -- Tensor descriptor and RF window (ISA sec 9D)
+        //======================================================================
+        `TNCA_MAJ_TDESC: begin
+            o_fu = `TNCA_FU_TXFER;
+            case (f_func)
+            `TNCA_TD_LOAD: begin
+                `TNCA_DEC_DST_D `TNCA_DEC_SRC_SA
+            end
+            `TNCA_TD_RELEASE: begin
+                `TNCA_DEC_DST_D
+            end
+            `TNCA_W_DEF: begin
+                `TNCA_DEC_DST_W
+                o_imm = imm16_z; u_imm16 = 1'b1;
+            end
+            `TNCA_W_RELEASE: begin
+                `TNCA_DEC_DST_W
+            end
+            default: bad = 1'b1;
+            endcase
+        end
+
+        //======================================================================
+        // 0x31 -- Tensor transfer (ISA sec 9E)
+        //======================================================================
+        `TNCA_MAJ_TXFER: begin
+            o_fu = `TNCA_FU_TXFER;
+            u_mod = 10'h03f;
+            bad = bad | (f_mod[2:0] > `TNCA_SZ_D) | (f_mod[4:3] != 2'd0);
+            case (f_func)
+            `TNCA_T_LD, `TNCA_T_ST: begin
+                // d = window (destination for a load, source for a store),
+                // a = descriptor, b = coordinate base, c = token
+                `TNCA_DEC_DST_W `TNCA_DEC_RA_A `TNCA_DEC_SRC_SB `TNCA_DEC_SRC_SC
+                `TNCA_DEC_MASK
+            end
+            `TNCA_T_PREFETCH: begin
+                `TNCA_DEC_RA_A `TNCA_DEC_SRC_SB `TNCA_DEC_MASK
+            end
+            default: bad = 1'b1;
+            endcase
+        end
+
         default: bad = 1'b1;
         endcase
 
@@ -600,6 +755,7 @@ module tnca_decoder (
             o_sa_en = 1'b0; o_sb_en = 1'b0; o_sc_en = 1'b0;
             o_va_en = 1'b0; o_vb_en = 1'b0; o_vc_en = 1'b0;
             o_pa_en = 1'b0; o_pb_en = 1'b0; o_pm_en = 1'b0;
+            o_ra_en = 1'b0;
             o_mask_dst = 1'b1;
             o_is_branch = 1'b0; o_is_exit = 1'b0;
             o_is_trap   = 1'b0; o_is_yield = 1'b0;
@@ -619,5 +775,11 @@ module tnca_decoder (
     `undef TNCA_DEC_DST_V
     `undef TNCA_DEC_DST_P
     `undef TNCA_DEC_MASK
+    `undef TNCA_DEC_DST_A
+    `undef TNCA_DEC_DST_B
+    `undef TNCA_DEC_DST_D
+    `undef TNCA_DEC_DST_W
+    `undef TNCA_DEC_RA_A
+    `undef TNCA_DEC_RA_B
 
 endmodule

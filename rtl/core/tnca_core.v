@@ -63,7 +63,13 @@ module tnca_core #(
     parameter MEM_BYTES      = 8,
     parameter MEM_SHIFT      = 3,
     parameter LSU_BEATS      = 8,          // outstanding memory beats
-    parameter LSU_TAG_W      = 3
+    parameter LSU_TAG_W      = 3,
+    parameter ACC_N          = 16,         // accumulator slots
+    parameter ACC_W          = 4,
+    parameter ACC_ROWS       = 16,
+    parameter ACC_ROW_W      = 4,
+    parameter BAR_N          = 32,         // mbarriers
+    parameter BAR_W          = 5
 ) (
     input  wire                     clk,
     input  wire                     rst_n,
@@ -173,6 +179,8 @@ module tnca_core #(
         reg [7:0]            p``_vb_idx;     \
         reg                  p``_vc_en;      \
         reg [7:0]            p``_vc_idx;     \
+        reg                  p``_ra_en;      \
+        reg [7:0]            p``_ra_idx;     \
         reg                  p``_pa_en;      \
         reg [3:0]            p``_pa_idx;     \
         reg                  p``_pb_en;      \
@@ -210,7 +218,12 @@ module tnca_core #(
     reg              f_hit;
     reg [RCTX_W-1:0] cand;
 
-    wire [NUM_RCTX-1:0] fetchable = running & ~faulted;
+    // A context asleep on a barrier stops fetching entirely. Sec 13.4 asks for
+    // exactly this rather than a polling loop: a spinning waiter would consume
+    // issue slots and memory bandwidth that the producer it is waiting for
+    // needs.
+    reg [NUM_RCTX-1:0] blocked;
+    wire [NUM_RCTX-1:0] fetchable = running & ~faulted & ~blocked;
 
     always @(*) begin
         f_sel = {RCTX_W{1'b0}};
@@ -239,6 +252,8 @@ module tnca_core #(
     wire [5:0]  dec_sa_idx, dec_sb_idx, dec_sc_idx;
     wire        dec_va_en, dec_vb_en, dec_vc_en;
     wire [7:0]  dec_va_idx, dec_vb_idx, dec_vc_idx;
+    wire        dec_ra_en;
+    wire [7:0]  dec_ra_idx;
     wire        dec_pa_en, dec_pb_en;
     wire [3:0]  dec_pa_idx, dec_pb_idx;
     wire        dec_pm_en, dec_pm_neg, dec_mask_dst;
@@ -262,6 +277,7 @@ module tnca_core #(
         .o_va_en(dec_va_en), .o_va_idx(dec_va_idx),
         .o_vb_en(dec_vb_en), .o_vb_idx(dec_vb_idx),
         .o_vc_en(dec_vc_en), .o_vc_idx(dec_vc_idx),
+        .o_ra_en(dec_ra_en), .o_ra_idx(dec_ra_idx),
         .o_pa_en(dec_pa_en), .o_pa_idx(dec_pa_idx),
         .o_pb_en(dec_pb_en), .o_pb_idx(dec_pb_idx),
         .o_pm_en(dec_pm_en), .o_pm_idx(dec_pm_idx), .o_pm_neg(dec_pm_neg),
@@ -348,6 +364,7 @@ module tnca_core #(
         .ra_rctx(x_rctx), .ra_idx(x_va_idx), .ra_data(va_data),
         .rb_rctx(x_rctx), .rb_idx(x_vb_idx), .rb_data(vb_data),
         .rc_rctx(x_rctx), .rc_idx(x_vc_idx), .rc_data(vc_data),
+        .rd_rctx(mtx_rctx), .rd_idx(mtx_vrf_addr), .rd_data(mtx_vrf_data),
         .w_en(w_en && (w_class == `TNCA_DST_V)),
         .w_rctx(w_rctx), .w_idx(w_idx), .w_lane_en(w_lane_en), .w_data(w_vdata)
     );
@@ -370,6 +387,7 @@ module tnca_core #(
     reg [NUM_RCTX*64-1:0]             sb_s;
     reg [NUM_RCTX*VREGS_PER_RCTX-1:0] sb_v;
     reg [NUM_RCTX*16-1:0]             sb_p;
+    reg [ACC_N-1:0]                   sb_acc;
 
     // NOTE: these are macros, not Verilog functions. A continuous assignment
     // that calls a function is only re-evaluated when the function's arguments
@@ -431,7 +449,24 @@ module tnca_core #(
                | ((r_dstc == `TNCA_DST_P) && `SB_P_BUSY(r_rctx, r_dsti[3:0])
                                           && !`WB_HIT_P(r_rctx, r_dsti[3:0]));
 
-    wire hazard = r_valid && (hz_sa|hz_sb|hz_sc|hz_va|hz_vb|hz_vc|hz_pa|hz_pb|hz_pm|hz_d);
+    // Accumulators are core-wide, not per-RCTX (ISA sec 1.2), so one bit per
+    // slot. A command that writes one holds it until the engine reports done;
+    // that is the only thing that makes "the accumulator may not be read before
+    // the m.mma completes" (sec 9C.3) enforceable rather than advisory.
+    wire r_acc_dst = (r_dstc == `TNCA_DST_A);
+    wire [ACC_W-1:0] r_acc_d = r_dsti[ACC_W-1:0];
+    wire r_acc_src = r_valid && (r_major == `TNCA_MAJ_ACC)
+                             && (r_func  == `TNCA_A_VREAD);
+    wire [ACC_W-1:0] r_acc_s = r_ra_idx[ACC_W-1:0];
+
+    wire acc_free_d = !sb_acc[r_acc_d] || (mtx_done && (mtx_done_slot == r_acc_d));
+    wire acc_free_s = !sb_acc[r_acc_s] || (mtx_done && (mtx_done_slot == r_acc_s));
+
+    wire hz_acc = (r_valid && r_acc_dst && !acc_free_d)
+                | (r_acc_src && !acc_free_s);
+
+    wire hazard = r_valid && (hz_sa|hz_sb|hz_sc|hz_va|hz_vb|hz_vc|hz_pa|hz_pb|hz_pm|hz_d)
+                | hz_acc;
 
     //==========================================================================
     // Execution units (all read their operands in X)
@@ -519,6 +554,111 @@ module tnca_core #(
     wire x_is_mul    = x_valid && `TNCA_IS_MUL(x_major, x_func);
     wire x_is_fpnorm = x_valid && `TNCA_IS_FPNORM(x_major);
     wire x_is_fpred  = x_valid && `TNCA_IS_FPRED(x_major, x_func);
+
+    //==========================================================================
+    // Mbarrier and matrix engine
+    //
+    // Both are asynchronous: a command leaves the execute stage and completes
+    // later, signalling the barrier it was armed against. That is the whole
+    // reason the barrier exists -- sec 13.1's three completions are only
+    // distinguishable if the thing that finishes can say so independently of
+    // the instruction that started it.
+    //==========================================================================
+    wire x_is_bar = x_valid && !x_kill && (x_fu == `TNCA_FU_BAR);
+    wire x_is_mtx = x_valid && !x_kill && (x_fu == `TNCA_FU_MATRIX);
+    wire x_is_avread = x_is_mtx && (x_major == `TNCA_MAJ_ACC)
+                                && (x_func == `TNCA_A_VREAD);
+
+    wire [BAR_W-1:0] tok_bar = sa_data[BAR_W-1:0];
+
+    wire        bar_arm_token_v;
+    wire [63:0] bar_arm_token;
+    wire        bar_test_done, bar_test_error;
+    wire [NUM_RCTX-1:0] bar_wake;
+    wire        bar_fault;
+    wire [BAR_W-1:0] bar_fault_bar;
+
+    wire        mtx_busy, mtx_done, mtx_done_bar_en;
+    wire [ACC_W-1:0] mtx_done_slot;
+    wire [BAR_W-1:0] mtx_done_bar;
+    wire [7:0]  mtx_vrf_addr;
+    wire [VLEN*ELEN-1:0] mtx_vrf_data;
+    wire [VLEN*ELEN-1:0] acc_rd_data;
+
+    // The engine serves one command at a time, so the RCTX that owns it is the
+    // one whose command is running; captured at issue.
+    reg [RCTX_W-1:0] mtx_rctx;
+
+    wire mtx_cmd_valid = x_is_mtx && !x_is_avread;
+
+    wire [1:0] mtx_cmd_op =
+        ((x_major == `TNCA_MAJ_MATRIX) && (x_func == `TNCA_M_ZERO)) ? 2'd0 :
+        ((x_major == `TNCA_MAJ_ACC)    && (x_func == `TNCA_A_ZERO)) ? 2'd0 :
+        ((x_major == `TNCA_MAJ_MATRIX) && (x_func == `TNCA_M_MMA))  ? 2'd1 : 2'd2;
+
+    wire [1:0] mtx_rowop =
+        (x_func == `TNCA_A_VWRITE) ? 2'd0 :
+        (x_func == `TNCA_A_MULROW) ? 2'd1 : 2'd2;
+
+    wire [31:0] mtx_scale = (x_func == `TNCA_A_MULROW) ? sb_data[31:0]
+                                                       : sc_data[31:0];
+
+    // An m.mma signals one operation completion against the barrier named by
+    // its token (ISA sec 9C).
+    wire mtx_bar_en = (x_major == `TNCA_MAJ_MATRIX) && (x_func == `TNCA_M_MMA);
+    wire [BAR_W-1:0] mtx_bar = sc_data[BAR_W-1:0];
+
+    tnca_matrix #(
+        .VLEN(VLEN), .ELEN(ELEN), .ACC_N(ACC_N), .ACC_W(ACC_W),
+        .ROWS(ACC_ROWS), .ROW_W(ACC_ROW_W), .BAR_W(BAR_W), .FMA_LAT(FP_LAT)
+    ) u_mtx (
+        .clk(clk), .rst_n(rst_n), .flush(launch_valid),
+        .cmd_valid(mtx_cmd_valid), .cmd_op(mtx_cmd_op),
+        .cmd_slot(x_dsti[ACC_W-1:0]),
+        .cmd_va(x_va_idx), .cmd_vb(x_vb_idx),
+        .cmd_k(x_mod[1:0]), .cmd_dt(x_mod[2]),
+        .cmd_bar_en(mtx_bar_en), .cmd_bar(mtx_bar),
+        .cmd_rowop(mtx_rowop), .cmd_row(sa_data[ACC_ROW_W-1:0]),
+        .cmd_vdata(vb_data), .cmd_scale(mtx_scale), .cmd_mask(lane_mask),
+        .busy(mtx_busy),
+        .vrf_addr(mtx_vrf_addr), .vrf_data(mtx_vrf_data),
+        .ard_slot(x_ra_idx[ACC_W-1:0]), .ard_row(sb_data[ACC_ROW_W-1:0]),
+        .ard_data(acc_rd_data),
+        .done(mtx_done), .done_slot(mtx_done_slot),
+        .done_bar_en(mtx_done_bar_en), .done_bar(mtx_done_bar)
+    );
+
+    tnca_barrier #(
+        .NUM_RCTX(NUM_RCTX), .RCTX_W(RCTX_W), .BAR_N(BAR_N), .BAR_W(BAR_W)
+    ) u_bar (
+        .clk(clk), .rst_n(rst_n), .flush(launch_valid),
+        .init_en(x_is_bar && (x_func == `TNCA_MB_INIT)),
+        .init_bar(x_dsti[BAR_W-1:0]),
+        .arm_en(x_is_bar && (x_func == `TNCA_MB_ARM)),
+        .arm_bar(x_ra_idx[BAR_W-1:0]),
+        .arm_arrivals(x_imm[15:8]), .arm_operations(x_imm[7:0]),
+        .arm_token(bar_arm_token),
+        .arrive_en(x_is_bar && (x_func == `TNCA_MB_ARRIVE)),
+        .arrive_bar(x_ra_idx[BAR_W-1:0]),
+        .opdone_en(mtx_done && mtx_done_bar_en),
+        .opdone_bar(mtx_done_bar),
+        .inval_en(x_is_bar && (x_func == `TNCA_MB_INVAL)),
+        .inval_bar(x_ra_idx[BAR_W-1:0]),
+        .test_token(sa_data), .test_done(bar_test_done),
+        .test_error(bar_test_error),
+        .sleep_en(bar_sleep), .sleep_rctx(x_rctx), .sleep_token(sa_data),
+        .wake(bar_wake),
+        .fault(bar_fault), .fault_bar(bar_fault_bar)
+    );
+
+    // mb.wait sleeps the RCTX rather than spinning (sec 13.4): the PC is left
+    // pointing at the instruction, the context stops fetching, and the barrier
+    // wakes it. Re-executing re-reads the token from the same scalar register,
+    // so nothing has to be remembered across the sleep.
+    wire x_is_mbwait = x_is_bar && (x_func == `TNCA_MB_WAIT);
+    wire bar_sleep   = x_is_mbwait && !bar_test_done;
+
+    assign bar_arm_token_v = 1'b0;   // token is combinational; no valid needed
 
     //==========================================================================
     // LSU
@@ -636,14 +776,19 @@ module tnca_core #(
         `TNCA_SPEC_CORE_ID:   spec_rd = CORE_ID;
         `TNCA_SPEC_NUM_CORES: spec_rd = NUM_CORES;
         `TNCA_SPEC_NUM_LANES: spec_rd = VLEN;
-        10'h00d:              spec_rd = VREGS_PER_RCTX;   // NUM_VREGS
+        `TNCA_SPEC_NUM_VREGS: spec_rd = VREGS_PER_RCTX;
+        `TNCA_SPEC_MAX_RANK:  spec_rd = 64'd2;    // see the transfer engine
+        `TNCA_SPEC_NUM_ACC:   spec_rd = ACC_N;
         `TNCA_SPEC_CLOCK:     spec_rd = clock_ctr;
         `TNCA_SPEC_INSTRET:   spec_rd = instret[x_rctx];
         `TNCA_SPEC_ARG_BASE:  spec_rd = arg_base;
         `TNCA_SPEC_ISA_VER:   spec_rd = `TNCA_ISA_VERSION;
         `TNCA_SPEC_CAP0:      spec_rd = (64'd1 << `TNCA_CAP_VECTOR_FP32)
                                       | (HAS_SFU ? (64'd1 << `TNCA_CAP_SFU) : 64'd0)
-                                      | (64'd1 << `TNCA_CAP_GATHER);
+                                      | (64'd1 << `TNCA_CAP_GATHER)
+                                      | (64'd1 << `TNCA_CAP_MATRIX_F16)
+                                      | (64'd1 << `TNCA_CAP_MATRIX_BF16)
+                                      | (64'd1 << `TNCA_CAP_MBARRIER);
         `TNCA_SPEC_TRAP_PC:   spec_rd = f_pc[x_rctx];
         `TNCA_SPEC_TRAP_CODE: spec_rd = {32'd0, f_detail[x_rctx], f_code[x_rctx]};
         default:              spec_rd = 64'd0;
@@ -660,7 +805,8 @@ module tnca_core #(
     wire [63:0] br_target = x_br_ind ? (sa_data & ~64'd7) : (x_pc + x_br_off);
 
     wire x_redirect = x_valid && !x_kill &&
-                      ((x_is_branch && br_taken) || x_is_exit || x_is_trap || x_illegal);
+                      ((x_is_branch && br_taken) || x_is_exit || x_is_trap ||
+                       x_illegal || bar_sleep);
 
     //==========================================================================
     // X result mux
@@ -670,18 +816,25 @@ module tnca_core #(
     reg [VLEN-1:0]      x_pres;
 
     always @(*) begin
-        x_vres = use_fpu ? fpu_v : valu_v;
+        x_vres = x_is_avread ? acc_rd_data : (use_fpu ? fpu_v : valu_v);
         x_pres = use_fpu ? fpu_p : valu_p;
-        if (x_br_link)                           x_sres = x_pc + 64'd8;
+        if (x_is_bar && (x_func == `TNCA_MB_ARM))  x_sres = bar_arm_token;
+        else if (x_is_bar && (x_func == `TNCA_MB_TEST))
+                                                 x_sres = {63'd0, bar_test_done};
+        else if (x_br_link)                      x_sres = x_pc + 64'd8;
         else if (x_major == `TNCA_MAJ_SYS)       x_sres = spec_rd;
         else if (x_major == `TNCA_MAJ_SALU)      x_sres = alu_result;
         else if (use_fpu)                        x_sres = fpu_s;
         else                                     x_sres = valu_s;
     end
 
-    // Anything that does not write back from X in this very cycle.
+    // Only these three classes go through the register writeback path.
+    // Accumulators, barriers and resource handles are written by their own
+    // units and never contend for it.
+    wire x_wb_reg = (x_dstc == `TNCA_DST_S) || (x_dstc == `TNCA_DST_V)
+                                            || (x_dstc == `TNCA_DST_P);
     wire x_defers_wb = x_mem_en || x_is_fpred || x_is_fpnorm || x_is_mul;
-    wire x_has_dest  = x_valid && !x_kill && (x_dstc != `TNCA_DST_NONE) && !x_defers_wb;
+    wire x_has_dest  = x_valid && !x_kill && x_wb_reg && !x_defers_wb;
 
     //==========================================================================
     // Writeback arbitration
@@ -771,6 +924,12 @@ module tnca_core #(
     // running reduction.
     wire red_busy_next = fpu_busy || red_pend || fpu_done || x_is_fpred;
 
+    // Same "free NEXT cycle" question as the LSU: the engine is claimed from X,
+    // one cycle after R looks.
+    wire r_needs_mtx = r_valid && (r_fu == `TNCA_FU_MATRIX);
+    wire mtx_free_next = !mtx_busy && !mtx_cmd_valid;
+    wire stall_mtx = r_needs_mtx && !mtx_free_next;
+
     wire stall_lsu = r_needs_lsu && !lsu_free_next;
     wire stall_fpu = (r_is_fpnorm && red_busy_next)
                    | (r_is_fpred  && (red_busy_next || fp_inflight || x_is_fpnorm));
@@ -781,12 +940,14 @@ module tnca_core #(
                             r_is_fpnorm ? FP_LAT[3:0]  : 4'd0;
 
     // Memory ops and FP reductions complete out of band and book nothing.
+    wire r_wb_reg = (r_dstc == `TNCA_DST_S) || (r_dstc == `TNCA_DST_V)
+                                             || (r_dstc == `TNCA_DST_P);
     wire r_unscheduled = r_mem_en | r_is_fpred;
-    wire r_books_wb    = r_valid && (r_dstc != `TNCA_DST_NONE) && !r_unscheduled;
+    wire r_books_wb    = r_valid && r_wb_reg && !r_unscheduled;
 
     wire stall_rsv = r_books_wb && wb_rsv[r_wb_delay + 4'd1];
 
-    wire stall_front = hazard | stall_lsu | stall_fpu | stall_rsv | wb_steal;
+    wire stall_front = hazard | stall_lsu | stall_fpu | stall_mtx | stall_rsv | wb_steal;
 
     // A redirect kills only the younger entries of the same RCTX.
     wire             squash_en   = x_redirect;
@@ -814,6 +975,9 @@ module tnca_core #(
             sb_s       <= {(NUM_RCTX*64){1'b0}};
             sb_v       <= {(NUM_RCTX*VREGS_PER_RCTX){1'b0}};
             sb_p       <= {(NUM_RCTX*16){1'b0}};
+            sb_acc     <= {ACC_N{1'b0}};
+            blocked    <= {NUM_RCTX{1'b0}};
+            mtx_rctx   <= {RCTX_W{1'b0}};
             red_pend   <= 1'b0;
             w_en       <= 1'b0;
             wb_rsv     <= {WB_DEPTH{1'b0}};
@@ -919,6 +1083,8 @@ module tnca_core #(
                 sb_s     <= {(NUM_RCTX*64){1'b0}};
                 sb_v     <= {(NUM_RCTX*VREGS_PER_RCTX){1'b0}};
                 sb_p     <= {(NUM_RCTX*16){1'b0}};
+                sb_acc   <= {ACC_N{1'b0}};
+                blocked  <= {NUM_RCTX{1'b0}};
                 fault_valid <= 1'b0;
             end else begin
 
@@ -959,6 +1125,7 @@ module tnca_core #(
                 r_va_en      <= dec_va_en && !d_illegal;  r_va_idx <= dec_va_idx;
                 r_vb_en      <= dec_vb_en && !d_illegal;  r_vb_idx <= dec_vb_idx;
                 r_vc_en      <= dec_vc_en && !d_illegal;  r_vc_idx <= dec_vc_idx;
+                r_ra_en      <= dec_ra_en && !d_illegal;  r_ra_idx <= dec_ra_idx;
                 r_pa_en      <= dec_pa_en && !d_illegal;  r_pa_idx <= dec_pa_idx;
                 r_pb_en      <= dec_pb_en && !d_illegal;  r_pb_idx <= dec_pb_idx;
                 r_pm_en      <= dec_pm_en && !d_illegal;  r_pm_idx <= dec_pm_idx;
@@ -1005,6 +1172,7 @@ module tnca_core #(
                 x_va_en      <= r_va_en;  x_va_idx <= r_va_idx;
                 x_vb_en      <= r_vb_en;  x_vb_idx <= r_vb_idx;
                 x_vc_en      <= r_vc_en;  x_vc_idx <= r_vc_idx;
+                x_ra_en      <= r_ra_en;  x_ra_idx <= r_ra_idx;
                 x_pa_en      <= r_pa_en;  x_pa_idx <= r_pa_idx;
                 x_pb_en      <= r_pb_en;  x_pb_idx <= r_pb_idx;
                 x_pm_en      <= r_pm_en;  x_pm_idx <= r_pm_idx;
@@ -1049,14 +1217,25 @@ module tnca_core #(
                 endcase
             end
 
+            if (mtx_done) sb_acc[mtx_done_slot] <= 1'b0;
+
             if (!stall_front && r_valid && !kill_r) begin
                 case (r_dstc)
                 `TNCA_DST_S: if (r_dsti[5:0] != 6'd0) sb_s[r_rctx*64 + r_dsti[5:0]] <= 1'b1;
                 `TNCA_DST_V: sb_v[r_rctx*VREGS_PER_RCTX + r_dsti] <= 1'b1;
                 `TNCA_DST_P: if (r_dsti[3:0] != 4'd0) sb_p[r_rctx*16 + r_dsti[3:0]] <= 1'b1;
+                `TNCA_DST_A: sb_acc[r_dsti[ACC_W-1:0]] <= 1'b1;
                 default: ;
                 endcase
             end
+
+            //------------------------------------------------------------------
+            // matrix engine ownership, and barrier wake-ups
+            //------------------------------------------------------------------
+            if (mtx_cmd_valid) mtx_rctx <= x_rctx;
+
+            for (i = 0; i < NUM_RCTX; i = i + 1)
+                if (bar_wake[i]) blocked[i] <= 1'b0;
 
             //------------------------------------------------------------------
             // FP reduction completion capture
@@ -1075,12 +1254,32 @@ module tnca_core #(
             end
 
             //------------------------------------------------------------------
+            // A barrier count that underflowed means the program's own arrival
+            // or operation count was wrong. Reporting it here turns what would
+            // otherwise be a hang thousands of cycles later into a located
+            // fault (sec 13.4).
+            //------------------------------------------------------------------
+            if (bar_fault) begin
+                fault_valid  <= 1'b1;
+                fault_code   <= `TNCA_TRAP_BARRIER;
+                fault_pc     <= x_pc;
+                fault_rctx   <= x_rctx;
+                fault_detail <= {19'd0, bar_fault_bar};
+            end
+
+            //------------------------------------------------------------------
             // retire effects of X
             //------------------------------------------------------------------
             if (x_valid && !x_kill) begin
                 instret[x_rctx] <= instret[x_rctx] + 64'd1;
 
-                if (x_illegal) begin
+                if (bar_sleep) begin
+                    // Leave the PC on the mb.wait and stop fetching. Waking
+                    // re-executes it, which re-reads the token from the same
+                    // scalar register, so nothing survives the sleep.
+                    blocked[x_rctx] <= 1'b1;
+                    pc[x_rctx]      <= x_pc;
+                end else if (x_illegal) begin
                     running[x_rctx] <= 1'b0;
                     faulted[x_rctx] <= 1'b1;
                     f_code[x_rctx]  <= `TNCA_TRAP_ILLEGAL;
@@ -1146,6 +1345,7 @@ module tnca_core #(
                     && !d_valid && !r_valid && !x_valid
                     && lsu_req_ready && !lsu_cpl_valid
                     && !fpu_busy && !red_pend && !w_en
+                    && !mtx_busy
                     && (wb_rsv == {WB_DEPTH{1'b0}});
 
     // Signals decoded but not consumed by the Stage-1 datapath. They are kept

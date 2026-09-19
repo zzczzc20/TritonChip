@@ -17,13 +17,15 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from tnca_isa import (ISA, MAJ, MAJ_NAME, CC_NAME, SPECIAL_NAME, SIZE,
                       CACHE_HINT, FMINMAX_MODE, RND, decode_fields,
-                      MASKABLE_MAJORS)
+                      MASKABLE_MAJORS, MMA_K, MMA_DT)
 
 BY_OPCODE = {}
 for _m, (_maj, _fn, _kinds, _sfx) in ISA.items():
     BY_OPCODE[(MAJ[_maj], _fn)] = (_m, _kinds, _sfx)
 
 SIZE_NAME = {v: k for k, v in SIZE.items()}
+MMA_K_NAME  = {v: k for k, v in MMA_K.items()}
+MMA_DT_NAME = {v: k for k, v in MMA_DT.items()}
 HINT_NAME = {v: k for k, v in CACHE_HINT.items()}
 FMM_NAME = {v: k for k, v in FMINMAX_MODE.items()}
 RND_NAME = {v: k for k, v in RND.items()}
@@ -58,6 +60,16 @@ def disassemble(word, addr=0):
     elif sfx == 'redb':
         if mod & 1:
             name += '.b'
+    elif sfx == 'mma':
+        k, dt = mod & 3, (mod >> 2) & 3
+        if k:
+            name += '.' + MMA_K_NAME.get(k, f'k?{k}')
+        if dt:
+            name += '.' + MMA_DT_NAME.get(dt, f'dt?{dt}')
+    elif sfx == 'txf':
+        name += '.' + SIZE_NAME.get(mod & 7, '?')
+        if (mod >> 5) & 1:
+            name += '.t'
     elif sfx == 'lsl':
         if mod & 3:
             trailing.append(f"lsl #{16 * (mod & 3)}")
@@ -75,6 +87,22 @@ def disassemble(word, addr=0):
         elif k == 'pd': ops.append(f"p{f['d'] & 0xf}")
         elif k == 'pa': ops.append(f"p{f['a'] & 0xf}")
         elif k == 'pb': ops.append(f"p{f['b'] & 0xf}")
+        elif k == 'ad': ops.append(f"a{f['d'] & 0xf}")
+        elif k == 'aa': ops.append(f"a{f['a'] & 0xf}")
+        elif k == 'bd': ops.append(f"b{f['d'] & 0x1f}")
+        elif k == 'ba': ops.append(f"b{f['a'] & 0x1f}")
+        elif k == 'dd': ops.append(f"d{f['d'] & 0xf}")
+        elif k == 'da': ops.append(f"d{f['a'] & 0xf}")
+        elif k == 'wd': ops.append(f"w{f['d'] & 0x1f}")
+        elif k == 'wa': ops.append(f"w{f['a'] & 0x1f}")
+        elif k == 'cnt2':
+            ops.append(f"#{f['b']}")
+            ops.append(f"#{f['c']}")
+        elif k == 'winspec':
+            ops.append(f"#{f['b']}")
+            ops.append(f"#{f['c']}")
+        elif k == 'mem_s':
+            ops.append(f"[s{f['a'] & 0x3f}]")
         elif k == 'rdst':
             ops.append(f"v{f['d']}" if (mod & 1) else f"s{f['d'] & 0x3f}")
         elif k == 'i16s':

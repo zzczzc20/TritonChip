@@ -42,7 +42,8 @@ RTLY       := -y $(RTL)/common -y $(RTL)/core -y $(RTL)/nuca -y $(RTL)/noc \
 # during bring-up is `make fma-deep`.
 FMA_VECTORS ?= 20000
 
-CORE_PROGS := t00_scalar t01_vector t02_mem t03_fp t04_roles t05_fault t06_alu
+CORE_PROGS := t00_scalar t01_vector t02_mem t03_fp t04_roles t05_fault t06_alu \
+              t11_matrix
 
 # Image size in 64-bit words; must match tb_tnca_core's WORDS parameter.
 IMAGE_WORDS := 16384
@@ -90,6 +91,13 @@ $(BUILD)/tb_bitops.vvp: $(TB)/core/tb_bitops.v $(RTL_COMMON) | dirs
 $(BUILD)/tb_mul64.vvp: $(TB)/core/tb_mul64.v $(RTL)/core/tnca_mul64.v | dirs
 	$(IVERILOG) $(IVFLAGS) -o $@ $^
 
+$(BUILD)/tb_cvt16.vvp: $(TB)/core/tb_cvt16.v $(RTL)/core/tnca_cvt16_f32.v \
+                       $(RTL_COMMON) | dirs
+	$(IVERILOG) $(IVFLAGS) -o $@ $^
+
+$(BUILD)/cvt16_vectors.txt: $(TOOLS)/model/gen_cvt16_vectors.py | dirs
+	$(PYTHON) $< -o $@
+
 $(BUILD)/fma_vectors.txt: $(TOOLS)/model/gen_fma_vectors.py $(TOOLS)/model/fp32.py | dirs
 	$(PYTHON) $< -o $@ -n $(FMA_VECTORS)
 
@@ -103,8 +111,11 @@ $(BUILD)/dec_vectors.txt: $(TOOLS)/model/gen_decoder_vectors.py \
 unit: $(BUILD)/tb_fp32_fma.vvp $(BUILD)/fma_vectors.txt \
       $(BUILD)/tb_decoder.vvp $(BUILD)/dec_vectors.txt $(BUILD)/tb_bitops.vvp \
       $(BUILD)/tb_mul64.vvp \
-      $(TB)/core/progs/t03_fp.s $(TB)/core/progs/t06_alu.s
+      $(TB)/core/progs/t03_fp.s $(TB)/core/progs/t06_alu.s \
+      $(TB)/core/progs/t11_matrix.s $(BUILD)/tb_cvt16.vvp $(BUILD)/cvt16_vectors.txt
 	@$(TOOLS)/run_test.sh "bitops" "$(VVP) $(BUILD)/tb_bitops.vvp"
+	@$(TOOLS)/run_test.sh "cvt16"  \
+	   "$(VVP) $(BUILD)/tb_cvt16.vvp +vec=$(BUILD)/cvt16_vectors.txt"
 	@$(TOOLS)/run_test.sh "mul64"  "$(VVP) $(BUILD)/tb_mul64.vvp"
 	@$(TOOLS)/run_test.sh "fp32_fma" \
 	   "$(VVP) $(BUILD)/tb_fp32_fma.vvp +vec=$(BUILD)/fma_vectors.txt"
@@ -131,6 +142,9 @@ $(TB)/core/progs/t03_fp.s: $(TB)/core/progs/gen_t03_fp.py $(TOOLS)/model/fp32.py
 	$(PYTHON) $<
 
 $(TB)/core/progs/t06_alu.s: $(TB)/core/progs/gen_t06_alu.py
+	$(PYTHON) $<
+
+$(TB)/core/progs/t11_matrix.s: $(TB)/core/progs/gen_t11_matrix.py $(TOOLS)/model/fp32.py
 	$(PYTHON) $<
 
 $(BUILD)/%.hex: $(TB)/core/progs/%.s $(TOOLS)/asm/tnca_asm.py $(TOOLS)/asm/tnca_isa.py | dirs

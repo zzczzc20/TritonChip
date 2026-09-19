@@ -50,7 +50,8 @@ import os
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from tnca_isa import (ISA, MAJ, CC, CC_INT, CC_FP, SPECIAL, SIZE, CACHE_HINT,
                       FMINMAX_MODE, RND, MASKABLE_MAJORS, encode,
-                      SREG_N, PREG_N, VREG_N, VLEN)
+                      SREG_N, PREG_N, VREG_N, VLEN,
+                      AREG_N, BREG_N, DREG_N, WREG_N, MMA_K, MMA_DT)
 
 
 class AsmError(Exception):
@@ -146,7 +147,9 @@ class Assembler:
 
     def reg(self, tok, kind):
         tok = tok.strip().lower()
-        pfx, lim = {'s': ('s', SREG_N), 'v': ('v', VREG_N), 'p': ('p', PREG_N)}[kind]
+        pfx, lim = {'s': ('s', SREG_N), 'v': ('v', VREG_N), 'p': ('p', PREG_N),
+                    'a': ('a', AREG_N), 'b': ('b', BREG_N),
+                    'd': ('d', DREG_N), 'w': ('w', WREG_N)}[kind]
         m = re.fullmatch(pfx + r'(\d+)', tok)
         if not m:
             self.err(f"expected a {pfx}-register, got '{tok}'")
@@ -324,6 +327,38 @@ class Assembler:
                 f[kind[1]] = self.reg(next_op(kind), 'v')
             elif kind in ('pd', 'pa', 'pb'):
                 f[kind[1]] = self.reg(next_op(kind), 'p')
+            elif kind in ('ad', 'aa', 'ab'):
+                f[kind[1]] = self.reg(next_op(kind), 'a')
+            elif kind in ('bd', 'ba'):
+                f[kind[1]] = self.reg(next_op(kind), 'b')
+            elif kind in ('dd', 'da'):
+                f[kind[1]] = self.reg(next_op(kind), 'd')
+            elif kind in ('wd', 'wa'):
+                f[kind[1]] = self.reg(next_op(kind), 'w')
+            elif kind == 'cnt2':
+                # two 8-bit counts: "#arrivals, #operations"
+                n_arr = self.imm(next_op('arrivals'))
+                n_ops = self.imm(next_op('operations'))
+                for nm, vv in (('arrivals', n_arr), ('operations', n_ops)):
+                    if not (0 <= vv <= 255):
+                        self.err(f"{nm} {vv} out of range 0..255")
+                f['b'], f['c'] = n_arr, n_ops
+            elif kind == 'winspec':
+                # "#base, #len" packed into imm16 as {base[7:0], len[7:0]}
+                base = self.imm(next_op('window base vreg'))
+                ln   = self.imm(next_op('window length'))
+                if not (0 <= base <= 255):
+                    self.err(f"window base {base} out of range 0..255")
+                if not (1 <= ln <= 255):
+                    self.err(f"window length {ln} out of range 1..255")
+                f['b'], f['c'] = base, ln
+            elif kind == 'mem_s':
+                # "[sN]" -- a plain base register, no displacement
+                tok = next_op('memory operand').strip()
+                m = re.fullmatch(r'\[\s*(s\d+)\s*\]', tok, re.IGNORECASE)
+                if not m:
+                    self.err(f"expected '[sN]', got '{tok}'")
+                f['a'] = self.reg(m.group(1), 's')
             elif kind == 'rdst':
                 tok = next_op('destination')
                 if mod & 1:
@@ -526,6 +561,31 @@ class Assembler:
                     self.err(f"'{mnem}' only accepts the '.b' broadcast suffix")
                 mod |= 1
             return mod, ops
+
+        if sclass == 'mma':
+            # ".k32", ".bf16" in any order; defaults k16/f16
+            kk, dt = 0, 0
+            for sf in sfx:
+                if sf in MMA_K:
+                    kk = MMA_K[sf]
+                elif sf in MMA_DT:
+                    dt = MMA_DT[sf]
+                else:
+                    self.err(f"unknown m.mma suffix '.{sf}' "
+                             f"(expected k16/k32/k64, f16/bf16)")
+            return kk | (dt << 2), ops
+
+        if sclass == 'txf':
+            # ".b/.h/.w" element size, optional ".t" transpose
+            esz, tr = 1, 0
+            for sf in sfx:
+                if sf in SIZE:
+                    esz = SIZE[sf]
+                elif sf == 't':
+                    tr = 1
+                else:
+                    self.err(f"unknown transfer suffix '.{sf}'")
+            return esz | (tr << 5), ops
 
         if sclass == 'lsl':
             # trailing "lsl #n" operand, if present

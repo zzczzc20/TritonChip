@@ -89,4 +89,11 @@ echo
 echo "LLVM $REV ready at $TARGET"
 echo "  MLIR_DIR=$LINK/lib/cmake/mlir"
 echo "  LLVM_DIR=$LINK/lib/cmake/llvm"
-echo "  (LLVM_SYSPATH=$LINK for a later Triton build)"
+echo
+echo "For a Triton build: leave LLVM_SYSPATH unset. Triton looks for exactly"
+echo "$NAME in this directory and will find it. Setting"
+echo "LLVM_SYSPATH=$LINK makes Triton's setup.py"
+echo "symlink that name onto itself, and every later configure then fails with"
+echo "\"Too many levels of symbolic links\" while reporting only that it could"
+echo "not find MLIR. If you must set it, give the versioned directory:"
+echo "  LLVM_SYSPATH=$TARGET"

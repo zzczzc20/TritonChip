@@ -12,6 +12,7 @@ Structure follows compiler_overview.md:
   footprints.py   the implicit wide register reads of sec 13.4, which the
                   operand fields do not show
   protocol.py     the ownership/event model of sec 16.2
+  report.py       the per-kernel resource and bottleneck report of sec 16.1
 
 The MLIR half (the `tnca` dialect, tnca-opt, the Triton plugin) lives beside
 this in C++ and needs the pinned LLVM; see compiler/README.md. This package is
@@ -23,8 +24,10 @@ from .diagnostics import CapabilityError, Diagnostic, ResourceError  # noqa: F40
 from .footprints import OwnershipChecker, RegRange  # noqa: F401
 from .isa import ISA, Instruction  # noqa: F401
 from .protocol import ProtocolError, ProtocolModel  # noqa: F401
+from .report import KernelPlan, format_report, try_plans  # noqa: F401
 from .target import TargetInfo  # noqa: F401
 
 __all__ = ['TargetInfo', 'ISA', 'Instruction', 'CapabilityError',
            'ResourceError', 'Diagnostic', 'OwnershipChecker', 'RegRange',
-           'ProtocolModel', 'ProtocolError']
+           'ProtocolModel', 'ProtocolError', 'KernelPlan', 'try_plans',
+           'format_report']

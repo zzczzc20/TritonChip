@@ -82,6 +82,16 @@ module tnca_tensor #(
     input  wire                     cmd_bar_en,
     input  wire [BAR_W-1:0]         cmd_bar,
     input  wire [RCTX_W-1:0]        cmd_rctx,
+    // The PC of the issuing instruction. ISA sec 10 has TRAP_PC locate the
+    // faulting instruction, and an engine fault surfaces long after that
+    // instruction retired, so the PC travels with the command.
+    input  wire [63:0]              cmd_pc,
+    // Any lane active. ISA sec 2.2 makes tensor instructions take a lane
+    // mask, and a fully-masked-off instruction performs no access while still
+    // writing its completion event. Without this the engine ignored the mask
+    // and performed the transfer regardless, so a predicated-off stage
+    // overwrote the window it was meant to leave alone.
+    input  wire                     cmd_active,
 
     output wire                     busy,
 
@@ -91,6 +101,18 @@ module tnca_tensor #(
     output reg  [BAR_W-1:0]         done_bar,
     output reg                      fault,
     output reg  [7:0]               fault_code,
+    // Which Role Context issued the command. ISA sec 10 requires a trap to
+    // stop the RAISING context; an engine fault arrives long after the
+    // issuing instruction has retired, so the core cannot infer it from
+    // whatever happens to be in the execute stage.
+    output reg  [RCTX_W-1:0]        fault_rctx,
+    output reg  [63:0]              fault_pc,
+    // A failing command still signals its barrier -- otherwise the waiter
+    // hangs -- but it must signal FAILURE. ISA sec 9A.2 gives the barrier an
+    // error bit "set by mb.inval or by a faulting command"; signalling an
+    // ordinary completion instead releases the consumer to read a window the
+    // transfer never wrote.
+    output reg                      done_err,
 
     // ---- vector register write port -----------------------------------------
     output reg                      vw_en,
@@ -167,6 +189,7 @@ module tnca_tensor #(
     reg               t_bar_en;
     reg [BAR_W-1:0]   t_bar;
     reg [RCTX_W-1:0]  t_rctx;
+    reg [63:0]        t_pc;
 
     reg [31:0]        t_rows, t_cols;
     reg [31:0]        t_row_bytes;    // cols * elem
@@ -267,13 +290,22 @@ module tnca_tensor #(
             tg_v      <= {NTAG{1'b0}};
             vw_en     <= 1'b0;
             done      <= 1'b0;
-            fault     <= 1'b0;
+            fault      <= 1'b0;
+            fault_rctx <= {RCTX_W{1'b0}};
+            fault_pc   <= 64'd0;
             done_bar_en <= 1'b0;
+            done_err   <= 1'b0;
         end else begin
             vw_en <= 1'b0;
             done  <= 1'b0;
             fault <= 1'b0;
             done_bar_en <= 1'b0;
+            // Cleared every cycle, like `done` itself. Left unreset it stayed
+            // X until the first fault, and `txf_done_en && !txf_done_err` is
+            // X rather than 1 when a transfer completes -- so every
+            // completion poisoned the barrier's operation count instead of
+            // decrementing it.
+            done_err    <= 1'b0;
 
             //------------------------------------------------------------------
             // configuration
@@ -332,7 +364,12 @@ module tnca_tensor #(
                     t_bar_en <= cmd_bar_en;
                     t_bar    <= cmd_bar;
                     t_rctx   <= cmd_rctx;
-                    st       <= S_TSETUP;
+                    t_pc     <= cmd_pc;
+                    // A fully-masked-off command reaches S_DONE without a
+                    // single memory access or window write, and still signals
+                    // its barrier once -- which is what keeps a static
+                    // operation count correct under predication (sec 9A.3).
+                    st       <= cmd_active ? S_TSETUP : S_DONE;
                 end
             end
 
@@ -379,9 +416,22 @@ module tnca_tensor #(
                 t_row       <= 32'd0;
                 t_unit      <= 32'd0;
 
+                // The row SIZE being a whole number of 8-byte units is not
+                // enough: every row must also START on an 8-byte boundary, or
+                // the returned units land in the window shifted. That needs
+                // the base and the row stride both aligned. Without this the
+                // engine returned wrong data for an odd row stride and raised
+                // nothing -- a wrong answer wearing the shape of a right one,
+                // which is the one failure mode sec 1.6 exists to prevent.
                 if (!desc_v[t_desc] || !win_v[t_win] ||
                     (d_rank[t_desc] > 8'd2) || (d_rank[t_desc] == 8'd0) ||
                     (((d_b1[t_desc] << t_esz) & 32'd7) != 32'd0) ||
+                    // Masked rather than bit-selected: Verilog-2005 does not
+                    // allow a part-select directly off an array word, and
+                    // iverilog accepted `d_s0[t_desc][2:0]` while evaluating
+                    // it as zero, so the check silently never fired.
+                    ((d_base[t_desc] & 64'd7) != 64'd0) ||
+                    ((d_s0[t_desc] & 64'd7) != 64'd0) ||
                     ((d_s1[t_desc]) != (64'd1 << t_esz)) ||
                     ((((d_b0[t_desc] * (d_b1[t_desc] << t_esz)) + 63) >> 6)
                       > {24'd0, win_len[t_win]})) begin
@@ -457,7 +507,10 @@ module tnca_tensor #(
             S_FAULT: begin
                 fault       <= 1'b1;
                 fault_code  <= `TNCA_TRAP_DESC;
+                fault_rctx  <= t_rctx;
+                fault_pc    <= t_pc;
                 done        <= 1'b1;
+                done_err    <= 1'b1;
                 done_bar_en <= t_bar_en;
                 done_bar    <= t_bar;
                 t_bar_en    <= 1'b0;

@@ -604,6 +604,7 @@ module tnca_core #(
     wire [63:0] bar_arm_token;
     wire        bar_test_done, bar_test_error;
     wire [NUM_RCTX-1:0] bar_wake;
+    wire [NUM_RCTX-1:0] bar_wake_err;
     wire        bar_fault;
     wire [BAR_W-1:0] bar_fault_bar;
 
@@ -671,14 +672,17 @@ module tnca_core #(
         .arrive_bar(x_ra_idx[BAR_W-1:0]),
         // Both asynchronous engines signal the same way: one completion per
         // command, whatever it expanded into (sec 13.3).
-        .opdone_en((mtx_done && mtx_done_bar_en) | (txf_done && txf_done_bar_en)),
-        .opdone_bar(mtx_done ? mtx_done_bar : txf_done_bar),
+        // One port per engine. Sharing one dropped whichever completion lost
+        // the mux when both finished in the same cycle.
+        .mtx_done_en(mtx_done && mtx_done_bar_en), .mtx_done_bar(mtx_done_bar),
+        .txf_done_en(txf_done && txf_done_bar_en), .txf_done_bar(txf_done_bar),
+        .txf_done_err(txf_done_err),
         .inval_en(x_is_bar && (x_func == `TNCA_MB_INVAL)),
         .inval_bar(x_ra_idx[BAR_W-1:0]),
         .test_token(sa_data), .test_done(bar_test_done),
         .test_error(bar_test_error),
         .sleep_en(bar_sleep), .sleep_rctx(x_rctx), .sleep_token(sa_data),
-        .wake(bar_wake),
+        .wake(bar_wake), .wake_err(bar_wake_err),
         .fault(bar_fault), .fault_bar(bar_fault_bar)
     );
 
@@ -842,6 +846,9 @@ module tnca_core #(
 
     wire        txf_busy, txf_done, txf_done_bar_en, txf_fault;
     wire [7:0]  txf_fault_code;
+    wire [RCTX_W-1:0] txf_fault_rctx;
+    wire [63:0] txf_fault_pc;
+    wire        txf_done_err;
     wire [BAR_W-1:0] txf_done_bar;
     wire        txf_vw_en;
     wire [RCTX_W-1:0] txf_vw_rctx;
@@ -873,10 +880,12 @@ module tnca_core #(
         .cmd_c0(sb_data), .cmd_c1(sb2_data),
         .cmd_esz(x_mod[2:0]),
         .cmd_bar_en(1'b1), .cmd_bar(sc_data[BAR_W-1:0]),
-        .cmd_rctx(x_rctx),
+        .cmd_rctx(x_rctx), .cmd_pc(x_pc), .cmd_active(|lane_mask),
         .busy(txf_busy),
         .done(txf_done), .done_bar_en(txf_done_bar_en), .done_bar(txf_done_bar),
         .fault(txf_fault), .fault_code(txf_fault_code),
+        .fault_rctx(txf_fault_rctx), .fault_pc(txf_fault_pc),
+        .done_err(txf_done_err),
         .vw_en(txf_vw_en), .vw_rctx(txf_vw_rctx), .vw_idx(txf_vw_idx),
         .vw_lane_en(txf_vw_lane), .vw_data(txf_vw_data),
         .mem_req_valid(tm_req_valid), .mem_req_ready(tm_req_ready),
@@ -1289,8 +1298,15 @@ module tnca_core #(
                     rr_ptr <= (f_sel + 1) % NUM_RCTX;
                     if (!kill_f) pc[f_sel] <= pc[f_sel] + 64'd8;
                 end
-            end else if (kill_f) begin
-                // held entry belonged to the squashed context
+            end else if (kill_d) begin
+                // The entry HELD in D is the one at risk here, so the test is
+                // on d_rctx (kill_d), not on which context the fetch stage
+                // happens to be selecting (kill_f). With one Role Context
+                // f_sel is always the squashed one and the two coincide; with
+                // two, f_sel alternates, so half the time a taken branch left
+                // a younger instruction of the same context alive in D and it
+                // executed after the redirect. That is how a `trap` placed
+                // after a loop branch fired while the branch was taken.
                 d_valid <= 1'b0;
             end
 
@@ -1424,7 +1440,18 @@ module tnca_core #(
             if (mtx_cmd_valid) mtx_rctx <= x_rctx;
 
             for (i = 0; i < NUM_RCTX; i = i + 1)
-                if (bar_wake[i]) blocked[i] <= 1'b0;
+                if (bar_wake[i]) begin
+                    blocked[i] <= 1'b0;
+                    // ISA sec 10: a waiter woken by an error raises
+                    // BARRIER_FAULT. Letting it resume sends it to wait on
+                    // the next generation of a pipeline whose producer has
+                    // already faulted, so the located fault becomes a hang.
+                    if (bar_wake_err[i]) begin
+                        running[i] <= 1'b0;
+                        faulted[i] <= 1'b1;
+                        f_code[i]  <= `TNCA_TRAP_BARRIER;
+                    end
+                end
 
             //------------------------------------------------------------------
             // FP reduction completion capture
@@ -1448,11 +1475,29 @@ module tnca_core #(
             // otherwise be a hang thousands of cycles later into a located
             // fault (sec 13.4).
             //------------------------------------------------------------------
+            //------------------------------------------------------------------
+            // An engine fault must STOP the Role Context that issued the
+            // command, not merely be recorded. ISA sec 10: a trap stops the
+            // raising RCTX and must never turn into a silent continuation.
+            // Recording it without clearing `running` let the program run on
+            // past a transfer that never happened, and the next fault -- a
+            // `trap` several instructions later -- overwrote the code, so a
+            // DESCRIPTOR_FAULT surfaced as TRAP_USER.
+            //
+            // The engine reports which context issued: the fault arrives long
+            // after the issuing instruction retired, so whatever sits in the
+            // execute stage now is the wrong answer.
+            //------------------------------------------------------------------
             if (txf_fault) begin
+                running[txf_fault_rctx] <= 1'b0;
+                faulted[txf_fault_rctx] <= 1'b1;
+                f_code[txf_fault_rctx]  <= txf_fault_code;
+                f_detail[txf_fault_rctx]<= 24'd0;
+                f_pc[txf_fault_rctx]    <= txf_fault_pc;
                 fault_valid  <= 1'b1;
                 fault_code   <= txf_fault_code;
-                fault_pc     <= x_pc;
-                fault_rctx   <= x_rctx;
+                fault_pc     <= txf_fault_pc;
+                fault_rctx   <= txf_fault_rctx;
                 fault_detail <= 24'd0;
             end else if (bar_fault) begin
                 fault_valid  <= 1'b1;

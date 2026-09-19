@@ -607,6 +607,28 @@ transactions they expand into; one `m.mma.async` is `operations=1`.
 a static operation count stays correct under predication. The compiler still
 has to get the consumer's control flow right.
 
+### 9A.7 Barriers are quiescent at kernel entry
+
+Every barrier starts at epoch 0, with both counts zero, no error and no
+waiter. A kernel does not have to run `mb.init` to reach that state, and a
+role must not be made to wait until another role has.
+
+This is not a convenience. There is no race-free way to express "wait until
+role 0 has initialised the barriers" using barriers, because waiting means
+sleeping on one and §9A.6 makes an `mb.init` under a sleeping waiter a
+`BARRIER_FAULT`. Any handshake built around that has to leave the barrier
+mechanism entirely — in practice, polling a memory flag — and a polling
+consumer competes with its own producer for the memory port. A compiled
+two-role GEMM deadlocked exactly this way: the consumer's poll starved the
+transfer engine, so the flag it was waiting for was never written.
+
+Guaranteeing the state at entry removes the problem rather than working
+around it. A consumer may sleep on generation 1 of a barrier before the
+producer has executed a single instruction.
+
+`mb.init` remains, for re-initialising a barrier *within* a kernel, where the
+program already knows nothing is waiting on it.
+
 ### 9A.5 What `release` covers
 
 `mb.arrive` carries release semantics, and that has to mean something a
@@ -851,7 +873,14 @@ coordinate 0 on that axis while the program believed it had set one. That is a
 wrong address, and a wrong address is a wrong answer rather than a slow one, so
 the encoding is refused instead.
 
-`t.prefetch` is deliberately exempt. It promises nothing (§9E.2) and may be
+A transfer's lane mask is **all or nothing**. A tile transfer writes whole
+8-byte units across many rows, so a 16-lane mask has no per-element meaning
+here; the engine performs the whole transfer if any lane is active and none of
+it if none is. The case §2.2 fixes — a fully-masked-off instruction performing
+no access and still writing its completion event — is therefore exact, and it
+is the case a predicated pipeline stage relies on.
+
+`t.prefetch` is deliberately exempt. It promises nothing (§9E.3) and may be
 dropped entirely, so a coordinate it reads wrongly costs a prefetch and never a
 result — which is precisely the line §1.4 draws between semantics and hints.
 
@@ -873,7 +902,27 @@ left to be inferred.
 Step 8 happens once per command, whatever step 5 expanded into — that is what
 makes the operation counts in `mb.arm` a static, checkable property.
 
-### 9E.2 `t.prefetch` promises nothing
+### 9E.2 Geometry the engine refuses
+
+`DESCRIPTOR_FAULT` rather than an approximation, for each of:
+
+| Condition | Why |
+|---|---|
+| rank above `TENSOR_MAX_RANK` | more coordinate arithmetic than the engine has |
+| `block_shape[1] * sizeof(dtype)` not a multiple of 8 | a returned 8-byte unit would straddle two window registers |
+| `base` not 8-byte aligned | the first unit of every row would land shifted |
+| `byte_stride[0]` not a multiple of 8 | rows after the first would land shifted, even with an aligned base |
+| `byte_stride[1]` not `sizeof(dtype)` | the engine copies runs, it does not gather per element |
+| the tile larger than the window | ISA §9D.2: the window is the bounds check |
+
+The two alignment conditions are the same requirement stated at both ends: a
+transfer places whole 8-byte units into window registers through the existing
+lane write enables, so every row must both *be* a whole number of units and
+*start* on one. A row stride of, say, 26 bytes satisfies neither, and an engine
+that proceeded anyway would return data shifted by two bytes per row — a wrong
+answer wearing the shape of a right one.
+
+### 9E.3 `t.prefetch` promises nothing
 
 Completion of a prefetch does not guarantee a later hit, does not create a
 snapshot, and does not confer ownership (§17.2). It is a hint in the sense of

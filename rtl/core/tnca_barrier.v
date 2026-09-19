@@ -60,8 +60,21 @@ module tnca_barrier #(
     input  wire [BAR_W-1:0]         arrive_bar,
 
     // ---- operation completion (asynchronous commands) -----------------------
-    input  wire                     opdone_en,
-    input  wire [BAR_W-1:0]         opdone_bar,
+    //
+    // One port PER ENGINE, not one shared port. The matrix unit and the
+    // transfer engine run independently and can finish in the same cycle;
+    // funnelling them through a single `opdone_en` counted one of the two and
+    // dropped the other, so a barrier waited for ever on an operation that
+    // had in fact completed. It took a slow memory model to shift the timing
+    // enough for the two to coincide.
+    input  wire                     mtx_done_en,
+    input  wire [BAR_W-1:0]         mtx_done_bar,
+
+    input  wire                     txf_done_en,
+    // Set when the completing command FAILED. ISA sec 9A.2: the barrier's
+    // error bit is set by mb.inval or by a faulting command.
+    input  wire                     txf_done_err,
+    input  wire [BAR_W-1:0]         txf_done_bar,
 
     // ---- invalidate ---------------------------------------------------------
     input  wire                     inval_en,
@@ -77,6 +90,12 @@ module tnca_barrier #(
     input  wire [RCTX_W-1:0]        sleep_rctx,
     input  wire [63:0]              sleep_token,
     output reg  [NUM_RCTX-1:0]      wake,           // pulse, one cycle
+    // Set alongside `wake` when the waiter was released by an ERROR rather
+    // than by the generation completing. ISA sec 10 makes a waiter woken this
+    // way raise BARRIER_FAULT: resuming it silently sends it on to wait for
+    // the next generation of a pipeline whose producer has already died,
+    // which turns a located fault into a hang.
+    output reg  [NUM_RCTX-1:0]      wake_err,
 
     // ---- faults -------------------------------------------------------------
     output reg                      fault,
@@ -106,15 +125,43 @@ module tnca_barrier #(
     // A generation is complete when the barrier's completed epoch has caught up
     // with it. Comparing ">=" rather than "==" means a waiter that arrives late
     // still sees its generation as finished instead of sleeping forever.
-    assign test_done  = (done_epoch[tst_bar] >= tst_epoch) && armed[tst_bar];
+    //
+    // No `armed` term. This predicate decides whether to SLEEP, and the
+    // sleepers loop below decides whether to WAKE; the two have to agree or a
+    // waiter oscillates. It required `armed` and the wake did not, so a wait
+    // on generation 0 of a barrier nothing had armed slept, woke immediately,
+    // re-executed, and slept again -- a livelock burning every issue slot on
+    // squashes rather than a clean hang.
+    //
+    // The term was also wrong on its own terms: `armed` is only ever clear
+    // before the first mb.arm, and generation 0 is the quiescent state every
+    // barrier starts in (ISA sec 9A.7), so it is complete by definition --
+    // nothing was ever pending. A wait on a generation that genuinely has not
+    // happened still sleeps, because done_epoch has not reached it.
+    assign test_done  = (done_epoch[tst_bar] >= tst_epoch);
     assign test_error = err[tst_bar];
 
     assign arm_token = {{(48-EPOCH_W){1'b0}}, (cur_epoch[arm_bar] + 1'b1),
                         {(16-BAR_W){1'b0}}, arm_bar};
 
+    // How many operation completions land on each barrier this cycle. Two
+    // engines report independently and nothing stops them naming the same
+    // barrier, so this is 0, 1 or 2.
+    //
+    // Written as a macro rather than a function on purpose. A function called
+    // from an always @(*) does not contribute the signals it reads internally
+    // to the block's sensitivity list, so the block goes stale exactly when a
+    // completion arrives -- which is the one moment it must not. The same
+    // trap cost a pipeline deadlock earlier in this design.
+    `define OP_DEC(b) \
+        ((((mtx_done_en && (mtx_done_bar == (b))) ? 2'd1 : 2'd0)) + \
+         (((txf_done_en && !txf_done_err && (txf_done_bar == (b))) \
+           ? 2'd1 : 2'd0)))
+
     //--------------------------------------------------------------------------
     // A barrier reaches zero on both counts in this cycle
     //--------------------------------------------------------------------------
+    integer od_i;
     reg [BAR_N-1:0] completes;
     reg [CNT_W-1:0] next_arr, next_ops;
 
@@ -122,7 +169,7 @@ module tnca_barrier #(
         completes = {BAR_N{1'b0}};
         for (i = 0; i < BAR_N; i = i + 1) begin
             next_arr = n_arrive[i] - ((arrive_en && (arrive_bar == i)) ? 1 : 0);
-            next_ops = n_ops[i]    - ((opdone_en && (opdone_bar == i)) ? 1 : 0);
+            next_ops = n_ops[i] - `OP_DEC(i[BAR_W-1:0]);
             // Only an armed generation that has not already completed.
             if (armed[i] && (done_epoch[i] != cur_epoch[i]) &&
                 (next_arr == 0) && (next_ops == 0) &&
@@ -152,10 +199,12 @@ module tnca_barrier #(
             armed     <= {BAR_N{1'b0}};
             slp_v     <= {NUM_RCTX{1'b0}};
             wake      <= {NUM_RCTX{1'b0}};
+            wake_err  <= {NUM_RCTX{1'b0}};
             fault     <= 1'b0;
             fault_bar <= {BAR_W{1'b0}};
         end else begin
-            wake  <= {NUM_RCTX{1'b0}};
+            wake     <= {NUM_RCTX{1'b0}};
+            wake_err <= {NUM_RCTX{1'b0}};
             fault <= 1'b0;
 
             //------------------------------------------------------------------
@@ -208,13 +257,36 @@ module tnca_barrier #(
                 end
             end
 
-            if (opdone_en && !(arm_en && arm_bar == opdone_bar)) begin
-                if (n_ops[opdone_bar] == 0) begin
-                    err[opdone_bar] <= 1'b1;
-                    fault     <= 1'b1;
-                    fault_bar <= opdone_bar;
-                end else begin
-                    n_ops[opdone_bar] <= n_ops[opdone_bar] - 1'b1;
+            // A completion that reports failure sets the barrier's error and
+            // releases its waiters, exactly as mb.inval does (ISA sec 9A.2).
+            // Counting it as an ordinary completion would let the consumer
+            // proceed on data that was never written -- a wrong answer, where
+            // the waiter is at least a located one.
+            // A failed completion sets the error and releases the waiters
+            // instead of counting (ISA sec 9A.2).
+            if (txf_done_en && txf_done_err) begin
+                err[txf_done_bar]        <= 1'b1;
+                done_epoch[txf_done_bar] <= cur_epoch[txf_done_bar];
+            end
+
+            // Both engines may report in the same cycle, and both may name
+            // the same barrier, so the decrement is a count rather than a
+            // flag. An arm in the same cycle re-sets the counts, so a
+            // completion for the phase being replaced is not applied to it.
+            // Private loop variable: `i` is also the index of the
+            // combinational `completes` block, and sharing one between an
+            // always @(*) and an always @(posedge) makes the two retrigger
+            // each other.
+            for (od_i = 0; od_i < BAR_N; od_i = od_i + 1) begin
+                if ((`OP_DEC(od_i[BAR_W-1:0]) != 2'd0) &&
+                    !(arm_en && (arm_bar == od_i[BAR_W-1:0]))) begin
+                    if (n_ops[od_i] < `OP_DEC(od_i[BAR_W-1:0])) begin
+                        err[od_i]  <= 1'b1;
+                        fault      <= 1'b1;
+                        fault_bar  <= od_i[BAR_W-1:0];
+                    end else begin
+                        n_ops[od_i] <= n_ops[od_i] - `OP_DEC(od_i[BAR_W-1:0]);
+                    end
                 end
             end
 
@@ -248,9 +320,13 @@ module tnca_barrier #(
             for (i = 0; i < NUM_RCTX; i = i + 1) begin
                 if (slp_v[i]) begin
                     if (err[slp_bar[i]] ||
-                        (inval_en && (inval_bar == slp_bar[i])) ||
-                        completes[slp_bar[i]] ||
-                        (done_epoch[slp_bar[i]] >= slp_epoch[i])) begin
+                        (inval_en && (inval_bar == slp_bar[i]))) begin
+                        wake[i]     <= 1'b1;
+                        wake_err[i] <= 1'b1;
+                        slp_v[i]    <= 1'b0;
+                    end else if (completes[slp_bar[i]] ||
+                                 (done_epoch[slp_bar[i]] >= slp_epoch[i]))
+                    begin
                         wake[i]  <= 1'b1;
                         slp_v[i] <= 1'b0;
                     end
@@ -260,3 +336,5 @@ module tnca_barrier #(
     end
 
 endmodule
+
+`undef OP_DEC

@@ -221,6 +221,14 @@ class Builder:
     def scatter(self, base, index, value, *, mask=None, size='w'):
         self._emit('scatter', [], [base, index, value], mask=mask, size=size)
 
+    def sload(self, base, offset=0, size='d'):
+        v = self._value(SCALAR, 'i64', hint='m')
+        self._emit('sload', [v], [base], offset=offset, size=size)
+        return v
+
+    def sstore(self, base, value, offset=0, size='d'):
+        self._emit('sstore', [], [base, value], offset=offset, size=size)
+
     def reduce(self, op, v, *, mask=None, dtype=None):
         """A whole-vector reduction to a scalar.
 
@@ -257,6 +265,25 @@ class Builder:
         self._emit('window_def', [w], [], length=length)
         return w
 
+    def window_reg(self, window, offset=0, dtype='i32'):
+        """Name one vector register inside a window.
+
+        ISA sec 9D.2: a window is register aliasing, not a scratchpad, so its
+        contents are read as ordinary vector registers. This is the read side
+        of the zero-copy handoff sec 7.3 puts above every other option for
+        tensors -- and it only works because the two contexts' logical names
+        map to the same physical registers.
+        """
+        if offset >= window.length:
+            raise Diagnostic(
+                f"register {offset} is past the end of a {window.length}-"
+                "register window",
+                because='ISA sec 9D.2 makes the window the bounds check',
+                source='ISA sec 9D.2')
+        v = Value(name=f"{window.name}[{offset}]", kind=VECTOR, dtype=dtype)
+        self._emit('window_reg', [v], [window], offset=offset)
+        return v
+
     def descriptor(self, addr, name=None):
         d = Value(name=name or f"d{len(self.kernel.descriptors)}", kind=DESC)
         self.kernel.descriptors.append(d)
@@ -268,10 +295,28 @@ class Builder:
         self.kernel.accumulators.append(a)
         return a
 
-    def barrier(self, name=None):
+    def barrier(self, name=None, init=False):
+        """Allocate a barrier.
+
+        `init=False` by default, and that is the interesting part. There is no
+        race-free way for one role to wait until another has run `mb.init`:
+        waiting means sleeping on the barrier, and ISA sec 9A.6 makes an
+        `mb.init` under a sleeping waiter a BARRIER_FAULT. Any handshake built
+        to avoid that has to run outside the barrier mechanism -- polling a
+        memory flag, which is what this compiler did until it deadlocked: the
+        consumer's polling starved the producer's transfer engine of the
+        memory port under a slow memory model, so the flag it was waiting for
+        could never be written.
+
+        The answer is that barriers are quiescent at kernel entry (ISA sec
+        9A.7), so no role has to initialise them and no role has to wait for
+        another to do it. `mb.init` remains for re-initialising a barrier
+        within a kernel, where the program already knows nobody is waiting.
+        """
         b = Value(name=name or f"b{len(self.kernel.barriers)}", kind=BARRIER)
         self.kernel.barriers.append(b)
-        self._emit('barrier_init', [], [b])
+        if init:
+            self._emit('barrier_init', [], [b])
         return b
 
     # ---- asynchronous -----------------------------------------------------
@@ -286,13 +331,45 @@ class Builder:
         self._emit('barrier_arm', [t], [barrier], arrivals=arrivals, ops=ops)
         return t
 
+    def barrier_token(self, barrier, epoch):
+        """Construct a token for a generation this role did not arm.
+
+        ISA sec 9A.2: token = {epoch[47:0], barrier_id[15:0]}. The scalar file
+        is private per RCTX (sec 7.3), so a consumer cannot read the
+        producer's token out of a register -- it derives the generation from
+        the iteration number instead, which is what makes a static pipeline
+        possible at all.
+        """
+        t = self._value(TOKEN, 'i64', hint='tk')
+        self._emit('barrier_token', [t], [barrier], epoch=epoch)
+        return t
+
+    def barrier_token_dyn(self, barrier, epoch_value):
+        """A token whose generation is computed at run time.
+
+        sec 7.3: 对于静态 pipeline，epoch 通常可以由各 role 根据迭代编号独立
+        计算；不必真的跨角色搬运每个 token. That is what makes a *rolled* role
+        loop possible at all -- the consumer cannot read the producer's token
+        out of a register, because the scalar file is per-RCTX private, but it
+        can compute the same generation from its own trip counter.
+
+        ISA sec 9A.2: token = {epoch[47:0], barrier_id[15:0]}.
+        """
+        t = self._value(TOKEN, 'i64', hint='tk')
+        self._emit('barrier_token_dyn', [t], [barrier, epoch_value])
+        return t
+
     def barrier_wait(self, token):
         self._emit('barrier_wait', [], [token])
 
-    def barrier_arrive(self, token):
-        self._emit('barrier_arrive', [], [token])
+    def barrier_arrive(self, barrier):
+        """Signal one software arrival. ISA sec 9A.3: mb.arrive names the
+        barrier, not a token -- it releases against whatever generation is
+        currently armed."""
+        self._emit('barrier_arrive', [], [barrier])
 
-    def dma_load(self, window, desc, coords, token, *, dtype='f16'):
+    def dma_load(self, window, desc, coords, token, *, dtype='f16',
+                 mask=None):
         """An asynchronous tile load into a window.
 
         The coordinates must live in consecutive scalar registers (ISA
@@ -301,7 +378,7 @@ class Builder:
         """
         e = self._value(EVENT, 'i1', hint='e')
         self._emit('dma_load', [e], [window, desc, token] + list(coords),
-                   dtype=dtype, rank=len(coords))
+                   dtype=dtype, rank=len(coords), mask=mask)
         return e
 
     def acc_zero(self, acc):

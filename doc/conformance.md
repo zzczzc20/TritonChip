@@ -165,6 +165,14 @@ number of 8-byte units with an 8-byte-aligned source. Both conditions are
 checked before a single transaction is issued, and a violation raises
 `DESCRIPTOR_FAULT`.
 
+*This paragraph described a check that did not exist.* Only the row **size**
+was tested; nothing tested where each row **started**. A 13-element FP16 row
+is 26 bytes, so every row after the first began two bytes off, and the engine
+returned shifted data while raising nothing. Found by compiling a GEMM with an
+N tail — milestone C2, which `compiler_overview.md` §15 says is where the
+tile/fragment mismatch should surface. Now checked, documented in ISA §9E.2,
+and tested by `t17_descfault`.
+
 **Why:** rank 3 to 5 is more coordinate arithmetic, not a different mechanism,
 and the alignment restriction is what lets a returned 8-byte unit land in a
 window register through the existing lane write enables rather than needing
@@ -271,3 +279,115 @@ that a simpler reading would have skipped:
      `ILLEGAL_INSTRUCTION` in the decoder and rejected in the assembler. This
      is precisely the implicit wide register read §13.4 of the compiler plan
      warns cannot be inferred from the explicit operand fields.
+
+7. **Milestone C2 found two more in the transfer engine.** Compiling a GEMM
+   with an N tail needs a 13-element row, and that exposed both:
+
+   - The source alignment requirement was documented in three places and
+     checked in none. See D4 above.
+   - An engine fault recorded the trap but never stopped the Role Context that
+     issued the command, so the program ran on past a transfer that had not
+     happened, and a later `trap` overwrote the code — a `DESCRIPTOR_FAULT`
+     surfaced as `TRAP_USER`. ISA §10 requires a trap to stop the raising
+     context. The engine now reports which context issued and at which PC,
+     because an engine fault arrives long after the issuing instruction has
+     retired and whatever sits in the execute stage by then is the wrong
+     answer.
+
+8. **Milestone C3 found two more, in how a failure travels.** The two-role
+   pipeline's error-propagation case: the producer's transfer faults, and the
+   consumer is asleep on the barrier it was counted against.
+
+   - The engine signalled an *ordinary* completion on that barrier while
+     faulting. The barrier decremented its operation count as if the transfer
+     had succeeded, so the consumer was released to read a window nothing had
+     written. ISA §9A.2 gives the barrier an error bit "set by `mb.inval` or
+     by a faulting command"; the engine now sets it, and the count is not
+     decremented by a failed completion.
+   - A waiter woken by that error then *resumed*, and went on to wait for the
+     next generation of a pipeline whose producer had already died — so a
+     located fault became a 400,000-cycle hang. ISA §10 lists "a waiter woken
+     by `mb.inval`" under `BARRIER_FAULT`; the hardware did not implement it
+     for any error source. It does now, which is also what the ISA always said
+     should happen for `mb.inval` itself.
+
+   Both are the same mistake in different places: a failure that stops one
+   Role Context has to reach everything that was waiting on it, or the
+   architecture's promise that a trap "must never turn into a silent hang"
+   holds only for synchronous faults.
+
+9. **Milestone C4 found a control bug that needed two Role Contexts to see.**
+   A taken branch failed to squash a younger instruction of the same context
+   when the front end was stalled, so the instruction after the branch
+   executed anyway. In the case that exposed it, a `trap` placed immediately
+   after a loop branch fired while the branch was taken.
+
+   The cause: the stalled path killed the entry *held* in decode based on
+   `kill_f` — which context the fetch stage was selecting — rather than
+   `kill_d`, the context of the entry actually held. With one Role Context
+   `f_sel` is always the squashed one and the two coincide, which is why every
+   single-role test passed. With two, `f_sel` alternates and the kill is
+   missed about half the time.
+
+   It is worth noting how it surfaced. The symptom was a compiler-generated
+   consumer spinning on a flag and trapping on a budget it had not exhausted;
+   the loop was correct, the countdown was correct, and the same loop passed
+   in isolation. Only instrumenting the branch condition showed the branch
+   being taken and the next instruction retiring anyway.
+
+10. **Milestone C4 also found a missing piece of the launch contract.** The
+    compiler's two-role kernels began with a memory-flag handshake: role 0
+    initialised the barriers and wrote a flag, and the other roles polled it.
+    Under a slow memory model the compiled GEMM deadlocked — the consumer's
+    polling starved the producer's transfer engine of the memory port, so the
+    flag it was waiting for could never be written.
+
+    The handshake existed because there is no race-free way to express "wait
+    until role 0 has run `mb.init`" using barriers: waiting means sleeping on
+    one, and §9A.6 makes `mb.init` under a sleeping waiter a `BARRIER_FAULT`.
+    Any workaround has to leave the barrier mechanism, and polling memory is
+    what that looks like.
+
+    The fix is a guarantee rather than a workaround. Barriers are quiescent at
+    kernel entry — which the hardware's reset and launch flush already
+    provide — so no role initialises them and no role waits for another to.
+    A consumer may sleep on generation 1 before the producer has executed an
+    instruction. Now ISA §9A.7, and the generated code emits neither the flag
+    nor `mb.init`.
+
+11. **Milestone C4's loop cloning found a livelock in `mb.wait`.** Two
+    predicates decide what a wait does: one whether to sleep, one whether to
+    wake. They disagreed. The sleep test required the barrier to have been
+    armed at least once; the wake test did not. A wait on generation 0 — the
+    quiescent state every barrier starts in — therefore slept, woke
+    immediately, re-executed the instruction and slept again.
+
+    It was a livelock rather than a hang, which mattered for finding it: the
+    machine burned ~100% of its issue slots on squashes, so the symptom was a
+    program running very fast and arriving nowhere, not a stalled one.
+
+    The `armed` term was wrong on its own terms as well. It is only ever clear
+    before the first `mb.arm`, and generation 0 has trivially completed since
+    nothing was ever pending. Removed, so both predicates are now
+    `done_epoch >= epoch`. `t19_waitgen0` covers generation 0 before and after
+    a barrier is used, and a late waiter on a generation that finished long
+    ago — the case the `>=` comparison exists for, which `armed` would have
+    broken as soon as a barrier were re-initialised.
+
+12. **Milestone C4 found the two asynchronous engines sharing one completion
+    port.** The core wired both into a single `opdone_en`, with
+    `opdone_bar = mtx_done ? mtx_done_bar : txf_done_bar`. When the matrix
+    unit and the transfer engine finished in the same cycle, the matrix won
+    the mux and the transfer's completion was silently dropped — so a barrier
+    waited for ever on an operation that had in fact completed.
+
+    It needed a slow memory model to shift the timing enough for the two to
+    coincide, and it presented as a clean deadlock: `issued=175` over 600,000
+    cycles, with `ready[0]` stuck at `cur=2 done=1 ops=1` and the consumer
+    asleep on generation 2. Instrumenting the two `done` signals showed
+    exactly one coincident cycle in that run — matrix on barrier 4, transfer
+    on barrier 0 — which is the dropped completion.
+
+    The barrier now takes one port per engine, and the per-barrier decrement
+    is a count rather than a flag, because nothing stops both engines naming
+    the same barrier in the same cycle.

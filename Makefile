@@ -48,7 +48,7 @@ RTLY       := -y $(RTL)/common -y $(RTL)/core -y $(RTL)/nuca -y $(RTL)/noc \
 FMA_VECTORS ?= 20000
 
 CORE_PROGS := t00_scalar t01_vector t02_mem t03_fp t04_roles t05_fault t06_alu \
-              t11_matrix t12_tensor t13_share t14_caps t15_target t16_vecadd
+              t11_matrix t12_tensor t13_share t14_caps t15_target t16_vecadd t17_descfault t18_squash t19_waitgen0
 
 # Image size in 64-bit words; must match tb_tnca_core's WORDS parameter.
 IMAGE_WORDS := 16384
@@ -59,6 +59,8 @@ ARGS_t04_roles := +allroles
 ARGS_t05_fault := +allroles +expectfault=01
 # t13 needs two contexts AND an aliased vector base: that is the whole point.
 ARGS_t13_share := +allroles +aliasvrf
+ARGS_t17_descfault := +expectfault=04
+ARGS_t18_squash := +allroles
 
 .PHONY: all test unit core synth lint clean dirs help isa target compiler
 
@@ -168,6 +170,15 @@ $(TB)/core/progs/t15_target.s: $(TB)/core/progs/gen_t15_target.py \
 $(TB)/core/progs/t16_vecadd.s: $(TB)/core/progs/gen_t16_vecadd.py $(TOOLS)/model/fp32.py
 	$(PYTHON) $<
 
+$(TB)/core/progs/t17_descfault.s: $(TB)/core/progs/gen_t17_descfault.py
+	$(PYTHON) $<
+
+$(TB)/core/progs/t18_squash.s: $(TB)/core/progs/gen_t18_squash.py
+	$(PYTHON) $<
+
+$(TB)/core/progs/t19_waitgen0.s: $(TB)/core/progs/gen_t19_waitgen0.py
+	$(PYTHON) $<
+
 $(BUILD)/%.hex: $(TB)/core/progs/%.s $(TOOLS)/asm/tnca_asm.py $(TOOLS)/asm/tnca_isa.py | dirs
 	$(ASM) $< -o $@ --lst $(BUILD)/$*.lst --size $(IMAGE_WORDS)
 
@@ -176,6 +187,8 @@ CORE_HEX := $(patsubst %,$(BUILD)/%.hex,$(CORE_PROGS))
 core: export ARGS_t04_roles := $(ARGS_t04_roles)
 core: export ARGS_t05_fault := $(ARGS_t05_fault)
 core: export ARGS_t13_share := $(ARGS_t13_share)
+core: export ARGS_t17_descfault := $(ARGS_t17_descfault)
+core: export ARGS_t18_squash := $(ARGS_t18_squash)
 core: $(BUILD)/tb_core.vvp $(CORE_HEX)
 	@for p in $(CORE_PROGS); do \
 	   extra=$$(eval echo \$${ARGS_$$p}); \
@@ -190,10 +203,9 @@ core: $(BUILD)/tb_core.vvp $(CORE_HEX)
 core-slowmem: export ARGS_t04_roles := $(ARGS_t04_roles)
 core-slowmem: export ARGS_t05_fault := $(ARGS_t05_fault)
 core-slowmem: export ARGS_t13_share := $(ARGS_t13_share)
-core-slowmem: $(CORE_HEX) | dirs
-	$(IVERILOG) $(IVFLAGS) -y $(RTL)/core -y $(RTL)/common -y $(TB)/common \
-	   -P tb_tnca_core.MEM_LATENCY=7 -P tb_tnca_core.RANDOM_STALL=1 \
-	   -o $(BUILD)/tb_core_slow.vvp $(TB)/core/tb_tnca_core.v
+core-slowmem: export ARGS_t17_descfault := $(ARGS_t17_descfault)
+core-slowmem: export ARGS_t18_squash := $(ARGS_t18_squash)
+core-slowmem: $(CORE_HEX) $(BUILD)/tb_core_slow.vvp | dirs
 	@for p in $(CORE_PROGS); do \
 	   extra=$$(eval echo \$${ARGS_$$p}); \
 	   $(TOOLS)/run_test.sh "$$p (slow mem)" \
@@ -210,11 +222,9 @@ core-slowmem: $(CORE_HEX) | dirs
 core-ooo: export ARGS_t04_roles := $(ARGS_t04_roles)
 core-ooo: export ARGS_t05_fault := $(ARGS_t05_fault)
 core-ooo: export ARGS_t13_share := $(ARGS_t13_share)
-core-ooo: $(CORE_HEX) | dirs
-	$(IVERILOG) $(IVFLAGS) -y $(RTL)/core -y $(RTL)/common -y $(TB)/common \
-	   -P tb_tnca_core.MEM_LATENCY=6 -P tb_tnca_core.RANDOM_STALL=1 \
-	   -P tb_tnca_core.MEM_REORDER=1 \
-	   -o $(BUILD)/tb_core_ooo.vvp $(TB)/core/tb_tnca_core.v
+core-ooo: export ARGS_t17_descfault := $(ARGS_t17_descfault)
+core-ooo: export ARGS_t18_squash := $(ARGS_t18_squash)
+core-ooo: $(CORE_HEX) $(BUILD)/tb_core_ooo.vvp | dirs
 	@for p in $(CORE_PROGS); do \
 	   extra=$$(eval echo \$${ARGS_$$p}); \
 	   $(TOOLS)/run_test.sh "$$p (ooo mem)" \
@@ -362,10 +372,41 @@ triton-e2e: $(BUILD)/tb_core.vvp
 	   echo "  triton-e2e             SKIP   no Triton at $(TRITON_PYTHON)"; \
 	 fi
 
+# The slow and reordering memory models, as file targets. They used to be
+# built only inside the core-slowmem / core-ooo recipes, so a compiler test
+# that picked one up was running against whatever RTL happened to be current
+# when that target last ran -- which silently produced failures against
+# already-fixed bugs.
+$(BUILD)/tb_core_slow.vvp: $(RTL_CORE) $(RTL_COMMON) $(TB)/core/tb_tnca_core.v | dirs
+	$(IVERILOG) $(IVFLAGS) -y $(RTL)/core -y $(RTL)/common -y $(TB)/common \
+	   -P tb_tnca_core.MEM_LATENCY=7 -P tb_tnca_core.RANDOM_STALL=1 \
+	   -o $@ $(TB)/core/tb_tnca_core.v
+
+$(BUILD)/tb_core_ooo.vvp: $(RTL_CORE) $(RTL_COMMON) $(TB)/core/tb_tnca_core.v | dirs
+	$(IVERILOG) $(IVFLAGS) -y $(RTL)/core -y $(RTL)/common -y $(TB)/common \
+	   -P tb_tnca_core.MEM_LATENCY=6 -P tb_tnca_core.RANDOM_STALL=1 \
+	   -P tb_tnca_core.MEM_REORDER=1 \
+	   -o $@ $(TB)/core/tb_tnca_core.v
+
+# A four-Role-Context elaboration. compiler_overview.md sec 15 C4 defers the
+# P + M0 + M1 + E check to "四 RCTX 硬件 profile 可用后" -- once such a profile
+# exists. This is that profile: the same core with NUM_RCTX=4, which needs
+# half as many logical vector registers each to keep the physical file the
+# same size.
+$(BUILD)/tb_core4.vvp: $(RTL_CORE) $(RTL_COMMON) $(TB)/core/tb_tnca_core.v | dirs
+	$(IVERILOG) $(IVFLAGS) -y $(RTL)/core -y $(RTL)/common -y $(TB)/common \
+	   -P tb_tnca_core.NUM_RCTX=4 -P tb_tnca_core.RCTX_W=2 \
+	   -P tb_tnca_core.VREGS_PER_RCTX=32 \
+	   -o $@ $(TB)/core/tb_tnca_core.v
+
+.PHONY: core4
+core4: $(BUILD)/tb_core4.vvp
+
 .PHONY: compiler-rtl
 # sec 16.2 third layer: run the compiler's own output on the RTL. Needs
 # sim/build/tb_core.vvp, so it comes after `core`.
-compiler-rtl: $(BUILD)/tb_core.vvp
+compiler-rtl: $(BUILD)/tb_core.vvp $(BUILD)/tb_core4.vvp \
+              $(BUILD)/tb_core_slow.vvp $(BUILD)/tb_core_ooo.vvp
 	@$(PYTHON) compiler/test/run_tests.py --rtl
 
 test: lint unit compiler core compiler-rtl triton-e2e core-slowmem core-ooo nuca mesh top

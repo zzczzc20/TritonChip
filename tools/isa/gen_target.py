@@ -31,6 +31,22 @@ TOP_V = os.path.join(ROOT, 'rtl', 'tnca_top.v')
 SCHEMA = os.path.join(ROOT, 'isa', 'tnca-isa-v0.1.json')
 OUT = os.path.join(ROOT, 'compiler', 'targets', 'tnca-sim-v0.1.json')
 
+# Additional elaborations of the same core. The parameters here are exactly
+# what the corresponding bench passes with -P, so a variant target describes a
+# machine that can actually be built rather than one that was imagined.
+# compiler_overview.md sec 7.6 is the reason these exist: the compiler must
+# map one graph onto different Role Context counts, which it cannot be shown
+# to do against a single target.
+VARIANTS = {
+    'tnca-sim-4rctx': {
+        'description': ('Four Role Contexts, half the logical vector '
+                        'registers each: the profile sec 15 C4 defers the '
+                        'P + M0 + M1 + E check until. Built by '
+                        '`make core4`.'),
+        'params': {'NUM_RCTX': 4, 'RCTX_W': 2, 'VREGS_PER_RCTX': 32},
+    },
+}
+
 PARAM_RE = re.compile(r"^\s*parameter\s+(\w+)\s*=\s*([0-9]+)\s*,?", re.M)
 
 
@@ -57,11 +73,7 @@ DESIGN_FACTS = {
 }
 
 
-def main():
-    core = params(CORE_V)
-    top = params(TOP_V)
-    with open(SCHEMA) as f:
-        isa = json.load(f)
+def build_target(core, top, isa, name, description):
 
     # Capability bits, from the ISA names and this build's parameters.
     # A bit is set only where the decoder actually executes the encoding;
@@ -84,9 +96,8 @@ def main():
 
     target = {
         'schema_version': 1,
-        'name': 'tnca-sim-v0.1',
-        'description': ('The configuration tb/top/tb_tnca_top.v elaborates: '
-                        'four tiles in a 2x2 mesh, two Role Contexts per core.'),
+        'name': name,
+        'description': description,
         'note': ('Generated file -- do not edit. Run `make target`. Derived '
                  'from rtl/core/tnca_core.v, rtl/tnca_top.v and '
                  'isa/tnca-isa-v0.1.json; see compiler_overview.md sec 15 C0.'),
@@ -205,26 +216,49 @@ def main():
         'trap_codes': isa['trap_codes'],
         'design_fact_sources': {k: v[1] for k, v in DESIGN_FACTS.items()},
     }
+    return target
 
-    text = json.dumps(target, indent=2) + '\n'
-    if '--check' in sys.argv:
-        cur = open(OUT).read() if os.path.exists(OUT) else None
-        if cur != text:
-            print(f"FAIL: {os.path.relpath(OUT, ROOT)} is stale; run `make target`")
+
+def main():
+    core = params(CORE_V)
+    top = params(TOP_V)
+    with open(SCHEMA) as f:
+        isa = json.load(f)
+
+    outputs = [(OUT, build_target(
+        core, top, isa, 'tnca-sim-v0.1',
+        'The configuration tb/top/tb_tnca_top.v elaborates: four tiles in a '
+        '2x2 mesh, two Role Contexts per core.'))]
+    for name, spec in VARIANTS.items():
+        variant = dict(core)
+        variant.update(spec['params'])
+        variant['PHYS_VREGS'] = (spec['params'].get('NUM_RCTX', core['NUM_RCTX'])
+                                 * spec['params'].get('VREGS_PER_RCTX',
+                                                      core['VREGS_PER_RCTX']))
+        outputs.append((
+            os.path.join(os.path.dirname(OUT), f"{name}.json"),
+            build_target(variant, top, isa, name, spec['description'])))
+
+    check = '--check' in sys.argv
+    stale = []
+    for path, target in outputs:
+        text = json.dumps(target, indent=2) + '\n'
+        if check:
+            cur = open(path).read() if os.path.exists(path) else None
+            if cur != text:
+                stale.append(os.path.relpath(path, ROOT))
+            continue
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        open(path, 'w').write(text)
+        print(f"wrote {os.path.relpath(path, ROOT)}: "
+              f"{target['num_rctx']} RCTX, "
+              f"{target['registers']['vreg_logical_per_rctx']} logical vregs "
+              f"each, {target['registers']['vreg_physical_total']} physical")
+    if check:
+        if stale:
+            print(f"FAIL: stale: {', '.join(stale)}; run `make target`")
             return 1
-        print(f"PASS: {os.path.relpath(OUT, ROOT)} matches the RTL parameters")
-        return 0
-
-    os.makedirs(os.path.dirname(OUT), exist_ok=True)
-    open(OUT, 'w').write(text)
-    print(f"wrote {os.path.relpath(OUT, ROOT)}")
-    print(f"  {target['num_rctx']} RCTX x {target['num_cores']} cores, "
-          f"VLEN={target['vlen']}, "
-          f"{target['registers']['vreg_physical_total']} physical vregs, "
-          f"{target['accumulators']['count']} accumulators, "
-          f"{target['barriers']['count']} barriers")
-    off = [k for k, v in caps.items() if not v]
-    print(f"  capabilities off: {', '.join(off)}")
+        print("PASS: target descriptions match the RTL parameters")
     return 0
 
 

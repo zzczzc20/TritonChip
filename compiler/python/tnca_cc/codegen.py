@@ -23,11 +23,10 @@ What is not simplified is ownership. Three things run alongside the walk:
 
 sec 11.1: 资源不够可以先明确报错。Nothing here approximates.
 """
-from .asm import ASM_SCRATCH_SREGS, AsmBuilder, RegisterAllocator
+from .asm import AsmBuilder, RegisterAllocator
 from .diagnostics import Diagnostic, ResourceError
 from .footprints import (OwnershipChecker, RegRange, fragment_registers)
-from .ir import (ACC, BARRIER, DESC, EVENT, PRED, SCALAR, TOKEN, VECTOR,
-                 WINDOW)
+from .ir import EVENT, PRED, SCALAR, TOKEN, VECTOR
 from .protocol import ProtocolModel
 
 # IR op -> mnemonic, for the plain arithmetic cases.
@@ -169,6 +168,8 @@ class CodeGen:
 
     def _free_dead(self, position, ops):
         for op in ops[:position + 1]:
+            if op.kind == 'window_reg':
+                continue    # an alias, not an allocation
             for v in op.results:
                 if v.kind in (VECTOR, SCALAR, PRED) and v.reg is not None \
                         and self._last_use.get(id(v)) == position:
@@ -364,6 +365,21 @@ class CodeGen:
                     f"[s{base.reg}, v{index.reg}]", f"v{value.reg}",
                     pred=self._pred(op.attrs.get('mask')))
 
+    def _op_sload(self, op):
+        base = op.operands[0]
+        v = op.results[0]
+        self._alloc(v)
+        self.b.emit(f"s.ld.{op.attrs['size']}", f"s{v.reg}",
+                    f"[s{base.reg}, #{op.attrs['offset']}]")
+
+    def _op_sstore(self, op):
+        base, value = op.operands
+        self.b.emit(f"s.st.{op.attrs['size']}",
+                    f"[s{base.reg}, #{op.attrs['offset']}]", f"s{value.reg}")
+
+    def _op_trap(self, op):
+        self.b.emit('trap', f"#{op.attrs['code']}")
+
     def _op_reduce(self, op):
         v = op.operands[0]
         s = op.results[0]
@@ -407,6 +423,15 @@ class CodeGen:
         self.b.emit('w.def', f"w{self.kernel.windows.index(w)}",
                     f"#{w.reg}", f"#{w.length}",
                     comment=f"v{w.reg}..v{w.reg + w.length - 1}")
+
+    def _op_window_reg(self, op):
+        window = op.operands[0]
+        v = op.results[0]
+        if window.reg is None:
+            raise Diagnostic(f"window {window.name} has no register range")
+        # Aliases a window register rather than allocating: the whole point is
+        # that no copy happens (sec 7.3).
+        v.reg = window.reg + op.attrs['offset']
 
     def _op_desc_snapshot(self, op):
         addr = op.operands[0]
@@ -454,9 +479,32 @@ class CodeGen:
         for cmd in self._mma_pending.pop(bar, []):
             self.own.release(cmd)
 
+    def _op_barrier_token(self, op):
+        bar = op.operands[0]
+        tok = op.results[0]
+        self._alloc(tok)
+        epoch = op.attrs['epoch']
+        # ISA sec 9A.2: token = {epoch[47:0], barrier_id[15:0]}.
+        value = (epoch << 16) | bar.reg
+        self.b.directive(
+            f".li       s{tok.reg}, #{value}"
+            f"          // b{bar.reg} generation {epoch} (ISA sec 9A.2)")
+        self._token_barrier[id(tok)] = bar.reg
+
+    def _op_barrier_token_dyn(self, op):
+        bar, epoch = op.operands
+        tok = op.results[0]
+        self._alloc(tok)
+        # token = {epoch[47:0], barrier_id[15:0]} (ISA sec 9A.2).
+        self.b.emit('s.shli', f"s{tok.reg}", f"s{epoch.reg}", '#16',
+                    comment='epoch into the token (ISA sec 9A.2)')
+        self.b.emit('s.ori', f"s{tok.reg}", f"s{tok.reg}", f"#{bar.reg}",
+                    comment=f"barrier b{bar.reg}")
+        self._token_barrier[id(tok)] = bar.reg
+
     def _op_barrier_arrive(self, op):
-        tok = op.operands[0]
-        self.b.emit('mb.arrive', f"s{tok.reg}")
+        bar = op.operands[0]
+        self.b.emit('mb.arrive', f"b{bar.reg}")
 
     # ---- asynchronous commands --------------------------------------------
     def _count_operation(self, bar):
@@ -497,8 +545,15 @@ class CodeGen:
         self._count_operation(bar)
         suffix = {'f16': 'h', 'bf16': 'h', 'f32': 'w'}[op.attrs['dtype']]
         widx = self.kernel.windows.index(window)
+        # ISA sec 9A.3: a fully predicated-off asynchronous command still
+        # completes once, so the static operation count stays correct under
+        # predication. The count above is therefore unconditional.
+        mask = op.attrs.get('mask')
         self.b.emit(f"t.ld.async.{suffix}", f"w{widx}", f"d{desc.reg}",
-                    f"s{run[0]}", f"s{token.reg}")
+                    f"s{run[0]}", f"s{token.reg}",
+                    pred=self._pred(mask),
+                    comment=('predicated off still completes once '
+                             '(ISA sec 9A.3)') if mask is not None else None)
 
         if self.protocol:
             from .protocol import BufferState

@@ -22,7 +22,7 @@ Two rules govern what is *not* here:
 """
 import re
 
-from .diagnostics import CapabilityError, Diagnostic
+from .diagnostics import Diagnostic
 from .ir import Builder, make_kernel
 
 # TTIR arithmetic -> our binary op names.

@@ -19,6 +19,17 @@ sys.path.insert(0, os.path.join(ROOT, 'compiler', 'python'))
 sys.path.insert(0, os.path.join(ROOT, 'tools', 'model'))
 
 BENCH = os.path.join(ROOT, 'sim', 'build', 'tb_core.vvp')
+# The memory model is an elaboration parameter, so each behaviour is its own
+# bench. sec 16.2 asks for 随机 memory latency/back-pressure over the
+# compiler's own output, which means running it against these too.
+BENCHES = {
+    'fast': 'tb_core.vvp',
+    'slow': 'tb_core_slow.vvp',     # MEM_LATENCY=7, RANDOM_STALL=1
+    'ooo': 'tb_core_ooo.vvp',       # responses return out of order
+    # Four Role Contexts, half the logical vector registers each. sec 15 C4
+    # defers the P + M0 + M1 + E check until such a profile exists.
+    'rctx4': 'tb_core4.vvp',
+}
 ASM = os.path.join(ROOT, 'tools', 'asm', 'tnca_asm.py')
 BUILD = os.path.join(ROOT, 'sim', 'build')
 
@@ -120,7 +131,15 @@ class Program:
         return '\n'.join(lines) + '\n'
 
 
-def run(program, *, extra_args=(), max_cycles=200000):
+def bench_path(which='fast'):
+    return os.path.join(BUILD, BENCHES[which])
+
+
+def bench_available(which):
+    return os.path.exists(bench_path(which)) and shutil.which('vvp')
+
+
+def run(program, *, extra_args=(), max_cycles=200000, bench='fast'):
     """Assemble and run. Returns (ok, stdout)."""
     os.makedirs(BUILD, exist_ok=True)
     src = os.path.join(BUILD, f"cc_{program.name}.s")
@@ -135,8 +154,72 @@ def run(program, *, extra_args=(), max_cycles=200000):
         return False, f"assembling failed:\n{asm.stderr}{asm.stdout}"
 
     proc = subprocess.run(
-        ['vvp', BENCH, f"+hex={hexf}", f"+maxcycles={max_cycles}",
-         *extra_args],
+        ['vvp', bench_path(bench), f"+hex={hexf}",
+         f"+maxcycles={max_cycles}", *extra_args],
         capture_output=True, text=True)
     ok = 'PASS' in proc.stdout and 'FAIL' not in proc.stdout
     return ok, proc.stdout
+
+
+def multirole_program(name, kernel, target, *, check_protocol=False,
+                      check_role=None):
+    """One image holding every role, dispatched on role_id.
+
+    Every Role Context starts at PC 0 and branches on its own index -- the
+    layout tb/core/progs/t13_share.s uses. Whole-program resources are set up
+    by role 0 only; the other roles wait for the flag it writes, because
+    ISA sec 9A.6 makes mb.init under a sleeping waiter a BARRIER_FAULT, so the
+    startup wait cannot itself be on a barrier (sec 13.3).
+
+    `check_role` (default: the last role) has its trailing `exit` removed and
+    is emitted last, so the assertions appended by Program.text() run as the
+    continuation of that role. Leaving every role to exit put the assertions
+    after the final exit, where nothing reached them -- and a test whose
+    checks never execute passes for the wrong reason.
+    """
+    from tnca_cc.codegen import CodeGen
+
+    if check_role is None:
+        check_role = len(kernel.roles) - 1
+    order = [r for r in range(len(kernel.roles)) if r != check_role]
+    order.append(check_role)
+
+    n_roles = len(kernel.roles)
+    p = Program(name)
+    p.raw("    s.rdspecial s60, role_id")
+    # A machine may have more Role Contexts than the kernel uses, and the
+    # bench starts every one of them. Park the extras: without this they fall
+    # through into role 0 and the program runs several producers against the
+    # same barriers, which advances each epoch once per stray context and
+    # desynchronises the whole channel. ISA sec 5.1 reports NUM_ROLES as the
+    # active count for the launch, so a kernel can always tell.
+    p.raw(f"    .li       s59, #{n_roles}")
+    p.raw("    s.cmp.geu s58, s60, s59")
+    p.raw("    br.nz     s58, park")
+    for r in range(1, n_roles):
+        p.raw(f"    .li       s59, #{r}")
+        p.raw(f"    s.cmp.eq  s58, s60, s59")
+        p.raw(f"    br.nz     s58, role{r}")
+    p.raw("    br        role0")
+    p.raw("")
+    p.raw("park:")
+    p.raw("    exit")
+    p.raw("")
+
+    peaks = []
+    for r in order:
+        cg = CodeGen(kernel, target, check_protocol=check_protocol)
+        cg.assign_shared()
+        cg.run(r)
+        text = cg.b.text().rstrip('\n')
+        if r == check_role:
+            # Drop the final exit so control reaches the assertions.
+            lines = text.splitlines()
+            while lines and lines[-1].strip() in ('exit', ''):
+                lines.pop()
+            text = '\n'.join(lines)
+        p.raw(f"role{r}:")
+        p.raw(text)
+        p.raw("")
+        peaks.append(cg.alloc.peak)
+    return p, peaks

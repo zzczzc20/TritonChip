@@ -32,7 +32,7 @@ import os
 import re
 import time
 
-from . import _data, abi, artifact, manifest as M
+from . import _data, abi, artifact, dump as _dump, manifest as M
 from .adapters import r1 as adapter
 from .errors import (ArgumentError, CompileError, ProfileMismatch,
                      SignatureError, TncaError, UnsupportedError)
@@ -58,6 +58,19 @@ KNOWN_OPTIONS = {
 }
 
 SOURCE_KINDS = ('triton', 'tnca-ir')
+
+# Options that change the artifact, and options that only change what is
+# written beside it. A dump directory in the cache key would mean turning
+# a dump on hands you a different kernel than the one you were debugging,
+# which defeats the purpose of looking; Triton keeps TRITON_KERNEL_DUMP
+# out of its key for the same reason.
+DIAGNOSTIC_OPTIONS = frozenset({'debug', 'dump_dir'})
+
+
+def semantic_options(options):
+    """The options that belong in the cache key."""
+    return {k: v for k, v in (options or {}).items()
+            if k not in DIAGNOSTIC_OPTIONS}
 
 # Triton's signature spelling -> the ABI type. Triton writes `fp32` in a
 # signature and `f32` in MLIR; both mean one binary32.
@@ -253,12 +266,20 @@ def cache_key(*, source_kind, source_hash, kernel_name, signature,
 
 
 class CompileResult:
-    def __init__(self, path, manifest, report, key, from_cache=False):
+    def __init__(self, path, manifest, report, key, from_cache=False,
+                 asm=None, dumped=None):
         self.path = path
         self.manifest = manifest
         self.report = report
         self.cache_key = key
         self.from_cache = from_cache
+        # `asm` is Triton's name for this: stage -> text, in memory,
+        # whether or not anything was written to disk. A cached result has
+        # an empty one, because nothing was compiled to produce it.
+        self.asm = asm if asm is not None else {}
+        # stage -> path, for the files that were written. Empty when no
+        # dump was asked for.
+        self.dumped = dumped or {}
 
     def __repr__(self):
         return (f"<CompileResult {self.manifest['identity']['kernel_name']!r} "
@@ -348,6 +369,14 @@ def compile_aot(source, *, kernel_name=None, signature=None, constexprs=None,
     # The key is computable before compiling, because everything in it is an
     # input. A cache that can only be consulted after the work is done is a
     # log of what it cost.
+    # Asking for a dump implies a compile. A cache hit is a request not to
+    # run the compiler; a dump is a request to see it run, and serving a
+    # hit would write no files -- so the first run of a session would dump
+    # and every later one would silently not.
+    dump_to = _dump.requested(options)
+    if cache is not None and (dump_to or _dump.always_compile()):
+        cache = None
+
     if cache is not None:
         early = _key_for(source, source_kind, kernel_name, signature,
                          constexprs, profile, pinfo, options, param_names)
@@ -363,7 +392,8 @@ def compile_aot(source, *, kernel_name=None, signature=None, constexprs=None,
     else:
         result = _compile_tnca_ir(source, kernel_name, signature, constexprs,
                                   target, prov, options)
-    kernel_name, params, asm_text, code, symbols, report = result
+    (kernel_name, params, asm_text, code, symbols, report,
+     stages) = result
 
     # The same function that was used for the lookup. Computing it a second
     # way is how a cache stores under one key and looks up under another.
@@ -383,7 +413,22 @@ def compile_aot(source, *, kernel_name=None, signature=None, constexprs=None,
     report['cache_key'] = key
     if cache is not None:
         cache.put(key, output)
-    return CompileResult(output, sealed, report, key)
+
+    written = {}
+    if dump_to:
+        written = stages.write(dump_to, metadata={
+            'kernel_name': kernel_name,
+            'source_kind': source_kind,
+            'profile': pinfo['name'],
+            'cache_key': key,
+            'artifact': os.path.abspath(output),
+            'constexprs': dict(sorted((constexprs or {}).items())),
+            'options': dict(sorted((options or {}).items())),
+            'toolchain_lock_hash': _lock_hash(),
+            'resources': measured,
+        })
+    return CompileResult(output, sealed, report, key,
+                         asm=dict(stages.stages), dumped=written)
 
 
 def _source_text(source):
@@ -432,7 +477,8 @@ def _key_for(source, source_kind, kernel_name, signature, constexprs,
                      kernel_name=name,
                      signature=[f"{n}:{t}" for n, t in params],
                      constexprs=constexprs, profile=profile,
-                     config_hash=pinfo['config_hash'], options=options)
+                     config_hash=pinfo['config_hash'],
+                     options=semantic_options(options))
 
 
 def _compile_triton(fn, kernel_name, signature, constexprs, target, prov,
@@ -496,18 +542,30 @@ def _compile_triton(fn, kernel_name, signature, constexprs, target, prov,
     # dynamic_args is the adapter's default, and the reason this driver
     # exists: one artifact, any arguments. The placeholders below tell the
     # compiler each parameter's SHAPE and reach the code nowhere.
+    stages = _dump.Dump(kernel_name)
+    # Captured here rather than re-derived later: this is the module the
+    # compile actually consumed, and anything reconstructed afterwards
+    # would be a second opinion about it.
+    stages.record('ttir', str(module))
+
     kernel, _builder, imp = adapter.import_ttir(
         module, kernel_name, _placeholders(params),
         param_names=[n for n, _t in params], target=target, prov=prov,
         dynamic_args=True)
+    stages.record('tnir', str(kernel))
+
     asm_text, cg = adapter.emit(
         kernel, target, prov=prov,
         check_protocol=bool(options.get('check_protocol', False)))
+    stages.record('asm', asm_text)
+
     code, symbols = adapter.assemble(asm_text, prov=prov)
+    stages.record('hex', _dump.hex_image(code))
+
     report = dict(stages=['ttir', 'tnca-ir', 'assembly', 'machine'],
                   assembly_lines=len(asm_text.splitlines()),
                   code_bytes=len(code))
-    return kernel_name, params, asm_text, code, symbols, report
+    return kernel_name, params, asm_text, code, symbols, report, stages
 
 
 def _compile_tnca_ir(build, kernel_name, signature, constexprs, target, prov,
@@ -530,14 +588,23 @@ def _compile_tnca_ir(build, kernel_name, signature, constexprs, target, prov,
     except Exception as e:
         raise CompileError(f"the TNCA IR program raised {type(e).__name__}: "
                            f"{e}", where=kernel_name)
+    # No .ttir for this source kind: a TNCA IR program never had one, and
+    # an empty file would suggest it did.
+    stages = _dump.Dump(kernel_name)
+    stages.record('tnir', str(kernel))
+
     asm_text, cg = adapter.emit(
         kernel, target, prov=prov,
         check_protocol=bool(options.get('check_protocol', False)))
+    stages.record('asm', asm_text)
+
     code, symbols = adapter.assemble(asm_text, prov=prov)
+    stages.record('hex', _dump.hex_image(code))
+
     report = dict(stages=['tnca-ir', 'assembly', 'machine'],
                   assembly_lines=len(asm_text.splitlines()),
                   code_bytes=len(code))
-    return kernel_name, params, asm_text, code, symbols, report
+    return kernel_name, params, asm_text, code, symbols, report, stages
 
 
 def _manifest(kernel_name, params, target, pinfo, constexprs, options, prov,
@@ -557,7 +624,11 @@ def _manifest(kernel_name, params, target, pinfo, constexprs, options, prov,
             'source_hash': prov.entries.get('source_sha256', ''),
             'toolchain_lock_hash': _lock_hash(),
             'constexprs': dict(sorted(constexprs.items())),
-            'options': dict(sorted(options.items())),
+            # Semantic options only. A dump directory is a fact about one
+            # debugging session, not about the kernel: recording it put a
+            # local home directory inside a distributable artifact and
+            # made two artifacts with the same cache key differ.
+            'options': dict(sorted(semantic_options(options).items())),
         },
         'target': {
             'profile': pinfo['name'],

@@ -689,7 +689,7 @@ clean:
 .PHONY: r2-baseline r2-inventory r2-abi-tests r2-artifact-tests \
         r2-compile-tests r2-cache-tests r2-runtime-tests r2-fault-tests \
         r2-grid-tests r2-memory-tests r2-mutation-tests \
-        r2-obs-tests r2-e2e-tests r3-rf-tests r3-flow-tests \
+        r2-obs-tests r2-e2e-tests r2-dump-tests r3-rf-tests r3-flow-tests \
         r3-count-tests r3-synth-tests r3-mem-synth \
         r3-mutation-tests \
         r2-package r2-stage-data \
@@ -821,6 +821,17 @@ r2-e2e-tests: $(BUILD)/tnca_device.vvp
 	   exit 1; \
 	 else \
 	   echo "  r2-e2e-tests           SKIP   no Triton at $(TRITON_PYTHON)"; \
+	 fi
+
+r2-dump-tests: $(BUILD)/tnca_device.vvp
+	@if [ -x "$(TRITON_PYTHON)" ]; then \
+	   $(TRITON_PYTHON) tools/r2/dump_tests.py \
+	     --json $(BUILD)/r2_dump_tests.json; \
+	 elif [ "$(R1_STRICT)" = "1" ]; then \
+	   echo "  r2-dump-tests          FAIL   no Triton at $(TRITON_PYTHON)"; \
+	   exit 1; \
+	 else \
+	   echo "  r2-dump-tests          SKIP   no Triton at $(TRITON_PYTHON)"; \
 	 fi
 
 r2-obs-tests: $(BUILD)/tnca_device.vvp

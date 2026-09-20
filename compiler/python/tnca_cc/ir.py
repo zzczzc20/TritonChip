@@ -107,6 +107,9 @@ class Kernel:
                 return r
         raise Diagnostic(f"kernel {self.name!r} has no role {index}")
 
+    def __str__(self):
+        return format_kernel(self)
+
 
 class Builder:
     """Construct IR. One builder per role region."""
@@ -492,3 +495,75 @@ def make_kernel(name, num_roles=1):
     for i in range(num_roles):
         k.roles.append(Role(index=i, name=f"role{i}"))
     return k
+
+# ---------------------------------------------------------------------------
+# The textual form
+#
+# An IR you cannot read is an IR you cannot review, so the kernel prints
+# itself -- the same arrangement LLVM and MLIR use, and for the same reason:
+# the printer lives next to the data structure and cannot drift from it.
+#
+# The form is deliberately close to the in-memory structure rather than
+# pretty: `%name:kind@reg` is exactly what Value.__repr__ produces, so a
+# dump and a debugger agree about what a value is called. Registers appear
+# only after allocation, which is how a reader can tell a pre-allocation
+# dump from a post-allocation one without being told.
+# ---------------------------------------------------------------------------
+
+def format_op(op, indent='    '):
+    """One operation, one line."""
+    if op.kind == 'label':
+        return f"  ^{op.attrs.get('name', '?')}:"
+    if op.kind == 'comment':
+        return f"{indent}// {op.attrs.get('text', '')}"
+    res = ', '.join(repr(r) for r in op.results)
+    ops = ', '.join(repr(o) for o in op.operands)
+    attrs = ' '.join(f"{k}={v!r}" for k, v in sorted(op.attrs.items())
+                     if k != 'comment')
+    line = f"{indent}{res} = " if res else indent
+    line += f"tnca.{op.kind}({ops})"
+    if attrs:
+        line += f"  {{{attrs}}}"
+    note = op.attrs.get('comment')
+    if note:
+        line += f"   // {note}"
+    return line
+
+
+def format_region(region, indent='    '):
+    return [format_op(op, indent) for op in region.ops]
+
+
+def format_kernel(kernel):
+    """The whole kernel as text.
+
+    Resources first, because they are fixed before any role-local
+    allocation (sec 10.1) and reading the roles without them is reading a
+    program without its declarations.
+    """
+    out = [f"tnca.kernel @{kernel.name} {{"]
+
+    if kernel.args:
+        out.append('  // arguments, bound through ARG_BASE')
+        for name, info in kernel.args.items():
+            out.append(f"  arg {name} = {info!r}")
+
+    resources = [('barrier', kernel.barriers),
+                 ('accumulator', kernel.accumulators),
+                 ('window', kernel.windows),
+                 ('descriptor', kernel.descriptors)]
+    declared = [(what, items) for what, items in resources if items]
+    if declared:
+        out.append('  // whole-program resources')
+        for what, items in declared:
+            out.append(f"  {what}s: {len(items)}  {items!r}")
+    elif not kernel.args:
+        out.append('  // no shared resources, no bound arguments')
+
+    for role in kernel.roles:
+        out.append('')
+        out.append(f"  role {role.index} @{role.name} {{")
+        out.extend(format_region(role.region))
+        out.append('  }')
+    out.append('}')
+    return '\n'.join(out) + '\n'

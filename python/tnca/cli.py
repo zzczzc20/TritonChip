@@ -77,24 +77,53 @@ def _number(text):
 
 
 # ---------------------------------------------------------------------------
+from .dump import STAGES as _DUMP_STAGES   # noqa: E402
+
+
 def cmd_compile(args):
     from . import aot
+    from . import dump as _dump
     fn = _load_source(args.source)
+
+    options = _kv(args.option, _number) if args.option else {}
+    # `--emit` without `--dump-dir` still has to make the compiler produce
+    # the stage, but it should not leave files behind: the caller asked to
+    # SEE something, not to store it. So the stages are collected in
+    # memory (they always are) and only written when a directory is named.
+    if args.dump_dir:
+        options['dump_dir'] = args.dump_dir
+
     res = aot.compile_aot(
         fn,
         kernel_name=args.kernel,
         signature=_kv(args.signature),
         constexprs=_kv(args.constexpr, _number),
         profile=args.profile,
-        options=_kv(args.option, _number) if args.option else None,
+        options=options or None,
         source_kind=args.source_kind,
         output=args.output)
+
+    if args.emit:
+        text = res.asm.get(args.emit)
+        if text is None:
+            available = ', '.join(res.asm) or 'none'
+            raise TncaError(
+                f"this compile produced no {args.emit!r} stage",
+                code='ARGUMENT_INVALID',
+                detail={'available': sorted(res.asm)},
+                remedy=f"stages from this source: {available}. A tnca-ir "
+                       f"program has no .ttir because it never had one")
+        sys.stdout.write(text if text.endswith('\n') else text + '\n')
+        return 0
+
     if args.json:
         print(json.dumps(dict(ok=True, path=res.path,
                               cache_key=res.cache_key,
                               from_cache=res.from_cache,
                               kernel=res.manifest['identity']['kernel_name'],
-                              report=res.report), indent=2))
+                              report=res.report,
+                              stages=sorted(res.asm),
+                              dumped=res.dumped), indent=2))
     else:
         seg = res.manifest['code']['segments'][0]
         print(f"wrote {res.path}")
@@ -103,6 +132,12 @@ def cmd_compile(args):
         print(f"  source   {res.manifest['identity']['source_kind']}")
         print(f"  code     {seg['length']} bytes, sha256 {seg['sha256'][:16]}")
         print(f"  key      {res.cache_key[:16]}")
+        if res.dumped:
+            where = os.path.dirname(next(iter(res.dumped.values())))
+            print(f"  dump     {where}")
+            for stage in sorted(res.dumped):
+                print(f"    {stage:<6s} "
+                      f"{os.path.basename(res.dumped[stage])}")
     return 0
 
 
@@ -246,6 +281,19 @@ def aot_main(argv=None):
                    choices=('triton', 'tnca-ir'))
     _common(c)
     c.set_defaults(func=cmd_compile)
+
+    # `-S`/`--emit` follow the compilers people already use: `gcc -S`
+    # writes assembly, `clang -emit-llvm` writes the IR. `--dump-dir`
+    # follows Triton's TRITON_DUMP_DIR, which is where anyone who has
+    # debugged a Triton kernel will look first.
+    c.add_argument('--emit', choices=list(_DUMP_STAGES), metavar='STAGE',
+                   help='print one stage to stdout instead of the summary: '
+                        + ', '.join(_DUMP_STAGES))
+    c.add_argument('-S', dest='emit', action='store_const', const='asm',
+                   help='shorthand for --emit asm')
+    c.add_argument('--dump-dir', metavar='DIR',
+                   help='write every stage into DIR/<kernel>/ '
+                        '(same as TNCA_DUMP_DIR with TNCA_KERNEL_DUMP=1)')
 
     i = sub.add_parser('inspect', help='what an artifact says about itself')
     i.add_argument('artifact')

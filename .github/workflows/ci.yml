@@ -195,6 +195,13 @@ jobs:
       - name: R2 compile cache
         run: make r2-cache-tests TRITON_PYTHON=$HOME/tritonenv/bin/python
 
+      # The IR and assembly dumps, and mostly that they are a view rather
+      # than an influence: a dump must not change the cache key or the
+      # artifact, or turning one on hands you a different kernel than the
+      # one you were trying to look at.
+      - name: R2 IR and assembly dumps
+        run: make r2-dump-tests TRITON_PYTHON=$HOME/tritonenv/bin/python
+
       # The persistent device: 32 launches in one session, eight tasks held
       # and a ninth refused, and an A->B->C chain whose middle result never
       # leaves the device.

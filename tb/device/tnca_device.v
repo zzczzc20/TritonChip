@@ -132,7 +132,11 @@ module tnca_device;
 
     integer served;              // the highest sequence acted on
     integer fh, n, i;
-    integer seq, op, a0, a1, a2, a3, a4, a5;
+    // 64-bit, not `integer`. An `integer` is 32 bits and signed, so a
+    // host address of 0xFFFFFFF0 arrives as -16, and the range check below
+    // then reads -16/8 + 1 = -1, which is not greater than WORDS -- an
+    // address far outside memory passing the guard that exists to catch it.
+    reg signed [63:0] seq, op, a0, a1, a2, a3, a4, a5;
     integer status, r0, r1;
     integer cyc;
 
@@ -253,12 +257,12 @@ module tnca_device;
                     status = 0; r0 = 0; r1 = 0;
                     case (op)
                         1: begin                       // UPLOAD
-                            if (a0 % 8 != 0 || a1 <= 0 ||
+                            if (a0 < 0 || a0 % 8 != 0 || a1 <= 0 ||
                                 (a0/8 + a1) > WORDS) status = 3;
                             else u_mem.load_range(up_path, a0/8, a1);
                         end
                         2: begin                       // DOWNLOAD
-                            if (a0 % 8 != 0 || a1 <= 0 ||
+                            if (a0 < 0 || a0 % 8 != 0 || a1 <= 0 ||
                                 (a0/8 + a1) > WORDS) status = 3;
                             else u_mem.dump_hex(down_path, a0/8, a1);
                         end

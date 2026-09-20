@@ -70,6 +70,54 @@ def expected_path(profile):
                         BENCH_NAME.get(profile, 'tnca_device.vvp'))
 
 
+# The directories `prepare` compiles from. A bench older than any file in
+# them was built from different RTL than the one on disk.
+_SOURCE_DIRS = (('rtl', 'core'), ('rtl', 'common'), ('rtl', 'gen'),
+                ('tb', 'common'), ('tb', 'device'))
+
+
+def newest_source(profile='core-sim'):
+    """(path, mtime) of the most recently changed source, or (None, 0).
+
+    Sources are not always present -- an installed wheel that did not stage
+    them has none -- and then nothing can be said about staleness, which is
+    different from saying the build is fresh.
+    """
+    newest, when = None, 0.0
+    for parts in _SOURCE_DIRS:
+        root = _package_data(*parts)
+        if not root or not os.path.isdir(root):
+            continue
+        for base, _dirs, files in os.walk(root):
+            for f in files:
+                if not f.endswith(('.v', '.vh', '.svh')):
+                    continue
+                path = os.path.join(base, f)
+                try:
+                    m = os.path.getmtime(path)
+                except OSError:
+                    continue
+                if m > when:
+                    newest, when = path, m
+    return newest, when
+
+
+def stale(path, profile='core-sim'):
+    """The source that is newer than this build, or None.
+
+    Worth its own function because the alternative is what actually
+    happened: an edited bench, a build from before the edit still sitting
+    in sim/build, and a test reporting on RTL that was no longer there.
+    Silence here is indistinguishable from a passing test.
+    """
+    try:
+        built = os.path.getmtime(path)
+    except OSError:
+        return None
+    src, when = newest_source(profile)
+    return src if src is not None and when > built else None
+
+
 def locate(profile='core-sim'):
     """The device bench, or None. Never builds."""
     override = os.environ.get('TNCA_DEVICE')
@@ -84,10 +132,19 @@ def locate(profile='core-sim'):
     return None
 
 
-def require(profile='core-sim'):
+def require(profile='core-sim', *, allow_stale=False):
     path = locate(profile)
     if path:
-        return path
+        src = None if allow_stale else stale(path, profile)
+        if src is None:
+            return path
+        raise DeviceLost(
+            f"the device for profile {profile!r} is older than the RTL it "
+            f"was built from",
+            detail={'device': path, 'newer source': src},
+            remedy='run `tnca-sim prepare --force` to rebuild it. Running '
+                   'it anyway would report on RTL that is no longer on '
+                   'disk, which reads exactly like a passing test')
     raise DeviceLost(
         f"no simulator for profile {profile!r}",
         detail={'looked for': expected_path(profile)},
@@ -100,9 +157,14 @@ def prepare(profile='core-sim', *, force=False, verbose=True):
     """Build this profile's device from the RTL the package ships."""
     target = expected_path(profile)
     if os.path.exists(target) and not force:
+        src = stale(target, profile)
+        if src is None:
+            if verbose:
+                print(f"  already built: {target}")
+            return target
         if verbose:
-            print(f"  already built: {target}")
-        return target
+            print(f"  rebuilding: {os.path.basename(src)} is newer than "
+                  f"the build")
 
     iverilog = shutil.which('iverilog')
     if not iverilog:

@@ -263,7 +263,7 @@ class TTIRImporter:
             name = param_names[i]
             value = arg_values[name]
             self._check_arg_type(name, ty, sig[i] if i < len(sig) else None,
-                                 value)
+                                 value, dynamic=self.dynamic_args)
             self.arg_names.append(name)
             if self.dynamic_args:
                 v = self._load_argument(arg_base, i, name, ty)
@@ -314,21 +314,46 @@ class TTIRImporter:
                                     f"{8 * index}")
 
     @staticmethod
-    def _check_arg_type(name, ty, sig_ty, value):
+    def _check_arg_type(name, ty, sig_ty, value, *, dynamic=False):
         """The value must fit the declared parameter type.
 
         A float where the signature says i32 is not a narrowing the compiler
         may perform quietly: the kernel would be compiled for a different
         number from the one the caller passed.
+
+        What "fits" means depends on the mode, and this is the one place the
+        two differ. Compiling FOR a literal bakes the value into the code, so
+        it has to be an address or an integer -- there is no instruction that
+        materialises a float operand from an immediate here. Compiling for a
+        DYNAMIC argument bakes in nothing; the value is a shape declaration,
+        and an f32 parameter is exactly where a Python float belongs. Refusing
+        it there rejected a kernel the frontend had already accepted, and said
+        so by naming the type rather than the mode.
         """
+        declared = (sig_ty or ty or '').strip()
+        is_float = declared in ('f32', 'fp32', 'float32')
+
+        if dynamic and is_float:
+            if isinstance(value, bool) or not isinstance(value, (int, float)):
+                raise Diagnostic(
+                    f"argument {name!r} is {type(value).__name__} {value!r}, "
+                    f"and the kernel declares it {declared}",
+                    because='an f32 parameter takes a number',
+                    source='doc/phase2_tasks_and_acceptance.md R2-06')
+            return
+
         if isinstance(value, bool) or not isinstance(value, int):
             raise Diagnostic(
                 f"argument {name!r} is {type(value).__name__} {value!r}, "
                 f"and the kernel declares it {sig_ty or ty}",
-                because='a kernel is compiled for literal arguments: an '
-                        'address or an integer, never a float or an object',
-                remedy='pass an integer address for a pointer and an '
-                       'integer for an i32',
+                because=('a kernel compiled for literal arguments takes an '
+                         'address or an integer, never a float or an object'
+                         if not dynamic else
+                         'this parameter is not a float in the signature'),
+                remedy=('pass an integer address for a pointer and an '
+                        'integer for an i32' if not dynamic else
+                        'check the signature: only an f32 parameter takes a '
+                        'float'),
                 source='compiler_overview.md sec 11.1')
         if _pointee(ty) and value < 0:
             raise Diagnostic(

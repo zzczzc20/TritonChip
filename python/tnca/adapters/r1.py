@@ -205,13 +205,21 @@ def assemble(asm_text, *, prov=None):
 
 
 def import_ttir(module, func_name, arg_values, *, param_names, target,
-                prov=None):
-    """A Triton TTIR module -> TNCA IR, through R1's importer."""
+                prov=None, dynamic_args=True):
+    """A Triton TTIR module -> TNCA IR, through R1's importer.
+
+    `dynamic_args` defaults to TRUE here, and that is the difference between
+    R1's importer and R2's use of it. R1 compiles a kernel for literal
+    arguments; R2 compiles one artifact that runs with any arguments, which
+    is the phase's central requirement. A caller who wants the literal
+    behaviour has to ask for it by name.
+    """
     r1 = _r1()
     imp = r1['TTIRImporter'](target, func_name)
     try:
         kernel, builder = imp.run(module, func_name, arg_values,
-                                  param_names=param_names)
+                                  param_names=param_names,
+                                  dynamic_args=dynamic_args)
     except r1['Unsupported'] as d:
         raise UnsupportedError(str(d).splitlines()[0],
                                where=f"TTIR function {func_name!r}",
@@ -223,6 +231,11 @@ def import_ttir(module, func_name, arg_values, *, param_names, target,
     if prov is not None:
         prov.record('frontend', 'tnca_cc.frontend.TTIRImporter')
         prov.record('bound_parameters', list(imp.arg_names))
+        prov.record('argument_binding',
+                    'dynamic: loaded from ARG_BASE' if dynamic_args
+                    else 'static: literals in the code')
+        if dynamic_args:
+            prov.record('argument_abi_types', list(imp.arg_abi_types))
     return kernel, builder, imp
 
 

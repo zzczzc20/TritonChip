@@ -58,3 +58,19 @@ def negative_zero_kernel(x_ptr, o_ptr, n, BLOCK: tl.constexpr):
     mask = offs < n
     a = tl.load(x_ptr + offs, mask=mask, other=-0.0)
     tl.store(o_ptr + offs, a, mask=mask)
+
+
+@triton.jit
+def axpy_kernel(x_ptr, y_ptr, o_ptr, n, alpha, BLOCK: tl.constexpr):
+    """y = alpha*x + y, with alpha a DYNAMIC f32 parameter.
+
+    R2-03 CMP-01 asks for this one specifically, and the reason is `alpha`:
+    an f32 scalar that arrives through the argument block rather than as a
+    constant is what proves one artifact runs with different numbers.
+    """
+    pid = tl.program_id(0)
+    offs = pid * BLOCK + tl.arange(0, BLOCK)
+    mask = offs < n
+    a = tl.load(x_ptr + offs, mask=mask, other=0.0)
+    b = tl.load(y_ptr + offs, mask=mask, other=0.0)
+    tl.store(o_ptr + offs, a * alpha + b, mask=mask)

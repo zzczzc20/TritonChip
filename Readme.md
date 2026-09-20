@@ -46,7 +46,7 @@ under development.
 The [support matrix](doc/support_matrix.md) distinguishes ISA definitions,
 profile capabilities, compiler lowering, and whole-system test coverage.
 R1 and R2 have not completed final acceptance; see their
-[status](doc/r1_status.md) and [status](doc/r2_status.md) reports.
+[R1 status](doc/r1_status.md) and [R2 status](doc/r2_status.md) reports.
 This is an RTL/compiler prototype, without silicon or physical-design signoff.
 
 ## Getting started

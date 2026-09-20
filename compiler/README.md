@@ -1,8 +1,20 @@
 # TNCA compiler backend
 
-Built to `doc/compiler_overview.md`. This directory is milestone **C0**: the
-pinned toolchain, the out-of-tree backend skeleton, `tnca-opt`, TargetInfo, the
-ISA schema, and the per-stage IR dump points.
+Built to `doc/compiler_overview.md`. Milestones **C0 through C4** are done and
+**C5** has not started; the table under "Milestones" below is the authority,
+and this paragraph used to say the directory *was* C0 while that table said
+C4 -- two claims about the same thing, one of them stale.
+
+What C0 delivered, and what the rest is built on: the pinned toolchain, the
+out-of-tree backend skeleton, `tnca-opt`, TargetInfo, the ISA schema, and the
+per-stage IR dump points.
+
+The instruction-by-instruction picture -- what the ISA defines, what each
+profile implements, what this compiler can emit and what has run on the whole
+machine -- is `doc/support_matrix.md`, generated from those four sources
+rather than written down. The acceptance contract is
+`doc/phase1_tasks_and_acceptance.md` and the current state of it is
+`doc/r1_status.md`.
 
 ## What runs today, and what does not
 

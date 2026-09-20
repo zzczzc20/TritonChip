@@ -503,6 +503,7 @@ ISA_GEN     := compiler/include/tnca/ISA/TNCAOpcodes.inc \
 isa:
 	@$(PYTHON) $(TOOLS)/isa/export_schema.py
 	@$(PYTHON) $(TOOLS)/isa/gen.py all
+	@$(PYTHON) $(TOOLS)/isa/gen_support_matrix.py
 	@$(PYTHON) $(TOOLS)/isa/check_consistency.py
 
 $(ISA_SCHEMA): $(TOOLS)/asm/tnca_isa.py $(TOOLS)/isa/export_schema.py
@@ -522,6 +523,7 @@ $(TARGET_JSON): $(RTL)/core/tnca_core.v $(RTL)/tnca_top.v $(ISA_SCHEMA) \
 compiler: $(ISA_SCHEMA) $(TARGET_JSON)
 	@$(PYTHON) $(TOOLS)/isa/export_schema.py --check
 	@$(PYTHON) $(TOOLS)/isa/gen.py --check all
+	@$(PYTHON) $(TOOLS)/isa/gen_support_matrix.py --check
 	@$(PYTHON) $(TOOLS)/isa/gen_target.py --check
 	@$(PYTHON) $(TOOLS)/isa/check_consistency.py
 	@$(PYTHON) compiler/test/run_tests.py --no-rtl
@@ -678,6 +680,7 @@ r1-inventory:
 r1-check-generated:
 	@$(PYTHON) $(TOOLS)/isa/export_schema.py --check
 	@$(PYTHON) $(TOOLS)/isa/gen.py --check all
+	@$(PYTHON) $(TOOLS)/isa/gen_support_matrix.py --check
 	@$(PYTHON) $(TOOLS)/isa/gen_target.py --check
 	@$(PYTHON) $(TOOLS)/isa/check_consistency.py
 	@$(PYTHON) tools/r1/inventory.py

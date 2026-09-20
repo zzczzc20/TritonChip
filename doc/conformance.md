@@ -17,6 +17,14 @@ Audited against the Stage-2 + Stage-3 tree: matrix unit, TensorMap and
 transfer engine on a 2x2 mesh over four NUCA slices. Re-run this audit whenever
 a stage closes.
 
+This file is about *principles*. For instruction-level support --
+what the ISA defines, what each profile implements, what the compiler can
+emit and what has executed on the whole machine, as four separate columns --
+see [`support_matrix.md`](support_matrix.md), which is generated from those
+sources rather than written. The acceptance contract these are checked
+against is [`phase1_tasks_and_acceptance.md`](phase1_tasks_and_acceptance.md);
+[`r1_status.md`](r1_status.md) says where it stands.
+
 ---
 
 ## The twelve frozen decisions (§"最后：我会优先冻结的十二个决定")

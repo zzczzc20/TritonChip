@@ -61,6 +61,15 @@ XY 路由与请求/响应分离虚拟网络的 mesh。
 
 **Stages 1–3 — four tiles on a 2×2 mesh over a single-level NUCA cache, with the matrix unit and TensorMap transfer engine.**
 
+Per-instruction detail lives in **[`doc/support_matrix.md`](doc/support_matrix.md)**,
+which separates four things this table necessarily runs together: what the ISA
+defines, what each of the three profiles implements, what the compiler can
+emit, and what has been executed on the whole machine. Those four disagree,
+and a single word for all of them is what the September 2026 audit found. The
+acceptance contract is [`doc/phase1_tasks_and_acceptance.md`](doc/phase1_tasks_and_acceptance.md),
+its current state [`doc/r1_status.md`](doc/r1_status.md), and the audit it
+answers [`doc/production_readiness_audit_2026-09-19.md`](doc/production_readiness_audit_2026-09-19.md).
+
 | Area | State |
 |---|---|
 | ISA v0.1 encoding | frozen, machine-readable, enforced by the decoder |

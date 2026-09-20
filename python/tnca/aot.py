@@ -49,6 +49,12 @@ KNOWN_OPTIONS = {
     'debug': 'bool; adds a compile report, never changes the code',
     'dump_dir': 'str; where to write the per-stage IR dumps',
     'check_protocol': 'bool; the channel model, which is not a safety check',
+    'alias': 'list of [param, param] pairs that MAY point at the same '
+             'memory. An elementwise kernel that reads and writes the same '
+             'index can run in place; one that does not is a different '
+             'kernel, and the compiler cannot tell which from the '
+             'signature, so it is declared here or refused at launch '
+             '(ABI-05)',
 }
 
 SOURCE_KINDS = ('triton', 'tnca-ir')
@@ -175,6 +181,39 @@ def measure_resources(asm_text, target, code=b''):
             'descriptors': target.num_descriptors,
         },
     }
+
+def _alias_pairs(options, params):
+    """The declared aliases, checked against the signature.
+
+    A pair naming a parameter that does not exist, or one that is not a
+    pointer, is a mistake worth refusing: it would sit in the manifest
+    looking like permission for something and granting nothing.
+    """
+    raw = (options or {}).get('alias') or []
+    ptrs = {n for n, t in params if t == 'device_ptr64'}
+    pairs = []
+    for pair in raw:
+        if not isinstance(pair, (list, tuple)) or len(pair) != 2:
+            raise CompileError(
+                f"alias entry {pair!r} is not a pair of parameter names",
+                remedy="write alias=[['x_ptr', 'o_ptr']]")
+        a, b = pair
+        for name in (a, b):
+            if name not in ptrs:
+                raise CompileError(
+                    f"alias names {name!r}, which is not a pointer "
+                    f"parameter of this kernel",
+                    detail={'pointers': sorted(ptrs)},
+                    remedy='only two buffers can alias, so both names must '
+                           'be device pointers')
+        if a == b:
+            raise CompileError(
+                f"alias pairs {a!r} with itself",
+                remedy='a parameter always aliases itself; the declaration '
+                       'is about two different parameters')
+        pairs.append(sorted([a, b]))
+    return sorted(pairs)
+
 
 def check_options(options):
     options = dict(options or {})
@@ -532,7 +571,7 @@ def _manifest(kernel_name, params, target, pinfo, constexprs, options, prov,
             'signature': abi.describe(params),
             'buffer_extents': {n: 'unknown' for n, t in params
                                if t == 'device_ptr64'},
-            'alias_allowed': [],
+            'alias_allowed': _alias_pairs(options, params),
         },
         'execution': {
             'role_mask': 1,

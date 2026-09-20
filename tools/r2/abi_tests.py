@@ -384,8 +384,119 @@ def abi04(log):
     return ok, 'a submitted task sees the snapshot, not the caller\'s dict'
 
 
+def abi05(log):
+    """A declared in-place alias runs; an undeclared overlap is refused."""
+    if not _have_triton():
+        return False, 'needs the locked Triton'
+    sys.path.insert(0, os.path.join(ROOT, 'compiler', 'test'))
+    import kernels_triton as K
+    from tnca.runtime import Session
+    from tnca.errors import TncaError
+
+    import tempfile
+    from tnca import aot
+    d = tempfile.mkdtemp(prefix='r2-abi5-')
+    N = 32
+    sig = {'x_ptr': '*fp32', 'y_ptr': '*fp32', 'o_ptr': '*fp32',
+           'n': 'i32', 'alpha': 'fp32', 'BLOCK': 'constexpr'}
+    ok = True
+
+    # The same kernel, compiled twice: once declaring that x and o may be
+    # the same memory, once not. The code is identical; the permission is
+    # not, and the permission is the thing under test.
+    plain = aot.compile_aot(K.axpy_kernel, signature=sig,
+                            constexprs={'BLOCK': 16}, profile='core-sim',
+                            output=os.path.join(d, 'plain.tnca'))
+    aliased = aot.compile_aot(K.axpy_kernel, signature=sig,
+                              constexprs={'BLOCK': 16}, profile='core-sim',
+                              options={'alias': [['x_ptr', 'o_ptr']]},
+                              output=os.path.join(d, 'alias.tnca'))
+    log.append(f"    declared in the manifest: "
+               f"{aliased.manifest['parameters']['alias_allowed']} "
+               f"vs {plain.manifest['parameters']['alias_allowed']}")
+    ok &= aliased.manifest['parameters']['alias_allowed'] == \
+        [['o_ptr', 'x_ptr']]
+    ok &= plain.manifest['parameters']['alias_allowed'] == []
+
+    s = Session(profile='core-sim', deadline_cycles=200000,
+                host_timeout=180)
+    try:
+        mod_alias = s.load(aliased.path)
+        mod_plain = s.load(plain.path)
+        xs = [float(i) for i in range(N)]
+        ys = [1.0] * N
+        x = s.allocate(N * 4, name='x')
+        y = s.allocate(N * 4, name='y')
+        s.upload(x, _f32s(xs))
+        s.upload(y, _f32s(ys))
+
+        # in place: o is x. Elementwise, so each element reads and writes
+        # its own index and the result is defined.
+        ev = s.submit(mod_alias, {'x_ptr': x, 'y_ptr': y, 'o_ptr': x,
+                                  'n': N, 'alpha': 2.0}, grid=(2, 1, 1))
+        s.wait(ev)
+        got = list(struct.unpack(f'<{N}f', s.download(x, N * 4)))
+        want = [v * 2.0 + 1.0 for v in xs]
+        log.append(f"    declared alias, o_ptr == x_ptr: {ev.state}, "
+                   f"correct={got == want}")
+        ok &= ev.ok and got == want
+
+        # the same launch without the declaration, refused before it runs
+        before = s.dev.seq
+        try:
+            s.submit(mod_plain, {'x_ptr': x, 'y_ptr': y, 'o_ptr': x,
+                                 'n': N, 'alpha': 2.0}, grid=(2, 1, 1))
+            log.append("    undeclared overlap: ACCEPTED (bad)")
+            ok = False
+        except TncaError as e:
+            log.append(f"    undeclared overlap  -> [{e.code}] after "
+                       f"{s.dev.seq - before} device request(s)")
+            ok &= e.code == 'ALIAS_UNDECLARED' and s.dev.seq == before
+
+        # A partial overlap is refused even when declared for the pair:
+        # the declaration says they may be the same buffer, not that they
+        # may be shifted copies of each other.
+        big = s.allocate(N * 8, name='big')
+        try:
+            s.submit(mod_alias, {'x_ptr': big, 'y_ptr': y, 'o_ptr': big,
+                                 'n': N, 'alpha': 1.0}, grid=(2, 1, 1))
+            log.append(f"    the same buffer twice, declared: accepted")
+        except TncaError as e:
+            log.append(f"    the same buffer twice, declared -> "
+                       f"[{e.code}] (bad)")
+            ok = False
+    finally:
+        s.poisoned = True
+        s.close()
+
+    # And a declaration that names something that is not a pointer, or a
+    # parameter that does not exist, is refused at compile time.
+    for bad, why in (([['x_ptr', 'n']], 'a scalar'),
+                     ([['x_ptr', 'nope']], 'a parameter that does not exist'),
+                     ([['x_ptr', 'x_ptr']], 'itself'),
+                     ([['x_ptr']], 'not a pair')):
+        try:
+            aot.compile_aot(K.axpy_kernel, signature=sig,
+                            constexprs={'BLOCK': 16}, profile='core-sim',
+                            options={'alias': bad},
+                            output=os.path.join(d, 'bad.tnca'))
+            log.append(f"    alias with {why}: ACCEPTED (bad)")
+            ok = False
+        except TncaError as e:
+            log.append(f"    alias naming {why:<32s} -> [{e.code}]")
+    return ok, 'a declared alias runs in place; an undeclared one never starts'
+
+
 TESTS = [('ABI-01', abi01), ('ABI-VERSION', abi_version),
-         ('ABI-02', abi02), ('ABI-03', abi03), ('ABI-04', abi04)]
+         ('ABI-02', abi02), ('ABI-03', abi03), ('ABI-04', abi04),
+         ('ABI-05', abi05)]
+
+NOT_YET = {
+    'ABI-06': 'a runtime gather/scatter that runs off the end of a '
+              'buffer needs non-contiguous addressing, which the Triton\n'
+              '              front end does not lower yet: every access this\n'
+              '              stage emits is a contiguous block with a mask',
+}
 
 
 def _case_ids():

@@ -100,6 +100,7 @@ is not hardware execution time.
 | R2 | Installable AOT compiler, versioned artifacts and ABI, simulation runtime, and grid scheduling | [Tasks and acceptance](doc/phase2_tasks_and_acceptance.md) |
 | R3 v2 | Single-core banked VRF integration, writeback flow control, and small RTL validation workloads | [Tasks and acceptance](doc/phase3_tasks_and_acceptance.md) |
 | R3.5 | LinearLayout and MLIR optimization reuse, with measured compiler gains on accepted R3 hardware | [Tasks and acceptance](doc/phase3_5_tasks_and_acceptance.md) |
+| R3.6 | Shared compiler/runtime/RTL integration, backend interfaces, and handoff for separate FPGA/ASIC implementation branches | [Tasks and acceptance](doc/phase3_6_tasks_and_acceptance.md) |
 
 These specifications define acceptance criteria, not completed features.
 

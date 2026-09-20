@@ -1,5 +1,5 @@
 {
-  "commit": "d83c3bc615c44a9cf6bfec3331eae68edb1c6e4c",
+  "commit": "08e3c84f44261d8648f5816a6412d8fbbee78a66",
   "contract_id": "r3-v2-core-vrf",
   "counts_toward_official_twelve": false,
   "implementation": "reference",
@@ -12,15 +12,15 @@
     "kernel_runs": 15,
     "startup_seconds_each": 0.6,
     "total_cycles": 138635,
-    "total_seconds": 370,
+    "total_seconds": 373,
     "within_budget": true
   },
   "runs": [
     {
-      "command": "vvp /mnt/triton-viz-data/r1/g0b/sim/build/tb_core.vvp +hex=/mnt/triton-viz-data/r1/g0b/sim/build/t16_vecadd.hex +maxcycles=50000",
+      "command": "vvp /mnt/triton-viz-data/r1/r3v2/sim/build/tb_core.vvp +hex=/mnt/triton-viz-data/r1/r3v2/sim/build/t16_vecadd.hex +maxcycles=50000",
       "cycles": 1023,
-      "cycles_per_second": 409,
-      "elapsed_s": 2.499,
+      "cycles_per_second": 406,
+      "elapsed_s": 2.52,
       "exit": 0,
       "id": "vecadd-fast",
       "memory": "fast",
@@ -29,10 +29,10 @@
       "stands_for": "C01/C02: FP32 elementwise"
     },
     {
-      "command": "vvp /mnt/triton-viz-data/r1/g0b/sim/build/tb_core.vvp +hex=/mnt/triton-viz-data/r1/g0b/sim/build/t11_matrix.hex +maxcycles=50000",
+      "command": "vvp /mnt/triton-viz-data/r1/r3v2/sim/build/tb_core.vvp +hex=/mnt/triton-viz-data/r1/r3v2/sim/build/t11_matrix.hex +maxcycles=50000",
       "cycles": 3513,
-      "cycles_per_second": 458,
-      "elapsed_s": 7.663,
+      "cycles_per_second": 446,
+      "elapsed_s": 7.874,
       "exit": 0,
       "id": "matrix-fast",
       "memory": "fast",
@@ -41,10 +41,10 @@
       "stands_for": "C03: FP16 matrix"
     },
     {
-      "command": "vvp /mnt/triton-viz-data/r1/g0b/sim/build/tb_core_slow.vvp +hex=/mnt/triton-viz-data/r1/g0b/sim/build/t11_matrix.hex +maxcycles=50000",
+      "command": "vvp /mnt/triton-viz-data/r1/r3v2/sim/build/tb_core_slow.vvp +hex=/mnt/triton-viz-data/r1/r3v2/sim/build/t11_matrix.hex +maxcycles=50000",
       "cycles": 4128,
-      "cycles_per_second": 501,
-      "elapsed_s": 8.238,
+      "cycles_per_second": 522,
+      "elapsed_s": 7.913,
       "exit": 0,
       "id": "matrix-slow",
       "memory": "slow",
@@ -53,10 +53,10 @@
       "stands_for": "C04/C05: matrix under a back-pressuring memory"
     },
     {
-      "command": "vvp /mnt/triton-viz-data/r1/g0b/sim/build/tb_core_ooo.vvp +hex=/mnt/triton-viz-data/r1/g0b/sim/build/t11_matrix.hex +maxcycles=50000",
+      "command": "vvp /mnt/triton-viz-data/r1/r3v2/sim/build/tb_core_ooo.vvp +hex=/mnt/triton-viz-data/r1/r3v2/sim/build/t11_matrix.hex +maxcycles=50000",
       "cycles": 4309,
-      "cycles_per_second": 518,
-      "elapsed_s": 8.321,
+      "cycles_per_second": 534,
+      "elapsed_s": 8.073,
       "exit": 0,
       "id": "matrix-ooo",
       "memory": "ooo",
@@ -66,6 +66,6 @@
     }
   ],
   "schema": "r3v2-scout/1",
-  "slowest_cycles_per_second": 409,
+  "slowest_cycles_per_second": 406,
   "why": "These are existing bench programs at the right shape, not the frozen C01/C03 with their independent oracles. Section 4.3 allows a scout record to occupy two of the official twelve only when the commit, artifact and config are the same; they are not, so the official runs are still owed."
 }

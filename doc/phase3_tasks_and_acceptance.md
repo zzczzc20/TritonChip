@@ -276,6 +276,8 @@ acceptance.json  contract_id=r3-v2-core-vrf；环境/每项结果/预算/推导�
 | R3-05/06/07 | 客户端时序、局部计数、实现 fingerprint | 全单元吞吐、自动 bank-aware 布局与成本反馈 |
 | R3-08 | 六个小 workload 与单核 runtime | BF16/tail/Norm 新性能矩阵、四 tile 产品闭环 |
 
-本阶段之后，先做 R3B（ARF 和单核模型闭合），再在 R2 四 tile runtime 真正完成后做 R3C（系统校准与发布）。这些是后续方向，需各自独立 tasks & acceptance，不能拿本阶段 PASS 自动填入旧合同。
+本阶段验收后，新增 [Phase 3.5](phase3_5_tasks_and_acceptance.md)：在固定的已验收硬件上复用 LinearLayout 和编译优化工具，交付可观测的单核性能收益。它不依赖同步 ARF 或四 tile runtime 完成。
+
+硬件后续仍为 R3B（ARF 和单核模型闭合），再在 R2 四 tile runtime 真正完成后做 R3C（系统校准与发布）。这些方向需各自独立 tasks & acceptance，不能拿本阶段或 Phase 3.5 的 PASS 自动填入旧合同。
 
 **只有 Gate A–D、24 条标准、全部子条件、预算和环境证据同时通过，才能签收 R3 v2。当前状态保持 NOT ACCEPTED。**

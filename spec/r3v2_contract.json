@@ -1,0 +1,101 @@
+{
+  "schema": "r3v2-contract/1",
+  "contract": "doc/phase3_tasks_and_acceptance.md",
+  "contract_version": "2.0",
+  "contract_id": "r3-v2-core-vrf",
+  "baseline_commit": "71317b35afb9d2602b0510da84188a0fbde15e29",
+  "note": "Section 3's frozen resource and timing contract, as fields an elaborated instance can be read back against. Written before the implementation so the implementation can be checked against it rather than described by it. Every field an implementation must satisfy is required: a null here is a claim nobody made, and R3V2-BASE-03 refuses one.",
+
+  "profiles": {
+    "reference": "core-sim",
+    "candidate": "core-vrf-sync-v1",
+    "candidate_inherits": "core-sim",
+    "unchanged": ["core-sim", "core-4r", "system-2x2"],
+    "why": "The candidate inherits core-sim's architectural resources -- 2 RCTX, the same ISA, the same register capacity, the same SFU -- so a difference in a result is a difference in implementation and not in what was asked of it. The implementation difference goes in the fingerprint."
+  },
+
+  "vrf": {
+    "logical_registers_per_role": 64,
+    "roles": 2,
+    "physical_registers": 128,
+    "lanes": 16,
+    "element_bits": 32,
+    "data_bits": 65536,
+    "data_bytes": 8192,
+    "banks": 4,
+    "rows_per_bank": 32,
+    "bank_row_bits": 512,
+    "bank_select": "the low 2 bits of the physical register number",
+    "row_select": "the remaining bits",
+    "physical_aliasing": "unchanged from the existing contract: equal role bases alias every name, disjoint bases share nothing"
+  },
+
+  "ports": {
+    "accepted_reads_per_bank_per_cycle": 1,
+    "accepted_writes_per_bank_per_cycle": 1,
+    "data_array_replication": false,
+    "why": "Replicating the array to add read ports would answer a different question. The point of the stage is what happens when the ports are real."
+  },
+
+  "synchronous_read": {
+    "read_latency_cycles": 1,
+    "consumable_at": "t+1 for a request accepted on the edge at t",
+    "downstream_stall": "data is held stable while the consumer is not ready; valid/ready is a full handshake and a stalled response is not dropped"
+  },
+
+  "collector": {
+    "entries": 4,
+    "sources_per_entry": 3,
+    "issue_rule": "an entry issues only when every source it declared has arrived",
+    "tagging": "every accepted read carries a tag and a reserved destination"
+  },
+
+  "writeback": {
+    "unbounded_queues": false,
+    "clients": ["simd", "lsu", "tensor", "matrix", "sfu"],
+    "note": "Each client's holding depth, maximum in flight, arbitration policy and credit count are declared per client in G3 and read back from the elaborated instance. They are listed here as required keys so an implementation cannot omit one silently.",
+    "required_per_client": ["holding_depth", "max_in_flight", "arbitration", "credits"]
+  },
+
+  "rdw_and_mask": {
+    "policy": "write-first",
+    "bypass_applies_to": "accepted writes only",
+    "granularity": "per lane",
+    "rejected_write_takes_effect_early": false
+  },
+
+  "reset": {
+    "architectural_read_of_unwritten": "zero",
+    "data_array_reset": false,
+    "valid_metadata": "may return zero or be scrubbed within a bound",
+    "forbidden": "turning the architectural read-as-zero into an X. The component test RF-03 checks that a never-written BANK reads X; that is a statement about the storage, and the architecture above it must still read zero."
+  },
+
+  "arf": {
+    "implementation": "behavioral",
+    "synchronous": false,
+    "counts_toward_synchronous_storage": false,
+    "forbidden": "giving the MMA an unlimited read port around the VRF because the ARF was deferred"
+  },
+
+  "drain": {
+    "completion_rule": "halt or success may not be reported before every accepted read and write, every asynchronous operation and every held lease has completed",
+    "error_rule": "an error path must release the resources or poison the session by name"
+  },
+
+  "fairness": {
+    "requesters_C": 4,
+    "max_grant_occupancy_B_cycles": 1,
+    "arbitration_pipeline_A_cycles": 1,
+    "bound": "(C-1)*B + A",
+    "bound_cycles": 4,
+    "precondition": "a bounded downstream ready. With no external progress there is no fixed completion time to promise, and the watchdog fires and names what is blocked instead.",
+    "beat_rule": "if arbitration is per beat then B is counted in beats, so a DMA is not treated as a permanent occupant"
+  },
+
+  "bit_accounting": {
+    "separate_totals_required": ["data_memory", "valid", "collector",
+                                 "bypass", "fifo"],
+    "why": "Section 3 asks for these separately because adding them together is how a control structure disappears into a capacity number."
+  }
+}

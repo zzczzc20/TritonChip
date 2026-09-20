@@ -99,6 +99,7 @@ is not hardware execution time.
 | R1 | Reproducible builds, reliable test gates, consistent profiles, and async resource safety | [Tasks and acceptance](doc/phase1_tasks_and_acceptance.md) |
 | R2 | Installable AOT compiler, versioned artifacts and ABI, simulation runtime, and grid scheduling | [Tasks and acceptance](doc/phase2_tasks_and_acceptance.md) |
 | R3 v2 | Single-core banked VRF integration, writeback flow control, and small RTL validation workloads | [Tasks and acceptance](doc/phase3_tasks_and_acceptance.md) |
+| R3.5 | LinearLayout and MLIR optimization reuse, with measured compiler gains on accepted R3 hardware | [Tasks and acceptance](doc/phase3_5_tasks_and_acceptance.md) |
 
 These specifications define acceptance criteria, not completed features.
 

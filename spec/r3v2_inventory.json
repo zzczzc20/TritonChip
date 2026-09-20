@@ -1,0 +1,442 @@
+{
+  "schema": "r3v2-inventory/1",
+  "contract": "doc/phase3_tasks_and_acceptance.md",
+  "contract_version": "2.0",
+  "contract_id": "r3-v2-core-vrf",
+  "note": "The required set. R3V2-BASE-01 says it is decided here and not by whatever turns up in a results file, so this is the file the verifier reads first and the results are checked against it -- never the other way round.",
+  "size_caps": {
+    "gemm": {
+      "m": 16,
+      "n": 16,
+      "k": 32
+    },
+    "reduction": {
+      "rows": 1,
+      "elements": 16
+    },
+    "elementwise": {
+      "n": 32,
+      "grid": 2
+    }
+  },
+  "budget": {
+    "core_kernel_runs": 15,
+    "core_wall_seconds_each": 180,
+    "core_cycles_each": 50000,
+    "component_rtl_invocations": 40,
+    "component_wall_seconds_each": 60,
+    "component_cycles_each": 10000,
+    "component_accepted_requests_each": 256,
+    "total_rtl_runs": 55,
+    "total_elapsed_seconds": 1800,
+    "total_cycles": 1000000,
+    "model_configurations": 32,
+    "model_wall_seconds": 30,
+    "model_starts_rtl": false,
+    "synthesis_wall_seconds": 1200,
+    "waveforms_default": "off",
+    "diagnostic_window_cycles": 256,
+    "diagnostic_trace_mebibytes": 10,
+    "component_rtl_invocations_planned": 37
+  },
+  "core": [
+    {
+      "id": "C01",
+      "workload": "vecadd",
+      "dtype": "fp32",
+      "sizes": {
+        "n": 16,
+        "grid": 1
+      },
+      "source_kind": "triton",
+      "memory": "fast",
+      "seed": 42,
+      "implementations": [
+        "reference",
+        "candidate"
+      ],
+      "purpose": "basic operand collection and SIMD writeback"
+    },
+    {
+      "id": "C02",
+      "workload": "masked_axpy",
+      "dtype": "fp32",
+      "sizes": {
+        "n": 17,
+        "block": 16,
+        "grid": 2
+      },
+      "source_kind": "triton",
+      "memory": "fast",
+      "seed": 42,
+      "implementations": [
+        "reference",
+        "candidate"
+      ],
+      "purpose": "the tail, a dynamic alpha, the LSU and writeback. grid=2 runs sequentially on one core and is not a claim about two tiles."
+    },
+    {
+      "id": "C03",
+      "workload": "gemm",
+      "dtype": "fp16",
+      "sizes": {
+        "m": 16,
+        "n": 16,
+        "k": 16
+      },
+      "source_kind": "tnca-ir",
+      "memory": "fast",
+      "seed": 42,
+      "roles": 1,
+      "implementations": [
+        "reference",
+        "candidate"
+      ],
+      "purpose": "tensor -> VRF -> MMA -> store, end to end numerically"
+    },
+    {
+      "id": "C04",
+      "workload": "gemm",
+      "dtype": "fp16",
+      "sizes": {
+        "m": 16,
+        "n": 16,
+        "k": 32
+      },
+      "source_kind": "tnca-ir",
+      "memory": "slow-reorder",
+      "seed": 42,
+      "roles": 1,
+      "schedule": "serial",
+      "implementations": [
+        "reference",
+        "candidate"
+      ],
+      "purpose": "two K16 steps; the return-contention baseline"
+    },
+    {
+      "id": "C05",
+      "workload": "gemm",
+      "dtype": "fp16",
+      "sizes": {
+        "m": 16,
+        "n": 16,
+        "k": 32
+      },
+      "source_kind": "tnca-ir",
+      "memory": "slow-reorder",
+      "seed": 42,
+      "roles": 2,
+      "schedule": "two-slot-pipeline",
+      "same_conditions_as": "C04",
+      "implementations": [
+        "reference",
+        "candidate"
+      ],
+      "purpose": "window reuse, concurrent clients, resources returned. C05 is allowed to be slower than C04; if it is, the reason is published and K is not increased to make it look better."
+    },
+    {
+      "id": "C06",
+      "workload": "reduction",
+      "dtype": "fp32",
+      "sizes": {
+        "elements": 16,
+        "valid": 15,
+        "rows": 1
+      },
+      "source_kind": "tnca-ir",
+      "memory": "fast",
+      "seed": 42,
+      "implementations": [
+        "reference",
+        "candidate"
+      ],
+      "purpose": "mask, a dependency chain, and read/write destinations"
+    }
+  ],
+  "runtime": [
+    {
+      "id": "RT-A",
+      "from_case": "C02",
+      "alpha": 2.5,
+      "implementations": [
+        "candidate"
+      ]
+    },
+    {
+      "id": "RT-B",
+      "from_case": "C02",
+      "alpha": -1.0,
+      "implementations": [
+        "candidate"
+      ]
+    },
+    {
+      "id": "RT-C",
+      "from_case": "C02",
+      "alpha": 0.25,
+      "implementations": [
+        "candidate"
+      ]
+    }
+  ],
+  "runtime_rules": {
+    "one_artifact": true,
+    "one_session": true,
+    "one_device_process": true,
+    "output_buffer_changes_each_time": true,
+    "code_hash_unchanged": true,
+    "extra_compiler_invocations_after_the_first": 0
+  },
+  "components": [
+    {
+      "id": "RF-01",
+      "gate": "G1",
+      "what": "capacity, banks, the inverse mapping, role aliasing, per-bank port limits",
+      "rtl_runs": 2
+    },
+    {
+      "id": "RF-02",
+      "gate": "G1",
+      "what": "mask, RDW, conflict, back-to-back requests, a stalled read response, against an independent model. Three seeds at the candidate's one-cycle latency; the existing two-cycle component test is retained but is not new work",
+      "seeds": [
+        1,
+        7,
+        42
+      ],
+      "rtl_runs": 3
+    },
+    {
+      "id": "RF-03",
+      "gate": "G1",
+      "what": "cold reset, read after a partial write, relaunch, in-flight at reset, zero/write race",
+      "rtl_runs": 4
+    },
+    {
+      "id": "CORE-01",
+      "gate": "G2",
+      "what": "the new top instantiates the banked VRF on the live datapath; every client enumerated; no shadow copy",
+      "rtl_runs": 1
+    },
+    {
+      "id": "CORE-02",
+      "gate": "G2",
+      "what": "three same-bank sources serialise, cross-bank parallel, no issue before all sources, payload stable across a stalled response",
+      "rtl_runs": 3
+    },
+    {
+      "id": "CORE-03",
+      "gate": "G2",
+      "what": "one directed program per read client (simd, lsu, tensor, matrix) that makes it really stall",
+      "rtl_runs": 4
+    },
+    {
+      "id": "FLOW-01",
+      "gate": "G3",
+      "what": "multiple writers to one bank in one cycle; every accepted transaction commits exactly once; a full FIFO stops issue",
+      "rtl_runs": 3
+    },
+    {
+      "id": "FLOW-02",
+      "gate": "G3",
+      "what": "the frozen fairness bound under sustained requests; conservation of issued/accepted/returned/committed/cancelled; credits returned",
+      "rtl_runs": 3
+    },
+    {
+      "id": "FLOW-03",
+      "gate": "G3",
+      "what": "collector entry reuse, flush and fault interleaved with a late return; leases freed on the real last consumption",
+      "rtl_runs": 4
+    },
+    {
+      "id": "COUNT-01",
+      "gate": "G5",
+      "what": "bank accepted/conflict, collector wait, writeback wait, inflight/credit against a short independent trace",
+      "rtl_runs": 2
+    }
+  ],
+  "mutations": [
+    {
+      "id": "M01",
+      "breaks": "the read returns a cycle early, or the wrong bank's data",
+      "detectors": [
+        "R3V2-RF-02",
+        "R3V2-CORE-02"
+      ],
+      "sub_variants": 2,
+      "rtl": true
+    },
+    {
+      "id": "M02",
+      "breaks": "a writeback reservation is dropped, or a full queue is ignored",
+      "detectors": [
+        "R3V2-FLOW-01",
+        "R3V2-FLOW-02"
+      ],
+      "sub_variants": 1,
+      "rtl": true
+    },
+    {
+      "id": "M03",
+      "breaks": "after a flush, an old tag writes into a new entry",
+      "detectors": [
+        "R3V2-FLOW-03"
+      ],
+      "sub_variants": 1,
+      "rtl": true
+    },
+    {
+      "id": "M04",
+      "breaks": "a masked write is dropped, or a source is freed early",
+      "detectors": [
+        "R3V2-RF-02",
+        "R3V2-FLOW-03"
+      ],
+      "sub_variants": 2,
+      "rtl": true
+    },
+    {
+      "id": "M05",
+      "breaks": "a stall is counted twice, or one accepted request is missed",
+      "detectors": [
+        "R3V2-COUNT-01"
+      ],
+      "sub_variants": 2,
+      "rtl": true
+    },
+    {
+      "id": "M06",
+      "breaks": "the model allows unlimited reads from one bank",
+      "detectors": [
+        "R3V2-MODEL-01"
+      ],
+      "sub_variants": 1,
+      "rtl": false
+    },
+    {
+      "id": "M07",
+      "breaks": "a missing candidate, an enlarged K, a forged elapsed time, missing evidence",
+      "detectors": [
+        "R3V2-BASE-02",
+        "R3V2-EV-01"
+      ],
+      "sub_variants": 4,
+      "rtl": false
+    }
+  ],
+  "inherited": [
+    {
+      "id": "INH-core-fast",
+      "command": "make core",
+      "profile": "core-sim",
+      "why": "the single-core ISA regression on the unchanged default profile"
+    },
+    {
+      "id": "INH-core-slow",
+      "command": "make core-slowmem",
+      "profile": "core-sim",
+      "why": "the same programs under a back-pressuring memory"
+    },
+    {
+      "id": "INH-core-ooo",
+      "command": "make core-ooo",
+      "profile": "core-sim",
+      "why": "and under out-of-order completion"
+    },
+    {
+      "id": "INH-unit",
+      "command": "make unit",
+      "profile": "none",
+      "why": "unit benches; shared RTL changes reach them"
+    },
+    {
+      "id": "INH-lint",
+      "command": "make lint",
+      "profile": "none",
+      "why": "every file still elaborates, the new ones included"
+    },
+    {
+      "id": "INH-resource",
+      "command": "make r1-resource-tests",
+      "profile": "core-sim",
+      "why": "ownership, footprint and resource checks must not regress"
+    },
+    {
+      "id": "INH-profile",
+      "command": "make r1-profile-tests",
+      "profile": "all",
+      "why": "the profile table against what the RTL elaborates, now with a new profile in it"
+    },
+    {
+      "id": "INH-generated",
+      "command": "make r1-check-generated",
+      "profile": "none",
+      "why": "generated artefacts still match their inputs"
+    },
+    {
+      "id": "INH-ir",
+      "command": "make r1-ir-tests",
+      "profile": "core-sim",
+      "why": "the compiler's IR-level checks"
+    },
+    {
+      "id": "INH-triton-e2e",
+      "command": "make triton-e2e",
+      "profile": "core-sim",
+      "why": "the real Triton frontend still compiles and runs"
+    },
+    {
+      "id": "INH-candidate-core",
+      "command": "make core PROFILE=core-vrf-sync-v1",
+      "profile": "core-vrf-sync-v1",
+      "why": "the same single-core ISA regression on the candidate. R3V2-REG-01 asks for the inherited cases to run on the candidate too, not only on the profile that did not change."
+    },
+    {
+      "id": "INH-top",
+      "command": "make top",
+      "profile": "system-2x2",
+      "why": "shared RTL changed, so the four-tile machine runs as well"
+    }
+  ],
+  "second_environment": {
+    "note": "A cross-environment smoke, not a second full acceptance. Its runs are budgeted separately and do not combine with the main environment's to make up coverage.",
+    "components": [
+      "RF-01",
+      "RF-02",
+      "RF-03",
+      "CORE-02",
+      "FLOW-01"
+    ],
+    "core": [
+      {
+        "id": "C02",
+        "implementations": [
+          "candidate"
+        ]
+      },
+      {
+        "id": "C03",
+        "implementations": [
+          "candidate"
+        ]
+      },
+      {
+        "id": "C05",
+        "implementations": [
+          "candidate"
+        ]
+      }
+    ],
+    "runtime": [
+      "RT-A",
+      "RT-B",
+      "RT-C"
+    ],
+    "compare": "numerical results and deterministic counts must agree; wall time is recorded separately and is not compared"
+  },
+  "mutation_rtl_accounting": {
+    "mutated_runs": "one per RTL sub-variant",
+    "clean_baseline_runs": 0,
+    "why": "The clean baseline for every mutation is the component suite passing on the unmutated candidate tree, which is already counted under `components`. Running it a second time to call it a baseline would spend budget to learn nothing."
+  }
+}

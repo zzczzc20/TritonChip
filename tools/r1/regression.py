@@ -484,9 +484,9 @@ def main():
             log.append('    ' + traceback.format_exc()[-700:].replace(
                 '\n', '\n    '))
         results.append(dict(id=cid, passed=bool(ok), detail=what))
-        print(f"  {cid}  {'PASS' if ok else 'FAIL':<5s} {what}")
+        print(f"  {cid}  {'PASS' if ok else 'FAIL':<5s} {what}", flush=True)
         for line in log:
-            print(line)
+            print(line, flush=True)
     if args.json:
         R.write_json(args.json, results)
     bad = [r['id'] for r in results if not r['passed']]

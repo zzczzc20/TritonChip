@@ -331,6 +331,10 @@ def main():
 
     entries = [e for e in ENTRIES if not args.only or e[0] in args.only]
     for name, argv, kind, tmpl in entries:
+        # Progress, unbuffered. A run that takes hours and prints nothing
+        # until it finishes cannot be watched, and "is it stuck?" is then a
+        # question only `ps` can answer.
+        print(f"  .. {name}", flush=True)
         step = R.run_step(argv, kind=kind,
                           case_dir=os.path.join(run_dir, 'logs', name),
                           name=name,
@@ -358,6 +362,7 @@ def main():
     for name, argv, kind, cap in CASE_SUITES:
         if args.only and name not in args.only:
             continue
+        print(f"  .. {name}", flush=True)
         case_dir = os.path.join(run_dir, 'logs', name)
         os.makedirs(case_dir, exist_ok=True)
         out_json = os.path.join(case_dir, 'cases.json')

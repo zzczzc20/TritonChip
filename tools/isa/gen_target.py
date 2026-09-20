@@ -89,6 +89,13 @@ def build_target(core, top, isa, name, description, profile=None):
         'matrix_bf16': True,
         'matrix_fp8': True,
         'tensor_dma': True,
+        # `t.st.async` (ISA sec 9E func 0x08) is encodable and the engine
+        # cannot source it: tnca_tensor has a vector write port and no read
+        # port. It raises ILLEGAL_INSTRUCTION rather than hanging
+        # (tb/core/progs/t26_stfault.s), and the compiler must not emit what
+        # the machine will refuse. Not a CAPABILITY0 bit -- there is no
+        # hardware configuration in which it is currently 1.
+        'tensor_store': False,
         'mbarrier': True,
         'packed_f16': False,
         'cache_hints': False,

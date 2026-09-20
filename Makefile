@@ -127,7 +127,7 @@ SFU_VECTORS ?= 6000
 FPU_MULTI_VECTORS ?= 1500
 
 CORE_PROGS := t00_scalar t01_vector t02_mem t03_fp t04_roles t05_fault t06_alu \
-              t11_matrix t12_tensor t13_share t14_caps t15_target t16_vecadd t17_descfault t18_squash t19_waitgen0 t20_sfu t21_cvt t22_atomic t23_amofault t25_mmasf
+              t11_matrix t12_tensor t13_share t14_caps t15_target t16_vecadd t17_descfault t18_squash t19_waitgen0 t20_sfu t21_cvt t22_atomic t23_amofault t25_mmasf t26_stfault
 
 # Image size in 64-bit words; must match tb_tnca_core's WORDS parameter.
 IMAGE_WORDS := 16384
@@ -140,6 +140,9 @@ ARGS_t05_fault := +allroles +expectfault=01
 ARGS_t13_share := +allroles +aliasvrf
 ARGS_t17_descfault := +expectfault=04
 ARGS_t23_amofault := +expectfault=03
+# t26 issues t.st.async, which this engine cannot source; ILLEGAL_INSTRUCTION
+# is the contract, and running to completion is the failure.
+ARGS_t26_stfault := +expectfault=01
 # t15 checks target facts against the hardware, and NUM_ROLES is the count this
 # LAUNCH activated (ISA sec 5.1) rather than the core's architectural NUM_RCTX.
 # Those agree only when every context is started, so this one starts them all.
@@ -350,6 +353,7 @@ core: export ARGS_t05_fault := $(ARGS_t05_fault)
 core: export ARGS_t13_share := $(ARGS_t13_share)
 core: export ARGS_t17_descfault := $(ARGS_t17_descfault)
 core: export ARGS_t23_amofault := $(ARGS_t23_amofault)
+core: export ARGS_t26_stfault := $(ARGS_t26_stfault)
 core: export ARGS_t15_target := $(ARGS_t15_target)
 core: export ARGS_t18_squash := $(ARGS_t18_squash)
 core: $(BUILD)/tb_core.vvp $(CORE_HEX)
@@ -368,6 +372,7 @@ core-slowmem: export ARGS_t05_fault := $(ARGS_t05_fault)
 core-slowmem: export ARGS_t13_share := $(ARGS_t13_share)
 core-slowmem: export ARGS_t17_descfault := $(ARGS_t17_descfault)
 core-slowmem: export ARGS_t23_amofault := $(ARGS_t23_amofault)
+core-slowmem: export ARGS_t26_stfault := $(ARGS_t26_stfault)
 core-slowmem: export ARGS_t15_target := $(ARGS_t15_target)
 core-slowmem: export ARGS_t18_squash := $(ARGS_t18_squash)
 core-slowmem: $(CORE_HEX) $(BUILD)/tb_core_slow.vvp | dirs
@@ -389,6 +394,7 @@ core-ooo: export ARGS_t05_fault := $(ARGS_t05_fault)
 core-ooo: export ARGS_t13_share := $(ARGS_t13_share)
 core-ooo: export ARGS_t17_descfault := $(ARGS_t17_descfault)
 core-ooo: export ARGS_t23_amofault := $(ARGS_t23_amofault)
+core-ooo: export ARGS_t26_stfault := $(ARGS_t26_stfault)
 core-ooo: export ARGS_t15_target := $(ARGS_t15_target)
 core-ooo: export ARGS_t18_squash := $(ARGS_t18_squash)
 core-ooo: $(CORE_HEX) $(BUILD)/tb_core_ooo.vvp | dirs
@@ -628,7 +634,7 @@ clean:
 #------------------------------------------------------------------------------
 .PHONY: r1-doctor r1-check-generated r1-gate-selftest r1-acceptance \
         r1-verify-evidence r1-inventory r1-check-artifacts r1-build-tests r1-profile-tests \
-        r1-resource-tests
+        r1-resource-tests r1-mutation-tests
 
 r1-doctor:
 	@$(PYTHON) tools/r1/doctor.py
@@ -672,6 +678,9 @@ r1-build-tests:
 
 r1-profile-tests: $(BUILD)/tb_core.vvp $(BUILD)/tb_core4.vvp $(BUILD)/tb_top.vvp
 	@$(PYTHON) tools/r1/profile_tests.py --json $(BUILD)/profile_tests.json
+
+r1-mutation-tests:
+	@$(PYTHON) tools/r1/mutation_tests.py --json $(BUILD)/mutation_tests.json
 
 r1-resource-tests:
 	@$(PYTHON) tools/r1/resource_tests.py --json $(BUILD)/resource_tests.json

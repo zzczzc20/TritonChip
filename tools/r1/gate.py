@@ -82,6 +82,11 @@ CASE_SUITES = [
      'build'),
     ('resource-tests', [sys.executable, 'tools/r1/resource_tests.py', '--json'],
      'build'),
+    # Last, and deliberately so: it copies the tree once per mutation and
+    # re-runs a suite twice, so it is the most expensive thing here and the
+    # only one whose value depends on everything above it already working.
+    ('mutation-tests', [sys.executable, 'tools/r1/mutation_tests.py', '--json'],
+     'build'),
 ]
 
 # Entries whose verdict covers a fixed set of inventory IDs rather than

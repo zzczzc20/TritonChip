@@ -798,6 +798,39 @@
       "note": ""
     },
     {
+      "id": "BASE-CORE-t26_stfault-fast",
+      "group": "contract/R1-06",
+      "entry": "make core",
+      "profile": "core-sim",
+      "expect": "PASS (t.st.async must raise ILLEGAL_INSTRUCTION, not hang)",
+      "source": "tb/core/progs/t26_stfault.s",
+      "work_package": "R1-06",
+      "baseline_status": "NOT RUN",
+      "note": "new in R1: the engine cannot source a window->global transfer, and a decodable instruction that deadlocks the core is not an acceptable answer. Runtime half of OWN-03 and OWN-09."
+    },
+    {
+      "id": "BASE-CORE-t26_stfault-slow",
+      "group": "contract/R1-06",
+      "entry": "make core-slowmem",
+      "profile": "core-sim",
+      "expect": "PASS (t.st.async must raise ILLEGAL_INSTRUCTION, not hang)",
+      "source": "tb/core/progs/t26_stfault.s",
+      "work_package": "R1-06",
+      "baseline_status": "NOT RUN",
+      "note": "new in R1: the engine cannot source a window->global transfer, and a decodable instruction that deadlocks the core is not an acceptable answer. Runtime half of OWN-03 and OWN-09."
+    },
+    {
+      "id": "BASE-CORE-t26_stfault-ooo",
+      "group": "contract/R1-06",
+      "entry": "make core-ooo",
+      "profile": "core-sim",
+      "expect": "PASS (t.st.async must raise ILLEGAL_INSTRUCTION, not hang)",
+      "source": "tb/core/progs/t26_stfault.s",
+      "work_package": "R1-06",
+      "baseline_status": "NOT RUN",
+      "note": "new in R1: the engine cannot source a window->global transfer, and a decodable instruction that deadlocks the core is not an acceptable answer. Runtime half of OWN-03 and OWN-09."
+    },
+    {
       "id": "BASE-TOP-t10_mesh-single-role",
       "group": "baseline/system",
       "entry": "make top",

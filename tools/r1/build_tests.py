@@ -51,25 +51,30 @@ def digest(path):
 SKIP_DIRS = {'.git', 'sim', 'build', '__pycache__', '.venv'}
 
 
-def tree_hashes(root, use_git=True):
-    """Hash the source tree, to prove an experiment leaked nothing into it.
+def source_rels(root, use_git=True):
+    """The files that make up the candidate tree.
 
-    A lab copy has no .git, so `git ls-files` there returns nothing and every
-    comparison trivially agrees -- which is how BUILD-04 first reported a
-    clean tree while the file it had just corrupted sat on disk. Falls back to
-    walking when git cannot answer.
+    A lab copy has no .git, so `git ls-files` there returns nothing -- which
+    is how BUILD-04 first reported a clean tree while the file it had just
+    corrupted sat on disk, and how a lab built inside a lab came out empty.
+    Falls back to walking when git cannot answer.
     """
     if use_git and os.path.isdir(os.path.join(root, '.git')):
         r = subprocess.run(['git', 'ls-files', '--cached', '--others',
                             '--exclude-standard'],
                            cwd=root, capture_output=True, text=True)
-        rels = r.stdout.split()
-    else:
-        rels = []
-        for base, dirs, files in os.walk(root):
-            dirs[:] = [d for d in dirs if d not in SKIP_DIRS]
-            for f in files:
-                rels.append(os.path.relpath(os.path.join(base, f), root))
+        return r.stdout.split()
+    rels = []
+    for base, dirs, files in os.walk(root):
+        dirs[:] = [d for d in dirs if d not in SKIP_DIRS]
+        for f in files:
+            rels.append(os.path.relpath(os.path.join(base, f), root))
+    return rels
+
+
+def tree_hashes(root, use_git=True):
+    """Hash the source tree, to prove an experiment leaked nothing into it."""
+    rels = source_rels(root, use_git)
     out = {}
     for rel in rels:
         p = os.path.join(root, rel)
@@ -81,18 +86,27 @@ def tree_hashes(root, use_git=True):
 class Lab:
     """An isolated copy of the candidate tree."""
 
-    def __init__(self, base):
+    def __init__(self, base, carry=()):
         self.dir = tempfile.mkdtemp(prefix='r1-build-', dir=base)
         # Tracked *and* untracked-but-not-ignored: the candidate under test is
         # the working tree, and copying only what git has committed would test
         # a different tree from the one the gate runs on.
-        r = subprocess.run(['git', 'ls-files', '--cached', '--others',
-                            '--exclude-standard'],
-                           cwd=ROOT, capture_output=True, text=True)
-        for rel in r.stdout.split():
+        for rel in source_rels(ROOT):
             src, dst = os.path.join(ROOT, rel), os.path.join(self.dir, rel)
+            if not os.path.exists(src):
+                continue
             os.makedirs(os.path.dirname(dst), exist_ok=True)
             shutil.copy2(src, dst)
+        # `carry` brings ignored build products along -- for an experiment
+        # about what a *stale* artefact does, rebuilding it would destroy the
+        # very condition under test.
+        for rel in carry:
+            src, dst = os.path.join(ROOT, rel), os.path.join(self.dir, rel)
+            if os.path.isdir(src):
+                shutil.copytree(src, dst, dirs_exist_ok=True)
+            elif os.path.exists(src):
+                os.makedirs(os.path.dirname(dst), exist_ok=True)
+                shutil.copy2(src, dst)
 
     def build(self, target=TARGET, extra=()):
         return sh(['make', target] + list(extra), self.dir)

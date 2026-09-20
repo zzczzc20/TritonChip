@@ -182,6 +182,10 @@ module tnca_tensor #(
 
     // --- transfer state ---
     reg               t_store;
+    // Which trap a fault raises. The engine used to hard-code DESCRIPTOR_FAULT
+    // because geometry was the only thing it could refuse; `t.st.async` needs
+    // a different code, and a fault path with one code cannot grow one.
+    reg  [7:0]        t_fcode;
     reg [DESC_W-1:0]  t_desc;
     reg [WIN_W-1:0]   t_win;
     reg [63:0]        t_c0, t_c1;
@@ -258,7 +262,7 @@ module tnca_tensor #(
     // like a correct transfer of the wrong numbers.
     wire rsp_write = mem_rsp_valid && (st != S_DLOAD) && (st != S_DWAIT);
 
-    wire issue_ok = (st == S_TRUN) && !unit_oob && have_tag && !t_store;
+    wire issue_ok = (st == S_TRUN) && !unit_oob && have_tag;
     wire dl_issue = (st == S_DLOAD);
 
     assign mem_req_valid = dl_issue || issue_ok;
@@ -291,6 +295,7 @@ module tnca_tensor #(
             vw_en     <= 1'b0;
             done      <= 1'b0;
             fault      <= 1'b0;
+            t_fcode    <= `TNCA_TRAP_DESC;
             fault_rctx <= {RCTX_W{1'b0}};
             fault_pc   <= 64'd0;
             done_bar_en <= 1'b0;
@@ -356,6 +361,7 @@ module tnca_tensor #(
                     st      <= S_DLOAD;
                 end else if (cmd_valid) begin
                     t_store  <= cmd_store;
+                    t_fcode  <= `TNCA_TRAP_DESC;
                     t_desc   <= cmd_desc;
                     t_win    <= cmd_win;
                     t_c0     <= cmd_c0;
@@ -365,6 +371,27 @@ module tnca_tensor #(
                     t_bar    <= cmd_bar;
                     t_rctx   <= cmd_rctx;
                     t_pc     <= cmd_pc;
+                    // `t.st.async` is encodable (ISA sec 9E func 0x08) and this
+                    // engine has no vector READ port, so it cannot perform one.
+                    // It used to be excluded from `issue_ok` alone, which meant
+                    // a store entered S_TRUN, issued nothing, never saw a
+                    // response and sat there until the testbench timed out --
+                    // a decodable instruction that deadlocked the core. An
+                    // unimplemented transfer direction is a fault: the waiter
+                    // is released with the barrier's error bit set and the
+                    // issuing context traps, which is what sec 1.6 requires of
+                    // a capability the machine does not have.
+                    //
+                    // Predication does not rescue it. A masked-off command
+                    // performs no access and still completes once (sec 9A.3),
+                    // but that is about the ACCESS, not about whether the
+                    // encoding is executable here; accepting a predicated-off
+                    // store would make the same program legal or illegal
+                    // depending on a runtime mask.
+                    if (cmd_store) begin
+                        t_fcode <= `TNCA_TRAP_ILLEGAL;
+                        st      <= S_FAULT;
+                    end else
                     // A fully-masked-off command reaches S_DONE without a
                     // single memory access or window write, and still signals
                     // its barrier once -- which is what keeps a static
@@ -506,7 +533,7 @@ module tnca_tensor #(
             // one failure mode a capability model exists to prevent.
             S_FAULT: begin
                 fault       <= 1'b1;
-                fault_code  <= `TNCA_TRAP_DESC;
+                fault_code  <= t_fcode;
                 fault_rctx  <= t_rctx;
                 fault_pc    <= t_pc;
                 done        <= 1'b1;
@@ -529,6 +556,6 @@ module tnca_tensor #(
     wire [31:0] cols_ok   = (cols_left >= {32'd0, t_cols}) ? t_cols : cols_left[31:0];
     assign t_valid_bytes  = row_oob ? 32'd0 : (cols_ok << t_esz);
 
-    wire _unused = &{1'b0, t_store, cmd_store, d_dtype[0], d_pad[0], 1'b0};
+    wire _unused = &{1'b0, t_store, d_dtype[0], d_pad[0], 1'b0};
 
 endmodule

@@ -641,9 +641,23 @@ class CodeGen:
                 source='compiler_overview.md sec 8.2')
 
     def _op_dma_load(self, op):
+        self._lower_transfer(op, store=False)
+
+    def _op_dma_store(self, op):
+        self._lower_transfer(op, store=True)
+
+    def _lower_transfer(self, op, *, store):
         window, desc, token = op.operands[0], op.operands[1], op.operands[2]
         coords = op.operands[3:]
-        self.target.require('tensor_dma', 'emit t.ld.async')
+        mnem = 't.st.async' if store else 't.ld.async'
+        self.target.require('tensor_dma', f'emit {mnem}')
+        if store:
+            # ISA sec 9E func 0x08 exists; no engine in any R1 profile can
+            # source it (tnca_tensor has a vector write port and no read
+            # port) and the hardware raises ILLEGAL_INSTRUCTION. A compiler
+            # that emits an instruction the machine refuses has moved a
+            # compile error into a runtime trap.
+            self.target.require('tensor_store', 'emit t.st.async')
         if len(coords) > self.target.dma_max_rank:
             raise Diagnostic(
                 f"a rank-{len(coords)} transfer on a target whose engine "
@@ -670,7 +684,7 @@ class CodeGen:
         # completes once, so the static operation count stays correct under
         # predication. The count above is therefore unconditional.
         mask = op.attrs.get('mask')
-        self._emit(f"t.ld.async.{suffix}", f"w{widx}", f"d{desc.reg}",
+        self._emit(f"{mnem}.{suffix}", f"w{widx}", f"d{desc.reg}",
                     f"s{run[0]}", f"s{token.reg}",
                     pred=self._pred(mask),
                     comment=('predicated off still completes once '
@@ -710,10 +724,16 @@ class CodeGen:
         # until completion would be a false dependency: it made `mb.arm`
         # writing an adjacent scalar a compile error in a program that is
         # correct. What must NOT be released early is the window, below.
-        # The window is what the engine WRITES, so reading it before the
-        # transfer completes is the error -- not writing it.
+        # For a load the window is what the engine WRITES, so reading it
+        # before the transfer completes is the error -- not writing it.
+        #
+        # Direction decides the mode, and the mode decides which program is
+        # wrong. A load WRITES the window, so reading it early is the error;
+        # a store READS it -- late, after this instruction has retired
+        # (sec 13.4's third implicit footprint) -- so OVERWRITING it early is
+        # the error, and reading it meanwhile is perfectly legal.
         self.own.hold(cmd, [RegRange('v', window.reg, window.length)],
-                      't.ld.async', mode='write')
+                      mnem, mode='read' if store else 'write')
         self._mma_pending.setdefault(bar, []).append(cmd)
 
         # Dead once the command has them; see the coordinate contract above.

@@ -392,6 +392,21 @@ class Builder:
                    dtype=dtype, rank=len(coords), mask=mask)
         return e
 
+    def dma_store(self, window, desc, coords, token, *, dtype='f16',
+                  mask=None):
+        """An asynchronous tile store out of a window.
+
+        The mirror image of dma_load, and the reason sec 13.4 lists three
+        implicit footprints rather than two: the engine reads the source
+        window LATE -- after the issuing instruction has retired -- so the
+        window stays live until the completion event, which is exactly the
+        range a liveness analysis built from the operand fields ends early.
+        """
+        e = self._value(EVENT, 'i1', hint='e')
+        self._emit('dma_store', [e], [window, desc, token] + list(coords),
+                   dtype=dtype, rank=len(coords), mask=mask)
+        return e
+
     def acc_zero(self, acc):
         self._emit('acc_zero', [], [acc])
 

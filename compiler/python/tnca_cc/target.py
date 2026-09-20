@@ -34,6 +34,7 @@ _CAPABILITY_USE = {
     'matrix_bf16': 'emit m.mma.async with BF16 inputs',
     'matrix_fp8': 'emit m.mma.async with OCP FP8 (E5M2 or E4M3) inputs',
     'tensor_dma': 'emit t.ld.async / t.st.async',
+    'tensor_store': 'emit t.st.async (window -> global)',
     'mbarrier': 'emit mbarrier operations',
     'vector_fp32': 'emit FP32 vector arithmetic',
     'cache_hints': 'attach a cache hint to a memory access',

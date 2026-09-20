@@ -57,7 +57,9 @@ ENTRIES = [
     # Per-seed lines, named with their inventory IDs directly.
     ('nuca',         ['make', 'nuca'],            'build', '{}'),
     ('mesh',         ['make', 'mesh'],            'build', '{}'),
-    ('top',          ['make', 'top'],             'build', None),
+    # Four runs, each named with its inventory ID. One exit code mapped onto
+    # four IDs said the same thing four times.
+    ('top',          ['make', 'top'],             'build', '{}'),
     # `make compiler` runs several checks and several suites. Mapping its
     # exit code onto BASE-CC-UNIT reported that suite as failing when a
     # *different* step in the same target failed, which is a mapping bug
@@ -125,9 +127,6 @@ LINE_IDS = {
 }
 
 COVERS = {
-    'top':          ['BASE-TOP-t10_mesh-single-role', 'BASE-TOP-t10_mesh-all-roles',
-                     'BASE-TOP-t24_amo_mesh-single-role',
-                     'BASE-TOP-t24_amo_mesh-all-roles'],
     'compiler-rtl': ['BASE-CC-RTL'],
 }
 

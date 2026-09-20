@@ -480,10 +480,10 @@ top: export ARGS_t24_amo_mesh := $(ARGS_t24_amo_mesh)
 top: $(BUILD)/tb_top.vvp $(patsubst %,$(BUILD)/%.hex,$(TOP_PROGS))
 	@for p in $(TOP_PROGS); do \
 	   extra=$$(eval echo \$${ARGS_$$p}); \
-	   $(TOOLS)/run_test.sh "$$p (2x2, 1 role)" \
+	   $(TOOLS)/run_test.sh "BASE-TOP-$$p-single-role" \
 	     "$(VVP) $(BUILD)/tb_top.vvp +hex=$(BUILD)/$$p.hex +maxcycles=2000000 $$extra" \
 	     || exit 1; \
-	   $(TOOLS)/run_test.sh "$$p (2x2, all roles)" \
+	   $(TOOLS)/run_test.sh "BASE-TOP-$$p-all-roles" \
 	     "$(VVP) $(BUILD)/tb_top.vvp +hex=$(BUILD)/$$p.hex +maxcycles=2000000 +allroles $$extra" \
 	     || exit 1; \
 	 done

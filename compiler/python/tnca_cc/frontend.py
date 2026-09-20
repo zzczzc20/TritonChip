@@ -146,6 +146,25 @@ class TTIRImporter:
         self.b.exit()
         return self.kernel, self.b
 
+    @staticmethod
+    def _constant_value(op):
+        """`op.get_constant_value()`, where the binding has it.
+
+        It does not exist before Triton 3.8, and calling it raised
+        AttributeError -- an interpreter error where the importer already had
+        a working fallback: the printed module, which is where float
+        constants come from anyway. The locked version has the method; this
+        keeps an older one from failing in a way that looks like a compiler
+        bug rather than a missing binding.
+        """
+        fn = getattr(op, 'get_constant_value', None)
+        if fn is None:
+            return None
+        try:
+            return fn()
+        except Exception:
+            return None
+
     # ---- function membership ----------------------------------------------
     @staticmethod
     def _in_function(op, fn):
@@ -287,7 +306,7 @@ class TTIRImporter:
         self._printed_consts = {}
         for op, literal in zip(walked, printed):
             self._printed_consts[op.get_result(0).id()] = literal
-            iv = op.get_constant_value()
+            iv = self._constant_value(op)
             if iv is not None:
                 m = re.fullmatch(r'(-?\d+)', literal)
                 if m and int(m.group(1)) != iv:
@@ -362,7 +381,7 @@ class TTIRImporter:
     def _op_arith_constant(self, op):
         rid = op.get_result(0).id()
         shape, elem = _parse_type(str(op.get_result(0).get_type()))
-        iv = op.get_constant_value()
+        iv = self._constant_value(op)
         if iv is None:
             printed = (self._printed_consts or {}).get(rid)
             if printed is None:

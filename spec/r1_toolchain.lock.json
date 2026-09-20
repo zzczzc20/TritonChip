@@ -91,12 +91,12 @@
     "minimum_llvm": 20
   },
   "triton": {
-    "note": "The frontend, from the published wheel rather than a source tree in somebody's home directory. R1-09 forbids referencing a maintainer's existing virtualenv path.",
-    "version": "3.5.0",
-    "distribution": "triton-3.5.0-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl",
-    "sha256": "c9e71db82261c4ffa3921cd050cd5faa18322d2d405c30eb56084afaff3b0833",
+    "note": "The frontend, from the published wheel rather than a source tree in somebody's home directory. R1-09 forbids referencing a maintainer's existing virtualenv path. 3.8.0 because that is the version the compiler is written against: 3.5.0 installs and imports, and its `ir.operation` has no `get_constant_value`, so the importer cannot read an integer constant. The frontend now falls back to the printed module when the method is absent, but the LOCKED version is the one the tests were written for.",
+    "version": "3.8.0",
+    "distribution": "triton-3.8.0-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl",
+    "sha256": "e91ffa46d095b252248297292dd22bcbacd53a125a0c2eefbbbf74925a320bc3",
     "index": "https://pypi.org/simple",
-    "install": "python3 -m venv <env>/tritonenv && <env>/tritonenv/bin/pip install triton==3.5.0"
+    "install": "python3 -m venv <env>/tritonenv && <env>/tritonenv/bin/pip install triton==3.8.0"
   },
   "xls": {
     "note": "The generator for rtl/gen. XLS is a BUILD-time dependency of the RTL and not a runtime one: the generated Verilog is checked in, so simulating and synthesising needs no XLS at all. Regenerating it does, and R1-09 requires that to be a fixed revision run locally or in a container rather than over somebody's ssh.",

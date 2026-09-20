@@ -61,7 +61,7 @@ if [ ! -f "$TARBALL" ] && [ -n "${XLS_CACHE:-}" ] \
 fi
 
 if [ -f "$TARBALL" ]; then
-  echo "already present: $TARBALL"
+  : # already here, from the cache above or from an earlier run
 else
   echo "fetching $URL"
   curl -fL --retry 3 -o "$TARBALL.part" "$URL"

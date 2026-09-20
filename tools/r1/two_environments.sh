@@ -31,9 +31,11 @@ rm -rf "$STAGE"
 mkdir -p "$STAGE"
 tar xzf "$ARCHIVE" -C "$STAGE" 2>/dev/null
 
+# The banner goes to stderr and the pid to stdout, because the caller reads
+# stdout. It read both, once, and `wait` was handed a banner.
 run_one() {
   local name=$1
-  echo "################ $name ################"
+  echo "################ $name ################" >&2
   ( cd "$STAGE" \
     && R1_PIP_CACHE="$PIP_CACHE" R1_XLS_CACHE="$XLS_CACHE_DIR" \
        bash tools/r1/bootstrap.sh "$ROOT/$name" "$ARCHIVE" ) \
@@ -54,6 +56,12 @@ wait "$PID_B" || RC_B=$?
 echo "envA exit=$RC_A  envB exit=$RC_B"
 
 echo "################ comparison ################"
+for e in envA envB; do
+  if [ ! -d "$ROOT/$e/evidence" ]; then
+    echo "$e produced no evidence directory; see $ROOT/$e.log"
+    exit 1
+  fi
+done
 CMP="$ROOT/compare"
 rm -rf "$CMP"; mkdir -p "$CMP"
 cp -r "$ROOT/envA/evidence" "$CMP/A"

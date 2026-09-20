@@ -185,6 +185,11 @@ jobs:
       - name: R2 faults and recovery
         run: make r2-fault-tests TRITON_PYTHON=$HOME/tritonenv/bin/python
 
+      # Nine grids, with the kernel writing its own identity and the whole
+      # array compared against a mapping computed independently.
+      - name: R2 grid mapping
+        run: make r2-grid-tests TRITON_PYTHON=$HOME/tritonenv/bin/python
+
       # The installable wheel, and the claim that matters: an environment
       # with no Triton and no compiler loads an artifact and runs it.
       - name: R2 package

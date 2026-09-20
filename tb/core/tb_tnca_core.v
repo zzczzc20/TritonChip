@@ -81,7 +81,7 @@ module tb_tnca_core;
     // R3-06 COUNT-02: the exclusive stall attribution.
     wire [63:0] perf_stall_total, perf_x_hazard, perf_x_lsu, perf_x_fpu,
                 perf_x_mtx, perf_x_txf, perf_x_fence, perf_x_arrive,
-                perf_x_rsv, perf_x_wb;
+                perf_x_rsv, perf_x_wb, perf_x_vrf, perf_x_vrfwb;
 
     tnca_core #(
         .NUM_RCTX(NUM_RCTX), .RCTX_W(RCTX_W), .VLEN(VLEN), .ELEN(ELEN), .LW(4),
@@ -115,7 +115,8 @@ module tb_tnca_core;
         .perf_x_fpu(perf_x_fpu), .perf_x_mtx(perf_x_mtx),
         .perf_x_txf(perf_x_txf), .perf_x_fence(perf_x_fence),
         .perf_x_arrive(perf_x_arrive), .perf_x_rsv(perf_x_rsv),
-        .perf_x_wb(perf_x_wb)
+        .perf_x_wb(perf_x_wb), .perf_x_vrf(perf_x_vrf),
+        .perf_x_vrfwb(perf_x_vrfwb)
     );
 
     tnca_mem_model #(
@@ -207,13 +208,13 @@ module tb_tnca_core;
                  dut.vrf_n_serial, dut.vrf_n_parallel,
                  dut.vrf_n_mtx_req, dut.vrf_n_mtx_wait,
                  dut.vrf_n_wb_retry);
-        $display("stall_total=%0d x_hazard=%0d x_lsu=%0d x_fpu=%0d x_mtx=%0d x_txf=%0d x_fence=%0d x_arrive=%0d x_rsv=%0d x_wb=%0d x_sum=%0d",
+        $display("stall_total=%0d x_hazard=%0d x_lsu=%0d x_fpu=%0d x_mtx=%0d x_txf=%0d x_fence=%0d x_arrive=%0d x_rsv=%0d x_wb=%0d x_vrf=%0d x_vrfwb=%0d x_sum=%0d",
                  perf_stall_total, perf_x_hazard, perf_x_lsu, perf_x_fpu,
                  perf_x_mtx, perf_x_txf, perf_x_fence, perf_x_arrive,
-                 perf_x_rsv, perf_x_wb,
+                 perf_x_rsv, perf_x_wb, perf_x_vrf, perf_x_vrfwb,
                  perf_x_hazard + perf_x_lsu + perf_x_fpu + perf_x_mtx
                  + perf_x_txf + perf_x_fence + perf_x_arrive + perf_x_rsv
-                 + perf_x_wb);
+                 + perf_x_wb + perf_x_vrf + perf_x_vrfwb);
         // What the memory model's seed actually changed. A matrix that runs
         // three seeds and reports three identical traces has run one seed
         // three times, and R1-08 asks for the difference to be visible.

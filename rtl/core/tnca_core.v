@@ -175,7 +175,9 @@ module tnca_core #(
     output reg  [63:0]              perf_x_fence,
     output reg  [63:0]              perf_x_arrive,
     output reg  [63:0]              perf_x_rsv,
-    output reg  [63:0]              perf_x_wb
+    output reg  [63:0]              perf_x_wb,
+    output reg  [63:0]              perf_x_vrf,
+    output reg  [63:0]              perf_x_vrfwb
 );
 
     // NOTE ON THE INSTRUCTION PORT: Stage 1 models instruction fetch as a
@@ -639,6 +641,33 @@ module tnca_core #(
         assign mtx_vrf_data = vrf_rsp_data[3*VW +: VW];
 
         assign vrf_stall = of_enable && !of_ready;
+
+`ifndef SYNTHESIS
+        // A bounded event trace, off unless asked for.
+        //
+        // R3V2-COUNT-01 wants the counters checked against an independent
+        // short trace rather than against themselves. This prints the
+        // EVENTS -- each request offered, each one taken, each response --
+        // and tools/r3v2/count_tests.py counts them in Python and compares
+        // with the hardware counters below. Section 4.3 caps a diagnostic
+        // window at 256 cycles, which is what `+vrftrace=` sets.
+        integer trace_n, trace_lim;
+        initial begin
+            trace_n = 0;
+            if (!$value$plusargs("vrftrace=%d", trace_lim)) trace_lim = 0;
+        end
+        always @(posedge clk) begin
+            if (rst_n && trace_lim != 0 && trace_n < trace_lim) begin
+                if (|of_want || mtx_vrf_req || |wr_we) begin
+                    $display("VRFEV %0d want=%b acc=%b rsp=%b mreq=%b mval=%b we=%b wok=%b",
+                             trace_n, of_want, vrf_req_accept[2:0],
+                             vrf_rsp_valid[2:0], mtx_vrf_req,
+                             mtx_vrf_valid_w, wr_we, wr_ok);
+                end
+                trace_n = trace_n + 1;
+            end
+        end
+`endif
 
         //----------------------------------------------------------------
         // What the file cost, per client
@@ -1613,6 +1642,16 @@ module tnca_core #(
                    && !x_fence && !x_arr && stall_rsv;
     wire x_wb    = !x_haz && !x_lsu && !x_fpu && !x_mtx && !x_txf
                    && !x_fence && !x_arr && !x_rsv && wb_steal;
+    // The two the banked file adds. They are last in the priority chain
+    // and zero on the reference, so its attribution is unchanged -- but
+    // they have to be IN the chain: adding a stall source to stall_front
+    // and not to the attribution breaks the one property the exclusive
+    // group exists to have, which is that it sums to the total.
+    wire x_vrf   = !x_haz && !x_lsu && !x_fpu && !x_mtx && !x_txf
+                   && !x_fence && !x_arr && !x_rsv && !x_wb && vrf_stall;
+    wire x_vrfwb = !x_haz && !x_lsu && !x_fpu && !x_mtx && !x_txf
+                   && !x_fence && !x_arr && !x_rsv && !x_wb && !x_vrf
+                   && vrf_wb_freeze;
 
     // A redirect kills only the younger entries of the same RCTX.
     wire             squash_en   = x_redirect;
@@ -1679,6 +1718,8 @@ module tnca_core #(
             perf_x_arrive     <= 64'd0;
             perf_x_rsv        <= 64'd0;
             perf_x_wb         <= 64'd0;
+            perf_x_vrf        <= 64'd0;
+            perf_x_vrfwb      <= 64'd0;
             perf_stall_wb     <= 64'd0;
             perf_squash       <= 64'd0;
             for (i = 0; i < NUM_RCTX; i = i + 1)
@@ -1763,6 +1804,8 @@ module tnca_core #(
             if (|running && x_arr)   perf_x_arrive <= perf_x_arrive + 64'd1;
             if (|running && x_rsv)   perf_x_rsv    <= perf_x_rsv    + 64'd1;
             if (|running && x_wb)    perf_x_wb     <= perf_x_wb     + 64'd1;
+            if (|running && x_vrf)   perf_x_vrf    <= perf_x_vrf    + 64'd1;
+            if (|running && x_vrfwb) perf_x_vrfwb  <= perf_x_vrfwb  + 64'd1;
 
             //------------------------------------------------------------------
             // launch

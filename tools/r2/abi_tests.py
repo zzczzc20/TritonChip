@@ -221,7 +221,171 @@ def abi_version(log):
     return ok, 'a higher minor is refused, not only a higher major'
 
 
-TESTS = [('ABI-01', abi01), ('ABI-VERSION', abi_version)]
+def _runtime_fixture():
+    """A session with the AXPY artifact loaded, for the cases that execute."""
+    import tempfile
+    sys.path.insert(0, os.path.join(ROOT, 'compiler', 'test'))
+    from tnca import aot
+    from tnca.runtime import Session
+    import kernels_triton as K
+    sig = {'x_ptr': '*fp32', 'y_ptr': '*fp32', 'o_ptr': '*fp32',
+           'n': 'i32', 'alpha': 'fp32', 'BLOCK': 'constexpr'}
+    d = tempfile.mkdtemp(prefix='r2-abi-')
+    res = aot.compile_aot(K.axpy_kernel, signature=sig,
+                          constexprs={'BLOCK': 16}, profile='core-sim',
+                          output=os.path.join(d, 'axpy.tnca'))
+    s = Session(workdir=os.path.join(d, 'dev'), deadline_cycles=200000,
+                host_timeout=120)
+    return s, s.load(res.path), res
+
+
+def _have_triton():
+    try:
+        import triton      # noqa: F401
+        return True
+    except Exception:
+        return False
+
+
+def _f32s(values):
+    return b''.join(struct.pack('<f', v) for v in values)
+
+
+def abi02(log):
+    """One artifact, three sets of addresses and values, one compile."""
+    if not _have_triton():
+        return False, 'needs the locked Triton'
+    from tnca import artifact
+    s, mod, res = _runtime_fixture()
+    ok = True
+    try:
+        before = artifact.load(res.path)[0]['code']['segments'][0]['sha256']
+        N = 16
+        seen = []
+        for i, (alpha, n) in enumerate(((2.0, 16), (-3.5, 8), (0.5, 1))):
+            x, y, o = (s.allocate(N * 4, name=f"{c}{i}") for c in 'xyo')
+            xs = [float(j + i) for j in range(N)]
+            ys = [float(100 * i + j) for j in range(N)]
+            s.upload(x, _f32s(xs))
+            s.upload(y, _f32s(ys))
+            s.upload(o, b'\xef\xbe\xad\xde' * N)
+            ev = s.submit(mod, {'x_ptr': x, 'y_ptr': y, 'o_ptr': o,
+                                'n': n, 'alpha': alpha})
+            s.wait(ev)
+            got = list(struct.unpack(f'<{N}f', s.download(o, N * 4)))
+            want = [xs[j] * alpha + ys[j] if j < n else None
+                    for j in range(N)]
+            head_ok = all(got[j] == want[j] for j in range(n))
+            # Past `n` the mask must have left the sentinel alone.
+            tail_ok = all(struct.pack('<f', got[j]) == b'\xef\xbe\xad\xde'
+                          for j in range(n, N))
+            seen.append((alpha, n, x.addr, head_ok, tail_ok))
+            log.append(f"    alpha={alpha:<5} n={n:<3} at {x.addr:#07x}: "
+                       f"first {n} correct={head_ok}, tail untouched="
+                       f"{tail_ok}")
+            ok &= head_ok and tail_ok
+        after = artifact.load(res.path)[0]['code']['segments'][0]['sha256']
+        log.append(f"    the code hash across all three: "
+                   f"{'unchanged' if before == after else 'CHANGED (bad)'}")
+        log.append(f"    distinct buffer addresses used: "
+                   f"{len({t[2] for t in seen})}")
+        ok &= before == after and len({t[2] for t in seen}) == 3
+    finally:
+        s.poisoned = True
+        s.close()
+    return ok, 'three address sets, three scalars, one unchanged code page'
+
+
+def abi03(log):
+    """Every way an argument can be wrong, refused before anything runs."""
+    if not _have_triton():
+        return False, 'needs the locked Triton'
+    from tnca.errors import ArgumentError, BufferError, TncaError
+    s, mod, _res = _runtime_fixture()
+    ok = True
+    try:
+        N = 16
+        x, y, o = (s.allocate(N * 4, name=c) for c in 'xyo')
+        small = s.allocate(8, name='small')
+        good = {'x_ptr': x, 'y_ptr': y, 'o_ptr': o, 'n': N, 'alpha': 1.0}
+
+        def refused(label, args):
+            nonlocal ok
+            before = len(s._events)
+            try:
+                s.submit(mod, args)
+                log.append(f"    {label:<34s} -> ACCEPTED (bad)")
+                ok = False
+            except TncaError as e:
+                started = len(s._events) > before
+                log.append(f"    {label:<34s} -> [{e.code}]"
+                           + ('  AND QUEUED A TASK (bad)' if started else ''))
+                ok &= not started
+
+        refused('a missing argument',
+                {k: v for k, v in good.items() if k != 'n'})
+        refused('an extra argument', dict(good, extra=1))
+        refused('an integer past i32', dict(good, n=2 ** 31))
+        refused('a float where i32 is declared', dict(good, n=1.5))
+        refused('a host integer as a pointer', dict(good, x_ptr=0x1000))
+        refused('a byte offset past the buffer',
+                dict(good, x_ptr=(x, N * 4 + 8)))
+        refused('a negative byte offset', dict(good, x_ptr=(x, -8)))
+
+        # A freed handle, and one from another session.
+        s.free(small)
+        refused('a freed buffer', dict(good, x_ptr=small))
+        other = __import__('tnca.runtime', fromlist=['Session']).Session(
+            workdir=None, deadline_cycles=200000, host_timeout=120)
+        try:
+            foreign = other.allocate(N * 4)
+            refused("another session's buffer", dict(good, x_ptr=foreign))
+        finally:
+            other.poisoned = True
+            other.close()
+    finally:
+        s.poisoned = True
+        s.close()
+    return ok, 'nine bad arguments, none of which started anything'
+
+
+def abi04(log):
+    """The block is a snapshot: mutating the caller's dict changes nothing."""
+    if not _have_triton():
+        return False, 'needs the locked Triton'
+    s, mod, _res = _runtime_fixture()
+    ok = True
+    try:
+        N = 16
+        x, y, o = (s.allocate(N * 4, name=c) for c in 'xyo')
+        s.upload(x, _f32s([2.0] * N))
+        s.upload(y, _f32s([0.0] * N))
+
+        # The same dict object, submitted and then changed. The task must
+        # see what it was submitted with.
+        args = {'x_ptr': x, 'y_ptr': y, 'o_ptr': o, 'n': N, 'alpha': 3.0}
+        s._stop.set()
+        s._worker.join(timeout=10)
+        ev = s.submit(mod, args)
+        args['alpha'] = 99.0          # after submit, before it runs
+        args['n'] = 1
+        s._start_worker()
+        s.wait(ev)
+        got = list(struct.unpack(f'<{N}f', s.download(o, N * 4)))
+        want = [2.0 * 3.0] * N
+        log.append(f"    submitted alpha=3.0, then set the dict to 99.0 "
+                   f"before it ran")
+        log.append(f"    the task computed with alpha="
+                   f"{got[0] / 2.0:.1f}: {'the snapshot' if got == want else 'THE MUTATION (bad)'}")
+        ok &= got == want
+    finally:
+        s.poisoned = True
+        s.close()
+    return ok, 'a submitted task sees the snapshot, not the caller\'s dict'
+
+
+TESTS = [('ABI-01', abi01), ('ABI-VERSION', abi_version),
+         ('ABI-02', abi02), ('ABI-03', abi03), ('ABI-04', abi04)]
 
 
 def main():

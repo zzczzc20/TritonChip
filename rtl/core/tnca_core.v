@@ -470,6 +470,7 @@ module tnca_core #(
     // warning at all. That is how mtx_rctx, mtx_vrf_req and this one were
     // each silently disconnected.
     wire                 stall_front;
+    wire                 stall_other;     // everything but the VRF
     wire                 vrf_stall;       // operands not yet collected
     wire                 vrf_wb_freeze;   // a vector writeback was refused
     wire                 mtx_vrf_valid_w;
@@ -558,29 +559,36 @@ module tnca_core #(
         //----------------------------------------------------------------
         // Operand fetch
         //
-        // The reads are issued in R, not in X. The indices are already
-        // known there -- x_va_idx is a register loaded from r_va_idx --
-        // so a one-cycle read started in R has its data exactly when the
-        // instruction arrives in X, and the common case costs nothing.
+        // The reads are issued in R and their data is used in X, which is
+        // where a one-cycle file has to be read from if X is to stay a
+        // single cycle. It has to stay a single cycle: the writeback
+        // reservation is booked when an instruction leaves R against a
+        // fixed latency, and holding an instruction in X makes it execute
+        // -- and write back -- again. The core says so itself, with
+        // "reservation disagrees with reality".
         //
-        // What it does cost is a stall whenever two of an instruction's
-        // three sources live in the same bank, which is the whole point:
-        // the behavioural file reads three registers at once because it
-        // has three ports, and this one has to take turns.
+        // Reading in R is a cycle earlier than the behavioural file was
+        // read, and that is exactly one cycle too early for the X_PROD
+        // case of the hazard interlock; see AVAIL_V below.
         //----------------------------------------------------------------
-        wire [2:0] of_need = {r_vc_en, r_vb_en, r_va_en} & {3{r_valid}};
+        // Only once the instruction is otherwise ready to go. Fetching
+        // earlier reads a register a producer has not written yet, and
+        // nothing afterwards can tell that the value is stale.
+        wire of_enable = r_valid && !stall_other;
+        wire [2:0] of_need =
+            {r_vc_en, r_vb_en, r_va_en} & {3{of_enable}};
         reg  [2:0] of_got;
         reg  [VW-1:0] of_d0, of_d1, of_d2;
 
         wire [2:0] of_arrive = vrf_rsp_valid[2:0];
         wire [2:0] of_have   = of_got | of_arrive;
-        // Nothing left to fetch for the instruction in R.
         wire of_ready = ((of_need & ~of_have) == 3'b000);
 
-        // Ask for what is needed and has not arrived. A source already in
-        // hand is not asked for again -- that is the difference between a
-        // retry and a second read.
-        wire [2:0] of_want = of_need & ~of_got;
+        // Ask for what is needed and has not arrived -- counting what is
+        // arriving THIS cycle. Using only what had already arrived
+        // re-requested a source in the same cycle its response landed, and
+        // the duplicate came back after the instruction had gone.
+        wire [2:0] of_want = of_need & ~of_have;
 
         wire [VW-1:0] of_v0 = of_arrive[0] ? vrf_rsp_data[0*VW +: VW] : of_d0;
         wire [VW-1:0] of_v1 = of_arrive[1] ? vrf_rsp_data[1*VW +: VW] : of_d1;
@@ -590,8 +598,7 @@ module tnca_core #(
             if (!rst_n) begin
                 of_got <= 3'b000;
             end else if (!stall_front) begin
-                // The instruction moved on; the next one starts empty.
-                of_got <= 3'b000;
+                of_got <= 3'b000;      // the instruction left R
             end else begin
                 of_got <= of_have;
                 if (of_arrive[0]) of_d0 <= vrf_rsp_data[0*VW +: VW];
@@ -613,16 +620,24 @@ module tnca_core #(
         assign vb_data = x_vb_q;
         assign vc_data = x_vc_q;
 
-        assign vrf_stall = r_valid && !of_ready;
+        // The matrix consumes its data in the cycle its response is valid,
+        // so it comes straight off port 3. Leaving this undriven left the
+        // matrix reading Z, and the Z propagated as far as the writeback
+        // reservation shift register, which then disagreed with reality --
+        // an assertion firing three stages away from its cause.
+        assign mtx_vrf_data = vrf_rsp_data[3*VW +: VW];
+
+        assign vrf_stall = of_enable && !of_ready;
+
 
         //----------------------------------------------------------------
         // Requests: three execute sources and the matrix unit
         //----------------------------------------------------------------
         wire [3:0] rq_v = {mtx_vrf_req && !mtx_vrf_valid_w, of_want};
-        wire [4*RCTX_W-1:0] rq_rctx =
-            {mtx_rctx, {3{r_rctx}}};
+        wire [4*RCTX_W-1:0] rq_rctx = {mtx_rctx, {3{r_rctx}}};
         wire [4*8-1:0] rq_idx =
             {mtx_vrf_addr, r_vc_idx, r_vb_idx, r_va_idx};
+
 
         //----------------------------------------------------------------
         // Writes: the transfer engine wins, the writeback retries
@@ -714,7 +729,28 @@ module tnca_core #(
                                (x_rctx == (rc)) && (x_dsti[3:0] == (idx)))
 
     `define AVAIL_S(rc, idx) (`WB_HIT_S(rc, idx) || `X_PROD_S(rc, idx))
-    `define AVAIL_V(rc, idx) (`WB_HIT_V(rc, idx) || `X_PROD_V(rc, idx))
+    // Both of those exemptions assume the file is read in X.
+    //
+    // WB_HIT says the WB stage writes the register now, so the file holds
+    // it next cycle -- next cycle being when a consumer released from R
+    // reaches X. X_PROD says the same thing a cycle further out, covered
+    // by the behavioural file's asynchronous write-first read, which IS
+    // the forwarding path.
+    //
+    // The banked file is read in R, one cycle before either write lands,
+    // and has no forwarding network. Measured: the consumer's read was
+    // issued in cycle 4 and the producer's write happened in cycle 5, so
+    // the read returned the stale value -- and the first assertion in
+    // t01_vector passed anyway, because iota's lane 0 is zero and so was
+    // the stale value.
+    //
+    // So on the candidate a busy vector register is simply a hazard until
+    // the scoreboard clears it, which is when the value is really in the
+    // file. That costs a stall on every producer/consumer pair. It is the
+    // price of a synchronous read without forwarding, and this stage
+    // reports it rather than building the network to hide it.
+    `define AVAIL_V(rc, idx) (!USE_BANKED_VRF && \
+                              (`WB_HIT_V(rc, idx) || `X_PROD_V(rc, idx)))
     `define AVAIL_P(rc, idx) (`WB_HIT_P(rc, idx) || `X_PROD_P(rc, idx))
 
     wire hz_sa = r_sa_en && `SB_S_BUSY(r_rctx, r_sa_idx) && !`AVAIL_S(r_rctx, r_sa_idx);
@@ -1485,10 +1521,18 @@ module tnca_core #(
 
     wire stall_rsv = r_books_wb && wb_rsv[r_wb_delay + 4'd1];
 
-    assign stall_front = hazard | stall_lsu | stall_fpu | stall_mtx
+    // Everything that holds an instruction in R for a reason other than
+    // its vector operands. The operand fetch is gated on this: a read
+    // issued while the instruction is still hazarded comes back with the
+    // value from before the producer wrote, and the instruction then
+    // advances holding it. Measured: the consumer read v2 in cycle 43,
+    // the producer wrote it in 44, and the assertion failed on the value
+    // from 43.
+    assign stall_other = hazard | stall_lsu | stall_fpu | stall_mtx
                      | stall_txf | stall_fence
-                     | stall_arrive | stall_rsv | wb_steal
-                     | vrf_stall | vrf_wb_freeze;
+                     | stall_arrive | stall_rsv | wb_steal;
+
+    assign stall_front = stall_other | vrf_stall | vrf_wb_freeze;
 
     // Exclusive attribution. The order is the order of the OR above, which
     // makes it arbitrary but FIXED -- and fixed is what matters: the same

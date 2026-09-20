@@ -356,6 +356,25 @@ core: export ARGS_t23_amofault := $(ARGS_t23_amofault)
 core: export ARGS_t26_stfault := $(ARGS_t26_stfault)
 core: export ARGS_t15_target := $(ARGS_t15_target)
 core: export ARGS_t18_squash := $(ARGS_t18_squash)
+# The candidate, on the same programs with the same arguments as `core`.
+# A difference in the result is then a difference in the register file and
+# not in how the two were run.
+.PHONY: core-vrf
+core-vrf: export ARGS_t04_roles := $(ARGS_t04_roles)
+core-vrf: export ARGS_t05_fault := $(ARGS_t05_fault)
+core-vrf: export ARGS_t13_share := $(ARGS_t13_share)
+core-vrf: export ARGS_t17_descfault := $(ARGS_t17_descfault)
+core-vrf: export ARGS_t23_amofault := $(ARGS_t23_amofault)
+core-vrf: export ARGS_t26_stfault := $(ARGS_t26_stfault)
+core-vrf: export ARGS_t15_target := $(ARGS_t15_target)
+core-vrf: $(BUILD)/tb_core_vrf.vvp $(CORE_HEX)
+	@for p in $(CORE_PROGS); do \
+	   extra=$$(eval echo \$${ARGS_$$p}); \
+	   $(TOOLS)/run_test.sh "$$p (banked vrf)" \
+	     "$(VVP) $(BUILD)/tb_core_vrf.vvp +hex=$(BUILD)/$$p.hex +maxcycles=200000 $$extra" \
+	     || exit 1; \
+	 done
+
 core: $(BUILD)/tb_core.vvp $(CORE_HEX)
 	@for p in $(CORE_PROGS); do \
 	   extra=$$(eval echo \$${ARGS_$$p}); \
@@ -605,6 +624,15 @@ e2e: $(BUILD)/tb_top.vvp
 # that picked one up was running against whatever RTL happened to be current
 # when that target last ran -- which silently produced failures against
 # already-fixed bugs.
+# The candidate: the same bench source, the same programs, a different
+# vector register file. One source for both implementations means a
+# difference between them cannot be a difference in the testbench.
+$(BUILD)/tb_core_vrf.vvp: $(RTL_DEPS) $(TB)/core/tb_tnca_core.v \
+                          $(TB)/common/tnca_mem_model.v | dirs
+	$(IVERILOG) $(IVFLAGS) -y $(RTL)/core -y $(RTL)/common -y $(RTL)/gen -y $(TB)/common \
+	   -P tb_tnca_core.USE_BANKED_VRF=1 \
+	   -o $@ $(TB)/core/tb_tnca_core.v
+
 $(BUILD)/tb_core_slow.vvp: $(RTL_DEPS) $(TB)/core/tb_tnca_core.v \
                            $(TB)/common/tnca_mem_model.v $(BUILD)/tb_core_slow.fp | dirs
 	$(IVERILOG) $(IVFLAGS) -y $(RTL)/core -y $(RTL)/common -y $(RTL)/gen -y $(TB)/common \

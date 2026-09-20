@@ -6,7 +6,7 @@
 本文件只记录**已经跑过并留下证据**的部分。状态只有 DELIVERED、PARTIAL、
 NOT STARTED 三种；没有完成度百分比。
 
-**R3 未签收。** 十二个工作包中三个已满足全部验收条件，三个部分满足。
+**R3 未签收。** 十二个工作包中三个已满足全部验收条件，四个部分满足。
 
 ## 逐包状态
 
@@ -22,7 +22,7 @@ NOT STARTED 三种；没有完成度百分比。
 | R3-08 小算子数值路径 | **NOT STARTED** | — | NUM-01…05 |
 | R3-09 模型校准与留出验证 | **NOT STARTED** | — | CAL-01…05 |
 | R3-10 存储结构综合 | **DELIVERED** | SYN-01…05 全通过。`flow/synth/mem_synth.py` 用 `proc; opt; memory -nomap; opt` 做**保留 memory** 的结构综合（旧的 `synth.py` 会把寄存器堆映射成几十万个触发器，回答的是别的问题）。结果：`tnca_vrf_banked` 4 个 memory 对象共 65536 bit = **正好 8 KiB**，每个 **1 读口 1 写口、同步读**；作为对照，被它替换的 `tnca_vector_rf` 是 **4 读口 130 写口、异步读**。数据阵列不在 reset 里清零；collector 的 162 个触发器位与 136 bit 控制阵列**单独列账**，不计入容量。无 PDK，所以只写 memory-inferred，Fmax/面积/功耗一律 NOT MEASURED，且测试会检查报告**没有**声称 SRAM 面积或频率 | 无 |
-| R3-11 预算门禁与 mutation | **NOT STARTED** | — | GATE-01…05 |
+| R3-11 预算门禁与 mutation | **PARTIAL** | R3M-01a/01b/04a/04b/05/06 六个变异全部被指定检查抓住，全部注入在隔离副本，候选源码哈希不变：同步读提前一拍与跨 bank 串数据被 RF-02 抓住；stall 重叠重复计数被 COUNT-02 抓住；少数一个端口的 grant 被 COUNT-01 抓住；模型 RF 端口无限被 MODEL-02 抓住；workload 偷偷把 K 撑到 4 倍上限被 PLAN-02 在**启动 RTL 之前**拒绝 | R3M-02/03 的检测器（FLOW-03、UNIT/NUM）尚不存在；BUDGET-02/03/04 未做 |
 | R3-12 双环境与发布证据 | **NOT STARTED** | — | R3REL-01…05 |
 
 ## 这一阶段已经成立的核心性质

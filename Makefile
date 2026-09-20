@@ -691,6 +691,7 @@ clean:
         r2-grid-tests r2-memory-tests r2-mutation-tests \
         r2-obs-tests r2-e2e-tests r3-rf-tests r3-flow-tests \
         r3-count-tests r3-synth-tests r3-mem-synth \
+        r3-mutation-tests \
         r2-package r2-stage-data \
         r3-scout r3-plan r3-model-tests
 
@@ -791,6 +792,10 @@ r2-package: r2-stage-data
 	@rm -rf build $(BUILD)/dist/*.whl
 	@$(PYTHON) -m pip wheel --no-deps -q -w $(BUILD)/dist .
 	@$(PYTHON) -c "import glob, os; [print('  %d bytes  %s' % (os.path.getsize(w), w)) for w in sorted(glob.glob('$(BUILD)/dist/*.whl'))]"
+
+r3-mutation-tests:
+	@$(PYTHON) tools/r3/mutation_tests.py \
+	   --json $(BUILD)/r3_mutation_tests.json
 
 r3-synth-tests:
 	@$(PYTHON) tools/r3/synth_tests.py --json $(BUILD)/r3_synth_tests.json

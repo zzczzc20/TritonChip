@@ -433,6 +433,26 @@ TESTS = [('RT-01', rt01), ('RT-02', rt02), ('RT-03', rt03), ('RT-04', rt04),
          ('RT-05', rt05), ('RT-06', rt06), ('RT-07', rt07)]
 
 
+def _case_ids():
+    """Every case ID this suite knows, for a filter that matched nothing.
+
+    Read off the module's own tables rather than written out again: a second
+    list of case IDs is a second thing to forget to update.
+    """
+    ids = set()
+    for name, value in list(globals().items()):
+        if name.startswith('_') or not name.isupper():
+            continue
+        if isinstance(value, dict):
+            ids |= {k for k in value if isinstance(k, str) and '-' in k}
+        elif isinstance(value, (list, tuple)):
+            for item in value:
+                if (isinstance(item, (list, tuple)) and item
+                        and isinstance(item[0], str) and '-' in item[0]):
+                    ids.add(item[0])
+    return ids
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--only', nargs='*')
@@ -457,6 +477,17 @@ def main():
             print(line, flush=True)
     if args.json:
         R.write_json(args.json, results)
+    # A filter that matched nothing must not report PASS. `--only ART-02`
+    # selected zero cases and exited 0, which is how a mutation that removed
+    # the manifest integrity check looked like a caught one. An empty run is
+    # not a clean run.
+    if args.only and not results:
+        print(f"  the --only filter {args.only} matched nothing; the known "
+              f"cases are:")
+        for cid in sorted(_case_ids()):
+            print(f"      {cid}")
+        return 2
+
     bad = [r['id'] for r in results if not r['passed']]
     print()
     if bad:

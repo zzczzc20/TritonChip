@@ -229,12 +229,31 @@ class Transport:
         reply = self.request(OP_DOWNLOAD, addr, words)
         if not reply.ok:
             return reply, b''
+        # The device said OK, so the file it was told to write must be
+        # there and must be readable. When it is not, something answered
+        # for a request it did not serve -- and the user gets a stable code
+        # for that, not a FileNotFoundError from inside the transport.
         out = bytearray()
-        with open(self.down) as fh:
-            for line in fh:
-                line = line.strip()
-                if line:
-                    out += int(line, 16).to_bytes(WORD, 'little')
+        try:
+            with open(self.down) as fh:
+                for line in fh:
+                    line = line.strip()
+                    if line:
+                        out += int(line, 16).to_bytes(WORD, 'little')
+        except (OSError, ValueError) as e:
+            raise DeviceLost(
+                'the device reported a successful download but produced no '
+                'readable data',
+                detail={'file': self.down, 'error': str(e),
+                        'seq': reply.seq, 'log': self.log},
+                remedy='the device and the host are out of step; call '
+                       'Session.recover() to start a new epoch') from e
+        if len(out) < words * WORD:
+            raise DeviceLost(
+                f"the device returned {len(out)} bytes for a "
+                f"{words * WORD}-byte download",
+                detail={'file': self.down, 'seq': reply.seq},
+                remedy='call Session.recover() to start a new epoch')
         return reply, bytes(out[:nbytes])
 
     def launch(self, pc, arg_base, role_mask=1, pid=(0, 0, 0),

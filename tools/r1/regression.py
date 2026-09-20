@@ -40,10 +40,19 @@ MEMORIES = ('fast', 'slow', 'ooo')
 TRACE_RE = re.compile(r'memtrace=([0-9a-f]+)')
 
 
+# Each `make` this suite runs is a whole entry point -- three core profiles,
+# the four-tile machine, the compiler's RTL suite. On the acceptance runner
+# those are tens of minutes each, and the `build` bucket's hour is a cap on
+# ONE step of the gate rather than on a suite that runs several. The gate
+# gives this suite its own cap (tools/r1/gate.py CASE_SUITES); this is the
+# per-command one inside it.
+MAKE_CAP = 7200
+
+
 def make(target, *extra, timeout=None):
     return subprocess.run(['make', target, *extra], cwd=ROOT,
                           capture_output=True, text=True,
-                          timeout=timeout or R.CAPS['build'])
+                          timeout=timeout or MAKE_CAP)
 
 
 def count_lines(text, pattern):

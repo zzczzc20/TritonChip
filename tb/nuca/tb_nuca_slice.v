@@ -178,9 +178,25 @@ module tb_nuca_slice;
     integer seed;
     reg [ADDR_W-1:0] a;
     reg [63:0] rnd;
+    // The stimulus trace, hashed. R1-08 requires the seed to reach the PRNG
+    // that actually controls the traffic rather than being recorded in a log
+    // line, and the only way to show that is a digest of what was issued: two
+    // seeds must produce different traces, and the same seed the same one.
+    reg [63:0] trace_hash;
+    integer    n_write;
+    // $random mutates its seed argument, so the value at the end is not the
+    // one the run started from. Keep the request separately or the log
+    // reports a number nobody passed.
+    integer    seed0;
 
     initial begin
-        seed = 20260918;
+        // +seed reaches $random itself. Without the argument $random draws
+        // from one global stream, so every "seed" ran identical traffic and
+        // three seeds were three copies of one test.
+        if (!$value$plusargs("seed=%d", seed)) seed = 20260918;
+        seed0 = seed;
+        trace_hash = 64'hcbf29ce484222325;   // FNV-1a offset basis
+        n_write = 0;
         fails = 0; n_issued = 0; n_checked = 0; inflight = 0; stream_ptr = 0;
         req_valid = 1'b0; rsp_ready = 1'b1;
         for (i = 0; i < (1<<TAG_W); i = i + 1) e_valid[i] = 1'b0;
@@ -201,7 +217,7 @@ module tb_nuca_slice;
             #1;
             req_valid = 1'b0;
             if (have_tag && req_ready) begin
-                rnd = {$random, $random};
+                rnd = {$random(seed), $random(seed)};
                 // Two traffic modes, alternating every 64 requests.
                 //
                 //   hot       a working set that fits, so lines are reused and
@@ -236,7 +252,8 @@ module tb_nuca_slice;
                 if (rnd[5:4] == 2'b00) begin
                     // write
                     req_we    = 1'b1;
-                    req_wdata = {$random, $random};
+                    req_wdata = {$random(seed), $random(seed)};
+                    n_write = n_write + 1;
                     shadow[widx] = req_wdata;
                     e_isread[free_tag] = 1'b0;
                 end else begin
@@ -247,6 +264,9 @@ module tb_nuca_slice;
                 end
                 e_valid[free_tag] = 1'b1;
                 e_addr[free_tag]  = a;
+                // One step of FNV-1a over {address, direction}: what was
+                // asked for, in the order it was asked.
+                trace_hash = (trace_hash ^ {31'd0, req_we, a}) * 64'd1099511628211;
                 inflight  = inflight + 1;
                 req_valid = 1'b1;
                 n_issued  = n_issued + 1;
@@ -265,6 +285,7 @@ module tb_nuca_slice;
         end
 
         $display("---- nuca slice ----");
+        $display("seed=%0d trace_hash=%016h writes=%0d", seed0, trace_hash, n_write);
         $display("issued=%0d reads_checked=%0d inflight_left=%0d", n_issued, n_checked, inflight);
         $display("hit=%0d miss=%0d merge=%0d wb=%0d mshr_full=%0d target_full=%0d hit_past_block=%0d",
                  perf_hit, perf_miss, perf_merge, perf_wb,

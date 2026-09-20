@@ -53,8 +53,9 @@ ENTRIES = [
     ('core-fast',    ['make', 'core'],            'build', 'BASE-CORE-{}-fast'),
     ('core-slow',    ['make', 'core-slowmem'],    'build', 'BASE-CORE-{}-slow'),
     ('core-ooo',     ['make', 'core-ooo'],        'build', 'BASE-CORE-{}-ooo'),
-    ('nuca',         ['make', 'nuca'],            'build', None),
-    ('mesh',         ['make', 'mesh'],            'build', None),
+    # Per-seed lines, named with their inventory IDs directly.
+    ('nuca',         ['make', 'nuca'],            'build', '{}'),
+    ('mesh',         ['make', 'mesh'],            'build', '{}'),
     ('top',          ['make', 'top'],             'build', None),
     # `make compiler` runs several checks and several suites. Mapping its
     # exit code onto BASE-CC-UNIT reported that suite as failing when a
@@ -66,8 +67,11 @@ ENTRIES = [
     # directly is what lets the gate see its exit code on its own.
     ('compiler-ir',  [sys.executable, 'compiler/test/IR/run_ir_tests.py'],
                                                   'build', '{}'),
-    ('triton-e2e',   ['make', 'triton-e2e'],      'build', None),
-    ('e2e',          ['make', 'e2e'],             'build', None),
+    # One ID per test, printed by compiler/test/run_suite.py. These used to
+    # map onto a single ID each, which is how five cases and two cases could
+    # be "covered" by two rows in the inventory.
+    ('triton-e2e',   ['make', 'triton-e2e'],      'build', '{}'),
+    ('e2e',          ['make', 'e2e'],             'build', '{}'),
 ]
 
 # Suites that report per-case results as JSON rather than as output lines.
@@ -100,14 +104,10 @@ LINE_IDS = {
 }
 
 COVERS = {
-    'nuca':         ['BASE-NUCA-fast', 'BASE-NUCA-slow', 'BASE-NUCA-ooo'],
-    'mesh':         ['BASE-MESH-2x2'],
     'top':          ['BASE-TOP-t10_mesh-single-role', 'BASE-TOP-t10_mesh-all-roles',
                      'BASE-TOP-t24_amo_mesh-single-role',
                      'BASE-TOP-t24_amo_mesh-all-roles'],
     'compiler-rtl': ['BASE-CC-RTL'],
-    'triton-e2e':   ['BASE-TRITON-CORE'],
-    'e2e':          ['BASE-TRITON-SYSTEM'],
 }
 
 

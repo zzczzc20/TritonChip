@@ -875,48 +875,136 @@
       "note": ""
     },
     {
-      "id": "BASE-NUCA-fast",
+      "id": "BASE-NUCA-fast-seed1",
       "group": "baseline/memory",
       "entry": "make nuca",
       "profile": "system-2x2",
-      "expect": "PASS, >=800 requests per seed",
+      "expect": "PASS, >=800 requests per seed, seed 1",
       "source": "tb/nuca/tb_nuca_slice.v",
       "work_package": "R1-08",
       "baseline_status": "PASS",
-      "note": ""
+      "note": "R1-08 REG-06/REG-07: three seeds, each reaching the PRNG that drives the stimulus. The bench prints a trace hash so that is checkable rather than asserted, and asserts its own coverage floors -- every source/destination/VN pair used, back-pressure actually applied, dirty writebacks and blocked-miss bypass actually triggered."
     },
     {
-      "id": "BASE-NUCA-slow",
+      "id": "BASE-NUCA-fast-seed7",
       "group": "baseline/memory",
       "entry": "make nuca",
       "profile": "system-2x2",
-      "expect": "PASS, >=800 requests per seed",
+      "expect": "PASS, >=800 requests per seed, seed 7",
       "source": "tb/nuca/tb_nuca_slice.v",
       "work_package": "R1-08",
       "baseline_status": "PASS",
-      "note": ""
+      "note": "R1-08 REG-06/REG-07: three seeds, each reaching the PRNG that drives the stimulus. The bench prints a trace hash so that is checkable rather than asserted, and asserts its own coverage floors -- every source/destination/VN pair used, back-pressure actually applied, dirty writebacks and blocked-miss bypass actually triggered."
     },
     {
-      "id": "BASE-NUCA-ooo",
+      "id": "BASE-NUCA-fast-seed42",
       "group": "baseline/memory",
       "entry": "make nuca",
       "profile": "system-2x2",
-      "expect": "PASS, >=800 requests per seed",
+      "expect": "PASS, >=800 requests per seed, seed 42",
       "source": "tb/nuca/tb_nuca_slice.v",
       "work_package": "R1-08",
       "baseline_status": "PASS",
-      "note": ""
+      "note": "R1-08 REG-06/REG-07: three seeds, each reaching the PRNG that drives the stimulus. The bench prints a trace hash so that is checkable rather than asserted, and asserts its own coverage floors -- every source/destination/VN pair used, back-pressure actually applied, dirty writebacks and blocked-miss bypass actually triggered."
     },
     {
-      "id": "BASE-MESH-2x2",
+      "id": "BASE-NUCA-slow-seed1",
+      "group": "baseline/memory",
+      "entry": "make nuca",
+      "profile": "system-2x2",
+      "expect": "PASS, >=800 requests per seed, seed 1",
+      "source": "tb/nuca/tb_nuca_slice.v",
+      "work_package": "R1-08",
+      "baseline_status": "PASS",
+      "note": "R1-08 REG-06/REG-07: three seeds, each reaching the PRNG that drives the stimulus. The bench prints a trace hash so that is checkable rather than asserted, and asserts its own coverage floors -- every source/destination/VN pair used, back-pressure actually applied, dirty writebacks and blocked-miss bypass actually triggered."
+    },
+    {
+      "id": "BASE-NUCA-slow-seed7",
+      "group": "baseline/memory",
+      "entry": "make nuca",
+      "profile": "system-2x2",
+      "expect": "PASS, >=800 requests per seed, seed 7",
+      "source": "tb/nuca/tb_nuca_slice.v",
+      "work_package": "R1-08",
+      "baseline_status": "PASS",
+      "note": "R1-08 REG-06/REG-07: three seeds, each reaching the PRNG that drives the stimulus. The bench prints a trace hash so that is checkable rather than asserted, and asserts its own coverage floors -- every source/destination/VN pair used, back-pressure actually applied, dirty writebacks and blocked-miss bypass actually triggered."
+    },
+    {
+      "id": "BASE-NUCA-slow-seed42",
+      "group": "baseline/memory",
+      "entry": "make nuca",
+      "profile": "system-2x2",
+      "expect": "PASS, >=800 requests per seed, seed 42",
+      "source": "tb/nuca/tb_nuca_slice.v",
+      "work_package": "R1-08",
+      "baseline_status": "PASS",
+      "note": "R1-08 REG-06/REG-07: three seeds, each reaching the PRNG that drives the stimulus. The bench prints a trace hash so that is checkable rather than asserted, and asserts its own coverage floors -- every source/destination/VN pair used, back-pressure actually applied, dirty writebacks and blocked-miss bypass actually triggered."
+    },
+    {
+      "id": "BASE-NUCA-ooo-seed1",
+      "group": "baseline/memory",
+      "entry": "make nuca",
+      "profile": "system-2x2",
+      "expect": "PASS, >=800 requests per seed, seed 1",
+      "source": "tb/nuca/tb_nuca_slice.v",
+      "work_package": "R1-08",
+      "baseline_status": "PASS",
+      "note": "R1-08 REG-06/REG-07: three seeds, each reaching the PRNG that drives the stimulus. The bench prints a trace hash so that is checkable rather than asserted, and asserts its own coverage floors -- every source/destination/VN pair used, back-pressure actually applied, dirty writebacks and blocked-miss bypass actually triggered."
+    },
+    {
+      "id": "BASE-NUCA-ooo-seed7",
+      "group": "baseline/memory",
+      "entry": "make nuca",
+      "profile": "system-2x2",
+      "expect": "PASS, >=800 requests per seed, seed 7",
+      "source": "tb/nuca/tb_nuca_slice.v",
+      "work_package": "R1-08",
+      "baseline_status": "PASS",
+      "note": "R1-08 REG-06/REG-07: three seeds, each reaching the PRNG that drives the stimulus. The bench prints a trace hash so that is checkable rather than asserted, and asserts its own coverage floors -- every source/destination/VN pair used, back-pressure actually applied, dirty writebacks and blocked-miss bypass actually triggered."
+    },
+    {
+      "id": "BASE-NUCA-ooo-seed42",
+      "group": "baseline/memory",
+      "entry": "make nuca",
+      "profile": "system-2x2",
+      "expect": "PASS, >=800 requests per seed, seed 42",
+      "source": "tb/nuca/tb_nuca_slice.v",
+      "work_package": "R1-08",
+      "baseline_status": "PASS",
+      "note": "R1-08 REG-06/REG-07: three seeds, each reaching the PRNG that drives the stimulus. The bench prints a trace hash so that is checkable rather than asserted, and asserts its own coverage floors -- every source/destination/VN pair used, back-pressure actually applied, dirty writebacks and blocked-miss bypass actually triggered."
+    },
+    {
+      "id": "BASE-MESH-2x2-seed1",
       "group": "baseline/memory",
       "entry": "make mesh",
       "profile": "system-2x2",
-      "expect": "PASS, >=20000 packets, zero loss/dup/misroute/reorder",
+      "expect": "PASS, >=20000 packets, zero loss/dup/misroute/reorder, seed 1",
       "source": "tb/noc/tb_mesh.v",
       "work_package": "R1-08",
       "baseline_status": "PASS",
-      "note": ""
+      "note": "R1-08 REG-06/REG-07: three seeds, each reaching the PRNG that drives the stimulus. The bench prints a trace hash so that is checkable rather than asserted, and asserts its own coverage floors -- every source/destination/VN pair used, back-pressure actually applied, dirty writebacks and blocked-miss bypass actually triggered."
+    },
+    {
+      "id": "BASE-MESH-2x2-seed7",
+      "group": "baseline/memory",
+      "entry": "make mesh",
+      "profile": "system-2x2",
+      "expect": "PASS, >=20000 packets, zero loss/dup/misroute/reorder, seed 7",
+      "source": "tb/noc/tb_mesh.v",
+      "work_package": "R1-08",
+      "baseline_status": "PASS",
+      "note": "R1-08 REG-06/REG-07: three seeds, each reaching the PRNG that drives the stimulus. The bench prints a trace hash so that is checkable rather than asserted, and asserts its own coverage floors -- every source/destination/VN pair used, back-pressure actually applied, dirty writebacks and blocked-miss bypass actually triggered."
+    },
+    {
+      "id": "BASE-MESH-2x2-seed42",
+      "group": "baseline/memory",
+      "entry": "make mesh",
+      "profile": "system-2x2",
+      "expect": "PASS, >=20000 packets, zero loss/dup/misroute/reorder, seed 42",
+      "source": "tb/noc/tb_mesh.v",
+      "work_package": "R1-08",
+      "baseline_status": "PASS",
+      "note": "R1-08 REG-06/REG-07: three seeds, each reaching the PRNG that drives the stimulus. The bench prints a trace hash so that is checkable rather than asserted, and asserts its own coverage floors -- every source/destination/VN pair used, back-pressure actually applied, dirty writebacks and blocked-miss bypass actually triggered."
     },
     {
       "id": "BASE-CC-UNIT",
@@ -952,26 +1040,81 @@
       "note": ""
     },
     {
-      "id": "BASE-TRITON-CORE",
+      "id": "BASE-TRITON-CORE-test_add_kernel",
       "group": "baseline/e2e",
       "entry": "make triton-e2e",
       "profile": "core-sim",
-      "expect": "5 single-core Triton cases",
+      "expect": "PASS (test_add_kernel)",
       "source": "compiler/test/test_triton_e2e.py",
       "work_package": "R1-08",
       "baseline_status": "PASS",
-      "note": ""
+      "note": "one ID per test. The coarse BASE-TRITON-CORE / BASE-TRITON-SYSTEM recorded one ID for five and two tests, which is how the same seven cases could be skipped in compiler-unit and counted as covered here. REG-01 allows the deduplication and forbids the disappearance."
     },
     {
-      "id": "BASE-TRITON-SYSTEM",
+      "id": "BASE-TRITON-CORE-test_context_specialised_add_kernel",
+      "group": "baseline/e2e",
+      "entry": "make triton-e2e",
+      "profile": "core-sim",
+      "expect": "PASS (test_context_specialised_add_kernel)",
+      "source": "compiler/test/test_triton_e2e.py",
+      "work_package": "R1-08",
+      "baseline_status": "PASS",
+      "note": "one ID per test. The coarse BASE-TRITON-CORE / BASE-TRITON-SYSTEM recorded one ID for five and two tests, which is how the same seven cases could be skipped in compiler-unit and counted as covered here. REG-01 allows the deduplication and forbids the disappearance."
+    },
+    {
+      "id": "BASE-TRITON-CORE-test_context_specialised_mul_add_kernel",
+      "group": "baseline/e2e",
+      "entry": "make triton-e2e",
+      "profile": "core-sim",
+      "expect": "PASS (test_context_specialised_mul_add_kernel)",
+      "source": "compiler/test/test_triton_e2e.py",
+      "work_package": "R1-08",
+      "baseline_status": "PASS",
+      "note": "one ID per test. The coarse BASE-TRITON-CORE / BASE-TRITON-SYSTEM recorded one ID for five and two tests, which is how the same seven cases could be skipped in compiler-unit and counted as covered here. REG-01 allows the deduplication and forbids the disappearance."
+    },
+    {
+      "id": "BASE-TRITON-CORE-test_mul_add_kernel",
+      "group": "baseline/e2e",
+      "entry": "make triton-e2e",
+      "profile": "core-sim",
+      "expect": "PASS (test_mul_add_kernel)",
+      "source": "compiler/test/test_triton_e2e.py",
+      "work_package": "R1-08",
+      "baseline_status": "PASS",
+      "note": "one ID per test. The coarse BASE-TRITON-CORE / BASE-TRITON-SYSTEM recorded one ID for five and two tests, which is how the same seven cases could be skipped in compiler-unit and counted as covered here. REG-01 allows the deduplication and forbids the disappearance."
+    },
+    {
+      "id": "BASE-TRITON-CORE-test_unsupported_block_is_refused",
+      "group": "baseline/e2e",
+      "entry": "make triton-e2e",
+      "profile": "core-sim",
+      "expect": "PASS (test_unsupported_block_is_refused)",
+      "source": "compiler/test/test_triton_e2e.py",
+      "work_package": "R1-08",
+      "baseline_status": "PASS",
+      "note": "one ID per test. The coarse BASE-TRITON-CORE / BASE-TRITON-SYSTEM recorded one ID for five and two tests, which is how the same seven cases could be skipped in compiler-unit and counted as covered here. REG-01 allows the deduplication and forbids the disappearance."
+    },
+    {
+      "id": "BASE-TRITON-SYSTEM-test_add_kernel_as_a_four_block_grid",
       "group": "baseline/e2e",
       "entry": "make e2e",
       "profile": "system-2x2",
-      "expect": "2 four-tile Triton cases, results read from the coherent view",
+      "expect": "PASS (test_add_kernel_as_a_four_block_grid)",
       "source": "compiler/test/test_e2e_system.py",
       "work_package": "R1-08",
       "baseline_status": "PASS",
-      "note": ""
+      "note": "one ID per test. The coarse BASE-TRITON-CORE / BASE-TRITON-SYSTEM recorded one ID for five and two tests, which is how the same seven cases could be skipped in compiler-unit and counted as covered here. REG-01 allows the deduplication and forbids the disappearance."
+    },
+    {
+      "id": "BASE-TRITON-SYSTEM-test_mul_add_kernel_as_a_four_block_grid",
+      "group": "baseline/e2e",
+      "entry": "make e2e",
+      "profile": "system-2x2",
+      "expect": "PASS (test_mul_add_kernel_as_a_four_block_grid)",
+      "source": "compiler/test/test_e2e_system.py",
+      "work_package": "R1-08",
+      "baseline_status": "PASS",
+      "note": "one ID per test. The coarse BASE-TRITON-CORE / BASE-TRITON-SYSTEM recorded one ID for five and two tests, which is how the same seven cases could be skipped in compiler-unit and counted as covered here. REG-01 allows the deduplication and forbids the disappearance."
     },
     {
       "id": "RUN-01",

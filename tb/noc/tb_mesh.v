@@ -58,6 +58,16 @@ module tb_mesh;
     reg [63:0] rnd;
     reg [31:0] lfsr;
 
+    // ---- seed, trace and coverage -------------------------------------------
+    // R1-08 REG-07: the seed has to reach the PRNG that chooses destinations
+    // and back-pressure, not merely appear in a log line, and the run has to
+    // report what it actually exercised. Twenty thousand packets that never
+    // met back-pressure are not a test of a network under back-pressure.
+    integer seed, seed0;
+    reg [63:0] trace_hash;
+    integer pair_count [0:N-1][0:N-1][0:NV-1];   // src x dst x vn, injected
+    integer n_pairs, n_backpressure, n_stall_cycles;
+
     function dx_of; input integer nd; dx_of = nd[0]; endfunction
     function dy_of; input integer nd; dy_of = nd[1]; endfunction
 
@@ -103,8 +113,25 @@ module tb_mesh;
     // Continuous assignments, not an always @(*) with a shared loop variable:
     // that block re-triggers on its own loop counter and spins at time zero.
     always @(posedge clk) begin
-        if (!rst_n) lfsr <= 32'hCAFE_0001;
+        if (!rst_n) lfsr <= lfsr_init;
         else        lfsr <= {lfsr[30:0], lfsr[31]^lfsr[21]^lfsr[1]^lfsr[0]};
+    end
+
+    // The back-pressure pattern is part of the stimulus, so it moves with the
+    // seed too. A fixed LFSR seed meant every "seed" met the same sequence of
+    // stalls, which is the half of the traffic that decides whether a buffer
+    // ever fills.
+    reg [31:0] lfsr_init;
+
+    // Count the cycles a receiver had something to take and refused it. If
+    // this is zero the back-pressure never happened, whatever the LFSR did.
+    integer bi;
+    always @(posedge clk) begin
+        if (rst_n) begin
+            for (bi = 0; bi < N*NV; bi = bi + 1)
+                if (lo_valid[bi] && !lo_ready[bi])
+                    n_stall_cycles = n_stall_cycles + 1;
+        end
     end
     genvar gi;
     generate
@@ -139,6 +166,17 @@ module tb_mesh;
                 end
 
         if (!$value$plusargs("npkt=%d", npkt)) npkt = 4000;
+        if (!$value$plusargs("seed=%d", seed)) seed = 20260918;
+        seed0 = seed;
+        trace_hash = 64'hcbf29ce484222325;
+        n_backpressure = 0; n_stall_cycles = 0;
+        // Derive the back-pressure LFSR from the seed, never zero (an
+        // all-zero LFSR is a constant, so the receivers would never stall).
+        lfsr_init = (seed ^ 32'hCAFE_0001) | 32'd1;
+        for (s = 0; s < N; s = s + 1)
+            for (d = 0; d < N; d = d + 1)
+                for (v = 0; v < NV; v = v + 1)
+                    pair_count[s][d][v] = 0;
 
         repeat (4) @(posedge clk);
         #1 rst_n = 1'b1;
@@ -151,7 +189,7 @@ module tb_mesh;
             end
             for (i = 0; i < N*NV; i = i + 1) begin
                 if (!li_valid[i] && (n_sent < npkt)) begin
-                    rnd = {$random, $random};
+                    rnd = {$random(seed), $random(seed)};
                     if (rnd[2:0] != 3'd0) begin      // inject most cycles
                         s = i / NV;
                         v = i % NV;
@@ -165,6 +203,9 @@ module tb_mesh;
                         li_valid[i] = 1'b1;
                         sent[s][d][v] = sent[s][d][v] + 1;
                         n_sent = n_sent + 1;
+                        pair_count[s][d][v] = pair_count[s][d][v] + 1;
+                        trace_hash = (trace_hash ^ {52'd0, s[3:0], d[3:0], v[3:0]})
+                                     * 64'd1099511628211;
                     end
                 end
             end
@@ -183,8 +224,29 @@ module tb_mesh;
             k = k + 1;
         end
 
+        n_pairs = 0;
+        for (s = 0; s < N; s = s + 1)
+            for (d = 0; d < N; d = d + 1)
+                for (v = 0; v < NV; v = v + 1)
+                    if (pair_count[s][d][v] > 0) n_pairs = n_pairs + 1;
+
         $display("---- mesh %0dx%0d, %0d VNs ----", NX, NY, NV);
-        $display("sent=%0d received=%0d", n_sent, n_recv);
+        $display("seed=%0d trace_hash=%016h", seed0, trace_hash);
+        $display("sent=%0d received=%0d pairs_covered=%0d/%0d backpressure_cycles=%0d",
+                 n_sent, n_recv, n_pairs, N*N*NV, n_stall_cycles);
+
+        // Coverage, asserted rather than printed. "Twenty thousand packets"
+        // says nothing about whether every source reached every destination
+        // on both virtual networks, or whether a receiver ever pushed back.
+        if (n_pairs != N*N*NV) begin
+            fails = fails + 1;
+            $display("FAIL: only %0d of %0d source/destination/VN combinations were used",
+                     n_pairs, N*N*NV);
+        end
+        if (n_stall_cycles == 0) begin
+            fails = fails + 1;
+            $display("FAIL: no receiver ever applied back-pressure");
+        end
         if (n_recv != n_sent) begin
             fails = fails + 1;
             $display("FAIL: %0d packets lost", n_sent - n_recv);

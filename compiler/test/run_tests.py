@@ -19,6 +19,18 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 RTL_SUITES = ['test_rtl_closure', 'test_gemm', 'test_pipeline',
               'test_partition']
 
+# Suites that need the real Triton frontend, which lives in its own
+# virtualenv. They are NOT skipped here -- they are reported by
+# `make triton-e2e` and `make e2e` through run_suite.py, one line per test.
+#
+# This is the audit's F09 at its smallest: "76 tests, 7 skipped" was 69 tests,
+# and the seven were these, running elsewhere under an entry point that
+# printed a count instead of names. R1-08 REG-01 allows the deduplication and
+# forbids the disappearance, so they leave this discovery and gain IDs of
+# their own rather than being skipped under an interpreter that was never
+# going to have Triton.
+TRITON_SUITES = ['test_triton_e2e', 'test_e2e_system']
+
 
 def main():
     rtl = '--rtl' in sys.argv
@@ -30,7 +42,7 @@ def main():
         suite = unittest.TestSuite(
             loader.loadTestsFromName(name) for name in RTL_SUITES)
     else:
-        rtl_files = {f"{n}.py" for n in RTL_SUITES}
+        rtl_files = {f"{n}.py" for n in RTL_SUITES + TRITON_SUITES}
         suite = loader.discover(
             HERE, pattern='test_*.py',
             top_level_dir=HERE)

@@ -410,6 +410,12 @@ core-ooo: $(CORE_HEX) $(BUILD)/tb_core_ooo.vvp | dirs
 #------------------------------------------------------------------------------
 NUCA_REQS ?= 2000
 
+# doc/phase1_tasks_and_acceptance.md R1-08 REG-06/REG-07: three seeds, and the
+# seed must reach the PRNG that controls the stimulus rather than appearing in
+# a log line. Both benches take +seed and print a trace hash, so "three seeds"
+# is checkable: three different hashes, and the same seed replayable.
+R1_SEEDS ?= 1 7 42
+
 $(BUILD)/tb_nuca_slice.vvp: $(TB)/nuca/tb_nuca_slice.v $(RTL)/nuca/tnca_nuca_slice.v \
                             $(TB)/common/tnca_dram_model.v $(RTL_COMMON) | dirs
 	$(IVERILOG) $(IVFLAGS) -y $(RTL)/common -o $@ $<
@@ -431,9 +437,11 @@ nuca: | dirs
 	     -P tb_nuca_slice.DRAM_OOO=$$3 \
 	     -o $(BUILD)/tb_nuca_$$4.vvp $(TB)/nuca/tb_nuca_slice.v \
 	     $(RTL)/nuca/tnca_nuca_slice.v $(TB)/common/tnca_dram_model.v || exit 1; \
-	   $(TOOLS)/run_test.sh "nuca slice ($$4)" \
-	     "$(VVP) $(BUILD)/tb_nuca_$$4.vvp +nreq=$(NUCA_REQS) +min_wb=1 +min_block=$$5" \
-	     || exit 1; \
+	   for sd in $(R1_SEEDS); do \
+	     $(TOOLS)/run_test.sh "BASE-NUCA-$$4-seed$$sd" \
+	       "$(VVP) $(BUILD)/tb_nuca_$$4.vvp +nreq=$(NUCA_REQS) +min_wb=1 +min_block=$$5 +seed=$$sd" \
+	       || exit 1; \
+	   done; \
 	 done
 
 #------------------------------------------------------------------------------
@@ -447,8 +455,11 @@ $(BUILD)/tb_mesh.vvp: $(TB)/noc/tb_mesh.v $(RTL_DEPS) $(BUILD)/tb_mesh.fp | dirs
 
 .PHONY: mesh
 mesh: $(BUILD)/tb_mesh.vvp
-	@$(TOOLS)/run_test.sh "mesh 2x2" \
-	   "$(VVP) $(BUILD)/tb_mesh.vvp +npkt=$(MESH_PKTS)"
+	@for sd in $(R1_SEEDS); do \
+	   $(TOOLS)/run_test.sh "BASE-MESH-2x2-seed$$sd" \
+	     "$(VVP) $(BUILD)/tb_mesh.vvp +npkt=$(MESH_PKTS) +seed=$$sd" \
+	     || exit 1; \
+	 done
 
 #------------------------------------------------------------------------------
 # Full 2x2 system: cores, slices, mesh, DRAM
@@ -547,7 +558,8 @@ TRITON_PYTHON ?= $(HOME)/src/tritonenv/bin/python
 .PHONY: triton-e2e e2e
 triton-e2e: $(BUILD)/tb_core.vvp
 	@if [ -x "$(TRITON_PYTHON)" ]; then \
-	   $(TRITON_PYTHON) compiler/test/test_triton_e2e.py; \
+	   $(TRITON_PYTHON) compiler/test/run_suite.py test_triton_e2e \
+	       triton-e2e BASE-TRITON-CORE; \
 	 elif [ "$(R1_STRICT)" = "1" ]; then \
 	   echo "  triton-e2e             FAIL   no Triton at $(TRITON_PYTHON)"; \
 	   exit 1; \
@@ -561,7 +573,8 @@ triton-e2e: $(BUILD)/tb_core.vvp
 # itself; this does not.
 e2e: $(BUILD)/tb_top.vvp
 	@if [ -x "$(TRITON_PYTHON)" ]; then \
-	   $(TRITON_PYTHON) compiler/test/test_e2e_system.py; \
+	   $(TRITON_PYTHON) compiler/test/run_suite.py test_e2e_system \
+	       e2e BASE-TRITON-SYSTEM; \
 	 elif [ "$(R1_STRICT)" = "1" ]; then \
 	   echo "  e2e                    FAIL   no Triton at $(TRITON_PYTHON)"; \
 	   exit 1; \

@@ -70,7 +70,8 @@ module tb_rf_bank;
         // the v1 semantics exactly as they were.
         .rsp_ready({NUM_PORTS{1'b1}}),
         .rsp_valid(rsp_valid), .rsp_data(rsp_data),
-        .we(we), .w_rctx(w_rctx), .w_idx(w_idx), .wmask(wmask), .wdata(wdata)
+        .we(we), .w_rctx(w_rctx), .w_idx(w_idx), .wmask(wmask),
+        .wdata(wdata), .w_accept()
     );
 
     wire [NUM_PORTS-1:0]       a2, v2;
@@ -85,7 +86,8 @@ module tb_rf_bank;
         .req_valid(req_valid), .req_rctx(req_rctx), .req_idx(req_idx),
         .req_accept(a2), .rsp_ready({NUM_PORTS{1'b1}}),
         .rsp_valid(v2), .rsp_data(d2),
-        .we(we), .w_rctx(w_rctx), .w_idx(w_idx), .wmask(wmask), .wdata(wdata)
+        .we(we), .w_rctx(w_rctx), .w_idx(w_idx), .wmask(wmask),
+        .wdata(wdata), .w_accept()
     );
 
     integer fh, n, cyc, i, rc;

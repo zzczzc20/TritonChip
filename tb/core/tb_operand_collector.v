@@ -60,7 +60,8 @@ module tb_operand_collector;
         .req_valid(req_valid), .req_rctx(req_rctx), .req_idx(req_idx),
         .req_accept(req_accept), .rsp_ready({NUM_PORTS{1'b1}}),
         .rsp_valid(rsp_valid), .rsp_data(rsp_data),
-        .we(we), .w_rctx(w_rctx), .w_idx(w_idx), .wmask(wmask), .wdata(wdata)
+        .we(we), .w_rctx(w_rctx), .w_idx(w_idx), .wmask(wmask),
+        .wdata(wdata), .w_accept()
     );
 
     tnca_operand_collector #(

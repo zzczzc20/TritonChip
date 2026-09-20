@@ -94,6 +94,14 @@ module tnca_matrix #(
     // ---- vector register read port (asynchronous) ---------------------------
     output wire [7:0]               vrf_addr,
     input  wire [VLEN*ELEN-1:0]     vrf_data,
+    // A synchronous register file answers a cycle later, so the two states
+    // that consume vrf_data have to be able to wait. `vrf_req` says a read
+    // is wanted this cycle; `vrf_valid` says the data on vrf_data belongs
+    // to the address on vrf_addr. With the behavioural file the core ties
+    // vrf_valid high and neither state ever waits, which is what keeps the
+    // reference implementation bit-identical.
+    output wire                     vrf_req,
+    input  wire                     vrf_valid,
 
     // ---- accumulator read, for a.vread --------------------------------------
     input  wire [ACC_W-1:0]         ard_slot,
@@ -180,6 +188,12 @@ module tnca_matrix #(
     wire [1:0]  b_part = elem8 ? kk[1:0] : {kk[0], 1'b0};
 
     assign vrf_addr = (st == S_LOADB) ? b_vreg : a_vreg;
+
+    // The two states that read the vector file. Held while the data has
+    // not come back: the address is driven from the state, so holding the
+    // state holds the request.
+    assign vrf_req = (st == S_LOADB) || (st == S_MAC);
+    wire vrf_wait = vrf_req && !vrf_valid;
 
     // B row latch. One 16-bit slot per element whatever the format: an 8-bit
     // element sits right-aligned in its slot, which is where the converter
@@ -354,7 +368,7 @@ module tnca_matrix #(
 
             //---------------------------------------------------------------
             // One vector read holds B[k][.] for the whole m sweep.
-            S_LOADB: begin
+            S_LOADB: if (!vrf_wait) begin
                 if (elem8)
                     for (i = 0; i < VLEN; i = i + 1)
                         b_row[i*16 +: 16] <=
@@ -366,7 +380,10 @@ module tnca_matrix #(
             end
 
             //---------------------------------------------------------------
-            S_MAC: begin
+            // Nothing is issued into the MAC pipeline while the A element
+            // has not arrived: tg_v[0] staying low is what stops the array
+            // multiplying whatever happened to be on the bus.
+            S_MAC: if (!vrf_wait) begin
                 tg_v[0]    <= 1'b1;
                 tg_slot[0] <= r_slot;
                 tg_row[0]  <= mm[ROW_W-1:0];

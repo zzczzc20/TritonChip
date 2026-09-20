@@ -54,7 +54,7 @@ module tb_r3v2_vrf;
         .req_accept(ACC), .rsp_ready(rsp_ready), \
         .rsp_valid(RV), .rsp_data(RD), \
         .we(we), .w_rctx(w_rctx), .w_idx(w_idx), \
-        .wmask(wmask), .wdata(wdata)
+        .wmask(wmask), .wdata(wdata), .w_accept()
 
     tnca_vrf_banked #(
         .PHYS_VREGS(128), .VREGS_PER_RCTX(64), .NUM_RCTX(2), .VLEN(VLEN),

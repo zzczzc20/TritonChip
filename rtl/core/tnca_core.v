@@ -45,7 +45,13 @@
 //==============================================================================
 `include "tnca_defs.vh"
 
+// An undeclared identifier is an error, not a one-bit wire. Three signals
+// in this file were silently disconnected by becoming implicit nets inside
+// a generate block, and two of them were one bit wide so nothing warned.
+`default_nettype none
+
 module tnca_core #(
+    parameter USE_BANKED_VRF = 0,
     parameter NUM_RCTX       = 2,
     parameter RCTX_W         = 1,
     parameter VLEN           = 16,
@@ -179,6 +185,21 @@ module tnca_core #(
     // the ISA or the hazard logic.
 
     localparam VREG_IDX_W = 8;
+
+    //==========================================================================
+    // The vector register file: behavioural, or banked with real ports
+    //
+    // USE_BANKED_VRF is opt-in and off by default. The behavioural file
+    // answers four reads combinationally in the same cycle, which is free in
+    // simulation and does not exist in silicon; the banked one has four banks
+    // of one read and one write port each, a one-cycle synchronous read, and
+    // an operand fetch that stalls when the sources it needs are in the same
+    // bank.
+    //
+    // Both are built from the same sources and the old one stays the default,
+    // so it remains the differential reference rather than becoming a thing
+    // nobody runs (doc/phase3_tasks_and_acceptance.md section 1).
+    //==========================================================================
 
     integer i;
     genvar  g;
@@ -427,6 +448,34 @@ module tnca_core #(
     //==========================================================================
     wire [63:0]          sa_data, sb_data, sc_data, sb2_raw;
     wire [VLEN*ELEN-1:0] va_data, vb_data, vc_data;
+
+    // Declared here rather than beside the units that drive them. A
+    // forward-referenced net inside a generate block becomes an implicit
+    // one-bit net in the generate scope instead of resolving to the
+    // module-level wire, and the only sign is a width warning; the VRF
+    // block below reads all of these.
+    wire [7:0]           mtx_vrf_addr;
+    wire [VLEN*ELEN-1:0] mtx_vrf_data;
+    wire                 mtx_vrf_req;
+    reg  [RCTX_W-1:0]    mtx_rctx;
+    wire                 txf_vw_en;
+    wire [RCTX_W-1:0]    txf_vw_rctx;
+    wire [7:0]           txf_vw_idx;
+    wire [VLEN-1:0]      txf_vw_lane;
+    wire [VLEN*ELEN-1:0] txf_vw_data;
+    // Declared here and assigned where it is computed. The operand fetch
+    // below reads it, and a net first mentioned inside a generate block
+    // becomes an implicit ONE-BIT net in that scope rather than resolving
+    // to the module-level wire -- which for a 1-bit signal produces no
+    // warning at all. That is how mtx_rctx, mtx_vrf_req and this one were
+    // each silently disconnected.
+    wire                 stall_front;
+    wire                 vrf_stall;       // operands not yet collected
+    wire                 vrf_wb_freeze;   // a vector writeback was refused
+    wire                 mtx_vrf_valid_w;
+    wire [3:0]           vrf_req_accept;
+    wire [3:0]           vrf_rsp_valid;
+    wire [4*VLEN*ELEN-1:0] vrf_rsp_data;
     wire [VLEN-1:0]      pa_data, pb_data, pm_raw;
 
     // Writeback stage.
@@ -476,21 +525,143 @@ module tnca_core #(
         .w_rctx(w_rctx), .w_idx(w_idx[5:0]), .w_data(w_sdata)
     );
 
-    tnca_vector_rf #(
-        .PHYS_VREGS(PHYS_VREGS), .VREGS_PER_RCTX(VREGS_PER_RCTX),
-        .NUM_RCTX(NUM_RCTX),
-        .VLEN(VLEN), .ELEN(ELEN), .RCTX_W(RCTX_W), .PHYS_W(PHYS_W)
-    ) u_vrf (
-        .clk(clk), .rst_n(rst_n), .vbase(vbase_q),
-        .ra_rctx(x_rctx), .ra_idx(x_va_idx), .ra_data(va_data),
-        .rb_rctx(x_rctx), .rb_idx(x_vb_idx), .rb_data(vb_data),
-        .rc_rctx(x_rctx), .rc_idx(x_vc_idx), .rc_data(vc_data),
-        .rd_rctx(mtx_rctx), .rd_idx(mtx_vrf_addr), .rd_data(mtx_vrf_data),
-        .w_en(w_en && (w_class == `TNCA_DST_V)),
-        .w_rctx(w_rctx), .w_idx(w_idx), .w_lane_en(w_lane_en), .w_data(w_vdata),
-        .x_en(txf_vw_en), .x_rctx(txf_vw_rctx), .x_idx(txf_vw_idx),
-        .x_lane_en(txf_vw_lane), .x_data(txf_vw_data)
-    );
+    localparam VW = VLEN * ELEN;
+
+    wire w_is_vec = w_en && (w_class == `TNCA_DST_V);
+
+    generate
+    if (USE_BANKED_VRF == 0) begin : g_vrf_behavioural
+
+        tnca_vector_rf #(
+            .PHYS_VREGS(PHYS_VREGS), .VREGS_PER_RCTX(VREGS_PER_RCTX),
+            .NUM_RCTX(NUM_RCTX),
+            .VLEN(VLEN), .ELEN(ELEN), .RCTX_W(RCTX_W), .PHYS_W(PHYS_W)
+        ) u_vrf (
+            .clk(clk), .rst_n(rst_n), .vbase(vbase_q),
+            .ra_rctx(x_rctx), .ra_idx(x_va_idx), .ra_data(va_data),
+            .rb_rctx(x_rctx), .rb_idx(x_vb_idx), .rb_data(vb_data),
+            .rc_rctx(x_rctx), .rc_idx(x_vc_idx), .rc_data(vc_data),
+            .rd_rctx(mtx_rctx), .rd_idx(mtx_vrf_addr),
+            .rd_data(mtx_vrf_data),
+            .w_en(w_is_vec),
+            .w_rctx(w_rctx), .w_idx(w_idx), .w_lane_en(w_lane_en),
+            .w_data(w_vdata),
+            .x_en(txf_vw_en), .x_rctx(txf_vw_rctx), .x_idx(txf_vw_idx),
+            .x_lane_en(txf_vw_lane), .x_data(txf_vw_data)
+        );
+        assign vrf_stall     = 1'b0;
+        assign vrf_wb_freeze = 1'b0;
+        assign mtx_vrf_valid_w = 1'b1;
+
+    end else begin : g_vrf_banked
+
+        //----------------------------------------------------------------
+        // Operand fetch
+        //
+        // The reads are issued in R, not in X. The indices are already
+        // known there -- x_va_idx is a register loaded from r_va_idx --
+        // so a one-cycle read started in R has its data exactly when the
+        // instruction arrives in X, and the common case costs nothing.
+        //
+        // What it does cost is a stall whenever two of an instruction's
+        // three sources live in the same bank, which is the whole point:
+        // the behavioural file reads three registers at once because it
+        // has three ports, and this one has to take turns.
+        //----------------------------------------------------------------
+        wire [2:0] of_need = {r_vc_en, r_vb_en, r_va_en} & {3{r_valid}};
+        reg  [2:0] of_got;
+        reg  [VW-1:0] of_d0, of_d1, of_d2;
+
+        wire [2:0] of_arrive = vrf_rsp_valid[2:0];
+        wire [2:0] of_have   = of_got | of_arrive;
+        // Nothing left to fetch for the instruction in R.
+        wire of_ready = ((of_need & ~of_have) == 3'b000);
+
+        // Ask for what is needed and has not arrived. A source already in
+        // hand is not asked for again -- that is the difference between a
+        // retry and a second read.
+        wire [2:0] of_want = of_need & ~of_got;
+
+        wire [VW-1:0] of_v0 = of_arrive[0] ? vrf_rsp_data[0*VW +: VW] : of_d0;
+        wire [VW-1:0] of_v1 = of_arrive[1] ? vrf_rsp_data[1*VW +: VW] : of_d1;
+        wire [VW-1:0] of_v2 = of_arrive[2] ? vrf_rsp_data[2*VW +: VW] : of_d2;
+
+        always @(posedge clk) begin
+            if (!rst_n) begin
+                of_got <= 3'b000;
+            end else if (!stall_front) begin
+                // The instruction moved on; the next one starts empty.
+                of_got <= 3'b000;
+            end else begin
+                of_got <= of_have;
+                if (of_arrive[0]) of_d0 <= vrf_rsp_data[0*VW +: VW];
+                if (of_arrive[1]) of_d1 <= vrf_rsp_data[1*VW +: VW];
+                if (of_arrive[2]) of_d2 <= vrf_rsp_data[2*VW +: VW];
+            end
+        end
+
+        // The operands travel into X with their instruction.
+        reg [VW-1:0] x_va_q, x_vb_q, x_vc_q;
+        always @(posedge clk) begin
+            if (!stall_front) begin
+                x_va_q <= of_v0;
+                x_vb_q <= of_v1;
+                x_vc_q <= of_v2;
+            end
+        end
+        assign va_data = x_va_q;
+        assign vb_data = x_vb_q;
+        assign vc_data = x_vc_q;
+
+        assign vrf_stall = r_valid && !of_ready;
+
+        //----------------------------------------------------------------
+        // Requests: three execute sources and the matrix unit
+        //----------------------------------------------------------------
+        wire [3:0] rq_v = {mtx_vrf_req && !mtx_vrf_valid_w, of_want};
+        wire [4*RCTX_W-1:0] rq_rctx =
+            {mtx_rctx, {3{r_rctx}}};
+        wire [4*8-1:0] rq_idx =
+            {mtx_vrf_addr, r_vc_idx, r_vb_idx, r_va_idx};
+
+        //----------------------------------------------------------------
+        // Writes: the transfer engine wins, the writeback retries
+        //
+        // The transfer engine has no way to be told to wait -- vw_en is a
+        // registered output with no acknowledgement -- so it takes the
+        // bank. The writeback does have somewhere to wait: freezing the
+        // w_* registers holds the payload and re-presents it next cycle,
+        // which is the "保持 payload 并重试" the contract asks for, with a
+        // declared depth of exactly one.
+        //----------------------------------------------------------------
+        wire [1:0] wr_we = {w_is_vec, txf_vw_en};
+        wire [2*RCTX_W-1:0] wr_rctx = {w_rctx, txf_vw_rctx};
+        wire [2*8-1:0]      wr_idx  = {w_idx, txf_vw_idx};
+        wire [2*VLEN-1:0]   wr_mask = {w_lane_en, txf_vw_lane};
+        wire [2*VW-1:0]     wr_data = {w_vdata, txf_vw_data};
+        wire [1:0]          wr_ok;
+
+        assign vrf_wb_freeze = w_is_vec && !wr_ok[1];
+        assign mtx_vrf_valid_w = vrf_rsp_valid[3];
+
+        tnca_vrf_banked #(
+            .PHYS_VREGS(PHYS_VREGS), .VREGS_PER_RCTX(VREGS_PER_RCTX),
+            .NUM_RCTX(NUM_RCTX), .VLEN(VLEN), .ELEN(ELEN),
+            .RCTX_W(RCTX_W), .PHYS_W(PHYS_W),
+            .NUM_BANKS(4), .BANK_W(2), .READ_LATENCY(1),
+            .NUM_PORTS(4), .ZERO_INVALID(1), .NUM_WRITERS(2)
+        ) u_vrf (
+            .clk(clk), .rst_n(rst_n), .vbase(vbase_q),
+            .req_valid(rq_v), .req_rctx(rq_rctx), .req_idx(rq_idx),
+            .req_accept(vrf_req_accept),
+            .rsp_ready(4'b1111),
+            .rsp_valid(vrf_rsp_valid), .rsp_data(vrf_rsp_data),
+            .we(wr_we), .w_rctx(wr_rctx), .w_idx(wr_idx),
+            .wmask(wr_mask), .wdata(wr_data), .w_accept(wr_ok)
+        );
+
+    end
+    endgenerate
 
     tnca_pred_rf #(.NUM_RCTX(NUM_RCTX), .RCTX_W(RCTX_W), .VLEN(VLEN)) u_prf (
         .clk(clk), .rst_n(rst_n),
@@ -731,13 +902,13 @@ module tnca_core #(
     wire [BAR_W-1:0] mtx_free_bar;
     wire [ACC_W-1:0] mtx_done_slot;
     wire [BAR_W-1:0] mtx_done_bar;
-    wire [7:0]  mtx_vrf_addr;
-    wire [VLEN*ELEN-1:0] mtx_vrf_data;
+    // The behavioural file answers combinationally, so the matrix never
+    // waits. The banked one drives this from its response valid.
+    wire        mtx_vrf_valid = mtx_vrf_valid_w;
     wire [VLEN*ELEN-1:0] acc_rd_data;
 
     // The engine serves one command at a time, so the RCTX that owns it is the
     // one whose command is running; captured at issue.
-    reg [RCTX_W-1:0] mtx_rctx;
 
     wire mtx_cmd_valid = x_is_mtx && !x_is_avread;
 
@@ -777,6 +948,7 @@ module tnca_core #(
         .cmd_vdata(vb_data), .cmd_scale(mtx_scale), .cmd_mask(lane_mask),
         .busy(mtx_busy),
         .vrf_addr(mtx_vrf_addr), .vrf_data(mtx_vrf_data),
+        .vrf_req(mtx_vrf_req), .vrf_valid(mtx_vrf_valid),
         .ard_slot(x_ra_idx[ACC_W-1:0]), .ard_row(sb_data[ACC_ROW_W-1:0]),
         .ard_data(acc_rd_data),
         .done(mtx_done), .done_slot(mtx_done_slot),
@@ -998,11 +1170,6 @@ module tnca_core #(
     wire [63:0] txf_fault_pc;
     wire        txf_done_err;
     wire [BAR_W-1:0] txf_done_bar;
-    wire        txf_vw_en;
-    wire [RCTX_W-1:0] txf_vw_rctx;
-    wire [7:0]  txf_vw_idx;
-    wire [VLEN-1:0] txf_vw_lane;
-    wire [VLEN*ELEN-1:0] txf_vw_data;
 
     wire                 tm_req_valid, tm_req_ready, tm_req_we;
     wire [63:0]          tm_req_addr;
@@ -1318,9 +1485,10 @@ module tnca_core #(
 
     wire stall_rsv = r_books_wb && wb_rsv[r_wb_delay + 4'd1];
 
-    wire stall_front = hazard | stall_lsu | stall_fpu | stall_mtx | stall_txf
-                     | stall_fence
-                     | stall_arrive | stall_rsv | wb_steal;
+    assign stall_front = hazard | stall_lsu | stall_fpu | stall_mtx
+                     | stall_txf | stall_fence
+                     | stall_arrive | stall_rsv | wb_steal
+                     | vrf_stall | vrf_wb_freeze;
 
     // Exclusive attribution. The order is the order of the OR above, which
     // makes it arbitrary but FIXED -- and fixed is what matters: the same
@@ -1456,7 +1624,10 @@ module tnca_core #(
             mu_dsti[0] <= x_dsti;
             mu_func[0] <= x_func;
 
-            // latch this cycle's writeback decision; it drives the RF next cycle
+            // latch this cycle's writeback decision; it drives the RF next
+            // cycle -- unless the file refused the last one, in which case
+            // w_* IS the holding register and keeps its payload.
+            if (!vrf_wb_freeze) begin
             w_en      <= nw_en;
             w_rctx    <= nw_rctx;
             w_class   <= nw_class;
@@ -1465,6 +1636,7 @@ module tnca_core #(
             w_vdata   <= nw_vdata;
             w_pdata   <= nw_pdata;
             w_lane_en <= nw_lane_en;
+            end
 
             if (|running) perf_cycles <= perf_cycles + 64'd1;
             // The overlapping view, unchanged.
@@ -1884,3 +2056,5 @@ module tnca_core #(
                      x_va_en, x_vc_en, x_pa_en, x_pb_en, x_sa_en, x_sc_en, 1'b0};
 
 endmodule
+
+`default_nettype wire

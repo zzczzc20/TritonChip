@@ -47,7 +47,8 @@ module tnca_vrf_banked #(
     parameter BANK_W         = 2,   // $clog2(NUM_BANKS)
     parameter READ_LATENCY   = 1,
     parameter NUM_PORTS      = 4,   // read requesters presented per cycle
-    parameter ZERO_INVALID   = 0    // 1 = an unwritten lane reads zero
+    parameter ZERO_INVALID   = 0,   // 1 = an unwritten lane reads zero
+    parameter NUM_WRITERS    = 1    // how many write clients contend
 ) (
     input  wire                              clk,
     input  wire                              rst_n,
@@ -69,12 +70,19 @@ module tnca_vrf_banked #(
     output wire [NUM_PORTS-1:0]              rsp_valid,
     output wire [NUM_PORTS*VLEN*ELEN-1:0]    rsp_data,
 
-    // ---- write port ------------------------------------------------------
-    input  wire                              we,
-    input  wire [RCTX_W-1:0]                 w_rctx,
-    input  wire [7:0]                        w_idx,
-    input  wire [VLEN-1:0]                   wmask,
-    input  wire [VLEN*ELEN-1:0]              wdata
+    // ---- write ports -----------------------------------------------------
+    //
+    // Two writers, because the core has two: the writeback stage and the
+    // transfer engine. Each bank still has ONE write port, so two writes
+    // to the same bank in one cycle cannot both land -- `w_accept` says
+    // which one did, and the loser has to hold its payload and retry.
+    // Silently dropping it is the failure R3V2-FLOW-01 is about.
+    input  wire [NUM_WRITERS-1:0]            we,
+    input  wire [NUM_WRITERS*RCTX_W-1:0]     w_rctx,
+    input  wire [NUM_WRITERS*8-1:0]          w_idx,
+    input  wire [NUM_WRITERS*VLEN-1:0]       wmask,
+    input  wire [NUM_WRITERS*VLEN*ELEN-1:0]  wdata,
+    output wire [NUM_WRITERS-1:0]            w_accept
 );
 
     localparam BANK_DEPTH = PHYS_VREGS / NUM_BANKS;
@@ -92,10 +100,59 @@ module tnca_vrf_banked #(
         end
     endfunction
 
-    // ---- write ------------------------------------------------------------
-    wire [PHYS_W-1:0] w_phys = phys_of(w_rctx, w_idx);
-    wire [BANK_W-1:0] w_bank = w_phys[BANK_W-1:0];
-    wire [ROW_W-1:0]  w_row  = w_phys[BANK_W +: ROW_W];
+    // ---- writes: one per bank, lowest writer index first -----------------
+    //
+    // The policy is fixed rather than fair on purpose: writer 0 is the
+    // writeback stage, whose stall reaches the whole pipeline, and writer
+    // 1 is the transfer engine, which already has a holding register for
+    // its payload. R3V2-FLOW-02's fairness bound is about READ requesters;
+    // this is a two-way conflict with a declared winner.
+    wire [PHYS_W-1:0] w_phys_of [0:NUM_WRITERS-1];
+    wire [BANK_W-1:0] w_bank_of [0:NUM_WRITERS-1];
+    wire [ROW_W-1:0]  w_row_of  [0:NUM_WRITERS-1];
+
+    genvar wq;
+    generate
+        for (wq = 0; wq < NUM_WRITERS; wq = wq + 1) begin : g_wdec
+            assign w_phys_of[wq] =
+                phys_of(w_rctx[wq*RCTX_W +: RCTX_W], w_idx[wq*8 +: 8]);
+            assign w_bank_of[wq] = w_phys_of[wq][BANK_W-1:0];
+            assign w_row_of[wq]  = w_phys_of[wq][BANK_W +: ROW_W];
+        end
+    endgenerate
+
+    reg [NUM_WRITERS-1:0] w_accept_c;
+    reg [NUM_BANKS-1:0]   w_bank_busy;
+    reg [NUM_BANKS-1:0]   bank_we_c;
+    reg [ROW_W-1:0]       bank_wrow_c  [0:NUM_BANKS-1];
+    reg [VLEN-1:0]        bank_wmask_c [0:NUM_BANKS-1];
+    reg [WIDTH-1:0]       bank_wdata_c [0:NUM_BANKS-1];
+
+    integer wi2, wb;
+    always @* begin
+        w_accept_c  = {NUM_WRITERS{1'b0}};
+        w_bank_busy = {NUM_BANKS{1'b0}};
+        bank_we_c   = {NUM_BANKS{1'b0}};
+        for (wb = 0; wb < NUM_BANKS; wb = wb + 1) begin
+            bank_wrow_c[wb]  = {ROW_W{1'b0}};
+            bank_wmask_c[wb] = {VLEN{1'b0}};
+            bank_wdata_c[wb] = {WIDTH{1'b0}};
+        end
+        for (wi2 = 0; wi2 < NUM_WRITERS; wi2 = wi2 + 1) begin
+            if (we[wi2] && !w_bank_busy[w_bank_of[wi2]]) begin
+                w_accept_c[wi2]                  = 1'b1;
+                w_bank_busy[w_bank_of[wi2]]      = 1'b1;
+                bank_we_c[w_bank_of[wi2]]        = 1'b1;
+                bank_wrow_c[w_bank_of[wi2]]      = w_row_of[wi2];
+                bank_wmask_c[w_bank_of[wi2]]     =
+                    wmask[wi2*VLEN +: VLEN];
+                bank_wdata_c[w_bank_of[wi2]]     =
+                    wdata[wi2*WIDTH +: WIDTH];
+            end
+        end
+    end
+
+    assign w_accept = w_accept_c;
 
     // ---- read requests: at most one per bank per cycle --------------------
     //
@@ -207,10 +264,10 @@ module tnca_vrf_banked #(
             ) u_bank (
                 .clk    (clk),
                 .rst_n  (rst_n),
-                .we     (we && (w_bank == b[BANK_W-1:0])),
-                .waddr  (w_row),
-                .wmask  (wmask),
-                .wdata  (wdata),
+                .we     (bank_we_c[b]),
+                .waddr  (bank_wrow_c[b]),
+                .wmask  (bank_wmask_c[b]),
+                .wdata  (bank_wdata_c[b]),
                 .re        (bank_re_c[b]),
                 .raddr     (bank_row_c[b]),
                 .dst       (bank_port_c[b*8 +: 8]),

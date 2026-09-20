@@ -45,7 +45,7 @@ ABI_VERSION = list(abi.ABI_VERSION)
 # something and been told nothing, and the artifact they get back is not the
 # one they asked for (CMP-02).
 KNOWN_OPTIONS = {
-    'opt_level': 'int, 0..2; reserved, does not change emission in v1',
+    'opt_level': 'int, 0..2. 0 is the frozen baseline and emits what this driver has always emitted. 1 runs the pinned upstream canonicalizer and CSE over the kernel and lowers a constant to its narrowest correct form. 2 adds the layout and allocation work (phase 3.5 section 4.3)',
     'debug': 'bool; adds a compile report, never changes the code',
     'dump_dir': 'str; where to write the per-stage IR dumps',
     'check_protocol': 'bool; the channel model, which is not a safety check',
@@ -542,11 +542,35 @@ def _compile_triton(fn, kernel_name, signature, constexprs, target, prov,
     # dynamic_args is the adapter's default, and the reason this driver
     # exists: one artifact, any arguments. The placeholders below tell the
     # compiler each parameter's SHAPE and reach the code nowhere.
+    opt_level = int((options or {}).get('opt_level', 0) or 0)
     stages = _dump.Dump(kernel_name)
     # Captured here rather than re-derived later: this is the module the
     # compile actually consumed, and anything reconstructed afterwards
     # would be a second opinion about it.
     stages.record('ttir', str(module))
+
+    # Phase 3.5 section 4.1: above O0 the pinned upstream canonicalizer
+    # and CSE run over this module, in place, and the importer below
+    # consumes the result. Optimising a copy and importing the original
+    # would be the failure R35-UP-03 exists to catch.
+    if opt_level >= 1:
+        from tnca_cc.upstream import PureValueOptimizer, PassError
+        try:
+            opt = PureValueOptimizer()
+            after, diff = opt.optimize_module(module, ctx, name=kernel_name)
+        except PassError as e:
+            raise CompileError(
+                f"opt_level {opt_level} asks for the upstream optimiser "
+                f"and it could not run: {e}",
+                where=kernel_name,
+                remedy='O1 and above do not fall back to no optimisation: '
+                       'a stage that reuses upstream cannot answer a '
+                       'missing upstream by quietly not reusing it') from e
+        prov.record('opt_pipeline', ','.join(opt.pipeline()))
+        prov.record('opt_pipeline_version', opt.PIPELINE_VERSION)
+        prov.record('opt_ops_before', diff['ops_before'])
+        prov.record('opt_ops_after', diff['ops_after'])
+        stages.record('ttir_opt', after)
 
     kernel, _builder, imp = adapter.import_ttir(
         module, kernel_name, _placeholders(params),
@@ -555,7 +579,7 @@ def _compile_triton(fn, kernel_name, signature, constexprs, target, prov,
     stages.record('tnir', str(kernel))
 
     asm_text, cg = adapter.emit(
-        kernel, target, prov=prov,
+        kernel, target, prov=prov, opt_level=opt_level,
         check_protocol=bool(options.get('check_protocol', False)))
     stages.record('asm', asm_text)
 
@@ -580,6 +604,7 @@ def _compile_tnca_ir(build, kernel_name, signature, constexprs, target, prov,
     prov.record('source_sha256', _sha(source_text))
     prov.record('source_kind', 'tnca-ir')
 
+    opt_level = int((options or {}).get('opt_level', 0) or 0)
     kernel, builder = adapter.new_kernel(kernel_name)
     try:
         build(builder, target)
@@ -594,7 +619,7 @@ def _compile_tnca_ir(build, kernel_name, signature, constexprs, target, prov,
     stages.record('tnir', str(kernel))
 
     asm_text, cg = adapter.emit(
-        kernel, target, prov=prov,
+        kernel, target, prov=prov, opt_level=opt_level,
         check_protocol=bool(options.get('check_protocol', False)))
     stages.record('asm', asm_text)
 

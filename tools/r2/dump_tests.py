@@ -56,9 +56,36 @@ def dump01(log):
     res = build(d, options={'dump_dir': os.path.join(d, 'dd')})
     ok = True
     log.append(f"    stages in memory: {', '.join(sorted(res.asm))}")
-    for stage in dump.STAGES:
+    for stage in dump.ALWAYS:
         if stage not in res.asm:
             log.append(f"    {stage}: missing from a Triton compile")
+            ok = False
+    # A Triton source always has a .ttir. It has no optimised one at the
+    # default level, because nothing ran -- and a file written anyway
+    # would report an optimisation that did not happen.
+    if 'ttir' not in res.asm:
+        log.append('    ttir: missing from a Triton compile')
+        ok = False
+    if 'ttir_opt' in res.asm:
+        log.append('    ttir_opt: written at the default level, where no '
+                   'pass ran')
+        ok = False
+    else:
+        log.append('    ttir_opt: absent at the default level, which is '
+                   'where no pass ran')
+    d1 = tempfile.mkdtemp(prefix='r2-dump1o-')
+    at_o1 = build(d1, options={'dump_dir': os.path.join(d1, 'dd'),
+                               'opt_level': 1})
+    if 'ttir_opt' not in at_o1.asm:
+        log.append('    ttir_opt: missing at opt_level 1, where the '
+                   'upstream passes did run')
+        ok = False
+    else:
+        o1_files = sorted(os.listdir(os.path.join(d1, 'dd', 'axpy_kernel')))
+        log.append(f"    at opt_level 1: {', '.join(o1_files)}")
+        if 'axpy_kernel.opt.ttir' not in o1_files:
+            log.append('    the optimised IR was not written to its own '
+                       'file')
             ok = False
     where = os.path.join(d, 'dd', 'axpy_kernel')
     on_disk = sorted(os.listdir(where))

@@ -54,7 +54,13 @@ def _is_fp(dtype):
 class CodeGen:
     """Lower one role's region to assembly."""
 
-    def __init__(self, kernel, target, builder=None, *, check_protocol=True):
+    def __init__(self, kernel, target, builder=None, *, check_protocol=True,
+                 opt_level=0):
+        # Phase 3.5 section 4.3. At 0 this is B0: every lowering decision
+        # below is the one the stage was frozen with, so O0 and B0 emit
+        # the same bytes. From 1 up, a lowering may choose a cheaper form
+        # for the same meaning.
+        self.opt_level = int(opt_level or 0)
         self.kernel = kernel
         self.target = target
         self.b = builder or AsmBuilder(target, kernel.name)
@@ -346,7 +352,27 @@ class CodeGen:
     def _op_const(self, op):
         v = op.results[0]
         self._alloc(v)
-        self.b.directive(f".li       s{v.reg}, #{op.attrs['value']}")
+        self.b.directive(self._materialise(v.reg, op.attrs['value']))
+
+    def _materialise(self, reg, value):
+        """One scalar constant into a register.
+
+        `.li` is four words whatever the value: movz and three movk. That
+        is deliberate on the assembler's side -- a pseudo-op has to be
+        exactly sized before it is expanded, or a branch computed over it
+        lands in the wrong place. It is not the assembler's business to
+        guess, so the compiler is what should stop asking for four words
+        when it needs one.
+
+        A value that fits in the low sixteen bits is exactly what movz
+        writes: it sets those bits and zeroes the rest. Above O0 that is
+        what we ask for. The GEMM result drain spends four words per row
+        on a row number between 0 and 15, sixteen times.
+        """
+        v = int(value)
+        if self.opt_level >= 1 and 0 <= v < (1 << 16):
+            return f"s.movz       s{reg}, #{v}"
+        return f".li       s{reg}, #{v}"
 
     def _op_program_id(self, op):
         v = op.results[0]

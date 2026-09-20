@@ -45,13 +45,27 @@ import os
 # .ttir and .ttgir do.
 SUFFIX = {
     'ttir': '.ttir',
+    # What the pinned upstream canonicalizer and CSE made of it. Written
+    # only above O0, because at O0 nothing ran and an identical second
+    # file would suggest something had. Phase 3.5 R35-OBS-01 wants the
+    # input and the optimised IR both visible, which is two files.
+    'ttir_opt': '.opt.ttir',
     'tnir': '.tnir',
     'asm': '.s',
     'hex': '.hex',
 }
 
 # The order they are produced in, which is the order a reader wants them.
-STAGES = ('ttir', 'tnir', 'asm', 'hex')
+STAGES = ('ttir', 'ttir_opt', 'tnir', 'asm', 'hex')
+
+# Stages that exist only for some compiles. `ttir` is absent for a TNCA IR
+# source, which never had one; `ttir_opt` is absent at O0, where no pass
+# ran. A file that is written anyway would say something happened.
+CONDITIONAL_STAGES = frozenset({'ttir', 'ttir_opt'})
+
+# What every compile produces, whatever its source kind or optimisation
+# level. A stage missing from THIS list is a bug.
+ALWAYS = tuple(s for s in STAGES if s not in CONDITIONAL_STAGES)
 
 ENV_ENABLE = 'TNCA_KERNEL_DUMP'
 ENV_DIR = 'TNCA_DUMP_DIR'

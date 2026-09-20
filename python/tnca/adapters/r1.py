@@ -146,7 +146,8 @@ def require_capabilities(target, needed):
                    'that does not need them')
 
 
-def emit(kernel, target, *, prov=None, check_protocol=True):
+def emit(kernel, target, *, prov=None, check_protocol=True,
+         opt_level=0):
     """TNCA IR -> assembly text, with R1's safety checks on.
 
     `check_protocol` selects the channel model, which is about a
@@ -155,7 +156,8 @@ def emit(kernel, target, *, prov=None, check_protocol=True):
     There is deliberately no argument that turns them off.
     """
     r1 = _r1()
-    cg = r1['CodeGen'](kernel, target, check_protocol=check_protocol)
+    cg = r1['CodeGen'](kernel, target, check_protocol=check_protocol,
+                       opt_level=opt_level)
     try:
         cg.assign_shared()
         cg.run()

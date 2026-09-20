@@ -104,6 +104,33 @@ class PureValueOptimizer:
         after = str(mod)
         return after, self._difference(before, after)
 
+    def optimize_module(self, module, ctx, *, name='tnca-r35'):
+        """Run the pipeline on the module the compile is actually using.
+
+        In place, in the module's own context. Section 4.2's rule about
+        passing only text applies to a boundary between two different
+        LLVM builds; there is one here, the wheel's, and this module
+        never leaves it. The product path already hands this same object
+        to the importer, so optimising it in place is what makes
+        R35-UP-03 true: the optimised module IS the emission input, not
+        a copy that was computed and dropped.
+        """
+        from triton._C import libtriton as L
+        before = str(module)
+        pm = L.ir.pass_manager(ctx)
+        if self.canonicalize:
+            L.passes.common.add_canonicalizer(pm)
+        if self.cse:
+            L.passes.common.add_cse(pm)
+        try:
+            pm.run(module, name)
+        except Exception as e:                            # noqa: BLE001
+            raise PassError(
+                f"the upstream pass pipeline failed: "
+                f"{type(e).__name__}: {e}") from e
+        after = str(module)
+        return after, self._difference(before, after)
+
     @staticmethod
     def _difference(before, after):
         """What the passes actually did, countable.

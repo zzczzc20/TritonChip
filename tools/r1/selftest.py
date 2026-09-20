@@ -56,18 +56,27 @@ def script(tmp, name, body, mode=0o755):
     return p
 
 
-def make_exit(target, extra=()):
-    """Run one make target and return its exit code."""
+def make_exit(target, extra=(), strict=None):
+    """Run one make target and return its exit code.
+
+    `strict` is passed explicitly rather than inherited. The gate runs this
+    self-test with R1_STRICT=1 in the environment, and a sub-case that checks
+    "development mode still skips" inherited it and failed -- a test that
+    depends on ambient state is testing the ambient state.
+    """
+    env = dict(os.environ)
+    if strict is not None:
+        env['R1_STRICT'] = '1' if strict else '0'
     r = subprocess.run(['make', target] + list(extra), cwd=ROOT,
-                       capture_output=True, text=True)
+                       capture_output=True, text=True, env=env)
     return r.returncode
 
 
 # ---------------------------------------------------------------------------
 def run01(c, tmp):
     """Both E2E entry points, with an interpreter that cannot succeed."""
-    a = make_exit('triton-e2e', ['TRITON_PYTHON=/usr/bin/false'])
-    b = make_exit('e2e', ['TRITON_PYTHON=/usr/bin/false'])
+    a = make_exit('triton-e2e', ['TRITON_PYTHON=/usr/bin/false'], strict=False)
+    b = make_exit('e2e', ['TRITON_PYTHON=/usr/bin/false'], strict=False)
     return c.record('RUN-01', a != 0 and b != 0,
                     f"make triton-e2e exit={a}, make e2e exit={b}")
 
@@ -75,8 +84,10 @@ def run01(c, tmp):
 def run02(c, tmp):
     """A missing tool is a failure in strict mode, not a skip."""
     miss = os.path.join(tmp, 'no-such-python')
-    strict = make_exit('triton-e2e', [f'TRITON_PYTHON={miss}', 'R1_STRICT=1'])
-    dev = make_exit('triton-e2e', [f'TRITON_PYTHON={miss}'])
+    strict = make_exit('triton-e2e', [f'TRITON_PYTHON={miss}', 'R1_STRICT=1'],
+                       strict=True)
+    dev = make_exit('triton-e2e', [f'TRITON_PYTHON={miss}', 'R1_STRICT=0'],
+                    strict=False)
 
     # The IR runner, whose tools may legitimately be absent on a dev box.
     env = dict(os.environ, R1_STRICT='1', TNCA_LLVM=os.path.join(tmp, 'nollvm'))
@@ -263,6 +274,10 @@ INJECTIONS = [run01, run02, run03, run04, run05,
 
 
 def main():
+    import argparse
+    ap = argparse.ArgumentParser()
+    ap.add_argument('--json', help='write per-case results here')
+    args = ap.parse_args()
     print("R1-02 gate self-test: ten injected failures, each must be detected")
     c = Check()
     tmp = tempfile.mkdtemp(prefix='r1-selftest-')
@@ -275,6 +290,11 @@ def main():
                          f"self-test raised {type(e).__name__}: {e}")
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
+
+    if args.json:
+        R.write_json(args.json,
+                     [dict(id=r['id'], passed=r['detected'], detail=r['detail'])
+                      for r in c.results])
 
     missed = [r['id'] for r in c.results if not r['detected']]
     print()

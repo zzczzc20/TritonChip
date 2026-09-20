@@ -69,7 +69,48 @@ RTL_NUCA   := $(wildcard $(RTL)/nuca/*.v)
 RTL_NOC    := $(wildcard $(RTL)/noc/*.v)
 RTL_TILE   := $(wildcard $(RTL)/tile/*.v) $(wildcard $(RTL)/*.v)
 RTL_GEN    := $(wildcard $(RTL)/gen/*.v)
+# Include files are prerequisites too. tb_core.vvp had neither rtl/gen nor a
+# single .vh in its prerequisites, so editing either left a stale simulator in
+# place and the next run "verified" RTL that no longer existed (audit F04).
+RTL_VH     := $(wildcard $(RTL)/common/*.vh) $(wildcard $(RTL)/noc/*.vh)
 RTL_ALL    := $(RTL_COMMON) $(RTL_CORE) $(RTL_GEN) $(RTL_NUCA) $(RTL_NOC) $(RTL_TILE)
+
+# What any bench built with `-y` library search can pull in. Over-approximate
+# on purpose: a missing edge is a stale artefact presented as a test result,
+# and an extra edge is a rebuild.
+RTL_DEPS   := $(RTL_ALL) $(RTL_VH)
+
+#------------------------------------------------------------------------------
+# Build fingerprints (doc/phase1_tasks_and_acceptance.md R1-03)
+#
+# File prerequisites cover what make can see. A fingerprint covers what it
+# cannot: the iverilog version, and the -P parameter overrides a bench is
+# elaborated with. Those change what the output *is* without changing any
+# file's timestamp, so without this a 2-RCTX simulator can be reused to test a
+# 4-RCTX profile. tools/r1/fingerprint.py rewrites the stamp only when the
+# hash changes, which is what makes it usable as a prerequisite.
+#------------------------------------------------------------------------------
+.PHONY: FORCE
+FORCE:
+
+$(BUILD)/%.fp: FORCE | dirs
+	@$(PYTHON) $(TOOLS)/r1/fingerprint.py stamp $@ $(FP_PARAMS_$*) -- $(FP_FILES_$*)
+
+FP_FILES_tb_core       := $(RTL_DEPS) $(TB)/core/tb_tnca_core.v $(TB)/common/tnca_mem_model.v
+FP_FILES_tb_core_slow  := $(FP_FILES_tb_core)
+FP_FILES_tb_core_ooo   := $(FP_FILES_tb_core)
+FP_FILES_tb_core4      := $(FP_FILES_tb_core)
+FP_FILES_tb_top        := $(RTL_DEPS) $(TB)/top/tb_tnca_top.v $(TB)/common/tnca_dram_model.v $(RTL)/tnca_top.v
+FP_FILES_tb_mesh       := $(RTL_DEPS) $(TB)/noc/tb_mesh.v
+FP_FILES_tb_nuca_slice := $(RTL_DEPS) $(TB)/nuca/tb_nuca_slice.v
+
+FP_PARAMS_tb_core       := profile=core-sim
+FP_PARAMS_tb_core_slow  := profile=core-sim MEM_LATENCY=7 RANDOM_STALL=1
+FP_PARAMS_tb_core_ooo   := profile=core-sim MEM_LATENCY=6 RANDOM_STALL=1 MEM_REORDER=1
+FP_PARAMS_tb_core4      := profile=core-4r NUM_RCTX=4 RCTX_W=2 VREGS_PER_RCTX=32
+FP_PARAMS_tb_top        := profile=system-2x2
+FP_PARAMS_tb_mesh       := profile=system-2x2 npkt=$(MESH_PKTS)
+FP_PARAMS_tb_nuca_slice := profile=system-2x2
 
 # Every RTL directory, for library search and include paths.
 RTLY       := -y $(RTL)/common -y $(RTL)/core -y $(RTL)/gen -y $(RTL)/nuca \
@@ -188,9 +229,10 @@ fma-deep: $(BUILD)/tb_fp32_fma.vvp
 #------------------------------------------------------------------------------
 # Core tests
 #------------------------------------------------------------------------------
-$(BUILD)/tb_core.vvp: $(TB)/core/tb_tnca_core.v $(RTL_CORE) $(RTL_COMMON) \
-                      $(TB)/common/tnca_mem_model.v | dirs
+$(BUILD)/tb_core.vvp: $(TB)/core/tb_tnca_core.v $(RTL_DEPS) \
+                      $(TB)/common/tnca_mem_model.v $(BUILD)/tb_core.fp | dirs
 	$(IVERILOG) $(IVFLAGS) -y $(RTL)/core -y $(RTL)/common -y $(RTL)/gen -y $(TB)/common -o $@ $<
+	@$(PYTHON) $(TOOLS)/r1/fingerprint.py provenance $@ $(BUILD)/tb_core.fp
 
 $(TB)/core/progs/t03_fp.s: $(TB)/core/progs/gen_t03_fp.py $(TOOLS)/model/fp32.py
 	$(PYTHON) $<
@@ -393,8 +435,9 @@ nuca: | dirs
 #------------------------------------------------------------------------------
 MESH_PKTS ?= 20000
 
-$(BUILD)/tb_mesh.vvp: $(TB)/noc/tb_mesh.v $(RTL_NOC) $(RTL_COMMON) | dirs
+$(BUILD)/tb_mesh.vvp: $(TB)/noc/tb_mesh.v $(RTL_DEPS) $(BUILD)/tb_mesh.fp | dirs
 	$(IVERILOG) -g2012 $(IVFLAGS) $(RTLY) -o $@ $< $(RTL)/noc/tnca_mesh.v
+	@$(PYTHON) $(TOOLS)/r1/fingerprint.py provenance $@ $(BUILD)/tb_mesh.fp
 
 .PHONY: mesh
 mesh: $(BUILD)/tb_mesh.vvp
@@ -407,10 +450,11 @@ mesh: $(BUILD)/tb_mesh.vvp
 TOP_PROGS := t10_mesh t24_amo_mesh
 ARGS_t10_mesh := +needevict
 
-$(BUILD)/tb_top.vvp: $(TB)/top/tb_tnca_top.v $(RTL_ALL) \
-                     $(TB)/common/tnca_dram_model.v | dirs
+$(BUILD)/tb_top.vvp: $(TB)/top/tb_tnca_top.v $(RTL_DEPS) $(RTL)/tnca_top.v \
+                     $(TB)/common/tnca_dram_model.v $(BUILD)/tb_top.fp | dirs
 	$(IVERILOG) -g2012 $(IVFLAGS) $(RTLY) -o $@ $< $(RTL)/tnca_top.v \
 	   $(TB)/common/tnca_dram_model.v
+	@$(PYTHON) $(TOOLS)/r1/fingerprint.py provenance $@ $(BUILD)/tb_top.fp
 
 .PHONY: top
 top: export ARGS_t10_mesh := $(ARGS_t10_mesh)
@@ -522,27 +566,33 @@ e2e: $(BUILD)/tb_top.vvp
 # that picked one up was running against whatever RTL happened to be current
 # when that target last ran -- which silently produced failures against
 # already-fixed bugs.
-$(BUILD)/tb_core_slow.vvp: $(RTL_CORE) $(RTL_COMMON) $(TB)/core/tb_tnca_core.v | dirs
+$(BUILD)/tb_core_slow.vvp: $(RTL_DEPS) $(TB)/core/tb_tnca_core.v \
+                           $(TB)/common/tnca_mem_model.v $(BUILD)/tb_core_slow.fp | dirs
 	$(IVERILOG) $(IVFLAGS) -y $(RTL)/core -y $(RTL)/common -y $(RTL)/gen -y $(TB)/common \
 	   -P tb_tnca_core.MEM_LATENCY=7 -P tb_tnca_core.RANDOM_STALL=1 \
 	   -o $@ $(TB)/core/tb_tnca_core.v
+	@$(PYTHON) $(TOOLS)/r1/fingerprint.py provenance $@ $(BUILD)/tb_core_slow.fp
 
-$(BUILD)/tb_core_ooo.vvp: $(RTL_CORE) $(RTL_COMMON) $(TB)/core/tb_tnca_core.v | dirs
+$(BUILD)/tb_core_ooo.vvp: $(RTL_DEPS) $(TB)/core/tb_tnca_core.v \
+                          $(TB)/common/tnca_mem_model.v $(BUILD)/tb_core_ooo.fp | dirs
 	$(IVERILOG) $(IVFLAGS) -y $(RTL)/core -y $(RTL)/common -y $(RTL)/gen -y $(TB)/common \
 	   -P tb_tnca_core.MEM_LATENCY=6 -P tb_tnca_core.RANDOM_STALL=1 \
 	   -P tb_tnca_core.MEM_REORDER=1 \
 	   -o $@ $(TB)/core/tb_tnca_core.v
+	@$(PYTHON) $(TOOLS)/r1/fingerprint.py provenance $@ $(BUILD)/tb_core_ooo.fp
 
 # A four-Role-Context elaboration. compiler_overview.md sec 15 C4 defers the
 # P + M0 + M1 + E check to "四 RCTX 硬件 profile 可用后" -- once such a profile
 # exists. This is that profile: the same core with NUM_RCTX=4, which needs
 # half as many logical vector registers each to keep the physical file the
 # same size.
-$(BUILD)/tb_core4.vvp: $(RTL_CORE) $(RTL_COMMON) $(TB)/core/tb_tnca_core.v | dirs
+$(BUILD)/tb_core4.vvp: $(RTL_DEPS) $(TB)/core/tb_tnca_core.v \
+                       $(TB)/common/tnca_mem_model.v $(BUILD)/tb_core4.fp | dirs
 	$(IVERILOG) $(IVFLAGS) -y $(RTL)/core -y $(RTL)/common -y $(RTL)/gen -y $(TB)/common \
 	   -P tb_tnca_core.NUM_RCTX=4 -P tb_tnca_core.RCTX_W=2 \
 	   -P tb_tnca_core.VREGS_PER_RCTX=32 \
 	   -o $@ $(TB)/core/tb_tnca_core.v
+	@$(PYTHON) $(TOOLS)/r1/fingerprint.py provenance $@ $(BUILD)/tb_core4.fp
 
 .PHONY: core4
 core4: $(BUILD)/tb_core4.vvp
@@ -575,7 +625,7 @@ clean:
 # evidence, run strict, and treat a skip as a failure.
 #------------------------------------------------------------------------------
 .PHONY: r1-doctor r1-check-generated r1-gate-selftest r1-acceptance \
-        r1-verify-evidence r1-inventory
+        r1-verify-evidence r1-inventory r1-check-artifacts r1-build-tests
 
 r1-doctor:
 	@$(PYTHON) tools/r1/doctor.py
@@ -601,6 +651,21 @@ r1-check-generated:
 	@if [ "$(R1_XLS)" = "1" ]; then $(PYTHON) $(TOOLS)/xls/xlsgen.py --check; \
 	 else echo "  r1-check-generated     NOTE   rtl/gen not re-checked "\
 	           "(needs the XLS host; set R1_XLS=1)"; fi
+
+# Before anything runs: is the simulator on disk the one these inputs build?
+# make can only ask whether the target is newer than its prerequisites, and an
+# artefact copied in from another profile is newer than everything. BUILD-07.
+r1-check-artifacts:
+	@for b in tb_core tb_core_slow tb_core_ooo tb_core4 tb_top tb_mesh; do \
+	   if [ -f $(BUILD)/$$b.vvp ]; then \
+	     $(PYTHON) $(TOOLS)/r1/fingerprint.py check $(BUILD)/$$b.vvp $(BUILD)/$$b.fp \
+	       || exit 1; \
+	   fi; \
+	 done; \
+	 echo "  r1-check-artifacts     PASS   built simulators match their inputs"
+
+r1-build-tests:
+	@$(PYTHON) tools/r1/build_tests.py --json $(BUILD)/build_tests.json
 
 r1-gate-selftest:
 	@$(PYTHON) tools/r1/selftest.py

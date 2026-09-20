@@ -1,0 +1,28 @@
+{
+  "acceptance_cap": 7200,
+  "caps": {
+    "build": 3600,
+    "ir": 120,
+    "meta": 120,
+    "rtl": 600,
+    "unit": 120
+  },
+  "contract": "doc/phase1_tasks_and_acceptance.md",
+  "git": {
+    "clean": false,
+    "commit": "db8282487cd298a2205e86697e5cb4ab468222ef",
+    "dirty_paths": [
+      "akefile",
+      "tools/r1/gate.py",
+      "tools/r1/selftest.py",
+      "spec/r1_normalization.json",
+      "tools/r1/build_tests.py",
+      "tools/r1/fingerprint.py"
+    ],
+    "source": "git",
+    "tree": "764359d6ec19cefbc589a2940f2561bef8a44d38"
+  },
+  "retry": 0,
+  "started": "2026-09-19T20:43:48",
+  "strict": true
+}

@@ -1,0 +1,13 @@
+R1-02 gate self-test: ten injected failures, each must be detected
+  RUN-01   detected     make triton-e2e exit=2, make e2e exit=2
+  RUN-02   ** MISSED ** strict=2 dev=2 ir_strict=1 import_error=FAIL
+  RUN-03   detected     assert=FAIL traceback_kept=True assembler_exit=1
+  RUN-04   detected     status=FAIL rc=7 ['simulator exit=7']
+  RUN-05   detected     silent=1 problem(s); both=1 problem(s); corrupt=1 problem(s)
+  RUN-06   detected     status=TIMEOUT orphans=[] elapsed=5.032s (cap 1s)
+  RUN-07   detected     empty=2; missing=1; duplicate=1; skip=1; xfail=1; xpass=1; notrun=2; clean=0
+  RUN-08   detected     missing_this_run='result.dump was not produced by this run'; previous run's file unaffected
+  RUN-09   detected     naive=0 guarded=1 offenders=[]
+  RUN-10   detected     a=INPUT-AAA b=INPUT-BBB separate_dirs=True
+
+  r1-gate-selftest       FAIL   missed: RUN-02

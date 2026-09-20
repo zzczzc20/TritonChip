@@ -1,0 +1,52 @@
+[
+  {
+    "detail": "make triton-e2e exit=2, make e2e exit=2",
+    "id": "RUN-01",
+    "passed": true
+  },
+  {
+    "detail": "strict=2 dev=2 ir_strict=1 import_error=FAIL",
+    "id": "RUN-02",
+    "passed": false
+  },
+  {
+    "detail": "assert=FAIL traceback_kept=True assembler_exit=1",
+    "id": "RUN-03",
+    "passed": true
+  },
+  {
+    "detail": "status=FAIL rc=7 ['simulator exit=7']",
+    "id": "RUN-04",
+    "passed": true
+  },
+  {
+    "detail": "silent=1 problem(s); both=1 problem(s); corrupt=1 problem(s)",
+    "id": "RUN-05",
+    "passed": true
+  },
+  {
+    "detail": "status=TIMEOUT orphans=[] elapsed=5.032s (cap 1s)",
+    "id": "RUN-06",
+    "passed": true
+  },
+  {
+    "detail": "empty=2; missing=1; duplicate=1; skip=1; xfail=1; xpass=1; notrun=2; clean=0",
+    "id": "RUN-07",
+    "passed": true
+  },
+  {
+    "detail": "missing_this_run='result.dump was not produced by this run'; previous run's file unaffected",
+    "id": "RUN-08",
+    "passed": true
+  },
+  {
+    "detail": "naive=0 guarded=1 offenders=[]",
+    "id": "RUN-09",
+    "passed": true
+  },
+  {
+    "detail": "a=INPUT-AAA b=INPUT-BBB separate_dirs=True",
+    "id": "RUN-10",
+    "passed": true
+  }
+]

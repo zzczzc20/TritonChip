@@ -70,6 +70,16 @@ ENTRIES = [
     ('e2e',          ['make', 'e2e'],             'build', None),
 ]
 
+# Suites that report per-case results as JSON rather than as output lines.
+# Their case IDs are the contract's own, so no mapping is needed -- which is
+# the point of having them emit structured results in the first place.
+CASE_SUITES = [
+    ('gate-selftest', [sys.executable, 'tools/r1/selftest.py', '--json'],
+     'build'),
+    ('build-tests',   [sys.executable, 'tools/r1/build_tests.py', '--json'],
+     'build'),
+]
+
 # Entries whose verdict covers a fixed set of inventory IDs rather than
 # emitting one line per case.
 # Entry output line name -> inventory ID, for entries that emit named lines.
@@ -136,6 +146,13 @@ def main():
     discovered = []
     steps = []
 
+    # An artefact from another profile is newer than every prerequisite, so
+    # make accepts it; this is the check that does not (BUILD-07).
+    art = R.run_step(['make', 'r1-check-artifacts'], kind='build',
+                     case_dir=os.path.join(run_dir, 'build'),
+                     name='check-artifacts')
+    steps.append(art)
+
     entries = [e for e in ENTRIES if not args.only or e[0] in args.only]
     for name, argv, kind, tmpl in entries:
         step = R.run_step(argv, kind=kind,
@@ -160,6 +177,25 @@ def main():
         if not tmpl and name not in COVERS and not step.ok:
             statuses[f'ENTRY-{name}'] = 'FAIL'
             discovered.append(f'ENTRY-{name}')
+
+    # Suites that report their own case IDs.
+    for name, argv, kind in CASE_SUITES:
+        if args.only and name not in args.only:
+            continue
+        case_dir = os.path.join(run_dir, 'logs', name)
+        os.makedirs(case_dir, exist_ok=True)
+        out_json = os.path.join(case_dir, 'cases.json')
+        step = R.run_step(argv + [out_json], kind=kind, case_dir=case_dir,
+                          name=name, env={'R1_STRICT': '1'})
+        steps.append(step)
+        if os.path.exists(out_json):
+            with open(out_json) as fh:
+                for rec in json.load(fh):
+                    cid = rec['id']
+                    if cid not in required:
+                        continue
+                    discovered.append(cid)
+                    statuses[cid] = 'PASS' if rec.get('passed') else 'FAIL'
 
     # Everything the contract requires that no entry point ran.
     for cid in sorted(required):

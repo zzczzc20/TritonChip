@@ -31,23 +31,26 @@ rm -rf "$STAGE"
 mkdir -p "$STAGE"
 tar xzf "$ARCHIVE" -C "$STAGE" 2>/dev/null
 
-# The banner goes to stderr and the pid to stdout, because the caller reads
-# stdout. It read both, once, and `wait` was handed a banner.
-run_one() {
+# Started in the CURRENT shell, not in a command substitution. `$(run_one A)`
+# runs the function in a subshell, so the job it backgrounds is a child of
+# that subshell and the main shell's `wait` cannot see it: "pid N is not a
+# child of this shell", and the comparison then ran while both environments
+# were still installing. A function body does not fork, so `$!` here is a
+# child of this shell.
+start_env() {
   local name=$1
-  echo "################ $name ################" >&2
+  echo "################ $name ################"
   ( cd "$STAGE" \
     && R1_PIP_CACHE="$PIP_CACHE" R1_XLS_CACHE="$XLS_CACHE_DIR" \
        bash tools/r1/bootstrap.sh "$ROOT/$name" "$ARCHIVE" ) \
     > "$ROOT/$name.log" 2>&1 &
-  echo $!
 }
 
 # In parallel. They share no state, so the only thing serialising them would
 # buy is a quieter machine -- and on a runner below the reference spec, wall
 # clock is the scarce thing.
-PID_A=$(run_one envA)
-PID_B=$(run_one envB)
+start_env envA; PID_A=$!
+start_env envB; PID_B=$!
 echo "envA pid $PID_A, envB pid $PID_B; logs in $ROOT/env{A,B}.log"
 
 RC_A=0; RC_B=0

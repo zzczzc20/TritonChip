@@ -140,7 +140,36 @@ module tnca_core #(
     output reg  [63:0]              perf_stall_hazard,
     output reg  [63:0]              perf_stall_lsu,
     output reg  [63:0]              perf_stall_wb,
-    output reg  [63:0]              perf_squash
+    output reg  [63:0]              perf_squash,
+
+    // ---- R3-06 COUNT-02 ---------------------------------------------------
+    //
+    // "主stall互斥计数总和与被阻塞cycle相等；重叠计数另列，不重复累计总体
+    //  时间."
+    //
+    // The three counters above do not satisfy that and cannot be made to.
+    // `hazard` and `stall_lsu` are separate terms of one OR and are true
+    // together all the time, so their sum exceeds the blocked cycles; and
+    // stall_fpu, stall_mtx, stall_txf, stall_fence, stall_arrive and
+    // stall_rsv were not counted at all, so it also falls short. Both at
+    // once, which is why "add them up and see" never revealed it.
+    //
+    // So the attribution below is EXCLUSIVE: every blocked cycle is charged
+    // to exactly one cause, by a fixed priority, and the nine of them sum to
+    // perf_stall_total by construction. The old counters stay, unchanged in
+    // meaning, as the overlapping view -- COUNT-02 asks for that one to be
+    // listed separately rather than deleted, because "how many cycles did
+    // the LSU contribute to" is a real question with a different answer.
+    output reg  [63:0]              perf_stall_total,
+    output reg  [63:0]              perf_x_hazard,
+    output reg  [63:0]              perf_x_lsu,
+    output reg  [63:0]              perf_x_fpu,
+    output reg  [63:0]              perf_x_mtx,
+    output reg  [63:0]              perf_x_txf,
+    output reg  [63:0]              perf_x_fence,
+    output reg  [63:0]              perf_x_arrive,
+    output reg  [63:0]              perf_x_rsv,
+    output reg  [63:0]              perf_x_wb
 );
 
     // NOTE ON THE INSTRUCTION PORT: Stage 1 models instruction fetch as a
@@ -1293,6 +1322,26 @@ module tnca_core #(
                      | stall_fence
                      | stall_arrive | stall_rsv | wb_steal;
 
+    // Exclusive attribution. The order is the order of the OR above, which
+    // makes it arbitrary but FIXED -- and fixed is what matters: the same
+    // blocked cycle must be charged to the same cause every run, or the
+    // counters are not comparable between two of them. The priority is part
+    // of the counter contract (spec/r3_counters.json), not an accident of
+    // how this expression happens to be written.
+    wire x_haz   = hazard;
+    wire x_lsu   = !x_haz && stall_lsu;
+    wire x_fpu   = !x_haz && !x_lsu && stall_fpu;
+    wire x_mtx   = !x_haz && !x_lsu && !x_fpu && stall_mtx;
+    wire x_txf   = !x_haz && !x_lsu && !x_fpu && !x_mtx && stall_txf;
+    wire x_fence = !x_haz && !x_lsu && !x_fpu && !x_mtx && !x_txf
+                   && stall_fence;
+    wire x_arr   = !x_haz && !x_lsu && !x_fpu && !x_mtx && !x_txf
+                   && !x_fence && stall_arrive;
+    wire x_rsv   = !x_haz && !x_lsu && !x_fpu && !x_mtx && !x_txf
+                   && !x_fence && !x_arr && stall_rsv;
+    wire x_wb    = !x_haz && !x_lsu && !x_fpu && !x_mtx && !x_txf
+                   && !x_fence && !x_arr && !x_rsv && wb_steal;
+
     // A redirect kills only the younger entries of the same RCTX.
     wire             squash_en   = x_redirect;
     wire [RCTX_W-1:0] squash_rctx = x_rctx;
@@ -1348,6 +1397,16 @@ module tnca_core #(
             perf_issued       <= 64'd0;
             perf_stall_hazard <= 64'd0;
             perf_stall_lsu    <= 64'd0;
+            perf_stall_total  <= 64'd0;
+            perf_x_hazard     <= 64'd0;
+            perf_x_lsu        <= 64'd0;
+            perf_x_fpu        <= 64'd0;
+            perf_x_mtx        <= 64'd0;
+            perf_x_txf        <= 64'd0;
+            perf_x_fence      <= 64'd0;
+            perf_x_arrive     <= 64'd0;
+            perf_x_rsv        <= 64'd0;
+            perf_x_wb         <= 64'd0;
             perf_stall_wb     <= 64'd0;
             perf_squash       <= 64'd0;
             for (i = 0; i < NUM_RCTX; i = i + 1)
@@ -1408,10 +1467,26 @@ module tnca_core #(
             w_lane_en <= nw_lane_en;
 
             if (|running) perf_cycles <= perf_cycles + 64'd1;
+            // The overlapping view, unchanged.
             if (hazard)    perf_stall_hazard <= perf_stall_hazard + 64'd1;
             if (stall_lsu) perf_stall_lsu    <= perf_stall_lsu + 64'd1;
             if (wb_steal)  perf_stall_wb     <= perf_stall_wb + 64'd1;
             if (squash_en) perf_squash       <= perf_squash + 64'd1;
+
+            // The exclusive view. Counted only while something is running,
+            // on the same condition as perf_cycles, so the sum can be
+            // compared against a cycle count taken over the same window.
+            if (|running && stall_front)
+                perf_stall_total <= perf_stall_total + 64'd1;
+            if (|running && x_haz)   perf_x_hazard <= perf_x_hazard + 64'd1;
+            if (|running && x_lsu)   perf_x_lsu    <= perf_x_lsu    + 64'd1;
+            if (|running && x_fpu)   perf_x_fpu    <= perf_x_fpu    + 64'd1;
+            if (|running && x_mtx)   perf_x_mtx    <= perf_x_mtx    + 64'd1;
+            if (|running && x_txf)   perf_x_txf    <= perf_x_txf    + 64'd1;
+            if (|running && x_fence) perf_x_fence  <= perf_x_fence  + 64'd1;
+            if (|running && x_arr)   perf_x_arrive <= perf_x_arrive + 64'd1;
+            if (|running && x_rsv)   perf_x_rsv    <= perf_x_rsv    + 64'd1;
+            if (|running && x_wb)    perf_x_wb     <= perf_x_wb     + 64'd1;
 
             //------------------------------------------------------------------
             // launch

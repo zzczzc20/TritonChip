@@ -127,7 +127,7 @@ SFU_VECTORS ?= 6000
 FPU_MULTI_VECTORS ?= 1500
 
 CORE_PROGS := t00_scalar t01_vector t02_mem t03_fp t04_roles t05_fault t06_alu \
-              t11_matrix t12_tensor t13_share t14_caps t15_target t16_vecadd t17_descfault t18_squash t19_waitgen0 t20_sfu t21_cvt t22_atomic t23_amofault t25_mmasf t26_stfault
+              t11_matrix t12_tensor t13_share t14_caps t15_target t16_vecadd t17_descfault t18_squash t19_waitgen0 t20_sfu t21_cvt t22_atomic t23_amofault t25_mmasf t26_stfault t28_count
 
 # Image size in 64-bit words; must match tb_tnca_core's WORDS parameter.
 IMAGE_WORDS := 16384
@@ -690,6 +690,7 @@ clean:
         r2-compile-tests r2-cache-tests r2-runtime-tests r2-fault-tests \
         r2-grid-tests r2-memory-tests r2-mutation-tests \
         r2-obs-tests r2-e2e-tests r3-rf-tests r3-flow-tests \
+        r3-count-tests \
         r2-package r2-stage-data \
         r3-scout r3-plan r3-model-tests
 
@@ -790,6 +791,9 @@ r2-package: r2-stage-data
 	@rm -rf build $(BUILD)/dist/*.whl
 	@$(PYTHON) -m pip wheel --no-deps -q -w $(BUILD)/dist .
 	@$(PYTHON) -c "import glob, os; [print('  %d bytes  %s' % (os.path.getsize(w), w)) for w in sorted(glob.glob('$(BUILD)/dist/*.whl'))]"
+
+r3-count-tests: $(BUILD)/tb_core.vvp $(CORE_HEX)
+	@$(PYTHON) tools/r3/count_tests.py --json $(BUILD)/r3_count_tests.json
 
 r3-flow-tests:
 	@$(PYTHON) tools/r3/flow_tests.py --json $(BUILD)/r3_flow_tests.json

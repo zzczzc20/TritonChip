@@ -1,0 +1,77 @@
+{
+  "schema": "r3-counters/1",
+  "contract": "doc/phase3_tasks_and_acceptance.md R3-06",
+  "note": "Where each count comes from, when it moves, what resets it, and what it does when it runs out of bits. A counter whose event is not written down is a number nobody can argue with.",
+  "reset": {
+    "rule": "every counter clears on rst_n and on nothing else",
+    "epoch": "a launch does NOT clear them. The host reads them before and after and subtracts, which is what makes a region of interest a region rather than a whole run. R2's epoch change restarts the device process, so it clears them the same way a reset does.",
+    "why": "clearing on launch would make a counter unreadable for any window that contains a launch, and the multi-batch grids of R2-09 are exactly that"
+  },
+  "overflow": {
+    "width": 64,
+    "rule": "wraps. At one event per cycle a 64-bit counter needs 5.8e11 seconds to wrap, so the defined behaviour is stated rather than guarded against in hardware.",
+    "narrow": "a counter narrower than 64 bits must say so here and must saturate rather than wrap, because a wrap in a narrow counter is reachable and a saturated one is at least ordered"
+  },
+  "groups": {
+    "cycles": {
+      "perf_cycles": {
+        "event": "one per cycle while any role context is running",
+        "source": "rtl/core/tnca_core.v",
+        "width": 64
+      },
+      "perf_issued": {
+        "event": "one per instruction that leaves the issue stage",
+        "source": "rtl/core/tnca_core.v",
+        "width": 64
+      }
+    },
+    "stall_exclusive": {
+      "note": "Every blocked cycle is charged to exactly one of these, by the fixed priority below. Their sum equals perf_stall_total over any window. This is the group COUNT-02 means by 主stall互斥计数.",
+      "priority": ["hazard", "lsu", "fpu", "mtx", "txf", "fence", "arrive",
+                   "rsv", "wb"],
+      "perf_stall_total": {
+        "event": "one per cycle where stall_front is true and something is running",
+        "width": 64
+      },
+      "perf_x_hazard": {"event": "a register or predicate dependency", "width": 64},
+      "perf_x_lsu":    {"event": "no free load/store slot", "width": 64},
+      "perf_x_fpu":    {"event": "the FP reduction unit is busy", "width": 64},
+      "perf_x_mtx":    {"event": "the matrix unit is busy", "width": 64},
+      "perf_x_txf":    {"event": "the transfer engine is busy", "width": 64},
+      "perf_x_fence":  {"event": "a fence has not retired", "width": 64},
+      "perf_x_arrive": {"event": "a barrier arrive cannot be taken", "width": 64},
+      "perf_x_rsv":    {"event": "the writeback slot this instruction needs is reserved", "width": 64},
+      "perf_x_wb":     {"event": "a completion stole the writeback port", "width": 64}
+    },
+    "stall_overlapping": {
+      "note": "The same cycles counted per cause, WITHOUT exclusivity: a cycle blocked by both a hazard and the LSU appears in both. Listed separately because 'how many cycles did the LSU contribute to' is a real question with a different answer, and because adding these up does not give a time. COUNT-02: 重叠计数另列，不重复累计总体时间.",
+      "perf_stall_hazard": {"event": "hazard true", "width": 64},
+      "perf_stall_lsu": {"event": "stall_lsu true", "width": 64},
+      "perf_stall_wb": {"event": "wb_steal true", "width": 64}
+    },
+    "control": {
+      "perf_squash": {"event": "one per redirect", "width": 64}
+    },
+    "operand_collector": {
+      "note": "rtl/core/tnca_operand_collector.v",
+      "n_grant":    {"event": "one per read request the register file accepted", "width": 32},
+      "n_conflict": {"event": "one per read request presented and refused; the request is retried, not lost", "width": 32},
+      "n_wait":     {"event": "one per CYCLE in which at least one request was refused -- a cycle count, not a request count", "width": 32},
+      "n_orphan":   {"event": "one per response whose entry was flushed after the read was accepted; absorbed, never written", "width": 32}
+    },
+    "memory_model": {
+      "note": "tb/common/tnca_mem_model.v -- a testbench model, so these describe the experiment rather than the design",
+      "n_stall_cycles":    {"event": "one per cycle a request was held off", "width": 32},
+      "n_reorder":         {"event": "one per response returned out of request order", "width": 32},
+      "n_multi_eligible":  {"event": "one per cycle with more than one response eligible", "width": 32}
+    },
+    "barrier": {
+      "note": "rtl/core/tnca_barrier.v",
+      "n_multi_complete": {"event": "one per cycle in which more than one barrier completed", "width": 32}
+    }
+  },
+  "sampling": {
+    "rule": "COUNT-05: counting is unconditional and has no enable. There is no configuration in which the numbers change, because there is no configuration -- which is a stronger guarantee than 'disabling sampling does not perturb results' and is why no disable exists.",
+    "storage": "no counter is software-addressable memory; they are read through the device's response fields, so enabling them adds no software-visible storage"
+  }
+}

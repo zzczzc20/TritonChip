@@ -72,6 +72,10 @@ module tb_tnca_core;
 
     wire [63:0] perf_cycles, perf_issued, perf_stall_hazard,
                 perf_stall_lsu, perf_stall_wb, perf_squash;
+    // R3-06 COUNT-02: the exclusive stall attribution.
+    wire [63:0] perf_stall_total, perf_x_hazard, perf_x_lsu, perf_x_fpu,
+                perf_x_mtx, perf_x_txf, perf_x_fence, perf_x_arrive,
+                perf_x_rsv, perf_x_wb;
 
     tnca_core #(
         .NUM_RCTX(NUM_RCTX), .RCTX_W(RCTX_W), .VLEN(VLEN), .ELEN(ELEN), .LW(4),
@@ -98,7 +102,13 @@ module tb_tnca_core;
         .mem_rsp_rdata(mrsp_rdata),
         .perf_cycles(perf_cycles), .perf_issued(perf_issued),
         .perf_stall_hazard(perf_stall_hazard), .perf_stall_lsu(perf_stall_lsu),
-        .perf_stall_wb(perf_stall_wb), .perf_squash(perf_squash)
+        .perf_stall_wb(perf_stall_wb), .perf_squash(perf_squash),
+        .perf_stall_total(perf_stall_total),
+        .perf_x_hazard(perf_x_hazard), .perf_x_lsu(perf_x_lsu),
+        .perf_x_fpu(perf_x_fpu), .perf_x_mtx(perf_x_mtx),
+        .perf_x_txf(perf_x_txf), .perf_x_fence(perf_x_fence),
+        .perf_x_arrive(perf_x_arrive), .perf_x_rsv(perf_x_rsv),
+        .perf_x_wb(perf_x_wb)
     );
 
     tnca_mem_model #(
@@ -181,6 +191,15 @@ module tb_tnca_core;
         $display("cycles=%0d issued=%0d hazard=%0d lsu=%0d wb=%0d squash=%0d",
                  cyc, perf_issued, perf_stall_hazard, perf_stall_lsu,
                  perf_stall_wb, perf_squash);
+        // The exclusive group, and its sum. tools/r3/count_tests.py checks
+        // that the sum is the total; printing both is what lets it.
+        $display("stall_total=%0d x_hazard=%0d x_lsu=%0d x_fpu=%0d x_mtx=%0d x_txf=%0d x_fence=%0d x_arrive=%0d x_rsv=%0d x_wb=%0d x_sum=%0d",
+                 perf_stall_total, perf_x_hazard, perf_x_lsu, perf_x_fpu,
+                 perf_x_mtx, perf_x_txf, perf_x_fence, perf_x_arrive,
+                 perf_x_rsv, perf_x_wb,
+                 perf_x_hazard + perf_x_lsu + perf_x_fpu + perf_x_mtx
+                 + perf_x_txf + perf_x_fence + perf_x_arrive + perf_x_rsv
+                 + perf_x_wb);
         // What the memory model's seed actually changed. A matrix that runs
         // three seeds and reports three identical traces has run one seed
         // three times, and R1-08 asks for the difference to be visible.

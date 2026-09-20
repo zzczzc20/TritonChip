@@ -14,9 +14,9 @@ defines honest against the same tables.
 import json
 import os
 
-ROOT = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                                    '..', '..', '..'))
-SCHEMA_PATH = os.path.join(ROOT, 'isa', 'tnca-isa-v0.1.json')
+from ._datapath import ROOT, find
+
+SCHEMA_PATH = find('isa', 'tnca-isa-v0.1.json')
 
 
 class Instruction:

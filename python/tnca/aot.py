@@ -31,7 +31,7 @@ import json
 import os
 import time
 
-from . import abi, artifact, manifest as M
+from . import _data, abi, artifact, manifest as M
 from .adapters import r1 as adapter
 from .errors import (ArgumentError, CompileError, ProfileMismatch,
                      SignatureError, TncaError, UnsupportedError)
@@ -64,11 +64,14 @@ def _sha(data):
 
 
 def _lock_hash():
-    root = os.path.dirname(os.path.dirname(os.path.dirname(
-        os.path.abspath(__file__))))
-    path = os.path.join(root, 'spec', 'r1_toolchain.lock.json')
+    """The toolchain lock, which is part of the cache key.
+
+    'unknown' rather than an exception when it is absent: a runtime-only
+    install has no lock to read and does not compile, and refusing over a
+    missing file would break `inspect`.
+    """
     try:
-        with open(path, 'rb') as fh:
+        with open(_data.path('spec', 'r1_toolchain.lock.json'), 'rb') as fh:
             return _sha(fh.read())
     except OSError:
         return 'unknown'

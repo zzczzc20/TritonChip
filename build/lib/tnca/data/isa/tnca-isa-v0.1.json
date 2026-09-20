@@ -1,0 +1,2512 @@
+{
+  "schema_version": 1,
+  "isa_version": "0.1",
+  "normative_source": "doc/isa/TNCA-ISA-v0.1.md",
+  "generated_from": "tools/asm/tnca_isa.py",
+  "note": "Generated file -- do not edit. Run `make isa` after changing tools/asm/tnca_isa.py. See compiler_overview.md sec 11.3.",
+  "word": {
+    "width": 64,
+    "fields": {
+      "major": {
+        "shift": 56,
+        "width": 8
+      },
+      "func": {
+        "shift": 48,
+        "width": 8
+      },
+      "d": {
+        "shift": 40,
+        "width": 8
+      },
+      "a": {
+        "shift": 32,
+        "width": 8
+      },
+      "b": {
+        "shift": 24,
+        "width": 8
+      },
+      "c": {
+        "shift": 16,
+        "width": 8
+      },
+      "pred": {
+        "shift": 12,
+        "width": 4
+      },
+      "x": {
+        "shift": 11,
+        "width": 1
+      },
+      "pn": {
+        "shift": 10,
+        "width": 1
+      },
+      "mod": {
+        "shift": 0,
+        "width": 10
+      }
+    }
+  },
+  "register_files": {
+    "sreg": {
+      "count": 64,
+      "per": "rctx",
+      "width_bits": 64
+    },
+    "preg": {
+      "count": 16,
+      "per": "rctx",
+      "width_bits": 16
+    },
+    "vreg": {
+      "count": 256,
+      "per": "core",
+      "lanes": 16,
+      "lane_width_bits": 32
+    },
+    "areg": {
+      "count": 16,
+      "per": "core"
+    },
+    "breg": {
+      "count": 32,
+      "per": "core"
+    },
+    "dreg": {
+      "count": 16,
+      "per": "core"
+    },
+    "wreg": {
+      "count": 32,
+      "per": "core"
+    }
+  },
+  "vlen": 16,
+  "majors": {
+    "SYS": 0,
+    "SALU": 1,
+    "CTRL": 2,
+    "VINT": 16,
+    "VFP": 17,
+    "CVT": 18,
+    "PRED": 19,
+    "SHUF": 20,
+    "RED": 21,
+    "SFU": 22,
+    "LSU": 32,
+    "ATOM": 33,
+    "TDESC": 48,
+    "TXFER": 49,
+    "THINT": 50,
+    "MATRIX": 64,
+    "ACC": 65,
+    "MBAR": 80,
+    "ROLE": 81,
+    "DEBUG": 96
+  },
+  "maskable_majors": [
+    16,
+    17,
+    18,
+    20,
+    21,
+    22,
+    32,
+    33,
+    49,
+    65
+  ],
+  "condition_codes": {
+    "eq": 0,
+    "ne": 1,
+    "lt": 2,
+    "le": 3,
+    "gt": 4,
+    "ge": 5,
+    "ltu": 6,
+    "leu": 7,
+    "gtu": 8,
+    "geu": 9,
+    "o": 10,
+    "uo": 11
+  },
+  "condition_codes_int": [
+    "eq",
+    "ge",
+    "geu",
+    "gt",
+    "gtu",
+    "le",
+    "leu",
+    "lt",
+    "ltu",
+    "ne"
+  ],
+  "condition_codes_fp": [
+    "eq",
+    "ge",
+    "gt",
+    "le",
+    "lt",
+    "ne",
+    "o",
+    "uo"
+  ],
+  "special_registers": {
+    "pid.x": 0,
+    "pid.y": 1,
+    "pid.z": 2,
+    "npid.x": 4,
+    "npid.y": 5,
+    "npid.z": 6,
+    "role_id": 8,
+    "num_roles": 9,
+    "core_id": 10,
+    "num_cores": 11,
+    "num_lanes": 12,
+    "num_vregs": 13,
+    "tensor_max_rank": 14,
+    "num_acc": 15,
+    "clock": 16,
+    "instret": 17,
+    "num_barriers": 18,
+    "num_windows": 19,
+    "num_descriptors": 20,
+    "num_phys_vregs": 21,
+    "arg_base": 32,
+    "isa_version": 48,
+    "cap0": 49,
+    "trap_pc": 64,
+    "trap_code": 65
+  },
+  "access_sizes": {
+    "b": 0,
+    "h": 1,
+    "w": 2,
+    "d": 3
+  },
+  "cache_hints": {
+    "default": 0,
+    "stream": 1,
+    "hipri": 2
+  },
+  "fp_minmax_modes": {
+    "ieee": 0,
+    "prop": 1,
+    "fast": 2
+  },
+  "rounding_modes": {
+    "rtz": 0,
+    "rne": 1,
+    "rmi": 2,
+    "rpi": 3
+  },
+  "trap_codes": {
+    "NONE": 0,
+    "ILLEGAL_INSTRUCTION": 1,
+    "MISALIGNED_PC": 2,
+    "ACCESS_FAULT": 3,
+    "DESCRIPTOR_FAULT": 4,
+    "BARRIER_FAULT": 5,
+    "RESOURCE_EXHAUSTED": 6,
+    "TRAP_USER": 64
+  },
+  "mma_k": {
+    "k16": 0,
+    "k32": 1,
+    "k64": 2
+  },
+  "mma_dtype": {
+    "f16": 0,
+    "bf16": 1,
+    "e5m2": 2,
+    "e4m3": 3
+  },
+  "operand_kinds": {
+    "sd": {
+      "field": "d",
+      "class": "sreg",
+      "role": "def"
+    },
+    "sa": {
+      "field": "a",
+      "class": "sreg",
+      "role": "use"
+    },
+    "sb": {
+      "field": "b",
+      "class": "sreg",
+      "role": "use"
+    },
+    "sc": {
+      "field": "c",
+      "class": "sreg",
+      "role": "use"
+    },
+    "vd": {
+      "field": "d",
+      "class": "vreg",
+      "role": "def"
+    },
+    "va": {
+      "field": "a",
+      "class": "vreg",
+      "role": "use"
+    },
+    "vb": {
+      "field": "b",
+      "class": "vreg",
+      "role": "use"
+    },
+    "vc": {
+      "field": "c",
+      "class": "vreg",
+      "role": "use"
+    },
+    "pd": {
+      "field": "d",
+      "class": "preg",
+      "role": "def"
+    },
+    "pa": {
+      "field": "a",
+      "class": "preg",
+      "role": "use"
+    },
+    "pb": {
+      "field": "b",
+      "class": "preg",
+      "role": "use"
+    },
+    "ad": {
+      "field": "d",
+      "class": "areg",
+      "role": "def"
+    },
+    "aa": {
+      "field": "a",
+      "class": "areg",
+      "role": "use"
+    },
+    "bd": {
+      "field": "d",
+      "class": "breg",
+      "role": "def"
+    },
+    "ba": {
+      "field": "a",
+      "class": "breg",
+      "role": "use"
+    },
+    "dd": {
+      "field": "d",
+      "class": "dreg",
+      "role": "def"
+    },
+    "da": {
+      "field": "a",
+      "class": "dreg",
+      "role": "use"
+    },
+    "wd": {
+      "field": "d",
+      "class": "wreg",
+      "role": "def"
+    },
+    "wa": {
+      "field": "a",
+      "class": "wreg",
+      "role": "use"
+    },
+    "i16s": {
+      "field": "c",
+      "class": "imm",
+      "role": "use",
+      "bits": 16,
+      "signed": true
+    },
+    "i16z": {
+      "field": "c",
+      "class": "imm",
+      "role": "use",
+      "bits": 16,
+      "signed": false
+    },
+    "i24": {
+      "field": "c",
+      "class": "imm",
+      "role": "use",
+      "bits": 24,
+      "signed": false
+    },
+    "lbl16": {
+      "field": "c",
+      "class": "label",
+      "role": "use",
+      "bits": 16,
+      "signed": true
+    },
+    "lbl24": {
+      "field": "c",
+      "class": "label",
+      "role": "use",
+      "bits": 24,
+      "signed": true
+    },
+    "spec": {
+      "field": "mod",
+      "class": "special",
+      "role": "use"
+    },
+    "lane": {
+      "field": "mod",
+      "class": "lane",
+      "role": "use"
+    },
+    "rdst": {
+      "field": "d",
+      "class": "sreg|vreg",
+      "role": "def",
+      "note": "vreg when the '.b' broadcast suffix is present, else sreg"
+    },
+    "cnt2": {
+      "field": "mod",
+      "class": "count",
+      "role": "use"
+    },
+    "winspec": {
+      "field": "mod",
+      "class": "window",
+      "role": "use"
+    },
+    "mem_si": {
+      "field": "a+c",
+      "class": "mem",
+      "role": "use",
+      "note": "scalar base in a, signed 16-bit displacement in c"
+    },
+    "mem_sv": {
+      "field": "a+b",
+      "class": "mem",
+      "role": "use",
+      "note": "scalar base in a, per-lane vector offsets in b"
+    },
+    "mem_s": {
+      "field": "a",
+      "class": "mem",
+      "role": "use",
+      "note": "scalar address, no displacement"
+    }
+  },
+  "operand_kinds_unused": [
+    "wa"
+  ],
+  "instructions": [
+    {
+      "mnemonic": "a.fma.row",
+      "major": "ACC",
+      "major_code": 65,
+      "func": 3,
+      "operands": [
+        "ad",
+        "sa",
+        "vb",
+        "sc"
+      ],
+      "suffix_class": null,
+      "maskable": true
+    },
+    {
+      "mnemonic": "a.mul.row",
+      "major": "ACC",
+      "major_code": 65,
+      "func": 2,
+      "operands": [
+        "ad",
+        "sa",
+        "sb"
+      ],
+      "suffix_class": null,
+      "maskable": true
+    },
+    {
+      "mnemonic": "a.vread",
+      "major": "ACC",
+      "major_code": 65,
+      "func": 0,
+      "operands": [
+        "vd",
+        "aa",
+        "sb"
+      ],
+      "suffix_class": null,
+      "maskable": true
+    },
+    {
+      "mnemonic": "a.vwrite",
+      "major": "ACC",
+      "major_code": 65,
+      "func": 1,
+      "operands": [
+        "ad",
+        "sa",
+        "vb"
+      ],
+      "suffix_class": null,
+      "maskable": true
+    },
+    {
+      "mnemonic": "a.zero",
+      "major": "ACC",
+      "major_code": 65,
+      "func": 8,
+      "operands": [
+        "ad"
+      ],
+      "suffix_class": null,
+      "maskable": true
+    },
+    {
+      "mnemonic": "atom.add",
+      "major": "ATOM",
+      "major_code": 33,
+      "func": 0,
+      "operands": [
+        "sd",
+        "mem_s",
+        "sb"
+      ],
+      "suffix_class": "amo",
+      "maskable": true
+    },
+    {
+      "mnemonic": "atom.and",
+      "major": "ATOM",
+      "major_code": 33,
+      "func": 1,
+      "operands": [
+        "sd",
+        "mem_s",
+        "sb"
+      ],
+      "suffix_class": "amo",
+      "maskable": true
+    },
+    {
+      "mnemonic": "atom.cas",
+      "major": "ATOM",
+      "major_code": 33,
+      "func": 16,
+      "operands": [
+        "sd",
+        "mem_s",
+        "sb",
+        "sc"
+      ],
+      "suffix_class": "amo",
+      "maskable": true
+    },
+    {
+      "mnemonic": "atom.ld",
+      "major": "ATOM",
+      "major_code": 33,
+      "func": 24,
+      "operands": [
+        "sd",
+        "mem_s"
+      ],
+      "suffix_class": "amo",
+      "maskable": true
+    },
+    {
+      "mnemonic": "atom.max.s",
+      "major": "ATOM",
+      "major_code": 33,
+      "func": 6,
+      "operands": [
+        "sd",
+        "mem_s",
+        "sb"
+      ],
+      "suffix_class": "amo",
+      "maskable": true
+    },
+    {
+      "mnemonic": "atom.max.u",
+      "major": "ATOM",
+      "major_code": 33,
+      "func": 8,
+      "operands": [
+        "sd",
+        "mem_s",
+        "sb"
+      ],
+      "suffix_class": "amo",
+      "maskable": true
+    },
+    {
+      "mnemonic": "atom.min.s",
+      "major": "ATOM",
+      "major_code": 33,
+      "func": 5,
+      "operands": [
+        "sd",
+        "mem_s",
+        "sb"
+      ],
+      "suffix_class": "amo",
+      "maskable": true
+    },
+    {
+      "mnemonic": "atom.min.u",
+      "major": "ATOM",
+      "major_code": 33,
+      "func": 7,
+      "operands": [
+        "sd",
+        "mem_s",
+        "sb"
+      ],
+      "suffix_class": "amo",
+      "maskable": true
+    },
+    {
+      "mnemonic": "atom.or",
+      "major": "ATOM",
+      "major_code": 33,
+      "func": 2,
+      "operands": [
+        "sd",
+        "mem_s",
+        "sb"
+      ],
+      "suffix_class": "amo",
+      "maskable": true
+    },
+    {
+      "mnemonic": "atom.st",
+      "major": "ATOM",
+      "major_code": 33,
+      "func": 25,
+      "operands": [
+        "mem_s",
+        "sb"
+      ],
+      "suffix_class": "amo",
+      "maskable": true
+    },
+    {
+      "mnemonic": "atom.xchg",
+      "major": "ATOM",
+      "major_code": 33,
+      "func": 4,
+      "operands": [
+        "sd",
+        "mem_s",
+        "sb"
+      ],
+      "suffix_class": "amo",
+      "maskable": true
+    },
+    {
+      "mnemonic": "atom.xor",
+      "major": "ATOM",
+      "major_code": 33,
+      "func": 3,
+      "operands": [
+        "sd",
+        "mem_s",
+        "sb"
+      ],
+      "suffix_class": "amo",
+      "maskable": true
+    },
+    {
+      "mnemonic": "br",
+      "major": "CTRL",
+      "major_code": 2,
+      "func": 0,
+      "operands": [
+        "lbl24"
+      ],
+      "suffix_class": null,
+      "maskable": false
+    },
+    {
+      "mnemonic": "br.nz",
+      "major": "CTRL",
+      "major_code": 2,
+      "func": 1,
+      "operands": [
+        "sa",
+        "lbl16"
+      ],
+      "suffix_class": null,
+      "maskable": false
+    },
+    {
+      "mnemonic": "br.r",
+      "major": "CTRL",
+      "major_code": 2,
+      "func": 4,
+      "operands": [
+        "sa"
+      ],
+      "suffix_class": null,
+      "maskable": false
+    },
+    {
+      "mnemonic": "br.z",
+      "major": "CTRL",
+      "major_code": 2,
+      "func": 2,
+      "operands": [
+        "sa",
+        "lbl16"
+      ],
+      "suffix_class": null,
+      "maskable": false
+    },
+    {
+      "mnemonic": "call",
+      "major": "CTRL",
+      "major_code": 2,
+      "func": 8,
+      "operands": [
+        "sd",
+        "lbl24"
+      ],
+      "suffix_class": null,
+      "maskable": false
+    },
+    {
+      "mnemonic": "exit",
+      "major": "CTRL",
+      "major_code": 2,
+      "func": 31,
+      "operands": [],
+      "suffix_class": null,
+      "maskable": false
+    },
+    {
+      "mnemonic": "fence",
+      "major": "ATOM",
+      "major_code": 33,
+      "func": 32,
+      "operands": [],
+      "suffix_class": "amo",
+      "maskable": true
+    },
+    {
+      "mnemonic": "m.mma.async",
+      "major": "MATRIX",
+      "major_code": 64,
+      "func": 1,
+      "operands": [
+        "ad",
+        "va",
+        "vb",
+        "sc"
+      ],
+      "suffix_class": "mma",
+      "maskable": false
+    },
+    {
+      "mnemonic": "m.zero",
+      "major": "MATRIX",
+      "major_code": 64,
+      "func": 0,
+      "operands": [
+        "ad"
+      ],
+      "suffix_class": null,
+      "maskable": false
+    },
+    {
+      "mnemonic": "mb.arm",
+      "major": "MBAR",
+      "major_code": 80,
+      "func": 1,
+      "operands": [
+        "sd",
+        "ba",
+        "cnt2"
+      ],
+      "suffix_class": null,
+      "maskable": false
+    },
+    {
+      "mnemonic": "mb.arrive",
+      "major": "MBAR",
+      "major_code": 80,
+      "func": 2,
+      "operands": [
+        "ba"
+      ],
+      "suffix_class": null,
+      "maskable": false
+    },
+    {
+      "mnemonic": "mb.init",
+      "major": "MBAR",
+      "major_code": 80,
+      "func": 0,
+      "operands": [
+        "bd"
+      ],
+      "suffix_class": null,
+      "maskable": false
+    },
+    {
+      "mnemonic": "mb.inval",
+      "major": "MBAR",
+      "major_code": 80,
+      "func": 5,
+      "operands": [
+        "ba"
+      ],
+      "suffix_class": null,
+      "maskable": false
+    },
+    {
+      "mnemonic": "mb.test",
+      "major": "MBAR",
+      "major_code": 80,
+      "func": 3,
+      "operands": [
+        "sd",
+        "sa"
+      ],
+      "suffix_class": null,
+      "maskable": false
+    },
+    {
+      "mnemonic": "mb.wait",
+      "major": "MBAR",
+      "major_code": 80,
+      "func": 4,
+      "operands": [
+        "sa"
+      ],
+      "suffix_class": null,
+      "maskable": false
+    },
+    {
+      "mnemonic": "nop",
+      "major": "SYS",
+      "major_code": 0,
+      "func": 0,
+      "operands": [],
+      "suffix_class": null,
+      "maskable": false
+    },
+    {
+      "mnemonic": "p.all",
+      "major": "PRED",
+      "major_code": 19,
+      "func": 17,
+      "operands": [
+        "sd",
+        "pa"
+      ],
+      "suffix_class": null,
+      "maskable": false
+    },
+    {
+      "mnemonic": "p.and",
+      "major": "PRED",
+      "major_code": 19,
+      "func": 1,
+      "operands": [
+        "pd",
+        "pa",
+        "pb"
+      ],
+      "suffix_class": null,
+      "maskable": false
+    },
+    {
+      "mnemonic": "p.andn",
+      "major": "PRED",
+      "major_code": 19,
+      "func": 5,
+      "operands": [
+        "pd",
+        "pa",
+        "pb"
+      ],
+      "suffix_class": null,
+      "maskable": false
+    },
+    {
+      "mnemonic": "p.any",
+      "major": "PRED",
+      "major_code": 19,
+      "func": 16,
+      "operands": [
+        "sd",
+        "pa"
+      ],
+      "suffix_class": null,
+      "maskable": false
+    },
+    {
+      "mnemonic": "p.ballot",
+      "major": "PRED",
+      "major_code": 19,
+      "func": 18,
+      "operands": [
+        "sd",
+        "pa"
+      ],
+      "suffix_class": null,
+      "maskable": false
+    },
+    {
+      "mnemonic": "p.frombits",
+      "major": "PRED",
+      "major_code": 19,
+      "func": 19,
+      "operands": [
+        "pd",
+        "sa"
+      ],
+      "suffix_class": null,
+      "maskable": false
+    },
+    {
+      "mnemonic": "p.mov",
+      "major": "PRED",
+      "major_code": 19,
+      "func": 0,
+      "operands": [
+        "pd",
+        "pa"
+      ],
+      "suffix_class": null,
+      "maskable": false
+    },
+    {
+      "mnemonic": "p.not",
+      "major": "PRED",
+      "major_code": 19,
+      "func": 4,
+      "operands": [
+        "pd",
+        "pa"
+      ],
+      "suffix_class": null,
+      "maskable": false
+    },
+    {
+      "mnemonic": "p.or",
+      "major": "PRED",
+      "major_code": 19,
+      "func": 2,
+      "operands": [
+        "pd",
+        "pa",
+        "pb"
+      ],
+      "suffix_class": null,
+      "maskable": false
+    },
+    {
+      "mnemonic": "p.popc",
+      "major": "PRED",
+      "major_code": 19,
+      "func": 20,
+      "operands": [
+        "sd",
+        "pa"
+      ],
+      "suffix_class": null,
+      "maskable": false
+    },
+    {
+      "mnemonic": "p.xor",
+      "major": "PRED",
+      "major_code": 19,
+      "func": 3,
+      "operands": [
+        "pd",
+        "pa",
+        "pb"
+      ],
+      "suffix_class": null,
+      "maskable": false
+    },
+    {
+      "mnemonic": "ret",
+      "major": "CTRL",
+      "major_code": 2,
+      "func": 9,
+      "operands": [
+        "sa"
+      ],
+      "suffix_class": null,
+      "maskable": false
+    },
+    {
+      "mnemonic": "s.add",
+      "major": "SALU",
+      "major_code": 1,
+      "func": 1,
+      "operands": [
+        "sd",
+        "sa",
+        "sb"
+      ],
+      "suffix_class": null,
+      "maskable": false
+    },
+    {
+      "mnemonic": "s.addi",
+      "major": "SALU",
+      "major_code": 1,
+      "func": 32,
+      "operands": [
+        "sd",
+        "sa",
+        "i16s"
+      ],
+      "suffix_class": null,
+      "maskable": false
+    },
+    {
+      "mnemonic": "s.and",
+      "major": "SALU",
+      "major_code": 1,
+      "func": 8,
+      "operands": [
+        "sd",
+        "sa",
+        "sb"
+      ],
+      "suffix_class": null,
+      "maskable": false
+    },
+    {
+      "mnemonic": "s.andi",
+      "major": "SALU",
+      "major_code": 1,
+      "func": 40,
+      "operands": [
+        "sd",
+        "sa",
+        "i16z"
+      ],
+      "suffix_class": null,
+      "maskable": false
+    },
+    {
+      "mnemonic": "s.andn",
+      "major": "SALU",
+      "major_code": 1,
+      "func": 11,
+      "operands": [
+        "sd",
+        "sa",
+        "sb"
+      ],
+      "suffix_class": null,
+      "maskable": false
+    },
+    {
+      "mnemonic": "s.ashr",
+      "major": "SALU",
+      "major_code": 1,
+      "func": 14,
+      "operands": [
+        "sd",
+        "sa",
+        "sb"
+      ],
+      "suffix_class": null,
+      "maskable": false
+    },
+    {
+      "mnemonic": "s.ashri",
+      "major": "SALU",
+      "major_code": 1,
+      "func": 46,
+      "operands": [
+        "sd",
+        "sa",
+        "i16z"
+      ],
+      "suffix_class": null,
+      "maskable": false
+    },
+    {
+      "mnemonic": "s.clz",
+      "major": "SALU",
+      "major_code": 1,
+      "func": 20,
+      "operands": [
+        "sd",
+        "sa"
+      ],
+      "suffix_class": null,
+      "maskable": false
+    },
+    {
+      "mnemonic": "s.cmp",
+      "major": "SALU",
+      "major_code": 1,
+      "func": 24,
+      "operands": [
+        "sd",
+        "sa",
+        "sb"
+      ],
+      "suffix_class": "cc_int",
+      "maskable": false
+    },
+    {
+      "mnemonic": "s.cmpi",
+      "major": "SALU",
+      "major_code": 1,
+      "func": 56,
+      "operands": [
+        "sd",
+        "sa",
+        "i16s"
+      ],
+      "suffix_class": "cc_int",
+      "maskable": false
+    },
+    {
+      "mnemonic": "s.ld",
+      "major": "LSU",
+      "major_code": 32,
+      "func": 0,
+      "operands": [
+        "sd",
+        "mem_si"
+      ],
+      "suffix_class": "ls",
+      "maskable": true
+    },
+    {
+      "mnemonic": "s.lshr",
+      "major": "SALU",
+      "major_code": 1,
+      "func": 13,
+      "operands": [
+        "sd",
+        "sa",
+        "sb"
+      ],
+      "suffix_class": null,
+      "maskable": false
+    },
+    {
+      "mnemonic": "s.lshri",
+      "major": "SALU",
+      "major_code": 1,
+      "func": 45,
+      "operands": [
+        "sd",
+        "sa",
+        "i16z"
+      ],
+      "suffix_class": null,
+      "maskable": false
+    },
+    {
+      "mnemonic": "s.max.s",
+      "major": "SALU",
+      "major_code": 1,
+      "func": 17,
+      "operands": [
+        "sd",
+        "sa",
+        "sb"
+      ],
+      "suffix_class": null,
+      "maskable": false
+    },
+    {
+      "mnemonic": "s.max.u",
+      "major": "SALU",
+      "major_code": 1,
+      "func": 19,
+      "operands": [
+        "sd",
+        "sa",
+        "sb"
+      ],
+      "suffix_class": null,
+      "maskable": false
+    },
+    {
+      "mnemonic": "s.min.s",
+      "major": "SALU",
+      "major_code": 1,
+      "func": 16,
+      "operands": [
+        "sd",
+        "sa",
+        "sb"
+      ],
+      "suffix_class": null,
+      "maskable": false
+    },
+    {
+      "mnemonic": "s.min.u",
+      "major": "SALU",
+      "major_code": 1,
+      "func": 18,
+      "operands": [
+        "sd",
+        "sa",
+        "sb"
+      ],
+      "suffix_class": null,
+      "maskable": false
+    },
+    {
+      "mnemonic": "s.mov",
+      "major": "SALU",
+      "major_code": 1,
+      "func": 0,
+      "operands": [
+        "sd",
+        "sa"
+      ],
+      "suffix_class": null,
+      "maskable": false
+    },
+    {
+      "mnemonic": "s.movk",
+      "major": "SALU",
+      "major_code": 1,
+      "func": 65,
+      "operands": [
+        "sd",
+        "i16z"
+      ],
+      "suffix_class": "lsl",
+      "maskable": false
+    },
+    {
+      "mnemonic": "s.movn",
+      "major": "SALU",
+      "major_code": 1,
+      "func": 66,
+      "operands": [
+        "sd",
+        "i16z"
+      ],
+      "suffix_class": "lsl",
+      "maskable": false
+    },
+    {
+      "mnemonic": "s.movz",
+      "major": "SALU",
+      "major_code": 1,
+      "func": 64,
+      "operands": [
+        "sd",
+        "i16z"
+      ],
+      "suffix_class": "lsl",
+      "maskable": false
+    },
+    {
+      "mnemonic": "s.mul",
+      "major": "SALU",
+      "major_code": 1,
+      "func": 3,
+      "operands": [
+        "sd",
+        "sa",
+        "sb"
+      ],
+      "suffix_class": null,
+      "maskable": false
+    },
+    {
+      "mnemonic": "s.mulh.s",
+      "major": "SALU",
+      "major_code": 1,
+      "func": 4,
+      "operands": [
+        "sd",
+        "sa",
+        "sb"
+      ],
+      "suffix_class": null,
+      "maskable": false
+    },
+    {
+      "mnemonic": "s.mulh.u",
+      "major": "SALU",
+      "major_code": 1,
+      "func": 5,
+      "operands": [
+        "sd",
+        "sa",
+        "sb"
+      ],
+      "suffix_class": null,
+      "maskable": false
+    },
+    {
+      "mnemonic": "s.muli",
+      "major": "SALU",
+      "major_code": 1,
+      "func": 34,
+      "operands": [
+        "sd",
+        "sa",
+        "i16s"
+      ],
+      "suffix_class": null,
+      "maskable": false
+    },
+    {
+      "mnemonic": "s.or",
+      "major": "SALU",
+      "major_code": 1,
+      "func": 9,
+      "operands": [
+        "sd",
+        "sa",
+        "sb"
+      ],
+      "suffix_class": null,
+      "maskable": false
+    },
+    {
+      "mnemonic": "s.ori",
+      "major": "SALU",
+      "major_code": 1,
+      "func": 41,
+      "operands": [
+        "sd",
+        "sa",
+        "i16z"
+      ],
+      "suffix_class": null,
+      "maskable": false
+    },
+    {
+      "mnemonic": "s.popc",
+      "major": "SALU",
+      "major_code": 1,
+      "func": 21,
+      "operands": [
+        "sd",
+        "sa"
+      ],
+      "suffix_class": null,
+      "maskable": false
+    },
+    {
+      "mnemonic": "s.rdspecial",
+      "major": "SYS",
+      "major_code": 0,
+      "func": 1,
+      "operands": [
+        "sd",
+        "spec"
+      ],
+      "suffix_class": null,
+      "maskable": false
+    },
+    {
+      "mnemonic": "s.sel",
+      "major": "SALU",
+      "major_code": 1,
+      "func": 25,
+      "operands": [
+        "sd",
+        "sa",
+        "sb",
+        "sc"
+      ],
+      "suffix_class": null,
+      "maskable": false
+    },
+    {
+      "mnemonic": "s.sext.w",
+      "major": "SALU",
+      "major_code": 1,
+      "func": 22,
+      "operands": [
+        "sd",
+        "sa"
+      ],
+      "suffix_class": null,
+      "maskable": false
+    },
+    {
+      "mnemonic": "s.shl",
+      "major": "SALU",
+      "major_code": 1,
+      "func": 12,
+      "operands": [
+        "sd",
+        "sa",
+        "sb"
+      ],
+      "suffix_class": null,
+      "maskable": false
+    },
+    {
+      "mnemonic": "s.shli",
+      "major": "SALU",
+      "major_code": 1,
+      "func": 44,
+      "operands": [
+        "sd",
+        "sa",
+        "i16z"
+      ],
+      "suffix_class": null,
+      "maskable": false
+    },
+    {
+      "mnemonic": "s.st",
+      "major": "LSU",
+      "major_code": 32,
+      "func": 8,
+      "operands": [
+        "mem_si",
+        "sd"
+      ],
+      "suffix_class": "ls",
+      "maskable": true
+    },
+    {
+      "mnemonic": "s.sub",
+      "major": "SALU",
+      "major_code": 1,
+      "func": 2,
+      "operands": [
+        "sd",
+        "sa",
+        "sb"
+      ],
+      "suffix_class": null,
+      "maskable": false
+    },
+    {
+      "mnemonic": "s.subi",
+      "major": "SALU",
+      "major_code": 1,
+      "func": 33,
+      "operands": [
+        "sd",
+        "sa",
+        "i16s"
+      ],
+      "suffix_class": null,
+      "maskable": false
+    },
+    {
+      "mnemonic": "s.wrspecial",
+      "major": "SYS",
+      "major_code": 0,
+      "func": 2,
+      "operands": [
+        "spec",
+        "sa"
+      ],
+      "suffix_class": null,
+      "maskable": false
+    },
+    {
+      "mnemonic": "s.xor",
+      "major": "SALU",
+      "major_code": 1,
+      "func": 10,
+      "operands": [
+        "sd",
+        "sa",
+        "sb"
+      ],
+      "suffix_class": null,
+      "maskable": false
+    },
+    {
+      "mnemonic": "s.xori",
+      "major": "SALU",
+      "major_code": 1,
+      "func": 42,
+      "operands": [
+        "sd",
+        "sa",
+        "i16z"
+      ],
+      "suffix_class": null,
+      "maskable": false
+    },
+    {
+      "mnemonic": "s.zext.w",
+      "major": "SALU",
+      "major_code": 1,
+      "func": 23,
+      "operands": [
+        "sd",
+        "sa"
+      ],
+      "suffix_class": null,
+      "maskable": false
+    },
+    {
+      "mnemonic": "t.ld.async",
+      "major": "TXFER",
+      "major_code": 49,
+      "func": 0,
+      "operands": [
+        "wd",
+        "da",
+        "sb",
+        "sc"
+      ],
+      "suffix_class": "txf",
+      "maskable": true
+    },
+    {
+      "mnemonic": "t.prefetch",
+      "major": "TXFER",
+      "major_code": 49,
+      "func": 16,
+      "operands": [
+        "da",
+        "sb"
+      ],
+      "suffix_class": "txf",
+      "maskable": true
+    },
+    {
+      "mnemonic": "t.st.async",
+      "major": "TXFER",
+      "major_code": 49,
+      "func": 8,
+      "operands": [
+        "wd",
+        "da",
+        "sb",
+        "sc"
+      ],
+      "suffix_class": "txf",
+      "maskable": true
+    },
+    {
+      "mnemonic": "td.load",
+      "major": "TDESC",
+      "major_code": 48,
+      "func": 0,
+      "operands": [
+        "dd",
+        "mem_s"
+      ],
+      "suffix_class": null,
+      "maskable": false
+    },
+    {
+      "mnemonic": "td.release",
+      "major": "TDESC",
+      "major_code": 48,
+      "func": 2,
+      "operands": [
+        "dd"
+      ],
+      "suffix_class": null,
+      "maskable": false
+    },
+    {
+      "mnemonic": "trap",
+      "major": "CTRL",
+      "major_code": 2,
+      "func": 24,
+      "operands": [
+        "i24"
+      ],
+      "suffix_class": null,
+      "maskable": false
+    },
+    {
+      "mnemonic": "v.add",
+      "major": "VINT",
+      "major_code": 16,
+      "func": 1,
+      "operands": [
+        "vd",
+        "va",
+        "vb"
+      ],
+      "suffix_class": null,
+      "maskable": true
+    },
+    {
+      "mnemonic": "v.addi",
+      "major": "VINT",
+      "major_code": 16,
+      "func": 32,
+      "operands": [
+        "vd",
+        "va",
+        "i16s"
+      ],
+      "suffix_class": null,
+      "maskable": true
+    },
+    {
+      "mnemonic": "v.and",
+      "major": "VINT",
+      "major_code": 16,
+      "func": 8,
+      "operands": [
+        "vd",
+        "va",
+        "vb"
+      ],
+      "suffix_class": null,
+      "maskable": true
+    },
+    {
+      "mnemonic": "v.andi",
+      "major": "VINT",
+      "major_code": 16,
+      "func": 40,
+      "operands": [
+        "vd",
+        "va",
+        "i16z"
+      ],
+      "suffix_class": null,
+      "maskable": true
+    },
+    {
+      "mnemonic": "v.andn",
+      "major": "VINT",
+      "major_code": 16,
+      "func": 11,
+      "operands": [
+        "vd",
+        "va",
+        "vb"
+      ],
+      "suffix_class": null,
+      "maskable": true
+    },
+    {
+      "mnemonic": "v.ashr",
+      "major": "VINT",
+      "major_code": 16,
+      "func": 14,
+      "operands": [
+        "vd",
+        "va",
+        "vb"
+      ],
+      "suffix_class": null,
+      "maskable": true
+    },
+    {
+      "mnemonic": "v.ashri",
+      "major": "VINT",
+      "major_code": 16,
+      "func": 46,
+      "operands": [
+        "vd",
+        "va",
+        "i16z"
+      ],
+      "suffix_class": null,
+      "maskable": true
+    },
+    {
+      "mnemonic": "v.clz",
+      "major": "VINT",
+      "major_code": 16,
+      "func": 20,
+      "operands": [
+        "vd",
+        "va"
+      ],
+      "suffix_class": null,
+      "maskable": true
+    },
+    {
+      "mnemonic": "v.cmp",
+      "major": "VINT",
+      "major_code": 16,
+      "func": 24,
+      "operands": [
+        "pd",
+        "va",
+        "vb"
+      ],
+      "suffix_class": "cc_int",
+      "maskable": true
+    },
+    {
+      "mnemonic": "v.cmpi",
+      "major": "VINT",
+      "major_code": 16,
+      "func": 56,
+      "operands": [
+        "pd",
+        "va",
+        "i16s"
+      ],
+      "suffix_class": "cc_int",
+      "maskable": true
+    },
+    {
+      "mnemonic": "v.exp2.approx",
+      "major": "SFU",
+      "major_code": 22,
+      "func": 0,
+      "operands": [
+        "vd",
+        "va"
+      ],
+      "suffix_class": null,
+      "maskable": true
+    },
+    {
+      "mnemonic": "v.extract",
+      "major": "SHUF",
+      "major_code": 20,
+      "func": 8,
+      "operands": [
+        "sd",
+        "va",
+        "lane"
+      ],
+      "suffix_class": null,
+      "maskable": true
+    },
+    {
+      "mnemonic": "v.insert",
+      "major": "SHUF",
+      "major_code": 20,
+      "func": 9,
+      "operands": [
+        "vd",
+        "sa",
+        "lane"
+      ],
+      "suffix_class": null,
+      "maskable": true
+    },
+    {
+      "mnemonic": "v.iota",
+      "major": "VINT",
+      "major_code": 16,
+      "func": 27,
+      "operands": [
+        "vd"
+      ],
+      "suffix_class": null,
+      "maskable": true
+    },
+    {
+      "mnemonic": "v.ld",
+      "major": "LSU",
+      "major_code": 32,
+      "func": 16,
+      "operands": [
+        "vd",
+        "mem_si"
+      ],
+      "suffix_class": "ls",
+      "maskable": true
+    },
+    {
+      "mnemonic": "v.ld.gather",
+      "major": "LSU",
+      "major_code": 32,
+      "func": 32,
+      "operands": [
+        "vd",
+        "mem_sv"
+      ],
+      "suffix_class": "ls",
+      "maskable": true
+    },
+    {
+      "mnemonic": "v.log2.approx",
+      "major": "SFU",
+      "major_code": 22,
+      "func": 3,
+      "operands": [
+        "vd",
+        "va"
+      ],
+      "suffix_class": null,
+      "maskable": true
+    },
+    {
+      "mnemonic": "v.lshr",
+      "major": "VINT",
+      "major_code": 16,
+      "func": 13,
+      "operands": [
+        "vd",
+        "va",
+        "vb"
+      ],
+      "suffix_class": null,
+      "maskable": true
+    },
+    {
+      "mnemonic": "v.lshri",
+      "major": "VINT",
+      "major_code": 16,
+      "func": 45,
+      "operands": [
+        "vd",
+        "va",
+        "i16z"
+      ],
+      "suffix_class": null,
+      "maskable": true
+    },
+    {
+      "mnemonic": "v.max.s",
+      "major": "VINT",
+      "major_code": 16,
+      "func": 17,
+      "operands": [
+        "vd",
+        "va",
+        "vb"
+      ],
+      "suffix_class": null,
+      "maskable": true
+    },
+    {
+      "mnemonic": "v.max.u",
+      "major": "VINT",
+      "major_code": 16,
+      "func": 19,
+      "operands": [
+        "vd",
+        "va",
+        "vb"
+      ],
+      "suffix_class": null,
+      "maskable": true
+    },
+    {
+      "mnemonic": "v.min.s",
+      "major": "VINT",
+      "major_code": 16,
+      "func": 16,
+      "operands": [
+        "vd",
+        "va",
+        "vb"
+      ],
+      "suffix_class": null,
+      "maskable": true
+    },
+    {
+      "mnemonic": "v.min.u",
+      "major": "VINT",
+      "major_code": 16,
+      "func": 18,
+      "operands": [
+        "vd",
+        "va",
+        "vb"
+      ],
+      "suffix_class": null,
+      "maskable": true
+    },
+    {
+      "mnemonic": "v.mov",
+      "major": "VINT",
+      "major_code": 16,
+      "func": 0,
+      "operands": [
+        "vd",
+        "va"
+      ],
+      "suffix_class": null,
+      "maskable": true
+    },
+    {
+      "mnemonic": "v.movi",
+      "major": "VINT",
+      "major_code": 16,
+      "func": 64,
+      "operands": [
+        "vd",
+        "i16s"
+      ],
+      "suffix_class": null,
+      "maskable": true
+    },
+    {
+      "mnemonic": "v.mul",
+      "major": "VINT",
+      "major_code": 16,
+      "func": 3,
+      "operands": [
+        "vd",
+        "va",
+        "vb"
+      ],
+      "suffix_class": null,
+      "maskable": true
+    },
+    {
+      "mnemonic": "v.mulh.s",
+      "major": "VINT",
+      "major_code": 16,
+      "func": 4,
+      "operands": [
+        "vd",
+        "va",
+        "vb"
+      ],
+      "suffix_class": null,
+      "maskable": true
+    },
+    {
+      "mnemonic": "v.mulh.u",
+      "major": "VINT",
+      "major_code": 16,
+      "func": 5,
+      "operands": [
+        "vd",
+        "va",
+        "vb"
+      ],
+      "suffix_class": null,
+      "maskable": true
+    },
+    {
+      "mnemonic": "v.muli",
+      "major": "VINT",
+      "major_code": 16,
+      "func": 34,
+      "operands": [
+        "vd",
+        "va",
+        "i16s"
+      ],
+      "suffix_class": null,
+      "maskable": true
+    },
+    {
+      "mnemonic": "v.or",
+      "major": "VINT",
+      "major_code": 16,
+      "func": 9,
+      "operands": [
+        "vd",
+        "va",
+        "vb"
+      ],
+      "suffix_class": null,
+      "maskable": true
+    },
+    {
+      "mnemonic": "v.ori",
+      "major": "VINT",
+      "major_code": 16,
+      "func": 41,
+      "operands": [
+        "vd",
+        "va",
+        "i16z"
+      ],
+      "suffix_class": null,
+      "maskable": true
+    },
+    {
+      "mnemonic": "v.permute",
+      "major": "SHUF",
+      "major_code": 20,
+      "func": 3,
+      "operands": [
+        "vd",
+        "va",
+        "vb"
+      ],
+      "suffix_class": null,
+      "maskable": true
+    },
+    {
+      "mnemonic": "v.popc",
+      "major": "VINT",
+      "major_code": 16,
+      "func": 21,
+      "operands": [
+        "vd",
+        "va"
+      ],
+      "suffix_class": null,
+      "maskable": true
+    },
+    {
+      "mnemonic": "v.rcp.approx",
+      "major": "SFU",
+      "major_code": 22,
+      "func": 1,
+      "operands": [
+        "vd",
+        "va"
+      ],
+      "suffix_class": null,
+      "maskable": true
+    },
+    {
+      "mnemonic": "v.reduce.add",
+      "major": "RED",
+      "major_code": 21,
+      "func": 0,
+      "operands": [
+        "rdst",
+        "va"
+      ],
+      "suffix_class": "redb",
+      "maskable": true
+    },
+    {
+      "mnemonic": "v.reduce.and",
+      "major": "RED",
+      "major_code": 21,
+      "func": 3,
+      "operands": [
+        "rdst",
+        "va"
+      ],
+      "suffix_class": "redb",
+      "maskable": true
+    },
+    {
+      "mnemonic": "v.reduce.max.s",
+      "major": "RED",
+      "major_code": 21,
+      "func": 1,
+      "operands": [
+        "rdst",
+        "va"
+      ],
+      "suffix_class": "redb",
+      "maskable": true
+    },
+    {
+      "mnemonic": "v.reduce.max.u",
+      "major": "RED",
+      "major_code": 21,
+      "func": 6,
+      "operands": [
+        "rdst",
+        "va"
+      ],
+      "suffix_class": "redb",
+      "maskable": true
+    },
+    {
+      "mnemonic": "v.reduce.min.s",
+      "major": "RED",
+      "major_code": 21,
+      "func": 2,
+      "operands": [
+        "rdst",
+        "va"
+      ],
+      "suffix_class": "redb",
+      "maskable": true
+    },
+    {
+      "mnemonic": "v.reduce.min.u",
+      "major": "RED",
+      "major_code": 21,
+      "func": 7,
+      "operands": [
+        "rdst",
+        "va"
+      ],
+      "suffix_class": "redb",
+      "maskable": true
+    },
+    {
+      "mnemonic": "v.reduce.or",
+      "major": "RED",
+      "major_code": 21,
+      "func": 4,
+      "operands": [
+        "rdst",
+        "va"
+      ],
+      "suffix_class": "redb",
+      "maskable": true
+    },
+    {
+      "mnemonic": "v.reduce.xor",
+      "major": "RED",
+      "major_code": 21,
+      "func": 5,
+      "operands": [
+        "rdst",
+        "va"
+      ],
+      "suffix_class": "redb",
+      "maskable": true
+    },
+    {
+      "mnemonic": "v.rotate",
+      "major": "SHUF",
+      "major_code": 20,
+      "func": 4,
+      "operands": [
+        "vd",
+        "va",
+        "sb"
+      ],
+      "suffix_class": null,
+      "maskable": true
+    },
+    {
+      "mnemonic": "v.rsqrt.approx",
+      "major": "SFU",
+      "major_code": 22,
+      "func": 2,
+      "operands": [
+        "vd",
+        "va"
+      ],
+      "suffix_class": null,
+      "maskable": true
+    },
+    {
+      "mnemonic": "v.sel",
+      "major": "VINT",
+      "major_code": 16,
+      "func": 25,
+      "operands": [
+        "vd",
+        "va",
+        "vb"
+      ],
+      "suffix_class": null,
+      "maskable": true
+    },
+    {
+      "mnemonic": "v.shl",
+      "major": "VINT",
+      "major_code": 16,
+      "func": 12,
+      "operands": [
+        "vd",
+        "va",
+        "vb"
+      ],
+      "suffix_class": null,
+      "maskable": true
+    },
+    {
+      "mnemonic": "v.shli",
+      "major": "VINT",
+      "major_code": 16,
+      "func": 44,
+      "operands": [
+        "vd",
+        "va",
+        "i16z"
+      ],
+      "suffix_class": null,
+      "maskable": true
+    },
+    {
+      "mnemonic": "v.shuffle.down",
+      "major": "SHUF",
+      "major_code": 20,
+      "func": 2,
+      "operands": [
+        "vd",
+        "va",
+        "sb"
+      ],
+      "suffix_class": null,
+      "maskable": true
+    },
+    {
+      "mnemonic": "v.shuffle.up",
+      "major": "SHUF",
+      "major_code": 20,
+      "func": 1,
+      "operands": [
+        "vd",
+        "va",
+        "sb"
+      ],
+      "suffix_class": null,
+      "maskable": true
+    },
+    {
+      "mnemonic": "v.shuffle.xor",
+      "major": "SHUF",
+      "major_code": 20,
+      "func": 0,
+      "operands": [
+        "vd",
+        "va",
+        "sb"
+      ],
+      "suffix_class": null,
+      "maskable": true
+    },
+    {
+      "mnemonic": "v.splat",
+      "major": "VINT",
+      "major_code": 16,
+      "func": 26,
+      "operands": [
+        "vd",
+        "sa"
+      ],
+      "suffix_class": null,
+      "maskable": true
+    },
+    {
+      "mnemonic": "v.st",
+      "major": "LSU",
+      "major_code": 32,
+      "func": 24,
+      "operands": [
+        "mem_si",
+        "vd"
+      ],
+      "suffix_class": "ls",
+      "maskable": true
+    },
+    {
+      "mnemonic": "v.st.scatter",
+      "major": "LSU",
+      "major_code": 32,
+      "func": 40,
+      "operands": [
+        "mem_sv",
+        "vd"
+      ],
+      "suffix_class": "ls",
+      "maskable": true
+    },
+    {
+      "mnemonic": "v.sub",
+      "major": "VINT",
+      "major_code": 16,
+      "func": 2,
+      "operands": [
+        "vd",
+        "va",
+        "vb"
+      ],
+      "suffix_class": null,
+      "maskable": true
+    },
+    {
+      "mnemonic": "v.subi",
+      "major": "VINT",
+      "major_code": 16,
+      "func": 33,
+      "operands": [
+        "vd",
+        "va",
+        "i16s"
+      ],
+      "suffix_class": null,
+      "maskable": true
+    },
+    {
+      "mnemonic": "v.xor",
+      "major": "VINT",
+      "major_code": 16,
+      "func": 10,
+      "operands": [
+        "vd",
+        "va",
+        "vb"
+      ],
+      "suffix_class": null,
+      "maskable": true
+    },
+    {
+      "mnemonic": "v.xori",
+      "major": "VINT",
+      "major_code": 16,
+      "func": 42,
+      "operands": [
+        "vd",
+        "va",
+        "i16z"
+      ],
+      "suffix_class": null,
+      "maskable": true
+    },
+    {
+      "mnemonic": "vf.abs",
+      "major": "VFP",
+      "major_code": 17,
+      "func": 21,
+      "operands": [
+        "vd",
+        "va"
+      ],
+      "suffix_class": null,
+      "maskable": true
+    },
+    {
+      "mnemonic": "vf.add",
+      "major": "VFP",
+      "major_code": 17,
+      "func": 1,
+      "operands": [
+        "vd",
+        "va",
+        "vb"
+      ],
+      "suffix_class": "ftz",
+      "maskable": true
+    },
+    {
+      "mnemonic": "vf.cmp",
+      "major": "VFP",
+      "major_code": 17,
+      "func": 24,
+      "operands": [
+        "pd",
+        "va",
+        "vb"
+      ],
+      "suffix_class": "cc_fp",
+      "maskable": true
+    },
+    {
+      "mnemonic": "vf.cvt",
+      "major": "CVT",
+      "major_code": 18,
+      "func": 4,
+      "operands": [
+        "vd",
+        "va"
+      ],
+      "suffix_class": "fmt2",
+      "maskable": true
+    },
+    {
+      "mnemonic": "vf.cvt.f32.s32",
+      "major": "CVT",
+      "major_code": 18,
+      "func": 2,
+      "operands": [
+        "vd",
+        "va"
+      ],
+      "suffix_class": "rnd",
+      "maskable": true
+    },
+    {
+      "mnemonic": "vf.cvt.f32.u32",
+      "major": "CVT",
+      "major_code": 18,
+      "func": 3,
+      "operands": [
+        "vd",
+        "va"
+      ],
+      "suffix_class": "rnd",
+      "maskable": true
+    },
+    {
+      "mnemonic": "vf.cvt.s32.f32",
+      "major": "CVT",
+      "major_code": 18,
+      "func": 0,
+      "operands": [
+        "vd",
+        "va"
+      ],
+      "suffix_class": null,
+      "maskable": true
+    },
+    {
+      "mnemonic": "vf.cvt.u32.f32",
+      "major": "CVT",
+      "major_code": 18,
+      "func": 1,
+      "operands": [
+        "vd",
+        "va"
+      ],
+      "suffix_class": null,
+      "maskable": true
+    },
+    {
+      "mnemonic": "vf.fma",
+      "major": "VFP",
+      "major_code": 17,
+      "func": 6,
+      "operands": [
+        "vd",
+        "va",
+        "vb",
+        "vc"
+      ],
+      "suffix_class": "ftz",
+      "maskable": true
+    },
+    {
+      "mnemonic": "vf.fms",
+      "major": "VFP",
+      "major_code": 17,
+      "func": 7,
+      "operands": [
+        "vd",
+        "va",
+        "vb",
+        "vc"
+      ],
+      "suffix_class": "ftz",
+      "maskable": true
+    },
+    {
+      "mnemonic": "vf.max",
+      "major": "VFP",
+      "major_code": 17,
+      "func": 17,
+      "operands": [
+        "vd",
+        "va",
+        "vb"
+      ],
+      "suffix_class": "fmm",
+      "maskable": true
+    },
+    {
+      "mnemonic": "vf.min",
+      "major": "VFP",
+      "major_code": 17,
+      "func": 16,
+      "operands": [
+        "vd",
+        "va",
+        "vb"
+      ],
+      "suffix_class": "fmm",
+      "maskable": true
+    },
+    {
+      "mnemonic": "vf.mul",
+      "major": "VFP",
+      "major_code": 17,
+      "func": 3,
+      "operands": [
+        "vd",
+        "va",
+        "vb"
+      ],
+      "suffix_class": "ftz",
+      "maskable": true
+    },
+    {
+      "mnemonic": "vf.neg",
+      "major": "VFP",
+      "major_code": 17,
+      "func": 20,
+      "operands": [
+        "vd",
+        "va"
+      ],
+      "suffix_class": null,
+      "maskable": true
+    },
+    {
+      "mnemonic": "vf.reduce.add",
+      "major": "RED",
+      "major_code": 21,
+      "func": 8,
+      "operands": [
+        "rdst",
+        "va"
+      ],
+      "suffix_class": "redb",
+      "maskable": true
+    },
+    {
+      "mnemonic": "vf.reduce.max",
+      "major": "RED",
+      "major_code": 21,
+      "func": 9,
+      "operands": [
+        "rdst",
+        "va"
+      ],
+      "suffix_class": "redb",
+      "maskable": true
+    },
+    {
+      "mnemonic": "vf.reduce.min",
+      "major": "RED",
+      "major_code": 21,
+      "func": 10,
+      "operands": [
+        "rdst",
+        "va"
+      ],
+      "suffix_class": "redb",
+      "maskable": true
+    },
+    {
+      "mnemonic": "vf.sub",
+      "major": "VFP",
+      "major_code": 17,
+      "func": 2,
+      "operands": [
+        "vd",
+        "va",
+        "vb"
+      ],
+      "suffix_class": "ftz",
+      "maskable": true
+    },
+    {
+      "mnemonic": "w.def",
+      "major": "TDESC",
+      "major_code": 48,
+      "func": 16,
+      "operands": [
+        "wd",
+        "winspec"
+      ],
+      "suffix_class": null,
+      "maskable": false
+    },
+    {
+      "mnemonic": "w.release",
+      "major": "TDESC",
+      "major_code": 48,
+      "func": 17,
+      "operands": [
+        "wd"
+      ],
+      "suffix_class": null,
+      "maskable": false
+    },
+    {
+      "mnemonic": "yield",
+      "major": "CTRL",
+      "major_code": 2,
+      "func": 16,
+      "operands": [],
+      "suffix_class": null,
+      "maskable": false
+    }
+  ]
+}

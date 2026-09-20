@@ -1,0 +1,88 @@
+# The installable package -- doc/phase2_tasks_and_acceptance.md R2-02.
+#
+# A NON-editable install is the requirement, and the reason is PKG-01: the
+# repository is moved off sys.path and out of the working directory, and
+# compile -> run -> download must still work. An editable install would point
+# back at the checkout and prove nothing.
+#
+# Four top-level names ship, and it is worth saying why each is top-level
+# rather than tucked under `tnca`:
+#
+#   tnca       the product: AOT driver, runtime, ABI, manifest, CLI
+#   tnca_cc    R1's compiler, unchanged, reached only through tnca.adapters.r1
+#   tnca_asm   R1's assembler, likewise
+#   tnca_isa   the ISA tables tnca_asm imports by that name
+#
+# Renaming the last three would mean editing R1 to suit packaging, and R1 is
+# under its own acceptance contract. They are imported by the adapter and by
+# nothing else in the product, which doc/r2_interfaces.md requires and PKG-02
+# checks by installing and looking.
+#
+# The DATA -- the profile spec, the generated targets, the ISA schema -- is
+# staged into tnca/data by `make r2-package` before the build. An installed
+# package reads it from there and never from a checkout, which is what makes
+# PKG-01's "move the repository away" a real test.
+
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "tnca"
+version = "0.2.0"
+description = "Experimental AOT compiler and RTL-simulation runtime for the TNCA architecture"
+readme = "Readme.md"
+requires-python = ">=3.10"
+license = { text = "Apache-2.0" }
+authors = [{ name = "TNCA maintainers" }]
+keywords = ["triton", "compiler", "accelerator", "rtl", "simulation"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Intended Audience :: Developers",
+  "License :: OSI Approved :: Apache Software License",
+  "Programming Language :: Python :: 3",
+  "Topic :: Software Development :: Compilers",
+]
+# Deliberately empty. The RUNTIME needs nothing beyond the standard library:
+# PKG-03 requires an environment with no Triton, no LLVM and no compiler to
+# load an artifact and run it. Anything listed here would be installed on the
+# run side too, and would make that claim untestable.
+dependencies = []
+
+[project.optional-dependencies]
+# The compile side. The version is the one spec/r1_toolchain.lock.json pins;
+# 3.5.0 installs and imports and has no `get_constant_value`, so "some
+# Triton" is not the same claim as "the locked Triton".
+compile = ["triton==3.8.0"]
+
+[project.scripts]
+tnca-aot = "tnca.cli:aot_main"
+tnca-sim = "tnca.cli:sim_main"
+
+[project.urls]
+Homepage = "https://github.com/zzczzc20/TritonChip"
+
+[tool.setuptools]
+# The empty key maps the ROOT of the package tree, which is where the two
+# plain modules are staged. They live in tools/asm in the repository, and
+# `package-dir` maps packages rather than module search roots -- so without
+# this the wheel built cleanly and shipped no assembler, and the installed
+# compiler reported itself unavailable for a reason that had nothing to do
+# with Triton.
+package-dir = { "" = "python/_staged", "tnca" = "python/tnca", "tnca_cc" = "compiler/python/tnca_cc" }
+py-modules = ["tnca_asm", "tnca_isa"]
+include-package-data = true
+
+[tool.setuptools.packages.find]
+where = ["python", "compiler/python"]
+include = ["tnca*", "tnca_cc*"]
+
+[tool.setuptools.package-data]
+tnca = [
+  "data/spec/*.json",
+  "data/compiler/targets/*.json",
+  "data/isa/*.json",
+  "data/rtl/**/*.v",
+  "data/rtl/**/*.vh",
+  "data/tb/**/*.v",
+]

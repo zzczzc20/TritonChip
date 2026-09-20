@@ -55,11 +55,6 @@ RUNNING, DRAINING = 'RUNNING', 'DRAINING'
 SUCCEEDED, FAILING, FAILED = 'SUCCEEDED', 'FAILING', 'FAILED'
 TERMINAL = {SUCCEEDED, FAILED}
 
-BENCH = {
-    'core-sim': 'sim/build/tnca_device.vvp',
-}
-
-
 class Buffer:
     """A device allocation. The handle a pointer argument takes."""
 
@@ -203,13 +198,12 @@ class Session:
         self.poisoned = False
         self.closed = False
 
-        root = os.path.dirname(os.path.dirname(os.path.dirname(
-            os.path.abspath(__file__))))
-        self.bench = bench or os.path.join(root, BENCH.get(profile, ''))
-        if not os.path.exists(self.bench):
-            raise DeviceLost(
-                f"no device for profile {profile!r} at {self.bench}",
-                remedy='run `make device` to build it')
+        # Located, never built. R2-02 allows the simulator to be built at
+        # install time or by an explicit `prepare`, and forbids building it
+        # per launch; `device.locate` looks and `device.prepare` builds, so
+        # there is no flag that could default the wrong way.
+        from . import device as _device
+        self.bench = bench or _device.require(profile)
 
         self._workdir = workdir
         self._deadline = deadline_cycles

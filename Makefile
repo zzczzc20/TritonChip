@@ -687,7 +687,8 @@ clean:
 # so; none of them prints a pass for work that has not happened.
 #==============================================================================
 .PHONY: r2-baseline r2-inventory r2-abi-tests r2-artifact-tests \
-        r2-compile-tests r2-cache-tests r2-runtime-tests r2-fault-tests
+        r2-compile-tests r2-cache-tests r2-runtime-tests r2-fault-tests \
+        r2-package r2-stage-data
 
 # DEP-01. EVIDENCE is an R1 run directory; COMBINED is compare_envs.py's
 # output over A and B, which is what makes an R1 verdict complete.
@@ -717,6 +718,30 @@ $(BUILD)/tnca_device.vvp: $(RTL_DEPS) $(TB)/device/tnca_device.v \
 
 .PHONY: device
 device: $(BUILD)/tnca_device.vvp
+
+# Stage the data an installed package reads. It lives at the repository root
+# for R1's sake and inside the package for everyone else's; copying rather
+# than symlinking, because a wheel cannot contain a symlink to a checkout.
+R2_DATA := python/tnca/data
+r2-stage-data:
+	@rm -rf $(R2_DATA)
+	@mkdir -p $(R2_DATA)/spec $(R2_DATA)/compiler/targets $(R2_DATA)/isa
+	@cp spec/*.json $(R2_DATA)/spec/
+	@cp compiler/targets/*.json $(R2_DATA)/compiler/targets/
+	@cp isa/*.json $(R2_DATA)/isa/
+	@mkdir -p $(R2_DATA)/rtl $(R2_DATA)/tb
+	@cp -R rtl/. $(R2_DATA)/rtl/
+	@cp -R tb/common tb/device $(R2_DATA)/tb/
+	@rm -rf python/_staged && mkdir -p python/_staged
+	@cp tools/asm/tnca_asm.py tools/asm/tnca_isa.py python/_staged/
+	@echo "  staged $$(find $(R2_DATA) -type f | wc -l | tr -d ' ') data file(s) into $(R2_DATA)"
+
+# A non-editable wheel. PKG-01 moves the repository off sys.path and out of
+# the working directory afterwards, so an editable install would prove
+# nothing.
+r2-package: r2-stage-data
+	@$(PYTHON) -m pip wheel --no-deps -w $(BUILD)/dist . 2>&1 | tail -3
+	@ls -la $(BUILD)/dist/*.whl | awk '{print "  " $$5, $$9}'
 
 r2-fault-tests: $(BUILD)/tnca_device.vvp
 	@if [ -x "$(TRITON_PYTHON)" ]; then \

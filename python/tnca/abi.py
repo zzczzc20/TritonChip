@@ -26,11 +26,10 @@ import json
 import os
 import struct
 
+from . import _data
 from .errors import ArgumentError, SignatureError, VersionError
 
-_SPEC_PATH = os.environ.get('TNCA_ABI_SPEC') or os.path.join(
-    os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
-    'spec', 'r2_abi_v1.json')
+_SPEC_PATH = _data.path('spec', 'r2_abi_v1.json', env='TNCA_ABI_SPEC')
 
 with open(_SPEC_PATH) as _fh:
     SPEC = json.load(_fh)

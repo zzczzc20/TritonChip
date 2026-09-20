@@ -1,0 +1,34 @@
+{
+  "schema": "r1-normalization/1",
+  "contract": "doc/phase1_tasks_and_acceptance.md R1-09",
+  "why": "Two builds of identical input are compared for equality. A host executable that embeds an address or a path is not byte-identical even when it is semantically identical, so the contract allows normalising such fields provided every removed field is listed here in advance. Nothing that carries semantic configuration, a numeric result or a cycle count may be removed, and nothing may be added to this list to make a failing comparison pass.",
+  "artifacts": {
+    "*.vvp": {
+      "tool": "iverilog",
+      "removed": [
+        {
+          "pattern": "0x[0-9a-fA-F]{6,}",
+          "replacement": "0xADDR",
+          "reason": "Icarus names its scope and parameter symbols after the address of the object that created them, so ASLR changes them on every run. The symbol's *name* carries no semantics; its content -- the scope path, the parameter value, the timescale -- is on the same line and is not touched."
+        },
+        {
+          "pattern": "^#! .*/vvp$",
+          "replacement": "#! VVP",
+          "reason": "The interpreter path differs between environment A and environment B by construction. It is not part of what was compiled."
+        },
+        {
+          "pattern": ":vpi_module \"[^\"]*\";",
+          "replacement": ":vpi_module \"VPI\";",
+          "reason": "Absolute paths to the installed VPI modules, for the same reason."
+        }
+      ]
+    }
+  },
+  "never_removed": [
+    "parameter values",
+    "timescale",
+    "scope names and hierarchy",
+    "any numeric literal that is not an address",
+    "cycle counts and simulation results"
+  ]
+}

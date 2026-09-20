@@ -1,0 +1,93 @@
+{
+  "schema": "tnca-manifest-schema/1",
+  "contract": "doc/phase2_tasks_and_acceptance.md R2-05, section 3.1",
+  "format_version": [1, 0],
+  "note": "Manifest v1, frozen. Hand-written rather than JSON Schema on purpose: the loader must refuse a duplicate JSON key and an unknown required field, and the contract's rule about `optional_metadata` is not expressible as a draft-07 constraint. python/tnca/manifest.py implements this file; it is not a second copy of it.",
+
+  "rules": {
+    "unknown_top_level": "reject",
+    "unknown_within_section": "reject",
+    "duplicate_json_keys": "reject",
+    "higher_or_unknown_major": "reject",
+    "higher_minor": "reject",
+    "optional_metadata": "The ONLY place an ignorable extension may live. Nothing in it may affect an address, a resource, a completion or a numeric result, and the loader does not read it.",
+    "serialisation": "UTF-8, sort_keys, separators (',', ':'), no trailing newline, no NaN/Infinity. This is what `manifest_hash` is taken over, so two environments that build the same artifact produce the same bytes."
+  },
+
+  "sections": {
+    "identity": {
+      "required": {
+        "format_version": "[major, minor] of the artifact container",
+        "abi_version": "[major, minor] of the argument block",
+        "isa_version": "the ISA the code is encoded for",
+        "kernel_name": "the function this artifact runs",
+        "source_kind": "triton | tnca-ir -- which adapter produced it, never blurred",
+        "compiler_hash": "hash of the compiler that emitted the code",
+        "source_hash": "hash of the source it was emitted from",
+        "toolchain_lock_hash": "hash of spec/r1_toolchain.lock.json",
+        "constexprs": "the compile-time constants, which ARE part of the cache key",
+        "options": "the compile options, which are too"
+      }
+    },
+    "target": {
+      "required": {
+        "profile": "profile ID, e.g. core-sim",
+        "config_hash": "what the profile IS: elaboration parameters and capabilities",
+        "implementation_fingerprint": "what the RTL IS. R2 changes the RTL, and a changed implementation may not wear R1's old hash",
+        "capabilities": "the capabilities this code needs, each of which the device must report"
+      }
+    },
+    "code": {
+      "required": {
+        "segments": "each with name, offset, length, sha256, alignment",
+        "entry_points": "per role, or one shared dispatch entry stated as such",
+        "constant_segments": "may be empty; same shape as code segments"
+      }
+    },
+    "parameters": {
+      "required": {
+        "signature": "name, type, index, offset, size, alignment, direction, in frozen order",
+        "buffer_extents": "for each pointer parameter, the minimum extent expression the runtime checks",
+        "alias_allowed": "the pairs that may overlap. Anything not listed here may not"
+      }
+    },
+    "execution": {
+      "required": {
+        "role_mask": "which roles this kernel starts",
+        "program_to_role": "how a program's roles map onto the machine",
+        "grid_dims_supported": "which grid axes may exceed 1",
+        "dynamic_constraints": "the bounds a launch is checked against, e.g. a loop trip count"
+      }
+    },
+    "resources": {
+      "required": {
+        "rf_private_per_role": "vector registers each role owns",
+        "shared_windows": "the physical mapping of any window two roles share",
+        "accumulators": "upper bound",
+        "barriers": "upper bound",
+        "descriptors": "upper bound",
+        "commands_outstanding": "upper bound",
+        "scratch_bytes": "spill and scratch, 0 if none"
+      }
+    },
+    "semantics": {
+      "required": {
+        "completion_scope": "what SUCCEEDED means for this kernel",
+        "error_contract": "what a failure guarantees about the outputs",
+        "cross_program_dependency": "false in v1; a kernel that needs another program to run first is refused at compile time",
+        "ownership_check_version": "which R1 safety checker ran",
+        "ownership_check_result": "and what it concluded"
+      }
+    },
+    "optional_metadata": {
+      "required": {},
+      "note": "Free-form, ignorable, and never consulted."
+    }
+  },
+
+  "integrity": {
+    "manifest_hash": "sha256 over the canonical serialisation of every section except this field",
+    "segment_hashes": "sha256 per segment, checked on load before a single instruction runs",
+    "claim": "Integrity and compatibility. NOT authentication: this proves an artifact is the one that was built, not that whoever built it was entitled to."
+  }
+}

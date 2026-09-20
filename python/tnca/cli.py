@@ -146,11 +146,10 @@ def cmd_doctor(args):
     except Exception:
         rows.append(('triton', 'not installed (runtime-only is fine)'))
 
-    device = os.path.join(
-        os.path.dirname(os.path.dirname(os.path.dirname(
-            os.path.abspath(__file__)))), 'sim', 'build', 'tnca_device.vvp')
-    rows.append(('device bench', device if os.path.exists(device)
-                 else 'not built -- run `make device`'))
+    from . import device as _device
+    found = _device.locate('core-sim')
+    rows.append(('device bench', found or
+                 'not built -- run `tnca-sim prepare`'))
     if args.json:
         print(json.dumps(dict(ok=True, **{k: str(v) for k, v in rows}),
                          indent=2))
@@ -264,6 +263,21 @@ def aot_main(argv=None):
         return _fail(e, getattr(args, 'json', False))
 
 
+def cmd_prepare(args):
+    """Build this profile's simulator, once.
+
+    Explicit on purpose. A launch never builds one: that would put a compile
+    inside every kernel call, which R2-02 forbids in as many words.
+    """
+    from . import device
+    path = device.prepare(args.profile, force=args.force)
+    if args.json:
+        print(json.dumps(dict(ok=True, profile=args.profile, device=path)))
+    else:
+        print(f"  {args.profile}: {path}")
+    return 0
+
+
 def sim_main(argv=None):
     ap = argparse.ArgumentParser(prog='tnca-sim',
                                  description='Run an artifact on the '
@@ -281,6 +295,12 @@ def sim_main(argv=None):
                    help='device cycles, not a host timeout')
     _common(r)
     r.set_defaults(func=cmd_run)
+
+    p = sub.add_parser('prepare', help="build a profile's simulator, once")
+    p.add_argument('--profile', default='core-sim')
+    p.add_argument('--force', action='store_true')
+    _common(p)
+    p.set_defaults(func=cmd_prepare)
 
     d = sub.add_parser('doctor', help='what this installation can do')
     _common(d)

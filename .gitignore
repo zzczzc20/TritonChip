@@ -56,3 +56,8 @@ sim/r1/
 # tools/xls/config.json, which IS committed.
 .xls/
 tritonenv/
+
+# Staged for packaging by `make r2-stage-data`; the originals are the
+# repository's own spec/, isa/, rtl/, tb/ and tools/asm/.
+python/tnca/data/
+python/_staged/

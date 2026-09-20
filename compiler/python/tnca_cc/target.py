@@ -18,9 +18,9 @@ import os
 
 from .diagnostics import CapabilityError, ResourceError
 
-ROOT = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                                    '..', '..', '..'))
-TARGET_DIR = os.path.join(ROOT, 'compiler', 'targets')
+from ._datapath import ROOT, find
+
+TARGET_DIR = find('compiler', 'targets')
 
 # Why the compiler asks, so a refusal can say what it was about to do.
 _CAPABILITY_USE = {

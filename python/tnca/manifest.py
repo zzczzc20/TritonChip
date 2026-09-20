@@ -29,11 +29,11 @@ import hashlib
 import json
 import os
 
+from . import _data
 from .errors import ArtifactError, VersionError
 
-_SCHEMA_PATH = os.environ.get('TNCA_MANIFEST_SCHEMA') or os.path.join(
-    os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
-    'spec', 'r2_manifest_v1.schema.json')
+_SCHEMA_PATH = _data.path('spec', 'r2_manifest_v1.schema.json',
+                          env='TNCA_MANIFEST_SCHEMA')
 
 with open(_SCHEMA_PATH) as _fh:
     SCHEMA = json.load(_fh)

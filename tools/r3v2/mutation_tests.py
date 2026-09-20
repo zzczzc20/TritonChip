@@ -45,9 +45,15 @@ def run_in(lab, argv, timeout=7200):
                           text=True, timeout=timeout, env=env)
 
 
-def P(name, case):
-    """One (invocation, named case) probe from the contract's table."""
-    return suite(f'{name}.py', case), case
+def P(name, case, label=None):
+    """One (invocation, expected-failure text, detector) probe.
+
+    `label` is what the evidence records as the detector. It differs from
+    the matched text only for the verifier, whose refusals are prose
+    rather than case ids -- and "caught by R3V2-EV-01" is what a reader
+    of the evidence needs to see.
+    """
+    return suite(f'{name}.py', case), case, label or case
 
 
 def suite(name, *cases):
@@ -300,7 +306,8 @@ def m07c(lab):
 
     def setup(lab, mutated=False):
         plant_evidence(lab, corrupt if mutated else None)
-    return [(VERIFIER_ARGV, 'the summary says True')], setup
+    return [(VERIFIER_ARGV, 'the summary says True',
+             'R3V2-EV-01')], setup
 
 
 def m07d(lab):
@@ -316,7 +323,8 @@ def m07d(lab):
     def setup(lab, mutated=False):
         plant_evidence(lab, corrupt if mutated else None)
     return [(VERIFIER_ARGV,
-             'R3V2-CORE-02: required by the contract')], setup
+             'R3V2-CORE-02: required by the contract',
+             'R3V2-EV-01')], setup
 
 
 MUTATIONS = [
@@ -361,7 +369,7 @@ def main():
                 probes, setup = fn(lab)
                 if setup:
                     setup(lab, True)
-                for argv, marker in probes:
+                for argv, marker, label in probes:
                     key = (tuple(argv), getattr(setup, '__qualname__', ''))
                     if key not in baseline:
                         clean = B.Lab(base)
@@ -384,7 +392,7 @@ def main():
                     named = [l for l in mut_r.stdout.splitlines()
                              if marker in l and 'PASS' not in l]
                     if named:
-                        fired.append(marker)
+                        fired.append(label)
                     else:
                         note.append(f"{marker}: the run failed, but not "
                                     f"in the named case")

@@ -32,7 +32,41 @@ from .errors import DeviceLost
 
 BENCH_NAME = {
     'core-sim': 'tnca_device.vvp',
+    'core-vrf-sync-v1': 'tnca_device_vrf.vvp',
+    # The same two, on a back-pressuring and reordering memory. C04 and
+    # C05 are specified on one, and a memory mode is a condition of the
+    # run rather than a different machine -- the ISA, the resources and
+    # the fingerprint are those of the profile it is derived from.
+    'core-sim/slow': 'tnca_device_slow.vvp',
+    'core-vrf-sync-v1/slow': 'tnca_device_vrf_slow.vvp',
 }
+
+# Parameters a profile's device is elaborated with. Both profiles come from
+# the same bench source, so what distinguishes them is here and nowhere
+# else -- and a difference between them cannot be a difference in the
+# testbench.
+_SLOW = ['-P', 'tnca_device.MEM_LATENCY=7',
+         '-P', 'tnca_device.RANDOM_STALL=1',
+         '-P', 'tnca_device.MEM_REORDER=1']
+_BANKED = ['-P', 'tnca_device.USE_BANKED_VRF=1']
+
+BENCH_PARAMS = {
+    'core-vrf-sync-v1': _BANKED,
+    'core-sim/slow': _SLOW,
+    'core-vrf-sync-v1/slow': _BANKED + _SLOW,
+}
+
+
+def base_profile(name):
+    """The architectural profile behind a memory-mode variant.
+
+    'core-sim/slow' is core-sim on a slower memory, not another machine:
+    same ISA, same resources, same fingerprint. Keeping the suffix out of
+    everything that asks about the ARCHITECTURE is what stops a memory
+    mode being mistaken for an implementation -- which is the confusion
+    R3V2-BASE-02 refuses in the inventory.
+    """
+    return name.split('/', 1)[0]
 
 # The elaboration each profile's device is built with. Read from the profile
 # spec rather than written here, so a profile that changes its RCTX count
@@ -65,9 +99,10 @@ def expected_path(profile):
     Keyed by the configuration hash, so a device built for a different
     elaboration is a different file rather than a surprise.
     """
-    h = profiles.config_hash(profile)[:16]
+    h = profiles.config_hash(base_profile(profile))[:16]
     src = source_fingerprint(profile)[:12]
-    return os.path.join(cache_root(), f"{profile}-{h}-{src}",
+    return os.path.join(cache_root(),
+                        f"{profile.replace('/', '-')}-{h}-{src}",
                         BENCH_NAME.get(profile, 'tnca_device.vvp'))
 
 
@@ -272,12 +307,13 @@ def prepare(profile='core-sim', *, force=False, verbose=True):
 
     os.makedirs(os.path.dirname(target), exist_ok=True)
     source = os.path.join(tb, 'device', 'tnca_device.v')
-    argv = [iverilog, '-g2005', '-I', os.path.join(rtl, 'common'),
-            '-y', os.path.join(rtl, 'core'),
-            '-y', os.path.join(rtl, 'common'),
-            '-y', os.path.join(rtl, 'gen'),
-            '-y', os.path.join(tb, 'common'),
-            '-o', target, source]
+    argv = ([iverilog, '-g2005', '-I', os.path.join(rtl, 'common'),
+             '-y', os.path.join(rtl, 'core'),
+             '-y', os.path.join(rtl, 'common'),
+             '-y', os.path.join(rtl, 'gen'),
+             '-y', os.path.join(tb, 'common')]
+            + BENCH_PARAMS.get(profile, [])
+            + ['-o', target, source])
     if verbose:
         print(f"  building {profile} -> {target}")
     prune(profile, verbose=verbose)

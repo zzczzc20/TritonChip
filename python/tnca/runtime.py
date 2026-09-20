@@ -369,7 +369,12 @@ class Session:
                        'major means the argument block is laid out '
                        'differently, and reading it anyway would put the '
                        'wrong bytes in every parameter')
-        if man['target']['profile'] != self.profile:
+        # A memory mode is a condition of the run, not another machine:
+        # 'core-sim/slow' loads artifacts compiled for 'core-sim'. The
+        # architecture, the resources and the fingerprint are the base
+        # profile's, and the comparison is about those.
+        from . import device as _device
+        if man['target']['profile'] != _device.base_profile(self.profile):
             raise ProfileMismatch(
                 f"artifact is for profile {man['target']['profile']!r}, "
                 f"this session is {self.profile!r}",

@@ -32,6 +32,11 @@
 
 module tnca_device;
 
+    // 1 elaborates the R3 v2 candidate's register file. Set with -P, so
+    // core-sim and core-vrf-sync-v1 come from the same bench source and a
+    // difference between them cannot be a difference in the device.
+    parameter USE_BANKED_VRF = 0;
+
     parameter NUM_RCTX       = 2;
     parameter RCTX_W         = 1;
     parameter VLEN           = 16;
@@ -83,7 +88,8 @@ module tnca_device;
     tnca_core #(
         .NUM_RCTX(NUM_RCTX), .RCTX_W(RCTX_W), .VLEN(VLEN), .ELEN(ELEN), .LW(4),
         .VREGS_PER_RCTX(VREGS_PER_RCTX), .PHYS_VREGS(PHYS_VREGS),
-        .PHYS_W(PHYS_W), .CORE_ID(0), .NUM_CORES(1), .HAS_SFU(HAS_SFU)
+        .PHYS_W(PHYS_W), .CORE_ID(0), .NUM_CORES(1), .HAS_SFU(HAS_SFU),
+        .USE_BANKED_VRF(USE_BANKED_VRF)
     ) dut (
         .clk(clk), .rst_n(rst_n),
         .launch_valid(launch_valid), .launch_pc(launch_pc),

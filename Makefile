@@ -766,6 +766,30 @@ r2-artifact-tests: $(BUILD)/tnca_device.vvp
 # The persistent device. R2-08 RT-02 wants 32 launches in one session, and
 # R2-11 makes restarting an explicit device-loss recovery, so this bench does
 # not exit: it serves requests until told to stop.
+# C04 and C05 are specified on a back-pressuring, reordering memory, so
+# both implementations need a device elaborated that way. Four devices, one
+# bench source: reference and candidate, fast and slow.
+$(BUILD)/tnca_device_slow.vvp: $(RTL_DEPS) $(TB)/device/tnca_device.v \
+                               $(TB)/common/tnca_mem_model.v | dirs
+	$(IVERILOG) $(IVFLAGS) -y $(RTL)/core -y $(RTL)/common -y $(RTL)/gen -y $(TB)/common \
+	   -P tnca_device.MEM_LATENCY=7 -P tnca_device.RANDOM_STALL=1 \
+	   -P tnca_device.MEM_REORDER=1 \
+	   -o $@ $(TB)/device/tnca_device.v
+
+$(BUILD)/tnca_device_vrf_slow.vvp: $(RTL_DEPS) $(TB)/device/tnca_device.v \
+                                   $(TB)/common/tnca_mem_model.v | dirs
+	$(IVERILOG) $(IVFLAGS) -y $(RTL)/core -y $(RTL)/common -y $(RTL)/gen -y $(TB)/common \
+	   -P tnca_device.USE_BANKED_VRF=1 \
+	   -P tnca_device.MEM_LATENCY=7 -P tnca_device.RANDOM_STALL=1 \
+	   -P tnca_device.MEM_REORDER=1 \
+	   -o $@ $(TB)/device/tnca_device.v
+
+$(BUILD)/tnca_device_vrf.vvp: $(RTL_DEPS) $(TB)/device/tnca_device.v \
+                              $(TB)/common/tnca_mem_model.v | dirs
+	$(IVERILOG) $(IVFLAGS) -y $(RTL)/core -y $(RTL)/common -y $(RTL)/gen -y $(TB)/common \
+	   -P tnca_device.USE_BANKED_VRF=1 \
+	   -o $@ $(TB)/device/tnca_device.v
+
 $(BUILD)/tnca_device.vvp: $(RTL_DEPS) $(TB)/device/tnca_device.v \
                           $(TB)/common/tnca_mem_model.v | dirs
 	$(IVERILOG) $(IVFLAGS) -y $(RTL)/core -y $(RTL)/common -y $(RTL)/gen -y $(TB)/common \

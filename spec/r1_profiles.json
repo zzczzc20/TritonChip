@@ -60,6 +60,33 @@
         "+allroles"
       ],
       "note": "HAS_SFU is 0 here and that is the correct profile, not a defect to be papered over. The contract is explicit: the system's SFU stays off rather than being switched on to remove the inconsistency. What was wrong was the target claiming otherwise."
+    },
+    "core-vrf-sync-v1": {
+      "target_file": "tnca-sim-v0.1.json",
+      "description": "The same single core with the banked, synchronous, finite-port vector register file. Architecturally identical to core-sim -- same ISA, same register capacity, same two role contexts -- so a difference in a result is a difference in implementation. R3 v2's candidate.",
+      "num_cores": 1,
+      "topology": "single",
+      "elaboration": {
+        "NUM_RCTX": 2,
+        "RCTX_W": 1,
+        "VREGS_PER_RCTX": 64,
+        "PHYS_VREGS": 128,
+        "HAS_SFU": 1,
+        "HAS_ATOMICS": 1,
+        "HAS_SYS_ATOMICS": 0
+      },
+      "bench": "sim/build/tb_core_vrf.vvp",
+      "bench_args": [
+        "+allroles"
+      ],
+      "implementation": {
+        "vector_register_file": "banked",
+        "banks": 4,
+        "ports_per_bank": "1 read, 1 write",
+        "read_latency_cycles": 1,
+        "unwritten_reads": "zero, from per-lane valid bits",
+        "contract": "spec/r3v2_contract.json"
+      }
     }
   },
   "supported_topologies": {

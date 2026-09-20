@@ -495,7 +495,7 @@ and would not be a valid FMA reference.
 | `tnca_cvt_comb_xls` | 1,097 | 0 | 54 | 32 | generated; all 25 format pairs |
 | `tnca_tensor` | 43,048 | 8,572 | 83 | 64 | at the 64-bit multiply floor |
 | `tnca_acc_rf` | 200,381 | 131,072 | 10 | — | 16 KiB as flops; belongs in SRAM |
-| `tnca_matrix` | 316,846 | 135,731 | 190 | 71 | **63 % of it is the accumulator file** |
+| `tnca_matrix` | 319,209 | 135,744 | 176 | 71 | four fragment formats; **63 % of it is the accumulator file** |
 
 **Read `depth` against the floor, not against 50.** The generic gate set has no
 carry-lookahead cells, so every addition maps to ripple carry: a bare 32-bit

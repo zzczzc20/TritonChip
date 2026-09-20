@@ -1,0 +1,78 @@
+{
+  "platform": "macOS-27.0-arm64-arm-64bit",
+  "results": [
+    {
+      "command": [
+        "git",
+        "rev-parse",
+        "HEAD"
+      ],
+      "returncode": 0,
+      "stdout": "6c9006349544c552de2e4b842e6eeb411ed330d1\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "git",
+        "status",
+        "--short"
+      ],
+      "returncode": 0,
+      "stdout": " M flow/synth/synth.py\n?? doc/audit/\n?? doc/production_readiness_audit_2026-09-19.md\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "python3",
+        "--version"
+      ],
+      "returncode": 0,
+      "stdout": "Python 3.12.2\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "iverilog",
+        "-V"
+      ],
+      "returncode": 0,
+      "stdout": "Icarus Verilog version 11.0 (stable) (v11_0)\n\nCopyright 1998-2020 Stephen Williams\n\n  This program is free software; you can redistribute it and/or modify\n  it under the terms of the GNU General Public License as published by\n  the Free Software Foundation; either version 2 of the License, or\n  (at your option) any later version.\n\n  This program is distributed in the hope that it will be useful,\n  but WITHOUT ANY WARRANTY; without even the implied warranty of\n  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the\n  GNU General Public License for more details.\n\n  You should have received a copy of the GNU General Public License along\n  with this program; if not, write to the Free Software Foundation, Inc.,\n  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.\n\nIcarus Verilog Preprocessor version 11.0 (stable) (v11_0)\n\nCopyright (c) 1999-2020 Stephen Williams (steve@icarus.com)\n  This program is free software; you can redistribute it and/or modify\n  it under the terms of the GNU General Public License as published by\n  the Free Software Foundation; either version 2 of the License, or\n  (at your option) any later version.\n\n  This program is distributed in the hope that it will be useful,\n  but WITHOUT ANY WARRANTY; without even the implied warranty of\n  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the\n  GNU General Public License for more details.\n\n  You should have received a copy of the GNU General Public License along\n  with this program; if not, write to the Free Software Foundation, Inc.,\n  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.\n\nIcarus Verilog Parser/Elaborator version 11.0 (stable) (v11_0)\n\nCopyright (c) 1998-2020 Stephen Williams (steve@icarus.com)\n\n  This program is free software; you can redistribute it and/or modify\n  it under the terms of the GNU General Public License as published by\n  the Free Software Foundation; either version 2 of the License, or\n  (at your option) any later version.\n\n  This program is distributed in the hope that it will be useful,\n  but WITHOUT ANY WARRANTY; without even the implied warranty of\n  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the\n  GNU General Public License for more details.\n\n  You should have received a copy of the GNU General Public License along\n  with this program; if not, write to the Free Software Foundation, Inc.,\n  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.\n\n FLAGS DLL vvp.tgt\nvvp.tgt: Icarus Verilog VVP Code Generator 11.0 (stable) (v11_0)\n\nCopyright (c) 2001-2020 Stephen Williams (steve@icarus.com)\n\n  This program is free software; you can redistribute it and/or modify\n  it under the terms of the GNU General Public License as published by\n  the Free Software Foundation; either version 2 of the License, or\n  (at your option) any later version.\n\n  This program is distributed in the hope that it will be useful,\n  but WITHOUT ANY WARRANTY; without even the implied warranty of\n  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the\n  GNU General Public License for more details.\n\n  You should have received a copy of the GNU General Public License along\n  with this program; if not, write to the Free Software Foundation, Inc.,\n  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.\n\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "make",
+        "triton-e2e",
+        "e2e",
+        "TRITON_PYTHON=/usr/bin/false"
+      ],
+      "returncode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "make",
+        "-n",
+        "-W",
+        "rtl/gen/tnca_cvt_comb_xls.v",
+        "sim/build/tb_core.vvp"
+      ],
+      "returncode": 0,
+      "stdout": "mkdir -p sim/build\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "make",
+        "-n",
+        "-W",
+        "rtl/common/tnca_defs.vh",
+        "sim/build/tb_core.vvp"
+      ],
+      "returncode": 0,
+      "stdout": "mkdir -p sim/build\n",
+      "stderr": ""
+    }
+  ]
+}

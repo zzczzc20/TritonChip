@@ -1,0 +1,11 @@
+DEFECT REPRODUCED: compiler accepted overwrite before MMA completion
+    w.def        w0, #56, #8                     // v56..v63
+    w.def        w1, #48, #8                     // v48..v55
+    mb.init      b0
+    v.movi       v0, #7
+    mb.arm       s1, b0, #0, #1                  // 0 arrival(s), 1 operation(s)
+    m.mma.async.k16.f16 a0, v56, v48, s1
+    v.mov        v56, v0                         // hand off through the shared window (sec 7.3)
+    mb.wait      s1
+    exit
+

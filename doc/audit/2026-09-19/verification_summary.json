@@ -1,0 +1,20 @@
+{
+  "base_commit": "6c90063",
+  "clean_build": false,
+  "make_test_returncode": 0,
+  "make_compiler_returncode": 0,
+  "triton_e2e_direct_returncode": 0,
+  "system_e2e_direct_returncode": 0,
+  "compiler_unit_reported_tests": 76,
+  "compiler_unit_skipped": 7,
+  "compiler_rtl_tests": 67,
+  "ir_test_files": 2,
+  "triton_single_core_tests": 5,
+  "triton_system_tests": 2,
+  "intentional_failure_make_returncode": 0,
+  "notes": [
+    "The intentional failure returning zero is a reproduced defect, not a passing check.",
+    "Working tree contains pre-existing flow/synth/synth.py changes.",
+    "Readme.md and doc/synthesis.md changed externally during the audit; synthesis-data diffs inspected and preserved."
+  ]
+}

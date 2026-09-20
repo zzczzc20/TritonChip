@@ -1,0 +1,9 @@
+DEFECT REPRODUCED: K64 FP16 accepted with 8-register windows; needs 32 each
+    w.def        w0, #56, #8                     // v56..v63
+    w.def        w1, #48, #8                     // v48..v55
+    mb.init      b0
+    mb.arm       s1, b0, #0, #1                  // 0 arrival(s), 1 operation(s)
+    m.mma.async.k64.f16 a0, v56, v48, s1
+    mb.wait      s1
+    exit
+

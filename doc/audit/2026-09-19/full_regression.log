@@ -1,0 +1,104 @@
+lint: all 38 files elaborate
+  bitops                 PASS   tb_bitops: 60471 checks, 0 failures
+  mul64                  PASS   tb_mul64: 60000 checks, 0 failures
+  fp32_fma               PASS   tb_fp32_fma: 41240 vectors, 0 failures
+  decoder                PASS   tb_decoder: 773 vectors, 0 failures
+  cvt_xls                PASS   tb_cvt_xls: 866495 vectors x 2 instances (pipelined, unpipelined), 0 failures
+  sfu_xls                PASS   tb_sfu_xls: 16740 vectors within 2^-22 (exp2=3462 log2=3633 rcp=6011 rsqrt=3634), 431 exact, 0 outside
+  sfu_core               PASS   tb_sfu_core: 1042 batches of 16 lanes (16672 vectors), 0 failures
+  fpu_multi              PASS   tb_fpu_multi: 5012 vectors, 0 failures
+  asm round-trip        PASS   10198 instructions, 23 programs, 0 mismatches
+PASS: isa/tnca-isa-v0.1.json is up to date (169 instructions)
+  up to date: compiler/include/tnca/ISA/TNCAOpcodes.inc
+  up to date: compiler/include/tnca/ISA/TNCAInstrInfo.td
+  up to date: doc/isa/opcode-map.md
+PASS: all generated ISA files match the schema
+PASS: target descriptions match the RTL parameters
+checked 218 shared constants against /Users/zhouzhongchun/repo/TritonChip/rtl/common/tnca_defs.vh
+PASS: the RTL defines, the assembler tables, the DSLX and the float oracle agree
+  compiler-unit          PASS   76 tests, 7 skipped
+  compiler-ir            PASS   2 IR test file(s)
+  t00_scalar             PASS   cycles=586 issued=290 hazard=116 lsu=0 wb=0 squash=42
+  t01_vector             PASS   cycles=943 issued=492 hazard=198 lsu=0 wb=0 squash=62
+  t02_mem                PASS   cycles=942 issued=353 hazard=309 lsu=83 wb=11 squash=40
+  t03_fp                 PASS   cycles=3069 issued=1431 hazard=748 lsu=37 wb=1 squash=194
+  t04_roles              PASS   cycles=142 issued=74 hazard=25 lsu=12 wb=1 squash=10
+  t05_fault              PASS   cycles=523 issued=228 hazard=15 lsu=8 wb=1 squash=68
+  t06_alu                PASS   cycles=4624 issued=2099 hazard=1201 lsu=360 wb=0 squash=187
+  t11_matrix             PASS   cycles=3513 issued=727 hazard=425 lsu=612 wb=0 squash=77
+  t12_tensor             PASS   cycles=1579 issued=213 hazard=120 lsu=0 wb=0 squash=23
+  t13_share              PASS   cycles=157 issued=71 hazard=29 lsu=22 wb=0 squash=10
+  t14_caps               PASS   cycles=860 issued=189 hazard=152 lsu=10 wb=3 squash=17
+  t15_target             PASS   cycles=184 issued=142 hazard=0 lsu=0 wb=0 squash=22
+  t16_vecadd             PASS   cycles=1023 issued=442 hazard=323 lsu=41 wb=48 squash=51
+  t17_descfault          PASS   cycles=114 issued=18 hazard=7 lsu=0 wb=0 squash=1
+  t18_squash             PASS   cycles=1226 issued=458 hazard=469 lsu=2 wb=0 squash=107
+  t19_waitgen0           PASS   cycles=92 issued=47 hazard=19 lsu=0 wb=0 squash=5
+  t20_sfu                PASS   cycles=1282 issued=409 hazard=487 lsu=160 wb=1 squash=41
+  t21_cvt                PASS   cycles=1942 issued=572 hazard=1067 lsu=0 wb=0 squash=33
+  t22_atomic             PASS   cycles=3010 issued=1429 hazard=860 lsu=88 wb=171 squash=118
+  t23_amofault           PASS   cycles=58 issued=28 hazard=18 lsu=0 wb=2 squash=3
+  t25_mmasf              PASS   cycles=1289 issued=168 hazard=84 lsu=422 wb=0 squash=10
+  compiler-rtl           PASS   67 tests
+----------------------------------------------------------------------
+Ran 5 tests in 5.460s
+
+OK
+  t00_scalar (slow mem)  PASS   cycles=586 issued=290 hazard=116 lsu=0 wb=0 squash=42
+  t01_vector (slow mem)  PASS   cycles=943 issued=492 hazard=198 lsu=0 wb=0 squash=62
+  t02_mem (slow mem)     PASS   cycles=1252 issued=353 hazard=525 lsu=177 wb=0 squash=40
+  t03_fp (slow mem)      PASS   cycles=3151 issued=1431 hazard=790 lsu=78 wb=0 squash=194
+  t04_roles (slow mem)   PASS   cycles=189 issued=74 hazard=47 lsu=37 wb=0 squash=10
+  t05_fault (slow mem)   PASS   cycles=535 issued=228 hazard=20 lsu=15 wb=0 squash=68
+  t06_alu (slow mem)     PASS   cycles=5289 issued=2099 hazard=1499 lsu=726 wb=1 squash=187
+  t11_matrix (slow mem)  PASS   cycles=4128 issued=727 hazard=450 lsu=1202 wb=0 squash=77
+  t12_tensor (slow mem)  PASS   cycles=2469 issued=213 hazard=120 lsu=0 wb=0 squash=23
+  t13_share (slow mem)   PASS   cycles=209 issued=71 hazard=43 lsu=60 wb=0 squash=10
+  t14_caps (slow mem)    PASS   cycles=1193 issued=189 hazard=195 lsu=35 wb=0 squash=17
+  t15_target (slow mem)  PASS   cycles=184 issued=142 hazard=0 lsu=0 wb=0 squash=22
+  t16_vecadd (slow mem)  PASS   cycles=1393 issued=442 hazard=653 lsu=78 wb=2 squash=51
+  t17_descfault (slow mem) PASS   cycles=353 issued=18 hazard=7 lsu=0 wb=0 squash=1
+  t18_squash (slow mem)  PASS   cycles=1978 issued=458 hazard=921 lsu=263 wb=0 squash=107
+  t19_waitgen0 (slow mem) PASS   cycles=92 issued=47 hazard=19 lsu=0 wb=0 squash=5
+  t20_sfu (slow mem)     PASS   cycles=1495 issued=409 hazard=531 lsu=330 wb=0 squash=41
+  t21_cvt (slow mem)     PASS   cycles=2736 issued=572 hazard=1861 lsu=0 wb=0 squash=33
+  t22_atomic (slow mem)  PASS   cycles=3946 issued=1429 hazard=1528 lsu=340 wb=6 squash=118
+  t23_amofault (slow mem) PASS   cycles=71 issued=28 hazard=31 lsu=0 wb=0 squash=3
+  t25_mmasf (slow mem)   PASS   cycles=1716 issued=168 hazard=84 lsu=849 wb=0 squash=10
+  t00_scalar (ooo mem)   PASS   cycles=586 issued=290 hazard=116 lsu=0 wb=0 squash=42
+  t01_vector (ooo mem)   PASS   cycles=943 issued=492 hazard=198 lsu=0 wb=0 squash=62
+  t02_mem (ooo mem)      PASS   cycles=1217 issued=353 hazard=498 lsu=169 wb=0 squash=40
+  t03_fp (ooo mem)       PASS   cycles=3147 issued=1431 hazard=789 lsu=75 wb=0 squash=194
+  t04_roles (ooo mem)    PASS   cycles=173 issued=74 hazard=41 lsu=27 wb=0 squash=10
+  t05_fault (ooo mem)    PASS   cycles=534 issued=228 hazard=20 lsu=14 wb=0 squash=68
+  t06_alu (ooo mem)      PASS   cycles=5192 issued=2099 hazard=1428 lsu=700 wb=2 squash=187
+  t11_matrix (ooo mem)   PASS   cycles=4123 issued=727 hazard=449 lsu=1198 wb=0 squash=77
+  t12_tensor (ooo mem)   PASS   cycles=2381 issued=213 hazard=120 lsu=0 wb=0 squash=23
+  t13_share (ooo mem)    PASS   cycles=203 issued=71 hazard=39 lsu=58 wb=0 squash=10
+  t14_caps (ooo mem)     PASS   cycles=1168 issued=189 hazard=184 lsu=31 wb=0 squash=17
+  t15_target (ooo mem)   PASS   cycles=184 issued=142 hazard=0 lsu=0 wb=0 squash=22
+  t16_vecadd (ooo mem)   PASS   cycles=1357 issued=442 hazard=622 lsu=73 wb=1 squash=51
+  t17_descfault (ooo mem) PASS   cycles=317 issued=18 hazard=7 lsu=0 wb=0 squash=1
+  t18_squash (ooo mem)   PASS   cycles=1866 issued=458 hazard=853 lsu=219 wb=0 squash=107
+  t19_waitgen0 (ooo mem) PASS   cycles=92 issued=47 hazard=19 lsu=0 wb=0 squash=5
+  t20_sfu (ooo mem)      PASS   cycles=1465 issued=409 hazard=520 lsu=311 wb=0 squash=41
+  t21_cvt (ooo mem)      PASS   cycles=2707 issued=572 hazard=1832 lsu=0 wb=0 squash=33
+  t22_atomic (ooo mem)   PASS   cycles=3798 issued=1429 hazard=1416 lsu=308 wb=11 squash=118
+  t23_amofault (ooo mem) PASS   cycles=68 issued=28 hazard=28 lsu=0 wb=0 squash=3
+  t25_mmasf (ooo mem)    PASS   cycles=1668 issued=168 hazard=84 lsu=801 wb=0 squash=10
+  nuca slice (ooo)       PASS   
+  nuca slice (fast)      PASS   
+  nuca slice (slow)      PASS   
+  mesh 2x2               PASS   
+  t10_mesh (2x2, 1 role) PASS   cycles=18673
+  t10_mesh (2x2, all roles) PASS   cycles=29143
+  t24_amo_mesh (2x2, 1 role) PASS   cycles=1488
+  t24_amo_mesh (2x2, all roles) PASS   cycles=2829
+----------------------------------------------------------------------
+Ran 2 tests in 11.889s
+
+OK
+
+==============================================
+ TNCA regression: all tests passed
+==============================================

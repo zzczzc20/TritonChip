@@ -12,6 +12,15 @@
 #   make core       core tests only
 #   make synth      Yosys synthesis + PPA proxy report
 #   make e2e        Triton source -> the four-tile machine -> checked numbers
+#
+#   R1 acceptance (doc/phase1_tasks_and_acceptance.md). These are expected to
+#   FAIL until R1 is finished; a gate that passes on partial delivery is the
+#   thing the contract exists to prevent.
+#   make r1-doctor          what this machine can and cannot certify
+#   make r1-check-generated generated artefacts match their sources (read-only)
+#   make r1-gate-selftest   ten injected failures, each must be detected
+#   make r1-acceptance      the full gate; writes an evidence directory
+#   make r1-verify-evidence EVIDENCE=<dir>   re-verify a run's evidence
 #   make xls        regenerate rtl/gen from the DSLX in xls/
 #   make xls-check  fail if rtl/gen has drifted from xls/
 #   make xls-report measure the scheduled clock period of each generated unit
@@ -22,6 +31,24 @@
 #==============================================================================
 
 SHELL      := /bin/bash
+# NOTE ON PIPELINES IN RECIPES
+#
+# `python ... | tail -4` reports tail's status, so a failing interpreter, a
+# failing test and a crashing assembler all exit 0. The audit reproduced
+# exactly that: `make triton-e2e e2e TRITON_PYTHON=/usr/bin/false` returned
+# success.
+#
+# The fix is not `.SHELLFLAGS := -o pipefail`: that was added in GNU Make 3.82
+# and the make shipped with macOS is 3.81, which ignores it silently -- so the
+# fix would appear to work in CI and do nothing here, which is worse than no
+# fix. Recipes therefore have no pipes on a command whose exit code matters,
+# and a recipe that truly needs one writes its own `set -o pipefail`.
+# tools/r1/selftest.py RUN-01 fails the gate if this ever regresses.
+
+# Release mode. A missing tool is a SKIP while developing and a FAILURE when
+# the run is supposed to be evidence: doc/phase1_tasks_and_acceptance.md
+# forbids a skip from producing an R1 PASS.
+R1_STRICT  ?= 0
 BUILD      := sim/build
 RTL        := rtl
 INC        := $(RTL)/common
@@ -468,7 +495,10 @@ TRITON_PYTHON ?= $(HOME)/src/tritonenv/bin/python
 .PHONY: triton-e2e e2e
 triton-e2e: $(BUILD)/tb_core.vvp
 	@if [ -x "$(TRITON_PYTHON)" ]; then \
-	   $(TRITON_PYTHON) compiler/test/test_triton_e2e.py 2>&1 | tail -4; \
+	   $(TRITON_PYTHON) compiler/test/test_triton_e2e.py; \
+	 elif [ "$(R1_STRICT)" = "1" ]; then \
+	   echo "  triton-e2e             FAIL   no Triton at $(TRITON_PYTHON)"; \
+	   exit 1; \
 	 else \
 	   echo "  triton-e2e             SKIP   no Triton at $(TRITON_PYTHON)"; \
 	 fi
@@ -479,7 +509,10 @@ triton-e2e: $(BUILD)/tb_core.vvp
 # itself; this does not.
 e2e: $(BUILD)/tb_top.vvp
 	@if [ -x "$(TRITON_PYTHON)" ]; then \
-	   $(TRITON_PYTHON) compiler/test/test_e2e_system.py 2>&1 | tail -4; \
+	   $(TRITON_PYTHON) compiler/test/test_e2e_system.py; \
+	 elif [ "$(R1_STRICT)" = "1" ]; then \
+	   echo "  e2e                    FAIL   no Triton at $(TRITON_PYTHON)"; \
+	   exit 1; \
 	 else \
 	   echo "  e2e                    SKIP   no Triton at $(TRITON_PYTHON)"; \
 	 fi
@@ -533,3 +566,48 @@ synth: | dirs
 
 clean:
 	rm -rf $(BUILD)
+
+#------------------------------------------------------------------------------
+# R1 acceptance gate -- doc/phase1_tasks_and_acceptance.md
+#
+# These entries are deliberately separate from `make test`. `test` is the
+# development regression and may skip an unavailable tool; the R1 entries are
+# evidence, run strict, and treat a skip as a failure.
+#------------------------------------------------------------------------------
+.PHONY: r1-doctor r1-check-generated r1-gate-selftest r1-acceptance \
+        r1-verify-evidence r1-inventory
+
+r1-doctor:
+	@$(PYTHON) tools/r1/doctor.py
+
+r1-inventory:
+	@$(PYTHON) tools/r1/inventory.py
+
+# Read-only, and with NO prerequisites on purpose.
+#
+# `make compiler` depends on $(ISA_SCHEMA) and $(TARGET_JSON), so it
+# regenerates them and *then* runs --check -- which can only ever agree. The
+# audit's F04 names that; this is the separated check, and a stale commit fails
+# here instead of being quietly repaired by whoever runs make.
+#
+# tools/xls/xlsgen.py --check needs the generator host, so it is opt-in via
+# R1_XLS=1 rather than turning an unreachable machine into a false failure.
+r1-check-generated:
+	@$(PYTHON) $(TOOLS)/isa/export_schema.py --check
+	@$(PYTHON) $(TOOLS)/isa/gen.py --check all
+	@$(PYTHON) $(TOOLS)/isa/gen_target.py --check
+	@$(PYTHON) $(TOOLS)/isa/check_consistency.py
+	@$(PYTHON) tools/r1/inventory.py
+	@if [ "$(R1_XLS)" = "1" ]; then $(PYTHON) $(TOOLS)/xls/xlsgen.py --check; \
+	 else echo "  r1-check-generated     NOTE   rtl/gen not re-checked "\
+	           "(needs the XLS host; set R1_XLS=1)"; fi
+
+r1-gate-selftest:
+	@$(PYTHON) tools/r1/selftest.py
+
+r1-acceptance: r1-gate-selftest
+	@$(PYTHON) tools/r1/gate.py
+
+r1-verify-evidence:
+	@test -n "$(EVIDENCE)" || { echo "usage: make r1-verify-evidence EVIDENCE=<dir>"; exit 2; }
+	@$(PYTHON) tools/r1/verify_evidence.py $(EVIDENCE)

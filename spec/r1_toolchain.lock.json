@@ -1,0 +1,38 @@
+{
+  "schema": "r1-toolchain-lock/1",
+  "contract": "doc/phase1_tasks_and_acceptance.md R1-09",
+  "note": "Pins what an R1 acceptance environment is. A version that is not here is not a locked version; r1-doctor compares against this file and reports every difference rather than only the ones it expects.",
+  "acceptance_platform": {
+    "os": "Ubuntu 24.04 LTS",
+    "os_release_id": "ubuntu",
+    "os_version_id": "24.04",
+    "arch": "x86_64",
+    "reference_runner": {
+      "vcpu": 8,
+      "ram_gib": 32,
+      "disk_gib": 100
+    },
+    "note": "macOS is a development platform and may not substitute for this (contract R1-09)."
+  },
+  "tools": {
+    "python3": { "min": "3.12", "source": "distribution" },
+    "iverilog": { "version": "12.0", "source": "ubuntu noble iverilog" },
+    "make": { "min": "4.3", "source": "distribution",
+              "note": "3.81 ignores .SHELLFLAGS; no recipe may depend on it" },
+    "git": { "min": "2.43", "source": "distribution" },
+    "g++": { "min": "13.3", "source": "distribution" },
+    "cmake": { "min": "3.28", "source": "distribution" },
+    "yosys": { "version": "0.52", "source": "optional",
+               "note": "synthesis proxies only; not required by the gate" }
+  },
+  "pinned_upstream": {
+    "note": "LLVM and Triton commits are pinned in compiler/pin/; verify_pin.py checks them. This file records that the pin is the authority, not a second copy of it.",
+    "authority": "compiler/pin/"
+  },
+  "not_yet_locked": [
+    "OS image digest",
+    "python package set and hashes",
+    "XLS revision and a local/containerised runner (rtl/gen is still regenerated through a personal SSH host)",
+    "Triton/LLVM binary distribution digests"
+  ]
+}

@@ -92,6 +92,20 @@ MODULES = [
     ('tnca_sfu',        ['core/tnca_sfu.v', 'gen/tnca_sfu_exp2_xls.v',
                          'gen/tnca_sfu_log2_xls.v', 'gen/tnca_sfu_rcp_xls.v',
                          'gen/tnca_sfu_rsqrt_xls.v'], {}),
+    # The vector FPU is measured in two configurations on purpose. With the
+    # SFU slice in it -- sixteen FMAs, sixteen all-pairs converters and four
+    # SFU pipelines, about 180 k gates of deep muxing -- yosys's mapper does
+    # not finish in five and a half hours, which is not a PPA result but is a
+    # fact about measuring this design. HAS_SFU=0 is a real build parameter,
+    # and the SFU slice is already measured on its own as `tnca_sfu`, so the
+    # two halves are covered even though the composite is not.
+    ('tnca_vector_fpu@nosfu',
+                        ['core/tnca_vector_fpu.v', 'core/tnca_fp32_fma.v',
+                         'gen/tnca_cvt_comb_xls.v',
+                         'core/tnca_sfu.v', 'gen/tnca_sfu_exp2_xls.v',
+                         'gen/tnca_sfu_log2_xls.v', 'gen/tnca_sfu_rcp_xls.v',
+                         'gen/tnca_sfu_rsqrt_xls.v'] + COMMON,
+                        {'HAS_SFU': 0}),
     ('tnca_vector_fpu', ['core/tnca_vector_fpu.v', 'core/tnca_fp32_fma.v',
                          'gen/tnca_cvt_comb_xls.v',
                          'core/tnca_sfu.v', 'gen/tnca_sfu_exp2_xls.v',
@@ -124,7 +138,11 @@ MODULES = [
 GATE_SET = "AND,NAND,OR,NOR,XOR,XNOR,MUX,AOI3,OAI3,AOI4,OAI4"
 
 
-def run_one(top, sources, params, keep_dir=None):
+def run_one(label, sources, params, keep_dir=None):
+    # A label may name a *configuration* rather than a module: everything
+    # after the first '@' is the parameter set's name, so the same top can be
+    # measured twice without the report calling both rows the same thing.
+    top = label.split('@')[0]
     srcs = " ".join(os.path.join(RTL, s) for s in sources)
     pset = "\n".join(f"chparam -set {k} {v} {top}" for k, v in params.items())
     script = f"""

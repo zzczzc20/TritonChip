@@ -1,0 +1,4 @@
+  t10_mesh (2x2, 1 role) PASS   cycles=18673
+  t10_mesh (2x2, all roles) PASS   cycles=29143
+  t24_amo_mesh (2x2, 1 role) PASS   cycles=1488
+  t24_amo_mesh (2x2, all roles) PASS   cycles=2829

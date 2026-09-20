@@ -101,9 +101,64 @@ one 32×16 multiplier in a library whose 32×32 multiplier is 65 levels by
 itself; XLS's own estimate agrees, putting `exp2` at 1220 ps against a floor of
 1217. Nothing is left there to restructure.
 
-`tnca_lsu`, `tnca_vector_rf`, `tnca_vector_alu`, `tnca_vector_fpu` and
-`tnca_core` are long runs; `make synth` regenerates the full table and
-`sim/build/synth.json` holds the raw per-cell breakdown.
+### What four fragment formats cost the matrix unit
+
+`m.mma.async` went from two input formats to four — FP16 and BF16 plus both
+OCP FP8 encodings — by replacing the hand-written `tnca_cvt16_f32` in front of
+each MAC with `tnca_fpu_multi`, which is `tnca_widen_xls` in front of the same
+binary32 FMA. The measurement is the point of doing it that way:
+
+| | gates | flops | depth |
+|---|---:|---:|---:|
+| before: FP16 + BF16, hand-written converter | 316,846 | 135,731 | **190** |
+| after: four formats, generated converter | 319,209 | 135,744 | **176** |
+
+**Two extra formats cost 2,363 gates — 0.7 % — and the critical path got 14
+levels shorter.** Both halves of that are worth stating.
+
+The depth fell because the generated widening is shallower than the one it
+replaced: `tnca_widen_xls` is 11 levels against `tnca_cvt16_f32`'s 14, and it
+sits directly in the MAC's operand path.
+
+The area barely moved because of something the structure paid for. Seventeen
+`tnca_cvt16_f32` instances (2,380 gates) became thirty-two `tnca_widen_xls`
+instances (8,480 if each were built), which should have cost about 6,100 more.
+It did not, because sixteen of those widen the *same* A element with the same
+inputs and yosys merged them. Writing the MAC as one multi-precision module
+and instantiating it sixteen times reads as redundant and synthesises as
+shared.
+
+63 % of this module is still the accumulator file, which belongs in SRAM and
+not in flops; that has not changed.
+
+### One module this flow cannot measure
+
+`tnca_vector_fpu` now holds sixteen FMAs, sixteen all-pairs converters and the
+four-function SFU slice — about 180 k gates of deep muxing. **Yosys did not
+finish mapping it in five and a half hours.** That is not a PPA result; it is a
+fact about measuring this design with this flow, and it is recorded rather than
+quietly dropped from the table.
+
+Removing the SFU does not rescue it: `python3 flow/synth/synth.py
+'tnca_vector_fpu@nosfu'` builds the unit with `HAS_SFU = 0`, which is a real
+build parameter and not a measurement fiction, and that did not finish in
+45 minutes either. (The `@` names a *configuration* of a top rather than a
+different top, so the report can carry both rows without calling them the
+same thing.)
+
+So the parts are measured instead, and they are enough to read the whole: the
+SFU slice as `tnca_sfu`, the converter as `tnca_cvt_comb_xls` (1,097 gates,
+54 levels) and the FMA as `tnca_fp32_fma` (7,120 gates, 115 levels, and the
+one that sets this unit's clock). Sixteen of the first two and sixteen of the
+third is where the unit's area goes, and the FMA is where its depth goes.
+
+What this is *not* is evidence about silicon. It is evidence that this
+particular gate-level proxy flow has an upper size limit, and that the unit
+has passed it.
+
+`tnca_lsu`, `tnca_vector_rf`, `tnca_vector_alu` and `tnca_core` are long runs;
+`make synth` regenerates the full table and `sim/build/synth.json` holds the
+raw per-cell breakdown.
 
 ## What measuring changed
 

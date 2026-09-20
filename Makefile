@@ -690,7 +690,7 @@ clean:
         r2-compile-tests r2-cache-tests r2-runtime-tests r2-fault-tests \
         r2-grid-tests r2-memory-tests r2-mutation-tests \
         r2-obs-tests r2-e2e-tests r3-rf-tests r3-flow-tests \
-        r3-count-tests \
+        r3-count-tests r3-synth-tests r3-mem-synth \
         r2-package r2-stage-data \
         r3-scout r3-plan r3-model-tests
 
@@ -791,6 +791,12 @@ r2-package: r2-stage-data
 	@rm -rf build $(BUILD)/dist/*.whl
 	@$(PYTHON) -m pip wheel --no-deps -q -w $(BUILD)/dist .
 	@$(PYTHON) -c "import glob, os; [print('  %d bytes  %s' % (os.path.getsize(w), w)) for w in sorted(glob.glob('$(BUILD)/dist/*.whl'))]"
+
+r3-synth-tests:
+	@$(PYTHON) tools/r3/synth_tests.py --json $(BUILD)/r3_synth_tests.json
+
+r3-mem-synth: | dirs
+	$(PYTHON) flow/synth/mem_synth.py --json $(BUILD)/mem_synth.json
 
 r3-count-tests: $(BUILD)/tb_core.vvp $(CORE_HEX)
 	@$(PYTHON) tools/r3/count_tests.py --json $(BUILD)/r3_count_tests.json

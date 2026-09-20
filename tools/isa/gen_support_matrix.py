@@ -98,8 +98,11 @@ LIMITS = [
      'checked in rtl/core/tnca_tensor.v before the transfer starts; '
      't17_descfault is the negative'),
     ('window write granularity', 'whole 8-byte units',
-     'the engine writes units, not bytes; byte-granular window writes are '
-     'NOT delivered'),
+     'rtl/core/tnca_tensor.v refuses a descriptor whose row is not a whole '
+     'number of 8-byte units, so every unit the engine writes is a full one. '
+     'The write port itself carries a byte keep-mask for a partial tail unit; '
+     'with the geometry check in place that path cannot be reached, and a '
+     'byte-granular transfer is NOT delivered'),
     ('control flow', 'a single block per region; loops via `b.loop`',
      'multi-block CFG, nested regions and events through block arguments '
      'are refused by name -- IR-02. This is a frozen boundary, not a '
@@ -396,8 +399,8 @@ def render():
     a('|---|---|---|')
     a('| transfer rank 3-5 | NOT DELIVERED | ISA sec 9E allows up to 5; the '
       'engine executes 1 and 2 and raises DESCRIPTOR_FAULT above that |')
-    a('| byte-granular window writes | NOT DELIVERED | the engine writes '
-      'whole 8-byte units |')
+    a('| byte-granular window writes | NOT DELIVERED | a descriptor whose '
+      'row is not a whole number of 8-byte units raises DESCRIPTOR_FAULT |')
     a('| `t.st.async` execution | NOT DELIVERED | encodable, faults with '
       'ILLEGAL_INSTRUCTION; capability `tensor_store` is false |')
     a('| general CFG in the MLIR verifier | FROZEN BOUNDARY | refused by '

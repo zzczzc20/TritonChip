@@ -211,7 +211,7 @@ false about it.
 | output tile | at most the accumulator shape (16x16) | `plan_gemm` refuses a larger tile; a bigger output needs several accumulators and an outer loop, which is not planned |
 | transfer rank | 1 or 2 | ISA sec 9E; rank > 2 raises DESCRIPTOR_FAULT in the engine and is a compile error in `_lower_transfer`. Rank 3-5 is NOT delivered |
 | transfer stride | row stride and base both 8-byte aligned; innermost stride = element size | checked in rtl/core/tnca_tensor.v before the transfer starts; t17_descfault is the negative |
-| window write granularity | whole 8-byte units | the engine writes units, not bytes; byte-granular window writes are NOT delivered |
+| window write granularity | whole 8-byte units | rtl/core/tnca_tensor.v refuses a descriptor whose row is not a whole number of 8-byte units, so every unit the engine writes is a full one. The write port itself carries a byte keep-mask for a partial tail unit; with the geometry check in place that path cannot be reached, and a byte-granular transfer is NOT delivered |
 | control flow | a single block per region; loops via `b.loop` | multi-block CFG, nested regions and events through block arguments are refused by name -- IR-02. This is a frozen boundary, not a removed capability |
 | async lifetime | one completion event per command; sources release on command completion | ISA v0.1 `source_release`; the compiler takes the bound rather than the looser one sec 10.2 permits hardware |
 
@@ -273,7 +273,7 @@ applicable. Each of these is a FAIL or NOT RUN, never an absence.
 | item | status | where it is tracked |
 |---|---|---|
 | transfer rank 3-5 | NOT DELIVERED | ISA sec 9E allows up to 5; the engine executes 1 and 2 and raises DESCRIPTOR_FAULT above that |
-| byte-granular window writes | NOT DELIVERED | the engine writes whole 8-byte units |
+| byte-granular window writes | NOT DELIVERED | a descriptor whose row is not a whole number of 8-byte units raises DESCRIPTOR_FAULT |
 | `t.st.async` execution | NOT DELIVERED | encodable, faults with ILLEGAL_INSTRUCTION; capability `tensor_store` is false |
 | general CFG in the MLIR verifier | FROZEN BOUNDARY | refused by name (IR-02), not accepted unchecked |
 | `tnca_vector_fpu` synthesis | NOT COMPLETED | see `doc/synthesis.md`; yosys did not finish |

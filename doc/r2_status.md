@@ -2,59 +2,73 @@
 
 合同：[phase2_tasks_and_acceptance.md](phase2_tasks_and_acceptance.md)。
 接口冻结：[r2_interfaces.md](r2_interfaces.md)。
-前置：[R1 合同](phase1_tasks_and_acceptance.md)与[R1 状态](r1_status.md)。
+前置：[R1 合同](phase1_tasks_and_acceptance.md)、[R1 状态](r1_status.md)、
+[R1 签收](r1_signoff.md)（**R1 已 ACCEPTED**）。
 
 本文件只记录**已经跑过并留下证据**的部分。状态只有 DELIVERED、PARTIAL、
 NOT STARTED 三种；没有完成度百分比。
 
-**R2 未签收，且按合同现在也不可能签收**：R2 的最终判决要求"已有有效 R1 基线
-证据 AND 同一 R2 候选 commit 的 R1 全套再次通过"。R1 的双环境验收正在执行中，
-`tools/r2/baseline.py` 在拿到它之前对任何 R2 gate 返回非零——这是 DEP-01 要求
-的行为，不是缺陷。
+**R2 未签收。** 十四个工作包中八个的验收条件已满足。最终判决还要求：在 R2
+候选 commit 上重跑 R1 全套（DEP-02）、grid/多批（R2-09）、host transport 的
+完成边界（R2-10）、报告与示例（R2-12）、E2E 与 mutation（R2-13）、双环境发布
+（R2-14）。
+
+## 这一阶段已经成立的核心性质
+
+一次编译、一个 artifact、多次不同参数的执行，中间结果留在设备内存里：
+
+```text
+    compiler invocations: 1 for the first compile, 0 for four more
+    alpha=2.5   SUCCEEDED  match=True
+    alpha=-1.0  SUCCEEDED  match=True
+    alpha=0.25  SUCCEEDED  match=True
+    32 launches, alternating alpha: 32 correct
+    device processes started: 1 (131 requests served in one)
+    A->B->C with no host download in between: SUCCEEDED/SUCCEEDED, correct=True
+```
+
+安装后、仓库移出 `sys.path`、没有 Triton 也没有编译器：
+
+```text
+    $ tnca-sim prepare
+      building core-sim -> ~/.cache/tnca/devices/core-sim-d4b7392.../tnca_device.vvp
+    $ tnca-sim run axpy.tnca --arg n=16 --arg alpha=2.5 ...
+      job 1: SUCCEEDED, 113 device cycles
+      o_ptr: [6.0, 6.0, 6.0, ...]
+```
 
 ## 逐包状态
 
 | 工作包 | 状态 | 实际交付 | 未满足的验收条件 |
 |---|---|---|---|
-| R2-01 R1 衔接/合同 | **PARTIAL** | `spec/r2_required_cases.json`：84 条语义用例，展开 profile 与 seed 后 170 个执行 ID；`tools/r2/inventory.py` 校验无空字段、无占位符、无重复；`tools/r2/baseline.py` 实现 DEP-01（缺失/伪造/不完整/PARTIAL 的 R1 全部拒绝，并复用 R1 自己的验证器而不是另写一个）；`doc/r2_interfaces.md` 冻结依赖方向与 adapter 边界 | DEP-02（在 R2 候选上重跑 R1 全套）需要 R1 先通过；DEP-03 的支持矩阵需要实现存在后才能逐条填 |
-| R2-02 安装/API | **NOT STARTED** | — | PKG-01…05 |
-| R2-03 编译 driver | **NOT STARTED** | — | CMP-01…05 |
+| R2-01 R1 衔接/合同 | **PARTIAL** | 84 条语义用例展开为 170 个执行 ID；`tools/r2/baseline.py` 实现 DEP-01（缺失/伪造/不完整/PARTIAL 的 R1 全部拒绝，复用 R1 自己的验证器）；`doc/r2_interfaces.md` 冻结依赖方向与 adapter 边界 | DEP-02 需要在 R2 候选上重跑 R1 全套；DEP-03 的支持矩阵待补 |
+| R2-02 安装/API | **PARTIAL** | 非 editable wheel；`tnca-aot compile/inspect/doctor`、`tnca-sim run/prepare/doctor`；**PKG-03 已验证**：无 Triton、无编译器、仓库外执行成功；运行端零依赖 | PKG-01/02/04/05 尚未作为受控用例执行 |
+| R2-03 编译 driver | **DELIVERED** | CMP-01…05 全通过：真实 Triton add/mul-add/动态 alpha AXPY 经产品入口编译并在 RTL 执行；六种畸形输入各按自己的错误码拒绝；R1 的负例经产品路径在 `-O2 --debug` 下仍被拒绝 | 无 |
 | R2-04 MLIR 主路径 | **NOT STARTED** | — | MLIR-01…05 |
-| R2-05 artifact/loader | **PARTIAL** | `spec/r2_manifest_v1.schema.json` 冻结 manifest v1；`python/tnca/manifest.py` 实现之（拒绝未知字段、重复 JSON key、更高 major **与** minor；canonical 序列化与 hash）；ART-02 的 schema/完整性半部分全部通过 | 容器格式与 loader、ART-01/03/04/05/06 需要设备 |
-| R2-06 动态 ABI | **PARTIAL** | `spec/r2_abi_v1.json` 冻结 ABI v1；`python/tnca/abi.py` 实现之；**ABI-01 对独立 byte-level oracle 全部通过**（六种类型、±0、NaN/Inf、整数边界不截断、高半必须为零、被拒绝的标量类型逐个具名） | ABI-02…06 需要 runtime 与设备 |
-| R2-07 缓存/确定性 | **NOT STARTED** | — | CACHE-01…04 |
-| R2-08 runtime 生命周期 | **NOT STARTED** | — | RT-01…07 |
-| R2-09 grid/admission | **NOT STARTED** | — | GRID-01…07 |
-| R2-10 host transport/完成 | **NOT STARTED** | — | MEM-01…06 |
-| R2-11 故障/恢复 | **NOT STARTED** | — | ERR-01…07 |
-| R2-12 报告/诊断/示例 | **NOT STARTED** | `python/tnca/errors.py` 的 20 个稳定错误码是 OBS-02 的前提 | OBS-01…04 |
+| R2-05 artifact/loader | **DELIVERED** | ART-01…06 全通过：一字节改动、截断、段重叠、重复 JSON key、未知版本、另一个 artifact 的段各被拒绝；profile/ABI/format 不匹配**在零次设备请求内**拒绝；容器无路径可遍历 | 无 |
+| R2-06 动态 ABI | **PARTIAL** | ABI-01（独立 byte-level oracle，六类型 22 个值）、ABI-02（三组地址与标量，code hash 不变）、ABI-03（九种坏参数，无一启动任务）、ABI-04（提交后修改 dict 无效） | ABI-05 alias 正例、ABI-06 gather/scatter 越界 fault |
+| R2-07 缓存/确定性 | **DELIVERED** | CACHE-01…04：七个维度改变 key，运行期输入无处可传；两个干净环境同 hash；损坏与截断各拒绝；**编译器被计数而非计时**，四次复用调用编译器 0 次 | 无 |
+| R2-08 runtime 生命周期 | **DELIVERED** | RT-01…07：完整生命周期、32 次不重启、八个占位第九个 QUEUE_FULL、wait 幂等且超时不是判决、租约阻塞、两 session 互不干扰、依赖链与跨 session 依赖拒绝 | 无 |
+| R2-09 grid/admission | **NOT STARTED** | 单 program 的 PID/NPID 已由设备传递 | GRID-01…07 |
+| R2-10 host transport/完成 | **PARTIAL** | `spec/r2_transport_v1.json` 冻结请求/响应信箱协议；upload/download 经设备内存系统而非层级引用 | MEM-01…06 |
+| R2-11 故障/恢复 | **DELIVERED** | ERR-01…07 全通过：trap 归因到 code/PC、可排空故障后 session 仍可用、设备 deadline 毒化并使排队任务 FAILED、recover 建立新 epoch、旧 epoch 的迟到回复被丢弃、设备被杀后 DEVICE_LOST 且无孤儿进程 | 无 |
+| R2-12 报告/诊断/示例 | **PARTIAL** | `python/tnca/errors.py` 的 20 个稳定错误码；编译报告进入 manifest 的 `optional_metadata` | OBS-01…04 |
 | R2-13 E2E/mutation | **NOT STARTED** | — | E2E-01…06、R2M-01…08 |
 | R2-14 双环境/发布 | **NOT STARTED** | — | REL-01…05 |
-
-## 批次
-
-合同的实施顺序是五批。当前在**第 1 批**：R2-01 与 R2-05/06 的 schema 合同。
-
-| 批次 | 工作包 | 状态 |
-|---|---|---|
-| 1 | R2-01、R2-05/06 的 schema 合同 | 进行中 |
-| 2 | R2-02、R2-03、R2-04 | 未开始 |
-| 3 | R2-05、R2-06、R2-07、R2-08 | 未开始 |
-| 4 | R2-09、R2-10、R2-11 | 未开始 |
-| 5 | R2-12、R2-13、R2-14 | 未开始 |
 
 ## 已冻结的合同
 
 | 合同 | 文件 | 关键规则 |
 |---|---|---|
-| manifest v1 | `spec/r2_manifest_v1.schema.json` | 未知/更高 major **或 minor** 拒绝；未知字段拒绝；重复 JSON key 拒绝；`optional_metadata` 是唯一可忽略扩展位且 loader 不读 |
+| manifest v1 | `spec/r2_manifest_v1.schema.json` | 未知/更高 major **或 minor** 拒绝；未知字段拒绝；重复 JSON key 拒绝；`optional_metadata` 是唯一可忽略扩展位 |
+| 容器 v1 | `spec/r2_container_v1.json` | 单文件、无路径、每个长度都是"声明"并按实际文件大小核验；原子写入 |
 | ABI v1 | `spec/r2_abi_v1.json` | 六种类型、8 字节 slot、`offset = 8×index`、32 位高半必须为零、f32 按 bit pattern |
-| 错误码 | `python/tnca/errors.py` | 码是公开接口：不改名、不复用；用户错误不得裸 traceback |
-| 必跑清单 | `spec/r2_required_cases.json` | 84 条语义用例；比较以展开后的执行 ID 为准，同一 case 跑两次不算两条 |
+| transport v1 | `spec/r2_transport_v1.json` | 单调序号的请求/响应信箱；迟到回复按序号丢弃；重启设备是显式的 epoch 事件 |
+| 错误码 | `python/tnca/errors.py` | 码是公开接口：不改名、不复用 |
 
-## 一条现在就必须说清楚的边界
+## 一条必须继续说清楚的边界
 
 合同 1.1 禁止把未迁移到真实 Triton 前端的能力写成"已经支持 Triton GEMM"。
-R1 的专用 GEMM、多角色和 rolled pipeline 是经 **`tnca-ir` 输入**进入产品路径
-的，manifest 的 `identity.source_kind` 记录这一点，`doc/support_matrix.md`
-的四列继续分开陈述。任何相反的措辞都是 DEP-03 要抓的。
+R1 的专用 GEMM、多角色和 rolled pipeline 经 **`tnca-ir` 输入**进入产品路径，
+manifest 的 `identity.source_kind` 记录这一点，CMP-05 验证它写的是
+`tnca-ir` 而不是 `triton`。

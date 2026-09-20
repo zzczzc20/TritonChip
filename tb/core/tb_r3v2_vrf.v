@@ -39,36 +39,38 @@ module tb_r3v2_vrf;
     reg  [NUM_PORTS-1:0]        req_valid, rsp_ready;
     reg  [NUM_PORTS*RCTX_W-1:0] req_rctx;
     reg  [NUM_PORTS*8-1:0]      req_idx;
-    reg                         we;
-    reg  [RCTX_W-1:0]           w_rctx;
-    reg  [7:0]                  w_idx;
-    reg  [VLEN-1:0]             wmask;
-    reg  [WIDTH-1:0]            wdata;
+    // Two write clients, so a same-bank conflict can be made on purpose.
+    reg  [1:0]                  we;
+    reg  [2*RCTX_W-1:0]         w_rctx;
+    reg  [2*8-1:0]              w_idx;
+    reg  [2*VLEN-1:0]           wmask;
+    reg  [2*WIDTH-1:0]          wdata;
+    wire [1:0]                  a_wok, r_wok;
 
     wire [NUM_PORTS-1:0]        a_acc, a_rv, r_acc, r_rv;
     wire [NUM_PORTS*WIDTH-1:0]  a_rd, r_rd;
 
-`define VRF_PORTS(ACC, RV, RD) \
+`define VRF_PORTS(ACC, RV, RD, WOK) \
         .clk(clk), .rst_n(rst_n), .vbase(vbase), \
         .req_valid(req_valid), .req_rctx(req_rctx), .req_idx(req_idx), \
         .req_accept(ACC), .rsp_ready(rsp_ready), \
         .rsp_valid(RV), .rsp_data(RD), \
         .we(we), .w_rctx(w_rctx), .w_idx(w_idx), \
-        .wmask(wmask), .wdata(wdata), .w_accept()
+        .wmask(wmask), .wdata(wdata), .w_accept(WOK)
 
     tnca_vrf_banked #(
         .PHYS_VREGS(128), .VREGS_PER_RCTX(64), .NUM_RCTX(2), .VLEN(VLEN),
         .ELEN(ELEN), .RCTX_W(RCTX_W), .PHYS_W(PHYS_W),
         .NUM_BANKS(NUM_BANKS), .BANK_W(BANK_W), .READ_LATENCY(1),
-        .NUM_PORTS(NUM_PORTS), .ZERO_INVALID(1)
-    ) u_arch (`VRF_PORTS(a_acc, a_rv, a_rd));
+        .NUM_PORTS(NUM_PORTS), .ZERO_INVALID(1), .NUM_WRITERS(2)
+    ) u_arch (`VRF_PORTS(a_acc, a_rv, a_rd, a_wok));
 
     tnca_vrf_banked #(
         .PHYS_VREGS(128), .VREGS_PER_RCTX(64), .NUM_RCTX(2), .VLEN(VLEN),
         .ELEN(ELEN), .RCTX_W(RCTX_W), .PHYS_W(PHYS_W),
         .NUM_BANKS(NUM_BANKS), .BANK_W(BANK_W), .READ_LATENCY(1),
-        .NUM_PORTS(NUM_PORTS), .ZERO_INVALID(0)
-    ) u_raw (`VRF_PORTS(r_acc, r_rv, r_rd));
+        .NUM_PORTS(NUM_PORTS), .ZERO_INVALID(0), .NUM_WRITERS(2)
+    ) u_raw (`VRF_PORTS(r_acc, r_rv, r_rd, r_wok));
 
     integer which, cyc, i, n, fh;
     integer p_idx [0:NUM_PORTS-1];
@@ -76,7 +78,7 @@ module tb_r3v2_vrf;
 
     task idle;
         begin
-            req_valid = 0; we = 0;
+            req_valid = 0; we = 2'b00;
         end
     endtask
 
@@ -87,9 +89,9 @@ module tb_r3v2_vrf;
         integer L;
         begin
             @(negedge clk);
-            we = 1; w_rctx = 0; w_idx = idx; wmask = mask;
+            we = 2'b10; w_rctx = 0; w_idx = {idx, 8'd0}; wmask = {mask, {VLEN{1'b0}}};
             for (L = 0; L < VLEN; L = L + 1)
-                wdata[L*ELEN +: ELEN] = word + L;
+                wdata[WIDTH + L*ELEN +: ELEN] = word + L;
             @(negedge clk);
             we = 0;
         end
@@ -113,7 +115,7 @@ module tb_r3v2_vrf;
 
     initial begin
         if (!$value$plusargs("case=%d", which)) which = 1;
-        idle; rsp_ready = {NUM_PORTS{1'b1}}; cyc = 0;
+        idle; rsp_ready = {NUM_PORTS{1'b1}}; cyc = 0; we = 0;
         req_rctx = 0; req_idx = 0; wmask = 0; w_idx = 0; w_rctx = 0;
         @(negedge clk); @(negedge clk);
         rst_n = 1;
@@ -163,6 +165,56 @@ module tb_r3v2_vrf;
             rsp_ready = {NUM_PORTS{1'b1}};
             @(negedge clk);
             $display("RELEASED arch_v=%b data=%h", a_rv, a_rd[0 +: WIDTH]);
+        end else if (which == 6) begin
+            // ---- two writers, one bank, the same cycle ----------------
+            //
+            // R3V2-FLOW-01. v0 and v4 are both bank 0. One write is taken,
+            // the other is refused and must be re-presented; both values
+            // must end up in the file, each exactly once.
+            @(negedge clk);
+            we    = 2'b11;
+            w_rctx = 2'b00;
+            w_idx  = {8'd4, 8'd0};            // writer1 -> v4, writer0 -> v0
+            wmask  = {{VLEN{1'b1}}, {VLEN{1'b1}}};
+            for (i = 0; i < VLEN; i = i + 1) begin
+                wdata[i*ELEN +: ELEN]         = 32'h7000 + i;   // writer 0
+                wdata[WIDTH + i*ELEN +: ELEN] = 32'h8000 + i;   // writer 1
+            end
+            #1;
+            $display("CONFLICT accept=%b", a_wok);
+            @(negedge clk);
+            // Re-present only the one that was refused, as a real client
+            // holding its payload would.
+            we = a_wok[0] ? 2'b10 : 2'b01;
+            #1;
+            $display("RETRY present=%b accept=%b", we, a_wok);
+            @(negedge clk);
+            we = 2'b00;
+            read_back(8'd0);
+            read_back(8'd4);
+
+        end else if (which == 7) begin
+            // ---- fairness: four requesters, one bank -------------------
+            //
+            // R3V2-FLOW-02. v0, v4, v8, v12 are all bank 0, so the four
+            // ports ask for the same single read port every cycle. The
+            // contract freezes the wait at (C-1)*B+A = 4 cycles.
+            do_write(8'd0,  {VLEN{1'b1}}, 32'h1000);
+            do_write(8'd4,  {VLEN{1'b1}}, 32'h2000);
+            do_write(8'd8,  {VLEN{1'b1}}, 32'h3000);
+            do_write(8'd12, {VLEN{1'b1}}, 32'h4000);
+            @(negedge clk);
+            req_valid = 4'b1111;
+            req_rctx  = 0;
+            req_idx   = {8'd12, 8'd8, 8'd4, 8'd0};
+            for (i = 0; i < 24; i = i + 1) begin
+                #1;
+                $display("GRANT %0d %b", cyc, a_acc);
+                @(negedge clk);
+                cyc = cyc + 1;
+            end
+            req_valid = 0;
+
         end else if (which == 5) begin
             if (!$value$plusargs("stim=%s", stim)) begin
                 $display("case 5 needs +stim="); $finish;

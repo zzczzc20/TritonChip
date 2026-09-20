@@ -23,6 +23,13 @@ module tb_operand_collector;
     localparam ENTRIES = 4, SRCS = 3, ENT_W = 2, NUM_PORTS = 4;
     localparam RCTX_W = 1, PHYS_W = 7, NUM_BANKS = 4, BANK_W = 2;
 
+    // At one cycle a read accepted on edge N returns on N+1 and the
+    // collector, which is always ready, consumes it there -- so a flush
+    // can never land while a read is outstanding, and the orphan path is
+    // unreachable. At two cycles there is a gap, and it is reachable.
+    // Both are run.
+    parameter RF_LAT = 1;
+
     reg clk = 0, rst_n = 0;
     always #5 clk = ~clk;
 
@@ -53,7 +60,7 @@ module tb_operand_collector;
     tnca_vrf_banked #(
         .PHYS_VREGS(128), .VREGS_PER_RCTX(64), .NUM_RCTX(2), .VLEN(VLEN),
         .ELEN(ELEN), .RCTX_W(RCTX_W), .PHYS_W(PHYS_W),
-        .NUM_BANKS(NUM_BANKS), .BANK_W(BANK_W), .READ_LATENCY(1),
+        .NUM_BANKS(NUM_BANKS), .BANK_W(BANK_W), .READ_LATENCY(RF_LAT),
         .NUM_PORTS(NUM_PORTS)
     ) u_rf (
         .clk(clk), .rst_n(rst_n), .vbase(vbase),
@@ -170,8 +177,7 @@ module tb_operand_collector;
             alloc_idx = {8'd8, 8'd4, 8'd0};
             @(negedge clk);
             alloc_valid = 0;
-            step;                       // one read accepted, in flight
-            @(negedge clk);
+            step;
             flush = 1;
             $display("FLUSH %0d", cyc);
             @(negedge clk);

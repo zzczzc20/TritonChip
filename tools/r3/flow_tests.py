@@ -27,12 +27,13 @@ SRCS = 3
 LANES = 16
 
 
-def build(out):
+def build(out, latency=1):
     return subprocess.run(
         ['iverilog', '-g2005', '-I', os.path.join(ROOT, 'rtl', 'common'),
          '-y', os.path.join(ROOT, 'rtl', 'core'),
          '-y', os.path.join(ROOT, 'rtl', 'common'),
          '-y', os.path.join(ROOT, 'tb', 'common'),
+         '-P', f'tb_operand_collector.RF_LAT={latency}',
          '-o', out, BENCH],
         capture_output=True, text=True, timeout=1800, cwd=ROOT)
 
@@ -198,13 +199,31 @@ def flow04(log, ctx):
 
 
 def flow05(log, ctx):
-    """A flush drops un-issued work and absorbs what is already in flight."""
+    """A flush drops un-issued work and absorbs what is already in flight.
+
+    Run at both read latencies, because at one cycle the orphan path is
+    unreachable and saying so is the result. A read accepted on edge N
+    returns on N+1, and the collector -- which is always ready -- consumes
+    it there; a flush has no cycle in which to land on an outstanding
+    read. At two cycles there is a gap and the orphan appears.
+
+    This case used to pass at latency 1 with one orphan, which was an
+    accident of when the register file happened to grant. Changing the
+    arbitration to round robin moved the grant and the orphan vanished,
+    which is how the accident came to light.
+    """
     ok = True
     res = run(ctx['vvp'], 4)
-    log.append(f"    flush at cycle {res['flush_at']} with reads "
-               f"outstanding -> {res['final']['orphan']} orphaned "
-               f"response(s), absorbed")
-    ok &= res['final']['orphan'] >= 1
+    log.append(f"    latency 1: {res['final']['orphan']} orphan(s) -- the "
+               f"response returns before a flush can intervene, so there "
+               f"is nothing to orphan")
+    ok &= res['final']['orphan'] == 0
+
+    res2 = run(ctx['vvp2'], 4)
+    log.append(f"    latency 2: {res2['final']['orphan']} orphan(s) -- a "
+               f"read really is outstanding when the entry disappears")
+    ok &= res2['final']['orphan'] >= 1
+    res = res2
 
     # The reused entry must hold the register the NEW allocation asked for
     # (v12 = 0x1c00), not the one the flushed allocation had in flight
@@ -239,11 +258,14 @@ def main():
     print("R3-04 operand collector, arbitration and return")
     tmp = tempfile.mkdtemp(prefix='r3-flow-')
     vvp = os.path.join(tmp, 'tb_oc.vvp')
-    b = build(vvp)
-    if b.returncode != 0:
-        print(f"  the bench did not build: {b.stderr[-400:]}")
-        return 1
-    ctx = {'vvp': vvp, 'tmp': tmp}
+    vvp2 = os.path.join(tmp, 'tb_oc2.vvp')
+    for out, lat in ((vvp, 1), (vvp2, 2)):
+        b = build(out, lat)
+        if b.returncode != 0:
+            print(f"  the bench did not build at latency {lat}: "
+                  f"{b.stderr[-400:]}")
+            return 1
+    ctx = {'vvp': vvp, 'vvp2': vvp2, 'tmp': tmp}
     results = []
     for cid, fn in TESTS:
         if args.only and cid not in args.only:

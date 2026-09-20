@@ -193,6 +193,23 @@ module tnca_vrf_banked #(
         end
     end
 
+    // Round robin over the requesters, not lowest-index-first.
+    //
+    // Fixed priority gives port 0 the bank whenever it wants it, and the
+    // matrix on port 3 waits behind the execute ports for as long as they
+    // keep asking -- an unbounded wait, where spec/r3v2_contract.json
+    // freezes (C-1)*B+A = 4 cycles. The pointer advances past whoever was
+    // served, so within any four grants on a bank every requester that
+    // kept asking has had one.
+    reg [1:0] rr_ptr;
+    always @(posedge clk) begin
+        if (!rst_n)
+            rr_ptr <= 2'd0;
+        else if (|accept_c)
+            rr_ptr <= rr_last + 2'd1;
+    end
+
+    reg  [1:0] rr_last;
     reg  [NUM_PORTS-1:0] accept_c;
     reg  [NUM_BANKS-1:0] bank_taken;
     reg  [ROW_W-1:0]     bank_row_c  [0:NUM_BANKS-1];
@@ -200,15 +217,17 @@ module tnca_vrf_banked #(
     // which port each bank is answering, so the response can be routed back
     reg  [NUM_BANKS*8-1:0] bank_port_c;
 
-    integer pi, bk;
+    integer pk, pi, bk;
     always @* begin
         accept_c    = {NUM_PORTS{1'b0}};
         bank_taken  = {NUM_BANKS{1'b0}};
+        rr_last     = rr_ptr;
         bank_re_c   = {NUM_BANKS{1'b0}};
         bank_port_c = {NUM_BANKS*8{1'b0}};
         for (bk = 0; bk < NUM_BANKS; bk = bk + 1)
             bank_row_c[bk] = {ROW_W{1'b0}};
-        for (pi = 0; pi < NUM_PORTS; pi = pi + 1) begin
+        for (pk = 0; pk < NUM_PORTS; pk = pk + 1) begin
+            pi = (rr_ptr + pk) % NUM_PORTS;
             // A bank holding a response takes no new read. Refusing here
             // rather than issuing and dropping is what makes `req_accept`
             // mean what it says.
@@ -220,6 +239,7 @@ module tnca_vrf_banked #(
                 bank_re_c[req_bank[pi]]      = 1'b1;
                 bank_row_c[req_bank[pi]]     = req_row[pi];
                 bank_port_c[req_bank[pi]*8 +: 8] = pi[7:0];
+                rr_last                          = pi[1:0];
             end
         end
     end

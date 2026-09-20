@@ -138,7 +138,16 @@ module tnca_operand_collector #(
         end
     end
 
-    assign req_valid = rq_v;
+    // No requests during a flush.
+    //
+    // Without this, a read accepted in the SAME cycle as the flush is not
+    // yet in port_live when the flush branch runs, so it is never marked
+    // an orphan -- and its response arrives a cycle later and is written
+    // into whatever now occupies that entry. That is precisely the "flush
+    // 后旧 tag 写入新 entry" failure, and it appeared the moment the
+    // register file's arbitration changed enough to accept more than one
+    // request in the flush cycle.
+    assign req_valid = flush ? {NUM_PORTS{1'b0}} : rq_v;
     assign req_rctx  = rq_rctx;
     assign req_idx   = rq_idx;
 
@@ -226,7 +235,7 @@ module tnca_operand_collector #(
             //    destination; refused ones stay outstanding and are counted
             any_wait = 1'b0;
             for (j = 0; j < NUM_PORTS; j = j + 1) begin
-                if (rq_v[j]) begin
+                if (rq_v[j] && !flush) begin
                     if (req_accept[j]) begin
                         asked_c[rq_ent[j*ENT_W +: ENT_W]] =
                             asked_c[rq_ent[j*ENT_W +: ENT_W]]

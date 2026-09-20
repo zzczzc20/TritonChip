@@ -687,7 +687,7 @@ clean:
 # so; none of them prints a pass for work that has not happened.
 #==============================================================================
 .PHONY: r2-baseline r2-inventory r2-abi-tests r2-artifact-tests \
-        r2-compile-tests r2-cache-tests r2-runtime-tests
+        r2-compile-tests r2-cache-tests r2-runtime-tests r2-fault-tests
 
 # DEP-01. EVIDENCE is an R1 run directory; COMBINED is compare_envs.py's
 # output over A and B, which is what makes an R1 verdict complete.
@@ -717,6 +717,17 @@ $(BUILD)/tnca_device.vvp: $(RTL_DEPS) $(TB)/device/tnca_device.v \
 
 .PHONY: device
 device: $(BUILD)/tnca_device.vvp
+
+r2-fault-tests: $(BUILD)/tnca_device.vvp
+	@if [ -x "$(TRITON_PYTHON)" ]; then \
+	   $(TRITON_PYTHON) tools/r2/fault_tests.py \
+	     --json $(BUILD)/r2_fault_tests.json; \
+	 elif [ "$(R1_STRICT)" = "1" ]; then \
+	   echo "  r2-fault-tests         FAIL   no Triton at $(TRITON_PYTHON)"; \
+	   exit 1; \
+	 else \
+	   echo "  r2-fault-tests         SKIP   no Triton at $(TRITON_PYTHON)"; \
+	 fi
 
 r2-runtime-tests: $(BUILD)/tnca_device.vvp
 	@if [ -x "$(TRITON_PYTHON)" ]; then \

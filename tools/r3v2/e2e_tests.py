@@ -83,6 +83,79 @@ def compile_case(case, tmp, profile=REF):
     raise NotImplementedError(case['workload'])
 
 
+def run_gemm(case, impl, log, tmp):
+    """C03-C05: allocate first, compile against those addresses, run.
+
+    The GEMM bakes its tile and descriptor addresses in, so the buffers
+    have to exist before the code does. That is the opposite order from
+    the elementwise cases and is why they do not share a path.
+    """
+    cid, sizes = case['id'], case['sizes']
+    m, n, k = sizes['m'], sizes['n'], sizes['k']
+    prof = profile_for(case, impl)
+    device.prepare(prof, verbose=False)
+
+    a_vals = W.inputs(m * k, seed=case['seed'], lo=-4, hi=4)
+    b_vals = W.inputs(k * n, seed=case['seed'] + 1, lo=-4, hi=4)
+    want = W.gemm_oracle(a_vals, b_vals, m, n, k)
+
+    with Session(profile=prof, deadline_cycles=50000) as s:
+        s.seeds = {'values': case['seed'], 'memory': case['seed']}
+        a_map = s.allocate(256, name='desc_a')
+        b_map = s.allocate(256, name='desc_b')
+        a_tile = s.allocate(m * k * 2, name='A')
+        b_tile = s.allocate(k * n * 2, name='B')
+        out = s.allocate((m * n + n) * 4, name='C')
+        hi = s.allocate(64, name='canary-hi')
+
+        prog = W.gemm_program(m, n, k,
+                              a_desc={'tile': a_tile.addr,
+                                      'map': a_map.addr},
+                              b_desc={'tile': b_tile.addr,
+                                      'map': b_map.addr},
+                              out=out.addr)
+        art = aot.compile_aot(prog, kernel_name=f"{cid}_gemm",
+                              signature={}, source_kind='tnca-ir',
+                              profile=device.base_profile(prof),
+                              output=os.path.join(
+                                  tmp, f"{cid}-{impl}.tnca"))
+        mod = s.load(art.path)
+
+        s.upload(a_tile, W.pack_f16(a_vals))
+        s.upload(b_tile, W.pack_f16(b_vals))
+        s.upload(a_map, W.pack_words(
+            W.tensormap(a_tile.addr, m, k, k * 2, 2, 16, 16, dtype=0)))
+        s.upload(b_map, W.pack_words(
+            W.tensormap(b_tile.addr, k, n, n * 2, 2, 16, 16, dtype=0)))
+        # The tile, then one row past it, all sentinel: a masked store
+        # that leaked would still satisfy every value check.
+        s.upload(out, struct.pack('<I', W.SENTINEL) * (m * n + n))
+        s.upload(hi, W.CANARY)
+
+        ev = s.submit(mod, {})
+        s.wait(ev)
+        raw = s.download(out, (m * n + n) * 4)
+        canary_ok = s.download(hi, 64) == W.CANARY
+
+    got = W.unf32(raw)
+    flat = [v for row in want for v in row]
+    body_ok = got[:m * n] == flat
+    tail = struct.unpack(f'<{n}I', raw[m * n * 4:])
+    tail_ok = all(v == W.SENTINEL for v in tail)
+    ok = ev.ok and body_ok and tail_ok and canary_ok
+    log.append(f"      {impl:<10s} {prof:<22s} {ev.state:<10s} "
+               f"{m}x{n}x{k} values {'ok' if body_ok else 'WRONG'}, "
+               f"{len(tail)} sentinel slot(s) "
+               f"{'intact' if tail_ok else 'TOUCHED'}, "
+               f"canary {'intact' if canary_ok else 'CLOBBERED'}, "
+               f"source_kind={mod.manifest['identity']['source_kind']}")
+    if not body_ok:
+        bad = next((i for i in range(m * n) if got[i] != flat[i]), 0)
+        log.append(f"        element {bad}: {got[bad]} != {flat[bad]}")
+    ok &= mod.manifest['identity']['source_kind'] == 'tnca-ir'
+    return ok, got[:m * n]
+
+
 def run_case(case, impl, art, log):
     """Compile once, run on one implementation, check against the oracle."""
     cid = case['id']
@@ -158,16 +231,17 @@ def e2e01(log, ctx):
     ran = 0
     done = []
     for case in INVENTORY['core']:
-        if case['workload'] == 'gemm':
-            continue           # see NOT_YET
         log.append(f"    {case['id']}: {case['workload']} "
                    f"{case['sizes']}  memory={case['memory']} "
                    f"seed={case['seed']}")
         results = {}
         for impl in case['implementations']:
-            base = REF if impl == 'reference' else CAND
-            art = compile_case(case, ctx['tmp'], base)
-            good, vals = run_case(case, impl, art, log)
+            if case['workload'] == 'gemm':
+                good, vals = run_gemm(case, impl, log, ctx['tmp'])
+            else:
+                base = REF if impl == 'reference' else CAND
+                art = compile_case(case, ctx['tmp'], base)
+                good, vals = run_case(case, impl, art, log)
             ok &= good
             ran += 1
             results[impl] = vals
@@ -291,14 +365,7 @@ def e2e03(log, ctx):
 TESTS = [('R3V2-E2E-01', e2e01), ('R3V2-E2E-02', e2e02),
          ('R3V2-E2E-03', e2e03)]
 
-NOT_YET = {
-    'R3V2-E2E-01-gemm': 'C03, C04 and C05 are FP16 GEMMs on the tnca-ir '
-                        'input. build_gemm can now emit into the product '
-                        'driver\'s builder, but the descriptors, the tile '
-                        'addresses and the FP16 oracle are not wired yet, '
-                        'so three of the six cases and six of the twelve '
-                        'runs are still owed',
-}
+NOT_YET = {}
 
 
 def main():

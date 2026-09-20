@@ -35,7 +35,7 @@ DELIVERED 的证据范围限制见上文，不等于已满足原合同全部条�
 | G1 VRF 包装/初始化 | **DONE** | R3V2-RF-01/02/03。per-lane valid 位让架构读零而数据阵列仍是 X；三个 seed 逐 lane 与独立模型零分歧；差分比对抓出两个真 bug（响应被 hold 时丢失目的地；一个端口可以拿到第二个未取走的响应） |
 | G2 全客户端接入 core | **DONE** | R3V2-CORE-01/02/03。`make core-vrf` 23 个程序全过；elaborated 层级只含 `tnca_vrf_banked`+`tnca_rf_bank`，无 `tnca_vector_rf` shadow、无层级直读；`t29_vrfbank` 定向制造同 bank 串行 4 次、跨 bank 并行 8 次、12 次真实拒绝；matrix 544 次请求等 272 次 |
 | G3 写回/返回/所有权 | **DONE** | R3V2-FLOW-01/02/03。两个写客户端同周期写同 bank：一个落地、被拒的一个保持 payload 重发、两个各提交恰好一次；四个请求者抢同一个 bank 时**每个**最长等 4 拍，正好是冻结的 (C-1)×B+A——为此把读仲裁从固定优先级改成 round-robin，否则 matrix 会无限等在 execute 端口后面；flush 与在途返回的隔离在 latency 1 下**不可达**（读在 N+1 就回来并被消费，flush 没有落点），在 latency 2 下可达并被验证 |
-| G4 六程序与安装后闭环 | NOT STARTED | R3V2-E2E-01/02/03 |
+| G4 六程序与安装后闭环 | **DONE** | R3V2-E2E-01/02/03。C01–C06 × reference/candidate **12 次全部执行通过**：数值全部对独立 oracle（不是两实现互相对照）、尾块 sentinel 未被触碰、两侧 canary 完好、fault=0、资源排空。C03/C04/C05 是经产品 driver 编译的真实 FP16 GEMM（`source_kind=tnca-ir`），C04/C05 在 slow/reorder 内存上。安装后 3 次动态 alpha 共一个 artifact、一个 session、一个设备进程，首编译后编译器调用 0 次、code hash 恒定。reference/candidate artifact 双向错配都在**零次设备请求**内被拒 |
 | G5 计数与微模型 | 部分 | core 已有 per-client 计数（req/accept/conflict/stall/serial/parallel/mtx_wait/wb_retry）；R3V2-COUNT-01/02、MODEL-01 未做 |
 | G6 结构综合/继承回归 | 部分 | 继承回归在 candidate 上通过（23 程序 + slow/ooo + top + lint）；R3V2-SYN-01/02、REG-01 未正式记录 |
 | G7 负例/证据/签收 | NOT STARTED | R3V2-MUT-01、EV-01、REL-01 |

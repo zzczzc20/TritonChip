@@ -142,3 +142,62 @@ def gemm_oracle(a, bm, m, n, k):
             row.append(acc)
         out.append(row)
     return out
+
+
+# ---------------------------------------------------------------------------
+# C03 / C04 / C05: FP16 GEMM on the tnca-ir input
+# ---------------------------------------------------------------------------
+
+def tensormap(base, e0, e1, s0, s1, b0, b1, rank=2, dtype=0, pad=0):
+    """The 256-byte tensor map of ISA sec 9D.3, as 32 little-endian words.
+
+    The descriptor extents are the REAL tile, not the fragment: what lies
+    past them the transfer engine fills with zero (sec 9E.1 step 7), which
+    is what makes an M, N or K tail come out exactly right rather than
+    approximately.
+    """
+    w = [0] * 32
+    w[0] = base
+    w[1] = e0
+    w[2] = e1
+    w[6] = s0
+    w[7] = s1
+    w[11] = (b1 << 32) | b0
+    w[13] = (pad << 48) | (dtype << 40) | (rank << 32)
+    return w
+
+
+def pack_words(words):
+    return b''.join(struct.pack('<Q', w & ((1 << 64) - 1)) for w in words)
+
+
+def pack_f16(values):
+    return b''.join(struct.pack('<e', v) for v in values)
+
+
+def gemm_program(m, n, k, *, a_desc, b_desc, out, roles=1):
+    """A GEMM for one output tile, emitted into the driver's builder.
+
+    The addresses are baked in, which is why the caller allocates first and
+    compiles second. C03-C05 are single-launch cases on the tnca-ir input;
+    the dynamic-argument path is C02's and E2E-02's business.
+    """
+    from tnca_cc.gemm import plan_gemm, build_gemm, check_descriptor_geometry
+
+    def build(b, target):
+        plan = plan_gemm(target, m=m, n=n, k=k, dtype='f16')
+        check_descriptor_geometry(target, base=a_desc['tile'],
+                                  row_stride_bytes=k * 2, elem_bytes=2,
+                                  block_cols=plan.frag_k, what='A')
+        check_descriptor_geometry(target, base=b_desc['tile'],
+                                  row_stride_bytes=n * 2, elem_bytes=2,
+                                  block_cols=plan.frag_n, what='B')
+        build_gemm(target, plan, name='gemm',
+                   a_desc_addr=a_desc['map'], b_desc_addr=b_desc['map'],
+                   out_addr=out, builder=b)
+        # build_gemm emits the tile and stops; R1's harness appends the
+        # exit itself. Without it the core runs off the end of the program
+        # and traps -- with the output already correct, which is a
+        # confusing way to fail.
+        b.exit()
+    return build

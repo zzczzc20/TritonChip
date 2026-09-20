@@ -90,11 +90,30 @@ def main():
     ap.add_argument('--json', default=os.path.join(BUILD,
                                                    'r3v2_scout.json'))
     ap.add_argument('--maxcycles', type=int, default=50000)
+    ap.add_argument('--commit', default=None,
+                    help='the candidate commit, for an exported tree with '
+                         'no .git')
     args = ap.parse_args()
 
-    head = subprocess.run(['git', 'rev-parse', 'HEAD'], cwd=ROOT,
-                          capture_output=True, text=True)
-    commit = head.stdout.strip() if head.returncode == 0 else 'unknown'
+    # An exported tree has no .git, and the scout runs on one: the main
+    # environment unpacks a `git archive`. R3V2-BASE-03 wants every piece
+    # of evidence to name its candidate, so a commit that cannot be found
+    # is a refusal rather than the string 'unknown' sitting in a report.
+    commit = args.commit
+    if not commit:
+        head = subprocess.run(['git', 'rev-parse', 'HEAD'], cwd=ROOT,
+                              capture_output=True, text=True)
+        if head.returncode == 0:
+            commit = head.stdout.strip()
+    if not commit:
+        stamp = os.path.join(ROOT, '.r1-commit')
+        if os.path.exists(stamp):
+            commit = open(stamp).read().strip()
+    if not commit:
+        print("  this tree does not say which commit it is, and no "
+              "--commit was given. Evidence that cannot name its "
+              "candidate is not evidence.")
+        return 2
     uname = subprocess.run(['uname', '-srm'], capture_output=True,
                            text=True).stdout.strip()
 
@@ -132,18 +151,52 @@ def main():
                 'twelve only when the commit, artifact and config are the '
                 'same; they are not, so the official runs are still owed.'),
     }
-    with open(args.json, 'w') as fh:
-        json.dump(report, fh, indent=2, sort_keys=True)
-        fh.write('\n')
-
     if rates:
         slowest = min(rates)
         print(f"  slowest observed rate: {slowest} cycles/s")
-        # What the budget means at this rate.
-        print(f"  at that rate a 50,000-cycle core case costs "
-              f"{50000 / slowest:.0f}s against a 180s cap, and the "
-              f"1,000,000-cycle total costs {1000000 / slowest:.0f}s "
-              f"against 1,800s")
+        print(f"  a 50,000-cycle core case would cost "
+              f"{50000 / slowest:.0f}s against its 180s cap")
+        print(f"  the 1,000,000-cycle ceiling would cost "
+              f"{1000000 / slowest:.0f}s against the 1,800s budget: the "
+              f"two caps in section 4.3 cannot both be reached")
+
+        # Which is the useful number? Not the ceiling. The plan does not
+        # run 1,000,000 cycles -- it runs 52 small programs. Projecting
+        # from the measured rate and the sizes actually listed says
+        # whether the budget is adequate for the work, which is the
+        # question G0 has to answer before any of it starts.
+        inv = json.load(open(os.path.join(ROOT, 'spec',
+                                          'r3v2_inventory.json')))
+        observed = {r['program']: r['cycles'] for r in runs if r.get('cycles')}
+        per_core = max(observed.values()) if observed else 5000
+        kernels = sum(len(c['implementations']) for c in inv['core']) + \
+            sum(len(c['implementations']) for c in inv['runtime'])
+        comps = sum(c['rtl_runs'] for c in inv['components']) + \
+            sum(m['sub_variants'] for m in inv['mutations'] if m['rtl'])
+        # A component test is a few hundred cycles of directed stimulus,
+        # not a program; the observed programs bound it generously.
+        per_comp = 2000
+        cycles = kernels * per_core + comps * per_comp
+        seconds = cycles / slowest + (kernels + comps) * 0.6
+        report['projected'] = {
+            'kernel_runs': kernels, 'component_runs': comps,
+            'cycles_each_core': per_core, 'cycles_each_component': per_comp,
+            'total_cycles': cycles, 'total_seconds': round(seconds),
+            'startup_seconds_each': 0.6,
+        }
+        print(f"  the PLAN is {kernels} kernel run(s) at up to "
+              f"{per_core} cycles and {comps} component run(s) at about "
+              f"{per_comp}: {cycles} cycles, about {seconds:.0f}s")
+        b = inv['budget']
+        fits = (cycles <= b['total_cycles'] and
+                seconds <= b['total_elapsed_seconds'])
+        report['projected']['within_budget'] = bool(fits)
+        print(f"  against {b['total_cycles']} cycles and "
+              f"{b['total_elapsed_seconds']}s: "
+              f"{'the budget is adequate for the work planned' if fits else 'THE PLAN DOES NOT FIT'}")
+    with open(args.json, 'w') as fh:
+        json.dump(report, fh, indent=2, sort_keys=True)
+        fh.write('\n')
     print(f"  wrote {args.json}")
     return 0 if all(r.get('exit') == 0 for r in runs) else 1
 

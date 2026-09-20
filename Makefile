@@ -864,9 +864,14 @@ R3V2_PEER     ?= evidence/r3v2-second-env.json
 # What the checkers read. The gate builds these before it runs anything,
 # so a checker that reports "not built" is reporting a build failure and
 # not a fresh checkout.
+# `tnca-opt` is here because REG-01 replays `make r1-ir-tests`, and IR-07
+# compares the Python IR against the MLIR one -- with no tnca-opt there is
+# no MLIR one, and the case fails for a missing binary.
 r3v2-prereqs: $(BUILD)/tb_core.vvp $(BUILD)/tb_core_vrf.vvp $(CORE_HEX) \
               $(BUILD)/tnca_device.vvp $(BUILD)/tnca_device_vrf.vvp
-	@echo "  r3v2-prereqs           OK     benches and programs built"
+	@$(MAKE) --no-print-directory tnca-opt >/dev/null || \
+	  echo "  r3v2-prereqs           NOTE   tnca-opt did not build"
+	@echo "  r3v2-prereqs           OK     benches, programs and tnca-opt"
 
 r3v2-plan:
 	@$(PYTHON) tools/r3v2/plan.py --json $(BUILD)/r3v2_plan.json

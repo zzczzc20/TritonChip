@@ -159,10 +159,17 @@ def main():
     # reports "not built", which is true and says nothing about the
     # design -- and in a fresh checkout that is every checker that runs a
     # program. The build is part of the run and its failure is the run's.
-    print("  building the benches and programs the checkers read...",
-          flush=True)
+    # The checkers, and the make targets some of them replay, look for
+    # the locked Triton in TRITON_PYTHON. Passing it as a make variable
+    # on the command line does not reach them: a make variable is not an
+    # environment variable, and `make r1-ir-tests` two levels down sees
+    # the default path and reports Triton as absent.
+    env = dict(os.environ)
+    env['TRITON_PYTHON'] = args.python
+    print("  building the benches, programs and tnca-opt the checkers "
+          "read...", flush=True)
     started = time.time()
-    pre = subprocess.run(['make', 'r3v2-prereqs'], cwd=ROOT,
+    pre = subprocess.run(['make', 'r3v2-prereqs'], cwd=ROOT, env=env,
                          capture_output=True, text=True, timeout=14400)
     with open(os.path.join(ev, 'build', 'prereqs.log'), 'w') as fh:
         fh.write(pre.stdout + pre.stderr)
@@ -176,8 +183,8 @@ def main():
         out = os.path.join(ev, 'runs', f'{name}.json')
         started = time.time()
         r = subprocess.run([args.python] + argv + ['--json', out],
-                           cwd=ROOT, capture_output=True, text=True,
-                           timeout=14400)
+                           cwd=ROOT, env=env, capture_output=True,
+                           text=True, timeout=14400)
         elapsed = time.time() - started
         with open(os.path.join(ev, 'runs', f'{name}.log'), 'w') as fh:
             fh.write(r.stdout + r.stderr)

@@ -645,7 +645,11 @@ $(BUILD)/tb_core4_ooo.vvp: $(RTL_DEPS) $(TB)/core/tb_tnca_core.v                
 	$(IVERILOG) $(IVFLAGS) -y $(RTL)/core -y $(RTL)/common -y $(RTL)/gen -y $(TB)/common 	   -P tb_tnca_core.NUM_RCTX=4 -P tb_tnca_core.RCTX_W=2 	   -P tb_tnca_core.VREGS_PER_RCTX=32 	   -P tb_tnca_core.MEM_LATENCY=6 -P tb_tnca_core.RANDOM_STALL=1 	   -P tb_tnca_core.MEM_REORDER=1 	   -o $@ $(TB)/core/tb_tnca_core.v
 
 .PHONY: core4
-core4: $(BUILD)/tb_core4.vvp
+# All three, not just the fast one. The slow and out-of-order four-context
+# benches had rules and no target that asked for them, so a clean environment
+# never built them and REG-09 reported "not built" instead of a result -- on
+# the acceptance runner, where nobody had built them by hand.
+core4: $(BUILD)/tb_core4.vvp $(BUILD)/tb_core4_slow.vvp $(BUILD)/tb_core4_ooo.vvp
 
 .PHONY: compiler-rtl
 # sec 16.2 third layer: run the compiler's own output on the RTL. Needs

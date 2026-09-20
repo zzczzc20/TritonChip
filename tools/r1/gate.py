@@ -270,7 +270,23 @@ def archive_build(run_dir):
             if f.endswith(('.fp', '.provenance.json')):
                 shutil.copy2(full, os.path.join(dest, f))
             if f.endswith('.vvp'):
+                # BOTH digests. The raw one says whether the files are
+                # identical; the normalised one says whether they are the
+                # same build, with the volatile fields listed in
+                # spec/r1_normalization.json removed. Two environments never
+                # produce byte-identical .vvp files -- Icarus names its
+                # symbols after the address of the object that created them
+                # -- so an archive carrying only the raw hash cannot answer
+                # the question R1-09 actually asks, and the cross-environment
+                # comparison had to report that it could not conclude.
+                try:
+                    sys.path.insert(0, HERE)
+                    import fingerprint as FP
+                    norm = FP.normalized_digest(full)
+                except Exception as e:
+                    norm = f"ERROR: {type(e).__name__}: {e}"
                 records[f] = dict(sha256=sha256(full),
+                                  normalized=norm,
                                   bytes=os.path.getsize(full))
     R.write_json(os.path.join(dest, 'artifacts.json'), records)
     return records

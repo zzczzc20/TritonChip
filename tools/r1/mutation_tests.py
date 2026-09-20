@@ -100,13 +100,21 @@ def mut04(lab):
 
 
 def mut05(lab):
-    """Put the exit-code-swallowing pipeline back."""
+    """Put the exit-code-swallowing pipeline back.
+
+    The site moved once already: these recipes used to invoke the test files
+    directly, and now go through run_suite.py so each test gets its own ID.
+    The mutation kept patching the old text, found nothing, and `patch()`
+    refused -- which is the framework working. A mutation that silently fails
+    to apply makes the checker look like it failed to notice, when in fact
+    nothing was broken.
+    """
     patch(lab, 'Makefile',
-          "	   $(TRITON_PYTHON) compiler/test/test_triton_e2e.py; \\",
-          "	   $(TRITON_PYTHON) compiler/test/test_triton_e2e.py 2>&1 | tail -4; \\")
+          "	       triton-e2e BASE-TRITON-CORE; \\",
+          "	       triton-e2e BASE-TRITON-CORE 2>&1 | tail -4; \\")
     patch(lab, 'Makefile',
-          "	   $(TRITON_PYTHON) compiler/test/test_e2e_system.py; \\",
-          "	   $(TRITON_PYTHON) compiler/test/test_e2e_system.py 2>&1 | tail -4; \\")
+          "	       e2e BASE-TRITON-SYSTEM; \\",
+          "	       e2e BASE-TRITON-SYSTEM 2>&1 | tail -4; \\")
     return ([sys.executable, 'tools/r1/selftest.py'], 'RUN-01')
 
 

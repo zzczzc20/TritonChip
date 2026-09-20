@@ -179,25 +179,61 @@ def compare(a, b):
     ba = (load(a, 'build/artifacts.json') or {})
     bb = (load(b, 'build/artifacts.json') or {})
     common = sorted(set(ba) & set(bb))
-    same = [f for f in common if ba[f]['sha256'] == bb[f]['sha256']]
-    differ_art = [f for f in common if f not in same]
-    notes.append(f"{len(same)}/{len(common)} built artefact(s) hash the same")
-    if differ_art:
-        rules = {}
-        if os.path.exists(NORMALIZATION):
-            with open(NORMALIZATION) as fh:
-                rules = json.load(fh)
-        notes.append(
-            f"differing: {', '.join(differ_art[:6])} -- permitted only under "
-            f"the {len(rules.get('rules', []))} declared normalisation rule(s)"
-            f"; never removed: {', '.join(rules.get('never_removed', [])[:4])}")
-        # The rules are declared, but applying them needs both binaries, and
-        # an evidence archive carries their hashes rather than the files.
-        # Saying so is the honest report; claiming agreement is not.
+    if not common:
+        problems.append('neither environment archived any built artefact')
+        return problems, notes
+
+    rules = {}
+    if os.path.exists(NORMALIZATION):
+        with open(NORMALIZATION) as fh:
+            rules = json.load(fh)
+    declared = rules.get('artifacts', {}).get('*.vvp', {}).get('removed', [])
+    never = rules.get('never_removed', [])
+
+    identical = [f for f in common if ba[f]['sha256'] == bb[f]['sha256']]
+    notes.append(f"{len(identical)}/{len(common)} built artefact(s) are "
+                 f"byte-identical")
+
+    # The question R1-09 asks is whether the two environments produced the
+    # same MACHINE, and an iverilog .vvp is never byte-identical across two
+    # builds: Icarus names its scope and parameter symbols after the address
+    # of the object that created them. The contract allows normalising such
+    # fields provided every one of them is listed in advance, which is what
+    # spec/r1_normalization.json is; the archives carry the normalised digest
+    # so this comparison can use it without the binaries.
+    missing_norm = [f for f in common
+                    if not ba[f].get('normalized') or not bb[f].get('normalized')]
+    if missing_norm:
         problems.append(
-            f"{len(differ_art)} artefact(s) differ and this comparison has "
-            "only their hashes, so the normalisation rules cannot be applied "
-            "here: archive the normalised binaries to close this")
+            f"{len(missing_norm)} artefact(s) have no normalised digest in "
+            f"the archive, e.g. {', '.join(missing_norm[:3])}: the raw hash "
+            "alone cannot answer whether two environments built the same "
+            "thing")
+        return problems, notes
+
+    bad_norm = [f for f in common
+                if str(ba[f]['normalized']).startswith('ERROR')
+                or str(bb[f]['normalized']).startswith('ERROR')]
+    if bad_norm:
+        problems.append(
+            f"normalisation failed for {', '.join(bad_norm[:3])}; a digest "
+            "that could not be computed is not a digest that matched")
+        return problems, notes
+
+    agree = [f for f in common
+             if ba[f]['normalized'] == bb[f]['normalized']]
+    differ = [f for f in common if f not in agree]
+    notes.append(
+        f"{len(agree)}/{len(common)} agree after the "
+        f"{len(declared)} declared normalisation rule(s); never removed: "
+        f"{', '.join(never[:3])}")
+    if differ:
+        problems.append(
+            f"{len(differ)} artefact(s) differ even normalised: "
+            + ', '.join(differ[:5])
+            + ". The declared rules remove addresses and installation paths "
+              "and nothing else, so a difference here is a difference in "
+              "what was built")
     return problems, notes
 
 

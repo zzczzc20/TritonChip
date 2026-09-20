@@ -289,6 +289,15 @@ def reg09(log):
     # and the reason is the point of the case: on a fast in-order memory the
     # two consumers finish so close together that reclaiming on the FIRST
     # release and reclaiming on the LAST produce the same answer.
+    # Build the benches this case needs, the way reg03 runs `make core`.
+    # They are build products; a suite that assumes somebody built them by
+    # hand passes on a developer's machine and reports "not built" on a clean
+    # acceptance environment, which is where it matters.
+    b = make('core4')
+    if b.returncode != 0:
+        log.append('    make core4 failed: ' + b.stdout.strip()[-300:])
+        return False, 'the four-context benches could not be built'
+
     import test_pipeline as T
     case = T.TestPipelineOnRTL('test_two_consumers_on_four_contexts')
     case.setUp()

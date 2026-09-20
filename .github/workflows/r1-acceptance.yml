@@ -1,17 +1,17 @@
 # The R1 acceptance gate, as a CI job.
 #
-# doc/phase1_tasks_and_acceptance.md R1-10 fixes both the entry points and the
-# rule about how their results may be combined:
+# doc/phase1_tasks_and_acceptance.md R1-09 and R1-10. Two independent Linux
+# x86_64 environments build the same candidate; B may not copy A's build, venv
+# or generated files. The final status comes from re-deriving the archive, not
+# from a step that said it was fine.
 #
-#   "生成 fresh environment 与 source mutation 试验可作为受控 CI jobs，但其结果
-#    必须由同一次候选验收汇总，不能靠手工拼一个 PASS 文件"
-#
-# So there is one job that decides. The environment jobs below build the same
-# candidate in two independent Linux x86_64 environments -- B may not copy A's
-# build, venv or generated files -- and each runs the whole gate itself. The
-# final status comes from `r1-verify-evidence` re-deriving the archive, never
-# from a step that said it was fine: "CI 成功状态必须取自该验证器；上传工件失败
-# 也不能算完成".
+# This job runs `tools/r1/bootstrap.sh` rather than `make r1-acceptance`
+# directly, and that is the correction this file needed: the gate needs an
+# ENVIRONMENT -- the locked Triton in its own venv, `tnca-opt` built against
+# the locked MLIR, the pinned XLS release -- and bootstrap.sh is the one place
+# that makes one. Calling the gate without it produced a run where R1-07,
+# R1-08 and R1-11 failed for want of tools, which says nothing about the
+# candidate and looks exactly like a candidate that is broken.
 #
 # ubuntu-24.04 rather than ubuntu-latest: a floating tag is not a locked
 # environment, and spec/r1_toolchain.lock.json names the image this expects.
@@ -31,7 +31,7 @@ jobs:
   acceptance:
     name: "R1 acceptance (env ${{ matrix.env }})"
     runs-on: ubuntu-24.04
-    timeout-minutes: 180
+    timeout-minutes: 360
     strategy:
       fail-fast: false
       matrix:
@@ -41,47 +41,83 @@ jobs:
         with:
           fetch-depth: 0
 
-      # No cache, and deliberately so. Environment B must not reuse anything
-      # A produced; a shared build cache between the two would make the
-      # "two independent environments" clause decorative.
+      # Versions come from the lock file, not from this workflow. A version
+      # written here as well is a second place to forget to update, and the
+      # two would disagree silently.
       - name: Install the locked toolchain
         run: |
           set -euo pipefail
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends \
-            iverilog build-essential cmake ninja-build python3 python3-venv
-          iverilog -V | head -2
+          python3 - <<'PY' > /tmp/apt-packages
+          import json
+          lock = json.load(open('spec/r1_toolchain.lock.json'))
+          want = []
+          for name, spec in lock['tools'].items():
+              if spec.get('source') == 'optional':
+                  continue
+              pkg = {'python3': 'python3', 'ninja': 'ninja-build',
+                     'g++': 'g++', 'make': 'make', 'git': 'git',
+                     'cmake': 'cmake', 'iverilog': 'iverilog'}.get(name)
+              if pkg:
+                  want.append(pkg)
+          want += list(lock['mlir']['packages'])
+          want.append('python3-venv')
+          print(' '.join(sorted(set(want))))
+          PY
+          echo "installing: $(cat /tmp/apt-packages)"
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends $(cat /tmp/apt-packages)
+          iverilog -V | head -1
           make --version | head -1
+          ls -d "$(python3 -c "import json;print(json.load(open('spec/r1_toolchain.lock.json'))['mlir']['mlir_dir'])")"
 
-      - name: Toolchain lock
-        run: make r1-doctor
+      # A clean archive of the candidate, which is what an acceptance
+      # environment is built from. Not the checkout: a working tree can carry
+      # artefacts the archive does not, and R1-03 exists because one did.
+      - name: Package the candidate
+        run: |
+          set -euo pipefail
+          git archive --format=tar -o /tmp/candidate.tar HEAD
+          git rev-parse HEAD > /tmp/.r1-commit
+          tar -rf /tmp/candidate.tar -C /tmp .r1-commit
+          gzip -f /tmp/candidate.tar
+          sha256sum /tmp/candidate.tar.gz
 
-      # The generated RTL is checked in, so this asks whether the checked-in
-      # copy still follows from its sources rather than trusting that it does.
-      - name: Generated sources match their inputs
-        run: make r1-check-generated
+      # Cache the DOWNLOADS only. R1-09 permits "已校验只读下载缓存" between
+      # the two environments and nothing else: pip reads wheels from here and
+      # the XLS fetcher verifies its sha256 whatever the file's provenance, so
+      # a poisoned cache is caught exactly like a poisoned download. No build,
+      # venv or generated file is shared.
+      - name: Restore the verified download cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/r1-cache/pip
+            ~/r1-cache/xls-*.tar.gz
+          key: r1-downloads-${{ hashFiles('spec/r1_toolchain.lock.json', 'tools/xls/config.json') }}
 
-      - name: The gate can fail
-        run: make r1-gate-selftest
-
-      # continue-on-error, and for a stated reason rather than to paper over
-      # failures: a single environment's verdict CANNOT be ACCEPTED, because
-      # R1-09 asks whether two environments agree and R1-12 signs off once
-      # everything else has. The gate leaves both open and says so. Marking
-      # this step red would make every correct run look broken; ignoring the
-      # exit code entirely would hide a real failure. So the step records its
-      # verdict, the next step checks the archive is internally consistent,
-      # and the `compare` job below decides R1.
-      - name: Acceptance
+      - name: Bootstrap this environment and run the gate
         id: acceptance
         continue-on-error: true
-        run: make r1-acceptance R1_EVIDENCE=evidence-${{ matrix.env }}
+        run: |
+          set -euo pipefail
+          mkdir -p ~/r1-cache/pip
+          mkdir -p /tmp/stage && tar xzf /tmp/candidate.tar.gz -C /tmp/stage
+          cd /tmp/stage
+          R1_PIP_CACHE=~/r1-cache/pip R1_XLS_CACHE=~/r1-cache \
+            bash tools/r1/bootstrap.sh "$HOME/env${{ matrix.env }}" \
+                 /tmp/candidate.tar.gz
 
+      # continue-on-error above, and for a stated reason rather than to paper
+      # over failures: a single environment's verdict CANNOT be ACCEPTED,
+      # because R1-09 asks whether two environments agree and R1-12 signs off
+      # once everything else has. The gate leaves both open and says so.
+      # Marking that step red would make every correct run look broken;
+      # ignoring its exit code would hide a real failure. So the step records
+      # its verdict and the next one reads the roll-up.
       - name: This environment's verdict
         run: |
           set -euo pipefail
-          latest=$(ls -dt sim/r1/*/ | head -1)
-          python3 - "$latest/acceptance.json" <<'PY'
+          python3 - "$HOME/env${{ matrix.env }}/evidence/acceptance.json" <<'PY'
           import json, sys
           a = json.load(open(sys.argv[1]))
           wps = a.get('work_packages', {})
@@ -99,32 +135,25 @@ jobs:
                 "R1-09 and R1-12 are for the compare job")
           PY
 
-      # Upload before verifying, so a failed run still leaves its evidence
-      # behind -- and `if: always()`, because the interesting archives are the
-      # ones from the runs that did not pass.
       - name: Archive the evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: r1-evidence-${{ matrix.env }}
-          path: sim/r1/
+          path: |
+            ~/env${{ matrix.env }}/evidence
+            ~/env${{ matrix.env }}.log
           retention-days: 30
 
-      # THE status. Everything above can be green and this red; this is the
-      # one that decides, because it recomputes the hashes and re-derives the
-      # required/discovered/executed relation instead of reading a verdict
-      # out of a file the run itself wrote.
+      # Everything above can be green and this red. It recomputes the hashes
+      # and re-derives the required/discovered/executed relation instead of
+      # reading a verdict out of a file the run itself wrote.
       - name: Verify the evidence
-        run: |
-          set -euo pipefail
-          latest=$(ls -dt sim/r1/*/ | head -1)
-          echo "verifying $latest"
-          make r1-verify-evidence EVIDENCE="$latest"
+        run: make r1-verify-evidence EVIDENCE="$HOME/env${{ matrix.env }}/evidence"
 
   # The two environments must agree on more than "it passed": the contract
-  # requires the ISA/profile/XLS generated files and the target binaries to
-  # hash the same in both. Comparing them is a job of its own, because
-  # neither environment can perform the comparison on its own.
+  # requires the generated files and the built artefacts to hash the same in
+  # both. That is a comparison neither can perform about itself.
   compare:
     name: "A and B produced the same artefacts"
     needs: acceptance
@@ -136,5 +165,11 @@ jobs:
         with:
           pattern: r1-evidence-*
           path: evidence
-      - name: Compare the generated and built artefacts
-        run: python3 tools/r1/compare_envs.py evidence
+      - name: Compare, and decide R1
+        run: python3 tools/r1/compare_envs.py evidence --json compare.json
+      - name: Archive the combined verdict
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: r1-combined-verdict
+          path: compare.json

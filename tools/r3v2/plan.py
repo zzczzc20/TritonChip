@@ -452,6 +452,35 @@ def base03(log, ctx):
         if not s.get('commit') or s['commit'] == 'unknown':
             log.append(f"    it does not name a commit")
             ok = False
+        else:
+            # And it has to have measured THIS design. A rate measured on
+            # an older RTL is a rate for that RTL: the candidate is slower
+            # than the reference it replaced, so a projection carried
+            # forward from before the change is a projection of something
+            # that is no longer being run.
+            changed = subprocess.run(
+                ['git', 'diff', '--quiet', s['commit'], 'HEAD', '--',
+                 'rtl', 'tb', 'spec/r3v2_inventory.json'],
+                cwd=ROOT, capture_output=True)
+            if changed.returncode == 1:
+                names = subprocess.run(
+                    ['git', 'diff', '--name-only', s['commit'], 'HEAD',
+                     '--', 'rtl', 'tb'], cwd=ROOT, capture_output=True,
+                    text=True).stdout.split()
+                log.append(f"    STALE: the design changed in "
+                           f"{len(names)} file(s) since it was measured "
+                           f"({', '.join(names[:3])}"
+                           f"{', ...' if len(names) > 3 else ''}); "
+                           f"re-run `make r3v2-scout`")
+                ok = False
+            elif changed.returncode == 0:
+                log.append("    the RTL and the inventory are unchanged "
+                           "since it was measured")
+            else:
+                log.append(f"    could not compare against "
+                           f"{s['commit'][:12]}: it is not in this "
+                           f"history")
+                ok = False
         proj = s.get('projected') or {}
         log.append(f"    measured {s.get('slowest_cycles_per_second')} "
                    f"cycles/s at worst; the {proj.get('kernel_runs')} "

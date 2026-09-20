@@ -37,7 +37,7 @@ DELIVERED 的证据范围限制见上文，不等于已满足原合同全部条�
 | G3 写回/返回/所有权 | **DONE** | R3V2-FLOW-01/02/03。两个写客户端同周期写同 bank：一个落地、被拒的一个保持 payload 重发、两个各提交恰好一次；四个请求者抢同一个 bank 时**每个**最长等 4 拍，正好是冻结的 (C-1)×B+A——为此把读仲裁从固定优先级改成 round-robin，否则 matrix 会无限等在 execute 端口后面；flush 与在途返回的隔离在 latency 1 下**不可达**（读在 N+1 就回来并被消费，flush 没有落点），在 latency 2 下可达并被验证 |
 | G4 六程序与安装后闭环 | **DONE** | R3V2-E2E-01/02/03。C01–C06 × reference/candidate **12 次全部执行通过**：数值全部对独立 oracle（不是两实现互相对照）、尾块 sentinel 未被触碰、两侧 canary 完好、fault=0、资源排空。C03/C04/C05 是经产品 driver 编译的真实 FP16 GEMM（`source_kind=tnca-ir`），C04/C05 在 slow/reorder 内存上。安装后 3 次动态 alpha 共一个 artifact、一个 session、一个设备进程，首编译后编译器调用 0 次、code hash 恒定。reference/candidate artifact 双向错配都在**零次设备请求**内被拒 |
 | G5 计数与微模型 | **DONE** | R3V2-COUNT-01/02、MODEL-01。计数器不与自己比：core 打印有界事件 trace，Python 独立数一遍，两者在 req/accept/conflict/mtx_req/mtx_wait/wb_retry 上逐项相等；九+二个互斥 stall 计数在 6 个程序上求和恒等于 `perf_stall_total`（加 banked VRF 时新增了两个 stall 源却忘了进归因链，这里发现并补上）。六个定向图的预测**先算先封哈希再开仿真**，逐周期 accept/response 零分歧，并带一个单 bank 模型的对照证明比对会失败。仿真 wall、硬件 cycles、时钟频率分三列，Fmax 记 NOT MEASURED |
-| G6 结构综合/继承回归 | 部分 | 继承回归在 candidate 上通过（23 程序 + slow/ooo + top + lint）；R3V2-SYN-01/02、REG-01 未正式记录 |
+| G6 结构综合/继承回归 | **DONE** | R3V2-SYN-01/02、REG-01。candidate VRF 数据**正好 65,536 bit**，100% 在同步 memory 对象里，四个 bank 各 1 读口 1 写口、同步读，与 profile 相符；valid/collector/FIFO 单列（每 bank 512 个 valid 位），ARF 的 16 KiB **不计入**该比率且仍标 behavioral。整机 elaborate + 连接检查通过，0 个未解释告警，层级里有 `tnca_vrf_banked`、没有 `tnca_vector_rf`。物理面积/Fmax/功耗一律 NOT MEASURED 且被检查没有被偷偷声称。12 条继承回归全过、0 个 skip |
 | G7 负例/证据/签收 | NOT STARTED | R3V2-MUT-01、EV-01、REL-01 |
 
 候选相对参考的周期代价（同程序、同参数、同 seed）：整体 +13%，矩阵类

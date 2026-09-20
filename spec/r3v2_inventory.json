@@ -387,9 +387,9 @@
     },
     {
       "id": "INH-candidate-core",
-      "command": "make core PROFILE=core-vrf-sync-v1",
+      "command": "make core-vrf",
       "profile": "core-vrf-sync-v1",
-      "why": "the same single-core ISA regression on the candidate. R3V2-REG-01 asks for the inherited cases to run on the candidate too, not only on the profile that did not change."
+      "why": "the same single-core ISA regression on the candidate. R3V2-REG-01 asks for the inherited cases to run on the candidate too, not only on the profile that did not change. This said `make core PROFILE=core-vrf-sync-v1` at first, and `core` takes no PROFILE variable -- make ignored it and ran the reference a second time, so the entry passed while testing nothing new."
     },
     {
       "id": "INH-top",

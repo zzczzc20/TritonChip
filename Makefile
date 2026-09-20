@@ -719,7 +719,7 @@ clean:
         r2-grid-tests r2-memory-tests r2-mutation-tests \
         r2-obs-tests r2-e2e-tests r2-dump-tests r3-rf-tests r3-flow-tests \
         r3-count-tests r3-synth-tests r3-mem-synth \
-        r3-mutation-tests r3v2-plan r3v2-scout r3v2-components r3v2-core r3v2-flow r3v2-e2e r3v2-count r3v2-model core-vrf \
+        r3-mutation-tests r3v2-plan r3v2-scout r3v2-components r3v2-core r3v2-flow r3v2-e2e r3v2-count r3v2-model r3v2-synth core-vrf \
         r2-package r2-stage-data \
         r3-scout r3-plan r3-model-tests
 
@@ -859,6 +859,9 @@ r3-mutation-tests:
 #------------------------------------------------------------------------------
 r3v2-plan:
 	@$(PYTHON) tools/r3v2/plan.py --json $(BUILD)/r3v2_plan.json
+
+r3v2-synth:
+	@$(PYTHON) tools/r3v2/syn_tests.py --json $(BUILD)/r3v2_syn_tests.json
 
 r3v2-count: $(BUILD)/tb_core.vvp $(BUILD)/tb_core_vrf.vvp $(CORE_HEX)
 	@$(PYTHON) tools/r3v2/count_tests.py --json $(BUILD)/r3v2_count_tests.json

@@ -104,6 +104,18 @@ jobs:
       - name: R3 plan
         run: make r3-plan
 
+      # R3-03 and R3-04: the banked register file against an independent
+      # model, and the operand collector against the real file. Both are
+      # iverilog only -- no Triton, no device -- and both pass every case
+      # they claim, so they belong in the per-push run.
+      #
+      # r3-flow-tests is NOT here. FLOW-03 is honestly NOT RUN (it needs
+      # the writeback units of R3-05) and the suite exits non-zero because
+      # of it, which is the behaviour R1-02 asks for. Making it green would
+      # mean turning a missing case into a skip.
+      - name: R3 banked register file
+        run: make r3-rf-tests
+
       # The gate has to be able to fail. Ten injected faults, each of which
       # must be detected; this is cheap and is the check that keeps every
       # other green tick meaningful.

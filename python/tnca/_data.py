@@ -17,9 +17,15 @@ _HERE = os.path.dirname(os.path.abspath(__file__))
 # Installed first. A checkout that has both -- because `make r2-stage-data`
 # has run -- should still read the staged copy, which is the one the wheel
 # would carry.
+#
+# TWO dirnames to reach the repository root, not three: `_HERE` is already a
+# directory (<repo>/python/tnca), where the code this replaced started from
+# `__file__` and needed one more. Three took it to `/`, so a fresh checkout
+# without the staged copy found nothing -- and the only machine where that
+# did not show was the one where `make r2-stage-data` had already run.
 _ROOTS = (
     os.path.join(_HERE, 'data'),
-    os.path.dirname(os.path.dirname(os.path.dirname(_HERE))),
+    os.path.dirname(os.path.dirname(_HERE)),
 )
 
 

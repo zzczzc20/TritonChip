@@ -739,9 +739,13 @@ r2-stage-data:
 # A non-editable wheel. PKG-01 moves the repository off sys.path and out of
 # the working directory afterwards, so an editable install would prove
 # nothing.
+# No pipeline. `... | tail -3` reports tail's exit code, so a failed build
+# would look like a successful one -- which is R1-02's F02 exactly, and
+# tools/r1/inventory.py's static scan caught this recipe the first time it
+# ran on a clean checkout. `-q` keeps it quiet without a pipe.
 r2-package: r2-stage-data
-	@$(PYTHON) -m pip wheel --no-deps -w $(BUILD)/dist . 2>&1 | tail -3
-	@ls -la $(BUILD)/dist/*.whl | awk '{print "  " $$5, $$9}'
+	@$(PYTHON) -m pip wheel --no-deps -q -w $(BUILD)/dist .
+	@$(PYTHON) -c "import glob, os; [print('  %d bytes  %s' % (os.path.getsize(w), w)) for w in sorted(glob.glob('$(BUILD)/dist/*.whl'))]"
 
 r2-fault-tests: $(BUILD)/tnca_device.vvp
 	@if [ -x "$(TRITON_PYTHON)" ]; then \

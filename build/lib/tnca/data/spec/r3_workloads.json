@@ -1,0 +1,279 @@
+{
+  "schema": "r3-workloads/1",
+  "contract": "doc/phase3_tasks_and_acceptance.md R3-01",
+  "note": "Sixteen workloads, expanding to exactly 32 performance runs. The caps are the contract's and are checked by tools/r3/plan.py BEFORE any RTL starts, because a workload that is too big is cheapest to reject before it has run for an hour.",
+  "caps": {
+    "core_gemm": {
+      "m": 16,
+      "n": 16,
+      "k": 64,
+      "fixed_tail": {
+        "m": 13,
+        "n": 11,
+        "k": 19
+      }
+    },
+    "system_gemm": {
+      "m": 16,
+      "n": 16,
+      "k": 32,
+      "grid": 4,
+      "tiles": 4
+    },
+    "reduction_like": {
+      "rows": 1,
+      "elements": 16,
+      "masked_elements": 15
+    },
+    "elementwise": {
+      "n": 64,
+      "grid": 4
+    },
+    "kernel_repetitions_per_simulation": 1,
+    "port_microtest_requests": 256,
+    "matrix_microtest": {
+      "commands": 2,
+      "k_per_command": 32
+    }
+  },
+  "expansion": "one performance run per (workload, memory mode) pair. The memory modes a workload lists are the ones where its number means something different, not all of them: a GEMM whose transfers dominate is worth running out-of-order, and a one-program elementwise kernel is not.",
+  "required_runs": 32,
+  "workloads": [
+    {
+      "id": "GEMM-K16",
+      "kind": "gemm",
+      "profile": "core-sim",
+      "params": {
+        "m": 16,
+        "n": 16,
+        "k": 16,
+        "dtype": "f16"
+      },
+      "runs": [
+        "fast",
+        "ooo"
+      ],
+      "why": "the smallest whole fragment: one MMA, one K step, and the baseline every other GEMM number is read against"
+    },
+    {
+      "id": "GEMM-K32",
+      "kind": "gemm",
+      "profile": "core-sim",
+      "params": {
+        "m": 16,
+        "n": 16,
+        "k": 32,
+        "dtype": "f16"
+      },
+      "runs": [
+        "fast",
+        "ooo"
+      ],
+      "why": "two K steps, so the second transfer overlaps the first MMA or does not"
+    },
+    {
+      "id": "GEMM-K64",
+      "kind": "gemm",
+      "profile": "core-sim",
+      "params": {
+        "m": 16,
+        "n": 16,
+        "k": 64,
+        "dtype": "f16"
+      },
+      "runs": [
+        "fast",
+        "ooo"
+      ],
+      "why": "the cap. Four K steps is where a window reuse stall would first show"
+    },
+    {
+      "id": "GEMM-TAIL",
+      "kind": "gemm",
+      "profile": "core-sim",
+      "params": {
+        "m": 13,
+        "n": 11,
+        "k": 19,
+        "dtype": "f16"
+      },
+      "runs": [
+        "fast",
+        "ooo"
+      ],
+      "why": "the contract fixes the tail at 13x11x19: every dimension ragged at once"
+    },
+    {
+      "id": "GEMM-BF16",
+      "kind": "gemm",
+      "profile": "core-sim",
+      "params": {
+        "m": 16,
+        "n": 16,
+        "k": 32,
+        "dtype": "bf16"
+      },
+      "runs": [
+        "fast",
+        "ooo"
+      ],
+      "why": "the same shape in bf16, because the fragment size is identical and the converter is not"
+    },
+    {
+      "id": "SYS-GEMM-G1",
+      "kind": "gemm",
+      "profile": "system-2x2",
+      "params": {
+        "m": 16,
+        "n": 16,
+        "k": 32,
+        "dtype": "f16",
+        "grid": 1
+      },
+      "runs": [
+        "fast"
+      ],
+      "why": "one program on the 2x2 machine: the mesh and NUCA cost with no contention to hide it"
+    },
+    {
+      "id": "SYS-GEMM-G4",
+      "kind": "gemm",
+      "profile": "system-2x2",
+      "params": {
+        "m": 16,
+        "n": 16,
+        "k": 32,
+        "dtype": "f16",
+        "grid": 4
+      },
+      "runs": [
+        "fast"
+      ],
+      "why": "four programs, one per tile, which is where slice and mesh contention first appears"
+    },
+    {
+      "id": "SYS-GEMM-TAIL",
+      "kind": "gemm",
+      "profile": "system-2x2",
+      "params": {
+        "m": 13,
+        "n": 11,
+        "k": 19,
+        "dtype": "f16",
+        "grid": 4
+      },
+      "runs": [
+        "fast"
+      ],
+      "why": "the ragged tail across four tiles"
+    },
+    {
+      "id": "RED-SUM",
+      "kind": "reduction",
+      "profile": "core-sim",
+      "params": {
+        "rows": 1,
+        "elements": 16,
+        "op": "add"
+      },
+      "runs": [
+        "fast",
+        "ooo"
+      ],
+      "why": "the balanced tree: log2(16) = 4 levels, and the cost of each is the thing the model has to predict"
+    },
+    {
+      "id": "RED-MAX",
+      "kind": "reduction",
+      "profile": "core-sim",
+      "params": {
+        "rows": 1,
+        "elements": 16,
+        "op": "max"
+      },
+      "runs": [
+        "fast"
+      ],
+      "why": "the same shape with a different unit, to separate tree cost from ALU cost"
+    },
+    {
+      "id": "SOFTMAX",
+      "kind": "softmax",
+      "profile": "core-sim",
+      "params": {
+        "rows": 1,
+        "elements": 16
+      },
+      "runs": [
+        "fast"
+      ],
+      "why": "max, subtract, exp, sum, divide: two reductions and an SFU pass in one dependency chain"
+    },
+    {
+      "id": "SOFTMAX-MASK",
+      "kind": "softmax",
+      "profile": "core-sim",
+      "params": {
+        "rows": 1,
+        "elements": 15
+      },
+      "runs": [
+        "fast"
+      ],
+      "why": "the masked case the contract asks for: fifteen of sixteen lanes"
+    },
+    {
+      "id": "RMSNORM",
+      "kind": "rmsnorm",
+      "profile": "core-sim",
+      "params": {
+        "rows": 1,
+        "elements": 16
+      },
+      "runs": [
+        "fast"
+      ],
+      "why": "one reduction, one rsqrt, one scale -- the SFU on the critical path"
+    },
+    {
+      "id": "LAYERNORM",
+      "kind": "layernorm",
+      "profile": "core-sim",
+      "params": {
+        "rows": 1,
+        "elements": 16
+      },
+      "runs": [
+        "fast"
+      ],
+      "why": "two reductions before the scale, so the chain is longer than RMSNorm by exactly one"
+    },
+    {
+      "id": "AXPY-64",
+      "kind": "elementwise",
+      "profile": "core-sim",
+      "params": {
+        "n": 64,
+        "grid": 4
+      },
+      "runs": [
+        "fast",
+        "ooo"
+      ],
+      "why": "four programs of sixteen lanes: the launch and argument-load overhead per program, which everything else is measured on top of"
+    },
+    {
+      "id": "AXPY-16",
+      "kind": "elementwise",
+      "profile": "core-sim",
+      "params": {
+        "n": 16,
+        "grid": 1
+      },
+      "runs": [
+        "fast"
+      ],
+      "why": "one program, to separate that overhead from the work"
+    }
+  ]
+}

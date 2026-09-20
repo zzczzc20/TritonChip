@@ -1,0 +1,73 @@
+{
+  "host": {
+    "cpus": 12,
+    "machine": "arm64",
+    "system": "Darwin"
+  },
+  "measured_at": "2026-09-20T03:06:40",
+  "probes": [
+    {
+      "bench": "sim/build/tb_core.vvp",
+      "cycles_per_second": 482,
+      "device_cycles": 942,
+      "image": "t02_mem.hex",
+      "name": "core-fast",
+      "passed": true,
+      "wall_seconds": 1.953
+    },
+    {
+      "bench": "sim/build/tb_core_slow.vvp",
+      "cycles_per_second": 602,
+      "device_cycles": 1252,
+      "image": "t02_mem.hex",
+      "name": "core-slow",
+      "passed": true,
+      "wall_seconds": 2.078
+    },
+    {
+      "bench": "sim/build/tb_core_ooo.vvp",
+      "cycles_per_second": 680,
+      "device_cycles": 1379,
+      "image": "t02_mem.hex",
+      "name": "core-ooo",
+      "passed": true,
+      "wall_seconds": 2.027
+    },
+    {
+      "bench": "sim/build/tb_core.vvp",
+      "cycles_per_second": 556,
+      "device_cycles": 3513,
+      "image": "t11_matrix.hex",
+      "name": "core-matrix",
+      "passed": true,
+      "wall_seconds": 6.316
+    },
+    {
+      "bench": "sim/build/tb_core.vvp",
+      "cycles_per_second": 596,
+      "device_cycles": 1579,
+      "image": "t12_tensor.hex",
+      "name": "core-tensor",
+      "passed": true,
+      "wall_seconds": 2.651
+    },
+    {
+      "bench": "sim/build/tb_core4.vvp",
+      "cycles_per_second": 234,
+      "device_cycles": 269,
+      "image": "t13_share.hex",
+      "name": "core4",
+      "passed": true,
+      "wall_seconds": 1.151
+    },
+    {
+      "bench": "sim/build/tb_top.vvp",
+      "cycles_per_second": 245,
+      "device_cycles": 18673,
+      "image": "t10_mesh.hex",
+      "name": "system-2x2",
+      "passed": true,
+      "wall_seconds": 76.306
+    }
+  ]
+}

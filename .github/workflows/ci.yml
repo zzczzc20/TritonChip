@@ -168,3 +168,20 @@ jobs:
       # leaves the device.
       - name: R2 runtime session
         run: make r2-runtime-tests TRITON_PYTHON=$HOME/tritonenv/bin/python
+
+      # Faults, drain and recovery: a trapping kernel is FAILED and the
+      # session still works afterwards.
+      - name: R2 faults and recovery
+        run: make r2-fault-tests TRITON_PYTHON=$HOME/tritonenv/bin/python
+
+      # The installable wheel, and the claim that matters: an environment
+      # with no Triton and no compiler loads an artifact and runs it.
+      - name: R2 package
+        run: |
+          set -euo pipefail
+          make r2-package PYTHON=$HOME/tritonenv/bin/python
+          python3 -m venv ~/runtime-only
+          ~/runtime-only/bin/pip install -q sim/build/dist/*.whl
+          ~/runtime-only/bin/python -c "import triton" 2>&1 | tail -1 || true
+          ~/runtime-only/bin/tnca-aot doctor
+          ~/runtime-only/bin/tnca-sim prepare

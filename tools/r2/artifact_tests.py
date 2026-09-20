@@ -392,7 +392,252 @@ def art_atomic_write(log):
     return ok, 'a failed compile leaves nothing to mistake for an artifact'
 
 
-TESTS = [('ART-02-schema', art02_schema),
+def _device_fixture():
+    """A session plus a freshly compiled artifact path."""
+    sys.path.insert(0, os.path.join(ROOT, 'compiler', 'test'))
+    from tnca import aot
+    from tnca.runtime import Session
+    import kernels_triton as K
+    import tempfile
+    sig = {'x_ptr': '*fp32', 'y_ptr': '*fp32', 'o_ptr': '*fp32',
+           'n': 'i32', 'BLOCK': 'constexpr'}
+    d = tempfile.mkdtemp(prefix='r2-artdev-')
+    res = aot.compile_aot(K.add_kernel, signature=sig,
+                          constexprs={'BLOCK': 16}, profile='core-sim',
+                          output=os.path.join(d, 'add.tnca'))
+    s = Session(workdir=os.path.join(d, 'dev'), deadline_cycles=200000,
+                host_timeout=120)
+    return s, res.path, d
+
+
+def _have_triton():
+    try:
+        import triton      # noqa: F401
+        return True
+    except Exception:
+        return False
+
+
+def _forge(path, mutate, out):
+    """Rewrite an artifact's manifest, keeping the payload, WITHOUT validating.
+
+    `artifact.write` validates, which is right for the product and useless
+    here: the point of these cases is to hand the LOADER something malformed
+    and watch it refuse. So the container is assembled by hand -- which the
+    test can do, because the format is sixteen bytes of header and then the
+    manifest. Using the product writer to build a broken artifact would mean
+    the product writer was not strict.
+    """
+    import json as _json
+    import struct as _struct
+    from tnca import artifact as A, manifest as MM
+    man, payload_at = A.read_header(path)
+    with open(path, 'rb') as fh:
+        blob = fh.read()
+    payload = blob[payload_at:]
+    man = mutate(dict(man))
+    header = _json.dumps(man, sort_keys=True, separators=(',', ':'),
+                         ensure_ascii=False, allow_nan=False).encode('utf-8')
+    with open(out, 'wb') as fh:
+        fh.write(A.MAGIC)
+        fh.write(_struct.pack('<HH', *A.FORMAT_VERSION))
+        fh.write(_struct.pack('<I', len(header)))
+        fh.write(header)
+        fh.write(payload)
+    return out
+
+
+def art01(log):
+    """A normal artifact: inspect, load, execute, and the totals agree."""
+    if not _have_triton():
+        return False, 'needs the locked Triton'
+    import struct
+    from tnca import aot
+    s, path, _d = _device_fixture()
+    ok = True
+    try:
+        # inspect needs no device and no compiler.
+        info = aot.inspect_artifact(path)
+        man = info['manifest']
+        log.append(f"    inspect (no device): {info['bytes']} bytes, "
+                   f"kernel {man['identity']['kernel_name']!r}, "
+                   f"{len(info['segments'])} segment(s)")
+
+        mod = s.load(path)
+        N = 16
+        x, y, o = (s.allocate(N * 4, name=c) for c in 'xyo')
+        xs = [float(i) for i in range(N)]
+        ys = [float(10 * i) for i in range(N)]
+        s.upload(x, b''.join(struct.pack('<f', v) for v in xs))
+        s.upload(y, b''.join(struct.pack('<f', v) for v in ys))
+        ev = s.submit(mod, {'x_ptr': x, 'y_ptr': y, 'o_ptr': o, 'n': N})
+        s.wait(ev)
+        got = list(struct.unpack(f'<{N}f', s.download(o, N * 4)))
+        want = [a + b for a, b in zip(xs, ys)]
+        log.append(f"    load and execute: {ev.state}, correct={got == want}")
+        ok &= ev.ok and got == want
+
+        # The manifest's resource claims against the device this ran on.
+        from tnca.adapters import r1 as adapter
+        target, _pinfo = adapter.target_for('core-sim')
+        res = man['resources']
+        checks = [
+            ('accumulators', res['accumulators'], target.num_accumulators),
+            ('barriers', res['barriers'], target.num_barriers),
+            ('descriptors', res['descriptors'], target.num_descriptors),
+            ('rf per role', res['rf_private_per_role']['role0'],
+             target.vregs_per_rctx),
+        ]
+        for what, claimed, actual in checks:
+            agree = claimed <= actual
+            log.append(f"    {what:<14s} manifest {claimed} <= device "
+                       f"{actual}: {agree}")
+            ok &= agree
+    finally:
+        s.poisoned = True
+        s.close()
+    return ok, 'inspect without a device, execute on one, totals agree'
+
+
+def art03(log):
+    """Wrong profile, wrong ABI, wrong capability -- before the first instruction."""
+    if not _have_triton():
+        return False, 'needs the locked Triton'
+    from tnca import manifest as MM
+    from tnca.errors import (CapabilityError, ProfileMismatch, TncaError,
+                             VersionError)
+    s, path, d = _device_fixture()
+    ok = True
+    try:
+        base_requests = s.dev.seq
+
+        def refused(label, mutate, expect=TncaError):
+            nonlocal ok, base_requests
+            out = os.path.join(d, f"m-{abs(hash(label)) % 10**8}.tnca")
+            _forge(path, mutate, out)
+            before = s.dev.seq
+            try:
+                s.load(out)
+                log.append(f"    {label:<34s} -> ACCEPTED (bad)")
+                ok = False
+            except expect as e:
+                # The refusal must cost nothing on the device: no upload, no
+                # launch, no instruction. ART-03 says "no kernel write side
+                # effect", and the transport counter is how that is visible.
+                spent = s.dev.seq - before
+                log.append(f"    {label:<34s} -> [{e.code}] "
+                           f"{spent} device request(s)")
+                ok &= spent == 0
+            except Exception as e:
+                log.append(f"    {label:<34s} -> {type(e).__name__} (wrong)")
+                ok = False
+
+        def set_profile(m):
+            m['target'] = dict(m['target'], profile='system-2x2')
+            return MM.seal(m)
+
+        def set_abi(m):
+            m['identity'] = dict(m['identity'], abi_version=[9, 0])
+            return MM.seal(m)
+
+        def set_format(m):
+            m['identity'] = dict(m['identity'], format_version=[2, 0])
+            return MM.seal(m)
+
+        refused('an artifact for another profile', set_profile)
+        refused('an argument ABI of 9.0', set_abi)
+        refused('a container format of 2.0', set_format)
+    finally:
+        s.poisoned = True
+        s.close()
+    return ok, 'each refused before a single device request'
+
+
+def art05(log):
+    """A size the device cannot hold is refused, not half-allocated."""
+    if not _have_triton():
+        return False, 'needs the locked Triton'
+    from tnca.errors import BufferError
+    s, path, _d = _device_fixture()
+    ok = True
+    try:
+        s.load(path)
+        before = len(s._buffers)
+        try:
+            s.allocate(1 << 30)
+            log.append("    a 1 GiB allocation: ACCEPTED (bad)")
+            ok = False
+        except BufferError as e:
+            log.append(f"    a 1 GiB allocation       -> [{e.code}] "
+                       f"{e.message[:46]}")
+        after = len(s._buffers)
+        log.append(f"    buffers registered before and after: "
+                   f"{before} -> {after} (must be equal)")
+        ok &= before == after
+
+        # And the heap is not advanced by the refusal: a later, legitimate
+        # allocation still fits.
+        small = s.allocate(64)
+        log.append(f"    a 64-byte allocation still works: {small.addr:#x}")
+    finally:
+        s.poisoned = True
+        s.close()
+    return ok, 'refused whole, with nothing reserved'
+
+
+def art06(log):
+    """Optional debug metadata can go; a required contract cannot."""
+    if not _have_triton():
+        return False, 'needs the locked Triton'
+    import struct
+    from tnca import manifest as MM
+    from tnca.errors import TncaError
+    s, path, d = _device_fixture()
+    ok = True
+    try:
+        def strip_optional(m):
+            m['optional_metadata'] = {}
+            return MM.seal(m)
+
+        stripped = _forge(path, strip_optional,
+                          os.path.join(d, 'stripped.tnca'))
+        mod = s.load(stripped)
+        N = 16
+        x, y, o = (s.allocate(N * 4, name=c) for c in 'xyo')
+        xs = [float(i) for i in range(N)]
+        s.upload(x, b''.join(struct.pack('<f', v) for v in xs))
+        s.upload(y, b''.join(struct.pack('<f', 1.0) for _ in range(N)))
+        ev = s.submit(mod, {'x_ptr': x, 'y_ptr': y, 'o_ptr': o, 'n': N})
+        s.wait(ev)
+        got = list(struct.unpack(f'<{N}f', s.download(o, N * 4)))
+        want = [v + 1.0 for v in xs]
+        log.append(f"    with optional_metadata emptied: {ev.state}, "
+                   f"identical result={got == want}")
+        ok &= ev.ok and got == want
+
+        def strip_required(m):
+            sem = dict(m['semantics'])
+            sem.pop('error_contract')
+            m['semantics'] = sem
+            return MM.seal(m)
+
+        broken = _forge(path, strip_required, os.path.join(d, 'broken.tnca'))
+        try:
+            s.load(broken)
+            log.append("    with a required field removed: ACCEPTED (bad)")
+            ok = False
+        except TncaError as e:
+            log.append(f"    with semantics.error_contract removed -> "
+                       f"[{e.code}]")
+    finally:
+        s.poisoned = True
+        s.close()
+    return ok, 'debug metadata optional, the execution contract not'
+
+
+TESTS = [('ART-01', art01), ('ART-03', art03), ('ART-05', art05),
+         ('ART-06', art06),
+         ('ART-02-schema', art02_schema),
          ('ART-02-container', art02_container),
          ('ART-04-paths', art04_no_paths),
          ('ART-04-atomic', art_atomic_write),

@@ -686,7 +686,8 @@ clean:
 # yet backed by an implementation runs the part that IS implemented and says
 # so; none of them prints a pass for work that has not happened.
 #==============================================================================
-.PHONY: r2-baseline r2-inventory r2-abi-tests r2-artifact-tests
+.PHONY: r2-baseline r2-inventory r2-abi-tests r2-artifact-tests \
+        r2-compile-tests
 
 # DEP-01. EVIDENCE is an R1 run directory; COMBINED is compare_envs.py's
 # output over A and B, which is what makes an R1 verdict complete.
@@ -702,6 +703,20 @@ r2-abi-tests:
 
 r2-artifact-tests:
 	@$(PYTHON) tools/r2/artifact_tests.py --json $(BUILD)/r2_artifact_tests.json
+
+# The compile driver needs the real Triton frontend and a built core bench:
+# CMP-01 runs what it compiled, and an entry point that only type-checks is
+# not the entry point the contract asks for.
+r2-compile-tests: $(BUILD)/tb_core.vvp
+	@if [ -x "$(TRITON_PYTHON)" ]; then \
+	   $(TRITON_PYTHON) tools/r2/compile_tests.py \
+	     --json $(BUILD)/r2_compile_tests.json; \
+	 elif [ "$(R1_STRICT)" = "1" ]; then \
+	   echo "  r2-compile-tests       FAIL   no Triton at $(TRITON_PYTHON)"; \
+	   exit 1; \
+	 else \
+	   echo "  r2-compile-tests       SKIP   no Triton at $(TRITON_PYTHON)"; \
+	 fi
 
 .PHONY: r1-doctor r1-check-generated r1-gate-selftest r1-acceptance \
         r1-verify-evidence r1-inventory r1-check-artifacts r1-build-tests r1-profile-tests \

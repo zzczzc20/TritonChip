@@ -36,7 +36,7 @@
       "k_per_command": 32
     }
   },
-  "expansion": "one performance run per (workload, memory mode) pair. The memory modes a workload lists are the ones where its number means something different, not all of them: a GEMM whose transfers dominate is worth running out-of-order, and a one-program elementwise kernel is not.",
+  "expansion": "one performance run per (workload, memory mode) pair. A workload lists the modes where its number means something DIFFERENT, not all of them: a GEMM whose transfers dominate is worth running out-of-order, and the whole-machine cases are run under the slow model instead, because there the question is whether the mesh and the slices hide latency rather than whether the LSU tolerates reordering.",
   "required_runs": 32,
   "workloads": [
     {
@@ -131,7 +131,8 @@
         "grid": 1
       },
       "runs": [
-        "fast"
+        "fast",
+        "slow"
       ],
       "why": "one program on the 2x2 machine: the mesh and NUCA cost with no contention to hide it"
     },
@@ -147,7 +148,8 @@
         "grid": 4
       },
       "runs": [
-        "fast"
+        "fast",
+        "slow"
       ],
       "why": "four programs, one per tile, which is where slice and mesh contention first appears"
     },
@@ -163,7 +165,8 @@
         "grid": 4
       },
       "runs": [
-        "fast"
+        "fast",
+        "slow"
       ],
       "why": "the ragged tail across four tiles"
     },
@@ -192,7 +195,8 @@
         "op": "max"
       },
       "runs": [
-        "fast"
+        "fast",
+        "ooo"
       ],
       "why": "the same shape with a different unit, to separate tree cost from ALU cost"
     },
@@ -205,7 +209,8 @@
         "elements": 16
       },
       "runs": [
-        "fast"
+        "fast",
+        "ooo"
       ],
       "why": "max, subtract, exp, sum, divide: two reductions and an SFU pass in one dependency chain"
     },
@@ -218,7 +223,8 @@
         "elements": 15
       },
       "runs": [
-        "fast"
+        "fast",
+        "ooo"
       ],
       "why": "the masked case the contract asks for: fifteen of sixteen lanes"
     },
@@ -231,7 +237,8 @@
         "elements": 16
       },
       "runs": [
-        "fast"
+        "fast",
+        "ooo"
       ],
       "why": "one reduction, one rsqrt, one scale -- the SFU on the critical path"
     },
@@ -244,7 +251,8 @@
         "elements": 16
       },
       "runs": [
-        "fast"
+        "fast",
+        "ooo"
       ],
       "why": "two reductions before the scale, so the chain is longer than RMSNorm by exactly one"
     },
@@ -271,7 +279,8 @@
         "grid": 1
       },
       "runs": [
-        "fast"
+        "fast",
+        "ooo"
       ],
       "why": "one program, to separate that overhead from the work"
     }

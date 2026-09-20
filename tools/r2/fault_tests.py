@@ -289,15 +289,155 @@ def err07(log):
     return ok, '16 alternating tasks, no leak, no task reported wrongly'
 
 
-TESTS = [('ERR-01', err01), ('ERR-02', err02), ('ERR-04', err04),
-         ('ERR-06', err06), ('ERR-07', err07)]
+def spin_artifact(d, iterations=4000):
+    """A kernel that runs long enough to blow a small device deadline.
 
-NOT_YET = {
-    'ERR-03': 'a device deadline with a non-returning transaction needs a '
-              'fault-injection hook in the memory model (R2-11 batch 4)',
-    'ERR-05': 'late and duplicate responses from an old epoch need the '
-              'transport epoch tag to be exercised by injection',
-}
+    Not an infinite loop: a kernel that can never finish would make the
+    device unusable for the rest of the suite, and the case is about the
+    DEADLINE firing, not about hanging forever.
+    """
+    def program(b, target):
+        i = b.const(0)
+        with b.loop(i, b.const(iterations)):
+            v = b.vmovi(1)
+            b.vbin('add', v, v)
+        b.exit()
+
+    return aot.compile_aot(program, kernel_name='spinner', signature={},
+                           profile='core-sim', source_kind='tnca-ir',
+                           output=os.path.join(d, 'spin.tnca')).path
+
+
+def err03(log):
+    """A device deadline poisons the session and fails what is queued."""
+    if not have_triton():
+        return False, 'needs the locked Triton'
+    # A deadline small enough that the spinning kernel cannot finish, and
+    # large enough that a normal kernel can: the case is the deadline
+    # firing, not the device being unable to do anything.
+    d = tempfile.mkdtemp(prefix='r2-err3-')
+    s = Session(workdir=os.path.join(d, 'dev'), deadline_cycles=2000,
+                host_timeout=180)
+    ok = True
+    try:
+        spinner = s.load(spin_artifact(d))
+        good = s.load(good_artifact(d))
+        x, y, o = (s.allocate(N * 4, name=c) for c in 'xyo')
+        s.upload(x, b''.join(struct.pack('<f', 1.0) for _ in range(N)))
+        s.upload(y, b''.join(struct.pack('<f', 1.0) for _ in range(N)))
+
+        # Hold the worker so a second task is queued BEHIND the one that
+        # will blow the deadline; the contract asks that a task which never
+        # ran terminates as FAILED rather than waiting forever.
+        s._stop.set()
+        s._worker.join(timeout=10)
+        slow = s.submit(spinner, {})
+        behind = s.submit(good, {'x_ptr': x, 'y_ptr': y, 'o_ptr': o, 'n': N})
+        s._start_worker()
+
+        s.wait(slow, timeout=180)
+        s.wait(behind, timeout=60)
+        log.append(f"    the kernel that outran the {2000}-cycle device "
+                   f"deadline: {slow.state} [{slow.error.code if slow.error else '-'}]")
+        log.append(f"    the task queued behind it: {behind.state} "
+                   f"[{behind.error.code if behind.error else '-'}]")
+        log.append(f"    the session: poisoned={s.poisoned}")
+        ok &= slow.state == 'FAILED'
+        ok &= slow.error is not None and slow.error.code == 'DEVICE_LOST'
+        ok &= behind.state == 'FAILED'
+        ok &= s.poisoned
+
+        # And a poisoned session refuses new work by name rather than
+        # accepting it and failing later.
+        try:
+            s.submit(good, {'x_ptr': x, 'y_ptr': y, 'o_ptr': o, 'n': N})
+            log.append("    submitting to a poisoned session: ACCEPTED (bad)")
+            ok = False
+        except SessionPoisoned as e:
+            log.append(f"    submitting to a poisoned session -> [{e.code}]")
+
+        # recover() is the explicit way back.
+        s.recover()
+        mod = s.load(good_artifact(d))
+        x2, y2, o2 = (s.allocate(N * 4, name=c) for c in 'xyo')
+        s.upload(x2, b''.join(struct.pack('<f', 5.0) for _ in range(N)))
+        s.upload(y2, b''.join(struct.pack('<f', 6.0) for _ in range(N)))
+        ev = s.submit(mod, {'x_ptr': x2, 'y_ptr': y2, 'o_ptr': o2, 'n': N})
+        s.wait(ev)
+        got = list(struct.unpack(f'<{N}f', s.download(o2, N * 4)))
+        log.append(f"    after recover(): {ev.state}, correct="
+                   f"{got == [11.0] * N}")
+        ok &= ev.ok and got == [11.0] * N
+    finally:
+        s.poisoned = True
+        s.close()
+    return ok, 'the deadline poisons, the queue fails, recover() works'
+
+
+def err05(log):
+    """A response from an older sequence is discarded, not believed."""
+    if not have_triton():
+        return False, 'needs the locked Triton'
+    s, d = session()
+    ok = True
+    try:
+        mod = s.load(good_artifact(d))
+        x, y, o = (s.allocate(N * 4, name=c) for c in 'xyo')
+        s.upload(x, b''.join(struct.pack('<f', 2.0) for _ in range(N)))
+        s.upload(y, b''.join(struct.pack('<f', 3.0) for _ in range(N)))
+        ev = s.submit(mod, {'x_ptr': x, 'y_ptr': y, 'o_ptr': o, 'n': N})
+        s.wait(ev)
+        got = list(struct.unpack(f'<{N}f', s.download(o, N * 4)))
+        ok &= ev.ok and got == [5.0] * N
+        log.append(f"    a normal task first: {ev.state}, correct="
+                   f"{got == [5.0] * N}")
+
+        # Now forge a LATE reply: an answer to a sequence that has already
+        # been answered, with a status that would be believed if the
+        # transport looked only at the newest line in the file.
+        stale_seq = max(1, s.dev.seq - 3)
+        with open(s.dev.rsp, 'w') as fh:
+            fh.write(f"{stale_seq} 1 255 4095" + chr(10))   # FAULT, trap 0xff
+        reply = s.dev.ping()
+        log.append(f"    forged a FAULT reply for sequence {stale_seq}, then "
+                   f"asked for {reply.seq}")
+        log.append(f"    the transport returned: {reply} "
+                   f"({'the real answer' if reply.ok else 'THE FORGERY (bad)'})")
+        ok &= reply.ok and reply.seq == s.dev.seq
+
+        # A reply from ahead of the request is impossible without something
+        # else writing the mailbox, and is reported rather than accepted.
+        with open(s.dev.rsp, 'w') as fh:
+            fh.write(f"{s.dev.seq + 100} 0 0 0" + chr(10))
+        try:
+            s.dev.ping()
+            log.append("    a reply from the future: ACCEPTED (bad)")
+            ok = False
+        except DeviceLost as e:
+            log.append(f"    a reply ahead of the request -> [{e.code}] "
+                       f"{e.message[:48]}")
+        s.poisoned = True
+
+        # And an old EPOCH's handles are refused, which is the other half of
+        # "a late message does not cross a generation".
+        s.recover()
+        try:
+            s.upload(x, b'\x00' * 8)
+            log.append("    a buffer from the previous epoch: ACCEPTED (bad)")
+            ok = False
+        except BufferError as e:
+            log.append(f"    a buffer from the previous epoch -> [{e.code}]")
+    finally:
+        s.poisoned = True
+        s.close()
+    return ok, 'a stale reply is ignored; one from the future is reported'
+
+
+TESTS = [('ERR-01', err01), ('ERR-02', err02), ('ERR-03', err03),
+         ('ERR-04', err04), ('ERR-05', err05), ('ERR-06', err06),
+         ('ERR-07', err07)]
+
+NOT_YET = {}
 
 
 def main():

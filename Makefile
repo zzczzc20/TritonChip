@@ -699,11 +699,33 @@ r2-baseline:
 r2-inventory:
 	@$(PYTHON) tools/r2/inventory.py
 
-r2-abi-tests:
-	@$(PYTHON) tools/r2/abi_tests.py --json $(BUILD)/r2_abi_tests.json
+# Schema cases run anywhere; the device cases added for R2-05/R2-06 need
+# the Triton interpreter and a built device, like the rest of the R2 suites.
+r2-abi-tests: $(BUILD)/tnca_device.vvp
+	@if [ -x "$(TRITON_PYTHON)" ]; then \
+	   $(TRITON_PYTHON) tools/r2/abi_tests.py \
+	     --json $(BUILD)/r2_abi_tests.json; \
+	 elif [ "$(R1_STRICT)" = "1" ]; then \
+	   echo "  r2-abi-tests          FAIL   no Triton at $(TRITON_PYTHON)"; \
+	   exit 1; \
+	 else \
+	   $(PYTHON) tools/r2/abi_tests.py \
+	     --json $(BUILD)/r2_abi_tests.json; \
+	 fi
 
-r2-artifact-tests:
-	@$(PYTHON) tools/r2/artifact_tests.py --json $(BUILD)/r2_artifact_tests.json
+# Schema cases run anywhere; the device cases added for R2-05/R2-06 need
+# the Triton interpreter and a built device, like the rest of the R2 suites.
+r2-artifact-tests: $(BUILD)/tnca_device.vvp
+	@if [ -x "$(TRITON_PYTHON)" ]; then \
+	   $(TRITON_PYTHON) tools/r2/artifact_tests.py \
+	     --json $(BUILD)/r2_artifact_tests.json; \
+	 elif [ "$(R1_STRICT)" = "1" ]; then \
+	   echo "  r2-artifact-tests     FAIL   no Triton at $(TRITON_PYTHON)"; \
+	   exit 1; \
+	 else \
+	   $(PYTHON) tools/r2/artifact_tests.py \
+	     --json $(BUILD)/r2_artifact_tests.json; \
+	 fi
 
 # The compile driver needs the real Triton frontend and a built core bench:
 # CMP-01 runs what it compiled, and an entry point that only type-checks is

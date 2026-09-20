@@ -130,6 +130,21 @@ class Builder:
 
     # ---- scalars ----------------------------------------------------------
     def const(self, value, dtype='i64'):
+        """A scalar constant. Takes a NUMBER, not a Value.
+
+        Handing it a Value produced `.li sX, #%c2:scalar@s2` -- the repr of
+        an SSA value where an immediate belongs -- and the error surfaced in
+        the assembler, three layers from the mistake. A builder that is given
+        the wrong kind of thing should say so.
+        """
+        if isinstance(value, Value):
+            raise Diagnostic(
+                f"const() takes a number and was given {value!r}",
+                because='a Value is already a register; there is nothing to '
+                        'materialise',
+                remedy='pass the Value where a Value is wanted, or a Python '
+                       'int here',
+                source='compiler_overview.md sec 12')
         v = self._value(SCALAR, dtype, hint='c')
         self._emit('const', [v], [], value=value)
         return v
@@ -449,7 +464,13 @@ class _Loop:
         b = self.b
         nxt = b.sbini('add', self.counter, 1)
         b._emit('assign', [], [self.counter, nxt])
-        lim = b.const(self.limit)
+        # An int becomes a constant; a Value is already one. `b.const` used
+        # to accept a Value and format its repr as an immediate, so
+        # `b.loop(i, b.const(4000))` assembled to
+        #     .li  s3, #%c2:scalar@s2
+        # and failed in the assembler rather than in the builder that had
+        # been handed the wrong kind of thing.
+        lim = self.limit if isinstance(self.limit, Value) else b.const(self.limit)
         more = b.scmp('lt', self.counter, lim)
         b.branch_nz(more, self.label)
         return False

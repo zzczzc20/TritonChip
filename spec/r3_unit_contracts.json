@@ -1,0 +1,69 @@
+{
+  "schema": "r3-unit-contracts/1",
+  "contract": "doc/phase3_tasks_and_acceptance.md R3-01 PLAN-04",
+  "note": "The numbers the performance model is built on. The rule PLAN-04 states is the one that matters here: 未知不是 0. A parameter nobody has measured is recorded as null with a `source` of `unmeasured`, and the model refuses to run rather than treating it as free. A zero written where a measurement belongs is a cost model that predicts a machine with no cost.",
+
+  "vector_register_file": {
+    "banks": {"value": null, "source": "unmeasured",
+              "note": "R3-03 delivers a banked synchronous VRF; today's rtl/core/tnca_vector_rf.v is a behavioural array with asynchronous reads and no banking, so there is no bank count to record."},
+    "read_ports": {"value": null, "source": "unmeasured",
+                   "note": "the behavioural model answers every read in the same cycle; the number of physical ports that would support that is exactly what R3-03 has to decide."},
+    "write_ports": {"value": 2, "source": "rtl/core/tnca_vector_rf.v",
+                    "note": "two write ports exist today: the vector writeback and the transfer engine's."},
+    "read_latency_cycles": {"value": 0, "source": "rtl/core/tnca_vector_rf.v",
+                            "note": "asynchronous read. This is the thing R3-03 changes, and it is recorded as 0 because it IS 0 today, not because it is unknown."}
+  },
+
+  "accumulator_file": {
+    "count": {"value": 16, "source": "compiler/targets/tnca-sim-v0.1.json accumulators.count"},
+    "row_width_lanes": {"value": 16, "source": "ISA sec 9C"},
+    "read_ports": {"value": null, "source": "unmeasured"},
+    "write_ports": {"value": null, "source": "unmeasured"}
+  },
+
+  "matrix_unit": {
+    "fragment": {"value": [16, 16, 16], "source": "compiler/targets/*.json mma.shape"},
+    "k_steps": {"value": [16, 32, 64], "source": "ISA sec 9C, MMA_K_STEPS"},
+    "command_latency_cycles": {"value": 224, "source": "measured",
+                               "note": "tools/r1/regression.py REG-10 measures it from a +donetrace run on tb_core: the matrix command completes 224 cycles after issue for a K16 f16 fragment. That measurement is what the collision experiment solves against."},
+    "source_release": {"value": "OnCommandCompletion", "source": "compiler/targets/*.json mma.source_release"}
+  },
+
+  "transfer_engine": {
+    "command_latency_cycles": {"value": 72, "source": "measured",
+                               "note": "same +donetrace run: an 8-register window transfer completes about 72 cycles after issue."},
+    "units_per_cycle": {"value": 1, "source": "rtl/core/tnca_tensor.v S_TRUN",
+                        "note": "one 8-byte unit per cycle, one memory request each."},
+    "max_rank": {"value": 2, "source": "rtl/core/tnca_tensor.v geometry check"}
+  },
+
+  "memory_model": {
+    "fast": {"latency_cycles": 1, "random_stall": false, "reorder": false,
+             "source": "tb/core/tb_tnca_core.v defaults"},
+    "slow": {"latency_cycles": 7, "random_stall": true, "reorder": false,
+             "source": "Makefile tb_core_slow.vvp parameters"},
+    "ooo": {"latency_cycles": 6, "random_stall": true, "reorder": true,
+            "jitter_cycles": [0, 7],
+            "source": "Makefile tb_core_ooo.vvp parameters and tb/common/tnca_mem_model.v",
+            "note": "the jitter is what makes the reorder path reachable at all; before R1-08 the latency was fixed and nothing ever returned out of order."}
+  },
+
+  "queues": {
+    "lsu_outstanding": {"value": null, "source": "unmeasured",
+                        "note": "the beat table's size is a parameter; the number that matters for the model is how many are outstanding in practice, which R3-06's counters will report."},
+    "nuca_mshr": {"value": null, "source": "unmeasured"},
+    "nuca_targets": {"value": null, "source": "unmeasured"},
+    "mesh_depth": {"value": 4, "source": "rtl/tnca_top.v tnca_mesh DEPTH parameter"}
+  },
+
+  "barrier": {
+    "count": {"value": 32, "source": "compiler/targets/*.json barriers.count"},
+    "completion_ports": {"value": 3, "source": "rtl/core/tnca_barrier.v OP_DEC",
+                         "note": "matrix done, matrix source-free, transfer done -- summed rather than muxed, so two completions in one cycle are both counted. REG-10 exercises it."}
+  },
+
+  "simulation_rate": {
+    "note": "Not a hardware property. How fast THIS host simulates, measured by tools/r3/scout.py, and the number R3's execution budget is derived from. It is not a clock frequency and no report may present it as one.",
+    "source": "doc/evidence/r3-timing-scout-macos.json"
+  }
+}

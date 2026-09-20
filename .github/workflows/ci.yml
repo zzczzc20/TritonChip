@@ -94,13 +94,6 @@ jobs:
           make core4
           python3 tools/r1/profile_tests.py
 
-      # R2's frozen contracts: the argument ABI against an independent
-      # byte-level oracle, and the manifest and container schema.
-      - name: R2 schema contracts
-        run: |
-          make r2-abi-tests
-          make r2-artifact-tests
-
       # The gate has to be able to fail. Ten injected faults, each of which
       # must be detected; this is cheap and is the check that keeps every
       # other green tick meaningful.
@@ -155,6 +148,14 @@ jobs:
       # R2's compile driver, through its public entry point: three real
       # Triton kernels compiled and executed, and one artifact run with three
       # different alphas at two different addresses.
+      # The argument ABI against an independent byte-level oracle, and the
+      # manifest, container and loader. Both suites have schema cases that
+      # need nothing and device cases that need a simulator.
+      - name: R2 ABI and artifact
+        run: |
+          make r2-abi-tests TRITON_PYTHON=$HOME/tritonenv/bin/python
+          make r2-artifact-tests TRITON_PYTHON=$HOME/tritonenv/bin/python
+
       - name: R2 compile driver
         run: make r2-compile-tests TRITON_PYTHON=$HOME/tritonenv/bin/python
 

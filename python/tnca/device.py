@@ -47,13 +47,16 @@ def cache_root():
 
 
 def _package_data(*parts):
-    here = os.path.dirname(os.path.abspath(__file__))
-    for root in (os.path.join(here, 'data'),
-                 os.path.dirname(os.path.dirname(os.path.dirname(here)))):
-        path = os.path.join(root, *parts)
-        if os.path.exists(path):
-            return path
-    return None
+    """Shared with every other module through `_data`.
+
+    This had its own copy of the root calculation, with the same off-by-one:
+    three dirnames from a DIRECTORY rather than from `__file__`, which lands
+    on `/`. A checkout then could not find the bench it had just built, and
+    the error said "no simulator" about a file that was right there.
+    """
+    from . import _data
+    path = _data.path(*parts)
+    return path if os.path.exists(path) else None
 
 
 def expected_path(profile):

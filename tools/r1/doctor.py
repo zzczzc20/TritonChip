@@ -55,11 +55,16 @@ def main():
     host = dict(system=platform.system(), machine=platform.machine(),
                 release=platform.release(), python=platform.python_version())
     tools = [probe(n, a) for n, a in TOOLS]
-    missing = [t['tool'] for t in tools if not t['found']]
 
     with open(LOCK) as fh:
         lock = json.load(fh)
     plat = lock['acceptance_platform']
+
+    # Required means "the lock requires it", not "this file happens to probe
+    # it". yosys is probed because its version is worth recording and absent
+    # because the gate does not synthesise anything.
+    missing = [t['tool'] for t in tools if not t['found']
+               and lock['tools'].get(t['tool'], {}).get('source') != 'optional']
 
     is_accept_env = (host['system'] == 'Linux' and
                      host['machine'] in ('x86_64', 'amd64'))
@@ -92,6 +97,10 @@ def main():
               "depend on it (see the Makefile header)")
 
     print()
+    optional_missing = [t['tool'] for t in tools if not t['found']
+                        and t['tool'] not in missing]
+    if optional_missing:
+        print(f"    optional, absent: {', '.join(optional_missing)}")
     if missing:
         print(f"  r1-doctor              FAIL   missing: {', '.join(missing)}")
         return 1

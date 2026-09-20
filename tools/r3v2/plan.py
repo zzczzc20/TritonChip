@@ -427,13 +427,49 @@ def base03(log, ctx):
                f"must name it")
 
     # The scout is a real run with a real exit code, or it is NOT RUN.
+    # The build directory first, then the committed evidence: a fresh
+    # checkout has no sim/build, and a scout that only exists as a build
+    # artefact is a measurement nobody can check later.
     scout = os.path.join(ROOT, 'sim', 'build', 'r3v2_scout.json')
+    if not os.path.exists(scout):
+        scout = os.path.join(ROOT, 'doc', 'evidence', 'r3v2',
+                             'scout-linux.json')
     if os.path.exists(scout):
         s = json.load(open(scout))
+        log.append(f"    scout on {s.get('platform')} at commit "
+                   f"{str(s.get('commit'))[:12]}")
         for row in s.get('runs', []):
-            log.append(f"    scout {row['id']:<10s} exit="
-                       f"{row.get('exit')} cycles={row.get('cycles')} "
-                       f"elapsed={row.get('elapsed_s')}s")
+            log.append(f"      {row['id']:<13s} exit={row.get('exit')} "
+                       f"cycles={row.get('cycles'):<6} "
+                       f"elapsed={row.get('elapsed_s')}s  "
+                       f"{row.get('cycles_per_second')} cycles/s")
+        # A scout that did not name its commit, or that ran somewhere
+        # other than the locked Linux, is not the measurement BASE-03
+        # asked for.
+        if 'Linux' not in str(s.get('platform', '')):
+            log.append(f"    it did not run on Linux")
+            ok = False
+        if not s.get('commit') or s['commit'] == 'unknown':
+            log.append(f"    it does not name a commit")
+            ok = False
+        proj = s.get('projected') or {}
+        log.append(f"    measured {s.get('slowest_cycles_per_second')} "
+                   f"cycles/s at worst; the {proj.get('kernel_runs')} "
+                   f"kernel and {proj.get('component_runs')} component "
+                   f"run(s) project to {proj.get('total_cycles')} cycles "
+                   f"and about {proj.get('total_seconds')}s")
+        if not proj.get('within_budget'):
+            log.append(f"    the plan does not fit the budget")
+            ok = False
+        log.append(f"    section 4.3's 1,000,000-cycle and 1,800s caps "
+                   f"cannot both be reached at this rate; the plan is far "
+                   f"under both, so neither is the binding constraint")
+        if s.get('counts_toward_official_twelve'):
+            log.append(f"    it claims to be two of the official twelve")
+            ok = False
+        else:
+            log.append(f"    it does not claim to be C01 and C03: those "
+                       f"runs are still owed")
         ok &= bool(s.get('runs'))
     else:
         log.append(f"    NOT RUN: the Linux scout has not been run on this "

@@ -691,7 +691,7 @@ clean:
         r2-grid-tests r2-memory-tests r2-mutation-tests \
         r2-obs-tests r2-e2e-tests r2-dump-tests r3-rf-tests r3-flow-tests \
         r3-count-tests r3-synth-tests r3-mem-synth \
-        r3-mutation-tests \
+        r3-mutation-tests r3v2-plan r3v2-scout \
         r2-package r2-stage-data \
         r3-scout r3-plan r3-model-tests
 
@@ -796,6 +796,20 @@ r2-package: r2-stage-data
 r3-mutation-tests:
 	@$(PYTHON) tools/r3/mutation_tests.py \
 	   --json $(BUILD)/r3_mutation_tests.json
+
+#------------------------------------------------------------------------------
+# R3 v2: the single-core VRF integration
+# (doc/phase3_tasks_and_acceptance.md, version 2.0)
+#
+# Section 6 names these entry points. A sub-target passing is not the stage
+# passing: `r3v2-acceptance` is the only thing that produces a verdict, and
+# it must return non-zero for a checker that does not exist yet.
+#------------------------------------------------------------------------------
+r3v2-plan:
+	@$(PYTHON) tools/r3v2/plan.py --json $(BUILD)/r3v2_plan.json
+
+r3v2-scout: | dirs
+	@$(PYTHON) tools/r3v2/scout.py
 
 r3-synth-tests:
 	@$(PYTHON) tools/r3/synth_tests.py --json $(BUILD)/r3_synth_tests.json

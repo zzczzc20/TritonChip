@@ -103,6 +103,20 @@ def TNCA_MMAAsyncOp : TNCA_Op<"mma.async", [
   let results = (outs TNCA_EventType:$event, TNCA_LeaseType:$lease);
 }
 
+def TNCA_AccReadOp : TNCA_Op<"acc.read"> {
+  let summary = "Read one row of an accumulator into the vector unit";
+  let description = [{
+    ISA sec 9C.3 leaves three things undefined while an `m.mma.async` is
+    outstanding, and this is the second of them: the destination accumulator
+    may not be read by the vector unit until the command completes. Without an
+    operation that expresses the read, the verifier could see the matrix unit
+    writing an accumulator and never see anyone reading it, so the rule was
+    stated in the ISA and checked nowhere.
+  }];
+  let arguments = (ins TNCA_AccType:$acc, I32:$row);
+  let results = (outs I32:$value);
+}
+
 def TNCA_AwaitOp : TNCA_Op<"await"> {
   let summary = "Wait for completion events";
   let description = [{

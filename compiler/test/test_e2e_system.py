@@ -98,7 +98,8 @@ class TestTritonOnTheWholeMachine(unittest.TestCase):
         """
         mod, _ctx = triton_bridge.make_ttir(fn, SIG, {'BLOCK': BLOCK})
         kernel, _ = TTIRImporter(self.target, name).run(
-            mod, name, {'x_ptr': X, 'y_ptr': Y, 'o_ptr': O, 'n': N})
+            mod, name, {'x_ptr': X, 'y_ptr': Y, 'o_ptr': O, 'n': N},
+            param_names=triton_bridge.param_names(fn))
         cg = CodeGen(kernel, self.target, check_protocol=False)
         cg.assign_shared()
         cg.run()

@@ -79,11 +79,21 @@ class TTIRImporter:
         self._scalar_cache = {}   # constant -> our Value, so BLOCK is emitted once
         self._byte_offsets = {}   # (offset value, shift) -> byte offset Value
         self.arg_names = []
+        self._fn = None           # the tt.func being lowered
 
     # ---- entry point ------------------------------------------------------
-    def run(self, module, func_name, arg_values):
-        """`arg_values` maps parameter name -> a literal the kernel is
-        compiled for (an address for a pointer, an integer for an i32)."""
+    def run(self, module, func_name, arg_values, *, param_names=None):
+        """Lower ONE function of a TTIR module.
+
+        `arg_values` maps parameter name -> a literal the kernel is compiled
+        for (an address for a pointer, an integer for an i32). `param_names`
+        is the function's DECLARED parameter order -- from the @triton.jit
+        function's `arg_names`, minus the constexprs, which do not become
+        MLIR arguments. Without it the binding falls back to the order the
+        caller happened to build the dict in, which is the audit's F07: two
+        dicts with the same contents and different insertion order compiled
+        to two different kernels, silently.
+        """
         # MLIR's get_function returns a null handle for a name that is not in
         # the module, and the next call on it segfaults the interpreter with no
         # message at all. A wrong kernel name is an ordinary mistake -- the
@@ -96,10 +106,27 @@ class TTIRImporter:
                 remedy='pass the kernel function name, e.g. "add_kernel"',
                 source='compiler_overview.md sec 11.1')
         fn = module.get_function(func_name)
-        self._bind_args(fn, arg_values)
+        self._fn = fn
+        self._bind_args(fn, func_name, arg_values, param_names, module)
 
+        # ONLY this function's operations.
+        #
+        # `module.walk` visits every operation in the module. On a
+        # single-function module that is the same set; on a module with a
+        # second `tt.func` -- a @triton.jit helper called with noinline=True,
+        # say -- it is not, and the extra operations were lowered into this
+        # kernel as though they belonged to it. The walk does not report which
+        # function it is in, so membership is decided by region identity:
+        # climb from the operation's block out to the function's own region.
         ops = []
         module.walk(lambda op: ops.append(op))
+        ops = [op for op in ops if self._in_function(op, fn)]
+        if not ops:
+            raise Diagnostic(
+                f"function {func_name!r} has no operations to lower",
+                because='an empty body means the walk found nothing inside '
+                        'this function, not that the kernel is trivial',
+                source='compiler_overview.md sec 11.1')
         self._float_constants(module, ops)
 
         for op in ops:
@@ -119,19 +146,117 @@ class TTIRImporter:
         self.b.exit()
         return self.kernel, self.b
 
+    # ---- function membership ----------------------------------------------
+    @staticmethod
+    def _in_function(op, fn):
+        """Is `op` inside `fn`'s body?
+
+        Region identity, climbing outwards. An operation in an `scf.for` body
+        is two regions deep and still belongs to the function; an operation in
+        a different `tt.func` never reaches this region at all.
+        """
+        try:
+            target = fn.get_region(0).id()
+            region = op.get_block().get_parent()
+        except Exception:
+            # A binding without the accessors. Refusing would be wrong -- the
+            # single-function case was always correct -- but claiming the
+            # filter ran would be worse, so say which one happened.
+            return True
+        seen = 0
+        while region is not None and seen < 64:
+            if region.id() == target:
+                return True
+            try:
+                region = region.get_parent_region()
+            except Exception:
+                return False
+            seen += 1
+        return False
+
     # ---- arguments --------------------------------------------------------
-    def _bind_args(self, fn, arg_values):
-        for i in range(fn.get_num_args()):
+    def _bind_args(self, fn, func_name, arg_values, param_names, module):
+        """Bind by the DECLARED signature, never by dict insertion order."""
+        n = fn.get_num_args()
+
+        if param_names is None:
+            # Insertion order is not a signature. It is accepted only where it
+            # cannot be wrong: one parameter, or none.
+            if len(arg_values) > 1:
+                raise Diagnostic(
+                    f"no declared parameter order for {sorted(arg_values)}",
+                    because='binding by dict insertion order made two calls '
+                            'with identical arguments compile to different '
+                            'kernels depending on the order the caller built '
+                            'the dict in',
+                    remedy='pass param_names: the @triton.jit function\'s '
+                           'arg_names, minus the constexprs',
+                    source='compiler_overview.md sec 11.1')
+            param_names = list(arg_values)
+
+        param_names = list(param_names)
+        if len(param_names) != n:
+            raise Diagnostic(
+                f"{func_name!r} takes {n} argument(s), but "
+                f"{len(param_names)} parameter name(s) were given: "
+                f"{param_names}",
+                because='the MLIR signature is the authority on how many '
+                        'values the kernel takes, and a constexpr is not '
+                        'among them',
+                remedy='drop the constexprs from param_names',
+                source='compiler_overview.md sec 11.1')
+
+        missing = [p for p in param_names if p not in arg_values]
+        extra = [k for k in arg_values if k not in param_names]
+        if missing or extra:
+            raise Diagnostic(
+                f"argument mismatch: missing {missing}, unexpected {extra}",
+                because='every declared parameter needs a value and nothing '
+                        'else may be passed; an unexpected name is a typo '
+                        'that would otherwise bind nothing and be ignored',
+                source='compiler_overview.md sec 11.1')
+
+        try:
+            sig = module.get_function_signature(fn)
+        except Exception:
+            sig = [None] * n
+
+        for i in range(n):
             arg = fn.args(i)
             ty = str(arg.get_type())
-            name = list(arg_values)[i] if i < len(arg_values) else f"arg{i}"
-            self.arg_names.append(name)
+            name = param_names[i]
             value = arg_values[name]
+            self._check_arg_type(name, ty, sig[i] if i < len(sig) else None,
+                                 value)
+            self.arg_names.append(name)
             v = self.b.const(value)
             self._v[arg.id()] = v
             self._args[i] = (name, v)
             if _pointee(ty):
                 self._ptr_base[arg.id()] = (name, _pointee(ty))
+
+    @staticmethod
+    def _check_arg_type(name, ty, sig_ty, value):
+        """The value must fit the declared parameter type.
+
+        A float where the signature says i32 is not a narrowing the compiler
+        may perform quietly: the kernel would be compiled for a different
+        number from the one the caller passed.
+        """
+        if isinstance(value, bool) or not isinstance(value, int):
+            raise Diagnostic(
+                f"argument {name!r} is {type(value).__name__} {value!r}, "
+                f"and the kernel declares it {sig_ty or ty}",
+                because='a kernel is compiled for literal arguments: an '
+                        'address or an integer, never a float or an object',
+                remedy='pass an integer address for a pointer and an '
+                       'integer for an i32',
+                source='compiler_overview.md sec 11.1')
+        if _pointee(ty) and value < 0:
+            raise Diagnostic(
+                f"argument {name!r} is a pointer and was given {value}",
+                because='a negative address is not one',
+                source='compiler_overview.md sec 11.1')
 
     # ---- constants --------------------------------------------------------
     def _float_constants(self, module, ops):
@@ -142,8 +267,18 @@ class TTIRImporter:
         can read: if the two disagree the order is wrong and we refuse rather
         than guess.
         """
-        text = module.str_nodebug() if hasattr(module, 'str_nodebug') \
-            else module.str()
+        # THIS function's text, not the module's. `ops` is already filtered
+        # to the target function, so pairing it against a module-wide list of
+        # printed constants would line up the wrong ones as soon as a second
+        # tt.func existed -- and the check below would then reject a perfectly
+        # good kernel for "constant order does not match".
+        fn = self._fn
+        if fn is not None and hasattr(fn, 'str_nodebug'):
+            text = fn.str_nodebug()
+        elif hasattr(module, 'str_nodebug'):
+            text = module.str_nodebug()
+        else:
+            text = module.str()
         printed = re.findall(r'=\s*arith\.constant\s+(\S+)\s*:', text)
         walked = [op for op in ops if op.get_name() == 'arith.constant']
         if len(printed) != len(walked):
@@ -163,14 +298,66 @@ class TTIRImporter:
 
     @staticmethod
     def _literal_value(literal, elem):
+        """One printed MLIR literal -> the bits the hardware will hold.
+
+        MLIR prints a float whose decimal form would not round-trip as a raw
+        hexadecimal bit pattern: NaN is `0x7FC00000`, positive infinity is
+        `0x7F800000`. Those went through `float(lit)`, which raises
+        ValueError -- an interpreter traceback where the contract asks for a
+        diagnostic, and the sort of thing that later gets "fixed" by a
+        fallback that reads the value as something else.
+
+        Two rules here. A hexadecimal pattern is taken as bits, exactly, so
+        the sign of a zero and the payload of a NaN survive; and a literal
+        this cannot read is refused by name rather than approximated.
+        """
+        import struct
         lit = literal.strip()
         m = re.fullmatch(r'dense<(.+)>', lit)
         if m:
             lit = m.group(1)
+        lit = lit.strip()
+
+        is_hex = re.fullmatch(r'[+-]?0[xX][0-9a-fA-F]+', lit) is not None
+
         if elem.startswith('f'):
-            import struct
-            return struct.unpack('<I', struct.pack('<f', float(lit)))[0]
-        return int(float(lit)) if '.' in lit or 'e' in lit.lower() else int(lit)
+            if is_hex:
+                # A raw bit pattern. `struct` must not see it: reinterpreting
+                # 0x7FC00000 as the integer 2143289344 and rounding it to f32
+                # gives a large finite number, which is exactly the "read as
+                # another value" the contract forbids.
+                bits = int(lit, 16)
+                if not 0 <= bits <= 0xFFFFFFFF:
+                    raise Diagnostic(
+                        f"float constant {lit} does not fit 32 bits",
+                        because='the vector element type is 32 bits wide',
+                        source='compiler_overview.md sec 11.1')
+                return bits
+            try:
+                # float() accepts 'inf', '-inf' and 'nan' as MLIR spells them,
+                # and -0.0 keeps its sign bit through struct.pack.
+                value = float(lit)
+            except ValueError:
+                raise Diagnostic(
+                    f"cannot read the float literal {lit!r}",
+                    because='the printed module is the only source of float '
+                            'constant values, and a literal that does not '
+                            'parse has no value to use',
+                    remedy='report the literal form so the frontend can '
+                           'learn it; it must not be guessed',
+                    source='compiler_overview.md sec 11.1')
+            return struct.unpack('<I', struct.pack('<f', value))[0]
+
+        if is_hex:
+            return int(lit, 16)
+        try:
+            if '.' in lit or 'e' in lit.lower():
+                return int(float(lit))
+            return int(lit)
+        except ValueError:
+            raise Diagnostic(
+                f"cannot read the integer literal {lit!r}",
+                source='compiler_overview.md sec 11.1')
 
     def _op_arith_constant(self, op):
         rid = op.get_result(0).id()

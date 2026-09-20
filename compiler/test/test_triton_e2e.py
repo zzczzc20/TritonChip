@@ -56,7 +56,8 @@ class TestTritonToRTL(unittest.TestCase):
         mod, _ctx = triton_bridge.make_ttir(fn, SIG, {'BLOCK': self.target.vlen})
         imp = TTIRImporter(self.target, name)
         kernel, _ = imp.run(mod, name,
-                            {'x_ptr': X, 'y_ptr': Y, 'o_ptr': O, 'n': N})
+                            {'x_ptr': X, 'y_ptr': Y, 'o_ptr': O, 'n': N},
+                            param_names=triton_bridge.param_names(fn))
         cg = CodeGen(kernel, self.target, check_protocol=False)
         cg.assign_shared()
         cg.run()
@@ -112,7 +113,8 @@ class TestTritonToRTL(unittest.TestCase):
         mod, _ctx = triton_bridge.make_ttir(K.add_kernel, SIG,
                                             {'BLOCK': t.vlen})
         kernel, _ = TTIRImporter(t, 'add_kernel').run(
-            mod, 'add_kernel', {'x_ptr': X, 'y_ptr': Y, 'o_ptr': O, 'n': N})
+            mod, 'add_kernel', {'x_ptr': X, 'y_ptr': Y, 'o_ptr': O, 'n': N},
+            param_names=triton_bridge.param_names(K.add_kernel))
         res = split_roles(kernel, t, name='add_cs')
 
         self.assertEqual(len(res.kernel.roles), 2)
@@ -163,7 +165,8 @@ class TestTritonToRTL(unittest.TestCase):
                                             {'BLOCK': t.vlen})
         kernel, _ = TTIRImporter(t, 'mul_add_kernel').run(
             mod, 'mul_add_kernel',
-            {'x_ptr': X, 'y_ptr': Y, 'o_ptr': O, 'n': N})
+            {'x_ptr': X, 'y_ptr': Y, 'o_ptr': O, 'n': N},
+            param_names=triton_bridge.param_names(K.mul_add_kernel))
         res = split_roles(kernel, t, name='muladd_cs')
         self.assertEqual(len(res.crossings), 1)
 
@@ -190,7 +193,8 @@ class TestTritonToRTL(unittest.TestCase):
         imp = TTIRImporter(self.target, 'add_kernel')
         with self.assertRaises(Unsupported) as cm:
             imp.run(mod, 'add_kernel',
-                    {'x_ptr': X, 'y_ptr': Y, 'o_ptr': O, 'n': N})
+                    {'x_ptr': X, 'y_ptr': Y, 'o_ptr': O, 'n': N},
+                    param_names=triton_bridge.param_names(K.add_kernel))
         self.assertIn('vector registers', str(cm.exception))
 
 

@@ -45,3 +45,15 @@ def make_ttir(fn, signature, constexprs, *, backend_name='tnca'):
                          ctx)
     # Keep the context alive: the module borrows from it.
     return module, ctx
+
+
+def param_names(fn):
+    """The kernel's declared parameter order, minus the constexprs.
+
+    The authority on which value binds to which parameter. Passing a dict and
+    letting the importer walk it in insertion order made two calls with
+    identical arguments compile to two different kernels (audit F07), so the
+    order comes from the @triton.jit function itself.
+    """
+    const = set(getattr(fn, 'constexprs', ()) or ())
+    return [n for i, n in enumerate(fn.arg_names) if i not in const]

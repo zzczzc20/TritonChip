@@ -29,6 +29,8 @@
 #include "llvm/ADT/DenseMap.h"
 #include "llvm/ADT/DenseSet.h"
 #include "llvm/ADT/SmallVector.h"
+#include "llvm/ADT/StringSet.h"
+#include "mlir/Interfaces/FunctionInterfaces.h"
 
 #include "tnca/Dialect/TNCA/IR/TNCADialect.h"
 
@@ -54,7 +56,15 @@ struct VerifyAsyncOwnershipPass
   void runOnOperation() override;
 };
 
-/// Which window values an asynchronous op holds, and how.
+/// Values this pass tracks ownership of. Windows were the only ones for a
+/// while, which meant ISA sec 9C.3's second clause -- the accumulator an
+/// outstanding m.mma.async writes may not be read by the vector unit -- was
+/// stated in the ISA and checked nowhere.
+static bool isTrackedResource(Value v) {
+  return isa<WindowType>(v.getType()) || isa<AccType>(v.getType());
+}
+
+/// Which resource values an asynchronous op holds, and how.
 static void collectTouches(Operation *op,
                            SmallVectorImpl<std::pair<Value, Touch>> &out) {
   if (auto load = dyn_cast<DMALoadOp>(op)) {
@@ -70,8 +80,125 @@ static void collectTouches(Operation *op,
   if (auto mma = dyn_cast<MMAAsyncOp>(op)) {
     out.emplace_back(mma.getA(), Touch::Reads);
     out.emplace_back(mma.getB(), Touch::Reads);
+    // The matrix unit WRITES the accumulator for as long as the command runs.
+    // Two commands accumulating into the same register in sequence is the
+    // ordinary K loop and stays legal; what is not is reading it meanwhile,
+    // and that is what tracking it as a written range makes checkable.
+    out.emplace_back(mma.getAcc(), Touch::Writes);
     return;
   }
+}
+
+//===----------------------------------------------------------------------===//
+// The support boundary
+//
+// This verifier reasons within one block. That is a real limit, and the
+// contract (R1-07, IR-02) requires it to be a *stated* one: an unimplemented
+// structure must be refused in so many words, never accepted unchecked. Two
+// of these used to be silent. An event produced in one block and awaited in
+// another left the first block reporting "never awaited" -- the right verdict
+// for the wrong reason -- while the second block retired a command it had
+// never seen. And `await` on an event that arrives as a block argument hit
+// `ev.getDefiningOp()` returning null and simply moved on, so the wait was
+// neither honoured nor refused.
+//
+// Freezing the boundary is not deleting the capability. When general CFG
+// support arrives these checks come out; until then a program outside the
+// subset gets a diagnostic instead of an answer nobody verified.
+//===----------------------------------------------------------------------===//
+
+/// Operations this pass understands. A TNCA operation that is neither here
+/// nor an async command is an unknown resource effect: refusing it is what
+/// stops a newly added op from being silently assumed inert (IR-05).
+static const llvm::StringSet<> &knownInertOps() {
+  static llvm::StringSet<> ops = {
+      "tnca.rf.reserve",   "tnca.rf.view",           "tnca.acc.reserve",
+      "tnca.acc.read",     "tnca.desc.snapshot",     "tnca.await",
+      "tnca.use_complete", "tnca.prefetch",          "tnca.channel.create",
+      "tnca.producer.acquire", "tnca.producer.publish",
+      "tnca.consumer.acquire", "tnca.consumer.release",
+  };
+  return ops;
+}
+
+/// Checks the structural subset. Returns true when something unsupported was
+/// found, in which case the caller must NOT go on to "verify" the block.
+static bool checkSupportBoundary(Region &r, Operation *owner) {
+  bool bad = false;
+  if (!r.hasOneBlock()) {
+    owner->emitError()
+        << "unsupported: this region has " << r.getBlocks().size()
+        << " blocks, and the asynchronous-resource verifier reasons within "
+           "one block. A lease that crosses a branch is neither checked nor "
+           "rejected today, so it is rejected explicitly "
+           "(compiler_overview.md sec 5.4; R1-07 IR-02)";
+    return true;
+  }
+
+  Block &block = r.front();
+  // Only events and leases. A window or accumulator arriving as an argument
+  // is an ordinary resource with no command attached; an event is a claim
+  // that some command is outstanding, and in this block there is nothing to
+  // attach that claim to.
+  for (BlockArgument arg : block.getArguments()) {
+    if (isa<EventType>(arg.getType()) || isa<LeaseType>(arg.getType())) {
+      owner->emitError()
+          << "unsupported: a completion event or lease arrives as a block "
+             "argument. Its producing command is not in this block, so "
+             "nothing here can say what it still owns";
+      bad = true;
+    }
+  }
+
+  for (Operation &op : block) {
+    if (op.getNumRegions() != 0 && !isa<SpecializeOp>(&op)) {
+      op.emitError()
+          << "unsupported: a nested region. The commands inside it and the "
+             "awaits outside it are checked separately, which is not a check "
+             "at all (R1-07 IR-02)";
+      bad = true;
+    }
+    if (auto await = dyn_cast<AwaitOp>(&op)) {
+      for (Value ev : await.getEvents()) {
+        if (!ev.getDefiningOp()) {
+          op.emitError()
+              << "unsupported: awaits an event that is not produced in this "
+                 "block. This used to be ignored in silence, which retired "
+                 "nothing and reported nothing";
+          bad = true;
+        }
+      }
+    }
+    StringRef name = op.getName().getStringRef();
+    if (name.starts_with("tnca.")) {
+      bool known = knownInertOps().contains(name) ||
+                   isa<TNCAAsyncOpInterface>(&op) || isa<SpecializeOp>(&op);
+      if (!known) {
+        op.emitError()
+            << "unsupported: unknown resource effect. This operation is in "
+               "the TNCA dialect, implements no asynchronous-resource "
+               "interface, and is not on the inert list, so what it does to "
+               "a window or accumulator is unknown. An unknown effect is "
+               "refused, never assumed to be none (R1-07 IR-05)";
+        bad = true;
+      }
+    } else {
+      // A foreign operation that takes a TNCA resource is the same question
+      // from the other side: nothing here knows whether it reads it, writes
+      // it, or keeps it past its lifetime.
+      for (Value v : op.getOperands()) {
+        if (isTrackedResource(v)) {
+          op.emitError()
+              << "unsupported: operation outside the TNCA dialect takes a "
+                 "window or accumulator operand, and its effect on that "
+                 "resource is not described (R1-07 IR-05)";
+          bad = true;
+          break;
+        }
+      }
+    }
+  }
+  return bad;
 }
 
 /// The completion event an asynchronous op produces, if any.
@@ -92,8 +219,22 @@ void VerifyAsyncOwnershipPass::runOnOperation() {
   root->walk([&](Operation *region) {
     if (region->getNumRegions() == 0)
       return;
+    // Function bodies and role regions, not every op that happens to have a
+    // region -- a module's region holds functions, and calling those "nested
+    // regions" would refuse every well-formed program.
+    if (!isa<FunctionOpInterface>(region) && !isa<SpecializeOp>(region))
+      return;
 
     for (Region &r : region->getRegions()) {
+      if (r.empty())
+        continue;
+      if (checkSupportBoundary(r, region)) {
+        failed = true;
+        // Deliberately not falling through into the block walk: reporting
+        // ownership verdicts about a structure this pass does not model is
+        // how "no errors" comes to mean "nothing was looked at".
+        continue;
+      }
       for (Block &block : r) {
         // Window value -> the commands currently holding it.
         DenseMap<Value, SmallVector<Operation *, 2>> readers;
@@ -125,17 +266,19 @@ void VerifyAsyncOwnershipPass::runOnOperation() {
           SmallVector<std::pair<Value, Touch>, 3> touches;
           collectTouches(&op, touches);
 
-          // Any operand of a non-async op that names a window a command still
-          // writes is a read of data that is not there yet; any window a
-          // command still reads must not be written.
+          // Any operand of a non-async op that names a resource a command
+          // still writes is a read of data that is not there yet; any
+          // resource a command still reads must not be written.
           if (touches.empty()) {
             for (Value operand : op.getOperands()) {
-              if (!isa<WindowType>(operand.getType()))
+              if (!isTrackedResource(operand))
                 continue;
               if (Operation *w = writer.lookup(operand)) {
                 op.emitError()
-                    << "reads a window that command "
-                    << w->getName().getStringRef()
+                    << "reads a "
+                    << (isa<AccType>(operand.getType()) ? "accumulator"
+                                                        : "window")
+                    << " that command " << w->getName().getStringRef()
                     << " has not finished writing; its completion event must "
                        "be awaited first (compiler_overview.md sec 10.2)";
                 failed = true;

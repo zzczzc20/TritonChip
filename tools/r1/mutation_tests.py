@@ -115,6 +115,54 @@ def mut05(lab):
 # `carry` exists for one reason: MUT-04 claims a capability the *built*
 # hardware does not have. Rebuilding the benches from the mutated spec would
 # make hardware and spec agree again and hide the very thing the check is for.
+def cmake_var(name, default=None):
+    """One variable out of the candidate's configured build directory."""
+    cache = os.path.join(ROOT, 'compiler', 'build', 'CMakeCache.txt')
+    if os.path.exists(cache):
+        with open(cache) as fh:
+            for line in fh:
+                key, _, value = line.partition('=')
+                if key.split(':')[0] == name:
+                    return value.strip()
+    return default
+
+
+def rebuild_tnca_opt(lab):
+    """Configure and build tnca-opt from the LAB's sources."""
+    build = os.path.join(lab.dir, 'compiler', 'build')
+    shutil.rmtree(build, ignore_errors=True)
+    mlir = cmake_var('MLIR_DIR')
+    llvm = cmake_var('LLVM_DIR')
+    if not mlir or not llvm:
+        raise AssertionError('no configured compiler/build to take MLIR_DIR '
+                             'and LLVM_DIR from')
+    c = run_in(lab, ['cmake', '-G', 'Ninja',
+                     '-S', os.path.join(lab.dir, 'compiler'), '-B', build,
+                     f'-DMLIR_DIR={mlir}', f'-DLLVM_DIR={llvm}',
+                     '-DCMAKE_BUILD_TYPE=' + (cmake_var('CMAKE_BUILD_TYPE')
+                                              or 'Release')],
+                timeout=1800)
+    if c.returncode != 0:
+        raise AssertionError('cmake configure in the lab failed: '
+                             + (c.stderr or c.stdout)[-400:])
+    b = run_in(lab, ['ninja', '-C', build, 'tnca-opt'], timeout=3000)
+    if b.returncode != 0:
+        raise AssertionError('rebuilding tnca-opt in the lab failed: '
+                             + (b.stderr or b.stdout)[-400:])
+
+
+def mut06(lab):
+    """Walk past an unsupported structure instead of refusing it."""
+    patch(lab, 'compiler/lib/Dialect/TNCA/Transforms/VerifyAsyncOwnership.cpp',
+          "      if (checkSupportBoundary(r, region)) {",
+          "      if (false && checkSupportBoundary(r, region)) {  // MUT-06")
+    # The rebuild is `prepare`, below: it has to run on the unmutated lab
+    # too, or the baseline fails for want of a binary and the comparison
+    # says nothing.
+    return ([sys.executable, 'tools/r1/ir_tests.py',
+             '--only', 'IR-02', 'IR-05'], 'IR-02/IR-05')
+
+
 def mut07(lab):
     """Free a window when ANY holder completes, not the last one."""
     patch(lab, 'compiler/python/tnca_cc/footprints.py',
@@ -129,19 +177,26 @@ def mut07(lab):
             'OWN-07')
 
 
+# (id, what it protects, mutation, files to carry in, preparation)
+#
+# `prepare` runs on the mutated lab AFTER the patch and on the clean lab as
+# well, because whatever the experiment needs -- here a rebuilt `tnca-opt` --
+# the baseline needs too. Without that the baseline failed for want of a
+# binary and the comparison proved nothing.
 MUTATIONS = [
-    ('MUT-01', 'ownership check on emitted writes', mut01, ()),
-    ('MUT-02', 'MMA footprint from the actual K and dtype', mut02, ()),
-    ('MUT-03', 'generated RTL and includes as build dependencies', mut03, ()),
-    ('MUT-04', 'the system profile has no SFU', mut04, ('sim/build',)),
-    ('MUT-05', 'pipelines that swallow an exit code', mut05, ()),
-    ('MUT-07', 'a window survives until the last consumer releases', mut07, ()),
+    ('MUT-01', 'ownership check on emitted writes', mut01, (), None),
+    ('MUT-02', 'MMA footprint from the actual K and dtype', mut02, (), None),
+    ('MUT-03', 'generated RTL and includes as build dependencies', mut03, (),
+     None),
+    ('MUT-04', 'the system profile has no SFU', mut04, ('sim/build',), None),
+    ('MUT-05', 'pipelines that swallow an exit code', mut05, (), None),
+    ('MUT-06', 'an unsupported structure is refused, not walked past', mut06,
+     (), rebuild_tnca_opt),
+    ('MUT-07', 'a window survives until the last consumer releases', mut07, (),
+     None),
 ]
 
-NOT_YET = {
-    'MUT-06': ('unknown resource effects and unsupported CFG are refused',
-               'needs IR-02/IR-05, which R1-07 has not delivered'),
-}
+NOT_YET = {}
 
 
 def main():
@@ -155,14 +210,18 @@ def main():
     base = tempfile.mkdtemp(prefix='r1-mut-')
     results = []
     try:
-        for cid, what, fn, carry in MUTATIONS:
+        for cid, what, fn, carry, prepare in MUTATIONS:
             if args.only and cid not in args.only:
                 continue
             lab = B.Lab(base, carry=carry)
             try:
                 argv, names = fn(lab)
+                if prepare:
+                    prepare(lab)
                 # Baseline: the same command on the unmutated tree must pass.
                 clean = B.Lab(base, carry=carry)
+                if prepare:
+                    prepare(clean)
                 base_r = run_in(clean, argv)
                 clean.close()
                 mut_r = run_in(lab, argv)

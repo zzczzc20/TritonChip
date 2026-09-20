@@ -243,6 +243,19 @@ module tnca_mem_model #(
         end
     endtask
 
+    // A RANGE, for the persistent device: a host upload replaces part of
+    // memory and must leave the rest -- including code that is already
+    // there and results a previous kernel wrote -- alone. `load_hex` reads a
+    // whole image and is right for a one-shot bench and wrong here.
+    task load_range;
+        input [1023:0] path;
+        input integer first;
+        input integer count;
+        begin
+            $readmemh(path, mem, first, first + count - 1);
+        end
+    endtask
+
     task dump_hex;
         input [1023:0] path;
         input integer first;

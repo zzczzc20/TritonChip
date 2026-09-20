@@ -707,6 +707,17 @@ r2-artifact-tests:
 # The compile driver needs the real Triton frontend and a built core bench:
 # CMP-01 runs what it compiled, and an entry point that only type-checks is
 # not the entry point the contract asks for.
+# The persistent device. R2-08 RT-02 wants 32 launches in one session, and
+# R2-11 makes restarting an explicit device-loss recovery, so this bench does
+# not exit: it serves requests until told to stop.
+$(BUILD)/tnca_device.vvp: $(RTL_DEPS) $(TB)/device/tnca_device.v \
+                          $(TB)/common/tnca_mem_model.v | dirs
+	$(IVERILOG) $(IVFLAGS) -y $(RTL)/core -y $(RTL)/common -y $(RTL)/gen -y $(TB)/common \
+	   -o $@ $(TB)/device/tnca_device.v
+
+.PHONY: device
+device: $(BUILD)/tnca_device.vvp
+
 r2-cache-tests: $(BUILD)/tb_core.vvp
 	@if [ -x "$(TRITON_PYTHON)" ]; then \
 	   $(TRITON_PYTHON) tools/r2/cache_tests.py \

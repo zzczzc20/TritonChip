@@ -32,6 +32,11 @@ TOOLS = [
     ('make', ['make', '--version']),
     ('g++', ['g++', '--version']),
     ('cmake', ['cmake', '--version']),
+    # Added because the lock requires it and the probe list did not mention
+    # it, so the acceptance environment -- which HAD ninja installed --
+    # reported "not found (lock requires it)". A tool the lock names and
+    # nothing probes is a tool nobody is checking.
+    ('ninja', ['ninja', '--version']),
 ]
 
 

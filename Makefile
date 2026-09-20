@@ -689,7 +689,7 @@ clean:
 .PHONY: r2-baseline r2-inventory r2-abi-tests r2-artifact-tests \
         r2-compile-tests r2-cache-tests r2-runtime-tests r2-fault-tests \
         r2-grid-tests r2-memory-tests r2-mutation-tests \
-        r2-obs-tests r2-e2e-tests \
+        r2-obs-tests r2-e2e-tests r3-rf-tests \
         r2-package r2-stage-data \
         r3-scout r3-plan r3-model-tests
 
@@ -790,6 +790,9 @@ r2-package: r2-stage-data
 	@rm -rf build $(BUILD)/dist/*.whl
 	@$(PYTHON) -m pip wheel --no-deps -q -w $(BUILD)/dist .
 	@$(PYTHON) -c "import glob, os; [print('  %d bytes  %s' % (os.path.getsize(w), w)) for w in sorted(glob.glob('$(BUILD)/dist/*.whl'))]"
+
+r3-rf-tests:
+	@$(PYTHON) tools/r3/rf_tests.py --json $(BUILD)/r3_rf_tests.json
 
 r2-e2e-tests: $(BUILD)/tnca_device.vvp
 	@if [ -x "$(TRITON_PYTHON)" ]; then \

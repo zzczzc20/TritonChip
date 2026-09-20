@@ -443,30 +443,32 @@ def pkg06(log, ctx):
         ok = False
 
     # A gate nobody has seen fail is a gate nobody has tested -- which is
-    # how the stale wheel survived every other packaging case. One file in
-    # a copy of the wheel is replaced with the version that actually
-    # shipped, and the comparison must notice.
+    # how the stale wheel survived every other packaging case. A copy of
+    # the wheel gets one shipped file changed the way the stale one was
+    # changed (the mailbox line shortened from eight fields to six), and
+    # the comparison must notice. Synthesised rather than fetched from
+    # git, so it also runs from an exported tree with no .git.
     control = os.path.join(ctx['base'], 'control.whl')
     victim = 'tnca/transport.py'
-    old_bytes = _run(['git', 'show',
-                      f"441d9c5:build/lib/{victim}"], cwd=ROOT)
-    if old_bytes.returncode == 0 and old_bytes.stdout:
-        with zipfile.ZipFile(ctx['wheel']) as src, \
-                zipfile.ZipFile(control, 'w') as dst:
-            for item in src.infolist():
-                data = src.read(item.filename)
-                if item.filename == victim:
-                    data = old_bytes.stdout.encode()
-                dst.writestr(item, data)
-        with zipfile.ZipFile(control) as z:
-            with open(os.path.join(ROOT, 'python', victim), 'rb') as fh:
-                caught = z.read(victim) != fh.read()
-        log.append(f"    a control wheel carrying the version that actually "
-                   f"shipped: {'caught' if caught else 'NOT CAUGHT (bad)'}")
-        ok &= caught
-    else:
-        log.append("    (the control needs the commit that carried the "
-                   "stale tree; skipped)")
+    with zipfile.ZipFile(ctx['wheel']) as src, \
+            zipfile.ZipFile(control, 'w') as dst:
+        for item in src.infolist():
+            data = src.read(item.filename)
+            if item.filename == victim:
+                data = data.replace(
+                    b'{a0} {a1} {a2} {a3} {a4} {a5}',
+                    b'{a0} {a1} {a2} {a3}')
+            dst.writestr(item, data)
+    with zipfile.ZipFile(control) as z:
+        with open(os.path.join(ROOT, 'python', victim), 'rb') as fh:
+            caught = z.read(victim) != fh.read()
+        ctl = z.read(victim).decode()
+        m3 = _re.search(r'fh\.write\(f"([^"]*)\\n"\)', ctl)
+        ctl_fields = len(m3.group(1).split()) if m3 else 0
+    log.append(f"    a control wheel whose host writes {ctl_fields} field(s) "
+               f"instead of {wrote}: "
+               f"{'caught' if caught else 'NOT CAUGHT (bad)'}")
+    ok &= caught and ctl_fields != reads
     return ok, 'the wheel is built from this tree, and its two ends agree'
 
 

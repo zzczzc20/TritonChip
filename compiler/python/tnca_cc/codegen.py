@@ -450,10 +450,19 @@ class CodeGen:
                     comment=op.attrs.get('comment'))
 
     def _op_vcmp(self, op):
-        a, b = op.operands
+        a = op.operands[0]
         p = op.results[0]
         self._alloc(p)
         mnem = 'vf.cmp' if _is_fp(a.dtype) else 'v.cmp'
+        # ISA sec 0x38: `v.cmpi Pd, Va, #imm16` compares against a signed
+        # 16-bit immediate. When the optimiser has proved the right side
+        # is a broadcast constant it leaves the value in `imm`, and the
+        # splat and the constant that fed it are then dead.
+        if 'imm' in op.attrs:
+            self._emit(f"{mnem}i.{op.attrs['cc']}", f"p{p.reg}",
+                        f"v{a.reg}", f"#{op.attrs['imm']}")
+            return
+        b = op.operands[1]
         self._emit(f"{mnem}.{op.attrs['cc']}", f"p{p.reg}", f"v{a.reg}",
                     f"v{b.reg}")
 

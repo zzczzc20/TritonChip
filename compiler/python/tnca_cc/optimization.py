@@ -64,6 +64,148 @@ def _opaque(op):
     return False
 
 
+def drop_dead_pure(kernel):
+    """Remove pure scalar definitions that nothing names.
+
+    Its own pass rather than a tail of the CSE, because the two have
+    different reasons to run. Strength reduction leaves a constant with
+    no users whether or not any value merged, and a kernel with a single
+    pure value has nothing to merge but can still have something dead.
+
+    Only pure definitions go. An effectful operation is never removed
+    for being unused: a store nobody reads is still a store.
+    """
+    out = {'removed': 0, 'roles': []}
+    for role in kernel.roles:
+        if any(_opaque(o) for o in role.region.ops):
+            out['roles'].append({'role': role.name,
+                                 'why': 'nested control flow'})
+            continue
+        # To a fixed point: dropping one definition can make the one it
+        # named dead in turn.
+        n = 0
+        while True:
+            live = set()
+            for o in role.region.ops:
+                for v in _values_in(o):
+                    live.add(id(v))
+            keep = [o for o in role.region.ops
+                    if not _is_pure(o)
+                    or any(id(r) in live for r in o.results)]
+            if len(keep) == len(role.region.ops):
+                break
+            n += len(role.region.ops) - len(keep)
+            role.region.ops = keep
+        out['removed'] += n
+        out['roles'].append({'role': role.name, 'removed': n})
+    return out
+
+
+def strength_reduce(kernel):
+    """Multiply by a constant power of two becomes a shift.
+
+    This one is OURS, and saying so matters. Upstream canonicalisation
+    was measured on the exact module where this shows up -- the `pid *
+    16` of every Triton elementwise kernel -- and it leaves arith.muli
+    alone and produces no arith.shli. So this is a TNCA lowering
+    decision, and reporting it as an upstream win would be false.
+
+    What it saves is not the multiply. It is the constant: `s.mul` needs
+    its operand in a register, and materialising it costs a whole
+    instruction (four, before the constant lowering). `s.shli` takes the
+    amount as an immediate, so the constant loses its only user and the
+    dead-value sweep takes it.
+    """
+    out = {'sites': 0, 'roles': []}
+    for role in kernel.roles:
+        if any(_opaque(o) for o in role.region.ops):
+            out['roles'].append({'role': role.name,
+                                 'why': 'nested control flow'})
+            continue
+        const_of = {}
+        n = 0
+        for op in role.region.ops:
+            if op.kind == 'const' and len(op.results) == 1:
+                const_of[id(op.results[0])] = int(op.attrs['value'])
+                continue
+            if op.kind != 'sbin' or op.attrs.get('op') != 'mul':
+                continue
+            if len(op.operands) != 2:
+                continue
+            a, b = op.operands
+            v = const_of.get(id(b))
+            # Only the right operand: multiplication commutes, but the
+            # IR's operand order is the source's, and swapping it here
+            # would make the dump disagree with the program.
+            if v is None or v <= 0 or (v & (v - 1)):
+                continue
+            shift = v.bit_length() - 1
+            op.kind = 'sbini'
+            op.operands = [a]
+            op.attrs = dict(op.attrs, op='shl', imm=shift,
+                            comment=f"x{v} as a shift")
+            n += 1
+        out['sites'] += n
+        out['roles'].append({'role': role.name, 'sites': n})
+    return out
+
+
+# The widest signed immediate `v.cmpi` takes (ISA sec 0x38).
+_CMPI_MIN, _CMPI_MAX = -(1 << 15), (1 << 15) - 1
+
+
+def fold_broadcast_compare(kernel):
+    """A compare against a broadcast constant becomes an immediate compare.
+
+    `v.cmp` takes two vectors, so comparing against a constant costs
+    three instructions: materialise the scalar, splat it, compare. The
+    ISA has `v.cmpi` with a signed 16-bit immediate, which is one.
+
+    This is ours, not upstream's: at this point the splat and the compare
+    are TNCA vector operations that no MLIR pass has an opinion about.
+
+    The splat is left in place. It is a pure value, and if the compare
+    was its only user the dead sweep takes it; if something else reads
+    it, removing it here would be wrong.
+    """
+    out = {'sites': 0, 'roles': []}
+    for role in kernel.roles:
+        if any(_opaque(o) for o in role.region.ops):
+            out['roles'].append({'role': role.name,
+                                 'why': 'nested control flow'})
+            continue
+        const_of, splat_of = {}, {}
+        n = 0
+        for op in role.region.ops:
+            if op.kind == 'const' and len(op.results) == 1:
+                const_of[id(op.results[0])] = int(op.attrs['value'])
+            elif op.kind == 'splat' and len(op.results) == 1 \
+                    and len(op.operands) == 1:
+                v = const_of.get(id(op.operands[0]))
+                if v is not None:
+                    splat_of[id(op.results[0])] = v
+            elif op.kind == 'vcmp' and len(op.operands) == 2:
+                a, b = op.operands
+                # Floating point stays alone: the immediate form is an
+                # integer one, and reading a float's bits as an integer
+                # immediate would change the comparison.
+                if _is_float(a):
+                    continue
+                v = splat_of.get(id(b))
+                if v is None or not (_CMPI_MIN <= v <= _CMPI_MAX):
+                    continue
+                op.operands = [a]
+                op.attrs = dict(op.attrs, imm=v)
+                n += 1
+        out['sites'] += n
+        out['roles'].append({'role': role.name, 'sites': n})
+    return out
+
+
+def _is_float(v):
+    return str(getattr(v, 'dtype', '')).startswith(('f', 'bf'))
+
+
 def pure_scalar_cse(kernel):
     """Merge each role's duplicate pure scalar values, using upstream.
 

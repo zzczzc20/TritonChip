@@ -20,6 +20,7 @@ import argparse
 import json
 import math
 import os
+import subprocess
 import sys
 import tempfile
 import time
@@ -52,7 +53,42 @@ def _cycles_of(ev):
 
 
 def run_one(wid, mode, tmp):
-    """One workload at one mode: cycles, correctness and static size."""
+    """One workload at one mode, in a process of its own.
+
+    Not in this one. Measured in-process, L06's baseline was 3241 cycles
+    alone and 3221 when L05 had run first: state survives a Session and
+    the second measurement starts from somewhere the first one left.
+    Section 6.3 requires the memory, the reset state and the cache state
+    to be identical between the runs being compared, and a difference of
+    twenty cycles is larger than most of the gains being measured.
+
+    A fresh interpreter was not enough on its own. The scratch directory
+    has to be fresh too: measuring L06 twice into one directory gave 3221
+    and then 3241, and into a new directory each time gave 3241 both
+    times. So the child makes its own and this argument is ignored.
+
+    It costs about a second per measurement and it is the difference
+    between a comparison and a coincidence.
+    """
+    r = subprocess.run([sys.executable, os.path.abspath(__file__),
+                        '--measure-one', wid, mode, tmp],
+                       cwd=ROOT, capture_output=True, text=True,
+                       timeout=3600)
+    if r.returncode != 0:
+        return {'cycles': None, 'correct': False, 'words': None,
+                'wall_s': None,
+                'error': (r.stderr or r.stdout)[-300:]}
+    try:
+        return json.loads(r.stdout.strip().splitlines()[-1])
+    except Exception:                                      # noqa: BLE001
+        return {'cycles': None, 'correct': False, 'words': None,
+                'wall_s': None,
+                'error': f"unreadable result: {r.stdout[-200:]}"}
+
+
+def measure_one(wid, mode, _tmp_ignored):
+    """The measurement itself. Runs in the child, in its own directory."""
+    tmp = tempfile.mkdtemp(prefix=f'r35-{wid}-{mode}-')
     import e2e_tests as E
     from tnca import aot
     from tnca.runtime import Session
@@ -101,9 +137,16 @@ def run_one(wid, mode, tmp):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--modes', nargs='*', default=['B0', 'O1'])
+    ap.add_argument('--measure-one', nargs=3, metavar=('WID', 'MODE', 'TMP'),
+                    help='internal: measure one case and print it as json')
     ap.add_argument('--only', nargs='*')
     ap.add_argument('--json')
     args = ap.parse_args()
+
+    if args.measure_one:
+        wid, mode, tmp = args.measure_one
+        print(json.dumps(measure_one(wid, mode, tmp)))
+        return 0
 
     print("R3.5: device cycles for the frozen workloads, by mode")
     print(f"  on {PROFILE}, the profile R3 v2 accepted")

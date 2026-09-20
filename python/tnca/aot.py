@@ -578,6 +578,25 @@ def _compile_triton(fn, kernel_name, signature, constexprs, target, prov,
         dynamic_args=True)
     stages.record('tnir', str(kernel))
 
+    # The TNCA IR passes run on this path too. Upstream canonicalisation
+    # already worked on the TTIR above, but it does not strength-reduce a
+    # multiply -- measured, on exactly this module -- and the importer
+    # introduces scalar values of its own that never existed upstream.
+    if opt_level >= 1:
+        from tnca_cc.optimization import (pure_scalar_cse, strength_reduce,
+                                           drop_dead_pure,
+                                           fold_broadcast_compare)
+        fb = fold_broadcast_compare(kernel)
+        prov.record('opt_immediate_compares', fb['sites'])
+        sr = strength_reduce(kernel)
+        cse = pure_scalar_cse(kernel)
+        dead = drop_dead_pure(kernel)
+        prov.record('opt_strength_reduced', sr['sites'])
+        prov.record('opt_pure_scalar_merged', cse['merged'])
+        prov.record('opt_dead_pure_removed', dead['removed'])
+        if sr['sites'] or cse['merged'] or dead['removed']:
+            stages.record('tnir_opt', str(kernel))
+
     asm_text, cg = adapter.emit(
         kernel, target, prov=prov, opt_level=opt_level,
         check_protocol=bool(options.get('check_protocol', False)))
@@ -623,15 +642,22 @@ def _compile_tnca_ir(build, kernel_name, signature, constexprs, target, prov,
     # Triton path gets never reaches it. Above O0 its pure scalar values
     # go across the bridge and upstream says which of them coincide.
     if opt_level >= 1:
-        from tnca_cc.optimization import pure_scalar_cse
+        from tnca_cc.optimization import (pure_scalar_cse, strength_reduce,
+                                           drop_dead_pure,
+                                           fold_broadcast_compare)
+        fb = fold_broadcast_compare(kernel)
+        prov.record('opt_immediate_compares', fb['sites'])
+        sr = strength_reduce(kernel)
         info = pure_scalar_cse(kernel)
+        dead = drop_dead_pure(kernel)
+        prov.record('opt_strength_reduced', sr['sites'])
         prov.record('opt_pure_scalar_merged', info['merged'])
-        prov.record('opt_pure_scalar_removed', info['removed_ops'])
+        prov.record('opt_dead_pure_removed', dead['removed'])
         for r in info['roles']:
             if r.get('applied'):
-                prov.record(f"opt_pipeline", ','.join(r['pipeline']))
+                prov.record('opt_pipeline', ','.join(r['pipeline']))
                 prov.record('opt_bridge_protocol', r['protocol'])
-        if info['merged']:
+        if info['merged'] or sr['sites'] or dead['removed']:
             stages.record('tnir_opt', str(kernel))
 
     asm_text, cg = adapter.emit(

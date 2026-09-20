@@ -1,9 +1,11 @@
 {
   "schema": "tnca-manifest-schema/1",
   "contract": "doc/phase2_tasks_and_acceptance.md R2-05, section 3.1",
-  "format_version": [1, 0],
+  "format_version": [
+    1,
+    0
+  ],
   "note": "Manifest v1, frozen. Hand-written rather than JSON Schema on purpose: the loader must refuse a duplicate JSON key and an unknown required field, and the contract's rule about `optional_metadata` is not expressible as a draft-07 constraint. python/tnca/manifest.py implements this file; it is not a second copy of it.",
-
   "rules": {
     "unknown_top_level": "reject",
     "unknown_within_section": "reject",
@@ -13,7 +15,6 @@
     "optional_metadata": "The ONLY place an ignorable extension may live. Nothing in it may affect an address, a resource, a completion or a numeric result, and the loader does not read it.",
     "serialisation": "UTF-8, sort_keys, separators (',', ':'), no trailing newline, no NaN/Infinity. This is what `manifest_hash` is taken over, so two environments that build the same artifact produce the same bytes."
   },
-
   "sections": {
     "identity": {
       "required": {
@@ -61,13 +62,13 @@
     },
     "resources": {
       "required": {
-        "rf_private_per_role": "vector registers each role owns",
+        "rf_private_per_role": "vector registers each role uses, measured from the emitted code",
         "shared_windows": "the physical mapping of any window two roles share",
-        "accumulators": "upper bound",
-        "barriers": "upper bound",
-        "descriptors": "upper bound",
-        "commands_outstanding": "upper bound",
-        "scratch_bytes": "spill and scratch, 0 if none"
+        "accumulators": "upper bound, measured from the emitted code",
+        "barriers": "upper bound, measured from the emitted code",
+        "descriptors": "upper bound, measured from the emitted code",
+        "commands_outstanding": "upper bound, or 'unknown' when no measurement or model supports a number; never 0 as a stand-in",
+        "scratch_bytes": "spill and scratch; 0 only when measured to be 0, otherwise 'unknown'"
       }
     },
     "semantics": {
@@ -84,7 +85,6 @@
       "note": "Free-form, ignorable, and never consulted."
     }
   },
-
   "integrity": {
     "manifest_hash": "sha256 over the canonical serialisation of every section except this field",
     "segment_hashes": "sha256 per segment, checked on load before a single instruction runs",

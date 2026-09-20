@@ -507,6 +507,10 @@ class TTIRImporter:
         axis = op.get_int_attr('axis') or 0
         self._v[op.get_result(0).id()] = self.b.program_id(axis)
 
+    def _op_tt_get_num_programs(self, op):
+        axis = op.get_int_attr('axis') or 0
+        self._v[op.get_result(0).id()] = self.b.num_programs(axis)
+
     def _op_tt_make_range(self, op):
         shape, _ = _parse_type(str(op.get_result(0).get_type()))
         self._check_block(shape)

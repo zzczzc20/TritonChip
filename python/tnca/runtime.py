@@ -207,6 +207,10 @@ class Session:
 
         self._workdir = workdir
         self._deadline = deadline_cycles
+        # Recorded rather than derived: a replay has to be told what the
+        # original run was given, and a seed nobody wrote down is a seed
+        # nobody can reuse.
+        self.seeds = {}
         self._host_timeout = host_timeout
         self._trace = trace
         self._lock = threading.RLock()
@@ -321,6 +325,32 @@ class Session:
             return True
 
     # ---- modules ----------------------------------------------------------
+    @property
+    def deadline_cycles(self):
+        """What a launch is given before it is declared stuck."""
+        return self._deadline
+
+    def task_of(self, event):
+        """The task record behind an event, or None.
+
+        Events are handed to the caller; tasks are not. This is the one way
+        back, and it is here so `failure.capture` does not have to reach
+        into the queue.
+        """
+        # Not a search through the queue: a finished task is popped from
+        # it, and a failure is captured after the failure. The event keeps
+        # the reference, and the session still checks the event is its own
+        # -- events are not portable between sessions.
+        task = getattr(event, '_task', None)
+        if task is None or getattr(event, 'epoch', None) != self.epoch:
+            return None
+        return task
+
+    def capture_failure(self, event, outdir, *, note=None):
+        """Save this launch as a replayable bundle. See tnca.failure."""
+        from . import failure
+        return failure.capture(self, event, outdir, note=note)
+
     def load(self, path):
         """Check an artifact against THIS device, then place its code."""
         self._check_usable()
@@ -329,7 +359,16 @@ class Session:
         want = man['identity']['abi_version']
         if not abi.supports(tuple(want)):
             raise VersionError(
-                f"artifact wants argument ABI {want[0]}.{want[1]}")
+                f"artifact wants argument ABI {want[0]}.{want[1]}, and this "
+                f"runtime implements {abi.ABI_VERSION[0]}.{abi.ABI_VERSION[1]}",
+                where=f"{os.path.basename(path)} "
+                      f"({man['identity'].get('kernel_name', '?')})",
+                detail={'artifact': list(want),
+                        'runtime': list(abi.ABI_VERSION)},
+                remedy='recompile the kernel with this toolchain. A higher '
+                       'major means the argument block is laid out '
+                       'differently, and reading it anyway would put the '
+                       'wrong bytes in every parameter')
         if man['target']['profile'] != self.profile:
             raise ProfileMismatch(
                 f"artifact is for profile {man['target']['profile']!r}, "
@@ -376,7 +415,14 @@ class Session:
             total = gx * gy * gz
             if total > 4096:
                 raise AdmissionError(
-                    f"{total} programs exceeds the 4096 limit")
+                    f"{total} programs exceeds the 4096 limit",
+                    where=f"{module.manifest['identity']['kernel_name']} "
+                          f"grid {gx}x{gy}x{gz}",
+                    detail={'requested': total, 'limit': 4096,
+                            'grid': [gx, gy, gz]},
+                    remedy='split the work across several launches; the '
+                           'limit is the grid the transport encodes, '
+                           'sixteen bits per axis with a 4096 cap')
 
             # Resolve and validate every argument BEFORE anything starts.
             resolved, leased = self._resolve(module, args)
@@ -408,7 +454,12 @@ class Session:
 
             task = dict(event=ev, module=module, block=block,
                         arg_addr=arg_addr, grid=(gx, gy, gz),
-                        depends_on=list(depends_on), leased=leased)
+                        depends_on=list(depends_on), leased=leased,
+                        # Kept so a failure can be saved and run again
+                        # (failure.capture); the block alone is bytes, and
+                        # a bundle a person cannot read is not a bundle.
+                        args=dict(resolved))
+            ev._task = task
             for buf in leased:
                 buf.leases += 1
             self._events[ev.job_id] = ev

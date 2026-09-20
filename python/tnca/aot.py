@@ -29,6 +29,7 @@ import hashlib
 import inspect as _inspect
 import json
 import os
+import re
 import time
 
 from . import _data, abi, artifact, manifest as M
@@ -76,6 +77,104 @@ def _lock_hash():
     except OSError:
         return 'unknown'
 
+
+
+# --------------------------------------------------------------------------
+# What the kernel actually uses, read off the code that was emitted.
+#
+# R2-12 OBS-01: "没有测量/模型支持的成本标为 unknown，不能填0冒充零开销."
+# The manifest used to report the PROFILE's register count as the kernel's,
+# and 0 for outstanding commands and scratch. Zero is a measurement; these
+# were not measured. What can be counted from the assembly is counted, and
+# what cannot is UNKNOWN by name.
+# --------------------------------------------------------------------------
+
+UNKNOWN = 'unknown'
+
+INSTRUCTION_BYTES = 8      # ISA sec 3: every instruction is 64 bits
+
+# reg class -> the operand spelling it appears under
+_REG_RE = {
+    'vector': re.compile(r'\bv(\d+)\b'),
+    'scalar': re.compile(r'\bs(\d+)\b'),
+    'accumulator': re.compile(r'\ba(\d+)\b'),
+    'barrier': re.compile(r'\bb(\d+)\b'),
+    'descriptor': re.compile(r'\bd(\d+)\b'),
+    'window': re.compile(r'\bw(\d+)\b'),
+}
+
+# Instructions that put a memory command in flight. Counting the mnemonics
+# gives the number ISSUED, which is an upper bound on the number OUTSTANDING
+# and is reported as exactly that -- not as the peak, which needs a schedule.
+_ASYNC = re.compile(r'^\s*(t\.(?:ld|st)\.async[\w.]*|g\.(?:ld|st)[\w.]*'
+                    r'|td\.load[\w.]*)\b')
+
+
+def _strip_asm(asm_text):
+    """Assembly with comments, labels and directives removed."""
+    out = []
+    for line in asm_text.splitlines():
+        line = line.split('//')[0].split('#')[0] if '//' in line else line
+        line = line.split('//')[0]
+        body = line.strip()
+        if not body or body.endswith(':') or body.startswith('.org'):
+            continue
+        out.append(body)
+    return out
+
+
+def measure_resources(asm_text, target, code=b''):
+    """Counted from the emitted instructions, or UNKNOWN.
+
+    Returned alongside the profile's limits so a reader can see the headroom
+    without having to look the profile up, and so OBS-01 can cross-check the
+    two against each other.
+    """
+    body = _strip_asm(asm_text)
+    used = {}
+    for kind, rx in _REG_RE.items():
+        # `#32` immediates and `0x` literals are not registers; the operand
+        # regexes are anchored on a word boundary and the immediates all
+        # carry a `#`, so they do not collide.
+        seen = set()
+        for line in body:
+            for m in rx.finditer(line):
+                seen.add(int(m.group(1)))
+        used[kind] = sorted(seen)
+
+    issued = sum(1 for line in body if _ASYNC.match(line))
+    # Two different counts, and they are not the same number: `.li` expands
+    # to as many as four words (movz + 3x movk, tools/asm sec 22), so the
+    # assembly understates the code. Reporting the line count as "the
+    # instructions" made a 27-instruction kernel out of a 30-instruction
+    # one. Both are given, each saying which it is.
+    machine = len(code) // INSTRUCTION_BYTES if code else UNKNOWN
+    return {
+        'measured_from': 'emitted assembly and machine code',
+        'assembly_instructions': len(body),
+        'machine_instructions': machine,
+        'code_bytes': len(code) if code else UNKNOWN,
+        'vector_regs_used': len(used['vector']),
+        'scalar_regs_used': len(used['scalar']),
+        'accumulators_used': len(used['accumulator']),
+        'barriers_used': len(used['barrier']),
+        'descriptors_used': len(used['descriptor']),
+        'windows_used': len(used['window']),
+        'async_commands_issued': issued,
+        # Issued is not outstanding: the peak in flight depends on where the
+        # waits fall, which needs a schedule this stage does not have.
+        'commands_outstanding_peak': UNKNOWN,
+        # No kernel in this stage spills, but "no spill slots were emitted"
+        # is a statement about the emitter, not a measurement of the kernel.
+        'scratch_bytes': UNKNOWN,
+        'dma_expansion': UNKNOWN,
+        'limits': {
+            'vector_regs': target.vregs_per_rctx,
+            'accumulators': target.num_accumulators,
+            'barriers': target.num_barriers,
+            'descriptors': target.num_descriptors,
+        },
+    }
 
 def check_options(options):
     options = dict(options or {})
@@ -232,8 +331,10 @@ def compile_aot(source, *, kernel_name=None, signature=None, constexprs=None,
     key = _key_for(source, source_kind, kernel_name, signature, constexprs,
                    profile, pinfo, options, param_names)
 
+    measured = measure_resources(asm_text, target, code=code)
+    report['resources'] = measured
     man = _manifest(kernel_name, params, target, pinfo, constexprs, options,
-                    prov, source_kind, report)
+                    prov, source_kind, report, measured=measured)
 
     if output is None:
         output = f"{kernel_name}-{key[:12]}{artifact.SUFFIX}"
@@ -401,7 +502,8 @@ def _compile_tnca_ir(build, kernel_name, signature, constexprs, target, prov,
 
 
 def _manifest(kernel_name, params, target, pinfo, constexprs, options, prov,
-              source_kind, report):
+              source_kind, report, measured=None):
+    measured = measured or {}
     caps = target.capabilities if isinstance(target.capabilities, dict) \
         else dict(target.capabilities)
     needed = sorted(c for c, v in caps.items() if v)
@@ -439,13 +541,15 @@ def _manifest(kernel_name, params, target, pinfo, constexprs, options, prov,
             'dynamic_constraints': {},
         },
         'resources': {
-            'rf_private_per_role': {'role0': target.vregs_per_rctx},
+            'rf_private_per_role': {
+                'role0': measured.get('vector_regs_used', UNKNOWN)},
             'shared_windows': [],
-            'accumulators': target.num_accumulators,
-            'barriers': target.num_barriers,
-            'descriptors': target.num_descriptors,
-            'commands_outstanding': 0,
-            'scratch_bytes': 0,
+            'accumulators': measured.get('accumulators_used', UNKNOWN),
+            'barriers': measured.get('barriers_used', UNKNOWN),
+            'descriptors': measured.get('descriptors_used', UNKNOWN),
+            'commands_outstanding': measured.get(
+                'commands_outstanding_peak', UNKNOWN),
+            'scratch_bytes': measured.get('scratch_bytes', UNKNOWN),
         },
         'semantics': {
             'completion_scope': 'device',

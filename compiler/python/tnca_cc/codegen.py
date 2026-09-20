@@ -354,6 +354,12 @@ class CodeGen:
         self._emit('s.rdspecial', f"s{v.reg}",
                     f"pid.{'xyz'[op.attrs['dim']]}")
 
+    def _op_num_programs(self, op):
+        v = op.results[0]
+        self._alloc(v)
+        self._emit('s.rdspecial', f"s{v.reg}",
+                   f"npid.{'xyz'[op.attrs['dim']]}")
+
     def _op_special(self, op):
         v = op.results[0]
         self._alloc(v)

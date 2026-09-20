@@ -154,6 +154,17 @@ class Builder:
         self._emit('program_id', [v], [], dim=dim)
         return v
 
+    def num_programs(self, dim=0):
+        """The grid extent on one axis.
+
+        The twin of program_id: ISA sec 5.1 gives both, pid.{x,y,z} and
+        npid.{x,y,z}, and a kernel that can ask which program it is can
+        ask how many there are.
+        """
+        v = self._value(SCALAR, 'i32', hint='npid')
+        self._emit('num_programs', [v], [], dim=dim)
+        return v
+
     def special(self, name):
         v = self._value(SCALAR, 'i64', hint='sp')
         self._emit('special', [v], [], name=name)

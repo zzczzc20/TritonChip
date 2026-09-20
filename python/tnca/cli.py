@@ -278,6 +278,35 @@ def cmd_prepare(args):
     return 0
 
 
+def cmd_replay(args):
+    """Run a saved failure again and say whether it failed the same way.
+
+    The exit code is about the REPLAY, not about the kernel: 0 means the
+    bundle reproduced what it recorded, which for a failure bundle means
+    the kernel failed again. A bundle that no longer reproduces is the
+    interesting case, and it exits 1.
+    """
+    from . import failure
+
+    index, outcome = failure.replay(args.bundle, profile=args.profile)
+    saved = index['outcome']
+    same, why = failure.same_failure(saved, outcome)
+    if getattr(args, 'json', False):
+        print(json.dumps({'bundle': args.bundle, 'saved': saved,
+                          'replayed': outcome, 'reproduced': same,
+                          'why': why}, indent=2, sort_keys=True,
+                         default=str))
+    else:
+        print(f"  kernel     {index['kernel']}  ({index['profile']}, "
+              f"grid {'x'.join(str(g) for g in index['grid'])})")
+        print(f"  saved      {saved.get('state')} "
+              f"[{saved.get('code')}]")
+        print(f"  replayed   {outcome.get('state')} "
+              f"[{outcome.get('code')}]")
+        print(f"  {'reproduced' if same else 'DID NOT REPRODUCE'}: {why}")
+    return 0 if same else 1
+
+
 def sim_main(argv=None):
     ap = argparse.ArgumentParser(prog='tnca-sim',
                                  description='Run an artifact on the '
@@ -301,6 +330,14 @@ def sim_main(argv=None):
     p.add_argument('--force', action='store_true')
     _common(p)
     p.set_defaults(func=cmd_prepare)
+
+    r = sub.add_parser('replay', help='run a saved failure bundle again')
+    r.add_argument('bundle')
+    r.add_argument('--profile', default=None,
+                   help="override the bundle's profile; the default is the "
+                        "one it was captured on")
+    _common(r)
+    r.set_defaults(func=cmd_replay)
 
     d = sub.add_parser('doctor', help='what this installation can do')
     _common(d)

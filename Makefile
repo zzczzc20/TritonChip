@@ -674,6 +674,31 @@ clean:
 # development regression and may skip an unavailable tool; the R1 entries are
 # evidence, run strict, and treat a skip as a failure.
 #------------------------------------------------------------------------------
+#==============================================================================
+# R2: the AOT compiler and simulation runtime
+# (doc/phase2_tasks_and_acceptance.md)
+#
+# These entries exist as the contract's stable interface. A target that is not
+# yet backed by an implementation runs the part that IS implemented and says
+# so; none of them prints a pass for work that has not happened.
+#==============================================================================
+.PHONY: r2-baseline r2-inventory r2-abi-tests r2-artifact-tests
+
+# DEP-01. EVIDENCE is an R1 run directory; COMBINED is compare_envs.py's
+# output over A and B, which is what makes an R1 verdict complete.
+r2-baseline:
+	@$(PYTHON) tools/r2/baseline.py $(if $(EVIDENCE),--evidence $(EVIDENCE),) \
+	   $(if $(COMBINED),--combined $(COMBINED),)
+
+r2-inventory:
+	@$(PYTHON) tools/r2/inventory.py
+
+r2-abi-tests:
+	@$(PYTHON) tools/r2/abi_tests.py --json $(BUILD)/r2_abi_tests.json
+
+r2-artifact-tests:
+	@$(PYTHON) tools/r2/artifact_tests.py --json $(BUILD)/r2_artifact_tests.json
+
 .PHONY: r1-doctor r1-check-generated r1-gate-selftest r1-acceptance \
         r1-verify-evidence r1-inventory r1-check-artifacts r1-build-tests r1-profile-tests \
         r1-resource-tests r1-mutation-tests r1-ir-tests r1-regression r1-evidence-tests r1-signoff

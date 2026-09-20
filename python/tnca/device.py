@@ -202,6 +202,45 @@ def require(profile='core-sim', *, allow_stale=False):
                'one: that would put a compile inside every kernel call')
 
 
+KEEP_BUILDS = 3
+
+
+def prune(profile='core-sim', keep=KEEP_BUILDS, verbose=False):
+    """Drop all but the newest `keep` builds of this profile.
+
+    The cache key holds a hash of the sources, which is what makes a
+    cached bench incapable of being stale -- and also what makes a new
+    directory appear every time the RTL changes. At 29 MB each that is a
+    gigabyte after a few dozen commits, so old ones go. Only this
+    profile's own directories are considered, and the newest are kept.
+    """
+    root = cache_root()
+    if not os.path.isdir(root):
+        return []
+    mine = []
+    for name in os.listdir(root):
+        if not name.startswith(f"{profile}-"):
+            continue
+        path = os.path.join(root, name)
+        if not os.path.isdir(path):
+            continue
+        try:
+            mine.append((os.path.getmtime(path), path))
+        except OSError:
+            continue
+    mine.sort(reverse=True)
+    removed = []
+    for _when, path in mine[keep:]:
+        try:
+            shutil.rmtree(path)
+            removed.append(path)
+        except OSError:
+            pass
+    if verbose and removed:
+        print(f"  pruned {len(removed)} older build(s) of {profile}")
+    return removed
+
+
 def prepare(profile='core-sim', *, force=False, verbose=True):
     """Build this profile's device from the RTL the package ships."""
     target = expected_path(profile)
@@ -241,6 +280,7 @@ def prepare(profile='core-sim', *, force=False, verbose=True):
             '-o', target, source]
     if verbose:
         print(f"  building {profile} -> {target}")
+    prune(profile, verbose=verbose)
     r = subprocess.run(argv, capture_output=True, text=True, timeout=1800)
     if r.returncode != 0 or not os.path.exists(target):
         raise DeviceLost(

@@ -166,6 +166,22 @@ def main():
     ap.add_argument('--json')
     args = ap.parse_args()
     wanted = args.tops or sorted(TOPS)
+    # The tops are independent yosys processes, so they run together. The
+    # wall time is then the slowest one rather than their sum, which
+    # matters because tnca_acc_rf -- 256 rows behind 257 write ports -- is
+    # most of it, and CI pays this on every push.
+    results = {}
+    if len(wanted) > 1:
+        from concurrent.futures import ThreadPoolExecutor
+        with ThreadPoolExecutor(max_workers=min(len(wanted), 5)) as pool:
+            futures = {}
+            for top in wanted:
+                if top not in TOPS:
+                    continue
+                files, flat = TOPS[top]
+                futures[top] = pool.submit(run_top, top, files, flat)
+            for top, fut in futures.items():
+                results[top] = fut.result()
     report = {'tops': {}, 'cap_seconds': TIMEOUT,
               'flow': 'proc; opt; memory -nomap; opt',
               'mapping': 'memory-inferred; no PDK, no FPGA RAM primitive',
@@ -178,7 +194,7 @@ def main():
             print(f"  {top}: not a declared top")
             continue
         files, flat = TOPS[top]
-        res = run_top(top, files, flatten=flat)
+        res = results.get(top) or run_top(top, files, flatten=flat)
         report['tops'][top] = res
         if not res['ok']:
             print(f"  {top:<24s} FAILED  {res.get('error', '')[:60]}")

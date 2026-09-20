@@ -1,8 +1,15 @@
 # TNCA out-of-tree MLIR backend (compiler_overview.md sec 15, C0).
 #
-# Needs the LLVM/MLIR revision pinned in compiler/pin/toolchain.json. Triton
-# requires its own pinned revision rather than an arbitrary release, so
-# building against a system LLVM is not supported here either.
+# Builds against the LLVM/MLIR revision pinned in compiler/pin/toolchain.json,
+# which is Triton's -- Triton requires its own revision rather than an
+# arbitrary release.
+#
+# It also builds against a distribution MLIR from 20.1 onwards, which is what
+# the R1 acceptance environment uses (spec/r1_toolchain.lock.json `mlir`):
+# tying the acceptance environment to a personally built LLVM is exactly what
+# R1-09 forbids. The one version-dependent thing is the aggregate
+# registration libraries, which exist only from LLVM 21; see
+# tools/tnca-opt/CMakeLists.txt.
 #
 #   cmake -B build -G Ninja \
 #         -DMLIR_DIR=$LLVM_INSTALL/lib/cmake/mlir \

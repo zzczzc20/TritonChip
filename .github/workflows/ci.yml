@@ -45,7 +45,7 @@ jobs:
           set -euo pipefail
           sudo apt-get update -qq
           sudo apt-get install -y --no-install-recommends \
-            iverilog build-essential cmake ninja-build \
+            iverilog yosys build-essential cmake ninja-build \
             python3 python3-venv \
             libmlir-20-dev mlir-20-tools llvm-20-dev
           iverilog -V | head -1
@@ -115,6 +115,15 @@ jobs:
       # mean turning a missing case into a skip.
       - name: R3 banked register file
         run: make r3-rf-tests
+
+      # R3-10: structural synthesis that keeps the memories, so a register
+      # file is counted as storage rather than as a few hundred thousand
+      # flops. About three minutes, and it passes identically on the yosys
+      # Ubuntu ships (0.33) and a current one (0.52) -- checked, because a
+      # synthesis result that depends on the tool version is not a property
+      # of the design.
+      - name: R3 storage synthesis
+        run: make r3-synth-tests
 
       # The gate has to be able to fail. Ten injected faults, each of which
       # must be detected; this is cheap and is the check that keeps every

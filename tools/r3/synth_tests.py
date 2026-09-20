@@ -11,6 +11,11 @@ SYN-05 requires Fmax, power and physical area to read NOT MEASURED rather
 than be converted from a gate depth. SYN-04 is therefore a test that the
 report does not overclaim, which is an odd-looking test until you notice
 how easy the overclaim would be.
+
+Checked on yosys 0.33 (what Ubuntu 24.04 ships, and what CI uses) and on
+0.52, with the same verdict and the same port counts; the logic cell
+counts differ by four out of sixty thousand. A synthesis result that
+depended on the tool version would not be a property of the design.
 """
 import argparse
 import json

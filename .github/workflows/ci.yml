@@ -162,3 +162,9 @@ jobs:
       # timed: "it was fast" and "it did not happen" are different claims.
       - name: R2 compile cache
         run: make r2-cache-tests TRITON_PYTHON=$HOME/tritonenv/bin/python
+
+      # The persistent device: 32 launches in one session, eight tasks held
+      # and a ninth refused, and an A->B->C chain whose middle result never
+      # leaves the device.
+      - name: R2 runtime session
+        run: make r2-runtime-tests TRITON_PYTHON=$HOME/tritonenv/bin/python

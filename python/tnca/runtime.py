@@ -392,11 +392,19 @@ class Session:
             ev._to(VALIDATED)
 
             for dep in depends_on:
+                # IDENTITY, not the job id. Job ids start at 1 in every
+                # session, so `dep.job_id in self._events` was true for
+                # another session's first task and a cross-session
+                # dependency was accepted -- which would have made this
+                # session wait on an event it does not own and cannot see
+                # fail.
                 if not isinstance(dep, Event) or \
-                        dep.job_id not in self._events:
+                        self._events.get(dep.job_id) is not dep:
                     raise AdmissionError(
                         'a dependency must be an event this session has '
-                        'already submitted')
+                        'already submitted',
+                        detail={'given': repr(dep)[:60]},
+                        remedy='events are not portable between sessions')
                 if dep.epoch != self.epoch:
                     raise AdmissionError(
                         'a dependency from a previous epoch')

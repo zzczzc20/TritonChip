@@ -8,7 +8,7 @@
 本文件只记录**已经跑过并留下证据**的部分。状态只有 DELIVERED、PARTIAL、
 NOT STARTED 三种；没有完成度百分比。
 
-**R2 未签收。** 十四个工作包中八个的验收条件已满足。最终判决还要求：在 R2
+**R2 未签收。** 十四个工作包中十个的验收条件已满足。最终判决还要求：在 R2
 候选 commit 上重跑 R1 全套（DEP-02）、grid/多批（R2-09）、host transport 的
 完成边界（R2-10）、报告与示例（R2-12）、E2E 与 mutation（R2-13）、双环境发布
 （R2-14）。
@@ -49,11 +49,11 @@ NOT STARTED 三种；没有完成度百分比。
 | R2-06 动态 ABI | **PARTIAL** | ABI-01（独立 byte-level oracle，六类型 22 个值）、ABI-02（三组地址与标量，code hash 不变）、ABI-03（九种坏参数，无一启动任务）、ABI-04（提交后修改 dict 无效） | ABI-05 alias 正例、ABI-06 gather/scatter 越界 fault |
 | R2-07 缓存/确定性 | **DELIVERED** | CACHE-01…04：七个维度改变 key，运行期输入无处可传；两个干净环境同 hash；损坏与截断各拒绝；**编译器被计数而非计时**，四次复用调用编译器 0 次 | 无 |
 | R2-08 runtime 生命周期 | **DELIVERED** | RT-01…07：完整生命周期、32 次不重启、八个占位第九个 QUEUE_FULL、wait 幂等且超时不是判决、租约阻塞、两 session 互不干扰、依赖链与跨 session 依赖拒绝 | 无 |
-| R2-09 grid/admission | **NOT STARTED** | 单 program 的 PID/NPID 已由设备传递 | GRID-01…07 |
-| R2-10 host transport/完成 | **PARTIAL** | `spec/r2_transport_v1.json` 冻结请求/响应信箱协议；upload/download 经设备内存系统而非层级引用 | MEM-01…06 |
+| R2-09 grid/admission | **PARTIAL** | GRID-01/02（九种 grid，每个 PID 恰好出现一次，NPID 是逻辑 grid 大小，与独立 oracle 比对）、GRID-06（映射是双射，边界被拒绝）。`t.program_id(0)` 曾返回线性 id，transport 现在传全部六个 grid 值 | GRID-03/04/05/07 需要四 tile 持久设备 |
+| R2-10 host transport/完成 | **PARTIAL** | MEM-03（A→B→C 全程留在设备内存）、MEM-05（静态：`python/tnca` 15 个模块无任何层级引用；动态：杀掉设备后 download 变成 DEVICE_LOST 而不是一个数）、MEM-06（每个请求都记录方向/地址/长度/状态；越界被拒；canary 完好）。设备的越界检查曾因 `integer` 是 32 位有符号而对 0xFFFFFFF0 失效 | MEM-01/02/04 需要四 tile profile 的脏 cache 行与延迟注入钩子 |
 | R2-11 故障/恢复 | **DELIVERED** | ERR-01…07 全通过：trap 归因到 code/PC、可排空故障后 session 仍可用、设备 deadline 毒化并使排队任务 FAILED、recover 建立新 epoch、旧 epoch 的迟到回复被丢弃、设备被杀后 DEVICE_LOST 且无孤儿进程 | 无 |
-| R2-12 报告/诊断/示例 | **PARTIAL** | `python/tnca/errors.py` 的 20 个稳定错误码；编译报告进入 manifest 的 `optional_metadata` | OBS-01…04 |
-| R2-13 E2E/mutation | **NOT STARTED** | — | E2E-01…06、R2M-01…08 |
+| R2-12 报告/诊断/示例 | **DELIVERED** | OBS-01（资源从发射出的代码实测：AXPY 用 4/64 向量寄存器，未测量的成本标 `unknown` 而不是 0；机器指令数与 code segment 交叉核对）、OBS-02（五类用户错误各有稳定码、位置与补救，无裸 traceback）、OBS-03（`Session.capture_failure` 写出可重放 bundle，`tnca-sim replay` 重放出同一语义错误；对照组换成正常 kernel 必须**不**复现）、OBS-04（三个安装后可直接运行的示例） | 无 |
+| R2-13 E2E/mutation | **PARTIAL** | E2E-01（216 个用例：3 kernel × 8 个 N × 3 值 seed × 3 内存 seed，参考值全部在 Python 侧独立算出，尾块 sentinel 与两侧 canary 每次核验）、E2E-02（九种 grid + 真实数值 kernel，空 grid 不计算，三个 3D grid 真执行）、E2E-05（三个 seed 下各 16 次发射加一条链）、R2M-01/02/05/05b/06/08 六个变异全部被指定测试抓住 | E2E-03/04/06 与 R2M-03/04/07 的检测器尚不存在 |
 | R2-14 双环境/发布 | **NOT STARTED** | — | REL-01…05 |
 
 ## 已冻结的合同

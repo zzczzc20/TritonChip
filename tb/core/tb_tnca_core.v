@@ -3,6 +3,11 @@
 //
 // Plusargs:
 //   +hex=<file>       memory image from tools/asm/tnca_asm.py
+//   +argbase=<n>      byte address of the kernel argument block (ISA sec 5.1
+//                     ARG_BASE). Default 0. A kernel compiled for dynamic
+//                     parameters reads its addresses and scalars from here,
+//                     so this is what lets one program image run with
+//                     different arguments.
 //   +maxcycles=<n>    timeout (default 200000)
 //   +dump=<file>      write a memory region out after the run
 //   +dumpfirst=<n>    first 64-bit word to dump (default 512)
@@ -111,6 +116,7 @@ module tb_tnca_core;
 
     reg [1023:0] hexfile, dumpfile, vcdfile;
     integer maxcycles, dumpfirst, dumpcount, k;
+    integer argbase;
     integer cyc;
     integer expectfault;
     reg do_trace, do_dump, want_fault;
@@ -121,6 +127,8 @@ module tb_tnca_core;
             $finish;
         end
         if (!$value$plusargs("maxcycles=%d", maxcycles)) maxcycles = 200000;
+        if (!$value$plusargs("argbase=%d", argbase)) argbase = 0;
+        arg_base = argbase;
         if (!$value$plusargs("dumpfirst=%d", dumpfirst))  dumpfirst = 512;
         if (!$value$plusargs("dumpcount=%d", dumpcount))  dumpcount = 256;
         want_fault = $value$plusargs("expectfault=%h", expectfault);

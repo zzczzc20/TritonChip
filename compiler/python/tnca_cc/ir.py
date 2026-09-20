@@ -221,9 +221,10 @@ class Builder:
     def scatter(self, base, index, value, *, mask=None, size='w'):
         self._emit('scatter', [], [base, index, value], mask=mask, size=size)
 
-    def sload(self, base, offset=0, size='d'):
+    def sload(self, base, offset=0, size='d', comment=None):
         v = self._value(SCALAR, 'i64', hint='m')
-        self._emit('sload', [v], [base], offset=offset, size=size)
+        self._emit('sload', [v], [base], offset=offset, size=size,
+                   comment=comment)
         return v
 
     def sstore(self, base, value, offset=0, size='d'):

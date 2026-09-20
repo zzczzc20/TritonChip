@@ -79,10 +79,13 @@ class TTIRImporter:
         self._scalar_cache = {}   # constant -> our Value, so BLOCK is emitted once
         self._byte_offsets = {}   # (offset value, shift) -> byte offset Value
         self.arg_names = []
+        self.arg_abi_types = []   # parallel to arg_names, in dynamic mode
+        self.dynamic_args = False  # set by run(); see _load_argument
         self._fn = None           # the tt.func being lowered
 
     # ---- entry point ------------------------------------------------------
-    def run(self, module, func_name, arg_values, *, param_names=None):
+    def run(self, module, func_name, arg_values, *, param_names=None,
+            dynamic_args=False):
         """Lower ONE function of a TTIR module.
 
         `arg_values` maps parameter name -> a literal the kernel is compiled
@@ -93,7 +96,15 @@ class TTIRImporter:
         caller happened to build the dict in, which is the audit's F07: two
         dicts with the same contents and different insertion order compiled
         to two different kernels, silently.
+
+        `dynamic_args` switches parameter binding from "materialise the
+        literal" to "load the slot from the argument block". The literals are
+        still required and still type-checked, because the compiler needs to
+        know the SHAPE of each argument -- but in dynamic mode no literal
+        reaches the code, which is what lets one artifact run with different
+        addresses and scalars (R2-06 ABI-02).
         """
+        self.dynamic_args = bool(dynamic_args)
         # MLIR's get_function returns a null handle for a name that is not in
         # the module, and the next call on it segfaults the interpreter with no
         # message at all. A wrong kernel name is an ordinary mistake -- the
@@ -240,6 +251,12 @@ class TTIRImporter:
         except Exception:
             sig = [None] * n
 
+        # The argument block's base, read once. Only in dynamic mode: a
+        # kernel compiled for literals never touches ARG_BASE, and emitting a
+        # read it does not use would be a difference between the two modes
+        # that shows up in the code rather than in what the code does.
+        arg_base = self.b.special('arg_base') if self.dynamic_args else None
+
         for i in range(n):
             arg = fn.args(i)
             ty = str(arg.get_type())
@@ -248,11 +265,53 @@ class TTIRImporter:
             self._check_arg_type(name, ty, sig[i] if i < len(sig) else None,
                                  value)
             self.arg_names.append(name)
-            v = self.b.const(value)
+            if self.dynamic_args:
+                v = self._load_argument(arg_base, i, name, ty)
+            else:
+                v = self.b.const(value)
             self._v[arg.id()] = v
             self._args[i] = (name, v)
             if _pointee(ty):
                 self._ptr_base[arg.id()] = (name, _pointee(ty))
+
+    # MLIR type -> (ABI type, the scalar load that reads its slot).
+    #
+    # ISA sec 9.1 mod[3] sign-extends an integer load, and that bit is the
+    # whole reason `i32` reads as `.sw`: the ABI puts a 32-bit value in the
+    # LOW four bytes with the high four ZERO, so a 64-bit load of -5 would
+    # produce 4294967291. Reading the slot at the declared width, with the
+    # declared signedness, is what makes the two halves of the contract --
+    # the encoder and the kernel -- agree.
+    _ARG_LOAD = {
+        'ptr': ('device_ptr64', 'd'),
+        'i64': ('i64', 'd'),
+        'i32': ('i32', 'sw'),
+        'f32': ('f32', 'w'),
+    }
+
+    def _load_argument(self, arg_base, index, name, ty):
+        """Emit the load of one argument slot.
+
+        doc/phase2_tasks_and_acceptance.md R2-06: the kernel loads dynamic
+        parameters from the block at ARG_BASE. Embedding an address or a
+        scalar in the code, or patching an instruction per launch, is
+        forbidden -- and R2M-01 exists to catch a compiler that goes back to
+        doing it.
+        """
+        kind = 'ptr' if _pointee(ty) else str(ty).strip()
+        if kind not in self._ARG_LOAD:
+            raise Unsupported(
+                f"parameter {name!r} has type {ty!r}, which the v1 argument "
+                "ABI does not carry",
+                because='spec/r2_abi_v1.json lists the six types a slot may '
+                        'hold',
+                remedy='pass it through a buffer element',
+                source='doc/phase2_tasks_and_acceptance.md R2-06')
+        abi_type, size = self._ARG_LOAD[kind]
+        self.arg_abi_types.append(abi_type)
+        return self.b.sload(arg_base, offset=8 * index, size=size,
+                            comment=f"{name}: {abi_type} at arg_base+"
+                                    f"{8 * index}")
 
     @staticmethod
     def _check_arg_type(name, ty, sig_ty, value):

@@ -478,7 +478,8 @@ class CodeGen:
         v = op.results[0]
         self._alloc(v)
         self._emit(f"s.ld.{op.attrs['size']}", f"s{v.reg}",
-                    f"[s{base.reg}, #{op.attrs['offset']}]")
+                    f"[s{base.reg}, #{op.attrs['offset']}]",
+                    comment=op.attrs.get('comment'))
 
     def _op_sstore(self, op):
         base, value = op.operands

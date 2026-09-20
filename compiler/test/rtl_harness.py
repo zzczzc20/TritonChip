@@ -29,6 +29,12 @@ BENCHES = {
     # Four Role Contexts, half the logical vector registers each. sec 15 C4
     # defers the P + M0 + M1 + E check until such a profile exists.
     'rctx4': 'tb_core4.vvp',
+    # The four-context profile under the two random memory models. REG-09's
+    # "last release" only differs from "first release" when the two consumers
+    # finish at visibly different times, which a fast in-order memory never
+    # arranges.
+    'rctx4-slow': 'tb_core4_slow.vvp',
+    'rctx4-ooo': 'tb_core4_ooo.vvp',
     # The whole machine: four cores, four NUCA slices, the 2x2 mesh and DRAM.
     'system': 'tb_top.vvp',
 }

@@ -25,4 +25,11 @@ if ! echo "$out" | grep -q '^PASS'; then
 fi
 stats=$(echo "$out" | grep -E '^(cycles=|tb_)' | head -1)
 printf '  %-22s PASS   %s\n' "$name" "$stats"
+# Evidence lines from the bench itself, kept even on a pass. R1-08 asks for
+# the seed's effect to be reported rather than asserted -- trace hashes and
+# coverage counts -- and a harness that prints them only on failure is a
+# harness that hides exactly the numbers the contract wants to see.
+# Indented by six, so the gate's result parser (which anchors on two spaces
+# followed by a non-space) does not read them as case results.
+echo "$out" | grep -E '^(seed=|sent=|issued=|hit=)' | sed 's/^/      /'
 exit 0

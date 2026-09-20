@@ -173,6 +173,16 @@ module tb_tnca_core;
         $display("cycles=%0d issued=%0d hazard=%0d lsu=%0d wb=%0d squash=%0d",
                  cyc, perf_issued, perf_stall_hazard, perf_stall_lsu,
                  perf_stall_wb, perf_squash);
+        // What the memory model's seed actually changed. A matrix that runs
+        // three seeds and reports three identical traces has run one seed
+        // three times, and R1-08 asks for the difference to be visible.
+        $display("memtrace=%016h memstall=%0d memreorder=%0d memmulti=%0d",
+                 u_mem.mem_trace, u_mem.n_stall_cycles, u_mem.n_reorder,
+                 u_mem.n_multi_eligible);
+        // Two engine completions landing on one barrier in one cycle. The
+        // barrier sums three independent ports so it cannot drop one; this
+        // says whether the case actually occurred.
+        $display("barcollide=%0d", dut.u_bar.n_multi_complete);
 
         if (cyc >= maxcycles) begin
             $display("FAIL: timeout after %0d cycles", cyc);
@@ -194,6 +204,18 @@ module tb_tnca_core;
             $display("PASS");
         end
         $finish;
+    end
+
+    // Completion cycles, for the collision experiment. +donetrace prints the
+    // cycle each engine signals a barrier, which is what makes "arrange for
+    // them to land together" an experiment rather than a guess.
+    always @(posedge clk) begin
+        if (rst_n && $test$plusargs("donetrace")) begin
+            if (dut.txf_done && dut.txf_done_bar_en)
+                $display("[done] cyc=%0d txf bar=%0d", cyc, dut.txf_done_bar);
+            if (dut.mtx_done && dut.mtx_done_bar_en)
+                $display("[done] cyc=%0d mtx bar=%0d", cyc, dut.mtx_done_bar);
+        end
     end
 
     // instruction trace

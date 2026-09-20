@@ -78,13 +78,55 @@ module tnca_mem_model #(
     assign imem_data = imem_q;
 
     // ---- pseudo-random source ------------------------------------------------
+    //
+    // The seed is a parameter AND a plusarg. R1-08 REG-04 asks for the slow
+    // and out-of-order models to run under three seeds, and a parameter alone
+    // would mean three rebuilds to change a number that controls nothing but
+    // stimulus. `+memseed=` reaches this LFSR, which is the thing that decides
+    // both the back-pressure pattern and which eligible response is retired
+    // first -- so a seed that did not reach here would be a seed in a log
+    // line and nowhere else.
     reg [31:0] lfsr;
+    reg [31:0] seed_q;
+    integer    seed_arg;
+    // Counted so a run can show what the seed actually changed. "Three seeds"
+    // with three identical stall counts is one test run three times.
+    integer    n_stall_cycles, n_reorder, n_multi_eligible;
+    reg [63:0] mem_trace;
+
+    initial begin
+        seed_q = SEED;
+        if ($value$plusargs("memseed=%d", seed_arg))
+            seed_q = (seed_arg[31:0] == 32'd0) ? 32'd1 : seed_arg[31:0];
+        n_stall_cycles   = 0;
+        n_reorder        = 0;
+        n_multi_eligible = 0;
+        mem_trace      = 64'hcbf29ce484222325;
+    end
+
     always @(posedge clk) begin
-        if (!rst_n) lfsr <= SEED;
+        if (!rst_n) lfsr <= seed_q;
         else        lfsr <= {lfsr[30:0], lfsr[31] ^ lfsr[21] ^ lfsr[1] ^ lfsr[0]};
     end
 
     assign req_ready = (RANDOM_STALL != 0) ? lfsr[3] : 1'b1;
+
+    // The SCHEDULE, not the addresses. A deterministic program issues the
+    // same addresses in the same order whatever the seed, so hashing those
+    // gave three identical digests for three different runs -- a trace hash
+    // that proved the program was deterministic and said nothing about the
+    // seed. What the seed changes is when a request is accepted and which
+    // eligible response is retired, so that is what is hashed.
+    always @(posedge clk) begin
+        if (rst_n) begin
+            if (req_valid && !req_ready)
+                n_stall_cycles <= n_stall_cycles + 1;
+            if (req_valid || rsp_valid)
+                mem_trace <= (mem_trace ^ {45'd0, req_valid, req_ready,
+                                           rsp_valid, rsp_tag})
+                             * 64'd1099511628211;
+        end
+    end
 
     // ---- in-flight pool ------------------------------------------------------
     // Each accepted request lands here with a countdown. When the countdown
@@ -141,7 +183,19 @@ module tnca_mem_model #(
                     p_valid[slot] <= 1'b1;
                     p_data[slot]  <= rd;
                     p_tag[slot]   <= req_tag;
-                    p_cnt[slot]   <= (LATENCY == 0) ? 8'd0 : (LATENCY - 1);
+                    // Under REORDER the latency VARIES. With a fixed one,
+                    // requests accepted on different cycles expire on
+                    // different cycles, so at most one entry was ever
+                    // eligible and the "pick a random eligible entry" branch
+                    // below picked the only one there was: the out-of-order
+                    // model had never once returned anything out of order.
+                    // n_reorder stayed at 0 on every run, which is what
+                    // R1-08's "must report the count actually triggered"
+                    // exists to catch.
+                    p_cnt[slot]   <= (LATENCY == 0) ? 8'd0 :
+                                     (REORDER != 0)
+                                       ? ((LATENCY - 1) + {5'd0, lfsr[10:8]})
+                                       : (LATENCY - 1);
                 end
             end
 
@@ -155,9 +209,11 @@ module tnca_mem_model #(
             for (k = 0; k < POOL; k = k + 1)
                 if (p_valid[k] && p_cnt[k] == 8'd0) nelig = nelig + 1;
 
+            if (nelig > 1) n_multi_eligible <= n_multi_eligible + 1;
             if (nelig > 0) begin
                 if (REORDER != 0) begin
                     pick = lfsr[7:0] % nelig;     // pseudo-random eligible entry
+                    if (pick != 0) n_reorder <= n_reorder + 1;
                 end else begin
                     pick = 0;                     // oldest-indexed: in order
                 end

@@ -615,6 +615,17 @@ $(BUILD)/tb_core4.vvp: $(RTL_DEPS) $(TB)/core/tb_tnca_core.v \
 	   -o $@ $(TB)/core/tb_tnca_core.v
 	@$(PYTHON) $(TOOLS)/r1/fingerprint.py provenance $@ $(BUILD)/tb_core4.fp
 
+# The same four-context profile under the two random memory models. R1-08
+# REG-09 asks for the last-release semantics to hold "在 slow/ooo 下各通过":
+# a consumer that finishes late is exactly the case a window reclaimed on the
+# FIRST release gets wrong, and on a fast, in-order memory the two releases
+# are so close together that the difference never shows.
+$(BUILD)/tb_core4_slow.vvp: $(RTL_DEPS) $(TB)/core/tb_tnca_core.v                             $(TB)/common/tnca_mem_model.v | dirs
+	$(IVERILOG) $(IVFLAGS) -y $(RTL)/core -y $(RTL)/common -y $(RTL)/gen -y $(TB)/common 	   -P tb_tnca_core.NUM_RCTX=4 -P tb_tnca_core.RCTX_W=2 	   -P tb_tnca_core.VREGS_PER_RCTX=32 	   -P tb_tnca_core.MEM_LATENCY=7 -P tb_tnca_core.RANDOM_STALL=1 	   -o $@ $(TB)/core/tb_tnca_core.v
+
+$(BUILD)/tb_core4_ooo.vvp: $(RTL_DEPS) $(TB)/core/tb_tnca_core.v                            $(TB)/common/tnca_mem_model.v | dirs
+	$(IVERILOG) $(IVFLAGS) -y $(RTL)/core -y $(RTL)/common -y $(RTL)/gen -y $(TB)/common 	   -P tb_tnca_core.NUM_RCTX=4 -P tb_tnca_core.RCTX_W=2 	   -P tb_tnca_core.VREGS_PER_RCTX=32 	   -P tb_tnca_core.MEM_LATENCY=6 -P tb_tnca_core.RANDOM_STALL=1 	   -P tb_tnca_core.MEM_REORDER=1 	   -o $@ $(TB)/core/tb_tnca_core.v
+
 .PHONY: core4
 core4: $(BUILD)/tb_core4.vvp
 
@@ -647,7 +658,7 @@ clean:
 #------------------------------------------------------------------------------
 .PHONY: r1-doctor r1-check-generated r1-gate-selftest r1-acceptance \
         r1-verify-evidence r1-inventory r1-check-artifacts r1-build-tests r1-profile-tests \
-        r1-resource-tests r1-mutation-tests r1-ir-tests
+        r1-resource-tests r1-mutation-tests r1-ir-tests r1-regression
 
 r1-doctor:
 	@$(PYTHON) tools/r1/doctor.py
@@ -691,6 +702,9 @@ r1-build-tests:
 
 r1-profile-tests: $(BUILD)/tb_core.vvp $(BUILD)/tb_core4.vvp $(BUILD)/tb_top.vvp
 	@$(PYTHON) tools/r1/profile_tests.py --json $(BUILD)/profile_tests.json
+
+r1-regression:
+	@$(PYTHON) tools/r1/regression.py --json $(BUILD)/regression.json
 
 r1-ir-tests:
 	@$(PYTHON) tools/r1/ir_tests.py --json $(BUILD)/ir_tests.json

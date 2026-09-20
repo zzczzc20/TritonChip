@@ -95,7 +95,8 @@ class TestPipelineOnRTL(unittest.TestCase):
         if not H.available():
             self.skipTest(H.why_unavailable())
 
-    def _run(self, iterations, *, stages=2, bench='fast', predicated_off=False):
+    def _run(self, iterations, *, stages=2, bench='fast', predicated_off=False,
+             seed=None):
         t = self.t
         plan = plan_pipeline(t, stages=stages, iterations=iterations)
 
@@ -129,10 +130,17 @@ class TestPipelineOnRTL(unittest.TestCase):
         p.words(FLAG, [0, 0], 'flag')
         p.words(RESULT, H.pack32([SENTINEL] * (iterations * 16 + 16)), 'res')
 
-        ok, out = H.run(p, extra_args=('+allroles', '+aliasvrf'),
+        # The memory model's LFSR drives both the back-pressure pattern and
+        # which eligible response is retired first, so this is the seed
+        # R1-08 REG-04 means by "传到真正控制 stimulus、stall、reorder 的 PRNG".
+        args = ['+allroles', '+aliasvrf']
+        if seed is not None:
+            args.append(f"+memseed={seed}")
+        ok, out = H.run(p, extra_args=tuple(args),
                         max_cycles=400000, bench=bench)
         self.assertTrue(ok, f"{iterations}-iteration pipeline on the "
                             f"{bench} memory failed:\n{out}")
+        return out
 
     def test_zero_iterations(self):
         """sec 15 C3's 0 iterations: the program must still start, initialise
@@ -274,8 +282,11 @@ class TestPipelineOnRTL(unittest.TestCase):
         waits for both; a slot released after one would let it overwrite a
         window the other consumer is still reading.
         """
-        if not H.bench_available('rctx4'):
-            self.skipTest('tb_core4.vvp not built; run `make core4`')
+        self._two_consumers()
+
+    def _two_consumers(self, bench='rctx4', seed=None):
+        if not H.bench_available(bench):
+            self.skipTest(f"{H.BENCHES[bench]} not built; run `make core4`")
         # A different machine, so a different target description -- generated
         # from the same RTL with the parameters the bench passes.
         t = TargetInfo.load('tnca-sim-4rctx')
@@ -309,9 +320,13 @@ class TestPipelineOnRTL(unittest.TestCase):
                 'desc')
         p.words(RESULT, H.pack32([SENTINEL] * 80), 'res')
 
-        ok, out = H.run(p, extra_args=('+allroles', '+aliasvrf'),
-                        max_cycles=400000, bench='rctx4')
-        self.assertTrue(ok, f"four-context pipeline failed:\n{out}")
+        args = ['+allroles', '+aliasvrf']
+        if seed is not None:
+            args.append(f"+memseed={seed}")
+        ok, out = H.run(p, extra_args=tuple(args),
+                        max_cycles=400000, bench=bench)
+        self.assertTrue(ok, f"four-context pipeline on {bench} failed:\n{out}")
+        return out
 
     def test_three_stage_ring(self):
         """Three slots rather than two: the reuse distance changes, and with

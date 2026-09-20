@@ -88,6 +88,11 @@ CASE_SUITES = [
      'build'),
     ('ir-tests',      [sys.executable, 'tools/r1/ir_tests.py', '--json'],
      'build'),
+    # The regression matrix re-runs several of the entries above on purpose:
+    # its cases are about the combinations and the seeds, not about whether a
+    # suite passes once.
+    ('regression',    [sys.executable, 'tools/r1/regression.py', '--json'],
+     'build'),
     # Last, and deliberately so: it copies the tree once per mutation and
     # re-runs a suite twice, so it is the most expensive thing here and the
     # only one whose value depends on everything above it already working.

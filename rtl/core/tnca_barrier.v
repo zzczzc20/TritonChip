@@ -192,6 +192,22 @@ module tnca_barrier #(
         end
     end
 
+    // Coverage, not function. R1-08 REG-10 asks for "DMA/MMA 同周期完成均被
+    // 计数" to be shown as triggered rather than argued from the code: the
+    // three-port sum above is the mechanism, and this is the evidence that it
+    // was ever exercised. A run where it stays at zero has not tested the
+    // collision, whatever the sum can do.
+    integer nmc_i;
+    reg [31:0] n_multi_complete;
+    always @(posedge clk) begin
+        if (!rst_n) n_multi_complete <= 32'd0;
+        else begin
+            for (nmc_i = 0; nmc_i < BAR_N; nmc_i = nmc_i + 1)
+                if (`OP_DEC(nmc_i[BAR_W-1:0]) > 3'd1)
+                    n_multi_complete <= n_multi_complete + 32'd1;
+        end
+    end
+
     reg slp_on_init;
     integer si;
     always @(*) begin

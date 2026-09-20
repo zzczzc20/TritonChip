@@ -1,0 +1,153 @@
+# The per-push check.
+#
+# This is a SUBSET and says so. The acceptance gate is
+# `.github/workflows/r1-acceptance.yml`: two independent environments, the
+# whole matrix, the mutation suite, the evidence verifier. That takes hours,
+# which is the wrong shape for a pull request, so it runs on a schedule and on
+# demand instead.
+#
+# What belongs here is everything that is fast AND can fail: elaboration, the
+# unit benches, the single-core programs under three memory models, the
+# compiler with its IR tests, the R1 resource and profile checks, the R2
+# schema contracts, and the gate's own self-test. A green tick here means
+# those passed. It does not mean R1 is accepted, and nothing in this file
+# claims otherwise.
+
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  LLVM_PREFIX: /usr/lib/llvm-20
+  TNCA_LLVM: /usr/lib/llvm-20
+
+jobs:
+  check:
+    name: "lint, unit, core, compiler"
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Toolchain
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends \
+            iverilog build-essential cmake ninja-build \
+            python3 python3-venv \
+            libmlir-20-dev mlir-20-tools llvm-20-dev
+          iverilog -V | head -1
+          make --version | head -1
+
+      - name: Report the toolchain against the lock
+        run: make r1-doctor
+
+      # The generated sources must still follow from their inputs. rtl/gen is
+      # reported as not re-checked here: regenerating it needs the pinned XLS
+      # release, which the acceptance workflow fetches and this one does not.
+      - name: Generated sources match their inputs
+        run: make r1-check-generated
+
+      - name: The frozen inventories are well formed
+        run: |
+          make r1-inventory
+          make r2-inventory
+
+      - name: Elaboration
+        run: make lint
+
+      - name: Unit benches
+        run: make unit
+
+      - name: Single-core programs, three memory models
+        run: |
+          make core
+          make core-slowmem
+          make core-ooo
+
+      - name: The four-tile machine
+        run: make top
+
+      - name: Build tnca-opt against the distribution MLIR
+        run: make tnca-opt
+
+      - name: Compiler and its IR tests
+        run: make compiler
+
+      - name: R1 resource, footprint and ownership checks
+        run: python3 tools/r1/resource_tests.py
+
+      - name: R1 profile and capability checks
+        run: |
+          make core4
+          python3 tools/r1/profile_tests.py
+
+      # R2's frozen contracts: the argument ABI against an independent
+      # byte-level oracle, and the manifest and container schema.
+      - name: R2 schema contracts
+        run: |
+          make r2-abi-tests
+          make r2-artifact-tests
+
+      # The gate has to be able to fail. Ten injected faults, each of which
+      # must be detected; this is cheap and is the check that keeps every
+      # other green tick meaningful.
+      - name: The gate can fail
+        run: make r1-gate-selftest
+
+  triton:
+    name: "the real Triton frontend"
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Toolchain
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends \
+            iverilog build-essential cmake ninja-build python3 python3-venv \
+            libmlir-20-dev mlir-20-tools llvm-20-dev
+
+      - name: Cache the wheel download
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: pip-${{ hashFiles('spec/r1_toolchain.lock.json') }}
+
+      # The version comes from the lock, not from this file. 3.5.0 installs
+      # and imports and has no `get_constant_value`, so "some Triton" is not
+      # the same claim as "the locked Triton".
+      - name: Install the locked Triton
+        run: |
+          set -euo pipefail
+          V=$(python3 -c "import json;print(json.load(open('spec/r1_toolchain.lock.json'))['triton']['version'])")
+          python3 -m venv ~/tritonenv
+          ~/tritonenv/bin/pip install -q "triton==$V"
+          ~/tritonenv/bin/python -c "import triton;print('triton', triton.__version__)"
+
+      - name: Build what the end-to-end tests run on
+        run: |
+          make tnca-opt
+          make sim/build/tb_core.vvp sim/build/tb_top.vvp
+
+      - name: Triton source to RTL, one core and the whole machine
+        run: |
+          make triton-e2e TRITON_PYTHON=$HOME/tritonenv/bin/python
+          make e2e TRITON_PYTHON=$HOME/tritonenv/bin/python
+
+      - name: The IR support boundary
+        run: TRITON_PYTHON=$HOME/tritonenv/bin/python python3 tools/r1/ir_tests.py

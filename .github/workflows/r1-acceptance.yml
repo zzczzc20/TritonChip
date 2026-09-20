@@ -18,11 +18,17 @@
 
 name: r1-acceptance
 
+# NOT on every push. A full acceptance is two environments running the whole
+# matrix, the mutation suite and the evidence verifier -- hours of work, and
+# the wrong shape for a pull request. `.github/workflows/ci.yml` is the
+# per-push check and says plainly that it is a subset. This is the one whose
+# verdict counts.
 on:
-  push:
-    branches: [main]
-  pull_request:
+  schedule:
+    - cron: '0 3 * * *'
   workflow_dispatch:
+  push:
+    tags: ['v*', 'r1-*']
 
 permissions:
   contents: read

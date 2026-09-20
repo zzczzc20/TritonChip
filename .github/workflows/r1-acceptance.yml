@@ -64,9 +64,40 @@ jobs:
       - name: The gate can fail
         run: make r1-gate-selftest
 
+      # continue-on-error, and for a stated reason rather than to paper over
+      # failures: a single environment's verdict CANNOT be ACCEPTED, because
+      # R1-09 asks whether two environments agree and R1-12 signs off once
+      # everything else has. The gate leaves both open and says so. Marking
+      # this step red would make every correct run look broken; ignoring the
+      # exit code entirely would hide a real failure. So the step records its
+      # verdict, the next step checks the archive is internally consistent,
+      # and the `compare` job below decides R1.
       - name: Acceptance
         id: acceptance
+        continue-on-error: true
         run: make r1-acceptance R1_EVIDENCE=evidence-${{ matrix.env }}
+
+      - name: This environment's verdict
+        run: |
+          set -euo pipefail
+          latest=$(ls -dt sim/r1/*/ | head -1)
+          python3 - "$latest/acceptance.json" <<'PY'
+          import json, sys
+          a = json.load(open(sys.argv[1]))
+          wps = a.get('work_packages', {})
+          deferred = {k for k, v in wps.items() if v.get('deferred_to')}
+          bad = sorted(k for k, v in wps.items()
+                       if v.get('verdict') != 'PASS' and k not in deferred)
+          print(f"verdict: {a.get('verdict')}")
+          for k in sorted(wps):
+              print(f"  {k}: {wps[k].get('verdict')}"
+                    + ("  (deferred to the A/B comparison)" if k in deferred else ""))
+          if bad:
+              print("work packages failing in THIS environment: " + ", ".join(bad))
+              sys.exit(1)
+          print("everything this environment can decide has passed; "
+                "R1-09 and R1-12 are for the compare job")
+          PY
 
       # Upload before verifying, so a failed run still leaves its evidence
       # behind -- and `if: always()`, because the interesting archives are the

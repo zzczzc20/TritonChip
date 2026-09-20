@@ -1,12 +1,26 @@
 {
   "note": "Modules generated from xls/*.x. See doc/xls.md. Every module is scheduled by XLS against the asap7 delay model at the same 1300 ps target; stage counts are the minimum that meets it, measured with `make xls-report`.",
+  "release": {
+    "note": "The pinned XLS distribution. tools/xls/fetch_xls.sh downloads it, verifies this sha256 BEFORE unpacking, and puts it in <repo>/.xls/cur. R1-09 allows a public tool distribution with a fixed checksum and forbids treating an unverified local cache or a floating tag as a locked version.",
+    "version": "v0.0.0-10704-g0a7c502cc-linux-x64",
+    "url": "https://github.com/google/xls/releases/download/v0.0.0-10704-g0a7c502cc/xls-v0.0.0-10704-g0a7c502cc-linux-x64.tar.gz",
+    "sha256": "62eaad69e9545371179485af8208004555c3a9eb6a037f935a0b154f08194f74",
+    "platform": "linux-x64"
+  },
+  "local": {
+    "note": "Where xlsgen.py looks for a local install, after $XLS_HOME. A local runner is the only one R1_STRICT=1 accepts.",
+    "xls_dir": null,
+    "workdir": "sim/build/xls"
+  },
   "remote": {
     "host": "52.91.238.245",
     "user": "ubuntu",
     "identity": "~/Documents/denton-nki-key.pem",
     "xls": "/home/ubuntu/xls/cur",
-    "workdir": "/home/ubuntu/work/tnca"
+    "workdir": "/home/ubuntu/work/tnca",
+    "note": "Development convenience only: XLS publishes linux-x64 binaries and this is developed on macOS arm64. R1_STRICT=1 refuses this runner, because a personal SSH host and a private key are not a locked generator (R1-09)."
   },
+  "clock_period_ps": 1300,
   "modules": [
     {
       "module": "tnca_cvt_xls",
@@ -77,6 +91,5 @@
       "why": "SFU rsqrt: table-indexed quadratic, ISA sec 8.8 bound 2^-22. Seven stages, not the six this one alone needs, so all four SFU operations share a latency.",
       "delay_model": "asap7"
     }
-  ],
-  "clock_period_ps": 1300
+  ]
 }

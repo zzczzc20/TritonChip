@@ -75,8 +75,8 @@
     "authority": "compiler/pin/"
   },
   "not_yet_locked": [
-    "XLS revision and a local or containerised runner: rtl/gen is regenerated through a personal SSH host, so `make r1-check-generated` reports rtl/gen as not re-checked unless R1_XLS=1",
-    "The development platform (macOS arm64) runs a Triton built from source at a different version from the acceptance wheel; the acceptance environment is the one this file pins"
+    "The development platform (macOS arm64) runs a Triton built from source at a different version from the acceptance wheel; the acceptance environment is the one this file pins",
+    "rtl/gen is re-checked only where XLS can run: `make r1-check-generated` reports it as not re-checked unless R1_XLS=1, and on an acceptance environment that needs tools/xls/fetch_xls.sh to have run"
   ],
   "mlir": {
     "note": "tnca-opt and the IR tests build against the distribution's MLIR rather than a personally built one. Ubuntu's LLVM packages are versioned and signed, which is what makes this a lock; a source build at a floating commit would not be. MLIR 18 is NOT enough: it lacks the EffectInstance(effect, OpOperand*, resource) overload the dialect uses, and the build fails to compile rather than silently doing something else.",
@@ -97,5 +97,13 @@
     "sha256": "c9e71db82261c4ffa3921cd050cd5faa18322d2d405c30eb56084afaff3b0833",
     "index": "https://pypi.org/simple",
     "install": "python3 -m venv <env>/tritonenv && <env>/tritonenv/bin/pip install triton==3.5.0"
+  },
+  "xls": {
+    "note": "The generator for rtl/gen. XLS is a BUILD-time dependency of the RTL and not a runtime one: the generated Verilog is checked in, so simulating and synthesising needs no XLS at all. Regenerating it does, and R1-09 requires that to be a fixed revision run locally or in a container rather than over somebody's ssh.",
+    "version": "v0.0.0-10704-g0a7c502cc-linux-x64",
+    "sha256": "62eaad69e9545371179485af8208004555c3a9eb6a037f935a0b154f08194f74",
+    "fetch": "tools/xls/fetch_xls.sh",
+    "authority": "tools/xls/config.json `release`",
+    "platform": "linux-x64 only; on any other platform xlsgen.py uses the ssh runner and R1_STRICT=1 refuses it"
   }
 }

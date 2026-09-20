@@ -23,6 +23,7 @@ import hashlib
 import json
 import os
 import shlex
+import shutil
 import subprocess
 import sys
 
@@ -46,6 +47,114 @@ BANNER = """//==================================================================
 def load_config():
     with open(CONFIG) as f:
         return json.load(f)
+
+
+# ---------------------------------------------------------------------------
+# Where the XLS binaries run.
+#
+# R1-09 is explicit: "不能依赖个人 SSH、私钥或远程 `cur` 目录". The remote
+# runner below is a development convenience -- XLS publishes linux-x64
+# binaries and this is developed on macOS arm64 -- and it is not an
+# acceptance path. An acceptance environment IS linux-x64, so it runs the
+# same binaries locally, from a release fetched by checksum
+# (tools/xls/fetch_xls.sh) into a directory of its own.
+#
+# `R1_STRICT=1` refuses the remote runner outright rather than quietly using
+# it: a personal SSH host is not a locked runner, and a generation step that
+# silently fell back to one would make `make r1-check-generated` a check
+# against somebody's home directory.
+# ---------------------------------------------------------------------------
+
+class LocalRunner:
+    """XLS binaries on this machine."""
+
+    kind = 'local'
+
+    def __init__(self, xls_dir, workdir):
+        self.xls = xls_dir
+        self.workdir = workdir
+
+    def prepare(self):
+        os.makedirs(self.workdir, exist_ok=True)
+        srcs = [os.path.join(DSLX_DIR, f) for f in sorted(os.listdir(DSLX_DIR))
+                if f.endswith('.x')]
+        for src in srcs:
+            dst = os.path.join(self.workdir, os.path.basename(src))
+            if os.path.abspath(src) != os.path.abspath(dst):
+                shutil.copy2(src, dst)
+        return srcs
+
+    def run(self, script, *, capture=True):
+        p = subprocess.run(['bash', '-s'], input=script, text=True,
+                           capture_output=capture, cwd=self.workdir)
+        if p.returncode != 0:
+            raise SystemExit(f"XLS step failed:\n{p.stderr or p.stdout}")
+        return p.stdout
+
+    def describe(self):
+        return f"local XLS at {self.xls}"
+
+
+class RemoteRunner:
+    """XLS binaries on another machine, over ssh. Development only."""
+
+    kind = 'remote'
+
+    def __init__(self, cfg):
+        self.cfg = cfg
+        r = cfg['remote']
+        self.xls = r['xls']
+        self.workdir = r['workdir']
+
+    def prepare(self):
+        return push_sources(self.cfg)
+
+    def run(self, script, *, capture=True):
+        return run_remote(self.cfg, script, capture=capture)
+
+    def describe(self):
+        r = self.cfg['remote']
+        return f"remote XLS at {r['user']}@{r['host']}:{r['xls']}"
+
+
+def find_local_xls(cfg):
+    """An XLS install on this machine, in the order the contract prefers.
+
+    Explicit environment variable, then the config's own local directory,
+    then the default fetch destination. A directory only counts if the tools
+    are actually in it -- an empty directory named `xls` has fooled a build
+    before.
+    """
+    candidates = [os.environ.get('XLS_HOME'),
+                  (cfg.get('local') or {}).get('xls_dir'),
+                  os.path.join(ROOT, '.xls', 'cur')]
+    for c in candidates:
+        if not c:
+            continue
+        c = os.path.abspath(os.path.expanduser(c))
+        if all(os.path.exists(os.path.join(c, t))
+               for t in ('ir_converter_main', 'opt_main', 'codegen_main')):
+            return c
+    return None
+
+
+def make_runner(cfg):
+    local = find_local_xls(cfg)
+    strict = os.environ.get('R1_STRICT') == '1'
+    if local:
+        wd = (cfg.get('local') or {}).get('workdir') or \
+            os.path.join(ROOT, 'sim', 'build', 'xls')
+        return LocalRunner(local, os.path.abspath(os.path.expanduser(wd)))
+    if strict:
+        raise SystemExit(
+            "no local XLS install, and R1_STRICT=1 refuses the ssh runner.\n"
+            "R1-09: a personal SSH host, a private key and a remote `cur`\n"
+            "directory are not a locked generator. Fetch the pinned release:\n"
+            "  tools/xls/fetch_xls.sh\n"
+            "or point XLS_HOME at an existing install.")
+    if 'remote' not in cfg:
+        raise SystemExit("no local XLS install and no remote configured")
+    return RemoteRunner(cfg)
 
 
 def remote(cfg):
@@ -84,15 +193,14 @@ def push_sources(cfg):
     return srcs
 
 
-def xls_version(cfg):
-    return run_remote(cfg, f"{cfg['remote']['xls']}/interpreter_main "
-                           "--version 2>&1 | head -1\n").strip()
+def xls_version(runner):
+    return runner.run(f"{runner.xls}/interpreter_main "
+                      "--version 2>&1 | head -1\n").strip()
 
 
-def generate(cfg, mod, version):
+def generate(cfg, runner, mod, version):
     """Run the DSLX -> IR -> opt -> Verilog chain for one module."""
-    r = cfg['remote']
-    x, wd = r['xls'], r['workdir']
+    x, wd = runner.xls, runner.workdir
     name = mod['module']
     stages = mod.get('pipeline_stages', 0)
     period = cfg.get('clock_period_ps')
@@ -134,7 +242,7 @@ cd {shlex.quote(wd)}
 echo "STATS {name} $(grep -c '^ ' {name}.ir) $(grep -c '^ ' {name}.opt.ir)"
 cat {name}.v
 """
-    out = run_remote(cfg, script)
+    out = runner.run(script)
     stats, verilog = None, []
     for line in out.splitlines():
         if line.startswith('STATS '):
@@ -163,10 +271,9 @@ PDK and maps every adder to ripple carry.
 """
 
 
-def report(cfg, only=None):
+def report(cfg, runner, only=None):
     """Binary-search the shortest feasible clock period per stage count."""
-    r = cfg['remote']
-    x, wd = r['xls'], r['workdir']
+    x, wd = runner.xls, runner.workdir
     mods = [m for m in cfg['modules'] if not only or m['module'] == only]
 
     # One remote script for everything: a round trip per probe would be
@@ -208,7 +315,7 @@ floor_period() { # module -> shortest period at any stage count
         lines.append(f"{x}/opt_main {name}.ir > {name}.opt.ir")
         lines.append(f'echo "ROW {name} {st} $(min_period {name} 1) '
                      f'$(min_period {name} {st}) $(floor_period {name})"')
-    out = run_remote(cfg, '\n'.join(lines))
+    out = runner.run('\n'.join(lines))
 
     print(REPORT_DOC)
     if target:
@@ -244,17 +351,19 @@ def main():
                   f" {m.get('pipeline_stages', 0) or 'comb'}")
         return 0
 
-    push_sources(cfg)
+    runner = make_runner(cfg)
+    print(f"  generator: {runner.describe()}")
+    runner.prepare()
     if args.report:
-        return report(cfg, args.only)
-    version = xls_version(cfg)
+        return report(cfg, runner, args.only)
+    version = xls_version(runner)
     os.makedirs(OUT_DIR, exist_ok=True)
 
     stale, rows = [], []
     for mod in cfg['modules']:
         if args.only and mod['module'] != args.only:
             continue
-        body, stats, pipeline = generate(cfg, mod, version)
+        body, stats, pipeline = generate(cfg, runner, mod, version)
         src = os.path.join(DSLX_DIR, mod['source'])
         text = BANNER.format(src=f"xls/{mod['source']}", top=mod['top'],
                              version=version, pipeline=pipeline,

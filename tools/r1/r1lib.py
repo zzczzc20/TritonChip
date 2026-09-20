@@ -235,19 +235,26 @@ def git_state():
     also drift -- so the commit id travels with the archive in `.r1-commit`,
     and a tree with neither is recorded as unknown rather than guessed.
     """
-    def g(*a):
+    def g(*a, strip=True):
         r = subprocess.run(['git'] + list(a), cwd=ROOT, capture_output=True,
                            text=True)
-        return r.stdout.strip() if r.returncode == 0 else None
+        if r.returncode != 0:
+            return None
+        return r.stdout.strip() if strip else r.stdout
 
     if os.path.isdir(os.path.join(ROOT, '.git')):
-        status = g('status', '--porcelain')
+        # NOT stripped. `git status --porcelain` puts the status in the first
+        # two columns and a staged modification leaves the first one blank, so
+        # stripping the whole output eats a column from the first line only --
+        # and the path came out as "ools/r1/gate.py". The status columns are
+        # fixed-width; the path starts at 3.
+        status = g('status', '--porcelain', strip=False) or ''
         return {
             'source': 'git',
             'commit': g('rev-parse', 'HEAD'),
             'tree': g('rev-parse', 'HEAD^{tree}'),
-            'clean': status == '',
-            'dirty_paths': [l[3:] for l in (status or '').splitlines()],
+            'clean': status.strip() == '',
+            'dirty_paths': [l[3:] for l in status.splitlines() if l.strip()],
         }
 
     stamp = os.path.join(ROOT, '.r1-commit')

@@ -31,26 +31,33 @@ def load():
         return json.load(fh)
 
 
-def profile(name):
-    spec = load()
+def profile(name, spec=None):
+    spec = spec or load()
     if name not in spec['profiles']:
         raise KeyError(f"no profile {name!r}; known: {sorted(spec['profiles'])}")
     return spec['profiles'][name]
 
 
-def target_of(name):
-    with open(os.path.join(TARGETS, profile(name)['target_file'])) as fh:
+def target_of(name, spec=None, targets_dir=None):
+    with open(os.path.join(targets_dir or TARGETS,
+                           profile(name, spec)['target_file'])) as fh:
         return json.load(fh)
 
 
-def config_hash(name):
+def config_hash(name, spec=None, targets_dir=None):
     """A hash of everything that decides what this profile IS.
 
     Deliberately over the *elaboration* and the *capabilities*, not over the
     whole target file: a comment or a description changing must not invalidate
     a binary, and a parameter or a capability changing must.
+
+    `spec` and `targets_dir` let an archived copy be re-derived from the files
+    beside it, which is how tools/r1/verify_evidence.py notices a manifest
+    lifted out of another candidate's evidence: the hashes were recomputed
+    along with it, so only re-deriving catches it.
     """
-    p, t = profile(name), target_of(name)
+    p = profile(name, spec)
+    t = target_of(name, spec, targets_dir)
     blob = json.dumps({
         'profile': name,
         'elaboration': p['elaboration'],

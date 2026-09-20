@@ -84,10 +84,80 @@ def verify(run_dir):
     if 'seconds' not in acc:
         problems.append('acceptance.json records no end state')
 
+    # --- the archived configuration has to describe the archived run ------
+    #
+    # `profiles/` exists so that "this run was on THAT machine" survives the
+    # run. Copying one file out of another candidate's evidence -- a manifest
+    # from a different profile or a different commit -- passes every hash
+    # check, because the hashes were recomputed along with it. So the
+    # manifests are RE-DERIVED from the profile spec archived beside them,
+    # and a manifest that does not follow from that spec is a mixture.
+    pdir = os.path.join(run_dir, 'profiles')
+    spec_copy = os.path.join(pdir, 'r1_profiles.json')
+    man_copy = os.path.join(pdir, 'manifests.json')
+    if os.path.isdir(pdir) and os.path.exists(spec_copy):
+        if not os.path.exists(man_copy):
+            problems.append('profiles/ has a spec but no manifests')
+        else:
+            try:
+                sys.path.insert(0, HERE)
+                import profiles as P
+                archived = json.load(open(man_copy))
+                spec_data = json.load(open(spec_copy))
+                for name, man in sorted(archived.items()):
+                    if name not in spec_data.get('profiles', {}):
+                        problems.append(
+                            f"profiles/manifests.json describes {name!r}, "
+                            "which the archived spec does not define")
+                        continue
+                    want = P.config_hash(name, spec=spec_data,
+                                        targets_dir=pdir)
+                    got = man.get('config_hash')
+                    if want != got:
+                        problems.append(
+                            f"profile {name}: archived manifest hash {got} "
+                            f"does not follow from the archived spec ({want})")
+                for name in sorted(spec_data.get('profiles', {})):
+                    if name not in archived:
+                        problems.append(
+                            f"profile {name} is in the archived spec and has "
+                            "no manifest")
+            except Exception as e:
+                problems.append(f"profiles/ could not be re-derived: "
+                                f"{type(e).__name__}: {e}")
+
     # --- the verdict, re-derived rather than trusted ----------------------
     required = INV.required_ids()
     statuses = res.get('statuses', {})
-    redone = INV.reconcile(required, rec.get('discovered', []), statuses)
+
+    # The discovered set is a CLAIM. Recompute it from the statuses that were
+    # actually recorded: padding `discovered` with IDs nothing ran is how a
+    # run comes to report full coverage of a suite it skipped.
+    claimed = set(rec.get('discovered', []))
+    recorded = set(statuses)
+    if claimed - recorded:
+        problems.append(
+            f"inventory.json claims {len(claimed - recorded)} discovered ID(s) "
+            f"with no recorded status, e.g. "
+            f"{sorted(claimed - recorded)[:3]}")
+    if recorded - claimed:
+        problems.append(
+            f"results.json records {len(recorded - claimed)} status(es) that "
+            f"inventory.json does not list as discovered, e.g. "
+            f"{sorted(recorded - claimed)[:3]}")
+
+    # Every required case must have a recorded status. Deleting one from
+    # results.json AND from inventory.json leaves both files internally
+    # consistent and the checksums correct; only the frozen inventory says
+    # the case should be there at all.
+    absent = set(required) - recorded
+    if absent:
+        problems.append(
+            f"{len(absent)} required case(s) have no recorded status: "
+            + ', '.join(sorted(absent)[:4])
+            + (' ...' if len(absent) > 4 else ''))
+
+    redone = INV.reconcile(required, sorted(recorded), statuses)
     if set(redone['required']) != set(rec.get('required', [])):
         problems.append('the run used a different required set than the spec')
     if redone['problems'] and acc.get('verdict') == 'ACCEPTED':

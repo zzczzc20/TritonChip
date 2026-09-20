@@ -43,3 +43,9 @@ tags
 compiler/build/
 compiler/.cache/
 compile_commands.json
+
+# Acceptance evidence. Archived by CI as a build artefact, not
+# committed: a run directory is a record of one machine at one
+# moment, and a repository full of them is a repository nobody can
+# tell the current evidence from.
+sim/r1/

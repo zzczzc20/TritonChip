@@ -1841,6 +1841,72 @@
       "work_package": "R1-11",
       "baseline_status": "NOT RUN",
       "note": "checker mutation"
+    },
+    {
+      "id": "EV-01",
+      "group": "contract/R1-10",
+      "entry": "make r1-evidence-tests",
+      "profile": "n/a",
+      "expect": "r1-verify-evidence returns non-zero and names it (a missing evidence file)",
+      "source": "tools/r1/evidence_tests.py",
+      "work_package": "R1-10",
+      "baseline_status": "NOT RUN",
+      "note": "the contract lists six tamperings the verifier must catch; each is injected into a copy of a real evidence directory and the complaint must name it, so a check failing for an unrelated reason does not pass the case"
+    },
+    {
+      "id": "EV-02",
+      "group": "contract/R1-10",
+      "entry": "make r1-evidence-tests",
+      "profile": "n/a",
+      "expect": "r1-verify-evidence returns non-zero and names it (one changed byte of one output)",
+      "source": "tools/r1/evidence_tests.py",
+      "work_package": "R1-10",
+      "baseline_status": "NOT RUN",
+      "note": "the contract lists six tamperings the verifier must catch; each is injected into a copy of a real evidence directory and the complaint must name it, so a check failing for an unrelated reason does not pass the case"
+    },
+    {
+      "id": "EV-03",
+      "group": "contract/R1-10",
+      "entry": "make r1-evidence-tests",
+      "profile": "n/a",
+      "expect": "r1-verify-evidence returns non-zero and names it (a profile or commit mixed in from another candidate)",
+      "source": "tools/r1/evidence_tests.py",
+      "work_package": "R1-10",
+      "baseline_status": "NOT RUN",
+      "note": "the contract lists six tamperings the verifier must catch; each is injected into a copy of a real evidence directory and the complaint must name it, so a check failing for an unrelated reason does not pass the case"
+    },
+    {
+      "id": "EV-04",
+      "group": "contract/R1-10",
+      "entry": "make r1-evidence-tests",
+      "profile": "n/a",
+      "expect": "r1-verify-evidence returns non-zero and names it (a deleted test, removed from every file that names it)",
+      "source": "tools/r1/evidence_tests.py",
+      "work_package": "R1-10",
+      "baseline_status": "NOT RUN",
+      "note": "the contract lists six tamperings the verifier must catch; each is injected into a copy of a real evidence directory and the complaint must name it, so a check failing for an unrelated reason does not pass the case"
+    },
+    {
+      "id": "EV-05",
+      "group": "contract/R1-10",
+      "entry": "make r1-evidence-tests",
+      "profile": "n/a",
+      "expect": "r1-verify-evidence returns non-zero and names it (a faked discovered count)",
+      "source": "tools/r1/evidence_tests.py",
+      "work_package": "R1-10",
+      "baseline_status": "NOT RUN",
+      "note": "the contract lists six tamperings the verifier must catch; each is injected into a copy of a real evidence directory and the complaint must name it, so a check failing for an unrelated reason does not pass the case"
+    },
+    {
+      "id": "EV-06",
+      "group": "contract/R1-10",
+      "entry": "make r1-evidence-tests",
+      "profile": "n/a",
+      "expect": "r1-verify-evidence returns non-zero and names it (a run with no end state)",
+      "source": "tools/r1/evidence_tests.py",
+      "work_package": "R1-10",
+      "baseline_status": "NOT RUN",
+      "note": "the contract lists six tamperings the verifier must catch; each is injected into a copy of a real evidence directory and the complaint must name it, so a check failing for an unrelated reason does not pass the case"
     }
   ]
 }

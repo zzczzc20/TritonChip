@@ -658,7 +658,7 @@ clean:
 #------------------------------------------------------------------------------
 .PHONY: r1-doctor r1-check-generated r1-gate-selftest r1-acceptance \
         r1-verify-evidence r1-inventory r1-check-artifacts r1-build-tests r1-profile-tests \
-        r1-resource-tests r1-mutation-tests r1-ir-tests r1-regression
+        r1-resource-tests r1-mutation-tests r1-ir-tests r1-regression r1-evidence-tests
 
 r1-doctor:
 	@$(PYTHON) tools/r1/doctor.py
@@ -703,6 +703,9 @@ r1-build-tests:
 r1-profile-tests: $(BUILD)/tb_core.vvp $(BUILD)/tb_core4.vvp $(BUILD)/tb_top.vvp
 	@$(PYTHON) tools/r1/profile_tests.py --json $(BUILD)/profile_tests.json
 
+r1-evidence-tests:
+	@$(PYTHON) tools/r1/evidence_tests.py --json $(BUILD)/evidence_tests.json
+
 r1-regression:
 	@$(PYTHON) tools/r1/regression.py --json $(BUILD)/regression.json
 
@@ -718,8 +721,12 @@ r1-resource-tests:
 r1-gate-selftest:
 	@$(PYTHON) tools/r1/selftest.py
 
+# R1_EVIDENCE names the run directory, so two environments building the same
+# candidate can be told apart in an archive. It changes where the evidence is
+# written and nothing about what runs: strict and retry=0 are not options.
+R1_EVIDENCE ?=
 r1-acceptance: r1-gate-selftest
-	@$(PYTHON) tools/r1/gate.py
+	@$(PYTHON) tools/r1/gate.py $(if $(R1_EVIDENCE),--evidence sim/r1/$(R1_EVIDENCE),)
 
 r1-verify-evidence:
 	@test -n "$(EVIDENCE)" || { echo "usage: make r1-verify-evidence EVIDENCE=<dir>"; exit 2; }

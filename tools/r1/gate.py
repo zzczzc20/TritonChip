@@ -17,6 +17,7 @@ environment. See tools/r1/r1lib.py.
 import argparse
 import json
 import hashlib
+import shutil
 import os
 import re
 import sys
@@ -93,6 +94,10 @@ CASE_SUITES = [
     # suite passes once.
     ('regression',    [sys.executable, 'tools/r1/regression.py', '--json'],
      'build'),
+    # It makes its own small evidence directory rather than tampering with
+    # this run's, which is still being written.
+    ('evidence-tests', [sys.executable, 'tools/r1/evidence_tests.py', '--json'],
+     'build'),
     # Last, and deliberately so: it copies the tree once per mutation and
     # re-runs a suite twice, so it is the most expensive thing here and the
     # only one whose value depends on everything above it already working.
@@ -133,6 +138,120 @@ def parse_results(text):
             name, verdict = m.group(1).strip(), m.group(2)
             out[name] = verdict
     return out
+
+
+def junit(path, statuses, steps, seconds):
+    """results.json in the shape CI systems read.
+
+    The contract asks for `results.json + junit.xml`, not one or the other:
+    the JSON is what `r1-verify-evidence` re-derives its set relations from,
+    and the XML is what a CI run turns into a red or green square. Writing
+    only the second is how a dashboard comes to disagree with the archive.
+    """
+    def esc(t):
+        return (str(t).replace('&', '&amp;').replace('<', '&lt;')
+                .replace('>', '&gt;').replace('"', '&quot;'))
+
+    by_step = {s['name']: s for s in steps}
+    bad = [k for k, v in statuses.items() if v in INV.NOT_A_PASS]
+    out = [f'<?xml version="1.0" encoding="UTF-8"?>',
+           f'<testsuites name="r1-acceptance" tests="{len(statuses)}" '
+           f'failures="{len(bad)}" time="{seconds}">',
+           f'  <testsuite name="r1" tests="{len(statuses)}" '
+           f'failures="{len(bad)}">']
+    for cid in sorted(statuses):
+        verdict = statuses[cid]
+        out.append(f'    <testcase classname="r1" name="{esc(cid)}">')
+        if verdict in INV.NOT_A_PASS:
+            out.append(f'      <failure message="{esc(verdict)}">'
+                       f'{esc(cid)} is {esc(verdict)}; the contract admits no '
+                       f'status but PASS</failure>')
+        out.append('    </testcase>')
+    out.append('  </testsuite>')
+    out.append('  <testsuite name="entries" '
+               f'tests="{len(steps)}" '
+               f'failures="{sum(1 for s in steps if not s.ok)}">')
+    for st in steps:
+        out.append(f'    <testcase classname="entry" name="{esc(st["name"])}" '
+                   f'time="{st.get("seconds", 0)}">')
+        if not st.ok:
+            out.append(f'      <failure message="exit {esc(st.get("returncode"))}">'
+                       f'{esc(st.get("stdout", ""))}</failure>')
+        out.append('    </testcase>')
+    out.append('  </testsuite>')
+    out.append('</testsuites>')
+    with open(path, 'w') as fh:
+        fh.write('\n'.join(out) + '\n')
+
+
+def archive_profiles(run_dir):
+    """The configuration inputs, the generated targets and the readback.
+
+    The contract's `profiles/` is not a copy of the spec for decoration: it
+    is what makes "this run was on THAT machine" checkable afterwards, and
+    what a later run is compared against when someone asks whether the
+    configuration moved.
+    """
+    dest = os.path.join(run_dir, 'profiles')
+    os.makedirs(dest, exist_ok=True)
+    written = []
+    src = os.path.join(ROOT, 'spec', 'r1_profiles.json')
+    if os.path.exists(src):
+        shutil.copy2(src, os.path.join(dest, 'r1_profiles.json'))
+        written.append('r1_profiles.json')
+    tdir = os.path.join(ROOT, 'compiler', 'targets')
+    if os.path.isdir(tdir):
+        for f in sorted(os.listdir(tdir)):
+            if f.endswith('.json'):
+                shutil.copy2(os.path.join(tdir, f), os.path.join(dest, f))
+                written.append(f)
+    try:
+        sys.path.insert(0, HERE)
+        import profiles as P
+        man = {name: P.make_manifest(name) for name in P.load()['profiles']}
+        R.write_json(os.path.join(dest, 'manifests.json'), man)
+        written.append('manifests.json')
+    except Exception as e:
+        R.write_json(os.path.join(dest, 'manifests.json'),
+                     dict(error=f"{type(e).__name__}: {e}"))
+    return written
+
+
+def archive_build(run_dir):
+    """Fingerprints and provenance for every artefact the run used."""
+    dest = os.path.join(run_dir, 'build')
+    os.makedirs(dest, exist_ok=True)
+    build = os.path.join(ROOT, 'sim', 'build')
+    records = {}
+    if os.path.isdir(build):
+        for f in sorted(os.listdir(build)):
+            full = os.path.join(build, f)
+            if f.endswith(('.fp', '.provenance.json')):
+                shutil.copy2(full, os.path.join(dest, f))
+            if f.endswith('.vvp'):
+                records[f] = dict(sha256=sha256(full),
+                                  bytes=os.path.getsize(full))
+    R.write_json(os.path.join(dest, 'artifacts.json'), records)
+    return records
+
+
+def archive_cases(run_dir):
+    """The per-case JSON each structured suite produced.
+
+    `logs/` holds what was printed; this holds what was decided, so a
+    disagreement between the two is visible rather than averaged.
+    """
+    dest = os.path.join(run_dir, 'cases')
+    os.makedirs(dest, exist_ok=True)
+    n = 0
+    for base, _dirs, files in os.walk(os.path.join(run_dir, 'logs')):
+        for f in files:
+            if f == 'cases.json':
+                suite = os.path.basename(base)
+                shutil.copy2(os.path.join(base, f),
+                             os.path.join(dest, f"{suite}.json"))
+                n += 1
+    return n
 
 
 def main():
@@ -241,6 +360,22 @@ def main():
                       failed=sum(1 for v in statuses.values()
                                  if v in ('FAIL', 'ERROR', 'TIMEOUT')),
                       seconds=round(time.time() - started, 1)))
+
+    junit(os.path.join(run_dir, 'junit.xml'), statuses, steps,
+          round(time.time() - started, 1))
+    archive_profiles(run_dir)
+    archive_build(run_dir)
+    archive_cases(run_dir)
+    # mutations/ is the mutation suite's own report: the contract wants the
+    # failure injections' ACTUAL results archived, not a claim that they ran.
+    mut = os.path.join(run_dir, 'logs', 'mutation-tests', 'cases.json')
+    if os.path.exists(mut):
+        shutil.copy2(mut, os.path.join(run_dir, 'mutations', 'results.json'))
+    for name in ('gate-selftest',):
+        sel = os.path.join(run_dir, 'logs', name, 'cases.json')
+        if os.path.exists(sel):
+            shutil.copy2(sel, os.path.join(run_dir, 'mutations',
+                                           f'{name}.json'))
 
     # checksums last, over everything else, so the verifier can re-derive them.
     lines = []

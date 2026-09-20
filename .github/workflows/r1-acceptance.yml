@@ -1,0 +1,109 @@
+# The R1 acceptance gate, as a CI job.
+#
+# doc/phase1_tasks_and_acceptance.md R1-10 fixes both the entry points and the
+# rule about how their results may be combined:
+#
+#   "生成 fresh environment 与 source mutation 试验可作为受控 CI jobs，但其结果
+#    必须由同一次候选验收汇总，不能靠手工拼一个 PASS 文件"
+#
+# So there is one job that decides. The environment jobs below build the same
+# candidate in two independent Linux x86_64 environments -- B may not copy A's
+# build, venv or generated files -- and each runs the whole gate itself. The
+# final status comes from `r1-verify-evidence` re-deriving the archive, never
+# from a step that said it was fine: "CI 成功状态必须取自该验证器；上传工件失败
+# 也不能算完成".
+#
+# ubuntu-24.04 rather than ubuntu-latest: a floating tag is not a locked
+# environment, and spec/r1_toolchain.lock.json names the image this expects.
+
+name: r1-acceptance
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  acceptance:
+    name: "R1 acceptance (env ${{ matrix.env }})"
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    strategy:
+      fail-fast: false
+      matrix:
+        env: [A, B]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # No cache, and deliberately so. Environment B must not reuse anything
+      # A produced; a shared build cache between the two would make the
+      # "two independent environments" clause decorative.
+      - name: Install the locked toolchain
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            iverilog build-essential cmake ninja-build python3 python3-venv
+          iverilog -V | head -2
+          make --version | head -1
+
+      - name: Toolchain lock
+        run: make r1-doctor
+
+      # The generated RTL is checked in, so this asks whether the checked-in
+      # copy still follows from its sources rather than trusting that it does.
+      - name: Generated sources match their inputs
+        run: make r1-check-generated
+
+      - name: The gate can fail
+        run: make r1-gate-selftest
+
+      - name: Acceptance
+        id: acceptance
+        run: make r1-acceptance R1_EVIDENCE=evidence-${{ matrix.env }}
+
+      # Upload before verifying, so a failed run still leaves its evidence
+      # behind -- and `if: always()`, because the interesting archives are the
+      # ones from the runs that did not pass.
+      - name: Archive the evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: r1-evidence-${{ matrix.env }}
+          path: sim/r1/
+          retention-days: 30
+
+      # THE status. Everything above can be green and this red; this is the
+      # one that decides, because it recomputes the hashes and re-derives the
+      # required/discovered/executed relation instead of reading a verdict
+      # out of a file the run itself wrote.
+      - name: Verify the evidence
+        run: |
+          set -euo pipefail
+          latest=$(ls -dt sim/r1/*/ | head -1)
+          echo "verifying $latest"
+          make r1-verify-evidence EVIDENCE="$latest"
+
+  # The two environments must agree on more than "it passed": the contract
+  # requires the ISA/profile/XLS generated files and the target binaries to
+  # hash the same in both. Comparing them is a job of its own, because
+  # neither environment can perform the comparison on its own.
+  compare:
+    name: "A and B produced the same artefacts"
+    needs: acceptance
+    if: always()
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: r1-evidence-*
+          path: evidence
+      - name: Compare the generated and built artefacts
+        run: python3 tools/r1/compare_envs.py evidence

@@ -1,9 +1,0 @@
-  bitops                 PASS   tb_bitops: 60471 checks, 0 failures
-  mul64                  PASS   tb_mul64: 60000 checks, 0 failures
-  fp32_fma               PASS   tb_fp32_fma: 41240 vectors, 0 failures
-  decoder                PASS   tb_decoder: 773 vectors, 0 failures
-  cvt_xls                PASS   tb_cvt_xls: 866495 vectors x 2 instances (pipelined, unpipelined), 0 failures
-  sfu_xls                PASS   tb_sfu_xls: 16740 vectors within 2^-22 (exp2=3462 log2=3633 rcp=6011 rsqrt=3634), 431 exact, 0 outside
-  sfu_core               PASS   tb_sfu_core: 1042 batches of 16 lanes (16672 vectors), 0 failures
-  fpu_multi              PASS   tb_fpu_multi: 5012 vectors, 0 failures
-  asm round-trip        PASS   10198 instructions, 23 programs, 0 mismatches

@@ -64,7 +64,12 @@ module tb_rf_bank;
     ) u_l1 (
         .clk(clk), .rst_n(rst_n), .vbase(vbase),
         .req_valid(req_valid), .req_rctx(req_rctx), .req_idx(req_idx),
-        .req_accept(req_accept), .rsp_valid(rsp_valid), .rsp_data(rsp_data),
+        .req_accept(req_accept),
+        // Always ready: this bench predates the handshake and its cases are
+        // about the storage, not about backpressure. Tying it high keeps
+        // the v1 semantics exactly as they were.
+        .rsp_ready({NUM_PORTS{1'b1}}),
+        .rsp_valid(rsp_valid), .rsp_data(rsp_data),
         .we(we), .w_rctx(w_rctx), .w_idx(w_idx), .wmask(wmask), .wdata(wdata)
     );
 
@@ -78,7 +83,8 @@ module tb_rf_bank;
     ) u_l2 (
         .clk(clk), .rst_n(rst_n), .vbase(vbase),
         .req_valid(req_valid), .req_rctx(req_rctx), .req_idx(req_idx),
-        .req_accept(a2), .rsp_valid(v2), .rsp_data(d2),
+        .req_accept(a2), .rsp_ready({NUM_PORTS{1'b1}}),
+        .rsp_valid(v2), .rsp_data(d2),
         .we(we), .w_rctx(w_rctx), .w_idx(w_idx), .wmask(wmask), .wdata(wdata)
     );
 

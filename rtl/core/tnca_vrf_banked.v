@@ -46,7 +46,8 @@ module tnca_vrf_banked #(
     parameter NUM_BANKS      = 4,
     parameter BANK_W         = 2,   // $clog2(NUM_BANKS)
     parameter READ_LATENCY   = 1,
-    parameter NUM_PORTS      = 4    // read requesters presented per cycle
+    parameter NUM_PORTS      = 4,   // read requesters presented per cycle
+    parameter ZERO_INVALID   = 0    // 1 = an unwritten lane reads zero
 ) (
     input  wire                              clk,
     input  wire                              rst_n,
@@ -60,6 +61,11 @@ module tnca_vrf_banked #(
     output wire [NUM_PORTS-1:0]              req_accept,
 
     // ---- read responses, READ_LATENCY cycles after acceptance ------------
+    //
+    // `rsp_ready` is per requester. A bank whose response is being held
+    // accepts no further read, and req_accept says so on the cycle the
+    // request is offered.
+    input  wire [NUM_PORTS-1:0]              rsp_ready,
     output wire [NUM_PORTS-1:0]              rsp_valid,
     output wire [NUM_PORTS*VLEN*ELEN-1:0]    rsp_data,
 
@@ -112,6 +118,24 @@ module tnca_vrf_banked #(
         end
     endgenerate
 
+    // A port with a response nobody has taken yet must not be given a
+    // second one. Without this it can have two reads outstanding in two
+    // banks, both come back, and one lands on top of the other -- a silent
+    // overwrite, which is the thing the contract names when it asks for
+    // every pending response to have a reserved destination.
+    reg  [NUM_PORTS-1:0] port_busy;
+    integer pb;
+    reg [7:0] pbd;
+    always @* begin
+        port_busy = {NUM_PORTS{1'b0}};
+        for (pb = 0; pb < NUM_BANKS; pb = pb + 1) begin
+            pbd = bank_rdst[pb*8 +: 8];
+            if (bank_rvalid[pb] && pbd < NUM_PORTS
+                    && !rsp_ready[pbd])
+                port_busy[pbd] = 1'b1;
+        end
+    end
+
     reg  [NUM_PORTS-1:0] accept_c;
     reg  [NUM_BANKS-1:0] bank_taken;
     reg  [ROW_W-1:0]     bank_row_c  [0:NUM_BANKS-1];
@@ -128,7 +152,12 @@ module tnca_vrf_banked #(
         for (bk = 0; bk < NUM_BANKS; bk = bk + 1)
             bank_row_c[bk] = {ROW_W{1'b0}};
         for (pi = 0; pi < NUM_PORTS; pi = pi + 1) begin
-            if (req_valid[pi] && !bank_taken[req_bank[pi]]) begin
+            // A bank holding a response takes no new read. Refusing here
+            // rather than issuing and dropping is what makes `req_accept`
+            // mean what it says.
+            if (req_valid[pi] && !bank_taken[req_bank[pi]]
+                    && bank_accept[req_bank[pi]]
+                    && !port_busy[pi]) begin
                 accept_c[pi]                 = 1'b1;
                 bank_taken[req_bank[pi]]     = 1'b1;
                 bank_re_c[req_bank[pi]]      = 1'b1;
@@ -142,7 +171,26 @@ module tnca_vrf_banked #(
 
     // ---- the banks --------------------------------------------------------
     wire [NUM_BANKS-1:0]       bank_rvalid;
+    wire [NUM_BANKS-1:0]       bank_accept;
+    wire [NUM_BANKS*8-1:0]     bank_rdst;
     wire [NUM_BANKS*WIDTH-1:0] bank_rdata;
+
+    // A bank's ready comes from the requester its response is destined
+    // for, which is the port recorded when the read was accepted. That is
+    // the same reservation R3V2-RF-01 asks about: a response has one
+    // destination, fixed at acceptance, and the backpressure follows it.
+    reg [NUM_BANKS-1:0] bank_ready_c;
+    integer rq;
+    reg [7:0] rdst;
+    always @* begin
+        bank_ready_c = {NUM_BANKS{1'b1}};
+        for (rq = 0; rq < NUM_BANKS; rq = rq + 1) begin
+            rdst = bank_rdst[rq*8 +: 8];
+            bank_ready_c[rq] = (bank_rvalid[rq] && rdst < NUM_PORTS)
+                               ? rsp_ready[rdst] : 1'b1;
+        end
+    end
+    wire [NUM_BANKS-1:0] bank_ready = bank_ready_c;
 
     genvar b;
     generate
@@ -153,7 +201,9 @@ module tnca_vrf_banked #(
                 .ELEN         (ELEN),
                 .ADDR_W       (ROW_W),
                 .READ_LATENCY (READ_LATENCY),
-                .RDW_BYPASS   (1)
+                .RDW_BYPASS   (1),
+                .ZERO_INVALID (ZERO_INVALID),
+                .DST_W        (8)
             ) u_bank (
                 .clk    (clk),
                 .rst_n  (rst_n),
@@ -161,10 +211,14 @@ module tnca_vrf_banked #(
                 .waddr  (w_row),
                 .wmask  (wmask),
                 .wdata  (wdata),
-                .re     (bank_re_c[b]),
-                .raddr  (bank_row_c[b]),
-                .rvalid (bank_rvalid[b]),
-                .rdata  (bank_rdata[b*WIDTH +: WIDTH])
+                .re        (bank_re_c[b]),
+                .raddr     (bank_row_c[b]),
+                .dst       (bank_port_c[b*8 +: 8]),
+                .rsp_ready (bank_ready[b]),
+                .rd_accept (bank_accept[b]),
+                .rvalid    (bank_rvalid[b]),
+                .rdst      (bank_rdst[b*8 +: 8]),
+                .rdata     (bank_rdata[b*WIDTH +: WIDTH])
             );
         end
     endgenerate
@@ -174,20 +228,10 @@ module tnca_vrf_banked #(
     // RF-04: "任一 pending 响应有保留目的地". The destination is registered
     // with the request and travels with it, so a response can neither be
     // lost nor delivered to a port that did not ask.
-    localparam PIPE = (READ_LATENCY == 2) ? 2 : 1;
-
-    reg [NUM_BANKS*8-1:0] dest_q [0:PIPE-1];
-    integer di;
-    always @(posedge clk) begin
-        if (!rst_n) begin
-            for (di = 0; di < PIPE; di = di + 1)
-                dest_q[di] <= {NUM_BANKS*8{1'b0}};
-        end else begin
-            dest_q[0] <= bank_port_c;
-            for (di = 1; di < PIPE; di = di + 1)
-                dest_q[di] <= dest_q[di-1];
-        end
-    end
+    // The destination used to be a shift register here, advancing every
+    // cycle in parallel with the data. It now rides inside the bank with
+    // the response it belongs to, so there is nothing left to keep in
+    // step -- which is the only reason the two could ever disagree.
 
     reg  [NUM_PORTS-1:0]           rsp_valid_c;
     reg  [NUM_PORTS*WIDTH-1:0]     rsp_data_c;
@@ -198,7 +242,7 @@ module tnca_vrf_banked #(
         rsp_data_c  = {NUM_PORTS*WIDTH{1'b0}};
         for (rb = 0; rb < NUM_BANKS; rb = rb + 1) begin
             if (bank_rvalid[rb]) begin
-                dst = dest_q[PIPE-1][rb*8 +: 8];
+                dst = bank_rdst[rb*8 +: 8];
                 if (dst < NUM_PORTS) begin
                     rsp_valid_c[dst]                = 1'b1;
                     rsp_data_c[dst*WIDTH +: WIDTH]  =

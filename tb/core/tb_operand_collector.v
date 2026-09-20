@@ -58,7 +58,8 @@ module tb_operand_collector;
     ) u_rf (
         .clk(clk), .rst_n(rst_n), .vbase(vbase),
         .req_valid(req_valid), .req_rctx(req_rctx), .req_idx(req_idx),
-        .req_accept(req_accept), .rsp_valid(rsp_valid), .rsp_data(rsp_data),
+        .req_accept(req_accept), .rsp_ready({NUM_PORTS{1'b1}}),
+        .rsp_valid(rsp_valid), .rsp_data(rsp_data),
         .we(we), .w_rctx(w_rctx), .w_idx(w_idx), .wmask(wmask), .wdata(wdata)
     );
 
@@ -71,7 +72,8 @@ module tb_operand_collector;
         .alloc_srcs(alloc_srcs), .alloc_idx(alloc_idx),
         .alloc_rctx(alloc_rctx), .busy(busy),
         .req_valid(req_valid), .req_rctx(req_rctx), .req_idx(req_idx),
-        .req_accept(req_accept), .rsp_valid(rsp_valid), .rsp_data(rsp_data),
+        .req_accept(req_accept),
+        .rsp_valid(rsp_valid), .rsp_data(rsp_data),
         .ready(ready), .consume(consume), .flush(flush),
         .n_wait(n_wait), .n_grant(n_grant), .n_conflict(n_conflict),
         .n_orphan(n_orphan)

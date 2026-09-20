@@ -23,14 +23,41 @@
 //   what the `rdw_hit` term below is. It is counted here rather than assumed
 //   away, because R3-05 says any new data holding "都要计入寄存器/存储结构".
 //
-// RESET
+// RESET, AND WHERE THE ZERO COMES FROM
 //
-//   `rst_n` clears the response pipeline, not the array. A memory does not
-//   forget its contents on reset and neither does this; what it does is stop
-//   presenting a response that belongs to a request from before the reset.
-//   RF-03 asks that invalid content not leak after a relaunch, and the answer
-//   is that a read of an address never written returns X, not a helpful zero
-//   -- a 2-state zero would hide exactly the bug the case is looking for.
+//   `rst_n` clears the response pipeline and the VALID bits. It does not
+//   clear the data array: a memory does not forget its contents on reset,
+//   and an SRAM macro has no such input.
+//
+//   That leaves a question the v1 component test answered one way and the
+//   architecture answers the other. A never-written location holds X. The
+//   architecture says an unwritten register reads ZERO
+//   (spec/r3v2_contract.json, reset.architectural_read_of_unwritten), and
+//   the behavioural file it replaces gets that from a 2-state array that
+//   happens to start at zero -- which is a simulation artefact, not a
+//   design.
+//
+//   So the zero is made explicit. One valid bit per lane per row, reset to
+//   0, set by the lanes a masked write actually names. A read of a lane
+//   whose valid bit is clear returns zero rather than what the array holds.
+//   ZERO_INVALID selects it: 0 leaves the raw array visible, which is what
+//   the v1 RF-03 case checks and is still the honest statement about the
+//   STORAGE; 1 is the architectural behaviour and is what the candidate
+//   elaborates. Both are tested, because "the array is not initialised" and
+//   "the register reads zero" are different claims and the design has to
+//   make both true at once.
+//
+//   The valid bits are counted separately from the data
+//   (spec/r3v2_contract.json, bit_accounting): 32 rows x 16 lanes = 512 bits
+//   per bank, against 16,384 bits of data. Adding them together is how a
+//   control structure disappears into a capacity number.
+//
+// BACKPRESSURE
+//
+//   A response is held while the consumer is not ready, and no further read
+//   is accepted while one is held. `rd_accept` says so on the cycle the
+//   request is offered, so the layer above rations reads rather than
+//   discovering afterwards that one was dropped.
 //==============================================================================
 `include "tnca_defs.vh"
 
@@ -40,7 +67,9 @@ module tnca_rf_bank #(
     parameter ELEN          = 32,
     parameter ADDR_W        = 5,
     parameter READ_LATENCY  = 1,   // 1 or 2
-    parameter RDW_BYPASS    = 1    // 1 = write-first, 0 = read-first
+    parameter RDW_BYPASS    = 1,   // 1 = write-first, 0 = read-first
+    parameter ZERO_INVALID  = 0,   // 1 = an unwritten lane reads zero
+    parameter DST_W         = 8    // width of the destination tag
 ) (
     input  wire                     clk,
     input  wire                     rst_n,
@@ -52,11 +81,25 @@ module tnca_rf_bank #(
     input  wire [LANES*ELEN-1:0]    wdata,
 
     // ---- read request ----------------------------------------------------
+    //
+    // `dst` travels WITH the request through the same registers as its
+    // data. It used to be a parallel pipeline in the wrapper, advancing
+    // every cycle; a response held for backpressure then kept its data and
+    // lost its destination, and went to whichever port the shift register
+    // happened to be holding. A tag that rides with its payload cannot get
+    // out of step with it.
     input  wire                     re,
     input  wire [ADDR_W-1:0]        raddr,
+    input  wire [DST_W-1:0]         dst,
 
     // ---- read response, READ_LATENCY cycles later ------------------------
+    //
+    // `rsp_ready` low holds the response; `rd_accept` says whether a read
+    // offered this cycle would be taken.
+    input  wire                     rsp_ready,
+    output wire                     rd_accept,
     output wire                     rvalid,
+    output wire [DST_W-1:0]         rdst,
     output wire [LANES*ELEN-1:0]    rdata
 );
 
@@ -64,7 +107,21 @@ module tnca_rf_bank #(
 
     reg [WIDTH-1:0] mem [0:DEPTH-1];
 
-    integer li;
+    // One valid bit per lane per row. Reset clears these and not the array.
+    reg [LANES-1:0] vld [0:DEPTH-1];
+
+    integer li, ri;
+    always @(posedge clk) begin
+        if (!rst_n) begin
+            for (ri = 0; ri < DEPTH; ri = ri + 1)
+                vld[ri] <= {LANES{1'b0}};
+        end else if (we) begin
+            for (li = 0; li < LANES; li = li + 1)
+                if (wmask[li])
+                    vld[waddr][li] <= 1'b1;
+        end
+    end
+
     always @(posedge clk) begin
         if (we) begin
             for (li = 0; li < LANES; li = li + 1)
@@ -73,53 +130,72 @@ module tnca_rf_bank #(
         end
     end
 
-    // ---- stage 1: the array read, plus the write-first bypass ------------
+    // ---- the array read, the write-first bypass, and the zero ------------
     wire rdw_hit = RDW_BYPASS && re && we && (raddr == waddr);
 
-    reg [WIDTH-1:0] s1_data;
-    reg             s1_valid;
-    reg [LANES-1:0] s1_bypass_mask;
-    reg [WIDTH-1:0] s1_bypass_data;
+    wire [WIDTH-1:0] array_q = mem[raddr];
+    wire [LANES-1:0] vld_q   = vld[raddr];
 
-    integer bi;
-    always @(posedge clk) begin
-        if (!rst_n) begin
-            s1_valid <= 1'b0;
-        end else begin
-            s1_valid       <= re;
-            s1_data        <= mem[raddr];
-            // The bypass is per lane, because the write is: a masked write
-            // to the address being read updates only the lanes it names,
-            // and the rest must still come from the array.
-            s1_bypass_mask <= rdw_hit ? wmask : {LANES{1'b0}};
-            s1_bypass_data <= wdata;
-        end
-    end
+    // A lane the write names is valid from this cycle whether or not its
+    // valid bit has been written back yet: the bypass carries the data, so
+    // it has to carry the validity too, or a write-then-read in
+    // consecutive cycles would return zero for a lane that was just set.
+    wire [LANES-1:0] eff_vld = vld_q | (rdw_hit ? wmask : {LANES{1'b0}});
 
-    wire [WIDTH-1:0] s1_merged;
+    wire [WIDTH-1:0] merged;
     genvar g;
     generate
         for (g = 0; g < LANES; g = g + 1) begin : g_merge
-            assign s1_merged[g*ELEN +: ELEN] =
-                s1_bypass_mask[g] ? s1_bypass_data[g*ELEN +: ELEN]
-                                  : s1_data[g*ELEN +: ELEN];
+            wire [ELEN-1:0] from_array =
+                (ZERO_INVALID && !eff_vld[g]) ? {ELEN{1'b0}}
+                                              : array_q[g*ELEN +: ELEN];
+            assign merged[g*ELEN +: ELEN] =
+                (rdw_hit && wmask[g]) ? wdata[g*ELEN +: ELEN]
+                                      : from_array;
         end
     endgenerate
 
-    // ---- stage 2, when the configuration asks for it ---------------------
-    reg [WIDTH-1:0] s2_data;
-    reg             s2_valid;
+    // ---- stage 1, with backpressure --------------------------------------
+    //
+    // One response in flight. It is loaded when the stage is empty or the
+    // consumer is taking what is there, and held otherwise -- which is also
+    // the condition under which a new read can be accepted, so the two are
+    // the same signal rather than two that have to agree.
+    reg [WIDTH-1:0] s1_data;
+    reg [DST_W-1:0] s1_dst;
+    reg             s1_valid;
+
+    wire s1_free = !s1_valid || rsp_ready;
+
     always @(posedge clk) begin
         if (!rst_n) begin
-            s2_valid <= 1'b0;
-        end else begin
-            s2_valid <= s1_valid;
-            s2_data  <= s1_merged;
+            s1_valid <= 1'b0;
+        end else if (s1_free) begin
+            s1_valid <= re;
+            s1_data  <= merged;
+            s1_dst   <= dst;
         end
     end
 
-    assign rvalid = (READ_LATENCY == 2) ? s2_valid : s1_valid;
-    assign rdata  = (READ_LATENCY == 2) ? s2_data  : s1_merged;
+    // ---- stage 2, when the configuration asks for it ---------------------
+    reg [WIDTH-1:0] s2_data;
+    reg [DST_W-1:0] s2_dst;
+    reg             s2_valid;
+    wire s2_free = !s2_valid || rsp_ready;
+    always @(posedge clk) begin
+        if (!rst_n) begin
+            s2_valid <= 1'b0;
+        end else if (s2_free) begin
+            s2_valid <= s1_valid;
+            s2_data  <= s1_data;
+            s2_dst   <= s1_dst;
+        end
+    end
+
+    assign rvalid    = (READ_LATENCY == 2) ? s2_valid : s1_valid;
+    assign rdata     = (READ_LATENCY == 2) ? s2_data  : s1_data;
+    assign rdst      = (READ_LATENCY == 2) ? s2_dst   : s1_dst;
+    assign rd_accept = (READ_LATENCY == 2) ? (s1_free && s2_free) : s1_free;
 
 `ifndef SYNTHESIS
     initial begin

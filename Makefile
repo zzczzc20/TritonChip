@@ -127,7 +127,7 @@ SFU_VECTORS ?= 6000
 FPU_MULTI_VECTORS ?= 1500
 
 CORE_PROGS := t00_scalar t01_vector t02_mem t03_fp t04_roles t05_fault t06_alu \
-              t11_matrix t12_tensor t13_share t14_caps t15_target t16_vecadd t17_descfault t18_squash t19_waitgen0 t20_sfu t21_cvt t22_atomic t23_amofault t25_mmasf t26_stfault t28_count
+              t11_matrix t12_tensor t13_share t14_caps t15_target t16_vecadd t17_descfault t18_squash t19_waitgen0 t20_sfu t21_cvt t22_atomic t23_amofault t25_mmasf t26_stfault t28_count t29_vrfbank
 
 # Image size in 64-bit words; must match tb_tnca_core's WORDS parameter.
 IMAGE_WORDS := 16384
@@ -719,7 +719,7 @@ clean:
         r2-grid-tests r2-memory-tests r2-mutation-tests \
         r2-obs-tests r2-e2e-tests r2-dump-tests r3-rf-tests r3-flow-tests \
         r3-count-tests r3-synth-tests r3-mem-synth \
-        r3-mutation-tests r3v2-plan r3v2-scout r3v2-components \
+        r3-mutation-tests r3v2-plan r3v2-scout r3v2-components r3v2-core core-vrf \
         r2-package r2-stage-data \
         r3-scout r3-plan r3-model-tests
 
@@ -835,6 +835,9 @@ r3-mutation-tests:
 #------------------------------------------------------------------------------
 r3v2-plan:
 	@$(PYTHON) tools/r3v2/plan.py --json $(BUILD)/r3v2_plan.json
+
+r3v2-core: $(BUILD)/tb_core.vvp $(BUILD)/tb_core_vrf.vvp $(CORE_HEX)
+	@$(PYTHON) tools/r3v2/core_tests.py --json $(BUILD)/r3v2_core_tests.json
 
 r3v2-components:
 	@$(PYTHON) tools/r3v2/rf_tests.py --json $(BUILD)/r3v2_rf_tests.json

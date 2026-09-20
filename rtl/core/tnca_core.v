@@ -471,6 +471,10 @@ module tnca_core #(
     // each silently disconnected.
     wire                 stall_front;
     wire                 stall_other;     // everything but the VRF
+    // Zero on the reference, which has no ports to contend for.
+    reg [31:0] vrf_n_req, vrf_n_accept, vrf_n_conflict, vrf_n_stall,
+               vrf_n_serial, vrf_n_parallel, vrf_n_mtx_req,
+               vrf_n_mtx_wait, vrf_n_wb_retry;
     wire                 vrf_stall;       // operands not yet collected
     wire                 vrf_wb_freeze;   // a vector writeback was refused
     wire                 mtx_vrf_valid_w;
@@ -553,6 +557,13 @@ module tnca_core #(
         assign vrf_stall     = 1'b0;
         assign vrf_wb_freeze = 1'b0;
         assign mtx_vrf_valid_w = 1'b1;
+        always @(posedge clk) begin
+            vrf_n_req      <= 32'd0; vrf_n_accept   <= 32'd0;
+            vrf_n_conflict <= 32'd0; vrf_n_stall    <= 32'd0;
+            vrf_n_serial   <= 32'd0; vrf_n_parallel <= 32'd0;
+            vrf_n_mtx_req  <= 32'd0; vrf_n_mtx_wait <= 32'd0;
+            vrf_n_wb_retry <= 32'd0;
+        end
 
     end else begin : g_vrf_banked
 
@@ -628,6 +639,55 @@ module tnca_core #(
         assign mtx_vrf_data = vrf_rsp_data[3*VW +: VW];
 
         assign vrf_stall = of_enable && !of_ready;
+
+        //----------------------------------------------------------------
+        // What the file cost, per client
+        //
+        // R3V2-CORE-03 asks that every read client be shown really
+        // stalling, and R3V2-COUNT-01 that the counts be exact. A refused
+        // request is counted where it happened rather than inferred from a
+        // cycle total, because "the LSU waited" and "something waited
+        // while an LSU instruction was in R" are different claims.
+        //----------------------------------------------------------------
+        always @(posedge clk) begin
+            if (!rst_n) begin
+                vrf_n_req      <= 32'd0;
+                vrf_n_accept   <= 32'd0;
+                vrf_n_conflict <= 32'd0;
+                vrf_n_stall    <= 32'd0;
+                vrf_n_serial   <= 32'd0;
+                vrf_n_parallel <= 32'd0;
+                vrf_n_mtx_req  <= 32'd0;
+                vrf_n_mtx_wait <= 32'd0;
+                vrf_n_wb_retry <= 32'd0;
+            end else begin
+                vrf_n_req    <= vrf_n_req +
+                    {29'd0, of_want[0]} + {29'd0, of_want[1]} +
+                    {29'd0, of_want[2]};
+                vrf_n_accept <= vrf_n_accept +
+                    {29'd0, vrf_req_accept[0]} + {29'd0, vrf_req_accept[1]} +
+                    {29'd0, vrf_req_accept[2]};
+                vrf_n_conflict <= vrf_n_conflict +
+                    {29'd0, of_want[0] & ~vrf_req_accept[0]} +
+                    {29'd0, of_want[1] & ~vrf_req_accept[1]} +
+                    {29'd0, of_want[2] & ~vrf_req_accept[2]};
+                if (vrf_stall) vrf_n_stall <= vrf_n_stall + 32'd1;
+                // More than one source wanted, and not all of them taken:
+                // the instruction's reads are being serialised.
+                if ((of_want[0] + of_want[1] + of_want[2]) > 2'd1) begin
+                    if ((vrf_req_accept[0] + vrf_req_accept[1]
+                         + vrf_req_accept[2]) ==
+                        (of_want[0] + of_want[1] + of_want[2]))
+                        vrf_n_parallel <= vrf_n_parallel + 32'd1;
+                    else
+                        vrf_n_serial <= vrf_n_serial + 32'd1;
+                end
+                if (mtx_vrf_req) vrf_n_mtx_req <= vrf_n_mtx_req + 32'd1;
+                if (mtx_vrf_req && !mtx_vrf_valid_w)
+                    vrf_n_mtx_wait <= vrf_n_mtx_wait + 32'd1;
+                if (vrf_wb_freeze) vrf_n_wb_retry <= vrf_n_wb_retry + 32'd1;
+            end
+        end
 
 
         //----------------------------------------------------------------

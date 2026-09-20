@@ -200,6 +200,13 @@ module tb_tnca_core;
                  perf_stall_wb, perf_squash);
         // The exclusive group, and its sum. tools/r3/count_tests.py checks
         // that the sum is the total; printing both is what lets it.
+        // R3V2-CORE-02/03 and COUNT-01 read these.
+        $display("vrf req=%0d accept=%0d conflict=%0d stall=%0d serial=%0d parallel=%0d mtx_req=%0d mtx_wait=%0d wb_retry=%0d",
+                 dut.vrf_n_req, dut.vrf_n_accept,
+                 dut.vrf_n_conflict, dut.vrf_n_stall,
+                 dut.vrf_n_serial, dut.vrf_n_parallel,
+                 dut.vrf_n_mtx_req, dut.vrf_n_mtx_wait,
+                 dut.vrf_n_wb_retry);
         $display("stall_total=%0d x_hazard=%0d x_lsu=%0d x_fpu=%0d x_mtx=%0d x_txf=%0d x_fence=%0d x_arrive=%0d x_rsv=%0d x_wb=%0d x_sum=%0d",
                  perf_stall_total, perf_x_hazard, perf_x_lsu, perf_x_fpu,
                  perf_x_mtx, perf_x_txf, perf_x_fence, perf_x_arrive,

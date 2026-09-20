@@ -37,9 +37,12 @@ from ..errors import (CapabilityError, CompileError, ProfileMismatch,
 _HERE = os.path.dirname(os.path.abspath(__file__))
 _ROOT = os.path.abspath(os.path.join(_HERE, '..', '..', '..'))
 
+# A DEVELOPMENT fallback, appended rather than prepended: an installed
+# package finds `tnca_cc` and `tnca_asm` as ordinary top-level modules, and
+# only a checkout needs these. Prepending them would let a developer's tree
+# shadow an installed one, which is how "it works here" starts.
 for _p in (os.path.join(_ROOT, 'compiler', 'python'),
-           os.path.join(_ROOT, 'tools', 'asm'),
-           os.path.join(_ROOT, 'tools', 'r1')):
+           os.path.join(_ROOT, 'tools', 'asm')):
     if os.path.isdir(_p) and _p not in sys.path:
         sys.path.append(_p)
 
@@ -100,21 +103,15 @@ def _sha(text):
 
 
 def profile(name):
-    """The profile spec entry and its configuration hash."""
-    try:
-        sys.path.append(os.path.join(_ROOT, 'tools', 'r1'))
-        import profiles as P
-    except ImportError as e:
-        raise ProfileMismatch(
-            f"cannot read the profile spec: {e}",
-            remedy='the package must ship spec/r1_profiles.json and the '
-                   'targets generated from it')
-    try:
-        p = P.profile(name)
-    except KeyError as e:
-        raise ProfileMismatch(str(e))
-    return dict(name=name, spec=p, config_hash=P.config_hash(name),
-                target_file=p['target_file'])
+    """The profile spec entry and its configuration hash.
+
+    From `tnca.profiles`, which reads the data the package ships. It used to
+    import `tools/r1/profiles.py` -- verification code, which the product may
+    not depend on (doc/r2_interfaces.md, checked by PKG-02) and which is not
+    in a wheel at all.
+    """
+    from .. import profiles as P
+    return P.info(name)
 
 
 def target_for(name, prov=None):

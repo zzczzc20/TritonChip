@@ -787,6 +787,7 @@ r2-stage-data:
 # tools/r1/inventory.py's static scan caught this recipe the first time it
 # ran on a clean checkout. `-q` keeps it quiet without a pipe.
 r2-package: r2-stage-data
+	@rm -rf build $(BUILD)/dist/*.whl
 	@$(PYTHON) -m pip wheel --no-deps -q -w $(BUILD)/dist .
 	@$(PYTHON) -c "import glob, os; [print('  %d bytes  %s' % (os.path.getsize(w), w)) for w in sorted(glob.glob('$(BUILD)/dist/*.whl'))]"
 

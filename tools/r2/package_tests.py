@@ -60,7 +60,11 @@ def clean_env(venv, extra=None):
 
 def build_wheel(log):
     """One wheel, built the way the release does."""
-    r = _run(['make', 'r2-package'], cwd=ROOT)
+    # The wheel is built by the interpreter running this suite: the
+    # Makefile's default PYTHON may be one without pip, and a wheel
+    # that was not built is not a wheel that passed.
+    r = _run(['make', 'r2-package', f'PYTHON={sys.executable}'],
+             cwd=ROOT)
     wheels = sorted(f for f in os.listdir(WHEEL_DIR)
                     if f.endswith('.whl')) if os.path.isdir(WHEEL_DIR) else []
     if not wheels:
@@ -371,8 +375,103 @@ print(json.dumps({
     return ok, 'licence, version, assets, and a reinstall from nothing'
 
 
-TESTS = [('PKG-01', pkg01), ('PKG-02', pkg02), ('PKG-04', pkg04),
-         ('PKG-05', pkg05)]
+def pkg06(log, ctx):
+    """The wheel ships the sources in the tree, byte for byte.
+
+    This case exists because the alternative was found the hard way. A
+    setuptools `build/` tree had been committed to the repository, and
+    build_py only recopies a source that is NEWER than its copy, so the
+    wheel was assembled from a months-old snapshot: the shipped transport
+    wrote six mailbox fields while the shipped device read eight, and the
+    device sat there for the full ten-minute host timeout with an empty
+    log. Every packaging case before this one passed, because none of them
+    compared what was in the wheel against what was in the tree.
+    """
+    import zipfile
+    ok = True
+    checked = stale = 0
+    problems = []
+    with zipfile.ZipFile(ctx['wheel']) as z:
+        names = z.namelist()
+        for name in names:
+            # tnca/ and tnca_cc/ come from the tree; data/ is staged from
+            # rtl, tb, spec and isa, and is compared too.
+            if name.startswith('tnca/data/'):
+                src = os.path.join(ROOT, 'python', 'tnca', 'data',
+                                   name[len('tnca/data/'):])
+            elif name.startswith('tnca/'):
+                src = os.path.join(ROOT, 'python', name)
+            elif name.startswith('tnca_cc/'):
+                src = os.path.join(ROOT, 'compiler', 'python', name)
+            elif name in ('tnca_asm.py', 'tnca_isa.py'):
+                src = os.path.join(ROOT, 'python', '_staged', name)
+            else:
+                continue          # dist-info, metadata
+            if not os.path.exists(src):
+                problems.append(f"{name}: shipped, but not in the tree")
+                continue
+            checked += 1
+            with open(src, 'rb') as fh:
+                on_disk = fh.read()
+            if z.read(name) != on_disk:
+                stale += 1
+                problems.append(f"{name}: differs from {os.path.relpath(src, ROOT)}")
+    log.append(f"    {checked} shipped file(s) compared against the tree")
+    if problems:
+        for pr in problems[:10]:
+            log.append(f"        {pr}")
+        log.append(f"    {len(problems)} file(s) do not match")
+        ok = False
+    else:
+        log.append("    every one identical: the wheel is this tree, not an "
+                   "older one")
+
+    # And the two ends of the mailbox protocol must agree about how many
+    # fields it has -- the specific mismatch that made this case necessary.
+    import re as _re
+    with zipfile.ZipFile(ctx['wheel']) as z:
+        tr = z.read('tnca/transport.py').decode()
+        dv = z.read('tnca/data/tb/device/tnca_device.v').decode()
+    m = _re.search(r'fh\.write\(f"([^"]*)\\n"\)', tr)
+    wrote = len(m.group(1).split()) if m else 0
+    m2 = _re.search(r'\$fscanf\(fh,\s*"([^"]*)"', dv)
+    reads = len(m2.group(1).split()) if m2 else 0
+    log.append(f"    the shipped host writes {wrote} mailbox field(s); the "
+               f"shipped device reads {reads}")
+    if wrote != reads or wrote == 0:
+        log.append("    the two ends of the protocol disagree (bad)")
+        ok = False
+
+    # A gate nobody has seen fail is a gate nobody has tested -- which is
+    # how the stale wheel survived every other packaging case. One file in
+    # a copy of the wheel is replaced with the version that actually
+    # shipped, and the comparison must notice.
+    control = os.path.join(ctx['base'], 'control.whl')
+    victim = 'tnca/transport.py'
+    old_bytes = _run(['git', 'show',
+                      f"441d9c5:build/lib/{victim}"], cwd=ROOT)
+    if old_bytes.returncode == 0 and old_bytes.stdout:
+        with zipfile.ZipFile(ctx['wheel']) as src, \
+                zipfile.ZipFile(control, 'w') as dst:
+            for item in src.infolist():
+                data = src.read(item.filename)
+                if item.filename == victim:
+                    data = old_bytes.stdout.encode()
+                dst.writestr(item, data)
+        with zipfile.ZipFile(control) as z:
+            with open(os.path.join(ROOT, 'python', victim), 'rb') as fh:
+                caught = z.read(victim) != fh.read()
+        log.append(f"    a control wheel carrying the version that actually "
+                   f"shipped: {'caught' if caught else 'NOT CAUGHT (bad)'}")
+        ok &= caught
+    else:
+        log.append("    (the control needs the commit that carried the "
+                   "stale tree; skipped)")
+    return ok, 'the wheel is built from this tree, and its two ends agree'
+
+
+TESTS = [('PKG-06', pkg06), ('PKG-01', pkg01), ('PKG-02', pkg02),
+         ('PKG-04', pkg04), ('PKG-05', pkg05)]
 
 NOT_YET = {}
 

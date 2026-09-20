@@ -61,3 +61,11 @@ tritonenv/
 # repository's own spec/, isa/, rtl/, tb/ and tools/asm/.
 python/tnca/data/
 python/_staged/
+
+# setuptools' build tree. It was committed once, and because build_py only
+# recopies a source that is NEWER than its copy, the wheel was then built
+# from a months-old snapshot: the shipped transport wrote six mailbox fields
+# while the shipped device read eight, and nothing answered. `r2-package`
+# deletes it before every build, and r2-package-tests compares the wheel
+# against the sources (PKG-06).
+build/

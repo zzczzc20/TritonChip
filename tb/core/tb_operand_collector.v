@@ -141,16 +141,26 @@ module tb_operand_collector;
                      u_oc.e_data[0][1*WIDTH +: WIDTH],
                      u_oc.e_data[0][2*WIDTH +: WIDTH]);
         end else if (which == 3) begin
-            // Four entries, each wanting one source, all in bank 0.
+            // Four entries, each wanting THREE sources, all in bank 0
+            // (v0, v4, v8 are phys 0, 4, 8 and 4 divides all of them).
+            // Twelve reads competing for one read port is real contention;
+            // the first version of this case gave each entry one source,
+            // and one allocation per cycle exactly matched one grant per
+            // cycle, so nothing ever queued and the round robin was never
+            // asked to decide anything.
             @(negedge clk);
+            // The allocation cycles are printed too. They were not, and
+            // the first printed cycle then carried every grant issued
+            // while the entries were being allocated -- which read as
+            // four grants in one cycle on a bank with one read port.
             for (i = 0; i < ENTRIES; i = i + 1) begin
                 alloc_valid = 1; alloc_entry = i[ENT_W-1:0];
-                alloc_srcs = 3'b001;
-                alloc_idx = {8'd0, 8'd0, i[5:0]*8'd4};
-                @(negedge clk);
+                alloc_srcs = 3'b111;
+                alloc_idx = {8'd8, 8'd4, 8'd0};
+                step;
             end
             alloc_valid = 0;
-            for (i = 0; i < 14; i = i + 1) step;
+            for (i = 0; i < 20; i = i + 1) step;
         end else if (which == 4) begin
             @(negedge clk);
             alloc_valid = 1; alloc_entry = 0; alloc_srcs = 3'b111;

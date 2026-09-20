@@ -49,8 +49,19 @@ esac
 mkdir -p "$DEST"
 TARBALL="$DEST/xls-$VERSION.tar.gz"
 
+# A shared read-only download cache is what R1-09 permits between the two
+# acceptance environments ("允许使用校验过的只读下载缓存"). It saves a
+# download and nothing else: the checksum below is verified whatever the
+# file's provenance, so a poisoned cache is caught exactly like a poisoned
+# download.
+if [ ! -f "$TARBALL" ] && [ -n "${XLS_CACHE:-}" ] \
+   && [ -f "$XLS_CACHE/xls-$VERSION.tar.gz" ]; then
+  echo "from the shared cache: $XLS_CACHE/xls-$VERSION.tar.gz"
+  cp "$XLS_CACHE/xls-$VERSION.tar.gz" "$TARBALL"
+fi
+
 if [ -f "$TARBALL" ]; then
-  echo "already downloaded: $TARBALL"
+  echo "already present: $TARBALL"
 else
   echo "fetching $URL"
   curl -fL --retry 3 -o "$TARBALL.part" "$URL"

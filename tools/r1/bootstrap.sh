@@ -75,11 +75,33 @@ test -x "$FILECHECK_LOCKED" || {
 make tnca-opt LLVM_PREFIX="$LLVM_PREFIX" >/dev/null
 echo "  built $(./compiler/build/tools/tnca-opt/tnca-opt --version 2>/dev/null | head -1 || echo tnca-opt)"
 
+# XLS, if this platform can run it. R1-09 wants rtl/gen re-generated from the
+# DSLX rather than trusted, and the generator must not be somebody's ssh host.
+# On a platform XLS does not publish binaries for, this says so and the
+# generated check reports rtl/gen as not re-checked -- which is the honest
+# outcome, not a silent pass.
+if [ "$(uname -s)/$(uname -m)" = "Linux/x86_64" ]; then
+  echo "=== $NAME: XLS (pinned release, verified by checksum) ==="
+  if XLS_CACHE=${R1_XLS_CACHE:-} bash tools/xls/fetch_xls.sh "$ROOT_DIR/xls"; then
+    export XLS_HOME="$ROOT_DIR/xls/cur"
+    echo "  XLS_HOME=$XLS_HOME"
+  else
+    echo "  XLS not available; rtl/gen will be reported as not re-checked"
+  fi
+fi
+
 echo "=== $NAME: doctor ==="
 make r1-doctor
 
 echo "=== $NAME: generated artefacts (read-only check) ==="
-make r1-check-generated
+# R1_XLS=1 only where XLS is actually present: asking for the rtl/gen check
+# without a generator turns a missing tool into a failed check, which says
+# something different from what happened.
+if [ -n "${XLS_HOME:-}" ]; then
+  make r1-check-generated R1_XLS=1
+else
+  make r1-check-generated
+fi
 
 echo "=== $NAME: gate self-test ==="
 make r1-gate-selftest

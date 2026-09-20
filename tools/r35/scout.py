@@ -112,11 +112,13 @@ def opportunities(asm):
             'kind': 'multiply-by-power-of-two', 'sites': len(pow2),
             'words_now': 5 * len(pow2), 'words_possible': len(pow2),
             'saving': 4 * len(pow2),
-            'mechanism': 'upstream canonicalisation turns muli by a constant '
-                         'power of two into a shift, and the constant then '
-                         'has no user',
-            'blocked_by': 'the product path does not run canonicalisation; '
-                          'the TTIR reaches codegen as written'})
+            'mechanism': 'lower a multiply by a constant power of two to a '
+                         'shift; the constant then has no user',
+            'blocked_by': "TNCA's own lowering. Upstream canonicalisation "
+                          "was MEASURED on this exact module and does NOT "
+                          "do it: arith.muli stayed 1 and no arith.shli "
+                          "appeared. This one is not reuse and must not be "
+                          "reported as an upstream win."})
 
     # `other=` materialised for a masked load whose only consumers end in a
     # store under the same mask.
@@ -236,6 +238,11 @@ def main():
     print("  blocked on, today:")
     print("    the product path is TTIR -> Python TNCA IR -> codegen, with "
           "no MLIR pass run on it")
+    print("    -- though the pinned wheel exports what is needed: "
+          "libtriton.passes.common.add_canonicalizer/add_cse run on this "
+          "TTIR")
+    print("       and take its 6 arith.constant ops to 2; "
+          "libtriton.linear_layout.LinearLayout is a real, exported class")
     print("    opt_level 0..2 is declared reserved and does not change "
           "emission")
     print("    LinearLayout is not called at all: there is no layout "

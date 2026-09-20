@@ -8,7 +8,7 @@
 本文件只记录**已经跑过并留下证据**的部分。状态只有 DELIVERED、PARTIAL、
 NOT STARTED 三种；没有完成度百分比。
 
-**R2 未签收。** 十四个工作包中十个的验收条件已满足。最终判决还要求：在 R2
+**R2 未签收。** 十四个工作包中十一个的验收条件已满足。最终判决还要求：在 R2
 候选 commit 上重跑 R1 全套（DEP-02）、grid/多批（R2-09）、host transport 的
 完成边界（R2-10）、报告与示例（R2-12）、E2E 与 mutation（R2-13）、双环境发布
 （R2-14）。
@@ -42,11 +42,11 @@ NOT STARTED 三种；没有完成度百分比。
 | 工作包 | 状态 | 实际交付 | 未满足的验收条件 |
 |---|---|---|---|
 | R2-01 R1 衔接/合同 | **PARTIAL** | 84 条语义用例展开为 170 个执行 ID；`tools/r2/baseline.py` 实现 DEP-01（缺失/伪造/不完整/PARTIAL 的 R1 全部拒绝，复用 R1 自己的验证器）；`doc/r2_interfaces.md` 冻结依赖方向与 adapter 边界 | DEP-02 需要在 R2 候选上重跑 R1 全套；DEP-03 的支持矩阵待补 |
-| R2-02 安装/API | **PARTIAL** | 非 editable wheel；`tnca-aot compile/inspect/doctor`、`tnca-sim run/prepare/doctor`；**PKG-03 已验证**：无 Triton、无编译器、仓库外执行成功；运行端零依赖 | PKG-01/02/04/05 尚未作为受控用例执行 |
+| R2-02 安装/API | **DELIVERED** | PKG-01/02/04/05/06 在 Linux 上全通过。两个全新 venv 非 editable 安装后 compile→run→download；探针先断言仓库不在 `sys.path` 且 `tnca` 不是从 checkout 导入的，再做别的；含空格路径、任意 cwd；四类失败各有稳定码且 CLI 与 API 一致；许可证/版本/7 项运行资产齐全，`--no-index --no-cache-dir` 重装可用。**PKG-06 是新增的**：把 wheel 里 95 个文件逐字节与源码比对——`build/` 目录曾被提交进 git，setuptools 只在源文件**更新**时才重拷，于是 wheel 里 9 个文件是几个月前的快照，发出去的 host 写 6 个信箱字段而设备读 8 个 | 无 |
 | R2-03 编译 driver | **DELIVERED** | CMP-01…05 全通过：真实 Triton add/mul-add/动态 alpha AXPY 经产品入口编译并在 RTL 执行；六种畸形输入各按自己的错误码拒绝；R1 的负例经产品路径在 `-O2 --debug` 下仍被拒绝 | 无 |
 | R2-04 MLIR 主路径 | **NOT STARTED** | — | MLIR-01…05 |
 | R2-05 artifact/loader | **DELIVERED** | ART-01…06 全通过：一字节改动、截断、段重叠、重复 JSON key、未知版本、另一个 artifact 的段各被拒绝；profile/ABI/format 不匹配**在零次设备请求内**拒绝；容器无路径可遍历 | 无 |
-| R2-06 动态 ABI | **PARTIAL** | ABI-01（独立 byte-level oracle，六类型 22 个值）、ABI-02（三组地址与标量，code hash 不变）、ABI-03（九种坏参数，无一启动任务）、ABI-04（提交后修改 dict 无效） | ABI-05 alias 正例、ABI-06 gather/scatter 越界 fault |
+| R2-06 动态 ABI | **PARTIAL** | ABI-01（独立 byte-level oracle，六类型 22 个值）、ABI-02（三组地址与标量，code hash 不变）、ABI-03（九种坏参数，无一启动任务）、ABI-04（提交后修改 dict 无效） | ABI-06 gather/scatter 越界 fault（ABI-05 已通过：声明过的 in-place alias 正确执行，未声明的重叠在**零次设备请求**内被拒） |
 | R2-07 缓存/确定性 | **DELIVERED** | CACHE-01…04：七个维度改变 key，运行期输入无处可传；两个干净环境同 hash；损坏与截断各拒绝；**编译器被计数而非计时**，四次复用调用编译器 0 次 | 无 |
 | R2-08 runtime 生命周期 | **DELIVERED** | RT-01…07：完整生命周期、32 次不重启、八个占位第九个 QUEUE_FULL、wait 幂等且超时不是判决、租约阻塞、两 session 互不干扰、依赖链与跨 session 依赖拒绝 | 无 |
 | R2-09 grid/admission | **PARTIAL** | GRID-01/02（九种 grid，每个 PID 恰好出现一次，NPID 是逻辑 grid 大小，与独立 oracle 比对）、GRID-06（映射是双射，边界被拒绝）。`t.program_id(0)` 曾返回线性 id，transport 现在传全部六个 grid 值 | GRID-03/04/05/07 需要四 tile 持久设备 |

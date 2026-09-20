@@ -30,6 +30,8 @@ TOOLS = [
     ('yosys', ['yosys', '-V']),
     ('git', ['git', '--version']),
     ('make', ['make', '--version']),
+    ('g++', ['g++', '--version']),
+    ('cmake', ['cmake', '--version']),
 ]
 
 

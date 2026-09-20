@@ -104,6 +104,10 @@ def main():
                 'model', 'synthesis', 'mutations', 'inherited'):
         os.makedirs(os.path.join(ev, sub), exist_ok=True)
 
+    try:
+        sys.stdout.reconfigure(line_buffering=True)
+    except AttributeError:
+        pass
     print(f"R3 v2 gate: {CONTRACT_ID}")
     print(f"  run {run_id}")
     print(f"  commit {commit[:12] or 'unknown'}"
@@ -151,6 +155,22 @@ def main():
                 json.dump(inv[key], fh, indent=2, sort_keys=True)
                 fh.write('\n')
 
+    # Build what the checkers read. A checker that cannot find its bench
+    # reports "not built", which is true and says nothing about the
+    # design -- and in a fresh checkout that is every checker that runs a
+    # program. The build is part of the run and its failure is the run's.
+    print("  building the benches and programs the checkers read...",
+          flush=True)
+    started = time.time()
+    pre = subprocess.run(['make', 'r3v2-prereqs'], cwd=ROOT,
+                         capture_output=True, text=True, timeout=14400)
+    with open(os.path.join(ev, 'build', 'prereqs.log'), 'w') as fh:
+        fh.write(pre.stdout + pre.stderr)
+    print(f"  {'built' if pre.returncode == 0 else 'BUILD FAILED'} in "
+          f"{time.time() - started:.0f}s", flush=True)
+    if pre.returncode != 0:
+        print((pre.stderr or pre.stdout)[-600:])
+
     results, gates = [], {}
     for gate, name, argv in CHECKS:
         out = os.path.join(ev, 'runs', f'{name}.json')
@@ -164,7 +184,7 @@ def main():
         cases = json.load(open(out)) if os.path.exists(out) else None
         if cases is None:
             print(f"  {gate} {name:<8s} NO RESULT -- the checker produced "
-                  f"no json; it may not exist yet")
+                  f"no json; it may not exist yet", flush=True)
             gates.setdefault(gate, []).append(False)
             results.append({'gate': gate, 'checker': name, 'exit': r.returncode,
                             'elapsed_s': round(elapsed, 2), 'cases': None})
@@ -174,7 +194,8 @@ def main():
         print(f"  {gate} {name:<8s} exit={r.returncode} "
               f"{len(cases) - len(bad)}/{len(cases)} case(s) "
               f"in {elapsed:>6.1f}s"
-              + (f"   open: {', '.join(bad)}" if bad else ''))
+              + (f"   open: {', '.join(bad)}" if bad else ''),
+              flush=True)
         results.append({'gate': gate, 'checker': name,
                         'exit': r.returncode,
                         'elapsed_s': round(elapsed, 2),
@@ -194,9 +215,11 @@ def main():
                     json.dump(c, fh, indent=2, sort_keys=True)
                     fh.write('\n')
 
-    every = all(all(v) for v in gates.values())
+    every = all(all(v) for v in gates.values()) and pre.returncode == 0
     verdict = SIGNOFF if (every and not dirty) else 'NOT ACCEPTED'
     reasons = []
+    if pre.returncode != 0:
+        reasons.append('the benches the checkers read did not build')
     if dirty:
         reasons.append('the working tree is not clean')
     for gate, oks in sorted(gates.items()):

@@ -719,7 +719,7 @@ clean:
         r2-grid-tests r2-memory-tests r2-mutation-tests \
         r2-obs-tests r2-e2e-tests r2-dump-tests r3-rf-tests r3-flow-tests \
         r3-count-tests r3-synth-tests r3-mem-synth \
-        r3-mutation-tests r3v2-plan r3v2-scout r3v2-mutations r3v2-runtime r3v2-release r3v2-record-environment r3v2-acceptance r3v2-verify-evidence r3v2 \
+        r3-mutation-tests r3v2-plan r3v2-scout r3v2-prereqs r3v2-mutations r3v2-runtime r3v2-release r3v2-record-environment r3v2-acceptance r3v2-verify-evidence r3v2 \
         r3v2-components r3v2-core r3v2-flow r3v2-e2e r3v2-count r3v2-model r3v2-synth core-vrf \
         r2-package r2-stage-data \
         r3-scout r3-plan r3-model-tests
@@ -860,6 +860,13 @@ r3-mutation-tests:
 #------------------------------------------------------------------------------
 R3V2_EVIDENCE ?= $(BUILD)/r3v2-evidence
 R3V2_PEER     ?= evidence/r3v2-second-env.json
+
+# What the checkers read. The gate builds these before it runs anything,
+# so a checker that reports "not built" is reporting a build failure and
+# not a fresh checkout.
+r3v2-prereqs: $(BUILD)/tb_core.vvp $(BUILD)/tb_core_vrf.vvp $(CORE_HEX) \
+              $(BUILD)/tnca_device.vvp $(BUILD)/tnca_device_vrf.vvp
+	@echo "  r3v2-prereqs           OK     benches and programs built"
 
 r3v2-plan:
 	@$(PYTHON) tools/r3v2/plan.py --json $(BUILD)/r3v2_plan.json

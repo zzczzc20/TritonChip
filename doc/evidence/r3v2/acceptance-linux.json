@@ -1,0 +1,355 @@
+{
+  "checks": [
+    {
+      "cases": [
+        {
+          "detail": "the frozen inventory is complete and within budget",
+          "id": "R3V2-BASE-01",
+          "passed": true
+        },
+        {
+          "detail": "every malformation refused before any RTL runs",
+          "id": "R3V2-BASE-02",
+          "passed": true
+        },
+        {
+          "detail": "the contract is complete; the scout must be real",
+          "id": "R3V2-BASE-03",
+          "passed": true
+        }
+      ],
+      "checker": "plan",
+      "elapsed_s": 0.04,
+      "exit": 0,
+      "gate": "G0"
+    },
+    {
+      "cases": [
+        {
+          "detail": "8 KiB in 4 banks, invertible, one read and one response",
+          "id": "R3V2-RF-01",
+          "passed": true
+        },
+        {
+          "detail": "three seeds, every accepted read, every property triggered",
+          "id": "R3V2-RF-02",
+          "passed": true
+        },
+        {
+          "detail": "zero above, X underneath, nothing across a reset",
+          "id": "R3V2-RF-03",
+          "passed": true
+        }
+      ],
+      "checker": "rf",
+      "elapsed_s": 0.41,
+      "exit": 0,
+      "gate": "G1"
+    },
+    {
+      "cases": [
+        {
+          "detail": "the banked file, its clients named, and no way around it",
+          "id": "R3V2-CORE-01",
+          "passed": true
+        },
+        {
+          "detail": "one bank serialises, three banks do not, and it costs",
+          "id": "R3V2-CORE-02",
+          "passed": true
+        },
+        {
+          "detail": "every read client waits, and none was masked to get there",
+          "id": "R3V2-CORE-03",
+          "passed": true
+        }
+      ],
+      "checker": "core",
+      "elapsed_s": 45.05,
+      "exit": 0,
+      "gate": "G2"
+    },
+    {
+      "cases": [
+        {
+          "detail": "one write lands, the other retries, both commit once",
+          "id": "R3V2-FLOW-01",
+          "passed": true
+        },
+        {
+          "detail": "four requesters, one port, served within 4 cycles",
+          "id": "R3V2-FLOW-02",
+          "passed": true
+        },
+        {
+          "detail": "reuse, flush, a late return, and ownership intact",
+          "id": "R3V2-FLOW-03",
+          "passed": true
+        }
+      ],
+      "checker": "flow",
+      "elapsed_s": 34.68,
+      "exit": 0,
+      "gate": "G3"
+    },
+    {
+      "cases": [
+        {
+          "detail": "12 runs, values, mask, sentinel and canaries",
+          "id": "R3V2-E2E-01",
+          "passed": true
+        },
+        {
+          "detail": "three scalars, one artifact, one device, no recompile",
+          "id": "R3V2-E2E-02",
+          "passed": true
+        },
+        {
+          "detail": "a wrong profile refused before any launch",
+          "id": "R3V2-E2E-03",
+          "passed": true
+        }
+      ],
+      "checker": "e2e",
+      "elapsed_s": 50.52,
+      "exit": 0,
+      "gate": "G4"
+    },
+    {
+      "cases": [
+        {
+          "detail": "counters equal their events; stalls are exclusive and sum",
+          "id": "R3V2-COUNT-01",
+          "passed": true
+        },
+        {
+          "detail": "one boundary, three quantities, and no frequency invented",
+          "id": "R3V2-COUNT-02",
+          "passed": true
+        }
+      ],
+      "checker": "count",
+      "elapsed_s": 97.29,
+      "exit": 0,
+      "gate": "G5"
+    },
+    {
+      "cases": [
+        {
+          "detail": "six graphs, sealed first, exact on every cycle",
+          "id": "R3V2-MODEL-01",
+          "passed": true
+        }
+      ],
+      "checker": "model",
+      "elapsed_s": 0.22,
+      "exit": 0,
+      "gate": "G5"
+    },
+    {
+      "cases": [
+        {
+          "detail": "exactly 8 KiB, synchronous, with the control state listed",
+          "id": "R3V2-SYN-01",
+          "passed": true
+        },
+        {
+          "detail": "no latches, the integration connects, nothing overclaimed",
+          "id": "R3V2-SYN-02",
+          "passed": true
+        },
+        {
+          "detail": "every inherited regression, no skips",
+          "id": "R3V2-REG-01",
+          "passed": true
+        }
+      ],
+      "checker": "syn",
+      "elapsed_s": 1357.75,
+      "exit": 0,
+      "gate": "G6"
+    },
+    {
+      "cases": [
+        {
+          "detail": "13/13 mutation(s) caught by their named checker",
+          "id": "R3V2-MUT-01",
+          "mutations": [
+            {
+              "caught": true,
+              "detectors": [
+                "R3V2-RF-02",
+                "R3V2-CORE-02"
+              ],
+              "id": "M01a",
+              "note": "caught by R3V2-RF-02, R3V2-CORE-02",
+              "what": "the read returns a cycle early"
+            },
+            {
+              "caught": true,
+              "detectors": [
+                "R3V2-RF-02",
+                "R3V2-CORE-02"
+              ],
+              "id": "M01b",
+              "note": "caught by R3V2-RF-02, R3V2-CORE-02",
+              "what": "a bank's data goes to the wrong requester"
+            },
+            {
+              "caught": true,
+              "detectors": [
+                "R3V2-FLOW-01"
+              ],
+              "id": "M02",
+              "note": "caught by R3V2-FLOW-01",
+              "what": "a refused write is dropped instead of held"
+            },
+            {
+              "caught": true,
+              "detectors": [
+                "R3V2-FLOW-03"
+              ],
+              "id": "M03",
+              "note": "caught by R3V2-FLOW-03",
+              "what": "after a flush, an old tag writes a new entry"
+            },
+            {
+              "caught": true,
+              "detectors": [
+                "R3V2-RF-02"
+              ],
+              "id": "M04a",
+              "note": "caught by R3V2-RF-02",
+              "what": "a masked write drops a lane"
+            },
+            {
+              "caught": true,
+              "detectors": [
+                "R3V2-FLOW-03"
+              ],
+              "id": "M04b",
+              "note": "caught by R3V2-FLOW-03",
+              "what": "a source is freed before it is consumed"
+            },
+            {
+              "caught": true,
+              "detectors": [
+                "R3V2-COUNT-01"
+              ],
+              "id": "M05a",
+              "note": "caught by R3V2-COUNT-01",
+              "what": "a stall is counted twice"
+            },
+            {
+              "caught": true,
+              "detectors": [
+                "R3V2-COUNT-01"
+              ],
+              "id": "M05b",
+              "note": "caught by R3V2-COUNT-01",
+              "what": "one accepted request is missed"
+            },
+            {
+              "caught": true,
+              "detectors": [
+                "R3V2-MODEL-01"
+              ],
+              "id": "M06",
+              "note": "caught by R3V2-MODEL-01",
+              "what": "the model allows unlimited reads from one bank"
+            },
+            {
+              "caught": true,
+              "detectors": [
+                "R3V2-BASE-01",
+                "R3V2-BASE-02"
+              ],
+              "id": "M07a",
+              "note": "caught by R3V2-BASE-01, R3V2-BASE-02",
+              "what": "a core case loses its candidate"
+            },
+            {
+              "caught": true,
+              "detectors": [
+                "R3V2-BASE-01",
+                "R3V2-BASE-02"
+              ],
+              "id": "M07b",
+              "note": "caught by R3V2-BASE-01, R3V2-BASE-02",
+              "what": "a workload quietly grows its K"
+            },
+            {
+              "caught": true,
+              "detectors": [
+                "R3V2-EV-01"
+              ],
+              "id": "M07c",
+              "note": "caught by R3V2-EV-01",
+              "what": "a result is edited to say it passed"
+            },
+            {
+              "caught": true,
+              "detectors": [
+                "R3V2-EV-01"
+              ],
+              "id": "M07d",
+              "note": "caught by R3V2-EV-01",
+              "what": "a required case has no result at all"
+            }
+          ],
+          "passed": true
+        },
+        {
+          "detail": "the verifier refuses a forged result and a missing one, and accepts the same evidence without them",
+          "id": "R3V2-EV-01",
+          "passed": true
+        }
+      ],
+      "checker": "mut",
+      "elapsed_s": 303.58,
+      "exit": 0,
+      "gate": "G7"
+    },
+    {
+      "cases": [
+        {
+          "detail": "the smoke agrees across Linux/x86_64 and Darwin/arm64",
+          "id": "R3V2-REL-01",
+          "passed": true
+        }
+      ],
+      "checker": "rel",
+      "elapsed_s": 43.28,
+      "exit": 0,
+      "gate": "G7"
+    }
+  ],
+  "clean_tree": true,
+  "commit": "33dbb375828e121dd2c14afa44f88ff55b5bd84e",
+  "contract_id": "r3-v2-core-vrf",
+  "frozen_hashes": {
+    "r3v2_contract.json": "a4cf9899e49e8f223c544337c5b03f75cfff0ac0a435d4b4aaf1bb4ce0181f06",
+    "r3v2_inventory.json": "455c4de8e7b9c6e17d1d42ed58be7ef4f06010e630d0db2aad8a30a8838cbd31"
+  },
+  "gates": {
+    "G0": true,
+    "G1": true,
+    "G2": true,
+    "G3": true,
+    "G4": true,
+    "G5": true,
+    "G6": true,
+    "G7": true
+  },
+  "machine": "x86_64",
+  "note": "This file records what each checker returned. It is not the verdict: tools/r3v2/verify_evidence.py recomputes that from the frozen inventory and the raw results, and does not trust the field above.",
+  "platform": "Linux-6.17.0-1019-aws-x86_64-with-glibc2.39",
+  "reasons": [],
+  "run_id": "1789939808-33dbb375828e",
+  "tools": {
+    "iverilog": "Icarus Verilog version 12.0 (stable) ()",
+    "python": "Python 3.12.3",
+    "yosys": "Yosys 0.33 (git sha1 2584903a060)"
+  },
+  "verdict": "R3_V2_CORE_VRF_ACCEPTED"
+}

@@ -27,7 +27,19 @@ DELIVERED 的证据范围限制见上文，不等于已满足原合同全部条�
 ## R3 v2（当前合同）逐 Gate 状态
 
 合同：[phase3_tasks_and_acceptance.md](phase3_tasks_and_acceptance.md) v2.0。
-签收名 `R3_V2_CORE_VRF_ACCEPTED`。**当前 NOT ACCEPTED。**
+签收名 `R3_V2_CORE_VRF_ACCEPTED`。**状态：ACCEPTED**，在锁定的 Linux 主环境
+（`Linux-6.17.0-1019-aws-x86_64`，iverilog 12.0、yosys 0.33、Triton 3.8.0）于
+commit `33dbb375828e`、干净工作树上跑出，run id `1789939808-33dbb375828e`，
+记录见 [`doc/evidence/r3v2/acceptance-linux.json`](evidence/r3v2/acceptance-linux.json)。
+
+十个 checker 全绿：G0 plan 3/3、G1 rf 3/3、G2 core 3/3、G3 flow 3/3、
+G4 e2e 3/3、G5 count 2/2 + model 1/1、G6 syn 3/3、G7 mut 2/2 + rel 1/1。
+24 条 `R3V2-*` 标准全部有独立可读的检查结果。
+
+**判决不是这份文件说的。**`tools/r3v2/verify_evidence.py` 在同一份证据上
+**不读** `verdict` 和 `passed` 字段，从冻结清单和各 checker 的原始结果重新
+推导，得到同一个结论：24/24 标准齐全、摘要与原始结果逐条一致、冻结文件哈希
+相符、commit 与干净树属实。checker 自身耗时 1629s，另有 304s 变异运行单独计账。
 
 | Gate | 状态 | 已通过的标准 |
 |---|---|---|
@@ -38,12 +50,25 @@ DELIVERED 的证据范围限制见上文，不等于已满足原合同全部条�
 | G4 六程序与安装后闭环 | **DONE** | R3V2-E2E-01/02/03。C01–C06 × reference/candidate **12 次全部执行通过**：数值全部对独立 oracle（不是两实现互相对照）、尾块 sentinel 未被触碰、两侧 canary 完好、fault=0、资源排空。C03/C04/C05 是经产品 driver 编译的真实 FP16 GEMM（`source_kind=tnca-ir`），C04/C05 在 slow/reorder 内存上。安装后 3 次动态 alpha 共一个 artifact、一个 session、一个设备进程，首编译后编译器调用 0 次、code hash 恒定。reference/candidate artifact 双向错配都在**零次设备请求**内被拒 |
 | G5 计数与微模型 | **DONE** | R3V2-COUNT-01/02、MODEL-01。计数器不与自己比：core 打印有界事件 trace，Python 独立数一遍，两者在 req/accept/conflict/mtx_req/mtx_wait/wb_retry 上逐项相等；九+二个互斥 stall 计数在 6 个程序上求和恒等于 `perf_stall_total`（加 banked VRF 时新增了两个 stall 源却忘了进归因链，这里发现并补上）。六个定向图的预测**先算先封哈希再开仿真**，逐周期 accept/response 零分歧，并带一个单 bank 模型的对照证明比对会失败。仿真 wall、硬件 cycles、时钟频率分三列，Fmax 记 NOT MEASURED |
 | G6 结构综合/继承回归 | **DONE** | R3V2-SYN-01/02、REG-01。candidate VRF 数据**正好 65,536 bit**，100% 在同步 memory 对象里，四个 bank 各 1 读口 1 写口、同步读，与 profile 相符；valid/collector/FIFO 单列（每 bank 512 个 valid 位），ARF 的 16 KiB **不计入**该比率且仍标 behavioral。整机 elaborate + 连接检查通过，0 个未解释告警，层级里有 `tnca_vrf_banked`、没有 `tnca_vector_rf`。物理面积/Fmax/功耗一律 NOT MEASURED 且被检查没有被偷偷声称。12 条继承回归全过、0 个 skip |
-| G7 负例/证据/签收 | **DONE（本机）** | R3V2-MUT-01、EV-01、REL-01。十三个子变异全部被**合同指定**的 checker 抓住，全部注入在隔离副本，候选源码哈希不变。其中两个变异本身是错的、被这次测试证伪：M01a 原本改 `READ_LATENCY==2` 的分支，而设计处处例化 1——改的是死代码，没有东西能抓住它是因为没有东西发生；改成移动 `rvalid` 则让 bench 死锁，**挂死是被时钟抓住，不是被 checker 抓住**；最终让它读当前呈现的地址而不是上一拍被接受的地址，这才是 off-by-one 读口真正交付的东西。M04b 原本删掉一个冗余保护：没有任何激励会对未 ready 的 entry 拉 `consume`，所以删掉它什么都不改变——等价变异考验的是 checker 的耐心，不是它的覆盖。另外两个变异**发现了真实盲点**：`t29_vrfbank` 原来用 `v.iota` 设置全部寄存器，四个 bank 于是装着同样的十六个数，**跨 bank 串数据的实现也会给出正确答案**；现在每个寄存器一个不同的值并全部经读口读回校验。FLOW-03 原来用一个带 flush 的场景断言所有权，而 flush 本来就会清掉 entry，所以"第一个源一到就释放槽位"完全不可见；现在它还跑同 bank 三源那一例，逐拍检查槽位在只收到一个操作数、还在等另外两个的每一拍里都仍然 busy 且不 ready |
+| G7 负例/证据/签收 | **DONE** | R3V2-MUT-01、EV-01、REL-01。十三个子变异全部被**合同指定**的 checker 抓住，全部注入在隔离副本，候选源码哈希不变。其中两个变异本身是错的、被这次测试证伪：M01a 原本改 `READ_LATENCY==2` 的分支，而设计处处例化 1——改的是死代码，没有东西能抓住它是因为没有东西发生；改成移动 `rvalid` 则让 bench 死锁，**挂死是被时钟抓住，不是被 checker 抓住**；最终让它读当前呈现的地址而不是上一拍被接受的地址，这才是 off-by-one 读口真正交付的东西。M04b 原本删掉一个冗余保护：没有任何激励会对未 ready 的 entry 拉 `consume`，所以删掉它什么都不改变——等价变异考验的是 checker 的耐心，不是它的覆盖。另外两个变异**发现了真实盲点**：`t29_vrfbank` 原来用 `v.iota` 设置全部寄存器，四个 bank 于是装着同样的十六个数，**跨 bank 串数据的实现也会给出正确答案**；现在每个寄存器一个不同的值并全部经读口读回校验。FLOW-03 原来用一个带 flush 的场景断言所有权，而 flush 本来就会清掉 entry，所以"第一个源一到就释放槽位"完全不可见；现在它还跑同 bank 三源那一例，逐拍检查槽位在只收到一个操作数、还在等另外两个的每一拍里都仍然 busy 且不 ready |
 
 候选相对参考的周期代价（同程序、同参数、同 seed）：整体 +13%，矩阵类
 +42…46%（每次 matrix VRF 读多一拍），tensor +36%，纯向量 +16%，纯标量 +0%，
 `t18_squash` -14%（更严的 interlock 改变了分支解析时机）。**不要求 candidate
 更快**；每一项增加都有公开的原因。
+
+## Gate A–D
+
+| 关口 | 状态 | 依据 |
+|---|---|---|
+| Gate A：G0/G1 | **PASS** | profile、初始化、端口与预算可核验；scout 在**本 commit** 上实测 406 cycles/s，计划投影 373s / 138,635 cycles，在 1800s 与 1,000,000 cycle 之下 |
+| Gate B：G2/G3 | **PASS** | 四个读客户端与两个写客户端全部接在 banked 文件上，层级里没有行为模型也没有直读；返回、写回、flush 与所有权有界且被逐拍检查 |
+| Gate C：G4/G5 | **PASS** | C01–C06 × reference/candidate 十二次全部对独立 oracle 通过；安装后三次动态发射共一个 artifact；计数器对上独立事件计数，微模型先封哈希后仿真 |
+| Gate D：G6/G7 | **PASS** | 65,536 bit 全在同步 memory 对象里；12 条继承回归零 skip；13 个变异全部被合同指定的 checker 抓住；证据被一个不产生它的程序重新推导过；第二环境 macOS/arm64 与主环境逐元素一致 |
+
+合同第 7 节的"不可提前宣称"仍然成立：本次签收的是 **R3 v2 单核同步 VRF 集成**，
+不是"项目生产级"，也不是旧 R2/R3 合同。四 tile runtime、同步 ARF、全 kernel
+模型校准都不在这份签收里，它们各自需要独立的 tasks & acceptance。
 
 ## R3 v2 的入口、证据与签收
 

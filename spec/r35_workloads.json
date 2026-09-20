@@ -1,0 +1,110 @@
+{
+  "schema": "tnca.r35.workloads/1",
+  "contract_id": "r35-compiler",
+  "contract_version": "1.0",
+  "note": "doc/phase3_5_tasks_and_acceptance.md section 6.1. Six sources, frozen: the seed, the sizes, the memory mode, the mask and the oracle. Sizes are NOT to be raised to make a result look better -- section 6.3 forbids changing the workload after a failure.",
+  "hardware_precondition": {
+    "stage": "R3 v2",
+    "signoff": "R3_V2_CORE_VRF_ACCEPTED",
+    "commit": "33dbb375828e",
+    "profile": "core-vrf-sync-v1",
+    "why": "Section 5: the gains are measured on the accepted banked profile. The old core-sim is a compatibility regression only and cannot stand in for a real finite-port measurement."
+  },
+  "seed": 42,
+  "workloads": [
+    {
+      "id": "L01",
+      "name": "masked AXPY",
+      "source_kind": "triton",
+      "sizes": {"n": 17, "block": 16, "grid": 2},
+      "memory": "fast",
+      "observe": "a dynamic scalar, the tail block, and address arithmetic",
+      "oracle": "x[i]*alpha + y[i] for i < n, in double, compared exactly after fp32 rounding"
+    },
+    {
+      "id": "L02",
+      "name": "two outputs sharing one intermediate",
+      "source_kind": "triton",
+      "sizes": {"n": 16, "grid": 1},
+      "memory": "fast",
+      "formula": "t = x*alpha; y = t + b; z = t - b",
+      "observe": "CSE and mask reuse across two outputs; BOTH outputs are checked, so neither can be deleted to win",
+      "oracle": "both y and z, elementwise"
+    },
+    {
+      "id": "L03",
+      "name": "a legal view/layout composition, then elementwise",
+      "source_kind": "tnca-ir",
+      "sizes": {"rows": 4, "cols": 4, "grid": 1},
+      "dtype": "fp32",
+      "memory": "fast",
+      "observe": "layout-conversion elimination and the physical bank assignment",
+      "ablation": true,
+      "note": "A predetermined ablation subject. It is reported whether or not it wins. If a pure rename is already free, it stays as a non-regression control -- the baseline is not made to carry data it never needed to move."
+    },
+    {
+      "id": "L04",
+      "name": "masked reduction",
+      "source_kind": "tnca-ir",
+      "sizes": {"elements": 16, "valid": 15, "rows": 1},
+      "memory": "fast",
+      "observe": "dead pure-value elimination and live range, with the reduction order unchanged"
+    },
+    {
+      "id": "L05",
+      "name": "FP16 GEMM",
+      "source_kind": "tnca-ir",
+      "sizes": {"m": 16, "n": 16, "k": 16},
+      "roles": 1,
+      "memory": "fast",
+      "observe": "TensorMap to VRF to MMA fragment layout, and what each conversion costs"
+    },
+    {
+      "id": "L06",
+      "name": "FP16 GEMM, two-slot pipeline",
+      "source_kind": "tnca-ir",
+      "sizes": {"m": 16, "n": 16, "k": 32},
+      "roles": 2,
+      "schedule": "two-slot-pipeline",
+      "memory": "slow-reorder",
+      "observe": "real bank conflicts, window lifetime and scheduling",
+      "ablation": true
+    }
+  ],
+  "matrix": {
+    "primary": {"runs": 12, "what": "six workloads x B0/O2, all on the same banked candidate"},
+    "ablation": {"runs": 4, "what": "L03 and L06 at O1 and at O2-no-LL; the O2 run is shared with the primary comparison"},
+    "legacy_profile": {"runs": 4, "what": "L01 and L02 x B0/O1 on the same core-sim binary; compatibility only, not a gain gate"},
+    "post_install": {"runs": 3, "what": "L01 at O2, one artifact and one session, three alphas"},
+    "total_launches": 23
+  },
+  "budget": {
+    "component_rtl_invocations": 24,
+    "total_rtl_runs": 47,
+    "total_elapsed_seconds": 2400,
+    "total_cycles": 1500000,
+    "core_wall_seconds_each": 180,
+    "core_cycles_each": 50000,
+    "component_wall_seconds_each": 60,
+    "component_cycles_each": 10000,
+    "candidate_search_per_kernel": 8,
+    "candidate_sweep_total": 48,
+    "candidate_sweep_seconds": 60,
+    "compile_seconds_each_o2": 30,
+    "waveforms_default": "off",
+    "diagnostic_window_cycles": 256,
+    "diagnostic_trace_mebibytes": 10
+  },
+  "gain_thresholds": {
+    "primary_absolute_cycles": 8,
+    "primary_relative": 0.05,
+    "primary_workloads_required": 2,
+    "primary_not_all_microlayout": "at least one winner must not be L03",
+    "ll_absolute_cycles": 4,
+    "ll_relative": 0.03,
+    "ll_subjects": ["L03", "L06"],
+    "regression_absolute_cycles": 4,
+    "regression_relative": 0.02,
+    "total_cycles_must_not_increase": true
+  }
+}

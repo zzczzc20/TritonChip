@@ -1,0 +1,36 @@
+{
+  "schema": "tnca.r35.toolchain/1",
+  "contract_id": "r35-compiler",
+  "note": "doc/phase3_5_tasks_and_acceptance.md section 4.2. The upstream components this stage reuses, pinned. R35-UP-01 requires the real upstream symbols to run, not a reimplementation wearing their name; R35-UP-02 requires a version mismatch to be a stable error rather than a silent fall back to no-LL.",
+  "upstream": {
+    "triton": {
+      "role": "LinearLayout, AxisInfo, and the TTIR the frontend already reads",
+      "pinned_by": "spec/r1_toolchain.lock.json (wheel) and compiler/pin/toolchain.json (source)",
+      "boundary": "The R1 acceptance pins a Triton WHEEL; the C++ LinearLayout lives in a source tree with its own LLVM. Section 4.2 forbids linking distribution MLIR 20 and a separately pinned LLVM into one process, so the two do not meet inside a process.",
+      "resolution": "an isolated helper that owns one matched Triton/LLVM, spoken to over versioned text or a versioned data protocol -- no MLIR object crosses an ABI"
+    },
+    "mlir": {
+      "role": "canonicalisation, CSE, the pass manager, the verifier and diagnostics",
+      "pinned_by": "compiler/pin/toolchain.json",
+      "runs_on": "pure-value regions with an explicit effect boundary only"
+    }
+  },
+  "runtime_rule": {
+    "compiler_may_depend_on_upstream": true,
+    "runtime_may_depend_on_upstream": false,
+    "why": "Section 4.2: loading an artifact must not import Triton, LLVM or LinearLayout, and must not need them installed. R35-PKG-02 checks a runtime-only install."
+  },
+  "helper": {
+    "name": "tnca-layout-opt",
+    "kind": "a separate compile-time tool, or an equally isolated adapter",
+    "protocol": "versioned text or a versioned data protocol",
+    "forbidden": [
+      "passing MLIR objects across an ABI boundary",
+      "linking two LLVM versions into one process",
+      "importing a private, unexported Python symbol from the Triton wheel",
+      "tracking upstream main",
+      "upgrading the R1 or R2 toolchain to make this build"
+    ]
+  },
+  "status": "PLANNED -- no adapter has been built yet. R35-UP-01 is NOT VERIFIED and this file records the boundary it has to respect, not a boundary it already respects."
+}

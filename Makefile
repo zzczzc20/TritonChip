@@ -729,7 +729,8 @@ clean:
         r3-mutation-tests r3v2-plan r3v2-scout r3v2-prereqs r3v2-mutations r3v2-runtime r3v2-release r3v2-record-environment r3v2-acceptance r3v2-verify-evidence r3v2 \
         r3v2-components r3v2-core r3v2-flow r3v2-e2e r3v2-count r3v2-model r3v2-synth core-vrf \
         r2-package r2-stage-data \
-        r3-scout r3-plan r3-model-tests
+        r3-scout r3-plan r3-model-tests \
+        r35-scout r35-check-plan
 
 # DEP-01. EVIDENCE is an R1 run directory; COMBINED is compare_envs.py's
 # output over A and B, which is what makes an R1 verdict complete.
@@ -856,6 +857,24 @@ r2-package: r2-stage-data
 r3-mutation-tests:
 	@$(PYTHON) tools/r3/mutation_tests.py \
 	   --json $(BUILD)/r3_mutation_tests.json
+
+#------------------------------------------------------------------------------
+# Phase 3.5: reuse the upstream compiler infrastructure
+# (doc/phase3_5_tasks_and_acceptance.md, version 1.0)
+#
+# Section 8 names these entry points. As with R3 v2, a sub-target passing is
+# not the stage passing: `r35-acceptance` is the only thing that produces a
+# verdict, and a checker that does not exist yet is a non-zero exit.
+#------------------------------------------------------------------------------
+R35_EVIDENCE ?= $(BUILD)/r35-evidence
+
+# Before any percentage is promised: what the compiler emits today, and
+# which of it is waste with a named mechanism.
+r35-scout: | dirs
+	@$(TRITON_PYTHON) tools/r35/scout.py --json $(BUILD)/r35_scout.json
+
+r35-check-plan: | dirs
+	@$(PYTHON) tools/r35/plan.py --json $(BUILD)/r35_plan.json
 
 #------------------------------------------------------------------------------
 # R3 v2: the single-core VRF integration

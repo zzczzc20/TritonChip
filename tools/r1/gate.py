@@ -49,6 +49,12 @@ def case_key(name):
 # Entry points, in the order the contract's batches imply. `kind` picks the
 # timeout cap; `maps` turns this entry's per-case lines into inventory IDs.
 ENTRIES = [
+    # The toolchain lock and the generated sources, before anything is built
+    # against them. The contract's verdict opens with the tool lock and the
+    # generation chain, and a gate that only ran them when someone remembered
+    # to call bootstrap.sh was checking them outside itself.
+    ('doctor',       [sys.executable, 'tools/r1/doctor.py'], 'meta', None),
+    ('check-generated', ['make', 'r1-check-generated'], 'build', None),
     ('lint',         ['make', 'lint'],            'build', None),
     ('unit',         ['make', 'unit'],            'build', 'BASE-UNIT-{}'),
     ('core-fast',    ['make', 'core'],            'build', 'BASE-CORE-{}-fast'),
@@ -425,6 +431,26 @@ def main():
     wps['R1-12']['deferred_to'] = 'tools/r1/compare_envs.py'
     wps['R1-12']['evidence'] = 'doc/r1_signoff.md, doc/r1_status.md'
 
+    # A dirty tree is not a candidate. The contract's verdict opens with
+    # "候选 commit 固定且源树干净", and the run recorded it without acting on
+    # it: an evidence directory from an edited tree describes a commit that
+    # does not exist.
+    git = run_meta.get('git') or {}
+    dirty = []
+    if not git.get('commit'):
+        dirty.append('no commit recorded: this is not a candidate checkout')
+    elif not git.get('clean'):
+        paths = git.get('dirty_paths') or []
+        dirty.append(
+            f"source tree is not clean ({len(paths)} path(s)): "
+            + ', '.join(paths[:5]) + (' ...' if len(paths) > 5 else ''))
+
+    # An orphan is a process the run started and did not reap. It can hold a
+    # file, a port or a simulator licence into the next case, so the contract
+    # counts it alongside a failure.
+    orphaned = [f"{s['name']}: {s.get('orphans')}" for s in steps
+                if s.get('orphans')]
+
     failing_steps = [s['name'] for s in steps if not s.ok]
     problems = list(rec['problems'])
     problems += [f"work package {k}: {v['verdict']}"
@@ -434,6 +460,8 @@ def main():
     problems += [f"spec: {p}" for p in spec_problems]
     problems += [f"unguarded pipeline: {p}" for p in pipe_problems]
     problems += [f"entry failed: {n}" for n in failing_steps]
+    problems += dirty
+    problems += [f"orphan process left behind by {o}" for o in orphaned]
 
     verdict = 'ACCEPTED' if not problems else 'NOT ACCEPTED'
 

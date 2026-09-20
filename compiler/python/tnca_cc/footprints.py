@@ -59,6 +59,36 @@ class RegRange:
         return f"{self.file}{self.first}..{self.file}{self.last}"
 
 
+# ISA sec 9C. The two things that decide how big a fragment is, in one place,
+# because the audit (F01) found them decided in two: the lowering emitted
+# K32/K64 from `op.attrs['k']` and then sized the footprint from the target's
+# default K16, so a K64 FP16 fragment -- 32 registers -- was accepted into an
+# 8-register window.
+MMA_K_STEPS = {'k16': 16, 'k32': 32, 'k64': 64}
+MMA_DTYPE_BITS = {'f16': 16, 'bf16': 16, 'e5m2': 8, 'e4m3': 8}
+
+
+def mma_shape_of(attrs, *, m=16, n=16):
+    """(m, n, k, dtype_bits) for one m.mma.async, from the INSTRUCTION.
+
+    Not from the target's default shape. The instruction says which K step and
+    which dtype it is; anything else is a different instruction's footprint.
+    """
+    k_name = attrs.get('k', 'k16')
+    dt = attrs.get('dtype', 'f16')
+    if k_name not in MMA_K_STEPS:
+        raise Diagnostic(
+            f"unknown K step {k_name!r}",
+            because=f"ISA sec 9C allocates {sorted(MMA_K_STEPS)}",
+            source='ISA sec 9C')
+    if dt not in MMA_DTYPE_BITS:
+        raise Diagnostic(
+            f"unknown fragment dtype {dt!r}",
+            because=f"ISA sec 9C's mod[3:2] allocates {sorted(MMA_DTYPE_BITS)}",
+            source='ISA sec 9C')
+    return m, n, MMA_K_STEPS[k_name], MMA_DTYPE_BITS[dt]
+
+
 def fragment_registers(rows, k, dtype_bits=16):
     """How many vector registers a `rows` x `k` fragment occupies.
 
@@ -138,18 +168,54 @@ class OwnershipChecker:
     """
 
     def __init__(self):
-        self._live = []     # (cmd_id, RegRange, description)
+        self._live = []     # (cmd_id, RegRange, description, mode)
 
-    def hold(self, cmd_id, ranges, description):
+    def hold(self, cmd_id, ranges, description, mode='read'):
+        """Hold a range for an outstanding command.
+
+        `mode` says what the COMMAND does with it, which decides what the
+        program may not do. A fragment the matrix unit reads may not be
+        written; an accumulator it writes may not be read (ISA sec 9C.3), and
+        collapsing the two would either allow a stale accumulator read or
+        forbid a legal one.
+        """
         for r in ranges:
-            self._live.append((cmd_id, r, description))
+            self._live.append((cmd_id, r, description, mode))
 
     def release(self, cmd_id):
         self._live = [e for e in self._live if e[0] != cmd_id]
 
+    def outstanding(self):
+        """Commands still holding a range, for the end-of-region check."""
+        seen = {}
+        for cmd_id, r, desc, _mode in self._live:
+            seen.setdefault(cmd_id, (desc, []))[1].append(str(r))
+        return seen
+
+    def check_read(self, file, index, *, by='an instruction'):
+        for cmd_id, r, desc, mode in self._live:
+            if mode == 'write' and r.file == file and index in r:
+                raise Diagnostic(
+                    f"{by} reads {file}{index}, inside {r} which command "
+                    f"#{cmd_id} is still writing",
+                    because=f"{desc} has not completed; ISA sec 9C.3 leaves "
+                            "the destination accumulator undefined until it "
+                            "does",
+                    remedy='wait for the command before reading its result',
+                    source='ISA sec 9C.3; compiler_overview.md sec 13.4')
+        return True
+
     def check_write(self, file, index, *, by='an instruction'):
-        for cmd_id, r, desc in self._live:
-            if r.file == file and index in r:
+        for cmd_id, r, desc, mode in self._live:
+            if mode == 'write' and r.file == file and index in r:
+                raise Diagnostic(
+                    f"{by} writes {file}{index}, inside {r} which command "
+                    f"#{cmd_id} is still writing",
+                    because=f"{desc} owns that range until it completes",
+                    remedy='wait for the command before writing its '
+                           'destination',
+                    source='ISA sec 9C.3; compiler_overview.md sec 13.4')
+            if mode == 'read' and r.file == file and index in r:
                 raise Diagnostic(
                     f"{by} writes {file}{index}, inside {r} which command "
                     f"#{cmd_id} is still reading",

@@ -25,7 +25,8 @@ sec 11.1: 资源不够可以先明确报错。Nothing here approximates.
 """
 from .asm import AsmBuilder, RegisterAllocator
 from .diagnostics import Diagnostic, ResourceError
-from .footprints import (OwnershipChecker, RegRange, fragment_registers)
+from .footprints import (OwnershipChecker, RegRange, fragment_registers,
+                         mma_shape_of)
 from .ir import EVENT, PRED, SCALAR, TOKEN, VECTOR
 from .protocol import ProtocolModel
 
@@ -166,6 +167,60 @@ class CodeGen:
             raise Diagnostic(f"cannot allocate a {v.kind} here")
         return v.reg
 
+    # ------------------------------------------------------------------
+    # Every emitted instruction goes through here.
+    #
+    # The audit's F01 is a write that landed inside an outstanding command's
+    # read set: `_op_window_put` emitted `v.mov` straight into a fragment the
+    # matrix unit was still reading. Fixing that one lowering would have left
+    # every other write unchecked -- an ordinary `vf.add`, a load, a gather
+    # and a reduction all write vector registers too -- so the check lives
+    # where the instruction is emitted rather than in the lowerings.
+    #
+    # Which operand is a destination comes from the assembler's ISA table,
+    # which is generated from the same schema as the decoder. A new
+    # instruction therefore cannot be added without its destination being
+    # known here, and a lowering cannot forget to ask.
+    # ------------------------------------------------------------------
+    _DEST_KINDS = {'vd': 'v', 'sd': 's', 'pd': 'p', 'ad': 'a', 'rdst': None}
+
+    @staticmethod
+    def _isa_table():
+        if CodeGen.__dict__.get('_isa_cache') is None:
+            import os as _os, sys as _sys
+            root = _os.path.abspath(_os.path.join(
+                _os.path.dirname(_os.path.abspath(__file__)),
+                '..', '..', '..'))
+            _sys.path.insert(0, _os.path.join(root, 'tools', 'asm'))
+            import tnca_isa
+            CodeGen._isa_cache = tnca_isa.ISA
+        return CodeGen._isa_cache
+
+    @classmethod
+    def _destination_kind(cls, mnem):
+        """The register class this mnemonic writes, or None."""
+        table = cls._isa_table()
+        best = None
+        for key in table:
+            if mnem == key or mnem.startswith(key + '.'):
+                if best is None or len(key) > len(best):
+                    best = key
+        if best is None:
+            return None
+        kinds = table[best][2]
+        if not kinds:
+            return None
+        return cls._DEST_KINDS.get(kinds[0], None)
+
+    def _emit(self, mnem, *operands, **kw):
+        kind = self._destination_kind(mnem)
+        if kind is not None and operands:
+            dst = operands[0]
+            if isinstance(dst, str) and dst[:1] == kind and dst[1:].isdigit():
+                self.own.check_write(kind, int(dst[1:]),
+                                     by=f"{mnem} {dst}")
+        return self.b.emit(mnem, *operands, **kw)
+
     def _free_dead(self, position, ops):
         for op in ops[:position + 1]:
             if op.kind == 'window_reg':
@@ -207,6 +262,25 @@ class CodeGen:
 
     def _finish(self):
         """Every asynchronous command must have been awaited (sec 10.2)."""
+        # A command whose range is still held when the region ends was never
+        # waited for. The arm/issue counts below catch a mismatched *count*;
+        # this catches the case where the counts agree and the wait is simply
+        # absent, which is the one that leaves the engine reading registers
+        # the program has gone on to reuse.
+        left = self.own.outstanding()
+        if left:
+            first = sorted(left)[0]
+            desc, ranges = left[first]
+            raise Diagnostic(
+                f"{len(left)} asynchronous command(s) still outstanding when "
+                f"the region ends; #{first} ({desc}) holds {', '.join(ranges)}",
+                because='ISA sec 9C.3 and sec 13.4: the engine reads and '
+                        'writes those registers after the issuing instruction '
+                        'retires, so leaving without waiting hands them to '
+                        'whatever runs next',
+                remedy='wait on the command\'s completion event before the '
+                       'region ends',
+                source='compiler_overview.md sec 10.2')
         for bar, promised in self._armed_ops.items():
             issued = self._issued_ops.get(bar, 0)
             if issued != promised:
@@ -243,55 +317,55 @@ class CodeGen:
     def _op_program_id(self, op):
         v = op.results[0]
         self._alloc(v)
-        self.b.emit('s.rdspecial', f"s{v.reg}",
+        self._emit('s.rdspecial', f"s{v.reg}",
                     f"pid.{'xyz'[op.attrs['dim']]}")
 
     def _op_special(self, op):
         v = op.results[0]
         self._alloc(v)
-        self.b.emit('s.rdspecial', f"s{v.reg}", op.attrs['name'])
+        self._emit('s.rdspecial', f"s{v.reg}", op.attrs['name'])
 
     def _op_sbin(self, op):
         a, b = op.operands
         v = op.results[0]
         self._alloc(v)
-        self.b.emit(_SBIN[op.attrs['op']], f"s{v.reg}", f"s{a.reg}",
+        self._emit(_SBIN[op.attrs['op']], f"s{v.reg}", f"s{a.reg}",
                     f"s{b.reg}", comment=op.attrs.get('comment'))
 
     def _op_sbini(self, op):
         a = op.operands[0]
         v = op.results[0]
         self._alloc(v)
-        self.b.emit(_SBINI[op.attrs['op']], f"s{v.reg}", f"s{a.reg}",
+        self._emit(_SBINI[op.attrs['op']], f"s{v.reg}", f"s{a.reg}",
                     f"#{op.attrs['imm']}", comment=op.attrs.get('comment'))
 
     def _op_scmp(self, op):
         a, b = op.operands
         v = op.results[0]
         self._alloc(v)
-        self.b.emit(f"s.cmp.{op.attrs['cc']}", f"s{v.reg}", f"s{a.reg}",
+        self._emit(f"s.cmp.{op.attrs['cc']}", f"s{v.reg}", f"s{a.reg}",
                     f"s{b.reg}")
 
     def _op_assign(self, op):
         dst, src = op.operands
-        self.b.emit('s.mov', f"s{dst.reg}", f"s{src.reg}")
+        self._emit('s.mov', f"s{dst.reg}", f"s{src.reg}")
 
     # ---- vector ops -------------------------------------------------------
     def _op_arange(self, op):
         v = op.results[0]
         self._alloc(v)
-        self.b.emit('v.iota', f"v{v.reg}", comment='arange(0, VLEN)')
+        self._emit('v.iota', f"v{v.reg}", comment='arange(0, VLEN)')
 
     def _op_splat(self, op):
         s = op.operands[0]
         v = op.results[0]
         self._alloc(v)
-        self.b.emit('v.splat', f"v{v.reg}", f"s{s.reg}")
+        self._emit('v.splat', f"v{v.reg}", f"s{s.reg}")
 
     def _op_vmovi(self, op):
         v = op.results[0]
         self._alloc(v)
-        self.b.emit('v.movi', f"v{v.reg}", f"#{op.attrs['imm']}")
+        self._emit('v.movi', f"v{v.reg}", f"#{op.attrs['imm']}")
 
     def _op_vbin(self, op):
         a, b = op.operands
@@ -306,7 +380,7 @@ class CodeGen:
             raise Diagnostic(
                 f"no {v.dtype} lowering for {op.attrs['op']!r}",
                 source='compiler_overview.md sec 12')
-        self.b.emit(mnem, f"v{v.reg}", f"v{a.reg}", f"v{b.reg}",
+        self._emit(mnem, f"v{v.reg}", f"v{a.reg}", f"v{b.reg}",
                     comment=op.attrs.get('comment'))
 
     def _op_vcmp(self, op):
@@ -314,14 +388,14 @@ class CodeGen:
         p = op.results[0]
         self._alloc(p)
         mnem = 'vf.cmp' if _is_fp(a.dtype) else 'v.cmp'
-        self.b.emit(f"{mnem}.{op.attrs['cc']}", f"p{p.reg}", f"v{a.reg}",
+        self._emit(f"{mnem}.{op.attrs['cc']}", f"p{p.reg}", f"v{a.reg}",
                     f"v{b.reg}")
 
     def _op_vselect(self, op):
         p, a, b = op.operands
         v = op.results[0]
         self._alloc(v)
-        self.b.emit('v.sel', f"v{v.reg}", f"v{a.reg}", f"v{b.reg}",
+        self._emit('v.sel', f"v{v.reg}", f"v{a.reg}", f"v{b.reg}",
                     pred=f"p{p.reg}")
 
     # ---- memory -----------------------------------------------------------
@@ -333,14 +407,14 @@ class CodeGen:
         if mask is not None:
             # sec 12: `other=` is a value. A predicated load leaves inactive
             # lanes holding what the register had, so put the value there.
-            self.b.emit('v.movi', f"v{v.reg}", f"#{op.attrs['other']}",
+            self._emit('v.movi', f"v{v.reg}", f"#{op.attrs['other']}",
                         comment='other=, materialised (sec 12)')
-        self.b.emit(f"v.ld.{op.attrs['size']}", f"v{v.reg}",
+        self._emit(f"v.ld.{op.attrs['size']}", f"v{v.reg}",
                     f"[s{base.reg}, #0]", pred=self._pred(mask))
 
     def _op_store(self, op):
         base, value = op.operands
-        self.b.emit(f"v.st.{op.attrs['size']}", f"[s{base.reg}, #0]",
+        self._emit(f"v.st.{op.attrs['size']}", f"[s{base.reg}, #0]",
                     f"v{value.reg}", pred=self._pred(op.attrs.get('mask')))
 
     def _op_gather(self, op):
@@ -350,18 +424,18 @@ class CodeGen:
         self.target.require('gather_scatter', 'emit v.ld.gather')
         self._alloc(v)
         if mask is not None:
-            self.b.emit('v.movi', f"v{v.reg}", f"#{op.attrs['other']}",
+            self._emit('v.movi', f"v{v.reg}", f"#{op.attrs['other']}",
                         comment='other=, materialised (sec 12)')
         # ISA sec 9.1 scales the index by the access size: these are element
         # indices, not byte offsets.
-        self.b.emit(f"v.ld.gather.{op.attrs['size']}", f"v{v.reg}",
+        self._emit(f"v.ld.gather.{op.attrs['size']}", f"v{v.reg}",
                     f"[s{base.reg}, v{index.reg}]", pred=self._pred(mask),
                     comment='index is in elements (ISA sec 9.1)')
 
     def _op_scatter(self, op):
         base, index, value = op.operands
         self.target.require('gather_scatter', 'emit v.st.scatter')
-        self.b.emit(f"v.st.scatter.{op.attrs['size']}",
+        self._emit(f"v.st.scatter.{op.attrs['size']}",
                     f"[s{base.reg}, v{index.reg}]", f"v{value.reg}",
                     pred=self._pred(op.attrs.get('mask')))
 
@@ -369,16 +443,16 @@ class CodeGen:
         base = op.operands[0]
         v = op.results[0]
         self._alloc(v)
-        self.b.emit(f"s.ld.{op.attrs['size']}", f"s{v.reg}",
+        self._emit(f"s.ld.{op.attrs['size']}", f"s{v.reg}",
                     f"[s{base.reg}, #{op.attrs['offset']}]")
 
     def _op_sstore(self, op):
         base, value = op.operands
-        self.b.emit(f"s.st.{op.attrs['size']}",
+        self._emit(f"s.st.{op.attrs['size']}",
                     f"[s{base.reg}, #{op.attrs['offset']}]", f"s{value.reg}")
 
     def _op_trap(self, op):
-        self.b.emit('trap', f"#{op.attrs['code']}")
+        self._emit('trap', f"#{op.attrs['code']}")
 
     def _op_reduce(self, op):
         v = op.operands[0]
@@ -390,16 +464,16 @@ class CodeGen:
             raise Diagnostic(f"no {v.dtype} reduction {op.attrs['op']!r}")
         # ISA sec 8.7: inactive lanes contribute the identity, so a masked
         # reduction needs no pre-select.
-        self.b.emit(mnem, f"s{s.reg}", f"v{v.reg}",
+        self._emit(mnem, f"s{s.reg}", f"v{v.reg}",
                     pred=self._pred(op.attrs.get('mask')))
 
     # ---- control ----------------------------------------------------------
     def _op_branch_nz(self, op):
         c = op.operands[0]
-        self.b.emit('br.nz', f"s{c.reg}", op.attrs['target'])
+        self._emit('br.nz', f"s{c.reg}", op.attrs['target'])
 
     def _op_exit(self, op):
-        self.b.emit('exit')
+        self._emit('exit')
 
     # ---- assertions -------------------------------------------------------
     def _op_assert_eq(self, op):
@@ -420,7 +494,7 @@ class CodeGen:
                 f"window {w.name} has no register range",
                 because='whole-program resources are fixed before the walk '
                         '(sec 10.1); call assign_shared() first')
-        self.b.emit('w.def', f"w{self.kernel.windows.index(w)}",
+        self._emit('w.def', f"w{self.kernel.windows.index(w)}",
                     f"#{w.reg}", f"#{w.length}",
                     comment=f"v{w.reg}..v{w.reg + w.length - 1}")
 
@@ -438,21 +512,21 @@ class CodeGen:
         if window.reg is None:
             raise Diagnostic(f"window {window.name} has no register range")
         dst = window.reg + op.attrs['offset']
-        self.b.emit('v.mov', f"v{dst}", f"v{value.reg}",
+        self._emit('v.mov', f"v{dst}", f"v{value.reg}",
                     comment='hand off through the shared window (sec 7.3)')
 
     def _op_desc_snapshot(self, op):
         addr = op.operands[0]
         d = op.results[0]
         self.target.require('tensor_dma', 'snapshot a TensorMap')
-        self.b.emit('td.load', f"d{d.reg}", f"[s{addr.reg}]",
+        self._emit('td.load', f"d{d.reg}", f"[s{addr.reg}]",
                     comment='a versioned snapshot, not a pointer '
                             '(ISA sec 9D.1)')
 
     def _op_barrier_init(self, op):
         b = op.operands[0]
         self.target.require('mbarrier', 'initialise an mbarrier')
-        self.b.emit('mb.init', f"b{b.reg}")
+        self._emit('mb.init', f"b{b.reg}")
         if self.protocol:
             self.protocol.barrier_init(b.reg)
 
@@ -461,7 +535,7 @@ class CodeGen:
         tok = op.results[0]
         self._alloc(tok)
         arrivals, ops_n = op.attrs['arrivals'], op.attrs['ops']
-        self.b.emit('mb.arm', f"s{tok.reg}", f"b{bar.reg}",
+        self._emit('mb.arm', f"s{tok.reg}", f"b{bar.reg}",
                     f"#{arrivals}", f"#{ops_n}",
                     comment=f"{arrivals} arrival(s), {ops_n} operation(s)")
         self._token_barrier[id(tok)] = bar.reg
@@ -472,7 +546,7 @@ class CodeGen:
 
     def _op_barrier_wait(self, op):
         tok = op.operands[0]
-        self.b.emit('mb.wait', f"s{tok.reg}")
+        self._emit('mb.wait', f"s{tok.reg}")
         bar = self._token_barrier.get(id(tok))
         if bar is None:
             return
@@ -504,15 +578,15 @@ class CodeGen:
         tok = op.results[0]
         self._alloc(tok)
         # token = {epoch[47:0], barrier_id[15:0]} (ISA sec 9A.2).
-        self.b.emit('s.shli', f"s{tok.reg}", f"s{epoch.reg}", '#16',
+        self._emit('s.shli', f"s{tok.reg}", f"s{epoch.reg}", '#16',
                     comment='epoch into the token (ISA sec 9A.2)')
-        self.b.emit('s.ori', f"s{tok.reg}", f"s{tok.reg}", f"#{bar.reg}",
+        self._emit('s.ori', f"s{tok.reg}", f"s{tok.reg}", f"#{bar.reg}",
                     comment=f"barrier b{bar.reg}")
         self._token_barrier[id(tok)] = bar.reg
 
     def _op_barrier_arrive(self, op):
         bar = op.operands[0]
-        self.b.emit('mb.arrive', f"b{bar.reg}")
+        self._emit('mb.arrive', f"b{bar.reg}")
 
     # ---- asynchronous commands --------------------------------------------
     def _count_operation(self, bar):
@@ -546,7 +620,7 @@ class CodeGen:
         # allocation would read whatever sat next to it.
         run = self.alloc.scalar_run(len(coords))
         for c, reg in zip(coords, run):
-            self.b.emit('s.mov', f"s{reg}", f"s{c.reg}",
+            self._emit('s.mov', f"s{reg}", f"s{c.reg}",
                         comment='coordinates must be consecutive (ISA sec 9E)')
 
         bar = self._token_barrier[id(token)]
@@ -557,7 +631,7 @@ class CodeGen:
         # completes once, so the static operation count stays correct under
         # predication. The count above is therefore unconditional.
         mask = op.attrs.get('mask')
-        self.b.emit(f"t.ld.async.{suffix}", f"w{widx}", f"d{desc.reg}",
+        self._emit(f"t.ld.async.{suffix}", f"w{widx}", f"d{desc.reg}",
                     f"s{run[0]}", f"s{token.reg}",
                     pred=self._pred(mask),
                     comment=('predicated off still completes once '
@@ -583,7 +657,7 @@ class CodeGen:
 
     def _op_acc_zero(self, op):
         a = op.operands[0]
-        self.b.emit('m.zero', f"a{a.reg}")
+        self._emit('m.zero', f"a{a.reg}")
 
     def _op_mma_async(self, op):
         acc, aw, bw, token = op.operands
@@ -593,14 +667,18 @@ class CodeGen:
                             f"{op.attrs['dtype']} inputs")
         bar = self._token_barrier[id(token)]
         self._count_operation(bar)
-        self.b.emit(f"m.mma.async.{op.attrs['k']}.{op.attrs['dtype']}",
+        self._emit(f"m.mma.async.{op.attrs['k']}.{op.attrs['dtype']}",
                     f"a{acc.reg}", f"v{aw.reg}", f"v{bw.reg}",
                     f"s{token.reg}")
         # sec 13.4 / ISA sec 9C.3: the matrix unit reads both fragments in
         # full, for many cycles after this instruction retires. Hold the whole
         # range rather than the one register the encoding names.
-        m, n, k = self.target.mma_shape
-        bits = 16 if op.attrs['dtype'] in ('f16', 'bf16') else 32
+        # From the instruction, not from the target's default shape. This is
+        # the audit's F01: the emit above already says K64 and e4m3, and
+        # sizing the footprint from target.mma_shape sized it for K16 FP16.
+        tm, tn = self.target.mma_shape[0], self.target.mma_shape[1]
+        fm, fn, _k, bits = mma_shape_of(op.attrs, m=tm, n=tn)
+        m, n, k = fm, fn, _k
         want_a = fragment_registers(m, k, bits)
         want_b = fragment_registers(k, n, bits)
         for w, want, which in ((aw, want_a, 'A'), (bw, want_b, 'B')):
@@ -620,11 +698,18 @@ class CodeGen:
         cmd = f"mma{len(self._events)}"
         self.own.hold(cmd, [RegRange('v', aw.reg, want_a),
                             RegRange('v', bw.reg, want_b)], 'm.mma.async')
+        # ISA sec 9C.3: the destination accumulator may not be read by the
+        # vector unit until the command completes. Holding it as a *written*
+        # range is what makes a.vread before the wait a compile error rather
+        # than a race whose symptom is a plausible wrong number.
+        self.own.hold(cmd, [RegRange('a', acc.reg, 1)], 'm.mma.async',
+                      mode='write')
         self._events[id(op.results[0])] = cmd
         self._mma_pending.setdefault(bar, []).append(cmd)
 
     def _op_acc_read(self, op):
         acc, row = op.operands
+        self.own.check_read('a', acc.reg, by=f"a.vread a{acc.reg}")
         v = op.results[0]
         self._alloc(v)
-        self.b.emit('a.vread', f"v{v.reg}", f"a{acc.reg}", f"s{row.reg}")
+        self._emit('a.vread', f"v{v.reg}", f"a{acc.reg}", f"s{row.reg}")

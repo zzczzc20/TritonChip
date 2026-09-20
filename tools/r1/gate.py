@@ -80,6 +80,8 @@ CASE_SUITES = [
      'build'),
     ('profile-tests', [sys.executable, 'tools/r1/profile_tests.py', '--json'],
      'build'),
+    ('resource-tests', [sys.executable, 'tools/r1/resource_tests.py', '--json'],
+     'build'),
 ]
 
 # Entries whose verdict covers a fixed set of inventory IDs rather than

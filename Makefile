@@ -627,7 +627,8 @@ clean:
 # evidence, run strict, and treat a skip as a failure.
 #------------------------------------------------------------------------------
 .PHONY: r1-doctor r1-check-generated r1-gate-selftest r1-acceptance \
-        r1-verify-evidence r1-inventory r1-check-artifacts r1-build-tests r1-profile-tests
+        r1-verify-evidence r1-inventory r1-check-artifacts r1-build-tests r1-profile-tests \
+        r1-resource-tests
 
 r1-doctor:
 	@$(PYTHON) tools/r1/doctor.py
@@ -671,6 +672,9 @@ r1-build-tests:
 
 r1-profile-tests: $(BUILD)/tb_core.vvp $(BUILD)/tb_core4.vvp $(BUILD)/tb_top.vvp
 	@$(PYTHON) tools/r1/profile_tests.py --json $(BUILD)/profile_tests.json
+
+r1-resource-tests:
+	@$(PYTHON) tools/r1/resource_tests.py --json $(BUILD)/resource_tests.json
 
 r1-gate-selftest:
 	@$(PYTHON) tools/r1/selftest.py

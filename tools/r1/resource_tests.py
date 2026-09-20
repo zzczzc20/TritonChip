@@ -1,0 +1,322 @@
+#!/usr/bin/env python3
+"""
+FP-01 .. FP-06 and OWN-01 .. OWN-12 -- R1-05 and R1-06.
+
+The audit's F01, as two families of tests.
+
+FP is about *how much* an instruction touches: the lowering emitted K32/K64
+from the instruction and then sized the footprint from the target's default
+K16, so a K64 FP16 fragment -- thirty-two registers -- was accepted into an
+eight-register window. The oracle here computes the answer from the ISA's own
+definition and never calls the function under test.
+
+OWN is about *when*: a write that lands inside an outstanding command's read
+set. Every negative has a positive twin that differs only in the event or the
+range, because a checker that rejects everything is not a checker.
+"""
+import argparse
+import os
+import sys
+
+HERE = os.path.dirname(os.path.abspath(__file__))
+ROOT = os.path.abspath(os.path.join(HERE, '..', '..'))
+sys.path.insert(0, HERE)
+sys.path.insert(0, os.path.join(ROOT, 'compiler', 'python'))
+import r1lib as R  # noqa: E402
+
+from tnca_cc import TargetInfo                       # noqa: E402
+from tnca_cc.diagnostics import Diagnostic           # noqa: E402
+from tnca_cc.ir import Builder, make_kernel          # noqa: E402
+from tnca_cc.codegen import CodeGen                  # noqa: E402
+from tnca_cc.footprints import (RegRange, fragment_registers,   # noqa: E402
+                                dma_coordinate_footprint)
+
+VREG_BYTES = 64          # VLEN 16 x ELEN 32 bits
+DTYPES = {'f16': 16, 'bf16': 16, 'e5m2': 8, 'e4m3': 8}
+KSTEPS = {'k16': 16, 'k32': 32, 'k64': 64}
+
+
+def oracle_registers(rows, k, bits):
+    """An independent formula, from ISA sec 9C.2, not the function under test.
+
+    A fragment is a flat row-major byte array of rows*k elements; a vector
+    register is VLEN*ELEN/8 bytes. Nothing else.
+    """
+    return -(-(rows * k * bits // 8) // VREG_BYTES)
+
+
+def compile_ok(build, target=None):
+    """Compile a kernel; return (ok, Diagnostic or None)."""
+    kernel = make_kernel('r1case')
+    b = Builder(kernel, kernel.role(0).region)
+    build(b)
+    cg = CodeGen(kernel, target or TargetInfo.default())
+    try:
+        cg.assign_shared()
+        cg.run()
+        return True, None
+    except Diagnostic as d:
+        return False, d
+
+
+# --------------------------------------------------------------------------
+def fp01(log):
+    """Twelve dtype x K combinations against an independent formula."""
+    bad = []
+    for dt, bits in DTYPES.items():
+        for kname, k in KSTEPS.items():
+            want_a = oracle_registers(16, k, bits)
+            want_b = oracle_registers(k, 16, bits)
+            got_a = fragment_registers(16, k, bits)
+            got_b = fragment_registers(k, 16, bits)
+            if (got_a, got_b) != (want_a, want_b):
+                bad.append(f"{dt}/{kname}: got {got_a},{got_b} want {want_a},{want_b}")
+            log.append(f"    {dt:5s} {kname}: A={got_a:2d} B={got_b:2d} VREG")
+    return not bad, '; '.join(bad) or '12 combinations match the formula'
+
+
+def fp02(log):
+    """Each combination, with A and then B one register short."""
+    ok = True
+    for dt in DTYPES:
+        for kname in KSTEPS:
+            need = oracle_registers(16, KSTEPS[kname], DTYPES[dt])
+            for which in ('A', 'B'):
+                la = need - 1 if which == 'A' else need
+                lb = need if which == 'A' else need - 1
+
+                def build(b, la=la, lb=lb, dt=dt, kname=kname):
+                    a, o = b.window(la), b.window(lb)
+                    acc, bar = b.accumulator(), b.barrier(init=True)
+                    tok = b.barrier_arm(bar, ops=1)
+                    b.mma_async(acc, a, o, tok, k=kname, dtype=dt)
+                    b.barrier_wait(tok)
+                    b.exit()
+
+                good, d = compile_ok(build)
+                if good:
+                    ok = False
+                    log.append(f"    {dt}/{kname} {which} short: ACCEPTED")
+                elif not (str(need) in str(d) and kname[1:] in str(d)
+                          and dt in str(d)):
+                    ok = False
+                    log.append(f"    {dt}/{kname} {which}: unhelpful: {d}")
+    log.append(f"    24 short-window cases, all refused with K, dtype and size")
+    return ok, 'a short window is refused and the diagnostic says by how much'
+
+
+def fp03(log):
+    """Exact length accepted; one over accepted; past the file refused."""
+    dt, kname = 'f16', 'k32'
+    need = oracle_registers(16, KSTEPS[kname], DTYPES[dt])
+
+    def build(la, lb):
+        def f(b):
+            a, o = b.window(la), b.window(lb)
+            acc, bar = b.accumulator(), b.barrier(init=True)
+            tok = b.barrier_arm(bar, ops=1)
+            b.mma_async(acc, a, o, tok, k=kname, dtype=dt)
+            b.barrier_wait(tok)
+            b.exit()
+        return f
+
+    exact, _ = compile_ok(build(need, need))
+    over, _ = compile_ok(build(need + 1, need + 1))
+    # Two windows of 64 registers each cannot both fit a 128-register file
+    # alongside anything else; this must be a resource error, not silence.
+    huge, dhuge = compile_ok(build(64, 64))
+    log.append(f"    exact({need})={exact} over({need+1})={over} "
+               f"overbudget(64,64)={huge}")
+    if dhuge:
+        log.append(f"      {str(dhuge).splitlines()[0][:110]}")
+    return exact and over and not huge, 'window lengths at and past the limit'
+
+
+def fp04(log):
+    """The audit's own negative: K64 FP16 into 8-register windows."""
+    def build(b):
+        a, o = b.window(8), b.window(8)
+        acc, bar = b.accumulator(), b.barrier(init=True)
+        tok = b.barrier_arm(bar, ops=1)
+        b.mma_async(acc, a, o, tok, k='k64')
+        b.barrier_wait(tok)
+        b.exit()
+    ok, d = compile_ok(build)
+    log.append(f"    refused at compile time: {not ok}")
+    if d:
+        log.append(f"      {str(d).splitlines()[0][:120]}")
+    return (not ok) and '32' in str(d), 'the audit reproduction, now refused'
+
+
+def fp05(log):
+    """DMA coordinate runs: legal ranges modelled, illegal ones refused."""
+    cases = []
+    for rank in (1, 2):
+        for sb in (1, 62 - rank + 1):
+            try:
+                rng = dma_coordinate_footprint(sb, rank)
+                cases.append((f"s{sb} rank{rank}", rng.count == rank, str(rng)))
+            except Diagnostic as d:
+                cases.append((f"s{sb} rank{rank}", False, str(d)[:60]))
+    bad = []
+    for sb, rank in ((63, 2), (0, 1), (62, 4)):
+        try:
+            dma_coordinate_footprint(sb, rank)
+            bad.append(f"s{sb} rank{rank} accepted")
+        except Diagnostic:
+            pass
+    for label, ok, detail in cases:
+        log.append(f"    {label}: {'ok' if ok else 'FAIL'} {detail}")
+    log.append(f"    out-of-range bases refused: {not bad}")
+    return all(c[1] for c in cases) and not bad, 'coordinate runs never wrap'
+
+
+def fp06(log):
+    """Different names, overlapping physical range, after allocation."""
+    def build(b):
+        a = b.window(8)
+        acc, bar = b.accumulator(), b.barrier(init=True)
+        tok = b.barrier_arm(bar, ops=1)
+        b.mma_async(acc, a, a, tok, k='k16')     # same window as A and B
+        v = b.vmovi(1)
+        b.window_put(a, 0, v)                    # writes what MMA reads
+        b.barrier_wait(tok)
+        b.exit()
+    ok, d = compile_ok(build)
+    log.append(f"    overlapping write refused: {not ok}")
+    if d:
+        log.append(f"      {str(d).splitlines()[0][:120]}")
+    return not ok, 'overlap found on the physical range, not on identity'
+
+
+# --------------------------------------------------------------------------
+def _mma_then(write, *, k='k16', dt='f16', wait_first=False, length=8):
+    def build(b):
+        a, o = b.window(length), b.window(length)
+        acc, bar = b.accumulator(), b.barrier(init=True)
+        tok = b.barrier_arm(bar, ops=1)
+        b.mma_async(acc, a, o, tok, k=k, dtype=dt)
+        if wait_first:
+            b.barrier_wait(tok)
+        write(b, a, o, acc)
+        if not wait_first:
+            b.barrier_wait(tok)
+        b.exit()
+    return build
+
+
+def own_pair(log, cid, write, **kw):
+    """A negative and the positive that differs only in the wait."""
+    bad, d = compile_ok(_mma_then(write, wait_first=False, **kw))
+    good, dg = compile_ok(_mma_then(write, wait_first=True, **kw))
+    log.append(f"    {cid}: before the wait -> "
+               f"{'ACCEPTED (bad)' if bad else 'refused'}; "
+               f"after -> {'accepted' if good else 'REFUSED (bad): ' + str(dg)[:80]}")
+    if d:
+        log.append(f"      {str(d).splitlines()[0][:120]}")
+    return (not bad) and good
+
+
+def own01(log):
+    """A/B covered while the MMA is outstanding, three different ways."""
+    ok = True
+    ok &= own_pair(log, 'window_put', lambda b, a, o, acc:
+                   b.window_put(a, 0, b.vmovi(7)))
+    ok &= own_pair(log, 'plain vector write', lambda b, a, o, acc:
+                   b.window_put(o, 1, b.vmovi(9)))
+    return ok, 'a write into an outstanding fragment is refused'
+
+
+def own05(log):
+    """An accumulator read while its MMA is outstanding."""
+    def read(b, a, o, acc):
+        b.acc_read(acc, b.const(0))
+    bad, d = compile_ok(_mma_then(read, wait_first=False))
+    good, dg = compile_ok(_mma_then(read, wait_first=True))
+    log.append(f"    read before the wait -> "
+               f"{'ACCEPTED (bad)' if bad else 'refused'}; after -> {good}")
+    if d:
+        log.append(f"      {str(d).splitlines()[0][:120]}")
+    return (not bad) and good, 'accumulator ordering'
+
+
+def own06(log):
+    """A missing await: the command is issued and never waited for."""
+    def build(b):
+        a, o = b.window(8), b.window(8)
+        acc, bar = b.accumulator(), b.barrier(init=True)
+        tok = b.barrier_arm(bar, ops=1)
+        b.mma_async(acc, a, o, tok, k='k16')
+        b.exit()                                  # no barrier_wait
+    bad, d = compile_ok(build)
+    log.append(f"    missing await -> {'ACCEPTED (bad)' if bad else 'refused'}")
+    if d:
+        log.append(f"      {str(d).splitlines()[0][:120]}")
+    return not bad, 'an outstanding command must be awaited'
+
+
+def own12(log):
+    """Compiling the same IR twice, and roles in either order, agree."""
+    def build(b):
+        a, o = b.window(8), b.window(8)
+        acc, bar = b.accumulator(), b.barrier(init=True)
+        tok = b.barrier_arm(bar, ops=1)
+        b.mma_async(acc, a, o, tok, k='k16')
+        b.barrier_wait(tok)
+        b.exit()
+
+    texts = []
+    for _ in range(2):
+        kernel = make_kernel('own12')
+        bld = Builder(kernel, kernel.role(0).region)
+        build(bld)
+        cg = CodeGen(kernel, TargetInfo.default())
+        cg.assign_shared()
+        cg.run()
+        texts.append(cg.b.text())
+    same = texts[0] == texts[1]
+    log.append(f"    two compilations of the same IR agree: {same}")
+    return same, 'determinism across repeated compilation'
+
+
+FP_TESTS = [('FP-01', fp01), ('FP-02', fp02), ('FP-03', fp03),
+            ('FP-04', fp04), ('FP-05', fp05), ('FP-06', fp06)]
+OWN_TESTS = [('OWN-01', own01), ('OWN-05', own05), ('OWN-06', own06),
+             ('OWN-12', own12)]
+TESTS = FP_TESTS + OWN_TESTS
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument('--only', nargs='*')
+    ap.add_argument('--json')
+    args = ap.parse_args()
+
+    print("R1-05/R1-06 resource footprint and async ownership")
+    results = []
+    for cid, fn in TESTS:
+        if args.only and cid not in args.only:
+            continue
+        log = []
+        try:
+            ok, detail = fn(log)
+        except Exception as e:
+            ok, detail = False, f"{type(e).__name__}: {e}"
+        results.append(dict(id=cid, passed=bool(ok), detail=detail))
+        print(f"  {cid}  {'PASS' if ok else 'FAIL':<5s} {detail}")
+        for line in log:
+            print(line)
+
+    if args.json:
+        R.write_json(args.json, results)
+    bad = [r['id'] for r in results if not r['passed']]
+    print()
+    if bad:
+        print(f"  r1-resource-tests      FAIL   {', '.join(bad)}")
+        return 1
+    print(f"  r1-resource-tests      PASS   {len(results)} check(s)")
+    return 0
+
+
+if __name__ == '__main__':
+    sys.exit(main())

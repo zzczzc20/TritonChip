@@ -78,31 +78,42 @@ ENTRIES = [
 # Suites that report per-case results as JSON rather than as output lines.
 # Their case IDs are the contract's own, so no mapping is needed -- which is
 # the point of having them emit structured results in the first place.
+# (name, argv, kind, seconds). The fourth field overrides the `kind` cap for
+# the two suites that legitimately take longer than an hour: the regression
+# matrix runs every entry above it again across 36 pipeline combinations and
+# three seeds, and the mutation suite copies the tree eight times and builds
+# `tnca-opt` twice. On the acceptance runner -- 4 vCPU, below the contract's
+# reference machine -- an hour is not enough for either, and a TIMEOUT there
+# would report a slow machine as a failed test.
+#
+# The caps are still not settable from the environment. A number here is a
+# decision in the candidate; a number from $R1_TIMEOUT is a decision by
+# whoever ran it.
 CASE_SUITES = [
     ('gate-selftest', [sys.executable, 'tools/r1/selftest.py', '--json'],
-     'build'),
+     'build', None),
     ('build-tests',   [sys.executable, 'tools/r1/build_tests.py', '--json'],
-     'build'),
+     'build', 7200),
     ('profile-tests', [sys.executable, 'tools/r1/profile_tests.py', '--json'],
-     'build'),
+     'build', None),
     ('resource-tests', [sys.executable, 'tools/r1/resource_tests.py', '--json'],
-     'build'),
+     'build', None),
     ('ir-tests',      [sys.executable, 'tools/r1/ir_tests.py', '--json'],
-     'build'),
+     'build', None),
     # The regression matrix re-runs several of the entries above on purpose:
     # its cases are about the combinations and the seeds, not about whether a
     # suite passes once.
     ('regression',    [sys.executable, 'tools/r1/regression.py', '--json'],
-     'build'),
+     'build', 21600),
     # It makes its own small evidence directory rather than tampering with
     # this run's, which is still being written.
     ('evidence-tests', [sys.executable, 'tools/r1/evidence_tests.py', '--json'],
-     'build'),
+     'build', 3600),
     # Last, and deliberately so: it copies the tree once per mutation and
     # re-runs a suite twice, so it is the most expensive thing here and the
     # only one whose value depends on everything above it already working.
     ('mutation-tests', [sys.executable, 'tools/r1/mutation_tests.py', '--json'],
-     'build'),
+     'build', 14400),
 ]
 
 # Entries whose verdict covers a fixed set of inventory IDs rather than
@@ -339,14 +350,15 @@ def main():
             discovered.append(f'ENTRY-{name}')
 
     # Suites that report their own case IDs.
-    for name, argv, kind in CASE_SUITES:
+    for name, argv, kind, cap in CASE_SUITES:
         if args.only and name not in args.only:
             continue
         case_dir = os.path.join(run_dir, 'logs', name)
         os.makedirs(case_dir, exist_ok=True)
         out_json = os.path.join(case_dir, 'cases.json')
         step = R.run_step(argv + [out_json], kind=kind, case_dir=case_dir,
-                          name=name, env={'R1_STRICT': '1'})
+                          name=name, env={'R1_STRICT': '1'},
+                          cap_seconds=cap)
         steps.append(step)
         if os.path.exists(out_json):
             with open(out_json) as fh:

@@ -113,13 +113,21 @@ def survivors(pid):
 
 
 def run_step(argv, *, kind, case_dir, name, env=None, cwd=None,
-             cap_override=None):
+             cap_override=None, cap_seconds=None):
     """Run one subprocess under a hard deadline, capturing everything.
 
     `cap_override` may only LOWER the cap; the selftest uses it so a hang
     injection costs a second instead of ten minutes.
+
+    `cap_seconds` sets it outright, for the two suites that legitimately take
+    longer than the `kind` bucket: the regression matrix and the mutation
+    suite each run everything else again. It is a number written in the
+    candidate, next to the entry it belongs to, and there is still no way to
+    change any of these from the environment -- a cap from $R1_TIMEOUT would
+    be a decision by whoever ran the gate rather than by the candidate, and
+    the first thing anyone would do with it is raise it past a hang.
     """
-    cap = CAPS[kind]
+    cap = cap_seconds if cap_seconds is not None else CAPS[kind]
     if cap_override is not None:
         cap = min(cap, cap_override)
 

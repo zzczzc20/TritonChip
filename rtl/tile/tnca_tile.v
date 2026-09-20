@@ -36,6 +36,13 @@ module tnca_tile #(
     parameter VREGS_PER_RCTX = 64,
     parameter PHYS_VREGS  = 128,
     parameter PHYS_W      = 7,
+    // Capability parameters, so the PROFILE decides and not this file. The
+    // system profile keeps the SFU off -- that is the correct configuration,
+    // not a defect -- but hard-coding it here is what let the target
+    // description claim otherwise (audit F03). spec/r1_profiles.json is the
+    // one place the value is chosen.
+    parameter HAS_SFU     = 0,
+    parameter HAS_ATOMICS = 1,
     parameter LSU_BEATS   = 8,
     parameter LSU_TAG_W   = 5,
     // slice
@@ -128,7 +135,8 @@ module tnca_tile #(
     tnca_core #(
         .NUM_RCTX(NUM_RCTX), .RCTX_W(RCTX_W), .VLEN(VLEN), .ELEN(ELEN), .LW(LW),
         .VREGS_PER_RCTX(VREGS_PER_RCTX), .PHYS_VREGS(PHYS_VREGS), .PHYS_W(PHYS_W),
-        .CORE_ID(TILE_ID), .NUM_CORES(NUM_TILES), .HAS_SFU(0),
+        .CORE_ID(TILE_ID), .NUM_CORES(NUM_TILES),
+        .HAS_SFU(HAS_SFU), .HAS_ATOMICS(HAS_ATOMICS),
         .LSU_BEATS(LSU_BEATS), .LSU_TAG_W(LSU_TAG_W)
     ) u_core (
         .clk(clk), .rst_n(rst_n),

@@ -81,7 +81,12 @@ def yv(i):
 @unittest.skipUnless(triton_bridge.available(), 'triton not importable')
 class TestTritonOnTheWholeMachine(unittest.TestCase):
     def setUp(self):
-        self.target = TargetInfo.default()
+        # The system profile, not the default. They differ: the four-tile
+        # machine reports four cores and no SFU, because rtl/tile/tnca_tile.v
+        # elaborates its cores with HAS_SFU=0. Compiling against the
+        # single-core target and running on the system is exactly the mismatch
+        # the audit's F03 describes.
+        self.target = TargetInfo.load('tnca-sim-2x2')
         if not H.bench_available('system'):
             self.skipTest("sim/build/tb_top.vvp not built; run `make top` first")
 

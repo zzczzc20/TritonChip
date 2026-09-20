@@ -1,0 +1,77 @@
+{
+  "schema": "r1-profiles/1",
+  "contract": "doc/phase1_tasks_and_acceptance.md R1-04",
+  "why": "One configuration source. The audit (F03) found compiler/targets/tnca-sim-v0.1.json describing a four-tile system with capabilities.sfu=true while rtl/tile/tnca_tile.v elaborated its core with .HAS_SFU(0). A compiler reading that target would emit an SFU instruction the machine raises ILLEGAL_INSTRUCTION on. The target must describe the *elaborated instance*, not some module's default, and the only way to keep that true is for the parameters, the target JSON, the capability expectations and the test command to come from one place.",
+  "profiles": {
+    "core-sim": {
+      "target_file": "tnca-sim-v0.1.json",
+      "description": "One core, two Role Contexts. What tb/core/tb_tnca_core.v elaborates, and what every single-core compiler test targets.",
+      "num_cores": 1,
+      "topology": "single",
+      "elaboration": {
+        "NUM_RCTX": 2,
+        "RCTX_W": 1,
+        "VREGS_PER_RCTX": 64,
+        "PHYS_VREGS": 128,
+        "HAS_SFU": 1,
+        "HAS_ATOMICS": 1,
+        "HAS_SYS_ATOMICS": 0
+      },
+      "bench": "sim/build/tb_core.vvp",
+      "bench_args": [
+        "+allroles"
+      ]
+    },
+    "core-4r": {
+      "target_file": "tnca-sim-4rctx.json",
+      "description": "One core, four Role Contexts, half the logical vector registers each so the physical file is the same size. compiler_overview.md sec 15 C4's P+M0+M1+E profile.",
+      "num_cores": 1,
+      "topology": "single",
+      "elaboration": {
+        "NUM_RCTX": 4,
+        "RCTX_W": 2,
+        "VREGS_PER_RCTX": 32,
+        "PHYS_VREGS": 128,
+        "HAS_SFU": 1,
+        "HAS_ATOMICS": 1,
+        "HAS_SYS_ATOMICS": 0
+      },
+      "bench": "sim/build/tb_core4.vvp",
+      "bench_args": [
+        "+allroles"
+      ]
+    },
+    "system-2x2": {
+      "target_file": "tnca-sim-2x2.json",
+      "description": "Four tiles in a 2x2 mesh, two Role Contexts per core, four NUCA slices, DRAM behind them. What tb/top/tb_tnca_top.v elaborates.",
+      "num_cores": 4,
+      "topology": "mesh-2x2",
+      "elaboration": {
+        "NUM_RCTX": 2,
+        "RCTX_W": 1,
+        "VREGS_PER_RCTX": 64,
+        "PHYS_VREGS": 128,
+        "HAS_SFU": 0,
+        "HAS_ATOMICS": 1,
+        "HAS_SYS_ATOMICS": 0
+      },
+      "bench": "sim/build/tb_top.vvp",
+      "bench_args": [
+        "+allroles"
+      ],
+      "note": "HAS_SFU is 0 here and that is the correct profile, not a defect to be papered over. The contract is explicit: the system's SFU stays off rather than being switched on to remove the inconsistency. What was wrong was the target claiming otherwise."
+    }
+  },
+  "supported_topologies": {
+    "single": {
+      "tiles": 1
+    },
+    "mesh-2x2": {
+      "tiles": 4,
+      "nx": 2,
+      "ny": 2
+    },
+    "note": "Nothing else is supported. rtl/noc/tnca_core_ni.v computes a 2-bit home and rtl/tnca_top.v fixes N_W=2, so raising NX/NY does not produce a correct 16-slice home or a wide enough source tag (audit F05). An unsupported topology must fail at configuration time rather than elaborate into a machine that misroutes."
+  },
+  "bench_args_note": "Every Role Context the profile defines is launched. NUM_ROLES reports the count this LAUNCH activated (ISA sec 5.1), not the core's architectural maximum, so a capability read-back that started one context would disagree with a target describing two -- and would be right to. A profile's capabilities are the capabilities of the whole profile."
+}

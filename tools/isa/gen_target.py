@@ -30,6 +30,7 @@ CORE_V = os.path.join(ROOT, 'rtl', 'core', 'tnca_core.v')
 TOP_V = os.path.join(ROOT, 'rtl', 'tnca_top.v')
 SCHEMA = os.path.join(ROOT, 'isa', 'tnca-isa-v0.1.json')
 OUT = os.path.join(ROOT, 'compiler', 'targets', 'tnca-sim-v0.1.json')
+PROFILES = os.path.join(ROOT, 'spec', 'r1_profiles.json')
 
 # Additional elaborations of the same core. The parameters here are exactly
 # what the corresponding bench passes with -P, so a variant target describes a
@@ -37,15 +38,13 @@ OUT = os.path.join(ROOT, 'compiler', 'targets', 'tnca-sim-v0.1.json')
 # compiler_overview.md sec 7.6 is the reason these exist: the compiler must
 # map one graph onto different Role Context counts, which it cannot be shown
 # to do against a single target.
-VARIANTS = {
-    'tnca-sim-4rctx': {
-        'description': ('Four Role Contexts, half the logical vector '
-                        'registers each: the profile sec 15 C4 defers the '
-                        'P + M0 + M1 + E check until. Built by '
-                        '`make core4`.'),
-        'params': {'NUM_RCTX': 4, 'RCTX_W': 2, 'VREGS_PER_RCTX': 32},
-    },
-}
+# The profiles come from spec/r1_profiles.json, which is also what the
+# elaboration parameters and the test commands come from. A target file that
+# describes a module's *defaults* rather than an *elaborated instance* is how
+# the audit's F03 happened: the four-tile target advertised an SFU that
+# rtl/tile/tnca_tile.v had switched off.
+with open(PROFILES) as _fh:
+    PROFILE_SPEC = json.load(_fh)
 
 PARAM_RE = re.compile(r"^\s*parameter\s+(\w+)\s*=\s*([0-9]+)\s*,?", re.M)
 
@@ -73,11 +72,13 @@ DESIGN_FACTS = {
 }
 
 
-def build_target(core, top, isa, name, description):
+def build_target(core, top, isa, name, description, profile=None):
 
-    # Capability bits, from the ISA names and this build's parameters.
-    # A bit is set only where the decoder actually executes the encoding;
-    # ISA sec 11 makes a clear bit a promise of ILLEGAL_INSTRUCTION.
+    # Capability bits, from the ISA names and this INSTANCE's parameters --
+    # `core` has already had the profile's elaboration overrides applied, so
+    # `bool(core['HAS_SFU'])` is what the tiles are actually built with.
+    # ISA sec 11 makes a clear bit a promise of ILLEGAL_INSTRUCTION, so a bit
+    # set here that the hardware does not honour is a lie the compiler acts on.
     caps = {
         'vector_fp32': True,
         'sfu': bool(core['HAS_SFU']),
@@ -226,19 +227,23 @@ def main():
     with open(SCHEMA) as f:
         isa = json.load(f)
 
-    outputs = [(OUT, build_target(
-        core, top, isa, 'tnca-sim-v0.1',
-        'The configuration tb/top/tb_tnca_top.v elaborates: four tiles in a '
-        '2x2 mesh, two Role Contexts per core.'))]
-    for name, spec in VARIANTS.items():
-        variant = dict(core)
-        variant.update(spec['params'])
-        variant['PHYS_VREGS'] = (spec['params'].get('NUM_RCTX', core['NUM_RCTX'])
-                                 * spec['params'].get('VREGS_PER_RCTX',
-                                                      core['VREGS_PER_RCTX']))
-        outputs.append((
-            os.path.join(os.path.dirname(OUT), f"{name}.json"),
-            build_target(variant, top, isa, name, spec['description'])))
+    outputs = []
+    for pname, spec in PROFILE_SPEC['profiles'].items():
+        inst = dict(core)
+        inst.update(spec['elaboration'])
+        t = build_target(inst, top, isa, os.path.splitext(spec['target_file'])[0],
+                         spec['description'], profile=pname)
+        # The instance's own shape, not the top module's defaults. A
+        # single-core profile that reported four cores is the same class of
+        # error as an SFU that is not there.
+        t['profile'] = pname
+        t['num_cores'] = spec['num_cores']
+        t['topology'] = spec['topology']
+        t['elaboration'] = spec['elaboration']
+        t['bench'] = spec['bench']
+        if spec['num_cores'] == 1:
+            t['memory'].pop('mesh', None)
+        outputs.append((os.path.join(os.path.dirname(OUT), spec['target_file']), t))
 
     check = '--check' in sys.argv
     stale = []

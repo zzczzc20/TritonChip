@@ -1,11 +1,11 @@
 {
   "schema_version": 1,
   "name": "tnca-sim-v0.1",
-  "description": "The configuration tb/top/tb_tnca_top.v elaborates: four tiles in a 2x2 mesh, two Role Contexts per core.",
+  "description": "One core, two Role Contexts. What tb/core/tb_tnca_core.v elaborates, and what every single-core compiler test targets.",
   "note": "Generated file -- do not edit. Run `make target`. Derived from rtl/core/tnca_core.v, rtl/tnca_top.v and isa/tnca-isa-v0.1.json; see compiler_overview.md sec 15 C0.",
   "isa_version": "0.1",
   "num_rctx": 2,
-  "num_cores": 4,
+  "num_cores": 1,
   "mesh": {
     "x": 2,
     "y": 2
@@ -135,5 +135,17 @@
     "gather_index_scaling": "ISA sec 9.1: lane i => Sa + sext(Vb[i]) * sz",
     "descriptor_bytes": "ISA sec 9D.3",
     "descriptor_semantic_bytes": "ISA sec 9D.3: bytes 0-127 are semantics, 128-255 are ignorable hints"
-  }
+  },
+  "profile": "core-sim",
+  "topology": "single",
+  "elaboration": {
+    "NUM_RCTX": 2,
+    "RCTX_W": 1,
+    "VREGS_PER_RCTX": 64,
+    "PHYS_VREGS": 128,
+    "HAS_SFU": 1,
+    "HAS_ATOMICS": 1,
+    "HAS_SYS_ATOMICS": 0
+  },
+  "bench": "sim/build/tb_core.vvp"
 }

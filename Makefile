@@ -448,7 +448,8 @@ mesh: $(BUILD)/tb_mesh.vvp
 # Full 2x2 system: cores, slices, mesh, DRAM
 #------------------------------------------------------------------------------
 TOP_PROGS := t10_mesh t24_amo_mesh
-ARGS_t10_mesh := +needevict
+ARGS_t24_amo_mesh := +needmesh
+ARGS_t10_mesh := +needevict +needmesh
 
 $(BUILD)/tb_top.vvp: $(TB)/top/tb_tnca_top.v $(RTL_DEPS) $(RTL)/tnca_top.v \
                      $(TB)/common/tnca_dram_model.v $(BUILD)/tb_top.fp | dirs
@@ -458,6 +459,7 @@ $(BUILD)/tb_top.vvp: $(TB)/top/tb_tnca_top.v $(RTL_DEPS) $(RTL)/tnca_top.v \
 
 .PHONY: top
 top: export ARGS_t10_mesh := $(ARGS_t10_mesh)
+top: export ARGS_t24_amo_mesh := $(ARGS_t24_amo_mesh)
 top: $(BUILD)/tb_top.vvp $(patsubst %,$(BUILD)/%.hex,$(TOP_PROGS))
 	@for p in $(TOP_PROGS); do \
 	   extra=$$(eval echo \$${ARGS_$$p}); \
@@ -625,7 +627,7 @@ clean:
 # evidence, run strict, and treat a skip as a failure.
 #------------------------------------------------------------------------------
 .PHONY: r1-doctor r1-check-generated r1-gate-selftest r1-acceptance \
-        r1-verify-evidence r1-inventory r1-check-artifacts r1-build-tests
+        r1-verify-evidence r1-inventory r1-check-artifacts r1-build-tests r1-profile-tests
 
 r1-doctor:
 	@$(PYTHON) tools/r1/doctor.py
@@ -666,6 +668,9 @@ r1-check-artifacts:
 
 r1-build-tests:
 	@$(PYTHON) tools/r1/build_tests.py --json $(BUILD)/build_tests.json
+
+r1-profile-tests: $(BUILD)/tb_core.vvp $(BUILD)/tb_core4.vvp $(BUILD)/tb_top.vvp
+	@$(PYTHON) tools/r1/profile_tests.py --json $(BUILD)/profile_tests.json
 
 r1-gate-selftest:
 	@$(PYTHON) tools/r1/selftest.py

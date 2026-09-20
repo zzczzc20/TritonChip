@@ -12,6 +12,11 @@
 //                     why a plain DRAM dump would be wrong.
 //   +dumpbase=<hex>   byte address to start the dump at (default 0)
 //   +dumpwords=<n>    64-bit words to dump (default 0, i.e. no dump)
+//   +needmesh         additionally require that some request crossed the
+//                     mesh. Right for a program whose point is cross-tile
+//                     traffic, wrong for one that only reads special
+//                     registers -- and a program that reads no memory must
+//                     not be failed for not reading memory.
 //   +needevict        additionally require that the slices missed and evicted;
 //                     for programs whose whole point is cache pressure. A test
 //                     that only touches three lines should not be asked to
@@ -311,7 +316,7 @@ module tb_tnca_top;
                     $display("FAIL: tile%0d trap code=0x%02x id=%0d pc=0x%0h",
                              k, fault_code[k*8 +: 8], fault_detail[k*24 +: 24],
                              fault_pc[k*64 +: 64]);
-        end else if (remote_flits == 0) begin
+        end else if ($test$plusargs("needmesh") && remote_flits == 0) begin
             $display("FAIL: no request ever left its tile -- the mesh was not tested");
         end else if ($test$plusargs("needevict")
                      && (tot_miss == 0 || tot_wb == 0)) begin

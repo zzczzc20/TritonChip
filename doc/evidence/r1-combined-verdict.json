@@ -1,0 +1,22 @@
+{
+  "notes": [
+    "A commit 97c0cf909c47c908be0564fcafa6809c0ec1a677  B commit 97c0cf909c47c908be0564fcafa6809c0ec1a677",
+    "A 173/173 pass, B 173/173",
+    "profile core-4r: 26692e8a4a394edd in both",
+    "profile core-sim: d4b739271bb463ba in both",
+    "profile system-2x2: d3188d732796426d in both",
+    "0/19 built artefact(s) are byte-identical",
+    "19/19 agree after the 3 declared normalisation rule(s); never removed: parameter values, timescale, scope names and hierarchy"
+  ],
+  "ok": true,
+  "problems": [],
+  "resolved": {
+    "R1-09": "PASS",
+    "R1-12": "PASS"
+  },
+  "runs": [
+    "/mnt/triton-viz-data/r1/run/compare/A",
+    "/mnt/triton-viz-data/r1/run/compare/B"
+  ],
+  "verdict": "ACCEPTED"
+}

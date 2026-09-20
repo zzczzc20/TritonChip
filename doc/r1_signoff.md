@@ -5,6 +5,33 @@ The contract is `phase1_tasks_and_acceptance.md`; the audit it answers is
 one row per work package with its owner, the commits that implemented it, the
 case IDs that test it, where the evidence lives, and its status.
 
+## R1 是 ACCEPTED
+
+在候选 commit `97c0cf90` 上，两套相互独立的 Linux x86_64 环境各自从同一个干净
+archive bootstrap、各自建自己的 venv 与 `tnca-opt`、各自跑完全套：
+
+```text
+A commit 97c0cf909c47c908be0564fcafa6809c0ec1a677  B commit 97c0cf90...
+A 173/173 pass, B 173/173
+profile core-4r:     26692e8a4a394edd  in both
+profile core-sim:    d4b739271bb463ba  in both
+profile system-2x2:  d3188d732796426d  in both
+0/19 built artefact(s) are byte-identical
+19/19 agree after the 3 declared normalisation rule(s)
+  r1-compare-envs   PASS   the two environments agree
+  R1-09 and R1-12 resolved here: {'R1-09': 'PASS', 'R1-12': 'PASS'}
+  FINAL VERDICT: ACCEPTED
+```
+
+证据：[`evidence/r1-combined-verdict.json`](evidence/r1-combined-verdict.json)、
+[`evidence/r1-environments.json`](evidence/r1-environments.json)。
+
+两个环境**各自**的 `acceptance.json` 都写着 NOT ACCEPTED，这是设计如此而不是
+缺陷：一次 run 无权回答"两套环境是否一致"。R1-09 与 R1-12 由
+`tools/r1/compare_envs.py` 在两份证据之上判定，最终判决是它给出的那一个。
+零字节相同是 iverilog 按对象地址命名符号的结果；`spec/r1_normalization.json`
+事先声明了可去除的三个字段，去除后 19 个产物全部一致。
+
 **Owner for every work package: the repository maintainer (git `zzczzc20`).**
 This is a single-maintainer project; recording one name twelve times is
 honest, and leaving the column blank or writing "TBD" is what the contract
@@ -27,10 +54,10 @@ absence.
 | R1-06 async ownership | maintainer | `501d152`, `3f137a3`, `14401ec` | OWN-01..OWN-12, `BASE-CORE-t26_stfault-{fast,slow,ooo}` | `tools/r1/resource_tests.py`, `tb/core/progs/t26_stfault.s` | PASS |
 | R1-07 IR support boundary | maintainer | `66da4c8`, `5fa415c` | IR-01..IR-07 | `tools/r1/ir_tests.py`, `compiler/test/IR/ir0*.mlir` | PASS |
 | R1-08 regression matrix | maintainer | `136849f`, `b424f9d` | REG-01..REG-11 and the 109 baseline IDs | `tools/r1/regression.py`, evidence `cases/regression.json` | PASS |
-| R1-09 reproducible toolchain, two environments | maintainer | `db82824`, `2f801a0`, `5fa415c`, `061d2b2` | `r1-doctor`, `compare_envs` | `spec/r1_toolchain.lock.json`, `tools/r1/bootstrap.sh`, `tools/r1/compare_envs.py` | PARTIAL |
+| R1-09 reproducible toolchain, two environments | maintainer | `db82824`, `2f801a0`, `5fa415c`, `061d2b2`, `90e9a24`, `97c0cf9` | `r1-doctor`, `compare_envs` | `spec/r1_toolchain.lock.json`, `tools/r1/bootstrap.sh`, `doc/evidence/r1-combined-verdict.json` | PASS |
 | R1-10 CI gate and evidence | maintainer | `3de733c` | EV-01..EV-06 | `.github/workflows/r1-acceptance.yml`, `tools/r1/verify_evidence.py` | PASS |
 | R1-11 mutation testing | maintainer | `14401ec`, `66da4c8` | MUT-01..MUT-07 | `tools/r1/mutation_tests.py`, evidence `mutations/` | PASS |
-| R1-12 documentation and sign-off | maintainer | `974a3d5`, this file | structural check in `tools/r1/signoff.py` | `doc/r1_signoff.md`, `doc/r1_status.md` | PARTIAL |
+| R1-12 documentation and sign-off | maintainer | `974a3d5`, `f9f8c2d`, this file | structural check in `tools/r1/signoff.py` | `doc/r1_signoff.md`, `doc/r1_status.md` | PASS |
 
 A row is PASS only when its cases are PASS **in the run being signed off**.
 The table above records what each work package delivered; the machine verdict
@@ -38,30 +65,19 @@ for a given candidate is `acceptance.json` in that run's evidence directory,
 and `make r1-verify-evidence EVIDENCE=<dir>` re-derives it rather than reading
 the verdict out of the file.
 
-## Why two rows are PARTIAL
+## 两条必须继续说明的限制
 
-**R1-09.** One Linux x86_64 acceptance environment exists and is locked: the
-AMI, every Ubuntu package version, MLIR 20.1.2 and the Triton wheel by
-sha256. `bootstrap.sh` builds an environment's own venv and its own
-`tnca-opt` from a clean candidate archive, so A and B share only a read-only
-download cache. What is not closed:
+R1 已签收，下面两点不改变判决，但属于必须留在记录里的事实。
 
-- the second environment's full run and the artefact comparison had not both
-  completed at the time this file was last updated; `tools/r1/compare_envs.py`
-  is the check and `.github/workflows/r1-acceptance.yml` is where it runs;
-- `rtl/gen` is still regenerated through a personal SSH host, so
-  `make r1-check-generated` reports it as not re-checked unless `R1_XLS=1`.
-  R1-09 asks for a local or containerised XLS runner at a fixed revision;
-- the runner is below the contract's reference runner on all three counts
-  (4 vCPU against 8, 15 GiB against 32, 58 GiB free against 100). Recorded in
-  the lock rather than rounded up.
+**运行机器低于合同的参考规格。** 4 vCPU 对 8、15 GiB 对 32、58 GiB 可用磁盘
+对 100。锁文件如实记录而不是四舍五入：在更小的机器上跑得更慢，这不等于参考
+规格不必要。
 
-**R1-12.** This file and `doc/r1_status.md` exist and the documentation points
-at the support matrix, the three profiles, the strict entry points and the
-known limits. It cannot be PASS until R1-09 is, because the contract's final
-verdict requires "独立环境 A 和 B 均完整通过，规定的产物确定一致" and a
-sign-off that claimed otherwise would be the thing this whole contract exists
-to prevent.
+**XLS 现在在环境内本地运行，从按 checksum 固定的发行包解出。**
+`tools/xls/fetch_xls.sh` 在解包前校验 sha256，`R1_STRICT=1` 直接拒绝 ssh
+runner。两套环境的 `make r1-check-generated R1_XLS=1` 都报告
+`PASS: rtl/gen matches the DSLX sources`，即受控 RTL 确实由 DSLX 重新生成而
+不是被信任。
 
 ## Found during R1, outside F01-F04
 

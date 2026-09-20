@@ -1,0 +1,50 @@
+{
+  "A": {
+    "verdict": "NOT ACCEPTED",
+    "required": 173,
+    "passed": 173,
+    "failed": 0,
+    "not_run": 0,
+    "seconds": 3069.5,
+    "work_packages": {
+      "R1-01": "PASS",
+      "R1-02": "PASS",
+      "R1-03": "PASS",
+      "R1-04": "PASS",
+      "R1-05": "PASS",
+      "R1-06": "PASS",
+      "R1-07": "PASS",
+      "R1-08": "PASS",
+      "R1-09": "NOT PASS",
+      "R1-10": "PASS",
+      "R1-11": "PASS",
+      "R1-12": "NOT PASS"
+    },
+    "commit": "97c0cf909c47c908be0564fcafa6809c0ec1a677",
+    "started": "2026-09-20T05:58:17"
+  },
+  "B": {
+    "verdict": "NOT ACCEPTED",
+    "required": 173,
+    "passed": 173,
+    "failed": 0,
+    "not_run": 0,
+    "seconds": 3202.0,
+    "work_packages": {
+      "R1-01": "PASS",
+      "R1-02": "PASS",
+      "R1-03": "PASS",
+      "R1-04": "PASS",
+      "R1-05": "PASS",
+      "R1-06": "PASS",
+      "R1-07": "PASS",
+      "R1-08": "PASS",
+      "R1-09": "NOT PASS",
+      "R1-10": "PASS",
+      "R1-11": "PASS",
+      "R1-12": "NOT PASS"
+    },
+    "commit": "97c0cf909c47c908be0564fcafa6809c0ec1a677",
+    "started": "2026-09-20T05:58:19"
+  }
+}

@@ -120,8 +120,14 @@ def compare(a, b):
     for tag, acc in (('A', aa), ('B', ab)):
         if not acc:
             problems.append(f"environment {tag} has no acceptance.json")
-        elif acc.get('verdict') != 'ACCEPTED':
-            problems.append(f"environment {tag}: {acc.get('verdict')}")
+    # Deliberately NOT checking `verdict == 'ACCEPTED'` here. A single
+    # environment cannot be ACCEPTED: R1-09 asks whether two environments
+    # agree and R1-12 signs off once everything else has, so the gate leaves
+    # both open and says so. Treating that as a problem made the comparison
+    # refuse the exact situation it exists to resolve. What IS checked, in
+    # combined_verdict below, is that every OTHER work package passed in
+    # both -- and that each one's R1-09 is open for the A/B question rather
+    # than because the environment was not an acceptance platform.
     if aa and ab:
         notes.append(f"A {aa.get('passed')}/{aa.get('required')} pass, "
                      f"B {ab.get('passed')}/{ab.get('required')}")

@@ -49,3 +49,10 @@ compile_commands.json
 # moment, and a repository full of them is a repository nobody can
 # tell the current evidence from.
 sim/r1/
+
+# Downloaded toolchains, fetched by checksum into the tree so an acceptance
+# environment owns its own copy (tools/xls/fetch_xls.sh). Several hundred
+# megabytes of somebody else's release; the digest that pins it is in
+# tools/xls/config.json, which IS committed.
+.xls/
+tritonenv/

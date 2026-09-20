@@ -48,7 +48,14 @@ def digest(path):
     return h.hexdigest()
 
 
-SKIP_DIRS = {'.git', 'sim', 'build', '__pycache__', '.venv'}
+# Not the candidate's source: build products, and downloaded tools.
+#
+# `.xls` is a 400 MB unpacked toolchain and `tritonenv` a virtualenv; copying
+# either into every isolated lab would make a seven-experiment run move
+# several gigabytes and hash it twice, for files that are not the candidate
+# and cannot be changed by an experiment.
+SKIP_DIRS = {'.git', 'sim', 'build', '__pycache__', '.venv',
+             '.xls', 'tritonenv', 'node_modules'}
 
 
 def source_rels(root, use_git=True):

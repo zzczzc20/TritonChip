@@ -564,7 +564,14 @@ pin:
 #   make tnca-opt LLVM_PREFIX=/usr/lib/llvm-18
 #
 # TNCA_LLVM does the same for FileCheck, which the IR tests invoke directly.
-LLVM_PREFIX ?= $(HOME)/.triton/llvm/llvm-macos-arm64
+#
+# The default follows the machine rather than the maintainer: the fetched
+# toolchain where it exists, then the distribution's LLVM 20 that CI
+# installs. A macOS path printed as "not found" on a Linux box is a
+# diagnosis of the wrong machine.
+LLVM_FETCHED := $(HOME)/.triton/llvm/llvm-macos-arm64
+LLVM_PREFIX ?= $(firstword $(wildcard $(LLVM_FETCHED)) \
+                           $(wildcard /usr/lib/llvm-20) $(LLVM_FETCHED))
 export TNCA_LLVM ?= $(LLVM_PREFIX)
 
 .PHONY: tnca-opt llvm-toolchain

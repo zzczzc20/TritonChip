@@ -55,13 +55,32 @@ def main():
     n = result.testsRun
     bad = len(result.failures) + len(result.errors)
     skipped = len(result.skipped)
+    # unittest reports an expected failure and an unexpected pass as success.
+    # doc/phase1_tasks_and_acceptance.md forbids both from producing an R1
+    # PASS, so they are counted here rather than left to the framework.
+    xfail = len(getattr(result, 'expectedFailures', []))
+    xpass = len(getattr(result, 'unexpectedSuccesses', []))
+    strict = os.environ.get('R1_STRICT') == '1'
+
     if bad:
         for case, tb in result.failures + result.errors:
             print(f"  FAIL {case}")
             print('    ' + tb.strip().replace('\n', '\n    ')[:3000])
         print(f"  {label:<22s} FAIL   {bad}/{n} failed")
         return 1
+
+    if strict and (skipped or xfail or xpass):
+        # "76 tests, 7 skipped" is 69 tests. Say so, and name them: a skip
+        # that nobody can see is a requirement nobody is tracking.
+        for case, why in result.skipped:
+            print(f"  SKIP {case}: {why}")
+        print(f"  {label:<22s} FAIL   {skipped} skipped, {xfail} xfail, "
+              f"{xpass} xpass (R1_STRICT=1: none of these is a pass)")
+        return 1
+
     extra = f", {skipped} skipped" if skipped else ""
+    if xfail or xpass:
+        extra += f", {xfail} xfail, {xpass} xpass"
     print(f"  {label:<22s} PASS   {n} tests{extra}")
     return 0
 

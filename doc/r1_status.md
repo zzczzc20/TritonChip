@@ -34,8 +34,35 @@
 | F04 check 先再生成 | **部分修复** | `r1-check-generated` 无再生成前置；`make compiler` 的旧行为未动 |
 | F01、F03、F05、F06、F08、F09、F10、F11 | **未修复** | 见上表 |
 
+## 第一个 Linux x86_64 验收环境（envA）
+
+主机：Ubuntu 24.04.4 LTS，x86_64，4 vCPU / 15 GiB RAM，工作区在挂载盘 `/mnt/triton-viz-data/r1/envA`（主盘已 83% 满，不使用）。iverilog 12.0（开发机是 11.0）。
+
+从候选 commit 的 `git archive` 解出干净树，不复制开发机的任何构建产物：
+
+| 步骤 | 结果 |
+|---|---|
+| `make r1-doctor` | PASS，并如实报告低于参考 runner 规格（4 vCPU < 8，57 GiB < 100） |
+| `make r1-check-generated` | PASS——干净 checkout 上 ISA schema、TableGen 表、opcode map、三个 target、218 个共享常量、DSLX 与浮点 oracle 全部一致 |
+| `make r1-gate-selftest` | PASS，10/10 注入全部检出（与开发机一致） |
+| `tools/r1/gate.py` | **NOT ACCEPTED**：required=151，pass=81，not-run=66，fail=4 |
+
+81 项通过的都是真跑出来的：21 个 core 程序 × 3 种内存模型、8 个 unit bench、NUCA、mesh、四 tile 整机两种 launch 模式，全部在 Linux + iverilog 12 上通过——开发机用的是 iverilog 11，这是一次真实的跨平台结果。
+
+4 项失败全部来自 envA 缺 Triton/LLVM，且在 `R1_STRICT=1` 下**正确地记为失败而不是跳过**：`BASE-CC-IR`（缺 tnca-opt）、`BASE-TRITON-CORE`、`BASE-TRITON-SYSTEM`（缺 Triton）、以及 `BASE-CC-UNIT`。
+
+envA 还缺：Triton + LLVM 的锁定安装、tnca-opt 构建、envB。这些是 R1-09 的内容。
+
+## gate 发现的一个此前看不见的缺口
+
+`compiler-unit` 长期报告 “PASS 76 tests, 7 skipped”。严格模式下逐条打印后，7 个全部是 `triton not importable`——整个套件跑在系统 `python3` 下，而 Triton 只装在 `TRITON_PYTHON` 指向的 venv 里。也就是说 **compiler-unit 里所有 Triton 相关用例从来没有在这个入口执行过**，而总数 76 让它看起来跑了。
+
+这正是合同 REG-01 点名的那 7 项。修法不是把 skip 改成 pass，而是让这些用例在真正能 import Triton 的解释器下运行；尚未修复。
+
 ## 一个不能靠改代码消掉的限制
 
 合同 R1-09 要求在 **Linux x86_64** 上用两套互相独立、从锁定工具链 bootstrap 的环境完成验收，并明确写着 macOS 不能替代。本仓库目前在 macOS arm64 上开发，`make r1-doctor` 会如实报告这一点并拒绝暗示相反的结论。
 
-因此：即使上表全部变成 DELIVERED，**在这台机器上也不可能产生一次合格的 R1 签收**。R1-09 需要的是环境与锁文件，不是更多测试代码。
+平台这一条现在有解了：envA 是真正的 Linux x86_64，合同要求的两套环境已经有第一套。仍然缺的是 envB、锁定的 Triton/LLVM 安装、XLS 的本地/容器化执行方式，以及 OS image digest——**这些是环境与锁文件的工作，不是更多测试代码**。
+
+开发机（macOS arm64）上的 `make r1-doctor` 会继续拒绝把自己当作验收环境。这条不变：macOS 是开发平台。

@@ -56,27 +56,35 @@ ENTRIES = [
     ('nuca',         ['make', 'nuca'],            'build', None),
     ('mesh',         ['make', 'mesh'],            'build', None),
     ('top',          ['make', 'top'],             'build', None),
-    ('compiler',     ['make', 'compiler'],        'build', None),
+    # `make compiler` runs several checks and several suites. Mapping its
+    # exit code onto BASE-CC-UNIT reported that suite as failing when a
+    # *different* step in the same target failed, which is a mapping bug
+    # wearing the shape of a test failure. Its per-case lines are parsed.
+    ('compiler',     ['make', 'compiler'],        'build', '{}'),
     ('compiler-rtl', ['make', 'compiler-rtl'],    'build', None),
     # Not a make target: it is one line inside `make compiler`. Calling it
     # directly is what lets the gate see its exit code on its own.
     ('compiler-ir',  [sys.executable, 'compiler/test/IR/run_ir_tests.py'],
-                                                  'build', None),
+                                                  'build', '{}'),
     ('triton-e2e',   ['make', 'triton-e2e'],      'build', None),
     ('e2e',          ['make', 'e2e'],             'build', None),
 ]
 
 # Entries whose verdict covers a fixed set of inventory IDs rather than
 # emitting one line per case.
+# Entry output line name -> inventory ID, for entries that emit named lines.
+LINE_IDS = {
+    'compiler-unit': 'BASE-CC-UNIT',
+    'compiler-ir':   'BASE-CC-IR',
+}
+
 COVERS = {
     'nuca':         ['BASE-NUCA-fast', 'BASE-NUCA-slow', 'BASE-NUCA-ooo'],
     'mesh':         ['BASE-MESH-2x2'],
     'top':          ['BASE-TOP-t10_mesh-single-role', 'BASE-TOP-t10_mesh-all-roles',
                      'BASE-TOP-t24_amo_mesh-single-role',
                      'BASE-TOP-t24_amo_mesh-all-roles'],
-    'compiler':     ['BASE-CC-UNIT'],
     'compiler-rtl': ['BASE-CC-RTL'],
-    'compiler-ir':  ['BASE-CC-IR'],
     'triton-e2e':   ['BASE-TRITON-CORE'],
     'e2e':          ['BASE-TRITON-SYSTEM'],
 }
@@ -140,7 +148,10 @@ def main():
 
         if tmpl:
             for case_name, verdict in per_case.items():
-                cid = tmpl.format(case_key(case_name))
+                key = case_key(case_name)
+                cid = LINE_IDS.get(key) or tmpl.format(key)
+                if cid not in required:
+                    continue     # a line this entry prints that is not a case
                 discovered.append(cid)
                 statuses[cid] = verdict
         for cid in COVERS.get(name, []):

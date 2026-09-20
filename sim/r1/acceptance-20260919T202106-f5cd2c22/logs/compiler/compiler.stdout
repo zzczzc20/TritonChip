@@ -1,0 +1,16 @@
+PASS: isa/tnca-isa-v0.1.json is up to date (169 instructions)
+  up to date: compiler/include/tnca/ISA/TNCAOpcodes.inc
+  up to date: compiler/include/tnca/ISA/TNCAInstrInfo.td
+  up to date: doc/isa/opcode-map.md
+PASS: all generated ISA files match the schema
+PASS: target descriptions match the RTL parameters
+checked 218 shared constants against /Users/zhouzhongchun/repo/TritonChip/rtl/common/tnca_defs.vh
+PASS: the RTL defines, the assembler tables, the DSLX and the float oracle agree
+  SKIP test_add_kernel_as_a_four_block_grid (test_e2e_system.TestTritonOnTheWholeMachine.test_add_kernel_as_a_four_block_grid): triton not importable
+  SKIP test_mul_add_kernel_as_a_four_block_grid (test_e2e_system.TestTritonOnTheWholeMachine.test_mul_add_kernel_as_a_four_block_grid): triton not importable
+  SKIP test_add_kernel (test_triton_e2e.TestTritonToRTL.test_add_kernel): triton not importable
+  SKIP test_context_specialised_add_kernel (test_triton_e2e.TestTritonToRTL.test_context_specialised_add_kernel): triton not importable
+  SKIP test_context_specialised_mul_add_kernel (test_triton_e2e.TestTritonToRTL.test_context_specialised_mul_add_kernel): triton not importable
+  SKIP test_mul_add_kernel (test_triton_e2e.TestTritonToRTL.test_mul_add_kernel): triton not importable
+  SKIP test_unsupported_block_is_refused (test_triton_e2e.TestTritonToRTL.test_unsupported_block_is_refused): triton not importable
+  compiler-unit          FAIL   7 skipped, 0 xfail, 0 xpass (R1_STRICT=1: none of these is a pass)

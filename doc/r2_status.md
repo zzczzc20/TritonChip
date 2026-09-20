@@ -8,9 +8,10 @@
 本文件只记录**已经跑过并留下证据**的部分。状态只有 DELIVERED、PARTIAL、
 NOT STARTED 三种；没有完成度百分比。
 
-**R2 未签收。** 十四个工作包中十一个的验收条件已满足。最终判决还要求：在 R2
+**R2 未签收。** 下表记录七个 DELIVERED、五个 PARTIAL、两个 NOT STARTED；
+最终判决还要求：在 R2
 候选 commit 上重跑 R1 全套（DEP-02）、grid/多批（R2-09）、host transport 的
-完成边界（R2-10）、报告与示例（R2-12）、E2E 与 mutation（R2-13）、双环境发布
+完成边界（R2-10）、MLIR 主路径（R2-04）、剩余 ABI 边界（R2-06）、E2E 与 mutation（R2-13）、双环境发布
 （R2-14）。
 
 ## 这一阶段已经成立的核心性质

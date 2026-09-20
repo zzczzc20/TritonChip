@@ -1,0 +1,43 @@
+{
+  "commit": "71317b35afb9d2602b0510da84188a0fbde15e29",
+  "host": "macOS-27.0-arm64-arm-64bit",
+  "scope": "Focused local checks only; not R1/R2/R3 acceptance",
+  "checks": [
+    {
+      "command": [
+        "python3",
+        "tools/r3/plan.py"
+      ],
+      "exit_code": 0,
+      "wall_seconds": 0.04,
+      "log": "plan.log"
+    },
+    {
+      "command": [
+        "python3",
+        "tools/r3/model_tests.py"
+      ],
+      "exit_code": 0,
+      "wall_seconds": 0.063,
+      "log": "model_tests.log"
+    },
+    {
+      "command": [
+        "python3",
+        "tools/r3/rf_tests.py"
+      ],
+      "exit_code": 0,
+      "wall_seconds": 0.755,
+      "log": "rf_tests.log"
+    },
+    {
+      "command": [
+        "python3",
+        "tools/r3/flow_tests.py"
+      ],
+      "exit_code": 1,
+      "wall_seconds": 0.867,
+      "log": "flow_tests.log"
+    }
+  ]
+}

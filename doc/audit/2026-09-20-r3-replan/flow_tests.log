@@ -1,0 +1,22 @@
+R3-04 operand collector, arbitration and return
+  FLOW-01  PASS  collected in order, complete before ready, right registers
+    v0,v1,v2 (three banks): 3 grant(s), 0 conflict(s), ready at cycle 1
+    v0,v4,v8 (one bank):   3 grant(s), 3 conflict(s), ready at cycle 3
+    not ready in any earlier cycle: True
+    one bank: lane 0 of each operand = ['0x1000', '0x1400', '0x1800']
+    three banks: lane 0 of each operand = ['0x1000', '0x1100', '0x1200']
+  FLOW-02  PASS  every read served once, one per port, and waiting counted
+    4 entries x 3 sources, all in one bank: 12 grant(s) for 12 required read(s)
+    grants per cycle: max 1 (one bank has one read port)
+    entries became ready at cycles [10, 11, 12, 13]
+    first to last ready: 3 cycle(s); serialised would be 9
+    29 refused request(s), 11 cycle(s) with something waiting
+  FLOW-04  PASS  request and response conserved in every scenario
+    the in-RTL conservation assertion did not fire in any of the four scenarios
+    after drain: ready=1111, 12 grant(s) all answered, 0 orphan(s)
+  FLOW-05  PASS  un-issued work dropped, in-flight reads absorbed, no leak
+    flush at cycle 1 with reads outstanding -> 1 orphaned response(s), absorbed
+    the slot was reused immediately; it holds 0x1c00 (v12), not 0x1000 (v0, the flushed request)
+  FLOW-03  NOT RUN  RF busy on return, a full queue and a writeback conflict need the units that produce writebacks -- R3-05. The collector has the half it owns (an accepted read reserves its destination and is absorbed even if its entry is gone), but "已发事务可以完成" is a claim about the whole return path, and half of it does not exist yet
+
+  r3-flow-tests          FAIL   FLOW-03

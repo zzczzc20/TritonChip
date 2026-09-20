@@ -45,7 +45,7 @@ under development.
 
 The [support matrix](doc/support_matrix.md) distinguishes ISA definitions,
 profile capabilities, compiler lowering, and whole-system test coverage.
-R1 and R2 have not completed final acceptance; see their
+R1 has a signed-off historical baseline; R2 remains incomplete. See the
 [R1 status](doc/r1_status.md) and [R2 status](doc/r2_status.md) reports.
 This is an RTL/compiler prototype, without silicon or physical-design signoff.
 
@@ -88,8 +88,8 @@ Development tests may skip unavailable dependencies. A successful development
 run is not release acceptance; the strict gate requires complete evidence.
 
 **RTL simulation is slow.** Use focused tests during development and small
-kernels for performance measurements. R3 limits new single-core GEMM workloads
-to 16×16×64 and uses a fast model for broader exploration. Simulation wall time
+kernels for performance measurements. R3 v2 limits new single-core GEMM workloads
+to 16×16×32 and focuses on finite-port VRF integration. Simulation wall time
 is not hardware execution time.
 
 ## Development milestones
@@ -98,7 +98,7 @@ is not hardware execution time.
 |---|---|---|
 | R1 | Reproducible builds, reliable test gates, consistent profiles, and async resource safety | [Tasks and acceptance](doc/phase1_tasks_and_acceptance.md) |
 | R2 | Installable AOT compiler, versioned artifacts and ABI, simulation runtime, and grid scheduling | [Tasks and acceptance](doc/phase2_tasks_and_acceptance.md) |
-| R3 | Banked register files, finite-port arbitration, performance modeling, and small RTL calibration workloads | [Tasks and acceptance](doc/phase3_tasks_and_acceptance.md) |
+| R3 v2 | Single-core banked VRF integration, writeback flow control, and small RTL validation workloads | [Tasks and acceptance](doc/phase3_tasks_and_acceptance.md) |
 
 These specifications define acceptance criteria, not completed features.
 

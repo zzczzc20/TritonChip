@@ -1,0 +1,33 @@
+R3-03 synchronous banked VRF
+  RF-01  PASS  8 KiB in 4 banks, mapping invertible
+    4 bank(s) x 32 row(s) x 16 lane(s) x 4 bytes = 8192 bytes (8 KiB)
+    the mapping is invertible for all 128 registers: True
+    registers per bank: [32, 32, 32, 32]
+    equal bases alias every name: True; disjoint bases share 0 register(s)
+    base=124, idx 0..7 -> [124, 125, 126, 127, 0, 1, 2, 3]
+  RF-02  PASS  three seeds, two latencies, every request compared
+    seed 1 spread latency 1 (139 request(s), 40 warm-up write(s)): 654 lane comparison(s), 1186 against never-written state (not compared), 0 problem(s)
+    seed 1 spread latency 2 (139 request(s), 40 warm-up write(s)): 638 lane comparison(s), 1170 against never-written state (not compared), 0 problem(s)
+    control: latency-1 responses checked against a latency-2 model -> DISAGREE (good)
+    seed 1 hot latency 1 (145 request(s), 40 warm-up write(s)): 960 lane comparison(s), 688 against never-written state (not compared), 0 problem(s)
+    seed 1 hot latency 2 (145 request(s), 40 warm-up write(s)): 944 lane comparison(s), 688 against never-written state (not compared), 0 problem(s)
+    seed 7 spread latency 1 (152 request(s), 40 warm-up write(s)): 822 lane comparison(s), 1114 against never-written state (not compared), 0 problem(s)
+    seed 7 spread latency 2 (152 request(s), 40 warm-up write(s)): 806 lane comparison(s), 1098 against never-written state (not compared), 0 problem(s)
+    seed 7 hot latency 1 (154 request(s), 40 warm-up write(s)): 1156 lane comparison(s), 636 against never-written state (not compared), 0 problem(s)
+    seed 7 hot latency 2 (154 request(s), 40 warm-up write(s)): 1140 lane comparison(s), 636 against never-written state (not compared), 0 problem(s)
+    seed 42 spread latency 1 (139 request(s), 40 warm-up write(s)): 670 lane comparison(s), 1138 against never-written state (not compared), 0 problem(s)
+    seed 42 spread latency 2 (139 request(s), 40 warm-up write(s)): 670 lane comparison(s), 1106 against never-written state (not compared), 0 problem(s)
+    seed 42 hot latency 1 (139 request(s), 40 warm-up write(s)): 1049 lane comparison(s), 551 against never-written state (not compared), 0 problem(s)
+    seed 42 hot latency 2 (139 request(s), 40 warm-up write(s)): 1033 lane comparison(s), 551 against never-written state (not compared), 0 problem(s)
+  RF-03  PASS  uninitialised state stays unknown
+    a register never written reads as X (unknown)
+  RF-04  PASS  one bank, one read, one response
+    four requests to one bank, every cycle: at most 1 accepted per cycle
+    latency 1: at most 1 response(s) in any cycle, 8 in total
+    latency 2: at most 1 response(s) in any cycle, 8 in total
+  RF-05  PASS  an impossible configuration refused, a masked write masked
+    100 registers in 8 banks of 12: refused at elaboration
+        tnca_vrf_banked: 8 banks x 12 = 96, not PHYS_VREGS=100
+    a 4-lane masked write over a full one: lanes 0..3 = [4096, 4097, 4098, 4099], lanes 4..5 = [8196, 8197]
+
+  r3-rf-tests            PASS   5 check(s)

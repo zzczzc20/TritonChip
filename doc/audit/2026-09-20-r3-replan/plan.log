@@ -1,0 +1,9 @@
+R3-01 plan: budgets and caps, checked before any simulator starts
+  PLAN-02  PASS  16 workload(s) inside the contract's caps
+  PLAN-03  PASS  expands to exactly 32 performance run(s)
+    at the measured simulation rate that is about 10 minutes of RTL
+    (rate from doc/evidence/r3-timing-scout-macos.json; it is a simulation rate, not a clock)
+  PLAN-04  PASS  14 parameter(s) with a source, 7 recorded as unmeasured rather than 0
+  PLAN-01  PASS  R1 baseline: ACCEPTED on 97c0cf909c47
+
+  r3-plan                PASS   4 check(s)

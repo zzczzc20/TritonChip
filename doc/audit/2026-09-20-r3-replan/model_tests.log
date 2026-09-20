@@ -1,0 +1,44 @@
+R3-02 finite-resource performance model
+  MODEL-01  PASS  six graphs, six hand calculations, exact agreement
+    serial chain of 4                 4 cycles  (hand: 4)  agree
+        each op issues the cycle after its producer completes: 1+1+1+1
+    4 independent, 4 ALUs             1 cycles  (hand: 1)  agree
+        nothing depends on anything and nothing is scarce: one cycle
+    4 independent, 1 ALU              4 cycles  (hand: 4)  agree
+        one ALU, occupancy 1: four operations cannot overlap, whatever the issue width says
+    2 ops, 2 banks, 1 port each       2 cycles  (hand: 2)  agree
+        each op takes both banks' single port, so the second waits a cycle even with two ALUs and width 2
+    2 reads on a 1-port bank         -> 'impossible' reads 2 register(s) from bank 0 and a bank has 1 
+    2 reads, 4 banks, 1 port each     1 cycles  (hand: 1)  agree
+        four banks, four distinct registers, two units: both ops issue in cycle 0
+    4 transfers, queue depth 2        9 cycles  (hand: 9)  agree
+        depth 2 and latency 4: two in flight, the next pair waits for them to drain
+        the queue stalled 4 time(s), which is what a finite queue is for
+    fill -> use -> refill            14 cycles  (hand: 14)  agree
+        fill completes at 4, the MMA issues at 4 and completes at 10, the refill issues at 10 and completes at 14
+  MODEL-02  PASS  scarcity costs, and nothing is free
+    8 banks -> 1 cycles, 2 banks -> 4 cycles
+    latency 1 -> 1 cycles, latency 3 -> 3 cycles
+    a queue with no depth        -> refused: queue 'dma' has no depth. An unbounded queue
+    a unit that takes no time    -> refused: unit 'alu' occupies 0 cycles
+    a bank with no read port     -> refused: rf_read_ports_per_bank=0
+    a consumer of a 9-cycle transfer completes at 10 (hand: 10)
+  MODEL-03  PASS  nothing lost, no cycles, and no zero-cycle answer for an impossible machine
+    6 operations issued 6 time(s): conserved
+    a dependency cycle           -> a dependency cycle: a -> b -> a
+    an unknown dependency        -> 'a' depends on unknown 'ghost'
+    a unit the machine lacks     -> 'a' uses unit 'tensor-core', which this machine do
+    two operations with one name -> two operations named 'a'
+    a queue the machine lacks    -> 'a' uses queue 'nope', which this machine does not
+  MODEL-04  PASS  deterministic, bounded, and fast enough to be useful
+    the same input five times: [14, 14, 14, 14, 14] -> identical
+    swept 54 candidates in 0.01s (budget: 128 candidates, 60 s)
+    best: b8p2w4u4 at 8 cycles, bottleneck dependency
+    a sweep past the budget -> 162 candidates exceeds the 128 the contract allows. A sw
+  MODEL-05  PASS  cycles, bottleneck, machine, and never "RTL measured"
+    cycles=296  bottleneck=dependency  issued={'alu': 0, 'mma': 1, 'dma': 1, 'sfu': 0}
+    machine recorded: banks=1, units=['alu', 'dma', 'mma', 'sfu']
+    kind: 'model projection'
+    a rejected candidate: impossible -> 'f' uses unit 'dma', which this machine does not have (a
+
+  r3-model-tests         PASS   5 check(s)

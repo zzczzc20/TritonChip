@@ -1,12 +1,28 @@
-# R3 状态：逐工作包的实际进度
+# R3 状态：v2 集成计划与 v1 历史进展
 
-合同：[phase3_tasks_and_acceptance.md](phase3_tasks_and_acceptance.md)。
+当前合同：[R3 v2](phase3_tasks_and_acceptance.md)。状态：**NOT ACCEPTED**。
+重规划依据：[2026-09-20 复查](r3_replan_review_2026-09-20.md)。
+
+v2 聚焦同步有限端口 VRF 的真实单核集成。G0–G7（基线、VRF、客户端接入、
+返回写回、E2E、计数、综合回归、证据）目前全部 **NOT VERIFIED**。
+已有组件可以复用，但旧用例的 PASS 不自动转换成新标准的 PASS。
+
+本次本地复查：plan 4 PASS、model 5 PASS、RF 5 PASS；flow 的四项已实现检查
+通过，FLOW-03 未实现，整套 exit=1。详见复查文档和原始日志。
+
+## 以下为 v1 历史工作记录
+
+历史合同：[R3 v1](phase3_tasks_and_acceptance_v1.md)。以下 DELIVERED 是当时的
+工作包记录，不能据此宣称原合同完整验收。复查发现 PLAN-01/03/04 与合同语义
+有差距，SYN-02 没有核验 ARF 同步端口；相应包仍需按具体性质重新评估。
+现有 `tools/r3` 的旧 ID 和注释归属于 v1；v2 使用独立 `R3V2-*` ID，待实现新 gate。
 前置：[R1 签收](r1_signoff.md)（**R1 已 ACCEPTED**）、[R2 状态](r2_status.md)。
 
 本文件只记录**已经跑过并留下证据**的部分。状态只有 DELIVERED、PARTIAL、
 NOT STARTED 三种；没有完成度百分比。
 
-**R3 未签收。** 十二个工作包中三个已满足全部验收条件，四个部分满足。
+**R3 v1 未签收。** 下表记录三个 DELIVERED、五个 PARTIAL、四个 NOT STARTED；
+DELIVERED 的证据范围限制见上文，不等于已满足原合同全部条件。
 
 ## 逐包状态
 

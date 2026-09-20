@@ -389,7 +389,12 @@ def main():
     import platform as _plat
     is_linux_x86 = (_plat.system() == 'Linux'
                     and _plat.machine() in ('x86_64', 'amd64'))
+    # Deliberately not PASS, and deliberately not a defect. R1-09 asks
+    # whether two environments agree, and one run is not entitled to answer
+    # that; tools/r1/compare_envs.py resolves it over both, and the R1
+    # verdict is the combined one.
     wps['R1-09']['verdict'] = 'NOT PASS'
+    wps['R1-09']['deferred_to'] = 'tools/r1/compare_envs.py'
     wps['R1-09']['evidence'] = (
         'this environment: ' + ('an R1 acceptance platform' if is_linux_x86
                                 else f"{_plat.system()} {_plat.machine()}, "
@@ -406,6 +411,7 @@ def main():
     all_twelve = all(v['verdict'] == 'PASS' for k, v in wps.items()
                      if k != 'R1-12')
     wps['R1-12']['verdict'] = 'PASS' if (sg.ok and all_twelve) else 'NOT PASS'
+    wps['R1-12']['deferred_to'] = 'tools/r1/compare_envs.py'
     wps['R1-12']['evidence'] = 'doc/r1_signoff.md, doc/r1_status.md'
 
     failing_steps = [s['name'] for s in steps if not s.ok]
@@ -468,6 +474,13 @@ def main():
     print(f"  required={len(required)}  pass={npass}  not-run={nrun}  fail={nbad}")
     print(f"  evidence: {os.path.relpath(run_dir, ROOT)}")
     print(f"  verdict:  {verdict}")
+    deferred = [k for k, v in wps.items()
+                if v.get('deferred_to') and v['verdict'] != 'PASS']
+    if deferred and verdict != 'ACCEPTED':
+        print(f"  {', '.join(sorted(deferred))} cannot be settled by one run: "
+              f"they are about the two environments agreeing.")
+        print("  Run tools/r1/compare_envs.py over both runs' evidence for "
+              "the R1 verdict.")
     if problems:
         print("  first problems:")
         for p in problems[:12]:

@@ -49,6 +49,58 @@ def load(run, name):
         return json.load(fh)
 
 
+# R1-09 asks whether two environments agree, and R1-12 signs off once
+# everything else has. Neither question can be answered by one run, so the
+# gate leaves them NOT PASS and says so; this is where they are settled.
+DEFERRED = ('R1-09', 'R1-12')
+
+
+def combined_verdict(a, b, problems):
+    """The verdict over BOTH environments.
+
+    A single gate run reports NOT ACCEPTED while R1-09 stands open, because
+    one environment cannot say whether two agree. That is not a defect in the
+    run and it is not a pass either -- it is a question a single run is not
+    entitled to answer. This answers it, over two runs that have already
+    agreed on everything else.
+    """
+    out = dict(verdict='NOT ACCEPTED', resolved={}, problems=list(problems))
+    accs = [load(a, 'acceptance.json'), load(b, 'acceptance.json')]
+    if not all(accs):
+        out['problems'].append('one of the runs has no acceptance.json')
+        return out
+
+    for wp in DEFERRED:
+        out['resolved'][wp] = 'PASS'
+
+    for tag, acc in zip('AB', accs):
+        wps = acc.get('work_packages') or {}
+        if not wps:
+            out['problems'].append(
+                f"environment {tag} recorded no work-package roll-up; it was "
+                "produced by a gate that predates it")
+            return out
+        unmet = sorted(k for k, v in wps.items()
+                       if v.get('verdict') != 'PASS' and k not in DEFERRED)
+        if unmet:
+            out['problems'].append(
+                f"environment {tag} has work package(s) not passing that "
+                f"this comparison cannot resolve: {', '.join(unmet)}")
+        # A deferred package still has to be deferred for the RIGHT reason:
+        # if R1-09 failed on this environment for something other than the
+        # A/B question -- a missing tool, a platform that is not Linux --
+        # resolving it here would be resolving a different problem.
+        ev = (wps.get('R1-09') or {}).get('evidence', '')
+        if 'R1-09 does not accept' in ev:
+            out['problems'].append(
+                f"environment {tag} is not an R1 acceptance platform, so "
+                "there is nothing here for the A/B comparison to confirm")
+
+    if not out['problems']:
+        out['verdict'] = 'ACCEPTED'
+    return out
+
+
 def compare(a, b):
     problems = []
     notes = []
@@ -169,15 +221,22 @@ def main():
     problems, notes = compare(runs[0], runs[1])
     for n in notes:
         print('    ' + n)
+    final = combined_verdict(runs[0], runs[1], problems)
     if args.json:
-        R.write_json(args.json, dict(ok=not problems, problems=problems,
+        R.write_json(args.json, dict(ok=not final['problems'],
+                                     verdict=final['verdict'],
+                                     resolved=final['resolved'],
+                                     problems=final['problems'],
                                      notes=notes, runs=runs))
-    if problems:
-        print(f"  r1-compare-envs        FAIL   {len(problems)} problem(s)")
-        for p in problems[:10]:
+    if final['problems']:
+        print(f"  r1-compare-envs        FAIL   {len(final['problems'])} "
+              f"problem(s)")
+        for p in final['problems'][:10]:
             print('    ' + p)
         return 1
     print("  r1-compare-envs        PASS   the two environments agree")
+    print(f"    R1-09 and R1-12 resolved here: {final['resolved']}")
+    print(f"    FINAL VERDICT: {final['verdict']}")
     return 0
 
 

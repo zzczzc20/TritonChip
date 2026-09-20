@@ -38,12 +38,44 @@ DELIVERED 的证据范围限制见上文，不等于已满足原合同全部条�
 | G4 六程序与安装后闭环 | **DONE** | R3V2-E2E-01/02/03。C01–C06 × reference/candidate **12 次全部执行通过**：数值全部对独立 oracle（不是两实现互相对照）、尾块 sentinel 未被触碰、两侧 canary 完好、fault=0、资源排空。C03/C04/C05 是经产品 driver 编译的真实 FP16 GEMM（`source_kind=tnca-ir`），C04/C05 在 slow/reorder 内存上。安装后 3 次动态 alpha 共一个 artifact、一个 session、一个设备进程，首编译后编译器调用 0 次、code hash 恒定。reference/candidate artifact 双向错配都在**零次设备请求**内被拒 |
 | G5 计数与微模型 | **DONE** | R3V2-COUNT-01/02、MODEL-01。计数器不与自己比：core 打印有界事件 trace，Python 独立数一遍，两者在 req/accept/conflict/mtx_req/mtx_wait/wb_retry 上逐项相等；九+二个互斥 stall 计数在 6 个程序上求和恒等于 `perf_stall_total`（加 banked VRF 时新增了两个 stall 源却忘了进归因链，这里发现并补上）。六个定向图的预测**先算先封哈希再开仿真**，逐周期 accept/response 零分歧，并带一个单 bank 模型的对照证明比对会失败。仿真 wall、硬件 cycles、时钟频率分三列，Fmax 记 NOT MEASURED |
 | G6 结构综合/继承回归 | **DONE** | R3V2-SYN-01/02、REG-01。candidate VRF 数据**正好 65,536 bit**，100% 在同步 memory 对象里，四个 bank 各 1 读口 1 写口、同步读，与 profile 相符；valid/collector/FIFO 单列（每 bank 512 个 valid 位），ARF 的 16 KiB **不计入**该比率且仍标 behavioral。整机 elaborate + 连接检查通过，0 个未解释告警，层级里有 `tnca_vrf_banked`、没有 `tnca_vector_rf`。物理面积/Fmax/功耗一律 NOT MEASURED 且被检查没有被偷偷声称。12 条继承回归全过、0 个 skip |
-| G7 负例/证据/签收 | NOT STARTED | R3V2-MUT-01、EV-01、REL-01 |
+| G7 负例/证据/签收 | **DONE（本机）** | R3V2-MUT-01、EV-01、REL-01。十三个子变异全部被**合同指定**的 checker 抓住，全部注入在隔离副本，候选源码哈希不变。其中两个变异本身是错的、被这次测试证伪：M01a 原本改 `READ_LATENCY==2` 的分支，而设计处处例化 1——改的是死代码，没有东西能抓住它是因为没有东西发生；改成移动 `rvalid` 则让 bench 死锁，**挂死是被时钟抓住，不是被 checker 抓住**；最终让它读当前呈现的地址而不是上一拍被接受的地址，这才是 off-by-one 读口真正交付的东西。M04b 原本删掉一个冗余保护：没有任何激励会对未 ready 的 entry 拉 `consume`，所以删掉它什么都不改变——等价变异考验的是 checker 的耐心，不是它的覆盖。另外两个变异**发现了真实盲点**：`t29_vrfbank` 原来用 `v.iota` 设置全部寄存器，四个 bank 于是装着同样的十六个数，**跨 bank 串数据的实现也会给出正确答案**；现在每个寄存器一个不同的值并全部经读口读回校验。FLOW-03 原来用一个带 flush 的场景断言所有权，而 flush 本来就会清掉 entry，所以"第一个源一到就释放槽位"完全不可见；现在它还跑同 bank 三源那一例，逐拍检查槽位在只收到一个操作数、还在等另外两个的每一拍里都仍然 busy 且不 ready |
 
 候选相对参考的周期代价（同程序、同参数、同 seed）：整体 +13%，矩阵类
 +42…46%（每次 matrix VRF 读多一拍），tensor +36%，纯向量 +16%，纯标量 +0%，
 `t18_squash` -14%（更严的 interlock 改变了分支解析时机）。**不要求 candidate
 更快**；每一项增加都有公开的原因。
+
+## R3 v2 的入口、证据与签收
+
+合同第 6 节点名的入口现在都存在：
+
+```sh
+make r3v2-plan            # 合同/清单/预算，不启动 RTL
+make r3v2-components      # bank/collector/return 定向测试
+make r3v2-core            # core 上的 VRF 集成
+make r3v2-runtime         # 安装后候选 profile，3 次动态发射
+make r3v2-synth           # memory-preserving 综合 + 集成连接检查
+make r3v2-mutations       # 十三个子变异对上各自被指定的 checker
+make r3v2-release         # 主环境对第二环境记录逐元素比对
+make r3v2-acceptance      # 唯一产生判决的东西
+make r3v2-verify-evidence EVIDENCE=<run-directory>
+```
+
+`r3v2-acceptance` 每次跑进自己的 run 目录（run ID 含时间戳与 commit），
+失败的历史留在原地不被覆盖，`latest` 只是一个指针。它按第 6 节的分区把每
+个 checker 的原始结果归档到 `contracts/ inventory/ build/ runs/ runtime/
+model/ synthesis/ mutations/ inherited/`——归档的是 checker 真正产出的字节，
+空的分区宁可留空，也不放一个读起来像证据的占位文件。
+
+`r3v2-verify-evidence` 由**不产生这份证据的人**跑：它从冻结清单和原始结果
+重新推导判决，把文件里的 `verdict` 和 `passed` 当作**声称**而不是证据。这条
+性质自己不能自证，所以它由 mutation 套件度量并在那里报告：M07c 把一条原始结
+果改成失败而摘要仍写着通过，M07d 删掉一条必需结果，两者都必须被拒；而**没有
+被动过的同一份证据必须被接受**，否则"拒绝"只是因为它什么都拒绝。
+
+第二环境是 macOS/arm64（`evidence/r3v2-second-env.json`），主环境是锁定的
+Linux x86_64。比对按**源码指纹**而不是 commit：记录一旦提交 HEAD 就变了，一个
+永远对不上的检查不是检查。wall time 分别记录、不比较——两台机器本来就不一样快。
 
 ## 逐包状态
 

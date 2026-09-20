@@ -1,9 +1,9 @@
 {
   "schema": "r1-toolchain-lock/1",
   "contract": "doc/phase1_tasks_and_acceptance.md R1-09",
-  "note": "Pins what an R1 acceptance environment is. A version that is not here is not a locked version; r1-doctor compares against this file and reports every difference rather than only the ones it expects.",
+  "note": "Pins what an R1 acceptance environment is. A version that is not here is not a locked version; r1-doctor compares against this file and reports every difference rather than only the ones it expects. Every external dependency records where it comes from, its exact version, and a digest where one exists.",
   "acceptance_platform": {
-    "os": "Ubuntu 24.04 LTS",
+    "os": "Ubuntu 24.04.4 LTS (Noble Numbat)",
     "os_release_id": "ubuntu",
     "os_version_id": "24.04",
     "arch": "x86_64",
@@ -12,27 +12,88 @@
       "ram_gib": 32,
       "disk_gib": 100
     },
-    "note": "macOS is a development platform and may not substitute for this (contract R1-09)."
+    "note": "macOS is a development platform and may not substitute for this (contract R1-09).",
+    "image": {
+      "cloud": "aws",
+      "ami": "ami-0a99fe8dc4fc1f359",
+      "note": "The image identity of the environment R1 was accepted in. An AMI id IS the image digest on AWS: it names one immutable snapshot. A different cloud needs its own equivalent recorded here before a run there counts."
+    },
+    "observed_runner": {
+      "instance_type": "inf2.xlarge",
+      "vcpu": 4,
+      "ram_gib": 15,
+      "disk_gib_free": 58,
+      "note": "BELOW the reference runner below on all three counts. Recorded rather than rounded up: it makes the acceptance run slower and it is the environment the R1 evidence actually came from. A run here is not evidence that the reference runner is unnecessary."
+    }
   },
   "tools": {
-    "python3": { "min": "3.12", "source": "distribution" },
-    "iverilog": { "version": "12.0", "source": "ubuntu noble iverilog" },
-    "make": { "min": "4.3", "source": "distribution",
-              "note": "3.81 ignores .SHELLFLAGS; no recipe may depend on it" },
-    "git": { "min": "2.43", "source": "distribution" },
-    "g++": { "min": "13.3", "source": "distribution" },
-    "cmake": { "min": "3.28", "source": "distribution" },
-    "yosys": { "version": "0.52", "source": "optional",
-               "note": "synthesis proxies only; not required by the gate" }
+    "python3": {
+      "version": "3.12.3-0ubuntu2.1",
+      "source": "ubuntu noble",
+      "min": "3.12"
+    },
+    "iverilog": {
+      "version": "12.0-2build2",
+      "source": "ubuntu noble",
+      "min": "12.0"
+    },
+    "make": {
+      "version": "4.3-4.1build2",
+      "source": "ubuntu noble",
+      "min": "4.3",
+      "note": "3.81 ignores .SHELLFLAGS; no recipe may depend on it"
+    },
+    "git": {
+      "version": "1:2.43.0-1ubuntu7.3",
+      "source": "ubuntu noble",
+      "min": "2.43"
+    },
+    "g++": {
+      "version": "4:13.2.0-7ubuntu1",
+      "source": "ubuntu noble",
+      "min": "13.3",
+      "note": "the package version is the gcc-defaults metapackage; the compiler it selects reports 13.3.0"
+    },
+    "cmake": {
+      "version": "3.28.3-1build7",
+      "source": "ubuntu noble",
+      "min": "3.28"
+    },
+    "ninja": {
+      "version": "1.11.1-2",
+      "source": "ubuntu noble ninja-build",
+      "min": "1.11"
+    },
+    "yosys": {
+      "version": "0.52",
+      "source": "optional",
+      "note": "synthesis proxies only; not required by the gate"
+    }
   },
   "pinned_upstream": {
     "note": "LLVM and Triton commits are pinned in compiler/pin/; verify_pin.py checks them. This file records that the pin is the authority, not a second copy of it.",
     "authority": "compiler/pin/"
   },
   "not_yet_locked": [
-    "OS image digest",
-    "python package set and hashes",
-    "XLS revision and a local/containerised runner (rtl/gen is still regenerated through a personal SSH host)",
-    "Triton/LLVM binary distribution digests"
-  ]
+    "XLS revision and a local or containerised runner: rtl/gen is regenerated through a personal SSH host, so `make r1-check-generated` reports rtl/gen as not re-checked unless R1_XLS=1",
+    "The development platform (macOS arm64) runs a Triton built from source at a different version from the acceptance wheel; the acceptance environment is the one this file pins"
+  ],
+  "mlir": {
+    "note": "tnca-opt and the IR tests build against the distribution's MLIR rather than a personally built one. Ubuntu's LLVM packages are versioned and signed, which is what makes this a lock; a source build at a floating commit would not be.",
+    "packages": {
+      "libmlir-18-dev": "1:18.1.3-1ubuntu1",
+      "mlir-18-tools": "1:18.1.3-1ubuntu1",
+      "llvm-18-dev": "1:18.1.3-1ubuntu1"
+    },
+    "mlir_dir": "/usr/lib/llvm-18/lib/cmake/mlir",
+    "filecheck": "/usr/lib/llvm-18/bin/FileCheck"
+  },
+  "triton": {
+    "note": "The frontend, from the published wheel rather than a source tree in somebody's home directory. R1-09 forbids referencing a maintainer's existing virtualenv path.",
+    "version": "3.5.0",
+    "distribution": "triton-3.5.0-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl",
+    "sha256": "c9e71db82261c4ffa3921cd050cd5faa18322d2d405c30eb56084afaff3b0833",
+    "index": "https://pypi.org/simple",
+    "install": "python3 -m venv <env>/tritonenv && <env>/tritonenv/bin/pip install triton==3.5.0"
+  }
 }

@@ -536,7 +536,17 @@ pin:
 # The MLIR half. Needs the pinned LLVM, which compiler/pin/fetch_toolchain.sh
 # obtains; `make compiler` skips the IR tests rather than failing when the
 # build is absent, so a checkout with no LLVM still runs everything else.
+# Where MLIR lives. The default is the development machine's pinned Triton
+# LLVM; an R1 acceptance environment sets it to the distribution's, which is
+# what spec/r1_toolchain.lock.json pins (`mlir.mlir_dir`). R1-09 forbids
+# referencing a maintainer's own tree, so this must be settable without
+# editing anything:
+#
+#   make tnca-opt LLVM_PREFIX=/usr/lib/llvm-18
+#
+# TNCA_LLVM does the same for FileCheck, which the IR tests invoke directly.
 LLVM_PREFIX ?= $(HOME)/.triton/llvm/llvm-macos-arm64
+export TNCA_LLVM ?= $(LLVM_PREFIX)
 
 .PHONY: tnca-opt llvm-toolchain
 llvm-toolchain:
@@ -555,7 +565,13 @@ tnca-opt:
 # The Triton frontend lives in its own virtualenv, because Triton must be
 # built against its own pinned LLVM (compiler/pin/toolchain.json) rather than
 # whatever the system Python has.
+# The acceptance environment installs the locked wheel into its own venv and
+# points this at it; see spec/r1_toolchain.lock.json `triton`.
 TRITON_PYTHON ?= $(HOME)/src/tritonenv/bin/python
+# Exported, because the gate runs tools/r1/ir_tests.py directly rather than
+# through a make recipe, and that script re-execs itself under this
+# interpreter instead of reporting "triton not importable" as a skip.
+export TRITON_PYTHON
 
 .PHONY: triton-e2e e2e
 triton-e2e: $(BUILD)/tb_core.vvp

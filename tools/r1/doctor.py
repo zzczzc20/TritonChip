@@ -84,6 +84,26 @@ def main():
         if got and need and got < need:
             lock_notes.append(f"{name}: {t['version']} is below the locked "
                               f"{want.get('version') or want.get('min')}")
+    # MLIR and Triton are not on PATH, so they are checked where the lock
+    # says they live rather than by probing a command name. An acceptance
+    # environment without them cannot run the IR or Triton cases at all, and
+    # the contract forbids reporting that as a skip.
+    if is_accept_env:
+        mlir = lock.get('mlir', {})
+        for what, path in (('MLIR cmake package', mlir.get('mlir_dir')),
+                           ('FileCheck', mlir.get('filecheck'))):
+            if path and not os.path.exists(path):
+                lock_notes.append(f"{what} not at the locked path {path}")
+        tri = lock.get('triton', {})
+        venv = os.environ.get('TRITON_PYTHON')
+        if tri and not venv:
+            lock_notes.append(
+                "TRITON_PYTHON is not set; the locked Triton "
+                f"{tri.get('version')} is installed per-environment and the "
+                "gate needs to be told where")
+        elif tri and not os.path.exists(venv):
+            lock_notes.append(f"TRITON_PYTHON={venv} does not exist")
+
     for item in lock.get('not_yet_locked', []):
         lock_notes.append(f"NOT LOCKED: {item}")
 

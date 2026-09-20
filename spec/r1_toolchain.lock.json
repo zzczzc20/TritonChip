@@ -79,14 +79,16 @@
     "The development platform (macOS arm64) runs a Triton built from source at a different version from the acceptance wheel; the acceptance environment is the one this file pins"
   ],
   "mlir": {
-    "note": "tnca-opt and the IR tests build against the distribution's MLIR rather than a personally built one. Ubuntu's LLVM packages are versioned and signed, which is what makes this a lock; a source build at a floating commit would not be.",
+    "note": "tnca-opt and the IR tests build against the distribution's MLIR rather than a personally built one. Ubuntu's LLVM packages are versioned and signed, which is what makes this a lock; a source build at a floating commit would not be. MLIR 18 is NOT enough: it lacks the EffectInstance(effect, OpOperand*, resource) overload the dialect uses, and the build fails to compile rather than silently doing something else.",
     "packages": {
-      "libmlir-18-dev": "1:18.1.3-1ubuntu1",
-      "mlir-18-tools": "1:18.1.3-1ubuntu1",
-      "llvm-18-dev": "1:18.1.3-1ubuntu1"
+      "libmlir-20-dev": "1:20.1.2-0ubuntu1~24.04.3",
+      "mlir-20-tools": "1:20.1.2-0ubuntu1~24.04.3",
+      "llvm-20-dev": "1:20.1.2-0ubuntu1~24.04.3"
     },
-    "mlir_dir": "/usr/lib/llvm-18/lib/cmake/mlir",
-    "filecheck": "/usr/lib/llvm-18/bin/FileCheck"
+    "source": "ubuntu noble-updates/universe",
+    "mlir_dir": "/usr/lib/llvm-20/lib/cmake/mlir",
+    "filecheck": "/usr/lib/llvm-20/bin/FileCheck",
+    "minimum_llvm": 20
   },
   "triton": {
     "note": "The frontend, from the published wheel rather than a source tree in somebody's home directory. R1-09 forbids referencing a maintainer's existing virtualenv path.",

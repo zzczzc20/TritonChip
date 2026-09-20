@@ -32,6 +32,49 @@ if [ -n "${R1_COMMIT:-}" ]; then
   printf '%s\n' "$R1_COMMIT" > .r1-commit
 fi
 
+# ---- this environment's own tools ------------------------------------------
+#
+# Everything below is built or installed INSIDE $ROOT_DIR. That is what makes
+# A and B independent: R1-09 allows a shared, checksum-verified read-only
+# download cache and nothing else, so pip may read from $R1_PIP_CACHE and no
+# build directory, venv or generated file is shared.
+#
+# The versions come from spec/r1_toolchain.lock.json rather than from this
+# script, because a second copy of a version number is a second thing to
+# forget to update.
+LOCK=spec/r1_toolchain.lock.json
+jqf() { python3 -c "import json,sys;d=json.load(open('$LOCK'));print(eval(sys.argv[1],{'d':d}))" "$1"; }
+
+MLIR_DIR_LOCKED=$(jqf "d['mlir']['mlir_dir']")
+FILECHECK_LOCKED=$(jqf "d['mlir']['filecheck']")
+TRITON_VERSION=$(jqf "d['triton']['version']")
+TRITON_SHA=$(jqf "d['triton']['sha256']")
+
+export LLVM_PREFIX=$(dirname "$(dirname "$MLIR_DIR_LOCKED")")
+export LLVM_PREFIX=${LLVM_PREFIX%/lib}
+export TNCA_LLVM=$LLVM_PREFIX
+export TRITON_PYTHON="$ROOT_DIR/tritonenv/bin/python"
+
+echo "=== $NAME: Triton $TRITON_VERSION into this environment's own venv ==="
+python3 -m venv "$ROOT_DIR/tritonenv"
+PIP_ARGS=(--disable-pip-version-check)
+if [ -n "${R1_PIP_CACHE:-}" ]; then
+  # Read-only by intent: a shared download cache is permitted, a shared
+  # install is not.
+  PIP_ARGS+=(--cache-dir "$R1_PIP_CACHE")
+fi
+"$ROOT_DIR/tritonenv/bin/pip" install -q "${PIP_ARGS[@]}" "triton==$TRITON_VERSION"
+"$ROOT_DIR/tritonenv/bin/python" -c "import triton;assert triton.__version__=='$TRITON_VERSION', triton.__version__;print('  triton', triton.__version__)"
+echo "  locked wheel sha256: $TRITON_SHA"
+
+echo "=== $NAME: tnca-opt against the locked MLIR ==="
+test -d "$MLIR_DIR_LOCKED" || {
+  echo "the locked MLIR is not at $MLIR_DIR_LOCKED"; exit 1; }
+test -x "$FILECHECK_LOCKED" || {
+  echo "the locked FileCheck is not at $FILECHECK_LOCKED"; exit 1; }
+make tnca-opt LLVM_PREFIX="$LLVM_PREFIX" >/dev/null
+echo "  built $(./compiler/build/tools/tnca-opt/tnca-opt --version 2>/dev/null | head -1 || echo tnca-opt)"
+
 echo "=== $NAME: doctor ==="
 make r1-doctor
 
@@ -42,6 +85,7 @@ echo "=== $NAME: gate self-test ==="
 make r1-gate-selftest
 
 echo "=== $NAME: acceptance ==="
+export LLVM_PREFIX TNCA_LLVM TRITON_PYTHON
 # The gate's own exit code is the verdict; `|| true` here would be the exact
 # mistake this whole work package exists to fix, so it is absent on purpose.
 set +e

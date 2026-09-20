@@ -279,9 +279,108 @@ def own12(log):
     return same, 'determinism across repeated compilation'
 
 
+def _dma_kernel(body, *, wait_before_body=False):
+    """A transfer into a window, then `body`, then the wait (or the reverse)."""
+    def build(b):
+        w = b.window(8)
+        bar = b.barrier(init=True)
+        tok = b.barrier_arm(bar, ops=1)
+        d = b.descriptor(b.const(0x5000))
+        b.dma_load(w, d, [b.const(0), b.const(0)], tok, dtype='f16')
+        if wait_before_body:
+            b.barrier_wait(tok)
+        body(b, w)
+        if not wait_before_body:
+            b.barrier_wait(tok)
+        b.exit()
+    return build
+
+
+def own02(log):
+    """Reading a DMA's target window before the transfer completes."""
+    def read_target(b, w):
+        v = b.window_reg(w, 0)
+        b.vbin('add', v, v)     # an instruction that actually reads it
+
+    bad, d = compile_ok(_dma_kernel(read_target))
+    good, dg = compile_ok(_dma_kernel(read_target, wait_before_body=True))
+    log.append(f"    read before the wait -> "
+               f"{'ACCEPTED (bad)' if bad else 'refused'}; after -> {good}")
+    if d:
+        log.append(f"      {str(d).splitlines()[0][:120]}")
+    if dg:
+        log.append(f"      positive twin failed: {str(dg).splitlines()[0][:110]}")
+    return (not bad) and good, 'a DMA target is not readable until it lands'
+
+
+def own04(log):
+    """DMA coordinates: the contract, checked against the RTL.
+
+    rtl/core/tnca_tensor.v:357 latches cmd_c0/cmd_c1 on cmd_valid and every
+    later use reads the latched copy, so the coordinates are snapshotted at
+    issue and the scalar run is reusable immediately. This test states that
+    conclusion as an executable claim: a program that rewrites the coordinate
+    registers right after issuing must COMPILE, because the engine will never
+    look at them again.
+    """
+    def rewrite_coords(b, w):
+        # Allocating and writing more scalars reuses the coordinate run.
+        for i in range(4):
+            b.const(0x1000 + i)
+
+    ok, d = compile_ok(_dma_kernel(rewrite_coords))
+    log.append(f"    reusing the coordinate registers after issue: "
+               f"{'accepted' if ok else 'REFUSED'}")
+    if d:
+        log.append(f"      {str(d).splitlines()[0][:120]}")
+    return ok, 'issue-time snapshot, proved in rtl/core/tnca_tensor.v:357'
+
+
+def own10(log):
+    """Over-budget resources are refused, with no partial issue."""
+    t = TargetInfo.default()
+    cases = []
+
+    def n_windows(n):
+        def build(b):
+            # One register each: the point is the window budget, and an
+            # eight-register window would exhaust the register file first and
+            # test a different limit.
+            for _ in range(n):
+                b.window(1)
+            b.exit()
+        return build
+
+    for n in (t.num_windows, t.num_windows + 1):
+        ok, d = compile_ok(n_windows(n))
+        cases.append((f"{n} windows", ok, d))
+        log.append(f"    {n:3d} windows -> {'accepted' if ok else 'refused'}"
+                   + (f": {str(d).splitlines()[0][:80]}" if d else ''))
+
+    def n_barriers(n):
+        def build(b):
+            for _ in range(n):
+                b.barrier(init=True)
+            b.exit()
+        return build
+
+    for n in (t.num_barriers, t.num_barriers + 1):
+        ok, d = compile_ok(n_barriers(n))
+        cases.append((f"{n} barriers", ok, d))
+        log.append(f"    {n:3d} barriers -> {'accepted' if ok else 'refused'}"
+                   + (f": {str(d).splitlines()[0][:80]}" if d else ''))
+
+    within = [c for c in cases if c[0].startswith(str(t.num_windows) + ' ')
+              or c[0].startswith(str(t.num_barriers) + ' ')]
+    over = [c for c in cases if c not in within]
+    return (all(c[1] for c in within) and not any(c[1] for c in over)), \
+        'resource budgets refused at the limit, not past it'
+
+
 FP_TESTS = [('FP-01', fp01), ('FP-02', fp02), ('FP-03', fp03),
             ('FP-04', fp04), ('FP-05', fp05), ('FP-06', fp06)]
-OWN_TESTS = [('OWN-01', own01), ('OWN-05', own05), ('OWN-06', own06),
+OWN_TESTS = [('OWN-01', own01), ('OWN-02', own02), ('OWN-04', own04),
+             ('OWN-05', own05), ('OWN-06', own06), ('OWN-10', own10),
              ('OWN-12', own12)]
 TESTS = FP_TESTS + OWN_TESTS
 

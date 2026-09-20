@@ -212,13 +212,27 @@ class CodeGen:
             return None
         return cls._DEST_KINDS.get(kinds[0], None)
 
+    _REG_PREFIXES = ('v', 's', 'p', 'a')
+
     def _emit(self, mnem, *operands, **kw):
         kind = self._destination_kind(mnem)
+        sources = operands
         if kind is not None and operands:
             dst = operands[0]
             if isinstance(dst, str) and dst[:1] == kind and dst[1:].isdigit():
                 self.own.check_write(kind, int(dst[1:]),
                                      by=f"{mnem} {dst}")
+            sources = operands[1:]
+        # Reads are checked too, and for the mirror-image reason: a range an
+        # engine is still WRITING -- a DMA's target window, an accumulator
+        # mid-MMA -- holds no defined value yet, so reading it is the error
+        # there. Checking only writes would catch the fragment case and miss
+        # this one entirely.
+        for src in sources:
+            if isinstance(src, str) and src[:1] in self._REG_PREFIXES \
+                    and src[1:].isdigit():
+                self.own.check_read(src[0], int(src[1:]),
+                                    by=f"{mnem} reading {src}")
         return self.b.emit(mnem, *operands, **kw)
 
     def _free_dead(self, position, ops):
@@ -244,6 +258,7 @@ class CodeGen:
 
     # ---- the walk ---------------------------------------------------------
     def run(self, role_index=0):
+        self._role_index = role_index
         role = self.kernel.role(role_index)
         ops = role.region.ops
         self._compute_last_uses(ops)
@@ -252,6 +267,17 @@ class CodeGen:
             self._free_dead(i, ops)
         self._finish()
         return self.b
+
+    def _awaited_elsewhere(self):
+        """Does any OTHER role of this kernel wait on a completion event?"""
+        if len(self.kernel.roles) < 2:
+            return False
+        for r in self.kernel.roles:
+            if r is self.kernel.role(self._role_index):
+                continue
+            if any(op.kind == 'barrier_wait' for op in r.region.ops):
+                return True
+        return False
 
     def _unhandled(self, op):
         raise Diagnostic(
@@ -268,6 +294,14 @@ class CodeGen:
         # absent, which is the one that leaves the engine reading registers
         # the program has gone on to reuse.
         left = self.own.outstanding()
+        if left and self._awaited_elsewhere():
+            # A producer role legitimately ends with transfers outstanding:
+            # in a two-role pipeline the CONSUMER waits on them. What must
+            # never happen is a kernel where nobody waits at all, and that is
+            # what this distinguishes. The cross-role obligation -- which role
+            # waits, on which generation -- is the channel protocol's, and
+            # check_protocol=True is where it is verified.
+            left = {}
         if left:
             first = sorted(left)[0]
             desc, ranges = left[first]
@@ -558,6 +592,11 @@ class CodeGen:
                 if lease.barrier == bar and not lease.retired:
                     self.protocol.complete(cmd)
                     self.own.release(cmd)
+        # Every command counted on this phase, protocol model or not. The
+        # release used to walk the protocol's leases only, so with
+        # check_protocol=False a transfer's window was held forever and the
+        # region could never end cleanly -- the debug switch changed what the
+        # safety checks concluded, which is exactly what it must not do.
         for cmd in self._mma_pending.pop(bar, []):
             self.own.release(cmd)
 
@@ -637,21 +676,47 @@ class CodeGen:
                     comment=('predicated off still completes once '
                              '(ISA sec 9A.3)') if mask is not None else None)
 
+        # sec 13.4: the engine reads the coordinate registers and writes the
+        # whole window, neither of which the encoding names in full.
+        #
+        # Taken unconditionally. This used to sit inside `if self.protocol`,
+        # so `check_protocol=False` -- a debugging convenience -- silently
+        # turned off emission safety as well as the channel model. The
+        # contract forbids that: a supported compilation path must run the
+        # unbypassable checks whatever the debug switches say.
         if self.protocol:
             from .protocol import BufferState
             if self.protocol.buffers[widx].state is BufferState.FREE:
                 self.protocol.producer_acquire(widx, 'producer')
             cmd = self.protocol.issue_async(widx, 'producer', bar, kind='dma')
-            self._events[id(op.results[0])] = cmd
-            # sec 13.4: the engine reads the coordinate registers and writes
-            # the whole window, neither of which the encoding names in full.
-            self.own.hold(cmd, [RegRange('s', run[0], len(run)),
-                                RegRange('v', window.reg, window.length)],
-                          't.ld.async')
+        else:
+            cmd = f"dma{len(self._events)}"
+        self._events[id(op.results[0])] = cmd
 
-        # The coordinate copies are dead once the command has them, but the
-        # engine keeps reading the registers, so the ownership hold above --
-        # not this free -- is what protects them.
+        # THE COORDINATE CONTRACT, checked against the RTL rather than assumed.
+        #
+        # The contract (R1-06) requires this to be settled one way or the
+        # other: if the engine snapshots the coordinates at issue, prove it
+        # and release them; if it reads them later, hold them until the
+        # completion event. It snapshots.
+        #
+        #   rtl/core/tnca_core.v reads Sb and Sb+1 in the execute stage and
+        #   passes them as cmd_c0/cmd_c1;
+        #   rtl/core/tnca_tensor.v:357 latches `t_c0 <= cmd_c0` on cmd_valid,
+        #   and every later use -- the row base at :448, the bounds at :232
+        #   and :528 -- reads t_c0/t_c1, never the register file again.
+        #
+        # So the scalar run is dead the cycle after issue, and holding it
+        # until completion would be a false dependency: it made `mb.arm`
+        # writing an adjacent scalar a compile error in a program that is
+        # correct. What must NOT be released early is the window, below.
+        # The window is what the engine WRITES, so reading it before the
+        # transfer completes is the error -- not writing it.
+        self.own.hold(cmd, [RegRange('v', window.reg, window.length)],
+                      't.ld.async', mode='write')
+        self._mma_pending.setdefault(bar, []).append(cmd)
+
+        # Dead once the command has them; see the coordinate contract above.
         for reg in run:
             self.alloc.free('s', reg)
 

@@ -276,9 +276,31 @@ synthesise the whole design without a toolchain it cannot install. XLS is a
 build-time dependency of the RTL, not a runtime dependency of the project; you
 need it only to change a `.x` file.
 
-`tools/xls/config.json` names the generator host. Codegen runs there and the
-Verilog comes back; every generated file carries the XLS version and a hash of
-the DSLX it came from in its banner.
+### Where the generator runs
+
+`xlsgen.py` picks a runner, and which one it picks is an acceptance question,
+not a convenience one.
+
+**Local**, and preferred: XLS binaries on this machine, found at `$XLS_HOME`,
+at `tools/xls/config.json`'s `local.xls_dir`, or at `.xls/cur`.
+`tools/xls/fetch_xls.sh` puts them there — it downloads the release pinned in
+`config.json`, verifies its sha256 **before** unpacking, and unpacks into
+`.xls/<version>`. A directory only counts as an install if the three tools are
+actually in it.
+
+**Remote**, over ssh, for development only: XLS publishes linux-x64 binaries
+and this is developed on macOS arm64, so `config.json`'s `remote` section
+names a host to run them on.
+
+`R1_STRICT=1` refuses the remote runner outright. The acceptance contract
+(`doc/phase1_tasks_and_acceptance.md` R1-09) rules out depending on a personal
+SSH host, a private key or a remote `cur` directory, and a generation step that
+quietly fell back to one would make `make r1-check-generated` a check against
+somebody's home directory. An acceptance environment is Linux x86_64 by
+contract, so it runs the binaries itself.
+
+Every generated file carries the XLS version and a hash of the DSLX it came
+from in its banner.
 
 Generation asks for plain Verilog (`--use_system_verilog=false`). XLS defaults
 to SystemVerilog and emits unpacked-array literals for its lookup tables, which

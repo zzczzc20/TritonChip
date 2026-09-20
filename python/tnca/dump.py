@@ -51,17 +51,21 @@ SUFFIX = {
     # input and the optimised IR both visible, which is two files.
     'ttir_opt': '.opt.ttir',
     'tnir': '.tnir',
+    # The TNCA IR after the bridge merged its duplicate pure values.
+    # Written only when something merged, for the same reason as
+    # `.opt.ttir`.
+    'tnir_opt': '.opt.tnir',
     'asm': '.s',
     'hex': '.hex',
 }
 
 # The order they are produced in, which is the order a reader wants them.
-STAGES = ('ttir', 'ttir_opt', 'tnir', 'asm', 'hex')
+STAGES = ('ttir', 'ttir_opt', 'tnir', 'tnir_opt', 'asm', 'hex')
 
 # Stages that exist only for some compiles. `ttir` is absent for a TNCA IR
 # source, which never had one; `ttir_opt` is absent at O0, where no pass
 # ran. A file that is written anyway would say something happened.
-CONDITIONAL_STAGES = frozenset({'ttir', 'ttir_opt'})
+CONDITIONAL_STAGES = frozenset({'ttir', 'ttir_opt', 'tnir_opt'})
 
 # What every compile produces, whatever its source kind or optimisation
 # level. A stage missing from THIS list is a bug.

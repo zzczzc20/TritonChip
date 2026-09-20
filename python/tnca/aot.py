@@ -618,6 +618,22 @@ def _compile_tnca_ir(build, kernel_name, signature, constexprs, target, prov,
     stages = _dump.Dump(kernel_name)
     stages.record('tnir', str(kernel))
 
+    # Phase 3.5 section 4.1: "TNCA IR 输入也必须能到达 LL 与适用的纯值优化".
+    # A TNCA IR source never had a TTIR, so the canonicalisation the
+    # Triton path gets never reaches it. Above O0 its pure scalar values
+    # go across the bridge and upstream says which of them coincide.
+    if opt_level >= 1:
+        from tnca_cc.optimization import pure_scalar_cse
+        info = pure_scalar_cse(kernel)
+        prov.record('opt_pure_scalar_merged', info['merged'])
+        prov.record('opt_pure_scalar_removed', info['removed_ops'])
+        for r in info['roles']:
+            if r.get('applied'):
+                prov.record(f"opt_pipeline", ','.join(r['pipeline']))
+                prov.record('opt_bridge_protocol', r['protocol'])
+        if info['merged']:
+            stages.record('tnir_opt', str(kernel))
+
     asm_text, cg = adapter.emit(
         kernel, target, prov=prov, opt_level=opt_level,
         check_protocol=bool(options.get('check_protocol', False)))

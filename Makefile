@@ -688,7 +688,8 @@ clean:
 #==============================================================================
 .PHONY: r2-baseline r2-inventory r2-abi-tests r2-artifact-tests \
         r2-compile-tests r2-cache-tests r2-runtime-tests r2-fault-tests \
-        r2-package r2-stage-data
+        r2-package r2-stage-data \
+        r3-scout r3-plan r3-model-tests
 
 # DEP-01. EVIDENCE is an R1 run directory; COMBINED is compare_envs.py's
 # output over A and B, which is what makes an R1 verdict complete.
@@ -740,6 +741,24 @@ $(BUILD)/tnca_device.vvp: $(RTL_DEPS) $(TB)/device/tnca_device.v \
 
 .PHONY: device
 device: $(BUILD)/tnca_device.vvp
+
+#==============================================================================
+# R3: implementation, performance model and small-scale RTL calibration
+# (doc/phase3_tasks_and_acceptance.md)
+#==============================================================================
+
+# How fast THIS host simulates, measured rather than remembered. R3's whole
+# execution budget is derived from it, and it is not a clock frequency.
+r3-scout: $(BUILD)/tb_core.vvp $(BUILD)/tb_top.vvp
+	@$(PYTHON) tools/r3/scout.py --json $(BUILD)/r3_scout.json
+
+# Budgets and caps, checked before any simulator starts: the expensive
+# mistake in R3 is not a wrong answer, it is an hour spent getting one.
+r3-plan:
+	@$(PYTHON) tools/r3/plan.py --json $(BUILD)/r3_plan.json
+
+r3-model-tests:
+	@$(PYTHON) tools/r3/model_tests.py --json $(BUILD)/r3_model_tests.json
 
 # Stage the data an installed package reads. It lives at the repository root
 # for R1's sake and inside the package for everyone else's; copying rather

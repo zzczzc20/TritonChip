@@ -140,6 +140,31 @@ def parse_results(text):
     return out
 
 
+def work_packages(spec, statuses):
+    """Roll every case up to the work package that owns it.
+
+    The contract's final verdict ends with "R1-01 ... R1-12 全部 PASS", and
+    until now nothing computed that: the gate counted cases and the sign-off
+    table asserted packages, with no arithmetic between them. Three packages
+    own no cases of their own -- R1-01 is the inventory itself, R1-09 is the
+    environment, R1-12 is this table -- and those are decided by their own
+    checks below rather than by an empty average, which would otherwise read
+    as a pass.
+    """
+    out = {}
+    by_wp = {}
+    for c in spec['cases']:
+        by_wp.setdefault(c['work_package'], []).append(c['id'])
+    for wp in [f"R1-{i:02d}" for i in range(1, 13)]:
+        ids = by_wp.get(wp, [])
+        bad = sorted(i for i in ids
+                     if statuses.get(i, 'NOT RUN') in INV.NOT_A_PASS)
+        out[wp] = dict(cases=len(ids), failing=bad,
+                       verdict=('PASS' if ids and not bad else
+                                'NO CASES' if not ids else 'NOT PASS'))
+    return out
+
+
 def junit(path, statuses, steps, seconds):
     """results.json in the shape CI systems read.
 
@@ -339,9 +364,56 @@ def main():
             discovered.append(cid)
 
     rec = INV.reconcile(required, discovered, statuses)
+    wps = work_packages(spec, statuses)
+
+    # The three packages that own no cases, decided by their own evidence.
+    #
+    # R1-01 is the inventory and the support matrix; the spec check above
+    # already ran, and a stale matrix is a stale claim about the machine.
+    sm = R.run_step([sys.executable, 'tools/isa/gen_support_matrix.py',
+                     '--check'], kind='meta',
+                    case_dir=os.path.join(run_dir, 'build'),
+                    name='support-matrix')
+    steps.append(sm)
+    wps['R1-01']['verdict'] = ('PASS' if sm.ok and not spec_problems
+                               else 'NOT PASS')
+    wps['R1-01']['evidence'] = 'spec/r1_required_cases.json, doc/support_matrix.md'
+
+    # R1-09 is the environment. One environment can say whether IT is an
+    # acceptance environment; it cannot say whether two agree, so this is
+    # PASS only where the cross-environment comparison has been made, which
+    # is .github/workflows/r1-acceptance.yml's `compare` job.
+    doc = R.run_step([sys.executable, 'tools/r1/doctor.py'], kind='meta',
+                     case_dir=os.path.join(run_dir, 'build'), name='doctor')
+    steps.append(doc)
+    import platform as _plat
+    is_linux_x86 = (_plat.system() == 'Linux'
+                    and _plat.machine() in ('x86_64', 'amd64'))
+    wps['R1-09']['verdict'] = 'NOT PASS'
+    wps['R1-09']['evidence'] = (
+        'this environment: ' + ('an R1 acceptance platform' if is_linux_x86
+                                else f"{_plat.system()} {_plat.machine()}, "
+                                     "which R1-09 does not accept")
+        + '; the A/B comparison is tools/r1/compare_envs.py and is not part '
+          'of a single run')
+
+    # R1-12 is the sign-off table: complete, and not claiming a PASS this run
+    # contradicts.
+    sg = R.run_step([sys.executable, 'tools/r1/signoff.py',
+                     '--evidence', run_dir], kind='meta',
+                    case_dir=os.path.join(run_dir, 'build'), name='signoff')
+    steps.append(sg)
+    all_twelve = all(v['verdict'] == 'PASS' for k, v in wps.items()
+                     if k != 'R1-12')
+    wps['R1-12']['verdict'] = 'PASS' if (sg.ok and all_twelve) else 'NOT PASS'
+    wps['R1-12']['evidence'] = 'doc/r1_signoff.md, doc/r1_status.md'
 
     failing_steps = [s['name'] for s in steps if not s.ok]
     problems = list(rec['problems'])
+    problems += [f"work package {k}: {v['verdict']}"
+                 + (f" ({len(v['failing'])} case(s) not passing)"
+                    if v['failing'] else '')
+                 for k, v in sorted(wps.items()) if v['verdict'] != 'PASS']
     problems += [f"spec: {p}" for p in spec_problems]
     problems += [f"unguarded pipeline: {p}" for p in pipe_problems]
     problems += [f"entry failed: {n}" for n in failing_steps]
@@ -354,6 +426,7 @@ def main():
                  dict(statuses=statuses, steps=steps))
     R.write_json(os.path.join(run_dir, 'acceptance.json'),
                  dict(verdict=verdict, problems=problems,
+                      work_packages=wps,
                       required=len(required),
                       passed=sum(1 for v in statuses.values() if v == 'PASS'),
                       not_run=sum(1 for v in statuses.values() if v == 'NOT RUN'),

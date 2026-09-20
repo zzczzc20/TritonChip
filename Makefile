@@ -676,7 +676,7 @@ clean:
 #------------------------------------------------------------------------------
 .PHONY: r1-doctor r1-check-generated r1-gate-selftest r1-acceptance \
         r1-verify-evidence r1-inventory r1-check-artifacts r1-build-tests r1-profile-tests \
-        r1-resource-tests r1-mutation-tests r1-ir-tests r1-regression r1-evidence-tests
+        r1-resource-tests r1-mutation-tests r1-ir-tests r1-regression r1-evidence-tests r1-signoff
 
 r1-doctor:
 	@$(PYTHON) tools/r1/doctor.py
@@ -721,6 +721,9 @@ r1-build-tests:
 
 r1-profile-tests: $(BUILD)/tb_core.vvp $(BUILD)/tb_core4.vvp $(BUILD)/tb_top.vvp
 	@$(PYTHON) tools/r1/profile_tests.py --json $(BUILD)/profile_tests.json
+
+r1-signoff:
+	@$(PYTHON) tools/r1/signoff.py $(if $(EVIDENCE),--evidence $(EVIDENCE),)
 
 r1-evidence-tests:
 	@$(PYTHON) tools/r1/evidence_tests.py --json $(BUILD)/evidence_tests.json

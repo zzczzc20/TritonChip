@@ -719,7 +719,8 @@ clean:
         r2-grid-tests r2-memory-tests r2-mutation-tests \
         r2-obs-tests r2-e2e-tests r2-dump-tests r3-rf-tests r3-flow-tests \
         r3-count-tests r3-synth-tests r3-mem-synth \
-        r3-mutation-tests r3v2-plan r3v2-scout r3v2-components r3v2-core r3v2-flow r3v2-e2e r3v2-count r3v2-model r3v2-synth core-vrf \
+        r3-mutation-tests r3v2-plan r3v2-scout r3v2-mutations r3v2-runtime r3v2-release r3v2-record-environment r3v2-acceptance r3v2-verify-evidence r3v2 \
+        r3v2-components r3v2-core r3v2-flow r3v2-e2e r3v2-count r3v2-model r3v2-synth core-vrf \
         r2-package r2-stage-data \
         r3-scout r3-plan r3-model-tests
 
@@ -857,8 +858,59 @@ r3-mutation-tests:
 # passing: `r3v2-acceptance` is the only thing that produces a verdict, and
 # it must return non-zero for a checker that does not exist yet.
 #------------------------------------------------------------------------------
+R3V2_EVIDENCE ?= $(BUILD)/r3v2-evidence
+R3V2_PEER     ?= evidence/r3v2-second-env.json
+
 r3v2-plan:
 	@$(PYTHON) tools/r3v2/plan.py --json $(BUILD)/r3v2_plan.json
+
+# The gate. It runs every checker, writes the section 6 evidence tree, and
+# only then decides -- so a checker that is missing, crashes, or reports an
+# open case is the stage not passing, not a line of output to read past.
+# The checkers run under the locked Triton where there is one: the
+# end-to-end and release cases compile real kernels, and a bare python3
+# would report them as absent rather than as run.
+r3v2-acceptance: | dirs
+	@if [ -x "$(TRITON_PYTHON)" ]; then \
+	   $(PYTHON) tools/r3v2/acceptance.py --evidence $(R3V2_EVIDENCE) \
+	     --python $(TRITON_PYTHON); \
+	 else \
+	   $(PYTHON) tools/r3v2/acceptance.py --evidence $(R3V2_EVIDENCE); \
+	 fi
+
+# The verifier, run against an evidence tree by someone who did not
+# produce it. It recomputes the verdict from the frozen inventory and the
+# raw results and ignores what the run claimed.
+# EVIDENCE names one run directory. `latest` is the pointer the gate
+# leaves behind; an older run is verified by naming it instead.
+EVIDENCE ?= $(R3V2_EVIDENCE)/latest
+
+r3v2-verify-evidence:
+	@$(PYTHON) tools/r3v2/verify_evidence.py $(EVIDENCE) \
+	   --json $(BUILD)/r3v2_verify_evidence.json
+
+# The gate and then an independent recount of its own evidence.
+r3v2: r3v2-acceptance r3v2-verify-evidence
+
+r3v2-mutations:
+	@$(PYTHON) tools/r3v2/mutation_tests.py \
+	   --json $(BUILD)/r3v2_mutation_tests.json
+
+# The main environment compared against a second one's recorded smoke.
+r3v2-release:
+	@if [ -x "$(TRITON_PYTHON)" ]; then \
+	   $(TRITON_PYTHON) tools/r3v2/rel_tests.py \
+	     --json $(BUILD)/r3v2_rel_tests.json; \
+	 elif [ "$(R1_STRICT)" = "1" ]; then \
+	   echo "  r3v2-release-tests     FAIL   no Triton at $(TRITON_PYTHON)"; \
+	   exit 1; \
+	 else \
+	   echo "  r3v2-release-tests     SKIP   no Triton at $(TRITON_PYTHON)"; \
+	 fi
+
+# Run in the SECOND environment to produce the record the above reads.
+r3v2-record-environment:
+	@$(TRITON_PYTHON) tools/r3v2/rel_tests.py --record $(R3V2_PEER)
 
 r3v2-synth:
 	@$(PYTHON) tools/r3v2/syn_tests.py --json $(BUILD)/r3v2_syn_tests.json
@@ -878,6 +930,19 @@ r3v2-e2e: $(BUILD)/tnca_device.vvp $(BUILD)/tnca_device_vrf.vvp
 	   exit 1; \
 	 else \
 	   echo "  r3v2-e2e-tests         SKIP   no Triton at $(TRITON_PYTHON)"; \
+	 fi
+
+# Section 6 names this entry point: the installed candidate profile and
+# three dynamic launches from one artifact.
+r3v2-runtime: $(BUILD)/tnca_device_vrf.vvp
+	@if [ -x "$(TRITON_PYTHON)" ]; then \
+	   $(TRITON_PYTHON) tools/r3v2/e2e_tests.py --only R3V2-E2E-02 \
+	     --json $(BUILD)/r3v2_runtime_tests.json; \
+	 elif [ "$(R1_STRICT)" = "1" ]; then \
+	   echo "  r3v2-runtime-tests     FAIL   no Triton at $(TRITON_PYTHON)"; \
+	   exit 1; \
+	 else \
+	   echo "  r3v2-runtime-tests     SKIP   no Triton at $(TRITON_PYTHON)"; \
 	 fi
 
 r3v2-flow: $(BUILD)/tb_core_vrf.vvp $(CORE_HEX)

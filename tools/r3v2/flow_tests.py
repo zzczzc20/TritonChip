@@ -184,6 +184,47 @@ def flow03(log, ctx):
         log.append("    the collector's conservation assertion fired")
         ok = False
 
+    # An entry is owned until ALL of its sources are in. Three sources in
+    # one bank arrive one per cycle, so there are cycles where the entry
+    # holds one operand and is still waiting for two -- and in every one
+    # of them the slot must stay busy and must not read ready.
+    #
+    # This check is here because a mutation that freed the slot on the
+    # FIRST source to land went undetected: case 4 flushes, and a flush
+    # clears the entry anyway, so nothing downstream of it could tell.
+    # Ownership was being asserted for a situation the stimulus never
+    # created.
+    for lat in (1, 2):
+        out = run(ctx[f'oc{lat}'], '+case=1')
+        cycles = [(int(m.group(1)), m.group(2), m.group(3))
+                  for m in re.finditer(r'CYC (\d+) busy=(\d+) ready=(\d+)',
+                                       out)]
+        ops = re.search(r'OPS 0 (\S+) (\S+) (\S+)', out)
+        if not (cycles and ops):
+            return False, f'the collector bench gave no case 1 at {lat}'
+        # bit 0 of the printed vectors is entry 0, printed MSB first.
+        busy = [c[1][-1] == '1' for c in cycles]
+        rdy = [c[2][-1] == '1' for c in cycles]
+        first_ready = next((i for i, r in enumerate(rdy) if r), None)
+        held = first_ready is not None and all(busy[:first_ready + 1])
+        log.append(f"    read latency {lat}: the entry is busy for "
+                   f"{sum(busy)} cycle(s) and first reads ready at cycle "
+                   f"{first_ready}")
+        if first_ready is None:
+            log.append("      it never became ready: the sources were "
+                       "never all collected")
+            ok = False
+        elif not held:
+            log.append("      the slot went free before it was ready: a "
+                       "source was released while others were still out")
+            ok = False
+        want = ('00001000', '00001400', '00001800')
+        got = tuple(g[-8:] for g in ops.groups())
+        log.append(f"      the three operands are v0/v4/v8 lane 0 = "
+                   f"{', '.join(got)}"
+                   + ('' if got == want else f"  EXPECTED {want}"))
+        ok &= got == want
+
     # A lease is released on the real last consumption. m.mma.async.sf
     # signals source-free when the last A element and B row have been
     # read, which on the candidate is later than on the reference because

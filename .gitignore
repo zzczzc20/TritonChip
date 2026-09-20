@@ -50,6 +50,13 @@ compile_commands.json
 # tell the current evidence from.
 sim/r1/
 
+# `evidence/r3v2-second-env.json` is the exception and IS committed: the
+# whole point of R3V2-REL-01 is that the main environment reads a record
+# made somewhere else, and a record that never leaves the machine that
+# made it proves nothing about a second environment. It is one small file
+# naming its platform and the numbers it got, and it is compared against
+# a source fingerprint, so a stale one is refused rather than believed.
+
 # Downloaded toolchains, fetched by checksum into the tree so an acceptance
 # environment owns its own copy (tools/xls/fetch_xls.sh). Several hundred
 # megabytes of somebody else's release; the digest that pins it is in

@@ -7,7 +7,7 @@
   "why_not_restart_per_launch": "R2-08 RT-02 requires 32 launches in one session with no restart, and R2-11 makes restarting an explicit, observable device-loss recovery rather than a normal path. A one-shot `vvp` per launch would make every launch a recovery, and would make 'the intermediate result stayed in device memory' impossible to claim.",
 
   "files": {
-    "req.txt": "host -> device. One line: seq op a0 a1 a2 a3. Rewritten in full for each request; the device acts when `seq` exceeds the last one it served.",
+    "req.txt": "host -> device. One line: seq op a0 a1 a2 a3 a4 a5. Rewritten in full for each request; the device acts when `seq` exceeds the last one it served.",
     "rsp.txt": "device -> host. One line: seq status r0 r1. The host polls until `seq` matches its request.",
     "up.hex": "payload for UPLOAD, one 64-bit word per line, hex",
     "down.hex": "payload from DOWNLOAD, same format"
@@ -16,7 +16,7 @@
   "operations": {
     "1": {"name": "UPLOAD", "a0": "byte address", "a1": "word count", "note": "reads up.hex into device memory through the memory system"},
     "2": {"name": "DOWNLOAD", "a0": "byte address", "a1": "word count", "note": "writes down.hex from device memory, through the memory system so a dirty line is seen"},
-    "3": {"name": "LAUNCH", "a0": "entry PC", "a1": "argument block address", "a2": "role mask", "a3": "packed grid: pid_x | npid_x<<16 | job<<32"},
+    "3": {"name": "LAUNCH", "a0": "entry PC", "a1": "argument block address", "a2": "role mask", "a3": "pid_x | pid_y<<16", "a4": "pid_z | npid_x<<16", "a5": "npid_y | npid_z<<16", "note": "All SIX grid values. ISA sec 5.1 makes program_id(axis) the logical index on that axis and num_programs(axis) its extent; carrying only x meant a 2x3 grid handed every program the LINEAR id under the name of the x index, and a kernel cannot tell the difference. Sixteen bits per axis is ample against the 4096-program cap."},
     "4": {"name": "QUIESCE", "note": "returns when the device has no outstanding work: no core busy, no transfer in flight, no memory response owed"},
     "5": {"name": "SHUTDOWN", "note": "the only clean way the device stops"},
     "6": {"name": "PING", "note": "liveness, and the handshake that proves the device came up"}

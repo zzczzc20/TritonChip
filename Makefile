@@ -688,6 +688,7 @@ clean:
 #==============================================================================
 .PHONY: r2-baseline r2-inventory r2-abi-tests r2-artifact-tests \
         r2-compile-tests r2-cache-tests r2-runtime-tests r2-fault-tests \
+        r2-grid-tests \
         r2-package r2-stage-data \
         r3-scout r3-plan r3-model-tests
 
@@ -787,6 +788,17 @@ r2-stage-data:
 r2-package: r2-stage-data
 	@$(PYTHON) -m pip wheel --no-deps -q -w $(BUILD)/dist .
 	@$(PYTHON) -c "import glob, os; [print('  %d bytes  %s' % (os.path.getsize(w), w)) for w in sorted(glob.glob('$(BUILD)/dist/*.whl'))]"
+
+r2-grid-tests: $(BUILD)/tnca_device.vvp
+	@if [ -x "$(TRITON_PYTHON)" ]; then \
+	   $(TRITON_PYTHON) tools/r2/grid_tests.py \
+	     --json $(BUILD)/r2_grid_tests.json; \
+	 elif [ "$(R1_STRICT)" = "1" ]; then \
+	   echo "  r2-grid-tests          FAIL   no Triton at $(TRITON_PYTHON)"; \
+	   exit 1; \
+	 else \
+	   echo "  r2-grid-tests          SKIP   no Triton at $(TRITON_PYTHON)"; \
+	 fi
 
 r2-fault-tests: $(BUILD)/tnca_device.vvp
 	@if [ -x "$(TRITON_PYTHON)" ]; then \

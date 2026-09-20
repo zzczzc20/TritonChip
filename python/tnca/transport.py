@@ -131,7 +131,8 @@ class Transport:
         self.proc = None
 
     # ---- the protocol -----------------------------------------------------
-    def request(self, op, a0=0, a1=0, a2=0, a3=0, *, timeout=None):
+    def request(self, op, a0=0, a1=0, a2=0, a3=0, a4=0, a5=0, *,
+                timeout=None):
         if not self.alive():
             raise DeviceLost(
                 'the device process is not running',
@@ -141,13 +142,13 @@ class Transport:
         seq = self.seq
         tmp = self.req + '.tmp'
         with open(tmp, 'w') as fh:
-            fh.write(f"{seq} {op} {a0} {a1} {a2} {a3}\n")
+            fh.write(f"{seq} {op} {a0} {a1} {a2} {a3} {a4} {a5}\n")
         # Written whole, then replaced: a device that polls mid-write would
         # otherwise read half a request and act on it.
         os.replace(tmp, self.req)
         reply = self._await(seq, timeout=timeout)
         self.history.append(dict(epoch=self.epoch, seq=seq, op=op,
-                                 a0=a0, a1=a1, a2=a2, a3=a3,
+                                 a0=a0, a1=a1, a2=a2, a3=a3, a4=a4, a5=a5,
                                  status=reply.status, r0=reply.r0,
                                  r1=reply.r1))
         return reply
@@ -232,9 +233,20 @@ class Transport:
                     out += int(line, 16).to_bytes(WORD, 'little')
         return reply, bytes(out[:nbytes])
 
-    def launch(self, pc, arg_base, role_mask=1, pid=0, npid=1, timeout=None):
-        packed = (pid & 0xFFFF) | ((npid & 0xFFFF) << 16)
-        return self.request(OP_LAUNCH, pc, arg_base, role_mask, packed,
+    def launch(self, pc, arg_base, role_mask=1, pid=(0, 0, 0),
+               npid=(1, 1, 1), timeout=None):
+        """All six grid values.
+
+        ISA sec 5.1 makes program_id(axis) the logical index on that axis.
+        Sending only x meant a 2x3 grid handed every program the LINEAR id
+        under the name of the x index, and a kernel cannot tell.
+        """
+        px, py, pz = pid
+        nx, ny, nz = npid
+        a3 = (px & 0xFFFF) | ((py & 0xFFFF) << 16)
+        a4 = (pz & 0xFFFF) | ((nx & 0xFFFF) << 16)
+        a5 = (ny & 0xFFFF) | ((nz & 0xFFFF) << 16)
+        return self.request(OP_LAUNCH, pc, arg_base, role_mask, a3, a4, a5,
                             timeout=timeout)
 
     def quiesce(self):

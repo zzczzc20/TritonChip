@@ -132,7 +132,7 @@ module tnca_device;
 
     integer served;              // the highest sequence acted on
     integer fh, n, i;
-    integer seq, op, a0, a1, a2, a3;
+    integer seq, op, a0, a1, a2, a3, a4, a5;
     integer status, r0, r1;
     integer cyc;
 
@@ -152,19 +152,31 @@ module tnca_device;
     endtask
 
     // One launch, from idle to idle. Returns through `status`.
+    //
+    // All six grid values, not two. ISA sec 5.1 makes `program_id(axis)` the
+    // logical index on THAT axis and `num_programs(axis)` the logical extent
+    // of it; carrying only x meant a 2x3 grid handed every program a pid.x of
+    // 0..5 and an npid.x of 6, which is the linear id and the total wearing
+    // the names of the x index and the x extent. A kernel cannot tell the
+    // difference and gets the wrong answer.
     task do_launch;
         input integer pc;
         input integer argb;
         input integer mask;
-        input integer gx;
-        input integer gnx;
+        input integer px;
+        input integer py;
+        input integer pz;
+        input integer nx;
+        input integer ny;
+        input integer nz;
         begin
             launch_pc    = pc;
             arg_base     = argb;
             launch_role_mask = mask[NUM_RCTX-1:0];
-            pid_x        = gx;
-            npid_x       = (gnx == 0) ? 1 : gnx;
-            pid_y = 0; pid_z = 0; npid_y = 1; npid_z = 1;
+            pid_x = px;  pid_y = py;  pid_z = pz;
+            npid_x = (nx == 0) ? 1 : nx;
+            npid_y = (ny == 0) ? 1 : ny;
+            npid_z = (nz == 0) ? 1 : nz;
 
             // Stimulus one delta after the edge, never on it: a blocking
             // assignment in the active region of the edge the DUT samples is
@@ -233,10 +245,10 @@ module tnca_device;
 
             fh = $fopen(req_path, "r");
             if (fh != 0) begin
-                n = $fscanf(fh, "%d %d %d %d %d %d",
-                            seq, op, a0, a1, a2, a3);
+                n = $fscanf(fh, "%d %d %d %d %d %d %d %d",
+                            seq, op, a0, a1, a2, a3, a4, a5);
                 $fclose(fh);
-                if (n == 6 && seq > served) begin
+                if (n == 8 && seq > served) begin
                     served = seq;
                     status = 0; r0 = 0; r1 = 0;
                     case (op)
@@ -250,8 +262,13 @@ module tnca_device;
                                 (a0/8 + a1) > WORDS) status = 3;
                             else u_mem.dump_hex(down_path, a0/8, a1);
                         end
-                        3: do_launch(a0, a1, a2, a3 & 32'hFFFF,
-                                     (a3 >> 16) & 32'hFFFF);
+                        // a3 = pid_x | pid_y<<16, a4 = pid_z | npid_x<<16,
+                        // a5 = npid_y | npid_z<<16. Sixteen bits per axis is
+                        // ample: the contract caps a grid at 4096 programs.
+                        3: do_launch(a0, a1, a2,
+                                     a3 & 32'hFFFF, (a3 >> 16) & 32'hFFFF,
+                                     a4 & 32'hFFFF, (a4 >> 16) & 32'hFFFF,
+                                     a5 & 32'hFFFF, (a5 >> 16) & 32'hFFFF);
                         4: begin                       // QUIESCE
                             i = 0;
                             while (!core_idle && i < deadline) begin

@@ -541,9 +541,17 @@ class Session:
             total = gx * gy * gz
             cycles = 0
             for linear in range(total):
+                # The contract's mapping, inverted: linear = x + gx*(y+gy*z).
+                # A program's identity is its (x, y, z), not its linear id --
+                # passing the linear id as pid.x made a 2x3 grid look like a
+                # 6x1 one to the kernel, and `num_programs(0)` came back as
+                # the total rather than gx.
+                x = linear % gx
+                y = (linear // gx) % gy
+                z = linear // (gx * gy)
                 reply = self.dev.launch(task['module'].code_addr,
                                         task['arg_addr'], role_mask=1,
-                                        pid=linear, npid=total)
+                                        pid=(x, y, z), npid=(gx, gy, gz))
                 cycles += reply.r0
                 if reply.status == T.ST_FAULT:
                     ev._to(FAILING)

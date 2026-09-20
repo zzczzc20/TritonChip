@@ -66,7 +66,8 @@ def expected_path(profile):
     elaboration is a different file rather than a surprise.
     """
     h = profiles.config_hash(profile)[:16]
-    return os.path.join(cache_root(), f"{profile}-{h}",
+    src = source_fingerprint(profile)[:12]
+    return os.path.join(cache_root(), f"{profile}-{h}-{src}",
                         BENCH_NAME.get(profile, 'tnca_device.vvp'))
 
 
@@ -74,6 +75,47 @@ def expected_path(profile):
 # them was built from different RTL than the one on disk.
 _SOURCE_DIRS = (('rtl', 'core'), ('rtl', 'common'), ('rtl', 'gen'),
                 ('tb', 'common'), ('tb', 'device'))
+
+
+_FINGERPRINT = {}
+
+
+def source_fingerprint(profile='core-sim'):
+    """A hash of every source the device is compiled from.
+
+    This is in the cache key, which is what makes a cached bench incapable
+    of being stale: a different source tree is a different key and a
+    different file, not the same file with a question about its age.
+
+    The first version of this compared MTIMES instead, and refused a cache
+    entry older than the sources. That is right within one checkout and
+    wrong across several, because ~/.cache is shared and a fresh `git
+    archive` stamps every file with the export time -- so a clean checkout
+    declared a perfectly good cache stale and refused to run at all. A
+    hash does not care when a file was written.
+    """
+    if profile in _FINGERPRINT:
+        return _FINGERPRINT[profile]
+    h = hashlib.sha256()
+    for parts in _SOURCE_DIRS:
+        root = _package_data(*parts)
+        if not root or not os.path.isdir(root):
+            continue
+        for base, dirs, files in os.walk(root):
+            dirs.sort()
+            for f in sorted(files):
+                if not f.endswith(('.v', '.vh', '.svh')):
+                    continue
+                path = os.path.join(base, f)
+                h.update(os.path.relpath(path, root).encode())
+                try:
+                    with open(path, 'rb') as fh:
+                        h.update(fh.read())
+                except OSError:
+                    h.update(b'<unreadable>')
+    digest = h.hexdigest()
+    _FINGERPRINT[profile] = digest
+    return digest
 
 
 def newest_source(profile='core-sim'):
@@ -135,7 +177,14 @@ def locate(profile='core-sim'):
 def require(profile='core-sim', *, allow_stale=False):
     path = locate(profile)
     if path:
-        src = None if allow_stale else stale(path, profile)
+        # A bench in the cache is named after the sources it was built
+        # from, so it cannot be stale. Anything else -- TNCA_DEVICE, or a
+        # build sitting in sim/build -- can be, and that is where the
+        # question is worth asking: a build older than the RTL reports on
+        # code that is no longer on disk and reads like a passing test.
+        in_cache = os.path.abspath(path).startswith(
+            os.path.abspath(cache_root()))
+        src = None if (allow_stale or in_cache) else stale(path, profile)
         if src is None:
             return path
         raise DeviceLost(

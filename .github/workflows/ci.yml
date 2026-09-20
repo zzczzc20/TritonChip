@@ -89,9 +89,14 @@ jobs:
       - name: R1 resource, footprint and ownership checks
         run: python3 tools/r1/resource_tests.py
 
+      # CFG-01 reads capabilities back from every profile's own bench, and
+      # `core-vrf-sync-v1` is a profile like any other -- so its bench has
+      # to exist here. Only the bench is built: the programs that run on it
+      # are the R3 v2 targets' business, not this job's.
       - name: R1 profile and capability checks
         run: |
           make core4
+          make sim/build/tb_core_vrf.vvp
           python3 tools/r1/profile_tests.py
 
       # R3's performance model: six graphs whose cycle counts are worked out

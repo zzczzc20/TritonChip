@@ -224,15 +224,26 @@ def plan_gemm(target, *, m, n, k, dtype='f16'):
 
 
 def build_gemm(target, plan, *, name='gemm', a_desc_addr, b_desc_addr,
-               out_addr, epilogue=True):
+               out_addr, epilogue=True, builder=None):
     """Emit the IR for one output tile.
 
     The k loop is unrolled. sec 9: W, V and A are static fields in the
     encoding, so a stage index cannot become a computed register base; the
     first version unrolls by stage so every number is static.
+
+    `builder` lets a caller emit into a kernel it already owns, which is
+    what the product compile driver needs: `compile_aot(source_kind=
+    'tnca-ir')` hands the program a Builder and expects the program to
+    fill it, rather than receiving a kernel built elsewhere. Without it
+    the only way to run this through the product path would be to
+    duplicate the body, and two copies of a GEMM is one too many.
     """
-    k = make_kernel(name)
-    b = Builder(k, k.role(0).region)
+    if builder is not None:
+        b = builder
+        k = b.kernel if hasattr(b, 'kernel') else None
+    else:
+        k = make_kernel(name)
+        b = Builder(k, k.role(0).region)
 
     b.comment(plan.describe())
 

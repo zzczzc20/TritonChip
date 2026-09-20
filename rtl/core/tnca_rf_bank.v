@@ -130,38 +130,24 @@ module tnca_rf_bank #(
         end
     end
 
-    // ---- the array read, the write-first bypass, and the zero ------------
+    // ---- the array read ---------------------------------------------------
+    //
+    // What is registered is the RAW array read and nothing else. The
+    // bypass and the zero substitution happen after the register, on the
+    // output side.
+    //
+    // The order matters structurally, not just tidily. With the merge
+    // between the array and the register, yosys cannot fold the register
+    // into the read port -- the read comes out ASYNCHRONOUS with an
+    // external flop, which is a flop array wearing a memory's name and is
+    // what R3V2-SYN-02 refuses. Registering `mem[raddr]` directly lets
+    // memory_dff make it a clocked read port, which is what an SRAM has.
     wire rdw_hit = RDW_BYPASS && re && we && (raddr == waddr);
 
-    wire [WIDTH-1:0] array_q = mem[raddr];
-    wire [LANES-1:0] vld_q   = vld[raddr];
-
-    // A lane the write names is valid from this cycle whether or not its
-    // valid bit has been written back yet: the bypass carries the data, so
-    // it has to carry the validity too, or a write-then-read in
-    // consecutive cycles would return zero for a lane that was just set.
-    wire [LANES-1:0] eff_vld = vld_q | (rdw_hit ? wmask : {LANES{1'b0}});
-
-    wire [WIDTH-1:0] merged;
-    genvar g;
-    generate
-        for (g = 0; g < LANES; g = g + 1) begin : g_merge
-            wire [ELEN-1:0] from_array =
-                (ZERO_INVALID && !eff_vld[g]) ? {ELEN{1'b0}}
-                                              : array_q[g*ELEN +: ELEN];
-            assign merged[g*ELEN +: ELEN] =
-                (rdw_hit && wmask[g]) ? wdata[g*ELEN +: ELEN]
-                                      : from_array;
-        end
-    endgenerate
-
-    // ---- stage 1, with backpressure --------------------------------------
-    //
-    // One response in flight. It is loaded when the stage is empty or the
-    // consumer is taking what is there, and held otherwise -- which is also
-    // the condition under which a new read can be accepted, so the two are
-    // the same signal rather than two that have to agree.
-    reg [WIDTH-1:0] s1_data;
+    reg [WIDTH-1:0] s1_raw;
+    reg [LANES-1:0] s1_vld;
+    reg [LANES-1:0] s1_byp_mask;
+    reg [WIDTH-1:0] s1_byp_data;
     reg [DST_W-1:0] s1_dst;
     reg             s1_valid;
 
@@ -171,11 +157,32 @@ module tnca_rf_bank #(
         if (!rst_n) begin
             s1_valid <= 1'b0;
         end else if (s1_free) begin
-            s1_valid <= re;
-            s1_data  <= merged;
-            s1_dst   <= dst;
+            s1_valid    <= re;
+            s1_raw      <= mem[raddr];
+            s1_vld      <= vld[raddr];
+            // A lane the write names is valid from this cycle whether or
+            // not its valid bit has been written back yet: the bypass
+            // carries the data, so it has to carry the validity too.
+            s1_byp_mask <= rdw_hit ? wmask : {LANES{1'b0}};
+            s1_byp_data <= wdata;
+            s1_dst      <= dst;
         end
     end
+
+    // ---- the merge, on the output side -----------------------------------
+    wire [WIDTH-1:0] s1_data;
+    genvar g;
+    generate
+        for (g = 0; g < LANES; g = g + 1) begin : g_merge
+            wire        byp  = s1_byp_mask[g];
+            wire        live = s1_vld[g] || byp;
+            wire [ELEN-1:0] from_mem =
+                (ZERO_INVALID && !live) ? {ELEN{1'b0}}
+                                        : s1_raw[g*ELEN +: ELEN];
+            assign s1_data[g*ELEN +: ELEN] =
+                byp ? s1_byp_data[g*ELEN +: ELEN] : from_mem;
+        end
+    endgenerate
 
     // ---- stage 2, when the configuration asks for it ---------------------
     reg [WIDTH-1:0] s2_data;

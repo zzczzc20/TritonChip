@@ -13,10 +13,14 @@ argued about rather than just observed:
   bank  = phys % NUM_BANKS
   row   = phys // NUM_BANKS
 
-  One read and one write per bank per cycle. Among the read requests that
-  want the same bank in the same cycle, the lowest port index is accepted
-  and the rest are not -- they are refused, not queued, and the layer above
-  is expected to retry.
+  One read and one write per bank per cycle. The requesters are scanned
+  round robin from a pointer that advances past whoever was served last,
+  so a requester that keeps asking waits at most (C-1)*B+A cycles. They
+  are refused, not queued, and the layer above is expected to retry.
+
+  This was lowest-index-first until R3 v2's FLOW-02 asked for a bounded
+  wait: fixed priority lets port 0 hold a bank for as long as it wants and
+  starves the matrix behind it.
 
   A write updates only the lanes its mask names.
 
@@ -52,6 +56,7 @@ class BankedRF:
         self.mem = [[None] * LANES for _ in range(phys_vregs)]
         # responses in flight: list of (due_cycle, port, value)
         self.pipe = []
+        self.rr = 0
 
     # ---- the address mapping, and its inverse -----------------------------
     def phys(self, rctx, idx):
@@ -81,16 +86,25 @@ class BankedRF:
             w_phys = self.phys(wr, wi)
             w_bank, _w_row = self.bank_row(w_phys)
 
-        # arbitration: one read per bank, lowest port first
+        # arbitration: one read per bank, round robin over the requesters
         taken = {}
         accepted = []
-        for port, rctx, idx in sorted(reads):
+        by_port = {port: (rctx, idx) for port, rctx, idx in reads}
+        last = self.rr
+        for k in range(self.num_ports):
+            port = (self.rr + k) % self.num_ports
+            if port not in by_port:
+                continue
+            rctx, idx = by_port[port]
             p = self.phys(rctx, idx)
             b, _r = self.bank_row(p)
             if b in taken:
                 continue
             taken[b] = (port, p)
             accepted.append(port)
+            last = port
+        if accepted:
+            self.rr = (last + 1) % self.num_ports
 
         # the value each accepted read will return, sampled NOW: write-first
         # in the lanes the concurrent write names.

@@ -719,7 +719,7 @@ clean:
         r2-grid-tests r2-memory-tests r2-mutation-tests \
         r2-obs-tests r2-e2e-tests r2-dump-tests r3-rf-tests r3-flow-tests \
         r3-count-tests r3-synth-tests r3-mem-synth \
-        r3-mutation-tests r3v2-plan r3v2-scout r3v2-components r3v2-core r3v2-flow core-vrf \
+        r3-mutation-tests r3v2-plan r3v2-scout r3v2-components r3v2-core r3v2-flow r3v2-e2e core-vrf \
         r2-package r2-stage-data \
         r3-scout r3-plan r3-model-tests
 
@@ -859,6 +859,17 @@ r3-mutation-tests:
 #------------------------------------------------------------------------------
 r3v2-plan:
 	@$(PYTHON) tools/r3v2/plan.py --json $(BUILD)/r3v2_plan.json
+
+r3v2-e2e: $(BUILD)/tnca_device.vvp $(BUILD)/tnca_device_vrf.vvp
+	@if [ -x "$(TRITON_PYTHON)" ]; then \
+	   $(TRITON_PYTHON) tools/r3v2/e2e_tests.py \
+	     --json $(BUILD)/r3v2_e2e_tests.json; \
+	 elif [ "$(R1_STRICT)" = "1" ]; then \
+	   echo "  r3v2-e2e-tests         FAIL   no Triton at $(TRITON_PYTHON)"; \
+	   exit 1; \
+	 else \
+	   echo "  r3v2-e2e-tests         SKIP   no Triton at $(TRITON_PYTHON)"; \
+	 fi
 
 r3v2-flow: $(BUILD)/tb_core_vrf.vvp $(CORE_HEX)
 	@$(PYTHON) tools/r3v2/flow_tests.py --json $(BUILD)/r3v2_flow_tests.json

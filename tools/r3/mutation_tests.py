@@ -81,10 +81,10 @@ def suite(name, *cases):
 def m01a(lab):
     """Return the read one cycle early at latency 2."""
     patch(lab, 'rtl/core/tnca_rf_bank.v',
-          "    assign rvalid = (READ_LATENCY == 2) ? s2_valid : s1_valid;\n"
-          "    assign rdata  = (READ_LATENCY == 2) ? s2_data  : s1_merged;",
-          "    assign rvalid = s1_valid;   // R3M-01a\n"
-          "    assign rdata  = s1_merged;")
+          "    assign rvalid    = (READ_LATENCY == 2) ? s2_valid : s1_valid;\n"
+          "    assign rdata     = (READ_LATENCY == 2) ? s2_data  : s1_data;",
+          "    assign rvalid    = s1_valid;   // R3M-01a\n"
+          "    assign rdata     = s1_data;")
     return suite('rf_tests.py', 'RF-02'), 'RF-02'
 
 

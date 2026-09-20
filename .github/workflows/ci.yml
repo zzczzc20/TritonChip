@@ -151,3 +151,14 @@ jobs:
 
       - name: The IR support boundary
         run: TRITON_PYTHON=$HOME/tritonenv/bin/python python3 tools/r1/ir_tests.py
+
+      # R2's compile driver, through its public entry point: three real
+      # Triton kernels compiled and executed, and one artifact run with three
+      # different alphas at two different addresses.
+      - name: R2 compile driver
+        run: make r2-compile-tests TRITON_PYTHON=$HOME/tritonenv/bin/python
+
+      # One compile, four cache hits, and the compiler counted rather than
+      # timed: "it was fast" and "it did not happen" are different claims.
+      - name: R2 compile cache
+        run: make r2-cache-tests TRITON_PYTHON=$HOME/tritonenv/bin/python

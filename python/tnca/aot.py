@@ -183,11 +183,15 @@ def _placeholders(params):
 
 def compile_aot(source, *, kernel_name=None, signature=None, constexprs=None,
                 profile='core-sim', options=None, output=None,
-                source_kind='triton', param_names=None):
+                source_kind='triton', param_names=None, cache=None):
     """Compile one kernel into one artifact.
 
     `source` is a @triton.jit function (source_kind 'triton') or a callable
     taking a Builder (source_kind 'tnca-ir').
+
+    `cache` is a `tnca.cache.Cache`. A hit returns the stored artifact
+    without invoking the compiler at all -- the point being that the compiler
+    is not invoked, not that it is invoked quickly.
     """
     started = time.time()
     if source_kind not in SOURCE_KINDS:
@@ -200,6 +204,18 @@ def compile_aot(source, *, kernel_name=None, signature=None, constexprs=None,
     prov = adapter.Provenance()
     target, pinfo = adapter.target_for(profile, prov)
 
+    # The key is computable before compiling, because everything in it is an
+    # input. A cache that can only be consulted after the work is done is a
+    # log of what it cost.
+    if cache is not None:
+        early = _key_for(source, source_kind, kernel_name, signature,
+                         constexprs, profile, pinfo, options, param_names)
+        hit = cache.get(early)
+        if hit:
+            man, _payload_at = artifact.read_header(hit)
+            return CompileResult(hit, man, dict(cached=True), early,
+                                 from_cache=True)
+
     if source_kind == 'triton':
         result = _compile_triton(source, kernel_name, signature, constexprs,
                                  target, prov, options, param_names)
@@ -208,12 +224,10 @@ def compile_aot(source, *, kernel_name=None, signature=None, constexprs=None,
                                   target, prov, options)
     kernel_name, params, asm_text, code, symbols, report = result
 
-    key = cache_key(source_kind=source_kind,
-                    source_hash=prov.entries.get('source_sha256', ''),
-                    kernel_name=kernel_name,
-                    signature=[f"{n}:{t}" for n, t in params],
-                    constexprs=constexprs, profile=profile,
-                    config_hash=pinfo['config_hash'], options=options)
+    # The same function that was used for the lookup. Computing it a second
+    # way is how a cache stores under one key and looks up under another.
+    key = _key_for(source, source_kind, kernel_name, signature, constexprs,
+                   profile, pinfo, options, param_names)
 
     man = _manifest(kernel_name, params, target, pinfo, constexprs, options,
                     prov, source_kind, report)
@@ -224,7 +238,58 @@ def compile_aot(source, *, kernel_name=None, signature=None, constexprs=None,
     sealed = artifact.write(output, man, segments)
     report['compile_seconds'] = round(time.time() - started, 3)
     report['cache_key'] = key
+    if cache is not None:
+        cache.put(key, output)
     return CompileResult(output, sealed, report, key)
+
+
+def _source_text(source):
+    """The text a compile is keyed on. One definition, used twice."""
+    try:
+        return _inspect.getsource(source.fn if hasattr(source, 'fn')
+                                  else source)
+    except Exception:
+        return getattr(source, '__name__', repr(source))
+
+
+def _declared_params(source, source_kind, signature, param_names):
+    """The frozen (name, abi_type) list, computed WITHOUT compiling.
+
+    Shared by the early cache lookup and the compile itself, because the two
+    must produce the same key -- and when they did not, every lookup missed
+    and every compile stored an entry nobody would ever find. The symptom
+    was five misses and five stores where there should have been one of
+    each; the cause was one side spelling a parameter `*fp32` and the other
+    `device_ptr64`.
+    """
+    if param_names is None:
+        if source_kind == 'triton':
+            const = set(getattr(source, 'constexprs', ()) or ())
+            names = getattr(source, 'arg_names', None) or []
+            param_names = [n for i, n in enumerate(names) if i not in const]
+        else:
+            param_names = list((signature or {}).keys())
+    return _signature_types(signature or {}, param_names)
+
+
+def _key_for(source, source_kind, kernel_name, signature, constexprs,
+             profile, pinfo, options, param_names):
+    """The cache key, from the inputs alone.
+
+    From the SOURCE TEXT rather than from anything the compiler produced, so
+    a hit costs a hash and not a compile. That is the whole claim of
+    CACHE-04: a runtime-only environment launching the same kernel
+    repeatedly invokes the compiler zero times, and "it was fast" is a
+    different statement from "it did not happen".
+    """
+    params = _declared_params(source, source_kind, signature, param_names)
+    name = kernel_name or getattr(source, '__name__', 'kernel')
+    return cache_key(source_kind=source_kind,
+                     source_hash=_sha(_source_text(source)),
+                     kernel_name=name,
+                     signature=[f"{n}:{t}" for n, t in params],
+                     constexprs=constexprs, profile=profile,
+                     config_hash=pinfo['config_hash'], options=options)
 
 
 def _compile_triton(fn, kernel_name, signature, constexprs, target, prov,

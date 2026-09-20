@@ -94,6 +94,16 @@ jobs:
           make core4
           python3 tools/r1/profile_tests.py
 
+      # R3's performance model: six graphs whose cycle counts are worked out
+      # by hand in the test, and exact agreement required. No RTL, no
+      # simulator, under a second.
+      - name: R3 performance model
+        run: make r3-model-tests
+
+      # R3's budgets and caps, checked without starting anything.
+      - name: R3 plan
+        run: make r3-plan
+
       # The gate has to be able to fail. Ten injected faults, each of which
       # must be detected; this is cheap and is the check that keeps every
       # other green tick meaningful.

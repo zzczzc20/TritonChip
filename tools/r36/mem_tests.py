@@ -181,6 +181,7 @@ def mem02(log):
                "trip, a gather and an atomic -- the operations two memory "
                "implementations are most likely to disagree about")
 
+    cycles = {}
     names = {0: 'tnca_mem_model (word array, counter pool)',
              1: 'tnca_mem_ref   (byte array, shift register, swap stage)'}
     passed = 0
@@ -199,9 +200,12 @@ def mem02(log):
                        if ln.startswith(('PASS', 'FAIL'))]
             good = bool(verdict) and verdict[0].startswith('PASS')
             passed += good
+            cyc = next((int(ln.split()[1]) for ln in r.stdout.splitlines()
+                        if ln.startswith('CYCLES ')), None)
+            cycles[(impl, lat, stall, reorder)] = cyc
             log.append(f"      latency {lat}, backpressure {stall}, "
                        f"reordering {reorder}: "
-                       f"{'PASS' if good else 'FAIL'}")
+                       f"{'PASS' if good else 'FAIL'}, {cyc} cycle(s)")
             if not good:
                 for ln in r.stdout.splitlines()[-4:]:
                     log.append(f"        {ln.strip()[:88]}")
@@ -210,6 +214,22 @@ def mem02(log):
     log.append(f"    {passed}/{2 * len(CONFIGS)} configuration(s), both "
                f"implementations, every value against a constant written "
                f"in the bench rather than against the other implementation")
+
+    # A memory that ignores the latency it was given returns the right
+    # answers at every setting and the same number of cycles at every
+    # setting. Correctness alone cannot tell the difference, so the
+    # cycle counts are compared: more latency must cost more cycles, in
+    # BOTH implementations. The reference memory had no such check until
+    # a directed mutation (R36-TEST-03 MUT-MEM-LATENCY) froze its depth
+    # and nothing noticed.
+    for impl in (0, 1):
+        ladder = [(lat, cycles.get((impl, lat, 0, 0)))
+                  for lat in (1, 4, 8)]
+        vals = [c for _l, c in ladder if c is not None]
+        rising = len(vals) == 3 and vals[0] < vals[1] < vals[2]
+        log.append(f"    implementation {impl}: a slower memory costs "
+                   f"more cycles: {ladder} ({'yes' if rising else 'NO'})")
+        ok &= rising
 
     # The second implementation has to be a different one. Checked, not
     # asserted: if tnca_mem_ref were a copy, this case would be one test

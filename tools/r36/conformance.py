@@ -47,27 +47,68 @@ MARK = 0x0DEFACED
 MARK_ADDR = 0x4000
 
 
-def _program():
-    import tnca_asm
-    a = tnca_asm.Assembler()
-    a.assemble(f"""
+# The two programs, as machine words.
+#
+# Carried as constants rather than assembled, because this suite is the
+# one a DOWNSTREAM branch runs and a downstream branch has no assembler:
+# tools/asm is a repository tool, not something the package ships. The
+# rehearsal found that by failing with ModuleNotFoundError on the two
+# cases that needed it, which is what a rehearsal is for.
+#
+# Constants can drift from the source they were assembled from, so
+# `--check-programs` re-assembles them when the assembler IS available
+# and compares. The source is kept here so there is something to
+# compare against.
+_MINIMAL_SRC = f"""
         .li      s1, #{MARK}
         .li      s2, #{MARK_ADDR}
         s.st.d   [s2, #0], s1
         exit
-    """)
-    return tnca_asm.build_image(a.records)
+"""
+MINIMAL_PROGRAM = [
+    0x1400100ACED0000, 0x14101000DEF0001, 0x141010000000002,
+    0x141010000000003, 0x140020040000000, 0x141020000000001,
+    0x141020000000002, 0x141020000000003, 0x2008010200000003,
+    0x21F000000000000,
+]
 
-
-def _trapping():
-    import tnca_asm
-    a = tnca_asm.Assembler()
-    a.assemble("""
+_TRAPPING_SRC = """
         .li          s1, #1
         .assert_eq   s1, #0xDEAD, #7
         exit
-    """)
-    return tnca_asm.build_image(a.records)
+"""
+TRAPPING_PROGRAM = [
+    0x140010000010000, 0x141010000000001, 0x141010000000002,
+    0x141010000000003, 0x1403E00DEAD0000, 0x1413E0000000001,
+    0x1413E0000000002, 0x1413E0000000003, 0x1183F013E000001,
+    0x202003F00020000, 0x218000000070000, 0x21F000000000000,
+]
+
+
+def _program():
+    return MINIMAL_PROGRAM
+
+
+def _trapping():
+    return TRAPPING_PROGRAM
+
+
+def check_programs():
+    """Re-assemble the constants above, where an assembler exists."""
+    try:
+        import tnca_asm
+    except ImportError:
+        return None, 'no assembler here, which is the normal case downstream'
+    out = []
+    for label, src, want in (('the minimal program', _MINIMAL_SRC,
+                              MINIMAL_PROGRAM),
+                             ('the trapping program', _TRAPPING_SRC,
+                              TRAPPING_PROGRAM)):
+        a = tnca_asm.Assembler()
+        a.assemble(src)
+        got = tnca_asm.build_image(a.records)
+        out.append((label, got == want, len(got)))
+    return out, 'assembled from the source beside them'
 
 
 def _words(ws):
@@ -303,12 +344,25 @@ def run_backend(name, info, log):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--backends', nargs='*')
+    ap.add_argument('--check-programs', action='store_true',
+                    help='re-assemble the built-in programs and compare')
     ap.add_argument('--json')
     args = ap.parse_args()
     from tnca import backend
     import r1lib as R
 
     print("The backend conformance suite")
+    if args.check_programs:
+        rows, why = check_programs()
+        if rows is None:
+            print(f"  the built-in programs: {why}")
+            return 0
+        bad = [r for r in rows if not r[1]]
+        for label, good, n in rows:
+            print(f"  {label}: {n} word(s), "
+                  f"{'matches its source' if good else 'DIFFERS FROM ITS SOURCE'}")
+        print(f"  {why}: {'all match' if not bad else 'DRIFTED'}")
+        return 1 if bad else 0
     info = backend.available()
     names = args.backends or sorted(info)
     print(f"  {len(CASES)} case(s) in {len(set(c.group for c in CASES))} "

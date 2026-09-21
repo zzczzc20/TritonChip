@@ -13,6 +13,7 @@ that happen to agree today are not one configuration; what makes them
 one is a check that fails when they stop agreeing.
 """
 import argparse
+import json
 import os
 import struct
 import sys
@@ -38,6 +39,41 @@ def axpy(**opts):
                            signature=SIG, constexprs={'BLOCK': 16},
                            options=opts,
                            output=os.path.join(tempfile.mkdtemp(), 'a.tnca'))
+
+
+def _regenerate(profile):
+    """The target this profile's RTL would produce, computed now.
+
+    The generator is imported rather than shelled out to, so this
+    compares values and not the formatting of a file.
+    """
+    import importlib.util
+    gen = os.path.join(ROOT, 'tools', 'isa', 'gen_target.py')
+    if not os.path.exists(gen):
+        return None, 'tools/isa/gen_target.py is not in this tree'
+    spec = importlib.util.spec_from_file_location('_gen_target', gen)
+    mod = importlib.util.module_from_spec(spec)
+    try:
+        spec.loader.exec_module(mod)
+        core = mod.params(mod.CORE_V)
+        top = mod.params(mod.TOP_V)
+        with open(mod.SCHEMA) as fh:
+            isa = json.load(fh)
+        pspec = mod.PROFILE_SPEC['profiles'][profile]
+        inst = dict(core)
+        inst.update(pspec['elaboration'])
+        t = mod.build_target(inst, top, isa,
+                             os.path.splitext(pspec['target_file'])[0],
+                             pspec['description'], profile=profile)
+        t['profile'] = profile
+        t['num_cores'] = pspec['num_cores']
+        t['topology'] = pspec['topology']
+        t['elaboration'] = pspec['elaboration']
+        if pspec['num_cores'] == 1:
+            t['memory'].pop('mesh', None)
+        return t, ''
+    except Exception as e:                                 # noqa: BLE001
+        return None, f"{type(e).__name__}: {e}"
 
 
 def cfg01(log):
@@ -99,6 +135,37 @@ def cfg01(log):
     log.append(f"    the artifact records {len(ac)}: "
                f"{'exactly the ones present' if ac == tc else 'DIFFER: ' + str(ac ^ tc)}")
     ok &= ac == tc
+
+    # 3b. And the target itself, against the RTL it claims to describe.
+    #
+    # The comparison above is between an artifact and the target it was
+    # compiled from, so both move together: editing the target by hand
+    # to claim a capability the hardware does not have leaves them in
+    # perfect agreement and the compiler emitting instructions the core
+    # will refuse. A directed mutation (R36-TEST-03 MUT-CAPABILITY)
+    # flipped atomics_system to true and every case here passed.
+    #
+    # So the target is re-derived from rtl/core/tnca_core.v and the
+    # profile's elaboration overrides -- which is where `atomics_system`
+    # actually comes from, HAS_SYS_ATOMICS on the instance -- and
+    # compared field by field.
+    regen, why = _regenerate(PROFILE)
+    if regen is None:
+        log.append(f"    the target could not be re-derived: {why}")
+        ok = False
+    else:
+        drift = {k: (regen.get(k), tgt.get(k))
+                 for k in set(regen) | set(tgt)
+                 if regen.get(k) != tgt.get(k)}
+        log.append(f"    the target re-derived from the RTL and the "
+                   f"profile: {len(regen)} field(s), "
+                   f"{'identical' if not drift else 'DRIFT ' + str(sorted(drift))}")
+        if drift:
+            for k in sorted(drift):
+                a, b = drift[k]
+                log.append(f"      {k}: RTL says {a!r}, the file says "
+                           f"{b!r}")
+        ok &= not drift
 
     log.append(f"    the ISA version: identity says "
                f"{art.manifest['identity']['isa_version']!r}, the target "

@@ -732,7 +732,7 @@ clean:
         r3-scout r3-plan r3-model-tests \
         r36-check-plan r36-backend-tests r36-config-tests \
         r36-export r36-rtl-tests r36-mem-tests r36-conformance \
-        r36-fidelity \
+        r36-fidelity r36-mutation-tests r36-regression \
         r36-io-tests r36-build r36-build-tests \
         r35-scout r35-check-plan r35-layout-tests r35-upstream-tests r35-opt-tests r35-prereqs r35-alloc-tests r35-safety-tests r35-package-tests \
         r35-acceptance r35-verify-evidence r35-perf
@@ -952,6 +952,18 @@ r36-config-tests: $(R2_DATA_STAMP) | dirs
 r36-conformance: $(R2_DATA_STAMP) | dirs
 	@$(TRITON_PYTHON) tools/r36/conformance.py \
 	   --json $(BUILD)/r36_conformance.json
+
+# Six directed mutations, each in an isolated copy, each required to be
+# caught by the checker named for it.
+r36-mutation-tests: $(R2_DATA_STAMP) | dirs
+	@$(TRITON_PYTHON) tools/r36/mutation_tests.py \
+	   --json $(BUILD)/r36_mutation_tests.json
+
+# The frozen impact scope, run rather than cited. Long: it is the whole
+# inherited regression plus the fidelity measurement.
+r36-regression: $(R2_DATA_STAMP) | dirs
+	@$(TRITON_PYTHON) tools/r36/regression.py \
+	   --json $(BUILD)/r36_regression.json
 
 # Section 5.2: the machine code and the cycles against the frozen
 # baseline, measured in a worktree at that commit rather than read out

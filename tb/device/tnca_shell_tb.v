@@ -270,6 +270,12 @@ module tnca_shell_tb;
 
         step = 3;
         run_cmd(CMD_LAUNCH, 64'd0);
+        // Printed, so a caller can compare the same program at several
+        // latencies. A memory that ignores the latency it was given
+        // returns the right answers at every setting and the same
+        // number of cycles at every setting, and only the second of
+        // those is observable.
+        $display("CYCLES %0d", done_cycles);
         if (done_status !== 4'd0) begin
             $display("FAIL the program returned status %0d (fault %02h at %0h, detail %06h)",
                      done_status, done_fault_code, done_fault_pc,

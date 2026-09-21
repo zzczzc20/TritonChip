@@ -14,9 +14,15 @@ run from a temporary directory (one of them with a space in its name, which
 PKG-02 asks for), and the first thing each does is assert that no module it
 imports came from the checkout.
 
-PKG-03 -- running with no Triton and no compiler -- already passes and
-lives in the same wheel build; it is re-checked here as the twin, because
-the other four mean nothing if the basic case regressed.
+PKG-03 -- running with no Triton and no compiler -- is NOT in this file.
+This docstring used to say it was "re-checked here as the twin", and the
+TESTS list below is PKG-06, PKG-01, PKG-02, PKG-04, PKG-05: there is no
+pkg03 function and there never was. An audit of the R3.6 checkers found
+the claim, which had also been copied into spec/r36_provenance.json.
+
+The case now lives in tools/r36/build_tests.py, under R36-BUILD-02,
+where it installs the wheel into a fresh environment, deletes tnca_cc
+and the assembler from it, and runs an artifact compiled elsewhere.
 """
 import argparse
 import json

@@ -70,6 +70,58 @@ def _digests(rels):
     return out
 
 
+def _install_wheel(venv, log):
+    """A fresh environment with the wheel in it, and nothing else.
+
+    No Triton and no compiler: the rehearsal loads a program it was
+    given as machine words, which is the harder claim and the one a
+    downstream branch actually makes.
+    """
+    dist = os.path.join(ROOT, 'sim', 'build', 'dist')
+    wheels = (sorted(f for f in os.listdir(dist) if f.endswith('.whl'))
+              if os.path.isdir(dist) else [])
+    if not wheels:
+        r = subprocess.run([sys.executable, 'tools/r36/build.py',
+                            '--what', 'package'], cwd=ROOT,
+                           capture_output=True, text=True, timeout=1800)
+        wheels = (sorted(f for f in os.listdir(dist)
+                         if f.endswith('.whl'))
+                  if os.path.isdir(dist) else [])
+        if not wheels:
+            return None, (r.stdout + r.stderr).strip()[-160:]
+    r = subprocess.run([sys.executable, '-m', 'venv', venv],
+                       capture_output=True, text=True, timeout=600)
+    if r.returncode != 0:
+        return None, (r.stderr or r.stdout).strip()[-160:]
+    py = os.path.join(venv, 'bin', 'python')
+    r = subprocess.run([py, '-m', 'pip', 'install', '-q',
+                        '--no-cache-dir',
+                        os.path.join(dist, wheels[-1])],
+                       capture_output=True, text=True, timeout=1800)
+    if r.returncode != 0:
+        return None, (r.stderr or r.stdout).strip()[-200:]
+    # And prove it is the installed one, not a checkout that leaked in.
+    r = subprocess.run([py, '-c', 'import tnca;print(tnca.__file__)'],
+                       cwd=os.path.dirname(venv), capture_output=True,
+                       text=True, timeout=300,
+                       env={k: v for k, v in os.environ.items()
+                            if k != 'PYTHONPATH'})
+    where = r.stdout.strip()
+    log.append(f"    the wheel {wheels[-1]} installed into a fresh "
+               f"environment")
+    log.append(f"    tnca resolves to {where}")
+    if ROOT in where:
+        log.append("    ...which is inside the repository, so this would "
+                   "not be an installed package at all")
+        return None, 'the checkout leaked into the environment'
+    # Triton must NOT be there: a runtime-only install is the claim.
+    r = subprocess.run([py, '-c', 'import triton'], capture_output=True,
+                       text=True, timeout=300)
+    log.append(f"    and it has no Triton and no compiler: "
+               f"{r.returncode != 0}")
+    return py, ''
+
+
 def hand01(log):
     """The rehearsal, from outside, against the delivered package."""
     ok = True
@@ -116,10 +168,25 @@ def hand01(log):
                f"{len(leaks)} {leaks[:2] if leaks else ''}")
     ok &= not leaks
 
-    env = dict(os.environ)
-    env['PYTHONPATH'] = os.path.join(ROOT, 'python')
+    # An INSTALLED package, not this repository's source tree.
+    #
+    # Section 5.3 says the downstream sample is built from the export
+    # package AND the install package. This used to hand the rehearsal
+    # `PYTHONPATH=<repo>/python`, so the sample read the main repository
+    # directly -- and the leak check above could not see it, because it
+    # only scans the copied files and the path was injected from
+    # outside. An audit of these checkers found it.
+    venv = os.path.join(work, 'venv')
+    py, why = _install_wheel(venv, log)
+    if py is None:
+        log.append(f"    no installed package to rehearse against: {why}")
+        return False, 'the wheel would not install here'
+
+    env = {k: v for k, v in os.environ.items()
+           if k not in ('PYTHONPATH', 'PYTHONHOME')}
+    env['PYTHONNOUSERSITE'] = '1'
     out = os.path.join(work, 'rehearsal.json')
-    r = subprocess.run([TRITON, 'run_rehearsal.py', '--package', pkg,
+    r = subprocess.run([py, 'run_rehearsal.py', '--package', pkg,
                         '--json', out],
                        cwd=down, capture_output=True, text=True,
                        timeout=3600, env=env)

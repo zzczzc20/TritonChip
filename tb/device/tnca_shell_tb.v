@@ -165,10 +165,28 @@ module tnca_shell_tb;
 
     reg [63:0] image [0:PROGRAM_WORDS-1];
     reg [1023:0] hexfile;
+    // The host-access monitor. `io_watch` is raised around the launch
+    // in step 9 so this counts only that window.
+    reg io_watch, io_saw_busy, io_open_while_busy;
+    integer io_busy_cycles;
+    always @(posedge clk) begin
+        if (!rst_n) begin
+            io_saw_busy <= 1'b0;
+            io_open_while_busy <= 1'b0;
+            io_busy_cycles <= 0;
+        end else if (io_watch && busy) begin
+            io_saw_busy <= 1'b1;
+            io_busy_cycles <= io_busy_cycles + 1;
+            // valid was offered and the shell said ready: it took it.
+            if (hq_valid && hq_ready) io_open_while_busy <= 1'b1;
+        end
+    end
+
     reg [63:0] got;
     reg settled;
     integer i, fails, nwords, step;
     reg do_reset, quiet;
+
 
     initial begin
         #WATCHDOG_NS;
@@ -247,6 +265,7 @@ module tnca_shell_tb;
     initial begin
         fails = 0;
         step  = 0;
+        io_watch = 1'b0;
         quiet = $test$plusargs("quiet");
         do_reset = $test$plusargs("reset");
         if (!$value$plusargs("hex=%s", hexfile)) begin
@@ -314,6 +333,49 @@ module tnca_shell_tb;
         check("partial stores, second launch", got, WANT_PARTIAL);
         host_xfer(1'b0, RESULT_BASE + 16, 64'd0, got);
         check("gather, second launch", got, WANT_GATHER);
+
+        //----------------------------------------------------------------------
+        // R36-IO-02: the device refuses host access while a kernel runs.
+        //
+        // Not "the protocol happens not to offer one" -- an access is
+        // actually attempted, mid-launch, and the port must be closed
+        // for every cycle the shell is busy. A monitor watches the whole
+        // window rather than sampling once, because a port that opened
+        // for a single cycle in the middle would pass a single sample.
+        //----------------------------------------------------------------------
+        step = 9;
+        io_saw_busy = 1'b0;
+        io_open_while_busy = 1'b0;
+        io_busy_cycles = 0;
+        io_watch = 1'b1;
+        while (cmd_ready !== 1'b1) begin @(posedge clk); #1; end
+        cmd_op = CMD_LAUNCH; cmd_pc = 64'd0; cmd_valid = 1'b1;
+        @(posedge clk);
+        #1 cmd_valid = 1'b0;
+        // Offer a host write for the whole run. The shell must not take
+        // it; it is accepted only once the kernel is done.
+        hq_valid = 1'b1; hq_we = 1'b1; hq_addr = RESULT_BASE + 64'd56;
+        hq_be = 8'hFF; hq_wdata = 64'hFEEDFACECAFEBEEF;
+        settled = 1'b0;
+        while (settled !== 1'b1) begin
+            if (done_valid === 1'b1) settled = 1'b1;
+            else begin @(posedge clk); #1; end
+        end
+        io_watch = 1'b0;
+        #1 hq_valid = 1'b0;
+        done_ready = 1'b1;
+        @(posedge clk);
+        #1 done_ready = 1'b0;
+        if (!io_saw_busy) begin
+            $display("FAIL the host-access case never saw a busy cycle");
+            fails = fails + 1;
+        end else if (io_open_while_busy) begin
+            $display("FAIL the host port accepted a write while a kernel ran");
+            fails = fails + 1;
+        end else if (!quiet) begin
+            $display("    the host port refused a real offer for all %0d busy cycle(s)",
+                     io_busy_cycles);
+        end
 
         //----------------------------------------------------------------------
         // R36-RST-01: reset while a kernel is in flight.

@@ -256,26 +256,67 @@ def io02(log):
                    f"{first:#x} then {second:#x}")
         ok &= first == second == 0x0DEFACED
 
-        # The refusal that matters: while a kernel runs, the host port is
-        # not ready. This is a hardware property, so it is read out of the
-        # hardware rather than asserted here -- tnca_shell drives
-        # host_req_ready low for every busy cycle, and the export's smoke
-        # test counts those cycles and fails if the port ever opened.
-        log.append("    host access during a launch is refused by the "
-                   "device: tnca_shell's host_req_ready is low for every "
-                   "busy cycle, counted by the export's smoke test "
-                   "(R36-RTL-01) rather than assumed here")
-
-        # And the protocol serialises anyway: the transport is
-        # request/response with one outstanding request, so a host that
-        # tried would be waiting for a reply it has not had.
-        log.append("    and the protocol cannot present one: the mailbox "
-                   "carries one outstanding request, so an upload during "
-                   "a launch is not a race the user has to avoid -- it "
-                   "is a request that has not been sent yet")
+        # The refusal that matters: while a kernel runs, the host port
+        # is not ready. This cannot be shown from here -- the mailbox is
+        # request/response with one outstanding request, so the host
+        # physically cannot present a second one mid-launch, and a
+        # checker that concluded "refused" from that would be reporting
+        # the absence of an opportunity.
+        #
+        # It is shown in RTL instead, where the opportunity exists:
+        # tb/device/tnca_shell_tb.v step 9 raises host_req_valid for the
+        # whole of a launch and a monitor fails if the shell ever
+        # asserted ready. This paragraph used to stand in for that test
+        # before it existed; an audit of these checkers found it.
+        ok &= _rtl_concurrency_case(log)
     finally:
         t.stop()
     return ok, 'the result is visible the moment the launch succeeds'
+
+
+def _rtl_concurrency_case(log):
+    """Read the RTL bench's verdict on host access during a launch."""
+    import glob
+    import subprocess
+    import tempfile
+    tb = os.path.join(ROOT, 'tb', 'device', 'tnca_shell_tb.v')
+    shell = os.path.join(ROOT, 'rtl', 'tnca_shell.v')
+    hexf = glob.glob(os.path.join(ROOT, 'sim', 'build',
+                                  't30_memboundary.hex'))
+    tmp = tempfile.mkdtemp(prefix='tnca-io2-')
+    if not hexf:
+        sys.path.insert(0, os.path.join(ROOT, 'tools', 'asm'))
+        import tnca_asm
+        a = tnca_asm.Assembler()
+        a.assemble(open(os.path.join(ROOT, 'tb', 'core', 'progs',
+                                     't30_memboundary.s')).read())
+        words = tnca_asm.build_image(a.records, size_words=4096)
+        hexf = [os.path.join(tmp, 't30.hex')]
+        with open(hexf[0], 'w') as fh:
+            for w in words:
+                fh.write(f"{w:016x}\n")
+    vvp = os.path.join(tmp, 'io2.vvp')
+    r = subprocess.run(['iverilog', '-g2005', '-I', 'rtl/common',
+                        '-y', 'rtl/core', '-y', 'rtl/common',
+                        '-y', 'rtl/gen', '-y', 'tb/common',
+                        '-o', vvp, tb, shell],
+                       cwd=ROOT, capture_output=True, text=True,
+                       timeout=1800)
+    if r.returncode != 0:
+        log.append(f"    the RTL concurrency case would not build: "
+                   f"{r.stderr.strip().splitlines()[-1][:80]}")
+        return False
+    r = subprocess.run(['vvp', vvp, f'+hex={hexf[0]}'], cwd=ROOT,
+                       capture_output=True, text=True, timeout=3600)
+    line = next((x.strip() for x in r.stdout.splitlines()
+                 if 'host port refused' in x or
+                 'host port accepted' in x or
+                 'never saw a busy cycle' in x), None)
+    good = 'PASS tnca_shell_tb' in r.stdout and \
+        (line is not None and 'refused' in line)
+    log.append(f"    host access offered for the whole of a launch, in "
+               f"RTL: {line or '(the case produced no line)'}")
+    return good
 
 
 def io03(log):

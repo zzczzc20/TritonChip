@@ -166,6 +166,16 @@ def build02(log):
     # acceptance one. A case that cannot run here has NOT passed -- R1-02
     # exists to stop that becoming a skip -- so this still fails, and
     # says which machine would answer it.
+    # The runtime-only half of the clause, checked HERE.
+    #
+    # Both this file's docstring and spec/r36_provenance.json said R2's
+    # PKG-03 covered it. There is no pkg03 function: the TESTS list is
+    # PKG-06, -01, -02, -04, -05, so nothing exercised a runtime-only
+    # install anywhere. An audit of these checkers found it.
+    log.append("    a runtime-only install, checked here rather than "
+               "deferred to a case that does not exist:")
+    ok &= _runtime_only(log)
+
     blocked = 'the locked Triton is not installable here' in r.stdout
     if blocked:
         log.append(f"    this platform is {platform.system()}/"
@@ -179,6 +189,114 @@ def build02(log):
     return ok, ('the fresh-environment cases need the acceptance platform'
                 if blocked
                 else 'the wheel stands on its own, and carries the public top')
+
+
+def _runtime_only(log):
+    """A wheel, no Triton, no compiler: load an artifact and run it."""
+    import tempfile as _tf
+    work = _tf.mkdtemp(prefix='tnca-runtime-only-')
+    venv = os.path.join(work, 'venv')
+    dist = os.path.join(ROOT, 'sim', 'build', 'dist')
+    wheels = sorted(f for f in os.listdir(dist) if f.endswith('.whl'))
+    r = _run([sys.executable, '-m', 'venv', venv], timeout=600)
+    if r.returncode != 0:
+        log.append(f"      no environment: {(r.stderr or r.stdout)[-120:]}")
+        return False
+    py = os.path.join(venv, 'bin', 'python')
+    r = _run([py, '-m', 'pip', 'install', '-q', '--no-cache-dir',
+              os.path.join(dist, wheels[-1])], timeout=1800)
+    if r.returncode != 0:
+        log.append(f"      the wheel would not install: "
+                   f"{(r.stderr or r.stdout)[-160:]}")
+        return False
+    env = {k: v for k, v in os.environ.items()
+           if k not in ('PYTHONPATH', 'PYTHONHOME')}
+    env['PYTHONNOUSERSITE'] = '1'
+
+    # One wheel ships both halves: pyproject.toml's packages.find takes
+    # `tnca*` and `tnca_cc*`, so an install has the compiler on disk
+    # whether or not it can be used. The clause is about DEPENDENCE --
+    # 不依赖 -- so the way to show it is to take the compiler and the
+    # assembler away and require loading and running to still work. A
+    # test that merely observed `import tnca_cc` failing would be
+    # testing the packaging, and this packaging puts it there on purpose.
+    site = os.path.join(venv, 'lib')
+    removed = []
+    for base, dirs, files in os.walk(site):
+        for name in list(dirs):
+            if name in ('tnca_cc',):
+                shutil.rmtree(os.path.join(base, name),
+                              ignore_errors=True)
+                removed.append(name)
+                dirs.remove(name)
+        for f in list(files):
+            if f in ('tnca_asm.py', 'tnca_isa.py'):
+                os.remove(os.path.join(base, f))
+                removed.append(f)
+    log.append(f"      the compiler and the assembler removed from the "
+               f"environment: {sorted(set(removed))}")
+
+    # An artifact compiled HERE, where there is a compiler, and loaded
+    # THERE, where there is not.
+    art = os.path.join(work, 'k.tnca')
+    r = _run([os.environ.get('TRITON_PYTHON', sys.executable), '-c',
+              f"""
+import sys, os
+sys.path.insert(0, {os.path.join(ROOT, 'python')!r})
+sys.path.insert(0, {os.path.join(ROOT, 'compiler', 'python')!r})
+sys.path.insert(0, {os.path.join(ROOT, 'tools', 'asm')!r})
+import tnca_asm
+from tnca import aot
+def prog(b, target):
+    v = b.const(0x0DEFACED)
+    a = b.const(0x4000)
+    b.sstore(a, v)
+    b.exit()
+aot.compile_aot(prog, kernel_name='mark', signature={{}},
+                source_kind='tnca-ir', profile='core-vrf-sync-v1',
+                output={art!r})
+print('compiled')
+"""], timeout=1800)
+    if r.returncode != 0 or not os.path.exists(art):
+        log.append(f"      could not build an artifact to load: "
+                   f"{(r.stderr or r.stdout).strip()[-200:]}")
+        return False
+
+    body = f"""
+import struct, sys
+import tnca
+from tnca import device
+from tnca.runtime import Session
+assert 'site-packages' in tnca.__file__, tnca.__file__
+for forbidden in ('triton', 'tnca_cc', 'mlir', 'tnca_asm'):
+    try:
+        __import__(forbidden)
+    except ImportError:
+        pass
+    else:
+        raise SystemExit(f'{{forbidden}} is importable; this is not a '
+                         f'runtime-only environment')
+device.prepare('core-vrf-sync-v1', verbose=False)
+with Session(profile='core-vrf-sync-v1', deadline_cycles=100000) as s:
+    mod = s.load({art!r})
+    ev = s.submit(mod, {{}})
+    s.wait(ev)
+    # The kernel writes to an absolute address, so the read goes
+    # through the transport rather than through a Buffer the session
+    # placed somewhere of its own choosing.
+    _r, blob = s.dev.download(0x4000, 8)
+    got = struct.unpack('<Q', blob)[0]
+print('ran', hex(got), ev.state)
+assert got == 0x0DEFACED, hex(got)
+"""
+    r = _run([py, '-c', body], cwd=work, timeout=3600, env=env)
+    good = r.returncode == 0
+    log.append(f"      {(r.stdout or r.stderr).strip().splitlines()[-1][:86] if (r.stdout or r.stderr).strip() else '(no output)'}")
+    log.append(f"      an artifact compiled elsewhere loads and runs "
+               f"with no Triton, no compiler, no assembler and no "
+               f"MLIR: {good}")
+    shutil.rmtree(work, ignore_errors=True)
+    return good
 
 
 def _normalised(manifest):

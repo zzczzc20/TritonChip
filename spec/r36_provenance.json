@@ -1,5 +1,4 @@
 {
-  "format": "tnca-provenance/1",
   "about": [
     "doc/phase3_6_tasks_and_acceptance.md R36-BUILD-03: dependencies,",
     "generated artifacts and third-party provenance and licences, complete.",
@@ -10,86 +9,79 @@
     "already pins them -- a second copy of a version number is a second",
     "thing to forget to update -- so entries point at the lock instead."
   ],
-  "project": {
-    "name": "TritonChip / TNCA",
-    "licence": "Apache-2.0",
-    "licence_file": "LICENSE",
-    "declared_in": "pyproject.toml"
-  },
-  "runtime_dependencies": [
+  "build_tools": [
     {
-      "what": "the tnca runtime package",
-      "third_party": [],
-      "note": "the Python standard library only. A runtime-only install loads and runs an artifact with nothing else installed, which R2's PKG-03 and R36-BUILD-02 both check."
+      "licence": "GPL-2.0-or-later",
+      "note": "a simulator, not a library. Nothing it produces is distributed and nothing links against it, so its licence does not reach the export.",
+      "role": "simulation only",
+      "version_pinned_in": "spec/r1_toolchain.lock.json -> tools",
+      "what": "Icarus Verilog"
+    },
+    {
+      "licence": "ISC",
+      "note": "analysis only at this stage; no netlist it produces is shipped.",
+      "role": "structural checking and the synthesis proxy",
+      "version_pinned_in": "spec/r1_toolchain.lock.json -> tools",
+      "what": "Yosys"
+    },
+    {
+      "licence": "Apache-2.0",
+      "note": "OPTIONAL. The generated Verilog is checked in, so a build without XLS produces the same export; XLS is needed only to regenerate it.",
+      "role": "generates rtl/gen/*.v from xls/*.x",
+      "source": "the published release binary",
+      "version_pinned_in": "spec/r1_toolchain.lock.json -> xls.version",
+      "what": "XLS"
     }
   ],
   "compile_dependencies": [
     {
-      "what": "triton",
       "licence": "MIT",
+      "note": "an installed wheel, never a working tree. tools/r35/upstream_tests.py R35-UP-01 refuses an editable install.",
       "source": "the published wheel on PyPI",
-      "version_pinned_in": "spec/r1_toolchain.lock.json -> triton.version",
       "used_for": "the TTIR frontend, the LinearLayout algebra and the canonicalize/CSE pipeline",
-      "note": "an installed wheel, never a working tree. tools/r35/upstream_tests.py R35-UP-01 refuses an editable install."
+      "version_pinned_in": "spec/r1_toolchain.lock.json -> triton.version",
+      "what": "triton"
     }
   ],
-  "build_tools": [
-    {
-      "what": "Icarus Verilog",
-      "licence": "GPL-2.0-or-later",
-      "role": "simulation only",
-      "version_pinned_in": "spec/r1_toolchain.lock.json -> tools",
-      "note": "a simulator, not a library. Nothing it produces is distributed and nothing links against it, so its licence does not reach the export."
-    },
-    {
-      "what": "Yosys",
-      "licence": "ISC",
-      "role": "structural checking and the synthesis proxy",
-      "version_pinned_in": "spec/r1_toolchain.lock.json -> tools",
-      "note": "analysis only at this stage; no netlist it produces is shipped."
-    },
-    {
-      "what": "XLS",
-      "licence": "Apache-2.0",
-      "source": "the published release binary",
-      "version_pinned_in": "spec/r1_toolchain.lock.json -> xls.version",
-      "role": "generates rtl/gen/*.v from xls/*.x",
-      "note": "OPTIONAL. The generated Verilog is checked in, so a build without XLS produces the same export; XLS is needed only to regenerate it."
-    }
-  ],
+  "format": "tnca-provenance/1",
   "generated_artifacts": [
     {
-      "path": "rtl/gen/*.v",
-      "generated_from": "xls/*.x",
-      "generated_by": "XLS, through flow/ and tools/",
       "checked_in": true,
+      "generated_by": "XLS, through flow/ and tools/",
+      "generated_from": "xls/*.x",
       "licence": "Apache-2.0, as the project",
+      "path": "rtl/gen/*.v",
       "why_checked_in": "so the RTL builds and the export ships without XLS installed. doc/xls.md has the regeneration workflow."
     },
     {
-      "path": "compiler/targets/*.json",
-      "generated_from": "spec/r1_profiles.json",
-      "generated_by": "tools/r1/gen_target.py",
       "checked_in": true,
-      "licence": "Apache-2.0, as the project"
+      "generated_by": "tools/r1/gen_target.py",
+      "generated_from": "spec/r1_profiles.json",
+      "licence": "Apache-2.0, as the project",
+      "path": "compiler/targets/*.json"
     },
     {
-      "path": "python/tnca/data/**",
-      "generated_from": "spec/, isa/, compiler/targets/, rtl/, tb/common/, tb/device/",
-      "generated_by": "make r2-stage-data",
       "checked_in": false,
+      "generated_by": "make r2-stage-data",
+      "generated_from": "spec/, isa/, compiler/targets/, rtl/, tb/common/, tb/device/",
       "licence": "Apache-2.0, as the project",
+      "path": "python/tnca/data/**",
       "why_not_checked_in": "it is a copy of files that are already in the tree. It is in .gitignore and rebuilt from a stamp with prerequisites, because a stale copy of the RTL is worse than no copy: the runtime reads it in preference to the working tree."
     },
     {
-      "path": "sim/build/tnca-export/**",
-      "generated_from": "rtl/, tb/common/, tb/device/",
-      "generated_by": "tools/r36/export.py",
       "checked_in": false,
+      "generated_by": "tools/r36/export.py",
+      "generated_from": "rtl/, tb/common/, tb/device/",
       "licence": "Apache-2.0, as the project",
-      "note": "the hardware export. Its own MANIFEST.json lists every file with a hash."
+      "note": "the hardware export. Its own MANIFEST.json lists every file with a hash.",
+      "path": "sim/build/tnca-export/**"
     }
   ],
+  "integrity": {
+    "algorithm": "sha256, first 16 hex characters",
+    "checked_by": "tools/r36/build_tests.py R36-BUILD-03",
+    "how": "every file listed in MANIFEST.json is re-hashed and compared, with the tree made read-only first, so the check cannot be the thing that repairs it."
+  },
   "normalisation": {
     "about": [
       "R36-BUILD-03 asks for two independent clean builds to be comparable,",
@@ -98,20 +90,28 @@
       "differ between two builds of the same source and still mean the same",
       "thing. Everything NOT listed here must match byte for byte."
     ],
+    "content_normalisation": "none. No file in the export contains a timestamp, a build host or an absolute path, and the comparison would catch it if one did.",
     "manifest_fields_ignored": [
       "tools",
       "source_commit"
     ],
-    "why": {
-      "tools": "the iverilog and yosys version strings of the machine that ran the build. They record the environment, not the artifact.",
-      "source_commit": "a clean build from an archive has no commit. Two builds of the same source must agree on the FILES, which is what the hashes are for."
-    },
     "paths_ignored": [],
-    "content_normalisation": "none. No file in the export contains a timestamp, a build host or an absolute path, and the comparison would catch it if one did."
+    "why": {
+      "source_commit": "a clean build from an archive has no commit. Two builds of the same source must agree on the FILES, which is what the hashes are for.",
+      "tools": "the iverilog and yosys version strings of the machine that ran the build. They record the environment, not the artifact."
+    }
   },
-  "integrity": {
-    "how": "every file listed in MANIFEST.json is re-hashed and compared, with the tree made read-only first, so the check cannot be the thing that repairs it.",
-    "algorithm": "sha256, first 16 hex characters",
-    "checked_by": "tools/r36/build_tests.py R36-BUILD-03"
-  }
+  "project": {
+    "declared_in": "pyproject.toml",
+    "licence": "Apache-2.0",
+    "licence_file": "LICENSE",
+    "name": "TritonChip / TNCA"
+  },
+  "runtime_dependencies": [
+    {
+      "note": "the Python standard library only. An artifact loads and runs in an environment with no Triton, no MLIR, no compiler and no assembler -- R36-BUILD-02 shows it by installing the wheel into a fresh environment, DELETING tnca_cc and the assembler modules from it, and running an artifact compiled elsewhere. The wheel ships both halves on purpose (pyproject's packages.find takes tnca* and tnca_cc*), so the claim is about dependence, not about absence.",
+      "third_party": [],
+      "what": "the tnca runtime package"
+    }
+  ]
 }

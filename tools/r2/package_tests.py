@@ -188,9 +188,27 @@ print(json.dumps({'state': ev.state, 'first': got[0],
     return all(outcomes), 'two fresh non-editable installs, end to end'
 
 
+def _need_venv(log, ctx, name):
+    """The environment an earlier case was supposed to leave behind.
+
+    Raising KeyError here made three cases report `KeyError: 'venvs'`
+    when the real reason was one line above: the locked Triton has no
+    wheel for this platform, so PKG-01 never built an environment. A
+    cascade that hides its own cause is worse than a single failure,
+    because the reader debugs the wrong thing.
+    """
+    venv = (ctx.get('venvs') or {}).get(name)
+    if venv is None:
+        log.append(f"    no {name}: an earlier case did not build it, and "
+                   f"its reason is the one to read")
+    return venv
+
+
 def pkg02(log, ctx):
     """No test imports, no checkout sim/build, any cwd, spaces in the path."""
-    venv = ctx['venvs']['envA']
+    venv = _need_venv(log, ctx, 'envA')
+    if venv is None:
+        return False, 'the environment this case needs was never built'
     ok = True
     # A directory with a space, which is the one PKG-02 names.
     spaced = os.path.join(ctx['base'], 'a path with spaces')
@@ -230,7 +248,9 @@ print(json.dumps({'modules': len(mods), 'leaked': leaked,
 
 def pkg04(log, ctx):
     """Missing assets, a read-only output, and CLI == API."""
-    venv = ctx['venvs']['envA']
+    venv = _need_venv(log, ctx, 'envA')
+    if venv is None:
+        return False, 'the environment this case needs was never built'
     work = tempfile.mkdtemp(prefix='pkg04-')
     ok = True
 
@@ -313,7 +333,9 @@ print(json.dumps(out))
 
 def pkg05(log, ctx):
     """Licence, version, schemas, assets; reinstall without a cache."""
-    venv = ctx['venvs']['envB']
+    venv = _need_venv(log, ctx, 'envB')
+    if venv is None:
+        return False, 'the environment this case needs was never built'
     work = tempfile.mkdtemp(prefix='pkg05-')
     ok = True
     body = '''

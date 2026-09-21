@@ -731,7 +731,7 @@ clean:
         r2-package r2-stage-data \
         r3-scout r3-plan r3-model-tests \
         r36-check-plan r36-export r36-rtl-tests r36-mem-tests \
-        r36-io-tests \
+        r36-io-tests r36-build r36-build-tests \
         r35-scout r35-check-plan r35-layout-tests r35-upstream-tests r35-opt-tests r35-prereqs r35-alloc-tests r35-safety-tests r35-package-tests \
         r35-acceptance r35-verify-evidence r35-perf
 
@@ -951,6 +951,17 @@ r36-rtl-tests: | dirs
 # Fourteen elaborations and fourteen runs, so it is not a per-push check.
 r36-mem-tests: | dirs
 	@$(PYTHON) tools/r36/mem_tests.py --json $(BUILD)/r36_mem_tests.json
+
+# The single public build entry point. `--what` selects what to
+# produce; a platform target that cannot be built says so and does not
+# block the rest.
+r36-build: | dirs
+	@$(PYTHON) tools/r36/build.py --what $(or $(WHAT),all) \
+	   --out $(BUILD)/tnca-export --json $(BUILD)/r36_build.json
+
+r36-build-tests: | dirs
+	@$(TRITON_PYTHON) tools/r36/build_tests.py \
+	   --json $(BUILD)/r36_build_tests.json
 
 # The host protocol, against the real device in a child process.
 r36-io-tests: $(R2_DATA_STAMP) | dirs

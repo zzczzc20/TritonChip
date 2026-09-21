@@ -801,10 +801,15 @@ $(BUILD)/tnca_device_vrf.vvp: $(RTL_DEPS) $(TB)/device/tnca_device.v \
 	   -P tnca_device.USE_BANKED_VRF=1 \
 	   -o $@ $(TB)/device/tnca_device.v
 
+# tnca_shell is named rather than found by library search: it lives in
+# $(RTL) itself, which is deliberately not on the -y path, because a bench
+# picking up a top level by accident is how two benches end up disagreeing
+# about which top they are testing.
 $(BUILD)/tnca_device.vvp: $(RTL_DEPS) $(TB)/device/tnca_device.v \
+                          $(RTL)/tnca_shell.v \
                           $(TB)/common/tnca_mem_model.v | dirs
 	$(IVERILOG) $(IVFLAGS) -y $(RTL)/core -y $(RTL)/common -y $(RTL)/gen -y $(TB)/common \
-	   -o $@ $(TB)/device/tnca_device.v
+	   -o $@ $(TB)/device/tnca_device.v $(RTL)/tnca_shell.v
 
 .PHONY: device
 device: $(BUILD)/tnca_device.vvp

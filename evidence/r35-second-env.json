@@ -29,13 +29,13 @@
       },
       "O2": {
         "correct": true,
-        "cycles": 3165,
+        "cycles": 3188,
         "wall_s": 3.4,
         "words": 95
       },
       "O2-no-LL": {
         "correct": true,
-        "cycles": 3165,
+        "cycles": 3127,
         "wall_s": 3.4,
         "words": 95
       }
@@ -51,7 +51,7 @@
     "R35-SAFE-02": true
   },
   "clean_tree": true,
-  "commit": "e2e8925f025c91f4a9df37c0a4107e418e893e4e",
+  "commit": "7a894de8a2f0697e27031989f86d8b411962c1b5",
   "environment": {
     "iverilog": "11.0",
     "machine": "arm64",
@@ -60,6 +60,6 @@
     "system": "Darwin",
     "triton": "3.8.0"
   },
-  "recorded_utc": "2026-09-21T01:14:20Z",
-  "sources": "678f72c965383fb487289216ea997cd2f4cca56804db2fbc5e70632412f5cf1c"
+  "recorded_utc": "2026-09-21T01:17:55Z",
+  "sources": "2c7ad23c3fec143bdfd5e0b87c740cdf2249283fe93f939c93bc2f1d44aa3336"
 }

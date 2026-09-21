@@ -730,7 +730,7 @@ clean:
         r3v2-components r3v2-core r3v2-flow r3v2-e2e r3v2-count r3v2-model r3v2-synth core-vrf \
         r2-package r2-stage-data \
         r3-scout r3-plan r3-model-tests \
-        r35-scout r35-check-plan r35-perf
+        r35-scout r35-check-plan r35-layout-tests r35-perf
 
 # DEP-01. EVIDENCE is an R1 run directory; COMBINED is compare_envs.py's
 # output over A and B, which is what makes an R1 verdict complete.
@@ -874,7 +874,13 @@ r35-scout: | dirs
 	@$(TRITON_PYTHON) tools/r35/scout.py --json $(BUILD)/r35_scout.json
 
 r35-check-plan: | dirs
-	@$(PYTHON) tools/r35/plan.py --json $(BUILD)/r35_plan.json
+	@$(TRITON_PYTHON) tools/r35/plan.py --json $(BUILD)/r35_plan.json
+
+# The layout semantics, against an enumeration that never calls
+# LinearLayout. No simulator: a layout is decided at compile time.
+r35-layout-tests: | dirs
+	@$(TRITON_PYTHON) tools/r35/layout_tests.py \
+	   --json $(BUILD)/r35_layout_tests.json
 
 # Device cycles for the frozen workloads, by mode, with the numbers
 # checked against the independent oracle. Section 6.3's C, not a host

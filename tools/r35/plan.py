@@ -287,19 +287,62 @@ def base03(log):
                "section 5 refuses them as a substitute for a finite-port "
                "measurement")
 
-    # B0/O0 equality is a real check, but it needs the new driver, which
-    # does not exist yet. Read the option table rather than import it: the
-    # point is what the shipped compiler declares, and a stage that cannot
-    # yet run is not a reason for this check to fail to load.
+    # O0 must emit what B0 emits, byte for byte. Section 4.3: "在冻结用例上
+    # 机器码与 B0 一致，除版本化 metadata 外不得人为变差".
     aot_src = open(os.path.join(ROOT, 'python', 'tnca', 'aot.py')).read()
-    reserved = bool(re.search(r"'opt_level':[^\n]*reserved", aot_src))
-    if reserved:
-        log.append('    O0 == B0 is NOT YET CHECKABLE: opt_level is still '
-                   'declared reserved and changes no emission, so there is '
-                   'no second path to compare against')
+    if re.search(r"'opt_level':[^\n]*reserved", aot_src):
+        log.append('    O0 == B0 is NOT CHECKABLE: opt_level is still '
+                   'declared reserved and changes no emission')
+        return False, 'the driver has no second path to compare against'
+
+    same, checked = [], 0
+    try:
+        sys.path.insert(0, os.path.join(ROOT, 'python'))
+        sys.path.insert(0, os.path.join(ROOT, 'compiler', 'python'))
+        sys.path.insert(0, os.path.join(ROOT, 'tools', 'r3v2'))
+        sys.path.insert(0, HERE)
+        import tempfile
+        import r35_workloads as WW
+        import workloads as W
+        from tnca import aot
+        cases = {
+            'L03': dict(source=WW.tnca_view_elementwise(),
+                        kernel_name='l03', source_kind='tnca-ir',
+                        signature={'in_ptr': '*fp32', 'out_ptr': '*fp32'}),
+            'L04': dict(source=W.tnca_reduction(15), kernel_name='red',
+                        source_kind='tnca-ir',
+                        signature={'in_ptr': '*fp32', 'out_ptr': '*fp32'}),
+            'L01': dict(source=W.triton_masked_axpy(),
+                        signature={'x_ptr': '*fp32', 'y_ptr': '*fp32',
+                                   'o_ptr': '*fp32', 'n': 'i32',
+                                   'alpha': 'fp32', 'BLOCK': 'constexpr'},
+                        constexprs={'BLOCK': 16}),
+        }
+        for cid, kw in sorted(cases.items()):
+            out = {}
+            for tag, opts in (('B0', {}), ('O0', {'opt_level': 0})):
+                r = aot.compile_aot(profile=pre['profile'], options=opts,
+                                    output=os.path.join(
+                                        tempfile.mkdtemp(), f'{cid}.tnca'),
+                                    **kw)
+                out[tag] = r.asm['hex']
+            checked += 1
+            equal = out['B0'] == out['O0']
+            same.append(equal)
+            log.append(f"    {cid}: O0 emits "
+                       f"{'the same bytes as B0' if equal else 'DIFFERENT '
+                          'bytes from B0'} "
+                       f"({len(out['B0'].splitlines())} word(s))")
+    except Exception as e:                                 # noqa: BLE001
+        log.append(f"    O0 == B0 could not be checked: "
+                   f"{type(e).__name__}: {e}")
         ok = False
-    return ok, ('the hardware precondition holds and the plan is startable'
-                if ok else 'the precondition or the driver is not in place')
+    if checked and not all(same):
+        ok = False
+    if not checked:
+        ok = False
+    return ok, ('the hardware precondition holds and O0 emits what B0 emits'
+                if ok else 'the precondition or the O0 path is not in place')
 
 
 TESTS = [('R35-BASE-01', base01),

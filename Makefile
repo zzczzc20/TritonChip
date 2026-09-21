@@ -730,7 +730,7 @@ clean:
         r3v2-components r3v2-core r3v2-flow r3v2-e2e r3v2-count r3v2-model r3v2-synth core-vrf \
         r2-package r2-stage-data \
         r3-scout r3-plan r3-model-tests \
-        r35-scout r35-check-plan r35-layout-tests r35-perf
+        r35-scout r35-check-plan r35-layout-tests r35-upstream-tests r35-opt-tests r35-perf
 
 # DEP-01. EVIDENCE is an R1 run directory; COMBINED is compare_envs.py's
 # output over A and B, which is what makes an R1 verdict complete.
@@ -881,6 +881,18 @@ r35-check-plan: | dirs
 r35-layout-tests: | dirs
 	@$(TRITON_PYTHON) tools/r35/layout_tests.py \
 	   --json $(BUILD)/r35_layout_tests.json
+
+# That the pinned upstream really runs, and that its answers reach the
+# machine code rather than being computed and dropped.
+r35-upstream-tests: | dirs
+	@$(TRITON_PYTHON) tools/r35/upstream_tests.py \
+	   --json $(BUILD)/r35_upstream_tests.json
+
+# The optimisation, and whether it is safe: effects intact, floating
+# point unchanged bit for bit.
+r35-opt-tests: | dirs
+	@$(TRITON_PYTHON) tools/r35/opt_tests.py \
+	   --json $(BUILD)/r35_opt_tests.json
 
 # Device cycles for the frozen workloads, by mode, with the numbers
 # checked against the independent oracle. Section 6.3's C, not a host

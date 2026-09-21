@@ -24,6 +24,7 @@ Where it looks, in order:
 import hashlib
 import os
 import shutil
+import warnings
 import subprocess
 import sys
 
@@ -283,8 +284,73 @@ def prune(profile='core-sim', keep=KEEP_BUILDS, verbose=False):
     return removed
 
 
+_WARNED_STALE = []
+
+
+def warn_if_staged_copy_is_stale():
+    """Say so when the staged data no longer matches the working tree.
+
+    `tnca/data/` is what _data.path reads whenever it exists, and it
+    exists as soon as anything has packaged once. Nothing re-makes it
+    when a source changes, so editing rtl/ or tb/ in a checkout reaches
+    the Makefile's benches and NOT this one: the device gets rebuilt
+    from a snapshot, and every result afterwards describes code that is
+    no longer in the tree.
+
+    The Makefile has a stamp with prerequisites now, which fixes it for
+    anything run through make. This covers the rest -- a script run
+    directly, an interactive session -- because the failure is silent
+    and expensive: it cost this project an afternoon of measuring the
+    wrong device and believing the numbers.
+
+    Warns once per process, and only when both copies exist.
+    """
+    from . import _data
+    roots = _data.roots()
+    if len(roots) < 2 or _WARNED_STALE:
+        return None
+    staged, tree = roots[0], roots[1]
+    if not os.path.isdir(staged):
+        return None
+    differ = []
+    for parts in _SOURCE_DIRS:
+        a = os.path.join(staged, *parts)
+        b = os.path.join(tree, *parts)
+        if not (os.path.isdir(a) and os.path.isdir(b)):
+            continue
+        if _dir_digest(a) != _dir_digest(b):
+            differ.append('/'.join(parts))
+    if not differ:
+        return None
+    _WARNED_STALE.append(True)
+    msg = (f"the staged copy under {staged} differs from the working "
+           f"tree in {differ}. The runtime reads the staged copy, so it "
+           f"is about to build a device from sources that are not the "
+           f"ones you edited. Run `make r2-stage-data`.")
+    warnings.warn(msg, RuntimeWarning, stacklevel=2)
+    return msg
+
+
+def _dir_digest(root):
+    h = hashlib.sha256()
+    for base, dirs, files in os.walk(root):
+        dirs.sort()
+        for f in sorted(files):
+            if not f.endswith(('.v', '.vh', '.svh')):
+                continue
+            p = os.path.join(base, f)
+            h.update(os.path.relpath(p, root).encode())
+            try:
+                with open(p, 'rb') as fh:
+                    h.update(fh.read())
+            except OSError:
+                h.update(b'<unreadable>')
+    return h.hexdigest()
+
+
 def prepare(profile='core-sim', *, force=False, verbose=True):
     """Build this profile's device from the RTL the package ships."""
+    warn_if_staged_copy_is_stale()
     target = expected_path(profile)
     if os.path.exists(target) and not force:
         src = stale(target, profile)

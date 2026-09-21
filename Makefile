@@ -80,6 +80,19 @@ RTL_ALL    := $(RTL_COMMON) $(RTL_CORE) $(RTL_GEN) $(RTL_NUCA) $(RTL_NOC) $(RTL_
 # and an extra edge is a rebuild.
 RTL_DEPS   := $(RTL_ALL) $(RTL_VH)
 
+# Where the data an installed package reads is staged, and the stamp that
+# says it is current.
+#
+# Defined HERE, with the other path variables, and not beside the recipe
+# that fills it. `:=` expands when make reads the line, so a rule that
+# named $(R2_DATA_STAMP) above the definition got an EMPTY prerequisite
+# and quietly lost its dependency on staging -- which is the exact
+# failure the stamp was added to prevent, reintroduced by where the
+# variable sat. `make sim/build/tnca_device.vvp` reported nothing to do
+# with a stamp six minutes newer than the target.
+R2_DATA := python/tnca/data
+R2_DATA_STAMP := $(R2_DATA)/.staged
+
 #------------------------------------------------------------------------------
 # Build fingerprints (doc/phase1_tasks_and_acceptance.md R1-03)
 #
@@ -839,8 +852,6 @@ r3-model-tests:
 # Stage the data an installed package reads. It lives at the repository root
 # for R1's sake and inside the package for everyone else's; copying rather
 # than symlinking, because a wheel cannot contain a symlink to a checkout.
-R2_DATA := python/tnca/data
-R2_DATA_STAMP := $(R2_DATA)/.staged
 
 # A STAMP with prerequisites, not a phony copy.
 #

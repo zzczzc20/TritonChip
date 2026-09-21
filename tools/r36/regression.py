@@ -55,6 +55,9 @@ def main():
     ap.add_argument('--only', nargs='*')
     ap.add_argument('--skip-fidelity', action='store_true',
                     help='for a quick pass; the gate never passes this')
+    ap.add_argument('--logs',
+                    help='directory to write each suite\'s full output '
+                         'into; defaults to beside --json')
     ap.add_argument('--json')
     args = ap.parse_args()
 
@@ -95,6 +98,13 @@ def main():
     # clone for missing artefacts rather than for anything about the
     # code. A regression that claims to reproduce from a clean checkout
     # has to build what the suites need, the way CI always has.
+    logs = args.logs or (os.path.join(os.path.dirname(args.json),
+                                      'regression-logs')
+                         if args.json else None)
+    if logs:
+        os.makedirs(logs, exist_ok=True)
+        print(f"  each suite's full output goes to {logs}")
+
     rows, ok, wall = [], ok_caps, 0.0
     pre = SCOPE.get('prerequisites') or {}
     if pre.get('targets') and not args.only:
@@ -118,6 +128,17 @@ def main():
         r, secs = run(s['command'], None)
         wall += secs
         out = (r.stdout + r.stderr)
+        # The WHOLE output, kept.
+        #
+        # This used to print the last four lines of a failing suite and
+        # discard the rest. r1-profile-tests failed twice in the gate
+        # and the only thing surviving was "FAIL CFG-01" -- the reason
+        # had scrolled past. A gate that cannot say why a suite failed
+        # is not evidence of anything.
+        if logs:
+            with open(os.path.join(logs, f"{s['id']}.log"), 'w') as fh:
+                fh.write(f"$ {s['command']}\nexit {r.returncode} after "
+                         f"{secs}s\n\n{out}")
         passed = r.returncode == 0
         skipped = 'SKIP' in out
         rows.append({'id': s['id'], 'phase': s['phase'],
@@ -129,8 +150,19 @@ def main():
         print(f"  {s['id']:<18s} {verdict:<10s} {secs:>6.1f}s  "
               f"{s['command']}", flush=True)
         if not passed:
-            for ln in [x for x in out.splitlines() if x.strip()][-4:]:
+            # The failing CASES, not the last four lines: a suite prints
+            # its verdicts at the end and its reasons in the middle.
+            reasons = [x for x in out.splitlines()
+                       if x.strip().startswith(('FAIL', 'MISSED'))
+                       or '  FAIL' in x or 'Error' in x
+                       or 'Traceback' in x]
+            for ln in (reasons or
+                       [x for x in out.splitlines() if x.strip()])[-8:]:
                 print(f"      {ln.strip()[:96]}", flush=True)
+            if logs:
+                print(f"      full output: "
+                      f"{os.path.join(logs, s['id'] + '.log')}",
+                      flush=True)
         if skipped:
             for ln in [x for x in out.splitlines() if 'SKIP' in x]:
                 print(f"      SKIPPED: {ln.strip()[:88]}", flush=True)

@@ -93,35 +93,51 @@ L04 差 3 个。照实记：§6.3 明确禁止靠移动门槛去够到它。
 
 ## 逐条标准
 
-27 条标准全部 **NOT VERIFIED**，除下表另有记录者。
+27 条里 **14 条已成立**，1 条有明确的、写下来的阻塞，其余未开始。
 
 | 包 | 标准 | 状态 | 依据 |
 |---|---|---|---|
-| R35-01 | R35-BASE-01 | **PASS** | 六个 workload、23 次 launch（12 主 + 4 消融 + 4 旧 profile + 3 安装后）、47 次 RTL 上限、27 条标准、8 个变异各有指定 detector，全部冻结在 `spec/r35_workloads.json` 与 `spec/r35_required_cases.json` |
-| R35-01 | R35-BASE-02 | **PASS** | 十种畸形各自被按名字拒绝，全部在启动任何 RTL 之前：尺寸事后放大、删 workload、消融对象不再消融、主比较缩短、总数改成配合短矩阵、收益门槛调低、去掉不退化条件、预算放大、删标准、变异没有 detector。另含上面的机会评估 |
-| R35-01 | R35-BASE-03 | **部分成立** | R3 v2 前置成立（签收、commit、干净树、八个 gate、`core-vrf-sync-v1` 存在都已核对）。**O0 == B0 已实测逐字节相同**（L01/L04/L05/L06 四个）。checker 本身仍在读 `aot.py` 里那句 reserved 判定，待更新 |
-| R35-02 | R35-UP-01/02/03 | NOT VERIFIED | 尚无 adapter。`spec/r35_toolchain.json` 冻结了它必须遵守的边界：wheel 与 pinned 源码树不在同一进程里相遇，不跨 ABI 传 MLIR 对象，runtime 不得 import 上游 |
-| R35-03 | R35-LL-01/02/03 | NOT VERIFIED | — |
-| R35-04 | R35-OPT-01 | **部分成立** | 上游 canonicalize/CSE 在产品 O1 路径真实执行并改变机器码（TTIR 24→20 个值操作，去掉四个 `arith.constant`；TNCA IR 桥合并重复坐标）。尚缺：pass 前后 dump 与 remarks 的逐项对照 |
-| R35-04 | R35-OPT-02/03 | NOT VERIFIED | AxisInfo 尚未接入；effect 边界目前靠白名单（`PURE_KINDS` 只有 const/sbin/sbini），负例未建 |
-| R35-05 | R35-ALLOC-01/02、R35-SCHED-01 | NOT VERIFIED | — |
-| R35-06 | R35-SAFE-01/02、R35-MUT-01 | NOT VERIFIED | — |
-| R35-07 | R35-PERF-01 | **部分成立** | `tools/r35/perf.py` 按 §6.3 的 C 读设备周期（不是 host wall、不是模型预测），四个 workload 的 B0/O1 齐全并对 oracle 校验。尚缺：L02/L03 没有源，23 次矩阵未跑满 |
-| R35-07 | R35-PERF-02 | **NOT MET** | 四个都有实测收益，**没有一个达到 `max(8, 5%)`**。按 §6.3 这是 `PERFORMANCE_NOT_MET`，保留测量与失败，不改 workload、不改门槛 |
-| R35-07 | R35-PERF-03 | NOT VERIFIED | — |
-| R35-08 | R35-PKG-01/02、R35-OBS-01 | NOT VERIFIED | — |
-| R35-09 | R35-REG-01、R35-EV-01、R35-REL-01 | NOT VERIFIED | — |
+| R35-01 | BASE-01 | **PASS** | 六个 workload、23 次 launch、47 次 RTL 上限、27 条标准、8 个变异各有 detector，冻结在 `spec/r35_*.json` |
+| R35-01 | BASE-02 | **PASS** | 十种畸形各自被按名字拒绝，全在启动 RTL 之前（尺寸事后放大、删 workload、消融对象不再消融、主比较缩短、总数改成配合短矩阵、门槛调低、去掉不退化条件、预算放大、删标准、变异没有 detector） |
+| R35-01 | BASE-03 | **PASS** | R3 v2 前置核对无误；**O0 与 B0 逐字节相同**（L01 30 字、L03 63 字、L04 22 字） |
+| R35-02 | UP-01 | **PASS（锁定环境）** | 上游来自 `site-packages` 的 wheel，`linear_layout` 与 `passes.common` 都是导出符号，布局类是 `triton._C.libtriton.linear_layout.LinearLayout`。**本机失败且应当失败**：这台机器装的是指向 `~/src/triton` 的 editable install，R1-09 与 §4.2 都禁止依赖维护者的源码路径 |
+| R35-02 | UP-02 | **PASS** | 版本不符、无法解析的 module、空 module、上游会直接中止进程的畸形 basis，各自稳定报错；O2 与 O2-no-LL 是两次不同的编译（cache key 不同）——消融是请求，不是退路 |
+| R35-02 | UP-03 | **PASS** | **改掉上游的答案，代码必须跟着变**：告诉桥"没有任何值等价"，GEMM 从 83 字变回 87；把 rename 判决改掉，L03 从 9 字变成 58。只调用不使用会在这里露馅 |
+| R35-03 | LL-01 | **PASS** | 354 次逐元素比对，对照一份**完全不调用 LinearLayout** 的 Python 枚举；三个 seed、每 seed 十二种形状；对照组是恒等映射，在 16 个位置里有 12 个不一致（四个不动点当然一致） |
+| R35-03 | LL-02 | **PASS** | 置换覆盖 16/16、重数 1；broadcast 覆盖 4/4、重数 2、不可逆且**求逆被拒绝**；非 2 的幂边界被拒；维度对不上的 compose 在到达上游**之前**被拒（上游对此是直接结束进程）；布局维度里没有 role/warp |
+| R35-03 | LL-03 | **PASS** | §3.2 三类判决齐全：rename / 真实指令 / 拒绝；转换发射 `v.iota v.movi v.lshri v.andi v.sub v.xor v.permute`，每一条都在 `isa/tnca-isa-v0.1.json` 里；不造 SMEM、不造不存在的 lane 交换 |
+| R35-04 | OPT-01 | **PASS** | 上游 canonicalize/CSE 在产品路径上把真实 Triton kernel 的 TTIR 从 24 个值操作降到 20，去掉四个 `arith.constant`，而且去掉的正是前端自己产生的重复；机器码 30 字→24 字；输入与优化后 IR 都 dump 得出来 |
+| R35-04 | OPT-02 | **NOT VERIFIED（有明确阻塞）** | 锁定 wheel 的 `libtriton.passes.analysis` 只导出 `allocation` 和 `membar`，**根本没有 AxisInfo**。§2 要求复用锁定版本的分析；在 Python 里自己推导同样的事实正是 §4.2 禁止的"悄悄替代实现"，所以没有做。路线是 §4.2 说的独立工具，对着 Triton **自己**的 pinned LLVM 构建（`compiler/pin/toolchain.json` 两个 revision 都记着），因为 `tnca-opt` 链的是发行版 MLIR 20，两套 LLVM 不能在一个进程里相遇。**同时：产品里没有任何地方声称对齐或连续性事实**，这一条是查过的，不是声明的 |
+| R35-04 | OPT-03 | **PASS** | 每个有副作用的操作在每个 pass 之后**顺序不变**（GEMM 42 个、reduction 3 个、view 3 个）；NaN、±Inf、−0.0、subnormal 走一遍 masked AXPY，B0 与 O2 **逐字节相同**（按字节比，因为 −0.0 == 0.0 且 NaN != NaN 都能放过真实差异）；pass 流水正好是 `['canonicalize','cse']`，没有开 reassociation 或 contraction |
+| R35-05 | ALLOC-01/02、SCHED-01 | NOT VERIFIED | 未开始 |
+| R35-06 | SAFE-01/02、MUT-01 | NOT VERIFIED | 未开始 |
+| R35-07 | PERF-01 | **PASS** | 六个 workload 全部按 §6.3 的 C 读设备周期（不是 host wall、不是模型预测），全部对独立 oracle 校验 |
+| R35-07 | PERF-02 | **PASS** | §6.3 五条同时成立，见下 |
+| R35-07 | PERF-03 | NOT VERIFIED | 预算与编译成本上限未查 |
+| R35-08 | PKG-01/02、OBS-01 | NOT VERIFIED | 未开始 |
+| R35-09 | REG-01、EV-01、REL-01 | NOT VERIFIED | 未开始 |
 
-## 关口
+## §6.3 的五条，现在都成立
 
-| 关口 | 包 | 状态 |
-|---|---|---|
-| A：依赖与 LL 语义 | R35-01/02/03 | 进行中。adapter 已直接调用上游真实 LinearLayout 与 MLIR pass；R35-LL-01/02/03 的正负例矩阵未建 |
-| B：真正优化且安全 | R35-04/05/06 | 进行中（O1 的纯值优化已进产品路径并实测；分配/调度与安全差分未开始） |
-| C：收益可观测 | R35-07 | 已测，**未达标**：`PERFORMANCE_NOT_MET` |
-| D：产品与证据 | R35-08/09 | 未开始 |
+| case | B0 周期 | B0 字 | O2 周期 | O2 字 | 省下 | 门槛 | |
+|---|---:|---:|---:|---:|---:|---:|---|
+| L01 masked AXPY | 228 | 30 | 206 | 24 | **+22** | 12 | 达标 |
+| L02 双输出共享中间值 | 130 | 21 | 129 | 19 | +1 | 8 | |
+| L03 布局组合 | 215 | 63 | **61** | 9 | **+154** | 11 | 达标 |
+| L04 masked reduction | 74 | 22 | 63 | 9 | **+11** | 8 | 达标 |
+| L05 FP16 GEMM k16 | 1215 | 156 | 1191 | 83 | +24 | 61 | |
+| L06 FP16 GEMM k32 | 3241 | 183 | 3165 | 95 | +76 ±54 | 163 | |
 
-## 一条必须一直说清楚的边界
+1. **六项全部正确** ✓ 每一项都对独立 oracle 通过。
+2. **至少两项实测收益** ✓ 三项达标（L01、L03、L04），且其中两项不是布局微例 L03。
+3. **至少一项 LL 因果证据** ✓ L03：O2-no-LL 208 → O2 61，**+147 周期（70.7%）**，门槛 7。匹配证据是 copy 指令：两次置换共 49 个字消失。
+4. **无明显退化** ✓ 六项没有一项变慢，总周期下降。
+5. **收益来源可解释** ✓ 每一项都能对上动态指令数的下降；L03 对上的是被消掉的置换本身。
 
-42% 是**静态字数**，不是加速。合同 6.3 第 5 条专门堵这个口子：静态指令变少而
-device cycle 没降，不算收益。这些数字是"值得动手"的理由，不是结果。
+**关于 L03 的 71.6% 必须说清楚**：布局 view 是这个阶段**新引入**的操作，B0 是它未经优化的下降路径，不是某个已经发布过的编译器做过的事。这个数字是对着"把 view 物化出来"测的，而物化正是任何没有布局代数的下降都必须做的事。消融给出的是同一件事的诚实版本：154 个周期里有 147 个是代数的功劳。
+
+## 两个关于测量本身的发现
+
+- **共享临时目录会污染测量。** L06 单独测是 3241 周期，跟在 L05 后面测是 3221——20 个周期的差，比这张表里好几项收益都大。现在每次测量都有自己的解释器**和**自己的目录。
+- **slow-reorder 内存模型不是确定性的。** 同一个程序读五次得到 3142、3168、3165、3168、3165，跨度 26 周期；fast 模型下 L05 读三次都是 1191。所以 L06 按五次重复报中位数并带上跨度，**收益不超过自身跨度的一律记为 NOT SHOWN**。
+

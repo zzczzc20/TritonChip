@@ -37,6 +37,30 @@ PACKAGES = ['R36-01', 'R36-02', 'R36-03', 'R36-04', 'R36-05', 'R36-06',
 # itself would be the thing this file exists to prevent.
 
 
+def _report_verdict(d):
+    """A checker's result, for the ones that are not case lists.
+
+    Three shapes exist and each is recognised by name rather than by a
+    generic `ok` lookup. The first version of this used `d.get('ok')`,
+    which is present in the regression report and absent from the other
+    two -- so it would have refused a conformance run that passed, for
+    the reason that it could not read it. Silently. Returning None here
+    makes not knowing a finding instead.
+    """
+    if not isinstance(d, dict):
+        return None, type(d).__name__
+    if 'ok' in d:                       # regression
+        return bool(d['ok']), 'a report with an ok field'
+    if 'mutations' in d:                # mutation_tests
+        return (all(m.get('caught') for m in d['mutations'])
+                and bool(d.get('tree_unchanged')),
+                f"{len(d['mutations'])} mutation(s)")
+    if d and all(isinstance(v, dict) and 'passed' in v
+                 for v in d.values()):  # conformance, keyed by backend
+        return all(v['passed'] for v in d.values()), f"{len(d)} backend(s)"
+    return None, f"a dict with keys {sorted(d)[:4]}"
+
+
 def load(path):
     with open(path) as fh:
         return json.load(fh)
@@ -113,15 +137,25 @@ def main():
                     f"{name}: exit 0 with {len(bad)} failing case(s) "
                     f"{bad} -- the summary and the cases disagree")
         else:
-            good = bool(cases.get('ok', False)) if isinstance(cases, dict) \
-                else False
+            good, shape = _report_verdict(cases)
+            if good is None:
+                findings.append(
+                    f"{name}: its result is a report this verifier does "
+                    f"not know how to read ({shape}). A verifier that "
+                    f"fell back to the exit code here would be believing "
+                    f"the summary, which is the thing it exists not to "
+                    f"do.")
+                good = False
         # The exit code is the primary fact; the cases are the check on
         # it. Both have to say the same thing.
         good = good and entry.get('exit') == 0
         recomputed.setdefault(pkg, []).append(good)
         n = len(cases) if isinstance(cases, list) else 1
+        if not isinstance(cases, list):
+            n = _report_verdict(cases)[1]
         print(f"    {pkg} {name:<12s} exit={entry.get('exit')} "
-              f"{n} result(s) -> {'ok' if good else 'OPEN'}")
+              f"{n}{' result(s)' if isinstance(cases, list) else ''}"
+              f" -> {'ok' if good else 'OPEN'}")
 
     by_pkg = {p: all(v) for p, v in recomputed.items()}
     missing = [p for p in PACKAGES if p not in by_pkg]

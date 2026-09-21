@@ -880,7 +880,8 @@ r35-check-plan: | dirs
 # checked against the independent oracle. Section 6.3's C, not a host
 # wall time and not a model prediction.
 r35-perf: | dirs
-	@$(TRITON_PYTHON) tools/r35/perf.py --json $(BUILD)/r35_perf.json
+	@$(TRITON_PYTHON) tools/r35/perf.py --modes B0 O2 O2-no-LL \
+	   --json $(BUILD)/r35_perf.json
 
 #------------------------------------------------------------------------------
 # R3 v2: the single-core VRF integration

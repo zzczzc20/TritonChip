@@ -45,6 +45,7 @@ ABI_VERSION = list(abi.ABI_VERSION)
 # something and been told nothing, and the artifact they get back is not the
 # one they asked for (CMP-02).
 KNOWN_OPTIONS = {
+    'no_ll': 'bool; at opt_level 2, switch the layout algebra off and use a legal plan instead. The ablation of phase 3.5 section 4.3, not a fallback: O2 without it never silently stops using LinearLayout',
     'opt_level': 'int, 0..2. 0 is the frozen baseline and emits what this driver has always emitted. 1 runs the pinned upstream canonicalizer and CSE over the kernel and lowers a constant to its narrowest correct form. 2 adds the layout and allocation work (phase 3.5 section 4.3)',
     'debug': 'bool; adds a compile report, never changes the code',
     'dump_dir': 'str; where to write the per-stage IR dumps',
@@ -582,6 +583,24 @@ def _compile_triton(fn, kernel_name, signature, constexprs, target, prov,
     # already worked on the TTIR above, but it does not strength-reduce a
     # multiply -- measured, on exactly this module -- and the importer
     # introduces scalar values of its own that never existed upstream.
+    # Phase 3.5 section 4.3: O2 adds the layout work. `no_ll` is the
+    # ablation -- the same pipeline with the layout algebra switched off
+    # and a legal plan used instead, which for a view means materialising
+    # it. No computation is removed either way.
+    # A layout view has to be lowered at EVERY level, because a program
+    # that contains one cannot be compiled otherwise. What changes with
+    # the level is whether anything reasons about it: below O2, and at
+    # O2 with the ablation on, each view is materialised from the bases
+    # it declares. At O2 the chain is composed with upstream
+    # LinearLayout first, and a composition that comes out the identity
+    # costs nothing.
+    from tnca_cc.layout import apply_plans
+    _use_ll = opt_level >= 2 and not (options or {}).get('no_ll')
+    lay = apply_plans(kernel, use_upstream=_use_ll)
+    if lay['renamed'] or lay['materialised'] or lay['refused']:
+        prov.record('opt_views_renamed', lay['renamed'])
+        prov.record('opt_views_materialised', lay['materialised'])
+        prov.record('opt_layout_upstream', _use_ll)
     if opt_level >= 1:
         from tnca_cc.optimization import (pure_scalar_cse, strength_reduce,
                                            drop_dead_pure,
@@ -647,6 +666,24 @@ def _compile_tnca_ir(build, kernel_name, signature, constexprs, target, prov,
     # A TNCA IR source never had a TTIR, so the canonicalisation the
     # Triton path gets never reaches it. Above O0 its pure scalar values
     # go across the bridge and upstream says which of them coincide.
+    # Phase 3.5 section 4.3: O2 adds the layout work. `no_ll` is the
+    # ablation -- the same pipeline with the layout algebra switched off
+    # and a legal plan used instead, which for a view means materialising
+    # it. No computation is removed either way.
+    # A layout view has to be lowered at EVERY level, because a program
+    # that contains one cannot be compiled otherwise. What changes with
+    # the level is whether anything reasons about it: below O2, and at
+    # O2 with the ablation on, each view is materialised from the bases
+    # it declares. At O2 the chain is composed with upstream
+    # LinearLayout first, and a composition that comes out the identity
+    # costs nothing.
+    from tnca_cc.layout import apply_plans
+    _use_ll = opt_level >= 2 and not (options or {}).get('no_ll')
+    lay = apply_plans(kernel, use_upstream=_use_ll)
+    if lay['renamed'] or lay['materialised'] or lay['refused']:
+        prov.record('opt_views_renamed', lay['renamed'])
+        prov.record('opt_views_materialised', lay['materialised'])
+        prov.record('opt_layout_upstream', _use_ll)
     if opt_level >= 1:
         from tnca_cc.optimization import (pure_scalar_cse, strength_reduce,
                                            drop_dead_pure,

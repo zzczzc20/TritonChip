@@ -38,7 +38,13 @@ SPEC = json.load(open(os.path.join(ROOT, 'spec', 'r35_workloads.json')))
 GAIN = SPEC['gain_thresholds']
 PROFILE = SPEC['hardware_precondition']['profile']
 
-MODES = {'B0': None, 'O0': 0, 'O1': 1, 'O2': 2}
+# Section 4.3's five modes, as the options each one compiles with.
+# O2-no-LL is the ablation: the same pipeline with the layout algebra
+# off and a legal plan used instead. It is not a fallback -- O2 never
+# quietly becomes it.
+MODES = {'B0': {}, 'O0': {'opt_level': 0}, 'O1': {'opt_level': 1},
+         'O2': {'opt_level': 2},
+         'O2-no-LL': {'opt_level': 2, 'no_ll': True}}
 
 # Workloads whose memory model reorders, and which therefore do not
 # return the same number twice.
@@ -119,7 +125,47 @@ def run_one(wid, mode, tmp):
                 'error': f"unreadable result: {r.stdout[-200:]}"}
 
 
-def _run_l02(level, tmp):
+def _run_l03(opts, tmp):
+    """L03: two cancelling layout views, then elementwise.
+
+    The predetermined ablation subject. Every mode must produce the same
+    numbers -- the views cancel mathematically whether or not anything
+    notices -- so a difference in cycles is a difference in what the
+    compiler decided, and nothing else.
+    """
+    import struct
+    import r35_workloads as WW
+    import workloads as W
+    from tnca import aot, device
+    from tnca.runtime import Session
+
+    prof = PROFILE
+    n = 16
+    device.prepare(prof, verbose=False)
+    xs = W.inputs(n, seed=42)
+    want = WW.l03_oracle(xs)
+
+    art = aot.compile_aot(
+        WW.tnca_view_elementwise(), kernel_name='l03',
+        signature={'in_ptr': '*fp32', 'out_ptr': '*fp32'},
+        source_kind='tnca-ir', profile=prof, options=opts,
+        output=os.path.join(tmp, 'l03.tnca'))
+    words = len(art.asm['hex'].splitlines())
+
+    with Session(profile=prof, deadline_cycles=50000) as s:
+        mod = s.load(art.path)
+        src = s.allocate(n * 4, name='in')
+        dst = s.allocate(n * 4, name='out')
+        s.upload(src, W.f32(xs))
+        s.upload(dst, struct.pack('<I', W.SENTINEL) * n)
+        ev = s.submit(mod, {'in_ptr': src, 'out_ptr': dst}, grid=(1, 1, 1))
+        s.wait(ev)
+        got = W.unf32(s.download(dst, n * 4))[:n]
+    return {'cycles': getattr(ev, 'device_cycles', None),
+            'correct': bool(ev.ok) and got == want, 'words': words}
+
+
+def _run_l02(opts, tmp):
     """L02: two outputs sharing one intermediate, both checked.
 
     Its own runner because it is the only workload with two outputs, and
@@ -146,8 +192,7 @@ def _run_l02(level, tmp):
                    'z_ptr': '*fp32', 'n': 'i32', 'alpha': 'fp32',
                    'BLOCK': 'constexpr'},
         constexprs={'BLOCK': block}, profile=prof,
-        options={} if level is None else {'opt_level': level},
-        output=os.path.join(tmp, 'l02.tnca'))
+        options=opts, output=os.path.join(tmp, 'l02.tnca'))
     words = len(art.asm['hex'].splitlines())
 
     cycles = []
@@ -174,17 +219,16 @@ def _run_l02(level, tmp):
 def measure_one(wid, mode, _tmp_ignored):
     """The measurement itself. Runs in the child, in its own directory."""
     tmp = tempfile.mkdtemp(prefix=f'r35-{wid}-{mode}-')
-    if wid == 'L02':
+    if wid in ('L02', 'L03'):
         started = time.time()
-        out = _run_l02(MODES[mode], tmp)
+        out = (_run_l02 if wid == 'L02' else _run_l03)(dict(MODES[mode]), tmp)
         out['wall_s'] = round(time.time() - started, 1)
         return out
     import e2e_tests as E
     from tnca import aot
     from tnca.runtime import Session
 
-    level = MODES[mode]
-    opts = {} if level is None else {'opt_level': level}
+    opts = dict(MODES[mode])
     seen = []
     real_wait = Session.wait
 
@@ -247,7 +291,7 @@ def main():
     # Only the workloads that have a source today. L02 and L03 are frozen
     # in the spec and not yet built, and saying so is better than a table
     # with holes in it.
-    HAVE = ['L01', 'L02', 'L04', 'L05', 'L06']
+    HAVE = ['L01', 'L02', 'L03', 'L04', 'L05', 'L06']
     ids = [w for w in HAVE if not args.only or w in args.only]
     missing = [w['id'] for w in SPEC['workloads'] if w['id'] not in HAVE]
 
@@ -267,8 +311,15 @@ def main():
         for m in args.modes:
             r = row['modes'][m]
             line += f" {r['cycles']:>11} {r['words']:>9}"
-        base = row['modes'].get(args.modes[0], {}).get('cycles')
-        last = row['modes'].get(args.modes[-1], {}).get('cycles')
+        # The primary comparison is section 6.3's: the baseline against
+        # O2. The last mode on the command line is not it -- O2-no-LL is
+        # an ablation, and measuring the baseline against the ablation
+        # would report the gain the optimisation does NOT get.
+        base_mode = args.modes[0]
+        target = 'O2' if 'O2' in args.modes else args.modes[-1]
+        row['compared'] = f"{base_mode} vs {target}"
+        base = row['modes'].get(base_mode, {}).get('cycles')
+        last = row['modes'].get(target, {}).get('cycles')
         if base and last is not None:
             d = base - last
             row['saved'] = d
@@ -300,7 +351,55 @@ def main():
         print(line, flush=True)
         rows.append(row)
 
+    # Section 6.3 condition 3: the gain that is specifically the layout
+    # algebra's, on one of the two subjects the contract names.
+    if 'O2' in args.modes and 'O2-no-LL' in args.modes:
+        print()
+        print("  the ablation -- what the layout algebra itself is worth:")
+        for r in rows:
+            o2 = r['modes'].get('O2', {}).get('cycles')
+            no = r['modes'].get('O2-no-LL', {}).get('cycles')
+            if o2 is None or no is None:
+                continue
+            d = no - o2
+            need = max(GAIN['ll_absolute_cycles'],
+                       math.ceil(GAIN['ll_relative'] * no))
+            subject = r['id'] in GAIN['ll_subjects']
+            r['ll_saved'] = d
+            r['ll_needed'] = need
+            r['ll_meets'] = bool(d >= need and subject)
+            print(f"    {r['id']}: O2-no-LL {no} -> O2 {o2}, {d:+d} cycles "
+                  f"({d / no:.1%}), needs {need}"
+                  + ("  ATTRIBUTED" if r['ll_meets'] else
+                     ("  (not a named subject)" if not subject else
+                      "  short")))
+
+    # Section 6.3 condition 4: no case may be meaningfully worse, and
+    # the total may not rise. A stage that wins twice and quietly loses
+    # four times has not delivered anything.
     print()
+    worse = []
+    total_base = total_target = 0
+    for r in rows:
+        b = r['modes'].get(args.modes[0], {}).get('cycles')
+        o = r['modes'].get(target, {}).get('cycles')
+        if b is None or o is None:
+            continue
+        total_base += b
+        total_target += o
+        allowed = max(GAIN['regression_absolute_cycles'],
+                      math.ceil(GAIN['regression_relative'] * b))
+        if o - b > allowed:
+            worse.append((r['id'], o - b, allowed))
+    for wid, d, allowed in worse:
+        print(f"    {wid} is {d} cycles worse, and {allowed} was the most "
+              f"section 6.3 allows")
+    print(f"  total over the measured cases: {total_base} -> "
+          f"{total_target} cycles"
+          + ("  -- which is not an increase" if total_target <= total_base
+             else "  -- AN INCREASE, which section 6.3 forbids"))
+    no_regression = not worse and total_target <= total_base
+
     wins = [r for r in rows if r.get('meets')]
     for r in rows:
         if 'saved' not in r:
@@ -324,10 +423,17 @@ def main():
     print("  section 6.3 condition 5: a case whose word count fell and "
           "whose cycles did not has not gained anything")
 
+    attributed = [r for r in rows if r.get('ll_meets')]
+    if 'O2-no-LL' in args.modes:
+        print(f"  {len(attributed)} LL attribution(s) on "
+              f"{'/'.join(GAIN['ll_subjects'])}; section 6.3 wants 1")
     ok = (len(wins) >= GAIN['primary_workloads_required'] and
-          all(r['correct'] for r in rows) and not missing)
+          all(r['correct'] for r in rows) and not missing and
+          no_regression and
+          (not 'O2-no-LL' in args.modes or attributed))
     detail = (f"{len(wins)}/{GAIN['primary_workloads_required']} workload(s) "
-              f"over the gate; {len(missing)} not yet built")
+              f"over the gate, {len(attributed)} LL attribution(s); "
+              f"{len(missing)} not yet built")
     results = [{'id': 'R35-PERF-01', 'passed': bool(ok), 'detail': detail,
                 'profile': PROFILE, 'rows': rows, 'unbuilt': missing}]
     if args.json:

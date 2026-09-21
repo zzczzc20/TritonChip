@@ -492,6 +492,58 @@ class CodeGen:
         self._emit(f"v.st.{op.attrs['size']}", f"[s{base.reg}, #0]",
                     f"v{value.reg}", pred=self._pred(op.attrs.get('mask')))
 
+    def _op_view(self, op):
+        """A layout view that has to be realised, as instructions.
+
+        `v.permute Vd, Va, Vb` (ISA 0x03 of the lane group) reads
+        `Vd[i] = Va[Vb[i]]`, so this needs Vb: lane i holding the
+        position the layout sends i to.
+
+        A LinearLayout is linear over GF(2), so that vector is the XOR of
+        the bases the set bits of the lane index select. Per bit: take
+        it, spread it to a full mask, AND the mask with that basis, XOR
+        it in. The basis values come from upstream, computed by
+        `index_vector_recipe` -- this only emits them.
+
+        Twenty-four instructions for a sixteen-lane permutation, and
+        every one of them is on the page. Section 3.2 asks for a
+        conversion's real cost to be checkable against the emitted code,
+        and this is what that costs when nothing proves it unnecessary.
+        """
+        src = op.operands[0]
+        out = op.results[0]
+        basis = op.attrs.get('perm_basis')
+        if basis is None:
+            raise Diagnostic(
+                "a layout view reached code generation without a plan",
+                because='the layout pass classifies every view as a '
+                        'rename, a real conversion or a refusal, and '
+                        'only the middle one is emitted here',
+                remedy='run the layout pass, or compile at O0 where '
+                       'views are not accepted',
+                source='phase3_5_tasks_and_acceptance.md sec 3.2')
+        self._alloc(out)
+        idx = self.alloc.vector()
+        zero = self.alloc.vector()
+        bit = self.alloc.vector()
+        self._emit('v.iota', f"v{bit}",
+                    comment=f"materialise {op.attrs.get('what') or 'a view'}")
+        self._emit('v.movi', f"v{idx}", '#0')
+        self._emit('v.movi', f"v{zero}", '#0')
+        lane = self.alloc.vector()
+        for k, b in enumerate(basis):
+            if b == 0:
+                continue
+            self._emit('v.lshri', f"v{lane}", f"v{bit}", f"#{k}")
+            self._emit('v.andi', f"v{lane}", f"v{lane}", '#1')
+            self._emit('v.sub', f"v{lane}", f"v{zero}", f"v{lane}",
+                        comment='0 or all ones')
+            self._emit('v.andi', f"v{lane}", f"v{lane}", f"#{b}")
+            self._emit('v.xor', f"v{idx}", f"v{idx}", f"v{lane}")
+        self._emit('v.permute', f"v{out.reg}", f"v{src.reg}", f"v{idx}")
+        for r in (idx, zero, bit, lane):
+            self.alloc.free('v', r)
+
     def _op_gather(self, op):
         base, index = op.operands
         v = op.results[0]

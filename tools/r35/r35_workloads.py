@@ -82,15 +82,31 @@ def l02_oracle(xs, bs, n, alpha):
 # baseline is not made to move data it never needed to move.
 
 def tnca_view_elementwise(rows=4, cols=4):
-    """Read a rows x cols tile, apply a layout view, consume it.
+    """Read a tile, view it transposed, view it back, consume it.
 
-    The view is described to the compiler by a LinearLayout, and the
-    elementwise work that follows is what makes the result observable:
-    every element is scaled by its own linear index under the view, so a
-    wrong basis produces wrong numbers rather than the same numbers in a
-    different order.
+    Section 6.1 puts L03 on the tnca-ir input and calls it "a legal
+    tensor view/layout composition, then elementwise consumption". This
+    is that composition: the tile is read as rows and columns, then read
+    back the way it came.
+
+    The two views cancel. Whether anything NOTICES they cancel is the
+    whole question, and it is the question section 6.3's third condition
+    asks -- so this is the predetermined ablation subject. With the
+    layout algebra on, upstream composes them, the composition is the
+    identity over all sixteen positions, and no value moves. With it
+    off, each view is materialised: an index vector built from the lane
+    index and a `v.permute`, twice.
+
+    Neither path removes any computation. The elementwise work happens
+    either way and both produce the same numbers, which is what makes
+    the cycle difference attributable to the layout decision and
+    nothing else.
     """
     n = rows * cols
+    # reg -> (row, col): bit k of the lane index selects basis k.
+    fwd = [('reg', [[1, 0], [2, 0], [0, 1], [0, 2]])]
+    # (row, col) -> reg, reading the tile back the way it came.
+    back = [('row', [[1], [2]]), ('col', [[4], [8]])]
 
     def build(b, target):
         base = b.special('arg_base')
@@ -101,29 +117,23 @@ def tnca_view_elementwise(rows=4, cols=4):
         keep = b.vcmp('lt', idx, b.splat(b.const(n)))
         v = b.load(p_in, mask=keep, other=0, dtype='f32')
 
-        # The view's index, as a vector: lane i holds the index that the
-        # layout maps i to. Built from the iota so the compiler sees an
-        # affine relation rather than a table.
-        #   row-major to column-major on a square tile:
-        #   j = (i % cols) * rows + (i // cols)
-        lo = b.vbin('and', idx, b.splat(b.const(cols - 1)))
-        hi = b.vbin('lshr', idx, b.splat(b.const((cols - 1).bit_length())))
-        j = b.vbin('add', b.vbin('mul', lo, b.splat(b.const(rows))), hi)
+        t1 = b.view(v, fwd, ['row', 'col'], [rows, cols],
+                    what='row-major as column-major')
+        t2 = b.view(t1, back, ['reg'], [n], what='and back again')
 
-        scaled = b.vbin('mul', b.vcvt('f32', j), v, dtype='f32')
-        b.store(p_out, scaled, mask=keep)
+        # The elementwise consumption: doubling, which needs no constant
+        # and is the same in every lane, so nothing about the result
+        # depends on which lane holds which element except the layout.
+        doubled = b.vbin('add', t2, t2, dtype='f32')
+        b.store(p_out, doubled, mask=keep)
         b.exit()
     return build
 
 
 def l03_oracle(xs, rows=4, cols=4):
-    """Element i of the output is x[i] * j(i), with j the view's index."""
+    """Two cancelling views leave the data where it was, then doubled."""
     import struct
 
     def f32(v):
         return struct.unpack('<f', struct.pack('<f', v))[0]
-    out = []
-    for i in range(rows * cols):
-        j = (i % cols) * rows + (i // cols)
-        out.append(f32(f32(xs[i]) * f32(j)))
-    return out
+    return [f32(f32(xs[i]) + f32(xs[i])) for i in range(rows * cols)]

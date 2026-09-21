@@ -204,6 +204,27 @@ class Builder:
         self._emit('vmovi', [v], [], imm=imm)
         return v
 
+    def view(self, v, bases, out_dims, out_sizes, *, what=''):
+        """Read `v` under a different layout.
+
+        doc/phase3_5_tasks_and_acceptance.md section 3. The layout is
+        given the way upstream LinearLayout takes it -- a list of
+        (input dimension, bases) and the output dimensions it maps to --
+        because the compiler hands it straight to upstream rather than
+        interpreting it here.
+
+        What this op MEANS is a reindex: lane i of the result holds the
+        element that the layout maps i to. What it COSTS depends on
+        whether the compiler can show the reindex never has to happen,
+        and section 3.2 makes that a classification with three answers:
+        a compile-time rename, a real sequence of instructions, or a
+        refusal. This op is the question; the layout pass is the answer.
+        """
+        out = self._value(VECTOR, v.dtype, hint='w')
+        self._emit('view', [out], [v], bases=bases, out_dims=out_dims,
+                   out_sizes=out_sizes, what=what)
+        return out
+
     def vbin(self, op, a, b, dtype=None, comment=None):
         v = self._value(VECTOR, dtype or a.dtype, hint='v')
         self._emit('vbin', [v], [a, b], op=op, comment=comment)

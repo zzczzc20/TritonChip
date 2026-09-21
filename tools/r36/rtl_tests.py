@@ -325,6 +325,21 @@ def rtl03(log):
                             for e in m['includes']}))
     top = m['synthesizable_top']
 
+    if shutil.which('yosys') is None:
+        # NOT RUN, and therefore a failure. R1-02: a case that cannot run
+        # has not passed, and the structural check is the point of this
+        # standard. Reported rather than raised: the bare
+        # FileNotFoundError this used to produce buried the reason in a
+        # subprocess traceback.
+        log.append("    yosys is not installed, so the structural check "
+                   "did NOT RUN")
+        log.append("    that is a failure and not a skip: no latch, no "
+                   "combinational loop, no multiple driver and no width "
+                   "problem are what R36-RTL-03 is about, and none of "
+                   "them has been established here")
+        return False, 'yosys is not installed; the structural check did '\
+                      'not run'
+
     def yosys(script, label):
         ys = tempfile.NamedTemporaryFile('w', suffix='.ys', delete=False)
         ys.write(script)

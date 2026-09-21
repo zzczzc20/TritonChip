@@ -611,7 +611,14 @@ class Session:
                     self._finish(task, SUCCEEDED)
                 return
 
-            self.dev.upload(task['arg_addr'], task['block'])
+            # A kernel with no arguments has an empty block, and
+            # uploading nothing is not a request. The transport refuses a
+            # zero-length transfer -- both bindings, one shared rule --
+            # because a transfer of nothing is a mistake everywhere
+            # except here, where it is the correct amount of argument
+            # data to write.
+            if task['block']:
+                self.dev.upload(task['arg_addr'], task['block'])
             ev._to(RUNNING)
             total = gx * gy * gz
             cycles = 0

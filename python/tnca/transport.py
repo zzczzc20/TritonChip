@@ -223,9 +223,7 @@ class Transport(_backend.Backend):
     # ---- operations -------------------------------------------------------
     def upload(self, addr, data):
         """Bytes into device memory, through the device's memory system."""
-        if addr % WORD:
-            raise TncaError(f"upload address {addr:#x} is not 8-byte aligned",
-                            code='ARGUMENT_INVALID')
+        _backend.check_transfer(addr, len(data), what='upload')
         padded = bytes(data) + b'\x00' * (-len(data) % WORD)
         words = len(padded) // WORD
         with open(self.up, 'w') as fh:
@@ -234,9 +232,7 @@ class Transport(_backend.Backend):
         return self.request(OP_UPLOAD, addr, words)
 
     def download(self, addr, nbytes):
-        if addr % WORD:
-            raise TncaError(f"download address {addr:#x} is not 8-byte "
-                            "aligned", code='ARGUMENT_INVALID')
+        _backend.check_transfer(addr, nbytes, what='download')
         words = (nbytes + WORD - 1) // WORD
         reply = self.request(OP_DOWNLOAD, addr, words)
         if not reply.ok:
@@ -290,7 +286,11 @@ class Transport(_backend.Backend):
     def capabilities(self):
         out = super().capabilities()
         out.update({'medium': 'a shared directory', 'bench': self.bench,
-                    'reaches': 'the RTL directly, in a child process'})
+                    'reaches': 'the RTL directly, in a child process',
+                    # The mailbox carries an opcode field, so a caller
+                    # can send one the device does not have and see it
+                    # refused.
+                    'raw_request': True})
         return out
 
     def ping(self):

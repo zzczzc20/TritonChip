@@ -1,0 +1,94 @@
+{
+  "format": "tnca-baseline-delta/1",
+  "about": [
+    "doc/phase3_6_tasks_and_acceptance.md section 5.2, checked by",
+    "R36-TEST-02 through tools/r36/fidelity.py.",
+    "",
+    "Section 5.2 does not say nothing may change. It says a purely",
+    "engineering refactor must change nothing, and that a necessary",
+    "semantic or implementation change must be identified SEPARATELY, with",
+    "its own regression and performance evidence, rather than folded in",
+    "with directory and interface tidying as one 'no behaviour change'.",
+    "",
+    "This file is that separate identification. Every difference the",
+    "fidelity tool measures between the frozen baseline and this candidate",
+    "has to match an entry here. A difference that matches an entry of",
+    "class 'engineering' is a failure: that class asserts invisibility, and",
+    "a visible change under it means the assertion was wrong."
+  ],
+  "baseline": {
+    "commit": "0e7c34795cd6",
+    "what": "the R3.5 candidate, 26 of 27 standards, with R35-OPT-02 open",
+    "why_this_one": "it is the last tree in which the frozen workloads were measured under the R3.5 contract. R3.5 is not signed off, and this file does not claim it is -- it is the baseline this stage refactored FROM, which is what section 5.2 asks for."
+  },
+  "fields": {
+    "code": "a sha256 prefix over the machine code of every compile the measurement performed, in order",
+    "cycles": "the device cycles the runtime reported for the last launch of the measurement"
+  },
+  "changes": [
+    {
+      "id": "DELTA-01",
+      "class": "semantic",
+      "what": "the device's behaviour moved from a testbench into rtl/tnca_shell.v, and the shell measures the run window on the clock edge rather than in a testbench's active region",
+      "why": "R36-RTL-02 refuses a public top whose function depends on testbench hierarchical reads and writes. The sequencing, the deadline, the completion record and the host arbitration are now synthesizable.",
+      "effect": "a launch reports one cycle fewer. The old testbench read core_idle in the active region of a clock edge -- where a read returns the value from before that edge's non-blocking updates -- so its first idle sample was one cycle early; the shell samples on the edge. MEASURED, not assumed: the runtime sums device_cycles across the programs of a grid, so a grid of two moves by two (L01: 228 -> 226) and a grid of one by one (L05: 1191 -> 1190).",
+      "covers": {
+        "fields": [
+          "cycles"
+        ],
+        "workloads": "all",
+        "modes": "all"
+      },
+      "evidence": "commit 31018c8 and b7f7176; r2-abi, r2-artifact, r2-runtime, r2-fault, r2-compile, r2-cache, core, core-vrf, unit and lint all pass on the new shell, r35-perf passes its gate, and tools/r36/mem_tests.py runs the same program through two independent memories behind the same ports at seven configurations each.",
+      "not_folded_in": "this is recorded apart from the directory and interface work of R36-01..03, which changed no measured number.",
+      "second_effect": "on the slow, reordering memory model the difference is larger and is not a constant, because the shell now arbitrates host access onto the same memory port the core uses. The host's uploads advance the model's LFSR before the kernel starts, and under REORDER that LFSR decides both the backpressure pattern and which response retires first, so the kernel meets a different schedule. L06 is read five times on each tree and compared as a median against the measured spread, which is the rule R3.5 already recorded for its gains."
+    },
+    {
+      "id": "DELTA-02",
+      "class": "semantic",
+      "what": "three compiler defects fixed in the TTIR importer and the builder",
+      "why": "tl.load(p + row * N + offs) silently dropped the row term; a constant offset in a pointer chain was refused as a per-lane offset; and a load through a plain pointer emitted a vector load, so the following tt.splat broadcast a vector register as though it were a scalar one.",
+      "effect": "the machine code changes for any workload whose kernel indexes a second dimension or loads through a scalar pointer, and a v.movi that cannot hold a 32-bit constant now materialises it in a scalar register and splats.",
+      "covers": {
+        "fields": [
+          "code",
+          "cycles"
+        ],
+        "workloads": "all",
+        "modes": "all"
+      },
+      "evidence": "commit 40fa43c; triton-e2e, e2e, r2-compile-tests, r1-ir-tests, r35-perf, r35-safety, r35-layout and r35-alloc all pass, and all eight tutorial examples check their answers against independent oracles. The row-indexing defect returned row 0's data for every row with no diagnostic, which is why it is a correctness fix rather than an optimisation.",
+      "not_folded_in": "recorded apart from DELTA-01: one is hardware, one is the compiler, and the evidence for each stands on its own."
+    },
+    {
+      "id": "DELTA-03",
+      "class": "semantic",
+      "what": "the core's fetch valids f1_valid and fb_valid were added to its reset list",
+      "why": "they were the only pipeline valids missing from it, so the first edge after reset released latched X into d_valid, r_valid took X from that, and core_idle read X from power-up until a launch flushed the pipeline.",
+      "effect": "none expected on any measured number: every existing measurement launches before it looks, and a launch already flushed those registers. Declared anyway, because it is an RTL change and section 5.2 is about what may move without being named.",
+      "covers": {
+        "fields": [
+          "cycles"
+        ],
+        "workloads": "all",
+        "modes": "all"
+      },
+      "evidence": "commit b7f7176; tools/r36/mem_tests.py R36-RST-01 resets the device thirty cycles into a launch and requires the next launch to be correct on both memory implementations.",
+      "not_folded_in": "separate from DELTA-01 although both are RTL: one changes what is measured, this one changes what the device looks like before anything is measured."
+    }
+  ],
+  "engineering_changes_asserting_invisibility": [
+    {
+      "id": "ENG-01",
+      "what": "the backend registry, the socket transport binding, and moving bench/bench_args out of the compile target into a platform_binding object",
+      "covers": "R36-01, R36-02, R36-03",
+      "assertion": "no measured machine code and no measured cycle count changes. Any difference attributed to this would be a failure, and the fidelity tool has no entry that would attribute one."
+    },
+    {
+      "id": "ENG-02",
+      "what": "the export tooling, the memory ledger, the provenance record and the build entry point",
+      "covers": "R36-04, R36-05, R36-07",
+      "assertion": "these read the tree and write reports. They compile nothing and run nothing that a workload measurement observes."
+    }
+  ]
+}

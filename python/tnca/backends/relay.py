@@ -48,6 +48,13 @@ def _recv(conn):
     return json.loads(h.decode()), p
 
 
+# Errors the device can refuse and carry on from. Anything else ends
+# the connection, because the relay cannot tell a live device from one
+# that has stopped answering except by what it said.
+RECOVERABLE = frozenset({'ARGUMENT_INVALID', 'PROTOCOL_ERROR',
+                         'PROFILE_MISMATCH', 'UNSUPPORTED'})
+
+
 def serve(conn, dev, epoch):
     """One client, until it says goodbye or the socket closes."""
     while True:
@@ -77,6 +84,9 @@ def serve(conn, dev, epoch):
             elif op == 'quiesce':
                 r = dev.quiesce()
                 _send(conn, _reply(r, epoch))
+            elif op == 'ping':
+                r = dev.ping()
+                _send(conn, _reply(r, epoch))
             else:
                 _send(conn, {'error': f"unknown operation {op!r}",
                              'code': 'PROTOCOL_ERROR'})
@@ -84,8 +94,16 @@ def serve(conn, dev, epoch):
             # The device's failure is reported, not hidden behind a
             # plausible answer. A relay that invented a reply here would
             # be the mock this stage forbids.
+            code = getattr(e, 'code', 'DEVICE_LOST')
             _send(conn, {'error': f"{type(e).__name__}: {e}",
-                         'code': getattr(e, 'code', 'DEVICE_LOST')})
+                         'code': code})
+            # ...but a refusable error is not device loss, and closing
+            # the connection made it one. An illegal argument used to
+            # end the session here, so the same mistake cost a reply on
+            # one backend and the device on the other. R36-IO-03 asks
+            # for exactly this distinction.
+            if code in RECOVERABLE:
+                continue
             return
 
 

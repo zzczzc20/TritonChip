@@ -29,6 +29,7 @@ import tempfile
 import time
 
 from ..errors import TncaError
+from .. import backend as _backend
 from ..backend import Backend, REFERENCE_AVAILABLE
 
 PROTOCOL_VERSION = 1
@@ -187,11 +188,18 @@ class SocketBackend(Backend):
         return head, data
 
     def upload(self, addr, data):
+        # Checked HERE, before anything goes on the wire. This binding
+        # used to send an unaligned address, let the device raise, and
+        # lose the connection to the relay's error path -- so the same
+        # illegal call was a clean ARGUMENT_INVALID on the file mailbox
+        # and a dead session here. The conformance suite found it.
+        _backend.check_transfer(addr, len(data), what='upload')
         head, _ = self._call({'op': 'upload', 'addr': int(addr),
                               'nbytes': len(data)}, bytes(data))
         return self._reply(head)
 
     def download(self, addr, nbytes):
+        _backend.check_transfer(addr, nbytes, what='download')
         head, data = self._call({'op': 'download', 'addr': int(addr),
                                  'nbytes': int(nbytes)})
         if len(data) != nbytes:
@@ -214,6 +222,10 @@ class SocketBackend(Backend):
         head, _ = self._call({'op': 'quiesce'})
         return self._reply(head)
 
+    def ping(self):
+        head, _ = self._call({'op': 'ping'})
+        return self._reply(head)
+
     def _reply(self, head):
         self.seq = head.get('seq', self.seq + 1)
         r = _Reply(self.seq, head.get('status', 0), head.get('r0', 0),
@@ -224,7 +236,12 @@ class SocketBackend(Backend):
     def capabilities(self):
         out = super().capabilities()
         out.update({'protocol': PROTOCOL_VERSION, 'medium': 'tcp',
-                    'reaches': 'the same RTL as sim-file, through a relay'})
+                    'reaches': 'the same RTL as sim-file, through a relay',
+                    # A structured protocol, not an opcode field: there
+                    # is no way to ask for an operation that does not
+                    # exist except by naming one, which the relay
+                    # refuses by name.
+                    'raw_request': False})
         return out
 
 

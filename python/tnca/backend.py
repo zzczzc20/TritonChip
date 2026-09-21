@@ -45,6 +45,36 @@ class BackendError(TncaError):
     """A backend could not be opened, or does not exist."""
 
 
+#: The device's word. A transfer is addressed in bytes and moved in
+#: words, so an address that is not a multiple of this one cannot be
+#: expressed on the wire.
+WORD = 8
+
+
+def check_transfer(addr, nbytes, *, what='transfer'):
+    """The argument rules every backend shares.
+
+    Shared, rather than implemented once per binding. The file-mailbox
+    transport checked alignment and the socket binding did not, so the
+    same illegal call was ARGUMENT_INVALID on one backend and, on the
+    other, went out on the wire, made the device raise, and took the
+    connection down with it. One rule in one place is the fix; the
+    conformance suite is what found it.
+    """
+    if int(addr) < 0:
+        raise TncaError(f"{what} address {addr} is negative",
+                        code='ARGUMENT_INVALID')
+    if int(addr) % WORD:
+        raise TncaError(
+            f"{what} address {addr:#x} is not {WORD}-byte aligned",
+            code='ARGUMENT_INVALID')
+    if int(nbytes) <= 0:
+        raise TncaError(f"a {what} of {nbytes} byte(s)",
+                        code='ARGUMENT_INVALID',
+                        remedy='a transfer of nothing is a mistake, not a '
+                               'fast path')
+
+
 class Backend(abc.ABC):
     """One device, one epoch, one connection.
 
@@ -95,6 +125,16 @@ class Backend(abc.ABC):
     def quiesce(self):
         """Drain: every accepted request finished, nothing in flight."""
 
+    @abc.abstractmethod
+    def ping(self):
+        """Is it there, and how much has it served? Returns a Reply.
+
+        Part of the interface rather than one binding's convenience: the
+        conformance suite needs a request with no side effect to bracket
+        the ones that have them, and a binding that cannot answer "are
+        you there" cannot be checked for having stayed there.
+        """
+
     def capabilities(self):
         """What this binding can do, for a caller that needs to ask.
 
@@ -105,7 +145,12 @@ class Backend(abc.ABC):
         return {'name': self.name, 'state': self.state,
                 'launch_is_idempotent': self.launch_is_idempotent,
                 'supports_cancel': False,
-                'concurrent_requests': 1}
+                'concurrent_requests': 1,
+                # Whether a caller can put an arbitrary opcode on the
+                # wire. The file mailbox can; a structured protocol
+                # cannot, and says so rather than having the conformance
+                # suite discover it as an AttributeError.
+                'raw_request': False}
 
 
 # ---------------------------------------------------------------------------

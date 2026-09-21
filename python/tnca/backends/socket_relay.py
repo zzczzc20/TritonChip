@@ -150,11 +150,18 @@ class SocketBackend(Backend):
             self._sock.close()
             self._sock = None
         if self._relay is not None:
-            self._relay.terminate()
+            # Give it a moment to act on the `bye` above and stop its own
+            # device. Terminating straight away worked, in the sense that
+            # this process went away -- and left the simulator it had
+            # started running with no parent.
             try:
-                self._relay.wait(timeout=10)
-            except subprocess.TimeoutExpired:              # pragma: no cover
-                self._relay.kill()
+                self._relay.wait(timeout=15)
+            except subprocess.TimeoutExpired:
+                self._relay.terminate()
+                try:
+                    self._relay.wait(timeout=10)
+                except subprocess.TimeoutExpired:          # pragma: no cover
+                    self._relay.kill()
             self._relay = None
 
     def alive(self):

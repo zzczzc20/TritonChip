@@ -16,6 +16,7 @@ inside the adapter.
 """
 import argparse
 import json
+import signal
 import socket
 import struct
 import sys
@@ -60,7 +61,7 @@ def serve(conn, dev, epoch):
     while True:
         head, payload = _recv(conn)
         if head is None:
-            return
+            return False
         op = head.get('op')
         try:
             if op == 'hello':
@@ -68,7 +69,10 @@ def serve(conn, dev, epoch):
                              'device': dev.bench})
                 continue
             if op == 'bye':
-                return
+                # A CLEAN goodbye, distinguished from a socket that just
+                # closed: the relay exits its accept loop on this one and
+                # gets to run its cleanup.
+                return True
             if op == 'upload':
                 r = dev.upload(head['addr'], payload)
                 _send(conn, _reply(r, epoch))
@@ -104,7 +108,7 @@ def serve(conn, dev, epoch):
             # for exactly this distinction.
             if code in RECOVERABLE:
                 continue
-            return
+            return False
 
 
 def _reply(r, epoch):
@@ -138,15 +142,34 @@ def main(argv=None):
     # would hand out an address that cannot answer.
     print(f"listening {port}", flush=True)
 
+    # SIGTERM has to run the cleanup below.
+    #
+    # Python's default SIGTERM handling ends the process without
+    # unwinding, so `finally: dev.stop()` never ran and the simulator
+    # this relay started was left orphaned -- reparented to init and
+    # spinning. Four of them were found on a four-core machine, taking
+    # the whole machine while an acceptance gate measured RTL beside
+    # them. The client terminates this process as a matter of course, so
+    # that was every socket-backend session.
+    def _bye(_sig, _frm):                                  # pragma: no cover
+        raise SystemExit(0)
+    for sig in (signal.SIGTERM, signal.SIGINT):
+        try:
+            signal.signal(sig, _bye)
+        except (ValueError, OSError):
+            pass
+
     try:
         while True:
             conn, _addr = srv.accept()
             conn.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
             try:
-                serve(conn, dev, args.epoch)
+                said_bye = serve(conn, dev, args.epoch)
             finally:
                 conn.close()
-    except KeyboardInterrupt:                              # pragma: no cover
+            if said_bye:
+                break
+    except (KeyboardInterrupt, SystemExit):                # pragma: no cover
         pass
     finally:
         dev.stop()

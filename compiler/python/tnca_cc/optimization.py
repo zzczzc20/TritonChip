@@ -17,6 +17,27 @@ bridge at all.
 from .ir import Op, Value, Region
 from .upstream.bridge import PureScalarBridge, BridgeError, _is_pure
 
+# Operations that define a value and do nothing else: no memory, no
+# ownership, no barrier, nothing that can fault. Deleting one that
+# nothing names changes no observable behaviour.
+#
+# `_is_pure` is a narrower question -- whether the bridge can express it
+# as an arith op -- and a splat is the case that separates them. It has
+# no effect and there is no arith op for it, so it can be deleted but
+# not sent across.
+#
+# Floating-point arithmetic is deliberately absent. A dead vf.add is
+# very probably removable too, but whether it is depends on what the
+# machine does with exception state, and section 7's R35-OPT-03 owns
+# that question. Nothing here needs it, so nothing here assumes it.
+PURE_NO_EFFECT = frozenset(_is_pure.__globals__['PURE_KINDS']) | {
+    'splat', 'vmovi', 'arange', 'scmp', 'vcmp',
+}
+
+
+def _no_effect(op):
+    return op.kind in PURE_NO_EFFECT
+
 
 def _values_in(op):
     """Every Value this op names, including the ones in attrs.
@@ -90,7 +111,7 @@ def drop_dead_pure(kernel):
                 for v in _values_in(o):
                     live.add(id(v))
             keep = [o for o in role.region.ops
-                    if not _is_pure(o)
+                    if not _no_effect(o)
                     or any(id(r) in live for r in o.results)]
             if len(keep) == len(role.region.ops):
                 break
@@ -206,6 +227,124 @@ def _is_float(v):
     return str(getattr(v, 'dtype', '')).startswith(('f', 'bf'))
 
 
+# Consumers whose inactive lanes are documented not to matter, and why.
+#
+#   reduce  ISA sec 8.7: inactive lanes contribute the operation's
+#           identity, "so a masked reduction needs no pre-select". The
+#           hardware supplies the identity; what the register held is
+#           not read.
+#   store   a predicated store does not write an inactive lane, so what
+#           that lane held was never observable.
+#
+# Nothing else is on this list. A vector arithmetic op reading a lane of
+# rubbish and producing a NaN that a LATER instruction observes would be
+# a wrong answer, and the fact that this kernel happens not to do that
+# is not a licence for the next one.
+_DONT_CARE_CONSUMERS = {'reduce': 'inactive lanes contribute the identity '
+                                  '(ISA sec 8.7)',
+                        'store': 'a predicated store does not write an '
+                                 'inactive lane'}
+
+# Operations whose output lane i depends on input lane i and nothing
+# else. Rubbish in an inactive lane stays in that lane, so if the lane is
+# never observed at the end of the chain it is never observed at all.
+#
+# This is safe here because the ISA has no observable floating-point
+# state: the special register table (sec 7.2) has no status word, no
+# sticky flags and no exception register, so an operation whose result
+# nobody reads has no other way to be noticed. A machine with an inexact
+# flag would need this list to be empty for floating point.
+#
+# Cross-lane operations are absent and must stay absent: a gather, a
+# scatter, a shuffle or a reduction moves lane i somewhere else, and
+# then an inactive lane's rubbish arrives in an active one.
+_LANE_LOCAL = {'vbin', 'vselect', 'vcmp', 'vmovi', 'splat'}
+
+
+def drop_dead_load_other(kernel):
+    """Stop materialising `other=` when nothing can observe it.
+
+    A masked load leaves its inactive lanes holding whatever the register
+    had, so the compiler writes `other` into the register first. That
+    instruction is only needed if something reads those lanes.
+
+    It is dropped only when EVERY consumer of the loaded value is
+    predicated by the same predicate value AND is one of the consumers
+    above. Same predicate value, not merely an equal-looking one: two
+    compares that happen to produce the same mask are still two values,
+    and this does not try to prove them equal.
+
+    `other` itself must be the identity the consumer assumes -- zero for
+    an add-reduction. A non-zero `other` is left alone, because then the
+    program is asking for something and this would silently stop
+    providing it.
+    """
+    out = {'sites': 0, 'roles': [], 'kept': []}
+    for role in kernel.roles:
+        if any(_opaque(o) for o in role.region.ops):
+            out['roles'].append({'role': role.name,
+                                 'why': 'nested control flow'})
+            continue
+        ops = role.region.ops
+        n = 0
+        for op in ops:
+            if op.kind != 'load' or op.attrs.get('mask') is None:
+                continue
+            if op.attrs.get('other') not in (0, 0.0):
+                out['kept'].append(f"{role.name}: other= is not zero")
+                continue
+            if op.attrs.get('no_other'):
+                continue
+            mask = op.attrs['mask']
+            loaded = op.results[0]
+            consumers = [o for o in ops
+                         if any(v is loaded for v in _values_in(o))]
+            if not consumers:
+                continue
+            why = _observable(loaded, mask, ops, {})
+            if why:
+                out['kept'].append(f"{role.name}: {why}")
+                continue
+            op.attrs = dict(op.attrs, no_other=True)
+            n += 1
+        out['sites'] += n
+        out['roles'].append({'role': role.name, 'sites': n})
+    return out
+
+
+def _observable(value, mask, ops, memo):
+    """Why this value's inactive lanes can be observed, or '' if they cannot.
+
+    Follows the value forward. A terminal consumer that ignores inactive
+    lanes ends that path; a lane-local operation continues it through its
+    own result; anything else ends the search with a reason.
+    """
+    key = id(value)
+    if key in memo:
+        return memo[key]
+    memo[key] = ''          # assume unobservable while we look; SSA is acyclic
+    consumers = [o for o in ops if any(v is value for v in _values_in(o))]
+    if not consumers:
+        # Nothing reads it at all, so nothing observes it either.
+        return ''
+    for c in consumers:
+        if c.kind in _DONT_CARE_CONSUMERS:
+            if c.attrs.get('mask') is not mask:
+                memo[key] = (f"a {c.kind} under a different predicate reads "
+                             f"the inactive lanes")
+                return memo[key]
+            continue
+        if c.kind in _LANE_LOCAL and len(c.results) == 1:
+            why = _observable(c.results[0], mask, ops, memo)
+            if why:
+                memo[key] = why
+                return why
+            continue
+        memo[key] = f"{c.kind} reads the inactive lanes"
+        return memo[key]
+    return ''
+
+
 def pure_scalar_cse(kernel):
     """Merge each role's duplicate pure scalar values, using upstream.
 
@@ -262,7 +401,7 @@ def pure_scalar_cse(kernel):
                 live.add(id(v))
         before = len(ops)
         role.region.ops = [o for o in ops
-                           if not _is_pure(o)
+                           if not _no_effect(o)
                            or any(id(r) in live for r in o.results)]
         note.update(applied=True, merged=info['merged'],
                     values=info['values'], distinct=info['distinct'],

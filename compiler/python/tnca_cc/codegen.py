@@ -479,7 +479,7 @@ class CodeGen:
         v = op.results[0]
         mask = op.attrs.get('mask')
         self._alloc(v)
-        if mask is not None:
+        if mask is not None and not op.attrs.get('no_other'):
             # sec 12: `other=` is a value. A predicated load leaves inactive
             # lanes holding what the register had, so put the value there.
             self._emit('v.movi', f"v{v.reg}", f"#{op.attrs['other']}",

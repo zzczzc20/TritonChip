@@ -34,10 +34,16 @@ class BridgeError(Exception):
     """The region could not be expressed, so it was left alone."""
 
 
-# The pure scalar operations this bridge understands. Anything else in a
-# role's region is a barrier: values that flow into it are still defined,
-# but it is not itself sent across.
+# The pure scalar operations this bridge can express as arith ops.
+# Anything else in a role's region is a barrier: values that flow into it
+# are still defined, but it is not itself sent across.
+#
+# This is a narrower idea than "has no effect": a splat has no effect and
+# still cannot cross, because it produces a vector and there is no
+# arith op for it. The two lists are kept apart in optimization.py for
+# exactly that reason.
 PURE_KINDS = ('const', 'sbin', 'sbini')
+BRIDGEABLE_KINDS = PURE_KINDS
 
 # TNCA's scalar binary operations, and the arith op each one is.
 _ARITH = {

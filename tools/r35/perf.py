@@ -29,6 +29,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.abspath(os.path.join(HERE, '..', '..'))
 sys.path.insert(0, os.path.join(ROOT, 'tools', 'r1'))
 sys.path.insert(0, os.path.join(ROOT, 'tools', 'r3v2'))
+sys.path.insert(0, HERE)
 sys.path.insert(0, os.path.join(ROOT, 'python'))
 sys.path.insert(0, os.path.join(ROOT, 'compiler', 'python'))
 import r1lib as R                                          # noqa: E402
@@ -86,9 +87,66 @@ def run_one(wid, mode, tmp):
                 'error': f"unreadable result: {r.stdout[-200:]}"}
 
 
+def _run_l02(level, tmp):
+    """L02: two outputs sharing one intermediate, both checked.
+
+    Its own runner because it is the only workload with two outputs, and
+    an oracle that checked one of them would let a compiler delete the
+    other and look fast.
+    """
+    import struct
+    import r35_workloads as WW
+    import workloads as W
+    from tnca import aot, device
+    from tnca.runtime import Session
+
+    prof = PROFILE
+    n, block = 16, 16
+    device.prepare(prof, verbose=False)
+    xs = W.inputs(block, seed=42)
+    bs = W.inputs(block, seed=43)
+    alpha = 2.5
+    want_y, want_z = WW.l02_oracle(xs, bs, n, alpha)
+
+    art = aot.compile_aot(
+        WW.triton_shared_intermediate(),
+        signature={'x_ptr': '*fp32', 'b_ptr': '*fp32', 'y_ptr': '*fp32',
+                   'z_ptr': '*fp32', 'n': 'i32', 'alpha': 'fp32',
+                   'BLOCK': 'constexpr'},
+        constexprs={'BLOCK': block}, profile=prof,
+        options={} if level is None else {'opt_level': level},
+        output=os.path.join(tmp, 'l02.tnca'))
+    words = len(art.asm['hex'].splitlines())
+
+    cycles = []
+    with Session(profile=prof, deadline_cycles=50000) as s:
+        mod = s.load(art.path)
+        x = s.allocate(block * 4, name='x')
+        b = s.allocate(block * 4, name='b')
+        y = s.allocate(block * 4, name='y')
+        z = s.allocate(block * 4, name='z')
+        s.upload(x, W.f32(xs))
+        s.upload(b, W.f32(bs))
+        s.upload(y, struct.pack('<I', W.SENTINEL) * block)
+        s.upload(z, struct.pack('<I', W.SENTINEL) * block)
+        ev = s.submit(mod, {'x_ptr': x, 'b_ptr': b, 'y_ptr': y, 'z_ptr': z,
+                            'n': n, 'alpha': alpha}, grid=(1, 1, 1))
+        s.wait(ev)
+        cycles.append(getattr(ev, 'device_cycles', None))
+        got_y = W.unf32(s.download(y, block * 4))[:n]
+        got_z = W.unf32(s.download(z, block * 4))[:n]
+    ok = bool(ev.ok) and got_y == want_y and got_z == want_z
+    return {'cycles': cycles[-1], 'correct': ok, 'words': words}
+
+
 def measure_one(wid, mode, _tmp_ignored):
     """The measurement itself. Runs in the child, in its own directory."""
     tmp = tempfile.mkdtemp(prefix=f'r35-{wid}-{mode}-')
+    if wid == 'L02':
+        started = time.time()
+        out = _run_l02(MODES[mode], tmp)
+        out['wall_s'] = round(time.time() - started, 1)
+        return out
     import e2e_tests as E
     from tnca import aot
     from tnca.runtime import Session
@@ -157,7 +215,7 @@ def main():
     # Only the workloads that have a source today. L02 and L03 are frozen
     # in the spec and not yet built, and saying so is better than a table
     # with holes in it.
-    HAVE = ['L01', 'L04', 'L05', 'L06']
+    HAVE = ['L01', 'L02', 'L04', 'L05', 'L06']
     ids = [w for w in HAVE if not args.only or w in args.only]
     missing = [w['id'] for w in SPEC['workloads'] if w['id'] not in HAVE]
 

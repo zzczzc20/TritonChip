@@ -250,5 +250,52 @@
       "why": "these suites existed before this stage and their runtime is a property of them, not of this work. The figure is recorded so a change in it is visible."
     },
     "accounting": "subprocess by subprocess. A checker that reuses one run for several cases counts it once, which is why the conformance suite opens one device per backend rather than one per case."
+  },
+  "prerequisites": {
+    "about": [
+      "Targets that must be built before the suites below can run, and the",
+      "reason each is needed. The scope was frozen without them, so on the",
+      "acceptance host -- a fresh clone with nothing built -- three suites",
+      "failed for missing artefacts rather than for anything about the",
+      "code: r1-ir-tests had no tnca-opt, r1-profile-tests had no",
+      "tb_core4.vvp, and r35-safety-tests' own clean baseline could not",
+      "measure L06.",
+      "",
+      "The CI workflow has always built these before running the same",
+      "suites; the regression runner was the only caller that did not, and",
+      "it was also the only one claiming to reproduce them from a clean",
+      "checkout."
+    ],
+    "targets": [
+      {
+        "target": "r2-stage-data",
+        "why": "the runtime reads python/tnca/data in preference to the working tree, and a fresh clone has none"
+      },
+      {
+        "target": "device",
+        "why": "the simulated device the runtime launches on"
+      },
+      {
+        "target": "tnca-opt",
+        "why": "r1-ir-tests drives the MLIR tool; without it IR-01, IR-02, IR-05 and IR-07 report a missing binary"
+      },
+      {
+        "target": "core4",
+        "why": "r1-profile-tests CFG-01 reads capabilities back from tb_core4.vvp, the four-context instance"
+      },
+      {
+        "target": "sim/build/tb_core_vrf.vvp",
+        "why": "the banked register file instance, which the delivery profile elaborates"
+      },
+      {
+        "target": "sim/build/tb_core.vvp",
+        "why": "the reference instance CFG-01 also reads back"
+      },
+      {
+        "target": "sim/build/tb_top.vvp",
+        "why": "the whole-machine instance CFG-01 reads back"
+      }
+    ],
+    "note": "Built once, before any suite, and counted in the inherited time rather than the new-run budget."
   }
 }

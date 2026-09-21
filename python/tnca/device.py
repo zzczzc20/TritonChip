@@ -27,6 +27,7 @@ import shutil
 import warnings
 import subprocess
 import sys
+import time
 
 from . import profiles
 from .errors import DeviceLost
@@ -247,6 +248,10 @@ def require(profile='core-sim', *, allow_stale=False):
 
 KEEP_BUILDS = 3
 
+#: How recently a build must have been touched to be left alone,
+#: whatever its age rank. See prune().
+RECENT_SECONDS = 900
+
 
 def prune(profile='core-sim', keep=KEEP_BUILDS, verbose=False):
     """Drop all but the newest `keep` builds of this profile.
@@ -273,7 +278,22 @@ def prune(profile='core-sim', keep=KEEP_BUILDS, verbose=False):
             continue
     mine.sort(reverse=True)
     removed = []
+    # Never remove a build that something might be running right now.
+    #
+    # Two installations sharing a home directory -- the checkout and a
+    # wheel in a virtual environment, which is exactly what the handoff
+    # rehearsal sets up -- prepare the same profile and prune each
+    # other. One of them then exec'd a path the other had just deleted:
+    # "tnca_device_vrf.vvp: No such file or directory", from a device
+    # that had been there a moment earlier.
+    #
+    # An age floor is the cheap fix: a build younger than this is
+    # somebody's, and disk is not so short that a few minutes of
+    # patience costs anything.
+    now = time.time()
     for _when, path in mine[keep:]:
+        if now - _when < RECENT_SECONDS:
+            continue
         try:
             shutil.rmtree(path)
             removed.append(path)

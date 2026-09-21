@@ -89,7 +89,29 @@ def main():
     ok_caps = not over
     print(f"  frozen at {SCOPE['frozen_at']}, "
           f"{len(SCOPE['suites'])} suite(s) in scope")
+    # The prerequisites, built once.
+    #
+    # Frozen without them, this list failed three suites on a fresh
+    # clone for missing artefacts rather than for anything about the
+    # code. A regression that claims to reproduce from a clean checkout
+    # has to build what the suites need, the way CI always has.
     rows, ok, wall = [], ok_caps, 0.0
+    pre = SCOPE.get('prerequisites') or {}
+    if pre.get('targets') and not args.only:
+        print(f"  building {len(pre['targets'])} prerequisite(s) first:")
+        for t in pre['targets']:
+            r, secs = run(f"make {t['target']}", None)
+            wall += secs
+            good = r.returncode == 0
+            print(f"    {t['target']:<28s} "
+                  f"{'ok' if good else 'FAILED':<7s} {secs:>6.1f}s  "
+                  f"{t['why'][:44]}", flush=True)
+            if not good:
+                for ln in [x for x in (r.stdout + r.stderr).splitlines()
+                           if x.strip()][-3:]:
+                    print(f"        {ln.strip()[:92]}", flush=True)
+                ok = False
+
     for s in SCOPE['suites']:
         if args.only and s['id'] not in args.only:
             continue

@@ -318,7 +318,15 @@ def main():
         line = f"  {wid:<6s}"
         for m in args.modes:
             r = row['modes'][m]
-            line += f" {r['cycles']:>11} {r['words']:>9}"
+            # A measurement that did not happen formats as a dash, not
+            # as a TypeError. When L06 failed to measure in a fresh
+            # clone this line raised
+            # "unsupported format string passed to NoneType.__format__",
+            # so the run died with a traceback about string formatting
+            # and said nothing about the workload that failed.
+            cyc = r['cycles'] if r['cycles'] is not None else '-'
+            wds = r['words'] if r['words'] is not None else '-'
+            line += f" {cyc:>11} {wds:>9}"
         # The primary comparison is section 6.3's: the baseline against
         # O2. The last mode on the command line is not it -- O2-no-LL is
         # an ablation, and measuring the baseline against the ablation

@@ -165,14 +165,30 @@ def env_id(e):
     return f"{e['system']}/{e['machine']}"
 
 
+# What the two environments must have in common: everything that
+# determines the results being compared. The compiler, the runtime, the
+# hardware, the frozen workloads, and the checkers REL-01 actually runs.
+FINGERPRINTED = ('compiler/python/', 'python/tnca/', 'spec/r35_',
+                 'rtl/', 'tb/', 'tools/r35/layout_tests.py',
+                 'tools/r35/opt_tests.py', 'tools/r35/safety_tests.py',
+                 'tools/r35/perf.py', 'tools/r35/r35_workloads.py',
+                 'tools/r35/release_tests.py')
+
+# Deliberately NOT fingerprinted: tools/r35/acceptance.py and
+# verify_evidence.py. The gate orchestrates the checkers and the
+# verifier reads their output afterwards; neither changes a number this
+# standard compares. Including them meant that editing the gate
+# invalidated a peer record made minutes earlier, which is a check that
+# can never be satisfied rather than a check.
+
+
 def sources_fingerprint():
     import hashlib
     sys.path.insert(0, os.path.join(ROOT, 'tools', 'r1'))
     import build_tests as B
     h = hashlib.sha256()
     for rel, d in sorted(B.tree_hashes(ROOT).items()):
-        if rel.startswith(('compiler/python/', 'python/tnca/', 'tools/r35/',
-                           'spec/r35_', 'rtl/', 'tb/')):
+        if rel.startswith(FINGERPRINTED):
             h.update(f"{rel}:{d}\n".encode())
     return h.hexdigest()
 

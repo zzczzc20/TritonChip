@@ -734,6 +734,7 @@ clean:
         r36-export r36-rtl-tests r36-mem-tests r36-conformance \
         r36-fidelity r36-mutation-tests r36-regression \
         r36-io-tests r36-build r36-build-tests \
+        r36-handoff-tests r36-acceptance r36-verify-evidence \
         r35-scout r35-check-plan r35-layout-tests r35-upstream-tests r35-opt-tests r35-prereqs r35-alloc-tests r35-safety-tests r35-package-tests \
         r35-acceptance r35-verify-evidence r35-perf
 
@@ -934,8 +935,6 @@ tutorial: device $(R2_DATA_STAMP)
 	 exit $$fail
 
 #------------------------------------------------------------------------------
-R36_EVIDENCE ?= $(BUILD)/r36-evidence
-
 r36-check-plan: | dirs
 	@$(TRITON_PYTHON) tools/r36/plan.py --json $(BUILD)/r36_plan.json
 
@@ -997,6 +996,23 @@ r36-build: | dirs
 r36-build-tests: | dirs
 	@$(TRITON_PYTHON) tools/r36/build_tests.py \
 	   --json $(BUILD)/r36_build_tests.json
+
+# The gate, and the independent verification of what it wrote.
+R36_EVIDENCE ?= $(BUILD)/r36-evidence
+
+r36-acceptance: | dirs
+	@$(PYTHON) tools/r36/acceptance.py --evidence $(R36_EVIDENCE) \
+	   --python $(TRITON_PYTHON)
+
+r36-verify-evidence:
+	@$(PYTHON) tools/r36/verify_evidence.py \
+	   --evidence $(or $(EVIDENCE),$(R36_EVIDENCE)) \
+	   --json $(BUILD)/r36_verify.json
+
+# The downstream rehearsal, run from outside the repository.
+r36-handoff-tests: $(R2_DATA_STAMP) | dirs
+	@$(TRITON_PYTHON) tools/r36/handoff_tests.py \
+	   --json $(BUILD)/r36_handoff_tests.json
 
 # The host protocol, against the real device in a child process.
 r36-io-tests: $(R2_DATA_STAMP) | dirs

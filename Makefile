@@ -731,6 +731,7 @@ clean:
         r2-package r2-stage-data \
         r3-scout r3-plan r3-model-tests \
         r36-check-plan r36-export r36-rtl-tests r36-mem-tests \
+        r36-io-tests \
         r35-scout r35-check-plan r35-layout-tests r35-upstream-tests r35-opt-tests r35-prereqs r35-alloc-tests r35-safety-tests r35-package-tests \
         r35-acceptance r35-verify-evidence r35-perf
 
@@ -950,6 +951,11 @@ r36-rtl-tests: | dirs
 # Fourteen elaborations and fourteen runs, so it is not a per-push check.
 r36-mem-tests: | dirs
 	@$(PYTHON) tools/r36/mem_tests.py --json $(BUILD)/r36_mem_tests.json
+
+# The host protocol, against the real device in a child process.
+r36-io-tests: $(R2_DATA_STAMP) | dirs
+	@$(TRITON_PYTHON) tools/r36/io_tests.py \
+	   --json $(BUILD)/r36_io_tests.json
 
 #------------------------------------------------------------------------------
 # Phase 3.5: reuse the upstream compiler infrastructure

@@ -73,8 +73,13 @@ def compile_frozen(tmp):
     one('L05', source=W.gemm_program(16, 16, 16, a_desc=a, b_desc=b,
                                      out=0x4000, roles=1),
         kernel_name='L05_gemm', source_kind='tnca-ir', signature={})
+    # roles=1, not 2. The parameter was ignored, so L06 was never a
+    # two-role program -- it differs from L05 by K (32 against 16) and
+    # by running on the slow, reordering memory, which is what its
+    # measurements have always actually been about. gemm_program now
+    # refuses a value it cannot honour; see CAP-TWO-ROLE.
     one('L06', source=W.gemm_program(16, 16, 32, a_desc=a, b_desc=b,
-                                     out=0x4000, roles=2),
+                                     out=0x4000, roles=1),
         kernel_name='L06_gemm', source_kind='tnca-ir', signature={})
     return out
 

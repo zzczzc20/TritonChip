@@ -181,7 +181,21 @@ def gemm_program(m, n, k, *, a_desc, b_desc, out, roles=1):
     The addresses are baked in, which is why the caller allocates first and
     compiles second. C03-C05 are single-launch cases on the tnca-ir input;
     the dynamic-argument path is C02's and E2E-02's business.
+
+    `roles` is accepted and must be 1. It used to be accepted and
+    IGNORED: two callers passed roles=2 and got byte-identical machine
+    code, so a two-role pipeline was a label on a single-role program.
+    Refusing is the honest shape for a parameter the builder cannot
+    honour -- see CAP-TWO-ROLE in spec/r36_capabilities.json for what
+    the core can do and what the product path cannot.
     """
+    if roles != 1:
+        raise ValueError(
+            f"gemm_program emits a single-role tile; roles={roles} is "
+            f"not something it can build. The core has two role "
+            f"contexts and the runtime launches with role_mask=1, so "
+            f"there is no product path to a two-role launch today "
+            f"(CAP-TWO-ROLE).")
     from tnca_cc.gemm import plan_gemm, build_gemm, check_descriptor_geometry
 
     def build(b, target):

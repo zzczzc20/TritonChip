@@ -259,6 +259,117 @@ def base03(log):
             log.append(f"    a launch reading far past its buffer was "
                        f"refused: {type(e).__name__}")
 
+    # Section 5.1 names six things this chain must contain and this
+    # case had two of them: a Triton elementwise kernel with a masked
+    # tail, and a fault recovery. The rest follow. An audit of these
+    # checkers found the gap.
+
+    # A TNCA IR small GEMM, with its real source_kind. Section 5.1 is
+    # explicit that a TNCA IR sample must not be written up as a generic
+    # Triton GEMM, so this one is compiled from the builder and its
+    # manifest is checked to say so.
+    m, n, k = 16, 16, 16
+    a_vals = W.inputs(m * k, seed=7, lo=-4, hi=4)
+    b_vals = W.inputs(k * n, seed=8, lo=-4, hi=4)
+    want_c = W.gemm_oracle(a_vals, b_vals, m, n, k)
+    with Session(profile=profile, deadline_cycles=50000) as s:
+        a_map = s.allocate(256, name='desc_a')
+        b_map = s.allocate(256, name='desc_b')
+        a_tile = s.allocate(m * k * 2, name='A')
+        b_tile = s.allocate(k * n * 2, name='B')
+        out = s.allocate((m * n + n) * 4, name='C')
+        g = aot.compile_aot(
+            W.gemm_program(m, n, k,
+                           a_desc={'tile': a_tile.addr, 'map': a_map.addr},
+                           b_desc={'tile': b_tile.addr, 'map': b_map.addr},
+                           out=out.addr),
+            kernel_name='base03_gemm', signature={},
+            source_kind='tnca-ir', profile=profile,
+            output=os.path.join(tmp, 'gemm.tnca'))
+        gmod = s.load(g.path)
+        s.upload(a_tile, W.pack_f16(a_vals))
+        s.upload(b_tile, W.pack_f16(b_vals))
+        s.upload(a_map, W.pack_words(
+            W.tensormap(a_tile.addr, m, k, k * 2, 2, 16, 16, dtype=0)))
+        s.upload(b_map, W.pack_words(
+            W.tensormap(b_tile.addr, k, n, n * 2, 2, 16, 16, dtype=0)))
+        s.upload(out, struct.pack('<I', W.SENTINEL) * (m * n + n))
+        gev = s.submit(gmod, {})
+        s.wait(gev)
+        raw = s.download(out, (m * n + n) * 4)
+    flat = [v for row in want_c for v in row]
+    gvals = W.unf32(raw)[:m * n]
+    gtail = struct.unpack(f'<{n}I', raw[m * n * 4:])
+    gok = gev.ok and gvals == flat and all(v == W.SENTINEL for v in gtail)
+    log.append(f"    a TNCA IR {m}x{n}x{k} GEMM: {gev.state}, "
+               f"source_kind {g.manifest['identity']['source_kind']}, "
+               f"values {'correct' if gvals == flat else 'WRONG'}, "
+               f"{len(gtail)} sentinel slot(s) "
+               f"{'intact' if all(v == W.SENTINEL for v in gtail) else 'TOUCHED'}")
+    ok &= gok and g.manifest['identity']['source_kind'] == 'tnca-ir'
+
+    # A two-role pipeline is NOT RUN, and this is the record of why.
+    #
+    # Section 5.1 names one. The core has two role contexts -- NUM_RCTX=2,
+    # launch_role_mask selects them, and tb/core/progs/t04_roles.s runs a
+    # producer and a consumer together on real RTL -- but there is no
+    # product path to them: runtime.py launches with role_mask=1,
+    # hard-coded, and the GEMM builder emits a single-role tile.
+    #
+    # This case originally ran gemm_program(..., roles=2) and reported a
+    # two-role pipeline. The parameter was accepted and ignored: the
+    # machine code was byte-identical to roles=1, so the label was the
+    # only difference. gemm_program now refuses a value it cannot
+    # honour, and the gap is recorded as CAP-TWO-ROLE rather than
+    # papered over here.
+    caps = {c['id']: c for c in CAPS['capabilities']}
+    tr = caps.get('CAP-TWO-ROLE')
+    log.append(f"    a two-role pipeline: NOT RUN. "
+               f"{'recorded as ' + tr['state'] if tr else 'NOT RECORDED, which is worse'}")
+    if tr:
+        log.append(f"      {tr['limits'][:96]}")
+        log.append(f"      bearing on this stage: "
+                   f"{tr['bearing_on_this_stage'][:80]}")
+    ok &= bool(tr) and tr['state'] == 'limited'
+    try:
+        W.gemm_program(16, 16, 16, a_desc={'tile': 0x2000, 'map': 0x1000},
+                       b_desc={'tile': 0x3000, 'map': 0x1100},
+                       out=0x4000, roles=2)
+        log.append("      and gemm_program still ACCEPTS roles=2, which "
+                   "it cannot honour")
+        ok = False
+    except ValueError as e:
+        log.append(f"      and gemm_program refuses roles=2: "
+                   f"{str(e)[:72]}")
+
+    # A device-internal dependency chain: B reads what A wrote and C
+    # reads what B wrote, with no host round trip between them. The
+    # middle result is never downloaded, which is the point -- it has to
+    # have stayed on the device.
+    with Session(profile=profile, deadline_cycles=50000) as s:
+        mod = s.load(art.path)
+        x = s.allocate(128, name='x')
+        y = s.allocate(128, name='y')
+        mid = s.allocate(128, name='mid')
+        fin = s.allocate(128, name='fin')
+        s.upload(x, W.f32(xs))
+        s.upload(y, W.f32(ys))
+        s.upload(mid, struct.pack('<I', W.SENTINEL) * 32)
+        s.upload(fin, struct.pack('<I', W.SENTINEL) * 32)
+        e1 = s.submit(mod, {'x_ptr': x, 'y_ptr': y, 'o_ptr': mid,
+                            'n': 16, 'alpha': 2.0}, grid=(1, 1, 1))
+        e2 = s.submit(mod, {'x_ptr': mid, 'y_ptr': y, 'o_ptr': fin,
+                            'n': 16, 'alpha': 3.0}, grid=(1, 1, 1))
+        s.wait(e2)
+        chain = W.unf32(s.download(fin, 128))[:16]
+    want_chain = [(xs[i] * 2.0 + ys[i]) * 3.0 + ys[i] for i in range(16)]
+    chain_ok = chain == want_chain
+    log.append(f"    a device-internal chain A -> B, the middle result "
+               f"never downloaded: {e1.state}/{e2.state}, values "
+               f"{'correct' if chain_ok else 'WRONG'} against an oracle "
+               f"that composes both steps")
+    ok &= e1.ok and e2.ok and chain_ok
+
     # Nothing from the test tree may be product logic.
     import tnca
     leaked = [m for m in sys.modules
@@ -269,8 +380,12 @@ def base03(log):
     log.append(f"    no test helper reached the product namespace: "
                f"{'confirmed' if not leaked else leaked}")
     ok &= not leaked
-    log.append("    section 5.1's chain: source, compiler, artifact, "
-               "backend, upload/launch/wait/download, independent oracle")
+    log.append("    section 5.1's chain, all six of its named parts: a "
+               "Triton elementwise kernel, a masked tail, a TNCA IR "
+               "small GEMM with its real source_kind, a device-internal "
+               "dependency chain and a fault recovery -- each against an "
+               "oracle computed here. The two-role pipeline it also "
+               "names is NOT RUN and is recorded as CAP-TWO-ROLE.")
     return ok, 'the product path runs end to end through the public API'
 
 

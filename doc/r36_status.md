@@ -3,7 +3,10 @@
 合同：[phase3_6_tasks_and_acceptance.md](phase3_6_tasks_and_acceptance.md)。
 交接指南：[r36_handoff.md](r36_handoff.md)。
 
-状态：**IMPLEMENTED / PENDING GATE**。30 条标准全部有 checker 并在开发环境
+状态：**IMPLEMENTED / NOT ACCEPTED**。交接说明与唯一未解决项见
+[r36_open_questions.md](r36_open_questions.md)。
+
+状态细节：**IMPLEMENTED / PENDING GATE**。30 条标准全部有 checker 并在开发环境
 通过；签收判决由锁定平台上的 `make r36-acceptance` 与
 `make r36-verify-evidence` 产生，本文件不代替该判决。
 
@@ -25,7 +28,13 @@ checker 写完后做过一次逐子句审计并据此修复了十余处"声称�
 | R36-07 构建安装与交付 | 2/3；BUILD-02 需锁定平台 | `make r36-build-tests` |
 | R36-08 conformance 与回归 | PASS | `make r36-conformance`、`r36-mutation-tests`、`r36-regression` |
 | R36-09 下游交接演练 | PASS (3/3) | `make r36-handoff-tests` |
-| R36-10 证据与签收 | 待锁定平台运行 | `make r36-acceptance`、`make r36-verify-evidence` |
+| R36-10 证据与签收 | 已运行；判决 NOT ACCEPTED | `make r36-acceptance`、`make r36-verify-evidence` |
+
+锁定平台最近一次 gate：9/11 checker 通过（plan、backend、config、rtl、
+memory、io、build、conformance、mutation 全部满分），5.2 节保真度通过（六个
+冻结 workload 机器码逐位相同，11 处周期差异全部归因）。未通过的是
+`R36-08 regression` 与 `R36-09 handoff`，两者都是"单独跑通过、在 gate 里失
+败"，详见 [r36_open_questions.md](r36_open_questions.md)。
 
 R36-BUILD-02 的 fresh-environment 用例在 macOS 上 **NOT RUN 并因此判 FAIL**：
 锁定的 Triton 3.8.0 只有 manylinux x86_64 wheel，

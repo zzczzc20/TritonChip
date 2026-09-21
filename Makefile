@@ -1404,7 +1404,20 @@ r1-check-artifacts:
 r1-build-tests:
 	@$(PYTHON) tools/r1/build_tests.py --json $(BUILD)/build_tests.json
 
-r1-profile-tests: $(BUILD)/tb_core.vvp $(BUILD)/tb_core4.vvp $(BUILD)/tb_top.vvp
+# All FOUR benches, one per profile in spec/r1_profiles.json. CFG-01
+# reads every capability and resource back out of each profile's own
+# top, so a bench it cannot find is a profile it cannot check.
+#
+# tb_core_vrf.vvp was missing from this list. The core-vrf-sync-v1
+# profile arrived with R3 v2 and the rule was never updated, so the
+# suite passed whenever something else had already built that bench --
+# which is almost always, on a developer's machine and in CI, because
+# the CI workflow builds it by name. In a clean run where nothing had,
+# CFG-01 reported "sim/build/tb_core_vrf.vvp not built" and failed.
+# R3.6's regression, which claims to reproduce the inherited suites
+# from a clean checkout, is what found it.
+r1-profile-tests: $(BUILD)/tb_core.vvp $(BUILD)/tb_core4.vvp \
+                  $(BUILD)/tb_top.vvp $(BUILD)/tb_core_vrf.vvp
 	@$(PYTHON) tools/r1/profile_tests.py --json $(BUILD)/profile_tests.json
 
 r1-signoff:

@@ -264,7 +264,9 @@
       "The CI workflow has always built these before running the same",
       "suites; the regression runner was the only caller that did not, and",
       "it was also the only one claiming to reproduce them from a clean",
-      "checkout."
+      "checkout.",
+      "",
+      "Update: three of these -- tb_core.vvp, tb_core_vrf.vvp and tb_top.vvp -- are now declared by r1-profile-tests itself, which was missing tb_core_vrf.vvp entirely. They are kept here so a clean run builds them once up front rather than discovering them suite by suite; make no-ops on a target that is already built."
     ],
     "targets": [
       {

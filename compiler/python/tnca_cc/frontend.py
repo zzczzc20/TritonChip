@@ -73,6 +73,11 @@ class TTIRImporter:
         self._v = {}            # TTIR value id -> our Value
         self._const = {}        # TTIR value id -> python constant
         self._ptr_base = {}     # TTIR value id -> (arg name, element type)
+        # TTIR pointer id -> the offsets added to it, oldest first. The
+        # offset table alone cannot say which pointer an offset belonged
+        # to, and reading only the last link is what made `p + row*N +
+        # offs` load from `p + offs`.
+        self._ptr_chain = {}
         self._offsets = {}      # TTIR value id -> our offset Value (elements)
         self._args = {}         # arg index -> (name, our Value)
         self._pending_const = {}  # TTIR value id -> constant not yet emitted
@@ -529,6 +534,7 @@ class TTIRImporter:
             if src.id() not in self._ptr_base:
                 raise Unsupported('splat of a non-argument pointer')
             self._ptr_base[rid] = self._ptr_base[src.id()]
+            self._ptr_chain[rid] = list(self._ptr_chain.get(src.id(), []))
             return
         self._v[rid] = self.b.splat(self._value(src), dtype=elem)
         self._offsets[rid] = ('uniform', src.id())
@@ -545,6 +551,11 @@ class TTIRImporter:
                 source='compiler_overview.md sec 12')
         self._ptr_base[rid] = self._ptr_base[base.id()]
         self._offsets[rid] = ('ptr', offs.id())
+        # The offsets this pointer accumulated, oldest first. Kept
+        # explicitly because the offset table alone cannot say which
+        # pointer an offset belonged to.
+        self._ptr_chain[rid] = self._ptr_chain.get(base.id(), []) + \
+            [offs.id()]
 
     def _op_arith_addi(self, op):
         self._binary(op, _INT_BIN['arith.addi'])
@@ -622,42 +633,110 @@ class TTIRImporter:
     def _address(self, ptr_value):
         """A scalar byte address for a recognised uniform-base access.
 
-        Returns (scalar base register value, size suffix, element type, kind)
-        where kind is 'contiguous' or 'indexed'.
+        Returns (address, size suffix, element type, kind, index) where
+        kind is 'contiguous' or 'indexed'.
+
+        This walks the WHOLE chain of `tt.addptr`s back to the argument
+        and adds up what each one contributed. It used to look at the
+        last link only and take the argument as the base, which meant
+        `p + row * N + offs` silently loaded from `p + offs`: row 0 gave
+        the right answer and every other row gave row 0's data, with no
+        error anywhere. Any kernel indexing a second dimension hits that,
+        which is most of them.
         """
         pid = ptr_value.id()
+        if pid not in self._ptr_base:
+            raise Unsupported(
+                'a pointer this importer did not track back to an '
+                'argument',
+                because='sec 12 recognises a uniform base plus a bounded '
+                        'offset; a pointer built some other way would '
+                        'need per-lane addressing',
+                source='compiler_overview.md sec 12')
         name, elem = self._ptr_base[pid]
         esize = _DTYPE_BYTES.get(elem)
         if esize is None:
             raise Unsupported(f"element type {elem!r}")
-        kind, src = self._offsets.get(pid, (None, None))
-        if kind != 'ptr':
-            raise Unsupported('an access whose offset was not tracked')
-        okind, ouni = self._offsets.get(src, (None, None))
 
-        base = self._arg_value(name)
-        if okind == 'contiguous':
-            # base + uniform*esize, lane i at +i*esize: exactly what a plain
-            # vector load does (ISA sec 9.1). No gather needed.
+        # Every offset added to this pointer, oldest first.
+        chain = list(self._ptr_chain.get(pid, []))
+        if not chain:
+            kind, src = self._offsets.get(pid, (None, None))
+            chain = [src] if kind == 'ptr' else []
+
+        scalar_terms, lane, const_elems = [], None, 0
+        for off in chain:
+            okind, ouni = self._offsets.get(off, (None, None))
+            known = self._scalar_const(off)
+            if known is not None and okind is None:
+                # A constant number of elements. `p + k * N + offs` with a
+                # constexpr k arrives here once Triton has folded `k * N`,
+                # and folding it into the address beats materialising a
+                # register to add zero.
+                const_elems += known
+            elif okind == 'arange':
+                if lane is not None:
+                    raise Unsupported(
+                        'two lane-varying offsets on one pointer')
+                lane = 'arange'
+            elif okind == 'contiguous':
+                if lane is not None:
+                    raise Unsupported(
+                        'two lane-varying offsets on one pointer')
+                lane = 'arange'
+                scalar_terms.append(self._v[ouni])
+            elif okind == 'uniform':
+                scalar_terms.append(self._v[ouni])
+            elif off in self._v and getattr(self._v[off], 'kind',
+                                            None) == 'scalar':
+                scalar_terms.append(self._v[off])
+            else:
+                # A general per-lane offset. Only meaningful on its own:
+                # the ISA scales it by the access size, so it is already
+                # in elements.
+                if len(chain) != 1:
+                    raise Unsupported(
+                        'a per-lane offset combined with another offset')
+                return (self._arg_value(name), _SIZE_SUFFIX[esize], elem,
+                        'indexed', self._v[off])
+
+        addr = self._arg_value(name)
+        if const_elems:
+            addr = self.b.sbini(
+                'add', addr, const_elems * esize,
+                comment=f"&{name}[{const_elems}] (a constant offset, "
+                        f"x{esize})")
+        if scalar_terms:
+            total = scalar_terms[0]
+            for extra in scalar_terms[1:]:
+                total = self.b.sbin('add', total, extra,
+                                    comment='the offsets add up')
             shift = {1: 0, 2: 1, 4: 2, 8: 3}[esize]
-            # Every pointer in a kernel shares the same block offset, so this
-            # is computed once rather than once per access. Not a general CSE
-            # -- sec 11.1 says not to build one here -- just not emitting the
-            # same shift three times for three pointers.
-            key = (ouni, shift)
+            # Every pointer in a kernel tends to share the same block
+            # offset, so this is computed once rather than once per
+            # access. Not a general CSE -- sec 11.1 says not to build one
+            # here -- just not emitting the same shift three times.
+            key = (id(total), shift)
             byte = self._byte_offsets.get(key)
             if byte is None:
                 byte = self.b.sbini(
-                    'shl', self._v[ouni], shift,
+                    'shl', total, shift,
                     comment=f"element offset -> bytes (x{esize})")
                 self._byte_offsets[key] = byte
-            addr = self.b.sbin('add', base, byte, comment=f"&{name}[block]")
-            return addr, _SIZE_SUFFIX[esize], elem, 'contiguous', None
-        if okind == 'arange':
-            return base, _SIZE_SUFFIX[esize], elem, 'contiguous', None
-        # Anything else is per-lane. ISA sec 9.1 scales the index by the
-        # access size, so the offset tensor is already in elements.
-        return base, _SIZE_SUFFIX[esize], elem, 'indexed', self._v[src]
+            addr = self.b.sbin('add', addr, byte, comment=f"&{name}[...]")
+        return addr, _SIZE_SUFFIX[esize], elem, 'contiguous', None
+
+    def _scalar_const(self, vid):
+        """The value of `vid` if it is a scalar constant, else None.
+
+        Constants are materialised lazily, so one that is still pending
+        is not in `_v` yet and the chain walk would otherwise take it for
+        a per-lane offset it cannot handle.
+        """
+        pending = self._pending_const.get(vid)
+        if pending is not None and pending[0] == 'scalar':
+            return int(pending[1])
+        return None
 
     def _arg_value(self, name):
         for _, (n, v) in self._args.items():
@@ -674,6 +753,19 @@ class TTIRImporter:
             other = self._const.get(op.get_operand(2).id(), 0)
         addr, size, elem, kind, index = self._address(ptr)
         rid = op.get_result(0).id()
+        shape, _rt = _parse_type(str(op.get_result(0).get_type()))
+        if shape is None:
+            # A load through a pointer that is not a tensor of pointers:
+            # ONE element, into a scalar register. `A[m, k]` in a GEMM is
+            # this, and it is usually on its way to a tt.splat. Emitting a
+            # whole vector load here would read 16 elements and then
+            # broadcast a vector register as though it were a scalar one.
+            if mask is not None:
+                raise Unsupported('a masked scalar load')
+            self._v[rid] = self.b.sload(
+                addr, size=size, dtype=elem,
+                comment='one element, not a vector')
+            return
         if kind == 'contiguous':
             self._v[rid] = self.b.load(addr, mask=mask, other=other,
                                        dtype=elem, size=size)
@@ -687,6 +779,12 @@ class TTIRImporter:
         mask = self._value(op.get_operand(2)) if op.get_num_operands() > 2 \
             else None
         addr, size, elem, kind, index = self._address(ptr)
+        shape, _vt = _parse_type(str(value.get_type()))
+        if shape is None:
+            if mask is not None:
+                raise Unsupported('a masked scalar store')
+            self.b.sstore(addr, self._value(value), size=size)
+            return
         if kind == 'contiguous':
             self.b.store(addr, self._value(value), mask=mask, size=size)
         else:

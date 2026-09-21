@@ -195,6 +195,14 @@ class Builder:
         return v
 
     def splat(self, s, dtype='i32'):
+        # `v.splat` reads a SCALAR register. Handing it a vector used to
+        # emit `v.splat vd, v7` -- a scalar register number that happened
+        # to be a vector's -- and the kernel quietly read the wrong
+        # register rather than failing.
+        if s.kind != SCALAR:
+            raise Diagnostic(
+                f"v.splat broadcasts a scalar register; {s.name} is a "
+                f"{s.kind}")
         v = self._value(VECTOR, dtype, hint='sp')
         self._emit('splat', [v], [s])
         return v
@@ -271,8 +279,8 @@ class Builder:
     def scatter(self, base, index, value, *, mask=None, size='w'):
         self._emit('scatter', [], [base, index, value], mask=mask, size=size)
 
-    def sload(self, base, offset=0, size='d', comment=None):
-        v = self._value(SCALAR, 'i64', hint='m')
+    def sload(self, base, offset=0, size='d', comment=None, dtype='i64'):
+        v = self._value(SCALAR, dtype, hint='m')
         self._emit('sload', [v], [base], offset=offset, size=size,
                    comment=comment)
         return v

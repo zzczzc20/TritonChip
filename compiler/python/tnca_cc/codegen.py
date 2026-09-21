@@ -429,9 +429,31 @@ class CodeGen:
         self._emit('v.splat', f"v{v.reg}", f"s{s.reg}")
 
     def _op_vmovi(self, op):
+        """A constant into every lane.
+
+        ISA 0x40: `v.movi Vd, #imm16` sign-extends sixteen bits, which is
+        not enough for a 32-bit value -- and every floating-point literal
+        is one. `x * alpha + 1.0` produced `v.movi v0, #1065353216`, the
+        bit pattern of 1.0f, and the assembler refused it three layers
+        below the kernel that asked.
+
+        A value that does not fit is materialised in a scalar register
+        and broadcast. That costs an instruction or two more than the
+        immediate form and is what the ISA provides; inventing a wider
+        immediate field would not make one exist.
+        """
         v = op.results[0]
         self._alloc(v)
-        self._emit('v.movi', f"v{v.reg}", f"#{op.attrs['imm']}")
+        imm = int(op.attrs['imm'])
+        if -(1 << 15) <= imm < (1 << 15):
+            self._emit('v.movi', f"v{v.reg}", f"#{imm}")
+            return
+        s = self.alloc.scalar()
+        self.b.directive(self._materialise(s, imm))
+        self._emit('v.splat', f"v{v.reg}", f"s{s}",
+                    comment='a 32-bit constant does not fit v.movi '
+                            '(ISA 0x40)')
+        self.alloc.free('s', s)
 
     def _op_vbin(self, op):
         a, b = op.operands

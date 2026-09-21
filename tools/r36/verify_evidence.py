@@ -259,6 +259,21 @@ def main():
         lvl = (br.get('hardware') or {}).get('claim_level')
         if lvl and lvl != 'engineering-ready':
             findings.append(f"the export claims {lvl!r}")
+        # And one IMPLEMENTATION, which is the other half of
+        # "混提交/实现". The build report and the run agree on the
+        # machine and the tools, or the evidence describes two runs
+        # stapled together. This used to compare the commit alone while
+        # the docstring claimed it covered platform and tool versions.
+        bt = br.get('tools') or {}
+        rt = rep.get('tools') or {}
+        shared = sorted(set(bt) & set(rt))
+        differ = [k for k in shared if bt[k] != rt[k]]
+        print(f"  tool versions common to both records: {shared}, "
+              f"{len(differ)} disagreement(s) {differ if differ else ''}")
+        if differ:
+            findings.append(
+                f"the deliverables and the checkers record different "
+                f"tool versions: {differ}")
     else:
         findings.append('no build report: the deliverables are not '
                         'bound to this run')

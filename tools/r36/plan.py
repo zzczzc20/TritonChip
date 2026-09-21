@@ -75,6 +75,31 @@ def base01(log):
                    f"accepted, and it is NOT. What is open is "
                    f"{pre['R3_5']['open']}, and the record here says why "
                    f"and what it bears on.")
+        # Traceable, which is the other half of the clause and was not
+        # being checked for R3.5: the evidence file has to be the run
+        # this stage names, on a clean tree, the same two things that
+        # are already required of R3 v2. The commit was printed and
+        # compared with nothing.
+        want_c = pre['R3_5'].get('commit', '')
+        same_c = str(d.get('commit', '')).startswith(want_c) if want_c \
+            else None
+        log.append(f"    and it is the run this stage names: "
+                   f"{want_c} vs {str(d.get('commit'))[:12]} "
+                   f"({same_c}), clean tree {d.get('clean_tree')}")
+        ok &= bool(same_c) and bool(d.get('clean_tree'))
+        # The profile this stage delivers on, frozen here rather than
+        # left for each checker to pick.
+        prof = pre.get('delivery_profile')
+        log.append(f"    the delivery profile frozen for this stage: "
+                   f"{prof!r}")
+        ok &= bool(prof)
+        wl = json.load(open(os.path.join(
+            ROOT, 'spec', 'r35_workloads.json')))
+        same_p = wl['hardware_precondition']['profile'] == prof
+        log.append(f"      and the workloads measure on the same one: "
+                   f"{same_p}")
+        ok &= same_p
+
         # The recorded state has to match the record, not flatter it.
         if d.get('verdict') == 'R36_ENGINEERING_READY':
             ok = False

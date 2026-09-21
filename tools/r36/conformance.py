@@ -123,10 +123,10 @@ class Case:
 def c_lifecycle(dev, rec):
     from tnca.errors import TncaError
     ok = dev.alive()
-    rec('alive after open', ok, 'the process exists')
+    rec('alive after open', ok, 'the process exists', 'liveness')
     caps = dev.capabilities()
     rec('capabilities', isinstance(caps, dict) and bool(caps),
-        f"{sorted(caps)[:6]}")
+        f"{sorted(caps)[:6]}", 'declaration')
     ok &= isinstance(caps, dict) and bool(caps)
     p = dev.ping()
     rec('PING', p.ok, f"seq {p.seq}, status {p.status}, served {p.r0}")
@@ -157,7 +157,8 @@ def c_lifecycle(dev, rec):
     else:
         rec('an operation the device does not have', True,
             'not offered: this binding has no opcode field, so an '
-            'unknown operation cannot be put on the wire')
+            'unknown operation cannot be put on the wire',
+            'declaration')
     return ok
 
 
@@ -191,7 +192,8 @@ def c_transfer(dev, rec):
             rec(what, False, 'it was accepted')
             ok = False
         except TncaError as e:
-            rec(what, True, f"[{getattr(e, 'code', '?')}] refused")
+            rec(what, True, f"[{getattr(e, 'code', '?')}] refused",
+                'protocol')
     # Past the end of memory, through the ordinary interface rather
     # than a raw opcode, so every binding answers the same question.
     from tnca.errors import TncaError as _T
@@ -211,7 +213,7 @@ def c_compatibility(dev, rec):
     have = all(k in caps for k in need)
     rec('the backend says what it is', have,
         f"medium {caps.get('medium')!r}, reaches "
-        f"{caps.get('reaches', '?')!r}")
+        f"{caps.get('reaches', '?')!r}", 'declaration')
     ok = have
     # The state the registry gives it must be one of the three, and must
     # not be the reserved one.
@@ -222,7 +224,7 @@ def c_compatibility(dev, rec):
     reserved = [k for k, v in states.items()
                 if v == backend.PLATFORM_VERIFIED]
     rec('no backend claims platform-verified', not reserved,
-        f"states {sorted(set(states.values()))}")
+        f"states {sorted(set(states.values()))}", 'registry')
     ok &= not reserved
     return ok
 
@@ -237,7 +239,8 @@ def c_completion(dev, rec):
         f"{r.r1} instruction(s) retired")
     ok &= r.ok
     rec('it reports a cycle count and a retired count',
-        r.r0 > 0 and r.r1 > 0, f"{r.r0} and {r.r1}")
+        r.r0 > 0 and r.r1 > 0, f"{r.r0} and {r.r1} from seq {r.seq}",
+        'protocol')
     ok &= r.r0 > 0 and r.r1 > 0
     _q, blob = dev.download(MARK_ADDR, 8)
     got = struct.unpack('<Q', blob)[0]
@@ -249,7 +252,9 @@ def c_completion(dev, rec):
     dev.launch(0, 0)
     _q, blob = dev.download(MARK_ADDR, 8)
     ok &= struct.unpack('<Q', blob)[0] == MARK
-    rec('a second launch in the same session', ok, 'no restart in between')
+    rec('a second launch in the same session', ok,
+        f"no restart in between; the oracle {MARK:#x} again",
+        ('protocol', 'oracle'))
     return ok
 
 
@@ -262,7 +267,7 @@ def c_faults(dev, rec):
         f"status {r.status}, code {r.r0:#x}, pc {r.r1:#x}")
     ok &= trapped
     rec('the fault carries a code and a pc', r.r0 != 0,
-        f"code {r.r0:#x} at pc {r.r1:#x}")
+        f"code {r.r0:#x} at pc {r.r1:#x}, from seq {r.seq}", 'protocol')
     ok &= r.r0 != 0
     # And the session survives it.
     dev.upload(0, _words(_program()))
@@ -320,22 +325,58 @@ def run_backend(name, info, log):
         for case in CASES:
             lines = []
 
-            def rec(step, good, detail, _l=lines):
-                _l.append((step, bool(good), detail))
+            # Each step records what backs it: a protocol exchange
+            # (a sequence number from the device) or an oracle (a value
+            # computed here). R36-TEST-01 asks every item to map to
+            # one; a step with neither is an assertion about the host's
+            # opinion of the device.
+            def rec(step, good, detail, backing=None, _l=lines):
+                d = str(detail)
+                if backing is None:
+                    backing = []
+                    if 'seq ' in d or 'status ' in d or 'served ' in d:
+                        backing.append('protocol')
+                    if 'oracle' in d:
+                        backing.append('oracle')
+                elif isinstance(backing, str):
+                    backing = [backing]
+                _l.append((step, bool(good), d, tuple(backing)))
             try:
                 good = case.fn(dev, rec)
             except Exception as e:                         # noqa: BLE001
                 good = False
-                lines.append((f"{type(e).__name__}", False, str(e)[:80]))
+                lines.append((f"{type(e).__name__}", False, str(e)[:80],
+                              ()))
             ok &= bool(good)
             record[case.id] = {'group': case.group, 'passed': bool(good),
-                               'steps': [{'step': s, 'ok': g,
-                                          'detail': d}
-                                         for s, g, d in lines]}
+                               'steps': [{'step': s, 'ok': g, 'detail': d,
+                                          'backed_by': list(b)}
+                                         for s, g, d, b in lines]}
             log.append(f"    {name} {case.id:<12s} "
                        f"{'PASS' if good else 'FAIL':<5s} {case.what}")
-            for s, g, d in lines:
-                log.append(f"      {'ok ' if g else 'BAD'} {s}: {d}"[:96])
+            bare = [s for s, _g, _d, b in lines if not b]
+            for s, g, d, b in lines:
+                mark = '+'.join(b) if b else 'bare'
+                log.append(f"      {'ok ' if g else 'BAD'} [{mark}] "
+                           f"{s}: {d}"[:98])
+            if bare:
+                log.append(f"      steps that declare no backing at "
+                           f"all: {bare}")
+                ok = False
+            # And a case about device behaviour has to be backed by the
+            # device: a group whose every step is a declaration or a
+            # registry lookup has not talked to anything.
+            kinds = {k for _s, _g, _d, b in lines for k in b}
+            if case.group in ('lifecycle', 'transfer', 'completion',
+                              'faults') and 'protocol' not in kinds:
+                log.append(f"      {case.id} touches the device and no "
+                           f"step is backed by a protocol exchange")
+                ok = False
+            if case.group in ('transfer', 'completion') and \
+                    'oracle' not in kinds:
+                log.append(f"      {case.id} checks values and no step "
+                           f"is backed by an oracle")
+                ok = False
     finally:
         dev.stop()
     return ok, record

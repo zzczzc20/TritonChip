@@ -30,6 +30,7 @@ import argparse
 import hashlib
 import json
 import os
+import platform
 import shutil
 import subprocess
 import sys
@@ -51,6 +52,19 @@ PLATFORM_TOOLS = {
     'asic': [('openroad', 'OpenROAD'), ('innovus', 'Cadence Innovus'),
              ('icc2_shell', 'Synopsys IC Compiler II')],
 }
+
+
+def _tool_versions():
+    out = {'python': sys.version.split()[0]}
+    for name, argv in (('iverilog', ['iverilog', '-V']),
+                       ('yosys', ['yosys', '-V'])):
+        try:
+            r = subprocess.run(argv, capture_output=True, text=True,
+                               timeout=60)
+            out[name] = (r.stdout or r.stderr).splitlines()[0].strip()
+        except Exception as e:                             # noqa: BLE001
+            out[name] = f"unavailable: {e}"
+    return out
 
 
 def _head():
@@ -244,8 +258,12 @@ def main():
     if 'all' in want:
         want = {'package', 'sim-assets', 'hardware', 'platform'}
 
+    # The tools this build used, so the verifier can check that the
+    # deliverables and the checkers came from one machine rather than
+    # from two runs stapled together.
     rep = {'targets': sorted(want), 'require': args.require,
-           'commit': _head(),
+           'commit': _head(), 'tools': _tool_versions(),
+           'platform': platform.platform(), 'machine': platform.machine(),
            'started': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime())}
     log = []
     print("TNCA build")

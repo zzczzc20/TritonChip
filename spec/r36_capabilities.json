@@ -117,7 +117,9 @@
       "evidence": "doc/evidence/r3v2/acceptance-linux.json",
       "signoff": "R3_V2_CORE_VRF_ACCEPTED",
       "state": "ACCEPTED"
-    }
+    },
+    "delivery_profile": "core-vrf-sync-v1",
+    "delivery_profile_why": "R36-BASE-01 asks this stage to freeze the profile it delivers on. It is the R3 v2 candidate with the banked, finite-port register file -- the one R3 v2 was accepted on and the one R3.5's frozen workloads are measured on, so the baseline, the measurements and the export all describe the same machine. It was implicit in every checker and written down in none of them."
   },
   "r2_remaining": {
     "handoff_depends_on_any": false,

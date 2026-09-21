@@ -69,6 +69,15 @@ def asm_run(src_text, bench, extra_args=(), tag='cfg'):
                         '+maxcycles=200000', *extra_args],
                        capture_output=True, text=True, timeout=R.CAPS['rtl'])
     ok = r.returncode == 0 and 'PASS' in r.stdout and 'FAIL' not in r.stdout
+    if not ok:
+        # Say where the inputs are. A failing simulation is worth
+        # re-running by hand, and it cannot be if nobody knows which
+        # program was fed to which bench: the reproduction command is
+        # more useful than the last line of output.
+        cmd = ' '.join(['vvp', os.path.join(ROOT, bench), f'+hex={hexf}',
+                        '+maxcycles=200000', *extra_args])
+        return ok, (r.stdout + r.stderr
+                    + f"\n  inputs kept in {d}\n  reproduce with: {cmd}\n")
     return ok, r.stdout + r.stderr
 
 

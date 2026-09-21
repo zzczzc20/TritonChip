@@ -270,13 +270,26 @@ def main():
         json.dump(report, fh, indent=2, sort_keys=True)
         fh.write('\n')
 
-    # The scratch space, removed. A gate that leaves gigabytes behind
-    # makes the next one fail for a reason that is not about the code.
+    # The scratch space. Removed on a clean run, because a gate that
+    # leaves gigabytes behind makes the next one fail for a reason that
+    # is not about the code -- and KEPT when something failed, because
+    # that is where the failing run left its inputs.
+    #
+    # A checker that fails writes its assembly, its hex image and its
+    # temporary benches under here. Deleting them destroyed the only
+    # copy of what a failing simulation was actually given, which is
+    # what a diagnosis needs. It cost an afternoon on one timeout.
     left = sum(os.path.getsize(os.path.join(b, f))
                for b, _d, fs in os.walk(scratch) for f in fs
                if os.path.exists(os.path.join(b, f)))
-    shutil.rmtree(scratch, ignore_errors=True)
-    print(f"  scratch removed: {left // (1 << 20)} MiB")
+    if verdict == SIGNOFF:
+        shutil.rmtree(scratch, ignore_errors=True)
+        print(f"  scratch removed: {left // (1 << 20)} MiB")
+    else:
+        print(f"  scratch KEPT ({left // (1 << 20)} MiB) at {scratch}")
+        print("    something failed, and this is where it left its "
+              "inputs. Remove it once the failure is understood.")
+
 
     print()
     for r in reasons:

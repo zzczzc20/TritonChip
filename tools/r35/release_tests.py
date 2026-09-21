@@ -200,8 +200,16 @@ def smoke(log):
     确定性代码/数值/cycles 一致". Not the whole 23-run matrix: the layout
     and safety checks, and the two ablation subjects at three modes.
     """
+    # The record's own file does not count against the tree being clean.
+    # Writing it is what makes the tree dirty, so a record that demanded
+    # a clean tree including itself could never be made -- and the first
+    # one was refused for exactly that, having been written while it was
+    # the only change present.
+    dirt = [l for l in git('status', '--porcelain').splitlines()
+            if l.strip() and not l.split(maxsplit=1)[-1].startswith(PEER)]
     out = {'environment': environment(), 'commit': git('rev-parse', 'HEAD'),
-           'clean_tree': git('status', '--porcelain') == '',
+           'clean_tree': not dirt,
+           'dirty_paths': [l.split(maxsplit=1)[-1] for l in dirt][:8],
            'sources': sources_fingerprint(),
            'recorded_utc': time.strftime('%Y-%m-%dT%H:%M:%SZ',
                                          time.gmtime())}
@@ -261,8 +269,8 @@ def compare(here, peer, log):
                         f"{(peer.get('sources') or '?')[:12]}, this run "
                         f"against {(here.get('sources') or '?')[:12]}")
     if not peer.get('clean_tree'):
-        problems.append('the peer record came from a tree that was not '
-                        'clean')
+        problems.append(f"the peer record came from a tree that was not "
+                        f"clean: {peer.get('dirty_paths')}")
     a, b = env_id(here['environment']), env_id(peer['environment'])
     log.append(f"    this environment {a}, the peer {b}")
     if a == b:

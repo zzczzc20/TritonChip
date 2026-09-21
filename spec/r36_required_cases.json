@@ -1,0 +1,97 @@
+{
+  "schema": "tnca.r36.required_cases/1",
+  "contract_id": "r36-engineering",
+  "contract_version": "1.0",
+  "signoff": "R36_ENGINEERING_READY",
+  "note": "doc/phase3_6_tasks_and_acceptance.md section 6. Ten packages, thirty standards. Section 8 is explicit about what the sign-off does NOT mean: not that an FPGA runs, not that an ASIC is implemented, not that the project is production-signed.",
+
+  "packages": [
+    {"id": "R36-01", "title": "integration baseline and capability inventory",
+     "gate": "A", "checker": "plan",
+     "cases": ["R36-BASE-01", "R36-BASE-02", "R36-BASE-03"]},
+    {"id": "R36-02", "title": "backend abstraction and the direction of dependency",
+     "gate": "A", "checker": "backend",
+     "cases": ["R36-BE-01", "R36-BE-02", "R36-BE-03"]},
+    {"id": "R36-03", "title": "configuration, artifact and compatibility",
+     "gate": "A", "checker": "config",
+     "cases": ["R36-CFG-01", "R36-CFG-02", "R36-CFG-03"]},
+    {"id": "R36-04", "title": "the shared RTL and a complete export",
+     "gate": "B", "checker": "export",
+     "cases": ["R36-RTL-01", "R36-RTL-02", "R36-RTL-03"]},
+    {"id": "R36-05", "title": "storage, clock and reset adaptation boundaries",
+     "gate": "B", "checker": "memory",
+     "cases": ["R36-MEM-01", "R36-MEM-02", "R36-RST-01"]},
+    {"id": "R36-06", "title": "the host protocol, completion and recovery",
+     "gate": "B", "checker": "protocol",
+     "cases": ["R36-IO-01", "R36-IO-02", "R36-IO-03"]},
+    {"id": "R36-07", "title": "build, install and portable delivery",
+     "gate": "C", "checker": "build",
+     "cases": ["R36-BUILD-01", "R36-BUILD-02", "R36-BUILD-03"]},
+    {"id": "R36-08", "title": "the shared conformance suite and the regression gate",
+     "gate": "C", "checker": "conformance",
+     "cases": ["R36-TEST-01", "R36-TEST-02", "R36-TEST-03"]},
+    {"id": "R36-09", "title": "downstream handoff and the extension rehearsal",
+     "gate": "C", "checker": "handoff",
+     "cases": ["R36-HAND-01", "R36-HAND-02", "R36-HAND-03"]},
+    {"id": "R36-10", "title": "evidence, status and the sign-off",
+     "gate": "D", "checker": "release",
+     "cases": ["R36-EV-01", "R36-EV-02", "R36-REL-01"]}
+  ],
+
+  "gates": {
+    "A": {"packages": ["R36-01", "R36-02", "R36-03"],
+          "may_then_claim": "the engineering boundary and the compatibility rules are frozen"},
+    "B": {"packages": ["R36-04", "R36-05", "R36-06"],
+          "may_then_claim": "the shared hardware and host interfaces are verified through a reference adapter"},
+    "C": {"packages": ["R36-07", "R36-08", "R36-09"],
+          "may_then_claim": "the mainline can be handed to an independent platform branch"},
+    "D": {"packages": ["R36-10"],
+          "may_then_claim": "R36_ENGINEERING_READY, and nothing beyond it"}
+  },
+
+  "claim_levels": {
+    "note": "Section 3.2. These are not interchangeable and each has to be recorded as itself.",
+    "operational": "the existing simulated execution, with its tested range stated",
+    "integration-tested": "a reference adapter other than the built-in binding, closed through real RTL or a protocol loop to it. NOT a claim that a board ran anything.",
+    "engineering-ready": "the shared package and interfaces exist and are tested; the specific platform is NOT verified",
+    "platform-verified": "reserved. Nothing in this stage may claim it."
+  },
+
+  "mutations": [
+    {"id": "M01", "what": "break a declared capability", "detector": "R36-CFG-01"},
+    {"id": "M02", "what": "corrupt a run-asset hash", "detector": "R36-CFG-02"},
+    {"id": "M03", "what": "return a reply under the wrong epoch", "detector": "R36-IO-03"},
+    {"id": "M04", "what": "report completion before the writes are visible", "detector": "R36-IO-02"},
+    {"id": "M05", "what": "change a storage read latency", "detector": "R36-MEM-02"},
+    {"id": "M06", "what": "drop a dependency from the export", "detector": "R36-RTL-01"},
+    {"id": "M07", "what": "forge a PASS or hide a missing case", "detector": "R36-EV-01"}
+  ],
+
+  "budget": {
+    "note": "Section 5.2: frozen at the start, measured from the small tests that already exist, never guessed from an imagined platform. RTL is slow, so a single run registry serves several checks.",
+    "new_rtl_runs": 40,
+    "total_elapsed_seconds": 2400,
+    "total_cycles": 1200000,
+    "core_wall_seconds_each": 180,
+    "core_cycles_each": 50000,
+    "component_wall_seconds_each": 60,
+    "component_cycles_each": 10000,
+    "toolchain_build_seconds": 1800,
+    "waveforms_default": "off",
+    "over_budget_is_a_failure_that_stays": true
+  },
+
+  "workload_caps": {
+    "note": "Section 5.1: reuse the small workloads. No new large models, no whole-machine sweeps, no RTL benchmark growth for the sake of looking board-ready.",
+    "gemm_max": {"m": 16, "n": 16, "k": 32},
+    "elementwise_max_elements": 32,
+    "reduction_max": {"rows": 1, "elements": 16}
+  },
+
+  "fidelity": {
+    "note": "Section 5.2: on the same hardware implementation, pure engineering refactoring may not change the machine code or the device cycles of R3.5's frozen workloads. A necessary semantic change is identified separately and gets its own regression and performance evidence; it is not folded into a directory move called 'no behaviour change'.",
+    "workloads": ["L01", "L02", "L03", "L04", "L05", "L06"],
+    "compare": ["machine code", "device cycles"],
+    "ignoring": ["metadata declared non-semantic in advance"]
+  }
+}

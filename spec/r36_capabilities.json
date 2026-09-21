@@ -1,0 +1,125 @@
+{
+  "schema": "tnca.r36.capabilities/1",
+  "contract_id": "r36-engineering",
+  "contract_version": "1.0",
+  "note": "doc/phase3_6_tasks_and_acceptance.md R36-BASE-02: every capability marked verified, limited or unimplemented, with the evidence for each. Section 2 also requires what this integration actually supports to be listed separately from what R2 left undone, and forbids the handoff baseline from depending on the latter.",
+  "preconditions": {
+    "R3_v2": {
+      "state": "ACCEPTED",
+      "signoff": "R3_V2_CORE_VRF_ACCEPTED",
+      "commit": "33dbb375828e",
+      "evidence": "doc/evidence/r3v2/acceptance-linux.json"
+    },
+    "R3_5": {
+      "state": "26 of 27",
+      "signoff": "NOT GIVEN",
+      "commit": "0e7c34795cd6",
+      "evidence": "doc/evidence/r35/acceptance-linux.json",
+      "open": [
+        "R35-OPT-02"
+      ],
+      "why": "The pinned Triton wheel does not export AxisInfo. Two routes were tried and recorded: the Python API has no such symbol, and upstream's TTIR to TTGIR conversion leaves sizePerThread at 1 whether an access is contiguous or stride-7, so its conclusion is not observable in the layout either. The route that remains is a separate tool built against Triton's own pinned LLVM.",
+      "bearing_on_this_stage": "None of R3.6's thirty standards depends on AxisInfo. The contract's precondition is not fully met and that is recorded here rather than assumed away; the compiler this stage integrates is the one that was measured, and its gains were verified independently."
+    }
+  },
+  "capabilities": [
+    {
+      "id": "CAP-COMPILE-TRITON",
+      "what": "a @triton.jit kernel through the real Triton frontend to TNCA machine code",
+      "state": "verified",
+      "evidence": "make triton-e2e (5 tests); R35-OPT-01",
+      "limits": "one element per lane; a wider block is refused rather than lowered"
+    },
+    {
+      "id": "CAP-COMPILE-TNCA-IR",
+      "what": "a TNCA IR program through the product builder",
+      "state": "verified",
+      "evidence": "R3V2-E2E-01 C03/C04/C05; R35-PERF-01 L03/L05/L06"
+    },
+    {
+      "id": "CAP-OPTIMISE",
+      "what": "upstream canonicalisation and CSE, constant and compare lowering, dead pure and unobservable-other elimination, LinearLayout-driven view elision",
+      "state": "verified",
+      "evidence": "R35-OPT-01/03, R35-LL-01/02/03, R35-PERF-02",
+      "limits": "no reordering is attempted; no AxisInfo facts are used or claimed"
+    },
+    {
+      "id": "CAP-ARTIFACT",
+      "what": "a versioned artifact with its manifest, ABI and identity",
+      "state": "verified",
+      "evidence": "make r2-artifact-tests (10 checks); R35-PKG-02"
+    },
+    {
+      "id": "CAP-RUNTIME-SINGLE-CORE",
+      "what": "session, buffer, event, launch, wait, drain against the simulated device",
+      "state": "verified",
+      "evidence": "make r2-runtime-tests (7 checks); R3V2-E2E-02"
+    },
+    {
+      "id": "CAP-GRID",
+      "what": "a grid of programs over one core, run sequentially",
+      "state": "limited",
+      "evidence": "R3V2-E2E-01 C02 at grid=2",
+      "limits": "grid=2 runs sequentially on one core. It is NOT a claim about two tiles; R3 v2 says so in the inventory."
+    },
+    {
+      "id": "CAP-FOUR-TILE",
+      "what": "four tiles with the mesh and system runtime",
+      "state": "limited",
+      "evidence": "make e2e (2 tests), make core4, make top",
+      "limits": "the RTL and a four-block grid run; the SYSTEM runtime that R2 specified is not complete. R2-09, R2-10 and R2-14 have open halves. Nothing in this stage's handoff baseline depends on it."
+    },
+    {
+      "id": "CAP-VRF-SYNCHRONOUS",
+      "what": "a banked, finite-port vector register file with real arbitration",
+      "state": "verified",
+      "evidence": "R3 v2, all eight gates; spec/r3v2_contract.json",
+      "limits": "one read and one write accepted per bank per cycle, four banks, 8 KiB"
+    },
+    {
+      "id": "CAP-ARF-SYNCHRONOUS",
+      "what": "the accumulator file with the same treatment as the VRF",
+      "state": "unimplemented",
+      "evidence": "R3V2-SYN-01 states it explicitly: the ARF is 16 KiB and is NOT counted toward the synchronous-memory ratio, and is still behavioural",
+      "limits": "16 KiB, behavioural. R3.6 does not undertake it and must not report it as done or guarantee it maps to an FPGA RAM. Section 4.4 says so in as many words."
+    },
+    {
+      "id": "CAP-CACHE-COHERENCE",
+      "what": "coherence between host and device views, or system atomics",
+      "state": "unimplemented",
+      "evidence": "none",
+      "limits": "host and device access is serial and the runtime enforces it. Section 4.5 permits that and forbids claiming what is not there."
+    },
+    {
+      "id": "CAP-EXTERNAL-BACKEND",
+      "what": "an execution backend other than the built-in simulator binding",
+      "state": "unimplemented",
+      "evidence": "none yet; R36-BE-02 is what would change this",
+      "limits": "the runtime currently starts and speaks to one simulator directly"
+    },
+    {
+      "id": "CAP-HARDWARE-EXPORT",
+      "what": "a self-contained hardware package that elaborates outside this repository",
+      "state": "unimplemented",
+      "evidence": "none yet; R36-RTL-01 is what would change this",
+      "limits": "the RTL runs only from inside this repository today: the benches load programs with $readmemh and the source list is the Makefile's. Section 4.3 wants a package with its own top, ports and dependency closure, and section 4.3 also forbids the shared hardware's only control path being a simulator facility."
+    },
+    {
+      "id": "CAP-PHYSICAL",
+      "what": "a bitstream, a board, or a process mapping",
+      "state": "out of scope",
+      "evidence": "none",
+      "limits": "Section 1 puts device selection, vendor IP, pin and board constraints, place and route, bitstream, programming and on-board debug in a separate branch. Not a failure of this stage."
+    }
+  ],
+  "r2_remaining": {
+    "note": "Section 2: what this integration supports and what R2 left undone are listed apart, and the handoff baseline may not depend on the latter.",
+    "open": [
+      "R2-04 the MLIR main path",
+      "R2-09 and R2-10 four-tile device halves",
+      "R2-14",
+      "E2E-03/04/06"
+    ],
+    "handoff_depends_on_any": false
+  }
+}

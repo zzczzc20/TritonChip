@@ -730,6 +730,7 @@ clean:
         r3v2-components r3v2-core r3v2-flow r3v2-e2e r3v2-count r3v2-model r3v2-synth core-vrf \
         r2-package r2-stage-data \
         r3-scout r3-plan r3-model-tests \
+        r36-check-plan \
         r35-scout r35-check-plan r35-layout-tests r35-upstream-tests r35-opt-tests r35-prereqs r35-alloc-tests r35-safety-tests r35-package-tests \
         r35-acceptance r35-verify-evidence r35-perf
 
@@ -858,6 +859,19 @@ r2-package: r2-stage-data
 r3-mutation-tests:
 	@$(PYTHON) tools/r3/mutation_tests.py \
 	   --json $(BUILD)/r3_mutation_tests.json
+
+#------------------------------------------------------------------------------
+# Phase 3.6: multi-backend engineering integration
+# (doc/phase3_6_tasks_and_acceptance.md, version 1.0)
+#
+# Section 7 names the gates. This stage prepares the mainline for a
+# separate platform branch; it does not put anything on a board, and the
+# sign-off says only R36_ENGINEERING_READY.
+#------------------------------------------------------------------------------
+R36_EVIDENCE ?= $(BUILD)/r36-evidence
+
+r36-check-plan: | dirs
+	@$(TRITON_PYTHON) tools/r36/plan.py --json $(BUILD)/r36_plan.json
 
 #------------------------------------------------------------------------------
 # Phase 3.5: reuse the upstream compiler infrastructure

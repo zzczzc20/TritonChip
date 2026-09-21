@@ -114,7 +114,23 @@ def opt02(log):
                "tnca-opt cannot host it: it links distribution MLIR 20, "
                "and section 4.2 forbids the two LLVMs meeting in one "
                "process.")
-    log.append("    Until that tool exists this is NOT VERIFIED. Nothing "
+    # A second route was tried and does not work either, recorded so
+    # the next person does not spend the afternoon on it. Upstream's
+    # TTIR->TTGIR conversion consults AxisInfo when it coalesces, so its
+    # chosen layout should in principle reflect what the analysis proved.
+    # It converts happily for this target -- threadsPerWarp 16,
+    # warpsPerCTA 1, which is exactly TNCA's sixteen lanes and one role
+    # -- and then `add_coalesce` leaves sizePerThread at 1 for a
+    # provably contiguous access AND for a stride-7 one, at BLOCK 16 and
+    # BLOCK 64 alike. The conclusion is not observable in the layout, so
+    # there is no fact to consume through this door.
+    log.append("    a second route was tried: upstream's TTIR->TTGIR "
+               "conversion consults AxisInfo when it coalesces. It "
+               "converts for this target, and then add_coalesce leaves "
+               "sizePerThread at 1 for a contiguous access and for a "
+               "stride-7 one alike, at BLOCK 16 and 64. The conclusion "
+               "is not observable in the layout.")
+    log.append("    Until the tool exists this is NOT VERIFIED. Nothing "
                "in the product currently claims an alignment or "
                "contiguity fact, so nothing is relying on an assumption "
                "either.")

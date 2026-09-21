@@ -72,23 +72,44 @@ def rtl01(log):
     ok = True
     pkg, m = _package(log)
 
-    # Nothing in the package may name a path back into the repository.
+    # Nothing in the package may DEPEND on a path back into the
+    # repository. A comment that names one is documentation -- the
+    # shell's header explains what the testbench it replaced used to do,
+    # and the first version of this check called that a leak. So
+    # comments come out of the Verilog first, and what is left is
+    # include directives, string literals and build-script arguments:
+    # the things that would actually make the package need our tree.
     leaks = []
     for base, _dirs, names in os.walk(pkg):
         for n in names:
             p = os.path.join(base, n)
+            rel = os.path.relpath(p, pkg)
+            if n == 'MANIFEST.json' or n == 'README.md':
+                # The manifest records provenance on purpose, and the
+                # README explains the layout. Neither is compiled.
+                continue
             try:
                 text = open(p, encoding='utf-8', errors='replace').read()
             except OSError:
                 continue
-            for pat in (ROOT, '../', 'rtl/core', 'tb/common', 'tb/device'):
-                if pat in text and n != 'MANIFEST.json':
-                    leaks.append((os.path.relpath(p, pkg), pat))
-    # MANIFEST.json records where a file came from on purpose; a build
-    # script or a source file naming the repository does not.
-    log.append(f"    paths leading out of the package: "
+            if n.endswith(('.v', '.vh')):
+                text = E._strip_comments(text)
+            for pat in (ROOT, '../', 'rtl/core/', 'rtl/common/',
+                        'rtl/gen/', 'tb/common/', 'tb/device/'):
+                if pat in text:
+                    leaks.append((rel, pat))
+    log.append(f"    paths leading out of the package, in code rather "
+               f"than in comments: "
                f"{len(leaks)}{'' if not leaks else ' ' + str(leaks[:3])}")
     ok &= not leaks
+
+    # And the package must not be reachable from ours by accident: no
+    # file in it may be a link to somewhere else.
+    links = [os.path.relpath(os.path.join(b, n), pkg)
+             for b, _d, ns in os.walk(pkg) for n in ns
+             if os.path.islink(os.path.join(b, n))]
+    log.append(f"    symlinks out of the package: {len(links)}")
+    ok &= not links
 
     r = _run(['sh', './elaborate.sh'], pkg)
     log.append(f"    elaborate.sh: {r.stdout.strip() or r.stderr.strip()[:90]}")
@@ -180,9 +201,19 @@ def rtl02(log):
     return ok, 'the ports carry the contract, and the timing is not assumed'
 
 
+# The system functions that ARE hardware: they describe a width or a
+# signedness and every synthesis tool implements them. Listed by name
+# rather than matched by a pattern, so adding one is a decision somebody
+# makes rather than a regex quietly widening.
+_SYNTHESIZABLE_SYSTEM = {
+    '$signed', '$unsigned', '$clog2', '$bits', '$size', '$left',
+    '$right', '$high', '$low', '$increment', '$countones', '$onehot',
+    '$onehot0',
+}
+
 # Anything that cannot exist in hardware.
 _SIMISMS = [
-    (re.compile(r'\$(?!fatal\b)[a-z_]+', re.I), 'a system task'),
+    (re.compile(r'\$[a-z_]\w*', re.I), 'a system task'),
     (re.compile(r'(?<![\w.])#\s*\d'), 'a delay'),
     (re.compile(r'\binitial\b'), 'an initial block'),
     (re.compile(r'\bforce\b|\brelease\b'), 'a force/release'),
@@ -205,7 +236,11 @@ def rtl03(log):
         body = re.sub(r'`ifdef\s+SIM.*?`endif', '', body, flags=re.S)
         for rx, what in _SIMISMS:
             for mm in rx.finditer(body):
-                findings.append((entry['file'], what, mm.group(0)[:20]))
+                tok = mm.group(0)
+                if what == 'a system task' and \
+                        tok.lower() in _SYNTHESIZABLE_SYSTEM:
+                    continue
+                findings.append((entry['file'], what, tok[:20]))
     log.append(f"    simulator-only constructs in the synthesizable set: "
                f"{len(findings)}")
     for f in findings[:6]:
@@ -219,28 +254,49 @@ def rtl03(log):
                f"{simfiles <= declared} ({sorted(simfiles - declared)})")
     ok &= simfiles <= declared
 
-    # The structural check, on the synthesizable set only.
-    ys = tempfile.NamedTemporaryFile('w', suffix='.ys', delete=False)
+    # The structural check, in two passes with different costs.
+    #
+    # The whole hierarchy gets the connection check: elaborate everything
+    # from the exported files alone and let yosys object to a port that
+    # does not line up, a net with two drivers or a width that does not
+    # match. `proc` is deliberately NOT run over the whole core here --
+    # it takes upward of a quarter of an hour on the generated XLS units
+    # and R3 v2's accepted r3v2-syn-tests already covers the core's
+    # internals. Repeating it would buy a longer gate and no new fact.
+    #
+    # The SHELL is the code this stage added, so it gets the full
+    # treatment: proc, then `check -assert`, which is where a latch or a
+    # combinational loop is actually reported.
     files = ' '.join(e['file'] for e in m['rtl'])
-    incs = ' '.join(f"-I {os.path.dirname(e['file']) or '.'}"
-                    for e in m['includes'])
-    ys.write(f"read_verilog -DSYNTHESIS {incs} {files}\n"
-             f"hierarchy -top {m['synthesizable_top']}\n"
-             f"proc\ncheck -assert\nstat\n")
-    ys.close()
-    r = _run(['yosys', '-q', '-s', ys.name], pkg)
-    os.unlink(ys.name)
-    if r.returncode != 0:
-        bad = [ln for ln in (r.stdout + r.stderr).splitlines()
-               if 'Warning' in ln or 'ERROR' in ln]
-        for ln in bad[:6]:
-            log.append(f"      {ln.strip()[:90]}")
-        log.append("    `check -assert` on the exported set: FAILED")
-        ok = False
-    else:
-        log.append("    `check -assert` on the exported set: no latch, "
-                   "no combinational loop, no multiple driver, no width "
-                   "problem")
+    incs = ' '.join(sorted({f"-I {os.path.dirname(e['file']) or '.'}"
+                            for e in m['includes']}))
+    top = m['synthesizable_top']
+
+    def yosys(script, label):
+        ys = tempfile.NamedTemporaryFile('w', suffix='.ys', delete=False)
+        ys.write(script)
+        ys.close()
+        r = _run(['yosys', '-q', '-s', ys.name], pkg, timeout=900)
+        os.unlink(ys.name)
+        if r.returncode != 0:
+            bad = [ln for ln in (r.stdout + r.stderr).splitlines()
+                   if ln.strip() and ('Warning' in ln or 'ERROR' in ln)]
+            for ln in bad[:6]:
+                log.append(f"      {ln.strip()[:90]}")
+            log.append(f"    {label}: FAILED")
+            return False
+        log.append(f"    {label}: clean")
+        return True
+
+    ok &= yosys(f"read_verilog -DSYNTHESIS {incs} {files}\n"
+                f"hierarchy -top {top} -check\ncheck -noinit\n",
+                "the whole exported hierarchy elaborates and connects")
+    ok &= yosys(f"read_verilog -DSYNTHESIS {incs} {files}\n"
+                f"hierarchy -top {top} -check\n"
+                f"select {top}\nproc\ncheck -assert\n",
+                f"`proc; check -assert` on {top}: no latch, no "
+                f"combinational loop, no multiple driver, no width "
+                f"problem")
 
     # The simulation binding and any future platform shell instantiate
     # the SAME top. Checked, not asserted: the binding's source must name

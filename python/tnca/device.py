@@ -267,7 +267,14 @@ def prune(profile='core-sim', keep=KEEP_BUILDS, verbose=False):
         return []
     mine = []
     for name in os.listdir(root):
-        if not name.startswith(f"{profile}-"):
+        # An EXACT profile match, not a prefix one. A directory is named
+        # "<profile>-<config hash>-<source fingerprint>", and both
+        # hashes are hex, so `core-sim-` as a prefix also matched
+        # `core-sim-slow-...` -- preparing one profile could evict
+        # another profile's builds. Splitting from the right is what
+        # tells the two apart.
+        parts = name.rsplit('-', 2)
+        if len(parts) != 3 or parts[0] != profile:
             continue
         path = os.path.join(root, name)
         if not os.path.isdir(path):
@@ -398,7 +405,7 @@ def prepare(profile='core-sim', *, force=False, verbose=True):
             remedy='reinstall a package built with `make r2-package`, which '
                    'stages the sources the device is built from')
 
-    os.makedirs(os.path.dirname(target), exist_ok=True)
+    # NOTE: the directory is created after prune(), not here. See below.
     source = os.path.join(tb, 'device', 'tnca_device.v')
     # The public top is NAMED, not found by library search. `rtl/` itself
     # is deliberately not a -y directory: it holds the tops, and a bench
@@ -414,7 +421,17 @@ def prepare(profile='core-sim', *, force=False, verbose=True):
             + ['-o', target, source, shell])
     if verbose:
         print(f"  building {profile} -> {target}")
+    # Prune FIRST, then create the directory, then build into it.
+    #
+    # This used to create the output directory, then prune, then run
+    # iverilog. Pruning between creating a directory and writing into it
+    # is a race with itself: the gate saw
+    # "core-vrf-sync-v1-.../tnca_device_vrf.vvp: No such file or
+    # directory" followed by "Code generator failure: -1" from a build
+    # whose target directory had just been made. Ordering it this way
+    # removes the whole class rather than the one case.
     prune(profile, verbose=verbose)
+    os.makedirs(os.path.dirname(target), exist_ok=True)
     r = subprocess.run(argv, capture_output=True, text=True, timeout=1800)
     if r.returncode != 0 or not os.path.exists(target):
         raise DeviceLost(

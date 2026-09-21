@@ -128,10 +128,16 @@ def main():
         print()
         print("  section 5.2, machine code and cycles against the frozen "
               "baseline:")
+        # The directory, because a fresh clone has no sim/build until a
+        # make target with a `dirs` prerequisite has run. Every suite
+        # above has one, so by here it exists -- but depending on that
+        # is the same shape of assumption that made CFG-01 fail on the
+        # acceptance host and pass here.
+        fj = os.path.join(ROOT, 'sim', 'build', 'r36_fidelity.json')
+        os.makedirs(os.path.dirname(fj), exist_ok=True)
         r, secs = run(f"{os.environ.get('TRITON_PYTHON', sys.executable)} "
                       f"tools/r36/fidelity.py --modes B0 O2 "
-                      f"--json {os.path.join(ROOT, 'sim', 'build', 'r36_fidelity.json')}",
-                      None)
+                      f"--json {fj}", None)
         wall += secs
         for ln in [x for x in r.stdout.splitlines() if x.strip()][-6:]:
             print(f"    {ln.strip()[:96]}")

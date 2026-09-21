@@ -149,6 +149,24 @@ def main():
     env = dict(os.environ)
     env['TRITON_PYTHON'] = args.python
 
+    # Temporary space beside the evidence, not wherever /tmp happens to
+    # be.
+    #
+    # The checkers build simulators and virtual environments, which is
+    # gigabytes per run. On the acceptance host /tmp is on the root
+    # filesystem; a gate filled it to 100%, and the next case could not
+    # create a virtual environment and reported that the locked Triton
+    # "ships no wheel for this platform" -- a false statement reached
+    # from a full disk. Putting scratch beside the evidence puts it on
+    # whatever filesystem the caller chose for the evidence, which is
+    # the one they decided had room.
+    scratch = os.path.join(ev, 'scratch')
+    os.makedirs(scratch, exist_ok=True)
+    for var in ('TMPDIR', 'TEMP', 'TMP'):
+        env[var] = scratch
+    print(f"  scratch space: {scratch} "
+          f"({shutil.disk_usage(scratch).free // (1 << 30)} GiB free)")
+
     # The deliverables, built once and bound to this commit. R36-EV-02:
     # every package traceable to one integration candidate.
     print("  building the deliverables...", flush=True)
@@ -251,6 +269,14 @@ def main():
     with open(os.path.join(ev, 'acceptance.json'), 'w') as fh:
         json.dump(report, fh, indent=2, sort_keys=True)
         fh.write('\n')
+
+    # The scratch space, removed. A gate that leaves gigabytes behind
+    # makes the next one fail for a reason that is not about the code.
+    left = sum(os.path.getsize(os.path.join(b, f))
+               for b, _d, fs in os.walk(scratch) for f in fs
+               if os.path.exists(os.path.join(b, f)))
+    shutil.rmtree(scratch, ignore_errors=True)
+    print(f"  scratch removed: {left // (1 << 20)} MiB")
 
     print()
     for r in reasons:

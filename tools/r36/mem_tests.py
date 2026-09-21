@@ -31,9 +31,11 @@ fetch valids were added to its reset list: core_idle read X from reset
 until the first launch, so the host port never opened.
 """
 import argparse
+import atexit
 import json
 import os
 import re
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -64,6 +66,27 @@ MAPPING_STATES = ('not started', 'in progress', 'not applicable: outside '
 # (latency, backpressure, reordering).
 CONFIGS = [(1, 0, 0), (4, 0, 0), (8, 0, 0), (1, 1, 0), (4, 1, 0),
            (1, 0, 1), (4, 1, 1)]
+
+
+# Every temporary directory this checker makes, removed when it exits.
+#
+# It used to leave them. Each mem02 run builds fourteen simulators at
+# about 30MB each, so one run is 415MB, and 1327 of these directories
+# were found on the acceptance host with the root filesystem at 100%.
+# That is not a tidiness point: the host could not create a virtual
+# environment, so R36-BUILD-02's fresh-environment cases failed, and the
+# checker reported that the locked Triton "ships no wheel for this
+# platform" -- a false statement about Linux, reached from a disk that
+# was full.
+_KEEP = []
+
+
+def _cleanup():
+    for d in _KEEP:
+        shutil.rmtree(d, ignore_errors=True)
+
+
+atexit.register(_cleanup)
 
 
 def _run(cmd, **kw):
@@ -173,6 +196,7 @@ def mem02(log):
     """Two memories, the same program, the same answers."""
     ok = True
     tmp = tempfile.mkdtemp(prefix='tnca-mem-')
+    _KEEP.append(tmp)
     hexf = os.path.join(tmp, 't30.hex')
     n = _assemble(hexf)
     log.append(f"    the program is {n} word(s) of "
@@ -253,6 +277,7 @@ def rst01(log):
     """Reset with a kernel in flight, and the launch after it."""
     ok = True
     tmp = tempfile.mkdtemp(prefix='tnca-rst-')
+    _KEEP.append(tmp)
     hexf = os.path.join(tmp, 't30.hex')
     _assemble(hexf)
 

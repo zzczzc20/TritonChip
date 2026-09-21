@@ -160,12 +160,6 @@ def build02(log):
     log.append(f"    the R2 suite (fresh environment, repo off the path, "
                f"arbitrary cwd, runtime-only): exit {r.returncode}")
 
-    # Why it failed matters. The locked Triton is a manylinux x86_64
-    # wheel and spec/r1_toolchain.lock.json says in as many words that
-    # macOS is a development platform and may not substitute for the
-    # acceptance one. A case that cannot run here has NOT passed -- R1-02
-    # exists to stop that becoming a skip -- so this still fails, and
-    # says which machine would answer it.
     # The runtime-only half of the clause, checked HERE.
     #
     # Both this file's docstring and spec/r36_provenance.json said R2's
@@ -176,18 +170,41 @@ def build02(log):
                "deferred to a case that does not exist:")
     ok &= _runtime_only(log)
 
+    # Why it failed, REPORTED rather than concluded.
+    #
+    # This used to print "the locked Triton ships no wheel for this
+    # platform" whenever PKG-01 failed. On the acceptance host that
+    # sentence was false -- Triton has a manylinux x86_64 wheel -- and
+    # what had actually happened was that the root filesystem was 100%
+    # full, so pip could not build a virtual environment. A checker that
+    # infers a platform fact from a string match will eventually state a
+    # falsehood, and this one did.
     blocked = 'the locked Triton is not installable here' in r.stdout
     if blocked:
         log.append(f"    this platform is {platform.system()}/"
-                   f"{platform.machine()}, and the locked Triton "
-                   f"{LOCKED_TRITON} ships no wheel for it")
-        log.append("    so the fresh-environment cases are NOT RUN here, "
-                   "which is a failure and not a skip: the verdict for "
-                   "this standard comes from the acceptance platform "
-                   "spec/r1_toolchain.lock.json names")
+                   f"{platform.machine()} and the lock names Triton "
+                   f"{LOCKED_TRITON}")
+        why = [ln.strip() for ln in r.stdout.splitlines()
+               if 'ERROR' in ln or 'No matching distribution' in ln
+               or 'No space left' in ln]
+        for ln in why[:3]:
+            log.append(f"      pip said: {ln[:88]}")
+        if not why:
+            log.append("      the suite reported no reason, which is "
+                       "itself worth chasing")
+        free = shutil.disk_usage(tempfile.gettempdir()).free
+        log.append(f"      free space on {tempfile.gettempdir()}: "
+                   f"{free // (1 << 20)} MiB")
+        if free < (2 << 30):
+            log.append("      not enough to build a virtual environment "
+                       "with Triton in it: an environment failure, not a "
+                       "packaging one")
+        log.append("    the fresh-environment cases are NOT RUN, which "
+                   "is a failure and not a skip: R1-02 exists to stop "
+                   "that becoming a skip")
     ok &= r.returncode == 0
-    return ok, ('the fresh-environment cases need the acceptance platform'
-                if blocked
+    return ok, ('the fresh-environment cases did not run; the reason is '
+                'above' if blocked
                 else 'the wheel stands on its own, and carries the public top')
 
 

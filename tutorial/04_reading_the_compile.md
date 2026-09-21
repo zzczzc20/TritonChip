@@ -106,8 +106,8 @@ do on this kernel, which is worth knowing when you expected otherwise.
 ## And it still computes the right thing
 
 ```text
-    default  SUCCEEDED, 113 cycle(s), correct=True
-    O2       SUCCEEDED, 100 cycle(s), correct=True
+    default  SUCCEEDED, 112 cycle(s), correct=True
+    O2       SUCCEEDED, 99 cycle(s), correct=True
 ```
 
 ---

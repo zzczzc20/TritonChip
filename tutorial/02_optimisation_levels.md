@@ -26,10 +26,10 @@ and every comparison against it would be measuring two changes at once.
 
 ```text
 mode            words  cycles   vs B0  code == B0  correct
-B0 (default)       30     228      +0  yes         yes
-O0                 30     228      +0  yes         yes
-O1                 24     206     +22  no          yes
-O2                 24     206     +22  no          yes
+B0 (default)       30     226      +0  yes         yes
+O0                 30     226      +0  yes         yes
+O1                 24     204     +22  no          yes
+O2                 24     204     +22  no          yes
 ```
 
 The kernel is a masked AXPY with a real tail — `n=17` against `BLOCK=16`

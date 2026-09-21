@@ -39,13 +39,13 @@ looks like a function call.
 
 ```text
 compiled  15 machine word(s), cache key 3b18327ed970
-launched  SUCCEEDED, 102 device cycle(s)
+launched  SUCCEEDED, 101 device cycle(s)
 result    [100.0, 100.0, 100.0, 100.0] ...
 expected  [100.0, 100.0, 100.0, 100.0] ...
 correct   every element matches
 ```
 
-Fifteen machine words for the whole kernel, and 102 device cycles to
+Fifteen machine words for the whole kernel, and 101 device cycles to
 run it. Those are real hardware cycles from the RTL, not a host timing.
 
 ## The signature, and why it is separate from the arguments

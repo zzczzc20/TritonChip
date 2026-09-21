@@ -57,8 +57,8 @@ with Session(profile=PROFILE, backend='sim-socket') as s:
 
 ```
 one artifact, key f6b102750788:
-  sim-file     via a shared directory     82 cycle(s), correct=True
-  sim-socket   via tcp                    82 cycle(s), correct=True
+  sim-file     via a shared directory     81 cycle(s), correct=True
+  sim-socket   via tcp                    81 cycle(s), correct=True
 ```
 
 The cycle counts are equal because both media reach the *same* RTL. That

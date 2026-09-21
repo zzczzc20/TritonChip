@@ -36,9 +36,9 @@ BACK      = [('row', [[1], [2]]), ('col', [[4], [8]])]
 
 ```text
 mode              words  cycles  correct
-B0 (default)         63     215  yes
-O2                    9      61  yes
-O2 with no_ll        58     208  yes
+B0 (default)         63     214  yes
+O2                    9      60  yes
+O2 with no_ll        58     207  yes
 ```
 
 ## Reading that
@@ -47,12 +47,12 @@ At **O2** the compiler hands both layouts to the real upstream
 `LinearLayout`, composes them, and compares the composition against
 upstream's identity over all sixteen positions. It is the identity, so
 no value has to move and nothing is emitted for either view. Sixty-three
-words become nine; 215 cycles become 61.
+words become nine; 214 cycles become 60.
 
 **`no_ll`** switches off the layout algebra and keeps everything else.
 Each view is then materialised the only way the ISA allows: an index
 vector built from the lane index with shifts and XORs, then a
-`v.permute`. That costs 58 words and 208 cycles.
+`v.permute`. That costs 58 words and 207 cycles.
 
 **The 147-cycle difference between `no_ll` and O2 is what the layout
 reasoning is worth on this program** — measured by turning it off, not

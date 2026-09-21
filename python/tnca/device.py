@@ -108,8 +108,15 @@ def expected_path(profile):
 
 # The directories `prepare` compiles from. A bench older than any file in
 # them was built from different RTL than the one on disk.
-_SOURCE_DIRS = (('rtl', 'core'), ('rtl', 'common'), ('rtl', 'gen'),
-                ('tb', 'common'), ('tb', 'device'))
+# `rtl` itself, not only its subdirectories. tnca_shell.v -- the public
+# top the bench instantiates -- lives directly in rtl/, and leaving the
+# directory out meant rewriting the device's entire command sequencer
+# changed nothing about the cache key: the runtime kept serving the
+# device it had built from the previous one. The walk below is recursive,
+# so naming rtl/ covers its subdirectories too; they are kept for the
+# case where only part of the tree was staged.
+_SOURCE_DIRS = (('rtl',), ('rtl', 'core'), ('rtl', 'common'),
+                ('rtl', 'gen'), ('tb', 'common'), ('tb', 'device'))
 
 
 _FINGERPRINT = {}
@@ -307,13 +314,18 @@ def prepare(profile='core-sim', *, force=False, verbose=True):
 
     os.makedirs(os.path.dirname(target), exist_ok=True)
     source = os.path.join(tb, 'device', 'tnca_device.v')
+    # The public top is NAMED, not found by library search. `rtl/` itself
+    # is deliberately not a -y directory: it holds the tops, and a bench
+    # that picks up a top by accident is how two benches end up
+    # disagreeing about which one they are testing.
+    shell = os.path.join(rtl, 'tnca_shell.v')
     argv = ([iverilog, '-g2005', '-I', os.path.join(rtl, 'common'),
              '-y', os.path.join(rtl, 'core'),
              '-y', os.path.join(rtl, 'common'),
              '-y', os.path.join(rtl, 'gen'),
              '-y', os.path.join(tb, 'common')]
             + BENCH_PARAMS.get(profile, [])
-            + ['-o', target, source])
+            + ['-o', target, source, shell])
     if verbose:
         print(f"  building {profile} -> {target}")
     prune(profile, verbose=verbose)

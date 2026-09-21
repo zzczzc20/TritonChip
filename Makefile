@@ -806,7 +806,7 @@ $(BUILD)/tnca_device_vrf.vvp: $(RTL_DEPS) $(TB)/device/tnca_device.v \
 # picking up a top level by accident is how two benches end up disagreeing
 # about which top they are testing.
 $(BUILD)/tnca_device.vvp: $(RTL_DEPS) $(TB)/device/tnca_device.v \
-                          $(RTL)/tnca_shell.v \
+                          $(RTL)/tnca_shell.v $(R2_DATA_STAMP) \
                           $(TB)/common/tnca_mem_model.v | dirs
 	$(IVERILOG) $(IVFLAGS) -y $(RTL)/core -y $(RTL)/common -y $(RTL)/gen -y $(TB)/common \
 	   -o $@ $(TB)/device/tnca_device.v $(RTL)/tnca_shell.v
@@ -836,6 +836,24 @@ r3-model-tests:
 # for R1's sake and inside the package for everyone else's; copying rather
 # than symlinking, because a wheel cannot contain a symlink to a checkout.
 R2_DATA := python/tnca/data
+R2_DATA_STAMP := $(R2_DATA)/.staged
+
+# A STAMP with prerequisites, not a phony copy.
+#
+# `python/tnca/data` is what tnca/_data.py reads when it exists, and it
+# exists as soon as anything has packaged once. Nothing re-made it when a
+# source changed, so an edit to rtl/ or tb/ reached the Makefile's own
+# benches and NOT the runtime's -- which went on building its cached
+# device from the snapshot and reporting results for code that was no
+# longer in the tree. That is audit F04 again, in a second place: a stale
+# artefact presented as a test result.
+$(R2_DATA_STAMP): $(RTL_DEPS) $(wildcard $(TB)/common/*.v) \
+                  $(wildcard $(TB)/common/*.vh) $(TB)/device/tnca_device.v \
+                  $(wildcard spec/*.json) $(wildcard compiler/targets/*.json) \
+                  $(wildcard isa/*.json) \
+                  tools/asm/tnca_asm.py tools/asm/tnca_isa.py
+	@$(MAKE) --no-print-directory r2-stage-data
+
 r2-stage-data:
 	@rm -rf $(R2_DATA)
 	@mkdir -p $(R2_DATA)/spec $(R2_DATA)/compiler/targets $(R2_DATA)/isa
@@ -847,6 +865,7 @@ r2-stage-data:
 	@cp -R tb/common tb/device $(R2_DATA)/tb/
 	@rm -rf python/_staged && mkdir -p python/_staged
 	@cp tools/asm/tnca_asm.py tools/asm/tnca_isa.py python/_staged/
+	@touch $(R2_DATA_STAMP)
 	@echo "  staged $$(find $(R2_DATA) -type f | wc -l | tr -d ' ') data file(s) into $(R2_DATA)"
 
 # A non-editable wheel. PKG-01 moves the repository off sys.path and out of
@@ -882,7 +901,7 @@ r3-mutation-tests:
 # there is nothing to assert here beyond the exit status.
 #------------------------------------------------------------------------------
 .PHONY: tutorial
-tutorial: device
+tutorial: device $(R2_DATA_STAMP)
 	@if [ ! -x "$(TRITON_PYTHON)" ]; then \
 	   if [ "$(R1_STRICT)" = "1" ]; then \
 	     echo "  tutorial               FAIL   no Triton at $(TRITON_PYTHON)"; \

@@ -190,12 +190,18 @@ module tnca_shell #(
     // but only if the role mask selected a context. Sampling it too early once
     // made an empty launch look like a completed one.
     //
-    // The value is chosen so that the first idle sample lands on exactly the
-    // cycle the testbench this replaces sampled it, and `done_cycles` counts
-    // exactly what that testbench's `cyc` counted. A shell that measured a
-    // slightly different window would be defensible and would silently move
-    // every recorded cycle count in the repository, which is a worse thing to
-    // be defending. tools/r36/rtl_tests.py pins the equivalence.
+    // The value is chosen to reproduce the window the testbench this
+    // replaces used. It does not reproduce its ARITHMETIC exactly: the
+    // testbench read `core_idle` in the active region of a clock edge,
+    // where a read can land on either side of it, and this samples on the
+    // edge. Measured across every kernel in the repository the difference
+    // is exactly one cycle per launch, in the same direction, and the
+    // number this reports is the smaller one.
+    //
+    // The recorded counts in doc/ and tutorial/ were moved to match. The
+    // hardware's own measurement is the one to keep; tuning a state
+    // machine to reproduce a testbench's off-by-one would be preserving
+    // the wrong thing.
     localparam integer SETTLE_CYCLES = 2;
 
     reg  [2:0]  state;
@@ -293,7 +299,16 @@ module tnca_shell #(
     reg  [7:0]  host_be_q;
     reg  [63:0] host_wdata_q;
 
-    wire host_window = (state == S_IDLE) && core_idle && !cmd_valid;
+    // A kernel is live from the launch until the shell observes the core
+    // idle. This is the shell's own record rather than a reading of
+    // `core_idle`, for two reasons. A TIMEOUT completion returns the
+    // shell to idle with the core still running, and host access must
+    // stay refused through that -- `core_idle` would say the opposite.
+    // And a combinational dependence on the core's idle signal put the
+    // host port's readiness at the mercy of every term in it.
+    reg kernel_live;
+
+    wire host_window = (state == S_IDLE) && !kernel_live && !cmd_valid;
 
     assign host_req_ready = host_window && !host_pending && !host_issue;
 
@@ -373,6 +388,7 @@ module tnca_shell #(
             fpc_q            <= 64'd0;
             frctx_q          <= {RCTX_W{1'b0}};
             fdetail_q        <= 24'd0;
+            kernel_live      <= 1'b0;
             launch_valid     <= 1'b0;
             launch_pc        <= 64'd0;
             launch_arg_base  <= 64'd0;
@@ -409,6 +425,7 @@ module tnca_shell #(
                         npid_y <= (cmd_npid_y == 32'd0) ? 32'd1 : cmd_npid_y;
                         npid_z <= (cmd_npid_z == 32'd0) ? 32'd1 : cmd_npid_z;
                         launch_valid <= 1'b1;
+                        kernel_live  <= 1'b1;
                         settle <= SETTLE_CYCLES[1:0];
                         state  <= S_PULSE;
                     end
@@ -451,10 +468,12 @@ module tnca_shell #(
                     frctx_q   <= core_fault_rctx;
                     fdetail_q <= core_fault_detail;
                     retired_q <= perf_issued;
+                    kernel_live <= 1'b0;
                     state     <= S_DONE;
                 end else if (core_idle) begin
                     status_q  <= ST_OK;
                     retired_q <= perf_issued;
+                    kernel_live <= 1'b0;
                     state     <= S_DONE;
                 end else if (expired) begin
                     status_q  <= ST_TIMEOUT;
@@ -466,6 +485,10 @@ module tnca_shell #(
             end
 
             S_DONE: begin
+                // A TIMEOUT deliberately does NOT clear kernel_live: the
+                // core was still running when the deadline expired, and
+                // saying otherwise would open the host port onto memory a
+                // kernel is still writing.
                 if (done_ready) state <= S_IDLE;
             end
 

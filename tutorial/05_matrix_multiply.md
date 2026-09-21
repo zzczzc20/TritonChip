@@ -33,7 +33,7 @@ buffers have to exist before the code does.
 
 ```text
 compiled  83 machine word(s) for a 16x16x16 FP16 GEMM
-launched  SUCCEEDED, 1191 device cycle(s)
+launched  SUCCEEDED, 1190 device cycle(s)
 values    correct against a double-precision oracle
 tail      16 sentinel slot(s) intact
 row 0     [25.0, 39.0, 36.0, -5.0] ...
@@ -75,7 +75,7 @@ would miss it. This costs one line and catches a whole class of bug.
 
 ## Where the cycles go
 
-1191 cycles for 83 instructions. Most of that is not instruction issue:
+1190 cycles for 83 instructions. Most of that is not instruction issue:
 the matrix unit waits on its operands, and the epilogue reads sixteen
 accumulator rows out through the vector unit and stores each one. On
 this shape roughly 80% of the stall cycles are the load/store unit.

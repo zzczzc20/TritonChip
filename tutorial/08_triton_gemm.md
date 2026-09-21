@@ -50,14 +50,14 @@ ev = s.submit(mod, {'a_ptr': da, 'b_ptr': db, 'c_ptr': dc}, grid=(M, 1, 1))
 
 ```
 compiled  135 machine word(s) for a 16x16x16 FP32 GEMM, written in Triton
-launched  SUCCEEDED, grid of 16 program(s), 10848 device cycle(s)
+launched  SUCCEEDED, grid of 16 program(s), 10832 device cycle(s)
 values    correct against a double-precision oracle
 C[0,:4]   [-1.0, 9.0, -1.0, 4.0]
 expected  [-1.0, 9.0, -1.0, 4.0]
 ```
 
-Compare with [05](05_matrix_multiply.md): 1191 cycles for the same
-16×16×16 shape on the matrix unit, against 10848 here for sixteen
+Compare with [05](05_matrix_multiply.md): 1190 cycles for the same
+16×16×16 shape on the matrix unit, against 10832 here for sixteen
 programs on the vector unit — about 9× — and that is with 05 in FP16
 against FP32 here. That gap is the matrix unit, and it is the reason the
 planner exists. Use `tl` for the kernels you are inventing; use the

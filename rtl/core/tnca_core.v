@@ -1679,6 +1679,21 @@ module tnca_core #(
     //==========================================================================
     always @(posedge clk) begin
         if (!rst_n) begin
+            // The FETCH valids too. They were the only pipeline valids
+            // left out of this list, and the omission was invisible for
+            // as long as nothing looked at the core before the first
+            // launch: `avail` is `fb_valid | f1_valid`, so the first
+            // edge after reset released latched X into d_valid, r_valid
+            // took X from it, and -- because stall_front depends on
+            // r_valid -- the X sustained itself. `core_idle` then read X
+            // from reset until a launch flushed the pipeline.
+            //
+            // A launch does flush, which is why every existing test
+            // passed: they all launch before they look. R36-RST-01 asks
+            // what the device looks like at reset, and the answer was
+            // "undefined, until you use it".
+            f1_valid   <= 1'b0;
+            fb_valid   <= 1'b0;
             d_valid    <= 1'b0;
             r_valid    <= 1'b0;
             x_valid    <= 1'b0;

@@ -75,6 +75,15 @@ module tnca_shell #(
     parameter PHYS_W         = 7,
     parameter LSU_TAG_W      = 5,
     parameter HAS_SFU        = 1,
+    // Forwarded to the core, not because this shell uses them, but
+    // because spec/r1_profiles.json names them in its elaboration and a
+    // platform that cannot set them cannot reproduce the profile. They
+    // were missing, so an integrator got the core's defaults and got
+    // this configuration right by luck; another profile would have been
+    // silently wrong. R36-CFG-01 asks the export description to agree
+    // with the profile field by field, and it now does.
+    parameter HAS_ATOMICS    = 1,
+    parameter HAS_SYS_ATOMICS = 0,
     parameter USE_BANKED_VRF = 0,
     parameter CORE_ID        = 0,
     parameter NUM_CORES      = 1,
@@ -254,7 +263,9 @@ module tnca_shell #(
         .NUM_RCTX(NUM_RCTX), .RCTX_W(RCTX_W), .VLEN(VLEN), .ELEN(ELEN), .LW(4),
         .VREGS_PER_RCTX(VREGS_PER_RCTX), .PHYS_VREGS(PHYS_VREGS),
         .PHYS_W(PHYS_W), .CORE_ID(CORE_ID), .NUM_CORES(NUM_CORES),
-        .HAS_SFU(HAS_SFU), .USE_BANKED_VRF(USE_BANKED_VRF)
+        .HAS_SFU(HAS_SFU), .HAS_ATOMICS(HAS_ATOMICS),
+        .HAS_SYS_ATOMICS(HAS_SYS_ATOMICS),
+        .USE_BANKED_VRF(USE_BANKED_VRF)
     ) u_core (
         .clk(clk), .rst_n(rst_n),
         .launch_valid(launch_valid), .launch_pc(launch_pc),

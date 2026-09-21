@@ -41,6 +41,17 @@ def axpy(**opts):
                            output=os.path.join(tempfile.mkdtemp(), 'a.tnca'))
 
 
+def _export_parameters(log):
+    """The public top's parameters, from a hardware export manifest."""
+    import glob
+    cands = sorted(glob.glob(os.path.join(ROOT, 'sim', 'build',
+                                          '*export*', 'MANIFEST.json')))
+    if not cands:
+        return None
+    with open(cands[-1]) as fh:
+        return json.load(fh).get('parameters') or {}
+
+
 def _regenerate(profile):
     """The target this profile's RTL would produce, computed now.
 
@@ -166,6 +177,47 @@ def cfg01(log):
                 log.append(f"      {k}: RTL says {a!r}, the file says "
                            f"{b!r}")
         ok &= not drift
+
+    # 3c. The EXPORT description, which R36-CFG-01 names alongside the
+    #     target, the device query and the RTL instance. It arrived
+    #     later than the rest of this case and was not being compared to
+    #     anything: the export published the public top's parameters and
+    #     nothing checked them against the profile whose configuration a
+    #     platform has to be able to reproduce.
+    #
+    #     The check found HAS_ATOMICS and HAS_SYS_ATOMICS missing from
+    #     the shell's parameter list. An integrator instantiating it got
+    #     the core's defaults, which happen to match this profile, and
+    #     would have been silently wrong on another.
+    export = _export_parameters(log)
+    if export is None:
+        log.append("    no export to compare against; run "
+                   "`make r36-export`")
+        ok = False
+    else:
+        want = prof['elaboration']
+        absent = sorted(k for k in want if k not in export)
+        log.append(f"    the export publishes {len(export)} parameter(s); "
+                   f"the profile's elaboration names {len(want)}")
+        log.append(f"    every parameter the profile sets is settable on "
+                   f"the exported top: {not absent} "
+                   f"{absent if absent else ''}")
+        ok &= not absent
+        # And where both give a literal value and the profile does not
+        # override it at elaboration, they must agree.
+        disagree = {}
+        for k, v in sorted(want.items()):
+            ev = export.get(k, '')
+            if ev.lstrip('-').isdigit() and int(ev) != int(v):
+                disagree[k] = (int(ev), int(v))
+        log.append(f"    the parameters whose defaults differ from the "
+                   f"profile: {sorted(disagree)} "
+                   f"{'(each must be set at elaboration)' if disagree else ''}")
+        for k, (a, b) in sorted(disagree.items()):
+            setter = k in str(P.profile(PROFILE).get('elaboration', {}))
+            log.append(f"      {k}: the top defaults to {a}, the profile "
+                       f"wants {b}, and the profile sets it: {setter}")
+            ok &= setter
 
     log.append(f"    the ISA version: identity says "
                f"{art.manifest['identity']['isa_version']!r}, the target "

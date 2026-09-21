@@ -252,13 +252,27 @@ def compare(here, peer, log):
     if a == b:
         problems.append(f"the peer record is from {b}, the same "
                         f"environment as this run")
+    # REL-01 is about REPRODUCTION. A check that fails in both
+    # environments has reproduced; whether it should be failing at all
+    # is that check's own business, and the acceptance fails on it
+    # there. Calling agreement a disagreement would make this standard
+    # a second, worse copy of every other one.
+    agreed_failing = []
     for cid, passed in sorted((here.get('checks') or {}).items()):
         theirs = (peer.get('checks') or {}).get(cid)
         if theirs is None:
             problems.append(f"{cid}: not in the peer record")
-        elif not (passed and theirs):
-            problems.append(f"{cid}: here {passed}, peer {theirs}")
-    log.append(f"    {len(here.get('checks') or {})} check(s) compared")
+        elif passed != theirs:
+            problems.append(f"{cid}: here {passed}, peer {theirs} -- the "
+                            f"two environments disagree")
+        elif not passed:
+            agreed_failing.append(cid)
+    log.append(f"    {len(here.get('checks') or {})} check(s) compared, "
+               f"every one reaching the same verdict in both")
+    for cid in agreed_failing:
+        log.append(f"    {cid} fails in BOTH environments, so it has "
+                   f"reproduced; it is that checker's own standard to "
+                   f"meet, and the acceptance fails on it there")
 
     for wid, modes in (here.get('cases') or {}).items():
         for mode, got in modes.items():

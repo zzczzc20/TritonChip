@@ -1,7 +1,23 @@
 # Phase 3.5 状态：复用上游编译基础设施，交付可观测的编译优化
 
 合同：[phase3_5_tasks_and_acceptance.md](phase3_5_tasks_and_acceptance.md) v1.0。
-签收名 `R35_COMPILER_ACCEPTED`。**当前 NOT ACCEPTED。**
+签收名 `R35_COMPILER_ACCEPTED`。**当前 NOT ACCEPTED，差一条。**
+
+在锁定的 Linux 主环境（`Linux-6.17.0-1019-aws-x86_64`、Triton 3.8.0）于
+commit `0e7c34795cd6`、干净工作树上跑完整 gate，run id `1789956010-0e7c34795cd6`，
+记录见 [`doc/evidence/r35/acceptance-linux.json`](evidence/r35/acceptance-linux.json)：
+
+| 包 | 结果 |
+|---|---|
+| R35-01 plan / R35-02 upstream / R35-03 layout | 3/3、3/3、3/3 |
+| R35-04 opt | **2/3 — R35-OPT-02 未成立** |
+| R35-05 alloc / R35-06 safety / R35-07 perf | 3/3、3/3、3/3 |
+| R35-08 package / R35-09 release | 3/3、3/3 |
+
+**26/27。**verifier 独立复核同一份证据、不读它的 `verdict` 与 `passed` 字段，
+从冻结清单和原始结果重算，得到同一个结论：27 条标准全部找得到、摘要与原始结果
+逐条一致、收益从**原始周期**重算为 3 个 winner 与 1 个 LL 归因、0 个退化、
+总周期 5097 → 4811，唯一打开的是 R35-OPT-02。
 
 前置已成立：R3 v2 于 commit `33dbb375828e` 在锁定 Linux 上签收
 `R3_V2_CORE_VRF_ACCEPTED`（见 [`doc/evidence/r3v2/acceptance-linux.json`](evidence/r3v2/acceptance-linux.json)），

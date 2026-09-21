@@ -1,0 +1,619 @@
+{
+  "checks": [
+    {
+      "cases": [
+        {
+          "detail": "the frozen inventory is complete and within budget",
+          "id": "R35-BASE-01",
+          "passed": true
+        },
+        {
+          "detail": "every malformation refused before any RTL runs",
+          "id": "R35-BASE-02",
+          "passed": true
+        },
+        {
+          "detail": "the hardware precondition holds and O0 emits what B0 emits",
+          "id": "R35-BASE-03",
+          "passed": true
+        }
+      ],
+      "checker": "plan",
+      "elapsed_s": 0.29,
+      "exit": 0,
+      "package": "R35-01"
+    },
+    {
+      "cases": [
+        {
+          "detail": "the pinned upstream runs, from the installed wheel",
+          "id": "R35-UP-01",
+          "passed": true
+        },
+        {
+          "detail": "mismatch, bad input and a malformed layout each refused",
+          "id": "R35-UP-02",
+          "passed": true
+        },
+        {
+          "detail": "the answers reach the code, shown by changing them",
+          "id": "R35-UP-03",
+          "passed": true
+        }
+      ],
+      "checker": "upstream",
+      "elapsed_s": 0.33,
+      "exit": 0,
+      "package": "R35-02"
+    },
+    {
+      "cases": [
+        {
+          "detail": "354 element comparison(s) over 3 seed(s)",
+          "id": "R35-LL-01",
+          "passed": true
+        },
+        {
+          "detail": "coverage, multiplicity, non-bijection and the refusals",
+          "id": "R35-LL-02",
+          "passed": true
+        },
+        {
+          "detail": "rename, conversion and refusal, with the cost on the page",
+          "id": "R35-LL-03",
+          "passed": true
+        }
+      ],
+      "checker": "layout",
+      "elapsed_s": 0.19,
+      "exit": 0,
+      "package": "R35-03"
+    },
+    {
+      "cases": [
+        {
+          "detail": "upstream runs on the product path and the code changes",
+          "id": "R35-OPT-01",
+          "passed": true
+        },
+        {
+          "detail": "the pinned wheel does not export AxisInfo; the route is named and nothing assumes its facts meanwhile",
+          "id": "R35-OPT-02",
+          "passed": false
+        },
+        {
+          "detail": "effects intact, floating point unchanged bit for bit",
+          "id": "R35-OPT-03",
+          "passed": true
+        }
+      ],
+      "checker": "opt",
+      "elapsed_s": 4.12,
+      "exit": 1,
+      "package": "R35-04"
+    },
+    {
+      "cases": [
+        {
+          "detail": "the cost is over physical banks, and every move is charged",
+          "id": "R35-ALLOC-01",
+          "passed": true
+        },
+        {
+          "detail": "peaks, ownership and footprint unchanged, and no spill",
+          "id": "R35-ALLOC-02",
+          "passed": true
+        },
+        {
+          "detail": "the op order is unchanged apart from deletions",
+          "id": "R35-SCHED-01",
+          "passed": true
+        }
+      ],
+      "checker": "alloc",
+      "elapsed_s": 3.04,
+      "exit": 0,
+      "package": "R35-05"
+    },
+    {
+      "cases": [
+        {
+          "detail": "the inherited cases hold and ownership is checked at O0..O2",
+          "id": "R35-SAFE-01",
+          "passed": true
+        },
+        {
+          "detail": "each pass has a positive case and a boundary negative one",
+          "id": "R35-SAFE-02",
+          "passed": true
+        },
+        {
+          "detail": "8/8 mutation(s) caught by their named checker",
+          "id": "R35-MUT-01",
+          "mutations": [
+            {
+              "caught": true,
+              "id": "N01",
+              "note": "caught by R35-LL-01",
+              "what": "a wrong LinearLayout basis"
+            },
+            {
+              "caught": true,
+              "id": "N02",
+              "note": "caught by R35-LL-02",
+              "what": "the tail-mask coverage check defeated"
+            },
+            {
+              "caught": true,
+              "id": "N03",
+              "note": "caught by R35-OPT-03",
+              "what": "an effectful operation marked pure"
+            },
+            {
+              "caught": true,
+              "id": "N04",
+              "note": "caught by R35-SAFE-01",
+              "what": "an async value released early"
+            },
+            {
+              "caught": true,
+              "id": "N05",
+              "note": "caught by R35-ALLOC-01",
+              "what": "the bank ignored in the cost model"
+            },
+            {
+              "caught": true,
+              "id": "N06",
+              "note": "caught by R35-PKG-02",
+              "what": "the opt level left out of the cache key"
+            },
+            {
+              "caught": true,
+              "id": "N07",
+              "note": "caught by R35-PERF-01",
+              "what": "a model cycle passed off as measured"
+            },
+            {
+              "caught": true,
+              "id": "N08",
+              "note": "caught by R35-EV-01",
+              "what": "a forged PASS"
+            }
+          ],
+          "passed": true
+        }
+      ],
+      "checker": "safety",
+      "elapsed_s": 205.83,
+      "exit": 0,
+      "package": "R35-06"
+    },
+    {
+      "cases": [
+        {
+          "detail": "6 workload(s) measured on core-vrf-sync-v1, every one against its oracle",
+          "id": "R35-PERF-01",
+          "passed": true,
+          "profile": "core-vrf-sync-v1",
+          "rows": [
+            {
+              "compared": "B0 vs O2",
+              "correct": true,
+              "id": "L01",
+              "ll_meets": false,
+              "ll_needed": 7,
+              "ll_saved": 0,
+              "meets": true,
+              "modes": {
+                "B0": {
+                  "correct": true,
+                  "cycles": 228,
+                  "repeats": 1,
+                  "samples": [
+                    228
+                  ],
+                  "spread": 0,
+                  "wall_s": 2.3,
+                  "words": 30
+                },
+                "O2": {
+                  "correct": true,
+                  "cycles": 206,
+                  "repeats": 1,
+                  "samples": [
+                    206
+                  ],
+                  "spread": 0,
+                  "wall_s": 2.3,
+                  "words": 24
+                },
+                "O2-no-LL": {
+                  "correct": true,
+                  "cycles": 206,
+                  "repeats": 1,
+                  "samples": [
+                    206
+                  ],
+                  "spread": 0,
+                  "wall_s": 2.2,
+                  "words": 24
+                }
+              },
+              "needed": 12,
+              "relative": 0.09649122807017543,
+              "saved": 22,
+              "spread": 0
+            },
+            {
+              "compared": "B0 vs O2",
+              "correct": true,
+              "id": "L02",
+              "ll_meets": false,
+              "ll_needed": 4,
+              "ll_saved": 0,
+              "meets": false,
+              "modes": {
+                "B0": {
+                  "correct": true,
+                  "cycles": 130,
+                  "repeats": 1,
+                  "samples": [
+                    130
+                  ],
+                  "spread": 0,
+                  "wall_s": 2.0,
+                  "words": 21
+                },
+                "O2": {
+                  "correct": true,
+                  "cycles": 129,
+                  "repeats": 1,
+                  "samples": [
+                    129
+                  ],
+                  "spread": 0,
+                  "wall_s": 2.0,
+                  "words": 19
+                },
+                "O2-no-LL": {
+                  "correct": true,
+                  "cycles": 129,
+                  "repeats": 1,
+                  "samples": [
+                    129
+                  ],
+                  "spread": 0,
+                  "wall_s": 2.0,
+                  "words": 19
+                }
+              },
+              "needed": 8,
+              "relative": 0.007692307692307693,
+              "saved": 1,
+              "spread": 0
+            },
+            {
+              "compared": "B0 vs O2",
+              "correct": true,
+              "id": "L03",
+              "ll_meets": true,
+              "ll_needed": 7,
+              "ll_saved": 147,
+              "meets": true,
+              "modes": {
+                "B0": {
+                  "correct": true,
+                  "cycles": 215,
+                  "repeats": 1,
+                  "samples": [
+                    215
+                  ],
+                  "spread": 0,
+                  "wall_s": 2.2,
+                  "words": 63
+                },
+                "O2": {
+                  "correct": true,
+                  "cycles": 61,
+                  "repeats": 1,
+                  "samples": [
+                    61
+                  ],
+                  "spread": 0,
+                  "wall_s": 1.9,
+                  "words": 9
+                },
+                "O2-no-LL": {
+                  "correct": true,
+                  "cycles": 208,
+                  "repeats": 1,
+                  "samples": [
+                    208
+                  ],
+                  "spread": 0,
+                  "wall_s": 2.2,
+                  "words": 58
+                }
+              },
+              "needed": 11,
+              "relative": 0.7162790697674418,
+              "saved": 154,
+              "spread": 0
+            },
+            {
+              "compared": "B0 vs O2",
+              "correct": true,
+              "id": "L04",
+              "ll_meets": false,
+              "ll_needed": 4,
+              "ll_saved": 0,
+              "meets": true,
+              "modes": {
+                "B0": {
+                  "correct": true,
+                  "cycles": 74,
+                  "repeats": 1,
+                  "samples": [
+                    74
+                  ],
+                  "spread": 0,
+                  "wall_s": 1.8,
+                  "words": 22
+                },
+                "O2": {
+                  "correct": true,
+                  "cycles": 63,
+                  "repeats": 1,
+                  "samples": [
+                    63
+                  ],
+                  "spread": 0,
+                  "wall_s": 1.9,
+                  "words": 9
+                },
+                "O2-no-LL": {
+                  "correct": true,
+                  "cycles": 63,
+                  "repeats": 1,
+                  "samples": [
+                    63
+                  ],
+                  "spread": 0,
+                  "wall_s": 1.8,
+                  "words": 9
+                }
+              },
+              "needed": 8,
+              "relative": 0.14864864864864866,
+              "saved": 11,
+              "spread": 0
+            },
+            {
+              "compared": "B0 vs O2",
+              "correct": true,
+              "id": "L05",
+              "ll_meets": false,
+              "ll_needed": 36,
+              "ll_saved": 0,
+              "meets": false,
+              "modes": {
+                "B0": {
+                  "correct": true,
+                  "cycles": 1215,
+                  "repeats": 1,
+                  "samples": [
+                    1215
+                  ],
+                  "spread": 0,
+                  "wall_s": 3.2,
+                  "words": 156
+                },
+                "O2": {
+                  "correct": true,
+                  "cycles": 1191,
+                  "repeats": 1,
+                  "samples": [
+                    1191
+                  ],
+                  "spread": 0,
+                  "wall_s": 3.2,
+                  "words": 83
+                },
+                "O2-no-LL": {
+                  "correct": true,
+                  "cycles": 1191,
+                  "repeats": 1,
+                  "samples": [
+                    1191
+                  ],
+                  "spread": 0,
+                  "wall_s": 3.2,
+                  "words": 83
+                }
+              },
+              "needed": 61,
+              "relative": 0.019753086419753086,
+              "saved": 24,
+              "spread": 0
+            },
+            {
+              "compared": "B0 vs O2",
+              "correct": true,
+              "id": "L06",
+              "ll_meets": false,
+              "ll_needed": 95,
+              "ll_saved": -5,
+              "meets": false,
+              "modes": {
+                "B0": {
+                  "correct": true,
+                  "cycles": 3235,
+                  "repeats": 5,
+                  "samples": [
+                    3221,
+                    3235,
+                    3235,
+                    3235,
+                    3241
+                  ],
+                  "spread": 20,
+                  "wall_s": 23.6,
+                  "words": 183
+                },
+                "O2": {
+                  "correct": true,
+                  "cycles": 3161,
+                  "repeats": 5,
+                  "samples": [
+                    3141,
+                    3141,
+                    3161,
+                    3161,
+                    3169
+                  ],
+                  "spread": 28,
+                  "wall_s": 23.2,
+                  "words": 95
+                },
+                "O2-no-LL": {
+                  "correct": true,
+                  "cycles": 3156,
+                  "repeats": 5,
+                  "samples": [
+                    3156,
+                    3156,
+                    3156,
+                    3169,
+                    3181
+                  ],
+                  "spread": 25,
+                  "wall_s": 23.099999999999998,
+                  "words": 95
+                }
+              },
+              "needed": 162,
+              "relative": 0.02287480680061824,
+              "saved": 74,
+              "spread": 28
+            }
+          ],
+          "unbuilt": []
+        },
+        {
+          "conditions": {
+            "1 all six correct": true,
+            "2 two workloads over the gate, not both L03": true,
+            "3 one LL attribution on L03/L06": true,
+            "4 nothing meaningfully worse, total not up": true,
+            "5 each gain has a real change behind it": true
+          },
+          "detail": "5/5 of section 6.3's conditions",
+          "id": "R35-PERF-02",
+          "passed": true
+        },
+        {
+          "budget": {
+            "device cycles": [
+              14861,
+              1500000
+            ],
+            "launches": [
+              30,
+              47
+            ],
+            "wall seconds": [
+              104,
+              2400
+            ]
+          },
+          "detail": "30 launch(es), 104s, 14861 cycle(s), all within section 6.2",
+          "id": "R35-PERF-03",
+          "passed": true
+        }
+      ],
+      "checker": "perf",
+      "elapsed_s": 106.06,
+      "exit": 0,
+      "package": "R35-07"
+    },
+    {
+      "cases": [
+        {
+          "detail": "O0..O2 compile, and three launches share one artifact",
+          "id": "R35-PKG-01",
+          "passed": true
+        },
+        {
+          "detail": "the level is in the key, and a runtime-only load is clean",
+          "id": "R35-PKG-02",
+          "passed": true
+        },
+        {
+          "detail": "the stages, the report, and nothing mislabelled",
+          "id": "R35-OBS-01",
+          "passed": true
+        }
+      ],
+      "checker": "package",
+      "elapsed_s": 3.47,
+      "exit": 0,
+      "package": "R35-08"
+    },
+    {
+      "cases": [
+        {
+          "detail": "13 impact-scope case(s), none skipped",
+          "id": "R35-REG-01",
+          "passed": true
+        },
+        {
+          "detail": "forged evidence refused, honest evidence accepted",
+          "id": "R35-EV-01",
+          "passed": true
+        },
+        {
+          "detail": "the second environment agrees",
+          "id": "R35-REL-01",
+          "passed": true
+        }
+      ],
+      "checker": "release",
+      "elapsed_s": 234.18,
+      "exit": 0,
+      "package": "R35-09"
+    }
+  ],
+  "clean_tree": true,
+  "commit": "0e7c34795cd63465592acc6a94ac45f0f49a5ee5",
+  "contract_id": "r35-compiler",
+  "frozen_hashes": {
+    "r35_required_cases.json": "48615966bea5cf8ece869efb1ff50f40e7254b3b1782669e9f9100d160d8946d",
+    "r35_toolchain.json": "7dc157386d5ef02a8560fb1643bd3be2c20ec058259fa7d308731aca6346a43e",
+    "r35_workloads.json": "c51880b128fc3fb80c052c38c556d86c630912af22bac6f72dec9cb6952c0f5f"
+  },
+  "machine": "x86_64",
+  "note": "This file records what each checker returned. It is not the verdict: tools/r35/verify_evidence.py recomputes that from the frozen inventory and the raw results, and does not trust the field above.",
+  "packages": {
+    "R35-01": true,
+    "R35-02": true,
+    "R35-03": true,
+    "R35-04": false,
+    "R35-05": true,
+    "R35-06": true,
+    "R35-07": true,
+    "R35-08": true,
+    "R35-09": true
+  },
+  "platform": "Linux-6.17.0-1019-aws-x86_64-with-glibc2.39",
+  "reasons": [
+    "R35-04 has an open checker"
+  ],
+  "run_id": "1789956010-0e7c34795cd6",
+  "tools": {
+    "iverilog": "Icarus Verilog version 12.0 (stable) ()",
+    "python": "3.12.3",
+    "triton": "3.8.0 /mnt/triton-viz-data/r1/tritonenv/lib/python3.12/site-packages/triton/__init__.py",
+    "yosys": "Yosys 0.33 (git sha1 2584903a060)"
+  },
+  "verdict": "NOT ACCEPTED"
+}

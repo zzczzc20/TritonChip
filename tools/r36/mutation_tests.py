@@ -27,6 +27,7 @@ import hashlib
 import json
 import os
 import shutil
+import signal
 import subprocess
 import sys
 import tempfile
@@ -63,6 +64,46 @@ def run_in(lab_dir, argv, timeout=3600, env_extra=None):
         env.update(env_extra)
     return subprocess.run(argv, cwd=lab_dir, capture_output=True,
                           text=True, timeout=timeout, env=env)
+
+
+def reap(prefix, log=None):
+    """Kill anything still running out of a directory we are about to
+    remove.
+
+    A mutated lab runs real checkers, and those start real devices --
+    MUT-FORGED-PASS runs a whole gate inside its lab, which starts one
+    per launch. Removing the lab does not stop them: they keep running
+    against deleted paths, and enough of them accumulate to change what
+    a later measurement means.
+
+    That is not hypothetical. Four were found on the acceptance host at
+    load average 8 on a four-core machine, and a CI run failed there
+    because tnca_acc_rf's yosys exceeded its wall-clock cap under the
+    contention -- a red build caused entirely by leftovers from an
+    earlier run of this file.
+    """
+    try:
+        r = subprocess.run(['ps', '-eo', 'pid,args'],
+                           capture_output=True, text=True, timeout=60)
+    except Exception:                                      # noqa: BLE001
+        return 0
+    killed = 0
+    for line in r.stdout.splitlines()[1:]:
+        line = line.strip()
+        if not line or prefix not in line:
+            continue
+        pid = line.split(None, 1)[0]
+        if not pid.isdigit() or int(pid) == os.getpid():
+            continue
+        try:
+            os.kill(int(pid), signal.SIGTERM)
+            killed += 1
+        except OSError:
+            pass
+    if killed and log is not None:
+        log.append(f"      reaped {killed} process(es) still running out "
+                   f"of the lab")
+    return killed
 
 
 def tree_digest(root):
@@ -301,6 +342,7 @@ def main():
             print(f"    {label:<22s} {'PASS' if good else 'FAIL'}   "
                   f"{tail[0].strip()[:62]}", flush=True)
             ok &= good
+        reap(control_lab.dir)
         shutil.rmtree(control_lab.dir, ignore_errors=True)
         if not all(controls.values()):
             print("    a detector that fails in an unmutated copy cannot "
@@ -344,8 +386,10 @@ def main():
                   f"{what}", flush=True)
             for line in log:
                 print(line, flush=True)
+            reap(lab.dir, log)
             shutil.rmtree(lab.dir, ignore_errors=True)
     finally:
+        reap(base)
         shutil.rmtree(base, ignore_errors=True)
 
     after = tree_digest(ROOT)

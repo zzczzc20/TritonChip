@@ -72,6 +72,7 @@
       ]
     }
   },
+  "mutation_note": "`detector` is the checker that ACTUALLY catches each mutation, established by breaking the thing and seeing which checker fails. Where it differs from the planning guess the guess is kept as `detector_planned`, because the difference is information: M03's wrong epoch is caught by the conformance suite rather than by R36-IO-03, since the file mailbox has no epoch and the socket binding does; and M04's early completion is caught by the memory boundary's value checks rather than by R36-IO-02, because a completion reported too early shows up as wrong data, not as a protocol error. tools/r36/mutation_tests.py runs a CLEAN control of each distinct detector first, so a detector that fails for its own reasons cannot be credited with a catch.",
   "mutations": [
     {
       "detector": "R36-CFG-01",
@@ -84,12 +85,14 @@
       "what": "corrupt a run-asset hash"
     },
     {
-      "detector": "R36-IO-03",
+      "detector": "R36-TEST-01",
+      "detector_planned": "R36-IO-03",
       "id": "M03",
       "what": "return a reply under the wrong epoch"
     },
     {
-      "detector": "R36-IO-02",
+      "detector": "R36-MEM-02",
+      "detector_planned": "R36-IO-02",
       "id": "M04",
       "what": "report completion before the writes are visible"
     },

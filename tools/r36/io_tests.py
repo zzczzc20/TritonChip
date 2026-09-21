@@ -128,6 +128,17 @@ def io01(log):
         # sequence counter and the canary.
         def illegal(what, fn):
             nonlocal ok
+            # The bracket makes exactly three requests of its own: a
+            # PING, a DOWNLOAD of the canary, and the closing PING. So
+            # the device's served counter must advance by three, or by
+            # four when the illegal call itself reached the device and
+            # was refused there. Anything more means the refusal started
+            # something.
+            #
+            # This half used to be measured and then thrown away with a
+            # `del`, under a comment saying both halves had to be
+            # unchanged. The counter cannot be unchanged -- the bracket
+            # moves it -- so the honest check is on how far it moved.
             before_seq = t.ping().r0
             before_canary = _get_word(t, CANARY_ADDR)
             try:
@@ -140,13 +151,13 @@ def io01(log):
             after_canary = _get_word(t, CANARY_ADDR)
             after_seq = t.ping().r0
             clean = after_canary == before_canary
+            moved = after_seq - before_seq
+            accounted = moved in (3, 4)
             log.append(f"    {what:<44s} refused {refused}, {how}, "
-                       f"memory unchanged {clean}")
-            ok &= refused and clean
-            # The sequence counter must have advanced only by the
-            # requests this bracket itself made; a refused request that
-            # started a device task would show up as more.
-            del before_seq, after_seq
+                       f"memory unchanged {clean}, the device served "
+                       f"{moved} request(s) "
+                       f"({'all of them this check''s own' if moved == 3 else 'ours plus the refused one' if moved == 4 else 'MORE THAN THIS CHECK MADE'})")
+            ok &= refused and clean and accounted
 
         from tnca.transport import OP_UPLOAD, OP_DOWNLOAD
         illegal('an unaligned upload address',
@@ -172,13 +183,41 @@ def io01(log):
                    f"{_get_word(t, 0x2000) == 0xFEEDFACECAFEBEEF}")
         ok &= _get_word(t, 0x2000) == 0xFEEDFACECAFEBEEF
 
-        # A duplicate request -- the same sequence number twice -- must be
-        # served once. The device tracks the highest sequence it has
-        # acted on, which is what makes a retried mailbox write safe.
-        log.append("    the device serves a sequence number once: it "
-                   "records the highest it has acted on, so a host that "
-                   "retries a mailbox write does not launch twice "
-                   "(exercised by IO-03)")
+        # Ordering: a sequence number BELOW the one already served must
+        # be ignored. The transport would never send one, so it is
+        # written straight into the mailbox -- the device has to be the
+        # thing that refuses, not the host.
+        _put(t, 0x2100, [0x1111111111111111])
+        served = t.ping().r0
+        with open(t.req, 'w') as fh:
+            fh.write(f"{served - 1} 1 {0x2100} 1 0 0 0 0\n")
+        import time as _t
+        _t.sleep(0.8)
+        still = _get_word(t, 0x2100)
+        again = t.ping().r0
+        log.append(f"    an out-of-order request (sequence {served - 1} "
+                   f"when {served} is served): memory still "
+                   f"{still:#x}, counter {again} "
+                   f"({'not acted on' if again >= served else 'WENT BACKWARDS'})")
+        ok &= still == 0x1111111111111111 and again >= served
+
+        # Drain after real work, rather than only on a device that has
+        # never run anything. The mailbox is synchronous, so the host
+        # cannot leave a launch in flight to drain; what this shows is
+        # that QUIESCE after a kernel reports a completed drain rather
+        # than inheriting state from it. The device-side wait, with the
+        # core genuinely busy, is exercised in the RTL bench
+        # (tb/device/tnca_shell_tb.v, CMD_QUIESCE).
+        _put(t, 0x8000, _slow_program(400))
+        _put(t, 0x4008, [0])
+        r = t.launch(0x8000, 0)
+        q = t.quiesce()
+        marker = _get_word(t, 0x4008)
+        log.append(f"    a real kernel ({r.r0} cycle(s)) and then "
+                   f"QUIESCE: status {q.status}, {q.r0} cycle(s) waited, "
+                   f"and its marker is in memory: "
+                   f"{marker == 0x5107D07E}")
+        ok &= r.ok and q.ok and marker == 0x5107D07E
     finally:
         t.stop()
     return ok, 'seven illegal requests, each with the memory unchanged'

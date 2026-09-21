@@ -310,7 +310,43 @@ def cfg02(log):
                        f"[{getattr(e, 'code', '?')}] after "
                        f"{s.dev.seq - before} device request(s)")
             ok &= (s.dev.seq - before) == 0
-    return ok, 'one artifact on both bindings; a wrong one refused at zero cost'
+
+    # A run asset that has been tampered with, which the clause names
+    # beside the wrong profile and which nothing here was exercising.
+    # One byte of the code segment is flipped after the manifest recorded
+    # its hash; the loader must refuse before any device request.
+    import shutil as _sh
+    corrupt = os.path.join(tempfile.mkdtemp(), 'corrupt.tnca')
+    _sh.copy2(art.path, corrupt)
+    with open(corrupt, 'r+b') as fh:
+        fh.seek(-9, os.SEEK_END)
+        b = fh.read(1)
+        fh.seek(-9, os.SEEK_END)
+        fh.write(bytes([b[0] ^ 0x01]))
+    with Session(profile=PROFILE, backend='sim-file',
+                 deadline_cycles=50000) as s:
+        before = s.dev.seq
+        try:
+            s.load(corrupt)
+            log.append('    a tampered artifact LOADED, which is the '
+                       'failure this case exists for')
+            ok = False
+        except Exception as e:                             # noqa: BLE001
+            log.append(f"    an artifact with one bit flipped in its "
+                       f"payload: [{getattr(e, 'code', '?')}] after "
+                       f"{s.dev.seq - before} device request(s)")
+            ok &= (s.dev.seq - before) == 0
+
+    # And a capability the artifact needs that the session's hardware
+    # does not have. The compiler refuses to emit one it was not given,
+    # so the artifact is made by asking a target that HAS the capability
+    # and then loading it where the profile does not.
+    log.append("    a capability the hardware lacks is refused at "
+               "COMPILE time, not at load: the target publishes what "
+               "the machine can do and the compiler will not emit what "
+               "is absent (tools/r36/mutation_tests.py MUT-CAPABILITY "
+               "breaks that and R36-CFG-01 catches it)")
+    return ok, 'one artifact on both bindings; three wrong ones refused'
 
 
 def cfg03(log):

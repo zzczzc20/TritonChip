@@ -227,8 +227,23 @@ def be03(log):
     from tnca.runtime import Session
     ok = True
 
+    # All four categories the clause names, not the two that were easy.
+    # A backend whose implementation will not import ("missing") and one
+    # whose peer speaks another protocol version were both unexercised,
+    # although the code paths for both exist. An audit of these checkers
+    # found it.
+    # Registered through the same _lazy factory the built-in backends
+    # use, naming a module that is not installed. That is the shape a
+    # platform branch's registration has, and BACKEND_UNAVAILABLE is
+    # what the caller is supposed to get.
+    B.register('missing-impl',
+               B._lazy('tnca.backends.nothing_here', 'Backend'),
+               state=B.REFERENCE_AVAILABLE,
+               what='a backend whose implementation is not installed')
+
     for name, expect in (('nonesuch', 'BACKEND_UNKNOWN'),
-                         ('fpga-prototype', 'BACKEND_NOT_IMPLEMENTED')):
+                         ('fpga-prototype', 'BACKEND_NOT_IMPLEMENTED'),
+                         ('missing-impl', 'BACKEND_UNAVAILABLE')):
         try:
             B.open_backend(name, bench='irrelevant')
             log.append(f"    {name}: OPENED, which it must not be")
@@ -238,6 +253,30 @@ def be03(log):
             log.append(f"    {name:<16s} refused: [{code}] "
                        f"{str(e).splitlines()[0][:52]}")
             ok &= code == expect
+
+    # A peer speaking another protocol version. The relay answers the
+    # `hello` handshake with its version, so raising the client's
+    # expectation is the same mismatch a newer device would present --
+    # and it has to be refused at the handshake, before any device work.
+    import tnca.backends.socket_relay as SR
+    from tnca import device
+    real_v = SR.PROTOCOL_VERSION
+    SR.PROTOCOL_VERSION = real_v + 1
+    try:
+        device.prepare(PROFILE, verbose=False)
+        d = B.open_backend('sim-socket',
+                           bench=device.expected_path(PROFILE))
+        d.start()
+        d.stop()
+        log.append('    a version-incompatible peer was ACCEPTED')
+        ok = False
+    except Exception as e:                                 # noqa: BLE001
+        log.append(f"    a peer speaking protocol {real_v} when this "
+                   f"client wants {real_v + 1}: "
+                   f"[{getattr(e, 'code', type(e).__name__)}] "
+                   f"{str(e).splitlines()[0][:50]}")
+    finally:
+        SR.PROTOCOL_VERSION = real_v
 
     # A session asking for one of them must fail, not quietly simulate.
     try:

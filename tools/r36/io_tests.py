@@ -319,6 +319,24 @@ def _rtl_concurrency_case(log):
     return good
 
 
+def _mk_artifact(path):
+    """A tiny artifact, for the cases that need one and not a kernel."""
+    sys.path.insert(0, os.path.join(ROOT, 'compiler', 'python'))
+    from tnca import aot
+
+    # Literals, not module constants. The driver re-reads this
+    # function's source and executes it in a namespace of its own, so a
+    # name from this module is a NameError inside the compile.
+    def prog(b, target):
+        v = b.const(0x0DEFACED)
+        a = b.const(0x4000)
+        b.sstore(a, v)
+        b.exit()
+    aot.compile_aot(prog, kernel_name='mark', signature={},
+                    source_kind='tnca-ir', profile=PROFILE, output=path)
+    return path
+
+
 def io03(log):
     """Late replies, duplicates, timeouts and device loss."""
     from tnca.errors import TncaError, DeviceLost
@@ -403,6 +421,69 @@ def io03(log):
         log.append(f"    the device afterwards: alive {t.alive()}, "
                    f"PING status {p.status}")
         ok &= t.alive() and p.ok
+
+        # A PARTIAL transfer: the device answers a download but the data
+        # it produced is short. The clause names this and nothing was
+        # exercising it. The file is truncated behind the transport's
+        # back, which is what a half-written payload looks like from the
+        # host side.
+        _put(t, 0x5000, [0xAAAA_BBBB_CCCC_DDDD] * 4)
+        # The truncation has to happen BETWEEN the device writing the
+        # payload and the host parsing it. The first attempt at this
+        # truncated the file and then called download again, which
+        # simply issued a fresh request and got a whole answer -- a
+        # partial-transfer case that never saw a partial transfer.
+        real_request = t.request
+
+        def truncating(op, *a, **kw):
+            reply = real_request(op, *a, **kw)
+            if op == 2 and reply.ok:          # DOWNLOAD
+                with open(t.down) as fh:
+                    lines = [ln for ln in fh if ln.strip()]
+                with open(t.down, 'w') as fh:
+                    fh.writelines(lines[:1])
+            return reply
+        t.request = truncating
+        try:
+            _r2, blob = t.download(0x5000, 32)
+            log.append(f"    a download whose payload was truncated "
+                       f"between the device and the host: ACCEPTED "
+                       f"{len(blob)} byte(s) of 32, which is wrong")
+            ok = False
+        except TncaError as e:
+            log.append(f"    a download whose payload was truncated "
+                       f"between the device and the host: "
+                       f"[{getattr(e, 'code', '?')}] "
+                       f"{str(e).splitlines()[0][:46]}")
+            ok &= getattr(e, 'code', '') in ('DEVICE_LOST',
+                                             'TRANSFER_SHORT')
+        finally:
+            t.request = real_request
+
+        # A stale handle: an event from a completed task must not come
+        # back to life, and must not be resubmittable.
+        from tnca.runtime import Session as _S
+        with _S(profile=PROFILE, deadline_cycles=50_000) as s:
+            import tempfile as _tf
+            art = os.path.join(_tf.mkdtemp(), 'm.tnca')
+            _mk_artifact(art)
+            mod = s.load(art)
+            ev = s.submit(mod, {})
+            s.wait(ev)
+            first = (ev.state, ev.ok)
+            try:
+                s.wait(ev)
+                second = (ev.state, ev.ok)
+                same = first == second
+                log.append(f"    waiting on a finished event again: "
+                           f"{first} then {second} "
+                           f"({'unchanged' if same else 'CHANGED'})")
+                ok &= same
+            except TncaError as e:
+                log.append(f"    waiting on a finished event again: "
+                           f"[{getattr(e, 'code', '?')}] refused")
+            log.append(f"    and it stays terminal: {ev.terminal}")
+            ok &= bool(getattr(ev, 'terminal', True))
 
         # Device loss, on purpose. Everything after it must be an error
         # with a code, not a hang and not a wrong answer.

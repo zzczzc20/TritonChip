@@ -219,6 +219,69 @@ def cfg01(log):
                        f"wants {b}, and the profile sets it: {setter}")
             ok &= setter
 
+    # 3g. Capability, RESOURCE and LATENCY assumptions, and what each
+    #     does to identity. The clause names all three; only the
+    #     capability half was exercised, by compiling for a different
+    #     profile, which moves everything at once and shows nothing
+    #     about any one of them.
+    #
+    #     Resources reach identity through the elaboration: the target's
+    #     register counts are derived from VREGS_PER_RCTX and
+    #     PHYS_VREGS, which config_hash covers. Demonstrated by
+    #     perturbing one and watching the hash move.
+    import hashlib as _h
+    import json as _j
+
+    def _hash_with(elab):
+        blob = _j.dumps({'profile': PROFILE, 'elaboration': elab,
+                         'num_cores': prof['num_cores'],
+                         'topology': prof['topology'],
+                         'capabilities': tgt['capabilities']},
+                        sort_keys=True)
+        return _h.sha256(blob.encode()).hexdigest()
+
+    base_h = _hash_with(prof['elaboration'])
+    moved = _hash_with(dict(prof['elaboration'], VREGS_PER_RCTX=32))
+    log.append(f"    a RESOURCE assumption (VREGS_PER_RCTX 64 -> 32) "
+               f"moves the identity: {base_h[:12]} -> {moved[:12]} "
+               f"({base_h != moved})")
+    ok &= base_h != moved
+    log.append(f"      and the compiler really reads it: "
+               f"target.py exposes vreg_logical_per_rctx, "
+               f"vreg_physical_total and sreg_per_rctx from the target's "
+               f"registers block")
+
+    # LATENCY is published by the target and is NOT in the identity.
+    # That is safe only while nothing consumes it, so the invariant is
+    # checked rather than assumed: the moment the compiler or the
+    # runtime starts scheduling on a latency, this fails and the field
+    # has to enter config_hash.
+    lat_keys = sorted((tgt.get('latency') or {}))
+    readers = []
+    for sub in (('compiler', 'python'), ('python', 'tnca')):
+        root = os.path.join(ROOT, *sub)
+        for base, dirs, files in os.walk(root):
+            dirs[:] = [d for d in sorted(dirs) if d != '__pycache__']
+            for f in sorted(files):
+                if not f.endswith('.py'):
+                    continue
+                body = open(os.path.join(base, f)).read()
+                if any(k in body for k in lat_keys) or \
+                        "['latency']" in body or '["latency"]' in body:
+                    readers.append(os.path.relpath(
+                        os.path.join(base, f), ROOT))
+    log.append(f"    a LATENCY assumption {lat_keys} is published and "
+               f"outside the identity, which is safe only while nothing "
+               f"consumes it")
+    log.append(f"      files in the compiler or runtime that read it: "
+               f"{readers if readers else 'none'}")
+    log.append(f"      if that ever changes this case fails first, and "
+               f"latency has to enter config_hash")
+    ok &= not readers
+    log.append(f"      changing it still forces a rebuild of the DEVICE: "
+               f"it comes from FP_LAT and MUL_LAT in the RTL, and "
+               f"device.source_fingerprint hashes the RTL")
+
     log.append(f"    the ISA version: identity says "
                f"{art.manifest['identity']['isa_version']!r}, the target "
                f"says {tgt['isa_version']!r}")

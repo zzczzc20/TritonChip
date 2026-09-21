@@ -225,7 +225,13 @@ module tnca_smoke;
     // A memory latency the caller can turn up, so the smoke test can be
     // run against a slower memory without editing it.
     parameter integer MEM_LATENCY = 1;
-    parameter integer WATCHDOG_NS = 4000000;
+    // Backpressure and out-of-order responses, so an integrator can run
+    // this against a memory that behaves like theirs rather than only
+    // against the friendliest one. The contract allows both; a top that
+    // only works without them is not meeting it.
+    parameter integer MEM_STALL = 0;
+    parameter integer MEM_REORDER = 0;
+    parameter integer WATCHDOG_NS = 40000000;
 
     localparam integer WORDS     = 1024;
     localparam integer LSU_TAG_W = 5;
@@ -308,7 +314,8 @@ module tnca_smoke;
 
     tnca_mem_model #(
         .WORDS(WORDS), .MEM_DW(64), .MEM_BYTES(8), .TAG_W(LSU_TAG_W),
-        .LATENCY(MEM_LATENCY), .RANDOM_STALL(0), .REORDER(0)
+        .LATENCY(MEM_LATENCY), .RANDOM_STALL(MEM_STALL),
+        .REORDER(MEM_REORDER)
     ) u_mem (
         .clk(clk), .rst_n(rst_n),
         .imem_addr(imem_addr), .imem_data(imem_data),
@@ -431,8 +438,12 @@ module tnca_smoke;
             $display("FAIL: result %h, expected %h", got, EXPECTED);
             fails = fails + 1;
         end else begin
-            $display("  the program ran in %0d cycle(s) and wrote %h",
-                     done_cycles, got);
+            // One string. Verilog-2005 has no adjacent string literal
+            // concatenation -- that is a C habit, and iverilog calls it
+            // a malformed statement.
+            $display("  the program ran in %0d cycle(s) and wrote %h (latency %0d, backpressure %0d, reordering %0d)",
+                     done_cycles, got, MEM_LATENCY, MEM_STALL,
+                     MEM_REORDER);
         end
 
         // 5. The host port must have refused while the kernel ran. The

@@ -121,14 +121,54 @@ def be01(log):
                f"{'confirmed' if not stray else 'LEAKED ' + str(stray)}")
     ok &= not stray
 
-    # The general runtime holds no simulator startup logic.
-    rt = open(os.path.join(ROOT, 'python', 'tnca', 'runtime.py')).read()
-    bad = [w for w in ('vvp', 'iverilog', 'Popen', 'subprocess')
-           if w in rt]
-    log.append("    the runtime state machine contains "
-               + (str(bad) if bad else 'no simulator startup or '
-                  'connection logic at all'))
-    ok &= not bad
+    # The general runtime and the compiler hold no simulator startup
+    # logic.
+    #
+    # This used to grep ONE file, python/tnca/runtime.py, and pass on a
+    # file-boundary technicality: transport.py Popens `vvp` and device.py
+    # shells out to `iverilog`, and runtime.py imports both. An audit of
+    # these checkers found it. The scan is now over the whole general
+    # runtime and the whole compiler, with the files that ARE bindings
+    # named here rather than silently skipped -- a binding is allowed to
+    # start a simulator, that is what it is for, and the list is short
+    # enough to read.
+    BINDINGS = {
+        'python/tnca/transport.py':
+            'the sim-file backend: the file mailbox and the vvp child '
+            'it speaks to',
+        'python/tnca/device.py':
+            'the simulation binding\'s build step: it elaborates the '
+            'RTL the package ships',
+        'python/tnca/backends/relay.py':
+            'the relay process of the sim-socket backend',
+        'python/tnca/backends/socket_relay.py':
+            'the sim-socket backend',
+    }
+    scanned, found = 0, {}
+    for sub in (('python', 'tnca'), ('compiler', 'python')):
+        root = os.path.join(ROOT, *sub)
+        for base, dirs, files in os.walk(root):
+            dirs[:] = [d for d in sorted(dirs) if d != '__pycache__']
+            for f in sorted(files):
+                if not f.endswith('.py'):
+                    continue
+                rel = os.path.relpath(os.path.join(base, f), ROOT)
+                if rel in BINDINGS:
+                    continue
+                scanned += 1
+                body = open(os.path.join(base, f)).read()
+                hits = [w for w in ('vvp', 'iverilog', 'Popen')
+                        if w in body]
+                if hits:
+                    found[rel] = hits
+    log.append(f"    {scanned} file(s) of the general runtime and the "
+               f"compiler scanned, {len(BINDINGS)} binding(s) excluded "
+               f"by name")
+    for rel, why in sorted(BINDINGS.items()):
+        log.append(f"      excluded {rel}: {why}")
+    log.append("    simulator startup or connection logic in the general "
+               "code: " + (str(found) if found else 'none'))
+    ok &= not found
     log.append("    it names a backend and the registry resolves it, so "
                "an external branch registers an implementation rather "
                "than editing the state machine")

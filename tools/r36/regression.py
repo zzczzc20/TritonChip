@@ -59,9 +59,37 @@ def main():
     args = ap.parse_args()
 
     print("R36-TEST-02: the frozen impact scope, run on this candidate")
+
+    # The workload caps, asserted rather than logged.
+    #
+    # Section 5.1 caps what this stage may add: a GEMM no larger than
+    # 16x16x32, elementwise no more than 32 elements, a reduction of one
+    # row of 16. plan.py printed these and compared them with nothing,
+    # and no checker read them at all. The workloads this stage measures
+    # are the frozen R3.5 six, so what there is to check is that none of
+    # them exceeds a cap -- which is the claim "新增小 workload 不超限"
+    # actually makes.
+    caps = json.load(open(os.path.join(
+        ROOT, 'spec', 'r36_required_cases.json')))['workload_caps']
+    wl = json.load(open(os.path.join(
+        ROOT, 'spec', 'r35_workloads.json')))['workloads']
+    over = []
+    for w in wl:
+        sz = w.get('sizes') or {}
+        g = caps.get('gemm_max') or {}
+        if {'m', 'n', 'k'} <= set(sz):
+            if any(sz[d] > g.get(d, 10 ** 9) for d in ('m', 'n', 'k')):
+                over.append((w['id'], 'gemm', sz))
+        elif 'block' in sz or 'n' in sz:
+            n = max(sz.get('n', 0), sz.get('block', 0))
+            if n > caps.get('elementwise_max_elements', 10 ** 9):
+                over.append((w['id'], 'elementwise', sz))
+    print(f"  workload caps {caps}: {len(wl)} workload(s), "
+          f"{len(over)} over {over if over else ''}")
+    ok_caps = not over
     print(f"  frozen at {SCOPE['frozen_at']}, "
           f"{len(SCOPE['suites'])} suite(s) in scope")
-    rows, ok, wall = [], True, 0.0
+    rows, ok, wall = [], ok_caps, 0.0
     for s in SCOPE['suites']:
         if args.only and s['id'] not in args.only:
             continue

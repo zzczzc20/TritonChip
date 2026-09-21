@@ -24,6 +24,7 @@ import argparse
 import hashlib
 import json
 import os
+import re
 import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -129,6 +130,21 @@ def main():
             findings.append(f"{name}: no log in the evidence")
             recomputed.setdefault(pkg, []).append(False)
             continue
+        # The OUTPUT, which R36-EV-01 names beside the exit codes and
+        # the hashes and which this used to check only for existence.
+        # Every checker prints a verdict line; it has to agree with the
+        # exit code and with the case records, because three ways of
+        # saying the same thing is how a disagreement becomes visible.
+        text = open(logf, encoding='utf-8', errors='replace').read()
+        said_fail = bool(re.search(r'^\s{2}\S.*\bFAIL\b', text, re.M))
+        said_pass = bool(re.search(r'^\s{2}\S.*\bPASS\b', text, re.M))
+        if entry.get('exit') == 0 and said_fail and not said_pass:
+            findings.append(
+                f"{name}: exit 0 and its own output says FAIL")
+        if entry.get('exit') not in (0, None) and said_pass \
+                and not said_fail:
+            findings.append(
+                f"{name}: a non-zero exit and its own output says PASS")
         cases = load(runf) if os.path.exists(runf) else None
         if cases is None:
             findings.append(f"{name}: no result file")

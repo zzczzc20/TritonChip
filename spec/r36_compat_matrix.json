@@ -1,0 +1,112 @@
+{
+  "format": "tnca-compat-matrix/1",
+  "about": [
+    "doc/phase3_6_tasks_and_acceptance.md R36-CFG-03: 配置和 schema 演进有",
+    "版本/迁移矩阵 -- configuration and schema evolution have a version and",
+    "migration matrix.",
+    "",
+    "This file is that matrix. It did not exist: the checker printed two",
+    "version numbers and then a prose line describing 'the acceptance",
+    "matrix', which was a description of nothing. An audit of these",
+    "checkers found it.",
+    "",
+    "Each row is one versioned interface: where its version lives, what",
+    "this build produces, what it accepts, and what happens to an artifact",
+    "or a peer that is outside that range. 'refuse' is a verdict, not a",
+    "failure to try: every one of them is a named error code a caller can",
+    "branch on."
+  ],
+  "interfaces": [
+    {
+      "id": "container",
+      "what": "the .tnca container format",
+      "version_lives_in": "tnca.manifest.FORMAT_VERSION, and the artifact header",
+      "produces": [1, 0],
+      "accepts": {"major": 1, "minor_max": 0},
+      "older": "refuse, code ARTIFACT_INVALID. No migration is offered: there has been no earlier released format, so a 0.x artifact would be something this project never produced.",
+      "newer": "refuse, code ARTIFACT_INVALID. A newer container may describe segments this loader cannot place, and guessing is how a loader hands a device the wrong bytes.",
+      "tested_by": "R36-CFG-03, which edits the header to format 99 and requires the refusal"
+    },
+    {
+      "id": "abi",
+      "what": "the argument ABI a kernel's parameters are laid out by",
+      "version_lives_in": "tnca.abi.ABI_VERSION, and the artifact manifest",
+      "produces": [1, 0],
+      "accepts": {"major": 1, "minor_max": 0},
+      "older": "refuse, code ABI_MISMATCH.",
+      "newer": "refuse, code ABI_MISMATCH -- including a higher MINOR. A minor bump may add a parameter kind the runtime cannot lay out, and accepting it because the major matched would place arguments by guess.",
+      "tested_by": "R36-CFG-03's ABI-VERSION case: accepts 1.0, refuses 1.1 and 2.0"
+    },
+    {
+      "id": "transport",
+      "what": "the host/device request protocol",
+      "version_lives_in": "spec/r2_transport_v1.json, and the file name carries the version",
+      "produces": "v1",
+      "accepts": ["v1"],
+      "older": "there is no older version.",
+      "newer": "a device speaking a later protocol would answer the v1 mailbox with fields this host does not read. The file name is the version, so a second protocol is a second file and a second binding.",
+      "tested_by": "R36-IO-01, which drives every operation of v1"
+    },
+    {
+      "id": "relay",
+      "what": "the sim-socket relay's wire protocol",
+      "version_lives_in": "PROTOCOL_VERSION in python/tnca/backends/socket_relay.py, exchanged in `hello`",
+      "produces": 1,
+      "accepts": [1],
+      "older": "refuse at `hello`, code PROTOCOL_ERROR.",
+      "newer": "refuse at `hello`. The handshake is before any device work, so a mismatch costs nothing.",
+      "tested_by": "R36-TEST-01 CONF-LIFE opens the backend, which performs the handshake"
+    },
+    {
+      "id": "compile-target",
+      "what": "the configuration an artifact was compiled for",
+      "version_lives_in": "config_hash in the artifact manifest, computed by tnca.profiles.config_hash",
+      "produces": "a hash of the profile, elaboration, core count, topology and capabilities",
+      "accepts": "an exact match with the session's profile",
+      "older": "refuse, code PROFILE_MISMATCH, before any device request. There is no migration: a different configuration is a different machine.",
+      "newer": "the same.",
+      "tested_by": "R36-CFG-02, which loads a core-sim artifact on core-vrf-sync-v1 and requires zero device requests"
+    },
+    {
+      "id": "cache",
+      "what": "the compilation cache",
+      "version_lives_in": "the cache key, which contains the toolchain lock hash and the config hash",
+      "produces": "one entry per (source, signature, constexprs, semantic options, profile, lock)",
+      "accepts": "only an exact key match",
+      "older": "an entry for another implementation simply does not match, so it cannot be served. This is the 'cache 不跨不兼容实现命中' requirement and it is structural rather than checked at read time.",
+      "newer": "the same.",
+      "tested_by": "R36-CFG-01, which shows the same source on two profiles produces two keys and two config hashes"
+    },
+    {
+      "id": "hardware-export",
+      "what": "the export package",
+      "version_lives_in": "`format` in MANIFEST.json",
+      "produces": "tnca-hardware-export/1",
+      "accepts": "consumers read the format field before anything else",
+      "older": "there is no older version.",
+      "newer": "a consumer that does not recognise the format must stop rather than read the file lists.",
+      "tested_by": "R36-RTL-01, which requires the manifest's fields including the format"
+    },
+    {
+      "id": "backend-abc",
+      "what": "tnca.backend.Backend, the interface a platform implements",
+      "version_lives_in": "the class itself; there is no number",
+      "produces": "nine abstract methods",
+      "accepts": "a subclass that implements all of them; Python refuses to instantiate one that does not",
+      "older": "a binding written against a smaller interface fails to instantiate, loudly, at registration.",
+      "newer": "adding a method is breaking for every existing binding. It has happened once, `ping`, and doc/r36_handoff.md section 8 records it.",
+      "tested_by": "R36-TEST-01, which runs the same suite against every registered backend"
+    }
+  ],
+  "migration_policy": [
+    "Nothing in this table migrates. Every mismatch is refused with a",
+    "named code, before any device work.",
+    "",
+    "That is a decision, not an omission. A migration path is a second",
+    "implementation of a format, and the two drift; refusing costs a",
+    "recompile, which is cheap here because compiling is seconds and the",
+    "cache makes the second one free. When a released artifact is",
+    "expensive enough to be worth migrating, this table is where the path",
+    "gets written down and R36-CFG-03 is where it gets a test."
+  ]
+}

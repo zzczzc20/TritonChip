@@ -171,9 +171,22 @@ def rtl02(log):
     srcs += [f"sim/{n}" for n in sorted(os.listdir(os.path.join(pkg, 'sim')))
              if n.endswith('.v') and 'device' not in n]
 
+    # Latency, backpressure and reordering -- the three things the
+    # memory contract allows and that a public top has to survive. This
+    # used to vary latency alone while its own docstring claimed it
+    # turned on random stalling; the smoke bench hardwired the stall and
+    # reorder knobs to zero, so there was nothing to turn on. An audit
+    # of these checkers found the docstring describing code that was not
+    # there.
     seen = {}
-    for label, params in (('latency 1', []),
-                          ('latency 4', ['-Ptnca_smoke.MEM_LATENCY=4'])):
+    for label, params in (
+            ('latency 1', []),
+            ('latency 4', ['-Ptnca_smoke.MEM_LATENCY=4']),
+            ('latency 1, backpressure',
+             ['-Ptnca_smoke.MEM_STALL=1']),
+            ('latency 4, backpressure, reordering',
+             ['-Ptnca_smoke.MEM_LATENCY=4', '-Ptnca_smoke.MEM_STALL=1',
+              '-Ptnca_smoke.MEM_REORDER=1'])):
         vvp = os.path.join(out, f"s{len(seen)}.vvp")
         r = _run(['iverilog', '-g2005', '-I', 'rtl', '-I', 'sim',
                   '-s', 'tnca_smoke'] + params + ['-o', vvp,
@@ -192,13 +205,21 @@ def rtl02(log):
         ok &= passed
     shutil.rmtree(out, ignore_errors=True)
 
-    # A slower memory must actually be slower. Two identical numbers
-    # would mean the parameter reached nothing and the case was decoration.
+    # A slower memory must actually be slower, and a hostile one must
+    # cost something too. Identical numbers would mean the parameters
+    # reached nothing and the cases were decoration.
     a, b = seen.get('latency 1'), seen.get('latency 4')
+    c = seen.get('latency 1, backpressure')
     log.append(f"    a slower memory really is slower: "
                f"{a} -> {b} ({'yes' if (a and b and b > a) else 'NO'})")
     ok &= bool(a and b and b > a)
-    return ok, 'the ports carry the contract, and the timing is not assumed'
+    log.append(f"    backpressure really costs cycles: "
+               f"{a} -> {c} ({'yes' if (a and c and c > a) else 'NO'})")
+    ok &= bool(a and c and c > a)
+    log.append("    and the answers are the same in every one of them, "
+               "which is the property: the timing is not assumed")
+    return ok, 'the ports carry the contract under latency, backpressure '\
+               'and reordering'
 
 
 # The system functions that ARE hardware: they describe a width or a

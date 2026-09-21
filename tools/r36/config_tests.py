@@ -416,11 +416,43 @@ def cfg03(log):
             log.append(f"    an artifact claiming format 99: "
                        f"[{getattr(e, 'code', '?')}] "
                        f"{str(e).splitlines()[0][:54]}")
-    log.append("    the acceptance matrix: a container this loader knows "
-               "is read, a newer one is refused by version rather than "
-               "by accident, and the version lives in the header a "
-               "loader must read")
-    return ok, 'versions decided, and no cache hit across implementations'
+    # The version and migration matrix, read rather than described.
+    #
+    # This line used to be a prose sentence about "the acceptance
+    # matrix", and no matrix existed anywhere in the tree. An audit of
+    # these checkers found the description of nothing.
+    mpath = os.path.join(ROOT, 'spec', 'r36_compat_matrix.json')
+    if not os.path.exists(mpath):
+        log.append("    there is no version/migration matrix")
+        ok = False
+    else:
+        mx = json.load(open(mpath))
+        rows = mx['interfaces']
+        need = ('id', 'what', 'version_lives_in', 'produces', 'accepts',
+                'older', 'newer', 'tested_by')
+        gaps = [(r.get('id', '?'), k) for r in rows for k in need
+                if k not in r]
+        log.append(f"    the version/migration matrix: {len(rows)} "
+                   f"interface(s), {len(gaps)} missing field(s) "
+                   f"{gaps if gaps else ''}")
+        ok &= not gaps
+        log.append(f"      {', '.join(r['id'] for r in rows)}")
+        ok &= bool(mx.get('migration_policy'))
+
+        # The two versions this case already read must agree with what
+        # the matrix says this build produces. A matrix that drifted
+        # from the code would be worse than none.
+        claims = {r['id']: r['produces'] for r in rows}
+        pairs = [('container', list(M.FORMAT_VERSION)),
+                 ('abi', list(abi.ABI_VERSION))]
+        for rid, live in pairs:
+            same = list(claims.get(rid) or []) == live
+            log.append(f"      {rid}: the matrix says {claims.get(rid)}, "
+                       f"the code produces {live} "
+                       f"({'agree' if same else 'DISAGREE'})")
+            ok &= same
+    return ok, 'versions decided, written down, and no cache hit across '\
+               'implementations'
 
 
 TESTS = [('R36-CFG-01', cfg01), ('R36-CFG-02', cfg02), ('R36-CFG-03', cfg03)]

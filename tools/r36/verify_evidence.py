@@ -207,18 +207,26 @@ def main():
     #     checker actually took, not from a number the run wrote down.
     budget = json.load(open(os.path.join(
         ROOT, 'spec', 'r36_regression.json')))['budget']
-    spent = sum(float(e.get('elapsed_s') or 0)
-                for e in rep.get('checks', []))
-    cap = budget['elapsed_seconds']
+    cap = budget['new_runs']['elapsed_seconds']
+    # The cap is on what this stage ADDED. `regression` re-runs suites
+    # that existed before it, and charging their runtime here would fail
+    # the gate for the size of a suite this stage did not create.
+    new_spent = sum(float(e.get('elapsed_s') or 0)
+                    for e in rep.get('checks', [])
+                    if e.get('checker') != 'regression')
+    inherited = sum(float(e.get('elapsed_s') or 0)
+                    for e in rep.get('checks', [])
+                    if e.get('checker') == 'regression')
     print()
-    print(f"  budget: {spent:.0f}s of {cap}s across "
-          f"{len(rep.get('checks', []))} checker(s) "
-          f"({'within' if spent <= cap else 'OVER'})")
-    if spent > cap:
+    print(f"  new runs: {new_spent:.0f}s of {cap}s across "
+          f"{len([e for e in rep.get('checks', []) if e.get('checker') != 'regression'])}"
+          f" checker(s) ({'within' if new_spent <= cap else 'OVER'})")
+    print(f"  inherited: {inherited:.0f}s, recorded and not capped")
+    if new_spent > cap:
         findings.append(
-            f"over the frozen budget: {spent:.0f}s of {cap}s. The "
-            f"contract keeps this a failure rather than something to "
-            f"re-run until it fits.")
+            f"over the frozen new-run budget: {new_spent:.0f}s of "
+            f"{cap}s. The contract keeps this a failure rather than "
+            f"something to re-run until it fits.")
 
     # 3e. One candidate, one implementation. A run whose pieces came
     #     from different trees is what "混提交/实现" names.

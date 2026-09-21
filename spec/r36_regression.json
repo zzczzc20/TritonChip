@@ -22,101 +22,233 @@
     "Everything downstream of those is in scope."
   ],
   "suites": [
-    {"id": "REG-lint", "command": "make lint", "phase": "R1",
-     "why": "every RTL file still elaborates, tnca_shell.v included",
-     "reached_by": "the new public top"},
-    {"id": "REG-unit", "command": "make unit", "phase": "R1",
-     "why": "the unit benches; a shared RTL change reaches them",
-     "reached_by": "the core's reset list"},
-    {"id": "REG-core", "command": "make core", "phase": "R1",
-     "why": "the single-core ISA regression on the unchanged default profile",
-     "reached_by": "the core's reset list"},
-    {"id": "REG-core-slow", "command": "make core-slowmem", "phase": "R1",
-     "why": "the same programs under a back-pressuring memory",
-     "reached_by": "the core's reset list"},
-    {"id": "REG-core-ooo", "command": "make core-ooo", "phase": "R1",
-     "why": "and under out-of-order completion",
-     "reached_by": "the core's reset list"},
-    {"id": "REG-core-vrf", "command": "make core-vrf", "phase": "R3v2",
-     "why": "the banked register file candidate, which is the profile this stage runs on",
-     "reached_by": "the core's reset list"},
-    {"id": "REG-top", "command": "make top", "phase": "R1",
-     "why": "the whole machine still elaborates and runs",
-     "reached_by": "shared RTL"},
-    {"id": "REG-ir", "command": "make r1-ir-tests", "phase": "R1",
-     "why": "the IR and its rules", "reached_by": "the TTIR importer"},
-    {"id": "REG-profiles", "command": "make r1-profile-tests", "phase": "R1",
-     "why": "profiles and their generated targets",
-     "reached_by": "the platform_binding split"},
-    {"id": "REG-generated", "command": "make r1-check-generated",
-     "phase": "R1", "why": "generated artifacts match their sources",
-     "reached_by": "the platform_binding split"},
-    {"id": "REG-triton-e2e", "command": "make triton-e2e", "phase": "R1",
-     "why": "Triton source to RTL on one core",
-     "reached_by": "the TTIR importer and the device"},
-    {"id": "REG-e2e", "command": "make e2e", "phase": "R1",
-     "why": "and on the whole machine",
-     "reached_by": "the TTIR importer and the device"},
-    {"id": "REG-r2-abi", "command": "make r2-abi-tests", "phase": "R2",
-     "why": "the argument ABI against a byte-level oracle",
-     "reached_by": "the runtime's argument upload"},
-    {"id": "REG-r2-artifact", "command": "make r2-artifact-tests",
-     "phase": "R2", "why": "the manifest, container and loader",
-     "reached_by": "the compile target's shape"},
-    {"id": "REG-r2-compile", "command": "make r2-compile-tests",
-     "phase": "R2", "why": "the compile driver's public entry point",
-     "reached_by": "the TTIR importer"},
-    {"id": "REG-r2-cache", "command": "make r2-cache-tests", "phase": "R2",
-     "why": "one compile, four cache hits, the compiler counted",
-     "reached_by": "the compile target's identity"},
-    {"id": "REG-r2-runtime", "command": "make r2-runtime-tests",
-     "phase": "R2", "why": "32 launches in one session, tasks held and refused",
-     "reached_by": "the transport and backend interfaces"},
-    {"id": "REG-r2-fault", "command": "make r2-fault-tests", "phase": "R2",
-     "why": "faults, drain and recovery",
-     "reached_by": "the transport and the shell's completion record"},
-    {"id": "REG-r2-dump", "command": "make r2-dump-tests", "phase": "R2",
-     "why": "the IR and assembly dumps are a view, not an influence",
-     "reached_by": "the TTIR importer"},
-    {"id": "REG-r3-model", "command": "make r3-model-tests", "phase": "R3",
-     "why": "the performance model", "reached_by": "nothing directly; frozen as a control"},
-    {"id": "REG-r3v2-rf", "command": "make r3-rf-tests", "phase": "R3v2",
-     "why": "the banked register file's own cases",
-     "reached_by": "the core's reset list"},
-    {"id": "REG-r35-layout", "command": "make r35-layout-tests",
-     "phase": "R3.5", "why": "the layout algebra and its three verdicts",
-     "reached_by": "the TTIR importer"},
-    {"id": "REG-r35-alloc", "command": "make r35-alloc-tests",
-     "phase": "R3.5", "why": "register allocation and bank cost",
-     "reached_by": "the TTIR importer"},
-    {"id": "REG-r35-safety", "command": "make r35-safety-tests",
-     "phase": "R3.5", "why": "what the compiler may not emit",
-     "reached_by": "the TTIR importer"},
-    {"id": "REG-r35-perf", "command": "make r35-perf", "phase": "R3.5",
-     "why": "the frozen workloads, measured, against their oracles",
-     "reached_by": "the shell's cycle accounting"},
-    {"id": "REG-tutorial", "command": "make tutorial", "phase": "R3.6",
-     "why": "eight worked examples, each against its own oracle",
-     "reached_by": "everything"}
+    {
+      "id": "REG-lint",
+      "command": "make lint",
+      "phase": "R1",
+      "why": "every RTL file still elaborates, tnca_shell.v included",
+      "reached_by": "the new public top"
+    },
+    {
+      "id": "REG-unit",
+      "command": "make unit",
+      "phase": "R1",
+      "why": "the unit benches; a shared RTL change reaches them",
+      "reached_by": "the core's reset list"
+    },
+    {
+      "id": "REG-core",
+      "command": "make core",
+      "phase": "R1",
+      "why": "the single-core ISA regression on the unchanged default profile",
+      "reached_by": "the core's reset list"
+    },
+    {
+      "id": "REG-core-slow",
+      "command": "make core-slowmem",
+      "phase": "R1",
+      "why": "the same programs under a back-pressuring memory",
+      "reached_by": "the core's reset list"
+    },
+    {
+      "id": "REG-core-ooo",
+      "command": "make core-ooo",
+      "phase": "R1",
+      "why": "and under out-of-order completion",
+      "reached_by": "the core's reset list"
+    },
+    {
+      "id": "REG-core-vrf",
+      "command": "make core-vrf",
+      "phase": "R3v2",
+      "why": "the banked register file candidate, which is the profile this stage runs on",
+      "reached_by": "the core's reset list"
+    },
+    {
+      "id": "REG-top",
+      "command": "make top",
+      "phase": "R1",
+      "why": "the whole machine still elaborates and runs",
+      "reached_by": "shared RTL"
+    },
+    {
+      "id": "REG-ir",
+      "command": "make r1-ir-tests",
+      "phase": "R1",
+      "why": "the IR and its rules",
+      "reached_by": "the TTIR importer"
+    },
+    {
+      "id": "REG-profiles",
+      "command": "make r1-profile-tests",
+      "phase": "R1",
+      "why": "profiles and their generated targets",
+      "reached_by": "the platform_binding split"
+    },
+    {
+      "id": "REG-generated",
+      "command": "make r1-check-generated",
+      "phase": "R1",
+      "why": "generated artifacts match their sources",
+      "reached_by": "the platform_binding split"
+    },
+    {
+      "id": "REG-triton-e2e",
+      "command": "make triton-e2e",
+      "phase": "R1",
+      "why": "Triton source to RTL on one core",
+      "reached_by": "the TTIR importer and the device"
+    },
+    {
+      "id": "REG-e2e",
+      "command": "make e2e",
+      "phase": "R1",
+      "why": "and on the whole machine",
+      "reached_by": "the TTIR importer and the device"
+    },
+    {
+      "id": "REG-r2-abi",
+      "command": "make r2-abi-tests",
+      "phase": "R2",
+      "why": "the argument ABI against a byte-level oracle",
+      "reached_by": "the runtime's argument upload"
+    },
+    {
+      "id": "REG-r2-artifact",
+      "command": "make r2-artifact-tests",
+      "phase": "R2",
+      "why": "the manifest, container and loader",
+      "reached_by": "the compile target's shape"
+    },
+    {
+      "id": "REG-r2-compile",
+      "command": "make r2-compile-tests",
+      "phase": "R2",
+      "why": "the compile driver's public entry point",
+      "reached_by": "the TTIR importer"
+    },
+    {
+      "id": "REG-r2-cache",
+      "command": "make r2-cache-tests",
+      "phase": "R2",
+      "why": "one compile, four cache hits, the compiler counted",
+      "reached_by": "the compile target's identity"
+    },
+    {
+      "id": "REG-r2-runtime",
+      "command": "make r2-runtime-tests",
+      "phase": "R2",
+      "why": "32 launches in one session, tasks held and refused",
+      "reached_by": "the transport and backend interfaces"
+    },
+    {
+      "id": "REG-r2-fault",
+      "command": "make r2-fault-tests",
+      "phase": "R2",
+      "why": "faults, drain and recovery",
+      "reached_by": "the transport and the shell's completion record"
+    },
+    {
+      "id": "REG-r2-dump",
+      "command": "make r2-dump-tests",
+      "phase": "R2",
+      "why": "the IR and assembly dumps are a view, not an influence",
+      "reached_by": "the TTIR importer"
+    },
+    {
+      "id": "REG-r3-model",
+      "command": "make r3-model-tests",
+      "phase": "R3",
+      "why": "the performance model",
+      "reached_by": "nothing directly; frozen as a control"
+    },
+    {
+      "id": "REG-r3v2-rf",
+      "command": "make r3-rf-tests",
+      "phase": "R3v2",
+      "why": "the banked register file's own cases",
+      "reached_by": "the core's reset list"
+    },
+    {
+      "id": "REG-r35-layout",
+      "command": "make r35-layout-tests",
+      "phase": "R3.5",
+      "why": "the layout algebra and its three verdicts",
+      "reached_by": "the TTIR importer"
+    },
+    {
+      "id": "REG-r35-alloc",
+      "command": "make r35-alloc-tests",
+      "phase": "R3.5",
+      "why": "register allocation and bank cost",
+      "reached_by": "the TTIR importer"
+    },
+    {
+      "id": "REG-r35-safety",
+      "command": "make r35-safety-tests",
+      "phase": "R3.5",
+      "why": "what the compiler may not emit",
+      "reached_by": "the TTIR importer"
+    },
+    {
+      "id": "REG-r35-perf",
+      "command": "make r35-perf",
+      "phase": "R3.5",
+      "why": "the frozen workloads, measured, against their oracles",
+      "reached_by": "the shell's cycle accounting"
+    },
+    {
+      "id": "REG-tutorial",
+      "command": "make tutorial",
+      "phase": "R3.6",
+      "why": "eight worked examples, each against its own oracle",
+      "reached_by": "everything"
+    }
   ],
   "known_open": [
-    {"id": "R35-OPT-02", "suite": "make r35-opt-tests",
-     "state": "OPEN, inherited",
-     "why": "the pinned Triton wheel exports no AxisInfo and the TTGIR coalesce route does not surface its conclusion either. Both routes are recorded in the checker. This stage did not close it and does not claim to.",
-     "in_scope": false,
-     "why_not_in_scope": "it is open in the baseline too, so running it here would measure the same open question twice rather than whether this stage regressed anything."},
-    {"id": "R2-GRID", "suite": "make r2-grid-tests",
-     "state": "OPEN, inherited",
-     "why": "GRID-03, -04, -05 and -07 are about per-tile launch on the four-tile machine and are honestly NOT RUN.",
-     "in_scope": false,
-     "why_not_in_scope": "open in the baseline; R36-BASE-02 records that this stage's handoff baseline does not depend on the four-tile runtime."}
+    {
+      "id": "R35-OPT-02",
+      "suite": "make r35-opt-tests",
+      "state": "OPEN, inherited",
+      "why": "the pinned Triton wheel exports no AxisInfo and the TTGIR coalesce route does not surface its conclusion either. Both routes are recorded in the checker. This stage did not close it and does not claim to.",
+      "in_scope": false,
+      "why_not_in_scope": "it is open in the baseline too, so running it here would measure the same open question twice rather than whether this stage regressed anything."
+    },
+    {
+      "id": "R2-GRID",
+      "suite": "make r2-grid-tests",
+      "state": "OPEN, inherited",
+      "why": "GRID-03, -04, -05 and -07 are about per-tile launch on the four-tile machine and are honestly NOT RUN.",
+      "in_scope": false,
+      "why_not_in_scope": "open in the baseline; R36-BASE-02 records that this stage's handoff baseline does not depend on the four-tile runtime."
+    }
   ],
   "budget": {
-    "note": "Frozen at the start of the stage, from measurements of the existing small tests rather than from a guess about a new platform. R36-BASE-01 checks these against the contract.",
-    "new_rtl_runs": 40,
-    "elapsed_seconds": 2400,
-    "cycles": 1200000,
-    "toolchain_build_seconds": 1800,
+    "note": [
+      "Section 5.2 freezes the NEW run list and its caps: '\u9636\u6bb5\u542f\u52a8\u65f6\u51bb\u7ed3\u65b0\u589e\u8fd0\u884c",
+      "\u6e05\u5355\u3001\u6b21\u6570\u3001cycle/wall \u4e0a\u9650'. The caps below come from",
+      "spec/r36_required_cases.json and bound what THIS stage adds -- the",
+      "tools/r36 checkers.",
+      "",
+      "Re-running the inherited regression is required by R36-TEST-02 and is",
+      "not a new run. Its cost is measured and recorded, and it is NOT",
+      "charged against the new-run cap: doing so would fail the gate for the",
+      "size of a suite this stage did not create, which is a verdict about",
+      "the wrong thing. The first version of this file made that mistake."
+    ],
+    "new_runs": {
+      "rtl_runs": 40,
+      "elapsed_seconds": 2400,
+      "cycles": 1200000,
+      "toolchain_build_seconds": 1800,
+      "charged_to": "every tools/r36 checker except `regression`, which re-runs inherited suites",
+      "over_budget": "stays a failure. The contract forbids re-running until it fits."
+    },
+    "inherited": {
+      "elapsed_seconds": null,
+      "measured_not_capped": true,
+      "why": "these suites existed before this stage and their runtime is a property of them, not of this work. The figure is recorded so a change in it is visible."
+    },
     "accounting": "subprocess by subprocess. A checker that reuses one run for several cases counts it once, which is why the conformance suite opens one device per backend rather than one per case."
   }
 }

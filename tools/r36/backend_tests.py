@@ -75,7 +75,7 @@ def be01(log):
     ok = True
 
     reg = B.available()
-    log.append(f"    the registry: "
+    log.append("    the registry: "
                + ', '.join(f"{n} ({e['state']})" for n, e in reg.items()))
     ok &= len(reg) >= 2
     ok &= any(e['state'] == B.INTERFACE_DEFINED for e in reg.values())

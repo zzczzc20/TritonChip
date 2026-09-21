@@ -40,6 +40,21 @@ PROFILE = SPEC['hardware_precondition']['profile']
 
 MODES = {'B0': None, 'O0': 0, 'O1': 1, 'O2': 2}
 
+# Workloads whose memory model reorders, and which therefore do not
+# return the same number twice.
+#
+# Measured: L05, on the fast model, gives 1191 cycles three times out of
+# three. L06, on slow-reorder, gave 3142, 3168, 3165, 3168 and 3165 --
+# a spread of 26 cycles from one program. A single reading of L06 is a
+# draw from that, not a measurement of it, and 26 cycles is the size of
+# some of the gains being argued about.
+#
+# So these are read several times and reported as a median with the
+# range beside it. The range is not decoration: a gain smaller than the
+# spread has not been shown.
+STOCHASTIC = {'L06'}
+REPEATS = 5
+
 
 def have_triton():
     try:
@@ -51,6 +66,23 @@ def have_triton():
 
 def _cycles_of(ev):
     return getattr(ev, 'device_cycles', None)
+
+
+def run_many(wid, mode, tmp, repeats):
+    """`repeats` independent readings, summarised.
+
+    The median is the figure; min and max say how much to trust it.
+    """
+    runs = [run_one(wid, mode, tmp) for _ in range(repeats)]
+    cycles = sorted(r['cycles'] for r in runs if r.get('cycles') is not None)
+    if not cycles:
+        return dict(runs[0], repeats=repeats, spread=None)
+    mid = cycles[len(cycles) // 2]
+    return {'cycles': mid, 'correct': all(r['correct'] for r in runs),
+            'words': runs[0]['words'], 'wall_s': sum(r['wall_s'] or 0
+                                                     for r in runs),
+            'repeats': repeats, 'samples': cycles,
+            'spread': cycles[-1] - cycles[0]}
 
 
 def run_one(wid, mode, tmp):
@@ -225,11 +257,12 @@ def main():
     head = f"  {'case':<6s}"
     for m in args.modes:
         head += f" {m + ' cycles':>11s} {m + ' words':>9s}"
-    print(head + f" {'saved':>7s} {'%':>7s}  correct")
+    print(head + f" {'saved':>7s} {'%':>7s}  {'noise':<8s}  correct")
     for wid in ids:
         row = {'id': wid, 'modes': {}}
+        n = REPEATS if wid in STOCHASTIC else 1
         for m in args.modes:
-            row['modes'][m] = run_one(wid, m, tmp)
+            row['modes'][m] = run_many(wid, m, tmp, n)
         line = f"  {wid:<6s}"
         for m in args.modes:
             r = row['modes'][m]
@@ -252,6 +285,17 @@ def main():
             line += f" {d:>7d} {100.0 * d / base:>6.1f}%"
         allok = all(r['correct'] for r in row['modes'].values())
         row['correct'] = allok
+        spread = max((r.get('spread') or 0)
+                     for r in row['modes'].values())
+        row['spread'] = spread
+        if spread:
+            line += f"  +/-{spread:<4d}"
+            # A gain no larger than the noise has not been shown.
+            if row.get('saved') is not None and row['saved'] <= spread:
+                row['meets'] = False
+                row['below_noise'] = True
+        else:
+            line += f"  {'':<8s}"
         line += f"  {'yes' if allok else 'NO'}"
         print(line, flush=True)
         rows.append(row)
@@ -261,8 +305,12 @@ def main():
     for r in rows:
         if 'saved' not in r:
             continue
-        verdict = 'meets the gate' if r['meets'] else \
-            f"short of the {r['needed']}-cycle gate"
+        if r.get('below_noise'):
+            verdict = (f"NOT SHOWN: the {r['spread']}-cycle spread over "
+                       f"{REPEATS} readings is as large as the gain")
+        else:
+            verdict = 'meets the gate' if r['meets'] else \
+                f"short of the {r['needed']}-cycle gate"
         print(f"    {r['id']}: {r['saved']:+d} cycles "
               f"({r['relative']:.1%}) -- {verdict}")
     print()

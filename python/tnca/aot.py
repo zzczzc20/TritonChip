@@ -586,9 +586,12 @@ def _compile_triton(fn, kernel_name, signature, constexprs, target, prov,
         from tnca_cc.optimization import (pure_scalar_cse, strength_reduce,
                                            drop_dead_pure,
                                            fold_broadcast_compare,
-                                           drop_dead_load_other)
+                                           drop_dead_load_other,
+                                           narrow_lane0_store)
         fb = fold_broadcast_compare(kernel)
         dlo = drop_dead_load_other(kernel)
+        n0 = narrow_lane0_store(kernel)
+        prov.record('opt_lane0_stores', n0['sites'])
         prov.record('opt_immediate_compares', fb['sites'])
         prov.record('opt_unobserved_load_other', dlo['sites'])
         sr = strength_reduce(kernel)
@@ -648,9 +651,12 @@ def _compile_tnca_ir(build, kernel_name, signature, constexprs, target, prov,
         from tnca_cc.optimization import (pure_scalar_cse, strength_reduce,
                                            drop_dead_pure,
                                            fold_broadcast_compare,
-                                           drop_dead_load_other)
+                                           drop_dead_load_other,
+                                           narrow_lane0_store)
         fb = fold_broadcast_compare(kernel)
         dlo = drop_dead_load_other(kernel)
+        n0 = narrow_lane0_store(kernel)
+        prov.record('opt_lane0_stores', n0['sites'])
         prov.record('opt_immediate_compares', fb['sites'])
         prov.record('opt_unobserved_load_other', dlo['sites'])
         sr = strength_reduce(kernel)

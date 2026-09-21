@@ -312,6 +312,73 @@ def drop_dead_load_other(kernel):
     return out
 
 
+def narrow_lane0_store(kernel):
+    """A vector store of a broadcast, masked to lane 0, is a scalar store.
+
+    A reduction produces a scalar. Putting it back in memory as a vector
+    store costs a broadcast into a register, a mask that selects one lane
+    and the vector store itself. The ISA has `s.st` (major LSU, func 8),
+    which writes that word directly.
+
+    Conditions, all of them checked rather than assumed:
+
+      * the stored value is a splat of a scalar, so every lane holds the
+        same thing and lane 0 is that thing;
+      * the mask is `idx < 1` over the lane index, so exactly lane 0 is
+        written -- proved from the operations that built it, not from
+        the mask's name;
+      * nothing else reads the splat or the mask, so removing them
+        removes nothing else's operand. (The dead sweep does the
+        removing; this only stops them being needed.)
+
+    The address and the bytes written are identical either way: the
+    vector store writes lane 0 to [base+0], and so does the scalar one.
+    """
+    out = {'sites': 0, 'roles': []}
+    for role in kernel.roles:
+        if any(_opaque(o) for o in role.region.ops):
+            out['roles'].append({'role': role.name,
+                                 'why': 'nested control flow'})
+            continue
+        ops = role.region.ops
+        iota, const_of, splat_of, lane0 = set(), {}, {}, set()
+        n = 0
+        for op in ops:
+            if op.kind == 'arange' and op.results:
+                iota.add(id(op.results[0]))
+            elif op.kind == 'const' and len(op.results) == 1:
+                const_of[id(op.results[0])] = int(op.attrs['value'])
+            elif op.kind == 'splat' and len(op.results) == 1 \
+                    and len(op.operands) == 1:
+                splat_of[id(op.results[0])] = op.operands[0]
+            elif op.kind == 'vcmp' and op.attrs.get('cc') == 'lt' \
+                    and op.operands and id(op.operands[0]) in iota:
+                # `idx < 1`, however the 1 arrived: as an immediate the
+                # fold left behind, or as a splat constant.
+                v = op.attrs.get('imm')
+                if v is None and len(op.operands) > 1:
+                    s = splat_of.get(id(op.operands[1]))
+                    v = const_of.get(id(s)) if s is not None else None
+                if v == 1 and op.results:
+                    lane0.add(id(op.results[0]))
+            elif op.kind == 'store' and len(op.operands) == 2:
+                base, value = op.operands
+                mask = op.attrs.get('mask')
+                if mask is None or id(mask) not in lane0:
+                    continue
+                src = splat_of.get(id(value))
+                if src is None:
+                    continue
+                op.kind = 'sstore'
+                op.operands = [base, src]
+                op.attrs = dict(op.attrs, mask=None, offset=0,
+                                comment='lane 0 of a broadcast is one word')
+                n += 1
+        out['sites'] += n
+        out['roles'].append({'role': role.name, 'sites': n})
+    return out
+
+
 def _observable(value, mask, ops, memo):
     """Why this value's inactive lanes can be observed, or '' if they cannot.
 

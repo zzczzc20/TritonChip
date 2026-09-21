@@ -525,7 +525,8 @@ class CodeGen:
     def _op_sstore(self, op):
         base, value = op.operands
         self._emit(f"s.st.{op.attrs['size']}",
-                    f"[s{base.reg}, #{op.attrs['offset']}]", f"s{value.reg}")
+                    f"[s{base.reg}, #{op.attrs['offset']}]", f"s{value.reg}",
+                    comment=op.attrs.get('comment'))
 
     def _op_trap(self, op):
         self._emit('trap', f"#{op.attrs['code']}")

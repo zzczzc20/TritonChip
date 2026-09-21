@@ -143,6 +143,21 @@ def main():
             json.dump(inv[key], fh, indent=2, sort_keys=True)
             fh.write('\n')
 
+    # Build what the checkers read. ALLOC-01 cross-checks its cost model
+    # against a running bench, and a checker that cannot find one reports
+    # a missing bench -- which is true and says nothing about the code.
+    print("  building the benches and programs the checkers read...",
+          flush=True)
+    started = time.time()
+    pre = subprocess.run(['make', 'r35-prereqs'], cwd=ROOT, env=env,
+                         capture_output=True, text=True, timeout=14400)
+    with open(os.path.join(ev, 'build', 'prereqs.log'), 'w') as fh:
+        fh.write(pre.stdout + pre.stderr)
+    print(f"  {'built' if pre.returncode == 0 else 'BUILD FAILED'} in "
+          f"{time.time() - started:.0f}s", flush=True)
+    if pre.returncode != 0:
+        print((pre.stderr or pre.stdout)[-500:])
+
     results, packages = [], {}
     for pkg, name, argv in CHECKS:
         out = os.path.join(ev, 'runs', f'{name}.json')
@@ -186,7 +201,8 @@ def main():
                          os.path.join(ev, area,
                                       fname.replace('.json', '.log')))
 
-    every = all(all(v) for v in packages.values())
+    every = all(all(v) for v in packages.values()) and \
+        pre.returncode == 0
     # Section 6.3: a run that measured honestly and fell short is not the
     # same as a run that did not happen. The gain gate has its own name.
     perf = next((e for e in results if e['checker'] == 'perf'), None)
@@ -196,6 +212,8 @@ def main():
         SHORTFALL if (perf_ran and not perf_met) else 'NOT ACCEPTED')
 
     reasons = []
+    if pre.returncode != 0:
+        reasons.append('the benches the checkers read did not build')
     if dirty:
         reasons.append('the working tree is not clean')
     for pkg, oks in sorted(packages.items()):

@@ -205,6 +205,38 @@ def rtl02(log):
         ok &= passed
     shutil.rmtree(out, ignore_errors=True)
 
+    # The timing contract, which R36-RTL-02 asks for by interface
+    # class: fetch, control, data, and status/error/counters. The ports
+    # existed and what a platform had to do with them was in comments.
+    m = json.load(open(os.path.join(pkg, 'MANIFEST.json')))
+    ifaces = m.get('interfaces') or []
+    classes = {i.get('class') for i in ifaces}
+    need = {'fetch', 'control', 'data', 'status'}
+    log.append(f"    the export publishes a timing contract for "
+               f"{len(ifaces)} interface(s) in classes "
+               f"{sorted(classes)}")
+    missing_cls = sorted(need - classes)
+    log.append(f"    every class the standard names is covered: "
+               f"{not missing_cls} "
+               f"{missing_cls if missing_cls else ''}")
+    ok &= not missing_cls
+    thin = [i.get('id') for i in ifaces
+            if not i.get('ports') or not i.get('contract')]
+    log.append(f"    each names its ports and its rules: "
+               f"{not thin} {thin if thin else ''}")
+    ok &= not thin
+    # And the ports it names are ports the top actually has.
+    shell = open(os.path.join(pkg, 'rtl', 'tnca_shell.v')).read()
+    absent = []
+    for i in ifaces:
+        for port in i.get('ports', []):
+            stem = port.rstrip('*').rstrip('_')
+            if stem and stem not in shell:
+                absent.append((i['id'], port))
+    log.append(f"    and the ports it names exist on the top: "
+               f"{not absent} {absent if absent else ''}")
+    ok &= not absent
+
     # A slower memory must actually be slower, and a hostile one must
     # cost something too. Identical numbers would mean the parameters
     # reached nothing and the cases were decoration.

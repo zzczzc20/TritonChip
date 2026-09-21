@@ -564,6 +564,118 @@ def export(outdir, *, program_words, result_addr, expected):
             manifest['unresolved'].append({'from': a, 'needs': b,
                                            'kind': why})
 
+    # R36-RTL-02: the public top's fetch, control, data and
+    # status/error/counter interfaces all need a timing contract. They
+    # had none: the ports existed and what a platform had to do with
+    # them was in comments. An audit of the R3.6 checkers found it.
+    manifest['interfaces'] = [
+        {
+            'id': 'control',
+            'class': 'control',
+            'ports': ['cmd_valid', 'cmd_ready', 'cmd_op', 'cmd_pc',
+                      'cmd_arg_base', 'cmd_role_mask', 'cmd_pid_*',
+                      'cmd_npid_*', 'cmd_deadline'],
+            'handshake': 'valid/ready. The transfer happens on the '
+                         'clock edge where both are high.',
+            'depth': 1,
+            'contract': [
+                'cmd_ready is a function of state only, never of '
+                'cmd_valid, so there is no combinational loop through '
+                'the requester.',
+                'the payload must be stable from the cycle cmd_valid '
+                'rises until the transfer.',
+                'at most one command is in flight. The shell drops '
+                'cmd_ready until it has produced a completion.',
+            ],
+        },
+        {
+            'id': 'completion',
+            'class': 'status',
+            'ports': ['done_valid', 'done_ready', 'done_status',
+                      'done_cycles', 'done_retired', 'done_fault_code',
+                      'done_fault_pc', 'done_fault_rctx',
+                      'done_fault_detail'],
+            'handshake': 'valid/ready, with the shell as the source.',
+            'depth': 1,
+            'contract': [
+                'done_valid, once high, stays high until done_ready, '
+                'and the payload does not change while it is high.',
+                'exactly one completion per accepted command.',
+                'a completion may be left unread indefinitely; the '
+                'shell holds it and accepts no further command.',
+            ],
+        },
+        {
+            'id': 'host',
+            'class': 'data',
+            'ports': ['host_req_valid', 'host_req_ready', 'host_req_we',
+                      'host_req_addr', 'host_req_be', 'host_req_wdata',
+                      'host_rsp_valid', 'host_rsp_rdata'],
+            'handshake': 'valid/ready in, valid-only out.',
+            'depth': 1,
+            'contract': [
+                'host_req_ready is low for every cycle a kernel is '
+                'running. This is a refusal, not advice.',
+                'one word per transfer; host_rsp_valid is a single-'
+                'cycle pulse and the reader must capture it.',
+                'a read and a write are answered the same way; a write '
+                'is complete when its response arrives.',
+            ],
+        },
+        {
+            'id': 'fetch',
+            'class': 'fetch',
+            'ports': ['imem_addr', 'imem_data'],
+            'handshake': 'none: an address out, a word back.',
+            'latency': 1,
+            'contract': [
+                'REGISTERED, not combinational: the word for the '
+                'address presented this cycle arrives on the next. The '
+                'core carries the stage and a one-deep buffer for it.',
+                'there is no ready and no stall. A fetch memory that '
+                'cannot answer every cycle needs a shell change, not a '
+                'parameter.',
+            ],
+        },
+        {
+            'id': 'memory',
+            'class': 'data',
+            'ports': ['mem_req_*', 'mem_rsp_valid', 'mem_rsp_tag',
+                      'mem_rsp_rdata'],
+            'handshake': 'valid/ready out, tagged valid-only back.',
+            'latency': 'any, including zero. Not fixed.',
+            'contract': [
+                'responses may return OUT OF ORDER. The tag matches a '
+                'response to its request and nothing else does.',
+                'mem_req_ready may fall at any time. The requester '
+                'holds its payload.',
+                'byte enables are honoured; sub-word stores depend on '
+                'them.',
+                'a write is answered like a read.',
+            ],
+            'checked_by': 'R36-MEM-02 runs two independent memories '
+                          'through this boundary at seven '
+                          'configurations each',
+        },
+        {
+            'id': 'counters',
+            'class': 'status',
+            'ports': ['busy', 'core_idle', 'perf_cycles', 'perf_issued',
+                      'perf_stall_hazard', 'perf_stall_lsu',
+                      'perf_stall_wb', 'perf_squash'],
+            'handshake': 'none: free-running outputs.',
+            'contract': [
+                'free-running and monotonic; they are not cleared per '
+                'launch. A caller takes a difference.',
+                'sampling them while busy is allowed and gives a '
+                'consistent read of that cycle.',
+                'core_idle is the CORE\'s own idle, defined from '
+                'reset. busy is the SHELL\'s, and the two differ '
+                'after a TIMEOUT completion.',
+            ],
+        },
+    ]
+
     manifest['simulation_only_behaviour'] = [
         {'file': 'sim/tnca_mem_model.v',
          'what': '$readmemh, $fopen and $fwrite',

@@ -295,10 +295,46 @@ def rst01(log):
                "with no launch needed to flush an undefined pipeline -- "
                "which is what the export's smoke test depends on")
 
+    # The cross-domain list, read rather than counted.
+    #
+    # This used to assert that five keys existed. "No implicit
+    # board-level assumptions" was then satisfied by the presence of a
+    # key called unstated_board_assumptions, whatever it said. An audit
+    # of these checkers found it.
     cd = LEDGER.get('cross_domain', {})
-    log.append(f"    the reset contract is written down: "
-               f"{cd.get('reset_release', 'NOT STATED')[:76]}")
-    ok &= 'reset_release' in cd
+    thin = [k for k, v in cd.items()
+            if not isinstance(v, str) or len(v.strip()) < 20]
+    log.append(f"    the cross-domain list: {len(cd)} entr(ies), "
+               f"{len(thin)} too short to say anything "
+               f"{thin if thin else ''}")
+    ok &= not thin
+    # Each of the four things a platform has to supply must be named,
+    # and the clock and reset entries have to say which is whose.
+    for key, words in (('clock', ('clk',)),
+                       ('reset', ('rst_n',)),
+                       ('reset_release', ('platform', 'synchronous')),
+                       ('memory_clock', ('clk',))):
+        text = (cd.get(key) or '').lower()
+        got = [w for w in words if w.lower() in text]
+        log.append(f"      {key}: names {got} "
+                   f"({'specific' if len(got) == len(words) else 'VAGUE'})")
+        ok &= len(got) == len(words)
+    unstated = (cd.get('unstated_board_assumptions') or '').strip()
+    log.append(f"      unstated_board_assumptions: {unstated[:72]!r}")
+    log.append("      a key that said 'some' or was blank would pass a "
+               "presence check and mean the opposite of what it says")
+    ok &= bool(unstated) and 'none' in unstated.lower()
+
+    # And the responsibilities are the same ones the handoff guide gives
+    # a platform, or the two documents disagree about whose job it is.
+    guide = os.path.join(ROOT, 'doc', 'r36_handoff.md')
+    if os.path.exists(guide):
+        g = open(guide).read()
+        both = [k for k in ('reset synchroni', 'rst_n', 'clk')
+                if k in g]
+        log.append(f"    the handoff guide repeats them to the platform: "
+                   f"{both}")
+        ok &= 'reset synchroni' in g
     return ok, 'reset in flight, and a correct launch after it'
 
 

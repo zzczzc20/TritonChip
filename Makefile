@@ -868,6 +868,45 @@ r3-mutation-tests:
 # separate platform branch; it does not put anything on a board, and the
 # sign-off says only R36_ENGINEERING_READY.
 #------------------------------------------------------------------------------
+# Tutorial
+#
+# tutorial/ promises that every number on its pages came from running the
+# script beside it. That promise decays the moment the compiler changes
+# unless something runs them, so this does. Each example checks its own
+# answers against an oracle and exits non-zero when they disagree, so
+# there is nothing to assert here beyond the exit status.
+#------------------------------------------------------------------------------
+.PHONY: tutorial
+tutorial: device
+	@if [ ! -x "$(TRITON_PYTHON)" ]; then \
+	   if [ "$(R1_STRICT)" = "1" ]; then \
+	     echo "  tutorial               FAIL   no Triton at $(TRITON_PYTHON)"; \
+	     exit 1; \
+	   else \
+	     echo "  tutorial               SKIP   no Triton at $(TRITON_PYTHON)"; \
+	     exit 0; \
+	   fi; \
+	 fi; \
+	 fail=0; n=0; \
+	 for f in tutorial/examples/*.py; do \
+	   n=$$((n+1)); \
+	   if PYTHONPATH=python:compiler/python $(TRITON_PYTHON) $$f \
+	        > $(BUILD)/tutorial-$$(basename $$f .py).log 2>&1; then \
+	     printf "    %-40s PASS\n" "$$(basename $$f)"; \
+	   else \
+	     printf "    %-40s FAIL\n" "$$(basename $$f)"; \
+	     tail -12 $(BUILD)/tutorial-$$(basename $$f .py).log; \
+	     fail=1; \
+	   fi; \
+	 done; \
+	 if [ $$fail -eq 0 ]; then \
+	   echo "  tutorial               PASS   $$n example(s), each against its own oracle"; \
+	 else \
+	   echo "  tutorial               FAIL"; \
+	 fi; \
+	 exit $$fail
+
+#------------------------------------------------------------------------------
 R36_EVIDENCE ?= $(BUILD)/r36-evidence
 
 r36-check-plan: | dirs

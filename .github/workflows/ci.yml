@@ -218,6 +218,14 @@ jobs:
       - name: R2 faults and recovery
         run: make r2-fault-tests TRITON_PYTHON=$HOME/tritonenv/bin/python
 
+      # The tutorial's examples, which is the only way its pages stay true.
+      # Each one computes its expected answer in Python and exits non-zero
+      # when the device disagrees, so a compiler change that breaks a
+      # documented result breaks this instead of quietly making the docs
+      # wrong.
+      - name: The tutorial's examples
+        run: make tutorial TRITON_PYTHON=$HOME/tritonenv/bin/python R1_STRICT=1
+
       # NOTE: `make r2-grid-tests` is deliberately NOT here. GRID-03, -04,
       # -05 and -07 are about per-tile launch on the four-tile machine and
       # are honestly NOT RUN, so the suite exits non-zero -- which is the

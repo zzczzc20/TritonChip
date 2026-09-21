@@ -74,6 +74,12 @@ make triton-e2e e2e \
 See the [compiler guide](compiler/README.md) for toolchain setup. Generated
 arithmetic RTL is checked in; XLS is needed only to regenerate it.
 
+To use the toolchain rather than build it, start with the
+[tutorial](tutorial/README.md): eight worked examples that compile Triton
+kernels, run them on the simulated hardware, check the answers against an
+oracle, compare optimisation levels, and read what the compiler did. Every
+number in those pages came from running the script beside it.
+
 | Command | Purpose |
 |---|---|
 | `make test` | Development regression across compiler, core, cache, mesh, and system |
@@ -116,6 +122,7 @@ These specifications define acceptance criteria, not completed features.
 | `xls/`, `rtl/gen/` | DSLX arithmetic sources and generated Verilog |
 | `flow/` | Synthesis tooling |
 | `doc/` | Design documents, specifications, audits, and implementation status |
+| `tutorial/` | Worked examples of using the compiler and runtime from Python |
 
 ## Documentation
 
@@ -124,6 +131,7 @@ These specifications define acceptance criteria, not completed features.
 - [Production-readiness audit](doc/production_readiness_audit_2026-09-19.md)
 - [Synthesis results](doc/synthesis.md) — structural proxies, not signed-off PPA
 - [XLS generation workflow](doc/xls.md)
+- [Tutorial](tutorial/README.md) — using the compiler and runtime from Python
 
 ## Contributing
 

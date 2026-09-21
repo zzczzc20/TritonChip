@@ -247,7 +247,12 @@ def main():
         t['num_cores'] = spec['num_cores']
         t['topology'] = spec['topology']
         t['elaboration'] = spec['elaboration']
-        t['bench'] = spec['bench']
+        # The bench is deliberately NOT copied here. Phase 3.6 section
+        # 3.1: a compile target describes the ISA, the ABI, the
+        # capabilities and the resources, and may not be equated with a
+        # simulator executable. It used to carry
+        # `sim/build/tb_core_vrf.vvp`, which the compiler never read and
+        # which made the target look like a binding to one program.
         if spec['num_cores'] == 1:
             t['memory'].pop('mesh', None)
         outputs.append((os.path.join(os.path.dirname(OUT), spec['target_file']), t))

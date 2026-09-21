@@ -28,6 +28,7 @@ import tempfile
 import time
 
 from .errors import DeviceLost, TncaError
+from . import backend as _backend
 
 OP_UPLOAD = 1
 OP_DOWNLOAD = 2
@@ -67,8 +68,19 @@ class Reply:
                 f"r0={self.r0} r1={self.r1}>")
 
 
-class Transport:
-    """One device process, one epoch."""
+class Transport(_backend.Backend):
+    """One device process, one epoch, reached through a shared directory.
+
+    The binding this repository has always used, now declared through
+    the interface every backend answers (phase 3.6 section 4.2) rather
+    than being the only thing the runtime knew how to talk to.
+    """
+
+    name = 'sim-file'
+    state = _backend.REFERENCE_AVAILABLE
+    #: A launch is not idempotent. Section 4.2: a timeout must not
+    #: resend one, because the kernel would run twice.
+    launch_is_idempotent = False
 
     def __init__(self, bench, *, workdir=None, poll_cycles=20,
                  deadline_cycles=2_000_000, host_timeout=600.0, trace=False,
@@ -274,6 +286,12 @@ class Transport:
 
     def quiesce(self):
         return self.request(OP_QUIESCE)
+
+    def capabilities(self):
+        out = super().capabilities()
+        out.update({'medium': 'a shared directory', 'bench': self.bench,
+                    'reaches': 'the RTL directly, in a child process'})
+        return out
 
     def ping(self):
         return self.request(OP_PING)

@@ -79,7 +79,7 @@ it is a statement about which column of evidence exists.
 | `v.mulh.u` | VINT | (baseline) | yes | yes | yes | yes | no | no |
 | `v.and` | VINT | (baseline) | yes | yes | yes | yes | no | no |
 | `v.or` | VINT | (baseline) | yes | yes | yes | yes | no | no |
-| `v.xor` | VINT | (baseline) | yes | yes | yes | yes | no | no |
+| `v.xor` | VINT | (baseline) | yes | yes | yes | yes | yes | no |
 | `v.andn` | VINT | (baseline) | yes | yes | yes | yes | no | no |
 | `v.shl` | VINT | (baseline) | yes | yes | yes | yes | no | no |
 | `v.lshr` | VINT | (baseline) | yes | yes | yes | yes | no | no |
@@ -97,11 +97,11 @@ it is a statement about which column of evidence exists.
 | `v.addi` | VINT | (baseline) | yes | yes | yes | yes | no | no |
 | `v.subi` | VINT | (baseline) | yes | yes | yes | yes | no | no |
 | `v.muli` | VINT | (baseline) | yes | yes | yes | yes | no | no |
-| `v.andi` | VINT | (baseline) | yes | yes | yes | yes | no | no |
+| `v.andi` | VINT | (baseline) | yes | yes | yes | yes | yes | no |
 | `v.ori` | VINT | (baseline) | yes | yes | yes | yes | no | no |
 | `v.xori` | VINT | (baseline) | yes | yes | yes | yes | no | no |
 | `v.shli` | VINT | (baseline) | yes | yes | yes | yes | no | no |
-| `v.lshri` | VINT | (baseline) | yes | yes | yes | yes | no | no |
+| `v.lshri` | VINT | (baseline) | yes | yes | yes | yes | yes | no |
 | `v.ashri` | VINT | (baseline) | yes | yes | yes | yes | no | no |
 | `v.cmpi` | VINT | (baseline) | yes | yes | yes | yes | no | no |
 | `v.movi` | VINT | (baseline) | yes | yes | yes | yes | yes | no |
@@ -134,7 +134,7 @@ it is a statement about which column of evidence exists.
 | `v.shuffle.xor` | SHUF | (baseline) | yes | yes | yes | yes | no | no |
 | `v.shuffle.up` | SHUF | (baseline) | yes | yes | yes | yes | no | no |
 | `v.shuffle.down` | SHUF | (baseline) | yes | yes | yes | yes | no | no |
-| `v.permute` | SHUF | (baseline) | yes | yes | yes | yes | no | no |
+| `v.permute` | SHUF | (baseline) | yes | yes | yes | yes | yes | no |
 | `v.rotate` | SHUF | (baseline) | yes | yes | yes | yes | no | no |
 | `v.extract` | SHUF | (baseline) | yes | yes | yes | yes | no | no |
 | `v.insert` | SHUF | (baseline) | yes | yes | yes | yes | no | no |
@@ -193,7 +193,7 @@ it is a statement about which column of evidence exists.
 | `mb.wait` | MBAR | mbarrier | yes | yes | yes | yes | yes | no |
 | `mb.inval` | MBAR | mbarrier | yes | yes | yes | yes | no | no |
 
-169 instructions: 67 the compiler emits, 1 it has a lowering for and refuses on every R1 profile, 20 executed on the whole machine.
+169 instructions: 71 the compiler emits, 1 it has a lowering for and refuses on every R1 profile, 20 executed on the whole machine.
 
 `gated` in the emit column means the lowering exists and the capability
 is false everywhere, so asking for it is a compile error rather than a

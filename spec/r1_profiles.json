@@ -17,10 +17,14 @@
         "HAS_ATOMICS": 1,
         "HAS_SYS_ATOMICS": 0
       },
-      "bench": "sim/build/tb_core.vvp",
-      "bench_args": [
-        "+allroles"
-      ]
+      "platform_binding": {
+        "kind": "simulation",
+        "bench": "sim/build/tb_core.vvp",
+        "bench_args": [
+          "+allroles"
+        ],
+        "what": "the testbench that reads this profile's capabilities back out of the hardware"
+      }
     },
     "core-4r": {
       "target_file": "tnca-sim-4rctx.json",
@@ -36,10 +40,14 @@
         "HAS_ATOMICS": 1,
         "HAS_SYS_ATOMICS": 0
       },
-      "bench": "sim/build/tb_core4.vvp",
-      "bench_args": [
-        "+allroles"
-      ]
+      "platform_binding": {
+        "kind": "simulation",
+        "bench": "sim/build/tb_core4.vvp",
+        "bench_args": [
+          "+allroles"
+        ],
+        "what": "the testbench that reads this profile's capabilities back out of the hardware"
+      }
     },
     "system-2x2": {
       "target_file": "tnca-sim-2x2.json",
@@ -55,11 +63,15 @@
         "HAS_ATOMICS": 1,
         "HAS_SYS_ATOMICS": 0
       },
-      "bench": "sim/build/tb_top.vvp",
-      "bench_args": [
-        "+allroles"
-      ],
-      "note": "HAS_SFU is 0 here and that is the correct profile, not a defect to be papered over. The contract is explicit: the system's SFU stays off rather than being switched on to remove the inconsistency. What was wrong was the target claiming otherwise."
+      "note": "HAS_SFU is 0 here and that is the correct profile, not a defect to be papered over. The contract is explicit: the system's SFU stays off rather than being switched on to remove the inconsistency. What was wrong was the target claiming otherwise.",
+      "platform_binding": {
+        "kind": "simulation",
+        "bench": "sim/build/tb_top.vvp",
+        "bench_args": [
+          "+allroles"
+        ],
+        "what": "the testbench that reads this profile's capabilities back out of the hardware"
+      }
     },
     "core-vrf-sync-v1": {
       "target_file": "tnca-sim-vrf-v1.json",
@@ -75,10 +87,6 @@
         "HAS_ATOMICS": 1,
         "HAS_SYS_ATOMICS": 0
       },
-      "bench": "sim/build/tb_core_vrf.vvp",
-      "bench_args": [
-        "+allroles"
-      ],
       "implementation": {
         "vector_register_file": "banked",
         "banks": 4,
@@ -86,6 +94,14 @@
         "read_latency_cycles": 1,
         "unwritten_reads": "zero, from per-lane valid bits",
         "contract": "spec/r3v2_contract.json"
+      },
+      "platform_binding": {
+        "kind": "simulation",
+        "bench": "sim/build/tb_core_vrf.vvp",
+        "bench_args": [
+          "+allroles"
+        ],
+        "what": "the testbench that reads this profile's capabilities back out of the hardware"
       }
     }
   },
@@ -100,5 +116,6 @@
     },
     "note": "Nothing else is supported. rtl/noc/tnca_core_ni.v computes a 2-bit home and rtl/tnca_top.v fixes N_W=2, so raising NX/NY does not produce a correct 16-slice home or a wide enough source tag (audit F05). An unsupported topology must fail at configuration time rather than elaborate into a machine that misroutes."
   },
-  "bench_args_note": "Every Role Context the profile defines is launched. NUM_ROLES reports the count this LAUNCH activated (ISA sec 5.1), not the core's architectural maximum, so a capability read-back that started one context would disagree with a target describing two -- and would be right to. A profile's capabilities are the capabilities of the whole profile."
+  "bench_args_note": "Every Role Context the profile defines is launched. NUM_ROLES reports the count this LAUNCH activated (ISA sec 5.1), not the core's architectural maximum, so a capability read-back that started one context would disagree with a target describing two -- and would be right to. A profile's capabilities are the capabilities of the whole profile.",
+  "platform_binding_note": "Phase 3.6 section 3.1 separates a compile target from a platform binding: a target describes the ISA, the ABI, the capabilities and the resources, and 'cannot be equated with a particular simulator executable or a particular board'. The bench below is a VERIFICATION binding -- which testbench exercises this profile's capabilities on this host -- and it is deliberately not copied into the generated target the compiler reads. The DEVICE binding lives in python/tnca/device.py, which is the one the runtime uses."
 }

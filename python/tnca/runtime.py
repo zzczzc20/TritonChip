@@ -183,6 +183,18 @@ class _Allocator:
         self.free_list.append((addr, size))
 
 
+def _open_device(name, bench, **kwargs):
+    """The one place the runtime learns which device it is talking to.
+
+    Phase 3.6 R36-BE-01: the general runtime holds no simulator or board
+    startup logic. It names a backend and the registry resolves it, so
+    an external branch registers an implementation rather than editing
+    the state machine below.
+    """
+    from . import backend as _backend
+    return _backend.open_backend(name, bench=bench, **kwargs)
+
+
 class Session:
     """One device, one address space, one queue."""
 
@@ -190,10 +202,16 @@ class Session:
 
     def __init__(self, profile='core-sim', *, bench=None, workdir=None,
                  code_base=0, heap_base=0x4000, heap_limit=0x20000,
-                 deadline_cycles=2_000_000, host_timeout=600.0, trace=False):
+                 deadline_cycles=2_000_000, host_timeout=600.0, trace=False,
+                 backend='sim-file'):
         Session._counter += 1
         self.id = Session._counter
         self.profile = profile
+        # Phase 3.6 section 3.1: the profile is a COMPILE target and the
+        # backend is how this host reaches a device. They were one thing
+        # and are now two, because a target that meant "this simulator
+        # executable" could never describe a board.
+        self.backend_name = backend
         self.epoch = 0
         self.poisoned = False
         self.closed = False
@@ -225,10 +243,11 @@ class Session:
         self._worker = None
         self._stop = threading.Event()
 
-        self.dev = T.Transport(self.bench, workdir=self._workdir,
-                               deadline_cycles=deadline_cycles,
-                               host_timeout=host_timeout, trace=trace,
-                               epoch=self.epoch)
+        self.dev = _open_device(self.backend_name, self.bench,
+                                workdir=self._workdir,
+                                deadline_cycles=deadline_cycles,
+                                host_timeout=host_timeout, trace=trace,
+                                epoch=self.epoch)
         self.dev.start()
         self._start_worker()
 
@@ -719,10 +738,11 @@ class Session:
             self._code_next = 0
             self._heap = _Allocator(self._heap.base, self._heap.limit)
             self.poisoned = False
-            self.dev = T.Transport(self.bench, workdir=self._workdir,
-                                   deadline_cycles=self._deadline,
-                                   host_timeout=self._host_timeout,
-                                   trace=self._trace, epoch=self.epoch)
+            self.dev = _open_device(self.backend_name, self.bench,
+                                    workdir=self._workdir,
+                                    deadline_cycles=self._deadline,
+                                    host_timeout=self._host_timeout,
+                                    trace=self._trace, epoch=self.epoch)
             self.dev.start()
         self._start_worker()
         return self.epoch

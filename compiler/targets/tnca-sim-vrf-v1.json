@@ -147,6 +147,5 @@
     "HAS_SFU": 1,
     "HAS_ATOMICS": 1,
     "HAS_SYS_ATOMICS": 0
-  },
-  "bench": "sim/build/tb_core_vrf.vvp"
+  }
 }

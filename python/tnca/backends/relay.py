@@ -1,0 +1,140 @@
+"""A relay: owns a device, serves it over a socket.
+
+doc/phase3_6_tasks_and_acceptance.md R36-BE-02.
+
+This exists so the reference adapter is a real protocol loop rather
+than a mock. It drives the same RTL the built-in binding drives, using
+the same transport, and forwards what comes back. It computes nothing:
+every number a client receives came out of the Verilog.
+
+It is also the shape an external branch would write -- a small process
+that owns whatever the platform is and speaks one protocol to the
+runtime -- which is why it is a module of its own rather than a helper
+inside the adapter.
+
+    python -m tnca.backends.relay <bench> [--workdir D] [--deadline N]
+"""
+import argparse
+import json
+import socket
+import struct
+import sys
+
+
+def _send(conn, obj, payload=b''):
+    head = json.dumps(obj, separators=(',', ':')).encode()
+    conn.sendall(struct.pack('<II', len(head), len(payload)) + head + payload)
+
+
+def _recv_exactly(conn, n):
+    out = bytearray()
+    while len(out) < n:
+        chunk = conn.recv(n - len(out))
+        if not chunk:
+            return None
+        out += chunk
+    return bytes(out)
+
+
+def _recv(conn):
+    head = _recv_exactly(conn, 8)
+    if head is None:
+        return None, None
+    hl, pl = struct.unpack('<II', head)
+    h = _recv_exactly(conn, hl)
+    p = _recv_exactly(conn, pl)
+    if h is None or p is None:
+        return None, None
+    return json.loads(h.decode()), p
+
+
+def serve(conn, dev, epoch):
+    """One client, until it says goodbye or the socket closes."""
+    while True:
+        head, payload = _recv(conn)
+        if head is None:
+            return
+        op = head.get('op')
+        try:
+            if op == 'hello':
+                _send(conn, {'protocol': 1, 'epoch': epoch,
+                             'device': dev.bench})
+                continue
+            if op == 'bye':
+                return
+            if op == 'upload':
+                r = dev.upload(head['addr'], payload)
+                _send(conn, _reply(r, epoch))
+            elif op == 'download':
+                r, data = dev.download(head['addr'], head['nbytes'])
+                _send(conn, _reply(r, epoch), data)
+            elif op == 'launch':
+                r = dev.launch(head['pc'], head['arg_base'],
+                               role_mask=head.get('role_mask', 1),
+                               pid=tuple(head.get('pid', (0, 0, 0))),
+                               npid=tuple(head.get('npid', (1, 1, 1))))
+                _send(conn, _reply(r, epoch))
+            elif op == 'quiesce':
+                r = dev.quiesce()
+                _send(conn, _reply(r, epoch))
+            else:
+                _send(conn, {'error': f"unknown operation {op!r}",
+                             'code': 'PROTOCOL_ERROR'})
+        except Exception as e:                             # noqa: BLE001
+            # The device's failure is reported, not hidden behind a
+            # plausible answer. A relay that invented a reply here would
+            # be the mock this stage forbids.
+            _send(conn, {'error': f"{type(e).__name__}: {e}",
+                         'code': getattr(e, 'code', 'DEVICE_LOST')})
+            return
+
+
+def _reply(r, epoch):
+    return {'seq': getattr(r, 'seq', 0), 'status': getattr(r, 'status', 0),
+            'r0': getattr(r, 'r0', 0), 'r1': getattr(r, 'r1', 0),
+            'epoch': epoch}
+
+
+def main(argv=None):
+    ap = argparse.ArgumentParser(description=__doc__)
+    ap.add_argument('bench')
+    ap.add_argument('--workdir')
+    ap.add_argument('--deadline', type=int, default=2_000_000)
+    ap.add_argument('--image')
+    ap.add_argument('--epoch', type=int, default=0)
+    ap.add_argument('--port', type=int, default=0)
+    args = ap.parse_args(argv)
+
+    from tnca import transport as T
+    dev = T.Transport(args.bench, workdir=args.workdir,
+                      deadline_cycles=args.deadline, image=args.image,
+                      epoch=args.epoch)
+    dev.start()
+
+    srv = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    srv.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    srv.bind(('127.0.0.1', args.port))
+    srv.listen(4)
+    port = srv.getsockname()[1]
+    # The client waits for this line. Printing it before the device is up
+    # would hand out an address that cannot answer.
+    print(f"listening {port}", flush=True)
+
+    try:
+        while True:
+            conn, _addr = srv.accept()
+            conn.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
+            try:
+                serve(conn, dev, args.epoch)
+            finally:
+                conn.close()
+    except KeyboardInterrupt:                              # pragma: no cover
+        pass
+    finally:
+        dev.stop()
+        srv.close()
+    return 0
+
+
+if __name__ == '__main__':
+    sys.exit(main())

@@ -91,13 +91,15 @@ def cfg01(log):
     ok_all = True
     for name in P.load()['profiles']:
         p, t = P.profile(name), P.target_of(name)
-        bench = p['bench']
+        binding = p['platform_binding']
+        bench = binding['bench']
         if not os.path.exists(os.path.join(ROOT, bench)):
             log.append(f"    {name}: {bench} not built")
             ok_all = False
             continue
         src, n = readback_program(t, None)
-        ok, out = asm_run(src, bench, p['bench_args'], tag=f'cfg01-{name}')
+        ok, out = asm_run(src, bench, binding['bench_args'],
+                          tag=f'cfg01-{name}')
         # On the four-tile bench every tile runs the program, so a capability
         # that differed on one tile would fail there and nowhere else.
         log.append(f"    {name}: {n} facts on {bench} -> "
@@ -146,7 +148,9 @@ def cfg03(log):
                 '    .assert_lane v2, #0, #0x3f000000, #1\n'
                 '    exit\n')
     core = P.profile('core-sim')
-    ok_core, out_core = asm_run(sfu_prog, core['bench'], core['bench_args'],
+    ok_core, out_core = asm_run(sfu_prog,
+                                core['platform_binding']['bench'],
+                                core['platform_binding']['bench_args'],
                                 tag='cfg03-core')
     log.append(f"    core-sim executes v.rsqrt.approx: {ok_core}")
 
@@ -168,7 +172,9 @@ def cfg03(log):
                  '    v.splat v1, s2\n'
                  '    v.rsqrt.approx v2, v1\n'
                  '    trap #99\n')
-    ok_trap, out_trap = asm_run(trap_prog, sysp['bench'], sysp['bench_args'],
+    ok_trap, out_trap = asm_run(trap_prog,
+                                sysp['platform_binding']['bench'],
+                                sysp['platform_binding']['bench_args'],
                                 tag='cfg03-sys')
     # The program is expected to fault, so the bench must NOT report PASS.
     faulted = 'ILLEGAL' in out_trap or 'trap code=0x01' in out_trap or not ok_trap
@@ -256,8 +262,11 @@ def cfg06(log):
                    f"single-core profile")
         return False, 'core-4r describes the wrong machine'
     src, n = readback_program(t, {'num_roles', 'num_vregs', 'num_cores'})
-    ok, out = asm_run(src, p['bench'], p['bench_args'], tag='cfg06')
-    log.append(f"    {n} facts on {p['bench']} -> {'PASS' if ok else 'FAIL'}")
+    ok, out = asm_run(src, p['platform_binding']['bench'],
+                      p['platform_binding']['bench_args'],
+                      tag='cfg06')
+    log.append(f"    {n} facts on {p['platform_binding']['bench']} "
+               f"-> {'PASS' if ok else 'FAIL'}")
     if not ok:
         log.append('      ' + out.strip().splitlines()[-1][:160])
     return ok, 'four Role Contexts read back from the hardware'

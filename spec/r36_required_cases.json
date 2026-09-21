@@ -110,6 +110,7 @@
     }
   ],
   "note": "doc/phase3_6_tasks_and_acceptance.md section 6. Ten packages, thirty standards. Section 8 is explicit about what the sign-off does NOT mean: not that an FPGA runs, not that an ASIC is implemented, not that the project is production-signed.",
+  "owner_note": "R36-EV-02 asks for evidence AND an owner for every standard. These are roles rather than people -- doc/r36_handoff.md section 9 says the same -- and the point of naming one is that a change to a public interface has a place to be argued about, not that there is a committee. The verifier requires the field to be present and non-empty; it cannot check that somebody is actually doing the job.",
   "packages": [
     {
       "cases": [
@@ -122,6 +123,7 @@
       ],
       "gate": "A",
       "id": "R36-01",
+      "owner": "the integration owner",
       "title": "integration baseline and capability inventory"
     },
     {
@@ -135,6 +137,7 @@
       ],
       "gate": "A",
       "id": "R36-02",
+      "owner": "the runtime owner",
       "title": "backend abstraction and the direction of dependency"
     },
     {
@@ -148,6 +151,7 @@
       ],
       "gate": "A",
       "id": "R36-03",
+      "owner": "the compiler owner",
       "title": "configuration, artifact and compatibility"
     },
     {
@@ -161,6 +165,7 @@
       ],
       "gate": "B",
       "id": "R36-04",
+      "owner": "the integration owner",
       "title": "the shared RTL and a complete export"
     },
     {
@@ -174,6 +179,7 @@
       ],
       "gate": "B",
       "id": "R36-05",
+      "owner": "the RTL owner",
       "title": "storage, clock and reset adaptation boundaries"
     },
     {
@@ -187,6 +193,7 @@
       ],
       "gate": "B",
       "id": "R36-06",
+      "owner": "the runtime owner",
       "title": "the host protocol, completion and recovery"
     },
     {
@@ -200,6 +207,7 @@
       ],
       "gate": "C",
       "id": "R36-07",
+      "owner": "the build owner",
       "title": "build, install and portable delivery"
     },
     {
@@ -215,6 +223,7 @@
       ],
       "gate": "C",
       "id": "R36-08",
+      "owner": "the verification owner",
       "title": "the shared conformance suite and the regression gate"
     },
     {
@@ -228,6 +237,7 @@
       ],
       "gate": "C",
       "id": "R36-09",
+      "owner": "the integration owner",
       "title": "downstream handoff and the extension rehearsal"
     },
     {
@@ -241,6 +251,7 @@
       ],
       "gate": "D",
       "id": "R36-10",
+      "owner": "the verification owner",
       "title": "evidence, status and the sign-off"
     }
   ],

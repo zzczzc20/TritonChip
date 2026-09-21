@@ -197,6 +197,57 @@ def main():
         if gap:
             findings.append(f"{pk['id']}: no evidence for {gap}")
 
+    # 3c. Every standard has an owner as well as evidence (R36-EV-02).
+    for pk in REQUIRED['packages']:
+        if not (pk.get('owner') or '').strip():
+            findings.append(f"{pk['id']}: no owner recorded")
+
+    # 3d. The budget, recomputed (R36-EV-01 names it alongside the exit
+    #     codes, the counts and the hashes). Summed from what each
+    #     checker actually took, not from a number the run wrote down.
+    budget = json.load(open(os.path.join(
+        ROOT, 'spec', 'r36_regression.json')))['budget']
+    spent = sum(float(e.get('elapsed_s') or 0)
+                for e in rep.get('checks', []))
+    cap = budget['elapsed_seconds']
+    print()
+    print(f"  budget: {spent:.0f}s of {cap}s across "
+          f"{len(rep.get('checks', []))} checker(s) "
+          f"({'within' if spent <= cap else 'OVER'})")
+    if spent > cap:
+        findings.append(
+            f"over the frozen budget: {spent:.0f}s of {cap}s. The "
+            f"contract keeps this a failure rather than something to "
+            f"re-run until it fits.")
+
+    # 3e. One candidate, one implementation. A run whose pieces came
+    #     from different trees is what "混提交/实现" names.
+    build = os.path.join(ev, 'packages', 'build-report.json')
+    if os.path.exists(build):
+        br = load(build)
+        bc = br.get('commit')
+        print(f"  the build report's commit: {(bc or '?')[:12]} "
+              f"({'the same candidate' if bc == rep.get('commit') else 'A DIFFERENT ONE'})")
+        if bc and bc != rep.get('commit'):
+            findings.append(
+                f"the deliverables were built at {bc[:12]} and the "
+                f"checkers ran at {rep.get('commit', '?')[:12]}")
+        lvl = (br.get('hardware') or {}).get('claim_level')
+        if lvl and lvl != 'engineering-ready':
+            findings.append(f"the export claims {lvl!r}")
+    else:
+        findings.append('no build report: the deliverables are not '
+                        'bound to this run')
+
+    # 3f. A failure and a re-run keep separate run IDs (R36-EV-02).
+    root = os.path.dirname(ev)
+    runs = [d for d in sorted(os.listdir(root))
+            if os.path.isdir(os.path.join(root, d))]
+    print(f"  run directories under {os.path.basename(root)}: "
+          f"{len(runs)}, all distinct: {len(runs) == len(set(runs))}")
+    if len(runs) != len(set(runs)):
+        findings.append('two runs share an id')
+
     # 4. The verdict, recomputed and then compared with what the summary
     #    claims. This is the "只改 summary PASS" refusal.
     want = (SIGNOFF if (not findings and rep.get('clean_tree'))
@@ -226,11 +277,14 @@ def main():
 
     # R36-10's own three cases, answered here rather than by a checker
     # that would be grading itself.
-    ev01 = not [f for f in findings if 'does not match' in f
-                or 'disagree' in f]
-    ev02 = not [f for f in findings if 'no evidence for' in f
-                or 'no result' in f] and bool(rep.get('commit')) \
-        and bool(rep.get('clean_tree'))
+    ev01 = not [f for f in findings
+                if 'does not match' in f or 'disagree' in f
+                or 'over the frozen budget' in f]
+    ev02 = not [f for f in findings
+                if 'no evidence for' in f or 'no result' in f
+                or 'no owner' in f or 'different' in f
+                or 'share an id' in f or 'not bound' in f] \
+        and bool(rep.get('commit')) and bool(rep.get('clean_tree'))
     rel01 = ok and claimed == SIGNOFF
     tenth = [
         {'id': 'R36-EV-01', 'passed': bool(ev01),

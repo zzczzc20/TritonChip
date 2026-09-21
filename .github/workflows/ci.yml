@@ -226,6 +226,29 @@ jobs:
       - name: The tutorial's examples
         run: make tutorial TRITON_PYTHON=$HOME/tritonenv/bin/python R1_STRICT=1
 
+      # R3.6's fast checkers. The backend registry and the configuration
+      # rules cost seconds, and both watch things a routine change can
+      # break without any other suite noticing: a backend that falls back
+      # to the simulator, or a compile target that drifts from the RTL it
+      # claims to describe.
+      #
+      # The heavy ones -- the memory boundary, the mutations, the frozen
+      # regression and the downstream rehearsal -- are NOT here. They run
+      # in the gate, where a long run is the point.
+      - name: R3.6 backend boundary and configuration
+        run: |
+          make r36-check-plan TRITON_PYTHON=$HOME/tritonenv/bin/python
+          make r36-backend-tests TRITON_PYTHON=$HOME/tritonenv/bin/python
+          make r36-config-tests TRITON_PYTHON=$HOME/tritonenv/bin/python
+
+      # The hardware export, built and then proved from somewhere else
+      # entirely: elaborated with no library search of ours and run
+      # against a program whose answer it checks itself.
+      - name: The hardware export, on its own
+        run: |
+          make r36-export
+          make r36-rtl-tests
+
       # NOTE: `make r2-grid-tests` is deliberately NOT here. GRID-03, -04,
       # -05 and -07 are about per-tile launch on the four-tile machine and
       # are honestly NOT RUN, so the suite exits non-zero -- which is the

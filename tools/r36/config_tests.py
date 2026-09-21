@@ -42,12 +42,35 @@ def axpy(**opts):
 
 
 def _export_parameters(log):
-    """The public top's parameters, from a hardware export manifest."""
+    """The public top's parameters, from a hardware export manifest.
+
+    BUILT if one is not lying around, rather than requiring a previous
+    `make r36-export`. A checker that depends on a build artifact being
+    in a particular directory passes on a developer's machine and fails
+    in a fresh clone -- which is what happened on the acceptance host,
+    and which the mutation suite's clean control then reported as a
+    detector failing for its own reasons.
+    """
     import glob
+    import subprocess
+    import tempfile
     cands = sorted(glob.glob(os.path.join(ROOT, 'sim', 'build',
                                           '*export*', 'MANIFEST.json')))
     if not cands:
-        return None
+        out = os.path.join(tempfile.mkdtemp(prefix='tnca-cfg-export-'),
+                           'export')
+        r = subprocess.run([sys.executable,
+                            os.path.join('tools', 'r36', 'export.py'),
+                            '--out', out],
+                           cwd=ROOT, capture_output=True, text=True,
+                           timeout=1800)
+        man = os.path.join(out, 'MANIFEST.json')
+        if r.returncode != 0 or not os.path.exists(man):
+            log.append(f"      the export would not build: "
+                       f"{(r.stderr or r.stdout).strip()[-140:]}")
+            return None
+        log.append(f"      no export was lying around, so one was built")
+        cands = [man]
     with open(cands[-1]) as fh:
         return json.load(fh).get('parameters') or {}
 

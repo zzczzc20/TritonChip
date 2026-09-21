@@ -187,6 +187,19 @@ def ll02(log):
     except LayoutError as e:
         log.append(f"    inverting it is refused: {str(e)[:78]}")
 
+    # A layout that does NOT cover its output has to be seen not to.
+    # Without this the coverage report could return True unconditionally
+    # and every assertion above would still hold, because all of them
+    # are about layouts that do cover.
+    partial = LinearLayoutAdapter([('reg', [[1], [2]])], ['e'], [8],
+                                  require_surjective=False,
+                                  what='covers half')
+    cp = partial.covers({'reg': 4}, {'e': 8})
+    log.append(f"    a layout over half its output: covered="
+               f"{cp['covered']}, {cp['unhit']} position(s) unhit of "
+               f"{cp['expected_outputs']}")
+    ok &= (not cp['covered']) and cp['unhit'] == 4
+
     # A non-power-of-two bound is not a linear layout's business.
     try:
         LinearLayoutAdapter([('reg', [[1], [2]])], ['i'], [3])

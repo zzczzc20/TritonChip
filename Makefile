@@ -730,7 +730,8 @@ clean:
         r3v2-components r3v2-core r3v2-flow r3v2-e2e r3v2-count r3v2-model r3v2-synth core-vrf \
         r2-package r2-stage-data \
         r3-scout r3-plan r3-model-tests \
-        r35-scout r35-check-plan r35-layout-tests r35-upstream-tests r35-opt-tests r35-alloc-tests r35-perf
+        r35-scout r35-check-plan r35-layout-tests r35-upstream-tests r35-opt-tests r35-alloc-tests r35-safety-tests r35-package-tests \
+        r35-acceptance r35-verify-evidence r35-perf
 
 # DEP-01. EVIDENCE is an R1 run directory; COMBINED is compare_envs.py's
 # output over A and B, which is what makes an R1 verdict complete.
@@ -899,6 +900,32 @@ r35-opt-tests: | dirs
 r35-alloc-tests: $(BUILD)/tb_core_vrf.vvp $(BUILD)/t29_vrfbank.hex | dirs
 	@$(TRITON_PYTHON) tools/r35/alloc_tests.py \
 	   --json $(BUILD)/r35_alloc_tests.json
+
+# The inherited safety cases, each pass's positive and negative case,
+# and the eight mutations against the checkers the contract names.
+r35-safety-tests: $(BUILD)/tb_core_vrf.vvp $(BUILD)/t29_vrfbank.hex | dirs
+	@$(TRITON_PYTHON) tools/r35/safety_tests.py \
+	   --json $(BUILD)/r35_safety_tests.json
+
+r35-package-tests: | dirs
+	@$(TRITON_PYTHON) tools/r35/package_tests.py \
+	   --json $(BUILD)/r35_package_tests.json
+
+# The gate. It runs every checker into a per-run evidence directory and
+# is the only thing that produces a verdict.
+r35-acceptance: | dirs
+	@if [ -x "$(TRITON_PYTHON)" ]; then \
+	   $(PYTHON) tools/r35/acceptance.py --evidence $(R35_EVIDENCE) \
+	     --python $(TRITON_PYTHON); \
+	 else \
+	   $(PYTHON) tools/r35/acceptance.py --evidence $(R35_EVIDENCE); \
+	 fi
+
+R35_EVIDENCE_DIR ?= $(R35_EVIDENCE)/latest
+
+r35-verify-evidence:
+	@$(PYTHON) tools/r35/verify_evidence.py $(R35_EVIDENCE_DIR) \
+	   --json $(BUILD)/r35_verify_evidence.json
 
 # Device cycles for the frozen workloads, by mode, with the numbers
 # checked against the independent oracle. Section 6.3's C, not a host

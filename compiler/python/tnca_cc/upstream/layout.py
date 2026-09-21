@@ -70,6 +70,49 @@ def _check_bases(bases, out_dims, out_sizes):
                 f"bounds in ordinary index arithmetic.")
 
 
+def _rank_gf2(rows, sizes):
+    """The rank of these basis rows over GF(2), as flat bit vectors.
+
+    Needed before the call, not after: upstream answers a basis that
+    does not span what it was told to cover by printing `LLVM ERROR` and
+    ending the process. There is no exception to catch and no output to
+    read, so a caller that got it wrong loses the compiler and learns
+    nothing. This is plain elimination over bit vectors -- arithmetic,
+    not layout algebra, and not a second opinion about anything upstream
+    decides.
+    """
+    vectors = []
+    for row in rows:
+        flat, shift = 0, 0
+        for value, s in zip(row, sizes):
+            flat |= (int(value) & (s - 1)) << shift
+            shift += max(1, (s - 1).bit_length())
+        vectors.append(flat)
+    rank, pivots = 0, []
+    for v in vectors:
+        for p in pivots:
+            v = min(v, v ^ p)
+        if v:
+            pivots.append(v)
+            pivots.sort(reverse=True)
+            rank += 1
+    return rank
+
+
+def _check_surjective(bases, out_sizes):
+    if not out_sizes:
+        return
+    need = sum(max(1, (int(s) - 1).bit_length()) for s in out_sizes)
+    rows = [r for _n, rr in bases for r in rr]
+    got = _rank_gf2(rows, [int(s) for s in out_sizes])
+    if got < need:
+        raise LayoutError(
+            f"these {len(rows)} basis row(s) span {got} of the {need} "
+            f"bit(s) the output dimensions need, so the layout does not "
+            f"cover them. Upstream answers this by ending the process, so "
+            f"it is refused here instead.")
+
+
 class LinearLayoutAdapter:
     """One TNCA layout, computed by upstream.
 
@@ -80,6 +123,8 @@ class LinearLayoutAdapter:
     def __init__(self, bases, out_dims, out_sizes=None,
                  require_surjective=True, *, what=''):
         _check_bases(bases, out_dims, out_sizes)
+        if require_surjective:
+            _check_surjective(bases, out_sizes)
         self.what = what
         self.out_dims = list(out_dims)
         try:

@@ -273,7 +273,14 @@ def main():
     ap.add_argument('--modes', nargs='*', default=['B0', 'O1'])
     ap.add_argument('--measure-one', nargs=3, metavar=('WID', 'MODE', 'TMP'),
                     help='internal: measure one case and print it as json')
-    ap.add_argument('--only', nargs='*')
+    # `--only` names CASES, as it does in every other checker here. It
+    # used to name workloads, so `--only R35-PERF-01` matched nothing and
+    # the run reported no wins -- which read as a failure and hid
+    # whatever it had been asked about.
+    ap.add_argument('--only', nargs='*',
+                    help='case ids: R35-PERF-01, -02, -03')
+    ap.add_argument('--workloads', nargs='*',
+                    help='which workloads to measure (L01..L06)')
     ap.add_argument('--json')
     args = ap.parse_args()
 
@@ -292,7 +299,8 @@ def main():
     # in the spec and not yet built, and saying so is better than a table
     # with holes in it.
     HAVE = ['L01', 'L02', 'L03', 'L04', 'L05', 'L06']
-    ids = [w for w in HAVE if not args.only or w in args.only]
+    ids = [w for w in HAVE
+           if not args.workloads or w in args.workloads]
     missing = [w['id'] for w in SPEC['workloads'] if w['id'] not in HAVE]
 
     tmp = tempfile.mkdtemp(prefix='r35-perf-')
@@ -434,11 +442,101 @@ def main():
     detail = (f"{len(wins)}/{GAIN['primary_workloads_required']} workload(s) "
               f"over the gate, {len(attributed)} LL attribution(s); "
               f"{len(missing)} not yet built")
-    results = [{'id': 'R35-PERF-01', 'passed': bool(ok), 'detail': detail,
-                'profile': PROFILE, 'rows': rows, 'unbuilt': missing}]
+    # PERF-01 is that the runs happened and were measured properly.
+    # PERF-02 is section 6.3's five conditions. They are different
+    # claims: a run can be impeccably measured and still fall short.
+    # Section 7: "没有用 host wall 或模型预测代替设备 C". A number that
+    # never came off the device is usually not obviously wrong, so this
+    # checks it against something the device cannot violate: an in-order
+    # core fetches every word of a straight-line kernel at least once,
+    # so C is at least the static word count. A reading below that did
+    # not come from this machine.
+    implausible = []
+    for r in rows:
+        for m in args.modes:
+            c = r['modes'][m].get('cycles')
+            w = r['modes'][m].get('words')
+            if c is None:
+                implausible.append(f"{r['id']} at {m}: no cycle count")
+            elif w and c < w:
+                implausible.append(
+                    f"{r['id']} at {m}: {c} cycle(s) for {w} word(s), "
+                    f"which this core cannot do")
+    if implausible:
+        print()
+        print("  these readings did not come from the device:")
+        for p_ in implausible:
+            print(f"    {p_}")
+    measured = (all(r['correct'] for r in rows) and not missing and
+                not implausible)
+    conditions = {
+        '1 all six correct': all(r['correct'] for r in rows) and not missing,
+        '2 two workloads over the gate, not both L03':
+            len(wins) >= GAIN['primary_workloads_required'] and
+            any(r['id'] != 'L03' for r in wins),
+        '3 one LL attribution on L03/L06': bool(attributed),
+        '4 nothing meaningfully worse, total not up': no_regression,
+        '5 each gain has a real change behind it':
+            all(r['modes'][args.modes[0]]['words'] >
+                r['modes'][target]['words'] for r in wins),
+    }
+    print()
+    print("  section 6.3, condition by condition:")
+    for name, held in conditions.items():
+        print(f"    {'met    ' if held else 'NOT MET'}  {name}")
+
+    # Section 6.2 and 6.4: what it cost to find out.
+    budget = SPEC['budget']
+    launches = sum(len(args.modes) * (REPEATS if r['id'] in STOCHASTIC else 1)
+                   for r in rows)
+    wall = sum(r['modes'][m].get('wall_s') or 0
+               for r in rows for m in args.modes)
+    cycles = sum(r['modes'][m].get('cycles') or 0
+                 for r in rows for m in args.modes)
+    within = {
+        'launches': (launches, budget['total_rtl_runs']),
+        'wall seconds': (round(wall), budget['total_elapsed_seconds']),
+        'device cycles': (cycles, budget['total_cycles']),
+    }
+    print()
+    print("  section 6.2's budget:")
+    for k, (got, cap) in within.items():
+        print(f"    {k:<14s} {got:>8} of {cap:<8} "
+              f"{'within' if got <= cap else 'OVER'}")
+    print(f"    candidate search: none is performed, so the "
+          f"{budget['candidate_search_per_kernel']}-per-kernel and "
+          f"{budget['candidate_sweep_total']}-total caps are not "
+          f"approached")
+    in_budget = all(got <= cap for got, cap in within.values())
+
+    results = [{'id': 'R35-PERF-01', 'passed': bool(measured),
+                'detail': (f"{len(rows)} workload(s) measured on "
+                           f"{PROFILE}, every one against its oracle"),
+                'profile': PROFILE, 'rows': rows, 'unbuilt': missing},
+               {'id': 'R35-PERF-02', 'passed': all(conditions.values()),
+                'detail': (f"{sum(conditions.values())}/5 of section "
+                           f"6.3's conditions"),
+                'conditions': {k: bool(v) for k, v in conditions.items()}},
+               {'id': 'R35-PERF-03', 'passed': bool(in_budget),
+                'detail': (f"{launches} launch(es), {round(wall)}s, "
+                           f"{cycles} cycle(s), all within section 6.2"),
+                'budget': {k: list(v) for k, v in within.items()}}]
+    ok = measured and all(conditions.values()) and in_budget
+    if args.only:
+        wanted = set(args.only)
+        unknown = wanted - {r['id'] for r in results}
+        results = [r for r in results if r['id'] in wanted]
+        if not results:
+            print(f"  the --only filter {args.only} matched nothing"
+                  + (f" (unknown: {sorted(unknown)})" if unknown else ''))
+            return 2
+        ok = all(r['passed'] for r in results)
     if args.json:
         R.write_json(args.json, results)
     print()
+    for r in results:
+        print(f"  {r['id']}  {'PASS' if r['passed'] else 'FAIL':<5s} "
+              f"{r['detail']}")
     print(f"  r35-perf               {'PASS' if ok else 'FAIL':<6s} {detail}")
     return 0 if ok else 1
 

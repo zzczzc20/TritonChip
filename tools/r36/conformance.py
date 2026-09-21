@@ -381,8 +381,17 @@ def main():
                      'cases': record}
         ok &= good
         print(flush=True)
+    # Written as a one-case list, the same shape every other checker
+    # produces. The gate and the verifier then need no special case for
+    # this file, and -- the part that matters -- the case ID the
+    # contract names appears in the evidence, so a package with no
+    # result is visibly a package with no result.
     if args.json:
-        R.write_json(args.json, out)
+        R.write_json(args.json, [{
+            'id': 'R36-TEST-01', 'passed': bool(ok),
+            'detail': f"{len(names)} backend(s), {len(CASES)} case(s) "
+                      f"in {len(set(c.group for c in CASES))} group(s)",
+            'backends': out}])
     print(f"  conformance            {'PASS' if ok else 'FAIL':<6s} "
           f"{len(names)} backend(s)")
     return 0 if ok else 1

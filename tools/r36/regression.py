@@ -125,9 +125,14 @@ def main():
     ok &= within
 
     if args.json:
-        R.write_json(args.json, {'suites': rows, 'fidelity': fid,
-                                 'wall_seconds': round(wall, 1),
-                                 'budget': b, 'ok': ok})
+        R.write_json(args.json, [{
+            'id': 'R36-TEST-02', 'passed': bool(ok),
+            'detail': f"{len(rows)} suite(s), "
+                      f"{sum(1 for r in rows if r['skipped'])} skip(s), "
+                      f"fidelity {fid}, {wall:.0f}s of "
+                      f"{b['elapsed_seconds']}s",
+            'suites': rows, 'fidelity': fid,
+            'wall_seconds': round(wall, 1), 'budget': b}])
     bad = [r['id'] for r in rows if not r['passed'] or r['skipped']]
     print()
     print(f"  r36-regression         {'PASS' if ok else 'FAIL':<6s} "

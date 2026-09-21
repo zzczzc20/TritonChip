@@ -30,11 +30,16 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.abspath(os.path.join(HERE, '..', '..'))
 
 SIGNOFF = 'R36_ENGINEERING_READY'
-PACKAGES = ['R36-01', 'R36-02', 'R36-03', 'R36-04', 'R36-05', 'R36-06',
-            'R36-07', 'R36-08', 'R36-09']
+
+REQUIRED = json.load(open(os.path.join(ROOT, 'spec',
+                                       'r36_required_cases.json')))
 # R36-10 is this verification itself and the sign-off record; it has no
 # checker of its own to run, which is deliberate: a package that graded
-# itself would be the thing this file exists to prevent.
+# itself would be the thing this file exists to prevent. Its three cases
+# are answered here, at the bottom.
+SELF_GRADED = 'R36-10'
+PACKAGES = [p['id'] for p in REQUIRED['packages']
+            if p['id'] != SELF_GRADED]
 
 
 def _report_verdict(d):
@@ -165,6 +170,33 @@ def main():
         if not by_pkg[p]:
             findings.append(f"{p} has an open checker")
 
+    # 3b. R36-EV-02: every one of the thirty standards has evidence.
+    #
+    # Package-level agreement is not enough. A checker that ran, exited
+    # zero and quietly stopped emitting one of its cases would leave a
+    # package looking complete, so the case IDs the contract names are
+    # matched against the case IDs that actually appear.
+    seen_cases = set()
+    for entry in rep.get('checks', []):
+        runf = os.path.join(ev, 'runs', f"{entry['checker']}.json")
+        if not os.path.exists(runf):
+            continue
+        cases = load(runf)
+        if isinstance(cases, list):
+            seen_cases |= {c.get('id') for c in cases if isinstance(c, dict)}
+    print()
+    for pk in REQUIRED['packages']:
+        want = set(pk['cases'])
+        if pk['id'] == SELF_GRADED:
+            print(f"    {pk['id']} {sorted(want)} answered by this "
+                  f"verification")
+            continue
+        gap = sorted(want - seen_cases)
+        print(f"    {pk['id']} {len(want - set(gap))}/{len(want)} case(s) "
+              f"present{'' if not gap else '   MISSING ' + str(gap)}")
+        if gap:
+            findings.append(f"{pk['id']}: no evidence for {gap}")
+
     # 4. The verdict, recomputed and then compared with what the summary
     #    claims. This is the "只改 summary PASS" refusal.
     want = (SIGNOFF if (not findings and rep.get('clean_tree'))
@@ -191,10 +223,36 @@ def main():
     for f in findings:
         print(f"  open: {f}")
     print(f"  verification: {'CONFIRMED' if ok else 'REFUSED'}")
+
+    # R36-10's own three cases, answered here rather than by a checker
+    # that would be grading itself.
+    ev01 = not [f for f in findings if 'does not match' in f
+                or 'disagree' in f]
+    ev02 = not [f for f in findings if 'no evidence for' in f
+                or 'no result' in f] and bool(rep.get('commit')) \
+        and bool(rep.get('clean_tree'))
+    rel01 = ok and claimed == SIGNOFF
+    tenth = [
+        {'id': 'R36-EV-01', 'passed': bool(ev01),
+         'detail': 'the verdict recomputed from the raw runs, and the '
+                   'frozen contracts re-hashed'},
+        {'id': 'R36-EV-02', 'passed': bool(ev02),
+         'detail': 'every package bound to one commit, on a clean tree, '
+                   'with evidence for all thirty cases'},
+        {'id': 'R36-REL-01', 'passed': bool(rel01),
+         'detail': f"ten packages, and the only sign-off this may be is "
+                   f"{SIGNOFF}; FPGA and ASIC physical verification are "
+                   f"an external follow-on"},
+    ]
+    for c in tenth:
+        print(f"    {c['id']:<14s} {'ok' if c['passed'] else 'OPEN'}")
+
     if args.json:
         with open(args.json, 'w') as fh:
             json.dump({'evidence': ev, 'claimed': claimed,
                        'recomputed': want, 'packages': by_pkg,
+                       'cases_seen': sorted(seen_cases),
+                       'r36_10': tenth,
                        'findings': findings, 'confirmed': bool(ok)},
                       fh, indent=2, sort_keys=True)
             fh.write('\n')

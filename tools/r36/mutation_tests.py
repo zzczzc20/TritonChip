@@ -273,9 +273,13 @@ def main():
           f"({'unchanged' if clean else 'CHANGED -- a mutation escaped'})")
     ok &= clean
     if args.json:
-        R.write_json(args.json, {'mutations': results,
-                                 'tree_unchanged': clean,
-                                 'digest': after})
+        R.write_json(args.json, [{
+            'id': 'R36-TEST-03', 'passed': bool(ok),
+            'detail': f"{len(results)} mutation(s), "
+                      f"{sum(1 for r in results if r['caught'])} caught, "
+                      f"tree unchanged {clean}",
+            'mutations': results, 'tree_unchanged': clean,
+            'digest': after}])
     missed = [r['id'] for r in results if not r['caught']]
     print(f"  r36-mutation-tests     {'FAIL' if not ok else 'PASS':<6s} "
           + (', '.join(missed) if missed

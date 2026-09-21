@@ -114,7 +114,20 @@ def cfg01(log):
         log.append(f"    {name}: {n} facts on {bench} -> "
                    f"{'PASS' if ok else 'FAIL'}")
         if not ok:
-            log.append('      ' + out.strip().splitlines()[-1][:160])
+            # The lines that SAY something, not the last one.
+            #
+            # The bench already prints "cycles=N issued=M ..." and its own
+            # FAIL line; the last line of the output is iverilog's
+            # "$finish called at ...", which is the one thing that never
+            # varies. A timeout that showed only that cost a full gate
+            # cycle to diagnose -- `issued=0` would have said at once
+            # that the program never executed an instruction, and a
+            # non-zero one that it hung partway.
+            keep = [ln for ln in out.splitlines()
+                    if ln.startswith(('FAIL', 'cycles=', '  inputs kept',
+                                      '  reproduce with'))]
+            for ln in (keep or out.strip().splitlines()[-1:]):
+                log.append('      ' + ln.strip()[:160])
         ok_all &= ok
     return ok_all, 'capabilities and resources read back from the hardware'
 

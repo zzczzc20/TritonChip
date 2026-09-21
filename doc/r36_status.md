@@ -7,6 +7,9 @@
 通过；签收判决由锁定平台上的 `make r36-acceptance` 与
 `make r36-verify-evidence` 产生，本文件不代替该判决。
 
+checker 写完后做过一次逐子句审计并据此修复了十余处"声称做了而没做"的检查，
+见下文《一次逐条审计》。
+
 目标为 `R36_ENGINEERING_READY`。**不指定 FPGA，不负责上板。** 板卡、厂商工具
 与 IP、布局布线、bitstream、烧录、实板调试及 ASIC 工艺实现由独立后续分支完成；
 `platform-verified` 是注册表拒绝接受的保留状态。
@@ -56,10 +59,46 @@ skip；判决以锁定平台的运行为准。
   以中位数对测得 spread 比较后记录。
 - DELTA-02、DELTA-03 已声明但这些 workload 未触及，工具明确输出这一点。
 
+## 一次逐条审计，以及它查出来的东西
+
+在所有 checker 写完之后，对 30 条标准逐子句做了一次审计：读合同的一句，读
+对应 checker 的实现，判断该句里每一项要求是否真的被执行。结论是"覆盖第一
+项、静默跳过后面几项"是常见失败模式。以下是**代码或 docstring 声称做了而
+实际没做**的部分，都已修复：
+
+- IO-01 的非法请求括号里，序号计数器读了之后被 `del` 丢掉，而 docstring 写
+  着两半都必须不变。
+- MUT-ASSET-HASH 根本没有调用任何 checker，它自己内联重算了一遍 hash 并伪造
+  了结果字典。
+- 冻结变异表有 7 条，harness 只有 6 条；M07 从未实现，而 plan.py 断言数量是
+  7，于是"数量和合同一致、工作不一致"。
+- 变异套件没有 clean 对照：在 lab 里因自身原因失败的 checker 会被记为检出。
+- BE-01 只 grep 了 `runtime.py` 一个文件；启动 vvp 的是 transport.py，调用
+  iverilog 的是 device.py。
+- RTL-02 的 docstring 说它打开了 random stalling，而 smoke bench 把
+  `RANDOM_STALL(0)` 写死了。
+- CFG-03 打印了一句关于"验收矩阵"的散文，而树里根本没有这样一份矩阵。
+- HAND-01 用 `PYTHONPATH=<repo>/python` 启动演练，5.3 节要求用**安装包**。
+- BUILD-02 的 runtime-only 一半被两处文件声称由 R2 的 PKG-03 覆盖；没有
+  pkg03 这个函数。
+- IO-02 的并发拒绝是两段散文。
+- `gemm_program(..., roles=2)` 参数被接受且被忽略，两个调用方拿到的是与
+  `roles=1` 逐字节相同的机器码——"两 role pipeline"只是一个标签。
+
+修复之外，另有 4 条覆盖仍然是部分的，已逐条记入
+`spec/r36_required_cases.json` 的 `known_partial_coverage`（写明未检查什么、
+为什么、以及什么能关闭它），并由 R36-BASE-01 断言该记录存在且完整：
+R36-RTL-03、R36-EV-02、R36-CFG-02、R36-REL-01。
+
 ## 尚未做的事
 
 `spec/r36_memories.json` 中每个阵列的 `technology_mapping` 均为
 `not started`；ARF 仍为行为模型；无 cache coherence；四 tile runtime 仍有缺口。
 这些写在 [交接指南](r36_handoff.md) 的「不是板级任务」一节，属于主线责任。
+
+`CAP-TWO-ROLE`：核心有两个 role context（`NUM_RCTX=2`，
+`tb/core/progs/t04_roles.s` 在真实 RTL 上跑生产者/消费者），但**产品路径到
+不了**——`runtime.py` 写死 `role_mask=1`，GEMM builder 只发单 role tile。
+5.1 节点名的"两 role pipeline"因此记为 NOT RUN。
 
 R35-OPT-02 在基线中即为 open，本阶段未关闭也不声称关闭。

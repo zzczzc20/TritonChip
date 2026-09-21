@@ -324,7 +324,24 @@ def main():
                 or 'no owner' in f or 'different' in f
                 or 'share an id' in f or 'not bound' in f] \
         and bool(rep.get('commit')) and bool(rep.get('clean_tree'))
-    rel01 = ok and claimed == SIGNOFF
+    # REL-01 also asks that the simulated execution and the downstream
+    # rehearsal be reproducible. That is not something a verifier
+    # reading files can establish, so it is established where it can be
+    # -- R36-HAND-01 runs the rehearsal twice and requires the same
+    # cycles and the same conformance verdicts -- and read back here.
+    hand = os.path.join(ev, 'handoff', 'handoff.json')
+    repro = None
+    if os.path.exists(hand):
+        rows = load(hand)
+        h1 = next((c for c in rows if c.get('id') == 'R36-HAND-01'), None)
+        repro = bool(h1 and h1.get('passed')
+                     and 'twice' in (h1.get('detail') or ''))
+    print(f"  the rehearsal was run twice and agreed: {repro}")
+    if repro is not True:
+        findings.append(
+            'no evidence that the rehearsal is reproducible: '
+            'R36-HAND-01 did not report a repeated run')
+    rel01 = ok and claimed == SIGNOFF and repro is True
     tenth = [
         {'id': 'R36-EV-01', 'passed': bool(ev01),
          'detail': 'the verdict recomputed from the raw runs, and the '

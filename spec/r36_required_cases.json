@@ -72,6 +72,44 @@
       ]
     }
   },
+  "known_partial_coverage": {
+    "about": [
+      "An audit of these checkers against section 6, clause by clause,",
+      "found a number of standards where the first demand was exercised and",
+      "a later one was not. Most were closed. These four were not, and are",
+      "recorded here rather than left to be rediscovered.",
+      "",
+      "Each says what is not checked, why, and what would close it. None of",
+      "them is a claim that the thing is true; they are claims about what",
+      "the evidence covers."
+    ],
+    "items": [
+      {
+        "not_checked": "`proc; check -assert` -- the pass that reports latches and combinational loops -- runs over the exported shell module only. The whole exported hierarchy gets `hierarchy -check; check -noinit`, which cannot report either.",
+        "standard": "R36-RTL-03",
+        "why": "proc over the generated XLS units runs for upward of a quarter of an hour, and R3 v2's accepted r3v2-syn-tests already covers the core's internals on the same sources. Repeating it would buy a longer gate and no new fact.",
+        "would_close_it": "running proc over the full exported hierarchy in a separate, slower job, or a yosys pass that reports latches without full proc."
+      },
+      {
+        "not_checked": "evidence is matched at the granularity of the 30 case IDs. A case that emits `passed: true` while exercising one of its three sub-demands is indistinguishable from a complete one.",
+        "standard": "R36-EV-02",
+        "why": "there is no machine-readable decomposition of section 6's clauses into sub-conditions, so there is nothing to match against. Writing one is a transcription of the contract and would itself need checking against the contract.",
+        "would_close_it": "a per-sub-clause inventory in this file, with each checker tagging which sub-clause each log line answers. The audit that found this list is the manual version of it."
+      },
+      {
+        "not_checked": "an artifact needing a capability the session's hardware lacks is not loaded and refused; the case records in prose that such an artifact cannot be produced.",
+        "standard": "R36-CFG-02",
+        "why": "the compiler refuses to emit an instruction the target does not publish, so there is no way to build the artifact through the product path. Constructing one by editing a compiled artifact would test the loader against something the compiler cannot make.",
+        "would_close_it": "a capability field in the artifact manifest that the loader checks independently of the instructions, and a hand-edited artifact that sets it. MUT-CAPABILITY covers the other direction -- a target claiming a capability the hardware lacks."
+      },
+      {
+        "not_checked": "reproducibility is established for the downstream rehearsal (R36-HAND-01 runs it twice and requires the same cycles and the same conformance verdicts) but not for the full simulated execution: the 26-suite regression and the fidelity measurement are each run once.",
+        "standard": "R36-REL-01",
+        "why": "running the inherited regression twice doubles the longest part of the gate for a property the per-suite oracles already constrain. The stochastic workload is the only one that does not return the same number twice, and fidelity.py already reads it five times and compares medians against the measured spread.",
+        "would_close_it": "a second full regression run compared suite by suite, in a job of its own."
+      }
+    ]
+  },
   "mutation_note": "`detector` is the checker that ACTUALLY catches each mutation, established by breaking the thing and seeing which checker fails. Where it differs from the planning guess the guess is kept as `detector_planned`, because the difference is information: M03's wrong epoch is caught by the conformance suite rather than by R36-IO-03, since the file mailbox has no epoch and the socket binding does; and M04's early completion is caught by the memory boundary's value checks rather than by R36-IO-02, because a completion reported too early shows up as wrong data, not as a protocol error. tools/r36/mutation_tests.py runs a CLEAN control of each distinct detector first, so a detector that fails for its own reasons cannot be credited with a catch.",
   "mutations": [
     {

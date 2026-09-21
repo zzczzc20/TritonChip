@@ -199,6 +199,40 @@ def hand01(log):
         log.append(f"      {(r.stderr or '').strip()[-200:]}")
     ok &= r.returncode == 0
 
+    # TWICE, and the same answers both times. R36-REL-01 asks for the
+    # simulated execution and the downstream rehearsal to be
+    # reproducible and nothing re-ran either of them; `ok and
+    # verdict == SIGNOFF` was standing in for it. The second run is
+    # cheap -- the device is already built -- and it is the only way to
+    # tell a reproducible result from one that happened once.
+    out2 = os.path.join(work, 'rehearsal-2.json')
+    r2 = subprocess.run([py, 'run_rehearsal.py', '--package', pkg,
+                         '--json', out2],
+                        cwd=down, capture_output=True, text=True,
+                        timeout=3600, env=env)
+    ok &= r2.returncode == 0
+
+    def _cycles(text):
+        m = re.search(r'launch: status \d+, (\d+) cycle', text)
+        return int(m.group(1)) if m else None
+
+    c1, c2 = _cycles(r.stdout), _cycles(r2.stdout)
+    same = c1 is not None and c1 == c2
+    log.append(f"    run twice: {c1} and {c2} cycle(s) "
+               f"({'reproducible' if same else 'NOT REPRODUCIBLE'})")
+    ok &= same
+
+    if os.path.exists(out) and os.path.exists(out2):
+        with open(out) as fh:
+            a = json.load(fh)
+        with open(out2) as fh:
+            b = json.load(fh)
+        pa = {k: v.get('passed') for k, v in (a.get('conformance') or {}).items()}
+        pb = {k: v.get('passed') for k, v in (b.get('conformance') or {}).items()}
+        log.append(f"    and the conformance verdicts agree between the "
+                   f"two runs: {pa == pb}")
+        ok &= pa == pb
+
     if os.path.exists(out):
         with open(out) as fh:
             rec = json.load(fh)
@@ -215,7 +249,8 @@ def hand01(log):
                f"{'unchanged' if not changed else 'CHANGED ' + str(changed)}")
     ok &= not changed
     shutil.rmtree(work, ignore_errors=True)
-    return ok, 'a real program on real RTL, from outside, patching nothing'
+    return ok, 'a real program on real RTL, twice, from outside, '\
+               'patching nothing'
 
 
 # Devices and processes that must not appear: naming one would be

@@ -153,6 +153,24 @@ def base01(log):
     ok &= 'platform-verified' in lv and 'reserved' in lv['platform-verified']
 
     caps = CASES['workload_caps']
+    # The coverage this stage knows is partial, named rather than left
+    # to be rediscovered.
+    kp = CASES.get('known_partial_coverage')
+    if kp:
+        log.append(f"    coverage recorded as partial: "
+                   f"{[i['standard'] for i in kp['items']]}")
+        for i in kp['items']:
+            log.append(f"      {i['standard']}: {i['not_checked'][:78]}")
+        gaps = [i['standard'] for i in kp['items']
+                if not i.get('why') or not i.get('would_close_it')]
+        log.append(f"    each says why and what would close it: "
+                   f"{not gaps} {gaps if gaps else ''}")
+        ok &= not gaps
+    else:
+        log.append("    no record of partial coverage, which after an "
+                   "audit found some is not the same as there being none")
+        ok = False
+
     log.append(f"    workloads stay small: GEMM to {caps['gemm_max']}, "
                f"elementwise to {caps['elementwise_max_elements']} "
                f"element(s), reduction to {caps['reduction_max']}")

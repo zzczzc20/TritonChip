@@ -518,16 +518,22 @@ class Builder:
         self._emit('barrier_arrive', [], [barrier])
 
     def dma_load(self, window, desc, coords, token, *, dtype='f16',
-                 mask=None):
+                 mask=None, transpose=False):
         """An asynchronous tile load into a window.
 
         The coordinates must live in consecutive scalar registers (ISA
         sec 9E); the lowering enforces that rather than hoping the allocator
         happened to place them so.
+
+        `transpose` is sec 9E's `mod[5]`, which asks the engine to write
+        the tile transposed. It is how `tl.trans` costs nothing: the
+        transpose happens while the data is already in flight, instead
+        of as a permutation of registers the ISA has no instruction for.
         """
         e = self._value(EVENT, 'i1', hint='e')
         self._emit('dma_load', [e], [window, desc, token] + list(coords),
-                   dtype=dtype, rank=len(coords), mask=mask)
+                   dtype=dtype, rank=len(coords), mask=mask,
+                   transpose=transpose)
         return e
 
     def dma_store(self, window, desc, coords, token, *, dtype='f16',

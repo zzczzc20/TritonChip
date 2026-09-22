@@ -127,6 +127,7 @@ class TTIRImporter:
         self._descs = {}    # TTIR value id -> our descriptor Value
         self._scratch = None      # the descriptor scratch base, read once
         self.scratch_maps = 0     # how many TensorMaps this kernel builds
+        self.spill_bytes = 0      # scratch beyond them, for tile repacks
         self.arg_names = []
         self.arg_abi_types = []   # parallel to arg_names, in dynamic mode
         self.dynamic_args = False  # set by run(); see _load_argument
@@ -341,15 +342,10 @@ class TTIRImporter:
         src = op.get_operand(0)
         shape, elem = _parse_type(str(src.get_type()))
         if isinstance(shape, tuple):
-            if axis != len(shape) - 1:
+            if axis >= len(shape):
                 raise Unsupported(
-                    f"a reduction along axis {axis} of a tile",
-                    because='ISA sec 8.7 reduces across the lanes of one '
-                            'vector register, which is one ROW of a tile; '
-                            'the other axis would combine one lane of '
-                            'sixteen different registers',
-                    remedy='reduce the last axis, or transpose first',
-                    source='doc/isa/TNCA-ISA-v0.1.md sec 8.7')
+                    f"a reduction along axis {axis} of a {len(shape)}-D "
+                    f"tile")
             _, rtype = _parse_type(str(op.get_result(0).get_type()))
             self._op_tt_reduce_2d(op, self._combinator(op), rtype or elem)
             return
@@ -777,6 +773,13 @@ class TTIRImporter:
                 name, pelem = self._ptr_base[src.id()]
                 self._ptr2d[rid] = (name, pelem, Affine2D())
                 return
+            if elem.startswith('f'):
+                # `sm_scale` over the whole tile. Broadcast once; every
+                # row names the same register.
+                v = self._broadcast_scalar(self._value(src), elem)
+                self._tiles[rid] = Tile('lazy', lambda r: v, shape[0],
+                                        shape[1], elem)
+                return
             k = self._scalar_const(src.id())
             if k is not None:
                 self._affine[rid] = Affine2D(const=k)
@@ -951,6 +954,12 @@ class TTIRImporter:
         """
         src = op.get_operand(0)
         axis = op.get_int_attr('axis')
+        tile = self._tiles.get(src.id())
+        if tile is not None and tile.kind == 'col':
+            # Already one value per row. `peak[:, None]` says exactly
+            # that, so it is a rename.
+            self._tiles[op.get_result(0).id()] = tile
+            return
         kind, _ = self._offsets.get(src.id(), (None, None))
         if kind != 'arange' and src.id() in self._v:
             # A 1-D value of DATA, not an index. `peak[:, None]` makes
@@ -960,17 +969,19 @@ class TTIRImporter:
             if axis == 0:
                 shape, elem = _parse_type(
                     str(op.get_result(0).get_type()))
+                v = self._value(src)
                 self._tiles[op.get_result(0).id()] = Tile(
-                    'rows', (self._value(src),) * shape[0],
-                    shape[0], shape[1], elem)
+                    'lazy', lambda r: v, shape[0], shape[1], elem)
                 return
-            raise Unsupported(
-                'x[:, None] on a value computed in a vector register',
-                because='it asks for lane r of one register to become the '
-                        'whole of row r, and ISA sec 8 has no instruction '
-                        'that takes a vector apart by lane',
-                remedy='produce the per-row values with a reduction, '
-                       'which leaves one scalar a row')
+            # `x[:, None]`: lane r of one register becomes the whole
+            # of row r. ISA sec 8 has no instruction that takes a
+            # vector apart by lane, so it goes out to memory and comes
+            # back as sixteen scalars -- the same repack, the other way
+            # round, as _col_to_vector.
+            _, selem = _parse_type(str(src.get_type()))
+            self._tiles[op.get_result(0).id()] = self._vector_to_col(
+                self._value(src), selem)
+            return
         if kind != 'arange':
             inner = self._affine_of(src)
             if inner is None:
@@ -996,22 +1007,21 @@ class TTIRImporter:
             shape, elem = _parse_type(str(op.get_result(0).get_type()))
             if tile.kind == 'col':
                 # One value per row, stretched across the row.
-                self._tiles[rid] = Tile(
-                    'rows',
-                    tuple(self._broadcast_scalar(x, elem)
-                          for x in tile.handle),
-                    shape[0], shape[1], elem)
+                get = self._tile_row_getter(tile, elem)
+                self._tiles[rid] = Tile('lazy', get, shape[0], shape[1],
+                                        elem)
                 return
             if tile.rows == shape[0]:
                 self._tiles[rid] = Tile(tile.kind, tile.handle, shape[0],
                                         shape[1], tile.dtype)
                 return
-            if tile.rows == 1 and tile.kind == 'rows':
+            if tile.rows == 1:
                 # `q[None, :]` stretched down the tile: every row is the
                 # same vector, so one register is named sixteen times
                 # rather than copied sixteen times.
-                self._tiles[rid] = Tile('rows', tile.handle * shape[0],
-                                        shape[0], shape[1], tile.dtype)
+                get = self._tile_row_getter(tile)
+                self._tiles[rid] = Tile('lazy', lambda r: get(0), shape[0],
+                                        shape[1], tile.dtype)
                 return
             raise Unsupported(
                 f"a broadcast from {tile.rows} rows to {shape[0]}",
@@ -1182,6 +1192,102 @@ class TTIRImporter:
                         'arguments (ABI v1 offsets are unchanged)')
         return self._scratch
 
+    def _spill_region(self, nbytes):
+        """Reserve scratch for a repack, and return its address.
+
+        Repacking through memory is not a workaround here, it is the
+        mechanism the architecture leaves: there is no scratchpad (sec
+        5.2), the ISA reserves `v.pack.f16` and `v.unpack.f16` (sec
+        8.4), and nothing in sec 8 takes a vector apart by lane. When a
+        value has to change shape, memory is where it changes.
+
+        Rounded to a whole TensorMap so the descriptors that follow
+        stay 8-byte aligned, which ISA sec 9E.2 requires of a base.
+        """
+        offset = self.scratch_maps * TENSORMAP_BYTES + self.spill_bytes
+        self.spill_bytes += (nbytes + 7) & ~7
+        return self.b.sbini('add', self._scratch_base(), offset,
+                            comment=f"{nbytes} bytes of repack scratch")
+
+    def _rows_to_window(self, rows, dtype, out_dtype, cols, nrows=None):
+        """Sixteen vector registers into one transfer-engine fragment.
+
+        A per-lane store of `cols * sizeof` bytes writes one row
+        contiguously, and sixteen of those in a row ARE the fragment
+        that ISA sec 9C.2 describes -- a flat row-major byte array.
+        So the repack is a store, a descriptor over what was stored,
+        and one transfer back.
+
+        The conversion happens on the way out, per lane, which is how
+        this reaches a packed FP16 fragment without `v.pack.f16`.
+        """
+        esize = self._ELEM_BYTES[out_dtype]
+        nrows = nrows or (self.target.vlen if callable(rows)
+                          else len(rows))
+        addr = self._spill_region(nrows * cols * esize)
+        self.b.comment(f"repack {nrows}x{cols} {out_dtype} through memory: "
+                       f"there is no v.pack (ISA sec 8.4)")
+        row_bytes = cols * esize
+        for r in range(nrows):
+            v = rows(r) if callable(rows) else rows[r]
+            if out_dtype != dtype:
+                v = self.b.vcvt(dtype, out_dtype, v,
+                                comment=f"row {r}: {dtype} -> {out_dtype}")
+            at = addr if r == 0 else self.b.sbini('add', addr, r * row_bytes,
+                                                  comment=f"row {r}")
+            self.b.store(at, v, size=_SIZE_SUFFIX[esize])
+        desc = self._build_descriptor(
+            base=addr, elem=out_dtype, extents=[nrows, cols],
+            byte_strides=[row_bytes, esize], block_shape=[nrows, cols],
+            what='a repacked tile')
+        zero = self.b.const(0)
+        return self._dma_in(desc.value, [zero, zero], [nrows, cols],
+                            out_dtype, 'a repacked tile')
+
+    def _vector_to_col(self, v, elem):
+        """One vector register into one value per row.
+
+        The mirror of `_col_to_vector`, and through memory for the same
+        reason: lane r has to become row r, and no instruction reads a
+        single lane.
+        """
+        esize = self._ELEM_BYTES[elem]
+        vlen = self.target.vlen
+        addr = self._spill_region(vlen * esize)
+        self.b.comment('one vector into one value per row: no instruction '
+                       'reads a single lane (ISA sec 8)')
+        self.b.store(addr, v, size=_SIZE_SUFFIX[esize])
+        out = []
+        for r in range(vlen):
+            at = addr if r == 0 else self.b.sbini('add', addr, r * esize,
+                                                  comment=f"row {r}")
+            out.append(self.b.sload(at, size=_SIZE_SUFFIX[esize],
+                                    dtype=elem))
+        return Tile('col', tuple(out), vlen, 1, elem)
+
+    def _col_to_vector(self, tile, elem):
+        """One value per row, gathered into one vector register.
+
+        The values are in sixteen separate registers and have to end up
+        in sixteen lanes of one. Nothing in ISA sec 8 writes a single
+        lane, so they go out to memory and come back as a vector load.
+        """
+        esize = self._ELEM_BYTES[elem]
+        addr = self._spill_region(len(tile.handle) * esize)
+        self.b.comment('one value per row into one vector: no instruction '
+                       'writes a single lane (ISA sec 8)')
+        for r, v in enumerate(tile.handle):
+            at = addr if r == 0 else self.b.sbini('add', addr, r * esize,
+                                                  comment=f"row {r}")
+            if v.kind == VECTOR:
+                # A broadcast reduction result: lane 0 is the value.
+                self.b.store(at, v, size=_SIZE_SUFFIX[esize],
+                             mask=self.b.vcmp('eq', self.b.arange(),
+                                              self.b.splat(self.b.const(0))))
+            else:
+                self.b.sstore(at, v, size=_SIZE_SUFFIX[esize])
+        return self.b.load(addr, dtype=elem, size=_SIZE_SUFFIX[esize])
+
     def _build_descriptor(self, *, base, elem, extents, byte_strides,
                           block_shape, what):
         """Write a TensorMap into scratch and snapshot it.
@@ -1297,7 +1403,7 @@ class TTIRImporter:
             # compiler wrote. Draining through the vector unit reaches
             # it directly (ISA sec 9B); routing it back through a window
             # would be a transfer to reach an address already in hand.
-            self._drain_accumulator(tile, d.base, d.byte_strides[0], d.elem)
+            self._drain_tile(tile, d.base, d.byte_strides[0], d.elem)
             return
         coords = [self._value(op.get_operand(i))
                   for i in range(1, op.get_num_operands())
@@ -1318,7 +1424,7 @@ class TTIRImporter:
         bits = self._ELEM_BYTES[elem] * 8
         return self.b.window(fragment_registers(rows, cols, bits))
 
-    def _dma_in(self, desc, coords, block, elem, what):
+    def _dma_in(self, desc, coords, block, elem, what, transpose=False):
         """One asynchronous tile load, and the wait for it.
 
         Armed for exactly one operation. ISA sec 9E.1 step 8 signals a
@@ -1331,21 +1437,24 @@ class TTIRImporter:
         bar = self.b.barrier(name=f"fill{len(self.kernel.barriers)}")
         tok = self.b.barrier_arm(bar, arrivals=0, ops=1)
         self.b.comment(f"{what}: one tile into a window (ISA sec 9E)")
-        self.b.dma_load(window, desc, coords, tok, dtype=elem)
+        self.b.dma_load(window, desc.value if hasattr(desc, 'value')
+                        else desc, coords, tok, dtype=elem,
+                        transpose=transpose)
         self.b.barrier_wait(tok)
-        return Tile('window', window, block[0], block[1], elem, desc=desc)
+        return Tile('window', window, block[0], block[1], elem,
+                    desc=(desc, coords))
 
     def _dma_out(self, desc, coords, tile, elem, what):
-        window = tile.handle
         if tile.kind != 'window':
-            window = self._spill_accumulator(tile, elem)
+            raise Unsupported(
+                f"{what} from a tile that is not in a transfer window")
         bar = self.b.barrier(name=f"drain{len(self.kernel.barriers)}")
         tok = self.b.barrier_arm(bar, arrivals=0, ops=1)
         self.b.comment(f"{what}: one tile out of a window (ISA sec 9E)")
         self.b.dma_store(window, desc, coords, tok, dtype=elem)
         self.b.barrier_wait(tok)
 
-    def _drain_accumulator(self, tile, base, row_stride_bytes, dst_elem):
+    def _drain_tile(self, tile, base, row_stride_bytes, dst_elem):
         """A 16x16 accumulator out to memory, a row at a time.
 
         ISA sec 9B exists for this. The accumulator is binary32 whatever
@@ -1363,13 +1472,14 @@ class TTIRImporter:
         """
         esize = self._ELEM_BYTES[dst_elem]
         size = _SIZE_SUFFIX[esize]
-        self.b.comment(f"accumulator epilogue: {tile.rows} rows through the "
-                       f"vector unit, as {dst_elem} (ISA sec 9B)")
+        self.b.comment(f"tile epilogue: {tile.rows} rows through the vector "
+                       f"unit, as {dst_elem} (ISA sec 9B)")
+        get = self._tile_row_getter(tile)
         for r in range(tile.rows):
-            v = self.b.acc_read(tile.handle, self.b.const(r))
-            if dst_elem != 'f32':
-                v = self.b.vcvt('f32', dst_elem, v,
-                                comment=f"row {r}: f32 accumulator -> "
+            v = get(r)
+            if dst_elem != tile.dtype:
+                v = self.b.vcvt(tile.dtype, dst_elem, v,
+                                comment=f"row {r}: {tile.dtype} -> "
                                         f"{dst_elem} (ISA sec 8.4)")
             addr = base if r == 0 else self.b.sbini(
                 'add', base, r * row_stride_bytes,
@@ -1387,6 +1497,37 @@ class TTIRImporter:
                         'lowering')
         return t
 
+    def _op_tt_trans(self, op):
+        """`tl.trans`, done by the transfer engine.
+
+        ISA sec 9E's `mod[5]` asks the engine to write a tile
+        transposed, so a transposed operand is the SAME transfer with
+        one bit set -- the permutation happens while the data is in
+        flight. There is no vector instruction that permutes a fragment,
+        so the alternative would have been a round trip through memory
+        for something the DMA does for nothing.
+
+        It therefore only applies to a tile that came from a transfer.
+        A tile computed in the vector unit has no transfer to set the
+        bit on.
+        """
+        src = op.get_operand(0)
+        tile = self._tile_of(src)
+        order = [op.get_int_attr('order')] if False else None
+        if tile.kind != 'window' or tile.desc is None:
+            raise Unsupported(
+                'tl.trans of a tile that was not loaded by the transfer '
+                'engine',
+                because='ISA sec 9E transposes a tile as it lands; nothing '
+                        'in sec 8 permutes a fragment already in registers',
+                remedy='transpose the operand as it is loaded')
+        desc, coords = tile.desc
+        self.b.comment('tl.trans: the same transfer, written transposed '
+                       '(ISA sec 9E mod[5])')
+        self._tiles[op.get_result(0).id()] = self._dma_in(
+            desc, coords, [tile.cols, tile.rows], tile.dtype, 'tl.trans',
+            transpose=True)
+
     def _op_tt_dot(self, op):
         """`tl.dot`, onto ISA sec 9C.
 
@@ -1398,14 +1539,13 @@ class TTIRImporter:
         """
         a = self._tile_of(op.get_operand(0))
         b = self._tile_of(op.get_operand(1))
-        if a.kind != 'window' or b.kind != 'window':
-            raise Unsupported(
-                'a tl.dot whose operands are not transfer-engine fragments',
-                because='ISA sec 9C reads A and B from vector registers in '
-                        'the fragment layout; a value computed in the '
-                        'vector unit would have to be repacked, and sec 8.4 '
-                        'reserves v.pack.f16',
-                remedy='feed tl.dot a value loaded from memory')
+        # ISA sec 9C reads A and B from vector registers in the fragment
+        # layout. A value computed in the vector unit is not in it, and
+        # sec 8.4 reserves the pack that would put it there -- so it
+        # goes out to memory and comes back through the engine, which
+        # is the repack path a scratchpad-free design leaves.
+        a = self._as_fragment(a, 'the left operand of tl.dot')
+        b = self._as_fragment(b, 'the right operand of tl.dot')
         if a.dtype != b.dtype:
             raise Unsupported(
                 f"a tl.dot of {a.dtype} with {b.dtype}: ISA sec 9C's "
@@ -1442,6 +1582,22 @@ class TTIRImporter:
         self._tiles[op.get_result(0).id()] = Tile(
             'accumulator', acc, a.rows, b.cols, rtype)
 
+    def _as_fragment(self, tile, what):
+        """This tile in the layout `m.mma.async` reads."""
+        if tile.kind == 'window':
+            return tile
+        if tile.dtype not in ('f16', 'bf16'):
+            raise Unsupported(
+                f"{what}: a computed {tile.dtype} tile",
+                because="ISA sec 9C's mod[3:2] names FP16, BF16 and the two "
+                        "FP8 encodings as input formats, and nothing else",
+                remedy='convert it, which tl.dot on a narrower type does '
+                       'anyway')
+        return self._rows_to_window(self._tile_row_getter(tile), tile.dtype,
+                                    tile.dtype if tile.dtype != 'f32'
+                                    else tile.dtype, tile.cols,
+                                    nrows=tile.rows)
+
     def _is_zero_tensor(self, value):
         pending = self._pending_const.get(value.id())
         if pending is None:
@@ -1467,15 +1623,53 @@ class TTIRImporter:
     #                         writes 32 contiguous bytes a row, and
     #                         sixteen of those ARE the fragment (9C.2).
 
-    def _rows_of(self, tile):
-        """This tile as sixteen vector registers, one per row."""
+    def _row_getter(self, value, rows, elem):
+        """A function from row index to that row, in a vector register.
+
+        Rows are pulled one at a time rather than all sixteen at once.
+        That is not a micro-optimisation: there are 64 vector registers
+        and 16 predicate ones, a fragment window costs eight, and a
+        FlashAttention step has three tiles live. Materialising every
+        row of every tile ran the allocator out.
+        """
+        tile = self._tiles.get(value.id())
+        if tile is not None:
+            return self._tile_row_getter(tile, elem)
+        shape, selem = _parse_type(str(value.get_type()))
+        if not isinstance(shape, tuple):
+            v = self._vec(value, elem)
+            return lambda r: v
+        pending = self._pending_const.get(value.id())
+        if pending is not None and pending[0] == 'tile':
+            # A dense constant over the tile: the same value in every
+            # lane of every row, so one register serves all sixteen.
+            v = self.b.vmovi(int(pending[1]), dtype=pending[2])
+            return lambda r: v
+        raise Unsupported(
+            f"a 2-D operand of type {value.get_type()} that is not a tile")
+
+    def _broadcast_scalar(self, v, dtype):
+        return v if v.kind == VECTOR else self.b.splat(v, dtype=dtype)
+
+    def _tile_row_getter(self, tile, elem=None):
         if tile.kind == 'rows':
+            return lambda r: tile.handle[r]
+        if tile.kind == 'lazy':
             return tile.handle
+        if tile.kind == 'col':
+            # One value per row, the same across the row.
+            return lambda r: self._broadcast_scalar(
+                tile.handle[r], elem or tile.dtype)
         if tile.kind == 'accumulator':
-            self.b.comment(f"{tile.rows} rows out of the accumulator, for "
-                           f"the vector unit (ISA sec 9B)")
-            return tuple(self.b.acc_read(tile.handle, self.b.const(r))
-                         for r in range(tile.rows))
+            return lambda r: self.b.acc_read(tile.handle, self.b.const(r))
+        if tile.kind == 'window' and self._ELEM_BYTES[tile.dtype] == 4 \
+                and tile.cols == self.target.vlen:
+            # A 32-bit fragment is one row per register (sec 9C.2: the
+            # fragment is a flat row-major byte array, and sixteen words
+            # is exactly a vector register). No unpacking, so the
+            # window's registers ARE the rows, named not copied.
+            return lambda r: self.b.window_reg(tile.handle, r,
+                                               dtype=tile.dtype)
         raise Unsupported(
             f"elementwise arithmetic on a {tile.dtype} tile that is in a "
             f"transfer window",
@@ -1484,64 +1678,84 @@ class TTIRImporter:
             remedy='do the arithmetic on a tl.dot result, which is in an '
                    'accumulator')
 
-    def _rows_tile(self, rows, cols, dtype, values):
-        return Tile('rows', tuple(values), rows, cols, dtype)
+    def _rows_of(self, tile):
+        """Every row of a tile at once. Prefer `_tile_row_getter`."""
+        get = self._tile_row_getter(tile)
+        return tuple(get(r) for r in range(tile.rows))
 
-    def _as_tile_operand(self, value, rows, cols, dtype):
-        """One operand of a 2-D elementwise operation, as rows.
+    def _materialise(self, rows_fn, rows, cols, elem):
+        """Where a computed tile goes once it exists.
 
-        A tile comes back as its rows. A scalar -- `sm_scale`, a
-        constant -- is the same in every lane of every row, so it
-        broadcasts to one vector reused sixteen times rather than
-        sixteen copies of itself.
+        An accumulator, when the element is 32 bits wide. A0..A15 are
+        16x16 of binary32 (ISA sec 9B) -- which is a tile, exactly, and
+        is the storage this machine provides for one. Writing each row
+        back as it is computed keeps one vector register live instead of
+        sixteen, and `a.vread` brings a row back when something wants it.
+
+        A mask cannot go there: a predicate is not a vector register. So
+        an i1 tile stays a rule for computing a row, re-applied by
+        whoever reads one. A comparison is a single instruction, so
+        recomputing it costs less than holding sixteen of the sixteen
+        predicate registers.
         """
-        tile = self._tiles.get(value.id())
-        if tile is not None:
-            if tile.kind == 'col':
-                # `peak[:, None]`: one value per ROW, the same across
-                # the row. Each row gets its own broadcast.
-                return tuple(self._broadcast_scalar(x, dtype)
-                             for x in tile.handle)
-            return self._rows_of(tile)
-        shape, elem = _parse_type(str(value.get_type()))
-        if shape is None or not isinstance(shape, tuple):
-            v = self._vec(value, dtype)
-            return (v,) * rows
-        raise Unsupported(
-            f"a 2-D operand of type {value.get_type()} that is not a tile")
-
-    def _broadcast_scalar(self, v, dtype):
-        return v if v.kind == VECTOR else self.b.splat(v, dtype=dtype)
+        if elem == 'i1':
+            return Tile('lazy', rows_fn, rows, cols, elem)
+        if self._ELEM_BYTES.get(elem) != 4:
+            return Tile('rows', tuple(rows_fn(r) for r in range(rows)),
+                        rows, cols, elem)
+        acc = self.b.accumulator(name=f"acc{len(self.kernel.accumulators)}")
+        self.b.comment(f"a computed {rows}x{cols} tile, into an accumulator "
+                       f"(ISA sec 9B)")
+        for r in range(rows):
+            self.b.acc_write(acc, self.b.const(r), rows_fn(r))
+        return Tile('accumulator', acc, rows, cols, elem)
 
     def _tile_binary(self, op, build):
         """An elementwise operation over a tile, a row at a time."""
         shape, elem = _parse_type(str(op.get_result(0).get_type()))
         rows, cols = shape
-        ops = [self._as_tile_operand(op.get_operand(i), rows, cols, elem)
-               for i in range(op.get_num_operands())]
-        out = [build([o[r] for o in ops], elem) for r in range(rows)]
-        self._tiles[op.get_result(0).id()] = self._rows_tile(
-            rows, cols, elem, out)
+        getters = [self._row_getter(op.get_operand(i), rows, elem)
+                   for i in range(op.get_num_operands())]
+        self._tiles[op.get_result(0).id()] = self._materialise(
+            lambda r: build([g(r) for g in getters], elem),
+            rows, cols, elem)
 
     def _is_2d(self, op):
         return isinstance(
             _parse_type(str(op.get_result(0).get_type()))[0], tuple)
 
     def _op_tt_reduce_2d(self, op, kind, elem):
-        """A reduction along a tile's rows, giving one value per row.
+        """A reduction over a tile.
 
-        Only axis 1. Reducing along axis 0 would combine lane r of
-        sixteen different registers, which ISA sec 8.7 has no
-        instruction for -- its reduction is across the lanes of ONE
-        register.
+        Along the last axis it is ISA sec 8.7 applied to each row, which
+        leaves one value per row.
+
+        Along the first axis it is NOT a sec 8.7 reduction at all: it
+        combines lane n of every row, and sixteen rows in sixteen
+        registers combine with fifteen ordinary lane-local operations
+        into one register. The answer is a vector, not a column, and it
+        needs no cross-lane instruction.
         """
         tile = self._tile_of(op.get_operand(0))
-        rows = self._rows_of(tile)
-        out = [self.b.reduce(kind, r, dtype=elem,
-                             broadcast=elem.startswith('f'))
-               for r in rows]
-        self._tiles[op.get_result(0).id()] = Tile(
-            'col', tuple(out), tile.rows, 1, elem)
+        axis = op.get_int_attr('axis')
+        get = self._tile_row_getter(tile, elem)
+        rid = op.get_result(0).id()
+
+        if axis == 0:
+            acc = get(0)
+            for r in range(1, tile.rows):
+                acc = self.b.vbin(kind, acc, get(r), dtype=elem,
+                                  comment=f"down the tile: row {r}"
+                                  if r == 1 else None)
+            self._v[rid] = acc
+            return
+
+        self._tiles[rid] = Tile(
+            'col',
+            tuple(self.b.reduce(kind, get(r), dtype=elem,
+                                broadcast=elem.startswith('f'))
+                  for r in range(tile.rows)),
+            tile.rows, 1, elem)
 
     # ---- where a float lives ----------------------------------------------
     #
@@ -1782,11 +1996,10 @@ class TTIRImporter:
         shape, elem = _parse_type(str(a.get_type()))
         if isinstance(shape, tuple):
             rows, cols = shape
-            xs = self._as_tile_operand(a, rows, cols, elem)
-            ys = self._as_tile_operand(b, rows, cols, elem)
-            self._tiles[op.get_result(0).id()] = Tile(
-                'rows', tuple(self.b.vcmp(cc, xs[r], ys[r])
-                              for r in range(rows)), rows, cols, 'i1')
+            xs = self._row_getter(a, rows, elem)
+            ys = self._row_getter(b, rows, elem)
+            self._tiles[op.get_result(0).id()] = self._materialise(
+                lambda r: self.b.vcmp(cc, xs(r), ys(r)), rows, cols, 'i1')
             return
         if elem == 'i1':
             # Comparing two masks. `(x == y)` on i1 is equality, which
@@ -2022,7 +2235,9 @@ class TTIRImporter:
                 raise Unsupported('a masked 2-D store')
             name, elem, aff = spec
             tile = self._tile_of(value)
-            if tile.kind == 'accumulator':
+            if tile.kind != 'window' or (
+                    self._ELEM_BYTES[tile.dtype] == 4
+                    and tile.cols == self.target.vlen):
                 if aff.col_stride != 1:
                     raise Unsupported(
                         f"a 2-D store whose columns are {aff.col_stride} "
@@ -2034,7 +2249,7 @@ class TTIRImporter:
                     base = self.b.sbini('add', base, aff.const * esize,
                                         comment="the tile's origin")
                 base = self._add_dynamic(base, aff, esize)
-                self._drain_accumulator(tile, base, aff.row_stride * esize,
+                self._drain_tile(tile, base, aff.row_stride * esize,
                                         elem)
                 return
             desc = self._tile_descriptor(name, elem, aff, shape2d,
@@ -2093,6 +2308,12 @@ class TTIRImporter:
                     self._scalar_cache[iv] = v
             else:
                 v = self.b.vmovi(iv, dtype=elem)
+            self._v[vid] = v
+            return v
+        tile = self._tiles.get(vid)
+        if tile is not None and tile.kind == 'col':
+            _, elem = _parse_type(str(ttir_value.get_type()))
+            v = self._col_to_vector(tile, elem)
             self._v[vid] = v
             return v
         raise Unsupported(

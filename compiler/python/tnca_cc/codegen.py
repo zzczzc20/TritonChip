@@ -914,6 +914,11 @@ class CodeGen:
         # completes once, so the static operation count stays correct under
         # predication. The count above is therefore unconditional.
         mask = op.attrs.get('mask')
+        if op.attrs.get('transpose'):
+            # sec 9E mod[5]. The engine writes the tile transposed, so
+            # the permutation happens in flight rather than as a
+            # register shuffle the vector unit cannot perform.
+            suffix += '.t'
         self._emit(f"{mnem}.{suffix}", f"w{widx}", f"d{desc.reg}",
                     f"s{run[0]}", f"s{token.reg}",
                     pred=self._pred(mask),

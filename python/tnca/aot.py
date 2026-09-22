@@ -422,6 +422,10 @@ def compile_aot(source, *, kernel_name=None, signature=None, constexprs=None,
                    profile, pinfo, options, param_names)
 
     measured = measure_resources(asm_text, target, code=code)
+    # The emitter cannot see this one: it is a requirement the frontend
+    # recorded, not a count of something in the assembly.
+    if 'scratch_bytes' in report:
+        measured['scratch_bytes'] = report['scratch_bytes']
     report['resources'] = measured
     man = _manifest(kernel_name, params, target, pinfo, constexprs, options,
                     prov, source_kind, report, measured=measured)
@@ -627,6 +631,18 @@ def _compile_triton(fn, kernel_name, signature, constexprs, target, prov,
         dynamic_args=True)
     stages.record('tnir', str(kernel))
 
+    # Scratch the KERNEL asks for, which is not the same thing as spill
+    # slots the emitter did not need. A kernel that builds a TensorMap
+    # has to write it to memory before `td.load` can snapshot it (ISA
+    # sec 9D.1), and a tile that changes shape passes through memory
+    # because nothing packs or unpacks one. The buffer arrives in the
+    # slot after the declared arguments, so a launch that does not
+    # supply it hands the kernel a pointer to whatever was there.
+    scratch_bytes = int(getattr(imp, 'scratch_used', 0))
+    if scratch_bytes:
+        prov.record('scratch_bytes', scratch_bytes)
+        prov.record('scratch_argument_slot', len(imp.arg_names))
+
     # The TNCA IR passes run on this path too. Upstream canonicalisation
     # already worked on the TTIR above, but it does not strength-reduce a
     # multiply -- measured, on exactly this module -- and the importer
@@ -680,7 +696,8 @@ def _compile_triton(fn, kernel_name, signature, constexprs, target, prov,
 
     report = dict(stages=['ttir', 'tnca-ir', 'assembly', 'machine'],
                   assembly_lines=len(asm_text.splitlines()),
-                  code_bytes=len(code))
+                  code_bytes=len(code),
+                  scratch_bytes=scratch_bytes)
     return kernel_name, params, asm_text, code, symbols, report, stages
 
 

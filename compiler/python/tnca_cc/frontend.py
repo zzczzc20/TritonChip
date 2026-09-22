@@ -127,8 +127,10 @@ class TTIRImporter:
         self._descs = {}    # TTIR value id -> our descriptor Value
         self._scratch = None      # the descriptor scratch base, read once
         self.scratch_maps = 0     # how many TensorMaps this kernel builds
-        self.spill_bytes = 0      # scratch beyond them, for tile repacks
+        self.scratch_used = 0     # bytes of scratch handed out, ever
         self._force_vector = 0    # depth inside a region body
+        self._atomic_seq = 0      # unique labels for CAS retry loops
+        self._lane0_scratch = None  # where a vector goes to be read as one
         self.arg_names = []
         self.arg_abi_types = []   # parallel to arg_names, in dynamic mode
         self.dynamic_args = False  # set by run(); see _load_argument
@@ -363,6 +365,145 @@ class TTIRImporter:
         self._v[op.get_result(0).id()] = self.b.reduce(
             kind, self._value(src), dtype=rtype,
             broadcast=rtype.startswith('f'))
+
+    # ---- atomics ----------------------------------------------------------
+    #
+    # ISA sec 9.2's atomics are scalar and 4 or 8 bytes wide: there is
+    # no vector atomic and no sub-word one, because the memory's word is
+    # eight bytes and a narrower read-modify-write would need a path
+    # nothing else in the design has. So an atomic over a tensor is one
+    # atomic per element, and there is nothing cheaper to lower it to.
+
+    # Triton's ATOMIC_OP, to the ISA's names. FADD is deliberately
+    # absent: sec 9.2 has no floating-point atomic and says so -- "FP32
+    # `atom.add` is expanded to a `atom.cas` loop by the compiler in
+    # v0.1" -- so it is expanded here rather than mapped to an
+    # instruction that does something else.
+    _ATOMIC_OP = {1: 'and', 2: 'or', 3: 'xor', 4: 'add', 6: 'max',
+                  7: 'min', 8: 'maxu', 9: 'minu', 10: 'xchg'}
+    _ATOMIC_SEM = {1: 'relaxed', 2: 'acquire', 3: 'release',
+                   4: 'acq_rel'}
+    _ATOMIC_SCOPE = {1: 'device', 2: 'core', 3: 'system'}
+
+    def _op_tt_atomic_rmw(self, op):
+        kind = op.get_int_attr('atomic_rmw_op')
+        sem = self._ATOMIC_SEM.get(op.get_int_attr('sem'), 'relaxed')
+        scope = self._ATOMIC_SCOPE.get(op.get_int_attr('scope'), 'device')
+        ptr, value = op.get_operand(0), op.get_operand(1)
+        if op.get_num_operands() > 2 and not self._is_all_true(
+                op.get_operand(2)):
+            raise Unsupported(
+                'a masked atomic',
+                because='ISA sec 9.2 has no predicated atomic; skipping one '
+                        'would need a branch per element',
+                remedy='mask the value instead, where the operation has an '
+                       'identity')
+
+        shape, elem = _parse_type(str(value.get_type()))
+        esize = self._ELEM_BYTES.get(elem)
+        if esize not in (4, 8):
+            raise Unsupported(
+                f"an atomic on {elem}",
+                because='ISA sec 9.2 allocates only the 4- and 8-byte sizes: '
+                        "the memory's word is eight bytes and a narrower "
+                        'read-modify-write has no path',
+                source='doc/isa/TNCA-ISA-v0.1.md sec 9.2')
+
+        if not isinstance(shape, tuple):
+            raise Unsupported(
+                'an atomic on a 1-D block',
+                remedy='use a 2-D tile, or a scalar atomic')
+
+        spec = self._ptr2d.get(ptr.id())
+        if spec is None:
+            raise Unsupported(
+                'an atomic through a pointer this does not recognise')
+        name, pelem, aff = spec
+        if aff.col_stride != 1:
+            raise Unsupported('an atomic over a non-contiguous row')
+
+        rows, cols = shape
+        tile = self._tile_of(value)
+        base = self._arg_value(name)
+        if aff.const:
+            base = self.b.sbini('add', base, aff.const * esize,
+                                comment="the tile's origin")
+        base = self._add_dynamic(base, aff, esize)
+
+        # The values are in an accumulator or in registers and the
+        # atomics need them one at a time in a SCALAR register. Nothing
+        # reads a single lane (sec 8), so the tile goes out to memory
+        # first and each element is loaded back as it is used.
+        get = self._tile_row_getter(tile)
+        src = self._spill_region(rows * cols * esize)
+        size = _SIZE_SUFFIX[esize]
+        self.b.comment(f"{rows}x{cols} atomics, one element at a time "
+                       f"(ISA sec 9.2 has no vector atomic)")
+        for r in range(rows):
+            at = src if r == 0 else self.b.sbini('add', src,
+                                                 r * cols * esize)
+            self.b.store(at, get(r), size=size)
+
+        row_stride = aff.row_stride * esize
+        for r in range(rows):
+            for c in range(cols):
+                v = self.b.sload(src, offset=(r * cols + c) * esize,
+                                 size=size, dtype=elem)
+                off = r * row_stride + c * esize
+                addr = base if off == 0 else self.b.sbini(
+                    'add', base, off, comment=f"[{r}, {c}]")
+                if elem.startswith('f'):
+                    self._atomic_fadd(addr, v, elem, sem, scope, size,
+                                      f"{r},{c}")
+                else:
+                    self.b.atomic(self._ATOMIC_OP[kind], addr, v, size=size,
+                                  order=sem, scope=scope, dtype=elem)
+        if op.get_num_results():
+            # The old values. Nothing in TileBench reads them, and
+            # gathering 256 scalars back into a tile to be discarded
+            # would be the whole cost of the operation again.
+            self._tiles[op.get_result(0).id()] = tile
+
+    def _atomic_fadd(self, addr, value, elem, sem, scope, size, label):
+        """A floating-point add, as ISA sec 9.2 says to do it.
+
+        There is no FP atomic. The compare-and-swap loop is the
+        expansion the ISA names, and the add inside it runs in the
+        vector unit because there is no scalar floating point either --
+        so each attempt broadcasts the old value, adds, and takes lane
+        zero back out through memory.
+        """
+        # One landing pad, shared by every atomic in the kernel: a
+        # vector store writes all VLEN lanes whatever the caller wants
+        # of them, so it needs a whole register's worth of room and
+        # asking for one per element would reserve kilobytes to use
+        # four bytes of each.
+        if self._lane0_scratch is None:
+            self._lane0_scratch = self._spill_region(
+                self.target.vlen * 8)
+        scratch = self._lane0_scratch
+        tag = f"amo{self._atomic_seq}"
+        self._atomic_seq += 1
+        self.b.comment(f"atomic fadd [{label}]: a CAS loop (ISA sec 9.2 "
+                       f"has no FP atomic)")
+        old = self.b.sload(addr, size=size, dtype=elem,
+                           comment='the value to add to')
+        self.b.label(tag)
+        vsum = self.b.vbin('add', self.b.splat(old, dtype=elem),
+                           self.b.splat(value, dtype=elem), dtype=elem,
+                           comment='the add, in the only unit that has one')
+        self.b.store(scratch, vsum, size=size)
+        new = self.b.sload(scratch, size=size, dtype=elem,
+                           comment='lane 0 back to a scalar register')
+        got = self.b.atomic_cas(addr, old, new, size=size, order=sem,
+                                scope=scope, dtype=elem)
+        again = self.b.scmp('ne', got, old)
+        self.b._emit('assign', [], [old, got])
+        self.b.branch_nz(again, tag)
+
+    def _is_all_true(self, value):
+        pending = self._pending_const.get(value.id())
+        return pending is not None and int(pending[1]) != 0
 
     # ---- folds with a body -----------------------------------------------
     #
@@ -1224,6 +1365,41 @@ class TTIRImporter:
                                comment='the tile origin')
         return base
 
+    def _load_tile_rows(self, name, elem, aff, shape):
+        """A tile whose element type has no usable fragment, row by row.
+
+        ISA sec 9.1 gives lane i of a vector load the address
+        `base + i*sz` and sign-extends a narrow integer per `mod[3]`, so
+        one `v.ld.b` puts a whole row of sixteen INT8s in sixteen lanes
+        already widened. That is the form arithmetic wants, and it never
+        passes through the packed layout that has no unpack.
+        """
+        rows, cols = shape
+        if aff.col_stride != 1:
+            raise Unsupported(
+                f"a tile whose columns are {aff.col_stride} elements apart",
+                because='a row is one vector load, which is contiguous')
+        if cols != self.target.vlen:
+            raise Unsupported(
+                f"a {elem} tile {cols} elements wide on a VLEN="
+                f"{self.target.vlen} machine")
+        esize = self._ELEM_BYTES[elem]
+        base = self._arg_value(name)
+        if aff.const:
+            base = self.b.sbini('add', base, aff.const * esize,
+                                comment="the tile's origin")
+        base = self._add_dynamic(base, aff, esize)
+        self.b.comment(f"a {rows}x{cols} {elem} tile, one row per vector "
+                       f"load: {elem} has no fragment this can unpack")
+        size = _SIZE_SUFFIX[esize]
+        stride = aff.row_stride * esize
+        out = []
+        for r in range(rows):
+            at = base if r == 0 else self.b.sbini('add', base, r * stride,
+                                                  comment=f"row {r}")
+            out.append(self.b.load(at, dtype=elem, size=size))
+        return Tile('rows', tuple(out), rows, cols, elem)
+
     def _tile_descriptor(self, name, elem, aff, block, what):
         """A TensorMap for the tile this pointer arithmetic describes.
 
@@ -1263,6 +1439,15 @@ class TTIRImporter:
     # ---- descriptors ------------------------------------------------------
 
     _ELEM_BYTES = {'f16': 2, 'bf16': 2, 'f32': 4, 'i8': 1, 'i32': 4}
+
+    # Which element types a tile can be TRANSFERRED as. The list is ISA
+    # sec 9D.3's dtype codes narrowed to the ones this backend can then
+    # read back: `i8` has a code but a packed i8 fragment cannot be
+    # taken apart (sec 8.4 reserves v.unpack), and a 32-bit integer has
+    # no code at all. Both load a row at a time instead, which needs no
+    # descriptor and no unpacking -- one `v.ld` puts sixteen elements in
+    # sixteen lanes whatever their width, sign-extended per sec 9.1.
+    _TRANSFERABLE = ('f16', 'bf16', 'f32')
 
     def _scratch_base(self):
         """Where this kernel builds its TensorMaps.
@@ -1307,10 +1492,25 @@ class TTIRImporter:
         Rounded to a whole TensorMap so the descriptors that follow
         stay 8-byte aligned, which ISA sec 9E.2 requires of a base.
         """
-        offset = self.scratch_maps * TENSORMAP_BYTES + self.spill_bytes
-        self.spill_bytes += (nbytes + 7) & ~7
-        return self.b.sbini('add', self._scratch_base(), offset,
+        return self.b.sbini('add', self._scratch_base(),
+                            self._take_scratch(nbytes),
                             comment=f"{nbytes} bytes of repack scratch")
+
+    def _take_scratch(self, nbytes):
+        """Hand out `nbytes` of scratch, once. Returns the offset.
+
+        One cursor for descriptors and repacks alike. They used to have
+        a counter each, both measured from the same base, so a
+        TensorMap built after a repack landed on top of it -- and the
+        repack is where a tile is while it changes shape.
+
+        Rounded to eight so the next thing out stays aligned; ISA sec
+        9E.2 wants a descriptor's base on an 8-byte boundary, and a
+        repacked tile IS a descriptor's base.
+        """
+        at = self.scratch_used
+        self.scratch_used += (nbytes + 7) & ~7
+        return at
 
     def _rows_to_window(self, rows, dtype, out_dtype, cols, nrows=None):
         """Sixteen vector registers into one transfer-engine fragment.
@@ -1411,7 +1611,7 @@ class TTIRImporter:
         slot = self.scratch_maps
         self.scratch_maps += 1
         addr = self.b.sbini('add', self._scratch_base(),
-                            slot * TENSORMAP_BYTES,
+                            self._take_scratch(TENSORMAP_BYTES),
                             comment=f"TensorMap {slot}: {what}")
 
         words = tensormap_words(base=0, extents=extents,
@@ -1682,13 +1882,24 @@ class TTIRImporter:
         self.b.barrier_wait(tok)
 
         _, rtype = _parse_type(str(op.get_result(0).get_type()))
-        self._tiles[op.get_result(0).id()] = Tile(
-            'accumulator', acc, a.rows, b.cols, rtype)
+        tile = Tile('accumulator', acc, a.rows, b.cols, 'f32')
+        if rtype.startswith('i'):
+            # The accumulator is binary32 (sec 9C) and the products were
+            # integers, so every value in it IS an integer -- but the IR
+            # calls the result i32, and an arith.sitofp on it would
+            # otherwise reinterpret a float as one.
+            get = self._tile_row_getter(tile)
+            tile = self._materialise(
+                lambda r: self.b.vcvt('f32', 's32', get(r)),
+                a.rows, b.cols, rtype)
+        self._tiles[op.get_result(0).id()] = tile
 
     def _as_fragment(self, tile, what):
         """This tile in the layout `m.mma.async` reads."""
         if tile.kind == 'window':
             return tile
+        if tile.dtype in ('i8', 'i32'):
+            return self._integer_fragment(tile)
         if tile.dtype not in ('f16', 'bf16'):
             raise Unsupported(
                 f"{what}: a computed {tile.dtype} tile",
@@ -1697,9 +1908,50 @@ class TTIRImporter:
                 remedy='convert it, which tl.dot on a narrower type does '
                        'anyway')
         return self._rows_to_window(self._tile_row_getter(tile), tile.dtype,
-                                    tile.dtype if tile.dtype != 'f32'
-                                    else tile.dtype, tile.cols,
-                                    nrows=tile.rows)
+                                    tile.dtype, tile.cols, nrows=tile.rows)
+
+    # The largest K for which an INT8 product accumulated in binary32 is
+    # exact. |a*b| <= 128*128 = 2**14, and every partial sum has to stay
+    # at or below 2**24, where binary32 still represents every integer.
+    INT8_EXACT_K = (1 << 24) // (1 << 14)
+
+    def _integer_fragment(self, tile):
+        """An integer tile as an FP16 MMA operand, exactly.
+
+        ISA sec 9C's `mod[3:2]` has FP16, BF16 and the two FP8
+        encodings; there is no integer mode. Converting is not an
+        approximation of one:
+
+          * every INT8 is an integer of magnitude at most 128, and FP16
+            represents every integer up to 2048 exactly, so the operands
+            convert without loss;
+          * sec 9C.1 forms the product at full width and rounds once per
+            accumulation step, so each product -- at most 2**14 -- is
+            exact in binary32;
+          * every partial sum is an integer of magnitude at most
+            K * 2**14, and binary32 represents every integer up to
+            2**24, so no step rounds either.
+
+        Which makes the result the exact integer dot product for K up to
+        INT8_EXACT_K. Above that a partial sum could round, so it is
+        refused rather than quietly approximated.
+        """
+        if tile.cols > self.INT8_EXACT_K:
+            raise Unsupported(
+                f"an integer tl.dot with K={tile.cols}",
+                because=f"ISA sec 9C has no integer MMA, and the exact FP "
+                        f"substitute holds only while every partial sum "
+                        f"stays below 2**24 -- K up to "
+                        f"{self.INT8_EXACT_K}",
+                source='doc/isa/TNCA-ISA-v0.1.md sec 9C.1')
+        get = self._tile_row_getter(tile)
+        self.b.comment(f"an {tile.dtype} MMA operand as f16: exact for "
+                       f"K <= {self.INT8_EXACT_K} (ISA sec 9C.1)")
+        rows = [self.b.vcvt('s32', 'f32', get(r),
+                            comment=f"row {r}: integer -> f32, exact")
+                for r in range(tile.rows)]
+        return self._rows_to_window(lambda r: rows[r], 'f32', 'f16',
+                                    tile.cols, nrows=tile.rows)
 
     def _is_zero_tensor(self, value):
         pending = self._pending_const.get(value.id())
@@ -1982,6 +2234,9 @@ class TTIRImporter:
 
     # ---- conversions ------------------------------------------------------
     def _convert(self, op, src, dst):
+        if self._is_2d(op):
+            self._tile_binary(op, lambda xs, e: self.b.vcvt(src, dst, xs[0]))
+            return
         _, elem, _bcast = self._float_shape(op)
         self._v[op.get_result(0).id()] = self.b.vcvt(
             src, dst, self._vec(op.get_operand(0), src))
@@ -2278,6 +2533,10 @@ class TTIRImporter:
                             "descriptor's extents, not from a mask",
                     remedy='let the descriptor pad, or load the full tile')
             name, elem, aff = spec
+            if elem not in self._TRANSFERABLE:
+                self._tiles[op.get_result(0).id()] = self._load_tile_rows(
+                    name, elem, aff, shape2d)
+                return
             desc = self._tile_descriptor(name, elem, aff, shape2d,
                                          'a 2-D tt.load')
             zero = self.b.const(0)

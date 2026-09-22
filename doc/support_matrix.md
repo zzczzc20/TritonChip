@@ -159,16 +159,16 @@ it is a statement about which column of evidence exists.
 | `v.st` | LSU | (baseline) | yes | yes | yes | yes | yes | no |
 | `v.ld.gather` | LSU | gather_scatter | yes | yes | yes | yes | yes | no |
 | `v.st.scatter` | LSU | gather_scatter | yes | yes | yes | yes | yes | no |
-| `atom.add` | ATOM | atomics_device | yes | yes | yes | yes | no | yes |
-| `atom.and` | ATOM | atomics_device | yes | yes | yes | yes | no | no |
-| `atom.or` | ATOM | atomics_device | yes | yes | yes | yes | no | yes |
-| `atom.xor` | ATOM | atomics_device | yes | yes | yes | yes | no | no |
-| `atom.xchg` | ATOM | atomics_device | yes | yes | yes | yes | no | no |
-| `atom.min.s` | ATOM | atomics_device | yes | yes | yes | yes | no | no |
-| `atom.max.s` | ATOM | atomics_device | yes | yes | yes | yes | no | no |
-| `atom.min.u` | ATOM | atomics_device | yes | yes | yes | yes | no | no |
-| `atom.max.u` | ATOM | atomics_device | yes | yes | yes | yes | no | yes |
-| `atom.cas` | ATOM | atomics_device | yes | yes | yes | yes | no | no |
+| `atom.add` | ATOM | atomics_device | yes | yes | yes | yes | yes | yes |
+| `atom.and` | ATOM | atomics_device | yes | yes | yes | yes | yes | no |
+| `atom.or` | ATOM | atomics_device | yes | yes | yes | yes | yes | yes |
+| `atom.xor` | ATOM | atomics_device | yes | yes | yes | yes | yes | no |
+| `atom.xchg` | ATOM | atomics_device | yes | yes | yes | yes | yes | no |
+| `atom.min.s` | ATOM | atomics_device | yes | yes | yes | yes | yes | no |
+| `atom.max.s` | ATOM | atomics_device | yes | yes | yes | yes | yes | no |
+| `atom.min.u` | ATOM | atomics_device | yes | yes | yes | yes | yes | no |
+| `atom.max.u` | ATOM | atomics_device | yes | yes | yes | yes | yes | yes |
+| `atom.cas` | ATOM | atomics_device | yes | yes | yes | yes | yes | no |
 | `atom.ld` | ATOM | atomics_device | yes | yes | yes | yes | no | yes |
 | `atom.st` | ATOM | atomics_device | yes | yes | yes | yes | no | no |
 | `fence` | ATOM | fence | no | no | no | no | no | yes |
@@ -193,7 +193,7 @@ it is a statement about which column of evidence exists.
 | `mb.wait` | MBAR | mbarrier | yes | yes | yes | yes | yes | no |
 | `mb.inval` | MBAR | mbarrier | yes | yes | yes | yes | no | no |
 
-169 instructions: 99 the compiler emits, 1 it has a lowering for and refuses on every R1 profile, 20 executed on the whole machine.
+169 instructions: 109 the compiler emits, 1 it has a lowering for and refuses on every R1 profile, 20 executed on the whole machine.
 
 `gated` in the emit column means the lowering exists and the capability
 is false everywhere, so asking for it is a compile error rather than a

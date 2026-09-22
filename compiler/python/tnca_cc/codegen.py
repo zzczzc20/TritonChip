@@ -60,6 +60,13 @@ _PUN = {'not': 'p.not', 'mov': 'p.mov'}
 # lowerings in mathlib.py refine these rather than returning them.
 _VUN_SFU = {'exp2': 'v.exp2.approx', 'rcp': 'v.rcp.approx',
             'rsqrt': 'v.rsqrt.approx', 'log2': 'v.log2.approx'}
+# ISA sec 9.2. Integer only, and 4 or 8 bytes only: mod[2:0] accepts
+# nothing narrower, because the memory's word is 8 bytes and a sub-word
+# read-modify-write would need a path nothing else in the design has.
+_ATOMIC = {'add': 'atom.add', 'and': 'atom.and', 'or': 'atom.or',
+           'xor': 'atom.xor', 'xchg': 'atom.xchg', 'min': 'atom.min.s',
+           'max': 'atom.max.s', 'minu': 'atom.min.u', 'maxu': 'atom.max.u'}
+
 _REDUCE_INT = {'add': 'v.reduce.add', 'max': 'v.reduce.max.s',
                'min': 'v.reduce.min.s', 'and': 'v.reduce.and',
                'or': 'v.reduce.or', 'xor': 'v.reduce.xor',
@@ -713,6 +720,48 @@ class CodeGen:
 
     def _op_trap(self, op):
         self._emit('trap', f"#{op.attrs['code']}")
+
+    def _op_atomic(self, op):
+        addr, value = op.operands
+        out = op.results[0]
+        self._alloc(out)
+        self.target.require(self._atomic_capability(op), 'emit an atomic')
+        mnem = _ATOMIC.get(op.attrs['op'])
+        if mnem is None:
+            raise Diagnostic(
+                f"no atomic {op.attrs['op']!r}",
+                because='ISA sec 9.2 allocates add, and, or, xor, xchg, min '
+                        'and max, and a compare-and-swap for the rest',
+                source='doc/isa/TNCA-ISA-v0.1.md sec 9.2')
+        self._emit(f"{mnem}{self._atomic_suffix(op)}", f"s{out.reg}",
+                    f"[s{addr.reg}]", f"s{value.reg}")
+
+    def _op_atomic_cas(self, op):
+        addr, expect, desired = op.operands
+        out = op.results[0]
+        self._alloc(out)
+        self.target.require(self._atomic_capability(op), 'emit an atomic')
+        self._emit(f"atom.cas{self._atomic_suffix(op)}", f"s{out.reg}",
+                    f"[s{addr.reg}]", f"s{expect.reg}", f"s{desired.reg}")
+
+    @staticmethod
+    def _atomic_capability(op):
+        # sec 9.2: system scope is only legal when SYSTEM_ATOMICS is set,
+        # and raises ILLEGAL_INSTRUCTION otherwise rather than silently
+        # degrading to device scope.
+        return ('atomics_system' if op.attrs.get('scope') == 'system'
+                else 'atomics_device')
+
+    @staticmethod
+    def _atomic_suffix(op):
+        out = f".{op.attrs.get('size', 'w')}"
+        order = op.attrs.get('order', 'relaxed')
+        scope = op.attrs.get('scope', 'device')
+        if order != 'relaxed':
+            out += f".{order}"
+        if scope != 'core':
+            out += f".{scope}"
+        return out
 
     def _op_reduce(self, op):
         v = op.operands[0]

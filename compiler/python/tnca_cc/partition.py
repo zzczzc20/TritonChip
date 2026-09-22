@@ -125,6 +125,7 @@ _CLASS_BY_OP = {
     'load': OpClass.VECTOR, 'gather': OpClass.VECTOR,
     'reduce': OpClass.VECTOR,
 
+    'atomic': OpClass.EPILOGUE, 'atomic_cas': OpClass.EPILOGUE,
     'store': OpClass.EPILOGUE, 'scatter': OpClass.EPILOGUE,
     'sstore': OpClass.EPILOGUE, 'sload': OpClass.ADDRESS,
 

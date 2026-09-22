@@ -358,6 +358,27 @@ class Builder:
     def sstore(self, base, value, offset=0, size='d'):
         self._emit('sstore', [], [base, value], offset=offset, size=size)
 
+    # ---- atomics (ISA sec 9.2) -------------------------------------------
+    def atomic(self, op, addr, value, *, size='w', order='relaxed',
+               scope='device', dtype='i32'):
+        """A read-modify-write at the home slice of the address.
+
+        Returns the value that was there. ISA sec 9.2 executes the whole
+        operation inside one step of the slice arbiter, which is what
+        makes it indivisible without a lock.
+        """
+        out = self._value(SCALAR, dtype, hint='a')
+        self._emit('atomic', [out], [addr, value], op=op, size=size,
+                   order=order, scope=scope)
+        return out
+
+    def atomic_cas(self, addr, expect, desired, *, size='w', order='relaxed',
+                   scope='device', dtype='i32'):
+        out = self._value(SCALAR, dtype, hint='a')
+        self._emit('atomic_cas', [out], [addr, expect, desired], size=size,
+                   order=order, scope=scope)
+        return out
+
     def reduce(self, op, v, *, mask=None, dtype=None, broadcast=False):
         """A whole-vector reduction.
 

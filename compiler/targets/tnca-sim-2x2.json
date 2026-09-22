@@ -89,7 +89,7 @@
     "mbarrier": true,
     "packed_f16": false,
     "cache_hints": false,
-    "fence": false
+    "fence": true
   },
   "latency": {
     "fp_result_cycles": 2,

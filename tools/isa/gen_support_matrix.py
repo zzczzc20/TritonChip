@@ -63,8 +63,6 @@ CAPABILITY_BY_MAJOR = {
 }
 
 CAPABILITY_BY_MNEMONIC = {
-    # ISA v0.1 has no fence encoding at all, so no profile has it.
-    'fence': 'fence',
     'v.ld.gather': 'gather_scatter',
     'v.st.scatter': 'gather_scatter',
     # Encodable, and no engine can source it. See doc/support_matrix.md's

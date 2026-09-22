@@ -99,8 +99,14 @@ def build_target(core, top, isa, name, description, profile=None):
         'mbarrier': True,
         'packed_f16': False,
         'cache_hints': False,
-        # Not a CAPABILITY0 bit: no fence encoding exists in v0.1 at all.
-        'fence': False,
+        # `fence` is ATOM 0x20 and has no CAPABILITY0 bit, which makes
+        # it baseline rather than absent -- the same thing `s.add` is.
+        # It was False here with a comment saying no encoding existed,
+        # while tools/asm/tnca_isa.py held the encoding, tnca_core.v
+        # decoded it, t14_caps.s and t22_atomic.s executed it, and the
+        # generated support matrix recorded it as machine-verified. The
+        # ATOM family gate is the one that applies.
+        'fence': True,
     }
 
     target = {

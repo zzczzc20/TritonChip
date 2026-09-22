@@ -121,11 +121,14 @@ _CLASS_BY_OP = {
     'vcmp': OpClass.VECTOR, 'vselect': OpClass.VECTOR,
     'vun': OpClass.VECTOR, 'vfma': OpClass.VECTOR,
     'pbin': OpClass.VECTOR, 'pun': OpClass.VECTOR,
+    'vextract': OpClass.VECTOR, 'vinsert': OpClass.VECTOR,
+    'vshuffle': OpClass.VECTOR,
     'vfms': OpClass.VECTOR, 'vcvt': OpClass.VECTOR,
     'load': OpClass.VECTOR, 'gather': OpClass.VECTOR,
     'reduce': OpClass.VECTOR,
 
     'atomic': OpClass.EPILOGUE, 'atomic_cas': OpClass.EPILOGUE,
+    'fence': OpClass.EPILOGUE,
     'store': OpClass.EPILOGUE, 'scatter': OpClass.EPILOGUE,
     'sstore': OpClass.EPILOGUE, 'sload': OpClass.ADDRESS,
 

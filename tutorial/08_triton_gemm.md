@@ -59,9 +59,14 @@ expected  [-1.0, 9.0, -1.0, 4.0]
 Compare with [05](05_matrix_multiply.md): 1190 cycles for the same
 16×16×16 shape on the matrix unit, against 10832 here for sixteen
 programs on the vector unit — about 9× — and that is with 05 in FP16
-against FP32 here. That gap is the matrix unit, and it is the reason the
-planner exists. Use `tl` for the kernels you are inventing; use the
-planner for the one shape it was built for.
+against FP32 here.
+
+That gap is the matrix unit, and you do not have to leave Triton to
+reach it: the `tl.dot` version further down this page gets there from
+an ordinary kernel. The planner of [05](05_matrix_multiply.md) is
+still the thing to use when you want to choose the pipeline depth and
+the k-step yourself; `tl.dot` is the thing to use when you want the
+product.
 
 ## `tl.static_range`, not `range`
 
@@ -84,33 +89,79 @@ If you want to see the unrolled result, [04](04_reading_the_compile.md)'s
 `dump_dir` gives you the TTIR — 135 machine words for K=16 is what a
 fully unrolled sixteen-step inner product costs.
 
+## The same product, as one `tl.dot`
+
+Everything above is the vector unit. `tl.dot` is the matrix unit, and
+the kernel for it is the one every Triton matmul tutorial has:
+
+```python
+om = tl.arange(0, M)
+ok = tl.arange(0, K)
+on = tl.arange(0, N)
+a = tl.load(a_ptr + om[:, None] * K + ok[None, :])
+b = tl.load(b_ptr + ok[:, None] * N + on[None, :])
+tl.store(c_ptr + om[:, None] * N + on[None, :], tl.dot(a, b))
+```
+
+Nothing in it is written for this machine. What the backend does is
+recognise that `om[:, None] * K + ok[None, :]` describes a tile:
+
+```
+compiled  164 machine word(s) for the SAME product written as tl.dot
+  td.load        x2   the TensorMap snapshot
+  t.ld.async     x2   the tile fetch
+  m.mma.async    x1   the 16x16x16 product
+  a.vread        x16  the accumulator epilogue
+  scratch       512 byte(s) for the descriptors it writes
+```
+
+164 machine words against 135 for the unrolled vector version, and one
+instruction doing the arithmetic instead of sixteen broadcast products
+per row.
+
+The tile arrives through the transfer engine rather than through vector
+loads, and that is not a preference. A 16×16 FP16 fragment is 512 bytes
+in eight registers, two rows per register (ISA sec 9C.2), while
+`v.ld.h` puts one 2-byte element in each of sixteen 32-bit lanes.
+Assembling the packed form in registers needs `v.pack.f16`, which sec
+8.4 marks *Reserved* — so the engine is not the fast path for a tile,
+it is the only one. `td.load` snapshots from memory and no instruction
+builds a descriptor out of registers, which is what the 512 bytes of
+scratch are for.
+
 ## Where support ends, exactly
 
 ```
 where this frontend's support currently ends
 (these are the real errors, not hypotheticals):
 
-  tl.dot                       [COMPILE_FAILED]
-                               input_precision must be one of (). Got ieee
+  tl.dot on f32                [UNSUPPORTED]
+                               [UNSUPPORTED] a tl.dot with f32 inputs
   a loop with a runtime bound  [UNSUPPORTED]
-                               [UNSUPPORTED] no TNCA lowering for TTIR operation 'arith.bitcast'
+                               [UNSUPPORTED] no TNCA lowering for TTIR operation 'scf.for'
 ```
 
-`tl.dot` is refused by **Triton's own frontend**, before anything of
-ours runs: the target publishes no dot precisions at all, so no argument
-to `input_precision` is valid. Reaching the matrix unit from `tl.dot` is
-future work; today the route to it is the planner of
-[05](05_matrix_multiply.md).
+`tl.dot` itself is supported; a `tl.dot` on **binary32** is not. ISA
+sec 9C's `mod[3:2]` names FP16, BF16 and the two FP8 encodings and
+reserves the rest, so there is no f32 matrix unit to lower it onto.
+Widening the operands to FP16 behind your back would be a different
+computation, so it is refused by name instead.
+
+An integer `tl.dot` IS accepted, because there the widening is not a
+choice: every INT8 is an integer under 2048, which FP16 holds exactly,
+and sec 9C.1's one-rounding-per-step accumulation in binary32 is exact
+for every partial sum under 2²⁴. That holds for K up to 1024, and a
+larger K is refused rather than quietly approximated.
 
 Two more current limits, both from [06](06_errors_and_faults.md) and
 [01](01_first_kernel.md):
 
-- `BLOCK` must equal the vector length (16). A wider block needs a
-  tensor spread over several vector registers with its index mapping
-  intact, and is refused rather than half-done.
-- `tl.zeros` lowers to a `tt.call`, which has no TNCA lowering — hence
-  the accumulator above is initialised with the k=0 product rather than
-  with zeros.
+- a 1-D `BLOCK` must equal the vector length (16). A wider block needs
+  a tensor spread over several vector registers with its index mapping
+  intact, and is refused rather than half-done. A 2-D 16×16 block is a
+  different thing and is supported — it is a tile.
+- a loop whose bound is a runtime value stays an `scf.for`, which has
+  no TNCA lowering. `tl.static_range` is unrolled while Triton traces.
 
 ## Three bugs this example found
 

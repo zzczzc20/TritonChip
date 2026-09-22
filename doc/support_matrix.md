@@ -136,8 +136,8 @@ it is a statement about which column of evidence exists.
 | `v.shuffle.down` | SHUF | (baseline) | yes | yes | yes | yes | no | no |
 | `v.permute` | SHUF | (baseline) | yes | yes | yes | yes | yes | no |
 | `v.rotate` | SHUF | (baseline) | yes | yes | yes | yes | no | no |
-| `v.extract` | SHUF | (baseline) | yes | yes | yes | yes | no | no |
-| `v.insert` | SHUF | (baseline) | yes | yes | yes | yes | no | no |
+| `v.extract` | SHUF | (baseline) | yes | yes | yes | yes | yes | no |
+| `v.insert` | SHUF | (baseline) | yes | yes | yes | yes | yes | no |
 | `v.reduce.add` | RED | (baseline) | yes | yes | yes | yes | yes | no |
 | `v.reduce.max.s` | RED | (baseline) | yes | yes | yes | yes | yes | no |
 | `v.reduce.min.s` | RED | (baseline) | yes | yes | yes | yes | yes | no |
@@ -171,7 +171,7 @@ it is a statement about which column of evidence exists.
 | `atom.cas` | ATOM | atomics_device | yes | yes | yes | yes | yes | no |
 | `atom.ld` | ATOM | atomics_device | yes | yes | yes | yes | no | yes |
 | `atom.st` | ATOM | atomics_device | yes | yes | yes | yes | no | no |
-| `fence` | ATOM | fence | no | no | no | no | no | yes |
+| `fence` | ATOM | atomics_device | yes | yes | yes | yes | no | yes |
 | `td.load` | TDESC | tensor_dma | yes | yes | yes | yes | yes | no |
 | `td.release` | TDESC | tensor_dma | yes | yes | yes | yes | no | no |
 | `w.def` | TDESC | tensor_dma | yes | yes | yes | yes | yes | no |
@@ -193,7 +193,7 @@ it is a statement about which column of evidence exists.
 | `mb.wait` | MBAR | mbarrier | yes | yes | yes | yes | yes | no |
 | `mb.inval` | MBAR | mbarrier | yes | yes | yes | yes | no | no |
 
-169 instructions: 109 the compiler emits, 1 it has a lowering for and refuses on every R1 profile, 20 executed on the whole machine.
+169 instructions: 111 the compiler emits, 1 it has a lowering for and refuses on every R1 profile, 20 executed on the whole machine.
 
 `gated` in the emit column means the lowering exists and the capability
 is false everywhere, so asking for it is a compile error rather than a

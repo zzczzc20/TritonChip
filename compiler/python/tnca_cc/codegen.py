@@ -571,6 +571,25 @@ class CodeGen:
         self._emit(f"vf.cvt.{src}.{dst}", f"v{v.reg}", f"v{a.reg}",
                     comment=op.attrs.get('comment'))
 
+    def _op_vextract(self, op):
+        v = op.operands[0]
+        out = op.results[0]
+        self._alloc(out)
+        self._emit('v.extract', f"s{out.reg}", f"v{v.reg}",
+                    f"#{op.attrs['lane']}")
+
+    def _op_vinsert(self, op):
+        v, scalar = op.operands
+        self._emit('v.insert', f"v{v.reg}", f"s{scalar.reg}",
+                    f"#{op.attrs['lane']}")
+
+    def _op_vshuffle(self, op):
+        v, amount = op.operands
+        out = op.results[0]
+        self._alloc(out)
+        self._emit(f"v.shuffle.{op.attrs['op']}", f"v{out.reg}",
+                    f"v{v.reg}", f"s{amount.reg}")
+
     def _op_vcmp(self, op):
         a = op.operands[0]
         p = op.results[0]
@@ -720,6 +739,18 @@ class CodeGen:
 
     def _op_trap(self, op):
         self._emit('trap', f"#{op.attrs['code']}")
+
+    def _op_fence(self, op):
+        # sec 9.2: `fence` takes no access size -- mod[2:0] is the size
+        # field and a fence has no access, so the decoder refuses a
+        # non-zero one rather than ignoring it.
+        self.target.require('fence', 'emit a fence')
+        out = 'fence'
+        if op.attrs.get('order', 'acq_rel') != 'relaxed':
+            out += f".{op.attrs['order']}"
+        if op.attrs.get('scope', 'device') != 'core':
+            out += f".{op.attrs['scope']}"
+        self._emit(out)
 
     def _op_atomic(self, op):
         addr, value = op.operands
@@ -1031,9 +1062,18 @@ class CodeGen:
     def _op_mma_async(self, op):
         acc, aw, bw, token = op.operands
         from .gemm import _DTYPE_CAP
-        self.target.require(_DTYPE_CAP[op.attrs['dtype']],
-                            f"emit m.mma.async with "
-                            f"{op.attrs['dtype']} inputs")
+        dtype = op.attrs['dtype']
+        if dtype not in _DTYPE_CAP:
+            raise Diagnostic(
+                f"a matrix multiply with {dtype} inputs",
+                because="ISA sec 9C's mod[3:2] names FP16, BF16 and the two "
+                        "FP8 encodings as the input formats, and reserves "
+                        "the rest; there is no binary32 MMA",
+                remedy='convert the operands, which is what tl.dot on a '
+                       'narrower type does anyway',
+                source='doc/isa/TNCA-ISA-v0.1.md sec 9C')
+        self.target.require(_DTYPE_CAP[dtype],
+                            f"emit m.mma.async with {dtype} inputs")
         bar = self._token_barrier[id(token)]
         self._count_operation(bar)
         self._emit(f"m.mma.async.{op.attrs['k']}.{op.attrs['dtype']}",

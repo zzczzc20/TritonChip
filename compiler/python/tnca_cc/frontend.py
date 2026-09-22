@@ -48,6 +48,25 @@ _DTYPE_BYTES = {'f32': 4, 'i32': 4, 'f16': 2, 'bf16': 2, 'i16': 2,
                 'i8': 1, 'i64': 8, 'f64': 8}
 _SIZE_SUFFIX = {1: 'b', 2: 'h', 4: 'w', 8: 'd'}
 
+# Integer element types narrower than a lane. ISA sec 9.1 mod[3] decides
+# whether such a load sign-extends, and the assembler spells the
+# extending form `.sb` / `.sh`.
+_NARROW_SIGNED = {'i8', 'i16'}
+
+
+def _load_suffix(size, elem):
+    """The access-size suffix for a LOAD of `elem`.
+
+    A store has nothing to extend, so it keeps the plain form; a load of
+    a narrow signed integer does not. Loading INT8 as `.b` zero-extends,
+    which turned every negative weight in a dequantisation into itself
+    plus 256 -- a wrong answer with no symptom, since the arithmetic
+    that followed was perfectly happy with it.
+    """
+    if elem in _NARROW_SIGNED and size in ('b', 'h'):
+        return 's' + size
+    return size
+
 
 def _parse_type(text):
     r"""(shape, element type) for a TTIR type string.
@@ -101,8 +120,14 @@ class Unsupported(Diagnostic):
 class TTIRImporter:
     """Walk a TTIR module and build the TNCA IR for it."""
 
-    def __init__(self, target, name='kernel'):
+    def __init__(self, target, name='kernel', scratch_addr=None):
         self.target = target
+        # Where a kernel compiled for LITERAL arguments puts its
+        # TensorMaps and its repacks. In dynamic mode the address
+        # arrives in an argument slot; in static mode there are no
+        # argument slots, so the caller that placed the buffers places
+        # this too.
+        self.scratch_addr = scratch_addr
         self.kernel = make_kernel(name)
         self.b = Builder(self.kernel, self.kernel.role(0).region)
         self.name = name
@@ -130,7 +155,7 @@ class TTIRImporter:
         self.scratch_used = 0     # bytes of scratch handed out, ever
         self._force_vector = 0    # depth inside a region body
         self._atomic_seq = 0      # unique labels for CAS retry loops
-        self._lane0_scratch = None  # where a vector goes to be read as one
+        self._lane0_mask = None     # the mask that selects only lane 0
         self.arg_names = []
         self.arg_abi_types = []   # parallel to arg_names, in dynamic mode
         self.dynamic_args = False  # set by run(); see _load_argument
@@ -385,6 +410,19 @@ class TTIRImporter:
                    4: 'acq_rel'}
     _ATOMIC_SCOPE = {1: 'device', 2: 'core', 3: 'system'}
 
+    def _op_ttg_barrier(self, op):
+        """`tl.debug_barrier`, as ISA sec 9.2's fence.
+
+        A kernel that exchanges values between lanes through memory --
+        which is what a `tl.load` from a lane-varying index is, whatever
+        the SHUF family could have done instead -- depends on the store
+        before it being visible to that load. The ISA does not state
+        that for the same address from the same context, so the barrier
+        is not decoration: it is the ordering the kernel depends on,
+        made explicit.
+        """
+        self.b.fence(order='acq_rel', scope='device')
+
     def _op_tt_atomic_rmw(self, op):
         kind = op.get_int_attr('atomic_rmw_op')
         sem = self._ATOMIC_SEM.get(op.get_int_attr('sem'), 'relaxed')
@@ -431,9 +469,10 @@ class TTIRImporter:
         base = self._add_dynamic(base, aff, esize)
 
         # The values are in an accumulator or in registers and the
-        # atomics need them one at a time in a SCALAR register. Nothing
-        # reads a single lane (sec 8), so the tile goes out to memory
-        # first and each element is loaded back as it is used.
+        # atomics need them one at a time in a scalar register. Sixteen
+        # rows of sixteen `v.extract`s would be 256 live scalars, so the
+        # tile goes out to memory and each element is loaded back as
+        # the atomic that consumes it is emitted.
         get = self._tile_row_getter(tile)
         src = self._spill_region(rows * cols * esize)
         size = _SIZE_SUFFIX[esize]
@@ -470,31 +509,21 @@ class TTIRImporter:
         There is no FP atomic. The compare-and-swap loop is the
         expansion the ISA names, and the add inside it runs in the
         vector unit because there is no scalar floating point either --
-        so each attempt broadcasts the old value, adds, and takes lane
-        zero back out through memory.
+        so each attempt broadcasts the old value, adds, and reads lane
+        zero back out with `v.extract`.
         """
-        # One landing pad, shared by every atomic in the kernel: a
-        # vector store writes all VLEN lanes whatever the caller wants
-        # of them, so it needs a whole register's worth of room and
-        # asking for one per element would reserve kilobytes to use
-        # four bytes of each.
-        if self._lane0_scratch is None:
-            self._lane0_scratch = self._spill_region(
-                self.target.vlen * 8)
-        scratch = self._lane0_scratch
         tag = f"amo{self._atomic_seq}"
         self._atomic_seq += 1
         self.b.comment(f"atomic fadd [{label}]: a CAS loop (ISA sec 9.2 "
                        f"has no FP atomic)")
         old = self.b.sload(addr, size=size, dtype=elem,
                            comment='the value to add to')
+        addend = self.b.splat(value, dtype=elem)
         self.b.label(tag)
-        vsum = self.b.vbin('add', self.b.splat(old, dtype=elem),
-                           self.b.splat(value, dtype=elem), dtype=elem,
+        vsum = self.b.vbin('add', self.b.splat(old, dtype=elem), addend,
+                           dtype=elem,
                            comment='the add, in the only unit that has one')
-        self.b.store(scratch, vsum, size=size)
-        new = self.b.sload(scratch, size=size, dtype=elem,
-                           comment='lane 0 back to a scalar register')
+        new = self.b.vextract(vsum, 0, dtype=elem)
         got = self.b.atomic_cas(addr, old, new, size=size, order=sem,
                                 scope=scope, dtype=elem)
         again = self.b.scmp('ne', got, old)
@@ -600,9 +629,9 @@ class TTIRImporter:
     def _op_tt_scan(self, op):
         """An inclusive scan.
 
-        ISA sec 8 has a reduction and no scan, and no lane shuffle to
-        build one out of -- so this is the fold above with every partial
-        result kept, gathered back into a vector through memory.
+        ISA sec 8.7 has a reduction and no scan. This is the fold
+        above with every partial result kept, taken apart and put back
+        together with `v.extract` and `v.insert`.
         """
         if op.get_int_attr('axis') != 0:
             raise Unsupported('a scan along an axis other than the lanes')
@@ -729,11 +758,27 @@ class TTIRImporter:
             if self.dynamic_args:
                 v = self._load_argument(arg_base, i, name, ty)
             else:
-                v = self.b.const(value)
+                v = self.b.const(self._literal_argument(value, ty, sig,
+                                                        i, name))
             self._v[arg.id()] = v
             self._args[i] = (name, v)
             if _pointee(ty):
                 self._ptr_base[arg.id()] = (name, _pointee(ty))
+
+    @staticmethod
+    def _literal_argument(value, ty, sig, index, name):
+        """One argument as the bits a scalar register would hold.
+
+        For everything but a float that is the value itself. For a
+        float it is the binary32 pattern, which is what the dynamic
+        path's `s.ld.w` puts in the register -- the two modes must
+        differ in where the number comes from and not in what it is.
+        """
+        declared = str(sig[index] if index < len(sig) and sig[index]
+                       else ty).strip()
+        if declared in ('f32', 'fp32', 'float32'):
+            return struct.unpack('<I', struct.pack('<f', float(value)))[0]
+        return value
 
     # MLIR type -> (ABI type, the scalar load that reads its slot).
     #
@@ -794,7 +839,13 @@ class TTIRImporter:
         declared = (sig_ty or ty or '').strip()
         is_float = declared in ('f32', 'fp32', 'float32')
 
-        if dynamic and is_float:
+        if is_float:
+            # A float parameter takes a number in BOTH modes. Refusing
+            # one in static mode was wrong rather than strict: the
+            # dynamic path loads the slot's four bytes into a scalar
+            # register and the register then holds the f32 bit pattern,
+            # so the static path materialising that same pattern is the
+            # identical kernel with the load folded away.
             if isinstance(value, bool) or not isinstance(value, (int, float)):
                 raise Diagnostic(
                     f"argument {name!r} is {type(value).__name__} {value!r}, "
@@ -1208,8 +1259,8 @@ class TTIRImporter:
         if kind != 'arange' and src.id() in self._v:
             # A 1-D value of DATA, not an index. `peak[:, None]` makes
             # one value per row out of it and `q[None, :]` makes one row
-            # repeated; the first needs the value's lanes taken apart,
-            # which no instruction does, and the second does not.
+            # repeated; the first takes the value's lanes apart with
+            # `v.extract`, and the second does not have to.
             if axis == 0:
                 shape, elem = _parse_type(
                     str(op.get_result(0).get_type()))
@@ -1218,10 +1269,8 @@ class TTIRImporter:
                     'lazy', lambda r: v, shape[0], shape[1], elem)
                 return
             # `x[:, None]`: lane r of one register becomes the whole
-            # of row r. ISA sec 8 has no instruction that takes a
-            # vector apart by lane, so it goes out to memory and comes
-            # back as sixteen scalars -- the same repack, the other way
-            # round, as _col_to_vector.
+            # of row r, which is `v.extract` (ISA 0x08) sixteen times
+            # and then a broadcast of each.
             _, selem = _parse_type(str(src.get_type()))
             self._tiles[op.get_result(0).id()] = self._vector_to_col(
                 self._value(src), selem)
@@ -1391,14 +1440,20 @@ class TTIRImporter:
         base = self._add_dynamic(base, aff, esize)
         self.b.comment(f"a {rows}x{cols} {elem} tile, one row per vector "
                        f"load: {elem} has no fragment this can unpack")
-        size = _SIZE_SUFFIX[esize]
+        size = _load_suffix(_SIZE_SUFFIX[esize], elem)
         stride = aff.row_stride * esize
-        out = []
-        for r in range(rows):
+
+        def row(r):
             at = base if r == 0 else self.b.sbini('add', base, r * stride,
                                                   comment=f"row {r}")
-            out.append(self.b.load(at, dtype=elem, size=size))
-        return Tile('rows', tuple(out), rows, cols, elem)
+            return self.b.load(at, dtype=elem, size=size)
+
+        # Through the same placement rule as a computed tile, so a
+        # 32-bit one lands in an accumulator rather than holding sixteen
+        # vector registers from the load to the last use of it. A mask
+        # tile loaded eagerly ran the allocator out before the attention
+        # it was masking got a register.
+        return self._materialise(row, rows, cols, elem)
 
     def _tile_descriptor(self, name, elem, aff, block, what):
         """A TensorMap for the tile this pointer arithmetic describes.
@@ -1466,13 +1521,17 @@ class TTIRImporter:
         """
         if self._scratch is None:
             if not self.dynamic_args:
-                raise Unsupported(
-                    'a descriptor in a kernel compiled for literal '
-                    'arguments',
-                    because='the TensorMap has to be written to memory, and '
-                            'the scratch buffer arrives through the argument '
-                            'block that this mode does not read',
-                    remedy='compile with dynamic arguments')
+                if self.scratch_addr is None:
+                    raise Unsupported(
+                        'a descriptor in a kernel compiled for literal '
+                        'arguments and given no scratch address',
+                        because='the TensorMap has to be written to memory, '
+                                'and in this mode no argument slot says '
+                                'where',
+                        remedy='pass scratch_addr, or compile with dynamic '
+                               'arguments')
+                self._scratch = self.b.const(self.scratch_addr)
+                return self._scratch
             self._scratch = self.b.sload(
                 self.b.special('arg_base'), offset=8 * len(self.arg_names),
                 size='d',
@@ -1483,11 +1542,12 @@ class TTIRImporter:
     def _spill_region(self, nbytes):
         """Reserve scratch for a repack, and return its address.
 
-        Repacking through memory is not a workaround here, it is the
-        mechanism the architecture leaves: there is no scratchpad (sec
-        5.2), the ISA reserves `v.pack.f16` and `v.unpack.f16` (sec
-        8.4), and nothing in sec 8 takes a vector apart by lane. When a
-        value has to change shape, memory is where it changes.
+        Repacking through memory is what the architecture leaves for
+        this one case: there is no scratchpad (sec 5.2) and the ISA
+        reserves `v.pack.f16` and `v.unpack.f16` (sec 8.4), so a
+        sixteen-bit fragment cannot be assembled in registers. Taking a
+        vector apart by LANE needs no memory -- `v.extract` and
+        `v.insert` do that -- and the lowerings that need it use them.
 
         Rounded to a whole TensorMap so the descriptors that follow
         stay 8-byte aligned, which ISA sec 9E.2 requires of a base.
@@ -1544,52 +1604,40 @@ class TTIRImporter:
             byte_strides=[row_bytes, esize], block_shape=[nrows, cols],
             what='a repacked tile')
         zero = self.b.const(0)
-        return self._dma_in(desc.value, [zero, zero], [nrows, cols],
+        return self._dma_in(desc, [zero, zero], [nrows, cols],
                             out_dtype, 'a repacked tile')
 
     def _vector_to_col(self, v, elem):
         """One vector register into one value per row.
 
-        The mirror of `_col_to_vector`, and through memory for the same
-        reason: lane r has to become row r, and no instruction reads a
-        single lane.
+        `v.extract Sd, Va, #lane` (ISA 0x08) reads a single lane into a
+        scalar register, zero-extended -- which for a float is its bit
+        pattern, and a scalar register holds a float as its bit pattern
+        anyway. Sixteen of those.
         """
-        esize = self._ELEM_BYTES[elem]
-        vlen = self.target.vlen
-        addr = self._spill_region(vlen * esize)
-        self.b.comment('one vector into one value per row: no instruction '
-                       'reads a single lane (ISA sec 8)')
-        self.b.store(addr, v, size=_SIZE_SUFFIX[esize])
-        out = []
-        for r in range(vlen):
-            at = addr if r == 0 else self.b.sbini('add', addr, r * esize,
-                                                  comment=f"row {r}")
-            out.append(self.b.sload(at, size=_SIZE_SUFFIX[esize],
-                                    dtype=elem))
-        return Tile('col', tuple(out), vlen, 1, elem)
+        self.b.comment('one vector into one value per row (ISA 0x08)')
+        return Tile('col',
+                    tuple(self.b.vextract(v, r, dtype=elem)
+                          for r in range(self.target.vlen)),
+                    self.target.vlen, 1, elem)
 
     def _col_to_vector(self, tile, elem):
         """One value per row, gathered into one vector register.
 
-        The values are in sixteen separate registers and have to end up
-        in sixteen lanes of one. Nothing in ISA sec 8 writes a single
-        lane, so they go out to memory and come back as a vector load.
+        `v.insert Vd, Sa, #lane` (ISA 0x09) writes one lane and leaves
+        the others, so the register is built up in place from a zeroed
+        start -- which also means the sixteen inserts are one value's
+        lifetime and not sixteen, and the allocator has to be told so.
         """
-        esize = self._ELEM_BYTES[elem]
-        addr = self._spill_region(len(tile.handle) * esize)
-        self.b.comment('one value per row into one vector: no instruction '
-                       'writes a single lane (ISA sec 8)')
-        for r, v in enumerate(tile.handle):
-            at = addr if r == 0 else self.b.sbini('add', addr, r * esize,
-                                                  comment=f"row {r}")
-            if v.kind == VECTOR:
-                # A broadcast reduction result: lane 0 is the value.
-                self.b.store(at, v, size=_SIZE_SUFFIX[esize],
-                             mask=self.b.vcmp('eq', self.b.arange(),
-                                              self.b.splat(self.b.const(0))))
-            else:
-                self.b.sstore(at, v, size=_SIZE_SUFFIX[esize])
-        return self.b.load(addr, dtype=elem, size=_SIZE_SUFFIX[esize])
+        out = self.b.vmovi(0, dtype=elem)
+        self.b.comment('one value per row into one vector (ISA 0x09)')
+        for r, x in enumerate(tile.handle):
+            if x.kind == VECTOR:
+                # A broadcast reduction result: every lane is the value,
+                # so lane 0 is it.
+                x = self.b.vextract(x, 0, dtype=elem)
+            self.b.vinsert(out, r, x)
+        return out
 
     def _build_descriptor(self, *, base, elem, extents, byte_strides,
                           block_shape, what):
@@ -1684,7 +1732,7 @@ class TTIRImporter:
         coords = [self._value(op.get_operand(1 + i))
                   for i in range(op.get_num_operands() - 1)]
         self._tiles[op.get_result(0).id()] = self._dma_in(
-            d.value, coords, d.block, d.elem, 'tt.descriptor_load')
+            d, coords, d.block, d.elem, 'tt.descriptor_load')
 
     def _op_tt_descriptor_store(self, op):
         d = self._descs[op.get_operand(0).id()]
@@ -1727,7 +1775,7 @@ class TTIRImporter:
         bits = self._ELEM_BYTES[elem] * 8
         return self.b.window(fragment_registers(rows, cols, bits))
 
-    def _dma_in(self, desc, coords, block, elem, what, transpose=False):
+    def _dma_in(self, desc, coords, block, elem, what):
         """One asynchronous tile load, and the wait for it.
 
         Armed for exactly one operation. ISA sec 9E.1 step 8 signals a
@@ -1741,8 +1789,7 @@ class TTIRImporter:
         tok = self.b.barrier_arm(bar, arrivals=0, ops=1)
         self.b.comment(f"{what}: one tile into a window (ISA sec 9E)")
         self.b.dma_load(window, desc.value if hasattr(desc, 'value')
-                        else desc, coords, tok, dtype=elem,
-                        transpose=transpose)
+                        else desc, coords, tok, dtype=elem)
         self.b.barrier_wait(tok)
         return Tile('window', window, block[0], block[1], elem,
                     desc=(desc, coords))
@@ -1780,9 +1827,9 @@ class TTIRImporter:
         get = self._tile_row_getter(tile)
         for r in range(tile.rows):
             v = get(r)
-            if dst_elem != tile.dtype:
-                v = self.b.vcvt(tile.dtype, dst_elem, v,
-                                comment=f"row {r}: {tile.dtype} -> "
+            if dst_elem != tile.store:
+                v = self.b.vcvt(tile.store, dst_elem, v,
+                                comment=f"row {r}: {tile.store} -> "
                                         f"{dst_elem} (ISA sec 8.4)")
             addr = base if r == 0 else self.b.sbini(
                 'add', base, r * row_stride_bytes,
@@ -1801,35 +1848,69 @@ class TTIRImporter:
         return t
 
     def _op_tt_trans(self, op):
-        """`tl.trans`, done by the transfer engine.
+        """`tl.trans`, by reading the source down its columns.
 
-        ISA sec 9E's `mod[5]` asks the engine to write a tile
-        transposed, so a transposed operand is the SAME transfer with
-        one bit set -- the permutation happens while the data is in
-        flight. There is no vector instruction that permutes a fragment,
-        so the alternative would have been a round trip through memory
-        for something the DMA does for nothing.
+        ISA sec 9E's `mod[5]` asks the transfer engine to write a tile
+        transposed, which would make this free. The reference
+        implementation does not decode it: `tnca_core.v` passes
+        `x_mod[2:0]` to the engine and nothing else, so an emitted
+        `t.ld.async.w.t` transfers the tile UNTRANSPOSED and the kernel
+        gets a wrong answer rather than a fault. A compiler must not
+        emit an instruction whose behaviour the machine does not
+        implement, so this does not -- see doc/r37_isa_gaps.md.
 
-        It therefore only applies to a tile that came from a transfer.
-        A tile computed in the vector unit has no transfer to set the
-        bit on.
+        What it does instead is read the columns. Row r of the
+        transpose is column r of the source, which is sixteen elements
+        `row_stride` apart -- and ISA sec 9.1's `v.ld.gather` addresses
+        lane i at `Sa + Vb[i]*sz`, one instruction per output row.
+
+        For a 32-bit tile the gathered rows are values and arithmetic
+        can use them. For a narrow one they are raw bit patterns sitting
+        in wide lanes -- `v.ld.gather.h` puts two bytes in a 32-bit lane
+        -- so those are packed straight back into a fragment, which
+        moves the bits without ever interpreting them, and the result is
+        usable as an MMA operand and as nothing else.
         """
         src = op.get_operand(0)
         tile = self._tile_of(src)
-        order = [op.get_int_attr('order')] if False else None
-        if tile.kind != 'window' or tile.desc is None:
+        if tile.desc is None:
             raise Unsupported(
-                'tl.trans of a tile that was not loaded by the transfer '
-                'engine',
-                because='ISA sec 9E transposes a tile as it lands; nothing '
-                        'in sec 8 permutes a fragment already in registers',
-                remedy='transpose the operand as it is loaded')
-        desc, coords = tile.desc
-        self.b.comment('tl.trans: the same transfer, written transposed '
-                       '(ISA sec 9E mod[5])')
-        self._tiles[op.get_result(0).id()] = self._dma_in(
-            desc, coords, [tile.cols, tile.rows], tile.dtype, 'tl.trans',
-            transpose=True)
+                'tl.trans of a tile that was not loaded from memory',
+                because='the transpose is read out of the source down its '
+                        'columns, so there has to be a source to read',
+                remedy='transpose a loaded operand')
+        desc, _coords = tile.desc
+        if not hasattr(desc, 'base'):
+            raise Unsupported('tl.trans of a tile with no known base')
+
+        elem = tile.dtype
+        esize = self._ELEM_BYTES[elem]
+        row_elems = desc.byte_strides[0] // esize
+        self.b.comment(f"tl.trans: {tile.cols} columns, gathered "
+                       f"{row_elems} elements apart (ISA sec 9.1)")
+        self.target.require('gather_scatter', 'emit v.ld.gather for tl.trans')
+
+        index = self.b.vbin('mul', self.b.arange(),
+                            self.b.splat(self.b.const(row_elems)),
+                            dtype='i32',
+                            comment='one element per source row')
+        size = _SIZE_SUFFIX[esize]
+        rows = []
+        for r in range(tile.cols):
+            at = desc.base if r == 0 else self.b.sbini(
+                'add', desc.base, r * esize, comment=f"column {r}")
+            rows.append(self.b.gather(at, index, dtype=elem,
+                                      size=_load_suffix(size, elem)))
+
+        rid = op.get_result(0).id()
+        if esize == 4:
+            self._tiles[rid] = Tile('rows', tuple(rows), tile.cols,
+                                    tile.rows, elem)
+            return
+        # Narrow: the lanes hold bits, not numbers. Straight into a
+        # fragment, where they are bits again.
+        self._tiles[rid] = self._rows_to_window(
+            lambda r: rows[r], elem, elem, tile.rows, nrows=tile.cols)
 
     def _op_tt_dot(self, op):
         """`tl.dot`, onto ISA sec 9C.
@@ -1853,6 +1934,15 @@ class TTIRImporter:
             raise Unsupported(
                 f"a tl.dot of {a.dtype} with {b.dtype}: ISA sec 9C's "
                 f"mod[3:2] names ONE input format for both operands")
+        if a.dtype not in ('f16', 'bf16'):
+            raise Unsupported(
+                f"a tl.dot with {a.dtype} inputs",
+                because="ISA sec 9C's mod[3:2] names FP16, BF16 and the two "
+                        "FP8 encodings, and reserves the rest -- there is "
+                        "no binary32 matrix unit to lower this onto",
+                remedy='cast the operands to tl.float16, which is exact for '
+                       'an integer input and a choice for a float one',
+                source='doc/isa/TNCA-ISA-v0.1.md sec 9C')
 
         acc = self.b.accumulator(name=f"acc{len(self.kernel.accumulators)}")
         # `tt.dot`'s third operand is the value accumulated into. Triton
@@ -1907,7 +1997,7 @@ class TTIRImporter:
                         "FP8 encodings as input formats, and nothing else",
                 remedy='convert it, which tl.dot on a narrower type does '
                        'anyway')
-        return self._rows_to_window(self._tile_row_getter(tile), tile.dtype,
+        return self._rows_to_window(self._tile_row_getter(tile), tile.store,
                                     tile.dtype, tile.cols, nrows=tile.rows)
 
     # The largest K for which an INT8 product accumulated in binary32 is
@@ -2002,6 +2092,13 @@ class TTIRImporter:
             return lambda r: v
         raise Unsupported(
             f"a 2-D operand of type {value.get_type()} that is not a tile")
+
+    def _lane0(self):
+        """A mask with lane 0 active and nothing else."""
+        if self._lane0_mask is None:
+            self._lane0_mask = self.b.vcmp(
+                'lt', self.b.arange(), self.b.splat(self.b.const(1)))
+        return self._lane0_mask
 
     def _broadcast_scalar(self, v, dtype):
         return v if v.kind == VECTOR else self.b.splat(v, dtype=dtype)
@@ -2262,7 +2359,8 @@ class TTIRImporter:
         _, rtype = _parse_type(str(res.get_type()))
         if tile is not None:
             self._tiles[res.id()] = Tile(tile.kind, tile.handle, tile.rows,
-                                         tile.cols, rtype, desc=tile.desc)
+                                         tile.cols, rtype, desc=tile.desc,
+                                         store=tile.store)
             return
         _, elem, _bcast = self._float_shape(op)
         _, stype = _parse_type(str(src.get_type()))
@@ -2541,8 +2639,7 @@ class TTIRImporter:
                                          'a 2-D tt.load')
             zero = self.b.const(0)
             self._tiles[op.get_result(0).id()] = self._dma_in(
-                desc.value, [zero, zero], list(shape2d), elem,
-                'a 2-D tt.load')
+                desc, [zero, zero], list(shape2d), elem, 'a 2-D tt.load')
             return
         mask = self._value(op.get_operand(1)) if op.get_num_operands() > 1 \
             else None
@@ -2561,7 +2658,7 @@ class TTIRImporter:
             if mask is not None:
                 raise Unsupported('a masked scalar load')
             self._v[rid] = self.b.sload(
-                addr, size=size, dtype=elem,
+                addr, size=_load_suffix(size, elem), dtype=elem,
                 comment='one element, not a vector')
             return
         if kind == 'broadcast':
@@ -2573,16 +2670,18 @@ class TTIRImporter:
                             'is the same in every lane, so either all of '
                             'the access happens or none of it does')
             self._v[rid] = self.b.splat(
-                self.b.sload(addr, size=size, dtype=elem,
+                self.b.sload(addr, size=_load_suffix(size, elem), dtype=elem,
                              comment='one element, broadcast to every lane'),
                 dtype=elem)
         elif kind == 'contiguous':
             self._v[rid] = self.b.load(addr, mask=mask, other=other,
-                                       dtype=elem, size=size)
+                                       dtype=elem,
+                                       size=_load_suffix(size, elem))
         else:
             self.target.require('gather_scatter', 'emit v.ld.gather')
             self._v[rid] = self.b.gather(addr, index, mask=mask, other=other,
-                                         dtype=elem, size=size)
+                                         dtype=elem,
+                                         size=_load_suffix(size, elem))
 
     def _op_tt_store(self, op):
         ptr, value = op.get_operand(0), op.get_operand(1)
@@ -2627,7 +2726,18 @@ class TTIRImporter:
         if shape is None:
             if mask is not None:
                 raise Unsupported('a masked scalar store')
-            self.b.sstore(addr, self._value(value), size=size)
+            v = self._value(value)
+            if v.kind == VECTOR:
+                # A float scalar lives broadcast in a vector register,
+                # because there is no scalar floating point -- so the
+                # ONE element it stands for is written by a vector store
+                # masked to lane 0. `narrow_lane0_store` turns that back
+                # into an `s.st` once it has proved the mask selects
+                # exactly lane zero.
+                self.b.store(addr, v, size=size, mask=self._lane0(),
+                             comment='one element: lane 0 of a broadcast')
+                return
+            self.b.sstore(addr, v, size=size)
             return
         if kind == 'broadcast':
             raise Unsupported(

@@ -173,18 +173,31 @@ class Tile:
     that the vector unit reaches a row at a time (ISA sec 9B).
     """
 
-    __slots__ = ('kind', 'handle', 'rows', 'cols', 'dtype', 'desc')
+    __slots__ = ('kind', 'handle', 'rows', 'cols', 'dtype', 'desc',
+                 'store')
 
-    def __init__(self, kind, handle, rows, cols, dtype, desc=None):
+    def __init__(self, kind, handle, rows, cols, dtype, desc=None,
+                 store=None):
         self.kind = kind
         self.handle = handle
         self.rows = rows
         self.cols = cols
+        # What the tile MEANS, which is the IR's type for it.
         self.dtype = dtype
         self.desc = desc
+        # What the registers actually hold, which is not always the
+        # same. An accumulator is binary32 whatever the MMA's inputs
+        # were (ISA sec 9C), so `acc.to(tl.float16)` records f16 as the
+        # meaning and leaves f32 in the registers -- the conversion
+        # happens once, on the way out, where sec 8.4's reserved pack is
+        # not needed. Reading `dtype` there instead emitted a
+        # convert-f16-to-f16 and stored the f32 bits.
+        self.store = store or dtype
 
     def __repr__(self):
-        return (f"Tile({self.kind}, {self.rows}x{self.cols}x{self.dtype})")
+        held = '' if self.store == self.dtype else f" held as {self.store}"
+        return (f"Tile({self.kind}, {self.rows}x{self.cols}x{self.dtype}"
+                f"{held})")
 
 
 def f32_bits(value):

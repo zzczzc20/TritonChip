@@ -4,12 +4,17 @@
     python tutorial/examples/08_triton_gemm.py
 
 [05] used the compiler's GEMM planner, which drives the matrix unit.
-This one is a @triton.jit kernel you write yourself, and it runs on the
-vector unit. It is slower, and it is the one you can modify.
+This page writes the same thing as a @triton.jit kernel, twice:
 
-It also shows where this frontend's support currently ends, with the
-exact errors, because knowing the boundary is more useful than
-discovering it.
+  * by hand, broadcasting a scalar of A across a row of B, which runs
+    on the vector unit and is the version you can modify a line of and
+    watch change;
+  * with `tl.dot`, which lowers onto `m.mma.async` -- one instruction
+    for the whole 16x16x16 product.
+
+It also shows where this frontend's support ends, with the exact
+errors, because knowing the boundary is more useful than discovering
+it.
 """
 import struct
 import sys
@@ -47,6 +52,30 @@ def gemm_row_per_program(a_ptr, b_ptr, c_ptr,
                      tl.load(b_ptr + k * N + offs_n))
 
     tl.store(c_ptr + m * N + offs_n, acc)
+
+
+@triton.jit
+def gemm_dot(a_ptr, b_ptr, c_ptr, K: tl.constexpr, N: tl.constexpr,
+             M: tl.constexpr):
+    """The same product, as one `tl.dot`.
+
+    Nothing here is written for this machine. The 2-D index arithmetic
+    is the shape every Triton matmul tutorial has; what the backend
+    does with it is recognise that `om[:, None] * K + ok[None, :]`
+    describes a tile, build a TensorMap for it, and fetch it with the
+    transfer engine -- because a packed FP16 fragment is not something
+    vector loads can assemble (ISA sec 9C.2, and sec 8.4 reserves the
+    pack that would be needed).
+
+    The product itself is one `m.mma.async`, and the result leaves the
+    accumulator a row at a time through the vector unit (sec 9B).
+    """
+    om = tl.arange(0, M)
+    ok = tl.arange(0, K)
+    on = tl.arange(0, N)
+    a = tl.load(a_ptr + om[:, None] * K + ok[None, :])
+    b = tl.load(b_ptr + ok[:, None] * N + on[None, :])
+    tl.store(c_ptr + om[:, None] * N + on[None, :], tl.dot(a, b))
 
 
 def _reason(e):
@@ -129,14 +158,36 @@ def main():
         print(f"          first difference at element {bad}: "
               f"{got[bad]} != {want[bad]}")
 
+    # ---- the same product, as one instruction --------------------------
+    dot = aot.compile_aot(
+        gemm_dot,
+        signature={'a_ptr': '*fp16', 'b_ptr': '*fp16', 'c_ptr': '*fp32',
+                   'K': 'constexpr', 'N': 'constexpr', 'M': 'constexpr'},
+        constexprs={'K': K, 'N': N, 'M': M},
+        profile=PROFILE, options={'opt_level': 2},
+        output='/tmp/tnca-tutorial-08-dot.tnca')
+    asm = dot.asm['asm']
+    print()
+    print(f"compiled  {len(dot.asm['hex'].splitlines())} machine word(s) "
+          f"for the SAME product written as tl.dot")
+    for want_mnem, what in (('td.load', 'the TensorMap snapshot'),
+                            ('t.ld.async', 'the tile fetch'),
+                            ('m.mma.async', 'the 16x16x16 product'),
+                            ('a.vread', 'the accumulator epilogue')):
+        n = sum(1 for ln in asm.splitlines()
+                if ln.strip().startswith(want_mnem))
+        print(f"  {want_mnem:<14s} x{n:<3d} {what}")
+    print(f"  scratch       {dot.manifest['resources']['scratch_bytes']} "
+          f"byte(s) for the descriptors it writes")
+
     print()
     print("where this frontend's support currently ends")
     print("(these are the real errors, not hypotheticals):")
     print()
 
     @triton.jit
-    def uses_dot(a_ptr, b_ptr, c_ptr, K: tl.constexpr, N: tl.constexpr,
-                 BLOCK: tl.constexpr):
+    def dot_f32(a_ptr, b_ptr, c_ptr, K: tl.constexpr, N: tl.constexpr,
+                BLOCK: tl.constexpr):
         offs_m = tl.arange(0, BLOCK)
         offs_n = tl.arange(0, BLOCK)
         offs_k = tl.arange(0, BLOCK)
@@ -154,7 +205,7 @@ def main():
         tl.store(o_ptr + offs, acc)
 
     for label, fn, sig, ce in (
-            ('tl.dot', uses_dot,
+            ('tl.dot on f32', dot_f32,
              {'a_ptr': '*fp32', 'b_ptr': '*fp32', 'c_ptr': '*fp32',
               'K': 'constexpr', 'N': 'constexpr', 'BLOCK': 'constexpr'},
              {'K': 16, 'N': 16, 'BLOCK': 16}),
@@ -171,18 +222,23 @@ def main():
             print(f"  {'':<28s} {_reason(e)}")
 
     print()
-    print("  `tl.dot` is refused by Triton's OWN frontend for this "
-          "target, before")
-    print("  anything of ours runs: the target publishes no dot "
-          "precisions at all,")
-    print("  so no argument to input_precision is valid. A loop whose "
-          "bound is a")
-    print("  runtime value stays an scf.for, whose bounds arrive as "
-          "arith.bitcast;")
-    print("  neither has a TNCA lowering. That is why the kernel above "
-          "uses")
-    print("  tl.static_range: it is unrolled before the backend ever "
-          "sees it.")
+    print("  `tl.dot` itself is supported -- the fp16 kernel above is "
+          "one, and it")
+    print("  becomes a single m.mma.async. What is refused is a dot "
+          "with binary32")
+    print("  inputs, because ISA sec 9C's mod[3:2] names FP16, BF16 and "
+          "the two")
+    print("  FP8 encodings and reserves the rest: there is no f32 "
+          "matrix unit to")
+    print("  lower it onto, and widening the operands behind your back "
+          "would be")
+    print("  a different computation.")
+    print()
+    print("  A loop whose bound is a runtime value stays an scf.for, "
+          "which has no")
+    print("  TNCA lowering. That is why the kernels here use "
+          "tl.static_range: it")
+    print("  is unrolled before the backend ever sees it.")
     return 0 if ok else 1
 
 

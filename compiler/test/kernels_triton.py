@@ -24,22 +24,37 @@ def mul_add_kernel(x_ptr, y_ptr, o_ptr, n, BLOCK: tl.constexpr):
     tl.store(o_ptr + offs, a * b + a, mask=mask)
 
 
-@triton.jit
+@triton.jit(noinline=True)
 def scale_helper(v, s):
-    """A @triton.jit helper, called with noinline=True so the module really
-    has two `tt.func`s. IR-04 needs a second function that must NOT be
-    lowered into the kernel that calls it."""
+    """A @triton.jit helper the inliner must leave alone.
+
+    The docstring here used to claim `noinline=True` while the
+    decorator said nothing of the kind. It survived anyway, because
+    nothing ran an inliner -- and when R3.7 started running one at
+    every optimisation level (`tt.call` blocks seven TileBench
+    operators), the second `tt.func` vanished and IR-04 and IR-05 both
+    lost the thing they were testing.
+
+    Its arguments are scalars because Triton refuses to leave a
+    `noinline` function uninlined when it is called with a tensor.
+    """
     return v * s
 
 
 @triton.jit
 def calls_a_helper(x_ptr, y_ptr, o_ptr, n, BLOCK: tl.constexpr):
+    """A kernel whose module really has two `tt.func`s.
+
+    IR-04 needs a second function that must not be lowered into this
+    one; IR-05 needs the `tt.call` to it, which has no lowering.
+    """
     pid = tl.program_id(0)
+    limit = scale_helper(n, 1)
     offs = pid * BLOCK + tl.arange(0, BLOCK)
-    mask = offs < n
+    mask = offs < limit
     a = tl.load(x_ptr + offs, mask=mask, other=0.0)
     b = tl.load(y_ptr + offs, mask=mask, other=0.0)
-    tl.store(o_ptr + offs, scale_helper(a, b), mask=mask)
+    tl.store(o_ptr + offs, a * b, mask=mask)
 
 
 @triton.jit

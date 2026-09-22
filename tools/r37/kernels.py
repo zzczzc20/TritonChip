@@ -502,18 +502,25 @@ def interleave(a_ptr, b_ptr, o_ptr, n, BLOCK: tl.constexpr):
 
 @triton.jit
 def bitonic_sort(x_ptr, o_ptr, BLOCK: tl.constexpr, STAGES: tl.constexpr):
-    """One bitonic block sort, entirely in registers."""
+    """One bitonic block sort.
+
+    The compare-exchange partner is lane `i ^ span`, which is a
+    cross-lane read. A GPU does it with a warp shuffle; a machine
+    without one does it through memory, and the barrier between the
+    store and the gather is what says so.
+    """
     i = tl.arange(0, BLOCK)
     v = tl.load(x_ptr + i)
     for k in tl.static_range(STAGES):
         for j in tl.static_range(k + 1):
             span = 1 << (k - j)
-            partner = tl.load(x_ptr + (i ^ span))
+            tl.store(o_ptr + i, v)
+            tl.debug_barrier()
+            partner = tl.load(o_ptr + (i ^ span))
             up = ((i >> (k + 1)) & 1) == 0
-            lo = tl.minimum(v, partner)
-            hi = tl.maximum(v, partner)
             take_low = ((i & span) == 0) == up
-            v = tl.where(take_low, lo, hi)
+            v = tl.where(take_low, tl.minimum(v, partner),
+                         tl.maximum(v, partner))
     tl.store(o_ptr + i, v)
 
 

@@ -291,6 +291,37 @@ class Builder:
         self._emit('vcvt', [v], [a], src=src, dst=dst, comment=comment)
         return v
 
+    def vextract(self, v, lane, dtype=None):
+        """One lane of a vector, into a scalar register (ISA 0x08).
+
+        `Sd = zext(Va[lane])`, so the scalar holds the lane's 32 bits --
+        which for a float is its pattern, and that is what a scalar
+        register holds for a float anyway.
+        """
+        out = self._value(SCALAR, dtype or v.dtype, hint='e')
+        self._emit('vextract', [out], [v], lane=lane)
+        return out
+
+    def vinsert(self, v, lane, scalar):
+        """One scalar into one lane, the others preserved (ISA 0x09).
+
+        In place, like `acc_write`: the instruction reads its
+        destination as well as writing it, so the value has to be one
+        object across the sixteen inserts that fill a register rather
+        than sixteen values the allocator is free to separate.
+        """
+        self._emit('vinsert', [], [v, scalar], lane=lane)
+
+    def vshuffle(self, kind, v, amount, dtype=None):
+        """A lane permutation (ISA sec 0x13 SHUF).
+
+        `xor` gives lane i the value from lane `i ^ amount`, which is
+        the compare-exchange partner every bitonic stage asks for.
+        """
+        out = self._value(VECTOR, dtype or v.dtype, hint='sh')
+        self._emit('vshuffle', [out], [v, amount], op=kind)
+        return out
+
     def vcmp(self, cc, a, b):
         p = self._value(PRED, 'i1', hint='m')
         self._emit('vcmp', [p], [a, b], cc=cc)
@@ -330,8 +361,9 @@ class Builder:
         self._emit('load', [v], [base], mask=mask, other=other, size=size)
         return v
 
-    def store(self, base, value, *, mask=None, size='w'):
-        self._emit('store', [], [base, value], mask=mask, size=size)
+    def store(self, base, value, *, mask=None, size='w', comment=None):
+        self._emit('store', [], [base, value], mask=mask, size=size,
+                   comment=comment)
 
     def gather(self, base, index, *, mask=None, other=0, dtype='f32',
                size='w'):
@@ -356,6 +388,16 @@ class Builder:
         return v
 
     def sstore(self, base, value, offset=0, size='d'):
+        # `s.st` names its data register in field `d` and the assembler
+        # prints it as `sN`. Handing it a vector register printed that
+        # vector's INDEX as a scalar one, so a reduction in v0 stored
+        # s0 -- which ISA sec 3 defines to read as zero. Every affected
+        # kernel wrote zeros and none of them failed to compile.
+        for v, what in ((base, 'address'), (value, 'value')):
+            if getattr(v, 'kind', SCALAR) != SCALAR:
+                raise TypeError(
+                    f"s.st takes scalar registers; its {what} is a "
+                    f"{v.kind} ({v.name})")
         self._emit('sstore', [], [base, value], offset=offset, size=size)
 
     # ---- atomics (ISA sec 9.2) -------------------------------------------
@@ -371,6 +413,16 @@ class Builder:
         self._emit('atomic', [out], [addr, value], op=op, size=size,
                    order=order, scope=scope)
         return out
+
+    def fence(self, *, order='acq_rel', scope='device'):
+        """Wait until every access this core has issued is complete.
+
+        ISA sec 9.2: the LSU waits for a response to a store as well as
+        to a load, so draining the LSU IS the fence at core and device
+        scope. Asynchronous transfers are deliberately outside it --
+        they complete against an mbarrier.
+        """
+        self._emit('fence', [], [], order=order, scope=scope)
 
     def atomic_cas(self, addr, expect, desired, *, size='w', order='relaxed',
                    scope='device', dtype='i32'):

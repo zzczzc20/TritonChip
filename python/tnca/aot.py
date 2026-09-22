@@ -77,25 +77,11 @@ def semantic_options(options):
 # signature and `f32` in MLIR; both mean one binary32.
 _TRITON_SPELLING = {'fp32': 'f32', 'fp64': 'f64', 'u1': 'bool'}
 
-# The shape bounds the matrix unit works in, which the Triton frontend
-# asks the target for before it will build a `tt.dot` at all. Passing an
-# empty dict -- which is what this did until R3.7 -- made every kernel
-# containing a `tl.dot` fail with "target doesn't provide lower shape
-# bounds for dot", which reads like a missing feature and was a missing
-# callback.
-#
-# ISA sec 9C fixes the fragment at 16x16 with K in {16, 32, 64}, so the
-# smallest product the hardware performs is 16x16x16. Triton pads an
-# operand up to these bounds rather than refusing it, which is what lets
-# a kernel written for a 16x16 tile compile here unchanged.
-MMA_MIN_M = MMA_MIN_N = MMA_MIN_K = 16
-
-
-def _min_dot_size(lhs_type, rhs_type):
-    return (MMA_MIN_M, MMA_MIN_N, MMA_MIN_K)
-
-
-_CODEGEN_FNS = {'min_dot_size': _min_dot_size}
+# Both of these live in tnca_cc.triton_options, because there is a
+# second caller -- the test bridge -- and when each had its own copy,
+# fixing one left `tl.dot` refused by the other.
+from tnca_cc.triton_options import (CODEGEN_FNS as _CODEGEN_FNS,
+                                    frontend_options as _frontend_options)
 
 
 def _sha(data):
@@ -536,34 +522,13 @@ def _compile_triton(fn, kernel_name, signature, constexprs, target, prov,
 
     params = _signature_types(signature, param_names)
 
-    class _Options:
-        num_warps = 1
-        num_ctas = 1
-        num_stages = 1
-        debug = False
-        sanitize_overflow = False
-        arch = None
-        # What `tl.dot(a, b, input_precision=...)` may ask for. The
-        # empty tuple here was not a policy, it was an oversight, and it
-        # made the frontend refuse EVERY `tl.dot` with "input_precision
-        # must be one of (). Got ieee" -- a message about a Triton option
-        # for a kernel that had never mentioned one.
-        #
-        # `ieee` is the one this backend implements, and it is the whole
-        # of what ISA sec 9C.1 specifies: one rounding per accumulation
-        # step, in increasing k order. `tf32` and `tf32x3` are absent
-        # because the matrix unit has no tf32 input format (sec 9C), so
-        # accepting them would mean silently computing something else.
-        allowed_dot_input_precisions = ('ieee',)
-        launch_cooperative_grid = False
-        backend_name = 'tnca'
-
     src = ASTSource(fn, signature=signature, constexprs=constexprs)
     ctx = ir.context()
     ir.load_dialects(ctx)
     try:
-        module = src.make_ir(GPUTarget('tnca', 0, 32), _Options(),
-                             _CODEGEN_FNS, {}, ctx)
+        module = src.make_ir(GPUTarget('tnca', 0, 32),
+                             _frontend_options('tnca'), _CODEGEN_FNS, {},
+                             ctx)
     except Exception as e:
         raise CompileError(f"the Triton frontend refused this kernel: {e}",
                            where=f"@triton.jit {kernel_name}")

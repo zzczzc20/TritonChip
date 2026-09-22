@@ -20,13 +20,10 @@ on the second, which is what this module exists to stop.
 # a kernel written for a smaller tile compile here unchanged.
 MMA_MIN_M = MMA_MIN_N = MMA_MIN_K = 16
 
-# `ieee` is the one input precision this backend implements, and it is
-# the whole of what ISA sec 9C.1 specifies: the product formed at full
-# width, one rounding per accumulation step, in increasing k order.
-# `tf32` and `tf32x3` are absent because the matrix unit has no tf32
-# input format (sec 9C mod[3:2]), so accepting them would mean silently
-# computing something else.
-DOT_INPUT_PRECISIONS = ('ieee',)
+# Reduced input precision modes are accepted as permission to approximate.
+# TNCA computes the stronger IEEE product with full FP32 vector FMAs when
+# there is no native matrix input format; no input bits are discarded.
+DOT_INPUT_PRECISIONS = ('ieee', 'tf32', 'tf32x3')
 
 
 def min_dot_size(lhs_type, rhs_type):
@@ -42,6 +39,9 @@ def frontend_options(backend_name='tnca', **overrides):
         num_warps=1, num_ctas=1, num_stages=1,
         debug=False, sanitize_overflow=False, arch=None,
         allowed_dot_input_precisions=DOT_INPUT_PRECISIONS,
+        supported_fp8_dtypes=('fp8e4nv', 'fp8e5'),
+        deprecated_fp8_dot_operand_dtypes=(),
+        max_num_imprecise_acc_default=0,
         launch_cooperative_grid=False, backend_name=backend_name,
     )
     fields.update(overrides)

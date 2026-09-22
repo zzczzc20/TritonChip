@@ -967,12 +967,20 @@ r36-config-tests: $(R2_DATA_STAMP) | dirs
 # A compiler that emits plausible instructions for all forty-five and
 # the wrong answer for one has not supported forty-five operators, and
 # the first target alone would not notice.
-.PHONY: r37-coverage r37-run r37
+.PHONY: r37-coverage r37-run r37 r37-representative-coverage r37-representative-run
+TILEBENCH_SOURCE ?= ../Tilebench
 r37-coverage: $(R2_DATA_STAMP) | dirs
-	@$(TRITON_PYTHON) tools/r37/coverage.py \
-	   --json $(BUILD)/r37_coverage.json
+	@$(TRITON_PYTHON) tools/r37/upstream.py --source $(TILEBENCH_SOURCE) \
+	   --json $(BUILD)/r37_upstream.json
 
 r37-run: $(BUILD)/tb_core.vvp $(R2_DATA_STAMP) | dirs
+	@$(TRITON_PYTHON) tools/r37/upstream_run.py --source $(TILEBENCH_SOURCE) \
+	   --json $(BUILD)/r37_upstream_run.json
+
+r37-representative-coverage: $(R2_DATA_STAMP) | dirs
+	@$(TRITON_PYTHON) tools/r37/coverage.py --json $(BUILD)/r37_coverage.json
+
+r37-representative-run: $(BUILD)/tb_core.vvp $(R2_DATA_STAMP) | dirs
 	@$(TRITON_PYTHON) tools/r37/run.py --json $(BUILD)/r37_run.json
 
 r37: r37-coverage r37-run

@@ -161,6 +161,7 @@ class CodeGen:
         for i, op in enumerate(ops):
             for v in op.results:
                 defined_at.setdefault(id(v), i)
+                self._last_use.setdefault(id(v), i)
 
         def note(v, i):
             if v is not None and getattr(v, 'kind', None):
@@ -442,7 +443,8 @@ class CodeGen:
 
     def _op_assign(self, op):
         dst, src = op.operands
-        self._emit('s.mov', f"s{dst.reg}", f"s{src.reg}")
+        bank = 'v' if dst.kind == VECTOR else 's'
+        self._emit(f'{bank}.mov', f'{bank}{dst.reg}', f'{bank}{src.reg}')
 
     # ---- vector ops -------------------------------------------------------
     def _op_arange(self, op):
@@ -566,6 +568,8 @@ class CodeGen:
         v = op.results[0]
         self._alloc(v)
         src, dst = op.attrs['src'], op.attrs['dst']
+        aliases = {'f8E4M3FN': 'e4m3', 'f8E5M2': 'e5m2'}
+        src, dst = aliases.get(src, src), aliases.get(dst, dst)
         # sec 8.4 gives int<->float their own opcodes and float->float a
         # shared one; the assembler spells the first two out.
         self._emit(f"vf.cvt.{src}.{dst}", f"v{v.reg}", f"v{a.reg}",

@@ -248,10 +248,27 @@ jobs:
       # A compiler that emits plausible instructions for all forty-five
       # and the wrong answer for one has not supported forty-five, and
       # the coverage number alone would not notice.
+      - name: Check out the validated TileBench sources
+        uses: actions/checkout@v4
+        with:
+          repository: Deep-Learning-Profiling-Tools/Tilebench
+          ref: 6e2cf155dfe01f4660540d187c81b09eb55f394f
+          path: sim/build/Tilebench
+          persist-credentials: false
+
       - name: R3.7 TileBench coverage, and what it computes
         run: |
-          make r37-coverage TRITON_PYTHON=$HOME/tritonenv/bin/python
-          make r37-run TRITON_PYTHON=$HOME/tritonenv/bin/python
+          make r37-coverage TRITON_PYTHON=$HOME/tritonenv/bin/python TILEBENCH_SOURCE=sim/build/Tilebench
+          make r37-run TRITON_PYTHON=$HOME/tritonenv/bin/python TILEBENCH_SOURCE=sim/build/Tilebench
+
+      - name: Preserve original TileBench validation reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: r37-original-tilebench
+          path: |
+            sim/build/r37_upstream.json
+            sim/build/r37_upstream_run.json
 
       # The hardware export, built and then proved from somewhere else
       # entirely: elaborated with no library search of ours and run

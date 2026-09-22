@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
-"""How many of TileBench's 45 operators this compiler can build, and what
-stops the rest.
+"""Compile the representative operator regression kernels.
+
+Original TileBench source compatibility is tested by upstream.py.
 
 The output that matters is the blocker table: failures grouped by their
 diagnostic, most common first. That is the work queue -- fixing the top
@@ -67,13 +68,18 @@ def run(only=None, json_out=None, verbose=False):
             continue
         fn, sig, ce = spec
         try:
-            art = aot.compile_aot(
-                fn, signature=sig, constexprs=ce, profile=PROFILE,
-                options={'opt_level': 2},
-                output=os.path.join(tempfile.mkdtemp(), f'{name}.tnca'))
+            variants = {}
+            with tempfile.TemporaryDirectory(prefix='tnca-r37-') as tmp:
+                for label, overrides in entry.get(
+                        'signature_variants', {'default': {}}).items():
+                    art = aot.compile_aot(
+                        fn, signature=dict(sig, **overrides), constexprs=ce,
+                        profile=PROFILE, options={'opt_level': 2},
+                        output=os.path.join(tmp, f'{name}-{label}.tnca'))
+                    variants[label] = len(art.asm['hex'].splitlines())
             rows.append({'id': name, 'category': entry['category'],
                          'state': 'COMPILES', 'blocker': None,
-                         'words': len(art.asm['hex'].splitlines())})
+                         'words': max(variants.values()), 'variants': variants})
         except TncaError as e:
             rows.append({'id': name, 'category': entry['category'],
                          'state': 'REFUSED',
@@ -85,7 +91,7 @@ def run(only=None, json_out=None, verbose=False):
                          'blocker': _blocker(f"{type(e).__name__}: {e}"),
                          'detail': f"{type(e).__name__}: {e}"[:160]})
 
-    total = len(SPEC['operators'])
+    total = len(rows)
     built = [r for r in rows if r['state'] == 'COMPILES']
     written = [r for r in rows if r['state'] != 'NOT WRITTEN']
     print(f"TileBench coverage: {len(built)}/{total} operator(s) build "
@@ -138,6 +144,9 @@ def main():
     ap.add_argument('--verbose', action='store_true')
     ap.add_argument('--json')
     args = ap.parse_args()
+    known = {o['id'] for o in SPEC['operators']}
+    if args.only and set(args.only) - known:
+        ap.error('unknown operators: ' + ', '.join(sorted(set(args.only) - known)))
     _rows, built, total = run(args.only, args.json, args.verbose)
     return 0 if len(built) == total else 1
 

@@ -179,6 +179,8 @@ class Builder:
         return v
 
     def sbini(self, op, a, imm, comment=None):
+        if not -32768 <= imm <= 32767:
+            return self.sbin(op, a, self.const(imm), comment=comment)
         v = self._value(SCALAR, a.dtype, hint='s')
         self._emit('sbini', [v], [a], op=op, imm=imm, comment=comment)
         return v

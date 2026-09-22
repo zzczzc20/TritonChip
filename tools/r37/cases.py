@@ -17,6 +17,7 @@ what it used (sec 8.8's 2**-22, plus a rounding or two), and the entry
 says which operation put it there.
 """
 import math
+import random
 import struct
 
 VLEN = 16
@@ -59,13 +60,33 @@ def sigmoid(v):
     return 1.0 / (1.0 + math.exp(-v))
 
 
-def build(Case):
+def build(Case, seed=None):
     """Every case, built against the harness's `Case`."""
     C = {}
+    rng = random.Random(seed)
+
+    def vary(values, kind='float'):
+        if seed is None:
+            return values
+        if kind == 'permutation':
+            result = list(values)
+            rng.shuffle(result)
+            return result
+        if kind == 'positive':
+            return [rng.randint(1, 16) * 0.25 for _ in values]
+        if kind == 'int8':
+            return [rng.randint(-128, 127) for _ in values]
+        if kind == 'keys':
+            return [rng.randrange(32) for _ in values]
+        if kind == 'mask':
+            return [rng.randrange(2) for _ in values]
+        return [rng.randint(-16, 16) * 0.25 for _ in values]
 
     # ---- point-wise ------------------------------------------------------
     x = ramp(VLEN)
+    x = vary(x)
     y = [i * 0.25 + 1.0 for i in range(VLEN)]
+    y = vary(y)
     C['vector_add'] = Case(
         'vector_add',
         buffers={'x_ptr': ('fp32', x), 'y_ptr': ('fp32', y),
@@ -98,6 +119,7 @@ def build(Case):
         note='tl.exp, then a reciprocal')
 
     b = [1.0 + i * 0.125 for i in range(VLEN)]
+    b = vary(b)
     C['swiglu'] = Case(
         'swiglu',
         buffers={'a_ptr': ('fp32', signed), 'b_ptr': ('fp32', b),
@@ -117,6 +139,7 @@ def build(Case):
         expect=[int(v / 0.5) for v in qx])
 
     bias = [0.25 * i for i in range(VLEN)]
+    bias = vary(bias)
 
     def gelu_tanh(v):
         inner = 0.7978845608 * (v + 0.044715 * v * v * v)
@@ -134,6 +157,7 @@ def build(Case):
         note="GELU's tanh form: an exp and a divide")
 
     keep = [1.0 if i % 3 else 0.0 for i in range(VLEN)]
+    keep = vary(keep, 'mask')
     C['dropout'] = Case(
         'dropout',
         buffers={'x_ptr': ('fp32', x), 'keep_ptr': ('fp32', keep),
@@ -143,6 +167,7 @@ def build(Case):
         rtol=TOL_DIV)
 
     q8 = [(i * 5) % 61 - 30 for i in range(VLEN)]
+    q8 = vary(q8, 'int8')
     C['dequantize_rowwise'] = Case(
         'dequantize_rowwise',
         buffers={'q_ptr': ('i8', q8), 's_ptr': ('fp32', [0.25] * 4),
@@ -160,9 +185,13 @@ def build(Case):
 
     # rope reads x[0:n] and x[n:2n] and writes both halves.
     xr = ramp(VLEN, 0.25)
+    xr = vary(xr)
     xi = ramp(VLEN, -0.125, 1.0)
+    xi = vary(xi)
     cs = [0.5] * VLEN
+    cs = vary(cs)
     sn = [0.25] * VLEN
+    sn = vary(sn)
     C['rope'] = Case(
         'rope',
         buffers={'x_ptr': ('fp32', xr + xi), 'cos_ptr': ('fp32', cs),
@@ -174,6 +203,7 @@ def build(Case):
 
     # ---- reduction and normalisation --------------------------------------
     rx = wavy(VLEN)
+    rx = vary(rx)
     peak = max(rx)
     ex = [math.exp(v - peak) for v in rx]
     tot = sum(ex)
@@ -185,6 +215,7 @@ def build(Case):
         note='tl.max, tl.exp, tl.sum and a divide')
 
     w = [1.0 + 0.125 * i for i in range(VLEN)]
+    w = vary(w)
     eps = 0.0
     rms = math.sqrt(sum(v * v for v in rx) / VLEN + eps)
     C['rmsnorm'] = Case(
@@ -199,6 +230,7 @@ def build(Case):
     d = [v - mean for v in rx]
     var = sum(v * v for v in d) / VLEN
     bias2 = [0.25 * i for i in range(VLEN)]
+    bias2 = vary(bias2)
     C['layernorm'] = Case(
         'layernorm',
         buffers={'x_ptr': ('fp32', rx), 'w_ptr': ('fp32', w),
@@ -219,7 +251,9 @@ def build(Case):
         note='an exp, a sum and a log')
 
     pp = [0.0625 * ((i % 7) + 1) for i in range(VLEN)]
+    pp = vary(pp, 'positive')
     qq = [0.0625 * ((i % 5) + 2) for i in range(VLEN)]
+    qq = vary(qq, 'positive')
     C['kl_divergence'] = Case(
         'kl_divergence',
         buffers={'p_ptr': ('fp32', pp), 'q_ptr': ('fp32', qq),
@@ -229,7 +263,9 @@ def build(Case):
         rtol=TOL_CHAIN, atol=2 ** -18, note='a divide and a log per element')
 
     mu = [0.5] * VLEN
+    mu = vary(mu)
     va = [4.0] * VLEN
+    va = vary(va, 'positive')
     C['batch_normalization'] = Case(
         'batch_normalization',
         buffers={'x_ptr': ('fp32', x), 'mean_ptr': ('fp32', mu),
@@ -247,7 +283,9 @@ def build(Case):
                  'idx_ptr': ('i32', [0] * 4)},
         scalars={'n': VLEN}, out='o_ptr',
         expect=[max(gex) / sum(gex)], rtol=TOL_EXP,
-        note='the winning softmax weight')
+        extra_outputs=[('idx_ptr', 0, [max(i for i, v in enumerate(rx)
+                                         if v == max(rx))])],
+        note='the winning softmax weight and expert index')
 
     hv = [(i * 5) % 4 for i in range(VLEN)]
     C['histogramming'] = Case(
@@ -278,8 +316,10 @@ def build(Case):
     A = [f16(small_ints(1, shift=5)[0] if False else
              float((i * 7 + j * 3) % 11 - 5))
          for i in range(T) for j in range(T)]
+    A = vary(A)
     B = [f16(float((i * 5 + j * 2) % 9 - 4))
          for i in range(T) for j in range(T)]
+    B = vary(B)
 
     def matmul(a, bm, M=T, N=T, K=T):
         return [sum(a[m * K + k] * bm[k * N + n] for k in range(K))
@@ -300,7 +340,9 @@ def build(Case):
         note='tl.make_tensor_descriptor, onto td.load and t.ld.async')
 
     Ai = [(i * 7 + j * 3) % 11 - 5 for i in range(T) for j in range(T)]
+    Ai = vary(Ai, 'int8')
     Bi = [(i * 5 + j * 2) % 9 - 4 for i in range(T) for j in range(T)]
+    Bi = vary(Bi, 'int8')
     C['matmul_int8'] = Case(
         'matmul_int8',
         buffers={'a_ptr': ('i8', Ai), 'b_ptr': ('i8', Bi),
@@ -315,23 +357,28 @@ def build(Case):
     SPLIT = 2
     A2 = [f16(float((i * 7 + j * 3) % 11 - 5))
           for i in range(T) for j in range(T * SPLIT)]
+    A2 = vary(A2)
     B2 = [f16(float((i * 5 + j * 2) % 9 - 4))
           for i in range(T * SPLIT) for j in range(T)]
+    B2 = vary(B2)
     slice0_a = [A2[m * (T * SPLIT) + k] for m in range(T) for k in range(T)]
     slice0_b = [B2[k * T + n] for k in range(T) for n in range(T)]
     C['streamk_matmul'] = Case(
         'streamk_matmul',
         buffers={'a_ptr': ('fp16', A2), 'b_ptr': ('fp16', B2),
                  'c_ptr': ('fp32', [0] * (T * T))},
-        out='c_ptr', expect=matmul(slice0_a, slice0_b),
+        out='c_ptr', expect=matmul(slice0_a, slice0_b), preserve_output=True,
         note='256 atomic adds, each a compare-and-swap loop')
 
     sm_scale = 0.25
     Q = [f16(float((i + j) % 5 - 2) * 0.5) for i in range(T) for j in range(T)]
+    Q = vary(Q)
     K_ = [f16(float((i * 3 + j) % 7 - 3) * 0.25)
           for i in range(T) for j in range(T)]
+    K_ = vary(K_)
     V = [f16(float((i * 2 + j * 5) % 6 - 3) * 0.5)
          for i in range(T) for j in range(T)]
+    V = vary(V)
 
     def attention(q, k, v, scale):
         kt = [k[n * T + d] for d in range(T) for n in range(T)]
@@ -398,6 +445,7 @@ def build(Case):
              'memory')
 
     qd = [f16(float((i % 5) - 2) * 0.5) for i in range(T)]
+    qd = vary(qd)
 
     def decode(q, k, v, scale):
         s = [sum(k[n * T + d] * q[d] for d in range(T)) * scale
@@ -423,7 +471,9 @@ def build(Case):
     # ---- stencil and convolution ------------------------------------------
     N = 16
     conv_w = [0.5, 0.25, 0.125]
+    conv_w = vary(conv_w)
     cx = ramp(N + 4, 0.25)
+    cx = vary(cx)
     C['1d_conv'] = Case(
         'conv1d' if False else '1d_conv',
         buffers={'x_ptr': ('fp32', cx), 'w_ptr': ('fp32', conv_w),
@@ -434,12 +484,14 @@ def build(Case):
 
     plane = [float((i * 3 + j) % 7) * 0.25
              for i in range(N + 4) for j in range(N + 4)]
+    plane = vary(plane)
 
     def at(row, col):
         return plane[row * N + col] if 0 <= row * N + col < len(plane) else 0.0
 
     w2 = [0.5, 0.25, 0.125, 0.0625, 0.03125, 0.015625,
           0.5, 0.25, 0.125]
+    w2 = vary(w2)
     C['2d_conv'] = Case(
         '2d_conv',
         buffers={'x_ptr': ('fp32', plane), 'w_ptr': ('fp32', w2),
@@ -450,9 +502,12 @@ def build(Case):
                 for c in range(N)])
 
     w3 = [0.5 ** ((i % 5) + 1) for i in range(27)]
+    w3 = vary(w3)
     cube = [float((i * 3 + j * 5) % 7) * 0.25
             for i in range(N * (N + 4)) for j in range(1)]
+    cube = vary(cube)
     cube = [float((i * 3) % 7) * 0.25 for i in range(N * N * 3)]
+    cube = vary(cube)
     C['3d_conv'] = Case(
         '3d_conv',
         buffers={'x_ptr': ('fp32', cube), 'w_ptr': ('fp32', w3),
@@ -466,6 +521,7 @@ def build(Case):
     PN = 32
     pool = [float((i * 5 + j * 3) % 13) * 0.25
             for i in range(4) for j in range(PN)]
+    pool = vary(pool)
     C['2d_max_pooling'] = Case(
         '2d_max_pooling',
         buffers={'x_ptr': ('fp32', pool), 'o_ptr': ('fp32', [0] * VLEN)},
@@ -475,6 +531,7 @@ def build(Case):
                 for c in range(VLEN)])
 
     blur = [float((i * 7) % 11) * 0.25 for i in range(N * 3)]
+    blur = vary(blur)
     C['gaussian_blur'] = Case(
         'gaussian_blur',
         buffers={'x_ptr': ('fp32', blur), 'o_ptr': ('fp32', [0] * N)},
@@ -486,6 +543,7 @@ def build(Case):
     # program_id 0 that row is at a negative offset -- so the pointer
     # points one row into its buffer.
     jac = [float((i * 3) % 5) * 0.25 for i in range(N * 3)]
+    jac = vary(jac)
     C['jacobi_stencil_2d'] = Case(
         'jacobi_stencil_2d',
         buffers={'x_ptr': ('fp32', jac), 'o_ptr': ('fp32', [0] * (N * 3))},
@@ -500,6 +558,7 @@ def build(Case):
         scalars={'n': VLEN}, out='o_ptr', expect=list(x))
 
     M = [float((i * 7 + j) % 13) * 0.25 for i in range(T) for j in range(T)]
+    M = vary(M)
     C['matrix_transpose'] = Case(
         'matrix_transpose',
         buffers={'x_ptr': ('fp32', M), 'o_ptr': ('fp32', [0] * (T * T))},
@@ -513,6 +572,7 @@ def build(Case):
         scalars={'n': VLEN}, out='o_ptr', expect=list(reversed(x)))
 
     perm = [(i * 7) % VLEN for i in range(VLEN)]
+    perm = vary(perm, 'permutation')
     dest = [0.0] * VLEN
     for i, pv in enumerate(perm):
         dest[pv] = x[i]
@@ -523,7 +583,9 @@ def build(Case):
         scalars={'n': VLEN}, out='o_ptr', expect=dest)
 
     ia = ramp(VLEN, 0.5)
+    ia = vary(ia)
     ib = ramp(VLEN, 0.25, 100.0)
+    ib = vary(ib)
     inter = []
     for a_, b_ in zip(ia, ib):
         inter += [a_, b_]
@@ -534,6 +596,7 @@ def build(Case):
         scalars={'n': VLEN}, out='o_ptr', expect=inter)
 
     sv = [float((i * 11) % 16) for i in range(VLEN)]
+    sv = vary(sv)
     C['bitonic_sort'] = Case(
         'bitonic_sort',
         buffers={'x_ptr': ('fp32', sv), 'o_ptr': ('fp32', [0] * VLEN)},
@@ -541,6 +604,7 @@ def build(Case):
         note='four bitonic stages, entirely in registers')
 
     keys = [(i * 5 + 3) % 16 for i in range(VLEN)]
+    keys = vary(keys, 'keys')
     zeros_before = 0
     ones_total = sum(1 for k in keys if k & 1)
     ones_before = 0
@@ -560,6 +624,7 @@ def build(Case):
              'partial kept')
 
     tv = wavy(VLEN, 0.5, -4.0)
+    tv = vary(tv)
     ranks = [sum(1 for o in tv if o > v) for v in tv]
     C['top_k_selection'] = Case(
         'top_k_selection',

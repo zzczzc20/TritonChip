@@ -35,6 +35,7 @@ venv/
 tags
 
 # ---- Generated artifacts ----
+*.tnca
 *.hex
 *.bin.txt
 /tmp/

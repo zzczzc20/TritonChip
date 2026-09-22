@@ -59,7 +59,7 @@ module tnca_device;
     parameter VREGS_PER_RCTX = 64;
     parameter PHYS_VREGS     = NUM_RCTX * VREGS_PER_RCTX;
     parameter PHYS_W         = 7;
-    parameter WORDS          = 16384;
+    parameter WORDS          = 65536;
     parameter MEM_LATENCY    = 1;
     parameter RANDOM_STALL   = 0;
     parameter MEM_REORDER    = 0;

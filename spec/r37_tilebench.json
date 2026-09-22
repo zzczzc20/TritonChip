@@ -2,8 +2,8 @@
   "format": "tnca-tilebench-coverage/1",
   "source": "https://github.com/Deep-Learning-Profiling-Tools/Tilebench",
   "about": [
-    "The 45 TileBench operators. make r37 compiles and executes original JIT function bodies from TILEBENCH_SOURCE.",
-    "upstream_source identifies the original module; upstream.py and upstream_run.py record exact source hashes, entry points and launch configurations.",
+    "The 45 TileBench operators. make r37 compiles and executes original JIT function bodies from TILEBENCH_SOURCE through public AOT and Session APIs at O0/O1/O2.",
+    "upstream_source identifies the original module; aot_run.py records optimization levels, source hashes, artifacts and numerical results; upstream.py and upstream_run.py retain the direct compiler diagnostics.",
     "kernel identifies the older representative regression kernel. Passing it does not establish original-source compatibility.",
     "Compilation and numerical RTL execution are separate gates. Missing stages or numerical cases never count as passes."
   ],

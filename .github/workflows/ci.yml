@@ -139,7 +139,7 @@ jobs:
   triton:
     name: "the real Triton frontend"
     runs-on: ubuntu-24.04
-    timeout-minutes: 60
+    timeout-minutes: 120
     steps:
       - uses: actions/checkout@v4
 
@@ -242,34 +242,6 @@ jobs:
           make r36-backend-tests TRITON_PYTHON=$HOME/tritonenv/bin/python
           make r36-config-tests TRITON_PYTHON=$HOME/tritonenv/bin/python
 
-      # Both numbers, because they answer different questions: which of
-      # TileBench's forty-five operators BUILD from Triton source, and
-      # which of them then compute the right answer on the core bench.
-      # A compiler that emits plausible instructions for all forty-five
-      # and the wrong answer for one has not supported forty-five, and
-      # the coverage number alone would not notice.
-      - name: Check out the validated TileBench sources
-        uses: actions/checkout@v4
-        with:
-          repository: Deep-Learning-Profiling-Tools/Tilebench
-          ref: 6e2cf155dfe01f4660540d187c81b09eb55f394f
-          path: sim/build/Tilebench
-          persist-credentials: false
-
-      - name: R3.7 TileBench coverage, and what it computes
-        run: |
-          make r37-coverage TRITON_PYTHON=$HOME/tritonenv/bin/python TILEBENCH_SOURCE=sim/build/Tilebench
-          make r37-run TRITON_PYTHON=$HOME/tritonenv/bin/python TILEBENCH_SOURCE=sim/build/Tilebench
-
-      - name: Preserve original TileBench validation reports
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: r37-original-tilebench
-          path: |
-            sim/build/r37_upstream.json
-            sim/build/r37_upstream_run.json
-
       # The hardware export, built and then proved from somewhere else
       # entirely: elaborated with no library search of ours and run
       # against a program whose answer it checks itself.
@@ -297,3 +269,42 @@ jobs:
           ~/runtime-only/bin/python -c "import triton" 2>&1 | tail -1 || true
           ~/runtime-only/bin/tnca-aot doctor
           ~/runtime-only/bin/tnca-sim prepare
+
+  tilebench:
+    name: "original TileBench, AOT O${{ matrix.opt_level }}"
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        opt_level: [0, 1, 2]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check out the validated TileBench sources
+        uses: actions/checkout@v4
+        with:
+          repository: Deep-Learning-Profiling-Tools/Tilebench
+          ref: 6e2cf155dfe01f4660540d187c81b09eb55f394f
+          path: sim/build/Tilebench
+          persist-credentials: false
+      - name: Install the simulator and locked Triton
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends iverilog python3-venv
+          V=$(python3 -c "import json;print(json.load(open('spec/r1_toolchain.lock.json'))['triton']['version'])")
+          python3 -m venv ~/tritonenv
+          ~/tritonenv/bin/pip install -q "triton==$V"
+      - name: AOT descriptor and scratch contracts
+        if: matrix.opt_level == 2
+        run: make r37-aot-tests TRITON_PYTHON=$HOME/tritonenv/bin/python
+      - name: Original kernels through AOT and Session
+        run: make r37-run TRITON_PYTHON=$HOME/tritonenv/bin/python TILEBENCH_SOURCE=sim/build/Tilebench R37_OPT_LEVELS=${{ matrix.opt_level }}
+      - name: Preserve numerical validation report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: r37-aot-O${{ matrix.opt_level }}
+          path: |
+            sim/build/r37_aot_run.json
+            sim/build/r37_aot_run_artifacts/

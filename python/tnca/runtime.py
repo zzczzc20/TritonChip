@@ -40,6 +40,7 @@ from collections import OrderedDict
 
 from . import abi, artifact, manifest as M
 from . import transport as T
+from .tensor import TensorDescriptor
 from .errors import (AdmissionError, ArgumentError, ArtifactError,
                      BufferBusy, BufferError, CapabilityError, DependencyFailed,
                      DeviceLost, ProfileMismatch, QueueFull, SessionBusy,
@@ -165,11 +166,15 @@ class _Allocator:
                        'anything; allocate at least one byte')
         need = (size + align - 1) // align * align
         for i, (addr, blocksize) in enumerate(self.free_list):
-            if blocksize >= need:
+            aligned = (addr + align - 1) // align * align
+            prefix = aligned - addr
+            if blocksize >= prefix + need:
                 self.free_list.pop(i)
-                if blocksize > need:
-                    self.free_list.append((addr + need, blocksize - need))
-                return addr, need
+                if prefix:
+                    self.free_list.append((addr, prefix))
+                if blocksize > prefix + need:
+                    self.free_list.append((aligned + need, blocksize - prefix - need))
+                return aligned, need
         addr = (self.next + align - 1) // align * align
         if addr + need > self.limit:
             raise BufferError(
@@ -201,7 +206,7 @@ class Session:
     _counter = 0
 
     def __init__(self, profile='core-sim', *, bench=None, workdir=None,
-                 code_base=0, heap_base=0x4000, heap_limit=0x20000,
+                 code_base=0, heap_base=0x20000, heap_limit=0x80000,
                  deadline_cycles=2_000_000, host_timeout=600.0, trace=False,
                  backend='sim-file'):
         Session._counter += 1
@@ -408,6 +413,8 @@ class Session:
 
         with self._lock:
             addr = self._code_next
+            if addr + len(code) > self._heap.base:
+                raise BufferError('compiled code overlaps the device heap; increase heap_base')
             reply = self.dev.upload(addr, code)
             if not reply.ok:
                 raise TncaError(f"could not place code: {reply}",
@@ -473,11 +480,28 @@ class Session:
                     raise AdmissionError(
                         'a dependency from a previous epoch')
 
-            block = abi.encode_block(module.params, resolved)
-            arg_addr = self._arg_slot(len(block))
+            scratch = module.manifest['resources'].get('scratch_bytes', 0)
+            scratch = scratch if isinstance(scratch, int) and scratch > 0 else 0
+            maps = []
+            for name, value in args.items():
+                if isinstance(value, TensorDescriptor):
+                    buf, offset = value.buffer if isinstance(value.buffer, tuple) else (value.buffer, 0)
+                    maps.append((name, value.pack(resolved[name], buf.size-offset)))
+            slots = abi.block_size(len(module.params)) + (8 if scratch else 0)
+            map_start = (slots + 255) // 256 * 256
+            scratch_start = map_start + 256 * len(maps)
+            arg_addr, reserved = self._heap.alloc(max(scratch_start + scratch, slots, WORD), align=256)
+            block = bytearray(scratch_start if maps else slots)
+            for i, (name, data) in enumerate(maps):
+                offset = map_start + 256*i
+                resolved[name] = arg_addr + offset
+                block[offset:offset+256] = data
+            block[:abi.block_size(len(module.params))] = abi.encode_block(module.params, resolved)
+            if scratch:
+                struct.pack_into('<Q', block, abi.block_size(len(module.params)), arg_addr+scratch_start)
 
             task = dict(event=ev, module=module, block=block,
-                        arg_addr=arg_addr, grid=(gx, gy, gz),
+                        arg_addr=arg_addr, allocation=(arg_addr, reserved), grid=(gx, gy, gz),
                         depends_on=list(depends_on), leased=leased,
                         # Kept so a failure can be saved and run again
                         # (failure.capture); the block alone is bytes, and
@@ -490,16 +514,6 @@ class Session:
             self._queue.append(task)
             ev._to(QUEUED)
             return ev
-
-    def _arg_slot(self, nbytes):
-        """Somewhere to put the argument block.
-
-        Its own allocation per submit, not one reused slot: the block must
-        stay immutable until the task drains, and a shared slot would let
-        the next submit rewrite the arguments of one still running.
-        """
-        addr, _size = self._heap.alloc(max(nbytes, WORD))
-        return addr
 
     def _resolve(self, module, args):
         """Arguments -> device values, with every check done here.
@@ -517,6 +531,10 @@ class Session:
         out, leased, spans = {}, [], []
         for name, kind in module.params:
             value = args[name]
+            if isinstance(value, TensorDescriptor):
+                if kind != 'device_ptr64':
+                    raise ArgumentError(f'{name!r} is not a descriptor pointer parameter')
+                value = value.buffer
             if kind == 'device_ptr64':
                 buf, offset = (value if isinstance(value, tuple)
                                else (value, 0))
@@ -678,6 +696,9 @@ class Session:
         ev = task['event']
         if not ev.terminal:
             ev._to(state, error)
+        allocation = task.pop('allocation', None)
+        if allocation is not None:
+            self._heap.release(*allocation)
         for buf in task['leased']:
             buf.leases = max(0, buf.leases - 1)
             if state == FAILED:

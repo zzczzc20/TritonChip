@@ -1,28 +1,64 @@
-# R3.7 original TileBench validation
+# R3.7 original TileBench AOT validation
 
 Validated on branch `r37-triton-coverage` on 2026-09-22.
 
-**45/45 original operators pass numerical RTL validation: 149/149 cases and stages.**
+**Each of O0, O1 and O2 passes 45/45 original operators and 149/149 numerical
+cases/stages: 447/447 total, through `tnca.aot.compile_aot` and
+`tnca.runtime.Session` on the `core-sim` RTL profile.**
 
-TileBench source commit: `6e2cf155dfe01f4660540d187c81b09eb55f394f`. The operator modules are unchanged from that commit. The loader preserves JIT function bodies and binds small launch configurations; it does not run the CUDA host wrappers.
+The three levels ran as independent complete numerical runs. Every artifact's
+recorded optimization level was checked; O1/O2 artifacts record the upstream
+optimization pipeline. Every recorded original source hash was verified again
+before submission.
 
-`tl.dot` cases include FP16, FP32, FP8 E4M3/E5M2, packed INT8, a two-iteration K loop, a nonzero batch index, attention, convolutions, and stream-K atomic accumulation. Multi-stage operators consume preceding RTL dumps; radix sort executes all 16 two-bit passes.
+TileBench source commit: `6e2cf155dfe01f4660540d187c81b09eb55f394f`.
+Operator modules are unchanged. The loader preserves JIT bodies and binds
+small launch configurations without executing CUDA/PyTorch host wrappers.
+
+The numerical gate loads actual `.tnca` artifacts, uploads inputs, submits
+public Session grids, waits for completion and downloads results. External
+descriptors and compiler scratch travel through the runtime argument ABI;
+the gate does not call the importer or code generator directly. Multi-stage
+operators consume preceding device outputs, including all 16 two-bit radix
+sort passes. Batched GEMM validates both batches, and stream-K exercises the
+full-tile and early-return programs through complete grids.
 
 Validation:
 
-- Original-source compilation: 45/45 operators, including every entry-point stage.
-- Original-source RTL: 45/45 operators; 149/149 cases/stages in one complete run.
-- Compiler checks: 69 unit tests and 6 IR cases pass; ISA/schema consistency checks pass.
-- Memory behavior: original softmax, histogram and FP16 GEMM pass with reordered responses; original transpose passes with delayed memory.
-- Representative regressions: 214/217 passed the initial run; the three affected stream-K cases all passed after the atomic-mask fix. The explicit combined revalidation record covers 217/217.
+- AOT compilation: 447/447 numerical configurations across O0/O1/O2.
+- AOT + Session numerical checks: 149/149 at each level; 45/45 operators at each level.
+- Compiler: 69 unit tests, 6 IR cases, and ISA/schema consistency checks pass.
+- Runtime/ABI/cache regressions: 7/7, 6/6 and 4/4 checks pass.
+- New AOT contracts: 8/8 tests pass, covering descriptor bounds, backing-buffer
+  leases, queued scratch isolation, allocation alignment, code/heap separation,
+  typed cache keys, dtype constexpr metadata and atomic simulator publication.
+- Delayed/reordered memory: 4/4 public-AOT softmax and histogram stages pass
+  at O2 on `core-sim/slow`.
+- Tutorials 01–07 pass. Updated tutorial 08 passes all 12 GEMM checks across
+  the three levels (FP16/FP32, two runtime shapes and addresses per artifact).
+  New tutorial 09 passes its three descriptor GEMMs. Both use `core-vrf-sync-v1`.
+- An installed wheel, in a fresh environment with both Triton and `tnca_cc`
+  absent, loads and runs the original FP16 descriptor matmul artifact: all
+  256 outputs and the output guard match.
 
-Commands and configuration details: [tools/r37/README.md](../tools/r37/README.md).
+Commands: [tools/r37/README.md](../tools/r37/README.md).
+Runnable examples: [tiled GEMM](../tutorial/08_triton_gemm.md) and
+[host descriptors](../tutorial/09_tensor_descriptors.md).
 
-Generated reports: `sim/build/r37_upstream.json`, `sim/build/r37_upstream_run.json`, `sim/build/r37_memory_checks.json`, and `sim/build/r37_representative_revalidated.json`. The numerical report records source hashes, signatures, constexprs, scalar arguments, descriptor shapes, program IDs, tolerances and every stage result.
+Generated evidence is kept outside Git: `sim/build/r37_aot_compile.json`,
+`r37_aot_O0.json`, `r37_aot_O1.json`, `r37_aot_O2.json`, the aggregate
+`r37_aot_run.json`, and `r37_aot_slow.json`. The aggregate records all source
+and artifact hashes. CI executes each level separately and archives the
+numerical report and compiled artifacts.
 
-These results establish correctness for the explicit small configurations, not arbitrary tile sizes or performance parity with GPU implementations.
+Earlier direct-lowering reports (`r37_upstream*.json`) remain diagnostic
+records; they are not the evidence for the public-AOT results above.
 
-| Original operator | Passing cases/stages |
+Correctness coverage is for these explicit small RTL configurations. It does
+not establish arbitrary tile sizes, every upstream launch option, or GPU
+performance parity.
+
+| Original operator | Passing cases/stages per level |
 |---|---:|
 | `vector_add` | 1 |
 | `mul2` | 1 |

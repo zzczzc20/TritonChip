@@ -248,6 +248,19 @@ def check_options(options):
     return options
 
 
+def _constexpr_metadata(values):
+    """Stable JSON values without changing the objects passed to Triton."""
+    def encode(value):
+        if isinstance(value, dict):
+            return {k: encode(v) for k, v in sorted(value.items())}
+        if isinstance(value, (tuple, list)):
+            return [encode(v) for v in value]
+        if type(value).__module__ == 'triton.language.core' and type(value).__name__ == 'dtype':
+            return {'triton_dtype': str(value)}
+        return value
+    return encode(values or {})
+
+
 def cache_key(*, source_kind, source_hash, kernel_name, signature,
               constexprs, profile, config_hash, options):
     """Content address of a compile.
@@ -261,7 +274,7 @@ def cache_key(*, source_kind, source_hash, kernel_name, signature,
         'source': source_hash,
         'kernel': kernel_name,
         'signature': list(signature),
-        'constexprs': dict(sorted((constexprs or {}).items())),
+        'constexprs': _constexpr_metadata(constexprs),
         'profile': profile,
         'config_hash': config_hash,
         'options': dict(sorted(options.items())),
@@ -311,7 +324,7 @@ def _signature_types(signature, param_names):
                 detail={'signature': sorted(signature)})
         if declared == 'constexpr':
             continue
-        if declared.startswith('*'):
+        if declared.startswith(('*', 'tensordesc<')):
             kind = 'device_ptr64'
         elif declared in ('i32', 'u32', 'i64', 'u64', 'f32'):
             kind = declared
@@ -433,7 +446,7 @@ def compile_aot(source, *, kernel_name=None, signature=None, constexprs=None,
             'profile': pinfo['name'],
             'cache_key': key,
             'artifact': os.path.abspath(output),
-            'constexprs': dict(sorted((constexprs or {}).items())),
+            'constexprs': _constexpr_metadata(constexprs),
             'options': dict(sorted((options or {}).items())),
             'toolchain_lock_hash': _lock_hash(),
             'resources': measured,
@@ -486,7 +499,7 @@ def _key_for(source, source_kind, kernel_name, signature, constexprs,
     return cache_key(source_kind=source_kind,
                      source_hash=_sha(_source_text(source)),
                      kernel_name=name,
-                     signature=[f"{n}:{t}" for n, t in params],
+                     signature=[f"{n}:{t}:{(signature or {}).get(n, t)}" for n, t in params],
                      constexprs=constexprs, profile=profile,
                      config_hash=pinfo['config_hash'],
                      options=semantic_options(options))
@@ -521,6 +534,8 @@ def _compile_triton(fn, kernel_name, signature, constexprs, target, prov,
         param_names = [n for i, n in enumerate(names) if i not in const]
 
     params = _signature_types(signature, param_names)
+    prov.record('tensor_descriptors', {n: signature[n] for n in param_names
+                                       if signature[n].startswith('tensordesc<')})
 
     src = ASTSource(fn, signature=signature, constexprs=constexprs)
     ctx = ir.context()
@@ -606,7 +621,7 @@ def _compile_triton(fn, kernel_name, signature, constexprs, target, prov,
     scratch_bytes = int(getattr(imp, 'scratch_used', 0))
     if scratch_bytes:
         prov.record('scratch_bytes', scratch_bytes)
-        prov.record('scratch_argument_slot', len(imp.arg_names))
+        prov.record('scratch_argument_slot', len(params))
 
     # The TNCA IR passes run on this path too. Upstream canonicalisation
     # already worked on the TTIR above, but it does not strength-reduce a
@@ -769,7 +784,7 @@ def _manifest(kernel_name, params, target, pinfo, constexprs, options, prov,
             'compiler_hash': prov.entries.get('assembly_sha256', ''),
             'source_hash': prov.entries.get('source_sha256', ''),
             'toolchain_lock_hash': _lock_hash(),
-            'constexprs': dict(sorted(constexprs.items())),
+            'constexprs': _constexpr_metadata(constexprs),
             # Semantic options only. A dump directory is a fact about one
             # debugging session, not about the kernel: recording it put a
             # local home directory inside a distributable artifact and

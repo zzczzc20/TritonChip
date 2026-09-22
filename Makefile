@@ -967,13 +967,26 @@ r36-config-tests: $(R2_DATA_STAMP) | dirs
 # A compiler that emits plausible instructions for all forty-five and
 # the wrong answer for one has not supported forty-five operators, and
 # the first target alone would not notice.
-.PHONY: r37-coverage r37-run r37 r37-representative-coverage r37-representative-run
+.PHONY: r37-aot-tests r37-coverage r37-run r37 r37-direct-coverage r37-direct-run r37-representative-coverage r37-representative-run
 TILEBENCH_SOURCE ?= ../Tilebench
+R37_OPT_LEVELS ?= 0 1 2
+r37-aot-tests: $(R2_DATA_STAMP) | dirs
+	@$(TRITON_PYTHON) tools/r37/aot_tests.py
+
 r37-coverage: $(R2_DATA_STAMP) | dirs
+	@$(TRITON_PYTHON) tools/r37/aot_run.py --source $(TILEBENCH_SOURCE) \
+	   --levels $(R37_OPT_LEVELS) --compile-only --json $(BUILD)/r37_aot_compile.json
+
+r37-run: $(R2_DATA_STAMP) | dirs
+	@$(TRITON_PYTHON) tools/r37/aot_run.py --source $(TILEBENCH_SOURCE) \
+	   --levels $(R37_OPT_LEVELS) --json $(BUILD)/r37_aot_run.json
+
+# Direct compiler/bench diagnostics remain available separately.
+r37-direct-coverage: $(R2_DATA_STAMP) | dirs
 	@$(TRITON_PYTHON) tools/r37/upstream.py --source $(TILEBENCH_SOURCE) \
 	   --json $(BUILD)/r37_upstream.json
 
-r37-run: $(BUILD)/tb_core.vvp $(R2_DATA_STAMP) | dirs
+r37-direct-run: $(BUILD)/tb_core.vvp $(R2_DATA_STAMP) | dirs
 	@$(TRITON_PYTHON) tools/r37/upstream_run.py --source $(TILEBENCH_SOURCE) \
 	   --json $(BUILD)/r37_upstream_run.json
 

@@ -937,14 +937,25 @@ class TTIRImporter:
         # Triton flattens a descriptor argument into its handle, shape and
         # strides. Keep the host-facing descriptor record together until this
         # ABI boundary, then bind every actual MLIR argument explicitly.
+        self.argument_slots = len(param_names)
+        descriptor_fields = {}
+        argument_indices = {}
         expanded_names, expanded_values = [], {}
         cursor = 0
-        for name in param_names:
+        for slot, name in enumerate(param_names):
             if cursor >= n:
                 break
             ty = str(fn.args(cursor).get_type())
             if ty.startswith('!tt.tensordesc<'):
                 record = arg_values.get(name)
+                if self.dynamic_args:
+                    shape, elem = _parse_type(ty.replace('!tt.tensordesc<', 'tensor<'))
+                    rank = len(shape)
+                    record = dict(address=record, shape=[0]*rank, strides=[0]*rank)
+                    size = 1 if elem.startswith('f8') or elem == 'i8' else 2 if elem in ('f16', 'bf16') else 4
+                    for j in range(rank):
+                        descriptor_fields[f'{name}.shape{j}'] = (slot, 8+8*j, 1)
+                        descriptor_fields[f'{name}.stride{j}'] = (slot, 48+8*j, size)
                 if not isinstance(record, dict):
                     raise Unsupported(f"descriptor argument {name!r} needs "
                                       "address, shape and strides")
@@ -952,10 +963,12 @@ class TTIRImporter:
                 names = [name] + [f'{name}.shape{i}' for i in range(rank)]
                 names += [f'{name}.stride{i}' for i in range(rank)]
                 values = [record['address']] + list(record['shape']) + list(record['strides'])
+                argument_indices[name] = slot
                 expanded_names.extend(names)
                 expanded_values.update(zip(names, values))
                 cursor += len(names)
             else:
+                argument_indices[name] = slot
                 expanded_names.append(name)
                 if name in arg_values:
                     expanded_values[name] = arg_values[name]
@@ -1003,7 +1016,14 @@ class TTIRImporter:
                                  value, dynamic=self.dynamic_args)
             self.arg_names.append(name)
             if self.dynamic_args:
-                v = self._load_argument(arg_base, i, name, ty)
+                if name in descriptor_fields:
+                    slot, offset, size = descriptor_fields[name]
+                    address = self.b.sload(arg_base, offset=8*slot, size='d')
+                    v = self.b.sload(address, offset=offset, size='d')
+                    if size > 1:
+                        v = self.b.sbini('ashr', v, size.bit_length()-1)
+                else:
+                    v = self._load_argument(arg_base, argument_indices[name], name, ty)
             else:
                 literal = self._literal_argument(value, ty, sig, i, name)
                 v = self._scalar_cache.get(literal)
@@ -1984,7 +2004,7 @@ class TTIRImporter:
                 self._scratch = self.b.const(self.scratch_addr)
                 return self._scratch
             self._scratch = self.b.sload(
-                self.b.special('arg_base'), offset=8 * len(self.arg_names),
+                self.b.special('arg_base'), offset=8 * self.argument_slots,
                 size='d',
                 comment='descriptor scratch: one slot past the declared '
                         'arguments (ABI v1 offsets are unchanged)')

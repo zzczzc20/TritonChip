@@ -128,6 +128,7 @@ class TTIRImporter:
         self._scratch = None      # the descriptor scratch base, read once
         self.scratch_maps = 0     # how many TensorMaps this kernel builds
         self.spill_bytes = 0      # scratch beyond them, for tile repacks
+        self._force_vector = 0    # depth inside a region body
         self.arg_names = []
         self.arg_abi_types = []   # parallel to arg_names, in dynamic mode
         self.dynamic_args = False  # set by run(); see _load_argument
@@ -329,14 +330,11 @@ class TTIRImporter:
         has consumed it.
         """
         if op.get_num_operands() != 1 or op.get_num_results() != 1:
-            raise Unsupported(
-                f"a {op.get_num_operands()}-input reduction",
-                because='a multi-input `tt.reduce` carries an index '
-                        'alongside the value -- argmax and argmin -- and '
-                        'ISA sec 8.7 reduces one vector to one scalar',
-                remedy='reduce the value and the index separately, or add '
-                       'an argmax lowering',
-                source='doc/isa/TNCA-ISA-v0.1.md sec 8.7')
+            # An argmax or an argmin: a value and an index folded
+            # together. ISA sec 8.7 reduces one vector to one scalar, so
+            # there is no instruction for this -- but the body says what
+            # the step is, and fifteen steps of it is the answer.
+            return self._fold(op, keep_partials=False)
 
         axis = op.get_int_attr('axis')
         src = op.get_operand(0)
@@ -365,6 +363,111 @@ class TTIRImporter:
         self._v[op.get_result(0).id()] = self.b.reduce(
             kind, self._value(src), dtype=rtype,
             broadcast=rtype.startswith('f'))
+
+    # ---- folds with a body -----------------------------------------------
+    #
+    # `tt.reduce` with one input and a single-instruction combinator is
+    # an ISA sec 8.7 reduction. Everything else that carries a region --
+    # an argmax, which folds a value and an index together, and
+    # `tt.scan`, which keeps every partial result -- is a sequential
+    # fold, and the body is the step.
+    #
+    # The step is evaluated by BINDING the region's block arguments and
+    # dispatching the body through the ordinary lowerings. That is why
+    # an argmax needs no pattern-matching against the shape Triton's
+    # `tl.argmax` happens to expand to: whatever the body computes, the
+    # same handlers that lower it anywhere else lower it here.
+    #
+    # Everything in the fold is a broadcast vector, including the
+    # integers. The body's operands have scalar types and there is no
+    # scalar floating point, no scalar predicate and no scalar select
+    # of a float -- so running it in the vector unit is not a choice
+    # between two working forms, it is the one that exists.
+
+    def _region_block(self, op):
+        body = self._bodies.get(op.get_region(0).id(), [])
+        if not body:
+            raise Unsupported(f"{op.get_name()} with an empty body")
+        return body[0].get_block(), body
+
+    def _eval_region(self, op, args):
+        """Run the region body once, on `args`. Returns its results."""
+        block, body = self._region_block(op)
+        n = block.get_num_arguments()
+        if n != len(args):
+            raise Unsupported(
+                f"{op.get_name()} whose body takes {n} arguments and was "
+                f"given {len(args)}")
+        for i, value in enumerate(args):
+            self._v[block.get_argument(i).id()] = value
+
+        self._force_vector += 1
+        try:
+            out = None
+            for inner in body:
+                name = inner.get_name()
+                if name in ('tt.reduce.return', 'tt.scan.return'):
+                    out = [self._value(inner.get_operand(i))
+                           for i in range(inner.get_num_operands())]
+                    continue
+                handler = getattr(self, '_op_' + name.replace('.', '_'),
+                                  None)
+                if handler is None:
+                    raise Unsupported(
+                        f"no TNCA lowering for {name!r} inside a "
+                        f"{op.get_name()} body")
+                handler(inner)
+        finally:
+            self._force_vector -= 1
+        if out is None:
+            raise Unsupported(f"a {op.get_name()} body that does not return")
+        return out
+
+    def _lanes_of(self, value):
+        """Every lane of a 1-D value, each broadcast to a whole vector."""
+        shape, elem = _parse_type(str(value.get_type()))
+        col = self._vector_to_col(self._value(value), elem)
+        return [self._broadcast_scalar(x, elem) for x in col.handle]
+
+    def _fold(self, op, *, keep_partials):
+        """A sequential fold over the lanes, body-defined.
+
+        Sixteen lanes and fifteen steps, unrolled. A loop would need the
+        running value to live across a back edge in a register the body
+        does not name, and the body is inlined rather than called.
+        """
+        nin = op.get_num_operands()
+        lanes = [self._lanes_of(op.get_operand(i)) for i in range(nin)]
+        vlen = len(lanes[0])
+
+        running = [lanes[i][0] for i in range(nin)]
+        partials = [list(running)]
+        for r in range(1, vlen):
+            running = self._eval_region(
+                op, running + [lanes[i][r] for i in range(nin)])
+            partials.append(list(running))
+
+        if not keep_partials:
+            for i in range(op.get_num_results()):
+                self._v[op.get_result(i).id()] = running[i]
+            return
+        for i in range(op.get_num_results()):
+            _, elem = _parse_type(str(op.get_result(i).get_type()))
+            col = Tile('col', tuple(p[i] for p in partials), vlen, 1, elem)
+            self._v[op.get_result(i).id()] = self._col_to_vector(col, elem)
+
+    def _op_tt_scan(self, op):
+        """An inclusive scan.
+
+        ISA sec 8 has a reduction and no scan, and no lane shuffle to
+        build one out of -- so this is the fold above with every partial
+        result kept, gathered back into a vector through memory.
+        """
+        if op.get_int_attr('axis') != 0:
+            raise Unsupported('a scan along an axis other than the lanes')
+        if op.get_bool_attr('reverse'):
+            raise Unsupported('a reversed scan')
+        self._fold(op, keep_partials=True)
 
     def _combinator(self, op):
         """Which reduction the region body computes.
@@ -1786,7 +1889,7 @@ class TTIRImporter:
         if shape is not None:
             self._check_block(shape)
             return shape, elem, False
-        if not elem.startswith('f'):
+        if not elem.startswith('f') and not self._force_vector:
             return None, elem, False
         return self.target.vlen, elem, True
 
@@ -2001,7 +2104,7 @@ class TTIRImporter:
             self._tiles[op.get_result(0).id()] = self._materialise(
                 lambda r: self.b.vcmp(cc, xs(r), ys(r)), rows, cols, 'i1')
             return
-        if elem == 'i1':
+        if elem == 'i1' and not self._force_vector:
             # Comparing two masks. `(x == y)` on i1 is equality, which
             # is the negation of exclusive-or; the vector comparison
             # unit does not take predicate registers.

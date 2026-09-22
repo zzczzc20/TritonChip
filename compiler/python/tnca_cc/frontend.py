@@ -26,6 +26,8 @@ import struct
 from . import mathlib
 from .diagnostics import Diagnostic
 from .ir import Builder, VECTOR, make_kernel
+from .tiles import (Affine2D, Tile, TileError, TENSORMAP_BYTES,
+                    check_geometry, tensormap_words)
 
 # TTIR arithmetic -> our binary op names.
 _INT_BIN = {'arith.addi': 'add', 'arith.subi': 'sub', 'arith.muli': 'mul',
@@ -48,7 +50,7 @@ _SIZE_SUFFIX = {1: 'b', 2: 'h', 4: 'w', 8: 'd'}
 
 
 def _parse_type(text):
-    """(shape, element type) for a TTIR type string.
+    r"""(shape, element type) for a TTIR type string.
 
     A 1-D tensor reports its length as an int, which is what every
     caller here wants and what the whole importer was written against.
@@ -71,6 +73,25 @@ def _parse_type(text):
 def _pointee(text):
     m = _PTR_RE.fullmatch(text.strip())
     return m.group(1).strip() if m else None
+
+
+class _Descriptor:
+    """A TensorMap this compiler built, and what it says.
+
+    The slot alone is not enough: an accumulator drains to memory
+    through the vector unit rather than through a transfer, and doing
+    that needs the base and the row stride that went INTO the map, not
+    a handle to the snapshot of it.
+    """
+
+    __slots__ = ('value', 'base', 'byte_strides', 'block', 'elem')
+
+    def __init__(self, value, *, base, byte_strides, block, elem):
+        self.value = value
+        self.base = base
+        self.byte_strides = list(byte_strides)
+        self.block = list(block)
+        self.elem = elem
 
 
 class Unsupported(Diagnostic):
@@ -100,6 +121,12 @@ class TTIRImporter:
         self._scalar_cache = {}   # constant -> our Value, so BLOCK is emitted once
         self._byte_offsets = {}   # (offset value, shift) -> byte offset Value
         self._fconst_cache = {}   # (f32 bit pattern, type) -> our Value
+        self._affine = {}   # TTIR value id -> Affine2D, for a 2-D index
+        self._ptr2d = {}    # TTIR value id -> (arg name, elem, Affine2D)
+        self._tiles = {}    # TTIR value id -> Tile
+        self._descs = {}    # TTIR value id -> our descriptor Value
+        self._scratch = None      # the descriptor scratch base, read once
+        self.scratch_maps = 0     # how many TensorMaps this kernel builds
         self.arg_names = []
         self.arg_abi_types = []   # parallel to arg_names, in dynamic mode
         self.dynamic_args = False  # set by run(); see _load_argument
@@ -658,6 +685,17 @@ class TTIRImporter:
         # becomes an attribute of our load rather than a value, and emitting
         # it eagerly would leave a dead `.li` and a dead register in every
         # masked access.
+        if isinstance(shape, tuple):
+            # A 2-D constant is not a vector register's worth of
+            # anything. It is either an index term -- `dense<16>`, the
+            # row stride in every `A[m, k]` -- or the zero accumulator
+            # `tt.dot` is given. Both are read by whatever consumes
+            # them; neither is materialised here, and `_value` refuses
+            # to invent a 1-D register for one.
+            self._pending_const[rid] = ('tile', iv, elem)
+            if not elem.startswith('f'):
+                self._affine[rid] = Affine2D(const=iv)
+            return
         if shape is None and not elem.startswith('f'):
             self._pending_const[rid] = ('scalar', iv, elem)
         else:
@@ -715,6 +753,29 @@ class TTIRImporter:
         src = op.get_operand(0)
         rid = op.get_result(0).id()
         shape, elem = _parse_type(str(op.get_result(0).get_type()))
+        if isinstance(shape, tuple):
+            # Stretching one value over a tile. For a pointer that is
+            # the start of a tile access; for an integer it is a
+            # constant term in the index. Neither materialises anything
+            # -- there is no 2-D register to put it in.
+            if _pointee(elem):
+                if src.id() not in self._ptr_base:
+                    raise Unsupported('splat of a non-argument pointer')
+                name, pelem = self._ptr_base[src.id()]
+                self._ptr2d[rid] = (name, pelem, Affine2D())
+                return
+            k = self._scalar_const(src.id())
+            if k is not None:
+                self._affine[rid] = Affine2D(const=k)
+                return
+            if src.id() in self._v and self._v[src.id()].kind != VECTOR:
+                self._affine[rid] = Affine2D(dynamic=[self._v[src.id()]])
+                return
+            raise Unsupported(
+                'a 2-D splat of a value that is neither a pointer nor a '
+                'scalar index',
+                because='a tile has no register to be broadcast into; only '
+                        'a term of the index it is addressed by')
         self._check_block(shape)
         if _pointee(elem):
             # A splat pointer is a uniform base. sec 12: recognise a uniform
@@ -738,6 +799,8 @@ class TTIRImporter:
     def _op_tt_addptr(self, op):
         base, offs = op.get_operand(0), op.get_operand(1)
         rid = op.get_result(0).id()
+        if self._try_addptr_2d(rid, base, offs):
+            return
         if base.id() not in self._ptr_base:
             raise Unsupported(
                 'a pointer that is not a uniform base plus an offset',
@@ -759,12 +822,18 @@ class TTIRImporter:
         self._ptr_chain[rid] = self._ptr_chain.get(base.id(), []) + [offs]
 
     def _op_arith_addi(self, op):
+        if self._try_affine(op, 'add'):
+            return
         self._binary(op, _INT_BIN['arith.addi'])
 
     def _op_arith_subi(self, op):
+        if self._try_affine(op, 'sub'):
+            return
         self._binary(op, 'sub')
 
     def _op_arith_muli(self, op):
+        if self._try_affine(op, 'mul'):
+            return
         self._binary(op, 'mul')
 
     def _op_arith_andi(self, op):
@@ -814,6 +883,469 @@ class TTIRImporter:
         self.target.require('vector_fp32', f"emit a {elem} {kind}")
         self._v[op.get_result(0).id()] = self.b.vun(
             kind, self._vec(op.get_operand(0), elem), dtype=elem)
+
+    # ---- two-dimensional blocks -------------------------------------------
+    #
+    # tiles.py explains why these do not lower one operation at a time:
+    # `tt.expand_dims`, `tt.broadcast` and the `arith.muli` between them
+    # have no meaning on this machine individually. What they add up to
+    # does -- an affine index over (row, col) -- and that is what a
+    # TensorMap describes. So they are tracked, not lowered, and the
+    # `tt.load` at the end of the chain becomes a descriptor and a DMA.
+
+    def _affine_of(self, value):
+        """The affine index this TTIR value denotes, or None."""
+        vid = value.id()
+        if vid in self._affine:
+            return self._affine[vid]
+        k = self._scalar_const(vid)
+        if k is not None:
+            return Affine2D(const=k)
+        pending = self._pending_const.get(vid)
+        if pending is not None and pending[0] == 'vector':
+            # A dense splat of one integer, which is a constant offset in
+            # every lane. The bit pattern IS the value for an integer.
+            _, iv, elem = pending
+            if not elem.startswith('f'):
+                return Affine2D(const=int(iv))
+        return None
+
+    def _op_tt_expand_dims(self, op):
+        """`x[:, None]` or `x[None, :]`: which axis an iota runs along.
+
+        This is the only place the row/column distinction enters. A
+        `tt.make_range` is just 0..n; `expand_dims` is what says whether
+        it indexes down the tile or across it.
+        """
+        src = op.get_operand(0)
+        axis = op.get_int_attr('axis')
+        kind, _ = self._offsets.get(src.id(), (None, None))
+        if kind != 'arange':
+            inner = self._affine_of(src)
+            if inner is None:
+                raise Unsupported(
+                    'tt.expand_dims of something that is not a range',
+                    because='the importer recognises a 2-D index as an '
+                            'affine function of the row and the column, '
+                            'and only a range establishes which one an '
+                            'axis is',
+                    source='doc/isa/TNCA-ISA-v0.1.md sec 9D.3')
+            self._affine[op.get_result(0).id()] = inner
+            return
+        # axis=1 makes the range vary down the rows; axis=0, across.
+        self._affine[op.get_result(0).id()] = (
+            Affine2D(row_stride=1) if axis == 1 else Affine2D(col_stride=1))
+
+    def _op_tt_broadcast(self, op):
+        """Stretching a 16x1 or 1x16 to 16x16 changes no index."""
+        src = op.get_operand(0)
+        rid = op.get_result(0).id()
+        aff = self._affine_of(src)
+        if aff is not None:
+            self._affine[rid] = aff
+            return
+        if src.id() in self._ptr2d:
+            self._ptr2d[rid] = self._ptr2d[src.id()]
+            return
+        raise Unsupported(
+            'tt.broadcast of a value that is neither an index nor a pointer',
+            because='a broadcast of DATA would have to replicate a vector '
+                    'register across a tile, which is a real data movement '
+                    'and not the index bookkeeping this recognises')
+
+    def _try_affine(self, op, kind):
+        """Track an integer operation on a 2-D index. True if handled."""
+        shape, elem = _parse_type(str(op.get_result(0).get_type()))
+        if not isinstance(shape, tuple) and op.get_result(0).id() \
+                not in self._affine:
+            # 1-D and scalars keep their existing lowering; only a 2-D
+            # result, or an operand already being tracked, comes here.
+            if not any(self._affine_of(op.get_operand(i)) is not None
+                       and isinstance(
+                           _parse_type(str(op.get_operand(i).get_type()))[0],
+                           tuple)
+                       for i in range(op.get_num_operands())):
+                return False
+        a = self._affine_of(op.get_operand(0))
+        b = self._affine_of(op.get_operand(1))
+        if a is None or b is None:
+            raise Unsupported(
+                f"a 2-D index built with {op.get_name()!r} out of something "
+                f"this does not track",
+                because='a tile is described by an affine index over the '
+                        'row and the column (ISA sec 9D.3), and an operand '
+                        'that is not one has no place in a descriptor')
+        rid = op.get_result(0).id()
+        if kind == 'add':
+            self._affine[rid] = a.plus(b)
+            return True
+        if kind == 'mul':
+            # One side must be a constant: an index that multiplies two
+            # varying terms is not affine, and no descriptor describes it.
+            for x, y in ((a, b), (b, a)):
+                if (y.row_stride, y.col_stride, y.dynamic) == (0, 0, []):
+                    self._affine[rid] = x.scaled(y.const)
+                    return True
+            raise Unsupported(
+                'a 2-D index that multiplies two varying terms',
+                because='a TensorMap gives each axis one stride (ISA sec '
+                        '9D.3); a product of two indices has no stride to be')
+        raise Unsupported(f"a 2-D index built with {op.get_name()!r}")
+
+    def _try_addptr_2d(self, rid, base, offs):
+        """Accumulate a 2-D pointer's index. True if this was one.
+
+        A 2-D pointer arrives as `splat(p)` broadcast to the tile shape,
+        with each `tt.addptr` contributing one affine term. Nothing is
+        emitted: what the chain adds up to becomes a descriptor when the
+        load at the end of it asks.
+        """
+        aff = self._affine_of(offs)
+        if aff is None:
+            return False
+        prev = self._ptr2d.get(base.id())
+        if prev is None:
+            spec = self._ptr_base.get(base.id())
+            if spec is None:
+                return False
+            shape, _ = _parse_type(str(base.get_type()))
+            result_2d = isinstance(
+                _parse_type(str(offs.get_type()))[0], tuple)
+            if not result_2d and not isinstance(shape, tuple):
+                return False
+            name, elem = spec
+            prev = (name, elem, Affine2D())
+        name, elem, acc = prev
+        self._ptr2d[rid] = (name, elem, acc.plus(aff))
+        return True
+
+    def _tile_descriptor(self, name, elem, aff, block, what):
+        """A TensorMap for the tile this pointer arithmetic describes.
+
+        The constant part of the index folds into the descriptor's base
+        rather than becoming a coordinate, so the transfer runs at
+        coordinate [0, 0] and the extents describe exactly the tile. A
+        coordinate would have had to be divided by the row stride to be
+        recovered, and a division that is only correct when the offset
+        happens to be a multiple of it is not one to build on.
+        """
+        if aff.col_stride != 1:
+            raise Unsupported(
+                f"a tile whose columns are {aff.col_stride} elements apart",
+                because='ISA sec 9E.2 refuses a descriptor whose innermost '
+                        'stride is not one element: the transfer engine '
+                        'copies runs, it does not gather per element',
+                remedy='index the last axis contiguously',
+                source='doc/isa/TNCA-ISA-v0.1.md sec 9E.2')
+        if aff.row_stride <= 0:
+            raise Unsupported(
+                f"a tile with a row stride of {aff.row_stride}",
+                because='a TensorMap addresses rows forward from its base')
+
+        esize = self._ELEM_BYTES[elem]
+        base = self._arg_value(name)
+        if aff.const:
+            base = self.b.sbini(
+                'add', base, aff.const * esize,
+                comment=f"the tile's origin, folded into the descriptor "
+                        f"base ({aff.const} elements)")
+        for extra in aff.dynamic:
+            base = self.b.sbin('add', base, extra,
+                               comment='a runtime tile origin')
+        return self._build_descriptor(
+            base=base, elem=elem, extents=list(block),
+            byte_strides=[aff.row_stride * esize, esize],
+            block_shape=list(block), what=what)
+
+    # ---- descriptors ------------------------------------------------------
+
+    _ELEM_BYTES = {'f16': 2, 'bf16': 2, 'f32': 4, 'i8': 1, 'i32': 4}
+
+    def _scratch_base(self):
+        """Where this kernel builds its TensorMaps.
+
+        `td.load Dd, [Sa]` snapshots a 256-byte object FROM MEMORY (ISA
+        sec 9D.1); there is no instruction that builds a descriptor out
+        of registers. A kernel whose base pointer arrives as an argument
+        therefore has to write its own map somewhere before it can load
+        it.
+
+        That somewhere is one slot past the declared arguments. The
+        frozen offsets in spec/r2_abi_v1.json are `8 * index` in
+        signature order, so appending leaves every declared argument
+        exactly where it was; the compiler reports `scratch_bytes` in
+        the manifest and the launch path supplies the buffer.
+        """
+        if self._scratch is None:
+            if not self.dynamic_args:
+                raise Unsupported(
+                    'a descriptor in a kernel compiled for literal '
+                    'arguments',
+                    because='the TensorMap has to be written to memory, and '
+                            'the scratch buffer arrives through the argument '
+                            'block that this mode does not read',
+                    remedy='compile with dynamic arguments')
+            self._scratch = self.b.sload(
+                self.b.special('arg_base'), offset=8 * len(self.arg_names),
+                size='d',
+                comment='descriptor scratch: one slot past the declared '
+                        'arguments (ABI v1 offsets are unchanged)')
+        return self._scratch
+
+    def _build_descriptor(self, *, base, elem, extents, byte_strides,
+                          block_shape, what):
+        """Write a TensorMap into scratch and snapshot it.
+
+        Every word is written, including the zero ones. The scratch
+        buffer's previous contents are not this kernel's to assume, and
+        a descriptor half-inherited from the last launch is a wrong
+        address rather than a fault.
+        """
+        try:
+            check_geometry(byte_strides=byte_strides,
+                           block_shape=block_shape,
+                           elem_bytes=self._ELEM_BYTES[elem])
+        except TileError as e:
+            raise Unsupported(str(e), source='doc/isa/TNCA-ISA-v0.1.md '
+                                             'sec 9E.2')
+
+        slot = self.scratch_maps
+        self.scratch_maps += 1
+        addr = self.b.sbini('add', self._scratch_base(),
+                            slot * TENSORMAP_BYTES,
+                            comment=f"TensorMap {slot}: {what}")
+
+        words = tensormap_words(base=0, extents=extents,
+                                byte_strides=byte_strides,
+                                block_shape=block_shape, dtype=elem)
+        zero = self.b.const(0)
+        for i, word in enumerate(words):
+            if i == 0:
+                # The base address is a register, not a literal: it came
+                # from an argument slot.
+                self.b.sstore(addr, base, offset=0, size='d')
+                continue
+            self.b.sstore(addr, zero if word == 0 else self.b.const(word),
+                          offset=i * 8, size='d')
+        return _Descriptor(self.b.descriptor(addr, name=f"d{slot}"),
+                           base=base, byte_strides=byte_strides,
+                           block=list(block_shape), elem=elem)
+
+    def _op_tt_make_tensor_descriptor(self, op):
+        """`tl.make_tensor_descriptor`, straight onto ISA sec 9D.
+
+        This is the case the hardware was designed for, so it is also
+        the shortest lowering in the file: the shape, the strides and
+        the block shape are what a TensorMap holds, and the operation
+        says all three.
+        """
+        ptr = op.get_operand(0)
+        n = op.get_num_operands()
+        rank = (n - 1) // 2
+        if rank != 2:
+            raise Unsupported(
+                f"a rank-{rank} tensor descriptor",
+                because='the tile path builds 16x16 fragments; a rank the '
+                        'MMA does not consume has nowhere to go yet',
+                source='doc/isa/TNCA-ISA-v0.1.md sec 9C.2')
+        elem = _pointee(str(ptr.get_type()))
+        if elem not in self._ELEM_BYTES:
+            raise Unsupported(f"a tensor descriptor of {elem}")
+        esize = self._ELEM_BYTES[elem]
+
+        extents, strides = [], []
+        for i in range(rank):
+            k = self._scalar_const(op.get_operand(1 + i).id())
+            if k is None:
+                raise Unsupported(
+                    'a tensor descriptor whose shape is a runtime value',
+                    because='the extents are written into the TensorMap, '
+                            'and only a constant can be written by the '
+                            'store that builds it',
+                    remedy='make the shape a tl.constexpr')
+            extents.append(k)
+        for i in range(rank):
+            k = self._scalar_const(op.get_operand(1 + rank + i).id())
+            if k is None:
+                raise Unsupported(
+                    'a tensor descriptor whose strides are runtime values')
+            strides.append(k * esize)
+
+        shape, _ = _parse_type(str(op.get_result(0).get_type()).replace(
+            '!tt.tensordesc<', 'tensor<').rstrip('>') + '>')
+        block = list(shape) if isinstance(shape, tuple) else [1, shape or 1]
+
+        self._descs[op.get_result(0).id()] = self._build_descriptor(
+            base=self._value(ptr), elem=elem, extents=extents,
+            byte_strides=strides, block_shape=block,
+            what='tl.make_tensor_descriptor')
+
+    def _op_tt_descriptor_load(self, op):
+        d = self._descs[op.get_operand(0).id()]
+        coords = [self._value(op.get_operand(1 + i))
+                  for i in range(op.get_num_operands() - 1)]
+        self._tiles[op.get_result(0).id()] = self._dma_in(
+            d.value, coords, d.block, d.elem, 'tt.descriptor_load')
+
+    def _op_tt_descriptor_store(self, op):
+        d = self._descs[op.get_operand(0).id()]
+        value = op.get_operand(op.get_num_operands() - 1)
+        tile = self._tile_of(value)
+        if tile.kind == 'accumulator':
+            # The result is in an accumulator and the destination is
+            # described by a TensorMap whose base and stride this
+            # compiler wrote. Draining through the vector unit reaches
+            # it directly (ISA sec 9B); routing it back through a window
+            # would be a transfer to reach an address already in hand.
+            self._drain_accumulator(tile, d.base, d.byte_strides[0], d.elem)
+            return
+        coords = [self._value(op.get_operand(1 + i))
+                  for i in range(op.get_num_operands() - 2)]
+        self._dma_out(d.value, coords, tile, d.elem, 'tt.descriptor_store')
+
+    # ---- tiles in and out -------------------------------------------------
+
+    def _window_for(self, rows, cols, elem):
+        """A window big enough for one fragment of this shape.
+
+        ISA sec 9C.2: a fragment is a flat row-major byte array, so the
+        register count follows from the element width alone -- a 16x16
+        FP16 fragment is eight registers and the same fragment in FP8 is
+        four. There is no separate packing rule to get wrong.
+        """
+        from .footprints import fragment_registers
+        bits = self._ELEM_BYTES[elem] * 8
+        return self.b.window(fragment_registers(rows, cols, bits))
+
+    def _dma_in(self, desc, coords, block, elem, what):
+        """One asynchronous tile load, and the wait for it.
+
+        Armed for exactly one operation. ISA sec 9E.1 step 8 signals a
+        completion once per command however many transactions it expands
+        into, which is what makes a static count checkable -- and the
+        count being checkable is the only reason to arm it rather than
+        poll.
+        """
+        window = self._window_for(block[0], block[1], elem)
+        bar = self.b.barrier(name=f"fill{len(self.kernel.barriers)}")
+        tok = self.b.barrier_arm(bar, arrivals=0, ops=1)
+        self.b.comment(f"{what}: one tile into a window (ISA sec 9E)")
+        self.b.dma_load(window, desc, coords, tok, dtype=elem)
+        self.b.barrier_wait(tok)
+        return Tile('window', window, block[0], block[1], elem, desc=desc)
+
+    def _dma_out(self, desc, coords, tile, elem, what):
+        window = tile.handle
+        if tile.kind != 'window':
+            window = self._spill_accumulator(tile, elem)
+        bar = self.b.barrier(name=f"drain{len(self.kernel.barriers)}")
+        tok = self.b.barrier_arm(bar, arrivals=0, ops=1)
+        self.b.comment(f"{what}: one tile out of a window (ISA sec 9E)")
+        self.b.dma_store(window, desc, coords, tok, dtype=elem)
+        self.b.barrier_wait(tok)
+
+    def _drain_accumulator(self, tile, base, row_stride_bytes, dst_elem):
+        """A 16x16 accumulator out to memory, a row at a time.
+
+        ISA sec 9B exists for this. The accumulator is binary32 whatever
+        the MMA's inputs were (sec 9C), and it is reachable from the
+        vector unit -- so a row is `a.vread`, a convert if the
+        destination is narrower, and a vector store. sec 5.4 is explicit
+        that this round trip not having to go through memory is what
+        makes a scratchpad-free design worth having.
+
+        Converting on the way out is also what avoids the one thing this
+        ISA cannot do: `arith.truncf` on a whole tile would need
+        `v.pack.f16` to rebuild a packed fragment, and sec 8.4 reserves
+        it. Per row, into a per-lane 16-bit store, there is nothing to
+        pack.
+        """
+        esize = self._ELEM_BYTES[dst_elem]
+        size = _SIZE_SUFFIX[esize]
+        self.b.comment(f"accumulator epilogue: {tile.rows} rows through the "
+                       f"vector unit, as {dst_elem} (ISA sec 9B)")
+        for r in range(tile.rows):
+            v = self.b.acc_read(tile.handle, self.b.const(r))
+            if dst_elem != 'f32':
+                v = self.b.vcvt('f32', dst_elem, v,
+                                comment=f"row {r}: f32 accumulator -> "
+                                        f"{dst_elem} (ISA sec 8.4)")
+            addr = base if r == 0 else self.b.sbini(
+                'add', base, r * row_stride_bytes,
+                comment=f"row {r}")
+            self.b.store(addr, v, size=size)
+
+    def _tile_of(self, value):
+        t = self._tiles.get(value.id())
+        if t is None:
+            raise Unsupported(
+                f"a 2-D value that is not a tile (type {value.get_type()})",
+                because='a 16x16 block lives in a transfer-engine window or '
+                        'an accumulator; a value that reached here in '
+                        'neither was produced by an operation with no 2-D '
+                        'lowering')
+        return t
+
+    def _op_tt_dot(self, op):
+        """`tl.dot`, onto ISA sec 9C.
+
+        The accumulator is binary32 whatever the inputs are, and sec
+        9C.1 fixes the order and the rounding, so there is nothing to
+        choose here: the two fragments are already in windows, in the
+        layout the transfer engine wrote and the MMA reads, and the
+        command is the whole lowering.
+        """
+        a = self._tile_of(op.get_operand(0))
+        b = self._tile_of(op.get_operand(1))
+        if a.kind != 'window' or b.kind != 'window':
+            raise Unsupported(
+                'a tl.dot whose operands are not transfer-engine fragments',
+                because='ISA sec 9C reads A and B from vector registers in '
+                        'the fragment layout; a value computed in the '
+                        'vector unit would have to be repacked, and sec 8.4 '
+                        'reserves v.pack.f16',
+                remedy='feed tl.dot a value loaded from memory')
+        if a.dtype != b.dtype:
+            raise Unsupported(
+                f"a tl.dot of {a.dtype} with {b.dtype}: ISA sec 9C's "
+                f"mod[3:2] names ONE input format for both operands")
+
+        acc = self.b.accumulator(name=f"acc{len(self.kernel.accumulators)}")
+        # `tt.dot`'s third operand is the value accumulated into. Triton
+        # passes an explicit zero tensor for a plain product, and an
+        # accumulator carried across a loop otherwise; only the first is
+        # expressible while a tile has no way to enter an accumulator.
+        cin = op.get_operand(2)
+        if self._tiles.get(cin.id()) is not None:
+            raise Unsupported(
+                'a tl.dot accumulating into a tile that is already live',
+                because='ISA sec 9B can write an accumulator a row at a '
+                        'time, but this importer has no path that puts a '
+                        'computed tile back into one yet')
+        if not self._is_zero_tensor(cin):
+            raise Unsupported(
+                'a tl.dot whose accumulator input is not zero',
+                because='the MMA adds into its accumulator, so a non-zero '
+                        'input has to be placed there first')
+        self.b.acc_zero(acc)
+
+        bar = self.b.barrier(name=f"mma{len(self.kernel.barriers)}")
+        tok = self.b.barrier_arm(bar, arrivals=0, ops=1)
+        self.b.mma_async(acc, a.handle, b.handle, tok, dtype=a.dtype)
+        # ISA sec 9C.3: the accumulator may not be read by the vector
+        # unit before the command completes, and its sources may not be
+        # overwritten. The wait is what makes both true.
+        self.b.barrier_wait(tok)
+
+        _, rtype = _parse_type(str(op.get_result(0).get_type()))
+        self._tiles[op.get_result(0).id()] = Tile(
+            'accumulator', acc, a.rows, b.cols, rtype)
+
+    def _is_zero_tensor(self, value):
+        pending = self._pending_const.get(value.id())
+        if pending is None:
+            return False
+        return int(pending[1]) == 0
 
     # ---- where a float lives ----------------------------------------------
     #
@@ -1142,6 +1674,31 @@ class TTIRImporter:
 
     def _op_tt_load(self, op):
         ptr = op.get_operand(0)
+        shape2d, elem2d = _parse_type(str(op.get_result(0).get_type()))
+        if isinstance(shape2d, tuple):
+            spec = self._ptr2d.get(ptr.id())
+            if spec is None:
+                raise Unsupported(
+                    'a 2-D load through a pointer this does not recognise',
+                    because='tiles.py: a 16x16 block cannot be assembled '
+                            'from vector loads, so the access has to be '
+                            'describable as a TensorMap',
+                    source='doc/isa/TNCA-ISA-v0.1.md sec 9E.2')
+            if op.get_num_operands() > 1:
+                raise Unsupported(
+                    'a masked 2-D load',
+                    because='a transfer\'s lane mask is all or nothing '
+                            '(ISA sec 9E); per-element bounds come from the '
+                            "descriptor's extents, not from a mask",
+                    remedy='let the descriptor pad, or load the full tile')
+            name, elem, aff = spec
+            desc = self._tile_descriptor(name, elem, aff, shape2d,
+                                         'a 2-D tt.load')
+            zero = self.b.const(0)
+            self._tiles[op.get_result(0).id()] = self._dma_in(
+                desc.value, [zero, zero], list(shape2d), elem,
+                'a 2-D tt.load')
+            return
         mask = self._value(op.get_operand(1)) if op.get_num_operands() > 1 \
             else None
         other = 0
@@ -1184,6 +1741,39 @@ class TTIRImporter:
 
     def _op_tt_store(self, op):
         ptr, value = op.get_operand(0), op.get_operand(1)
+        shape2d, _ = _parse_type(str(value.get_type()))
+        if isinstance(shape2d, tuple):
+            spec = self._ptr2d.get(ptr.id())
+            if spec is None:
+                raise Unsupported(
+                    'a 2-D store through a pointer this does not recognise',
+                    source='doc/isa/TNCA-ISA-v0.1.md sec 9E.2')
+            if op.get_num_operands() > 2:
+                raise Unsupported('a masked 2-D store')
+            name, elem, aff = spec
+            tile = self._tile_of(value)
+            if tile.kind == 'accumulator':
+                if aff.col_stride != 1:
+                    raise Unsupported(
+                        f"a 2-D store whose columns are {aff.col_stride} "
+                        f"elements apart: a row leaves the accumulator as "
+                        f"one contiguous vector store")
+                esize = self._ELEM_BYTES[elem]
+                base = self._arg_value(name)
+                if aff.const:
+                    base = self.b.sbini('add', base, aff.const * esize,
+                                        comment="the tile's origin")
+                for extra in aff.dynamic:
+                    base = self.b.sbin('add', base, extra)
+                self._drain_accumulator(tile, base, aff.row_stride * esize,
+                                        elem)
+                return
+            desc = self._tile_descriptor(name, elem, aff, shape2d,
+                                         'a 2-D tt.store')
+            zero = self.b.const(0)
+            self._dma_out(desc.value, [zero, zero], tile, elem,
+                          'a 2-D tt.store')
+            return
         mask = self._value(op.get_operand(2)) if op.get_num_operands() > 2 \
             else None
         addr, size, elem, kind, index = self._address(ptr)
@@ -1217,6 +1807,13 @@ class TTIRImporter:
         pending = self._pending_const.get(vid)
         if pending is not None:
             kind, iv, elem = pending
+            if kind == 'tile':
+                raise Unsupported(
+                    f"a 2-D constant used as a value (type "
+                    f"{ttir_value.get_type()})",
+                    because='a 2-D block lives in a window or an '
+                            'accumulator, and a constant is in neither '
+                            'until something puts it there')
             if kind == 'scalar':
                 # One register per distinct value: BLOCK appears once per use
                 # in TTIR, and three `.li`s of 16 is three registers held for

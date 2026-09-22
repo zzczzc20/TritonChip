@@ -114,12 +114,13 @@ _CLASS_BY_OP = {
     'dma_load': OpClass.TRANSFER, 'dma_store': OpClass.TRANSFER,
 
     'mma_async': OpClass.MATRIX, 'acc_zero': OpClass.MATRIX,
-    'acc_read': OpClass.MATRIX,
+    'acc_read': OpClass.MATRIX, 'acc_write': OpClass.MATRIX,
 
     'arange': OpClass.VECTOR, 'splat': OpClass.VECTOR,
     'vmovi': OpClass.VECTOR, 'vbin': OpClass.VECTOR,
     'vcmp': OpClass.VECTOR, 'vselect': OpClass.VECTOR,
     'vun': OpClass.VECTOR, 'vfma': OpClass.VECTOR,
+    'pbin': OpClass.VECTOR, 'pun': OpClass.VECTOR,
     'vfms': OpClass.VECTOR, 'vcvt': OpClass.VECTOR,
     'load': OpClass.VECTOR, 'gather': OpClass.VECTOR,
     'reduce': OpClass.VECTOR,
@@ -710,7 +711,7 @@ def specialize_gemm_rolled(target, gemm_plan, *, name='cs_gemm_rolled',
 # distinction between the two is not worth drawing when both are free.
 _PURE = {'const', 'program_id', 'special', 'sbin', 'sbini', 'scmp',
          'arange', 'splat', 'vmovi', 'vbin', 'vun', 'vcmp', 'vselect',
-         'vfma', 'vfms', 'vcvt',
+         'vfma', 'vfms', 'vcvt', 'pbin', 'pun',
          'barrier_token', 'barrier_token_dyn', 'comment'}
 
 

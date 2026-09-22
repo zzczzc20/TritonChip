@@ -296,6 +296,23 @@ class Builder:
         self._emit('vcmp', [p], [a, b], cc=cc)
         return p
 
+    def pbin(self, op, a, b):
+        """Predicate logic (ISA sec 0x13).
+
+        `m & (v == b)` is two comparisons and an AND, and the AND is on
+        i1 lanes. Routing it through the integer vector unit would have
+        needed the predicates in vector registers, which is not where a
+        comparison leaves them.
+        """
+        out = self._value(PRED, 'i1', hint='m')
+        self._emit('pbin', [out], [a, b], op=op)
+        return out
+
+    def pun(self, op, a):
+        out = self._value(PRED, 'i1', hint='m')
+        self._emit('pun', [out], [a], op=op)
+        return out
+
     def vselect(self, p, a, b):
         v = self._value(VECTOR, a.dtype, hint='v')
         self._emit('vselect', [v], [p, a, b])
@@ -537,6 +554,16 @@ class Builder:
         self._emit('mma_async', [e], [acc, a_window, b_window, token],
                    dtype=dtype, k=k)
         return e
+
+    def acc_write(self, acc, row, value):
+        """One row of a vector value into an accumulator (ISA 0x01).
+
+        The write half of sec 9B. It is what lets a value computed in
+        the vector unit be an MMA's accumulator input, and sec 5.4 names
+        FlashAttention's rescale of O as the reason the round trip must
+        not go through memory.
+        """
+        self._emit('acc_write', [], [acc, row, value])
 
     def acc_read(self, acc, row):
         v = self._value(VECTOR, 'f32', hint='ac')

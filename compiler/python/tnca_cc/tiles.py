@@ -135,19 +135,24 @@ class Affine2D:
         self.col_stride = col_stride
         self.const = const
         # Scalar Values added to the offset whose size is not known here.
-        self.dynamic = list(dynamic or ())
+        # (scalar Value, coefficient in elements). A coefficient is
+        # carried rather than applied so that scaling the whole index
+        # -- which a split-k matmul does -- stays exact and stays one
+        # multiply at the end.
+        self.dynamic = [(v, 1) if not isinstance(v, tuple) else v
+                        for v in (dynamic or ())]
 
     def scaled(self, k):
+        """Multiply the whole index by a constant.
+
+        A runtime term keeps its own coefficient rather than being
+        refused: `s * K` with `s` a program id is how every split-k
+        matmul finds its slice, and the scale is one `s.muli` at the
+        point the base address is computed.
+        """
         return Affine2D(self.row_stride * k, self.col_stride * k,
                         self.const * k,
-                        self.dynamic if k == 1 else None) \
-            if k == 1 or not self.dynamic else self._refuse_scale(k)
-
-    @staticmethod
-    def _refuse_scale(k):
-        raise TileError(
-            f"a runtime offset multiplied by {k}: the scale would have to "
-            f"be applied to a register the descriptor cannot hold")
+                        [(v, c * k) for v, c in self.dynamic])
 
     def plus(self, other):
         return Affine2D(self.row_stride + other.row_stride,

@@ -426,7 +426,7 @@ def linear_self_attention(q_ptr, k_ptr, v_ptr, o_ptr, D: tl.constexpr,
     q = tl.load(q_ptr + ol[:, None] * D + od[None, :])
     k = tl.load(k_ptr + ol[:, None] * D + od[None, :])
     v = tl.load(v_ptr + ol[:, None] * D + od[None, :])
-    kv = tl.dot(tl.trans(k), v)
+    kv = tl.dot(tl.trans(k), v).to(tl.float16)
     tl.store(o_ptr + ol[:, None] * D + od[None, :], tl.dot(q, kv))
 
 

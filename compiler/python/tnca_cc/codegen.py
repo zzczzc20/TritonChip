@@ -37,13 +37,22 @@ _SBIN = {'add': 's.add', 'sub': 's.sub', 'mul': 's.mul', 'and': 's.and',
 _SBINI = {'add': 's.addi', 'sub': 's.subi', 'mul': 's.muli',
           'and': 's.andi', 'or': 's.ori', 'xor': 's.xori',
           'shl': 's.shli', 'lshr': 's.lshri', 'ashr': 's.ashri'}
-_VBIN_INT = {'add': 'v.add', 'sub': 'v.sub', 'mul': 'v.mul'}
+_VBIN_INT = {'add': 'v.add', 'sub': 'v.sub', 'mul': 'v.mul',
+             'and': 'v.and', 'or': 'v.or', 'xor': 'v.xor',
+             'andn': 'v.andn', 'shl': 'v.shl', 'lshr': 'v.lshr',
+             'ashr': 'v.ashr', 'min': 'v.min.s', 'max': 'v.max.s',
+             'minu': 'v.min.u', 'maxu': 'v.max.u'}
 _VBIN_FP = {'add': 'vf.add', 'sub': 'vf.sub', 'mul': 'vf.mul',
             'min': 'vf.min', 'max': 'vf.max'}
 # Lane-local unaries. Float only: the ISA spells integer negation as a
 # subtract from zero, which is exact, while float negation is a sign-bit
 # flip that a subtract does not reproduce for zero or for NaN.
 _VUN_FP = {'neg': 'vf.neg', 'abs': 'vf.abs'}
+
+# ISA sec 0x13. Predicates have their own logic unit; an `and` of two
+# comparisons belongs here and not in the integer vector unit.
+_PBIN = {'and': 'p.and', 'or': 'p.or', 'xor': 'p.xor', 'andn': 'p.andn'}
+_PUN = {'not': 'p.not', 'mov': 'p.mov'}
 
 # ISA sec 8.8. Approximate by contract, not by accident: each is
 # specified to <= 2**-22 relative error, which is roughly four units in
@@ -572,6 +581,22 @@ class CodeGen:
         self._emit(f"{mnem}.{op.attrs['cc']}", f"p{p.reg}", f"v{a.reg}",
                     f"v{b.reg}")
 
+    def _op_pbin(self, op):
+        a, b = op.operands
+        p = op.results[0]
+        self._alloc(p)
+        mnem = _PBIN.get(op.attrs['op'])
+        if mnem is None:
+            raise Diagnostic(f"no predicate lowering for {op.attrs['op']!r}",
+                             source='doc/isa/opcode-map.md sec 0x13')
+        self._emit(mnem, f"p{p.reg}", f"p{a.reg}", f"p{b.reg}")
+
+    def _op_pun(self, op):
+        a = op.operands[0]
+        p = op.results[0]
+        self._alloc(p)
+        self._emit(_PUN[op.attrs['op']], f"p{p.reg}", f"p{a.reg}")
+
     def _op_vselect(self, op):
         p, a, b = op.operands
         v = op.results[0]
@@ -996,6 +1021,12 @@ class CodeGen:
                       mode='write')
         self._events[id(op.results[0])] = cmd
         self._mma_pending.setdefault(bar, []).append(cmd)
+
+    def _op_acc_write(self, op):
+        acc, row, value = op.operands
+        self.own.check_write('a', acc.reg, by=f"a.vwrite a{acc.reg}")
+        self._emit('a.vwrite', f"a{acc.reg}", f"s{row.reg}",
+                    f"v{value.reg}")
 
     def _op_acc_read(self, op):
         acc, row = op.operands

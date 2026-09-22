@@ -259,7 +259,7 @@ _DONT_CARE_CONSUMERS = {'reduce': 'inactive lanes contribute the identity '
 # scatter, a shuffle or a reduction moves lane i somewhere else, and
 # then an inactive lane's rubbish arrives in an active one.
 _LANE_LOCAL = {'vbin', 'vun', 'vselect', 'vcmp', 'vmovi', 'splat',
-               'vfma', 'vfms', 'vcvt'}
+               'vfma', 'vfms', 'vcvt', 'pbin', 'pun'}
 
 
 def drop_dead_load_other(kernel):

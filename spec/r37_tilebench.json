@@ -1,0 +1,253 @@
+{
+  "format": "tnca-tilebench-coverage/1",
+  "source": "https://github.com/Deep-Learning-Profiling-Tools/Tilebench",
+  "about": [
+    "The 45 operators TileBench defines, and whether this compiler can build",
+    "each one from Triton source.",
+    "",
+    "The goal is coverage with the KERNEL UNCHANGED. A operator that only",
+    "compiles after its Triton source is rewritten to avoid something we do",
+    "not support has not been covered; it has been avoided. So each entry",
+    "records the kernel actually compiled and, when it fails, the exact",
+    "diagnostic -- not a category.",
+    "",
+    "`kernel: null` means no representative kernel has been written yet. That",
+    "is NOT RUN, and it is counted apart from failures: a suite that quietly",
+    "omitted the hard operators would report a coverage number that means",
+    "nothing."
+  ],
+  "categories": [
+    "point-wise",
+    "reduction",
+    "matmul",
+    "stencil",
+    "data-layout"
+  ],
+  "operators": [
+    {
+      "id": "vector_add",
+      "category": "point-wise",
+      "kernel": null
+    },
+    {
+      "id": "mul2",
+      "category": "point-wise",
+      "kernel": null
+    },
+    {
+      "id": "relu",
+      "category": "point-wise",
+      "kernel": null
+    },
+    {
+      "id": "leaky_relu",
+      "category": "point-wise",
+      "kernel": null
+    },
+    {
+      "id": "sigmoid",
+      "category": "point-wise",
+      "kernel": null
+    },
+    {
+      "id": "fused_activation",
+      "category": "point-wise",
+      "kernel": null
+    },
+    {
+      "id": "swiglu",
+      "category": "point-wise",
+      "kernel": null
+    },
+    {
+      "id": "dropout",
+      "category": "point-wise",
+      "kernel": null
+    },
+    {
+      "id": "quantize_global",
+      "category": "point-wise",
+      "kernel": null
+    },
+    {
+      "id": "dequantize_rowwise",
+      "category": "point-wise",
+      "kernel": null
+    },
+    {
+      "id": "weight_dequant",
+      "category": "point-wise",
+      "kernel": null
+    },
+    {
+      "id": "rope",
+      "category": "point-wise",
+      "kernel": null
+    },
+    {
+      "id": "softmax",
+      "category": "reduction",
+      "kernel": null
+    },
+    {
+      "id": "layernorm",
+      "category": "reduction",
+      "kernel": null
+    },
+    {
+      "id": "rmsnorm",
+      "category": "reduction",
+      "kernel": null
+    },
+    {
+      "id": "l2_norm",
+      "category": "reduction",
+      "kernel": null
+    },
+    {
+      "id": "mean_reduction",
+      "category": "reduction",
+      "kernel": null
+    },
+    {
+      "id": "argmax",
+      "category": "reduction",
+      "kernel": null
+    },
+    {
+      "id": "cross_entropy",
+      "category": "reduction",
+      "kernel": null
+    },
+    {
+      "id": "kl_divergence",
+      "category": "reduction",
+      "kernel": null
+    },
+    {
+      "id": "batch_normalization",
+      "category": "reduction",
+      "kernel": null
+    },
+    {
+      "id": "moe_topk_gating",
+      "category": "reduction",
+      "kernel": null
+    },
+    {
+      "id": "histogramming",
+      "category": "reduction",
+      "kernel": null
+    },
+    {
+      "id": "matmul_fp32_fp16_fp8",
+      "category": "matmul",
+      "kernel": null
+    },
+    {
+      "id": "matmul_int8",
+      "category": "matmul",
+      "kernel": null
+    },
+    {
+      "id": "batched_matmul",
+      "category": "matmul",
+      "kernel": null
+    },
+    {
+      "id": "streamk_matmul",
+      "category": "matmul",
+      "kernel": null
+    },
+    {
+      "id": "flash_attention",
+      "category": "matmul",
+      "kernel": null
+    },
+    {
+      "id": "flash_decode",
+      "category": "matmul",
+      "kernel": null
+    },
+    {
+      "id": "block_sparse_attention",
+      "category": "matmul",
+      "kernel": null
+    },
+    {
+      "id": "linear_self_attention",
+      "category": "matmul",
+      "kernel": null
+    },
+    {
+      "id": "1d_conv",
+      "category": "stencil",
+      "kernel": null
+    },
+    {
+      "id": "2d_conv",
+      "category": "stencil",
+      "kernel": null
+    },
+    {
+      "id": "3d_conv",
+      "category": "stencil",
+      "kernel": null
+    },
+    {
+      "id": "2d_max_pooling",
+      "category": "stencil",
+      "kernel": null
+    },
+    {
+      "id": "gaussian_blur",
+      "category": "stencil",
+      "kernel": null
+    },
+    {
+      "id": "jacobi_stencil_2d",
+      "category": "stencil",
+      "kernel": null
+    },
+    {
+      "id": "matrix_copy",
+      "category": "data-layout",
+      "kernel": null
+    },
+    {
+      "id": "matrix_transpose",
+      "category": "data-layout",
+      "kernel": null
+    },
+    {
+      "id": "interleave",
+      "category": "data-layout",
+      "kernel": null
+    },
+    {
+      "id": "reverse_array",
+      "category": "data-layout",
+      "kernel": null
+    },
+    {
+      "id": "destindex",
+      "category": "data-layout",
+      "kernel": null
+    },
+    {
+      "id": "bitonic_sort",
+      "category": "data-layout",
+      "kernel": null
+    },
+    {
+      "id": "radix_sort",
+      "category": "data-layout",
+      "kernel": null
+    },
+    {
+      "id": "top_k_selection",
+      "category": "data-layout",
+      "kernel": null
+    }
+  ]
+}

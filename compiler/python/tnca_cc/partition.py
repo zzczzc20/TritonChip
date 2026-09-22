@@ -119,6 +119,8 @@ _CLASS_BY_OP = {
     'arange': OpClass.VECTOR, 'splat': OpClass.VECTOR,
     'vmovi': OpClass.VECTOR, 'vbin': OpClass.VECTOR,
     'vcmp': OpClass.VECTOR, 'vselect': OpClass.VECTOR,
+    'vun': OpClass.VECTOR, 'vfma': OpClass.VECTOR,
+    'vfms': OpClass.VECTOR, 'vcvt': OpClass.VECTOR,
     'load': OpClass.VECTOR, 'gather': OpClass.VECTOR,
     'reduce': OpClass.VECTOR,
 
@@ -707,7 +709,8 @@ def specialize_gemm_rolled(target, gemm_plan, *, name='cs_gemm_rolled',
 # constant is copied, cheap address arithmetic is rematerialised, and the
 # distinction between the two is not worth drawing when both are free.
 _PURE = {'const', 'program_id', 'special', 'sbin', 'sbini', 'scmp',
-         'arange', 'splat', 'vmovi', 'vbin', 'vcmp', 'vselect',
+         'arange', 'splat', 'vmovi', 'vbin', 'vun', 'vcmp', 'vselect',
+         'vfma', 'vfms', 'vcvt',
          'barrier_token', 'barrier_token_dyn', 'comment'}
 
 

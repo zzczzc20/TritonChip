@@ -40,9 +40,21 @@ _SBINI = {'add': 's.addi', 'sub': 's.subi', 'mul': 's.muli',
 _VBIN_INT = {'add': 'v.add', 'sub': 'v.sub', 'mul': 'v.mul'}
 _VBIN_FP = {'add': 'vf.add', 'sub': 'vf.sub', 'mul': 'vf.mul',
             'min': 'vf.min', 'max': 'vf.max'}
+# Lane-local unaries. Float only: the ISA spells integer negation as a
+# subtract from zero, which is exact, while float negation is a sign-bit
+# flip that a subtract does not reproduce for zero or for NaN.
+_VUN_FP = {'neg': 'vf.neg', 'abs': 'vf.abs'}
+
+# ISA sec 8.8. Approximate by contract, not by accident: each is
+# specified to <= 2**-22 relative error, which is roughly four units in
+# the last place of binary32. Nothing here rounds correctly, so the
+# lowerings in mathlib.py refine these rather than returning them.
+_VUN_SFU = {'exp2': 'v.exp2.approx', 'rcp': 'v.rcp.approx',
+            'rsqrt': 'v.rsqrt.approx', 'log2': 'v.log2.approx'}
 _REDUCE_INT = {'add': 'v.reduce.add', 'max': 'v.reduce.max.s',
                'min': 'v.reduce.min.s', 'and': 'v.reduce.and',
-               'or': 'v.reduce.or', 'xor': 'v.reduce.xor'}
+               'or': 'v.reduce.or', 'xor': 'v.reduce.xor',
+               'maxu': 'v.reduce.max.u', 'minu': 'v.reduce.min.u'}
 _REDUCE_FP = {'add': 'vf.reduce.add', 'max': 'vf.reduce.max',
               'min': 'vf.reduce.min'}
 
@@ -444,15 +456,26 @@ class CodeGen:
         """
         v = op.results[0]
         self._alloc(v)
-        imm = int(op.attrs['imm'])
+        self._broadcast_imm(v.reg, int(op.attrs['imm']))
+
+    def _broadcast_imm(self, vreg, imm, comment=None):
+        """A 32-bit constant into every lane of `vreg`.
+
+        Every caller that puts a literal in a vector register goes
+        through here. The load and the gather used to emit their `other=`
+        `v.movi` themselves, so a masked load of a float -- `other=-inf`,
+        which is what every masked `tl.max` uses -- reached the assembler
+        as `v.movi #4286578688` and was refused, while the identical
+        constant arriving through `vmovi` was materialised correctly.
+        """
         if -(1 << 15) <= imm < (1 << 15):
-            self._emit('v.movi', f"v{v.reg}", f"#{imm}")
+            self._emit('v.movi', f"v{vreg}", f"#{imm}", comment=comment)
             return
         s = self.alloc.scalar()
         self.b.directive(self._materialise(s, imm))
-        self._emit('v.splat', f"v{v.reg}", f"s{s}",
-                    comment='a 32-bit constant does not fit v.movi '
-                            '(ISA 0x40)')
+        self._emit('v.splat', f"v{vreg}", f"s{s}",
+                    comment=comment or 'a 32-bit constant does not fit '
+                                       'v.movi (ISA 0x40)')
         self.alloc.free('s', s)
 
     def _op_vbin(self, op):
@@ -468,7 +491,68 @@ class CodeGen:
             raise Diagnostic(
                 f"no {v.dtype} lowering for {op.attrs['op']!r}",
                 source='compiler_overview.md sec 12')
+        # ISA sec 8.3: `.ieee` ignores a NaN operand, `.prop` propagates
+        # it. The two spellings are two different functions, so the
+        # suffix is written out rather than left to the assembler's
+        # default whenever the frontend knew which one it meant.
+        fmm = op.attrs.get('fmm')
+        if fmm is not None:
+            if mnem not in ('vf.min', 'vf.max'):
+                raise Diagnostic(
+                    f"a min/max NaN mode on {op.attrs['op']!r}, which has "
+                    f"none", source='doc/isa/TNCA-ISA-v0.1.md sec 8.3')
+            mnem = f"{mnem}.{fmm}"
         self._emit(mnem, f"v{v.reg}", f"v{a.reg}", f"v{b.reg}",
+                    comment=op.attrs.get('comment'))
+
+    def _op_vun(self, op):
+        a = op.operands[0]
+        v = op.results[0]
+        self._alloc(v)
+        sfu = _VUN_SFU.get(op.attrs['op'])
+        if sfu is not None:
+            self.target.require('sfu', f"emit {op.attrs['op']}")
+            self._emit(sfu, f"v{v.reg}", f"v{a.reg}",
+                        comment=op.attrs.get('comment'))
+            return
+        if not _is_fp(v.dtype):
+            raise Diagnostic(
+                f"no {v.dtype} lowering for {op.attrs['op']!r}: the ISA "
+                f"has no integer {op.attrs['op']}",
+                source='doc/isa/opcode-map.md')
+        self.target.require('vector_fp32',
+                            f"emit a {v.dtype} {op.attrs['op']}")
+        mnem = _VUN_FP.get(op.attrs['op'])
+        if mnem is None:
+            raise Diagnostic(f"no {v.dtype} lowering for {op.attrs['op']!r}",
+                             source='compiler_overview.md sec 12')
+        self._emit(mnem, f"v{v.reg}", f"v{a.reg}",
+                    comment=op.attrs.get('comment'))
+
+    def _op_vfma(self, op):
+        a, b, c = op.operands
+        v = op.results[0]
+        self._alloc(v)
+        self.target.require('vector_fp32', f"emit a {v.dtype} fma")
+        self._emit('vf.fma', f"v{v.reg}", f"v{a.reg}", f"v{b.reg}",
+                    f"v{c.reg}", comment=op.attrs.get('comment'))
+
+    def _op_vfms(self, op):
+        a, b, c = op.operands
+        v = op.results[0]
+        self._alloc(v)
+        self.target.require('vector_fp32', f"emit a {v.dtype} fms")
+        self._emit('vf.fms', f"v{v.reg}", f"v{a.reg}", f"v{b.reg}",
+                    f"v{c.reg}", comment=op.attrs.get('comment'))
+
+    def _op_vcvt(self, op):
+        a = op.operands[0]
+        v = op.results[0]
+        self._alloc(v)
+        src, dst = op.attrs['src'], op.attrs['dst']
+        # sec 8.4 gives int<->float their own opcodes and float->float a
+        # shared one; the assembler spells the first two out.
+        self._emit(f"vf.cvt.{src}.{dst}", f"v{v.reg}", f"v{a.reg}",
                     comment=op.attrs.get('comment'))
 
     def _op_vcmp(self, op):
@@ -504,8 +588,8 @@ class CodeGen:
         if mask is not None and not op.attrs.get('no_other'):
             # sec 12: `other=` is a value. A predicated load leaves inactive
             # lanes holding what the register had, so put the value there.
-            self._emit('v.movi', f"v{v.reg}", f"#{op.attrs['other']}",
-                        comment='other=, materialised (sec 12)')
+            self._broadcast_imm(v.reg, int(op.attrs['other']),
+                                comment='other=, materialised (sec 12)')
         self._emit(f"v.ld.{op.attrs['size']}", f"v{v.reg}",
                     f"[s{base.reg}, #0]", pred=self._pred(mask))
 
@@ -573,8 +657,8 @@ class CodeGen:
         self.target.require('gather_scatter', 'emit v.ld.gather')
         self._alloc(v)
         if mask is not None:
-            self._emit('v.movi', f"v{v.reg}", f"#{op.attrs['other']}",
-                        comment='other=, materialised (sec 12)')
+            self._broadcast_imm(v.reg, int(op.attrs['other']),
+                                comment='other=, materialised (sec 12)')
         # ISA sec 9.1 scales the index by the access size: these are element
         # indices, not byte offsets.
         self._emit(f"v.ld.gather.{op.attrs['size']}", f"v{v.reg}",
@@ -615,6 +699,10 @@ class CodeGen:
             raise Diagnostic(f"no {v.dtype} reduction {op.attrs['op']!r}")
         # ISA sec 8.7: inactive lanes contribute the identity, so a masked
         # reduction needs no pre-select.
+        if op.attrs.get('broadcast'):
+            self._emit(f"{mnem}.b", f"v{s.reg}", f"v{v.reg}",
+                        pred=self._pred(op.attrs.get('mask')))
+            return
         self._emit(mnem, f"s{s.reg}", f"v{v.reg}",
                     pred=self._pred(op.attrs.get('mask')))
 

@@ -21,9 +21,11 @@ Two rules govern what is *not* here:
             substitution.
 """
 import re
+import struct
 
+from . import mathlib
 from .diagnostics import Diagnostic
-from .ir import Builder, make_kernel
+from .ir import Builder, VECTOR, make_kernel
 
 # TTIR arithmetic -> our binary op names.
 _INT_BIN = {'arith.addi': 'add', 'arith.subi': 'sub', 'arith.muli': 'mul',
@@ -37,7 +39,7 @@ _CMP_I = {0: 'eq', 1: 'ne', 2: 'lt', 3: 'le', 4: 'gt', 5: 'ge',
           6: 'ltu', 7: 'leu', 8: 'gtu', 9: 'geu'}
 _CMP_F = {1: 'eq', 2: 'gt', 3: 'ge', 4: 'lt', 5: 'le', 6: 'ne'}
 
-_TENSOR_RE = re.compile(r'tensor<(\d+)x(.+)>')
+_TENSOR_RE = re.compile(r'tensor<((?:\d+x)+)(.+)>')
 _PTR_RE = re.compile(r'!tt\.ptr<(.+?)>')
 
 _DTYPE_BYTES = {'f32': 4, 'i32': 4, 'f16': 2, 'bf16': 2, 'i16': 2,
@@ -46,10 +48,23 @@ _SIZE_SUFFIX = {1: 'b', 2: 'h', 4: 'w', 8: 'd'}
 
 
 def _parse_type(text):
-    """(shape, element type) for a TTIR type string."""
+    """(shape, element type) for a TTIR type string.
+
+    A 1-D tensor reports its length as an int, which is what every
+    caller here wants and what the whole importer was written against.
+    A tensor of rank 2 or more reports its dimensions as a tuple, so
+    that `_check_block` can refuse it by name.
+
+    The distinction is not cosmetic. The pattern used to be
+    `tensor<(\d+)x(.+)>`, and `tensor<16x16xf16>` matched it -- as a
+    16-element tensor of element type "16xf16". Nothing downstream
+    looked at the element type closely enough to notice, so a 2-D block
+    was silently compiled as the first row of itself.
+    """
     m = _TENSOR_RE.fullmatch(text.strip())
     if m:
-        return int(m.group(1)), m.group(2).strip()
+        dims = tuple(int(d) for d in m.group(1).rstrip('x').split('x'))
+        return (dims[0] if len(dims) == 1 else dims), m.group(2).strip()
     return None, text.strip()
 
 
@@ -78,11 +93,13 @@ class TTIRImporter:
         # to, and reading only the last link is what made `p + row*N +
         # offs` load from `p + offs`.
         self._ptr_chain = {}
-        self._offsets = {}      # TTIR value id -> our offset Value (elements)
+        self._offsets = {}  # TTIR value id -> our offset Value (elements)
+        self._bodies = {}   # region id -> the operations inside that region
         self._args = {}         # arg index -> (name, our Value)
         self._pending_const = {}  # TTIR value id -> constant not yet emitted
         self._scalar_cache = {}   # constant -> our Value, so BLOCK is emitted once
         self._byte_offsets = {}   # (offset value, shift) -> byte offset Value
+        self._fconst_cache = {}   # (f32 bit pattern, type) -> our Value
         self.arg_names = []
         self.arg_abi_types = []   # parallel to arg_names, in dynamic mode
         self.dynamic_args = False  # set by run(); see _load_argument
@@ -144,6 +161,8 @@ class TTIRImporter:
                         'this function, not that the kernel is trivial',
                 source='compiler_overview.md sec 11.1')
         self._float_constants(module, ops)
+
+        ops, self._bodies = self._split_regions(ops)
 
         for op in ops:
             name = op.get_name()
@@ -208,6 +227,163 @@ class TTIRImporter:
                 return False
             seen += 1
         return False
+
+    @staticmethod
+    def _split_regions(ops):
+        """Separate the function body from the bodies of region operations.
+
+        `module.walk` does not stop at a region boundary: the combinator
+        inside a `tt.reduce` arrives in the same flat list as the reduce
+        that owns it. Dispatched there it would be lowered twice -- once
+        as part of the reduction, and once as a stray scalar
+        `arith.maxnumf` over two block arguments that were never bound to
+        anything, which is a wrong answer rather than an error.
+
+        Returns (top-level ops, {region id: [ops inside it]}). The bodies
+        stay in walk order, which is program order, because the operation
+        that owns them has to read them as a sequence.
+        """
+        owned = set()
+        for op in ops:
+            if op.get_name() in ('tt.func', 'builtin.module'):
+                continue
+            for i in range(op.get_num_regions()):
+                owned.add(op.get_region(i).id())
+        if not owned:
+            return ops, {}
+
+        top, bodies = [], {}
+        for op in ops:
+            rid = None
+            try:
+                region = op.get_block().get_parent()
+            except Exception:                             # noqa: BLE001
+                region = None
+            seen = 0
+            while region is not None and seen < 64:
+                if region.id() in owned:
+                    rid = region.id()
+                    break
+                try:
+                    region = region.get_parent_region()
+                except Exception:                         # noqa: BLE001
+                    break
+                seen += 1
+            if rid is None:
+                top.append(op)
+            else:
+                bodies.setdefault(rid, []).append(op)
+        return top, bodies
+
+    # ---- reductions -------------------------------------------------------
+    # The combinator inside a `tt.reduce` region, as the reduction it is.
+    # `maximumf`/`minimumf` are deliberately absent: they propagate NaN,
+    # and ISA sec 8.7 does not say what `vf.reduce.max` does with one.
+    # Mapping them onto it anyway would be a guess about the hardware
+    # written into the compiler.
+    _COMBINATOR = {
+        'arith.addf': 'add', 'arith.addi': 'add',
+        'arith.maxnumf': 'max', 'arith.minnumf': 'min',
+        'arith.maxsi': 'max', 'arith.minsi': 'min',
+        'arith.maxui': 'maxu', 'arith.minui': 'minu',
+        'arith.andi': 'and', 'arith.ori': 'or', 'arith.xori': 'xor',
+    }
+
+    def _op_tt_reduce(self, op):
+        """A whole-vector reduction to a scalar.
+
+        The masked lanes need no handling here. Triton has already put
+        `other=` into the loaded vector, and ISA sec 8.7 makes an
+        inactive lane contribute the operation's identity -- which is the
+        same value. Adding a second mask would be harmless for `add` and
+        wrong for nothing, but it would also be untrue: the mask this
+        reduction would want is the load's, and by this point the load
+        has consumed it.
+        """
+        if op.get_num_operands() != 1 or op.get_num_results() != 1:
+            raise Unsupported(
+                f"a {op.get_num_operands()}-input reduction",
+                because='a multi-input `tt.reduce` carries an index '
+                        'alongside the value -- argmax and argmin -- and '
+                        'ISA sec 8.7 reduces one vector to one scalar',
+                remedy='reduce the value and the index separately, or add '
+                       'an argmax lowering',
+                source='doc/isa/TNCA-ISA-v0.1.md sec 8.7')
+
+        axis = op.get_int_attr('axis')
+        src = op.get_operand(0)
+        shape, elem = _parse_type(str(src.get_type()))
+        if shape is None:
+            raise Unsupported('a reduction over a scalar')
+        rank = len(shape) if isinstance(shape, tuple) else 1
+        if rank != 1 or axis != 0:
+            raise Unsupported(
+                f"a reduction over axis {axis} of a {rank}-D tensor",
+                because='only the lane axis of a 1-D block reduces to a '
+                        'scalar in one instruction',
+                source='doc/isa/TNCA-ISA-v0.1.md sec 8.7')
+
+        kind = self._combinator(op)
+        _, rtype = _parse_type(str(op.get_result(0).get_type()))
+        rtype = rtype or elem
+        self._v[op.get_result(0).id()] = self.b.reduce(
+            kind, self._value(src), dtype=rtype,
+            broadcast=rtype.startswith('f'))
+
+    def _combinator(self, op):
+        """Which reduction the region body computes.
+
+        Read out of the region rather than assumed: `tt.reduce` is a
+        generic fold and the body is the only thing that says whether it
+        is a sum, a maximum or something this backend has no instruction
+        for. Guessing from the operator name would be guessing from the
+        Python that produced it, which the IR no longer contains.
+        """
+        body = self._bodies.get(op.get_region(0).id(), [])
+        body = [b for b in body if b.get_name() != 'tt.reduce.return']
+        rets = self._bodies.get(op.get_region(0).id(), [])
+        rets = [b for b in rets if b.get_name() == 'tt.reduce.return']
+
+        if len(body) != 1 or len(rets) != 1:
+            raise Unsupported(
+                f"a reduction whose body is {len(body)} operations",
+                because='a single ISA reduction computes a single '
+                        'associative combinator; a longer body is a fold '
+                        'that has to be written out as a loop',
+                source='doc/isa/TNCA-ISA-v0.1.md sec 8.7')
+
+        inner, ret = body[0], rets[0]
+        name = inner.get_name()
+        kind = self._COMBINATOR.get(name)
+        if kind is None:
+            raise Unsupported(
+                f"a reduction combined with {name!r}",
+                because='ISA sec 8.7 has add, max, min, and, or and xor, '
+                        'and a combinator outside that set is not one '
+                        'instruction',
+                remedy='use tl.sum, tl.max or tl.min',
+                source='doc/isa/TNCA-ISA-v0.1.md sec 8.7')
+
+        # The body must fold its two block arguments and return that.
+        # Anything else -- a captured outer value, a returned constant --
+        # is a different function that happens to contain the right
+        # operator, and lowering it as this reduction would be wrong.
+        if inner.get_num_operands() != 2:
+            raise Unsupported(f"a reduction combined with a "
+                              f"{inner.get_num_operands()}-operand {name!r}")
+        a, b = inner.get_operand(0).id(), inner.get_operand(1).id()
+        if a == b or a in self._v or b in self._v:
+            raise Unsupported(
+                'a reduction whose body captures a value from outside it',
+                because='the body must fold its own two arguments; one that '
+                        'reads an outer value is not the fold this lowers',
+                source='doc/isa/TNCA-ISA-v0.1.md sec 8.7')
+        if (ret.get_num_operands() != 1
+                or ret.get_operand(0).id() != inner.get_result(0).id()):
+            raise Unsupported(
+                'a reduction that returns something other than its '
+                'combinator')
+        return kind
 
     # ---- arguments --------------------------------------------------------
     def _bind_args(self, fn, func_name, arg_values, param_names, module):
@@ -419,7 +595,6 @@ class TTIRImporter:
         the sign of a zero and the payload of a NaN survive; and a literal
         this cannot read is refused by name rather than approximated.
         """
-        import struct
         lit = literal.strip()
         m = re.fullmatch(r'dense<(.+)>', lit)
         if m:
@@ -483,15 +658,28 @@ class TTIRImporter:
         # becomes an attribute of our load rather than a value, and emitting
         # it eagerly would leave a dead `.li` and a dead register in every
         # masked access.
-        if shape is None:
+        if shape is None and not elem.startswith('f'):
             self._pending_const[rid] = ('scalar', iv, elem)
         else:
-            self._check_block(shape)
+            # A float constant goes in a vector register even when TTIR
+            # calls it a scalar: `s.li` would put it in a register no
+            # floating-point instruction can read.
+            if shape is not None:
+                self._check_block(shape)
             self._pending_const[rid] = ('vector', iv, elem)
 
     # ---- shape rules ------------------------------------------------------
     def _check_block(self, shape):
         vlen = self.target.vlen
+        if isinstance(shape, tuple):
+            raise Unsupported(
+                f"a {len(shape)}-D block of {'x'.join(map(str, shape))}",
+                because='a vector register is one dimension; a 2-D tile '
+                        'needs the register-blocking that sec 12 describes '
+                        'and this importer does not build yet',
+                remedy='use a 1-D block, or a tl.dot whose operands the '
+                       'matrix lowering handles',
+                source='compiler_overview.md sec 12')
         if shape % vlen:
             raise Unsupported(
                 f"a block of {shape} is not a multiple of VLEN={vlen}",
@@ -536,7 +724,15 @@ class TTIRImporter:
             self._ptr_base[rid] = self._ptr_base[src.id()]
             self._ptr_chain[rid] = list(self._ptr_chain.get(src.id(), []))
             return
-        self._v[rid] = self.b.splat(self._value(src), dtype=elem)
+        v = self._value(src)
+        if v.kind == VECTOR:
+            # Already broadcast to every lane -- a reduced float, or a
+            # float constant. Splatting it again would emit a `v.splat`
+            # that reads a vector register, which is not what that
+            # instruction does.
+            self._v[rid] = v
+        else:
+            self._v[rid] = self.b.splat(v, dtype=elem)
         self._offsets[rid] = ('uniform', src.id())
 
     def _op_tt_addptr(self, op):
@@ -554,8 +750,13 @@ class TTIRImporter:
         # The offsets this pointer accumulated, oldest first. Kept
         # explicitly because the offset table alone cannot say which
         # pointer an offset belonged to.
-        self._ptr_chain[rid] = self._ptr_chain.get(base.id(), []) + \
-            [offs.id()]
+        #
+        # The TTIR values, not their ids: an offset can be a constant
+        # that has not been materialised yet, and only the value can ask
+        # for it to be. Keeping ids here meant a chain containing a
+        # constant vector -- `x[row*N + col + dx]`, every unrolled
+        # convolution tap -- died in a KeyError instead of loading.
+        self._ptr_chain[rid] = self._ptr_chain.get(base.id(), []) + [offs]
 
     def _op_arith_addi(self, op):
         self._binary(op, _INT_BIN['arith.addi'])
@@ -584,24 +785,192 @@ class TTIRImporter:
     def _op_arith_mulf(self, op):
         self._binary(op, 'mul')
 
+    # MLIR has two maxima and they are not the same function. ISA sec 8.3
+    # has both: `.prop` propagates a NaN operand, `.ieee` ignores it.
+    # `tl.maximum` lowers to `arith.maximumf`, and `tl.max`/softmax to
+    # `arith.maxnumf` through the reduction -- so getting these the wrong
+    # way round shows up as a NaN that should have been eaten, or a
+    # number where a NaN was owed.
     def _op_arith_maximumf(self, op):
-        self._binary(op, 'max')
+        self._binary(op, 'max', fmm='prop')
 
     def _op_arith_minimumf(self, op):
-        self._binary(op, 'min')
+        self._binary(op, 'min', fmm='prop')
 
-    def _binary(self, op, kind):
+    def _op_arith_maxnumf(self, op):
+        self._binary(op, 'max', fmm='ieee')
+
+    def _op_arith_minnumf(self, op):
+        self._binary(op, 'min', fmm='ieee')
+
+    def _op_arith_negf(self, op):
+        self._unary_fp(op, 'neg')
+
+    def _op_math_absf(self, op):
+        self._unary_fp(op, 'abs')
+
+    def _unary_fp(self, op, kind):
+        _, elem, _bcast = self._float_shape(op)
+        self.target.require('vector_fp32', f"emit a {elem} {kind}")
+        self._v[op.get_result(0).id()] = self.b.vun(
+            kind, self._vec(op.get_operand(0), elem), dtype=elem)
+
+    # ---- where a float lives ----------------------------------------------
+    #
+    # There is no scalar floating-point unit. ISA sec 7 has `s.add` and
+    # `s.max.s` and no `s.fadd`, no scalar divide and no scalar SFU, so a
+    # TTIR value of type `f32` -- what `tl.sum` returns, and what every
+    # mean and every norm then divides by -- cannot be held in a scalar
+    # register and operated on there.
+    #
+    # It is held in a vector register, broadcast to every lane. Sec 8.7's
+    # `mod[0] = 1` reduction form produces exactly that, so the broadcast
+    # costs nothing at the point the value is created, and `tt.splat` of
+    # such a value is then a rename rather than an instruction.
+
+    def _is_float_scalar(self, ttir_value):
+        _, elem = _parse_type(str(ttir_value.get_type()))
+        return elem.startswith('f') and elem != 'f'
+
+    def _float_shape(self, op):
+        """The shape a float operation should be lowered at.
+
+        A tensor result keeps its own shape. A scalar float result is
+        still lowered in the vector unit, because that is the only unit
+        that has floating point -- so it reports VLEN, and the result is
+        recorded as a broadcast value.
+        """
+        shape, elem = _parse_type(str(op.get_result(0).get_type()))
+        if shape is not None:
+            self._check_block(shape)
+            return shape, elem, False
+        if not elem.startswith('f'):
+            return None, elem, False
+        return self.target.vlen, elem, True
+
+    def _vec(self, ttir_value, elem):
+        """This value in a vector register, whatever it is held in now.
+
+        A float scalar is already broadcast, so it comes back unchanged.
+        An integer scalar -- a loop bound, an `n` about to be converted
+        to a float -- is in a scalar register and gets a splat.
+        """
+        v = self._value(ttir_value)
+        if v.kind == VECTOR:
+            return v
+        return self.b.splat(v, dtype=elem)
+
+    # ---- transcendentals --------------------------------------------------
+    # `math.*` in, a mathlib.py function out. Every one of these is built
+    # on ISA sec 8.8, whose operations are approximate by contract;
+    # mathlib.ACCURACY states what each lowering promises and why.
+    _MATH = {
+        'math.exp': 'exp', 'math.exp2': 'exp2',
+        'math.log': 'log', 'math.log2': 'log2',
+        'math.sqrt': 'sqrt', 'math.rsqrt': 'rsqrt',
+        'math.absf': 'absf',
+    }
+
+    def _fconst(self, value, elem='f32'):
+        """A whole-vector float constant, emitted once per value.
+
+        Keyed on the bit pattern rather than the Python float so that
+        +0.0 and -0.0 do not share a register: they are different
+        numbers and `struct` keeps them apart even where `==` does not.
+        """
+        bits = struct.unpack('<I', struct.pack('<f', value))[0]
+        key = (bits, elem)
+        v = self._fconst_cache.get(key)
+        if v is None:
+            v = self.b.vmovi(bits, dtype=elem)
+            self._fconst_cache[key] = v
+        return v
+
+    def _math(self, op, fname):
+        _, elem, _bcast = self._float_shape(op)
+        self.target.require('sfu', f"emit {fname}")
+        fn = getattr(mathlib, fname)
+        self._v[op.get_result(0).id()] = fn(
+            self.b, lambda c: self._fconst(c, elem),
+            self._vec(op.get_operand(0), elem), dtype=elem)
+
+    def _op_math_exp(self, op):
+        self._math(op, 'exp')
+
+    def _op_math_exp2(self, op):
+        self._math(op, 'exp2')
+
+    def _op_math_log(self, op):
+        self._math(op, 'log')
+
+    def _op_math_log2(self, op):
+        self._math(op, 'log2')
+
+    def _op_math_sqrt(self, op):
+        self._math(op, 'sqrt')
+
+    def _op_math_rsqrt(self, op):
+        self._math(op, 'rsqrt')
+
+    def _op_arith_divf(self, op):
+        """IEEE division, which the ISA does not have (sec 8.2).
+
+        A reciprocal and a multiply, with the reciprocal refined so the
+        answer matches the division the IR asked for rather than being
+        the four-ulp approximation the SFU returns.
+        """
+        _, elem, _bcast = self._float_shape(op)
+        self.target.require('sfu', 'emit a float division')
+        self._v[op.get_result(0).id()] = mathlib.div(
+            self.b, lambda c: self._fconst(c, elem),
+            self._vec(op.get_operand(0), elem),
+            self._vec(op.get_operand(1), elem), dtype=elem)
+
+    # ---- conversions ------------------------------------------------------
+    def _convert(self, op, src, dst):
+        _, elem, _bcast = self._float_shape(op)
+        self._v[op.get_result(0).id()] = self.b.vcvt(
+            src, dst, self._vec(op.get_operand(0), src))
+
+    def _op_arith_sitofp(self, op):
+        self._convert(op, 's32', 'f32')
+
+    def _op_arith_uitofp(self, op):
+        self._convert(op, 'u32', 'f32')
+
+    def _op_arith_fptosi(self, op):
+        self._convert(op, 'f32', 's32')
+
+    def _op_arith_fptoui(self, op):
+        self._convert(op, 'f32', 'u32')
+
+    def _op_arith_select(self, op):
+        """`arith.select(cond, on_true, on_false)`.
+
+        ISA 0x19 is `Vd[i] = mask[i] ? Va[i] : Vb[i]` and writes every
+        lane, so the operand order carries across unchanged and no
+        separate merge is needed.
+        """
+        cond, a, b = (op.get_operand(0), op.get_operand(1),
+                      op.get_operand(2))
+        shape, elem, _bcast = self._float_shape(op)
+        if shape is None:
+            raise Unsupported('a select on integer scalars')
+        self._v[op.get_result(0).id()] = self.b.vselect(
+            self._value(cond), self._vec(a, elem), self._vec(b, elem))
+
+    def _binary(self, op, kind, fmm=None):
         a, b = op.get_operand(0), op.get_operand(1)
         rid = op.get_result(0).id()
-        shape, elem = _parse_type(str(op.get_result(0).get_type()))
+        shape, elem, _bcast = self._float_shape(op)
         if shape is None:
             self._v[rid] = self.b.sbin(kind, self._value(a), self._value(b))
         else:
-            self._check_block(shape)
             if elem.startswith('f'):
                 self.target.require('vector_fp32', f"emit a {elem} {kind}")
-            self._v[rid] = self.b.vbin(kind, self._value(a), self._value(b),
-                                       dtype=elem)
+            self._v[rid] = self.b.vbin(kind, self._vec(a, elem),
+                                       self._vec(b, elem),
+                                       dtype=elem, fmm=fmm)
             # Track `pid*BLOCK + arange` so a contiguous access is recognised.
             self._note_affine(rid, a, b, kind)
 
@@ -626,8 +995,9 @@ class TTIRImporter:
         cc = table.get(pred)
         if cc is None:
             raise Unsupported(f"comparison predicate {pred} on {which}")
-        self._v[op.get_result(0).id()] = self.b.vcmp(cc, self._value(a),
-                                                     self._value(b))
+        _, elem = _parse_type(str(a.get_type()))
+        self._v[op.get_result(0).id()] = self.b.vcmp(
+            cc, self._vec(a, elem), self._vec(b, elem))
 
     # ---- memory -----------------------------------------------------------
     def _address(self, ptr_value):
@@ -660,12 +1030,16 @@ class TTIRImporter:
 
         # Every offset added to this pointer, oldest first.
         chain = list(self._ptr_chain.get(pid, []))
-        if not chain:
-            kind, src = self._offsets.get(pid, (None, None))
-            chain = [src] if kind == 'ptr' else []
 
-        scalar_terms, lane, const_elems = [], None, 0
-        for off in chain:
+        # Each link of the chain is sorted into one of three piles: a
+        # compile-time element count, a scalar (lane-invariant) term, and
+        # a lane-varying term. What the access turns out to be follows
+        # from which piles are non-empty, rather than from the order the
+        # links happened to arrive in.
+        scalar_terms, lane_terms, const_elems = [], [], 0
+        pure_arange = 0
+        for value in chain:
+            off = value.id()
             okind, ouni = self._offsets.get(off, (None, None))
             known = self._scalar_const(off)
             if known is not None and okind is None:
@@ -675,15 +1049,14 @@ class TTIRImporter:
                 # register to add zero.
                 const_elems += known
             elif okind == 'arange':
-                if lane is not None:
-                    raise Unsupported(
-                        'two lane-varying offsets on one pointer')
-                lane = 'arange'
+                pure_arange += 1
+                lane_terms.append(value)
             elif okind == 'contiguous':
-                if lane is not None:
-                    raise Unsupported(
-                        'two lane-varying offsets on one pointer')
-                lane = 'arange'
+                # `uniform + arange`, already summed into one vector. The
+                # uniform part is lane-invariant, so hoist it into the
+                # scalar address and let the arange be the lane term.
+                pure_arange += 1
+                lane_terms.append(value)
                 scalar_terms.append(self._v[ouni])
             elif okind == 'uniform':
                 scalar_terms.append(self._v[ouni])
@@ -691,14 +1064,17 @@ class TTIRImporter:
                                             None) == 'scalar':
                 scalar_terms.append(self._v[off])
             else:
-                # A general per-lane offset. Only meaningful on its own:
-                # the ISA scales it by the access size, so it is already
-                # in elements.
-                if len(chain) != 1:
-                    raise Unsupported(
-                        'a per-lane offset combined with another offset')
-                return (self._arg_value(name), _SIZE_SUFFIX[esize], elem,
-                        'indexed', self._v[off])
+                # A general per-lane offset, in elements: ISA sec 9.1
+                # scales a gather index by the access size, so it needs no
+                # conversion to bytes the way a scalar term does.
+                lane_terms.append(value)
+
+        # A gather's address is `Sa + Vb[i]*sz`, so a scalar offset and a
+        # per-lane offset on the same pointer are not in conflict: the
+        # first belongs in `Sa` and the second in `Vb`. Refusing the
+        # combination cost `x[row*N + col + dx]` -- which is every
+        # stencil and every convolution -- for no reason.
+        indexed = len(lane_terms) > pure_arange or len(lane_terms) > 1
 
         addr = self._arg_value(name)
         if const_elems:
@@ -724,6 +1100,26 @@ class TTIRImporter:
                     comment=f"element offset -> bytes (x{esize})")
                 self._byte_offsets[key] = byte
             addr = self.b.sbin('add', addr, byte, comment=f"&{name}[...]")
+
+        if indexed:
+            # More than one lane-varying term, or one that is not the
+            # plain lane index: sum them and gather. `contiguous` here
+            # would give lane i the element at i, which is only the same
+            # answer when the sum IS the lane index.
+            index = self._value(lane_terms[0])
+            for extra in lane_terms[1:]:
+                index = self.b.vbin('add', index, self._value(extra),
+                                    dtype=index.dtype,
+                                    comment='per-lane offsets add up, in '
+                                            'elements (ISA sec 9.1)')
+            return addr, _SIZE_SUFFIX[esize], elem, 'indexed', index
+
+        if not lane_terms:
+            # Nothing varies per lane, so every lane wants the SAME
+            # element. A contiguous vector load would give lane i the
+            # element at i and be wrong by fifteen lanes out of sixteen.
+            return addr, _SIZE_SUFFIX[esize], elem, 'broadcast', None
+
         return addr, _SIZE_SUFFIX[esize], elem, 'contiguous', None
 
     def _scalar_const(self, vid):
@@ -766,7 +1162,19 @@ class TTIRImporter:
                 addr, size=size, dtype=elem,
                 comment='one element, not a vector')
             return
-        if kind == 'contiguous':
+        if kind == 'broadcast':
+            # One element into every lane: a scalar load and a splat.
+            if mask is not None:
+                raise Unsupported(
+                    'a masked load of a single broadcast element',
+                    because='the mask would select lanes of a value that '
+                            'is the same in every lane, so either all of '
+                            'the access happens or none of it does')
+            self._v[rid] = self.b.splat(
+                self.b.sload(addr, size=size, dtype=elem,
+                             comment='one element, broadcast to every lane'),
+                dtype=elem)
+        elif kind == 'contiguous':
             self._v[rid] = self.b.load(addr, mask=mask, other=other,
                                        dtype=elem, size=size)
         else:
@@ -785,6 +1193,14 @@ class TTIRImporter:
                 raise Unsupported('a masked scalar store')
             self.b.sstore(addr, self._value(value), size=size)
             return
+        if kind == 'broadcast':
+            raise Unsupported(
+                'a vector store through a pointer that does not vary by '
+                'lane',
+                because='every lane would write the same address, and '
+                        'which lane won is not something the ISA decides',
+                remedy='store one element, or give the pointer a per-lane '
+                       'offset')
         if kind == 'contiguous':
             self.b.store(addr, self._value(value), mask=mask, size=size)
         else:

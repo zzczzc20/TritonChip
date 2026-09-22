@@ -233,9 +233,62 @@ class Builder:
                    out_sizes=out_sizes, what=what)
         return out
 
-    def vbin(self, op, a, b, dtype=None, comment=None):
+    def vbin(self, op, a, b, dtype=None, comment=None, fmm=None):
+        """A lane-local binary.
+
+        `fmm` is the ISA sec 8.3 min/max NaN mode and is meaningful only
+        for `min` and `max`. It is not a tuning knob: MLIR has two
+        distinct maxima, `arith.maxnumf` (NaN operand ignored) and
+        `arith.maximumf` (NaN operand propagates), and they are `.ieee`
+        and `.prop` respectively. Defaulting both to `.ieee` -- which is
+        what happened before this argument existed -- silently computed
+        the wrong one of the two.
+        """
         v = self._value(VECTOR, dtype or a.dtype, hint='v')
-        self._emit('vbin', [v], [a, b], op=op, comment=comment)
+        self._emit('vbin', [v], [a, b], op=op, comment=comment, fmm=fmm)
+        return v
+
+    def vun(self, op, a, dtype=None, comment=None):
+        """A lane-local unary.
+
+        `neg` and `abs` are single ISA instructions (0x14, 0x15) that act
+        on the sign bit alone. Synthesising them out of `vbin` would not
+        be the same function: `0 - x` is +0.0 for x = +0.0, where negation
+        is -0.0, and it does not preserve a NaN payload the way ISA sec
+        0x14 promises.
+        """
+        v = self._value(VECTOR, dtype or a.dtype, hint='v')
+        self._emit('vun', [v], [a], op=op, comment=comment)
+        return v
+
+    def vfma(self, a, b, c, dtype=None, comment=None):
+        """`a*b + c` with a SINGLE rounding (ISA 0x06).
+
+        Single rounding is the whole reason this exists as its own
+        builder call: the argument reduction in the math lowerings gets
+        its extra precision from the product NOT being rounded before
+        the add, and a multiply followed by an add is a different
+        function that happens to agree most of the time.
+        """
+        v = self._value(VECTOR, dtype or a.dtype, hint='v')
+        self._emit('vfma', [v], [a, b, c], comment=comment)
+        return v
+
+    def vfms(self, a, b, c, dtype=None, comment=None):
+        """`a*b - c` with a single rounding (ISA 0x07)."""
+        v = self._value(VECTOR, dtype or a.dtype, hint='v')
+        self._emit('vfms', [v], [a, b, c], comment=comment)
+        return v
+
+    def vcvt(self, src, dst, a, comment=None):
+        """A numeric conversion (ISA sec 8.4).
+
+        `src` and `dst` are the ISA's own format names, in the ISA's own
+        order: `vcvt('s32', 'f32', x)` is `vf.cvt.s32.f32`, widening a
+        signed integer to binary32.
+        """
+        v = self._value(VECTOR, dst, hint='c')
+        self._emit('vcvt', [v], [a], src=src, dst=dst, comment=comment)
         return v
 
     def vcmp(self, cc, a, b):
@@ -288,16 +341,25 @@ class Builder:
     def sstore(self, base, value, offset=0, size='d'):
         self._emit('sstore', [], [base, value], offset=offset, size=size)
 
-    def reduce(self, op, v, *, mask=None, dtype=None):
-        """A whole-vector reduction to a scalar.
+    def reduce(self, op, v, *, mask=None, dtype=None, broadcast=False):
+        """A whole-vector reduction.
 
         ISA sec 8.7 fixes the order as a balanced binary tree over lane index
         so the result is bit-reproducible, and makes inactive lanes contribute
         the operation's identity -- so a masked reduction needs no pre-select.
+
+        `broadcast` selects sec 8.7's `mod[0] = 1` form, which writes the
+        result to every lane of a vector register instead of to a scalar
+        one. That is the form a float reduction wants: there is no scalar
+        floating-point unit (sec 7 has no `s.fadd`), so a reduced float
+        has to end up in a vector register anyway, and the broadcast form
+        puts it there without a separate splat.
         """
-        s = self._value(SCALAR, dtype or v.dtype, hint='r')
-        self._emit('reduce', [s], [v], op=op, mask=mask)
-        return s
+        out = self._value(VECTOR if broadcast else SCALAR,
+                          dtype or v.dtype, hint='r')
+        self._emit('reduce', [out], [v], op=op, mask=mask,
+                   broadcast=broadcast)
+        return out
 
     # ---- control ----------------------------------------------------------
     def loop(self, counter, limit, body_label='loop'):

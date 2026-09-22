@@ -337,7 +337,17 @@ def axpy(x_ptr, y_ptr, o_ptr, n, alpha, BLOCK: tl.constexpr):
     log.append(f"    --dump-dir wrote {files}")
     log.append(f"    and said where: "
                f"{'dump' in r.stdout}")
-    ok &= len(files) == 5 and r.returncode == 0 and 'dump' in r.stdout
+    # The set, not the count. A count passes just as happily when a
+    # stage is renamed as when it is written, and says nothing about
+    # which one went missing.
+    want = {'axpy.ttir', 'axpy.inlined.ttir', 'axpy.tnir', 'axpy.s',
+            'axpy.hex', 'axpy.json'}
+    missing, extra = want - set(files), set(files) - want
+    if missing or extra:
+        log.append(f"    missing {sorted(missing)}, unexpected "
+                   f"{sorted(extra)}")
+    ok &= not missing and not extra and r.returncode == 0 \
+        and 'dump' in r.stdout
     return ok, '-S, --emit and --dump-dir all behave'
 
 

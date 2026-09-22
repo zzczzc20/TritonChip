@@ -258,7 +258,8 @@ _DONT_CARE_CONSUMERS = {'reduce': 'inactive lanes contribute the identity '
 # Cross-lane operations are absent and must stay absent: a gather, a
 # scatter, a shuffle or a reduction moves lane i somewhere else, and
 # then an inactive lane's rubbish arrives in an active one.
-_LANE_LOCAL = {'vbin', 'vselect', 'vcmp', 'vmovi', 'splat'}
+_LANE_LOCAL = {'vbin', 'vun', 'vselect', 'vcmp', 'vmovi', 'splat',
+               'vfma', 'vfms', 'vcvt'}
 
 
 def drop_dead_load_other(kernel):

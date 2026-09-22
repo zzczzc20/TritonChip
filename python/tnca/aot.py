@@ -77,6 +77,26 @@ def semantic_options(options):
 # signature and `f32` in MLIR; both mean one binary32.
 _TRITON_SPELLING = {'fp32': 'f32', 'fp64': 'f64', 'u1': 'bool'}
 
+# The shape bounds the matrix unit works in, which the Triton frontend
+# asks the target for before it will build a `tt.dot` at all. Passing an
+# empty dict -- which is what this did until R3.7 -- made every kernel
+# containing a `tl.dot` fail with "target doesn't provide lower shape
+# bounds for dot", which reads like a missing feature and was a missing
+# callback.
+#
+# ISA sec 9C fixes the fragment at 16x16 with K in {16, 32, 64}, so the
+# smallest product the hardware performs is 16x16x16. Triton pads an
+# operand up to these bounds rather than refusing it, which is what lets
+# a kernel written for a 16x16 tile compile here unchanged.
+MMA_MIN_M = MMA_MIN_N = MMA_MIN_K = 16
+
+
+def _min_dot_size(lhs_type, rhs_type):
+    return (MMA_MIN_M, MMA_MIN_N, MMA_MIN_K)
+
+
+_CODEGEN_FNS = {'min_dot_size': _min_dot_size}
+
 
 def _sha(data):
     if isinstance(data, str):
@@ -519,7 +539,18 @@ def _compile_triton(fn, kernel_name, signature, constexprs, target, prov,
         debug = False
         sanitize_overflow = False
         arch = None
-        allowed_dot_input_precisions = ()
+        # What `tl.dot(a, b, input_precision=...)` may ask for. The
+        # empty tuple here was not a policy, it was an oversight, and it
+        # made the frontend refuse EVERY `tl.dot` with "input_precision
+        # must be one of (). Got ieee" -- a message about a Triton option
+        # for a kernel that had never mentioned one.
+        #
+        # `ieee` is the one this backend implements, and it is the whole
+        # of what ISA sec 9C.1 specifies: one rounding per accumulation
+        # step, in increasing k order. `tf32` and `tf32x3` are absent
+        # because the matrix unit has no tf32 input format (sec 9C), so
+        # accepting them would mean silently computing something else.
+        allowed_dot_input_precisions = ('ieee',)
         launch_cooperative_grid = False
         backend_name = 'tnca'
 
@@ -527,7 +558,8 @@ def _compile_triton(fn, kernel_name, signature, constexprs, target, prov,
     ctx = ir.context()
     ir.load_dialects(ctx)
     try:
-        module = src.make_ir(GPUTarget('tnca', 0, 32), _Options(), {}, {}, ctx)
+        module = src.make_ir(GPUTarget('tnca', 0, 32), _Options(),
+                             _CODEGEN_FNS, {}, ctx)
     except Exception as e:
         raise CompileError(f"the Triton frontend refused this kernel: {e}",
                            where=f"@triton.jit {kernel_name}")
@@ -549,6 +581,22 @@ def _compile_triton(fn, kernel_name, signature, constexprs, target, prov,
     # compile actually consumed, and anything reconstructed afterwards
     # would be a second opinion about it.
     stages.record('ttir', str(module))
+
+    # Legalisation first, at every level: Triton's library functions
+    # (`tl.exp`, `tl.sum`, `tl.max`, ...) are @triton.jit functions and
+    # arrive as `tt.call` until they are inlined. No backend can lower a
+    # call, so this is not an optimisation and is not gated on one --
+    # an opt_level may change how good the code is, never whether it
+    # compiles.
+    from tnca_cc.upstream import PureValueOptimizer as _PVO, PassError as _PE
+    try:
+        _PVO.legalize_module(module, ctx, name=kernel_name)
+    except _PE as e:
+        raise CompileError(
+            f"the upstream inliner could not run: {e}", where=kernel_name,
+            remedy='Triton library calls cannot be lowered until they '
+                   'are inlined') from e
+    stages.record('ttir_inlined', str(module))
 
     # Phase 3.5 section 4.1: above O0 the pinned upstream canonicalizer
     # and CSE run over this module, in place, and the importer below

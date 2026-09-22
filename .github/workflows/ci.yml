@@ -242,6 +242,17 @@ jobs:
           make r36-backend-tests TRITON_PYTHON=$HOME/tritonenv/bin/python
           make r36-config-tests TRITON_PYTHON=$HOME/tritonenv/bin/python
 
+      # Both numbers, because they answer different questions: which of
+      # TileBench's forty-five operators BUILD from Triton source, and
+      # which of them then compute the right answer on the core bench.
+      # A compiler that emits plausible instructions for all forty-five
+      # and the wrong answer for one has not supported forty-five, and
+      # the coverage number alone would not notice.
+      - name: R3.7 TileBench coverage, and what it computes
+        run: |
+          make r37-coverage TRITON_PYTHON=$HOME/tritonenv/bin/python
+          make r37-run TRITON_PYTHON=$HOME/tritonenv/bin/python
+
       # The hardware export, built and then proved from somewhere else
       # entirely: elaborated with no library search of ours and run
       # against a program whose answer it checks itself.

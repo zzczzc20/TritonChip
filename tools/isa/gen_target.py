@@ -96,6 +96,14 @@ def build_target(core, top, isa, name, description, profile=None):
         # the machine will refuse. Not a CAPABILITY0 bit -- there is no
         # hardware configuration in which it is currently 1.
         'tensor_store': False,
+        # ISA sec 9E's mod[5] asks the engine for a transposed write.
+        # `tnca_core.v` passes x_mod[2:0] to the engine and nothing
+        # else, so an emitted `.t` transfers the tile UNTRANSPOSED and
+        # returns a wrong answer rather than a fault -- which is worse
+        # than either implementing it or not encoding it. False here
+        # makes asking for it a compile error, the way `tensor_store`
+        # already is. doc/r37_isa_gaps.md has the detail.
+        'tensor_transpose': False,
         'mbarrier': True,
         'packed_f16': False,
         'cache_hints': False,

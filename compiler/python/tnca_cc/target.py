@@ -25,6 +25,7 @@ TARGET_DIR = find('compiler', 'targets')
 # Why the compiler asks, so a refusal can say what it was about to do.
 _CAPABILITY_USE = {
     'sfu': 'emit v.*.approx for a transcendental',
+    'tensor_transpose': "ask the transfer engine for a transposed write",
     'atomics_device': 'emit a device-scope atomic',
     'atomics_system': 'emit a system-scope atomic',
     'fence': 'emit a memory fence',
@@ -48,6 +49,9 @@ _CAPABILITY_FALLBACK = {
             'polynomial meets it'),
     'cache_hints': 'drop the hint; it changes no address, value or order',
     'packed_f16': 'widen to FP32 and narrow on store',
+    'tensor_transpose': ('read the source down its columns with '
+                         'v.ld.gather, which is what the compiler does '
+                         'for tl.trans'),
     'atomics_device': None,
     'atomics_system': None,
     'fence': None,

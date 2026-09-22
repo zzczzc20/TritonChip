@@ -86,6 +86,7 @@
     "matrix_fp8": true,
     "tensor_dma": true,
     "tensor_store": false,
+    "tensor_transpose": false,
     "mbarrier": true,
     "packed_f16": false,
     "cache_hints": false,

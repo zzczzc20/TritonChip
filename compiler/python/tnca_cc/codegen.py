@@ -995,9 +995,14 @@ class CodeGen:
         # predication. The count above is therefore unconditional.
         mask = op.attrs.get('mask')
         if op.attrs.get('transpose'):
-            # sec 9E mod[5]. The engine writes the tile transposed, so
-            # the permutation happens in flight rather than as a
-            # register shuffle the vector unit cannot perform.
+            # sec 9E mod[5]. Specified, encodable, and not decoded by
+            # any engine here -- `tnca_core.v` hands the engine
+            # `x_mod[2:0]` and stops. So the capability is false
+            # everywhere and asking for it is a compile error, which is
+            # the one outcome that is neither a wrong answer nor a
+            # runtime trap.
+            self.target.require('tensor_transpose',
+                                'emit a transposed t.ld.async')
             suffix += '.t'
         self._emit(f"{mnem}.{suffix}", f"w{widx}", f"d{desc.reg}",
                     f"s{run[0]}", f"s{token.reg}",

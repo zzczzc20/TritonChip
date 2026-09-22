@@ -275,6 +275,7 @@ applicable. Each of these is a FAIL or NOT RUN, never an absence.
 | transfer rank 3-5 | NOT DELIVERED | ISA sec 9E allows up to 5; the engine executes 1 and 2 and raises DESCRIPTOR_FAULT above that |
 | byte-granular window writes | NOT DELIVERED | a descriptor whose row is not a whole number of 8-byte units raises DESCRIPTOR_FAULT |
 | `t.st.async` execution | NOT DELIVERED | encodable, faults with ILLEGAL_INSTRUCTION; capability `tensor_store` is false |
+| transposed transfer (`t.ld.async` mod[5]) | NOT DELIVERED | ISA sec 9E specifies it; tnca_core.v passes only x_mod[2:0] to the engine, so it would transfer untransposed. Capability `tensor_transpose` is false; doc/r37_isa_gaps.md |
 | general CFG in the MLIR verifier | FROZEN BOUNDARY | refused by name (IR-02), not accepted unchecked |
 | `tnca_vector_fpu` synthesis | NOT COMPLETED | see `doc/synthesis.md`; yosys did not finish |
 

@@ -187,6 +187,26 @@
       ],
       "command": "make r36-build-tests",
       "limits": "run on the x86_64 acceptance-platform host; the Darwin/arm64 development machine cannot install the pinned Triton"
+    },
+    {
+      "id": "pytorch-p1plus-inductor",
+      "claim": "torch.compile -> Inductor -> Triton -> tnca backend plugin -> Session: 12 small graphs (elementwise, fused activation, reductions, softmax incl. NaN, RMSNorm, GEMM, GEMM+RMSNorm+SiLU, views, in-place) match eager CPU with zero host fallback; R3.7 149/149 through native kernel[grid]; plugin and compile_aot code segments byte-identical at O0/O1/O2",
+      "level": "functionally-validated",
+      "artifacts": [
+        "python/tnca/triton_backend/compiler.py",
+        "python/tnca/triton_backend/driver.py",
+        "python/tnca/inductor.py",
+        "tools/r38/torch_tests.py",
+        "tools/r38/triton_native_run.py",
+        "tools/r38/plugin_identity.py",
+        "doc/r38_pytorch_p1plus.md"
+      ],
+      "generated": [
+        "sim/build/r38/torch/torch_tests.json",
+        "sim/build/r38/torch/triton_native.json"
+      ],
+      "command": "make r38-torch",
+      "limits": "blocks capped at 16 elements (small shapes); host tensors uploaded/downloaded per launch; PyTorch in its own environment (spec/r38/torch.lock.json)"
     }
   ]
 }

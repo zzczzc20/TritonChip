@@ -67,7 +67,7 @@ def main():
         check('4 same content, two directories, same candidate',
               [] if a == b else [f'{a["components"]} vs {b["components"]}'])
         moved = []
-        for key, rel in (('H', 'rtl/core/tnca_lsu.v'), ('C', 'compiler/backend/compiler.py'),
+        for key, rel in (('H', 'rtl/core/tnca_lsu.v'), ('C', 'compiler/python/tnca_cc/frontend.py'),
                          ('I', 'isa/tnca-isa-v0.1.json'), ('R', 'python/tnca/runtime.py'),
                          ('P', 'spec/r38/counters.json'), ('C', 'python/tnca/aot.py')):
             p = tmp / 'b' / rel

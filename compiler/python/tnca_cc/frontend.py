@@ -39,8 +39,11 @@ _FP_BIN = {'arith.addf': 'add', 'arith.subf': 'sub', 'arith.mulf': 'mul',
 # Predicates as MLIR spells them in arith.cmpi/cmpf attributes.
 _CMP_I = {0: 'eq', 1: 'ne', 2: 'lt', 3: 'le', 4: 'gt', 5: 'ge',
           6: 'ltu', 7: 'leu', 8: 'gtu', 9: 'geu'}
+# 'uo', not 'u': the assembler's condition codes (ISA sec 8.3). The old
+# spelling was never reached until `arith.cmpf uno` (an isnan) arrived from
+# Inductor, and then failed at assembly rather than at import.
 _CMP_F = {1: 'eq', 2: 'gt', 3: 'ge', 4: 'lt', 5: 'le', 6: 'ne',
-          7: 'o', 8: 'u', 13: 'ne'}
+          7: 'o', 8: 'uo', 13: 'ne'}
 
 _TENSOR_RE = re.compile(r'tensor<((?:\d+x)+)(.+)>')
 _PTR_RE = re.compile(r'!tt\.ptr<(.+?)>')
@@ -566,13 +569,14 @@ class TTIRImporter:
 
     # ---- reductions -------------------------------------------------------
     # The combinator inside a `tt.reduce` region, as the reduction it is.
-    # `maximumf`/`minimumf` are deliberately absent: they propagate NaN,
-    # and ISA sec 8.7 does not say what `vf.reduce.max` does with one.
-    # Mapping them onto it anyway would be a guess about the hardware
-    # written into the compiler.
+    # `maximumf`/`minimumf` propagate NaN, and ISA sec 8.7 does not say what
+    # `vf.reduce.max` does with one, so they are NOT mapped onto it: they
+    # become 'max_prop'/'min_prop', which _reduce_vec lowers from what the
+    # ISA does specify (see there).
     _COMBINATOR = {
         'arith.addf': 'add', 'arith.addi': 'add',
         'arith.maxnumf': 'max', 'arith.minnumf': 'min',
+        'arith.maximumf': 'max_prop', 'arith.minimumf': 'min_prop',
         'arith.maxsi': 'max', 'arith.minsi': 'min',
         'arith.maxui': 'maxu', 'arith.minui': 'minu',
         'arith.andi': 'and', 'arith.ori': 'or', 'arith.xori': 'xor',
@@ -620,9 +624,35 @@ class TTIRImporter:
         kind = self._combinator(op)
         _, rtype = _parse_type(str(op.get_result(0).get_type()))
         rtype = rtype or elem
-        self._v[op.get_result(0).id()] = self.b.reduce(
+        self._v[op.get_result(0).id()] = self._reduce_vec(
             kind, self._value(src), dtype=rtype, mask=self._shape_mask(shape),
             broadcast=rtype.startswith('f'))
+
+    def _reduce_vec(self, kind, v, *, dtype, mask, broadcast):
+        """One ISA sec 8.7 reduction, or a NaN-propagating max/min built from
+        specified behaviour.
+
+        `vf.reduce.max` over a vector with no NaN is fully defined whatever the
+        hardware does with a NaN. So 'max_prop' is that reduction, plus an OR
+        reduction of `x unordered x` over the SAME active lanes; if any lane
+        was NaN the result is the canonical qNaN. That is `arith.maximumf`
+        folded over the lanes, except for the order of +0 and -0, which the
+        plain 'max' path leaves to the hardware as well.
+        """
+        if kind not in ('max_prop', 'min_prop'):
+            return self.b.reduce(kind, v, dtype=dtype, mask=mask, broadcast=broadcast)
+        base = kind[:3]
+        r = self.b.reduce(base, v, dtype=dtype, mask=mask, broadcast=True)
+        nan = self.b.vcmp('uo', v, v)
+        if mask is not None:
+            nan = self.b.pbin('and', nan, mask)
+        flags = self.b.vselect(nan, self.b.vmovi(1), self.b.vmovi(0))
+        any_nan = self.b.reduce('or', flags, dtype='i32', broadcast=True)
+        is_nan = self.b.vcmp('ne', any_nan, self.b.vmovi(0))
+        out = self.b.vselect(is_nan, self._fconst(float('nan'), dtype), r)
+        if not broadcast:
+            raise Unsupported(f'a NaN-propagating {base} reduction of {dtype} to a scalar register')
+        return out
 
     # ---- atomics ----------------------------------------------------------
     #
@@ -642,6 +672,16 @@ class TTIRImporter:
     _ATOMIC_SEM = {1: 'relaxed', 2: 'acquire', 3: 'release',
                    4: 'acq_rel'}
     _ATOMIC_SCOPE = {1: 'device', 2: 'core', 3: 'system'}
+
+    def _op_llvm_intr_assume(self, op):
+        """`tl.assume(cond)`: a fact the program promises, for the optimiser.
+
+        It changes no value -- a program whose assumption is false is already
+        undefined -- so lowering it to nothing is exact. It is listed here
+        rather than skipped so that "every operation lowers explicitly" stays
+        true: an unknown operation is still refused.
+        """
+        return
 
     def _op_ttg_barrier(self, op):
         """`tl.debug_barrier`, as ISA sec 9.2's fence.
@@ -2896,6 +2936,14 @@ class TTIRImporter:
         rid = op.get_result(0).id()
 
         if axis == 0:
+            if kind in ('max_prop', 'min_prop'):
+                # lane-local down the tile: sec 8.3's `.prop` form is exactly
+                # the NaN-propagating combinator, one element pair at a time
+                acc = get(0)
+                for r in range(1, tile.rows):
+                    acc = self.b.vbin(kind[:3], acc, get(r), dtype=elem, fmm='prop')
+                self._v[rid] = acc
+                return
             acc = get(0)
             for r in range(1, tile.rows):
                 acc = self.b.vbin(kind, acc, get(r), dtype=elem,
@@ -2906,8 +2954,8 @@ class TTIRImporter:
 
         self._tiles[rid] = Tile(
             'col',
-            tuple(self.b.reduce(kind, get(r), dtype=elem, mask=self._shape_mask(tile.cols),
-                                broadcast=elem.startswith('f'))
+            tuple(self._reduce_vec(kind, get(r), dtype=elem, mask=self._shape_mask(tile.cols),
+                                   broadcast=elem.startswith('f'))
                   for r in range(tile.rows)),
             tile.rows, 1, elem)
 

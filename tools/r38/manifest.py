@@ -21,11 +21,12 @@ SCHEMA = json.loads((ROOT / 'spec' / 'r38' / 'measurement.schema.json').read_tex
 
 # Which files define each layer. Generated and cached output is excluded.
 COMPONENTS = {
-    'C': ['compiler/python/**/*.py', 'compiler/backend/**/*.py', 'compiler/lib/**/*.cpp',
-          'compiler/include/**/*.td', 'compiler/include/**/*.h', 'python/tnca/aot.py'],
+    'C': ['compiler/python/**/*.py', 'compiler/lib/**/*.cpp',
+          'compiler/include/**/*.td', 'compiler/include/**/*.h', 'python/tnca/aot.py',
+          'python/tnca/triton_backend/compiler.py', 'python/tnca/triton_backend/libdevice.py'],
     'I': ['isa/*.json', 'compiler/targets/*.json', 'spec/r2_abi_v1.json', 'spec/r1_profiles.json'],
     'H': ['rtl/**/*.v', 'rtl/**/*.vh', 'tb/device/*.v', 'tb/common/*.v'],
-    'R': ['python/tnca/*.py'],
+    'R': ['python/tnca/*.py', 'python/tnca/triton_backend/driver.py', 'python/tnca/triton_backend/__init__.py'],
     'W': ['spec/r38/suites/*.json', 'tools/r37/upstream_cases.py', 'tools/r38/archbench/r37_workloads.py'],
     'M': ['tools/r38/costmodel/**/*.py'],
     'P': ['spec/r38/counters.json', 'spec/r3_counters.json'],
@@ -82,7 +83,8 @@ def candidate(root=ROOT, *, env=None, extra_workload=None, hardware_root=None):
             comp[key] = tree_hash(base, rels)
             continue
         if key == 'R':
-            rels = [r for r in rels if r != 'python/tnca/aot.py']      # it is in C
+            # in C: the compile half of the Triton backend is compiler code
+            rels = [r for r in rels if r != 'python/tnca/aot.py']
         comp[key] = tree_hash(root, rels)
     if extra_workload:
         comp['W'] = hashlib.sha256((comp['W'] + json.dumps(extra_workload, sort_keys=True)).encode()).hexdigest()

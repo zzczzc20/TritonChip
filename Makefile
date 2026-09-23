@@ -1013,7 +1013,20 @@ r37: r37-coverage r37-run
 # sim/build/r38/, so a candidate is measured as it stands rather than as the
 # device cache last saw it. A target passing is not Stage 1 passing; the
 # status document names which work package each one backs.
-.PHONY: r38-l0 r38-smoke r38-baseline r38-baseline-check r38-profiler r38-l2 r38-xpose-rtl
+.PHONY: r38-l0 r38-smoke r38-baseline r38-baseline-check r38-profiler r38-l2 r38-xpose-rtl r38-torch
+# P1+ (doc/r38_pytorch_p1plus.md): PyTorch lives in its own environment so no
+# existing gate gains a dependency. T1: the R3.7 cases through native Triton
+# launch; T2-T4: small graphs through torch.compile -> Inductor -> TNCA.
+TORCH_PYTHON ?= $(HOME)/src/torchenv/bin/python
+# A compile-path change must leave every existing artifact byte-identical:
+# identical bytes cannot change a kernel's behaviour or its cycles.
+.PHONY: r38-identity
+r38-identity: $(R2_DATA_STAMP) | dirs
+	@$(TRITON_PYTHON) tools/r38/artifact_identity.py --profile core-sim --levels 0 1 2
+r38-torch: $(R2_DATA_STAMP) | dirs
+	@for l in 0 1 2; do $(TORCH_PYTHON) tools/r38/plugin_identity.py --level $$l || exit 1; done
+	@$(TORCH_PYTHON) tools/r38/triton_native_run.py
+	@$(TORCH_PYTHON) tools/r38/torch_tests.py
 # S1-07: the transposed transfer at the ISA level, on both elaborations.
 XPOSE_PROGS := t30_xpose t31_xpose_illegal t32_xpose_badsize
 $(TB)/core/progs/t30_xpose.s $(TB)/core/progs/t31_xpose_illegal.s \

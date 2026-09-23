@@ -17,7 +17,7 @@ Generated evidence lives under `sim/build/r38/` and is not in Git.
 | S1-07 three-layer feature | **PASS** | `tools/r38/loop_tests.py` 6/6; `make r38-xpose-rtl`; R37 447/447 on `core-sim` (cycles identical at O0/O1/O2) and 447/447 on `core-xpose-v1`; record `spec/r38/design_changes/xpose-dma-001.json` | — |
 | S1-08 case ablations | — | — | after S1-07 |
 | S1-09 gates | L0/L1/L2 + selftest implemented; selftest **PASS** | `tools/r38/gate.py l0\|l1\|l2\|selftest`; log `sim/build/r38/devops_log.jsonl` | an L2 promotion run |
-| S1-10 Agent/PyTorch/NV protocol | — | — | after S1-07 |
+| S1-10 PyTorch (P1+, replaces the P0/P1 plan) | **first milestone PASS**: 12/12 graphs, 149/149 native launches, plugin = AOT code at O0/O1/O2 | [r38_pytorch_p1plus.md](r38_pytorch_p1plus.md); `make r38-torch` | Agent pilot and NVIDIA scoring rules not started |
 | S1-11 related work | — | — | — |
 
 ## Changes to the product made by Stage 1 so far

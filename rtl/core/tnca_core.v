@@ -72,6 +72,9 @@ module tnca_core #(
     // device to be a scope at all, and there is none.
     parameter HAS_ATOMICS    = 1,
     parameter HAS_SYS_ATOMICS = 0,
+    // ISA sec 9E mod[5]: the transfer engine's transposed write. 0 makes a
+    // mod[5] transfer ILLEGAL_INSTRUCTION (capability tensor_transpose).
+    parameter HAS_TENSOR_XPOSE = 0,
     parameter FP_LAT         = 2,          // tnca_vector_fpu result delay, in cycles
     parameter SFU_LAT        = 6,          // rtl/gen/tnca_sfu_*_xls.v latency
     parameter MUL_LAT        = 3,          // tnca_mul64 result delay, in cycles
@@ -1309,7 +1312,7 @@ module tnca_core #(
         .VLEN(VLEN), .ELEN(ELEN), .RCTX_W(RCTX_W),
         .DESC_N(DESC_N), .DESC_W(DESC_W), .WIN_N(WIN_N), .WIN_W(WIN_W),
         .BAR_W(BAR_W), .MEM_DW(MEM_DW), .MEM_BYTES(MEM_BYTES),
-        .TAG_W(CTAG_W), .NTAG(1 << CTAG_W)
+        .TAG_W(CTAG_W), .NTAG(1 << CTAG_W), .HAS_XPOSE(HAS_TENSOR_XPOSE)
     ) u_txf (
         .clk(clk), .rst_n(rst_n), .flush(launch_valid),
         .cfg_valid(txf_is_cfg), .cfg_op(txf_cfg_op),
@@ -1319,6 +1322,7 @@ module tnca_core #(
         .cmd_desc(x_ra_idx[DESC_W-1:0]), .cmd_win(x_dsti[WIN_W-1:0]),
         .cmd_c0(sb_data), .cmd_c1(sb2_data),
         .cmd_esz(x_mod[2:0]),
+        .cmd_xpose(x_mod[5]), .cmd_layout(x_mod[4:3]),
         .cmd_bar_en(1'b1), .cmd_bar(sc_data[BAR_W-1:0]),
         .cmd_rctx(x_rctx), .cmd_pc(x_pc), .cmd_active(|lane_mask),
         .busy(txf_busy),

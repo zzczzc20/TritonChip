@@ -104,6 +104,7 @@ module tnca_shell_tb;
         .perf_stall_hazard(perf_stall_hazard),
         .perf_stall_lsu(perf_stall_lsu),
         .perf_stall_wb(perf_stall_wb), .perf_squash(perf_squash),
+        .perf_sel(5'd0), .perf_rdata(),
         .imem_addr(imem_addr), .imem_data(imem_data),
         .mem_req_valid(mreq_valid), .mem_req_ready(mreq_ready),
         .mem_req_addr(mreq_addr), .mem_req_we(mreq_we),

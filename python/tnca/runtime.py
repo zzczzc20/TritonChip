@@ -32,13 +32,14 @@ stopped looking. The task keeps running, it is not cancelled, and it is
 certainly not successful. The device has its own, separate deadline, and that
 one is a fault.
 """
+import json
 import os
 import struct
 import threading
 import time
 from collections import OrderedDict
 
-from . import abi, artifact, manifest as M
+from . import _data, abi, artifact, manifest as M
 from . import transport as T
 from .tensor import TensorDescriptor
 from .errors import (AdmissionError, ArgumentError, ArtifactError,
@@ -98,6 +99,14 @@ class Event:
         self.error = None
         self.history = [(SUBMITTED, time.time())]
         self.device_cycles = None
+        # One entry per program, in linear order. `device_cycles` is their
+        # sum because the runtime launches a grid one program at a time;
+        # that sum is serial-grid time, not the makespan of a device that
+        # runs programs concurrently.
+        self.program_cycles = None
+        # Session(counters=True): {'available', 'programs', 'total'}; None
+        # when counters were not asked for. See _counter_summary.
+        self.counters = None
         self.done = threading.Event()
 
     def _to(self, state, error=None):
@@ -200,6 +209,27 @@ def _open_device(name, bench, **kwargs):
     return _backend.open_backend(name, bench=bench, **kwargs)
 
 
+def _counter_spec():
+    with open(_data.path('spec', 'r38', 'counters.json')) as fh:
+        spec = json.load(fh)
+    return sorted(spec['counters'], key=lambda c: c['index'])
+
+
+def _counter_summary(deltas):
+    """Per-program counter differences and their sum over the grid.
+
+    The sum of a counter over programs is a total of events. For the
+    cycle-like counters it is serial-grid time, like device_cycles, and
+    not the makespan of a device that runs programs concurrently.
+    """
+    total = {}
+    for d in deltas:
+        for k, v in d.items():
+            total[k] = total.get(k, 0) + v
+    return {'available': True, 'timing': 'serial-grid',
+            'programs': deltas, 'total': total}
+
+
 class Session:
     """One device, one address space, one queue."""
 
@@ -208,7 +238,7 @@ class Session:
     def __init__(self, profile='core-sim', *, bench=None, workdir=None,
                  code_base=0, heap_base=0x20000, heap_limit=0x80000,
                  deadline_cycles=2_000_000, host_timeout=600.0, trace=False,
-                 backend='sim-file'):
+                 backend='sim-file', counters=False):
         Session._counter += 1
         self.id = Session._counter
         self.profile = profile
@@ -236,6 +266,11 @@ class Session:
         self.seeds = {}
         self._host_timeout = host_timeout
         self._trace = trace
+        # Off by default. On, every program's launch is bracketed by a read
+        # of each device counter and the event carries the differences.
+        # The reads happen while the device is idle, outside the window
+        # done_cycles measures, so they add host time and no device cycles.
+        self._counters = _counter_spec() if counters else None
         self._lock = threading.RLock()
         self._buffers = OrderedDict()
         self._modules = []
@@ -257,6 +292,16 @@ class Session:
         self._start_worker()
 
     # ---- housekeeping -----------------------------------------------------
+    def _snapshot(self):
+        """Every counter now, by name; None if the device cannot say."""
+        out = {}
+        for c in self._counters:
+            v = self.dev.perf_read(c['index'])
+            if v is None:
+                return None
+            out[c['name']] = v
+        return out
+
     def _check_usable(self):
         if self.closed:
             raise TncaError('this session is closed', code='SESSION_BUSY')
@@ -398,12 +443,9 @@ class Session:
         # architecture, the resources and the fingerprint are the base
         # profile's, and the comparison is about those.
         from . import device as _device
-        if man['target']['profile'] != _device.base_profile(self.profile):
-            raise ProfileMismatch(
-                f"artifact is for profile {man['target']['profile']!r}, "
-                f"this session is {self.profile!r}",
-                remedy='recompile for this profile; v1 artifacts are not '
-                       'portable between them')
+        from . import profiles as _profiles
+        _profiles.check_executes(_device.base_profile(self.profile), man,
+                                 where=os.path.basename(path))
 
         params = [(p['name'], p['type'])
                   for p in man['parameters']['signature']]
@@ -640,6 +682,9 @@ class Session:
             ev._to(RUNNING)
             total = gx * gy * gz
             cycles = 0
+            per_program = []
+            probe = self._counters is not None
+            deltas = []
             for linear in range(total):
                 # The contract's mapping, inverted: linear = x + gx*(y+gy*z).
                 # A program's identity is its (x, y, z), not its linear id --
@@ -649,10 +694,20 @@ class Session:
                 x = linear % gx
                 y = (linear // gx) % gy
                 z = linear // (gx * gy)
+                before = self._snapshot() if probe else None
+                if probe and before is None:
+                    probe = False            # this device has no op 7
                 reply = self.dev.launch(task['module'].code_addr,
                                         task['arg_addr'], role_mask=1,
                                         pid=(x, y, z), npid=(gx, gy, gz))
                 cycles += reply.r0
+                per_program.append(reply.r0)
+                if probe and reply.status == T.ST_OK:
+                    after = self._snapshot()
+                    deltas.append(dict(
+                        {k: (after[k] - before[k]) & 0xFFFFFFFFFFFFFFFF
+                         for k in after},
+                        done_cycles=reply.r0, done_retired=reply.r1))
                 if reply.status == T.ST_FAULT:
                     ev._to(FAILING)
                     with self._lock:
@@ -677,6 +732,10 @@ class Session:
             ev._to(DRAINING)
             self.dev.quiesce()
             ev.device_cycles = cycles
+            ev.program_cycles = per_program
+            if self._counters is not None:
+                ev.counters = (_counter_summary(deltas) if probe
+                               else {'available': False})
             with self._lock:
                 self._finish(task, SUCCEEDED)
         except DeviceLost as e:

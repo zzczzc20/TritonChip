@@ -135,6 +135,15 @@ class Backend(abc.ABC):
         you there" cannot be checked for having stayed there.
         """
 
+    def perf_read(self, index):
+        """One device counter (spec/r38/counters.json), or None.
+
+        Not abstract: a binding with no counter path is a legal binding,
+        and it must say "unavailable" -- None -- rather than a number.
+        A zero here would be a measurement.
+        """
+        return None
+
     def capabilities(self):
         """What this binding can do, for a caller that needs to ask.
 

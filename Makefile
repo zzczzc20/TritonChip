@@ -653,6 +653,13 @@ $(BUILD)/tb_core_vrf.vvp: $(RTL_DEPS) $(TB)/core/tb_tnca_core.v \
 	   -P tb_tnca_core.USE_BANKED_VRF=1 \
 	   -o $@ $(TB)/core/tb_tnca_core.v
 
+# R38 S1-07: core-sim with the transposed tensor-DMA write (core-xpose-v1).
+$(BUILD)/tb_core_xpose.vvp: $(RTL_DEPS) $(TB)/core/tb_tnca_core.v \
+                            $(TB)/common/tnca_mem_model.v | dirs
+	$(IVERILOG) $(IVFLAGS) -y $(RTL)/core -y $(RTL)/common -y $(RTL)/gen -y $(TB)/common \
+	   -P tb_tnca_core.HAS_TENSOR_XPOSE=1 \
+	   -o $@ $(TB)/core/tb_tnca_core.v
+
 $(BUILD)/tb_core_slow.vvp: $(RTL_DEPS) $(TB)/core/tb_tnca_core.v \
                            $(TB)/common/tnca_mem_model.v $(BUILD)/tb_core_slow.fp | dirs
 	$(IVERILOG) $(IVFLAGS) -y $(RTL)/core -y $(RTL)/common -y $(RTL)/gen -y $(TB)/common \
@@ -873,6 +880,7 @@ r2-stage-data:
 	@rm -rf $(R2_DATA)
 	@mkdir -p $(R2_DATA)/spec $(R2_DATA)/compiler/targets $(R2_DATA)/isa
 	@cp spec/*.json $(R2_DATA)/spec/
+	@mkdir -p $(R2_DATA)/spec/r38 && cp spec/r38/*.json $(R2_DATA)/spec/r38/
 	@cp compiler/targets/*.json $(R2_DATA)/compiler/targets/
 	@cp isa/*.json $(R2_DATA)/isa/
 	@mkdir -p $(R2_DATA)/rtl $(R2_DATA)/tb
@@ -997,6 +1005,44 @@ r37-representative-run: $(BUILD)/tb_core.vvp $(R2_DATA_STAMP) | dirs
 	@$(TRITON_PYTHON) tools/r37/run.py --json $(BUILD)/r37_run.json
 
 r37: r37-coverage r37-run
+
+#------------------------------------------------------------------------------
+# R38 Stage 1 (doc/r38_stage1_tasks_and_acceptance.md)
+#
+# Every target measures the working tree: benches are built from rtl/ into
+# sim/build/r38/, so a candidate is measured as it stands rather than as the
+# device cache last saw it. A target passing is not Stage 1 passing; the
+# status document names which work package each one backs.
+.PHONY: r38-l0 r38-smoke r38-baseline r38-baseline-check r38-profiler r38-l2 r38-xpose-rtl
+# S1-07: the transposed transfer at the ISA level, on both elaborations.
+XPOSE_PROGS := t30_xpose t31_xpose_illegal t32_xpose_badsize
+$(TB)/core/progs/t30_xpose.s $(TB)/core/progs/t31_xpose_illegal.s \
+$(TB)/core/progs/t32_xpose_badsize.s: $(TB)/core/progs/gen_t30_xpose.py
+	@$(PYTHON) $<
+r38-xpose-rtl: $(BUILD)/tb_core.vvp $(BUILD)/tb_core_xpose.vvp $(patsubst %,$(BUILD)/%.hex,$(XPOSE_PROGS))
+	@$(TOOLS)/run_test.sh t30_xpose "$(VVP) $(BUILD)/tb_core_xpose.vvp +hex=$(BUILD)/t30_xpose.hex +maxcycles=100000"
+	@$(TOOLS)/run_test.sh t31_xpose_illegal "$(VVP) $(BUILD)/tb_core.vvp +hex=$(BUILD)/t31_xpose_illegal.hex +maxcycles=100000 +expectfault=01"
+	@$(TOOLS)/run_test.sh t32_xpose_badsize "$(VVP) $(BUILD)/tb_core_xpose.vvp +hex=$(BUILD)/t32_xpose_badsize.hex +maxcycles=100000 +expectfault=04"
+
+r38-l0: | dirs
+	@$(PYTHON) tools/r38/gen_counters.py --check
+	@$(PYTHON) tools/r38/evidence_tests.py
+	@$(PYTHON) tools/r38/archbench_tests.py
+
+r38-smoke: $(R2_DATA_STAMP) | dirs
+	@$(TRITON_PYTHON) tools/r38/run.py --suite smoke
+	@$(TRITON_PYTHON) tools/r38/manifest_tests.py
+
+r38-baseline: $(R2_DATA_STAMP) | dirs
+	@$(TRITON_PYTHON) tools/r38/baseline.py --run --source $(TILEBENCH_SOURCE)
+
+r38-baseline-check: $(R2_DATA_STAMP) | dirs
+	@$(TRITON_PYTHON) tools/r38/baseline.py --check --source $(TILEBENCH_SOURCE)
+
+r38-profiler: $(R2_DATA_STAMP) | dirs
+	@$(TRITON_PYTHON) tools/r38/profiler_tests.py
+
+r38-l2: r38-l0 r37 r38-baseline-check r38-profiler r38-smoke
 
 # One suite, every backend. This is the suite a downstream branch runs.
 r36-conformance: $(R2_DATA_STAMP) | dirs
@@ -1457,7 +1503,7 @@ r1-build-tests:
 # R3.6's regression, which claims to reproduce the inherited suites
 # from a clean checkout, is what found it.
 r1-profile-tests: $(BUILD)/tb_core.vvp $(BUILD)/tb_core4.vvp \
-                  $(BUILD)/tb_top.vvp $(BUILD)/tb_core_vrf.vvp
+                  $(BUILD)/tb_top.vvp $(BUILD)/tb_core_vrf.vvp $(BUILD)/tb_core_xpose.vvp
 	@$(PYTHON) tools/r1/profile_tests.py --json $(BUILD)/profile_tests.json
 
 r1-signoff:

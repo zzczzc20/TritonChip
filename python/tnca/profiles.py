@@ -96,6 +96,50 @@ def config_hash(name):
     return hashlib.sha256(blob.encode()).hexdigest()
 
 
+def check_executes(machine, manifest, *, where=''):
+    """Refuse an artifact this machine cannot run, before any code is placed.
+
+    Same profile: accepted, as before. A profile may also declare
+    `executes_artifacts_of` -- profiles it is a strict superset of, with the
+    same elaboration apart from added capabilities -- and runs their
+    artifacts when the artifact's configuration hash is that profile's and
+    every capability it requires is present here. An artifact from a
+    machine with a capability this one lacks is refused as CAPABILITY_MISSING
+    naming it, rather than as an unexplained profile difference.
+    """
+    from .errors import CapabilityError
+    art = manifest['target']['profile']
+    if art == machine:
+        return
+    here = {c for c, v in target(machine)['capabilities'].items() if v}
+    needed = set(manifest['target'].get('capabilities', []))
+    missing = sorted(needed - here)
+    if art in profile(machine).get('executes_artifacts_of', []):
+        if manifest['target'].get('config_hash') != config_hash(art):
+            raise ProfileMismatch(
+                f"artifact claims profile {art!r} with configuration "
+                f"{str(manifest['target'].get('config_hash'))[:12]}, which is not "
+                f"{art!r} as this runtime knows it", where=where,
+                remedy='recompile; the profile changed since the artifact was built')
+        if missing:
+            raise CapabilityError(
+                f"artifact needs {missing}, which {machine!r} does not have",
+                where=where, remedy=f'recompile for {machine!r}')
+        return
+    if art in names() and machine in profile(art).get('executes_artifacts_of', []) and missing:
+        raise CapabilityError(
+            f"artifact is for {art!r} and needs {missing}, which {machine!r} "
+            f"does not have", where=where,
+            detail={'artifact_profile': art, 'machine': machine, 'missing': missing},
+            remedy=f'recompile for {machine!r}; the compiler then lowers '
+                   f'without the capability')
+    raise ProfileMismatch(
+        f"artifact is for profile {art!r}, this session is {machine!r}",
+        where=where,
+        remedy='recompile for this profile; v1 artifacts are not '
+               'portable between them')
+
+
 def info(name):
     p = profile(name)
     return dict(name=name, spec=p, config_hash=config_hash(name),

@@ -57,6 +57,8 @@ BENCH_PARAMS = {
     'core-vrf-sync-v1': _BANKED,
     'core-sim/slow': _SLOW,
     'core-vrf-sync-v1/slow': _BANKED + _SLOW,
+    'core-xpose-v1': ['-P', 'tnca_device.HAS_TENSOR_XPOSE=1'],
+    'core-xpose-v1/slow': ['-P', 'tnca_device.HAS_TENSOR_XPOSE=1'] + _SLOW,
 }
 
 

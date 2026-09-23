@@ -1,0 +1,37 @@
+{
+  "schema": "r38-counters/1",
+  "contract": "doc/r38_stage1_tasks_and_acceptance.md S1-02; events are defined in spec/r3_counters.json",
+  "note": "The ONE list of device counters readable through transport op 7 (PERF_READ). tools/r38/gen_counters.py generates rtl/tnca_perf_sel.vh from it, and the runtime reads names from it, so the index a host asks for and the counter the RTL returns cannot drift apart. Every counter is 64 bits, clears on rst_n only, and wraps (spec/r3_counters.json).",
+  "sel_width": 5,
+  "counters": [
+    {"index": 0,  "name": "perf_cycles",       "group": "cycles",           "source": "rtl/core/tnca_core.v"},
+    {"index": 1,  "name": "perf_issued",       "group": "cycles",           "source": "rtl/core/tnca_core.v"},
+    {"index": 2,  "name": "perf_stall_total",  "group": "stall_total",      "source": "rtl/core/tnca_core.v"},
+    {"index": 3,  "name": "perf_x_hazard",     "group": "stall_exclusive",  "source": "rtl/core/tnca_core.v"},
+    {"index": 4,  "name": "perf_x_lsu",        "group": "stall_exclusive",  "source": "rtl/core/tnca_core.v"},
+    {"index": 5,  "name": "perf_x_fpu",        "group": "stall_exclusive",  "source": "rtl/core/tnca_core.v"},
+    {"index": 6,  "name": "perf_x_mtx",        "group": "stall_exclusive",  "source": "rtl/core/tnca_core.v"},
+    {"index": 7,  "name": "perf_x_txf",        "group": "stall_exclusive",  "source": "rtl/core/tnca_core.v"},
+    {"index": 8,  "name": "perf_x_fence",      "group": "stall_exclusive",  "source": "rtl/core/tnca_core.v"},
+    {"index": 9,  "name": "perf_x_arrive",     "group": "stall_exclusive",  "source": "rtl/core/tnca_core.v"},
+    {"index": 10, "name": "perf_x_rsv",        "group": "stall_exclusive",  "source": "rtl/core/tnca_core.v"},
+    {"index": 11, "name": "perf_x_wb",         "group": "stall_exclusive",  "source": "rtl/core/tnca_core.v"},
+    {"index": 12, "name": "perf_x_vrf",        "group": "stall_exclusive",  "source": "rtl/core/tnca_core.v"},
+    {"index": 13, "name": "perf_x_vrfwb",      "group": "stall_exclusive",  "source": "rtl/core/tnca_core.v"},
+    {"index": 14, "name": "perf_stall_hazard", "group": "stall_overlapping", "source": "rtl/core/tnca_core.v"},
+    {"index": 15, "name": "perf_stall_lsu",    "group": "stall_overlapping", "source": "rtl/core/tnca_core.v"},
+    {"index": 16, "name": "perf_stall_wb",     "group": "stall_overlapping", "source": "rtl/core/tnca_core.v"},
+    {"index": 17, "name": "perf_squash",       "group": "control",          "source": "rtl/core/tnca_core.v"},
+    {"index": 18, "name": "perf_mem_rd_beats", "group": "memory",           "source": "rtl/tnca_shell.v",
+     "event": "one per core read or atomic request accepted on the data port; host transfers are not counted", "unit": "beats of 8 bytes"},
+    {"index": 19, "name": "perf_mem_wr_beats", "group": "memory",           "source": "rtl/tnca_shell.v",
+     "event": "one per core write request accepted on the data port; host transfers are not counted", "unit": "beats of 8 bytes"}
+  ],
+  "identities": {
+    "exclusive_sum": "sum of stall_exclusive == perf_stall_total over any window (by construction in tnca_core)",
+    "retired": "delta perf_issued over one launch == done_retired of that launch",
+    "cycles_vs_done": "0 <= done_cycles + run_window_slack - delta perf_cycles. perf_cycles counts every cycle a role context runs; done_cycles counts only the shell's S_RUN window, which starts run_window_slack cycles after the core starts (S_PULSE, then SETTLE_CYCLES = 2 of S_SETTLE) and ends when the core is idle, i.e. after outstanding memory and writeback drain. The difference is therefore the drain.",
+    "run_window_slack": 3,
+    "drain_cycles": "done_cycles + run_window_slack - delta perf_cycles: cycles after the last role stopped until the core reported idle"
+  }
+}

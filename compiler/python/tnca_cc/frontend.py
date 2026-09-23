@@ -163,6 +163,10 @@ class TTIRImporter:
         self._affine = {}   # TTIR value id -> Affine2D, for a 2-D index
         self._ptr2d = {}    # TTIR value id -> (arg name, elem, Affine2D)
         self._tiles = {}    # TTIR value id -> Tile
+        # Descriptor loads whose only use is tl.trans, lowered at the trans
+        # as ONE transposed transfer (ISA sec 9E mod[5]); see _plan_transposes.
+        self._xpose_loads = set()
+        self._deferred = {}
         self._descs = {}    # TTIR value id -> our descriptor Value
         self._scratch = None      # the descriptor scratch base, read once
         self.scratch_maps = 0     # how many TensorMaps this kernel builds
@@ -232,6 +236,7 @@ class TTIRImporter:
                         'this function, not that the kernel is trivial',
                 source='compiler_overview.md sec 11.1')
         self._float_constants(module, ops)
+        self._plan_transposes(ops)
 
         ops, self._bodies = self._split_regions(ops)
         # Triton's public Python binding exposes block identity but not
@@ -2211,10 +2216,68 @@ class TTIRImporter:
             byte_strides=strides, block_shape=block,
             what='tl.make_tensor_descriptor')
 
+    # Operations that may write memory a deferred load would read.
+    _WRITES = ('tt.store', 'tt.descriptor_store', 'tt.atomic', 'tt.descriptor_scatter',
+               'tt.descriptor_reduce', 'tt.call', 'scf.', 'cf.')
+
+    def _plan_transposes(self, ops):
+        """Which descriptor loads become one transposed transfer.
+
+        ISA sec 9E mod[5] writes the tile transposed while it is in flight.
+        On a target with `tensor_transpose`, a 16-bit descriptor load whose
+        only user is `tt.trans` is not emitted where it stands; the trans
+        emits the transposed transfer instead of loading the tile and then
+        gathering its columns (what _op_tt_trans does otherwise).
+
+        Moving a load later is only a no-op if nothing in between can write
+        what it reads, so the trans must be in the SAME block with no store,
+        atomic, call or nested control flow between the two. Anything else
+        keeps the ordinary lowering.
+        """
+        if not self.target.has('tensor_transpose'):
+            return
+        users, where = {}, {}
+        for i, op in enumerate(ops):
+            where[id(op)] = i
+            for k in range(op.get_num_operands()):
+                users.setdefault(op.get_operand(k).id(), []).append(op)
+        for i, op in enumerate(ops):
+            if op.get_name() != 'tt.descriptor_load':
+                continue
+            us = users.get(op.get_result(0).id(), [])
+            if not us or any(u.get_name() != 'tt.trans' for u in us):
+                continue
+            block = op.get_block().id()
+            ok = True
+            for u in us:
+                j = where.get(id(u))
+                if j is None or j < i or u.get_block().id() != block:
+                    ok = False
+                    break
+                if any(ops[k].get_name().startswith(self._WRITES) for k in range(i + 1, j)):
+                    ok = False
+                    break
+            if ok:
+                self._xpose_loads.add(op.get_result(0).id())
+
+    def _xpose_geometry_ok(self, d):
+        """The engine's transposed-write rule (rtl/core/tnca_tensor.v S_TSETUP):
+        a 2-D tile of 16-bit elements with 4, 8 or 16 source rows."""
+        return (len(d.block) == 2 and d.elem in ('f16', 'bf16')
+                and d.block[0] in (4, 8, 16))
+
     def _op_tt_descriptor_load(self, op):
         d = self._descs[op.get_operand(0).id()]
         coords = [self._value(op.get_operand(1 + i))
                   for i in range(op.get_num_operands() - 1)]
+        # A host descriptor is a TensorMap in the engine's own layout
+        # (tnca.tensor.TensorDescriptor.pack), so the transfer can use it
+        # directly; its run-time geometry is checked by the runtime before
+        # launch against the artifact's `dma_descriptors` (see aot.py).
+        if (op.get_result(0).id() in self._xpose_loads and d.value is not None
+                and self._xpose_geometry_ok(d)):
+            self._deferred[op.get_result(0).id()] = (d, coords)
+            return
         if d.address is not None or len(d.block) > 2 or d.elem not in ('f16', 'bf16', 'f32'):
             base = self._descriptor_origin(d, coords)
             rows, cols = d.block[-2:]
@@ -2405,6 +2468,21 @@ class TTIRImporter:
         usable as an MMA operand and as nothing else.
         """
         src = op.get_operand(0)
+        if src.id() in self._deferred:
+            d, coords = self._deferred.pop(src.id())
+            rows, cols = d.block
+            window = self._window_for(cols, rows, d.elem)
+            bar = self.b.barrier(name=f"fill{len(self.kernel.barriers)}")
+            tok = self.b.barrier_arm(bar, arrivals=0, ops=1)
+            self.b.comment('tl.trans of a descriptor tile: one transposed '
+                           'transfer (ISA sec 9E mod[5])')
+            self.b.dma_load(window, d.value if hasattr(d, 'value') else d, coords,
+                            tok, dtype=d.elem, transpose=True)
+            self.b.barrier_wait(tok)
+            # Window element (c, r) = source (r, c), flat row-major: the
+            # layout the gathered path below builds with _rows_to_window.
+            self._tiles[op.get_result(0).id()] = Tile('window', window, cols, rows, d.elem)
+            return
         tile = self._tile_of(src)
         if tile.desc is None:
             elem = tile.store

@@ -80,6 +80,7 @@ include = ["tnca*", "tnca_cc*"]
 [tool.setuptools.package-data]
 tnca = [
   "data/spec/*.json",
+  "data/spec/r38/*.json",
   "data/compiler/targets/*.json",
   "data/isa/*.json",
   "data/rtl/**/*.v",

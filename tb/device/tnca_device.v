@@ -42,6 +42,8 @@
 //                             now enforced by the shell rather than counted
 //                             here.
 //   +trace                    one line per served request
+//
+// Op 7 (PERF_READ, transport 1.1) reads one device counter by index.
 //==============================================================================
 `timescale 1ns/1ps
 
@@ -51,6 +53,8 @@ module tnca_device;
     // core-sim and core-vrf-sync-v1 come from the same bench source and a
     // difference between them cannot be a difference in the device.
     parameter USE_BANKED_VRF = 0;
+    // 1 elaborates the transposed tensor-DMA write (profile core-xpose-v1).
+    parameter HAS_TENSOR_XPOSE = 0;
 
     parameter NUM_RCTX       = 2;
     parameter RCTX_W         = 1;
@@ -121,11 +125,17 @@ module tnca_device;
     wire [63:0] perf_cycles, perf_issued, perf_stall_hazard,
                 perf_stall_lsu, perf_stall_wb, perf_squash;
 
+    // PERF_READ (transport op 7). The index space is spec/r38/counters.json.
+`include "tnca_perf_count.vh"
+    reg  [4:0]  perf_sel = 5'd0;
+    wire [63:0] perf_rdata;
+
     tnca_shell #(
         .NUM_RCTX(NUM_RCTX), .RCTX_W(RCTX_W), .VLEN(VLEN), .ELEN(ELEN),
         .VREGS_PER_RCTX(VREGS_PER_RCTX), .PHYS_VREGS(PHYS_VREGS),
         .PHYS_W(PHYS_W), .LSU_TAG_W(LSU_TAG_W), .HAS_SFU(HAS_SFU),
-        .USE_BANKED_VRF(USE_BANKED_VRF)
+        .USE_BANKED_VRF(USE_BANKED_VRF),
+        .HAS_TENSOR_XPOSE(HAS_TENSOR_XPOSE)
     ) dut (
         .clk(clk), .rst_n(rst_n),
         .cmd_valid(cmd_valid), .cmd_ready(cmd_ready), .cmd_op(cmd_op),
@@ -150,6 +160,7 @@ module tnca_device;
         .perf_stall_hazard(perf_stall_hazard),
         .perf_stall_lsu(perf_stall_lsu),
         .perf_stall_wb(perf_stall_wb), .perf_squash(perf_squash),
+        .perf_sel(perf_sel), .perf_rdata(perf_rdata),
         .imem_addr(imem_addr), .imem_data(imem_data),
         .mem_req_valid(mreq_valid), .mem_req_ready(mreq_ready),
         .mem_req_addr(mreq_addr), .mem_req_we(mreq_we),
@@ -386,6 +397,19 @@ module tnca_device;
                         end
                         6: begin                       // PING
                             r0 = served;
+                        end
+                        // PERF_READ: r0 = low 32 bits, r1 = high 32 bits of
+                        // counter a0. Read only between commands -- the
+                        // mailbox is served only when no command is running
+                        // -- so a read never lands inside a launch's window.
+                        7: begin
+                            if (a0 < 0 || a0 >= PERF_NUM_COUNTERS) status = 3;
+                            else begin
+                                perf_sel = a0[4:0];
+                                #1;
+                                r0 = perf_rdata[31:0];
+                                r1 = perf_rdata[63:32];
+                            end
                         end
                         default: status = 3;
                     endcase

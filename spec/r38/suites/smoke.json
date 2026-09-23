@@ -1,0 +1,19 @@
+{
+  "schema": "r38-suite/1",
+  "id": "smoke",
+  "contract": "doc/r38_stage1_tasks_and_acceptance.md S1-04: the L1 feedback suite",
+  "note": "Eight points chosen to exercise different bottlenecks. Each point names R3.7 cases; a multi-stage point runs all of its stages. Level O2 is the pre-registered deployment level (roadmap 5.4).",
+  "level": 2,
+  "repeats": 3,
+  "wall_budget_seconds": 900,
+  "points": [
+    {"id": "gemm-fp16",        "cases": ["matmul_fp32_fp16_fp8/fp16"], "bottleneck": "matrix unit + transfer"},
+    {"id": "gemm-int8",        "cases": ["matmul_int8"],               "bottleneck": "integer dot fallback"},
+    {"id": "softmax-37",       "cases": ["softmax/n37"],               "bottleneck": "SFU / reduction"},
+    {"id": "layernorm-37",     "cases": ["layernorm/n37"],             "bottleneck": "reduction + hazards"},
+    {"id": "histogram",        "cases": ["histogramming/partial", "histogramming/reduce"], "bottleneck": "atomics"},
+    {"id": "flash-attention",  "cases": ["flash_attention"],           "bottleneck": "fused matrix + softmax"},
+    {"id": "conv2d",           "cases": ["2d_conv"],                   "bottleneck": "gather / boundary"},
+    {"id": "transpose",        "cases": ["matrix_transpose"],          "bottleneck": "memory port"}
+  ]
+}

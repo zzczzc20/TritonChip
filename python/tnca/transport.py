@@ -195,6 +195,51 @@ class Transport(_backend.Backend):
             self.proc.wait(timeout=10)
         self.proc = None
 
+    # ---- the medium -------------------------------------------------------
+    #
+    # The three below are what a SECOND medium replaces, and they are methods
+    # rather than inlined bodies for that reason. The module's own opening
+    # note says a doorbell and two MMIO registers "change the medium and not
+    # the protocol"; this is where that substitution is made real, and the
+    # board binding in backends/u50.py overrides exactly these.
+    #
+    # The protocol, the sequence bookkeeping, the stale-reply rule and the
+    # a3/a4/a5 grid packing above `request` are NOT overridable, because they
+    # are not the medium -- they are the protocol, and a second copy of the
+    # protocol is how two bindings start answering differently.
+    def _put_request(self, seq, op, a0, a1, a2, a3, a4, a5):
+        """Command out. One line, written whole and then replaced: a device
+        that polls mid-write would otherwise read half a request and act on
+        it."""
+        tmp = self.req + '.tmp'
+        with open(tmp, 'w') as fh:
+            fh.write(f"{seq} {op} {a0} {a1} {a2} {a3} {a4} {a5}\n")
+        os.replace(tmp, self.req)
+
+    def _put_payload(self, addr, words):
+        """Payload out: `words`, to be placed at `addr`.
+
+        The address is carried here and not remembered by the caller,
+        because the two mediums address payload differently -- a file holds
+        whatever was written to it, and a memory window needs to be told
+        where each word goes, one access at a time. A medium that ignored
+        the address would be a medium that could only ever fill location
+        zero.
+        """
+        with open(self.up, 'w') as fh:
+            for w in words:
+                fh.write(f"{w:016x}\n")
+
+    def _get_payload(self, addr, nwords):
+        """Payload in: `nwords` words, read from `addr`."""
+        out = bytearray()
+        with open(self.down) as fh:
+            for line in fh:
+                line = line.strip()
+                if line:
+                    out += int(line, 16).to_bytes(WORD, 'little')
+        return bytes(out)
+
     # ---- the protocol -----------------------------------------------------
     def request(self, op, a0=0, a1=0, a2=0, a3=0, a4=0, a5=0, *,
                 timeout=None):
@@ -205,12 +250,7 @@ class Transport(_backend.Backend):
                 remedy='call Session.recover() to start a new epoch')
         self.seq += 1
         seq = self.seq
-        tmp = self.req + '.tmp'
-        with open(tmp, 'w') as fh:
-            fh.write(f"{seq} {op} {a0} {a1} {a2} {a3} {a4} {a5}\n")
-        # Written whole, then replaced: a device that polls mid-write would
-        # otherwise read half a request and act on it.
-        os.replace(tmp, self.req)
+        self._put_request(seq, op, a0, a1, a2, a3, a4, a5)
         reply = self._await(seq, timeout=timeout)
         self.history.append(dict(epoch=self.epoch, seq=seq, op=op,
                                  a0=a0, a1=a1, a2=a2, a3=a3, a4=a4, a5=a5,
@@ -218,15 +258,32 @@ class Transport(_backend.Backend):
                                  r1=reply.r1))
         return reply
 
+    def _gone_detail(self):
+        """What to report when the medium stops answering.
+
+        A child process and a board stop for different reasons and the
+        useful detail differs: one has an exit status, the other has a
+        register that quit moving. Kept beside `_log_tail`, which the board
+        overrides as well, so that `_await` has exactly one place to ask
+        whether the device is still there.
+        """
+        if self.proc is None:
+            return {'log': self.log}
+        return {'exit': self.proc.returncode, 'log': self.log}
+
     def _await(self, seq, *, timeout=None, what=None):
         deadline = time.time() + (timeout or self.host_timeout)
         while True:
-            if self.proc is not None and self.proc.poll() is not None:
+            # `alive()` rather than `self.proc.poll()` inline. The two said
+            # the same thing for this binding and the second one cannot be
+            # answered by a board, which has no process to poll -- so the
+            # wait loop asks the question its subclasses already implement.
+            if not self.alive():
                 raise DeviceLost(
-                    f"the device exited while waiting for "
+                    f"the device stopped answering while waiting for "
                     f"{what or f'sequence {seq}'}",
-                    detail={'exit': self.proc.returncode, 'log': self.log,
-                            'tail': self._log_tail()})
+                    detail=dict(self._gone_detail(), tail=self._log_tail()),
+                    remedy='call Session.recover() to start a new epoch')
             got = self._read_reply()
             if got is not None:
                 if got.seq == seq:
@@ -274,11 +331,10 @@ class Transport(_backend.Backend):
         """Bytes into device memory, through the device's memory system."""
         _backend.check_transfer(addr, len(data), what='upload')
         padded = bytes(data) + b'\x00' * (-len(data) % WORD)
-        words = len(padded) // WORD
-        with open(self.up, 'w') as fh:
-            for i in range(words):
-                fh.write(f"{int.from_bytes(padded[i * WORD:(i + 1) * WORD], 'little'):016x}\n")
-        return self.request(OP_UPLOAD, addr, words)
+        n = len(padded) // WORD
+        self._put_payload(addr, [int.from_bytes(padded[i * WORD:(i + 1) * WORD],
+                                                'little') for i in range(n)])
+        return self.request(OP_UPLOAD, addr, n)
 
     def download(self, addr, nbytes):
         _backend.check_transfer(addr, nbytes, what='download')
@@ -286,17 +342,12 @@ class Transport(_backend.Backend):
         reply = self.request(OP_DOWNLOAD, addr, words)
         if not reply.ok:
             return reply, b''
-        # The device said OK, so the file it was told to write must be
+        # The device said OK, so the payload it was told to produce must be
         # there and must be readable. When it is not, something answered
         # for a request it did not serve -- and the user gets a stable code
-        # for that, not a FileNotFoundError from inside the transport.
-        out = bytearray()
+        # for that, not a raw OSError from inside the transport.
         try:
-            with open(self.down) as fh:
-                for line in fh:
-                    line = line.strip()
-                    if line:
-                        out += int(line, 16).to_bytes(WORD, 'little')
+            out = self._get_payload(addr, words)
         except (OSError, ValueError) as e:
             raise DeviceLost(
                 'the device reported a successful download but produced no '

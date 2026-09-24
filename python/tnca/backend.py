@@ -293,6 +293,32 @@ def _register_builtin():
              what='the same RTL, reached over a TCP socket through a '
                   'relay process: a different connection medium for the '
                   'same implementation')
+    # The U50 platform binding, in two parts that share one backend.
+    #
+    # `fpga-u50` is the board: rtl/fpga/tnca_fpga_top.v over its register
+    # port, through an XDMALink. `fpga-u50-sim` is the same backend, the
+    # same protocol and the same RTL, with a simulator standing in for the
+    # board -- section 3.4's "a protocol loop to it", which is what makes
+    # the board binding reference-available rather than platform-verified.
+    #
+    # Both are lazy for the usual reason: u50_sim imports a simulator and
+    # u50 imports XRT, and neither should cost anything until it is asked
+    # for. `fpga-prototype` above is untouched and stays interface-defined
+    # -- that is the name whose contract is "declared and not implemented",
+    # and giving it an implementation is the thing the state is there to
+    # prevent.
+    register('fpga-u50', _lazy('tnca.backends.u50', 'board'),
+             state=REFERENCE_AVAILABLE, needs_elaborator=False,
+             needs_hardware=True,
+             what='the TNCA device on an Alveo U50: rtl/fpga/tnca_fpga_top.v '
+                  'reached over its register port. The host side is proven '
+                  'against the RTL; the board link is not, and opening this '
+                  'with no board raises rather than substituting the '
+                  'stand-in')
+    register('fpga-u50-sim', _lazy('tnca.backends.u50_sim', 'stand_in'),
+             state=REFERENCE_AVAILABLE, needs_elaborator=False,
+             what='the same device and the same register protocol, on real '
+                  'RTL, driven by a simulator standing in for the board')
     register('fpga-prototype', None, state=INTERFACE_DEFINED,
              what='a future board. The interface is defined and nothing '
                   'implements it; opening it is an error, not a '

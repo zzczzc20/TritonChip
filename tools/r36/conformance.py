@@ -18,6 +18,15 @@ is itself a case -- section 3.4 forbids falling back to the simulator
 and reporting success, so "it did not run" and "it ran on something
 else" have to be distinguishable.
 
+There is a third answer now that a binding for real hardware exists. A
+`reference-available` binding that declares `needs_hardware` -- the
+Alveo, whose dependency is XRT and a card in a slot -- cannot be
+measured on a machine that has neither, and the whole suite for it
+becomes the same refusal case: it must say what is missing rather than
+carry on against the stand-in. That is "it did not run", said out loud.
+It is not a pass for that backend and the summary does not count it as
+one, because nothing about how it carries a kernel was established.
+
 Every case records two things beside its verdict: the protocol exchange
 it caused, taken from the transport's own sequence counter and status
 codes, and the oracle it checked against. A case with neither is an
@@ -152,8 +161,21 @@ def c_lifecycle(dev, rec):
                 if not r.ok else 'it was ACCEPTED')
             ok &= not r.ok
         except TncaError as e:
+            # Backed by a declaration, and it has to be said: this branch
+            # recorded no backing, and a step with none fails the case by
+            # its own rule further down. It never fired, because no
+            # binding in this repository put a raw opcode on the wire --
+            # sim-file and sim-socket both answer `raw_request: False` --
+            # so the branch was unreachable until the board binding
+            # arrived, and that one does carry an opcode field.
+            #
+            # A declaration is the honest backing: what refused is the
+            # binding's own limit, not the device. It could not put the
+            # request on its wire at all. A device that was asked and
+            # refused lands in the `status` path above, backed by the
+            # protocol exchange that carried the refusal back.
             rec('an operation the device does not have', True,
-                f"[{getattr(e, 'code', '?')}] raised")
+                f"[{getattr(e, 'code', '?')}] raised", 'declaration')
     else:
         rec('an operation the device does not have', True,
             'not offered: this binding has no opcode field, so an '
@@ -201,8 +223,19 @@ def c_transfer(dev, rec):
         r = dev.upload(0x10_0000, _words([0]))
         good, how = (not r.ok), f"status {r.status}"
     except _T as e:
+        # Backed the same way the branch above it is, and it has to be
+        # said explicitly: the keyword inference reads a detail like
+        # "status 3" as a protocol step, and this branch's detail carries
+        # no such word, so it recorded NO backing and failed the case on
+        # the suite's own rule. It never fired because no binding in this
+        # repository refused here -- sim-file and sim-socket both let the
+        # device answer with a status -- so the branch was unreachable
+        # until a binding checked the window on the device's behalf,
+        # which the board binding does. Same backing as the two refusals
+        # above: this step is the transfer contract being enforced, and
+        # it is one question whichever side answers it.
         good, how = True, f"[{getattr(e, 'code', '?')}] refused"
-    rec('a transfer past the end of memory', good, how)
+    rec('a transfer past the end of memory', good, how, 'protocol')
     ok &= good
     return ok
 
@@ -298,7 +331,7 @@ CASES = [
 def run_backend(name, info, log):
     """Every case against one backend, or the refusal that stands in."""
     from tnca import backend, device
-    from tnca.errors import TncaError
+    from tnca.errors import DependencyFailed, TncaError
 
     state = info['state']
     if state != backend.REFERENCE_AVAILABLE:
@@ -316,10 +349,33 @@ def run_backend(name, info, log):
             return True, {'refused': True,
                           'code': getattr(e, 'code', None)}
 
-    device.prepare(PROFILE, verbose=False)
-    dev = backend.open_backend(name, bench=device.expected_path(PROFILE),
-                               deadline_cycles=200_000)
-    dev.start()
+    # Opening it is allowed to fail for want of a dependency, and until
+    # now that failure took the whole suite down with it -- one board
+    # binding with no board in the machine erased the results for every
+    # backend after it, alphabetically, before sim-file was even reached.
+    #
+    # Only a missing DEPENDENCY is excused, and only for a binding that
+    # said it needs hardware. Anything else is a broken installation,
+    # and the same DependencyFailed from a backend that needs no
+    # hardware is exactly that: sim-file unable to import what it needs
+    # is not a machine without a card, and it must not be waved past.
+    try:
+        device.prepare(PROFILE, verbose=False)
+        dev = backend.open_backend(name,
+                                   bench=device.expected_path(PROFILE),
+                                   deadline_cycles=200_000)
+        dev.start()
+    except DependencyFailed as e:
+        if not backend.needs_hardware(name):
+            raise
+        log.append(f"    {name} [{state}]: not measurable on this "
+                   f"machine, and it says why instead of substituting")
+        log.append(f"      [{getattr(e, 'code', '?')}] "
+                   f"{str(e).splitlines()[0][:76]}")
+        log.append("    the suite for it is that refusal: a platform "
+                   "that is not here must not appear to work")
+        return True, {'refused': True, 'code': getattr(e, 'code', None),
+                      'not_applicable': str(e).splitlines()[0][:120]}
     ok, record = True, {}
     try:
         for case in CASES:
@@ -359,24 +415,39 @@ def run_backend(name, info, log):
                 mark = '+'.join(b) if b else 'bare'
                 log.append(f"      {'ok ' if g else 'BAD'} [{mark}] "
                            f"{s}: {d}"[:98])
+            # Failing a case from here has to be written back into the
+            # record as well as into the total. It was not, and the JSON
+            # went on saying every case passed while the gate said FAIL:
+            # the file the evidence is read from disagreed with the run
+            # that produced it, and finding out why meant three passes
+            # over a log this function had already stopped printing.
+            def _fail_here(why, _cid=case.id):
+                record[_cid]['passed'] = False
+                record[_cid].setdefault('notes', []).append(why)
+
             if bare:
-                log.append(f"      steps that declare no backing at "
-                           f"all: {bare}")
+                why = (f"steps that declare no backing at all: {bare}")
+                log.append(f"      {why}")
                 ok = False
+                _fail_here(why)
             # And a case about device behaviour has to be backed by the
             # device: a group whose every step is a declaration or a
             # registry lookup has not talked to anything.
             kinds = {k for _s, _g, _d, b in lines for k in b}
             if case.group in ('lifecycle', 'transfer', 'completion',
                               'faults') and 'protocol' not in kinds:
-                log.append(f"      {case.id} touches the device and no "
-                           f"step is backed by a protocol exchange")
+                why = (f"{case.id} touches the device and no step is "
+                       f"backed by a protocol exchange")
+                log.append(f"      {why}")
                 ok = False
+                _fail_here(why)
             if case.group in ('transfer', 'completion') and \
                     'oracle' not in kinds:
-                log.append(f"      {case.id} checks values and no step "
-                           f"is backed by an oracle")
+                why = (f"{case.id} checks values and no step is backed "
+                       f"by an oracle")
+                log.append(f"      {why}")
                 ok = False
+                _fail_here(why)
     finally:
         dev.stop()
     return ok, record
@@ -408,7 +479,7 @@ def main():
     names = args.backends or sorted(info)
     print(f"  {len(CASES)} case(s) in {len(set(c.group for c in CASES))} "
           f"group(s), against {len(names)} backend(s)")
-    out, ok = {}, True
+    out, ok, unmeasured = {}, True, []
     for name in names:
         if name not in info:
             print(f"    {name}: not a backend this installation knows")
@@ -420,6 +491,8 @@ def main():
             print(line, flush=True)
         out[name] = {'state': info[name]['state'], 'passed': good,
                      'cases': record}
+        if record.get('not_applicable'):
+            unmeasured.append((name, record['not_applicable']))
         ok &= good
         print(flush=True)
     # Written as a one-case list, the same shape every other checker
@@ -427,14 +500,31 @@ def main():
     # this file, and -- the part that matters -- the case ID the
     # contract names appears in the evidence, so a package with no
     # result is visibly a package with no result.
+    # Said before the verdict, so the verdict cannot be read as covering
+    # more than it did. A backend counted here was opened and driven; one
+    # listed as unmeasured was not, and "PASS" beside its name would be
+    # the overclaim section 3.2 keeps platform-verified reserved to
+    # prevent.
+    if unmeasured:
+        print(f"  {len(unmeasured)} of {len(names)} backend(s) could not be "
+              f"measured on this machine:")
+        for n, why in unmeasured:
+            print(f"    {n}: {why[:100]}")
+        print("    not a pass for them -- nothing about how they carry a "
+              "kernel was established. Not a failure either: their "
+              "hardware is not here, and a suite that called that a "
+              "failure could never run anywhere that has none")
     if args.json:
         R.write_json(args.json, [{
             'id': 'R36-TEST-01', 'passed': bool(ok),
             'detail': f"{len(names)} backend(s), {len(CASES)} case(s) "
-                      f"in {len(set(c.group for c in CASES))} group(s)",
+                      f"in {len(set(c.group for c in CASES))} group(s)"
+                      + (f", {len(unmeasured)} not measurable here"
+                         if unmeasured else ''),
             'backends': out}])
     print(f"  conformance            {'PASS' if ok else 'FAIL':<6s} "
-          f"{len(names)} backend(s)")
+          f"{len(names) - len(unmeasured)} of {len(names)} backend(s) "
+          f"measured")
     return 0 if ok else 1
 
 

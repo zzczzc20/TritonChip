@@ -159,8 +159,30 @@ class Backend(abc.ABC):
 _REGISTRY = {}
 
 
-def register(name, factory, *, state=INTERFACE_DEFINED, what=''):
-    """Make a backend openable by name."""
+def register(name, factory, *, state=INTERFACE_DEFINED, what='',
+             needs_elaborator=True, needs_hardware=False):
+    """Make a backend openable by name.
+
+    `needs_elaborator` says whether opening this backend means reading the
+    profile's own simulator build. True for everything that drives a
+    compiled artifact of the profile; False for a device reached some
+    other way. A board over PCIe has no simulator build to read, and
+    asking for one on its behalf is what made
+    `Session(backend='fpga-u50')` raise "no simulator for profile ..." on
+    precisely the machine that had the board and not the simulator.
+
+    `needs_hardware` says whether opening it means a physical device
+    being present. It is not the same claim as `needs_elaborator` and
+    neither implies the other: the simulator bindings need no hardware
+    but do read a build, and a board needs the hardware and reads
+    nothing. It is here because a reference-available binding is
+    otherwise held to "runnable wherever this is installed", and the
+    conformance suite enforces that by opening every one of them. A
+    board cannot meet that, and the suite had no way to be told so.
+
+    The defaults are the ones a backend had before these existed, so a
+    binding that says nothing about either keeps the behaviour it had.
+    """
     if state not in STATES:
         raise ValueError(f"{state!r} is not one of {STATES}")
     if state == PLATFORM_VERIFIED:
@@ -168,13 +190,41 @@ def register(name, factory, *, state=INTERFACE_DEFINED, what=''):
             "platform-verified is reserved: nothing in this repository "
             "has run on a real platform, and section 3.2 keeps "
             "engineering-ready and platform-verified apart")
-    _REGISTRY[name] = {'factory': factory, 'state': state, 'what': what}
+    _REGISTRY[name] = {'factory': factory, 'state': state, 'what': what,
+                       'needs_elaborator': bool(needs_elaborator),
+                       'needs_hardware': bool(needs_hardware)}
 
 
 def available():
     """Every registered backend and its state."""
     return {n: {'state': e['state'], 'what': e['what']}
             for n, e in sorted(_REGISTRY.items())}
+
+
+def needs_elaborator(name):
+    """Whether opening `name` means reading the profile's simulator.
+
+    An unknown name answers True, and deliberately. The caller is about to
+    be told the name is unknown, and it should hear that from
+    `open_backend`, which says so plainly, rather than from
+    `device.require`, which would say there is no simulator and send
+    somebody looking for the wrong problem.
+    """
+    entry = _REGISTRY.get(name)
+    return True if entry is None else entry['needs_elaborator']
+
+
+def needs_hardware(name):
+    """Whether opening `name` means a physical device being present.
+
+    An unknown name answers False, the opposite of `needs_elaborator`
+    above, and for the same kind of reason: a caller about to be told
+    the name is unknown should not also be told its hardware is
+    missing. False says no more than "this is not a reason to excuse
+    it", which leaves `open_backend` to give the plain answer.
+    """
+    entry = _REGISTRY.get(name)
+    return False if entry is None else entry['needs_hardware']
 
 
 def open_backend(name, **kwargs):

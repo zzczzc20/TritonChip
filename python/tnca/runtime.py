@@ -225,8 +225,19 @@ class Session:
         # install time or by an explicit `prepare`, and forbids building it
         # per launch; `device.locate` looks and `device.prepare` builds, so
         # there is no flag that could default the wrong way.
+        #
+        # Resolved only for a backend that reads it. A board is reached
+        # over PCIe and has no simulator build; `device.require` raises
+        # when there is none, so asking on the board's behalf left
+        # `Session(backend='fpga-u50')` unusable on exactly the machines
+        # it exists for -- the ones with a board and no simulator. An
+        # explicit `bench=` is honoured whatever the backend says, so a
+        # caller who has one keeps passing it.
+        from . import backend as _backend
         from . import device as _device
-        self.bench = bench or _device.require(profile)
+        self.bench = bench
+        if bench is None and _backend.needs_elaborator(self.backend_name):
+            self.bench = _device.require(profile)
 
         self._workdir = workdir
         self._deadline = deadline_cycles

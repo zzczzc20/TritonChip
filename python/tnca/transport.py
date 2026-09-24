@@ -21,14 +21,40 @@ thirty-two launches in one session, and a runtime that quietly relaunched the
 simulator between them would make "the intermediate result stayed in device
 memory" a sentence with no content.
 """
+import ctypes
 import os
 import shutil
+import signal
 import subprocess
 import tempfile
 import time
 
 from .errors import DeviceLost, TncaError
 from . import backend as _backend
+
+#: PR_SET_PDEATHSIG, from <linux/prctl.h>: "signal this process when its
+#: parent dies". 1 is the option number, not a flag.
+_PR_SET_PDEATHSIG = 1
+
+
+def _arm_parent_death():
+    """Ask the kernel to terminate this process when its parent dies.
+
+    Called in the child between fork and exec, so the request is in place
+    before the device starts. It survives the exec: the parent-death signal
+    is cleared only for set-user-ID, set-group-ID and capability-bearing
+    binaries, and a simulator is none of those.
+
+    Best-effort on purpose. A child that could not arm the signal must still
+    run -- refusing to start a device because it could not promise to die
+    later would trade a leak for an outage, and the leak is the smaller
+    problem.
+    """
+    try:
+        libc = ctypes.CDLL('libc.so.6', use_errno=True)
+        libc.prctl(_PR_SET_PDEATHSIG, signal.SIGTERM)
+    except Exception:
+        pass
 
 OP_UPLOAD = 1
 OP_DOWNLOAD = 2
@@ -119,10 +145,32 @@ class Transport(_backend.Backend):
             argv.append(f'+hex={self.image}')
         if self.trace:
             argv.append('+trace')
+        # The device is put in its own session so that a signal delivered to
+        # the host's process group -- Ctrl-C in a terminal, a supervisor
+        # stopping the job -- does not land on it mid-launch. That is right
+        # while the host is alive, and it is exactly what lets the device
+        # outlive it: `stop` is the only reaper, and a host killed with
+        # SIGKILL never reaches `stop`. What is left behind is a simulator
+        # polling a mailbox nobody will write to, forever.
+        #
+        # `+deadline` does not cover this. tb/device/tnca_device.v bounds a
+        # single launch with it, and an orphan's problem is that no launch is
+        # in progress -- there is nothing for a launch deadline to count.
+        #
+        # Measured before this line existed: a device with PPID 1 that had
+        # been running for 14.5 hours, 8.9 CPU-hours of work, 61.6% of a core,
+        # beside 581 abandoned work directories. So the parent asks the kernel
+        # to end the child instead, which is the one promise SIGKILL cannot
+        # break.
+        #
+        # `preexec_fn` is documented as unsafe in a process with threads. This
+        # runtime is single-threaded host code; if that ever stops being true,
+        # this is the line that needs revisiting.
+        spawn = {'preexec_fn': _arm_parent_death} if hasattr(os, 'fork') else {}
         with open(self.log, 'w') as log:
             self.proc = subprocess.Popen(
                 argv, stdout=log, stderr=subprocess.STDOUT,
-                start_new_session=True)
+                start_new_session=True, **spawn)
         # The device writes sequence 0 when it is up. Waiting for that is the
         # difference between "slow to start" and "never started", and a
         # runtime that cannot tell them apart reports the wrong one.

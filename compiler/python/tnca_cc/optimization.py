@@ -76,6 +76,8 @@ def _opaque(op):
     it may be live across it in ways the flat list does not show. Rather
     than model that, a role containing one is left alone.
     """
+    if op.kind in ('label', 'branch_nz', 'assign'):
+        return True
     for a in op.attrs.values():
         if isinstance(a, Region):
             return True
@@ -100,7 +102,7 @@ def drop_dead_pure(kernel):
     for role in kernel.roles:
         if any(_opaque(o) for o in role.region.ops):
             out['roles'].append({'role': role.name,
-                                 'why': 'nested control flow'})
+                                 'why': 'control flow or mutable assignments'})
             continue
         # To a fixed point: dropping one definition can make the one it
         # named dead in turn.
@@ -141,7 +143,7 @@ def strength_reduce(kernel):
     for role in kernel.roles:
         if any(_opaque(o) for o in role.region.ops):
             out['roles'].append({'role': role.name,
-                                 'why': 'nested control flow'})
+                                 'why': 'control flow or mutable assignments'})
             continue
         const_of = {}
         n = 0
@@ -193,7 +195,7 @@ def fold_broadcast_compare(kernel):
     for role in kernel.roles:
         if any(_opaque(o) for o in role.region.ops):
             out['roles'].append({'role': role.name,
-                                 'why': 'nested control flow'})
+                                 'why': 'control flow or mutable assignments'})
             continue
         const_of, splat_of = {}, {}
         n = 0
@@ -258,7 +260,8 @@ _DONT_CARE_CONSUMERS = {'reduce': 'inactive lanes contribute the identity '
 # Cross-lane operations are absent and must stay absent: a gather, a
 # scatter, a shuffle or a reduction moves lane i somewhere else, and
 # then an inactive lane's rubbish arrives in an active one.
-_LANE_LOCAL = {'vbin', 'vselect', 'vcmp', 'vmovi', 'splat'}
+_LANE_LOCAL = {'vbin', 'vun', 'vselect', 'vcmp', 'vmovi', 'splat',
+               'vfma', 'vfms', 'vcvt', 'pbin', 'pun'}
 
 
 def drop_dead_load_other(kernel):
@@ -283,7 +286,7 @@ def drop_dead_load_other(kernel):
     for role in kernel.roles:
         if any(_opaque(o) for o in role.region.ops):
             out['roles'].append({'role': role.name,
-                                 'why': 'nested control flow'})
+                                 'why': 'control flow or mutable assignments'})
             continue
         ops = role.region.ops
         n = 0
@@ -338,7 +341,7 @@ def narrow_lane0_store(kernel):
     for role in kernel.roles:
         if any(_opaque(o) for o in role.region.ops):
             out['roles'].append({'role': role.name,
-                                 'why': 'nested control flow'})
+                                 'why': 'control flow or mutable assignments'})
             continue
         ops = role.region.ops
         iota, const_of, splat_of, lane0 = set(), {}, {}, set()
@@ -426,7 +429,7 @@ def pure_scalar_cse(kernel):
         note = {'role': role.name, 'applied': False, 'why': None}
 
         if any(_opaque(o) for o in ops):
-            note['why'] = 'the region has nested control flow'
+            note['why'] = 'the region has control flow or mutable assignments'
             out['roles'].append(note)
             continue
 
@@ -457,6 +460,15 @@ def pure_scalar_cse(kernel):
             out['roles'].append(note)
             continue
 
+        # Constants are cheap to rematerialise; merging distant copies can
+        # keep dozens of scalars live across every transfer in an unrolled
+        # convolution. Bound the lifetime extension instead of exhausting
+        # the scalar file to save a single immediate.
+        positions = {id(v): i for i, o in enumerate(ops) for v in o.results}
+        eq = {key: value for key, value in eq.items()
+              if abs(positions.get(key, 0)-positions.get(id(value), 0)) <= 32}
+        info['merged'] = sum(key != id(value) for key, value in eq.items())
+        info['distinct'] = info['values'] - info['merged']
         for o in ops:
             _rewrite(o, eq)
 

@@ -38,7 +38,8 @@ you do not need `PYTHONPATH` — that line is for working in a checkout.
 | [05](05_matrix_multiply.md) | a 16×16×16 FP16 GEMM on the matrix unit, through the planner | `05_matrix_multiply.py` |
 | [06](06_errors_and_faults.md) | what is refused, what faults, and what you are told | `06_errors_and_faults.py` |
 | [07](07_backends_and_cache.md) | profiles vs backends, and what is in the cache key | `07_backends_and_cache.py` |
-| [08](08_triton_gemm.md) | the same GEMM written as a `@triton.jit` kernel, and where support ends | `08_triton_gemm.py` |
+| [08](08_triton_gemm.md) | tiled `tl.dot`, runtime K loops, masked tails, and O0/O1/O2 | `08_triton_gemm.py` |
+| [09](09_tensor_descriptors.md) | host descriptors, bounds and descriptor GEMM through AOT | `09_tensor_descriptors.py` |
 
 ## The three ideas worth having before you read on
 

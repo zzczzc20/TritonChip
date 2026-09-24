@@ -77,17 +77,17 @@ it is a statement about which column of evidence exists.
 | `v.mul` | VINT | (baseline) | yes | yes | yes | yes | yes | no |
 | `v.mulh.s` | VINT | (baseline) | yes | yes | yes | yes | no | no |
 | `v.mulh.u` | VINT | (baseline) | yes | yes | yes | yes | no | no |
-| `v.and` | VINT | (baseline) | yes | yes | yes | yes | no | no |
-| `v.or` | VINT | (baseline) | yes | yes | yes | yes | no | no |
+| `v.and` | VINT | (baseline) | yes | yes | yes | yes | yes | no |
+| `v.or` | VINT | (baseline) | yes | yes | yes | yes | yes | no |
 | `v.xor` | VINT | (baseline) | yes | yes | yes | yes | yes | no |
-| `v.andn` | VINT | (baseline) | yes | yes | yes | yes | no | no |
-| `v.shl` | VINT | (baseline) | yes | yes | yes | yes | no | no |
-| `v.lshr` | VINT | (baseline) | yes | yes | yes | yes | no | no |
-| `v.ashr` | VINT | (baseline) | yes | yes | yes | yes | no | no |
-| `v.min.s` | VINT | (baseline) | yes | yes | yes | yes | no | no |
-| `v.max.s` | VINT | (baseline) | yes | yes | yes | yes | no | no |
-| `v.min.u` | VINT | (baseline) | yes | yes | yes | yes | no | no |
-| `v.max.u` | VINT | (baseline) | yes | yes | yes | yes | no | no |
+| `v.andn` | VINT | (baseline) | yes | yes | yes | yes | yes | no |
+| `v.shl` | VINT | (baseline) | yes | yes | yes | yes | yes | no |
+| `v.lshr` | VINT | (baseline) | yes | yes | yes | yes | yes | no |
+| `v.ashr` | VINT | (baseline) | yes | yes | yes | yes | yes | no |
+| `v.min.s` | VINT | (baseline) | yes | yes | yes | yes | yes | no |
+| `v.max.s` | VINT | (baseline) | yes | yes | yes | yes | yes | no |
+| `v.min.u` | VINT | (baseline) | yes | yes | yes | yes | yes | no |
+| `v.max.u` | VINT | (baseline) | yes | yes | yes | yes | yes | no |
 | `v.clz` | VINT | (baseline) | yes | yes | yes | yes | no | no |
 | `v.popc` | VINT | (baseline) | yes | yes | yes | yes | no | no |
 | `v.cmp` | VINT | (baseline) | yes | yes | yes | yes | yes | no |
@@ -108,24 +108,24 @@ it is a statement about which column of evidence exists.
 | `vf.add` | VFP | (baseline) | yes | yes | yes | yes | yes | no |
 | `vf.sub` | VFP | (baseline) | yes | yes | yes | yes | yes | no |
 | `vf.mul` | VFP | (baseline) | yes | yes | yes | yes | yes | no |
-| `vf.fma` | VFP | (baseline) | yes | yes | yes | yes | no | no |
-| `vf.fms` | VFP | (baseline) | yes | yes | yes | yes | no | no |
+| `vf.fma` | VFP | (baseline) | yes | yes | yes | yes | yes | no |
+| `vf.fms` | VFP | (baseline) | yes | yes | yes | yes | yes | no |
 | `vf.min` | VFP | (baseline) | yes | yes | yes | yes | yes | no |
 | `vf.max` | VFP | (baseline) | yes | yes | yes | yes | yes | no |
-| `vf.neg` | VFP | (baseline) | yes | yes | yes | yes | no | no |
-| `vf.abs` | VFP | (baseline) | yes | yes | yes | yes | no | no |
+| `vf.neg` | VFP | (baseline) | yes | yes | yes | yes | yes | no |
+| `vf.abs` | VFP | (baseline) | yes | yes | yes | yes | yes | no |
 | `vf.cmp` | VFP | (baseline) | yes | yes | yes | yes | yes | no |
 | `vf.cvt.s32.f32` | CVT | (baseline) | yes | yes | yes | yes | no | no |
 | `vf.cvt.u32.f32` | CVT | (baseline) | yes | yes | yes | yes | no | no |
 | `vf.cvt.f32.s32` | CVT | (baseline) | yes | yes | yes | yes | no | no |
 | `vf.cvt.f32.u32` | CVT | (baseline) | yes | yes | yes | yes | no | no |
-| `vf.cvt` | CVT | (baseline) | yes | yes | yes | yes | no | no |
-| `p.mov` | PRED | (baseline) | yes | yes | yes | yes | no | no |
-| `p.and` | PRED | (baseline) | yes | yes | yes | yes | no | no |
-| `p.or` | PRED | (baseline) | yes | yes | yes | yes | no | no |
-| `p.xor` | PRED | (baseline) | yes | yes | yes | yes | no | no |
-| `p.not` | PRED | (baseline) | yes | yes | yes | yes | no | no |
-| `p.andn` | PRED | (baseline) | yes | yes | yes | yes | no | no |
+| `vf.cvt` | CVT | (baseline) | yes | yes | yes | yes | yes | no |
+| `p.mov` | PRED | (baseline) | yes | yes | yes | yes | yes | no |
+| `p.and` | PRED | (baseline) | yes | yes | yes | yes | yes | no |
+| `p.or` | PRED | (baseline) | yes | yes | yes | yes | yes | no |
+| `p.xor` | PRED | (baseline) | yes | yes | yes | yes | yes | no |
+| `p.not` | PRED | (baseline) | yes | yes | yes | yes | yes | no |
+| `p.andn` | PRED | (baseline) | yes | yes | yes | yes | yes | no |
 | `p.any` | PRED | (baseline) | yes | yes | yes | yes | no | no |
 | `p.all` | PRED | (baseline) | yes | yes | yes | yes | no | no |
 | `p.ballot` | PRED | (baseline) | yes | yes | yes | yes | no | no |
@@ -136,42 +136,42 @@ it is a statement about which column of evidence exists.
 | `v.shuffle.down` | SHUF | (baseline) | yes | yes | yes | yes | no | no |
 | `v.permute` | SHUF | (baseline) | yes | yes | yes | yes | yes | no |
 | `v.rotate` | SHUF | (baseline) | yes | yes | yes | yes | no | no |
-| `v.extract` | SHUF | (baseline) | yes | yes | yes | yes | no | no |
-| `v.insert` | SHUF | (baseline) | yes | yes | yes | yes | no | no |
+| `v.extract` | SHUF | (baseline) | yes | yes | yes | yes | yes | no |
+| `v.insert` | SHUF | (baseline) | yes | yes | yes | yes | yes | no |
 | `v.reduce.add` | RED | (baseline) | yes | yes | yes | yes | yes | no |
 | `v.reduce.max.s` | RED | (baseline) | yes | yes | yes | yes | yes | no |
 | `v.reduce.min.s` | RED | (baseline) | yes | yes | yes | yes | yes | no |
 | `v.reduce.and` | RED | (baseline) | yes | yes | yes | yes | yes | no |
 | `v.reduce.or` | RED | (baseline) | yes | yes | yes | yes | yes | no |
 | `v.reduce.xor` | RED | (baseline) | yes | yes | yes | yes | yes | no |
-| `v.reduce.max.u` | RED | (baseline) | yes | yes | yes | yes | no | no |
-| `v.reduce.min.u` | RED | (baseline) | yes | yes | yes | yes | no | no |
+| `v.reduce.max.u` | RED | (baseline) | yes | yes | yes | yes | yes | no |
+| `v.reduce.min.u` | RED | (baseline) | yes | yes | yes | yes | yes | no |
 | `vf.reduce.add` | RED | (baseline) | yes | yes | yes | yes | yes | no |
 | `vf.reduce.max` | RED | (baseline) | yes | yes | yes | yes | yes | no |
 | `vf.reduce.min` | RED | (baseline) | yes | yes | yes | yes | yes | no |
-| `v.exp2.approx` | SFU | sfu | yes | yes | yes | no | no | no |
-| `v.rcp.approx` | SFU | sfu | yes | yes | yes | no | no | no |
-| `v.rsqrt.approx` | SFU | sfu | yes | yes | yes | no | no | no |
-| `v.log2.approx` | SFU | sfu | yes | yes | yes | no | no | no |
+| `v.exp2.approx` | SFU | sfu | yes | yes | yes | no | yes | no |
+| `v.rcp.approx` | SFU | sfu | yes | yes | yes | no | yes | no |
+| `v.rsqrt.approx` | SFU | sfu | yes | yes | yes | no | yes | no |
+| `v.log2.approx` | SFU | sfu | yes | yes | yes | no | yes | no |
 | `s.ld` | LSU | (baseline) | yes | yes | yes | yes | yes | yes |
 | `s.st` | LSU | (baseline) | yes | yes | yes | yes | yes | yes |
 | `v.ld` | LSU | (baseline) | yes | yes | yes | yes | yes | no |
 | `v.st` | LSU | (baseline) | yes | yes | yes | yes | yes | no |
 | `v.ld.gather` | LSU | gather_scatter | yes | yes | yes | yes | yes | no |
 | `v.st.scatter` | LSU | gather_scatter | yes | yes | yes | yes | yes | no |
-| `atom.add` | ATOM | atomics_device | yes | yes | yes | yes | no | yes |
-| `atom.and` | ATOM | atomics_device | yes | yes | yes | yes | no | no |
-| `atom.or` | ATOM | atomics_device | yes | yes | yes | yes | no | yes |
-| `atom.xor` | ATOM | atomics_device | yes | yes | yes | yes | no | no |
-| `atom.xchg` | ATOM | atomics_device | yes | yes | yes | yes | no | no |
-| `atom.min.s` | ATOM | atomics_device | yes | yes | yes | yes | no | no |
-| `atom.max.s` | ATOM | atomics_device | yes | yes | yes | yes | no | no |
-| `atom.min.u` | ATOM | atomics_device | yes | yes | yes | yes | no | no |
-| `atom.max.u` | ATOM | atomics_device | yes | yes | yes | yes | no | yes |
-| `atom.cas` | ATOM | atomics_device | yes | yes | yes | yes | no | no |
+| `atom.add` | ATOM | atomics_device | yes | yes | yes | yes | yes | yes |
+| `atom.and` | ATOM | atomics_device | yes | yes | yes | yes | yes | no |
+| `atom.or` | ATOM | atomics_device | yes | yes | yes | yes | yes | yes |
+| `atom.xor` | ATOM | atomics_device | yes | yes | yes | yes | yes | no |
+| `atom.xchg` | ATOM | atomics_device | yes | yes | yes | yes | yes | no |
+| `atom.min.s` | ATOM | atomics_device | yes | yes | yes | yes | yes | no |
+| `atom.max.s` | ATOM | atomics_device | yes | yes | yes | yes | yes | no |
+| `atom.min.u` | ATOM | atomics_device | yes | yes | yes | yes | yes | no |
+| `atom.max.u` | ATOM | atomics_device | yes | yes | yes | yes | yes | yes |
+| `atom.cas` | ATOM | atomics_device | yes | yes | yes | yes | yes | no |
 | `atom.ld` | ATOM | atomics_device | yes | yes | yes | yes | no | yes |
 | `atom.st` | ATOM | atomics_device | yes | yes | yes | yes | no | no |
-| `fence` | ATOM | fence | no | no | no | no | no | yes |
+| `fence` | ATOM | atomics_device | yes | yes | yes | yes | no | yes |
 | `td.load` | TDESC | tensor_dma | yes | yes | yes | yes | yes | no |
 | `td.release` | TDESC | tensor_dma | yes | yes | yes | yes | no | no |
 | `w.def` | TDESC | tensor_dma | yes | yes | yes | yes | yes | no |
@@ -182,7 +182,7 @@ it is a statement about which column of evidence exists.
 | `m.zero` | MATRIX | matrix_f16 | yes | yes | yes | yes | yes | no |
 | `m.mma.async` | MATRIX | matrix_f16 | yes | yes | yes | yes | yes | no |
 | `a.vread` | ACC | matrix_f16 | yes | yes | yes | yes | yes | no |
-| `a.vwrite` | ACC | matrix_f16 | yes | yes | yes | yes | no | no |
+| `a.vwrite` | ACC | matrix_f16 | yes | yes | yes | yes | yes | no |
 | `a.mul.row` | ACC | matrix_f16 | yes | yes | yes | yes | no | no |
 | `a.fma.row` | ACC | matrix_f16 | yes | yes | yes | yes | no | no |
 | `a.zero` | ACC | matrix_f16 | yes | yes | yes | yes | no | no |
@@ -193,7 +193,7 @@ it is a statement about which column of evidence exists.
 | `mb.wait` | MBAR | mbarrier | yes | yes | yes | yes | yes | no |
 | `mb.inval` | MBAR | mbarrier | yes | yes | yes | yes | no | no |
 
-169 instructions: 71 the compiler emits, 1 it has a lowering for and refuses on every R1 profile, 20 executed on the whole machine.
+169 instructions: 111 the compiler emits, 1 it has a lowering for and refuses on every R1 profile, 20 executed on the whole machine.
 
 `gated` in the emit column means the lowering exists and the capability
 is false everywhere, so asking for it is a compile error rather than a
@@ -275,6 +275,7 @@ applicable. Each of these is a FAIL or NOT RUN, never an absence.
 | transfer rank 3-5 | NOT DELIVERED | ISA sec 9E allows up to 5; the engine executes 1 and 2 and raises DESCRIPTOR_FAULT above that |
 | byte-granular window writes | NOT DELIVERED | a descriptor whose row is not a whole number of 8-byte units raises DESCRIPTOR_FAULT |
 | `t.st.async` execution | NOT DELIVERED | encodable, faults with ILLEGAL_INSTRUCTION; capability `tensor_store` is false |
+| transposed transfer (`t.ld.async` mod[5]) | NOT DELIVERED | ISA sec 9E specifies it; tnca_core.v passes only x_mod[2:0] to the engine, so it would transfer untransposed. Capability `tensor_transpose` is false; doc/r37_isa_gaps.md |
 | general CFG in the MLIR verifier | FROZEN BOUNDARY | refused by name (IR-02), not accepted unchecked |
 | `tnca_vector_fpu` synthesis | NOT COMPLETED | see `doc/synthesis.md`; yosys did not finish |
 

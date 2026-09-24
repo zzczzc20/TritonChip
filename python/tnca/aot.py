@@ -77,6 +77,12 @@ def semantic_options(options):
 # signature and `f32` in MLIR; both mean one binary32.
 _TRITON_SPELLING = {'fp32': 'f32', 'fp64': 'f64', 'u1': 'bool'}
 
+# Both of these live in tnca_cc.triton_options, because there is a
+# second caller -- the test bridge -- and when each had its own copy,
+# fixing one left `tl.dot` refused by the other.
+from tnca_cc.triton_options import (CODEGEN_FNS as _CODEGEN_FNS,
+                                    frontend_options as _frontend_options)
+
 
 def _sha(data):
     if isinstance(data, str):
@@ -242,6 +248,19 @@ def check_options(options):
     return options
 
 
+def _constexpr_metadata(values):
+    """Stable JSON values without changing the objects passed to Triton."""
+    def encode(value):
+        if isinstance(value, dict):
+            return {k: encode(v) for k, v in sorted(value.items())}
+        if isinstance(value, (tuple, list)):
+            return [encode(v) for v in value]
+        if type(value).__module__ == 'triton.language.core' and type(value).__name__ == 'dtype':
+            return {'triton_dtype': str(value)}
+        return value
+    return encode(values or {})
+
+
 def cache_key(*, source_kind, source_hash, kernel_name, signature,
               constexprs, profile, config_hash, options):
     """Content address of a compile.
@@ -255,7 +274,7 @@ def cache_key(*, source_kind, source_hash, kernel_name, signature,
         'source': source_hash,
         'kernel': kernel_name,
         'signature': list(signature),
-        'constexprs': dict(sorted((constexprs or {}).items())),
+        'constexprs': _constexpr_metadata(constexprs),
         'profile': profile,
         'config_hash': config_hash,
         'options': dict(sorted(options.items())),
@@ -305,7 +324,7 @@ def _signature_types(signature, param_names):
                 detail={'signature': sorted(signature)})
         if declared == 'constexpr':
             continue
-        if declared.startswith('*'):
+        if declared.startswith(('*', 'tensordesc<')):
             kind = 'device_ptr64'
         elif declared in ('i32', 'u32', 'i64', 'u64', 'f32'):
             kind = declared
@@ -402,6 +421,10 @@ def compile_aot(source, *, kernel_name=None, signature=None, constexprs=None,
                    profile, pinfo, options, param_names)
 
     measured = measure_resources(asm_text, target, code=code)
+    # The emitter cannot see this one: it is a requirement the frontend
+    # recorded, not a count of something in the assembly.
+    if 'scratch_bytes' in report:
+        measured['scratch_bytes'] = report['scratch_bytes']
     report['resources'] = measured
     man = _manifest(kernel_name, params, target, pinfo, constexprs, options,
                     prov, source_kind, report, measured=measured)
@@ -423,7 +446,7 @@ def compile_aot(source, *, kernel_name=None, signature=None, constexprs=None,
             'profile': pinfo['name'],
             'cache_key': key,
             'artifact': os.path.abspath(output),
-            'constexprs': dict(sorted((constexprs or {}).items())),
+            'constexprs': _constexpr_metadata(constexprs),
             'options': dict(sorted((options or {}).items())),
             'toolchain_lock_hash': _lock_hash(),
             'resources': measured,
@@ -476,7 +499,7 @@ def _key_for(source, source_kind, kernel_name, signature, constexprs,
     return cache_key(source_kind=source_kind,
                      source_hash=_sha(_source_text(source)),
                      kernel_name=name,
-                     signature=[f"{n}:{t}" for n, t in params],
+                     signature=[f"{n}:{t}:{(signature or {}).get(n, t)}" for n, t in params],
                      constexprs=constexprs, profile=profile,
                      config_hash=pinfo['config_hash'],
                      options=semantic_options(options))
@@ -511,23 +534,16 @@ def _compile_triton(fn, kernel_name, signature, constexprs, target, prov,
         param_names = [n for i, n in enumerate(names) if i not in const]
 
     params = _signature_types(signature, param_names)
-
-    class _Options:
-        num_warps = 1
-        num_ctas = 1
-        num_stages = 1
-        debug = False
-        sanitize_overflow = False
-        arch = None
-        allowed_dot_input_precisions = ()
-        launch_cooperative_grid = False
-        backend_name = 'tnca'
+    prov.record('tensor_descriptors', {n: signature[n] for n in param_names
+                                       if signature[n].startswith('tensordesc<')})
 
     src = ASTSource(fn, signature=signature, constexprs=constexprs)
     ctx = ir.context()
     ir.load_dialects(ctx)
     try:
-        module = src.make_ir(GPUTarget('tnca', 0, 32), _Options(), {}, {}, ctx)
+        module = src.make_ir(GPUTarget('tnca', 0, 32),
+                             _frontend_options('tnca'), _CODEGEN_FNS, {},
+                             ctx)
     except Exception as e:
         raise CompileError(f"the Triton frontend refused this kernel: {e}",
                            where=f"@triton.jit {kernel_name}")
@@ -549,6 +565,22 @@ def _compile_triton(fn, kernel_name, signature, constexprs, target, prov,
     # compile actually consumed, and anything reconstructed afterwards
     # would be a second opinion about it.
     stages.record('ttir', str(module))
+
+    # Legalisation first, at every level: Triton's library functions
+    # (`tl.exp`, `tl.sum`, `tl.max`, ...) are @triton.jit functions and
+    # arrive as `tt.call` until they are inlined. No backend can lower a
+    # call, so this is not an optimisation and is not gated on one --
+    # an opt_level may change how good the code is, never whether it
+    # compiles.
+    from tnca_cc.upstream import PureValueOptimizer as _PVO, PassError as _PE
+    try:
+        _PVO.legalize_module(module, ctx, name=kernel_name)
+    except _PE as e:
+        raise CompileError(
+            f"the upstream inliner could not run: {e}", where=kernel_name,
+            remedy='Triton library calls cannot be lowered until they '
+                   'are inlined') from e
+    stages.record('ttir_inlined', str(module))
 
     # Phase 3.5 section 4.1: above O0 the pinned upstream canonicalizer
     # and CSE run over this module, in place, and the importer below
@@ -578,6 +610,18 @@ def _compile_triton(fn, kernel_name, signature, constexprs, target, prov,
         param_names=[n for n, _t in params], target=target, prov=prov,
         dynamic_args=True)
     stages.record('tnir', str(kernel))
+
+    # Scratch the KERNEL asks for, which is not the same thing as spill
+    # slots the emitter did not need. A kernel that builds a TensorMap
+    # has to write it to memory before `td.load` can snapshot it (ISA
+    # sec 9D.1), and a tile that changes shape passes through memory
+    # because nothing packs or unpacks one. The buffer arrives in the
+    # slot after the declared arguments, so a launch that does not
+    # supply it hands the kernel a pointer to whatever was there.
+    scratch_bytes = int(getattr(imp, 'scratch_used', 0))
+    if scratch_bytes:
+        prov.record('scratch_bytes', scratch_bytes)
+        prov.record('scratch_argument_slot', len(params))
 
     # The TNCA IR passes run on this path too. Upstream canonicalisation
     # already worked on the TTIR above, but it does not strength-reduce a
@@ -632,7 +676,8 @@ def _compile_triton(fn, kernel_name, signature, constexprs, target, prov,
 
     report = dict(stages=['ttir', 'tnca-ir', 'assembly', 'machine'],
                   assembly_lines=len(asm_text.splitlines()),
-                  code_bytes=len(code))
+                  code_bytes=len(code),
+                  scratch_bytes=scratch_bytes)
     return kernel_name, params, asm_text, code, symbols, report, stages
 
 
@@ -739,7 +784,7 @@ def _manifest(kernel_name, params, target, pinfo, constexprs, options, prov,
             'compiler_hash': prov.entries.get('assembly_sha256', ''),
             'source_hash': prov.entries.get('source_sha256', ''),
             'toolchain_lock_hash': _lock_hash(),
-            'constexprs': dict(sorted(constexprs.items())),
+            'constexprs': _constexpr_metadata(constexprs),
             # Semantic options only. A dump directory is a fact about one
             # debugging session, not about the kernel: recording it put a
             # local home directory inside a distributable artifact and

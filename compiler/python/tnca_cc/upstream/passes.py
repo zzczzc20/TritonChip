@@ -132,6 +132,32 @@ class PureValueOptimizer:
         return after, self._difference(before, after)
 
     @staticmethod
+    def legalize_module(module, ctx, *, name='tnca-legalize'):
+        """Inline Triton's library calls, at EVERY optimisation level.
+
+        This is legalisation, not optimisation. `tl.exp`, `tl.sum`,
+        `tl.max`, `tl.sqrt`, `tl.sigmoid` and friends are ordinary
+        @triton.jit functions, and until they are inlined they appear in
+        the IR as `tt.call`, which no backend can lower. Seven of
+        TileBench's operators were refused for exactly that.
+
+        So it runs before the importer whatever `opt_level` says. An
+        optimisation level may change how good the code is; it must not
+        change whether the kernel compiles at all, and gating the
+        inliner behind O1 would have done precisely that.
+        """
+        from triton._C import libtriton as L
+        pm = L.ir.pass_manager(ctx)
+        L.passes.common.add_inliner(pm)
+        try:
+            pm.run(module, name)
+        except Exception as e:                            # noqa: BLE001
+            raise PassError(
+                f"the upstream inliner failed: "
+                f"{type(e).__name__}: {e}") from e
+        return str(module)
+
+    @staticmethod
     def _difference(before, after):
         """What the passes actually did, countable.
 

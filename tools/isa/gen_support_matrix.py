@@ -63,8 +63,6 @@ CAPABILITY_BY_MAJOR = {
 }
 
 CAPABILITY_BY_MNEMONIC = {
-    # ISA v0.1 has no fence encoding at all, so no profile has it.
-    'fence': 'fence',
     'v.ld.gather': 'gather_scatter',
     'v.st.scatter': 'gather_scatter',
     # Encodable, and no engine can source it. See doc/support_matrix.md's
@@ -403,6 +401,10 @@ def render():
       'row is not a whole number of 8-byte units raises DESCRIPTOR_FAULT |')
     a('| `t.st.async` execution | NOT DELIVERED | encodable, faults with '
       'ILLEGAL_INSTRUCTION; capability `tensor_store` is false |')
+    a('| transposed transfer (`t.ld.async` mod[5]) | NOT DELIVERED | ISA '
+      'sec 9E specifies it; tnca_core.v passes only x_mod[2:0] to the '
+      'engine, so it would transfer untransposed. Capability '
+      '`tensor_transpose` is false; doc/r37_isa_gaps.md |')
     a('| general CFG in the MLIR verifier | FROZEN BOUNDARY | refused by '
       'name (IR-02), not accepted unchecked |')
     a('| `tnca_vector_fpu` synthesis | NOT COMPLETED | see '

@@ -1,0 +1,307 @@
+{
+  "format": "tnca-tilebench-coverage/1",
+  "source": "https://github.com/Deep-Learning-Profiling-Tools/Tilebench",
+  "about": [
+    "The 45 TileBench operators. make r37 compiles and executes original JIT function bodies from TILEBENCH_SOURCE through public AOT and Session APIs at O0/O1/O2.",
+    "upstream_source identifies the original module; aot_run.py records optimization levels, source hashes, artifacts and numerical results; upstream.py and upstream_run.py retain the direct compiler diagnostics.",
+    "kernel identifies the older representative regression kernel. Passing it does not establish original-source compatibility.",
+    "Compilation and numerical RTL execution are separate gates. Missing stages or numerical cases never count as passes."
+  ],
+  "categories": [
+    "point-wise",
+    "reduction",
+    "matmul",
+    "stencil",
+    "data-layout"
+  ],
+  "operators": [
+    {
+      "id": "vector_add",
+      "category": "point-wise",
+      "kernel": "tools/r37/kernels.py:vector_add",
+      "upstream_source": "benchmarks/operators/vector_add/impl_triton.py"
+    },
+    {
+      "id": "mul2",
+      "category": "point-wise",
+      "kernel": "tools/r37/kernels.py:mul2",
+      "upstream_source": "benchmarks/operators/mul2/impl_triton.py"
+    },
+    {
+      "id": "relu",
+      "category": "point-wise",
+      "kernel": "tools/r37/kernels.py:relu",
+      "upstream_source": "benchmarks/operators/relu/impl_triton.py"
+    },
+    {
+      "id": "leaky_relu",
+      "category": "point-wise",
+      "kernel": "tools/r37/kernels.py:leaky_relu",
+      "upstream_source": "benchmarks/operators/leaky_relu/impl_triton.py"
+    },
+    {
+      "id": "sigmoid",
+      "category": "point-wise",
+      "kernel": "tools/r37/kernels.py:sigmoid",
+      "upstream_source": "benchmarks/operators/sigmoid/impl_triton.py"
+    },
+    {
+      "id": "fused_activation",
+      "category": "point-wise",
+      "kernel": "tools/r37/kernels.py:fused_activation",
+      "upstream_source": "benchmarks/operators/fused_activation/impl_triton.py"
+    },
+    {
+      "id": "swiglu",
+      "category": "point-wise",
+      "kernel": "tools/r37/kernels.py:swiglu",
+      "upstream_source": "benchmarks/operators/swiglu/impl_triton.py"
+    },
+    {
+      "id": "dropout",
+      "category": "point-wise",
+      "kernel": "tools/r37/kernels.py:dropout",
+      "upstream_source": "benchmarks/operators/dropout/impl_triton.py"
+    },
+    {
+      "id": "quantize_global",
+      "category": "point-wise",
+      "kernel": "tools/r37/kernels.py:quantize_global",
+      "upstream_source": "benchmarks/operators/quantize_global/impl_triton.py"
+    },
+    {
+      "id": "dequantize_rowwise",
+      "category": "point-wise",
+      "kernel": "tools/r37/kernels.py:dequantize_rowwise",
+      "upstream_source": "benchmarks/operators/dequantize_rowwise/impl_triton.py"
+    },
+    {
+      "id": "weight_dequant",
+      "category": "point-wise",
+      "kernel": "tools/r37/kernels.py:weight_dequant",
+      "upstream_source": "benchmarks/operators/weight_dequant/impl_triton.py"
+    },
+    {
+      "id": "rope",
+      "category": "point-wise",
+      "kernel": "tools/r37/kernels.py:rope",
+      "upstream_source": "benchmarks/operators/rope/impl_triton.py"
+    },
+    {
+      "id": "softmax",
+      "category": "reduction",
+      "kernel": "tools/r37/kernels.py:softmax",
+      "upstream_source": "benchmarks/operators/softmax/impl_triton.py"
+    },
+    {
+      "id": "layernorm",
+      "category": "reduction",
+      "kernel": "tools/r37/kernels.py:layernorm",
+      "upstream_source": "benchmarks/operators/layernorm/impl_triton.py"
+    },
+    {
+      "id": "rmsnorm",
+      "category": "reduction",
+      "kernel": "tools/r37/kernels.py:rmsnorm",
+      "upstream_source": "benchmarks/operators/rmsnorm/impl_triton.py"
+    },
+    {
+      "id": "l2_norm",
+      "category": "reduction",
+      "kernel": "tools/r37/kernels.py:l2_norm",
+      "upstream_source": "benchmarks/operators/l2_norm/impl_triton.py"
+    },
+    {
+      "id": "mean_reduction",
+      "category": "reduction",
+      "kernel": "tools/r37/kernels.py:mean_reduction",
+      "upstream_source": "benchmarks/operators/mean_reduction/impl_triton.py"
+    },
+    {
+      "id": "argmax",
+      "category": "reduction",
+      "kernel": "tools/r37/kernels.py:argmax",
+      "upstream_source": "benchmarks/operators/argmax/impl_triton.py"
+    },
+    {
+      "id": "cross_entropy",
+      "category": "reduction",
+      "kernel": "tools/r37/kernels.py:cross_entropy",
+      "upstream_source": "benchmarks/operators/cross_entropy/impl_triton.py"
+    },
+    {
+      "id": "kl_divergence",
+      "category": "reduction",
+      "kernel": "tools/r37/kernels.py:kl_divergence",
+      "upstream_source": "benchmarks/operators/kl_divergence/impl_triton.py"
+    },
+    {
+      "id": "batch_normalization",
+      "category": "reduction",
+      "kernel": "tools/r37/kernels.py:batch_normalization",
+      "upstream_source": "benchmarks/operators/batch_normalization/impl_triton.py"
+    },
+    {
+      "id": "moe_topk_gating",
+      "category": "reduction",
+      "kernel": "tools/r37/kernels.py:moe_topk_gating",
+      "upstream_source": "benchmarks/operators/moe_topk_gating/impl_triton.py"
+    },
+    {
+      "id": "histogramming",
+      "category": "reduction",
+      "kernel": "tools/r37/kernels.py:histogramming",
+      "upstream_source": "benchmarks/operators/histogramming/impl_triton.py"
+    },
+    {
+      "id": "matmul_fp32_fp16_fp8",
+      "category": "matmul",
+      "kernel": "tools/r37/kernels.py:matmul_tile",
+      "signature_variants": {
+        "fp16": {
+          "a_ptr": "*fp16",
+          "b_ptr": "*fp16"
+        },
+        "fp32": {
+          "a_ptr": "*fp32",
+          "b_ptr": "*fp32"
+        },
+        "fp8e4nv": {
+          "a_ptr": "*fp8e4nv",
+          "b_ptr": "*fp8e4nv"
+        },
+        "fp8e5": {
+          "a_ptr": "*fp8e5",
+          "b_ptr": "*fp8e5"
+        }
+      },
+      "upstream_source": "benchmarks/operators/matmul_fp32_fp16_fp8/impl_triton.py"
+    },
+    {
+      "id": "matmul_int8",
+      "category": "matmul",
+      "kernel": "tools/r37/kernels.py:matmul_int8",
+      "upstream_source": "benchmarks/operators/matmul_int8/impl_triton.py"
+    },
+    {
+      "id": "batched_matmul",
+      "category": "matmul",
+      "kernel": "tools/r37/kernels.py:matmul_descriptor",
+      "upstream_source": "benchmarks/operators/batched_matmul/impl_triton.py"
+    },
+    {
+      "id": "streamk_matmul",
+      "category": "matmul",
+      "kernel": "tools/r37/kernels.py:streamk_matmul",
+      "upstream_source": "benchmarks/operators/streamk_matmul/impl_triton.py"
+    },
+    {
+      "id": "flash_attention",
+      "category": "matmul",
+      "kernel": "tools/r37/kernels.py:flash_attention",
+      "upstream_source": "benchmarks/operators/flash_attention/impl_triton.py"
+    },
+    {
+      "id": "flash_decode",
+      "category": "matmul",
+      "kernel": "tools/r37/kernels.py:flash_decode",
+      "upstream_source": "benchmarks/operators/flash_decode/impl_triton.py"
+    },
+    {
+      "id": "block_sparse_attention",
+      "category": "matmul",
+      "kernel": "tools/r37/kernels.py:block_sparse_attention",
+      "upstream_source": "benchmarks/operators/block_sparse_attention/impl_triton.py"
+    },
+    {
+      "id": "linear_self_attention",
+      "category": "matmul",
+      "kernel": "tools/r37/kernels.py:linear_self_attention",
+      "upstream_source": "benchmarks/operators/linear_self_attention/impl_triton.py"
+    },
+    {
+      "id": "1d_conv",
+      "category": "stencil",
+      "kernel": "tools/r37/kernels.py:conv1d",
+      "upstream_source": "benchmarks/operators/1d_conv/impl_triton.py"
+    },
+    {
+      "id": "2d_conv",
+      "category": "stencil",
+      "kernel": "tools/r37/kernels.py:conv2d",
+      "upstream_source": "benchmarks/operators/2d_conv/impl_triton.py"
+    },
+    {
+      "id": "3d_conv",
+      "category": "stencil",
+      "kernel": "tools/r37/kernels.py:conv3d",
+      "upstream_source": "benchmarks/operators/3d_conv/impl_triton.py"
+    },
+    {
+      "id": "2d_max_pooling",
+      "category": "stencil",
+      "kernel": "tools/r37/kernels.py:max_pool2d",
+      "upstream_source": "benchmarks/operators/2d_max_pooling/impl_triton.py"
+    },
+    {
+      "id": "gaussian_blur",
+      "category": "stencil",
+      "kernel": "tools/r37/kernels.py:gaussian_blur",
+      "upstream_source": "benchmarks/operators/gaussian_blur/impl_triton.py"
+    },
+    {
+      "id": "jacobi_stencil_2d",
+      "category": "stencil",
+      "kernel": "tools/r37/kernels.py:jacobi_stencil_2d",
+      "upstream_source": "benchmarks/operators/jacobi_stencil_2d/impl_triton.py"
+    },
+    {
+      "id": "matrix_copy",
+      "category": "data-layout",
+      "kernel": "tools/r37/kernels.py:matrix_copy",
+      "upstream_source": "benchmarks/operators/matrix_copy/impl_triton.py"
+    },
+    {
+      "id": "matrix_transpose",
+      "category": "data-layout",
+      "kernel": "tools/r37/kernels.py:matrix_transpose",
+      "upstream_source": "benchmarks/operators/matrix_transpose/impl_triton.py"
+    },
+    {
+      "id": "interleave",
+      "category": "data-layout",
+      "kernel": "tools/r37/kernels.py:interleave",
+      "upstream_source": "benchmarks/operators/interleave/impl_triton.py"
+    },
+    {
+      "id": "reverse_array",
+      "category": "data-layout",
+      "kernel": "tools/r37/kernels.py:reverse_array",
+      "upstream_source": "benchmarks/operators/reverse_array/impl_triton.py"
+    },
+    {
+      "id": "destindex",
+      "category": "data-layout",
+      "kernel": "tools/r37/kernels.py:destindex",
+      "upstream_source": "benchmarks/operators/destindex/impl_triton.py"
+    },
+    {
+      "id": "bitonic_sort",
+      "category": "data-layout",
+      "kernel": "tools/r37/kernels.py:bitonic_sort",
+      "upstream_source": "benchmarks/operators/bitonic_sort/impl_triton.py"
+    },
+    {
+      "id": "radix_sort",
+      "category": "data-layout",
+      "kernel": "tools/r37/kernels.py:radix_sort",
+      "upstream_source": "benchmarks/operators/radix_sort/impl_triton.py"
+    },
+    {
+      "id": "top_k_selection",
+      "category": "data-layout",
+      "kernel": "tools/r37/kernels.py:top_k_selection",
+      "upstream_source": "benchmarks/operators/top_k_selection/impl_triton.py"
+    }
+  ]
+}

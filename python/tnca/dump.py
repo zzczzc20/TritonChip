@@ -50,6 +50,12 @@ SUFFIX = {
     # file would suggest something had. Phase 3.5 R35-OBS-01 wants the
     # input and the optimised IR both visible, which is two files.
     'ttir_opt': '.opt.ttir',
+    # After the inliner, which runs at EVERY optimisation level because
+    # Triton's library functions arrive as `tt.call` and no backend can
+    # lower a call. Worth its own file: the difference between this and
+    # `.ttir` is the whole of tl.exp, tl.sum and friends appearing, and
+    # that is usually what a reader is looking for.
+    'ttir_inlined': '.inlined.ttir',
     'tnir': '.tnir',
     # The TNCA IR after the bridge merged its duplicate pure values.
     # Written only when something merged, for the same reason as
@@ -60,12 +66,14 @@ SUFFIX = {
 }
 
 # The order they are produced in, which is the order a reader wants them.
-STAGES = ('ttir', 'ttir_opt', 'tnir', 'tnir_opt', 'asm', 'hex')
+STAGES = ('ttir', 'ttir_inlined', 'ttir_opt', 'tnir',
+          'tnir_opt', 'asm', 'hex')
 
 # Stages that exist only for some compiles. `ttir` is absent for a TNCA IR
 # source, which never had one; `ttir_opt` is absent at O0, where no pass
 # ran. A file that is written anyway would say something happened.
-CONDITIONAL_STAGES = frozenset({'ttir', 'ttir_opt', 'tnir_opt'})
+CONDITIONAL_STAGES = frozenset({'ttir', 'ttir_inlined',
+                                'ttir_opt', 'tnir_opt'})
 
 # What every compile produces, whatever its source kind or optimisation
 # level. A stage missing from THIS list is a bug.

@@ -119,9 +119,10 @@ class Transport(_backend.Backend):
             argv.append(f'+hex={self.image}')
         if self.trace:
             argv.append('+trace')
-        self.proc = subprocess.Popen(
-            argv, stdout=open(self.log, 'w'), stderr=subprocess.STDOUT,
-            start_new_session=True)
+        with open(self.log, 'w') as log:
+            self.proc = subprocess.Popen(
+                argv, stdout=log, stderr=subprocess.STDOUT,
+                start_new_session=True)
         # The device writes sequence 0 when it is up. Waiting for that is the
         # difference between "slow to start" and "never started", and a
         # runtime that cannot tell them apart reports the wrong one.

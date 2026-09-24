@@ -96,11 +96,25 @@ def build_target(core, top, isa, name, description, profile=None):
         # the machine will refuse. Not a CAPABILITY0 bit -- there is no
         # hardware configuration in which it is currently 1.
         'tensor_store': False,
+        # ISA sec 9E's mod[5] asks the engine for a transposed write.
+        # `tnca_core.v` passes x_mod[2:0] to the engine and nothing
+        # else, so an emitted `.t` transfers the tile UNTRANSPOSED and
+        # returns a wrong answer rather than a fault -- which is worse
+        # than either implementing it or not encoding it. False here
+        # makes asking for it a compile error, the way `tensor_store`
+        # already is. doc/r37_isa_gaps.md has the detail.
+        'tensor_transpose': False,
         'mbarrier': True,
         'packed_f16': False,
         'cache_hints': False,
-        # Not a CAPABILITY0 bit: no fence encoding exists in v0.1 at all.
-        'fence': False,
+        # `fence` is ATOM 0x20 and has no CAPABILITY0 bit, which makes
+        # it baseline rather than absent -- the same thing `s.add` is.
+        # It was False here with a comment saying no encoding existed,
+        # while tools/asm/tnca_isa.py held the encoding, tnca_core.v
+        # decoded it, t14_caps.s and t22_atomic.s executed it, and the
+        # generated support matrix recorded it as machine-verified. The
+        # ATOM family gate is the one that applies.
+        'fence': True,
     }
 
     target = {

@@ -37,12 +37,40 @@ _SBIN = {'add': 's.add', 'sub': 's.sub', 'mul': 's.mul', 'and': 's.and',
 _SBINI = {'add': 's.addi', 'sub': 's.subi', 'mul': 's.muli',
           'and': 's.andi', 'or': 's.ori', 'xor': 's.xori',
           'shl': 's.shli', 'lshr': 's.lshri', 'ashr': 's.ashri'}
-_VBIN_INT = {'add': 'v.add', 'sub': 'v.sub', 'mul': 'v.mul'}
+_VBIN_INT = {'add': 'v.add', 'sub': 'v.sub', 'mul': 'v.mul',
+             'and': 'v.and', 'or': 'v.or', 'xor': 'v.xor',
+             'andn': 'v.andn', 'shl': 'v.shl', 'lshr': 'v.lshr',
+             'ashr': 'v.ashr', 'min': 'v.min.s', 'max': 'v.max.s',
+             'minu': 'v.min.u', 'maxu': 'v.max.u'}
 _VBIN_FP = {'add': 'vf.add', 'sub': 'vf.sub', 'mul': 'vf.mul',
             'min': 'vf.min', 'max': 'vf.max'}
+# Lane-local unaries. Float only: the ISA spells integer negation as a
+# subtract from zero, which is exact, while float negation is a sign-bit
+# flip that a subtract does not reproduce for zero or for NaN.
+_VUN_FP = {'neg': 'vf.neg', 'abs': 'vf.abs'}
+
+# ISA sec 0x13. Predicates have their own logic unit; an `and` of two
+# comparisons belongs here and not in the integer vector unit.
+_PBIN = {'and': 'p.and', 'or': 'p.or', 'xor': 'p.xor', 'andn': 'p.andn'}
+_PUN = {'not': 'p.not', 'mov': 'p.mov'}
+
+# ISA sec 8.8. Approximate by contract, not by accident: each is
+# specified to <= 2**-22 relative error, which is roughly four units in
+# the last place of binary32. Nothing here rounds correctly, so the
+# lowerings in mathlib.py refine these rather than returning them.
+_VUN_SFU = {'exp2': 'v.exp2.approx', 'rcp': 'v.rcp.approx',
+            'rsqrt': 'v.rsqrt.approx', 'log2': 'v.log2.approx'}
+# ISA sec 9.2. Integer only, and 4 or 8 bytes only: mod[2:0] accepts
+# nothing narrower, because the memory's word is 8 bytes and a sub-word
+# read-modify-write would need a path nothing else in the design has.
+_ATOMIC = {'add': 'atom.add', 'and': 'atom.and', 'or': 'atom.or',
+           'xor': 'atom.xor', 'xchg': 'atom.xchg', 'min': 'atom.min.s',
+           'max': 'atom.max.s', 'minu': 'atom.min.u', 'maxu': 'atom.max.u'}
+
 _REDUCE_INT = {'add': 'v.reduce.add', 'max': 'v.reduce.max.s',
                'min': 'v.reduce.min.s', 'and': 'v.reduce.and',
-               'or': 'v.reduce.or', 'xor': 'v.reduce.xor'}
+               'or': 'v.reduce.or', 'xor': 'v.reduce.xor',
+               'maxu': 'v.reduce.max.u', 'minu': 'v.reduce.min.u'}
 _REDUCE_FP = {'add': 'vf.reduce.add', 'max': 'vf.reduce.max',
               'min': 'vf.reduce.min'}
 
@@ -133,6 +161,7 @@ class CodeGen:
         for i, op in enumerate(ops):
             for v in op.results:
                 defined_at.setdefault(id(v), i)
+                self._last_use.setdefault(id(v), i)
 
         def note(v, i):
             if v is not None and getattr(v, 'kind', None):
@@ -414,7 +443,8 @@ class CodeGen:
 
     def _op_assign(self, op):
         dst, src = op.operands
-        self._emit('s.mov', f"s{dst.reg}", f"s{src.reg}")
+        bank = 'v' if dst.kind == VECTOR else 's'
+        self._emit(f'{bank}.mov', f'{bank}{dst.reg}', f'{bank}{src.reg}')
 
     # ---- vector ops -------------------------------------------------------
     def _op_arange(self, op):
@@ -444,15 +474,26 @@ class CodeGen:
         """
         v = op.results[0]
         self._alloc(v)
-        imm = int(op.attrs['imm'])
+        self._broadcast_imm(v.reg, int(op.attrs['imm']))
+
+    def _broadcast_imm(self, vreg, imm, comment=None):
+        """A 32-bit constant into every lane of `vreg`.
+
+        Every caller that puts a literal in a vector register goes
+        through here. The load and the gather used to emit their `other=`
+        `v.movi` themselves, so a masked load of a float -- `other=-inf`,
+        which is what every masked `tl.max` uses -- reached the assembler
+        as `v.movi #4286578688` and was refused, while the identical
+        constant arriving through `vmovi` was materialised correctly.
+        """
         if -(1 << 15) <= imm < (1 << 15):
-            self._emit('v.movi', f"v{v.reg}", f"#{imm}")
+            self._emit('v.movi', f"v{vreg}", f"#{imm}", comment=comment)
             return
         s = self.alloc.scalar()
         self.b.directive(self._materialise(s, imm))
-        self._emit('v.splat', f"v{v.reg}", f"s{s}",
-                    comment='a 32-bit constant does not fit v.movi '
-                            '(ISA 0x40)')
+        self._emit('v.splat', f"v{vreg}", f"s{s}",
+                    comment=comment or 'a 32-bit constant does not fit '
+                                       'v.movi (ISA 0x40)')
         self.alloc.free('s', s)
 
     def _op_vbin(self, op):
@@ -468,8 +509,90 @@ class CodeGen:
             raise Diagnostic(
                 f"no {v.dtype} lowering for {op.attrs['op']!r}",
                 source='compiler_overview.md sec 12')
+        # ISA sec 8.3: `.ieee` ignores a NaN operand, `.prop` propagates
+        # it. The two spellings are two different functions, so the
+        # suffix is written out rather than left to the assembler's
+        # default whenever the frontend knew which one it meant.
+        fmm = op.attrs.get('fmm')
+        if fmm is not None:
+            if mnem not in ('vf.min', 'vf.max'):
+                raise Diagnostic(
+                    f"a min/max NaN mode on {op.attrs['op']!r}, which has "
+                    f"none", source='doc/isa/TNCA-ISA-v0.1.md sec 8.3')
+            mnem = f"{mnem}.{fmm}"
         self._emit(mnem, f"v{v.reg}", f"v{a.reg}", f"v{b.reg}",
                     comment=op.attrs.get('comment'))
+
+    def _op_vun(self, op):
+        a = op.operands[0]
+        v = op.results[0]
+        self._alloc(v)
+        sfu = _VUN_SFU.get(op.attrs['op'])
+        if sfu is not None:
+            self.target.require('sfu', f"emit {op.attrs['op']}")
+            self._emit(sfu, f"v{v.reg}", f"v{a.reg}",
+                        comment=op.attrs.get('comment'))
+            return
+        if not _is_fp(v.dtype):
+            raise Diagnostic(
+                f"no {v.dtype} lowering for {op.attrs['op']!r}: the ISA "
+                f"has no integer {op.attrs['op']}",
+                source='doc/isa/opcode-map.md')
+        self.target.require('vector_fp32',
+                            f"emit a {v.dtype} {op.attrs['op']}")
+        mnem = _VUN_FP.get(op.attrs['op'])
+        if mnem is None:
+            raise Diagnostic(f"no {v.dtype} lowering for {op.attrs['op']!r}",
+                             source='compiler_overview.md sec 12')
+        self._emit(mnem, f"v{v.reg}", f"v{a.reg}",
+                    comment=op.attrs.get('comment'))
+
+    def _op_vfma(self, op):
+        a, b, c = op.operands
+        v = op.results[0]
+        self._alloc(v)
+        self.target.require('vector_fp32', f"emit a {v.dtype} fma")
+        self._emit('vf.fma', f"v{v.reg}", f"v{a.reg}", f"v{b.reg}",
+                    f"v{c.reg}", comment=op.attrs.get('comment'))
+
+    def _op_vfms(self, op):
+        a, b, c = op.operands
+        v = op.results[0]
+        self._alloc(v)
+        self.target.require('vector_fp32', f"emit a {v.dtype} fms")
+        self._emit('vf.fms', f"v{v.reg}", f"v{a.reg}", f"v{b.reg}",
+                    f"v{c.reg}", comment=op.attrs.get('comment'))
+
+    def _op_vcvt(self, op):
+        a = op.operands[0]
+        v = op.results[0]
+        self._alloc(v)
+        src, dst = op.attrs['src'], op.attrs['dst']
+        aliases = {'f8E4M3FN': 'e4m3', 'f8E5M2': 'e5m2'}
+        src, dst = aliases.get(src, src), aliases.get(dst, dst)
+        # sec 8.4 gives int<->float their own opcodes and float->float a
+        # shared one; the assembler spells the first two out.
+        self._emit(f"vf.cvt.{src}.{dst}", f"v{v.reg}", f"v{a.reg}",
+                    comment=op.attrs.get('comment'))
+
+    def _op_vextract(self, op):
+        v = op.operands[0]
+        out = op.results[0]
+        self._alloc(out)
+        self._emit('v.extract', f"s{out.reg}", f"v{v.reg}",
+                    f"#{op.attrs['lane']}")
+
+    def _op_vinsert(self, op):
+        v, scalar = op.operands
+        self._emit('v.insert', f"v{v.reg}", f"s{scalar.reg}",
+                    f"#{op.attrs['lane']}")
+
+    def _op_vshuffle(self, op):
+        v, amount = op.operands
+        out = op.results[0]
+        self._alloc(out)
+        self._emit(f"v.shuffle.{op.attrs['op']}", f"v{out.reg}",
+                    f"v{v.reg}", f"s{amount.reg}")
 
     def _op_vcmp(self, op):
         a = op.operands[0]
@@ -488,6 +611,22 @@ class CodeGen:
         self._emit(f"{mnem}.{op.attrs['cc']}", f"p{p.reg}", f"v{a.reg}",
                     f"v{b.reg}")
 
+    def _op_pbin(self, op):
+        a, b = op.operands
+        p = op.results[0]
+        self._alloc(p)
+        mnem = _PBIN.get(op.attrs['op'])
+        if mnem is None:
+            raise Diagnostic(f"no predicate lowering for {op.attrs['op']!r}",
+                             source='doc/isa/opcode-map.md sec 0x13')
+        self._emit(mnem, f"p{p.reg}", f"p{a.reg}", f"p{b.reg}")
+
+    def _op_pun(self, op):
+        a = op.operands[0]
+        p = op.results[0]
+        self._alloc(p)
+        self._emit(_PUN[op.attrs['op']], f"p{p.reg}", f"p{a.reg}")
+
     def _op_vselect(self, op):
         p, a, b = op.operands
         v = op.results[0]
@@ -504,8 +643,8 @@ class CodeGen:
         if mask is not None and not op.attrs.get('no_other'):
             # sec 12: `other=` is a value. A predicated load leaves inactive
             # lanes holding what the register had, so put the value there.
-            self._emit('v.movi', f"v{v.reg}", f"#{op.attrs['other']}",
-                        comment='other=, materialised (sec 12)')
+            self._broadcast_imm(v.reg, int(op.attrs['other']),
+                                comment='other=, materialised (sec 12)')
         self._emit(f"v.ld.{op.attrs['size']}", f"v{v.reg}",
                     f"[s{base.reg}, #0]", pred=self._pred(mask))
 
@@ -573,8 +712,8 @@ class CodeGen:
         self.target.require('gather_scatter', 'emit v.ld.gather')
         self._alloc(v)
         if mask is not None:
-            self._emit('v.movi', f"v{v.reg}", f"#{op.attrs['other']}",
-                        comment='other=, materialised (sec 12)')
+            self._broadcast_imm(v.reg, int(op.attrs['other']),
+                                comment='other=, materialised (sec 12)')
         # ISA sec 9.1 scales the index by the access size: these are element
         # indices, not byte offsets.
         self._emit(f"v.ld.gather.{op.attrs['size']}", f"v{v.reg}",
@@ -605,6 +744,60 @@ class CodeGen:
     def _op_trap(self, op):
         self._emit('trap', f"#{op.attrs['code']}")
 
+    def _op_fence(self, op):
+        # sec 9.2: `fence` takes no access size -- mod[2:0] is the size
+        # field and a fence has no access, so the decoder refuses a
+        # non-zero one rather than ignoring it.
+        self.target.require('fence', 'emit a fence')
+        out = 'fence'
+        if op.attrs.get('order', 'acq_rel') != 'relaxed':
+            out += f".{op.attrs['order']}"
+        if op.attrs.get('scope', 'device') != 'core':
+            out += f".{op.attrs['scope']}"
+        self._emit(out)
+
+    def _op_atomic(self, op):
+        addr, value = op.operands
+        out = op.results[0]
+        self._alloc(out)
+        self.target.require(self._atomic_capability(op), 'emit an atomic')
+        mnem = _ATOMIC.get(op.attrs['op'])
+        if mnem is None:
+            raise Diagnostic(
+                f"no atomic {op.attrs['op']!r}",
+                because='ISA sec 9.2 allocates add, and, or, xor, xchg, min '
+                        'and max, and a compare-and-swap for the rest',
+                source='doc/isa/TNCA-ISA-v0.1.md sec 9.2')
+        self._emit(f"{mnem}{self._atomic_suffix(op)}", f"s{out.reg}",
+                    f"[s{addr.reg}]", f"s{value.reg}")
+
+    def _op_atomic_cas(self, op):
+        addr, expect, desired = op.operands
+        out = op.results[0]
+        self._alloc(out)
+        self.target.require(self._atomic_capability(op), 'emit an atomic')
+        self._emit(f"atom.cas{self._atomic_suffix(op)}", f"s{out.reg}",
+                    f"[s{addr.reg}]", f"s{expect.reg}", f"s{desired.reg}")
+
+    @staticmethod
+    def _atomic_capability(op):
+        # sec 9.2: system scope is only legal when SYSTEM_ATOMICS is set,
+        # and raises ILLEGAL_INSTRUCTION otherwise rather than silently
+        # degrading to device scope.
+        return ('atomics_system' if op.attrs.get('scope') == 'system'
+                else 'atomics_device')
+
+    @staticmethod
+    def _atomic_suffix(op):
+        out = f".{op.attrs.get('size', 'w')}"
+        order = op.attrs.get('order', 'relaxed')
+        scope = op.attrs.get('scope', 'device')
+        if order != 'relaxed':
+            out += f".{order}"
+        if scope != 'core':
+            out += f".{scope}"
+        return out
+
     def _op_reduce(self, op):
         v = op.operands[0]
         s = op.results[0]
@@ -615,6 +808,10 @@ class CodeGen:
             raise Diagnostic(f"no {v.dtype} reduction {op.attrs['op']!r}")
         # ISA sec 8.7: inactive lanes contribute the identity, so a masked
         # reduction needs no pre-select.
+        if op.attrs.get('broadcast'):
+            self._emit(f"{mnem}.b", f"v{s.reg}", f"v{v.reg}",
+                        pred=self._pred(op.attrs.get('mask')))
+            return
         self._emit(mnem, f"s{s.reg}", f"v{v.reg}",
                     pred=self._pred(op.attrs.get('mask')))
 
@@ -801,6 +998,16 @@ class CodeGen:
         # completes once, so the static operation count stays correct under
         # predication. The count above is therefore unconditional.
         mask = op.attrs.get('mask')
+        if op.attrs.get('transpose'):
+            # sec 9E mod[5]. Specified, encodable, and not decoded by
+            # any engine here -- `tnca_core.v` hands the engine
+            # `x_mod[2:0]` and stops. So the capability is false
+            # everywhere and asking for it is a compile error, which is
+            # the one outcome that is neither a wrong answer nor a
+            # runtime trap.
+            self.target.require('tensor_transpose',
+                                'emit a transposed t.ld.async')
+            suffix += '.t'
         self._emit(f"{mnem}.{suffix}", f"w{widx}", f"d{desc.reg}",
                     f"s{run[0]}", f"s{token.reg}",
                     pred=self._pred(mask),
@@ -864,9 +1071,18 @@ class CodeGen:
     def _op_mma_async(self, op):
         acc, aw, bw, token = op.operands
         from .gemm import _DTYPE_CAP
-        self.target.require(_DTYPE_CAP[op.attrs['dtype']],
-                            f"emit m.mma.async with "
-                            f"{op.attrs['dtype']} inputs")
+        dtype = op.attrs['dtype']
+        if dtype not in _DTYPE_CAP:
+            raise Diagnostic(
+                f"a matrix multiply with {dtype} inputs",
+                because="ISA sec 9C's mod[3:2] names FP16, BF16 and the two "
+                        "FP8 encodings as the input formats, and reserves "
+                        "the rest; there is no binary32 MMA",
+                remedy='convert the operands, which is what tl.dot on a '
+                       'narrower type does anyway',
+                source='doc/isa/TNCA-ISA-v0.1.md sec 9C')
+        self.target.require(_DTYPE_CAP[dtype],
+                            f"emit m.mma.async with {dtype} inputs")
         bar = self._token_barrier[id(token)]
         self._count_operation(bar)
         self._emit(f"m.mma.async.{op.attrs['k']}.{op.attrs['dtype']}",
@@ -908,6 +1124,12 @@ class CodeGen:
                       mode='write')
         self._events[id(op.results[0])] = cmd
         self._mma_pending.setdefault(bar, []).append(cmd)
+
+    def _op_acc_write(self, op):
+        acc, row, value = op.operands
+        self.own.check_write('a', acc.reg, by=f"a.vwrite a{acc.reg}")
+        self._emit('a.vwrite', f"a{acc.reg}", f"s{row.reg}",
+                    f"v{value.reg}")
 
     def _op_acc_read(self, op):
         acc, row = op.operands

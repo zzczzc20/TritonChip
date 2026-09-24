@@ -26,6 +26,7 @@ import os
 import shutil
 import warnings
 import subprocess
+import tempfile
 import sys
 import time
 
@@ -432,13 +433,24 @@ def prepare(profile='core-sim', *, force=False, verbose=True):
     # removes the whole class rather than the one case.
     prune(profile, verbose=verbose)
     os.makedirs(os.path.dirname(target), exist_ok=True)
-    r = subprocess.run(argv, capture_output=True, text=True, timeout=1800)
-    if r.returncode != 0 or not os.path.exists(target):
-        raise DeviceLost(
-            f"could not build the device for {profile!r}",
-            detail={'stderr': (r.stderr or r.stdout)[-600:]},
-            remedy='check that iverilog is version 12 and that the package '
-                   'shipped its RTL')
+    # Publish only a complete executable. Parallel preparations must never
+    # truncate the cached file while another Session is starting vvp.
+    fd, temporary = tempfile.mkstemp(prefix='.building-', suffix='.vvp',
+                                      dir=os.path.dirname(target))
+    os.close(fd)
+    argv[argv.index('-o') + 1] = temporary
+    try:
+        r = subprocess.run(argv, capture_output=True, text=True, timeout=1800)
+        if r.returncode != 0 or not os.path.getsize(temporary):
+            raise DeviceLost(
+                f"could not build the device for {profile!r}",
+                detail={'stderr': (r.stderr or r.stdout)[-600:]},
+                remedy='check that iverilog is version 12 and that the package '
+                       'shipped its RTL')
+        os.replace(temporary, target)
+    finally:
+        if os.path.exists(temporary):
+            os.unlink(temporary)
     if verbose:
         print(f"  built {os.path.getsize(target)} bytes")
     return target

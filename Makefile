@@ -958,6 +958,46 @@ r36-config-tests: $(R2_DATA_STAMP) | dirs
 	@$(TRITON_PYTHON) tools/r36/config_tests.py \
 	   --json $(BUILD)/r36_config_tests.json
 
+#------------------------------------------------------------------------------
+# R3.7: TileBench coverage, from Triton source.
+#
+# Two numbers, because they answer different questions. `r37-coverage`
+# says which of the forty-five operators BUILD; `r37-run` executes each
+# one on the core bench and checks what it computed against a reference.
+# A compiler that emits plausible instructions for all forty-five and
+# the wrong answer for one has not supported forty-five operators, and
+# the first target alone would not notice.
+.PHONY: r37-aot-tests r37-coverage r37-run r37 r37-direct-coverage r37-direct-run r37-representative-coverage r37-representative-run
+TILEBENCH_SOURCE ?= ../Tilebench
+R37_OPT_LEVELS ?= 0 1 2
+r37-aot-tests: $(R2_DATA_STAMP) | dirs
+	@$(TRITON_PYTHON) tools/r37/aot_tests.py
+
+r37-coverage: $(R2_DATA_STAMP) | dirs
+	@$(TRITON_PYTHON) tools/r37/aot_run.py --source $(TILEBENCH_SOURCE) \
+	   --levels $(R37_OPT_LEVELS) --compile-only --json $(BUILD)/r37_aot_compile.json
+
+r37-run: $(R2_DATA_STAMP) | dirs
+	@$(TRITON_PYTHON) tools/r37/aot_run.py --source $(TILEBENCH_SOURCE) \
+	   --levels $(R37_OPT_LEVELS) --json $(BUILD)/r37_aot_run.json
+
+# Direct compiler/bench diagnostics remain available separately.
+r37-direct-coverage: $(R2_DATA_STAMP) | dirs
+	@$(TRITON_PYTHON) tools/r37/upstream.py --source $(TILEBENCH_SOURCE) \
+	   --json $(BUILD)/r37_upstream.json
+
+r37-direct-run: $(BUILD)/tb_core.vvp $(R2_DATA_STAMP) | dirs
+	@$(TRITON_PYTHON) tools/r37/upstream_run.py --source $(TILEBENCH_SOURCE) \
+	   --json $(BUILD)/r37_upstream_run.json
+
+r37-representative-coverage: $(R2_DATA_STAMP) | dirs
+	@$(TRITON_PYTHON) tools/r37/coverage.py --json $(BUILD)/r37_coverage.json
+
+r37-representative-run: $(BUILD)/tb_core.vvp $(R2_DATA_STAMP) | dirs
+	@$(TRITON_PYTHON) tools/r37/run.py --json $(BUILD)/r37_run.json
+
+r37: r37-coverage r37-run
+
 # One suite, every backend. This is the suite a downstream branch runs.
 r36-conformance: $(R2_DATA_STAMP) | dirs
 	@$(TRITON_PYTHON) tools/r36/conformance.py \

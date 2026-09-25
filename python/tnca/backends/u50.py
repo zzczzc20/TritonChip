@@ -65,6 +65,7 @@ rather than spread through the file. Section 3.2 keeps engineering-ready
 and platform-verified apart, and this binding is the first of those.
 """
 import abc
+import ctypes
 import os
 import time
 
@@ -503,6 +504,367 @@ class U50Backend(Transport):
         return out
 
 
+# ---------------------------------------------------------------------------
+# The board's registers, through XRT
+#
+# Everything from here to XDMALink is board-dependent and none of it has run
+# on a board. What it is built from is three things that are on the machine
+# and are not the device: XRT's headers, `nm` on its library, and xclbinutil
+# reading a shipped .xclbin. Where a fact came from one of those rather than
+# from memory, the comment says which one.
+# ---------------------------------------------------------------------------
+
+#: The kernel's name as XRT knows it, which is NOT the name in fpga/kernel.xml.
+#:
+#: xclIPName2Index's header says "@ipName: IP name. usually `<kernel
+#: name>:<instance name>`". Confirmed against a shipped .xclbin rather than
+#: assumed: dumping that file's IP_LAYOUT section shows a kernel named `hello`
+#: with a single instance as `hello:hello_1`. This kernel is `tnca_u50` in
+#: fpga/kernel.xml with one instance, so it is this.
+#:
+#: XDMALink takes it as a parameter because it is the one thing in this
+#: section that a different build could disagree about -- a second kernel in
+#: the same xclbin, or an instance numbering that starts elsewhere.
+IP_NAME = 'tnca_u50:tnca_u50_1'
+
+#: XRT's verbosity, from `enum xclVerbosityLevel` in deprecated/xrt.h:
+#: XCL_QUIET = 0, XCL_INFO = 1, XCL_WARN = 2, XCL_ERROR = 3.
+#:
+#: WARN and not INFO, which is talkative about enumerating devices on every
+#: open, and not QUIET, which is also quiet about the reason a register access
+#: was refused -- which is the one thing worth hearing from XRT here.
+XCL_WARN = 2
+
+#: Where the loaded xclbin's UUID is inside the xclbin file, and how that is
+#: known.
+#:
+#: xclOpenContext wants "UUID of the xclbin image running on the device", and
+#: no getter for it exists: xclDeviceInfo2 has no uuid field and there is no
+#: XclbinId function (both checked in the headers rather than remembered).
+#: XRT's own accessor is xclbin_uuid() in experimental/xclbin_util.h -- and it
+#: is `static inline`, so it is not an exported symbol and ctypes cannot reach
+#: it. Its body is four lines: check the magic, then copy the header's m_uuid.
+#: This is those four lines.
+#:
+#: 336 is not read out of a struct definition. It is where the UUID that
+#: xclbinutil --info reports for a shipped .xclbin was actually found, by
+#: searching the file's first kilobyte for those sixteen bytes; they matched in
+#: straight order at 336, which is axlf.m_header at 304 plus m_uuid at 32. The
+#: magic check above it is the guard, so a file that is not an xclbin is
+#: refused rather than parsed at an offset that would then be meaningless.
+XCLBIN_MAGIC = b'xclbin2'
+XCLBIN_UUID_OFFSET = 336
+
+#: libxrt_core.so, loaded once. Module state and not a class attribute,
+#: because it is one library for the process and a second copy would be a
+#: second set of signatures to keep right.
+_LIB = None
+
+
+def _xclbin_uuid(path):
+    """The sixteen bytes xclOpenContext wants, read out of the file."""
+    with open(path, 'rb') as fh:
+        head = fh.read(XCLBIN_UUID_OFFSET + 16)
+    if head[:7] != XCLBIN_MAGIC:
+        raise DependencyFailed(
+            f'{path} does not start with "xclbin2"',
+            detail={'path': path, 'found': repr(head[:8]),
+                    'xrt': _xrt_version()},
+            remedy='xclOpenContext takes the UUID of the xclbin loaded on '
+                   'the device, and the only place that UUID can be read '
+                   'from is the file itself. This is not one')
+    return head[XCLBIN_UUID_OFFSET:XCLBIN_UUID_OFFSET + 16]
+
+
+def _xrt_library():
+    """libxrt_core.so, loaded once, with every signature declared.
+
+    Declared here rather than at the call sites, and that is not style:
+    ctypes without argtypes does not fail on a wrong argument. It passes an
+    integer where a pointer was expected and returns whatever the callee made
+    of it, which for a register read is a number that looks like a register.
+    Each signature below is the one in the header named beside it.
+    """
+    global _LIB
+    if _LIB is not None:
+        return _LIB
+
+    root = os.environ.get('XILINX_XRT', '/opt/xilinx/xrt')
+    path = os.path.join(root, 'lib', 'libxrt_core.so')
+    try:
+        lib = ctypes.CDLL(path, use_errno=True)
+    except OSError as e:
+        raise DependencyFailed(
+            'XRT\'s library is not loadable, so there is no way to reach '
+            'the board\'s registers from here',
+            detail={'path': path, 'error': str(e), 'xrt': _xrt_version()},
+            remedy='this binding drives a board and will not stand in for '
+                   'one. Install XRT, or point XILINX_XRT at it, or pass '
+                   'accessor= an object with read(offset) and '
+                   'write(offset, value), or use the fpga-u50-sim binding '
+                   'to drive the same registers on the RTL') from e
+
+    c = ctypes
+    # xuid_t is `unsigned char[16]` (xclbin.h), and as a parameter that is a
+    # pointer to its first byte.
+    u8 = c.POINTER(c.c_ubyte)
+
+    # deprecated/xrt.h:
+    #   xclOpen(unsigned int, const char*, enum xclVerbosityLevel)
+    lib.xclOpen.argtypes = [c.c_uint, c.c_char_p, c.c_int]
+    lib.xclOpen.restype = c.c_void_p
+
+    # deprecated/xrt.h: void xclClose(xclDeviceHandle)
+    lib.xclClose.argtypes = [c.c_void_p]
+    lib.xclClose.restype = None
+
+    # deprecated/xrt.h: int xclIPName2Index(xclDeviceHandle, const char*)
+    lib.xclIPName2Index.argtypes = [c.c_void_p, c.c_char_p]
+    lib.xclIPName2Index.restype = c.c_int
+
+    # deprecated/xrt.h:
+    #   int xclOpenContext(xclDeviceHandle, const xuid_t, unsigned, bool)
+    lib.xclOpenContext.argtypes = [c.c_void_p, u8, c.c_uint, c.c_bool]
+    lib.xclOpenContext.restype = c.c_int
+
+    # deprecated/xrt.h:
+    #   int xclCloseContext(xclDeviceHandle, const xuid_t, unsigned)
+    lib.xclCloseContext.argtypes = [c.c_void_p, u8, c.c_uint]
+    lib.xclCloseContext.restype = c.c_int
+
+    # experimental/xrt-next.h: the datum is 32 bits wide and `offset` is a byte
+    # offset into the IP's register space -- which is why a 64-bit register
+    # costs two of these. Both return 0 on success, and datap is only
+    # meaningful when they did.
+    lib.xclRegRead.argtypes = [c.c_void_p, c.c_uint, c.c_uint,
+                               c.POINTER(c.c_uint32)]
+    lib.xclRegRead.restype = c.c_int
+    lib.xclRegWrite.argtypes = [c.c_void_p, c.c_uint, c.c_uint, c.c_uint32]
+    lib.xclRegWrite.restype = c.c_int
+
+    _LIB = lib
+    return lib
+
+
+class _XRTRegisters:
+    """The board's register space, reached through XRT's C API.
+
+    WHY ctypes AND NOT pyxrt
+
+    `XDMALink`'s docstring used to say there were two shapes and that this
+    was the step needing a board. This is the shape, and it was chosen from
+    the headers on the machine:
+
+      * pyxrt is built for one Python, and this backend has to import under
+        whichever one runs it. libxrt_core.so has no such opinion, and
+        ctypes reaches it from any of them. (pyxrt on this machine is also
+        packaged without an `ip` class at all, so the first shape was not
+        available to choose.)
+      * the functions below are the deprecated-but-still-exported C API.
+        All seven were checked with `nm -D` on the library before this was
+        written, because a header declaring a function says nothing about
+        whether the library still has it.
+
+    WHAT IT TAKES, AND IN WHAT ORDER
+
+        xclOpen(index, NULL, XCL_WARN)     -> device handle
+        xclIPName2Index(handle, ip_name)   -> ipIndex, negative if absent
+        xclOpenContext(handle, uuid, ipIndex, shared=False)
+        xclRegRead / xclRegWrite(handle, ipIndex, byte offset, ...)
+        xclCloseContext, xclClose          on the way out
+
+    The context is not optional. xclRegRead's header says so in as many words
+    -- "Caller should own an exclusive context on the IP obtained via
+    xclOpenContext()" -- and a register read without one is a read whose
+    failure would have nothing to do with the device.
+
+    The UUID that context needs is why `xclbin` is not optional either. Read
+    the four lines in `_xclbin_uuid` above for why it can only come from the
+    file, and note what that asserts: the file named here is the image loaded
+    on the board. If it is not, xclOpenContext refuses -- which is the loud
+    version of that mistake and not a quiet one.
+
+    WHY THERE ARE TWO 32-BIT ACCESSES PER 64-BIT REGISTER
+
+    xclRegRead and xclRegWrite are 32-bit; every register in
+    rtl/fpga/tnca_mmio.v is 64. So a register is two accesses, at `offset`
+    for the low half and `offset + 4` for the high, which is the aperture
+    rtl/fpga/tnca_axi_lite.v decodes.
+
+    The WRITE ORDER is low then high, and it is not a preference:
+    tnca_axi_lite latches the low half into a shadow register and lets the
+    HIGH-half write complete the register write, composing {high,
+    shadow_low}. High first completes a write with the previous value's low
+    half still in the shadow -- which arrives as a register holding another
+    register's low bits, and reads as a protocol bug.
+
+    The READ ORDER is low then high and has no such rule, but it does have a
+    tear: the device can update the register between the two accesses, and
+    the halves would then come from two different values. That is not
+    repaired here because it is repaired above. `U50Backend._read_reply`
+    reads the sequence, then the fields, then the sequence again, and
+    believes the set only if the number held still -- which is exactly the
+    repair this needs, in the place that knows what the registers mean.
+    A medium does not, and one that tried would be guessing.
+
+    WHAT IT CANNOT DO
+
+    Nothing here has been executed against a board. XRT's headers, `nm` on
+    its library and xclbinutil on a shipped .xclbin are three documents and
+    none of them is a device. Section 3.2 keeps engineering-ready and
+    platform-verified apart and this is still the first.
+    """
+
+    def __init__(self, index=0, xclbin=None, ip_name=IP_NAME, what=None):
+        self.index = index
+        self.xclbin = xclbin
+        self.ip_name = ip_name
+        self._what = what or f'U50 index {index}'
+        self._lib = None
+        self._handle = None
+        self._ip = None
+        # Kept as an attribute and not a local: ctypes does not own the
+        # buffer, and the context holds the pointer for as long as it is open.
+        self._uuid = None
+
+    # ---- lifetime ---------------------------------------------------------
+    def open(self):
+        if not self.xclbin:
+            raise DependencyFailed(
+                'the board link was not told which .xclbin is loaded',
+                detail={'medium': self._what, 'xclbin': self.xclbin},
+                remedy='xclOpenContext takes the UUID of the image running '
+                       'on the device, and XRT hands that UUID out nowhere '
+                       '-- not from xclDeviceInfo2 and not from any getter. '
+                       'It is read out of the file, so the file has to be '
+                       'named: XDMALink(xclbin=<path>), or open the backend '
+                       'with xclbin= that path')
+
+        uuid = _xclbin_uuid(self.xclbin)
+        lib = _xrt_library()
+
+        handle = lib.xclOpen(self.index, None, XCL_WARN)
+        if not handle:
+            errno = ctypes.get_errno()
+            raise DependencyFailed(
+                f'XRT would not open device {self.index}',
+                detail={'index': self.index, 'errno': errno,
+                        'xclbin': self.xclbin, 'xrt': _xrt_version()},
+                remedy='either there is no card at that index, or the driver '
+                       'is not loaded, or another process holds it. XRT '
+                       'prints its own reason at the verbosity this opens '
+                       'with, so the message above this one is the detail')
+        self._lib = lib
+        self._handle = handle
+
+        ip = lib.xclIPName2Index(handle, self.ip_name.encode())
+        if ip < 0:
+            self._close_everything()
+            raise DependencyFailed(
+                f'the loaded xclbin has no IP called {self.ip_name!r}',
+                detail={'ip_name': self.ip_name, 'rc': ip,
+                        'xclbin': self.xclbin, 'medium': self._what},
+                remedy='the name xclIPName2Index takes is "<kernel '
+                       'name>:<instance name>", which is not the name in '
+                       'kernel.xml. Dump the xclbin\'s IP_LAYOUT section '
+                       'with xclbinutil and pass the name it lists: '
+                       'XDMALink(xclbin=..., ip_name=...)')
+
+        self._uuid = (ctypes.c_ubyte * 16)(*uuid)
+        rc = lib.xclOpenContext(handle, self._uuid, ip, False)
+        if rc != 0:
+            self._close_everything()
+            raise DependencyFailed(
+                f'XRT would not give an exclusive context on '
+                f'{self.ip_name!r} (returned {rc})',
+                detail={'ip_name': self.ip_name, 'ipIndex': ip, 'rc': rc,
+                        'xclbin': self.xclbin, 'medium': self._what},
+                remedy='a context is refused when another client already '
+                       'holds an exclusive one on the same IP, or when the '
+                       'xclbin named here is not the one loaded on the '
+                       'device. Both are worth knowing before a register '
+                       'read fails for a reason that looks like the device')
+        self._ip = ip
+        return self
+
+    def close(self):
+        """Safe on a device that already died, and safe to call twice."""
+        self._close_everything()
+
+    def _close_everything(self):
+        lib, self._lib = self._lib, None
+        handle, self._handle = self._handle, None
+        ip, self._ip = self._ip, None
+        uuid, self._uuid = self._uuid, None
+        if lib is None or handle is None:
+            return
+        try:
+            if ip is not None and uuid is not None:
+                lib.xclCloseContext(handle, uuid, ip)
+        except Exception:
+            # A context that cannot be closed is not a reason to leak the
+            # device handle below, and neither failure has a caller who
+            # could do anything with it.
+            pass
+        try:
+            lib.xclClose(handle)
+        except Exception:
+            pass
+
+    # ---- the four methods a U50Link needs ---------------------------------
+    def read(self, offset):
+        lo = self._read32(offset)
+        hi = self._read32(offset + 4)
+        return lo | (hi << 32)
+
+    def write(self, offset, value):
+        value = int(value) & 0xFFFF_FFFF_FFFF_FFFF
+        # Low half first. See the class docstring: the high-half write is
+        # what completes the register write, so it has to come second.
+        self._write32(offset, value & 0xFFFF_FFFF)
+        self._write32(offset + 4, (value >> 32) & 0xFFFF_FFFF)
+
+    def describe(self):
+        return self._what
+
+    # ---- one 32-bit access ------------------------------------------------
+    def _read32(self, offset):
+        if self._handle is None:
+            raise DeviceLost('the board is not open',
+                             detail={'medium': self._what})
+        out = ctypes.c_uint32(0)
+        rc = self._lib.xclRegRead(self._handle, self._ip, offset,
+                                  ctypes.byref(out))
+        if rc != 0:
+            raise DeviceLost(
+                f'XRT refused a register read at {offset:#x} '
+                f'(returned {rc})',
+                detail={'medium': self._what, 'offset': offset, 'rc': rc,
+                        'ip_name': self.ip_name, 'ipIndex': self._ip},
+                remedy='a read that XRT refuses is not a read that returned '
+                       'zero: nothing was transferred. If the device is '
+                       'still there, this is the IP index or the offset, '
+                       'and the two are independent -- the index comes from '
+                       'the xclbin and the offset from rtl/fpga/tnca_mmio.v')
+        return out.value
+
+    def _write32(self, offset, word):
+        if self._handle is None:
+            raise DeviceLost('the board is not open',
+                             detail={'medium': self._what})
+        rc = self._lib.xclRegWrite(self._handle, self._ip, offset, word)
+        if rc != 0:
+            raise DeviceLost(
+                f'XRT refused a register write at {offset:#x} '
+                f'(returned {rc})',
+                detail={'medium': self._what, 'offset': offset, 'rc': rc,
+                        'value': word, 'ip_name': self.ip_name,
+                        'ipIndex': self._ip},
+                remedy='nothing was written. Whether the device is gone or '
+                       'the offset is wrong is told apart by whether reads '
+                       'at other offsets still work')
+
+
 class XDMALink(U50Link):
     """The board itself. NOT EXERCISED, and this docstring says so first.
 
@@ -515,28 +877,34 @@ class XDMALink(U50Link):
     THAT STEP
 
     `_open_access()` -- and nothing else -- depends on the platform's
-    control path. On the U50 the register file sits behind the shell's
-    AXI-Lite control, and how a userspace process reaches it is a
-    property of the platform package and the XRT version, not of this
-    device. Two shapes are common and they are not interchangeable:
+    control path, and it was written by reading that control path rather
+    than by trying one. On the U50 the register file sits behind the
+    shell's AXI-Lite control, and the way in is XRT's C API through
+    `_XRTRegisters` above: xclOpen, xclIPName2Index, xclOpenContext, then
+    xclRegRead and xclRegWrite at a byte offset, twice per 64-bit register.
 
-        pyxrt.ip(...).read_register / write_register
-        a mapped BAR from the management interface, read and written
-            as 64-bit words at the same byte offsets
+    pyxrt was the other candidate and was not chosen. On this machine it
+    is packaged for one Python only and without an `ip` class at all, so
+    it was not a choice that could be made here anyway.
 
-    Rather than guess which, this class takes the accessor as an
-    argument and only builds one itself when none is given, and that
-    constructor is the single place that has to be right before anything
-    else in this file can be trusted on a board. Failing to find one is
-    a DependencyFailed naming what is missing -- never a fallback to the
-    stand-in, which section 3.4 forbids in as many words.
+    What is left that only a board can settle:
+
+      * that `ip_name` is the name this kernel is given at link time,
+      * that an exclusive context on it is granted,
+      * that the register file answers at the offsets the map names.
+
+    `accessor=` still exists and is still the way past all three without
+    editing this file. Failing to build one is a DependencyFailed naming
+    what is missing -- never a fallback to the stand-in, which section
+    3.4 forbids in as many words.
     """
 
     def __init__(self, xclbin=None, accessor=None, index=0,
-                 words=DEFAULT_WORDS, what=None):
+                 words=DEFAULT_WORDS, what=None, ip_name=IP_NAME):
         self.xclbin = xclbin
         self.index = index
         self.words = words
+        self.ip_name = ip_name
         self._accessor = accessor
         self._what = what or f'U50 index {index}'
         self._device = None
@@ -558,6 +926,10 @@ class XDMALink(U50Link):
                 pass
 
     def alive(self):
+        # "The handle is open", not "the board answers". Asking a board that
+        # question costs a bus transaction, and every caller in this file
+        # reads a register immediately after asking -- so the read is the
+        # test, and a board that is gone is found by it raising DeviceLost.
         return self._accessor is not None
 
     def read_reg(self, offset):
@@ -575,34 +947,27 @@ class XDMALink(U50Link):
     def _open_access(self):
         """Build the platform accessor. The board-dependent step.
 
-        See the class docstring: this is the one method that cannot be
-        written correctly without the board in front of it, so it is
-        written as a check with a precise failure rather than as a guess
-        that would fail obscurely three calls later.
+        Every call this makes was checked against the header that declares
+        it and against `nm` on the library that exports it; `_XRTRegisters`
+        above carries those notes. What no amount of reading settles is the
+        board, and the class docstring lists the three things that are.
+
+        The accessor is closed on the way out of a failure rather than left
+        to the caller. `U50Backend.start()` does close the link when
+        `open()` raises, but by the time it does, this method has already
+        thrown and a device handle that was opened in here is not something
+        the layer above can see. That is the same shape as the leak that
+        left devices running before `link.open()` was moved inside that
+        try -- found by looking for one with the driver long gone.
         """
+        acc = _XRTRegisters(index=self.index, xclbin=self.xclbin,
+                            ip_name=self.ip_name, what=self._what)
         try:
-            import pyxrt                                    # noqa: F401
-        except ImportError as e:
-            raise DependencyFailed(
-                'XRT\'s Python binding (pyxrt) is not importable, so there '
-                'is no way to reach the board\'s registers from here',
-                detail={'xclbin': self.xclbin, 'index': self.index,
-                        'error': str(e)},
-                remedy='this binding drives a board and will not stand in '
-                       'for one. Install XRT, or pass accessor= an object '
-                       'with read(offset)/write(offset, value), or use '
-                       'the fpga-u50-sim binding to drive the same '
-                       'registers on the RTL') from e
-        raise DependencyFailed(
-            'this build has no verified way to reach the register file',
-            detail={'xclbin': self.xclbin, 'index': self.index,
-                    'xrt': _xrt_version()},
-            remedy='the control path on an XDMA platform is a property of '
-                   'the platform package, and guessing it produces '
-                   'failures that look like protocol bugs. Pass '
-                   'accessor= an object with read(offset) and '
-                   'write(offset, value); everything above it is already '
-                   'proven by fpga-u50-sim')
+            acc.open()
+        except BaseException:
+            acc.close()
+            raise
+        return acc
 
 
 def _xrt_version():
@@ -633,5 +998,9 @@ def board(**kw):
         link = XDMALink(xclbin=kw.pop('xclbin', None),
                         accessor=kw.pop('accessor', None),
                         index=kw.pop('index', 0),
+                        # Named here so that a build that named its kernel
+                        # differently is a caller's argument and not an
+                        # edit to this file. See IP_NAME.
+                        ip_name=kw.pop('ip_name', IP_NAME),
                         words=kw.pop('words', DEFAULT_WORDS))
     return U50Backend(link, **kw)

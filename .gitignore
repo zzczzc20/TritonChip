@@ -16,6 +16,18 @@ flow/synth/out/
 *.ys.log
 yosys.log
 
+# ---- Vivado ----
+# Session logs. Vivado writes vivado.jou and vivado.log into the process
+# current directory unless it is told otherwise, so any batch run started
+# from the repository root leaves a pair here. Two arrived this way on
+# 2026-09-26. flow/ and the board build are not where they came from:
+# u50_build/pkg/run_pkg.sh passes -log and -journal into its own directory,
+# so this is some other invocation and the ignore is here for the ones that
+# do not. Ignored rather than removed -- a session log is a record, and the
+# mistake is where the session ran, not that it wrote one down.
+vivado.jou
+vivado.log
+
 # ---- Python ----
 __pycache__/
 *.py[cod]

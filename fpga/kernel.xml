@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  The kernel description package_xo is given, and the only place the platform
+  is told what this kernel's ports are.
+
+  The schema is the RTL Kernel Wizard's, taken from the example Vitis 2022.2
+  ships rather than from memory:
+
+    Vitis/2022.2/cli/examples/xo_kernel_srcs/rtl_kernel_wizard_0.xo
+      rtl_kernel_wizard_0/kernel.xml
+
+  and so is the range/dataWidth pairing: its s_axi_control is
+  range="0x1000" dataWidth="32" with a twelve-bit address in the RTL, which is
+  the aperture rtl/fpga/tnca_axi_lite.v was written with (S_AXI_ADDR_W = 12)
+  and four times what the 0x00..0xA4 register map needs. The spare address
+  space is not used and is not reserved for anything.
+
+  WHAT IS NOT HERE, AND WHY
+
+  ap_clk and ap_rst_n have no <port> entry. ap_clk is a system port the
+  platform supplies and connects by name -- the wizard's kernel.xml does not
+  list it either, and its constraints file is one line,
+  `create_clock -period 4.000 [get_ports ap_clk]`. ap_rst_n is absent for a
+  different reason: this kernel does not have one. rtl/board/tnca_u50_xo.v
+  generates its reset from a counter off ap_clk, and the wizard's own top,
+  which also has no ap_rst_n port, instantiates its control slave with
+  `.ap_rst_n(1'b1)` -- so no external reset is taken to exist.
+
+  <args/> is empty and is not decoration. This kernel has no scalar arguments:
+  everything the host says to it is a register write, and everything it says
+  back is a register read. hwControlProtocol is ap_ctrl_none for the same
+  reason there is no ap_start -- the mailbox in rtl/fpga/tnca_mmio.v is the
+  control protocol, and a second one generated alongside it would be a second
+  thing claiming to own the device.
+
+  interrupt is false. There is no interrupt port and no interrupt source. The
+  host polls R_DOORBELL, which is what the transport already does when it
+  reads a response file, so nothing is waiting for an edge that never comes.
+-->
+<root versionMajor="1" versionMinor="6">
+  <kernel name="tnca_u50" language="ip_c" vlnv="tnca.com:kernel:tnca_u50:1.0"
+          attributes="" preferredWorkGroupSizeMultiple="0" workGroupSize="1"
+          interrupt="false" hwControlProtocol="ap_ctrl_none">
+    <ports>
+      <port name="s_axi_tnca" mode="slave" range="0x1000" dataWidth="32"
+            portType="addressable" base="0x0"/>
+    </ports>
+    <args/>
+  </kernel>
+</root>

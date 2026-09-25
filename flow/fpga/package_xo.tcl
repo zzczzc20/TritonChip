@@ -1,0 +1,206 @@
+#==============================================================================
+# Package the RTL kernel into a .xo.
+#
+#   vivado -mode batch -source flow/fpga/package_xo.tcl -tclargs <repo> <out>
+#
+# WHAT THIS PRODUCES, AND WHY IT IS SHAPED THIS WAY
+#
+# A .xo is a zip with three things in it:
+#
+#   <kernel>/kernel.xml        the copy of fpga/kernel.xml that travels with
+#                              the kernel
+#   ip_repo/<vlnv>/            a Vivado IP: component.xml, xgui/, src/, and the
+#                              out-of-context constraints
+#   xo.xml                     the manifest that names the two
+#
+# That is the unpacked shape of the RTL Kernel Wizard's own output
+# (Vitis/2022.2/cli/examples/xo_kernel_srcs/rtl_kernel_wizard_0.xo), and it is
+# the shape this reproduces -- because package_xo is documented as taking an
+# -ip_directory and a -kernel_xml, and an IP is a thing that has to be built
+# before it can be handed over.
+#
+# So this is two steps and not one. The first builds the IP from the same RTL
+# the repository lints and simulates, and the second wraps it.
+#
+# WHY THERE IS NO AXI INFRARED HERE
+#
+# The AXI4-Lite interface is inferred from the port names, which is what the
+# naming convention is for: `s_axi_tnca_awaddr`, `..._awvalid`, `..._wdata` and
+# the rest are the names Vivado's inference recognises, and rtl/fpga/
+# tnca_u50_top.v carries a comment saying why the platform's names are used
+# rather than the adapter's own. If the inference finds nothing, the IP has no
+# s_axi_tnca bus and package_xo fails on the kernel.xml referencing a port that
+# is not there -- which is the failure this wants, announced, and not a kernel
+# that links and then reads zero for ever.
+#==============================================================================
+
+set ROOT [file normalize [lindex $::argv 0]]
+set OUT  [file normalize [lindex $::argv 1]]
+
+set PART    xcu50-fsvh2104-2-e
+set VENDOR  tnca.com
+set LIB     kernel
+set NAME    tnca_u50
+set VERSION 1.0
+
+# The platform's default kernel clock, which is what ap_clk will be. Written
+# here only so the IP carries a number instead of an empty string; the platform
+# overrides it at link time and the override is the one that counts.
+set AP_CLK_HZ 300000000
+
+set IPDIR  $OUT/ip_repo/tnca_com_kernel_${NAME}_1_0
+set KXML   $OUT/kernel.xml
+set XO     $OUT/${NAME}.xo
+
+file mkdir $OUT
+file copy -force $ROOT/fpga/kernel.xml $KXML
+
+#------------------------------------------------------------------------------
+# The RTL, named rather than globbed
+#
+# Named because a glob would take tmp_variants/ and anything else that happens
+# to be sitting in the tree, and a kernel built from files nobody chose is a
+# kernel nobody can account for. The lists mirror the Makefile's RTL_* so that
+# a directory added there and forgotten here is visible as a difference.
+#------------------------------------------------------------------------------
+set RTL [list]
+foreach d {common core gen nuca noc tile fpga} {
+    foreach f [lsort [glob -nocomplain $ROOT/rtl/$d/*.v]] {
+        lappend RTL $f
+    }
+}
+foreach f [lsort [glob -nocomplain $ROOT/rtl/*.v]] {
+    lappend RTL $f
+}
+lappend RTL $ROOT/rtl/board/tnca_u50_xo.v
+
+set INCS [list $ROOT/rtl/common $ROOT/rtl/noc]
+
+puts "TNCA_PKG_ROOT=$ROOT"
+puts "TNCA_PKG_FILES=[llength $RTL]"
+
+#------------------------------------------------------------------------------
+# The IP
+#------------------------------------------------------------------------------
+create_project -force tnca_xo $OUT/proj -part $PART
+
+add_files -norecurse $RTL
+foreach d $INCS {
+    set_property include_dirs $INCS [current_fileset]
+}
+add_files -fileset constrs_1 -norecurse $ROOT/flow/fpga/ooc.xdc
+
+set_property top tnca_u50_xo [current_fileset]
+update_compile_order -fileset sources_1
+
+ipx::package_project -root_dir $IPDIR -vendor $VENDOR -library $LIB \
+    -taxonomy /KernelIP -import_files
+
+set core [ipx::current_core]
+
+#------------------------------------------------------------------------------
+# The clock, associated with the bus it clocks
+#
+# Inference has already produced both interfaces by this point -- the log says
+# `Inferred bus interface 's_axi_tnca'` and `'ap_clk'` -- and it does it off the
+# port names alone, which is what the naming convention in rtl/fpga/
+# tnca_u50_top.v is for. What it does NOT do is say that ap_clk is the clock for
+# s_axi_tnca, and the log warns about that gap from each end:
+#
+#   WARNING: [IP_Flow 19-3158] Bus Interface 's_axi_tnca': FREQ_HZ bus parameter
+#            missing from AXI interface when interface is not associated to a clock
+#   WARNING: [IP_Flow 19-5661] Bus Interface 'ap_clk' does not have any bus
+#            interfaces associated with it
+#
+# One association and one frequency close both, and they belong on the CLOCK
+# interface, not on the AXI one. That is not a preference -- it is what the
+# Wizard's own component.xml has, and matching that file is what this whole
+# script is doing. From the shipped example, unpacked:
+#
+#   <busInterface ap_clk>
+#     <parameter ASSOCIATED_BUSIF = "m00_axi:s_axi_control"/>
+#     <parameter FREQ_HZ  resolve="user" = "250000000"/>
+#
+# Its AXI interface has no <parameters> block at all. With a clock behind it, it
+# does not need one: FREQ_HZ is read off the associated clock rather than
+# declared twice.
+#
+# WHY THIS IS NOT `set_property CONFIG.<name>`
+#
+# Because a bus parameter is not a component parameter. `CONFIG.ASSOCIATED_BUSIF`
+# on a bus_interface object is an unknown property, which is the error that put
+# this comment here; the parameter has to be fetched or created as a bus
+# parameter object first.
+#
+# WHY A FAILURE BELOW IS REPORTED RATHER THAN FATAL
+#
+# Because what is at stake is metadata and not the kernel. The AXI ports exist in
+# the IP either way and the platform connects them by name out of kernel.xml, so
+# a missing association makes this IP carry less than the Wizard's does -- worth
+# fixing, not worth failing a build over. Each step therefore says what happened
+# and the file-level readback at the end is the evidence, rather than the absence
+# of an error being the evidence. Note that the two warnings above are emitted
+# during package_project, which has already run by the time this can fix
+# anything, so their being in the log is expected and is not a leftover.
+#------------------------------------------------------------------------------
+set clk_if [ipx::get_bus_interfaces ap_clk -of_objects $core]
+
+proc tnca_busparam {busif name value {resolve ""}} {
+    set p [ipx::get_bus_parameters $name -of_objects $busif]
+    if {[llength $p] == 0} {
+        set p [ipx::add_bus_parameter $name $busif]
+        puts "TNCA_PKG_PARAM $name: created"
+    } else {
+        puts "TNCA_PKG_PARAM $name: already present"
+    }
+    if {[catch {set_property value $value $p} why]} {
+        puts "TNCA_PKG_PARAM $name: value refused -- $why"
+        return
+    }
+    puts "TNCA_PKG_PARAM $name: value = [get_property value $p]"
+    if {$resolve ne ""} {
+        if {[catch {set_property value_resolve_type $resolve $p} why]} {
+            puts "TNCA_PKG_PARAM $name: resolve type refused -- $why"
+        } else {
+            puts "TNCA_PKG_PARAM $name: resolve = [get_property value_resolve_type $p]"
+        }
+    }
+}
+
+# FREQ_HZ resolves as `user` for the same reason the Wizard's does: the number
+# here is an estimate of what the platform will hand over, and a link that
+# retargets the clock has to be able to say so. AP_CLK_HZ above is the estimate.
+tnca_busparam $clk_if ASSOCIATED_BUSIF s_axi_tnca
+tnca_busparam $clk_if FREQ_HZ $AP_CLK_HZ user
+
+ipx::create_xgui_files $core
+ipx::update_checksums $core
+ipx::save_core $core
+
+puts "TNCA_PKG_IP=$IPDIR"
+
+#------------------------------------------------------------------------------
+# Read the association back out of the file that will ship
+#
+# Not out of the in-memory core, which is what just accepted the write and would
+# agree with itself. component.xml is what package_xo zips.
+#------------------------------------------------------------------------------
+set fh [open $IPDIR/component.xml r]
+set xml [read $fh]
+close $fh
+
+foreach {tag id} {ASSOC ASSOCIATED_BUSIF FREQ FREQ_HZ} {
+    if {[regexp "BUSIFPARAM_VALUE\\.AP_CLK\\.$id\">(\[^<\]*)" $xml -> v]} {
+        puts "TNCA_PKG_XML_$tag=$v"
+    } else {
+        puts "TNCA_PKG_XML_$tag=NOT IN component.xml"
+    }
+}
+
+#------------------------------------------------------------------------------
+# The container
+#------------------------------------------------------------------------------
+package_xo -kernel_xml $KXML -kernel_name $NAME \
+    -ip_directory $IPDIR -xo_path $XO -force
+
+puts "TNCA_PKG_DONE=$XO"

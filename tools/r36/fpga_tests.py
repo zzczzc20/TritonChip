@@ -628,8 +628,11 @@ MUTANTS = [
     ('the read address never crosses',
      'rd_addr_q <= rd_addr_f;',
      'rd_addr_q <= rd_addr_q;'),
+    # The mux that picks the half moved to the device's side of the crossing
+    # (see the declaration of `rd_data_s`), so this one now holds the register
+    # that actually crosses. It is the same mutation it always was.
     ('the read data never crosses',
-     'rd_data_s  <= reg_rdata;',
+     'rd_data_s  <= reg_rdata_sel;',
      'rd_data_s  <= rd_data_s;'),
 ]
 

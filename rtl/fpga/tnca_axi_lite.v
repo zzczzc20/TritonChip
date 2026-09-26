@@ -125,6 +125,17 @@ module tnca_axi_lite #(
     // buses are deliberately not synchronised -- they are sampled only while
     // they are known to be still, which is what the toggle buys and what no
     // synchroniser on a 64-bit bus could buy.
+    //
+    // What each bus is worth, and why no bus is wider than it has to be: the
+    // design is a multicycle one in both directions, and nothing in the linked
+    // design says so -- the platform declares no clock relationship between the
+    // bus clock and the device clock, so every bus is analysed as if a single
+    // fast edge had to carry it. That analysis is not wrong about the hardware,
+    // it is wrong about the intent: the toggles are what make it a multicycle
+    // design, and a bus that is still for a whole device cycle is still for
+    // eight bus cycles. The buses are sized so that the analysis is survivable
+    // anyway, because a bus that needs the multicycle assumption to pass is a
+    // bus that cannot be checked.
     //==========================================================================
     // host -> device
     reg  [ADDR_BITS-1:0] wr_addr_f;     // byte offset, low three bits zero
@@ -134,7 +145,16 @@ module tnca_axi_lite #(
     reg                  rd_tog;
 
     // device -> host
-    reg  [63:0]          rd_data_s;
+    //
+    // `rd_data_s` carries the half the host asked for, already selected. The
+    // 64-to-32 mux is on this side because of how little room the crossing has:
+    // `reg_clk` is the bus clock divided by eight, so its tree reaches 172884
+    // loads and spreads across the whole part, while the bus clock's reaches
+    // 449. The device's edge therefore lands about 2.6ns into a 3.333ns period,
+    // which leaves the far side under 0.7ns to work with -- the linked design
+    // measures its own acknowledgement toggles at 0.588ns to cross one bit.
+    // A mux on the far side of that does not fit. A fanout-of-one copy does.
+    reg  [31:0]          rd_data_s;
     reg                  rd_ack_tog;
     reg                  wr_ack_tog;
 
@@ -150,7 +170,17 @@ module tnca_axi_lite #(
                W_SEND = 2'd1,   // the value is assembled and crossing
                W_RESP = 2'd2;   // hold B until bready
 
-    reg [1:0]              wstate;
+    // One-hot by the time it is placed, so each state is one net. The linked
+    // design charges 3.731ns to the W_IDLE net -- twelve loads, with the driver
+    // and one of the loads in the same slice -- while a thirty-two load net
+    // spanning further in the same block costs 0.886ns. That is a router
+    // serving a net's far loads along one tree, not a logic depth problem: the
+    // whole path is 0.237ns of logic inside 4.854ns. An RTL edit cannot buy
+    // that back, and the only force it can apply is to ask for the state to be
+    // near its consumers more than once. This is that ask, and it is a hint
+    // rather than an instruction -- if the tool declines it, the answer is a
+    // floorplan and not a rewrite.
+    (* max_fanout = 4 *) reg [1:0] wstate;
     reg                    aw_have;
     reg                    w_have;
     reg [S_AXI_ADDR_W-1:0] awaddr_q;
@@ -241,14 +271,16 @@ module tnca_axi_lite #(
     // The device's read is combinational from `reg_addr`, so the device side
     // only has to put the address down, wait one of its own cycles, and take
     // what `reg_rdata` says. The address it puts down is the 64-bit register's,
-    // so the half is selected here rather than there.
+    // and the half wanted travels with it as `rd_sel_f`; the mux itself is on
+    // the device's side, for the reason given at `rd_data_s`.
     //==========================================================================
     localparam R_IDLE = 2'd0,
                R_WAIT = 2'd1,
                R_RESP = 2'd2;
 
     reg [1:0]              rstate;
-    reg [S_AXI_ADDR_W-1:0] araddr_q;
+    reg                    rd_sel_f;    // bit 2 of the address, crossing with it
+    reg [31:0]             rd_data_q;   // what `rd_data_s` last said, in this domain
 
     (* ASYNC_REG = "TRUE" *) reg [2:0] rd_ack_sync;
 
@@ -257,22 +289,36 @@ module tnca_axi_lite #(
     assign s_axi_arready = (rstate == R_IDLE);
     assign s_axi_rresp   = 2'b00;
     assign s_axi_rvalid  = (rstate == R_RESP);
-    assign s_axi_rdata   = araddr_q[2] ? rd_data_s[63:32] : rd_data_s[31:0];
+
+    // A register, not a mux over a far-side bus. `rvalid` is held from the same
+    // edge this is loaded, so data and valid are up together exactly as they
+    // were when the mux was here.
+    assign s_axi_rdata   = rd_data_q;
 
     always @(posedge s_axi_aclk or negedge s_axi_aresetn) begin
         if (!s_axi_aresetn) begin
             rstate      <= R_IDLE;
-            araddr_q    <= {S_AXI_ADDR_W{1'b0}};
+            rd_sel_f    <= 1'b0;
+            rd_data_q   <= 32'd0;
             rd_addr_f   <= {ADDR_BITS{1'b0}};
             rd_tog      <= 1'b0;
             rd_ack_sync <= 3'b000;
         end else begin
             rd_ack_sync <= {rd_ack_sync[1:0], rd_ack_tog};
 
+            // Taken on the acknowledgement: `rd_data_s` went still on the same
+            // device edge that moved `rd_ack_tog`, so by the time that edge has
+            // been synchronised and detected here the value has been quiet for
+            // longer than the two cycles `rstate` spends in R_WAIT. Same edge
+            // as `rstate` reaching R_RESP, so nothing about the response timing
+            // changes -- only which side of the crossing the mux is on.
+            if (rd_ack_pulse)
+                rd_data_q <= rd_data_s;
+
             case (rstate)
                 R_IDLE: begin
                     if (s_axi_arvalid && s_axi_arready) begin
-                        araddr_q  <= s_axi_araddr;
+                        rd_sel_f  <= s_axi_araddr[2];
                         rd_addr_f <= {s_axi_araddr[ADDR_BITS-1:3], 3'b000};
                         rd_tog    <= ~rd_tog;
                         rstate    <= R_WAIT;
@@ -318,9 +364,16 @@ module tnca_axi_lite #(
 
     reg [ADDR_BITS-1:0] wr_addr_q;
     reg [ADDR_BITS-1:0] rd_addr_q;
+    reg                 rd_sel_q;       // loaded with rd_addr_q, held with it
     reg [63:0]          reg_wdata_q;
     reg                 reg_we_q;
     reg                 rd_pending;
+
+    // The half the host asked for, chosen here rather than on the far side of
+    // the crossing. `rd_sel_q` is loaded on the same edge as `rd_addr_q` and
+    // held until the next read arrives, so both are valid on the cycle that
+    // `rd_take` fires and the read costs exactly what it cost before.
+    wire [31:0] reg_rdata_sel = rd_sel_q ? reg_rdata[63:32] : reg_rdata[31:0];
 
     // A read and a write can arrive on the same device cycle: the host's read
     // and write channels are independent and nothing above serialises them.
@@ -337,11 +390,12 @@ module tnca_axi_lite #(
             rd_sync     <= 3'b000;
             wr_addr_q   <= {ADDR_BITS{1'b0}};
             rd_addr_q   <= {ADDR_BITS{1'b0}};
+            rd_sel_q    <= 1'b0;
             reg_wdata_q <= 64'd0;
             reg_we_q    <= 1'b0;
             rd_pending  <= 1'b0;
             wr_ack_tog  <= 1'b0;
-            rd_data_s   <= 64'd0;
+            rd_data_s   <= 32'd0;
             rd_ack_tog  <= 1'b0;
         end else begin
             wr_sync <= {wr_sync[1:0], wr_tog};
@@ -367,11 +421,13 @@ module tnca_axi_lite #(
             else if (rd_take)
                 rd_pending <= 1'b0;
 
-            if (rd_pulse)
+            if (rd_pulse) begin
                 rd_addr_q <= rd_addr_f;
+                rd_sel_q  <= rd_sel_f;
+            end
 
             if (rd_take) begin
-                rd_data_s  <= reg_rdata;
+                rd_data_s  <= reg_rdata_sel;
                 rd_ack_tog <= ~rd_ack_tog;
             end
         end

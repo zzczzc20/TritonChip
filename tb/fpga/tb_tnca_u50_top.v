@@ -24,7 +24,7 @@
 // WHAT IT DOES NOT DO
 //
 // It does not sweep clock ratios. That is R36-FPGA-05's job and it is done
-// there, against a stub, eleven times. Here the clocks are locked at the ratio
+// there, against a stub, twelve times. Here the clocks are locked at the ratio
 // the board runs -- see CLOCKS below -- and the subject is the join.
 //
 // It does not establish that any of this fits, meets timing, or runs on a
@@ -43,13 +43,13 @@
 //
 // FAST_HALF and SLOW_HALF are half-periods in nanoseconds, as in
 // tb_tnca_axi_lite.v: ap_clk is the fast one and clk_dev the slow one. The
-// default pair is 1 and 8, which is the board's -- ap_clk 300 MHz divided by
-// BUFGCE_DIV's 8 in rtl/board/tnca_u50_xo.v is 37.5 MHz, and 8 is the ratio.
+// default pair is 1 and 4, which is the board's -- ap_clk 150 MHz divided by
+// BUFGCE_DIV's 4 in rtl/board/tnca_u50_xo.v is 37.5 MHz, and 4 is the ratio.
 // The absolute rate here differs from the board's by the same factor on both
 // sides, so the ratio is real and the frequencies are not.
 //
 // The two clocks are locked rather than free-running, because that is what a
-// divided clock is: BUFGCE_DIV's output edges coincide with every eighth
+// divided clock is: BUFGCE_DIV's output edges coincide with every fourth
 // ap_clk edge rather than drifting against it. A bench that let them drift
 // would spend most of its time in a phase relationship the board never has.
 //==============================================================================
@@ -60,7 +60,7 @@
 module tb_tnca_u50_top;
 
     parameter FAST_HALF   = 1;             // ap_clk half-period, ns
-    parameter SLOW_HALF   = 8;             // clk_dev half-period, ns
+    parameter SLOW_HALF   = 4;             // clk_dev half-period, ns
 
     parameter ADDR_BITS   = 8;
     parameter AXI_ADDR_W  = 12;

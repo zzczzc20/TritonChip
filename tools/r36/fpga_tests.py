@@ -56,15 +56,15 @@ device clock are not synchronised and never will be -- so the property that
 matters is not structural and cannot be reached from yosys.
 
 R36-FPGA-05 is therefore a simulation rather than an elaboration:
-tb/fpga/tb_tnca_axi_lite.v against eleven clock ratios, each of which must
+tb/fpga/tb_tnca_axi_lite.v against twelve clock ratios, each of which must
 say PASS. The bench is self-checking -- it counts strobes, watches for a
 `reg_we` that lasts longer than a cycle, and asserts that the read/write
 collision it exists to arbitrate actually happened -- so PASS is the whole
 verdict and this file does not re-derive it.
 
-  The ratio that matters is 1:8. The platform clock is 300 MHz and the
-  device clock is taken from it through a divide-by-eight, so the bench
-  at 2 ns and 16 ns is the pair the board would run. The other ten exist
+  The ratio that matters is 1:4. The platform clock is 150 MHz and the
+  device clock is taken from it through a divide-by-four, so the bench at
+  1 ns and 4 ns is the pair the board would run. The other eleven exist
   because a crossing that is correct at one ratio is often correct only
   there: an integer ratio hides a metastable window that a 4:5 ratio
   exposes, and a self-limiting handshake that stalls when the slow side
@@ -131,7 +131,7 @@ TIMEOUT = 900
 # in simulation time. This is the backstop for the other kind of hang: a
 # design that spins in zero simulated time never reaches the watchdog, and
 # iverilog 10.3 was measured producing exactly that. Multiplied by the
-# seventeen runs across R36-FPGA-05 and -06 it is still bounded.
+# nineteen runs across R36-FPGA-05 and -06 it is still bounded.
 TB_TIMEOUT = 120
 TOP = 'tnca_fpga_top'
 FPGA_DIR = os.path.join('rtl', 'fpga')
@@ -150,11 +150,14 @@ AXIL_TB = os.path.join('tb', 'fpga', 'tb_tnca_axi_lite.v')
 AXIL_DUT = os.path.join(FPGA_DIR, 'tnca_axi_lite.v')
 
 # (FAST_HALF, SLOW_HALF) in nanoseconds -- the two half-periods the bench
-# elaborates with, so the clock ratio is SLOW_HALF/FAST_HALF. 1:8 is the
-# board's; the rest are the awkward ones around it.
-AXIL_RATIOS = [(1, 1), (1, 2), (1, 3), (1, 8), (3, 24), (5, 8),
+# elaborates with, so the clock ratio is SLOW_HALF/FAST_HALF. 1:4 is the
+# board's; 1:8 is the ratio the board ran at before the kernel clock came down
+# to 150 MHz, kept because a slower device clock is the harder crossing and
+# because the benches' poll bounds were sized against it; the rest are the
+# awkward ones around both.
+AXIL_RATIOS = [(1, 1), (1, 2), (1, 3), (1, 4), (1, 8), (3, 24), (5, 8),
                (2, 3), (1, 13), (1, 25), (4, 5), (1, 40)]
-AXIL_BOARD_RATIO = (1, 8)
+AXIL_BOARD_RATIO = (1, 4)
 
 # The bench that drives the whole top -- adapter, join, second clock, reset
 # ordering -- with the real device behind it, and the file it drives. The
@@ -164,13 +167,15 @@ AXIL_BOARD_RATIO = (1, 8)
 U50TOP_TB  = os.path.join('tb', 'fpga', 'tb_tnca_u50_top.v')
 U50TOP_DUT = os.path.join(FPGA_DIR, 'tnca_u50_top.v')
 
-# Two ratios. 1:8 is the board's -- ap_clk divided by BUFGCE_DIV's 8 -- and is
-# where the suite runs. 1:1 is here because it is not a reduction of that but a
+# Three ratios. 1:4 is the board's -- ap_clk 150 MHz divided by BUFGCE_DIV's 4
+# -- and is where the suite runs. 1:8 is what the board ran before the kernel
+# clock came down, and stays because it is the slower device clock and so the
+# harder crossing. 1:1 is here because it is not a reduction of either but a
 # different corner: with equal half-periods the two clocks are not merely
 # nearby, they are the same edge, which is the degenerate case a divided clock
 # approaches at the limit and the one a handshake that needs phase margin
-# would fail at. Both must pass.
-U50TOP_RATIOS = [(1, 8), (1, 1)]
+# would fail at. All three must pass.
+U50TOP_RATIOS = [(1, 4), (1, 8), (1, 1)]
 
 _PROBLEMS = re.compile(r'Found and reported (\d+) problems')
 _STAT_NAME = re.compile(r'^=== (\S+) ===\s*$', re.M)
@@ -571,7 +576,7 @@ def _run_u50top(tmp, tag, fast_half, slow_half, dut=None):
 
 
 def fpga05(log):
-    """Eleven clock ratios, each of which must pass."""
+    """Twelve clock ratios, each of which must pass."""
     if not _require_iverilog(log):
         return False, 'iverilog is not installed, so nothing was simulated'
     gone = _axil_missing(log)
@@ -604,7 +609,7 @@ def fpga05(log):
         return False, f'the adapter fails at {len(bad)} clock ratio(s): ' \
                       f'{", ".join(bad)}'
     return True, f'the adapter holds at {len(AXIL_RATIOS)} clock ratios, ' \
-                 f'including the board\'s 1:8'
+                 f'including the board\'s 1:4'
 
 
 # The six, each as (name, old, new). Every `old` must occur exactly once

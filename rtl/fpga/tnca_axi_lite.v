@@ -12,11 +12,14 @@
 //
 // WHY THERE ARE TWO CLOCKS IN IT
 //
-// The platform's kernel clock is 300 MHz and cannot be lowered; of the two
-// scalable clocks this U50 platform declares, 300 and 500, neither is reachable
-// by this design. So the device is given a divided clock by the wrapper above,
-// and the register port is on that divided clock while the host bus is not.
-// Every clock crossing in the design is in this file.
+// Because they belong to different things. The host bus is on the platform's
+// kernel clock, which a design does not get to choose -- it is asked for at link
+// time (`--kernel_frequency` in flow/fpga/link.sh, 150 MHz) and handed over by
+// the shell. The register port is on the device clock, because the register file
+// it addresses is there and a port on any other clock would be a crossing per
+// access. So the wrapper above divides the bus clock and passes the result down
+// as `clk_dev`; this file is what sits between the two. Every clock crossing in
+// the design is in this file.
 //
 // The crossing is a toggle handshake, not a FIFO. The host polls with one
 // register access outstanding at a time, so there is never a second
@@ -147,13 +150,17 @@ module tnca_axi_lite #(
     // device -> host
     //
     // `rd_data_s` carries the half the host asked for, already selected. The
-    // 64-to-32 mux is on this side because of how little room the crossing has:
-    // `reg_clk` is the bus clock divided by eight, so its tree reaches 172884
+    // 64-to-32 mux is on this side because of how little room the crossing had:
+    // `reg_clk` is the bus clock divided by four, so its tree reaches 172884
     // loads and spreads across the whole part, while the bus clock's reaches
-    // 449. The device's edge therefore lands about 2.6ns into a 3.333ns period,
-    // which leaves the far side under 0.7ns to work with -- the linked design
-    // measures its own acknowledgement toggles at 0.588ns to cross one bit.
-    // A mux on the far side of that does not fit. A fanout-of-one copy does.
+    // 449. The device's edge therefore lands about 2.6ns into the bus period.
+    //
+    // At 300 MHz that period was 3.333ns and left the far side under 0.7ns; the
+    // linked design measured its own acknowledgement toggles at 0.588ns to cross
+    // one bit, which is the whole of it. At 150 MHz the period is 6.667ns and
+    // there is room. The mux stays on this side anyway: room bought by lowering
+    // a clock is not room to move work back into, and this side is where the
+    // measurement was made.
     reg  [31:0]          rd_data_s;
     reg                  rd_ack_tog;
     reg                  wr_ack_tog;

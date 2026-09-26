@@ -27,8 +27,7 @@ a file.
 
 ## The clock
 
-The platform states what `ap_clk` will be, in its own `hw.hpfm` inside
-`hw.xsa`:
+The platform states its kernel clocks in its own `hw.hpfm` inside `hw.xsa`:
 
 ```xml
 <xd:systemClocks xd:defaultClock="0">
@@ -43,15 +42,24 @@ The platform states what `ap_clk` will be, in its own `hw.hpfm` inside
 </xd:systemClocks>
 ```
 
-`defaultClock="0"` is 300 MHz. That is what `ooc.xdc` constrains. The 500 MHz
-entry is id 1: it exists, it is not the default, and taking it would be a change
-of design rather than a change of build flag.
+Those two frequencies are the clocks' **power-on defaults**, not the set of
+values the shell can produce. That set is declared by the clocking IP the shell
+is built from -- `shell_ucs_subsystem_v3_0`, unpacked from the platform's
+`hw.xsa`, whose `component.xml` gives `FREQ_HZ_KERNEL_CLOCK_00` a
+`minimum="10" maximum="650"` in MHz. 150 is inside that range.
 
-The device does not run at 300 MHz. `rtl/board/tnca_u50_xo.v` divides `ap_clk`
-with `BUFGCE_DIV #(.BUFGCE_DIVIDE(8))`, so the device runs at **37.5 MHz**.
-`link.sh` passes no `--kernel_frequency`, and it checks the resulting frequency
-rather than assuming it -- `v++` can lower a kernel clock on its own and still
-report success (`AUTO-FREQ-SCALING-04`, quoted in `link.sh`).
+**This build asks for 150 MHz.** `link.sh` passes `--kernel_frequency 0:150`,
+`ooc.xdc` constrains 6.667 ns, `package_xo.tcl` declares the same figure in the
+IP, and `rtl/board/tnca_u50_xo.v` divides by four -- so the device runs at
+**37.5 MHz**, which is where it ran before, when the bus was at 300 and the
+divide was eight. The bus came down because the first link failed on it; the
+device was deliberately held still so that every measurement about it survives.
+
+`link.sh` still checks the resulting frequency rather than assuming it -- `v++`
+can lower a kernel clock on its own and still report success
+(`AUTO-FREQ-SCALING-04`, quoted in `link.sh`). That check is not in tension with
+naming 150 here: it exists so that 150 is what actually reaches the `.xclbin`,
+not so that nobody ever writes a number down.
 
 ## The measurements
 
@@ -79,28 +87,62 @@ bound either. What can be said without overreach:
 - The device logic routed under a 40 ns constraint with 14.75 ns of slack.
 
 The 40 ns run was directed on 2026-09-24 as "我们先用25mhz试一下吧" -- a bring-up
-measurement, not a unilateral relaxation, which the working agreement lists as
-something not to do ("不要为了'跑起来'直接修改：clock constraint..."). The
-3.333 ns script was left in place untouched so the two can be compared.
+measurement. The 3.333 ns script was left in place untouched so the two can be
+compared. **Neither run took part in a link**: both are out-of-context
+measurements of `tnca_fpga_top` alone, taken before the adapter existed.
+
+## What the first link measured
+
+`link.sh` has now run once, at the platform default of 300 MHz and with no
+`--kernel_frequency` on the command line (`~/u50_build/pkg/link.log`, started
+2026-09-26 00:53, `elapsed = 01:56:36`). **It failed**, on `write_bitstream`:
+
+```
+ERROR: [VPL 101-2] design did not meet timing - hold violation
+```
+
+173 setup endpoints and 4 hold endpoints failed, out of a design whose device
+domain had **+6.494 ns of slack and nothing failing in it**. Of the 173, 131 are
+not reachable by editing RTL at all -- 97 of them are a zero-logic, 0.722 ns path
+that a −3.884 ns skew between two clock objects the platform never relates fails
+on its own. The remainder all miss a single 3.333 ns period by under two
+nanoseconds. `u50/reports/phase3_link_report.md` is the full attribution.
+
+That is the whole reason the bus is at 150 MHz now: doubling the period reaches
+every one of those paths at once, and dividing by four instead of eight keeps the
+device exactly where the +6.494 ns was measured.
 
 ## What the measurements do not cover
 
 The 37.5 MHz figure rests on the device having routed at 25.231 ns under a 40 ns
-constraint, which is under the 26.667 ns that 300/8 gives it. That is 1.4 ns of
+constraint, which is under the 26.667 ns that 150/4 gives it. That is 1.4 ns of
 margin, and it is margin on a run that was not asked to try.
 
-Neither run contained `rtl/fpga/tnca_axi_lite.v`, `rtl/fpga/tnca_u50_top.v`, or
-`rtl/board/tnca_u50_xo.v`. The adapter and the clock crossing are timed at
-`ap_clk` -- 3.333 ns -- and nothing above says they meet it. `link.sh` is what
-would establish that, and it has not finished.
+Neither OOC run contained `rtl/fpga/tnca_axi_lite.v`, `rtl/fpga/tnca_u50_top.v`,
+or `rtl/board/tnca_u50_xo.v`. The adapter and the clock crossing are timed by the
+link at `ap_clk` -- 6.667 ns -- and the first link is what showed they do not
+close at 3.333 ns.
+
+And nothing here says the clock is 150 MHz, only that 150 MHz was asked for. The
+kernel clock is an MMCM output -- `aclk_kernel_00_hierarchy/clkwiz_aclk_kernel_00`
+in the link's own `vivado.log` -- and Vitis reaches it by re-solving that MMCM and
+emitting a `create_generated_clock` for the divide and multiply it picked
+(`write_user_impl_clock_constraint` in `ocl_util.tcl`). So the figure `link.sh`
+reads back out of the `.xclbin` is the one the solver was handed. The shell counts
+the clock it actually gets, in `frequency_counter_aclk_kernel_00` at `0x9000`, and
+reading that means loading the `.xclbin`.
 
 So: the divider ratio, the device frequency, and whether the whole thing closes
-are three separate questions, and only the middle one has been measured.
+are three separate questions, and only the middle one has been measured
+favorably.
 
-## If the link fails on timing
+## If the link fails on timing again
 
-Do not lower the frequency. That is not a build flag away from being correct:
-`ooc.xdc` and the divider comment in `rtl/board/tnca_u50_xo.v` both carry
-numbers, `link.sh` checks the result against them, and a link that closed at a
-lower clock is a different design from the one that was measured. The failure
-mode to reach for is the report, not the constraint.
+Not by reaching for a smaller number in one place. `ooc.xdc`, `package_xo.tcl`,
+`link.sh` and the divider comment in `rtl/board/tnca_u50_xo.v` all carry the
+frequency, and `link.sh` checks the result against them; a link that closed at a
+clock only one of those files mentions is a different design from the one anyone
+measured. 150 MHz is itself a lowering, chosen and recorded deliberately -- see
+the header of `link.sh` for the argument. Going below it is a second such
+decision, and it gets made the same way: with the report in hand, and the number
+moved in all four places at once.

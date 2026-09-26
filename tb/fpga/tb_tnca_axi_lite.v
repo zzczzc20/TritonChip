@@ -39,8 +39,8 @@
 //
 // CLOCK RATIO
 //
-// The board runs 300 MHz into the bus and 37.5 MHz into the device, a ratio of
-// 8. The suite is run at more than one ratio, because a crossing that happens
+// The board runs 150 MHz into the bus and 37.5 MHz into the device, a ratio of
+// 4. The suite is run at more than one ratio, because a crossing that happens
 // to work at one is not a crossing that works. The two parameters are clock
 // half-periods in ns and the Makefile passes them.
 //

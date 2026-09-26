@@ -39,7 +39,7 @@
 // flip-flop powers up in a defined state -- the configuration bitstream sets
 // it, which is why `por_cnt` below has no `initial` and would be wrong to be
 // given one -- so the counter starts at zero and the reset is held for 64
-// `ap_clk` edges, which at 300 MHz is 213 ns.
+// `ap_clk` edges, which at 150 MHz is 427 ns.
 //
 // It is released as a level, synchronously to `ap_clk`, and tnca_u50_top treats
 // it as an asynchronous reset. A synchronous release into an asynchronous reset
@@ -47,16 +47,28 @@
 // tnca_u50_top see a clean single edge, and the assertion they are supposed to
 // catch at power-up has already happened before `ap_clk` started.
 //
-// THE DEVICE CLOCK, AND WHY IT IS EIGHT
+// THE DEVICE CLOCK, AND WHY IT IS FOUR
 //
-// 300 MHz for the bus, divided by eight for the device, is 37.5 MHz. The
-// measured worst path through this design, placed and routed out of context,
-// is 18.829 ns -- 53 MHz -- so eight leaves about 40% of the period unspent.
+// The bus runs at 150 MHz -- asked for at link time, see flow/fpga/link.sh --
+// and divided by four for the device, that is 37.5 MHz. The number that
+// matters is 37.5: it is what this design ran at when it was linked, and the
+// link's own report measured that domain at +6.494 ns of slack with nothing
+// failing in it. Holding the device where it is means every measurement made
+// about the device still stands. What changed is the bus, and only the bus.
 //
-// Eight is also the largest divide BUFGCE_DIV has. Anything slower needs an
-// MMCM and a re-link, and saying so here is the point: a larger number in
-// BUFGCE_DIVIDE is not an edit, and the divider is not the knob to reach for
-// if this does not close.
+// The bus came down because the link failed on it. Of the 173 setup endpoints
+// the first link reported, 131 are not reachable by editing RTL: 97 are a
+// zero-logic, 0.722 ns path failed by a -3.884 ns skew between two Vivado
+// clock objects that the platform never declares a relationship for, one has
+// both ends inside the platform, and 33 are a routing outcome whose worst
+// path spends 0.237 ns of its 4.854 in logic. The rest are all one shape -- a
+// requirement of a single 3.333 ns period against paths that miss it by less
+// than two nanoseconds. A longer period is the one lever that reaches every
+// one of them at once.
+//
+// Four rather than eight, then, because eight would put the device at 18.75
+// MHz, half of what it runs at today, and buy nothing for it. The divide is
+// chosen to hold the device still, not to hold a ratio.
 //
 // Nothing here writes a constraint. ap_clk's period belongs to the platform
 // and to flow/fpga/ooc.xdc, and the device clock is not separately constrained
@@ -102,7 +114,7 @@ module tnca_u50_xo #(
     //==========================================================================
     // Power-on reset
     //
-    // 64 edges is 213 ns at 300 MHz: long enough that every clock in the design
+    // 64 edges is 427 ns at 150 MHz: long enough that every clock in the design
     // has started, short enough that it is over before the host can finish
     // opening the device. Nothing depends on it being exactly 64.
     //==========================================================================
@@ -126,7 +138,7 @@ module tnca_u50_xo #(
     wire clk_dev;
 
     BUFGCE_DIV #(
-        .BUFGCE_DIVIDE  (8),
+        .BUFGCE_DIVIDE  (4),
         .CE_TYPE        ("SYNC"),
         .IS_CE_INVERTED (1'b0),
         .IS_CLR_INVERTED(1'b0),

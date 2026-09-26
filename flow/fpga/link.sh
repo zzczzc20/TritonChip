@@ -200,19 +200,36 @@ fi
 #------------------------------------------------------------------------------
 # Check 2: what frequency actually went into the .xclbin?
 #
-# The format, taken from xclbinutil --info on a shipped .xclbin rather than
-# assumed:
+# Not by looking for the entry whose Type is KERNEL. That was the first
+# reading of this file, and it was wrong. On this shell the clock that
+# --kernel_frequency 0: names comes out labelled DATA_CLK, and KERNEL_CLK is a
+# different clock the design is not wired to. v++ says as much itself:
+#
+#   INFO: [v++ 60-991] clock name 'ulp_ucs/aclk_kernel_00' (clock ID '0') is
+#   being mapped to clock name 'DATA_CLK' in the xclbin
+#
+#   INFO: [v++ 60-1230] ... System (SYSTEM) clock: hbm_aclk = 450,
+#   Kernel (KERNEL) clock: ulp_ucs/aclk_kernel_01 = 500,
+#   Kernel (DATA) clock: ulp_ucs/aclk_kernel_00 = 150
+#
+# A check that matched on "KERNEL" therefore compared 500 against 150 and
+# failed a build whose real kernel clock was exactly what was asked for. So
+# the name is read out of the tool's own mapping line rather than assumed, and
+# the value is read back out of the artifact:
 #
 #   Scalable Clocks
 #   ---------------
-#      Name:      KERNEL_CLK
+#      Name:      DATA_CLK
 #      Index:     2
-#      Type:      KERNEL
-#      Frequency: 500 MHz
+#      Type:      DATA
+#      Frequency: 150 MHz
 #
-# Type comes before Frequency inside a block, and exactly one block is the
-# kernel's. Anything else -- no such block, no frequency after it -- leaves
-# got empty, and empty is a failure below.
+# The mapping line is specific to clock ID '0' on purpose: that is the ID this
+# script passes, so that is the entry whose value decides this build's clock.
+# No mapping line, no such entry, no frequency -- all leave got empty, and
+# empty is a failure below. Failing on a missing mapping line is the point:
+# the name is not guessed, so a shell that maps it somewhere else stops the
+# link rather than being read the wrong way and passed.
 #
 # WHAT THIS NUMBER IS, AND WHAT IT IS NOT
 #
@@ -231,14 +248,21 @@ fi
 # in the management aperture -- and reading that is the stronger check. It
 # needs the .xclbin loaded, which is a decision this script does not take.
 #------------------------------------------------------------------------------
+mapped=$(sed -n \
+    "s/.*clock name '[^']*' (clock ID '0') is being mapped to clock name '\([^']*\)'.*/\1/p" \
+    "$LOG" | tail -1)
+
 got=""
 if [ $rc -eq 0 ] && [ -f "$XCLBIN" ]; then
     xclbinutil --info --input "$XCLBIN" > "$INFO" 2>&1
-    got=$(awk '
-        /^[ \t]*Type:/      { t = $2 }
-        /^[ \t]*Frequency:/ && t == "KERNEL" { print $2; exit }
-    ' "$INFO")
-    echo "xclbin kernel clock = ${got:-<unreadable>} MHz (expected $EXPECT_MHZ)" >> "$LOG"
+    if [ -n "$mapped" ]; then
+        got=$(awk -v want="$mapped" '
+            /^[ \t]*Name:/      { n = $2 }
+            /^[ \t]*Frequency:/ && n == want { print $2; exit }
+        ' "$INFO")
+    fi
+    echo "clock ID 0 maps to xclbin entry '${mapped:-<no mapping line>}'" >> "$LOG"
+    echo "xclbin clock = ${got:-<unreadable>} MHz (expected $EXPECT_MHZ)" >> "$LOG"
     echo "Scalable Clocks block, as reported:" >> "$LOG"
     awk '/^Scalable Clocks/,/^System Clocks/' "$INFO" >> "$LOG"
 fi
@@ -268,9 +292,12 @@ if [ "$moved" -ne 0 ]; then
 fi
 
 if [ -z "$got" ]; then
-    echo "link.sh: FAILED -- the kernel clock could not be read out of the"
-    echo "         .xclbin. The report is at $INFO; look at it before"
-    echo "         treating this as a pass, because it is not one."
+    echo "link.sh: FAILED -- the clock this build asked for could not be read"
+    echo "         back out of the .xclbin. Either the log carries no 'clock"
+    echo "         ID 0 ... is being mapped to ...' line, or the entry it"
+    echo "         names has no Frequency after it. The report is at $INFO and"
+    echo "         the mapping line, if any, is quoted in $LOG; look at both"
+    echo "         before treating this as a pass, because it is not one."
     echo "LINK_FAILED freq-unreadable $(date)" >> "$LOG"
     echo "=== LINK_DONE $(date) ===" >> "$LOG"
     exit 4

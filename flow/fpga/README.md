@@ -112,6 +112,54 @@ That is the whole reason the bus is at 150 MHz now: doubling the period reaches
 every one of those paths at once, and dividing by four instead of eight keeps the
 device exactly where the +6.494 ns was measured.
 
+## What the second link measured
+
+At 150 MHz (`--kernel_frequency 0:150`, `~/u50_build/pkg150/link.log`, started
+2026-09-26 16:13, `elapsed = 2h 11m 55s`) **the link succeeded** and
+`tnca_u50.xclbin` was written. Out of the routed report:
+
+```
+    WNS(ns)   TNS Failing Endpoints     WHS(ns)   THS Failing Endpoints
+      0.055                       0       0.009                       0
+                TNS Total Endpoints: 901013    THS Total: 899418
+All user specified timing constraints are met.
+```
+
+The same clock table names what the two runs differ by:
+
+```
+ap_clk                          6.667 ns   149.992 MHz
+  clk_dev                      26.668 ns    37.498 MHz
+  clk_kernel_00_unbuffered_net  6.667 ns   150.000 MHz
+  clk_kernel_01_unbuffered_net  2.000 ns   500.000 MHz
+```
+
+`ap_clk` is at 6.667 ns, and `clk_dev` is at 26.668 -- exactly one quarter of it,
+which is `BUFGCE_DIVIDE 4` doing what `rtl/board/tnca_u50_xo.v` says it does. The
+device is where it was; the bus moved. 0.055 ns is not a comfortable margin, but
+it is a closed design: the bitstream is fixed and so is the clock.
+
+`--kernel_frequency 0:150` also did what it was asked to, which took reading the
+log to confirm. v++ numbers the shell's clocks and then renames them in the
+xclbin:
+
+```
+INFO: [v++ 60-991] clock name 'ulp_ucs/aclk_kernel_00' (clock ID '0') is being
+mapped to clock name 'DATA_CLK' in the xclbin
+```
+
+so the entry called `KERNEL_CLK` in the finished artifact is
+`ulp_ucs/aclk_kernel_01` -- a clock this design is not wired to -- and the one
+this design runs on is the entry called `DATA_CLK`. `link.sh` was matching on
+`Type: KERNEL`, compared 500 against 150, and reported `LINK_FAILED freq=500`
+for a build whose real clock was exactly what was asked for. It now reads the
+entry name out of the tool's own mapping line and fails if that line is absent,
+which is the same fail-closed direction as before and no longer reads the wrong
+entry.
+
+**None of this has been on a board.** The `.xclbin` exists and nothing has
+loaded it.
+
 ## What the measurements do not cover
 
 The 37.5 MHz figure rests on the device having routed at 25.231 ns under a 40 ns

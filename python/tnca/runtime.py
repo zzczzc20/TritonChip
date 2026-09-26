@@ -208,7 +208,7 @@ class Session:
     def __init__(self, profile='core-sim', *, bench=None, workdir=None,
                  code_base=0, heap_base=0x20000, heap_limit=0x80000,
                  deadline_cycles=2_000_000, host_timeout=600.0, trace=False,
-                 backend='sim-file'):
+                 backend='sim-file', **backend_kwargs):
         Session._counter += 1
         self.id = Session._counter
         self.profile = profile
@@ -217,6 +217,17 @@ class Session:
         # and are now two, because a target that meant "this simulator
         # executable" could never describe a board.
         self.backend_name = backend
+        # What the backend needs and this session cannot know. The named
+        # arguments above are the ones every binding has an opinion about;
+        # these are the rest, and they are not interpreted here. A board
+        # has to be told which .xclbin the card is running -- that fact
+        # exists in no profile and no artifact, and without a way to state
+        # it `Session(backend='fpga-u50')` could name the board and never
+        # open it. Passed through untouched, so that a backend's own
+        # requirement is raised by the backend, which is the thing that
+        # knows it, rather than re-stated here where it would be a second
+        # copy free to drift.
+        self._backend_kwargs = backend_kwargs
         self.epoch = 0
         self.poisoned = False
         self.closed = False
@@ -263,7 +274,7 @@ class Session:
                                 workdir=self._workdir,
                                 deadline_cycles=deadline_cycles,
                                 host_timeout=host_timeout, trace=trace,
-                                epoch=self.epoch)
+                                epoch=self.epoch, **self._backend_kwargs)
         self.dev.start()
         self._start_worker()
 
@@ -781,7 +792,8 @@ class Session:
                                     workdir=self._workdir,
                                     deadline_cycles=self._deadline,
                                     host_timeout=self._host_timeout,
-                                    trace=self._trace, epoch=self.epoch)
+                                    trace=self._trace, epoch=self.epoch,
+                                    **self._backend_kwargs)
             self.dev.start()
         self._start_worker()
         return self.epoch

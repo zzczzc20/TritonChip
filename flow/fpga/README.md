@@ -3,9 +3,11 @@
 `flow/fpga/ooc.xdc` ends with a pointer to this file for "the measured one". This
 is that number, where it came from, and what it does not cover.
 
-**Nothing in this directory has been on a board.** No `.xclbin` built here has
-been loaded. Loading one changes hardware state and is a separate decision that
-has not been taken.
+**The `.xclbin` this directory builds has been on the board.** It was loaded on
+2026-09-26 at 19:54 by `flow/fpga/program.sh`, which is the third step here and
+the only one that changes hardware state; the sections below record what that
+measured. Loading is still a deliberate step, but it is no longer one that has
+not been taken.
 
 ## The two steps
 
@@ -157,8 +159,117 @@ entry name out of the tool's own mapping line and fails if that line is absent,
 which is the same fail-closed direction as before and no longer reads the wrong
 entry.
 
-**None of this has been on a board.** The `.xclbin` exists and nothing has
-loaded it.
+At the time that was written, none of it had been on a board. It has since --
+see the section below, which is where the 150 above stops being a request.
+
+## What the board measured
+
+`flow/fpga/program.sh --go` loaded `tnca_u50.xclbin` on 2026-09-26 at 19:54:26.
+It reported `EXIT=0` after about a second, and the device then answered with
+xclbin uuid `ccbbcf8b-5ace-7c99-63b9-9a7c065d74a5`, which is the uuid of the
+file that was written. The image it replaced was `44e9640d-…`.
+
+### The clock is 150 MHz, measured
+
+This is the figure the section below could only report as *requested*. The shell
+counts the clock it is actually handed, and the driver logs the count beside the
+request whenever `xbutil examine -r platform` reads it:
+
+```
+clock_wiz_get_freq_by_id: freq = 100      <- before: the image that was loaded
+clock_counter_get_freq:   khz: 100000
+clock_wiz_get_freq_by_id: freq = 150      <- after: this build
+clock_counter_get_freq:   khz: 150000
+```
+
+`frequency_counter_aclk_kernel_00` counts edges, so `150000` is a measurement of
+the MMCM output rather than the metadata the solver was handed read back at
+itself. The same log shows `clock_wiz_scaling_by_request: verify: 0 ret: 0` and
+`icap_refresh_clock_freq: ret: 0` at load time, which is XRT programming the MMCM
+and saying it worked. **The device therefore runs at 150/4 = 37.5 MHz**, which is
+where the OOC measurements above put it.
+
+### The device answers
+
+Two of three rungs of `tmp_variants/board_bringup.py` -- scratch, not in the
+repository -- ran against the loaded design:
+
+| rung | what it does | result |
+|---|---|---|
+| `read` | three reads over XRT's AXI-Lite register API | **PASS** -- `R_MAGIC` came back `0x00010000544e4341`, "TNCA" |
+| `ping` | one mailbox round trip, core not started | **PASS** -- `seq=2 OK r0=2 r1=0` |
+| `run` | upload, launch the core, compare results | **PASS** -- 5 of 5 values, 3 of 3 sentinels |
+
+`read` is the weaker of the two and it is still worth naming what it rules out:
+the value is read back over PCIe from registers that only exist if the
+bitstream is the one this directory built and is out of reset. A half-configured
+region does not answer with a magic number.
+
+### `run` failed first, on something that was not the board
+
+The first attempt never reached the core. `start()`'s ping went unanswered and
+the failure surfaced as `AttributeError: 'U50Backend' object has no attribute
+'log'` -- a second bug, hiding the first.
+
+The real one was in the host, and the board was right to be silent. The device's
+rule for a doorbell is `req_seq > served` (`rtl/fpga/tnca_mmio.v`'s `MS_IDLE`),
+and `served` is a 64-bit counter that resets when the **bitstream** does, not
+when a host process starts. `Transport` numbers requests `self.seq += 1` from
+zero, so every new process began at sequence 1. `ping` had been the first
+mailbox user and left `served` at 3; the next process rang with sequence 1, the
+device dropped it as the duplicate the rule says it is, and a dropped ring is
+silent by design. `R_SERVED` read back **`0x0000000000000003`** -- exactly the
+three requests `ping` had made.
+
+So the board was usable once per bitstream load, which is not a property anyone
+would find in simulation, because a simulation binding is started fresh each
+time. The fix is the one the register exists for: `start()` adopts `served`
+before its first request. The run then reported `seq=5`, which is what the
+diagnosis predicts and not a coincidence.
+
+The masking bug had the same shape as one the file already guards against:
+`Transport.__init__` sets `bench` and `dir`, and the board's constructor
+deliberately re-sets them to `None` so that no reachable path raises
+`AttributeError` -- and `log` was the one that got missed, on the timeout path of
+all places. It is `None` now, so a board timeout arrives as `WAIT_TIMEOUT`.
+
+### `run`, second attempt
+
+```
+    upload ok (<Reply seq=5 OK r0=0 r1=0>)
+    launch ok (status 0, 243 cycles, 72 retired)
+    partial stores ok (0x333333332222ee11)
+    vector round trip ok (0x00000000000000f0)
+    gather ok (0x0000000000000078)
+    atomic, old value ok (0x0000000000000007)
+    atomic, new value ok (0x000000000000000c)
+    a slot the program must not have touched (5) ok (0xdeadbeeffacef00d)
+    a slot the program must not have touched (6) ok (0xdeadbeeffacef00d)
+    a slot the program must not have touched (7) ok (0xdeadbeeffacef00d)
+PASS run
+```
+
+**The core executed on the board and the numbers are the hand-computed ones** --
+including the three slots the program was supposed to leave alone.
+
+### Why `run` was held back first
+
+Recorded because the hold was correct at the time and the rule is not repealed:
+when `ping` returned the board was at **FPGA 91 C / HBM 86 C**, over a standing
+threshold that stops hardware testing at 90 C / 85 C. Power was 22.5 W of 75 W
+with nothing running -- `total execs 0`, no client attached.
+
+It ran on the instruction that the temperature was not to be considered, after a
+90-second check showed the climb had stopped (94/89 flat across three readings).
+`run` itself moved nothing: 95 C before, 95 C after. Whether the rise from 82 to
+94 across the session is ours (150 MHz where the previous image ran 100), the
+host's, or ambient has **not** been established, and the 22.5 W figure argues
+against it being the design working hard. Recorded as an open question, not
+attributed.
+
+**Nothing was done about the temperature.** Cooling, power limits and clock are
+outside what this branch may touch, and so is `xbutil reset`. The design is still
+loaded.
 
 ## What the measurements do not cover
 
@@ -171,14 +282,16 @@ or `rtl/board/tnca_u50_xo.v`. The adapter and the clock crossing are timed by th
 link at `ap_clk` -- 6.667 ns -- and the first link is what showed they do not
 close at 3.333 ns.
 
-And nothing here says the clock is 150 MHz, only that 150 MHz was asked for. The
-kernel clock is an MMCM output -- `aclk_kernel_00_hierarchy/clkwiz_aclk_kernel_00`
-in the link's own `vivado.log` -- and Vitis reaches it by re-solving that MMCM and
-emitting a `create_generated_clock` for the divide and multiply it picked
+And nothing *in this file's measurements* says the clock is 150 MHz, only that
+150 MHz was asked for. The kernel clock is an MMCM output --
+`aclk_kernel_00_hierarchy/clkwiz_aclk_kernel_00` in the link's own `vivado.log` --
+and Vitis reaches it by re-solving that MMCM and emitting a
+`create_generated_clock` for the divide and multiply it picked
 (`write_user_impl_clock_constraint` in `ocl_util.tcl`). So the figure `link.sh`
 reads back out of the `.xclbin` is the one the solver was handed. The shell counts
 the clock it actually gets, in `frequency_counter_aclk_kernel_00` at `0x9000`, and
-reading that means loading the `.xclbin`.
+reading that means loading the `.xclbin` -- which has since been done, and the
+count agrees. See "What the board measured" above.
 
 So: the divider ratio, the device frequency, and whether the whole thing closes
 are three separate questions, and only the middle one has been measured

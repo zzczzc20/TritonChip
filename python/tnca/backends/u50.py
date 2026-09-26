@@ -248,6 +248,14 @@ class U50Backend(Transport):
         # caller can test.
         self.bench = None
         self.dir = None
+        # And this one for the same reason, which was learned the hard way.
+        # `Transport._await` reaches for `self.log` when a wait runs out and
+        # `request()` when the medium is gone; neither is a board path, both
+        # are reachable from one, and an AttributeError raised there replaces
+        # a WAIT_TIMEOUT the caller could act on with a traceback it cannot.
+        # There is no log file on a board -- `log_tail` above already says
+        # so -- and None says it in a way a caller can test.
+        self.log = None
         self.epoch = epoch
         self.host_timeout = host_timeout
         self.deadline_cycles = deadline_cycles
@@ -287,6 +295,16 @@ class U50Backend(Transport):
                            'this device. Check the identity register '
                            'before anything else: every later symptom of '
                            'this looks like a protocol bug')
+            # The device's `served` is 64 bits wide and it resets when the
+            # bitstream does, not when this process starts. The rule the
+            # doorbell applies is `req_seq > served` (rtl/fpga/tnca_mmio.v's
+            # MS_IDLE), so a session that began numbering at one again would
+            # ring a bell the device is already past -- and a duplicate ring
+            # is dropped in silence, by design: no answer, no completion, no
+            # error. Adopting the watermark is what lets a second host
+            # process talk to a board the first one has already used, and it
+            # is why `served` is 64 bits and readable at all.
+            self.seq = self.link.read_reg(R_SERVED)
             # The window's byte enables belong to this session, not to
             # whatever the last one left them as.
             self.link.write_reg(R_HOST_BE, BE_ALL)
@@ -375,9 +393,10 @@ class U50Backend(Transport):
         the number did not move.
 
         Sequence zero means nothing has answered yet. No request carries
-        it, because `self.seq` starts at one, so "nothing yet" and "the
-        previous answer is still standing" are the same observation and
-        `_await` waits on both.
+        it -- `start()` adopts the device's `served` and `request()` steps
+        before it sends, so the first sequence of any session is at least
+        one -- so "nothing yet" and "the previous answer is still standing"
+        are the same observation and `_await` waits on both.
         """
         for _ in range(8):
             before = self.link.read_reg(R_RSP_SEQ)
@@ -535,25 +554,23 @@ IP_NAME = 'tnca_u50:tnca_u50_1'
 #: was refused -- which is the one thing worth hearing from XRT here.
 XCL_WARN = 2
 
-#: Where the loaded xclbin's UUID is inside the xclbin file, and how that is
-#: known.
-#:
-#: xclOpenContext wants "UUID of the xclbin image running on the device", and
-#: no getter for it exists: xclDeviceInfo2 has no uuid field and there is no
-#: XclbinId function (both checked in the headers rather than remembered).
-#: XRT's own accessor is xclbin_uuid() in experimental/xclbin_util.h -- and it
-#: is `static inline`, so it is not an exported symbol and ctypes cannot reach
-#: it. Its body is four lines: check the magic, then copy the header's m_uuid.
-#: This is those four lines.
-#:
-#: 336 is not read out of a struct definition. It is where the UUID that
-#: xclbinutil --info reports for a shipped .xclbin was actually found, by
-#: searching the file's first kilobyte for those sixteen bytes; they matched in
-#: straight order at 336, which is axlf.m_header at 304 plus m_uuid at 32. The
-#: magic check above it is the guard, so a file that is not an xclbin is
-#: refused rather than parsed at an offset that would then be meaningless.
+#: The magic every .xclbin starts with.
 XCLBIN_MAGIC = b'xclbin2'
-XCLBIN_UUID_OFFSET = 336
+
+#: How much of an .xclbin is searched for the loaded device's uuid.
+#:
+#: A search and not an offset, deliberately -- read `_loaded_xclbin_uuid`
+#: below for what assuming an offset cost the first time a board was loaded.
+#: The uuid sits inside the header, and the header is a few hundred bytes:
+#: 0x150 in the platform-shipped .xclbin the old constant was measured on,
+#: 0x1a0 in the one v++ built for this branch. Four kilobytes is a window
+#: that does not need revisiting when it moves again, and sixteen exact bytes
+#: do not turn up by accident, so a window wider than needed costs nothing.
+XCLBIN_UUID_SEARCH = 4096
+
+#: The drm render node that is XRT device index 0, and the file under it that
+#: holds the uuid of the image the device is running.
+_DRM_RENDER_BASE = 128
 
 #: libxrt_core.so, loaded once. Module state and not a class attribute,
 #: because it is one library for the process and a second copy would be a
@@ -561,19 +578,82 @@ XCLBIN_UUID_OFFSET = 336
 _LIB = None
 
 
-def _xclbin_uuid(path):
-    """The sixteen bytes xclOpenContext wants, read out of the file."""
+def _loaded_xclbin_uuid(index):
+    """The sixteen bytes the device says it is running.
+
+    Not read out of the .xclbin file, and that is a correction rather than a
+    preference.
+
+    The uuid used to be read from the file at a fixed offset, 336, which had
+    been found by searching a platform-shipped .xclbin for the bytes
+    xclbinutil reported. That number is not a property of the format. The
+    header v++ writes puts m_uniqueId eighty bytes further along, so on the
+    first .xclbin this branch ever loaded the read returned sixteen zero
+    bytes; xclOpenContext rejected them with "Invalid argument", and XRT
+    threw across the C boundary, aborting the process before any of `open`'s
+    error handling could run. The failure looked like the board refusing and
+    was a constant that happened to fit one file.
+
+    The kernel has known the answer since the image was loaded:
+    /sys/class/drm/renderD<N>/device/xclbinuuid is the uuid of the image
+    running on that device. It needs no knowledge of any header layout, and
+    it cannot disagree with the device, because it is the device's own
+    answer -- which is the whole of what xclOpenContext is asking about.
+
+    N is 128 + index, the drm convention XRT's index follows. On this machine
+    renderD128 is the U50's user function 0000:01:00.1; renderD129 is an
+    NVIDIA card, which is not an XRT device at all. The lookup fails closed,
+    so a card whose render node is numbered differently stops here with a
+    named reason instead of opening a context against the wrong uuid.
+    """
+    node = (f'/sys/class/drm/renderD{_DRM_RENDER_BASE + index}'
+            '/device/xclbinuuid')
+    try:
+        with open(node) as fh:
+            text = fh.read().strip()
+    except OSError as exc:
+        raise DependencyFailed(
+            f'could not read the loaded image uuid from {node}',
+            detail={'node': node, 'index': index, 'errno': exc.errno,
+                    'xrt': _xrt_version()},
+            remedy='xclOpenContext takes the uuid of the image running on '
+                   'the device, and this is where the kernel publishes it. '
+                   f'If the render node for this device is not renderD'
+                   f'{_DRM_RENDER_BASE + index}, this is the wrong node and '
+                   'the fix is the right index, not another way of reading '
+                   'it') from exc
+
+    raw = text.replace('-', '')
+    if len(raw) != 32:
+        raise DependencyFailed(
+            f'{node} does not hold a uuid (found {text!r})',
+            detail={'node': node, 'value': text, 'xrt': _xrt_version()},
+            remedy='that device has no image loaded, so there is no uuid for '
+                   'a context to be opened against. Load one first: '
+                   'flow/fpga/program.sh, which is a deliberate step and '
+                   'says so')
+    return bytes.fromhex(raw)
+
+
+def _file_carries_uuid(path, uuid):
+    """Whether the named .xclbin claims the identity the device is running.
+
+    A membership test rather than a lookup: the sixteen bytes have to appear
+    in the header, and where in it they appear is not asked. That is the
+    question worth asking here anyway -- pointing the link at a file other
+    than the loaded image is the mistake the uuid was in this function to
+    catch, and this catches it without betting on a layout.
+    """
     with open(path, 'rb') as fh:
-        head = fh.read(XCLBIN_UUID_OFFSET + 16)
+        head = fh.read(XCLBIN_UUID_SEARCH)
     if head[:7] != XCLBIN_MAGIC:
         raise DependencyFailed(
             f'{path} does not start with "xclbin2"',
             detail={'path': path, 'found': repr(head[:8]),
                     'xrt': _xrt_version()},
-            remedy='xclOpenContext takes the UUID of the xclbin loaded on '
-                   'the device, and the only place that UUID can be read '
-                   'from is the file itself. This is not one')
-    return head[XCLBIN_UUID_OFFSET:XCLBIN_UUID_OFFSET + 16]
+            remedy='it is not an .xclbin, so it is not the image the device '
+                   'is running')
+    return uuid in head
 
 
 def _xrt_library():
@@ -678,11 +758,11 @@ class _XRTRegisters:
     xclOpenContext()" -- and a register read without one is a read whose
     failure would have nothing to do with the device.
 
-    The UUID that context needs is why `xclbin` is not optional either. Read
-    the four lines in `_xclbin_uuid` above for why it can only come from the
-    file, and note what that asserts: the file named here is the image loaded
-    on the board. If it is not, xclOpenContext refuses -- which is the loud
-    version of that mistake and not a quiet one.
+    The UUID that context needs comes from the device and not from the file
+    -- `_loaded_xclbin_uuid` below has the correction and the board that
+    forced it. `xclbin` is still not optional, for a different reason now: it
+    is what lets this link check that the file it was pointed at is the image
+    the device is running, instead of a design nobody measured.
 
     WHY THERE ARE TWO 32-BIT ACCESSES PER 64-BIT REGISTER
 
@@ -729,18 +809,34 @@ class _XRTRegisters:
 
     # ---- lifetime ---------------------------------------------------------
     def open(self):
+        # The uuid the context needs is the device's own answer, so this no
+        # longer depends on knowing where it sits in a file. What the file is
+        # still good for is the question below it.
+        uuid = _loaded_xclbin_uuid(self.index)
+
         if not self.xclbin:
             raise DependencyFailed(
                 'the board link was not told which .xclbin is loaded',
                 detail={'medium': self._what, 'xclbin': self.xclbin},
-                remedy='xclOpenContext takes the UUID of the image running '
-                       'on the device, and XRT hands that UUID out nowhere '
-                       '-- not from xclDeviceInfo2 and not from any getter. '
-                       'It is read out of the file, so the file has to be '
-                       'named: XDMALink(xclbin=<path>), or open the backend '
+                remedy='the uuid itself now comes from the device, so this is '
+                       'not about reaching it -- it is about checking that '
+                       'the file named here is the image the device is '
+                       'running, which cannot be done without being named '
+                       'one. XDMALink(xclbin=<path>), or open the backend '
                        'with xclbin= that path')
 
-        uuid = _xclbin_uuid(self.xclbin)
+        if not _file_carries_uuid(self.xclbin, uuid):
+            raise DependencyFailed(
+                f'{self.xclbin} is not the image the device is running',
+                detail={'xclbin': self.xclbin, 'medium': self._what,
+                        'xrt': _xrt_version()},
+                remedy='that file does not carry the uuid of the loaded '
+                       'image, so driving the device through it would be '
+                       'driving a design nobody measured. Either load it, or '
+                       'name the one that is loaded -- '
+                       '/sys/class/drm/renderD*/device/xclbinuuid is what the '
+                       'device says it is running')
+
         lib = _xrt_library()
 
         handle = lib.xclOpen(self.index, None, XCL_WARN)

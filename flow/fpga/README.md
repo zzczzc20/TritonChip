@@ -107,8 +107,11 @@ ERROR: [VPL 101-2] design did not meet timing - hold violation
 domain had **+6.494 ns of slack and nothing failing in it**. Of the 173, 131 are
 not reachable by editing RTL at all -- 97 of them are a zero-logic, 0.722 ns path
 that a −3.884 ns skew between two clock objects the platform never relates fails
-on its own. The remainder all miss a single 3.333 ns period by under two
-nanoseconds. `u50/reports/phase3_link_report.md` is the full attribution.
+on its own. The 131 sit in three groups -- the platform's clock identity
+(97), the platform's own interior (1), and a routing outcome (33) whose worst
+path spends 0.237 ns of its 4.854 in logic -- and the rest miss a single
+3.333 ns period by under two nanoseconds. The 173 is de-duplicated: an endpoint
+can appear in more than one clock pair, and the per-pair rows sum to 206.
 
 That is the whole reason the bus is at 150 MHz now: doubling the period reaches
 every one of those paths at once, and dividing by four instead of eight keeps the

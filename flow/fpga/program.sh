@@ -88,8 +88,9 @@
 # keeps the other half honest. Configuring the shell is what brings the
 # HBM up, so check_thermal_after_load runs after a load that reported
 # success, before this script will say OK, and accepts nothing but a real
-# reading. A card whose HBM is still absent after an image was written did
-# not configure, whatever the loader's exit status said.
+# reading -- and waits for one, because the sensor does not come up off
+# the loader's exit status. A card whose HBM is still absent when that
+# wait runs out did not configure, whatever the loader's exit status said.
 #
 # WHAT IT DOES NOT DO
 #
@@ -314,34 +315,57 @@ inactive (it says '${state:-<nothing>}')"
 # with an image already in the region, which is a worse place to be than
 # stopping before one, and it is exactly why the exception above is not
 # allowed to widen.
+#
+# It waits for the reading, and that is not politeness. Measured on this
+# card: read once at the instant the loader exited, the sensor returned 0
+# and sysfs called it inactive; eighteen seconds later the same two reads
+# said 70 C and active. So a check that reads once reports the ordinary
+# start of a healthy HBM as a failed configuration -- which is the mistake
+# this whole gate exists to correct, made in the other direction: a state
+# that has not settled yet, taken for a settled one. The two errors are
+# the same error, so the exception is not allowed to widen here either,
+# and the waiting is what keeps that from being a false alarm.
+#
+# Waiting does not weaken it: an HBM that is genuinely not up is still not
+# up when the budget runs out, and a real reading above the stop threshold
+# still ends the run on the spot rather than after a delay.
 #------------------------------------------------------------------------------
 check_thermal_after_load() {
+    local budget=${HBM_SETTLE_S:-60} waited=0 hbm
     say
-    say "HBM, after the load"
-    if ! "$XRT/xbutil" examine -d "$BDF" -r thermal --batch > "$WORK/thermal2" 2>&1; then
-        say "  [FAIL] the thermal report is unreadable after the load"
-        return 1
-    fi
-    hbm=$(awk '/^[[:space:]]*FPGA HBM[[:space:]]+:/{print $(NF-1); exit}' "$WORK/thermal2")
-    case "$hbm" in
-        ''|*[!0-9]*|0)
-            say "  [FAIL] HBM temperature is '${hbm:-<absent>}' after the load,"
-            say "         and sysfs says the sensor is $(hbm_sensor_state)."
-            say "         Before the load an absent reading was accepted because"
-            say "         there was nothing to measure. After it, absent means"
-            say "         the image did not bring the HBM up -- the loader's"
-            say "         exit status is not the whole answer. Do not run a"
-            say "         kernel on this card until that is explained."
-            return 1
-            ;;
-    esac
-    if [ "$hbm" -ge "$TMAX_HBM" ]; then
-        say "  [FAIL] HBM ${hbm} C is at or above $TMAX_HBM"
-        return 1
-    fi
-    say "  [ ok ] HBM ${hbm} C, under $TMAX_HBM -- the sensor is reading,"
-    say "         which is what the load was supposed to make happen."
-    return 0
+    say "HBM, after the load (up to ${budget}s for the sensor to appear)"
+    while :; do
+        hbm=''
+        if "$XRT/xbutil" examine -d "$BDF" -r thermal --batch \
+               > "$WORK/thermal2" 2>&1; then
+            hbm=$(awk '/^[[:space:]]*FPGA HBM[[:space:]]+:/{print $(NF-1); exit}' \
+                  "$WORK/thermal2")
+        fi
+        case "$hbm" in
+            ''|*[!0-9]*|0) ;;                  # not up yet, and not a verdict
+            *)
+                if [ "$hbm" -ge "$TMAX_HBM" ]; then
+                    say "  [FAIL] HBM ${hbm} C is at or above $TMAX_HBM"
+                    return 1
+                fi
+                say "  [ ok ] HBM ${hbm} C, under $TMAX_HBM -- the sensor is"
+                say "         reading, which is what the load was supposed to"
+                say "         make happen. It appeared after ${waited}s."
+                return 0
+                ;;
+        esac
+        [ "$waited" -ge "$budget" ] && break
+        sleep 2
+        waited=$((waited + 2))
+    done
+    say "  [FAIL] HBM temperature is '${hbm:-<absent>}' ${waited}s after the"
+    say "         load, and sysfs says the sensor is $(hbm_sensor_state)."
+    say "         Before the load an absent reading was accepted because"
+    say "         there was nothing to measure. After it, absent means"
+    say "         the image did not bring the HBM up -- the loader's"
+    say "         exit status is not the whole answer. Do not run a"
+    say "         kernel on this card until that is explained."
+    return 1
 }
 
 #------------------------------------------------------------------------------

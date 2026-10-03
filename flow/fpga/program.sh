@@ -53,10 +53,43 @@
 #      client pid all have to be empty.
 #   5. Nobody else is programming. A second `xbutil program` racing this one
 #      is the one way to corrupt a load that would otherwise have been fine.
-#   6. Temperature is under the stop thresholds.
+#   6. Temperature is under the stop thresholds -- with one named exception
+#      for a card that has just come out of a management reset and says so
+#      through sysfs. See THE HBM THAT IS NOT THERE YET below.
 #
 # Gate 5 reads /proc, so if /proc is mounted with hidepid it sees only this
 # user's processes; kdsstat's client pid is the backstop for the rest.
+#
+#------------------------------------------------------------------------------
+# THE HBM THAT IS NOT THERE YET
+#
+# A management reset leaves the card in a state that is legal and that this
+# script used to refuse. No shell is configured, so nothing is loaded,
+# nothing is running, and no HBM is powered -- and `xbutil examine -r
+# thermal` answers accordingly, with no `FPGA HBM` row at all, or with a 0
+# in it. Gate 6 read either of those as "the temperature could not be read"
+# and refused to load, which made the state a card is in immediately
+# before a load the one state it would not load from.
+#
+# 0 is also what a threshold test passes by arithmetic, since 0 < 80. A
+# reading of 0 was therefore two wrong answers wearing one face: a reason
+# to stop, and a reason to carry on. Neither is right, because neither is
+# a measurement.
+#
+# So the gate reads an absent, non-numeric or zero HBM reading as "no
+# measurement", and then asks sysfs which of the two it means. The driver
+# publishes the board's temperatures under the device's hwmon, each
+# labelled -- `HBM TEMP` among them -- and a sensor that is not powered
+# reads 0 there with its label intact. That is the card saying the HBM is
+# not up, which is not the same as this script failing to read it, and
+# only the second is a reason to stop.
+#
+# The exception does not survive the load, and that is the half of it that
+# keeps the other half honest. Configuring the shell is what brings the
+# HBM up, so check_thermal_after_load runs after a load that reported
+# success, before this script will say OK, and accepts nothing but a real
+# reading. A card whose HBM is still absent after an image was written did
+# not configure, whatever the loader's exit status said.
 #
 # WHAT IT DOES NOT DO
 #
@@ -177,6 +210,48 @@ check_no_other_programmer() {
 }
 
 #------------------------------------------------------------------------------
+# The board's temperatures in sysfs.
+#
+# The driver publishes one hwmon under the device, and the temperatures are
+# `tempN_input` in millidegrees, each named by the `tempN_label` beside it.
+# The NUMBER is not stable -- HBM is temp10 on this machine and nothing
+# promises it stays there -- so a reading is identified by its label and
+# never by its index. A driver that renames a sensor then produces "not
+# found" rather than a temperature silently read off the wrong one.
+#------------------------------------------------------------------------------
+hwmon_dir() {
+    local d
+    for d in "$SYS"/hwmon/hwmon*; do
+        [ -d "$d" ] && { printf '%s\n' "$d"; return 0; }
+    done
+    return 1
+}
+
+temp_millideg() {
+    local d l
+    d=$(hwmon_dir) || return 1
+    for l in "$d"/temp*_label; do
+        [ -f "$l" ] || continue
+        [ "$(cat "$l" 2>/dev/null)" = "$1" ] || continue
+        cat "${l%_label}_input" 2>/dev/null
+        return 0
+    done
+    return 1
+}
+
+# `active <millidegrees>`, `inactive`, or `unknown` -- and the three are
+# kept apart because only the middle one is permission to carry on.
+hbm_sensor_state() {
+    local v
+    v=$(temp_millideg 'HBM TEMP') || { printf 'unknown'; return; }
+    case "$v" in
+        ''|*[!0-9]*) printf 'unknown' ;;
+        0)           printf 'inactive' ;;
+        *)           printf 'active %s' "$v" ;;
+    esac
+}
+
+#------------------------------------------------------------------------------
 # Gate 6: temperature.
 #------------------------------------------------------------------------------
 check_thermal() {
@@ -191,14 +266,82 @@ check_thermal() {
     fpga=$(awk '/^[[:space:]]*FPGA[[:space:]]+:/     {print $(NF-1); exit}' "$WORK/thermal")
     hbm=$( awk '/^[[:space:]]*FPGA HBM[[:space:]]+:/{print $(NF-1); exit}' "$WORK/thermal")
 
-    if [ -z "$fpga" ] || [ -z "$hbm" ]; then
-        bad "could not read FPGA/HBM temperature out of the report"
-        return
-    fi
+    # The FPGA is in the shell and is powered the moment the card is, so
+    # its reading has to be there and has to be a number. Nothing here is
+    # allowed to be assumed.
+    case "$fpga" in
+        ''|*[!0-9]*) bad "no FPGA temperature in the report (got '${fpga:-<nothing>}')"
+                     return ;;
+    esac
     [ "$fpga" -lt "$TMAX_FPGA" ] && ok "FPGA ${fpga} C, under $TMAX_FPGA" \
                                  || bad "FPGA ${fpga} C is at or above $TMAX_FPGA"
-    [ "$hbm"  -lt "$TMAX_HBM"  ] && ok "HBM ${hbm} C, under $TMAX_HBM" \
-                                 || bad "HBM ${hbm} C is at or above $TMAX_HBM"
+
+    # HBM is not always powered, and the difference is the whole of this
+    # gate. Absent, unparseable and 0 all mean "no measurement"; which of
+    # those it is, and what it means, is asked of sysfs rather than guessed
+    # from the report. See THE HBM THAT IS NOT THERE YET above.
+    case "$hbm" in
+        ''|*[!0-9]*|0) hbm='' ;;
+    esac
+    if [ -n "$hbm" ]; then
+        [ "$hbm" -lt "$TMAX_HBM" ] && ok "HBM ${hbm} C, under $TMAX_HBM" \
+                                   || bad "HBM ${hbm} C is at or above $TMAX_HBM"
+        return
+    fi
+
+    state=$(hbm_sensor_state)
+    if [ "$state" = "inactive" ]; then
+        ok "HBM has no reading, and sysfs says the sensor is inactive"
+        say "         (the labelled 'HBM TEMP' under $SYS/hwmon"
+        say "          reads 0: no shell is configured, so no HBM is"
+        say "          powered. This is the state a card is in out of a"
+        say "          management reset, and it is a load that ends it --"
+        say "          check_thermal_after_load is what holds that.)"
+    else
+        bad "HBM has no reading and sysfs does not say the sensor is \
+inactive (it says '${state:-<nothing>}')"
+    fi
+}
+
+#------------------------------------------------------------------------------
+# The same reading again, after the load, with the exception reversed.
+#
+# This is not a second opinion about the same question. The gate above
+# deferred a judgement because the HBM was not powered yet, and writing an
+# .xclbin is the act that powers it, so the question it deferred is
+# answered here -- and a card that still cannot report an HBM temperature
+# after an image was written did not configure. That is a reason to stop
+# with an image already in the region, which is a worse place to be than
+# stopping before one, and it is exactly why the exception above is not
+# allowed to widen.
+#------------------------------------------------------------------------------
+check_thermal_after_load() {
+    say
+    say "HBM, after the load"
+    if ! "$XRT/xbutil" examine -d "$BDF" -r thermal --batch > "$WORK/thermal2" 2>&1; then
+        say "  [FAIL] the thermal report is unreadable after the load"
+        return 1
+    fi
+    hbm=$(awk '/^[[:space:]]*FPGA HBM[[:space:]]+:/{print $(NF-1); exit}' "$WORK/thermal2")
+    case "$hbm" in
+        ''|*[!0-9]*|0)
+            say "  [FAIL] HBM temperature is '${hbm:-<absent>}' after the load,"
+            say "         and sysfs says the sensor is $(hbm_sensor_state)."
+            say "         Before the load an absent reading was accepted because"
+            say "         there was nothing to measure. After it, absent means"
+            say "         the image did not bring the HBM up -- the loader's"
+            say "         exit status is not the whole answer. Do not run a"
+            say "         kernel on this card until that is explained."
+            return 1
+            ;;
+    esac
+    if [ "$hbm" -ge "$TMAX_HBM" ]; then
+        say "  [FAIL] HBM ${hbm} C is at or above $TMAX_HBM"
+        return 1
+    fi
+    say "  [ ok ] HBM ${hbm} C, under $TMAX_HBM -- the sensor is reading,"
+    say "         which is what the load was supposed to make happen."
+    return 0
 }
 
 #------------------------------------------------------------------------------
@@ -253,14 +396,28 @@ EOF
 
     if grep -q '^EXIT=0' "$LOG" 2>/dev/null; then
         after=$(tr -d '[:space:]' < "$SYS/xclbinuuid" 2>/dev/null || echo '<none>')
-        say
-        say "program.sh: OK -- device now reports xclbin $after"
         if [ "$after" != "$(field 'UUID (xclbin)' < "$WORK/info" | tr -d '[:space:]')" ]; then
-            say "         but that is not the UUID of the file that was loaded."
-            say "         That should not happen, and it means the card is not"
-            say "         running what this script just wrote."
+            say
+            say "program.sh: the loader reported success, and the device reports"
+            say "         xclbin $after -- which is not the UUID of the file that"
+            say "         was loaded. That should not happen, and it means the"
+            say "         card is not running what this script just wrote."
             exit 4
         fi
+        # The other half of gate 6, and the reason its exception was safe to
+        # make. Run before OK rather than after it, so that OK means both
+        # checks passed and not only that the loader exited zero.
+        if ! check_thermal_after_load; then
+            say
+            say "program.sh: the image is loaded -- the device reports $after --"
+            say "         but the check that has to follow a load did not pass."
+            say "         The region is written and there is nothing left this"
+            say "         script can safely do to it. Leave the card alone and"
+            say "         do not start a run on it."
+            exit 5
+        fi
+        say
+        say "program.sh: OK -- device now reports xclbin $after"
         say "         loading is done; running a kernel on it is a separate step."
         exit 0
     fi
@@ -287,6 +444,9 @@ do_status() {
     say "thermal"
     "$XRT/xbutil" examine -d "$BDF" -r thermal --batch 2>&1 \
         | sed -n '/Thermals/,$p' | sed 's/^/  /'
+    # The reading behind gate 6's one exception, said out loud here because
+    # a report with no `FPGA HBM` row is the question this answers.
+    say "  hbm sensor in sysfs: $(hbm_sensor_state)"
     if [ -n "${1:-}" ] && [ -f "$1" ]; then
         say
         say "last program.log at $1"

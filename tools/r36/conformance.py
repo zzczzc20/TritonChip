@@ -27,6 +27,27 @@ carry on against the stand-in. That is "it did not run", said out loud.
 It is not a pass for that backend and the summary does not count it as
 one, because nothing about how it carries a kernel was established.
 
+That third answer is honest, and on its own it is also a hole -- the one
+two options below close. "Not measurable here" is a sentence in a log,
+and a log is not a gate: a run that never touched a board can be filed
+beside one that did and read the same way, because the verdict line and
+the JSON both said PASS either way. The distinction was recorded and
+nothing acted on it.
+
+    --xclbin PATH       the image the card is running, handed to the
+                        bindings that ask for it. A board has to be told
+                        this -- it is in no profile and no artifact -- so
+                        without the option a card binding cannot be
+                        opened, and the board could not be measured by
+                        this suite on any machine, including one with the
+                        card in it.
+
+    --require-measured  a backend that was not measured FAILS the run
+                        rather than being recorded as N/A. This is the
+                        option that turns the distinction into a verdict,
+                        and it is the one to use wherever the result will
+                        be read as evidence that hardware was tested.
+
 Every case records two things beside its verdict: the protocol exchange
 it caused, taken from the transport's own sequence counter and status
 codes, and the oracle it checked against. A case with neither is an
@@ -328,7 +349,7 @@ CASES = [
 ]
 
 
-def run_backend(name, info, log):
+def run_backend(name, info, log, xclbin=None):
     """Every case against one backend, or the refusal that stands in."""
     from tnca import backend, device
     from tnca.errors import DependencyFailed, TncaError
@@ -361,9 +382,18 @@ def run_backend(name, info, log):
     # is not a machine without a card, and it must not be waved past.
     try:
         device.prepare(PROFILE, verbose=False)
+        # A board has to be told which image it is running, and that fact is
+        # in no profile and no artifact. Handed only to a binding that
+        # declares `needs_hardware`, because that declaration is the
+        # registry's own statement of which bindings are cards -- a
+        # simulator would take the keyword as an unknown argument and fail
+        # for a reason that has nothing to do with what was being tested.
+        kw = {}
+        if xclbin and backend.needs_hardware(name):
+            kw['xclbin'] = xclbin
         dev = backend.open_backend(name,
                                    bench=device.expected_path(PROFILE),
-                                   deadline_cycles=200_000)
+                                   deadline_cycles=200_000, **kw)
         dev.start()
     except DependencyFailed as e:
         if not backend.needs_hardware(name):
@@ -458,8 +488,25 @@ def main():
     ap.add_argument('--backends', nargs='*')
     ap.add_argument('--check-programs', action='store_true',
                     help='re-assemble the built-in programs and compare')
+    ap.add_argument('--xclbin', metavar='PATH',
+                    help='the .xclbin the board is running. Handed to the '
+                         'bindings that declare they need hardware; without '
+                         'it such a binding cannot be opened, so a card in '
+                         'the machine still cannot be measured')
+    ap.add_argument('--require-measured', action='store_true',
+                    help='a backend that could not be measured on this '
+                         'machine FAILS the run instead of being recorded '
+                         'as N/A. Use it wherever the result will be read '
+                         'as evidence that hardware was tested')
     ap.add_argument('--json')
     args = ap.parse_args()
+    # Said here rather than three frames down, so that a typo in a path is
+    # a typo in a path and not a board that could not be reached. The two
+    # are reported the same way otherwise, and only one of them is the
+    # machine's fault.
+    if args.xclbin and not os.path.isfile(args.xclbin):
+        print(f"  --xclbin {args.xclbin}: no such file")
+        return 2
     from tnca import backend
     import r1lib as R
 
@@ -486,7 +533,8 @@ def main():
             ok = False
             continue
         log = []
-        good, record = run_backend(name, info[name], log)
+        good, record = run_backend(name, info[name], log,
+                                   xclbin=args.xclbin)
         for line in log:
             print(line, flush=True)
         out[name] = {'state': info[name]['state'], 'passed': good,
@@ -514,13 +562,28 @@ def main():
               "kernel was established. Not a failure either: their "
               "hardware is not here, and a suite that called that a "
               "failure could never run anywhere that has none")
+        if args.require_measured:
+            # The exception above is a default, not a principle, and this
+            # is the caller saying which one it was. A run whose whole
+            # purpose was to touch the hardware does not get to finish by
+            # reporting that it did not.
+            ok = False
+            print("    --require-measured: the standing excuse is withdrawn "
+                  "and the run FAILS:")
+            for n, _why in unmeasured:
+                print(f"      {n}: required to be measured, and was not")
+            print("    Nothing about those backends was established here. "
+                  "This is not hardware verification and must not be "
+                  "filed as any.")
     if args.json:
         R.write_json(args.json, [{
             'id': 'R36-TEST-01', 'passed': bool(ok),
             'detail': f"{len(names)} backend(s), {len(CASES)} case(s) "
                       f"in {len(set(c.group for c in CASES))} group(s)"
                       + (f", {len(unmeasured)} not measurable here"
-                         if unmeasured else ''),
+                         if unmeasured else '')
+                      + (", measurement was required"
+                         if args.require_measured else ''),
             'backends': out}])
     print(f"  conformance            {'PASS' if ok else 'FAIL':<6s} "
           f"{len(names) - len(unmeasured)} of {len(names)} backend(s) "

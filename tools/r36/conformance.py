@@ -40,7 +40,10 @@ nothing acted on it.
                         without the option a card binding cannot be
                         opened, and the board could not be measured by
                         this suite on any machine, including one with the
-                        card in it.
+                        card in it. A run that was given one records it
+                        beside its verdict, because a hardware result that
+                        does not name its image can be neither reproduced
+                        nor checked against the card afterwards.
 
     --require-measured  a backend that was not measured FAILS the run
                         rather than being recorded as N/A. This is the
@@ -407,6 +410,18 @@ def run_backend(name, info, log, xclbin=None):
         return True, {'refused': True, 'code': getattr(e, 'code', None),
                       'not_applicable': str(e).splitlines()[0][:120]}
     ok, record = True, {}
+    if kw.get('xclbin'):
+        # A verdict about hardware is a verdict about an image, and a result
+        # that does not name the image cannot be checked against the card
+        # later or reproduced anywhere. Recorded here rather than in main()
+        # because here is where it is true: the link opened, which means it
+        # checked this file against the uuid the device reports, and every
+        # case below was measured through that check. A run that never
+        # opened the board records no image, which is not the same as
+        # recording one it did not use.
+        record['xclbin'] = kw['xclbin']
+        log.append(f"    {name}: driving the image at {kw['xclbin']}, whose "
+                   f"uuid is the one the device reports")
     try:
         for case in CASES:
             lines = []

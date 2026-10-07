@@ -258,6 +258,29 @@ hbm_sensor_state() {
 #------------------------------------------------------------------------------
 # Gate 6: temperature.
 #------------------------------------------------------------------------------
+# reading <label> <report>: the number on the row of an `xbutil examine -r
+# thermal` report whose label is exactly <label>, or nothing. XRT lays that
+# report out two ways, and both have been read off a card:
+#
+#   FPGA                  : 45 C        "label : value C" (the U50 host)
+#
+#   Temperature    Celcius              a table (the U280 host, XRT 2.16)
+#   FPGA           32
+#   FPGA HBM       27
+#
+# The label has to match whole -- "FPGA" is not the "FPGA HBM" row -- and the
+# rest of the row has to be a number and nothing else, so a row this does not
+# understand gives nothing, which every caller treats as "not a reading".
+reading() {
+    awk -v want="$1" '
+        { row = $0; sub(/^[[:space:]]+/, "", row) }
+        index(row, want) == 1 {
+            rest = substr(row, length(want) + 1)
+            if (rest !~ /^[[:space:]]+(:[[:space:]]*)?[0-9]+([[:space:]]*C)?[[:space:]]*$/) next
+            gsub(/[^0-9]/, "", rest); print rest; exit
+        }' "$2"
+}
+
 check_thermal() {
     say
     say "thermal"
@@ -267,8 +290,8 @@ check_thermal() {
     fi
     sed -n '/Thermals/,$p' "$WORK/thermal" | sed 's/^/  /'
 
-    fpga=$(awk '/^[[:space:]]*FPGA[[:space:]]+:/     {print $(NF-1); exit}' "$WORK/thermal")
-    hbm=$( awk '/^[[:space:]]*FPGA HBM[[:space:]]+:/{print $(NF-1); exit}' "$WORK/thermal")
+    fpga=$(reading 'FPGA' "$WORK/thermal")
+    hbm=$(reading 'FPGA HBM' "$WORK/thermal")
 
     # The FPGA is in the shell and is powered the moment the card is, so
     # its reading has to be there and has to be a number. Nothing here is
@@ -341,8 +364,7 @@ check_thermal_after_load() {
         hbm=''
         if "$XRT/xbutil" examine -d "$BDF" -r thermal --batch \
                > "$WORK/thermal2" 2>&1; then
-            hbm=$(awk '/^[[:space:]]*FPGA HBM[[:space:]]+:/{print $(NF-1); exit}' \
-                  "$WORK/thermal2")
+            hbm=$(reading 'FPGA HBM' "$WORK/thermal2")
         fi
         case "$hbm" in
             ''|*[!0-9]*|0) ;;                  # not up yet, and not a verdict

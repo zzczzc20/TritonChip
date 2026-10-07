@@ -45,8 +45,20 @@ def _vector(imp, src, typ):
 
 
 def _publish(imp, dst, value, shape, elem):
-    """Give a non-64-bit result to the rest of the importer in its form."""
+    """Give a non-64-bit result to the rest of the importer in its form.
+
+    A one-element 2-D result is made lane-uniform, as every one-column row
+    in the importer is (see the 2-D gather in frontend._op_tt_load):
+    tt.broadcast stretches such a row by naming it, not by copying lane 0.
+    """
     from .tiles import Tile
+    b = imp.b
+    if shape == (1, 1):
+        if value.kind == 'pred':
+            lane = b.vextract(b.vselect(value, b.vmovi(1), b.vmovi(0)), 0)
+            value = b.vcmp('ne', b.splat(lane), b.vmovi(0))
+        else:
+            value = b.splat(b.vextract(value, 0), dtype=elem)
     if isinstance(shape, tuple):
         if elem == 'i1':
             imp._tiles[dst.id()] = Tile('lazy', lambda r, v=value: v, 1, shape[1], 'i1')
@@ -160,7 +172,10 @@ def lower(imp, op):
         arithmetic = [x for x in body if x.get_name() not in ('tt.reduce.return','tt.scan.return')]
         if len(arithmetic) != 1 or arithmetic[0].get_name() != 'arith.addi':
             raise Unsupported('64-bit tensor reduction/scan requires integer addition')
-        n, _ = _parse_type(str(operands[0].get_type()))
+        sdims, _ = _parse_type(str(operands[0].get_type()))
+        n = _count(sdims, vlen)
+        if n is None or (isinstance(sdims, tuple) and op.get_int_attr('axis') != 1):
+            raise Unsupported(f'a 64-bit {name} over a {sdims} block')
         accum = b.const(0)
         lo, hi = b.vmovi(0), b.vmovi(0)
         for i in range(n):
@@ -170,6 +185,10 @@ def lower(imp, op):
                 b.vinsert(hi, i, b.sbini('lshr', accum, 32))
         if name == 'tt.scan':
             imp._wide[dst.id()] = (lo, hi)
+        elif count is not None:
+            # A one-row block reduced along its row is a one-element block,
+            # held like any other 64-bit block.
+            output(lambda i: accum, count)
         else:
             imp._v[dst.id()] = accum
     else:

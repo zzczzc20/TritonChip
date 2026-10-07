@@ -100,11 +100,15 @@ tnca.runtime.Session → RTL（core-sim / core-xpose-v1）   ← 已有
 | **2‑D 布尔 splat 被当作下标项**：`idx_q < BATCH` 并入 store mask 后整块被屏蔽，bmm 与 attention 的结果从未写出 | 2‑D i1 splat 成为谓词 tile（潜在缺陷，所有带标量条件 mask 的 2‑D store 都受影响） |
 | 循环携带的 i1 tile 没有存储 | 以 0/1 字携带，读出时比较 |
 | tile 的 `tt.bitcast`（Inductor `select_one`） | 同宽重解释，行不变 |
+| **`[1, 1]` 值沿行广播未展开**：每个 program 只 load 一次的标志/下标只在 lane 0，`tt.broadcast` 到 `[1, 16]` 直接复用该寄存器，`tl.where(flag, x, 0)` 只保留 16 个元素中的 1 个 | 广播时把 lane 0 splat 到整行（谓词同样处理）。只对 `[1, 1]` 源：由 2‑D 下标得到的 `[R, 1]` 本来每 lane 都有值，放宽到它会无谓改变 45 个 R3.7 产物；非均匀的 `[R, 1]`（R > 1）仍未处理 |
+| **布尔 tile 的 select 把谓词寄存器当向量数据**：Inductor 每个 `any` 里的 `acc = tl.where(m, acc \| x, acc)` 读到的是同号向量寄存器 | 布尔 select 用谓词与/或组合 |
+| 布尔转数值（`uitofp`/`sitofp`，`mask.float()`）把谓词寄存器交给 `v.cvt` | 先转成每 lane 的 0/1（有符号为 −1） |
+| 单行块上的 64 位求和（`mask.sum()`） | `wide.py` 的归约接受 `(1, n)` |
 
 **运行时/插件**：后端由环境选择（`TNCA_BACKEND`、`TNCA_BACKEND_ARGS`），同一 torch 程序可跑在 `sim-file`、`fpga-u50-sim`、`fpga-u50`；`launch_log()` 记录每次 launch 的周期、program 数、counter、传输字节；`TNCA_HOST_TIMEOUT`；`TNCA_LAUNCH=skip` 只编译不运行；插件遵循 `TNCA_KERNEL_DUMP`（失败的 kernel 也写出各阶段），`tools/r38/ttir_lower.py` 在 Inductor 之外复现一次降低。
 
 **结果**：tiny + small 全部 52 点编译通过（`make archbench-coverage`），零 host 回退；tiny 档在 RTL 上的数值结果见 `doc/r38_stage1_status.md`。经板卡寄存器协议（`fpga-u50-sim`，与板卡同一个 `U50Backend`、同一个 `tnca_fpga_top`）的周期与同 profile 的仿真 bench 逐点相同。
 
-仍未解决：单查询（decode，M = 1）的 attention 数值错误，正在定位（`op.attention_decode`、`model.llama_decode`）。
+单查询（decode，M = 1）的 attention 此前数值错误，原因是上表最后三类布尔缺陷（SDPA 分解中“该行是否有有限分数”的标志）；修正后的验证见状态文档。
 
 仍未覆盖：块宽 > 16 的张量、多行块上的 int64 运算、small 档的模型在 RTL 上的完整仿真（单次数小时到数十小时，留给板卡）、张量常驻设备（P2）。

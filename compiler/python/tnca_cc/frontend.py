@@ -3215,12 +3215,26 @@ class TTIRImporter:
 
     # ---- conversions ------------------------------------------------------
     def _convert(self, op, src, dst):
+        # A mask converted to a number is 0 or 1 -- -1 for a signed
+        # conversion of i1 -- in each lane first: a predicate register has
+        # no lanes for v.cvt to read (`(x != y).to(tl.float32)`).
+        _, operand = _parse_type(str(op.get_operand(0).get_type()))
+        true = -1 if src.startswith('s') else 1
+
+        def lanes(v):
+            if operand != 'i1':
+                return v
+            if v.kind == SCALAR:
+                v = self.b.splat(v)
+            if v.kind == VECTOR:
+                v = self.b.vcmp('ne', v, self.b.vmovi(0))
+            return self.b.vselect(v, self.b.vmovi(true), self.b.vmovi(0))
         if self._is_2d(op):
-            self._tile_binary(op, lambda xs, e: self.b.vcvt(src, dst, xs[0]))
+            self._tile_binary(op, lambda xs, e: self.b.vcvt(src, dst, lanes(xs[0])))
             return
         _, elem, _bcast = self._float_shape(op)
-        self._v[op.get_result(0).id()] = self.b.vcvt(
-            src, dst, self._vec(op.get_operand(0), src))
+        v = self._value(op.get_operand(0)) if operand == 'i1' else self._vec(op.get_operand(0), src)
+        self._v[op.get_result(0).id()] = self.b.vcvt(src, dst, lanes(v))
 
     def _op_arith_truncf(self, op):
         self._float_convert(op)
@@ -3297,8 +3311,14 @@ class TTIRImporter:
                 return
             raise Unsupported('a per-lane select between pointers')
         if self._is_2d(op):
-            self._tile_binary(op, lambda xs, e: self.b.vselect(
-                xs[0], xs[1], xs[2]))
+            # A select of masks combines predicates. v.select moves vector
+            # registers, and handed two predicate registers as its data it
+            # read the vector registers that share their numbers --
+            # Inductor's `acc = tl.where(m, acc | x, acc)` in every `any`.
+            self._tile_binary(op, lambda xs, e: (
+                self.b.pbin('or', self.b.pbin('and', xs[0], xs[1]),
+                            self.b.pbin('and', self.b.pun('not', xs[0]), xs[2]))
+                if e == 'i1' else self.b.vselect(xs[0], xs[1], xs[2])))
             return
         shape, elem, _bcast = self._float_shape(op)
         if elem == 'i1':
@@ -3562,11 +3582,25 @@ class TTIRImporter:
                 other = (self._const.get(op.get_operand(2).id(), 0)
                          if op.get_num_operands() > 2 else 0)
                 size = _load_suffix(_SIZE_SUFFIX[self._ELEM_BYTES[elem]], elem)
+
+                def row(r):
+                    v = self.b.gather(base, get_index(r),
+                                      mask=self._shape_mask(shape2d[1], get_mask(r)),
+                                      other=other, dtype=elem, size=size)
+                    if shape2d == (1, 1):
+                        # One element: it lands in lane 0 only, but a
+                        # `[1, 1]` that tt.broadcast stretches along the row
+                        # is used by naming its register, so every lane must
+                        # hold it. Inductor's one-row reductions load a flag
+                        # or an id this way once per program; without the
+                        # splat `tl.where(flag, x, 0)` kept one element of
+                        # sixteen. (`[R, 1]` loads with R > 1 are left as
+                        # they were: R3.7 consumes them correctly as they
+                        # are, and changing them changed its artifacts.)
+                        v = self.b.splat(self.b.vextract(v, 0, dtype=elem), dtype=elem)
+                    return v
                 self._tiles[op.get_result(0).id()] = self._materialise(
-                    lambda r: self.b.gather(base, get_index(r),
-                        mask=self._shape_mask(shape2d[1], get_mask(r)),
-                        other=other, dtype=elem, size=size),
-                    shape2d[0], shape2d[1], elem)
+                    row, shape2d[0], shape2d[1], elem)
                 return
             if elem not in self._TRANSFERABLE:
                 self._tiles[op.get_result(0).id()] = self._load_tile_rows(

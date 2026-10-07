@@ -37,8 +37,11 @@ def main():
     ap.add_argument('--profile', default='core-sim')
     ap.add_argument('--levels', nargs='+', type=int, default=[0, 1, 2])
     ap.add_argument('--ref-dir', type=Path, action='append', default=[])
+    ap.add_argument('--only', nargs='+', help='case names (development; not the acceptance run)')
     args = ap.parse_args()
     cases = H.cases()
+    if args.only:
+        cases = {n: c for n, c in cases.items() if n in args.only}
     diffs, checked = [], 0
     with tempfile.TemporaryDirectory() as tmp:
         for level in args.levels:

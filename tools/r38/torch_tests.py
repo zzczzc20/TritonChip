@@ -116,6 +116,32 @@ def g_cumsum(x):
     return torch.cumsum(x, dim=-1)               # a one-row scan, a tile bitcast
 
 
+def g_any_finite(x):
+    return (x != float('-inf')).any(dim=-1)      # a loop-carried mask selected with masks
+
+
+def g_where_flag(y, flag):
+    return torch.where(flag[:, None], y, torch.zeros_like(y)).sum(dim=-1)   # a [1, 1] flag stretched
+
+
+def g_mask_float_max(x):
+    return (x > 0).float().amax(dim=-1)          # a mask converted to a number
+
+
+def g_mask_count(x):
+    return (x != float('-inf')).sum(dim=-1)      # an int64 sum over a one-row block
+
+
+def g_sdpa_decode(q, k, v):                      # one query against a cache: all of the above
+    return torch.nn.functional.scaled_dot_product_attention(q, k, v)
+
+
+def make_masked_rows():
+    x = torch.randn(2, 16)
+    x[1, :] = float('-inf')
+    return (x,)
+
+
 def make_embedding():
     g = torch.Generator().manual_seed(0)
     return (torch.randperm(256, generator=g)[:16], torch.randn(256, 16))
@@ -139,6 +165,12 @@ GRAPHS = {
     'argmax_fp16': (g_argmax, lambda: (torch.randn(2, 64).half(),), 0.0, True),
     'gemv': (g_gemv, lambda: (torch.randn(1, 64).half(), torch.randn(64, 16).half()), 2 ** -8, True),
     'cumsum': (g_cumsum, lambda: (torch.randn(4, 32),), 2 ** -16, True),
+    'any_finite': (g_any_finite, make_masked_rows, 0.0, True),
+    'where_flag': (g_where_flag, lambda: (torch.randn(2, 16), torch.tensor([True, False])), 2 ** -18, True),
+    'mask_float_max': (g_mask_float_max, make_masked_rows, 0.0, True),
+    'mask_count': (g_mask_count, make_masked_rows, 0.0, True),
+    'sdpa_decode': (g_sdpa_decode, lambda: (torch.randn(1, 2, 1, 16).half(), torch.randn(1, 2, 16, 16).half(),
+                                            torch.randn(1, 2, 16, 16).half()), 2 ** -7, True),
     'fallback_detected': (g_fallback_detected, lambda: (torch.randn(3, 8),), 0.0, False),
 }
 
@@ -170,6 +202,8 @@ def run(name):
     want = fn(*[t.clone() for t in inputs])
     compiled = torch.compile(fn)
     got, code = run_and_get_code(compiled, *inputs)
+    if want.dtype == torch.bool:                 # compared as 0/1: bool has no subtraction
+        want, got = want.float(), got.float()
     nan_want, nan_got = torch.isnan(want), torch.isnan(got)
     nan_ok = bool((nan_want == nan_got).all())
     finite = ~nan_want

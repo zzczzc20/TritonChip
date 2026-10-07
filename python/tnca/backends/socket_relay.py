@@ -101,6 +101,34 @@ class SocketBackend(Backend):
 
     # -- lifetime -----------------------------------------------------------
     def start(self):
+        """Connect, or fail having left nothing behind.
+
+        A `start` that raises has still created things: it spawned a relay
+        and opened a socket. The caller cannot be asked to clean up -- it
+        has no started object to hand back to `stop`, which is what a
+        failed `start` means -- so the reaping belongs here.
+
+        It did not happen, and R36's own BE-03 is the case that found it.
+        That case raises the protocol version to force a mismatch, `start`
+        refuses at the handshake exactly as it should, and the relay it
+        had just spawned was left with no client at all. A relay in that
+        state waits for a client that is never coming, holding a device
+        that goes on running. Every gate run added one more.
+
+        Cleanup is best effort. The failure worth reporting is the
+        original one; raising from in here would replace it with a
+        symptom of it.
+        """
+        try:
+            return self._start()
+        except BaseException:
+            try:
+                self.stop()
+            except Exception:                              # noqa: BLE001
+                pass
+            raise
+
+    def _start(self):
         os.makedirs(self.dir, exist_ok=True)
         if self._address is None:
             self._relay = subprocess.Popen(

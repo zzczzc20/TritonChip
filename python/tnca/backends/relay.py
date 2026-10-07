@@ -125,6 +125,9 @@ def main(argv=None):
     ap.add_argument('--image')
     ap.add_argument('--epoch', type=int, default=0)
     ap.add_argument('--port', type=int, default=0)
+    # Bounds how long this process may outlive its client. Zero disables
+    # it, which is only correct for a relay somebody else supervises.
+    ap.add_argument('--idle-timeout', type=float, default=120.0)
     args = ap.parse_args(argv)
 
     from tnca import transport as T
@@ -159,9 +162,38 @@ def main(argv=None):
         except (ValueError, OSError):
             pass
 
+    # A relay must not outlive its client by more than this.
+    #
+    # `accept` used to block forever. A client that died between starting
+    # this process and connecting to it -- killed, or crashed on the way
+    # -- left the relay waiting for a client that was never coming, with
+    # the device it owns still running and still costing CPU for nobody.
+    # Ten of those were found reparented to init on one machine, each
+    # with its simulator still spinning. `SocketBackend.start` reaps on
+    # its own failure now, which covers the ordinary way in; this covers
+    # the one where the client never got to run any cleanup at all.
+    #
+    # A client that is genuinely coming arrives in milliseconds: it
+    # connects as soon as it has read the line printed above.
+    if args.idle_timeout > 0:
+        srv.settimeout(args.idle_timeout)
+
     try:
         while True:
-            conn, _addr = srv.accept()
+            try:
+                conn, _addr = srv.accept()
+            except socket.timeout:
+                # Nobody came, or whoever was here never said goodbye.
+                # Either way there is no session to serve.
+                print(f"no client for {args.idle_timeout:g}s: stopping the "
+                      f"device and exiting", file=sys.stderr, flush=True)
+                break
+            # Said rather than relied on: a socket accepted from a
+            # listener that has a timeout still comes back blocking, and
+            # `serve` has to block -- it is waiting on a client that is
+            # thinking, not on an idle moment. A timeout inherited from
+            # the listener would cut off a long launch instead.
+            conn.settimeout(None)
             conn.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
             try:
                 said_bye = serve(conn, dev, args.epoch)

@@ -664,7 +664,13 @@ module tnca_tensor #(
                     else begin
                         t_unit     <= t_unit + 1'b1;
                         t_row      <= 32'd0;
-                        r_row_base <= r_base0;
+                        // Guarded like its write in S_TSET2: without the
+                        // feature r_base0 has no driver, and an unguarded
+                        // read here is an undriven net in that engine
+                        // (yosys `check`, R36-FPGA-02) even though no
+                        // command can reach this state.
+                        if (HAS_XPOSE != 0)
+                            r_row_base <= r_base0;
                         st         <= S_XRUN;
                     end
                 end else

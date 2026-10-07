@@ -73,7 +73,13 @@ RTL_GEN    := $(wildcard $(RTL)/gen/*.v)
 # single .vh in its prerequisites, so editing either left a stale simulator in
 # place and the next run "verified" RTL that no longer existed (audit F04).
 RTL_VH     := $(wildcard $(RTL)/common/*.vh) $(wildcard $(RTL)/noc/*.vh)
-RTL_ALL    := $(RTL_COMMON) $(RTL_CORE) $(RTL_GEN) $(RTL_NUCA) $(RTL_NOC) $(RTL_TILE)
+# The board wrapper, which has a top of its own. Nothing else here would find
+# it: tools/r36/export.py walks the module graph out from tnca_shell, and
+# tnca_fpga_top sits above that rather than below it, so it is neither in the
+# manifest nor reached by any wildcard above. Three files were written under
+# rtl/fpga before anyone noticed that not one of them had ever been compiled.
+RTL_FPGA   := $(wildcard $(RTL)/fpga/*.v)
+RTL_ALL    := $(RTL_COMMON) $(RTL_CORE) $(RTL_GEN) $(RTL_NUCA) $(RTL_NOC) $(RTL_TILE) $(RTL_FPGA)
 
 # What any bench built with `-y` library search can pull in. Over-approximate
 # on purpose: a missing edge is a stale artefact presented as a test result,
@@ -125,9 +131,13 @@ FP_PARAMS_tb_top        := profile=system-2x2
 FP_PARAMS_tb_mesh       := profile=system-2x2 npkt=$(MESH_PKTS)
 FP_PARAMS_tb_nuca_slice := profile=system-2x2
 
-# Every RTL directory, for library search and include paths.
+# Every RTL directory, for library search and include paths. `-y $(RTL)` is
+# here for rtl/tnca_shell.v: the benches pass it by name, but `lint` compiles
+# one file at a time and rtl/fpga/tnca_fpga_top.v instantiates it, so without
+# this the fpga wrapper lints as a missing-module error.
 RTLY       := -y $(RTL)/common -y $(RTL)/core -y $(RTL)/gen -y $(RTL)/nuca \
-              -y $(RTL)/noc -y $(RTL)/tile -I $(RTL)/noc
+              -y $(RTL)/noc -y $(RTL)/tile -y $(RTL)/fpga -y $(RTL) \
+              -I $(RTL)/noc
 
 # Number of random FMA vectors in the default regression. The deep sweep used
 # during bring-up is `make fma-deep`.
@@ -751,7 +761,7 @@ clean:
         r2-package r2-stage-data \
         r3-scout r3-plan r3-model-tests \
         r36-check-plan r36-backend-tests r36-config-tests \
-        r36-export r36-rtl-tests r36-mem-tests r36-conformance \
+        r36-export r36-rtl-tests r36-fpga-tests r36-mem-tests r36-conformance \
         r36-fidelity r36-mutation-tests r36-regression \
         r36-io-tests r36-build r36-build-tests \
         r36-handoff-tests r36-acceptance r36-verify-evidence \
@@ -1090,6 +1100,17 @@ r36-export: | dirs
 
 r36-rtl-tests: | dirs
 	@$(PYTHON) tools/r36/rtl_tests.py --json $(BUILD)/r36_rtl_tests.json
+
+# The board wrapper, which the export walk cannot reach: rtl/fpga sits
+# ABOVE tnca_shell rather than below it, so r36-rtl-tests never saw it
+# and neither did `make lint` until RTL_FPGA was added. Elaboration, then
+# `proc; check -assert`, then memory inference, each module elaborated at
+# the root. That last detail is not a style choice: `hierarchy` renames a
+# parameterised module, so a `select` on the original matches nothing and
+# exits zero, and a gate written that way reports the same thing whether
+# or not it ran. The script's header says more.
+r36-fpga-tests: | dirs
+	@$(PYTHON) tools/r36/fpga_tests.py --json $(BUILD)/r36_fpga_tests.json
 
 # Two memories behind one boundary, and reset with a kernel in flight.
 # Fourteen elaborations and fourteen runs, so it is not a per-push check.

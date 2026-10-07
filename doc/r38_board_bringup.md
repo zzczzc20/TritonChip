@@ -1,6 +1,6 @@
 # R38：上板实验准备与执行清单（U50）
 
-版本 0.2，2026-10-07。状态：**U280 镜像构建中**（acf3019，见 §4）。
+版本 0.3，2026-10-07。状态：**U280 镜像已构建并收敛时序，尚未加载**（acf3019，见 §4；加载需负责人同意）。
 上位：[Stage 1](r38_stage1_tasks_and_acceptance.md) §5“进入 Stage 2 的交接物”；板卡流程与既有实测：[flow/fpga/README.md](../flow/fpga/README.md)；测量协议：[archbench/PROTOCOL.md](../archbench/PROTOCOL.md)。
 
 ## 0. 现状：板上镜像落后于 r38 RTL
@@ -97,6 +97,15 @@ TNCA_BOARD=u280 flow/fpga/program.sh --go    <build>/tnca_u280.xclbin      # 见
 python -m archbench.run --platform tnca --backend fpga-u280 --profile core-vrf-sync-v1 \
     --backend-args '{"xclbin": "<build>/tnca_u280.xclbin"}' --tier tiny small --counters --out results/u280.jsonl
 ```
+
+**构建记录**（`<build>` = `~/tnca_build/u280`，RTL 与本分支 HEAD 相同）：
+
+| 次 | 放置 | 结果 |
+|---|---|---|
+| 1 | 交给布局器 | kernel 跨 SLR0/SLR1；ap_clk WNS −1.919 ns，32 个端点，全是 AXI-Lite 适配器里的一条路径（`w_have` → `shadow_lo[*]/CE`：一级 LUT、8.2 ns 走线、一次 SLR0→SLR1 跨越）。失败 |
+| 2 | `--connectivity.slr tnca_u50_1:SLR1`（`boards.sh`） | synth 44 分钟，impl 3 小时 13 分钟。routed 全设计 WNS +0.016 ns、0 个失败端点；kernel clock 域 WNS +4.229 ns。`.xclbin` 读回 DATA_CLK = 150 MHz，器件时钟 37.5 MHz。`tnca_u280.xclbin` sha256 `f8717adc…a77a52bec` |
+
+第 2 次 v++ 退出 0，但 `link.sh` 当时报失败（退出 3）：它的检查 1 匹配任何 `AUTO-FREQ-SCALING` 规则，而这次打印的是 `AUTO-FREQ-SCALING-08`。这条 advisory 的意思是时序有余量、频率保持原值（“will select the original specified frequency of 150.0 MHz”）。检查 1 现在只放过 08，其余规则 ID（包括以后版本新增的）仍判失败。`LINK_RECHECK=1` 可以对已完成的链接重跑检查而不重跑 v++；该构建复检结果为 `link.sh: OK`。
 
 **共用规则**：这块卡上加载着别人的镜像（2026-10-07 为一个 HBM 带宽测试，CU 空闲），主机上也有其他人的 Vivado 任务。`program.sh --go` 会替换别人的镜像，所以每次加载前确认没有进程占用该设备，并经负责人同意；构建（package/link）不碰卡，`VPP_JOBS` 限制并行度。
 

@@ -159,8 +159,30 @@ class Backend(abc.ABC):
 _REGISTRY = {}
 
 
-def register(name, factory, *, state=INTERFACE_DEFINED, what=''):
-    """Make a backend openable by name."""
+def register(name, factory, *, state=INTERFACE_DEFINED, what='',
+             needs_elaborator=True, needs_hardware=False):
+    """Make a backend openable by name.
+
+    `needs_elaborator` says whether opening this backend means reading the
+    profile's own simulator build. True for everything that drives a
+    compiled artifact of the profile; False for a device reached some
+    other way. A board over PCIe has no simulator build to read, and
+    asking for one on its behalf is what made
+    `Session(backend='fpga-u50')` raise "no simulator for profile ..." on
+    precisely the machine that had the board and not the simulator.
+
+    `needs_hardware` says whether opening it means a physical device
+    being present. It is not the same claim as `needs_elaborator` and
+    neither implies the other: the simulator bindings need no hardware
+    but do read a build, and a board needs the hardware and reads
+    nothing. It is here because a reference-available binding is
+    otherwise held to "runnable wherever this is installed", and the
+    conformance suite enforces that by opening every one of them. A
+    board cannot meet that, and the suite had no way to be told so.
+
+    The defaults are the ones a backend had before these existed, so a
+    binding that says nothing about either keeps the behaviour it had.
+    """
     if state not in STATES:
         raise ValueError(f"{state!r} is not one of {STATES}")
     if state == PLATFORM_VERIFIED:
@@ -168,13 +190,41 @@ def register(name, factory, *, state=INTERFACE_DEFINED, what=''):
             "platform-verified is reserved: nothing in this repository "
             "has run on a real platform, and section 3.2 keeps "
             "engineering-ready and platform-verified apart")
-    _REGISTRY[name] = {'factory': factory, 'state': state, 'what': what}
+    _REGISTRY[name] = {'factory': factory, 'state': state, 'what': what,
+                       'needs_elaborator': bool(needs_elaborator),
+                       'needs_hardware': bool(needs_hardware)}
 
 
 def available():
     """Every registered backend and its state."""
     return {n: {'state': e['state'], 'what': e['what']}
             for n, e in sorted(_REGISTRY.items())}
+
+
+def needs_elaborator(name):
+    """Whether opening `name` means reading the profile's simulator.
+
+    An unknown name answers True, and deliberately. The caller is about to
+    be told the name is unknown, and it should hear that from
+    `open_backend`, which says so plainly, rather than from
+    `device.require`, which would say there is no simulator and send
+    somebody looking for the wrong problem.
+    """
+    entry = _REGISTRY.get(name)
+    return True if entry is None else entry['needs_elaborator']
+
+
+def needs_hardware(name):
+    """Whether opening `name` means a physical device being present.
+
+    An unknown name answers False, the opposite of `needs_elaborator`
+    above, and for the same kind of reason: a caller about to be told
+    the name is unknown should not also be told its hardware is
+    missing. False says no more than "this is not a reason to excuse
+    it", which leaves `open_backend` to give the plain answer.
+    """
+    entry = _REGISTRY.get(name)
+    return False if entry is None else entry['needs_hardware']
 
 
 def open_backend(name, **kwargs):
@@ -243,6 +293,32 @@ def _register_builtin():
              what='the same RTL, reached over a TCP socket through a '
                   'relay process: a different connection medium for the '
                   'same implementation')
+    # The U50 platform binding, in two parts that share one backend.
+    #
+    # `fpga-u50` is the board: rtl/fpga/tnca_fpga_top.v over its register
+    # port, through an XDMALink. `fpga-u50-sim` is the same backend, the
+    # same protocol and the same RTL, with a simulator standing in for the
+    # board -- section 3.4's "a protocol loop to it", which is what makes
+    # the board binding reference-available rather than platform-verified.
+    #
+    # Both are lazy for the usual reason: u50_sim imports a simulator and
+    # u50 imports XRT, and neither should cost anything until it is asked
+    # for. `fpga-prototype` above is untouched and stays interface-defined
+    # -- that is the name whose contract is "declared and not implemented",
+    # and giving it an implementation is the thing the state is there to
+    # prevent.
+    register('fpga-u50', _lazy('tnca.backends.u50', 'board'),
+             state=REFERENCE_AVAILABLE, needs_elaborator=False,
+             needs_hardware=True,
+             what='the TNCA device on an Alveo U50: rtl/fpga/tnca_fpga_top.v '
+                  'reached over its register port. The host side is proven '
+                  'against the RTL; the board link is not, and opening this '
+                  'with no board raises rather than substituting the '
+                  'stand-in')
+    register('fpga-u50-sim', _lazy('tnca.backends.u50_sim', 'stand_in'),
+             state=REFERENCE_AVAILABLE, needs_elaborator=False,
+             what='the same device and the same register protocol, on real '
+                  'RTL, driven by a simulator standing in for the board')
     register('fpga-prototype', None, state=INTERFACE_DEFINED,
              what='a future board. The interface is defined and nothing '
                   'implements it; opening it is an error, not a '

@@ -143,6 +143,13 @@ def be01(log):
             'the relay process of the sim-socket backend',
         'python/tnca/backends/socket_relay.py':
             'the sim-socket backend',
+        'python/tnca/backends/u50_sim.py':
+            'the fpga-u50-sim backend: a simulator standing in for the '
+            'board, driving the same register port on the same RTL. Its '
+            'partner python/tnca/backends/u50.py is NOT on this list and '
+            'must not be: that is the file that runs on the board, and a '
+            'board binding that named a simulator would be a binding '
+            'whose tested path and shipped path had come apart',
     }
     scanned, found = 0, {}
     for sub in (('python', 'tnca'), ('compiler', 'python')):

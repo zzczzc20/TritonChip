@@ -1,0 +1,512 @@
+#!/bin/bash
+#==============================================================================
+# Put tnca_u50.xclbin onto the U50.
+#
+#   flow/fpga/program.sh --check <xclbin>   # run every gate, change nothing
+#   flow/fpga/program.sh --go    <xclbin>   # program the device
+#   flow/fpga/program.sh --status [<xclbin>]# what is loaded, how the last
+#                                           # program.sh run went
+#
+# package_xo.tcl and link.sh each end in a file. This one does not. It is the
+# only thing in flow/fpga/ that changes hardware state: it writes a bitstream
+# into the device's reconfigurable region, replacing whatever was there.
+#
+#------------------------------------------------------------------------------
+# THE HALF-CONFIGURED STATE
+#
+# The kernel driver streams the second-stage bitstream into the ICAP. That
+# stream is one long write -- no transaction around it, no rollback. If
+# whatever is feeding it stops part-way, the region is left holding part of a
+# bitstream. Nothing on this side repairs that: the card stays that way until
+# `xbutil reset` (whose own help text calls it a "Hot reset") or a reboot.
+# This script runs neither, and says so rather than implying it can recover.
+#
+# So it does not pretend to make the write atomic. It does the two things that
+# are actually available:
+#
+#   1. It refuses to start unless the conditions for a first-try success hold.
+#   2. It detaches the loader from the shell that started it.
+#
+# (2) is not hypothetical. ssh to this host has been reset mid-session, twice
+# in one afternoon, with no warning, under the load of other people's Vivado
+# runs. `ssh host xbutil program ...` shares that fate and dies at whatever
+# byte the stream had reached -- which is exactly the failure this is about.
+# `setsid` puts the loader in its own session with all three std fds pointed
+# away from the terminal, so nothing this shell does can reach it.
+#
+#------------------------------------------------------------------------------
+# THE GATES
+#
+# All of them closed: an answer that cannot be read is a failure, not a pass.
+# Each is a thing that, if wrong, turns a two-second load into a card that has
+# to be reset.
+#
+#   1. The file parses. xclbinutil reads it end to end. An .xclbin truncated
+#      by a full disk or an interrupted copy is caught here, before the device
+#      is opened, instead of being streamed until it runs out.
+#   2. The interface UUID is the shell's. The .xclbin and the live device each
+#      carry one, and they have to be the same string. The driver checks this
+#      itself; this script does not rely on where in the driver's sequence
+#      that check happens, so it compares the two itself first.
+#   3. The platform is the one this was built for.
+#   4. Nobody is using the device. kdsstat's contexts, outstanding execs and
+#      client pid all have to be empty.
+#   5. Nobody else is programming. A second `xbutil program` racing this one
+#      is the one way to corrupt a load that would otherwise have been fine.
+#   6. Temperature is under the stop thresholds -- with one named exception
+#      for a card that has just come out of a management reset and says so
+#      through sysfs. See THE HBM THAT IS NOT THERE YET below.
+#
+# Gate 5 reads /proc, so if /proc is mounted with hidepid it sees only this
+# user's processes; kdsstat's client pid is the backstop for the rest.
+#
+#------------------------------------------------------------------------------
+# THE HBM THAT IS NOT THERE YET
+#
+# A management reset leaves the card in a state that is legal and that this
+# script used to refuse. No shell is configured, so nothing is loaded,
+# nothing is running, and no HBM is powered -- and `xbutil examine -r
+# thermal` answers accordingly, with no `FPGA HBM` row at all, or with a 0
+# in it. Gate 6 read either of those as "the temperature could not be read"
+# and refused to load, which made the state a card is in immediately
+# before a load the one state it would not load from.
+#
+# 0 is also what a threshold test passes by arithmetic, since 0 < 80. A
+# reading of 0 was therefore two wrong answers wearing one face: a reason
+# to stop, and a reason to carry on. Neither is right, because neither is
+# a measurement.
+#
+# So the gate reads an absent, non-numeric or zero HBM reading as "no
+# measurement", and then asks sysfs which of the two it means. The driver
+# publishes the board's temperatures under the device's hwmon, each
+# labelled -- `HBM TEMP` among them -- and a sensor that is not powered
+# reads 0 there with its label intact. That is the card saying the HBM is
+# not up, which is not the same as this script failing to read it, and
+# only the second is a reason to stop.
+#
+# The exception does not survive the load, and that is the half of it that
+# keeps the other half honest. Configuring the shell is what brings the
+# HBM up, so check_thermal_after_load runs after a load that reported
+# success, before this script will say OK, and accepts nothing but a real
+# reading -- and waits for one, because the sensor does not come up off
+# the loader's exit status. A card whose HBM is still absent when that
+# wait runs out did not configure, whatever the loader's exit status said.
+#
+# WHAT IT DOES NOT DO
+#
+# No reset, no reconfigure, no repair, no flash. Not `xbmgmt` in any form, not
+# `xbutil reset`, and not `xbutil validate` -- that last one loads the
+# platform's own validate xclbins, which would replace whatever is on the card
+# just as surely as this script does, only without saying so.
+#==============================================================================
+
+set -u
+
+XRT=${XRT_BIN:-/opt/xilinx/xrt/bin}
+BDF=${BDF:-0000:01:00.1}
+SYS=/sys/bus/pci/devices/$BDF
+
+# The shell this build targets, and the interface UUID that shell and the
+# .xclbin both carry. If the live UUID is not this string, the platform was
+# swapped underneath the build and nothing downstream of here is valid.
+EXPECT_VBNV=xilinx_u50_gen3x16_xdma_5_202210_1
+EXPECT_IINTF=16e2362f82d2feab35529da27134b76d
+
+# The stop thresholds. Same numbers as the standing thermal protocol: do not
+# add load above these, and stop if a running load crosses them.
+TMAX_FPGA=85
+TMAX_HBM=80
+
+WORK=$(mktemp -d)
+trap 'rm -rf "$WORK"' EXIT
+
+say() { printf '%s\n' "$*"; }
+die() { printf 'program.sh: %s\n' "$*" >&2; exit 2; }
+field() { sed -n "s/^[[:space:]]*$1[[:space:]]*:[[:space:]]*//p" | head -1; }
+
+FAIL=0
+ok()  { printf '  [ ok ] %s\n' "$*"; }
+bad() { printf '  [FAIL] %s\n' "$*"; FAIL=1; }
+
+#------------------------------------------------------------------------------
+# Gate 1-3: the file.
+#------------------------------------------------------------------------------
+check_xclbin() {
+    say "the .xclbin"
+    [ -f "$XCLBIN" ] || { bad "no such file: $XCLBIN"; return; }
+    say "  file   $XCLBIN"
+    say "  size   $(stat -c%s "$XCLBIN") bytes"
+    say "  sha256 $(sha256sum "$XCLBIN" | awk '{print $1}')"
+
+    if ! xclbinutil --info --input "$XCLBIN" > "$WORK/info" 2> "$WORK/err"; then
+        bad "xclbinutil cannot read it -- truncated, or not an .xclbin"
+        sed 's/^/         /' "$WORK/err" | head -5
+        return
+    fi
+    ok "parses as an .xclbin"
+
+    got_vbnv=$(field 'Platform VBNV' < "$WORK/info" | tr -d '[:space:]')
+    if [ "$got_vbnv" = "$EXPECT_VBNV" ]; then
+        ok "platform VBNV $got_vbnv"
+    else
+        bad "platform VBNV is '${got_vbnv:-<unreadable>}', expected $EXPECT_VBNV"
+    fi
+
+    got_iintf=$(field 'UUID (IINTF)' < "$WORK/info" | tr -d '[:space:]')
+    if [ "$got_iintf" = "$EXPECT_IINTF" ]; then
+        ok "interface UUID matches the shell contract"
+    else
+        bad "interface UUID is '${got_iintf:-<unreadable>}', expected $EXPECT_IINTF"
+    fi
+
+    say "  xclbin UUID $(field 'UUID (xclbin)' < "$WORK/info" | tr -d '[:space:]')"
+}
+
+#------------------------------------------------------------------------------
+# Gate 2 (live side) and 4: the device.
+#------------------------------------------------------------------------------
+check_device() {
+    say
+    say "the device"
+    [ -d "$SYS" ] || { bad "no $SYS -- device not present"; return; }
+    ok "present at $BDF"
+
+    live=$(tr -d '[:space:]' < "$SYS/interface_uuids" 2>/dev/null)
+    if [ "$live" = "$EXPECT_IINTF" ]; then
+        ok "live shell interface UUID matches"
+    else
+        bad "live shell interface UUID is '${live:-<unreadable>}', expected $EXPECT_IINTF"
+    fi
+
+    ctx=$(field contexts          < "$SYS/kdsstat" 2>/dev/null)
+    outs=$(field 'outstanding execs' < "$SYS/kdsstat" 2>/dev/null)
+    cpid=$(field 'client pid'     < "$SYS/kdsstat" 2>/dev/null)
+    if [ "$ctx" = "0" ] && [ "$outs" = "0" ] && [ -z "$cpid" ]; then
+        ok "idle: contexts 0, outstanding 0, no client"
+    else
+        bad "in use: contexts=${ctx:-<unreadable>} outstanding=${outs:-<unreadable>} client=${cpid:-<unreadable>}"
+    fi
+
+    say "  loaded now $(tr -d '[:space:]' < "$SYS/xclbinuuid" 2>/dev/null || echo '<none>')"
+}
+
+#------------------------------------------------------------------------------
+# Gate 5: nobody else is programming.
+#
+# Matched on the whole command line, machine-wide. pgrep never matches itself,
+# and nothing in this script's own command line contains "xbutil", so it
+# cannot find us -- which is the failure mode that a pkill -f style check
+# walks into, by matching its own caller and killing it.
+#------------------------------------------------------------------------------
+check_no_other_programmer() {
+    say
+    say "other loaders"
+    hits=$(pgrep -a -f '(xbutil|xbmgmt).*program' 2>/dev/null || true)
+    if [ -z "$hits" ]; then
+        ok "no other program/load running"
+    else
+        bad "another load is running -- a second ICAP stream would corrupt this one:"
+        printf '%s\n' "$hits" | sed 's/^/         /'
+    fi
+}
+
+#------------------------------------------------------------------------------
+# The board's temperatures in sysfs.
+#
+# The driver publishes one hwmon under the device, and the temperatures are
+# `tempN_input` in millidegrees, each named by the `tempN_label` beside it.
+# The NUMBER is not stable -- HBM is temp10 on this machine and nothing
+# promises it stays there -- so a reading is identified by its label and
+# never by its index. A driver that renames a sensor then produces "not
+# found" rather than a temperature silently read off the wrong one.
+#------------------------------------------------------------------------------
+hwmon_dir() {
+    local d
+    for d in "$SYS"/hwmon/hwmon*; do
+        [ -d "$d" ] && { printf '%s\n' "$d"; return 0; }
+    done
+    return 1
+}
+
+temp_millideg() {
+    local d l
+    d=$(hwmon_dir) || return 1
+    for l in "$d"/temp*_label; do
+        [ -f "$l" ] || continue
+        [ "$(cat "$l" 2>/dev/null)" = "$1" ] || continue
+        cat "${l%_label}_input" 2>/dev/null
+        return 0
+    done
+    return 1
+}
+
+# `active <millidegrees>`, `inactive`, or `unknown` -- and the three are
+# kept apart because only the middle one is permission to carry on.
+hbm_sensor_state() {
+    local v
+    v=$(temp_millideg 'HBM TEMP') || { printf 'unknown'; return; }
+    case "$v" in
+        ''|*[!0-9]*) printf 'unknown' ;;
+        0)           printf 'inactive' ;;
+        *)           printf 'active %s' "$v" ;;
+    esac
+}
+
+#------------------------------------------------------------------------------
+# Gate 6: temperature.
+#------------------------------------------------------------------------------
+check_thermal() {
+    say
+    say "thermal"
+    if ! "$XRT/xbutil" examine -d "$BDF" -r thermal --batch > "$WORK/thermal" 2>&1; then
+        bad "thermal unreadable"
+        return
+    fi
+    sed -n '/Thermals/,$p' "$WORK/thermal" | sed 's/^/  /'
+
+    fpga=$(awk '/^[[:space:]]*FPGA[[:space:]]+:/     {print $(NF-1); exit}' "$WORK/thermal")
+    hbm=$( awk '/^[[:space:]]*FPGA HBM[[:space:]]+:/{print $(NF-1); exit}' "$WORK/thermal")
+
+    # The FPGA is in the shell and is powered the moment the card is, so
+    # its reading has to be there and has to be a number. Nothing here is
+    # allowed to be assumed.
+    case "$fpga" in
+        ''|*[!0-9]*) bad "no FPGA temperature in the report (got '${fpga:-<nothing>}')"
+                     return ;;
+    esac
+    [ "$fpga" -lt "$TMAX_FPGA" ] && ok "FPGA ${fpga} C, under $TMAX_FPGA" \
+                                 || bad "FPGA ${fpga} C is at or above $TMAX_FPGA"
+
+    # HBM is not always powered, and the difference is the whole of this
+    # gate. Absent, unparseable and 0 all mean "no measurement"; which of
+    # those it is, and what it means, is asked of sysfs rather than guessed
+    # from the report. See THE HBM THAT IS NOT THERE YET above.
+    case "$hbm" in
+        ''|*[!0-9]*|0) hbm='' ;;
+    esac
+    if [ -n "$hbm" ]; then
+        [ "$hbm" -lt "$TMAX_HBM" ] && ok "HBM ${hbm} C, under $TMAX_HBM" \
+                                   || bad "HBM ${hbm} C is at or above $TMAX_HBM"
+        return
+    fi
+
+    state=$(hbm_sensor_state)
+    if [ "$state" = "inactive" ]; then
+        ok "HBM has no reading, and sysfs says the sensor is inactive"
+        say "         (the labelled 'HBM TEMP' under $SYS/hwmon"
+        say "          reads 0: no shell is configured, so no HBM is"
+        say "          powered. This is the state a card is in out of a"
+        say "          management reset, and it is a load that ends it --"
+        say "          check_thermal_after_load is what holds that.)"
+    else
+        bad "HBM has no reading and sysfs does not say the sensor is \
+inactive (it says '${state:-<nothing>}')"
+    fi
+}
+
+#------------------------------------------------------------------------------
+# The same reading again, after the load, with the exception reversed.
+#
+# This is not a second opinion about the same question. The gate above
+# deferred a judgement because the HBM was not powered yet, and writing an
+# .xclbin is the act that powers it, so the question it deferred is
+# answered here -- and a card that still cannot report an HBM temperature
+# after an image was written did not configure. That is a reason to stop
+# with an image already in the region, which is a worse place to be than
+# stopping before one, and it is exactly why the exception above is not
+# allowed to widen.
+#
+# It waits for the reading, and that is not politeness. Measured on this
+# card: read once at the instant the loader exited, the sensor returned 0
+# and sysfs called it inactive; eighteen seconds later the same two reads
+# said 70 C and active. So a check that reads once reports the ordinary
+# start of a healthy HBM as a failed configuration -- which is the mistake
+# this whole gate exists to correct, made in the other direction: a state
+# that has not settled yet, taken for a settled one. The two errors are
+# the same error, so the exception is not allowed to widen here either,
+# and the waiting is what keeps that from being a false alarm.
+#
+# Waiting does not weaken it: an HBM that is genuinely not up is still not
+# up when the budget runs out, and a real reading above the stop threshold
+# still ends the run on the spot rather than after a delay.
+#------------------------------------------------------------------------------
+check_thermal_after_load() {
+    local budget=${HBM_SETTLE_S:-60} waited=0 hbm
+    say
+    say "HBM, after the load (up to ${budget}s for the sensor to appear)"
+    while :; do
+        hbm=''
+        if "$XRT/xbutil" examine -d "$BDF" -r thermal --batch \
+               > "$WORK/thermal2" 2>&1; then
+            hbm=$(awk '/^[[:space:]]*FPGA HBM[[:space:]]+:/{print $(NF-1); exit}' \
+                  "$WORK/thermal2")
+        fi
+        case "$hbm" in
+            ''|*[!0-9]*|0) ;;                  # not up yet, and not a verdict
+            *)
+                if [ "$hbm" -ge "$TMAX_HBM" ]; then
+                    say "  [FAIL] HBM ${hbm} C is at or above $TMAX_HBM"
+                    return 1
+                fi
+                say "  [ ok ] HBM ${hbm} C, under $TMAX_HBM -- the sensor is"
+                say "         reading, which is what the load was supposed to"
+                say "         make happen. It appeared after ${waited}s."
+                return 0
+                ;;
+        esac
+        [ "$waited" -ge "$budget" ] && break
+        sleep 2
+        waited=$((waited + 2))
+    done
+    say "  [FAIL] HBM temperature is '${hbm:-<absent>}' ${waited}s after the"
+    say "         load, and sysfs says the sensor is $(hbm_sensor_state)."
+    say "         Before the load an absent reading was accepted because"
+    say "         there was nothing to measure. After it, absent means"
+    say "         the image did not bring the HBM up -- the loader's"
+    say "         exit status is not the whole answer. Do not run a"
+    say "         kernel on this card until that is explained."
+    return 1
+}
+
+#------------------------------------------------------------------------------
+# The load itself.
+#
+# The inner runner is written to the build directory rather than typed inline
+# because setsid needs something to exec, and because it leaves behind the one
+# line that matters -- the loader's exit status -- in the same log as
+# everything else. The log is the record; nothing about the outcome depends on
+# this shell still being alive to read it.
+#------------------------------------------------------------------------------
+do_load() {
+    OUT=$(cd "$(dirname "$XCLBIN")" && pwd)
+    LOG=$OUT/program.log
+    RUN=$OUT/program.run
+
+    {
+        say "=== PROGRAM START $(date) ==="
+        say "BDF=$BDF"
+        say "XCLBIN=$XCLBIN"
+        say "SHA256=$(sha256sum "$XCLBIN" | awk '{print $1}')"
+        say "REPLACING=$(tr -d '[:space:]' < "$SYS/xclbinuuid" 2>/dev/null || echo '<none>')"
+        say "THERMAL=$(tr '\n' ' ' < "$WORK/thermal" | tr -s ' ')"
+        say "---"
+    } > "$LOG"
+
+    cat > "$RUN" <<EOF
+#!/bin/bash
+# Written by program.sh. Runs detached in its own session; the shell that
+# started program.sh cannot reach it, which is the point.
+"$XRT/xbutil" program -d "$BDF" -u "$XCLBIN" >> "$LOG" 2>&1
+echo "EXIT=\$? $(date)" >> "$LOG"
+EOF
+    chmod +x "$RUN"
+
+    setsid "$RUN" < /dev/null > /dev/null 2>&1 &
+    say
+    say "loader detached (setsid, own session, fds off the terminal)"
+    say "  log  $LOG"
+    say "  it will survive this shell dying, which is not a hypothetical here."
+
+    say "waiting for it to finish (up to 180s)..."
+    for _ in $(seq 1 180); do
+        grep -q '^EXIT=' "$LOG" 2>/dev/null && break
+        sleep 1
+    done
+
+    say
+    say "--- $LOG ---"
+    sed 's/^/  /' "$LOG"
+    say "------------"
+
+    if grep -q '^EXIT=0' "$LOG" 2>/dev/null; then
+        after=$(tr -d '[:space:]' < "$SYS/xclbinuuid" 2>/dev/null || echo '<none>')
+        if [ "$after" != "$(field 'UUID (xclbin)' < "$WORK/info" | tr -d '[:space:]')" ]; then
+            say
+            say "program.sh: the loader reported success, and the device reports"
+            say "         xclbin $after -- which is not the UUID of the file that"
+            say "         was loaded. That should not happen, and it means the"
+            say "         card is not running what this script just wrote."
+            exit 4
+        fi
+        # The other half of gate 6, and the reason its exception was safe to
+        # make. Run before OK rather than after it, so that OK means both
+        # checks passed and not only that the loader exited zero.
+        if ! check_thermal_after_load; then
+            say
+            say "program.sh: the image is loaded -- the device reports $after --"
+            say "         but the check that has to follow a load did not pass."
+            say "         The region is written and there is nothing left this"
+            say "         script can safely do to it. Leave the card alone and"
+            say "         do not start a run on it."
+            exit 5
+        fi
+        say
+        say "program.sh: OK -- device now reports xclbin $after"
+        say "         loading is done; running a kernel on it is a separate step."
+        exit 0
+    fi
+
+    say
+    say "program.sh: the load did NOT report success. Before touching it again:"
+    say "  - read $LOG"
+    say "  - dmesg | grep -i icap   (the driver logs the download there)"
+    say "  - if the region is half-configured the card needs \`xbutil reset -t"
+    say "    user\` (a hot reset) or a reboot. This script does not run either,"
+    say "    and cannot: one is a hot reset and the other needs root. Stop and"
+    say "    get a decision rather than retrying into a worse state."
+    exit 3
+}
+
+#------------------------------------------------------------------------------
+do_status() {
+    say "device   $BDF"
+    say "loaded   $(tr -d '[:space:]' < "$SYS/xclbinuuid" 2>/dev/null || echo '<none>')"
+    say
+    say "kdsstat"
+    sed 's/^/  /' "$SYS/kdsstat" 2>/dev/null
+    say
+    say "thermal"
+    "$XRT/xbutil" examine -d "$BDF" -r thermal --batch 2>&1 \
+        | sed -n '/Thermals/,$p' | sed 's/^/  /'
+    # The reading behind gate 6's one exception, said out loud here because
+    # a report with no `FPGA HBM` row is the question this answers.
+    say "  hbm sensor in sysfs: $(hbm_sensor_state)"
+    if [ -n "${1:-}" ] && [ -f "$1" ]; then
+        say
+        say "last program.log at $1"
+        tail -25 "$1" | sed 's/^/  /'
+    fi
+}
+
+#------------------------------------------------------------------------------
+case "${1:-}" in
+    --check|--go)
+        MODE=$1
+        XCLBIN=${2:-}
+        [ -n "$XCLBIN" ] || die "usage: program.sh $MODE <xclbin>"
+        command -v xclbinutil >/dev/null \
+            || die "xclbinutil not on PATH -- source Vitis settings64.sh first"
+        check_xclbin
+        check_device
+        check_no_other_programmer
+        check_thermal
+        say
+        if [ $FAIL -ne 0 ]; then
+            say "program.sh: gates failed. Nothing was loaded."
+            exit 1
+        fi
+        if [ "$MODE" = "--check" ]; then
+            say "program.sh: all gates pass. Nothing was loaded (--check)."
+            say "         to load:  program.sh --go $XCLBIN"
+            exit 0
+        fi
+        do_load
+        ;;
+    --status)
+        do_status "${2:-}"
+        ;;
+    *)
+        sed -n '3,6p' "$0"
+        exit 2
+        ;;
+esac

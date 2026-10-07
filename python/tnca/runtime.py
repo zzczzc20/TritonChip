@@ -208,7 +208,7 @@ class Session:
     def __init__(self, profile='core-sim', *, bench=None, workdir=None,
                  code_base=0, heap_base=0x20000, heap_limit=0x80000,
                  deadline_cycles=2_000_000, host_timeout=600.0, trace=False,
-                 backend='sim-file'):
+                 backend='sim-file', **backend_kwargs):
         Session._counter += 1
         self.id = Session._counter
         self.profile = profile
@@ -217,6 +217,17 @@ class Session:
         # and are now two, because a target that meant "this simulator
         # executable" could never describe a board.
         self.backend_name = backend
+        # What the backend needs and this session cannot know. The named
+        # arguments above are the ones every binding has an opinion about;
+        # these are the rest, and they are not interpreted here. A board
+        # has to be told which .xclbin the card is running -- that fact
+        # exists in no profile and no artifact, and without a way to state
+        # it `Session(backend='fpga-u50')` could name the board and never
+        # open it. Passed through untouched, so that a backend's own
+        # requirement is raised by the backend, which is the thing that
+        # knows it, rather than re-stated here where it would be a second
+        # copy free to drift.
+        self._backend_kwargs = backend_kwargs
         self.epoch = 0
         self.poisoned = False
         self.closed = False
@@ -225,8 +236,19 @@ class Session:
         # install time or by an explicit `prepare`, and forbids building it
         # per launch; `device.locate` looks and `device.prepare` builds, so
         # there is no flag that could default the wrong way.
+        #
+        # Resolved only for a backend that reads it. A board is reached
+        # over PCIe and has no simulator build; `device.require` raises
+        # when there is none, so asking on the board's behalf left
+        # `Session(backend='fpga-u50')` unusable on exactly the machines
+        # it exists for -- the ones with a board and no simulator. An
+        # explicit `bench=` is honoured whatever the backend says, so a
+        # caller who has one keeps passing it.
+        from . import backend as _backend
         from . import device as _device
-        self.bench = bench or _device.require(profile)
+        self.bench = bench
+        if bench is None and _backend.needs_elaborator(self.backend_name):
+            self.bench = _device.require(profile)
 
         self._workdir = workdir
         self._deadline = deadline_cycles
@@ -252,7 +274,7 @@ class Session:
                                 workdir=self._workdir,
                                 deadline_cycles=deadline_cycles,
                                 host_timeout=host_timeout, trace=trace,
-                                epoch=self.epoch)
+                                epoch=self.epoch, **self._backend_kwargs)
         self.dev.start()
         self._start_worker()
 
@@ -770,7 +792,8 @@ class Session:
                                     workdir=self._workdir,
                                     deadline_cycles=self._deadline,
                                     host_timeout=self._host_timeout,
-                                    trace=self._trace, epoch=self.epoch)
+                                    trace=self._trace, epoch=self.epoch,
+                                    **self._backend_kwargs)
             self.dev.start()
         self._start_worker()
         return self.epoch

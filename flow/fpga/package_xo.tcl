@@ -37,7 +37,9 @@
 set ROOT [file normalize [lindex $::argv 0]]
 set OUT  [file normalize [lindex $::argv 1]]
 
-set PART    xcu50-fsvh2104-2-e
+# The card's part: the third argument, from flow/fpga/boards.sh's
+# BOARD_PART; the U50's when absent, which is what this script always built.
+set PART    [expr {[llength $::argv] > 2 ? [lindex $::argv 2] : "xcu50-fsvh2104-2-e"}]
 set VENDOR  tnca.com
 set LIB     kernel
 set NAME    tnca_u50

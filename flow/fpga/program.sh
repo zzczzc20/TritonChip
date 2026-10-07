@@ -102,15 +102,18 @@
 
 set -u
 
+# The card: TNCA_BOARD=u50 (default) or u280, from flow/fpga/boards.sh.
+. "$(dirname "$0")/boards.sh"
+
 XRT=${XRT_BIN:-/opt/xilinx/xrt/bin}
-BDF=${BDF:-0000:01:00.1}
+BDF=${BDF:-$BOARD_BDF}
 SYS=/sys/bus/pci/devices/$BDF
 
 # The shell this build targets, and the interface UUID that shell and the
 # .xclbin both carry. If the live UUID is not this string, the platform was
 # swapped underneath the build and nothing downstream of here is valid.
-EXPECT_VBNV=xilinx_u50_gen3x16_xdma_5_202210_1
-EXPECT_IINTF=16e2362f82d2feab35529da27134b76d
+EXPECT_VBNV=$BOARD_PLATFORM
+EXPECT_IINTF=$BOARD_IINTF
 
 # The stop thresholds. Same numbers as the standing thermal protocol: do not
 # add load above these, and stop if a running load crosses them.

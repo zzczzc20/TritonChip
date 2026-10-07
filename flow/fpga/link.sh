@@ -114,8 +114,10 @@ set -u
 OUT=${1:?usage: link.sh <build-dir>    # the directory package_xo.tcl wrote into}
 REPO=$(cd "$(dirname "$0")/../.." && pwd)
 
-VITIS=${XILINX_VITIS:-/home/x4/Software/Xilinx/Vitis/2022.2}
-PLATFORM=xilinx_u50_gen3x16_xdma_5_202210_1
+# The card: TNCA_BOARD=u50 (default) or u280, from flow/fpga/boards.sh.
+. "$(dirname "$0")/boards.sh"
+VITIS=${XILINX_VITIS:-$BOARD_VITIS}
+PLATFORM=$BOARD_PLATFORM
 PLATFORMS_DIR=${XILINX_PLATFORMS:-/opt/xilinx/platforms}
 
 # The clock this build asks for, and the one flow/fpga/ooc.xdc constrains and
@@ -125,7 +127,7 @@ PLATFORMS_DIR=${XILINX_PLATFORMS:-/opt/xilinx/platforms}
 EXPECT_MHZ=150
 
 XO=$OUT/tnca_u50.xo
-XCLBIN=$OUT/tnca_u50.xclbin
+XCLBIN=$OUT/tnca_${BOARD}.xclbin
 LOG=$OUT/link.log
 INFO=$OUT/xclbin.info
 
@@ -153,6 +155,7 @@ export TMPDIR=$OUT/tmp TMP=$OUT/tmp TEMP=$OUT/tmp
     echo "REPO=$REPO"
     echo "RTL_COMMIT=$(git -C "$REPO" rev-parse HEAD 2>/dev/null || echo 'not a git tree')"
     echo "XO=$XO"
+    echo "BOARD=$BOARD"
     echo "PLATFORM=$PLATFORM"
     echo "KERNEL_FREQUENCY_ARG=--kernel_frequency 0:$EXPECT_MHZ"
     echo "EXPECT_MHZ=$EXPECT_MHZ"
@@ -166,8 +169,11 @@ export TMPDIR=$OUT/tmp TMP=$OUT/tmp TEMP=$OUT/tmp
 # answer to "which path" is in the post-route report, and that report only
 # exists if the routed checkpoint was kept.
 #------------------------------------------------------------------------------
+# VPP_JOBS bounds the parallelism on a shared host (v++ --jobs); unset, v++
+# chooses.
 v++ -l -t hw \
     --platform "$PLATFORM" \
+    ${VPP_JOBS:+--jobs $VPP_JOBS} \
     --kernel_frequency 0:$EXPECT_MHZ \
     --temp_dir "$OUT/tmp" \
     --log_dir "$OUT/vpp_logs" \

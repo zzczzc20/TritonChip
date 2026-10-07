@@ -24,11 +24,15 @@ from ..bounds import VERSION, tnca_bound, tnca_peak
 from .common import base_record, classify, compare, error_text, reference
 
 EVIDENCE = {'sim-file': 'measured-rtl', 'sim-socket': 'measured-rtl',
-            'fpga-u50-sim': 'measured-rtl', 'fpga-u50': 'measured-board'}
+            'fpga-u50-sim': 'measured-rtl', 'fpga-u50': 'measured-board',
+            'fpga-u280': 'measured-board'}
 
 # The clock a cycle count may be converted with, by backend. Only a board
 # has one; a simulated cycle has no duration (Stage 1 rule).
-BOARD_CLOCK_HZ = {'fpga-u50': 37.5e6}
+BOARD_CLOCK_HZ = {'fpga-u50': 37.5e6,
+                  # Requested the same way (150 MHz kernel clock / 4); replace
+                  # with the U280's measured figure once the image is loaded.
+                  'fpga-u280': 37.5e6}
 
 # The device heap a launch's argument storages must fit: Session's default
 # heap, 0x20000..0x80000, of the 512 KiB memory the simulator and the U50

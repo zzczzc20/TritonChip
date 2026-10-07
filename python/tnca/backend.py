@@ -324,6 +324,15 @@ def _register_builtin():
                   'against the RTL; the board link is not, and opening this '
                   'with no board raises rather than substituting the '
                   'stand-in')
+    # The same kernel and register protocol on an Alveo U280 (flow/fpga/
+    # boards.sh, TNCA_BOARD=u280): one backend, a second name, so a record
+    # says which card produced it.
+    register('fpga-u280', _lazy('tnca.backends.u50', 'board'),
+             state=REFERENCE_AVAILABLE, needs_elaborator=False,
+             needs_hardware=True,
+             what='the TNCA device on an Alveo U280: the U50 kernel and '
+                  'register port (rtl/fpga/tnca_fpga_top.v) built for the '
+                  'U280 shell, reached through the same U50Backend')
     register('fpga-u50-sim', _lazy('tnca.backends.u50_sim', 'stand_in'),
              state=REFERENCE_AVAILABLE, needs_elaborator=False,
              what='the same device and the same register protocol, on real '

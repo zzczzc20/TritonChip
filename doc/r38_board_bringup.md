@@ -1,6 +1,6 @@
 # R38：上板实验准备与执行清单（U50）
 
-版本 0.1，2026-10-07。状态：**准备完成，等待 FPGA 服务器访问**。
+版本 0.2，2026-10-07。状态：**U280 镜像构建中**（acf3019，见 §4）。
 上位：[Stage 1](r38_stage1_tasks_and_acceptance.md) §5“进入 Stage 2 的交接物”；板卡流程与既有实测：[flow/fpga/README.md](../flow/fpga/README.md)；测量协议：[archbench/PROTOCOL.md](../archbench/PROTOCOL.md)。
 
 ## 0. 现状：板上镜像落后于 r38 RTL
@@ -73,3 +73,31 @@ flow/fpga/program.sh --go    <build>/pkg/tnca_u50.xclbin   # 唯一改变硬件�
 - **传输开销**：Stage 1 每次 launch 经寄存器窗口逐字上传/下载参数存储；板卡上这是 host 时间（单独记录，不计设备时间），会让端到端时延远大于设备时间。张量常驻设备是 roadmap P2（PrivateUse1）的工作。
 - **单核串行 grid**：设备时间是各 program 周期之和（`serial-grid`），不是多核并发的 makespan。
 - **温度**：上次记录 FPGA 91–95 °C、HBM 86–89 °C，超过 90/85 °C 的停测门槛后经明确指示才继续；这次仍按该门槛执行，超限即停并报告。
+
+## 4. 实际板卡：acf3019 上的 Alveo U280（2026-10-07）
+
+提供的 FPGA 主机是 U280 而不是 U50。设备 RTL、kernel（`tnca_u50`）与寄存器协议不变，只换卡相关的值，集中在 `flow/fpga/boards.sh`，由 `TNCA_BOARD` 选择：
+
+| 项 | 值（在主机上读出） |
+|---|---|
+| 访问 | 经 GB10 主机跳板：`ssh zhongchun@143.89.78.224`，再 `ssh zzhouch@acf3019.ece.ust.hk`（跳板机上的密钥） |
+| 主机 | Ubuntu 22.04，24 核，62 GB，XRT 2.16（2023.2），Vivado/Vitis 2021.1 与 2023.2；多人共用 |
+| 卡 | `xilinx_u280_gen3x16_xdma_base_1`，BDF `0000:04:00.1`，接口 UUID `fb2b2c5a19ed63593fea95f51fbc8eb9` |
+| 平台 / 器件 | `xilinx_u280_gen3x16_xdma_1_202211_1`，`xcu280-fsvh2892-2L-e` |
+| 时钟 | 平台 kernel clock 0 默认 300 MHz；本设计同样请求 150 MHz、器件 /4 = 37.5 MHz |
+| 后端名 | `fpga-u280`（与 `fpga-u50` 同一个 `U50Backend`） |
+
+命令（在 acf3019 的仓库根目录）：
+
+```sh
+vivado -mode batch -source flow/fpga/package_xo.tcl -tclargs $PWD <build> xcu280-fsvh2892-2L-e
+TNCA_BOARD=u280 XILINX_VITIS=/tools/Xilinx/Vitis/2023.2 VPP_JOBS=8 flow/fpga/link.sh <build>
+TNCA_BOARD=u280 flow/fpga/program.sh --check <build>/tnca_u280.xclbin
+TNCA_BOARD=u280 flow/fpga/program.sh --go    <build>/tnca_u280.xclbin      # 见下面的共用规则
+python -m archbench.run --platform tnca --backend fpga-u280 --profile core-vrf-sync-v1 \
+    --backend-args '{"xclbin": "<build>/tnca_u280.xclbin"}' --tier tiny small --counters --out results/u280.jsonl
+```
+
+**共用规则**：这块卡上加载着别人的镜像（2026-10-07 为一个 HBM 带宽测试，CU 空闲），主机上也有其他人的 Vivado 任务。`program.sh --go` 会替换别人的镜像，所以每次加载前确认没有进程占用该设备，并经负责人同意；构建（package/link）不碰卡，`VPP_JOBS` 限制并行度。
+
+期望值：板卡周期应与 `core-vrf-sync-v1` 的仿真 bench 逐 launch 相同（`fpga-u50-sim` 已在 RTL 上证明板卡顶层与该 bench 周期一致）；tiny 档的期望记录由 `python -m archbench.run --platform tnca --profile core-vrf-sync-v1 --tier tiny` 产生。

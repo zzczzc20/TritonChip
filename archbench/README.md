@@ -80,9 +80,9 @@ python -m archbench.run --platform tnca --tier tiny small --compile-only --jobs 
 python -m archbench.run --platform tnca --backend fpga-u50-sim --profile core-vrf-sync-v1 \
     --tier tiny --jobs 6 --out results/u50sim_tiny.jsonl
 
-# On the U50 board (see doc/r38_board_bringup.md); the board is used serially
-python -m archbench.run --platform tnca --backend fpga-u50 --profile core-vrf-sync-v1 \
-    --backend-args '{"xclbin": "/path/to/tnca_u50.xclbin"}' --tier tiny small --out results/u50.jsonl
+# On a board (see doc/r38_board_bringup.md): fpga-u50 or fpga-u280; a board is used serially
+python -m archbench.run --platform tnca --backend fpga-u280 --profile core-vrf-sync-v1 \
+    --backend-args '{"xclbin": "/path/to/tnca_u280.xclbin"}' --tier tiny small --out results/u280.jsonl
 
 # GPU (sequential; the primary variant is inductor-cudagraph)
 python -m archbench.run --platform gpu --tier tiny small large --out results/gpu.jsonl

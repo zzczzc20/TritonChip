@@ -1,7 +1,7 @@
 # R38 Stage 1 status
 
 Plan and acceptance: [r38_stage1_tasks_and_acceptance.md](r38_stage1_tasks_and_acceptance.md).
-Updated 2026-09-22. Stage state: **IN PROGRESS / NOT ACCEPTED** (gates G1a, G1b open on the items marked below).
+Updated 2026-10-07. Stage state: **IN PROGRESS / NOT ACCEPTED** (gates G1a, G1b open on the items marked below).
 
 Generated evidence lives under `sim/build/r38/` and is not in Git.
 
@@ -17,7 +17,9 @@ Generated evidence lives under `sim/build/r38/` and is not in Git.
 | S1-07 three-layer feature | **PASS** | `tools/r38/loop_tests.py` 6/6; `make r38-xpose-rtl`; R37 447/447 on `core-sim` (cycles identical at O0/O1/O2) and 447/447 on `core-xpose-v1`; record `spec/r38/design_changes/xpose-dma-001.json` | — |
 | S1-08 case ablations | — | — | after S1-07 |
 | S1-09 gates | L0/L1/L2 + selftest implemented; selftest **PASS** | `tools/r38/gate.py l0\|l1\|l2\|selftest`; log `sim/build/r38/devops_log.jsonl` | an L2 promotion run |
-| S1-10 PyTorch (P1+, replaces the P0/P1 plan) | **first milestone PASS**: 12/12 graphs, 149/149 native launches, plugin = AOT code at O0/O1/O2 | [r38_pytorch_p1plus.md](r38_pytorch_p1plus.md); `make r38-torch` | Agent pilot and NVIDIA scoring rules not started |
+| S1-10 PyTorch (P1+, replaces the P0/P1 plan) | **IN PROGRESS**: ArchBench(torch) tiny + small 52/52 compile with zero host fallback and launch counts equal to the generated wrapper's; 7 regression graphs added for the fixes (incl. a device-assert trap) PASS; tiny tier on the RTL being measured; single-query (decode) attention gives wrong numbers and is open | [r38_pytorch_p1plus.md](r38_pytorch_p1plus.md) §6; `make r38-torch`, `make archbench-coverage`, `make archbench-tiny` | decode attention; Agent pilot not started |
+| S1-10 NVIDIA scoring rules | **written**: [archbench/PROTOCOL.md](../archbench/PROTOCOL.md); exercised on GB10 (bound v1 found an η = 1.2 audit failure, fixed in bound v2; v2 measurement running) | `make archbench-gpu`, `python -m archbench.report` | GB10 tensor-core peak is an upper estimate |
+| Board preparation (Stage 2 hand-off) | **ready, waiting for FPGA access** | [r38_board_bringup.md](r38_board_bringup.md); `make r36-fpga-tests` (8/8 incl. PERF_READ); `make archbench-u50sim` | the board image predates the merge and must be rebuilt (§0 there) |
 | S1-11 related work | — | — | — |
 
 ## Changes to the product made by Stage 1 so far

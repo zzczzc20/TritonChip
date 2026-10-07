@@ -207,6 +207,100 @@
       ],
       "command": "make r38-torch",
       "limits": "blocks capped at 16 elements (small shapes); host tensors uploaded/downloaded per launch; PyTorch in its own environment (spec/r38/torch.lock.json)"
+    },
+    {
+      "id": "fpga-u50-merge",
+      "claim": "The U50 board support of branch fpga-u50 (U50Backend over XRT, fpga-u50-sim on the same RTL, AXI-Lite adapter, board top, Vitis package/link/program flow) merged into r38; the board wrapper elaborates, connects and passes its benches against the r38 shell",
+      "level": "functionally-validated",
+      "artifacts": [
+        "rtl/fpga/tnca_fpga_top.v",
+        "rtl/fpga/tnca_mmio.v",
+        "rtl/fpga/tnca_axi_lite.v",
+        "rtl/board/tnca_u50_xo.v",
+        "python/tnca/backends/u50.py",
+        "python/tnca/backends/u50_sim.py",
+        "flow/fpga/README.md",
+        "tools/r36/fpga_tests.py"
+      ],
+      "generated": [
+        "sim/build/r36_fpga_tests.json"
+      ],
+      "command": "make r36-fpga-tests",
+      "limits": "the image on the board was built before the merge (flow/fpga/README.md); a rebuilt image is board-measured only in Stage 2 (doc/r38_board_bringup.md)"
+    },
+    {
+      "id": "perf-read-board-protocol",
+      "claim": "Transport 1.1 op 7 PERF_READ on the board's register protocol (tnca_mmio -> tnca_shell perf_sel/perf_rdata): counters in 32-bit halves, an out-of-range index refused; Session(counters=True) through U50Backend satisfies the S1-02 conservation, retired and window identities",
+      "level": "functionally-validated",
+      "artifacts": [
+        "rtl/fpga/tnca_mmio.v",
+        "rtl/fpga/tnca_fpga_top.v",
+        "tb/fpga/tb_tnca_fpga.v",
+        "tools/r36/fpga_tests.py",
+        "tools/r38/profiler_tests.py"
+      ],
+      "generated": [
+        "sim/build/r36_fpga_tests.json",
+        "sim/build/r38/profiler/report-fpga-u50-sim.json"
+      ],
+      "command": "tools/r38/profiler_tests.py --quick --backend fpga-u50-sim --profiles core-vrf-sync-v1",
+      "limits": "the probe cases (quick) through fpga-u50-sim; on the board after the image is rebuilt (Stage 2)"
+    },
+    {
+      "id": "archbench-torch",
+      "claim": "ArchBench at the PyTorch level: 76 points (27 tiny, 25 small, 24 large; LLM operators, general operators, LLaMA prefill/decode, GPT-2 block, MLP, ResNet block), frozen by content hash; strict bounds for TNCA (cycles) and the GB10 GPU (seconds); E/A/S through the Stage 1 scorer; declared MACs never exceed torch's FLOP counter and bytes match the tensors",
+      "level": "functionally-validated",
+      "artifacts": [
+        "archbench/README.md",
+        "archbench/PROTOCOL.md",
+        "archbench/registry.py",
+        "archbench/ops.py",
+        "archbench/models.py",
+        "archbench/bounds.py",
+        "archbench/specs/gpu_gb10.json",
+        "archbench/selftest.py",
+        "archbench/suites/tiny.json",
+        "archbench/suites/small.json",
+        "archbench/suites/large.json"
+      ],
+      "generated": [],
+      "command": "make archbench-selftest",
+      "limits": "the GB10 tensor-core peak is an upper estimate (specs/gpu_gb10.json); GPU records are measured-gpu, not a TNCA evidence level"
+    },
+    {
+      "id": "pytorch-archbench-flow",
+      "claim": "Every tiny and small ArchBench point compiles through torch.compile -> Inductor -> Triton -> tnca with zero host fallback (SDPA decomposition, int64 ids with checked narrowing, device asserts as traps, M=1 GEMM, one-row folds/scans, the 2-D boolean splat fix); tiny-tier numerics on the RTL in doc/r38_stage1_status.md",
+      "level": "functionally-validated",
+      "artifacts": [
+        "python/tnca/inductor.py",
+        "python/tnca/triton_backend/driver.py",
+        "compiler/python/tnca_cc/frontend.py",
+        "compiler/python/tnca_cc/wide.py",
+        "archbench/platforms/tnca.py",
+        "tools/r38/torch_tests.py",
+        "doc/r38_pytorch_p1plus.md"
+      ],
+      "generated": [
+        "sim/build/archbench/coverage.jsonl",
+        "sim/build/archbench/tnca_tiny.jsonl"
+      ],
+      "command": "make archbench-coverage",
+      "limits": "small-tier models are not simulated (hours to tens of hours per point at ~500 cycles/s) and are left to the board; blocks <= 16 per dimension; int64 emulated lane by lane"
+    },
+    {
+      "id": "pytorch-board-protocol",
+      "claim": "ArchBench points run through the board's software path (U50Backend, register protocol, tnca_fpga_top) on fpga-u50-sim, with device cycles identical to the simulation bench of profile core-vrf-sync-v1",
+      "level": "functionally-validated",
+      "artifacts": [
+        "python/tnca/backends/u50_sim.py",
+        "python/tnca/triton_backend/driver.py",
+        "doc/r38_board_bringup.md"
+      ],
+      "generated": [
+        "sim/build/archbench/u50sim_tiny.jsonl"
+      ],
+      "command": "make archbench-u50sim",
+      "limits": "a simulation of the board's top level; the board itself is Stage 2"
     }
   ]
 }

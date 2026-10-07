@@ -1,0 +1,307 @@
+{
+ "families": [
+  "add",
+  "argmax",
+  "attention_decode",
+  "attention_prefill",
+  "bmm",
+  "conv2d",
+  "cumsum",
+  "embedding",
+  "gelu_tanh",
+  "gemv",
+  "gpt2_block",
+  "layernorm",
+  "linear",
+  "llama_decode",
+  "llama_prefill",
+  "matmul",
+  "mlp",
+  "resnet_block",
+  "rmsnorm",
+  "rope",
+  "silu",
+  "softmax",
+  "swiglu",
+  "transpose"
+ ],
+ "points": [
+  {
+   "dtype": "fp16",
+   "family": "gpt2_block",
+   "id": "model.gpt2_block/tiny/fp16-d64-h4-b1-s16",
+   "kind": "model",
+   "sha256": "c6ac63596b04acf91cdb6fd7da6cf742d3da62e6f02951df35f1b6a538b5bdc4",
+   "track": [
+    "llm",
+    "general"
+   ]
+  },
+  {
+   "dtype": "fp16",
+   "family": "llama_decode",
+   "id": "model.llama_decode/tiny/fp16-b1-p16",
+   "kind": "model",
+   "sha256": "9889060c587f03f485fbc2e16e4c3b6788cf830c616747040259517c3e81b63a",
+   "track": [
+    "llm"
+   ]
+  },
+  {
+   "dtype": "fp16",
+   "family": "llama_prefill",
+   "id": "model.llama_prefill/tiny/fp16-b1-s16",
+   "kind": "model",
+   "sha256": "6d14a4a6373ba814884be0e62ed485960e3da63c6fe51b6e2de35492dbde69bc",
+   "track": [
+    "llm"
+   ]
+  },
+  {
+   "dtype": "fp16",
+   "family": "mlp",
+   "id": "model.mlp/tiny/fp16-t16-d64",
+   "kind": "model",
+   "sha256": "3c29cacaedd536ac424faa6457fad7b109728917f3aaa2a51bd359c7769054d0",
+   "track": [
+    "llm",
+    "general"
+   ]
+  },
+  {
+   "dtype": "fp32",
+   "family": "resnet_block",
+   "id": "model.resnet_block/tiny/fp32-n1-c8-hw8",
+   "kind": "model",
+   "sha256": "080606dc05ff1b13636f93504e4c71cf8bd2c40d09a0430998669ed262d26dfd",
+   "track": [
+    "general"
+   ]
+  },
+  {
+   "dtype": "fp16",
+   "family": "add",
+   "id": "op.add/tiny/fp16-n1000",
+   "kind": "op",
+   "sha256": "f5f7f2ddaf105584a49a973c66f605ac8c77b0647a64fcb875af80803953064d",
+   "track": [
+    "llm"
+   ]
+  },
+  {
+   "dtype": "fp32",
+   "family": "add",
+   "id": "op.add/tiny/fp32-n256",
+   "kind": "op",
+   "sha256": "9dcd4777d15fa3588470ddcfd6b006688d11d7d104f6bf2ce7e14724bed6ebaf",
+   "track": [
+    "general"
+   ]
+  },
+  {
+   "dtype": "fp16",
+   "family": "argmax",
+   "id": "op.argmax/tiny/fp16-r2-v256",
+   "kind": "op",
+   "sha256": "dcabfc0ea1563282aee716b021f07802b6885622e717c4b0e729ca9b3579da78",
+   "track": [
+    "llm"
+   ]
+  },
+  {
+   "dtype": "fp16",
+   "family": "attention_decode",
+   "id": "op.attention_decode/tiny/fp16-b1-h2-l16-d16",
+   "kind": "op",
+   "sha256": "5b80febf2036b8a8b337cf9f5d28d3dd5df2b1c0370263c33c5cf6a0dfcb4c91",
+   "track": [
+    "llm"
+   ]
+  },
+  {
+   "dtype": "fp16",
+   "family": "attention_prefill",
+   "id": "op.attention_prefill/tiny/fp16-b1-h2-s16-d16",
+   "kind": "op",
+   "sha256": "eb5c0145c4c95f225ddedb70032fa797303883b0498ec54a1b9bd9065ff48a52",
+   "track": [
+    "llm"
+   ]
+  },
+  {
+   "dtype": "fp16",
+   "family": "bmm",
+   "id": "op.bmm/tiny/fp16-b2-m16-k16-n16",
+   "kind": "op",
+   "sha256": "0fe3169aebf7be21044bc50e594a20c7e9f88fffd9690a79b1839c3e19332cc3",
+   "track": [
+    "llm"
+   ]
+  },
+  {
+   "dtype": "fp32",
+   "family": "conv2d",
+   "id": "op.conv2d/tiny/fp32-n1-cin4-h8-w8-cout8",
+   "kind": "op",
+   "sha256": "86bb96a8692f4c67bad0ad607ff461e13ffd21db588893f619f8b0f787c09e62",
+   "track": [
+    "general"
+   ]
+  },
+  {
+   "dtype": "fp32",
+   "family": "cumsum",
+   "id": "op.cumsum/tiny/fp32-r4-c64",
+   "kind": "op",
+   "sha256": "e96b7cc34b9f3598ccd069f7dbcb9907b95ea945bf9015b1ca218186f034d293",
+   "track": [
+    "general"
+   ]
+  },
+  {
+   "dtype": "fp16",
+   "family": "embedding",
+   "id": "op.embedding/tiny/fp16-v256-d64-t16",
+   "kind": "op",
+   "sha256": "18364d4b91a144e7517036fa7bac6663cc696260897fd607d0c297aa595e1fd9",
+   "track": [
+    "llm"
+   ]
+  },
+  {
+   "dtype": "fp16",
+   "family": "gelu_tanh",
+   "id": "op.gelu_tanh/tiny/fp16-n256",
+   "kind": "op",
+   "sha256": "30cf007bb48aeb50f2981306b92da697c0d83c1d251ca0183994e38a43f53b1e",
+   "track": [
+    "llm"
+   ]
+  },
+  {
+   "dtype": "fp16",
+   "family": "gemv",
+   "id": "op.gemv/tiny/fp16-k64-n64",
+   "kind": "op",
+   "sha256": "c03b40a0ee32d5743b0b51310f10486cbbbc18ed9467a5cecb856296f3bd86a4",
+   "track": [
+    "llm"
+   ]
+  },
+  {
+   "dtype": "fp16",
+   "family": "layernorm",
+   "id": "op.layernorm/tiny/fp16-r4-d64",
+   "kind": "op",
+   "sha256": "aff82d79e98252bf1ed16d7c25b5a595462c24e9b1ef6cc86b15d3763e0521a2",
+   "track": [
+    "llm",
+    "general"
+   ]
+  },
+  {
+   "dtype": "fp16",
+   "family": "linear",
+   "id": "op.linear/tiny/fp16-m16-k64-n64",
+   "kind": "op",
+   "sha256": "fef641659c128e0325e26b6ac25157cc8654edd70d032ffdedb0d06f681de6e3",
+   "track": [
+    "llm"
+   ]
+  },
+  {
+   "dtype": "fp16",
+   "family": "matmul",
+   "id": "op.matmul/tiny/fp16-m16-k32-n16",
+   "kind": "op",
+   "sha256": "f1472816b16b6a6d11abaa85899817c50a0a2bb2ff72d305940e45d94bd3d1a7",
+   "track": [
+    "llm",
+    "general"
+   ]
+  },
+  {
+   "dtype": "fp32",
+   "family": "matmul",
+   "id": "op.matmul/tiny/fp32-m16-k32-n16",
+   "kind": "op",
+   "sha256": "7b3ebbf263dd5c6e39ec35d1a5e60a6cda5cc1ff2d0cbedcbb10f31eebd20624",
+   "track": [
+    "general"
+   ]
+  },
+  {
+   "dtype": "fp16",
+   "family": "rmsnorm",
+   "id": "op.rmsnorm/tiny/fp16-r4-d64",
+   "kind": "op",
+   "sha256": "ae56e7ac2a07857540c82866b99e5474842b8b4ad4265ba3c3a8e802384877cd",
+   "track": [
+    "llm"
+   ]
+  },
+  {
+   "dtype": "fp16",
+   "family": "rope",
+   "id": "op.rope/tiny/fp16-b1-h2-s16-d16",
+   "kind": "op",
+   "sha256": "e5e6096b39bf6df53c6f90eef2aac7a3714f5c590ab1c5d5e6d91fd1703fa7e9",
+   "track": [
+    "llm"
+   ]
+  },
+  {
+   "dtype": "fp16",
+   "family": "silu",
+   "id": "op.silu/tiny/fp16-n256",
+   "kind": "op",
+   "sha256": "b2a22df9ad8d31575e015f32d569e81d9fe5fc5de5e2250c847f1271ad9909fd",
+   "track": [
+    "llm"
+   ]
+  },
+  {
+   "dtype": "fp16",
+   "family": "softmax",
+   "id": "op.softmax/tiny/fp16-r4-c64",
+   "kind": "op",
+   "sha256": "a447549839693d045a0927704d247517cebbfe994ed8e860923310baecf92835",
+   "track": [
+    "llm"
+   ]
+  },
+  {
+   "dtype": "fp32",
+   "family": "softmax",
+   "id": "op.softmax/tiny/fp32-r3-c37",
+   "kind": "op",
+   "sha256": "eac6279205bd4758485963c1ad7b2c1cee46c9d2023344ae3bd7b7ef68fc2434",
+   "track": [
+    "general"
+   ]
+  },
+  {
+   "dtype": "fp16",
+   "family": "swiglu",
+   "id": "op.swiglu/tiny/fp16-n256",
+   "kind": "op",
+   "sha256": "f69ec68a393c2a6b4593d56b10003f0aa36ffef4a8453c27bccdd775370ab898",
+   "track": [
+    "llm"
+   ]
+  },
+  {
+   "dtype": "fp32",
+   "family": "transpose",
+   "id": "op.transpose/tiny/fp32-r32-c32",
+   "kind": "op",
+   "sha256": "100dca9763db82154f7a7bb58d479c17be426d4b4a3ffa53025a0e3b9ec893fb",
+   "track": [
+    "general"
+   ]
+  }
+ ],
+ "schema": "archbench-suite/1",
+ "sha256": "26cfbf20dfd81d6baef4fdc66b0c890ee8cfebba676568cbaede12c0b79033cc",
+ "tier": "tiny"
+}

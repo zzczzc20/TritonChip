@@ -1,0 +1,72 @@
+{
+ "schema": "archbench-gpu-spec/1",
+ "device": "NVIDIA GB10",
+ "kind": "spec_peak",
+ "note": "spec_peak for the strict bound (roadmap 4.5): the most the implementation can serve, never a measurement. Where a figure is uncertain the GENEROUS end is taken, because a generous peak can only lower the bound (a looser, still valid eta); a stingy one could let a measurement beat its bound. Unit: per second.",
+ "facts": {
+  "sm_count": {
+   "value": 48,
+   "source": "torch.cuda.get_device_properties(0).multi_processor_count on the measured unit (2026-10-07)"
+  },
+  "sm_clock_max_hz": {
+   "value": 3003000000.0,
+   "source": "nvidia-smi -q -d CLOCK, Max Clocks SM = 3003 MHz (driver 580.95.05); the default application clock is 2418 MHz"
+  },
+  "l2_bytes": {
+   "value": 25165824,
+   "source": "torch.cuda.get_device_properties(0).L2_cache_size"
+  },
+  "memory": {
+   "value": "256-bit LPDDR5X at 8533 MT/s",
+   "source": "device properties memory_bus_width=256, memory_clock_rate=8533000 kHz"
+  },
+  "vendor_fp32": {
+   "value": 31000000000000.0,
+   "source": "NVIDIA, via The Register 2025-08-27 (Hot Chips): 'about 31 teraFLOPS of single precision'"
+  },
+  "vendor_fp4_sparse": {
+   "value": 1000000000000000.0,
+   "source": "NVIDIA: '1 petaFLOP of FP4 with sparsity'"
+  },
+  "system_cache_bytes": {
+   "value": 16777216,
+   "source": "The Register 2025-08-27 (Hot Chips): GB10 has a 16 MB system-level ('L4') cache shared by the CPU and GPU. Counted as write-back capacity: if it does not hold GPU writes, the bound is only looser"
+  }
+ },
+ "rates": {
+  "fp32_fma": {
+   "value": 18447000000000.0,
+   "unit": "FMA/s",
+   "derivation": "48 SM x 128 FP32 FMA/clk/SM (CUDA C Programming Guide, arithmetic instruction throughput, compute capability 12.x) x 3.003e9 Hz = 18.45e12 FMA/s = 36.9 TFLOPS, above the vendor 31 TFLOPS (which is at a lower clock): generous"
+  },
+  "fp16_fma_simt": {
+   "value": 36894000000000.0,
+   "unit": "FMA/s",
+   "derivation": "half2 doubles the FP32 rate: 2 x 18.45e12"
+  },
+  "tensor_fp16_mac": {
+   "value": 77625000000000.0,
+   "unit": "MAC/s",
+   "derivation": "upper estimate from the vendor figure: 1e15 FP4 sparse FLOPS = 5e14 dense; Blackwell halves the rate at each doubling of operand width (FP4 -> FP8 -> FP16), giving 1.25e14 FP16 dense FLOPS at the clock the vendor quotes (taken as the 2418 MHz default); scaled to the 3003 MHz maximum = 1.5525e14 FLOPS = 7.7625e13 MAC/s. If the per-SM figure is lower (512 FLOP/clk/SM gives 3.69e13 MAC/s), this only loosens the bound."
+  },
+  "tensor_bf16_mac": {
+   "value": 77625000000000.0,
+   "unit": "MAC/s",
+   "derivation": "as tensor_fp16_mac"
+  },
+  "sfu": {
+   "value": 2305900000000.0,
+   "unit": "op/s",
+   "derivation": "48 SM x 16 MUFU/clk/SM x 3.003e9 (CUDA C Programming Guide, cc 12.x); scoped only -- a transcendental can also be built from FMAs"
+  },
+  "dram_bytes": {
+   "value": 273056000000.0,
+   "unit": "B/s",
+   "derivation": "256 bit / 8 x 8533e6 transfers/s = 273.1 GB/s. Valid as a bound only under the cold-L2 protocol (archbench/PROTOCOL.md): data starts in DRAM because L2 is flushed before every timed call"
+  }
+ },
+ "caches": {
+  "write_back_bytes": 41943040,
+  "note": "L2 + system cache. Outputs that fit may stay dirty in cache when the kernel ends, so only writes BEYOND this capacity are a necessary DRAM transfer; the flush before a timed call is twice this size so required READS do come from DRAM"
+ }
+}

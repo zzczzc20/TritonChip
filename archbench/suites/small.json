@@ -1,0 +1,287 @@
+{
+ "families": [
+  "add",
+  "argmax",
+  "attention_decode",
+  "attention_prefill",
+  "bmm",
+  "conv2d",
+  "cumsum",
+  "embedding",
+  "gelu_tanh",
+  "gemv",
+  "gpt2_block",
+  "layernorm",
+  "linear",
+  "llama_decode",
+  "llama_prefill",
+  "matmul",
+  "mlp",
+  "resnet_block",
+  "rmsnorm",
+  "rope",
+  "silu",
+  "softmax",
+  "swiglu",
+  "transpose"
+ ],
+ "points": [
+  {
+   "dtype": "fp16",
+   "family": "gpt2_block",
+   "id": "model.gpt2_block/small/fp16-d128-h4-b1-s64",
+   "kind": "model",
+   "sha256": "75533c2b96d185e7fd2bdf0a168ef57d4d53f0ed019e0aaba37aa43c7757c7f6",
+   "track": [
+    "llm",
+    "general"
+   ]
+  },
+  {
+   "dtype": "fp16",
+   "family": "llama_decode",
+   "id": "model.llama_decode/small/fp16-b1-p128",
+   "kind": "model",
+   "sha256": "a83153ccb5eccc8f9b328aeed2fd648df5e7e9deecfd940d986ebc5129ee53c1",
+   "track": [
+    "llm"
+   ]
+  },
+  {
+   "dtype": "fp16",
+   "family": "llama_prefill",
+   "id": "model.llama_prefill/small/fp16-b1-s64",
+   "kind": "model",
+   "sha256": "a4aa11b171f8875f87051a5ebfbd9fbeecfc53ac8f48f5c67e1902ffbf490ae0",
+   "track": [
+    "llm"
+   ]
+  },
+  {
+   "dtype": "fp16",
+   "family": "mlp",
+   "id": "model.mlp/small/fp16-t64-d128",
+   "kind": "model",
+   "sha256": "f511caa754abeaca7079ecb12015bb08034f269eeed9e9b505c603cca60c672c",
+   "track": [
+    "llm",
+    "general"
+   ]
+  },
+  {
+   "dtype": "fp32",
+   "family": "resnet_block",
+   "id": "model.resnet_block/small/fp32-n1-c16-hw16",
+   "kind": "model",
+   "sha256": "5238ddb9e794f37c05c358ecddf18e348afc1e556e3fc76adb42eef4bd958413",
+   "track": [
+    "general"
+   ]
+  },
+  {
+   "dtype": "fp16",
+   "family": "add",
+   "id": "op.add/small/fp16-n16384",
+   "kind": "op",
+   "sha256": "f43dd5c514c6c730b9db20fa09586b37edb6baa1babdb45529dfb9748f7e58e5",
+   "track": [
+    "llm"
+   ]
+  },
+  {
+   "dtype": "fp16",
+   "family": "argmax",
+   "id": "op.argmax/small/fp16-r8-v2048",
+   "kind": "op",
+   "sha256": "ac90cabca0fb31d2468ed15e86696c02beed0d80024a752322e2fab0d73093a3",
+   "track": [
+    "llm"
+   ]
+  },
+  {
+   "dtype": "fp16",
+   "family": "attention_decode",
+   "id": "op.attention_decode/small/fp16-b1-h4-l256-d32",
+   "kind": "op",
+   "sha256": "df633231c46b52878fd433bafca00947f171dc7c7c4e74ab1f28b7d8babc101f",
+   "track": [
+    "llm"
+   ]
+  },
+  {
+   "dtype": "fp16",
+   "family": "attention_prefill",
+   "id": "op.attention_prefill/small/fp16-b1-h4-s64-d32",
+   "kind": "op",
+   "sha256": "d4034b40444b352ce5541f585017b84ede0aa83e6bcac78c70af743db82c1dc1",
+   "track": [
+    "llm"
+   ]
+  },
+  {
+   "dtype": "fp16",
+   "family": "bmm",
+   "id": "op.bmm/small/fp16-b8-m64-k32-n64",
+   "kind": "op",
+   "sha256": "bf410a0a1dc6f72b1881229f93247bd174c966958d8cb84dfa95135bba263ba1",
+   "track": [
+    "llm"
+   ]
+  },
+  {
+   "dtype": "fp32",
+   "family": "conv2d",
+   "id": "op.conv2d/small/fp32-n1-cin16-h16-w16-cout16",
+   "kind": "op",
+   "sha256": "d5181555b6f724fa531e2d80074df12585f537f9221326da80d58bce175a8bc7",
+   "track": [
+    "general"
+   ]
+  },
+  {
+   "dtype": "fp32",
+   "family": "cumsum",
+   "id": "op.cumsum/small/fp32-r64-c256",
+   "kind": "op",
+   "sha256": "26ddb7122057f8d2f47e8214f559d5a7688a12063eb826c9a952d1ad8e0e4397",
+   "track": [
+    "general"
+   ]
+  },
+  {
+   "dtype": "fp16",
+   "family": "embedding",
+   "id": "op.embedding/small/fp16-v1024-d128-t64",
+   "kind": "op",
+   "sha256": "954c19f88a13770e74b84b2aa5e323f57ac9c75790e92fefde53e06941aa5422",
+   "track": [
+    "llm"
+   ]
+  },
+  {
+   "dtype": "fp16",
+   "family": "gelu_tanh",
+   "id": "op.gelu_tanh/small/fp16-n16384",
+   "kind": "op",
+   "sha256": "3b62dc7e25eb5d4c68d3c1d6ae307298611489b485909c0323f85a878fcd0851",
+   "track": [
+    "llm"
+   ]
+  },
+  {
+   "dtype": "fp16",
+   "family": "gemv",
+   "id": "op.gemv/small/fp16-k256-n512",
+   "kind": "op",
+   "sha256": "53659f5393236b19a85019305821818b76babff48951aea232e335969b4adce2",
+   "track": [
+    "llm"
+   ]
+  },
+  {
+   "dtype": "fp16",
+   "family": "layernorm",
+   "id": "op.layernorm/small/fp16-r64-d256",
+   "kind": "op",
+   "sha256": "b6fbd482b1212ad7aa7084acda2757379258de5865c82248c7913af16b8317d0",
+   "track": [
+    "llm",
+    "general"
+   ]
+  },
+  {
+   "dtype": "fp16",
+   "family": "linear",
+   "id": "op.linear/small/fp16-m64-k256-n256",
+   "kind": "op",
+   "sha256": "84b3ab709908f8bc0a2ed4aaf4de371f26271ec65d95ce936bbe831e70740b3a",
+   "track": [
+    "llm"
+   ]
+  },
+  {
+   "dtype": "fp16",
+   "family": "matmul",
+   "id": "op.matmul/small/fp16-m64-k128-n128",
+   "kind": "op",
+   "sha256": "bc1d21628b4802196e41376a9bc889ebb05bd1f6e57e7ed5e091c642bc01174e",
+   "track": [
+    "llm",
+    "general"
+   ]
+  },
+  {
+   "dtype": "fp32",
+   "family": "matmul",
+   "id": "op.matmul/small/fp32-m64-k128-n128",
+   "kind": "op",
+   "sha256": "27fc8a44991a4668e9496360b72726d9b646decbde0e1ee571c617e3090e5189",
+   "track": [
+    "general"
+   ]
+  },
+  {
+   "dtype": "fp16",
+   "family": "rmsnorm",
+   "id": "op.rmsnorm/small/fp16-r64-d256",
+   "kind": "op",
+   "sha256": "8d28513b0f556d405ddd081f935becb0dea847284dae328c5fff13ca576d66f7",
+   "track": [
+    "llm"
+   ]
+  },
+  {
+   "dtype": "fp16",
+   "family": "rope",
+   "id": "op.rope/small/fp16-b1-h4-s64-d32",
+   "kind": "op",
+   "sha256": "63dc112adfc11a22ec7bd0a0a383c064e6f9ff52c95efc6e3a02a027392558e4",
+   "track": [
+    "llm"
+   ]
+  },
+  {
+   "dtype": "fp16",
+   "family": "silu",
+   "id": "op.silu/small/fp16-n16384",
+   "kind": "op",
+   "sha256": "0aab72a6198df42a40e98976facc987d2225d0b49176da5893ef3399a477d523",
+   "track": [
+    "llm"
+   ]
+  },
+  {
+   "dtype": "fp16",
+   "family": "softmax",
+   "id": "op.softmax/small/fp16-r64-c512",
+   "kind": "op",
+   "sha256": "b9054caddd29ba4c026bb0db3c1df8b077b37a38050230c9849d0f87bc1bd9e5",
+   "track": [
+    "llm"
+   ]
+  },
+  {
+   "dtype": "fp16",
+   "family": "swiglu",
+   "id": "op.swiglu/small/fp16-n16384",
+   "kind": "op",
+   "sha256": "18951b85cc544d97f41995a24d6cb227a3e2bc3b4714f35a236fc387b758ae7a",
+   "track": [
+    "llm"
+   ]
+  },
+  {
+   "dtype": "fp32",
+   "family": "transpose",
+   "id": "op.transpose/small/fp32-r128-c256",
+   "kind": "op",
+   "sha256": "824a2e04d1b7be0a77c436cb5df3c520e828e7fd74a312b584f3bbd5526f1e2b",
+   "track": [
+    "general"
+   ]
+  }
+ ],
+ "schema": "archbench-suite/1",
+ "sha256": "23dba4b762efc003e0728c6396344ad331e44c0bc16e15834381b65b16d876bc",
+ "tier": "small"
+}

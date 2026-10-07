@@ -1067,6 +1067,35 @@ r38-profiler: $(R2_DATA_STAMP) | dirs
 
 r38-l2: r38-l0 r37 r38-baseline-check r38-profiler r38-smoke
 
+# ArchBench at the PyTorch level (archbench/README.md, archbench/PROTOCOL.md):
+# one set of torch workloads, TNCA through torch.compile -> Inductor -> tnca,
+# the GPU through torch.compile on CUDA, one bound and one scorer. Runs in
+# TORCH_PYTHON. Records are JSON lines under $(BUILD)/archbench/.
+.PHONY: archbench-selftest archbench-coverage archbench-tiny archbench-u50sim archbench-gpu
+ARCHBENCH_OUT ?= $(BUILD)/archbench
+ARCHBENCH_JOBS ?= 8
+archbench-selftest:
+	@$(TORCH_PYTHON) -m archbench.selftest
+# Every tiny and small point compiles for TNCA; nothing is simulated.
+archbench-coverage: $(R2_DATA_STAMP) | dirs
+	@mkdir -p $(ARCHBENCH_OUT) && rm -f $(ARCHBENCH_OUT)/coverage.jsonl
+	@$(TORCH_PYTHON) -m archbench.run --platform tnca --tier tiny small --compile-only \
+	   --jobs $(ARCHBENCH_JOBS) --out $(ARCHBENCH_OUT)/coverage.jsonl
+# The tiny tier on the RTL simulator (hours: the models are millions of cycles).
+archbench-tiny: $(R2_DATA_STAMP) | dirs
+	@mkdir -p $(ARCHBENCH_OUT) && rm -f $(ARCHBENCH_OUT)/tnca_tiny.jsonl
+	@$(TORCH_PYTHON) -m archbench.run --platform tnca --tier tiny --jobs $(ARCHBENCH_JOBS) \
+	   --out $(ARCHBENCH_OUT)/tnca_tiny.jsonl
+# The same through the board's register protocol on the board's RTL top: the
+# expected board results (doc/r38_board_bringup.md, step B4).
+archbench-u50sim: $(R2_DATA_STAMP) | dirs
+	@mkdir -p $(ARCHBENCH_OUT) && rm -f $(ARCHBENCH_OUT)/u50sim_tiny.jsonl
+	@$(TORCH_PYTHON) -m archbench.run --platform tnca --backend fpga-u50-sim --profile core-vrf-sync-v1 \
+	   --tier tiny --jobs $(ARCHBENCH_JOBS) --out $(ARCHBENCH_OUT)/u50sim_tiny.jsonl
+archbench-gpu:
+	@mkdir -p $(ARCHBENCH_OUT) && rm -f $(ARCHBENCH_OUT)/gpu.jsonl
+	@$(TORCH_PYTHON) -m archbench.run --platform gpu --tier tiny small large --out $(ARCHBENCH_OUT)/gpu.jsonl
+
 # One suite, every backend. This is the suite a downstream branch runs.
 r36-conformance: $(R2_DATA_STAMP) | dirs
 	@$(TRITON_PYTHON) tools/r36/conformance.py \

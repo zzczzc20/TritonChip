@@ -146,8 +146,17 @@ class SimLink(U50Link):
                  host_timeout=30.0, trace=False):
         self.harness = harness
         self.words = words
-        self.dir = workdir or os.path.join(_repo_root(), 'sim', 'build',
-                                           'u50-sim')
+        # One directory per link unless the caller names one. The harness,
+        # its build and both mailbox files live here, so two links sharing a
+        # fixed directory -- two processes, or a test beside a benchmark --
+        # rebuilt one .vvp under each other and answered each other's
+        # register requests.
+        if workdir is None:
+            import tempfile
+            base = os.path.join(_repo_root(), 'sim', 'build', 'u50-sim')
+            os.makedirs(base, exist_ok=True)
+            workdir = tempfile.mkdtemp(prefix='link-', dir=base)
+        self.dir = workdir
         os.makedirs(self.dir, exist_ok=True)
         self.cmd = os.path.join(self.dir, 'regs.cmd')
         self.rsp = os.path.join(self.dir, 'regs.rsp')
@@ -181,9 +190,17 @@ class SimLink(U50Link):
                 f'+watchdog={self.watchdog}']
         if self.trace:
             argv.append('+trace')
+        # The stand-in dies with the process that owns it, as the sim-file
+        # device does (transport._arm_parent_death): a host that exits
+        # without stopping its link -- a benchmark worker, a killed test --
+        # otherwise left the simulator spinning against a mailbox nobody
+        # would write again. Sixteen of them were found running, parented
+        # to init, after one benchmark sweep.
+        from ..transport import _arm_parent_death
+        spawn = {'preexec_fn': _arm_parent_death} if hasattr(os, 'fork') else {}
         with open(self.log, 'w') as lg:
             self.proc = subprocess.Popen(argv, stdout=lg, stderr=subprocess.STDOUT,
-                                         start_new_session=True)
+                                         start_new_session=True, **spawn)
         self._await_up()
         return self
 

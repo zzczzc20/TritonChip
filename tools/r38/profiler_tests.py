@@ -92,6 +92,10 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument('--quick', action='store_true', help='probe cases only (development)')
     ap.add_argument('--profiles', nargs='+', default=['core-sim', 'core-vrf-sync-v1'])
+    ap.add_argument('--backend', help='a runtime backend other than the simulation bench '
+                    '(e.g. fpga-u50-sim, or fpga-u50 on a board): runs tests 1-5 through it, '
+                    'numerics only for 5; tests 6-7 are about the bench and are skipped')
+    ap.add_argument('--backend-args', default='{}', help='JSON keyword arguments for --backend')
     args = ap.parse_args()
     OUT.mkdir(parents=True, exist_ok=True)
     results, failed = {}, False
@@ -107,10 +111,14 @@ def main():
 
     base, base_src = baseline_cycles()
     for profile in args.profiles:
-        bench = H.build_bench(profile, OUT / f'bench-{profile}.vvp')
         only = PROBE if args.quick else None
+        if args.backend:
+            skw = dict(backend=args.backend, counters=True, **json.loads(args.backend_args))
+        else:
+            bench = H.build_bench(profile, OUT / f'bench-{profile}.vvp')
+            skw = dict(bench=str(bench), counters=True)
         rows = H.run_cases(2, OUT / f'artifacts-{profile}', only=only, profile=profile,
-                           session_kwargs=dict(bench=str(bench), counters=True), progress=False)
+                           session_kwargs=skw, progress=False)
         (OUT / f'rows-{profile}.json').write_text(json.dumps(rows, indent=1))
         bad, attained = identity_problems(rows)
         if not attained:
@@ -118,7 +126,7 @@ def main():
         report(f'1-3 identities [{profile}]', bad)
         report(f'4 monotonic [{profile}]', monotonic_problems(rows))
         numeric = [f'{r["case"]}: {r["detail"]}' for r in rows if not r['ok']]
-        if profile == 'core-sim':
+        if profile == 'core-sim' and not args.backend:
             if base is None:
                 numeric.append('no S1-01 baseline to compare cycles with')
             else:
@@ -126,8 +134,14 @@ def main():
                             for r in rows if r['ok'] and r['cycles'] != base.get(r['case'])]
             if not args.quick and len(rows) != 149:
                 numeric.append(f'{len(rows)} cases ran, expected 149')
-        report(f'5 no perturbation [{profile}] vs {base_src if profile == "core-sim" else "numerics only"}',
-               numeric)
+        report(f'5 no perturbation [{profile}] vs '
+               f'{base_src if profile == "core-sim" and not args.backend else "numerics only"}', numeric)
+
+    if args.backend:
+        (OUT / f'report-{args.backend}.json').write_text(json.dumps(results, indent=1))
+        print(f'profiler [{args.backend}]: {"FAIL" if failed else "PASS"}'
+              + (' (quick: NOT the acceptance run)' if args.quick else ''))
+        return 1 if failed else 0
 
     # 6: the device as it was before op 7.
     old = OUT / 'old-device'

@@ -310,3 +310,22 @@ measured. 150 MHz is itself a lowering, chosen and recorded deliberately -- see
 the header of `link.sh` for the argument. Going below it is a second such
 decision, and it gets made the same way: with the report in hand, and the number
 moved in all four places at once.
+
+## Since this image: the r38 merge (2026-10-07)
+
+The image measured above was built from the `fpga-u50` branch. After that
+branch was merged into `r38`, the device RTL behind it changed, so the loaded
+image is **not** the current design and has to be rebuilt before any r38
+measurement is taken on the board:
+
+- `rtl/tnca_shell.v`: the counter read port (`perf_sel`/`perf_rdata`), two
+  data-port beat counters, and `done_retired` reporting the command's own
+  instructions rather than every instruction since reset.
+- `rtl/fpga/tnca_mmio.v`, `rtl/fpga/tnca_fpga_top.v`: mailbox op 7
+  `PERF_READ`, answered in 32-bit halves like the simulation bench; an index
+  past the last counter is refused. Checked by `R36-FPGA-08`.
+- `rtl/core/tnca_tensor.v`: the transposed tensor transfer, elaborated only
+  with `HAS_TENSOR_XPOSE=1` (0 here, as in `core-vrf-sync-v1`).
+
+The build steps, the order of the checks on the new image, and what each must
+show are in [`doc/r38_board_bringup.md`](../../doc/r38_board_bringup.md).

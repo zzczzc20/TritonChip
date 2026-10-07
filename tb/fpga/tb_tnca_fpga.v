@@ -77,6 +77,7 @@ module tb_tnca_fpga;
     localparam [3:0] OP_QUIESCE  = 4'd4;
     localparam [3:0] OP_SHUTDOWN = 4'd5;
     localparam [3:0] OP_PING     = 4'd6;
+    localparam [3:0] OP_PERF_READ = 4'd7;
 
     localparam [3:0] ST_OK      = 4'd0;
     localparam [3:0] ST_FAULT   = 4'd1;
@@ -128,6 +129,7 @@ module tb_tnca_fpga;
     reg [1023:0] hexfile;
     reg [63:0] seq;
     reg [63:0] got, r0, r1;
+    reg [63:0] perf_a;          // a PERF_READ result kept for the second read
     reg [3:0]  status;
     reg        quiet;
     integer    i, fails, step;
@@ -451,6 +453,30 @@ module tb_tnca_fpga;
         mailbox(4'd9, 64'd0, 64'd0, 64'd0, 64'd0, 64'd0, 64'd0,
                 status, r0, r1);
         check_status("an opcode the device does not have", status, ST_REFUSED);
+
+        // PERF_READ (op 7, transport 1.1): a counter in two 32-bit halves,
+        // as the simulation bench answers it. After the launch above the
+        // cycle and issue counters are past zero; nothing runs between two
+        // reads, so a second read is not smaller; an index past the last
+        // counter is refused, never answered with a zero.
+        mailbox(OP_PERF_READ, 64'd0, 64'd0, 64'd0, 64'd0, 64'd0, 64'd0,
+                status, r0, r1);
+        check_status("PERF_READ perf_cycles", status, ST_OK);
+        check("PERF_READ answers in 32-bit halves", {32'd0, r0[63:32] | r1[63:32]}, 64'd0);
+        perf_a = {r1[31:0], r0[31:0]};
+        check("perf_cycles is past zero after a launch", {63'd0, perf_a != 64'd0}, 64'd1);
+        mailbox(OP_PERF_READ, 64'd1, 64'd0, 64'd0, 64'd0, 64'd0, 64'd0,
+                status, r0, r1);
+        check_status("PERF_READ perf_issued", status, ST_OK);
+        check("perf_issued is past zero after a launch",
+              {63'd0, {r1[31:0], r0[31:0]} != 64'd0}, 64'd1);
+        mailbox(OP_PERF_READ, 64'd0, 64'd0, 64'd0, 64'd0, 64'd0, 64'd0,
+                status, r0, r1);
+        check("perf_cycles does not go backwards between reads",
+              {63'd0, {r1[31:0], r0[31:0]} >= perf_a}, 64'd1);
+        mailbox(OP_PERF_READ, 64'd20, 64'd0, 64'd0, 64'd0, 64'd0, 64'd0,
+                status, r0, r1);
+        check_status("PERF_READ past the last counter", status, ST_REFUSED);
 
         // The results must be exactly where they were: a refused upload that
         // wrote something anyway is the failure this checks for.

@@ -796,10 +796,61 @@ def fpga07(log):
                  f'{len(U50TOP_MUTANTS)} of its breakages are caught'
 
 
+FPGA_TB = os.path.join('tb', 'fpga', 'tb_tnca_fpga.v')
+FPGA_TB_PROG = os.path.join('tb', 'core', 'progs', 't30_memboundary.s')
+
+
+def fpga08(log):
+    """The register protocol, end to end, on tnca_fpga_top.
+
+    tb/fpga/tb_tnca_fpga.v drives the device the way a host does -- the
+    program through the payload window, the command through the mailbox, the
+    answers back through the window -- and checks the hand-computed results,
+    the refusals, and PERF_READ (transport 1.1 op 7): two counters past zero
+    after a launch, answered in 32-bit halves, not decreasing between reads,
+    and an index past the last counter refused rather than read as zero.
+    It is the bench python/tnca/backends/u50.py is written against, and it
+    was not run by any gate until the counters made the protocol grow.
+    """
+    if not _require_iverilog(log):
+        return False, 'iverilog is not installed, so nothing was simulated'
+    with tempfile.TemporaryDirectory() as tmp:
+        hexfile = os.path.join(tmp, 'prog.hex')
+        r = subprocess.run([sys.executable, 'tools/asm/tnca_asm.py', FPGA_TB_PROG,
+                            '-o', hexfile, '--size', '16384'],
+                           cwd=ROOT, capture_output=True, text=True, timeout=TIMEOUT)
+        if r.returncode != 0:
+            log.append('    the program does not assemble: '
+                       + ' | '.join(_interesting(r.stdout + r.stderr, 2)))
+            return False, 'the bench program does not assemble'
+        vvp = os.path.join(tmp, 'tb_tnca_fpga.vvp')
+        r = subprocess.run(['iverilog', '-g2005', '-I', 'rtl/common', '-I', 'rtl/noc',
+                            '-o', vvp, FPGA_TB] + _library_files(),
+                           cwd=ROOT, capture_output=True, text=True, timeout=TIMEOUT)
+        if r.returncode != 0:
+            log.append('    it does not build: ' + ' | '.join(_interesting(r.stdout + r.stderr, 2)))
+            return False, 'the register-protocol bench does not build'
+        try:
+            r = subprocess.run(['vvp', vvp, f'+hex={hexfile}'], cwd=ROOT,
+                               capture_output=True, text=True, timeout=TB_TIMEOUT * 5)
+        except subprocess.TimeoutExpired:
+            return False, 'the register-protocol bench did not finish, which is a hang'
+    lines = (r.stdout + r.stderr).splitlines()
+    for line in lines:
+        if line.startswith('FAIL'):
+            log.append('    ' + line)
+    perf = [l.strip() for l in lines if 'PERF_READ' in l or 'perf_' in l]
+    for line in perf:
+        log.append('    ' + line)
+    ok = any(l.startswith('PASS tb_tnca_fpga') for l in lines)
+    return ok, ('the register protocol holds through tnca_mmio, PERF_READ included' if ok
+                else 'the register-protocol bench did not pass')
+
+
 TESTS = [('R36-FPGA-01', fpga01), ('R36-FPGA-02', fpga02),
          ('R36-FPGA-03', fpga03), ('R36-FPGA-04', fpga04),
          ('R36-FPGA-05', fpga05), ('R36-FPGA-06', fpga06),
-         ('R36-FPGA-07', fpga07)]
+         ('R36-FPGA-07', fpga07), ('R36-FPGA-08', fpga08)]
 
 
 def main():

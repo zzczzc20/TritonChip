@@ -19,6 +19,7 @@ u50)
     BOARD_IINTF=16e2362f82d2feab35529da27134b76d
     BOARD_BDF=0000:01:00.1
     BOARD_VITIS=/home/x4/Software/Xilinx/Vitis/2022.2
+    BOARD_VPP_OPTS=
     ;;
 u280)
     # acf3019.ece.ust.hk, 2026-10-07: shell xilinx_u280_gen3x16_xdma_base_1,
@@ -28,6 +29,14 @@ u280)
     BOARD_IINTF=fb2b2c5a19ed63593fea95f51fbc8eb9
     BOARD_BDF=0000:04:00.1
     BOARD_VITIS=/tools/Xilinx/Vitis/2023.2
+    # The whole kernel in SLR1. Left to the placer, the first U280 link
+    # (2026-10-07) split it over SLR0 and SLR1 and missed 150 MHz by
+    # 1.919 ns on 32 endpoints, all one path in the AXI-Lite adapter
+    # (w_have -> shadow_lo[*]/CE: one LUT, 8.2 ns of route, an SLR0->SLR1
+    # crossing). SLR0 also holds the shell's fixed logic (~108k LUTs);
+    # SLR1 was 19 % used. v++ adds the register slices for the control
+    # port's crossing from the shell.
+    BOARD_VPP_OPTS="--connectivity.slr tnca_u50_1:SLR1"
     ;;
 *)
     echo "boards.sh: unknown TNCA_BOARD '${TNCA_BOARD}' (u50, u280)" >&2

@@ -156,6 +156,7 @@ export TMPDIR=$OUT/tmp TMP=$OUT/tmp TEMP=$OUT/tmp
     echo "RTL_COMMIT=$(git -C "$REPO" rev-parse HEAD 2>/dev/null || echo 'not a git tree')"
     echo "XO=$XO"
     echo "BOARD=$BOARD"
+    echo "BOARD_VPP_OPTS=$BOARD_VPP_OPTS"
     echo "PLATFORM=$PLATFORM"
     echo "KERNEL_FREQUENCY_ARG=--kernel_frequency 0:$EXPECT_MHZ"
     echo "EXPECT_MHZ=$EXPECT_MHZ"
@@ -174,6 +175,7 @@ export TMPDIR=$OUT/tmp TMP=$OUT/tmp TEMP=$OUT/tmp
 v++ -l -t hw \
     --platform "$PLATFORM" \
     ${VPP_JOBS:+--jobs $VPP_JOBS} \
+    $BOARD_VPP_OPTS \
     --kernel_frequency 0:$EXPECT_MHZ \
     --temp_dir "$OUT/tmp" \
     --log_dir "$OUT/vpp_logs" \

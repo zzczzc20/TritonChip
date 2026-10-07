@@ -90,13 +90,15 @@ jobs:
         run: python3 tools/r1/resource_tests.py
 
       # CFG-01 reads capabilities back from every profile's own bench, and
-      # `core-vrf-sync-v1` is a profile like any other -- so its bench has
-      # to exist here. Only the bench is built: the programs that run on it
-      # are the R3 v2 targets' business, not this job's.
+      # `core-vrf-sync-v1` and `core-xpose-v1` are profiles like any other --
+      # so their benches have to exist here (the Makefile's r1-profile-tests
+      # builds the same set). Only the benches are built: the programs that
+      # run on them are other targets' business, not this job's.
       - name: R1 profile and capability checks
         run: |
           make core4
           make sim/build/tb_core_vrf.vvp
+          make sim/build/tb_core_xpose.vvp
           python3 tools/r1/profile_tests.py
 
       # R3's performance model: six graphs whose cycle counts are worked out

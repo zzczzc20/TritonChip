@@ -16,7 +16,6 @@ silently computed.
 import argparse
 import json
 from pathlib import Path
-import re
 import sys
 import time
 
@@ -29,35 +28,8 @@ import tnca.inductor                                        # noqa: E402
 CONFIG = tnca.inductor.configure()
 from torch._inductor.utils import run_and_get_code          # noqa: E402
 
-# Host-side computation in Inductor's generated wrapper. Buffer allocation,
-# reinterpretation and views are not computation and are not listed.
-FALLBACK = [
-    (re.compile(r'\bextern_kernels\.\w+'), 'extern kernel'),
-    (re.compile(r'\btorch\.ops\.aten\.(?!empty|empty_strided|as_strided|reinterpret)\w+'), 'ATen op'),
-    (re.compile(r'\baten\.(?!empty|empty_strided|as_strided)\w+\('), 'ATen op'),
-    (re.compile(r'\bcpp_fused\w*'), 'C++ kernel'),
-]
-
-
-def _executed(src):
-    """The wrapper as it runs: no comments (Inductor annotates each kernel
-    launch with the ATen ops it replaced), and nothing from the benchmark
-    harness Inductor appends after `def benchmark_compiled_module`."""
-    src = src.split('def benchmark_compiled_module', 1)[0]
-    return '\n'.join(l for l in src.splitlines() if not l.lstrip().startswith('#'))
-
-
-def fallbacks(code):
-    found = []
-    for src in map(_executed, code):
-        for pat, what in FALLBACK:
-            for m in pat.finditer(src):
-                found.append(f'{what}: {m.group(0)}')
-    return sorted(set(found))
-
-
-def kernels(code):
-    return sorted({m.group(1) for src in code for m in re.finditer(r'def (triton_\w+)\(', src)})
+fallbacks = tnca.inductor.host_fallbacks
+kernels = tnca.inductor.triton_kernels
 
 
 def g_elementwise(x, y):
@@ -117,6 +89,38 @@ def g_fallback_detected(x):
     return torch.sort(x, dim=-1).values          # no Triton lowering on this path
 
 
+# 2026-10-07: the graphs ArchBench needed (doc/r38_pytorch_p1plus.md section 6).
+# Each one is the smallest graph that reaches one fix.
+
+def g_bmm(a, b):
+    return torch.bmm(a, b)                       # the batched store mask: a 2-D i1 splat
+
+
+def g_sdpa_causal(q, k, v):                      # the CPU flash-attention decomposition
+    return torch.nn.functional.scaled_dot_product_attention(q, k, v, is_causal=True)
+
+
+def g_embedding(ids, table):
+    return torch.nn.functional.embedding(ids, table)   # int64 ids, a device assert
+
+
+def g_argmax(x):
+    return torch.argmax(x, dim=-1)               # a one-row fold, an fp16 load's other=
+
+
+def g_gemv(x, w):
+    return x @ w                                 # M = 1: a tile whose rows all alias
+
+
+def g_cumsum(x):
+    return torch.cumsum(x, dim=-1)               # a one-row scan, a tile bitcast
+
+
+def make_embedding():
+    g = torch.Generator().manual_seed(0)
+    return (torch.randperm(256, generator=g)[:16], torch.randn(256, 16))
+
+
 GRAPHS = {
     'elementwise': (g_elementwise, lambda: (torch.randn(37), torch.randn(37)), 0.0, True),
     'fused_act': (g_fused_act, lambda: (torch.randn(45), torch.randn(45), torch.randn(45)), 2 ** -17, True),
@@ -129,8 +133,31 @@ GRAPHS = {
     'sliced_view': (g_sliced_view, lambda: (torch.randn(3, 37),), 0.0, True),
     'transposed_input': (g_transposed_input, lambda: (torch.randn(20, 12), torch.randn(12, 20)), 0.0, True),
     'inplace_add': (g_inplace_add, lambda: (torch.randn(37), torch.randn(37)), 0.0, True),
+    'bmm': (g_bmm, lambda: (torch.randn(2, 16, 16).half(), torch.randn(2, 16, 16).half()), 2 ** -8, True),
+    'sdpa_causal': (g_sdpa_causal, lambda: tuple(torch.randn(1, 2, 16, 16).half() for _ in range(3)), 2 ** -7, True),
+    'embedding_i64': (g_embedding, make_embedding, 0.0, True),
+    'argmax_fp16': (g_argmax, lambda: (torch.randn(2, 64).half(),), 0.0, True),
+    'gemv': (g_gemv, lambda: (torch.randn(1, 64).half(), torch.randn(64, 16).half()), 2 ** -8, True),
+    'cumsum': (g_cumsum, lambda: (torch.randn(4, 32),), 2 ** -16, True),
     'fallback_detected': (g_fallback_detected, lambda: (torch.randn(3, 8),), 0.0, False),
 }
+
+
+def check_index_assert():
+    """An out-of-range token id must fault on the device -- the device
+    assert Inductor inserts is lowered as a check, not as nothing -- and
+    not read whatever memory the id lands on."""
+    torch._dynamo.reset()
+    ids = torch.tensor([0, 300, 5])              # 300 >= 256
+    table = torch.randn(256, 16)
+    try:
+        out = torch.compile(g_embedding)(ids, table)
+    except Exception as e:                        # noqa: BLE001
+        text = f'{type(e).__name__}: {e}'
+        ok = ('FAULT' in text.upper() or 'TRAP' in text.upper()) and 'IndexError' not in text
+        return dict(name='index_assert_traps', ok=ok, problems=[] if ok else [f'failed, but not by a device fault: {text[-400:]}'])
+    return dict(name='index_assert_traps', ok=False,
+                problems=[f'an out-of-range id produced a result: {out[1, :4].tolist()}'])
 
 
 def run(name):
@@ -186,6 +213,13 @@ def main():
         print(f'{"PASS" if row["ok"] else "FAIL"} {name}  kernels={row.get("kernels")} '
               f'fallbacks={row.get("fallbacks")} err={row.get("max_error")}'
               + ''.join(f'\n     {p}' for p in row['problems']), flush=True)
+    if not args.only or 'index_assert_traps' in args.only:
+        t = time.monotonic()
+        row = check_index_assert()
+        row['seconds'] = round(time.monotonic() - t, 1)
+        rows.append(row)
+        print(f'{"PASS" if row["ok"] else "FAIL"} index_assert_traps' + ''.join(f'\n     {p}' for p in row['problems']),
+              flush=True)
     args.json.write_text(json.dumps(dict(config=CONFIG, rows=rows), indent=1, default=str) + '\n')
     print(f'torch: {sum(r["ok"] for r in rows)}/{len(rows)} pass')
     return 0 if rows and all(r['ok'] for r in rows) else 1

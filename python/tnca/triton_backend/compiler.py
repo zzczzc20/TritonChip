@@ -222,9 +222,25 @@ class TNCABackend(BaseBackend):
         stages.record('ttir', text)
         ctx = module.context
         compile_options = {'opt_level': options.opt_level}
-        (kernel_name, params, asm_text, code, symbols, report,
-         _stages) = aot._lower_ttir(module, ctx, kernel_name, params, target, prov,
-                                    compile_options, stages, options.opt_level)
+        # The dump switches of doc/dumping_ir.md (TNCA_KERNEL_DUMP=1, written
+        # under TNCA_DUMP_DIR/<kernel>/), on this entry point as on AOT --
+        # and written for a kernel that FAILS to lower too, with every stage
+        # it reached, which is when a dump is most wanted:
+        # tools/r38/ttir_lower.py reruns the failing lowering from the .ttir.
+        dump_to = _dump.requested()
+        try:
+            (kernel_name, params, asm_text, code, symbols, report,
+             _stages) = aot._lower_ttir(module, ctx, kernel_name, params, target, prov,
+                                        compile_options, stages, options.opt_level)
+        except Exception as e:
+            if dump_to:
+                stages.write(dump_to, metadata={'entry_point': 'triton-backend', 'profile': options.profile,
+                                                'opt_level': options.opt_level,
+                                                'failed': f'{type(e).__name__}: {str(e)[:500]}'})
+            raise
+        if dump_to:
+            stages.write(dump_to, metadata={'entry_point': 'triton-backend', 'profile': options.profile,
+                                            'opt_level': options.opt_level})
         # Aliasing. Triton lets pointer arguments overlap (PyTorch Inductor
         # passes one storage as input and output of an in-place op), and the
         # runtime refuses an overlap the manifest does not declare (ABI-05).

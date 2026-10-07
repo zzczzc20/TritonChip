@@ -15,11 +15,31 @@ region the kernel does not write comes back unchanged because it was
 uploaded. This is an explicit host round trip per launch; keeping tensors on
 the device is the PrivateUse1 device (roadmap P2) and not this.
 
-One Session per process and profile, opened on first launch.
+One Session per process, profile and backend, opened on first launch. The
+backend is the runtime's (tnca.backend registry), chosen by environment so
+that the same torch program reaches any of them unchanged:
+
+    TNCA_BACKEND       sim-file (default) | sim-socket | fpga-u50-sim | fpga-u50
+    TNCA_BACKEND_ARGS  JSON object of keyword arguments the backend needs and
+                       the runtime cannot know, e.g. {"xclbin": "/path/x.xclbin"}
+                       for the board (Session passes them through untouched)
+    TNCA_DEADLINE      device cycles one launch may take (default 5e6)
+    TNCA_HOST_TIMEOUT  wall seconds the host waits for one launch (default 600;
+                       a simulator runs ~500 target cycles per second)
+    TNCA_LAUNCH=skip   compile every kernel and run none (coverage sweeps);
+                       the launch log marks each entry `skipped`
+
+`launch_log()` records every launch made while it is open -- kernel, grid,
+device cycles, per-program cycles, counters, bytes moved between host and
+device -- which is how a caller measures a whole torch graph rather than
+one kernel.
 """
+import contextlib
+import json
 import os
 import tempfile
 import threading
+import time
 
 from triton.backends.compiler import GPUTarget
 from triton.backends.driver import DriverBase
@@ -30,6 +50,19 @@ def _torch():
     return torch
 
 
+def backend_choice():
+    """(backend name, keyword arguments) from TNCA_BACKEND / TNCA_BACKEND_ARGS."""
+    name = os.environ.get('TNCA_BACKEND') or 'sim-file'
+    raw = os.environ.get('TNCA_BACKEND_ARGS') or '{}'
+    try:
+        kwargs = json.loads(raw)
+    except ValueError as e:
+        raise TNCALaunchError(f'TNCA_BACKEND_ARGS is not JSON: {e}') from None
+    if not isinstance(kwargs, dict):
+        raise TNCALaunchError('TNCA_BACKEND_ARGS must be a JSON object')
+    return name, kwargs
+
+
 class _Sessions:
     lock = threading.Lock()
     open = {}
@@ -37,13 +70,48 @@ class _Sessions:
     @classmethod
     def get(cls, profile):
         from tnca.runtime import Session
+        backend, kwargs = backend_choice()
+        key = (profile, backend, json.dumps(kwargs, sort_keys=True))
         with cls.lock:
-            s = cls.open.get(profile)
+            s = cls.open.get(key)
             if s is None or s.closed or s.poisoned:
                 s = Session(profile=profile, deadline_cycles=int(os.environ.get('TNCA_DEADLINE', '5000000')),
-                            counters=os.environ.get('TNCA_COUNTERS') == '1')
-                cls.open[profile] = s
+                            host_timeout=float(os.environ.get('TNCA_HOST_TIMEOUT', '600')),
+                            counters=os.environ.get('TNCA_COUNTERS') == '1',
+                            backend=backend, **kwargs)
+                cls.open[key] = s
             return s
+
+    @classmethod
+    def close_all(cls):
+        """Close every session at interpreter exit, so each device -- a
+        simulator, a board link -- is shut down rather than abandoned."""
+        with cls.lock:
+            for s in cls.open.values():
+                try:
+                    if not s.closed:
+                        s.close()
+                except Exception:                        # noqa: BLE001
+                    pass
+            cls.open.clear()
+
+
+import atexit as _atexit                                 # noqa: E402
+_atexit.register(_Sessions.close_all)
+
+
+_logs = []
+
+
+@contextlib.contextmanager
+def launch_log():
+    """Collect one dict per launch made while open (nested logs all see it)."""
+    log = []
+    _logs.append(log)
+    try:
+        yield log
+    finally:
+        _logs.remove(log)
 
 
 class TNCALaunchError(RuntimeError):
@@ -89,6 +157,31 @@ class TNCALauncher:
         torch = _torch()
         if launch_enter_hook is not None:
             launch_enter_hook(launch_metadata)
+        if os.environ.get('TNCA_LAUNCH') == 'skip':
+            # Compile-only sweeps (TNCA_LAUNCH=skip): every kernel of a graph
+            # is compiled, none is run, and the outputs are whatever the host
+            # buffers held. The log says so, so no caller can take the
+            # result for a measurement.
+            # What the launch WOULD move: one buffer per distinct storage,
+            # exactly as below -- the capacity question a board asks.
+            storages = {}
+            for v in args:
+                if isinstance(v, torch.Tensor):
+                    st = v.untyped_storage()
+                    storages[st.data_ptr()] = st.nbytes()
+                elif type(v).__name__ == 'TensorDescriptor' and hasattr(v, 'base'):
+                    st = v.base.untyped_storage()
+                    storages[st.data_ptr()] = st.nbytes()
+            entry = dict(kernel=self.metadata.name, grid=(gridX, gridY, gridZ), profile=self.profile,
+                         backend=None, device_cycles=None, program_cycles=[], counters=None,
+                         host_seconds=dict(upload=0.0, run=0.0, download=0.0),
+                         upload_bytes=sum(storages.values()), download_bytes=0,
+                         buffers=len(storages), skipped=True)
+            for log in _logs:
+                log.append(entry)
+            if launch_exit_hook is not None:
+                launch_exit_hook(launch_metadata)
+            return
         # Bind by NAME: the artifact's parameters are the kernel's own names,
         # minus constexprs and anything the JIT specialised away.
         by_name = dict(zip(self.names, args)) if self.names else {}
@@ -110,6 +203,8 @@ class TNCALauncher:
         values = [by_name[p] for p in self.params]
         session, module = _load(_Sessions.get(self.profile), function)
         buffers, bound = {}, {}
+        moved = {'upload_bytes': 0, 'download_bytes': 0}
+        t_start = time.perf_counter()
 
         def device_ref(name, v):
             if v.device.type != 'cpu':
@@ -121,6 +216,7 @@ class TNCALauncher:
                 handle = session.allocate(max(st.nbytes(), 8), name=name)
                 if st.nbytes():
                     session.upload(handle, raw.numpy().tobytes())
+                    moved['upload_bytes'] += st.nbytes()
                 buffers[key] = (handle, raw)
             handle = buffers[key][0]
             off = v.storage_offset() * v.element_size()
@@ -147,8 +243,11 @@ class TNCALauncher:
                     raise TNCALaunchError(f'{name}: None argument')
                 else:
                     raise TNCALaunchError(f'{name}: unsupported argument type {type(v).__name__}')
-            event = session.submit(module, bound, grid=(max(gridX, 1), max(gridY, 1), max(gridZ, 1)))
+            grid = (max(gridX, 1), max(gridY, 1), max(gridZ, 1))
+            t_submit = time.perf_counter()
+            event = session.submit(module, bound, grid=grid)
             session.wait(event)
+            t_done = time.perf_counter()
             self.last_event = event
             self.last_cycles = event.device_cycles
             TNCALauncher.last = self
@@ -159,6 +258,19 @@ class TNCALauncher:
                 if n:
                     data = session.download(handle)[:n]
                     raw.copy_(torch.frombuffer(bytearray(data), dtype=torch.uint8))
+                    moved['download_bytes'] += n
+            if _logs:
+                entry = dict(kernel=self.metadata.name, grid=grid, profile=self.profile,
+                             backend=session.backend_name,
+                             device_cycles=event.device_cycles,
+                             program_cycles=list(event.program_cycles or []),
+                             counters=event.counters,
+                             host_seconds=dict(upload=round(t_submit - t_start, 6),
+                                               run=round(t_done - t_submit, 6),
+                                               download=round(time.perf_counter() - t_done, 6)),
+                             **moved)
+                for log in _logs:
+                    log.append(entry)
         finally:
             for handle, _raw in buffers.values():
                 try:

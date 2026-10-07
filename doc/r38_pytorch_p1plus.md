@@ -73,3 +73,38 @@ tnca.runtime.Session → RTL（core-sim / core-xpose-v1）   ← 已有
 - 插件的 Triton 缓存 key 覆盖编译器源码；`TNCA_PROFILE` / `TNCA_OPT_LEVEL` 进入选项哈希。
 - JIT 特化会改变部分 kernel 的 TTIR，因此原生启动的周期约一半与 AOT 基线相同，其余不同但数值正确；逐字节相同的保证针对相同 TTIR。
 - 含异步张量传输的 kernel 不声明指针别名，参数重叠仍会被 runtime 拒绝。
+
+## 6. 强化：以 ArchBench 为驱动的全流程（2026-10-07）
+
+决定（2026-10-07）：ArchBench 以 PyTorch 为基础（[archbench/](../archbench/README.md)），与 GPU 比的是同一 PyTorch 程序经各自 `torch.compile` 的性能。用 ArchBench 的 tiny/small 档（52 个点：16 个 LLM 算子族、general 算子、LLaMA prefill/decode、GPT‑2 block、MLP、ResNet block）检查全流程，发现并修复了以下缺口。
+
+**Inductor 集成（`tnca.inductor.configure`，仍只用上游扩展点）**
+
+| 缺口 | 处理 |
+|---|---|
+| `scaled_dot_product_attention` 在 CPU 张量上成为 `aten._scaled_dot_product_flash_attention_for_cpu` host 调用 | 把上游（torch.export 所用的）数学分解加入 Inductor 的分解表；只影响 CPU 张量 |
+| conv 模板的配置从 64×256 起 | 为 device `cpu` 的配置启发式只给 16×16×16 一个配置 |
+| 归约 kernel 一次多行，使每行的值（argmax 的下标、embedding 的 token id）成为 2‑D 块 | 归约启发式 `XBLOCK = 1`：一行一个 program，归约维 16 一块 |
+| Inductor 的 FX 图缓存键不含我们注册的分解/启发式，旧图带着 host 回退被重用 | 关闭 `fx_graph_cache` 与 AOTAutograd 缓存；kernel 仍由 Triton 缓存（键含编译器源码） |
+| max‑autotune 下 Inductor 计时尾融合，CPU device interface 无法计时 | `benchmark_epilogue_fusion = False`：不计时，编译结果与 host 快慢无关 |
+
+**编译器（TTIR → TNCA IR）**
+
+| 缺口 | 处理 |
+|---|---|
+| `tl.device_assert`（Inductor 对每个间接下标都插入） | 真实检查：任一有效 lane 为假则 `TRAP_USER 0xA55E7`，含 2‑D 条件 |
+| int64 张量（token id、argmax 输出） | `wide.py` 扩展：load/store/compare/select/broadcast，1‑D 与单行 2‑D 块，逐 lane 精确；64 位偏移进入指针前做**带检查的**收窄（越界 `TRAP_USER 0xA5564`，不回绕） |
+| 布尔常量 `arith.constant true` 无类型后缀，使常量配对失败、整个 kernel 的浮点常量不可读 | 修正匹配（潜在缺陷，此前被 fp16 argmax 触发） |
+| 多操作数归约/scan 只接受 1‑D | 单行 2‑D 块 `(1, n)` 沿轴 1 等同于一个寄存器的 lane |
+| GEMM 模板在 M = 1（decode 的所有投影）时 A 的行步长为 0，TensorMap 无法表达 | 一次向量 load 作为每一行，经与计算 tile 相同的 repack 进入 MMA |
+| **2‑D 布尔 splat 被当作下标项**：`idx_q < BATCH` 并入 store mask 后整块被屏蔽，bmm 与 attention 的结果从未写出 | 2‑D i1 splat 成为谓词 tile（潜在缺陷，所有带标量条件 mask 的 2‑D store 都受影响） |
+| 循环携带的 i1 tile 没有存储 | 以 0/1 字携带，读出时比较 |
+| tile 的 `tt.bitcast`（Inductor `select_one`） | 同宽重解释，行不变 |
+
+**运行时/插件**：后端由环境选择（`TNCA_BACKEND`、`TNCA_BACKEND_ARGS`），同一 torch 程序可跑在 `sim-file`、`fpga-u50-sim`、`fpga-u50`；`launch_log()` 记录每次 launch 的周期、program 数、counter、传输字节；`TNCA_HOST_TIMEOUT`；`TNCA_LAUNCH=skip` 只编译不运行；插件遵循 `TNCA_KERNEL_DUMP`（失败的 kernel 也写出各阶段），`tools/r38/ttir_lower.py` 在 Inductor 之外复现一次降低。
+
+**结果**：tiny + small 全部 52 点编译通过（`make archbench-coverage`），零 host 回退；tiny 档在 RTL 上的数值结果见 `doc/r38_stage1_status.md`。经板卡寄存器协议（`fpga-u50-sim`，与板卡同一个 `U50Backend`、同一个 `tnca_fpga_top`）的周期与同 profile 的仿真 bench 逐点相同。
+
+仍未解决：单查询（decode，M = 1）的 attention 数值错误，正在定位（`op.attention_decode`、`model.llama_decode`）。
+
+仍未覆盖：块宽 > 16 的张量、多行块上的 int64 运算、small 档的模型在 RTL 上的完整仿真（单次数小时到数十小时，留给板卡）、张量常驻设备（P2）。

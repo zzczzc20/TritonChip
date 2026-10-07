@@ -17,10 +17,29 @@ Generated evidence lives under `sim/build/r38/` and is not in Git.
 | S1-07 three-layer feature | **PASS** | `tools/r38/loop_tests.py` 6/6; `make r38-xpose-rtl`; R37 447/447 on `core-sim` (cycles identical at O0/O1/O2) and 447/447 on `core-xpose-v1`; record `spec/r38/design_changes/xpose-dma-001.json` | — |
 | S1-08 case ablations | — | — | after S1-07 |
 | S1-09 gates | L0/L1/L2 + selftest implemented; selftest **PASS** | `tools/r38/gate.py l0\|l1\|l2\|selftest`; log `sim/build/r38/devops_log.jsonl` | an L2 promotion run |
-| S1-10 PyTorch (P1+, replaces the P0/P1 plan) | **IN PROGRESS**: ArchBench(torch) tiny + small 52/52 compile with zero host fallback and launch counts equal to the generated wrapper's; 7 regression graphs added for the fixes (incl. a device-assert trap) PASS; single-query (decode) attention fixed (three boolean defects, §6 of the P1+ doc); tiny tier on the RTL being measured | [r38_pytorch_p1plus.md](r38_pytorch_p1plus.md) §6; `make r38-torch`, `make archbench-coverage`, `make archbench-tiny` | Agent pilot not started |
+| S1-10 PyTorch (P1+, replaces the P0/P1 plan) | **IN PROGRESS**: ArchBench(torch) tiny + small 52/52 compile with zero host fallback and launch counts equal to the generated wrapper's; 7 regression graphs added for the fixes (incl. a device-assert trap) PASS; single-query (decode) attention fixed (three boolean defects, §6 of the P1+ doc); **tiny tier on the RTL 27/27 pass** (section below); 24/24 graph tests + the assert trap | [r38_pytorch_p1plus.md](r38_pytorch_p1plus.md) §6; `make r38-torch`, `make archbench-coverage`, `make archbench-tiny` | Agent pilot not started |
 | S1-10 NVIDIA scoring rules | **written**: [archbench/PROTOCOL.md](../archbench/PROTOCOL.md); exercised on GB10: 76/76 points under bound v2, η ≤ 1 throughout (bound v1 had found an η = 1.2 audit failure) | `make archbench-gpu`, `python -m archbench.report` | GB10 tensor-core peak is an upper estimate |
 | Board preparation (Stage 2 hand-off) | **ready, waiting for FPGA access** | [r38_board_bringup.md](r38_board_bringup.md); `make r36-fpga-tests` (8/8 incl. PERF_READ); `make archbench-u50sim` | the board image predates the merge and must be rebuilt (§0 there) |
 | S1-11 related work | — | — | — |
+
+## 2026-10-07: ArchBench (PyTorch) tiny tier, TNCA vs GB10
+
+Same 27 points, same seed, each platform's own `torch.compile`; balanced weights; strict
+bounds `archbench-torch-bounds/2`. TNCA: `core-sim`, O2, device cycles summed over launches
+(serial-grid), launch counts equal to the generated wrapper's. GB10: CUDA-graph replay,
+CUPTI device time, cold caches. Both full suites certified.
+
+| | pass | E (harmonic η) | A (arithmetic η) |
+|---|---:|---:|---:|
+| GB10, `inductor-cudagraph` | 27/27 | 0.0028 | 0.0068 |
+| TNCA `core-sim`, RTL | 27/27 | 0.0091 | 0.0293 |
+
+Models on TNCA (RTL cycles, η): LLaMA prefill 3.88 M (0.0099), LLaMA decode 2.57 M (0.0091),
+GPT-2 block 2.16 M (0.0117), MLP 1.14 M (0.0145), ResNet block 0.66 M (0.0029). At these
+shapes both platforms are latency-bound and far from their bounds; η is not speed
+(roadmap §4.7), and times are compared only once a board gives TNCA seconds. GB10 on the
+small and large tiers: 25/25 and 24/24 (Llama-3.2-1B decode 14.9 ms/token against a
+9.1 ms DRAM bound).
 
 ## Changes to the product made by Stage 1 so far
 

@@ -193,6 +193,13 @@ module tnca_tensor #(
                d_e3 [0:DESC_N-1], d_e4 [0:DESC_N-1];
     reg [63:0] d_s0 [0:DESC_N-1], d_s1 [0:DESC_N-1], d_s2 [0:DESC_N-1],
                d_s3 [0:DESC_N-1], d_s4 [0:DESC_N-1];
+    // The box's element count, saturated at 2^20, worked out while the
+    // TensorMap's tail is still arriving (S_DWAIT, words 14-18: one multiply a
+    // word), so the per-transfer window check is a shift and a compare rather
+    // than five multiplies in series -- which, in S_TCHK, was the device's
+    // worst path once the matrix loop was gone (10.1 ns post-synthesis).
+    reg [20:0] d_boxel [0:DESC_N-1];
+    reg [20:0] dl_boxel, t_boxel;
     reg [31:0] d_b0 [0:DESC_N-1], d_b1 [0:DESC_N-1], d_b2 [0:DESC_N-1],
                d_b3 [0:DESC_N-1], d_b4 [0:DESC_N-1];
     reg [7:0]  d_rank   [0:DESC_N-1];
@@ -572,6 +579,34 @@ module tnca_tensor #(
     wire [7:0] p_dtype = dl_buf[13][40 +: 8];   // byte 109
     wire [7:0] p_pad   = dl_buf[13][48 +: 8];   // byte 110
 
+    // Block dimension j of the TensorMap being loaded, as a factor of the box
+    // element count: 1 past the rank, 2^20 (saturating) past the legal 256.
+    function [20:0] box_factor;
+        input [2:0] j;
+        reg [31:0] b;
+        begin
+            case (j)
+            3'd0: b = dl_buf[11][31:0];
+            3'd1: b = dl_buf[11][63:32];
+            3'd2: b = dl_buf[12][31:0];
+            3'd3: b = dl_buf[12][63:32];
+            default: b = dl_buf[13][31:0];
+            endcase
+            if ({5'd0, j} >= p_rank)   box_factor = 21'd1;
+            else if (b > 32'd256)      box_factor = 21'h100000;
+            else                       box_factor = b[20:0];
+        end
+    endfunction
+    function [20:0] box_mul;
+        input [20:0] p;
+        input [20:0] f;
+        reg   [41:0] x;
+        begin
+            x = p * f;
+            box_mul = (x >= 42'h100000) ? 21'h100000 : x[20:0];
+        end
+    endfunction
+
     //==========================================================================
     // Geometry, on the normalised copy
     //==========================================================================
@@ -579,9 +614,11 @@ module tnca_tensor #(
     // derived quantities in the same cycle it checks them.
     wire [31:0] n_row_bytes = t_b4 << t_esz;
     wire [63:0] n_CB        = t_c4 << t_esz;
-    wire [40:0] g_rows  = {32'd0, t_b0[8:0]} * {32'd0, t_b1[8:0]} *
-                          {32'd0, t_b2[8:0]} * {32'd0, t_b3[8:0]};
-    wire [52:0] g_box   = {12'd0, g_rows} * {21'd0, n_row_bytes};
+    // Bytes in the box: the element count from the descriptor slot (above)
+    // times the element size. Saturated at 2^20 elements, far past any window
+    // (at most 255 x 64 bytes), so the comparison is exact where it matters;
+    // a block dimension over 256 is refused by blk_ok whatever this says.
+    wire [52:0] g_box   = {32'd0, t_boxel} << t_esz;
     wire [52:0] g_win   = {39'd0, t_wlen, 6'd0};
     function blk_ok;
         input [31:0] b;
@@ -788,6 +825,11 @@ module tnca_tensor #(
 
             S_DWAIT: begin
                 if (mem_rsp_valid) begin
+                    // Words 11-13 (block dims, rank) are in dl_buf by the time
+                    // word 14 arrives: fold one dimension per word after that.
+                    if (dl_word >= 5'd14 && dl_word <= 5'd18)
+                        dl_boxel <= (dl_word == 5'd14) ? box_factor(3'd0)
+                                                       : box_mul(dl_boxel, box_factor(dl_word[2:0] - 3'd6));
                     dl_buf[dl_word] <= mem_rsp_rdata;
                     if (dl_word == 5'd31) st <= S_DPARSE;
                     else begin
@@ -815,6 +857,7 @@ module tnca_tensor #(
                 d_b3[dl_slot]    <= dl_buf[12][63:32];
                 d_b4[dl_slot]    <= dl_buf[13][31:0];
                 d_rank[dl_slot]  <= p_rank;
+                d_boxel[dl_slot] <= dl_boxel;
                 d_dtype[dl_slot] <= p_dtype;
                 d_pad[dl_slot]   <= p_pad;
                 desc_v[dl_slot]  <= 1'b1;
@@ -832,6 +875,7 @@ module tnca_tensor #(
                 t_pad   <= d_pad[t_desc];
                 t_wbase <= win_base[t_win];
                 t_wlen  <= win_len[t_win];
+                t_boxel <= d_boxel[t_desc];
                 t_e0 <= 64'd1; t_e1 <= 64'd1; t_e2 <= 64'd1; t_e3 <= 64'd1; t_e4 <= 64'd1;
                 t_s0 <= 64'd0; t_s1 <= 64'd0; t_s2 <= 64'd0; t_s3 <= 64'd0; t_s4 <= 64'd0;
                 t_b0 <= 32'd1; t_b1 <= 32'd1; t_b2 <= 32'd1; t_b3 <= 32'd1; t_b4 <= 32'd1;

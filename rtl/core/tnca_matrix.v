@@ -236,7 +236,7 @@ module tnca_matrix #(
                            : row_mul ? 32'd0
                            : acc_rd[g];
 
-            tnca_fpu_multi u_mac (
+            tnca_fpu_multi #(.LAT(FMA_LAT)) u_mac (
                 .clk(clk), .rst_n(rst_n),
                 .fmt(mac_fmt),
                 .a(fa), .b(fb), .c(fc),
@@ -294,6 +294,21 @@ module tnca_matrix #(
     );
 
     assign ard_data = acc_rd_bus;
+
+`ifndef SYNTHESIS
+    // tnca_acc_rf has no write-to-read bypass (see there). That is only right
+    // while nothing reads a row in the cycle it is written and uses what it
+    // read: the MAC sweep and a row op are the users, so check both.
+    wire acc_rd_used = (st == S_MAC && !vrf_wait) || (st == S_ROW && r_rowop != 2'd0);
+    wire acc_collide = acc_rd_used && acc_w_en &&
+                       ({acc_r_slot, acc_r_row} == {acc_w_slot, acc_w_row});
+    always @(posedge clk)
+        if (rst_n && acc_collide) begin
+            $display("FATAL: tnca_matrix read accumulator %0d row %0d in the cycle it was written",
+                     acc_r_slot, acc_r_row);
+            $finish;
+        end
+`endif
 
     //==========================================================================
     // Sequencer

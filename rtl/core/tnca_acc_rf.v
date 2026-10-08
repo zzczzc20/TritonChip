@@ -7,7 +7,8 @@
 // to go accumulator -> cache -> vector -> cache -> accumulator, a design with
 // no scratchpad would have lost the argument for existing.
 //
-// One row-wide read port and one row-wide write port, each VLEN*32 bits. The
+// One row-wide read port and one row-wide write port, each VLEN*32 bits; a
+// read returns the row as it was before this cycle's write (see below). The
 // matrix engine and the a.* instructions share them, which is why the decoder
 // puts both on the same functional unit: the contention is real and belongs in
 // the issue logic rather than hidden here.
@@ -68,21 +69,25 @@ module tnca_acc_rf #(
         end
     end
 
-    // Write-first read, matching the other register files: the matrix engine
-    // reads and writes the same row two cycles apart, and a reader that
-    // collides with the writer must see the new value.
-    wire hit = (w_en && (ra == wa)) || (z_en && (ra == za));
-
+    // Read-old, with no write-to-read bypass. The bypass this file used to
+    // have put the FMA's normalise-and-round, the write port and the next
+    // multiply-add's operand selection and alignment into one cycle: it was
+    // the worst clk_dev path of the U280 link (60 logic levels, 23.9 ns), and
+    // it never carried a value anyone used. The matrix engine reads row m and
+    // writes it FMA_LAT cycles later, while it is reading row m+FMA_LAT; the
+    // next read of row m is ROWS+1 cycles after the first. A row op and
+    // a.vread start only after the previous command's write has landed.
+    // tnca_matrix checks that in simulation (`acc_collide`), so a change that
+    // made the bypass necessary would fail loudly rather than read stale data.
+    //
+    // The zero port keeps its bypass: z_en and the row are registers, so it
+    // is two levels of logic, not a path through the arithmetic.
     genvar g;
     generate
-        for (g = 0; g < VLEN; g = g + 1) begin : g_bypass
+        for (g = 0; g < VLEN; g = g + 1) begin : g_rd
             assign r_data[g*ELEN +: ELEN] =
-                (z_en && (ra == za))                  ? {ELEN{1'b0}} :
-                (w_en && (ra == wa) && w_lane_en[g])  ? w_data[g*ELEN +: ELEN]
-                                                      : mem[ra][g*ELEN +: ELEN];
+                (z_en && (ra == za)) ? {ELEN{1'b0}} : mem[ra][g*ELEN +: ELEN];
         end
     endgenerate
-
-    wire _unused = &{1'b0, hit, 1'b0};
 
 endmodule

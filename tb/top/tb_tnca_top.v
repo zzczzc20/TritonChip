@@ -277,10 +277,12 @@ module tb_tnca_top;
         while (!all_idle && cyc < maxcycles) begin
             @(posedge clk);
             cyc = cyc + 1;
-            if (progress != 0 && cyc % progress == 0)
+            if (progress != 0 && cyc % progress == 0) begin
                 $display("progress: cycle %0d issued %0d %0d %0d %0d", cyc,
                          perf_issued[0 +: 64], perf_issued[64 +: 64],
                          perf_issued[128 +: 64], perf_issued[192 +: 64]);
+                $fflush;          // a log file is block-buffered otherwise
+            end
         end
 
         tot_hit = 0; tot_miss = 0; tot_wb = 0; tot_mshr_full = 0; tot_block = 0;

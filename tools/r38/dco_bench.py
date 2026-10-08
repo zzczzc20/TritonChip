@@ -48,7 +48,10 @@ sys.path.insert(0, os.path.join(ROOT, 'tools', 'model'))
 
 BUILD = os.path.join(ROOT, 'sim', 'build')
 OUT = os.path.join(BUILD, 'dco')
-BENCH = os.path.join(BUILD, 'tb_top_dco.vvp')
+# The bench, per DRAM interval (make dco-bench DCO_DRAM_INTERVAL=n builds
+# tb_top_dco_i<n>.vvp): 8 is the compute-bound regime, 48 the memory-bound one.
+DRAM_INTERVAL = 48
+BENCH = None
 ASM = os.path.join(ROOT, 'tools', 'asm', 'tnca_asm.py')
 GRID = (4, 1, 1)                 # one program per tile
 
@@ -64,11 +67,16 @@ POLICIES = {
     'all':       2 | 4 | 8 | 32,
     'all+gqa':   2 | 4 | 8 | 16 | 32,
     'lru+dbp+tb': 1 | 4 | 32,    # what the compiler alone buys an LRU cache
+    'at+fix2':   2 | 8 | 64,     # static bypass at B_GEAR = 2 (the paper's "fix" variants)
 }
-DEFAULT_POLICIES = ['rr', 'lru', 'at', 'at+dbp', 'at+bypass', 'all', 'all+gqa']
+DEFAULT_POLICIES = ['rr', 'lru', 'at', 'at+dbp', 'at+bypass', 'at+fix2', 'all', 'all+gqa']
 
-# B_BITS 3 as in the paper; the gear moves on evictions per 512 cycles.
-KNOBS = {'bbits': 3, 'gear': 0, 'window': 512, 'ub': 24, 'lb': 6}
+# B_BITS 3 as in the paper. The dynamic gear moves on valid-line evictions per
+# 1024 cycles in each slice: above 4 it bypasses one tier more, below 1 one
+# less (these kernels evict a few lines per window per slice; the first
+# setting, 24 per 512, never moved it). `gear` is GEAR_INIT, which only the
+# static variant reads -- a dynamic gear starts at 0.
+KNOBS = {'bbits': 3, 'gear': 2, 'window': 1024, 'ub': 4, 'lb': 1}
 
 import triton                     # noqa: E402
 import triton.language as tl      # noqa: E402
@@ -77,6 +85,13 @@ import triton.language as tl      # noqa: E402
 # ---------------------------------------------------------------------------
 # Workloads
 # ---------------------------------------------------------------------------
+# The kernels move their tiles with tensor descriptors (TMA-style): one
+# transfer-engine instruction per 16x16 tile instead of a few hundred LSU and
+# repack instructions, which is what a Triton kernel on a TMA machine is
+# written as -- and what keeps a four-tile RTL simulation to minutes. The
+# accumulation is the dot's own (`acc = tl.dot(a, b, acc)`): the matrix unit
+# adds into its accumulator, where `acc += tl.dot(a, b)` would bring every
+# row back through the vector unit.
 @triton.jit
 def attn_kernel(q_ptr, kt_ptr, v_ptr, o_ptr,
                 H: tl.constexpr, NQB: tl.constexpr, NKB: tl.constexpr,
@@ -86,22 +101,26 @@ def attn_kernel(q_ptr, kt_ptr, v_ptr, o_ptr,
     K is stored pre-transposed, one contiguous D x BN tile per key block."""
     pid = tl.program_id(0)
     npid = tl.num_programs(0)
-    rm = tl.arange(0, BM)
-    rn = tl.arange(0, BN)
-    rd = tl.arange(0, D)
+    q_d = tl.make_tensor_descriptor(q_ptr, shape=[H * NQB * BM, D], strides=[D, 1],
+                                    block_shape=[BM, D])
+    k_d = tl.make_tensor_descriptor(kt_ptr, shape=[H * NKB * D, BN], strides=[BN, 1],
+                                    block_shape=[D, BN])
+    v_d = tl.make_tensor_descriptor(v_ptr, shape=[H * NKB * BN, D], strides=[D, 1],
+                                    block_shape=[BN, D])
+    o_d = tl.make_tensor_descriptor(o_ptr, shape=[H * NQB * BM, D], strides=[D, 1],
+                                    block_shape=[BM, D])
     for t in range(pid, H * NQB, npid):
         h = t // NQB
         qb = t % NQB
-        rows = h * NQB * BM + qb * BM + rm
-        q = tl.load(q_ptr + rows[:, None] * D + rd[None, :])
+        row = (h * NQB + qb) * BM
+        q = q_d.load([row, 0])
         acc = tl.zeros((BM, D), dtype=tl.float32)
         for kb in range(NKB):
-            kt = tl.load(kt_ptr + (h * NKB + kb) * D * BN
-                         + rd[:, None] * BN + rn[None, :])
+            kt = k_d.load([(h * NKB + kb) * D, 0])
             s = tl.dot(q, kt)
-            v = tl.load(v_ptr + ((h * NKB + kb) * BN + rn)[:, None] * D + rd[None, :])
-            acc += tl.dot(s.to(tl.float16), v)
-        tl.store(o_ptr + rows[:, None] * D + rd[None, :], acc.to(tl.float16))
+            v = v_d.load([(h * NKB + kb) * BN, 0])
+            acc = tl.dot(s.to(tl.float16), v, acc)
+        o_d.store([row, 0], acc.to(tl.float16))
 
 
 @triton.jit
@@ -109,20 +128,24 @@ def xw_kernel(x_ptr, w_ptr, o_ptr,
               NMB: tl.constexpr, BM: tl.constexpr, K: tl.constexpr,
               BK: tl.constexpr, N: tl.constexpr):
     """A stream of activations through one small weight: X is read once, W
-    by every row block. Under LRU the stream pushes W out; X is the
-    nAcc = 1 tensor the compiler marks for bypass."""
+    by every row block. X's tiles are half a line wide, so the compiler
+    marks it nAcc = 1 but not for bypass; dead-block prediction sees each of
+    its lines die after its last word is read."""
     pid = tl.program_id(0)
     npid = tl.num_programs(0)
-    rm = tl.arange(0, BM)
-    rk = tl.arange(0, BK)
-    rn = tl.arange(0, N)
+    x_d = tl.make_tensor_descriptor(x_ptr, shape=[NMB * BM, K], strides=[K, 1],
+                                    block_shape=[BM, BK])
+    w_d = tl.make_tensor_descriptor(w_ptr, shape=[K, N], strides=[N, 1],
+                                    block_shape=[BK, N])
+    o_d = tl.make_tensor_descriptor(o_ptr, shape=[NMB * BM, N], strides=[N, 1],
+                                    block_shape=[BM, N])
     for mb in range(pid, NMB, npid):
         acc = tl.zeros((BM, N), dtype=tl.float32)
         for kb in range(K // BK):
-            x = tl.load(x_ptr + (mb * BM + rm)[:, None] * K + (kb * BK + rk)[None, :])
-            w = tl.load(w_ptr + (kb * BK + rk)[:, None] * N + rn[None, :])
-            acc += tl.dot(x, w)
-        tl.store(o_ptr + (mb * BM + rm)[:, None] * N + rn[None, :], acc.to(tl.float16))
+            x = x_d.load([mb * BM, kb * BK])
+            w = w_d.load([kb * BK, 0])
+            acc = tl.dot(x, w, acc)
+        o_d.store([mb * BM, 0], acc.to(tl.float16))
 
 
 @triton.jit
@@ -132,22 +155,25 @@ def gemm_kernel(a_ptr, b_ptr, c_ptr,
                 N: tl.constexpr):
     """C = A @ B over a row-major walk of C's blocks. A row panel is reused
     by the NNB blocks of its row and is then dead; all of B is reused by
-    every row of blocks, and B is larger than the cache."""
+    every row of blocks, and B is larger than the cache. B is stored
+    block-packed: tile (nb, kb) is one contiguous BK x BN block."""
     pid = tl.program_id(0)
     npid = tl.num_programs(0)
-    rm = tl.arange(0, BM)
-    rn = tl.arange(0, BN)
-    rk = tl.arange(0, BK)
+    a_d = tl.make_tensor_descriptor(a_ptr, shape=[NMB * BM, K], strides=[K, 1],
+                                    block_shape=[BM, BK])
+    b_d = tl.make_tensor_descriptor(b_ptr, shape=[NNB * K, BN], strides=[BN, 1],
+                                    block_shape=[BK, BN])
+    c_d = tl.make_tensor_descriptor(c_ptr, shape=[NMB * BM, N], strides=[N, 1],
+                                    block_shape=[BM, BN])
     for t in range(pid, NMB * NNB, npid):
         mb = t // NNB
         nb = t % NNB
         acc = tl.zeros((BM, BN), dtype=tl.float32)
         for kb in range(K // BK):
-            a = tl.load(a_ptr + (mb * BM + rm)[:, None] * K + (kb * BK + rk)[None, :])
-            b = tl.load(b_ptr + ((nb * (K // BK) + kb) * BK + rk)[:, None] * BN + rn[None, :])
-            acc += tl.dot(a, b)
-        tl.store(c_ptr + (mb * BM + rm)[:, None] * N + (nb * BN + rn)[None, :],
-                 acc.to(tl.float16))
+            a = a_d.load([mb * BM, kb * BK])
+            b = b_d.load([(nb * (K // BK) + kb) * BK, 0])
+            acc = tl.dot(a, b, acc)
+        c_d.store([mb * BM, nb * BN], acc.to(tl.float16))
 
 
 def _f16(rng, shape, scale=0.25):
@@ -159,7 +185,7 @@ def _mm(a, b):
 
 
 def w_attn():
-    H, NQB, NKB, BM, BN, D = 2, 12, 16, 16, 16, 16
+    H, NQB, NKB, BM, BN, D = 2, 8, 16, 16, 16, 16
     rng = np.random.default_rng(1)
     q = _f16(rng, (H, NQB * BM, D))
     k = _f16(rng, (H, NKB * BN, D))
@@ -386,18 +412,23 @@ def main():
     ap.add_argument('--policies', help='comma-separated, from: ' + ', '.join(POLICIES))
     ap.add_argument('--jobs', type=int, default=6)
     ap.add_argument('--json', help='write results here')
+    ap.add_argument('--dram-interval', type=int, default=DRAM_INTERVAL,
+                    help='cycles per DRAM request of the bench to run (default %(default)s)')
     ap.add_argument('--plan-only', action='store_true',
                     help='compile and print what the compiler registers; run nothing')
     ap.add_argument('--nodco', action='store_true',
                     help='also run round-robin on an image compiled without '
                          'registrations, to price the registration stores')
     args = ap.parse_args()
+    global BENCH
+    BENCH = os.path.join(BUILD, f'tb_top_dco_i{args.dram_interval}.vvp')
     if not args.plan_only and not os.path.exists(BENCH):
-        sys.exit(f"{BENCH} not built; run `make dco-bench` first")
+        sys.exit(f"{BENCH} not built; run `make dco-bench DCO_DRAM_INTERVAL={args.dram_interval}`")
 
     names = args.only.split(',') if args.only else list(WORKLOADS)
     pols = args.policies.split(',') if args.policies else DEFAULT_POLICIES
-    report = {'knobs': KNOBS, 'workloads': {}}
+    report = {'knobs': KNOBS, 'dram_interval': args.dram_interval,
+              'bench': os.path.basename(BENCH), 'workloads': {}}
     failed = False
     for name in names:
         w = WORKLOADS[name]()

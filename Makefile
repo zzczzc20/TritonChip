@@ -577,11 +577,12 @@ top: $(BUILD)/tb_top.vvp $(patsubst %,$(BUILD)/%.hex,$(TOP_PROGS))
 # one line every DCO_DRAM_INTERVAL cycles, so traffic costs time. Triton
 # kernels compiled with the DCO pass run under every policy; the bench checks
 # that all policies give identical bits and reports cycles and DRAM traffic.
-DCO_DRAM_INTERVAL ?= 8
+DCO_DRAM_INTERVAL ?= 48
 DCO_DRAM_LAT      ?= 40
-DCO_BENCH_ARGS    ?= --json $(BUILD)/r38/dco_bench.json
+DCO_BENCH_ARGS    ?= --dram-interval $(DCO_DRAM_INTERVAL) \
+                     --json $(BUILD)/r38/dco_bench_i$(DCO_DRAM_INTERVAL).json
 
-$(BUILD)/tb_top_dco.vvp: $(TB)/top/tb_tnca_top.v $(RTL_DEPS) $(RTL)/tnca_top.v \
+$(BUILD)/tb_top_dco_i$(DCO_DRAM_INTERVAL).vvp: $(TB)/top/tb_tnca_top.v $(RTL_DEPS) $(RTL)/tnca_top.v \
                          $(TB)/common/tnca_dram_model.v | dirs
 	$(IVERILOG) -g2012 $(IVFLAGS) $(RTLY) \
 	   -P tb_tnca_top.SETS=8 -P tb_tnca_top.SET_W=3 \
@@ -592,7 +593,7 @@ $(BUILD)/tb_top_dco.vvp: $(TB)/top/tb_tnca_top.v $(RTL_DEPS) $(RTL)/tnca_top.v \
 	   -o $@ $< $(RTL)/tnca_top.v $(TB)/common/tnca_dram_model.v
 
 .PHONY: dco-bench
-dco-bench: $(BUILD)/tb_top_dco.vvp
+dco-bench: $(BUILD)/tb_top_dco_i$(DCO_DRAM_INTERVAL).vvp
 	@mkdir -p $(BUILD)/r38
 	$(TRITON_PYTHON) tools/r38/dco_bench.py $(DCO_BENCH_ARGS)
 

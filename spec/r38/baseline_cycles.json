@@ -148,13 +148,37 @@
     "sigmoid": 180,
     "softmax/n37": 1114,
     "softmax/n7": 417,
-    "streamk_matmul/early_return": 17766,
-    "streamk_matmul/first": 23391,
-    "streamk_matmul/full0": 8668,
-    "streamk_matmul/full1": 17336,
+    "streamk_matmul/early_return": 16898,
+    "streamk_matmul/first": 23110,
+    "streamk_matmul/full0": 8234,
+    "streamk_matmul/full1": 16468,
     "swiglu": 199,
     "top_k_selection": 752,
     "vector_add": 91,
     "weight_dequant": 123
-  }
+  },
+  "amendments": [
+    {
+      "cases": {
+        "streamk_matmul/first": [
+          23391,
+          23110
+        ],
+        "streamk_matmul/full0": [
+          8668,
+          8234
+        ],
+        "streamk_matmul/full1": [
+          17336,
+          16468
+        ],
+        "streamk_matmul/early_return": [
+          17766,
+          16898
+        ]
+      },
+      "cause": "r38-tdesc (bf38197..f2634e1): the rank-1-5 transfer engine and compiler; measured identical on that tree and on the R38 timing work (the timing work moves no cycle), numerics pass. Not re-frozen when those commits landed; the R2 check found it on 2026-10-08.",
+      "measured_on": "core-sim O2, two runs, sim/build/r38/baseline_check_{1,2}.json"
+    }
+  ]
 }

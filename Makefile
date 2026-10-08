@@ -798,6 +798,17 @@ test: lint unit compiler core compiler-rtl triton-e2e core-slowmem core-ooo nuca
 synth: | dirs
 	$(PYTHON) flow/synth/synth.py --json $(BUILD)/synth.json --logs $(BUILD)/synth
 
+# FPGA timing of a unit or the whole device, post-synthesis and out of context
+# (flow/synth/vivado_ooc.sh): minutes where a v++ link is hours, to find what
+# sets the board clock and to check that a fix moved it. Needs Vivado.
+#   make fpga-timing FPGA_UNIT=tnca_matrix FPGA_PERIOD=13.333 FPGA_PARAMS="FMA_LAT=3"
+FPGA_UNIT   ?= tnca_fpga_top
+FPGA_PERIOD ?= 13.333
+FPGA_PARAMS ?=
+.PHONY: fpga-timing
+fpga-timing:
+	flow/synth/vivado_ooc.sh $(FPGA_UNIT) $(FPGA_PERIOD) $(FPGA_PARAMS)
+
 clean:
 	rm -rf $(BUILD)
 

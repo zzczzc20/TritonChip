@@ -70,6 +70,25 @@
 // MHz, half of what it runs at today, and buy nothing for it. The divide is
 // chosen to hold the device still, not to hold a ratio.
 //
+// R38: THREE, AND WHY THAT IS NOW SAFE
+//
+// The device's worst path at 37.5 MHz was the matrix unit's accumulate loop:
+// the FMA's normalise/round, the accumulator file's write-to-read bypass and
+// the next multiply-add's alignment in one cycle -- 60 logic levels, 23.9 ns
+// routed, 2.7 ns of slack (doc/r38_board_bringup.md, timing section). The
+// bypass carried nothing anyone used and is gone (rtl/core/tnca_acc_rf.v), and
+// the FMA's zero test no longer waits for the multiplier. Post-synthesis, out
+// of context, the whole device's worst path is then 10.1 ns (the tensor
+// engine's geometry check), against 14.7 ns for the matrix loop it replaced;
+// at the 1.6x routed-to-synthesised ratio that loop showed, that is about
+// 16 ns routed, inside 50 MHz's 20.0 ns. The link is the measurement that
+// settles it, and link.sh fails rather than lowers the clock.
+//
+// The clock crossing does not care about the ratio: tnca_axi_lite crosses on
+// a toggle with synchronisers (rtl/fpga/tnca_u50_top.v), and every clk_dev
+// edge is an ap_clk edge, so the cross-domain requirement stays one ap_clk
+// period whatever DEV_DIV is.
+//
 // Nothing here writes a constraint. ap_clk's period belongs to the platform
 // and to flow/fpga/ooc.xdc, and the device clock is not separately constrained
 // because Vivado propagates the divide through BUFGCE_DIV on its own. A second
@@ -84,7 +103,10 @@ module tnca_u50_xo #(
     parameter ADDR_W         = 16,
     parameter NUM_RCTX       = 2,
     parameter RCTX_W         = 1,
-    parameter VREGS_PER_RCTX = 64
+    parameter VREGS_PER_RCTX = 64,
+    // ap_clk / DEV_DIV is the device clock: 3 -> 50 MHz from R38's timing
+    // work on; the image loaded on 2026-10-08 was built with 4 (37.5 MHz).
+    parameter DEV_DIV        = 3
 ) (
     //---- the platform's clock ----------------------------------------------
     input  wire                    ap_clk,
@@ -138,7 +160,7 @@ module tnca_u50_xo #(
     wire clk_dev;
 
     BUFGCE_DIV #(
-        .BUFGCE_DIVIDE  (4),
+        .BUFGCE_DIVIDE  (DEV_DIV),
         .CE_TYPE        ("SYNC"),
         .IS_CE_INVERTED (1'b0),
         .IS_CLR_INVERTED(1'b0),

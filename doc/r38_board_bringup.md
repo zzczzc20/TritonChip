@@ -142,3 +142,51 @@ python -m archbench.run --platform tnca --backend fpga-u280 --profile core-vrf-s
 3. 把板卡证据登记进 evidence registry（Stage 2 等级）。
 4. 内存容量路线（URAM 或 HBM）待负责人决定。
 
+## 6. 器件时钟：37.5 MHz 的瓶颈与第一轮优化（2026-10-08）
+
+### 6.1 瓶颈在哪里
+
+U280 链接的 routed 报告（`hw_bb_locked_timing_summary_routed.rpt`）里，clk_dev（26.668 ns）最差路径的余量只有 2.689 ns：
+
+- **起止点**：`u_mtx/g_mac[12].u_mac/u_fma` 中 `p1_mag_reg → p0_exp_common_reg`。
+- **规模**：60 级逻辑（19 个 CARRY8、一个 DSP），数据路径 23.931 ns，其中走线占 73 %。
+- **含义**：FMA 第 2 级（前导 1 搜索、规格化、舍入）的结果经累加器文件的写→读直通，进入下一次乘加的第 0 级。在第 0 级里，它经过 24×24 乘法（DSP）和「乘积是否为 0」的判断，最后决定移位方向和公共指数。整个过程在一个周期内完成。
+
+### 6.2 方法：几分钟一次的 OOC 综合，而不是四小时的链接
+
+- **工具**：`flow/synth/vivado_ooc.sh`（`make fpga-timing`）。对单个单元或整个器件（`tnca_fpga_top`）做 out-of-context 综合加时序估计。单元级 3–5 分钟，整器件约 25 分钟。
+- **注意**：报告的是布线前的估计。矩阵这条路径综合后估计为 14.7 ns，链接后实测为 23.9 ns，比值约 1.6，下文都按这个比值折算。
+- **yosys**：用 yosys 映射 UltraScale+ 原语后再数级数的办法试过了，不可用。它不推断 CARRY8，`ltp` 也不把 FDRE 当作寄存器边界。yosys 仍用于 `make synth` 的通用门结构代理。
+
+### 6.3 改动（都不改变任何周期数）
+
+| 改动 | 文件 | 综合后估计 |
+|---|---|---|
+| 去掉累加器文件的写→读直通。矩阵引擎读第 m 行后 FMA_LAT 拍才写回，同一行下一次被读是 ROWS+1 拍以后；行操作和 `a.vread` 都在上一条命令写回之后才开始，所以这条直通从未传过被使用的值。`tnca_matrix` 在仿真里检查这一点（`acc_collide`），违反时测试直接失败。 | `rtl/core/tnca_acc_rf.v`、`rtl/core/tnca_matrix.v` | 矩阵单元 14.7 → 8.6 ns |
+| FMA 改由 XLS 生成（见 [`xls.md`](xls.md)）。`xls/tnca_fma.x` 不使用会把次正规数清零的 `apfloat`，算法与原手写版逐步对应，流水级由 XLS 排定。`LAT=2` 的实例与手写版的级数和延迟相同。 | `xls/tnca_fma.x`、`rtl/gen/tnca_fma_xls.v`、`rtl/core/tnca_fp32_fma.v` | 向量 FPU 9.2 → 6.8 ns |
+| tensor 引擎的窗口检查原来是五个块维度连乘再比较，现在在 `td.load` 读入描述符尾部时每字一次乘法，预先算出 box 元素数（饱和到 2^20），传输时只做移位和比较。 | `rtl/core/tnca_tensor.v` | 整器件最差路径原为 10.1 ns |
+
+验证：
+
+- `unit`：XLS FMA 两个延迟各 41 240 条向量。
+- `fma-deep`：两个延迟各 516 240 条向量，与精确 Fraction oracle 0 差异。
+- `core`、`core-vrf`：各 31/31，包括 tensor 描述符 t12/t17/t33–t35。
+- 其余：`r38-xpose-rtl`、`top`、`e2e` 全部通过，周期数与改动前逐一相同（例如 t10_mesh 18 591）。
+
+### 6.4 频率
+
+- **整器件结果**：三项都做完后，整器件（`tnca_fpga_top`，以 13.333 ns 为目标，U280 器件）综合后最差路径为 **10.19 ns，40 级**，WNS +3.08 ns，525 817 个端点全部满足。这条路径从 VRF bank 的 BRAM 读口出发，经矩阵单元选出 A 元素、做格式扩展，进入 FMA 第 0 级。原来 60 级、14.7 ns 的矩阵回路和 10.1 ns 的 tensor 窗口检查都已不在最差路径中。资源：LUT 242 474（18.6 %），寄存器 181 133（7.0 %），BRAM 167.5。
+- **新构建默认 /3**：`rtl/board/tnca_u50_xo.v` 的 `DEV_DIV` 参数默认改为 3，即 150 MHz / 3 = 50 MHz，周期 20 ns。按 1.6 倍折算，布线后约 16.3 ns（约 61 MHz），余量约 3.7 ns。
+- **跨时钟域不受影响**：适配器用 toggle 加同步器跨域，与分频比无关；分频后时钟的边沿都与 ap_clk 对齐，跨域约束仍是一个 ap_clk 周期。
+- **以链接结果为准**：`link.sh` 在时序不满足时会报失败，不会自行降频。
+- **当前加载的镜像（uuid `083faace…`）仍是 /4、37.5 MHz**。`archbench/platforms/tnca.py` 的 `BOARD_CLOCK_HZ` 描述的是已加载的镜像，要等新镜像加载时一起改。
+
+### 6.5 再往上：75 MHz（150 / 2，13.3 ns）
+
+按 1.6 倍折算，75 MHz 需要综合后不超过约 8.3 ns。现在剩下的两处：
+
+- **矩阵单元，10.2 ns（整器件最差）**：VRF 的 BRAM 读出后，经 A 元素选择和格式扩展直接进入 FMA 第 0 级；单独综合矩阵单元时，累加器读口进入第 0 级为 8.6 ns。可以在 A 操作数进入 FMA 前加一级寄存器（MAC 扫描只多 1 拍排空，累加回路不受影响），或者用 `LAT=3` 的 XLS FMA（单元级 7.8 ns）。
+- **向量 FPU**：`LAT=3` 时为 5.8 ns。
+
+`LAT=3` 只需改核心的 `FP_LAT`，FMA 本身只是换一个生成实例。代价是浮点结果晚一拍，需要重新冻结周期基线（`spec/r38/baseline_cycles.json`），并更新目标描述里的 `fp_result_cycles`。这属于下一步，应该作为一条 design change 记录在 `spec/r38/design_changes/`。
+

@@ -29,6 +29,10 @@ EVIDENCE = {'sim-file': 'measured-rtl', 'sim-socket': 'measured-rtl',
 
 # The clock a cycle count may be converted with, by backend. Only a board
 # has one; a simulated cycle has no duration (Stage 1 rule).
+# The device clock of the image LOADED on each board -- a property of the
+# bitstream, not of this checkout. Images built from R38's timing work on
+# divide by 3 (rtl/board/tnca_u50_xo.v DEV_DIV: 50 MHz); the ones loaded today
+# were built with 4. Change an entry in the same step that loads a new image.
 BOARD_CLOCK_HZ = {'fpga-u50': 37.5e6,
                   # 150 MHz kernel clock / 4, measured: with the image loaded
                   # (2026-10-08) the shell's frequency counter

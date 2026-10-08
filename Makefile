@@ -157,7 +157,7 @@ $(foreach p,$(TDESC_FAULTS),$(eval export ARGS_$(p) := +expectfault=04))
 
 CORE_PROGS := t00_scalar t01_vector t02_mem t03_fp t04_roles t05_fault t06_alu \
               t11_matrix t12_tensor t13_share t14_caps t15_target t16_vecadd t17_descfault t18_squash t19_waitgen0 t20_sfu t21_cvt t22_atomic t23_amofault t25_mmasf t28_count t29_vrfbank \
-              t33_tdesc_load t34_tdesc_store t36_reduce $(TDESC_FAULTS)
+              t33_tdesc_load t34_tdesc_store t36_reduce t37_lsu_straddle $(TDESC_FAULTS)
 
 # Image size in 64-bit words; must match tb_tnca_core's WORDS parameter.
 IMAGE_WORDS := 16384
@@ -281,6 +281,9 @@ $(TB)/core/progs/t06_alu.s: $(TB)/core/progs/gen_t06_alu.py
 	$(PYTHON) $<
 
 $(TB)/core/progs/t36_reduce.s: $(TB)/core/progs/gen_t36_reduce.py
+	$(PYTHON) $<
+
+$(TB)/core/progs/t37_lsu_straddle.s: $(TB)/core/progs/gen_t37_lsu_straddle.py
 	$(PYTHON) $<
 
 $(TB)/core/progs/t11_matrix.s: $(TB)/core/progs/gen_t11_matrix.py $(TOOLS)/model/fp32.py

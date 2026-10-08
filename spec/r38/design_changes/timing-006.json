@@ -13,7 +13,9 @@
   "layers": {
     "microarch": {
       "files": [
-        "rtl/core/tnca_lsu.v"
+        "rtl/core/tnca_lsu.v",
+        "tb/core/progs/gen_t37_lsu_straddle.py",
+        "tb/core/progs/t37_lsu_straddle.s"
       ],
       "change": "per-lane geometry (low/high word, straddle, low/high byte enables, low/high write data shifted into place) computed combinationally from lane_addr/lane_wdata/nbytes and registered in S_SETUP; the planner picks the lowest pending lane's word and ORs the matching lanes' precomputed enables and data"
     }
@@ -21,7 +23,7 @@
   "compatibility": {
     "cycles": "unchanged: R2 cycle check over the 149 R37 O2 cases, and every core program",
     "artifacts": "unchanged",
-    "numerics": "same beats, same enables, same data: every core program under three memory models (fast, slow, out of order), core-vrf, the four-tile machine, NUCA and mesh"
+    "numerics": "same beats, same enables, same data: every core program under three memory models (fast, slow, out of order), core-vrf, the four-tile machine, NUCA and mesh; t37_lsu_straddle (1344 checks: unaligned vector stores and loads, b/h/w elements, every byte offset, full and sparse masks, guard words) passes on the LSU before and after this change in the same 22051 cycles, and fails at check 507 when the planner takes a straddler's low-half enables for its high half"
   },
   "resource": {
     "kind": "Vivado 2023.2 post-synthesis, out of context, xcu280-fsvh2892-2L-e, 6.667 ns target",
@@ -42,7 +44,8 @@
   },
   "rollback": "revert rtl/core/tnca_lsu.v",
   "evidence": [
-    "doc/r38_board_bringup.md"
+    "doc/r38_board_bringup.md",
+    "tb/core/progs/gen_t37_lsu_straddle.py"
   ],
   "status": "implemented"
 }

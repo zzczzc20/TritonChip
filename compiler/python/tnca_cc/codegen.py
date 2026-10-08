@@ -966,11 +966,9 @@ class CodeGen:
         mnem = 't.st.async' if store else 't.ld.async'
         self.target.require('tensor_dma', f'emit {mnem}')
         if store:
-            # ISA sec 9E func 0x08 exists; no engine in any R1 profile can
-            # source it (tnca_tensor has a vector write port and no read
-            # port) and the hardware raises ILLEGAL_INSTRUCTION. A compiler
-            # that emits an instruction the machine refuses has moved a
-            # compile error into a runtime trap.
+            # ISA sec 9E func 0x08. The engine reads the window through its
+            # own VRF port; a target without it still refuses here rather
+            # than trapping at run time.
             self.target.require('tensor_store', 'emit t.st.async')
         if len(coords) > self.target.dma_max_rank:
             raise Diagnostic(
@@ -992,7 +990,8 @@ class CodeGen:
 
         bar = self._token_barrier[id(token)]
         self._count_operation(bar)
-        suffix = {'f16': 'h', 'bf16': 'h', 'f32': 'w'}[op.attrs['dtype']]
+        suffix = {'f16': 'h', 'bf16': 'h', 'i16': 'h', 'f32': 'w', 'i32': 'w',
+                  'i8': 'b', 'f8E4M3FN': 'b', 'f8E5M2': 'b'}[op.attrs['dtype']]
         widx = self.kernel.windows.index(window)
         # ISA sec 9A.3: a fully predicated-off asynchronous command still
         # completes once, so the static operation count stays correct under

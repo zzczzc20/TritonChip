@@ -20,6 +20,7 @@ Two rules govern what is *not* here:
             absent SFU, absent atomics. Each is a diagnostic, never a quiet
             substitution.
 """
+import math
 import re
 import struct
 
@@ -116,9 +117,11 @@ class _Descriptor:
     a handle to the snapshot of it.
     """
 
-    __slots__ = ('value', 'base', 'byte_strides', 'block', 'elem', 'address', 'extents')
+    __slots__ = ('value', 'base', 'byte_strides', 'block', 'elem', 'address', 'extents',
+                 'pad', 'host')
 
-    def __init__(self, value, *, base, byte_strides, block, elem, address=None, extents=None):
+    def __init__(self, value, *, base, byte_strides, block, elem, address=None, extents=None,
+                 pad=0, host=False):
         self.value = value
         self.base = base
         self.byte_strides = list(byte_strides)
@@ -126,6 +129,13 @@ class _Descriptor:
         self.elem = elem
         self.address = address
         self.extents = extents
+        # ISA sec 9D.3 padding mode, when this kernel built the map; a host
+        # descriptor's is read from its TensorMap where it matters.
+        self.pad = pad
+        # A TensorMap the host built (a `TensorDescriptor` argument): its
+        # geometry is known only at run time, and it need not satisfy the
+        # transfer engine's alignment, so it is read through the LSU.
+        self.host = host
 
 
 class Unsupported(Diagnostic):
@@ -239,6 +249,8 @@ class TTIRImporter:
                         'this function, not that the kernel is trivial',
                 source='compiler_overview.md sec 11.1')
         self._float_constants(module, ops)
+        self._value_users = self._users(ops)
+        self._trans_orders = self._read_trans_orders(module, func_name, ops)
         self._plan_transposes(ops)
 
         ops, self._bodies = self._split_regions(ops)
@@ -1187,13 +1199,14 @@ class TTIRImporter:
                 self._ptr_base[arg.id()] = (name, _pointee(ty))
             elif ty.startswith('!tt.tensordesc<'):
                 shape, elem = _parse_type(ty.replace('!tt.tensordesc<', 'tensor<'))
-                if not isinstance(shape, tuple) or any(d != 1 for d in shape[:-2]):
+                block = list(shape) if isinstance(shape, tuple) else [shape or 1]
+                if not 1 <= len(block) <= 5:
                     raise Unsupported(f'external descriptor type {ty}')
                 self._descs[arg.id()] = _Descriptor(
                     self.b.descriptor(v), base=self.b.sload(v, size='d'),
                     byte_strides=[self.b.sload(v, offset=48 + 8*j, size='d')
-                                  for j in range(len(shape))],
-                    block=list(shape), elem=elem, address=v)
+                                  for j in range(len(block))],
+                    block=block, elem=elem, address=v, host=True)
 
     @staticmethod
     def _literal_argument(value, ty, sig, index, name):
@@ -2303,21 +2316,28 @@ class TTIRImporter:
         return out
 
     def _build_descriptor(self, *, base, elem, extents, byte_strides,
-                          block_shape, what):
+                          block_shape, what, pad=0, check=True):
         """Write a TensorMap into scratch and snapshot it.
 
         Every word is written, including the zero ones. The scratch
         buffer's previous contents are not this kernel's to assume, and
         a descriptor half-inherited from the last launch is a wrong
-        address rather than a fault.
+        address rather than a fault. An extent or stride that is a
+        run-time value is stored from its register.
+
+        `check` applies the engine's geometry rules (ISA sec 9E.2) here,
+        for a map that only ever feeds the engine. A `tl.make_tensor_
+        descriptor` map is also read through the LSU, so its geometry is
+        decided per operation instead (descriptors.dma_ok).
         """
-        try:
-            check_geometry(byte_strides=byte_strides,
-                           block_shape=block_shape,
-                           elem_bytes=self._ELEM_BYTES[elem])
-        except TileError as e:
-            raise Unsupported(str(e), source='doc/isa/TNCA-ISA-v0.1.md '
-                                             'sec 9E.2')
+        if check:
+            try:
+                check_geometry(byte_strides=byte_strides,
+                               block_shape=block_shape,
+                               elem_bytes=self._ELEM_BYTES[elem])
+            except TileError as e:
+                raise Unsupported(str(e), source='doc/isa/TNCA-ISA-v0.1.md '
+                                                 'sec 9E.2')
 
         slot = self.scratch_maps
         self.scratch_maps += 1
@@ -2325,9 +2345,13 @@ class TTIRImporter:
                             self._take_scratch(TENSORMAP_BYTES),
                             comment=f"TensorMap {slot}: {what}")
 
-        words = tensormap_words(base=0, extents=extents,
-                                byte_strides=byte_strides,
-                                block_shape=block_shape, dtype=elem)
+        literal = lambda x: x if isinstance(x, int) else 0
+        words = tensormap_words(base=0, extents=[literal(e) for e in extents],
+                                byte_strides=[literal(s) for s in byte_strides],
+                                block_shape=block_shape, dtype=elem, pad=pad)
+        runtime = {1 + i: e for i, e in enumerate(extents) if not isinstance(e, int)}
+        runtime.update({6 + i: s for i, s in enumerate(byte_strides)
+                        if not isinstance(s, int)})
         zero = self.b.const(0)
         for i, word in enumerate(words):
             if i == 0:
@@ -2335,60 +2359,20 @@ class TTIRImporter:
                 # from an argument slot.
                 self.b.sstore(addr, base, offset=0, size='d')
                 continue
+            if i in runtime:
+                self.b.sstore(addr, runtime[i], offset=i * 8, size='d')
+                continue
             self.b.sstore(addr, zero if word == 0 else self.b.const(word),
                           offset=i * 8, size='d')
         return _Descriptor(self.b.descriptor(addr, name=f"d{slot}"),
                            base=base, byte_strides=byte_strides,
-                           block=list(block_shape), elem=elem, address=addr, extents=extents)
+                           block=list(block_shape), elem=elem, address=addr, extents=extents,
+                           pad=pad)
 
     def _op_tt_make_tensor_descriptor(self, op):
-        """`tl.make_tensor_descriptor`, straight onto ISA sec 9D.
-
-        This is the case the hardware was designed for, so it is also
-        the shortest lowering in the file: the shape, the strides and
-        the block shape are what a TensorMap holds, and the operation
-        says all three.
-        """
-        ptr = op.get_operand(0)
-        n = op.get_num_operands()
-        rank = (n - 1) // 2
-        if rank != 2:
-            raise Unsupported(
-                f"a rank-{rank} tensor descriptor",
-                because='the tile path builds 16x16 fragments; a rank the '
-                        'MMA does not consume has nowhere to go yet',
-                source='doc/isa/TNCA-ISA-v0.1.md sec 9C.2')
-        elem = _pointee(str(ptr.get_type()))
-        if elem not in self._ELEM_BYTES:
-            raise Unsupported(f"a tensor descriptor of {elem}")
-        esize = self._ELEM_BYTES[elem]
-
-        extents, strides = [], []
-        for i in range(rank):
-            k = self._scalar_const(op.get_operand(1 + i).id())
-            if k is None:
-                raise Unsupported(
-                    'a tensor descriptor whose shape is a runtime value',
-                    because='the extents are written into the TensorMap, '
-                            'and only a constant can be written by the '
-                            'store that builds it',
-                    remedy='make the shape a tl.constexpr')
-            extents.append(k)
-        for i in range(rank):
-            k = self._scalar_const(op.get_operand(1 + rank + i).id())
-            if k is None:
-                raise Unsupported(
-                    'a tensor descriptor whose strides are runtime values')
-            strides.append(k * esize)
-
-        shape, _ = _parse_type(str(op.get_result(0).get_type()).replace(
-            '!tt.tensordesc<', 'tensor<').rstrip('>') + '>')
-        block = list(shape) if isinstance(shape, tuple) else [1, shape or 1]
-
-        self._descs[op.get_result(0).id()] = self._build_descriptor(
-            base=self._value(ptr), elem=elem, extents=extents,
-            byte_strides=strides, block_shape=block,
-            what='tl.make_tensor_descriptor')
+        """`tl.make_tensor_descriptor`, any rank 1-5 (descriptors.py)."""
+        from . import descriptors
+        descriptors.make(self, op)
 
     # Operations that may write memory a deferred load would read.
     _WRITES = ('tt.store', 'tt.descriptor_store', 'tt.atomic', 'tt.descriptor_scatter',
@@ -2434,6 +2418,52 @@ class TTIRImporter:
             if ok:
                 self._xpose_loads.add(op.get_result(0).id())
 
+    @staticmethod
+    def _users(ops):
+        """TTIR value id -> [(user op, operand index)]."""
+        users = {}
+        for op in ops:
+            for k in range(op.get_num_operands()):
+                users.setdefault(op.get_operand(k).id(), []).append((op, k))
+        return users
+
+    _TRANS_RE = re.compile(r'\btt\.trans\b[^{\n]*\{[^}\n]*\border\s*=\s*array<i32:\s*([0-9,\s]+)>')
+
+    def _read_trans_orders(self, module, func_name, ops):
+        """result value id of a tt.trans -> its `order` permutation.
+
+        The Python binding does not expose a DenseI32ArrayAttr, so the
+        permutation is read from the printed function, in program order --
+        the same way the CFG successors are. Each one is checked against the
+        operand and result shapes where it is used, so a mismatch is a
+        diagnostic rather than a wrong permutation.
+        """
+        trans = [op for op in ops if op.get_name() == 'tt.trans']
+        if not trans:
+            return {}
+        printed = str(module)
+        match = re.search(r'(?m)^  tt.func[^\n]*@' + re.escape(func_name) + r'\(', printed)
+        body = printed[match.start():] if match else printed
+        body = re.split(r'(?m)^  }', body, maxsplit=1)[0]
+        orders = [[int(x) for x in m.group(1).split(',')]
+                  for m in self._TRANS_RE.finditer(body)]
+        if len(orders) != len(trans):
+            raise Unsupported('cannot read the order of every tt.trans',
+                              because=f'{len(trans)} operations, {len(orders)} printed orders')
+        return {op.get_result(0).id(): order for op, order in zip(trans, orders)}
+
+    def _trans_order(self, op):
+        from .packed import shape
+        order = self._trans_orders.get(op.get_result(0).id())
+        src, _ = shape(op.get_operand(0))
+        dst, _ = shape(op.get_result(0))
+        if order is None:
+            order = list(reversed(range(len(src))))
+        if sorted(order) != list(range(len(src))) or \
+                [src[i] for i in order] != list(dst):
+            raise Unsupported(f'a tt.trans order {order} that does not take {src} to {dst}')
+        return order
+
     def _xpose_geometry_ok(self, d):
         """The engine's transposed-write rule (rtl/core/tnca_tensor.v S_TSETUP):
         a 2-D tile of 16-bit elements with 4, 8 or 16 source rows."""
@@ -2444,48 +2474,12 @@ class TTIRImporter:
         d = self._descs[op.get_operand(0).id()]
         coords = [self._value(op.get_operand(1 + i))
                   for i in range(op.get_num_operands() - 1)]
-        # A host descriptor is a TensorMap in the engine's own layout
-        # (tnca.tensor.TensorDescriptor.pack), so the transfer can use it
-        # directly; its run-time geometry is checked by the runtime before
-        # launch against the artifact's `dma_descriptors` (see aot.py).
         if (op.get_result(0).id() in self._xpose_loads and d.value is not None
-                and self._xpose_geometry_ok(d)):
+                and not d.host and self._xpose_geometry_ok(d)):
             self._deferred[op.get_result(0).id()] = (d, coords)
             return
-        if d.address is not None or len(d.block) > 2 or d.elem not in ('f16', 'bf16', 'f32'):
-            base = self._descriptor_origin(d, coords)
-            rows, cols = d.block[-2:]
-            extents = d.extents or [self.b.sload(d.address, offset=8+8*i, size='d')
-                                     for i in range(len(d.block))]
-            get_mask = self._descriptor_mask(d, coords, extents)
-            esize = self._ELEM_BYTES[d.elem]
-            def row(r):
-                at = self._scaled_address(base, r, d.byte_strides[-2])
-                return self.b.load(at, dtype=d.elem,
-                    size=_load_suffix(_SIZE_SUFFIX[esize], d.elem),
-                    mask=get_mask(r), other=0)
-            tile = self._materialise(row, rows, cols, d.elem)
-            self._tiles[op.get_result(0).id()] = tile
-        else:
-            self._tiles[op.get_result(0).id()] = self._dma_in(
-                d, coords, d.block, d.elem, 'tt.descriptor_load')
-
-    def _descriptor_mask(self, d, coords, extents):
-        def row(r):
-            mask = None
-            for axis, (coord, extent) in enumerate(zip(coords, extents)):
-                if isinstance(extent, int):
-                    extent = self.b.const(extent)
-                pos = self.b.splat(coord)
-                if axis == len(coords)-1:
-                    pos = self.b.vbin('add', pos, self.b.arange())
-                elif axis == len(coords)-2:
-                    pos = self.b.vbin('add', pos, self.b.splat(self.b.const(r)))
-                valid = self.b.pbin('and', self.b.vcmp('ge', pos, self.b.vmovi(0)),
-                                   self.b.vcmp('lt', pos, self.b.splat(extent)))
-                mask = valid if mask is None else self.b.pbin('and', mask, valid)
-            return self._shape_mask(d.block[-1], mask)
-        return row
+        from . import descriptors
+        descriptors.load(self, op)
 
     def _scaled_address(self, base, index, stride):
         index = self.b.const(index) if isinstance(index, int) else index
@@ -2500,38 +2494,21 @@ class TTIRImporter:
         return base
 
     def _op_tt_descriptor_store(self, op):
-        d = self._descs[op.get_operand(0).id()]
-        # The stored value is the tensor operand. Taking the last one
-        # got a coordinate, because MLIR prints `desc[i, j], value` and
-        # orders the operands `desc, value, i, j`.
-        value = None
-        for i in range(1, op.get_num_operands()):
-            cand = op.get_operand(i)
-            if isinstance(_parse_type(str(cand.get_type()))[0], tuple):
-                value = cand
-                break
-        if value is None:
-            raise Unsupported('a tt.descriptor_store with no tile to store')
-        tile = self._tile_of(value)
-        coords = [self._value(op.get_operand(i))
-                  for i in range(1, op.get_num_operands())
-                  if op.get_operand(i).id() != value.id()]
-        if tile.kind != 'window':
-            # The result is in an accumulator and the destination is
-            # described by a TensorMap whose base and stride this
-            # compiler wrote. Draining through the vector unit reaches
-            # it directly (ISA sec 9B); routing it back through a window
-            # would be a transfer to reach an address already in hand.
-            extents = d.extents or [self.b.sload(d.address, offset=8+8*i, size='d')
-                                    for i in range(len(d.block))]
-            self._drain_tile(tile, self._descriptor_origin(d, coords),
-                             d.byte_strides[-2], d.elem,
-                             self._descriptor_mask(d, coords, extents))
-            return
-        coords = [self._value(op.get_operand(i))
-                  for i in range(1, op.get_num_operands())
-                  if op.get_operand(i).id() != value.id()]
-        self._dma_out(d.value, coords, tile, d.elem, 'tt.descriptor_store')
+        from . import descriptors
+        descriptors.store(self, op)
+
+    def _op_tt_descriptor_reduce(self, op):
+        """`desc.atomic_add/min/max/and/or/xor`: one atomic per element."""
+        from . import descriptors
+        descriptors.reduce(self, op)
+
+    def _op_tt_descriptor_gather(self, op):
+        from . import descriptors
+        descriptors.gather(self, op)
+
+    def _op_tt_descriptor_scatter(self, op):
+        from . import descriptors
+        descriptors.scatter(self, op)
 
     # ---- tiles in and out -------------------------------------------------
 
@@ -2642,6 +2619,7 @@ class TTIRImporter:
         usable as an MMA operand and as nothing else.
         """
         src = op.get_operand(0)
+        order = self._trans_order(op)
         if src.id() in self._deferred:
             d, coords = self._deferred.pop(src.id())
             rows, cols = d.block
@@ -2658,6 +2636,22 @@ class TTIRImporter:
             self._tiles[op.get_result(0).id()] = Tile('window', window, cols, rows, d.elem)
             return
         tile = self._tile_of(src)
+        # An N-D value is a tile of its non-unit dimensions. A permutation
+        # that keeps their order only relabels it; one that swaps the two of
+        # them is the 2-D transpose below; anything else is not a tile
+        # operation this machine has.
+        from .packed import shape as _shape
+        sdims, _ = _shape(src)
+        nonunit = [i for i, n in enumerate(sdims) if n != 1]
+        moved = [i for i in order if sdims[i] != 1]
+        if moved == nonunit:
+            self._tiles[op.get_result(0).id()] = tile
+            return
+        if len(nonunit) != 2 or moved != nonunit[::-1] or \
+                (tile.rows, tile.cols) != (sdims[nonunit[0]], sdims[nonunit[1]]):
+            raise Unsupported(f'a tt.trans {order} of a {list(sdims)} tile',
+                              because='a tile is two dimensions; only swapping them '
+                                      'is a transpose')
         if tile.desc is None:
             elem = tile.store
             esize = self._ELEM_BYTES[elem]
@@ -3041,7 +3035,8 @@ class TTIRImporter:
     def _tile_binary(self, op, build):
         """An elementwise operation over a tile, a row at a time."""
         shape, elem = _parse_type(str(op.get_result(0).get_type()))
-        rows, cols = shape
+        # An N-D tile is prod(shape[:-1]) rows of shape[-1].
+        rows, cols = math.prod(shape[:-1]), shape[-1]
         getters = [self._row_getter(op.get_operand(i), rows, elem)
                    for i in range(op.get_num_operands())]
         self._tiles[op.get_result(0).id()] = self._materialise(

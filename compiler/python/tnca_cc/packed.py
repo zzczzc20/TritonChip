@@ -54,18 +54,28 @@ def permute(imp, src, indices, dtype):
 def lower(imp, op):
     name = op.get_name()
     operands = [op.get_operand(i) for i in range(op.get_num_operands())]
-    if not any(v.id() in imp._packed for v in operands):
+    packed_in = [v for v in operands if v.id() in imp._packed]
+    if not packed_in:
         return False
     if name in ('tt.store', 'tt.return', 'scf.yield'):
         return False
     if not op.get_num_results():
+        return False
+    # A value held both ways (a one-row descriptor load: a tile and one
+    # register) is a tile to everything a tile handles; only a change of
+    # rank, which the tile lowering does not do, takes the packed form.
+    if name not in ('tt.expand_dims', 'tt.trans', 'tt.reshape') and \
+            all(v.id() in imp._tiles for v in packed_in):
         return False
     res = op.get_result(0)
     dims, elem = shape(res)
     if dims is None or math.prod(dims) > imp.target.vlen:
         return False
     b = imp.b
-    xs = [value(imp, v) for v in operands]
+    try:
+        xs = [value(imp, v) for v in operands]
+    except ValueError:
+        return False          # an operand only a tile lowering can read
     count = math.prod(dims)
     from .frontend import _INT_BIN, _FP_BIN, _CMP_I, _CMP_F
     binary = dict(_INT_BIN, **_FP_BIN)
@@ -76,6 +86,20 @@ def lower(imp, op):
                   b.vbin(binary[name], *xs, dtype=elem))
     elif name in ('tt.reshape', 'tt.expand_dims', 'tt.bitcast'):
         result = xs[0]
+    elif name == 'tt.trans':
+        # dst[c] = src[c permuted back]: destination dimension k is source
+        # dimension order[k]. The order is read and checked by the importer.
+        srcdims, _ = shape(operands[0])
+        order = imp._trans_order(op)
+        indices = []
+        for i in range(count):
+            at = coords(i, dims)
+            src_at = [0] * len(srcdims)
+            for k, axis in enumerate(order):
+                src_at[axis] = at[k]
+            indices.append(index(src_at, srcdims))
+        result = (xs[0] if indices == list(range(count))
+                  else permute(imp, xs[0], indices, elem))
     elif name == 'tt.broadcast':
         srcdims, _ = shape(operands[0])
         indices = [index([a if d != 1 else 0 for a, d in zip(coords(i, dims), srcdims)], srcdims)

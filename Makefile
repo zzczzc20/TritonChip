@@ -1027,7 +1027,7 @@ r37: r37-coverage r37-run
 # sim/build/r38/, so a candidate is measured as it stands rather than as the
 # device cache last saw it. A target passing is not Stage 1 passing; the
 # status document names which work package each one backs.
-.PHONY: r38-l0 r38-smoke r38-baseline r38-baseline-check r38-profiler r38-l2 r38-xpose-rtl r38-torch
+.PHONY: r38-l0 r38-smoke r38-baseline r38-baseline-check r38-profiler r38-l2 r38-xpose-rtl r38-torch r38-tdesc
 # P1+ (doc/r38_pytorch_p1plus.md): PyTorch lives in its own environment so no
 # existing gate gains a dependency. T1: the R3.7 cases through native Triton
 # launch; T2-T4: small graphs through torch.compile -> Inductor -> TNCA.
@@ -1037,6 +1037,10 @@ TORCH_PYTHON ?= $(HOME)/src/torchenv/bin/python
 .PHONY: r38-identity
 r38-identity: $(R2_DATA_STAMP) | dirs
 	@$(TRITON_PYTHON) tools/r38/artifact_identity.py --profile core-sim --levels 0 1 2
+# Tensor descriptors (rank 1-5) through the real Triton front end, on the RTL.
+r38-tdesc: $(R2_DATA_STAMP) | dirs
+	@$(TORCH_PYTHON) tools/r38/tdesc_tests.py
+
 r38-torch: $(R2_DATA_STAMP) | dirs
 	@for l in 0 1 2; do $(TORCH_PYTHON) tools/r38/plugin_identity.py --level $$l || exit 1; done
 	@$(TORCH_PYTHON) tools/r38/triton_native_run.py

@@ -1,0 +1,50 @@
+{
+  "schema": "r38-design-change/1",
+  "id": "timing-007",
+  "parent_commit": "6ae7430",
+  "claims_three_layer": false,
+  "hypothesis": "With the reduction cut, the core's worst writeback path is the VALU's vector multiply: the immediate-operand select decoded from the X-stage func in front of sixteen multipliers, and the signed high half formed by two subtractions in series behind them. Decoding the select in R, and forming the high half's correction beside the multiplier so that one subtraction follows it, are both cycle- and function-neutral.",
+  "evidence_for_hypothesis": "tnca_fpga_top post-synthesis, 6.667 ns target, after timing-004/005: x_func -> w_vdata 6.706 ns / 28 levels: 1.1 ns of decode before the DSP's B input, then two cascaded DSPs, two subtract carry chains and the result muxes",
+  "touched_layers": [
+    "microarch"
+  ],
+  "semantic_change": false,
+  "feature": "clock",
+  "layers": {
+    "microarch": {
+      "files": [
+        "rtl/core/tnca_vector_alu.v",
+        "rtl/core/tnca_core.v",
+        "rtl/common/tnca_defs.vh"
+      ],
+      "change": "TNCA_V_USES_IMM(fn) macro (the one list of immediate forms); the core registers x_valu_imm <= TNCA_V_USES_IMM(r_func) with the opcode and the unit takes it as use_imm; ps_hi = pu_hi - ((x<0 ? y : 0) + (y<0 ? x : 0)), equal mod 2^32 to the two subtractions"
+    }
+  },
+  "compatibility": {
+    "cycles": "unchanged: R2 cycle check over the 149 R37 O2 cases, and every core program",
+    "artifacts": "unchanged",
+    "numerics": "identical: a - b - c = a - (b + c) mod 2^ELEN, and use_imm is the same function of the same opcode one register earlier"
+  },
+  "resource": {
+    "kind": "Vivado 2023.2 post-synthesis, out of context, xcu280-fsvh2892-2L-e, 6.667 ns target",
+    "module": "tnca_fpga_top",
+    "parent": {
+      "group": "core -> core (VALU multiply -> w_vdata)",
+      "worst_ns": 6.707,
+      "worst_levels": 28
+    },
+    "change": {
+      "group": "core -> core",
+      "worst_ns": 6.071,
+      "worst_levels": 26
+    }
+  },
+  "results": {
+    "correctness": "lint, unit, core 31/31, core-vrf 31/31, top: 78 PASS"
+  },
+  "rollback": "revert the three files",
+  "evidence": [
+    "doc/r38_board_bringup.md"
+  ],
+  "status": "implemented"
+}

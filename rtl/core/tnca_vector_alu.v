@@ -25,6 +25,7 @@ module tnca_vector_alu #(
     input  wire [VLEN*ELEN-1:0]    vb,
     input  wire [63:0]             sa,      // scalar operand (splat, shuffle amount, insert)
     input  wire [63:0]             imm,
+    input  wire                    use_imm, // `TNCA_V_USES_IMM(func), registered
 
     input  wire [VLEN-1:0]         pa,
     input  wire [VLEN-1:0]         pb,
@@ -55,16 +56,11 @@ module tnca_vector_alu #(
         end
     endgenerate
 
-    // Second operand: register or immediate, chosen by opcode.
-    reg use_imm;
-    always @(*) begin
-        case (func)
-        `TNCA_V_ADDI, `TNCA_V_SUBI, `TNCA_V_MULI, `TNCA_V_ANDI, `TNCA_V_ORI,
-        `TNCA_V_XORI, `TNCA_V_SHLI, `TNCA_V_LSHRI, `TNCA_V_ASHRI,
-        `TNCA_V_CMPI, `TNCA_V_MOVI: use_imm = 1'b1;
-        default:                    use_imm = 1'b0;
-        endcase
-    end
+    // Second operand: register or immediate, chosen by opcode. `use_imm` is
+    // `TNCA_V_USES_IMM(func), decoded by the core from the R-stage opcode and
+    // registered into X with it: the select steers 512 operand bits into
+    // sixteen multipliers, and decoding it here from `func` put the decode
+    // and its fan-out in front of them (timing-007).
 
     wire [ELEN-1:0] immv = imm[ELEN-1:0];
 
@@ -124,10 +120,12 @@ module tnca_vector_alu #(
             c_eq  = (x == y);
             c_lts = (x[ELEN-1] ^ y[ELEN-1]) ? x[ELEN-1] : c_ltu;
 
+            // The correction is formed beside the multiplier, not after it:
+            // one subtraction behind the product instead of two (timing-007).
             pu    = x * y;
             ps_hi = pu[2*ELEN-1:ELEN]
-                  - (x[ELEN-1] ? y : {ELEN{1'b0}})
-                  - (y[ELEN-1] ? x : {ELEN{1'b0}});
+                  - ((x[ELEN-1] ? y : {ELEN{1'b0}})
+                   + (y[ELEN-1] ? x : {ELEN{1'b0}}));
 
             case (func)
             `TNCA_V_MOV:                     lane_res[i] = x;
@@ -221,7 +219,7 @@ module tnca_vector_alu #(
     // reductions here are associative, so their trees keep that shape for
     // familiarity only; the shape is not what makes them correct.
     // --------------------------------------------------------------------------
-    // Three trees, chosen once at the end -- not one tree that picks among
+    // Three reductions, chosen once at the end -- not one tree that picks among
     // eight operations at every level. The single tree put an 8-way function
     // select and a compare in each of its four levels, behind the predicate
     // read and in front of scalar writeback: the device's worst path after
@@ -246,14 +244,14 @@ module tnca_vector_alu #(
 
     reg [ELEN-1:0] t_add [0:2*VLEN-1];
     reg [ELEN-1:0] t_bit [0:2*VLEN-1];
-    reg [ELEN-1:0] t_mm  [0:2*VLEN-1];
+    reg [ELEN-1:0] mm_key [0:VLEN-1];
     integer lvl, span;
 
     always @(*) begin
         for (i = 0; i < VLEN; i = i + 1) begin
-            t_add[i] = mask[i] ? a[i] : {ELEN{1'b0}};
-            t_bit[i] = mask[i] ? a[i] : bit_ident;
-            t_mm[i]  = mask[i] ? (a[i] ^ mm_x) : {ELEN{1'b0}};
+            t_add[i]  = mask[i] ? a[i] : {ELEN{1'b0}};
+            t_bit[i]  = mask[i] ? a[i] : bit_ident;
+            mm_key[i] = mask[i] ? (a[i] ^ mm_x) : {ELEN{1'b0}};
         end
         // Pairwise combine, the same balanced shape as before.
         span = VLEN;
@@ -266,15 +264,47 @@ module tnca_vector_alu #(
                     2'd1:    t_bit[i>>1] = t_bit[i] | t_bit[i+1];
                     default: t_bit[i>>1] = t_bit[i] ^ t_bit[i+1];
                     endcase
-                    t_mm[i>>1] = (t_mm[i] > t_mm[i+1]) ? t_mm[i] : t_mm[i+1];
                 end
             end
             span = span >> 1;
         end
     end
 
+    // The max key in one comparison deep, not four (timing-004). A four-level
+    // tournament puts four 32-bit compares, each steering a 32-bit mux with
+    // fan-out 32-65, in series: 5 ns of the device's worst path after
+    // timing-003. Instead every pair of lanes is compared once, in parallel
+    // (VLEN*(VLEN-1)/2 comparators), and lane i wins if its key is above
+    // every lower lane's and at least every higher lane's -- so exactly one
+    // lane wins (the lowest-numbered maximum) and its key is the result,
+    // picked by a one-hot AND-OR. Inactive lanes hold key 0, which loses or
+    // ties; when every key ties, lane 0 wins with key 0, the identity.
+    reg [VLEN*VLEN-1:0] mm_gt;      // [i*VLEN+j], j < i: key i > key j
+    reg [VLEN-1:0]      mm_win;
+    reg [ELEN-1:0]      mm_best;
+    integer j;
+
+    always @(*) begin
+        mm_gt = {VLEN*VLEN{1'b0}};
+        for (i = 0; i < VLEN; i = i + 1)
+            for (j = 0; j < i; j = j + 1)
+                mm_gt[i*VLEN + j] = (mm_key[i] > mm_key[j]);
+        for (i = 0; i < VLEN; i = i + 1) begin
+            mm_win[i] = 1'b1;
+            for (j = 0; j < VLEN; j = j + 1) begin
+                if (j < i)
+                    mm_win[i] = mm_win[i] & mm_gt[i*VLEN + j];
+                else if (j > i)
+                    mm_win[i] = mm_win[i] & ~mm_gt[j*VLEN + i];
+            end
+        end
+        mm_best = {ELEN{1'b0}};
+        for (i = 0; i < VLEN; i = i + 1)
+            mm_best = mm_best | ({ELEN{mm_win[i]}} & mm_key[i]);
+    end
+
     wire [ELEN-1:0] red_result = red_add ? t_add[0] :
-                                 red_mm  ? (t_mm[0] ^ mm_x) : t_bit[0];
+                                 red_mm  ? (mm_best ^ mm_x) : t_bit[0];
 
     // --------------------------------------------------------------------------
     // Predicate family (ISA sec 8.5)

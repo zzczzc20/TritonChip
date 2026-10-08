@@ -214,6 +214,17 @@
 `define TNCA_V_CMPI          8'h38
 `define TNCA_V_MOVI          8'h40
 
+// The functions whose second operand is the immediate. A macro rather than a
+// case in tnca_vector_alu so the core can decode it a stage early (R) and the
+// unit can take it registered; the list exists once.
+`define TNCA_V_USES_IMM(fn) \
+    (((fn) == `TNCA_V_ADDI)  || ((fn) == `TNCA_V_SUBI)  || \
+     ((fn) == `TNCA_V_MULI)  || ((fn) == `TNCA_V_ANDI)  || \
+     ((fn) == `TNCA_V_ORI)   || ((fn) == `TNCA_V_XORI)  || \
+     ((fn) == `TNCA_V_SHLI)  || ((fn) == `TNCA_V_LSHRI) || \
+     ((fn) == `TNCA_V_ASHRI) || ((fn) == `TNCA_V_CMPI)  || \
+     ((fn) == `TNCA_V_MOVI))
+
 //------------------------------------------------------------------------------
 // Vector FP family (ISA §8.2)
 //------------------------------------------------------------------------------

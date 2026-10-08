@@ -367,12 +367,47 @@ module tnca_tensor #(
     // The unit's 8 bytes are box-row bytes [8k, 8k+8): memory bytes
     // [t_CB + 8k, t_CB + 8k + 8), taken from the words at t_CBa + 8k and,
     // when misaligned, the next one.
+    //
+    // Every in-bounds test below is on w0 = 8*t_unit - r_m, the offset of the
+    // unit's low word from the box row's first byte, against bounds that are
+    // constant for the whole transfer (timing-008): the tests were 64-bit
+    // adds, subtracts, a max/min and eight range compares rebuilt from t_CB
+    // and t_E in every cycle, in front of the request's valid and from there
+    // the memory's write enables -- the device's worst path once the core's
+    // had been cut (7.0 ns post-synthesis). The bounds depend only on t_CB,
+    // t_E and t_row_bytes, which S_TCHK sets and nothing changes until the
+    // next transfer, and S_TMUL always runs at least one cycle between S_TCHK
+    // and the walk, so a copy registered every cycle is current by then.
+    //   load, low word in the tensor:  ld_wlo in (-8, t_E)   <=> w0 in (K1, K2)
+    //   load, high word:               ld_whi in (-8, t_E)   <=> w0 in (K1-8, K2-8)
+    //   store, byte j of the word:     in [0, t_E) and in the box row
+    //                                  <=> w0 + j in [max(0,-t_CB), min(t_row_bytes, t_E-t_CB))
+    wire signed [63:0] bnd_k1 = -64'sd8 - $signed(t_CB);
+    wire signed [63:0] bnd_k2 = $signed(t_E) - $signed(t_CB);
+    wire signed [63:0] bnd_lo = $signed(t_CB) < 0 ? -$signed(t_CB) : 64'sd0;
+    wire signed [63:0] bnd_hi = (bnd_k2 < $signed({32'd0, t_row_bytes})) ? bnd_k2
+                                                                       : $signed({32'd0, t_row_bytes});
+    reg  signed [63:0] q_k1, q_k2, q_k1h, q_k2h;
+    reg  signed [63:0] q_lo [0:7];
+    reg  signed [63:0] q_hi [0:7];
+    integer bj;
+    always @(posedge clk) begin
+        q_k1  <= bnd_k1;
+        q_k2  <= bnd_k2;
+        q_k1h <= bnd_k1 - 64'sd8;
+        q_k2h <= bnd_k2 - 64'sd8;
+        for (bj = 0; bj < 8; bj = bj + 1) begin
+            q_lo[bj] <= bnd_lo - bj;
+            q_hi[bj] <= bnd_hi - bj;
+        end
+    end
+    wire signed [63:0] w0 = $signed({29'd0, t_unit, 3'd0}) - $signed({61'd0, r_m});
+
     wire [63:0] ld_g    = t_CB  + {29'd0, t_unit, 3'd0};  // first byte of the unit
     wire [63:0] ld_wlo  = t_CBa + {29'd0, t_unit, 3'd0};  // its low word
     wire [63:0] ld_whi  = ld_wlo + 64'd8;
-    wire        ld_nlo  = t_rowv && $signed(ld_wlo) > -64'sd8 && $signed(ld_wlo) < $signed(t_E);
-    wire        ld_nhi  = t_rowv && (r_m != 3'd0) &&
-                          $signed(ld_whi) > -64'sd8 && $signed(ld_whi) < $signed(t_E);
+    wire        ld_nlo  = t_rowv && (w0 > q_k1) && (w0 < q_k2);
+    wire        ld_nhi  = t_rowv && (r_m != 3'd0) && (w0 > q_k1h) && (w0 < q_k2h);
     wire [7:0]  ld_keep = t_rowv ? byte_range(64'd0 - ld_g, t_E - ld_g) : 8'd0;
     wire [31:0] ld_off  = t_flat + {t_unit[28:0], 3'd0};  // byte offset in the window
     wire [7:0]  ld_vreg = t_wbase + ld_off[13:6];
@@ -383,13 +418,11 @@ module tnca_tensor #(
     // they are both inside the tensor and inside the box row.
     wire [31:0] st_nwords = t_row_units + ((r_m != 3'd0) ? 32'd1 : 32'd0);
     wire [63:0] st_g    = t_CBa + {29'd0, t_unit, 3'd0};
-    wire [63:0] st_lo0  = 64'd0 - st_g;                   // tensor starts here
-    wire [63:0] st_lo1  = t_CB - st_g;                    // box row starts here
-    wire [63:0] st_hi0  = t_E - st_g;                     // tensor ends here
-    wire [63:0] st_hi1  = t_CB + {32'd0, t_row_bytes} - st_g;  // box row ends
-    wire [63:0] st_lo   = ($signed(st_lo0) > $signed(st_lo1)) ? st_lo0 : st_lo1;
-    wire [63:0] st_hi   = ($signed(st_hi0) < $signed(st_hi1)) ? st_hi0 : st_hi1;
-    wire [7:0]  st_be   = t_rowv ? byte_range(st_lo, st_hi) : 8'd0;
+    reg  [7:0]  st_be;
+    integer bk;
+    always @(*)
+        for (bk = 0; bk < 8; bk = bk + 1)
+            st_be[bk] = t_rowv && (w0 >= q_lo[bk]) && (w0 < q_hi[bk]);
     // The window unit that word k's high bytes come from is unit k; its low
     // bytes come from unit k-1 (st_prev) when misaligned.
     wire        st_has_cur = (t_unit < t_row_units);
@@ -556,19 +589,24 @@ module tnca_tensor #(
     wire        x_req  = (st == S_XRUN) && !x_unit_oob && have_tag;
     wire        dl_issue = (st == S_DLOAD);
 
+    // The fields are steered by the state, not by which request is valid:
+    // each request is only ever valid in its own state, so the two agree
+    // whenever a field is looked at, and the late valids stay out of the
+    // address and enables (timing-008).
+    wire st_is_store = (st == S_SRUN);
     assign mem_req_valid = dl_issue || ld_req || st_req || x_req;
-    assign mem_req_addr  = dl_issue ? (dl_addr + {56'd0, dl_word, 3'd0})
-                         : ld_req   ? ld_addr
-                         : st_req   ? (t_P3 + st_g)
-                         :            x_unit_addr;
-    assign mem_req_we    = st_req;
-    assign mem_req_be    = st_req ? st_be : {MEM_BYTES{1'b0}};
-    assign mem_req_wdata = st_req ? st_word : {MEM_DW{1'b0}};
+    assign mem_req_addr  = dl_issue      ? (dl_addr + {56'd0, dl_word, 3'd0})
+                         : (st == S_TRUN) ? ld_addr
+                         : st_is_store    ? (t_P3 + st_g)
+                         :                  x_unit_addr;
+    assign mem_req_we    = st_is_store;
+    assign mem_req_be    = st_is_store ? st_be : {MEM_BYTES{1'b0}};
+    assign mem_req_wdata = st_is_store ? st_word : {MEM_DW{1'b0}};
     // The descriptor load is serial -- one word outstanding at a time -- so it
     // needs exactly one tag.
-    assign mem_req_tag   = dl_issue ? {TAG_W{1'b0}}
-                         : ld_req   ? {ld_slot, ld_issue_hi}
-                         :            free_tag;
+    assign mem_req_tag   = dl_issue       ? {TAG_W{1'b0}}
+                         : (st == S_TRUN) ? {ld_slot, ld_issue_hi}
+                         :                  free_tag;
 
     wire mem_fire = mem_req_valid && mem_req_ready;
 

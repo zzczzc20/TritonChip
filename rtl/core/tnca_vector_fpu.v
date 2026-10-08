@@ -57,6 +57,19 @@ module tnca_vector_fpu #(
     input  wire [VLEN*ELEN-1:0]     vb,
     input  wire [VLEN*ELEN-1:0]     vc,
 
+    // The FMA array's controls, decoded from the opcode one stage early (in
+    // R) and registered with it, so they are flops here rather than a decode
+    // of `major`/`func` -- which, at fan-out ~1500 across sixteen lanes'
+    // operand muxes, was 2.3 ns in front of the FMA's first stage. Exactly
+    // what the decode below the ports would compute from the same opcode
+    // (tnca_core.v, r_fpctl):
+    //   [0] func is vf.add/vf.sub        (operands a, 1.0, b)
+    //   [1] func is vf.mul               (operands a, b, +0)
+    //   [2] vf.sub or vf.fms             (negate the addend)
+    //   [3] vf.mul                       (ignore the addend)
+    //   [4] an FP reduction (is_red_mc)
+    input  wire [4:0]               fpctl,
+
     // multi-cycle control (reductions only)
     output wire                     is_multicycle,
     input  wire                     start,         // issue pulse, 1 cycle
@@ -125,8 +138,8 @@ module tnca_vector_fpu #(
     // the FMA's first stage (8.2 ns post-synthesis). Whenever an FP reduction
     // sits in X nothing else can be issuing to the FMA array, so selecting the
     // tree operands on is_red_mc alone changes no result; the capture below
-    // still waits for `start`.
-    wire red_active = red_busy | is_red_mc;
+    // still waits for `start`. fpctl[4] is is_red_mc, registered from R.
+    wire red_active = red_busy | fpctl[4];
 
     // During a fold the instruction inputs belong to a later instruction, so
     // the rounding mode has to come from the latched copy.
@@ -153,34 +166,18 @@ module tnca_vector_fpu #(
     reg            f_sub, f_mul;
 
     always @(*) begin
-        f_sub = 1'b0;
-        f_mul = 1'b0;
-        case (major)
-        `TNCA_MAJ_VFP: begin
-            case (func)
-            `TNCA_VF_ADD: f_sub = 1'b0;
-            `TNCA_VF_SUB: f_sub = 1'b1;
-            `TNCA_VF_MUL: f_mul = 1'b1;
-            `TNCA_VF_FMS: f_sub = 1'b1;
-            default:      ;
-            endcase
-        end
-        default: ;
-        endcase
+        f_sub = fpctl[2];
+        f_mul = fpctl[3];
 
         for (i = 0; i < VLEN; i = i + 1) begin
             // default: lane arithmetic
-            case (func)
-            `TNCA_VF_ADD, `TNCA_VF_SUB: begin
+            if (fpctl[0]) begin                 // vf.add / vf.sub
                 fa[i] = a[i]; fb[i] = FP_ONE; fc[i] = b[i];
-            end
-            `TNCA_VF_MUL: begin
+            end else if (fpctl[1]) begin        // vf.mul
                 fa[i] = a[i]; fb[i] = b[i];   fc[i] = FP_PZERO;
-            end
-            default: begin   // vf.fma / vf.fms
+            end else begin                      // vf.fma / vf.fms
                 fa[i] = a[i]; fb[i] = b[i];   fc[i] = c[i];
             end
-            endcase
         end
 
         // A reduction level overrides lanes 0..VLEN/2-1 with tree operands.

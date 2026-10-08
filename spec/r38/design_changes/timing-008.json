@@ -1,0 +1,52 @@
+{
+  "schema": "r38-design-change/1",
+  "id": "timing-008",
+  "parent_commit": "6ae7430",
+  "claims_three_layer": false,
+  "hypothesis": "With the core's paths cut, the device's worst path is the transfer engine's request: the in-bounds tests for a load word or a store's byte enables are rebuilt in every cycle from t_CB and t_E with 64-bit adds, subtracts, a max/min and eight range compares, in front of the request's valid -- and the valid steers the core's memory mux and from there the memory's write enables. The bounds are constant for a whole transfer, so registering them leaves one 36-bit offset against registered constants; steering the request's fields by state instead of by which request is valid takes the late valids out of the address and enables. No cycle moves.",
+  "evidence_for_hypothesis": "tnca_fpga_top post-synthesis, 6.667 ns target, after timing-004..007: u_txf/t_P3 -> u_mem WEA 7.197 ns / 38 levels (t_CB_reg -> u_mem WEA 6.998 ns in the build before: 17 CARRY8 of bounds arithmetic, then the request mux, the address and the memory's range check)",
+  "touched_layers": [
+    "microarch"
+  ],
+  "semantic_change": false,
+  "feature": "clock",
+  "layers": {
+    "microarch": {
+      "files": [
+        "rtl/core/tnca_tensor.v"
+      ],
+      "change": "w0 = 8*t_unit - r_m (the unit's low word's offset from the box row start); load low/high word tests as w0 in (K1, K2) / (K1-8, K2-8) with K1 = -8 - t_CB, K2 = t_E - t_CB; store byte j as w0 in [max(0,-t_CB) - j, min(t_row_bytes, t_E - t_CB) - j); all bounds registered every cycle from t_CB/t_E/t_row_bytes, which S_TCHK sets and S_TMUL (at least one cycle) separates from the walk; mem_req_addr/tag/we/be/wdata selected by state (S_DLOAD/S_TRUN/S_SRUN/else), equal to the old selection whenever the request is valid"
+    }
+  },
+  "compatibility": {
+    "cycles": "unchanged: R2 cycle check over the 149 R37 O2 cases, and every core program",
+    "numerics": "the same predicates by algebra (each bound moved across its inequality; no operand near 2^63); t33 (672 window-lane checks of rank 1-5 loads, negative/misaligned/past-the-end coordinates, zero/NaN fill), t34 (400 memory-word checks of stores), t35 refusals, t17, r38-xpose-rtl",
+    "artifacts": "unchanged"
+  },
+  "resource": {
+    "kind": "Vivado 2023.2 post-synthesis, out of context, xcu280-fsvh2892-2L-e, 6.667 ns target",
+    "module": "tnca_fpga_top",
+    "parent": {
+      "group": "u_txf -> u_mem",
+      "worst_ns": 7.197,
+      "worst_levels": 38,
+      "device_wns_ns": -0.948
+    },
+    "change": {
+      "group": "u_txf -> u_mem",
+      "worst_ns": 5.73,
+      "worst_levels": 26,
+      "device_worst_ns": 6.839,
+      "device_wns_ns": -0.19,
+      "device_worst_path": "the vector FMA's first generated stage (u_vfpu -> g_fma p0)"
+    }
+  },
+  "results": {
+    "correctness": "lint, core, core-slowmem, core-ooo, core-vrf, top, nuca, r38-xpose-rtl: 144 PASS"
+  },
+  "rollback": "revert rtl/core/tnca_tensor.v",
+  "evidence": [
+    "doc/r38_board_bringup.md"
+  ],
+  "status": "implemented"
+}

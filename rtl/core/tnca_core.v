@@ -976,9 +976,14 @@ module tnca_core #(
     wire [VLEN*ELEN-1:0] valu_v;
     wire [63:0]          valu_s;
     wire [VLEN-1:0]      valu_p;
+    // Decoded in R, registered into X with the opcode (tnca_vector_alu's
+    // `use_imm`).
+    reg x_valu_imm;
+
     tnca_vector_alu #(.VLEN(VLEN), .ELEN(ELEN)) u_valu (
         .major(x_major), .func(x_func), .mod(x_mod), .mask(lane_mask),
         .va(va_data), .vb(vb_data), .sa(v_sop), .imm(x_imm),
+        .use_imm(x_valu_imm),
         .pa(pa_data), .pb(pb_data),
         .vres(valu_v), .sres(valu_s), .pres(valu_p)
     );
@@ -996,11 +1001,22 @@ module tnca_core #(
                                (x_major == `TNCA_MAJ_SFU) ||
                                ((x_major == `TNCA_MAJ_RED) && (x_func >= `TNCA_RD_FADD)));
 
+    // The FMA array's controls, decoded in R and registered into X with the
+    // opcode they are decoded from (see tnca_vector_fpu's `fpctl`).
+    wire r_vfp = (r_major == `TNCA_MAJ_VFP);
+    wire [4:0] r_fpctl = {
+        (r_major == `TNCA_MAJ_RED) && (r_func >= `TNCA_RD_FADD),
+        r_vfp && (r_func == `TNCA_VF_MUL),
+        r_vfp && ((r_func == `TNCA_VF_SUB) || (r_func == `TNCA_VF_FMS)),
+        (r_func == `TNCA_VF_MUL),
+        (r_func == `TNCA_VF_ADD) || (r_func == `TNCA_VF_SUB)};
+    reg  [4:0] x_fpctl;
+
     tnca_vector_fpu #(.VLEN(VLEN), .ELEN(ELEN), .LW(LW), .FP_LAT(FP_LAT),
                       .SFU_LAT(SFU_LAT), .HAS_SFU(HAS_SFU)) u_vfpu (
         .clk(clk), .rst_n(rst_n),
         .major(x_major), .func(x_func), .mod(x_mod), .mask(lane_mask),
-        .va(va_data), .vb(vb_data), .vc(vc_data),
+        .va(va_data), .vb(vb_data), .vc(vc_data), .fpctl(x_fpctl),
         .is_multicycle(fpu_multicycle),
         .start(x_is_fp && fpu_multicycle && !x_kill),
         .busy(fpu_busy), .done(fpu_done),
@@ -2005,6 +2021,8 @@ module tnca_core #(
                 x_major      <= r_major;
                 x_func       <= r_func;
                 x_mod        <= r_mod;
+                x_fpctl      <= r_fpctl;
+                x_valu_imm   <= `TNCA_V_USES_IMM(r_func);
                 x_fu         <= r_fu;
                 x_dstc       <= r_dstc;
                 x_dsti       <= r_dsti;

@@ -88,19 +88,19 @@ LIMITS = [
     ('output tile', 'at most the accumulator shape (16x16)',
      '`plan_gemm` refuses a larger tile; a bigger output needs several '
      'accumulators and an outer loop, which is not planned'),
-    ('transfer rank', '1 or 2',
-     'ISA sec 9E; rank > 2 raises DESCRIPTOR_FAULT in the engine and is a '
-     'compile error in `_lower_transfer`. Rank 3-5 is NOT delivered'),
-    ('transfer stride', 'row stride and base both 8-byte aligned; '
-     'innermost stride = element size',
-     'checked in rtl/core/tnca_tensor.v before the transfer starts; '
-     't17_descfault is the negative'),
-    ('window write granularity', 'whole 8-byte units',
-     'rtl/core/tnca_tensor.v refuses a descriptor whose row is not a whole '
-     'number of 8-byte units, so every unit the engine writes is a full one. '
-     'The write port itself carries a byte keep-mask for a partial tail unit; '
-     'with the geometry check in place that path cannot be reached, and a '
-     'byte-granular transfer is NOT delivered'),
+    ('transfer rank', '1 to 5',
+     'ISA sec 9E (R38): signed coordinates, out-of-bounds elements zero- or '
+     'NaN-filled on a load and not written by a store; rank > 5 raises '
+     'DESCRIPTOR_FAULT. tb/core/progs/t33_tdesc_load.s, t34_tdesc_store.s'),
+    ('transfer stride', 'innermost stride = element size; base, outer '
+     'strides and coordinates any alignment',
+     'an unaligned row is assembled from two memory words per unit '
+     '(rtl/core/tnca_tensor.v); t17_descfault is the negative for a '
+     'non-contiguous innermost stride'),
+    ('window write granularity', 'whole 8-byte units, rows a multiple of 8 bytes',
+     'a box row whose size is not a whole number of 8-byte units raises '
+     'DESCRIPTOR_FAULT; partial units at a tensor edge are filled per the '
+     'padding mode through the byte keep-mask'),
     ('control flow', 'a single block per region; loops via `b.loop`',
      'multi-block CFG, nested regions and events through block arguments '
      'are refused by name -- IR-02. This is a frozen boundary, not a '
@@ -122,8 +122,8 @@ ASYNC_OPS = [
         writes='the whole destination window, every register of it',
         held='the window, from issue',
         release='the completion event; the coordinate registers are free one '
-                'cycle after issue, because rtl/core/tnca_tensor.v:357 '
-                'latches c0/c1 on cmd_valid and never reads the file again '
+                'cycle after issue, because rtl/core/tnca_tensor.v latches '
+                'c0..c4 on cmd_valid and never reads the file again '
                 '(case OWN-04)',
         error='the barrier is signalled with its error bit set, so the '
               'waiter is released rather than hanging; the window is not '
@@ -140,12 +140,11 @@ ASYNC_OPS = [
         held='the source window, from issue',
         release='the completion event. Reading the window meanwhile is '
                 'legal; overwriting it is not (case OWN-03)',
-        error='not executable on any R1 profile: the engine has no vector '
-              'read port and raises ILLEGAL_INSTRUCTION with the barrier '
-              'error bit set (t26_stfault). The compiler refuses to emit it',
-        generation='would count one operation; the capability '
-                   '`tensor_store` is false everywhere',
-        predicated='n/a on this profile set'),
+        error='a refused geometry raises DESCRIPTOR_FAULT with the barrier '
+              'error bit set, so the waiter is released (t35_tdesc_fpad2)',
+        generation='counts one operation on the armed phase of its barrier',
+        predicated='a fully masked-off transfer performs no access and still '
+                   'completes exactly once (ISA sec 9A.3)'),
     dict(
         mnemonic='m.mma.async',
         reads='both fragments in full: fragment_registers(m,k) and '
@@ -395,12 +394,10 @@ def render():
     a('')
     a('| item | status | where it is tracked |')
     a('|---|---|---|')
-    a('| transfer rank 3-5 | NOT DELIVERED | ISA sec 9E allows up to 5; the '
-      'engine executes 1 and 2 and raises DESCRIPTOR_FAULT above that |')
-    a('| byte-granular window writes | NOT DELIVERED | a descriptor whose '
-      'row is not a whole number of 8-byte units raises DESCRIPTOR_FAULT |')
-    a('| `t.st.async` execution | NOT DELIVERED | encodable, faults with '
-      'ILLEGAL_INSTRUCTION; capability `tensor_store` is false |')
+    a('| a box row that is not a whole number of 8-byte units | NOT DELIVERED | '
+      'raises DESCRIPTOR_FAULT; the compiler reads such a box through the LSU |')
+    a('| transposed `t.st.async` | NOT DELIVERED | mod[5] on a store raises '
+      'DESCRIPTOR_FAULT |')
     a('| transposed transfer (`t.ld.async` mod[5]) | PROFILE-GATED | '
       'implemented behind HAS_TENSOR_XPOSE (profile core-xpose-v1, '
       'capability `tensor_transpose`): 16-bit elements, 4/8/16 source rows '

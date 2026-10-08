@@ -34,12 +34,39 @@
 // Step eight happens once per command whatever step five expanded into, which
 // is what makes the operation counts in mb.arm a static property.
 //
-// STAGE-2 GEOMETRY RESTRICTION. Rank 1 and 2 only, and a tile row must be a
-// whole number of 8-byte units, aligned. Both are checked and raise
-// DESCRIPTOR_FAULT. Sec 7.2 allows rank up to 5 and the general case needs
-// byte-granular window writes; faulting is the honest interim, because the
-// alternative -- approximating -- would make a wrong answer look like a right
-// one. TENSOR_MAX_RANK reports the limit so software can ask.
+// GEOMETRY (ISA sec 9D.3, 9E; R38 tensor descriptors, aligned with the TMA
+// contract Triton exposes on NVIDIA GPUs)
+//
+// Rank 1 to 5. Dimension 0 is the outermost, dimension rank-1 the contiguous
+// one. A box of block_shape[0..r-1] elements is moved between memory and a
+// window in which it is flat row-major: a "row" is one run of the contiguous
+// dimension, and the rows are the outer dimensions in odometer order.
+// Internally every rank is normalised to five positions with the contiguous
+// dimension last; the positions a lower rank does not use have extent 1,
+// block 1, stride 0 and coordinate 0, so they are always in bounds and the
+// walk below never needs to know the rank.
+//
+// Coordinates are SIGNED and may point anywhere: before the tensor, past it,
+// or straddling an edge, and the contiguous coordinate need not be aligned to
+// anything. An element is in bounds when 0 <= coord + index < extent in every
+// dimension. Out-of-bounds elements of a load are filled -- zero, or the
+// dtype's quiet NaN under padding mode 3 -- and are never read; out-of-bounds
+// elements of a store are not written. Padding mode 2 turns any
+// out-of-bounds element into DESCRIPTOR_FAULT instead.
+//
+// What the engine still requires (each checked, each a DESCRIPTOR_FAULT):
+// an innermost stride of one element, a box row that is a whole number of
+// 8-byte units, every block dimension in 1..256, and a box that fits its
+// window. TENSOR_MAX_RANK reports 5. The base and the outer strides may have
+// any alignment -- a strict superset of the TMA contract, which wants 16.
+//
+// A box row that does not start on an 8-byte boundary -- a misaligned base,
+// stride or contiguous coordinate, which can differ row to row -- is the one
+// case that is not a straight copy: each 8-byte unit of the row is then
+// assembled from two memory words. Loads fetch both words of such a unit and
+// shift; stores shift the window's units the other way and write each memory
+// word through its byte enables, so a store touches exactly the in-bounds
+// bytes of its box.
 //==============================================================================
 `include "tnca_defs.vh"
 
@@ -56,16 +83,16 @@ module tnca_tensor #(
     parameter MEM_BYTES = 8,
     parameter TAG_W     = 4,        // engine-local tag
     parameter NTAG      = 16,
-    // ISA sec 9E mod[5], the transposed write (see TRANSPOSED WRITE below).
-    // 0 on every profile before R38; a mod[5] command then faults
-    // ILLEGAL_INSTRUCTION instead of transferring untransposed.
+    // The transposed window write (ISA sec 9E mod[5], capability
+    // `tensor_transpose`). Off, the corner-turn buffer and its states are
+    // not built.
     parameter HAS_XPOSE = 0
 ) (
     input  wire                     clk,
     input  wire                     rst_n,
     input  wire                     flush,
 
-    // ---- configuration commands (single cycle, from the execute stage) ------
+    // ---- descriptor / window management (single cycle, from X) ----
     input  wire                     cfg_valid,
     input  wire [1:0]               cfg_op,      // 0 td.load 1 td.release
                                                  // 2 w.def   3 w.release
@@ -75,59 +102,66 @@ module tnca_tensor #(
     input  wire [7:0]               cfg_wbase,
     input  wire [7:0]               cfg_wlen,
 
-    // ---- transfer command ---------------------------------------------------
+    // ---- transfer command ----
     input  wire                     cmd_valid,
     input  wire                     cmd_store,
     input  wire [DESC_W-1:0]        cmd_desc,
     input  wire [WIN_W-1:0]         cmd_win,
+    // The coordinates: Sb, Sb+1, ... Sb+4 (ISA sec 9E), one per descriptor
+    // dimension in descriptor order. Only the first `rank` are used.
     input  wire [63:0]              cmd_c0,
     input  wire [63:0]              cmd_c1,
+    input  wire [63:0]              cmd_c2,
+    input  wire [63:0]              cmd_c3,
+    input  wire [63:0]              cmd_c4,
+    input  wire [5:0]               cmd_sb,      // which register Sb is
     input  wire [2:0]               cmd_esz,     // log2 element bytes
     input  wire                     cmd_xpose,   // mod[5]
     input  wire [1:0]               cmd_layout,  // mod[4:3]; only 0 exists
     input  wire                     cmd_bar_en,
     input  wire [BAR_W-1:0]         cmd_bar,
     input  wire [RCTX_W-1:0]        cmd_rctx,
-    // The PC of the issuing instruction. ISA sec 10 has TRAP_PC locate the
-    // faulting instruction, and an engine fault surfaces long after that
-    // instruction retired, so the PC travels with the command.
+    // The PC of the instruction that issued this transfer. A geometry fault
+    // is detected cycles later, after the core has moved on, and TRAP_PC must
+    // name the instruction that caused it -- not whichever one the core
+    // happens to be executing when the fault surfaces.
     input  wire [63:0]              cmd_pc,
-    // Any lane active. ISA sec 2.2 makes tensor instructions take a lane
-    // mask, and a fully-masked-off instruction performs no access while still
-    // writing its completion event. Without this the engine ignored the mask
-    // and performed the transfer regardless, so a predicated-off stage
-    // overwrote the window it was meant to leave alone.
+    // The issuing instruction's predicate (sec 2.2). All-or-nothing: see
+    // the ISA's sec 9E note. An inactive command performs no access and
+    // still signals its completion once.
     input  wire                     cmd_active,
 
     output wire                     busy,
 
-    // ---- completion ---------------------------------------------------------
     output reg                      done,
     output reg                      done_bar_en,
     output reg  [BAR_W-1:0]         done_bar,
     output reg                      fault,
     output reg  [7:0]               fault_code,
-    // Which Role Context issued the command. ISA sec 10 requires a trap to
-    // stop the RAISING context; an engine fault arrives long after the
-    // issuing instruction has retired, so the core cannot infer it from
-    // whatever happens to be in the execute stage.
+    // A fault is asynchronous: by the time the geometry is checked the core
+    // may be issuing from another RCTX. These say which RCTX and which PC.
     output reg  [RCTX_W-1:0]        fault_rctx,
     output reg  [63:0]              fault_pc,
-    // A failing command still signals its barrier -- otherwise the waiter
-    // hangs -- but it must signal FAILURE. ISA sec 9A.2 gives the barrier an
-    // error bit "set by mb.inval or by a faulting command"; signalling an
-    // ordinary completion instead releases the consumer to read a window the
-    // transfer never wrote.
+    // Set together with `done` when the transfer faulted. The barrier
+    // releases its waiter rather than leaving it to block forever (ISA sec
+    // 10), and this is how it knows the operation it is counting failed.
     output reg                      done_err,
 
-    // ---- vector register write port -----------------------------------------
+    // ---- window write port (into the vector register file) ----
     output reg                      vw_en,
     output reg  [RCTX_W-1:0]        vw_rctx,
     output reg  [7:0]               vw_idx,
     output reg  [VLEN-1:0]          vw_lane_en,
     output reg  [VLEN*ELEN-1:0]     vw_data,
 
-    // ---- memory port --------------------------------------------------------
+    // ---- window read port (a store's source), held until vr_valid ----
+    output wire                     vr_req,
+    output wire [RCTX_W-1:0]        vr_rctx,
+    output wire [7:0]               vr_idx,
+    input  wire                     vr_valid,
+    input  wire [VLEN*ELEN-1:0]     vr_data,
+
+    // ---- memory port (one word request per cycle) ----
     output wire                     mem_req_valid,
     input  wire                     mem_req_ready,
     output wire [63:0]              mem_req_addr,
@@ -150,38 +184,43 @@ module tnca_tensor #(
     reg [7:0]       win_len  [0:WIN_N-1];
 
     //==========================================================================
-    // Descriptor table -- the snapshot, parsed
+    // Descriptor table -- the snapshot, parsed. Dimension j of the
+    // descriptor is d_*j, in descriptor order (0 outermost).
     //==========================================================================
     reg [DESC_N-1:0] desc_v;
     reg [63:0] d_base   [0:DESC_N-1];
-    reg [63:0] d_e0     [0:DESC_N-1];
-    reg [63:0] d_e1     [0:DESC_N-1];
-    reg [63:0] d_s0     [0:DESC_N-1];
-    reg [63:0] d_s1     [0:DESC_N-1];
-    reg [31:0] d_b0     [0:DESC_N-1];
-    reg [31:0] d_b1     [0:DESC_N-1];
+    reg [63:0] d_e0 [0:DESC_N-1], d_e1 [0:DESC_N-1], d_e2 [0:DESC_N-1],
+               d_e3 [0:DESC_N-1], d_e4 [0:DESC_N-1];
+    reg [63:0] d_s0 [0:DESC_N-1], d_s1 [0:DESC_N-1], d_s2 [0:DESC_N-1],
+               d_s3 [0:DESC_N-1], d_s4 [0:DESC_N-1];
+    reg [31:0] d_b0 [0:DESC_N-1], d_b1 [0:DESC_N-1], d_b2 [0:DESC_N-1],
+               d_b3 [0:DESC_N-1], d_b4 [0:DESC_N-1];
     reg [7:0]  d_rank   [0:DESC_N-1];
     reg [7:0]  d_dtype  [0:DESC_N-1];
     reg [7:0]  d_pad    [0:DESC_N-1];
 
     //==========================================================================
-    // Engine
+    // Engine states
     //==========================================================================
-    localparam S_IDLE   = 4'd0,
-               S_DLOAD  = 4'd1,   // fetching a 256-byte TensorMap
-               S_DWAIT  = 4'd2,
-               S_DPARSE = 4'd8,
-               S_TSETUP = 4'd3,
-               S_TSET2  = 4'd9,
-               S_TRUN   = 4'd4,
-               S_TDRAIN = 4'd5,
-               S_DONE   = 4'd6,
-               S_FAULT  = 4'd7,
-               S_XRUN   = 4'd10,  // transposed: one column block, down the rows
-               S_XDRAIN = 4'd11,
-               S_XWRITE = 4'd12;
+    localparam S_IDLE   = 5'd0,
+               S_DLOAD  = 5'd1,   // fetching a 256-byte TensorMap
+               S_DWAIT  = 5'd2,
+               S_DPARSE = 5'd3,
+               S_TSETUP = 5'd4,   // copy and normalise the snapshot
+               S_TCHK   = 5'd5,   // geometry
+               S_TMUL   = 5'd6,   // starting address, one multiply a cycle
+               S_TRUN   = 5'd7,   // load: one box unit at a time
+               S_TDRAIN = 5'd8,
+               S_SRUN   = 5'd9,   // store: one memory word at a time
+               S_SREAD  = 5'd10,  // store: reading a window register
+               S_SDRAIN = 5'd11,
+               S_DONE   = 5'd12,
+               S_FAULT  = 5'd13,
+               S_XRUN   = 5'd14,  // transposed: one column block, down the rows
+               S_XDRAIN = 5'd15,
+               S_XWRITE = 5'd16;
 
-    reg [3:0] st;
+    reg [4:0] st;
 
     // --- descriptor load state ---
     reg [DESC_W-1:0] dl_slot;
@@ -189,15 +228,15 @@ module tnca_tensor #(
     reg [4:0]        dl_word;        // 0..31
     reg [63:0]       dl_buf [0:31];
 
-    // --- transfer state ---
+    // --- command, as issued ---
     reg               t_store;
-    // Which trap a fault raises. The engine used to hard-code DESCRIPTOR_FAULT
-    // because geometry was the only thing it could refuse; `t.st.async` needs
-    // a different code, and a fault path with one code cannot grow one.
+    // Which trap a fault raises: DESCRIPTOR_FAULT for geometry, and
+    // ILLEGAL_INSTRUCTION for an encoding this engine does not execute.
     reg  [7:0]        t_fcode;
     reg [DESC_W-1:0]  t_desc;
     reg [WIN_W-1:0]   t_win;
-    reg [63:0]        t_c0, t_c1;
+    reg [63:0]        cc0, cc1, cc2, cc3, cc4;   // coordinates, descriptor order
+    reg [5:0]         t_sb;
     reg [2:0]         t_esz;
     reg               t_xpose;
     reg               t_bar_en;
@@ -205,21 +244,207 @@ module tnca_tensor #(
     reg [RCTX_W-1:0]  t_rctx;
     reg [63:0]        t_pc;
 
-    reg [31:0]        t_rows, t_cols;
-    reg [31:0]        t_row_bytes;    // cols * elem
-    reg [31:0]        t_row_units;    // row_bytes / 8
-    wire [31:0]       t_valid_bytes;  // in-bounds bytes of the current row
-    reg [31:0]        t_row;          // current row
-    reg [31:0]        t_unit;         // current 8-byte unit in the row
+    // --- the transfer, normalised: position 4 is the contiguous dimension,
+    //     positions below 5-rank are unused (extent 1, block 1, stride 0,
+    //     coordinate 0) ---
+    reg [63:0]        t_base;
+    reg [63:0]        t_e0, t_e1, t_e2, t_e3, t_e4;
+    reg [63:0]        t_s0, t_s1, t_s2, t_s3, t_s4;
+    reg [31:0]        t_b0, t_b1, t_b2, t_b3, t_b4;
+    reg [63:0]        t_c0, t_c1, t_c2, t_c3, t_c4;
+    reg [7:0]         t_rank;
+    reg [7:0]         t_dtype;
+    reg [7:0]         t_pad;
     reg [7:0]         t_wbase;
+    reg [7:0]         t_wlen;
 
-    // outstanding reads
-    reg [NTAG-1:0]    tg_v;
-    reg [7:0]         tg_vreg  [0:NTAG-1];
-    reg [3:0]         tg_lane  [0:NTAG-1];   // first of two lanes
-    reg [7:0]         tg_keep  [0:NTAG-1];   // per-byte keep mask
+    // --- derived per transfer ---
+    reg [63:0]        t_E;           // contiguous extent in bytes
+    reg [63:0]        t_CB;          // contiguous coordinate in bytes (signed)
+    reg [31:0]        t_row_bytes;   // block[4] * element size
+    reg [31:0]        t_row_units;   // t_row_bytes / 8
+    reg [63:0]        t_fill;        // what an out-of-bounds load byte becomes
+
+    // --- the starting-address accumulation (S_TMUL) ---
+    reg [2:0]         t_mp;          // position being multiplied
+    reg [63:0]        t_acc;
+
+    // --- the walk: an odometer over positions 0..3, with the address of
+    //     each level's current index kept so a carry is one add ---
+    reg [31:0]        t_i0, t_i1, t_i2, t_i3;
+    reg [63:0]        t_P0, t_P1, t_P2, t_P3;  // t_P3: this row's element-0 address
+    reg [31:0]        t_unit;        // load: box unit; store: memory word
+    reg [31:0]        t_flat;        // this row's byte offset in the window
+    reg               t_half;        // load: second word of a split unit
+    reg [TAG_W-2:0]   t_slot;
 
     assign busy = (st != S_IDLE);
+
+    //==========================================================================
+    // The fill value: zero, or the dtype's quiet NaN repeated across the
+    // 8-byte unit. Elements are aligned inside a unit, so a byte of the unit
+    // takes the fill byte in the same position. ISA sec 9D.3 dtype codes.
+    //==========================================================================
+    reg [63:0] fill_nan;
+    reg        dtype_float;
+    reg [2:0]  dtype_lg;             // log2 bytes of the dtype
+    always @(*) begin
+        fill_nan = 64'd0; dtype_float = 1'b0; dtype_lg = 3'd0;
+        case (t_dtype)
+        8'd0: begin fill_nan = {4{16'h7E00}};     dtype_float = 1'b1; dtype_lg = 3'd1; end // FP16
+        8'd1: begin fill_nan = {4{16'h7FC0}};     dtype_float = 1'b1; dtype_lg = 3'd1; end // BF16
+        8'd2: begin fill_nan = {2{32'h7FC00000}}; dtype_float = 1'b1; dtype_lg = 3'd2; end // FP32
+        8'd3: begin dtype_lg = 3'd0; end                                                  // INT8
+        8'd4: begin dtype_lg = 3'd1; end                                                  // INT16
+        8'd5: begin dtype_lg = 3'd2; end                                                  // INT32
+        8'd6: begin dtype_lg = 3'd3; end                                                  // INT64
+        8'd7: begin fill_nan = {8{8'h7F}};        dtype_float = 1'b1; dtype_lg = 3'd0; end // FP8 E4M3
+        8'd8: begin fill_nan = {8{8'h7F}};        dtype_float = 1'b1; dtype_lg = 3'd0; end // FP8 E5M2
+        8'd9: begin fill_nan = 64'h7FF8000000000000; dtype_float = 1'b1; dtype_lg = 3'd3; end // FP64
+        default: ;
+        endcase
+    end
+
+    //==========================================================================
+    // Row bounds. A row is in bounds when every outer position's coordinate
+    // plus index lies in [0, extent). Signed: a negative coordinate is an
+    // ordinary out-of-bounds position, not a huge one.
+    //==========================================================================
+    function in_dim;
+        input [63:0] c;
+        input [31:0] i;
+        input [63:0] e;
+        reg   [63:0] g;
+        begin
+            g = c + {32'd0, i};
+            in_dim = !g[63] && (g < e);
+        end
+    endfunction
+
+    wire t_rowv = in_dim(t_c0, t_i0, t_e0) && in_dim(t_c1, t_i1, t_e1) &&
+                  in_dim(t_c2, t_i2, t_e2) && in_dim(t_c3, t_i3, t_e3);
+
+    // The odometer's next step. Position 3 moves fastest.
+    wire inc3 = (t_i3 + 32'd1 < t_b3);
+    wire inc2 = !inc3 && (t_i2 + 32'd1 < t_b2);
+    wire inc1 = !inc3 && !inc2 && (t_i1 + 32'd1 < t_b1);
+    wire inc0 = !inc3 && !inc2 && !inc1 && (t_i0 + 32'd1 < t_b0);
+    wire last_row = !inc3 && !inc2 && !inc1 && !inc0;
+
+    //==========================================================================
+    // Contiguous-dimension byte ranges. Offsets are relative to the address of
+    // the row's element 0 (t_P3), in bytes, signed. The valid bytes are
+    // [0, t_E); the box row is [t_CB, t_CB + t_row_bytes).
+    //==========================================================================
+    // Where this row's box starts within an 8-byte word: (row address +
+    // contiguous offset) mod 8. Constant along a row, and possibly different
+    // from row to row (an outer stride need not be a multiple of 8).
+    wire [2:0]  r_m   = t_P3[2:0] + t_CB[2:0];
+    // The box's first byte rounded down to its word, relative to t_P3.
+    wire [63:0] t_CBa = t_CB - {61'd0, r_m};
+
+    // A byte j (0..7) of an 8-byte group starting at byte offset `g` is
+    // valid when lo <= j < hi, with lo/hi computed once per group.
+    function [7:0] byte_range;
+        input [63:0] lo;   // signed
+        input [63:0] hi;   // signed
+        integer      j;
+        begin
+            for (j = 0; j < 8; j = j + 1)
+                byte_range[j] = ($signed({61'd0, j[2:0]}) >= $signed(lo)) &&
+                                ($signed({61'd0, j[2:0]}) <  $signed(hi));
+        end
+    endfunction
+
+    // ---- loads: unit t_unit of the box row ----
+    // The unit's 8 bytes are box-row bytes [8k, 8k+8): memory bytes
+    // [t_CB + 8k, t_CB + 8k + 8), taken from the words at t_CBa + 8k and,
+    // when misaligned, the next one.
+    wire [63:0] ld_g    = t_CB  + {29'd0, t_unit, 3'd0};  // first byte of the unit
+    wire [63:0] ld_wlo  = t_CBa + {29'd0, t_unit, 3'd0};  // its low word
+    wire [63:0] ld_whi  = ld_wlo + 64'd8;
+    wire        ld_nlo  = t_rowv && $signed(ld_wlo) > -64'sd8 && $signed(ld_wlo) < $signed(t_E);
+    wire        ld_nhi  = t_rowv && (r_m != 3'd0) &&
+                          $signed(ld_whi) > -64'sd8 && $signed(ld_whi) < $signed(t_E);
+    wire [7:0]  ld_keep = t_rowv ? byte_range(64'd0 - ld_g, t_E - ld_g) : 8'd0;
+    wire [31:0] ld_off  = t_flat + {t_unit[28:0], 3'd0};  // byte offset in the window
+    wire [7:0]  ld_vreg = t_wbase + ld_off[13:6];
+    wire [3:0]  ld_lane = ld_off[5:2];
+
+    // ---- stores: memory word t_unit of the box row ----
+    // Word k is memory bytes [t_CBa + 8k, +8). Its bytes are written when
+    // they are both inside the tensor and inside the box row.
+    wire [31:0] st_nwords = t_row_units + ((r_m != 3'd0) ? 32'd1 : 32'd0);
+    wire [63:0] st_g    = t_CBa + {29'd0, t_unit, 3'd0};
+    wire [63:0] st_lo0  = 64'd0 - st_g;                   // tensor starts here
+    wire [63:0] st_lo1  = t_CB - st_g;                    // box row starts here
+    wire [63:0] st_hi0  = t_E - st_g;                     // tensor ends here
+    wire [63:0] st_hi1  = t_CB + {32'd0, t_row_bytes} - st_g;  // box row ends
+    wire [63:0] st_lo   = ($signed(st_lo0) > $signed(st_lo1)) ? st_lo0 : st_lo1;
+    wire [63:0] st_hi   = ($signed(st_hi0) < $signed(st_hi1)) ? st_hi0 : st_hi1;
+    wire [7:0]  st_be   = t_rowv ? byte_range(st_lo, st_hi) : 8'd0;
+    // The window unit that word k's high bytes come from is unit k; its low
+    // bytes come from unit k-1 (st_prev) when misaligned.
+    wire        st_has_cur = (t_unit < t_row_units);
+    wire [31:0] st_off  = t_flat + {t_unit[28:0], 3'd0};
+    wire [7:0]  st_vreg = t_wbase + st_off[13:6];
+    wire [2:0]  st_u    = st_off[5:3];
+
+    //==========================================================================
+    // Load slots. A box unit that needs memory takes one slot until both of
+    // its words (or its one) are back; the tag is {slot, which word}.
+    //==========================================================================
+    localparam NSLOT  = NTAG / 2;
+    localparam SLOT_W = TAG_W - 1;
+
+    reg [NSLOT-1:0] sl_v, sl_nlo, sl_nhi, sl_glo, sl_ghi;
+    reg [63:0]      sl_dlo  [0:NSLOT-1];
+    reg [63:0]      sl_dhi  [0:NSLOT-1];
+    reg [7:0]       sl_vreg [0:NSLOT-1];
+    reg [3:0]       sl_lane [0:NSLOT-1];
+    reg [7:0]       sl_keep [0:NSLOT-1];
+    reg [2:0]       sl_m    [0:NSLOT-1];   // the row's misalignment
+
+    wire [NSLOT-1:0] sl_done = sl_v & (sl_glo | ~sl_nlo) & (sl_ghi | ~sl_nhi);
+
+    reg [SLOT_W-1:0] free_slot, done_slot;
+    reg              have_slot, have_done;
+    always @(*) begin
+        free_slot = {SLOT_W{1'b0}}; have_slot = 1'b0;
+        done_slot = {SLOT_W{1'b0}}; have_done = 1'b0;
+        for (i = NSLOT-1; i >= 0; i = i - 1) begin
+            if (!sl_v[i])   begin free_slot = i[SLOT_W-1:0]; have_slot = 1'b1; end
+            if (sl_done[i]) begin done_slot = i[SLOT_W-1:0]; have_done = 1'b1; end
+        end
+    end
+
+    // The finished unit: shift the word pair into place, then put the fill
+    // wherever a byte is outside the tensor.
+    wire [63:0]  dn_lo   = sl_dlo[done_slot];
+    wire [63:0]  dn_hi   = sl_dhi[done_slot];
+    wire [2:0]   dn_m    = sl_m[done_slot];
+    wire [127:0] dn_pair = {dn_hi, dn_lo} >> {dn_m, 3'b000};
+    wire [7:0]   dn_keep = sl_keep[done_slot];
+    reg  [63:0]  dn_data;
+    integer      dk;
+    always @(*)
+        for (dk = 0; dk < 8; dk = dk + 1)
+            dn_data[dk*8 +: 8] = dn_keep[dk] ? dn_pair[dk*8 +: 8] : t_fill[dk*8 +: 8];
+
+    //==========================================================================
+    // Store state: the window register being read, and the previous unit
+    //==========================================================================
+    reg               sr_v;          // sr_data holds window register sr_idx
+    reg [7:0]         sr_idx;
+    reg [VLEN*ELEN-1:0] sr_data;
+    reg [63:0]        st_prev;
+    reg [NTAG-1:0]    tg_v;          // store: outstanding write responses
+
+    wire [63:0] st_cur  = st_has_cur ? sr_data[st_u*64 +: 64] : 64'd0;
+    wire [63:0] st_word = (r_m == 3'd0) ? st_cur
+                        : ((st_cur << {r_m, 3'b000}) |
+                           (st_prev >> {(4'd8 - {1'b0, r_m}), 3'b000}));
+    wire        st_need_reg = st_has_cur && !(sr_v && (sr_idx == st_vreg));
 
     reg [TAG_W-1:0] free_tag;
     reg             have_tag;
@@ -229,39 +454,12 @@ module tnca_tensor #(
             if (!tg_v[i]) begin free_tag = i[TAG_W-1:0]; have_tag = 1'b1; end
     end
 
-    //==========================================================================
-    // Address of the current unit
-    //
-    // The row base is WALKED, not recomputed. Written as
-    //     base + (c0 + row)*stride0 + c1*stride1
-    // every row costs a 64x64 multiply, and the multiplier then sits in the
-    // inner loop of every transfer. The starting address needs the multiplies
-    // once, in a setup cycle where there is no throughput to lose; after that a
-    // row is one add. This is what a DMA engine is supposed to look like.
-    //==========================================================================
-    reg  [63:0] r_row_base;
-    wire [63:0] unit_addr = r_row_base + {29'd0, t_unit, 3'd0};
-
-    // Out of bounds in the row dimension: the whole row is padding.
-    wire row_oob  = ((t_c0 + {32'd0, t_row}) >= d_e0[t_desc]);
-    wire [31:0] unit_off = {t_unit[28:0], 3'd0};
-    wire unit_oob = row_oob || (unit_off >= t_valid_bytes);
-
-    // Bytes of this unit that came from memory; the rest are padding.
-    wire [31:0] rem = t_valid_bytes - unit_off;
-    wire [3:0]  nkeep = (rem >= 32'd8) ? 4'd8 : rem[3:0];
-    // Its own loop variable: a combinational block that shares a module-level
-    // index with another one retriggers it, and simulation time stops.
-    reg  [7:0]  keep_mask;
-    integer km_i;
-    always @(*) begin
-        keep_mask = 8'd0;
-        for (km_i = 0; km_i < 8; km_i = km_i + 1)
-            if (km_i < nkeep) keep_mask[km_i] = 1'b1;
-    end
+    assign vr_req  = (st == S_SREAD);
+    assign vr_rctx = t_rctx;
+    assign vr_idx  = st_vreg;
 
     //==========================================================================
-    // TRANSPOSED WRITE (ISA sec 9E mod[5])
+    // TRANSPOSED WRITE (ISA sec 9E mod[5]) -- rank 2, 16-bit, unchanged.
     //
     // A source tile of R rows x C columns lands as C rows x R columns, flat
     // row-major: window element (c, r) = source element (r, c). Memory
@@ -272,12 +470,33 @@ module tnca_tensor #(
     // corner-turns: it reads one column block down every row into xbuf,
     // then writes the 8/esz completed destination rows, each as whole
     // lanes. xbuf is XR_MAX units, the hardware cost of the feature.
+    // It uses normalised positions 3 (rows) and 4 (columns).
     //==========================================================================
     localparam [31:0] XR_MAX = 32'd16;
+    reg  [31:0] x_row;                 // current source row
+    reg  [63:0] r_row_base;
+    wire [63:0] x_unit_addr = r_row_base + {29'd0, t_unit, 3'd0};
+    wire        x_row_oob   = !in_dim(t_c3, x_row, t_e3);
+    wire [63:0] x_cols_left = (t_e4 > t_c4) ? (t_e4 - t_c4) : 64'd0;
+    wire [31:0] x_cols_ok   = (x_cols_left >= {32'd0, t_b4}) ? t_b4 : x_cols_left[31:0];
+    wire [31:0] x_valid_bytes = x_row_oob ? 32'd0 : (x_cols_ok << t_esz);
+    wire [31:0] x_unit_off  = {t_unit[28:0], 3'd0};
+    wire        x_unit_oob  = x_row_oob || (x_unit_off >= x_valid_bytes);
+    wire [31:0] x_rem       = x_valid_bytes - x_unit_off;
+    wire [3:0]  x_nkeep     = (x_rem >= 32'd8) ? 4'd8 : x_rem[3:0];
+    reg  [7:0]  x_keep_mask;
+    integer km_i;
+    always @(*) begin
+        x_keep_mask = 8'd0;
+        for (km_i = 0; km_i < 8; km_i = km_i + 1)
+            if (km_i < x_nkeep) x_keep_mask[km_i] = 1'b1;
+    end
+
     reg  [16*64-1:0] xbuf;             // unit r at [r*64 +: 64]
-    wire [7:0]  x_rsp_tagrow = tg_vreg[mem_rsp_tag];
-    wire [3:0]  x_rsp_row    = x_rsp_tagrow[3:0];
-    wire [7:0]  x_rsp_kbits  = tg_keep[mem_rsp_tag];
+    reg  [3:0]  xt_row  [0:NTAG-1];    // which buffered row a tag fills
+    reg  [7:0]  xt_keep [0:NTAG-1];
+    wire [3:0]  x_rsp_row    = xt_row[mem_rsp_tag];
+    wire [7:0]  x_rsp_kbits  = xt_keep[mem_rsp_tag];
     reg  [63:0] x_rsp_keep;
     integer xk;
     always @(*)
@@ -288,17 +507,13 @@ module tnca_tensor #(
     // 16-bit elements only (the MMA operand types): a unit is four
     // elements, so one column block is four destination rows, and a
     // destination row of R elements is 2R bytes with R in {4, 8, 16}.
-    // Restricting the size is what keeps the placement cheap: the first
-    // version accepted 1-, 2- and 4-byte elements at any offset, and its
-    // byte crossbar more than doubled the engine's gate count.
     wire [3:0]  x_per_unit   = 4'd4;
-    wire [31:0] x_drow_bytes = t_rows << 1;
+    wire [31:0] x_drow_bytes = t_b3 << 1;
     wire [31:0] x_ddst  = ((t_unit << 2) + {28'd0, x_q}) * x_drow_bytes;
     wire [7:0]  x_vreg  = t_wbase + x_ddst[13:6];
     wire [3:0]  x_lane0 = x_ddst[5:2];
-    wire [31:0] x_b0    = d_b0[t_desc];
     wire        xrow_ok = (t_esz == 3'd1) &&
-                          ((x_b0 == 32'd4) || (x_b0 == 32'd8) || (x_b0 == 32'd16));
+                          ((t_b3 == 32'd4) || (t_b3 == 32'd8) || (t_b3 == 32'd16));
     reg  [VLEN-1:0]      x_lanes;
     reg  [VLEN*ELEN-1:0] x_data;
     integer xh, xl;
@@ -307,55 +522,126 @@ module tnca_tensor #(
         for (xl = 0; xl < VLEN; xl = xl + 1)
             if ((xl >= x_lane0) && (xl < x_lane0 + (x_drow_bytes >> 2)))
                 x_lanes[xl] = 1'b1;
-        // The destination row, repeated across the register: halfword k
-        // holds element x_q of source row (k mod R). The lane enables pick
-        // the copy at the row's own offset, so nothing has to be shifted
-        // into place. xbuf's only reader, and built only with the feature,
-        // so an engine without it has none and synthesis drops xbuf.
         x_data = {(VLEN*ELEN){1'b0}};
         if (HAS_XPOSE != 0)
             for (xh = 0; xh < 2*VLEN; xh = xh + 1)
-                case (t_rows[4:0])
+                case (t_b3[4:0])
                 5'd4:  x_data[xh*16 +: 16] = xbuf[((xh & 3)  * 64 + x_q * 16) +: 16];
                 5'd8:  x_data[xh*16 +: 16] = xbuf[((xh & 7)  * 64 + x_q * 16) +: 16];
                 default: x_data[xh*16 +: 16] = xbuf[((xh & 15) * 64 + x_q * 16) +: 16];
                 endcase
     end
 
-    // Destination inside the window
-    wire [31:0] flat  = t_row * t_row_bytes + unit_off;
-    wire [7:0]  d_vreg = t_wbase + flat[31:6];
-    wire [3:0]  d_lane = flat[5:2];
+    //==========================================================================
+    // Memory requests
+    //==========================================================================
+    // Load: unit t_unit, its low word unless t_half (or only the high word
+    // is needed).
+    wire        ld_issue_hi = t_half || !ld_nlo;
+    wire        ld_req = (st == S_TRUN) && (ld_nlo || ld_nhi) &&
+                         (t_half || have_slot);
+    wire [63:0] ld_addr = t_P3 + (ld_issue_hi ? ld_whi : ld_wlo);
+    wire [SLOT_W-1:0] ld_slot = t_half ? t_slot : free_slot;
 
-    // A returning unit and a padding unit both want the vector write port. The
-    // return has priority -- it is the path that releases a tag and lets the
-    // transfer finish -- and the padding unit simply waits a cycle. Letting the
-    // padding write win instead silently dropped returned data, which looked
-    // like a correct transfer of the wrong numbers.
-    wire rsp_write = mem_rsp_valid && (st != S_DLOAD) && (st != S_DWAIT);
+    wire        st_req = (st == S_SRUN) && t_rowv && !st_need_reg &&
+                         (st_be != 8'd0) && have_tag;
 
-    wire issue_ok = ((st == S_TRUN) || (st == S_XRUN)) && !unit_oob && have_tag;
-    wire dl_issue = (st == S_DLOAD);
+    wire        x_req  = (st == S_XRUN) && !x_unit_oob && have_tag;
+    wire        dl_issue = (st == S_DLOAD);
 
-    assign mem_req_valid = dl_issue || issue_ok;
-    assign mem_req_addr  = dl_issue ? (dl_addr + {56'd0, dl_word, 3'd0}) : unit_addr;
-    assign mem_req_we    = 1'b0;
-    assign mem_req_be    = {MEM_BYTES{1'b0}};
-    assign mem_req_wdata = {MEM_DW{1'b0}};
+    assign mem_req_valid = dl_issue || ld_req || st_req || x_req;
+    assign mem_req_addr  = dl_issue ? (dl_addr + {56'd0, dl_word, 3'd0})
+                         : ld_req   ? ld_addr
+                         : st_req   ? (t_P3 + st_g)
+                         :            x_unit_addr;
+    assign mem_req_we    = st_req;
+    assign mem_req_be    = st_req ? st_be : {MEM_BYTES{1'b0}};
+    assign mem_req_wdata = st_req ? st_word : {MEM_DW{1'b0}};
     // The descriptor load is serial -- one word outstanding at a time -- so it
-    // needs exactly one tag. It happens once per descriptor and never on a
-    // critical path, and a parallel fetch would have forced a wider tag through
-    // the whole network for no benefit.
-    assign mem_req_tag   = dl_issue ? {TAG_W{1'b0}} : free_tag;
+    // needs exactly one tag.
+    assign mem_req_tag   = dl_issue ? {TAG_W{1'b0}}
+                         : ld_req   ? {ld_slot, ld_issue_hi}
+                         :            free_tag;
 
     wire mem_fire = mem_req_valid && mem_req_ready;
 
     //==========================================================================
-    // Descriptor parsing, once the 256 bytes are in
+    // Descriptor parsing, once the 256 bytes are in (ISA sec 9D.3)
     //==========================================================================
     wire [7:0] p_rank  = dl_buf[13][32 +: 8];   // byte 108
     wire [7:0] p_dtype = dl_buf[13][40 +: 8];   // byte 109
     wire [7:0] p_pad   = dl_buf[13][48 +: 8];   // byte 110
+
+    //==========================================================================
+    // Geometry, on the normalised copy
+    //==========================================================================
+    // Computed from the normalised copy directly: S_TCHK registers the
+    // derived quantities in the same cycle it checks them.
+    wire [31:0] n_row_bytes = t_b4 << t_esz;
+    wire [63:0] n_CB        = t_c4 << t_esz;
+    wire [40:0] g_rows  = {32'd0, t_b0[8:0]} * {32'd0, t_b1[8:0]} *
+                          {32'd0, t_b2[8:0]} * {32'd0, t_b3[8:0]};
+    wire [52:0] g_box   = {12'd0, g_rows} * {21'd0, n_row_bytes};
+    wire [52:0] g_win   = {39'd0, t_wlen, 6'd0};
+    function blk_ok;
+        input [31:0] b;
+        begin
+            blk_ok = (b != 32'd0) && (b <= 32'd256);
+        end
+    endfunction
+    // The whole box inside the tensor, for padding mode 2.
+    function box_in;
+        input [63:0] c;
+        input [31:0] b;
+        input [63:0] e;
+        reg   [63:0] hi;
+        begin
+            hi = c + {32'd0, b};
+            box_in = !c[63] && (hi <= e);
+        end
+    endfunction
+    wire g_inside = box_in(t_c0, t_b0, t_e0) && box_in(t_c1, t_b1, t_e1) &&
+                    box_in(t_c2, t_b2, t_e2) && box_in(t_c3, t_b3, t_e3) &&
+                    box_in(t_c4, t_b4, t_e4);
+    wire g_bad =
+        // The rank the engine executes, and coordinates that exist: Sb+rank-1
+        // must not run past S63 (the next index would be S0, which reads 0).
+        (t_rank == 8'd0) || (t_rank > 8'd5) ||
+        ({2'b00, t_sb} + {2'b00, t_rank[5:0]} > 8'd64) ||
+        // Padding: 0 zero, 2 fault, 3 NaN (floating dtypes of this element
+        // size only). 1 (clamp) is reserved.
+        (t_pad == 8'd1) || (t_pad > 8'd3) ||
+        ((t_pad == 8'd3) && (!dtype_float || (dtype_lg != t_esz))) ||
+        ((t_pad == 8'd2) && !g_inside) ||
+        // Each block dimension 1..256; a row of whole 8-byte units.
+        !blk_ok(t_b0) || !blk_ok(t_b1) || !blk_ok(t_b2) ||
+        !blk_ok(t_b3) || !blk_ok(t_b4) ||
+        ((n_row_bytes & 32'd7) != 32'd0) ||
+        // The contiguous dimension contiguous. (Base and outer strides may
+        // have any alignment; see the header.)
+        (t_s4 != (64'd1 << t_esz)) ||
+        // ISA sec 9D.2: the window is the bounds check.
+        (g_box > g_win) ||
+        // TRANSPOSED WRITE: a 2-D tile of 16-bit elements with 4, 8 or 16
+        // source rows, so every destination row is whole lanes inside ONE
+        // register, and every source row starting on an 8-byte boundary with
+        // a non-negative contiguous coordinate (the corner turn copies whole
+        // source units).
+        (t_xpose && ((t_rank != 8'd2) || (t_b3 > XR_MAX) || !xrow_ok ||
+                     t_c4[63] || (n_CB[2:0] != 3'd0) || t_store ||
+                     ((t_base & 64'd7) != 64'd0) || ((t_s3 & 64'd7) != 64'd0)));
+
+    // The multiplier for the starting address: t_acc += c[p] * s[p]
+    reg [63:0] mul_c, mul_s;
+    always @(*) begin
+        case (t_mp)
+        3'd0: begin mul_c = t_c0; mul_s = t_s0; end
+        3'd1: begin mul_c = t_c1; mul_s = t_s1; end
+        3'd2: begin mul_c = t_c2; mul_s = t_s2; end
+        default: begin mul_c = t_c3; mul_s = t_s3; end
+        endcase
+    end
+    wire [63:0] mul_p = mul_c * mul_s;
 
     //==========================================================================
     always @(posedge clk) begin
@@ -364,6 +650,7 @@ module tnca_tensor #(
             win_v     <= {WIN_N{1'b0}};
             desc_v    <= {DESC_N{1'b0}};
             tg_v      <= {NTAG{1'b0}};
+            sl_v      <= {NSLOT{1'b0}};
             // Reset so that, with HAS_XPOSE = 0, it is a constant 0 that
             // synthesis can prove -- and then remove xbuf and the transposed
             // states rather than build logic no command can reach.
@@ -376,6 +663,7 @@ module tnca_tensor #(
             fault_pc   <= 64'd0;
             done_bar_en <= 1'b0;
             done_err   <= 1'b0;
+            sr_v       <= 1'b0;
         end else begin
             vw_en <= 1'b0;
             done  <= 1'b0;
@@ -414,25 +702,36 @@ module tnca_tensor #(
                     // Into the corner-turn buffer, not the window: a unit
                     // holds one source row's slice of 8/esz columns, which
                     // is a slice of 8/esz DIFFERENT destination rows.
-                    // Flat, and indexed through a wire: iverilog evaluates a
-                    // part-select taken straight off an array word as zero
-                    // (see the d_s0 check in S_TSETUP).
                     xbuf[x_rsp_row*64 +: 64] <= mem_rsp_rdata & x_rsp_keep;
                     tg_v[mem_rsp_tag] <= 1'b0;
-                end else begin
-                    // place the unit into its window register, keeping only the
-                    // in-bounds bytes; the rest were already zero
-                    vw_en      <= 1'b1;
-                    vw_rctx    <= t_rctx;
-                    vw_idx     <= tg_vreg[mem_rsp_tag];
-                    vw_lane_en <= ({{(VLEN-2){1'b0}}, 2'b11} << tg_lane[mem_rsp_tag]);
-                    vw_data    <= {(VLEN*ELEN){1'b0}};
-                    for (i = 0; i < 8; i = i + 1)
-                        if (tg_keep[mem_rsp_tag][i])
-                            vw_data[(tg_lane[mem_rsp_tag]*4 + i)*8 +: 8]
-                                <= mem_rsp_rdata[i*8 +: 8];
+                end else if (t_store) begin
+                    // A write's response says it has been performed.
                     tg_v[mem_rsp_tag] <= 1'b0;
+                end else begin
+                    if (mem_rsp_tag[0]) begin
+                        sl_dhi[mem_rsp_tag[TAG_W-1:1]] <= mem_rsp_rdata;
+                        sl_ghi[mem_rsp_tag[TAG_W-1:1]] <= 1'b1;
+                    end else begin
+                        sl_dlo[mem_rsp_tag[TAG_W-1:1]] <= mem_rsp_rdata;
+                        sl_glo[mem_rsp_tag[TAG_W-1:1]] <= 1'b1;
+                    end
                 end
+            end
+
+            //------------------------------------------------------------------
+            // A load unit whose words are all back goes into its window
+            // register. This has the write port first: it is the path that
+            // frees a slot and lets the transfer finish. A unit with no
+            // memory behind it (all fill) waits a cycle.
+            //------------------------------------------------------------------
+            if (have_done && !t_store && !t_xpose) begin
+                vw_en      <= 1'b1;
+                vw_rctx    <= t_rctx;
+                vw_idx     <= sl_vreg[done_slot];
+                vw_lane_en <= ({{(VLEN-2){1'b0}}, 2'b11} << sl_lane[done_slot]);
+                vw_data    <= {(VLEN*ELEN){1'b0}};
+                vw_data[sl_lane[done_slot]*32 +: 64] <= dn_data;
+                sl_v[done_slot] <= 1'b0;
             end
 
             case (st)
@@ -449,8 +748,12 @@ module tnca_tensor #(
                     t_fcode  <= `TNCA_TRAP_DESC;
                     t_desc   <= cmd_desc;
                     t_win    <= cmd_win;
-                    t_c0     <= cmd_c0;
-                    t_c1     <= cmd_c1;
+                    cc0      <= cmd_c0;
+                    cc1      <= cmd_c1;
+                    cc2      <= cmd_c2;
+                    cc3      <= cmd_c3;
+                    cc4      <= cmd_c4;
+                    t_sb     <= cmd_sb;
                     t_esz    <= cmd_esz;
                     // A constant 0 on an engine built without the feature, so
                     // synthesis removes the corner-turn buffer and its states
@@ -460,31 +763,12 @@ module tnca_tensor #(
                     t_bar    <= cmd_bar;
                     t_rctx   <= cmd_rctx;
                     t_pc     <= cmd_pc;
-                    // `t.st.async` is encodable (ISA sec 9E func 0x08) and this
-                    // engine has no vector READ port, so it cannot perform one.
-                    // It used to be excluded from `issue_ok` alone, which meant
-                    // a store entered S_TRUN, issued nothing, never saw a
-                    // response and sat there until the testbench timed out --
-                    // a decodable instruction that deadlocked the core. An
-                    // unimplemented transfer direction is a fault: the waiter
-                    // is released with the barrier's error bit set and the
-                    // issuing context traps, which is what sec 1.6 requires of
-                    // a capability the machine does not have.
-                    //
-                    // Predication does not rescue it. A masked-off command
-                    // performs no access and still completes once (sec 9A.3),
-                    // but that is about the ACCESS, not about whether the
-                    // encoding is executable here; accepting a predicated-off
-                    // store would make the same program legal or illegal
-                    // depending on a runtime mask.
                     // A window layout this engine does not have, or a
                     // transposed write on an engine built without one, is
-                    // refused the same way: the encoding exists, the
-                    // machine does not execute it, and running it anyway
-                    // would transfer the tile in some other shape and call
-                    // it done.
-                    if (cmd_store || (cmd_layout != 2'd0) ||
-                        (cmd_xpose && (HAS_XPOSE == 0))) begin
+                    // refused: the encoding exists, the machine does not
+                    // execute it, and running it anyway would transfer the
+                    // tile in some other shape and call it done.
+                    if ((cmd_layout != 2'd0) || (cmd_xpose && (HAS_XPOSE == 0))) begin
                         t_fcode <= `TNCA_TRAP_ILLEGAL;
                         st      <= S_FAULT;
                     end else
@@ -517,10 +801,19 @@ module tnca_tensor #(
                 d_base[dl_slot]  <= dl_buf[0];
                 d_e0[dl_slot]    <= dl_buf[1];
                 d_e1[dl_slot]    <= dl_buf[2];
+                d_e2[dl_slot]    <= dl_buf[3];
+                d_e3[dl_slot]    <= dl_buf[4];
+                d_e4[dl_slot]    <= dl_buf[5];
                 d_s0[dl_slot]    <= dl_buf[6];
                 d_s1[dl_slot]    <= dl_buf[7];
+                d_s2[dl_slot]    <= dl_buf[8];
+                d_s3[dl_slot]    <= dl_buf[9];
+                d_s4[dl_slot]    <= dl_buf[10];
                 d_b0[dl_slot]    <= dl_buf[11][31:0];
                 d_b1[dl_slot]    <= dl_buf[11][63:32];
+                d_b2[dl_slot]    <= dl_buf[12][31:0];
+                d_b3[dl_slot]    <= dl_buf[12][63:32];
+                d_b4[dl_slot]    <= dl_buf[13][31:0];
                 d_rank[dl_slot]  <= p_rank;
                 d_dtype[dl_slot] <= p_dtype;
                 d_pad[dl_slot]   <= p_pad;
@@ -529,116 +822,249 @@ module tnca_tensor #(
             end
 
             //---------------------------------------------------------------
-            // Bounds and geometry, before a single transaction is issued.
+            // Copy the snapshot into the transfer and normalise it: descriptor
+            // dimension j goes to position 5 - rank + j. Positions below are
+            // the identity (extent 1, block 1, stride 0, coordinate 0).
             S_TSETUP: begin
-                t_rows      <= d_b0[t_desc];
-                t_cols      <= d_b1[t_desc];
-                t_row_bytes <= d_b1[t_desc] << t_esz;
-                t_row_units <= (d_b1[t_desc] << t_esz) >> 3;
-                t_wbase     <= win_base[t_win];
-                t_row       <= 32'd0;
-                t_unit      <= 32'd0;
-
-                // The row SIZE being a whole number of 8-byte units is not
-                // enough: every row must also START on an 8-byte boundary, or
-                // the returned units land in the window shifted. That needs
-                // the base and the row stride both aligned. Without this the
-                // engine returned wrong data for an odd row stride and raised
-                // nothing -- a wrong answer wearing the shape of a right one,
-                // which is the one failure mode sec 1.6 exists to prevent.
-                if (!desc_v[t_desc] || !win_v[t_win] ||
-                    (d_rank[t_desc] > 8'd2) || (d_rank[t_desc] == 8'd0) ||
-                    (((d_b1[t_desc] << t_esz) & 32'd7) != 32'd0) ||
-                    // Masked rather than bit-selected: Verilog-2005 does not
-                    // allow a part-select directly off an array word, and
-                    // iverilog accepted `d_s0[t_desc][2:0]` while evaluating
-                    // it as zero, so the check silently never fired.
-                    ((d_base[t_desc] & 64'd7) != 64'd0) ||
-                    ((d_s0[t_desc] & 64'd7) != 64'd0) ||
-                    ((d_s1[t_desc]) != (64'd1 << t_esz)) ||
-                    ((((d_b0[t_desc] * (d_b1[t_desc] << t_esz)) + 63) >> 6)
-                      > {24'd0, win_len[t_win]}) ||
-                    // TRANSPOSED WRITE geometry: a 2-D tile of 16-bit
-                    // elements with 4, 8 or 16 source rows, so every
-                    // destination row is whole lanes inside ONE register.
-                    (t_xpose && ((d_rank[t_desc] != 8'd2) ||
-                                 (d_b0[t_desc] > XR_MAX) ||
-                                 !xrow_ok))) begin
+                t_base  <= d_base[t_desc];
+                t_rank  <= d_rank[t_desc];
+                t_dtype <= d_dtype[t_desc];
+                t_pad   <= d_pad[t_desc];
+                t_wbase <= win_base[t_win];
+                t_wlen  <= win_len[t_win];
+                t_e0 <= 64'd1; t_e1 <= 64'd1; t_e2 <= 64'd1; t_e3 <= 64'd1; t_e4 <= 64'd1;
+                t_s0 <= 64'd0; t_s1 <= 64'd0; t_s2 <= 64'd0; t_s3 <= 64'd0; t_s4 <= 64'd0;
+                t_b0 <= 32'd1; t_b1 <= 32'd1; t_b2 <= 32'd1; t_b3 <= 32'd1; t_b4 <= 32'd1;
+                t_c0 <= 64'd0; t_c1 <= 64'd0; t_c2 <= 64'd0; t_c3 <= 64'd0; t_c4 <= 64'd0;
+                case (d_rank[t_desc])
+                8'd1: begin
+                    t_e4 <= d_e0[t_desc]; t_s4 <= d_s0[t_desc]; t_b4 <= d_b0[t_desc]; t_c4 <= cc0;
+                end
+                8'd2: begin
+                    t_e3 <= d_e0[t_desc]; t_s3 <= d_s0[t_desc]; t_b3 <= d_b0[t_desc]; t_c3 <= cc0;
+                    t_e4 <= d_e1[t_desc]; t_s4 <= d_s1[t_desc]; t_b4 <= d_b1[t_desc]; t_c4 <= cc1;
+                end
+                8'd3: begin
+                    t_e2 <= d_e0[t_desc]; t_s2 <= d_s0[t_desc]; t_b2 <= d_b0[t_desc]; t_c2 <= cc0;
+                    t_e3 <= d_e1[t_desc]; t_s3 <= d_s1[t_desc]; t_b3 <= d_b1[t_desc]; t_c3 <= cc1;
+                    t_e4 <= d_e2[t_desc]; t_s4 <= d_s2[t_desc]; t_b4 <= d_b2[t_desc]; t_c4 <= cc2;
+                end
+                8'd4: begin
+                    t_e1 <= d_e0[t_desc]; t_s1 <= d_s0[t_desc]; t_b1 <= d_b0[t_desc]; t_c1 <= cc0;
+                    t_e2 <= d_e1[t_desc]; t_s2 <= d_s1[t_desc]; t_b2 <= d_b1[t_desc]; t_c2 <= cc1;
+                    t_e3 <= d_e2[t_desc]; t_s3 <= d_s2[t_desc]; t_b3 <= d_b2[t_desc]; t_c3 <= cc2;
+                    t_e4 <= d_e3[t_desc]; t_s4 <= d_s3[t_desc]; t_b4 <= d_b3[t_desc]; t_c4 <= cc3;
+                end
+                default: begin    // 5; anything else faults in S_TCHK
+                    t_e0 <= d_e0[t_desc]; t_s0 <= d_s0[t_desc]; t_b0 <= d_b0[t_desc]; t_c0 <= cc0;
+                    t_e1 <= d_e1[t_desc]; t_s1 <= d_s1[t_desc]; t_b1 <= d_b1[t_desc]; t_c1 <= cc1;
+                    t_e2 <= d_e2[t_desc]; t_s2 <= d_s2[t_desc]; t_b2 <= d_b2[t_desc]; t_c2 <= cc2;
+                    t_e3 <= d_e3[t_desc]; t_s3 <= d_s3[t_desc]; t_b3 <= d_b3[t_desc]; t_c3 <= cc3;
+                    t_e4 <= d_e4[t_desc]; t_s4 <= d_s4[t_desc]; t_b4 <= d_b4[t_desc]; t_c4 <= cc4;
+                end
+                endcase
+                // An unloaded descriptor or an undefined window has nothing
+                // to transfer; checked here, before anything is derived.
+                if (!desc_v[t_desc] || !win_v[t_win])
                     st <= S_FAULT;
+                else
+                    st <= S_TCHK;
+            end
+
+            //---------------------------------------------------------------
+            // Derived quantities, then every geometry rule at once. Nothing
+            // has touched memory yet, so a fault here has no side effect.
+            S_TCHK: begin
+                t_E         <= t_e4 << t_esz;
+                t_CB        <= t_c4 << t_esz;
+                t_row_bytes <= t_b4 << t_esz;
+                t_row_units <= (t_b4 << t_esz) >> 3;
+                t_fill      <= (t_pad == 8'd3) ? fill_nan : 64'd0;
+                // Positions below 5 - rank are the identity; skip them.
+                t_mp        <= 3'd5 - t_rank[2:0];
+                t_acc       <= t_base;
+                if (g_bad)
+                    st <= S_FAULT;
+                else
+                    st <= S_TMUL;
+            end
+
+            //---------------------------------------------------------------
+            // base + sum over the outer positions of coordinate * stride,
+            // one multiply a cycle. The walk after this is adds only.
+            S_TMUL: begin
+                if (t_mp < 3'd4) begin
+                    t_acc <= t_acc + mul_p;
+                    t_mp  <= t_mp + 3'd1;
                 end else begin
-                    st <= S_TSET2;
-                end
-            end
-
-            //---------------------------------------------------------------
-            // The only place the stride multiplies happen: once per command.
-            S_TSET2: begin
-                r_row_base <= d_base[t_desc]
-                            + t_c0 * d_s0[t_desc]
-                            + t_c1 * d_s1[t_desc];
-                if (HAS_XPOSE != 0) begin     // read only by the transposed walk
-                    r_base0 <= d_base[t_desc]
-                             + t_c0 * d_s0[t_desc]
-                             + t_c1 * d_s1[t_desc];
-                    x_q     <= 4'd0;
-                end
-                st <= t_xpose ? S_XRUN : S_TRUN;
-            end
-
-            //---------------------------------------------------------------
-            // One 8-byte unit per cycle. Out-of-bounds units are written as
-            // zeros with no memory access at all -- padding is not a masked
-            // read, it is the absence of one.
-            S_TRUN: begin
-                // Padding is the ABSENCE of an access, not a masked one: an
-                // out-of-bounds unit issues no memory request at all and writes
-                // zeros straight into the window.
-                if (unit_oob && !rsp_write) begin
-                    vw_en      <= 1'b1;
-                    vw_rctx    <= t_rctx;
-                    vw_idx     <= d_vreg;
-                    vw_lane_en <= ({{(VLEN-2){1'b0}}, 2'b11} << d_lane);
-                    vw_data    <= {(VLEN*ELEN){1'b0}};
-                end
-
-                if ((unit_oob && !rsp_write) || mem_fire) begin
-                    if (!unit_oob) begin
-                        tg_v[free_tag]    <= 1'b1;
-                        tg_vreg[free_tag] <= d_vreg;
-                        tg_lane[free_tag] <= d_lane;
-                        tg_keep[free_tag] <= keep_mask;
-                    end
-                    if (t_unit == t_row_units - 1) begin
-                        t_unit <= 32'd0;
-                        if (t_row == t_rows - 1) st <= S_TDRAIN;
-                        else begin
-                            t_row      <= t_row + 1'b1;
-                            r_row_base <= r_row_base + d_s0[t_desc];
+                    t_P0 <= t_acc; t_P1 <= t_acc; t_P2 <= t_acc; t_P3 <= t_acc;
+                    t_i0 <= 32'd0; t_i1 <= 32'd0; t_i2 <= 32'd0; t_i3 <= 32'd0;
+                    t_unit <= 32'd0;
+                    t_flat <= 32'd0;
+                    t_half <= 1'b0;
+                    st_prev <= 64'd0;
+                    sr_v    <= 1'b0;
+                    if (t_xpose) begin
+                        r_row_base <= t_acc + t_CB;
+                        if (HAS_XPOSE != 0) begin   // read only by the transposed walk
+                            r_base0 <= t_acc + t_CB;
+                            x_q     <= 4'd0;
                         end
-                    end else begin
-                        t_unit <= t_unit + 1'b1;
+                        x_row <= 32'd0;
+                        st <= S_XRUN;
+                    end else
+                        st <= t_store ? S_SRUN : S_TRUN;
+                end
+            end
+
+            //---------------------------------------------------------------
+            // LOAD. One box unit per step: issue its word (or two), or, when
+            // no byte of it is inside the tensor, write the fill straight into
+            // the window -- padding is the absence of an access, not a masked
+            // one.
+            S_TRUN: begin : s_trun
+                reg adv;
+                adv = 1'b0;
+                if (!ld_nlo && !ld_nhi) begin
+                    if (!have_done) begin
+                        vw_en      <= 1'b1;
+                        vw_rctx    <= t_rctx;
+                        vw_idx     <= ld_vreg;
+                        vw_lane_en <= ({{(VLEN-2){1'b0}}, 2'b11} << ld_lane);
+                        vw_data    <= {(VLEN*ELEN){1'b0}};
+                        vw_data[ld_lane*32 +: 64] <= t_fill;
+                        adv = 1'b1;
+                    end
+                end else if (mem_fire) begin
+                    if (!t_half) begin
+                        sl_v[free_slot]    <= 1'b1;
+                        sl_nlo[free_slot]  <= ld_nlo;
+                        sl_nhi[free_slot]  <= ld_nhi;
+                        sl_glo[free_slot]  <= 1'b0;
+                        sl_ghi[free_slot]  <= 1'b0;
+                        sl_vreg[free_slot] <= ld_vreg;
+                        sl_lane[free_slot] <= ld_lane;
+                        sl_keep[free_slot] <= ld_keep;
+                        sl_m[free_slot]    <= r_m;
+                        // A missing word's bytes are all outside the tensor,
+                        // so whatever stands in for it is never kept.
+                        sl_dlo[free_slot]  <= 64'd0;
+                        sl_dhi[free_slot]  <= 64'd0;
+                        t_slot <= free_slot;
+                    end
+                    if (!t_half && ld_nlo && ld_nhi)
+                        t_half <= 1'b1;       // the high word next cycle
+                    else begin
+                        t_half <= 1'b0;
+                        adv = 1'b1;
                     end
                 end
+                if (adv) begin
+                    if (t_unit + 32'd1 == t_row_units) begin
+                        t_unit <= 32'd0;
+                        t_flat <= t_flat + t_row_bytes;
+                        if (last_row) st <= S_TDRAIN;
+                        else begin
+                            if (inc3) begin
+                                t_i3 <= t_i3 + 32'd1; t_P3 <= t_P3 + t_s3;
+                            end else if (inc2) begin
+                                t_i2 <= t_i2 + 32'd1; t_i3 <= 32'd0;
+                                t_P2 <= t_P2 + t_s2; t_P3 <= t_P2 + t_s2;
+                            end else if (inc1) begin
+                                t_i1 <= t_i1 + 32'd1; t_i2 <= 32'd0; t_i3 <= 32'd0;
+                                t_P1 <= t_P1 + t_s1; t_P2 <= t_P1 + t_s1; t_P3 <= t_P1 + t_s1;
+                            end else begin
+                                t_i0 <= t_i0 + 32'd1; t_i1 <= 32'd0; t_i2 <= 32'd0; t_i3 <= 32'd0;
+                                t_P0 <= t_P0 + t_s0; t_P1 <= t_P0 + t_s0;
+                                t_P2 <= t_P0 + t_s0; t_P3 <= t_P0 + t_s0;
+                            end
+                        end
+                    end else
+                        t_unit <= t_unit + 32'd1;
+                end
+            end
+
+            S_TDRAIN: begin
+                if ((sl_v == {NSLOT{1'b0}}) && !mem_rsp_valid) st <= S_DONE;
+            end
+
+            //---------------------------------------------------------------
+            // STORE. One memory word of the box row per step. A row outside
+            // the tensor is skipped whole; a word with no byte to write is
+            // skipped; a word whose window unit is not in hand waits for the
+            // register to be read.
+            S_SRUN: begin : s_srun
+                reg adv;
+                reg row_end;
+                adv = 1'b0;
+                row_end = 1'b0;
+                if (!t_rowv) begin
+                    row_end = 1'b1;
+                end else if (st_need_reg) begin
+                    st <= S_SREAD;
+                end else if (st_be == 8'd0 || mem_fire) begin
+                    if (mem_fire) tg_v[free_tag] <= 1'b1;
+                    adv = 1'b1;
+                end
+                if (adv) begin
+                    st_prev <= st_cur;
+                    if (t_unit + 32'd1 == st_nwords) row_end = 1'b1;
+                    else t_unit <= t_unit + 32'd1;
+                end
+                if (row_end) begin
+                    t_unit  <= 32'd0;
+                    st_prev <= 64'd0;
+                    t_flat  <= t_flat + t_row_bytes;
+                    if (last_row) st <= S_SDRAIN;
+                    else begin
+                        if (inc3) begin
+                            t_i3 <= t_i3 + 32'd1; t_P3 <= t_P3 + t_s3;
+                        end else if (inc2) begin
+                            t_i2 <= t_i2 + 32'd1; t_i3 <= 32'd0;
+                            t_P2 <= t_P2 + t_s2; t_P3 <= t_P2 + t_s2;
+                        end else if (inc1) begin
+                            t_i1 <= t_i1 + 32'd1; t_i2 <= 32'd0; t_i3 <= 32'd0;
+                            t_P1 <= t_P1 + t_s1; t_P2 <= t_P1 + t_s1; t_P3 <= t_P1 + t_s1;
+                        end else begin
+                            t_i0 <= t_i0 + 32'd1; t_i1 <= 32'd0; t_i2 <= 32'd0; t_i3 <= 32'd0;
+                            t_P0 <= t_P0 + t_s0; t_P1 <= t_P0 + t_s0;
+                            t_P2 <= t_P0 + t_s0; t_P3 <= t_P0 + t_s0;
+                        end
+                    end
+                end
+            end
+
+            S_SREAD: begin
+                if (vr_valid) begin
+                    sr_data <= vr_data;
+                    sr_idx  <= st_vreg;
+                    sr_v    <= 1'b1;
+                    st      <= S_SRUN;
+                end
+            end
+
+            S_SDRAIN: begin
+                if ((tg_v == {NTAG{1'b0}}) && !mem_rsp_valid) st <= S_DONE;
             end
 
             //---------------------------------------------------------------
             // TRANSPOSED WRITE. Column block t_unit (8/esz source columns)
-            // is read down all t_rows source rows, one 8-byte unit each,
+            // is read down all t_b3 source rows, one 8-byte unit each,
             // into xbuf[row]. Out-of-bounds units are zeros without an
-            // access, exactly as in S_TRUN.
+            // access.
             S_XRUN: begin
-                if (unit_oob || mem_fire) begin
-                    if (unit_oob)
-                        xbuf[t_row[3:0]*64 +: 64] <= 64'd0;
+                if (x_unit_oob || mem_fire) begin
+                    if (x_unit_oob)
+                        xbuf[x_row[3:0]*64 +: 64] <= 64'd0;
                     else begin
                         tg_v[free_tag]    <= 1'b1;
-                        tg_vreg[free_tag] <= {4'd0, t_row[3:0]};
-                        tg_keep[free_tag] <= keep_mask;
+                        xt_row[free_tag]  <= x_row[3:0];
+                        xt_keep[free_tag] <= x_keep_mask;
                     end
-                    if (t_row == t_rows - 1) st <= S_XDRAIN;
+                    if (x_row == t_b3 - 1) st <= S_XDRAIN;
                     else begin
-                        t_row      <= t_row + 1'b1;
-                        r_row_base <= r_row_base + d_s0[t_desc];
+                        x_row      <= x_row + 1'b1;
+                        r_row_base <= r_row_base + t_s3;
                     end
                 end
             end
@@ -663,8 +1089,8 @@ module tnca_tensor #(
                     if (t_unit == t_row_units - 1) st <= S_DONE;
                     else begin
                         t_unit     <= t_unit + 1'b1;
-                        t_row      <= 32'd0;
-                        // Guarded like its write in S_TSET2: without the
+                        x_row      <= 32'd0;
+                        // Guarded like its write in S_TMUL: without the
                         // feature r_base0 has no driver, and an unguarded
                         // read here is an undriven net in that engine
                         // (yosys `check`, R36-FPGA-02) even though no
@@ -675,11 +1101,6 @@ module tnca_tensor #(
                     end
                 end else
                     x_q <= x_q + 1'b1;
-            end
-
-            //---------------------------------------------------------------
-            S_TDRAIN: begin
-                if ((tg_v == {NTAG{1'b0}}) && !mem_rsp_valid) st <= S_DONE;
             end
 
             //---------------------------------------------------------------
@@ -713,13 +1134,6 @@ module tnca_tensor #(
         end
     end
 
-    //==========================================================================
-    // Valid-byte count for the current row, recomputed combinationally
-    //==========================================================================
-    wire [63:0] cols_left = (d_e1[t_desc] > t_c1) ? (d_e1[t_desc] - t_c1) : 64'd0;
-    wire [31:0] cols_ok   = (cols_left >= {32'd0, t_cols}) ? t_cols : cols_left[31:0];
-    assign t_valid_bytes  = row_oob ? 32'd0 : (cols_ok << t_esz);
-
-    wire _unused = &{1'b0, t_store, d_dtype[0], d_pad[0], 1'b0};
+    wire _unused = &{1'b0, d_dtype[0], 1'b0};
 
 endmodule

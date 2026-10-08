@@ -452,6 +452,7 @@ module tnca_core #(
     // Register files (read in X)
     //==========================================================================
     wire [63:0]          sa_data, sb_data, sc_data, sb2_raw;
+    wire [63:0]          sb3_raw, sb4_raw, sb5_raw;
     wire [VLEN*ELEN-1:0] va_data, vb_data, vc_data;
 
     // Declared here rather than beside the units that drive them. A
@@ -463,6 +464,14 @@ module tnca_core #(
     wire [VLEN*ELEN-1:0] mtx_vrf_data;
     wire                 mtx_vrf_req;
     reg  [RCTX_W-1:0]    mtx_rctx;
+    // The transfer engine's window READ port: a t.st.async's source. Held
+    // until valid, like the matrix unit's (immediate on the behavioural file,
+    // a cycle later through the banked file's arbitration).
+    wire                 txf_vr_req;
+    wire [RCTX_W-1:0]    txf_vr_rctx;
+    wire [7:0]           txf_vr_idx;
+    wire                 txf_vr_valid;
+    wire [VLEN*ELEN-1:0] txf_vr_data;
     wire                 txf_vw_en;
     wire [RCTX_W-1:0]    txf_vw_rctx;
     wire [7:0]           txf_vw_idx;
@@ -483,9 +492,9 @@ module tnca_core #(
     wire                 vrf_stall;       // operands not yet collected
     wire                 vrf_wb_freeze;   // a vector writeback was refused
     wire                 mtx_vrf_valid_w;
-    wire [3:0]           vrf_req_accept;
-    wire [3:0]           vrf_rsp_valid;
-    wire [4*VLEN*ELEN-1:0] vrf_rsp_data;
+    wire [4:0]           vrf_req_accept;
+    wire [4:0]           vrf_rsp_valid;
+    wire [5*VLEN*ELEN-1:0] vrf_rsp_data;
     wire [VLEN-1:0]      pa_data, pb_data, pm_raw;
 
     // Writeback stage.
@@ -531,6 +540,11 @@ module tnca_core #(
         .rd_idx((x_major == `TNCA_MAJ_MATRIX) ? (x_sc_idx + 6'd1)
                                               : (x_sb_idx + 6'd1)),
         .rd_data(sb2_raw),
+        // Sb+2..Sb+4: a rank-3..5 transfer's remaining coordinates.
+        .re_rctx(x_rctx),
+        .re_idx(x_sb_idx + 6'd2), .re_data(sb3_raw),
+        .rf_idx(x_sb_idx + 6'd3), .rf_data(sb4_raw),
+        .rg_idx(x_sb_idx + 6'd4), .rg_data(sb5_raw),
         .w_en(w_en && (w_class == `TNCA_DST_S)),
         .w_rctx(w_rctx), .w_idx(w_idx[5:0]), .w_data(w_sdata)
     );
@@ -553,6 +567,8 @@ module tnca_core #(
             .rc_rctx(x_rctx), .rc_idx(x_vc_idx), .rc_data(vc_data),
             .rd_rctx(mtx_rctx), .rd_idx(mtx_vrf_addr),
             .rd_data(mtx_vrf_data),
+            .re_rctx(txf_vr_rctx), .re_idx(txf_vr_idx),
+            .re_data(txf_vr_data),
             .w_en(w_is_vec),
             .w_rctx(w_rctx), .w_idx(w_idx), .w_lane_en(w_lane_en),
             .w_data(w_vdata),
@@ -562,6 +578,7 @@ module tnca_core #(
         assign vrf_stall     = 1'b0;
         assign vrf_wb_freeze = 1'b0;
         assign mtx_vrf_valid_w = 1'b1;
+        assign txf_vr_valid = 1'b1;
         always @(posedge clk) begin
             vrf_n_req      <= 32'd0; vrf_n_accept   <= 32'd0;
             vrf_n_conflict <= 32'd0; vrf_n_stall    <= 32'd0;
@@ -642,6 +659,8 @@ module tnca_core #(
         // reservation shift register, which then disagreed with reality --
         // an assertion firing three stages away from its cause.
         assign mtx_vrf_data = vrf_rsp_data[3*VW +: VW];
+        assign txf_vr_valid = vrf_rsp_valid[4];
+        assign txf_vr_data  = vrf_rsp_data[4*VW +: VW];
 
         assign vrf_stall = of_enable && !of_ready;
 
@@ -725,10 +744,11 @@ module tnca_core #(
         //----------------------------------------------------------------
         // Requests: three execute sources and the matrix unit
         //----------------------------------------------------------------
-        wire [3:0] rq_v = {mtx_vrf_req && !mtx_vrf_valid_w, of_want};
-        wire [4*RCTX_W-1:0] rq_rctx = {mtx_rctx, {3{r_rctx}}};
-        wire [4*8-1:0] rq_idx =
-            {mtx_vrf_addr, r_vc_idx, r_vb_idx, r_va_idx};
+        wire [4:0] rq_v = {txf_vr_req && !txf_vr_valid,
+                           mtx_vrf_req && !mtx_vrf_valid_w, of_want};
+        wire [5*RCTX_W-1:0] rq_rctx = {txf_vr_rctx, mtx_rctx, {3{r_rctx}}};
+        wire [5*8-1:0] rq_idx =
+            {txf_vr_idx, mtx_vrf_addr, r_vc_idx, r_vb_idx, r_va_idx};
 
 
         //----------------------------------------------------------------
@@ -756,12 +776,12 @@ module tnca_core #(
             .NUM_RCTX(NUM_RCTX), .VLEN(VLEN), .ELEN(ELEN),
             .RCTX_W(RCTX_W), .PHYS_W(PHYS_W),
             .NUM_BANKS(4), .BANK_W(2), .READ_LATENCY(1),
-            .NUM_PORTS(4), .ZERO_INVALID(1), .NUM_WRITERS(2)
+            .NUM_PORTS(5), .ZERO_INVALID(1), .NUM_WRITERS(2)
         ) u_vrf (
             .clk(clk), .rst_n(rst_n), .vbase(vbase_q),
             .req_valid(rq_v), .req_rctx(rq_rctx), .req_idx(rq_idx),
             .req_accept(vrf_req_accept),
-            .rsp_ready(4'b1111),
+            .rsp_ready(5'b11111),
             .rsp_valid(vrf_rsp_valid), .rsp_data(vrf_rsp_data),
             .we(wr_we), .w_rctx(wr_rctx), .w_idx(wr_idx),
             .wmask(wr_mask), .wdata(wr_data), .w_accept(wr_ok)
@@ -865,6 +885,18 @@ module tnca_core #(
     wire r_reads_sb2 = (r_valid && (r_major == `TNCA_MAJ_TXFER)) | r_mma_sf;
     wire hz_sb2 = r_reads_sb2 && `SB_S_BUSY(r_rctx, r_sb2_idx)
                               && !`AVAIL_S(r_rctx, r_sb2_idx);
+    // And Sb+2..Sb+4 for a rank-3..5 transfer. The rank is in the descriptor
+    // snapshot, which the issue stage cannot see, so every transfer checks
+    // all five: a busy register it does not need costs a stall, a busy one it
+    // does need and was not checked costs a wrong address.
+    wire r_is_txfer = r_valid && (r_major == `TNCA_MAJ_TXFER);
+    wire [5:0] r_sb3_idx = r_sb_idx + 6'd2;
+    wire [5:0] r_sb4_idx = r_sb_idx + 6'd3;
+    wire [5:0] r_sb5_idx = r_sb_idx + 6'd4;
+    wire hz_sbx = r_is_txfer &&
+          ((`SB_S_BUSY(r_rctx, r_sb3_idx) && !`AVAIL_S(r_rctx, r_sb3_idx)) ||
+           (`SB_S_BUSY(r_rctx, r_sb4_idx) && !`AVAIL_S(r_rctx, r_sb4_idx)) ||
+           (`SB_S_BUSY(r_rctx, r_sb5_idx) && !`AVAIL_S(r_rctx, r_sb5_idx)));
 
     // WAW uses WB_HIT only, never X_PROD.
     //
@@ -899,7 +931,7 @@ module tnca_core #(
                 | (r_acc_src && !acc_free_s);
 
     wire hazard = r_valid && (hz_sa|hz_sb|hz_sc|hz_va|hz_vb|hz_vc|hz_pa|hz_pb|hz_pm|hz_d)
-                | hz_acc | hz_sb2;
+                | hz_acc | hz_sb2 | hz_sbx;
 
     //==========================================================================
     // Execution units (all read their operands in X)
@@ -1321,6 +1353,8 @@ module tnca_core #(
         .cmd_valid(txf_is_xfr), .cmd_store(x_func == `TNCA_T_ST),
         .cmd_desc(x_ra_idx[DESC_W-1:0]), .cmd_win(x_dsti[WIN_W-1:0]),
         .cmd_c0(sb_data), .cmd_c1(sb2_data),
+        .cmd_c2(sb3_raw), .cmd_c3(sb4_raw), .cmd_c4(sb5_raw),
+        .cmd_sb(x_sb_idx),
         .cmd_esz(x_mod[2:0]),
         .cmd_xpose(x_mod[5]), .cmd_layout(x_mod[4:3]),
         .cmd_bar_en(1'b1), .cmd_bar(sc_data[BAR_W-1:0]),
@@ -1332,6 +1366,8 @@ module tnca_core #(
         .done_err(txf_done_err),
         .vw_en(txf_vw_en), .vw_rctx(txf_vw_rctx), .vw_idx(txf_vw_idx),
         .vw_lane_en(txf_vw_lane), .vw_data(txf_vw_data),
+        .vr_req(txf_vr_req), .vr_rctx(txf_vr_rctx), .vr_idx(txf_vr_idx),
+        .vr_valid(txf_vr_valid), .vr_data(txf_vr_data),
         .mem_req_valid(tm_req_valid), .mem_req_ready(tm_req_ready),
         .mem_req_addr(tm_req_addr), .mem_req_we(tm_req_we),
         .mem_req_be(tm_req_be), .mem_req_wdata(tm_req_wdata),
@@ -1378,7 +1414,7 @@ module tnca_core #(
         `TNCA_SPEC_NUM_CORES: spec_rd = NUM_CORES;
         `TNCA_SPEC_NUM_LANES: spec_rd = VLEN;
         `TNCA_SPEC_NUM_VREGS: spec_rd = VREGS_PER_RCTX;
-        `TNCA_SPEC_MAX_RANK:  spec_rd = 64'd2;    // see the transfer engine
+        `TNCA_SPEC_MAX_RANK:  spec_rd = 64'd5;    // see the transfer engine
         `TNCA_SPEC_NUM_ACC:   spec_rd = ACC_N;
         `TNCA_SPEC_CLOCK:     spec_rd = clock_ctr;
         `TNCA_SPEC_INSTRET:   spec_rd = instret[x_rctx];

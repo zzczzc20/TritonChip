@@ -128,7 +128,7 @@ def reg03(log):
     faults = {'t05_fault': ('01', ['+allroles']),
               't17_descfault': ('04', []),
               't23_amofault': ('03', []),
-              't26_stfault': ('01', [])}
+              't35_tdesc_fpad2': ('04', [])}
     for prog, (code, args) in faults.items():
         hexf = os.path.join(ROOT, 'sim', 'build', f'{prog}.hex')
         bench = os.path.join(ROOT, 'sim', 'build', 'tb_core.vvp')
@@ -435,21 +435,23 @@ def reg10(log):
     hit, detail = _completion_collision(log)
     ok &= hit
 
-    # The engine's error completion, on real hardware: t26 issues a command
-    # the engine cannot perform, and the waiter must be released with the
-    # barrier's error bit rather than left hanging.
-    hexf = os.path.join(ROOT, 'sim', 'build', 't26_stfault.hex')
+    # The engine's error completion, on real hardware: t35_tdesc_fpad2 issues
+    # a transfer the engine refuses (padding mode 2 with an element out of
+    # bounds), and the waiter must be released with the barrier's error bit
+    # rather than left hanging. (t26_stfault did this with t.st.async until
+    # the engine learned to perform stores.)
+    hexf = os.path.join(ROOT, 'sim', 'build', 't35_tdesc_fpad2.hex')
     bench = os.path.join(ROOT, 'sim', 'build', 'tb_core.vvp')
     if os.path.exists(hexf) and os.path.exists(bench):
         r = subprocess.run(['vvp', bench, f'+hex={hexf}',
-                            '+maxcycles=200000', '+expectfault=01'],
+                            '+maxcycles=200000', '+expectfault=04'],
                            capture_output=True, text=True,
                            timeout=R.CAPS['rtl'])
         woke = 'PASS' in r.stdout and 'timeout' not in r.stdout
         log.append(f"    an error completion releases the waiter: {woke}")
         ok &= woke
     else:
-        log.append("    t26_stfault image not built")
+        log.append("    t35_tdesc_fpad2 image not built")
         ok = False
     return ok, 'error and collision completions counted exactly once'
 

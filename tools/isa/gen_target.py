@@ -56,8 +56,9 @@ def params(path):
 
 # Facts the RTL does not carry as a number, each with its normative source.
 DESIGN_FACTS = {
-    'tensor_max_rank': (2, 'rtl/core/tnca_core.v TNCA_SPEC_MAX_RANK; the '
-                           'transfer engine implements rank 1-2 only'),
+    'tensor_max_rank': (5, 'rtl/core/tnca_core.v TNCA_SPEC_MAX_RANK; the '
+                           'transfer engine implements rank 1-5 (ISA sec 9E), '
+                           'signed coordinates, zero/NaN/fault padding'),
     'mma_shape': ({'m': 16, 'n': 16, 'k': 16},
                   'ISA sec 9C: m.mma.async is a 16x16x16 step'),
     'mma_accum_order': ('increasing_k',
@@ -89,13 +90,11 @@ def build_target(core, top, isa, name, description, profile=None):
         'matrix_bf16': True,
         'matrix_fp8': True,
         'tensor_dma': True,
-        # `t.st.async` (ISA sec 9E func 0x08) is encodable and the engine
-        # cannot source it: tnca_tensor has a vector write port and no read
-        # port. It raises ILLEGAL_INSTRUCTION rather than hanging
-        # (tb/core/progs/t26_stfault.s), and the compiler must not emit what
-        # the machine will refuse. Not a CAPABILITY0 bit -- there is no
-        # hardware configuration in which it is currently 1.
-        'tensor_store': False,
+        # `t.st.async` (ISA sec 9E func 0x08): window -> memory, rank 1-5,
+        # out-of-bounds elements not written. The engine reads the window
+        # through its own VRF read port (tnca_tensor vr_*). Every engine has
+        # it, so it is baseline rather than a CAPABILITY0 bit.
+        'tensor_store': True,
         # ISA sec 9E's mod[5] asks the engine for a transposed write.
         # R38 S1-07 implemented it in tnca_tensor.v behind the core's
         # HAS_TENSOR_XPOSE parameter; an engine built without it raises

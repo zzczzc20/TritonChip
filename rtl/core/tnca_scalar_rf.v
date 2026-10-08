@@ -1,7 +1,7 @@
 //==============================================================================
 // tnca_scalar_rf -- scalar register file, NUM_RCTX x 64 x 64 bit
 //
-// 3 read ports + 1 write port. Reads are asynchronous (read in RD, use in EX)
+// 7 read ports + 1 write port (A-C operands, D-G a transfer's coordinates). Reads are asynchronous (read in RD, use in EX)
 // and are write-first: a read that collides with the concurrent write returns
 // the new value. That bypass is what lets the scoreboard release a destination
 // in the same cycle it is written, instead of costing an extra bubble.
@@ -36,6 +36,18 @@ module tnca_scalar_rf #(
     input  wire [5:0]            rd_idx,
     output wire [63:0]           rd_data,
 
+    // read ports E, F, G -- the third to fifth coordinates of a rank-3..5
+    // transfer (Sb+2..Sb+4). Same reasoning as port D: five consecutive
+    // reads in one cycle cost three more read muxes on a 64-entry file,
+    // where a multi-cycle read would cost a sequencer in the issue path.
+    input  wire [RCTX_W-1:0]     re_rctx,
+    input  wire [5:0]            re_idx,
+    output wire [63:0]           re_data,
+    input  wire [5:0]            rf_idx,
+    output wire [63:0]           rf_data,
+    input  wire [5:0]            rg_idx,
+    output wire [63:0]           rg_data,
+
     // write port
     input  wire                  w_en,
     input  wire [RCTX_W-1:0]     w_rctx,
@@ -65,6 +77,9 @@ module tnca_scalar_rf #(
     wire [RCTX_W+5:0] ab = {rb_rctx, rb_idx};
     wire [RCTX_W+5:0] ac = {rc_rctx, rc_idx};
     wire [RCTX_W+5:0] ad = {rd_rctx, rd_idx};
+    wire [RCTX_W+5:0] ae = {re_rctx, re_idx};
+    wire [RCTX_W+5:0] af = {re_rctx, rf_idx};
+    wire [RCTX_W+5:0] ag = {re_rctx, rg_idx};
 
     assign ra_data = (ra_idx == 6'd0)            ? 64'd0 :
                      (w_real && (aa == wa))      ? w_data : mem[aa];
@@ -74,5 +89,11 @@ module tnca_scalar_rf #(
                      (w_real && (ac == wa))      ? w_data : mem[ac];
     assign rd_data = (rd_idx == 6'd0)            ? 64'd0 :
                      (w_real && (ad == wa))      ? w_data : mem[ad];
+    assign re_data = (re_idx == 6'd0)            ? 64'd0 :
+                     (w_real && (ae == wa))      ? w_data : mem[ae];
+    assign rf_data = (rf_idx == 6'd0)            ? 64'd0 :
+                     (w_real && (af == wa))      ? w_data : mem[af];
+    assign rg_data = (rg_idx == 6'd0)            ? 64'd0 :
+                     (w_real && (ag == wa))      ? w_data : mem[ag];
 
 endmodule

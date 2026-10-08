@@ -567,7 +567,17 @@ module tnca_nuca_slice #(
                             (vown[10] ||
                              dead_tile(tile_id(line_addr(vtag, cur_set), vown, d_lsb),
                                        dco_dead_valid, dco_dead_id));
-                    vprio = (pol_repl == 2'd2) ? (vtag[3:0] & bmask) : 4'd0;
+                    // Anti-thrashing ranks only lines of registered tensors,
+                    // and only in the older half of the set's LRU stack: a
+                    // line just filled stays until the cores sharing it have
+                    // read it (DCO's "deprioritised data stay a while"), and
+                    // data no tensor owns -- scratch, TensorMaps -- is ranked
+                    // by recency alone. With four ways and no protection, a
+                    // low-tier line was the next victim the moment it landed,
+                    // and every core sharing it fetched it again.
+                    vprio = (pol_repl != 2'd2)                      ? 4'd0 :
+                            (!vown[11] || age[vidx] < (WAYS / 2))   ? bmask :
+                                                                      (vtag[3:0] & bmask);
                     vkey  = {!vdead, vprio, ~age[vidx]};
                     if (!way_claimed[vw] && (!vic_ok || vkey < vbest)) begin
                         vic_way = vw[WAY_W-1:0]; vic_ok = 1'b1; vbest = vkey; vic_dead = vdead;
@@ -588,7 +598,8 @@ module tnca_nuca_slice #(
     wire [11:0] cur_own   = owner(cur_addr, dco_t_valid, dco_t_base, dco_t_size,
                                   dco_t_bypass, dco_t_lsb);
     wire        cur_tbyp  = pol_tbyp && cur_own[11] && cur_own[10];
-    wire        cur_dbyp  = pol_dyn && ({1'b0, cur_prio} < {1'b0, gear_eff}) &&
+    wire        cur_dbyp  = pol_dyn && cur_own[11] &&
+                            ({1'b0, cur_prio} < {1'b0, gear_eff}) &&
                             (!pol_gqa || dco_slow[cur_src]);
     wire        cur_byp   = !cur_we && !cur_amo && (cur_tbyp || cur_dbyp);
 

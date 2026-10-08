@@ -145,8 +145,15 @@ class Unsupported(Diagnostic):
 class TTIRImporter:
     """Walk a TTIR module and build the TNCA IR for it."""
 
-    def __init__(self, target, name='kernel', scratch_addr=None):
+    def __init__(self, target, name='kernel', scratch_addr=None,
+                 scratch_stride=None):
         self.target = target
+        # With literal arguments, programs that run AT THE SAME TIME -- one
+        # per tile on the 2x2 system -- must not share one scratch area:
+        # each would rebuild its TensorMaps and repacks on top of the
+        # others'. `scratch_stride` gives program x its own,
+        # scratch_addr + pid.x * scratch_stride.
+        self.scratch_stride = scratch_stride
         # Where a kernel compiled for LITERAL arguments puts its
         # TensorMaps and its repacks. In dynamic mode the address
         # arrives in an argument slot; in static mode there are no
@@ -195,7 +202,7 @@ class TTIRImporter:
 
     # ---- entry point ------------------------------------------------------
     def run(self, module, func_name, arg_values, *, param_names=None,
-            dynamic_args=False):
+            dynamic_args=False, dco=None):
         """Lower ONE function of a TTIR module.
 
         `arg_values` maps parameter name -> a literal the kernel is compiled
@@ -213,8 +220,16 @@ class TTIRImporter:
         know the SHAPE of each argument -- but in dynamic mode no literal
         reaches the code, which is what lets one artifact run with different
         addresses and scalars (R2-06 ABI-02).
+
+        `dco`, when given, is {'grid': (x, y, z)}: the grid the kernel will be
+        launched on. The kernel then registers its input tensors with the
+        Tensor Management Unit -- nAcc, bypass and the tile granule -- before
+        its first load (tnca_cc/dco.py, doc/DCO.pdf sec IV). The counts come
+        from the literal arguments, so they describe the shape compiled for.
         """
         self.dynamic_args = bool(dynamic_args)
+        self.dco_plan = None
+        self.dco_note = None
         # MLIR's get_function returns a null handle for a name that is not in
         # the module, and the next call on it segfaults the interpreter with no
         # message at all. A wrong kernel name is an ordinary mistake -- the
@@ -229,6 +244,9 @@ class TTIRImporter:
         fn = module.get_function(func_name)
         self._fn = fn
         self._bind_args(fn, func_name, arg_values, param_names, module)
+        # Where DCO's registrations go: after the arguments, before anything
+        # the kernel loads.
+        dco_mark = len(self.b.region.ops)
 
         # ONLY this function's operations.
         #
@@ -314,6 +332,15 @@ class TTIRImporter:
                     source='compiler_overview.md sec 11.1, sec 12')
             handler(op)
 
+        if dco is not None:
+            from . import dco as _dco
+            try:
+                self.dco_plan = _dco.plan(self, fn, ops, self._bodies, arg_values,
+                                          grid=dco.get('grid', (1, 1, 1)))
+                _dco.emit(self, self.dco_plan, dco_mark)
+                self.dco_note = self.dco_plan.note
+            except _dco.Refused as e:
+                self.dco_note = f'no DCO registration: {e}'
         self.b.exit()
         return self.kernel, self.b
 
@@ -2194,6 +2221,12 @@ class TTIRImporter:
                         remedy='pass scratch_addr, or compile with dynamic '
                                'arguments')
                 self._scratch = self.b.const(self.scratch_addr)
+                if self.scratch_stride:
+                    self._scratch = self.b.sbin(
+                        'add', self._scratch,
+                        self.b.sbin('mul', self.b.program_id(0),
+                                    self.b.const(self.scratch_stride)),
+                        comment='this program\'s own scratch')
                 return self._scratch
             self._scratch = self.b.sload(
                 self.b.special('arg_base'), offset=8 * self.argument_slots,

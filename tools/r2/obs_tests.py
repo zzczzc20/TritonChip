@@ -110,8 +110,11 @@ def obs01(log):
     log.append(f"    {rep['vector_regs_used']} of {lim['vector_regs']} "
                f"vector registers: a usage, not the limit")
 
-    # 4. an unmeasured cost is 'unknown', never 0
-    unmeasured = ['commands_outstanding', 'scratch_bytes']
+    # 4. an unmeasured cost is 'unknown', never 0. (scratch_bytes was one
+    #    until the frontend began recording the scratch it allocates
+    #    (imp.scratch_used, 4b91e41): a TTIR kernel's 0 is now a count, and
+    #    is checked as one below.)
+    unmeasured = ['commands_outstanding']
     for field in unmeasured:
         v = mres[field]
         if v == 0 or v == '0':
@@ -120,6 +123,14 @@ def obs01(log):
             ok = False
         else:
             log.append(f"    {field:<22s} -> {v!r}")
+
+    if not isinstance(mres['scratch_bytes'], int):
+        log.append(f"    scratch_bytes is {mres['scratch_bytes']!r}, not the "
+                   f"frontend's count (bad)")
+        ok = False
+    else:
+        log.append(f"    scratch_bytes          -> {mres['scratch_bytes']} "
+                   f"(the frontend's count)")
 
     # 5. and a measurable one IS a number, so 'unknown' is not a blanket
     if not isinstance(rep['async_commands_issued'], int):

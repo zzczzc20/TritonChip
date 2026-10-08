@@ -36,6 +36,7 @@ For day-to-day use (build targets, module map, debugging commands), see [`compil
 | Triton kernels (AOT) | All 45 original TileBench operators, 149 cases, compile and run correctly on the RTL at O0, O1 and O2: 447/447 | `make r37`, [`r37_validation.md`](r37_validation.md) |
 | Native `kernel[grid](...)` launches | Through the `triton.backends` plugin; the plugin's code is byte-identical to AOT for the same TTIR | `make r38-torch` (`plugin_identity.py`, `triton_native_run.py`) |
 | PyTorch | `torch.compile` → Inductor → Triton → TNCA with zero host fallback on 22 graph tests (a 23rd checks that a real host fallback, `torch.sort`, is detected) and on all 52 tiny/small ArchBench points (operators plus LLaMA prefill/decode, GPT-2 block, MLP, ResNet block) | `make r38-torch`, `make archbench-coverage` |
+| Tensor descriptors | Ranks 1–5, as Triton defines them for TMA on NVIDIA GPUs: `tl.make_tensor_descriptor` with run-time shapes and strides, host `TensorDescriptor` arguments, `load`/`store`/`atomic_*`/`gather`/`scatter`, zero or NaN padding, signed coordinates. Executed by the transfer engine (`t.ld.async`/`t.st.async`, rank 1–5) or the LSU. Inductor's own tensor-descriptor code generation is available with `configure(tensor_descriptors=True)` | `tools/r38/tdesc_tests.py` (10/10 on the RTL, bit-exact); RTL `t33`–`t35` |
 | Execution | RTL simulator (`core-sim`, `core-vrf-sync-v1`, `core-xpose-v1`), the board protocol in simulation (`fpga-u50-sim`), and the Alveo U280 board | ArchBench tiny 27/27 on RTL and on the U280; small 25/25 on the U280 |
 | Cycle fidelity | Board cycles equal simulator cycles launch by launch (tiny tier) | [`architecture_overview.md`](architecture_overview.md) §10.1 |
 | Compiler stability | 447 R3.7 artifacts are byte-identical before and after the R38 compiler changes | `make r38-identity` |
@@ -78,7 +79,7 @@ Three entry points produce TTIR. All of them call `tnca.aot._lower_ttir`, so the
 | Entry point | Use |
 |---|---|
 | `tnca.aot.compile_aot(fn, signature=..., constexprs=...)` | Ahead-of-time compilation to a `.tnca` file; the `tnca-aot compile` CLI. Default `opt_level` 0. |
-| Triton backend plugin `tnca.triton_backend` | `kernel[grid](...)` on CPU tensors, and PyTorch Inductor. Registered as the `triton.backends` entry point `tnca` (`pyproject.toml`). Active when `TNCA_TRITON=1`, or when CUDA is unavailable. Default `TNCA_OPT_LEVEL` 2. |
+| Triton backend plugin `tnca.triton_backend` | `kernel[grid](...)` on CPU tensors, and PyTorch Inductor. Registered as the `triton.backends` entry point `cpu` (`pyproject.toml`): it is the backend Inductor's `cpu_backend = "triton"` uses, and Inductor recognises it by that name. Active when `TNCA_TRITON=1`, or when CUDA is unavailable. Default `TNCA_OPT_LEVEL` 2. |
 | TNCA IR builders (`kernels.py`, `gemm.py`, `pipeline.py`, `partition.py`) | Build TNCA IR directly for the milestone tests C1–C4 (§11). Not reachable from Triton. |
 
 **Toolchain pin:**
@@ -156,17 +157,46 @@ Addressing:
   - By default, one gather per output row.
   - On profiles with `tensor_transpose` (`core-xpose-v1`), a descriptor load whose only use is `tt.trans` becomes one transposed `t.ld.async`. This is the R38 three-layer case: ISA bit, RTL and compiler selection together.
 
+### 5.3 Tensor descriptors (rank 1–5)
+
+`compiler/python/tnca_cc/descriptors.py` implements the contract Triton states for TMA descriptors on NVIDIA GPUs:
+- rank 1–5, dimension 0 outermost, the last dimension contiguous;
+- a box of `block_shape` elements at signed coordinates, in bounds when `0 <= coord + index < extent` in every dimension;
+- out-of-bounds elements of a load are zero, or NaN under `padding_option="nan"`;
+- stores, atomic reductions and scatters do not touch out-of-bounds elements.
+
+| Source | What the compiler knows |
+|---|---|
+| `tl.make_tensor_descriptor` | Everything. The shape and strides may be run-time values: the TensorMap is written to scratch from registers. Padding comes from the op's `padding` attribute. |
+| Host `TensorDescriptor` argument | Only the rank, block shape and element type. Base, extents, strides and padding are read from the host-built TensorMap at run time. Its geometry need not suit the transfer engine (the TNCA plugin accepts a superset of NVIDIA's alignment rules), so it is always read through the LSU. |
+
+Each operation picks one of two machines and the result's representation:
+
+| Box | Representation | `load` | `store` |
+|---|---|---|---|
+| one row (`block` is `[1, …, 1, n]`) | one register; for rank ≥ 2 also a one-row tile, so tile and packed lowerings both accept it | one masked contiguous load | one masked contiguous store |
+| ≤ 16 elements, several rows | a packed N-D value (one register, row-major lanes) | one masked gather with per-lane element offsets | one masked scatter |
+| > 16 elements | a tile of `prod(block[:-1])` rows × `block[-1]` | the transfer engine when the descriptor is this kernel's, the element type is 16/32-bit, the box fits 1 KiB, and every use can read a window (an MMA operand, a 32-bit tile one row per register, or another descriptor store); otherwise one masked load per row | `t.st.async` for a window tile of the box's shape; otherwise one masked store per row |
+
+- **Atomics.** `atomic_add`/`min`/`max`/`and`/`or`/`xor` are one scalar atomic per in-bounds element, the way `tl.atomic_rmw` does it. FP32 add is a compare-and-swap loop; other floating-point atomics are refused.
+- **Gather and scatter.** `gather` and `scatter` need a 2-D descriptor with a one-row block, and address one row per index.
+- **`tl.trans` of an N-D value:**
+  - On a packed value it is a compile-time lane permutation.
+  - On a tile it relabels when the non-unit dimensions keep their order, and is the 2-D transpose when it swaps them.
+  - The permutation is read from the printed TTIR, because the Python binding does not expose it, and is checked against the operand and result shapes.
+
 ## 6. Operation coverage and the error model
 
 | Family | Handled |
 |---|---|
 | Control flow | `scf.for`, `scf.while`, `cf.br`, `cf.cond_br` |
-| Triton | `get_program_id`, `get_num_programs`, `make_range`, `splat`, `addptr`, `load`, `store`, `reshape`, `join`, `bitcast`, `expand_dims`, `broadcast`, `trans`, `dot`, `reduce`, `scan`, `assert`, `atomic_rmw`, `make_tensor_descriptor`, `descriptor_load`, `descriptor_store`, `fp_to_fp` |
+| Triton | `get_program_id`, `get_num_programs`, `make_range`, `splat`, `addptr`, `load`, `store`, `reshape`, `join`, `bitcast`, `expand_dims`, `broadcast`, `trans`, `dot`, `reduce`, `scan`, `assert`, `atomic_rmw`, `make_tensor_descriptor`, `descriptor_load`, `descriptor_store`, `descriptor_reduce`, `descriptor_gather`, `descriptor_scatter`, `fp_to_fp` |
 | `arith` | Integer add/sub/mul/div/rem/and/or/xor/shifts/min/max; float add/sub/mul/div/neg, `maximumf`/`minimumf`/`maxnumf`/`minnumf`; extensions, truncations, int↔float conversions; `cmpi`, `cmpf`, `select`, `constant` |
 | `math` | `absf`, `exp`, `exp2`, `log`, `log2`, `sqrt`, `rsqrt` |
 | Other | `llvm.intr.assume` (no-op), `ttg.barrier` (fence) |
 
 Not supported today:
+- **Raw FP16/BF16 arithmetic in a hand-written kernel — currently a silent wrong answer.** `x * 2` on an FP16 tensor that was loaded and never upcast is emitted as binary32 `vf.mul` on FP16 bit patterns. Inductor upcasts to FP32 before arithmetic (`codegen_upcast_to_fp32`), and so do the TileBench kernels, so no tested path reaches it. It was found while testing descriptors (2026-10-08). The fix needs one consistent register representation for half-precision values: freshly loaded values hold FP16 bits, but `_fconst` builds FP32 bits under an FP16 label (§15.6).
 - **`scf.if`.** A Triton `if` on a runtime value that becomes `scf.if` is rejected. Inductor's kernels do not produce it, but hand-written kernels may.
 - Control-flow edges that carry block arguments.
 - Some loop-carried predicate or pointer tensors.
@@ -268,6 +298,7 @@ There is one `Session` per (profile, backend, arguments), kept for the life of t
 | `TNCA_HOST_TIMEOUT` | 600 s | Host-side wait budget |
 | `TNCA_LAUNCH=skip` | — | Compile every kernel, launch none (reports would-be transfer sizes) |
 | `TNCA_KERNEL_DUMP`, `TNCA_DUMP_DIR` | — | Dump every stage (TTIR, inlined, optimised, TNCA IR, assembly, hex), also for failing kernels |
+| `TNCA_TENSOR_DESCRIPTORS` | off | `1`: `tnca.inductor.configure()` turns on Inductor's tensor-descriptor code generation (§9) |
 
 ## 9. PyTorch integration
 
@@ -287,6 +318,13 @@ There is one `Session` per (profile, backend, arguments), kept for the life of t
 `tnca.inductor.host_fallbacks(code)` and `triton_kernels(code)` scan Inductor's generated wrapper. A point with any host fallback is recorded as `unsupported`.
 
 **Status:** zero fallback on the 22 offloading graph tests of `tools/r38/torch_tests.py` (its 23rd graph checks that a real fallback is detected, and a separate case checks the device-assert trap: 24/24) and on all 52 tiny/small ArchBench points. The large tier (Llama-3.2-1B shapes) exceeds device memory and is not run on TNCA.
+
+**Tensor descriptors from Inductor.** `configure(tensor_descriptors=True)` (or `TNCA_TENSOR_DESCRIPTORS=1`) turns on Inductor's `use_tensor_descriptor` code generation, the same code it produces for TMA on NVIDIA GPUs:
+- Pointwise and reduction kernels load and store through `tl.make_tensor_descriptor` at ranks 1–5, with `tl.trans`/`tl.reshape` around permuted accesses.
+- Inductor offers this for CPU tensors only when a Triton backend is registered under the name `cpu`, which is why the plugin's entry point has that name.
+- Inductor's CPU branch skips the 16-byte rules that Triton's `make_tensor_descriptor` itself enforces, so `configure()` installs a checker through `TritonKernel.tma_compatibility_checker_cls`. It applies Inductor's CUDA rules instead, refuses descriptors whose innermost block is `XBLOCK` in a reduction (TNCA runs reductions one row per program), and keeps to the element types the compiler takes through a descriptor.
+- With these rules, a graph gets descriptors on TNCA exactly where it would on an NVIDIA GPU.
+- Off by default; the pointer-based code generation is unchanged.
 
 **Multi-step generation:** `python -m archbench.generate` chains prefill and decode steps on one model. Each step compiles for its cache length. The device's K/V outputs feed the next step, and each step's logits are checked against an FP32 reference given the same inputs.
 
@@ -335,6 +373,7 @@ The Triton path uses neither. Every Triton or PyTorch kernel runs as one role co
 | `make r38-identity` | Every artifact byte-identical to a frozen baseline (`tools/r38/artifact_identity.py`). Used to show that compiler changes for PyTorch alter no existing kernel. |
 | `make r38-torch` | Plugin/AOT identity at O0–O2, the 149 cases launched natively, 23 PyTorch graph tests, and the device-assert trap (24/24) |
 | `make archbench-coverage` | Every tiny/small ArchBench point compiles with zero fallback (also run on x86_64) |
+| `make r38-tdesc` (`tools/r38/tdesc_tests.py`) | Tensor descriptors through the real Triton front end and the plugin, on the RTL: ranks 1–5, run-time shapes and strides, host descriptors, negative and past-the-end offsets, zero/NaN padding, atomics, gather/scatter, a rank-3 MMA operand. Each case is checked bit-exactly against PyTorch computing the box from the definition, and records which path the compiler chose. |
 | ArchBench runs | Numerical agreement with an FP32 reference on RTL and on the board, per point |
 | R2 tests (`r2-abi/compile/cache/dump/runtime/fault-tests`) | ABI, container, compilation cache, dumps, runtime state machine, faults |
 
@@ -367,10 +406,13 @@ The matrix unit is almost idle: 16-wide tiles and LSU-fed operands keep it below
 5. **One role context per Triton program.** The partitioning and pipelining work (C3/C4) is not connected to TTIR.
 6. **`i64` is exact but slow** (scalar per-lane emulation), and limited to one-row tiles.
 7. **Tile access patterns.** Transfer-engine tiles need a unit column stride; non-uniform `[R, 1]` broadcasts with R > 1 are not covered.
-8. **Stale text:**
+8. **Raw FP16/BF16 arithmetic** in hand-written kernels is miscompiled (§6). Upcast with `.to(tl.float32)`, as Inductor does.
+9. **Descriptors.** A box row wider than 16 elements is refused (one row is one register). An N-D value with more than two non-unit dimensions is a row tile: elementwise operations, stores and reshapes that keep the last dimension work, but a `trans` that moves more than the last two dimensions does not. Descriptor atomics on FP16/BF16 are refused (the only floating atomic is FP32 add). `round_f32_to_tf32` is refused rather than ignored.
+10. **Stale text:**
    - `tnca_cc/__init__.py` calls the plugin C++ (it is Python).
    - The `r38_pytorch_p1plus.md` diagram names `_compile_ttir` (it is `_lower_ttir`) and counts 12 graph tests (now 23, plus the trap check).
    - The `_op_tt_trans` docstring predates the transposed-transfer RTL.
+   - `tools/r38/tdesc_tests.py` records the path each case took from the dumped assembly; the R3.7 cases do not.
 
 ## 15. Next steps
 
@@ -410,6 +452,7 @@ Each is an R38 cross-layer case, attributed by the profiler and predicted by the
 ### 15.6 Coverage and engineering
 
 - Coverage:
+  - Half-precision arithmetic (§6): one register representation for FP16/BF16 values, computed in binary32 (exact for + − × ÷, since binary32 has 2p+2 bits for both). Highest priority, because the current failure is silent.
   - `scf.if`.
   - Multi-row `i64`.
   - The missing libdevice functions (`pow`, `erf`, trigonometric).
@@ -418,7 +461,7 @@ Each is an R38 cross-layer case, attributed by the profiler and predicted by the
   - A scheduled job for the tiny tier on RTL.
 - Specs:
   - Bump the transport spec to 1.1 (op 7 `PERF_READ`).
-  - Fix the stale text in §14.8.
+  - Fix the stale text in §14.10.
 
 ## 16. Plan versus delivery
 

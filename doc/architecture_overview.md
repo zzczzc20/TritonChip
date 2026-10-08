@@ -55,7 +55,7 @@ The design draft ([`design/tnca_v1_architecture_draft.md`](design/tnca_v1_archit
 | Matrix unit (§6) | M16×N16, K16/32/64, 256 MAC/cycle per tile | M16×N16, K = 16/32/64, **16 MAC/cycle** (1/16 of the reference). FP32 accumulation, one rounding per step. |
 | Vector RF (§5) | 32 KiB per tile | **8 KiB:** 128 physical registers × 16 lanes × 32 bits. Optional 4-bank synchronous organisation with an operand collector (`core-vrf-sync-v1`). |
 | Accumulator RF (§5.1) | 16 KiB per tile | **16 KiB:** 16 slots × 16 × 16 × FP32. |
-| TensorMap (§7) | 256-byte descriptor; semantics separated from hints | 256-byte descriptor; rank 1–2 only; no hint fields act yet. |
+| TensorMap (§7) | 256-byte descriptor; semantics separated from hints | 256-byte descriptor; **rank 1–5** with signed coordinates and zero/NaN/fault padding — the TMA contract Triton exposes on NVIDIA GPUs, with no alignment requirement on base or strides; no hint fields act yet. |
 | NUCA cache (§8) | 512 KiB/slice, 8 MiB, 96 MSHRs; TensorMap-aware replacement and bypass | 2×2 system only: 32 KiB/slice (64 sets × 8 ways × 64 B), 8 MSHRs. No TensorMap metadata, dead-block prediction, bypass or admission control. |
 | Transaction control (§9) | Credits, MSHR-aware arbitration, admission | Not implemented. |
 | Async protocol (§13) | mbarrier with ready/free events | **Implemented:** 32 mbarriers per core, counting arrivals and operations separately; the matrix unit signals result-ready and source-free separately. |
@@ -134,7 +134,7 @@ A launch names a PC, an argument block, a role mask and the program id/count. A 
 | Vector FPU | 16 lanes, 2-cycle latency; lane reductions take log2(16) = 4 steps on the FMA array |
 | SFU | One shared slice computing exp2, log2, reciprocal and rsqrt; one lane per cycle, 6-cycle latency, ≤ 2⁻²² relative error, subnormals flushed. A 16-lane op occupies it for VLEN + 8 cycles. Generated from XLS (`rtl/gen/`). |
 | Matrix | `C16×16 += A·B`, K = 16/32/64, 16 MACs per cycle (one k step per 16 cycles); separate result-ready and source-free completion events |
-| Tensor transfer engine | Loads rank-1/2 tiles described by a descriptor snapshot into RF windows, asynchronously, completing on an mbarrier. Rows must be whole 8-byte units, or a descriptor fault is raised. `t.st.async` (tensor store) is not implemented. `core-xpose-v1` adds a transposed window write for 16-bit elements (§7). |
+| Tensor transfer engine | `t.ld.async` / `t.st.async` of a rank-1–5 box between memory and an RF window, asynchronously, one completion per command on an mbarrier. Coordinates are five consecutive scalar registers, signed and of any alignment; base and strides need no alignment either. A misaligned row is assembled from two memory words per 8-byte unit. Out-of-bounds elements are filled on a load (zero, or the dtype's NaN) and not written by a store (byte enables). The store reads the window through its own VRF port. Box rows must be whole 8-byte units, block dimensions 1–256. `core-xpose-v1` adds a transposed window write for 16-bit elements (§7). |
 | LSU | Ordinary loads, stores, gathers and scatters, coalesced onto 64-bit words; up to 8 beats outstanding, completed out of order by tag; one instruction in flight |
 | Memory mux | Merges the LSU and the transfer engine onto the core's single 64-bit data port; the transfer engine wins |
 | Banked VRF (option) | 4 banks, each 1R1W with synchronous read; an operand collector with 4 entries × 3 sources (`core-vrf-sync-v1`, the board profile) |
@@ -388,7 +388,7 @@ ArchBench compares platforms on the same PyTorch programs, each compiled by its 
 3. **Host round trips.** Every launch uploads its argument storages and downloads them back, one 64-bit word per register access. On the board this host time dwarfs device time: tiny LLaMA decode spends 1.9 s in transfers for 0.094 s of device time.
 4. **Throughput.** Single issue, one 8 B/cycle port, 16 MAC/cycle matrix, a one-lane SFU, and no instruction scheduling in the compiler. η is about 1 % on models.
 5. **Narrow tiles.** At most 16 elements per block dimension (compiler limit, [`compiler_overview.md`](compiler_overview.md) §14). This caps matrix-unit use.
-6. **Transfer engine.** Rank 1–2 descriptors only; no tensor store; no byte-granular window writes.
+6. **Transfer engine.** A box row must be a whole number of 8-byte units (the compiler reads other boxes through the LSU), and a misaligned row costs two memory reads per unit. There is no transposed store, no TMA-style gather4/multicast, and no reduce-in-memory (descriptor atomics are per-element LSU atomics).
 7. **Not a physical design.** FPGA timing at 37.5 MHz and yosys structural proxies. No ASIC PPA, no power measurement yet.
 8. **Documentation drift.**
    - ISA text: atomics and register classes marked reserved; vector-register base.
@@ -400,6 +400,8 @@ ArchBench compares platforms on the same PyTorch programs, each compiled by its 
 Ordered by what the R38 plan needs first. Each item names the decision or evidence it produces.
 
 ### 13.1 Close Stage 1 and record the board
+
+- **Rebuild the board image for the rank-5 transfer engine.** The U280 image loaded on 2026-10-08 predates it: its engine executes rank 1–2 and refuses `t.st.async`. `TENSOR_MAX_RANK` reads 2 on that image. A rank-3–5 transfer or a store faults there. A rank-1–2 load whose contiguous coordinate is not 8-byte aligned, which the compiler now sends to the engine for device-side descriptors, is **not** detected by that engine and returns shifted data. So kernels that use descriptors must not run on the old image. A rebuilt image then needs the board ladder again: conformance, ArchBench, and the descriptor tests through `fpga-u280`.
 
 - **Record the board as evidence.**
   - The U280 results (B1–B6) are in the runbook (§5 there) and in `doc/r38_stage1_status.md`.

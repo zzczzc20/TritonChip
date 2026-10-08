@@ -39,7 +39,7 @@ module tnca_vector_fpu #(
     parameter VLEN   = 16,
     parameter ELEN   = 32,
     parameter LW     = 4,            // log2(VLEN)
-    parameter FP_LAT = 2,            // must match tnca_fp32_fma's stage count
+    parameter FP_LAT = 2,            // tnca_fp32_fma's latency: 2 or 3 (a generated instance each)
     parameter SFU_LAT = 6,           // must match rtl/gen/tnca_sfu_*_xls.v
     // Follows the core's HAS_SFU. A build with the capability bit clear does
     // not instantiate the slice, so it does not pay ~60 k gates for logic its
@@ -213,7 +213,7 @@ module tnca_vector_fpu #(
     wire [ELEN-1:0] fma_y [0:VLEN-1];
     generate
         for (g = 0; g < VLEN; g = g + 1) begin : g_fma
-            tnca_fp32_fma u_fma (
+            tnca_fp32_fma #(.LAT(FP_LAT)) u_fma (
                 .clk(clk), .rst_n(rst_n),
                 .a(fa[g]), .b(fb[g]), .c(fc[g]),
                 .sub_c(f_sub), .mul_only(f_mul), .ftz(ftz),

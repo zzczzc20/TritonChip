@@ -17,6 +17,13 @@ which parts, why those and not others, and what the decision cost and bought.
 | `tnca_sfu_log2_xls` | `xls/tnca_sfu.x` | `v.log2.approx` | 7 | 6 |
 | `tnca_sfu_rcp_xls` | `xls/tnca_sfu.x` | `v.rcp.approx` | 7 | 6 |
 | `tnca_sfu_rsqrt_xls` | `xls/tnca_sfu.x` | `v.rsqrt.approx` | 7 | 6 |
+| `tnca_fma_xls` | `xls/tnca_fma.x` | binary32 FMA with subnormals (FP_LAT = 2) | 3 | 2 |
+| `tnca_fma_l3_xls` | `xls/tnca_fma.x` | the same, one stage deeper (FP_LAT = 3) | 4 | 3 |
+
+The two FMA instances are generated with `--flop_outputs=false`: N stages are
+N−1 registers, and the result is combinational from the last stage, because
+every consumer (the vector FP writeback, the accumulator file) registers it.
+`rtl/core/tnca_fp32_fma.v` picks the instance for the core's `FP_LAT`.
 
 The formats are binary32, bfloat16, binary16, OCP FP8 E5M2 and OCP FP8 E4M3.
 FP4 is deliberately absent.
@@ -27,10 +34,11 @@ that fills stage 0. Each testbench *measures* its unit's latency rather than
 assuming it — the numbers above are the ones that make the benches pass, and
 the neighbouring values fail loudly.
 
-## What is not generated, and why
+## The binary32 FMA: generated since R38, without apfloat
 
-**The binary32 FMA stays hand-written.** XLS's `apfloat` library flushes
-subnormals to zero. That is measured, not assumed:
+**Until R38 the FMA was hand-written,** with two hand-placed register stages.
+The reason was XLS's `apfloat` library, which flushes subnormals to zero. That
+is measured, not assumed:
 
 ```
 apfloat::add(1e-45, 0.0)            -> 0.0   (should be 1e-45)
@@ -45,10 +53,27 @@ a binary32 FMA from `apfloat` would have broken the default rounding mode, and
 `rtl/core/tnca_fp32_fma.v` already handles subnormals and is checked against an
 exact Fraction oracle over half a million vectors.
 
-So the arithmetic stayed where it was verified. `rtl/core/tnca_fpu_multi.v`
-composes the two: XLS widening in front of the existing FMA. That gives FP8 and
-FP16 operands with one verified multiplier and no second implementation to keep
-in agreement with the first.
+So the arithmetic stayed where it was verified, and XLS only did the format
+work around it (`rtl/core/tnca_fpu_multi.v`: XLS widening in front of the FMA).
+
+**What changed is where the incompatibility is taken.** It was never XLS: it
+is one library. `xls/tnca_fma.x` writes the FMA in DSLX without `apfloat` --
+the hand-written algorithm step for step, subnormal inputs and outputs, the
+`ftz` mode, `mul_only`, `sub_c`, the NaN and signed-zero rules -- and XLS does
+what it is good at, the schedule. The reason this matters is the clock: the
+U280 link's worst path (60 logic levels, 23.9 ns at 37.5 MHz) ran through the
+hand-placed normalise/round stage, and moving a hand-placed cut is a redesign,
+while a generated one is a stage count in `tools/xls/config.json`. Two
+instances are generated now, latency 2 (a drop-in: same `FP_LAT`, same cycles)
+and latency 3 (for a faster board clock); a third is one more config entry.
+
+The verification did not change: `tb_fp32_fma` and `make fma-deep` check both
+instances against the same exact Fraction oracle (`tools/model/fp32.py`;
+41 240 and 516 240 vectors, 0 failures), and `tb_fpu_multi` checks the
+composition with the five formats. The DSLX file also carries its own tests
+for the cases `apfloat` gets wrong.
+
+## What is not generated, and why
 
 **The SFU is the opposite case.** ISA §8.8 specifies those operations as
 approximate, with a published error bound, and *requires* subnormal flushing.

@@ -204,9 +204,15 @@ lint: dirs
 #------------------------------------------------------------------------------
 # Unit tests
 #------------------------------------------------------------------------------
+# The FMA is generated (xls/tnca_fma.x); tnca_fp32_fma picks the instance for
+# its latency. Both latencies are tested against the same oracle.
+FMA_GEN := $(RTL)/gen/tnca_fma_xls.v $(RTL)/gen/tnca_fma_l3_xls.v
 $(BUILD)/tb_fp32_fma.vvp: $(TB)/core/tb_fp32_fma.v $(RTL)/core/tnca_fp32_fma.v \
-                          $(RTL_COMMON) | dirs
+                          $(FMA_GEN) $(RTL_COMMON) | dirs
 	$(IVERILOG) $(IVFLAGS) -o $@ $^
+$(BUILD)/tb_fp32_fma_l3.vvp: $(TB)/core/tb_fp32_fma.v $(RTL)/core/tnca_fp32_fma.v \
+                             $(FMA_GEN) $(RTL_COMMON) | dirs
+	$(IVERILOG) $(IVFLAGS) -P tb_fp32_fma.FMA_LAT=3 -o $@ $^
 
 $(BUILD)/tb_bitops.vvp: $(TB)/core/tb_bitops.v $(RTL_COMMON) | dirs
 	$(IVERILOG) $(IVFLAGS) -o $@ $^
@@ -224,7 +230,7 @@ $(BUILD)/dec_vectors.txt: $(TOOLS)/model/gen_decoder_vectors.py \
                           $(TOOLS)/asm/tnca_isa.py $(TOOLS)/asm/tnca_asm.py | dirs
 	$(PYTHON) $< -o $@
 
-unit: $(BUILD)/tb_fp32_fma.vvp $(BUILD)/fma_vectors.txt \
+unit: $(BUILD)/tb_fp32_fma.vvp $(BUILD)/tb_fp32_fma_l3.vvp $(BUILD)/fma_vectors.txt \
       $(BUILD)/tb_decoder.vvp $(BUILD)/dec_vectors.txt $(BUILD)/tb_bitops.vvp \
       $(BUILD)/tb_mul64.vvp \
       $(TB)/core/progs/t03_fp.s $(TB)/core/progs/t06_alu.s \
@@ -236,6 +242,8 @@ unit: $(BUILD)/tb_fp32_fma.vvp $(BUILD)/fma_vectors.txt \
 	@$(TOOLS)/run_test.sh "mul64"  "$(VVP) $(BUILD)/tb_mul64.vvp"
 	@$(TOOLS)/run_test.sh "fp32_fma" \
 	   "$(VVP) $(BUILD)/tb_fp32_fma.vvp +vec=$(BUILD)/fma_vectors.txt"
+	@$(TOOLS)/run_test.sh "fp32_fma (latency 3)" \
+	   "$(VVP) $(BUILD)/tb_fp32_fma_l3.vvp +vec=$(BUILD)/fma_vectors.txt"
 	@$(TOOLS)/run_test.sh "decoder" \
 	   "$(VVP) $(BUILD)/tb_decoder.vvp +vec=$(BUILD)/dec_vectors.txt"
 	@$(TOOLS)/run_test.sh "cvt_xls" \
@@ -250,11 +258,13 @@ unit: $(BUILD)/tb_fp32_fma.vvp $(BUILD)/fma_vectors.txt \
 
 # Deeper FMA sweep; slow, run it before declaring the unit done.
 .PHONY: fma-deep
-fma-deep: $(BUILD)/tb_fp32_fma.vvp
+fma-deep: $(BUILD)/tb_fp32_fma.vvp $(BUILD)/tb_fp32_fma_l3.vvp
 	$(PYTHON) $(TOOLS)/model/gen_fma_vectors.py -o $(BUILD)/fma_deep.txt \
 	   -n 400000 --seed 424242
 	@$(TOOLS)/run_test.sh "fp32_fma (deep)" \
 	   "$(VVP) $(BUILD)/tb_fp32_fma.vvp +vec=$(BUILD)/fma_deep.txt"
+	@$(TOOLS)/run_test.sh "fp32_fma (deep, latency 3)" \
+	   "$(VVP) $(BUILD)/tb_fp32_fma_l3.vvp +vec=$(BUILD)/fma_deep.txt"
 
 #------------------------------------------------------------------------------
 # Core tests
@@ -364,7 +374,7 @@ $(BUILD)/sfu_vectors.txt: $(TOOLS)/model/gen_sfu_vectors.py | dirs
 	$(PYTHON) $< -o $@ -n $(SFU_VECTORS)
 
 $(BUILD)/tb_fpu_multi.vvp: $(TB)/xls/tb_fpu_multi.v $(RTL)/core/tnca_fpu_multi.v \
-                           $(RTL)/core/tnca_fp32_fma.v $(RTL)/gen/tnca_widen_xls.v \
+                           $(RTL)/core/tnca_fp32_fma.v $(FMA_GEN) $(RTL)/gen/tnca_widen_xls.v \
                            $(RTL_COMMON) | dirs
 	$(IVERILOG) $(IVFLAGS) -y $(RTL)/core -y $(RTL)/common -y $(RTL)/gen \
 	   -o $@ $(TB)/xls/tb_fpu_multi.v

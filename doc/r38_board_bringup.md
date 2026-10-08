@@ -1,6 +1,6 @@
 # R38：上板实验准备与执行清单（U50）
 
-版本 0.3，2026-10-07。状态：**U280 镜像已构建并收敛时序，尚未加载**（acf3019，见 §4；加载需负责人同意）。
+版本 0.4，2026-10-08。状态：**U280 已加载并完成验收阶梯 B1–B6**（acf3019，见 §4、§5）。
 上位：[Stage 1](r38_stage1_tasks_and_acceptance.md) §5“进入 Stage 2 的交接物”；板卡流程与既有实测：[flow/fpga/README.md](../flow/fpga/README.md)；测量协议：[archbench/PROTOCOL.md](../archbench/PROTOCOL.md)。
 
 ## 0. 现状：板上镜像落后于 r38 RTL
@@ -110,3 +110,35 @@ python -m archbench.run --platform tnca --backend fpga-u280 --profile core-vrf-s
 **共用规则**：这块卡上加载着别人的镜像（2026-10-07 为一个 HBM 带宽测试，CU 空闲），主机上也有其他人的 Vivado 任务。`program.sh --go` 会替换别人的镜像，所以每次加载前确认没有进程占用该设备，并经负责人同意；构建（package/link）不碰卡，`VPP_JOBS` 限制并行度。
 
 期望值：板卡周期应与 `core-vrf-sync-v1` 的仿真 bench 逐 launch 相同（`fpga-u50-sim` 已在 RTL 上证明板卡顶层与该 bench 周期一致）；tiny 档的期望记录由 `python -m archbench.run --platform tnca --profile core-vrf-sync-v1 --tier tiny` 产生。
+
+## 5. U280 上板结果（2026-10-08）
+
+经负责人同意，2026-10-08 09:38 用 `program.sh --go` 加载 `tnca_u280.xclbin`（sha256 `f8717adc…a77a52bec`，xclbin uuid `083faace-4e12-8434-c841-947e12a47ba8`），替换原镜像 `483a6e3f…`。加载前所有门检查通过：设备空闲、无其他加载进程、FPGA 32 °C、HBM 27 °C。加载后 HBM 传感器 2 s 内出现读数，为 26 °C。管理功能上的时钟频率计数器（`clock_counter_freqs`）读出 kernel clock 为 150 MHz，器件时钟因此是 37.5 MHz。
+
+结果记录在 acf3019 的 `~/tnca_build/u280/results/`。
+
+| 步 | 命令要点 | 结果 |
+|---|---|---|
+| B1 | `tools/r36/conformance.py --backends fpga-u280 --xclbin X --require-measured` | **5/5 PASS**，1 of 1 backend measured。成功 launch 23 周期，oracle 值正确。故障 launch 报 code 0x40 及其 PC，之后 session 仍可用。 |
+| B2 | `tools/r38/profiler_tests.py --backend fpga-u280 …`（先 `--quick`，后完整验收） | **PASS**：守恒、单调、无扰动三项均成立，经 PERF_READ 读出；快速版和完整版都通过 |
+| B3 tiny | `archbench.run … --backend fpga-u280 --tier tiny --counters` | **27/27 pass**，用时 6.3 分钟，27 个点全部带 counters |
+| B3 small | 同上，`--tier small` | **25/25 pass**，用时 7.7 分钟。LLaMA prefill（S = 64）155.6 M 周期 = 4.15 s；decode（P = 128）43.9 M 周期 = 1.17 s |
+| B4 | 板卡记录与 `core-vrf-sync-v1` 仿真记录逐 launch 对比 | tiny 27/27 点、132 次 launch，**周期逐 launch 完全相同**。small 档没有 RTL 参照，RTL 仿真太慢。 |
+| B5 | `archbench.report u280_tiny u280_small gpu_gb10 --tier tiny small` | 52/52 对 52/52。TNCA U280：E = 0.0072，A = 0.021；GB10：E = 0.0051，A = 0.041。秒级时间比 T_GPU/T_TNCA 在 2×10⁻⁵ 到 6×10⁻³ 之间 |
+| B6 | `python -m archbench.generate --tier small --new 8 …` | 64-token prefill 加 7 步 decode，每步都用设备自己产生的 KV cache。8 步全部在容差内，token 序列与纯 FP32 生成完全一致。设备时间：prefill 15.4 tokens/s，decode 1.01 tokens/s。host 墙钟 327 s，其中 194 s 在 launch 内（传输和等待），其余是逐步编译。 |
+
+为跑通 small 档，上板时修了三处，均已提交：
+
+- **`link.sh` 误判 `AUTO-FREQ-SCALING-08`**：见 §4。
+- **`program.sh` 读不出 U280 的温度**：XRT 2.16 的 thermal 报告是表格格式，原解析只认 `FPGA : 45 C` 这种格式。现在两种格式都能读。
+- **运行时堆分配器碎片化**：释放的块不合并，LLaMA small 跑到图的后半段时报 “out of device memory: 131072 bytes needs 131072 and 98304 remain”。合并后，每次 launch 结束堆都回到空，tiny 档周期与修复前完全相同。
+
+另外，conformance 套件此前对每个后端都先构建仿真器，所以在没有 iverilog 的板卡主机上跑不起来。现在只为需要仿真器的后端构建。
+
+**下一步**（详见 [architecture_overview.md](architecture_overview.md) §13 与 [compiler_overview.md](compiler_overview.md) §15）：
+
+1. 从 U280 链接报告提取 kernel 单独的资源占用。
+2. 板卡功耗（`xbutil examine -r electrical`）。
+3. 把板卡证据登记进 evidence registry（Stage 2 等级）。
+4. 内存容量路线（URAM 或 HBM）待负责人决定。
+

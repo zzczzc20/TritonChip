@@ -1,7 +1,7 @@
 # R38 Stage 1 status
 
 Plan and acceptance: [r38_stage1_tasks_and_acceptance.md](r38_stage1_tasks_and_acceptance.md).
-Updated 2026-10-07. Stage state: **IN PROGRESS / NOT ACCEPTED** (gates G1a, G1b open on the items marked below).
+Updated 2026-10-08. Stage state: **IN PROGRESS / NOT ACCEPTED** (gates G1a, G1b open on the items marked below).
 
 Generated evidence lives under `sim/build/r38/` and is not in Git.
 
@@ -19,7 +19,7 @@ Generated evidence lives under `sim/build/r38/` and is not in Git.
 | S1-09 gates | L0/L1/L2 + selftest implemented; selftest **PASS** | `tools/r38/gate.py l0\|l1\|l2\|selftest`; log `sim/build/r38/devops_log.jsonl` | an L2 promotion run |
 | S1-10 PyTorch (P1+, replaces the P0/P1 plan) | **IN PROGRESS**: ArchBench(torch) tiny + small 52/52 compile with zero host fallback and launch counts equal to the generated wrapper's; 7 regression graphs added for the fixes (incl. a device-assert trap) PASS; single-query (decode) attention fixed (three boolean defects, §6 of the P1+ doc); **tiny tier on the RTL 27/27 pass** (section below); 24/24 graph tests + the assert trap | [r38_pytorch_p1plus.md](r38_pytorch_p1plus.md) §6; `make r38-torch`, `make archbench-coverage`, `make archbench-tiny` | Agent pilot not started |
 | S1-10 NVIDIA scoring rules | **written**: [archbench/PROTOCOL.md](../archbench/PROTOCOL.md); exercised on GB10: 76/76 points under bound v2, η ≤ 1 throughout (bound v1 had found an η = 1.2 audit failure) | `make archbench-gpu`, `python -m archbench.report` | GB10 tensor-core peak is an upper estimate |
-| Board preparation (Stage 2 hand-off) | **ready, waiting for FPGA access** | [r38_board_bringup.md](r38_board_bringup.md); `make r36-fpga-tests` (8/8 incl. PERF_READ); `make archbench-u50sim` | the board image predates the merge and must be rebuilt (§0 there) |
+| Board (Stage 2 hand-off) | **U280 loaded, ladder B1–B6 passed** (2026-10-08) | [r38_board_bringup.md](r38_board_bringup.md) §5: conformance 5/5 measured, profiler (full), ArchBench tiny 27/27 + small 25/25, tiny cycles identical to the RTL launch by launch, multi-step LLaMA generation | board evidence is `measured-board` in ArchBench records; the evidence registry entry stays `documented` until Stage 2 levels apply |
 | S1-11 related work | — | — | — |
 
 ## 2026-10-07: ArchBench (PyTorch) tiny tier, TNCA vs GB10
@@ -40,6 +40,10 @@ shapes both platforms are latency-bound and far from their bounds; η is not spe
 (roadmap §4.7), and times are compared only once a board gives TNCA seconds. GB10 on the
 small and large tiers: 25/25 and 24/24 (Llama-3.2-1B decode 14.9 ms/token against a
 9.1 ms DRAM bound).
+
+TNCA in seconds (U280, `core-vrf-sync-v1` at 37.5 MHz, 2026-10-08): tiny + small 52/52 pass,
+E 0.0072 / A 0.021 against GB10's 0.0051 / 0.041 on the same 52 points; the time ratio
+T_GPU/T_TNCA is 2×10⁻⁵ to 6×10⁻³ per point ([r38_board_bringup.md](r38_board_bringup.md) §5).
 
 ## Changes to the product made by Stage 1 so far
 

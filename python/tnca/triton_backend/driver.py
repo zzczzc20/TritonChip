@@ -118,8 +118,10 @@ class TNCALaunchError(RuntimeError):
     pass
 
 
-_TORCH_TO_TNCA = {'float32': 'fp32', 'float16': 'fp16', 'bfloat16': 'bf16', 'int32': 'i32',
-                  'int8': 'i8', 'float8_e4m3fn': 'e4m3', 'float8_e5m2': 'e5m2'}
+_TORCH_TO_TNCA = {'float32': 'fp32', 'float16': 'fp16', 'bfloat16': 'bf16', 'float64': 'fp64',
+                  'int8': 'i8', 'uint8': 'u8', 'int16': 'i16', 'uint16': 'u16',
+                  'int32': 'i32', 'uint32': 'u32', 'int64': 'i64', 'uint64': 'u64',
+                  'float8_e4m3fn': 'e4m3', 'float8_e5m2': 'e5m2'}
 
 
 class TNCALauncher:
@@ -233,8 +235,17 @@ class TNCALauncher:
                     dt = _TORCH_TO_TNCA.get(str(v.base.dtype).replace('torch.', ''))
                     if dt is None:
                         raise TNCALaunchError(f'{name}: descriptor dtype {v.base.dtype} is not supported')
+                    # On NVIDIA this makes the TMA round FP32 to TF32 on the
+                    # way in. TNCA's transfer engine moves bits and its FP32
+                    # dot is exact, so honouring the flag would need a
+                    # rounding step nothing here performs -- and ignoring it
+                    # would return different numbers under the same name.
+                    if getattr(v, 'round_f32_to_tf32', False):
+                        raise TNCALaunchError(f'{name}: round_f32_to_tf32 is not supported on TNCA '
+                                              '(FP32 tensors are transferred and multiplied exactly)')
                     bound[name] = TD(device_ref(name, v.base), list(v.shape), list(v.strides),
-                                     list(v.block_shape), dt)
+                                     list(v.block_shape), dt,
+                                     padding=getattr(v, 'padding', 'zero'))
                 elif isinstance(v, bool):
                     bound[name] = int(v)
                 elif isinstance(v, (int, float)):

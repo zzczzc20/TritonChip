@@ -185,6 +185,19 @@ Each operation picks one of two machines and the result's representation:
   - On a tile it relabels when the non-unit dimensions keep their order, and is the 2-D transpose when it swaps them.
   - The permutation is read from the printed TTIR, because the Python binding does not expose it, and is checked against the operand and result shapes.
 
+### 5.4 Cache orchestration (DCO)
+
+`compiler/python/tnca_cc/dco.py` is the compiler half of DCO ([`dco.md`](dco.md)). It is enabled by `TTIRImporter.run(..., dco={'grid': (x, y, z)})` and does two things:
+
+1. **Counts reads.** It interprets the kernel's integer and address arithmetic for every program of the grid and every loop iteration. It counts how many times each tile origin of each pointer argument is loaded: that is nAcc. On the loop nests the paper's product-of-trip-counts rule covers, the two agree. Counting also handles a flattened index split with `//` and `%`, and a loop strided by the program id.
+2. **Registers.** At the top of the kernel it emits scalar stores to the TMU window:
+   - a TILE write giving the tile granule (`D_LSB`);
+   - three stores per input tensor: base, extent and nAcc. A tensor with nAcc = 1 is marked for bypass when its tiles cover whole cache lines.
+
+The pass refuses rather than guesses. If a loop bound depends on loaded data, an address cannot be computed, a branch depends on an unknown value, or the trace exceeds its budget, it registers nothing and records why in `importer.dco_note`. That leaves the baseline, never a wrong result.
+
+The counts come from the literal arguments the kernel is compiled for. A dynamic-argument artifact would need them recomputed at launch (§15).
+
 ## 6. Operation coverage and the error model
 
 | Family | Handled |
@@ -196,7 +209,7 @@ Each operation picks one of two machines and the result's representation:
 | Other | `llvm.intr.assume` (no-op), `ttg.barrier` (fence) |
 
 Not supported today:
-- **Raw FP16/BF16 arithmetic in a hand-written kernel — currently a silent wrong answer.** `x * 2` on an FP16 tensor that was loaded and never upcast is emitted as binary32 `vf.mul` on FP16 bit patterns. Inductor upcasts to FP32 before arithmetic (`codegen_upcast_to_fp32`), and so do the TileBench kernels, so no tested path reaches it. It was found while testing descriptors (2026-10-08). The fix needs one consistent register representation for half-precision values: freshly loaded values hold FP16 bits, but `_fconst` builds FP32 bits under an FP16 label (§15.6).
+- **Raw FP16/BF16 arithmetic in a hand-written kernel — currently a silent wrong answer.** `x * 2` on an FP16 tensor that was loaded and never upcast is emitted as binary32 `vf.mul` on FP16 bit patterns. Inductor upcasts to FP32 before arithmetic (`codegen_upcast_to_fp32`), and so do the TileBench kernels, so no tested path reaches it. It was found while testing descriptors (2026-10-08). The fix needs one consistent register representation for half-precision values: freshly loaded values hold FP16 bits, but `_fconst` builds FP32 bits under an FP16 label (§15.7).
 - **`scf.if`.** A Triton `if` on a runtime value that becomes `scf.if` is rejected. Inductor's kernels do not produce it, but hand-written kernels may.
 - Control-flow edges that carry block arguments.
 - Some loop-carried predicate or pointer tensors.
@@ -377,7 +390,7 @@ The Triton path uses neither. Every Triton or PyTorch kernel runs as one role co
 | ArchBench runs | Numerical agreement with an FP32 reference on RTL and on the board, per point |
 | R2 tests (`r2-abi/compile/cache/dump/runtime/fault-tests`) | ABI, container, compilation cache, dumps, runtime state machine, faults |
 
-**CI coverage:** CI runs `make compiler`, the Triton frontend and R2 tests, and R3.7 at O0/O1/O2. It does not run `r38-torch`, `r38-identity` or ArchBench, which need PyTorch or long RTL runs (§15.6).
+**CI coverage:** CI runs `make compiler`, the Triton frontend and R2 tests, and R3.7 at O0/O1/O2. It does not run `r38-torch`, `r38-identity` or ArchBench, which need PyTorch or long RTL runs (§15.7).
 
 ## 13. Performance today
 
@@ -449,7 +462,14 @@ These are the cheapest performance work:
 
 Each is an R38 cross-layer case, attributed by the profiler and predicted by the cost model before it is measured.
 
-### 15.6 Coverage and engineering
+### 15.6 DCO for launched kernels
+
+The DCO pass runs only for kernels compiled with literal arguments (the 2×2 bench). Making it available to runtime launches has three parts:
+- Compute nAcc from the launch's actual arguments: either a host-side replay of the same trace, or registration code that evaluates the trip-count products at run time.
+- Carry the TMU writes in the artifact manifest.
+- Bring the 2×2 system into the runtime, which has no TMU path today ([`architecture_overview.md`](architecture_overview.md) §13.5).
+
+### 15.7 Coverage and engineering
 
 - Coverage:
   - Half-precision arithmetic (§6): one register representation for FP16/BF16 values, computed in binary32 (exact for + − × ÷, since binary32 has 2p+2 bits for both). Highest priority, because the current failure is silent.

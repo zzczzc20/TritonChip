@@ -323,7 +323,12 @@ jobs:
       matrix:
         opt_level: [0, 1, 2]
     steps:
+      # Full history: the profiler's case 6 builds the device as it was
+      # before the counters (`git show 3b5b28f:...`), which a shallow
+      # checkout does not have.
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - name: Check out the validated TileBench sources
         uses: actions/checkout@v4
         with:

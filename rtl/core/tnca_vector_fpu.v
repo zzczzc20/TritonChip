@@ -120,7 +120,13 @@ module tnca_vector_fpu #(
 
     // Keyed on the reduction alone: an SFU pass must not hijack the FMA
     // operands, and `is_multicycle` now covers both families.
-    wire red_active = red_busy | (start & is_red_mc);
+    // Not `start & is_red_mc`: `start` is the core's whole issue decision,
+    // and in front of the operand select it put that logic in series with
+    // the FMA's first stage (8.2 ns post-synthesis). Whenever an FP reduction
+    // sits in X nothing else can be issuing to the FMA array, so selecting the
+    // tree operands on is_red_mc alone changes no result; the capture below
+    // still waits for `start`.
+    wire red_active = red_busy | is_red_mc;
 
     // During a fold the instruction inputs belong to a later instruction, so
     // the rounding mode has to come from the latched copy.

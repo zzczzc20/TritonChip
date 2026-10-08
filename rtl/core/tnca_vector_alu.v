@@ -216,58 +216,65 @@ module tnca_vector_alu #(
     // --------------------------------------------------------------------------
     // Reduction (ISA sec 8.7)
     //
-    // The tree is a balanced binary reduction over lane index, which is what
-    // makes vf.reduce.add bit-reproducible. The integer reductions here are
-    // associative so the shape does not matter for them, but they share it so
-    // the FP unit's tree and this one stay structurally identical.
+    // The FP unit's tree is a balanced binary reduction over lane index,
+    // which is what makes vf.reduce.add bit-reproducible. The integer
+    // reductions here are associative, so their trees keep that shape for
+    // familiarity only; the shape is not what makes them correct.
     // --------------------------------------------------------------------------
-    reg [ELEN-1:0] red_in [0:VLEN-1];
-    reg [ELEN-1:0] tree   [0:2*VLEN-1];
-    reg [ELEN-1:0] ident;
-    integer lvl, node, span;
+    // Three trees, chosen once at the end -- not one tree that picks among
+    // eight operations at every level. The single tree put an 8-way function
+    // select and a compare in each of its four levels, behind the predicate
+    // read and in front of scalar writeback: the device's worst path after
+    // R38's timing work (37 levels, 9.3 ns post-synthesis). Integer add, the
+    // bitwise operations and min/max are associative and commutative, and
+    // equal min/max keys are equal values, so the tree's shape and its ties
+    // change no result.
+    //
+    // min/max become one unsigned max over a key: the sign bit flipped for
+    // the signed forms and the whole word inverted for the min forms. That is
+    // an order-preserving bijection, so the max key maps back to the answer,
+    // and every identity (min signed, max signed, 0, all ones) maps to key 0.
+    wire red_add  = (func == `TNCA_RD_ADD);
+    wire red_mm   = (func == `TNCA_RD_MAX_S) || (func == `TNCA_RD_MIN_S) ||
+                    (func == `TNCA_RD_MAX_U) || (func == `TNCA_RD_MIN_U);
+    wire mm_sgn   = (func == `TNCA_RD_MAX_S) || (func == `TNCA_RD_MIN_S);
+    wire mm_min   = (func == `TNCA_RD_MIN_S) || (func == `TNCA_RD_MIN_U);
+    wire [ELEN-1:0] mm_x = {mm_sgn ^ mm_min, {(ELEN-1){mm_min}}};
+    wire [1:0] bit_op = (func == `TNCA_RD_AND) ? 2'd0 :
+                        (func == `TNCA_RD_OR)  ? 2'd1 : 2'd2;   // else xor
+    wire [ELEN-1:0] bit_ident = (func == `TNCA_RD_AND) ? {ELEN{1'b1}} : {ELEN{1'b0}};
+
+    reg [ELEN-1:0] t_add [0:2*VLEN-1];
+    reg [ELEN-1:0] t_bit [0:2*VLEN-1];
+    reg [ELEN-1:0] t_mm  [0:2*VLEN-1];
+    integer lvl, span;
 
     always @(*) begin
-        case (func)
-        `TNCA_RD_ADD, `TNCA_RD_OR, `TNCA_RD_XOR: ident = {ELEN{1'b0}};
-        `TNCA_RD_AND:                            ident = {ELEN{1'b1}};
-        `TNCA_RD_MAX_S:                          ident = {1'b1, {(ELEN-1){1'b0}}};
-        `TNCA_RD_MIN_S:                          ident = {1'b0, {(ELEN-1){1'b1}}};
-        `TNCA_RD_MAX_U:                          ident = {ELEN{1'b0}};
-        `TNCA_RD_MIN_U:                          ident = {ELEN{1'b1}};
-        default:                                 ident = {ELEN{1'b0}};
-        endcase
-
-        for (i = 0; i < VLEN; i = i + 1)
-            red_in[i] = mask[i] ? a[i] : ident;
-
-        // Level 0 of the tree is the (masked) input.
-        for (i = 0; i < VLEN; i = i + 1)
-            tree[i] = red_in[i];
-
-        // Pairwise combine: span halves each level.
+        for (i = 0; i < VLEN; i = i + 1) begin
+            t_add[i] = mask[i] ? a[i] : {ELEN{1'b0}};
+            t_bit[i] = mask[i] ? a[i] : bit_ident;
+            t_mm[i]  = mask[i] ? (a[i] ^ mm_x) : {ELEN{1'b0}};
+        end
+        // Pairwise combine, the same balanced shape as before.
         span = VLEN;
-        node = 0;
         for (lvl = 0; lvl < LW; lvl = lvl + 1) begin
             for (i = 0; i < VLEN; i = i + 2) begin
                 if (i + 1 < span) begin
-                    case (func)
-                    `TNCA_RD_ADD:    tree[i>>1] = tree[i] + tree[i+1];
-                    `TNCA_RD_AND:    tree[i>>1] = tree[i] & tree[i+1];
-                    `TNCA_RD_OR:     tree[i>>1] = tree[i] | tree[i+1];
-                    `TNCA_RD_XOR:    tree[i>>1] = tree[i] ^ tree[i+1];
-                    `TNCA_RD_MAX_S:  tree[i>>1] = ($signed(tree[i]) > $signed(tree[i+1])) ? tree[i] : tree[i+1];
-                    `TNCA_RD_MIN_S:  tree[i>>1] = ($signed(tree[i]) < $signed(tree[i+1])) ? tree[i] : tree[i+1];
-                    `TNCA_RD_MAX_U:  tree[i>>1] = (tree[i] > tree[i+1]) ? tree[i] : tree[i+1];
-                    `TNCA_RD_MIN_U:  tree[i>>1] = (tree[i] < tree[i+1]) ? tree[i] : tree[i+1];
-                    default:         tree[i>>1] = tree[i];
+                    t_add[i>>1] = t_add[i] + t_add[i+1];
+                    case (bit_op)
+                    2'd0:    t_bit[i>>1] = t_bit[i] & t_bit[i+1];
+                    2'd1:    t_bit[i>>1] = t_bit[i] | t_bit[i+1];
+                    default: t_bit[i>>1] = t_bit[i] ^ t_bit[i+1];
                     endcase
+                    t_mm[i>>1] = (t_mm[i] > t_mm[i+1]) ? t_mm[i] : t_mm[i+1];
                 end
             end
             span = span >> 1;
         end
     end
 
-    wire [ELEN-1:0] red_result = tree[0];
+    wire [ELEN-1:0] red_result = red_add ? t_add[0] :
+                                 red_mm  ? (t_mm[0] ^ mm_x) : t_bit[0];
 
     // --------------------------------------------------------------------------
     // Predicate family (ISA sec 8.5)

@@ -1,0 +1,53 @@
+{
+  "schema": "r38-design-change/1",
+  "id": "timing-003",
+  "parent_commit": "0b4a314",
+  "claims_three_layer": false,
+  "hypothesis": "With the matrix operands registered, the device's worst paths are two pieces of logic written for clarity rather than depth: the VALU's integer reduction, one tree that selects among eight operations at each of its four levels, and the vector FPU's operand select, which waited for the core's whole issue decision. Both can be rewritten without moving a cycle.",
+  "evidence_for_hypothesis": "tnca_fpga_top post-synthesis at 13.333 ns after timing-002: x_pm_idx -> w_sdata 9.298 ns / 37 levels (each tree level: 2 CARRY8 + 4-5 LUTs of function select); x_major -> u_vfpu/g_fma.u_fma p0 8.215 ns / 32 levels (issue decode -> red_active -> operand mux -> multiplier)",
+  "touched_layers": [
+    "microarch"
+  ],
+  "semantic_change": false,
+  "feature": "clock",
+  "layers": {
+    "microarch": {
+      "files": [
+        "rtl/core/tnca_vector_alu.v",
+        "rtl/core/tnca_vector_fpu.v",
+        "tb/core/progs/gen_t36_reduce.py",
+        "tb/core/progs/t36_reduce.s"
+      ],
+      "change": "integer reduction as three trees chosen once (add; and/or/xor; min/max as one unsigned max over an order-preserving key: sign flipped for signed, inverted for min, every identity mapping to key 0); the FPU's reduction operand override keyed on is_red_mc, not start & is_red_mc (nothing else issues to the FMA array while an FP reduction is in X); t36_reduce: all eight integer reductions x 8 vectors x 8 mask shapes (including empty) and the broadcast form, 544 checks against a Python model"
+    }
+  },
+  "compatibility": {
+    "cycles": "unchanged: R2 cycle check over the 149 R37 O2 cases, and every core program",
+    "numerics": "t36_reduce passes on the old VALU and on the new one (544/544 each), so the rewrite computes the same function on those inputs",
+    "artifacts": "unchanged"
+  },
+  "resource": {
+    "kind": "Vivado 2023.2 post-synthesis, out of context, xcu280-fsvh2892-2L-e, 13.333 ns target",
+    "module": "tnca_fpga_top",
+    "parent": {
+      "worst_ns": 9.298,
+      "worst_levels": 37
+    },
+    "change": {
+      "worst_ns": 7.759,
+      "worst_levels": 32,
+      "worst_path": "w_class -> w_sdata (writeback select)",
+      "wns_at_75MHz_ns": 5.556
+    }
+  },
+  "results": {
+    "links": "75 MHz (DEV_DIV = 2) links started 2026-10-08 23:59 HKT (timing-002 only) and 2026-10-09 00:45 HKT (with this change)",
+    "correctness": "lint, unit, core 31/31, core-vrf 31/31, top; t36_reduce 544/544"
+  },
+  "rollback": "revert the two files; both are local rewrites",
+  "evidence": [
+    "tb/core/progs/gen_t36_reduce.py",
+    "doc/r38_board_bringup.md"
+  ],
+  "status": "implemented"
+}

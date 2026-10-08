@@ -1004,6 +1004,15 @@ r2-package: r2-stage-data
 	@$(PYTHON) -m pip wheel --no-deps -q -w $(BUILD)/dist .
 	@$(PYTHON) -c "import glob, os; [print('  %d bytes  %s' % (os.path.getsize(w), w)) for w in sorted(glob.glob('$(BUILD)/dist/*.whl'))]"
 
+# PKG-01 smoke: the wheel, installed non-editable into a fresh environment and
+# imported with -I from an empty directory, reads only data it shipped -- every
+# file it opens exists inside the environment (tools/r2/wheel_smoke.py). Fast,
+# and needs no Triton: it is the check for a module that finds its data by
+# counting directories up from itself.
+.PHONY: r2-wheel-smoke
+r2-wheel-smoke: r2-package
+	@$(PYTHON) tools/r2/wheel_smoke.py
+
 r3-mutation-tests:
 	@$(PYTHON) tools/r3/mutation_tests.py \
 	   --json $(BUILD)/r3_mutation_tests.json

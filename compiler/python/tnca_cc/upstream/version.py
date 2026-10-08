@@ -7,11 +7,14 @@ claim is "we reuse upstream" cannot answer a missing upstream by
 silently not reusing it.
 """
 import json
-import os
 
-HERE = os.path.dirname(os.path.abspath(__file__))
-ROOT = os.path.abspath(os.path.join(HERE, '..', '..', '..', '..'))
-LOCK = os.path.join(ROOT, 'spec', 'r1_toolchain.lock.json')
+# Through _datapath, not four directories up: installed from the wheel, four
+# up from site-packages/tnca_cc/upstream is <prefix>/lib, and the lock was
+# looked for at lib/spec/r1_toolchain.lock.json. _datapath reads the copy the
+# wheel ships (tnca/data/spec/), then the checkout.
+from .._datapath import find
+
+LOCK = find('spec', 'r1_toolchain.lock.json')
 
 
 class UpstreamError(Exception):

@@ -305,6 +305,7 @@ jobs:
         run: |
           set -euo pipefail
           make r2-package PYTHON=$HOME/tritonenv/bin/python
+          $HOME/tritonenv/bin/python tools/r2/wheel_smoke.py
           python3 -m venv ~/runtime-only
           ~/runtime-only/bin/pip install -q sim/build/dist/*.whl
           ~/runtime-only/bin/python -c "import triton" 2>&1 | tail -1 || true

@@ -485,6 +485,7 @@ module tnca_core #(
     // each silently disconnected.
     wire                 stall_front;
     wire                 stall_other;     // everything but the VRF
+    wire                 r_vsrc_haz;      // a vector source's producer is in flight
     // Zero on the reference, which has no ports to contend for.
     reg [31:0] vrf_n_req, vrf_n_accept, vrf_n_conflict, vrf_n_stall,
                vrf_n_serial, vrf_n_parallel, vrf_n_mtx_req,
@@ -604,10 +605,16 @@ module tnca_core #(
         // read, and that is exactly one cycle too early for the X_PROD
         // case of the hazard interlock; see AVAIL_V below.
         //----------------------------------------------------------------
-        // Only once the instruction is otherwise ready to go. Fetching
+        // Only once no producer of a vector source is in flight. Fetching
         // earlier reads a register a producer has not written yet, and
-        // nothing afterwards can tell that the value is stale.
-        wire of_enable = r_valid && !stall_other;
+        // nothing afterwards can tell that the value is stale. The other
+        // reasons to hold the instruction in R (a busy unit, a scalar
+        // operand, the writeback reservation) do not make a fetched value
+        // stale -- only an older instruction can write the register, and
+        // every older writer is in the scoreboard -- so the fetch no longer
+        // waits for them (timing-010): it overlaps them, and the whole
+        // stall decision is no longer in front of the bank arbiters.
+        wire of_enable = r_valid && !r_vsrc_haz;
         wire [2:0] of_need =
             {r_vc_en, r_vb_en, r_va_en} & {3{of_enable}};
         reg  [2:0] of_got;
@@ -929,6 +936,8 @@ module tnca_core #(
 
     wire hz_acc = (r_valid && r_acc_dst && !acc_free_d)
                 | (r_acc_src && !acc_free_s);
+
+    assign r_vsrc_haz = hz_va | hz_vb | hz_vc;
 
     wire hazard = r_valid && (hz_sa|hz_sb|hz_sc|hz_va|hz_vb|hz_vc|hz_pa|hz_pb|hz_pm|hz_d)
                 | hz_acc | hz_sb2 | hz_sbx;

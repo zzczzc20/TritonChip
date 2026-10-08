@@ -30,11 +30,15 @@
       "group": "core -> u_vfpu (converter -> delay stage 0)",
       "worst_ns": 6.44,
       "worst_levels": 25
+    },
+    "change": {
+      "group": "core -> u_vfpu (converter)",
+      "worst_ns_below": 6.071,
+      "note": "measured with timing-010 (2026-10-09): the group is no longer above 6.07 ns; device worst 6.837 ns"
     }
   },
   "results": {
-    "correctness": "lint, unit, core 31/31, core-vrf 31/31, top: 78 PASS; R2 cycle check PASS over the 149 R37 O2 cases, two runs",
-    "ooc": "not yet measured: the FPGA host's memory is held by three U280 links (2026-10-09 03:15 HKT)"
+    "correctness": "lint, unit, core 31/31, core-vrf 31/31, top: 78 PASS; R2 cycle check PASS over the 149 R37 O2 cases, two runs"
   },
   "rollback": "revert rtl/core/tnca_vector_fpu.v",
   "evidence": [

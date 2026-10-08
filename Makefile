@@ -699,6 +699,20 @@ triton-e2e: $(BUILD)/tb_core.vvp
 	   echo "  triton-e2e             SKIP   no Triton at $(TRITON_PYTHON)"; \
 	 fi
 
+# DCO's compiler pass (tnca_cc/dco.py): nAcc, bypass and the tile granule for
+# three kernels whose read counts are known, registration ahead of every load,
+# and the refusal of a loop it cannot count. Compile-only.
+.PHONY: dco-compiler
+dco-compiler:
+	@if [ -x "$(TRITON_PYTHON)" ]; then \
+	   $(TRITON_PYTHON) compiler/test/run_suite.py test_dco dco DCO-COMPILER; \
+	 elif [ "$(R1_STRICT)" = "1" ]; then \
+	   echo "  dco                    FAIL   no Triton at $(TRITON_PYTHON)"; \
+	   exit 1; \
+	 else \
+	   echo "  dco                    SKIP   no Triton at $(TRITON_PYTHON)"; \
+	 fi
+
 # The whole flow: Triton source, through the compiler, onto the four-tile
 # machine as a grid, with the answers read back out of the machine and checked
 # in Python. `triton-e2e` above stops at one core and lets the program check

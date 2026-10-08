@@ -7,11 +7,14 @@
 # demand instead.
 #
 # What belongs here is everything that is fast AND can fail: elaboration, the
-# unit benches, the single-core programs under three memory models, the
-# compiler with its IR tests, the R1 resource and profile checks, the R2
-# schema contracts, and the gate's own self-test. A green tick here means
-# those passed. It does not mean R1 is accepted, and nothing in this file
-# claims otherwise.
+# unit benches, the single-core programs under three memory models and on the
+# board's register file, the four-tile machine with its NUCA slices, mesh and
+# DCO policies, the generated FMA at both latencies, the compiler with its IR tests,
+# the R1 resource and profile checks, the R2 schema contracts, the R3.7
+# TileBench gate with R38's cycle and artifact identity, the PyTorch/Inductor
+# path and ArchBench's compile coverage, and the gate's own self-test. A green
+# tick here means those passed. It does not mean R1 is accepted, and nothing
+# in this file claims otherwise.
 
 name: ci
 
@@ -34,9 +37,9 @@ env:
 
 jobs:
   check:
-    name: "lint, unit, core, compiler"
+    name: "lint, unit, core, system, compiler"
     runs-on: ubuntu-24.04
-    timeout-minutes: 90
+    timeout-minutes: 120
     steps:
       - uses: actions/checkout@v4
 
@@ -71,6 +74,12 @@ jobs:
       - name: Unit benches
         run: make unit
 
+      # The binary32 FMA is generated (xls/tnca_fma.x); the checked-in
+      # instances at both latencies against the exact oracle, half a million
+      # vectors each.
+      - name: The generated FMA, deep
+        run: make fma-deep
+
       - name: Single-core programs, three memory models
         run: |
           make core
@@ -79,6 +88,31 @@ jobs:
 
       - name: The four-tile machine
         run: make top
+
+      # The last level on its own: the NUCA slice under three memory models,
+      # the mesh, and the same randomised slice check under DCO's
+      # replacement, bypass and dead-block policies (doc/dco.md) -- where
+      # every read must still return the shadow memory's value.
+      - name: NUCA slice, mesh and DCO policies
+        run: |
+          make nuca
+          make mesh
+          make nuca-dco
+
+      # What the board runs: every core program on the banked, synchronous
+      # register file (core-vrf-sync-v1, the U280 image), and the transposed
+      # tensor transfer of core-xpose-v1.
+      - name: The board's elaboration and the transposed transfer
+        run: |
+          make core-vrf
+          make r38-xpose-rtl
+
+      # R38's counter list is generated in three places and must agree; the
+      # evidence registry must reject each of its injected mutations.
+      - name: R38 counters and evidence registry
+        run: |
+          python3 tools/r38/gen_counters.py --check
+          python3 tools/r38/evidence_tests.py
 
       - name: Build tnca-opt against the distribution MLIR
         run: make tnca-opt
@@ -168,7 +202,7 @@ jobs:
           set -euo pipefail
           V=$(python3 -c "import json;print(json.load(open('spec/r1_toolchain.lock.json'))['triton']['version'])")
           python3 -m venv ~/tritonenv
-          ~/tritonenv/bin/pip install -q "triton==$V"
+          ~/tritonenv/bin/pip install -q "triton==$V" numpy
           ~/tritonenv/bin/python -c "import triton;print('triton', triton.__version__)"
 
       - name: Build what the end-to-end tests run on
@@ -183,6 +217,11 @@ jobs:
 
       - name: The IR support boundary
         run: TRITON_PYTHON=$HOME/tritonenv/bin/python python3 tools/r1/ir_tests.py
+
+      # DCO's compiler pass: nAcc, bypass and tile granule for three kernels
+      # whose read counts are known, and the refusal of one it cannot count.
+      - name: DCO compiler pass
+        run: make dco-compiler TRITON_PYTHON=$HOME/tritonenv/bin/python R1_STRICT=1
 
       # R2's compile driver, through its public entry point: three real
       # Triton kernels compiled and executed, and one artifact run with three
@@ -302,6 +341,17 @@ jobs:
         run: make r37-aot-tests TRITON_PYTHON=$HOME/tritonenv/bin/python
       - name: Original kernels through AOT and Session
         run: make r37-run TRITON_PYTHON=$HOME/tritonenv/bin/python TILEBENCH_SOURCE=sim/build/Tilebench R37_OPT_LEVELS=${{ matrix.opt_level }}
+      # R38 rule R2: every case's device cycles equal the frozen baseline
+      # (spec/r38/baseline_cycles.json), run twice to show they are
+      # deterministic. A change that moves cycles has to re-freeze it, in the
+      # same commit, and say why.
+      - name: R38 cycle baseline
+        if: matrix.opt_level == 2
+        run: make r38-baseline-check TRITON_PYTHON=$HOME/tritonenv/bin/python TILEBENCH_SOURCE=sim/build/Tilebench
+      # The profiler's attribution against the counters and the cost model.
+      - name: R38 profiler
+        if: matrix.opt_level == 1
+        run: make r38-profiler TRITON_PYTHON=$HOME/tritonenv/bin/python TILEBENCH_SOURCE=sim/build/Tilebench
       - name: Preserve numerical validation report
         if: always()
         uses: actions/upload-artifact@v4
@@ -310,3 +360,69 @@ jobs:
           path: |
             sim/build/r37_aot_run.json
             sim/build/r37_aot_run_artifacts/
+
+  # The PyTorch path: torch.compile -> Inductor -> Triton -> the TNCA plugin
+  # -> the RTL simulator, in the locked torch (spec/r38/torch.lock.json), in
+  # its own environment so no other job gains a dependency.
+  torch:
+    name: "PyTorch: ${{ matrix.suite }}"
+    runs-on: ubuntu-24.04
+    timeout-minutes: 150
+    strategy:
+      fail-fast: false
+      matrix:
+        suite: [plugin, inductor]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check out the validated TileBench sources
+        uses: actions/checkout@v4
+        with:
+          repository: Deep-Learning-Profiling-Tools/Tilebench
+          ref: 6e2cf155dfe01f4660540d187c81b09eb55f394f
+          path: sim/build/Tilebench
+          persist-credentials: false
+      - name: Cache the wheel download
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: pip-torch-${{ hashFiles('spec/r38/torch.lock.json', 'spec/r1_toolchain.lock.json') }}
+      # torch and triton at their locked versions; the plugin is the package
+      # itself, installed so that Triton finds its `triton.backends` entry
+      # point.
+      - name: Install the simulator, locked torch and the TNCA plugin
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends iverilog python3-venv
+          TV=$(python3 -c "import json;print(json.load(open('spec/r1_toolchain.lock.json'))['triton']['version'])")
+          PV=$(python3 -c "import json;print(json.load(open('spec/r38/torch.lock.json'))['version'])")
+          python3 -m venv ~/torchenv
+          ~/torchenv/bin/pip install -q "torch==$PV" "triton==$TV" numpy
+          make python/tnca/data/.staged
+          ~/torchenv/bin/pip install -q -e .
+          ~/torchenv/bin/python -c "import torch, triton, tnca; print('torch', torch.__version__, 'triton', triton.__version__)"
+      # The plugin: its artifacts byte-identical to the AOT driver's at O0-O2,
+      # TileBench's kernels launched natively with `kernel[grid](...)`, and
+      # the Inductor graphs (with fallback detection).
+      - name: Triton plugin and Inductor graphs
+        if: matrix.suite == 'plugin'
+        run: |
+          make r38-torch TORCH_PYTHON=$HOME/torchenv/bin/python \
+            TRITON_PYTHON=$HOME/torchenv/bin/python TILEBENCH_SOURCE=sim/build/Tilebench
+      # Tensor descriptors of rank 1-5 through Triton's NVIDIA-style API, on
+      # the RTL, element for element against PyTorch; then every ArchBench
+      # tiny and small point compiled for TNCA (nothing simulated), and the
+      # benchmark's own scoring self-test.
+      - name: Tensor descriptors, ArchBench coverage and self-test
+        if: matrix.suite == 'inductor'
+        run: |
+          make r38-tdesc TORCH_PYTHON=$HOME/torchenv/bin/python
+          make archbench-selftest TORCH_PYTHON=$HOME/torchenv/bin/python
+          make archbench-coverage TORCH_PYTHON=$HOME/torchenv/bin/python ARCHBENCH_JOBS=4
+      - name: Preserve the coverage record
+        if: always() && matrix.suite == 'inductor'
+        uses: actions/upload-artifact@v4
+        with:
+          name: archbench-coverage
+          path: sim/build/archbench/coverage.jsonl
+          if-no-files-found: ignore

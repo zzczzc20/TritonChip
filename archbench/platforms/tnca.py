@@ -30,8 +30,11 @@ EVIDENCE = {'sim-file': 'measured-rtl', 'sim-socket': 'measured-rtl',
 # The clock a cycle count may be converted with, by backend. Only a board
 # has one; a simulated cycle has no duration (Stage 1 rule).
 BOARD_CLOCK_HZ = {'fpga-u50': 37.5e6,
-                  # Requested the same way (150 MHz kernel clock / 4); replace
-                  # with the U280's measured figure once the image is loaded.
+                  # 150 MHz kernel clock / 4, measured: with the image loaded
+                  # (2026-10-08) the shell's frequency counter
+                  # (clock_freq_counter.m.*/clock_counter_freqs in sysfs on the
+                  # management function) reads 150 MHz for the kernel clock,
+                  # to its 1 MHz resolution.
                   'fpga-u280': 37.5e6}
 
 # The device heap a launch's argument storages must fit: Session's default

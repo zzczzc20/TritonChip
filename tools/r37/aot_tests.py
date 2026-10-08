@@ -85,6 +85,26 @@ class AotIntegrationTests(unittest.TestCase):
         self.assertGreaterEqual(aligned, addr)
         self.assertLessEqual(aligned+reserved, addr+size)
 
+    def test_freed_blocks_merge_back_into_one(self):
+        # A launch allocates its storages and frees them all; the next launch
+        # must be able to place one storage as large as all of them together.
+        from tnca.runtime import _Allocator
+        allocator = _Allocator(0x20000, 0x30000)
+        blocks = [allocator.alloc(n) for n in (0x1000, 0x40, 0x2000, 0x100)]
+        for addr, size in (blocks[2], blocks[0], blocks[3], blocks[1]):
+            allocator.release(addr, size)
+        self.assertEqual(allocator.free_list, [])
+        self.assertEqual(allocator.next, 0x20000)
+        addr, size = allocator.alloc(0x10000)
+        self.assertEqual((addr, size), (0x20000, 0x10000))
+        allocator.release(addr, size)
+        # A hole below a live block merges with its neighbour and stays a hole.
+        low, mid, high = (allocator.alloc(0x1000) for _ in range(3))
+        allocator.release(*low)
+        allocator.release(*mid)
+        self.assertEqual(allocator.free_list, [(0x20000, 0x2000)])
+        self.assertEqual(allocator.alloc(0x2000), (0x20000, 0x2000))
+
     def test_descriptor_layout_and_bounds(self):
         desc = TensorDescriptor(None, [2, 16], [16, 1], [1, 16], 'fp16')
         raw = desc.pack(0x12300, 64)

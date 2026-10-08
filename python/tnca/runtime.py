@@ -155,10 +155,21 @@ class Module:
 class _Allocator:
     """A first-fit allocator over the device's address space.
 
-    Deliberately simple and deliberately NOT reusing a freed block
-    immediately: reuse-after-free is the bug this layer is supposed to make
-    impossible to hit by accident, and an allocator that hands the same
-    address straight back makes a stale handle look like a live one.
+    Freed blocks are reused, first fit by address, and a freed block is
+    merged with any free neighbour -- or, if it ends where the untouched top
+    of the heap begins, given back to it. A stale handle is caught at the
+    handle (Session marks a freed buffer dead and refuses it), not by keeping
+    its address out of circulation.
+
+    The merging is not tidiness. The Triton driver allocates every argument
+    storage of a launch and frees them after it, so a model is a long run of
+    allocate-all/free-all cycles in sizes that differ launch to launch.
+    Without merging, the free list fills with pieces sized by earlier
+    launches, the top of the heap creeps upward past all of them, and a
+    request fails with the space it needs free but in pieces: on the U280,
+    2026-10-08, LLaMA small's decode could not place its 128 KiB output-head
+    weight, with 96 KiB of the heap never touched and the free space below
+    it split along earlier launches' storages.
     """
 
     def __init__(self, base, limit):
@@ -178,11 +189,14 @@ class _Allocator:
             aligned = (addr + align - 1) // align * align
             prefix = aligned - addr
             if blocksize >= prefix + need:
-                self.free_list.pop(i)
+                # What is left of the block stays where it was, so the list
+                # stays in address order and release() can merge neighbours.
+                rest = []
                 if prefix:
-                    self.free_list.append((addr, prefix))
+                    rest.append((addr, prefix))
                 if blocksize > prefix + need:
-                    self.free_list.append((aligned + need, blocksize - prefix - need))
+                    rest.append((aligned + need, blocksize - prefix - need))
+                self.free_list[i:i + 1] = rest
                 return aligned, need
         addr = (self.next + align - 1) // align * align
         if addr + need > self.limit:
@@ -190,11 +204,23 @@ class _Allocator:
                 f"out of device memory: {size} bytes needs {need} and "
                 f"{self.limit - addr} remain",
                 remedy='free a buffer, or use a profile with more memory')
+        if addr > self.next:
+            # The bytes skipped to align are free too. Left out, they would
+            # sit between two blocks and stop them ever merging.
+            self.free_list.append((self.next, addr - self.next))
         self.next = addr + need
         return addr, need
 
     def release(self, addr, size):
-        self.free_list.append((addr, size))
+        merged = []
+        for a, n in sorted(self.free_list + [(addr, size)]):
+            if merged and merged[-1][0] + merged[-1][1] == a:
+                merged[-1] = (merged[-1][0], merged[-1][1] + n)
+            else:
+                merged.append((a, n))
+        if merged and merged[-1][0] + merged[-1][1] == self.next:
+            self.next = merged.pop()[0]
+        self.free_list = merged
 
 
 def _open_device(name, bench, **kwargs):

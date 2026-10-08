@@ -2953,6 +2953,16 @@ class TTIRImporter:
             if elem == 'i1':
                 v = self.b.vcmp('ne', v, self.b.vmovi(0))
             return lambda r: v
+        # A one-row block (1, n) that an operation produced as a register
+        # rather than as a tile -- a row loaded through a descriptor, or a
+        # packed value: its only row is that register. Inductor's descriptor
+        # reductions (`sdpa_decode`) reach here with one.
+        held = self._v.get(value.id())
+        if (len(shape) == 2 and shape[0] == 1 and held is not None
+                and getattr(held, 'kind', None) == VECTOR):
+            if elem == 'i1':
+                held = self.b.vcmp('ne', held, self.b.vmovi(0))
+            return lambda r: held
         raise Unsupported(
             f"a 2-D operand of type {value.get_type()} that is not a tile")
 

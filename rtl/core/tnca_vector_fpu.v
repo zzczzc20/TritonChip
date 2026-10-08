@@ -203,12 +203,26 @@ module tnca_vector_fpu #(
     // DSLX and both are checked against the same exact oracle by tb_cvt_xls.
     //
     // The result is combinational, so it joins the other non-FMA results on
-    // the FP_LAT delay line below.
+    // the FP_LAT delay line below -- one stage in (timing-009). The FMA's
+    // stages are now ~6 ns each and the converter in front of stage 0 was
+    // 6.4 ns, three-quarters of it routing; its inputs are registered beside
+    // stage 0 instead and its result enters at stage 1, which every FP_LAT
+    // this unit supports (2 or 3) has. Same result, same cycle.
     //--------------------------------------------------------------------------
+    reg [ELEN-1:0] cvt_x [0:VLEN-1];
+    reg [5:0]      cvt_mod;
+    reg            cvt_fmt;       // delay stage 0 holds a vf.cvt.fmt
+    always @(posedge clk) begin
+        for (i = 0; i < VLEN; i = i + 1)
+            cvt_x[i] <= a[i];
+        cvt_mod <= mod[5:0];
+        cvt_fmt <= rst_n && (major == `TNCA_MAJ_CVT) && (func == `TNCA_CVT_FMT);
+    end
     generate
         for (g = 0; g < VLEN; g = g + 1) begin : g_fcvt
             tnca_cvt_comb_xls u_cvt (
-                .src(mod[2:0]), .dst(mod[5:3]), .x(a[g]), .out(fcvt[g])
+                .src(cvt_mod[2:0]), .dst(cvt_mod[5:3]), .x(cvt_x[g]),
+                .out(fcvt[g])
             );
         end
     endgenerate
@@ -515,8 +529,9 @@ module tnca_vector_fpu #(
             end
         end
         `TNCA_MAJ_CVT: begin
+            // vf.cvt.fmt's result joins at stage 1 (cvt_fmt, below).
             for (i = 0; i < VLEN; i = i + 1)
-                nf_v[i*ELEN +: ELEN] = (func == `TNCA_CVT_FMT) ? fcvt[i]
+                nf_v[i*ELEN +: ELEN] = (func == `TNCA_CVT_FMT) ? {ELEN{1'b0}}
                                                                : cvt[i];
         end
         default: ;
@@ -548,6 +563,9 @@ module tnca_vector_fpu #(
                 dly_maj[d] <= dly_maj[d-1];
                 dly_fn[d]  <= dly_fn[d-1];
             end
+            if (cvt_fmt)
+                for (i = 0; i < VLEN; i = i + 1)
+                    dly_v[1][i*ELEN +: ELEN] <= fcvt[i];
         end
     end
 

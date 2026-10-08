@@ -1,0 +1,44 @@
+{
+  "schema": "r38-design-change/1",
+  "id": "timing-009",
+  "parent_commit": "b8561d3",
+  "claims_three_layer": false,
+  "hypothesis": "After timing-008 the worst path outside the generated FMA is vf.cvt.fmt's converter: combinational, in front of the FP_LAT delay line's first stage, 6.4 ns and three-quarters routing. Its result already waits FP_LAT cycles, so registering its inputs beside stage 0 and entering its result at stage 1 moves no cycle.",
+  "evidence_for_hypothesis": "tnca_fpga_top post-synthesis, 6.667 ns target, after timing-008: g_vrf_banked.x_va_q -> u_vfpu/dly_v[0] 6.440 ns / 25 levels (route 71 %) through g_fcvt[6].u_cvt",
+  "touched_layers": [
+    "microarch"
+  ],
+  "semantic_change": false,
+  "feature": "clock",
+  "layers": {
+    "microarch": {
+      "files": [
+        "rtl/core/tnca_vector_fpu.v"
+      ],
+      "change": "cvt_x/cvt_mod registered every cycle beside delay stage 0, cvt_fmt marks a vf.cvt.fmt there; tnca_cvt_comb_xls reads the registered copy and its result overwrites dly_v[1] when cvt_fmt; nf_v carries 0 for vf.cvt.fmt at stage 0. Needs FP_LAT >= 2, which every FMA instance this unit can select has"
+    }
+  },
+  "compatibility": {
+    "cycles": "unchanged: R2 cycle check over the 149 R37 O2 cases, and every core program (t21_cvt 1942 cycles before and after)",
+    "numerics": "the same converter on the same operands one register later; t21_cvt on both register files, tb_cvt_xls",
+    "artifacts": "unchanged"
+  },
+  "resource": {
+    "kind": "Vivado 2023.2 post-synthesis, out of context, xcu280-fsvh2892-2L-e, 6.667 ns target",
+    "module": "tnca_fpga_top",
+    "parent": {
+      "group": "core -> u_vfpu (converter -> delay stage 0)",
+      "worst_ns": 6.44,
+      "worst_levels": 25
+    }
+  },
+  "results": {
+    "correctness": "lint, unit, core 31/31, core-vrf 31/31, top: 78 PASS; R2 cycle check PASS over the 149 R37 O2 cases, two runs",
+    "ooc": "not yet measured: the FPGA host's memory is held by three U280 links (2026-10-09 03:15 HKT)"
+  },
+  "rollback": "revert rtl/core/tnca_vector_fpu.v",
+  "evidence": [
+    "doc/r38_board_bringup.md"
+  ],
+  "status": "implemented"
+}

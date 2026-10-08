@@ -314,7 +314,9 @@ jobs:
   tilebench:
     name: "original TileBench, AOT O${{ matrix.opt_level }}"
     runs-on: ubuntu-24.04
-    timeout-minutes: 90
+    # O2 also runs R38's cycle baseline (two more O2 passes) and O1 the
+    # profiler, so the longest of the three is about three times the gate.
+    timeout-minutes: 180
     strategy:
       fail-fast: false
       matrix:

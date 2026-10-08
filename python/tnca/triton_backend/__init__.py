@@ -1,4 +1,5 @@
-"""TNCA as a Triton backend (entry point `triton.backends`: tnca).
+"""TNCA as a Triton backend (entry point `triton.backends`: cpu -- the backend
+Inductor's `cpu_backend = "triton"` uses).
 
 compiler.py compiles TTIR with the lowering `tnca.aot.compile_aot` uses;
 driver.py launches through `tnca.runtime.Session`. See doc/r38_pytorch_p1plus.md.

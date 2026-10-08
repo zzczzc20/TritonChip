@@ -403,6 +403,9 @@ jobs:
           make python/tnca/data/.staged
           ~/torchenv/bin/pip install -q -e .
           ~/torchenv/bin/python -c "import torch, triton, tnca; print('torch', torch.__version__, 'triton', triton.__version__)"
+          # A launch never builds the simulator it runs on (that would put an
+          # iverilog compile inside a kernel call), so build it once here.
+          ~/torchenv/bin/tnca-sim prepare
       # The plugin: its artifacts byte-identical to the AOT driver's at O0-O2,
       # TileBench's kernels launched natively with `kernel[grid](...)`, and
       # the Inductor graphs (with fallback detection).

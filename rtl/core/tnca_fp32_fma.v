@@ -67,7 +67,10 @@ module tnca_fp32_fma #(
         end else begin : g_bad
             // No generated instance has this latency: refuse to elaborate
             // rather than build a unit whose results arrive at the wrong time.
-            tnca_fp32_fma_LAT_has_no_generated_instance u_missing ();
+            // The refusal is a port no instance has -- an error in every
+            // elaborator -- and not an undefined module, which the hardware
+            // export would have to list as a blackbox (tools/r36/export.py).
+            tnca_fma_xls u_missing (.LAT_must_be_2_or_3(1'b1));
         end
     endgenerate
 

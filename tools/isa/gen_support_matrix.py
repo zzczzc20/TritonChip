@@ -65,8 +65,8 @@ CAPABILITY_BY_MAJOR = {
 CAPABILITY_BY_MNEMONIC = {
     'v.ld.gather': 'gather_scatter',
     'v.st.scatter': 'gather_scatter',
-    # Encodable, and no engine can source it. See doc/support_matrix.md's
-    # "Not delivered" section and tb/core/progs/t26_stfault.s.
+    # The engine stores since the rank-5 descriptor work (tb/core/progs/
+    # t34_tdesc_store.s); a profile without the capability still refuses it.
     't.st.async': 'tensor_store',
 }
 

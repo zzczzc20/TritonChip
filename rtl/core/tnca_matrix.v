@@ -59,7 +59,11 @@ module tnca_matrix #(
     parameter ROWS    = 16,
     parameter ROW_W   = 4,
     parameter BAR_W   = 5,
-    parameter FMA_LAT = 2
+    parameter FMA_LAT = 2,
+    // Register the MAC operands before the FMA (tnca_fpu_multi IN_REG): one
+    // more cycle of latency per command, and the A operand's block-RAM read
+    // and element select no longer share a cycle with the multiply.
+    parameter OPND_REG = 1
 ) (
     input  wire                     clk,
     input  wire                     rst_n,
@@ -236,7 +240,7 @@ module tnca_matrix #(
                            : row_mul ? 32'd0
                            : acc_rd[g];
 
-            tnca_fpu_multi #(.LAT(FMA_LAT)) u_mac (
+            tnca_fpu_multi #(.LAT(FMA_LAT), .IN_REG(OPND_REG)) u_mac (
                 .clk(clk), .rst_n(rst_n),
                 .fmt(mac_fmt),
                 .a(fa), .b(fb), .c(fc),
@@ -251,12 +255,14 @@ module tnca_matrix #(
     //==========================================================================
     // Result tag pipeline, alongside the FMA's own registers
     //==========================================================================
-    reg              tg_v   [0:FMA_LAT-1];
-    reg [ACC_W-1:0]  tg_slot[0:FMA_LAT-1];
-    reg [ROW_W-1:0]  tg_row [0:FMA_LAT-1];
-    reg [VLEN-1:0]   tg_mask[0:FMA_LAT-1];
+    // A result lands PIPE cycles after its operands are presented.
+    localparam PIPE = FMA_LAT + OPND_REG;
+    reg              tg_v   [0:PIPE-1];
+    reg [ACC_W-1:0]  tg_slot[0:PIPE-1];
+    reg [ROW_W-1:0]  tg_row [0:PIPE-1];
+    reg [VLEN-1:0]   tg_mask[0:PIPE-1];
 
-    wire wb_v = tg_v[FMA_LAT-1];
+    wire wb_v = tg_v[PIPE-1];
 
     //==========================================================================
     // Accumulator file
@@ -270,9 +276,9 @@ module tnca_matrix #(
     reg [VLEN*ELEN-1:0] direct_data;
 
     wire acc_w_en          = wb_v | direct_w;
-    wire [ACC_W-1:0] acc_w_slot = direct_w ? direct_slot : tg_slot[FMA_LAT-1];
-    wire [ROW_W-1:0] acc_w_row  = direct_w ? direct_row  : tg_row[FMA_LAT-1];
-    wire [VLEN-1:0]  acc_w_lane = direct_w ? direct_mask : tg_mask[FMA_LAT-1];
+    wire [ACC_W-1:0] acc_w_slot = direct_w ? direct_slot : tg_slot[PIPE-1];
+    wire [ROW_W-1:0] acc_w_row  = direct_w ? direct_row  : tg_row[PIPE-1];
+    wire [VLEN-1:0]  acc_w_lane = direct_w ? direct_mask : tg_mask[PIPE-1];
     wire [VLEN*ELEN-1:0] acc_w_data = direct_w ? direct_data : mac_bus;
 
     // The read port serves the engine while it is running and a.vread when it
@@ -321,7 +327,7 @@ module tnca_matrix #(
             done_bar_en <= 1'b0;
             z_en        <= 1'b0;
             direct_w    <= 1'b0;
-            for (i = 0; i < FMA_LAT; i = i + 1) tg_v[i] <= 1'b0;
+            for (i = 0; i < PIPE; i = i + 1) tg_v[i] <= 1'b0;
         end else begin
             done        <= 1'b0;
             src_free    <= 1'b0;
@@ -330,7 +336,7 @@ module tnca_matrix #(
             direct_w    <= 1'b0;
 
             // advance the result tag pipeline
-            for (i = FMA_LAT-1; i > 0; i = i - 1) begin
+            for (i = PIPE-1; i > 0; i = i - 1) begin
                 tg_v[i]    <= tg_v[i-1];
                 tg_slot[i] <= tg_slot[i-1];
                 tg_row[i]  <= tg_row[i-1];
@@ -410,10 +416,10 @@ module tnca_matrix #(
                         // The last A element and the last B row have now been
                         // read. Nothing in this command will touch the vector
                         // file again, so the fragments are free from here --
-                        // FMA_LAT cycles before the result lands.
+                        // PIPE cycles before the result lands.
                         src_free     <= r_sf_en;
                         src_free_bar <= r_sf_bar;
-                        drain <= FMA_LAT[3:0] + 4'd1;
+                        drain <= PIPE[3:0] + 4'd1;
                         st    <= S_DRAIN;
                     end else begin
                         kk <= kk + 1'b1;
@@ -440,7 +446,7 @@ module tnca_matrix #(
                     tg_slot[0] <= r_slot;
                     tg_row[0]  <= r_row;
                     tg_mask[0] <= r_mask;
-                    drain      <= FMA_LAT[3:0] + 4'd1;
+                    drain      <= PIPE[3:0] + 4'd1;
                     st         <= S_DRAIN;
                 end
             end

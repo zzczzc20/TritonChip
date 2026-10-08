@@ -37,4 +37,10 @@ OOC_GENERICS="$*" vivado -mode batch -nojournal -nolog \
     -tclargs "$UNIT" "$PERIOD" "$PART" "$OUT" "$ROOT/rtl" $FILES > "$OUT/vivado.log" 2>&1
 awk '/WNS\(ns\)/{getline; getline; printf "%s: WNS %s ns at %s ns (%s failing of %s endpoints)\n", "'"$TAG"'", $1, "'"$PERIOD"'", $3, $4; exit}' "$OUT"/*_summary.rpt
 awk '/^Slack/{s=$4} /Source:/{src=$2} /Destination:/{dst=$2} /Data Path Delay/{d=$4} /Logic Levels/{print "  " s, d, $3 " levels", src, "->", dst}' \
-    "$OUT"/*_paths.rpt | head -10
+    "$OUT"/*_paths.rpt | head -10 || true
+# The paths near failing, grouped by (start module, end module): one line per
+# group with its count and worst delay -- the list of what is left to fix.
+if [ -f "$OUT/${UNIT}_paths.csv" ]; then
+    python3 "$ROOT/flow/synth/path_groups.py" "$OUT/${UNIT}_paths.csv" > "$OUT/${UNIT}_groups.txt"
+    head -30 "$OUT/${UNIT}_groups.txt"
+fi

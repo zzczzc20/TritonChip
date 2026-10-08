@@ -25,7 +25,13 @@
 `default_nettype none
 
 module tnca_fpu_multi #(
-    parameter LAT = 2               // the FMA's latency (tnca_fp32_fma)
+    parameter LAT    = 2,           // the FMA's latency (tnca_fp32_fma)
+    // A register between the widening and the FMA: the matrix unit's A
+    // operand arrives from the vector file's block RAM through an element
+    // select, and with the widening and the FMA's first stage behind it that
+    // was the device's worst path after R38's first timing pass (10.2 ns
+    // post-synthesis, U280). With it, the unit's latency is LAT + 1.
+    parameter IN_REG = 0
 ) (
     input  wire        clk,
     input  wire        rst_n,
@@ -51,10 +57,28 @@ module tnca_fpu_multi #(
     tnca_widen_xls u_wa (.fmt(fmt), .x(a), .out(a_f32));
     tnca_widen_xls u_wb (.fmt(fmt), .x(b), .out(b_f32));
 
+    wire [31:0] fa, fb, fc;
+    wire        f_sub, f_mul, f_ftz;
+    generate
+        if (IN_REG != 0) begin : g_in_reg
+            reg [31:0] a_q, b_q, c_q;
+            reg        sub_q, mul_q, ftz_q;
+            always @(posedge clk) begin
+                a_q <= a_f32; b_q <= b_f32; c_q <= c;
+                sub_q <= sub_c; mul_q <= mul_only; ftz_q <= ftz;
+            end
+            assign fa = a_q; assign fb = b_q; assign fc = c_q;
+            assign f_sub = sub_q; assign f_mul = mul_q; assign f_ftz = ftz_q;
+        end else begin : g_in_wire
+            assign fa = a_f32; assign fb = b_f32; assign fc = c;
+            assign f_sub = sub_c; assign f_mul = mul_only; assign f_ftz = ftz;
+        end
+    endgenerate
+
     tnca_fp32_fma #(.LAT(LAT)) u_fma (
         .clk(clk), .rst_n(rst_n),
-        .a(a_f32), .b(b_f32), .c(c),
-        .sub_c(sub_c), .mul_only(mul_only), .ftz(ftz),
+        .a(fa), .b(fb), .c(fc),
+        .sub_c(f_sub), .mul_only(f_mul), .ftz(f_ftz),
         .y(y)
     );
 endmodule

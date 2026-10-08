@@ -190,3 +190,12 @@ U280 链接的 routed 报告（`hw_bb_locked_timing_summary_routed.rpt`）里，
 
 `LAT=3` 只需改核心的 `FP_LAT`，FMA 本身只是换一个生成实例。代价是浮点结果晚一拍，需要重新冻结周期基线（`spec/r38/baseline_cycles.json`），并更新目标描述里的 `fp_result_cycles`。这属于下一步，应该作为一条 design change 记录在 `spec/r38/design_changes/`。
 
+### 6.6 第二轮：向 75 MHz（2026-10-08 夜）
+
+- **矩阵操作数寄存器（timing-002）。** 在 `tnca_fpu_multi` 的格式扩展与 FMA 之间加一级寄存器（`IN_REG`）；矩阵单元的 `OPND_REG` 默认打开，结果标签流水与排空相应延长一拍。整器件（75 MHz 目标）综合后估计从 10.19 ns 降到 **9.30 ns**，WNS +4.02 ns。原来 2 672 个端点的 VRF→MAC 一组已低于 8.9 ns。
+- **周期代价。** 每条 `m.mma` 多 1 拍。R37 O2 的 149 个用例中有 14 个变化，各 +1 到 +4 拍，全部数值正确。
+- **冻结基线修订。** 重新冻结时发现：r38-tdesc 改变了 17 个用例的周期，并改变了 profile 配置哈希（能力表新增 `tensor_store`），而当时只修订了 streamk 的 4 项。漏掉的原因是 R2 检查的输出被截到了最后几行。现在全部补齐，并在 `spec/r38/baseline_cycles.json` 中按来源分条记录。配置哈希的变化也解释了 `r38-identity` 的 0/447。
+- **重新测量周期时要先重新暂存 RTL。** 直接运行 `tools/r38/baseline.py --run` 不会重新暂存 `python/tnca/data/rtl`，设备仿真器会沿用旧 RTL。`make r38-baseline-check` 会先暂存，不受影响。
+- **剩下的最差一组**：VALU 的单周期带掩码整数归约（`x_pm_idx → w_sdata`，9.30 ns，37 级）。它在一个单元内部，扇出小，布线比例可能低于矩阵那条路径的 1.6。
+- **75 MHz 链接。** 第一次以 `DEV_DIV = 2` 的链接已于 2026-10-08 23:58（HKT）在 acf3019 上启动，源码为本节的状态。布线后的结果决定归约是否也要拆成两拍。
+

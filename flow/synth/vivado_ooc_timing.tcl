@@ -47,4 +47,22 @@ report_timing_summary -no_header -no_detailed_paths -file [file join $out ${top}
 # critical paths, not 50 bits of the same bus.
 report_timing -from [all_registers] -to [all_registers] -max_paths 60 -nworst 1 \
     -unique_pins -sort_by group -file [file join $out ${top}_paths.rpt]
+# Every register-to-register path within GROUP_SLACK of failing (default:
+# slack under a third of the period), worst path per endpoint, as one line
+# each -- what flow/synth/vivado_ooc.sh groups by module to show what is
+# left to fix, rather than 60 bits of the one worst bus.
+set limit [expr {[info exists ::env(GROUP_SLACK)] ? $::env(GROUP_SLACK) : $period / 3.0}]
+set fh [open [file join $out ${top}_paths.csv] w]
+puts $fh "slack,delay,levels,start,end"
+foreach p [get_timing_paths -from [all_registers] -to [all_registers] -max_paths 20000 \
+               -nworst 1 -slack_lesser_than $limit] {
+    puts $fh [join [list [get_property SLACK $p] [get_property DATAPATH_DELAY $p] \
+                         [get_property LOGIC_LEVELS $p] \
+                         [get_property PARENT_CELL [get_property STARTPOINT_PIN $p]] \
+                         [get_property PARENT_CELL [get_property ENDPOINT_PIN $p]]] ","]
+}
+close $fh
+# The synthesised netlist, so a path can be examined later without
+# synthesising again (open_checkpoint, report_timing -from/-to).
+write_checkpoint -force [file join $out ${top}_synth.dcp]
 puts "DONE $top"

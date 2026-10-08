@@ -74,8 +74,8 @@ module tnca_acc_rf #(
     // multiply-add's operand selection and alignment into one cycle: it was
     // the worst clk_dev path of the U280 link (60 logic levels, 23.9 ns), and
     // it never carried a value anyone used. The matrix engine reads row m and
-    // writes it FMA_LAT cycles later, while it is reading row m+FMA_LAT; the
-    // next read of row m is ROWS+1 cycles after the first. A row op and
+    // writes it PIPE cycles later (its MAC latency), while it is reading row
+    // m+PIPE; the next read of row m is ROWS+1 cycles after the first. A row op and
     // a.vread start only after the previous command's write has landed.
     // tnca_matrix checks that in simulation (`acc_collide`), so a change that
     // made the bypass necessary would fail loudly rather than read stale data.

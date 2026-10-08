@@ -6,7 +6,8 @@ native `kernel[grid](...)` launch, or PyTorch Inductor — and emits a sealed
 `.tnca` artifact that the public runtime (`tnca.runtime.Session`) loads and
 runs on the RTL simulator or the Alveo U50 board.
 
-Design reference: [`doc/compiler_overview.md`](../doc/compiler_overview.md).
+Design, status and next steps: [`doc/compiler_overview.md`](../doc/compiler_overview.md)
+(the original C0–C5 plan is [`doc/design/tnca_v1_compiler_draft.md`](../doc/design/tnca_v1_compiler_draft.md)).
 Instruction-level support (what the ISA defines, what each profile implements,
 what the compiler emits): [`doc/support_matrix.md`](../doc/support_matrix.md),
 generated from the ISA schema, the target files and the compiler.

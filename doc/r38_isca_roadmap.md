@@ -93,7 +93,7 @@ NVIDIA 外部参照 + PyTorch / FPGA LLM 系统验证
 5. **功能 fallback 不能写成原生硬件能力。** [r37_isa_gaps.md](r37_isa_gaps.md) 记录了格式、descriptor、dot 等落差。FP32 dot 的向量展开和部分 INT8 的浮点路径必须单独记录；小 K 正确不意味着任意累加范围都精确。
 6. **现有综合不是 PPA。** [synthesis.md](synthesis.md) 明确没有 PDK，gate/depth/flop 是结构代理；不能当作 mm²、GHz 或 watt。
 7. **R36 未等于 FPGA 上板完成。** [r36_status.md](r36_status.md) 仍记录 `IMPLEMENTED / NOT ACCEPTED` 与锁定平台 gate 问题，而且该阶段明确不负责具体板卡、P&R 和 bitstream。
-8. **架构概览中的 16 tile、1 GHz、8 MiB 等是设计建议。** [architecture_overview.md](architecture_overview.md) 不能作为当前已实现配置或实测频率来源。
+8. **架构概览中的 16 tile、1 GHz、8 MiB 等是设计建议。** [设计草案](design/tnca_v1_architecture_draft.md)（原 `architecture_overview.md`）不能作为当前已实现配置或实测频率来源。
 
 R38 的第一项产物应是“证据注册表”，将每项能力标为 `documented / implemented / functionally-validated / cycle-validated / synthesized / board-measured`，每级都链接对应制品。不允许一个笼统的 `supported=true` 跨越这些层次。
 

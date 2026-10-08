@@ -2,7 +2,7 @@
 
 版本：1.0，2026-09-20。状态：**PLANNED / NOT ACCEPTED**。
 前提：**进入本阶段时，R3 v2 与 R3.5 已验收。**
-关联：[R3 v2](phase3_tasks_and_acceptance.md)、[R3.5](phase3_5_tasks_and_acceptance.md)、[架构设计](architecture_overview.md)、[编译器设计](compiler_overview.md)、[R2 接口](r2_interfaces.md)。
+关联：[R3 v2](phase3_tasks_and_acceptance.md)、[R3.5](phase3_5_tasks_and_acceptance.md)、[架构设计](design/tnca_v1_architecture_draft.md)、[编译器设计](design/tnca_v1_compiler_draft.md)、[R2 接口](r2_interfaces.md)。
 
 **本阶段负责主线工程准备，不负责上板。** 板卡选型、厂商 IP、引脚/板级时钟约束、布局布线、bitstream、烧录和实板调试，由其他人在独立分支完成，不纳入 R3.6 验收。
 

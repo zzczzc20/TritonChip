@@ -3,7 +3,7 @@
 版本：2.0，2026-09-20。状态：**PLANNED / NOT ACCEPTED**。
 检查基线：`71317b35afb9d2602b0510da84188a0fbde15e29`。
 
-依据：[当前状态复查](r3_replan_review_2026-09-20.md)、[架构设计](architecture_overview.md)、[编译器设计](compiler_overview.md)。
+依据：[当前状态复查](r3_replan_review_2026-09-20.md)、[架构设计](design/tnca_v1_architecture_draft.md)、[编译器设计](design/tnca_v1_compiler_draft.md)。
 本文件替代原第三阶段的执行计划；[v1 合同原文](phase3_tasks_and_acceptance_v1.md)保留。R1/R2 原合同不变。
 
 **RTL 仿真很慢。新阶段只做一个单核 candidate、少量小程序和定向组件测试。缩小交付范围，不降低所保留功能的正确性、反压、所有权和证据标准。**

@@ -8,8 +8,9 @@ This document is the single source of truth for instruction encoding. RTL
 architectural model (`tools/model/tnca_model.py`) are all derived from it. If
 they disagree, this document wins and the others are bugs.
 
-Derived from `doc/architecture_overview.md` §11–§12. Section references below
-point at that document.
+Derived from the TNCA-v1 design draft, `doc/design/tnca_v1_architecture_draft.md`
+(until 2026-10-08 `doc/architecture_overview.md`) §11–§12. Section references
+below point at that document.
 
 ---
 

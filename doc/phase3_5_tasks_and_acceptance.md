@@ -2,7 +2,7 @@
 
 版本：1.0，2026-09-20。状态：**PLANNED / NOT ACCEPTED**。
 检查基线：`03c88fad3f9482a22b1ded1aaf183b84709b6abc`。
-前置：**假设进入本阶段时 [R3 v2](phase3_tasks_and_acceptance.md) 已验收**；接口约束：[R2 interfaces](r2_interfaces.md)；设计依据：[compiler overview](compiler_overview.md)。
+前置：**假设进入本阶段时 [R3 v2](phase3_tasks_and_acceptance.md) 已验收**；接口约束：[R2 interfaces](r2_interfaces.md)；设计依据：[compiler overview](design/tnca_v1_compiler_draft.md)。
 
 **目标：复用 Triton LinearLayout 和合适的 Triton/MLIR 优化基础设施，在不增加 SMEM、不修改 ISA 或硬件资源的前提下，让同一份程序产生更好的 TNCA 机器码，并在当前小规模 RTL 上测到可归因的周期下降。**
 

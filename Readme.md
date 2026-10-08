@@ -126,7 +126,8 @@ These specifications define acceptance criteria, not completed features.
 
 ## Documentation
 
-- [Architecture design](doc/architecture_overview.md) and [compiler design](doc/compiler_overview.md)
+- [Architecture overview](doc/architecture_overview.md) and [compiler overview](doc/compiler_overview.md): what is built, measured status, next steps
+- Original design drafts (TNCA-v1, Chinese): [architecture](doc/design/tnca_v1_architecture_draft.md), [compiler plan](doc/design/tnca_v1_compiler_draft.md)
 - [ISA v0.1](doc/isa/TNCA-ISA-v0.1.md) and [support matrix](doc/support_matrix.md)
 - [Production-readiness audit](doc/production_readiness_audit_2026-09-19.md)
 - [Synthesis results](doc/synthesis.md) — structural proxies, not signed-off PPA

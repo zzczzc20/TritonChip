@@ -1,0 +1,56 @@
+the .xclbin
+  file   ~/tnca_build/u280_75b/tnca_u280.xclbin
+  size   55487439 bytes
+  sha256 16813fa9075f9192f9e3b19f97d9a68185fc13dca395885e8efcaa8c98cc3cee
+  [ ok ] parses as an .xclbin
+  [ ok ] platform VBNV xilinx_u280_gen3x16_xdma_1_202211_1
+  [ ok ] interface UUID matches the shell contract
+  xclbin UUID dacad4d7-7930-06a9-ef40-eabdcf03c944
+
+the device
+  [ ok ] present at 0000:04:00.1
+  [ ok ] live shell interface UUID matches
+  [ ok ] idle: contexts 0, outstanding 0, no client
+  loaded now 083faace-4e12-8434-c841-947e12a47ba8
+
+other loaders
+  [ ok ] no other program/load running
+
+thermal
+  Thermals
+    Temperature    Celcius  
+    ------------------------
+    PCB Top Front  24       
+    PCB Top Rear   23       
+    FPGA           31       
+    FPGA HBM       26       
+  
+  
+  [ ok ] FPGA 31 C, under 85
+  [ ok ] HBM 26 C, under 80
+
+
+loader detached (setsid, own session, fds off the terminal)
+  log  ~/tnca_build/u280_75b/program.log
+  it will survive this shell dying, which is not a hypothetical here.
+waiting for it to finish (up to 180s)...
+
+--- ~/tnca_build/u280_75b/program.log ---
+  === PROGRAM START Fri Oct  9 05:42:13 AM HKT 2026 ===
+  BDF=0000:04:00.1
+  XCLBIN=~/tnca_build/u280_75b/tnca_u280.xclbin
+  SHA256=16813fa9075f9192f9e3b19f97d9a68185fc13dca395885e8efcaa8c98cc3cee
+  REPLACING=083faace-4e12-8434-c841-947e12a47ba8
+  THERMAL= ------------------------------------------------- [0000:04:00.1] : xilinx_u280_gen3x16_xdma_base_1 ------------------------------------------------- Thermals Temperature Celcius ------------------------ PCB Top Front 24 PCB Top Rear 23 FPGA 31 FPGA HBM 26 
+  ---
+  INFO: xbutil program succeeded on 0000:04:00.1
+  EXIT=0 Fri Oct  9 05:42:13 AM HKT 2026
+------------
+
+HBM, after the load (up to 60s for the sensor to appear)
+  [ ok ] HBM 26 C, under 80 -- the sensor is
+         reading, which is what the load was supposed to
+         make happen. It appeared after 2s.
+
+program.sh: OK -- device now reports xclbin dacad4d7-7930-06a9-ef40-eabdcf03c944
+         loading is done; running a kernel on it is a separate step.

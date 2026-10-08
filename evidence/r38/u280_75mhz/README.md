@@ -24,7 +24,7 @@ Run by `boardrun.sh`; `program.sh --go` passed every gate (FPGA 31 °C, HBM 26 �
 
 | File | Step | Result |
 |---|---|---|
-| `program_go.out` | load | `xbutil program` succeeded; xclbin `dacad4d7-…` |
+| `program_go.log` | load | `xbutil program` succeeded; xclbin `dacad4d7-…` |
 | `b1_conformance.json` | B1, `tools/r36/conformance.py --require-measured` | PASS: oracle, a second launch, a fault and recovery |
 | `b2_profiler.log` | B2, `tools/r38/profiler_tests.py --quick` | PASS |
 | `b3_tiny.log` | B3, ArchBench tiny on `fpga-u280` | 27/27 pass |

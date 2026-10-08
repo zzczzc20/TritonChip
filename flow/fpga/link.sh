@@ -40,8 +40,8 @@
 # one of them at once.
 #
 # 150 rather than a rounder 100 or 200 because of what it does to the device:
-# rtl/board/tnca_u50_xo.v divided ap_clk by four (it divides by DEV_DIV = 3
-# now, for 50 MHz: see the divider's header), and 150/4 is 37.5 MHz -- the
+# rtl/board/tnca_u50_xo.v divided ap_clk by four (it divides by DEV_DIV = 2
+# now, for 75 MHz: see the divider's header), and 150/4 is 37.5 MHz -- the
 # frequency the device ran at in the link that failed, where its own domain
 # reported +6.494 ns of slack and nothing failing in it. The device is held
 # still deliberately, so every measurement made about it survives the change.
@@ -122,8 +122,9 @@ PLATFORM=$BOARD_PLATFORM
 PLATFORMS_DIR=${XILINX_PLATFORMS:-/opt/xilinx/platforms}
 
 # The clock this build asks for, and the one flow/fpga/ooc.xdc constrains and
-# rtl/board/tnca_u50_xo.v divides by DEV_DIV (3 since R38's timing work: the
-# device at 50 MHz; it was 4, 37.5 MHz). The header says why it is not the
+# rtl/board/tnca_u50_xo.v divides by DEV_DIV (2 since R38's timing work: the
+# device at 75 MHz, measured on the U280; it was 4, 37.5 MHz, and briefly 3).
+# The header says why it is not the
 # platform default of 300; the four checks at the bottom of this file are what
 # make sure it is this number that reaches the .xclbin.
 EXPECT_MHZ=150
@@ -359,8 +360,13 @@ if [ "$got" != "$EXPECT_MHZ" ]; then
     exit 5
 fi
 
+# The divider is read from the wrapper this tree packages, not assumed: the
+# message said /4 long after DEV_DIV became 3 and then 2.
+div=$(sed -n 's/^[[:space:]]*parameter DEV_DIV[[:space:]]*=[[:space:]]*\([0-9]*\).*/\1/p' \
+      "$REPO/rtl/board/tnca_u50_xo.v" | head -1)
+dev=$(awk -v f="$got" -v d="${div:-0}" 'BEGIN { if (d > 0) printf "%g", f / d; else printf "?" }')
 echo "link.sh: OK -- $XCLBIN"
-echo "         kernel clock ${got} MHz, device clock $((got / 4)) MHz"
+echo "         kernel clock ${got} MHz, DEV_DIV ${div:-?}, device clock ${dev} MHz"
 echo "         bitstream is in the .xclbin; loading it is a separate decision"
 echo "         and has not been taken."
 echo "LINK_OK $(date)" >> "$LOG"

@@ -84,6 +84,18 @@
 // 16 ns routed, inside 50 MHz's 20.0 ns. The link is the measurement that
 // settles it, and link.sh fails rather than lowers the clock.
 //
+// R38: TWO, MEASURED (2026-10-09)
+//
+// After the second round of timing work (timing-002/003) the device's worst
+// path post-synthesis was 7.76 ns. The /2 link of that RTL routed with
+// clk_dev at +0.471 ns of slack against 13.333 ns (75 MHz), worst path the
+// predicate index into vector writeback, 12.7 ns and 80 % routing; on the
+// U280 it passed conformance, the profiler and ArchBench tiny 27/27 with
+// every cycle count identical to RTL simulation, and two spin kernels timed
+// on the host put the device clock at 74.97 and 75.02 MHz
+// (flow/fpga/measure_clock.py). The RTL here is a further 0.9 ns faster
+// post-synthesis (timing-004..009), so two is the default.
+//
 // The clock crossing does not care about the ratio: tnca_axi_lite crosses on
 // a toggle with synchronisers (rtl/fpga/tnca_u50_top.v), and every clk_dev
 // edge is an ap_clk edge, so the cross-domain requirement stays one ap_clk
@@ -104,9 +116,10 @@ module tnca_u50_xo #(
     parameter NUM_RCTX       = 2,
     parameter RCTX_W         = 1,
     parameter VREGS_PER_RCTX = 64,
-    // ap_clk / DEV_DIV is the device clock: 3 -> 50 MHz from R38's timing
-    // work on; the image loaded on 2026-10-08 was built with 4 (37.5 MHz).
-    parameter DEV_DIV        = 3
+    // ap_clk / DEV_DIV is the device clock: 2 -> 75 MHz, measured on the
+    // U280 on 2026-10-09 (see above); the image loaded on 2026-10-08 was
+    // built with 4 (37.5 MHz).
+    parameter DEV_DIV        = 2
 ) (
     //---- the platform's clock ----------------------------------------------
     input  wire                    ap_clk,

@@ -31,15 +31,19 @@ EVIDENCE = {'sim-file': 'measured-rtl', 'sim-socket': 'measured-rtl',
 # has one; a simulated cycle has no duration (Stage 1 rule).
 # The device clock of the image LOADED on each board -- a property of the
 # bitstream, not of this checkout. Images built from R38's timing work on
-# divide by 3 (rtl/board/tnca_u50_xo.v DEV_DIV: 50 MHz); the ones loaded today
-# were built with 4. Change an entry in the same step that loads a new image.
+# divide by 2 (rtl/board/tnca_u50_xo.v DEV_DIV: 75 MHz); the U280 runs one
+# since 2026-10-09, the U50's was built with 4. Change an entry in the same
+# step that loads a new image.
 BOARD_CLOCK_HZ = {'fpga-u50': 37.5e6,
-                  # 150 MHz kernel clock / 4, measured: with the image loaded
-                  # (2026-10-08) the shell's frequency counter
+                  # 150 MHz kernel clock / 2 (DEV_DIV), measured: with the
+                  # image loaded (2026-10-09) the shell's frequency counter
                   # (clock_freq_counter.m.*/clock_counter_freqs in sysfs on the
                   # management function) reads 150 MHz for the kernel clock,
-                  # to its 1 MHz resolution.
-                  'fpga-u280': 37.5e6}
+                  # to its 1 MHz resolution, and the device's own cycle count
+                  # over host-timed spin kernels gives 74.97-75.02 MHz
+                  # (flow/fpga/measure_clock.py). It was /4, 37.5 MHz, until
+                  # R38's timing work.
+                  'fpga-u280': 75e6}
 
 # The device heap a launch's argument storages must fit: Session's default
 # heap, 0x20000..0x80000, of the 512 KiB memory the simulator and the U50

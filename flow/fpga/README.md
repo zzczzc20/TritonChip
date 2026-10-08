@@ -52,10 +52,12 @@ is built from -- `shell_ucs_subsystem_v3_0`, unpacked from the platform's
 
 **This build asks for 150 MHz.** `link.sh` passes `--kernel_frequency 0:150`,
 `ooc.xdc` constrains 6.667 ns, `package_xo.tcl` declares the same figure in the
-IP, and `rtl/board/tnca_u50_xo.v` divides by four -- so the device runs at
-**37.5 MHz**, which is where it ran before, when the bus was at 300 and the
-divide was eight. The bus came down because the first link failed on it; the
-device was deliberately held still so that every measurement about it survives.
+IP, and `rtl/board/tnca_u50_xo.v` divides by `DEV_DIV`. The divide was four
+-- the device at **37.5 MHz**, where it ran before, when the bus was at 300 and
+the divide was eight; the bus came down because the first link failed on it,
+and the device was held still so that every measurement about it survived.
+Since R38's timing work it is **two: the device at 75 MHz**, measured on the
+U280 (below, and `evidence/r38/u280_75mhz/`).
 
 `link.sh` still checks the resulting frequency rather than assuming it -- `v++`
 can lower a kernel clock on its own and still report success
@@ -329,3 +331,24 @@ measurement is taken on the board:
 
 The build steps, the order of the checks on the new image, and what each must
 show are in [`doc/r38_board_bringup.md`](../../doc/r38_board_bringup.md).
+
+## 75 MHz on the U280 (2026-10-09)
+
+R38's timing work (`doc/r38_board_bringup.md` sec. 6) cut the device's worst
+path from a 60-level loop in the matrix unit to 7.76 ns post-synthesis. On
+that RTL the build ran with `DEV_DIV = 2`:
+
+- **The link:** clk_dev routed at **+0.471 ns** of slack against 13.333 ns,
+  with nothing failing. The design WNS is +0.016 ns, the platform's own
+  near-zero path. v++ printed only AUTO-FREQ-SCALING-08.
+- **The board:** conformance, the profiler, and ArchBench tiny 27/27 pass.
+  Every point's device cycle count is identical to the RTL simulation
+  (`tools/r38/board_vs_sim.py`).
+- **The clock:** the shell's counter reads 150 MHz.
+  `measure_clock.py` -- the device's own cycle count over host-timed spin
+  kernels -- reads 74.97 and 75.02 MHz.
+
+The files, the image's sha256 and the routed path are in
+[`evidence/r38/u280_75mhz/`](../../evidence/r38/u280_75mhz/README.md).
+`DEV_DIV = 2` is now the wrapper's default.
+

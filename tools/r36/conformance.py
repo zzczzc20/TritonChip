@@ -384,19 +384,24 @@ def run_backend(name, info, log, xclbin=None):
     # hardware is exactly that: sim-file unable to import what it needs
     # is not a machine without a card, and it must not be waved past.
     try:
-        device.prepare(PROFILE, verbose=False)
+        # The simulator is built, and named, only for a binding that reads
+        # it -- the rule Session follows. A board is reached over PCIe and
+        # has no simulator build, and building one anyway made the suite
+        # need iverilog on the machine with the card, which is the one
+        # machine the board binding is measured on and need not have it.
+        kw = {}
+        if backend.needs_elaborator(name):
+            device.prepare(PROFILE, verbose=False)
+            kw['bench'] = device.expected_path(PROFILE)
         # A board has to be told which image it is running, and that fact is
         # in no profile and no artifact. Handed only to a binding that
         # declares `needs_hardware`, because that declaration is the
         # registry's own statement of which bindings are cards -- a
         # simulator would take the keyword as an unknown argument and fail
         # for a reason that has nothing to do with what was being tested.
-        kw = {}
         if xclbin and backend.needs_hardware(name):
             kw['xclbin'] = xclbin
-        dev = backend.open_backend(name,
-                                   bench=device.expected_path(PROFILE),
-                                   deadline_cycles=200_000, **kw)
+        dev = backend.open_backend(name, deadline_cycles=200_000, **kw)
         dev.start()
     except DependencyFailed as e:
         if not backend.needs_hardware(name):

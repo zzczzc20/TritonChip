@@ -23,6 +23,11 @@ module tb_nuca_slice;
     parameter DRAM_LAT   = 40;
     parameter DRAM_STALL = 1;
     parameter DRAM_OOO   = 1;
+    // DCO policy under test (rtl/nuca/tnca_tmu.v POLICY): 0 is the round-robin
+    // baseline. Whatever the policy, every read must still return the shadow
+    // -- replacement, bypass and dead-block prediction move only where a line
+    // lives, never what it holds.
+    parameter POLICY     = 0;
 
     localparam ADDR_W     = 64;
     localparam LINE_BYTES = 64;
@@ -41,6 +46,7 @@ module tb_nuca_slice;
     localparam RQ_W       = 3;
     localparam SRC_W      = 4;
     localparam TAG_W      = 5;
+    localparam SLICE_ID   = 0;
 
     // Address space: 8x the slice capacity, so eviction is the common case.
     localparam N_LINES    = SETS * WAYS * 8;
@@ -77,6 +83,24 @@ module tb_nuca_slice;
 
     wire [31:0] perf_hit, perf_miss, perf_merge, perf_mshr_full,
                 perf_target_full, perf_wb, perf_hit_past_block;
+    wire [31:0] perf_bypass, perf_evict, perf_dead_evict;
+    wire [3:0]  perf_gear;
+
+    // ---- DCO stimulus ---------------------------------------------------------
+    // One tensor registered as nAcc = 1 (bypass) over the second quarter of the
+    // address space, one ordinary tensor over the rest, a dead-tile FIFO that a
+    // random process rewrites, and a "slower core" flag that flips. A small
+    // window and low thresholds keep the gear moving.
+    localparam [7:0]  B_BITS_TB = 8'd3;
+    localparam [63:0] T_BYP     = N_LINES * 64;
+    wire [75:0] dco_cfg = {16'd2, 16'd6, 16'd64, 4'd2, 6'd0, 6'd8,
+                           B_BITS_TB[3:0], POLICY[7:0]};
+    reg  [15:0]             dco_slow;
+    reg  [15:0]             dead_v;
+    reg  [16*16-1:0]        dead_id;
+    reg                     tl_ready;
+    wire                    tl_valid, tl_drop, tmw_valid;
+    wire [63:0]             tl_addr;
 
     tnca_nuca_slice #(
         .ADDR_W(ADDR_W), .LINE_BYTES(LINE_BYTES), .LINE_BITS(LINE_BITS),
@@ -84,12 +108,14 @@ module tb_nuca_slice;
         .SETS(SETS), .SET_W(SET_W), .WAYS(WAYS), .WAY_W(WAY_W),
         .MSHR_N(MSHR_N), .MSHR_W(MSHR_W),
         .TARGET_N(TARGET_N), .TARGET_W(TARGET_W),
-        .RQ_N(RQ_N), .RQ_W(RQ_W), .SRC_W(SRC_W), .TAG_W(TAG_W)
+        .RQ_N(RQ_N), .RQ_W(RQ_W), .SRC_W(SRC_W), .TAG_W(TAG_W),
+        .SLICE_ID(SLICE_ID), .DCO_T(2)
     ) dut (
         .clk(clk), .rst_n(rst_n),
         .req_ready(req_ready), .req_valid(req_valid), .req_addr(req_addr),
         .req_we(req_we), .req_be(req_be), .req_wdata(req_wdata),
         .req_src(req_src), .req_tag(req_tag),
+        .req_amo(1'b0), .req_aop(4'd0), .req_cmp(64'd0),
         .rsp_valid(rsp_valid), .rsp_ready(rsp_ready), .rsp_src(rsp_src),
         .rsp_tag(rsp_tag), .rsp_rdata(rsp_rdata),
         .mem_req_valid(m_req_valid), .mem_req_ready(m_req_ready),
@@ -99,12 +125,43 @@ module tb_nuca_slice;
         .mem_rsp_rdata(m_rsp_rdata),
         .perf_hit(perf_hit), .perf_miss(perf_miss), .perf_merge(perf_merge),
         .perf_mshr_full(perf_mshr_full), .perf_target_full(perf_target_full),
-        .perf_wb(perf_wb), .perf_hit_past_block(perf_hit_past_block)
+        .perf_wb(perf_wb), .perf_hit_past_block(perf_hit_past_block),
+        .dco_cfg(dco_cfg),
+        .dco_t_valid(2'b11),
+        .dco_t_base({64'd0, T_BYP}),
+        .dco_t_size({64'd0, T_BYP}),
+        .dco_t_bypass(2'b01), .dco_t_lsb({6'd0, 6'd9}),
+        .dco_dead_valid(dead_v), .dco_dead_id(dead_id), .dco_slow(dco_slow),
+        .tmu_wr_valid(tmw_valid), .tmu_wr_ready(1'b1), .tmu_wr_off(),
+        .tmu_wr_data(), .tmu_wr_src(), .tmu_rd_off(), .tmu_rd_data(64'd0),
+        .tmu_tl_valid(tl_valid), .tmu_tl_ready(tl_ready), .tmu_tl_addr(tl_addr),
+        .tmu_tl_drop(tl_drop),
+        .perf_bypass(perf_bypass), .perf_evict(perf_evict),
+        .perf_dead_evict(perf_dead_evict), .perf_gear(perf_gear)
     );
+
+    integer dk;
+    integer dseed;
+    always @(posedge clk) begin
+        if (!rst_n) begin
+            dco_slow <= 16'h0000; dead_v <= 16'd0; dead_id <= 0; tl_ready <= 1'b0;
+        end else begin
+            tl_ready <= $random(dseed);
+            if (($random(dseed) & 255) == 0) dco_slow <= $random(dseed);
+            if (($random(dseed) & 31) == 0) begin
+                dk = ($random(dseed) & 15);
+                dead_v[dk] <= 1'b1;
+                // {tensor index, chunk}: tensor 0 (bypassed, 512-byte tiles)
+                // or 1 (the default granule, D_LSB = 8)
+                dead_id[dk*16 +: 16] <= {3'd0, 13'd0} | (($random(dseed) & 1) << 13)
+                                        | ($random(dseed) & 255);
+            end
+        end
+    end
 
     tnca_dram_model #(
         .ADDR_W(ADDR_W), .LINE_BYTES(LINE_BYTES), .LINE_BITS(LINE_BITS),
-        .LINES(N_LINES), .TAG_W(MSHR_W), .SRC_W(1),
+        .LINES(N_LINES * 4), .TAG_W(MSHR_W), .SRC_W(1),   // home-consistent lines span 4x
         .LATENCY(DRAM_LAT), .RANDOM_STALL(DRAM_STALL), .REORDER(DRAM_OOO)
     ) u_dram (
         .clk(clk), .rst_n(rst_n),
@@ -195,6 +252,7 @@ module tb_nuca_slice;
         // three seeds were three copies of one test.
         if (!$value$plusargs("seed=%d", seed)) seed = 20260918;
         seed0 = seed;
+        dseed = seed ^ 32'h00dc0dc0;
         trace_hash = 64'hcbf29ce484222325;   // FNV-1a offset basis
         n_write = 0;
         fails = 0; n_issued = 0; n_checked = 0; inflight = 0; stream_ptr = 0;
@@ -244,7 +302,12 @@ module tb_nuca_slice;
                     widx = rnd[31:0] % N_WORDS;
                 end
 
-                a = widx * WORD_BYTES;
+                // A home-consistent address: the mesh only ever delivers a
+                // slice the lines whose home bits (line[1:0] ^ line[3:2]) are
+                // its id, and the slice indexes on that. Line L of the shadow
+                // becomes line {L, L[1:0] ^ SLICE_ID}, a bijection.
+                a = ((((widx / 8) << 2) | (((widx / 8) & 3) ^ SLICE_ID)) << 6)
+                    | ((widx % 8) * WORD_BYTES);
                 req_addr  = a;
                 req_src   = 4'd1;
                 req_tag   = free_tag;
@@ -290,6 +353,8 @@ module tb_nuca_slice;
         $display("hit=%0d miss=%0d merge=%0d wb=%0d mshr_full=%0d target_full=%0d hit_past_block=%0d",
                  perf_hit, perf_miss, perf_merge, perf_wb,
                  perf_mshr_full, perf_target_full, perf_hit_past_block);
+        $display("policy=%0d bypass=%0d evict=%0d dead_evict=%0d gear=%0d",
+                 POLICY, perf_bypass, perf_evict, perf_dead_evict, perf_gear);
 
         if (inflight > 0) begin
             fails = fails + 1;

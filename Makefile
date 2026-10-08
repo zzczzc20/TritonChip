@@ -490,6 +490,30 @@ nuca: | dirs
 	   done; \
 	 done
 
+# The same randomised check under DCO's policies (doc/DCO.pdf; the POLICY
+# register of rtl/nuca/tnca_tmu.v). The bench drives a bypassed tensor, a
+# dead-tile FIFO that keeps changing and a flipping slow-core flag; whatever
+# the cache keeps or skips, every read must still return the shadow.
+#   1 LRU   2 anti-thrash   46 AT + DBP + dynamic and tensor bypass
+#   62 the same with gqa_bypass   74 AT + a static bypass gear
+DCO_POLICIES ?= 1 2 46 62 74
+DCO_SEEDS    ?= 1 7
+
+.PHONY: nuca-dco
+nuca-dco: | dirs
+	@for pol in $(DCO_POLICIES); do \
+	   $(IVERILOG) $(IVFLAGS) -y $(RTL)/common \
+	     -P tb_nuca_slice.DRAM_LAT=40 -P tb_nuca_slice.DRAM_STALL=1 \
+	     -P tb_nuca_slice.DRAM_OOO=1 -P tb_nuca_slice.POLICY=$$pol \
+	     -o $(BUILD)/tb_nuca_dco$$pol.vvp $(TB)/nuca/tb_nuca_slice.v \
+	     $(RTL)/nuca/tnca_nuca_slice.v $(TB)/common/tnca_dram_model.v || exit 1; \
+	   for sd in $(DCO_SEEDS); do \
+	     $(TOOLS)/run_test.sh "DCO-NUCA-policy$$pol-seed$$sd" \
+	       "$(VVP) $(BUILD)/tb_nuca_dco$$pol.vvp +nreq=$(NUCA_REQS) +min_wb=1 +seed=$$sd" \
+	       || exit 1; \
+	   done; \
+	 done
+
 #------------------------------------------------------------------------------
 # Network on chip
 #------------------------------------------------------------------------------
@@ -535,6 +559,33 @@ top: $(BUILD)/tb_top.vvp $(patsubst %,$(BUILD)/%.hex,$(TOP_PROGS))
 	 done
 
 #------------------------------------------------------------------------------
+#------------------------------------------------------------------------------
+# DCO on the whole machine (tools/r38/dco_bench.py)
+#------------------------------------------------------------------------------
+# The 2x2 system with a last level small enough for a simulated kernel to
+# thrash -- 8 sets x 4 ways per slice, 8 KiB in all -- and a DRAM that takes
+# one line every DCO_DRAM_INTERVAL cycles, so traffic costs time. Triton
+# kernels compiled with the DCO pass run under every policy; the bench checks
+# that all policies give identical bits and reports cycles and DRAM traffic.
+DCO_DRAM_INTERVAL ?= 8
+DCO_DRAM_LAT      ?= 40
+DCO_BENCH_ARGS    ?= --json $(BUILD)/r38/dco_bench.json
+
+$(BUILD)/tb_top_dco.vvp: $(TB)/top/tb_tnca_top.v $(RTL_DEPS) $(RTL)/tnca_top.v \
+                         $(TB)/common/tnca_dram_model.v | dirs
+	$(IVERILOG) -g2012 $(IVFLAGS) $(RTLY) \
+	   -P tb_tnca_top.SETS=8 -P tb_tnca_top.SET_W=3 \
+	   -P tb_tnca_top.WAYS=4 -P tb_tnca_top.WAY_W=2 \
+	   -P tb_tnca_top.DRAM_LINES=32768 -P tb_tnca_top.DRAM_STALL=0 \
+	   -P tb_tnca_top.DRAM_OOO=1 -P tb_tnca_top.DRAM_LAT=$(DCO_DRAM_LAT) \
+	   -P tb_tnca_top.DRAM_INTERVAL=$(DCO_DRAM_INTERVAL) \
+	   -o $@ $< $(RTL)/tnca_top.v $(TB)/common/tnca_dram_model.v
+
+.PHONY: dco-bench
+dco-bench: $(BUILD)/tb_top_dco.vvp
+	@mkdir -p $(BUILD)/r38
+	$(TRITON_PYTHON) tools/r38/dco_bench.py $(DCO_BENCH_ARGS)
+
 #==============================================================================
 # The compiler side (doc/compiler_overview.md)
 #==============================================================================
@@ -727,7 +778,7 @@ compiler-rtl: $(BUILD)/tb_core.vvp $(BUILD)/tb_core4.vvp \
               $(BUILD)/tb_core_slow.vvp $(BUILD)/tb_core_ooo.vvp
 	@$(PYTHON) compiler/test/run_tests.py --rtl
 
-test: lint unit compiler core compiler-rtl triton-e2e core-slowmem core-ooo nuca mesh top e2e
+test: lint unit compiler core compiler-rtl triton-e2e core-slowmem core-ooo nuca nuca-dco mesh top e2e
 	@echo
 	@echo "=============================================="
 	@echo " TNCA regression: all tests passed"

@@ -59,7 +59,12 @@ module tnca_tile #(
     parameter RQ_N        = 8,
     parameter RQ_W        = 3,
     parameter SLICE_SRC_W = 4,
-    parameter SLICE_TAG_W = 5
+    parameter SLICE_TAG_W = 5,
+    // DCO (rtl/nuca/tnca_tmu.v)
+    parameter DCO_T       = 8,
+    parameter DCO_DEAD    = 16,
+    parameter DCO_ID_W    = 16,
+    parameter [63:0] TMU_BASE = 64'h0000_0000_7FFF_0000
 ) (
     input  wire                     clk,
     input  wire                     rst_n,
@@ -99,6 +104,32 @@ module tnca_tile #(
     input  wire                     mem_rsp_valid,
     input  wire [MSHR_W-1:0]        mem_rsp_tag,
     input  wire [LINE_BITS-1:0]     mem_rsp_rdata,
+
+    // ---- DCO: this slice's side of the TMU (straight through) -----------------
+    input  wire [75:0]              dco_cfg,
+    input  wire [DCO_T-1:0]         dco_t_valid,
+    input  wire [DCO_T*64-1:0]      dco_t_base,
+    input  wire [DCO_T*64-1:0]      dco_t_size,
+    input  wire [DCO_T-1:0]         dco_t_bypass,
+    input  wire [DCO_T*6-1:0]       dco_t_lsb,
+    input  wire [DCO_DEAD-1:0]      dco_dead_valid,
+    input  wire [DCO_DEAD*DCO_ID_W-1:0] dco_dead_id,
+    input  wire [15:0]              dco_slow,
+    output wire                     tmu_wr_valid,
+    input  wire                     tmu_wr_ready,
+    output wire [11:0]              tmu_wr_off,
+    output wire [63:0]              tmu_wr_data,
+    output wire [SLICE_SRC_W-1:0]   tmu_wr_src,
+    output wire [11:0]              tmu_rd_off,
+    input  wire [63:0]              tmu_rd_data,
+    output wire                     tmu_tl_valid,
+    input  wire                     tmu_tl_ready,
+    output wire [63:0]              tmu_tl_addr,
+    output wire                     tmu_tl_drop,
+    output wire [31:0]              perf_bypass,
+    output wire [31:0]              perf_evict,
+    output wire [31:0]              perf_dead_evict,
+    output wire [3:0]               perf_gear,
 
     // ---- counters -----------------------------------------------------------
     output wire [63:0]              perf_cycles,
@@ -233,7 +264,10 @@ module tnca_tile #(
         .MSHR_N(MSHR_N), .MSHR_W(MSHR_W),
         .TARGET_N(TARGET_N), .TARGET_W(TARGET_W),
         .RQ_N(RQ_N), .RQ_W(RQ_W),
-        .SRC_W(SLICE_SRC_W), .TAG_W(SLICE_TAG_W)
+        .SRC_W(SLICE_SRC_W), .TAG_W(SLICE_TAG_W),
+        .SLICE_ID(TILE_ID),
+        .DCO_T(DCO_T), .DCO_DEAD(DCO_DEAD), .DCO_ID_W(DCO_ID_W),
+        .TMU_BASE(TMU_BASE)
     ) u_slice (
         .clk(clk), .rst_n(rst_n),
         .req_ready(s_req_ready), .req_valid(s_req_valid),
@@ -249,7 +283,18 @@ module tnca_tile #(
         .mem_rsp_rdata(mem_rsp_rdata),
         .perf_hit(perf_hit), .perf_miss(perf_miss), .perf_merge(perf_merge),
         .perf_mshr_full(perf_mshr_full), .perf_target_full(),
-        .perf_wb(perf_wb), .perf_hit_past_block(perf_hit_past_block)
+        .perf_wb(perf_wb), .perf_hit_past_block(perf_hit_past_block),
+        .dco_cfg(dco_cfg), .dco_t_valid(dco_t_valid), .dco_t_base(dco_t_base),
+        .dco_t_size(dco_t_size), .dco_t_bypass(dco_t_bypass), .dco_t_lsb(dco_t_lsb),
+        .dco_dead_valid(dco_dead_valid), .dco_dead_id(dco_dead_id),
+        .dco_slow(dco_slow),
+        .tmu_wr_valid(tmu_wr_valid), .tmu_wr_ready(tmu_wr_ready),
+        .tmu_wr_off(tmu_wr_off), .tmu_wr_data(tmu_wr_data), .tmu_wr_src(tmu_wr_src),
+        .tmu_rd_off(tmu_rd_off), .tmu_rd_data(tmu_rd_data),
+        .tmu_tl_valid(tmu_tl_valid), .tmu_tl_ready(tmu_tl_ready),
+        .tmu_tl_addr(tmu_tl_addr), .tmu_tl_drop(tmu_tl_drop),
+        .perf_bypass(perf_bypass), .perf_evict(perf_evict),
+        .perf_dead_evict(perf_dead_evict), .perf_gear(perf_gear)
     );
 
     //==========================================================================

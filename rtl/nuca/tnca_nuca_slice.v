@@ -26,13 +26,22 @@
 // accesses to one address at its home slice (sec 14.1). It is a correctness
 // property, not a performance heuristic.
 //
-// WHAT IS DELIBERATELY NOT HERE (Stage 4)
+// DCO (doc/DCO.pdf, doc/dco.md)
 //
-// No TensorMap metadata, no dead-block prediction, no coordinated bypass, no
-// priority-based replacement, no pressure-adaptive admission. Stage 3's job is
-// a baseline that those can be measured against one at a time (sec 21), and a
-// baseline with a policy already in it cannot serve that purpose. Replacement
-// here is invalid-first then round-robin, which is deliberately uninteresting.
+// Stage 3 built this slice as a baseline with no policy in it -- invalid-first
+// then round-robin -- so that cache policies could be measured against it one
+// at a time (sec 21). DCO's are now here, each behind a bit of the TMU's
+// POLICY register (rtl/nuca/tnca_tmu.v), and POLICY 0 is still that baseline:
+//
+//   LRU and anti-thrashing replacement   victim = min {not dead, priority, age}
+//   dead-block prediction                tiles the TMU has counted to nAcc
+//   dynamic bypass                       priority < B_GEAR, gear set by evictions
+//   gqa_bypass                           ... only for the slower core of a pair
+//   tensor bypass                        tensors registered with nAcc = 1
+//
+// None of them changes what a load returns; they decide where a line lives.
+// What is still not here: pressure-adaptive admission and MSHR-aware
+// arbitration.
 //
 // The engine processes one thing per cycle with completion paths ahead of new
 // work, so a fill or a writeback always wins over a fresh request: throttling
@@ -57,7 +66,18 @@ module tnca_nuca_slice #(
     parameter RQ_N       = 8,        // request buffer entries
     parameter RQ_W       = 3,
     parameter SRC_W      = 4,
-    parameter TAG_W      = 4
+    parameter TAG_W      = 4,
+    // Which slice this is, and how many line-address bits choose a home.
+    // The core NI homes a line at line[1:0] ^ line[3:2] (rtl/noc/tnca_core_ni.v),
+    // so every line this slice sees has those two bits fixed by its id.
+    parameter SLICE_ID   = 0,
+    parameter HOME_W     = 2,
+    // DCO (rtl/nuca/tnca_tmu.v): tensor-table entries, dead-FIFO entries,
+    // tile-identifier width, and the address window of the TMU's registers.
+    parameter DCO_T      = 8,
+    parameter DCO_DEAD   = 16,
+    parameter DCO_ID_W   = 16,
+    parameter [63:0] TMU_BASE = 64'h0000_0000_7FFF_0000
 ) (
     input  wire                     clk,
     input  wire                     rst_n,
@@ -101,7 +121,34 @@ module tnca_nuca_slice #(
     input  wire [MSHR_W-1:0]        mem_rsp_tag,
     input  wire [LINE_BITS-1:0]     mem_rsp_rdata,
 
+    // ---- DCO: policy and metadata, from the TMU ------------------------------
+    input  wire [75:0]              dco_cfg,        // see `DCO_*` slices below
+    input  wire [DCO_T-1:0]         dco_t_valid,
+    input  wire [DCO_T*64-1:0]      dco_t_base,
+    input  wire [DCO_T*64-1:0]      dco_t_size,
+    input  wire [DCO_T-1:0]         dco_t_bypass,
+    input  wire [DCO_T*6-1:0]       dco_t_lsb,      // per-tensor tile granule (0: D_LSB)
+    input  wire [DCO_DEAD-1:0]      dco_dead_valid,
+    input  wire [DCO_DEAD*DCO_ID_W-1:0] dco_dead_id,
+    input  wire [15:0]              dco_slow,       // per requester: the slower of its pair
+    // ---- DCO: to the TMU -----------------------------------------------------
+    output wire                     tmu_wr_valid,
+    input  wire                     tmu_wr_ready,
+    output wire [11:0]              tmu_wr_off,
+    output wire [63:0]              tmu_wr_data,
+    output wire [SRC_W-1:0]         tmu_wr_src,
+    output wire [11:0]              tmu_rd_off,
+    input  wire [63:0]              tmu_rd_data,
+    output wire                     tmu_tl_valid,
+    input  wire                     tmu_tl_ready,
+    output wire [63:0]              tmu_tl_addr,
+    output reg                      tmu_tl_drop,
+
     // ---- performance counters (sec 20.2) ------------------------------------
+    output reg  [31:0]              perf_bypass,      // DCO: misses served without a way
+    output reg  [31:0]              perf_evict,       // valid lines evicted
+    output reg  [31:0]              perf_dead_evict,  // ... of which predicted dead
+    output reg  [3:0]               perf_gear,        // the bypass gear now
     output reg  [31:0]              perf_hit,
     output reg  [31:0]              perf_miss,
     output reg  [31:0]              perf_merge,
@@ -114,7 +161,11 @@ module tnca_nuca_slice #(
     localparam OFF_W     = 6;                       // log2(LINE_BYTES)
     localparam WORDS_PER_LINE = LINE_BYTES / WORD_BYTES;
     localparam WSEL_W   = 3;                        // log2(WORDS_PER_LINE)
-    localparam TAGB     = ADDR_W - OFF_W - SET_W;
+    // The set index skips the home bits: they are the same for every line
+    // that reaches this slice, so indexing with them -- as this slice did
+    // until R38 -- left only SETS/4 of its sets reachable and three quarters
+    // of the array unused. The tag is everything above the set.
+    localparam TAGB     = ADDR_W - OFF_W - HOME_W - SET_W;
     localparam LINES    = SETS * WAYS;
     localparam LINE_W   = SET_W + WAY_W;
 
@@ -135,9 +186,104 @@ module tnca_nuca_slice #(
     //==========================================================================
     // Address decomposition
     //==========================================================================
-    `define SLICE_SET(ad)  (ad[OFF_W +: SET_W])
+    `define SLICE_SET(ad)  (ad[OFF_W + HOME_W +: SET_W])
     `define SLICE_TAG(ad)  (ad[ADDR_W-1 -: TAGB])
     `define SLICE_WSEL(ad) (ad[WORD_BYTES==8 ? 3 : 2 +: WSEL_W])
+
+    // A cached line's byte address from its tag and set: the home bits are
+    // line[1:0] = SLICE_ID ^ line[3:2], and line[3:2] are the set's low bits.
+    function [ADDR_W-1:0] line_addr;
+        input [TAGB-1:0]  tg;
+        input [SET_W-1:0] st;
+        reg   [HOME_W-1:0] home;
+        begin
+            home = SLICE_ID[HOME_W-1:0] ^ st[HOME_W-1:0];
+            line_addr = {tg, st, home, {OFF_W{1'b0}}};
+        end
+    endfunction
+
+    //==========================================================================
+    // DCO configuration (doc/DCO.pdf; rtl/nuca/tnca_tmu.v holds the registers)
+    //==========================================================================
+    wire [7:0]  pol        = dco_cfg[7:0];
+    wire [1:0]  pol_repl   = pol[1:0];      // 0 round-robin, 1 LRU, 2 anti-thrash
+    wire        pol_dbp    = pol[2];        // dead-block prediction
+    wire        pol_dyn    = pol[3];        // dynamic bypass
+    wire        pol_gqa    = pol[4];        // ... only for the slower core of a pair
+    wire        pol_tbyp   = pol[5];        // bypass tensors registered with nAcc = 1
+    wire        pol_static = pol[6];        // the gear is GEAR_INIT, not adapted
+    wire [3:0]  b_bits     = dco_cfg[11:8];
+    wire [5:0]  d_lsb      = dco_cfg[17:12];  // the default tile granule
+    wire [3:0]  gear_init  = dco_cfg[27:24];
+    wire [15:0] g_window   = dco_cfg[43:28];
+    wire [15:0] g_ub       = dco_cfg[59:44];
+    wire [15:0] g_lb       = dco_cfg[75:60];
+    // The anti-thrashing priority is tag[B_BITS-1:0], the tag's lowest bits:
+    // uniform across a tensor, so keeping the high-priority half keeps half of
+    // any working set, whatever its size. At most 3 bits, as in the paper, so
+    // the gear runs 0..8 (sec IV-D, Fig. 7).
+    wire [3:0]  bmask      = (b_bits >= 4'd3) ? 4'h7 : ((4'd1 << b_bits) - 4'd1);
+    wire [3:0]  gear_max   = bmask + 4'd1;
+
+    // The tensor an address belongs to: inside [base, base+size), or with a
+    // size of 0, the registered tensor with the highest base not above it (the
+    // TMU's rule, tnca_tmu.v). Returns {hit, bypass, index[3:0], tile lsb[5:0]};
+    // a tile lsb of 0 means "the default granule", D_LSB.
+    function [11:0] owner;
+        input [ADDR_W-1:0]      a;
+        input [DCO_T-1:0]       tv;
+        input [DCO_T*64-1:0]    tbase;
+        input [DCO_T*64-1:0]    tsize;
+        input [DCO_T-1:0]       tbyp;
+        input [DCO_T*6-1:0]     tlsb;
+        integer k;
+        reg     hit, byp;
+        reg [63:0] best, b, z;
+        reg [3:0]  idx;
+        reg [5:0]  lsb;
+        begin
+            hit = 1'b0; best = 64'd0; byp = 1'b0; idx = 4'd0; lsb = 6'd0;
+            for (k = 0; k < DCO_T; k = k + 1) begin
+                b = tbase[k*64 +: 64];
+                z = tsize[k*64 +: 64];
+                if (tv[k] && (a >= b) && ((z == 64'd0) || (a - b < z)) &&
+                    (!hit || b > best)) begin
+                    hit = 1'b1; best = b; byp = tbyp[k]; idx = k[3:0];
+                    lsb = tlsb[k*6 +: 6];
+                end
+            end
+            owner = {hit, byp, idx, lsb};
+        end
+    endfunction
+
+    // A tile's identifier, as the TMU forms it: the owning tensor's index
+    // above the tile's number within the address space, in that tensor's own
+    // granule (DCO's per-tensor tile size). Tiles of different tensors never
+    // share an identifier, whatever their sizes.
+    function [DCO_ID_W-1:0] tile_id;
+        input [ADDR_W-1:0] a;
+        input [11:0]       own;
+        input [5:0]        dflt;
+        reg   [5:0]        lsb;
+        reg   [63:0]       sh;
+        begin
+            lsb = (own[5:0] != 6'd0) ? own[5:0] : dflt;
+            sh  = a >> lsb;
+            tile_id = {own[8:6], sh[DCO_ID_W-4:0]};
+        end
+    endfunction
+
+    function dead_tile;
+        input [DCO_ID_W-1:0]           id;
+        input [DCO_DEAD-1:0]           dv;
+        input [DCO_DEAD*DCO_ID_W-1:0]  did;
+        integer k;
+        begin
+            dead_tile = 1'b0;
+            for (k = 0; k < DCO_DEAD; k = k + 1)
+                if (dv[k] && did[k*DCO_ID_W +: DCO_ID_W] == id) dead_tile = 1'b1;
+        end
+    endfunction
 
     //==========================================================================
     // Arrays
@@ -147,6 +293,9 @@ module tnca_nuca_slice #(
     reg [LINES-1:0]     v_bits;
     reg [LINES-1:0]     d_bits;
     reg [WAY_W-1:0]     victim_ptr [0:SETS-1];
+    // LRU, as ages: 0 is the most recently used way of its set, WAYS-1 the
+    // least. A permutation per set at all times.
+    reg [WAY_W-1:0]     age        [0:LINES-1];
 
     //==========================================================================
     // Request buffer -- not a FIFO; see the arbiter note in the header
@@ -249,6 +398,9 @@ module tnca_nuca_slice #(
     reg [TARGET_W-1:0]  ms_head  [0:MSHR_N-1];
     reg [TARGET_W-1:0]  ms_tail  [0:MSHR_N-1];
     reg [MSHR_N-1:0]    ms_hasT;
+    // A bypassed miss (DCO): the line is fetched for its targets and never
+    // allocated, so the MSHR claims no way and the fill writes no array.
+    reg [MSHR_N-1:0]    ms_byp;
     reg [LINE_BITS-1:0] ms_line  [0:MSHR_N-1];   // filled data, before wake
     reg [ADDR_W-1:0]    ms_wbadr [0:MSHR_N-1];
 
@@ -314,7 +466,8 @@ module tnca_nuca_slice #(
                E_WBSND = 4'd5,
                E_MREQ  = 4'd6,
                E_FILL  = 4'd7,
-               E_WAKE  = 4'd8;
+               E_WAKE  = 4'd8,
+               E_MMIO  = 4'd9;   // a TMU register, never cached
 
     reg [3:0]            est;
     reg [RQ_W-1:0]       cur_rq;
@@ -357,35 +510,109 @@ module tnca_nuca_slice #(
             end
     end
 
-    // ---- victim selection: invalid first, then round robin, never a way that
+    // ---- victim selection: invalid first, then the policy, never a way that
     //      an in-flight MSHR has already claimed in this set -------------------
+    //
+    // Round-robin (policy 0) is the baseline this slice started with. The
+    // others rank each candidate by a key and take the smallest:
+    //
+    //   { not dead (DBP), priority (anti-thrash), most recently used (LRU) }
+    //
+    // so a dead line goes first, then the lowest-priority line, and LRU breaks
+    // the tie -- the order DCO's replacement policy names (sec IV-A).
     reg              way_claimed [0:WAYS-1];
     reg [WAY_W-1:0]  vic_way;
     reg              vic_ok;
+    reg              vic_dead;
     reg [WAY_W-1:0]  cand;
+    reg [7:0]        vkey, vbest;
+    reg              vdead;
+    reg [TAGB-1:0]   vtag;
+    reg [3:0]        vprio;
+    reg [11:0]       vown;
+    integer          vidx, vw, vi;
+    // Its own loop variables: a loop index shared with another always block
+    // puts each block in the other's sensitivity list, and the simulator
+    // then re-runs both on every write to it. Only E_MISS reads the result,
+    // so the search runs only there -- the same logic, without evaluating
+    // sixteen dead-tile compares per way on every cycle of a simulation.
     always @(*) begin
-        for (w = 0; w < WAYS; w = w + 1) begin
-            way_claimed[w] = 1'b0;
-            for (i = 0; i < MSHR_N; i = i + 1)
-                if ((ms_state[i] != MS_FREE) && (ms_set[i] == cur_set) &&
-                    (ms_way[i] == w[WAY_W-1:0]))
-                    way_claimed[w] = 1'b1;
-        end
-        vic_way = {WAY_W{1'b0}}; vic_ok = 1'b0;
-        // invalid ways first
-        for (w = WAYS-1; w >= 0; w = w - 1)
-            if (!v_bits[cur_set*WAYS + w] && !way_claimed[w]) begin
-                vic_way = w[WAY_W-1:0]; vic_ok = 1'b1;
-            end
-        if (!vic_ok) begin
-            for (w = WAYS-1; w >= 0; w = w - 1) begin
-                cand = victim_ptr[cur_set] + w[WAY_W-1:0];
-                if (!way_claimed[cand]) begin
-                    vic_way = cand; vic_ok = 1'b1;
+        vic_way = {WAY_W{1'b0}}; vic_ok = 1'b0; vic_dead = 1'b0; vbest = 8'hFF;
+        for (vw = 0; vw < WAYS; vw = vw + 1) way_claimed[vw] = 1'b0;
+        if (est == E_MISS) begin
+            for (vw = 0; vw < WAYS; vw = vw + 1)
+                for (vi = 0; vi < MSHR_N; vi = vi + 1)
+                    if ((ms_state[vi] != MS_FREE) && !ms_byp[vi] && (ms_set[vi] == cur_set) &&
+                        (ms_way[vi] == vw[WAY_W-1:0]))
+                        way_claimed[vw] = 1'b1;
+            // invalid ways first
+            for (vw = WAYS-1; vw >= 0; vw = vw - 1)
+                if (!v_bits[cur_set*WAYS + vw] && !way_claimed[vw]) begin
+                    vic_way = vw[WAY_W-1:0]; vic_ok = 1'b1;
+                end
+            if (!vic_ok && pol_repl == 2'd0) begin
+                for (vw = WAYS-1; vw >= 0; vw = vw - 1) begin
+                    cand = victim_ptr[cur_set] + vw[WAY_W-1:0];
+                    if (!way_claimed[cand]) begin
+                        vic_way = cand; vic_ok = 1'b1;
+                    end
+                end
+            end else if (!vic_ok) begin
+                for (vw = 0; vw < WAYS; vw = vw + 1) begin
+                    vidx  = cur_set*WAYS + vw;
+                    vtag  = tag_mem[vidx];
+                    vown  = owner(line_addr(vtag, cur_set), dco_t_valid, dco_t_base,
+                                  dco_t_size, dco_t_bypass, dco_t_lsb);
+                    vdead = pol_dbp && vown[11] &&
+                            (vown[10] ||
+                             dead_tile(tile_id(line_addr(vtag, cur_set), vown, d_lsb),
+                                       dco_dead_valid, dco_dead_id));
+                    vprio = (pol_repl == 2'd2) ? (vtag[3:0] & bmask) : 4'd0;
+                    vkey  = {!vdead, vprio, ~age[vidx]};
+                    if (!way_claimed[vw] && (!vic_ok || vkey < vbest)) begin
+                        vic_way = vw[WAY_W-1:0]; vic_ok = 1'b1; vbest = vkey; vic_dead = vdead;
+                    end
                 end
             end
         end
     end
+
+    // ---- the bypass decision for the request in hand (DCO sec IV-D) ----------
+    // A read miss is not allocated when its tensor was registered with
+    // nAcc = 1 (it will not be read again), or when its priority is below the
+    // gear the eviction rate has set -- only for the slower core of its pair
+    // under gqa_bypass, so shared data the faster core fetches stays cached.
+    reg  [3:0]  gear;
+    wire [3:0]  gear_eff  = pol_static ? gear_init : gear;
+    wire [3:0]  cur_prio  = cur_tagb[3:0] & bmask;
+    wire [11:0] cur_own   = owner(cur_addr, dco_t_valid, dco_t_base, dco_t_size,
+                                  dco_t_bypass, dco_t_lsb);
+    wire        cur_tbyp  = pol_tbyp && cur_own[11] && cur_own[10];
+    wire        cur_dbyp  = pol_dyn && ({1'b0, cur_prio} < {1'b0, gear_eff}) &&
+                            (!pol_gqa || dco_slow[cur_src]);
+    wire        cur_byp   = !cur_we && !cur_amo && (cur_tbyp || cur_dbyp);
+
+    // ---- the TMU register window ---------------------------------------------
+    wire        cur_mmio  = (cur_addr[ADDR_W-1:12] == TMU_BASE[ADDR_W-1:12]);
+    assign tmu_wr_valid = (est == E_MMIO) && cur_we && !cur_amo;
+    assign tmu_wr_off   = cur_addr[11:0];
+    assign tmu_wr_data  = cur_wdata;
+    assign tmu_wr_src   = cur_src;
+    assign tmu_rd_off   = cur_addr[11:0];
+
+    // ---- tile-last-word notices (DCO sec IV-B) ---------------------------------
+    // A tile's use is counted when its last 8-byte word is read. One notice is
+    // held; a second one while it waits is dropped and counted -- a hint late or
+    // lost moves when a tile is declared dead, never what a load returns.
+    reg         tl_v;
+    reg  [63:0] tl_a;
+    assign tmu_tl_valid = tl_v;
+    assign tmu_tl_addr  = tl_a;
+    // Only a registered tensor's tiles are counted, each in its own granule.
+    wire [5:0]  cur_lsb  = (cur_own[5:0] != 6'd0) ? cur_own[5:0] : d_lsb;
+    wire [63:0] tlw_mask = ((64'd1 << cur_lsb) - 64'd1) & ~64'd7;
+    wire        cur_tlw  = pol_dbp && cur_own[11] && !cur_we && !cur_amo &&
+                           (cur_lsb >= 6'd3) && ((cur_addr & tlw_mask) == tlw_mask);
 
     // ---- pending work elsewhere ---------------------------------------------
     reg              ms_pick;       // some MSHR wants the engine
@@ -436,6 +663,34 @@ module tnca_nuca_slice #(
     reg [WAY_W-1:0]    fill_way;
     reg [SET_W-1:0]    fill_set;
 
+    // DCO bookkeeping
+    reg         gear_seed;
+    reg [15:0]  ev_cnt, win_cnt;
+    reg         tl_load;
+    reg [63:0]  tl_naddr;
+
+    // Make `tw` the most recently used way of set `ts`: every way younger than
+    // it ages by one, so the ages stay a permutation.
+    task touch;
+        input [SET_W-1:0] ts;
+        input [WAY_W-1:0] tw;
+        integer q;
+        begin
+            for (q = 0; q < WAYS; q = q + 1)
+                if (age[ts*WAYS + q] < age[ts*WAYS + tw])
+                    age[ts*WAYS + q] <= age[ts*WAYS + q] + 1'b1;
+            age[ts*WAYS + tw] <= {WAY_W{1'b0}};
+        end
+    endtask
+
+    task tl_note;
+        input [ADDR_W-1:0] a;
+        begin
+            tl_load  = 1'b1;
+            tl_naddr = a;
+        end
+    endtask
+
     always @(posedge clk) begin
         if (!rst_n) begin
             est           <= E_SEL;
@@ -454,8 +709,20 @@ module tnca_nuca_slice #(
             perf_hit_past_block <= 0;
             for (i = 0; i < MSHR_N; i = i + 1) ms_state[i] <= MS_FREE;
             for (i = 0; i < SETS; i = i + 1)   victim_ptr[i] <= {WAY_W{1'b0}};
+            for (i = 0; i < LINES; i = i + 1)  age[i] <= i % WAYS;
+            ms_byp <= {MSHR_N{1'b0}};
+            perf_bypass <= 0; perf_evict <= 0; perf_dead_evict <= 0;
+            tl_v <= 1'b0; tl_a <= 64'd0; tmu_tl_drop <= 1'b0;
+            gear <= 4'd0; gear_seed <= 1'b1; ev_cnt <= 16'd0; win_cnt <= 16'd0;
         end else begin
             push_rsp = 1'b0;
+            tl_load  = 1'b0;
+            tl_naddr = 64'd0;
+            if (gear_seed) begin
+                // the first cycle out of reset: start from the configured gear
+                gear <= (gear_init > gear_max) ? gear_max : gear_init;
+                gear_seed <= 1'b0;
+            end
             push_src = {SRC_W{1'b0}};
             push_tag = {TAG_W{1'b0}};
             push_data = {WORD_BITS{1'b0}};
@@ -522,8 +789,23 @@ module tnca_nuca_slice #(
 
             //---------------------------------------------------------------
             E_LOOK: begin
-                if (hit && !ms_match) est <= E_HIT;
-                else                  est <= E_MISS;
+                if (cur_mmio)              est <= E_MMIO;
+                else if (hit && !ms_match) est <= E_HIT;
+                else                       est <= E_MISS;
+            end
+
+            //---------------------------------------------------------------
+            // A TMU register: a store waits for the TMU to take it, a load
+            // reads it straight away. Neither touches the arrays.
+            E_MMIO: begin
+                if (!cur_we || cur_amo || tmu_wr_ready) begin
+                    push_rsp  = 1'b1;
+                    push_src  = cur_src;
+                    push_tag  = cur_tag;
+                    push_data = cur_we ? {WORD_BITS{1'b0}} : tmu_rd_data;
+                    rq_v[cur_rq] <= 1'b0;
+                    est <= E_SEL;
+                end
             end
 
             //---------------------------------------------------------------
@@ -572,15 +854,23 @@ module tnca_nuca_slice #(
                     push_data = data_mem[cur_set*WAYS + hit_way]
                                 [cur_wsel*WORD_BITS +: WORD_BITS];
                 end
+                touch(cur_set, hit_way);
+                if (cur_tlw) tl_note(cur_addr);
                 rq_v[cur_rq] <= 1'b0;
                 est <= E_SEL;
             end
 
             //---------------------------------------------------------------
             E_MISS: begin
-                if (ms_match) begin
+                if (ms_match && ms_byp[ms_match_id] && (cur_we || cur_amo)) begin
+                    // A store cannot ride a bypassed miss: there is no way for
+                    // it to write. It waits for the miss to retire, then
+                    // allocates a line of its own.
+                    rq_blocked[cur_rq] <= 1'b1;
+                end else if (ms_match) begin
                     // merge into the existing miss
                     if (tg_has_free) begin
+                        if (cur_tlw) tl_note(cur_addr);
                         perf_merge <= perf_merge + 1;
                         tg_v[tg_free_idx]     <= 1'b1;
                         tg_src[tg_free_idx]   <= cur_src;
@@ -603,8 +893,38 @@ module tnca_nuca_slice #(
                         perf_target_full <= perf_target_full + 1;
                         rq_blocked[cur_rq] <= 1'b1;
                     end
+                end else if (ms_has_free && tg_has_free && cur_byp) begin
+                    // DCO bypass: fetch the line for this read, claim no way.
+                    perf_miss   <= perf_miss + 1;
+                    perf_bypass <= perf_bypass + 1;
+                    ms_addr[ms_free_idx]  <= {cur_addr[ADDR_W-1:OFF_W], {OFF_W{1'b0}}};
+                    ms_way[ms_free_idx]   <= {WAY_W{1'b0}};
+                    ms_set[ms_free_idx]   <= cur_set;
+                    ms_byp[ms_free_idx]   <= 1'b1;
+                    ms_head[ms_free_idx]  <= tg_free_idx;
+                    ms_tail[ms_free_idx]  <= tg_free_idx;
+                    ms_hasT[ms_free_idx]  <= 1'b1;
+                    ms_state[ms_free_idx] <= MS_REQ;
+                    tg_v[tg_free_idx]     <= 1'b1;
+                    tg_next[tg_free_idx]  <= tg_free_idx;
+                    tg_src[tg_free_idx]   <= cur_src;
+                    tg_tag[tg_free_idx]   <= cur_tag;
+                    tg_we[tg_free_idx]    <= 1'b0;
+                    tg_amo[tg_free_idx]   <= 1'b0;
+                    tg_be[tg_free_idx]    <= cur_be;
+                    tg_wdata[tg_free_idx] <= cur_wdata;
+                    tg_wsel[tg_free_idx]  <= cur_wsel;
+                    if (cur_tlw) tl_note(cur_addr);
+                    rq_v[cur_rq] <= 1'b0;
                 end else if (ms_has_free && tg_has_free && vic_ok) begin
                     perf_miss <= perf_miss + 1;
+                    ms_byp[ms_free_idx]  <= 1'b0;
+                    if (v_bits[cur_set*WAYS + vic_way]) begin
+                        perf_evict <= perf_evict + 1;
+                        ev_cnt     <= ev_cnt + 1'b1;
+                        if (vic_dead) perf_dead_evict <= perf_dead_evict + 1;
+                    end
+                    if (cur_tlw) tl_note(cur_addr);
                     ms_addr[ms_free_idx] <= {cur_addr[ADDR_W-1:OFF_W], {OFF_W{1'b0}}};
                     ms_way[ms_free_idx]  <= vic_way;
                     ms_set[ms_free_idx]  <= cur_set;
@@ -614,8 +934,8 @@ module tnca_nuca_slice #(
                     // A dirty victim must leave before the fill overwrites it.
                     if (v_bits[cur_set*WAYS + vic_way] && d_bits[cur_set*WAYS + vic_way]) begin
                         ms_state[ms_free_idx] <= MS_WB;
-                        ms_wbadr[ms_free_idx] <= {tag_mem[cur_set*WAYS + vic_way],
-                                                  cur_set, {OFF_W{1'b0}}};
+                        ms_wbadr[ms_free_idx] <= line_addr(tag_mem[cur_set*WAYS + vic_way],
+                                                           cur_set);
                     end else begin
                         ms_state[ms_free_idx] <= MS_REQ;
                     end
@@ -628,6 +948,9 @@ module tnca_nuca_slice #(
                     tg_src[tg_free_idx]   <= cur_src;
                     tg_tag[tg_free_idx]   <= cur_tag;
                     tg_we[tg_free_idx]    <= cur_we;
+                    tg_amo[tg_free_idx]   <= cur_amo;
+                    tg_aop[tg_free_idx]   <= cur_aop;
+                    tg_cmp[tg_free_idx]   <= cur_cmp;
                     tg_be[tg_free_idx]    <= cur_be;
                     tg_wdata[tg_free_idx] <= cur_wdata;
                     tg_wsel[tg_free_idx]  <= cur_wsel;
@@ -670,10 +993,13 @@ module tnca_nuca_slice #(
             E_FILL: begin
                 fill_set = ms_set[cur_ms];
                 fill_way = ms_way[cur_ms];
-                data_mem[fill_set*WAYS + fill_way] <= ms_line[cur_ms];
-                tag_mem[fill_set*WAYS + fill_way]  <= ms_addr[cur_ms][ADDR_W-1 -: TAGB];
-                v_bits[fill_set*WAYS + fill_way]   <= 1'b1;
-                d_bits[fill_set*WAYS + fill_way]   <= 1'b0;
+                if (!ms_byp[cur_ms]) begin
+                    data_mem[fill_set*WAYS + fill_way] <= ms_line[cur_ms];
+                    tag_mem[fill_set*WAYS + fill_way]  <= ms_addr[cur_ms][ADDR_W-1 -: TAGB];
+                    v_bits[fill_set*WAYS + fill_way]   <= 1'b1;
+                    d_bits[fill_set*WAYS + fill_way]   <= 1'b0;
+                    touch(fill_set, fill_way);
+                end
                 ms_state[cur_ms] <= MS_WAKE;
                 est <= E_SEL;
             end
@@ -709,6 +1035,8 @@ module tnca_nuca_slice #(
                         data_mem[fill_set*WAYS + fill_way] <= merged;
                         d_bits[fill_set*WAYS + fill_way]   <= 1'b1;
                         push_data = {WORD_BITS{1'b0}};
+                    end else if (ms_byp[cur_ms]) begin
+                        push_data = ms_line[cur_ms][tg_wsel[t_cur]*WORD_BITS +: WORD_BITS];
                     end else begin
                         push_data = data_mem[fill_set*WAYS + fill_way]
                                     [tg_wsel[t_cur]*WORD_BITS +: WORD_BITS];
@@ -722,6 +1050,7 @@ module tnca_nuca_slice #(
                         // last target: the miss is done, resources released
                         ms_state[cur_ms] <= MS_FREE;
                         ms_hasT[cur_ms]  <= 1'b0;
+                        ms_byp[cur_ms]   <= 1'b0;
                         rq_blocked <= {RQ_N{1'b0}};   // retry anything that gave up
                     end else begin
                         ms_head[cur_ms] <= tg_next[t_cur];
@@ -732,6 +1061,36 @@ module tnca_nuca_slice #(
 
             default: est <= E_SEL;
             endcase
+
+            //------------------------------------------------------------------
+            // tile-last-word notice buffer (one entry)
+            //------------------------------------------------------------------
+            tmu_tl_drop <= 1'b0;
+            if (tl_v && tmu_tl_ready) tl_v <= 1'b0;
+            if (tl_load) begin
+                if (!tl_v || tmu_tl_ready) begin
+                    tl_v <= 1'b1;
+                    tl_a <= tl_naddr;
+                end else begin
+                    tmu_tl_drop <= 1'b1;
+                end
+            end
+
+            //------------------------------------------------------------------
+            // B_GEAR: evictions in each window of g_window cycles move it
+            // (sec IV-D). Above bypass_ub bypass more, below bypass_lb less.
+            //------------------------------------------------------------------
+            if (!gear_seed) begin
+                if (win_cnt + 16'd1 >= g_window) begin
+                    win_cnt <= 16'd0;
+                    ev_cnt  <= 16'd0;
+                    if (ev_cnt > g_ub && gear < gear_max)            gear <= gear + 4'd1;
+                    else if (ev_cnt < g_lb && gear != 4'd0)          gear <= gear - 4'd1;
+                end else begin
+                    win_cnt <= win_cnt + 16'd1;
+                end
+            end
+            perf_gear <= gear_eff;
 
             //------------------------------------------------------------------
             // response queue

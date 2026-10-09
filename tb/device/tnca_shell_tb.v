@@ -67,7 +67,7 @@ module tnca_shell_tb;
     reg  [3:0]  cmd_op = CMD_NOP;
     reg  [63:0] cmd_pc = 64'd0, cmd_arg_base = 64'd0;
     reg  [NUM_RCTX-1:0] cmd_role_mask = 1;
-    reg                 cmd_slice = 0;
+    reg  [2:0]          cmd_slice = 0;
     reg  [31:0] px = 0, py = 0, pz = 0, nx = 1, ny = 1, nz = 1;
     reg  [63:0] cmd_deadline = 64'd2000000;
     wire        cmd_ready, done_valid, busy, core_idle;

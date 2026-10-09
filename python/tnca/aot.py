@@ -756,10 +756,23 @@ def _rctx_spmd(kernel, target, prov, options, stages, scratch_bytes, scratch_slo
     if not _rctx_spmd_wanted(options):
         return 1
     from tnca_cc import rctx_spmd
+    # As many contexts as the target has, halved while the kernel's
+    # accumulators, barriers, descriptors or windows do not fit a slice --
+    # the hardware slices by the count the launch asks for (RSLICE) -- and at
+    # most TNCA_RCTX_SPMD_MMA (default 2) for a kernel that uses the matrix
+    # unit: measured on ArchBench, two GEMM programs at a time beat four,
+    # which share one matrix unit and one transfer engine (R39-05).
     contexts = int(getattr(target, 'num_rctx', 1) or 1)
-    sizes = rctx_spmd.slices(target, contexts) if contexts > 1 else None
-    why = rctx_spmd.ineligible(kernel, scratch_bytes, sizes) if contexts > 1 \
-        else 'the target has one role context'
+    mma_cap = int(os.environ.get('TNCA_RCTX_SPMD_MMA', '2'))
+    why = 'the target has one role context'
+    while contexts > 1:
+        sizes = rctx_spmd.slices(target, contexts)
+        why = rctx_spmd.ineligible(kernel, scratch_bytes, sizes)
+        if why is None and kernel.accumulators and contexts > mma_cap:
+            why = f'a kernel using the matrix unit runs on at most {mma_cap} contexts'
+        if why is None:
+            break
+        contexts //= 2
     if why is not None:
         prov.record('rctx_spmd_refused', why)
         return 1

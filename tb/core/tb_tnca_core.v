@@ -73,7 +73,8 @@ module tb_tnca_core;
     reg [63:0]  launch_pc = 64'd0;
     reg [NUM_RCTX-1:0] launch_role_mask;
     integer            nroles;
-    reg                launch_slice;
+    reg  [2:0]         launch_slice;
+    integer            slicek;
     reg [31:0]  pid_x = 0, pid_y = 0, pid_z = 0;
     reg [31:0]  npid_x = 1, npid_y = 1, npid_z = 1;
     reg [63:0]  arg_base = 64'd0;
@@ -185,7 +186,9 @@ module tb_tnca_core;
         if ($value$plusargs("roles=%d", nroles))
             launch_role_mask = (1 << nroles) - 1;
         // R39-05: every context in its own slice of the resources (RSLICE).
-        launch_slice = $test$plusargs("slice");
+        // +slicek=K: 2^K slices (0, the default: one per context).
+        if (!$value$plusargs("slicek=%d", slicek)) slicek = 0;
+        launch_slice = {$test$plusargs("slice") ? 1'b1 : 1'b0, slicek[1:0]};
 
         // Per-RCTX physical vector base. Disjoint by default; +aliasvrf gives
         // every context the same base, which is what a producer/consumer role

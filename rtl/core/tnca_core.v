@@ -88,15 +88,18 @@ module tnca_core #(
     //               still excludes them.
     parameter FPU_OVERLAP    = 0,
     // R39-05: per-context resource slices. Not a timing switch -- it is a
-    // capability (rctx_slice): a launch with launch_slice set gives each
+    // capability (rctx_slice): a launch with launch_slice[2] set gives each
     // context its own accumulators, barriers, descriptors and windows. An
     // index an instruction names (or a barrier token carries) has the
-    // context number ORed into its top bits, so context r of R uses slice r
-    // of each file -- 16/R accumulators, 32/R barriers, 16/R descriptors
-    // and 16/R windows -- and R programs of one kernel run at once without
-    // naming each other's resources. The compiler keeps every index below
-    // the slice size; ORing is then idempotent, so a token mb.arm returns
-    // (already sliced) means the same thing when it comes back.
+    // context number ORed into its top bits, so context r of S slices uses
+    // slice r of each file -- 16/S accumulators, 32/S barriers, 16/S
+    // descriptors and 16/S windows -- and S programs of one kernel run at
+    // once without naming each other's resources. S = 2^launch_slice[1:0],
+    // or every context (2^RCTX_W) when that field is 0: a kernel that needs
+    // more than a quarter of a file runs on two contexts of a four-context
+    // core with halves. The compiler keeps every index below the slice
+    // size; ORing is then idempotent, so a token mb.arm returns (already
+    // sliced) means the same thing when it comes back.
     parameter RSLICE         = 0,
     parameter NUM_RCTX       = 2,
     parameter RCTX_W         = 1,
@@ -148,7 +151,7 @@ module tnca_core #(
     input  wire                     launch_valid,
     input  wire [63:0]              launch_pc,
     input  wire [NUM_RCTX-1:0]      launch_role_mask,
-    input  wire                     launch_slice,     // RSLICE: slice per-core resources
+    input  wire [2:0]               launch_slice,     // RSLICE: {slice, log2 slices}
     input  wire [31:0]              launch_pid_x,
     input  wire [31:0]              launch_pid_y,
     input  wire [31:0]              launch_pid_z,
@@ -458,23 +461,25 @@ module tnca_core #(
     // barrier, or a descriptor or window; `ra` names an accumulator (ACC),
     // a barrier (MBAR) or a descriptor (TXFER).
     //==========================================================================
-    reg slice_q;
-    localparam ACC_SH = ACC_W - RCTX_W;
-    localparam BAR_SH = BAR_W - RCTX_W;
-    localparam RES_SH = DESC_W - RCTX_W;
+    reg       slice_q;
+    reg [1:0] slice_k;            // log2 of the number of slices
     wire       d_sl    = (RSLICE != 0) && slice_q;
     wire [7:0] d_rctx8 = {{(8-RCTX_W){1'b0}}, d_rctx};
+    // Index width minus log2(slices): where the context number goes.
+    wire [3:0] acc_sh  = ACC_W  - slice_k;
+    wire [3:0] bar_sh  = BAR_W  - slice_k;
+    wire [3:0] res_sh  = DESC_W - slice_k;
     wire [7:0] dec_dsti_sl =
         !d_sl                          ? dec_dsti :
-        (dec_dstc == `TNCA_DST_A)      ? (dec_dsti | (d_rctx8 << ACC_SH)) :
-        (dec_dstc == `TNCA_DST_B)      ? (dec_dsti | (d_rctx8 << BAR_SH)) :
-        (dec_dstc == `TNCA_DST_RES)    ? (dec_dsti | (d_rctx8 << RES_SH)) :
+        (dec_dstc == `TNCA_DST_A)      ? (dec_dsti | (d_rctx8 << acc_sh)) :
+        (dec_dstc == `TNCA_DST_B)      ? (dec_dsti | (d_rctx8 << bar_sh)) :
+        (dec_dstc == `TNCA_DST_RES)    ? (dec_dsti | (d_rctx8 << res_sh)) :
                                          dec_dsti;
     wire [7:0] dec_ra_sl =
         !d_sl                          ? dec_ra_idx :
-        (dec_major == `TNCA_MAJ_ACC)   ? (dec_ra_idx | (d_rctx8 << ACC_SH)) :
-        (dec_major == `TNCA_MAJ_MBAR)  ? (dec_ra_idx | (d_rctx8 << BAR_SH)) :
-        (dec_major == `TNCA_MAJ_TXFER) ? (dec_ra_idx | (d_rctx8 << RES_SH)) :
+        (dec_major == `TNCA_MAJ_ACC)   ? (dec_ra_idx | (d_rctx8 << acc_sh)) :
+        (dec_major == `TNCA_MAJ_MBAR)  ? (dec_ra_idx | (d_rctx8 << bar_sh)) :
+        (dec_major == `TNCA_MAJ_TXFER) ? (dec_ra_idx | (d_rctx8 << res_sh)) :
                                          dec_ra_idx;
 
     tnca_decoder u_dec (
@@ -1262,7 +1267,7 @@ module tnca_core #(
 
     // RSLICE: a barrier a token names is in the issuing context's slice.
     wire [BAR_W-1:0] x_bar_sl = ((RSLICE != 0) && slice_q)
-                              ? ({{(BAR_W-RCTX_W){1'b0}}, x_rctx} << BAR_SH)
+                              ? ({{(BAR_W-RCTX_W){1'b0}}, x_rctx} << bar_sh)
                               : {BAR_W{1'b0}};
     wire [BAR_W-1:0] tok_bar = sa_data[BAR_W-1:0] | x_bar_sl;
 
@@ -2064,6 +2069,7 @@ module tnca_core #(
             blocked    <= {NUM_RCTX{1'b0}};
             parked     <= {NUM_RCTX{1'b0}};
             slice_q    <= 1'b0;
+            slice_k    <= 2'd0;
             perf_rctx_switch <= 64'd0;
             mtx_rctx   <= {RCTX_W{1'b0}};
             red_pend   <= 1'b0;
@@ -2198,7 +2204,9 @@ module tnca_core #(
                 end
                 running  <= launch_role_mask;
                 launched <= launch_role_mask;
-                slice_q  <= (RSLICE != 0) && launch_slice;
+                slice_q  <= (RSLICE != 0) && launch_slice[2];
+                slice_k  <= (launch_slice[1:0] != 2'd0) ? launch_slice[1:0]
+                                                        : RCTX_W[1:0];
                 faulted  <= {NUM_RCTX{1'b0}};
                 pid_x    <= launch_pid_x;
                 pid_y    <= launch_pid_y;

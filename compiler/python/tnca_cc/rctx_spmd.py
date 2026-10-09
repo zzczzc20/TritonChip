@@ -45,8 +45,9 @@ _MUTATES = {'vinsert': (0,), 'assign': (0,)}
 
 
 def slices(target, contexts):
-    """{kind: how many a context may use} under RSLICE, or None without it.
-    Descriptors and windows share the slicing of the smaller file."""
+    """{kind: how many a context may use} when the files are cut into
+    `contexts` slices (RSLICE), or None without it. Descriptors and windows
+    share the slicing of the smaller file."""
     caps = target.capabilities if isinstance(target.capabilities, dict) \
         else dict(target.capabilities)
     if not caps.get('rctx_slice'):

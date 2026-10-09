@@ -182,7 +182,7 @@ module tnca_fpga_top #(
     localparam PHYS_W = $clog2(NUM_RCTX * VREGS_PER_RCTX);
 
     wire [NUM_RCTX-1:0] cmd_role_mask;
-    wire                cmd_slice;
+    wire [2:0]          cmd_slice;
     wire [31:0] cmd_pid_x, cmd_pid_y, cmd_pid_z;
     wire [31:0] cmd_npid_x, cmd_npid_y, cmd_npid_z;
     wire [63:0] cmd_deadline;

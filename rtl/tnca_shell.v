@@ -113,9 +113,10 @@ module tnca_shell #(
     input  wire [63:0]              cmd_arg_base,
     input  wire [NUM_RCTX-1:0]      cmd_role_mask,
     // R39-05: give each started context its own slice of the core's
-    // accumulators, barriers, descriptors and windows (RSLICE). Bit 31 of
-    // the launch's role-mask argument.
-    input  wire                     cmd_slice,
+    // accumulators, barriers, descriptors and windows (RSLICE): bit 31 of
+    // the launch's role-mask argument, and bits 30:29 the log2 of the
+    // number of slices (0: one per context the core has).
+    input  wire [2:0]               cmd_slice,
     input  wire [31:0]              cmd_pid_x,
     input  wire [31:0]              cmd_pid_y,
     input  wire [31:0]              cmd_pid_z,
@@ -252,7 +253,7 @@ module tnca_shell #(
     reg  [63:0] launch_pc;
     reg  [63:0] launch_arg_base;
     reg  [NUM_RCTX-1:0] launch_role_mask;
-    reg                 launch_slice;
+    reg  [2:0]          launch_slice;
     reg  [31:0] pid_x, pid_y, pid_z, npid_x, npid_y, npid_z;
 
     wire        core_fault_valid;
@@ -469,7 +470,7 @@ module tnca_shell #(
             launch_pc        <= 64'd0;
             launch_arg_base  <= 64'd0;
             launch_role_mask <= {NUM_RCTX{1'b0}};
-            launch_slice     <= 1'b0;
+            launch_slice     <= 3'd0;
             pid_x <= 32'd0; pid_y <= 32'd0; pid_z <= 32'd0;
             npid_x <= 32'd1; npid_y <= 32'd1; npid_z <= 32'd1;
         end else begin

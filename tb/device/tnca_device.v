@@ -105,7 +105,7 @@ module tnca_device;
     reg  [63:0] cmd_pc = 64'd0;
     reg  [63:0] cmd_arg_base = 64'd0;
     reg  [NUM_RCTX-1:0] cmd_role_mask;
-    reg                 cmd_slice;
+    reg  [2:0]          cmd_slice;
     reg  [31:0] cmd_pid_x = 0, cmd_pid_y = 0, cmd_pid_z = 0;
     reg  [31:0] cmd_npid_x = 1, cmd_npid_y = 1, cmd_npid_z = 1;
     reg  [63:0] cmd_deadline = 64'd0;
@@ -285,7 +285,7 @@ module tnca_device;
             cmd_pc        = pc;
             cmd_arg_base  = argb;
             cmd_role_mask = mask[NUM_RCTX-1:0];
-            cmd_slice     = mask[31];
+            cmd_slice     = mask[31:29];
             cmd_pid_x = px;  cmd_pid_y = py;  cmd_pid_z = pz;
             cmd_npid_x = nx; cmd_npid_y = ny; cmd_npid_z = nz;
             cmd_deadline = deadline;
@@ -340,7 +340,7 @@ module tnca_device;
             u_mem.load_hex(hexfile);
 
         cmd_role_mask = {{(NUM_RCTX-1){1'b0}}, 1'b1};
-        cmd_slice     = 1'b0;
+        cmd_slice     = 3'd0;
 
         served = 0;
         repeat (4) @(posedge clk);

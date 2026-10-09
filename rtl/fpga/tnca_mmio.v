@@ -165,7 +165,7 @@ module tnca_mmio #(
     output reg  [63:0]              cmd_pc,
     output reg  [63:0]              cmd_arg_base,
     output reg  [NUM_RCTX-1:0]      cmd_role_mask,
-    output reg                      cmd_slice,       // R39-05: role-mask bit 31
+    output reg  [2:0]               cmd_slice,       // R39-05: role-mask bits 31:29
     output reg  [31:0]              cmd_pid_x,
     output reg  [31:0]              cmd_pid_y,
     output reg  [31:0]              cmd_pid_z,
@@ -405,7 +405,7 @@ module tnca_mmio #(
             cmd_op <= 4'd0;
             cmd_pc <= 64'd0;   cmd_arg_base <= 64'd0;
             cmd_role_mask <= {NUM_RCTX{1'b0}};
-            cmd_slice     <= 1'b0;
+            cmd_slice     <= 3'd0;
             cmd_pid_x <= 32'd0;  cmd_pid_y <= 32'd0;  cmd_pid_z <= 32'd0;
             cmd_npid_x <= 32'd1; cmd_npid_y <= 32'd1; cmd_npid_z <= 32'd1;
             cmd_deadline <= 64'd0;
@@ -447,7 +447,7 @@ module tnca_mmio #(
                         cmd_pc        <= req_a0;
                         cmd_arg_base  <= req_a1;
                         cmd_role_mask <= req_a2[NUM_RCTX-1:0];
-                        cmd_slice     <= req_a2[31];
+                        cmd_slice     <= req_a2[31:29];
                         cmd_pid_x     <= req_a3[15:0];
                         cmd_pid_y     <= req_a3[31:16];
                         cmd_pid_z     <= req_a4[15:0];
@@ -463,8 +463,8 @@ module tnca_mmio #(
                         cmd_pc        <= 64'd0;
                         cmd_arg_base  <= 64'd0;
                         cmd_role_mask <= {NUM_RCTX{1'b0}};
-                        cmd_slice     <= 1'b0;
-            cmd_slice     <= 1'b0;
+                        cmd_slice     <= 3'd0;
+            cmd_slice     <= 3'd0;
                         cmd_pid_x     <= 32'd0;
                         cmd_pid_y     <= 32'd0;
                         cmd_pid_z     <= 32'd0;

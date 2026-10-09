@@ -767,9 +767,11 @@ class Session:
                 if per > 1:
                     # Bit 31: each started context gets its own slice of the
                     # core's accumulators, barriers, descriptors and windows
-                    # (RSLICE). A machine without RSLICE ignores it, and the
-                    # compiler only relies on it where the target has it.
-                    mask |= 1 << 31
+                    # (RSLICE), bits 30:29 the log2 of the number of slices --
+                    # `per`, which may be fewer than the core's contexts. A
+                    # machine without RSLICE ignores them, and the compiler
+                    # only relies on them where the target has it.
+                    mask |= (1 << 31) | ((per.bit_length() - 1) << 29)
                 first = x + gx * (y + gy * z)
                 before = self._snapshot() if probe else None
                 if probe and before is None:

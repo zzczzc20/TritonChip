@@ -166,19 +166,28 @@ def _decompose_cpu_attention():
         decompositions[op] = decomposition_table[op]
 
 
-def configure(max_block=STAGE1_MAX_BLOCK, tensor_descriptors=None):
+def configure(max_block=None, tensor_descriptors=None):
     """Point Inductor's CPU code generation at TNCA.
 
-    `tensor_descriptors` (default: the environment's TNCA_TENSOR_DESCRIPTORS
-    == "1") turns on Inductor's `use_tensor_descriptor` code generation, so
-    its kernels load and store through `tl.make_tensor_descriptor` (rank 1-5)
-    instead of pointer arithmetic -- the same code Inductor generates for
-    TMA on NVIDIA GPUs. Off, kernels use pointers as before.
+    `tensor_descriptors` turns on Inductor's `use_tensor_descriptor` code
+    generation, so its kernels load and store through
+    `tl.make_tensor_descriptor` (rank 1-5) instead of pointer arithmetic --
+    the same code Inductor generates for TMA on NVIDIA GPUs. It is ON by
+    default: since R39 this is the standard path every performance number
+    comes from (doc/r39_tasks_and_acceptance.md sec 0.1).
+    TNCA_TENSOR_DESCRIPTORS=0 turns it off; off, kernels use pointers.
+
+    `max_block` caps every block dimension (default: TNCA_MAX_BLOCK, else
+    STAGE1_MAX_BLOCK). Both are knobs an ablation sets through the
+    environment, and both are in the dict this returns, which ArchBench
+    records with every point.
     """
     import os
     os.environ.setdefault('TNCA_TRITON', '1')
     if tensor_descriptors is None:
-        tensor_descriptors = os.environ.get('TNCA_TENSOR_DESCRIPTORS') == '1'
+        tensor_descriptors = os.environ.get('TNCA_TENSOR_DESCRIPTORS', '1') != '0'
+    if max_block is None:
+        max_block = int(os.environ.get('TNCA_MAX_BLOCK', STAGE1_MAX_BLOCK))
     import torch._inductor.config as config
     config.cpu_backend = 'triton'
     if tensor_descriptors:
@@ -211,9 +220,8 @@ def configure(max_block=STAGE1_MAX_BLOCK, tensor_descriptors=None):
     out = dict(cpu_backend=config.cpu_backend, max_block=max_block,
                persistent_reductions=config.triton.persistent_reductions,
                compile_threads=config.compile_threads,
-               max_autotune_gemm_backends=config.max_autotune_gemm_backends)
-    if tensor_descriptors:
-        out['tensor_descriptors'] = True
+               max_autotune_gemm_backends=config.max_autotune_gemm_backends,
+               tensor_descriptors=bool(tensor_descriptors))
     return out
 
 

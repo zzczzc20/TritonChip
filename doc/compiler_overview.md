@@ -311,7 +311,8 @@ There is one `Session` per (profile, backend, arguments), kept for the life of t
 | `TNCA_HOST_TIMEOUT` | 600 s | Host-side wait budget |
 | `TNCA_LAUNCH=skip` | — | Compile every kernel, launch none (reports would-be transfer sizes) |
 | `TNCA_KERNEL_DUMP`, `TNCA_DUMP_DIR` | — | Dump every stage (TTIR, inlined, optimised, TNCA IR, assembly, hex), also for failing kernels |
-| `TNCA_TENSOR_DESCRIPTORS` | off | `1`: `tnca.inductor.configure()` turns on Inductor's tensor-descriptor code generation (§9) |
+| `TNCA_TENSOR_DESCRIPTORS` | on (since R39) | `tnca.inductor.configure()` turns on Inductor's tensor-descriptor code generation (§9), the standard path; `0` turns it off |
+| `TNCA_MAX_BLOCK` | 16 | the block-dimension cap `tnca.inductor.configure()` gives Inductor (an R39 ablation knob) |
 
 ## 9. PyTorch integration
 
@@ -332,7 +333,7 @@ There is one `Session` per (profile, backend, arguments), kept for the life of t
 
 **Status:** zero fallback on the 22 offloading graph tests of `tools/r38/torch_tests.py` (its 23rd graph checks that a real fallback is detected, and a separate case checks the device-assert trap: 24/24) and on all 52 tiny/small ArchBench points. The large tier (Llama-3.2-1B shapes) exceeds device memory and is not run on TNCA.
 
-**Tensor descriptors from Inductor.** `configure(tensor_descriptors=True)` (or `TNCA_TENSOR_DESCRIPTORS=1`) turns on Inductor's `use_tensor_descriptor` code generation, the same code it produces for TMA on NVIDIA GPUs:
+**Tensor descriptors from Inductor.** On by default since R39 (`configure(tensor_descriptors=False)` or `TNCA_TENSOR_DESCRIPTORS=0` turns it off). It turns on Inductor's `use_tensor_descriptor` code generation, the same code it produces for TMA on NVIDIA GPUs:
 - Pointwise and reduction kernels load and store through `tl.make_tensor_descriptor` at ranks 1–5, with `tl.trans`/`tl.reshape` around permuted accesses.
 - Inductor offers this for CPU tensors only when a Triton backend is registered under the name `cpu`, which is why the plugin's entry point has that name.
 - Inductor's CPU branch skips the 16-byte rules that Triton's `make_tensor_descriptor` itself enforces, so `configure()` installs a checker through `TritonKernel.tma_compatibility_checker_cls`. It applies Inductor's CUDA rules instead, refuses descriptors whose innermost block is `XBLOCK` in a reduction (TNCA runs reductions one row per program), and keeps to the element types the compiler takes through a descriptor.

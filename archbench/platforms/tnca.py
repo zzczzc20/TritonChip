@@ -51,6 +51,39 @@ BOARD_CLOCK_HZ = {'fpga-u50': 37.5e6,
 HEAP_BYTES = 0x80000 - 0x20000
 
 
+# The TNCA_* environment variables that do NOT change what is compiled or how
+# it runs: the transport, timeouts, and what the harness itself sets from its
+# own arguments (which the record already holds). Every other TNCA_* variable
+# is an ablation knob and is recorded (R39-00).
+NOT_KNOBS = frozenset({'TNCA_BACKEND', 'TNCA_BACKEND_ARGS', 'TNCA_HOST_TIMEOUT',
+                       'TNCA_DEADLINE', 'TNCA_LAUNCH', 'TNCA_PROFILE', 'TNCA_OPT_LEVEL',
+                       'TNCA_COUNTERS', 'TNCA_TRITON', 'TNCA_DEVICE'})
+
+
+def knobs():
+    return {k: v for k, v in sorted(os.environ.items())
+            if k.startswith('TNCA_') and k not in NOT_KNOBS}
+
+
+def device_id(profile, backend, backend_kwargs):
+    """What the device actually was: the simulator build, named by its
+    profile and RTL hashes, or the board image, named by its sha256. Two
+    runs with the same profile name on different RTL must not be merged."""
+    import hashlib
+    try:
+        xclbin = (backend_kwargs or {}).get('xclbin')
+        if xclbin:
+            h = hashlib.sha256()
+            with open(xclbin, 'rb') as f:
+                for chunk in iter(lambda: f.read(1 << 20), b''):
+                    h.update(chunk)
+            return f'xclbin:{h.hexdigest()[:16]}'
+        from tnca import device
+        return f'sim:{os.path.basename(os.path.dirname(device.expected_path(profile)))}'
+    except Exception as e:                                   # noqa: BLE001
+        return f'unknown:{type(e).__name__}'
+
+
 def run(point, *, profile='core-sim', opt_level=2, seed=0, counters=False):
     os.environ['TNCA_PROFILE'] = profile
     os.environ['TNCA_OPT_LEVEL'] = str(opt_level)
@@ -68,7 +101,8 @@ def run(point, *, profile='core-sim', opt_level=2, seed=0, counters=False):
     config = tnca.inductor.configure()
     backend, backend_kwargs = backend_choice()
     plat = dict(kind='tnca', name=f'tnca:{profile}@{backend}', profile=profile, backend=backend,
-                backend_args=backend_kwargs, opt_level=opt_level, inductor=config)
+                backend_args=backend_kwargs, opt_level=opt_level, inductor=config,
+                knobs=knobs(), device_id=device_id(profile, backend, backend_kwargs))
     rec = base_record(point, plat, EVIDENCE.get(backend, 'measured-rtl'))
 
     compile_only = os.environ.get('TNCA_LAUNCH') == 'skip'

@@ -12,7 +12,8 @@ this path cannot offload, and it must be REPORTED as a fallback rather than
 silently computed.
 
     ~/src/torchenv/bin/python tools/r38/torch_tests.py [--only NAME ...]
-    TNCA_TENSOR_DESCRIPTORS=1 ... torch_tests.py   # with Inductor's tensor descriptors
+    TNCA_TENSOR_DESCRIPTORS=0 ... torch_tests.py   # without Inductor's tensor descriptors
+                                                   # (on by default since R39: the standard path)
 """
 import argparse
 import json
@@ -225,7 +226,7 @@ def run(name):
         problems.append('no Triton kernel was generated')
     if not must_offload and not fb:
         problems.append('an op this path cannot offload was not reported as a fallback')
-    # With TNCA_TENSOR_DESCRIPTORS=1 Inductor loads and stores through tensor
+    # With tensor descriptors on (the default) Inductor loads and stores through tensor
     # descriptors where its rules allow; the count says how many it made.
     descs = sum(c.count('tl.make_tensor_descriptor(') for c in code)
     return dict(name=name, ok=not problems, problems=problems, max_error=err, kernels=ks,

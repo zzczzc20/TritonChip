@@ -403,7 +403,9 @@ Ordered by what the R38 plan needs first. Each item names the decision or eviden
 
 ### 13.1 Close Stage 1 and record the board
 
-- **Rebuild the board image for the rank-5 transfer engine.** The U280 image loaded on 2026-10-08 predates it: its engine executes rank 1–2 and refuses `t.st.async`. `TENSOR_MAX_RANK` reads 2 on that image. A rank-3–5 transfer or a store faults there. A rank-1–2 load whose contiguous coordinate is not 8-byte aligned, which the compiler now sends to the engine for device-side descriptors, is **not** detected by that engine and returns shifted data. So kernels that use descriptors must not run on the old image. A rebuilt image then needs the board ladder again: conformance, ArchBench, and the descriptor tests through `fpga-u280`.
+- **Rebuild the board image for the rank-5 transfer engine. Done, 2026-10-09.** The U280 now runs a 100 MHz undivided image of r38-dco `8d8e4e9`, which has the rank-5 engine and `t.st.async` (`evidence/r38/u280_100mhz/`). The image loaded on 2026-10-08 executed rank 1–2 only and must not run descriptor kernels; it is no longer loaded. On the new image, through `fpga-u280`:
+  - `tools/r38/tdesc_tests.py` passes 10/10, including rank-3 transfers both ways and the rank-5 zero fill;
+  - `tools/r38/torch_tests.py` with `TNCA_TENSOR_DESCRIPTORS=1` passes 24/24 (R39-00).
 
 - **Record the board as evidence.**
   - The U280 results (B1–B6) are in the runbook (§5 there) and in `doc/r38_stage1_status.md`.

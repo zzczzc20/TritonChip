@@ -50,14 +50,16 @@ def _schedule():
 
 def _sparse_tensormaps():
     # Store only a TensorMap's non-zero words; the runtime zero-fills
-    # scratch. Off until its ablation passes; TNCA_SPARSE_TENSORMAPS=1 on.
-    return int(os.environ.get('TNCA_SPARSE_TENSORMAPS', '0'))
+    # scratch. On for the standard path since its ablation passed
+    # (doc/r39_tasks_and_acceptance.md R39-08); TNCA_SPARSE_TENSORMAPS=0 off.
+    return int(os.environ.get('TNCA_SPARSE_TENSORMAPS', '1'))
 
 
 def _rctx_spmd():
-    # R39-05's switch: one program per Role Context per launch, for a kernel
-    # that allows it. Off until its ablation passes; TNCA_RCTX_SPMD=1 on.
-    return int(os.environ.get('TNCA_RCTX_SPMD', '0'))
+    # R39-05's switch: every Role Context runs programs of one grid row, for
+    # a kernel that allows it. On for the standard path since its ablation
+    # passed (doc/r39_tasks_and_acceptance.md R39-05); TNCA_RCTX_SPMD=0 off.
+    return int(os.environ.get('TNCA_RCTX_SPMD', '1'))
 
 
 @dataclass(frozen=True)

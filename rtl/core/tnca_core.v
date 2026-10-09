@@ -77,9 +77,9 @@ module tnca_core #(
     //               longer stalls the core.
     parameter RCTX_SWITCH    = 0,
     //   LSU_INFLIGHT (R39-08) 2: two load/store units behind the one port
-    //               (tnca_lsu_pair), so a load starts while the access ahead
-    //               waits for memory. Loads overtake only loads; stores,
-    //               atomics and fences see one access at a time, as before.
+    //               (tnca_lsu_pair), so an access starts while the one ahead
+    //               waits for memory; atomics and fences see one access at
+    //               a time, as before.
     parameter LSU_INFLIGHT   = 1,
     //   FPU_OVERLAP (R39-10) ordinary vector FP issues during an SFU pass,
     //               and an SFU pass starts with ordinary FP in flight: the
@@ -1410,9 +1410,10 @@ module tnca_core #(
     wire [CTAG_W-1:0]    lm_rsp_tag;
     wire [MEM_DW-1:0]    lm_rsp_rdata;
 
-    // R39-08: with LSU_INFLIGHT = 2 a load may be accepted while the other
-    // unit drains a load (lsu_ready_load); req_ready still means no access
-    // is in flight at all, which is what a fence and an arrive wait for.
+    // R39-08: with LSU_INFLIGHT = 2 a load or store may be accepted while
+    // the other unit drains one (lsu_ready_load); req_ready still means no
+    // access is in flight at all, which is what a fence and an arrive wait
+    // for.
     wire lsu_ready_load;
     generate
     if (LSU_INFLIGHT >= 2) begin : g_lsu_pair
@@ -1457,7 +1458,7 @@ module tnca_core #(
         .MEM_DW(MEM_DW), .MEM_BYTES(MEM_BYTES), .MEM_SHIFT(MEM_SHIFT),
         .NUM_BEATS(LSU_BEATS), .BEAT_W(CTAG_W)
     ) u_lsu (
-        .o_draining(), .o_load(),
+        .o_draining(), .o_amo(),
         .clk(clk), .rst_n(rst_n),
         .req_ready(lsu_req_ready),
         .req_valid(x_mem_go),
@@ -1828,9 +1829,9 @@ module tnca_core #(
     // Without the second term the LSU silently dropped a request whose
     // predecessor had been accepted in the very cycle R looked at req_ready,
     // leaving the load's destination marked busy forever.
-    // A plain load needs only lsu_ready_load (LSU_INFLIGHT); anything else
+    // A load or store needs only lsu_ready_load (LSU_INFLIGHT); an atomic
     // needs the unit idle.
-    wire r_plain_load  = r_mem_en && !r_mem_store && !r_amo;
+    wire r_plain_load  = r_mem_en && !r_amo;
     wire lsu_free_next = (r_plain_load ? lsu_ready_load : lsu_req_ready) && !x_mem_go;
 
     // The reduction sequencer hijacks the FMA array's operands, so it may only

@@ -1,6 +1,6 @@
 //==============================================================================
-// tnca_lsu_pair -- two load/store units behind one request port, so a load can
-// start while the access ahead of it waits for memory (R39-08, LSU_INFLIGHT=2)
+// tnca_lsu_pair -- two load/store units behind one request port, so an access
+// can start while the one ahead of it waits for memory (R39-08, LSU_INFLIGHT=2)
 //
 // tnca_lsu keeps one instruction in flight: it plans and issues the beats of an
 // access, then waits for every response, then completes, and only then takes
@@ -11,13 +11,19 @@
 //
 // ORDERING
 // --------
-// Only a plain load overtakes, and only plain loads are overtaken: a load
-// accepted while the other unit drains a load reads memory nothing in flight
-// writes. A store or an atomic waits for both units to be idle, as it always
-// has, and so does anything behind one -- so no access is reordered with a
-// write, and `fence` (which waits for req_ready) still means every access is
-// complete. req_ready keeps that meaning: both units idle. req_ready_load is
-// the new, weaker one the core uses for a load.
+// The second unit is accepted only once the first has ISSUED its last beat,
+// so every request of the earlier access reaches the port before any of the
+// later one. The memories behind this core perform requests in the order
+// they arrive and reorder only the responses (tnca_fpga_mem's single data
+// port; tnca_mem_model applies a request when it accepts it, then delays or
+// shuffles the reply) -- so a load or store accepted while the other unit
+// drains a load or a store sees, and leaves, memory exactly as program order
+// would. An atomic waits for both units to be idle, as it always has, and so
+// does anything behind one; `fence` (which waits for req_ready) still means
+// every access is complete. req_ready keeps that meaning: both units idle.
+// req_ready_load is the weaker one the core uses for any other access. (A
+// memory that performed two requests out of order -- different NUCA slices
+// -- would need address checks here; no profile with this switch has one.)
 //
 // Only one unit issues beats at a time (the second is accepted only once the
 // first has issued its last), so the memory port is the issuing unit's. The
@@ -89,7 +95,7 @@ module tnca_lsu_pair #(
 );
     localparam UB = BEAT_W - 1;       // a unit's own tag width
 
-    wire [1:0] u_ready, u_drain, u_load, u_cplv, u_mvalid, u_take, u_ack;
+    wire [1:0] u_ready, u_drain, u_atomic, u_cplv, u_mvalid, u_take, u_ack;
     wire [RCTX_W-1:0]    u_cpl_rctx  [0:1];
     wire [2:0]           u_cpl_dstc  [0:1];
     wire [7:0]           u_cpl_dsti  [0:1];
@@ -105,11 +111,12 @@ module tnca_lsu_pair #(
     wire [`TNCA_AOP_W-1:0] u_aop [0:1];
     wire [63:0]          u_cmp   [0:1];
 
-    // An idle unit with the other one draining a load takes a load.
+    // An idle unit with the other one draining anything but an atomic takes
+    // anything but an atomic.
     assign req_ready      = &u_ready;
     assign req_ready_load = (&u_ready)
-                          | (u_ready[0] & u_drain[1] & u_load[1])
-                          | (u_ready[1] & u_drain[0] & u_load[0]);
+                          | (u_ready[0] & u_drain[1] & ~u_atomic[1])
+                          | (u_ready[1] & u_drain[0] & ~u_atomic[0]);
     assign u_take[0] = req_valid && u_ready[0];
     assign u_take[1] = req_valid && !u_ready[0] && u_ready[1];
 
@@ -173,7 +180,7 @@ module tnca_lsu_pair #(
                 .cpl_rctx(u_cpl_rctx[g]), .cpl_dst_class(u_cpl_dstc[g]),
                 .cpl_dst_idx(u_cpl_dsti[g]), .cpl_sdata(u_cpl_sdata[g]),
                 .cpl_vdata(u_cpl_vdata[g]), .cpl_lane_en(u_cpl_lane[g]),
-                .o_draining(u_drain[g]), .o_load(u_load[g]),
+                .o_draining(u_drain[g]), .o_amo(u_atomic[g]),
                 .mem_req_valid(u_mvalid[g]),
                 .mem_req_ready(mem_req_ready && (mu == g)),
                 .mem_req_addr(u_addr[g]), .mem_req_we(u_we[g]),

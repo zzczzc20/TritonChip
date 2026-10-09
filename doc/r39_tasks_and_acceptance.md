@@ -371,7 +371,7 @@ R39-02a 的改动都在两个开关之下，关闭时制品逐字节相同（447
 
 进展（2026-10-09）：
 
-- **Mode B（编译器 + 运行时）。** `tnca_cc.rctx_spmd`，compile option `rctx_spmd`（`TNCA_RCTX_SPMD`，标准路径默认 0，消融通过后再打开）。
+- **Mode B（编译器 + 运行时）。** `tnca_cc.rctx_spmd`，compile option `rctx_spmd`（`TNCA_RCTX_SPMD`）。消融通过后，标准路径默认开启；`compile_aot` 默认关。
   - kernel 体包成循环：context r 依次运行 program r、r + R、……（R 为 target 的 context 数），直到 `num_programs(0)`。`program_id(0)` 的值就是循环变量，循环尾是 4 条指令。
   - 参数 load、常量、其他轴的 pid 在循环外算一次。只提升标量；被 `assign` 原地写的值不提升（循环计数器的初值若被提升，第二个 program 的循环会从第一个结束处开始——ArchBench 的 cumsum、norm、softmax 先发现了这个错误，已修复，定向测试 `ragged_trip_counts` 覆盖）。
   - manifest：`execution.role_mask = 2^R − 1`，`program_to_role` 每个 context 一项，`entry_points` 每个 context 一项。运行时对每个 (y, z) 发一次 launch，启动 min(R, gx) 个 context；scratch 按 context 数放大。
@@ -391,7 +391,8 @@ R39-02a 的改动都在两个开关之下，关闭时制品逐字节相同（447
   - `t39_isolate`（新，验收 1 的第二条）：context 0 跑 24 个相互依赖的 SFU pass，其余 context 跑不碰 SFU、不碰存储器的整数与向量循环；`+ctxtrace` 打印每个 context 的退出拍和退休指令数。2 个 context 时，计算的那个 context 在没有 RCTX_SWITCH 时第 1794 拍退出，有时第 1392 拍。
   - `t39_slice`（新，`gen_t39_slice.py`）：每个 context 用同样的名字 `d1`、`w1`、`b0`、`b1`、`a1` 走 TensorMap → transfer engine → window → barrier → MMA → `a.vread`，数据按 context 不同、结果逐 context 断言。r39sw 上 2 个、r39sw4 上 2/3/4 个 context 都通过；没有 RSLICE 的台架上只启动 1 个 context。
   - `tools/r39/rctx_spmd_tests.py`（新）：奇数 grid、单 program、二维 grid、内层循环、每个 program 不同 trip count、cumsum、masked softmax；以及三个持有资源的 kernel（tl.dot、tensor descriptor、dot tile 网格），它们在有 `rctx_slice` 的 target 上必须被接受并数值正确，在其他 target 上必须被拒绝。
-  - R3.7 全套（447 个，`TNCA_RCTX_SPMD=1`）：进行中，已 300/300。
+  - R3.7 全套（447 个，`TNCA_RCTX_SPMD=1`，与 R39-01/02a 的开关一起）：**447/447**，135/135 个算子 × 优化级别通过。
+  - tensor descriptor 测试（`TNCA_RCTX_SPMD=1`，v3）：12/12。
   - `core-r39sw`（v3 全部开关）37 个程序 × 两种存储器模型全部通过。
 - **消融（v2 RTL 仿真 tiny，13 个不持有资源的点，A 为 v2、SPMD 关）：**
 
@@ -440,6 +441,12 @@ R39-02a 的改动都在两个开关之下，关闭时制品逐字节相同（447
   - 停顿占比：VRF 10.1 % → 5.1 %（绝对周期 −56 %，属于 R39-07 的指标，`VRF_PREFETCH` 达成）；前端 17.0 % → 10.7 %（绝对 −45 %，R39-09 的指标，`FE_NOBUBBLE` 达成）。
   - hazard 的绝对周期只降 4 %，**未达到 R39-06 的 −40 %**。bypass 只消除了「正在写回」的那一拍；剩下的 hazard 来自 load、SFU 和规约这类长延迟结果，由 R39-05 的多 context 处理，见 R39-05。
   - 获益最大的是 cumsum 1.68×、embedding 1.49×、matmul fp32 1.35×、argmax 1.27×。
+- **板上确认（u280_r39c，v2，100 MHz，路由后 WNS +0.073 ns；xclbin sha256 `8d38ca27…5cd4`）。** 软件为当前默认（R39-01 调度、R39-02a 代码形状开，SPMD 与 sparse TensorMap 关）。
+  - B1 conformance 通过；tiny 27/27 数值通过。
+  - 相对冻结基线（`spec/r39/baseline_archbench.jsonl`，r39b 镜像，全部开关关）：tiny **S_geo 2.872**，E 0.00614 → 0.01522（2.48×），总周期 0.371×，最慢的点 1.148×，没有点变慢。
+  - small 25/25 通过，S_geo 2.807。tiny + small 合计 52/52：**S_geo 2.840**，E 0.00725 → 0.01866（**2.57×**），总周期 0.334×；提升最少的是 silu small，1.086×。实测时钟 100.038 / 99.967 MHz。
+  - 板上周期与 v2 的器件级 RTL 仿真（sim-file）逐点相同（例如 gpt2_block 899716、swiglu 3392），所以本轮的仿真消融数字就是板上数字。
+  - 这个镜像在 B5 修复之前构建，含该缺陷；1–2 个 context 的运行没有触发。
 
 ### R39-07：VRF 端口与 bank 冲突（硬件）
 
@@ -487,12 +494,15 @@ R39-02a 的改动都在两个开关之下，关闭时制品逐字节相同（447
 
 进展（2026-10-09）：
 
-- RTL 开关 `LSU_INFLIGHT = 2`（`rtl/core/tnca_lsu_pair.v`）：两个 `tnca_lsu` 共用一个存储器口。另一个单元在等最后的响应（drain）时，空闲单元就接受下一条 load。
-  - 只有 plain load 超越 plain load；store、原子操作和 fence 仍然等两个单元都空闲。没有访存与写重排，`fence` 的含义不变。
+- RTL 开关 `LSU_INFLIGHT = 2`（`rtl/core/tnca_lsu_pair.v`）：两个 `tnca_lsu` 共用一个存储器口。另一个单元在等最后的响应（drain）时，空闲单元就接受下一条 load 或 store。
+  - 第二个单元只在第一个单元发出最后一个 beat 之后才被接受，所以前一个访问的请求总是先到达端口。本 profile 的存储器按到达顺序执行请求，只把响应延迟或打乱（板上 `tnca_fpga_mem` 是单个数据口；`tnca_mem_model` 在接受时执行请求），因此任何非原子访问之间的重叠都与程序顺序等价。
+  - 原子操作仍等两个单元都空闲，`fence` 的含义不变（等 `req_ready`，即两个单元都空闲）。
+  - 起初只让 load 重叠；放开 store 之后，store 序列（建 TensorMap）不再每条都等写回应。`tdesc_rows` 4565 → 3355 拍，`dot_grid` 10428 → 8712 拍（都是单 context）。
+  - 若存储器会把不同地址的请求乱序执行（多 slice 的 NUCA），这里需要地址检查；带这个开关的 profile 都没有这样的存储器。
   - beat tag 的最高位是单元号；两个完成同时等待时，较早的先出。
 - `t39_switch` 在 v3 台架上（存储器 1 拍返回）2266 → 2106 拍（与 FPU_OVERLAP 合计）；单 program 的 vector add 79 → 67 拍。
 - `core-r39sw`（含此开关）全部通过。套件消融随 v3 一起报告（见 R39-05）。
-- **软件侧：TensorMap 只存非零字。** compile option `sparse_tensormaps`（`TNCA_SPARSE_TENSORMAPS`）。kernel 在 scratch 里建 TensorMap 时，每个字都要一条 `s.st.d`，而每条 store 占用 LSU 一整次访问（setup、beat、等写回应、完成）；32 个字里秩 2 的只有 7 个非零。运行时现在把 scratch 随参数块一起清零上传，于是零字不必再存。
+- **软件侧：TensorMap 只存非零字。** compile option `sparse_tensormaps`（`TNCA_SPARSE_TENSORMAPS`）。消融通过后，标准路径默认开启。kernel 在 scratch 里建 TensorMap 时，每个字都要一条 `s.st.d`，而每条 store 占用 LSU 一整次访问（setup、beat、等写回应、完成）；32 个字里秩 2 的只有 7 个非零。运行时现在把 scratch 随参数块一起清零上传，于是零字不必再存。
   - 结果：tensor descriptor 测试 12/12；`tdesc_rows` 4565 → 2510 拍（SPMD 关），与 SPMD 合用为 1958 拍，相对两者都关 2.33×；`dot_grid` 10428 → 7848 拍，合用为 7201 拍（1.45×）。
   - 套件消融随 v4 一起报告（见 R39-05）。
 - 未做：深度 4（需要更宽的端口 tag），store 的 posted write，与 transfer engine 的公平仲裁。

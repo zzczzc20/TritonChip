@@ -1,0 +1,48 @@
+{
+  "schema": "r38-design-change/1",
+  "id": "timing-012",
+  "parent_commit": "8d8e4e9",
+  "claims_three_layer": false,
+  "hypothesis": "After the accumulator file, the next register file that is flops only because of a reset loop is the scalar file: 128 x 64 bits behind seven asynchronous read ports, which synthesis built as 8 192 flip-flops and seven 128:1 multiplexers (~25 k LUTs). Without the reset it is distributed RAM, replicated per read port; a valid bit per register reproduces the reset.",
+  "evidence_for_hypothesis": "Hierarchical utilisation of tnca_fpga_top after timing-010: u_srf 24 669 LUTs / 8 192 FFs, in an SLR1 at 97.7 % CLB use (doc sec 6.12)",
+  "touched_layers": [
+    "microarch"
+  ],
+  "semantic_change": false,
+  "feature": "clock",
+  "layers": {
+    "microarch": {
+      "files": [
+        "rtl/core/tnca_scalar_rf.v"
+      ],
+      "change": "mem has no reset and is written on w_real; valid[DEPTH] flops cleared by reset and set by w_real; each of the seven reads returns 0 for s0, the write data on a collision (write-first, unchanged), else valid ? mem : 0"
+    }
+  },
+  "compatibility": {
+    "cycles": "unchanged: R2 cycle check over the 149 R37 O2 cases, and every core program",
+    "numerics": "the same function: a register not written since reset reads 0 as the reset flops did; lint, unit, core, core-vrf, core-slowmem, core-ooo, top, nuca",
+    "artifacts": "unchanged"
+  },
+  "resource": {
+    "kind": "Vivado 2023.2 post-synthesis, out of context, xcu280-fsvh2892-2L-e, 6.667 ns target",
+    "module": "tnca_scalar_rf",
+    "parent": {
+      "luts": 24669,
+      "ffs": 8192,
+      "note": "u_srf within tnca_fpga_top"
+    },
+    "change": {
+      "luts": 2115,
+      "luts_as_memory": 1036,
+      "ffs": 128
+    }
+  },
+  "results": {
+    "correctness": "lint, unit, core, core-vrf, core-slowmem, core-ooo, top, nuca: 155 PASS; R2 cycle check PASS over the 149 R37 O2 cases, two runs"
+  },
+  "rollback": "revert rtl/core/tnca_scalar_rf.v",
+  "evidence": [
+    "doc/r38_board_bringup.md"
+  ],
+  "status": "implemented"
+}

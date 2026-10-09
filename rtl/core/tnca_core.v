@@ -180,7 +180,13 @@ module tnca_core #(
     output reg  [63:0]              perf_x_rsv,
     output reg  [63:0]              perf_x_wb,
     output reg  [63:0]              perf_x_vrf,
-    output reg  [63:0]              perf_x_vrfwb
+    output reg  [63:0]              perf_x_vrfwb,
+    // Cycles a role context runs in which nothing is stalled and nothing
+    // issues: R holds no live instruction -- a fetch bubble, a squash, a
+    // redirect. With it, perf_issued + perf_stall_total + perf_x_frontend
+    // == perf_cycles exactly (R39-00); without it 14 % of ArchBench's
+    // cycles had no name.
+    output reg  [63:0]              perf_x_frontend
 );
 
     // NOTE ON THE INSTRUCTION PORT: Stage 1 models instruction fetch as a
@@ -695,6 +701,23 @@ module tnca_core #(
                 end
                 trace_n = trace_n + 1;
             end
+        end
+
+        // R39-00 B1: a vector writeback the file refused is still pending
+        // -- w_* holds it and retries -- so no operand read of its register
+        // may be issued until it lands. Granted now, the read returns the
+        // value from before the write, the consumer latches it in of_d*,
+        // and nothing afterwards can tell. The message starts with FAIL so
+        // tools/run_test.sh fails the program that reaches it.
+        integer b1p;
+        always @(posedge clk) begin
+            if (rst_n && vrf_wb_freeze)
+                for (b1p = 0; b1p < 3; b1p = b1p + 1)
+                    if (of_want[b1p] && vrf_req_accept[b1p] && (r_rctx == w_rctx)
+                        && (((b1p == 0) ? r_va_idx : (b1p == 1) ? r_vb_idx : r_vc_idx)
+                            == w_idx))
+                        $display("FAIL tnca_core assert @%0t: operand port %0d read v%0d while its writeback is held (stale value)",
+                                 $time, b1p, w_idx);
         end
 `endif
 
@@ -1800,6 +1823,7 @@ module tnca_core #(
             perf_x_wb         <= 64'd0;
             perf_x_vrf        <= 64'd0;
             perf_x_vrfwb      <= 64'd0;
+            perf_x_frontend   <= 64'd0;
             perf_stall_wb     <= 64'd0;
             perf_squash       <= 64'd0;
             for (i = 0; i < NUM_RCTX; i = i + 1)
@@ -1886,6 +1910,8 @@ module tnca_core #(
             if (|running && x_wb)    perf_x_wb     <= perf_x_wb     + 64'd1;
             if (|running && x_vrf)   perf_x_vrf    <= perf_x_vrf    + 64'd1;
             if (|running && x_vrfwb) perf_x_vrfwb  <= perf_x_vrfwb  + 64'd1;
+            if (|running && !stall_front && !(r_valid && !kill_r))
+                perf_x_frontend <= perf_x_frontend + 64'd1;
 
             //------------------------------------------------------------------
             // launch
@@ -2082,10 +2108,15 @@ module tnca_core #(
             // writes to the same bit, so the later statement is the one that
             // takes effect.
             //------------------------------------------------------------------
+            // A vector writeback the banked file refused this cycle has not
+            // happened: w_* holds it for a retry, and the register stays busy
+            // until the retry lands (R39-00, B1). Releasing it here let a
+            // consumer fetch the old value during a second refusal --
+            // t38_wbfreeze computed a wrong answer that way.
             if (w_en) begin
                 case (w_class)
                 `TNCA_DST_S: if (w_idx[5:0] != 6'd0) sb_s[w_rctx*64 + w_idx[5:0]] <= 1'b0;
-                `TNCA_DST_V: sb_v[w_rctx*VREGS_PER_RCTX + w_idx] <= 1'b0;
+                `TNCA_DST_V: if (!vrf_wb_freeze) sb_v[w_rctx*VREGS_PER_RCTX + w_idx] <= 1'b0;
                 `TNCA_DST_P: if (w_idx[3:0] != 4'd0) sb_p[w_rctx*16 + w_idx[3:0]] <= 1'b0;
                 default: ;
                 endcase

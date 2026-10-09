@@ -82,7 +82,7 @@ module tb_tnca_core;
     // R3-06 COUNT-02: the exclusive stall attribution.
     wire [63:0] perf_stall_total, perf_x_hazard, perf_x_lsu, perf_x_fpu,
                 perf_x_mtx, perf_x_txf, perf_x_fence, perf_x_arrive,
-                perf_x_rsv, perf_x_wb, perf_x_vrf, perf_x_vrfwb;
+                perf_x_rsv, perf_x_wb, perf_x_vrf, perf_x_vrfwb, perf_x_frontend;
 
     tnca_core #(
         .NUM_RCTX(NUM_RCTX), .RCTX_W(RCTX_W), .VLEN(VLEN), .ELEN(ELEN), .LW(4),
@@ -118,7 +118,7 @@ module tb_tnca_core;
         .perf_x_txf(perf_x_txf), .perf_x_fence(perf_x_fence),
         .perf_x_arrive(perf_x_arrive), .perf_x_rsv(perf_x_rsv),
         .perf_x_wb(perf_x_wb), .perf_x_vrf(perf_x_vrf),
-        .perf_x_vrfwb(perf_x_vrfwb)
+        .perf_x_vrfwb(perf_x_vrfwb), .perf_x_frontend(perf_x_frontend)
     );
 
     tnca_mem_model #(
@@ -220,6 +220,15 @@ module tb_tnca_core;
                  perf_x_hazard + perf_x_lsu + perf_x_fpu + perf_x_mtx
                  + perf_x_txf + perf_x_fence + perf_x_arrive + perf_x_rsv
                  + perf_x_wb + perf_x_vrf + perf_x_vrfwb);
+        // R39-00: every running cycle issues, stalls, or has nothing to
+        // issue, so the three counts add up to the cycle count exactly. A
+        // mismatch is a counter bug, and it fails the program.
+        $display("frontend=%0d partition=%0d+%0d+%0d of %0d",
+                 perf_x_frontend, perf_issued, perf_stall_total,
+                 perf_x_frontend, perf_cycles);
+        if (perf_issued + perf_stall_total + perf_x_frontend != perf_cycles)
+            $display("FAIL: cycle partition: issued %0d + stalled %0d + frontend %0d != cycles %0d",
+                     perf_issued, perf_stall_total, perf_x_frontend, perf_cycles);
         // What the memory model's seed actually changed. A matrix that runs
         // three seeds and reports three identical traces has run one seed
         // three times, and R1-08 asks for the difference to be visible.

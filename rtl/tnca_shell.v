@@ -275,7 +275,7 @@ module tnca_shell #(
     // The exclusive stall attribution (spec/r3_counters.json stall_exclusive).
     wire [63:0] perf_stall_total, perf_x_hazard, perf_x_lsu, perf_x_fpu,
                 perf_x_mtx, perf_x_txf, perf_x_fence, perf_x_arrive,
-                perf_x_rsv, perf_x_wb, perf_x_vrf, perf_x_vrfwb;
+                perf_x_rsv, perf_x_wb, perf_x_vrf, perf_x_vrfwb, perf_x_frontend;
 
     tnca_core #(
         .NUM_RCTX(NUM_RCTX), .RCTX_W(RCTX_W), .VLEN(VLEN), .ELEN(ELEN), .LW(4),
@@ -318,7 +318,7 @@ module tnca_shell #(
         .perf_x_txf(perf_x_txf), .perf_x_fence(perf_x_fence),
         .perf_x_arrive(perf_x_arrive), .perf_x_rsv(perf_x_rsv),
         .perf_x_wb(perf_x_wb), .perf_x_vrf(perf_x_vrf),
-        .perf_x_vrfwb(perf_x_vrfwb)
+        .perf_x_vrfwb(perf_x_vrfwb), .perf_x_frontend(perf_x_frontend)
     );
 
     //==========================================================================

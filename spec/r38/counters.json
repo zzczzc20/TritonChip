@@ -25,10 +25,13 @@
     {"index": 18, "name": "perf_mem_rd_beats", "group": "memory",           "source": "rtl/tnca_shell.v",
      "event": "one per core read or atomic request accepted on the data port; host transfers are not counted", "unit": "beats of 8 bytes"},
     {"index": 19, "name": "perf_mem_wr_beats", "group": "memory",           "source": "rtl/tnca_shell.v",
-     "event": "one per core write request accepted on the data port; host transfers are not counted", "unit": "beats of 8 bytes"}
+     "event": "one per core write request accepted on the data port; host transfers are not counted", "unit": "beats of 8 bytes"},
+    {"index": 20, "name": "perf_x_frontend",   "group": "cycles",           "source": "rtl/core/tnca_core.v",
+     "event": "one per cycle a role context runs with nothing stalled and nothing issued: R holds no live instruction (fetch bubble, squash, redirect)"}
   ],
   "identities": {
     "exclusive_sum": "sum of stall_exclusive == perf_stall_total over any window (by construction in tnca_core)",
+    "cycle_partition": "perf_issued + perf_stall_total + perf_x_frontend == perf_cycles over any window: every running cycle issues, stalls, or has nothing to issue (R39-00)",
     "retired": "delta perf_issued over one launch == done_retired of that launch",
     "cycles_vs_done": "0 <= done_cycles + run_window_slack - delta perf_cycles. perf_cycles counts every cycle a role context runs; done_cycles counts only the shell's S_RUN window, which starts run_window_slack cycles after the core starts (S_PULSE, then SETTLE_CYCLES = 2 of S_SETTLE) and ends when the core is idle, i.e. after outstanding memory and writeback drain. The difference is therefore the drain.",
     "run_window_slack": 3,

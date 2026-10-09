@@ -144,6 +144,97 @@
         "what": "the testbench that reads this profile's capabilities back out of the hardware"
       }
     },
+    "core-vrf-sync-v3": {
+      "target_file": "tnca-sim-vrf-v3.json",
+      "executes_artifacts_of": [
+        "core-vrf-sync-v1",
+        "core-vrf-sync-v2"
+      ],
+      "description": "core-vrf-sync-v2 with the R39-05/08/10 switches: RCTX_SWITCH (an instruction held in R by a register hazard gives way to another Role Context's, which refetches it once a writeback could have cleared the hazard), LSU_INFLIGHT=2 (two load/store units behind the port, so a load starts while the one ahead waits for memory) and FPU_OVERLAP (ordinary vector FP alongside an SFU pass); and RSLICE, the rctx_slice capability (a launch can give each context its own slice of the accumulators, barriers, descriptors and windows). Same ISA and registers as v1 and v2, whose artifacts run here unchanged. Simulation only until a board image is built with it.",
+      "num_cores": 1,
+      "topology": "single",
+      "elaboration": {
+        "NUM_RCTX": 2,
+        "RCTX_W": 1,
+        "VREGS_PER_RCTX": 64,
+        "PHYS_VREGS": 128,
+        "HAS_SFU": 1,
+        "HAS_ATOMICS": 1,
+        "HAS_SYS_ATOMICS": 0,
+        "RSLICE": 1
+      },
+      "implementation": {
+        "vector_register_file": "banked",
+        "banks": 4,
+        "ports_per_bank": "1 read, 1 write",
+        "read_latency_cycles": 1,
+        "unwritten_reads": "zero, from per-lane valid bits",
+        "contract": "spec/r3v2_contract.json",
+        "rtl_parameters": {
+          "USE_BANKED_VRF": 1,
+          "VRF_BYPASS": 1,
+          "FE_NOBUBBLE": 1,
+          "VRF_PREFETCH": 1,
+          "RCTX_SWITCH": 1,
+          "LSU_INFLIGHT": 2,
+          "FPU_OVERLAP": 1
+        }
+      },
+      "platform_binding": {
+        "kind": "simulation",
+        "bench": "sim/build/tb_core_r39sw.vvp",
+        "bench_args": [
+          "+allroles"
+        ],
+        "what": "the testbench that reads this profile's capabilities back out of the hardware"
+      }
+    },
+    "core-vrf-sync-v4": {
+      "target_file": "tnca-sim-vrf-v4.json",
+      "executes_artifacts_of": [
+        "core-vrf-sync-v1",
+        "core-vrf-sync-v2",
+        "core-vrf-sync-v3"
+      ],
+      "description": "core-vrf-sync-v3 with four Role Contexts instead of two, each keeping its 64 logical vector registers, so the banked file holds 256 (16 KiB) -- the four-context core of the original design (R39-05). A kernel compiled for it runs a grid row on all four (rctx_spmd), each in its own quarter of the per-core resources; v1-v3 artifacts start at most two contexts and run unchanged. Simulation only until a board image is built with it.",
+      "num_cores": 1,
+      "topology": "single",
+      "elaboration": {
+        "NUM_RCTX": 4,
+        "RCTX_W": 2,
+        "VREGS_PER_RCTX": 64,
+        "PHYS_VREGS": 256,
+        "HAS_SFU": 1,
+        "HAS_ATOMICS": 1,
+        "HAS_SYS_ATOMICS": 0,
+        "RSLICE": 1
+      },
+      "implementation": {
+        "vector_register_file": "banked",
+        "banks": 4,
+        "ports_per_bank": "1 read, 1 write",
+        "read_latency_cycles": 1,
+        "unwritten_reads": "zero, from per-lane valid bits",
+        "contract": "spec/r3v2_contract.json",
+        "rtl_parameters": {
+          "USE_BANKED_VRF": 1,
+          "VRF_BYPASS": 1,
+          "FE_NOBUBBLE": 1,
+          "VRF_PREFETCH": 1,
+          "RCTX_SWITCH": 1,
+          "LSU_INFLIGHT": 2,
+          "FPU_OVERLAP": 1
+        }
+      },
+      "platform_binding": {
+        "kind": "simulation",
+        "bench": "sim/build/tb_core_r39sw4.vvp",
+        "bench_args": [
+          "+allroles"
+        ],
+        "what": "the testbench that reads this profile's capabilities back out of the hardware"
+      }
+    },
     "core-xpose-v1": {
       "target_file": "tnca-sim-xpose-v1.json",
       "executes_artifacts_of": [

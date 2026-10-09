@@ -4,7 +4,9 @@
   "source": "Core: tools/r39/latency_probe.py, dependent chains and independent streams on sim/build/tb_core_vrf.vvp (banked) and sim/build/tb_core.vvp (flipflop), cycles per instruction from two chain lengths. Memory (banked): tools/r39/load_latency.py on the U280 at 100 MHz (nd100c image), core-vrf-sync-v1: 11 cycles per dependent or independent scalar load, 16-20 per 64-byte vector load. The flipflop model's memory is core-sim's one-cycle bench memory and is not measured on a board.",
   "by_target": {
     "tnca-sim-vrf-v1": "banked",
-    "tnca-sim-vrf-v2": "banked2"
+    "tnca-sim-vrf-v2": "banked2",
+    "tnca-sim-vrf-v3": "banked2",
+    "tnca-sim-vrf-v4": "banked2"
   },
   "default": "flipflop",
   "models": {

@@ -113,6 +113,10 @@ def build_target(core, top, isa, name, description, profile=None):
         # generated support matrix recorded it as machine-verified. The
         # ATOM family gate is the one that applies.
         'fence': True,
+        # R39-05: a launch can give each Role Context its own slice of the
+        # accumulators, barriers, descriptors and windows (RSLICE), so one
+        # kernel's programs run on several contexts at once.
+        'rctx_slice': bool(core.get('RSLICE', 0)),
     }
 
     target = {

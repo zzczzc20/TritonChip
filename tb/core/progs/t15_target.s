@@ -31,7 +31,7 @@ start:
     .assert_eq s1, #0x10, #8
     // tensor_max_rank: when a descriptor must be flattened or fall back to the LSU
     s.rdspecial s1, tensor_max_rank
-    .assert_eq s1, #0x2, #9
+    .assert_eq s1, #0x5, #9
     // cap0: which encodings may be emitted at all
     s.rdspecial s1, cap0
     .assert_eq s1, #0x9ef, #10

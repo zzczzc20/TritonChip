@@ -48,6 +48,18 @@ def _schedule():
     return int(os.environ.get('TNCA_SCHEDULE', '1'))
 
 
+def _sparse_tensormaps():
+    # Store only a TensorMap's non-zero words; the runtime zero-fills
+    # scratch. Off until its ablation passes; TNCA_SPARSE_TENSORMAPS=1 on.
+    return int(os.environ.get('TNCA_SPARSE_TENSORMAPS', '0'))
+
+
+def _rctx_spmd():
+    # R39-05's switch: one program per Role Context per launch, for a kernel
+    # that allows it. Off until its ablation passes; TNCA_RCTX_SPMD=1 on.
+    return int(os.environ.get('TNCA_RCTX_SPMD', '0'))
+
+
 @dataclass(frozen=True)
 class TNCAOptions:
     # What ASTSource.make_ir reads; tnca_cc.triton_options.frontend_options
@@ -76,6 +88,8 @@ class TNCAOptions:
     opt_level: int = field(default_factory=_opt_level)
     schedule: int = field(default_factory=_schedule)
     index_opt: int = field(default_factory=_index_opt)
+    rctx_spmd: int = field(default_factory=_rctx_spmd)
+    sparse_tensormaps: int = field(default_factory=_sparse_tensormaps)
 
     def hash(self):
         key = '_'.join(f'{k}-{v}' for k, v in sorted(self.__dict__.items()))
@@ -244,6 +258,10 @@ class TNCABackend(BaseBackend):
             compile_options['schedule'] = options.schedule
         if options.index_opt:
             compile_options['index_opt'] = options.index_opt
+        if options.rctx_spmd:
+            compile_options['rctx_spmd'] = options.rctx_spmd
+        if options.sparse_tensormaps:
+            compile_options['sparse_tensormaps'] = options.sparse_tensormaps
         # The dump switches of doc/dumping_ir.md (TNCA_KERNEL_DUMP=1, written
         # under TNCA_DUMP_DIR/<kernel>/), on this entry point as on AOT --
         # and written for a kernel that FAILS to lower too, with every stage

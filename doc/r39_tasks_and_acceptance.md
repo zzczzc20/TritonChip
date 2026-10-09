@@ -1,6 +1,6 @@
 # R39：标准路径的性能——去掉 R38 及以前的妥协
 
-版本：1.1，2026-10-09。状态：**R39-00 进行中**（进展见各工作包末尾）。
+版本：1.1，2026-10-09。状态：R39-00 已关闭；R39-01、R39-02a 已默认开启；R39-05、06、08、09、10 进行中（进展见各工作包末尾）。
 起点：`r39` 分支，`74f841c`（r38-dco：U280 100 MHz 不分频上板、ArchBench B4 逐点等周期）。
 签收名：`R39_STANDARD_PATH_PERF`。
 
@@ -173,6 +173,14 @@ ArchBench 本身还没有走标准路径：descriptor 默认关闭，记录的�
   - tiny：IPC 0.277。停顿占比：hazard 32.1 %，LSU 12.6 %，VRF 11.2 %，未归因 13.9 %。
   - small：IPC 0.264。停顿占比：hazard 35.3 %，LSU 12.4 %，VRF 10.0 %，未归因 13.3 %。
   - 与 §0.2（descriptor 关）逐点对照，tiny 的 S_geo 为 0.998（0.925–1.068）。`max_block = 16` 时多数 kernel 只有一个向量宽，descriptor 与普通 load 几乎没有差别；差别要到 R39-02 的宽块才出现。
+
+- **基线冻结（u280_r39b 镜像，2026-10-09）。**
+  - 镜像：RTL `db59522`，B1/B2/B3 已修，R39 开关全关；xclbin sha256 `807d4014…48e2`；实测时钟 100.092 / 99.919 MHz。
+  - 软件：`0b7ef29` 的代码树，`TNCA_SCHEDULE=0 TNCA_INDEX_OPT=0 TNCA_NO_X_DIM=0`，即 `d4ee950` 的标准路径。
+  - tiny + small **52/52 数值通过**。tiny IPC 0.277，hazard 32.1 %，LSU 12.6 %，VRF 11.2 %，前端 13.9 %；small IPC 0.264，hazard 35.2 %，LSU 12.4 %，VRF 10.0 %，前端 13.3 %。
+  - **B4 逐点等周期：27/27。** 板上周期与板卡 shell 的 RTL 仿真（u50sim 后端，同一软件、同一开关）逐点相同。
+  - 冻结为 `spec/r39/baseline_archbench.json`（镜像、软件、配置哈希、逐点周期、η、counter、B4 结论）和 `spec/r39/baseline_archbench.jsonl`（52 条原始记录，作为 `tools/r39/ablate.py` 的 A 侧）。
+- **R39-00 验收 1–5 全部满足，R39-00 关闭。**
 
 ### R39-01：指令调度（编译器）
 
@@ -361,6 +369,49 @@ R39-02a 的改动都在两个开关之下，关闭时制品逐字节相同（447
    - 套件 IPC ≥ 0.45。
 4. R5：100 MHz 时序收敛，资源增量单列。
 
+进展（2026-10-09）：
+
+- **Mode B（编译器 + 运行时）。** `tnca_cc.rctx_spmd`，compile option `rctx_spmd`（`TNCA_RCTX_SPMD`，标准路径默认 0，消融通过后再打开）。
+  - kernel 体包成循环：context r 依次运行 program r、r + R、……（R 为 target 的 context 数），直到 `num_programs(0)`。`program_id(0)` 的值就是循环变量，循环尾是 4 条指令。
+  - 参数 load、常量、其他轴的 pid 在循环外算一次。只提升标量；被 `assign` 原地写的值不提升（循环计数器的初值若被提升，第二个 program 的循环会从第一个结束处开始——ArchBench 的 cumsum、norm、softmax 先发现了这个错误，已修复，定向测试 `ragged_trip_counts` 覆盖）。
+  - manifest：`execution.role_mask = 2^R − 1`，`program_to_role` 每个 context 一项，`entry_points` 每个 context 一项。运行时对每个 (y, z) 发一次 launch，启动 min(R, gx) 个 context；scratch 按 context 数放大。
+- **RSLICE（硬件 capability `rctx_slice`）。** launch 的 role-mask 参数第 31 位要求按 context 切分 per-core 资源：指令立即数和 barrier token 里的资源编号在 D→R 和执行单元入口处 OR 上 context 号，context r 使用 accumulator、barrier、descriptor、window 各自的第 r 片。
+  - 编译器保证每类编号小于片大小，OR 因而幂等：`mb.arm` 返回的 token 已经切过，再用一次结果不变。
+  - 用到这些资源或 scratch 的 kernel 只在有 `rctx_slice` 的 target 上才包成 Mode B；scratch 的每次 load（导入器在循环之后会再 load 一次）都加上 ROLE_ID × scratch_bytes。
+  - 旧镜像只取 role-mask 的低位，第 31 位被忽略；编译器不会为它们生成依赖切分的代码。
+  - 入口块里由不变量建成的 TensorMap（Inductor 的都是由参数建成的，tile 的位置在每次 load 时给出）也只建一次：写进本 context scratch 的 32 个 store，以及所有 store 都已移出循环后的 snapshot。只有 snapshot 会读 TensorMap，所以移动这些 store 不改变任何可观察的顺序。实测 `tdesc_rows`（5 个 program）：SPMD 开但每个 program 都重建 TensorMap 时为 0.99×，提到循环外后为 1.62×；`dot_grid` 为 1.17×，此后主要停顿在矩阵单元（R39-10）。
+  - 拒绝按 kernel 起点计数 barrier epoch 的 token（`barrier_token`，只有软件流水的降低会生成）：同一 context 上的第二个 program 中，barrier 的 epoch 是接着第一个往下数的。标准路径不生成这种 token。
+- **RCTX_SWITCH（硬件）。** R 级指令因寄存器 hazard 停顿、D 级是另一个 context 的指令时，丢弃 R 级指令（它还没有读、写或占用任何东西），让前端前进。该 context 从 `r_pc` 重新取指，并 park 到有写回到它的寄存器（或 accumulator 完成）为止。
+  - 只对 hazard，不对 LSU 忙：t39_switch 上对 LSU 忙也让路反而慢 8 %，因为 LSU 本身就是瓶颈，被丢弃的访存在 LSU 空出后 3 拍才回到 R。
+  - 计数：让路的那一拍计入 `perf_x_hazard`，`issued + stall + frontend = cycles` 仍精确成立；`perf_rctx_switch` 记让路次数（仿真可读）。
+- **4 个 context。** profile `core-vrf-sync-v4`：`NUM_RCTX = 4`，每个 context 64 个向量寄存器，VRF 共 256 个（16 KiB）。
+- **profile。** `core-vrf-sync-v3` = v2 + `RCTX_SWITCH` + `LSU_INFLIGHT=2` + `FPU_OVERLAP` + `RSLICE`（2 个 context）；`core-vrf-sync-v4` = v3 + 4 个 context。两者都只有仿真，板卡镜像待建。单个时序开关可以用 `TNCA_RTL_PARAMS="RCTX_SWITCH=0,..."` 在器件仿真上关掉做消融（进入缓存键，ArchBench 用 `--set` 记录）。
+- **测试。**
+  - `t39_switch`（新）：所有 context 同时跑指针追踪、MUL 链、SFU 链，以及 SFU pass 期间发出的普通 FP 与规约，结果与 role 相关、逐项断言。core、core-vrf、r39hw、r39sw、r39sw4 上都通过。
+  - `t39_isolate`（新，验收 1 的第二条）：context 0 跑 24 个相互依赖的 SFU pass，其余 context 跑不碰 SFU、不碰存储器的整数与向量循环；`+ctxtrace` 打印每个 context 的退出拍和退休指令数。2 个 context 时，计算的那个 context 在没有 RCTX_SWITCH 时第 1794 拍退出，有时第 1392 拍。
+  - `t39_slice`（新，`gen_t39_slice.py`）：每个 context 用同样的名字 `d1`、`w1`、`b0`、`b1`、`a1` 走 TensorMap → transfer engine → window → barrier → MMA → `a.vread`，数据按 context 不同、结果逐 context 断言。r39sw 上 2 个、r39sw4 上 2/3/4 个 context 都通过；没有 RSLICE 的台架上只启动 1 个 context。
+  - `tools/r39/rctx_spmd_tests.py`（新）：奇数 grid、单 program、二维 grid、内层循环、每个 program 不同 trip count、cumsum、masked softmax；以及三个持有资源的 kernel（tl.dot、tensor descriptor、dot tile 网格），它们在有 `rctx_slice` 的 target 上必须被接受并数值正确，在其他 target 上必须被拒绝。
+  - R3.7 全套（447 个，`TNCA_RCTX_SPMD=1`）：进行中，已 300/300。
+  - `core-r39sw`（v3 全部开关）37 个程序 × 两种存储器模型全部通过。
+- **消融（v2 RTL 仿真 tiny，13 个不持有资源的点，A 为 v2、SPMD 关）：**
+
+  | B | S_geo | hazard 占比 | FPU 占比 |
+  |---|---|---|---|
+  | v2 + SPMD | 1.223 | 16.9 % → 4.2 % | 2.1 % → 5.6 % |
+  | v3（只开 RCTX_SWITCH）+ SPMD | 1.226 | → 6.4 % | → 4.5 % |
+  | v3（RCTX_SWITCH + LSU_INFLIGHT + FPU_OVERLAP）+ SPMD | 1.278 | → 8.3 % | → 1.8 % |
+
+  v3 在 SPMD 关时与 v2 逐点同周期（S_geo 恰为 1.0000）：单 context 不受影响。SFU 密集的点（gelu、silu、swiglu）只开 RCTX_SWITCH 时比 v2 + SPMD 慢：普通 FP 在 SFU pass 期间整体停顿，被丢弃的指令又要多等一次重新取指。`FPU_OVERLAP` 去掉这个停顿后，这些点回到 1.29–1.45×。
+- **时序与资源（Vivado OOC 综合后，整个器件 `tnca_fpga_top`，10 ns）：**
+
+  | 配置 | WNS | 最差路径 | CLB LUT | 寄存器 | BRAM | DSP |
+  |---|---|---|---|---|---|---|
+  | v2（2 context） | 3.177 ns | FPU FMA 操作数选择，6.805 ns | 195 579 | 53 759 | 167.5 | 171 |
+  | v4（4 context + RCTX_SWITCH + LSU_INFLIGHT=2 + FPU_OVERLAP + RSLICE） | 3.139 ns | 同一条路径，6.843 ns | 215 202（+10 %） | 64 146（+19 %） | 167.5 | 171 |
+
+  新逻辑没有进入最差路径。256 个向量寄存器仍放在同样数量的 BRAM 里。板卡镜像 `u280_r39d`（v4，100 MHz）已开始链接。
+- **未完成：** v4 与持有资源的 kernel 的全套件消融；板卡确认（B4 逐点等周期）；per-context issued counter 的硬件导出（仿真里用 `+ctxtrace` 打印每个 context 的退出拍和退休指令数）。
+
 ### R39-06：banked VRF 的旁路网络（硬件）
 
 交付：
@@ -380,6 +431,16 @@ R39-02a 的改动都在两个开关之下，关闭时制品逐字节相同（447
 3. 消融：套件 `perf_x_hazard` 相对下降 ≥ 40 %（在 R39-01 之后测），S_geo ≥ **1.15×**。
 4. R5：100 MHz 收敛。
 
+进展（2026-10-09）：
+
+- RTL 开关 `VRF_BYPASS`（正在写回的源经 bank 的 write-first 路径读出，不算 hazard）和 `VRF_PREFETCH`（R 不用读口时，D 级指令提前一拍读向量源），组成 profile `core-vrf-sync-v2` 的一部分，板卡镜像 `u280_r39c` 正在链接。
+- core 台架实测（`tools/r39/latency_probe.py`）：互不相关的向量指令 1 拍/条（原 2），相关的 `v.add` 3 拍（原 4），`vf` 5 拍（原 6）。调度器的机器模型新增 `banked2`。
+- `core-r39hw`（v2）37 个程序 × 两种存储器模型通过。
+- **套件消融（v1 → v2，三个开关一起，RTL 仿真 tiny，软件为 R39-01 + R39-02a 默认）：** 25/27 点（两个 llama 点仍在跑），S_geo **1.158**，最慢的点 1.016×，没有点变慢。
+  - 停顿占比：VRF 10.1 % → 5.1 %（绝对周期 −56 %，属于 R39-07 的指标，`VRF_PREFETCH` 达成）；前端 17.0 % → 10.7 %（绝对 −45 %，R39-09 的指标，`FE_NOBUBBLE` 达成）。
+  - hazard 的绝对周期只降 4 %，**未达到 R39-06 的 −40 %**。bypass 只消除了「正在写回」的那一拍；剩下的 hazard 来自 load、SFU 和规约这类长延迟结果，由 R39-05 的多 context 处理，见 R39-05。
+  - 获益最大的是 cumsum 1.68×、embedding 1.49×、matmul fp32 1.35×、argmax 1.27×。
+
 ### R39-07：VRF 端口与 bank 冲突（硬件）
 
 交付：
@@ -394,6 +455,14 @@ R39-02a 的改动都在两个开关之下，关闭时制品逐字节相同（447
 2. 回归通过。
 3. 消融：`perf_x_vrf` 相对下降 ≥ 50 %，S_geo ≥ **1.08×**。
 4. R5：100 MHz 收敛。
+
+进展（2026-10-10）：
+
+- **B5（新，R39-05 的 4 context 测试中发现，已修复）：banked VRF 读仲裁会让矩阵端口永远拿不到 bank。** 现象是 v4 上 3 个 program 的 dot tile 网格挂死：矩阵单元停在 MAC 状态，每拍请求一次读，却一直没有被接受；等它的 context 睡在 barrier 上，另两个 context 堵在 R、D 两级。
+  - 原因：round robin 指针移到「本拍最后一个被服务的端口」之后。D 级预取（端口 1，与矩阵的端口 3 同一个 bank）和端口 0（另一个 bank）每拍都请求；按 1 2 3 4 0 的顺序服务 1 和 0 之后，指针又回到 1，于是端口 3 永远排在端口 1 后面。
+  - 修复：指针移到本拍第一个被服务的端口之后。按顺序排第一的请求者一定拿到它的 bank，所以每个持续请求的端口在 NUM_PORTS 拍内必被服务。
+  - 测试：`tools/r39/vrf_fairness_test.py` 新增 case 8（两个 bank 同一拍被服务），旧仲裁失败（端口 3 在 24 拍里只被服务 1 次），新仲裁通过（最长等 3 拍）。
+  - 这是 v2 起（VRF_PREFETCH）就潜在的缺陷，只是 1–2 个 context 时 bank 的组合没有触发。u280_r39c（v2）镜像按旧 RTL 构建；v4 镜像 u280_r39d 已按修复后的 RTL 重新链接；仿真消融全部用修复后的 RTL 重跑。
 
 ### R39-08：非阻塞 LSU 与存储器端口（硬件）
 
@@ -416,6 +485,18 @@ R39-02a 的改动都在两个开关之下，关闭时制品逐字节相同（447
 2. 消融：`perf_x_lsu` 相对下降 ≥ 50 %，S_geo ≥ **1.1×**。
 3. R5：100 MHz 收敛。
 
+进展（2026-10-09）：
+
+- RTL 开关 `LSU_INFLIGHT = 2`（`rtl/core/tnca_lsu_pair.v`）：两个 `tnca_lsu` 共用一个存储器口。另一个单元在等最后的响应（drain）时，空闲单元就接受下一条 load。
+  - 只有 plain load 超越 plain load；store、原子操作和 fence 仍然等两个单元都空闲。没有访存与写重排，`fence` 的含义不变。
+  - beat tag 的最高位是单元号；两个完成同时等待时，较早的先出。
+- `t39_switch` 在 v3 台架上（存储器 1 拍返回）2266 → 2106 拍（与 FPU_OVERLAP 合计）；单 program 的 vector add 79 → 67 拍。
+- `core-r39sw`（含此开关）全部通过。套件消融随 v3 一起报告（见 R39-05）。
+- **软件侧：TensorMap 只存非零字。** compile option `sparse_tensormaps`（`TNCA_SPARSE_TENSORMAPS`）。kernel 在 scratch 里建 TensorMap 时，每个字都要一条 `s.st.d`，而每条 store 占用 LSU 一整次访问（setup、beat、等写回应、完成）；32 个字里秩 2 的只有 7 个非零。运行时现在把 scratch 随参数块一起清零上传，于是零字不必再存。
+  - 结果：tensor descriptor 测试 12/12；`tdesc_rows` 4565 → 2510 拍（SPMD 关），与 SPMD 合用为 1958 拍，相对两者都关 2.33×；`dot_grid` 10428 → 7848 拍，合用为 7201 拍（1.45×）。
+  - 套件消融随 v4 一起报告（见 R39-05）。
+- 未做：深度 4（需要更宽的端口 tag），store 的 posted write，与 transfer engine 的公平仲裁。
+
 ### R39-09：前端（硬件）
 
 交付：
@@ -433,6 +514,11 @@ R39-02a 的改动都在两个开关之下，关闭时制品逐字节相同（447
 2. 消融：`perf_x_frontend` 相对下降 ≥ 40 %，S_geo ≥ **1.05×**。
 3. R5：100 MHz 收敛。
 
+进展（2026-10-09）：
+
+- RTL 开关 `FE_NOBUBBLE`：解码器本拍取走缓冲字时不再阻止取指，停顿不再额外损失一个取指槽。属于 profile `core-vrf-sync-v2`。
+- **分支预测不做，数据如下。** v2 的 RTL 仿真 tiny 全套件中，taken 分支的重定向只有 3570 次，共 249 万拍。每次约 3 拍，合计约 0.4 %：热点 kernel 展开后几乎是直线代码。前端剩下的 10.7 % 主要是 `mb.wait` 睡眠和停顿后的取指空泡；前者由多 context 填补（R39-05）。
+
 ### R39-10：矩阵与规约单元的吞吐（硬件，按收益决定是否实施）
 
 交付：
@@ -442,6 +528,12 @@ R39-02a 的改动都在两个开关之下，关闭时制品逐字节相同（447
 - 每个子项只有在 R39-02/03 之后的 counter 显示它确实是瓶颈时才实施。实施的必须给出消融；不实施的必须给出数据说明为什么不做。
 
 验收：实施的子项，其目标点（GEMM 类或 softmax/norm 类）S_geo ≥ 1.2×；不实施的子项需有数据支持。
+
+进展（2026-10-09）：
+
+- RTL 开关 `FPU_OVERLAP`：SFU 有独立的数据通路并在 start 时锁存源操作数，只有规约借用 FMA 阵列。因此普通向量 FP 只在规约折叠时停顿，SFU pass 也不再等待在途的普通 FP。原来 SFU pass 的约 22 拍内，任何 context 的普通 FP 都不能发射。
+- `t39_switch` 增加 E 段：SFU pass 期间发出普通 FP 与一次规约，结果逐 lane 断言。
+- 与 SPMD 一起时，SFU 密集的点 FPU 停顿占比从 4.5 % 降到 1.8 %（见 R39-05）。
 
 ### R39-11：总消融与签收
 

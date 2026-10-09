@@ -90,7 +90,8 @@
     "mbarrier": true,
     "packed_f16": false,
     "cache_hints": false,
-    "fence": true
+    "fence": true,
+    "rctx_slice": false
   },
   "latency": {
     "fp_result_cycles": 2,

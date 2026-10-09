@@ -576,6 +576,11 @@ class Session:
 
             scratch = module.manifest['resources'].get('scratch_bytes', 0)
             scratch = scratch if isinstance(scratch, int) and scratch > 0 else 0
+            # R39-05: a kernel that runs a program on each of several Role
+            # Contexts at once gives each its own scratch, at ROLE_ID *
+            # scratch_bytes from the base (tnca_cc.rctx_spmd).
+            scratch *= len(module.manifest.get('execution', {})
+                           .get('program_to_role', {'0': ['role0']}))
             maps = []
             for name, value in args.items():
                 if isinstance(value, TensorDescriptor):
@@ -585,7 +590,11 @@ class Session:
             map_start = (slots + 255) // 256 * 256
             scratch_start = map_start + 256 * len(maps)
             arg_addr, reserved = self._heap.alloc(max(scratch_start + scratch, slots, WORD), align=256)
-            block = bytearray(scratch_start if maps else slots)
+            # Scratch is handed over zero-filled: the upload covers it, so a
+            # TensorMap the kernel builds there needs only its non-zero words
+            # stored (compile option sparse_tensormaps).
+            block = bytearray(scratch_start + scratch if scratch
+                              else (scratch_start if maps else slots))
             for i, (name, data) in enumerate(maps):
                 offset = map_start + 256*i
                 resolved[name] = arg_addr + offset
@@ -732,7 +741,15 @@ class Session:
             if task['block']:
                 self.dev.upload(task['arg_addr'], task['block'])
             ev._to(RUNNING)
-            total = gx * gy * gz
+            # R39-05 Mode B: a kernel whose manifest maps programs onto
+            # `per` Role Contexts runs a whole row of the grid in one launch,
+            # context r looping over programs r, r + per, ... (the kernel
+            # does the looping), so a row is one launch with min(per, gx)
+            # contexts started and pid.x = 0.
+            per = len(task['module'].manifest.get('execution', {})
+                      .get('program_to_role', {'0': ['role0']}))
+            launches_x = 1 if per > 1 else gx
+            total = launches_x * gy * gz
             cycles = 0
             per_program = []
             probe = self._counters is not None
@@ -743,14 +760,22 @@ class Session:
                 # passing the linear id as pid.x made a 2x3 grid look like a
                 # 6x1 one to the kernel, and `num_programs(0)` came back as
                 # the total rather than gx.
-                x = linear % gx
-                y = (linear // gx) % gy
-                z = linear // (gx * gy)
+                x = linear % launches_x
+                y = (linear // launches_x) % gy
+                z = linear // (launches_x * gy)
+                mask = (1 << min(per, gx)) - 1
+                if per > 1:
+                    # Bit 31: each started context gets its own slice of the
+                    # core's accumulators, barriers, descriptors and windows
+                    # (RSLICE). A machine without RSLICE ignores it, and the
+                    # compiler only relies on it where the target has it.
+                    mask |= 1 << 31
+                first = x + gx * (y + gy * z)
                 before = self._snapshot() if probe else None
                 if probe and before is None:
                     probe = False            # this device has no op 7
                 reply = self.dev.launch(task['module'].code_addr,
-                                        task['arg_addr'], role_mask=1,
+                                        task['arg_addr'], role_mask=mask,
                                         pid=(x, y, z), npid=(gx, gy, gz))
                 cycles += reply.r0
                 per_program.append(reply.r0)
@@ -769,7 +794,7 @@ class Session:
                             f"kernel trapped: code {reply.r0:#04x} at pc "
                             f"{reply.r1:#x}", code='KERNEL_FAULT',
                             detail={'trap': reply.r0, 'pc': reply.r1,
-                                    'program': linear}))
+                                    'program': first}))
                     return
                 if reply.status == T.ST_TIMEOUT:
                     ev._to(FAILING)
@@ -778,7 +803,7 @@ class Session:
                         self._finish(task, FAILED, DeviceLost(
                             f"the device deadline expired with work "
                             f"outstanding after {reply.r0} cycles",
-                            detail={'program': linear}))
+                            detail={'program': first}))
                     self._poison_rest()
                     return
             ev._to(DRAINING)

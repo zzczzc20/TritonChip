@@ -33,6 +33,10 @@ module tb_tnca_core;
     parameter VRF_BYPASS     = 0;
     parameter FE_NOBUBBLE    = 0;
     parameter VRF_PREFETCH   = 0;
+    parameter RCTX_SWITCH    = 0;
+    parameter LSU_INFLIGHT   = 1;
+    parameter FPU_OVERLAP    = 0;
+    parameter RSLICE         = 0;
     parameter HAS_TENSOR_XPOSE = 0;
 
     parameter NUM_RCTX       = 2;
@@ -68,6 +72,8 @@ module tb_tnca_core;
     reg         launch_valid = 1'b0;
     reg [63:0]  launch_pc = 64'd0;
     reg [NUM_RCTX-1:0] launch_role_mask;
+    integer            nroles;
+    reg                launch_slice;
     reg [31:0]  pid_x = 0, pid_y = 0, pid_z = 0;
     reg [31:0]  npid_x = 1, npid_y = 1, npid_z = 1;
     reg [63:0]  arg_base = 64'd0;
@@ -93,12 +99,13 @@ module tb_tnca_core;
         .CORE_ID(0), .NUM_CORES(1), .HAS_SFU(1),
         .USE_BANKED_VRF(USE_BANKED_VRF),
         .VRF_BYPASS(VRF_BYPASS), .FE_NOBUBBLE(FE_NOBUBBLE),
-        .VRF_PREFETCH(VRF_PREFETCH),
+        .VRF_PREFETCH(VRF_PREFETCH), .RCTX_SWITCH(RCTX_SWITCH),
+        .LSU_INFLIGHT(LSU_INFLIGHT), .FPU_OVERLAP(FPU_OVERLAP), .RSLICE(RSLICE),
         .HAS_TENSOR_XPOSE(HAS_TENSOR_XPOSE)
     ) dut (
         .clk(clk), .rst_n(rst_n),
         .launch_valid(launch_valid), .launch_pc(launch_pc),
-        .launch_role_mask(launch_role_mask),
+        .launch_role_mask(launch_role_mask), .launch_slice(launch_slice),
         .launch_pid_x(pid_x), .launch_pid_y(pid_y), .launch_pid_z(pid_z),
         .launch_npid_x(npid_x), .launch_npid_y(npid_y), .launch_npid_z(npid_z),
         .launch_arg_base(arg_base),
@@ -173,6 +180,12 @@ module tb_tnca_core;
         launch_role_mask = {{(NUM_RCTX-1){1'b0}}, 1'b1};
         if ($test$plusargs("allroles"))
             launch_role_mask = {NUM_RCTX{1'b1}};
+        // +roles=N starts the first N: a program written for a two-context
+        // core run on the four-context one (core-vrf-sync-v4).
+        if ($value$plusargs("roles=%d", nroles))
+            launch_role_mask = (1 << nroles) - 1;
+        // R39-05: every context in its own slice of the resources (RSLICE).
+        launch_slice = $test$plusargs("slice");
 
         // Per-RCTX physical vector base. Disjoint by default; +aliasvrf gives
         // every context the same base, which is what a producer/consumer role
@@ -231,6 +244,9 @@ module tb_tnca_core;
         $display("frontend=%0d partition=%0d+%0d+%0d of %0d",
                  perf_x_frontend, perf_issued, perf_stall_total,
                  perf_x_frontend, perf_cycles);
+        // R39-05: cycles in which an instruction held in R gave way to
+        // another context's (RCTX_SWITCH; always 0 without it).
+        $display("rctx_switch=%0d", dut.perf_rctx_switch);
         if (perf_issued + perf_stall_total + perf_x_frontend != perf_cycles)
             $display("FAIL: cycle partition: issued %0d + stalled %0d + frontend %0d != cycles %0d",
                      perf_issued, perf_stall_total, perf_x_frontend, perf_cycles);

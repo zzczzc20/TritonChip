@@ -157,7 +157,7 @@ $(foreach p,$(TDESC_FAULTS),$(eval export ARGS_$(p) := +expectfault=04))
 
 CORE_PROGS := t00_scalar t01_vector t02_mem t03_fp t04_roles t05_fault t06_alu \
               t11_matrix t12_tensor t13_share t14_caps t15_target t16_vecadd t17_descfault t18_squash t19_waitgen0 t20_sfu t21_cvt t22_atomic t23_amofault t25_mmasf t28_count t29_vrfbank \
-              t33_tdesc_load t34_tdesc_store t36_reduce t37_lsu_straddle t38_wbfreeze t39_freeze_drop $(TDESC_FAULTS)
+              t33_tdesc_load t34_tdesc_store t36_reduce t37_lsu_straddle t38_wbfreeze t39_freeze_drop t39_switch t39_isolate t39_slice $(TDESC_FAULTS)
 
 # Image size in 64-bit words; must match tb_tnca_core's WORDS parameter.
 IMAGE_WORDS := 16384
@@ -175,6 +175,13 @@ ARGS_t23_amofault := +expectfault=03
 # Those agree only when every context is started, so this one starts them all.
 ARGS_t15_target := +allroles
 ARGS_t18_squash := +allroles
+# t39 runs the same program on every context at once (R39-05).
+export ARGS_t39_switch := +allroles
+export ARGS_t39_isolate := +allroles
+# t39_slice names the same resources in every context: all of them, each in
+# its own slice, where the core has RSLICE (core-r39sw, core-r39sw4); one
+# context elsewhere, where the names would really be shared.
+export ARGS_t39_slice := +roles=1
 
 .PHONY: all test unit core synth lint clean dirs help isa target compiler
 
@@ -291,6 +298,8 @@ $(TB)/core/progs/t38_wbfreeze.s: $(TB)/core/progs/gen_t38_wbfreeze.py $(TB)/core
 
 $(TB)/core/progs/t39_freeze_drop.s: $(TB)/core/progs/gen_t39_freeze_drop.py $(TB)/core/progs/gen_t33_tdesc.py
 	$(PYTHON) $<
+$(TB)/core/progs/t39_slice.s: $(TB)/core/progs/gen_t39_slice.py $(TB)/core/progs/gen_t33_tdesc.py
+	$(PYTHON) $<
 
 $(TB)/core/progs/t11_matrix.s: $(TB)/core/progs/gen_t11_matrix.py $(TOOLS)/model/fp32.py
 	$(PYTHON) $<
@@ -304,6 +313,9 @@ $(TB)/core/progs/t14_caps.s: $(TB)/core/progs/gen_t14_caps.py
 $(TB)/core/progs/t15_target.s: $(TB)/core/progs/gen_t15_target.py \
                                compiler/targets/tnca-sim-v0.1.json
 	$(PYTHON) $<
+$(TB)/core/progs/t15_target_vrf_v4.s: $(TB)/core/progs/gen_t15_target.py \
+                                      compiler/targets/tnca-sim-vrf-v4.json
+	$(PYTHON) $< tnca-sim-vrf-v4
 
 $(TB)/core/progs/t16_vecadd.s: $(TB)/core/progs/gen_t16_vecadd.py $(TOOLS)/model/fp32.py
 	$(PYTHON) $<
@@ -503,6 +515,75 @@ core-r39hw: $(CORE_HEX) $(BUILD)/tb_core_r39hw.vvp $(BUILD)/tb_core_r39hw_ooo.vv
 	     || exit 1; \
 	   $(TOOLS)/run_test.sh "$$p (r39 hw, ooo mem)" \
 	     "$(VVP) $(BUILD)/tb_core_r39hw_ooo.vvp +hex=$(BUILD)/$$p.hex +maxcycles=400000 $$extra" \
+	     || exit 1; \
+	 done
+
+# R39-05/08/10: the same, with RCTX_SWITCH (an instruction held in R by a
+# hazard gives way to another context's), LSU_INFLIGHT=2, FPU_OVERLAP and
+# RSLICE -- the candidate core-vrf-sync-v3.
+R39_SW := $(R39_HW) -P tb_tnca_core.RCTX_SWITCH=1 -P tb_tnca_core.LSU_INFLIGHT=2 \
+          -P tb_tnca_core.FPU_OVERLAP=1 -P tb_tnca_core.RSLICE=1
+$(BUILD)/tb_core_r39sw.vvp: $(RTL_DEPS) $(TB)/core/tb_tnca_core.v \
+                            $(TB)/common/tnca_mem_model.v | dirs
+	$(IVERILOG) $(IVFLAGS) -y $(RTL)/core -y $(RTL)/common -y $(RTL)/gen -y $(TB)/common \
+	   $(R39_SW) -o $@ $(TB)/core/tb_tnca_core.v
+$(BUILD)/tb_core_r39sw_ooo.vvp: $(RTL_DEPS) $(TB)/core/tb_tnca_core.v \
+                                $(TB)/common/tnca_mem_model.v | dirs
+	$(IVERILOG) $(IVFLAGS) -y $(RTL)/core -y $(RTL)/common -y $(RTL)/gen -y $(TB)/common \
+	   $(R39_SW) -P tb_tnca_core.MEM_LATENCY=6 -P tb_tnca_core.RANDOM_STALL=1 \
+	   -P tb_tnca_core.MEM_REORDER=1 -o $@ $(TB)/core/tb_tnca_core.v
+.PHONY: core-r39sw
+core-r39sw: export ARGS_t04_roles := $(ARGS_t04_roles)
+core-r39sw: export ARGS_t05_fault := $(ARGS_t05_fault)
+core-r39sw: export ARGS_t13_share := $(ARGS_t13_share)
+core-r39sw: export ARGS_t17_descfault := $(ARGS_t17_descfault)
+core-r39sw: export ARGS_t23_amofault := $(ARGS_t23_amofault)
+core-r39sw: export ARGS_t15_target := $(ARGS_t15_target)
+core-r39sw: export ARGS_t18_squash := $(ARGS_t18_squash)
+core-r39sw: export ARGS_t39_slice := +allroles +slice
+core-r39sw: $(CORE_HEX) $(BUILD)/tb_core_r39sw.vvp $(BUILD)/tb_core_r39sw_ooo.vvp | dirs
+	@for p in $(CORE_PROGS); do \
+	   extra=$$(eval echo \$${ARGS_$$p}); \
+	   $(TOOLS)/run_test.sh "$$p (r39 switch)" \
+	     "$(VVP) $(BUILD)/tb_core_r39sw.vvp +hex=$(BUILD)/$$p.hex +maxcycles=200000 $$extra" \
+	     || exit 1; \
+	   $(TOOLS)/run_test.sh "$$p (r39 switch, ooo mem)" \
+	     "$(VVP) $(BUILD)/tb_core_r39sw_ooo.vvp +hex=$(BUILD)/$$p.hex +maxcycles=400000 $$extra" \
+	     || exit 1; \
+	 done
+
+# R39-05: and four Role Contexts of 64 vector registers (core-vrf-sync-v4).
+R39_SW4 := $(R39_SW) -P tb_tnca_core.NUM_RCTX=4 -P tb_tnca_core.RCTX_W=2 -P tb_tnca_core.PHYS_W=8
+$(BUILD)/tb_core_r39sw4.vvp: $(RTL_DEPS) $(TB)/core/tb_tnca_core.v \
+                             $(TB)/common/tnca_mem_model.v | dirs
+	$(IVERILOG) $(IVFLAGS) -y $(RTL)/core -y $(RTL)/common -y $(RTL)/gen -y $(TB)/common \
+	   $(R39_SW4) -o $@ $(TB)/core/tb_tnca_core.v
+$(BUILD)/tb_core_r39sw4_ooo.vvp: $(RTL_DEPS) $(TB)/core/tb_tnca_core.v \
+                                 $(TB)/common/tnca_mem_model.v | dirs
+	$(IVERILOG) $(IVFLAGS) -y $(RTL)/core -y $(RTL)/common -y $(RTL)/gen -y $(TB)/common \
+	   $(R39_SW4) -P tb_tnca_core.MEM_LATENCY=6 -P tb_tnca_core.RANDOM_STALL=1 \
+	   -P tb_tnca_core.MEM_REORDER=1 -o $@ $(TB)/core/tb_tnca_core.v
+.PHONY: core-r39sw4
+# The programs written for a two-context core start two contexts here
+# (+roles=2); t39_switch and t39_isolate start all four.
+core-r39sw4: export ARGS_t04_roles := +roles=2
+core-r39sw4: export ARGS_t05_fault := +roles=2 +expectfault=01
+core-r39sw4: export ARGS_t13_share := +roles=2 +aliasvrf
+core-r39sw4: export ARGS_t17_descfault := $(ARGS_t17_descfault)
+core-r39sw4: export ARGS_t23_amofault := $(ARGS_t23_amofault)
+core-r39sw4: export ARGS_t15_target_vrf_v4 := +allroles
+core-r39sw4: export ARGS_t18_squash := +roles=2
+core-r39sw4: export ARGS_t39_slice := +allroles +slice
+# t15 asserts the machine's facts against a target file: this one's.
+R39SW4_PROGS := $(patsubst t15_target,t15_target_vrf_v4,$(CORE_PROGS))
+core-r39sw4: $(patsubst %,$(BUILD)/%.hex,$(R39SW4_PROGS)) $(BUILD)/tb_core_r39sw4.vvp $(BUILD)/tb_core_r39sw4_ooo.vvp | dirs
+	@for p in $(R39SW4_PROGS); do \
+	   extra=$$(eval echo \$${ARGS_$$p}); \
+	   $(TOOLS)/run_test.sh "$$p (r39 4 rctx)" \
+	     "$(VVP) $(BUILD)/tb_core_r39sw4.vvp +hex=$(BUILD)/$$p.hex +maxcycles=200000 $$extra" \
+	     || exit 1; \
+	   $(TOOLS)/run_test.sh "$$p (r39 4 rctx, ooo mem)" \
+	     "$(VVP) $(BUILD)/tb_core_r39sw4_ooo.vvp +hex=$(BUILD)/$$p.hex +maxcycles=400000 $$extra" \
 	     || exit 1; \
 	 done
 

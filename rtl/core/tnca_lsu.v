@@ -88,6 +88,13 @@ module tnca_lsu #(
     output reg  [VLEN*ELEN-1:0]     cpl_vdata,
     output reg  [VLEN-1:0]          cpl_lane_en,
 
+    // ---- state, for a wrapper that overlaps two of these (tnca_lsu_pair) ----
+    // o_draining: every beat is issued, only responses or the completion
+    // are outstanding. o_load: the access is a plain load (not a store, not
+    // an atomic), so a later load may overtake it without reordering memory.
+    output wire                     o_draining,
+    output wire                     o_load,
+
     // ---- memory port (tagged, responses may return out of order) ------------
     output wire                     mem_req_valid,
     input  wire                     mem_req_ready,
@@ -149,6 +156,8 @@ module tnca_lsu #(
     integer i, b;
 
     assign req_ready = (state == S_IDLE);
+    assign o_draining = (state == S_DRAIN) || (state == S_DONE);
+    assign o_load     = !r_store && !r_amo;
 
     //--------------------------------------------------------------------------
     // Beat planning: which word, which lanes, which byte enables

@@ -206,16 +206,26 @@ module tnca_vrf_banked #(
     // It was two bits for five ports (R39-00, B2): port 4 -- the transfer
     // engine's store read -- could never come first, and serving it wrapped
     // the pointer to 0 rather than to the port after it.
+    //
+    // It moves past the FIRST port served this cycle, not the last (R39-05,
+    // found on four contexts). Ports 1 and 0 served on different banks, in
+    // the order 1 2 3 4 0, put the pointer back on 1 every cycle, so port 3
+    // -- the matrix, on port 1's bank -- lost to it forever while D's
+    // prefetch re-asked for the same register each stalled cycle: the MMA
+    // never finished and the context waiting on it hung. The first requester
+    // in order always wins its bank, so moving past it reaches every
+    // requester within NUM_PORTS cycles.
     localparam RR_W = (NUM_PORTS <= 2) ? 1 : $clog2(NUM_PORTS);
     reg [RR_W-1:0] rr_ptr;
     always @(posedge clk) begin
         if (!rst_n)
             rr_ptr <= {RR_W{1'b0}};
         else if (|accept_c)
-            rr_ptr <= (rr_last == NUM_PORTS - 1) ? {RR_W{1'b0}} : rr_last + 1'b1;
+            rr_ptr <= (rr_first == NUM_PORTS - 1) ? {RR_W{1'b0}} : rr_first + 1'b1;
     end
 
-    reg  [RR_W-1:0] rr_last;
+    reg  [RR_W-1:0] rr_first;
+    reg             rr_any;
     reg  [NUM_PORTS-1:0] accept_c;
     reg  [NUM_BANKS-1:0] bank_taken;
     reg  [ROW_W-1:0]     bank_row_c  [0:NUM_BANKS-1];
@@ -227,7 +237,8 @@ module tnca_vrf_banked #(
     always @* begin
         accept_c    = {NUM_PORTS{1'b0}};
         bank_taken  = {NUM_BANKS{1'b0}};
-        rr_last     = rr_ptr;
+        rr_first    = rr_ptr;
+        rr_any      = 1'b0;
         bank_re_c   = {NUM_BANKS{1'b0}};
         bank_port_c = {NUM_BANKS*8{1'b0}};
         for (bk = 0; bk < NUM_BANKS; bk = bk + 1)
@@ -245,7 +256,8 @@ module tnca_vrf_banked #(
                 bank_re_c[req_bank[pi]]      = 1'b1;
                 bank_row_c[req_bank[pi]]     = req_row[pi];
                 bank_port_c[req_bank[pi]*8 +: 8] = pi[7:0];
-                rr_last                          = pi[RR_W-1:0];
+                if (!rr_any) rr_first            = pi[RR_W-1:0];
+                rr_any                           = 1'b1;
             end
         end
     end

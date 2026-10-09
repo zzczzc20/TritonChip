@@ -74,6 +74,7 @@ module tnca_vector_fpu #(
     output wire                     is_multicycle,
     input  wire                     start,         // issue pulse, 1 cycle
     output wire                     busy,
+    output wire                     red_busy_o,    // the FMA array is folding a reduction
     output wire                     done,
 
     output reg  [VLEN*ELEN-1:0]     vres,
@@ -498,6 +499,7 @@ module tnca_vector_fpu #(
     endgenerate
 
     assign busy = red_busy | sfu_busy;
+    assign red_busy_o = red_busy;
     assign done = red_done | sfu_done;
 
     // --------------------------------------------------------------------------

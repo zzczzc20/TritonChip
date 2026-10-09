@@ -204,7 +204,7 @@ def assemble(asm_text, *, prov=None):
 
 
 def import_ttir(module, func_name, arg_values, *, param_names, target,
-                prov=None, dynamic_args=True, index_opt=False):
+                prov=None, dynamic_args=True, index_opt=False, sparse_maps=False):
     """A Triton TTIR module -> TNCA IR, through R1's importer.
 
     `dynamic_args` defaults to TRUE here, and that is the difference between
@@ -214,7 +214,8 @@ def import_ttir(module, func_name, arg_values, *, param_names, target,
     behaviour has to ask for it by name.
     """
     r1 = _r1()
-    imp = r1['TTIRImporter'](target, func_name, index_opt=index_opt)
+    imp = r1['TTIRImporter'](target, func_name, index_opt=index_opt,
+                             sparse_maps=sparse_maps)
     try:
         kernel, builder = imp.run(module, func_name, arg_values,
                                   param_names=param_names,

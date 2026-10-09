@@ -9,6 +9,11 @@ each port must be granted at least once in every NUM_PORTS consecutive
 cycles. With the round-robin pointer two bits wide, port 4 was never first in
 the order and was never granted while the others kept asking.
 
+Case 8 (R39-05) serves two banks in one cycle: port 0 alone on one, ports 1
+and 3 on the other. The pointer used to move past the LAST port served, which
+in the order 1 2 3 0 put it back on 1 every cycle, and port 3 -- the matrix --
+never won its bank. It must now be served within NUM_PORTS cycles.
+
     python3 tools/r39/vrf_fairness_test.py
 """
 import os
@@ -21,7 +26,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)
 BENCH = os.path.join(ROOT, 'tb', 'core', 'tb_r3v2_vrf.v')
 
 
-def run(ports, tmp):
+def run(ports, tmp, case=7):
     out = os.path.join(tmp, f'vrf{ports}.vvp')
     b = subprocess.run(
         ['iverilog', '-g2005', '-I', os.path.join(ROOT, 'rtl', 'common'),
@@ -31,7 +36,7 @@ def run(ports, tmp):
         capture_output=True, text=True, cwd=ROOT)
     if b.returncode != 0:
         return None, f'build failed: {b.stderr[-300:]}'
-    r = subprocess.run(['vvp', out, '+case=7'], capture_output=True, text=True,
+    r = subprocess.run(['vvp', out, f'+case={case}'], capture_output=True, text=True,
                        timeout=600, cwd=ROOT)
     grants = []
     for line in r.stdout.splitlines():
@@ -58,6 +63,21 @@ def check(ports, grants):
     return True, f'{len(order)} grants, every window of {ports} serves every port'
 
 
+def check_two_banks(ports, grants):
+    """Case 8: ports 0, 1 and 3 ask every cycle, 1 and 3 on one bank. Port 3
+    must be granted within every `ports` consecutive cycles."""
+    gaps, last = [], -1
+    for c, g in enumerate(grants):
+        if 3 in g:
+            gaps.append(c - last)
+            last = c
+    gaps.append(len(grants) - last)
+    worst = max(gaps)
+    if not any(3 in g for g in grants):
+        return False, 'port 3 (the matrix) never granted while ports 0 and 1 kept asking'
+    return worst <= ports, f'port 3 granted {sum(3 in g for g in grants)} times, longest wait {worst} cycles'
+
+
 def main():
     ok = True
     with tempfile.TemporaryDirectory(prefix='r39-fair-') as tmp:
@@ -69,6 +89,10 @@ def main():
                 continue
             good, why = check(ports, grants)
             print(f"  {ports} ports: {'PASS' if good else 'FAIL'}  {why}")
+            ok &= good
+            grants, err = run(ports, tmp, case=8)
+            good, why = (False, err) if err else check_two_banks(ports, grants)
+            print(f"  {ports} ports, two banks: {'PASS' if good else 'FAIL'}  {why}")
             ok &= good
     print(f"vrf-fairness           {'PASS' if ok else 'FAIL'}")
     return 0 if ok else 1

@@ -68,6 +68,13 @@ module tnca_fpga_regs;
     parameter VRF_BYPASS   = 1;
     parameter FE_NOBUBBLE  = 1;
     parameter VRF_PREFETCH = 1;
+    parameter RCTX_SWITCH  = 0;
+    parameter LSU_INFLIGHT = 1;
+    parameter FPU_OVERLAP  = 0;
+    parameter RSLICE       = 0;
+    // R39-05: the image's Role Contexts (4 for core-vrf-sync-v4).
+    parameter NUM_RCTX     = 2;
+    parameter RCTX_W       = 1;
 
     // The device, exactly as the board would instantiate it: one clock, one
     // asynchronous reset, one flat register port. Nothing is added for the
@@ -92,7 +99,9 @@ module tnca_fpga_regs;
     tnca_fpga_top #(
         .WORDS(WORDS), .ADDR_W(ADDR_W), .LSU_TAG_W(LSU_TAG_W),
         .USE_BANKED_VRF(1), .VRF_BYPASS(VRF_BYPASS), .FE_NOBUBBLE(FE_NOBUBBLE),
-        .VRF_PREFETCH(VRF_PREFETCH)
+        .VRF_PREFETCH(VRF_PREFETCH), .RCTX_SWITCH(RCTX_SWITCH),
+        .LSU_INFLIGHT(LSU_INFLIGHT), .FPU_OVERLAP(FPU_OVERLAP), .RSLICE(RSLICE),
+        .NUM_RCTX(NUM_RCTX), .RCTX_W(RCTX_W)
     ) u_top (
         .clk(clk), .rst_n_async(rst_n_async),
         .reg_addr(reg_addr), .reg_wdata(reg_wdata),

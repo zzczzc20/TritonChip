@@ -220,6 +220,33 @@ module tb_r3v2_vrf;
             end
             req_valid = 0;
 
+        end else if (which == 8) begin
+            // ---- fairness when two banks are served in one cycle --------
+            //
+            // R39-05: port 0 alone on bank 1 (v1), ports 1 and 3 both on
+            // bank 0 (v0, v4), all asking every cycle -- D's prefetch and
+            // the matrix, as four contexts met them. Ports 1 and 0 served in
+            // the order 1 2 3 0 used to put the pointer back on 1, and port
+            // 3 never won bank 0. It must be served within NUM_PORTS cycles.
+            do_write(8'd0, {VLEN{1'b1}}, 32'h1000);
+            do_write(8'd1, {VLEN{1'b1}}, 32'h2000);
+            do_write(8'd4, {VLEN{1'b1}}, 32'h3000);
+            @(negedge clk);
+            req_valid = 0;
+            req_valid[0] = 1'b1; req_valid[1] = 1'b1; req_valid[3] = 1'b1;
+            req_rctx  = 0;
+            req_idx   = 0;
+            req_idx[0*8 +: 8] = 8'd1;
+            req_idx[1*8 +: 8] = 8'd0;
+            req_idx[3*8 +: 8] = 8'd4;
+            for (i = 0; i < 24; i = i + 1) begin
+                #1;
+                $display("GRANT %0d %b", cyc, a_acc);
+                @(negedge clk);
+                cyc = cyc + 1;
+            end
+            req_valid = 0;
+
         end else if (which == 5) begin
             if (!$value$plusargs("stim=%s", stim)) begin
                 $display("case 5 needs +stim="); $finish;

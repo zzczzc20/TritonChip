@@ -150,8 +150,11 @@ class TTIRImporter:
     """Walk a TTIR module and build the TNCA IR for it."""
 
     def __init__(self, target, name='kernel', scratch_addr=None,
-                 scratch_stride=None, index_opt=False):
+                 scratch_stride=None, index_opt=False, sparse_maps=False):
         self.target = target
+        # R39: the launch path hands scratch over zero-filled (tnca.runtime),
+        # so a TensorMap's zero words need no store -- 7 of 32 for rank 2.
+        self.sparse_maps = sparse_maps
         # R39-02: track lane-uniform 1-D integer values through arithmetic
         # (_uniform_scalar), so `64 * xindex + r0_index` stays a contiguous
         # access. A compile option; off, the importer is what it was.
@@ -2675,6 +2678,8 @@ class TTIRImporter:
             if i in runtime:
                 self.b.sstore(addr, runtime[i], offset=i * 8, size='d')
                 continue
+            if word == 0 and self.sparse_maps:
+                continue                     # scratch arrives zero-filled
             self.b.sstore(addr, zero if word == 0 else self.b.const(word),
                           offset=i * 8, size='d')
         return _Descriptor(self.b.descriptor(addr, name=f"d{slot}"),

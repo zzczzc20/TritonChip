@@ -30,6 +30,9 @@ module tb_tnca_core;
     // Makefile, so one bench source describes both implementations and a
     // difference between them cannot be a difference in the testbench.
     parameter USE_BANKED_VRF = 0;
+    parameter VRF_BYPASS     = 0;
+    parameter FE_NOBUBBLE    = 0;
+    parameter VRF_PREFETCH   = 0;
     parameter HAS_TENSOR_XPOSE = 0;
 
     parameter NUM_RCTX       = 2;
@@ -89,6 +92,8 @@ module tb_tnca_core;
         .VREGS_PER_RCTX(VREGS_PER_RCTX), .PHYS_VREGS(PHYS_VREGS), .PHYS_W(PHYS_W),
         .CORE_ID(0), .NUM_CORES(1), .HAS_SFU(1),
         .USE_BANKED_VRF(USE_BANKED_VRF),
+        .VRF_BYPASS(VRF_BYPASS), .FE_NOBUBBLE(FE_NOBUBBLE),
+        .VRF_PREFETCH(VRF_PREFETCH),
         .HAS_TENSOR_XPOSE(HAS_TENSOR_XPOSE)
     ) dut (
         .clk(clk), .rst_n(rst_n),

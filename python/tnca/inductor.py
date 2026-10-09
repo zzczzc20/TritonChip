@@ -223,7 +223,8 @@ def configure(max_block=None, tensor_descriptors=None, no_x_dim=None):
     if max_block is None:
         max_block = int(os.environ.get('TNCA_MAX_BLOCK', STAGE1_MAX_BLOCK))
     if no_x_dim is None:
-        no_x_dim = os.environ.get('TNCA_NO_X_DIM', '0') != '0'
+        # On for the standard path since R39-02a's ablation passed.
+        no_x_dim = os.environ.get('TNCA_NO_X_DIM', '1') != '0'
     _NO_X_DIM[0] = bool(no_x_dim)
     _install_no_x_dim()
     import torch._inductor.config as config

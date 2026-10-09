@@ -37,8 +37,9 @@ def _opt_level():
 
 
 def _index_opt():
-    # R39-02's importer switch; off until its ablation is accepted.
-    return int(os.environ.get('TNCA_INDEX_OPT', '0'))
+    # R39-02a's importer switch, on for the standard path since its ablation
+    # passed. TNCA_INDEX_OPT=0 turns it off; compile_aot defaults it off.
+    return int(os.environ.get('TNCA_INDEX_OPT', '1'))
 
 
 def _schedule():

@@ -155,7 +155,11 @@ ArchBench 本身还没有走标准路径：descriptor 默认关闭，记录的�
 
 进展（2026-10-09）：
 
-- 交付 1–4 已完成（`7121da0`、`db59522`）。B1 由 `t38_wbfreeze` 复现后修复；B2 由 `tools/r39/vrf_fairness_test.py` 证明 4 口、5 口每个请求者都会被服务；B3 文档已更新。
+- 交付 1–4 已完成（`7121da0`、`db59522`）。
+- **B4（新，读 RTL 时发现，已修复）：banked VRF 的写回冻结会丢结果。** transfer engine 抢到 bank 时写回级冻结并重试，但 FP、MUL 流水线不受停顿约束，冻结那一拍落下的结果被丢掉：寄存器保留旧值，scoreboard 位永不清除，下一个读者永远等待。
+  - 复现：`t39_freeze_drop`，banked 核在 3 次 `wb_retry` 后挂死。
+  - 修复：写回优先拿 bank（`tnca_vrf_banked` 注释本来就这么写）；transfer engine 被拒时保持该写、下拍重发（`tnca_tensor vw_ready`），有写被保持时不报告传输完成。
+  - 验证：t39 通过；core、core-vrf、core-slowmem、core-ooo 各 35/35，xpose 3/3，count、fairness 测试通过。B1 由 `t38_wbfreeze` 复现后修复；B2 由 `tools/r39/vrf_fairness_test.py` 证明 4 口、5 口每个请求者都会被服务；B3 文档已更新。
 - **标准路径第一次全量运行失败 8 点**（nd100c 镜像，descriptor 开）。原因有三类，都已修复：
   1. **标量指针未下降。** Inductor 在参数的切片上建 descriptor，写作 `tl.make_tensor_descriptor(p + k, ...)`；导入器只在 load 的指针链里处理 `p + k`，没有把它当作值。影响 gpt2_block、llama_prefill（tiny、small）。修复：标量 `tt.addptr` 在被当作值使用时才算出地址（`frontend._scalar_ptr_value`），因此只经由 load 使用的指针不多出指令，制品同一性 447/447 不变。
   2. **一个 range tree 被拆成两维。** Inductor 把 `y // 4`、`y % 4` 匹配成 descriptor 的两维，块形状为 `[(YBLOCK+3)//4, XBLOCK, Min(4, YBLOCK)]`；kernel 因此要把 tile 重排成 4 维再置换，导入器没有这种下降。即使有，搬运的行也只有 1/4 或 1/2 个向量宽。影响 conv2d、resnet_block。修复：`TNCATMACompatibilityChecker` 拒绝这种访问，Inductor 退回指针访问。

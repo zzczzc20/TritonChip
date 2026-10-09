@@ -157,7 +157,7 @@ $(foreach p,$(TDESC_FAULTS),$(eval export ARGS_$(p) := +expectfault=04))
 
 CORE_PROGS := t00_scalar t01_vector t02_mem t03_fp t04_roles t05_fault t06_alu \
               t11_matrix t12_tensor t13_share t14_caps t15_target t16_vecadd t17_descfault t18_squash t19_waitgen0 t20_sfu t21_cvt t22_atomic t23_amofault t25_mmasf t28_count t29_vrfbank \
-              t33_tdesc_load t34_tdesc_store t36_reduce t37_lsu_straddle t38_wbfreeze $(TDESC_FAULTS)
+              t33_tdesc_load t34_tdesc_store t36_reduce t37_lsu_straddle t38_wbfreeze t39_freeze_drop $(TDESC_FAULTS)
 
 # Image size in 64-bit words; must match tb_tnca_core's WORDS parameter.
 IMAGE_WORDS := 16384
@@ -287,6 +287,9 @@ $(TB)/core/progs/t37_lsu_straddle.s: $(TB)/core/progs/gen_t37_lsu_straddle.py
 	$(PYTHON) $<
 
 $(TB)/core/progs/t38_wbfreeze.s: $(TB)/core/progs/gen_t38_wbfreeze.py $(TB)/core/progs/gen_t33_tdesc.py
+	$(PYTHON) $<
+
+$(TB)/core/progs/t39_freeze_drop.s: $(TB)/core/progs/gen_t39_freeze_drop.py $(TB)/core/progs/gen_t33_tdesc.py
 	$(PYTHON) $<
 
 $(TB)/core/progs/t11_matrix.s: $(TB)/core/progs/gen_t11_matrix.py $(TOOLS)/model/fp32.py
@@ -467,6 +470,39 @@ core-ooo: $(CORE_HEX) $(BUILD)/tb_core_ooo.vvp | dirs
 	   extra=$$(eval echo \$${ARGS_$$p}); \
 	   $(TOOLS)/run_test.sh "$$p (ooo mem)" \
 	     "$(VVP) $(BUILD)/tb_core_ooo.vvp +hex=$(BUILD)/$$p.hex +maxcycles=400000 $$extra" \
+	     || exit 1; \
+	 done
+
+# R39: the banked core with the R39 hardware switches on (the candidate
+# core-vrf-sync-v2), on the bench memory and on the back-pressuring,
+# reordering one -- every core program, as core-vrf and core-ooo run them.
+R39_HW := -P tb_tnca_core.USE_BANKED_VRF=1 -P tb_tnca_core.VRF_BYPASS=1 \
+          -P tb_tnca_core.FE_NOBUBBLE=1 -P tb_tnca_core.VRF_PREFETCH=1
+$(BUILD)/tb_core_r39hw.vvp: $(RTL_DEPS) $(TB)/core/tb_tnca_core.v \
+                            $(TB)/common/tnca_mem_model.v | dirs
+	$(IVERILOG) $(IVFLAGS) -y $(RTL)/core -y $(RTL)/common -y $(RTL)/gen -y $(TB)/common \
+	   $(R39_HW) -o $@ $(TB)/core/tb_tnca_core.v
+$(BUILD)/tb_core_r39hw_ooo.vvp: $(RTL_DEPS) $(TB)/core/tb_tnca_core.v \
+                                $(TB)/common/tnca_mem_model.v | dirs
+	$(IVERILOG) $(IVFLAGS) -y $(RTL)/core -y $(RTL)/common -y $(RTL)/gen -y $(TB)/common \
+	   $(R39_HW) -P tb_tnca_core.MEM_LATENCY=6 -P tb_tnca_core.RANDOM_STALL=1 \
+	   -P tb_tnca_core.MEM_REORDER=1 -o $@ $(TB)/core/tb_tnca_core.v
+.PHONY: core-r39hw
+core-r39hw: export ARGS_t04_roles := $(ARGS_t04_roles)
+core-r39hw: export ARGS_t05_fault := $(ARGS_t05_fault)
+core-r39hw: export ARGS_t13_share := $(ARGS_t13_share)
+core-r39hw: export ARGS_t17_descfault := $(ARGS_t17_descfault)
+core-r39hw: export ARGS_t23_amofault := $(ARGS_t23_amofault)
+core-r39hw: export ARGS_t15_target := $(ARGS_t15_target)
+core-r39hw: export ARGS_t18_squash := $(ARGS_t18_squash)
+core-r39hw: $(CORE_HEX) $(BUILD)/tb_core_r39hw.vvp $(BUILD)/tb_core_r39hw_ooo.vvp | dirs
+	@for p in $(CORE_PROGS); do \
+	   extra=$$(eval echo \$${ARGS_$$p}); \
+	   $(TOOLS)/run_test.sh "$$p (r39 hw)" \
+	     "$(VVP) $(BUILD)/tb_core_r39hw.vvp +hex=$(BUILD)/$$p.hex +maxcycles=200000 $$extra" \
+	     || exit 1; \
+	   $(TOOLS)/run_test.sh "$$p (r39 hw, ooo mem)" \
+	     "$(VVP) $(BUILD)/tb_core_r39hw_ooo.vvp +hex=$(BUILD)/$$p.hex +maxcycles=400000 $$extra" \
 	     || exit 1; \
 	 done
 

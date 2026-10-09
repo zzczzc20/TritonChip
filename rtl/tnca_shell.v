@@ -85,6 +85,9 @@ module tnca_shell #(
     parameter HAS_ATOMICS    = 1,
     parameter HAS_SYS_ATOMICS = 0,
     parameter USE_BANKED_VRF = 0,
+    parameter VRF_BYPASS     = 0,
+    parameter FE_NOBUBBLE    = 0,
+    parameter VRF_PREFETCH   = 0,
     parameter HAS_TENSOR_XPOSE = 0,
     parameter CORE_ID        = 0,
     parameter NUM_CORES      = 1,
@@ -284,6 +287,8 @@ module tnca_shell #(
         .HAS_SFU(HAS_SFU), .HAS_ATOMICS(HAS_ATOMICS),
         .HAS_SYS_ATOMICS(HAS_SYS_ATOMICS),
         .USE_BANKED_VRF(USE_BANKED_VRF),
+        .VRF_BYPASS(VRF_BYPASS), .FE_NOBUBBLE(FE_NOBUBBLE),
+        .VRF_PREFETCH(VRF_PREFETCH),
         .HAS_TENSOR_XPOSE(HAS_TENSOR_XPOSE)
     ) u_core (
         .clk(clk), .rst_n(rst_n),

@@ -53,6 +53,9 @@ module tnca_device;
     // core-sim and core-vrf-sync-v1 come from the same bench source and a
     // difference between them cannot be a difference in the device.
     parameter USE_BANKED_VRF = 0;
+    parameter VRF_BYPASS     = 0;
+    parameter FE_NOBUBBLE    = 0;
+    parameter VRF_PREFETCH   = 0;
     // 1 elaborates the transposed tensor-DMA write (profile core-xpose-v1).
     parameter HAS_TENSOR_XPOSE = 0;
 
@@ -135,6 +138,8 @@ module tnca_device;
         .VREGS_PER_RCTX(VREGS_PER_RCTX), .PHYS_VREGS(PHYS_VREGS),
         .PHYS_W(PHYS_W), .LSU_TAG_W(LSU_TAG_W), .HAS_SFU(HAS_SFU),
         .USE_BANKED_VRF(USE_BANKED_VRF),
+        .VRF_BYPASS(VRF_BYPASS), .FE_NOBUBBLE(FE_NOBUBBLE),
+        .VRF_PREFETCH(VRF_PREFETCH),
         .HAS_TENSOR_XPOSE(HAS_TENSOR_XPOSE)
     ) dut (
         .clk(clk), .rst_n(rst_n),

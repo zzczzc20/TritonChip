@@ -52,6 +52,22 @@
 
 module tnca_core #(
     parameter USE_BANKED_VRF = 0,
+    // R39 hardware switches. Each is 0 in every profile that predates it,
+    // and 0 elaborates exactly the core that existed before it.
+    //   VRF_BYPASS  (R39-06) a vector source being written back THIS cycle
+    //               is not a hazard on the banked file: the read is issued
+    //               in the same cycle and the bank's write-first bypass
+    //               returns the new value (tnca_rf_bank RDW_BYPASS).
+    //   FE_NOBUBBLE (R39-09) the fetch is not held back for a buffered word
+    //               the decoder is taking this cycle, so a stall no longer
+    //               costs a second fetch slot (a bubble after every stall).
+    parameter VRF_BYPASS     = 0,
+    parameter FE_NOBUBBLE    = 0,
+    //   VRF_PREFETCH (R39-07) on the banked file the instruction in D reads
+    //               its vector sources one cycle early, when R is not using
+    //               the read ports, so the bank's one-cycle read overlaps the
+    //               instruction ahead instead of stalling issue.
+    parameter VRF_PREFETCH   = 0,
     parameter NUM_RCTX       = 2,
     parameter RCTX_W         = 1,
     parameter VLEN           = 16,
@@ -425,6 +441,21 @@ module tnca_core #(
         .o_is_fence(dec_is_fence)
     );
 
+    // VRF_PREFETCH: the vector source fields of the word entering D, decoded
+    // from the fetch word and registered with it, so D's early read does not
+    // wait for the decoder (the request path into the banks is the core's
+    // critical path). Unused, synthesis removes all of it.
+    wire        pf_va_en_n, pf_vb_en_n, pf_vc_en_n;
+    wire [7:0]  pf_va_idx_n, pf_vb_idx_n, pf_vc_idx_n;
+    reg         d_pf_va_en, d_pf_vb_en, d_pf_vc_en;
+    reg  [7:0]  d_pf_va_idx, d_pf_vb_idx, d_pf_vc_idx;
+    tnca_decoder u_pfdec (
+        .insn(avail_insn),
+        .o_va_en(pf_va_en_n), .o_va_idx(pf_va_idx_n),
+        .o_vb_en(pf_vb_en_n), .o_vb_idx(pf_vb_idx_n),
+        .o_vc_en(pf_vc_en_n), .o_vc_idx(pf_vc_idx_n)
+    );
+
     // Implementation limits are checked here, not in the decoder: the decoder
     // implements the ISA, this core implements one configuration of it.
     // A vector name past VREGS_PER_RCTX, or an SFU op on a build without the
@@ -490,6 +521,8 @@ module tnca_core #(
     // warning at all. That is how mtx_rctx, mtx_vrf_req and this one were
     // each silently disconnected.
     wire                 stall_front;
+    wire                 kill_d;          // forward: the D-stage squash (below)
+    wire                 pf_haz_w;        // forward: VRF_PREFETCH's hazard (below)
     wire                 stall_other;     // everything but the VRF
     wire                 r_vsrc_haz;      // a vector source's producer is in flight
     // Zero on the reference, which has no ports to contend for.
@@ -498,6 +531,7 @@ module tnca_core #(
                vrf_n_mtx_wait, vrf_n_wb_retry;
     wire                 vrf_stall;       // operands not yet collected
     wire                 vrf_wb_freeze;   // a vector writeback was refused
+    wire                 txf_vw_ready;    // the engine's window write was taken
     wire                 mtx_vrf_valid_w;
     wire [4:0]           vrf_req_accept;
     wire [4:0]           vrf_rsp_valid;
@@ -584,6 +618,7 @@ module tnca_core #(
         );
         assign vrf_stall     = 1'b0;
         assign vrf_wb_freeze = 1'b0;
+        assign txf_vw_ready  = 1'b1;   // separate write ports: never refused
         assign mtx_vrf_valid_w = 1'b1;
         assign txf_vr_valid = 1'b1;
         always @(posedge clk) begin
@@ -626,7 +661,12 @@ module tnca_core #(
         reg  [2:0] of_got;
         reg  [VW-1:0] of_d0, of_d1, of_d2;
 
-        wire [2:0] of_arrive = vrf_rsp_valid[2:0];
+        // A response to D's early read (pf_tag) is this instruction's only if
+        // it advanced into R (adv_q); otherwise it is dropped and D reads
+        // again. R's own requests never share a cycle with D's.
+        reg  [2:0] pf_tag;
+        reg        adv_q;
+        wire [2:0] of_arrive = vrf_rsp_valid[2:0] & ~(pf_tag & {3{~adv_q}});
         wire [2:0] of_have   = of_got | of_arrive;
         wire of_ready = ((of_need & ~of_have) == 3'b000);
 
@@ -697,7 +737,8 @@ module tnca_core #(
                     $display("VRFEV %0d want=%b acc=%b rsp=%b mreq=%b mval=%b we=%b wok=%b",
                              trace_n, of_want, vrf_req_accept[2:0],
                              vrf_rsp_valid[2:0], mtx_vrf_req,
-                             mtx_vrf_valid_w, wr_we, wr_ok);
+                             // writeback first, as tools/r3v2/count_tests.py reads it
+                             mtx_vrf_valid_w, {wr_we[0], wr_we[1]}, {wr_ok[0], wr_ok[1]});
                 end
                 trace_n = trace_n + 1;
             end
@@ -774,31 +815,62 @@ module tnca_core #(
         //----------------------------------------------------------------
         // Requests: three execute sources and the matrix unit
         //----------------------------------------------------------------
-        wire [4:0] rq_v = {txf_vr_req && !txf_vr_valid,
-                           mtx_vrf_req && !mtx_vrf_valid_w, of_want};
-        wire [5*RCTX_W-1:0] rq_rctx = {txf_vr_rctx, mtx_rctx, {3{r_rctx}}};
-        wire [5*8-1:0] rq_idx =
-            {txf_vr_idx, mtx_vrf_addr, r_vc_idx, r_vb_idx, r_va_idx};
-
-
-        //----------------------------------------------------------------
-        // Writes: the transfer engine wins, the writeback retries
         //
-        // The transfer engine has no way to be told to wait -- vw_en is a
-        // registered output with no acknowledgement -- so it takes the
-        // bank. The writeback does have somewhere to wait: freezing the
-        // w_* registers holds the payload and re-presents it next cycle,
-        // which is the "保持 payload 并重试" the contract asks for, with a
-        // declared depth of exactly one.
+        // VRF_PREFETCH: when R asks for nothing and is not waiting on a
+        // producer, the three source ports serve D. D's sources must have no
+        // older writer still to come: none in the scoreboard (unless it is
+        // being written back this cycle and VRF_BYPASS lets the bank's
+        // write-first path return it) and none in R, the one older writer
+        // the scoreboard does not hold yet.
+        // (pf_haz_w is assigned after the scoreboard macros, below.)
+        wire [2:0] pf_need = {d_pf_vc_en, d_pf_vb_en, d_pf_va_en};
+        wire pf_go = (VRF_PREFETCH != 0) && d_valid && (|pf_need)
+                   && (of_want == 3'b000) && !(r_valid && r_vsrc_haz) && !pf_haz_w;
+        wire [2:0] rq_src = pf_go ? pf_need : of_want;
+        wire [4:0] rq_v = {txf_vr_req && !txf_vr_valid,
+                           mtx_vrf_req && !mtx_vrf_valid_w, rq_src};
+        wire [RCTX_W-1:0] rq_src_rctx = pf_go ? d_rctx : r_rctx;
+        wire [5*RCTX_W-1:0] rq_rctx = {txf_vr_rctx, mtx_rctx, {3{rq_src_rctx}}};
+        wire [5*8-1:0] rq_idx = pf_go
+            ? {txf_vr_idx, mtx_vrf_addr, d_pf_vc_idx, d_pf_vb_idx, d_pf_va_idx}
+            : {txf_vr_idx, mtx_vrf_addr, r_vc_idx, r_vb_idx, r_va_idx};
+
+        always @(posedge clk) begin
+            if (!rst_n) begin
+                pf_tag <= 3'b000;
+                adv_q  <= 1'b0;
+            end else begin
+                pf_tag <= pf_go ? (vrf_req_accept[2:0] & pf_need) : 3'b000;
+                adv_q  <= !stall_front && d_valid && !kill_d;
+            end
+        end
+
+
         //----------------------------------------------------------------
-        wire [1:0] wr_we = {w_is_vec, txf_vw_en};
-        wire [2*RCTX_W-1:0] wr_rctx = {w_rctx, txf_vw_rctx};
-        wire [2*8-1:0]      wr_idx  = {w_idx, txf_vw_idx};
-        wire [2*VLEN-1:0]   wr_mask = {w_lane_en, txf_vw_lane};
-        wire [2*VW-1:0]     wr_data = {w_vdata, txf_vw_data};
+        // Writes: the writeback wins, the transfer engine waits (R39-00 B4)
+        //
+        // It used to be the other way round: the engine took the bank and
+        // the writeback stage froze its w_* registers to retry. But the
+        // FP and MUL pipes advance regardless of stalls, so a result of
+        // theirs landing in a frozen cycle was dropped -- its register kept
+        // the old value and its scoreboard bit never cleared, and the next
+        // reader waited forever (tb/core/progs/t39_freeze_drop.s hangs).
+        // The engine can wait: it holds a refused write and presents it
+        // again (tnca_tensor vw_ready), and does not complete a transfer
+        // while one is held. Writer 0, the lower index, has the bank first
+        // (tnca_vrf_banked), as that file's own comment always said.
+        //----------------------------------------------------------------
+        wire [1:0] wr_we = {txf_vw_en, w_is_vec};
+        wire [2*RCTX_W-1:0] wr_rctx = {txf_vw_rctx, w_rctx};
+        wire [2*8-1:0]      wr_idx  = {txf_vw_idx, w_idx};
+        wire [2*VLEN-1:0]   wr_mask = {txf_vw_lane, w_lane_en};
+        wire [2*VW-1:0]     wr_data = {txf_vw_data, w_vdata};
         wire [1:0]          wr_ok;
 
-        assign vrf_wb_freeze = w_is_vec && !wr_ok[1];
+        // Structurally never set now (the writeback is never refused); kept
+        // so the counters and the B1 assertion keep their meaning.
+        assign vrf_wb_freeze = w_is_vec && !wr_ok[0];
+        assign txf_vw_ready  = !txf_vw_en || wr_ok[1];
         assign mtx_vrf_valid_w = vrf_rsp_valid[3];
 
         tnca_vrf_banked #(
@@ -891,9 +963,22 @@ module tnca_core #(
     // file. That costs a stall on every producer/consumer pair. It is the
     // price of a synchronous read without forwarding, and this stage
     // reports it rather than building the network to hide it.
-    `define AVAIL_V(rc, idx) (!USE_BANKED_VRF && \
-                              (`WB_HIT_V(rc, idx) || `X_PROD_V(rc, idx)))
+    `define AVAIL_V(rc, idx) (!USE_BANKED_VRF ? \
+                              (`WB_HIT_V(rc, idx) || `X_PROD_V(rc, idx)) : \
+                              (VRF_BYPASS != 0 && `WB_HIT_V(rc, idx)))
     `define AVAIL_P(rc, idx) (`WB_HIT_P(rc, idx) || `X_PROD_P(rc, idx))
+
+    // VRF_PREFETCH: a source of the instruction in D that an older writer
+    // has still to write -- in the scoreboard (unless written back this
+    // cycle, with VRF_BYPASS), or the destination of the instruction in R,
+    // the one older writer the scoreboard does not hold yet.
+    `define PF_HAZ(idx) ((`SB_V_BUSY(d_rctx, idx) && \
+                          !(VRF_BYPASS != 0 && `WB_HIT_V(d_rctx, idx))) || \
+                         (r_valid && r_dstc == `TNCA_DST_V && r_rctx == d_rctx && \
+                          r_dsti == (idx)))
+    assign pf_haz_w = (d_pf_va_en && `PF_HAZ(d_pf_va_idx))
+                    | (d_pf_vb_en && `PF_HAZ(d_pf_vb_idx))
+                    | (d_pf_vc_en && `PF_HAZ(d_pf_vc_idx));
 
     wire hz_sa = r_sa_en && `SB_S_BUSY(r_rctx, r_sa_idx) && !`AVAIL_S(r_rctx, r_sa_idx);
     wire hz_sb = r_sb_en && `SB_S_BUSY(r_rctx, r_sb_idx) && !`AVAIL_S(r_rctx, r_sb_idx);
@@ -1413,7 +1498,7 @@ module tnca_core #(
         .fault_rctx(txf_fault_rctx), .fault_pc(txf_fault_pc),
         .done_err(txf_done_err),
         .vw_en(txf_vw_en), .vw_rctx(txf_vw_rctx), .vw_idx(txf_vw_idx),
-        .vw_lane_en(txf_vw_lane), .vw_data(txf_vw_data),
+        .vw_lane_en(txf_vw_lane), .vw_data(txf_vw_data), .vw_ready(txf_vw_ready),
         .vr_req(txf_vr_req), .vr_rctx(txf_vr_rctx), .vr_idx(txf_vr_idx),
         .vr_valid(txf_vr_valid), .vr_data(txf_vr_data),
         .mem_req_valid(tm_req_valid), .mem_req_ready(tm_req_ready),
@@ -1745,7 +1830,7 @@ module tnca_core #(
     wire             squash_en   = x_redirect;
     wire [RCTX_W-1:0] squash_rctx = x_rctx;
     wire kill_f = squash_en && f_hit  && (f_sel  == squash_rctx);
-    wire kill_d = squash_en && d_valid && (d_rctx == squash_rctx);
+    assign kill_d = squash_en && d_valid && (d_rctx == squash_rctx);
     // The in-flight fetch and the buffered word are younger than X, so a
     // redirect kills them on the same rule.
     wire kill_f1 = squash_en && f1_valid && (f1_rctx == squash_rctx);
@@ -1754,7 +1839,11 @@ module tnca_core #(
 
     // Issue a fetch unless the buffer is full, or a word is already arriving
     // into a front end that is stalled and would have nowhere to put a second.
-    wire f_issue = f_hit && !fb_valid && !(stall_front && f1_valid);
+    // FE_NOBUBBLE: an unstalled decoder takes the buffered word this cycle,
+    // so the buffer is free again for the word a fetch issued now returns.
+    wire f_issue = (FE_NOBUBBLE != 0)
+                 ? (f_hit && !(stall_front && (fb_valid || f1_valid)))
+                 : (f_hit && !fb_valid && !(stall_front && f1_valid));
     wire kill_r = squash_en && r_valid && (r_rctx == squash_rctx);
 
     // x_kill is never set in this design (X is the oldest in-flight entry), but
@@ -1983,6 +2072,9 @@ module tnca_core #(
                 d_rctx  <= avail_rctx;
                 d_pc    <= avail_pc;
                 d_insn  <= avail_insn;
+                d_pf_va_en <= pf_va_en_n;  d_pf_va_idx <= pf_va_idx_n;
+                d_pf_vb_en <= pf_vb_en_n;  d_pf_vb_idx <= pf_vb_idx_n;
+                d_pf_vc_en <= pf_vc_en_n;  d_pf_vc_idx <= pf_vc_idx_n;
             end else if (kill_d) begin
                 // The entry HELD in D is the one at risk here, so the test is
                 // on d_rctx (kill_d), not on which context the fetch stage

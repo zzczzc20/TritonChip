@@ -104,6 +104,9 @@ module tnca_fpga_top #(
     // it produces the machine every artifact was compiled for rather than one
     // that silently differs.
     parameter USE_BANKED_VRF  = 1,
+    parameter VRF_BYPASS      = 0,
+    parameter FE_NOBUBBLE     = 0,
+    parameter VRF_PREFETCH    = 0,
     // The transposed tensor-DMA write (ISA sec 9E mod[5], R38 S1-07). Off,
     // as in core-vrf-sync-v1; a board built with it on runs a profile that
     // declares the capability, and none does for the banked VRF yet.
@@ -254,6 +257,8 @@ module tnca_fpga_top #(
         .HAS_SFU(HAS_SFU), .HAS_ATOMICS(HAS_ATOMICS),
         .HAS_SYS_ATOMICS(HAS_SYS_ATOMICS),
         .USE_BANKED_VRF(USE_BANKED_VRF),
+        .VRF_BYPASS(VRF_BYPASS), .FE_NOBUBBLE(FE_NOBUBBLE),
+        .VRF_PREFETCH(VRF_PREFETCH),
         .HAS_TENSOR_XPOSE(HAS_TENSOR_XPOSE),
         .CORE_ID(CORE_ID), .NUM_CORES(NUM_CORES), .HOST_TAG(HOST_TAG)
     ) u_shell (

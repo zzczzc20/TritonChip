@@ -31,6 +31,9 @@ module tnca_shell_tb;
     parameter RANDOM_STALL   = 0;
     parameter MEM_REORDER    = 0;
     parameter USE_BANKED_VRF = 0;
+    parameter VRF_BYPASS     = 0;
+    parameter FE_NOBUBBLE    = 0;
+    parameter VRF_PREFETCH   = 0;
     parameter WORDS          = 4096;
     parameter NUM_RCTX       = 2;
     parameter RCTX_W         = 1;
@@ -80,7 +83,9 @@ module tnca_shell_tb;
 
     tnca_shell #(
         .NUM_RCTX(NUM_RCTX), .RCTX_W(RCTX_W), .LSU_TAG_W(LSU_TAG_W),
-        .USE_BANKED_VRF(USE_BANKED_VRF)
+        .USE_BANKED_VRF(USE_BANKED_VRF),
+        .VRF_BYPASS(VRF_BYPASS), .FE_NOBUBBLE(FE_NOBUBBLE),
+        .VRF_PREFETCH(VRF_PREFETCH)
     ) dut (
         .clk(clk), .rst_n(rst_n),
         .cmd_valid(cmd_valid), .cmd_ready(cmd_ready), .cmd_op(cmd_op),

@@ -1,0 +1,51 @@
+{
+  "schema": "r38-design-change/1",
+  "id": "timing-011",
+  "parent_commit": "1eb6b94",
+  "claims_three_layer": false,
+  "hypothesis": "The undivided 100 MHz link spends hours clearing routing congestion: the kernel is pinned to SLR1, whose CLBs are 97.7 % used, and routing is 70-80 % of every critical path. The largest single block is the accumulator file -- 131 072 flip-flops and ~42 k LUTs of read multiplexing -- because a reset loop over the whole array stops it being inferred as RAM. Per-lane distributed RAM with a valid bit per (row, lane) standing in for the reset and the row zero computes the same function in a fraction of the area.",
+  "evidence_for_hypothesis": "u280_nd100 (FP_LAT = 2, 100 MHz) slr_util_placed.rpt: SLR1 CLB 97.71 %, CLB LUTs 70.49 %; rip-up-and-reroute global iteration 0 started at 513 246 overlapping nodes and was still at 2 828 after ~2 h. Hierarchical utilisation of the device (post-synthesis): u_mtx 84 354 LUTs / 139 751 FFs, of which u_acc 41 869 LUTs / 131 072 FFs",
+  "touched_layers": [
+    "microarch"
+  ],
+  "semantic_change": false,
+  "feature": "clock",
+  "layers": {
+    "microarch": {
+      "files": [
+        "rtl/core/tnca_acc_rf.v"
+      ],
+      "change": "storage as VLEN arrays of DEPTH x ELEN, no reset, written per lane (w_en && !z_en && w_lane_en[g]) and read asynchronously; valid[DEPTH][VLEN] flops: reset and z_en clear a row, a write ORs in its lane enables; a lane reads 0 where its valid bit is clear or the row is being zeroed this cycle. Read-old and the zero port's bypass are unchanged, and a zero still drops a same-cycle write"
+    }
+  },
+  "compatibility": {
+    "cycles": "unchanged: R2 cycle check over the 149 R37 O2 cases, and every core program (t11_matrix 3520 / 4992 on the banked file, t25_mmasf 1290 / 1889, as before)",
+    "numerics": "the same function: a cleared or never-written (row, lane) reads 0 as the zeroed flops did; lint, unit, core, core-vrf, core-slowmem, top, nuca",
+    "artifacts": "unchanged"
+  },
+  "resource": {
+    "kind": "Vivado 2023.2 post-synthesis, out of context, xcu280-fsvh2892-2L-e, 6.667 ns target",
+    "module": "tnca_matrix",
+    "parent": {
+      "luts": 84354,
+      "ffs": 139751,
+      "note": "u_mtx within tnca_fpga_top"
+    },
+    "change": {
+      "luts": 49516,
+      "luts_as_memory": 2560,
+      "ffs": 12758,
+      "dsps": 32,
+      "wns_ns": 0.573,
+      "note": "tnca_matrix out of context"
+    }
+  },
+  "results": {
+    "correctness": "lint, unit, core, core-vrf, core-slowmem, top, nuca: 122 PASS; R2 cycle check PASS over the 149 R37 O2 cases, two runs"
+  },
+  "rollback": "revert rtl/core/tnca_acc_rf.v",
+  "evidence": [
+    "doc/r38_board_bringup.md"
+  ],
+  "status": "implemented"
+}

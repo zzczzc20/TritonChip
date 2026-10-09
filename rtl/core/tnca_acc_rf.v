@@ -14,8 +14,9 @@
 // the issue logic rather than hidden here.
 //
 // At the reference configuration (16 slots x 16 rows x 16 lanes x 32 bit) this
-// is 16 KiB of state. Like the vector file it is flops here and belongs in
-// SRAM in silicon; see doc/synthesis.md.
+// is 16 KiB of state: distributed RAM per lane on an FPGA, with a valid bit per
+// (row, lane) standing in for the reset (below); SRAM in silicon, see
+// doc/synthesis.md.
 //==============================================================================
 
 module tnca_acc_rf #(
@@ -47,25 +48,36 @@ module tnca_acc_rf #(
 
     localparam DEPTH = ACC_N * ROWS;
 
-    reg [VLEN*ELEN-1:0] mem [0:DEPTH-1];
-
+    // Storage: one DEPTH x ELEN array per lane, with no reset, so that it
+    // maps to distributed RAM (one write port with the lane's enable, one
+    // asynchronous read). Written as one DEPTH x VLEN*ELEN array of flops
+    // with a reset loop, the file was 131 072 flip-flops and ~42 k LUTs of
+    // read multiplexing on the U280 -- a sixth of the core's LUTs and most of
+    // its registers, in an SLR whose CLBs were 97.7 % used (timing-011).
+    //
+    // What the reset and the row zero used to write into the array, a valid
+    // bit per (row, lane) now records instead: reset and z_en clear it, a
+    // lane's write sets it, and a read returns zero where it is clear. So a
+    // row that was zeroed or never written still reads as zeros, exactly as
+    // before, and the RAM's own contents there are never looked at.
     wire [ACC_W+ROW_W-1:0] ra = {r_slot, r_row};
     wire [ACC_W+ROW_W-1:0] wa = {w_slot, w_row};
     wire [ACC_W+ROW_W-1:0] za = {z_slot, z_row};
 
-    integer i, l;
+    // A zero wins the cycle: the write is dropped, whatever its row, as the
+    // old `if (z_en) ... else if (w_en)` did.
+    wire w_go = w_en && !z_en;
+
+    reg [VLEN-1:0] valid [0:DEPTH-1];
+    integer i;
     always @(posedge clk) begin
         if (!rst_n) begin
             for (i = 0; i < DEPTH; i = i + 1)
-                mem[i] <= {(VLEN*ELEN){1'b0}};
-        end else begin
-            if (z_en) begin
-                mem[za] <= {(VLEN*ELEN){1'b0}};
-            end else if (w_en) begin
-                for (l = 0; l < VLEN; l = l + 1)
-                    if (w_lane_en[l])
-                        mem[wa][l*ELEN +: ELEN] <= w_data[l*ELEN +: ELEN];
-            end
+                valid[i] <= {VLEN{1'b0}};
+        end else if (z_en) begin
+            valid[za] <= {VLEN{1'b0}};
+        end else if (w_en) begin
+            valid[wa] <= valid[wa] | w_lane_en;
         end
     end
 
@@ -85,9 +97,13 @@ module tnca_acc_rf #(
     genvar g;
     generate
         for (g = 0; g < VLEN; g = g + 1) begin : g_rd
+            reg [ELEN-1:0] lane_mem [0:DEPTH-1];
+            always @(posedge clk)
+                if (w_go && w_lane_en[g])
+                    lane_mem[wa] <= w_data[g*ELEN +: ELEN];
+            wire [VLEN-1:0] rv = valid[ra];
             assign r_data[g*ELEN +: ELEN] =
-                (z_en && (ra == za)) ? {ELEN{1'b0}} : mem[ra][g*ELEN +: ELEN];
+                ((z_en && (ra == za)) || !rv[g]) ? {ELEN{1'b0}} : lane_mem[ra];
         end
     endgenerate
-
 endmodule

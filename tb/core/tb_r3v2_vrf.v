@@ -55,7 +55,7 @@ module tb_r3v2_vrf;
     wire [NUM_PORTS*WIDTH-1:0]  a_rd, r_rd;
 
 `define VRF_PORTS(ACC, RV, RD, WOK) \
-        .clk(clk), .rst_n(rst_n), .vbase(vbase), \
+        .clk(clk), .rst_n(rst_n), .clear(1'b0), .vbase(vbase), \
         .req_valid(req_valid), .req_rctx(req_rctx), .req_idx(req_idx), \
         .req_accept(ACC), .rsp_ready(rsp_ready), \
         .rsp_valid(RV), .rsp_data(RD), \

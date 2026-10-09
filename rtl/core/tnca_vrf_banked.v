@@ -53,6 +53,9 @@ module tnca_vrf_banked #(
     input  wire                              clk,
     input  wire                              rst_n,
 
+    // A launch: the read arbiter's round robin starts over, so a kernel's
+    // cycles do not depend on what ran before it.
+    input  wire                              clear,
     input  wire [NUM_RCTX*PHYS_W-1:0]        vbase,
 
     // ---- read requests, one per requester --------------------------------
@@ -218,7 +221,7 @@ module tnca_vrf_banked #(
     localparam RR_W = (NUM_PORTS <= 2) ? 1 : $clog2(NUM_PORTS);
     reg [RR_W-1:0] rr_ptr;
     always @(posedge clk) begin
-        if (!rst_n)
+        if (!rst_n || clear)
             rr_ptr <= {RR_W{1'b0}};
         else if (|accept_c)
             rr_ptr <= (rr_first == NUM_PORTS - 1) ? {RR_W{1'b0}} : rr_first + 1'b1;

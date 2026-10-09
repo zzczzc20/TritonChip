@@ -12,6 +12,7 @@ FLOW-03 is NOT RUN and says why.
 import argparse
 import os
 import re
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -39,7 +40,7 @@ def build(out, latency=1):
 
 
 def run(vvp, case):
-    r = subprocess.run([vvp, f'+case={case}'], capture_output=True,
+    r = subprocess.run([shutil.which('vvp') or 'vvp', vvp, f'+case={case}'], capture_output=True,
                        text=True, timeout=900)
     cycles, ops, final, reused, flush_at = [], None, {}, None, None
     for line in r.stdout.splitlines():

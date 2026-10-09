@@ -12,7 +12,8 @@ The rules, stated so a disagreement can be argued about:
 
   Each bank takes at most one read and one write per cycle. The
   requesters are scanned round robin from a pointer that advances past
-  whoever was served last, so a requester that keeps asking waits at most
+  the first port served (R39 B5: past the last one, the pointer could come
+  back to the same port every cycle), so a requester that keeps asking waits at most
   (C-1)*B+A cycles. Lowest-index-first would let port 0 hold a bank for as
   long as it wanted and starve the matrix behind it.
 
@@ -51,7 +52,7 @@ class CandidateVRF:
         self.valid = [[False] * LANES for _ in range(phys_vregs)]
         # One held response per bank: (port, value) or None
         self.held = [None] * num_banks
-        # The round-robin pointer, advanced past whoever was served last.
+        # The round-robin pointer, advanced past the first port served (R39 B5).
         self.rr = 0
 
     # ---- addressing -------------------------------------------------------
@@ -114,7 +115,6 @@ class CandidateVRF:
 
         accepted, taken = [], {}
         by_port = {port: (rctx, idx) for port, rctx, idx in reads}
-        last = self.rr
         for k in range(self.num_ports):
             port = (self.rr + k) % self.num_ports
             if port not in by_port:
@@ -126,9 +126,11 @@ class CandidateVRF:
                 continue
             taken[b] = (port, p)
             accepted.append(port)
-            last = port
         if accepted:
-            self.rr = (last + 1) % self.num_ports
+            # Past the FIRST port served, as tnca_vrf_banked does since R39
+            # B5: past the last one let the pointer return to the same port
+            # every cycle and starve another on its bank.
+            self.rr = (accepted[0] + 1) % self.num_ports
 
         # 3. the value each accepted read carries
         sampled = {}

@@ -965,7 +965,7 @@ module tnca_core #(
             .NUM_BANKS(4), .BANK_W(2), .READ_LATENCY(1),
             .NUM_PORTS(5), .ZERO_INVALID(1), .NUM_WRITERS(2)
         ) u_vrf (
-            .clk(clk), .rst_n(rst_n), .vbase(vbase_q),
+            .clk(clk), .rst_n(rst_n), .clear(launch_valid), .vbase(vbase_q),
             .req_valid(rq_v), .req_rctx(rq_rctx), .req_idx(rq_idx),
             .req_accept(vrf_req_accept),
             .rsp_ready(5'b11111),
@@ -2231,6 +2231,12 @@ module tnca_core #(
                 sb_acc   <= {ACC_N{1'b0}};
                 blocked  <= {NUM_RCTX{1'b0}};
                 parked   <= {NUM_RCTX{1'b0}};
+                // Round robin starts from context 0 at every launch, as it
+                // does after reset: with several contexts the interleaving
+                // -- and so the cycle count -- would otherwise depend on
+                // what ran before (B4 found board and simulation 1-8
+                // cycles apart on three points of 27).
+                rr_ptr   <= {RCTX_W{1'b0}};
                 fault_valid <= 1'b0;
             end else begin
 

@@ -24,6 +24,7 @@ import json
 import os
 import random
 import re
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -55,7 +56,7 @@ def build(out):
 
 
 def run_case(vvp, case, extra=()):
-    r = subprocess.run([vvp, f'+case={case}'] + list(extra),
+    r = subprocess.run([shutil.which('vvp') or 'vvp', vvp, f'+case={case}'] + list(extra),
                        capture_output=True, text=True, timeout=900)
     return r.stdout
 

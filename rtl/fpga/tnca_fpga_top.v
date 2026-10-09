@@ -99,14 +99,15 @@ module tnca_fpga_top #(
     parameter HAS_ATOMICS     = 1,
     parameter HAS_SYS_ATOMICS = 0,
     // The profile this device exists to run. spec/r1_profiles.json's
-    // core-vrf-sync-v1 is a single core with a banked VRF, and the default here
-    // is that and not the core's default, so that a build which forgot to set
-    // it produces the machine every artifact was compiled for rather than one
-    // that silently differs.
+    // core-vrf-sync-v2 is a single core with a banked VRF and the R39 switches
+    // (VRF_BYPASS, FE_NOBUBBLE, VRF_PREFETCH), and the defaults here are that
+    // and not the core's defaults, so that a build which forgot to set them
+    // produces the machine the board backend reports rather than one that
+    // silently differs. core-vrf-sync-v1 is the same with the three at 0.
     parameter USE_BANKED_VRF  = 1,
-    parameter VRF_BYPASS      = 0,
-    parameter FE_NOBUBBLE     = 0,
-    parameter VRF_PREFETCH    = 0,
+    parameter VRF_BYPASS      = 1,
+    parameter FE_NOBUBBLE     = 1,
+    parameter VRF_PREFETCH    = 1,
     // The transposed tensor-DMA write (ISA sec 9E mod[5], R38 S1-07). Off,
     // as in core-vrf-sync-v1; a board built with it on runs a profile that
     // declares the capability, and none does for the banked VRF yet.

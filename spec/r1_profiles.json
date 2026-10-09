@@ -104,6 +104,46 @@
         "what": "the testbench that reads this profile's capabilities back out of the hardware"
       }
     },
+    "core-vrf-sync-v2": {
+      "target_file": "tnca-sim-vrf-v2.json",
+      "executes_artifacts_of": [
+        "core-vrf-sync-v1"
+      ],
+      "description": "core-vrf-sync-v1 with the R39 hardware switches: VRF_BYPASS (a source being written back is read through the bank's write-first path), FE_NOBUBBLE (a stall costs no second fetch slot) and VRF_PREFETCH (the instruction in D reads its vector sources a cycle early). Same ISA, registers, role contexts and capabilities as v1 -- only the timing differs, so v1 artifacts run here and a difference in a result is a defect. The R39 board image.",
+      "num_cores": 1,
+      "topology": "single",
+      "elaboration": {
+        "NUM_RCTX": 2,
+        "RCTX_W": 1,
+        "VREGS_PER_RCTX": 64,
+        "PHYS_VREGS": 128,
+        "HAS_SFU": 1,
+        "HAS_ATOMICS": 1,
+        "HAS_SYS_ATOMICS": 0
+      },
+      "implementation": {
+        "vector_register_file": "banked",
+        "banks": 4,
+        "ports_per_bank": "1 read, 1 write",
+        "read_latency_cycles": 1,
+        "unwritten_reads": "zero, from per-lane valid bits",
+        "contract": "spec/r3v2_contract.json",
+        "rtl_parameters": {
+          "USE_BANKED_VRF": 1,
+          "VRF_BYPASS": 1,
+          "FE_NOBUBBLE": 1,
+          "VRF_PREFETCH": 1
+        }
+      },
+      "platform_binding": {
+        "kind": "simulation",
+        "bench": "sim/build/tb_core_r39hw.vvp",
+        "bench_args": [
+          "+allroles"
+        ],
+        "what": "the testbench that reads this profile's capabilities back out of the hardware"
+      }
+    },
     "core-xpose-v1": {
       "target_file": "tnca-sim-xpose-v1.json",
       "executes_artifacts_of": [

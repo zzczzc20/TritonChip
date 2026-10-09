@@ -228,7 +228,14 @@ class U50Backend(Transport):
 
     def __init__(self, link, *, epoch=0, host_timeout=30.0,
                  deadline_cycles=2_000_000, poll_interval=0.001,
-                 trace=False, **kw):
+                 trace=False, image_profile=None, **kw):
+        # The profile the loaded image (or the simulated harness) was built
+        # as. Nothing in the hardware says which (spec/r1_profiles.json: the
+        # R39 switches change no capability register), so it is what the
+        # build declares: rtl/fpga/tnca_fpga_top.v's defaults are
+        # core-vrf-sync-v2 since R39, and an older image (r39b and before)
+        # is core-vrf-sync-v1 and says so through this argument.
+        self.image_profile = image_profile or BOARD_PROFILE
         # Transport's constructor sets up four filenames and a child
         # process. None of that is here, so it is not called.
         if link is None:
@@ -515,7 +522,7 @@ class U50Backend(Transport):
                     'reaches': 'rtl/fpga/tnca_fpga_top.v: rtl/tnca_shell.v '
                                'wrapped for a board, over its register port',
                     'protocol': 'r2_transport_v1',
-                    'profile': 'core-vrf-sync-v1',
+                    'profile': self.image_profile,
                     # The mailbox carries an opcode field and the device
                     # refuses one it does not have, so a caller can send
                     # one and see it refused.
@@ -545,6 +552,9 @@ class U50Backend(Transport):
 #: section that a different build could disagree about -- a second kernel in
 #: the same xclbin, or an instance numbering that starts elsewhere.
 IP_NAME = 'tnca_u50:tnca_u50_1'
+
+# What rtl/fpga/tnca_fpga_top.v builds by default (R39: core-vrf-sync-v2).
+BOARD_PROFILE = 'core-vrf-sync-v2'
 
 #: XRT's verbosity, from `enum xclVerbosityLevel` in deprecated/xrt.h:
 #: XCL_QUIET = 0, XCL_INFO = 1, XCL_WARN = 2, XCL_ERROR = 3.

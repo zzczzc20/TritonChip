@@ -143,8 +143,12 @@ class SimLink(U50Link):
 
     def __init__(self, harness=None, *, words=DEFAULT_WORDS, workdir=None,
                  pollcycles=20, intercycle=8, watchdog=200_000_000,
-                 host_timeout=30.0, trace=False):
+                 host_timeout=30.0, trace=False, rtl_params=None):
         self.harness = harness
+        # Parameter overrides for the harness (tb/fpga/tnca_fpga_regs.v), e.g.
+        # {'VRF_BYPASS': 0, 'FE_NOBUBBLE': 0, 'VRF_PREFETCH': 0} builds the
+        # core-vrf-sync-v1 hardware instead of the board's v2 (R39 ablations).
+        self.rtl_params = dict(rtl_params or {})
         self.words = words
         # One directory per link unless the caller names one. The harness,
         # its build and both mailbox files live here, so two links sharing a
@@ -356,6 +360,8 @@ class SimLink(U50Link):
         argv = [iverilog, '-g2005', '-I', os.path.join('rtl', 'common')]
         for d in _LIBDIRS:
             argv += ['-y', d]
+        for k, v in sorted(self.rtl_params.items()):
+            argv += ['-P', f'tnca_fpga_regs.{k}={int(v)}']
         argv += ['-o', out, _BENCH] + _RTL
         r = subprocess.run(argv, cwd=root, capture_output=True, text=True,
                            timeout=1800)
@@ -381,5 +387,9 @@ def stand_in(**kw):
     if link is None:
         link = SimLink(harness=kw.pop('harness', None),
                        words=kw.pop('words', DEFAULT_WORDS),
-                       workdir=kw.pop('workdir', None))
+                       workdir=kw.pop('workdir', None),
+                       rtl_params=kw.pop('rtl_params', None))
+        if 'image_profile' not in kw and link.rtl_params and \
+                not any(link.rtl_params.get(k, 1) for k in ('VRF_BYPASS', 'FE_NOBUBBLE', 'VRF_PREFETCH')):
+            kw['image_profile'] = 'core-vrf-sync-v1'
     return U50Backend(link, **kw)

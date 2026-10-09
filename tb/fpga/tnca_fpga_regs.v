@@ -62,6 +62,13 @@
 
 module tnca_fpga_regs;
 
+    // The R39 hardware switches, as the board image has them (core-vrf-sync-v2;
+    // rtl/fpga/tnca_fpga_top.v). The fpga-u50-sim backend overrides them with
+    // -P (SimLink rtl_params) to build core-vrf-sync-v1 for an ablation.
+    parameter VRF_BYPASS   = 1;
+    parameter FE_NOBUBBLE  = 1;
+    parameter VRF_PREFETCH = 1;
+
     // The device, exactly as the board would instantiate it: one clock, one
     // asynchronous reset, one flat register port. Nothing is added for the
     // benefit of the host -- if this bench needed a port the board does not
@@ -84,7 +91,8 @@ module tnca_fpga_regs;
 
     tnca_fpga_top #(
         .WORDS(WORDS), .ADDR_W(ADDR_W), .LSU_TAG_W(LSU_TAG_W),
-        .USE_BANKED_VRF(1)
+        .USE_BANKED_VRF(1), .VRF_BYPASS(VRF_BYPASS), .FE_NOBUBBLE(FE_NOBUBBLE),
+        .VRF_PREFETCH(VRF_PREFETCH)
     ) u_top (
         .clk(clk), .rst_n_async(rst_n_async),
         .reg_addr(reg_addr), .reg_wdata(reg_wdata),

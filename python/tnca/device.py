@@ -42,6 +42,8 @@ BENCH_NAME = {
     # the fingerprint are those of the profile it is derived from.
     'core-sim/slow': 'tnca_device_slow.vvp',
     'core-vrf-sync-v1/slow': 'tnca_device_vrf_slow.vvp',
+    'core-vrf-sync-v2': 'tnca_device_vrf2.vvp',
+    'core-vrf-sync-v2/slow': 'tnca_device_vrf2_slow.vvp',
 }
 
 # Parameters a profile's device is elaborated with. Both profiles come from
@@ -52,11 +54,17 @@ _SLOW = ['-P', 'tnca_device.MEM_LATENCY=7',
          '-P', 'tnca_device.RANDOM_STALL=1',
          '-P', 'tnca_device.MEM_REORDER=1']
 _BANKED = ['-P', 'tnca_device.USE_BANKED_VRF=1']
+# The R39 hardware switches (spec/r1_profiles.json core-vrf-sync-v2's
+# implementation.rtl_parameters).
+_R39 = ['-P', 'tnca_device.VRF_BYPASS=1', '-P', 'tnca_device.FE_NOBUBBLE=1',
+        '-P', 'tnca_device.VRF_PREFETCH=1']
 
 BENCH_PARAMS = {
     'core-vrf-sync-v1': _BANKED,
     'core-sim/slow': _SLOW,
     'core-vrf-sync-v1/slow': _BANKED + _SLOW,
+    'core-vrf-sync-v2': _BANKED + _R39,
+    'core-vrf-sync-v2/slow': _BANKED + _R39 + _SLOW,
     'core-xpose-v1': ['-P', 'tnca_device.HAS_TENSOR_XPOSE=1'],
     'core-xpose-v1/slow': ['-P', 'tnca_device.HAS_TENSOR_XPOSE=1'] + _SLOW,
 }

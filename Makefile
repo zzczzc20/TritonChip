@@ -668,7 +668,7 @@ TARGET_JSON := compiler/targets/tnca-sim-v0.1.json
 target: $(TARGET_JSON)
 
 $(TARGET_JSON): $(RTL)/core/tnca_core.v $(RTL)/tnca_top.v $(ISA_SCHEMA) \
-                $(TOOLS)/isa/gen_target.py
+                $(TOOLS)/isa/gen_target.py spec/r1_profiles.json
 	@$(PYTHON) $(TOOLS)/isa/gen_target.py
 
 # Generated files are checked, not regenerated, so a stale commit fails here
@@ -1240,7 +1240,7 @@ archbench-tiny: $(R2_DATA_STAMP) | dirs
 # expected board results (doc/r38_board_bringup.md, step B4).
 archbench-u50sim: $(R2_DATA_STAMP) | dirs
 	@mkdir -p $(ARCHBENCH_OUT) && rm -f $(ARCHBENCH_OUT)/u50sim_tiny.jsonl
-	@$(TORCH_PYTHON) -m archbench.run --platform tnca --backend fpga-u50-sim --profile core-vrf-sync-v1 \
+	@$(TORCH_PYTHON) -m archbench.run --platform tnca --backend fpga-u50-sim --profile core-vrf-sync-v2 \
 	   --tier tiny --jobs $(ARCHBENCH_JOBS) --out $(ARCHBENCH_OUT)/u50sim_tiny.jsonl
 archbench-gpu:
 	@mkdir -p $(ARCHBENCH_OUT) && rm -f $(ARCHBENCH_OUT)/gpu.jsonl
@@ -1716,7 +1716,8 @@ r1-build-tests:
 # R3.6's regression, which claims to reproduce the inherited suites
 # from a clean checkout, is what found it.
 r1-profile-tests: $(BUILD)/tb_core.vvp $(BUILD)/tb_core4.vvp \
-                  $(BUILD)/tb_top.vvp $(BUILD)/tb_core_vrf.vvp $(BUILD)/tb_core_xpose.vvp
+                  $(BUILD)/tb_top.vvp $(BUILD)/tb_core_vrf.vvp $(BUILD)/tb_core_xpose.vvp \
+                  $(BUILD)/tb_core_r39hw.vvp
 	@$(PYTHON) tools/r1/profile_tests.py --json $(BUILD)/profile_tests.json
 
 r1-signoff:

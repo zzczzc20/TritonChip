@@ -341,14 +341,18 @@ class Session:
 
     # ---- housekeeping -----------------------------------------------------
     def _snapshot(self):
-        """Every counter now, by name; None if the device cannot say."""
+        """Every counter the device has now, by name; None if it has none.
+
+        A device built before a counter was added does not have it, and
+        leaves it out rather than losing the rest: perf_x_frontend (R39)
+        made every older image report no counters at all.
+        """
         out = {}
         for c in self._counters:
             v = self.dev.perf_read(c['index'])
-            if v is None:
-                return None
-            out[c['name']] = v
-        return out
+            if v is not None:
+                out[c['name']] = v
+        return out or None
 
     def _check_usable(self):
         if self.closed:

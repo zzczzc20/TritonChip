@@ -173,6 +173,7 @@ class TTIRImporter:
         # to, and reading only the last link is what made `p + row*N +
         # offs` load from `p + offs`.
         self._ptr_chain = {}
+        self._scalar_ptrs = {}  # scalar `p + k`: TTIR id -> (p, k), see _op_tt_addptr
         self._offsets = {}  # TTIR value id -> our offset Value (elements)
         self._bodies = {}   # region id -> the operations inside that region
         self._args = {}         # arg index -> (name, our Value)
@@ -1635,6 +1636,14 @@ class TTIRImporter:
         # constant vector -- `x[row*N + col + dx]`, every unrolled
         # convolution tap -- died in a KeyError instead of loading.
         self._ptr_chain[rid] = self._ptr_chain.get(base.id(), []) + [offs]
+        # A scalar pointer is also an address in its own right: Inductor
+        # builds a descriptor over a slice of an argument as
+        # `tl.make_tensor_descriptor(p + k, ...)`, and the descriptor takes
+        # the pointer as a value, not through a load's chain walk. The
+        # address is computed when something asks for it (_value), so a
+        # pointer only ever loaded through costs nothing.
+        if not str(op.get_result(0).get_type()).startswith('tensor<'):
+            self._scalar_ptrs[rid] = (base, offs)
 
     def _op_arith_addi(self, op):
         if self._try_affine(op, 'add'):
@@ -1785,6 +1794,10 @@ class TTIRImporter:
         src, dst = op.get_operand(0), op.get_result(0)
         dims, elem = shape(dst)
         tile = self._tiles.get(src.id())
+        if tile is not None and tile.vector is not None and len(dims) == 1:
+            # One value per row, taken from a register: back to that register.
+            self._v[dst.id()] = tile.vector
+            return
         if tile is not None and tuple(d for d in dims if d != 1) == tuple(
                 d for d in (tile.rows, tile.cols) if d != 1):
             self._tiles[dst.id()] = tile
@@ -2328,7 +2341,7 @@ class TTIRImporter:
             result = self.b.splat(self.b.vextract(v, r), dtype=elem)
             return (self.b.vcmp('ne', result, self.b.vmovi(0))
                     if elem == 'i1' else result)
-        return Tile('lazy', row, rows or self.target.vlen, 1, elem)
+        return Tile('lazy', row, rows or self.target.vlen, 1, elem, vector=v)
 
     def _col_to_vector(self, tile, elem):
         """One value per row, gathered into one vector register.
@@ -2338,6 +2351,8 @@ class TTIRImporter:
         start -- which also means the sixteen inserts are one value's
         lifetime and not sixteen, and the allocator has to be told so.
         """
+        if tile.vector is not None:
+            return tile.vector
         out = self.b.vmovi(0, dtype=elem)
         self.b.comment('one value per row into one vector (ISA 0x09)')
         for r, x in enumerate(tile.handle):
@@ -2627,6 +2642,40 @@ class TTIRImporter:
                         'lowering')
         return t
 
+    def _relabel(self, op, tile, sdims, nonunit):
+        """A tt.trans that keeps the non-unit dimensions in order: the same
+        numbers in the same order, under another shape.
+
+        It is a rename, unless it carries the one non-unit dimension between
+        the rows and the columns of the tile -- `[N, 1] -> [1, N]`, which
+        Inductor writes for every per-channel weight it reads through a
+        rank-1 descriptor. One value per row and one row of lanes are the
+        same numbers held differently, and renaming one as the other read
+        row 0 for all of them.
+        """
+        from .packed import shape as _shape
+        rid = op.get_result(0).id()
+        rdims, _ = _shape(op.get_result(0))
+        if len(nonunit) == 1:
+            n = sdims[nonunit[0]]
+            to_row = rdims[-1] == n
+            elem = tile.dtype
+            if (tile.rows, tile.cols) == (n, 1) and to_row:
+                v = tile.vector
+                if v is None:
+                    rows = tile.handle if isinstance(tile.handle, (list, tuple)) else \
+                        [tile.handle(r) for r in range(n)]
+                    v = self._col_to_vector(Tile('col', list(rows), n, 1, elem), elem)
+                self._v[rid] = v
+                self._packed.add(rid)
+                self._tiles[rid] = Tile('rows', (v,), 1, n, elem)
+                return
+            if (tile.rows, tile.cols) == (1, n) and not to_row:
+                v = self._row_getter(op.get_operand(0), 1, elem)(0)
+                self._tiles[rid] = self._vector_to_col(v, elem, n)
+                return
+        self._tiles[rid] = tile
+
     def _op_tt_trans(self, op):
         """`tl.trans`, by reading the source down its columns.
 
@@ -2678,7 +2727,7 @@ class TTIRImporter:
         nonunit = [i for i, n in enumerate(sdims) if n != 1]
         moved = [i for i in order if sdims[i] != 1]
         if moved == nonunit:
-            self._tiles[op.get_result(0).id()] = tile
+            self._relabel(op, tile, sdims, nonunit)
             return
         if len(nonunit) != 2 or moved != nonunit[::-1] or \
                 (tile.rows, tile.cols) != (sdims[nonunit[0]], sdims[nonunit[1]]):
@@ -3803,6 +3852,26 @@ class TTIRImporter:
                            size=size)
 
     # ---- helpers ----------------------------------------------------------
+    def _scalar_ptr_value(self, vid):
+        """`p + k` for a scalar pointer `p` and a scalar offset `k` in
+        elements, as a byte address; None if either is not a scalar."""
+        base, offs = self._scalar_ptrs[vid]
+        esize = _DTYPE_BYTES.get(self._ptr_base[vid][1])
+        try:
+            bv = self._value(base)
+        except Unsupported:
+            return None
+        if getattr(bv, 'kind', None) != SCALAR or not esize:
+            return None
+        k = self._scalar_const(offs.id())
+        if k is not None:
+            return bv if k == 0 else self.b.sbini('add', bv, k * esize)
+        ov = self._v.get(offs.id())
+        if getattr(ov, 'kind', None) != SCALAR:
+            return None
+        scaled = ov if esize == 1 else self.b.sbini('shl', ov, esize.bit_length() - 1)
+        return self.b.sbin('add', bv, scaled)
+
     def _value(self, ttir_value):
         vid = ttir_value.id()
         v = self._v.get(vid)
@@ -3830,7 +3899,15 @@ class TTIRImporter:
                 v = self.b.vmovi(iv, dtype=elem)
             self._v[vid] = v
             return v
+        if vid in self._scalar_ptrs:
+            v = self._scalar_ptr_value(vid)
+            if v is not None:
+                self._v[vid] = v
+                return v
         tile = self._tiles.get(vid)
+        if tile is not None and tile.vector is not None:
+            self._v[vid] = tile.vector
+            return tile.vector
         if tile is not None and tile.kind == 'col':
             _, elem = _parse_type(str(ttir_value.get_type()))
             v = self._col_to_vector(tile, elem)

@@ -313,6 +313,8 @@ There is one `Session` per (profile, backend, arguments), kept for the life of t
 | `TNCA_KERNEL_DUMP`, `TNCA_DUMP_DIR` | — | Dump every stage (TTIR, inlined, optimised, TNCA IR, assembly, hex), also for failing kernels |
 | `TNCA_TENSOR_DESCRIPTORS` | on (since R39) | `tnca.inductor.configure()` turns on Inductor's tensor-descriptor code generation (§9), the standard path; `0` turns it off |
 | `TNCA_MAX_BLOCK` | 16 | the block-dimension cap `tnca.inductor.configure()` gives Inductor (an R39 ablation knob) |
+| `TNCA_TDESC_BISECT=lo:hi` | — | Debugging: number the descriptor-eligible accesses in the order Inductor asks about them, and use a descriptor only for those in `[lo, hi)`. Binary search finds the one access whose lowering is wrong |
+| `TNCA_GUARD_BYTES`, `TNCA_GUARD_CHECK` | — | Debugging: poisoned margins around every launch buffer. The first catches out-of-bounds writes; the second runs each launch with two poisons and catches out-of-bounds reads |
 
 ## 9. PyTorch integration
 

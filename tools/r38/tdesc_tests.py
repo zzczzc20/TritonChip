@@ -271,6 +271,48 @@ def case_rank3_dot(torch, tl, triton):
     return err < 1e-5, f'max rel err {err:.2e}', _paths(_asm(k))
 
 
+def case_rank1_relabel_in_loop(torch, tl, triton):
+    """Rank 1 loaded in a loop and relabelled [16] -> [16, 1] -> [1, 16] before
+    use, the way Inductor reads an RMSNorm weight (R39-00: llama_decode)."""
+    @triton.jit
+    def k(w, x, out, N: tl.constexpr):
+        dw = tl.make_tensor_descriptor(w, shape=[N], strides=[1], block_shape=[16])
+        acc = tl.zeros([1, 16], tl.float32)
+        for off in range(0, N, 16):
+            idx = off + tl.arange(0, 16)[None, :]
+            a = tl.trans(tl.expand_dims(dw.load([off]), 1)).to(tl.float32)
+            t = a + tl.load(x + idx).to(tl.float32)
+            tl.store(out + idx, t)
+            acc += t * t
+        tl.store(out + N + tl.arange(0, 16)[None, :], acc)
+    w = torch.randn(64, dtype=torch.float16)
+    x = torch.randn(64, dtype=torch.float16)
+    out = torch.zeros(80, dtype=torch.float32)
+    k[(1,)](w, x, out, 64)
+    t = w.float() + x.float()
+    want = torch.cat([t, (t * t).reshape(4, 16).sum(0)])
+    ok = bool(torch.allclose(out, want, rtol=1e-3, atol=1e-3))
+    return ok, f'max abs error {float((out - want).abs().max()):.3g}', _paths(_asm(k))
+
+
+def case_rank1_store_relabel(torch, tl, triton):
+    """A [1, 16] row relabelled [16, 1] -> [16] and stored through a rank-1
+    descriptor, the way Inductor writes an RMSNorm output (R39-00)."""
+    @triton.jit
+    def k(x, out, N: tl.constexpr):
+        do = tl.make_tensor_descriptor(out, shape=[N], strides=[1], block_shape=[16])
+        for off in range(0, N, 16):
+            t = tl.load(x + off + tl.arange(0, 16)[None, :]).to(tl.float32) * 3
+            v = tl.reshape(tl.trans(t), [16])
+            do.store([off], v.to(tl.float16))
+    x = torch.randn(64, dtype=torch.float16)
+    out = torch.zeros(64, dtype=torch.float16)
+    k[(1,)](x, out, 64)
+    want = (x.float() * 3).half()
+    ok = bool(torch.equal(out, want))
+    return ok, f'max abs error {float((out.float() - want.float()).abs().max()):.3g}', _paths(_asm(k))
+
+
 CASES = {n[5:]: f for n, f in sorted(globals().items()) if n.startswith('case_')}
 
 

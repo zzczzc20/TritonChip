@@ -284,8 +284,18 @@ def _apply_tma_rules():
     def on_cpu():
         return V.graph.get_current_device_or_throw().type == 'cpu'
 
+    import os
+    bisect = os.environ.get('TNCA_TDESC_BISECT')
+    lo, hi = (int(x) for x in bisect.split(':')) if bisect else (0, None)
+
     class TNCATMACompatibilityChecker(base):
         _tnca_rules = True
+        # TNCA_TDESC_BISECT=lo:hi -- a debugging knob, not a configuration:
+        # the eligible loads and stores of a graph are numbered in the order
+        # Inductor asks about them (deterministic for a given graph), and
+        # only those numbered lo..hi-1 get a descriptor. A binary search over
+        # the range finds the one access whose descriptor lowering is wrong.
+        _seen = 0
 
         def can_use_tma(self):
             if self.force or not on_cpu():
@@ -298,11 +308,30 @@ def _apply_tma_rules():
                                lambda: False)
             if self.for_store and (self.kernel.no_x_dim or multirow()):
                 return False
+            if bisect:
+                n = TNCATMACompatibilityChecker._seen
+                TNCATMACompatibilityChecker._seen += 1
+                if n < lo or (hi is not None and n >= hi):
+                    return False
             return True
 
         def are_block_parameters_compatible(self, block_params, constant_offset=0):
             if not on_cpu():
                 return super().are_block_parameters_compatible(block_params, constant_offset)
+            # One range tree split over two descriptor dimensions -- Inductor
+            # matching `y // 4` and `y % 4` as dimensions of their own, a
+            # block shape [(YBLOCK + 3)//4, XBLOCK, Min(4, YBLOCK)] -- makes
+            # the kernel reshape its tile to rank 4 and permute it around the
+            # access. The importer has no lowering for that, and the box rows
+            # it would move are a quarter or half a vector wide, where the
+            # pointer access Inductor falls back to moves one tile row per
+            # instruction.
+            seen = set()
+            for dim in block_params.block_shape:
+                names = {x.name for x in getattr(dim, 'free_symbols', ())}
+                if names & seen:
+                    return False
+                seen |= names
             # TNCA runs a reduction one row per program (XBLOCK = 1, see
             # _register): Inductor's no_x_dim in all but name. A descriptor
             # whose innermost block is XBLOCK can then never span 16 bytes,

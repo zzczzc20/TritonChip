@@ -1,6 +1,6 @@
 # R39：标准路径的性能——去掉 R38 及以前的妥协
 
-版本：1.0，2026-10-09。状态：**NOT STARTED**。
+版本：1.1，2026-10-09。状态：**R39-00 进行中**（进展见各工作包末尾）。
 起点：`r39` 分支，`74f841c`（r38-dco：U280 100 MHz 不分频上板、ArchBench B4 逐点等周期）。
 签收名：`R39_STANDARD_PATH_PERF`。
 
@@ -152,6 +152,23 @@ ArchBench 本身还没有走标准路径：descriptor 默认关闭，记录的�
 3. B1：定向测试 `t38_wbfreeze` 在修复前失败（若复现）、修复后通过；若无法复现，测试保留，结论写入文档。B2：`t29_vrfbank` 扩展的 5 口测试证明每个请求者都会被服务。
 4. 基线：tiny + small 在板上数值全部通过；tiny 的 B4 逐点等周期；基线文件记录 commit、镜像 sha256、配置哈希。
 5. 标准路径基线与 §0.2（无 descriptor）的对照表写入报告。这一步只是测量，不设阈值。
+
+进展（2026-10-09）：
+
+- 交付 1–4 已完成（`7121da0`、`db59522`）。B1 由 `t38_wbfreeze` 复现后修复；B2 由 `tools/r39/vrf_fairness_test.py` 证明 4 口、5 口每个请求者都会被服务；B3 文档已更新。
+- **标准路径第一次全量运行失败 8 点**（nd100c 镜像，descriptor 开）。原因有三类，都已修复：
+  1. **标量指针未下降。** Inductor 在参数的切片上建 descriptor，写作 `tl.make_tensor_descriptor(p + k, ...)`；导入器只在 load 的指针链里处理 `p + k`，没有把它当作值。影响 gpt2_block、llama_prefill（tiny、small）。修复：标量 `tt.addptr` 在被当作值使用时才算出地址（`frontend._scalar_ptr_value`），因此只经由 load 使用的指针不多出指令，制品同一性 447/447 不变。
+  2. **一个 range tree 被拆成两维。** Inductor 把 `y // 4`、`y % 4` 匹配成 descriptor 的两维，块形状为 `[(YBLOCK+3)//4, XBLOCK, Min(4, YBLOCK)]`；kernel 因此要把 tile 重排成 4 维再置换，导入器没有这种下降。即使有，搬运的行也只有 1/4 或 1/2 个向量宽。影响 conv2d、resnet_block。修复：`TNCATMACompatibilityChecker` 拒绝这种访问，Inductor 退回指针访问。
+  3. **数值错误（llama_decode、llama_prefill）。** rank-1 descriptor 读出的权重经 `[16] → [16, 1] → [1, 16]` 重新标号。`tt.trans` 把它当作改名处理，tile 的表示仍是「每行一个值」，于是后续运算每个 lane 都读到第 0 个元素。反方向 `[1, 16] → [16, 1] → [16]` 再接 descriptor store 也是同一个问题。修复：`frontend._relabel` 在「每行一个值」与「一行」之间转换表示；从同一个寄存器拆出来的列，直接还原为该寄存器，不付代价。新增定向测试 `rank1_relabel_in_loop`、`rank1_store_relabel`，tdesc 12/12。
+- **定位手段**，留作调试开关，默认关闭：
+  - `TNCA_TDESC_BISECT=lo:hi`：按 Inductor 询问的顺序给 descriptor 访问编号，只对区间内的访问使用 descriptor，二分到出错的那一个。本次定位到第 69 个访问。
+  - `TNCA_GUARD_BYTES` / `TNCA_GUARD_CHECK`：给每个缓冲区两侧加毒化边缘。前者检出越界写；后者用两种毒值各跑一次，检出越界读。本次排除了越界读写。
+- **counter 回归。** 加入 `perf_x_frontend` 后，旧镜像对第 20 号 counter 回答 refused。`Session._snapshot` 因此丢掉了全部 counter，R39 分支上的 ArchBench 记录都没有 counter。修复：只跳过设备没有的那一项。
+- **结果（nd100c 镜像，正式基线待 r39b 镜像）：**
+  - 标准路径 tiny + small **52/52 数值通过**，全部带 counter。
+  - tiny：IPC 0.277。停顿占比：hazard 32.1 %，LSU 12.6 %，VRF 11.2 %，未归因 13.9 %。
+  - small：IPC 0.264。停顿占比：hazard 35.3 %，LSU 12.4 %，VRF 10.0 %，未归因 13.3 %。
+  - 与 §0.2（descriptor 关）逐点对照，tiny 的 S_geo 为 0.998（0.925–1.068）。`max_block = 16` 时多数 kernel 只有一个向量宽，descriptor 与普通 load 几乎没有差别；差别要到 R39-02 的宽块才出现。
 
 ### R39-01：指令调度（编译器）
 

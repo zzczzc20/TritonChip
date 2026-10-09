@@ -317,3 +317,24 @@ FMA 的三级已经大致平衡（各约 6.1–6.8 ns），不改周期就压不
 - **验证。** 回归 155 项通过（含 core-ooo、nuca）。
 - **链接调整。** 用 timing-011 + 012 的 RTL 不分频 100 MHz 链接（`u280_nd100d`）于 08:57 启动。最早那次 `u280_nd100` 在拥塞中布线约 5 小时后停掉：它的 RTL 面积最大，被 nd100c/d 严格超越。
 
+### 6.13 100 MHz 不分频在 U280 上跑通（2026-10-09）
+
+- **镜像。** `u280_nd100c`：RTL 为 8d8e4e9（timing-001…011，`FP_LAT = 2`），`DEV_DIV = 1`，kernel clock 100 MHz。08:19 开始链接，12:05 完成，`LINK_EXIT=0`。v++ 只报告 AUTO-FREQ-SCALING-08，`.xclbin` 读回 DATA_CLK = 100 MHz。
+- **布线。**
+  - SLR1 的 CLB 使用率 85.41 %（之前 97.71 %）。rip-up-and-reroute 约 20 分钟就清掉了重叠节点，三轮迭代后 WNS 由 −0.541 收敛到 +0.016。
+  - 最终全设计 WNS +0.016 ns，566 734 个端点无失败。器件所在的 kernel clock 域 **WNS +0.127 ns**（10 ns 周期）。
+  - 最差路径是 LSU `pending → u_mem` BRAM 数据输入：9.47 ns，87 % 是走线。
+- **上板。** 门检查全部通过：FPGA 31 °C、HBM 26 °C。
+  - B1 conformance PASS。
+  - B2 profiler PASS。
+  - B3 ArchBench tiny 27/27 通过。
+  - B4：27 个点与同一 RTL 的仿真**逐点周期完全相同**。参考是 1eb6b94 的 `fpga-u50-sim` 结果；timing-011 不改周期。
+- **时钟实测。**
+  - 频率计数器读出 100 MHz。
+  - `measure_clock.py` 测得 **100.067 / 100.009 MHz**。
+- **默认配置。** 流程的四处时钟设置（`package_xo.tcl`、`ooc.xdc`、`link.sh`、包装层的 `DEV_DIV`）改为 100 MHz、不分频。ArchBench 的 `fpga-u280` 时钟改为 100e6，与板上当前加载的镜像一致。/2（150 MHz kernel clock，器件 75 MHz）作为备选。
+- **记录。** 都在 `evidence/r38/u280_100mhz/`。
+- **仍在运行。**
+  - `u280_nd100d`：再加 timing-012（标量寄存器文件），SLR1 的 CLB 降到 76.6 %，用来看余量还能多出多少。
+  - `u280_fl3`：`FP_LAT = 3`，请求 125 MHz；RTL 不含 timing-011/012。
+

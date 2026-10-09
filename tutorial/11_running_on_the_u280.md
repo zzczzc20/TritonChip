@@ -55,9 +55,10 @@ board's host side is tested without a board.
 
 ## The clock
 
-The board's kernel clock is 150 MHz, and the device divides it by `DEV_DIV`
-(`rtl/board/tnca_u50_xo.v`). The image above uses **`DEV_DIV = 2`, so the
-device runs at 75 MHz**. That was measured, not assumed:
+The device runs at the kernel clock divided by `DEV_DIV`
+(`rtl/board/tnca_u50_xo.v`). The run above was on the image with a 150 MHz
+kernel clock and **`DEV_DIV = 2`, so the device ran at 75 MHz**. That was
+measured, not assumed:
 
 - the shell's frequency counter reads 150 MHz for the kernel clock;
 - `flow/fpga/measure_clock.py` times two spin kernels of different
@@ -67,10 +68,17 @@ device runs at 75 MHz**. That was measured, not assumed:
 So 7044 cycles is 94 µs of device time. The 9 ms of wall time is almost
 all host and PCIe.
 
+The same day an undivided image followed: kernel clock 100 MHz,
+`DEV_DIV = 1`, measured at 100.07 and 100.01 MHz. It ran ArchBench with
+every cycle count equal to the simulator's. That is now the flow's default;
+`evidence/r38/u280_100mhz/` has the record. Cycle counts do not depend on
+the clock, so the 7044 above is the same on either image. Only the time
+they take changes.
+
 ## Building and loading an image
 
 ```sh
-# package the RTL as an XRT kernel, then link it for the U280: about 4-5 hours
+# package the RTL as an XRT kernel, then link it for the U280: about 4 hours
 vivado -mode batch -source flow/fpga/package_xo.tcl -tclargs . <build> xcu280-fsvh2892-2L-e
 TNCA_BOARD=u280 flow/fpga/link.sh <build>
 

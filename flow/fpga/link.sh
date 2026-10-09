@@ -52,10 +52,23 @@
 # success anyway. Naming the number here, constraining it in flow/fpga/ooc.xdc,
 # counting against it in the divider, and reading it back out of the finished
 # .xclbin is the opposite of that: it is the clock the design was measured at,
-# written down in four places that have to agree. If the link fails at 150 the
+# written down in four places that have to agree. If the link fails at it the
 # next step is a report and a decision, not a smaller number slipped in -- and
 # if it comes to that, the number moves in all four places or the .xclbin is not
 # the design anybody measured.
+#
+# WHY 100, AND UNDIVIDED (2026-10-09)
+#
+# R38's timing work (doc/r38_board_bringup.md sec 6) took the device's worst
+# path from a 60-level matrix loop to 6.84 ns post-synthesis, and timing-011
+# took the accumulator file out of flip-flops, which cleared the routing
+# congestion that held the device's SLR at 97.7 % of its CLBs. Linked at 100
+# MHz with DEV_DIV = 1, that RTL routed with the kernel clock at +0.127 ns and
+# nothing failing (566 734 endpoints), and on the U280 it passed conformance,
+# the profiler and ArchBench tiny with every cycle count equal to the RTL
+# simulation, at a measured 100.0 MHz. So the four places now say 100, and the
+# divider 1. The /2 image of the same flow (150 MHz, DEV_DIV = 2: 75 MHz) also
+# routed and ran; it is the fallback if a change costs this one its slack.
 #
 #------------------------------------------------------------------------------
 # WHY THE RESULTING FREQUENCY IS CHECKED AND NOT ASSUMED
@@ -122,12 +135,12 @@ PLATFORM=$BOARD_PLATFORM
 PLATFORMS_DIR=${XILINX_PLATFORMS:-/opt/xilinx/platforms}
 
 # The clock this build asks for, and the one flow/fpga/ooc.xdc constrains and
-# rtl/board/tnca_u50_xo.v divides by DEV_DIV (2 since R38's timing work: the
-# device at 75 MHz, measured on the U280; it was 4, 37.5 MHz, and briefly 3).
-# The header says why it is not the
-# platform default of 300; the four checks at the bottom of this file are what
-# make sure it is this number that reaches the .xclbin.
-EXPECT_MHZ=150
+# rtl/board/tnca_u50_xo.v divides by DEV_DIV (1 since 2026-10-09: the device at
+# 100 MHz, measured on the U280; before that 150 MHz divided by 4, 3, then 2).
+# The header says why it is not the platform default of 300; the four checks at
+# the bottom of this file are what make sure it is this number that reaches the
+# .xclbin.
+EXPECT_MHZ=100
 
 XO=$OUT/tnca_u50.xo
 XCLBIN=$OUT/tnca_${BOARD}.xclbin

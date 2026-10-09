@@ -30,20 +30,20 @@ EVIDENCE = {'sim-file': 'measured-rtl', 'sim-socket': 'measured-rtl',
 # The clock a cycle count may be converted with, by backend. Only a board
 # has one; a simulated cycle has no duration (Stage 1 rule).
 # The device clock of the image LOADED on each board -- a property of the
-# bitstream, not of this checkout. Images built from R38's timing work on
-# divide by 2 (rtl/board/tnca_u50_xo.v DEV_DIV: 75 MHz); the U280 runs one
-# since 2026-10-09, the U50's was built with 4. Change an entry in the same
-# step that loads a new image.
+# bitstream, not of this checkout. The U280 runs a 100 MHz undivided image
+# since 2026-10-09 (rtl/board/tnca_u50_xo.v DEV_DIV = 1, kernel clock 100 MHz);
+# the U50's was built with 4. Change an entry in the same step that loads a
+# new image.
 BOARD_CLOCK_HZ = {'fpga-u50': 37.5e6,
-                  # 150 MHz kernel clock / 2 (DEV_DIV), measured: with the
-                  # image loaded (2026-10-09) the shell's frequency counter
+                  # 100 MHz kernel clock, undivided, measured: with the image
+                  # loaded (2026-10-09 12:05 HKT) the shell's frequency counter
                   # (clock_freq_counter.m.*/clock_counter_freqs in sysfs on the
-                  # management function) reads 150 MHz for the kernel clock,
-                  # to its 1 MHz resolution, and the device's own cycle count
-                  # over host-timed spin kernels gives 74.97-75.02 MHz
-                  # (flow/fpga/measure_clock.py). It was /4, 37.5 MHz, until
-                  # R38's timing work.
-                  'fpga-u280': 75e6}
+                  # management function) reads 100 MHz, to its 1 MHz
+                  # resolution, and the device's own cycle count over
+                  # host-timed spin kernels gives 100.01-100.07 MHz
+                  # (flow/fpga/measure_clock.py). Earlier the same day: /2 of
+                  # 150, 75 MHz; until R38's timing work, /4, 37.5 MHz.
+                  'fpga-u280': 100e6}
 
 # The device heap a launch's argument storages must fit: Session's default
 # heap, 0x20000..0x80000, of the 512 KiB memory the simulator and the U50

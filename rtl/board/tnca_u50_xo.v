@@ -96,6 +96,18 @@
 // (flow/fpga/measure_clock.py). The RTL here is a further 0.9 ns faster
 // post-synthesis (timing-004..009), so two is the default.
 //
+// R38: ONE, MEASURED (2026-10-09)
+//
+// With the kernel clock asked at 100 MHz (flow/fpga/link.sh) the device takes
+// it undivided. The RTL with timing-004..011 -- 6.84 ns post-synthesis, and the
+// accumulator file in distributed RAM, which cleared the routing congestion of
+// an SLR at 97.7 % CLB use -- routed at +0.127 ns against 10 ns with nothing
+// failing; on the U280 it passed conformance, the profiler and ArchBench tiny
+// 27/27 with every cycle count identical to RTL simulation, and the spin-kernel
+// measurement read 100.07 and 100.01 MHz (evidence/r38/u280_100mhz/). BUFGCE_DIV
+// stays in the path with a divide of one, so going back to /2 is this
+// parameter and the kernel clock, and nothing else.
+//
 // The clock crossing does not care about the ratio: tnca_axi_lite crosses on
 // a toggle with synchronisers (rtl/fpga/tnca_u50_top.v), and every clk_dev
 // edge is an ap_clk edge, so the cross-domain requirement stays one ap_clk
@@ -116,10 +128,11 @@ module tnca_u50_xo #(
     parameter NUM_RCTX       = 2,
     parameter RCTX_W         = 1,
     parameter VREGS_PER_RCTX = 64,
-    // ap_clk / DEV_DIV is the device clock: 2 -> 75 MHz, measured on the
-    // U280 on 2026-10-09 (see above); the image loaded on 2026-10-08 was
-    // built with 4 (37.5 MHz).
-    parameter DEV_DIV        = 2
+    // ap_clk / DEV_DIV is the device clock: 1 -> 100 MHz with the 100 MHz
+    // kernel clock, measured on the U280 on 2026-10-09 (see above). The /2
+    // image (150 MHz kernel clock, 75 MHz device) ran the same day; the one
+    // loaded on 2026-10-08 was built with 4 (37.5 MHz).
+    parameter DEV_DIV        = 1
 ) (
     //---- the platform's clock ----------------------------------------------
     input  wire                    ap_clk,

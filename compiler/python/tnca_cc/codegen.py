@@ -289,6 +289,9 @@ class CodeGen:
         return f"{prefix}{v.reg}"
 
     def _pred(self, mask):
+        if mask is not None and getattr(mask, 'kind', None) != PRED:
+            raise Diagnostic(f"a {mask.kind} {mask!r} used as an execution mask; "
+                             f"masks are predicate registers")
         return f"p{mask.reg}" if mask is not None else None
 
     # ---- the walk ---------------------------------------------------------
@@ -443,7 +446,9 @@ class CodeGen:
 
     def _op_assign(self, op):
         dst, src = op.operands
-        bank = 'v' if dst.kind == VECTOR else 's'
+        bank = {VECTOR: 'v', PRED: 'p'}.get(dst.kind, 's')
+        if src.kind != dst.kind:
+            raise Diagnostic(f"assign of a {src.kind} into a {dst.kind} {dst!r}")
         self._emit(f'{bank}.mov', f'{bank}{dst.reg}', f'{bank}{src.reg}')
 
     # ---- vector ops -------------------------------------------------------
@@ -619,17 +624,32 @@ class CodeGen:
         if mnem is None:
             raise Diagnostic(f"no predicate lowering for {op.attrs['op']!r}",
                              source='doc/isa/opcode-map.md sec 0x13')
+        self._check_pred_operands(op, a, b)
         self._emit(mnem, f"p{p.reg}", f"p{a.reg}", f"p{b.reg}")
+
+    @staticmethod
+    def _check_pred_operands(op, *values):
+        """A predicate instruction names predicate registers. A vector
+        operand here would be printed as the predicate register with the
+        same number -- whatever that happens to hold -- which is a wrong
+        answer that only an allocation change reveals (R39-01 found
+        `xmask ^ true` reading `true` that way)."""
+        for v in values:
+            if getattr(v, 'kind', None) != PRED:
+                raise Diagnostic(f"{op.kind} {op.attrs.get('op')!r} on a {v.kind} operand "
+                                 f"{v!r}; it takes predicates")
 
     def _op_pun(self, op):
         a = op.operands[0]
         p = op.results[0]
         self._alloc(p)
+        self._check_pred_operands(op, a)
         self._emit(_PUN[op.attrs['op']], f"p{p.reg}", f"p{a.reg}")
 
     def _op_vselect(self, op):
         p, a, b = op.operands
         v = op.results[0]
+        self._check_pred_operands(op, p)
         self._alloc(v)
         self._emit('v.sel', f"v{v.reg}", f"v{a.reg}", f"v{b.reg}",
                     pred=f"p{p.reg}")

@@ -194,7 +194,46 @@ ArchBench 本身还没有走标准路径：descriptor 默认关闭，记录的�
 
    估计依据：冒险停顿占 32.6 %，其中软件可重排的部分预计一半以上；硬件旁路属于 R39-06。
 
-### R39-02：宽块与多寄存器 tile（编译器 + Inductor）
+进展（2026-10-09）：
+
+- **实现。**
+  - `compiler/python/tnca_cc/schedule.py`：基本块内的 list scheduler。依赖规则：
+    - 纯运算只受数据依赖约束；
+    - 访存读可以越过纯运算、也可以相互越过，但不越过任何带 effect 的运算；
+    - effect 之间保持原序；
+    - `vinsert`、`assign` 视为原地写；
+    - 窗口别名的读者不越过它后面的下一个 effect；
+    - label、branch、exit 是块边界。
+  - 选择规则：最早可发射优先，其次关键路径，再次原序。
+  - 寄存器压力按 allocator 的活跃区间分别跟踪 vector、scalar、pred 三个寄存器堆（含跨 loop 的延长），上限为原序峰值加余量；候选限定在原序 48 条之内。超过上限的块退回原序。
+  - `aot._emit` 依次尝试：默认余量与窗口 → 零余量、窗口 16 → 原序，并在 provenance 中记录回退。
+  - 调度时顺带删去无人读的参数块 load：参数块由 runtime 为本次 launch 写入，读它不会 fault。
+- **机器模型实测**，写在 `spec/r39_sched_model.json`：
+  - 核心延迟来自 `tools/r39/latency_probe.py`（banked VRF 上）。整数向量依赖距离 4 拍，FP 6 拍，SFU 29 拍，标量 ALU 2 拍，标量 MUL 5 拍。
+  - **banked VRF 上连互不相关的向量指令也只能每 2 拍发射一条**（`vrf` 停顿 1 拍；同 bank 再加 1 拍）。这是 R39-07 的硬件问题，调度无法消除。
+  - 存储器代价来自 `tools/r39/load_latency.py`，在板上测得：标量 load 11 拍，64 字节向量 load 16–20 拍；LSU 一次只容一条访存。
+- **合法性。** `tools/r39/schedule_tests.py` 用独立规则检查每个重排过的块：894 次编译，约 1 万个块，0 违规，模型估计没有一个变差。
+- **消融**（nd100c 镜像，tiny + small，`TNCA_SCHEDULE=0/1`），52/52 数值通过：
+  - S_geo **1.158**（tiny 1.164，small 1.151）≥ 1.15 ✓；
+  - 套件 `perf_x_hazard` 周期降为 **0.633×（−37 %）** ≥ 30 % ✓；
+  - 无回退点（最慢 op.silu/small 1.000，最快 op.rope/tiny 1.520）✓；
+  - 套件总周期 0.931×。LSU 停顿周期随之升至 1.27×：计算被压紧以后，单发射的 LSU 成了瓶颈，属于 R39-08。
+  - 第一版只跟踪向量压力，GEMM kernel 因标量寄存器不足退回原序，S_geo 1.138，未达标；修正后才通过。
+- **调度暴露出的潜伏缺陷（已修复）。** 掩码运算接到了非 predicate 的操作数，codegen 把它打印成同号的 predicate 寄存器，读到什么算什么。原序下碰巧对，换一种分配就错：
+  - Inductor 的 `xmask ^ true`：`true` 被物化成向量 `v.movi -1`。`index_assert_traps` 在调度后不再 trap。
+  - argmax 中标量 0/1 进入 `p.xor`。
+  - 注意力 kernel 中跨循环的 mask tile 以向量作为 `v.sel` 的条件。
+
+  修复：`frontend._as_pred` 把向量、标量转成 predicate；循环携带的 mask 放在 predicate 寄存器中（`p.mov`）。并加了两道检查：`Builder.vselect` 与 codegen 的 `p.*`、`v.sel` 和执行掩码都拒绝非 predicate 操作数，同类错误以后编译时就报出。参考路径的制品不受影响（447/447 相同）。
+- **默认值。** 标准路径（Triton/Inductor 插件）默认 `schedule=1`；`compile_aot`（参考路径）默认仍为 0，R2 冻结基线不变。`plugin_identity` 把插件的选择显式传给 AOT，两条入口生成同一份代码。
+- **发现（交给后续工作包）：** Inductor 的 `[1, R]` 规约 kernel 代码量是计算本身的十倍以上：
+  - 索引 tile 用 `iota*1 + splat` 逐次物化，且在循环内重复计算；
+  - 连续 load 退化成 gather，并经 scratch 存取、加 fence；
+  - 一行的 tile 经由累加器搬运。
+
+  见 R39-02 进展。
+
+### R39-02：宽块与多寄存器 tile（编译器 + Inductor）；R39-02a：代码形状
 
 交付：
 
@@ -216,6 +255,44 @@ ArchBench 本身还没有走标准路径：descriptor 默认关闭，记录的�
    - 全套件 S_geo ≥ **1.3×**。
 
    估计依据：每 program 的固定开销（参数加载、地址计算、规约树）按元素数摊薄。
+
+进展（2026-10-09）：先做 **R39-02a**，再做宽块。
+
+量了 R39-01 之后的代码才发现，比宽块更大的妥协在代码形状本身：
+- 静态指令里绝大部分是索引和地址的物化，真正的运算只占很小一部分；
+- Inductor 的 `[1, R]` 规约逐次物化索引 tile，并经 gather、scratch、fence 搬运；
+- GEMM 模板每个 K 步约 2700 条指令。
+
+所以把 R39-02 拆成两部分：
+- **02a**：代码形状，已完成，下面是消融；
+- **02b**：宽块与 program 合并，交付和验收仍按上文。
+
+R39-02a 的改动都在两个开关之下，关闭时制品逐字节相同（447/447）：
+
+- **`TNCA_NO_X_DIM`（Inductor）。** 循环规约去掉单位 x 维，生成一维 `[R0_BLOCK]` 块（`tnca.inductor._install_no_x_dim`）。导入器为此补上了以下支持：
+  - `tensor<1>` 到 `tensor<N>` 的 broadcast；
+  - 循环携带的 mask（放在 predicate 寄存器里）。
+- **compile option `index_opt`（`TNCA_INDEX_OPT`）。**
+  - 标量值上的 lane-uniform 格：`64*xindex + r0_index` 仍是连续访问。
+  - 由 `assume(x >= 0)` 和乘以常数得出非负、倍数事实：`(u + arange) % M` 在 u 是块长倍数时仍连续。矩阵模板的 `rm % M` 因此不再走 gather。
+  - 连续索引的 `expand_dims` 是仿射项。
+  - 标量除法改在标量寄存器上做：常数除数用倒数乘法，除数为 1 走快路径，取代 32 轮向量恢复除法。
+  - 指针 tile 的 TensorMap 在 kernel 入口只建一次，tile 原点作为坐标传入，不再每个 K 步重建 256 字节。
+  - `acc + tl.dot(a, b, 0)` 直接在 acc 的累加器上累加；循环携带值已就位时 yield 不再复制。
+  - `acc.to(f16)` 后接 store 时，逐行在出口转换，不再整块经 scratch 落地再读回。
+  - 仿射行的各部分只算一次；相同的比较只做一次。
+- **效果（模拟器上逐 kernel 计）。**
+  - RMSNorm 4×64：14 332 → 4 668 拍（3.1×）。
+  - 16×32×16 matmul：20 539 → 2 602 拍（7.9×），K 循环里只剩两次传输、一次 MMA。
+  - 52 个点的静态指令：pointwise −50 %，规约 −38 %，模板 −56 %。
+- **消融**（nd100c 镜像，tiny + small；A 为 R39-01 的默认配置，B 再加 `TNCA_NO_X_DIM=1 TNCA_INDEX_OPT=1`），52/52 数值通过：
+  - S_geo **2.114**（tiny 2.129，small 2.098），套件总周期 0.409×；
+  - E：tiny 0.0070 → 0.0126，small 0.0100 → 0.0199；
+  - 无回退点。
+- **仍待处理**，按收益排序：
+  - f32 `tl.dot`（注意力里的 P@V、fp32 卷积）走向量 FMA，而不是矩阵单元；
+  - 卷积模板仍有 gather；
+  - 宽块、program 合并（02b）。
 
 ### R39-03：异步重叠与软件流水（编译器）
 

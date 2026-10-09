@@ -50,6 +50,11 @@ KNOWN_OPTIONS = {
     'debug': 'bool; adds a compile report, never changes the code',
     'dump_dir': 'str; where to write the per-stage IR dumps',
     'check_protocol': 'bool; the channel model, which is not a safety check',
+    'index_opt': 'int, 0 or 1. 1 tracks lane-uniform 1-D integer values through arithmetic so '
+                     'an address built from one stays a contiguous access (R39-02)',
+    'schedule': 'int, 0 or 1. 1 list-schedules every basic block against the measured '
+                'machine model of the target (R39-01, tnca_cc.schedule); a schedule the '
+                'allocator cannot fit is compiled in program order and the provenance says so',
     'alias': 'list of [param, param] pairs that MAY point at the same '
              'memory. An elementwise kernel that reads and writes the same '
              'index can run in place; one that does not is a different '
@@ -624,10 +629,15 @@ def _lower_ttir(module, ctx, kernel_name, params, target, prov, options, stages,
         prov.record('opt_ops_after', diff['ops_after'])
         stages.record('ttir_opt', after)
 
+    index_opt = (options or {}).get('index_opt')
+    if index_opt is None:
+        index_opt = int(os.environ.get('TNCA_INDEX_OPT', '0'))
     kernel, _builder, imp = adapter.import_ttir(
         module, kernel_name, _placeholders(params),
         param_names=[n for n, _t in params], target=target, prov=prov,
-        dynamic_args=True)
+        dynamic_args=True, index_opt=bool(index_opt))
+    if index_opt:
+        prov.record('index_opt', True)
     stages.record('tnir', str(kernel))
 
     # Scratch the KERNEL asks for, which is not the same thing as spill
@@ -685,9 +695,7 @@ def _lower_ttir(module, ctx, kernel_name, params, target, prov, options, stages,
         if sr['sites'] or cse['merged'] or dead['removed']:
             stages.record('tnir_opt', str(kernel))
 
-    asm_text, cg = adapter.emit(
-        kernel, target, prov=prov, opt_level=opt_level,
-        check_protocol=bool(options.get('check_protocol', False)))
+    asm_text, cg = _emit(kernel, target, prov, opt_level, options, stages)
     stages.record('asm', asm_text)
 
     code, symbols = adapter.assemble(asm_text, prov=prov)
@@ -698,6 +706,51 @@ def _lower_ttir(module, ctx, kernel_name, params, target, prov, options, stages,
                   code_bytes=len(code),
                   scratch_bytes=scratch_bytes)
     return kernel_name, params, asm_text, code, symbols, report, stages
+
+
+def _emit(kernel, target, prov, opt_level, options, stages):
+    """adapter.emit, after the R39-01 scheduler when `schedule` asks for it.
+
+    The allocator has no spill, so a schedule that needs more registers than
+    the role has is compiled in program order instead, and the provenance
+    records that it was. Any other failure of a scheduled kernel is the
+    scheduler's and is reported, not hidden behind program order.
+    """
+    options = options or {}
+    check = bool(options.get('check_protocol', False))
+    # Unset, the environment decides (TNCA_SCHEDULE, default off), so a
+    # whole suite -- `make r37`, the torch tests -- can run scheduled.
+    schedule = options.get('schedule')
+    if schedule is None:
+        schedule = int(os.environ.get('TNCA_SCHEDULE', '0'))
+    if not schedule:
+        return adapter.emit(kernel, target, prov=prov, opt_level=opt_level, check_protocol=check)
+    import copy
+    from tnca_cc.schedule import schedule_kernel
+    original = copy.deepcopy(kernel)
+    # First with the default slack over program order's register peaks and
+    # the default window, then with no slack and a narrow window, then
+    # program order: the allocator has no spill.
+    attempts = [(None, None), ({'vector': 0, 'scalar': 0, 'pred': 0}, 16)]
+    for i, (slack, window) in enumerate(attempts):
+        trial = kernel if i == 0 else copy.deepcopy(original)
+        rep = schedule_kernel(trial, target, slack=slack, window=window)
+        if i == 0:
+            prov.record('schedule_model', rep['model'])
+            prov.record('schedule_dropped_argument_loads', rep['dropped_argument_loads'])
+        prov.record('schedule_moved', rep['moved'])
+        prov.record('schedule_estimate', [rep['estimate_before'], rep['estimate_after']])
+        prov.record('schedule_slack', 'default' if slack is None else 'none')
+        stages.record('tnir_sched', str(trial))
+        try:
+            return adapter.emit(trial, target, prov=prov, opt_level=opt_level,
+                                check_protocol=check)
+        except CompileError as e:
+            if e.detail.get('kind') != 'ResourceError':
+                raise
+            last = e
+    prov.record('schedule_fallback', f'program order: {str(last)[:200]}')
+    return adapter.emit(original, target, prov=prov, opt_level=opt_level, check_protocol=check)
 
 
 def _compile_tnca_ir(build, kernel_name, signature, constexprs, target, prov,
@@ -773,9 +826,7 @@ def _compile_tnca_ir(build, kernel_name, signature, constexprs, target, prov,
         if info['merged'] or sr['sites'] or dead['removed']:
             stages.record('tnir_opt', str(kernel))
 
-    asm_text, cg = adapter.emit(
-        kernel, target, prov=prov, opt_level=opt_level,
-        check_protocol=bool(options.get('check_protocol', False)))
+    asm_text, cg = _emit(kernel, target, prov, opt_level, options, stages)
     stages.record('asm', asm_text)
 
     code, symbols = adapter.assemble(asm_text, prov=prov)

@@ -168,7 +168,7 @@ def emit(kernel, target, *, prov=None, check_protocol=True,
     except r1['Diagnostic'] as d:
         raise CompileError(str(d).splitlines()[0],
                            where='code generation',
-                           detail={'diagnostic': str(d)})
+                           detail={'diagnostic': str(d), 'kind': type(d).__name__})
     text = cg.b.text()
     if prov is not None:
         prov.record('codegen', 'tnca_cc.codegen.CodeGen')
@@ -204,7 +204,7 @@ def assemble(asm_text, *, prov=None):
 
 
 def import_ttir(module, func_name, arg_values, *, param_names, target,
-                prov=None, dynamic_args=True):
+                prov=None, dynamic_args=True, index_opt=False):
     """A Triton TTIR module -> TNCA IR, through R1's importer.
 
     `dynamic_args` defaults to TRUE here, and that is the difference between
@@ -214,7 +214,7 @@ def import_ttir(module, func_name, arg_values, *, param_names, target,
     behaviour has to ask for it by name.
     """
     r1 = _r1()
-    imp = r1['TTIRImporter'](target, func_name)
+    imp = r1['TTIRImporter'](target, func_name, index_opt=index_opt)
     try:
         kernel, builder = imp.run(module, func_name, arg_values,
                                   param_names=param_names,

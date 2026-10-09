@@ -166,7 +166,38 @@ def _decompose_cpu_attention():
         decompositions[op] = decomposition_table[op]
 
 
-def configure(max_block=None, tensor_descriptors=None):
+_NO_X_DIM = [False]
+
+
+def _install_no_x_dim():
+    """Let Inductor drop the x dimension of a looped reduction.
+
+    Inductor generates a reduction without its x dimension -- 1-D blocks
+    `[R0_BLOCK]` instead of `[XBLOCK, R0_BLOCK]` -- only for a persistent
+    reduction whose configuration fixes XBLOCK = 1 (`want_no_x_dim`). Every
+    TNCA reduction runs XBLOCK = 1 (TNCAReductionHeuristic), looped or not,
+    so the x dimension of a looped one is a unit dimension too. Without it
+    the row is an ordinary 1-D vector to the compiler: a contiguous load and
+    lane arithmetic, where `[1, R0_BLOCK]` went through the 2-D tile path
+    (an index tile per use, a gather, a pass through scratch).
+    """
+    import torch._inductor.codegen.triton as T
+    if getattr(T.TritonKernel.want_no_x_dim, '_tnca', False):
+        return
+    orig = T.TritonKernel.want_no_x_dim
+
+    def want_no_x_dim(self):
+        if orig(self):
+            return True
+        from torch._inductor.virtualized import V
+        return bool(_NO_X_DIM[0] and V.graph.get_current_device_or_throw().type == 'cpu'
+                    and self.inside_reduction
+                    and len(self.numels) == self.num_reduction_dims + 1)
+    want_no_x_dim._tnca = True
+    T.TritonKernel.want_no_x_dim = want_no_x_dim
+
+
+def configure(max_block=None, tensor_descriptors=None, no_x_dim=None):
     """Point Inductor's CPU code generation at TNCA.
 
     `tensor_descriptors` turns on Inductor's `use_tensor_descriptor` code
@@ -181,6 +212,9 @@ def configure(max_block=None, tensor_descriptors=None):
     STAGE1_MAX_BLOCK). Both are knobs an ablation sets through the
     environment, and both are in the dict this returns, which ArchBench
     records with every point.
+
+    `no_x_dim` (TNCA_NO_X_DIM) generates looped reductions without their
+    unit x dimension (R39-02, _install_no_x_dim).
     """
     import os
     os.environ.setdefault('TNCA_TRITON', '1')
@@ -188,6 +222,10 @@ def configure(max_block=None, tensor_descriptors=None):
         tensor_descriptors = os.environ.get('TNCA_TENSOR_DESCRIPTORS', '1') != '0'
     if max_block is None:
         max_block = int(os.environ.get('TNCA_MAX_BLOCK', STAGE1_MAX_BLOCK))
+    if no_x_dim is None:
+        no_x_dim = os.environ.get('TNCA_NO_X_DIM', '0') != '0'
+    _NO_X_DIM[0] = bool(no_x_dim)
+    _install_no_x_dim()
     import torch._inductor.config as config
     config.cpu_backend = 'triton'
     if tensor_descriptors:
@@ -221,7 +259,8 @@ def configure(max_block=None, tensor_descriptors=None):
                persistent_reductions=config.triton.persistent_reductions,
                compile_threads=config.compile_threads,
                max_autotune_gemm_backends=config.max_autotune_gemm_backends,
-               tensor_descriptors=bool(tensor_descriptors))
+               tensor_descriptors=bool(tensor_descriptors),
+               no_x_dim=bool(no_x_dim))
     return out
 
 

@@ -1,0 +1,76 @@
+{
+  "schema": "tnca-sched-model/1",
+  "what": "The machine model of the R39-01 instruction scheduler (compiler/python/tnca_cc/schedule.py). latency: cycles from an operation's issue to the issue of one that reads its result, by operation class. issue: cycles an operation holds the issue slot. lsu: a memory access holds the load/store unit (tnca_lsu.v has one in flight) for base + ceil(bytes / bytes_per_beat) cycles, and a load's result is ready when it lets go.",
+  "source": "Core: tools/r39/latency_probe.py, dependent chains and independent streams on sim/build/tb_core_vrf.vvp (banked) and sim/build/tb_core.vvp (flipflop), cycles per instruction from two chain lengths. Memory (banked): tools/r39/load_latency.py on the U280 at 100 MHz (nd100c image), core-vrf-sync-v1: 11 cycles per dependent or independent scalar load, 16-20 per 64-byte vector load. The flipflop model's memory is core-sim's one-cycle bench memory and is not measured on a board.",
+  "by_target": {
+    "tnca-sim-vrf-v1": "banked"
+  },
+  "default": "flipflop",
+  "models": {
+    "banked": {
+      "latency": {
+        "salu": 2,
+        "smul": 5,
+        "valu": 4,
+        "vfp": 6,
+        "sfu": 29,
+        "vcmp": 2,
+        "pred": 2,
+        "reduce": 3,
+        "reduce_b": 4,
+        "vextract": 3,
+        "vinsert": 4,
+        "acc_read": 4,
+        "alias": 0,
+        "other": 4
+      },
+      "issue": {
+        "scalar": 1,
+        "vector_reads_vrf": 2,
+        "vector_no_vrf_read": 1
+      },
+      "estimated": [
+        "reduce",
+        "vextract",
+        "vinsert",
+        "acc_read"
+      ],
+      "lsu": {
+        "base": 10,
+        "bytes_per_beat": 8
+      }
+    },
+    "flipflop": {
+      "latency": {
+        "salu": 2,
+        "smul": 5,
+        "valu": 2,
+        "vfp": 4,
+        "sfu": 27,
+        "vcmp": 1,
+        "pred": 2,
+        "reduce": 1,
+        "reduce_b": 2,
+        "vextract": 1,
+        "vinsert": 2,
+        "acc_read": 2,
+        "alias": 0,
+        "other": 2
+      },
+      "issue": {
+        "scalar": 1,
+        "vector_reads_vrf": 1,
+        "vector_no_vrf_read": 1
+      },
+      "estimated": [
+        "vinsert",
+        "acc_read",
+        "lsu"
+      ],
+      "lsu": {
+        "base": 2,
+        "bytes_per_beat": 8
+      }
+    }
+  }
+}

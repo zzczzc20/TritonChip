@@ -36,6 +36,17 @@ def _opt_level():
     return int(os.environ.get('TNCA_OPT_LEVEL', '2'))
 
 
+def _index_opt():
+    # R39-02's importer switch; off until its ablation is accepted.
+    return int(os.environ.get('TNCA_INDEX_OPT', '0'))
+
+
+def _schedule():
+    # R39-01's switch, on for the standard path since its ablation passed
+    # (doc/r39_tasks_and_acceptance.md R39-01). TNCA_SCHEDULE=0 turns it off.
+    return int(os.environ.get('TNCA_SCHEDULE', '1'))
+
+
 @dataclass(frozen=True)
 class TNCAOptions:
     # What ASTSource.make_ir reads; tnca_cc.triton_options.frontend_options
@@ -62,6 +73,8 @@ class TNCAOptions:
     # TNCA's own
     profile: str = field(default_factory=_profile)
     opt_level: int = field(default_factory=_opt_level)
+    schedule: int = field(default_factory=_schedule)
+    index_opt: int = field(default_factory=_index_opt)
 
     def hash(self):
         key = '_'.join(f'{k}-{v}' for k, v in sorted(self.__dict__.items()))
@@ -140,6 +153,8 @@ def _compiler_fingerprint():
         h = hashlib.sha256(aot._lock_hash().encode())
         files = sorted(Path(tnca_cc.__file__).parent.rglob('*.py'))
         files += [Path(aot.__file__), Path(__file__), Path(__file__).with_name('libdevice.py')]
+        from tnca_cc._datapath import find
+        files.append(Path(find('spec', 'r39_sched_model.json')))
         for f in files:
             h.update(str(f.name).encode())
             h.update(f.read_bytes())
@@ -222,6 +237,12 @@ class TNCABackend(BaseBackend):
         stages.record('ttir', text)
         ctx = module.context
         compile_options = {'opt_level': options.opt_level}
+        # Only when on: an option that is off must leave the artifact
+        # byte-identical to one compiled before the option existed.
+        if options.schedule:
+            compile_options['schedule'] = options.schedule
+        if options.index_opt:
+            compile_options['index_opt'] = options.index_opt
         # The dump switches of doc/dumping_ir.md (TNCA_KERNEL_DUMP=1, written
         # under TNCA_DUMP_DIR/<kernel>/), on this entry point as on AOT --
         # and written for a kernel that FAILS to lower too, with every stage

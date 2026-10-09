@@ -31,6 +31,7 @@ import triton                                               # noqa: E402
 from triton.backends.compiler import GPUTarget              # noqa: E402
 from triton.compiler.compiler import ASTSource              # noqa: E402
 from tnca import aot, artifact                              # noqa: E402
+from tnca.triton_backend.compiler import _schedule, _index_opt  # noqa: E402
 
 
 def main():
@@ -48,8 +49,13 @@ def main():
                 continue
             fn, sig, ce = case.kernel_spec
             a_path = Path(tmp) / 'aot.tnca'
+            # The plugin's own choices for the R39 switches (TNCA_SCHEDULE,
+            # TNCA_INDEX_OPT), passed explicitly: the AOT entry point
+            # defaults them off.
             aot.compile_aot(fn, signature=sig, constexprs=ce, profile='core-sim',
-                            options={'opt_level': args.level}, output=str(a_path))
+                            options={'opt_level': args.level, 'schedule': _schedule(),
+                                     'index_opt': _index_opt()},
+                            output=str(a_path))
             src = ASTSource(fn, signature=sig, constexprs=ce)
             k = triton.compile(src, target=GPUTarget('tnca', 0, 1))
             p_path = Path(tmp) / 'plugin.tnca'

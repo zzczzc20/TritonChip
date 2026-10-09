@@ -97,13 +97,12 @@ def build_target(core, top, isa, name, description, profile=None):
         # hardware configuration in which it is currently 1.
         'tensor_store': False,
         # ISA sec 9E's mod[5] asks the engine for a transposed write.
-        # `tnca_core.v` passes x_mod[2:0] to the engine and nothing
-        # else, so an emitted `.t` transfers the tile UNTRANSPOSED and
-        # returns a wrong answer rather than a fault -- which is worse
-        # than either implementing it or not encoding it. False here
-        # makes asking for it a compile error, the way `tensor_store`
-        # already is. doc/r37_isa_gaps.md has the detail.
-        'tensor_transpose': False,
+        # R38 S1-07 implemented it in tnca_tensor.v behind the core's
+        # HAS_TENSOR_XPOSE parameter; an engine built without it raises
+        # ILLEGAL_INSTRUCTION for mod[5] (it used to transfer the tile
+        # untransposed). So the capability is this instance's parameter,
+        # and on a profile without it asking remains a compile error.
+        'tensor_transpose': bool(core.get('HAS_TENSOR_XPOSE', 0)),
         'mbarrier': True,
         'packed_f16': False,
         'cache_hints': False,

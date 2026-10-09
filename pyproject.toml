@@ -59,6 +59,11 @@ compile = ["triton==3.8.0"]
 tnca-aot = "tnca.cli:aot_main"
 tnca-sim = "tnca.cli:sim_main"
 
+# Registers TNCA with Triton, so `kernel[grid](...)` and PyTorch Inductor
+# compile and launch through tnca.triton_backend (doc/r38_pytorch_p1plus.md).
+[project.entry-points."triton.backends"]
+tnca = "tnca.triton_backend"
+
 [project.urls]
 Homepage = "https://github.com/zzczzc20/TritonChip"
 
@@ -80,6 +85,7 @@ include = ["tnca*", "tnca_cc*"]
 [tool.setuptools.package-data]
 tnca = [
   "data/spec/*.json",
+  "data/spec/r38/*.json",
   "data/compiler/targets/*.json",
   "data/isa/*.json",
   "data/rtl/**/*.v",

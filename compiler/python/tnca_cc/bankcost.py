@@ -18,12 +18,13 @@ is exactly what section 3.1 forbids, and the way to be sure it is not
 happening is for the cost to have no access to a layout at all.
 """
 import json
-import os
 import re
 
-HERE = os.path.dirname(os.path.abspath(__file__))
-ROOT = os.path.abspath(os.path.join(HERE, '..', '..', '..'))
-_CONTRACT = os.path.join(ROOT, 'spec', 'r3v2_contract.json')
+from ._datapath import find
+
+# The shipped copy in an installed wheel, the checkout's otherwise -- the same
+# lookup the ISA and the targets use (see _datapath).
+_CONTRACT = find('spec', 'r3v2_contract.json')
 
 
 def hardware():

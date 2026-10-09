@@ -663,6 +663,13 @@ $(BUILD)/tb_core_vrf.vvp: $(RTL_DEPS) $(TB)/core/tb_tnca_core.v \
 	   -P tb_tnca_core.USE_BANKED_VRF=1 \
 	   -o $@ $(TB)/core/tb_tnca_core.v
 
+# R38 S1-07: core-sim with the transposed tensor-DMA write (core-xpose-v1).
+$(BUILD)/tb_core_xpose.vvp: $(RTL_DEPS) $(TB)/core/tb_tnca_core.v \
+                            $(TB)/common/tnca_mem_model.v | dirs
+	$(IVERILOG) $(IVFLAGS) -y $(RTL)/core -y $(RTL)/common -y $(RTL)/gen -y $(TB)/common \
+	   -P tb_tnca_core.HAS_TENSOR_XPOSE=1 \
+	   -o $@ $(TB)/core/tb_tnca_core.v
+
 $(BUILD)/tb_core_slow.vvp: $(RTL_DEPS) $(TB)/core/tb_tnca_core.v \
                            $(TB)/common/tnca_mem_model.v $(BUILD)/tb_core_slow.fp | dirs
 	$(IVERILOG) $(IVFLAGS) -y $(RTL)/core -y $(RTL)/common -y $(RTL)/gen -y $(TB)/common \
@@ -883,6 +890,7 @@ r2-stage-data:
 	@rm -rf $(R2_DATA)
 	@mkdir -p $(R2_DATA)/spec $(R2_DATA)/compiler/targets $(R2_DATA)/isa
 	@cp spec/*.json $(R2_DATA)/spec/
+	@mkdir -p $(R2_DATA)/spec/r38 && cp spec/r38/*.json $(R2_DATA)/spec/r38/
 	@cp compiler/targets/*.json $(R2_DATA)/compiler/targets/
 	@cp isa/*.json $(R2_DATA)/isa/
 	@mkdir -p $(R2_DATA)/rtl $(R2_DATA)/tb
@@ -904,6 +912,15 @@ r2-package: r2-stage-data
 	@rm -rf build $(BUILD)/dist/*.whl
 	@$(PYTHON) -m pip wheel --no-deps -q -w $(BUILD)/dist .
 	@$(PYTHON) -c "import glob, os; [print('  %d bytes  %s' % (os.path.getsize(w), w)) for w in sorted(glob.glob('$(BUILD)/dist/*.whl'))]"
+
+# PKG-01 smoke: the wheel, installed non-editable into a fresh environment and
+# imported with -I from an empty directory, reads only data it shipped -- every
+# file it opens exists inside the environment (tools/r2/wheel_smoke.py). Fast,
+# and needs no Triton: it is the check for a module that finds its data by
+# counting directories up from itself.
+.PHONY: r2-wheel-smoke
+r2-wheel-smoke: r2-package
+	@$(PYTHON) tools/r2/wheel_smoke.py
 
 r3-mutation-tests:
 	@$(PYTHON) tools/r3/mutation_tests.py \
@@ -1007,6 +1024,86 @@ r37-representative-run: $(BUILD)/tb_core.vvp $(R2_DATA_STAMP) | dirs
 	@$(TRITON_PYTHON) tools/r37/run.py --json $(BUILD)/r37_run.json
 
 r37: r37-coverage r37-run
+
+#------------------------------------------------------------------------------
+# R38 Stage 1 (doc/r38_stage1_tasks_and_acceptance.md)
+#
+# Every target measures the working tree: benches are built from rtl/ into
+# sim/build/r38/, so a candidate is measured as it stands rather than as the
+# device cache last saw it. A target passing is not Stage 1 passing; the
+# status document names which work package each one backs.
+.PHONY: r38-l0 r38-smoke r38-baseline r38-baseline-check r38-profiler r38-l2 r38-xpose-rtl r38-torch
+# P1+ (doc/r38_pytorch_p1plus.md): PyTorch lives in its own environment so no
+# existing gate gains a dependency. T1: the R3.7 cases through native Triton
+# launch; T2-T4: small graphs through torch.compile -> Inductor -> TNCA.
+TORCH_PYTHON ?= $(HOME)/src/torchenv/bin/python
+# A compile-path change must leave every existing artifact byte-identical:
+# identical bytes cannot change a kernel's behaviour or its cycles.
+.PHONY: r38-identity
+r38-identity: $(R2_DATA_STAMP) | dirs
+	@$(TRITON_PYTHON) tools/r38/artifact_identity.py --profile core-sim --levels 0 1 2
+r38-torch: $(R2_DATA_STAMP) | dirs
+	@for l in 0 1 2; do $(TORCH_PYTHON) tools/r38/plugin_identity.py --level $$l || exit 1; done
+	@$(TORCH_PYTHON) tools/r38/triton_native_run.py
+	@$(TORCH_PYTHON) tools/r38/torch_tests.py
+# S1-07: the transposed transfer at the ISA level, on both elaborations.
+XPOSE_PROGS := t30_xpose t31_xpose_illegal t32_xpose_badsize
+$(TB)/core/progs/t30_xpose.s $(TB)/core/progs/t31_xpose_illegal.s \
+$(TB)/core/progs/t32_xpose_badsize.s: $(TB)/core/progs/gen_t30_xpose.py
+	@$(PYTHON) $<
+r38-xpose-rtl: $(BUILD)/tb_core.vvp $(BUILD)/tb_core_xpose.vvp $(patsubst %,$(BUILD)/%.hex,$(XPOSE_PROGS))
+	@$(TOOLS)/run_test.sh t30_xpose "$(VVP) $(BUILD)/tb_core_xpose.vvp +hex=$(BUILD)/t30_xpose.hex +maxcycles=100000"
+	@$(TOOLS)/run_test.sh t31_xpose_illegal "$(VVP) $(BUILD)/tb_core.vvp +hex=$(BUILD)/t31_xpose_illegal.hex +maxcycles=100000 +expectfault=01"
+	@$(TOOLS)/run_test.sh t32_xpose_badsize "$(VVP) $(BUILD)/tb_core_xpose.vvp +hex=$(BUILD)/t32_xpose_badsize.hex +maxcycles=100000 +expectfault=04"
+
+r38-l0: | dirs
+	@$(PYTHON) tools/r38/gen_counters.py --check
+	@$(PYTHON) tools/r38/evidence_tests.py
+	@$(PYTHON) tools/r38/archbench_tests.py
+
+r38-smoke: $(R2_DATA_STAMP) | dirs
+	@$(TRITON_PYTHON) tools/r38/run.py --suite smoke
+	@$(TRITON_PYTHON) tools/r38/manifest_tests.py
+
+r38-baseline: $(R2_DATA_STAMP) | dirs
+	@$(TRITON_PYTHON) tools/r38/baseline.py --run --source $(TILEBENCH_SOURCE)
+
+r38-baseline-check: $(R2_DATA_STAMP) | dirs
+	@$(TRITON_PYTHON) tools/r38/baseline.py --check --source $(TILEBENCH_SOURCE)
+
+r38-profiler: $(R2_DATA_STAMP) | dirs
+	@$(TRITON_PYTHON) tools/r38/profiler_tests.py
+
+r38-l2: r38-l0 r37 r38-baseline-check r38-profiler r38-smoke
+
+# ArchBench at the PyTorch level (archbench/README.md, archbench/PROTOCOL.md):
+# one set of torch workloads, TNCA through torch.compile -> Inductor -> tnca,
+# the GPU through torch.compile on CUDA, one bound and one scorer. Runs in
+# TORCH_PYTHON. Records are JSON lines under $(BUILD)/archbench/.
+.PHONY: archbench-selftest archbench-coverage archbench-tiny archbench-u50sim archbench-gpu
+ARCHBENCH_OUT ?= $(BUILD)/archbench
+ARCHBENCH_JOBS ?= 8
+archbench-selftest:
+	@$(TORCH_PYTHON) -m archbench.selftest
+# Every tiny and small point compiles for TNCA; nothing is simulated.
+archbench-coverage: $(R2_DATA_STAMP) | dirs
+	@mkdir -p $(ARCHBENCH_OUT) && rm -f $(ARCHBENCH_OUT)/coverage.jsonl
+	@$(TORCH_PYTHON) -m archbench.run --platform tnca --tier tiny small --compile-only \
+	   --jobs $(ARCHBENCH_JOBS) --out $(ARCHBENCH_OUT)/coverage.jsonl
+# The tiny tier on the RTL simulator (hours: the models are millions of cycles).
+archbench-tiny: $(R2_DATA_STAMP) | dirs
+	@mkdir -p $(ARCHBENCH_OUT) && rm -f $(ARCHBENCH_OUT)/tnca_tiny.jsonl
+	@$(TORCH_PYTHON) -m archbench.run --platform tnca --tier tiny --jobs $(ARCHBENCH_JOBS) \
+	   --out $(ARCHBENCH_OUT)/tnca_tiny.jsonl
+# The same through the board's register protocol on the board's RTL top: the
+# expected board results (doc/r38_board_bringup.md, step B4).
+archbench-u50sim: $(R2_DATA_STAMP) | dirs
+	@mkdir -p $(ARCHBENCH_OUT) && rm -f $(ARCHBENCH_OUT)/u50sim_tiny.jsonl
+	@$(TORCH_PYTHON) -m archbench.run --platform tnca --backend fpga-u50-sim --profile core-vrf-sync-v1 \
+	   --tier tiny --jobs $(ARCHBENCH_JOBS) --out $(ARCHBENCH_OUT)/u50sim_tiny.jsonl
+archbench-gpu:
+	@mkdir -p $(ARCHBENCH_OUT) && rm -f $(ARCHBENCH_OUT)/gpu.jsonl
+	@$(TORCH_PYTHON) -m archbench.run --platform gpu --tier tiny small large --out $(ARCHBENCH_OUT)/gpu.jsonl
 
 # One suite, every backend. This is the suite a downstream branch runs.
 r36-conformance: $(R2_DATA_STAMP) | dirs
@@ -1478,7 +1575,7 @@ r1-build-tests:
 # R3.6's regression, which claims to reproduce the inherited suites
 # from a clean checkout, is what found it.
 r1-profile-tests: $(BUILD)/tb_core.vvp $(BUILD)/tb_core4.vvp \
-                  $(BUILD)/tb_top.vvp $(BUILD)/tb_core_vrf.vvp
+                  $(BUILD)/tb_top.vvp $(BUILD)/tb_core_vrf.vvp $(BUILD)/tb_core_xpose.vvp
 	@$(PYTHON) tools/r1/profile_tests.py --json $(BUILD)/profile_tests.json
 
 r1-signoff:

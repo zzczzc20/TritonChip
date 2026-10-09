@@ -91,8 +91,8 @@
 #
 # So the link is checked:
 #
-#   1. The link log is grepped for the rule ID. If it is there, the frequency
-#      moved and this exits non-zero with the rule's own message.
+#   1. The link log is grepped for the rule IDs. If one that moves or refuses
+#      a clock is there, this exits non-zero with the rule's own message.
 #   2. The .xclbin is read back with xclbinutil --info and the kernel clock is
 #      taken from the entry whose Type is KERNEL. Anything other than the
 #      frequency this script names is a failure here.
@@ -114,8 +114,10 @@ set -u
 OUT=${1:?usage: link.sh <build-dir>    # the directory package_xo.tcl wrote into}
 REPO=$(cd "$(dirname "$0")/../.." && pwd)
 
-VITIS=${XILINX_VITIS:-/home/x4/Software/Xilinx/Vitis/2022.2}
-PLATFORM=xilinx_u50_gen3x16_xdma_5_202210_1
+# The card: TNCA_BOARD=u50 (default) or u280, from flow/fpga/boards.sh.
+. "$(dirname "$0")/boards.sh"
+VITIS=${XILINX_VITIS:-$BOARD_VITIS}
+PLATFORM=$BOARD_PLATFORM
 PLATFORMS_DIR=${XILINX_PLATFORMS:-/opt/xilinx/platforms}
 
 # The clock this build asks for, and the one flow/fpga/ooc.xdc constrains and
@@ -125,7 +127,7 @@ PLATFORMS_DIR=${XILINX_PLATFORMS:-/opt/xilinx/platforms}
 EXPECT_MHZ=150
 
 XO=$OUT/tnca_u50.xo
-XCLBIN=$OUT/tnca_u50.xclbin
+XCLBIN=$OUT/tnca_${BOARD}.xclbin
 LOG=$OUT/link.log
 INFO=$OUT/xclbin.info
 
@@ -148,46 +150,84 @@ command -v xclbinutil >/dev/null || { echo "link.sh: xclbinutil not on PATH afte
 mkdir -p "$OUT/tmp" "$OUT/vpp_logs"
 export TMPDIR=$OUT/tmp TMP=$OUT/tmp TEMP=$OUT/tmp
 
-{
-    echo "=== LINK START $(date) ==="
-    echo "REPO=$REPO"
-    echo "RTL_COMMIT=$(git -C "$REPO" rev-parse HEAD 2>/dev/null || echo 'not a git tree')"
-    echo "XO=$XO"
-    echo "PLATFORM=$PLATFORM"
-    echo "KERNEL_FREQUENCY_ARG=--kernel_frequency 0:$EXPECT_MHZ"
-    echo "EXPECT_MHZ=$EXPECT_MHZ"
-    echo "---"
-} > "$LOG"
-
 #------------------------------------------------------------------------------
-# The link
-#
-# -s keeps the intermediates. Not for debugging: if this fails on timing, the
-# answer to "which path" is in the post-route report, and that report only
-# exists if the routed checkpoint was kept.
+# LINK_RECHECK=1 re-runs the checks below on a link that has already run,
+# without running v++ again: v++'s exit status is taken from the VPP_RC line
+# that run left in its log, and the verdict is appended to that log. It exists
+# because a link is hours long and the checks are a script; a change to the
+# checks should not cost a relink to apply to a build it was made for.
 #------------------------------------------------------------------------------
-v++ -l -t hw \
-    --platform "$PLATFORM" \
-    --kernel_frequency 0:$EXPECT_MHZ \
-    --temp_dir "$OUT/tmp" \
-    --log_dir "$OUT/vpp_logs" \
-    -s \
-    -o "$XCLBIN" \
-    "$XO" >> "$LOG" 2>&1
-rc=$?
+if [ "${LINK_RECHECK:-0}" = 1 ]; then
+    [ -f "$LOG" ] || { echo "link.sh: LINK_RECHECK=1 but no $LOG" >&2; exit 2; }
+    rc=$(sed -n 's/^VPP_RC=//p' "$LOG" | tail -1)
+    [ -n "$rc" ] || { echo "link.sh: LINK_RECHECK=1 but $LOG has no VPP_RC line" >&2; exit 2; }
+    {
+        echo "=== RECHECK $(date) ==="
+        echo "CHECKS_COMMIT=$(git -C "$REPO" rev-parse HEAD 2>/dev/null || echo 'not a git tree')"
+    } >> "$LOG"
+    echo "=== rechecking the link in $OUT (v++ rc=$rc), v++ not run ==="
+else
+    {
+        echo "=== LINK START $(date) ==="
+        echo "REPO=$REPO"
+        echo "RTL_COMMIT=$(git -C "$REPO" rev-parse HEAD 2>/dev/null || echo 'not a git tree')"
+        echo "XO=$XO"
+        echo "BOARD=$BOARD"
+        echo "BOARD_VPP_OPTS=$BOARD_VPP_OPTS"
+        echo "PLATFORM=$PLATFORM"
+        echo "KERNEL_FREQUENCY_ARG=--kernel_frequency 0:$EXPECT_MHZ"
+        echo "EXPECT_MHZ=$EXPECT_MHZ"
+        echo "---"
+    } > "$LOG"
 
-echo "VPP_RC=$rc" >> "$LOG"
-echo "=== v++ finished rc=$rc at $(date) ==="
+    #--------------------------------------------------------------------------
+    # The link
+    #
+    # -s keeps the intermediates. Not for debugging: if this fails on timing, the
+    # answer to "which path" is in the post-route report, and that report only
+    # exists if the routed checkpoint was kept.
+    #--------------------------------------------------------------------------
+    # VPP_JOBS bounds the parallelism on a shared host (v++ --jobs); unset, v++
+    # chooses.
+    v++ -l -t hw \
+        --platform "$PLATFORM" \
+        ${VPP_JOBS:+--jobs $VPP_JOBS} \
+        $BOARD_VPP_OPTS \
+        --kernel_frequency 0:$EXPECT_MHZ \
+        --temp_dir "$OUT/tmp" \
+        --log_dir "$OUT/vpp_logs" \
+        -s \
+        -o "$XCLBIN" \
+        "$XO" >> "$LOG" 2>&1
+    rc=$?
+
+    echo "VPP_RC=$rc" >> "$LOG"
+    echo "=== v++ finished rc=$rc at $(date) ==="
+fi
 
 #------------------------------------------------------------------------------
 # Check 1: did the frequency move?
 #
-# The rule ID is quoted verbatim from scripts/ocl/ocl_rules.cfg, so this is a
-# search for a string the tool itself defines rather than for a phrasing
-# guessed at from its output.
+# The rule IDs are quoted verbatim from scripts/ocl/ocl_rules.cfg, so this is
+# a search for strings the tool itself defines rather than for a phrasing
+# guessed at from its output. Vitis 2023.2 defines eight:
+#
+#   01, 02, 05   errors: a clock missed timing and could not be rescued
+#   03, 04, 06, 07   warnings: "The frequency has been automatically changed"
+#   08   advisory: "the auto scaled frequency %s MHz exceeds the original
+#        specified frequency. The compiler will select the original specified
+#        frequency of %s MHz."
+#
+# 08 is the one rule that says the clock did not move: the design closed with
+# slack to spare and the frequency asked for is kept. The first U280 link that
+# met timing (2026-10-07) printed it for both of its clocks, and a check that
+# matched every rule ID failed that build. So 08 is the exception and every
+# other ID fails -- including any a later release adds, which is the direction
+# an unknown rule has to fail in. Check 2 reads the frequency back out of the
+# .xclbin either way.
 #------------------------------------------------------------------------------
 moved=0
-if grep -q 'AUTO-FREQ-SCALING' "$LOG"; then
+if awk '/AUTO-FREQ-SCALING/ && !/AUTO-FREQ-SCALING-08\]/ { f = 1 } END { exit !f }' "$LOG"; then
     moved=1
     echo
     echo "link.sh: v++ reported automatic frequency scaling. The clock moved and"
@@ -195,6 +235,10 @@ if grep -q 'AUTO-FREQ-SCALING' "$LOG"; then
     echo
     grep -A3 'AUTO-FREQ-SCALING' "$LOG" | sed 's/^/         /'
     echo
+elif grep -q 'AUTO-FREQ-SCALING-08\]' "$LOG"; then
+    echo "link.sh: AUTO-FREQ-SCALING-08 only: timing closed with slack and the"
+    echo "         requested frequencies were kept:"
+    grep 'AUTO-FREQ-SCALING-08\]' "$LOG" | sed 's/^/         /'
 fi
 
 #------------------------------------------------------------------------------

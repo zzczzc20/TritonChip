@@ -2,7 +2,7 @@
 
 版本：1.0，2026-09-20。状态：**任务与验收规范；尚未验收，不宣告 R1/R2 已完成。**
 
-前置合同：[R1](phase1_tasks_and_acceptance.md)、[R2](phase2_tasks_and_acceptance.md)。设计依据：[架构原始设计](architecture_overview.md)第五、六、十六、二十节及[生产化路线](production_readiness_audit_2026-09-19.md)中的 R3。
+前置合同：[R1](phase1_tasks_and_acceptance.md)、[R2](phase2_tasks_and_acceptance.md)。设计依据：[架构原始设计](design/tnca_v1_architecture_draft.md)第五、六、十六、二十节及[生产化路线](production_readiness_audit_2026-09-19.md)中的 R3。
 
 **RTL 仿真很慢。本阶段只用小尺寸、少组合的 RTL 微基准验证正确性、真实周期数和资源争用；参数搜索由快速模型完成。禁止把 R3 扩成大型 GEMM、Attention 或模型推理的 RTL benchmark。**
 

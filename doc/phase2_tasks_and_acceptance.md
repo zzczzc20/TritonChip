@@ -2,7 +2,7 @@
 
 版本：1.0，2026-09-19。状态：**规范已制定，尚未实施验收；不表示 R1 已完成。**
 
-前置合同：[R1 tasks & acceptance](phase1_tasks_and_acceptance.md)。路线依据：[生产化审计](production_readiness_audit_2026-09-19.md)、[架构设计](architecture_overview.md)第十八节、[编译器设计](compiler_overview.md)第二、十、十四至十六节。
+前置合同：[R1 tasks & acceptance](phase1_tasks_and_acceptance.md)。路线依据：[生产化审计](production_readiness_audit_2026-09-19.md)、[架构设计](design/tnca_v1_architecture_draft.md)第十八节、[编译器设计](design/tnca_v1_compiler_draft.md)第二、十、十四至十六节。
 
 本文件在 R1 进行期间预先冻结 R2 的交付范围。R1 的实时进度以其实施证据为准，本文件不复制其完成状态，也不修改 R1 门槛。R2 设计、接口和隔离的原型可以提前进行；**最终验收必须以已通过的 R1 为基础，且在 R2 候选 commit 上重新通过 R1 全套。**
 

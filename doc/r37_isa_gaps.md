@@ -9,6 +9,13 @@ compiler that quietly works around a gap makes the gap permanent.
 
 ## 1. `t.ld.async` `mod[5]`: the transposed write is not implemented
 
+**Closed by R38 S1-07.** `tnca_tensor.v` implements the transposed write
+behind the core parameter `HAS_TENSOR_XPOSE` (profile `core-xpose-v1`,
+capability `tensor_transpose`); an engine built without it raises
+`ILLEGAL_INSTRUCTION` for `mod[5]`, and a non-zero `mod[4:3]` does too. ISA sec
+9E now defines the layout and the geometry it accepts. The record below is the
+state before that change.
+
 **ISA sec 9E** — "`mod[2:0]` is the transfer's element-size log2;
 `mod[4:3]` selects the window layout (`0` = flat row-major); `mod[5]`
 requests a transposed write."

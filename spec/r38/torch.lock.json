@@ -1,0 +1,18 @@
+{
+  "schema": "r38-torch-lock/1",
+  "contract": "doc/r38_pytorch_p1plus.md T0",
+  "note": "PyTorch for the P1+ path (doc/r38_pytorch_p1plus.md): torch.compile -> Inductor -> Triton -> the tnca backend. 2.14.0 because it is the release that depends on triton~=3.8.0, the locked frontend; Inductor's generated Triton follows the version torch pins. Installed into its own environment (TORCH_PYTHON), never into TRITON_PYTHON, so no existing gate gains a dependency. Kept out of spec/r1_toolchain.lock.json on purpose: that file's hash is in every artifact's identity, and torch is not part of the TNCA compile toolchain, so pinning it there would change every artifact without changing any code.",
+  "version": "2.14.0",
+  "distributions": {
+    "linux_x86_64": {
+      "file": "torch-2.14.0-cp312-cp312-manylinux_2_28_x86_64.whl",
+      "sha256": "fecffb58f51fd643d213acd68da21cc3fc19bea05a3bc64b4ee55128f47a4963"
+    },
+    "macos_arm64": {
+      "file": "torch-2.14.0-cp312-cp312-macosx_14_0_arm64.whl",
+      "sha256": "c1f844f1c750e87df4b68bc3afbc0e2b0c7ef19d7b8f666e48bdcf6a0c4f0056"
+    }
+  },
+  "index": "https://pypi.org/simple",
+  "install": "python3 -m venv <env>/torchenv && <env>/torchenv/bin/pip install torch==2.14.0 numpy && install tnca (registers the triton.backends entry point)"
+}

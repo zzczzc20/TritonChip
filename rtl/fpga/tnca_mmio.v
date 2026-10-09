@@ -35,8 +35,9 @@
 //   Mailbox, request side (the host writes these, then the doorbell)
 //     0x00 REQ_SEQ       the sequence this request carries
 //     0x08 REQ_OP        UPLOAD 1, DOWNLOAD 2, LAUNCH 3, QUIESCE 4,
-//                        SHUTDOWN 5, PING 6
+//                        SHUTDOWN 5, PING 6, PERF_READ 7
 //     0x10 REQ_A0        UPLOAD/DOWNLOAD: device address. LAUNCH: pc.
+//                        PERF_READ: counter index (spec/r38/counters.json).
 //     0x18 REQ_A1        UPLOAD/DOWNLOAD: word count. LAUNCH: arg base.
 //     0x20 REQ_A2        LAUNCH: role mask.
 //     0x28 REQ_A3        LAUNCH: pid_x | pid_y << 16
@@ -49,8 +50,10 @@
 //   Mailbox, response side (the device writes these, the host reads them)
 //     0x50 RSP_SEQ       the sequence this completion answers
 //     0x58 RSP_STATUS    OK 0, FAULT 1, TIMEOUT 2, REFUSED 3
-//     0x60 RSP_R0        FAULT: fault code. Otherwise: cycles.
-//     0x68 RSP_R1        FAULT: fault pc. Otherwise: instructions retired.
+//     0x60 RSP_R0        FAULT: fault code. PERF_READ: low 32 bits of the
+//                        counter. Otherwise: cycles.
+//     0x68 RSP_R1        FAULT: fault pc. PERF_READ: high 32 bits of the
+//                        counter. Otherwise: instructions retired.
 //
 //   Payload window -- one 64-bit word of device memory per access. This is the
 //   medium the UPLOAD and DOWNLOAD payloads travel through, exactly as up.hex
@@ -98,6 +101,14 @@
 // opcode is acknowledged with OK and does nothing else: a device that cannot
 // be shut down by a register write is a device a host cannot accidentally kill.
 // PING returns `served`, which is what the simulation binding returns.
+//
+// PERF_READ (transport 1.1, R38 S1-02) reads one device counter through the
+// shell's combinational `perf_sel`/`perf_rdata` port, split into two 32-bit
+// halves exactly as tb/device/tnca_device.v answers it, so the runtime's
+// one decoder serves both. It is served in MS_IDLE like every request that
+// is not a launch, which is to say only while no command is running: a read
+// never lands inside a launch's measurement window. An index past the last
+// counter is REFUSED, not answered with zero -- a zero would be a reading.
 //
 // The `seq > served` rule is kept. In simulation it exists because the device
 // polls a file and re-reads the request it has already acted on; a doorbell is
@@ -189,8 +200,16 @@ module tnca_mmio #(
     output wire [7:0]               host_req_be,
     output wire [63:0]              host_req_wdata,
     input  wire                     host_rsp_valid,
-    input  wire [63:0]              host_rsp_rdata
+    input  wire [63:0]              host_rsp_rdata,
+
+    //--------------------------------------------------------------------------
+    // To the shell: the counter read port (PERF_READ)
+    //--------------------------------------------------------------------------
+    output wire [4:0]               perf_sel,
+    input  wire [63:0]              perf_rdata
 );
+
+`include "tnca_perf_count.vh"
 
     //==========================================================================
     // The opcodes and statuses, from transport.py and r2_transport_v1.json
@@ -201,6 +220,7 @@ module tnca_mmio #(
     localparam [3:0] OP_QUIESCE  = 4'd4;
     localparam [3:0] OP_SHUTDOWN = 4'd5;
     localparam [3:0] OP_PING     = 4'd6;
+    localparam [3:0] OP_PERF_READ = 4'd7;
 
     localparam [3:0] RSP_OK      = 4'd0;
     localparam [3:0] RSP_FAULT   = 4'd1;
@@ -360,6 +380,12 @@ module tnca_mmio #(
     wire req_guard_ok = (req_a0[2:0] == 3'd0) && (req_a1 != 64'd0) &&
                         ((req_a0_words + req_a1) <= MEM_WORDS);
 
+    // The counter a PERF_READ names. Combinational from the descriptor, and
+    // read by the shell combinationally: the doorbell is served in one
+    // cycle of MS_IDLE, with the descriptor already written.
+    assign perf_sel = req_a0[4:0];
+    wire perf_index_ok = (req_a0 < PERF_NUM_COUNTERS);
+
     always @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
             // The descriptor is NOT reset here. It is written by the host and
@@ -474,6 +500,12 @@ module tnca_mmio #(
                         // off by one against the simulation binding.
                         rsp_r0     <= req_seq;
                         rsp_r1     <= 64'd0;
+                    end
+                    OP_PERF_READ: begin
+                        rsp_seq    <= req_seq;
+                        rsp_status <= perf_index_ok ? RSP_OK : RSP_REFUSED;
+                        rsp_r0     <= perf_index_ok ? {32'd0, perf_rdata[31:0]}  : 64'd0;
+                        rsp_r1     <= perf_index_ok ? {32'd0, perf_rdata[63:32]} : 64'd0;
                     end
                     default: begin
                         // An opcode the device does not have is refused

@@ -62,6 +62,8 @@ OP_LAUNCH = 3
 OP_QUIESCE = 4
 OP_SHUTDOWN = 5
 OP_PING = 6
+# Transport 1.1: read one device counter; r0/r1 = its low/high 32 bits.
+OP_PERF_READ = 7
 
 ST_OK = 0
 ST_FAULT = 1
@@ -70,7 +72,8 @@ ST_REFUSED = 3
 
 OP_NAME = {OP_UPLOAD: 'UPLOAD', OP_DOWNLOAD: 'DOWNLOAD',
            OP_LAUNCH: 'LAUNCH', OP_QUIESCE: 'QUIESCE',
-           OP_SHUTDOWN: 'SHUTDOWN', OP_PING: 'PING'}
+           OP_SHUTDOWN: 'SHUTDOWN', OP_PING: 'PING',
+           OP_PERF_READ: 'PERF_READ'}
 
 STATUS_NAME = {ST_OK: 'OK', ST_FAULT: 'FAULT', ST_TIMEOUT: 'TIMEOUT',
                ST_REFUSED: 'REFUSED'}
@@ -395,3 +398,17 @@ class Transport(_backend.Backend):
 
     def ping(self):
         return self.request(OP_PING)
+
+    def perf_read(self, index):
+        """A 64-bit counter, or None from a device without op 7.
+
+        The bench writes r0 and r1 as signed 32-bit integers, so each half
+        is masked back to its bits before they are joined.
+        """
+        reply = self.request(OP_PERF_READ, index)
+        if reply.status == ST_REFUSED:
+            return None
+        if not reply.ok:
+            raise TncaError(f"PERF_READ {index} answered {reply!r}",
+                            code='PERF_READ')
+        return (reply.r0 & 0xFFFFFFFF) | ((reply.r1 & 0xFFFFFFFF) << 32)

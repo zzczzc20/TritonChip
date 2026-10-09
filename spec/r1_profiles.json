@@ -103,6 +103,33 @@
         ],
         "what": "the testbench that reads this profile's capabilities back out of the hardware"
       }
+    },
+    "core-xpose-v1": {
+      "target_file": "tnca-sim-xpose-v1.json",
+      "executes_artifacts_of": [
+        "core-sim"
+      ],
+      "description": "core-sim with the transfer engine's transposed write (ISA sec 9E mod[5]) elaborated: HAS_TENSOR_XPOSE=1 and capability tensor_transpose. Otherwise identical to core-sim, so a difference in a result is the feature. R38 S1-07's first three-layer change.",
+      "num_cores": 1,
+      "topology": "single",
+      "elaboration": {
+        "NUM_RCTX": 2,
+        "RCTX_W": 1,
+        "VREGS_PER_RCTX": 64,
+        "PHYS_VREGS": 128,
+        "HAS_SFU": 1,
+        "HAS_ATOMICS": 1,
+        "HAS_SYS_ATOMICS": 0,
+        "HAS_TENSOR_XPOSE": 1
+      },
+      "platform_binding": {
+        "kind": "simulation",
+        "bench": "sim/build/tb_core_xpose.vvp",
+        "bench_args": [
+          "+allroles"
+        ],
+        "what": "the testbench that reads this profile's capabilities back out of the hardware"
+      }
     }
   },
   "supported_topologies": {

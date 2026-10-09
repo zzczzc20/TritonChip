@@ -1,6 +1,8 @@
-# Conformance to `architecture_overview.md`
+# Conformance to the TNCA-v1 design draft
 
-A point-by-point audit of what is built so far against the design document.
+A point-by-point audit of what is built so far against the design document,
+[`design/tnca_v1_architecture_draft.md`](design/tnca_v1_architecture_draft.md)
+(until 2026-10-08 `architecture_overview.md`; section numbers are unchanged).
 Every row is one of:
 
 * **Held** — implemented, and the implementation respects the principle.
@@ -323,7 +325,7 @@ that a simpler reading would have skipped:
    way. It took a program that *acted* on the value to find it.
 
 7. **The compiler plan found three more.** Building
-   [`compiler_overview.md`](compiler_overview.md)'s milestone C0 against the
+   [`compiler_overview.md`](design/tnca_v1_compiler_draft.md)'s milestone C0 against the
    hardware exposed things no RTL test was asking about, because they are only
    wrong from a compiler's point of view:
 

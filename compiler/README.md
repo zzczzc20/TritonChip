@@ -1,309 +1,210 @@
-# TNCA compiler backend
+# TNCA Compiler
 
-Built to `doc/compiler_overview.md`. Milestones **C0 through C4** are done and
-**C5** has not started; the table under "Milestones" below is the authority,
-and this paragraph used to say the directory *was* C0 while that table said
-C4 -- two claims about the same thing, one of them stale.
+The TNCA compiler lowers Triton kernels to TNCA machine code. It accepts Triton
+IR (TTIR) produced by Triton's own frontend — from an ahead-of-time call, a
+native `kernel[grid](...)` launch, or PyTorch Inductor — and emits a sealed
+`.tnca` artifact that the public runtime (`tnca.runtime.Session`) loads and
+runs on the RTL simulator or the Alveo U50 board.
 
-What C0 delivered, and what the rest is built on: the pinned toolchain, the
-out-of-tree backend skeleton, `tnca-opt`, TargetInfo, the ISA schema, and the
-per-stage IR dump points.
+Design, status and next steps: [`doc/compiler_overview.md`](../doc/compiler_overview.md)
+(the original C0–C5 plan is [`doc/design/tnca_v1_compiler_draft.md`](../doc/design/tnca_v1_compiler_draft.md)).
+Instruction-level support (what the ISA defines, what each profile implements,
+what the compiler emits): [`doc/support_matrix.md`](../doc/support_matrix.md),
+generated from the ISA schema, the target files and the compiler.
 
-The instruction-by-instruction picture -- what the ISA defines, what each
-profile implements, what this compiler can emit and what has run on the whole
-machine -- is `doc/support_matrix.md`, generated from those four sources
-rather than written down. The acceptance contract is
-`doc/phase1_tasks_and_acceptance.md` and the current state of it is
-`doc/r1_status.md`.
+## Status
 
-## What runs today, and what does not
+| Area | State | Evidence |
+|---|---|---|
+| Triton coverage | All 45 original TileBench operators (149 numerical cases/stages) compile **and** run correctly on the RTL at O0, O1 and O2 — 447/447 | `make r37`; [`doc/r37_validation.md`](../doc/r37_validation.md) |
+| Native Triton launch | The same 149 cases through `kernel[grid](...)`; plugin and AOT code segments byte-identical for identical TTIR | `make r38-torch` (`plugin_identity.py`, `triton_native_run.py`) |
+| PyTorch | `torch.compile` → Inductor → Triton → TNCA with zero host fallback on the R38 graph tests and on every tiny/small ArchBench point (operators and end-to-end LLaMA / GPT-2 / MLP / ResNet blocks) | `make r38-torch`, `make archbench-coverage`, `make archbench-tiny`; [`archbench/`](../archbench/README.md) |
+| Board path | Artifacts run unchanged through the U50 register protocol; cycles identical to the simulation bench of the same profile | `fpga-u50-sim` backend; [`doc/r38_board_bringup.md`](../doc/r38_board_bringup.md) |
+| Three-layer feature | Transposed tensor-DMA write (ISA §9E `mod[5]`) selected by the compiler when the profile declares `tensor_transpose` | `tools/r38/loop_tests.py` |
+| Performance | Correctness-first. Strict-bound efficiency on the tiny ArchBench points is roughly 0.4 %–24 % (see Known limits) | `python -m archbench.report` |
 
-The plan splits code generation into two paths on purpose (§11.1, §11.2), and
-that split decides what is usable right now.
+## Compilation pipeline
 
-| Path | Status |
+Every TTIR entry point calls one lowering function, `tnca.aot._lower_ttir`, so the
+AOT path and the Triton plugin cannot drift apart:
+
+```text
+@triton.jit ──► Triton frontend ──► TTIR
+                                     │  legalize: upstream inliner (all levels; tl.* library calls)
+                                     │  O1+: upstream canonicalize + CSE on the TTIR      (tnca_cc.upstream)
+                                     ▼
+                       frontend.TTIRImporter ──► TNCA IR                                    (frontend, tiles,
+                                     │                                                      packed, wide, mathlib)
+                                     │  layout plans; O2: composed with upstream LinearLayout (layout)
+                                     │  O1+: strength reduction, pure-scalar CSE, dead-value
+                                     │       removal, lane-0 store narrowing                (optimization)
+                                     ▼
+                       codegen ──► TNCA assembly                                            (codegen, footprints,
+                                     │  linear-scan allocation, async-ownership checks      protocol)
+                                     ▼
+                       tools/asm/tnca_asm.py ──► machine code ──► .tnca (manifest, ABI, provenance)
+```
+
+Entry points:
+
+- **AOT** — `tnca.aot.compile_aot(fn, signature=..., constexprs=...)`.
+- **Triton backend plugin** — `tnca.triton_backend`, registered as the
+  `triton.backends` entry point `tnca`. It serves `kernel[grid](...)` and PyTorch
+  Inductor (`tnca.inductor.configure()`); see
+  [`doc/r38_pytorch_p1plus.md`](../doc/r38_pytorch_p1plus.md).
+- **TNCA IR builders** — `kernels.py`, `gemm.py`, `pipeline.py`, `partition.py`
+  construct IR directly for the C1–C4 milestone tests.
+
+Optimization levels:
+
+| Level | Adds |
 |---|---|
-| Bring-up: TNCA IR → assembly → `tools/asm/tnca_asm.py` → RTL (§11.1) | Python. Runs with nothing installed. |
-| MLIR: the `tnca` dialect, `tnca-opt`, the async verifier | **Builds and runs.** |
-| Triton frontend → TTIR → TNCA IR → RTL | **Closed.** `make triton-e2e` |
-| Triton → context-specialised (multi-role) ISA | **Closed.** |
-| Thin LLVM target (§11.2) | Encodings generated; the target itself is deliberately not started. |
+| O0 | Legalization only (inlining). Every program that compiles at O2 compiles at O0. |
+| O1 | Upstream canonicalization and CSE on TTIR; TNCA-IR scalar optimizations. |
+| O2 | O1 plus layout reasoning with the upstream `LinearLayout`; `no_ll` is the ablation. |
 
-### Building Triton
+## Lowering model
 
-Triton 3.8.0 builds on macOS arm64 against the pinned LLVM, though it is not
-officially supported there. What it needed:
+The importer maps Triton's value model onto the machine explicitly; a construct
+it cannot map raises a diagnostic naming the operation and is never skipped
+(§11.1, §12).
 
+| Triton value | TNCA representation |
+|---|---|
+| 1-D block | One vector register, VLEN = 16 lanes; tails are masked. Blocks wider than VLEN are rejected. |
+| 2-D block | A tile: a transfer-engine **window** in fragment layout (`tl.dot` operands, written by `t.ld.async`), an **accumulator** (16×16 binary32, ISA §9B) for computed 32-bit tiles, or rows held in registers / spilled to scratch. A tile whose rows all alias (row stride 0, e.g. GEMM with M = 1) is one row load reused for every row. |
+| Small N-D tensor | Packed into one vector in row-major order (`packed.py`); broadcasts and reductions permute lanes explicitly. |
+| `tl.dot` | FP16 / BF16 / FP8 → `m.mma.async` with binary32 accumulation; FP32 → exact vector FMAs (no narrowing); INT8 → FP16 MMA, exact for K ≤ 1024. |
+| Transcendentals, division | SFU approximations (≤ 2⁻²² relative) with Newton refinement where needed; each function states its accuracy (`mathlib.py`). |
+| 64-bit integers | Exact, as pairs of 32-bit lanes (`wide.py`) for 1-D blocks and one-row 2-D blocks. A 64-bit offset reaching a pointer is narrowed to a 32-bit gather index **with a check** that traps (`TRAP_USER 0xA5564`) instead of wrapping. |
+| `tl.device_assert` | A real check: any failing active lane raises `TRAP_USER 0xA55E7`. |
+| `tt.reduce` / `tt.scan` | ISA §8.7 reductions; multi-operand folds (argmax) and scans unrolled across lanes; NaN-propagating `maximumf`/`minimumf` built from specified behaviour. |
+| Asynchrony | Tensor DMA, MMA and mbarriers, with ownership checked at compile time (`footprints.py`, `protocol.py`). Automatic context specialization splits a kernel into producer/consumer roles (`partition.py`). |
+
+## Module map
+
+| Module | Responsibility |
+|---|---|
+| `frontend.py` | TTIR walk and lowering to TNCA IR: control flow, addressing, loads/stores, descriptors, `tl.dot`, reductions, conversions |
+| `tiles.py`, `packed.py`, `wide.py` | 2-D tile descriptions and placement; packed small tensors; exact 64-bit integers |
+| `mathlib.py` | Transcendentals and division on the SFU |
+| `ir.py` | The low-level TNCA IR and its builder |
+| `optimization.py`, `layout.py`, `upstream/` | TNCA-IR passes; layout plans; the pinned upstream inliner, canonicalizer, CSE and `LinearLayout` |
+| `codegen.py`, `asm.py` | Register allocation and assembly emission |
+| `footprints.py`, `protocol.py`, `bankcost.py` | Implicit register footprints, the async ownership/event model, VRF bank-conflict cost |
+| `partition.py`, `pipeline.py`, `gemm.py` | Context specialization (C4), the explicit two-role pipeline (C3), GEMM planning (C2) |
+| `target.py`, `isa.py`, `triton_options.py` | The target contract, the ISA schema, what the backend reports to Triton |
+| `report.py`, `diagnostics.py` | Per-kernel resource/bottleneck report; capability and resource diagnostics |
+
+The PyTorch integration (`python/tnca/inductor.py`) and the Triton plugin
+(`python/tnca/triton_backend/`) sit outside this package and call into it only
+through `tnca.aot`.
+
+## Known limits
+
+- **Block width.** Each block dimension is at most VLEN (16). Inductor is
+  configured accordingly (blocks ≤ 16, one row per reduction program, one
+  16×16×16 GEMM configuration); a wider tensor split across registers is not
+  built yet.
+- **2-D tiles.** TensorMap transfers need a unit column stride and a positive
+  row stride; other access patterns use the LSU row by row. Multi-operand folds
+  and 64-bit integers are supported on one-row 2-D blocks only.
+- **64-bit integers** are emulated lane by lane in scalar registers: exact, but
+  slow. They appear mainly in embedding lookups.
+- **Performance** has not been tuned. On the tiny ArchBench points, time goes to
+  register hazards, a single 8-byte memory port, and repacks through memory
+  (`doc/r38_stage1_status.md`); the profiler and cost model of R38 exist to
+  attribute it.
+- **Execution model.** One core; a grid's programs run serially.
+
+## Build and test
+
+Python 3.12 and the pinned Triton 3.8.0 (`TRITON_PYTHON`) cover everything
+except the MLIR half. PyTorch lives in its own environment (`TORCH_PYTHON`,
+`spec/r38/torch.lock.json`).
+
+```sh
+make compiler          # ISA/target staleness checks, unit tests, IR tests
+make compiler-rtl      # the compiler's milestone kernels on the RTL
+make triton-e2e        # Triton → TTIR → TNCA → RTL
+make r37               # 45 TileBench operators at O0/O1/O2 (447 cases)
+make r38-identity      # every artifact byte-identical to the frozen set
+make r38-torch         # plugin identity, native launches, PyTorch graph tests
+make archbench-coverage  # every tiny/small ArchBench point compiles for TNCA
 ```
-GIT_CONFIG_COUNT=2 GIT_CONFIG_KEY_0=http.proxy GIT_CONFIG_VALUE_0= \
-GIT_CONFIG_KEY_1=https.proxy GIT_CONFIG_VALUE_1= \
-TRITON_APPEND_CMAKE_ARGS="-DTRITON_BUILD_UT=OFF" \
-TRITON_BUILD_PROTON=OFF MAX_JOBS=10 \
-  pip install -e . --no-build-isolation
+
+Debugging a kernel:
+
+```sh
+TNCA_KERNEL_DUMP=1 TNCA_DUMP_DIR=/tmp/dump python -m archbench.run --platform tnca --point <id> --compile-only
+python tools/r38/ttir_lower.py /tmp/dump/<kernel>/<kernel>.ttir --asm   # same lowering, full traceback
 ```
 
-Leave `LLVM_SYSPATH` unset — Triton finds `llvm-<rev>-macos-arm64-1` in
-`~/.triton/llvm` by name. Pointing it at the `llvm-macos-arm64` symlink makes
-`setup.py` link that name onto itself, and every later configure then fails
-with "Too many levels of symbolic links" while reporting only that it could
-not find MLIR.
+Per-stage IR dumps (TTIR, inlined TTIR, optimized TTIR, TNCA IR, assembly,
+machine code) are described in [`doc/dumping_ir.md`](../doc/dumping_ir.md).
 
-### Getting the MLIR half
+### MLIR half
 
-```
-make llvm-toolchain     # fetch the pinned LLVM (about 355 MB, sha256 verified)
-make tnca-opt           # configure and build
-make compiler           # unit tests + IR tests
-```
+The `tnca` dialect, its async-resource verifier
+(`lib/Dialect/TNCA/Transforms/VerifyAsyncOwnership.cpp`) and the `tnca-opt`
+driver build against the pinned LLVM:
 
-`fetch_toolchain.sh` downloads the prebuilt LLVM that Triton itself uses for
-the pinned revision, into `~/.triton/llvm` — the directory Triton's own build
-searches — so a later Triton build reuses it rather than fetching a second
-copy. The URL is not invented: it is the scheme `python/build_helpers.py`
-constructs, and the sha256 is the one `cmake/llvm-info.json` publishes for the
-platform. A mismatch refuses to unpack.
-
-`make compiler` skips the IR tests rather than failing when `tnca-opt` has not
-been built, so a checkout with no LLVM still runs everything else.
-
-## Single ISA source (§11.3)
-
-> 不要再手工维护第三套独立 opcode 数字。
-
-There is one set of opcode numbers. Everything else is generated:
-
-```
-tools/asm/tnca_isa.py            authoring form; assembler and RTL tests use it
-  └─ isa/tnca-isa-v0.1.json      canonical schema   (make isa)
-       ├─ compiler/include/tnca/ISA/TNCAOpcodes.inc    C++ x-macro table
-       ├─ compiler/include/tnca/ISA/TNCAInstrInfo.td   TableGen, for §11.2
-       └─ doc/isa/opcode-map.md                        the encoding map
+```sh
+make llvm-toolchain    # fetch the prebuilt LLVM Triton pins (sha256-checked)
+make tnca-opt
 ```
 
-`rtl/common/tnca_defs.vh` is hand-written, because the RTL is what the ISA
-describes rather than a consumer of it. `tools/isa/check_consistency.py` holds
-the two together — it compares all 198 shared constants and fails the build on
-any disagreement.
+`make compiler` skips the IR tests when `tnca-opt` is absent.
 
-## Target contract (§15 C0)
+## Single sources of truth
 
-`compiler/targets/tnca-sim-v0.1.json` is generated from the RTL parameters by
-`tools/isa/gen_target.py`, never typed by hand, and
-`tb/core/progs/t15_target.s` asserts the hardware agrees with it. The chain is:
+- **ISA.** `tools/asm/tnca_isa.py` → `isa/tnca-isa-v0.1.json` (`make isa`) →
+  `include/tnca/ISA/TNCAOpcodes.inc`, `TNCAInstrInfo.td` and
+  `doc/isa/opcode-map.md`. The RTL's `rtl/common/tnca_defs.vh` is hand-written
+  and `tools/isa/check_consistency.py` holds the two together.
+- **Target.** `targets/*.json` are generated from the RTL parameters
+  (`make target`, `tools/isa/gen_target.py`) and read back by the hardware in
+  `tb/core/progs/t15_target.s`: RTL parameter → target file → test → special
+  register.
 
-```
-RTL parameter → target file → t15_target.s → special register read
-```
-
-A break anywhere in that chain fails the regression, so the file a compiler
-trusts is the file the silicon confirms.
+| Target file | Profile | Elaboration |
+|---|---|---|
+| `tnca-sim-v0.1.json` | `core-sim` | 2 role contexts, 64 logical vector registers each |
+| `tnca-sim-vrf-v1.json` | `core-vrf-sync-v1` | banked VRF; the U50 board image |
+| `tnca-sim-xpose-v1.json` | `core-xpose-v1` | `core-sim` + transposed tensor-DMA write |
+| `tnca-sim-4rctx.json` | `core-4r` | 4 role contexts, 32 registers each |
+| `tnca-sim-2x2.json` | `system-2x2` | 2×2 tiles, no SFU |
 
 ## Layout
 
+```text
+python/tnca_cc/    the compiler (Python)
+targets/           generated target descriptions
+include/, lib/     the tnca MLIR dialect, its interfaces and the async verifier
+tools/tnca-opt/    the MLIR driver
+pin/               pinned Triton/LLVM revisions and the LLVM fetch script
+test/              unit tests, IR tests, RTL closure tests
 ```
-pin/toolchain.json       pinned Triton + LLVM, verified against upstream
-pin/fetch_toolchain.sh   fetch the prebuilt LLVM, sha256-checked
-targets/                 generated target descriptions
-python/tnca_cc/          the bring-up compiler: target, ISA, diagnostics,
-                         implicit footprints (§13.4), protocol model (§16.2)
-backend/                 the Triton out-of-tree plugin
-include/, lib/           the tnca dialect (§5.3) and its two interfaces (§5.4)
-lib/Dialect/TNCA/Transforms/  the async-resource verifier of §5.4
-tools/tnca-opt/          the IR driver every §16.2 unit test runs against
-test/                    Python unit tests and `test/IR/*.mlir`; `make compiler`
-```
-
-## Commands
-
-```
-make isa        regenerate every ISA artifact from the single source
-make target     regenerate the target description from the RTL
-make compiler   unit tests + staleness checks for every generated file
-make pin        re-verify the pinned toolchain against upstream (needs network)
-```
-
-## What building this found in the hardware
-
-The point of doing the compiler now is that it asks questions no RTL test was
-asking. Nine so far, all recorded in
-[`../doc/conformance.md`](../doc/conformance.md):
-
-From the plan itself:
-
-- `CAPABILITY0.TENSOR_DMA` read 0 while the transfer engine executed TXFER.
-- The four whole-program resources (§10.1) were not reportable by the hardware,
-  so a target description could not be checked against the machine.
-- A transfer with its coordinate base at `s63` silently ran at coordinate 0 on
-  its second axis, because the implicit `Sb+1` read wrapped onto `S0`.
-
-From C2, compiling a GEMM with an N tail:
-
-- The transfer engine's source-alignment requirement was documented in three
-  places and checked in none, so an odd row stride returned data shifted by two
-  bytes per row and raised nothing.
-- An engine fault recorded the trap but never stopped the Role Context that
-  issued the command, so a `DESCRIPTOR_FAULT` surfaced as a later `TRAP_USER`.
-
-From C3, propagating a failure through a pipeline:
-
-- A faulting command signalled an *ordinary* completion, releasing its consumer
-  to read a window nothing had written.
-- A waiter woken by a barrier error resumed instead of faulting, so a located
-  fault became a hang on the next generation.
-- `t.ld.async` accepted a lane mask the engine ignored, so a predicated-off
-  stage performed its transfer anyway.
-
-From C4:
-
-- A taken branch failed to squash a younger instruction of the same context
-  when the front end was stalled. Only reachable with two Role Contexts.
-- The launch contract had no race-free way for a role to wait for another's
-  `mb.init`, so the compiler polled a memory flag — and the polling starved the
-  producer's transfer engine until the whole kernel deadlocked. Barriers are
-  now guaranteed quiescent at kernel entry (ISA §9A.7).
-- `mb.wait` on an already-complete generation livelocked: the sleep predicate
-  required the barrier to have been armed and the wake predicate did not, so a
-  waiter oscillated instead of returning.
-- Both asynchronous engines shared one completion port into the barrier unit.
-  When the matrix unit and the transfer engine finished in the same cycle, the
-  transfer's completion was silently dropped and its barrier waited for ever.
-
-The last one is worth a note on method: it presented as a clean deadlock under
-a slow memory model, and the fix was only defensible after instrumenting both
-`done` signals and finding exactly one coincident cycle in the failing run.
-Without that measurement it would have been a plausible story rather than a
-demonstrated cause.
-
-The third is worth separating from a related case that was *not* changed.
-Overwriting an `m.mma.async` source fragment while the matrix unit is still
-reading it is also silently wrong — but ISA §9C.3 states that and assigns it to
-the compiler, so it is undefined by design, and `footprints.py` models it. The
-`s63` case was undefined by accident: nothing said what happened, and what
-happened was a wrong address. That is the difference between a contract the
-compiler can honour and a trap it cannot see.
 
 ## Milestones
 
-| | State |
+| Milestone | State |
 |---|---|
-| **C0** toolchain, TargetInfo, ISA schema, `tnca-opt` | done |
-| **C1** Triton → TTIR → TNCA IR → assembly → RTL | done |
-| **C2** single-RCTX Tensor DMA + MMA | done |
-| **C3** explicit two-role pipeline | done |
-| **C4** automatic Context Specialization | done |
-| **C5** attention and performance feedback | not started |
+| C0 Toolchain, target contract, ISA schema, `tnca-opt` | Done |
+| C1 Triton → TTIR → TNCA IR → assembly → RTL | Done |
+| C2 Single-context tensor DMA + MMA | Done |
+| C3 Explicit two-role pipeline | Done |
+| C4 Automatic context specialization | Done |
+| R3.7 Original TileBench, 45/45 operators at O0/O1/O2 | Done |
+| R3.8 PyTorch via Inductor; first three-layer feature; profiler-driven work | In progress ([`doc/r38_stage1_status.md`](../doc/r38_stage1_status.md)) |
 
-Each milestone's cases run on the RTL: `make compiler-rtl`.
+## Hardware issues found by the compiler
 
-## C1: the first closure
-
-§15 C1 sets the bar plainly — 不修改输出汇编，不人工补 barrier，直接运行编译
-产物. The first case now clears it.
-
-`tnca_cc.lower.lower_elementwise` emits TNCA assembly for a masked elementwise
-kernel. `compiler/test/test_rtl_closure.py` assembles that output with the
-existing `tools/asm/tnca_asm.py` and runs it on the Icarus model of the core,
-appending only data and assertions — never an edit to an emitted instruction.
-It is checked two ways: instruction-for-instruction against the hand-written
-`tb/core/progs/t16_vecadd.s` (§11.1 keeps that comparison available so a
-compiler bug and an encoding bug can be told apart), and by the arithmetic
-itself on the RTL, masked tail included.
-
-Still to do for C1: integer and FP32 reduction, gather/scatter, blocks wider
-than one vector register, and the Triton frontend in front of it. The lowering
-takes a small kernel description rather than TTIR today, which is why it is a
-slice and not the milestone.
-
-Anything not lowered raises rather than approximating. §11.1 is explicit:
-资源不够可以先明确报错，不能为了快速"支持"而偷偷破坏异步生命周期.
-
-## C2: Tensor DMA and MMA
-
-`tnca_cc.gemm` plans and lowers a GEMM tile. The planner exists because of
-§9: a 32×64 B tile loaded row-major puts 64·sizeof(dtype) between the rows of
-any 32×16 column sub-block where the MMA fragment wants 16·sizeof(dtype), and
-moving the fragment base cannot close that. §9 recommends splitting into
-separate transfers, each landing compact — and notes that the choice changes
-the DMA command count, the barrier operation count, the window count, the
-descriptor shapes and the RF live ranges at once. So one planner decides all
-of them, which is §9's conclusion: 布局选择、通信协议和流水资源预算必须联合
-规划.
-
-FP16 and BF16, different strides, and M/N/K tails all run against
-`fp32.mma_ref`, which accumulates in increasing k order with one rounding per
-step as ISA §9C.1 requires.
-
-## C3: the two-role pipeline
-
-§15 calls this 第一阶段最重要的里程碑. `tnca_cc.pipeline` builds a producer and
-a consumer over an RF channel — not a shared-memory Aref, because there is no
-scratchpad for one to live in. Ready and free are separate barriers: ISA
-§9A.1 warns that a transfer completing is not the consumer having finished
-reading, and a pipeline with one barrier per slot implements only load-ready.
-
-Covered: 0/1/2/odd/6 iterations, two- and three-slot rings, predicated-off
-async, delayed completion and out-of-order returns (against the slow and
-reordering memory models), error propagation, and draining at exit.
-
-## C4: automatic partitioning
-
-`tnca_cc.partition` follows §7's six steps. The graph carries more than SSA
-def-use — loop-carried, memory, control, accumulator-order and async-resource
-edges — because a partitioner that sees only def-use will split an
-accumulator's updates across roles or move a write past a command still
-reading the register.
-
-The physical RCTX count is applied last, by merging, per §7.6:
-不能让物理 RCTX 数决定最开始的数据流图表示. The same graph maps to two contexts
-(P | M+E) and to four (P | M | E, nothing merged). Transfer and matrix are
-never merged: they are the two that overlap in time.
-
-§15 C4 defers the four-context check to 四 RCTX 硬件 profile 可用后. That
-profile now exists — `make core4` elaborates the same core with `NUM_RCTX=4`
-and half the logical vector registers each — with its own generated target
-description, and a one-producer/two-consumer channel runs on it. The property
-it tests is §7.4's: 只有两个 consumer 都释放，producer 才能覆盖该 slot.
-
-Not done: the literal `P + M0 + M1 + E` split. The mapper *merges* partitions
-when contexts are scarce; splitting the matrix partition across two roles for
-throughput is a different operation, and it does not perform it.
-
-### From Triton to context-specialised ISA
-
-`split_roles` closes the gap between the two halves. It takes the single
-region the Triton frontend produces and emits one region per Role Context,
-following §7.3's order:
-
-- a value whose **whole dependency chain is pure** is recomputed in every role
-  that needs it rather than communicated. This is recursive on purpose: a
-  predicate is one `v.cmp`, but it comes from `pid*BLOCK + arange`, and
-  recomputing the comparison while communicating its inputs would be worse
-  than recomputing all of it;
-- a tensor that cannot be recomputed — anything rooted in memory or in an
-  engine — crosses on a **shared RF window**, which §7.3 ranks above every
-  other option and which is the only one TNCA has;
-- the handoff is ordered by a barrier: the producer arrives after its last
-  write, each consumer waits before its first read, and ISA §9A.5 makes that
-  arrival cover the outstanding register write.
-
-For `add_kernel` that is one crossing (the sum), five operations
-rematerialised, 20 instructions in the producer and 12 in the consumer. The
-test checks the split is structurally real — the epilogue role contains no
-load, the producer contains no store — not merely that the arithmetic comes
-out right.
-
-Limit: straight-line regions, which is what the frontend emits for one program
-id. §7.5's structured-loop cloning exists for the GEMM shape
-(`specialize_gemm_rolled`) but is not yet driven from TTIR.
-
-Communication follows §7.3's order, and on this target nothing falls back to
-a global temporary — which is the point for a machine with no scratchpad.
-
-Both role-loop forms are built. `specialize_gemm` unrolls the k loop, which
-§9 recommends as the first version so every `W`, `V` and `A` number stays a
-static encoding field. `specialize_gemm_rolled` clones the loop into each role
-instead (§7.5): the body covers one trip through the slot ring, so the numbers
-stay static while the code stops growing with K — 105 instructions at K=64 and
-at K=128, against 110 and 166 unrolled. Each role derives its barrier
-generation from its own trip counter, because it cannot read the other's token:
-the scalar file is per-RCTX private (§7.3).
+Compiling real kernels has repeatedly exposed RTL and ISA defects that no
+directed RTL test reached — among them a dropped completion when the matrix
+unit and the transfer engine finished in the same cycle, a barrier `wait` that
+livelocked on an already-complete generation, an engine fault that recorded a
+trap without stopping its context, and a transposed-transfer mode that was
+silently ignored. Each is recorded with its evidence in
+[`doc/conformance.md`](../doc/conformance.md) and
+[`doc/r37_isa_gaps.md`](../doc/r37_isa_gaps.md).

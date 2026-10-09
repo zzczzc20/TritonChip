@@ -1,0 +1,63 @@
+{
+  "schema": "r38-design-change/1",
+  "id": "xpose-dma-001",
+  "parent_commit": "3b5b28f",
+  "claims_three_layer": true,
+  "hypothesis": "tl.dot(a, b.T) on host descriptors reads B down its columns through the LSU (one 8-byte beat per element pair, heavy LSU stalls). A transposed tensor-DMA write (ISA sec 9E mod[5]) lets the engine deliver B^T straight into the MMA fragment window, cutting memory beats and LSU stalls on the GEMM inner loop.",
+  "evidence_for_hypothesis": "smoke GEMM fp16 16x16x32 on core-sim: 13549 cycles, 3156 memory beats for 2560 required bytes (9.9x), perf_x_lsu 21.8% of cycles, matrix unit <= 0.5% busy (doc/r38_stage1_status.md)",
+  "touched_layers": ["compiler", "isa", "microarch", "runtime"],
+  "semantic_change": false,
+  "feature": "tensor_transpose",
+  "layers": {
+    "microarch": {
+      "files": ["rtl/core/tnca_tensor.v", "rtl/core/tnca_core.v", "rtl/tnca_shell.v", "tb/device/tnca_device.v", "tb/core/tb_tnca_core.v"],
+      "change": "transposed write via a 16 x 8-byte corner-turn buffer (S_XRUN/S_XDRAIN/S_XWRITE); elaboration parameter HAS_TENSOR_XPOSE; mod[5] without it and any non-zero mod[4:3] raise ILLEGAL_INSTRUCTION (previously ignored)"
+    },
+    "isa": {
+      "files": ["doc/isa/TNCA-ISA-v0.1.md", "spec/r1_profiles.json", "compiler/targets/tnca-sim-xpose-v1.json", "tools/isa/gen_target.py"],
+      "change": "sec 9E defines the transposed layout and its geometry (16-bit, 4/8/16 source rows); capability tensor_transpose derived from HAS_TENSOR_XPOSE; profile core-xpose-v1 (executes_artifacts_of core-sim)"
+    },
+    "compiler": {
+      "files": ["compiler/python/tnca_cc/frontend.py"],
+      "change": "_plan_transposes: a 16-bit descriptor load used only by tt.trans, in the same block with no intervening write, is deferred and emitted at the trans as one t.ld.async.h.t (host descriptors included); otherwise the gathered lowering is unchanged"
+    },
+    "runtime": {
+      "files": ["python/tnca/profiles.py", "python/tnca/runtime.py", "python/tnca/device.py"],
+      "change": "loader rule check_executes: a core-xpose-v1 artifact on core-sim is CAPABILITY_MISSING naming tensor_transpose; core-sim artifacts run on core-xpose-v1"
+    }
+  },
+  "compatibility": {
+    "feature_off_artifacts": "byte-identical to the frozen baseline for all 149 O2 cases on core-sim",
+    "old_artifacts_on_new_hardware": "core-sim artifact runs on core-xpose-v1 with baseline cycles",
+    "new_artifacts_on_old_hardware": "refused before launch, CAPABILITY_MISSING",
+    "geometry": "a descriptor consumed by the transposed transfer that violates sec 9E.2 (e.g. a 36-byte row stride) traps DESCRIPTOR_FAULT on core-xpose-v1; the same kernel runs on core-sim through the LSU. The frozen v1 manifest has no field to declare which descriptors the engine reads, so the runtime cannot pre-check it."
+  },
+  "resource": {
+    "kind": "structural-proxy (yosys, generic gates, no PDK)",
+    "module": "tnca_tensor",
+    "parent": {"gates": 42373, "flops": 8704, "depth": 94},
+    "feature_off": {"gates": 42347, "flops": 8708, "depth": 94},
+    "feature_on": {"gates": 47081, "flops": 9797, "depth": 97},
+    "delta_on_vs_off": {"gates": 4734, "flops": 1089, "depth": 3},
+    "note": "a first version accepting 1/2/4-byte elements at any offset cost +50958 gates (+120%); narrowing to 16-bit elements and replicating the row across the register (lane enables place it) cut that to +4734"
+  },
+  "results": {
+    "timing": "serial-grid device cycles, O2, fast memory model",
+    "smoke_gemm_fp16_16x16x32": {"core_sim": 13549, "core_xpose_v1": 9249, "speedup": 1.465,
+                                  "mem_beats": [3156, 1616], "perf_x_lsu": [2954, 1185], "issued": [5976, 4730]},
+    "r37_cases_changed_O2": {"matmul_fp32_fp16_fp8/fp16": [13549, 9249], "streamk_matmul/first": [23391, 21241],
+                              "streamk_matmul/full0": [8668, 6518], "streamk_matmul/full1": [17336, 13036],
+                              "streamk_matmul/early_return": [17766, 13466]},
+    "dev_gemm_32x32x64": {"core_sim": 90084, "core_xpose_v1": 55684},
+    "unchanged": "every other R37 case; FP32/FP8 GEMM, 3-D batched and 4-D attention descriptors do not meet the transposed-write rule and keep the gathered lowering",
+    "correctness": "R37 447/447 on core-sim (cycles identical to the baseline at O0/O1/O2) and 447/447 on core-xpose-v1; 12 partial-tile FP16/BF16 GEMMs; 224 lane assertions (t30_xpose)"
+  },
+  "rollback": "build without HAS_TENSOR_XPOSE (every pre-R38 profile): artifacts and cycles are the baseline's and the engine's structural proxy is the parent's within 0.1% gates/flops",
+  "evidence": [
+    "tools/r38/loop_tests.py",
+    "tb/core/progs/gen_t30_xpose.py",
+    "tools/r38/xpose_cases.py"
+  ],
+  "generated_evidence": ["sim/build/r38/loop/report.json", "sim/build/r38/xpose_O01.json", "sim/build/r38/coresim_O01_after.json", "sim/build/r38/r36_build_linux.log"],
+  "status": "implemented"
+}

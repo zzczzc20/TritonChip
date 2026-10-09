@@ -16,7 +16,8 @@ from tnca import aot, device
 from tnca.runtime import Session, TensorDescriptor
 
 
-def run(name, case, level, profile, directory, *, compile_only=False):
+def run(name, case, level, profile, directory, *, compile_only=False, session_kwargs=None,
+        session_profile=None):
     fn, signature, constexprs = case.kernel_spec
     artifact = aot.compile_aot(fn, signature=signature, constexprs=constexprs,
                               profile=device.base_profile(profile), options={'opt_level': level},
@@ -34,7 +35,10 @@ def run(name, case, level, profile, directory, *, compile_only=False):
         expected = [sum(a[z*256+m*16+k]*bt[z*256+n*16+k] for k in range(16))
                     for z in range(2) for m in range(16) for n in range(16)]
         outputs = [(case.out, 0, expected, case.rtol, case.atol)]
-    with Session(profile=profile, deadline_cycles=500_000) as session:
+    # session_profile: run on a different machine than the one compiled for
+    # (a profile that executes another's artifacts).
+    with Session(profile=session_profile or profile, deadline_cycles=500_000,
+                 **(session_kwargs or {})) as session:
         module = session.load(artifact.path)
         handles, initial = {}, {}
         for name, (dtype, values) in case.buffers.items():
@@ -83,7 +87,8 @@ def run(name, case, level, profile, directory, *, compile_only=False):
             captured[name] = (dtype, [decode(int.from_bytes(data[i:i+size], 'little'))
                                       for i in range(0, len(values)*size, size)])
     return captured, dict(detail=f'{count} elements correct; inputs, tails and guards intact',
-                          grid=grid, cycles=event.device_cycles,
+                          grid=grid, cycles=event.device_cycles, program_cycles=event.program_cycles,
+                          counters=event.counters,
                           artifact=artifact.path, scratch_bytes=artifact.manifest['resources']['scratch_bytes'])
 
 

@@ -32,13 +32,14 @@ stopped looking. The task keeps running, it is not cancelled, and it is
 certainly not successful. The device has its own, separate deadline, and that
 one is a fault.
 """
+import json
 import os
 import struct
 import threading
 import time
 from collections import OrderedDict
 
-from . import abi, artifact, manifest as M
+from . import _data, abi, artifact, manifest as M
 from . import transport as T
 from .tensor import TensorDescriptor
 from .errors import (AdmissionError, ArgumentError, ArtifactError,
@@ -98,6 +99,14 @@ class Event:
         self.error = None
         self.history = [(SUBMITTED, time.time())]
         self.device_cycles = None
+        # One entry per program, in linear order. `device_cycles` is their
+        # sum because the runtime launches a grid one program at a time;
+        # that sum is serial-grid time, not the makespan of a device that
+        # runs programs concurrently.
+        self.program_cycles = None
+        # Session(counters=True): {'available', 'programs', 'total'}; None
+        # when counters were not asked for. See _counter_summary.
+        self.counters = None
         self.done = threading.Event()
 
     def _to(self, state, error=None):
@@ -146,10 +155,21 @@ class Module:
 class _Allocator:
     """A first-fit allocator over the device's address space.
 
-    Deliberately simple and deliberately NOT reusing a freed block
-    immediately: reuse-after-free is the bug this layer is supposed to make
-    impossible to hit by accident, and an allocator that hands the same
-    address straight back makes a stale handle look like a live one.
+    Freed blocks are reused, first fit by address, and a freed block is
+    merged with any free neighbour -- or, if it ends where the untouched top
+    of the heap begins, given back to it. A stale handle is caught at the
+    handle (Session marks a freed buffer dead and refuses it), not by keeping
+    its address out of circulation.
+
+    The merging is not tidiness. The Triton driver allocates every argument
+    storage of a launch and frees them after it, so a model is a long run of
+    allocate-all/free-all cycles in sizes that differ launch to launch.
+    Without merging, the free list fills with pieces sized by earlier
+    launches, the top of the heap creeps upward past all of them, and a
+    request fails with the space it needs free but in pieces: on the U280,
+    2026-10-08, LLaMA small's decode could not place its 128 KiB output-head
+    weight, with 96 KiB of the heap never touched and the free space below
+    it split along earlier launches' storages.
     """
 
     def __init__(self, base, limit):
@@ -169,11 +189,14 @@ class _Allocator:
             aligned = (addr + align - 1) // align * align
             prefix = aligned - addr
             if blocksize >= prefix + need:
-                self.free_list.pop(i)
+                # What is left of the block stays where it was, so the list
+                # stays in address order and release() can merge neighbours.
+                rest = []
                 if prefix:
-                    self.free_list.append((addr, prefix))
+                    rest.append((addr, prefix))
                 if blocksize > prefix + need:
-                    self.free_list.append((aligned + need, blocksize - prefix - need))
+                    rest.append((aligned + need, blocksize - prefix - need))
+                self.free_list[i:i + 1] = rest
                 return aligned, need
         addr = (self.next + align - 1) // align * align
         if addr + need > self.limit:
@@ -181,11 +204,23 @@ class _Allocator:
                 f"out of device memory: {size} bytes needs {need} and "
                 f"{self.limit - addr} remain",
                 remedy='free a buffer, or use a profile with more memory')
+        if addr > self.next:
+            # The bytes skipped to align are free too. Left out, they would
+            # sit between two blocks and stop them ever merging.
+            self.free_list.append((self.next, addr - self.next))
         self.next = addr + need
         return addr, need
 
     def release(self, addr, size):
-        self.free_list.append((addr, size))
+        merged = []
+        for a, n in sorted(self.free_list + [(addr, size)]):
+            if merged and merged[-1][0] + merged[-1][1] == a:
+                merged[-1] = (merged[-1][0], merged[-1][1] + n)
+            else:
+                merged.append((a, n))
+        if merged and merged[-1][0] + merged[-1][1] == self.next:
+            self.next = merged.pop()[0]
+        self.free_list = merged
 
 
 def _open_device(name, bench, **kwargs):
@@ -200,6 +235,27 @@ def _open_device(name, bench, **kwargs):
     return _backend.open_backend(name, bench=bench, **kwargs)
 
 
+def _counter_spec():
+    with open(_data.path('spec', 'r38', 'counters.json')) as fh:
+        spec = json.load(fh)
+    return sorted(spec['counters'], key=lambda c: c['index'])
+
+
+def _counter_summary(deltas):
+    """Per-program counter differences and their sum over the grid.
+
+    The sum of a counter over programs is a total of events. For the
+    cycle-like counters it is serial-grid time, like device_cycles, and
+    not the makespan of a device that runs programs concurrently.
+    """
+    total = {}
+    for d in deltas:
+        for k, v in d.items():
+            total[k] = total.get(k, 0) + v
+    return {'available': True, 'timing': 'serial-grid',
+            'programs': deltas, 'total': total}
+
+
 class Session:
     """One device, one address space, one queue."""
 
@@ -208,7 +264,7 @@ class Session:
     def __init__(self, profile='core-sim', *, bench=None, workdir=None,
                  code_base=0, heap_base=0x20000, heap_limit=0x80000,
                  deadline_cycles=2_000_000, host_timeout=600.0, trace=False,
-                 backend='sim-file', **backend_kwargs):
+                 backend='sim-file', counters=False, **backend_kwargs):
         Session._counter += 1
         self.id = Session._counter
         self.profile = profile
@@ -258,6 +314,11 @@ class Session:
         self.seeds = {}
         self._host_timeout = host_timeout
         self._trace = trace
+        # Off by default. On, every program's launch is bracketed by a read
+        # of each device counter and the event carries the differences.
+        # The reads happen while the device is idle, outside the window
+        # done_cycles measures, so they add host time and no device cycles.
+        self._counters = _counter_spec() if counters else None
         self._lock = threading.RLock()
         self._buffers = OrderedDict()
         self._modules = []
@@ -279,6 +340,16 @@ class Session:
         self._start_worker()
 
     # ---- housekeeping -----------------------------------------------------
+    def _snapshot(self):
+        """Every counter now, by name; None if the device cannot say."""
+        out = {}
+        for c in self._counters:
+            v = self.dev.perf_read(c['index'])
+            if v is None:
+                return None
+            out[c['name']] = v
+        return out
+
     def _check_usable(self):
         if self.closed:
             raise TncaError('this session is closed', code='SESSION_BUSY')
@@ -420,12 +491,9 @@ class Session:
         # architecture, the resources and the fingerprint are the base
         # profile's, and the comparison is about those.
         from . import device as _device
-        if man['target']['profile'] != _device.base_profile(self.profile):
-            raise ProfileMismatch(
-                f"artifact is for profile {man['target']['profile']!r}, "
-                f"this session is {self.profile!r}",
-                remedy='recompile for this profile; v1 artifacts are not '
-                       'portable between them')
+        from . import profiles as _profiles
+        _profiles.check_executes(_device.base_profile(self.profile), man,
+                                 where=os.path.basename(path))
 
         params = [(p['name'], p['type'])
                   for p in man['parameters']['signature']]
@@ -662,6 +730,9 @@ class Session:
             ev._to(RUNNING)
             total = gx * gy * gz
             cycles = 0
+            per_program = []
+            probe = self._counters is not None
+            deltas = []
             for linear in range(total):
                 # The contract's mapping, inverted: linear = x + gx*(y+gy*z).
                 # A program's identity is its (x, y, z), not its linear id --
@@ -671,10 +742,20 @@ class Session:
                 x = linear % gx
                 y = (linear // gx) % gy
                 z = linear // (gx * gy)
+                before = self._snapshot() if probe else None
+                if probe and before is None:
+                    probe = False            # this device has no op 7
                 reply = self.dev.launch(task['module'].code_addr,
                                         task['arg_addr'], role_mask=1,
                                         pid=(x, y, z), npid=(gx, gy, gz))
                 cycles += reply.r0
+                per_program.append(reply.r0)
+                if probe and reply.status == T.ST_OK:
+                    after = self._snapshot()
+                    deltas.append(dict(
+                        {k: (after[k] - before[k]) & 0xFFFFFFFFFFFFFFFF
+                         for k in after},
+                        done_cycles=reply.r0, done_retired=reply.r1))
                 if reply.status == T.ST_FAULT:
                     ev._to(FAILING)
                     with self._lock:
@@ -699,6 +780,10 @@ class Session:
             ev._to(DRAINING)
             self.dev.quiesce()
             ev.device_cycles = cycles
+            ev.program_cycles = per_program
+            if self._counters is not None:
+                ev.counters = (_counter_summary(deltas) if probe
+                               else {'available': False})
             with self._lock:
                 self._finish(task, SUCCEEDED)
         except DeviceLost as e:

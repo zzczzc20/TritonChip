@@ -1,0 +1,306 @@
+{
+  "schema": "r38-evidence-registry/1",
+  "contract": "doc/r38_stage1_tasks_and_acceptance.md S1-00; roadmap section 1.2",
+  "levels": [
+    "documented",
+    "implemented",
+    "functionally-validated",
+    "cycle-validated",
+    "synthesized",
+    "board-measured"
+  ],
+  "note": "One row per capability, at the HIGHEST level its evidence supports and no higher. A row at functionally-validated or above names the command that re-establishes it. Generated evidence under sim/build/ is listed as such and is not in Git. Stage 1 cannot contain board-measured.",
+  "entries": [
+    {
+      "id": "tilebench-45-aot",
+      "claim": "45/45 original TileBench operators, 149/149 cases/stages at each of O0/O1/O2 through compile_aot + Session on core-sim",
+      "level": "functionally-validated",
+      "artifacts": [
+        "doc/r37_validation.md",
+        "spec/r37_tilebench.json"
+      ],
+      "generated": [
+        "sim/build/r37_aot_run.json"
+      ],
+      "command": "make r37",
+      "limits": "small explicit RTL configurations; not arbitrary tiles, K ranges or launch options"
+    },
+    {
+      "id": "tilebench-cycles-serial-grid",
+      "claim": "device cycles per case, deterministic on the fast memory model, recorded as a frozen baseline",
+      "level": "cycle-validated",
+      "artifacts": [
+        "tools/r38/baseline.py",
+        "spec/r38/baseline_cycles.json"
+      ],
+      "generated": [
+        "sim/build/r38/baseline_O2.json"
+      ],
+      "command": "tools/r38/baseline.py --check",
+      "limits": "serial-grid: the runtime launches one program at a time and adds cycles; not device throughput"
+    },
+    {
+      "id": "public-aot-runtime",
+      "claim": "compile_aot -> .tnca -> Session is the path every R38 number takes",
+      "level": "functionally-validated",
+      "artifacts": [
+        "python/tnca/aot.py",
+        "python/tnca/runtime.py"
+      ],
+      "command": "make r37-aot-tests"
+    },
+    {
+      "id": "device-grid-scheduler",
+      "claim": "device-side concurrent grid scheduling",
+      "level": "documented",
+      "artifacts": [
+        "doc/architecture_overview.md"
+      ],
+      "limits": "Session._run_one launches programs serially with role_mask=1"
+    },
+    {
+      "id": "mlir-dialect-ownership-verifier",
+      "claim": "TNCA MLIR dialect and async ownership verifier exist",
+      "level": "implemented",
+      "artifacts": [
+        "compiler/include/tnca/Dialect/TNCA/IR/TNCADialect.td",
+        "compiler/lib/Dialect/TNCA/Transforms/VerifyAsyncOwnership.cpp"
+      ],
+      "limits": "not established that every public-AOT compile passes through a unified MLIR pipeline (roadmap 1.1)"
+    },
+    {
+      "id": "counter-contract",
+      "claim": "20 device counters (spec/r38/counters.json) readable per program through transport op 7 and Session(counters=True); exclusive-stall, retired and run-window identities hold on every program of all 149 O2 cases on core-sim and core-vrf-sync-v1",
+      "level": "functionally-validated",
+      "artifacts": [
+        "spec/r3_counters.json",
+        "spec/r38/counters.json",
+        "tools/r38/profiler_tests.py"
+      ],
+      "limits": "single core, simulation transport; board counters (DRAM controller, NoC) are Stage 2",
+      "generated": [
+        "sim/build/r38/profiler/report.json"
+      ],
+      "command": "make r38-profiler"
+    },
+    {
+      "id": "memory-reorder-tolerance",
+      "claim": "public-AOT softmax and histogram at O2 pass on delayed/reordered memory",
+      "level": "functionally-validated",
+      "artifacts": [
+        "doc/r37_validation.md"
+      ],
+      "generated": [
+        "sim/build/r37_aot_slow.json"
+      ],
+      "command": "make r37-run"
+    },
+    {
+      "id": "isa-fallback-paths",
+      "claim": "FP32 dot vector expansion and part of INT8 on float paths are functional fallbacks, not native capability",
+      "level": "documented",
+      "artifacts": [
+        "doc/r37_isa_gaps.md"
+      ]
+    },
+    {
+      "id": "archbench-v0-metric",
+      "claim": "strict bounds, E/A/S/U/AQ and the appendix A self-checks",
+      "level": "implemented",
+      "artifacts": [
+        "tools/r38/archbench/score.py",
+        "tools/r38/archbench/bounds.py",
+        "tools/r38/archbench_tests.py"
+      ],
+      "limits": "S1-05 not accepted until section 4.10.9 item 7 (degraded RTL) passes"
+    },
+    {
+      "id": "structural-synthesis",
+      "claim": "generic yosys gate/depth/flop counts",
+      "level": "synthesized",
+      "structural_proxy": true,
+      "artifacts": [
+        "doc/synthesis.md"
+      ],
+      "command": "make synth",
+      "limits": "no PDK and no FPGA flow: not mm^2, GHz or watts"
+    },
+    {
+      "id": "fpga-board",
+      "claim": "any FPGA place-and-route, bitstream or board measurement",
+      "level": "documented",
+      "artifacts": [
+        "doc/r36_status.md"
+      ],
+      "limits": "R36 IMPLEMENTED / NOT ACCEPTED; board work is Stage 2"
+    },
+    {
+      "id": "multi-core-system",
+      "claim": "2x2 mesh with NUCA and NoC",
+      "level": "functionally-validated",
+      "artifacts": [
+        "rtl/tnca_top.v"
+      ],
+      "command": "make top",
+      "limits": "no scaling result; 16-tile figures in the architecture overview are design proposals"
+    },
+    {
+      "id": "costmodel-v0",
+      "claim": "single-core serial-grid analytical cost model; held-out median error 0.0%, P90 7.3%, Spearman 0.999, 90% interval coverage 0.88",
+      "level": "implemented",
+      "artifacts": [
+        "tools/r38/costmodel/model.py",
+        "tools/r38/costmodel/evaluate.py"
+      ],
+      "generated": [
+        "sim/build/r38/dev/costmodel_report.json"
+      ],
+      "limits": "held-out families contain no GEMM, transpose, softmax or rmsnorm family; operators outside its declared structure are refused"
+    },
+    {
+      "id": "tensor-transpose-dma",
+      "claim": "ISA sec 9E mod[5] transposed tensor-DMA write (16-bit, 4/8/16 source rows) on profile core-xpose-v1, used by the compiler for tl.trans of descriptor tiles; FP16 GEMM 16x16x32 13549 -> 9249 cycles",
+      "level": "cycle-validated",
+      "artifacts": [
+        "rtl/core/tnca_tensor.v",
+        "compiler/python/tnca_cc/frontend.py",
+        "spec/r38/design_changes/xpose-dma-001.json",
+        "tools/r38/loop_tests.py",
+        "tb/core/progs/gen_t30_xpose.py"
+      ],
+      "generated": [
+        "sim/build/r38/loop/report.json",
+        "sim/build/r38/xpose_O01.json"
+      ],
+      "command": "tools/r38/loop_tests.py",
+      "limits": "serial-grid cycles on the simulation bench; structural proxy +4734 gates / +1089 flops on tnca_tensor, no Fmax or FPGA resource yet (Stage 2)"
+    },
+    {
+      "id": "r36-build-linux",
+      "claim": "R36-BUILD-01..03 including the fresh-environment package cases, with the R38 changes",
+      "level": "functionally-validated",
+      "artifacts": [
+        "tools/r36/build_tests.py"
+      ],
+      "generated": [
+        "sim/build/r38/r36_build_linux.log"
+      ],
+      "command": "make r36-build-tests",
+      "limits": "run on the x86_64 acceptance-platform host; the Darwin/arm64 development machine cannot install the pinned Triton"
+    },
+    {
+      "id": "pytorch-p1plus-inductor",
+      "claim": "torch.compile -> Inductor -> Triton -> tnca backend plugin -> Session: 12 small graphs (elementwise, fused activation, reductions, softmax incl. NaN, RMSNorm, GEMM, GEMM+RMSNorm+SiLU, views, in-place) match eager CPU with zero host fallback; R3.7 149/149 through native kernel[grid]; plugin and compile_aot code segments byte-identical at O0/O1/O2",
+      "level": "functionally-validated",
+      "artifacts": [
+        "python/tnca/triton_backend/compiler.py",
+        "python/tnca/triton_backend/driver.py",
+        "python/tnca/inductor.py",
+        "tools/r38/torch_tests.py",
+        "tools/r38/triton_native_run.py",
+        "tools/r38/plugin_identity.py",
+        "doc/r38_pytorch_p1plus.md"
+      ],
+      "generated": [
+        "sim/build/r38/torch/torch_tests.json",
+        "sim/build/r38/torch/triton_native.json"
+      ],
+      "command": "make r38-torch",
+      "limits": "blocks capped at 16 elements (small shapes); host tensors uploaded/downloaded per launch; PyTorch in its own environment (spec/r38/torch.lock.json)"
+    },
+    {
+      "id": "fpga-u50-merge",
+      "claim": "The U50 board support of branch fpga-u50 (U50Backend over XRT, fpga-u50-sim on the same RTL, AXI-Lite adapter, board top, Vitis package/link/program flow) merged into r38; the board wrapper elaborates, connects and passes its benches against the r38 shell",
+      "level": "functionally-validated",
+      "artifacts": [
+        "rtl/fpga/tnca_fpga_top.v",
+        "rtl/fpga/tnca_mmio.v",
+        "rtl/fpga/tnca_axi_lite.v",
+        "rtl/board/tnca_u50_xo.v",
+        "python/tnca/backends/u50.py",
+        "python/tnca/backends/u50_sim.py",
+        "flow/fpga/README.md",
+        "tools/r36/fpga_tests.py"
+      ],
+      "generated": [
+        "sim/build/r36_fpga_tests.json"
+      ],
+      "command": "make r36-fpga-tests",
+      "limits": "the image on the board was built before the merge (flow/fpga/README.md); a rebuilt image is board-measured only in Stage 2 (doc/r38_board_bringup.md)"
+    },
+    {
+      "id": "perf-read-board-protocol",
+      "claim": "Transport 1.1 op 7 PERF_READ on the board's register protocol (tnca_mmio -> tnca_shell perf_sel/perf_rdata): counters in 32-bit halves, an out-of-range index refused; Session(counters=True) through U50Backend satisfies the S1-02 conservation, retired and window identities",
+      "level": "functionally-validated",
+      "artifacts": [
+        "rtl/fpga/tnca_mmio.v",
+        "rtl/fpga/tnca_fpga_top.v",
+        "tb/fpga/tb_tnca_fpga.v",
+        "tools/r36/fpga_tests.py",
+        "tools/r38/profiler_tests.py"
+      ],
+      "generated": [
+        "sim/build/r36_fpga_tests.json",
+        "sim/build/r38/profiler/report-fpga-u50-sim.json"
+      ],
+      "command": "tools/r38/profiler_tests.py --quick --backend fpga-u50-sim --profiles core-vrf-sync-v1",
+      "limits": "the probe cases (quick) through fpga-u50-sim; on the board after the image is rebuilt (Stage 2)"
+    },
+    {
+      "id": "archbench-torch",
+      "claim": "ArchBench at the PyTorch level: 76 points (27 tiny, 25 small, 24 large; LLM operators, general operators, LLaMA prefill/decode, GPT-2 block, MLP, ResNet block), frozen by content hash; strict bounds for TNCA (cycles) and the GB10 GPU (seconds); E/A/S through the Stage 1 scorer; declared MACs never exceed torch's FLOP counter and bytes match the tensors",
+      "level": "functionally-validated",
+      "artifacts": [
+        "archbench/README.md",
+        "archbench/PROTOCOL.md",
+        "archbench/registry.py",
+        "archbench/ops.py",
+        "archbench/models.py",
+        "archbench/bounds.py",
+        "archbench/specs/gpu_gb10.json",
+        "archbench/selftest.py",
+        "archbench/suites/tiny.json",
+        "archbench/suites/small.json",
+        "archbench/suites/large.json"
+      ],
+      "generated": [],
+      "command": "make archbench-selftest",
+      "limits": "the GB10 tensor-core peak is an upper estimate (specs/gpu_gb10.json); GPU records are measured-gpu, not a TNCA evidence level"
+    },
+    {
+      "id": "pytorch-archbench-flow",
+      "claim": "Every tiny and small ArchBench point compiles through torch.compile -> Inductor -> Triton -> tnca with zero host fallback (SDPA decomposition, int64 ids with checked narrowing, device asserts as traps, M=1 GEMM, one-row folds/scans, the 2-D boolean splat fix); tiny-tier numerics on the RTL in doc/r38_stage1_status.md",
+      "level": "functionally-validated",
+      "artifacts": [
+        "python/tnca/inductor.py",
+        "python/tnca/triton_backend/driver.py",
+        "compiler/python/tnca_cc/frontend.py",
+        "compiler/python/tnca_cc/wide.py",
+        "archbench/platforms/tnca.py",
+        "tools/r38/torch_tests.py",
+        "doc/r38_pytorch_p1plus.md"
+      ],
+      "generated": [
+        "sim/build/archbench/coverage.jsonl",
+        "sim/build/archbench/tnca_tiny.jsonl"
+      ],
+      "command": "make archbench-coverage",
+      "limits": "small-tier models are not simulated (hours to tens of hours per point at ~500 cycles/s) and are left to the board; blocks <= 16 per dimension; int64 emulated lane by lane"
+    },
+    {
+      "id": "pytorch-board-protocol",
+      "claim": "ArchBench points run through the board's software path (U50Backend, register protocol, tnca_fpga_top) on fpga-u50-sim, with device cycles identical to the simulation bench of profile core-vrf-sync-v1",
+      "level": "functionally-validated",
+      "artifacts": [
+        "python/tnca/backends/u50_sim.py",
+        "python/tnca/triton_backend/driver.py",
+        "doc/r38_board_bringup.md"
+      ],
+      "generated": [
+        "sim/build/archbench/u50sim_tiny.jsonl"
+      ],
+      "command": "make archbench-u50sim",
+      "limits": "a simulation of the board's top level; the board itself is Stage 2"
+    }
+  ]
+}

@@ -401,10 +401,11 @@ def render():
       'row is not a whole number of 8-byte units raises DESCRIPTOR_FAULT |')
     a('| `t.st.async` execution | NOT DELIVERED | encodable, faults with '
       'ILLEGAL_INSTRUCTION; capability `tensor_store` is false |')
-    a('| transposed transfer (`t.ld.async` mod[5]) | NOT DELIVERED | ISA '
-      'sec 9E specifies it; tnca_core.v passes only x_mod[2:0] to the '
-      'engine, so it would transfer untransposed. Capability '
-      '`tensor_transpose` is false; doc/r37_isa_gaps.md |')
+    a('| transposed transfer (`t.ld.async` mod[5]) | PROFILE-GATED | '
+      'implemented behind HAS_TENSOR_XPOSE (profile core-xpose-v1, '
+      'capability `tensor_transpose`): 16-bit elements, 4/8/16 source rows '
+      '(ISA sec 9E; tb/core/progs/t30_xpose.s). Without it the encoding '
+      'raises ILLEGAL_INSTRUCTION (t31_xpose_illegal.s) |')
     a('| general CFG in the MLIR verifier | FROZEN BOUNDARY | refused by '
       'name (IR-02), not accepted unchecked |')
     a('| `tnca_vector_fpu` synthesis | NOT COMPLETED | see '

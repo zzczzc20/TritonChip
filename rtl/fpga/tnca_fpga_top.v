@@ -104,6 +104,10 @@ module tnca_fpga_top #(
     // it produces the machine every artifact was compiled for rather than one
     // that silently differs.
     parameter USE_BANKED_VRF  = 1,
+    // The transposed tensor-DMA write (ISA sec 9E mod[5], R38 S1-07). Off,
+    // as in core-vrf-sync-v1; a board built with it on runs a profile that
+    // declares the capability, and none does for the banked VRF yet.
+    parameter HAS_TENSOR_XPOSE = 0,
     parameter CORE_ID         = 0,
     parameter NUM_CORES       = 1,
     parameter LSU_TAG_W       = 5,
@@ -187,6 +191,8 @@ module tnca_fpga_top #(
     wire [63:0] host_req_wdata;
     wire        host_rsp_valid;
     wire [63:0] host_rsp_rdata;
+    wire [4:0]  perf_sel;
+    wire [63:0] perf_rdata;
 
     tnca_mmio #(
         .ADDR_W(ADDR_BITS),
@@ -211,7 +217,8 @@ module tnca_fpga_top #(
         .host_req_valid(host_req_valid), .host_req_ready(host_req_ready),
         .host_req_we(host_req_we), .host_req_addr(host_req_addr),
         .host_req_be(host_req_be), .host_req_wdata(host_req_wdata),
-        .host_rsp_valid(host_rsp_valid), .host_rsp_rdata(host_rsp_rdata)
+        .host_rsp_valid(host_rsp_valid), .host_rsp_rdata(host_rsp_rdata),
+        .perf_sel(perf_sel), .perf_rdata(perf_rdata)
     );
 
     //==========================================================================
@@ -247,6 +254,7 @@ module tnca_fpga_top #(
         .HAS_SFU(HAS_SFU), .HAS_ATOMICS(HAS_ATOMICS),
         .HAS_SYS_ATOMICS(HAS_SYS_ATOMICS),
         .USE_BANKED_VRF(USE_BANKED_VRF),
+        .HAS_TENSOR_XPOSE(HAS_TENSOR_XPOSE),
         .CORE_ID(CORE_ID), .NUM_CORES(NUM_CORES), .HOST_TAG(HOST_TAG)
     ) u_shell (
         .clk(clk), .rst_n(rst_n),
@@ -273,6 +281,8 @@ module tnca_fpga_top #(
         .busy(), .core_idle(),
         .perf_cycles(), .perf_issued(), .perf_stall_hazard(),
         .perf_stall_lsu(), .perf_stall_wb(), .perf_squash(),
+        // Every counter, by index, for the mailbox's PERF_READ (op 7).
+        .perf_sel(perf_sel), .perf_rdata(perf_rdata),
         .imem_addr(imem_addr), .imem_data(imem_data),
         .mem_req_valid(mem_req_valid), .mem_req_ready(mem_req_ready),
         .mem_req_addr(mem_req_addr), .mem_req_we(mem_req_we),

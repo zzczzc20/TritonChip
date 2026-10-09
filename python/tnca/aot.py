@@ -420,19 +420,10 @@ def compile_aot(source, *, kernel_name=None, signature=None, constexprs=None,
     key = _key_for(source, source_kind, kernel_name, signature, constexprs,
                    profile, pinfo, options, param_names)
 
-    measured = measure_resources(asm_text, target, code=code)
-    # The emitter cannot see this one: it is a requirement the frontend
-    # recorded, not a count of something in the assembly.
-    if 'scratch_bytes' in report:
-        measured['scratch_bytes'] = report['scratch_bytes']
-    report['resources'] = measured
-    man = _manifest(kernel_name, params, target, pinfo, constexprs, options,
-                    prov, source_kind, report, measured=measured)
-
     if output is None:
         output = f"{kernel_name}-{key[:12]}{artifact.SUFFIX}"
-    segments = {'text': code}
-    sealed = artifact.write(output, man, segments)
+    sealed, measured = _seal(output, kernel_name, params, asm_text, code, report,
+                             target, pinfo, constexprs, options, prov, source_kind)
     report['compile_seconds'] = round(time.time() - started, 3)
     report['cache_key'] = key
     if cache is not None:
@@ -453,6 +444,20 @@ def compile_aot(source, *, kernel_name=None, signature=None, constexprs=None,
         })
     return CompileResult(output, sealed, report, key,
                          asm=dict(stages.stages), dumped=written)
+
+
+def _seal(output, kernel_name, params, asm_text, code, report, target, pinfo,
+          constexprs, options, prov, source_kind):
+    """Manifest and container for compiled code: shared by every entry point."""
+    measured = measure_resources(asm_text, target, code=code)
+    # The emitter cannot see this one: it is a requirement the frontend
+    # recorded, not a count of something in the assembly.
+    if 'scratch_bytes' in report:
+        measured['scratch_bytes'] = report['scratch_bytes']
+    report['resources'] = measured
+    man = _manifest(kernel_name, params, target, pinfo, constexprs, options,
+                    prov, source_kind, report, measured=measured)
+    return artifact.write(output, man, {'text': code}), measured
 
 
 def _source_text(source):
@@ -565,6 +570,20 @@ def _compile_triton(fn, kernel_name, signature, constexprs, target, prov,
     # compile actually consumed, and anything reconstructed afterwards
     # would be a second opinion about it.
     stages.record('ttir', str(module))
+    return _lower_ttir(module, ctx, kernel_name, params, target, prov, options,
+                       stages, opt_level)
+
+
+def _lower_ttir(module, ctx, kernel_name, params, target, prov, options, stages,
+                opt_level):
+    """TTIR to TNCA machine code: the ONE lowering every entry point uses.
+
+    `compile_aot` reaches it from a @triton.jit function through the
+    frontend above; the Triton backend plugin (tnca.triton_backend) reaches
+    it from the TTIR Triton's own JIT built. Two lowerings would be two
+    compilers whose answers could drift apart, so there is one, and both
+    entry points must produce the same code for the same TTIR.
+    """
 
     # Legalisation first, at every level: Triton's library functions
     # (`tl.exp`, `tl.sum`, `tl.max`, ...) are @triton.jit functions and

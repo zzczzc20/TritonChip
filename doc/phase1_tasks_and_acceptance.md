@@ -2,7 +2,7 @@
 
 版本：1.0，2026-09-19。状态：**规范已制定，实现尚未验收。**
 
-依据：[当前代码审计](production_readiness_audit_2026-09-19.md)、[架构原始设计](architecture_overview.md)、[编译器原始设计](compiler_overview.md)。审计基线 commit 为 `6c90063`；当时的测试记录在 [audit/2026-09-19](audit/2026-09-19/verification_summary.json)。旧回归通过不表示本合同已通过。
+依据：[当前代码审计](production_readiness_audit_2026-09-19.md)、[架构原始设计](design/tnca_v1_architecture_draft.md)、[编译器原始设计](design/tnca_v1_compiler_draft.md)。审计基线 commit 为 `6c90063`；当时的测试记录在 [audit/2026-09-19](audit/2026-09-19/verification_summary.json)。旧回归通过不表示本合同已通过。
 
 本文件把审计中的 R1 落成执行合同。**本阶段完成的唯一判据是：本文所有必交付项、所有必跑用例、所有证据要求，在同一个候选 commit 上全部满足。没有百分比完成验收，没有带问题通过，没有临时豁免。**
 

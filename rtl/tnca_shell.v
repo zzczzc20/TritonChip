@@ -85,6 +85,7 @@ module tnca_shell #(
     parameter HAS_ATOMICS    = 1,
     parameter HAS_SYS_ATOMICS = 0,
     parameter USE_BANKED_VRF = 0,
+    parameter HAS_TENSOR_XPOSE = 0,
     parameter CORE_ID        = 0,
     parameter NUM_CORES      = 1,
     // The tag the shell uses for its own host accesses. The core is idle
@@ -151,6 +152,12 @@ module tnca_shell #(
     output wire [63:0]              perf_stall_lsu,
     output wire [63:0]              perf_stall_wb,
     output wire [63:0]              perf_squash,
+    // Every counter in spec/r38/counters.json, by index. Combinational and
+    // read-only: selecting a counter changes nothing the kernel can see,
+    // which is what lets a host read them between launches without the
+    // reading entering the next launch's cycles.
+    input  wire [4:0]               perf_sel,
+    output reg  [63:0]              perf_rdata,
 
     //--------------------------------------------------------------------------
     // Instruction fetch, to whatever holds the program
@@ -219,6 +226,12 @@ module tnca_shell #(
     reg  [63:0] deadline_q;
     reg  [3:0]  status_q;
     reg  [63:0] retired_q;
+    // perf_issued when the command was accepted. perf_issued is never
+    // cleared (spec/r3_counters.json), so the completion reports the
+    // difference: instructions retired by THIS command, like done_cycles.
+    // Reporting perf_issued itself made the second program of a grid
+    // claim the first program's instructions as well.
+    reg  [63:0] issued_base;
     reg  [7:0]  fcode_q;
     reg  [63:0] fpc_q;
     reg  [RCTX_W-1:0] frctx_q;
@@ -259,13 +272,19 @@ module tnca_shell #(
     wire        core_req_amo;
     wire [3:0]  core_req_aop;
 
+    // The exclusive stall attribution (spec/r3_counters.json stall_exclusive).
+    wire [63:0] perf_stall_total, perf_x_hazard, perf_x_lsu, perf_x_fpu,
+                perf_x_mtx, perf_x_txf, perf_x_fence, perf_x_arrive,
+                perf_x_rsv, perf_x_wb, perf_x_vrf, perf_x_vrfwb;
+
     tnca_core #(
         .NUM_RCTX(NUM_RCTX), .RCTX_W(RCTX_W), .VLEN(VLEN), .ELEN(ELEN), .LW(4),
         .VREGS_PER_RCTX(VREGS_PER_RCTX), .PHYS_VREGS(PHYS_VREGS),
         .PHYS_W(PHYS_W), .CORE_ID(CORE_ID), .NUM_CORES(NUM_CORES),
         .HAS_SFU(HAS_SFU), .HAS_ATOMICS(HAS_ATOMICS),
         .HAS_SYS_ATOMICS(HAS_SYS_ATOMICS),
-        .USE_BANKED_VRF(USE_BANKED_VRF)
+        .USE_BANKED_VRF(USE_BANKED_VRF),
+        .HAS_TENSOR_XPOSE(HAS_TENSOR_XPOSE)
     ) u_core (
         .clk(clk), .rst_n(rst_n),
         .launch_valid(launch_valid), .launch_pc(launch_pc),
@@ -292,7 +311,14 @@ module tnca_shell #(
         .perf_cycles(perf_cycles), .perf_issued(perf_issued),
         .perf_stall_hazard(perf_stall_hazard),
         .perf_stall_lsu(perf_stall_lsu),
-        .perf_stall_wb(perf_stall_wb), .perf_squash(perf_squash)
+        .perf_stall_wb(perf_stall_wb), .perf_squash(perf_squash),
+        .perf_stall_total(perf_stall_total),
+        .perf_x_hazard(perf_x_hazard), .perf_x_lsu(perf_x_lsu),
+        .perf_x_fpu(perf_x_fpu), .perf_x_mtx(perf_x_mtx),
+        .perf_x_txf(perf_x_txf), .perf_x_fence(perf_x_fence),
+        .perf_x_arrive(perf_x_arrive), .perf_x_rsv(perf_x_rsv),
+        .perf_x_wb(perf_x_wb), .perf_x_vrf(perf_x_vrf),
+        .perf_x_vrfwb(perf_x_vrfwb)
     );
 
     //==========================================================================
@@ -336,6 +362,29 @@ module tnca_shell #(
 
     // The core must not see its request accepted while the host owns the port.
     assign core_req_ready = mem_req_ready && !host_issue;
+
+    //==========================================================================
+    // Data-port traffic, the core's side only
+    //
+    // A beat is one accepted 8-byte request. Host transfers go through the
+    // same port but are not the kernel's traffic, so they are not counted:
+    // host_issue owns the port on exactly the cycles the core cannot be
+    // accepted. Cleared on rst_n only, like every counter.
+    //==========================================================================
+    reg [63:0] perf_mem_rd_beats, perf_mem_wr_beats;
+    always @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
+            perf_mem_rd_beats <= 64'd0;
+            perf_mem_wr_beats <= 64'd0;
+        end else if (core_req_valid && core_req_ready) begin
+            if (core_req_we && !core_req_amo)
+                perf_mem_wr_beats <= perf_mem_wr_beats + 64'd1;
+            else
+                perf_mem_rd_beats <= perf_mem_rd_beats + 64'd1;
+        end
+    end
+
+`include "tnca_perf_sel.vh"
 
     always @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
@@ -395,6 +444,7 @@ module tnca_shell #(
             deadline_q       <= 64'd0;
             status_q         <= ST_OK;
             retired_q        <= 64'd0;
+            issued_base      <= 64'd0;
             fcode_q          <= 8'd0;
             fpc_q            <= 64'd0;
             frctx_q          <= {RCTX_W{1'b0}};
@@ -419,6 +469,7 @@ module tnca_shell #(
                     frctx_q    <= {RCTX_W{1'b0}};
                     fdetail_q  <= 24'd0;
                     retired_q  <= 64'd0;
+                    issued_base <= perf_issued;
                     case (cmd_op)
                     CMD_LAUNCH: begin
                         launch_pc        <= cmd_pc;
@@ -478,17 +529,17 @@ module tnca_shell #(
                     fpc_q     <= core_fault_pc;
                     frctx_q   <= core_fault_rctx;
                     fdetail_q <= core_fault_detail;
-                    retired_q <= perf_issued;
+                    retired_q <= perf_issued - issued_base;
                     kernel_live <= 1'b0;
                     state     <= S_DONE;
                 end else if (core_idle) begin
                     status_q  <= ST_OK;
-                    retired_q <= perf_issued;
+                    retired_q <= perf_issued - issued_base;
                     kernel_live <= 1'b0;
                     state     <= S_DONE;
                 end else if (expired) begin
                     status_q  <= ST_TIMEOUT;
-                    retired_q <= perf_issued;
+                    retired_q <= perf_issued - issued_base;
                     state     <= S_DONE;
                 end else begin
                     run_cycles <= run_cycles + 64'd1;

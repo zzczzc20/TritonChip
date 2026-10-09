@@ -8,8 +8,9 @@ This document is the single source of truth for instruction encoding. RTL
 architectural model (`tools/model/tnca_model.py`) are all derived from it. If
 they disagree, this document wins and the others are bugs.
 
-Derived from `doc/architecture_overview.md` §11–§12. Section references below
-point at that document.
+Derived from the TNCA-v1 design draft, `doc/design/tnca_v1_architecture_draft.md`
+(until 2026-10-08 `doc/architecture_overview.md`) §11–§12. Section references
+below point at that document.
 
 ---
 
@@ -980,6 +981,28 @@ copies the descriptor rather than re-reading it per line.
 
 `mod[2:0]` is the transfer's element-size log2; `mod[4:3]` selects the window
 layout (`0` = flat row-major); `mod[5]` requests a transposed write.
+
+A non-zero `mod[4:3]` raises `ILLEGAL_INSTRUCTION`: layout `0` is the only one
+that exists, and accepting another value would transfer the tile in a shape the
+program did not ask for.
+
+**The transposed write (`mod[5]`, capability `tensor_transpose`).** For a
+descriptor with block shape `R × C`, the window receives the tile as `C` rows of
+`R` elements, flat row-major: window element `(c, r)` is source element
+`(coord0 + r, coord1 + c)`, and zero wherever either index falls outside the
+descriptor's extents (§9E.1 step 7). Everything else — snapshot, bounds, one
+completion — is as for the untransposed transfer. The implementation
+requires, in addition to §9E.2:
+
+| Condition | Otherwise |
+|---|---|
+| the engine was built with the capability | `ILLEGAL_INSTRUCTION` |
+| rank 2 | `DESCRIPTOR_FAULT` |
+| 16-bit elements (`mod[2:0] = 1`) | `DESCRIPTOR_FAULT` |
+| `R` is 4, 8 or 16 | `DESCRIPTOR_FAULT` |
+
+The last two keep each destination row whole lanes inside one register, which
+is what lets the engine write it through the lane enables it already has.
 
 Coordinates come from **consecutive scalar registers** starting at `Sb`, one per
 descriptor rank (§12.11). The block shape comes from the descriptor.

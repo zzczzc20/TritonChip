@@ -1,0 +1,12 @@
+{
+  "schema": "r38-record-schema/1",
+  "describes": "r38-design-change/1",
+  "contract": "roadmap section 3.2; doc/r38_stage1_tasks_and_acceptance.md S1-03, S1-07",
+  "note": "One cross-layer change as a unit: what was believed, what each layer changed, how it is gated, what it cost, what was measured and how to undo it. Numbers are copied from generated reports named in `evidence`, which tools/r38/manifest.py checks exist.",
+  "required": ["schema", "id", "parent_commit", "hypothesis", "touched_layers", "semantic_change",
+               "feature", "layers", "compatibility", "resource", "results", "rollback", "evidence", "status"],
+  "enums": {
+    "touched_layers": ["compiler", "isa", "microarch", "runtime"],
+    "status": ["proposed", "implemented", "accepted", "rolled-back", "rejected"]
+  }
+}

@@ -301,6 +301,7 @@ module tnca_smoke;
         .perf_stall_hazard(perf_stall_hazard),
         .perf_stall_lsu(perf_stall_lsu),
         .perf_stall_wb(perf_stall_wb), .perf_squash(perf_squash),
+        .perf_sel(5'd0), .perf_rdata(),
         .imem_addr(imem_addr), .imem_data(imem_data),
         .mem_req_valid(mreq_valid), .mem_req_ready(mreq_ready),
         .mem_req_addr(mreq_addr), .mem_req_we(mreq_we),
@@ -662,8 +663,11 @@ def export(outdir, *, program_words, result_addr, expected):
             'class': 'status',
             'ports': ['busy', 'core_idle', 'perf_cycles', 'perf_issued',
                       'perf_stall_hazard', 'perf_stall_lsu',
-                      'perf_stall_wb', 'perf_squash'],
-            'handshake': 'none: free-running outputs.',
+                      'perf_stall_wb', 'perf_squash', 'perf_sel',
+                      'perf_rdata'],
+            'handshake': 'none: free-running outputs; perf_rdata is a '
+                         'combinational read of the counter perf_sel '
+                         'selects (spec/r38/counters.json).',
             'contract': [
                 'free-running and monotonic; they are not cleared per '
                 'launch. A caller takes a difference.',

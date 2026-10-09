@@ -56,4 +56,45 @@ The script compares the complete output with an independent Python matrix
 product and checks guard bytes past the logical tensor. It exits nonzero
 on a compilation, launch, or numerical failure.
 
+## Beyond this example
+
+Descriptors follow the contract Triton exposes for TMA on NVIDIA GPUs:
+
+- **Rank 1 to 5.**
+- **Signed coordinates.** They may be negative, past the end, or straddle an edge.
+- **Padding.** Out-of-bounds elements of a load read as zero, or as the
+  dtype's NaN with `padding_option="nan"`.
+- **Stores.** They write only the in-bounds bytes of their box.
+- **Atomic adds and maxes** through a descriptor.
+- **Row gather and scatter.**
+
+`tools/r38/tdesc_tests.py` (`make r38-tdesc`) runs one kernel per feature and
+compares the outputs bit for bit with a model computed from the definition.
+On the current RTL:
+
+```text
+PASS atomic_add             add bit-exact; max bit-exact
+PASS gather_scatter         bit-exact
+PASS host_descriptor        bit-exact
+PASS rank1_copy             bit-exact; bit-exact; bit-exact
+PASS rank2_nan_pad          bit-exact
+PASS rank3_dma              bit-exact
+PASS rank3_dot              max rel err 0.00e+00
+PASS rank3_small_trans      bit-exact
+PASS rank4_rows             bit-exact
+PASS rank5_fill             bit-exact
+tensor descriptors [core-sim]: 10/10 pass
+```
+
+The full output also counts each case's instructions, and they show that
+not every case uses the transfer engine:
+
+- `rank3_dma` loads and stores with `t.ld.async`/`t.st.async`;
+- `rank3_small_trans`, whose box fits one register, is gathered with
+  `v.ld.gather`;
+- `rank4_rows` is loaded row by row.
+
+From PyTorch, Inductor's descriptor code generation reaches the same path
+([10](10_torch_compile.md)).
+
 Back to the [index](README.md).

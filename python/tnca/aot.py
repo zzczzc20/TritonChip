@@ -759,17 +759,22 @@ def _rctx_spmd(kernel, target, prov, options, stages, scratch_bytes, scratch_slo
     # As many contexts as the target has, halved while the kernel's
     # accumulators, barriers, descriptors or windows do not fit a slice --
     # the hardware slices by the count the launch asks for (RSLICE) -- and at
-    # most TNCA_RCTX_SPMD_MMA (default 2) for a kernel that uses the matrix
-    # unit: measured on ArchBench, two GEMM programs at a time beat four,
-    # which share one matrix unit and one transfer engine (R39-05).
+    # most TNCA_RCTX_SPMD_SHARED (default 2) for a kernel that holds any of
+    # them: measured on ArchBench (v4, tiny), two such programs at a time beat
+    # four -- GEMMs share one matrix unit and one transfer engine, and the
+    # attention reductions that read through TensorMaps each build their own
+    # maps and share the memory path -- while kernels holding nothing gain
+    # from all four (R39-05).
     contexts = int(getattr(target, 'num_rctx', 1) or 1)
-    mma_cap = int(os.environ.get('TNCA_RCTX_SPMD_MMA', '2'))
+    shared_cap = int(os.environ.get('TNCA_RCTX_SPMD_SHARED', '2'))
+    holds = bool(kernel.accumulators or kernel.descriptors or kernel.windows
+                 or kernel.barriers or scratch_bytes)
     why = 'the target has one role context'
     while contexts > 1:
         sizes = rctx_spmd.slices(target, contexts)
         why = rctx_spmd.ineligible(kernel, scratch_bytes, sizes)
-        if why is None and kernel.accumulators and contexts > mma_cap:
-            why = f'a kernel using the matrix unit runs on at most {mma_cap} contexts'
+        if why is None and holds and contexts > shared_cap:
+            why = f'a kernel holding per-core resources runs on at most {shared_cap} contexts'
         if why is None:
             break
         contexts //= 2

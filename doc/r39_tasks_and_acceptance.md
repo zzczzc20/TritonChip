@@ -381,7 +381,8 @@ R39-02a 的改动都在两个开关之下，关闭时制品逐字节相同（447
   - 旧镜像只取 role-mask 的低位，第 31 位被忽略；编译器不会为它们生成依赖切分的代码。
   - **切片数由 launch 决定。** role-mask 的第 30:29 位是 log2(切片数)；0 表示每个 context 一片。在 4 context 的核上，一个 kernel 可以只用 2 个 context，各分到一半资源。
     - 原因：v4 上按四份切，每个 context 只有 4 个 accumulator。主导模型点的 GEMM 模板要用 6–8 个，于是被拒绝 SPMD。同时，被接受的 GEMM 类 kernel 在 4 个 context 上反而比在 v3 的 2 个 context 上慢：gpt2_block 785k 对 667k 拍，mlp 468k 对 390k，attention_decode 13.0k 对 11.4k。四个 context 共用一个矩阵单元和一个 transfer engine。
-    - 编译器的选择：取 2 的幂中能放下这个 kernel 资源的最大 context 数；用矩阵单元的 kernel 最多 2 个（`TNCA_RCTX_SPMD_MMA`，默认 2）。
+    - 编译器的选择：取 2 的幂中能放下这个 kernel 资源的最大 context 数；持有任何 per-core 资源（accumulator、descriptor、window、barrier 或 scratch）的 kernel 最多 2 个（`TNCA_RCTX_SPMD_SHARED`，默认 2）。
+    - 先只限制用矩阵单元的 kernel，attention 的规约 kernel 在 v4 上仍比 v3 慢（7141 对 6155 拍，3 个 32 个 program 的 kernel 都是这样）。它们经 TensorMap 读数据，不用 accumulator：4 个 context 各建自己的 TensorMap，共用同一条存储器通路。不持有资源的 kernel 仍用全部 4 个 context，比如 add 快 1.14×。
     - `t39_slice` 在 4 context 台架上用 `+slicek=1`（2 个 context 各一半）和默认的四份切分都通过。
   - 入口块里由不变量建成的 TensorMap（Inductor 的都是由参数建成的，tile 的位置在每次 load 时给出）也只建一次：写进本 context scratch 的 32 个 store，以及所有 store 都已移出循环后的 snapshot。只有 snapshot 会读 TensorMap，所以移动这些 store 不改变任何可观察的顺序。实测 `tdesc_rows`（5 个 program）：SPMD 开但每个 program 都重建 TensorMap 时为 0.99×，提到循环外后为 1.62×；`dot_grid` 为 1.17×，此后主要停顿在矩阵单元（R39-10）。
   - 拒绝按 kernel 起点计数 barrier epoch 的 token（`barrier_token`，只有软件流水的降低会生成）：同一 context 上的第二个 program 中，barrier 的 epoch 是接着第一个往下数的。标准路径不生成这种 token。

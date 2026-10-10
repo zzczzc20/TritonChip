@@ -1,6 +1,6 @@
 # R39 报告：标准路径的性能
 
-版本：草稿，2026-10-10。对应 `doc/r39_tasks_and_acceptance.md` 的 R39-11。
+版本：2026-10-10。对应 `doc/r39_tasks_and_acceptance.md` 的 R39-11（v4 终版，镜像 u280_r39e）。R39-12/13（Mode A、v5、medium 档）的结果在完成后另列。
 
 本轮所有数字都来自标准路径：torch.compile → Inductor（tensor descriptor 开）→ Triton → tnca → U280，或者与板卡逐点同周期的器件级 RTL 仿真。参考路径（无 descriptor、`compile_aot`）的数字只作对照，不进验收。
 
@@ -12,8 +12,8 @@
 | S_geo 相对 R39-00 基线 | ≥ 3.0× | **4.315×** |
 | 设备时间 E 相对基线 | ≥ 3× | **3.55×**（0.00725 → 0.02576） |
 | 没有点慢于基线 | — | 最少的是 embedding tiny，1.974× |
-| 100 MHz 时序 | 收敛 | 路由后 ap_clk WNS +0.087 ns；实测 100.017 / 99.992 MHz |
-| B4 逐点等周期 | 27/27 | u280_r39d：24/27，3 点相差 1–8 拍。原因已定位（见 §4），u280_r39e 修复后复测 |
+| 100 MHz 时序 | 收敛 | u280_r39d：路由后 ap_clk WNS +0.087 ns，实测 100.017 / 99.992 MHz；终版 u280_r39e：WNS +0.053 ns，实测 100.003 / 99.990 MHz |
+| B4 逐点等周期 | 27/27 | u280_r39e：整套连跑 26/27；attention_decode 板上 10252、仿真 10251。单独重跑两次、紧跟 argmax 重跑，板上都是 10251（§4） |
 | leave-one-out 每项 ≥ 3 % | — | 6 项达到；4 个 context、RCTX_SWITCH、FE_NOBUBBLE、VRF_BYPASS、FPU_OVERLAP 不足 3 %，降级为「无显著贡献」（§3） |
 
 ## 2. 累计表（板上，tiny + small，52 点，相对冻结基线）
@@ -71,7 +71,15 @@ v2 → v4 一步在板上是 S_geo 1.519、总周期 0.669×。
 - u280_r39d：tiny 27/27、small 25/25；B1 conformance 通过。
 - B4（板上对同一 RTL、同一软件的器件级仿真）：24/27 逐点相同。add fp16 2391/2395、attention_decode 10252/10251、softmax fp32 1702/1710 不同。
 - 原因：取指的 round robin 指针和 VRF 读仲裁的 round robin 指针在 launch 时不复位。板上的器件跨点持续运行（并且先跑了 B1），仿真每个点从复位开始。一个 context 时这两个指针不影响周期；多 context 时影响交织顺序。
-- 修复：launch 时两个指针都回到 0。修复后在仿真中验证：同一个会话里，不管前面跑过什么，同一个 kernel 都是 369 拍。镜像 u280_r39e 已带此修复重新链接。
+- 修复：launch 时两个指针都回到 0。修复后在仿真中验证：同一个会话里，不管前面跑过什么，同一个 kernel 都是 369 拍。
+- 终版镜像 u280_r39e 带这个修复，sha256 `6a3e76a4…4b18cf`。
+  - 在板上：B1 conformance 通过；tiny 27/27、small 25/25 数值通过。
+  - B4：add fp16、softmax fp32 已与仿真逐拍相同。
+  - attention_decode 在整套连跑中是 10252，仿真是 10251。
+- 复测 attention_decode：同一镜像上单独跑两次，以及紧跟它前一个点 argmax 跑，板上都是 10251，与仿真相同。
+  - 所以这 1 拍不是前一个 kernel 留下的状态，也不能稳定复现。
+  - 原因未查清，记为未结项。
+  - 仿真没有模拟主机侧的异步行为。
 
 ## 5. 做了什么（按工作包）
 

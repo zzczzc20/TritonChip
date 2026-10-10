@@ -27,6 +27,9 @@ same bound formulas and scoring library (`tools/r38/archbench`).
   - `tiny`: within reach of the RTL simulator.
   - `small`: within the board's device memory; every kernel's argument
     storages fit the 384 KiB heap of the U50 image's 512 KiB memory.
+  - `medium` (R39-13): a moderately bigger load for the board, two to eight
+    times `small`; every kernel's largest launch stays within the same heap
+    with room for the runtime's own scratch (at most 352 KiB of arguments).
   - `large`: GPU-realistic shapes. TNCA records `capacity-exceeded` until it has
     external memory; problems are never shrunk to fit.
 - Tracks: `llm` covers decoder inference; `general` covers convolution, scan,

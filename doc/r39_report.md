@@ -1,6 +1,6 @@
 # R39 报告：标准路径的性能
 
-版本：2026-10-10。对应 `doc/r39_tasks_and_acceptance.md` 的 R39-11（v4 终版，镜像 u280_r39e）。R39-12/13（Mode A、v5、medium 档）的结果在完成后另列。
+版本：2026-10-10。§1–§7 对应 `doc/r39_tasks_and_acceptance.md` 的 R39-11（v4 终版，镜像 u280_r39e）。§8 是 R39-12/13（Mode A、v5、medium 档），终版镜像 u280_r39h；R39 的最终状态见 §8.5。
 
 本轮所有数字都来自标准路径：torch.compile → Inductor（tensor descriptor 开）→ Triton → tnca → U280，或者与板卡逐点同周期的器件级 RTL 仿真。参考路径（无 descriptor、`compile_aot`）的数字只作对照，不进验收。
 
@@ -113,14 +113,14 @@ v2 → v4 一步在板上是 S_geo 1.519、总周期 0.669×。
 
 ## 7. 代价
 
-| | v2（u280_r39c） | v4（u280_r39d） | v5（u280_r39f） |
-|---|---|---|---|
-| CLB LUT（含平台 shell） | 314 851 | 333 236（+5.8 %） | 336 181（+0.9 %） |
-| 寄存器 | 216 965 | 226 423（+4.4 %） | 227 541（+0.5 %） |
-| BRAM tile | 351 | 367 | 367 |
-| 路由后 WNS（100 MHz） | +0.073 ns | +0.087 ns | +0.101 ns |
+| | v2（u280_r39c） | v4（u280_r39d） | v5（u280_r39f） | v5 终版（u280_r39h） |
+|---|---|---|---|---|
+| CLB LUT（含平台 shell） | 314 851 | 333 236（+5.8 %） | 336 181（+0.9 %） | 336 334（+0.05 %） |
+| 寄存器 | 216 965 | 226 423（+4.4 %） | 227 541（+0.5 %） | 227 496 |
+| BRAM tile | 351 | 367 | 367 | 367 |
+| 路由后 WNS（100 MHz） | +0.073 ns | +0.087 ns | +0.101 ns | +0.088 ns |
 
-v5 的 RPAIR 与转置传输几乎不占资源。
+v5 的 RPAIR 与转置传输几乎不占资源；`MTX_ABUF`（8 个 A 元素的缓冲）与 `RCTX_SWITCH=2` 也是。
 
 OOC 综合（只算 `tnca_fpga_top`，10 ns）：v4 比 v2 LUT +10 %、寄存器 +19 %，最差路径相同（FPU FMA 的操作数选择）。
 
@@ -182,8 +182,57 @@ OOC 综合（只算 `tnca_fpga_top`，10 ns）：v4 比 v2 LUT +10 %、寄存器
 
 ### 8.4 终版镜像 u280_r39h（v5，含 MTX_ABUF 与 RCTX_SWITCH=2）
 
-仿真（tiny，相对 v4 终版，Mode A 关）：
-- 全套件 S_geo 1.287，没有点变慢。
-- GEMM 类 1.91：linear 3.01，mlp 3.41，gemv 2.71，gpt2_block 2.23，llama_decode 1.70，llama_prefill 1.62，matmul 1.39，bmm 1.36。
+- 时序与时钟：100 MHz，路由后 ap_clk WNS +0.088 ns；实测 100.022 / 99.989 MHz；xclbin sha256 `c56d492f6a33…44ea7d`。
+- 软件：`be87779`（板上运行的源码树与它逐文件相同）。
+- B1 conformance 通过。Mode A 关、开两种都跑：tiny 27/27、small 25/25、medium 25/25 数值通过。
 
-板上结果待镜像链接完成后补上。
+| 比较（板上，Mode A 关） | tiny | small | medium | 合计 77 点 |
+|---|---|---|---|---|
+| v5 终版 / 冻结基线 | 5.538 | 5.617 | 5.491 | **5.548**（总周期 0.161×） |
+| v5 终版 / v4 终版 | 1.287 | 1.299 | 1.274 | **1.287**（总周期 0.679×） |
+| v5 终版 / v5（r39f） | 1.078 | 1.087 | 1.086 | 1.084（总周期 0.911×） |
+
+- 没有点比 v4 终版慢；最少的是不经矩阵单元的点（add、argmax 等），1.000。
+- GEMM 类 27 点（linear、gemv、matmul、bmm、mlp、gpt2_block、llama_*）相对 v4 终版 S_geo **1.880**，其余 50 点 1.048。
+  - linear 3.01–3.64，mlp 3.41–3.48，gemv 2.71–2.99，gpt2_block 1.84–2.23，llama_prefill 1.62–1.67，llama_decode 1.17–1.70，fp16 matmul 1.39–1.70。
+- 相对 r39f，`MTX_ABUF` 与 `RCTX_SWITCH=2` 让 fp16 matmul、linear 再快 1.51–1.70。
+  - fp32 matmul small、medium 慢 1.3 %、1.4 %（0.987、0.986），conv2d fp32 慢 0.7 %。
+  - 都小于 2 %，原因没有定位。
+
+**Mode A（带 `ring_estimate` 门控）的消融**，板上，开 / 关 `rctx_roles`，77 点：
+
+- 全部正确；S_geo **1.0045**（tiny 1.006、small 1.004、medium 1.003），没有点变慢；套件周期 −0.37 %。
+- 门控只特化 producer 自己还有 load/store 的循环。周期变了的 9 个点都变快：
+  - gemv 1.064–1.112（A 行要重排）。
+  - llama_decode 1.008–1.047。
+  - llama_prefill 1.000–1.009。
+- 其余 68 点不特化，与关时逐拍相同；其中包括门控前在 r39f 上变慢的 mlp、matmul、linear。
+- GEMM 类 27 点 S_geo 1.013。
+- **结论**：套件周期的变化远小于 R39-11 的 3 %，仍记为「无显著贡献」，**默认关**。
+  - 选择规则：`rctx_roles=1` 只在 `ring_estimate` 预计有收益、且两个 role 不会无序读写同一块内存时拆分；`2` 跳过估计（测试用）。
+  - R40 若要默认打开，需要在 R40 的协议下重新消融。
+
+**B4**（板上对同一 RTL、同一软件的器件级仿真，tiny，Mode A 关）：
+
+- 整套连跑：26/27 逐拍相同。llama_decode 板上 545164，仿真 545162。
+- 在同一镜像上复测：
+  - 单独跑两次：都是 545162，与仿真相同。
+  - 紧跟它在套件里的前一个点 gpt2_block 跑：545164，可复现。
+- 所以这 2 拍来自 gpt2_block 留下的、launch 时不复位的状态。进一步定位：
+  - 这个状态跨进程、跨 kernel 保留。gpt2_block 之后，先跑 llama_decode、再跑 add、再单独跑 llama_decode，都是 545164。
+  - 差别在一个 kernel：`triton_poi_fused__unsafe_view_neg_split_transpose_view_3`（grid 2，每层一次，共两次），每次 161 → 162 拍。其余 40 次 launch 逐拍相同。
+  - 不是 buffer 周围的内存：每个 buffer 两侧加 4 KiB 边界，分别填 0xFF 和 0x00，都是 545164，结果逐位相同。
+  - 仿真复现不了：同一个仿真会话里先跑 gpt2_block 再跑两次 llama_decode，都是 545162。
+    - 但这个会话里 llama_decode 的 buffer 地址与板上新进程的不同。
+    - 板上每个点也会重新打开 Session。
+- 结论：是器件里 launch 不复位、又只影响多 context 交织的状态，与 §4 的 attention_decode 同类。数值不受影响，周期差 0.0004 %。
+- 记为未结项，交给 R40-00：用 B39 冻结为未结项，在 R40 的 HBM 镜像之前查清。
+
+### 8.5 R39 的最终状态
+
+- 签收的软件与镜像：`be87779` + u280_r39h（v5）。默认开关：`TNCA_INDEX_OPT=1`、`TNCA_RCTX_SPMD=1`、`TNCA_SPARSE_TENSORMAPS=1`，`TNCA_RCTX_ROLES=0`。
+- 相对 R39-00 冻结基线：77 点 S_geo **5.548**，总周期 0.161×；没有点变慢。
+- 未结项：
+  - B4 的 llama_decode（上面）与 r39e 的 attention_decode（§4）：都是跨 launch 的状态造成的 1–2 拍。
+  - softmax fp16 tiny 对时序开关敏感（§3）。
+- 这些在 R40-00 冻结为 B39 的未结项（`spec/r40/baseline.json`）。

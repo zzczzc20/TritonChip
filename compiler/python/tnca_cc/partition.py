@@ -1005,6 +1005,7 @@ _ALWAYS = frozenset({'label', 'branch_nz', 'exit', 'comment'})
 _IN_PLACE = {'assign': 0, 'vinsert': 0}
 _RESOURCE = frozenset({'window', 'desc', 'barrier', 'acc'})
 PRODUCER, CONSUMER = 0, 1
+BOTH = 2          # an op each role runs its own copy of
 
 
 class NotSpecialised(Exception):
@@ -1171,6 +1172,12 @@ def _assign(ops, loop, ring_ids):
             part[i] = PRODUCER
         elif k in _EFFECT and first <= i <= last:
             part[i] = PRODUCER          # the transfer chain, and its waits
+        elif k in ('store', 'scatter', 'sstore', 'fence') and i < first:
+            # Memory written before the loop may be read by either role (a
+            # carried tile's spill, its initial value): each writes it
+            # itself. The producer's copy is ordered before the consumer's
+            # first read of anything by the ring; the values are the same.
+            part[i] = BOTH
         elif k in _EFFECT:
             part[i] = CONSUMER          # the epilogue, and anything else outside
     # A barrier op goes with the command its token counts.
@@ -1204,6 +1211,58 @@ def _assign(ops, loop, ring_ids):
     return part
 
 
+_WRITES = frozenset({'store', 'scatter', 'sstore', 'atomic', 'atomic_cas'})
+_READS_MEM = frozenset({'load', 'gather', 'sload', 'atomic', 'atomic_cas'})
+
+
+def _where(ops, v, producer):
+    """An address as (the value it is built on, a byte offset or None):
+    `sbini add` chains folded, anything else the root."""
+    off = 0
+    while True:
+        j = producer.get(id(v))
+        if j is None or ops[j].kind != 'sbini' or ops[j].attrs.get('op') != 'add':
+            return id(v), off
+        off += ops[j].attrs.get('imm', 0)
+        v = ops[j].operands[0]
+
+
+def _memory_crossings(ops, roles, first, last):
+    """Refuse a split in which one role may read memory the other writes
+    unordered. The ring's barriers order the windows and nothing else, so a
+    tile one role spills to scratch in the loop and the other reads back --
+    or a store the consumer makes that the producer's next program reads --
+    would be a race. An address is compared as its root value and constant
+    offset; a scatter's, or one that is not a constant from its root,
+    covers the whole root. A TensorMap is its role's own: only that role's
+    transfers read it."""
+    producer = {id(r): i for i, op in enumerate(ops) for r in op.results}
+    maps = {id(op.operands[0]) for op in ops if op.kind == 'desc_snapshot'}
+    def spans(role, kinds, where):
+        out = []
+        for i in roles[role]:
+            op = ops[i]
+            if op.kind not in kinds or not where(i):
+                continue
+            if op.kind == 'sstore' and id(op.operands[0]) in maps:
+                continue
+            root, off = _where(ops, op.operands[0], producer)
+            out.append((root, None if op.kind in ('scatter', 'gather') else off, op.kind))
+        return out
+    def clash(writes, reads):
+        for wr, wo, wk in writes:
+            for rr, ro, rk in reads:
+                if wr == rr and (wo is None or ro is None or abs(wo - ro) < 64):
+                    return f'{rk} may read what a {wk} of the other role wrote'
+        return None
+    in_loop = lambda i: first <= i <= last
+    anywhere = lambda i: True
+    why = (clash(spans(PRODUCER, _WRITES, in_loop), [r for r in spans(CONSUMER, _READS_MEM, anywhere)])
+           or clash(spans(CONSUMER, _WRITES, anywhere), spans(PRODUCER, _READS_MEM, in_loop)))
+    if why:
+        raise NotSpecialised(f'memory crosses roles: {why}')
+
+
 def _pull(ops, part, role):
     """propagatePartitions for one role: its own ops, the control flow, and
     everything they read -- duplicated rather than communicated, as
@@ -1218,7 +1277,8 @@ def _pull(ops, part, role):
         if k is not None and k < len(op.operands):
             mutators.setdefault(id(op.operands[k]), []).append(i)
     keep = set()
-    work = [i for i, op in enumerate(ops) if part.get(i) == role or op.kind in _ALWAYS]
+    work = [i for i, op in enumerate(ops)
+            if part.get(i) in (role, BOTH) or op.kind in _ALWAYS]
     while work:
         i = work.pop()
         if i in keep:
@@ -1234,14 +1294,14 @@ def _pull(ops, part, role):
                 if j is None or j in keep:
                     continue
                 other = part.get(j)
-                if other is not None and other != role:
+                if other is not None and other not in (role, BOTH):
                     if v.kind in _RESOURCE:
                         continue
                     raise NotSpecialised(
                         f'{v.name} ({v.kind}) crosses from role {other} to role {role} '
                         f'at {ops[j].kind}')
                 work.append(j)
-    return [ops[i] for i in sorted(keep)]
+    return sorted(keep)
 
 
 def _ring_sync(role_ops, role, ring, full, empty, direct, stages):
@@ -1366,8 +1426,12 @@ def specialize_loop(kernel, target, *, stages=2):
                     if unrolled[i].kind == 'branch_nz')
         part = _assign(unrolled, RingLoop(heads[0], test, 0, 0, loop.windows, loop.direct),
                        ring_ids)
-        prod = _pull(unrolled, part, PRODUCER)
-        cons = _pull(unrolled, part, CONSUMER)
+        roles_idx = {PRODUCER: _pull(unrolled, part, PRODUCER),
+                     CONSUMER: _pull(unrolled, part, CONSUMER)}
+        staged = [i for i, op in enumerate(unrolled) if op.attrs.get('_stage') is not None]
+        _memory_crossings(unrolled, roles_idx, min(staged), max(staged))
+        prod = [unrolled[i] for i in roles_idx[PRODUCER]]
+        cons = [unrolled[i] for i in roles_idx[CONSUMER]]
     except NotSpecialised:
         kernel.windows[:], kernel.barriers[:] = saved
         raise

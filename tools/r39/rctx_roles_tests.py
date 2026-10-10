@@ -56,7 +56,23 @@ def kernels(tl, triton):
         acc += tl.load(bias + n0 + r)[None, :]
         tl.store(out + (m0 + r)[:, None] * N + (n0 + r)[None, :], acc)
 
-    return dict(gemm=gemm, linear=linear)
+    @triton.jit
+    def gemm_ptrs(a, b, c, N, K: tl.constexpr, BLOCK: tl.constexpr):
+        # the pointers carried round the loop, as Inductor's bmm template
+        # does: the importer spills the pointer tiles to scratch in the loop
+        n0 = tl.program_id(0) * BLOCK
+        m0 = tl.program_id(1) * BLOCK
+        r = tl.arange(0, BLOCK)
+        pa = a + (m0 + r)[:, None] * K + r[None, :]
+        pb = b + r[:, None] * N + (n0 + r)[None, :]
+        acc = tl.zeros([BLOCK, BLOCK], dtype=tl.float32)
+        for k in range(0, K, BLOCK):
+            acc += tl.dot(tl.load(pa), tl.load(pb))
+            pa += BLOCK
+            pb += BLOCK * N
+        tl.store(c + (m0 + r)[:, None] * N + (n0 + r)[None, :], acc)
+
+    return dict(gemm=gemm, linear=linear, gemm_ptrs=gemm_ptrs)
 
 
 def cases(torch, k):
@@ -70,6 +86,14 @@ def cases(torch, k):
             a, b = rnd(m, kk), rnd(kk, n)
             c = torch.zeros(m, n)
             ck = k['gemm'][(n // 16, m // 16)](a, b, c, n, K=kk, BLOCK=16)
+            return ck, c, a.float() @ b.float()
+        return run
+
+    def gemm_ptrs(m, n, kk):
+        def run():
+            a, b = rnd(m, kk), rnd(kk, n)
+            c = torch.zeros(m, n)
+            ck = k['gemm_ptrs'][(n // 16, m // 16)](a, b, c, n, K=kk, BLOCK=16)
             return ck, c, a.float() @ b.float()
         return run
 
@@ -92,6 +116,8 @@ def cases(torch, k):
         'linear_one_program': (linear(16, 16, 64), True),
         'linear_four_programs': (linear(16, 64, 64), True),
         'linear_odd_steps_grid': (linear(32, 48, 48), True),
+        # The loop writes memory (its spilled pointer tiles): refused.
+        'gemm_carried_pointers': (gemm_ptrs(32, 32, 48), False),
     }
 
 
@@ -134,7 +160,8 @@ def main():
         print(json.dumps(run_case(args.child, args.profile)))
         return 0
     names = ['gemm_one_step', 'gemm_odd_steps', 'gemm_grid_3x2', 'gemm_five_programs',
-             'linear_one_program', 'linear_four_programs', 'linear_odd_steps_grid']
+             'linear_one_program', 'linear_four_programs', 'linear_odd_steps_grid',
+             'gemm_carried_pointers']
     if args.only:
         names = [n for n in names if n in args.only]
     rows, good = [], True

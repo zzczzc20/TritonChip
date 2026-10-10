@@ -29,9 +29,9 @@
   {
    "dtype": "fp16",
    "family": "gpt2_block",
-   "id": "model.gpt2_block/medium/fp16-d160-h5-b1-s80",
+   "id": "model.gpt2_block/medium/fp16-d160-h5-b1-s64",
    "kind": "model",
-   "sha256": "2add299135ee4cf69e2ce71eb23b7d4f06af2ccd9742cc2cf8b66ae977393b15",
+   "sha256": "2746d763693c5849cb5f3ce10030c23f3244c69df5c622c00bdd4c06e255f0a1",
    "track": [
     "llm",
     "general"
@@ -273,15 +273,15 @@
   {
    "dtype": "fp32",
    "family": "transpose",
-   "id": "op.transpose/medium/fp32-r192-c256",
+   "id": "op.transpose/medium/fp32-r160-c256",
    "kind": "op",
-   "sha256": "7bbb11cd15106cd5b496ccf7ffd7298be24510d395012db66ce5cb39012aaeb4",
+   "sha256": "b3ccc55a669cb014583ecdf3f38887daad9b95a5d230ee9bb979d60fe23429b2",
    "track": [
     "general"
    ]
   }
  ],
  "schema": "archbench-suite/1",
- "sha256": "5eb4b2c878419a515e47491a4e510da9cbf18ccf5e790a735a74d4c77674fc14",
+ "sha256": "f79429252a41ee2f00ee17bdf15da6e8e9dc56a577cb994fb90fa777679f8470",
  "tier": "medium"
 }

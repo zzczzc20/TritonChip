@@ -300,7 +300,7 @@ class Transpose(torch.nn.Module):
         return x.t().contiguous()
 
 
-TR = dict(tiny=(32, 32), small=(128, 256), medium=(192, 256), large=(4096, 4096))
+TR = dict(tiny=(32, 32), small=(128, 256), medium=(160, 256), large=(4096, 4096))
 for tier, (r, c) in TR.items():
     op('transpose', tier, 'fp32', dict(r=r, c=c),
        lambda seed, r=r, c=c: (Transpose(), (randn(gen(seed), (r, c), 'fp32'),)),

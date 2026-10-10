@@ -263,7 +263,7 @@ class GPT2Block(torch.nn.Module):
         return x + self.fc2(F.gelu(self.fc(self.ln2(x)), approximate='tanh'))
 
 
-GPT2 = dict(tiny=(64, 4, 1, 16), small=(128, 4, 1, 64), medium=(160, 5, 1, 80), large=(1024, 16, 1, 512))
+GPT2 = dict(tiny=(64, 4, 1, 16), small=(128, 4, 1, 64), medium=(160, 5, 1, 64), large=(1024, 16, 1, 512))
 for tier, (d, h, bsz, s) in GPT2.items():
     t = bsz * s
     tri = s * (s + 1) // 2

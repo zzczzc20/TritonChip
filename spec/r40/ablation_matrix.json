@@ -6,7 +6,7 @@
    "wp": "R40-01",
    "id": "native-device",
    "layer": "runtime",
-   "switch": "TNCA_DEVICE",
+   "switch": "TNCA_TORCH_DEVICE",
    "values": "cpu migration (A) / native per-kernel staging (B) / native resident (C): A-B to R40-01, B-C to R40-02",
    "single_factor": true,
    "leave_one_out": true

@@ -285,7 +285,7 @@ def plan(S):
                   gates=[gate('R40-10', 'acceptance', 'capability', 'make r40-acceptance')]))
     X = {
         'R40-01.device-time': dict(experiment(
-            'existing', ['TNCA_DEVICE', 'TNCA_RCTX_ROLES', 'platform.software_tree',
+            'existing', ['TNCA_TORCH_DEVICE', 'TNCA_RCTX_ROLES', 'platform.software_tree',
                          'platform.inductor', 'platform.device_id', 'platform.image'],
             'device-cycles-serial-grid', 1.0, baseline='B39',
             note='a capability gate: S_geo >= 1.0 and no unhandled >5% regression; A is B39 '
@@ -332,7 +332,7 @@ def plan(S):
 
 def ablation_matrix():
     M = [
-        ('R40-01', 'native-device', 'runtime', 'TNCA_DEVICE', 'cpu migration (A) / native per-kernel '
+        ('R40-01', 'native-device', 'runtime', 'TNCA_TORCH_DEVICE', 'cpu migration (A) / native per-kernel '
          'staging (B) / native resident (C): A-B to R40-01, B-C to R40-02'),
         ('R40-02', 'residency', 'runtime', 'TNCA_TRANSFER_POLICY', 'per-kernel / resident'),
         ('R40-02', 'submission', 'runtime', 'TNCA_SUBMIT', 'single / batched / replay'),

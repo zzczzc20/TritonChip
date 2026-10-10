@@ -118,8 +118,20 @@ def judge_p2(d, F):
         st, clock = h.get('steady') or {}, t.get('clock_hz')
         if st and clock and dev.get('median'):
             dev_s = dev['median'] / clock
-            if st['request_s'] + 1e-6 < st['upload_s'] + st['run_s'] + st['download_s']:
-                why.append('request < upload + run + download')
+            calls = h.get('calls')
+            if calls:
+                # Per call: the request contains its uploads, runs and downloads.
+                late = [c for c in calls
+                        if c['request_s'] + 1e-6 < c['upload_s'] + c['run_s'] + c['download_s']]
+                if late:
+                    why.append(f'{len(late)} call(s) with request < upload + run + download')
+            else:
+                # Medians alone: each part of a call is at most the call, so
+                # the median request is at least each part's median. (A median
+                # of sums is not a sum of medians, so the sum is not compared.)
+                for part in ('upload_s', 'run_s', 'download_s'):
+                    if st['request_s'] + 1e-6 < st[part]:
+                        why.append(f'median request < median {part[:-2]}')
             if st['run_s'] + 1e-6 < dev_s:
                 why.append(f"host run {st['run_s']} s < device {dev_s:.6f} s")
             if (h.get('first_call_s') or 0) + 1e-3 < st['request_s']:

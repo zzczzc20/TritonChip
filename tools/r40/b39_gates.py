@@ -14,7 +14,9 @@ build host (Icarus, TORCH_PYTHON and TRITON_PYTHON as the Makefile has
 them) and records its exit status, wall time and the pass/total counts its
 output reports; `--freeze` writes the run to spec/r40/b39/gates.json;
 `--check` compares a later run with it: every gate exits 0 and reports the
-same counts. A gate added after the freeze is an amendment.
+same counts. A gate added after the freeze is an amendment. A gate that does
+not exit 0 on B39 itself is frozen with that exit and the reason
+(`why_nonzero`), and must keep both.
 """
 import argparse
 import json
@@ -63,26 +65,20 @@ GATES = [
     ('r39-vrf-fairness', f'{TP} tools/r39/vrf_fairness_test.py', 'B5: VRF read arbitration'),
 ]
 
-SUMMARY = [
-    # "447/447", "84 passed", "PASS (27/27)", "10/10 ok" -- the last such count wins
-    re.compile(r'(\d+)\s*/\s*(\d+)\b'),
-]
-PASS_LINE = re.compile(r'^\s*(PASS|ok|pass|\[PASS\])\b')
-FAIL_LINE = re.compile(r'^\s*(FAIL|fail|\[FAIL\]|ERROR)\b')
+PASS_WORD = re.compile(r'\bPASS\b')
+FAIL_WORD = re.compile(r'\bFAIL\b')
+FRACTION = re.compile(r'\b(\d+)\s*/\s*(\d+)\b')
 
 
 def counts(text):
-    """What the output says it passed: per-test PASS/FAIL lines, and the
-    last n/m summary it prints."""
+    """What the output says it passed: lines naming PASS and FAIL as words
+    (`  t35_tdesc_fblock   PASS   cycles=...`, `O2 PASS streamk/...`), and
+    every n/m the last 40 lines report (`447/447 cases; 135/135 pairs`)."""
     lines = text.splitlines()
-    out = dict(pass_lines=sum(1 for l in lines if PASS_LINE.match(l)),
-               fail_lines=sum(1 for l in lines if FAIL_LINE.match(l)))
-    last = None
-    for l in lines[-40:]:
-        for rx in SUMMARY:
-            for m in rx.finditer(l):
-                last = f'{m.group(1)}/{m.group(2)}'
-    out['summary'] = last
+    out = dict(pass_lines=sum(1 for l in lines if PASS_WORD.search(l)),
+               fail_lines=sum(1 for l in lines if FAIL_WORD.search(l)))
+    out['summary'] = [f'{m.group(1)}/{m.group(2)}' for l in lines[-40:]
+                      for m in FRACTION.finditer(l)] or None
     return out
 
 
@@ -128,7 +124,10 @@ def check(run_path, frozen_path, evidence):
             checks.append(dict(name=f['name'], ok=False, why='not run'))
             continue
         same = all(g[k] == f[k] for k in ('pass_lines', 'fail_lines', 'summary'))
-        ok = g['exit'] == 0 and same
+        # The exit status as frozen: a gate B39 itself does not pass (r38-l0
+        # reports two checks pending by design) is held to the same answer,
+        # not dropped and not counted as passing.
+        ok = g['exit'] == f['exit'] and same
         checks.append(dict(name=f['name'], ok=ok,
                            why='' if ok else f"exit {g['exit']}, counts {g['pass_lines']}/"
                                              f"{g['fail_lines']}/{g['summary']} vs frozen "
@@ -155,17 +154,37 @@ def main(argv=None):
     g.add_argument('--run', action='store_true')
     g.add_argument('--freeze', type=Path, metavar='RUN.json')
     g.add_argument('--check', type=Path, metavar='RUN.json')
+    g.add_argument('--reparse', type=Path, metavar='RUN.json',
+                   help='recompute every gate\'s counts from its saved log, in place')
     ap.add_argument('--only', nargs='*')
     ap.add_argument('--out', type=Path, default=ROOT / 'sim' / 'build' / 'r40' / 'b39_gates_run.json')
     ap.add_argument('--evidence', action='store_true')
+    ap.add_argument('--why', action='append', default=[], metavar='NAME=REASON',
+                    help='with --freeze: why a gate does not exit 0 on B39 (it must, or be explained)')
     args = ap.parse_args(argv)
     if args.run:
         return run(args.only, args.out)
+    if args.reparse:
+        doc = json.loads(args.reparse.read_text())
+        for row in doc['gates']:
+            log = ROOT / 'sim' / 'build' / 'r40' / 'b39_gates' / f"{row['name']}.log"
+            row.update(counts(log.read_text()))
+            print(f"  {row['name']:<20s} exit {row['exit']}  pass {row['pass_lines']:>4d}  "
+                  f"fail {row['fail_lines']:>3d}  {row['summary']}")
+        args.reparse.write_text(json.dumps(doc, indent=1) + '\n')
+        return 0
     if args.freeze:
         doc = json.loads(args.freeze.read_text())
+        why = dict(w.split('=', 1) for w in args.why)
+        for r in doc['gates']:
+            if r['name'] in why:
+                r['why_nonzero'] = why[r['name']]
         bad = [r['name'] for r in doc['gates'] if r['exit'] != 0]
+        for r in doc['gates']:
+            if r['exit'] != 0 and not r.get('why_nonzero'):
+                sys.exit(f"{r['name']} exits {r['exit']}: say why (why_nonzero) before freezing it")
         if bad:
-            sys.exit(f'not freezing a run with failing gates: {bad}')
+            print(f'frozen with a non-zero exit, as B39 has it: {bad}')
         FROZEN.parent.mkdir(parents=True, exist_ok=True)
         FROZEN.write_text(json.dumps(doc, indent=1) + '\n')
         print(f'{len(doc["gates"])} gates -> {FROZEN}')

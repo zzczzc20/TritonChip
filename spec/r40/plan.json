@@ -396,7 +396,7 @@
   "R40-01.device-time": {
    "subset": "spec/r40/suites/existing.json",
    "vary": [
-    "TNCA_DEVICE",
+    "TNCA_TORCH_DEVICE",
     "TNCA_RCTX_ROLES",
     "platform.software_tree",
     "platform.inductor",

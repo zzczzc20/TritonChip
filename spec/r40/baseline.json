@@ -259,6 +259,27 @@
    "refs": [
     "https://github.com/zzczzc20/TritonChip/pull/6"
    ]
+  },
+  {
+   "id": "B39-OI-6",
+   "title": "CPU-path kernels reload a stored intermediate through the transfer engine with no fence",
+   "status": "open (found in R40-01)",
+   "owner": "R40-03 (compiler: order a store before a later transfer read of the same buffer)",
+   "blocks": [
+    "a correctness argument for B39 kernels that store and reload within one launch"
+   ],
+   "does_not_block": [
+    "the B39 numbers (every point passes, on the board and in simulation)"
+   ],
+   "evidence": [
+    "Inductor emits tl.debug_barrier() before reading back a buffer stored in a reduction loop only for non-CPU devices (torch/_inductor/codegen/triton.py, load()); on CPU tensors it does not",
+    "op.softmax/tiny fp16 on the CPU path stores exp(x - max) and reloads it through a tensor descriptor (the transfer engine) in the next loop, with no fence between",
+    "the ISA does not order an LSU store and a later transfer read of the same bytes (tnca_cc.frontend _op_ttg_barrier); the reload comes many instructions later, which is why it has always been right",
+    "on the tnca device the same kernel gets the barrier, which the compiler lowers to a fence (+20 cycles on that point)"
+   ],
+   "refs": [
+    "doc/r40_tnca_device.md sec 3"
+   ]
   }
  ],
  "b4": {

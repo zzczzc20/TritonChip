@@ -661,6 +661,28 @@ R39-02a 的改动都在两个开关之下，关闭时制品逐字节相同（447
   - linear 1.065，mlp 1.02，gemv 0.97，几何平均约 1.01。
   - 不值得为它重新链接镜像，已回退。
 
+进展（2026-10-10 下午，板上）：
+
+- **镜像 u280_r39f**（v5，不含 MTX_ABUF 与 RCTX_SWITCH=2）：
+  - 时序与时钟：100 MHz，WNS +0.101 ns，实测 100.002 / 99.947 MHz。
+  - B1 通过；tiny 27/27、small 25/25、medium 25/25，Mode A 开、关都正确。
+  - **B4 27/27 逐拍相同。**
+  - v5 相对 v4 终版：77 点 S_geo 1.187（总周期 0.745×），没有点变慢。相对冻结基线 5.119。
+- **Mode A 的消融**：
+  - 板上 r39f：77 点 S_geo 0.997。只有单 program 的 matmul tiny 快 1.084；mlp、matmul small/medium、linear tiny 慢 2–5 %。
+  - 仿真（tiny，v5 终版）：1.006。
+  - 按 R39-11 的规则记为「无显著贡献」，**默认关**。
+  - 原因：GEMM 受矩阵单元约束，Mode B 已经让两个 program 的传输与 MMA 互相掩盖；Mode A 两个 role 重复的地址计算在单发射核上占了发射槽。
+  - Mode A 在 program 少、或 producer 重（gemv）时有收益，作为经测试的选项保留。
+- **验收 3（GEMM 类 S_geo ≥ 1.2，相对 R39-05 终版）由 v5 整包达成**：
+  - 仿真 tiny 上 GEMM 类 1.91（9 点），全套件 1.287，没有点变慢。
+  - 贡献来自转置传输、epilogue 改造、`m.zero`、`MTX_ABUF`（MMA 551 → 311 拍）和 `RCTX_SWITCH=2`，**不是来自 Mode A**。
+- **Mode A 的正确性修复**：
+  - bmm 模板把指针 tile 经 scratch 在循环里携带，Mode A 在 medium 档上算错。
+  - 现在循环前的写由两个 role 各做一份；一个 role 可能读到另一个 role 写的内存时不拆分。
+  - `rctx_roles_tests` 加了这种情形的用例。
+- **终版镜像 u280_r39h**（v5，含 `MTX_ABUF`、`RCTX_SWITCH=2`）在链接中；板上结果出来后补上。
+
 ### R39-13：评测负载适度扩大（ArchBench medium 档）
 
 交付：

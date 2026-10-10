@@ -106,16 +106,84 @@ v2 → v4 一步在板上是 S_geo 1.519、总周期 0.669×。
 - R39-02b 宽块（多寄存器 1-D tile）：导入器明确拒绝 64 元素的块。
 - R39-03 软件流水、R39-04 bank 感知分配。
 - R39-09 分支预测：taken 分支的代价只占约 0.4 %，按数据不做。
-- R39-10 矩阵单元加宽：一个 K16 MMA 约 256 拍，是 GEMM 点剩下的主要瓶颈之一。
+- R39-10 矩阵单元加宽：MAC 阵列仍是每拍一行。
+  - v4 上一个 FP16 K16 的 MMA 实测 551 拍，不是早先估的约 256 拍：每个 MAC 都在等一次读 A 元素的 VRF 访问。
+  - v5 的 `MTX_ABUF` 把它降到 311 拍（§8）。
 - per-context issued counter 的硬件导出：仿真里用 `+ctxtrace`。
 
 ## 7. 代价
 
-| | v2（u280_r39c） | v4（u280_r39d） |
-|---|---|---|
-| CLB LUT（含平台 shell） | 314 851 | 333 236（+5.8 %） |
-| 寄存器 | 216 965 | 226 423（+4.4 %） |
-| BRAM tile | 351 | 367 |
-| 路由后 WNS（100 MHz） | +0.073 ns | +0.087 ns |
+| | v2（u280_r39c） | v4（u280_r39d） | v5（u280_r39f） |
+|---|---|---|---|
+| CLB LUT（含平台 shell） | 314 851 | 333 236（+5.8 %） | 336 181（+0.9 %） |
+| 寄存器 | 216 965 | 226 423（+4.4 %） | 227 541（+0.5 %） |
+| BRAM tile | 351 | 367 | 367 |
+| 路由后 WNS（100 MHz） | +0.073 ns | +0.087 ns | +0.101 ns |
+
+v5 的 RPAIR 与转置传输几乎不占资源。
 
 OOC 综合（只算 `tnca_fpga_top`，10 ns）：v4 比 v2 LUT +10 %、寄存器 +19 %，最差路径相同（FPU FMA 的操作数选择）。
+
+## 8. R39-12、R39-13：Mode A、v5 与 medium 档
+
+### 8.1 做了什么
+
+- **Mode A**（`rctx_roles`，默认关）：在导入器的 IR 上跑上游 warp specialization 的三步（`tnca_cc.partition.specialize_loop`）：
+  1. PartitionScheduling：分区。
+  2. aref：2 级 window 环，每级一对 full/empty barrier。
+  3. PartitionLoops：每个 role 一份循环。
+
+  一个 program 变成 producer（传输）和 consumer（MMA 与 epilogue），跑在一对 Role Context 上（`RPAIR`）；各对再按 Mode B 跑一行 grid。
+- **v5 的硬件**（profile core-vrf-sync-v5）：
+  - `RPAIR`。
+  - RPAIR 下精确的 `mb.arrive`。
+  - 转置传输 `HAS_TENSOR_XPOSE`。
+  - `MTX_ABUF`：MMA 先把 A 片段读进缓冲，FP16 K16 从 551 拍降到 311 拍。
+  - `RCTX_SWITCH=2`：等矩阵单元或传输引擎的 context 也让路。
+- **编译器**：
+  - linear 的 B（W 转置）用一次转置传输，代替 16 次 gather 加经 scratch 的重排。
+  - masked 连续行的 load/store 每行一条带谓词的访存。
+  - 只有一个使用者的 tile 延迟到使用处按行计算，GEMM epilogue 不再经过 scratch 和两个 accumulator。
+  - 零初始化的 accumulator 用一条 `m.zero`。
+- **缺陷**：
+  - B6：程序自己构造的 barrier token 在 `mb.wait`/`mb.test` 上没有按 slice 改写，是 R39-05 留下的。
+  - Mode A 自己的一个错：bmm 模板把指针 tile 在循环里经 scratch 携带，循环前的写原来只放在 consumer 里，结果错。
+    - 现在循环前的写两个 role 各做一份。
+    - 一个 role 可能读到另一个 role 写的内存时，不拆分这个循环。
+- **medium 档**（R39-13）：25 点，每个 kernel 的参数都在 384 KiB heap 以内，规模是 small 的 2–8 倍。
+
+### 8.2 板上结果（镜像 u280_r39f：v5，不含 MTX_ABUF 与 RCTX_SWITCH=2）
+
+- 时序与时钟：100 MHz，路由后 ap_clk WNS +0.101 ns；实测 100.002 / 99.947 MHz；xclbin sha256 `7631515f9cde…`。
+- B1 通过；tiny 27/27、small 25/25、medium 25/25。
+- **B4：27/27 逐拍相同。**
+
+| 比较（板上，Mode A 关） | tiny | small | medium | 合计 77 点 |
+|---|---|---|---|---|
+| v4 终版 / 冻结基线 | 4.304 | 4.325 | 4.309 | 4.313 |
+| v5（r39f）/ v4 终版 | 1.193 | 1.195 | 1.173 | **1.187**（总周期 0.745×） |
+| v5（r39f）/ 冻结基线 | 5.135 | 5.166 | 5.056 | **5.119** |
+
+没有点比 v4 终版慢。
+
+### 8.3 Mode A 的消融
+
+- **板上**（r39f，开 / 关 `rctx_roles`）：77 点都正确，S_geo **0.997**。
+  - 单 program 的 matmul tiny 快 1.084。
+  - 已被 Mode B 掩盖的 GEMM 变慢，最多 5 %：mlp 0.956，matmul small 0.953，linear tiny 0.955。
+- **仿真**（tiny，v5 终版软件与硬件）：S_geo **1.006**。
+  - 变快的：gemv 1.112，matmul 1.072，llama_decode 1.047。
+  - 变慢的：mlp 0.966，linear 0.980，gpt2_block 0.988。
+- **结论**：按 R39-11 的规则，Mode A 记为「无显著贡献」，默认关。
+  - 原因 1：这些 GEMM 受矩阵单元约束。Mode B 已让两个 program 的传输与 MMA 互相掩盖。
+  - 原因 2：Mode A 让两个 role 各算一遍地址，在单发射的核上多占发射槽。
+  - Mode A 只在 program 少（每行 grid 一个）或 producer 重（gemv 的 A 行要重排）时有收益。
+  - 它作为功能完整、经测试的选项保留。
+
+### 8.4 终版镜像 u280_r39h（v5，含 MTX_ABUF 与 RCTX_SWITCH=2）
+
+仿真（tiny，相对 v4 终版，Mode A 关）：
+- 全套件 S_geo 1.287，没有点变慢。
+- GEMM 类 1.91：linear 3.01，mlp 3.41，gemv 2.71，gpt2_block 2.23，llama_decode 1.70，llama_prefill 1.62，matmul 1.39，bmm 1.36。
+
+板上结果待镜像链接完成后补上。

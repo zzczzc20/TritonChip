@@ -631,6 +631,36 @@ R39-02a 的改动都在两个开关之下，关闭时制品逐字节相同（447
 3. 消融（RTL 仿真 tiny + 新的 medium 档）：GEMM 类点（linear、gemv、matmul、bmm、mlp、gpt2_block、llama_*）的 S_geo ≥ **1.2×**（相对 R39-05 终版），全套件不慢于终版。
 4. R5：100 MHz 收敛，板上终版确认，B4 逐点等周期。
 
+进展（2026-10-10，RTL 仿真；板上镜像 u280_r39f 在链接中）：
+
+- **硬件**（f9297a8）：
+  - `RPAIR`，以及 RPAIR 下精确的 `mb.arrive`。
+  - 缺陷 B6：software 构造的 barrier token 在 `mb.wait`/`mb.test` 上没有按 slice 改写。B6 的表现和发现经过见下面「定向测试」一条。
+  - profile core-vrf-sync-v5。
+- **编译器**（644482e）：
+  - `tnca_cc.partition.specialize_loop`：在导入器的 IR 上跑上游的三步（PartitionScheduling → aref → PartitionLoops）。
+  - `rctx_spmd` 的 `pair` 模式。
+  - `codegen.emit_roles`。
+  - B 操作数的转置传输。
+  - masked 连续行的 epilogue。
+  - 延迟到唯一使用者处计算的 tile。
+- **定向测试**：
+  - `t39_pair`（core 级，4 context、2 对）在快、慢两种存储器上通过。
+  - 在乱序存储器上，它首先暴露了 B6：pair 1 的 consumer 在 pair 0 的 barrier 上醒来，提前做了 MMA。
+  - `tools/r39/rctx_roles_tests.py`：
+    - v5：6 个多步 GEMM 循环都被特化，结果正确，比只用 Mode B 快 1.008–1.132×。
+    - 单步的 GEMM 被 Triton 折掉了循环，按预期被拒绝。
+    - v4：全部被拒绝，结果正确。
+- **回归**：core-r39sw5 84/84，R3.7 447/447，torch 24/24，plugin identity O0/O1/O2 149/149，rctx_spmd_tests v4/v5 10/10。
+- **消融（tiny，RTL 仿真，相对 v4 终版）**：
+  - v5 软硬件包（转置传输 + epilogue）：GEMM 类 S_geo 1.53。各点：linear 1.99、gemv 2.22、mlp 2.53、gpt2_block 1.89、llama_decode 1.57、llama_prefill 1.44。全套件 1.17，没有点变慢。
+  - Mode A 再叠加在上面时，在 tiny 上不划算：linear 0.955、gemv 0.948、mlp 0.969、llama_decode 0.974，只有 matmul 1.084。
+  - 原因：tiny 的 GEMM 只有 2–4 个 K 步。Mode B 的两个 program 已经互相掩盖了传输与 MMA，而 Mode A 让两个 role 各算一遍地址，在单发射的核上多占了发射槽。
+  - Mode A 的价值要在 K 步多的 medium 档和板上量。
+- **试过、未采用**：`ACC_RD2`，让 `a.vread` 走累加器文件的第二读口，不必等别的 context 的 MMA。
+  - linear 1.065，mlp 1.02，gemv 0.97，几何平均约 1.01。
+  - 不值得为它重新链接镜像，已回退。
+
 ### R39-13：评测负载适度扩大（ArchBench medium 档）
 
 交付：

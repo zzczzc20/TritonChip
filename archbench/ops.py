@@ -69,10 +69,10 @@ def _elementwise(family, module, n_inputs, fp, sfu, sizes, dtype='fp16', track=(
            track=track)
 
 
-_elementwise('add', Add, 2, 1, 0, dict(tiny=1000, small=16384, large=1 << 24))
-_elementwise('silu', SiLU, 1, 2, 1, dict(tiny=256, small=16384, large=1 << 24))
-_elementwise('gelu_tanh', GeLUTanh, 1, 4, 1, dict(tiny=256, small=16384, large=1 << 24))
-_elementwise('swiglu', SwiGLU, 2, 3, 1, dict(tiny=256, small=16384, large=1 << 24))
+_elementwise('add', Add, 2, 1, 0, dict(tiny=1000, small=16384, medium=49152, large=1 << 24))
+_elementwise('silu', SiLU, 1, 2, 1, dict(tiny=256, small=16384, medium=65536, large=1 << 24))
+_elementwise('gelu_tanh', GeLUTanh, 1, 4, 1, dict(tiny=256, small=16384, medium=65536, large=1 << 24))
+_elementwise('swiglu', SwiGLU, 2, 3, 1, dict(tiny=256, small=16384, medium=49152, large=1 << 24))
 _elementwise('add', Add, 2, 1, 0, dict(tiny=256), dtype='fp32', track=('general',))
 
 
@@ -110,7 +110,7 @@ class Argmax(torch.nn.Module):
         return torch.argmax(x, dim=-1)
 
 
-ROWS = dict(tiny=(4, 64), small=(64, 512), large=(4096, 4096))
+ROWS = dict(tiny=(4, 64), small=(64, 512), medium=(80, 512), large=(4096, 4096))
 for tier, (r, c) in ROWS.items():
     n = r * c
     op('softmax', tier, 'fp16', dict(r=r, c=c),
@@ -121,7 +121,7 @@ op('softmax', 'tiny', 'fp32', dict(r=3, c=37),
    Demand(fp_ops=3 * 111, sfu_ops=111, read_bytes=111 * 4, write_bytes=111 * 4),
    track=('general',), note='a row length that is not a multiple of the vector length')
 
-NORM_ROWS = dict(tiny=(4, 64), small=(64, 256), large=(512, 2048))
+NORM_ROWS = dict(tiny=(4, 64), small=(64, 256), medium=(128, 512), large=(512, 2048))
 for tier, (r, d) in NORM_ROWS.items():
     n = r * d
 
@@ -138,7 +138,7 @@ for tier, (r, d) in NORM_ROWS.items():
        Demand(fp_ops=4 * n, sfu_ops=r, read_bytes=(n + 2 * d) * 2, write_bytes=n * 2),
        track=('llm', 'general'))
 
-ARGMAX = dict(tiny=(2, 256), small=(8, 2048), large=(64, 128256))
+ARGMAX = dict(tiny=(2, 256), small=(8, 2048), medium=(32, 4096), large=(64, 128256))
 for tier, (r, v) in ARGMAX.items():
     op('argmax', tier, 'fp16', dict(r=r, v=v),
        lambda seed, r=r, v=v: (Argmax(), (randn(gen(seed), (r, v), 'fp16', 3.0),)),
@@ -169,7 +169,7 @@ def _linear(k, n, dtype, g, bias):
     return lin.to(getattr(torch, TORCH_DTYPE[dtype]))
 
 
-MM = dict(tiny=(16, 32, 16), small=(64, 128, 128), large=(2048, 2048, 2048))
+MM = dict(tiny=(16, 32, 16), small=(64, 128, 128), medium=(128, 192, 128), large=(2048, 2048, 2048))
 for dtype in ('fp16', 'fp32'):
     for tier, (m, k, n) in MM.items():
         b = B[dtype]
@@ -179,7 +179,7 @@ for dtype in ('fp16', 'fp32'):
            Demand(macs=m * k * n, read_bytes=(m * k + k * n) * b, write_bytes=m * n * b),
            track=('llm', 'general') if dtype == 'fp16' else ('general',))
 
-LINEAR = dict(tiny=(16, 64, 64), small=(64, 256, 256), large=(512, 2048, 8192))
+LINEAR = dict(tiny=(16, 64, 64), small=(64, 256, 256), medium=(128, 320, 256), large=(512, 2048, 8192))
 for tier, (m, k, n) in LINEAR.items():
     def mk(seed, m=m, k=k, n=n):
         g = gen(seed)
@@ -187,7 +187,7 @@ for tier, (m, k, n) in LINEAR.items():
     op('linear', tier, 'fp16', dict(m=m, k=k, n=n), mk,
        Demand(macs=m * k * n, fp_ops=m * n, read_bytes=(m * k + k * n + n) * 2, write_bytes=m * n * 2))
 
-GEMV = dict(tiny=(64, 64), small=(256, 512), large=(2048, 8192))
+GEMV = dict(tiny=(64, 64), small=(256, 512), medium=(320, 448), large=(2048, 8192))
 for tier, (k, n) in GEMV.items():
     def mk(seed, k=k, n=n):
         g = gen(seed)
@@ -196,7 +196,7 @@ for tier, (k, n) in GEMV.items():
        Demand(macs=k * n, read_bytes=(k + k * n) * 2, write_bytes=n * 2),
        note='decode-time projection: one token, weight-bandwidth bound')
 
-BMMS = dict(tiny=(2, 16, 16, 16), small=(8, 64, 32, 64), large=(32, 512, 64, 512))
+BMMS = dict(tiny=(2, 16, 16, 16), small=(8, 64, 32, 64), medium=(16, 64, 32, 64), large=(32, 512, 64, 512))
 for tier, (bt, m, k, n) in BMMS.items():
     op('bmm', tier, 'fp16', dict(b=bt, m=m, k=k, n=n),
        lambda seed, bt=bt, m=m, k=k, n=n: (
@@ -218,7 +218,7 @@ class DecodeAttention(torch.nn.Module):
         return F.scaled_dot_product_attention(q, k, v)
 
 
-PREFILL = dict(tiny=(1, 2, 16, 16), small=(1, 4, 64, 32), large=(1, 32, 512, 64))
+PREFILL = dict(tiny=(1, 2, 16, 16), small=(1, 4, 64, 32), medium=(1, 4, 96, 32), large=(1, 32, 512, 64))
 for tier, (b, h, s, d) in PREFILL.items():
     tri = s * (s + 1) // 2
     op('attention_prefill', tier, 'fp16', dict(b=b, h=h, s=s, d=d),
@@ -228,7 +228,7 @@ for tier, (b, h, s, d) in PREFILL.items():
               read_bytes=3 * b * h * s * d * 2, write_bytes=b * h * s * d * 2),
        note='causal: only the s(s+1)/2 unmasked scores are work')
 
-DECODE = dict(tiny=(1, 2, 16, 16), small=(1, 4, 256, 32), large=(1, 32, 2048, 64))
+DECODE = dict(tiny=(1, 2, 16, 16), small=(1, 4, 256, 32), medium=(1, 8, 256, 32), large=(1, 32, 2048, 64))
 for tier, (b, h, l, d) in DECODE.items():
     op('attention_decode', tier, 'fp16', dict(b=b, h=h, l=l, d=d),
        lambda seed, b=b, h=h, l=l, d=d: (DecodeAttention(), (
@@ -263,7 +263,7 @@ def rope_tables(s, d, dtype, offset=0, theta=10000.0):
     return emb.cos().to(dt), emb.sin().to(dt)
 
 
-ROPE = dict(tiny=(1, 2, 16, 16), small=(1, 4, 64, 32), large=(1, 32, 512, 64))
+ROPE = dict(tiny=(1, 2, 16, 16), small=(1, 4, 64, 32), medium=(1, 8, 128, 32), large=(1, 32, 512, 64))
 for tier, (b, h, s, d) in ROPE.items():
     n = b * h * s * d
 
@@ -283,7 +283,7 @@ class Embedding(torch.nn.Module):
         return F.embedding(ids, self.weight)
 
 
-EMB = dict(tiny=(256, 64, 16), small=(1024, 128, 64), large=(128256, 2048, 512))
+EMB = dict(tiny=(256, 64, 16), small=(1024, 128, 64), medium=(1024, 128, 256), large=(128256, 2048, 512))
 for tier, (v, d, t) in EMB.items():
     def mk(seed, v=v, d=d, t=t):
         g = gen(seed)
@@ -300,7 +300,7 @@ class Transpose(torch.nn.Module):
         return x.t().contiguous()
 
 
-TR = dict(tiny=(32, 32), small=(128, 256), large=(4096, 4096))
+TR = dict(tiny=(32, 32), small=(128, 256), medium=(192, 256), large=(4096, 4096))
 for tier, (r, c) in TR.items():
     op('transpose', tier, 'fp32', dict(r=r, c=c),
        lambda seed, r=r, c=c: (Transpose(), (randn(gen(seed), (r, c), 'fp32'),)),
@@ -312,7 +312,7 @@ class Cumsum(torch.nn.Module):
         return torch.cumsum(x, dim=-1)
 
 
-for tier, (r, c) in dict(tiny=(4, 64), small=(64, 256)).items():
+for tier, (r, c) in dict(tiny=(4, 64), small=(64, 256), medium=(128, 256)).items():
     op('cumsum', tier, 'fp32', dict(r=r, c=c),
        lambda seed, r=r, c=c: (Cumsum(), (randn(gen(seed), (r, c), 'fp32'),)),
        Demand(fp_ops=r * c, read_bytes=r * c * 4, write_bytes=r * c * 4), tol=1e-3,
@@ -330,7 +330,7 @@ class Conv(torch.nn.Module):
         return self.conv(x)
 
 
-CONV = dict(tiny=(1, 4, 8, 8, 8), small=(1, 16, 16, 16, 16), large=(8, 64, 56, 56, 64))
+CONV = dict(tiny=(1, 4, 8, 8, 8), small=(1, 16, 16, 16, 16), medium=(1, 24, 16, 16, 24), large=(8, 64, 56, 56, 64))
 for tier, (nb, cin, h, w, cout) in CONV.items():
     def mk(seed, nb=nb, cin=cin, h=h, w=w, cout=cout):
         g = gen(seed)

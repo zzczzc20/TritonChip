@@ -71,8 +71,12 @@ _R39_SW = _R39 + ['-P', 'tnca_device.RCTX_SWITCH=1', '-P', 'tnca_device.LSU_INFL
 # core-vrf-sync-v4: and four Role Contexts of 64 vector registers each.
 _FOUR = ['-P', 'tnca_device.NUM_RCTX=4', '-P', 'tnca_device.RCTX_W=2',
          '-P', 'tnca_device.PHYS_W=8']
-# core-vrf-sync-v5: and the transposed transfer and Role Context pairs (R39-12).
-_V5 = ['-P', 'tnca_device.HAS_TENSOR_XPOSE=1', '-P', 'tnca_device.RPAIR=1']
+# core-vrf-sync-v5: and the transposed transfer and Role Context pairs, and a
+# context gives way to another while it waits for the matrix unit or the
+# transfer engine too (RCTX_SWITCH=2) (R39-12).
+_V5 = ['-P', 'tnca_device.HAS_TENSOR_XPOSE=1', '-P', 'tnca_device.RPAIR=1',
+       '-P', 'tnca_device.MTX_ABUF=1']
+_R39_SW5 = [a.replace('RCTX_SWITCH=1', 'RCTX_SWITCH=2') for a in _R39_SW]
 
 BENCH_PARAMS = {
     'core-vrf-sync-v1': _BANKED,
@@ -84,8 +88,8 @@ BENCH_PARAMS = {
     'core-vrf-sync-v3/slow': _BANKED + _R39_SW + _SLOW,
     'core-vrf-sync-v4': _BANKED + _R39_SW + _FOUR,
     'core-vrf-sync-v4/slow': _BANKED + _R39_SW + _FOUR + _SLOW,
-    'core-vrf-sync-v5': _BANKED + _R39_SW + _FOUR + _V5,
-    'core-vrf-sync-v5/slow': _BANKED + _R39_SW + _FOUR + _V5 + _SLOW,
+    'core-vrf-sync-v5': _BANKED + _R39_SW5 + _FOUR + _V5,
+    'core-vrf-sync-v5/slow': _BANKED + _R39_SW5 + _FOUR + _V5 + _SLOW,
     'core-xpose-v1': ['-P', 'tnca_device.HAS_TENSOR_XPOSE=1'],
     'core-xpose-v1/slow': ['-P', 'tnca_device.HAS_TENSOR_XPOSE=1'] + _SLOW,
 }
@@ -99,7 +103,7 @@ BENCH_PARAMS = {
 # overrides are part of the cache key, and archbench records them with
 # `--set` like any other knob.
 RTL_SWITCHES = ('VRF_BYPASS', 'FE_NOBUBBLE', 'VRF_PREFETCH', 'RCTX_SWITCH', 'LSU_INFLIGHT',
-                'FPU_OVERLAP')
+                'FPU_OVERLAP', 'MTX_ABUF')
 
 
 def rtl_overrides():

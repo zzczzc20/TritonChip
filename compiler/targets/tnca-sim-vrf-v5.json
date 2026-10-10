@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "name": "tnca-sim-vrf-v5",
-  "description": "core-vrf-sync-v4 with the transfer engine's transposed write (HAS_TENSOR_XPOSE, R38 S1-07) and Role Context pairs (RPAIR): a launch can make contexts 2k and 2k+1 one program's producer and consumer, sharing that program's vector registers and its slice of the per-core resources (R39-12, Mode A). A GEMM's B operand, W transposed, arrives by one transposed transfer instead of sixteen gathers and a repack. v1-v4 artifacts run unchanged. Simulation only until a board image is built with it.",
+  "description": "core-vrf-sync-v4 with the transfer engine's transposed write (HAS_TENSOR_XPOSE, R38 S1-07) and Role Context pairs (RPAIR): a launch can make contexts 2k and 2k+1 one program's producer and consumer, sharing that program's vector registers and its slice of the per-core resources (R39-12, Mode A). A GEMM's B operand, W transposed, arrives by one transposed transfer instead of sixteen gathers and a repack. Two timing switches on top: the matrix unit reads an MMA's A fragment into a buffer before its sweep (MTX_ABUF; an FP16 K16 command 551 -> 311 cycles), and a context waiting for the matrix unit or the transfer engine gives way to another (RCTX_SWITCH=2). v1-v4 artifacts run unchanged.",
   "note": "Generated file -- do not edit. Run `make target`. Derived from rtl/core/tnca_core.v, rtl/tnca_top.v and isa/tnca-isa-v0.1.json; see compiler_overview.md sec 15 C0.",
   "isa_version": "0.1",
   "num_rctx": 4,

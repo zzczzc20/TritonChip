@@ -243,7 +243,7 @@
         "core-vrf-sync-v3",
         "core-vrf-sync-v4"
       ],
-      "description": "core-vrf-sync-v4 with the transfer engine's transposed write (HAS_TENSOR_XPOSE, R38 S1-07) and Role Context pairs (RPAIR): a launch can make contexts 2k and 2k+1 one program's producer and consumer, sharing that program's vector registers and its slice of the per-core resources (R39-12, Mode A). A GEMM's B operand, W transposed, arrives by one transposed transfer instead of sixteen gathers and a repack. v1-v4 artifacts run unchanged. Simulation only until a board image is built with it.",
+      "description": "core-vrf-sync-v4 with the transfer engine's transposed write (HAS_TENSOR_XPOSE, R38 S1-07) and Role Context pairs (RPAIR): a launch can make contexts 2k and 2k+1 one program's producer and consumer, sharing that program's vector registers and its slice of the per-core resources (R39-12, Mode A). A GEMM's B operand, W transposed, arrives by one transposed transfer instead of sixteen gathers and a repack. Two timing switches on top: the matrix unit reads an MMA's A fragment into a buffer before its sweep (MTX_ABUF; an FP16 K16 command 551 -> 311 cycles), and a context waiting for the matrix unit or the transfer engine gives way to another (RCTX_SWITCH=2). v1-v4 artifacts run unchanged.",
       "num_cores": 1,
       "topology": "single",
       "elaboration": {
@@ -270,9 +270,10 @@
           "VRF_BYPASS": 1,
           "FE_NOBUBBLE": 1,
           "VRF_PREFETCH": 1,
-          "RCTX_SWITCH": 1,
+          "RCTX_SWITCH": 2,
           "LSU_INFLIGHT": 2,
-          "FPU_OVERLAP": 1
+          "FPU_OVERLAP": 1,
+          "MTX_ABUF": 1
         }
       },
       "platform_binding": {

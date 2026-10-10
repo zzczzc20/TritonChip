@@ -593,7 +593,13 @@ core-r39sw4: $(patsubst %,$(BUILD)/%.hex,$(R39SW4_PROGS)) $(BUILD)/tb_core_r39sw
 	 done
 
 # R39-12: and the transposed transfer and Role Context pairs (core-vrf-sync-v5).
-R39_SW5 := $(R39_SW4) -P tb_tnca_core.HAS_TENSOR_XPOSE=1 -P tb_tnca_core.RPAIR=1
+# RCTX_SWITCH=2: a context also gives way when it waits for the matrix unit
+# or the transfer engine. MTX_ABUF: the matrix unit buffers an MMA's A.
+R39_SW5 := $(R39_HW) -P tb_tnca_core.RCTX_SWITCH=2 -P tb_tnca_core.LSU_INFLIGHT=2 \
+           -P tb_tnca_core.FPU_OVERLAP=1 -P tb_tnca_core.RSLICE=1 \
+           -P tb_tnca_core.NUM_RCTX=4 -P tb_tnca_core.RCTX_W=2 -P tb_tnca_core.PHYS_W=8 \
+           -P tb_tnca_core.HAS_TENSOR_XPOSE=1 -P tb_tnca_core.RPAIR=1 \
+           -P tb_tnca_core.MTX_ABUF=1
 $(BUILD)/tb_core_r39sw5.vvp: $(RTL_DEPS) $(TB)/core/tb_tnca_core.v \
                              $(TB)/common/tnca_mem_model.v | dirs
 	$(IVERILOG) $(IVFLAGS) -y $(RTL)/core -y $(RTL)/common -y $(RTL)/gen -y $(TB)/common \

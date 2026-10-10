@@ -61,6 +61,7 @@ module tnca_device;
     parameter FPU_OVERLAP    = 0;
     parameter RSLICE         = 0;
     parameter RPAIR          = 0;
+    parameter MTX_ABUF       = 0;
     // 1 elaborates the transposed tensor-DMA write (profile core-xpose-v1).
     parameter HAS_TENSOR_XPOSE = 0;
 
@@ -147,7 +148,7 @@ module tnca_device;
         .VRF_BYPASS(VRF_BYPASS), .FE_NOBUBBLE(FE_NOBUBBLE),
         .VRF_PREFETCH(VRF_PREFETCH), .RCTX_SWITCH(RCTX_SWITCH),
         .LSU_INFLIGHT(LSU_INFLIGHT), .FPU_OVERLAP(FPU_OVERLAP), .RSLICE(RSLICE),
-        .RPAIR(RPAIR),
+        .RPAIR(RPAIR), .MTX_ABUF(MTX_ABUF),
         .HAS_TENSOR_XPOSE(HAS_TENSOR_XPOSE)
     ) dut (
         .clk(clk), .rst_n(rst_n),

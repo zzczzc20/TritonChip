@@ -74,8 +74,14 @@ module tnca_core #(
     //               anything, its context refetches it once a writeback to
     //               that context could have cleared the hazard, and the
     //               other context issues meanwhile. A stalled context no
-    //               longer stalls the core.
+    //               longer stalls the core. 2 (R39-12): also when it waits
+    //               for the matrix unit or the transfer engine to be free,
+    //               and it refetches once one goes idle.
     parameter RCTX_SWITCH    = 0,
+    //   MTX_ABUF (R39-12) the matrix unit reads an MMA's A fragment into a
+    //               buffer first (tnca_matrix ABUF) instead of one register
+    //               read per MAC.
+    parameter MTX_ABUF       = 0,
     //   LSU_INFLIGHT (R39-08) 2: two load/store units behind the one port
     //               (tnca_lsu_pair), so an access starts while the one ahead
     //               waits for memory; atomics and fences see one access at
@@ -1330,7 +1336,8 @@ module tnca_core #(
 
     tnca_matrix #(
         .VLEN(VLEN), .ELEN(ELEN), .ACC_N(ACC_N), .ACC_W(ACC_W),
-        .ROWS(ACC_ROWS), .ROW_W(ACC_ROW_W), .BAR_W(BAR_W), .FMA_LAT(FP_LAT)
+        .ROWS(ACC_ROWS), .ROW_W(ACC_ROW_W), .BAR_W(BAR_W), .FMA_LAT(FP_LAT),
+        .ABUF(MTX_ABUF)
     ) u_mtx (
         .clk(clk), .rst_n(rst_n), .flush(launch_valid),
         .cmd_valid(mtx_cmd_valid), .cmd_op(mtx_cmd_op),
@@ -1980,6 +1987,18 @@ module tnca_core #(
     wire stall_raw = stall_other | vrf_stall | vrf_wb_freeze;
 
     reg [63:0] perf_rctx_switch;     // cycles in which R's instruction gave way
+    // RCTX_SWITCH=2 (R39-12): also give way when R's instruction waits for the
+    // matrix unit or the transfer engine, which can be busy for hundreds of
+    // cycles with ANOTHER context's command. Held in R, it held every context
+    // behind it: a consumer waiting for the other pair's MMA stopped the
+    // producers issuing their transfers. The context wakes when an engine
+    // goes idle (eng_freed) or as before.
+    reg  mtx_busy_q, txf_busy_q;
+    wire eng_freed = (RCTX_SWITCH >= 2) && ((mtx_busy_q && !mtx_busy) || (txf_busy_q && !txf_busy));
+    always @(posedge clk) begin
+        mtx_busy_q <= rst_n && mtx_busy;
+        txf_busy_q <= rst_n && txf_busy;
+    end
     // A parked context wakes on a writeback to one of its registers (every
     // register write passes through W) or an accumulator's completion.
     reg [NUM_RCTX-1:0] rctx_wake;
@@ -1988,7 +2007,7 @@ module tnca_core #(
         for (wk_i = 0; wk_i < NUM_RCTX; wk_i = wk_i + 1)
             rctx_wake[wk_i] = (w_en && (w_rctx == wk_i[RCTX_W-1:0])
                                && !((w_class == `TNCA_DST_V) && vrf_wb_freeze))
-                            || mtx_done;
+                            || mtx_done || eng_freed;
     end
 
     // RCTX_SWITCH: the instruction in R waits on a register an older
@@ -2003,7 +2022,8 @@ module tnca_core #(
     // Not for a busy load/store unit: measured on t39_switch, giving way
     // there cost 8 % -- the unit is the bottleneck, and the dropped access
     // reached it three cycles after it was free instead of at once.
-    wire rp_go = (RCTX_SWITCH != 0) && r_valid && hazard && r_of_idle
+    wire rp_go = (RCTX_SWITCH != 0) && r_valid && r_of_idle
+               && (hazard || ((RCTX_SWITCH >= 2) && (stall_mtx || stall_txf)))
                && d_valid && (d_rctx != r_rctx)
                && !x_redirect && !vrf_wb_freeze;
     assign stall_front = stall_raw && !rp_go;
@@ -2628,6 +2648,22 @@ module tnca_core #(
     //==========================================================================
 `ifndef SYNTHESIS
     // synthesis translate_off
+    // +engtrace: every matrix and transfer command as it issues and as it
+    // completes, with its context and cycle -- the engines' occupancy and the
+    // gaps between commands, which the stall counters do not show.
+    reg engtrace;
+    initial engtrace = $test$plusargs("engtrace");
+    always @(posedge clk)
+        if (engtrace && rst_n && !launch_valid) begin
+            if (mtx_cmd_valid)
+                $display("ENG %0d mtx-issue rctx%0d op%0d", clock_ctr, x_rctx, mtx_cmd_op);
+            if (mtx_done)
+                $display("ENG %0d mtx-done", clock_ctr);
+            if (txf_is_cfg || txf_is_xfr)
+                $display("ENG %0d txf-issue rctx%0d %s", clock_ctr, x_rctx, txf_is_cfg ? "cfg" : "xfr");
+            if (txf_done)
+                $display("ENG %0d txf-done", clock_ctr);
+        end
     // +ctxtrace: when each Role Context exits, and how many instructions it
     // retired -- what shows that one context's stall did not hold the others
     // back (R39-05, t39_isolate).

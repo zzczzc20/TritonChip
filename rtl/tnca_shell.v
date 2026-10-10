@@ -92,6 +92,7 @@ module tnca_shell #(
     parameter LSU_INFLIGHT   = 1,
     parameter RSLICE         = 0,
     parameter RPAIR          = 0,
+    parameter MTX_ABUF       = 0,
     parameter FPU_OVERLAP    = 0,
     parameter HAS_TENSOR_XPOSE = 0,
     parameter CORE_ID        = 0,
@@ -303,7 +304,7 @@ module tnca_shell #(
         .VRF_BYPASS(VRF_BYPASS), .FE_NOBUBBLE(FE_NOBUBBLE),
         .VRF_PREFETCH(VRF_PREFETCH), .RCTX_SWITCH(RCTX_SWITCH),
         .LSU_INFLIGHT(LSU_INFLIGHT), .FPU_OVERLAP(FPU_OVERLAP), .RSLICE(RSLICE),
-        .RPAIR(RPAIR),
+        .RPAIR(RPAIR), .MTX_ABUF(MTX_ABUF),
         .HAS_TENSOR_XPOSE(HAS_TENSOR_XPOSE)
     ) u_core (
         .clk(clk), .rst_n(rst_n),

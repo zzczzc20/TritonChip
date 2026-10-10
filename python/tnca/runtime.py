@@ -147,6 +147,8 @@ class Module:
         self.params = params
         self.epoch = epoch
         self.name = manifest['identity']['kernel_name']
+        self.code_size = 0           # bytes reserved in the code region
+        self.alive = True            # False once unloaded
 
     def __repr__(self):
         return f"<Module {self.name!r} @{self.code_addr:#x}>"
@@ -326,7 +328,7 @@ class Session:
         self._events = OrderedDict()
         self._next_buffer = 0
         self._next_job = 0
-        self._code_next = code_base
+        self._code = _Allocator(code_base, heap_base)
         self._heap = _Allocator(heap_base, heap_limit)
         self._worker = None
         self._stop = threading.Event()
@@ -506,17 +508,41 @@ class Session:
             raise ArtifactError('the artifact has no code segment')
 
         with self._lock:
-            addr = self._code_next
-            if addr + len(code) > self._heap.base:
-                raise BufferError('compiled code overlaps the device heap; increase heap_base')
+            # The code region is allocated like the heap (first fit, freed
+            # space reused): with nothing ever unloaded it places modules one
+            # after another, 64-byte aligned, exactly as before; unload()
+            # gives a module's space back (R40-01: tensors resident in the
+            # heap outlive the code that last used them).
+            try:
+                addr, size = self._code.alloc(len(code), align=64)
+            except BufferError:
+                raise BufferError('compiled code overlaps the device heap; increase heap_base') \
+                    from None
             reply = self.dev.upload(addr, code)
             if not reply.ok:
+                self._code.release(addr, size)
                 raise TncaError(f"could not place code: {reply}",
                                 code='ARTIFACT_INVALID')
-            self._code_next = (addr + len(code) + 63) // 64 * 64
             mod = Module(path, man, addr, params, self.epoch)
+            mod.code_size = size
             self._modules.append(mod)
             return mod
+
+    def unload(self, module):
+        """Give a module's code space back. Refused while a task of it is
+        unfinished; the module may not be submitted afterwards."""
+        self._check_usable()
+        with self._lock:
+            if module.epoch != self.epoch or not module.alive:
+                return False
+            if any(not e.terminal for e in self._events.values()):
+                # Conservative: a task records its kernel by name, not by
+                # module, so any unfinished task keeps every module loaded.
+                raise BufferBusy(f'{module.name}: tasks are unfinished; unload waits for none')
+            module.alive = False
+            self._modules.remove(module)
+            self._code.release(module.code_addr, module.code_size)
+            return True
 
     # ---- submission -------------------------------------------------------
     def submit(self, module, args, *, grid=(1, 1, 1), depends_on=()):
@@ -525,6 +551,8 @@ class Session:
             if module.epoch != self.epoch:
                 raise AdmissionError(
                     'that module was loaded in a previous epoch')
+            if not module.alive:
+                raise AdmissionError(f'{module.name} has been unloaded')
             if len(self.unfinished) >= MAX_UNFINISHED:
                 raise QueueFull(
                     f"{MAX_UNFINISHED} tasks are already unfinished",
@@ -910,7 +938,7 @@ class Session:
             self._buffers.clear()
             self._modules.clear()
             self._next_job = 0
-            self._code_next = 0
+            self._code = _Allocator(self._code.base, self._code.limit)
             self._heap = _Allocator(self._heap.base, self._heap.limit)
             self.poisoned = False
             self.dev = _open_device(self.backend_name, self.bench,

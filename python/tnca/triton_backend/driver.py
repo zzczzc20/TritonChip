@@ -255,9 +255,29 @@ class TNCALauncher:
         moved = {'upload_bytes': 0, 'download_bytes': 0}
         t_start = time.perf_counter()
 
+        devices = {a.device.type for a in values if isinstance(a, torch.Tensor)} | \
+            {a.base.device.type for a in values if type(a).__name__ == 'TensorDescriptor'
+             and hasattr(a, 'base')}
+        if len(devices) > 1:
+            raise TNCALaunchError(f'{self.metadata.name}: tensors on {sorted(devices)}; a kernel\'s '
+                                  'tensors are all on the tnca device or all on the host')
+
         def device_ref(name, v):
+            if v.device.type == 'tnca':
+                # R40-01: the tensor lives in device memory already. Its own
+                # buffer and byte offset are the argument; nothing is copied.
+                if guard:
+                    raise TNCALaunchError(f'{name}: TNCA_GUARD_* stages host tensors; '
+                                          'a tnca tensor is not staged')
+                from tnca.torch_device import MEMORY, storage_address
+                buf, base_off = MEMORY.locate(storage_address(v))
+                if buf.session_id != session.id or buf.epoch != session.epoch:
+                    raise TNCALaunchError(f'{name}: its storage belongs to another session or epoch')
+                moved['resident_bytes'] = moved.get('resident_bytes', 0) + v.untyped_storage().nbytes()
+                off = base_off + v.storage_offset() * v.element_size()
+                return (buf, off) if off else buf
             if v.device.type != 'cpu':
-                raise TNCALaunchError(f'{name}: tensor on {v.device}; TNCA stage 1 takes host tensors')
+                raise TNCALaunchError(f'{name}: tensor on {v.device}; TNCA takes host or tnca tensors')
             st = v.untyped_storage()
             key = st.data_ptr()
             if key not in buffers:
@@ -345,6 +365,7 @@ class TNCALauncher:
 
 _loaded = {}
 _artifact_hashes = {}
+evicted = 0                  # modules unloaded to make code room (resident sessions)
 
 
 def _artifact_sha256(path):
@@ -370,14 +391,43 @@ def _load(session, path):
     """
     from tnca.errors import BufferError as _BE
     key = (id(session), session.epoch, path)
-    m = _loaded.get(key)
+    m = _loaded.pop(key, None)
     if m is not None:
+        _loaded[key] = m             # most recently used last (eviction order)
         return session, m
     try:
         m = session.load(path)
     except _BE as e:
         if 'overlaps the device heap' not in str(e):
             raise
+        try:
+            from tnca.torch_device import MEMORY
+            resident = any(b.session_id == session.id for b in MEMORY.buffers.values())
+        except ImportError:
+            resident = False
+        if resident:
+            # Replacing the session would take every tnca tensor's storage
+            # with it. Instead the modules launched longest ago give their
+            # code space back (Session.unload) until this one fits; only if
+            # it cannot fit at all is the code region a capacity limit.
+            for old_key in list(_loaded):
+                if old_key[0] != id(session) or old_key[1] != session.epoch:
+                    continue
+                session.unload(_loaded.pop(old_key))
+                global evicted
+                evicted += 1
+                try:
+                    m = session.load(path)
+                    break
+                except _BE as again:
+                    if 'overlaps the device heap' not in str(again):
+                        raise
+            else:
+                raise TNCALaunchError(
+                    'the code region cannot hold this kernel even with every other module '
+                    'unloaded (capacity-exceeded: code region)') from e
+            _loaded[key] = m
+            return session, m
         profile = session.profile
         session.close()
         session = _Sessions.get(profile)

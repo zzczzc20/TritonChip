@@ -236,6 +236,31 @@ U280 有三个 SLR，HBM 接口位于 SLR0；板卡提供 8 GB HBM、32 个 AXI 
 2. 有 CUDA 与无 CUDA 主机分别跑混合设备测试；导入/编译顺序、并发首次注册、进程 worker、缓存命中、checkpoint map_location、不支持 dtype 的错误均可复现。
 3. descriptor 实际代码与设备事件覆盖 GEMM / reduction / pointwise 代表点；新增 device/codegen 在 tiny + small + medium 的设备时间 `S_geo ≥1.0`，无未处理 >5% 回退。此包以设备能力签收；若声称 codegen 提升须另满足 §3.2。
 
+进展（2026-10-10，进行中；设计与审计见 `doc/r40_tnca_device.md`）：
+
+- **设备**（`python/tnca/torch_device/`）：PrivateUse1 改名为 `tnca`。
+  - C++ 扩展：allocator 的 DataPtr 是器件地址（runtime heap 里的 buffer），加上 empty / empty_strided / as_strided / view / `_reshape_alias` / set_ / resize_。
+  - Python 部分：所有方向、任意 stride 与 dtype 的拷贝，fill_ / zero_ / item()；device module `torch.tnca`（stream / event 为 R40-01 的同步语义）。
+  - 选择 C++ 的原因：torch 2.14 的纯 Python 后端只能建无 storage 的张量，view 与 alias 都得逐算子重写。
+- **编译**：
+  - Dynamo DeviceInterface 的属性取自 profile 的 target 文件。
+  - `register_backend_for_device("tnca", TritonScheduling, ...)` 与 device op overrides；kernel 以 Triton target `tnca` 编译。
+  - launcher 直接传 `tnca` 张量自己的 buffer 与偏移，0 字节上传；混合 host / 器件张量的 launch 被拒绝。
+  - runtime 的代码区改为与 heap 同样的分配器，加 `Session.unload`：张量常驻时，代码区满就卸载最久未用的模块。
+- **lowering 策略**（`tnca.torch_device.policy`）：
+  - `tnca` 不加入 Inductor 的 GPU_TYPES，`is_gpu()` 处取 CPU 路径（B39）的答案。
+  - 以 `device.type == "cpu"` 判断的 6 处给 `tnca` 同样的答案，各有开关：模板、方差、cat、小矩阵分解（含 bmm lowering）、realize 与融合、conv layout。SDPA 的 backend 选择取 CPU 自己的选择器（C++ stub）。
+  - 先当作 GPU 实测：tiny 上 S_geo 0.834，layernorm 0.32、rope 0.31，原因见设计文档 §3。改用上述策略后对齐。
+  - `scf.if` 的 lowering（if-conversion / 分支）补齐：Welford 与 `op.layernorm/large` 的编译缺口。
+- **测试**（`tools/r40/device_tests.py`，16 项）：
+  - 仿真与 U280 板上都通过：storage 与 alias、拷贝、module、拒绝、编译图（pointwise / reduction / norm / GEMM / SDPA，0 上传）、view、代码区卸载、属性、策略。
+  - 验收 2：有 CUDA 主机（GB10）上 CUDA 与 tnca 图同进程交替运行；无 CUDA 主机（板卡主机）也测。另有三种 import 顺序、8 线程并发注册、spawn worker、cache 命中、checkpoint map_location（cpu / tnca）、复数与 fp64 计算的拒绝。
+  - plugin identity O0/O1/O2 149/149 字节相同：改动不改变任何 B39 制品。
+- **设备时间**（tiny，RTL 仿真，相对 B39 的 CPU 路径）：27 点中 20 点逐拍相同，S_geo 0.999。差别都在 2 % 以内，各有原因：
+  - softmax fp16、gpt2_block、attention_prefill：Inductor 对非 cpu 设备在“reduction 循环里写回后再读”前加 `tl.debug_barrier()`，TNCA 编译为 fence，每处约 20 拍。这正是 B39 缺的同步（B39-OI-6）。
+  - resnet_block −1.7 %：FakeTensor 的 conv backend 选择对 PrivateUse1 给出 contiguous 输出，CPU（MKLDNN）给 channels-last。
+  - 板上 tiny / small / medium 的 native 测量进行中。片上 RAM 的 heap 只有 384 KiB，放不下常驻张量的点记为 capacity-exceeded，留待 R40-04 的 HBM。
+
 ### R40-02：张量驻留、bulk DMA、事件与批量提交
 
 交付：

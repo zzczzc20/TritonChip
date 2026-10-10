@@ -51,6 +51,10 @@ this module sets, each through an upstream extension point:
 wrapper: what stayed on the host, and which kernels were generated.
 """
 STAGE1_MAX_BLOCK = 16
+# The device types whose Triton kernels TNCA runs: `cpu` (CPU tensors, the
+# R39 migration path, B39) and `tnca` (the native device, R40-01). Both get
+# the same heuristics, templates and descriptor rules.
+TNCA_DEVICE_TYPES = ('cpu', 'tnca')
 _registered = False
 
 
@@ -89,6 +93,7 @@ def _register(cap):
     from torch._inductor.heuristics.triton_codegen.pointwise import PointwiseHeuristic
     from torch._inductor.heuristics.triton_codegen.reduction import ReductionHeuristic
 
+    @register_codegen_heuristic('pointwise', 'tnca')
     @register_codegen_heuristic('pointwise', 'cpu')
     class TNCAPointwiseHeuristic(PointwiseHeuristic):
         """Inductor's default pointwise configs, block dimensions capped."""
@@ -96,6 +101,7 @@ def _register(cap):
         def get_configs(self, *args, **kwargs):
             return _clamp(super().get_configs(*args, **kwargs), cap)
 
+    @register_codegen_heuristic('reduction', 'tnca')
     @register_codegen_heuristic('reduction', 'cpu')
     class TNCAReductionHeuristic(ReductionHeuristic):
         """Inductor's default looped-reduction configs: one row per program
@@ -120,6 +126,8 @@ def _register(cap):
         self.mm_configs = [tt.GemmConfig(16, 16, 16, 1, 1, group_m=1)]
         self.exhaustive_configs = list(self.mm_configs)
 
+    @register_template_heuristic(mm_template.uid, 'tnca')
+    @register_template_heuristic(bmm_template.uid, 'tnca')
     @register_template_heuristic(mm_template.uid, 'cpu')
     @register_template_heuristic(bmm_template.uid, 'cpu')
     class TNCAMMTemplateConfigHeuristic(tt.CPUMMTemplateConfigHeuristic):
@@ -129,6 +137,8 @@ def _register(cap):
             super().__init__()
             one_fragment(self)
 
+    @register_template_heuristic(mm_template.uid, 'tnca', op_name='addmm')
+    @register_template_heuristic(bmm_template.uid, 'tnca', op_name='baddbmm')
     @register_template_heuristic(mm_template.uid, 'cpu', op_name='addmm')
     @register_template_heuristic(bmm_template.uid, 'cpu', op_name='baddbmm')
     class TNCAAddmmTemplateConfigHeuristic(tt.CPUAddmmTemplateConfigHeuristic):
@@ -144,8 +154,8 @@ def _register(cap):
     # object `V.choices.get_conv_configs("cpu")` reads.
     from torch._inductor.heuristics.template.triton import ConvConfig
     from torch._inductor.choices import InductorChoices
-    cpu_heuristic = InductorChoices().get_config_heuristics('cpu')
-    cpu_heuristic.conv_configs = [ConvConfig(cap, cap, cap, 1, 1)]
+    for dev in ('cpu', 'tnca'):
+        InductorChoices().get_config_heuristics(dev).conv_configs = [ConvConfig(cap, cap, cap, 1, 1)]
 
     _registered = True
 
@@ -190,7 +200,7 @@ def _install_no_x_dim():
         if orig(self):
             return True
         from torch._inductor.virtualized import V
-        return bool(_NO_X_DIM[0] and V.graph.get_current_device_or_throw().type == 'cpu'
+        return bool(_NO_X_DIM[0] and V.graph.get_current_device_or_throw().type in TNCA_DEVICE_TYPES
                     and self.inside_reduction
                     and len(self.numels) == self.num_reduction_dims + 1)
     want_no_x_dim._tnca = True
@@ -217,7 +227,19 @@ def configure(max_block=None, tensor_descriptors=None, no_x_dim=None):
     unit x dimension (R39-02, _install_no_x_dim).
     """
     import os
-    os.environ.setdefault('TNCA_TRITON', '1')
+    # TNCA's Triton driver is THE active driver only where there is no CUDA
+    # device. With CUDA present (R40-01: CPU, CUDA and tnca tensors in one
+    # process) it stays out of Triton's count of active drivers, and Inductor
+    # selects it per kernel -- the `cpu` registry entry for CPU tensors and
+    # tnca ones (tnca.torch_device.inductor_device) -- as it does for any
+    # second Triton backend. TNCA_TRITON=1 set by the caller still forces it.
+    try:
+        import torch
+        cuda = torch.cuda.is_available()
+    except Exception:                                        # noqa: BLE001
+        cuda = False
+    if not cuda:
+        os.environ.setdefault('TNCA_TRITON', '1')
     if tensor_descriptors is None:
         tensor_descriptors = os.environ.get('TNCA_TENSOR_DESCRIPTORS', '1') != '0'
     if max_block is None:
@@ -322,7 +344,7 @@ def _apply_tma_rules():
     from torch._inductor.virtualized import V
 
     def on_cpu():
-        return V.graph.get_current_device_or_throw().type == 'cpu'
+        return V.graph.get_current_device_or_throw().type in TNCA_DEVICE_TYPES
 
     import os
     bisect = os.environ.get('TNCA_TDESC_BISECT')
@@ -340,7 +362,21 @@ def _apply_tma_rules():
         def can_use_tma(self):
             if self.force or not on_cpu():
                 return super().can_use_tma()
-            if not super().can_use_tma():
+            # Inductor's own first test knows `cpu` (a Triton CPU backend and
+            # the stable descriptor API) but not `tnca`, which it would send
+            # down the CUDA-capability branch. The tnca device asks the CPU
+            # question -- is TNCA's plugin there, is the API -- and then the
+            # rules below, the same for both.
+            graph = V.graph
+            if graph.get_current_device_or_throw().type != 'cpu':
+                graph.get_current_device_or_throw = lambda: torch.device('cpu')
+                try:
+                    ok = super().can_use_tma()
+                finally:
+                    del graph.get_current_device_or_throw
+            else:
+                ok = super().can_use_tma()
+            if not ok:
                 return False
             if self.dtype not in _descriptor_dtypes():
                 return False

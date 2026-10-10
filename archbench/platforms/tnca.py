@@ -118,6 +118,16 @@ def run(point, *, profile='core-sim', opt_level=2, seed=0, counters=False, warmu
     from torch._inductor.utils import run_and_get_code
 
     config = tnca.inductor.configure()
+    # R40-01: TNCA_TORCH_DEVICE=native puts the module and its inputs on the
+    # `tnca` PyTorch device (tnca.torch_device) -- storage in device memory,
+    # Inductor generating for device "tnca" -- and copies the outputs back
+    # explicitly for the comparison. Unset (or `cpu`), the B39 path: CPU
+    # tensors, every launch staging its arguments.
+    native = os.environ.get('TNCA_TORCH_DEVICE', 'cpu') == 'native'
+    if native:
+        import tnca.torch_device
+        tnca.torch_device.register()
+        config = dict(config, device='tnca')
     backend, backend_kwargs = backend_choice()
     plat = dict(kind='tnca', name=f'tnca:{profile}@{backend}', profile=profile, backend=backend,
                 backend_args=backend_kwargs, opt_level=opt_level, inductor=config,
@@ -136,7 +146,14 @@ def run(point, *, profile='core-sim', opt_level=2, seed=0, counters=False, warmu
     torch._dynamo.reset()
     m, inputs = point.make(seed)
     m = m.eval()
-    compiled = torch.compile(m)
+    if native:
+        try:
+            m = m.to('tnca')
+            inputs = tuple(x.to('tnca') if isinstance(x, torch.Tensor) else x for x in inputs)
+        except Exception as e:                               # noqa: BLE001
+            rec.update(status=classify(e), problems=[f'to("tnca"): {error_text(e)}'])
+            return rec
+    compiled = torch.compile(m, fullgraph=native)
     if bundle:
         # Every kernel compiled here, none taken from an earlier cache, so the
         # dump (TTIR, TNCA IR, assembly) and Triton's own cache entries are
@@ -268,7 +285,10 @@ def run(point, *, profile='core-sim', opt_level=2, seed=0, counters=False, warmu
         rec['time']['device'] = rec['timings']['device-cycles-serial-grid']['median']
         rec['time']['device_seconds'] = rec['time']['device'] / clock if clock else None
     rec['host'].update(first_call_s=first['wall_s'],
-                       steady=_host_steady(steady) if steady else None)
+                       steady=_host_steady(steady) if steady else None,
+                       # the raw per-call breakdown, timed calls only
+                       calls=[{k: round(c[k], 6) for k in ('request_s', 'upload_s', 'run_s',
+                                                          'download_s')} for c in steady] or None)
     rec['provenance'] = _provenance(profile, backend, backend_kwargs, plat, log, clock)
     if bundle:
         rec['provenance']['bundle'] = _prov.write_bundle(

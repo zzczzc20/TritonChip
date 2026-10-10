@@ -542,6 +542,95 @@ class TTIRImporter:
         for key in self._pending_const.keys() - pending_values:
             self._v.pop(key, None)
 
+    # Operations a branch of an if-converted `scf.if` may not contain: both
+    # branches run, so neither may touch memory, fault, synchronise or loop.
+    _IFCONV_IMPURE = ('tt.load', 'tt.store', 'tt.descriptor_load', 'tt.descriptor_store',
+                      'tt.atomic_rmw', 'tt.atomic_cas', 'tt.call', 'tt.dot', 'tt.dot_scaled',
+                      'tt.assert', 'tt.print', 'tt.descriptor_gather', 'tt.descriptor_scatter',
+                      'arith.divsi', 'arith.divui', 'arith.remsi', 'arith.remui',
+                      'arith.ceildivsi', 'arith.ceildivui', 'arith.floordivsi')
+
+    class _SelectView:
+        """`arith.select(cond, then_i, else_i)` for the i-th result of an
+        if-converted `scf.if`, presented with the operation interface
+        _op_arith_select reads (operands, result, name)."""
+
+        def __init__(self, cond, a, b, result):
+            self._ops, self._result = (cond, a, b), result
+
+        def get_name(self):
+            return 'arith.select'
+
+        def get_operand(self, i):
+            return self._ops[i]
+
+        def get_num_operands(self):
+            return 3
+
+        def get_result(self, i):
+            return self._result
+
+        def get_num_results(self):
+            return 1
+
+    def _op_scf_if(self, op):
+        """`scf.if` on a scalar condition.
+
+        With results -- Inductor's Welford reduction, `if roffset == 0`
+        choosing between starting the running mean/M2 and updating them --
+        it is if-converted: both regions are pure (no memory access, no
+        possible fault, no loop), so both are lowered and each result is
+        `arith.select(cond, then, else)`, which is what `tl.where` would be.
+        Without results it is a branch around its region: there the region
+        is the point (a store under a condition), and nothing is selected.
+        """
+        then_ops = self._bodies.get(op.get_region(0).id(), [])
+        else_ops = (self._bodies.get(op.get_region(1).id(), [])
+                    if op.get_num_regions() > 1 else [])
+        cond = op.get_operand(0)
+        if op.get_num_results() == 0:
+            if else_ops and any(o.get_name() != 'scf.yield' for o in else_ops):
+                raise Unsupported('scf.if with an else region and no results')
+            caches = ('_scalar_cache', '_fconst_cache', '_byte_offsets', '_aff_cache')
+            saved = {n: dict(getattr(self, n)) for n in caches if hasattr(self, n)}
+            saved_single = (self._scratch, self._lane0_mask)
+            pending_values = {k for k in self._pending_const if k in self._v}
+            end = self._control_label('endif')
+            c = self._condition_scalar(self._value(cond))
+            self.b.branch_nz(self.b.scmp('eq', c, self.b.const(0)), end)
+            for inner in then_ops:
+                if inner.get_name() != 'scf.yield':
+                    self._dispatch(inner)
+            self.b.label(end)
+            for n, cache in saved.items():
+                setattr(self, n, cache)
+            self._scratch, self._lane0_mask = saved_single
+            for key in self._pending_const.keys() - pending_values:
+                self._v.pop(key, None)
+            return
+        for inner in list(then_ops) + list(else_ops):
+            name = inner.get_name()
+            if name in self._IFCONV_IMPURE or (name != 'scf.yield' and inner.get_num_regions()):
+                raise Unsupported(
+                    f'scf.if whose branch contains {name}',
+                    because='an scf.if with results is lowered by running both branches and '
+                            'selecting, which is only right when neither touches memory, '
+                            'can fault or loops')
+        yields = []
+        for ops in (then_ops, else_ops):
+            out = None
+            for inner in ops:
+                if inner.get_name() == 'scf.yield':
+                    out = [inner.get_operand(i) for i in range(inner.get_num_operands())]
+                else:
+                    self._dispatch(inner)
+            if out is None or len(out) != op.get_num_results():
+                raise Unsupported('scf.if region without a yield of every result')
+            yields.append(out)
+        for i in range(op.get_num_results()):
+            self._op_arith_select(self._SelectView(cond, yields[0][i], yields[1][i],
+                                                   op.get_result(i)))
+
     def _dispatch(self, op):
         from .packed import lower
         from .wide import lower as lower_wide

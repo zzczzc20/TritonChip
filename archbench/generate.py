@@ -50,7 +50,7 @@ def _sha256(path):
 
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__.split('\n')[0])
-    ap.add_argument('--tier', default='small', choices=('tiny', 'small'))
+    ap.add_argument('--tier', default='small', choices=('tiny', 'small', 'medium', 'large', 'hbm'))
     ap.add_argument('--new', type=int, default=8, help='tokens to generate after the prompt')
     ap.add_argument('--seed', type=int, default=0)
     ap.add_argument('--profile', default='core-sim')

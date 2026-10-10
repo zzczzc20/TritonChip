@@ -1374,6 +1374,48 @@ archbench-gpu:
 	@mkdir -p $(ARCHBENCH_OUT) && rm -f $(ARCHBENCH_OUT)/gpu.jsonl
 	@$(TORCH_PYTHON) -m archbench.run --platform gpu --tier tiny small large --out $(ARCHBENCH_OUT)/gpu.jsonl
 
+# R40 (doc/r40_tasks_and_acceptance.md). Each gate's evidence is
+# $(BUILD)/r40/<work package>.json, judged by tools/r40/acceptance.py.
+# R40-00: the protocol, the frozen B39 baseline (spec/r40/baseline.json) and
+# the plan, subsets and ablation matrix frozen before any R40 measurement.
+.PHONY: r40-protocol r40-freeze r40-freeze-check r40-api-lock r40-hbm-coverage \
+        r40-b39-gates r40-b39 r40-acceptance
+# Acceptance 1 and 3: every manipulation of a comparison refused, identity 1;
+# nothing missing passes a gate. Synthetic records: no torch, no board.
+r40-protocol:
+	@$(PYTHON) tools/r40/protocol_tests.py --evidence
+# Write the plan, subsets and ablation matrix (an amendment once frozen).
+r40-freeze:
+	@$(TORCH_PYTHON) tools/r40/freeze.py
+r40-api-lock:
+	@$(TORCH_PYTHON) tools/r40/api_lock.py --out spec/r40/api_lock.json
+# The large and hbm points through the standard path, compiled, none run:
+# compile coverage and capacity, recorded in spec/r40/hbm_coverage.json.
+R40_COVERAGE_PROFILE ?= core-vrf-sync-v5
+r40-hbm-coverage: $(R2_DATA_STAMP) | dirs
+	@mkdir -p $(BUILD)/r40 && rm -f $(BUILD)/r40/hbm_compile.jsonl
+	@$(TORCH_PYTHON) -m archbench.run --platform tnca --profile $(R40_COVERAGE_PROFILE) --tier large hbm \
+	   --compile-only --jobs $(ARCHBENCH_JOBS) --out $(BUILD)/r40/hbm_compile.jsonl || true
+	@$(TORCH_PYTHON) tools/r40/hbm_coverage.py $(BUILD)/r40/hbm_compile.jsonl
+# The plan, subsets, suites, API lock, B39 records and HBM coverage as frozen.
+r40-freeze-check:
+	@$(TORCH_PYTHON) tools/r40/freeze.py --check --evidence
+# R39's merge gates on this tree, against the counts frozen with B39.
+r40-b39-gates: $(R2_DATA_STAMP) | dirs
+	@TORCH_PYTHON=$(TORCH_PYTHON) TRITON_PYTHON=$(TRITON_PYTHON) \
+	   $(PYTHON) tools/r40/b39_gates.py --run --out $(BUILD)/r40/b39_gates_run.json; \
+	 $(PYTHON) tools/r40/b39_gates.py --check $(BUILD)/r40/b39_gates_run.json --evidence
+# Acceptance 2: B39 rerun on its image (B39_RERUN: the frozen commit's
+# records, u280_<tier>.jsonl) and the R40-00 tree's protocol-2 run
+# (B39_P2), with the gate run above.
+B39_RERUN ?= $(BUILD)/r40/b39_rerun
+B39_P2 ?= $(BUILD)/r40/b39_p2
+r40-b39:
+	@$(PYTHON) tools/r40/b39_repro.py --b39 $(B39_RERUN) --p2 $(B39_P2) \
+	   --gates $(BUILD)/r40/b39_gates_run.json --evidence
+r40-acceptance:
+	@$(PYTHON) tools/r40/acceptance.py --json $(BUILD)/r40/acceptance.json
+
 # One suite, every backend. This is the suite a downstream branch runs.
 r36-conformance: $(R2_DATA_STAMP) | dirs
 	@$(TRITON_PYTHON) tools/r36/conformance.py \

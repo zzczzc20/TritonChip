@@ -21,12 +21,16 @@ Tiers say where a point can be measured, not how important it is:
             eight times small, still within the device heap per kernel
     large   GPU-realistic shapes (a ~1B-parameter decoder, 512-token prefill);
             TNCA records them as capacity-exceeded until it has the memory
+    hbm     R40-00: working sets of at least 32 MiB -- four times the
+            architecture's whole NUCA -- for streaming, GEMM, transpose and
+            gather (archbench/hbm.py); capacity-exceeded until TNCA has HBM.
+            R40's HBM suite is these and every point of the other tiers
 """
 from dataclasses import dataclass, field
 import hashlib
 import json
 
-TIERS = ('tiny', 'small', 'medium', 'large')
+TIERS = ('tiny', 'small', 'medium', 'large', 'hbm')
 
 # Relative tolerance on max|got - ref| / max(max|ref|, 1), by the dtype the
 # point computes in. The reference is eager PyTorch in float32 on the CPU
@@ -139,4 +143,4 @@ def _load():
     global _loaded
     if not _loaded:
         _loaded = True
-        from . import ops, models    # noqa: F401  (registration side effect)
+        from . import ops, models, hbm    # noqa: F401  (registration side effect)

@@ -1,0 +1,757 @@
+{
+ "schema": "tnca-r40-plan/1",
+ "signoff": "R40_NATIVE_DEVICE_SCALABLE_NUCA_HBM",
+ "document": "doc/r40_tasks_and_acceptance.md",
+ "work_packages": [
+  {
+   "id": "R40-00",
+   "title": "close R39, freeze the protocol",
+   "depends": [],
+   "gates": [
+    {
+     "id": "R40-00.protocol",
+     "kind": "capability",
+     "command": "make r40-protocol",
+     "evidence": "sim/build/r40/R40-00.json",
+     "required": true,
+     "note": "acceptance 1 and 3: every manipulation refused, identity is 1; acceptance.py passes nothing missing"
+    },
+    {
+     "id": "R40-00.b39-reproducible",
+     "kind": "capability",
+     "command": "make r40-b39",
+     "evidence": "sim/build/r40/R40-00.json",
+     "required": true,
+     "note": "acceptance 2: B39 numerics, cycles and gates reproduce; time boundaries check out"
+    },
+    {
+     "id": "R40-00.frozen",
+     "kind": "capability",
+     "command": "make r40-freeze-check",
+     "evidence": "sim/build/r40/R40-00.json",
+     "required": true,
+     "note": "plan, subsets, suites, API lock, B39 records and the HBM suite coverage as frozen"
+    }
+   ]
+  },
+  {
+   "id": "R40-01",
+   "title": "native PyTorch TNCA device",
+   "depends": [
+    "R40-00"
+   ],
+   "gates": [
+    {
+     "id": "R40-01.device",
+     "kind": "capability",
+     "command": "make r40-device",
+     "evidence": "sim/build/r40/R40-01.json",
+     "required": true,
+     "note": ""
+    },
+    {
+     "id": "R40-01.mixed-device",
+     "kind": "capability",
+     "command": "make r40-device",
+     "evidence": "sim/build/r40/R40-01.json",
+     "required": true,
+     "note": ""
+    },
+    {
+     "id": "R40-01.device-time",
+     "kind": "perf",
+     "command": "make r40-device",
+     "evidence": "sim/build/r40/R40-01.json",
+     "required": true,
+     "note": ""
+    }
+   ]
+  },
+  {
+   "id": "R40-02",
+   "title": "residency, bulk DMA, events, batched submission",
+   "depends": [
+    "R40-01",
+    "R40-04"
+   ],
+   "gates": [
+    {
+     "id": "R40-02.zero-transfer",
+     "kind": "capability",
+     "command": "make r40-residency",
+     "evidence": "sim/build/r40/R40-02.json",
+     "required": true,
+     "note": ""
+    },
+    {
+     "id": "R40-02.resident",
+     "kind": "perf",
+     "command": "make r40-residency",
+     "evidence": "sim/build/r40/R40-02.json",
+     "required": true,
+     "note": ""
+    },
+    {
+     "id": "R40-02.batched",
+     "kind": "perf",
+     "command": "make r40-residency",
+     "evidence": "sim/build/r40/R40-02.json",
+     "required": true,
+     "note": ""
+    },
+    {
+     "id": "R40-02.stress",
+     "kind": "capability",
+     "command": "make r40-residency",
+     "evidence": "sim/build/r40/R40-02.json",
+     "required": true,
+     "note": ""
+    }
+   ]
+  },
+  {
+   "id": "R40-03",
+   "title": "general tiles, layout, resource allocation",
+   "depends": [
+    "R40-01"
+   ],
+   "gates": [
+    {
+     "id": "R40-03.tiles",
+     "kind": "capability",
+     "command": "make r40-tiles",
+     "evidence": "sim/build/r40/R40-03.json",
+     "required": true,
+     "note": ""
+    },
+    {
+     "id": "R40-03.wide-blocks",
+     "kind": "perf",
+     "command": "make r40-tiles",
+     "evidence": "sim/build/r40/R40-03.json",
+     "required": true,
+     "note": ""
+    },
+    {
+     "id": "R40-03.gemm-tile",
+     "kind": "perf",
+     "command": "make r40-tiles",
+     "evidence": "sim/build/r40/R40-03.json",
+     "required": true,
+     "note": ""
+    },
+    {
+     "id": "R40-03.contract",
+     "kind": "capability",
+     "command": "make r40-tiles",
+     "evidence": "sim/build/r40/R40-03.json",
+     "required": true,
+     "note": ""
+    }
+   ]
+  },
+  {
+   "id": "R40-04",
+   "title": "single-core HBM, scalable memory interface",
+   "depends": [
+    "R40-00"
+   ],
+   "gates": [
+    {
+     "id": "R40-04.hbm",
+     "kind": "capability",
+     "command": "make r40-hbm",
+     "evidence": "sim/build/r40/R40-04.json",
+     "required": true,
+     "note": ""
+    },
+    {
+     "id": "R40-04.bandwidth",
+     "kind": "perf",
+     "command": "make r40-hbm",
+     "evidence": "sim/build/r40/R40-04.json",
+     "required": true,
+     "note": ""
+    },
+    {
+     "id": "R40-04.robustness",
+     "kind": "capability",
+     "command": "make r40-hbm",
+     "evidence": "sim/build/r40/R40-04.json",
+     "required": true,
+     "note": ""
+    }
+   ]
+  },
+  {
+   "id": "R40-05",
+   "title": "multi-SLR physical cores in the common runtime",
+   "depends": [
+    "R40-04"
+   ],
+   "gates": [
+    {
+     "id": "R40-05.multicore",
+     "kind": "capability",
+     "command": "make r40-multicore",
+     "evidence": "sim/build/r40/R40-05.json",
+     "required": true,
+     "note": ""
+    },
+    {
+     "id": "R40-05.scaling",
+     "kind": "perf",
+     "command": "make r40-multicore",
+     "evidence": "sim/build/r40/R40-05.json",
+     "required": true,
+     "note": ""
+    },
+    {
+     "id": "R40-05.dispatch",
+     "kind": "capability",
+     "command": "make r40-multicore",
+     "evidence": "sim/build/r40/R40-05.json",
+     "required": true,
+     "note": ""
+    }
+   ]
+  },
+  {
+   "id": "R40-06",
+   "title": "NUCA, several memory ports, locality",
+   "depends": [
+    "R40-05"
+   ],
+   "gates": [
+    {
+     "id": "R40-06.nuca",
+     "kind": "capability",
+     "command": "make r40-nuca",
+     "evidence": "sim/build/r40/R40-06.json",
+     "required": true,
+     "note": ""
+    },
+    {
+     "id": "R40-06.streaming-scaling",
+     "kind": "perf",
+     "command": "make r40-nuca",
+     "evidence": "sim/build/r40/R40-06.json",
+     "required": true,
+     "note": ""
+    },
+    {
+     "id": "R40-06.locality",
+     "kind": "perf",
+     "command": "make r40-nuca",
+     "evidence": "sim/build/r40/R40-06.json",
+     "required": true,
+     "note": ""
+    },
+    {
+     "id": "R40-06.semantics",
+     "kind": "capability",
+     "command": "make r40-nuca",
+     "evidence": "sim/build/r40/R40-06.json",
+     "required": true,
+     "note": ""
+    }
+   ]
+  },
+  {
+   "id": "R40-07",
+   "title": "asynchronous pipelines, layout moves, matrix throughput",
+   "depends": [
+    "R40-03",
+    "R40-06"
+   ],
+   "gates": [
+    {
+     "id": "R40-07.pipeline",
+     "kind": "capability",
+     "command": "make r40-pipeline",
+     "evidence": "sim/build/r40/R40-07.json",
+     "required": true,
+     "note": ""
+    },
+    {
+     "id": "R40-07.long-k",
+     "kind": "perf",
+     "command": "make r40-pipeline",
+     "evidence": "sim/build/r40/R40-07.json",
+     "required": true,
+     "note": ""
+    },
+    {
+     "id": "R40-07.matrix",
+     "kind": "perf",
+     "command": "make r40-pipeline",
+     "evidence": "sim/build/r40/R40-07.json",
+     "required": true,
+     "note": ""
+    },
+    {
+     "id": "R40-07.policy",
+     "kind": "capability",
+     "command": "make r40-pipeline",
+     "evidence": "sim/build/r40/R40-07.json",
+     "required": true,
+     "note": ""
+    }
+   ]
+  },
+  {
+   "id": "R40-08",
+   "title": "standard Torch attention, reductions, resident KV",
+   "depends": [
+    "R40-07",
+    "R40-02"
+   ],
+   "gates": [
+    {
+     "id": "R40-08.attention",
+     "kind": "capability",
+     "command": "make r40-attention",
+     "evidence": "sim/build/r40/R40-08.json",
+     "required": true,
+     "note": ""
+    },
+    {
+     "id": "R40-08.prefill",
+     "kind": "perf",
+     "command": "make r40-attention",
+     "evidence": "sim/build/r40/R40-08.json",
+     "required": true,
+     "note": ""
+    },
+    {
+     "id": "R40-08.decode",
+     "kind": "capability",
+     "command": "make r40-attention",
+     "evidence": "sim/build/r40/R40-08.json",
+     "required": true,
+     "note": ""
+    }
+   ]
+  },
+  {
+   "id": "R40-09",
+   "title": "budgeted automatic selection, applications, scaling",
+   "depends": [
+    "R40-08"
+   ],
+   "gates": [
+    {
+     "id": "R40-09.autotune",
+     "kind": "capability",
+     "command": "make r40-autotune",
+     "evidence": "sim/build/r40/R40-09.json",
+     "required": true,
+     "note": ""
+    },
+    {
+     "id": "R40-09.holdout",
+     "kind": "perf",
+     "command": "make r40-autotune",
+     "evidence": "sim/build/r40/R40-09.json",
+     "required": true,
+     "note": ""
+    },
+    {
+     "id": "R40-09.suites",
+     "kind": "capability",
+     "command": "make r40-autotune",
+     "evidence": "sim/build/r40/R40-09.json",
+     "required": true,
+     "note": ""
+    },
+    {
+     "id": "R40-09.model",
+     "kind": "perf",
+     "command": "make r40-autotune",
+     "evidence": "sim/build/r40/R40-09.json",
+     "required": true,
+     "note": ""
+    }
+   ]
+  },
+  {
+   "id": "R40-10",
+   "title": "final board sign-off",
+   "depends": [
+    "R40-09"
+   ],
+   "gates": [
+    {
+     "id": "R40-10.acceptance",
+     "kind": "capability",
+     "command": "make r40-acceptance",
+     "evidence": "sim/build/r40/R40-10.json",
+     "required": true,
+     "note": ""
+    }
+   ]
+  }
+ ],
+ "experiments": {
+  "R40-01.device-time": {
+   "subset": "spec/r40/suites/existing.json",
+   "vary": [
+    "TNCA_DEVICE",
+    "TNCA_RCTX_ROLES",
+    "platform.software_tree",
+    "platform.inductor",
+    "platform.device_id",
+    "platform.image"
+   ],
+   "timing": "device-cycles-serial-grid",
+   "threshold": 1.0,
+   "baseline": "B39",
+   "note": "a capability gate: S_geo >= 1.0 and no unhandled >5% regression; A is B39 (spec/r40/baseline.json, wrapped by tools/r40/b39.py), B the native device on the same image with per-kernel staging",
+   "explained": [],
+   "legacy_a": true
+  },
+  "R40-02.resident": {
+   "subset": "spec/r40/suites/R40-02.graphs3.json",
+   "vary": [
+    "TNCA_TRANSFER_POLICY"
+   ],
+   "timing": "request-latency",
+   "threshold": 1.5,
+   "baseline": "B40-S",
+   "note": "per-kernel staging against residency",
+   "explained": []
+  },
+  "R40-02.batched": {
+   "subset": "spec/r40/suites/R40-02.small-kernel-graphs.json",
+   "vary": [
+    "TNCA_SUBMIT"
+   ],
+   "timing": "resident-call-latency",
+   "threshold": 1.2,
+   "baseline": "B40-S",
+   "note": "",
+   "explained": []
+  },
+  "R40-03.wide-blocks": {
+   "subset": "spec/r40/suites/R40-03.pointwise-reduction.json",
+   "vary": [
+    "TNCA_MAX_BLOCK"
+   ],
+   "timing": "graph-makespan",
+   "threshold": 1.3,
+   "baseline": "B40-S",
+   "note": "",
+   "explained": []
+  },
+  "R40-03.gemm-tile": {
+   "subset": "spec/r40/suites/R40-03.gemm-reuse.json",
+   "vary": [
+    "TNCA_GEMM_TILE"
+   ],
+   "timing": "graph-makespan",
+   "threshold": 1.15,
+   "baseline": "B40-S",
+   "note": "",
+   "explained": []
+  },
+  "R40-04.ingress": {
+   "subset": "spec/r40/suites/R40-04.streaming.json",
+   "vary": [
+    "TNCA_RTL_INGRESS"
+   ],
+   "timing": "graph-makespan",
+   "threshold": 1.5,
+   "baseline": "B40-S",
+   "note": "also >= 50% of the frozen bottleneck peak per direction",
+   "explained": []
+  },
+  "R40-05.three-cores": {
+   "subset": "spec/r40/suites/R40-05.compute.json",
+   "vary": [
+    "TNCA_ACTIVE_CORES"
+   ],
+   "timing": "graph-makespan",
+   "threshold": 2.1,
+   "baseline": "B40-N",
+   "note": "1 -> 3 active cores; 2 cores >= 1.5",
+   "explained": []
+  },
+  "R40-06.streaming-cores": {
+   "subset": "spec/r40/suites/R40-04.streaming.json",
+   "vary": [
+    "TNCA_ACTIVE_CORES"
+   ],
+   "timing": "graph-makespan",
+   "threshold": 1.8,
+   "baseline": "B40-N",
+   "note": "",
+   "explained": []
+  },
+  "R40-06.ports": {
+   "subset": "spec/r40/suites/R40-04.streaming.json",
+   "vary": [
+    "TNCA_RTL_MEM_PORTS"
+   ],
+   "timing": "graph-makespan",
+   "threshold": 1.3,
+   "baseline": "B40-S",
+   "note": "",
+   "explained": []
+  },
+  "R40-06.locality": {
+   "subset": "spec/r40/suites/R40-06.reuse.json",
+   "vary": [
+    "TNCA_LOCALITY"
+   ],
+   "timing": "graph-makespan",
+   "threshold": 1.1,
+   "baseline": "B40-S",
+   "note": "",
+   "explained": []
+  },
+  "R40-06.dco": {
+   "subset": "spec/r40/suites/R40-06.reuse.json",
+   "vary": [
+    "TNCA_DCO"
+   ],
+   "timing": "graph-makespan",
+   "threshold": 1.1,
+   "baseline": "B40-S",
+   "note": "",
+   "explained": []
+  },
+  "R40-07.pipeline": {
+   "subset": "spec/r40/suites/R40-07.long-k.json",
+   "vary": [
+    "TNCA_PIPELINE"
+   ],
+   "timing": "graph-makespan",
+   "threshold": 1.2,
+   "baseline": "B40-S",
+   "note": "",
+   "explained": []
+  },
+  "R40-07.matrix": {
+   "subset": "spec/r40/suites/R40-07.compute-bound.json",
+   "vary": [
+    "TNCA_RTL_MMA"
+   ],
+   "timing": "graph-makespan",
+   "threshold": 1.2,
+   "baseline": "B40-S",
+   "note": "",
+   "explained": []
+  },
+  "R40-08.prefill": {
+   "subset": "spec/r40/suites/R40-08.long-prefill.json",
+   "vary": [
+    "TNCA_SDPA"
+   ],
+   "timing": "graph-makespan",
+   "threshold": 1.5,
+   "baseline": "B40-S",
+   "note": "",
+   "explained": []
+  },
+  "R40-09.holdout": {
+   "subset": "spec/r40/suites/R40-09.holdout.json",
+   "vary": [
+    "TNCA_TUNE"
+   ],
+   "timing": "graph-makespan",
+   "threshold": 1.1,
+   "baseline": "B40-S",
+   "note": "regret p90 <= 15%",
+   "explained": []
+  }
+ },
+ "subsets": {
+  "existing": {
+   "path": "spec/r40/suites/existing.json",
+   "sha256": "65203911a59e6df88a342aec40c0500d739707e9b9b16310f9ec277ed6fea8da",
+   "points": 77
+  },
+  "large": {
+   "path": "spec/r40/suites/large.json",
+   "sha256": "b5ac6b077bb24e3a1fd56dcbfef959394b172018eaf8e5fae8c62fdebe59c3ae",
+   "points": 24
+  },
+  "hbm-tier": {
+   "path": "spec/r40/suites/hbm-tier.json",
+   "sha256": "a4079187c3a4f3ddfe66f3933ffcb11ddc561dcc06307e68171ee43ceec362bc",
+   "points": 12
+  },
+  "hbm": {
+   "path": "spec/r40/suites/hbm.json",
+   "sha256": "22dbb1603d3d5031ba08097729bf4040365bbbea42a0c36c72ee4a71a35fae5b",
+   "points": 113
+  },
+  "hbm-core": {
+   "path": "spec/r40/suites/hbm-core.json",
+   "sha256": "3cb5de4b8ec17029a0c3ab518d63f7b6d98b6c04067f69fadd66928a392d074e",
+   "points": 14
+  },
+  "R40-01.representatives": {
+   "path": "spec/r40/suites/R40-01.representatives.json",
+   "sha256": "71abb6bf4354e24cb553f5f49caad7868ffc9184f0836ac1a57f6f3823c1dff5",
+   "points": 3
+  },
+  "R40-04.ge64mib": {
+   "path": "spec/r40/suites/R40-04.ge64mib.json",
+   "sha256": "6c96fa4805da70b69ffe8e8a4888268bc8f12f557bf54cede9c9c78a75913fed",
+   "points": 21
+  },
+  "R40-04.calibration": {
+   "path": "spec/r40/suites/R40-04.calibration.json",
+   "sha256": "d9a3085df7105e7f93c8672947a7e213ecde3bba4fed0774df6d3f73e49ba11c",
+   "points": 17
+  },
+  "R40-04.model-holdout": {
+   "path": "spec/r40/suites/R40-04.model-holdout.json",
+   "sha256": "847838d205c979f2339075b4677d4bff3e8b45485130d51118199c9f2100e837",
+   "points": 19
+  },
+  "R40-02.graphs3": {
+   "path": "spec/r40/suites/R40-02.graphs3.json",
+   "sha256": "ca98ae1ef3ce1e9954ff708f0a043b44072ee38a32e436cd25a822e3fbe988a7",
+   "points": 24
+  },
+  "R40-02.small-kernel-graphs": {
+   "path": "spec/r40/suites/R40-02.small-kernel-graphs.json",
+   "sha256": "8198e4c78e024a0cfaf5fe6316e71fceeb5886b390e12afe3d6f5d4de70a9705",
+   "points": 6
+  },
+  "R40-03.pointwise-reduction": {
+   "path": "spec/r40/suites/R40-03.pointwise-reduction.json",
+   "sha256": "2c910fff0455c346cde3a512e83879f86581d058f792d73479a0e8900cb478f3",
+   "points": 15
+  },
+  "R40-03.gemm-reuse": {
+   "path": "spec/r40/suites/R40-03.gemm-reuse.json",
+   "sha256": "dc575999e61ec5fc29fc6aaa82e12278305b44f5038de4781af46687606387e2",
+   "points": 9
+  },
+  "R40-04.streaming": {
+   "path": "spec/r40/suites/R40-04.streaming.json",
+   "sha256": "8ea0044e6d5ad80c72327b5e777d4ac5ac704482d6323bb47e2c65652e4a8736",
+   "points": 6
+  },
+  "R40-05.compute": {
+   "path": "spec/r40/suites/R40-05.compute.json",
+   "sha256": "6346e1859fc738dd4953197838bcbbb7b33b786ec061766b221d8610fada2502",
+   "points": 10
+  },
+  "R40-06.reuse": {
+   "path": "spec/r40/suites/R40-06.reuse.json",
+   "sha256": "ba5b8b42e26b314bff21911e92840a57924eb252199d04efea3950970e2e6642",
+   "points": 14
+  },
+  "R40-07.long-k": {
+   "path": "spec/r40/suites/R40-07.long-k.json",
+   "sha256": "590ba5bc721dcbf8126452865e99380eb887f62e181eb748ec2355044b2235b1",
+   "points": 9
+  },
+  "R40-07.compute-bound": {
+   "path": "spec/r40/suites/R40-07.compute-bound.json",
+   "sha256": "41972f63634c4afd8b688d9f366574c8a6e22db487d4f8602df54270cb6385a6",
+   "points": 14
+  },
+  "R40-08.long-prefill": {
+   "path": "spec/r40/suites/R40-08.long-prefill.json",
+   "sha256": "6dab49f80083d7c0c51283a093579177ebf55aa19412d663233116cfa95b192f",
+   "points": 3
+  },
+  "R40-09.holdout": {
+   "path": "spec/r40/suites/R40-09.holdout.json",
+   "sha256": "a989304bcfc9aec4a72ed441c14b27a9b6f1ef7142f5519e2be990cc85b5d6c6",
+   "points": 14
+  },
+  "R40-09.tune": {
+   "path": "spec/r40/suites/R40-09.tune.json",
+   "sha256": "8dff3d7c39445053a726b684f90a1c02615426384de6f19bf4201f8ad571f952",
+   "points": 47
+  }
+ },
+ "workloads": {
+  "llama_generate": {
+   "harness": "python -m archbench.generate --tier hbm --new 64",
+   "what": "a decoder used the way a model is used: one prefill, then greedy decode steps, each fed the device's own token and cache (R40-09: >= 4 layers, >= 64 MiB of weights, prefill >= 512, >= 64 decode steps)",
+   "model": {
+    "dim": 1024,
+    "n_layers": 4,
+    "n_heads": 16,
+    "n_kv_heads": 4,
+    "ffn": 2816,
+    "vocab": 32000,
+    "eps": 1e-05,
+    "dtype": "fp16",
+    "batch": 1,
+    "weights": "random: archbench.models.Llama(cfg, archbench.ops.gen(seed), \"fp16\")",
+    "seed": 0,
+    "weight_bytes": 221267968
+   },
+   "points": {
+    "prefill": {
+     "id": "model.llama_prefill/hbm/fp16-b1-s512",
+     "sha256": "c5c8826fb47090de07d2c4860b32d84da88aaf1b22ab0a206eb4139fef6813e1"
+    },
+    "decode": {
+     "id": "model.llama_decode/hbm/fp16-b1-p512",
+     "sha256": "23cc5a368f9c804105cace69fb9f772d116dbd510dc8bc3a5c5f4f9e8728de16"
+    }
+   },
+   "prefill": 512,
+   "decode_steps": 64,
+   "reference": "eager PyTorch in binary32 on the CPU: every step against the reference given the same inputs (the device's own tokens and cache) at tolerance 0.05, and the generated ids against a generation run wholly in the reference, a differing id accepted only where the reference's two logits nearly tie (archbench/generate.py)",
+   "report": [
+    "TTFT",
+    "decode median and p95 ms/token",
+    "tokens/s",
+    "peak HBM",
+    "input/output/weight/KV traffic"
+   ]
+  }
+ },
+ "sample_plan": {
+  "board": {
+   "warmup": 5,
+   "timed": 30,
+   "blocks": 3,
+   "order": "interleaved A/B, randomised per block",
+   "long_task": {
+    "threshold_s": 1.0,
+    "timed": 10,
+    "blocks": 3
+   },
+   "report": [
+    "median",
+    "p95",
+    "paired bootstrap 95% interval"
+   ]
+  },
+  "simulation": {
+   "note": "deterministic: one run is the measurement; RTL cycles are not seconds"
+  },
+  "bootstrap": {
+   "resamples": 2000,
+   "alpha": 0.05,
+   "seed": 20261010
+  }
+ },
+ "formulas": {
+  "s_geo": "exp(mean_i log(T_A,i / T_B,i)) over the frozen subset, T the per-point median of the timed samples (R39's definition)",
+  "s_geo_balanced_weighted": "exp(sum_i w_i log(T_A,i / T_B,i)), w balanced: every family the same mass, uniform inside it -- reported beside S_geo, never instead of it",
+  "E": "the weighted harmonic mean of eta over the complete suite (archbench.report); a companion, never a speed",
+  "perf_pass": "95% paired bootstrap lower bound of S_geo > 1 and the frozen threshold met",
+  "regress": "a point slower by more than 2% needs a recorded cause and an automatic selection; more than 5% under the final default fails (doc sec 3.2 item 5)",
+  "loo": "the final system with one mechanism off: at least 3% on its target subset, else \"no significant contribution\" (doc sec 3.2 item 6)"
+ },
+ "amendments": [],
+ "baselines": {
+  "B39": "spec/r40/baseline.json: R39's signed-off software, image and configuration",
+  "B40-S": "native device, one core, the same HBM/NUCA system and software, performance switches off",
+  "B40-N": "one multi-core image; only the active core mask changes; slices, PCs and cache capacity held",
+  "B40-F": "the final candidate, every accepted switch on; leave-one-out from it"
+ },
+ "toolchain_lock": "spec/r40/baseline.json:toolchain"
+}

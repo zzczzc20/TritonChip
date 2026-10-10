@@ -167,6 +167,59 @@ U280 有三个 SLR，HBM 接口位于 SLR0；板卡提供 8 GB HBM、32 个 AXI 
 2. B39 全量数值与现有 gate 可复现；device、host、传输及 compile 的时间边界可从日志核对。每个后续性能实验在实施前已有冻结子集。
 3. `tools/r40/acceptance.py` 以机器可读状态区分 `capability-pass`、`perf-pass`、`no-significant-gain`、`fail`、`not-measured`，缺命令/缺证据不能 PASS。
 
+进展（2026-10-10，执行记录；上面的合同未改动）：
+
+- **R39 收尾**：R39 已签收，PR #6 合入 `r38-dco`（merge `b5c606d`）；`r40` 从这里分出。
+  - 终版：软件 `be87779` + 镜像 u280_r39h（v5）。相对 R39-00 基线 77 点 S_geo 5.548，相对 v4 终版 1.287。
+  - Mode A 带 `ring_estimate` 门控：77 点 S_geo 1.0045，套件周期 −0.37 %，记为「无显著贡献」，默认关。
+  - 选择规则：`rctx_roles=1` 只在估计有收益、且两个 role 不会无序读写同一块内存时拆分；`2` 强制（测试用）。
+  - 证据在 `doc/r39_report.md` §8.4–8.5。
+- **B39 冻结**（`spec/r40/baseline.json`，`spec/r40/b39/`）：
+  - 软件：commit `be87779`、tree，以及内容摘要 `files:04338f…`（`archbench/provenance.py`，git checkout 与无 .git 的副本算法相同）。
+  - 默认开关与 Inductor 配置。
+  - 镜像：sha256、profile、capabilities、RTL 参数、时钟策略与实测频率、时序。资源按 SLR 记录在 `spec/r40/b39/resources.json`。
+  - 工具链：板卡主机与构建主机的 Vitis/Vivado/XRT/torch/Triton/Icarus/Yosys 版本。
+  - 记录：77 条板上记录、B1、B4 的仿真参考。只有一种配置（v5、Mode A 关），不混 v4。
+  - 未结项 5 条，各有责任与阻塞范围：
+    - B4：llama_decode 与 attention_decode，都是跨 launch 状态造成的 1–2 拍。
+    - softmax fp16 tiny 对时序开关敏感（交 R40-07）。
+    - v5 上 fp32 matmul/conv2d 慢 0.7–1.4 %（交 R40-07）。
+    - GitHub Actions 因账户计费不启动。
+- **起点更正**：§1.1 表中「K16 MMA 约 256 拍」是 R39 早期估计。实测 v4 是 551 拍，v5 的 `MTX_ABUF` 降到 311 拍（R39 报告 §6、§8）。
+- **API 锁**（`spec/r40/api_lock.json`，`tools/r40/api_lock.py --check`）：torch 2.14.0、Triton 3.8.0 下，R40-01 要用的 25 个扩展 API 都在，签名已记录。
+  - 包括 `register_backend_for_device`（带 fx wrapper 与 custom config 参数）、`_setup_privateuseone_for_python_backend`、`register_interface_for_device`。
+  - Triton 以 entry point 名 `cpu` 发现本后端（§1.1 所说）。
+- **ArchBench 协议 2**（`archbench/PROTOCOL.md` 版本 2）：
+  - 冷启动首次调用单独记录；warm-up 与计时调用分开，每次调用一个样本。
+  - 计时口径：`device-cycles-serial-grid`，有计时调用时另有 `request-latency`。
+  - `host.steady` 记录稳态的 upload / run / download。
+  - 每条记录带 provenance：软件摘要、artifact sha256、profile 与 capabilities、镜像与时钟、launch map。
+  - `--bundle-dir` 把 Dynamo 图、Inductor wrapper 与 Triton 源、TTIR / TNCA IR / 汇编、Triton cache 与 artifact 逐文件哈希存下。
+  - 仿真上 tiny 的 add 与 mlp 已验证。
+- **工具**（`tools/r40/`）：
+  - `ablate.py`：多计时口径、配置差异白名单（knob 与 `platform.<字段>`）、bootstrap 置信区间、bundle 审计、资源对照（`resources.py`）。
+  - `acceptance.py`、`protocol_tests.py`：34 个用例全部通过。每个反例都按正确的原因被拒绝；相同输入 S_geo = 1，结论为「无显著贡献」；缺命令、缺证据或不点名的 gate 都不能 PASS。
+  - `b39.py`、`b39_gates.py`、`b39_repro.py`、`freeze.py`、`hbm_coverage.py`、`evidence.py`。
+  - make 目标：`r40-protocol`、`r40-freeze[-check]`、`r40-api-lock`、`r40-hbm-coverage`、`r40-b39-gates`、`r40-b39`、`r40-acceptance`。
+- **HBM 套件**（`archbench/hbm.py`、`archbench/suites/hbm.json`、`spec/r40/suites/hbm.json`）：
+  - 新增 12 点，working set 都 ≥ 32 MiB，即架构全部 NUCA（8 MiB）的 4 倍：
+    - streaming：add / silu / copy 2^26、softmax、rmsnorm。
+    - GEMM：matmul 4096³、linear、gemv 对 86 MiB 权重。
+    - transpose：8192² fp32。
+    - gather：embedding，从 256 MiB 表取 8192 行。
+    - R40 decoder：4 层，211 MiB 权重，prefill 512；`archbench.generate --tier hbm --new 64` 是多步 decoder 的 workload。
+  - 套件 = 全部现有点 + 原 large + 这 12 点，共 113 点，加 decoder workload。原 large 未缩。
+  - 覆盖记录（`spec/r40/hbm_coverage.json`）：large + hbm 36 点中 35 点经标准路径编译通过，0 点放得进 B39 的 heap，0 点实测。
+  - 未编译的是 `op.layernorm/large`：循环 reduction 产生 `scf.if`，TNCA 没有 lowering。交 R40-03。
+- **冻结子集**（`spec/r40/suites/`，21 个；`plan.json`、`ablation_matrix.json`）：
+  - 每个子集都是对 family / tier / shape / 算术强度 / B39 记录的规则，解析成带定义哈希的点表。
+  - 每个性能实验都有冻结的子集、可变开关、计时口径、阈值与基线。
+  - R40-09 holdout 是 medium + large + hbm 按点 id 哈希取的 30 %（14 点）；HBM 模型的校准 / holdout 各 17 / 19 点。
+  - 其余每包的子集与阈值见 `plan.json`。
+- **复现**：
+  - B39 软件（`be87779` 的导出）在 u280_r39h 上重跑：77/77 数值通过，**77/77 逐点周期与冻结记录相同**。
+  - 协议 2 的板上运行、R39 gate 重跑结果在进行中，结果补在这里。
+
 ### R40-01：原生 PyTorch TNCA 设备与 Inductor 加速器路径
 
 交付：

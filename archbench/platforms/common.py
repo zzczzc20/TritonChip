@@ -7,6 +7,8 @@ import traceback
 import torch
 
 SCHEMA = 'archbench-torch-record/1'
+# Protocol 2 (R40-00): timing kinds, timed samples, provenance (archbench/PROTOCOL.md).
+SCHEMA2 = 'archbench-torch-record/2'
 
 # roadmap section 4.8: failures are kept apart, never merged into "slow".
 STATUSES = ('pass', 'numeric-error', 'compile-failure', 'runtime-fault', 'capacity-exceeded',

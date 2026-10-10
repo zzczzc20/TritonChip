@@ -1,0 +1,64 @@
+{
+ "schema": "tnca-r40-resources/1",
+ "image": "c56d492f6a33400077bc65bce0a04397eedc4a4f89ffd657084e2c875e44ea7d",
+ "clock": "ap_clk",
+ "total": {
+  "lut": 336334,
+  "ff": 227496,
+  "bram": 367,
+  "uram": 0,
+  "dsp": 175
+ },
+ "slr": {
+  "SLR0": {
+   "lut": 31033,
+   "ff": 51292,
+   "bram": 67.5,
+   "uram": 0,
+   "dsp": 0
+  },
+  "SLR1": {
+   "lut": 279220,
+   "ff": 140907,
+   "bram": 249.5,
+   "uram": 0,
+   "dsp": 171
+  },
+  "SLR2": {
+   "lut": 26081,
+   "ff": 35297,
+   "bram": 50,
+   "uram": 0,
+   "dsp": 4
+  }
+ },
+ "slr_crossings": {
+  "SLR2<->SLR1": {
+   "used": 5173,
+   "available": 23040
+  },
+  "SLR1<->SLR0": {
+   "used": 7212,
+   "available": 23040
+  }
+ },
+ "timing": {
+  "design_wns_ns": 0.016,
+  "design_whs_ns": 0.006,
+  "wns_ns": 0.088,
+  "whs_ns": 0.01,
+  "period_ns": 10.0,
+  "target_mhz": 100.0,
+  "clock_mhz": 99.989
+ },
+ "sources": {
+  "util": {
+   "name": "full_util_routed.rpt",
+   "sha256": "7b4a6037e4e445cecc009fcc2df08b0866209d23d0828b029217031efba31d55"
+  },
+  "timing": {
+   "name": "hw_bb_locked_timing_summary_routed.rpt",
+   "sha256": "ee2bebcef846dff3a2ae41eb786889755f2c4a7fff21fab75930b4b633f39413"
+  }
+ }
+}

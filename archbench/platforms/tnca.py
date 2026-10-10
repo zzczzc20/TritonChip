@@ -13,15 +13,27 @@ Time is the sum over every kernel launch of the launch's device cycles
 (`serial-grid`: programs of a grid run one after another, so this is not a
 makespan of a concurrent device). Host transfers -- every launch uploads its
 argument storages and downloads them back in Stage 1 -- are reported beside
-it and are not device time. The first call compiles and runs; its launches
-are the measurement, since a TNCA launch is deterministic and the simulator
-is too slow to repeat it for nothing.
+it and are not device time.
+
+Protocol 2 (archbench/PROTOCOL.md, R40-00) separates the cold first call --
+compilation, any autotuning and the first run -- from the measurement:
+`warmup` calls follow it, then `timed` calls, each one sample. The samples
+are per call: `device-cycles-serial-grid` (the call's launches' device
+cycles) and, when there are timed calls, `request-latency` (host monotonic
+time around the call; on this CPU-tensor path it includes every launch's
+upload and download). With no timed call -- the simulator, where a launch is
+deterministic and too slow to repeat for nothing -- the first call's device
+cycles are the one sample, marked deterministic; there is then no latency.
+The record carries its provenance (archbench/provenance.py): the software
+tree, every artifact's sha256, the profile and its capabilities, the image
+and clock, the launch map, and with `bundle` the files of the chain.
 """
 import os
 import time
 
+from .. import provenance as _prov
 from ..bounds import VERSION, tnca_bound, tnca_peak
-from .common import base_record, classify, compare, error_text, reference
+from .common import SCHEMA2, base_record, classify, compare, error_text, reference
 
 EVIDENCE = {'sim-file': 'measured-rtl', 'sim-socket': 'measured-rtl',
             'fpga-u50-sim': 'measured-rtl', 'fpga-u50': 'measured-board',
@@ -44,6 +56,9 @@ BOARD_CLOCK_HZ = {'fpga-u50': 37.5e6,
                   # (flow/fpga/measure_clock.py). Earlier the same day: /2 of
                   # 150, 75 MHz; until R38's timing work, /4, 37.5 MHz.
                   'fpga-u280': 100e6}
+# How each board's clock is set (a configuration field of protocol-2 records:
+# two runs at different clock policies are different configurations).
+BOARD_CLOCK_POLICY = {'fpga-u50': '150MHz/4', 'fpga-u280': '100MHz-undivided'}
 
 # The device heap a launch's argument storages must fit: Session's default
 # heap, 0x20000..0x80000, of the 512 KiB memory the simulator and the U50
@@ -57,7 +72,10 @@ HEAP_BYTES = 0x80000 - 0x20000
 # is an ablation knob and is recorded (R39-00).
 NOT_KNOBS = frozenset({'TNCA_BACKEND', 'TNCA_BACKEND_ARGS', 'TNCA_HOST_TIMEOUT',
                        'TNCA_DEADLINE', 'TNCA_LAUNCH', 'TNCA_PROFILE', 'TNCA_OPT_LEVEL',
-                       'TNCA_COUNTERS', 'TNCA_TRITON', 'TNCA_DEVICE'})
+                       'TNCA_COUNTERS', 'TNCA_TRITON', 'TNCA_DEVICE',
+                       # the provenance bundle's kernel dump (doc/dumping_ir.md):
+                       # it writes files, the artifact is byte-identical
+                       'TNCA_KERNEL_DUMP', 'TNCA_DUMP_DIR'})
 
 
 def knobs():
@@ -84,7 +102,8 @@ def device_id(profile, backend, backend_kwargs):
         return f'unknown:{type(e).__name__}'
 
 
-def run(point, *, profile='core-sim', opt_level=2, seed=0, counters=False):
+def run(point, *, profile='core-sim', opt_level=2, seed=0, counters=False, warmup=0, timed=0,
+        bundle=None):
     os.environ['TNCA_PROFILE'] = profile
     os.environ['TNCA_OPT_LEVEL'] = str(opt_level)
     if counters:
@@ -117,11 +136,24 @@ def run(point, *, profile='core-sim', opt_level=2, seed=0, counters=False):
     torch._dynamo.reset()
     m, inputs = point.make(seed)
     m = m.eval()
+    compiled = torch.compile(m)
+    if bundle:
+        # Every kernel compiled here, none taken from an earlier cache, so the
+        # dump (TTIR, TNCA IR, assembly) and Triton's own cache entries are
+        # the chain of THIS record.
+        os.environ['TNCA_KERNEL_DUMP'] = '1'
+        os.environ['TNCA_DUMP_DIR'] = os.path.join(bundle, 'kernels')
+        os.environ['TRITON_CACHE_DIR'] = os.path.join(bundle, 'triton_cache')
+    graph = _prov.GraphCapture() if bundle else None
     t0 = time.monotonic()
     log = []
     try:
         with torch.no_grad(), launch_log() as log:
-            got, code = run_and_get_code(torch.compile(m), *inputs)
+            if graph:
+                with graph:
+                    got, code = run_and_get_code(compiled, *inputs)
+            else:
+                got, code = run_and_get_code(compiled, *inputs)
     except Exception as e:                                   # noqa: BLE001
         rec.update(status=classify(e), problems=[error_text(e)],
                    host=dict(wall_s=round(time.monotonic() - t0, 2), launches=len(log)))
@@ -208,7 +240,124 @@ def run(point, *, profile='core-sim', opt_level=2, seed=0, counters=False):
         rec['eta'] = L / cycles
         if rec['eta'] > 1:
             rec['problems'].append(f'AUDIT: eta {rec["eta"]:.4f} > 1 -- a measurement below its strict bound')
+
+    # ---- protocol 2: the measurement proper, and where it came from -------
+    rec['schema'] = SCHEMA2
+    plat.update(image=plat.get('device_id'), clock_policy=BOARD_CLOCK_POLICY.get(backend),
+                software_tree=_prov.software_tree())
+    first = dict(wall_s=round(wall, 3), device_cycles=cycles or None)
+    calls = []
+    if rec['status'] == 'pass' and (warmup or timed):
+        calls = _steady(compiled, inputs, warmup + timed, expected, launch_log, torch)
+        bad = [c for c in calls if c.get('problem')]
+        if bad:
+            rec['status'] = 'not-measured'
+            rec['problems'].append(f'steady call {bad[0]["index"]}: {bad[0]["problem"]}')
+        elif not compare(calls[-1].pop('out'), ref, point.tolerance)['ok']:
+            rec['status'] = 'numeric-error'
+            rec['problems'].append('the last timed call does not match the reference')
+        for c in calls:
+            c.pop('out', None)
+    steady = [c for c in calls[warmup:]] if calls else []
+    rec['timings'] = _timings(cycles, steady, warmup, clock)
+    rec['time'].update(kind='device-cycles-serial-grid',
+                       samples=rec['timings']['device-cycles-serial-grid']['samples'],
+                       deterministic=not steady, warmup=warmup, timed=len(steady),
+                       first_call=first)
+    if steady:
+        rec['time']['device'] = rec['timings']['device-cycles-serial-grid']['median']
+        rec['time']['device_seconds'] = rec['time']['device'] / clock if clock else None
+    rec['host'].update(first_call_s=first['wall_s'],
+                       steady=_host_steady(steady) if steady else None)
+    rec['provenance'] = _provenance(profile, backend, backend_kwargs, plat, log, clock)
+    if bundle:
+        rec['provenance']['bundle'] = _prov.write_bundle(
+            bundle, point_id=point.id, graph_text=graph.text, wrapper_code=code,
+            launches=log, dump_dir=None)
     return rec
+
+
+def _steady(compiled, inputs, n, expected, launch_log, torch):
+    """`n` calls after the first, each with its launches and host time."""
+    out = []
+    for i in range(n):
+        with torch.no_grad(), launch_log() as lg:
+            t = time.monotonic()
+            got = compiled(*inputs)
+            dt = time.monotonic() - t
+        c = dict(index=i, request_s=dt, launches=len(lg),
+                 device_cycles=sum(e['device_cycles'] or 0 for e in lg),
+                 upload_s=sum(e['host_seconds']['upload'] for e in lg),
+                 run_s=sum(e['host_seconds']['run'] for e in lg),
+                 download_s=sum(e['host_seconds']['download'] for e in lg))
+        if expected is not None and len(lg) != expected:
+            c['problem'] = f'{len(lg)} launches, the wrapper makes {expected}'
+        elif not c['device_cycles']:
+            c['problem'] = 'no device time'
+        if i == n - 1:
+            c['out'] = got
+        out.append(c)
+    return out
+
+
+def _median(xs):
+    s = sorted(xs)
+    k = len(s)
+    m = s[k // 2] if k % 2 else 0.5 * (s[k // 2 - 1] + s[k // 2])
+    return int(m) if isinstance(m, float) and m.is_integer() and all(isinstance(x, int) for x in s) else m
+
+
+def _p95(xs):
+    s = sorted(xs)
+    return s[min(len(s) - 1, int(round(0.95 * (len(s) - 1))))]
+
+
+def _timings(first_cycles, steady, warmup, clock):
+    """Every timing kind this run measured, each with its own samples."""
+    out = {}
+    if steady:
+        cyc = [c['device_cycles'] for c in steady]
+        out['device-cycles-serial-grid'] = dict(unit='cycles', samples=cyc, median=_median(cyc),
+                                                p95=_p95(cyc), warmup=warmup, deterministic=False,
+                                                clock_hz=clock)
+        lat = [round(c['request_s'], 6) for c in steady]
+        out['request-latency'] = dict(unit='s', samples=lat, median=_median(lat), p95=_p95(lat),
+                                      warmup=warmup,
+                                      includes=['per-launch upload', 'device', 'per-launch download',
+                                                'host dispatch'])
+    else:
+        cyc = [first_cycles] if first_cycles else []
+        out['device-cycles-serial-grid'] = dict(unit='cycles', samples=cyc,
+                                                median=first_cycles or None, p95=first_cycles or None,
+                                                warmup=0, deterministic=True, clock_hz=clock,
+                                                note='the first call: device time excludes compilation')
+    return out
+
+
+def _host_steady(steady):
+    return {k: round(_median([c[k] for c in steady]), 6)
+            for k in ('request_s', 'upload_s', 'run_s', 'download_s')}
+
+
+def _provenance(profile, backend, backend_kwargs, plat, log, clock):
+    try:
+        from tnca.adapters import r1
+        target, _info = r1.target_for(profile)
+        caps = target.capabilities if isinstance(target.capabilities, dict) else dict(target.capabilities)
+        capabilities = sorted(k for k, v in caps.items() if v)
+    except Exception as e:                                   # noqa: BLE001
+        capabilities = None
+        plat.setdefault('problems', []).append(f'capabilities: {e}')
+    arts = sorted({e.get('artifact') for e in log if e.get('artifact')})
+    seen, launches = set(), []
+    for e in log:
+        launches.append(dict(kernel=e['kernel'], grid=list(e['grid']),
+                             programs=len(e.get('program_cycles') or []), artifact=e.get('artifact')))
+        seen.add(e['kernel'])
+    return dict(software_tree=_prov.software_tree(), git=_prov.git_commit(),
+                artifacts=arts, profile=profile, capabilities=capabilities,
+                image=plat.get('device_id'), clock_hz=clock, backend=backend,
+                launch_map=dict(timing='serial-grid', cores=[0], launches=launches))
 
 
 def _wrapper_launches(code):

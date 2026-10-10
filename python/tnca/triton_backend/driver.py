@@ -226,6 +226,7 @@ class TNCALauncher:
         if _logs:
             entry = dict(kernel=self.metadata.name, grid=grid, profile=self.profile,
                          backend=session.backend_name,
+                         artifact=_artifact_sha256(function), artifact_path=function,
                          device_cycles=event.device_cycles,
                          program_cycles=list(event.program_cycles or []),
                          counters=event.counters,
@@ -343,6 +344,19 @@ class TNCALauncher:
                     pass
 
 _loaded = {}
+_artifact_hashes = {}
+
+
+def _artifact_sha256(path):
+    """The sha256 of the .tnca a launch ran, for the record's provenance
+    (archbench/PROTOCOL.md, protocol 2): what was measured, named by content."""
+    h = _artifact_hashes.get(path)
+    if h is None and isinstance(path, str) and os.path.exists(path):
+        import hashlib
+        with open(path, 'rb') as fh:
+            h = hashlib.sha256(fh.read()).hexdigest()
+        _artifact_hashes[path] = h
+    return h
 
 
 def _load(session, path):

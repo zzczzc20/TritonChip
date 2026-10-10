@@ -119,10 +119,17 @@ def main(argv=None):
         for r in rows:
             print(f"    {r['id']:<34s} {r['kind']:<10s} {r['status']:<20s} {r['why']}")
     report['passed'] = all_ok
+    evaluated = sorted(report['work_packages'])
+    whole = len(evaluated) == len(plan['work_packages'])
+    report['scope'] = 'all work packages' if whole else evaluated
     if args.json:
         args.json.parent.mkdir(parents=True, exist_ok=True)
         args.json.write_text(json.dumps(report, indent=1) + '\n')
-    print(f"\n{plan.get('signoff', 'R40')}: {'PASS' if all_ok else 'NOT PASSED'}")
+    if whole:
+        print(f"\n{plan.get('signoff', 'R40')}: {'PASS' if all_ok else 'NOT PASSED'}")
+    else:
+        print(f"\n{', '.join(evaluated)}: {'PASS' if all_ok else 'NOT PASSED'} "
+              f"(the sign-off {plan.get('signoff', 'R40')} is judged on every work package)")
     return 0 if all_ok else 1
 
 

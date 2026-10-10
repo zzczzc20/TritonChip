@@ -1,6 +1,7 @@
 # R40：原生 TNCA 设备、可扩展多核 NUCA 与 HBM
 
 版本：0.1，2026-10-10。状态：**PROPOSED / NOT ACCEPTED**。
+执行状态（2026-10-10）：R40-00 已关闭（`evidence/r40/R40-00/`）；R40-01 进行中。
 起点：R39 尾声；本次审查为 `r39` 分支、HEAD `3a546702db3fda63547b4c1ff0a9d779a6c5cfbe`，工作区另有未提交的 R39 改动。正式起点由 R40-00 冻结，不能把当前工作区或尚未签收的镜像当作基线。
 签收名：`R40_NATIVE_DEVICE_SCALABLE_NUCA_HBM`。
 上位与前序：[R39 tasks & acceptance](r39_tasks_and_acceptance.md)、[R39 报告](r39_report.md)、[ArchBench 协议](../archbench/PROTOCOL.md)。仓库阶段文档目录为 `doc/`，本文沿用此惯例。
@@ -218,7 +219,20 @@ U280 有三个 SLR，HBM 接口位于 SLR0；板卡提供 8 GB HBM、32 个 AXI 
   - 其余每包的子集与阈值见 `plan.json`。
 - **复现**：
   - B39 软件（`be87779` 的导出）在 u280_r39h 上重跑：77/77 数值通过，**77/77 逐点周期与冻结记录相同**。
-  - 协议 2 的板上运行、R39 gate 重跑结果在进行中，结果补在这里。
+  - R40-00 的树按协议 2 在同一镜像上跑（5 次 warm-up、10 次计时）：
+    - 77/77 通过；首次调用的周期与 B39 全部相同，10 次计时之间没有周期差。
+    - 时间边界一致：host run ≥ 器件时间，request ≥ 各部分，首次调用 ≥ 稳态调用。
+    - compile 中位 3.5 s；CPU 张量路径上器件时间只占 request 的中位 0.3 %。
+  - B39 对它（经 `ablate.py`，只声明软件 tree 不同）：接受，S_geo 1.000000，CI [1, 1]，无显著贡献。
+  - R39 的 27 个合入 gate 在本树上运行，计数按实际冻结（`spec/r40/b39/gates.json`）。
+    - 其中 3 个在 B39 commit 上同样不以 0 退出，连同原因一起冻结：`r38-l0`（两项按设计 pending）、`r38-baseline-check`（R38 基线的 profile 配置；149/149 用例通过）、`r38-identity`（需先 `make r38-baseline`）。
+- **R40-00 关闭**（2026-10-10）：`acceptance.py --wp R40-00` 的四个 gate 都是 `capability-pass`：
+  - protocol 34/34。
+  - frozen 33/33。
+  - b39-gates 27/27。
+  - b39-reproducible：上面的三次运行加 identity。
+  - 证据在 `evidence/r40/R40-00/`。
+  - 此后对 `spec/r40/` 的计划、子集或阈值的任何改动都是 amendment。
 
 ### R40-01：原生 PyTorch TNCA 设备与 Inductor 加速器路径
 

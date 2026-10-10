@@ -238,7 +238,9 @@ def plan(S):
     W.append(dict(id='R40-01', title='native PyTorch TNCA device', depends=['R40-00'],
                   gates=[gate('R40-01', 'device', 'capability', 'make r40-device'),
                          gate('R40-01', 'mixed-device', 'capability', 'make r40-device'),
-                         gate('R40-01', 'device-time', 'perf', 'make r40-device')]))
+                         gate('R40-01', 'device-time', 'capability', 'make r40-device',
+                              note='a capability gate with a floor: S_geo >= 1.0 against B39, no '
+                                   'unhandled regression over 5 % (doc R40-01 acceptance 3)')]))
     W.append(dict(id='R40-02', title='residency, bulk DMA, events, batched submission',
                   depends=['R40-01', 'R40-04'],
                   gates=[gate('R40-02', 'zero-transfer', 'capability', 'make r40-residency'),

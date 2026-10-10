@@ -59,11 +59,11 @@
     },
     {
      "id": "R40-01.device-time",
-     "kind": "perf",
+     "kind": "capability",
      "command": "make r40-device",
      "evidence": "sim/build/r40/R40-01.json",
      "required": true,
-     "note": ""
+     "note": "a capability gate with a floor: S_geo >= 1.0 against B39, no unhandled regression over 5 % (doc R40-01 acceptance 3)"
     }
    ]
   },

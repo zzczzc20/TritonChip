@@ -37,6 +37,13 @@ import threading
 from pathlib import Path
 
 WORD = 8                     # tnca.backend: every transfer starts word-aligned
+# Heap kept free for launches: Session.submit places every launch's argument
+# block and per-context scratch in the same heap the storages come from
+# (about 13 KB a launch, doc/r39_tasks_and_acceptance.md R39-13). Without a
+# reserve, resident tensors could fill the heap and a launch would fail
+# mid-graph; with it, running out is a tensor allocation that fails cleanly
+# (torch.OutOfMemoryError, capacity-exceeded).
+LAUNCH_RESERVE = int(os.environ.get('TNCA_LAUNCH_RESERVE', 32 * 1024))
 _lock = threading.RLock()
 _registered = False
 _ext = None
@@ -67,6 +74,13 @@ class DeviceMemory:
         # Whole words: a transfer starts on an 8-byte boundary, and staging
         # rounds a span out to words, which must stay inside the storage.
         nbytes = (int(nbytes) + WORD - 1) // WORD * WORD
+        heap = s._heap
+        free = sum(size for _addr, size in heap.free_list) + (heap.limit - heap.next)
+        if free - nbytes < LAUNCH_RESERVE:
+            from tnca.errors import BufferError as _BE
+            raise _BE(f'out of device memory: a {nbytes}-byte storage would leave '
+                      f'{free - nbytes} of the heap\'s free bytes, less than the '
+                      f'{LAUNCH_RESERVE} kept for launches')
         buf = s.allocate(nbytes, name=f'storage@{len(self.buffers)}')
         self.buffers[buf.addr] = buf
         self.live += buf.size

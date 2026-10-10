@@ -273,7 +273,14 @@ U280 有三个 SLR，HBM 接口位于 SLR0；板卡提供 8 GB HBM、32 个 AXI 
 - **设备时间**（tiny，RTL 仿真，相对 B39 的 CPU 路径）：27 点中 20 点逐拍相同，S_geo 0.999。差别都在 2 % 以内，各有原因：
   - softmax fp16、gpt2_block、attention_prefill：Inductor 对非 cpu 设备在“reduction 循环里写回后再读”前加 `tl.debug_barrier()`，TNCA 编译为 fence，每处约 20 拍。这正是 B39 缺的同步（B39-OI-6）。
   - resnet_block −1.7 %：FakeTensor 的 conv backend 选择对 PrivateUse1 给出 contiguous 输出，CPU（MKLDNN）给 channels-last。
-  - 板上 tiny / small / medium 的 native 测量进行中。片上 RAM 的 heap 只有 384 KiB，放不下常驻张量的点记为 capacity-exceeded，留待 R40-04 的 HBM。
+- **板上**（u280_r39h，`TNCA_TORCH_DEVICE=native`，协议 2）：
+  - tiny 27/27、small 21/25、medium 20/25 通过。其余 9 点 capacity-exceeded：常驻张量放不下片上 384 KiB 的 heap。
+  - 68 点相对 B39 S_geo 1.0015，52 点逐拍相同，最差 0.983。
+  - 请求延迟在 tiny 上是 B39 CPU 路径的 3.59 倍快（几何平均，范围 1.66–17 倍）。
+- **gate**（`evidence/r40/R40-01/`）：
+  - `R40-01.mixed-device` capability-pass：有 CUDA 与无 CUDA 两台主机各 16/16。
+  - `R40-01.device` 与 `R40-01.device-time` 为 not-measured（9 点 capacity），按验收 1 在 R40-04 之后补齐。
+- **graph 输入上的 descriptor**（`TNCA_INPUTS_ALIGNED=1`，实测）：medium 上 rmsnorm 0.62、softmax 0.92、transpose 0.83。原因是一行一个 program 的 descriptor load 比 vector load 贵，所以默认关，留给 R40-03 的多行块。
 
 ### R40-02：张量驻留、bulk DMA、事件与批量提交
 

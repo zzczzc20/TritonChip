@@ -387,7 +387,13 @@ def main(argv=None):
     args = ap.parse_args(argv)
     D.register()
     results = []
-    for fn in CASES:
+    # The cases that start their own processes go first, before this one has
+    # opened the device: a board is held by one process at a time (a
+    # simulator is one per process, so there it would not matter).
+    first = ('import_orders', 'concurrent_registration', 'worker_process')
+    order = [fn for fn in CASES if fn.__name__ in first] + \
+        [fn for fn in CASES if fn.__name__ not in first]
+    for fn in order:
         if args.only and fn.__name__ not in args.only:
             continue
         try:
@@ -401,11 +407,28 @@ def main(argv=None):
     passed = sum(r['ok'] for r in results)
     print(f"r40-device-tests  {'PASS' if passed == len(results) else 'FAIL'}  ({passed}/{len(results)})")
     if args.evidence:
+        # Acceptance 2 wants a host with CUDA and one without: each run adds
+        # its own checks under its host class, and the gate passes only when
+        # both classes are there and every check of both passed.
         sys.path.insert(0, str(Path(__file__).resolve().parent))
         import evidence
-        evidence.record('R40-01.device-tests', 'capability-pass' if passed == len(results) else 'fail',
-                        results, detail=f'{passed}/{len(results)}; profile {os.environ["TNCA_PROFILE"]}, '
-                                        f'backend {os.environ.get("TNCA_BACKEND", "sim-file")}')
+        import json as _json
+        cls = 'cuda-host' if torch.cuda.is_available() else 'no-cuda-host'
+        where = f'{cls}/{os.environ.get("TNCA_BACKEND", "sim-file")}/{os.uname().nodename}'
+        path = evidence.path_for('R40-01.mixed-device')
+        try:
+            prior = _json.loads(path.read_text())['gates']['R40-01.mixed-device']['checks']
+        except Exception:                                # noqa: BLE001
+            prior = []
+        kept = [c for c in prior if not c['name'].startswith(where + ':')]
+        mine = [dict(name=f"{where}:{r['name']}", ok=r['ok'], detail=r['detail']) for r in results]
+        checks = kept + mine
+        classes = {c['name'].split('/', 1)[0] for c in checks}
+        ok = all(c['ok'] for c in checks) and {'cuda-host', 'no-cuda-host'} <= classes
+        status = 'capability-pass' if ok else ('not-measured' if all(c['ok'] for c in checks) else 'fail')
+        evidence.record('R40-01.mixed-device', status, checks,
+                        detail=f'{sorted({c["name"].rsplit(":", 1)[0] for c in checks})}; '
+                               f'{sum(c["ok"] for c in checks)}/{len(checks)} checks')
     return 0 if passed == len(results) else 1
 
 

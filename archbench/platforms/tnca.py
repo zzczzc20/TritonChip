@@ -132,7 +132,12 @@ def run(point, *, profile='core-sim', opt_level=2, seed=0, counters=False, warmu
     plat = dict(kind='tnca', name=f'tnca:{profile}@{backend}', profile=profile, backend=backend,
                 backend_args=backend_kwargs, opt_level=opt_level, inductor=config,
                 knobs=knobs(), device_id=device_id(profile, backend, backend_kwargs))
+    # The configuration a protocol-2 comparison checks, on every record --
+    # one that fails as much as one that passes (tools/r40/ablate.py `mixed`).
+    plat.update(image=plat.get('device_id'), clock_policy=BOARD_CLOCK_POLICY.get(backend),
+                software_tree=_prov.software_tree())
     rec = base_record(point, plat, EVIDENCE.get(backend, 'measured-rtl'))
+    rec['schema'] = SCHEMA2
 
     compile_only = os.environ.get('TNCA_LAUNCH') == 'skip'
     try:
@@ -260,12 +265,16 @@ def run(point, *, profile='core-sim', opt_level=2, seed=0, counters=False, warmu
 
     # ---- protocol 2: the measurement proper, and where it came from -------
     rec['schema'] = SCHEMA2
-    plat.update(image=plat.get('device_id'), clock_policy=BOARD_CLOCK_POLICY.get(backend),
-                software_tree=_prov.software_tree())
     first = dict(wall_s=round(wall, 3), device_cycles=cycles or None)
     calls = []
     if rec['status'] == 'pass' and (warmup or timed):
-        calls = _steady(compiled, inputs, warmup + timed, expected, launch_log, torch)
+        got = None               # the first call's outputs are not held across the timed calls
+        try:
+            calls = _steady(compiled, inputs, warmup + timed, expected, launch_log, torch)
+        except Exception as e:                               # noqa: BLE001
+            rec['status'] = classify(e)
+            rec['problems'].append(f'steady calls: {error_text(e)}')
+            calls = []
         bad = [c for c in calls if c.get('problem')]
         if bad:
             rec['status'] = 'not-measured'
@@ -300,7 +309,9 @@ def run(point, *, profile='core-sim', opt_level=2, seed=0, counters=False, warmu
 def _steady(compiled, inputs, n, expected, launch_log, torch):
     """`n` calls after the first, each with its launches and host time."""
     out = []
+    got = None
     for i in range(n):
+        got = None               # free the last call's outputs before the next
         with torch.no_grad(), launch_log() as lg:
             t = time.monotonic()
             got = compiled(*inputs)

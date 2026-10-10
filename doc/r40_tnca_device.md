@@ -93,3 +93,30 @@ The remaining device-type branches, and what they mean for `tnca`:
 
 Every override is scoped to tensors on `tnca`; CPU and CUDA tensors in the
 same process keep upstream's behaviour.
+
+## 4. Descriptors on graph inputs (`TNCA_INPUTS_ALIGNED=1`, measured)
+
+`tnca` storages are 64-byte aligned, so unlike host tensors the device's graph
+inputs could be assumed aligned. Inductor would then read them through tensor
+descriptors as on a GPU. The parity policy leaves that off. The opt-in switch
+measures the alternative (RTL simulation, native device, device cycles):
+
+| Point | Parity | Inputs aligned | Speedup |
+|---|---|---|---|
+| `op.add/medium` | 93 817 | 93 817 | 1.000 (no descriptor either way) |
+| `op.matmul/medium` fp16 | 269 196 | 269 196 | 1.000 (the template's transfers are the TNCA compiler's) |
+| `op.rmsnorm/medium` | 547 815 | 890 111 | 0.615 |
+| `op.softmax/medium` | 564 395 | 613 172 | 0.920 |
+| `op.transpose/medium` fp32 | 91 440 | 109 984 | 0.831 |
+
+The tiny tier said the same. Inductor's reductions run one row per program,
+and a descriptor load of a one-row block costs the TNCA lowering more than a
+vector load of that row. So the switch stays off. Making descriptors pay on
+these kernels is a matter of wider, multi-row blocks (R40-03), measured then.
+
+Where the standard path does move data through the transfer engine on `tnca`:
+- the GEMM template's tiles: TensorMaps built by the TNCA compiler, transfers and MMAs;
+- an intermediate realised and read back (softmax's stored `exp`), through a descriptor.
+
+Inductor generates no descriptor for a one-dimensional pointwise kernel such as
+`add`, with or without the switch.

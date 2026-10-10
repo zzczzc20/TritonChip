@@ -1415,6 +1415,16 @@ r40-b39:
 	   --gates $(BUILD)/r40/b39_gates_run.json --evidence
 r40-acceptance:
 	@$(PYTHON) tools/r40/acceptance.py --json $(BUILD)/r40/acceptance.json
+# R40-01: the tnca PyTorch device (doc/r40_tnca_device.md). The device tests
+# on this host -- run once on a host with CUDA and once on one without
+# (acceptance 2) -- then the native suite's records (R40_NATIVE: the
+# u280_<tier>.jsonl of `archbench.run --set TNCA_TORCH_DEVICE=native` on the
+# B39 image) against B39 (acceptance 1 and 3).
+R40_NATIVE ?= $(BUILD)/r40/native
+.PHONY: r40-device
+r40-device: $(R2_DATA_STAMP) | dirs
+	@$(TORCH_PYTHON) tools/r40/device_tests.py --evidence; \
+	 $(PYTHON) tools/r40/device_time.py --native $(R40_NATIVE) --evidence
 
 # One suite, every backend. This is the suite a downstream branch runs.
 r36-conformance: $(R2_DATA_STAMP) | dirs

@@ -1,0 +1,19 @@
+# R40-01 (in progress): the tnca device, 2026-10-10
+
+`gates.json` holds the evidence the gate tools wrote. `tools/r40/acceptance.py --wp R40-01` gives:
+
+| Gate | Status | Why |
+|---|---|---|
+| R40-01.mixed-device | capability-pass | `tools/r40/device_tests.py`, 16/16 on a host with CUDA (GB10, simulator) and 16/16 on one without (the board host, U280): 32/32 checks |
+| R40-01.device | not-measured | 68 of the 77 tiny/small/medium points run on the device and pass, with no host fallback. 9 are capacity-exceeded: their tensors do not fit resident in the B39 image's 384 KiB on-chip heap |
+| R40-01.device-time | not-measured | The frozen comparison needs all 77 (`ablate.py` refuses a frozen point that did not run). The diagnostic over the 68 is S_geo 1.0015 against B39, 52 cycle-identical, worst 0.983 (resnet_block tiny, explained in `doc/r40_tnca_device.md`) |
+
+The two `not-measured` gates are signed off after R40-04 gives the device
+external memory, as the R40 contract foresees (R40-01 acceptance 1: "HBM
+就绪前先跑容量可容纳的 smoke，完整签收在 R40-04 后补齐").
+
+The board run: u280_r39h, software of this commit's parent tree,
+`archbench.run --set TNCA_TORCH_DEVICE=native --warmup 5 --timed 10`. The
+records are under `sim/build/r40/native1/`. On tiny, request latency is
+3.59× B39's CPU path (geometric mean, range 1.66–17×), because no tensor
+crosses the host interface per launch.

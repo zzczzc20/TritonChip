@@ -32,7 +32,7 @@ from triton.backends.compiler import GPUTarget              # noqa: E402
 from triton.compiler.compiler import ASTSource              # noqa: E402
 from tnca import aot, artifact                              # noqa: E402
 from tnca.triton_backend.compiler import (_schedule, _index_opt, _rctx_spmd,  # noqa: E402
-                                          _sparse_tensormaps)
+                                          _sparse_tensormaps, _rctx_roles)
 
 
 def main():
@@ -60,6 +60,8 @@ def main():
                 opts['rctx_spmd'] = _rctx_spmd()
             if _sparse_tensormaps():
                 opts['sparse_tensormaps'] = _sparse_tensormaps()
+            if _rctx_roles():
+                opts['rctx_roles'] = _rctx_roles()
             aot.compile_aot(fn, signature=sig, constexprs=ce, profile='core-sim',
                             options=opts, output=str(a_path))
             src = ASTSource(fn, signature=sig, constexprs=ce)

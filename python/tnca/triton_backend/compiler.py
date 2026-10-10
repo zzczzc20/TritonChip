@@ -62,6 +62,13 @@ def _rctx_spmd():
     return int(os.environ.get('TNCA_RCTX_SPMD', '1'))
 
 
+def _rctx_roles():
+    # R39-12's switch: a GEMM loop as a producer and a consumer on a Role
+    # Context pair (Mode A), on a target with rctx_pair. Off until its
+    # ablation is in; TNCA_RCTX_ROLES=1 on.
+    return int(os.environ.get('TNCA_RCTX_ROLES', '0'))
+
+
 @dataclass(frozen=True)
 class TNCAOptions:
     # What ASTSource.make_ir reads; tnca_cc.triton_options.frontend_options
@@ -92,6 +99,7 @@ class TNCAOptions:
     index_opt: int = field(default_factory=_index_opt)
     rctx_spmd: int = field(default_factory=_rctx_spmd)
     sparse_tensormaps: int = field(default_factory=_sparse_tensormaps)
+    rctx_roles: int = field(default_factory=_rctx_roles)
 
     def hash(self):
         key = '_'.join(f'{k}-{v}' for k, v in sorted(self.__dict__.items()))
@@ -264,6 +272,8 @@ class TNCABackend(BaseBackend):
             compile_options['rctx_spmd'] = options.rctx_spmd
         if options.sparse_tensormaps:
             compile_options['sparse_tensormaps'] = options.sparse_tensormaps
+        if options.rctx_roles:
+            compile_options['rctx_roles'] = options.rctx_roles
         # The dump switches of doc/dumping_ir.md (TNCA_KERNEL_DUMP=1, written
         # under TNCA_DUMP_DIR/<kernel>/), on this entry point as on AOT --
         # and written for a kernel that FAILS to lower too, with every stage

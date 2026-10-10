@@ -159,8 +159,15 @@ def emit(kernel, target, *, prov=None, check_protocol=True,
     cg = r1['CodeGen'](kernel, target, check_protocol=check_protocol,
                        opt_level=opt_level)
     try:
-        cg.assign_shared()
-        cg.run()
+        if len(kernel.roles) > 1:
+            # R39-12: a producer and a consumer per program (Mode A).
+            from tnca_cc.codegen import emit_roles
+            text, cg = emit_roles(kernel, target, check_protocol=check_protocol,
+                                  opt_level=opt_level)
+        else:
+            cg.assign_shared()
+            cg.run()
+            text = None
     except r1['Unsupported'] as d:
         raise UnsupportedError(str(d).splitlines()[0],
                                where='code generation',
@@ -169,7 +176,8 @@ def emit(kernel, target, *, prov=None, check_protocol=True,
         raise CompileError(str(d).splitlines()[0],
                            where='code generation',
                            detail={'diagnostic': str(d), 'kind': type(d).__name__})
-    text = cg.b.text()
+    if text is None:
+        text = cg.b.text()
     if prov is not None:
         prov.record('codegen', 'tnca_cc.codegen.CodeGen')
         prov.record('ownership_check', 'unconditional')

@@ -746,9 +746,14 @@ class Session:
             # context r looping over programs r, r + per, ... (the kernel
             # does the looping), so a row is one launch with min(per, gx)
             # contexts started and pid.x = 0.
-            per = len(task['module'].manifest.get('execution', {})
-                      .get('program_to_role', {'0': ['role0']}))
-            launches_x = 1 if per > 1 else gx
+            p2r = (task['module'].manifest.get('execution', {})
+                   .get('program_to_role', {'0': ['role0']}))
+            per = len(p2r)
+            # R39-12 Mode A: each program is a producer and a consumer on a
+            # Role Context pair -- contexts 2k and 2k+1 -- and the kernel
+            # loops over its programs even when there is one pair.
+            rpp = len(p2r.get('0', ['role0']))
+            launches_x = 1 if per > 1 or rpp > 1 else gx
             total = launches_x * gy * gz
             cycles = 0
             per_program = []
@@ -763,7 +768,11 @@ class Session:
                 x = linear % launches_x
                 y = (linear // launches_x) % gy
                 z = linear // (launches_x * gy)
-                mask = (1 << min(per, gx)) - 1
+                mask = (1 << (min(per, gx) * rpp)) - 1
+                if rpp == 2:
+                    # Bit 28: pair 2k and 2k+1 -- one vector base, one slice
+                    # (RPAIR). The compiler pairs only where the target has it.
+                    mask |= 1 << 28
                 if per > 1:
                     # Bit 31: each started context gets its own slice of the
                     # core's accumulators, barriers, descriptors and windows

@@ -952,3 +952,447 @@ def split_roles(kernel, target, *, name=None):
                                    crossing[src]) for src in ordered],
                        rematerialised=remat_count,
                        windows=1 if ordered else 0)
+
+
+# ---------------------------------------------------------------------------
+# R39-12: Mode A on the standard path -- the upstream pipeline, on the
+# importer's IR
+# ---------------------------------------------------------------------------
+#
+# Upstream's automatic warp specialisation (triton
+# lib/Dialect/TritonGPU/Transforms/WarpSpecialization) runs, in order:
+#
+#   PartitionScheduling  "data" ops are seeded -- descriptor loads, MMAs --
+#                        and merged under heuristics and constraints; then
+#                        propagatePartitions pulls every non-data op into
+#                        each partition that uses it (duplicating it), and
+#                        duplicateCheapOps recomputes cheap chains instead of
+#                        communicating them;
+#   InsertAref/LowerAref every value that crosses partitions inside the loop
+#                        becomes a ring of numStages buffers with a full and
+#                        an empty barrier per buffer;
+#   PartitionLoops       each partition gets its own copy of the loop.
+#
+# The same three steps run here, with this machine's answers where upstream's
+# are NVIDIA's (sec 7.2):
+#
+#   * the producer is the TRANSFER partition -- each `t.ld.async` feeding an
+#     MMA, and whatever builds what it reads -- and the consumer is MATRIX
+#     merged with the EPILOGUE: two roles per program, one Role Context pair
+#     (RPAIR) each (sec 7.6);
+#   * a ring buffer is a window per stage: the register file is the only
+#     buffer there is (sec 7.3);
+#   * each role counts the epochs it waits on itself -- the scalar file is
+#     per context (sec 7.3), so nothing but the barriers is exchanged;
+#   * a W number is an encoding field (sec 9), so the loop body is unrolled
+#     once per stage instead of indexing the ring.
+#
+# Twill (Soi et al., "Optimal Software Pipelining and Warp Specialization for
+# Tensor Core GPUs", arXiv 2512.18134) frames the choice as one of initiation
+# interval: variable-latency transfers on a warp of their own, and the
+# schedule taken only where its steady state beats the serial one. The paper
+# releases no code; `ring_estimate` asks its question of the R39-01 machine
+# model and the result is recorded with the kernel.
+
+_EFFECT = frozenset({
+    'dma_load', 'dma_store', 'mma_async', 'acc_zero', 'acc_write', 'acc_read',
+    'barrier_init', 'barrier_arm', 'barrier_wait', 'barrier_arrive',
+    'window_def', 'window_put', 'desc_snapshot', 'store', 'scatter', 'sstore',
+    'fence', 'atomic', 'atomic_cas', 'assert_eq', 'assert_lane', 'trap'})
+_MEM_WRITES = frozenset({'store', 'scatter', 'sstore', 'fence', 'atomic',
+                         'atomic_cas'})
+_ALWAYS = frozenset({'label', 'branch_nz', 'exit', 'comment'})
+_IN_PLACE = {'assign': 0, 'vinsert': 0}
+_RESOURCE = frozenset({'window', 'desc', 'barrier', 'acc'})
+PRODUCER, CONSUMER = 0, 1
+
+
+class NotSpecialised(Exception):
+    """Why a kernel keeps one role per program. Not an error: the kernel is
+    compiled as it was."""
+
+
+@dataclass
+class RingLoop:
+    head: int            # the loop's label
+    test: int            # its exit branch
+    latch: int           # first op of the increment that ends the body
+    back: int            # the back branch
+    windows: list        # windows a transfer fills and an MMA reads
+    direct: bool         # transfers complete on the ring's barrier
+
+
+def _operands(op):
+    out = list(op.operands)
+    m = op.attrs.get('mask')
+    if m is not None:
+        out.append(m)
+    return [v for v in out if isinstance(v, Value)]
+
+
+def find_ring_loop(ops):
+    """The loop to specialise: the innermost one holding both a transfer
+    into a window and an MMA reading that window, in the importer's shape --
+
+        L:  <exit test> branch_nz E
+            <body, straight-line>
+            <increment>  branch_nz L
+        E:
+    """
+    labels = {op.attrs['name']: i for i, op in enumerate(ops) if op.kind == 'label'}
+    loops = [(labels[op.attrs['target']], i) for i, op in enumerate(ops)
+             if op.kind == 'branch_nz' and labels.get(op.attrs.get('target'), i) < i]
+    found = []
+    for head, back in loops:
+        if any(head < h < back for h, b in loops if (h, b) != (head, back)):
+            continue                                   # not innermost
+        body = ops[head + 1:back]
+        fills = {id(op.operands[0]): op for op in body if op.kind == 'dma_load'}
+        reads = {id(w) for op in body if op.kind == 'mma_async' for w in op.operands[1:3]}
+        windows = [op.operands[0] for k, op in fills.items() if k in reads]
+        if windows:
+            found.append((head, back, windows))
+    if not found:
+        raise NotSpecialised('no loop fills a window that an MMA in it reads')
+    if len(found) > 1:
+        raise NotSpecialised(f'{len(found)} loops feed an MMA; one is specialised')
+    head, back, windows = found[0]
+    end = ops[back + 1] if back + 1 < len(ops) else None
+    test = next((i for i in range(head + 1, back) if ops[i].kind == 'branch_nz'), None)
+    if (test is None or end is None or end.kind != 'label'
+            or ops[test].attrs.get('target') != end.attrs['name']):
+        raise NotSpecialised('the loop does not exit by one test at its head')
+    # The increment: the assigns and the pure scalar ops at the end of the
+    # body that only they and the back branch read.
+    latch = back
+    while latch - 1 > test:
+        op = ops[latch - 1]
+        if op.kind != 'assign' and not (op.kind in ('const', 'sbin', 'sbini', 'scmp')
+                                         and all(id(r) in _read_from(ops, latch, back + 1)
+                                                 and id(r) not in _read_from(ops, test + 1, latch - 1)
+                                                 for r in op.results)):
+            break
+        latch -= 1
+    for i in range(test + 1, latch):
+        if ops[i].kind in ('label', 'branch_nz', 'exit'):
+            raise NotSpecialised('the loop body is not straight-line')
+    body = ops[test + 1:latch]
+    # The transfers complete on the ring's barrier unless the producer
+    # writes memory in the loop -- the gathered-and-repacked operand of a
+    # target without `tensor_transpose` -- or builds a map in it: then it
+    # waits for its own transfers before overwriting what they read, and
+    # arrives on the ring itself.
+    direct = not any(op.kind in _MEM_WRITES or op.kind == 'desc_snapshot' for op in body)
+    return RingLoop(head, test, latch, back, windows, direct)
+
+
+def _read_from(ops, a, b):
+    return {id(v) for op in ops[a:b] for v in _operands(op)}
+
+
+def _clone(op, vmap):
+    """A copy of `op` with fresh results, reading through `vmap`. A window,
+    descriptor, barrier or accumulator is a per-core resource and keeps its
+    identity -- the kernel's lists name it -- unless `vmap` maps it."""
+    results = []
+    for r in op.results:
+        if id(r) not in vmap and r.kind not in _RESOURCE:
+            vmap[id(r)] = Value(name=r.name, kind=r.kind, dtype=r.dtype, length=r.length)
+        results.append(vmap.get(id(r), r))
+    new = Op(kind=op.kind, results=results,
+             operands=[vmap.get(id(v), v) if isinstance(v, Value) else v for v in op.operands],
+             attrs=dict(op.attrs))
+    m = new.attrs.get('mask')
+    if isinstance(m, Value):
+        new.attrs['mask'] = vmap.get(id(m), m)
+    return new
+
+
+def _unroll(kernel, ops, loop, stages):
+    """The loop body once per ring stage, each stage on windows of its own:
+
+        L:  test; body[stage 0]; increment;
+                  test; body[stage 1]; increment; ... branch L
+        E:
+
+    Every copy keeps the exit test, so any trip count is right; a role's
+    epochs are counted per stage, so one that leaves after stage 0 still
+    agrees with the other role about every barrier."""
+    test_ops = ops[loop.head + 1:loop.test + 1]
+    body = ops[loop.test + 1:loop.latch]
+    incr = ops[loop.latch:loop.back]
+    out = list(ops[:loop.test + 1])
+    ring = []                              # [stage] -> {window id: window}
+    for s in range(stages):
+        vmap = {}
+        if s:
+            for w in loop.windows:
+                c = Value(name=f"{w.name}_s{s}", kind=w.kind, dtype=w.dtype, length=w.length)
+                kernel.windows.append(c)
+                vmap[id(w)] = c
+            tmap = {}
+            out += [_clone(op, tmap) for op in test_ops]
+        ring.append({id(w): vmap.get(id(w), w) for w in loop.windows})
+        for op in body:
+            c = _clone(op, vmap)
+            c.attrs['_stage'] = s
+            out.append(c)
+        if s < stages - 1:
+            imap = {}
+            out += [_clone(op, imap) for op in incr]
+    out += ops[loop.latch:]
+    return out, ring
+
+
+def _assign(ops, loop, ring_ids):
+    """PartitionScheduling: every op with an effect gets a partition.
+
+    Seeds as upstream's: the transfers filling a ring window (descriptor
+    loads) are the producer's and the MMAs the consumer's. Then the merges
+    upstream's heuristics would make on this IR -- the whole load chain with
+    its load (`load_local_alloc`, `load_epilog`), the epilogue with the MMA
+    when there are two roles (sec 7.6) -- written as the rule each op meets.
+    Pure ops get none here: `_pull` takes them into each role that needs
+    them (propagatePartitions, duplicateCheapOps)."""
+    first = loop.test + 1
+    last = max(i for i, op in enumerate(ops) if op.attrs.get('_stage') is not None)
+    token_of = {}
+    for i, op in enumerate(ops):
+        if op.kind in ('dma_load', 'dma_store', 'mma_async'):
+            token_of[id(op.operands[2] if op.kind != 'mma_async' else op.operands[3])] = i
+    part = {}
+    for i, op in enumerate(ops):
+        k = op.kind
+        if k == 'dma_load' and id(op.operands[0]) in ring_ids:
+            part[i] = PRODUCER
+        elif k in ('mma_async', 'acc_zero', 'acc_write', 'acc_read'):
+            part[i] = CONSUMER
+        elif k == 'window_def' and id(op.results[0]) in ring_ids:
+            part[i] = PRODUCER
+        elif k in _EFFECT and first <= i <= last:
+            part[i] = PRODUCER          # the transfer chain, and its waits
+        elif k in _EFFECT:
+            part[i] = CONSUMER          # the epilogue, and anything else outside
+    # A barrier op goes with the command its token counts.
+    arm_of = {}
+    for i, op in enumerate(ops):
+        if op.kind == 'barrier_arm':
+            user = token_of.get(id(op.results[0]))
+            if user is not None:
+                part[i] = part.get(user, part.get(i))
+            arm_of[id(op.results[0])] = i
+    for i, op in enumerate(ops):
+        if op.kind == 'barrier_wait' and id(op.operands[0]) in arm_of:
+            part[i] = part[arm_of[id(op.operands[0])]]
+    # A TensorMap's snapshot goes with its transfers, and its stores with it.
+    users = {}
+    for i, op in enumerate(ops):
+        for v in _operands(op):
+            users.setdefault(id(v), []).append(i)
+    maps = {}
+    for i, op in enumerate(ops):
+        if op.kind == 'desc_snapshot':
+            roles = {part[u] for u in users.get(id(op.results[0]), []) if u in part}
+            if len(roles) > 1:
+                raise NotSpecialised(f'descriptor {op.results[0].name} is read by both roles')
+            if roles:
+                part[i] = roles.pop()
+            maps[id(op.operands[0])] = part[i]
+    for i, op in enumerate(ops):
+        if op.kind == 'sstore' and id(op.operands[0]) in maps:
+            part[i] = maps[id(op.operands[0])]
+    return part
+
+
+def _pull(ops, part, role):
+    """propagatePartitions for one role: its own ops, the control flow, and
+    everything they read -- duplicated rather than communicated, as
+    duplicateCheapOps would. A value only another role's op can produce is
+    a crossing; a ring window, a descriptor, a barrier or an accumulator is
+    a per-core resource both name alike (sec 10.1) and is not one."""
+    producer, mutators = {}, {}
+    for i, op in enumerate(ops):
+        for r in op.results:
+            producer[id(r)] = i
+        k = _IN_PLACE.get(op.kind)
+        if k is not None and k < len(op.operands):
+            mutators.setdefault(id(op.operands[k]), []).append(i)
+    keep = set()
+    work = [i for i, op in enumerate(ops) if part.get(i) == role or op.kind in _ALWAYS]
+    while work:
+        i = work.pop()
+        if i in keep:
+            continue
+        keep.add(i)
+        op = ops[i]
+        reads = _operands(op)
+        if op.kind in _IN_PLACE:
+            reads = [v for j, v in enumerate(op.operands) if j != _IN_PLACE[op.kind]
+                     and isinstance(v, Value)]
+        for v in reads:
+            for j in [producer.get(id(v))] + mutators.get(id(v), []):
+                if j is None or j in keep:
+                    continue
+                other = part.get(j)
+                if other is not None and other != role:
+                    if v.kind in _RESOURCE:
+                        continue
+                    raise NotSpecialised(
+                        f'{v.name} ({v.kind}) crosses from role {other} to role {role} '
+                        f'at {ops[j].kind}')
+                work.append(j)
+    return [ops[i] for i in sorted(keep)]
+
+
+def _ring_sync(role_ops, role, ring, full, empty, direct, stages):
+    """InsertAref + LowerAref for one role: the waits, arms and arrivals of
+    each stage's full/empty pair, with the epochs this role counts."""
+    use = [Value(name=f'ring_use{s}', kind='scalar', dtype='i64') for s in range(stages)]
+    out = [Op('const', [u], [], {'value': 0}) for u in use]
+    span = {}
+    for i, op in enumerate(role_ops):
+        s = op.attrs.get('_stage')
+        if s is not None:
+            a, b = span.get(s, (i, i))
+            span[s] = (min(a, i), max(b, i))
+    start = {a: s for s, (a, b) in span.items()}
+    end = {b: s for s, (a, b) in span.items()}
+    ring_ids = {id(w): s for s in range(stages) for w in ring[s].values()}
+    if role == PRODUCER and direct:
+        # The importer arms a barrier per transfer and waits for it; on the
+        # ring the transfers complete on the stage's `full` instead, and the
+        # consumer is the one who waits.
+        dropped, token_stage, count = set(), {}, {}
+        for op in role_ops:
+            if op.kind == 'dma_load' and id(op.operands[0]) in ring_ids:
+                s = ring_ids[id(op.operands[0])]
+                token_stage[id(op.operands[2])] = s
+                count[s] = count.get(s, 0) + 1
+        for i, op in enumerate(role_ops):
+            if op.kind == 'barrier_arm' and id(op.results[0]) in token_stage:
+                dropped.add(i)
+            elif op.kind == 'barrier_wait' and id(op.operands[0]) in token_stage:
+                dropped.add(i)
+        full_tok = {}
+    mma_wait = {}
+    if role == CONSUMER:
+        mma_tok = {}
+        for op in role_ops:
+            if op.kind == 'mma_async':
+                for w in op.operands[1:3]:
+                    if id(w) in ring_ids:
+                        mma_tok[id(op.operands[3])] = ring_ids[id(w)]
+        for i, op in enumerate(role_ops):
+            if op.kind == 'barrier_wait' and id(op.operands[0]) in mma_tok:
+                mma_wait[i] = mma_tok[id(op.operands[0])]
+    for i, op in enumerate(role_ops):
+        s = start.get(i)
+        if s is not None:
+            if role == PRODUCER:
+                # Wait until the consumer has released this stage as many
+                # times as it has been filled; on the first trip that is
+                # epoch 0, which every barrier starts at (ISA sec 9A.7).
+                tk = Value(name=f'ring_empty{s}', kind='token', dtype='i64')
+                out += [Op('comment', [], [], {'text': f'ring stage {s}: wait until the consumer released it'}),
+                        Op('barrier_token_dyn', [tk], [empty[s], use[s]]),
+                        Op('barrier_wait', [], [tk], {'retires': [full[s]]})]
+            else:
+                g = Value(name=f'ring_gen{s}', kind='scalar', dtype='i64')
+                tk = Value(name=f'ring_full{s}', kind='token', dtype='i64')
+                out += [Op('comment', [], [], {'text': f'ring stage {s}: wait until the producer filled it'}),
+                        Op('sbini', [g], [use[s]], {'op': 'add', 'imm': 1}),
+                        Op('assign', [], [use[s], g]),
+                        Op('barrier_token_dyn', [tk], [full[s], use[s]]),
+                        Op('barrier_wait', [], [tk])]
+        if role == PRODUCER and direct:
+            if i in dropped:
+                continue
+            if op.kind == 'dma_load' and id(op.operands[0]) in ring_ids:
+                s2 = ring_ids[id(op.operands[0])]
+                if s2 not in full_tok:
+                    full_tok[s2] = Value(name=f'ring_fill{s2}', kind='token', dtype='i64')
+                    out.append(Op('barrier_arm', [full_tok[s2]], [full[s2]],
+                                  {'arrivals': 0, 'ops': count[s2]}))
+                op = Op(op.kind, op.results, [op.operands[0], op.operands[1], full_tok[s2]]
+                        + list(op.operands[3:]), dict(op.attrs))
+        out.append(op)
+        if role == CONSUMER and i in mma_wait:
+            s2 = mma_wait[i]
+            t = Value(name=f'ring_release{s2}', kind='token', dtype='i64')
+            out += [Op('barrier_arm', [t], [empty[s2]], {'arrivals': 1, 'ops': 0}),
+                    Op('barrier_arrive', [], [empty[s2]])]
+        s = end.get(i)
+        if s is not None and role == PRODUCER:
+            if not direct:
+                t = Value(name=f'ring_filled{s}', kind='token', dtype='i64')
+                out += [Op('barrier_arm', [t], [full[s]], {'arrivals': 1, 'ops': 0}),
+                        Op('barrier_arrive', [], [full[s]])]
+            n = Value(name=f'ring_next{s}', kind='scalar', dtype='i64')
+            out += [Op('sbini', [n], [use[s]], {'op': 'add', 'imm': 1}),
+                    Op('assign', [], [use[s], n])]
+    if role == PRODUCER and direct:
+        full_tok.clear()
+    return out
+
+
+def _rename_labels(ops, role):
+    for op in ops:
+        if op.kind == 'label':
+            op.attrs = dict(op.attrs, name=f"{op.attrs['name']}__r{role}")
+        elif op.kind == 'branch_nz':
+            op.attrs = dict(op.attrs, target=f"{op.attrs['target']}__r{role}")
+
+
+def specialize_loop(kernel, target, *, stages=2):
+    """R39-12: one program as a producer and a consumer role over a ring.
+
+    Takes a one-role kernel (after rctx_spmd, if it ran) and returns a
+    description of what was done; the kernel is rebuilt in place with two
+    roles. Raises NotSpecialised, leaving the kernel untouched, when it does
+    not have the shape this handles.
+    """
+    if len(kernel.roles) != 1:
+        raise NotSpecialised('the kernel already has more than one role')
+    ops = kernel.roles[0].region.ops
+    loop = find_ring_loop(ops)
+    import copy
+    saved = copy.copy(kernel.windows), copy.copy(kernel.barriers)
+    try:
+        unrolled, ring = _unroll(kernel, ops, loop, stages)
+        ring_ids = {id(w) for st in ring for w in st.values()}
+        # Where the unrolled loop is now.
+        heads = [i for i, op in enumerate(unrolled) if op is ops[loop.head]]
+        test = next(i for i in range(heads[0] + 1, len(unrolled))
+                    if unrolled[i].kind == 'branch_nz')
+        part = _assign(unrolled, RingLoop(heads[0], test, 0, 0, loop.windows, loop.direct),
+                       ring_ids)
+        prod = _pull(unrolled, part, PRODUCER)
+        cons = _pull(unrolled, part, CONSUMER)
+    except NotSpecialised:
+        kernel.windows[:], kernel.barriers[:] = saved
+        raise
+    full = [Value(name=f'ring_full{s}', kind='barrier') for s in range(stages)]
+    empty = [Value(name=f'ring_empty{s}', kind='barrier') for s in range(stages)]
+    kernel.barriers += full + empty
+    roles = []
+    for role, role_ops in ((PRODUCER, prod), (CONSUMER, cons)):
+        # A role's own copies: the same op object in two roles would share
+        # its attrs and, worse, its result Values' registers.
+        vmap = {}
+        mine = [_clone(op, vmap) for op in role_ops]
+        mine = _ring_sync(mine, role, [{k: vmap.get(id(w), w) for k, w in st.items()}
+                                       for st in ring], full, empty, loop.direct, stages)
+        for op in mine:
+            op.attrs.pop('_stage', None)
+        _rename_labels(mine, role)
+        roles.append(mine)
+    from .ir import Role, Region
+    kernel.roles = [Role(index=r, name=('producer', 'consumer')[r], region=Region(ops=roles[r]))
+                    for r in (PRODUCER, CONSUMER)]
+    used = {id(v) for r in roles for op in r for v in _operands(op)}
+    kernel.barriers = [b for b in kernel.barriers if id(b) in used]
+    kernel.windows = [w for w in kernel.windows
+                      if any(op.kind == 'window_def' and op.results[0] is w for r in roles for op in r)
+                      or id(w) in used]
+    return {'stages': stages, 'direct': loop.direct, 'ring_windows': len(ring_ids),
+            'producer_ops': len(roles[0]), 'consumer_ops': len(roles[1])}

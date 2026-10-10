@@ -297,6 +297,8 @@ class TTIRImporter:
                 source='compiler_overview.md sec 11.1')
         self._float_constants(module, ops)
         self._value_users = self._users(ops)
+        self._all_ops = ops
+        self._op_pos = {id(o): i for i, o in enumerate(ops)}
         self._trans_orders = self._read_trans_orders(module, func_name, ops)
         self._plan_transposes(ops)
 
@@ -2319,6 +2321,61 @@ class TTIRImporter:
                                comment='the tile origin')
         return base
 
+    def _contiguous_rows(self, op, aff, shape, mask_at):
+        """A MASKED 2-D access whose rows are contiguous VLEN-element runs
+        (index_opt). Inductor's GEMM epilogue is one: the output tile is
+        stored, and the bias read, under `(idx_m < M) & (idx_n < N)`. A mask
+        is per element, and per element is what a predicated vector access
+        already is -- so row r is one `v.ld`/`v.st` under row r of the mask,
+        four memory beats for sixteen f16 elements, where the gathered and
+        scattered form took one beat per element."""
+        return (self.index_opt and op.get_num_operands() > mask_at
+                and isinstance(aff, Affine2D) and aff.col_stride == 1
+                and aff.row_stride >= 0 and shape[1] == self.target.vlen)
+
+    def _row_base(self, name, aff, esize):
+        base = self._arg_value(name)
+        if aff.const:
+            base = self.b.sbini('add', base, aff.const * esize, comment="the tile's origin")
+        return self._add_dynamic(base, aff, esize)
+
+    def _masked_rows_load(self, op, name, elem, aff, shape):
+        rows, cols = shape
+        esize = self._ELEM_BYTES[elem]
+        base = self._row_base(name, aff, esize)
+        get_mask = self._row_getter(op.get_operand(1), rows, 'i1')
+        other = self._const.get(op.get_operand(2).id(), 0) if op.get_num_operands() > 2 else 0
+        size = _load_suffix(_SIZE_SUFFIX[esize], elem)
+        stride = aff.row_stride * esize
+        self.b.comment(f"a masked {rows}x{cols} tile with contiguous rows: one "
+                       "predicated load a row")
+
+        def row(r):
+            at = base if r == 0 or not stride else self.b.sbini('add', base, r * stride,
+                                                                comment=f"row {r}")
+            return self.b.load(at, mask=self._shape_mask(cols, get_mask(r)), other=other,
+                               dtype=elem, size=size)
+        if self._deferrable(op):
+            return Tile('lazy', row, rows, cols, elem)
+        return self._materialise(row, rows, cols, elem)
+
+    def _masked_rows_store(self, op, name, elem, aff, shape, tile):
+        rows, cols = shape
+        esize = self._ELEM_BYTES[elem]
+        base = self._row_base(name, aff, esize)
+        get, get_mask = self._tile_row_getter(tile), self._row_getter(op.get_operand(2), rows, 'i1')
+        stride = aff.row_stride * esize
+        self.b.comment(f"a masked {rows}x{cols} tile with contiguous rows: one "
+                       "predicated store a row")
+        for r in range(rows):
+            v = get(r)
+            if elem != tile.store:
+                v = self.b.vcvt(tile.store, elem, v)
+            at = base if r == 0 or not stride else self.b.sbini('add', base, r * stride,
+                                                                comment=f"row {r}")
+            self.b.store(at, v, mask=self._shape_mask(cols, get_mask(r)),
+                         size=_SIZE_SUFFIX[esize])
+
     def _load_tile_rows(self, name, elem, aff, shape):
         """A tile whose element type has no usable fragment, row by row.
 
@@ -2722,6 +2779,14 @@ class TTIRImporter:
                 continue
             us = users.get(op.get_result(0).id(), [])
             if not us or any(u.get_name() != 'tt.trans' for u in us):
+                continue
+            # A 16-bit tile in a window is an MMA operand and nothing else:
+            # only a transpose `tl.dot` reads (as A or B) may arrive as one.
+            # Inductor's attention reshapes (`split_transpose_view`) transpose
+            # a descriptor tile and then do arithmetic on it.
+            if any(d.get_name() != 'tt.dot' or k > 1
+                   for u in us for d, k in self._value_users.get(u.get_result(0).id(), [])
+                   ) or any(not self._value_users.get(u.get_result(0).id()) for u in us):
                 continue
             block = op.get_block().id()
             ok = True
@@ -3480,9 +3545,47 @@ class TTIRImporter:
         rows, cols = math.prod(shape[:-1]), shape[-1]
         getters = [self._row_getter(op.get_operand(i), rows, elem)
                    for i in range(op.get_num_operands())]
+        if self._deferrable(op):
+            self._tiles[op.get_result(0).id()] = Tile(
+                'lazy', lambda r: build([g(r) for g in getters], elem), rows, cols, elem)
+            return
         self._tiles[op.get_result(0).id()] = self._materialise(
             lambda r: build([g(r) for g in getters], elem),
             rows, cols, elem)
+
+    # Operations a deferred tile may not be computed across: they write
+    # memory or an accumulator in place (`acc + tl.dot` accumulates into the
+    # tile it reads), or leave the block.
+    _NOT_ACROSS = ('tt.store', 'tt.descriptor_store', 'tt.atomic_rmw', 'tt.atomic_cas',
+                   'tt.dot', 'tt.dot_scaled', 'tt.call', 'tt.return', 'tt.assert',
+                   'tt.print', 'tt.descriptor_scatter')
+
+    def _deferrable(self, op):
+        """index_opt: may this tile be a rule for its rows, computed where its
+        one user reads them, rather than written to an accumulator or to
+        scratch and read back (_materialise)?
+
+        Yes when the user is in the same block and nothing between the two
+        writes memory or an accumulator or leaves the block -- so a row
+        computed late is the row computed now. Inductor's GEMM epilogue is
+        the case: the bias loaded, widened, added to the accumulator,
+        narrowed and stored is five tile operations, and materialising each
+        made 112 accumulator and memory accesses a tile where reading the
+        accumulator, loading the bias row and storing take 48."""
+        if not self.index_opt:
+            return False
+        users = self._value_users.get(op.get_result(0).id(), [])
+        if len(users) != 1:
+            return False
+        user = users[0][0]
+        i, j = self._op_pos.get(id(op)), self._op_pos.get(id(user))
+        if i is None or j is None or j <= i or user.get_block().id() != op.get_block().id():
+            return False
+        for o in self._all_ops[i + 1:j]:
+            name = o.get_name()
+            if name in self._NOT_ACROSS or name.startswith(('scf.', 'cf.')):
+                return False
+        return True
 
     def _is_2d(self, op):
         return isinstance(
@@ -3698,8 +3801,8 @@ class TTIRImporter:
                 self._tiles[res.id()] = tile
                 return
             users = self._value_users.get(res.id(), [])
-            if self.index_opt and tile.kind == 'accumulator' and len(users) == 1 \
-                    and users[0][0].get_name() == 'tt.store':
+            if (self.index_opt and tile.kind == 'accumulator' and len(users) == 1
+                    and users[0][0].get_name() == 'tt.store') or self._deferrable(op):
                 # A matmul's epilogue (`acc.to(f16)` then a store): each row is
                 # converted on its way out, where materialising the tile first
                 # put sixteen rows through scratch and read them back.
@@ -4036,6 +4139,53 @@ class TTIRImporter:
 
         return addr, _SIZE_SUFFIX[esize], elem, 'contiguous', None
 
+    def _transposed_tile_load(self, op, name, elem, aff, shape):
+        """A tile whose ROWS are contiguous, as one transposed transfer -- or
+        None (R39-12).
+
+        Inductor's GEMM template reads `B[k, n]` of a linear layer from the
+        weight `W[n, k]`: element (r, c) of the tile is `base + r + c*S`.
+        Read as rows, that is sixteen gathers, and then a 16-bit fragment
+        cannot be assembled in registers (ISA sec 8.4), so it went through
+        memory: 32 stores, a fence, 16 loads, a TensorMap and a transfer,
+        every K step. Read as the transpose it is a plain tile: `U[c, r] =
+        base + c*S + r`, row stride S, contiguous -- and ISA sec 9E mod[5]
+        writes U into the window transposed, which is the tile. The engine's
+        rule (tnca_tensor.v S_TSETUP) is 16-bit elements and 4, 8 or 16
+        source rows; a mask, another width or no `tensor_transpose` keeps
+        the gathered path -- and so does a tile anything but `tl.dot` reads:
+        a 16-bit tile in a window is an MMA operand and nothing else.
+        """
+        users = self._value_users.get(op.get_result(0).id(), [])
+        if not users or any(u.get_name() != 'tt.dot' or k > 1 for u, k in users):
+            return None
+        if (not self.target.has('tensor_transpose') or op.get_num_operands() > 1
+                or not isinstance(aff, Affine2D) or elem not in ('f16', 'bf16')
+                or aff.row_stride != 1 or aff.col_stride <= 1
+                or shape[0] != self.target.vlen or shape[1] not in (4, 8, 16)):
+            return None
+        u = Affine2D(row_stride=aff.col_stride, col_stride=1, const=aff.const,
+                     dynamic=aff.dynamic)
+        block = [shape[1], shape[0]]
+        what = 'a tile contiguous down its columns'
+        hoisted = (self._hoisted_tile_descriptor(name, elem, u, block, what)
+                   if self.index_opt else None)
+        if hoisted is not None:
+            desc, coords = hoisted
+        else:
+            desc = self._tile_descriptor(name, elem, u, block, what)
+            zero = self.b.const(0)
+            coords = [zero, zero]
+        window = self._window_for(shape[0], shape[1], elem)
+        bar = self.b.barrier(name=f"fill{len(self.kernel.barriers)}")
+        tok = self.b.barrier_arm(bar, arrivals=0, ops=1)
+        self.b.comment(f"{what}: its transpose is a plain tile, written "
+                       "transposed by the engine (ISA sec 9E mod[5])")
+        self.b.dma_load(window, desc.value if hasattr(desc, 'value') else desc,
+                        coords, tok, dtype=elem, transpose=True)
+        self.b.barrier_wait(tok)
+        return Tile('window', window, shape[0], shape[1], elem)
+
     def _scalar_const(self, vid):
         """The value of `vid` if it is a scalar constant, else None.
 
@@ -4067,6 +4217,14 @@ class TTIRImporter:
                             'describable as a TensorMap',
                     source='doc/isa/TNCA-ISA-v0.1.md sec 9E.2')
             name, elem, aff = spec
+            xt = self._transposed_tile_load(op, name, elem, aff, shape2d)
+            if xt is not None:
+                self._tiles[op.get_result(0).id()] = xt
+                return
+            if self._contiguous_rows(op, aff, shape2d, 1):
+                self._tiles[op.get_result(0).id()] = self._masked_rows_load(
+                    op, name, elem, aff, shape2d)
+                return
             if (op.get_num_operands() > 1 or not isinstance(aff, Affine2D)
                     or aff.col_stride != 1 or shape2d[1] != self.target.vlen):
                 base = self._arg_value(name)
@@ -4189,6 +4347,9 @@ class TTIRImporter:
                     source='doc/isa/TNCA-ISA-v0.1.md sec 9E.2')
             name, elem, aff = spec
             tile = self._tile_of(value)
+            if self._contiguous_rows(op, aff, shape2d, 2):
+                self._masked_rows_store(op, name, elem, aff, shape2d, tile)
+                return
             if (op.get_num_operands() > 2 or not isinstance(aff, Affine2D)
                     or aff.col_stride != 1 or shape2d[1] != self.target.vlen):
                 base = self._arg_value(name)

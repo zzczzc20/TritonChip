@@ -62,6 +62,12 @@ KNOWN_OPTIONS = {
                  'launch, context r looping over programs r, r + R, ... (R39-05 Mode B, '
                  'tnca_cc.rctx_spmd), when the kernel shares nothing between programs but '
                  'memory; the manifest says so, and a refusal is recorded in the provenance',
+    'rctx_roles': 'int, 0 or 1. 1 compiles a loop that fills windows an MMA reads as two '
+                  'roles of one program on a Role Context pair -- a producer issuing the '
+                  'transfers and a consumer running the MMAs and the epilogue, over a '
+                  'two-stage ring of windows (R39-12 Mode A, tnca_cc.partition.specialize_loop) '
+                  '-- on a target with rctx_pair, the pairs running a grid row as rctx_spmd '
+                  'does; a refusal is recorded in the provenance',
     'alias': 'list of [param, param] pairs that MAY point at the same '
              'memory. An elementwise kernel that reads and writes the same '
              'index can run in place; one that does not is a different '
@@ -711,10 +717,34 @@ def _lower_ttir(module, ctx, kernel_name, params, target, prov, options, stages,
     # pressure, and the allocator has no spill -- so a kernel that does not
     # fit is tried again computing nothing once, then without the loop.
     import copy as _copy
-    plain = _copy.deepcopy(kernel) if _rctx_spmd_wanted(options) else None
-    programs_per_launch = _rctx_spmd(kernel, target, prov, options, stages,
-                                     scratch_bytes, 8 * len(params))
+    plain = (_copy.deepcopy(kernel)
+             if _rctx_spmd_wanted(options) or _rctx_roles_wanted(options) else None)
+    # R39-12: a GEMM loop as a producer and a consumer on a Role Context pair
+    # (Mode A), with the pairs running a grid row (Mode B) -- or, where that
+    # does not apply or does not fit, Mode B alone.
+    roles_per_program = 1
+    programs_per_launch = _rctx_roles(kernel, target, prov, options, stages,
+                                      scratch_bytes, 8 * len(params))
+    if programs_per_launch:
+        roles_per_program = 2
+        try:
+            asm_text, cg = _emit(kernel, target, prov, opt_level, options, stages)
+        except CompileError as e:
+            if e.detail.get('kind') != 'ResourceError':
+                raise
+            prov.record('rctx_roles_fallback', str(e)[:160])
+            kernel = _copy.deepcopy(plain)
+            roles_per_program = 1
+            for key in ('rctx_roles', 'rctx_roles_pairs', 'rctx_roles_ring'):
+                prov.entries.pop(key, None)
+            stages.stages.pop('tnir_roles', None)
+            programs_per_launch = None
+    if not programs_per_launch:
+        programs_per_launch = _rctx_spmd(kernel, target, prov, options, stages,
+                                         scratch_bytes, 8 * len(params))
     for retry in ('none', 'off'):
+        if roles_per_program == 2:
+            break
         try:
             asm_text, cg = _emit(kernel, target, prov, opt_level, options, stages)
             break
@@ -738,8 +768,70 @@ def _lower_ttir(module, ctx, kernel_name, params, target, prov, options, stages,
                   assembly_lines=len(asm_text.splitlines()),
                   code_bytes=len(code),
                   scratch_bytes=scratch_bytes,
-                  programs_per_launch=programs_per_launch)
+                  programs_per_launch=programs_per_launch,
+                  roles_per_program=roles_per_program)
     return kernel_name, params, asm_text, code, symbols, report, stages
+
+
+def _rctx_roles_wanted(options):
+    want = (options or {}).get('rctx_roles')
+    if want is None:
+        want = int(os.environ.get('TNCA_RCTX_ROLES', '0'))
+    return bool(want)
+
+
+def _rctx_roles(kernel, target, prov, options, stages, scratch_bytes, scratch_slot):
+    """R39-12 Mode A: how many programs one launch runs, each as a producer
+    and a consumer on a Role Context pair -- or None, the kernel untouched.
+
+    tnca_cc.partition.specialize_loop does the specialising; here the pairs
+    get their programs first (rctx_spmd with `pair`: pair k runs programs k,
+    k + P, ...), so the ring's epoch counters, set before that loop, carry
+    from one program to the next as the barriers' epochs do."""
+    if not _rctx_roles_wanted(options):
+        return None
+    caps = target.capabilities if isinstance(target.capabilities, dict) \
+        else dict(target.capabilities)
+    if not caps.get('rctx_pair'):
+        prov.record('rctx_roles_refused', 'the target cannot pair Role Contexts')
+        return None
+    import copy
+    from tnca_cc import partition, rctx_spmd
+    try:
+        partition.find_ring_loop(kernel.roles[0].region.ops)
+    except partition.NotSpecialised as e:
+        prov.record('rctx_roles_refused', str(e))
+        return None
+    pairs = max(1, int(getattr(target, 'num_rctx', 1) or 1) // 2)
+    while True:
+        trial = copy.deepcopy(kernel)
+        sizes = rctx_spmd.slices(target, pairs) if pairs > 1 else None
+        why = rctx_spmd.ineligible(trial, scratch_bytes, sizes) if pairs > 1 else None
+        info = None
+        if why is None:
+            try:
+                rctx_spmd.apply(trial, pairs, scratch_slot, scratch_bytes, pair=True)
+                info = partition.specialize_loop(trial, target, stages=2)
+            except (partition.NotSpecialised, ValueError) as e:
+                why = str(e)
+        if info is not None and sizes is not None:
+            used = {'accumulators': len(trial.accumulators), 'barriers': len(trial.barriers),
+                    'descriptors': len(trial.descriptors), 'windows': len(trial.windows)}
+            over = [k for k, n in used.items() if n > sizes[k]]
+            if over:
+                why = f'the ring needs more {over[0]} than a slice of {pairs} has'
+        if why is None:
+            break
+        if pairs == 1:
+            prov.record('rctx_roles_refused', why)
+            return None
+        pairs //= 2
+    kernel.__dict__.update(trial.__dict__)
+    prov.record('rctx_roles', 2)
+    prov.record('rctx_roles_pairs', pairs)
+    prov.record('rctx_roles_ring', info)
+    stages.record('tnir_roles', str(kernel))
+    return pairs
 
 
 def _rctx_spmd_wanted(options):
@@ -931,7 +1023,9 @@ def _manifest(kernel_name, params, target, pinfo, constexprs, options, prov,
     caps = target.capabilities if isinstance(target.capabilities, dict) \
         else dict(target.capabilities)
     needed = sorted(c for c, v in caps.items() if v)
-    roles = [f'role{i}' for i in range(int((report or {}).get('programs_per_launch', 1)))]
+    programs = int((report or {}).get('programs_per_launch', 1))
+    per_program = int((report or {}).get('roles_per_program', 1))
+    roles = [f'role{i}' for i in range(programs * per_program)]
     return {
         'identity': {
             'format_version': FORMAT_VERSION,
@@ -966,8 +1060,10 @@ def _manifest(kernel_name, params, target, pinfo, constexprs, options, prov,
         'execution': {
             # R39-05: program x of a grid row runs on Role Context
             # x mod len(roles), all of them from the same entry point.
+            # R39-12: or on the pair 2x, 2x + 1, a producer and a consumer.
             'role_mask': (1 << len(roles)) - 1,
-            'program_to_role': {str(i): [r] for i, r in enumerate(roles)},
+            'program_to_role': {str(i): roles[i * per_program:(i + 1) * per_program]
+                                for i in range(programs)},
             'grid_dims_supported': [True, False, False],
             'dynamic_constraints': {},
         },

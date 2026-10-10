@@ -115,9 +115,15 @@ def _hoistable(op, invariant, arg_base, mutated):
     return k == 'sload' and id(op.operands[0]) in arg_base
 
 
-def apply(kernel, contexts, scratch_slot=None, scratch_bytes=0, hoist=True):
+def apply(kernel, contexts, scratch_slot=None, scratch_bytes=0, hoist=True,
+          pair=False):
     """Wrap the role's body in the loop over its programs. Returns the number
     of operations computed once before the loop.
+
+    `pair` (R39-12, RPAIR): the launch pairs contexts 2k and 2k+1, which run
+    the same programs as two roles of one -- so the program index, and the
+    scratch, are the pair's: ROLE_ID >> 1. `contexts` is then the number of
+    pairs.
 
     `scratch_slot` is the byte offset in the argument block of the scratch
     base (the slot after the declared arguments). Every load of it -- the
@@ -184,8 +190,14 @@ def apply(kernel, contexts, scratch_slot=None, scratch_bytes=0, hoist=True):
         if last is None or out[last].kind != 'branch_nz' or out[last].attrs.get('target') != _LATCH:
             break
         del out[last]
-    head = [Op('special', [x], [], {'name': 'role_id'}),
-            Op('num_programs', [npid], [], {'dim': 0})]
+    if pair:
+        rid = Value(name='rctx_context', kind=SCALAR, dtype='i64')
+        head = [Op('special', [rid], [], {'name': 'role_id'}),
+                Op('sbini', [x], [rid], {'op': 'lshr', 'imm': 1,
+                                         'comment': 'the pair runs the program'})]
+    else:
+        head = [Op('special', [x], [], {'name': 'role_id'})]
+    head.append(Op('num_programs', [npid], [], {'dim': 0}))
     if any(op.kind == 'branch_nz' and op.attrs.get('target') == _LATCH for op in out):
         head.append(Op('const', [one], [], {'value': 1}))
     head.append(Op('label', [], [], {'name': _BODY}))
@@ -203,16 +215,17 @@ def apply(kernel, contexts, scratch_slot=None, scratch_bytes=0, hoist=True):
     if scratch_slot is not None and scratch_bytes:
         bases = {id(op.results[0]) for op in before + out
                  if op.kind == 'special' and op.attrs.get('name') == 'arg_base'}
-        before = _own_scratch(before, bases, scratch_slot, scratch_bytes, 'pre')
-        out = _own_scratch(out, bases, scratch_slot, scratch_bytes, 'body')
+        before = _own_scratch(before, bases, scratch_slot, scratch_bytes, 'pre', pair)
+        out = _own_scratch(out, bases, scratch_slot, scratch_bytes, 'body', pair)
     region.ops = before + head + out + tail
     return len(before)
 
 
-def _own_scratch(ops, bases, slot, nbytes, tag):
+def _own_scratch(ops, bases, slot, nbytes, tag, pair=False):
     """After each load of the scratch base in `ops` (an sload at `slot` from
     one of the `bases`, the arg_base values), the base plus ROLE_ID * nbytes
-    under the loaded value's name, so every use is the context's."""
+    under the loaded value's name, so every use is the context's -- the
+    pair's, ROLE_ID >> 1, under `pair`."""
     out = []
     for i, op in enumerate(ops):
         out.append(op)
@@ -225,8 +238,12 @@ def _own_scratch(ops, bases, slot, nbytes, tag):
         rid = Value(name=f'rctx_{tag}{i}_role', kind=SCALAR, dtype='i64')
         size = Value(name=f'rctx_{tag}{i}_bytes', kind=SCALAR, dtype='i64')
         off = Value(name=f'rctx_{tag}{i}_off', kind=SCALAR, dtype='i64')
-        out += [Op('special', [rid], [], {'name': 'role_id'}),
-                Op('const', [size], [], {'value': nbytes}),
+        out.append(Op('special', [rid], [], {'name': 'role_id'}))
+        if pair:
+            ctx = rid
+            rid = Value(name=f'rctx_{tag}{i}_pair', kind=SCALAR, dtype='i64')
+            out.append(Op('sbini', [rid], [ctx], {'op': 'lshr', 'imm': 1}))
+        out += [Op('const', [size], [], {'value': nbytes}),
                 Op('sbin', [off], [rid, size], {'op': 'mul'}),
                 Op('sbin', [base], [raw, off],
                    {'op': 'add', 'comment': "this context's own scratch"})]

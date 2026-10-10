@@ -300,6 +300,8 @@ $(TB)/core/progs/t39_freeze_drop.s: $(TB)/core/progs/gen_t39_freeze_drop.py $(TB
 	$(PYTHON) $<
 $(TB)/core/progs/t39_slice.s: $(TB)/core/progs/gen_t39_slice.py $(TB)/core/progs/gen_t33_tdesc.py
 	$(PYTHON) $<
+$(TB)/core/progs/t39_pair.s: $(TB)/core/progs/gen_t39_pair.py $(TB)/core/progs/gen_t33_tdesc.py
+	$(PYTHON) $<
 
 $(TB)/core/progs/t11_matrix.s: $(TB)/core/progs/gen_t11_matrix.py $(TOOLS)/model/fp32.py
 	$(PYTHON) $<
@@ -316,6 +318,9 @@ $(TB)/core/progs/t15_target.s: $(TB)/core/progs/gen_t15_target.py \
 $(TB)/core/progs/t15_target_vrf_v4.s: $(TB)/core/progs/gen_t15_target.py \
                                       compiler/targets/tnca-sim-vrf-v4.json
 	$(PYTHON) $< tnca-sim-vrf-v4
+$(TB)/core/progs/t15_target_vrf_v5.s: $(TB)/core/progs/gen_t15_target.py \
+                                      compiler/targets/tnca-sim-vrf-v5.json
+	$(PYTHON) $< tnca-sim-vrf-v5
 
 $(TB)/core/progs/t16_vecadd.s: $(TB)/core/progs/gen_t16_vecadd.py $(TOOLS)/model/fp32.py
 	$(PYTHON) $<
@@ -584,6 +589,42 @@ core-r39sw4: $(patsubst %,$(BUILD)/%.hex,$(R39SW4_PROGS)) $(BUILD)/tb_core_r39sw
 	     || exit 1; \
 	   $(TOOLS)/run_test.sh "$$p (r39 4 rctx, ooo mem)" \
 	     "$(VVP) $(BUILD)/tb_core_r39sw4_ooo.vvp +hex=$(BUILD)/$$p.hex +maxcycles=400000 $$extra" \
+	     || exit 1; \
+	 done
+
+# R39-12: and the transposed transfer and Role Context pairs (core-vrf-sync-v5).
+R39_SW5 := $(R39_SW4) -P tb_tnca_core.HAS_TENSOR_XPOSE=1 -P tb_tnca_core.RPAIR=1
+$(BUILD)/tb_core_r39sw5.vvp: $(RTL_DEPS) $(TB)/core/tb_tnca_core.v \
+                             $(TB)/common/tnca_mem_model.v | dirs
+	$(IVERILOG) $(IVFLAGS) -y $(RTL)/core -y $(RTL)/common -y $(RTL)/gen -y $(TB)/common \
+	   $(R39_SW5) -o $@ $(TB)/core/tb_tnca_core.v
+$(BUILD)/tb_core_r39sw5_ooo.vvp: $(RTL_DEPS) $(TB)/core/tb_tnca_core.v \
+                                 $(TB)/common/tnca_mem_model.v | dirs
+	$(IVERILOG) $(IVFLAGS) -y $(RTL)/core -y $(RTL)/common -y $(RTL)/gen -y $(TB)/common \
+	   $(R39_SW5) -P tb_tnca_core.MEM_LATENCY=6 -P tb_tnca_core.RANDOM_STALL=1 \
+	   -P tb_tnca_core.MEM_REORDER=1 -o $@ $(TB)/core/tb_tnca_core.v
+.PHONY: core-r39sw5
+# As core-r39sw4, and t39_pair (two producer/consumer pairs, +pair) and the
+# transposed transfer's own programs.
+core-r39sw5: export ARGS_t04_roles := +roles=2
+core-r39sw5: export ARGS_t05_fault := +roles=2 +expectfault=01
+core-r39sw5: export ARGS_t13_share := +roles=2 +aliasvrf
+core-r39sw5: export ARGS_t17_descfault := $(ARGS_t17_descfault)
+core-r39sw5: export ARGS_t23_amofault := $(ARGS_t23_amofault)
+core-r39sw5: export ARGS_t15_target_vrf_v5 := +allroles
+core-r39sw5: export ARGS_t18_squash := +roles=2
+core-r39sw5: export ARGS_t39_slice := +allroles +slice
+core-r39sw5: export ARGS_t39_pair := +allroles +slice +slicek=1 +pair
+core-r39sw5: export ARGS_t32_xpose_badsize := +expectfault=04
+R39SW5_PROGS := $(patsubst t15_target,t15_target_vrf_v5,$(CORE_PROGS)) t39_pair t30_xpose t32_xpose_badsize
+core-r39sw5: $(patsubst %,$(BUILD)/%.hex,$(R39SW5_PROGS)) $(BUILD)/tb_core_r39sw5.vvp $(BUILD)/tb_core_r39sw5_ooo.vvp | dirs
+	@for p in $(R39SW5_PROGS); do \
+	   extra=$$(eval echo \$${ARGS_$$p}); \
+	   $(TOOLS)/run_test.sh "$$p (r39 v5)" \
+	     "$(VVP) $(BUILD)/tb_core_r39sw5.vvp +hex=$(BUILD)/$$p.hex +maxcycles=200000 $$extra" \
+	     || exit 1; \
+	   $(TOOLS)/run_test.sh "$$p (r39 v5, ooo mem)" \
+	     "$(VVP) $(BUILD)/tb_core_r39sw5_ooo.vvp +hex=$(BUILD)/$$p.hex +maxcycles=400000 $$extra" \
 	     || exit 1; \
 	 done
 
@@ -1798,7 +1839,8 @@ r1-build-tests:
 # from a clean checkout, is what found it.
 r1-profile-tests: $(BUILD)/tb_core.vvp $(BUILD)/tb_core4.vvp \
                   $(BUILD)/tb_top.vvp $(BUILD)/tb_core_vrf.vvp $(BUILD)/tb_core_xpose.vvp \
-                  $(BUILD)/tb_core_r39hw.vvp
+                  $(BUILD)/tb_core_r39hw.vvp $(BUILD)/tb_core_r39sw.vvp \
+                  $(BUILD)/tb_core_r39sw4.vvp $(BUILD)/tb_core_r39sw5.vvp
 	@$(PYTHON) tools/r1/profile_tests.py --json $(BUILD)/profile_tests.json
 
 r1-signoff:

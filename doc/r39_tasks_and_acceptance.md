@@ -1,6 +1,6 @@
 # R39：标准路径的性能——去掉 R38 及以前的妥协
 
-版本：1.1，2026-10-09。状态：R39-00 已关闭；R39-01、R39-02a 已默认开启；R39-05、06、08、09、10 进行中（进展见各工作包末尾）。
+版本：1.1，2026-10-09。状态：R39-00 已关闭；R39-01、R39-02a、R39-05/06/07/08/09/10 已在板上终版中；R39-12（Mode A）、R39-13（medium 档）进行中（进展见各工作包末尾）。
 起点：`r39` 分支，`74f841c`（r38-dco：U280 100 MHz 不分频上板、ArchBench B4 逐点等周期）。
 签收名：`R39_STANDARD_PATH_PERF`。
 
@@ -586,6 +586,60 @@ R39-02a 的改动都在两个开关之下，关闭时制品逐字节相同（447
   `ablate.py --gate --min-speedup 3.0 --max-regress 1.0` 通过：S_geo ≥ 3.0，没有点变慢。IPC 0.265 → 0.411。
 - 相对 v2 镜像（u280_r39c），也就是 R39-05/08/10 加 sparse TensorMap 的板上增益：S_geo 1.519，总周期 0.669×；提升最少的是 matmul fp32 tiny，1.095×。
 - 停顿占比（tiny，基线 → 终版）：hazard 32.1 % → 16.4 %，VRF 11.2 % → 4.0 %，前端 13.9 % → 4.3 %。LSU 从 12.6 % 升到 22.0 %，成为最大的一项（绝对周期 0.44×）。
+
+### R39-12：Mode A——用 partition.py 让访存与计算在多个 role 间重叠（硬件 + 编译器 + 运行时）
+
+背景：R39-05 的 Mode B 让多个 program 并发，但每个 program 内部仍是串行的。标准路径 GEMM 模板的 K 循环每一步依次是：load A 并等待；用 16 个 gather 把 B（转置的权重）搬到 scratch 再重排；建 TensorMap；load B 并等待；MMA 并等待。访存与计算从不重叠。
+
+交付：
+
+- **编译器。** 在导入器产出的 IR 上做自动 context 特化（`tnca_cc.partition`：classify → graph → partition → map_to_rctx），把带 MMA 的计数循环拆成两个 role：
+  - **producer**：TRANSFER 分区。A、B 的 load、gather 与重排、TensorMap、`dma_load` 写入 window。
+  - **consumer**：MATRIX 与 EPILOGUE。MMA、accumulator 读出、写回。
+  - 两者之间是一个 2 级 window 环。每级有一对 full/empty barrier。各 role 用自己的迭代号算 epoch（sec 7.3），不交换 token。
+  - producer 在 consumer 做第 k 步 MMA 时准备第 k+1 步。
+  - 两个 role 各自复制循环控制（trip count 相同）。不在循环里的部分：地址计算在需要它的 role 里重算；accumulator 初始化与 epilogue 归 consumer。
+- **寄存器。** 一个 program 的两个 role 共用 64 个逻辑向量寄存器：window 在顶部，producer 和 consumer 的私有寄存器分别在不相交的区间里。codegen 的分配器按 role 给出区间。
+- **硬件（launch 的 pair 模式）。**
+  - role-mask 的第 28 位置位时，context 2k 与 2k+1 组成一对：它们的 vbase 相同（都是 2k 的），RSLICE 也按对（rctx >> 1）切片。
+  - 这样一个 program 的两个 role 看到同一组 window、barrier、descriptor 和 accumulator，而不同 program 之间仍然隔离。
+  - 不置位时行为不变。
+- **与 Mode B 组合。** v4 上 2 个 program × 2 个 role。每一对按 R39-05 的方式循环执行一行 grid 的 program；一对里的两个 role 迭代同样的 program 序列。
+- **开关。** compile option `rctx_roles`（`TNCA_RCTX_ROLES`），以及硬件参数 `RPAIR`。
+- **B 操作数用一次转置传输（同属本工作包）。**
+  - linear 的 B 是 W 的转置，列方向连续。原来每个 K 步要 16 次 gather，再经 scratch 重排：32 次 store、一次 fence、16 次 load、建一个 TensorMap、做一次传输。
+  - 这些只有在每步 producer 只剩两次传输时才值得去重叠。R38 S1-07 已有传输引擎的转置写（ISA sec 9E mod[5]，`HAS_TENSOR_XPOSE`），但 v4 没有打开它。
+  - 现在导入器把这种 tile 当成它的转置来读：转置后是一个普通 tile，引擎转置后写入 window。限于只给 `tl.dot` 用的 16 位 tile。
+- **`mb.arrive` 精确化（`RPAIR`）。**
+  - 原来 arrive 要等所有引擎空闲，所以 consumer 释放一个 stage 时，要等 producer 已经发出的下一批传输做完。这正好把两个 role 串行化了。
+  - 有 `RPAIR` 时，arrive 只等本 context 发出的矩阵和传输命令。ISA sec 9A.5 允许这样做。
+- **新 profile core-vrf-sync-v5** = v4 + `HAS_TENSOR_XPOSE` + `RPAIR`，target `tnca-sim-vrf-v5`，capability `tensor_transpose`、`rctx_pair`。
+
+验收：
+
+1. 定向测试：
+   - core 级：两个 role 经 window 环交接 K 步，逐元素正确。
+   - 4 context：2 对同时运行不同 program，结果正确。
+   - 对 Triton GEMM（`dot_grid`、K ≥ 2 步）数值正确，并由 `+ctxtrace` 证明 producer 与 consumer 的执行在时间上重叠。
+2. 全部 core 回归、R3.7、torch 测试、`rctx_spmd_tests` 通过；`compile_aot` 默认关时制品不变（plugin identity）。
+3. 消融（RTL 仿真 tiny + 新的 medium 档）：GEMM 类点（linear、gemv、matmul、bmm、mlp、gpt2_block、llama_*）的 S_geo ≥ **1.2×**（相对 R39-05 终版），全套件不慢于终版。
+4. R5：100 MHz 收敛，板上终版确认，B4 逐点等周期。
+
+### R39-13：评测负载适度扩大（ArchBench medium 档）
+
+交付：
+
+- 在 small 与 large 之间加 `medium` 档，覆盖全部 family（op 与 model）。
+  - 约束是每个 kernel 的参数（输入、输出、权重）放得进器件 heap：512 KiB 器件存储器中的 384 KiB。runtime 每次 launch 只上传这个 kernel 的参数。
+  - 在这个约束下，规模取 small 的 2–8 倍。gemv 的 small 已经占了 256 KiB 权重，只能小幅增大。
+- 规模写进 `archbench`（`ops.py`、`models.py`、`registry.TIERS`），冻结 `suites/medium.json`；`ablate.py` 支持按档统计。
+- 板上跑 medium 全档；仿真只用于定位，不作为 medium 的常规手段。
+
+验收：
+
+1. medium 全档在终版镜像上数值全部通过。
+2. 冻结 R39-00 基线在 medium 档上的数字：在 r39b 镜像上，用基线软件跑一遍。
+3. R39-11 的板上结论在 tiny + small + medium 上复核：S_geo、E、无点变慢。
 
 ## 4. 执行顺序
 

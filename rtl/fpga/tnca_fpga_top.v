@@ -113,6 +113,7 @@ module tnca_fpga_top #(
     parameter LSU_INFLIGHT    = 1,
     parameter FPU_OVERLAP     = 0,
     parameter RSLICE          = 0,
+    parameter RPAIR           = 0,
     // The transposed tensor-DMA write (ISA sec 9E mod[5], R38 S1-07). Off,
     // as in core-vrf-sync-v1; a board built with it on runs a profile that
     // declares the capability, and none does for the banked VRF yet.
@@ -182,7 +183,7 @@ module tnca_fpga_top #(
     localparam PHYS_W = $clog2(NUM_RCTX * VREGS_PER_RCTX);
 
     wire [NUM_RCTX-1:0] cmd_role_mask;
-    wire [2:0]          cmd_slice;
+    wire [3:0]          cmd_slice;
     wire [31:0] cmd_pid_x, cmd_pid_y, cmd_pid_z;
     wire [31:0] cmd_npid_x, cmd_npid_y, cmd_npid_z;
     wire [63:0] cmd_deadline;
@@ -271,6 +272,7 @@ module tnca_fpga_top #(
         .VRF_BYPASS(VRF_BYPASS), .FE_NOBUBBLE(FE_NOBUBBLE),
         .VRF_PREFETCH(VRF_PREFETCH), .RCTX_SWITCH(RCTX_SWITCH),
         .LSU_INFLIGHT(LSU_INFLIGHT), .FPU_OVERLAP(FPU_OVERLAP), .RSLICE(RSLICE),
+        .RPAIR(RPAIR),
         .HAS_TENSOR_XPOSE(HAS_TENSOR_XPOSE),
         .CORE_ID(CORE_ID), .NUM_CORES(NUM_CORES), .HOST_TAG(HOST_TAG)
     ) u_shell (

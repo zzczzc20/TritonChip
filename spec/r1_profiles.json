@@ -235,6 +235,55 @@
         "what": "the testbench that reads this profile's capabilities back out of the hardware"
       }
     },
+    "core-vrf-sync-v5": {
+      "target_file": "tnca-sim-vrf-v5.json",
+      "executes_artifacts_of": [
+        "core-vrf-sync-v1",
+        "core-vrf-sync-v2",
+        "core-vrf-sync-v3",
+        "core-vrf-sync-v4"
+      ],
+      "description": "core-vrf-sync-v4 with the transfer engine's transposed write (HAS_TENSOR_XPOSE, R38 S1-07) and Role Context pairs (RPAIR): a launch can make contexts 2k and 2k+1 one program's producer and consumer, sharing that program's vector registers and its slice of the per-core resources (R39-12, Mode A). A GEMM's B operand, W transposed, arrives by one transposed transfer instead of sixteen gathers and a repack. v1-v4 artifacts run unchanged. Simulation only until a board image is built with it.",
+      "num_cores": 1,
+      "topology": "single",
+      "elaboration": {
+        "NUM_RCTX": 4,
+        "RCTX_W": 2,
+        "VREGS_PER_RCTX": 64,
+        "PHYS_VREGS": 256,
+        "HAS_SFU": 1,
+        "HAS_ATOMICS": 1,
+        "HAS_SYS_ATOMICS": 0,
+        "RSLICE": 1,
+        "HAS_TENSOR_XPOSE": 1,
+        "RPAIR": 1
+      },
+      "implementation": {
+        "vector_register_file": "banked",
+        "banks": 4,
+        "ports_per_bank": "1 read, 1 write",
+        "read_latency_cycles": 1,
+        "unwritten_reads": "zero, from per-lane valid bits",
+        "contract": "spec/r3v2_contract.json",
+        "rtl_parameters": {
+          "USE_BANKED_VRF": 1,
+          "VRF_BYPASS": 1,
+          "FE_NOBUBBLE": 1,
+          "VRF_PREFETCH": 1,
+          "RCTX_SWITCH": 1,
+          "LSU_INFLIGHT": 2,
+          "FPU_OVERLAP": 1
+        }
+      },
+      "platform_binding": {
+        "kind": "simulation",
+        "bench": "sim/build/tb_core_r39sw5.vvp",
+        "bench_args": [
+          "+allroles"
+        ],
+        "what": "the testbench that reads this profile's capabilities back out of the hardware"
+      }
+    },
     "core-xpose-v1": {
       "target_file": "tnca-sim-xpose-v1.json",
       "executes_artifacts_of": [

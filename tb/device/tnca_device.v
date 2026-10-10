@@ -60,6 +60,7 @@ module tnca_device;
     parameter LSU_INFLIGHT   = 1;
     parameter FPU_OVERLAP    = 0;
     parameter RSLICE         = 0;
+    parameter RPAIR          = 0;
     // 1 elaborates the transposed tensor-DMA write (profile core-xpose-v1).
     parameter HAS_TENSOR_XPOSE = 0;
 
@@ -105,7 +106,7 @@ module tnca_device;
     reg  [63:0] cmd_pc = 64'd0;
     reg  [63:0] cmd_arg_base = 64'd0;
     reg  [NUM_RCTX-1:0] cmd_role_mask;
-    reg  [2:0]          cmd_slice;
+    reg  [3:0]          cmd_slice;
     reg  [31:0] cmd_pid_x = 0, cmd_pid_y = 0, cmd_pid_z = 0;
     reg  [31:0] cmd_npid_x = 1, cmd_npid_y = 1, cmd_npid_z = 1;
     reg  [63:0] cmd_deadline = 64'd0;
@@ -146,6 +147,7 @@ module tnca_device;
         .VRF_BYPASS(VRF_BYPASS), .FE_NOBUBBLE(FE_NOBUBBLE),
         .VRF_PREFETCH(VRF_PREFETCH), .RCTX_SWITCH(RCTX_SWITCH),
         .LSU_INFLIGHT(LSU_INFLIGHT), .FPU_OVERLAP(FPU_OVERLAP), .RSLICE(RSLICE),
+        .RPAIR(RPAIR),
         .HAS_TENSOR_XPOSE(HAS_TENSOR_XPOSE)
     ) dut (
         .clk(clk), .rst_n(rst_n),
@@ -285,7 +287,7 @@ module tnca_device;
             cmd_pc        = pc;
             cmd_arg_base  = argb;
             cmd_role_mask = mask[NUM_RCTX-1:0];
-            cmd_slice     = mask[31:29];
+            cmd_slice     = {mask[28], mask[31:29]};   // {pair, slice, log2}
             cmd_pid_x = px;  cmd_pid_y = py;  cmd_pid_z = pz;
             cmd_npid_x = nx; cmd_npid_y = ny; cmd_npid_z = nz;
             cmd_deadline = deadline;
@@ -340,7 +342,7 @@ module tnca_device;
             u_mem.load_hex(hexfile);
 
         cmd_role_mask = {{(NUM_RCTX-1){1'b0}}, 1'b1};
-        cmd_slice     = 3'd0;
+        cmd_slice     = 4'd0;
 
         served = 0;
         repeat (4) @(posedge clk);

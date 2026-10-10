@@ -172,7 +172,7 @@ module tnca_tile #(
     ) u_core (
         .clk(clk), .rst_n(rst_n),
         .launch_valid(launch_valid), .launch_pc(launch_pc),
-        .launch_role_mask(launch_role_mask), .launch_slice(3'd0),
+        .launch_role_mask(launch_role_mask), .launch_slice(4'd0),
         .launch_pid_x(TILE_ID_32), .launch_pid_y(32'd0), .launch_pid_z(32'd0),
         .launch_npid_x(NUM_TILES_32), .launch_npid_y(32'd1), .launch_npid_z(32'd1),
         .launch_arg_base(launch_arg_base), .launch_vbase(launch_vbase),

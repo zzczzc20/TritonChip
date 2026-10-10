@@ -48,6 +48,8 @@ BENCH_NAME = {
     'core-vrf-sync-v3/slow': 'tnca_device_vrf3_slow.vvp',
     'core-vrf-sync-v4': 'tnca_device_vrf4.vvp',
     'core-vrf-sync-v4/slow': 'tnca_device_vrf4_slow.vvp',
+    'core-vrf-sync-v5': 'tnca_device_vrf5.vvp',
+    'core-vrf-sync-v5/slow': 'tnca_device_vrf5_slow.vvp',
 }
 
 # Parameters a profile's device is elaborated with. Both profiles come from
@@ -69,6 +71,8 @@ _R39_SW = _R39 + ['-P', 'tnca_device.RCTX_SWITCH=1', '-P', 'tnca_device.LSU_INFL
 # core-vrf-sync-v4: and four Role Contexts of 64 vector registers each.
 _FOUR = ['-P', 'tnca_device.NUM_RCTX=4', '-P', 'tnca_device.RCTX_W=2',
          '-P', 'tnca_device.PHYS_W=8']
+# core-vrf-sync-v5: and the transposed transfer and Role Context pairs (R39-12).
+_V5 = ['-P', 'tnca_device.HAS_TENSOR_XPOSE=1', '-P', 'tnca_device.RPAIR=1']
 
 BENCH_PARAMS = {
     'core-vrf-sync-v1': _BANKED,
@@ -80,6 +84,8 @@ BENCH_PARAMS = {
     'core-vrf-sync-v3/slow': _BANKED + _R39_SW + _SLOW,
     'core-vrf-sync-v4': _BANKED + _R39_SW + _FOUR,
     'core-vrf-sync-v4/slow': _BANKED + _R39_SW + _FOUR + _SLOW,
+    'core-vrf-sync-v5': _BANKED + _R39_SW + _FOUR + _V5,
+    'core-vrf-sync-v5/slow': _BANKED + _R39_SW + _FOUR + _V5 + _SLOW,
     'core-xpose-v1': ['-P', 'tnca_device.HAS_TENSOR_XPOSE=1'],
     'core-xpose-v1/slow': ['-P', 'tnca_device.HAS_TENSOR_XPOSE=1'] + _SLOW,
 }

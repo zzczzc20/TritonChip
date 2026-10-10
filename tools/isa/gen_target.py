@@ -117,6 +117,10 @@ def build_target(core, top, isa, name, description, profile=None):
         # accumulators, barriers, descriptors and windows (RSLICE), so one
         # kernel's programs run on several contexts at once.
         'rctx_slice': bool(core.get('RSLICE', 0)),
+        # R39-12: a launch can pair Role Contexts 2k and 2k+1 (RPAIR), so
+        # one program's producer and consumer share its vector registers and
+        # its slice of the per-core resources (Mode A).
+        'rctx_pair': bool(core.get('RPAIR', 0)),
     }
 
     target = {

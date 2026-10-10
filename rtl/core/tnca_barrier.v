@@ -365,6 +365,31 @@ module tnca_barrier #(
         end
     end
 
+`ifndef SYNTHESIS
+    // synthesis translate_off
+    // +bartrace: every arm, arrival, completion and fault, for debugging a
+    // protocol between roles.
+    reg bartrace;
+    initial bartrace = $test$plusargs("bartrace");
+    always @(posedge clk) if (bartrace && rst_n && !flush) begin
+        if (arm_en)
+            $display("BAR %0t arm b%0d arr=%0d ops=%0d epoch->%0d", $time, arm_bar,
+                     arm_arrivals, arm_operations, cur_epoch[arm_bar] + 1'b1);
+        if (arrive_en)
+            $display("BAR %0t arrive b%0d left=%0d", $time, arrive_bar, n_arrive[arrive_bar]);
+        if (txf_done_en)
+            $display("BAR %0t txf b%0d err=%0d left=%0d", $time, txf_done_bar, txf_done_err, n_ops[txf_done_bar]);
+        if (mtx_done_en)
+            $display("BAR %0t mtx b%0d left=%0d", $time, mtx_done_bar, n_ops[mtx_done_bar]);
+        if (sleep_en)
+            $display("BAR %0t sleep rctx%0d b%0d epoch %0d (done %0d)", $time, sleep_rctx,
+                     sleep_token[BAR_W-1:0], sleep_token[63:16], done_epoch[sleep_token[BAR_W-1:0]]);
+        if (fault)
+            $display("BAR %0t FAULT b%0d", $time, fault_bar);
+    end
+    // synthesis translate_on
+`endif
+
 endmodule
 
 `undef OP_DEC

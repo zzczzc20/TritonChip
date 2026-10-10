@@ -91,6 +91,7 @@ module tnca_shell #(
     parameter RCTX_SWITCH    = 0,
     parameter LSU_INFLIGHT   = 1,
     parameter RSLICE         = 0,
+    parameter RPAIR          = 0,
     parameter FPU_OVERLAP    = 0,
     parameter HAS_TENSOR_XPOSE = 0,
     parameter CORE_ID        = 0,
@@ -115,8 +116,10 @@ module tnca_shell #(
     // R39-05: give each started context its own slice of the core's
     // accumulators, barriers, descriptors and windows (RSLICE): bit 31 of
     // the launch's role-mask argument, and bits 30:29 the log2 of the
-    // number of slices (0: one per context the core has).
-    input  wire [2:0]               cmd_slice,
+    // number of slices (0: one per context the core has). R39-12: bit 28,
+    // pair contexts 2k and 2k+1 (RPAIR). {pair, slice, log2 slices}, the
+    // core's launch_slice.
+    input  wire [3:0]               cmd_slice,
     input  wire [31:0]              cmd_pid_x,
     input  wire [31:0]              cmd_pid_y,
     input  wire [31:0]              cmd_pid_z,
@@ -253,7 +256,7 @@ module tnca_shell #(
     reg  [63:0] launch_pc;
     reg  [63:0] launch_arg_base;
     reg  [NUM_RCTX-1:0] launch_role_mask;
-    reg  [2:0]          launch_slice;
+    reg  [3:0]          launch_slice;
     reg  [31:0] pid_x, pid_y, pid_z, npid_x, npid_y, npid_z;
 
     wire        core_fault_valid;
@@ -300,6 +303,7 @@ module tnca_shell #(
         .VRF_BYPASS(VRF_BYPASS), .FE_NOBUBBLE(FE_NOBUBBLE),
         .VRF_PREFETCH(VRF_PREFETCH), .RCTX_SWITCH(RCTX_SWITCH),
         .LSU_INFLIGHT(LSU_INFLIGHT), .FPU_OVERLAP(FPU_OVERLAP), .RSLICE(RSLICE),
+        .RPAIR(RPAIR),
         .HAS_TENSOR_XPOSE(HAS_TENSOR_XPOSE)
     ) u_core (
         .clk(clk), .rst_n(rst_n),
@@ -470,7 +474,7 @@ module tnca_shell #(
             launch_pc        <= 64'd0;
             launch_arg_base  <= 64'd0;
             launch_role_mask <= {NUM_RCTX{1'b0}};
-            launch_slice     <= 3'd0;
+            launch_slice     <= 4'd0;
             pid_x <= 32'd0; pid_y <= 32'd0; pid_z <= 32'd0;
             npid_x <= 32'd1; npid_y <= 32'd1; npid_z <= 32'd1;
         end else begin

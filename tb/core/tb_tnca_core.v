@@ -37,6 +37,7 @@ module tb_tnca_core;
     parameter LSU_INFLIGHT   = 1;
     parameter FPU_OVERLAP    = 0;
     parameter RSLICE         = 0;
+    parameter RPAIR          = 0;
     parameter HAS_TENSOR_XPOSE = 0;
 
     parameter NUM_RCTX       = 2;
@@ -73,7 +74,7 @@ module tb_tnca_core;
     reg [63:0]  launch_pc = 64'd0;
     reg [NUM_RCTX-1:0] launch_role_mask;
     integer            nroles;
-    reg  [2:0]         launch_slice;
+    reg  [3:0]         launch_slice;
     integer            slicek;
     reg [31:0]  pid_x = 0, pid_y = 0, pid_z = 0;
     reg [31:0]  npid_x = 1, npid_y = 1, npid_z = 1;
@@ -102,6 +103,7 @@ module tb_tnca_core;
         .VRF_BYPASS(VRF_BYPASS), .FE_NOBUBBLE(FE_NOBUBBLE),
         .VRF_PREFETCH(VRF_PREFETCH), .RCTX_SWITCH(RCTX_SWITCH),
         .LSU_INFLIGHT(LSU_INFLIGHT), .FPU_OVERLAP(FPU_OVERLAP), .RSLICE(RSLICE),
+        .RPAIR(RPAIR),
         .HAS_TENSOR_XPOSE(HAS_TENSOR_XPOSE)
     ) dut (
         .clk(clk), .rst_n(rst_n),
@@ -188,7 +190,10 @@ module tb_tnca_core;
         // R39-05: every context in its own slice of the resources (RSLICE).
         // +slicek=K: 2^K slices (0, the default: one per context).
         if (!$value$plusargs("slicek=%d", slicek)) slicek = 0;
-        launch_slice = {$test$plusargs("slice") ? 1'b1 : 1'b0, slicek[1:0]};
+        // R39-12: +pair makes contexts 2k and 2k+1 one program's two roles
+        // (RPAIR): context 2k+1 takes 2k's registers, and its slice.
+        launch_slice = {$test$plusargs("pair") ? 1'b1 : 1'b0,
+                        $test$plusargs("slice") ? 1'b1 : 1'b0, slicek[1:0]};
 
         // Per-RCTX physical vector base. Disjoint by default; +aliasvrf gives
         // every context the same base, which is what a producer/consumer role

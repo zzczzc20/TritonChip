@@ -101,6 +101,15 @@ module tnca_core #(
     // size; ORing is then idempotent, so a token mb.arm returns (already
     // sliced) means the same thing when it comes back.
     parameter RSLICE         = 0,
+    // R39-12: Role Context pairs (capability rctx_pair). A launch with
+    // launch_slice[3] set makes contexts 2k and 2k+1 one program's two roles
+    // (Mode A): both get the vector base of context 2k, so they name the same
+    // registers -- the windows one fills and the other reads, with each role's
+    // own temporaries in a range the compiler keeps apart -- and RSLICE slices
+    // by the pair, k, so both name the same accumulators, barriers,
+    // descriptors and windows. Scalar and predicate files, PCs and faults stay
+    // per context. Without the bit, or with RPAIR = 0, nothing changes.
+    parameter RPAIR          = 0,
     parameter NUM_RCTX       = 2,
     parameter RCTX_W         = 1,
     parameter VLEN           = 16,
@@ -151,7 +160,7 @@ module tnca_core #(
     input  wire                     launch_valid,
     input  wire [63:0]              launch_pc,
     input  wire [NUM_RCTX-1:0]      launch_role_mask,
-    input  wire [2:0]               launch_slice,     // RSLICE: {slice, log2 slices}
+    input  wire [3:0]               launch_slice,     // {pair, slice, log2 slices}
     input  wire [31:0]              launch_pid_x,
     input  wire [31:0]              launch_pid_y,
     input  wire [31:0]              launch_pid_z,
@@ -463,8 +472,9 @@ module tnca_core #(
     //==========================================================================
     reg       slice_q;
     reg [1:0] slice_k;            // log2 of the number of slices
+    reg       pair_q;             // RPAIR: the slice is the pair's, rctx >> 1
     wire       d_sl    = (RSLICE != 0) && slice_q;
-    wire [7:0] d_rctx8 = {{(8-RCTX_W){1'b0}}, d_rctx};
+    wire [7:0] d_rctx8 = {{(8-RCTX_W){1'b0}}, d_rctx} >> ((RPAIR != 0) && pair_q);
     // Index width minus log2(slices): where the context number goes.
     wire [3:0] acc_sh  = ACC_W  - slice_k;
     wire [3:0] bar_sh  = BAR_W  - slice_k;
@@ -1267,9 +1277,16 @@ module tnca_core #(
 
     // RSLICE: a barrier a token names is in the issuing context's slice.
     wire [BAR_W-1:0] x_bar_sl = ((RSLICE != 0) && slice_q)
-                              ? ({{(BAR_W-RCTX_W){1'b0}}, x_rctx} << bar_sh)
+                              ? (({{(BAR_W-RCTX_W){1'b0}}, x_rctx}
+                                  >> ((RPAIR != 0) && pair_q)) << bar_sh)
                               : {BAR_W{1'b0}};
     wire [BAR_W-1:0] tok_bar = sa_data[BAR_W-1:0] | x_bar_sl;
+    // The token mb.wait and mb.test hand the barrier file, in the slice. A
+    // token mb.arm returned is sliced already (ORing is idempotent); one the
+    // program built from an epoch it counted itself -- each role of a ring
+    // does (R39-12) -- names the barrier as the program does, and without
+    // this a context in slice 1 waited on slice 0's barrier.
+    wire [63:0]      tok_sl  = {sa_data[63:BAR_W], tok_bar};
 
     wire        bar_arm_token_v;
     wire [63:0] bar_arm_token;
@@ -1360,9 +1377,9 @@ module tnca_core #(
         .txf_done_err(txf_done_err),
         .inval_en(x_is_bar && (x_func == `TNCA_MB_INVAL)),
         .inval_bar(x_ra_idx[BAR_W-1:0]),
-        .test_token(sa_data), .test_done(bar_test_done),
+        .test_token(tok_sl), .test_done(bar_test_done),
         .test_error(bar_test_error),
-        .sleep_en(bar_sleep), .sleep_rctx(x_rctx), .sleep_token(sa_data),
+        .sleep_en(bar_sleep), .sleep_rctx(x_rctx), .sleep_token(tok_sl),
         .wake(bar_wake), .wake_err(bar_wake_err),
         .fault(bar_fault), .fault_bar(bar_fault_bar)
     );
@@ -1861,7 +1878,8 @@ module tnca_core #(
     // register write and no engine is mid-command. Conservative -- it also
     // waits on an engine running another context's command -- and deliberately
     // so, because the precise version needs per-command ownership that buys
-    // nothing at two contexts.
+    // nothing at two contexts. Role Context pairs (RPAIR) are where it buys
+    // something, and there it is precise (below).
     reg [NUM_RCTX-1:0] rctx_wr_busy;
     integer rb_i, rb_j;
     always @(*) begin
@@ -1878,8 +1896,23 @@ module tnca_core #(
 
     wire r_is_arrive = r_valid && (r_major == `TNCA_MAJ_MBAR)
                                 && (r_func  == `TNCA_MB_ARRIVE);
+    // RPAIR (R39-12): the precise version, for the engines. A consumer
+    // releasing a ring stage must not wait for the transfers its producer
+    // has started into the next one -- that wait serialised the two roles
+    // whose overlap is the point -- so an arrive waits for a matrix or
+    // transfer command only if its own context issued it: the one running
+    // (each engine runs one command at a time and its issuer is recorded),
+    // or one in X this cycle. ISA sec 9A.5 allows exactly this precision.
+    reg  [RCTX_W-1:0] txf_rctx;          // who issued the transfer engine's command
+    wire arr_mtx = (RPAIR != 0)
+                 ? ((mtx_busy && mtx_rctx == r_rctx) || (mtx_cmd_valid && x_rctx == r_rctx))
+                 : mtx_busy;
+    wire arr_txf = (RPAIR != 0)
+                 ? ((txf_busy && txf_rctx == r_rctx)
+                    || ((txf_is_cfg || txf_is_xfr) && x_rctx == r_rctx))
+                 : txf_busy;
     wire stall_arrive = r_is_arrive && (rctx_wr_busy[r_rctx] || !lsu_req_ready
-                                        || mtx_busy || txf_busy);
+                                        || arr_mtx || arr_txf);
 
     wire r_needs_txf = r_valid && (r_fu == `TNCA_FU_TXFER);
     wire txf_free_next = !txf_busy && !txf_is_cfg && !txf_is_xfr;
@@ -2070,8 +2103,10 @@ module tnca_core #(
             parked     <= {NUM_RCTX{1'b0}};
             slice_q    <= 1'b0;
             slice_k    <= 2'd0;
+            pair_q     <= 1'b0;
             perf_rctx_switch <= 64'd0;
             mtx_rctx   <= {RCTX_W{1'b0}};
+            txf_rctx   <= {RCTX_W{1'b0}};
             red_pend   <= 1'b0;
             red_len    <= {VLEN{1'b1}};
             w_en       <= 1'b0;
@@ -2205,6 +2240,7 @@ module tnca_core #(
                 running  <= launch_role_mask;
                 launched <= launch_role_mask;
                 slice_q  <= (RSLICE != 0) && launch_slice[2];
+                pair_q   <= (RPAIR != 0) && launch_slice[3];
                 slice_k  <= (launch_slice[1:0] != 2'd0) ? launch_slice[1:0]
                                                         : RCTX_W[1:0];
                 faulted  <= {NUM_RCTX{1'b0}};
@@ -2216,6 +2252,10 @@ module tnca_core #(
                 npid_z   <= launch_npid_z;
                 arg_base <= launch_arg_base;
                 vbase_q  <= launch_vbase;
+                // RPAIR: context 2k+1 takes context 2k's registers.
+                if ((RPAIR != 0) && launch_slice[3])
+                    for (i = 1; i < NUM_RCTX; i = i + 2)
+                        vbase_q[i*PHYS_W +: PHYS_W] <= launch_vbase[(i-1)*PHYS_W +: PHYS_W];
                 d_valid  <= 1'b0;
                 r_valid  <= 1'b0;
                 x_valid  <= 1'b0;
@@ -2432,6 +2472,7 @@ module tnca_core #(
             // matrix engine ownership, and barrier wake-ups
             //------------------------------------------------------------------
             if (mtx_cmd_valid) mtx_rctx <= x_rctx;
+            if (txf_is_cfg || txf_is_xfr) txf_rctx <= x_rctx;
 
             for (i = 0; i < NUM_RCTX; i = i + 1)
                 if (bar_wake[i]) begin

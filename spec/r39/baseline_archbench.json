@@ -1741,5 +1741,10 @@
    }
   }
  },
- "records": "spec/r39/baseline_archbench.jsonl: the 52 ArchBench records themselves (host log paths removed), the A side of tools/r39/ablate.py"
+ "records": "spec/r39/baseline_archbench.jsonl: the 52 ArchBench records themselves (host log paths removed), the A side of tools/r39/ablate.py",
+ "medium": {
+  "records": "spec/r39/baseline_archbench_medium.jsonl: the 25 medium points (R39-13), measured the same way -- u280_r39b, the 0b7ef29 tree with its switches off, profile core-vrf-sync-v1 -- on 2026-10-10, after the tier was added (archbench/suites/medium.json)",
+  "points": 25,
+  "passing": 25
+ }
 }

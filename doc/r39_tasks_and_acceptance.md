@@ -677,6 +677,20 @@ R39-02a 的改动都在两个开关之下，关闭时制品逐字节相同（447
 2. 冻结 R39-00 基线在 medium 档上的数字：在 r39b 镜像上，用基线软件跑一遍。
 3. R39-11 的板上结论在 tiny + small + medium 上复核：S_geo、E、无点变慢。
 
+进展（2026-10-10，板上）：
+
+- **medium 档**（5a7eab4、2d51e3c）：25 点，24 个 family，每个 kernel 的最大一次 launch 的参数不超过 352 KiB。
+  - runtime 每次 launch 还需要约 13 KB：每个 context 一份 scratch、TensorMap、对齐。
+  - 第一次上板时 gpt2_block 因此超出 heap，transpose 正好用满 heap。两者都已缩小后重新冻结。
+- **冻结基线的 medium 数字**（验收 2）：
+  - 测法：u280_r39b 镜像，0b7ef29 软件，开关全关，profile core-vrf-sync-v1。
+  - 结果：25/25 数值通过，记录在 `spec/r39/baseline_archbench_medium.jsonl`。
+- **v4 终版在 medium 档上**（验收 3 的一部分）：u280_r39e，R39-05 终版软件，25/25 通过。相对基线：
+  - S_geo **4.309**；E 0.00751 → 0.02669（3.55×）。
+  - 没有点变慢，最少的是 embedding，1.983×。
+  - 发射占比 0.277 → 0.515。
+  - 这与 tiny + small 的 4.315、3.55× 一致，R39-11 的结论在更大的负载上成立。
+
 ## 4. 执行顺序
 
 1. **R39-00 先于一切。** 没有标准路径基线和消融工具，后续一切收益都无从证明。

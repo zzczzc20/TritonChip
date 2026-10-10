@@ -63,7 +63,14 @@ module tnca_matrix #(
     // Register the MAC operands before the FMA (tnca_fpu_multi IN_REG): one
     // more cycle of latency per command, and the A operand's block-RAM read
     // and element select no longer share a cycle with the multiply.
-    parameter OPND_REG = 1
+    parameter OPND_REG = 1,
+    // R39-12: read the A fragment into a buffer of its own before the MAC
+    // sweep, when it is at most eight registers (FP16/BF16 K16, FP8 K16 and
+    // K32), so the sweep issues one row a cycle. Without it every MAC waits
+    // for a vector-file read of the register holding its one A element:
+    // measured, 551 cycles for an FP16 K16 command, of which the 256 MACs
+    // are under half.
+    parameter ABUF     = 0
 ) (
     input  wire                     clk,
     input  wire                     rst_n,
@@ -127,7 +134,8 @@ module tnca_matrix #(
                S_MAC   = 3'd3,
                S_ROW   = 3'd4,
                S_DRAIN = 3'd5,
-               S_DONE  = 3'd6;
+               S_DONE  = 3'd6,
+               S_LOADA = 3'd7;
 
     integer i;
     genvar  g;
@@ -154,6 +162,11 @@ module tnca_matrix #(
     wire [6:0] k_limit = (r_k == `TNCA_MMA_K16) ? 7'd16 :
                          (r_k == `TNCA_MMA_K32) ? 7'd32 : 7'd64;
 
+    // ABUF: the A fragment, 16 x k_limit elements, in at most 8 registers.
+    reg  [VLEN*ELEN-1:0] abuf [0:7];
+    reg  [3:0]           la;          // the A register being read
+    reg                  use_abuf;    // this command sweeps out of abuf
+
     // The fragment dtype, as the converter's format code. The two vocabularies
     // are deliberately different -- a fragment cannot be binary32, so sec 9C
     // needs only two bits -- and this is the one place they meet.
@@ -169,6 +182,8 @@ module tnca_matrix #(
 
     // Both FP8 encodings are one byte per element; FP16 and BF16 are two.
     wire elem8 = r_dt[1];
+    // How many registers A takes (ABUF reads them all, when they fit).
+    wire [6:0] a_regs   = elem8 ? {2'd0, k_limit[6:2]} : {1'b0, k_limit[6:1]};
 
     assign busy = (st != S_IDLE);
 
@@ -191,12 +206,14 @@ module tnca_matrix #(
     wire [7:0]  b_vreg = r_vb + (elem8 ? {3'd0, kk[6:2]} : {2'd0, kk[6:1]});
     wire [1:0]  b_part = elem8 ? kk[1:0] : {kk[0], 1'b0};
 
-    assign vrf_addr = (st == S_LOADB) ? b_vreg : a_vreg;
+    assign vrf_addr = (st == S_LOADB) ? b_vreg
+                    : (st == S_LOADA) ? (r_va + {4'd0, la})
+                    : a_vreg;
 
     // The two states that read the vector file. Held while the data has
     // not come back: the address is driven from the state, so holding the
     // state holds the request.
-    assign vrf_req = (st == S_LOADB) || (st == S_MAC);
+    assign vrf_req = (st == S_LOADB) || (st == S_LOADA) || (st == S_MAC && !use_abuf);
     wire vrf_wait = vrf_req && !vrf_valid;
 
     // B row latch. One 16-bit slot per element whatever the format: an 8-bit
@@ -205,8 +222,10 @@ module tnca_matrix #(
     reg [VLEN*16-1:0] b_row;
 
     // A element for this cycle, right-aligned in 32 bits.
-    wire [31:0] a_elem_v = elem8 ? {24'd0, vrf_data[a_elem*8 +: 8]}
-                                 : {16'd0, vrf_data[a_elem[4:0]*16 +: 16]};
+    wire [2:0]           a_bi   = elem8 ? a_flat[8:6] : a_flat[7:5];
+    wire [VLEN*ELEN-1:0] a_word = use_abuf ? abuf[a_bi] : vrf_data;
+    wire [31:0] a_elem_v = elem8 ? {24'd0, a_word[a_elem*8 +: 8]}
+                                 : {16'd0, a_word[a_elem[4:0]*16 +: 16]};
 
     //==========================================================================
     // The MAC array
@@ -366,11 +385,19 @@ module tnca_matrix #(
                     kk       <= 7'd0;
                     mm       <= {(ROW_W+1){1'b0}};
                     drain    <= 4'd0;
+                    la       <= 4'd0;
+                    use_abuf <= 1'b0;
                     case (cmd_op)
                     2'd0: st <= S_ZERO;
                     2'd1: st <= S_LOADB;
                     default: st <= S_ROW;
                     endcase
+                    // r_k and r_dt are not latched yet: decide from the command.
+                    if (cmd_op == 2'd1 && ABUF != 0 &&
+                        (cmd_dt[1] ? (cmd_k != `TNCA_MMA_K64) : (cmd_k == `TNCA_MMA_K16))) begin
+                        use_abuf <= 1'b1;
+                        st       <= S_LOADA;
+                    end
                 end
             end
 
@@ -385,6 +412,14 @@ module tnca_matrix #(
                 end else begin
                     mm <= mm + 1'b1;
                 end
+            end
+
+            //---------------------------------------------------------------
+            // ABUF: the A fragment's registers, one read each, before any MAC.
+            S_LOADA: if (!vrf_wait) begin
+                abuf[la[2:0]] <= vrf_data;
+                if ({3'd0, la} == a_regs - 7'd1) st <= S_LOADB;
+                else                             la <= la + 1'b1;
             end
 
             //---------------------------------------------------------------

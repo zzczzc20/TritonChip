@@ -53,6 +53,15 @@ module tnca_device;
     // core-sim and core-vrf-sync-v1 come from the same bench source and a
     // difference between them cannot be a difference in the device.
     parameter USE_BANKED_VRF = 0;
+    parameter VRF_BYPASS     = 0;
+    parameter FE_NOBUBBLE    = 0;
+    parameter VRF_PREFETCH   = 0;
+    parameter RCTX_SWITCH    = 0;
+    parameter LSU_INFLIGHT   = 1;
+    parameter FPU_OVERLAP    = 0;
+    parameter RSLICE         = 0;
+    parameter RPAIR          = 0;
+    parameter MTX_ABUF       = 0;
     // 1 elaborates the transposed tensor-DMA write (profile core-xpose-v1).
     parameter HAS_TENSOR_XPOSE = 0;
 
@@ -98,6 +107,7 @@ module tnca_device;
     reg  [63:0] cmd_pc = 64'd0;
     reg  [63:0] cmd_arg_base = 64'd0;
     reg  [NUM_RCTX-1:0] cmd_role_mask;
+    reg  [3:0]          cmd_slice;
     reg  [31:0] cmd_pid_x = 0, cmd_pid_y = 0, cmd_pid_z = 0;
     reg  [31:0] cmd_npid_x = 1, cmd_npid_y = 1, cmd_npid_z = 1;
     reg  [63:0] cmd_deadline = 64'd0;
@@ -135,12 +145,16 @@ module tnca_device;
         .VREGS_PER_RCTX(VREGS_PER_RCTX), .PHYS_VREGS(PHYS_VREGS),
         .PHYS_W(PHYS_W), .LSU_TAG_W(LSU_TAG_W), .HAS_SFU(HAS_SFU),
         .USE_BANKED_VRF(USE_BANKED_VRF),
+        .VRF_BYPASS(VRF_BYPASS), .FE_NOBUBBLE(FE_NOBUBBLE),
+        .VRF_PREFETCH(VRF_PREFETCH), .RCTX_SWITCH(RCTX_SWITCH),
+        .LSU_INFLIGHT(LSU_INFLIGHT), .FPU_OVERLAP(FPU_OVERLAP), .RSLICE(RSLICE),
+        .RPAIR(RPAIR), .MTX_ABUF(MTX_ABUF),
         .HAS_TENSOR_XPOSE(HAS_TENSOR_XPOSE)
     ) dut (
         .clk(clk), .rst_n(rst_n),
         .cmd_valid(cmd_valid), .cmd_ready(cmd_ready), .cmd_op(cmd_op),
         .cmd_pc(cmd_pc), .cmd_arg_base(cmd_arg_base),
-        .cmd_role_mask(cmd_role_mask),
+        .cmd_role_mask(cmd_role_mask), .cmd_slice(cmd_slice),
         .cmd_pid_x(cmd_pid_x), .cmd_pid_y(cmd_pid_y), .cmd_pid_z(cmd_pid_z),
         .cmd_npid_x(cmd_npid_x), .cmd_npid_y(cmd_npid_y),
         .cmd_npid_z(cmd_npid_z),
@@ -274,6 +288,7 @@ module tnca_device;
             cmd_pc        = pc;
             cmd_arg_base  = argb;
             cmd_role_mask = mask[NUM_RCTX-1:0];
+            cmd_slice     = {mask[28], mask[31:29]};   // {pair, slice, log2}
             cmd_pid_x = px;  cmd_pid_y = py;  cmd_pid_z = pz;
             cmd_npid_x = nx; cmd_npid_y = ny; cmd_npid_z = nz;
             cmd_deadline = deadline;
@@ -328,6 +343,7 @@ module tnca_device;
             u_mem.load_hex(hexfile);
 
         cmd_role_mask = {{(NUM_RCTX-1){1'b0}}, 1'b1};
+        cmd_slice     = 4'd0;
 
         served = 0;
         repeat (4) @(posedge clk);

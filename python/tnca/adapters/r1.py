@@ -159,8 +159,15 @@ def emit(kernel, target, *, prov=None, check_protocol=True,
     cg = r1['CodeGen'](kernel, target, check_protocol=check_protocol,
                        opt_level=opt_level)
     try:
-        cg.assign_shared()
-        cg.run()
+        if len(kernel.roles) > 1:
+            # R39-12: a producer and a consumer per program (Mode A).
+            from tnca_cc.codegen import emit_roles
+            text, cg = emit_roles(kernel, target, check_protocol=check_protocol,
+                                  opt_level=opt_level)
+        else:
+            cg.assign_shared()
+            cg.run()
+            text = None
     except r1['Unsupported'] as d:
         raise UnsupportedError(str(d).splitlines()[0],
                                where='code generation',
@@ -168,8 +175,9 @@ def emit(kernel, target, *, prov=None, check_protocol=True,
     except r1['Diagnostic'] as d:
         raise CompileError(str(d).splitlines()[0],
                            where='code generation',
-                           detail={'diagnostic': str(d)})
-    text = cg.b.text()
+                           detail={'diagnostic': str(d), 'kind': type(d).__name__})
+    if text is None:
+        text = cg.b.text()
     if prov is not None:
         prov.record('codegen', 'tnca_cc.codegen.CodeGen')
         prov.record('ownership_check', 'unconditional')
@@ -204,7 +212,7 @@ def assemble(asm_text, *, prov=None):
 
 
 def import_ttir(module, func_name, arg_values, *, param_names, target,
-                prov=None, dynamic_args=True):
+                prov=None, dynamic_args=True, index_opt=False, sparse_maps=False):
     """A Triton TTIR module -> TNCA IR, through R1's importer.
 
     `dynamic_args` defaults to TRUE here, and that is the difference between
@@ -214,7 +222,8 @@ def import_ttir(module, func_name, arg_values, *, param_names, target,
     behaviour has to ask for it by name.
     """
     r1 = _r1()
-    imp = r1['TTIRImporter'](target, func_name)
+    imp = r1['TTIRImporter'](target, func_name, index_opt=index_opt,
+                             sparse_maps=sparse_maps)
     try:
         kernel, builder = imp.run(module, func_name, arg_values,
                                   param_names=param_names,

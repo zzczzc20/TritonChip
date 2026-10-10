@@ -153,6 +153,10 @@ module tnca_tensor #(
     output reg  [7:0]               vw_idx,
     output reg  [VLEN-1:0]          vw_lane_en,
     output reg  [VLEN*ELEN-1:0]     vw_data,
+    // The register file took the write presented this cycle. Low while
+    // vw_en is high, the file gave the bank to the writeback stage (which
+    // has it first: R39-00 B4); the write is held and presented again.
+    input  wire                     vw_ready,
 
     // ---- window read port (a store's source), held until vr_valid ----
     output wire                     vr_req,
@@ -719,6 +723,9 @@ module tnca_tensor #(
     wire [63:0] mul_p = mul_c * mul_s;
 
     //==========================================================================
+    // A window write the register file refused this cycle (vw_ready).
+    wire vw_hold = vw_en && !vw_ready;
+
     always @(posedge clk) begin
         if (!rst_n || flush) begin
             st        <= S_IDLE;
@@ -740,7 +747,9 @@ module tnca_tensor #(
             done_err   <= 1'b0;
             sr_v       <= 1'b0;
         end else begin
-            vw_en <= 1'b0;
+            // A refused write stays presented (vw_hold); nothing below starts
+            // another until it is taken.
+            if (!vw_hold) vw_en <= 1'b0;
             done  <= 1'b0;
             fault <= 1'b0;
             done_bar_en <= 1'b0;
@@ -799,7 +808,7 @@ module tnca_tensor #(
             // frees a slot and lets the transfer finish. A unit with no
             // memory behind it (all fill) waits a cycle.
             //------------------------------------------------------------------
-            if (have_done && !t_store && !t_xpose) begin
+            if (have_done && !t_store && !t_xpose && !vw_hold) begin
                 vw_en      <= 1'b1;
                 vw_rctx    <= t_rctx;
                 vw_idx     <= sl_vreg[done_slot];
@@ -1008,7 +1017,7 @@ module tnca_tensor #(
                 reg adv;
                 adv = 1'b0;
                 if (!ld_nlo && !ld_nhi) begin
-                    if (!have_done) begin
+                    if (!have_done && !vw_hold) begin
                         vw_en      <= 1'b1;
                         vw_rctx    <= t_rctx;
                         vw_idx     <= ld_vreg;
@@ -1161,7 +1170,7 @@ module tnca_tensor #(
             // Destination row c = t_unit*(8/esz) + x_q holds element x_q of
             // every buffered unit, in source-row order: window element
             // (c, r) = source element (r, c). One whole-lane write per row.
-            S_XWRITE: begin
+            S_XWRITE: if (!vw_hold) begin
                 vw_en      <= 1'b1;
                 vw_rctx    <= t_rctx;
                 vw_idx     <= x_vreg;
@@ -1186,7 +1195,9 @@ module tnca_tensor #(
             end
 
             //---------------------------------------------------------------
-            S_DONE: begin
+            // Not complete while a write of this transfer is still being held:
+            // a reader the completion releases must find it written.
+            S_DONE: if (!vw_hold) begin
                 done        <= 1'b1;
                 done_bar_en <= t_bar_en;
                 done_bar    <= t_bar;
@@ -1198,7 +1209,7 @@ module tnca_tensor #(
             // A geometry this engine cannot execute is a fault, never an
             // approximation (sec 1.6): a wrong answer that looks right is the
             // one failure mode a capability model exists to prevent.
-            S_FAULT: begin
+            S_FAULT: if (!vw_hold) begin
                 fault       <= 1'b1;
                 fault_code  <= t_fcode;
                 fault_rctx  <= t_rctx;

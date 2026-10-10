@@ -17,6 +17,8 @@ Tiers say where a point can be measured, not how important it is:
             wall second): each point is at most a few hundred thousand cycles
     small   sized for the board: every kernel's arguments fit the device
             heap (384 KiB of the U50 image's 512 KiB memory)
+    medium  for the board too, a moderately bigger load (R39-13): two to
+            eight times small, still within the device heap per kernel
     large   GPU-realistic shapes (a ~1B-parameter decoder, 512-token prefill);
             TNCA records them as capacity-exceeded until it has the memory
 """
@@ -24,7 +26,7 @@ from dataclasses import dataclass, field
 import hashlib
 import json
 
-TIERS = ('tiny', 'small', 'large')
+TIERS = ('tiny', 'small', 'medium', 'large')
 
 # Relative tolerance on max|got - ref| / max(max|ref|, 1), by the dtype the
 # point computes in. The reference is eager PyTorch in float32 on the CPU

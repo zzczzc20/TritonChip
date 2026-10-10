@@ -72,6 +72,16 @@ def _child_env(args):
             env['TNCA_BACKEND_ARGS'] = args.backend_args
         if args.compile_only:
             env['TNCA_LAUNCH'] = 'skip'
+        # R39: the standard path has tensor descriptors on (the default in
+        # tnca.inductor.configure); this is the switch that turns them off.
+        if args.no_tensor_descriptors:
+            env['TNCA_TENSOR_DESCRIPTORS'] = '0'
+    # Ablation knobs: KEY=VALUE set in every child's environment, and
+    # recorded with every point (platform.knobs) so two runs that differ in
+    # one are never mistaken for the same configuration.
+    for kv in args.set or []:
+        k, _, v = kv.partition('=')
+        env[k] = v
     return env
 
 
@@ -115,6 +125,10 @@ def main(argv=None):
     ap.add_argument('--backend', default=os.environ.get('TNCA_BACKEND', 'sim-file'))
     ap.add_argument('--backend-args', default=os.environ.get('TNCA_BACKEND_ARGS'))
     ap.add_argument('--counters', action='store_true')
+    ap.add_argument('--no-tensor-descriptors', action='store_true',
+                    help='TNCA: Inductor without tensor descriptors (the standard path has them on)')
+    ap.add_argument('--set', action='append', metavar='KEY=VALUE',
+                    help='an environment knob for every point (repeatable), recorded with each point')
     ap.add_argument('--compile-only', action='store_true',
                     help='TNCA: compile every kernel, launch none (TNCA_LAUNCH=skip)')
     ap.add_argument('--variant', default='inductor-cudagraph')

@@ -28,6 +28,9 @@ that the same torch program reaches any of them unchanged:
                        a simulator runs ~500 target cycles per second)
     TNCA_LAUNCH=skip   compile every kernel and run none (coverage sweeps);
                        the launch log marks each entry `skipped`
+    TNCA_GUARD_BYTES, TNCA_GUARD_CHECK
+                       debugging: poisoned margins around every buffer, to
+                       catch out-of-bounds writes and reads (_guards)
 
 `launch_log()` records every launch made while it is open -- kernel, grid,
 device cycles, per-program cycles, counters, bytes moved between host and
@@ -204,6 +207,49 @@ class TNCALauncher:
             raise TNCALaunchError(f'{self.metadata.name}: no launch value for {missing}')
         values = [by_name[p] for p in self.params]
         session, module = _load(_Sessions.get(self.profile), function)
+        guard, poisons = _guards()
+        grid = (max(gridX, 1), max(gridY, 1), max(gridZ, 1))
+        runs = [self._launch_once(session, module, values, grid, guard, poison)
+                for poison in poisons]
+        event, outputs, moved, (t_start, t_submit, t_done) = runs[-1]
+        if len(runs) > 1:
+            differ = sorted({name for k, (name, _raw, data) in outputs.items()
+                             if runs[0][1][k][2] != data})
+            if differ:
+                raise TNCALaunchError(
+                    f'{self.metadata.name}: reads memory outside its buffers -- with two '
+                    f'different poisons around every buffer (TNCA_GUARD_CHECK) the launch '
+                    f'wrote different results into {differ}')
+        for _name, raw, data in outputs.values():
+            if data:
+                raw.copy_(torch.frombuffer(bytearray(data), dtype=torch.uint8))
+        if _logs:
+            entry = dict(kernel=self.metadata.name, grid=grid, profile=self.profile,
+                         backend=session.backend_name,
+                         device_cycles=event.device_cycles,
+                         program_cycles=list(event.program_cycles or []),
+                         counters=event.counters,
+                         host_seconds=dict(upload=round(t_submit - t_start, 6),
+                                           run=round(t_done - t_submit, 6),
+                                           download=round(time.perf_counter() - t_done, 6)),
+                         **moved)
+            for log in _logs:
+                log.append(entry)
+        if launch_exit_hook is not None:
+            launch_exit_hook(launch_metadata)
+
+    def _launch_once(self, session, module, values, grid, guard, poison):
+        """Upload every distinct storage, run the grid, download them.
+
+        Returns (event, {storage: (argument name, host bytes view, device
+        bytes)}, bytes moved, (start, submit, done) times). Nothing is
+        copied back into the host tensors here; the caller does that, once.
+
+        With `guard` > 0 every buffer is allocated `guard` bytes larger on
+        each side, the margins filled with `poison`; a margin that comes back
+        changed is a write out of bounds and fails the launch.
+        """
+        torch = _torch()
         buffers, bound = {}, {}
         moved = {'upload_bytes': 0, 'download_bytes': 0}
         t_start = time.perf_counter()
@@ -215,13 +261,23 @@ class TNCALauncher:
             key = st.data_ptr()
             if key not in buffers:
                 raw = torch.empty(0, dtype=torch.uint8).set_(st)
-                handle = session.allocate(max(st.nbytes(), 8), name=name)
-                if st.nbytes():
-                    session.upload(handle, raw.numpy().tobytes())
-                    moved['upload_bytes'] += st.nbytes()
-                buffers[key] = (handle, raw)
+                n = st.nbytes()
+                if guard:
+                    # One upload of margin, data, poison up to the next 64
+                    # bytes, margin: the device takes 8-byte-aligned writes.
+                    body = -(-n // 64) * 64
+                    handle = session.allocate(body + 2 * guard, name=name)
+                    session.upload(handle, poison * guard + raw.numpy().tobytes()
+                                   + poison * (body - n + guard))
+                    moved['upload_bytes'] += n
+                else:
+                    handle = session.allocate(max(n, 8), name=name)
+                    if n:
+                        session.upload(handle, raw.numpy().tobytes())
+                        moved['upload_bytes'] += n
+                buffers[key] = (handle, raw, name)
             handle = buffers[key][0]
-            off = v.storage_offset() * v.element_size()
+            off = guard + v.storage_offset() * v.element_size()
             return (handle, off) if off else handle
 
         try:
@@ -254,7 +310,6 @@ class TNCALauncher:
                     raise TNCALaunchError(f'{name}: None argument')
                 else:
                     raise TNCALaunchError(f'{name}: unsupported argument type {type(v).__name__}')
-            grid = (max(gridX, 1), max(gridY, 1), max(gridZ, 1))
             t_submit = time.perf_counter()
             event = session.submit(module, bound, grid=grid)
             session.wait(event)
@@ -264,33 +319,28 @@ class TNCALauncher:
             TNCALauncher.last = self
             if event.state != 'SUCCEEDED':
                 raise TNCALaunchError(f'{self.metadata.name}: {event.error}')
-            for handle, raw in buffers.values():
+            outputs = {}
+            for key, (handle, raw, name) in buffers.items():
                 n = raw.numel()
-                if n:
-                    data = session.download(handle)[:n]
-                    raw.copy_(torch.frombuffer(bytearray(data), dtype=torch.uint8))
-                    moved['download_bytes'] += n
-            if _logs:
-                entry = dict(kernel=self.metadata.name, grid=grid, profile=self.profile,
-                             backend=session.backend_name,
-                             device_cycles=event.device_cycles,
-                             program_cycles=list(event.program_cycles or []),
-                             counters=event.counters,
-                             host_seconds=dict(upload=round(t_submit - t_start, 6),
-                                               run=round(t_done - t_submit, 6),
-                                               download=round(time.perf_counter() - t_done, 6)),
-                             **moved)
-                for log in _logs:
-                    log.append(entry)
+                if guard:
+                    whole = bytes(session.download(handle))
+                    if whole[:guard] != poison * guard or \
+                            whole[guard + n:] != poison * (len(whole) - guard - n):
+                        raise TNCALaunchError(
+                            f'{self.metadata.name}: wrote outside {name!r} (a TNCA_GUARD_BYTES '
+                            f'margin of {guard} bytes came back changed)')
+                    data = whole[guard:guard + n]
+                else:
+                    data = session.download(handle)[:n] if n else b''
+                outputs[key] = (name, raw, bytes(data))
+                moved['download_bytes'] += n
+            return event, outputs, moved, (t_start, t_submit, t_done)
         finally:
-            for handle, _raw in buffers.values():
+            for handle, _raw, _name in buffers.values():
                 try:
                     session.free(handle)
                 except Exception:                        # noqa: BLE001
                     pass
-        if launch_exit_hook is not None:
-            launch_exit_hook(launch_metadata)
-
 
 _loaded = {}
 
@@ -322,6 +372,28 @@ def _load(session, path):
     _loaded[key] = m
     return session, m
 
+
+def _guards():
+    """(guard bytes, poisons) for a launch -- debugging knobs, off by default.
+
+    TNCA_GUARD_BYTES=N  every buffer gets an N-byte margin on each side,
+                        filled with 0xFF, and a margin that comes back
+                        changed fails the launch (a write out of bounds).
+    TNCA_GUARD_CHECK=1  every launch runs twice, margins 0xFF and then 0x00
+                        (4096 bytes unless TNCA_GUARD_BYTES says otherwise),
+                        and fails if the results differ: the kernel read
+                        memory outside its buffers. Without it such a read
+                        returns whatever an earlier launch left there, so a
+                        wrong answer comes and goes with the run's history.
+    """
+    raw = os.environ.get('TNCA_GUARD_BYTES')
+    check = os.environ.get('TNCA_GUARD_CHECK') == '1'
+    guard = int(raw) if raw else (4096 if check else 0)
+    if guard % 64:
+        raise TNCALaunchError(f'TNCA_GUARD_BYTES={guard}: must be a multiple of 64 (buffer alignment)')
+    if check:
+        return guard, (b'\xff', b'\x00')
+    return guard, ((b'\xff',) if guard else (None,))
 
 class TNCAUtils:
     def __init__(self):

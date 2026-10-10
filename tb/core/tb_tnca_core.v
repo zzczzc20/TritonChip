@@ -30,6 +30,15 @@ module tb_tnca_core;
     // Makefile, so one bench source describes both implementations and a
     // difference between them cannot be a difference in the testbench.
     parameter USE_BANKED_VRF = 0;
+    parameter VRF_BYPASS     = 0;
+    parameter FE_NOBUBBLE    = 0;
+    parameter VRF_PREFETCH   = 0;
+    parameter RCTX_SWITCH    = 0;
+    parameter LSU_INFLIGHT   = 1;
+    parameter FPU_OVERLAP    = 0;
+    parameter RSLICE         = 0;
+    parameter RPAIR          = 0;
+    parameter MTX_ABUF       = 0;
     parameter HAS_TENSOR_XPOSE = 0;
 
     parameter NUM_RCTX       = 2;
@@ -65,6 +74,9 @@ module tb_tnca_core;
     reg         launch_valid = 1'b0;
     reg [63:0]  launch_pc = 64'd0;
     reg [NUM_RCTX-1:0] launch_role_mask;
+    integer            nroles;
+    reg  [3:0]         launch_slice;
+    integer            slicek;
     reg [31:0]  pid_x = 0, pid_y = 0, pid_z = 0;
     reg [31:0]  npid_x = 1, npid_y = 1, npid_z = 1;
     reg [63:0]  arg_base = 64'd0;
@@ -82,18 +94,22 @@ module tb_tnca_core;
     // R3-06 COUNT-02: the exclusive stall attribution.
     wire [63:0] perf_stall_total, perf_x_hazard, perf_x_lsu, perf_x_fpu,
                 perf_x_mtx, perf_x_txf, perf_x_fence, perf_x_arrive,
-                perf_x_rsv, perf_x_wb, perf_x_vrf, perf_x_vrfwb;
+                perf_x_rsv, perf_x_wb, perf_x_vrf, perf_x_vrfwb, perf_x_frontend;
 
     tnca_core #(
         .NUM_RCTX(NUM_RCTX), .RCTX_W(RCTX_W), .VLEN(VLEN), .ELEN(ELEN), .LW(4),
         .VREGS_PER_RCTX(VREGS_PER_RCTX), .PHYS_VREGS(PHYS_VREGS), .PHYS_W(PHYS_W),
         .CORE_ID(0), .NUM_CORES(1), .HAS_SFU(1),
         .USE_BANKED_VRF(USE_BANKED_VRF),
+        .VRF_BYPASS(VRF_BYPASS), .FE_NOBUBBLE(FE_NOBUBBLE),
+        .VRF_PREFETCH(VRF_PREFETCH), .RCTX_SWITCH(RCTX_SWITCH),
+        .LSU_INFLIGHT(LSU_INFLIGHT), .FPU_OVERLAP(FPU_OVERLAP), .RSLICE(RSLICE),
+        .RPAIR(RPAIR), .MTX_ABUF(MTX_ABUF),
         .HAS_TENSOR_XPOSE(HAS_TENSOR_XPOSE)
     ) dut (
         .clk(clk), .rst_n(rst_n),
         .launch_valid(launch_valid), .launch_pc(launch_pc),
-        .launch_role_mask(launch_role_mask),
+        .launch_role_mask(launch_role_mask), .launch_slice(launch_slice),
         .launch_pid_x(pid_x), .launch_pid_y(pid_y), .launch_pid_z(pid_z),
         .launch_npid_x(npid_x), .launch_npid_y(npid_y), .launch_npid_z(npid_z),
         .launch_arg_base(arg_base),
@@ -118,7 +134,7 @@ module tb_tnca_core;
         .perf_x_txf(perf_x_txf), .perf_x_fence(perf_x_fence),
         .perf_x_arrive(perf_x_arrive), .perf_x_rsv(perf_x_rsv),
         .perf_x_wb(perf_x_wb), .perf_x_vrf(perf_x_vrf),
-        .perf_x_vrfwb(perf_x_vrfwb)
+        .perf_x_vrfwb(perf_x_vrfwb), .perf_x_frontend(perf_x_frontend)
     );
 
     tnca_mem_model #(
@@ -168,6 +184,17 @@ module tb_tnca_core;
         launch_role_mask = {{(NUM_RCTX-1){1'b0}}, 1'b1};
         if ($test$plusargs("allroles"))
             launch_role_mask = {NUM_RCTX{1'b1}};
+        // +roles=N starts the first N: a program written for a two-context
+        // core run on the four-context one (core-vrf-sync-v4).
+        if ($value$plusargs("roles=%d", nroles))
+            launch_role_mask = (1 << nroles) - 1;
+        // R39-05: every context in its own slice of the resources (RSLICE).
+        // +slicek=K: 2^K slices (0, the default: one per context).
+        if (!$value$plusargs("slicek=%d", slicek)) slicek = 0;
+        // R39-12: +pair makes contexts 2k and 2k+1 one program's two roles
+        // (RPAIR): context 2k+1 takes 2k's registers, and its slice.
+        launch_slice = {$test$plusargs("pair") ? 1'b1 : 1'b0,
+                        $test$plusargs("slice") ? 1'b1 : 1'b0, slicek[1:0]};
 
         // Per-RCTX physical vector base. Disjoint by default; +aliasvrf gives
         // every context the same base, which is what a producer/consumer role
@@ -220,6 +247,18 @@ module tb_tnca_core;
                  perf_x_hazard + perf_x_lsu + perf_x_fpu + perf_x_mtx
                  + perf_x_txf + perf_x_fence + perf_x_arrive + perf_x_rsv
                  + perf_x_wb + perf_x_vrf + perf_x_vrfwb);
+        // R39-00: every running cycle issues, stalls, or has nothing to
+        // issue, so the three counts add up to the cycle count exactly. A
+        // mismatch is a counter bug, and it fails the program.
+        $display("frontend=%0d partition=%0d+%0d+%0d of %0d",
+                 perf_x_frontend, perf_issued, perf_stall_total,
+                 perf_x_frontend, perf_cycles);
+        // R39-05: cycles in which an instruction held in R gave way to
+        // another context's (RCTX_SWITCH; always 0 without it).
+        $display("rctx_switch=%0d", dut.perf_rctx_switch);
+        if (perf_issued + perf_stall_total + perf_x_frontend != perf_cycles)
+            $display("FAIL: cycle partition: issued %0d + stalled %0d + frontend %0d != cycles %0d",
+                     perf_issued, perf_stall_total, perf_x_frontend, perf_cycles);
         // What the memory model's seed actually changed. A matrix that runs
         // three seeds and reports three identical traces has run one seed
         // three times, and R1-08 asks for the difference to be visible.

@@ -183,11 +183,14 @@ class Tile:
     """
 
     __slots__ = ('kind', 'handle', 'rows', 'cols', 'dtype', 'desc',
-                 'store')
+                 'store', 'vector')
 
     def __init__(self, kind, handle, rows, cols, dtype, desc=None,
-                 store=None):
+                 store=None, vector=None):
         self.kind = kind
+        # One value per row taken from the lanes of one register: that
+        # register, so turning the rows back into lanes costs nothing.
+        self.vector = vector
         self.handle = handle
         self.rows = rows
         self.cols = cols

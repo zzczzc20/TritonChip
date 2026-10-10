@@ -1403,13 +1403,38 @@ def _rename_labels(ops, role):
             op.attrs = dict(op.attrs, target=f"{op.attrs['target']}__r{role}")
 
 
-def specialize_loop(kernel, target, *, stages=2):
+# The load/store-unit work, besides its transfers, that makes a producer worth
+# a Role Context of its own (ring_estimate).
+_LSU_WORK = frozenset({'load', 'gather', 'store', 'scatter'})
+
+
+def ring_estimate(ops, producer_idx, first, last):
+    """Twill's question, asked of what the board measured: does the split
+    lower the loop's steady-state interval?
+
+    Only when the producer has work of its own to overlap. A producer that
+    is two transfers per K step adds nothing Mode B does not already give:
+    two programs on two contexts overlap one's transfers with the other's
+    MMAs, the matrix unit bounds both, and the second role's copy of the
+    address arithmetic costs issue slots on a single-issue core (measured on
+    the board: linear, mlp and matmul at small and medium 2-5 % slower).
+    One that also loads, gathers or stores in the loop -- a GEMV's single A
+    row, loaded and repacked through scratch every step -- does overlap
+    (gemv +11 %, llama_decode +5 % in simulation). Raises NotSpecialised."""
+    work = sum(1 for i in producer_idx if first <= i <= last and ops[i].kind in _LSU_WORK)
+    if not work:
+        raise NotSpecialised('the producer would only issue transfers, which Mode B already '
+                             'overlaps with the MMAs of another program')
+
+
+def specialize_loop(kernel, target, *, stages=2, force=False):
     """R39-12: one program as a producer and a consumer role over a ring.
 
     Takes a one-role kernel (after rctx_spmd, if it ran) and returns a
     description of what was done; the kernel is rebuilt in place with two
     roles. Raises NotSpecialised, leaving the kernel untouched, when it does
-    not have the shape this handles.
+    not have the shape this handles or when ring_estimate expects no gain
+    (`force` skips that, for tests of the mechanism).
     """
     if len(kernel.roles) != 1:
         raise NotSpecialised('the kernel already has more than one role')
@@ -1430,6 +1455,8 @@ def specialize_loop(kernel, target, *, stages=2):
                      CONSUMER: _pull(unrolled, part, CONSUMER)}
         staged = [i for i, op in enumerate(unrolled) if op.attrs.get('_stage') is not None]
         _memory_crossings(unrolled, roles_idx, min(staged), max(staged))
+        if not force:
+            ring_estimate(unrolled, roles_idx[PRODUCER], min(staged), max(staged))
         prod = [unrolled[i] for i in roles_idx[PRODUCER]]
         cons = [unrolled[i] for i in roles_idx[CONSUMER]]
     except NotSpecialised:

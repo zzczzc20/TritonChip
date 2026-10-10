@@ -67,7 +67,8 @@ KNOWN_OPTIONS = {
                   'transfers and a consumer running the MMAs and the epilogue, over a '
                   'two-stage ring of windows (R39-12 Mode A, tnca_cc.partition.specialize_loop) '
                   '-- on a target with rctx_pair, the pairs running a grid row as rctx_spmd '
-                  'does; a refusal is recorded in the provenance',
+                  'does, where tnca_cc.partition.ring_estimate expects a gain; 2 skips the '
+                  'estimate (tests of the mechanism); a refusal is recorded in the provenance',
     'alias': 'list of [param, param] pairs that MAY point at the same '
              'memory. An elementwise kernel that reads and writes the same '
              'index can run in place; one that does not is a different '
@@ -811,7 +812,9 @@ def _rctx_roles(kernel, target, prov, options, stages, scratch_bytes, scratch_sl
         if why is None:
             try:
                 rctx_spmd.apply(trial, pairs, scratch_slot, scratch_bytes, pair=True)
-                info = partition.specialize_loop(trial, target, stages=2)
+                force = int((options or {}).get('rctx_roles')
+                            or os.environ.get('TNCA_RCTX_ROLES', '0') or 0) >= 2
+                info = partition.specialize_loop(trial, target, stages=2, force=force)
             except (partition.NotSpecialised, ValueError) as e:
                 why = str(e)
         if info is not None and sizes is not None:

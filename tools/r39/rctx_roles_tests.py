@@ -4,7 +4,8 @@
     python3 tools/r39/rctx_roles_tests.py [--profile core-vrf-sync-v5] [--only NAME ...]
 
 Each case is a `@triton.jit` GEMM with a K loop, launched through the TNCA
-plugin on CPU tensors twice -- TNCA_RCTX_ROLES=0, then 1 (rctx_spmd on in
+plugin on CPU tensors twice -- TNCA_RCTX_ROLES=0, then 2 (the split forced
+past ring_estimate, so the mechanism is tested on every loop; rctx_spmd on in
 both) -- and checked against PyTorch both times. With the switch on, a target
 with `rctx_pair` must compile every case as two roles per program (the
 manifest's program_to_role has two roles per program) and one without it must
@@ -167,7 +168,7 @@ def main():
     rows, good = [], True
     for n in names:
         res = {}
-        for v in ('0', '1'):
+        for v in ('0', '2'):
             env = dict(os.environ, TNCA_RCTX_ROLES=v,
                        TRITON_CACHE_DIR=tempfile.mkdtemp(prefix='tnca-roles-'))
             p = subprocess.run([sys.executable, __file__, '--child', n, '--profile', args.profile],
@@ -177,7 +178,7 @@ def main():
             except Exception:                                   # noqa: BLE001
                 res[v] = dict(ok=False, err=(p.stderr or p.stdout)[-400:], roles=None,
                               cycles=None, accept=None)
-        off, on = res['0'], res['1']
+        off, on = res['0'], res['2']
         manifest_ok = off.get('roles') == 1 and on.get('roles') == (2 if on.get('accept') else 1)
         ok = off['ok'] and on['ok'] and manifest_ok
         good &= ok

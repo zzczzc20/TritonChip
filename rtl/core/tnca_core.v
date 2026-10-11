@@ -2450,7 +2450,10 @@ module tnca_core #(
                 x_is_fence   <= r_is_fence;
                 x_illegal    <= r_illegal;
 
-                if (r_valid && !kill_r) perf_issued <= perf_issued + 64'd1;
+                // Async faults may leave R occupied after every context
+                // stops. Use the same ROI as cycles/stalls/frontend.
+                if (|running && r_valid && !kill_r)
+                    perf_issued <= perf_issued + 64'd1;
             end else begin
                 x_valid <= 1'b0;             // bubble, never a repeat
             end

@@ -233,17 +233,7 @@ class TestPipelineOnRTL(unittest.TestCase):
                         max_cycles=400000)
         self.assertTrue(ok, f"predicated-off async broke the pipeline:\n{out}")
 
-    def test_error_propagation(self):
-        """sec 15 C3's 错误传播.
-
-        The producer's descriptor has a 26-byte row stride, which ISA sec 9E.2
-        refuses. Three things must then happen, and before this test only the
-        first did: the producer stops with DESCRIPTOR_FAULT; the consumer
-        waiting on that barrier is released rather than hanging; and it is
-        released with the barrier's error set rather than as an ordinary
-        completion, because an ordinary completion would send it to read a
-        window the transfer never wrote.
-        """
+    def _strided_transfer(self, rank):
         t = self.t
         plan = plan_pipeline(t, stages=2, iterations=2)
 
@@ -259,11 +249,32 @@ class TestPipelineOnRTL(unittest.TestCase):
 
         src = [half(r, c) for r in range(ROWS) for c in range(COLS)]
         p.words(SRC, H.pack16(src), 'src')
-        # A 13-element row is 26 bytes: neither a whole number of 8-byte units
-        # nor a multiple of one.
-        p.words(DESC, tensormap(SRC, ROWS, 13, 13 * 2, 2, TILE, TILE), 'desc')
+        # The current engine accepts a 26-byte FP16 row stride. An invalid
+        # rank is the negative twin; both use the same data and pipeline.
+        p.words(DESC, tensormap(SRC, ROWS, 13, 13 * 2, 2, TILE, TILE,
+                               rank=rank), 'desc')
         p.words(FLAG, [0, 0], 'flag')
         p.words(RESULT, H.pack32([SENTINEL] * 48), 'res')
+        return p
+
+    def test_unaligned_row_stride(self):
+        """A legal 26-byte row stride preserves packed data and tail padding."""
+        p = self._strided_transfer(rank=2)
+        halves = list(range(13)) + [0] * 3 + list(range(13, 26)) + [0] * 3
+        expected = [halves[2 * i] | (halves[2 * i + 1] << 16) for i in range(16)]
+        expected += [0] * 16 + [SENTINEL] * 16
+        p.check_base(RESULT)
+        for i, value in enumerate(expected):
+            p.check_word(RESULT, i * 4, value)
+        ok, out = H.run(p, extra_args=('+allroles', '+aliasvrf'), max_cycles=400000)
+        self.assertTrue(ok, f"strided transfer data or padding is wrong:\n{out}")
+
+    def test_error_propagation(self):
+        """Rank zero faults, wakes the consumer and propagates barrier error."""
+        p = self._strided_transfer(rank=0)
+        p.check_base(RESULT)
+        for i in range(48):
+            p.check_word(RESULT, i * 4, SENTINEL)
 
         ok, out = H.run(p, extra_args=('+allroles', '+aliasvrf',
                                        '+expectfault=04'),

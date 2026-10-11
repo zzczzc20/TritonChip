@@ -21,3 +21,11 @@ HBM device group revalidated 8/8 on gx10-6646: default native 16/16,
 adverse native 5/5, capacity 24 MiB into the device, all 32 MiB model
 samples, delayed/reordered samples, and line8 adverse/capacity/samples.
 This is RTL simulation, not the physical 32-PC or board bandwidth gate.
+
+Standard native Torch HBM result checkpoint: the original MLP tiny point
+passes on core-vrf-sync-v5/hbm (101542 cycles, no host fallback). The bound
+resolver now maps this memory mode to the existing architectural core
+profile; its actual memory ingress remains 8 B/cycle, not HBM peak.
+ArchBench selftest passes all tiny/small checks with HBM bounds included.
+See native_hbm_mlp_bound_fix.* and hbm_bounds_selftest.log. This is RTL
+execution and does not close any physical-board or performance gate.

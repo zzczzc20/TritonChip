@@ -1,0 +1,59 @@
+PASS model.gpt2_block/tiny/fp16-d64-h4-b1-s16
+PASS model.llama_decode/tiny/fp16-b1-p16
+PASS model.llama_prefill/tiny/fp16-b1-s16
+PASS model.mlp/tiny/fp16-t16-d64
+PASS model.resnet_block/tiny/fp32-n1-c8-hw8
+PASS op.add/tiny/fp16-n1000
+PASS op.add/tiny/fp32-n256
+PASS op.argmax/tiny/fp16-r2-v256
+PASS op.attention_decode/tiny/fp16-b1-h2-l16-d16
+PASS op.attention_prefill/tiny/fp16-b1-h2-s16-d16
+PASS op.bmm/tiny/fp16-b2-m16-k16-n16
+PASS op.conv2d/tiny/fp32-n1-cin4-h8-w8-cout8
+PASS op.cumsum/tiny/fp32-r4-c64
+PASS op.embedding/tiny/fp16-v256-d64-t16
+PASS op.gelu_tanh/tiny/fp16-n256
+PASS op.gemv/tiny/fp16-k64-n64
+PASS op.layernorm/tiny/fp16-r4-d64
+PASS op.linear/tiny/fp16-m16-k64-n64
+PASS op.matmul/tiny/fp16-m16-k32-n16
+PASS op.matmul/tiny/fp32-m16-k32-n16
+PASS op.rmsnorm/tiny/fp16-r4-d64
+PASS op.rope/tiny/fp16-b1-h2-s16-d16
+PASS op.silu/tiny/fp16-n256
+PASS op.softmax/tiny/fp16-r4-c64
+PASS op.softmax/tiny/fp32-r3-c37
+PASS op.swiglu/tiny/fp16-n256
+PASS op.transpose/tiny/fp32-r32-c32
+PASS model.gpt2_block/small/fp16-d128-h4-b1-s64
+PASS model.llama_decode/small/fp16-b1-p128
+PASS model.llama_prefill/small/fp16-b1-s64
+PASS model.mlp/small/fp16-t64-d128
+PASS model.resnet_block/small/fp32-n1-c16-hw16
+PASS op.add/small/fp16-n16384
+PASS op.argmax/small/fp16-r8-v2048
+PASS op.attention_decode/small/fp16-b1-h4-l256-d32
+PASS op.attention_prefill/small/fp16-b1-h4-s64-d32
+PASS op.bmm/small/fp16-b8-m64-k32-n64
+PASS op.conv2d/small/fp32-n1-cin16-h16-w16-cout16
+PASS op.cumsum/small/fp32-r64-c256
+PASS op.embedding/small/fp16-v1024-d128-t64
+PASS op.gelu_tanh/small/fp16-n16384
+PASS op.gemv/small/fp16-k256-n512
+PASS op.layernorm/small/fp16-r64-d256
+PASS op.linear/small/fp16-m64-k256-n256
+PASS op.matmul/small/fp16-m64-k128-n128
+PASS op.matmul/small/fp32-m64-k128-n128
+PASS op.rmsnorm/small/fp16-r64-d256
+PASS op.rope/small/fp16-b1-h4-s64-d32
+PASS op.silu/small/fp16-n16384
+PASS op.softmax/small/fp16-r64-c512
+PASS op.swiglu/small/fp16-n16384
+PASS op.transpose/small/fp32-r128-c256
+tiny: matches the frozen suite (27 points)
+small: matches the frozen suite (25 points)
+medium: matches the frozen suite (25 points)
+large: matches the frozen suite (24 points)
+hbm: matches the frozen suite (12 points)
+PASS scoring refusals
+archbench selftest: PASS (0 failing check(s))

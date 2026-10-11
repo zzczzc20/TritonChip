@@ -38,3 +38,12 @@ HBM compile succeeds against the reported 33,554,432-byte heap; the CPU
 migration control still reports `capacity-exceeded` against 393,216 bytes.
 See native_large_compile_capacity.*, cpu_large_compile_capacity.* and
 native_hbm_compile77.*. Shapes, frozen thresholds and CPU limits are unchanged.
+
+Current full regression checkpoint: CUDA hidden passes 16/16. CUDA visible
+passes 14/16; import_orders and mixed_devices fail with CUDA context
+allocation errors. A standalone one-element CUDA allocation also fails
+with cuDevicePrimaryCtxRetain returning CUDA_ERROR_OUT_OF_MEMORY.
+The CUDA-visible full rerun remains pending a working CUDA context; the
+logs retain both failures. Child diagnostics now retain bounded stderr
+and stdout so the underlying exception is visible instead of only the
+last Dynamo hint. No failed case is changed into a skip.

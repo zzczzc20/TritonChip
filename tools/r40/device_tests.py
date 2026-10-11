@@ -234,7 +234,7 @@ def _child(code, timeout=1800):
                            timeout=timeout, cwd=str(ROOT))
     ok = [l for l in r.stdout.splitlines() if l.startswith('OK')]
     assert r.returncode == 0 and ok, \
-        f'child exited {r.returncode}: {(r.stderr.strip().splitlines() or [""])[-1][:200]}'
+        f'child exited {r.returncode}:\n{r.stderr[-6000:]}\nstdout:\n{r.stdout[-2000:]}'
     return ok[-1]
 
 

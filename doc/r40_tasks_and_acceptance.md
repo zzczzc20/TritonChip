@@ -312,7 +312,9 @@ U280 有三个 SLR，HBM 接口位于 SLR0；板卡提供 8 GB HBM、32 个 AXI 
   async lifetime 2/2、三次恢复 epoch 的 stale handle 隔离 3/3、payload 并发与 mutation 2/2；
   原生设备完整回归 16/16，runtime 生命周期与 batch 旧回归各 7/7。
 - `make r40-residency` 当前为能力 checkpoint；冻结链式图、多步 decode、
-  1000-call 完整压力及性能 gate 尚未完成，不能据此签收 R40-02。
+  replay 完整压力、高水位账本及性能 gate 尚未完成，不能据此签收 R40-02。
+- 原生 batched 模式 1000 次调用实测通过：有界队列、数值、末尾 storage 数与 leases 审计通过；
+  stream context/事件及零 kernel 传输同组通过 4/4。并发线程审计另组 5/5。
 - 标准 Torch launch 可通过 `torch.tnca.graph(Graph())` 捕获并保留 intermediate storage；
   replay 复用同一 module/参数/制品、跳过 wrapper，日志仍等到真实 completion。
   shape/stride/storage alias 和 recovery epoch 在首条 admission 前整图校验；

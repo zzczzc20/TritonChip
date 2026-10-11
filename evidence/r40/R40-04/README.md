@@ -16,3 +16,8 @@ model fidelity and frozen bandwidth/performance gates.
 
 Raw simulation logs are under ~/tritonchip-r40-next/sim/build/r40 on
 gx10-6646. Vivado outputs are under ~/tnca_build/u280_r40next on acf3019.
+
+HBM device group revalidated 8/8 on gx10-6646: default native 16/16,
+adverse native 5/5, capacity 24 MiB into the device, all 32 MiB model
+samples, delayed/reordered samples, and line8 adverse/capacity/samples.
+This is RTL simulation, not the physical 32-PC or board bandwidth gate.

@@ -27,6 +27,11 @@ input updates, and rejects changed shape/stride/storage alias or recovery
 epoch before any admission. Invalid graphs require reset and recapture.
 The concurrent batch/stream regression with this change passed 5/5 (10 calls).
 
-The frozen chained-graph/decode audit, latency thresholds and final
-1000-call stress remain unmeasured. No R40-02 gate is
+Native batched 1000-call stress passed 4/4 with the allocation token and
+stream changes: correct final output, bounded unfinished queue, unchanged
+live storage total and no outstanding leases at the end. The separate
+concurrent-thread smoke passed 5/5.
+
+The frozen chained-graph/decode audit, latency thresholds, replay stress
+and explicit high-water ledger remain unmeasured. No R40-02 gate is
 claimed passing by this checkpoint.

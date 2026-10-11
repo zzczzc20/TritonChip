@@ -51,3 +51,16 @@ Physical heap ledger in the 1000-call stress: actual reserved heap peaked at
 9216 B and ended at 2560 B; code used/peak 5632 B, capacity 393216 B.
 This replaces the earlier missing high-water observation, not the frozen
 latency or replay stress acceptance. See batch_stress_physical.log.
+
+Frozen transfer-audit checkpoint: the unchanged attention_decode tiny
+point (validated against R40-02.graphs3's definition hash) passes two
+resident calls and two staging calls, 4/4. Each actually launches three
+kernels. Successful Session uploads/downloads involving device tensor
+storage or staging shadows are intercepted without modifying payloads.
+The physical copy ledger matches the launcher ledger: resident 0/0 bytes,
+staging 5440/5440 bytes per call. Both policies use identical artifacts
+and match the frozen FP32 reference/tolerance. Explicit output downloads
+provide a positive control for the copy observer outside the graph audit.
+Included in make r40-residency; the full frozen graph subset, model weight
+retransfer, KV growth and latency gates remain pending.
+See frozen_residency_attention_tiny.log and tools/r40/frozen_residency_tests.py.

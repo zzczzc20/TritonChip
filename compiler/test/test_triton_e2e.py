@@ -52,8 +52,9 @@ class TestTritonToRTL(unittest.TestCase):
         if not H.available():
             self.skipTest(H.why_unavailable())
 
-    def _compile(self, fn, name):
-        mod, _ctx = triton_bridge.make_ttir(fn, SIG, {'BLOCK': self.target.vlen})
+    def _compile(self, fn, name, block=None):
+        block = self.target.vlen if block is None else block
+        mod, _ctx = triton_bridge.make_ttir(fn, SIG, {'BLOCK': block})
         imp = TTIRImporter(self.target, name)
         kernel, _ = imp.run(mod, name,
                             {'x_ptr': X, 'y_ptr': Y, 'o_ptr': O, 'n': N},
@@ -63,17 +64,17 @@ class TestTritonToRTL(unittest.TestCase):
         cg.run()
         return cg
 
-    def _program(self, fn, name, expect):
-        t = self.target
-        padded = ((N + t.vlen - 1) // t.vlen) * t.vlen
-        cg = self._compile(fn, name)
+    def _program(self, fn, name, expect, block=None):
+        block = self.target.vlen if block is None else block
+        padded = ((N + block - 1) // block) * block
+        cg = self._compile(fn, name, block=block)
 
         p = H.Program(f"triton_{name}")
         p.kernel(cg)
         # One program id per run, because the bench launches a single context
-        # rather than a grid: the kernel covers offs 0..VLEN-1.
+        # rather than a grid: the kernel covers offs 0..BLOCK-1.
         p.check_base(O)
-        for i in range(t.vlen):
+        for i in range(block):
             p.check_word(O, i * 4, f2b(expect(i)) if i < N else SENTINEL)
         p.words(X, H.pack32([f2b(xv(i)) for i in range(padded)]), 'xs')
         p.words(Y, H.pack32([f2b(yv(i)) for i in range(padded)]), 'ys')
@@ -184,18 +185,28 @@ class TestTritonToRTL(unittest.TestCase):
                         max_cycles=200000)
         self.assertTrue(ok, f"context-specialised mul_add failed:\n{out}")
 
+    def test_wide_block_add_kernel(self):
+        """R40 register chunks cover the entire block and preserve the tail mask."""
+        import kernels_triton as K
+        for block in (32, 64, 128):
+            with self.subTest(block=block):
+                p = self._program(K.add_kernel, 'add_kernel',
+                                  lambda i: xv(i) + yv(i), block=block)
+                ok, out = H.run(p)
+                self.assertTrue(ok, f"BLOCK={block} add failed on the RTL:\n{out}")
+
     def test_unsupported_block_is_refused(self):
-        """sec 12: a block wider than one register is a diagnostic, not a
-        silent lowering of the first register only."""
+        """Blocks above the supported 128-element limit must fail explicitly."""
         import kernels_triton as K
         from tnca_cc.frontend import Unsupported
-        mod, _ctx = triton_bridge.make_ttir(K.add_kernel, SIG, {'BLOCK': 64})
+        mod, _ctx = triton_bridge.make_ttir(K.add_kernel, SIG, {'BLOCK': 256})
         imp = TTIRImporter(self.target, 'add_kernel')
         with self.assertRaises(Unsupported) as cm:
             imp.run(mod, 'add_kernel',
                     {'x_ptr': X, 'y_ptr': Y, 'o_ptr': O, 'n': N},
                     param_names=triton_bridge.param_names(K.add_kernel))
-        self.assertIn('vector registers', str(cm.exception))
+        self.assertIn('register block width 256', str(cm.exception))
+        self.assertIn('up to 128', str(cm.exception))
 
 
 if __name__ == '__main__':

@@ -1161,6 +1161,37 @@ class TTIRImporter:
         running value to live across a back edge in a register the body
         does not name, and the body is inlined rather than called.
         """
+        shape, _ = _parse_type(str(op.get_operand(0).get_type()))
+        if isinstance(shape, tuple) and shape[0] > 1:
+            if keep_partials:
+                raise Unsupported('multi-row scan requires row scan result mapping')
+            from .wide import _RowValue, _RowOp
+            rows, cols = shape
+            shapes = getattr(self, '_reduction_tiles', set())
+            shapes.add((rows, cols, 1))
+            self._reduction_tiles = shapes
+            outputs = [[] for _ in range(op.get_num_results())]
+            for row in range(rows):
+                mapped = {}
+                for i in range(op.get_num_operands()):
+                    src = op.get_operand(i)
+                    sshape, elem = _parse_type(str(src.get_type()))
+                    view = _RowValue(src, row, sshape)
+                    val = self._row_getter(src, rows, elem)(row)
+                    self._tiles[view.id()] = Tile('lazy', lambda r, val=val: val, 1, cols, elem)
+                    mapped[src.id()] = view
+                for i in range(op.get_num_results()):
+                    dst = op.get_result(i)
+                    mapped[dst.id()] = dst
+                self._fold(_RowOp(op, mapped), keep_partials=False)
+                for i in range(op.get_num_results()):
+                    outputs[i].append(self._v[op.get_result(i).id()])
+            for i in range(op.get_num_results()):
+                dst = op.get_result(i)
+                _, elem = _parse_type(str(dst.get_type()))
+                self._tiles[dst.id()] = Tile('col', tuple(outputs[i]), rows, 1, elem)
+                self._v.pop(dst.id(), None)
+            return
         nin = op.get_num_operands()
         lanes = [self._lanes_of(op.get_operand(i)) for i in range(nin)]
         vlen = len(lanes[0])
@@ -3559,7 +3590,7 @@ class TTIRImporter:
         return self._lane0_mask
 
     def _broadcast_scalar(self, v, dtype):
-        return v if v.kind == VECTOR else self.b.splat(v, dtype=dtype)
+        return v if v.kind in (VECTOR, PRED) else self.b.splat(v, dtype=dtype)
 
     def _tile_row_getter(self, tile, elem=None):
         if tile.kind == 'spilled':
@@ -3706,6 +3737,9 @@ class TTIRImporter:
         """
         tile = self._tile_of(op.get_operand(0))
         axis = op.get_int_attr('axis')
+        shapes = getattr(self, '_reduction_tiles', set())
+        shapes.add((tile.rows, tile.cols, axis))
+        self._reduction_tiles = shapes
         get = self._tile_row_getter(tile, elem)
         rid = op.get_result(0).id()
 
@@ -3774,7 +3808,7 @@ class TTIRImporter:
         to a float -- is in a scalar register and gets a splat.
         """
         v = self._value(ttir_value)
-        if v.kind == VECTOR:
+        if v.kind in (VECTOR, PRED):
             return v
         return self.b.splat(v, dtype=elem)
 

@@ -353,7 +353,11 @@ U280 有三个 SLR，HBM 接口位于 SLR0；板卡提供 8 GB HBM、32 个 AXI 
 - 单行 wide reduction 的 sum/amax/RMSNorm/softmax/LayerNorm 在 32/64/128 各 20/20；
   通用多输出 argmax fold 在 16/32/64/128 各 4/4，覆盖 NaN 与首个并列索引。
   scalar-carry loop 保持逐迭代内存顺序；实际宽度/kind 写入制品 provenance。
-- 多行 reduction、大 GEMM tile、bank 分配、完整资源压力、旧制品合同与冻结性能 gate 待测。
+- 独立 `TNCA_REDUCTION_ROWS` cap 默认 1；实际两行 fragment 的上述五种 reduction
+  在 lane cap 16/32/64 各 20/20，包含 tail 与零驻留 launch 传输。
+  两行 argmax 在 16/32 各 4/4；索引加 `2^40` 的双字计算/写回另 4/4。
+  修复 tile select 将 scalar predicate 误送 `v.splat` 的问题。
+- 大 GEMM tile、bank 分配、完整资源压力、旧制品合同与冻结性能 gate 待测。
   证据 `evidence/r40/R40-03/`，默认 block cap 仍 16。
 
 ### R40-04：单核真实 HBM 与可扩展外存接口

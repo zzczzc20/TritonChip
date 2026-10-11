@@ -12,8 +12,8 @@ arithmetic and hardware predicate capacity. A controlled straight-line IR
 pass spills long-lived vectors to private per-program scratch; control-flow
 spills are explicitly refused until dominance analysis is available.
 
-The 128-wide int64 graph uses 14 slots (896 B), 14 static stores and 63
-static reloads; the manifest reports 52 VRF registers per role, two roles,
+The 128-wide int64 graph uses 14 slots (896 B), 14 static stores and 42
+static reloads after preserving contiguous chunk offsets (63 in the initial run); the manifest reports 52 VRF registers per role, two roles,
 and the same scratch size. These are compiler resource/traffic ledgers;
 no HBM bandwidth or performance improvement is claimed. The final RCTX
 resource fallback now retries the plain kernel and returns ResourceError
@@ -28,6 +28,19 @@ All measured launches have zero resident tensor H2D/D2H bytes. The provenance
 records actual reduction widths and kinds. Float LayerNorm uses two-pass
 variance here; this is not Welford or multi-row coverage.
 
-Multi-row reductions, larger GEMM tiles, bank allocation, full resource
-pressure coverage, old-profile contract and frozen performance gates remain
-unmeasured. All R40-03 gates remain not-measured.
+Multi-row checkpoint: TNCA_REDUCTION_ROWS independently caps the row block;
+default 1 preserves the unit-row path, while larger caps retain its 2-D shape.
+The standard Torch five-op reduction suite passes 20/20 at each lane cap
+16/32/64 with actual two-row fragments in provenance, tails and zero resident
+launch transfers. Native argmax passes 4/4 at 16/32 with two rows; a separate
+32-wide two-row test adds 2^40 to indices and passes 4/4, verifying exact high
+words and int64 stores. Scalar predicates remain predicates when tile select
+broadcasts them. Bounded 2-D int64 arithmetic and memory use a low/high pair
+per row with checked address narrowing; reshapes that change the row layout,
+64-bit row folds and multi-row scans still refuse explicitly.
+Single-row 64/128 argmax revalidated 4/4 each; default single-row reductions
+pass 20/20. The frozen protocol check passes 33/33. Old-profile artifact and
+RCTX contract checks are running separately, against the actual frozen B39.
+
+Larger GEMM tiles, bank allocation, full resource pressure and frozen
+performance gates remain unmeasured. All R40-03 gates remain not-measured.

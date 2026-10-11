@@ -85,7 +85,7 @@ def _clamp(configs, cap, rows=None):
     return [best] if best is not None else []
 
 
-def _register(cap):
+def _register(cap, reduction_rows=1):
     global _registered
     if _registered:
         return
@@ -104,18 +104,10 @@ def _register(cap):
     @register_codegen_heuristic('reduction', 'tnca')
     @register_codegen_heuristic('reduction', 'cpu')
     class TNCAReductionHeuristic(ReductionHeuristic):
-        """Inductor's default looped-reduction configs: one row per program
-        (XBLOCK = 1), the reduced dimension in blocks of `cap`.
-
-        One row is one vector register wide on this machine, and a program
-        reduces it while a grid of programs covers the rows. Several rows
-        per program would only stack registers the core works through one
-        after another anyway, and it makes every per-row value -- an
-        argmax's index, an embedding row's id -- a 2-D block where one
-        element per program is what the computation has."""
+        """Looped reductions with independently bounded row and lane blocks."""
 
         def get_configs(self, **kwargs):
-            return _clamp(super().get_configs(**kwargs), cap, rows=1)
+            return _clamp(super().get_configs(**kwargs), cap, rows=reduction_rows)
 
     import torch._inductor.heuristics.template.triton as tt
     from torch._inductor.heuristics.registry import register_template_heuristic
@@ -223,8 +215,9 @@ def configure(max_block=None, tensor_descriptors=None, no_x_dim=None):
     environment, and both are in the dict this returns, which ArchBench
     records with every point.
 
-    `no_x_dim` (TNCA_NO_X_DIM) generates looped reductions without their
-    unit x dimension (R39-02, _install_no_x_dim).
+    `TNCA_REDUCTION_ROWS` independently caps the row block (1/2/4/8/16,
+    default 1). `no_x_dim` (TNCA_NO_X_DIM) removes the unit row dimension
+    only when this cap is 1 (R39-02, _install_no_x_dim).
     """
     import os
     # TNCA's Triton driver is THE active driver only where there is no CUDA
@@ -247,6 +240,11 @@ def configure(max_block=None, tensor_descriptors=None, no_x_dim=None):
     if no_x_dim is None:
         # On for the standard path since R39-02a's ablation passed.
         no_x_dim = os.environ.get('TNCA_NO_X_DIM', '1') != '0'
+    reduction_rows = int(os.environ.get('TNCA_REDUCTION_ROWS', '1'))
+    if reduction_rows not in (1, 2, 4, 8, 16):
+        raise ValueError('TNCA_REDUCTION_ROWS must be 1, 2, 4, 8 or 16')
+    # Dropping the row dimension is valid only for a single-row program.
+    no_x_dim = bool(no_x_dim) and reduction_rows == 1
     _NO_X_DIM[0] = bool(no_x_dim)
     _install_no_x_dim()
     import torch._inductor.config as config
@@ -276,14 +274,14 @@ def configure(max_block=None, tensor_descriptors=None, no_x_dim=None):
     config.fx_graph_remote_cache = False
     import torch._functorch.config as functorch_config
     functorch_config.enable_autograd_cache = False
-    _register(max_block)
+    _register(max_block, reduction_rows)
     _decompose_cpu_attention()
     out = dict(cpu_backend=config.cpu_backend, max_block=max_block,
                persistent_reductions=config.triton.persistent_reductions,
                compile_threads=config.compile_threads,
                max_autotune_gemm_backends=config.max_autotune_gemm_backends,
                tensor_descriptors=bool(tensor_descriptors),
-               no_x_dim=bool(no_x_dim))
+               no_x_dim=bool(no_x_dim), reduction_rows=reduction_rows)
     return out
 
 

@@ -653,6 +653,9 @@ def _lower_ttir(module, ctx, kernel_name, params, target, prov, options, stages,
         module, kernel_name, _placeholders(params),
         param_names=[n for n, _t in params], target=target, prov=prov,
         dynamic_args=True, index_opt=bool(index_opt), sparse_maps=bool(sparse))
+    reduction_tiles = sorted(getattr(imp, '_reduction_tiles', ()))
+    if reduction_tiles and int(os.environ.get('TNCA_REDUCTION_ROWS', '1')) > 1:
+        prov.record('reduction_tiles', reduction_tiles)
     block_widths = sorted(getattr(imp, '_register_block_widths', ()))
     if block_widths:
         from tnca_cc.vector_spill import spill as spill_vectors

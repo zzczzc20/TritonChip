@@ -1,4 +1,4 @@
-"""Split wide 1-D and one-row TTIR values into VLEN register chunks.
+"""Split wide 1-D and bounded-row TTIR values into VLEN register chunks.
 
 Views preserve scalar SSA identities and give every vector chunk its own
 identity and type. Existing typed lowering handles each chunk, including
@@ -9,7 +9,7 @@ import re
 
 
 def _width(value):
-    match = re.fullmatch(r'tensor<(?:1x)?(\d+)x([^\d].*)>', str(value.get_type()))
+    match = re.fullmatch(r'tensor<(?:\d+x)?(\d+)x([^\d].*)>', str(value.get_type()))
     return int(match.group(1)) if match else None
 
 
@@ -25,8 +25,7 @@ class _ValueView:
         text = str(self.value.get_type())
         width = _width(self.value)
         if width and width > self.vlen:
-            prefix = 'tensor<1x' if text.startswith(f'tensor<1x{width}x') else 'tensor<'
-            return re.sub(r'^tensor<(?:1x)?\d+x', f'{prefix}{self.vlen}x', text)
+            return re.sub(r'\d+x([^\d].*)>$', f'{self.vlen}x\\1>', text)
         return self.value.get_type()
 
     def __getattr__(self, name):
@@ -88,6 +87,13 @@ def lower(imp, op):
     widths = {_width(v) for v in values if _width(v) and _width(v) > imp.target.vlen}
     if not widths:
         return False
+    for value in values:
+        dims = re.match(r'^tensor<((?:\d+x)+)', str(value.get_type()))
+        if dims:
+            shape = [int(n) for n in dims.group(1).split('x') if n]
+            if len(shape) > 2 or (len(shape) == 2 and shape[0] > imp.target.vlen):
+                from .frontend import Unsupported
+                raise Unsupported('register block requires at most VLEN rows and rank <= 2')
     from .frontend import Unsupported
     if len(widths) != 1:
         raise Unsupported('register-block operation with mismatched widths')
@@ -119,7 +125,7 @@ def lower(imp, op):
             pure_predicate = (width // imp.target.vlen >= max(1, imp.target.pregs_per_rctx // 8) and
                               name.startswith('arith.') and
                               name != 'arith.constant' and op.get_num_results() == 1 and
-                              not str(op.get_result(0).get_type()).startswith('tensor<1x') and
+                              re.fullmatch(r'tensor<\d+xi1>', str(op.get_result(0).get_type())) is not None and
                               str(op.get_result(0).get_type()).endswith('xi1>'))
             if pure_predicate:
                 # Recompute pure lane masks at each use. Original operand
@@ -159,26 +165,28 @@ def _reduce(imp, op, width):
             imp._dispatch(_OpView(op, chunk, imp.target.vlen))
             if rid in imp._tiles:
                 tile = imp._tiles[rid]
-                partials.append(imp._tile_row_getter(tile, elem)(0))
+                partials.append([imp._tile_row_getter(tile, elem)(r) for r in range(tile.rows)])
             else:
-                partials.append(imp._v[rid])
+                partials.append([imp._v[rid]])
     finally:
         imp._in_register_chunk = False
-    scalar = partials[0].kind == SCALAR
-    vectors = [imp.b.splat(value, dtype=elem) if value.kind == SCALAR else value
-               for value in partials]
-    # A balanced tree retains Triton's reduction association across chunks.
-    while len(vectors) > 1:
-        vectors = [imp.b.vbin(kind[:3] if kind.endswith('_prop') else kind,
-                             vectors[i], vectors[i + 1], dtype=elem,
-                             fmm='prop' if kind.endswith('_prop') else None)
-                   for i in range(0, len(vectors) - 1, 2)] + (vectors[-1:] if len(vectors) % 2 else [])
-    combined = imp.b.vextract(vectors[0], 0, dtype=elem) if scalar else vectors[0]
+    rows = len(partials[0])
+    combined_rows = []
+    for row in range(rows):
+        values = [p[row] for p in partials]
+        scalar = values[0].kind == SCALAR
+        vectors = [imp.b.splat(v, dtype=elem) if v.kind == SCALAR else v for v in values]
+        while len(vectors) > 1:
+            vectors = [imp.b.vbin(kind[:3] if kind.endswith('_prop') else kind,
+                                 vectors[i], vectors[i + 1], dtype=elem,
+                                 fmm='prop' if kind.endswith('_prop') else None)
+                       for i in range(0, len(vectors) - 1, 2)] + (vectors[-1:] if len(vectors) % 2 else [])
+        combined_rows.append(imp.b.vextract(vectors[0], 0, dtype=elem) if scalar else vectors[0])
     if isinstance(shape, tuple):
-        imp._tiles[rid] = Tile('col', (combined,), 1, 1, elem)
+        imp._tiles[rid] = Tile('col', tuple(combined_rows), rows, 1, elem)
         imp._v.pop(rid, None)
     else:
-        imp._v[rid] = combined
+        imp._v[rid] = combined_rows[0]
     return True
 
 
@@ -295,19 +303,33 @@ def _reduce_general(imp, op, width):
         if op.get_int_attr('axis') != (1 if isinstance(shape, tuple) else 0):
             raise Unsupported('wide fold axis must be the lane axis')
     partials = []
+    rows = shape[0] if isinstance(shape, tuple) else 1
     imp._in_register_chunk = True
     try:
         for chunk in range(width // imp.target.vlen):
             view = _OpView(op, chunk, imp.target.vlen)
             imp._fold(view, keep_partials=False)
-            partials.append([imp._v[op.get_result(i).id()] for i in range(op.get_num_results())])
+            part = []
+            for row in range(rows):
+                part.append([imp._row_getter(op.get_result(i), rows,
+                             _parse_type(str(op.get_result(i).get_type()))[1])(row)
+                             for i in range(op.get_num_results())])
+            partials.append(part)
     finally:
         imp._in_register_chunk = False
     while len(partials) > 1:
-        partials = [imp._eval_region(op, partials[i] + partials[i+1])
+        partials = [[imp._eval_region(op, partials[i][row] + partials[i+1][row])
+                     for row in range(rows)]
                     for i in range(0, len(partials)-1, 2)] + (partials[-1:] if len(partials)%2 else [])
-    for i, value in enumerate(partials[0]):
-        imp._v[op.get_result(i).id()] = value
+    from .tiles import Tile
+    for i in range(op.get_num_results()):
+        dst = op.get_result(i)
+        if isinstance(shape, tuple):
+            _, elem = _parse_type(str(dst.get_type()))
+            imp._tiles[dst.id()] = Tile('col', tuple(p[i] for p in partials[0]), rows, 1, elem)
+            imp._v.pop(dst.id(), None)
+        else:
+            imp._v[dst.id()] = partials[0][0][i]
     seen = getattr(imp, '_register_reductions', set())
     seen.add((width, 'body-fold', op.get_int_attr('axis')))
     imp._register_reductions = seen

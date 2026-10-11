@@ -27,7 +27,6 @@ backend serves (tnca.triton_backend); the launcher passes a tnca tensor's own
 device buffer (tnca.triton_backend.driver, R40-01 resident path).
 """
 import contextlib
-import functools
 import os
 from types import SimpleNamespace
 
@@ -35,17 +34,20 @@ NAME = 'tnca'
 _registered = False
 
 
-@functools.cache
 def properties(index=0):
     """The device's properties, from the profile's target file."""
     from tnca import device as _device
     from tnca.adapters import r1
+    if index not in (None, 0):
+        raise RuntimeError(f'tnca:{index} does not exist')
     profile = os.environ.get('TNCA_PROFILE', 'core-sim')
     target, info = r1.target_for(_device.base_profile(profile))
     caps = target.capabilities if isinstance(target.capabilities, dict) else dict(target.capabilities)
     num_cores = int(getattr(target, 'num_cores', 1) or 1)
     num_rctx = int(getattr(target, 'num_rctx', 1) or 1)
     vlen = int(getattr(target, 'vlen', 16) or 16)
+    from . import MEMORY
+    heap = MEMORY.session(0)._heap
     return SimpleNamespace(
         name=f'TNCA {profile}', profile=profile, type=NAME, index=index,
         # Inductor reads these: the cores a grid spreads over, a "warp" is
@@ -53,9 +55,9 @@ def properties(index=0):
         # a program's lanes are one vector register.
         multi_processor_count=num_cores, warp_size=1, major=0, minor=0,
         max_threads_per_block=vlen, max_threads_per_multi_processor=vlen * num_rctx,
-        regs_per_multiprocessor=64 * num_rctx,
+        regs_per_multiprocessor=int(target.phys_vregs),
         num_rctx=num_rctx, vlen=vlen, capabilities=caps,
-        total_memory=0x80000 - 0x20000,
+        total_memory=heap.limit - heap.base,
     )
 
 

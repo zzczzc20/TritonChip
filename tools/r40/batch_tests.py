@@ -118,6 +118,9 @@ def main():
     assert D.MEMORY.live == live, (D.MEMORY.live, live)
     assert not s.unfinished and all(not b.leases for b in s._buffers.values())
     print(f'PASS {args.calls} graph calls, bounded queue, final storage/lease audit', flush=True)
+    print(f'AUDIT storage_live_bytes={D.MEMORY.live} storage_peak_bytes={D.MEMORY.peak} '
+          f'live_buffers={sum(b.alive for b in s._buffers.values())} '
+          f'leases={sum(b.leases for b in s._buffers.values())} unfinished={len(s.unfinished)}', flush=True)
     print('r40-batch-tests PASS (5/5)', flush=True)
     return 0
 

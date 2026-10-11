@@ -1,0 +1,11 @@
+  already built: /home/zhongchun/.cache/tnca/devices/core-vrf-sync-v5-a8f9e2a0291d254a-f30a9b914657/tnca_device_vrf5.vvp
+PASS core-vrf-sync-v5: 393216 heap bytes, 256 registers
+  already built: /home/zhongchun/.cache/tnca/devices/core-vrf-sync-v5-hbm-a8f9e2a0291d254a-f30a9b914657/tnca_device_vrf5_hbm.vvp
+PASS core-vrf-sync-v5/hbm: 33554432 heap bytes, 256 registers
+  building core-vrf-sync-v4 -> /home/zhongchun/.cache/tnca/devices/core-vrf-sync-v4-bd7caa1379afa548-f30a9b914657/tnca_device_vrf4.vvp
+  pruned 1 older build(s) of core-vrf-sync-v4
+  built 17664602 bytes
+PASS core-vrf-sync-v4: 393216 heap bytes, 256 registers
+PASS nonexistent device refused
+r40-properties-tests PASS (4/4)
+EXIT:0

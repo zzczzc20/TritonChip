@@ -250,7 +250,9 @@ class TNCALauncher:
         for _name, raw, data in outputs.values():
             if data:
                 raw.copy_(torch.frombuffer(bytearray(data), dtype=torch.uint8))
-        if _active_logs():
+        from tnca.torch_device.graph import active_capture
+        capture = active_capture()
+        if _active_logs() or capture is not None:
             entry = dict(kernel=self.metadata.name, grid=grid, profile=self.profile,
                          backend=session.backend_name,
                          stream_id=event.stream_id,
@@ -266,6 +268,9 @@ class TNCALauncher:
                 entry.update(_event=event, _session=session)
             for log in _active_logs():
                 log.append(entry)
+            if capture is not None:
+                capture._append(event._replay_command, entry)
+                del event._replay_command
         if launch_exit_hook is not None:
             launch_exit_hook(launch_metadata)
 
@@ -381,6 +386,10 @@ class TNCALauncher:
                     raise TNCALaunchError(f'{name}: None argument')
                 else:
                     raise TNCALaunchError(f'{name}: unsupported argument type {type(v).__name__}')
+            from tnca.torch_device.graph import active_capture
+            capture = active_capture()
+            if capture is not None and (devices != {'tnca'} or guard or transfer_policy != 'resident'):
+                raise TNCALaunchError('graph capture requires native resident tensors without guards')
             t_submit = time.perf_counter()
             if asynchronous:
                 from tnca.runtime import MAX_UNFINISHED
@@ -392,6 +401,8 @@ class TNCALauncher:
             previous = session.latest_event if asynchronous else None
             event = session.submit(module, bound, grid=grid,
                                    depends_on=[previous] if previous is not None else [])
+            if capture is not None:
+                event._replay_command = (session, module, bound, grid, tuple(values))
             if asynchronous:
                 self.last_event = event
                 self.last_cycles = None
@@ -544,15 +555,19 @@ class TNCAUtils:
             with open(path, 'wb') as fh:
                 fh.write(kernel)
         # (module, function, n_regs, n_spills, n_max_threads)
-        return path, path, 0, 0, 1 << 20
+        return path, path, 0, 0, self.get_device_properties(device)["max_threads_per_block"]
 
     def unload_module(self, module):
         pass
 
     def get_device_properties(self, device):
-        return {'max_shared_mem': 1 << 30, 'multiprocessor_count': 1, 'max_num_regs': 1 << 16,
-                'warpSize': 1, 'sm_clock_rate': 0, 'mem_clock_rate': 0, 'mem_bus_width': 64,
-                'max_threads_per_block': 1 << 20}
+        from tnca.torch_device.inductor_device import properties
+        p = properties(device)
+        # TNCA has addressable global scratch, not CUDA shared memory.
+        return {'max_shared_mem': 0, 'multiprocessor_count': p.multi_processor_count,
+                'max_num_regs': p.regs_per_multiprocessor, 'warpSize': p.warp_size,
+                'sm_clock_rate': 0, 'mem_clock_rate': 0, 'mem_bus_width': 64,
+                'max_threads_per_block': p.max_threads_per_block}
 
 
 class TNCADriver(DriverBase):
@@ -591,7 +606,7 @@ class TNCADriver(DriverBase):
 
     def get_current_stream(self, device=None):
         torch = _torch()
-        if hasattr(torch, "tnca") and os.environ.get("TNCA_TORCH_DEVICE") == "native":
+        if hasattr(torch, "tnca"):
             return torch.tnca.current_stream().stream_id
         return 0
 

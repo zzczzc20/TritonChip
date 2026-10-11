@@ -328,7 +328,12 @@ class _Event:
             raise RuntimeError('tnca event belongs to a recovered session epoch')
 
 
+from .graph import Graph, graph
+
+
 class _DeviceModule:
+    Graph = Graph
+    graph = staticmethod(graph)
     Stream = _Stream
     Event = _Event
 

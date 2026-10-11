@@ -312,7 +312,11 @@ U280 有三个 SLR，HBM 接口位于 SLR0；板卡提供 8 GB HBM、32 个 AXI 
   async lifetime 2/2、三次恢复 epoch 的 stale handle 隔离 3/3、payload 并发与 mutation 2/2；
   原生设备完整回归 16/16，runtime 生命周期与 batch 旧回归各 7/7。
 - `make r40-residency` 当前为能力 checkpoint；冻结链式图、多步 decode、
-  1000-call 完整压力、guarded replay 和性能 gate 尚未完成，不能据此签收 R40-02。
+  1000-call 完整压力及性能 gate 尚未完成，不能据此签收 R40-02。
+- 标准 Torch launch 可通过 `torch.tnca.graph(Graph())` 捕获并保留 intermediate storage；
+  replay 复用同一 module/参数/制品、跳过 wrapper，日志仍等到真实 completion。
+  shape/stride/storage alias 和 recovery epoch 在首条 admission 前整图校验；
+  失败后须 reset/重新捕获。实测 4/4；含更新输入与拒绝部分执行的负例。
 
 ### R40-03：通用 tile、布局与资源分配
 

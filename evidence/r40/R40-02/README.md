@@ -21,6 +21,12 @@ original runtime lifetime 7/7, runtime batch 7/7, backend regression 3/3,
 native device regression 16/16, native resident/staging control 6/6,
 queued graph/stream/concurrent logging and 10-call smoke 5/5.
 
-The frozen chained-graph/decode audit, latency thresholds, graph replay and
+Guarded graph replay passed 4/4: a standard compiled multi-kernel graph
+retains intermediate storage, replays unchanged artifacts after explicit
+input updates, and rejects changed shape/stride/storage alias or recovery
+epoch before any admission. Invalid graphs require reset and recapture.
+The concurrent batch/stream regression with this change passed 5/5 (10 calls).
+
+The frozen chained-graph/decode audit, latency thresholds and final
 1000-call stress remain unmeasured. No R40-02 gate is
 claimed passing by this checkpoint.

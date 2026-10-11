@@ -109,9 +109,12 @@ image better than the one named. At this revision the default build is
 `core-vrf-sync-v2`.
 
 Use `program: false` only when the worker has already loaded the exact XCLBIN
-being tested and that loaded-image identity is documented. It still runs
-conformance and ArchBench. Do not use this option to bypass programming for a
-different candidate image.
+being tested. It still runs conformance and ArchBench, and it records the
+identity of what it measured: the programmer's read-only `--status` report is
+kept as the `loaded_image` stage and the card's xclbin UUID as
+`loaded_xclbin_uuid`. The runtime refuses a card whose image is not the run's
+XCLBIN, so a different image fails conformance rather than being measured. Do
+not use this option to bypass programming for a different candidate image.
 
 ## Preflight and implementation
 

@@ -536,6 +536,7 @@ def measure_board(
         env["TNCA_BDF"] = str(config["bdf"])
 
     stages: list[dict[str, Any]] = []
+    loaded_image: str | None = None
     conformance_summary: dict[str, Any] | None = None
     arch_summary: dict[str, Any] | None = None
     contract = image_profile_contract(root, arch_profile)
@@ -549,6 +550,8 @@ def measure_board(
             "board": board,
             "backend": backend,
             "bdf": config.get("bdf"),
+            "programmed": bool(config.get("program", True)),
+            "loaded_xclbin_uuid": loaded_image,
             "xclbin": str(xclbin.relative_to(run_dir)),
             "xclbin_sha256": xclbin_sha256,
             "profile": arch_profile,
@@ -605,6 +608,22 @@ def measure_board(
         stages.append(stage)
         if loaded.returncode != 0:
             raise fail("board programming failed", "program")
+
+    else:
+        # Nothing is loaded, so the measurement is of whatever the card holds.
+        # The runtime refuses a card whose image is not this file; the
+        # programmer's read-only report puts that image's identity on record.
+        script = config.get("program_script") or profile.data.get("program_script")
+        if script and (root / str(script)).is_file():
+            reported, stage = _run([str(root / str(script)), "--status"], root=root, run_dir=run_dir,
+                                   log_name="loaded_image", env=env, timeout_s=120)
+            stages.append(stage)
+            try:
+                text = Path(reported.log_path).read_text(encoding="utf-8", errors="replace")
+            except OSError:
+                text = ""
+            found = re.search(r"(?m)^loaded\s+([0-9a-fA-F-]{8,})\s*$", text)
+            loaded_image = found.group(1).lower() if found else None
 
     conformance_cfg = config.get("conformance", True)
     if conformance_cfg:

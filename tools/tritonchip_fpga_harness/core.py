@@ -971,9 +971,12 @@ def measure_existing(
             error, final_status = str(exc), "BOARD_FAIL"
     # The implementation stages keep their place; the board stages of an
     # earlier attempt are replaced by this one's.
-    board_stage_names = {"program_check", "program", "conformance", "archbench"}
+    board_stage_names = {"program_check", "program", "loaded_image", "conformance", "archbench"}
     stages = [s for s in result.get("stages", []) if s.get("name") not in board_stage_names]
     stages.extend((measurement or {}).get("stages", []))
+    # Only a passed implementation gets this far, whatever a board stage
+    # then makes of the run's status.
+    result.setdefault("implementation_status", "PASS")
     result.update({
         "stages": stages,
         "measurement": measurement,

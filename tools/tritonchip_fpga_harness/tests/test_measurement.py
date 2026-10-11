@@ -90,7 +90,7 @@ class MeasurementTests(unittest.TestCase):
                 "p.parent.mkdir(parents=True,exist_ok=True); r=" + repr(self._record()) + "; "
                 "p.write_text(json.dumps(r)+'\\n')")]
             result = measure_board(
-                root=REPO, run_dir=run_dir, profile=profile,
+                root=Path(td), run_dir=run_dir, profile=profile,
                 manifest={"board": {"backend": "fpga-u50", "profile": "core-vrf-sync-v1", "program": False,
                                     "conformance": {"command": conf},
                                     "archbench": {"command": bench, "counters": True}}},
@@ -112,7 +112,7 @@ class MeasurementTests(unittest.TestCase):
             conf = [py, "-c", "import json,os,pathlib; p=pathlib.Path(os.environ['TNCA_HARNESS_RUN_DIR'])/'board'/'conformance.json'; p.parent.mkdir(parents=True,exist_ok=True); p.write_text(json.dumps([{'passed':True}]))"]
             bench = [py, "-c", "import json,os,pathlib; p=pathlib.Path(os.environ['TNCA_HARNESS_RUN_DIR'])/'board'/'archbench.jsonl'; r=" + repr(self._record()) + "; p.write_text(json.dumps(r)+'\\n')"]
             result = measure_board(
-                root=REPO, run_dir=run_dir, profile=profile,
+                root=Path(td), run_dir=run_dir, profile=profile,
                 manifest={"board": {"backend": "fpga-u50", "profile": "core-vrf-sync-v1",
                                     "program": {"check_command": check, "command": go},
                                     "conformance": {"command": conf},

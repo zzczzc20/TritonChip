@@ -177,6 +177,8 @@ class DeferredMeasure(BoardStageCase):
                        skip_board=True)
         failed = measure_existing(HERE, self.repo, self.state, str(built["run_id"]))
         self.assertEqual(failed["status"], "BOARD_FAIL")
+        # The link is still a link that passed.
+        self.assertEqual(failed["implementation_status"], "PASS")
         again = measure_existing(HERE, self.repo, self.state, str(built["run_id"]),
                                  board_manifest=self.manifest(conformance={"command": conformance()}))
         self.assertEqual(again["status"], "PASS", again.get("measurement_error"))
@@ -237,6 +239,39 @@ class DeferredMeasure(BoardStageCase):
         self.assertEqual(software_identity(self.repo, first)["relation"], "same-tree")
         self.assertEqual(software_identity(self.repo, "0" * 40)["relation"], "unknown")
         self.assertEqual(software_identity(self.repo, None)["relation"], "unknown")
+
+
+class UnprogrammedMeasurement(BoardStageCase):
+    """program: false measures whatever the card holds, so it says what that was."""
+
+    def programmer(self, body: str) -> None:
+        self.commit("flow/fpga/program.sh", "#!/bin/sh\n" + body + "\n")
+        (self.repo / "flow/fpga/program.sh").chmod(0o755)
+        git(self.repo, "add", "-A")
+        git(self.repo, "commit", "-q", "-m", "programmer is executable")
+
+    def test_the_loaded_image_is_put_on_record(self) -> None:
+        self.programmer('[ "$1" = --status ] || exit 9\n'
+                        'echo "device   0000:04:00.1"; echo "loaded   78F04922-980e-d3cb-ee78-cf732d6ec13f"; echo "kdsstat"')
+        result = submit(HERE, self.repo, self.manifest(conformance={"command": conformance()}), self.state, "mock")
+        self.assertEqual(result["status"], "PASS", result.get("measurement_error"))
+        measurement = result["measurement"]
+        self.assertFalse(measurement["programmed"])
+        self.assertEqual(measurement["loaded_xclbin_uuid"], "78f04922-980e-d3cb-ee78-cf732d6ec13f")
+        self.assertEqual([s["name"] for s in measurement["stages"]], ["loaded_image", "conformance"])
+
+    def test_an_unreadable_report_is_recorded_as_unknown_not_guessed(self) -> None:
+        self.programmer('echo "loaded   <none>"')
+        result = submit(HERE, self.repo, self.manifest(conformance={"command": conformance()}), self.state, "mock")
+        self.assertEqual(result["status"], "PASS", result.get("measurement_error"))
+        self.assertIsNone(result["measurement"]["loaded_xclbin_uuid"])
+
+    def test_a_programmed_run_asks_for_no_report(self) -> None:
+        go = [PY, "-c", "pass"]
+        result = submit(HERE, self.repo, self.manifest(program={"command": go}, conformance=False), self.state, "mock")
+        self.assertTrue(result["measurement"]["programmed"])
+        self.assertIsNone(result["measurement"]["loaded_xclbin_uuid"])
+        self.assertEqual([s["name"] for s in result["measurement"]["stages"]], ["program"])
 
 
 class ImageProfile(BoardStageCase):

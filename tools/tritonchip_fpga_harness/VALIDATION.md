@@ -1,5 +1,61 @@
 # Harness validation record
 
+## On r38, 2026-10-11 (branch `fpga-harness`)
+
+The harness as committed on top of `4b7767e`. What was run, and what was not.
+
+**Offline suite.** 82 tests pass on the development Mac (Python 3.9) and on
+the U280 host `acf3019` (Python 3.10.12), from a clean checkout in both
+places, and leave the checkout clean:
+
+```text
+PYTHONPATH=tools python3 -m unittest discover \
+  -s tools/tritonchip_fpga_harness/tests -p 'test_*.py'
+```
+
+**On the U280 host, read-only.** Nothing below built, loaded or ran anything
+on the card.
+
+- `doctor --target u280-r38-pr5 --adapter u280`: every repository contract and
+  vendor check passes (Vivado and Vitis 2023.2, the U280 platform, `v++`,
+  `xclbinutil`, no vendor process of this account), from a bare SSH shell as
+  well as after sourcing `settings64.sh`.
+- `doctor --adapter u280 --manifest ...` for a board stage with ArchBench: the
+  programmer, `xbutil`, `xclbinutil`, XRT's library, the conformance tool and
+  the ArchBench runner are found. `board_archbench_python` **fails**: this
+  account's `python3` had no PyTorch at first; after `torch 2.14.0+cpu` and
+  `triton 3.8.0` appeared in its user site the check reports them and still
+  fails, correctly, because the `tnca` package is not installed there and
+  Triton has no `cpu` backend. ArchBench cannot run under this account until
+  it is.
+- `flow/fpga/program.sh --check` (the programmer the profile now names, with
+  `TNCA_BOARD=u280`) on the XCLBIN linked from `b5c606d`: the file parses, the
+  platform and interface UUID match, the card is present at `0000:04:00.1` and
+  idle, the temperatures are in range. Nothing was loaded.
+- `validate` on three real U280 links kept under `~/.tritonchip-fpga-harness/runs`:
+
+  | Run | Result | Design WNS / WHS (ns) | Failing endpoints | DRC |
+  |---|---|---|---|---|
+  | `pr5-latest-b5c606d-u280-100mhz` | PASS, 100 MHz | +0.016 / +0.006 | 0 of 584 460 | 0 errors, 5 checks |
+  | `timing011-u280-full-20261010` | PASS, 100 MHz | +0.016 / +0.006 | 0 of 566 734 | 0 errors |
+  | `pr5-u280-full-20261009` | FAIL: `v++` rc 1, no XCLBIN | −0.079 / +0.006 | 304 of 572 249 | — |
+
+  `b5c606d` and `4b7767e` have the same tree, so the first row is the image of
+  this branch's base. Before the parser was corrected the same command called
+  that run FAIL for a missing DRC report and gave its hold slack as 167 090 ns.
+
+**Not done.** No link was started from this branch, and no board stage
+(program, conformance, ArchBench) was run through this version of the
+harness: the card is shared, and loading it is a decision for whoever holds
+the window. The verdicts above are therefore about real build output and a
+real host, not about a new measurement. A `measured-board` result still
+requires `submit` or `measure` on the worker, as `HANDOFF.md` describes.
+
+The sections below are the record of the harness as first written, against
+the `fpga-dev` checkout (`3ea50a8`) and the PR5 head of the time. They are
+kept as written; where they name `flow/fpga/u280/program.sh`, a test count,
+or an unreachable U280 host, the section above supersedes them.
+
 This record describes what the first deliverable proves. It does not turn an
 existing FPGA artifact into a new implementation run.
 

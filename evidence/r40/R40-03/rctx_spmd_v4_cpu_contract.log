@@ -1,0 +1,12 @@
+  PASS  add_odd_grid           off     438 cyc  on     369 cyc   1.187x  role_mask 1->15
+  PASS  add_one_program        off      67 cyc  on      73 cyc   0.918x  role_mask 1->15
+  PASS  row_sum_inner_loop     off     995 cyc  on     720 cyc   1.382x  role_mask 1->15
+  PASS  grid_2d                off     458 cyc  on     386 cyc   1.187x  role_mask 1->15
+  PASS  ragged_trip_counts     off     546 cyc  on     438 cyc   1.247x  role_mask 1->15
+  PASS  row_cumsum             off     755 cyc  on     663 cyc   1.139x  role_mask 1->15
+  PASS  row_softmax_masked     off     681 cyc  on     489 cyc   1.393x  role_mask 1->15
+  PASS  dot_one_program        off    1245 cyc  on    1245 cyc   1.000x  role_mask 1->1
+  PASS  tdesc_rows             off    1815 cyc  on    1335 cyc   1.360x  role_mask 1->3
+  PASS  dot_grid               off    7398 cyc  on    6652 cyc   1.112x  role_mask 1->3
+r39-rctx-spmd-tests [core-vrf-sync-v4]  PASS
+EXIT:0

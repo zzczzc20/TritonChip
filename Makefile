@@ -1445,6 +1445,7 @@ r40-tiles: $(R2_DATA_STAMP) | dirs
 	@for width in 16 32 64 128; do $(TORCH_PYTHON) tools/r40/reduction_tests.py --width $$width || exit $$?; $(TORCH_PYTHON) tools/r40/fold_tests.py --width $$width || exit $$?; done
 	@for width in 16 32 64; do $(TORCH_PYTHON) tools/r40/reduction_tests.py --width $$width --rows 2 || exit $$?; done
 	@$(TORCH_PYTHON) tools/r40/fold_tests.py --width 32 --rows 2 --index-bias 1099511627776
+	@$(TRITON_PYTHON) tools/r40/contract_tests.py
 # R40-04: single-core HBM (rtl/fpga/tnca_axi_bridge.v). What runs without a
 # board: the bridge against a reference under late, reordered, backpressured,
 # refusing and reset AXI traffic, its mutations, and the tnca device on the

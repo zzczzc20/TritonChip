@@ -39,8 +39,20 @@ broadcasts them. Bounded 2-D int64 arithmetic and memory use a low/high pair
 per row with checked address narrowing; reshapes that change the row layout,
 64-bit row folds and multi-row scans still refuse explicitly.
 Single-row 64/128 argmax revalidated 4/4 each; default single-row reductions
-pass 20/20. The frozen protocol check passes 33/33. Old-profile artifact and
-RCTX contract checks are running separately, against the actual frozen B39.
+pass 20/20. The frozen protocol check passes 33/33. The core-sim O0/O1/O2 artifact contract passes 447/447 byte-identical to
+independently rebuilt frozen B39 commit be877793. The older R38 hash table
+found on the host does not match that frozen source; it is not used as the
+R40 reference. contract_reference.json stores the independently generated
+B39 hashes; tools/r40/contract_tests.py verifies its commit and exact case
+inventory before comparing current artifacts. It is included in r40-tiles.
+Rebuild with the locked Triton environment: archive the B39 commit into a
+separate directory, run tools/r37/aot_run.py --source "$TILEBENCH_SOURCE"
+--profile core-sim --levels 0 1 2 --compile-only, then run the current
+artifact_identity.py with --ref-dir pointing at those generated artifacts.
+This is an artifact/ABI comparison and not a performance measurement.
+RCTX SPMD/roles suites pass on both v4 and v5, using the old CPU migration
+path with CUDA_VISIBLE_DEVICES empty. CUDA/TNCA alternation is checked
+separately by the native device suite.
 
 Larger GEMM tiles, bank allocation, full resource pressure and frozen
 performance gates remain unmeasured. All R40-03 gates remain not-measured.

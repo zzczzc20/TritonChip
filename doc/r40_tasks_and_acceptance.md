@@ -357,7 +357,10 @@ U280 有三个 SLR，HBM 接口位于 SLR0；板卡提供 8 GB HBM、32 个 AXI 
   在 lane cap 16/32/64 各 20/20，包含 tail 与零驻留 launch 传输。
   两行 argmax 在 16/32 各 4/4；索引加 `2^40` 的双字计算/写回另 4/4。
   修复 tile select 将 scalar predicate 误送 `v.splat` 的问题。
-- 大 GEMM tile、bank 分配、完整资源压力、旧制品合同与冻结性能 gate 待测。
+- 默认 core-sim 的 O0/O1/O2 制品与冻结 B39 独立重建参考逐字节一致（447/447）；
+  RCTX SPMD/roles 在 v4/v5 均通过。参考 commit 和完整 inventory 由
+  `tools/r40/contract_tests.py` 校验；此项不构成性能测量。
+- 大 GEMM tile、bank 分配、完整资源压力与冻结性能 gate 待测。
   证据 `evidence/r40/R40-03/`，默认 block cap 仍 16。
 
 ### R40-04：单核真实 HBM 与可扩展外存接口

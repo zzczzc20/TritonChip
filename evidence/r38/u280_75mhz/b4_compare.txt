@@ -1,0 +1,29 @@
+point                                                     board        sim  status
+model.gpt2_block/tiny/fp16-d64-h4-b1-s16                2825516    2825516  pass/pass same
+model.llama_decode/tiny/fp16-b1-p16                     3543490    3543490  pass/pass same
+model.llama_prefill/tiny/fp16-b1-s16                    5323042    5323042  pass/pass same
+model.mlp/tiny/fp16-t16-d64                             1414224    1414224  pass/pass same
+model.resnet_block/tiny/fp32-n1-c8-hw8                  1052656    1052656  pass/pass same
+op.add/tiny/fp16-n1000                                     7239       7239  pass/pass same
+op.add/tiny/fp32-n256                                      1776       1776  pass/pass same
+op.argmax/tiny/fp16-r2-v256                               24174      24174  pass/pass same
+op.attention_decode/tiny/fp16-b1-h2-l16-d16               74984      74984  pass/pass same
+op.attention_prefill/tiny/fp16-b1-h2-s16-d16             192206     192206  pass/pass same
+op.bmm/tiny/fp16-b2-m16-k16-n16                           32060      32060  pass/pass same
+op.conv2d/tiny/fp32-n1-cin4-h8-w8-cout8                  476860     476860  pass/pass same
+op.cumsum/tiny/fp32-r4-c64                                11372      11372  pass/pass same
+op.embedding/tiny/fp16-v256-d64-t16                       94528      94528  pass/pass same
+op.gelu_tanh/tiny/fp16-n256                                5312       5312  pass/pass same
+op.gemv/tiny/fp16-k64-n64                                104228     104228  pass/pass same
+op.layernorm/tiny/fp16-r4-d64                             29056      29056  pass/pass same
+op.linear/tiny/fp16-m16-k64-n64                          164576     164576  pass/pass same
+op.matmul/tiny/fp16-m16-k32-n16                           22072      22072  pass/pass same
+op.matmul/tiny/fp32-m16-k32-n16                           22163      22163  pass/pass same
+op.rmsnorm/tiny/fp16-r4-d64                               17340      17340  pass/pass same
+op.rope/tiny/fp16-b1-h2-s16-d16                           12000      12000  pass/pass same
+op.silu/tiny/fp16-n256                                     3792       3792  pass/pass same
+op.softmax/tiny/fp16-r4-c64                               21024      21024  pass/pass same
+op.softmax/tiny/fp32-r3-c37                               10738      10738  pass/pass same
+op.swiglu/tiny/fp16-n256                                   4288       4288  pass/pass same
+op.transpose/tiny/fp32-r32-c32                            14748      14748  pass/pass same
+B4: 27 identical, 0 different, of 27 points

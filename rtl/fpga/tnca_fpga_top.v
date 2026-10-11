@@ -99,11 +99,22 @@ module tnca_fpga_top #(
     parameter HAS_ATOMICS     = 1,
     parameter HAS_SYS_ATOMICS = 0,
     // The profile this device exists to run. spec/r1_profiles.json's
-    // core-vrf-sync-v1 is a single core with a banked VRF, and the default here
-    // is that and not the core's default, so that a build which forgot to set
-    // it produces the machine every artifact was compiled for rather than one
-    // that silently differs.
+    // core-vrf-sync-v2 is a single core with a banked VRF and the R39 switches
+    // (VRF_BYPASS, FE_NOBUBBLE, VRF_PREFETCH), and the defaults here are that
+    // and not the core's defaults, so that a build which forgot to set them
+    // produces the machine the board backend reports rather than one that
+    // silently differs. core-vrf-sync-v1 is the same with the three at 0.
     parameter USE_BANKED_VRF  = 1,
+    parameter VRF_BYPASS      = 1,
+    parameter FE_NOBUBBLE     = 1,
+    parameter VRF_PREFETCH    = 1,
+    // R39-05: off in the v2 image, which was built before it existed.
+    parameter RCTX_SWITCH     = 0,
+    parameter LSU_INFLIGHT    = 1,
+    parameter FPU_OVERLAP     = 0,
+    parameter RSLICE          = 0,
+    parameter RPAIR           = 0,
+    parameter MTX_ABUF        = 0,
     // The transposed tensor-DMA write (ISA sec 9E mod[5], R38 S1-07). Off,
     // as in core-vrf-sync-v1; a board built with it on runs a profile that
     // declares the capability, and none does for the banked VRF yet.
@@ -168,7 +179,12 @@ module tnca_fpga_top #(
     wire [3:0]  cmd_op;
     wire [63:0] cmd_pc;
     wire [63:0] cmd_arg_base;
+    // The physical vector register index: 7 bits for 2 x 64, 8 for 4 x 64
+    // (core-vrf-sync-v4) -- derived, so it cannot disagree with the count.
+    localparam PHYS_W = $clog2(NUM_RCTX * VREGS_PER_RCTX);
+
     wire [NUM_RCTX-1:0] cmd_role_mask;
+    wire [3:0]          cmd_slice;
     wire [31:0] cmd_pid_x, cmd_pid_y, cmd_pid_z;
     wire [31:0] cmd_npid_x, cmd_npid_y, cmd_npid_z;
     wire [63:0] cmd_deadline;
@@ -205,7 +221,7 @@ module tnca_fpga_top #(
         .reg_we(reg_we), .reg_re(reg_re), .reg_rdata(reg_rdata),
         .cmd_valid(cmd_valid), .cmd_ready(cmd_ready), .cmd_op(cmd_op),
         .cmd_pc(cmd_pc), .cmd_arg_base(cmd_arg_base),
-        .cmd_role_mask(cmd_role_mask),
+        .cmd_role_mask(cmd_role_mask), .cmd_slice(cmd_slice),
         .cmd_pid_x(cmd_pid_x), .cmd_pid_y(cmd_pid_y), .cmd_pid_z(cmd_pid_z),
         .cmd_npid_x(cmd_npid_x), .cmd_npid_y(cmd_npid_y),
         .cmd_npid_z(cmd_npid_z), .cmd_deadline(cmd_deadline),
@@ -250,17 +266,21 @@ module tnca_fpga_top #(
         .NUM_RCTX(NUM_RCTX), .RCTX_W(RCTX_W), .VLEN(VLEN), .ELEN(ELEN),
         .VREGS_PER_RCTX(VREGS_PER_RCTX),
         .PHYS_VREGS(NUM_RCTX * VREGS_PER_RCTX),
-        .PHYS_W(7), .LSU_TAG_W(LSU_TAG_W),
+        .PHYS_W(PHYS_W), .LSU_TAG_W(LSU_TAG_W),
         .HAS_SFU(HAS_SFU), .HAS_ATOMICS(HAS_ATOMICS),
         .HAS_SYS_ATOMICS(HAS_SYS_ATOMICS),
         .USE_BANKED_VRF(USE_BANKED_VRF),
+        .VRF_BYPASS(VRF_BYPASS), .FE_NOBUBBLE(FE_NOBUBBLE),
+        .VRF_PREFETCH(VRF_PREFETCH), .RCTX_SWITCH(RCTX_SWITCH),
+        .LSU_INFLIGHT(LSU_INFLIGHT), .FPU_OVERLAP(FPU_OVERLAP), .RSLICE(RSLICE),
+        .RPAIR(RPAIR), .MTX_ABUF(MTX_ABUF),
         .HAS_TENSOR_XPOSE(HAS_TENSOR_XPOSE),
         .CORE_ID(CORE_ID), .NUM_CORES(NUM_CORES), .HOST_TAG(HOST_TAG)
     ) u_shell (
         .clk(clk), .rst_n(rst_n),
         .cmd_valid(cmd_valid), .cmd_ready(cmd_ready), .cmd_op(cmd_op),
         .cmd_pc(cmd_pc), .cmd_arg_base(cmd_arg_base),
-        .cmd_role_mask(cmd_role_mask),
+        .cmd_role_mask(cmd_role_mask), .cmd_slice(cmd_slice),
         .cmd_pid_x(cmd_pid_x), .cmd_pid_y(cmd_pid_y), .cmd_pid_z(cmd_pid_z),
         .cmd_npid_x(cmd_npid_x), .cmd_npid_y(cmd_npid_y),
         .cmd_npid_z(cmd_npid_z), .cmd_deadline(cmd_deadline),

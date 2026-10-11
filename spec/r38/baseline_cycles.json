@@ -2,21 +2,21 @@
   "schema": "r38-baseline-cycles/1",
   "level": 2,
   "profile": "core-sim",
-  "config_hash": "6c1d264def1fdb2daf8da8f426e872747bc1955a3df2640314fb1debf6985d35",
+  "config_hash": "f32bff11099e93c1db0c2820d920d41323b63fefcaa4277d9cb63022a7b3f7de",
   "timing": "serial-grid",
   "source_commit": "3b5b28f6d273e2fba380f67d6eeedec6aa56edf3",
   "note": "device cycles per case, fast memory model; rule R2 of doc/r38_stage1_tasks_and_acceptance.md",
   "cycles": {
-    "1d_conv": 19340,
-    "2d_conv": 29181,
+    "1d_conv": 19347,
+    "2d_conv": 29188,
     "2d_max_pooling": 6490,
-    "3d_conv": 38866,
+    "3d_conv": 38873,
     "argmax/n37": 1112,
     "argmax/n7": 407,
     "batch_normalization/apply": 2260,
     "batch_normalization/stats": 308,
     "batch_normalization/sums": 1200,
-    "batched_matmul": 19112,
+    "batched_matmul": 18376,
     "bitonic_sort/k2j1": 110,
     "bitonic_sort/k4j1": 110,
     "bitonic_sort/k4j2": 102,
@@ -24,12 +24,12 @@
     "bitonic_sort/k8j2": 102,
     "bitonic_sort/k8j4": 102,
     "bitonic_sort/pad": 74,
-    "block_sparse_attention": 15518,
+    "block_sparse_attention": 15042,
     "cross_entropy": 270,
     "dequantize_rowwise": 112,
     "destindex": 138,
     "dropout": 160,
-    "flash_attention": 17265,
+    "flash_attention": 16784,
     "flash_decode": 869,
     "fused_activation": 237,
     "gaussian_blur": 7487,
@@ -44,16 +44,16 @@
     "layernorm/n37": 673,
     "layernorm/n7": 413,
     "leaky_relu": 78,
-    "linear_self_attention/kv": 4316,
-    "linear_self_attention/out": 5877,
+    "linear_self_attention/kv": 3942,
+    "linear_self_attention/out": 5503,
     "linear_self_attention/phi_k": 134,
     "linear_self_attention/phi_q": 134,
     "linear_self_attention/z": 4412,
-    "matmul_fp32_fp16_fp8/e4m3": 11628,
-    "matmul_fp32_fp16_fp8/e5m2": 11628,
-    "matmul_fp32_fp16_fp8/fp16": 13549,
-    "matmul_fp32_fp16_fp8/fp32": 11268,
-    "matmul_int8": 36718,
+    "matmul_fp32_fp16_fp8/e4m3": 10897,
+    "matmul_fp32_fp16_fp8/e5m2": 10897,
+    "matmul_fp32_fp16_fp8/fp16": 12830,
+    "matmul_fp32_fp16_fp8/fp32": 10673,
+    "matmul_int8": 35793,
     "matrix_copy": 70,
     "matrix_transpose": 4382,
     "mean_reduction": 188,
@@ -148,13 +148,161 @@
     "sigmoid": 180,
     "softmax/n37": 1114,
     "softmax/n7": 417,
-    "streamk_matmul/early_return": 17766,
-    "streamk_matmul/first": 23391,
-    "streamk_matmul/full0": 8668,
-    "streamk_matmul/full1": 17336,
+    "streamk_matmul/early_return": 16900,
+    "streamk_matmul/first": 23111,
+    "streamk_matmul/full0": 8235,
+    "streamk_matmul/full1": 16470,
     "swiglu": 199,
     "top_k_selection": 752,
     "vector_add": 91,
     "weight_dequant": 123
-  }
+  },
+  "amendments": [
+    {
+      "cases": {
+        "streamk_matmul/first": [
+          23391,
+          23110
+        ],
+        "streamk_matmul/full0": [
+          8668,
+          8234
+        ],
+        "streamk_matmul/full1": [
+          17336,
+          16468
+        ],
+        "streamk_matmul/early_return": [
+          17766,
+          16898
+        ]
+      },
+      "cause": "r38-tdesc (bf38197..f2634e1): the rank-1-5 transfer engine and compiler; measured identical on that tree and on the R38 timing work (the timing work moves no cycle), numerics pass. Not re-frozen when those commits landed; the R2 check found it on 2026-10-08.",
+      "measured_on": "core-sim O2, two runs, sim/build/r38/baseline_check_{1,2}.json"
+    },
+    {
+      "cases": {
+        "1d_conv": [
+          19340,
+          19346
+        ],
+        "2d_conv": [
+          29181,
+          29187
+        ],
+        "3d_conv": [
+          38866,
+          38872
+        ],
+        "batched_matmul": [
+          19112,
+          18374
+        ],
+        "block_sparse_attention": [
+          15518,
+          15040
+        ],
+        "flash_attention": [
+          17265,
+          16782
+        ],
+        "linear_self_attention/kv": [
+          4316,
+          3942
+        ],
+        "linear_self_attention/out": [
+          5877,
+          5503
+        ],
+        "matmul_fp32_fp16_fp8/e4m3": [
+          11628,
+          10895
+        ],
+        "matmul_fp32_fp16_fp8/e5m2": [
+          11628,
+          10895
+        ],
+        "matmul_fp32_fp16_fp8/fp16": [
+          13549,
+          12828
+        ],
+        "matmul_fp32_fp16_fp8/fp32": [
+          11268,
+          10673
+        ],
+        "matmul_int8": [
+          36718,
+          35789
+        ]
+      },
+      "cause": "r38-tdesc, continued: the earlier amendment listed only streamk; the R2 check's log had been cut to its last lines and these 13 sorted before it. Same three-tree evidence: the r38-tdesc tree without the timing work gives exactly these values, the r38 tree the frozen ones. Numerics pass. The profile's configuration hash moved with it (capabilities: tensor_store and the rank-5 engine are in the target), which is also why every r38-identity artifact differed: the hash is in each manifest.",
+      "measured_on": "core-sim O2: the r38-tdesc tree, and the timing tree before timing-002 (sim/build/r38/baseline_check_1.json)",
+      "config_hash": [
+        "6c1d264def1fdb2daf8da8f426e872747bc1955a3df2640314fb1debf6985d35",
+        "f32bff11099e93c1db0c2820d920d41323b63fefcaa4277d9cb63022a7b3f7de"
+      ]
+    },
+    {
+      "cases": {
+        "1d_conv": [
+          19346,
+          19347
+        ],
+        "2d_conv": [
+          29187,
+          29188
+        ],
+        "3d_conv": [
+          38872,
+          38873
+        ],
+        "batched_matmul": [
+          18374,
+          18376
+        ],
+        "block_sparse_attention": [
+          15040,
+          15042
+        ],
+        "flash_attention": [
+          16782,
+          16784
+        ],
+        "matmul_fp32_fp16_fp8/e4m3": [
+          10895,
+          10897
+        ],
+        "matmul_fp32_fp16_fp8/e5m2": [
+          10895,
+          10897
+        ],
+        "matmul_fp32_fp16_fp8/fp16": [
+          12828,
+          12830
+        ],
+        "matmul_int8": [
+          35789,
+          35793
+        ],
+        "streamk_matmul/early_return": [
+          16898,
+          16900
+        ],
+        "streamk_matmul/first": [
+          23110,
+          23111
+        ],
+        "streamk_matmul/full0": [
+          8234,
+          8235
+        ],
+        "streamk_matmul/full1": [
+          16468,
+          16470
+        ]
+      },
+      "cause": "timing-002 (spec/r38/design_changes/timing-002.json): the matrix unit registers its MAC operands before the FMA, so each m.mma command lands one cycle later -- +1 to +4 cycles on the cases that use the matrix unit, every other case unchanged.",
+      "measured_on": "core-sim O2 after re-staging the RTL (python/tnca/data), sim/build/r38/baseline_O2.json"
+    }
+  ]
 }

@@ -37,7 +37,7 @@
     "count": 32
   },
   "dma": {
-    "max_rank": 2,
+    "max_rank": 5,
     "dtypes": [
       "f16",
       "bf16"
@@ -85,12 +85,14 @@
     "matrix_bf16": true,
     "matrix_fp8": true,
     "tensor_dma": true,
-    "tensor_store": false,
+    "tensor_store": true,
     "tensor_transpose": true,
     "mbarrier": true,
     "packed_f16": false,
     "cache_hints": false,
-    "fence": true
+    "fence": true,
+    "rctx_slice": false,
+    "rctx_pair": false
   },
   "latency": {
     "fp_result_cycles": 2,
@@ -131,7 +133,7 @@
     "TRAP_USER": 64
   },
   "design_fact_sources": {
-    "tensor_max_rank": "rtl/core/tnca_core.v TNCA_SPEC_MAX_RANK; the transfer engine implements rank 1-2 only",
+    "tensor_max_rank": "rtl/core/tnca_core.v TNCA_SPEC_MAX_RANK; the transfer engine implements rank 1-5 (ISA sec 9E), signed coordinates, zero/NaN/fault padding",
     "mma_shape": "ISA sec 9C: m.mma.async is a 16x16x16 step",
     "mma_accum_order": "ISA sec 9C.1: RNE_f32(exact(A)*exact(B) + C), increasing k, bit-reproducible",
     "gather_index_scaling": "ISA sec 9.1: lane i => Sa + sext(Vb[i]) * sz",

@@ -29,18 +29,59 @@ EVIDENCE = {'sim-file': 'measured-rtl', 'sim-socket': 'measured-rtl',
 
 # The clock a cycle count may be converted with, by backend. Only a board
 # has one; a simulated cycle has no duration (Stage 1 rule).
+# The device clock of the image LOADED on each board -- a property of the
+# bitstream, not of this checkout. The U280 runs a 100 MHz undivided image
+# since 2026-10-09 (rtl/board/tnca_u50_xo.v DEV_DIV = 1, kernel clock 100 MHz);
+# the U50's was built with 4. Change an entry in the same step that loads a
+# new image.
 BOARD_CLOCK_HZ = {'fpga-u50': 37.5e6,
-                  # 150 MHz kernel clock / 4, measured: with the image loaded
-                  # (2026-10-08) the shell's frequency counter
+                  # 100 MHz kernel clock, undivided, measured: with the image
+                  # loaded (2026-10-09 12:05 HKT) the shell's frequency counter
                   # (clock_freq_counter.m.*/clock_counter_freqs in sysfs on the
-                  # management function) reads 150 MHz for the kernel clock,
-                  # to its 1 MHz resolution.
-                  'fpga-u280': 37.5e6}
+                  # management function) reads 100 MHz, to its 1 MHz
+                  # resolution, and the device's own cycle count over
+                  # host-timed spin kernels gives 100.01-100.07 MHz
+                  # (flow/fpga/measure_clock.py). Earlier the same day: /2 of
+                  # 150, 75 MHz; until R38's timing work, /4, 37.5 MHz.
+                  'fpga-u280': 100e6}
 
 # The device heap a launch's argument storages must fit: Session's default
 # heap, 0x20000..0x80000, of the 512 KiB memory the simulator and the U50
 # image both have (python/tnca/runtime.py, rtl/fpga/tnca_fpga_mem.v WORDS).
 HEAP_BYTES = 0x80000 - 0x20000
+
+
+# The TNCA_* environment variables that do NOT change what is compiled or how
+# it runs: the transport, timeouts, and what the harness itself sets from its
+# own arguments (which the record already holds). Every other TNCA_* variable
+# is an ablation knob and is recorded (R39-00).
+NOT_KNOBS = frozenset({'TNCA_BACKEND', 'TNCA_BACKEND_ARGS', 'TNCA_HOST_TIMEOUT',
+                       'TNCA_DEADLINE', 'TNCA_LAUNCH', 'TNCA_PROFILE', 'TNCA_OPT_LEVEL',
+                       'TNCA_COUNTERS', 'TNCA_TRITON', 'TNCA_DEVICE'})
+
+
+def knobs():
+    return {k: v for k, v in sorted(os.environ.items())
+            if k.startswith('TNCA_') and k not in NOT_KNOBS}
+
+
+def device_id(profile, backend, backend_kwargs):
+    """What the device actually was: the simulator build, named by its
+    profile and RTL hashes, or the board image, named by its sha256. Two
+    runs with the same profile name on different RTL must not be merged."""
+    import hashlib
+    try:
+        xclbin = (backend_kwargs or {}).get('xclbin')
+        if xclbin:
+            h = hashlib.sha256()
+            with open(xclbin, 'rb') as f:
+                for chunk in iter(lambda: f.read(1 << 20), b''):
+                    h.update(chunk)
+            return f'xclbin:{h.hexdigest()[:16]}'
+        from tnca import device
+        return f'sim:{os.path.basename(os.path.dirname(device.expected_path(profile)))}'
+    except Exception as e:                                   # noqa: BLE001
+        return f'unknown:{type(e).__name__}'
 
 
 def run(point, *, profile='core-sim', opt_level=2, seed=0, counters=False):
@@ -60,7 +101,8 @@ def run(point, *, profile='core-sim', opt_level=2, seed=0, counters=False):
     config = tnca.inductor.configure()
     backend, backend_kwargs = backend_choice()
     plat = dict(kind='tnca', name=f'tnca:{profile}@{backend}', profile=profile, backend=backend,
-                backend_args=backend_kwargs, opt_level=opt_level, inductor=config)
+                backend_args=backend_kwargs, opt_level=opt_level, inductor=config,
+                knobs=knobs(), device_id=device_id(profile, backend, backend_kwargs))
     rec = base_record(point, plat, EVIDENCE.get(backend, 'measured-rtl'))
 
     compile_only = os.environ.get('TNCA_LAUNCH') == 'skip'

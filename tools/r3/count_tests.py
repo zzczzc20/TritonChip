@@ -22,6 +22,7 @@ import argparse
 import json
 import os
 import re
+import shutil
 import subprocess
 import sys
 
@@ -83,7 +84,7 @@ def count01(log, ctx):
     # sources all in one bank is twelve reads and can be no other number.
     vvp = ctx.get('oc_vvp')
     if vvp:
-        p = subprocess.run([vvp, '+case=3'], capture_output=True, text=True,
+        p = subprocess.run([shutil.which('vvp') or 'vvp', vvp, '+case=3'], capture_output=True, text=True,
                            timeout=900)
         m = re.search(r'FINAL grant=(\d+) conflict=(\d+) wait=(\d+) '
                       r'orphan=(\d+)', p.stdout)

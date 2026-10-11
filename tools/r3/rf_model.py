@@ -14,7 +14,7 @@ argued about rather than just observed:
   row   = phys // NUM_BANKS
 
   One read and one write per bank per cycle. The requesters are scanned
-  round robin from a pointer that advances past whoever was served last,
+  round robin from a pointer that advances past the first port served (R39 B5),
   so a requester that keeps asking waits at most (C-1)*B+A cycles. They
   are refused, not queued, and the layer above is expected to retry.
 
@@ -90,7 +90,6 @@ class BankedRF:
         taken = {}
         accepted = []
         by_port = {port: (rctx, idx) for port, rctx, idx in reads}
-        last = self.rr
         for k in range(self.num_ports):
             port = (self.rr + k) % self.num_ports
             if port not in by_port:
@@ -102,9 +101,11 @@ class BankedRF:
                 continue
             taken[b] = (port, p)
             accepted.append(port)
-            last = port
         if accepted:
-            self.rr = (last + 1) % self.num_ports
+            # Past the FIRST port served, as tnca_vrf_banked does since R39
+            # B5: past the last one let the pointer return to the same port
+            # every cycle and starve another on its bank.
+            self.rr = (accepted[0] + 1) % self.num_ports
 
         # the value each accepted read will return, sampled NOW: write-first
         # in the lanes the concurrent write names.

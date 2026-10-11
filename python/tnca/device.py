@@ -42,6 +42,14 @@ BENCH_NAME = {
     # the fingerprint are those of the profile it is derived from.
     'core-sim/slow': 'tnca_device_slow.vvp',
     'core-vrf-sync-v1/slow': 'tnca_device_vrf_slow.vvp',
+    'core-vrf-sync-v2': 'tnca_device_vrf2.vvp',
+    'core-vrf-sync-v2/slow': 'tnca_device_vrf2_slow.vvp',
+    'core-vrf-sync-v3': 'tnca_device_vrf3.vvp',
+    'core-vrf-sync-v3/slow': 'tnca_device_vrf3_slow.vvp',
+    'core-vrf-sync-v4': 'tnca_device_vrf4.vvp',
+    'core-vrf-sync-v4/slow': 'tnca_device_vrf4_slow.vvp',
+    'core-vrf-sync-v5': 'tnca_device_vrf5.vvp',
+    'core-vrf-sync-v5/slow': 'tnca_device_vrf5_slow.vvp',
 }
 
 # Parameters a profile's device is elaborated with. Both profiles come from
@@ -52,14 +60,69 @@ _SLOW = ['-P', 'tnca_device.MEM_LATENCY=7',
          '-P', 'tnca_device.RANDOM_STALL=1',
          '-P', 'tnca_device.MEM_REORDER=1']
 _BANKED = ['-P', 'tnca_device.USE_BANKED_VRF=1']
+# The R39 hardware switches (spec/r1_profiles.json core-vrf-sync-v2's
+# implementation.rtl_parameters).
+_R39 = ['-P', 'tnca_device.VRF_BYPASS=1', '-P', 'tnca_device.FE_NOBUBBLE=1',
+        '-P', 'tnca_device.VRF_PREFETCH=1']
+# core-vrf-sync-v3: R39-05's RCTX_SWITCH and RSLICE, R39-08's LSU_INFLIGHT and
+# R39-10's FPU_OVERLAP on top of them.
+_R39_SW = _R39 + ['-P', 'tnca_device.RCTX_SWITCH=1', '-P', 'tnca_device.LSU_INFLIGHT=2',
+                  '-P', 'tnca_device.FPU_OVERLAP=1', '-P', 'tnca_device.RSLICE=1']
+# core-vrf-sync-v4: and four Role Contexts of 64 vector registers each.
+_FOUR = ['-P', 'tnca_device.NUM_RCTX=4', '-P', 'tnca_device.RCTX_W=2',
+         '-P', 'tnca_device.PHYS_W=8']
+# core-vrf-sync-v5: and the transposed transfer and Role Context pairs, and a
+# context gives way to another while it waits for the matrix unit or the
+# transfer engine too (RCTX_SWITCH=2) (R39-12).
+_V5 = ['-P', 'tnca_device.HAS_TENSOR_XPOSE=1', '-P', 'tnca_device.RPAIR=1',
+       '-P', 'tnca_device.MTX_ABUF=1']
+_R39_SW5 = [a.replace('RCTX_SWITCH=1', 'RCTX_SWITCH=2') for a in _R39_SW]
 
 BENCH_PARAMS = {
     'core-vrf-sync-v1': _BANKED,
     'core-sim/slow': _SLOW,
     'core-vrf-sync-v1/slow': _BANKED + _SLOW,
+    'core-vrf-sync-v2': _BANKED + _R39,
+    'core-vrf-sync-v2/slow': _BANKED + _R39 + _SLOW,
+    'core-vrf-sync-v3': _BANKED + _R39_SW,
+    'core-vrf-sync-v3/slow': _BANKED + _R39_SW + _SLOW,
+    'core-vrf-sync-v4': _BANKED + _R39_SW + _FOUR,
+    'core-vrf-sync-v4/slow': _BANKED + _R39_SW + _FOUR + _SLOW,
+    'core-vrf-sync-v5': _BANKED + _R39_SW5 + _FOUR + _V5,
+    'core-vrf-sync-v5/slow': _BANKED + _R39_SW5 + _FOUR + _V5 + _SLOW,
     'core-xpose-v1': ['-P', 'tnca_device.HAS_TENSOR_XPOSE=1'],
     'core-xpose-v1/slow': ['-P', 'tnca_device.HAS_TENSOR_XPOSE=1'] + _SLOW,
 }
+
+
+# R39 ablations of the hardware switches on the device simulation:
+# TNCA_RTL_PARAMS="RCTX_SWITCH=0,LSU_INFLIGHT=2" elaborates the profile's
+# device with these on top of its own parameters. Only timing switches --
+# nothing that changes the ISA, the registers or the resources, so the
+# profile's artifacts and fingerprint still describe the machine. The
+# overrides are part of the cache key, and archbench records them with
+# `--set` like any other knob.
+RTL_SWITCHES = ('VRF_BYPASS', 'FE_NOBUBBLE', 'VRF_PREFETCH', 'RCTX_SWITCH', 'LSU_INFLIGHT',
+                'FPU_OVERLAP', 'MTX_ABUF')
+
+
+def rtl_overrides():
+    """[(name, value)] from TNCA_RTL_PARAMS, sorted; refuses anything else."""
+    raw = os.environ.get('TNCA_RTL_PARAMS', '').strip()
+    out = {}
+    for kv in filter(None, (x.strip() for x in raw.split(','))):
+        k, _, v = kv.partition('=')
+        if k not in RTL_SWITCHES or not v.strip().isdigit():
+            raise ValueError(f"TNCA_RTL_PARAMS: {kv!r} is not one of "
+                             f"{', '.join(RTL_SWITCHES)}=<int>")
+        out[k] = int(v)
+    return sorted(out.items())
+
+
+def bench_params(profile):
+    """The -P arguments this profile's device is elaborated with."""
+    return BENCH_PARAMS.get(profile, []) + [
+        a for k, v in rtl_overrides() for a in ('-P', f'tnca_device.{k}={v}')]
 
 
 def base_profile(name):
@@ -106,8 +169,10 @@ def expected_path(profile):
     """
     h = profiles.config_hash(base_profile(profile))[:16]
     src = source_fingerprint(profile)[:12]
+    ov = rtl_overrides()
+    tag = ('-' + '-'.join(f'{k.lower()}{v}' for k, v in ov)) if ov else ''
     return os.path.join(cache_root(),
-                        f"{profile.replace('/', '-')}-{h}-{src}",
+                        f"{profile.replace('/', '-')}-{h}-{src}{tag}",
                         BENCH_NAME.get(profile, 'tnca_device.vvp'))
 
 
@@ -420,7 +485,7 @@ def prepare(profile='core-sim', *, force=False, verbose=True):
              '-y', os.path.join(rtl, 'common'),
              '-y', os.path.join(rtl, 'gen'),
              '-y', os.path.join(tb, 'common')]
-            + BENCH_PARAMS.get(profile, [])
+            + bench_params(profile)
             + ['-o', target, source, shell])
     if verbose:
         print(f"  building {profile} -> {target}")

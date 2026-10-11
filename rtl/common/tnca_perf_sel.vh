@@ -22,6 +22,7 @@ always @(*) begin
     5'd17: perf_rdata = perf_squash;
     5'd18: perf_rdata = perf_mem_rd_beats;
     5'd19: perf_rdata = perf_mem_wr_beats;
+    5'd20: perf_rdata = perf_x_frontend;
     default: perf_rdata = 64'd0;
     endcase
 end

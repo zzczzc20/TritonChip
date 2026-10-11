@@ -52,6 +52,70 @@
 
 module tnca_core #(
     parameter USE_BANKED_VRF = 0,
+    // R39 hardware switches. Each is 0 in every profile that predates it,
+    // and 0 elaborates exactly the core that existed before it.
+    //   VRF_BYPASS  (R39-06) a vector source being written back THIS cycle
+    //               is not a hazard on the banked file: the read is issued
+    //               in the same cycle and the bank's write-first bypass
+    //               returns the new value (tnca_rf_bank RDW_BYPASS).
+    //   FE_NOBUBBLE (R39-09) the fetch is not held back for a buffered word
+    //               the decoder is taking this cycle, so a stall no longer
+    //               costs a second fetch slot (a bubble after every stall).
+    parameter VRF_BYPASS     = 0,
+    parameter FE_NOBUBBLE    = 0,
+    //   VRF_PREFETCH (R39-07) on the banked file the instruction in D reads
+    //               its vector sources one cycle early, when R is not using
+    //               the read ports, so the bank's one-cycle read overlaps the
+    //               instruction ahead instead of stalling issue.
+    parameter VRF_PREFETCH   = 0,
+    //   RCTX_SWITCH (R39-05) an instruction held in R by a register hazard
+    //               gives way when the instruction behind it belongs to
+    //               another Role Context: it is dropped before it has done
+    //               anything, its context refetches it once a writeback to
+    //               that context could have cleared the hazard, and the
+    //               other context issues meanwhile. A stalled context no
+    //               longer stalls the core. 2 (R39-12): also when it waits
+    //               for the matrix unit or the transfer engine to be free,
+    //               and it refetches once one goes idle.
+    parameter RCTX_SWITCH    = 0,
+    //   MTX_ABUF (R39-12) the matrix unit reads an MMA's A fragment into a
+    //               buffer first (tnca_matrix ABUF) instead of one register
+    //               read per MAC.
+    parameter MTX_ABUF       = 0,
+    //   LSU_INFLIGHT (R39-08) 2: two load/store units behind the one port
+    //               (tnca_lsu_pair), so an access starts while the one ahead
+    //               waits for memory; atomics and fences see one access at
+    //               a time, as before.
+    parameter LSU_INFLIGHT   = 1,
+    //   FPU_OVERLAP (R39-10) ordinary vector FP issues during an SFU pass,
+    //               and an SFU pass starts with ordinary FP in flight: the
+    //               SFU has its own datapath and latches its source, so
+    //               only a reduction (which folds through the FMA array)
+    //               still excludes them.
+    parameter FPU_OVERLAP    = 0,
+    // R39-05: per-context resource slices. Not a timing switch -- it is a
+    // capability (rctx_slice): a launch with launch_slice[2] set gives each
+    // context its own accumulators, barriers, descriptors and windows. An
+    // index an instruction names (or a barrier token carries) has the
+    // context number ORed into its top bits, so context r of S slices uses
+    // slice r of each file -- 16/S accumulators, 32/S barriers, 16/S
+    // descriptors and 16/S windows -- and S programs of one kernel run at
+    // once without naming each other's resources. S = 2^launch_slice[1:0],
+    // or every context (2^RCTX_W) when that field is 0: a kernel that needs
+    // more than a quarter of a file runs on two contexts of a four-context
+    // core with halves. The compiler keeps every index below the slice
+    // size; ORing is then idempotent, so a token mb.arm returns (already
+    // sliced) means the same thing when it comes back.
+    parameter RSLICE         = 0,
+    // R39-12: Role Context pairs (capability rctx_pair). A launch with
+    // launch_slice[3] set makes contexts 2k and 2k+1 one program's two roles
+    // (Mode A): both get the vector base of context 2k, so they name the same
+    // registers -- the windows one fills and the other reads, with each role's
+    // own temporaries in a range the compiler keeps apart -- and RSLICE slices
+    // by the pair, k, so both name the same accumulators, barriers,
+    // descriptors and windows. Scalar and predicate files, PCs and faults stay
+    // per context. Without the bit, or with RPAIR = 0, nothing changes.
+    parameter RPAIR          = 0,
     parameter NUM_RCTX       = 2,
     parameter RCTX_W         = 1,
     parameter VLEN           = 16,
@@ -102,6 +166,7 @@ module tnca_core #(
     input  wire                     launch_valid,
     input  wire [63:0]              launch_pc,
     input  wire [NUM_RCTX-1:0]      launch_role_mask,
+    input  wire [3:0]               launch_slice,     // {pair, slice, log2 slices}
     input  wire [31:0]              launch_pid_x,
     input  wire [31:0]              launch_pid_y,
     input  wire [31:0]              launch_pid_z,
@@ -180,7 +245,13 @@ module tnca_core #(
     output reg  [63:0]              perf_x_rsv,
     output reg  [63:0]              perf_x_wb,
     output reg  [63:0]              perf_x_vrf,
-    output reg  [63:0]              perf_x_vrfwb
+    output reg  [63:0]              perf_x_vrfwb,
+    // Cycles a role context runs in which nothing is stalled and nothing
+    // issues: R holds no live instruction -- a fetch bubble, a squash, a
+    // redirect. With it, perf_issued + perf_stall_total + perf_x_frontend
+    // == perf_cycles exactly (R39-00); without it 14 % of ArchBench's
+    // cycles had no name.
+    output reg  [63:0]              perf_x_frontend
 );
 
     // NOTE ON THE INSTRUCTION PORT: Stage 1 models instruction fetch as a
@@ -307,6 +378,12 @@ module tnca_core #(
     // needs.
     reg [NUM_RCTX-1:0] blocked;
 
+    // RCTX_SWITCH: a context whose instruction gave way in R does not fetch
+    // until a writeback to one of its registers (or an accumulator's
+    // completion) could have cleared what it was waiting for. Fetching it
+    // sooner would only bring the same instruction back to the same stall.
+    reg [NUM_RCTX-1:0] parked;
+
     // Roles this launch started. Latched, not derived from `running`, which
     // drops a context as soon as it exits.
     reg [NUM_RCTX-1:0] launched;
@@ -317,7 +394,7 @@ module tnca_core #(
         for (na_i = 0; na_i < NUM_RCTX; na_i = na_i + 1)
             if (launched[na_i]) n_active = n_active + 6'd1;
     end
-    wire [NUM_RCTX-1:0] fetchable = running & ~faulted & ~blocked;
+    wire [NUM_RCTX-1:0] fetchable = running & ~faulted & ~blocked & ~parked;
 
     always @(*) begin
         f_sel = {RCTX_W{1'b0}};
@@ -390,6 +467,37 @@ module tnca_core #(
     wire        dec_amo, dec_amo_cas, dec_is_fence;
     wire [`TNCA_AOP_W-1:0] dec_aop;
 
+    //==========================================================================
+    // RSLICE: the launch's resource partition, and the remap of the indices
+    // an instruction names. Done as D hands the instruction to R, so every
+    // later use -- the accumulator scoreboard, the barrier, descriptor and
+    // window files, the matrix and transfer engines -- sees the physical
+    // index. Destinations of class A, B and RES name an accumulator, a
+    // barrier, or a descriptor or window; `ra` names an accumulator (ACC),
+    // a barrier (MBAR) or a descriptor (TXFER).
+    //==========================================================================
+    reg       slice_q;
+    reg [1:0] slice_k;            // log2 of the number of slices
+    reg       pair_q;             // RPAIR: the slice is the pair's, rctx >> 1
+    wire       d_sl    = (RSLICE != 0) && slice_q;
+    wire [7:0] d_rctx8 = {{(8-RCTX_W){1'b0}}, d_rctx} >> ((RPAIR != 0) && pair_q);
+    // Index width minus log2(slices): where the context number goes.
+    wire [3:0] acc_sh  = ACC_W  - slice_k;
+    wire [3:0] bar_sh  = BAR_W  - slice_k;
+    wire [3:0] res_sh  = DESC_W - slice_k;
+    wire [7:0] dec_dsti_sl =
+        !d_sl                          ? dec_dsti :
+        (dec_dstc == `TNCA_DST_A)      ? (dec_dsti | (d_rctx8 << acc_sh)) :
+        (dec_dstc == `TNCA_DST_B)      ? (dec_dsti | (d_rctx8 << bar_sh)) :
+        (dec_dstc == `TNCA_DST_RES)    ? (dec_dsti | (d_rctx8 << res_sh)) :
+                                         dec_dsti;
+    wire [7:0] dec_ra_sl =
+        !d_sl                          ? dec_ra_idx :
+        (dec_major == `TNCA_MAJ_ACC)   ? (dec_ra_idx | (d_rctx8 << acc_sh)) :
+        (dec_major == `TNCA_MAJ_MBAR)  ? (dec_ra_idx | (d_rctx8 << bar_sh)) :
+        (dec_major == `TNCA_MAJ_TXFER) ? (dec_ra_idx | (d_rctx8 << res_sh)) :
+                                         dec_ra_idx;
+
     tnca_decoder u_dec (
         .insn(d_insn),
         .o_illegal(dec_illegal), .o_fu(dec_fu),
@@ -417,6 +525,21 @@ module tnca_core #(
         .o_mem_hint(dec_mem_hint),
         .o_amo(dec_amo), .o_aop(dec_aop), .o_amo_cas(dec_amo_cas),
         .o_is_fence(dec_is_fence)
+    );
+
+    // VRF_PREFETCH: the vector source fields of the word entering D, decoded
+    // from the fetch word and registered with it, so D's early read does not
+    // wait for the decoder (the request path into the banks is the core's
+    // critical path). Unused, synthesis removes all of it.
+    wire        pf_va_en_n, pf_vb_en_n, pf_vc_en_n;
+    wire [7:0]  pf_va_idx_n, pf_vb_idx_n, pf_vc_idx_n;
+    reg         d_pf_va_en, d_pf_vb_en, d_pf_vc_en;
+    reg  [7:0]  d_pf_va_idx, d_pf_vb_idx, d_pf_vc_idx;
+    tnca_decoder u_pfdec (
+        .insn(avail_insn),
+        .o_va_en(pf_va_en_n), .o_va_idx(pf_va_idx_n),
+        .o_vb_en(pf_vb_en_n), .o_vb_idx(pf_vb_idx_n),
+        .o_vc_en(pf_vc_en_n), .o_vc_idx(pf_vc_idx_n)
     );
 
     // Implementation limits are checked here, not in the decoder: the decoder
@@ -452,6 +575,7 @@ module tnca_core #(
     // Register files (read in X)
     //==========================================================================
     wire [63:0]          sa_data, sb_data, sc_data, sb2_raw;
+    wire [63:0]          sb3_raw, sb4_raw, sb5_raw;
     wire [VLEN*ELEN-1:0] va_data, vb_data, vc_data;
 
     // Declared here rather than beside the units that drive them. A
@@ -463,6 +587,14 @@ module tnca_core #(
     wire [VLEN*ELEN-1:0] mtx_vrf_data;
     wire                 mtx_vrf_req;
     reg  [RCTX_W-1:0]    mtx_rctx;
+    // The transfer engine's window READ port: a t.st.async's source. Held
+    // until valid, like the matrix unit's (immediate on the behavioural file,
+    // a cycle later through the banked file's arbitration).
+    wire                 txf_vr_req;
+    wire [RCTX_W-1:0]    txf_vr_rctx;
+    wire [7:0]           txf_vr_idx;
+    wire                 txf_vr_valid;
+    wire [VLEN*ELEN-1:0] txf_vr_data;
     wire                 txf_vw_en;
     wire [RCTX_W-1:0]    txf_vw_rctx;
     wire [7:0]           txf_vw_idx;
@@ -475,17 +607,22 @@ module tnca_core #(
     // warning at all. That is how mtx_rctx, mtx_vrf_req and this one were
     // each silently disconnected.
     wire                 stall_front;
+    wire                 kill_d;          // forward: the D-stage squash (below)
+    wire                 pf_haz_w;        // forward: VRF_PREFETCH's hazard (below)
     wire                 stall_other;     // everything but the VRF
+    wire                 r_vsrc_haz;      // a vector source's producer is in flight
+    wire                 r_of_idle;       // R has no vector read asked for, arriving or held
     // Zero on the reference, which has no ports to contend for.
     reg [31:0] vrf_n_req, vrf_n_accept, vrf_n_conflict, vrf_n_stall,
                vrf_n_serial, vrf_n_parallel, vrf_n_mtx_req,
                vrf_n_mtx_wait, vrf_n_wb_retry;
     wire                 vrf_stall;       // operands not yet collected
     wire                 vrf_wb_freeze;   // a vector writeback was refused
+    wire                 txf_vw_ready;    // the engine's window write was taken
     wire                 mtx_vrf_valid_w;
-    wire [3:0]           vrf_req_accept;
-    wire [3:0]           vrf_rsp_valid;
-    wire [4*VLEN*ELEN-1:0] vrf_rsp_data;
+    wire [4:0]           vrf_req_accept;
+    wire [4:0]           vrf_rsp_valid;
+    wire [5*VLEN*ELEN-1:0] vrf_rsp_data;
     wire [VLEN-1:0]      pa_data, pb_data, pm_raw;
 
     // Writeback stage.
@@ -531,6 +668,11 @@ module tnca_core #(
         .rd_idx((x_major == `TNCA_MAJ_MATRIX) ? (x_sc_idx + 6'd1)
                                               : (x_sb_idx + 6'd1)),
         .rd_data(sb2_raw),
+        // Sb+2..Sb+4: a rank-3..5 transfer's remaining coordinates.
+        .re_rctx(x_rctx),
+        .re_idx(x_sb_idx + 6'd2), .re_data(sb3_raw),
+        .rf_idx(x_sb_idx + 6'd3), .rf_data(sb4_raw),
+        .rg_idx(x_sb_idx + 6'd4), .rg_data(sb5_raw),
         .w_en(w_en && (w_class == `TNCA_DST_S)),
         .w_rctx(w_rctx), .w_idx(w_idx[5:0]), .w_data(w_sdata)
     );
@@ -553,6 +695,8 @@ module tnca_core #(
             .rc_rctx(x_rctx), .rc_idx(x_vc_idx), .rc_data(vc_data),
             .rd_rctx(mtx_rctx), .rd_idx(mtx_vrf_addr),
             .rd_data(mtx_vrf_data),
+            .re_rctx(txf_vr_rctx), .re_idx(txf_vr_idx),
+            .re_data(txf_vr_data),
             .w_en(w_is_vec),
             .w_rctx(w_rctx), .w_idx(w_idx), .w_lane_en(w_lane_en),
             .w_data(w_vdata),
@@ -561,7 +705,10 @@ module tnca_core #(
         );
         assign vrf_stall     = 1'b0;
         assign vrf_wb_freeze = 1'b0;
+        assign r_of_idle     = 1'b1;   // X reads the file itself
+        assign txf_vw_ready  = 1'b1;   // separate write ports: never refused
         assign mtx_vrf_valid_w = 1'b1;
+        assign txf_vr_valid = 1'b1;
         always @(posedge clk) begin
             vrf_n_req      <= 32'd0; vrf_n_accept   <= 32'd0;
             vrf_n_conflict <= 32'd0; vrf_n_stall    <= 32'd0;
@@ -587,16 +734,27 @@ module tnca_core #(
         // read, and that is exactly one cycle too early for the X_PROD
         // case of the hazard interlock; see AVAIL_V below.
         //----------------------------------------------------------------
-        // Only once the instruction is otherwise ready to go. Fetching
+        // Only once no producer of a vector source is in flight. Fetching
         // earlier reads a register a producer has not written yet, and
-        // nothing afterwards can tell that the value is stale.
-        wire of_enable = r_valid && !stall_other;
+        // nothing afterwards can tell that the value is stale. The other
+        // reasons to hold the instruction in R (a busy unit, a scalar
+        // operand, the writeback reservation) do not make a fetched value
+        // stale -- only an older instruction can write the register, and
+        // every older writer is in the scoreboard -- so the fetch no longer
+        // waits for them (timing-010): it overlaps them, and the whole
+        // stall decision is no longer in front of the bank arbiters.
+        wire of_enable = r_valid && !r_vsrc_haz;
         wire [2:0] of_need =
             {r_vc_en, r_vb_en, r_va_en} & {3{of_enable}};
         reg  [2:0] of_got;
         reg  [VW-1:0] of_d0, of_d1, of_d2;
 
-        wire [2:0] of_arrive = vrf_rsp_valid[2:0];
+        // A response to D's early read (pf_tag) is this instruction's only if
+        // it advanced into R (adv_q); otherwise it is dropped and D reads
+        // again. R's own requests never share a cycle with D's.
+        reg  [2:0] pf_tag;
+        reg        adv_q;
+        wire [2:0] of_arrive = vrf_rsp_valid[2:0] & ~(pf_tag & {3{~adv_q}});
         wire [2:0] of_have   = of_got | of_arrive;
         wire of_ready = ((of_need & ~of_have) == 3'b000);
 
@@ -642,8 +800,15 @@ module tnca_core #(
         // reservation shift register, which then disagreed with reality --
         // an assertion firing three stages away from its cause.
         assign mtx_vrf_data = vrf_rsp_data[3*VW +: VW];
+        assign txf_vr_valid = vrf_rsp_valid[4];
+        assign txf_vr_data  = vrf_rsp_data[4*VW +: VW];
 
         assign vrf_stall = of_enable && !of_ready;
+        // RCTX_SWITCH drops the instruction in R only when none of its
+        // vector reads is in flight or held: a response arriving after it
+        // has gone would be taken as an operand of whatever replaced it.
+        assign r_of_idle = (of_got == 3'b000) && (of_arrive == 3'b000)
+                        && (of_want == 3'b000);
 
 `ifndef SYNTHESIS
         // A bounded event trace, off unless asked for.
@@ -654,6 +819,14 @@ module tnca_core #(
         // and tools/r3v2/count_tests.py counts them in Python and compares
         // with the hardware counters below. Section 4.3 caps a diagnostic
         // window at 256 cycles, which is what `+vrftrace=` sets.
+        // +hangdump: the matrix port's view of the banked file.
+        always @(posedge clk)
+            if (hang_at != 0 && clock_ctr >= hang_at && clock_ctr < hang_at + 16)
+                $display("hang vrf @%0d rr=%0d rq_v=%b accept=%b rsp=%b p3 bank=%0d row=%0d idx=%0d rctx=%0d bank_accept=%b port_busy=%b pf_go=%b",
+                         clock_ctr, u_vrf.rr_ptr, rq_v, vrf_req_accept, vrf_rsp_valid, u_vrf.req_bank[3],
+                         u_vrf.req_row[3], mtx_vrf_addr, mtx_rctx, u_vrf.bank_accept,
+                         u_vrf.port_busy, pf_go);
+
         integer trace_n, trace_lim;
         initial begin
             trace_n = 0;
@@ -665,10 +838,28 @@ module tnca_core #(
                     $display("VRFEV %0d want=%b acc=%b rsp=%b mreq=%b mval=%b we=%b wok=%b",
                              trace_n, of_want, vrf_req_accept[2:0],
                              vrf_rsp_valid[2:0], mtx_vrf_req,
-                             mtx_vrf_valid_w, wr_we, wr_ok);
+                             // writeback first, as tools/r3v2/count_tests.py reads it
+                             mtx_vrf_valid_w, {wr_we[0], wr_we[1]}, {wr_ok[0], wr_ok[1]});
                 end
                 trace_n = trace_n + 1;
             end
+        end
+
+        // R39-00 B1: a vector writeback the file refused is still pending
+        // -- w_* holds it and retries -- so no operand read of its register
+        // may be issued until it lands. Granted now, the read returns the
+        // value from before the write, the consumer latches it in of_d*,
+        // and nothing afterwards can tell. The message starts with FAIL so
+        // tools/run_test.sh fails the program that reaches it.
+        integer b1p;
+        always @(posedge clk) begin
+            if (rst_n && vrf_wb_freeze)
+                for (b1p = 0; b1p < 3; b1p = b1p + 1)
+                    if (of_want[b1p] && vrf_req_accept[b1p] && (r_rctx == w_rctx)
+                        && (((b1p == 0) ? r_va_idx : (b1p == 1) ? r_vb_idx : r_vc_idx)
+                            == w_idx))
+                        $display("FAIL tnca_core assert @%0t: operand port %0d read v%0d while its writeback is held (stale value)",
+                                 $time, b1p, w_idx);
         end
 `endif
 
@@ -725,30 +916,62 @@ module tnca_core #(
         //----------------------------------------------------------------
         // Requests: three execute sources and the matrix unit
         //----------------------------------------------------------------
-        wire [3:0] rq_v = {mtx_vrf_req && !mtx_vrf_valid_w, of_want};
-        wire [4*RCTX_W-1:0] rq_rctx = {mtx_rctx, {3{r_rctx}}};
-        wire [4*8-1:0] rq_idx =
-            {mtx_vrf_addr, r_vc_idx, r_vb_idx, r_va_idx};
-
-
-        //----------------------------------------------------------------
-        // Writes: the transfer engine wins, the writeback retries
         //
-        // The transfer engine has no way to be told to wait -- vw_en is a
-        // registered output with no acknowledgement -- so it takes the
-        // bank. The writeback does have somewhere to wait: freezing the
-        // w_* registers holds the payload and re-presents it next cycle,
-        // which is the "保持 payload 并重试" the contract asks for, with a
-        // declared depth of exactly one.
+        // VRF_PREFETCH: when R asks for nothing and is not waiting on a
+        // producer, the three source ports serve D. D's sources must have no
+        // older writer still to come: none in the scoreboard (unless it is
+        // being written back this cycle and VRF_BYPASS lets the bank's
+        // write-first path return it) and none in R, the one older writer
+        // the scoreboard does not hold yet.
+        // (pf_haz_w is assigned after the scoreboard macros, below.)
+        wire [2:0] pf_need = {d_pf_vc_en, d_pf_vb_en, d_pf_va_en};
+        wire pf_go = (VRF_PREFETCH != 0) && d_valid && (|pf_need)
+                   && (of_want == 3'b000) && !(r_valid && r_vsrc_haz) && !pf_haz_w;
+        wire [2:0] rq_src = pf_go ? pf_need : of_want;
+        wire [4:0] rq_v = {txf_vr_req && !txf_vr_valid,
+                           mtx_vrf_req && !mtx_vrf_valid_w, rq_src};
+        wire [RCTX_W-1:0] rq_src_rctx = pf_go ? d_rctx : r_rctx;
+        wire [5*RCTX_W-1:0] rq_rctx = {txf_vr_rctx, mtx_rctx, {3{rq_src_rctx}}};
+        wire [5*8-1:0] rq_idx = pf_go
+            ? {txf_vr_idx, mtx_vrf_addr, d_pf_vc_idx, d_pf_vb_idx, d_pf_va_idx}
+            : {txf_vr_idx, mtx_vrf_addr, r_vc_idx, r_vb_idx, r_va_idx};
+
+        always @(posedge clk) begin
+            if (!rst_n) begin
+                pf_tag <= 3'b000;
+                adv_q  <= 1'b0;
+            end else begin
+                pf_tag <= pf_go ? (vrf_req_accept[2:0] & pf_need) : 3'b000;
+                adv_q  <= !stall_front && d_valid && !kill_d;
+            end
+        end
+
+
         //----------------------------------------------------------------
-        wire [1:0] wr_we = {w_is_vec, txf_vw_en};
-        wire [2*RCTX_W-1:0] wr_rctx = {w_rctx, txf_vw_rctx};
-        wire [2*8-1:0]      wr_idx  = {w_idx, txf_vw_idx};
-        wire [2*VLEN-1:0]   wr_mask = {w_lane_en, txf_vw_lane};
-        wire [2*VW-1:0]     wr_data = {w_vdata, txf_vw_data};
+        // Writes: the writeback wins, the transfer engine waits (R39-00 B4)
+        //
+        // It used to be the other way round: the engine took the bank and
+        // the writeback stage froze its w_* registers to retry. But the
+        // FP and MUL pipes advance regardless of stalls, so a result of
+        // theirs landing in a frozen cycle was dropped -- its register kept
+        // the old value and its scoreboard bit never cleared, and the next
+        // reader waited forever (tb/core/progs/t39_freeze_drop.s hangs).
+        // The engine can wait: it holds a refused write and presents it
+        // again (tnca_tensor vw_ready), and does not complete a transfer
+        // while one is held. Writer 0, the lower index, has the bank first
+        // (tnca_vrf_banked), as that file's own comment always said.
+        //----------------------------------------------------------------
+        wire [1:0] wr_we = {txf_vw_en, w_is_vec};
+        wire [2*RCTX_W-1:0] wr_rctx = {txf_vw_rctx, w_rctx};
+        wire [2*8-1:0]      wr_idx  = {txf_vw_idx, w_idx};
+        wire [2*VLEN-1:0]   wr_mask = {txf_vw_lane, w_lane_en};
+        wire [2*VW-1:0]     wr_data = {txf_vw_data, w_vdata};
         wire [1:0]          wr_ok;
 
-        assign vrf_wb_freeze = w_is_vec && !wr_ok[1];
+        // Structurally never set now (the writeback is never refused); kept
+        // so the counters and the B1 assertion keep their meaning.
+        assign vrf_wb_freeze = w_is_vec && !wr_ok[0];
+        assign txf_vw_ready  = !txf_vw_en || wr_ok[1];
         assign mtx_vrf_valid_w = vrf_rsp_valid[3];
 
         tnca_vrf_banked #(
@@ -756,12 +979,12 @@ module tnca_core #(
             .NUM_RCTX(NUM_RCTX), .VLEN(VLEN), .ELEN(ELEN),
             .RCTX_W(RCTX_W), .PHYS_W(PHYS_W),
             .NUM_BANKS(4), .BANK_W(2), .READ_LATENCY(1),
-            .NUM_PORTS(4), .ZERO_INVALID(1), .NUM_WRITERS(2)
+            .NUM_PORTS(5), .ZERO_INVALID(1), .NUM_WRITERS(2)
         ) u_vrf (
-            .clk(clk), .rst_n(rst_n), .vbase(vbase_q),
+            .clk(clk), .rst_n(rst_n), .clear(launch_valid), .vbase(vbase_q),
             .req_valid(rq_v), .req_rctx(rq_rctx), .req_idx(rq_idx),
             .req_accept(vrf_req_accept),
-            .rsp_ready(4'b1111),
+            .rsp_ready(5'b11111),
             .rsp_valid(vrf_rsp_valid), .rsp_data(vrf_rsp_data),
             .we(wr_we), .w_rctx(wr_rctx), .w_idx(wr_idx),
             .wmask(wr_mask), .wdata(wr_data), .w_accept(wr_ok)
@@ -841,9 +1064,22 @@ module tnca_core #(
     // file. That costs a stall on every producer/consumer pair. It is the
     // price of a synchronous read without forwarding, and this stage
     // reports it rather than building the network to hide it.
-    `define AVAIL_V(rc, idx) (!USE_BANKED_VRF && \
-                              (`WB_HIT_V(rc, idx) || `X_PROD_V(rc, idx)))
+    `define AVAIL_V(rc, idx) (!USE_BANKED_VRF ? \
+                              (`WB_HIT_V(rc, idx) || `X_PROD_V(rc, idx)) : \
+                              (VRF_BYPASS != 0 && `WB_HIT_V(rc, idx)))
     `define AVAIL_P(rc, idx) (`WB_HIT_P(rc, idx) || `X_PROD_P(rc, idx))
+
+    // VRF_PREFETCH: a source of the instruction in D that an older writer
+    // has still to write -- in the scoreboard (unless written back this
+    // cycle, with VRF_BYPASS), or the destination of the instruction in R,
+    // the one older writer the scoreboard does not hold yet.
+    `define PF_HAZ(idx) ((`SB_V_BUSY(d_rctx, idx) && \
+                          !(VRF_BYPASS != 0 && `WB_HIT_V(d_rctx, idx))) || \
+                         (r_valid && r_dstc == `TNCA_DST_V && r_rctx == d_rctx && \
+                          r_dsti == (idx)))
+    assign pf_haz_w = (d_pf_va_en && `PF_HAZ(d_pf_va_idx))
+                    | (d_pf_vb_en && `PF_HAZ(d_pf_vb_idx))
+                    | (d_pf_vc_en && `PF_HAZ(d_pf_vc_idx));
 
     wire hz_sa = r_sa_en && `SB_S_BUSY(r_rctx, r_sa_idx) && !`AVAIL_S(r_rctx, r_sa_idx);
     wire hz_sb = r_sb_en && `SB_S_BUSY(r_rctx, r_sb_idx) && !`AVAIL_S(r_rctx, r_sb_idx);
@@ -865,6 +1101,18 @@ module tnca_core #(
     wire r_reads_sb2 = (r_valid && (r_major == `TNCA_MAJ_TXFER)) | r_mma_sf;
     wire hz_sb2 = r_reads_sb2 && `SB_S_BUSY(r_rctx, r_sb2_idx)
                               && !`AVAIL_S(r_rctx, r_sb2_idx);
+    // And Sb+2..Sb+4 for a rank-3..5 transfer. The rank is in the descriptor
+    // snapshot, which the issue stage cannot see, so every transfer checks
+    // all five: a busy register it does not need costs a stall, a busy one it
+    // does need and was not checked costs a wrong address.
+    wire r_is_txfer = r_valid && (r_major == `TNCA_MAJ_TXFER);
+    wire [5:0] r_sb3_idx = r_sb_idx + 6'd2;
+    wire [5:0] r_sb4_idx = r_sb_idx + 6'd3;
+    wire [5:0] r_sb5_idx = r_sb_idx + 6'd4;
+    wire hz_sbx = r_is_txfer &&
+          ((`SB_S_BUSY(r_rctx, r_sb3_idx) && !`AVAIL_S(r_rctx, r_sb3_idx)) ||
+           (`SB_S_BUSY(r_rctx, r_sb4_idx) && !`AVAIL_S(r_rctx, r_sb4_idx)) ||
+           (`SB_S_BUSY(r_rctx, r_sb5_idx) && !`AVAIL_S(r_rctx, r_sb5_idx)));
 
     // WAW uses WB_HIT only, never X_PROD.
     //
@@ -898,8 +1146,10 @@ module tnca_core #(
     wire hz_acc = (r_valid && r_acc_dst && !acc_free_d)
                 | (r_acc_src && !acc_free_s);
 
+    assign r_vsrc_haz = hz_va | hz_vb | hz_vc;
+
     wire hazard = r_valid && (hz_sa|hz_sb|hz_sc|hz_va|hz_vb|hz_vc|hz_pa|hz_pb|hz_pm|hz_d)
-                | hz_acc | hz_sb2;
+                | hz_acc | hz_sb2 | hz_sbx;
 
     //==========================================================================
     // Execution units (all read their operands in X)
@@ -944,15 +1194,20 @@ module tnca_core #(
     wire [VLEN*ELEN-1:0] valu_v;
     wire [63:0]          valu_s;
     wire [VLEN-1:0]      valu_p;
+    // Decoded in R, registered into X with the opcode (tnca_vector_alu's
+    // `use_imm`).
+    reg x_valu_imm;
+
     tnca_vector_alu #(.VLEN(VLEN), .ELEN(ELEN)) u_valu (
         .major(x_major), .func(x_func), .mod(x_mod), .mask(lane_mask),
         .va(va_data), .vb(vb_data), .sa(v_sop), .imm(x_imm),
+        .use_imm(x_valu_imm),
         .pa(pa_data), .pb(pb_data),
         .vres(valu_v), .sres(valu_s), .pres(valu_p)
     );
 
     wire                 fpu_multicycle;
-    wire                 fpu_busy, fpu_done;
+    wire                 fpu_busy, fpu_done, fpu_red_busy;
     wire [VLEN*ELEN-1:0] fpu_v;
     wire [63:0]          fpu_s;
     wire [VLEN-1:0]      fpu_p;
@@ -964,14 +1219,25 @@ module tnca_core #(
                                (x_major == `TNCA_MAJ_SFU) ||
                                ((x_major == `TNCA_MAJ_RED) && (x_func >= `TNCA_RD_FADD)));
 
+    // The FMA array's controls, decoded in R and registered into X with the
+    // opcode they are decoded from (see tnca_vector_fpu's `fpctl`).
+    wire r_vfp = (r_major == `TNCA_MAJ_VFP);
+    wire [4:0] r_fpctl = {
+        (r_major == `TNCA_MAJ_RED) && (r_func >= `TNCA_RD_FADD),
+        r_vfp && (r_func == `TNCA_VF_MUL),
+        r_vfp && ((r_func == `TNCA_VF_SUB) || (r_func == `TNCA_VF_FMS)),
+        (r_func == `TNCA_VF_MUL),
+        (r_func == `TNCA_VF_ADD) || (r_func == `TNCA_VF_SUB)};
+    reg  [4:0] x_fpctl;
+
     tnca_vector_fpu #(.VLEN(VLEN), .ELEN(ELEN), .LW(LW), .FP_LAT(FP_LAT),
                       .SFU_LAT(SFU_LAT), .HAS_SFU(HAS_SFU)) u_vfpu (
         .clk(clk), .rst_n(rst_n),
         .major(x_major), .func(x_func), .mod(x_mod), .mask(lane_mask),
-        .va(va_data), .vb(vb_data), .vc(vc_data),
+        .va(va_data), .vb(vb_data), .vc(vc_data), .fpctl(x_fpctl),
         .is_multicycle(fpu_multicycle),
         .start(x_is_fp && fpu_multicycle && !x_kill),
-        .busy(fpu_busy), .done(fpu_done),
+        .busy(fpu_busy), .red_busy_o(fpu_red_busy), .done(fpu_done),
         .vres(fpu_v), .sres(fpu_s), .pres(fpu_p),
         .mc_sres(fpu_red_s), .mc_vres(fpu_red_v)
     );
@@ -1015,7 +1281,18 @@ module tnca_core #(
     wire x_is_avread = x_is_mtx && (x_major == `TNCA_MAJ_ACC)
                                 && (x_func == `TNCA_A_VREAD);
 
-    wire [BAR_W-1:0] tok_bar = sa_data[BAR_W-1:0];
+    // RSLICE: a barrier a token names is in the issuing context's slice.
+    wire [BAR_W-1:0] x_bar_sl = ((RSLICE != 0) && slice_q)
+                              ? (({{(BAR_W-RCTX_W){1'b0}}, x_rctx}
+                                  >> ((RPAIR != 0) && pair_q)) << bar_sh)
+                              : {BAR_W{1'b0}};
+    wire [BAR_W-1:0] tok_bar = sa_data[BAR_W-1:0] | x_bar_sl;
+    // The token mb.wait and mb.test hand the barrier file, in the slice. A
+    // token mb.arm returned is sliced already (ORing is idempotent); one the
+    // program built from an epoch it counted itself -- each role of a ring
+    // does (R39-12) -- names the barrier as the program does, and without
+    // this a context in slice 1 waited on slice 0's barrier.
+    wire [63:0]      tok_sl  = {sa_data[63:BAR_W], tok_bar};
 
     wire        bar_arm_token_v;
     wire [63:0] bar_arm_token;
@@ -1055,11 +1332,12 @@ module tnca_core #(
     // An m.mma signals one operation completion against the barrier named by
     // its token (ISA sec 9C).
     wire mtx_bar_en = (x_major == `TNCA_MAJ_MATRIX) && (x_func == `TNCA_M_MMA);
-    wire [BAR_W-1:0] mtx_bar = sc_data[BAR_W-1:0];
+    wire [BAR_W-1:0] mtx_bar = sc_data[BAR_W-1:0] | x_bar_sl;
 
     tnca_matrix #(
         .VLEN(VLEN), .ELEN(ELEN), .ACC_N(ACC_N), .ACC_W(ACC_W),
-        .ROWS(ACC_ROWS), .ROW_W(ACC_ROW_W), .BAR_W(BAR_W), .FMA_LAT(FP_LAT)
+        .ROWS(ACC_ROWS), .ROW_W(ACC_ROW_W), .BAR_W(BAR_W), .FMA_LAT(FP_LAT),
+        .ABUF(MTX_ABUF)
     ) u_mtx (
         .clk(clk), .rst_n(rst_n), .flush(launch_valid),
         .cmd_valid(mtx_cmd_valid), .cmd_op(mtx_cmd_op),
@@ -1071,7 +1349,7 @@ module tnca_core #(
         // token sits in Sc+1.
         .cmd_sf_en((x_major == `TNCA_MAJ_MATRIX) && (x_func == `TNCA_M_MMA)
                    && x_mod[4]),
-        .cmd_sf_bar(sb2_raw[BAR_W-1:0]),
+        .cmd_sf_bar(sb2_raw[BAR_W-1:0] | x_bar_sl),
         .cmd_rowop(mtx_rowop), .cmd_row(sa_data[ACC_ROW_W-1:0]),
         .cmd_vdata(vb_data), .cmd_scale(mtx_scale), .cmd_mask(lane_mask),
         .busy(mtx_busy),
@@ -1106,9 +1384,9 @@ module tnca_core #(
         .txf_done_err(txf_done_err),
         .inval_en(x_is_bar && (x_func == `TNCA_MB_INVAL)),
         .inval_bar(x_ra_idx[BAR_W-1:0]),
-        .test_token(sa_data), .test_done(bar_test_done),
+        .test_token(tok_sl), .test_done(bar_test_done),
         .test_error(bar_test_error),
-        .sleep_en(bar_sleep), .sleep_rctx(x_rctx), .sleep_token(sa_data),
+        .sleep_en(bar_sleep), .sleep_rctx(x_rctx), .sleep_token(tok_sl),
         .wake(bar_wake), .wake_err(bar_wake_err),
         .fault(bar_fault), .fault_bar(bar_fault_bar)
     );
@@ -1161,11 +1439,19 @@ module tnca_core #(
     wire [CTAG_W-1:0]    lm_rsp_tag;
     wire [MEM_DW-1:0]    lm_rsp_rdata;
 
-    tnca_lsu #(
+    // R39-08: with LSU_INFLIGHT = 2 a load or store may be accepted while
+    // the other unit drains one (lsu_ready_load); req_ready still means no
+    // access is in flight at all, which is what a fence and an arrive wait
+    // for.
+    wire lsu_ready_load;
+    generate
+    if (LSU_INFLIGHT >= 2) begin : g_lsu_pair
+    tnca_lsu_pair #(
         .VLEN(VLEN), .ELEN(ELEN), .RCTX_W(RCTX_W),
         .MEM_DW(MEM_DW), .MEM_BYTES(MEM_BYTES), .MEM_SHIFT(MEM_SHIFT),
         .NUM_BEATS(LSU_BEATS), .BEAT_W(CTAG_W)
     ) u_lsu (
+        .req_ready_load(lsu_ready_load),
         .clk(clk), .rst_n(rst_n),
         .req_ready(lsu_req_ready),
         .req_valid(x_mem_go),
@@ -1194,6 +1480,44 @@ module tnca_core #(
         .mem_rsp_valid(lm_rsp_valid), .mem_rsp_tag(lm_rsp_tag),
         .mem_rsp_rdata(lm_rsp_rdata)
     );
+    end else begin : g_lsu_one
+    assign lsu_ready_load = lsu_req_ready;
+    tnca_lsu #(
+        .VLEN(VLEN), .ELEN(ELEN), .RCTX_W(RCTX_W),
+        .MEM_DW(MEM_DW), .MEM_BYTES(MEM_BYTES), .MEM_SHIFT(MEM_SHIFT),
+        .NUM_BEATS(LSU_BEATS), .BEAT_W(CTAG_W)
+    ) u_lsu (
+        .o_draining(), .o_amo(),
+        .clk(clk), .rst_n(rst_n),
+        .req_ready(lsu_req_ready),
+        .req_valid(x_mem_go),
+        .req_store(x_mem_store), .req_vector(x_mem_vector),
+        .req_indexed(x_mem_indexed), .req_size(x_mem_size),
+        .req_signed(x_mem_signed), .req_hint(x_mem_hint),
+        .req_base(sa_data), .req_offset(x_imm),
+        .req_index(vb_data),
+        // atom.cas swaps in Sc and compares against Sb; every other atomic
+        // has one operand and takes Sb.
+        .req_sdata(x_amo_cas ? sc_data : sb_data),
+        .req_amo(x_amo), .req_aop(x_aop), .req_cmp(sb_data),
+        .req_vdata(x_mem_indexed ? vc_data : vb_data),
+        .req_mask(lane_mask),
+        .req_rctx(x_rctx), .req_dst_class(x_dstc), .req_dst_idx(x_dsti),
+        .cpl_valid(lsu_cpl_valid), .cpl_ack(lsu_cpl_ack),
+        .cpl_rctx(lsu_cpl_rctx), .cpl_dst_class(lsu_cpl_dstc),
+        .cpl_dst_idx(lsu_cpl_dsti), .cpl_sdata(lsu_cpl_sdata),
+        .cpl_vdata(lsu_cpl_vdata), .cpl_lane_en(lsu_cpl_lane_en),
+        .mem_req_valid(lm_req_valid), .mem_req_ready(lm_req_ready),
+        .mem_req_addr(lm_req_addr), .mem_req_we(lm_req_we),
+        .mem_req_be(lm_req_be), .mem_req_wdata(lm_req_wdata),
+        .mem_req_tag(lm_req_tag), .mem_req_hint(lm_req_hint),
+        .mem_req_amo(lm_req_amo), .mem_req_aop(lm_req_aop),
+        .mem_req_cmp(lm_req_cmp),
+        .mem_rsp_valid(lm_rsp_valid), .mem_rsp_tag(lm_rsp_tag),
+        .mem_rsp_rdata(lm_rsp_rdata)
+    );
+    end
+    endgenerate
 
     tnca_mem_mux #(
         .MEM_DW(MEM_DW), .MEM_BYTES(MEM_BYTES),
@@ -1321,9 +1645,11 @@ module tnca_core #(
         .cmd_valid(txf_is_xfr), .cmd_store(x_func == `TNCA_T_ST),
         .cmd_desc(x_ra_idx[DESC_W-1:0]), .cmd_win(x_dsti[WIN_W-1:0]),
         .cmd_c0(sb_data), .cmd_c1(sb2_data),
+        .cmd_c2(sb3_raw), .cmd_c3(sb4_raw), .cmd_c4(sb5_raw),
+        .cmd_sb(x_sb_idx),
         .cmd_esz(x_mod[2:0]),
         .cmd_xpose(x_mod[5]), .cmd_layout(x_mod[4:3]),
-        .cmd_bar_en(1'b1), .cmd_bar(sc_data[BAR_W-1:0]),
+        .cmd_bar_en(1'b1), .cmd_bar(sc_data[BAR_W-1:0] | x_bar_sl),
         .cmd_rctx(x_rctx), .cmd_pc(x_pc), .cmd_active(|lane_mask),
         .busy(txf_busy),
         .done(txf_done), .done_bar_en(txf_done_bar_en), .done_bar(txf_done_bar),
@@ -1331,7 +1657,9 @@ module tnca_core #(
         .fault_rctx(txf_fault_rctx), .fault_pc(txf_fault_pc),
         .done_err(txf_done_err),
         .vw_en(txf_vw_en), .vw_rctx(txf_vw_rctx), .vw_idx(txf_vw_idx),
-        .vw_lane_en(txf_vw_lane), .vw_data(txf_vw_data),
+        .vw_lane_en(txf_vw_lane), .vw_data(txf_vw_data), .vw_ready(txf_vw_ready),
+        .vr_req(txf_vr_req), .vr_rctx(txf_vr_rctx), .vr_idx(txf_vr_idx),
+        .vr_valid(txf_vr_valid), .vr_data(txf_vr_data),
         .mem_req_valid(tm_req_valid), .mem_req_ready(tm_req_ready),
         .mem_req_addr(tm_req_addr), .mem_req_we(tm_req_we),
         .mem_req_be(tm_req_be), .mem_req_wdata(tm_req_wdata),
@@ -1378,7 +1706,7 @@ module tnca_core #(
         `TNCA_SPEC_NUM_CORES: spec_rd = NUM_CORES;
         `TNCA_SPEC_NUM_LANES: spec_rd = VLEN;
         `TNCA_SPEC_NUM_VREGS: spec_rd = VREGS_PER_RCTX;
-        `TNCA_SPEC_MAX_RANK:  spec_rd = 64'd2;    // see the transfer engine
+        `TNCA_SPEC_MAX_RANK:  spec_rd = 64'd5;    // see the transfer engine
         `TNCA_SPEC_NUM_ACC:   spec_rd = ACC_N;
         `TNCA_SPEC_CLOCK:     spec_rd = clock_ctr;
         `TNCA_SPEC_INSTRET:   spec_rd = instret[x_rctx];
@@ -1530,7 +1858,10 @@ module tnca_core #(
     // Without the second term the LSU silently dropped a request whose
     // predecessor had been accepted in the very cycle R looked at req_ready,
     // leaving the load's destination marked busy forever.
-    wire lsu_free_next = lsu_req_ready && !x_mem_go;
+    // A load or store needs only lsu_ready_load (LSU_INFLIGHT); an atomic
+    // needs the unit idle.
+    wire r_plain_load  = r_mem_en && !r_amo;
+    wire lsu_free_next = (r_plain_load ? lsu_ready_load : lsu_req_ready) && !x_mem_go;
 
     // The reduction sequencer hijacks the FMA array's operands, so it may only
     // start when the array is empty -- otherwise it corrupts a normal FP
@@ -1554,7 +1885,8 @@ module tnca_core #(
     // register write and no engine is mid-command. Conservative -- it also
     // waits on an engine running another context's command -- and deliberately
     // so, because the precise version needs per-command ownership that buys
-    // nothing at two contexts.
+    // nothing at two contexts. Role Context pairs (RPAIR) are where it buys
+    // something, and there it is precise (below).
     reg [NUM_RCTX-1:0] rctx_wr_busy;
     integer rb_i, rb_j;
     always @(*) begin
@@ -1571,8 +1903,23 @@ module tnca_core #(
 
     wire r_is_arrive = r_valid && (r_major == `TNCA_MAJ_MBAR)
                                 && (r_func  == `TNCA_MB_ARRIVE);
+    // RPAIR (R39-12): the precise version, for the engines. A consumer
+    // releasing a ring stage must not wait for the transfers its producer
+    // has started into the next one -- that wait serialised the two roles
+    // whose overlap is the point -- so an arrive waits for a matrix or
+    // transfer command only if its own context issued it: the one running
+    // (each engine runs one command at a time and its issuer is recorded),
+    // or one in X this cycle. ISA sec 9A.5 allows exactly this precision.
+    reg  [RCTX_W-1:0] txf_rctx;          // who issued the transfer engine's command
+    wire arr_mtx = (RPAIR != 0)
+                 ? ((mtx_busy && mtx_rctx == r_rctx) || (mtx_cmd_valid && x_rctx == r_rctx))
+                 : mtx_busy;
+    wire arr_txf = (RPAIR != 0)
+                 ? ((txf_busy && txf_rctx == r_rctx)
+                    || ((txf_is_cfg || txf_is_xfr) && x_rctx == r_rctx))
+                 : txf_busy;
     wire stall_arrive = r_is_arrive && (rctx_wr_busy[r_rctx] || !lsu_req_ready
-                                        || mtx_busy || txf_busy);
+                                        || arr_mtx || arr_txf);
 
     wire r_needs_txf = r_valid && (r_fu == `TNCA_FU_TXFER);
     wire txf_free_next = !txf_busy && !txf_is_cfg && !txf_is_xfr;
@@ -1598,8 +1945,20 @@ module tnca_core #(
     // unpredictably long.
     wire stall_fence = r_valid && r_is_fence
                     && (!lsu_req_ready || lsu_cpl_valid || rctx_wr_busy[r_rctx]);
-    wire stall_fpu = (r_is_fpnorm && red_busy_next)
-                   | (r_is_fpmc   && (red_busy_next || fp_inflight || x_is_fpnorm));
+    // FPU_OVERLAP: the FMA array is the only thing an ordinary FP op and a
+    // multicycle one actually share, and only a reduction uses it -- so an
+    // ordinary op waits for a fold (running, or in X and starting next
+    // cycle), and an SFU pass waits only for the completion port and the
+    // slice (red_busy_next), not for ordinary ops in flight.
+    wire r_is_sfu   = r_valid && (r_major == `TNCA_MAJ_SFU);
+    wire x_is_fpred = x_valid && (x_major == `TNCA_MAJ_RED) && (x_func >= `TNCA_RD_FADD);
+    wire fold_next  = fpu_red_busy || x_is_fpred;
+    wire stall_fpu = (FPU_OVERLAP != 0)
+        ? ((r_is_fpnorm && fold_next)
+           | (r_is_fpmc && !r_is_sfu && (red_busy_next || fp_inflight || x_is_fpnorm))
+           | (r_is_sfu && red_busy_next))
+        : ((r_is_fpnorm && red_busy_next)
+           | (r_is_fpmc   && (red_busy_next || fp_inflight || x_is_fpnorm)));
 
     // ---- writeback reservation ------------------------------------------------
     // Delay from "in X" to "result available", per unit.
@@ -1625,7 +1984,49 @@ module tnca_core #(
                      | stall_txf | stall_fence
                      | stall_arrive | stall_rsv | wb_steal;
 
-    assign stall_front = stall_other | vrf_stall | vrf_wb_freeze;
+    wire stall_raw = stall_other | vrf_stall | vrf_wb_freeze;
+
+    reg [63:0] perf_rctx_switch;     // cycles in which R's instruction gave way
+    // RCTX_SWITCH=2 (R39-12): also give way when R's instruction waits for the
+    // matrix unit or the transfer engine, which can be busy for hundreds of
+    // cycles with ANOTHER context's command. Held in R, it held every context
+    // behind it: a consumer waiting for the other pair's MMA stopped the
+    // producers issuing their transfers. The context wakes when an engine
+    // goes idle (eng_freed) or as before.
+    reg  mtx_busy_q, txf_busy_q;
+    wire eng_freed = (RCTX_SWITCH >= 2) && ((mtx_busy_q && !mtx_busy) || (txf_busy_q && !txf_busy));
+    always @(posedge clk) begin
+        mtx_busy_q <= rst_n && mtx_busy;
+        txf_busy_q <= rst_n && txf_busy;
+    end
+    // A parked context wakes on a writeback to one of its registers (every
+    // register write passes through W) or an accumulator's completion.
+    reg [NUM_RCTX-1:0] rctx_wake;
+    integer wk_i;
+    always @(*) begin
+        for (wk_i = 0; wk_i < NUM_RCTX; wk_i = wk_i + 1)
+            rctx_wake[wk_i] = (w_en && (w_rctx == wk_i[RCTX_W-1:0])
+                               && !((w_class == `TNCA_DST_V) && vrf_wb_freeze))
+                            || mtx_done || eng_freed;
+    end
+
+    // RCTX_SWITCH: the instruction in R waits on a register an older
+    // instruction of its context has yet to write, and the one in D is
+    // another context's. Drop the first -- it has
+    // issued nothing, read nothing (r_of_idle) and claimed nothing -- and let
+    // the front end move: its context refetches it from r_pc once woken
+    // (rctx_wake, below), and the other context's instruction takes R this
+    // cycle. Not while X redirects (one squash a cycle) nor while the
+    // writeback is frozen (the front end must hold then whatever R holds).
+    //
+    // Not for a busy load/store unit: measured on t39_switch, giving way
+    // there cost 8 % -- the unit is the bottleneck, and the dropped access
+    // reached it three cycles after it was free instead of at once.
+    wire rp_go = (RCTX_SWITCH != 0) && r_valid && r_of_idle
+               && (hazard || ((RCTX_SWITCH >= 2) && (stall_mtx || stall_txf)))
+               && d_valid && (d_rctx != r_rctx)
+               && !x_redirect && !vrf_wb_freeze;
+    assign stall_front = stall_raw && !rp_go;
 
     // Exclusive attribution. The order is the order of the OR above, which
     // makes it arbitrary but FIXED -- and fixed is what matters: the same
@@ -1660,18 +2061,27 @@ module tnca_core #(
     // A redirect kills only the younger entries of the same RCTX.
     wire             squash_en   = x_redirect;
     wire [RCTX_W-1:0] squash_rctx = x_rctx;
-    wire kill_f = squash_en && f_hit  && (f_sel  == squash_rctx);
-    wire kill_d = squash_en && d_valid && (d_rctx == squash_rctx);
+    // A switch (rp_go) kills the same younger entries of R's context; D's
+    // is another context's by construction.
+    wire kill_f = (squash_en && f_hit  && (f_sel  == squash_rctx))
+                | (rp_go && f_hit && (f_sel == r_rctx));
+    assign kill_d = squash_en && d_valid && (d_rctx == squash_rctx);
     // The in-flight fetch and the buffered word are younger than X, so a
     // redirect kills them on the same rule.
-    wire kill_f1 = squash_en && f1_valid && (f1_rctx == squash_rctx);
-    wire kill_fb = squash_en && fb_valid && (fb_rctx == squash_rctx);
+    wire kill_f1 = (squash_en && f1_valid && (f1_rctx == squash_rctx))
+                 | (rp_go && f1_valid && (f1_rctx == r_rctx));
+    wire kill_fb = (squash_en && fb_valid && (fb_rctx == squash_rctx))
+                 | (rp_go && fb_valid && (fb_rctx == r_rctx));
     wire kill_av = fb_valid ? kill_fb : kill_f1;
 
     // Issue a fetch unless the buffer is full, or a word is already arriving
     // into a front end that is stalled and would have nowhere to put a second.
-    wire f_issue = f_hit && !fb_valid && !(stall_front && f1_valid);
-    wire kill_r = squash_en && r_valid && (r_rctx == squash_rctx);
+    // FE_NOBUBBLE: an unstalled decoder takes the buffered word this cycle,
+    // so the buffer is free again for the word a fetch issued now returns.
+    wire f_issue = (FE_NOBUBBLE != 0)
+                 ? (f_hit && !(stall_front && (fb_valid || f1_valid)))
+                 : (f_hit && !fb_valid && !(stall_front && f1_valid));
+    wire kill_r = (squash_en && r_valid && (r_rctx == squash_rctx)) | rp_go;
 
     // x_kill is never set in this design (X is the oldest in-flight entry), but
     // it is kept as an explicit signal so a future second execute stage has a
@@ -1710,7 +2120,13 @@ module tnca_core #(
             sb_p       <= {(NUM_RCTX*16){1'b0}};
             sb_acc     <= {ACC_N{1'b0}};
             blocked    <= {NUM_RCTX{1'b0}};
+            parked     <= {NUM_RCTX{1'b0}};
+            slice_q    <= 1'b0;
+            slice_k    <= 2'd0;
+            pair_q     <= 1'b0;
+            perf_rctx_switch <= 64'd0;
             mtx_rctx   <= {RCTX_W{1'b0}};
+            txf_rctx   <= {RCTX_W{1'b0}};
             red_pend   <= 1'b0;
             red_len    <= {VLEN{1'b1}};
             w_en       <= 1'b0;
@@ -1739,6 +2155,7 @@ module tnca_core #(
             perf_x_wb         <= 64'd0;
             perf_x_vrf        <= 64'd0;
             perf_x_vrfwb      <= 64'd0;
+            perf_x_frontend   <= 64'd0;
             perf_stall_wb     <= 64'd0;
             perf_squash       <= 64'd0;
             for (i = 0; i < NUM_RCTX; i = i + 1)
@@ -1812,7 +2229,10 @@ module tnca_core #(
             // The exclusive view. Counted only while something is running,
             // on the same condition as perf_cycles, so the sum can be
             // compared against a cycle count taken over the same window.
-            if (|running && stall_front)
+            // stall_raw, not stall_front: a cycle in which R's instruction
+            // gave way (RCTX_SWITCH) issued nothing because of its hazard,
+            // and is charged to it like any other hazard cycle.
+            if (|running && stall_raw)
                 perf_stall_total <= perf_stall_total + 64'd1;
             if (|running && x_haz)   perf_x_hazard <= perf_x_hazard + 64'd1;
             if (|running && x_lsu)   perf_x_lsu    <= perf_x_lsu    + 64'd1;
@@ -1825,6 +2245,9 @@ module tnca_core #(
             if (|running && x_wb)    perf_x_wb     <= perf_x_wb     + 64'd1;
             if (|running && x_vrf)   perf_x_vrf    <= perf_x_vrf    + 64'd1;
             if (|running && x_vrfwb) perf_x_vrfwb  <= perf_x_vrfwb  + 64'd1;
+            if (|running && !stall_raw && !(r_valid && !kill_r))
+                perf_x_frontend <= perf_x_frontend + 64'd1;
+            if (|running && rp_go) perf_rctx_switch <= perf_rctx_switch + 64'd1;
 
             //------------------------------------------------------------------
             // launch
@@ -1836,6 +2259,10 @@ module tnca_core #(
                 end
                 running  <= launch_role_mask;
                 launched <= launch_role_mask;
+                slice_q  <= (RSLICE != 0) && launch_slice[2];
+                pair_q   <= (RPAIR != 0) && launch_slice[3];
+                slice_k  <= (launch_slice[1:0] != 2'd0) ? launch_slice[1:0]
+                                                        : RCTX_W[1:0];
                 faulted  <= {NUM_RCTX{1'b0}};
                 pid_x    <= launch_pid_x;
                 pid_y    <= launch_pid_y;
@@ -1845,6 +2272,10 @@ module tnca_core #(
                 npid_z   <= launch_npid_z;
                 arg_base <= launch_arg_base;
                 vbase_q  <= launch_vbase;
+                // RPAIR: context 2k+1 takes context 2k's registers.
+                if ((RPAIR != 0) && launch_slice[3])
+                    for (i = 1; i < NUM_RCTX; i = i + 2)
+                        vbase_q[i*PHYS_W +: PHYS_W] <= launch_vbase[(i-1)*PHYS_W +: PHYS_W];
                 d_valid  <= 1'b0;
                 r_valid  <= 1'b0;
                 x_valid  <= 1'b0;
@@ -1859,6 +2290,13 @@ module tnca_core #(
                 sb_p     <= {(NUM_RCTX*16){1'b0}};
                 sb_acc   <= {ACC_N{1'b0}};
                 blocked  <= {NUM_RCTX{1'b0}};
+                parked   <= {NUM_RCTX{1'b0}};
+                // Round robin starts from context 0 at every launch, as it
+                // does after reset: with several contexts the interleaving
+                // -- and so the cycle count -- would otherwise depend on
+                // what ran before (B4 found board and simulation 1-8
+                // cycles apart on three points of 27).
+                rr_ptr   <= {RCTX_W{1'b0}};
                 fault_valid <= 1'b0;
             end else begin
 
@@ -1896,6 +2334,9 @@ module tnca_core #(
                 d_rctx  <= avail_rctx;
                 d_pc    <= avail_pc;
                 d_insn  <= avail_insn;
+                d_pf_va_en <= pf_va_en_n;  d_pf_va_idx <= pf_va_idx_n;
+                d_pf_vb_en <= pf_vb_en_n;  d_pf_vb_idx <= pf_vb_idx_n;
+                d_pf_vc_en <= pf_vc_en_n;  d_pf_vc_idx <= pf_vc_idx_n;
             end else if (kill_d) begin
                 // The entry HELD in D is the one at risk here, so the test is
                 // on d_rctx (kill_d), not on which context the fetch stage
@@ -1920,7 +2361,7 @@ module tnca_core #(
                 r_mod        <= dec_mod;
                 r_fu         <= dec_fu;
                 r_dstc       <= d_illegal ? `TNCA_DST_NONE : dec_dstc;
-                r_dsti       <= dec_dsti;
+                r_dsti       <= dec_dsti_sl;
                 r_mask_dst   <= dec_mask_dst;
                 r_sa_en      <= dec_sa_en && !d_illegal;  r_sa_idx <= dec_sa_idx;
                 r_sb_en      <= dec_sb_en && !d_illegal;  r_sb_idx <= dec_sb_idx;
@@ -1928,7 +2369,7 @@ module tnca_core #(
                 r_va_en      <= dec_va_en && !d_illegal;  r_va_idx <= dec_va_idx;
                 r_vb_en      <= dec_vb_en && !d_illegal;  r_vb_idx <= dec_vb_idx;
                 r_vc_en      <= dec_vc_en && !d_illegal;  r_vc_idx <= dec_vc_idx;
-                r_ra_en      <= dec_ra_en && !d_illegal;  r_ra_idx <= dec_ra_idx;
+                r_ra_en      <= dec_ra_en && !d_illegal;  r_ra_idx <= dec_ra_sl;
                 r_pa_en      <= dec_pa_en && !d_illegal;  r_pa_idx <= dec_pa_idx;
                 r_pb_en      <= dec_pb_en && !d_illegal;  r_pb_idx <= dec_pb_idx;
                 r_pm_en      <= dec_pm_en && !d_illegal;  r_pm_idx <= dec_pm_idx;
@@ -1969,6 +2410,8 @@ module tnca_core #(
                 x_major      <= r_major;
                 x_func       <= r_func;
                 x_mod        <= r_mod;
+                x_fpctl      <= r_fpctl;
+                x_valu_imm   <= `TNCA_V_USES_IMM(r_func);
                 x_fu         <= r_fu;
                 x_dstc       <= r_dstc;
                 x_dsti       <= r_dsti;
@@ -2019,10 +2462,15 @@ module tnca_core #(
             // writes to the same bit, so the later statement is the one that
             // takes effect.
             //------------------------------------------------------------------
+            // A vector writeback the banked file refused this cycle has not
+            // happened: w_* holds it for a retry, and the register stays busy
+            // until the retry lands (R39-00, B1). Releasing it here let a
+            // consumer fetch the old value during a second refusal --
+            // t38_wbfreeze computed a wrong answer that way.
             if (w_en) begin
                 case (w_class)
                 `TNCA_DST_S: if (w_idx[5:0] != 6'd0) sb_s[w_rctx*64 + w_idx[5:0]] <= 1'b0;
-                `TNCA_DST_V: sb_v[w_rctx*VREGS_PER_RCTX + w_idx] <= 1'b0;
+                `TNCA_DST_V: if (!vrf_wb_freeze) sb_v[w_rctx*VREGS_PER_RCTX + w_idx] <= 1'b0;
                 `TNCA_DST_P: if (w_idx[3:0] != 4'd0) sb_p[w_rctx*16 + w_idx[3:0]] <= 1'b0;
                 default: ;
                 endcase
@@ -2044,6 +2492,7 @@ module tnca_core #(
             // matrix engine ownership, and barrier wake-ups
             //------------------------------------------------------------------
             if (mtx_cmd_valid) mtx_rctx <= x_rctx;
+            if (txf_is_cfg || txf_is_xfr) txf_rctx <= x_rctx;
 
             for (i = 0; i < NUM_RCTX; i = i + 1)
                 if (bar_wake[i]) begin
@@ -2168,6 +2617,22 @@ module tnca_core #(
                 end
             end
 
+            //------------------------------------------------------------------
+            // RCTX_SWITCH: wake on a writeback to the context (every register
+            // write passes through W) or an accumulator's completion; park
+            // the context whose instruction gave way, and point it back at
+            // that instruction. Written after the fetch's PC increment, which
+            // kill_f already suppressed for this context, and exclusive with
+            // X's redirect (rp_go excludes it). A wake in the same cycle
+            // wins: the writeback that clears the hazard may be this one.
+            //------------------------------------------------------------------
+            for (i = 0; i < NUM_RCTX; i = i + 1)
+                if (rctx_wake[i]) parked[i] <= 1'b0;
+            if (rp_go) begin
+                pc[r_rctx] <= r_pc;
+                if (!rctx_wake[r_rctx]) parked[r_rctx] <= 1'b1;
+            end
+
             end // !launch_valid
         end
     end
@@ -2183,6 +2648,50 @@ module tnca_core #(
     //==========================================================================
 `ifndef SYNTHESIS
     // synthesis translate_off
+    // +engtrace: every matrix and transfer command as it issues and as it
+    // completes, with its context and cycle -- the engines' occupancy and the
+    // gaps between commands, which the stall counters do not show.
+    reg engtrace;
+    initial engtrace = $test$plusargs("engtrace");
+    always @(posedge clk)
+        if (engtrace && rst_n && !launch_valid) begin
+            if (mtx_cmd_valid)
+                $display("ENG %0d mtx-issue rctx%0d op%0d", clock_ctr, x_rctx, mtx_cmd_op);
+            if (mtx_done)
+                $display("ENG %0d mtx-done", clock_ctr);
+            if (txf_is_cfg || txf_is_xfr)
+                $display("ENG %0d txf-issue rctx%0d %s", clock_ctr, x_rctx, txf_is_cfg ? "cfg" : "xfr");
+            if (txf_done)
+                $display("ENG %0d txf-done", clock_ctr);
+        end
+    // +ctxtrace: when each Role Context exits, and how many instructions it
+    // retired -- what shows that one context's stall did not hold the others
+    // back (R39-05, t39_isolate).
+    reg ctxtrace;
+    initial ctxtrace = $test$plusargs("ctxtrace");
+    // +hangdump=N: every context's state at cycle N -- what a hang is
+    // waiting for, without a waveform.
+    reg [63:0] hang_at;
+    integer hd_i;
+    initial if (!$value$plusargs("hangdump=%d", hang_at)) hang_at = 0;
+    always @(posedge clk)
+        if (hang_at != 0 && clock_ctr == hang_at) begin
+            for (hd_i = 0; hd_i < NUM_RCTX; hd_i = hd_i + 1)
+                $display("hang ctx %0d running=%b faulted=%b blocked=%b parked=%b pc=%0h retired=%0d sb_s=%h sb_v=%h",
+                         hd_i, running[hd_i], faulted[hd_i], blocked[hd_i], parked[hd_i],
+                         pc[hd_i], instret[hd_i], sb_s[hd_i*64 +: 64],
+                         sb_v[hd_i*VREGS_PER_RCTX +: VREGS_PER_RCTX]);
+            $display("hang r_valid=%b r_rctx=%0d r_pc=%0h d_valid=%b d_rctx=%0d x_valid=%b slice=%b sb_acc=%h lsu_ready=%b txf_busy=%b mtx_busy=%b",
+                     r_valid, r_rctx, r_pc, d_valid, d_rctx, x_valid, slice_q, sb_acc,
+                     lsu_req_ready, txf_busy, mtx_busy);
+            $display("hang mtx st=%0d mtx_rctx=%0d vrf_req=%b vrf_valid=%b hazard=%b stall_mtx=%b stall_lsu=%b vrf_stall=%b stall_front=%b",
+                     u_mtx.st, mtx_rctx, mtx_vrf_req, mtx_vrf_valid_w, hazard, stall_mtx,
+                     stall_lsu, vrf_stall, stall_front);
+        end
+    always @(posedge clk)
+        if (ctxtrace && rst_n && !launch_valid && x_valid && !x_kill && x_is_exit)
+            $display("ctx %0d exit cycle=%0d retired=%0d", x_rctx, clock_ctr,
+                     instret[x_rctx] + 64'd1);
     always @(posedge clk) begin
         if (rst_n && !launch_valid) begin
             // The message starts with FAIL so tools/run_test.sh treats it as a

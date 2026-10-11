@@ -200,6 +200,10 @@ def llama_decode_demand(c, bsz, p, b=2):
 LLAMA = {
     'tiny': (LlamaCfg(dim=64, n_layers=2, n_heads=4, n_kv_heads=2, ffn=128, vocab=256), 1, 16, 16),
     'small': (LlamaCfg(dim=128, n_layers=4, n_heads=4, n_kv_heads=2, ffn=352, vocab=512), 1, 64, 128),
+    # R39-13: as large as every kernel's arguments allow in the device heap:
+    # the attention's (6 heads of 64 x 64 scores in and out, with q, k and v)
+    # the down projection's 512 x 192 weight and the head's 640 x 192 one.
+    'medium': (LlamaCfg(dim=192, n_layers=4, n_heads=6, n_kv_heads=2, ffn=512, vocab=640), 1, 64, 256),
     # Llama-3.2-1B's shape (its embeddings are tied; here the head is a
     # separate matrix, which changes no FLOP and only the weight bytes).
     'large': (LlamaCfg(dim=2048, n_layers=16, n_heads=32, n_kv_heads=8, ffn=8192, vocab=128256), 1, 512, 512),
@@ -259,7 +263,7 @@ class GPT2Block(torch.nn.Module):
         return x + self.fc2(F.gelu(self.fc(self.ln2(x)), approximate='tanh'))
 
 
-GPT2 = dict(tiny=(64, 4, 1, 16), small=(128, 4, 1, 64), large=(1024, 16, 1, 512))
+GPT2 = dict(tiny=(64, 4, 1, 16), small=(128, 4, 1, 64), medium=(160, 5, 1, 64), large=(1024, 16, 1, 512))
 for tier, (d, h, bsz, s) in GPT2.items():
     t = bsz * s
     tri = s * (s + 1) // 2
@@ -285,7 +289,7 @@ class MLP(torch.nn.Module):
         return self.fc2(F.gelu(self.fc(x), approximate='tanh'))
 
 
-for tier, (t, d) in dict(tiny=(16, 64), small=(64, 128), large=(512, 2048)).items():
+for tier, (t, d) in dict(tiny=(16, 64), small=(64, 128), medium=(128, 128), large=(512, 2048)).items():
     def mk(seed, t=t, d=d):
         g = gen(seed)
         return MLP(d, g, 'fp16').eval(), (randn(g, (t, d), 'fp16'),)
@@ -320,7 +324,7 @@ class ResNetBlock(torch.nn.Module):
         return F.relu(self.b2(self.c2(y)) + x)
 
 
-for tier, (nb, ch, hw) in dict(tiny=(1, 8, 8), small=(1, 16, 16), large=(8, 64, 56)).items():
+for tier, (nb, ch, hw) in dict(tiny=(1, 8, 8), small=(1, 16, 16), medium=(1, 24, 16), large=(8, 64, 56)).items():
     taps = (3 * hw - 2) ** 2
 
     def mk(seed, nb=nb, ch=ch, hw=hw):

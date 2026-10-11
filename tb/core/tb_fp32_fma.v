@@ -24,7 +24,10 @@ module tb_fp32_fma;
     // but this testbench pushes the expectation *after* the edge that captured
     // the operands, so at the check point `y` belongs to the entry one slot
     // back. (The core's writeback delay is the other number: 2.)
-    localparam LATENCY = 1;
+    // FMA_LAT is the DUT's: 2 or 3 (tnca_fp32_fma's generated instances);
+    // the queue offset is one less, for the reason above.
+    parameter  FMA_LAT = 2;
+    localparam LATENCY = FMA_LAT - 1;
     localparam MAXQ    = 8;
 
     reg clk = 1'b0;
@@ -35,7 +38,7 @@ module tb_fp32_fma;
     reg         sub_c, mul_only, ftz;
     wire [31:0] y;
 
-    tnca_fp32_fma dut (
+    tnca_fp32_fma #(.LAT(FMA_LAT)) dut (
         .clk(clk), .rst_n(rst_n),
         .a(a), .b(b), .c(c),
         .sub_c(sub_c), .mul_only(mul_only), .ftz(ftz),

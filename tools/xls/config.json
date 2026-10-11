@@ -90,6 +90,26 @@
       "pipeline_stages": 7,
       "why": "SFU rsqrt: table-indexed quadratic, ISA sec 8.8 bound 2^-22. Seven stages, not the six this one alone needs, so all four SFU operations share a latency.",
       "delay_model": "asap7"
+    },
+    {
+      "module": "tnca_fma_xls",
+      "source": "tnca_fma.x",
+      "top": "fma32",
+      "pipeline_stages": 3,
+      "clock_period_ps": null,
+      "delay_model": "asap7",
+      "why": "The binary32 FMA every FP result goes through, with subnormals (apfloat's flush is why it used to be hand-written; see xls/tnca_fma.x). Three stages, two registers, the result combinational from the last stage: latency 2, exactly the hand-written module's shape, so it is a drop-in: same FP_LAT, same cycles. No clock period: XLS finds the shortest period three stages allow, which is what balances them.",
+      "flop_outputs": false
+    },
+    {
+      "module": "tnca_fma_l3_xls",
+      "source": "tnca_fma.x",
+      "top": "fma32",
+      "pipeline_stages": 4,
+      "clock_period_ps": null,
+      "delay_model": "asap7",
+      "why": "The same FMA one stage deeper (four stages, three registers: latency 3), for a faster clock: selected by FP_LAT=3 through tnca_fp32_fma. The matrix unit's accumulate interleave (16 rows) and the vector FPU's reduction sequencer both take any FP_LAT up to 15.",
+      "flop_outputs": false
     }
   ]
 }

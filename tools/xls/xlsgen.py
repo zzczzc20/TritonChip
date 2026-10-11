@@ -203,7 +203,9 @@ def generate(cfg, runner, mod, version):
     x, wd = runner.xls, runner.workdir
     name = mod['module']
     stages = mod.get('pipeline_stages', 0)
-    period = cfg.get('clock_period_ps')
+    # A module may set its own period, or null for none: then XLS schedules
+    # the given stage count at the shortest period it allows.
+    period = mod['clock_period_ps'] if 'clock_period_ps' in mod else cfg.get('clock_period_ps')
 
     # Plain Verilog, not SystemVerilog. XLS defaults to SystemVerilog and
     # emits unpacked-array literals for its lookup tables; iverilog aborts on
@@ -218,14 +220,21 @@ def generate(cfg, runner, mod, version):
         # scheduler balances the stages against. With only the stage count it
         # would equalise node counts, which is not the same thing.
         model = mod.get('delay_model', 'unit')
+        # flop_outputs: false for a unit whose consumer registers the result
+        # anyway (the FMA: the writeback mux and the accumulator write), so
+        # its last stage feeds that register directly, as the hand-written
+        # pipeline's did. N stages are then N-1 registers.
+        flop_out = mod.get('flop_outputs', True)
         gen = (f"--generator=pipeline --pipeline_stages={stages} "
                f"--delay_model={model} "
                + (f"--clock_period_ps={period} " if period else "")
                + f"--reset=rst --reset_active_low=false "
-               f"--flop_inputs=false --flop_outputs=true")
+               f"--flop_inputs=false --flop_outputs={'true' if flop_out else 'false'}")
         pipeline = (f"{stages} stages, {model}"
                     + (f", {period} ps target" if period else "")
-                    + f" (latency {stages - 1} cycles: --flop_inputs=false)")
+                    + (f" (latency {stages - 1} cycles: --flop_inputs=false)" if flop_out
+                       else f" ({stages - 1} registers: --flop_inputs=false --flop_outputs=false;"
+                            f" the result is combinational from the last stage)"))
     else:
         gen = "--generator=combinational"
         pipeline = "combinational"

@@ -149,8 +149,15 @@ FMA_VECTORS ?= 20000
 SFU_VECTORS ?= 6000
 FPU_MULTI_VECTORS ?= 1500
 
+# The rank 1-5 transfer refusals (gen_t33_tdesc.py): each is DESCRIPTOR_FAULT,
+# and running to completion is the failure.
+TDESC_FAULTS := t35_tdesc_frank t35_tdesc_fpad2 t35_tdesc_fnanint t35_tdesc_fsb \
+                t35_tdesc_fblock t35_tdesc_fclamp
+$(foreach p,$(TDESC_FAULTS),$(eval export ARGS_$(p) := +expectfault=04))
+
 CORE_PROGS := t00_scalar t01_vector t02_mem t03_fp t04_roles t05_fault t06_alu \
-              t11_matrix t12_tensor t13_share t14_caps t15_target t16_vecadd t17_descfault t18_squash t19_waitgen0 t20_sfu t21_cvt t22_atomic t23_amofault t25_mmasf t26_stfault t28_count t29_vrfbank
+              t11_matrix t12_tensor t13_share t14_caps t15_target t16_vecadd t17_descfault t18_squash t19_waitgen0 t20_sfu t21_cvt t22_atomic t23_amofault t25_mmasf t28_count t29_vrfbank \
+              t33_tdesc_load t34_tdesc_store t36_reduce t37_lsu_straddle t38_wbfreeze t39_freeze_drop t39_switch t39_isolate t39_slice $(TDESC_FAULTS)
 
 # Image size in 64-bit words; must match tb_tnca_core's WORDS parameter.
 IMAGE_WORDS := 16384
@@ -163,14 +170,18 @@ ARGS_t05_fault := +allroles +expectfault=01
 ARGS_t13_share := +allroles +aliasvrf
 ARGS_t17_descfault := +expectfault=04
 ARGS_t23_amofault := +expectfault=03
-# t26 issues t.st.async, which this engine cannot source; ILLEGAL_INSTRUCTION
-# is the contract, and running to completion is the failure.
-ARGS_t26_stfault := +expectfault=01
 # t15 checks target facts against the hardware, and NUM_ROLES is the count this
 # LAUNCH activated (ISA sec 5.1) rather than the core's architectural NUM_RCTX.
 # Those agree only when every context is started, so this one starts them all.
 ARGS_t15_target := +allroles
 ARGS_t18_squash := +allroles
+# t39 runs the same program on every context at once (R39-05).
+export ARGS_t39_switch := +allroles
+export ARGS_t39_isolate := +allroles
+# t39_slice names the same resources in every context: all of them, each in
+# its own slice, where the core has RSLICE (core-r39sw, core-r39sw4); one
+# context elsewhere, where the names would really be shared.
+export ARGS_t39_slice := +roles=1
 
 .PHONY: all test unit core synth lint clean dirs help isa target compiler
 
@@ -200,9 +211,15 @@ lint: dirs
 #------------------------------------------------------------------------------
 # Unit tests
 #------------------------------------------------------------------------------
+# The FMA is generated (xls/tnca_fma.x); tnca_fp32_fma picks the instance for
+# its latency. Both latencies are tested against the same oracle.
+FMA_GEN := $(RTL)/gen/tnca_fma_xls.v $(RTL)/gen/tnca_fma_l3_xls.v
 $(BUILD)/tb_fp32_fma.vvp: $(TB)/core/tb_fp32_fma.v $(RTL)/core/tnca_fp32_fma.v \
-                          $(RTL_COMMON) | dirs
+                          $(FMA_GEN) $(RTL_COMMON) | dirs
 	$(IVERILOG) $(IVFLAGS) -o $@ $^
+$(BUILD)/tb_fp32_fma_l3.vvp: $(TB)/core/tb_fp32_fma.v $(RTL)/core/tnca_fp32_fma.v \
+                             $(FMA_GEN) $(RTL_COMMON) | dirs
+	$(IVERILOG) $(IVFLAGS) -P tb_fp32_fma.FMA_LAT=3 -o $@ $^
 
 $(BUILD)/tb_bitops.vvp: $(TB)/core/tb_bitops.v $(RTL_COMMON) | dirs
 	$(IVERILOG) $(IVFLAGS) -o $@ $^
@@ -220,7 +237,7 @@ $(BUILD)/dec_vectors.txt: $(TOOLS)/model/gen_decoder_vectors.py \
                           $(TOOLS)/asm/tnca_isa.py $(TOOLS)/asm/tnca_asm.py | dirs
 	$(PYTHON) $< -o $@
 
-unit: $(BUILD)/tb_fp32_fma.vvp $(BUILD)/fma_vectors.txt \
+unit: $(BUILD)/tb_fp32_fma.vvp $(BUILD)/tb_fp32_fma_l3.vvp $(BUILD)/fma_vectors.txt \
       $(BUILD)/tb_decoder.vvp $(BUILD)/dec_vectors.txt $(BUILD)/tb_bitops.vvp \
       $(BUILD)/tb_mul64.vvp \
       $(TB)/core/progs/t03_fp.s $(TB)/core/progs/t06_alu.s \
@@ -232,6 +249,8 @@ unit: $(BUILD)/tb_fp32_fma.vvp $(BUILD)/fma_vectors.txt \
 	@$(TOOLS)/run_test.sh "mul64"  "$(VVP) $(BUILD)/tb_mul64.vvp"
 	@$(TOOLS)/run_test.sh "fp32_fma" \
 	   "$(VVP) $(BUILD)/tb_fp32_fma.vvp +vec=$(BUILD)/fma_vectors.txt"
+	@$(TOOLS)/run_test.sh "fp32_fma (latency 3)" \
+	   "$(VVP) $(BUILD)/tb_fp32_fma_l3.vvp +vec=$(BUILD)/fma_vectors.txt"
 	@$(TOOLS)/run_test.sh "decoder" \
 	   "$(VVP) $(BUILD)/tb_decoder.vvp +vec=$(BUILD)/dec_vectors.txt"
 	@$(TOOLS)/run_test.sh "cvt_xls" \
@@ -246,11 +265,13 @@ unit: $(BUILD)/tb_fp32_fma.vvp $(BUILD)/fma_vectors.txt \
 
 # Deeper FMA sweep; slow, run it before declaring the unit done.
 .PHONY: fma-deep
-fma-deep: $(BUILD)/tb_fp32_fma.vvp
+fma-deep: $(BUILD)/tb_fp32_fma.vvp $(BUILD)/tb_fp32_fma_l3.vvp
 	$(PYTHON) $(TOOLS)/model/gen_fma_vectors.py -o $(BUILD)/fma_deep.txt \
 	   -n 400000 --seed 424242
 	@$(TOOLS)/run_test.sh "fp32_fma (deep)" \
 	   "$(VVP) $(BUILD)/tb_fp32_fma.vvp +vec=$(BUILD)/fma_deep.txt"
+	@$(TOOLS)/run_test.sh "fp32_fma (deep, latency 3)" \
+	   "$(VVP) $(BUILD)/tb_fp32_fma_l3.vvp +vec=$(BUILD)/fma_deep.txt"
 
 #------------------------------------------------------------------------------
 # Core tests
@@ -266,6 +287,22 @@ $(TB)/core/progs/t03_fp.s: $(TB)/core/progs/gen_t03_fp.py $(TOOLS)/model/fp32.py
 $(TB)/core/progs/t06_alu.s: $(TB)/core/progs/gen_t06_alu.py
 	$(PYTHON) $<
 
+$(TB)/core/progs/t36_reduce.s: $(TB)/core/progs/gen_t36_reduce.py
+	$(PYTHON) $<
+
+$(TB)/core/progs/t37_lsu_straddle.s: $(TB)/core/progs/gen_t37_lsu_straddle.py
+	$(PYTHON) $<
+
+$(TB)/core/progs/t38_wbfreeze.s: $(TB)/core/progs/gen_t38_wbfreeze.py $(TB)/core/progs/gen_t33_tdesc.py
+	$(PYTHON) $<
+
+$(TB)/core/progs/t39_freeze_drop.s: $(TB)/core/progs/gen_t39_freeze_drop.py $(TB)/core/progs/gen_t33_tdesc.py
+	$(PYTHON) $<
+$(TB)/core/progs/t39_slice.s: $(TB)/core/progs/gen_t39_slice.py $(TB)/core/progs/gen_t33_tdesc.py
+	$(PYTHON) $<
+$(TB)/core/progs/t39_pair.s: $(TB)/core/progs/gen_t39_pair.py $(TB)/core/progs/gen_t33_tdesc.py
+	$(PYTHON) $<
+
 $(TB)/core/progs/t11_matrix.s: $(TB)/core/progs/gen_t11_matrix.py $(TOOLS)/model/fp32.py
 	$(PYTHON) $<
 
@@ -278,11 +315,21 @@ $(TB)/core/progs/t14_caps.s: $(TB)/core/progs/gen_t14_caps.py
 $(TB)/core/progs/t15_target.s: $(TB)/core/progs/gen_t15_target.py \
                                compiler/targets/tnca-sim-v0.1.json
 	$(PYTHON) $<
+$(TB)/core/progs/t15_target_vrf_v4.s: $(TB)/core/progs/gen_t15_target.py \
+                                      compiler/targets/tnca-sim-vrf-v4.json
+	$(PYTHON) $< tnca-sim-vrf-v4
+$(TB)/core/progs/t15_target_vrf_v5.s: $(TB)/core/progs/gen_t15_target.py \
+                                      compiler/targets/tnca-sim-vrf-v5.json
+	$(PYTHON) $< tnca-sim-vrf-v5
 
 $(TB)/core/progs/t16_vecadd.s: $(TB)/core/progs/gen_t16_vecadd.py $(TOOLS)/model/fp32.py
 	$(PYTHON) $<
 
 $(TB)/core/progs/t17_descfault.s: $(TB)/core/progs/gen_t17_descfault.py
+	$(PYTHON) $<
+
+$(TB)/core/progs/t33_tdesc_load.s $(TB)/core/progs/t34_tdesc_store.s \
+$(patsubst %,$(TB)/core/progs/%.s,$(TDESC_FAULTS)): $(TB)/core/progs/gen_t33_tdesc.py
 	$(PYTHON) $<
 
 $(TB)/core/progs/t18_squash.s: $(TB)/core/progs/gen_t18_squash.py
@@ -356,7 +403,7 @@ $(BUILD)/sfu_vectors.txt: $(TOOLS)/model/gen_sfu_vectors.py | dirs
 	$(PYTHON) $< -o $@ -n $(SFU_VECTORS)
 
 $(BUILD)/tb_fpu_multi.vvp: $(TB)/xls/tb_fpu_multi.v $(RTL)/core/tnca_fpu_multi.v \
-                           $(RTL)/core/tnca_fp32_fma.v $(RTL)/gen/tnca_widen_xls.v \
+                           $(RTL)/core/tnca_fp32_fma.v $(FMA_GEN) $(RTL)/gen/tnca_widen_xls.v \
                            $(RTL_COMMON) | dirs
 	$(IVERILOG) $(IVFLAGS) -y $(RTL)/core -y $(RTL)/common -y $(RTL)/gen \
 	   -o $@ $(TB)/xls/tb_fpu_multi.v
@@ -376,7 +423,6 @@ core: export ARGS_t05_fault := $(ARGS_t05_fault)
 core: export ARGS_t13_share := $(ARGS_t13_share)
 core: export ARGS_t17_descfault := $(ARGS_t17_descfault)
 core: export ARGS_t23_amofault := $(ARGS_t23_amofault)
-core: export ARGS_t26_stfault := $(ARGS_t26_stfault)
 core: export ARGS_t15_target := $(ARGS_t15_target)
 core: export ARGS_t18_squash := $(ARGS_t18_squash)
 # The candidate, on the same programs with the same arguments as `core`.
@@ -388,7 +434,6 @@ core-vrf: export ARGS_t05_fault := $(ARGS_t05_fault)
 core-vrf: export ARGS_t13_share := $(ARGS_t13_share)
 core-vrf: export ARGS_t17_descfault := $(ARGS_t17_descfault)
 core-vrf: export ARGS_t23_amofault := $(ARGS_t23_amofault)
-core-vrf: export ARGS_t26_stfault := $(ARGS_t26_stfault)
 core-vrf: export ARGS_t15_target := $(ARGS_t15_target)
 core-vrf: $(BUILD)/tb_core_vrf.vvp $(CORE_HEX)
 	@for p in $(CORE_PROGS); do \
@@ -414,7 +459,6 @@ core-slowmem: export ARGS_t05_fault := $(ARGS_t05_fault)
 core-slowmem: export ARGS_t13_share := $(ARGS_t13_share)
 core-slowmem: export ARGS_t17_descfault := $(ARGS_t17_descfault)
 core-slowmem: export ARGS_t23_amofault := $(ARGS_t23_amofault)
-core-slowmem: export ARGS_t26_stfault := $(ARGS_t26_stfault)
 core-slowmem: export ARGS_t15_target := $(ARGS_t15_target)
 core-slowmem: export ARGS_t18_squash := $(ARGS_t18_squash)
 core-slowmem: $(CORE_HEX) $(BUILD)/tb_core_slow.vvp | dirs
@@ -436,7 +480,6 @@ core-ooo: export ARGS_t05_fault := $(ARGS_t05_fault)
 core-ooo: export ARGS_t13_share := $(ARGS_t13_share)
 core-ooo: export ARGS_t17_descfault := $(ARGS_t17_descfault)
 core-ooo: export ARGS_t23_amofault := $(ARGS_t23_amofault)
-core-ooo: export ARGS_t26_stfault := $(ARGS_t26_stfault)
 core-ooo: export ARGS_t15_target := $(ARGS_t15_target)
 core-ooo: export ARGS_t18_squash := $(ARGS_t18_squash)
 core-ooo: $(CORE_HEX) $(BUILD)/tb_core_ooo.vvp | dirs
@@ -444,6 +487,150 @@ core-ooo: $(CORE_HEX) $(BUILD)/tb_core_ooo.vvp | dirs
 	   extra=$$(eval echo \$${ARGS_$$p}); \
 	   $(TOOLS)/run_test.sh "$$p (ooo mem)" \
 	     "$(VVP) $(BUILD)/tb_core_ooo.vvp +hex=$(BUILD)/$$p.hex +maxcycles=400000 $$extra" \
+	     || exit 1; \
+	 done
+
+# R39: the banked core with the R39 hardware switches on (the candidate
+# core-vrf-sync-v2), on the bench memory and on the back-pressuring,
+# reordering one -- every core program, as core-vrf and core-ooo run them.
+R39_HW := -P tb_tnca_core.USE_BANKED_VRF=1 -P tb_tnca_core.VRF_BYPASS=1 \
+          -P tb_tnca_core.FE_NOBUBBLE=1 -P tb_tnca_core.VRF_PREFETCH=1
+$(BUILD)/tb_core_r39hw.vvp: $(RTL_DEPS) $(TB)/core/tb_tnca_core.v \
+                            $(TB)/common/tnca_mem_model.v | dirs
+	$(IVERILOG) $(IVFLAGS) -y $(RTL)/core -y $(RTL)/common -y $(RTL)/gen -y $(TB)/common \
+	   $(R39_HW) -o $@ $(TB)/core/tb_tnca_core.v
+$(BUILD)/tb_core_r39hw_ooo.vvp: $(RTL_DEPS) $(TB)/core/tb_tnca_core.v \
+                                $(TB)/common/tnca_mem_model.v | dirs
+	$(IVERILOG) $(IVFLAGS) -y $(RTL)/core -y $(RTL)/common -y $(RTL)/gen -y $(TB)/common \
+	   $(R39_HW) -P tb_tnca_core.MEM_LATENCY=6 -P tb_tnca_core.RANDOM_STALL=1 \
+	   -P tb_tnca_core.MEM_REORDER=1 -o $@ $(TB)/core/tb_tnca_core.v
+.PHONY: core-r39hw
+core-r39hw: export ARGS_t04_roles := $(ARGS_t04_roles)
+core-r39hw: export ARGS_t05_fault := $(ARGS_t05_fault)
+core-r39hw: export ARGS_t13_share := $(ARGS_t13_share)
+core-r39hw: export ARGS_t17_descfault := $(ARGS_t17_descfault)
+core-r39hw: export ARGS_t23_amofault := $(ARGS_t23_amofault)
+core-r39hw: export ARGS_t15_target := $(ARGS_t15_target)
+core-r39hw: export ARGS_t18_squash := $(ARGS_t18_squash)
+core-r39hw: $(CORE_HEX) $(BUILD)/tb_core_r39hw.vvp $(BUILD)/tb_core_r39hw_ooo.vvp | dirs
+	@for p in $(CORE_PROGS); do \
+	   extra=$$(eval echo \$${ARGS_$$p}); \
+	   $(TOOLS)/run_test.sh "$$p (r39 hw)" \
+	     "$(VVP) $(BUILD)/tb_core_r39hw.vvp +hex=$(BUILD)/$$p.hex +maxcycles=200000 $$extra" \
+	     || exit 1; \
+	   $(TOOLS)/run_test.sh "$$p (r39 hw, ooo mem)" \
+	     "$(VVP) $(BUILD)/tb_core_r39hw_ooo.vvp +hex=$(BUILD)/$$p.hex +maxcycles=400000 $$extra" \
+	     || exit 1; \
+	 done
+
+# R39-05/08/10: the same, with RCTX_SWITCH (an instruction held in R by a
+# hazard gives way to another context's), LSU_INFLIGHT=2, FPU_OVERLAP and
+# RSLICE -- the candidate core-vrf-sync-v3.
+R39_SW := $(R39_HW) -P tb_tnca_core.RCTX_SWITCH=1 -P tb_tnca_core.LSU_INFLIGHT=2 \
+          -P tb_tnca_core.FPU_OVERLAP=1 -P tb_tnca_core.RSLICE=1
+$(BUILD)/tb_core_r39sw.vvp: $(RTL_DEPS) $(TB)/core/tb_tnca_core.v \
+                            $(TB)/common/tnca_mem_model.v | dirs
+	$(IVERILOG) $(IVFLAGS) -y $(RTL)/core -y $(RTL)/common -y $(RTL)/gen -y $(TB)/common \
+	   $(R39_SW) -o $@ $(TB)/core/tb_tnca_core.v
+$(BUILD)/tb_core_r39sw_ooo.vvp: $(RTL_DEPS) $(TB)/core/tb_tnca_core.v \
+                                $(TB)/common/tnca_mem_model.v | dirs
+	$(IVERILOG) $(IVFLAGS) -y $(RTL)/core -y $(RTL)/common -y $(RTL)/gen -y $(TB)/common \
+	   $(R39_SW) -P tb_tnca_core.MEM_LATENCY=6 -P tb_tnca_core.RANDOM_STALL=1 \
+	   -P tb_tnca_core.MEM_REORDER=1 -o $@ $(TB)/core/tb_tnca_core.v
+.PHONY: core-r39sw
+core-r39sw: export ARGS_t04_roles := $(ARGS_t04_roles)
+core-r39sw: export ARGS_t05_fault := $(ARGS_t05_fault)
+core-r39sw: export ARGS_t13_share := $(ARGS_t13_share)
+core-r39sw: export ARGS_t17_descfault := $(ARGS_t17_descfault)
+core-r39sw: export ARGS_t23_amofault := $(ARGS_t23_amofault)
+core-r39sw: export ARGS_t15_target := $(ARGS_t15_target)
+core-r39sw: export ARGS_t18_squash := $(ARGS_t18_squash)
+core-r39sw: export ARGS_t39_slice := +allroles +slice
+core-r39sw: $(CORE_HEX) $(BUILD)/tb_core_r39sw.vvp $(BUILD)/tb_core_r39sw_ooo.vvp | dirs
+	@for p in $(CORE_PROGS); do \
+	   extra=$$(eval echo \$${ARGS_$$p}); \
+	   $(TOOLS)/run_test.sh "$$p (r39 switch)" \
+	     "$(VVP) $(BUILD)/tb_core_r39sw.vvp +hex=$(BUILD)/$$p.hex +maxcycles=200000 $$extra" \
+	     || exit 1; \
+	   $(TOOLS)/run_test.sh "$$p (r39 switch, ooo mem)" \
+	     "$(VVP) $(BUILD)/tb_core_r39sw_ooo.vvp +hex=$(BUILD)/$$p.hex +maxcycles=400000 $$extra" \
+	     || exit 1; \
+	 done
+
+# R39-05: and four Role Contexts of 64 vector registers (core-vrf-sync-v4).
+R39_SW4 := $(R39_SW) -P tb_tnca_core.NUM_RCTX=4 -P tb_tnca_core.RCTX_W=2 -P tb_tnca_core.PHYS_W=8
+$(BUILD)/tb_core_r39sw4.vvp: $(RTL_DEPS) $(TB)/core/tb_tnca_core.v \
+                             $(TB)/common/tnca_mem_model.v | dirs
+	$(IVERILOG) $(IVFLAGS) -y $(RTL)/core -y $(RTL)/common -y $(RTL)/gen -y $(TB)/common \
+	   $(R39_SW4) -o $@ $(TB)/core/tb_tnca_core.v
+$(BUILD)/tb_core_r39sw4_ooo.vvp: $(RTL_DEPS) $(TB)/core/tb_tnca_core.v \
+                                 $(TB)/common/tnca_mem_model.v | dirs
+	$(IVERILOG) $(IVFLAGS) -y $(RTL)/core -y $(RTL)/common -y $(RTL)/gen -y $(TB)/common \
+	   $(R39_SW4) -P tb_tnca_core.MEM_LATENCY=6 -P tb_tnca_core.RANDOM_STALL=1 \
+	   -P tb_tnca_core.MEM_REORDER=1 -o $@ $(TB)/core/tb_tnca_core.v
+.PHONY: core-r39sw4
+# The programs written for a two-context core start two contexts here
+# (+roles=2); t39_switch and t39_isolate start all four.
+core-r39sw4: export ARGS_t04_roles := +roles=2
+core-r39sw4: export ARGS_t05_fault := +roles=2 +expectfault=01
+core-r39sw4: export ARGS_t13_share := +roles=2 +aliasvrf
+core-r39sw4: export ARGS_t17_descfault := $(ARGS_t17_descfault)
+core-r39sw4: export ARGS_t23_amofault := $(ARGS_t23_amofault)
+core-r39sw4: export ARGS_t15_target_vrf_v4 := +allroles
+core-r39sw4: export ARGS_t18_squash := +roles=2
+core-r39sw4: export ARGS_t39_slice := +allroles +slice
+# t15 asserts the machine's facts against a target file: this one's.
+R39SW4_PROGS := $(patsubst t15_target,t15_target_vrf_v4,$(CORE_PROGS))
+core-r39sw4: $(patsubst %,$(BUILD)/%.hex,$(R39SW4_PROGS)) $(BUILD)/tb_core_r39sw4.vvp $(BUILD)/tb_core_r39sw4_ooo.vvp | dirs
+	@for p in $(R39SW4_PROGS); do \
+	   extra=$$(eval echo \$${ARGS_$$p}); \
+	   $(TOOLS)/run_test.sh "$$p (r39 4 rctx)" \
+	     "$(VVP) $(BUILD)/tb_core_r39sw4.vvp +hex=$(BUILD)/$$p.hex +maxcycles=200000 $$extra" \
+	     || exit 1; \
+	   $(TOOLS)/run_test.sh "$$p (r39 4 rctx, ooo mem)" \
+	     "$(VVP) $(BUILD)/tb_core_r39sw4_ooo.vvp +hex=$(BUILD)/$$p.hex +maxcycles=400000 $$extra" \
+	     || exit 1; \
+	 done
+
+# R39-12: and the transposed transfer and Role Context pairs (core-vrf-sync-v5).
+# RCTX_SWITCH=2: a context also gives way when it waits for the matrix unit
+# or the transfer engine. MTX_ABUF: the matrix unit buffers an MMA's A.
+R39_SW5 := $(R39_HW) -P tb_tnca_core.RCTX_SWITCH=2 -P tb_tnca_core.LSU_INFLIGHT=2 \
+           -P tb_tnca_core.FPU_OVERLAP=1 -P tb_tnca_core.RSLICE=1 \
+           -P tb_tnca_core.NUM_RCTX=4 -P tb_tnca_core.RCTX_W=2 -P tb_tnca_core.PHYS_W=8 \
+           -P tb_tnca_core.HAS_TENSOR_XPOSE=1 -P tb_tnca_core.RPAIR=1 \
+           -P tb_tnca_core.MTX_ABUF=1
+$(BUILD)/tb_core_r39sw5.vvp: $(RTL_DEPS) $(TB)/core/tb_tnca_core.v \
+                             $(TB)/common/tnca_mem_model.v | dirs
+	$(IVERILOG) $(IVFLAGS) -y $(RTL)/core -y $(RTL)/common -y $(RTL)/gen -y $(TB)/common \
+	   $(R39_SW5) -o $@ $(TB)/core/tb_tnca_core.v
+$(BUILD)/tb_core_r39sw5_ooo.vvp: $(RTL_DEPS) $(TB)/core/tb_tnca_core.v \
+                                 $(TB)/common/tnca_mem_model.v | dirs
+	$(IVERILOG) $(IVFLAGS) -y $(RTL)/core -y $(RTL)/common -y $(RTL)/gen -y $(TB)/common \
+	   $(R39_SW5) -P tb_tnca_core.MEM_LATENCY=6 -P tb_tnca_core.RANDOM_STALL=1 \
+	   -P tb_tnca_core.MEM_REORDER=1 -o $@ $(TB)/core/tb_tnca_core.v
+.PHONY: core-r39sw5
+# As core-r39sw4, and t39_pair (two producer/consumer pairs, +pair) and the
+# transposed transfer's own programs.
+core-r39sw5: export ARGS_t04_roles := +roles=2
+core-r39sw5: export ARGS_t05_fault := +roles=2 +expectfault=01
+core-r39sw5: export ARGS_t13_share := +roles=2 +aliasvrf
+core-r39sw5: export ARGS_t17_descfault := $(ARGS_t17_descfault)
+core-r39sw5: export ARGS_t23_amofault := $(ARGS_t23_amofault)
+core-r39sw5: export ARGS_t15_target_vrf_v5 := +allroles
+core-r39sw5: export ARGS_t18_squash := +roles=2
+core-r39sw5: export ARGS_t39_slice := +allroles +slice
+core-r39sw5: export ARGS_t39_pair := +allroles +slice +slicek=1 +pair
+core-r39sw5: export ARGS_t32_xpose_badsize := +expectfault=04
+R39SW5_PROGS := $(patsubst t15_target,t15_target_vrf_v5,$(CORE_PROGS)) t39_pair t30_xpose t32_xpose_badsize
+core-r39sw5: $(patsubst %,$(BUILD)/%.hex,$(R39SW5_PROGS)) $(BUILD)/tb_core_r39sw5.vvp $(BUILD)/tb_core_r39sw5_ooo.vvp | dirs
+	@for p in $(R39SW5_PROGS); do \
+	   extra=$$(eval echo \$${ARGS_$$p}); \
+	   $(TOOLS)/run_test.sh "$$p (r39 v5)" \
+	     "$(VVP) $(BUILD)/tb_core_r39sw5.vvp +hex=$(BUILD)/$$p.hex +maxcycles=200000 $$extra" \
+	     || exit 1; \
+	   $(TOOLS)/run_test.sh "$$p (r39 v5, ooo mem)" \
+	     "$(VVP) $(BUILD)/tb_core_r39sw5_ooo.vvp +hex=$(BUILD)/$$p.hex +maxcycles=400000 $$extra" \
 	     || exit 1; \
 	 done
 
@@ -482,6 +669,30 @@ nuca: | dirs
 	   for sd in $(R1_SEEDS); do \
 	     $(TOOLS)/run_test.sh "BASE-NUCA-$$4-seed$$sd" \
 	       "$(VVP) $(BUILD)/tb_nuca_$$4.vvp +nreq=$(NUCA_REQS) +min_wb=1 +min_block=$$5 +seed=$$sd" \
+	       || exit 1; \
+	   done; \
+	 done
+
+# The same randomised check under DCO's policies (doc/DCO.pdf; the POLICY
+# register of rtl/nuca/tnca_tmu.v). The bench drives a bypassed tensor, a
+# dead-tile FIFO that keeps changing and a flipping slow-core flag; whatever
+# the cache keeps or skips, every read must still return the shadow.
+#   1 LRU   2 anti-thrash   46 AT + DBP + dynamic and tensor bypass
+#   62 the same with gqa_bypass   74 AT + a static bypass gear
+DCO_POLICIES ?= 1 2 46 62 74
+DCO_SEEDS    ?= 1 7
+
+.PHONY: nuca-dco
+nuca-dco: | dirs
+	@for pol in $(DCO_POLICIES); do \
+	   $(IVERILOG) $(IVFLAGS) -y $(RTL)/common \
+	     -P tb_nuca_slice.DRAM_LAT=40 -P tb_nuca_slice.DRAM_STALL=1 \
+	     -P tb_nuca_slice.DRAM_OOO=1 -P tb_nuca_slice.POLICY=$$pol \
+	     -o $(BUILD)/tb_nuca_dco$$pol.vvp $(TB)/nuca/tb_nuca_slice.v \
+	     $(RTL)/nuca/tnca_nuca_slice.v $(TB)/common/tnca_dram_model.v || exit 1; \
+	   for sd in $(DCO_SEEDS); do \
+	     $(TOOLS)/run_test.sh "DCO-NUCA-policy$$pol-seed$$sd" \
+	       "$(VVP) $(BUILD)/tb_nuca_dco$$pol.vvp +nreq=$(NUCA_REQS) +min_wb=1 +seed=$$sd" \
 	       || exit 1; \
 	   done; \
 	 done
@@ -531,6 +742,34 @@ top: $(BUILD)/tb_top.vvp $(patsubst %,$(BUILD)/%.hex,$(TOP_PROGS))
 	 done
 
 #------------------------------------------------------------------------------
+#------------------------------------------------------------------------------
+# DCO on the whole machine (tools/r38/dco_bench.py)
+#------------------------------------------------------------------------------
+# The 2x2 system with a last level small enough for a simulated kernel to
+# thrash -- 8 sets x 4 ways per slice, 8 KiB in all -- and a DRAM that takes
+# one line every DCO_DRAM_INTERVAL cycles, so traffic costs time. Triton
+# kernels compiled with the DCO pass run under every policy; the bench checks
+# that all policies give identical bits and reports cycles and DRAM traffic.
+DCO_DRAM_INTERVAL ?= 48
+DCO_DRAM_LAT      ?= 40
+DCO_BENCH_ARGS    ?= --dram-interval $(DCO_DRAM_INTERVAL) \
+                     --json $(BUILD)/r38/dco_bench_i$(DCO_DRAM_INTERVAL).json
+
+$(BUILD)/tb_top_dco_i$(DCO_DRAM_INTERVAL).vvp: $(TB)/top/tb_tnca_top.v $(RTL_DEPS) $(RTL)/tnca_top.v \
+                         $(TB)/common/tnca_dram_model.v | dirs
+	$(IVERILOG) -g2012 $(IVFLAGS) $(RTLY) \
+	   -P tb_tnca_top.SETS=8 -P tb_tnca_top.SET_W=3 \
+	   -P tb_tnca_top.WAYS=4 -P tb_tnca_top.WAY_W=2 \
+	   -P tb_tnca_top.DRAM_LINES=32768 -P tb_tnca_top.DRAM_STALL=0 \
+	   -P tb_tnca_top.DRAM_OOO=1 -P tb_tnca_top.DRAM_LAT=$(DCO_DRAM_LAT) \
+	   -P tb_tnca_top.DRAM_INTERVAL=$(DCO_DRAM_INTERVAL) \
+	   -o $@ $< $(RTL)/tnca_top.v $(TB)/common/tnca_dram_model.v
+
+.PHONY: dco-bench
+dco-bench: $(BUILD)/tb_top_dco_i$(DCO_DRAM_INTERVAL).vvp
+	@mkdir -p $(BUILD)/r38
+	$(TRITON_PYTHON) tools/r38/dco_bench.py $(DCO_BENCH_ARGS)
+
 #==============================================================================
 # The compiler side (doc/compiler_overview.md)
 #==============================================================================
@@ -557,7 +796,7 @@ TARGET_JSON := compiler/targets/tnca-sim-v0.1.json
 target: $(TARGET_JSON)
 
 $(TARGET_JSON): $(RTL)/core/tnca_core.v $(RTL)/tnca_top.v $(ISA_SCHEMA) \
-                $(TOOLS)/isa/gen_target.py
+                $(TOOLS)/isa/gen_target.py spec/r1_profiles.json
 	@$(PYTHON) $(TOOLS)/isa/gen_target.py
 
 # Generated files are checked, not regenerated, so a stale commit fails here
@@ -632,6 +871,20 @@ triton-e2e: $(BUILD)/tb_core.vvp
 	   exit 1; \
 	 else \
 	   echo "  triton-e2e             SKIP   no Triton at $(TRITON_PYTHON)"; \
+	 fi
+
+# DCO's compiler pass (tnca_cc/dco.py): nAcc, bypass and the tile granule for
+# three kernels whose read counts are known, registration ahead of every load,
+# and the refusal of a loop it cannot count. Compile-only.
+.PHONY: dco-compiler
+dco-compiler:
+	@if [ -x "$(TRITON_PYTHON)" ]; then \
+	   $(TRITON_PYTHON) compiler/test/run_suite.py test_dco dco DCO-COMPILER; \
+	 elif [ "$(R1_STRICT)" = "1" ]; then \
+	   echo "  dco                    FAIL   no Triton at $(TRITON_PYTHON)"; \
+	   exit 1; \
+	 else \
+	   echo "  dco                    SKIP   no Triton at $(TRITON_PYTHON)"; \
 	 fi
 
 # The whole flow: Triton source, through the compiler, onto the four-tile
@@ -723,7 +976,7 @@ compiler-rtl: $(BUILD)/tb_core.vvp $(BUILD)/tb_core4.vvp \
               $(BUILD)/tb_core_slow.vvp $(BUILD)/tb_core_ooo.vvp
 	@$(PYTHON) compiler/test/run_tests.py --rtl
 
-test: lint unit compiler core compiler-rtl triton-e2e core-slowmem core-ooo nuca mesh top e2e
+test: lint unit compiler core compiler-rtl triton-e2e core-slowmem core-ooo nuca nuca-dco mesh top e2e
 	@echo
 	@echo "=============================================="
 	@echo " TNCA regression: all tests passed"
@@ -732,6 +985,17 @@ test: lint unit compiler core compiler-rtl triton-e2e core-slowmem core-ooo nuca
 #------------------------------------------------------------------------------
 synth: | dirs
 	$(PYTHON) flow/synth/synth.py --json $(BUILD)/synth.json --logs $(BUILD)/synth
+
+# FPGA timing of a unit or the whole device, post-synthesis and out of context
+# (flow/synth/vivado_ooc.sh): minutes where a v++ link is hours, to find what
+# sets the board clock and to check that a fix moved it. Needs Vivado.
+#   make fpga-timing FPGA_UNIT=tnca_matrix FPGA_PERIOD=13.333 FPGA_PARAMS="FMA_LAT=3"
+FPGA_UNIT   ?= tnca_fpga_top
+FPGA_PERIOD ?= 13.333
+FPGA_PARAMS ?=
+.PHONY: fpga-timing
+fpga-timing:
+	flow/synth/vivado_ooc.sh $(FPGA_UNIT) $(FPGA_PERIOD) $(FPGA_PARAMS)
 
 clean:
 	rm -rf $(BUILD)
@@ -1032,7 +1296,7 @@ r37: r37-coverage r37-run
 # sim/build/r38/, so a candidate is measured as it stands rather than as the
 # device cache last saw it. A target passing is not Stage 1 passing; the
 # status document names which work package each one backs.
-.PHONY: r38-l0 r38-smoke r38-baseline r38-baseline-check r38-profiler r38-l2 r38-xpose-rtl r38-torch
+.PHONY: r38-l0 r38-smoke r38-baseline r38-baseline-check r38-profiler r38-l2 r38-xpose-rtl r38-torch r38-tdesc
 # P1+ (doc/r38_pytorch_p1plus.md): PyTorch lives in its own environment so no
 # existing gate gains a dependency. T1: the R3.7 cases through native Triton
 # launch; T2-T4: small graphs through torch.compile -> Inductor -> TNCA.
@@ -1042,10 +1306,15 @@ TORCH_PYTHON ?= $(HOME)/src/torchenv/bin/python
 .PHONY: r38-identity
 r38-identity: $(R2_DATA_STAMP) | dirs
 	@$(TRITON_PYTHON) tools/r38/artifact_identity.py --profile core-sim --levels 0 1 2
+# Tensor descriptors (rank 1-5) through the real Triton front end, on the RTL.
+r38-tdesc: $(R2_DATA_STAMP) | dirs
+	@$(TORCH_PYTHON) tools/r38/tdesc_tests.py
+
 r38-torch: $(R2_DATA_STAMP) | dirs
 	@for l in 0 1 2; do $(TORCH_PYTHON) tools/r38/plugin_identity.py --level $$l || exit 1; done
 	@$(TORCH_PYTHON) tools/r38/triton_native_run.py
 	@$(TORCH_PYTHON) tools/r38/torch_tests.py
+	@TNCA_TENSOR_DESCRIPTORS=0 $(TORCH_PYTHON) tools/r38/torch_tests.py --json $(BUILD)/r38/torch/torch_tests_nodesc.json
 # S1-07: the transposed transfer at the ISA level, on both elaborations.
 XPOSE_PROGS := t30_xpose t31_xpose_illegal t32_xpose_badsize
 $(TB)/core/progs/t30_xpose.s $(TB)/core/progs/t31_xpose_illegal.s \
@@ -1099,7 +1368,7 @@ archbench-tiny: $(R2_DATA_STAMP) | dirs
 # expected board results (doc/r38_board_bringup.md, step B4).
 archbench-u50sim: $(R2_DATA_STAMP) | dirs
 	@mkdir -p $(ARCHBENCH_OUT) && rm -f $(ARCHBENCH_OUT)/u50sim_tiny.jsonl
-	@$(TORCH_PYTHON) -m archbench.run --platform tnca --backend fpga-u50-sim --profile core-vrf-sync-v1 \
+	@$(TORCH_PYTHON) -m archbench.run --platform tnca --backend fpga-u50-sim --profile core-vrf-sync-v2 \
 	   --tier tiny --jobs $(ARCHBENCH_JOBS) --out $(ARCHBENCH_OUT)/u50sim_tiny.jsonl
 archbench-gpu:
 	@mkdir -p $(ARCHBENCH_OUT) && rm -f $(ARCHBENCH_OUT)/gpu.jsonl
@@ -1575,7 +1844,9 @@ r1-build-tests:
 # R3.6's regression, which claims to reproduce the inherited suites
 # from a clean checkout, is what found it.
 r1-profile-tests: $(BUILD)/tb_core.vvp $(BUILD)/tb_core4.vvp \
-                  $(BUILD)/tb_top.vvp $(BUILD)/tb_core_vrf.vvp $(BUILD)/tb_core_xpose.vvp
+                  $(BUILD)/tb_top.vvp $(BUILD)/tb_core_vrf.vvp $(BUILD)/tb_core_xpose.vvp \
+                  $(BUILD)/tb_core_r39hw.vvp $(BUILD)/tb_core_r39sw.vvp \
+                  $(BUILD)/tb_core_r39sw4.vvp $(BUILD)/tb_core_r39sw5.vvp
 	@$(PYTHON) tools/r1/profile_tests.py --json $(BUILD)/profile_tests.json
 
 r1-signoff:

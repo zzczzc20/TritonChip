@@ -21,6 +21,8 @@ def main():
     ap.add_argument('--profile', default='core-sim')
     ap.add_argument('--opt', type=int, default=2)
     ap.add_argument('--asm', action='store_true', help='print the assembly')
+    ap.add_argument('--schedule', type=int, default=None,
+                    help='the compile option schedule (R39-01); prints what the scheduler did')
     args = ap.parse_args()
     import triton                                       # noqa: F401  (backends first)
     from triton._C.libtriton import ir
@@ -36,10 +38,16 @@ def main():
     prov = adapter.Provenance()
     target, _pinfo = adapter.target_for(args.profile, prov)
     stages = _dump.Dump(kernel_name)
+    options = {'opt_level': args.opt}
+    if args.schedule is not None:
+        options['schedule'] = args.schedule
     out = aot._lower_ttir(module, ctx, kernel_name, params, target, prov,
-                          {'opt_level': args.opt}, stages, args.opt)
+                          options, stages, args.opt)
     asm_text = out[2]
     print(f'{kernel_name}: {len(asm_text.splitlines())} asm lines, params {[n for n, _ in params]}')
+    for k, v in prov.as_dict().items():
+        if k.startswith('schedule'):
+            print(f'  {k}: {v}')
     if args.asm:
         print(asm_text)
     return 0

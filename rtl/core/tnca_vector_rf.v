@@ -66,6 +66,11 @@ module tnca_vector_rf #(
     input  wire [7:0]                rd_idx,
     output wire [VLEN*ELEN-1:0]      rd_data,
 
+    // read port E -- the transfer engine's window read (t.st.async source)
+    input  wire [RCTX_W-1:0]         re_rctx,
+    input  wire [7:0]                re_idx,
+    output wire [VLEN*ELEN-1:0]      re_data,
+
     input  wire                      w_en,
     input  wire [RCTX_W-1:0]         w_rctx,
     input  wire [7:0]                w_idx,
@@ -94,6 +99,7 @@ module tnca_vector_rf #(
     wire [PHYS_W-1:0] base_b = vbase[rb_rctx*PHYS_W +: PHYS_W];
     wire [PHYS_W-1:0] base_c = vbase[rc_rctx*PHYS_W +: PHYS_W];
     wire [PHYS_W-1:0] base_d = vbase[rd_rctx*PHYS_W +: PHYS_W];
+    wire [PHYS_W-1:0] base_e = vbase[re_rctx*PHYS_W +: PHYS_W];
     wire [PHYS_W-1:0] base_w = vbase[w_rctx*PHYS_W  +: PHYS_W];
     wire [PHYS_W-1:0] base_x = vbase[x_rctx*PHYS_W  +: PHYS_W];
 
@@ -124,11 +130,13 @@ module tnca_vector_rf #(
     wire [PHYS_W-1:0] ab = base_b + rb_idx;
     wire [PHYS_W-1:0] ac = base_c + rc_idx;
     wire [PHYS_W-1:0] ad = base_d + rd_idx;
+    wire [PHYS_W-1:0] ae = base_e + re_idx;
 
     wire hit_a = w_en && (aa == wa);
     wire hit_b = w_en && (ab == wa);
     wire hit_c = w_en && (ac == wa);
     wire hit_d = w_en && (ad == wa);
+    wire hit_e = w_en && (ae == wa);
 
     genvar g;
     generate
@@ -141,6 +149,8 @@ module tnca_vector_rf #(
                 (hit_c && w_lane_en[g]) ? w_data[g*ELEN +: ELEN] : mem[ac][g*ELEN +: ELEN];
             assign rd_data[g*ELEN +: ELEN] =
                 (hit_d && w_lane_en[g]) ? w_data[g*ELEN +: ELEN] : mem[ad][g*ELEN +: ELEN];
+            assign re_data[g*ELEN +: ELEN] =
+                (hit_e && w_lane_en[g]) ? w_data[g*ELEN +: ELEN] : mem[ae][g*ELEN +: ELEN];
         end
     endgenerate
 

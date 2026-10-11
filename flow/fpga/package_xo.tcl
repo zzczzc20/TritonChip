@@ -46,14 +46,15 @@ set NAME    tnca_u50
 set VERSION 1.0
 
 # The kernel clock this design asks the platform for, and the one link.sh passes
-# to v++ as --kernel_frequency 0:150. The platform's default is 300; the header
-# of flow/fpga/link.sh records why this design does not take it.
+# to v++ as --kernel_frequency 0:100 (it was 150 with the device divided; since
+# R38's timing work the device runs on it undivided). The platform's default is
+# 300; the header of flow/fpga/link.sh records why this design does not take it.
 #
 # Keeping this number in step with link.sh is not cosmetic: it is the frequency
 # the IP declares, and a kernel whose metadata claims 300 while its link asks
 # for 150 is a kernel with two answers to one question. flow/fpga/ooc.xdc
 # constrains the same figure for out-of-context synthesis.
-set AP_CLK_HZ 150000000
+set AP_CLK_HZ 100000000
 
 set IPDIR  $OUT/ip_repo/tnca_com_kernel_${NAME}_1_0
 set KXML   $OUT/kernel.xml

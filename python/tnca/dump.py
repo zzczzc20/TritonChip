@@ -61,19 +61,29 @@ SUFFIX = {
     # Written only when something merged, for the same reason as
     # `.opt.ttir`.
     'tnir_opt': '.opt.tnir',
+    # After the R39-01 scheduler reordered each basic block. Written only
+    # when the kernel was compiled with schedule=1.
+    'tnir_sched': '.sched.tnir',
+    # After R39-05 made each launch one program per Role Context. Written
+    # only when the kernel was compiled with rctx_spmd=1 and allowed it.
+    'tnir_spmd': '.spmd.tnir',
+    # After R39-12 made each program a producer and a consumer on a Role
+    # Context pair. Written only when compiled with rctx_roles=1 and allowed.
+    'tnir_roles': '.roles.tnir',
     'asm': '.s',
     'hex': '.hex',
 }
 
 # The order they are produced in, which is the order a reader wants them.
 STAGES = ('ttir', 'ttir_inlined', 'ttir_opt', 'tnir',
-          'tnir_opt', 'asm', 'hex')
+          'tnir_opt', 'tnir_spmd', 'tnir_roles', 'tnir_sched', 'asm', 'hex')
 
 # Stages that exist only for some compiles. `ttir` is absent for a TNCA IR
 # source, which never had one; `ttir_opt` is absent at O0, where no pass
 # ran. A file that is written anyway would say something happened.
 CONDITIONAL_STAGES = frozenset({'ttir', 'ttir_inlined',
-                                'ttir_opt', 'tnir_opt'})
+                                'ttir_opt', 'tnir_opt', 'tnir_spmd', 'tnir_roles',
+                                'tnir_sched'})
 
 # What every compile produces, whatever its source kind or optimisation
 # level. A stage missing from THIS list is a bug.

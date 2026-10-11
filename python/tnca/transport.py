@@ -148,6 +148,10 @@ class Transport(_backend.Backend):
             argv.append(f'+hex={self.image}')
         if self.trace:
             argv.append('+trace')
+        # Debugging only: more plusargs for the bench (e.g. +ctxtrace,
+        # +hangdump=N), from the environment, so a kernel run through the
+        # whole stack can be traced without another entry point.
+        argv += os.environ.get('TNCA_DEVICE_PLUSARGS', '').split()
         # The device is put in its own session so that a signal delivered to
         # the host's process group -- Ctrl-C in a terminal, a supervisor
         # stopping the job -- does not land on it mid-launch. That is right

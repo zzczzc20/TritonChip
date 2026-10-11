@@ -27,12 +27,31 @@ backends this installation knows:
   fpga-prototype   interface-defined    a future board. The interface is defined and
                                         nothing implements it; opening it is an error,
                                         not a redirection to the simulator.
+  fpga-u280        reference-available  the TNCA device on an Alveo U280: the U50 kernel
+                                        and register port (rtl/fpga/tnca_fpga_top.v)
+                                        built for the U280 shell, reached through the
+                                        same U50Backend
+  fpga-u50         reference-available  the TNCA device on an Alveo U50:
+                                        rtl/fpga/tnca_fpga_top.v reached over its
+                                        register port. The host side is proven against
+                                        the RTL; the board link is not, and opening this
+                                        with no board raises rather than substituting
+                                        the stand-in
+  fpga-u50-sim     reference-available  the same device and the same register protocol,
+                                        on real RTL, driven by a simulator standing in
+                                        for the board
   sim-file         reference-available  the simulated device over a file rendezvous,
                                         which is what this repository has always used
   sim-socket       reference-available  the same RTL, reached over a TCP socket through
                                         a relay process: a different connection medium
                                         for the same implementation
 ```
+
+The two board backends are real: `fpga-u280` is what
+[11](11_running_on_the_u280.md) runs on. `fpga-u50-sim` is the same
+register protocol driven against the RTL in a simulator, which is how
+the board's host side is tested without a board — and how a board run
+is checked cycle for cycle.
 
 Those states are not decoration. `interface-defined` means the contract
 exists and nothing implements it, and asking for one is an error:
@@ -56,7 +75,7 @@ with Session(profile=PROFILE, backend='sim-socket') as s:
 ```
 
 ```
-one artifact, key f6b102750788:
+one artifact, key 058db3dcd3a1:
   sim-file     via a shared directory     81 cycle(s), correct=True
   sim-socket   via tcp                    81 cycle(s), correct=True
 ```
@@ -77,8 +96,8 @@ art.cache_key         # what it was served under
 
 ```
 the cache, which is about not compiling twice:
-  the same request twice      from_cache=True, key f6b102750788
-  a different opt level       from_cache=False, key 89f2e6fece51
+  the same request twice      from_cache=True, key 058db3dcd3a1
+  a different opt level       from_cache=False, key b8e49aae5408
 ```
 
 What is in the key is the whole question. The **optimisation level is**,
@@ -93,7 +112,7 @@ A **diagnostic option is not**:
 
 ```
   a diagnostic option is not in the key, because it changes nothing:
-    with dump_dir: key f6b102750788 (same: True)
+    with dump_dir: key 058db3dcd3a1 (same: True)
 ```
 
 `dump_dir` and `debug` only change what is written *beside* the

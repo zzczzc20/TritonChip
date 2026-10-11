@@ -43,11 +43,14 @@ TENSORMAP_WORDS = 32
 TENSORMAP_BYTES = TENSORMAP_WORDS * 8
 
 # sec 9D.3 `dtype`. Anything else is reserved, so an unlisted element
-# type is refused rather than encoded as the nearest thing.
-DTYPE_CODE = {'f16': 0, 'bf16': 1, 'f32': 2, 'i8': 3}
+# type is refused rather than encoded as the nearest thing. The engine moves
+# bits; the code decides only what NaN padding means.
+DTYPE_CODE = {'f16': 0, 'bf16': 1, 'f32': 2, 'i8': 3, 'i16': 4, 'i32': 5, 'i64': 6,
+              'f8E4M3FN': 7, 'f8E5M2': 8, 'f64': 9}
 
-# sec 9D.3 `padding mode`.
-PAD_ZERO, PAD_CLAMP, PAD_FAULT = 0, 1, 2
+# sec 9D.3 `padding mode`: 0 zero-fill, 1 reserved (was clamp), 2 fault on
+# any out-of-bounds element, 3 quiet-NaN fill (floating dtypes).
+PAD_ZERO, PAD_CLAMP, PAD_FAULT, PAD_NAN = 0, 1, 2, 3
 
 
 class TileError(Exception):
@@ -99,6 +102,11 @@ def check_geometry(*, byte_strides, block_shape, elem_bytes, base=None):
     proceeded anyway would return data shifted by a couple of bytes per
     row -- a wrong answer wearing the shape of a right one.
     """
+    if not 1 <= len(block_shape) <= 5:
+        raise TileError(f"a rank-{len(block_shape)} tile: ISA sec 9E executes rank 1-5")
+    if any(not 1 <= b <= 256 for b in block_shape):
+        raise TileError(f"a block {list(block_shape)}: ISA sec 9E.2 takes each block "
+                        f"dimension in 1..256")
     if byte_strides[-1] != elem_bytes:
         raise TileError(
             f"a tile whose innermost stride is {byte_strides[-1]} bytes and "
@@ -110,10 +118,11 @@ def check_geometry(*, byte_strides, block_shape, elem_bytes, base=None):
             f"{block_shape[-1] * elem_bytes} bytes a row is not a whole "
             f"number of 8-byte units, so one would straddle two window "
             f"registers")
-    if len(byte_strides) > 1 and byte_strides[0] % 8:
-        raise TileError(
-            f"a row stride of {byte_strides[0]} bytes: ISA sec 9E.2 -- rows "
-            f"after the first would land shifted in the window")
+    for s in byte_strides[:-1]:
+        if isinstance(s, int) and s % 8:
+            raise TileError(
+                f"a stride of {s} bytes: ISA sec 9E.2 -- rows after the first "
+                f"would start off an 8-byte boundary")
     if base is not None and base % 8:
         raise TileError(
             f"a tile based at {base:#x}: ISA sec 9E.2 wants 8-byte "
@@ -174,11 +183,14 @@ class Tile:
     """
 
     __slots__ = ('kind', 'handle', 'rows', 'cols', 'dtype', 'desc',
-                 'store')
+                 'store', 'vector')
 
     def __init__(self, kind, handle, rows, cols, dtype, desc=None,
-                 store=None):
+                 store=None, vector=None):
         self.kind = kind
+        # One value per row taken from the lanes of one register: that
+        # register, so turning the rows back into lanes costs nothing.
+        self.vector = vector
         self.handle = handle
         self.rows = rows
         self.cols = cols

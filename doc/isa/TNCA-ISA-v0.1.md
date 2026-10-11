@@ -194,7 +194,7 @@ compares.
 | `0x00b` | `NUM_CORES` | R | |
 | `0x00c` | `NUM_LANES` | R | `VLEN`, architecturally 16 in v0.1 |
 | `0x00d` | `NUM_VREGS` | R | logical `V` registers this implementation gives each RCTX; naming one beyond it raises `ILLEGAL_INSTRUCTION` |
-| `0x00e` | `TENSOR_MAX_RANK` | R | highest descriptor rank the transfer engine executes; a higher rank raises `DESCRIPTOR_FAULT` rather than being approximated |
+| `0x00e` | `TENSOR_MAX_RANK` | R | highest descriptor rank the transfer engine executes (5 since R38; 2 before); a higher rank raises `DESCRIPTOR_FAULT` rather than being approximated |
 | `0x00f` | `NUM_ACC` | R | accumulator slots |
 | `0x010` | `CLOCK` | R | free-running core cycle counter |
 | `0x011` | `INSTRET` | R | instructions retired by this RCTX |
@@ -931,15 +931,15 @@ corrupting a neighbouring allocation.
 
 256 bytes. The first 128 are **semantics that must be executed exactly**; the
 second 128 are **hints that may be ignored entirely**. Nothing in the second
-half may change an address, a value, an access, or an order (§1.4).
+half may change an address, a value, an access or an order (§1.4).
 
 | Bytes | Field |
 |---|---|
 | 0–7 | base address |
-| 8–47 | `extent[5]`, 64-bit each |
+| 8–47 | `extent[5]`, unsigned 64-bit each |
 | 48–87 | `byte_stride[5]`, signed 64-bit each |
 | 88–107 | default `block_shape[5]`, 32-bit each |
-| 108 | rank |
+| 108 | rank, 1–5 |
 | 109 | dtype |
 | 110 | padding mode |
 | 111 | semantic flags |
@@ -948,13 +948,37 @@ half may change an address, a value, an access, or an order (§1.4).
 | 128–191 | cache/flow hints — **ignorable** |
 | 192–255 | reserved |
 
+Dimension 0 is the outermost and dimension `rank-1` the contiguous one; entries
+past `rank` are ignored. This is the order Triton and PyTorch use, and the
+contract of `tl.make_tensor_descriptor` (a TMA descriptor on NVIDIA GPUs).
+
 ```
 addr(i0..i_{r-1}) = base + sum_d  i_d * byte_stride_d
 ```
 
-`dtype`: `0` = FP16, `1` = BF16, `2` = FP32, `3` = INT8, others reserved.
-`padding mode`: `0` = zero-fill out-of-bounds elements, `1` = clamp the
-coordinate, `2` = raise `DESCRIPTOR_FAULT`.
+`dtype` (R38 extends the v0.1 list; codes 0–3 are unchanged):
+
+| Code | Type | Code | Type |
+|---:|---|---:|---|
+| 0 | FP16 | 5 | INT32 |
+| 1 | BF16 | 6 | INT64 |
+| 2 | FP32 | 7 | FP8 E4M3 |
+| 3 | INT8 | 8 | FP8 E5M2 |
+| 4 | INT16 | 9 | FP64 |
+
+Others are reserved. The engine moves bits and never interprets them; the code
+decides only what NaN padding writes.
+
+`padding mode` — what an **out-of-bounds** element of a load becomes:
+
+| Mode | Meaning |
+|---:|---|
+| 0 | zero |
+| 1 | reserved (was "clamp the coordinate", never implemented); `DESCRIPTOR_FAULT` |
+| 2 | `DESCRIPTOR_FAULT` if any element of the box is out of bounds, load or store |
+| 3 | the dtype's quiet NaN (FP16 `0x7E00`, BF16 `0x7FC0`, FP32 `0x7FC00000`, FP64 `0x7FF8…0`, FP8 `0x7F`); a floating dtype whose size is the transfer's element size, else `DESCRIPTOR_FAULT` |
+
+Modes 0 and 3 are Triton's `padding_option="zero"` and `"nan"`.
 
 ### 9D.4 Snapshot semantics (§7.4)
 
@@ -986,6 +1010,26 @@ A non-zero `mod[4:3]` raises `ILLEGAL_INSTRUCTION`: layout `0` is the only one
 that exists, and accepting another value would transfer the tile in a shape the
 program did not ask for.
 
+**What a transfer moves (R38: rank 1–5).** The descriptor's `block_shape` is a
+box of `b_0 × … × b_{r-1}` elements at signed coordinates `c_0 … c_{r-1}`. In the
+window the box is flat and row-major: box element `(i_0 … i_{r-1})` is at byte
+`((…(i_0·b_1 + i_1)·b_2 + …)·b_{r-1} + i_{r-1}) · esize` from the window's
+first register. A *row* is one run of the contiguous dimension.
+
+- **In bounds** means `0 <= c_d + i_d < extent_d` for every `d`. Coordinates are
+  signed 64-bit and may point anywhere — before the tensor, past it, or
+  straddling an edge — and the contiguous coordinate need not be aligned to
+  anything.
+- **`t.ld.async`** writes every in-bounds element from memory and every
+  out-of-bounds element per the padding mode. An out-of-bounds element is
+  never read: padding is the absence of an access.
+- **`t.st.async`** (R38) writes every in-bounds element of the window to
+  memory and does not touch an out-of-bounds one. The engine reads the window
+  through its own register-file port and writes memory through byte enables,
+  so a store touches exactly the in-bounds bytes of its box. The window is
+  the transfer's *source* until its completion (it is read late, after the
+  instruction retires).
+
 **The transposed write (`mod[5]`, capability `tensor_transpose`).** For a
 descriptor with block shape `R × C`, the window receives the tile as `C` rows of
 `R` elements, flat row-major: window element `(c, r)` is source element
@@ -1000,12 +1044,16 @@ requires, in addition to §9E.2:
 | rank 2 | `DESCRIPTOR_FAULT` |
 | 16-bit elements (`mod[2:0] = 1`) | `DESCRIPTOR_FAULT` |
 | `R` is 4, 8 or 16 | `DESCRIPTOR_FAULT` |
+| base, row stride and contiguous coordinate on 8-byte boundaries, coordinate non-negative | `DESCRIPTOR_FAULT` |
+| a load (there is no transposed store) | `DESCRIPTOR_FAULT` |
 
 The last two keep each destination row whole lanes inside one register, which
 is what lets the engine write it through the lane enables it already has.
 
 Coordinates come from **consecutive scalar registers** starting at `Sb`, one per
-descriptor rank (§12.11). The block shape comes from the descriptor.
+descriptor rank, in descriptor order (`Sb` holds `c_0`) (§12.11). The block
+shape comes from the descriptor. `Sb + rank - 1` past `S63` raises
+`DESCRIPTOR_FAULT`: the next index would be `S0`.
 
 `t.ld.async` and `t.st.async` with `Sb = S63` raise `ILLEGAL_INSTRUCTION`. The
 next index would be `S0`, which reads as zero and discards writes (§3), so the
@@ -1049,19 +1097,28 @@ makes the operation counts in `mb.arm` a static, checkable property.
 
 | Condition | Why |
 |---|---|
-| rank above `TENSOR_MAX_RANK` | more coordinate arithmetic than the engine has |
-| `block_shape[1] * sizeof(dtype)` not a multiple of 8 | a returned 8-byte unit would straddle two window registers |
-| `base` not 8-byte aligned | the first unit of every row would land shifted |
-| `byte_stride[0]` not a multiple of 8 | rows after the first would land shifted, even with an aligned base |
-| `byte_stride[1]` not `sizeof(dtype)` | the engine copies runs, it does not gather per element |
-| the tile larger than the window | ISA §9D.2: the window is the bounds check |
+| rank 0 or above `TENSOR_MAX_RANK` (5) | more coordinate arithmetic than the engine has |
+| `Sb + rank - 1` past `S63` | the coordinates do not exist |
+| a block dimension outside 1..256 | the TMA limit, and what the window sizing assumes |
+| `block_shape[rank-1] * esize` not a multiple of 8 | a box row would end mid-unit in the window |
+| `byte_stride[rank-1]` not `esize` | the engine copies runs; it does not gather per element |
+| the box larger than the window | ISA §9D.2: the window is the bounds check |
+| padding mode 1 or above 3, or NaN padding of a non-floating dtype | §9D.3 |
+| padding mode 2 with any element of the box out of bounds | §9D.3 |
 
-The two alignment conditions are the same requirement stated at both ends: a
-transfer places whole 8-byte units into window registers through the existing
-lane write enables, so every row must both *be* a whole number of units and
-*start* on one. A row stride of, say, 26 bytes satisfies neither, and an engine
-that proceeded anyway would return data shifted by two bytes per row — a wrong
-answer wearing the shape of a right one.
+**Alignment is not on the list (R38).** The base and the outer strides may
+have any alignment, and so may the contiguous coordinate. A box row that does
+not start on an 8-byte boundary is assembled from two memory words per 8-byte
+unit — on a load, both words are fetched and shifted; on a store, the window's
+units are shifted the other way and each memory word is written through its
+byte enables. This is a strict superset of the TMA contract (which requires a
+16-byte-aligned base and strides): every descriptor legal there is legal here
+and moves the same elements.
+
+v0.1 refused an unaligned base or row stride, because the engine then placed
+whole 8-byte units only and an unaligned row came back shifted. The transposed
+write (`mod[5]`) keeps that restriction: base, row stride and contiguous
+coordinate on 8-byte boundaries, coordinate non-negative.
 
 ### 9E.3 `t.prefetch` promises nothing
 
@@ -1079,7 +1136,7 @@ snapshot, and does not confer ownership (§17.2). It is a hint in the sense of
 | `0x01` | `ILLEGAL_INSTRUCTION` | unknown encoding, reserved bit set, illegal field |
 | `0x02` | `MISALIGNED_PC` | branch target not 8-byte aligned |
 | `0x03` | `ACCESS_FAULT` | translation or permission failure |
-| `0x04` | `DESCRIPTOR_FAULT` | rank above `TENSOR_MAX_RANK`, transfer larger than its window, or an out-of-bounds access under padding mode 2 |
+| `0x04` | `DESCRIPTOR_FAULT` | a transfer geometry §9E.2 refuses: rank above `TENSOR_MAX_RANK`, coordinates past `S63`, a block dimension outside 1..256, a non-contiguous innermost stride, a box larger than its window, a reserved padding mode, or an out-of-bounds element under padding mode 2 |
 | `0x05` | `BARRIER_FAULT` | arrival or operation count underflow, or a waiter woken by `mb.inval` |
 | `0x06` | `RESOURCE_EXHAUSTED` | descriptor/window/barrier table full, or `td.release` with outstanding references |
 | `0x40` | `TRAP_USER` | `trap #imm24`, code in `TRAP_CODE[23:0]` |

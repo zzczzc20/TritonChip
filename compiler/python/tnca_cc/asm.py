@@ -43,6 +43,7 @@ class RegisterAllocator:
         self._p_free = list(range(FIRST_PREG, target.pregs_per_rctx))
         self._reserved_v = set()
         self.peak = {'s': 0, 'v': 0, 'p': 0}
+        self.max_vector = -1          # the highest vector register handed out
         self._live = {'s': set(), 'v': set(), 'p': set()}
 
     # ---- allocation -------------------------------------------------------
@@ -56,6 +57,8 @@ class RegisterAllocator:
                 remedy='a smaller tile, or fewer live values',
                 source='compiler_overview.md sec 10.1, 11.1')
         idx = pool.pop(0)
+        if kind == 'v':
+            self.max_vector = max(self.max_vector, idx)
         self._live[kind].add(idx)
         self.peak[kind] = max(self.peak[kind], len(self._live[kind]))
         return idx
@@ -103,6 +106,11 @@ class RegisterAllocator:
                     'registers (ISA sec 9E), so they cannot be scattered',
             remedy='fewer live scalars across the transfer',
             source='compiler_overview.md sec 10.1, 13.4')
+
+    def limit_vectors(self, lo, hi):
+        """Hand out only v[lo, hi): two roles of a Role Context pair share
+        the file (R39-12), and each keeps to its own range."""
+        self._v_free = [i for i in self._v_free if lo <= i < hi]
 
     def reserve_vector(self, first, count):
         """Pin a vector range the planner has already assigned.

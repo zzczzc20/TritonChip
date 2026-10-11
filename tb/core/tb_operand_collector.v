@@ -63,7 +63,7 @@ module tb_operand_collector;
         .NUM_BANKS(NUM_BANKS), .BANK_W(BANK_W), .READ_LATENCY(RF_LAT),
         .NUM_PORTS(NUM_PORTS)
     ) u_rf (
-        .clk(clk), .rst_n(rst_n), .vbase(vbase),
+        .clk(clk), .rst_n(rst_n), .clear(1'b0), .vbase(vbase),
         .req_valid(req_valid), .req_rctx(req_rctx), .req_idx(req_idx),
         .req_accept(req_accept), .rsp_ready({NUM_PORTS{1'b1}}),
         .rsp_valid(rsp_valid), .rsp_data(rsp_data),

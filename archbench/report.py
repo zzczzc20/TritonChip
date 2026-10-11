@@ -47,7 +47,17 @@ def platform_key(r):
     if p.get('kind') == 'gpu':
         return f"gpu:{p.get('spec')}:{p.get('variant')}"
     if p.get('kind') == 'tnca':
-        return f"tnca:{p.get('profile')}@{p.get('backend')}:O{p.get('opt_level')}"
+        key = f"tnca:{p.get('profile')}@{p.get('backend')}:O{p.get('opt_level')}"
+        # R39-00: the Inductor configuration, the ablation knobs and the
+        # device build are part of what was measured. Without them, two runs
+        # of one profile that differ in any of these collapsed into one key
+        # and the later silently replaced the earlier.
+        extra = {k: p.get(k) for k in ('inductor', 'knobs', 'device_id') if p.get(k) is not None}
+        if extra:
+            import hashlib
+            blob = json.dumps(extra, sort_keys=True).encode()
+            key += f"#{hashlib.sha256(blob).hexdigest()[:8]}"
+        return key
     return str(p.get('name') or p.get('kind'))
 
 

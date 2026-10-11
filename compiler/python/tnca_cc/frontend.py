@@ -20,6 +20,7 @@ Two rules govern what is *not* here:
             absent SFU, absent atomics. Each is a diagnostic, never a quiet
             substitution.
 """
+import math
 import re
 import struct
 
@@ -116,9 +117,11 @@ class _Descriptor:
     a handle to the snapshot of it.
     """
 
-    __slots__ = ('value', 'base', 'byte_strides', 'block', 'elem', 'address', 'extents')
+    __slots__ = ('value', 'base', 'byte_strides', 'block', 'elem', 'address', 'extents',
+                 'pad', 'host')
 
-    def __init__(self, value, *, base, byte_strides, block, elem, address=None, extents=None):
+    def __init__(self, value, *, base, byte_strides, block, elem, address=None, extents=None,
+                 pad=0, host=False):
         self.value = value
         self.base = base
         self.byte_strides = list(byte_strides)
@@ -126,17 +129,42 @@ class _Descriptor:
         self.elem = elem
         self.address = address
         self.extents = extents
+        # ISA sec 9D.3 padding mode, when this kernel built the map; a host
+        # descriptor's is read from its TensorMap where it matters.
+        self.pad = pad
+        # A TensorMap the host built (a `TensorDescriptor` argument): its
+        # geometry is known only at run time, and it need not satisfy the
+        # transfer engine's alignment, so it is read through the LSU.
+        self.host = host
 
 
 class Unsupported(Diagnostic):
     """A TTIR construct with no TNCA lowering yet."""
 
 
+# Integer operations a lane-uniform value keeps through (_uniform_scalar).
+_UNIFORM_SBIN = frozenset({'add', 'sub', 'mul', 'and', 'or', 'xor'})
+
+
 class TTIRImporter:
     """Walk a TTIR module and build the TNCA IR for it."""
 
-    def __init__(self, target, name='kernel', scratch_addr=None):
+    def __init__(self, target, name='kernel', scratch_addr=None,
+                 scratch_stride=None, index_opt=False, sparse_maps=False):
         self.target = target
+        # R39: the launch path hands scratch over zero-filled (tnca.runtime),
+        # so a TensorMap's zero words need no store -- 7 of 32 for rank 2.
+        self.sparse_maps = sparse_maps
+        # R39-02: track lane-uniform 1-D integer values through arithmetic
+        # (_uniform_scalar), so `64 * xindex + r0_index` stays a contiguous
+        # access. A compile option; off, the importer is what it was.
+        self.index_opt = index_opt
+        # With literal arguments, programs that run AT THE SAME TIME -- one
+        # per tile on the 2x2 system -- must not share one scratch area:
+        # each would rebuild its TensorMaps and repacks on top of the
+        # others'. `scratch_stride` gives program x its own,
+        # scratch_addr + pid.x * scratch_stride.
+        self.scratch_stride = scratch_stride
         # Where a kernel compiled for LITERAL arguments puts its
         # TensorMaps and its repacks. In dynamic mode the address
         # arrives in an argument slot; in static mode there are no
@@ -156,6 +184,19 @@ class TTIRImporter:
         # to, and reading only the last link is what made `p + row*N +
         # offs` load from `p + offs`.
         self._ptr_chain = {}
+        self._scalar_ptrs = {}  # scalar `p + k`: TTIR id -> (p, k), see _op_tt_addptr
+        # The scalar that a lane-uniform 1-D value (every lane equal) is,
+        # for one computed from others rather than splatted from a scalar
+        # the TTIR names: TTIR id -> scalar Value (_uniform_scalar).
+        self._uscalar = {}
+        self._fused_add = {}    # addf result id -> the tile _fuse_dot_add made
+        self._aff_cache = {}    # parts of affine rows, see _affine_row_opt
+        # Facts about scalar values (index_opt): TTIR id -> known non-negative,
+        # TTIR id -> a constant it is known to be a multiple of, and the
+        # comparisons `x >= 0` a later `assume` turns into the first.
+        self._nonneg = set()
+        self._multiple = {}
+        self._ge0 = {}
         self._offsets = {}  # TTIR value id -> our offset Value (elements)
         self._bodies = {}   # region id -> the operations inside that region
         self._args = {}         # arg index -> (name, our Value)
@@ -185,7 +226,7 @@ class TTIRImporter:
 
     # ---- entry point ------------------------------------------------------
     def run(self, module, func_name, arg_values, *, param_names=None,
-            dynamic_args=False):
+            dynamic_args=False, dco=None):
         """Lower ONE function of a TTIR module.
 
         `arg_values` maps parameter name -> a literal the kernel is compiled
@@ -203,8 +244,16 @@ class TTIRImporter:
         know the SHAPE of each argument -- but in dynamic mode no literal
         reaches the code, which is what lets one artifact run with different
         addresses and scalars (R2-06 ABI-02).
+
+        `dco`, when given, is {'grid': (x, y, z)}: the grid the kernel will be
+        launched on. The kernel then registers its input tensors with the
+        Tensor Management Unit -- nAcc, bypass and the tile granule -- before
+        its first load (tnca_cc/dco.py, doc/DCO.pdf sec IV). The counts come
+        from the literal arguments, so they describe the shape compiled for.
         """
         self.dynamic_args = bool(dynamic_args)
+        self.dco_plan = None
+        self.dco_note = None
         # MLIR's get_function returns a null handle for a name that is not in
         # the module, and the next call on it segfaults the interpreter with no
         # message at all. A wrong kernel name is an ordinary mistake -- the
@@ -219,6 +268,14 @@ class TTIRImporter:
         fn = module.get_function(func_name)
         self._fn = fn
         self._bind_args(fn, func_name, arg_values, param_names, module)
+        # Where operations built once for the whole kernel go (index_opt:
+        # _hoisted_tile_descriptor): after the arguments are bound, before
+        # anything that could be inside a loop.
+        self._prologue_pos = len(self.b.region.ops)
+        self._hoisted = {}
+        # Where DCO's registrations go: after the arguments, before anything
+        # the kernel loads.
+        dco_mark = len(self.b.region.ops)
 
         # ONLY this function's operations.
         #
@@ -239,6 +296,10 @@ class TTIRImporter:
                         'this function, not that the kernel is trivial',
                 source='compiler_overview.md sec 11.1')
         self._float_constants(module, ops)
+        self._value_users = self._users(ops)
+        self._all_ops = ops
+        self._op_pos = {id(o): i for i, o in enumerate(ops)}
+        self._trans_orders = self._read_trans_orders(module, func_name, ops)
         self._plan_transposes(ops)
 
         ops, self._bodies = self._split_regions(ops)
@@ -302,6 +363,15 @@ class TTIRImporter:
                     source='compiler_overview.md sec 11.1, sec 12')
             handler(op)
 
+        if dco is not None:
+            from . import dco as _dco
+            try:
+                self.dco_plan = _dco.plan(self, fn, ops, self._bodies, arg_values,
+                                          grid=dco.get('grid', (1, 1, 1)))
+                _dco.emit(self, self.dco_plan, dco_mark)
+                self.dco_note = self.dco_plan.note
+            except _dco.Refused as e:
+                self.dco_note = f'no DCO registration: {e}'
         self.b.exit()
         return self.kernel, self.b
 
@@ -411,7 +481,11 @@ class TTIRImporter:
             out = self.b.vmovi(0, dtype=value.dtype)
             self.b._emit('assign', [], [out, value])
             return out
-        raise Unsupported('a loop-carried predicate or pointer tensor')
+        if value.kind == PRED:
+            # A mask carried around a loop (Inductor's running `any` in an
+            # attention softmax): its own predicate register, p.mov'd.
+            return self.b.pun('mov', value)
+        raise Unsupported('a loop-carried pointer tensor')
 
     def _condition_scalar(self, value):
         if value.kind == PRED:
@@ -502,7 +576,8 @@ class TTIRImporter:
                 # read it back as a comparison.
                 get = self._row_getter(src, shape[0], 'i1')
                 store = self._materialise(
-                    lambda r, get=get: self.b.vselect(get(r), self.b.vmovi(1), self.b.vmovi(0)),
+                    lambda r, get=get: self.b.vselect(self._as_pred(get(r)), self.b.vmovi(1),
+                                                      self.b.vmovi(0)),
                     shape[0], shape[1], 'i32')
                 sget = self._tile_row_getter(store)
                 val = Tile('lazy', lambda r, sget=sget: self.b.vcmp('ne', sget(r), self.b.vmovi(0)),
@@ -512,13 +587,31 @@ class TTIRImporter:
                 mask_tiles.add(i)
                 val = store
             elif isinstance(shape, tuple):
-                get = self._row_getter(src, shape[0], elem)
-                val = self._materialise(get, shape[0], shape[1], elem)
+                if (self.index_opt and self._is_zero_tensor(src)
+                        and self._ELEM_BYTES.get(elem) == 4 and elem != 'i32'
+                        and len(self.kernel.accumulators) < 8):
+                    # A matmul's `acc = tl.zeros(...)`: one m.zero, where
+                    # _materialise wrote sixteen rows of zeros through the
+                    # matrix unit -- measured, 64 of the 80 commands a
+                    # linear layer's tiny point gave it, about 77 cycles
+                    # each, more of its time than the MMAs themselves.
+                    acc = self.b.accumulator(name=f"acc{len(self.kernel.accumulators)}")
+                    self.b.comment('a zero tile carried round the loop: one m.zero (ISA sec 9C)')
+                    self.b.acc_zero(acc)
+                    val = Tile('accumulator', acc, shape[0], shape[1], elem)
+                else:
+                    get = self._row_getter(src, shape[0], elem)
+                    val = self._materialise(get, shape[0], shape[1], elem)
                 self._tiles[block.get_argument(i + 1).id()] = val
                 self._tiles[op.get_result(i).id()] = val
             else:
                 pointer = _pointee(elem)
-                val = self._copy_value(self._address(src)[0] if pointer else self._value(src))
+                init = self._address(src)[0] if pointer else self._value(src)
+                if elem == 'i1':
+                    # A mask is carried in a predicate register whatever its
+                    # initial value arrived as (`dense<false>` is a vector).
+                    init = self._as_pred(init)
+                val = self._copy_value(init)
                 self._v[block.get_argument(i + 1).id()] = val
                 self._v[op.get_result(i).id()] = val
                 if pointer:
@@ -530,7 +623,7 @@ class TTIRImporter:
         start, end = self._control_label('for'), self._control_label('endfor')
         # A loop may execute zero times. Constants cached inside its body
         # must not be reused afterwards as if they had run unconditionally.
-        caches = ('_scalar_cache', '_fconst_cache', '_byte_offsets')
+        caches = ('_scalar_cache', '_fconst_cache', '_byte_offsets', '_aff_cache')
         saved = {name: dict(getattr(self, name)) for name in caches}
         saved_single = (self._scratch, self._lane0_mask)
         pending_values = {k for k in self._pending_const if k in self._v}
@@ -544,21 +637,31 @@ class TTIRImporter:
                 values = []
                 for i, dst in enumerate(carried):
                     src = inner.get_operand(i)
+                    held = self._tiles.get(src.id())
+                    if self.index_opt and isinstance(dst, Tile) and held is not None \
+                            and held.kind == dst.kind == 'accumulator' and held.handle is dst.handle:
+                        # Already where the carry lives (_fuse_dot_add).
+                        values.append(None)
+                        continue
                     if isinstance(dst, Tile):
                         if i in pointer_tiles:
                             get = self._offset_row(self._ptr2d[src.id()][2])
                         elif i in mask_tiles:
                             mget = self._row_getter(src, dst.rows, 'i1')
                             get = (lambda r, mget=mget: self.b.vselect(
-                                mget(r), self.b.vmovi(1), self.b.vmovi(0)))
+                                self._as_pred(mget(r)), self.b.vmovi(1), self.b.vmovi(0)))
                         else:
                             get = self._tile_row_getter(self._tile_of(src))
                         values.append(self._materialise(get, dst.rows, dst.cols, dst.dtype))
                     else:
                         _, elem = _parse_type(str(src.get_type()))
-                        values.append(self._copy_value(self._address(src)[0]
-                                      if _pointee(elem) else self._value(src)))
+                        v = self._address(src)[0] if _pointee(elem) else self._value(src)
+                        if elem == 'i1':
+                            v = self._as_pred(v)
+                        values.append(self._copy_value(v))
                 for dst, src in zip(carried, values):
+                    if src is None:
+                        continue
                     if isinstance(dst, Tile):
                         get = self._tile_row_getter(src)
                         for r in range(dst.rows):
@@ -706,7 +809,14 @@ class TTIRImporter:
         undefined -- so lowering it to nothing is exact. It is listed here
         rather than skipped so that "every operation lowers explicitly" stays
         true: an unknown operation is still refused.
+
+        With index_opt the promise is also kept as a fact: `x >= 0`
+        (Inductor's matmul template asserts it of its program ids) lets a
+        remainder of a contiguous range stay contiguous (_contiguous_div).
         """
+        x = self._ge0.get(op.get_operand(0).id())
+        if self.index_opt and x is not None:
+            self._nonneg.add(x)
         return
 
     # TRAP_USER code a failed `tl.device_assert` raises (ISA sec 10:
@@ -1187,13 +1297,14 @@ class TTIRImporter:
                 self._ptr_base[arg.id()] = (name, _pointee(ty))
             elif ty.startswith('!tt.tensordesc<'):
                 shape, elem = _parse_type(ty.replace('!tt.tensordesc<', 'tensor<'))
-                if not isinstance(shape, tuple) or any(d != 1 for d in shape[:-2]):
+                block = list(shape) if isinstance(shape, tuple) else [shape or 1]
+                if not 1 <= len(block) <= 5:
                     raise Unsupported(f'external descriptor type {ty}')
                 self._descs[arg.id()] = _Descriptor(
                     self.b.descriptor(v), base=self.b.sload(v, size='d'),
                     byte_strides=[self.b.sload(v, offset=48 + 8*j, size='d')
-                                  for j in range(len(shape))],
-                    block=list(shape), elem=elem, address=v)
+                                  for j in range(len(block))],
+                    block=block, elem=elem, address=v, host=True)
 
     @staticmethod
     def _literal_argument(value, ty, sig, index, name):
@@ -1595,6 +1706,14 @@ class TTIRImporter:
         # constant vector -- `x[row*N + col + dx]`, every unrolled
         # convolution tap -- died in a KeyError instead of loading.
         self._ptr_chain[rid] = self._ptr_chain.get(base.id(), []) + [offs]
+        # A scalar pointer is also an address in its own right: Inductor
+        # builds a descriptor over a slice of an argument as
+        # `tl.make_tensor_descriptor(p + k, ...)`, and the descriptor takes
+        # the pointer as a value, not through a load's chain walk. The
+        # address is computed when something asks for it (_value), so a
+        # pointer only ever loaded through costs nothing.
+        if not str(op.get_result(0).get_type()).startswith('tensor<'):
+            self._scalar_ptrs[rid] = (base, offs)
 
     def _op_arith_addi(self, op):
         if self._try_affine(op, 'add'):
@@ -1617,6 +1736,14 @@ class TTIRImporter:
         pending = self._pending_const.get(op.get_operand(1).id())
         if pending is not None:
             divisor_const = int(pending[1])
+        if self.index_opt and self._contiguous_div(op, remainder, divisor_const):
+            return
+        rshape, relem = _parse_type(str(op.get_result(0).get_type()))
+        if self.index_opt and rshape is None and relem in ('i32', 'i16', 'i8'):
+            self._v[op.get_result(0).id()] = self._scalar_divide(
+                self._value(op.get_operand(0)), self._value(op.get_operand(1)),
+                signed, remainder, divisor_const)
+            return
         def divide(xs, elem):
             if elem not in ('i32', 'i8', 'i16'):
                 raise Unsupported(f'integer vector division on {elem}')
@@ -1665,6 +1792,107 @@ class TTIRImporter:
             if signed:
                 result = self.b.sbini('ashr', self.b.sbini('shl', result, 32), 32)
         self._v[op.get_result(0).id()] = result
+
+    def _contiguous_div(self, op, remainder, m):
+        """`(u + arange(L)) % M` and `// M`, without a per-lane division.
+
+        With u a non-negative multiple of L and M a multiple of L, the range
+        never crosses a multiple of M: the remainder is `u % M + arange(L)`,
+        still contiguous, and the quotient is `u // M` in every lane. Inductor's
+        matmul template indexes its rows as `rm % M` (with `tl.multiple_of`
+        and `tl.max_contiguous` saying the same thing), so this is what keeps
+        its operand tiles affine -- one transfer each instead of sixteen
+        gathers.
+        """
+        a = op.get_operand(0)
+        kind, key = self._offsets.get(a.id(), (None, None))
+        shape, elem = _parse_type(str(a.get_type()))
+        if kind != 'contiguous' or not isinstance(shape, int) or m is None or m <= 0:
+            return False
+        if key not in self._nonneg or self._multiple.get(key, 1) % shape or m % shape:
+            return False
+        u = self._key_scalar(key)
+        rid = op.get_result(0).id()
+        if m & (m - 1) == 0:
+            sr = self.b.sbini('and', u, m - 1) if remainder else \
+                self.b.sbini('lshr', u, m.bit_length() - 1)
+        else:
+            q = self._scalar_udiv_const(u, m)
+            sr = self.b.sbin('sub', u, self.b.sbini('mul', q, m)) if remainder else q
+        self._uscalar[rid] = sr
+        if remainder:
+            self._offsets[rid] = ('contiguous', rid)
+            self._v[rid] = self.b.vbin('add', self.b.splat(sr, dtype=elem), self.b.arange(),
+                                       dtype=elem)
+        else:
+            self._offsets[rid] = ('uniform', rid)
+            self._v[rid] = self.b.splat(sr, dtype=elem)
+        return True
+
+    def _scalar_udiv_const(self, n, d):
+        """floor(n / d) for 0 <= n < 2**32 and a constant d >= 2 (Granlund and
+        Montgomery: a multiply by a reciprocal and two shifts)."""
+        l = (d - 1).bit_length()
+        m = ((1 << 32) * ((1 << l) - d)) // d + 1
+        t1 = self.b.sbini('lshr', self.b.sbin('mul', n, self.b.const(m)), 32)
+        t = self.b.sbin('add', t1, self.b.sbini('lshr', self.b.sbin('sub', n, t1), 1))
+        return self.b.sbini('lshr', t, l - 1) if l > 1 else t
+
+    def _scalar_divide(self, a, b, signed, remainder, divisor_const):
+        """Scalar integer division in scalar registers (index_opt).
+
+        The vector restoring loop ran for scalars too, 32 iterations of
+        sixteen-lane work and an extract -- in every program of a matmul,
+        which divides its program id twice. Here: a power-of-two or other
+        constant divisor is shifts or a reciprocal multiply; otherwise a
+        scalar restoring loop over 32 bits, skipped entirely when the
+        divisor is 1 (Inductor's GROUP_M = 1 grid arithmetic).
+        Truncating, as arith.divsi/remsi are; signed operands are divided
+        as magnitudes and the signs put back. 32-bit operands only: the loop
+        covers 32 bits.
+        """
+        b_ = self.b
+        if signed:
+            ma = b_.sbin('sub', b_.const(0), b_.scmp('lt', a, b_.const(0)))   # all ones if a < 0
+            mb = b_.sbin('sub', b_.const(0), b_.scmp('lt', b, b_.const(0)))
+            ua = b_.sbin('sub', b_.sbin('xor', a, ma), ma)
+            ub = b_.sbin('sub', b_.sbin('xor', b, mb), mb)
+        else:
+            ua, ub = a, b
+        if divisor_const is not None and divisor_const > 0:
+            d = divisor_const
+            if d & (d - 1) == 0:
+                uq = b_.sbini('lshr', ua, d.bit_length() - 1)
+            else:
+                uq = self._scalar_udiv_const(ua, d)
+            ur = b_.sbin('sub', ua, b_.sbini('mul', uq, d))
+        else:
+            uq, ur = b_.const(0), b_.const(0)
+            uq = self._copy_value(uq)
+            ur = self._copy_value(ur)
+            done = self._control_label('sdiv_done')
+            one = b_.scmp('eq', ub, b_.const(1))
+            b_._emit('assign', [], [uq, ua])
+            b_.branch_nz(one, done)
+            b_._emit('assign', [], [uq, b_.const(0)])
+            bit = self._copy_value(b_.const(31))
+            loop = self._control_label('sdiv')
+            b_.label(loop)
+            digit = b_.sbini('and', b_.sbin('lshr', ua, bit), 1)
+            r1 = b_.sbin('or', b_.sbini('shl', ur, 1), digit)
+            take = b_.sbin('sub', b_.const(0), b_.scmp('geu', r1, ub))
+            b_._emit('assign', [], [ur, b_.sbin('sub', r1, b_.sbin('and', ub, take))])
+            b_._emit('assign', [], [uq, b_.sbin('or', uq,
+                                               b_.sbin('and', b_.sbin('shl', b_.const(1), bit), take))])
+            b_._emit('assign', [], [bit, b_.sbini('sub', bit, 1)])
+            b_.branch_nz(b_.scmp('ge', bit, b_.const(0)), loop)
+            b_.label(done)
+        if not signed:
+            return ur if remainder else uq
+        if remainder:
+            return b_.sbin('sub', b_.sbin('xor', ur, ma), ma)
+        mq = b_.sbin('xor', ma, mb)
+        return b_.sbin('sub', b_.sbin('xor', uq, mq), mq)
 
     def _op_arith_divsi(self, op):
         self._integer_division(op, True, False)
@@ -1745,6 +1973,10 @@ class TTIRImporter:
         src, dst = op.get_operand(0), op.get_result(0)
         dims, elem = shape(dst)
         tile = self._tiles.get(src.id())
+        if tile is not None and tile.vector is not None and len(dims) == 1:
+            # One value per row, taken from a register: back to that register.
+            self._v[dst.id()] = tile.vector
+            return
         if tile is not None and tuple(d for d in dims if d != 1) == tuple(
                 d for d in (tile.rows, tile.cols) if d != 1):
             self._tiles[dst.id()] = tile
@@ -1815,6 +2047,12 @@ class TTIRImporter:
         self._binary(op, 'xor')
 
     def _op_arith_addf(self, op):
+        fused = self._fused_add.pop(op.get_result(0).id(), None)
+        if fused is not None:
+            # `acc + tl.dot(a, b)`: the matrix unit already accumulated into
+            # acc (_fuse_dot_add).
+            self._tiles[op.get_result(0).id()] = fused
+            return
         self._binary(op, 'add')
 
     def _op_arith_subf(self, op):
@@ -1898,7 +2136,16 @@ class TTIRImporter:
             # that, so it is a rename.
             self._tiles[op.get_result(0).id()] = tile
             return
-        kind, _ = self._offsets.get(src.id(), (None, None))
+        kind, key = self._offsets.get(src.id(), (None, None))
+        if self.index_opt and kind == 'contiguous':
+            # `u + arange` along the new axis: an index, not data. Taking it
+            # apart lane by lane (below) turned a matmul template's rows into
+            # sixteen extracts and its loads into gathers.
+            dyn = [self._key_scalar(key)]
+            self._affine[op.get_result(0).id()] = (
+                Affine2D(row_stride=1, dynamic=dyn) if axis == 1
+                else Affine2D(col_stride=1, dynamic=dyn))
+            return
         if kind != 'arange' and src.id() in self._v:
             # A 1-D value of DATA, not an index. `peak[:, None]` makes
             # one value per row out of it and `q[None, :]` makes one row
@@ -1939,6 +2186,30 @@ class TTIRImporter:
         """Stretching a 16x1 or 1x16 to 16x16 changes no index."""
         src = op.get_operand(0)
         rid = op.get_result(0).id()
+        sshape, selem = _parse_type(str(src.get_type()))
+        dshape, _ = _parse_type(str(op.get_result(0).get_type()))
+        if sshape == 1 and isinstance(dshape, int):
+            # tensor<1> -> tensor<N>: one element in every lane. Inductor
+            # writes this for a per-row value in a reduction without an x
+            # dimension (the row's offset, its mask, its reduced value).
+            kind, key = self._offsets.get(src.id(), (None, None))
+            if kind == 'uniform':
+                self._offsets[rid] = ('uniform', key)
+                self._v[rid] = self._value(src)
+                return
+            sc = self._uniform_scalar(src)
+            if sc is not None:
+                self._uscalar[rid] = sc
+                self._offsets[rid] = ('uniform', rid)
+                self._v[rid] = self.b.splat(sc, dtype=selem)
+                return
+            v = self._value(src)
+            if getattr(v, 'kind', None) == PRED:
+                lane = self.b.vextract(self.b.vselect(v, self.b.vmovi(1), self.b.vmovi(0)), 0)
+                self._v[rid] = self.b.vcmp('ne', self.b.splat(lane), self.b.vmovi(0))
+            else:
+                self._v[rid] = self.b.splat(self.b.vextract(v, 0, dtype=selem), dtype=selem)
+            return
         tile = self._tiles.get(src.id())
         if tile is not None:
             shape, elem = _parse_type(str(op.get_result(0).get_type()))
@@ -2063,6 +2334,61 @@ class TTIRImporter:
                                comment='the tile origin')
         return base
 
+    def _contiguous_rows(self, op, aff, shape, mask_at):
+        """A MASKED 2-D access whose rows are contiguous VLEN-element runs
+        (index_opt). Inductor's GEMM epilogue is one: the output tile is
+        stored, and the bias read, under `(idx_m < M) & (idx_n < N)`. A mask
+        is per element, and per element is what a predicated vector access
+        already is -- so row r is one `v.ld`/`v.st` under row r of the mask,
+        four memory beats for sixteen f16 elements, where the gathered and
+        scattered form took one beat per element."""
+        return (self.index_opt and op.get_num_operands() > mask_at
+                and isinstance(aff, Affine2D) and aff.col_stride == 1
+                and aff.row_stride >= 0 and shape[1] == self.target.vlen)
+
+    def _row_base(self, name, aff, esize):
+        base = self._arg_value(name)
+        if aff.const:
+            base = self.b.sbini('add', base, aff.const * esize, comment="the tile's origin")
+        return self._add_dynamic(base, aff, esize)
+
+    def _masked_rows_load(self, op, name, elem, aff, shape):
+        rows, cols = shape
+        esize = self._ELEM_BYTES[elem]
+        base = self._row_base(name, aff, esize)
+        get_mask = self._row_getter(op.get_operand(1), rows, 'i1')
+        other = self._const.get(op.get_operand(2).id(), 0) if op.get_num_operands() > 2 else 0
+        size = _load_suffix(_SIZE_SUFFIX[esize], elem)
+        stride = aff.row_stride * esize
+        self.b.comment(f"a masked {rows}x{cols} tile with contiguous rows: one "
+                       "predicated load a row")
+
+        def row(r):
+            at = base if r == 0 or not stride else self.b.sbini('add', base, r * stride,
+                                                                comment=f"row {r}")
+            return self.b.load(at, mask=self._shape_mask(cols, get_mask(r)), other=other,
+                               dtype=elem, size=size)
+        if self._deferrable(op):
+            return Tile('lazy', row, rows, cols, elem)
+        return self._materialise(row, rows, cols, elem)
+
+    def _masked_rows_store(self, op, name, elem, aff, shape, tile):
+        rows, cols = shape
+        esize = self._ELEM_BYTES[elem]
+        base = self._row_base(name, aff, esize)
+        get, get_mask = self._tile_row_getter(tile), self._row_getter(op.get_operand(2), rows, 'i1')
+        stride = aff.row_stride * esize
+        self.b.comment(f"a masked {rows}x{cols} tile with contiguous rows: one "
+                       "predicated store a row")
+        for r in range(rows):
+            v = get(r)
+            if elem != tile.store:
+                v = self.b.vcvt(tile.store, elem, v)
+            at = base if r == 0 or not stride else self.b.sbini('add', base, r * stride,
+                                                                comment=f"row {r}")
+            self.b.store(at, v, mask=self._shape_mask(cols, get_mask(r)),
+                         size=_SIZE_SUFFIX[esize])
+
     def _load_tile_rows(self, name, elem, aff, shape):
         """A tile whose element type has no usable fragment, row by row.
 
@@ -2140,6 +2466,71 @@ class TTIRImporter:
             byte_strides=[aff.row_stride * esize, esize],
             block_shape=list(block), what=what)
 
+    # Extents of a TensorMap built once over a pointer (no shape is known):
+    # wide enough that no coordinate the kernel forms is out of bounds, as
+    # an unmasked pointer load never is.
+    _OPEN_EXTENT = (1 << 31) - 1
+
+    def _hoisted_tile_descriptor(self, name, elem, aff, block, what):
+        """A TensorMap built ONCE, at the kernel's entry, and the coordinates
+        of this tile in it -- or None (index_opt).
+
+        _tile_descriptor folds the whole index into the descriptor's base,
+        so a tile whose origin moves (a matmul's K step) rebuilt its
+        256-byte map -- 32 stores and a snapshot -- for every transfer. Here
+        the constant part stays in the base, and each runtime term of the
+        index becomes a coordinate: one whose coefficient is a multiple of
+        the row stride moves rows, one with coefficient 1 moves columns.
+        Exact, with no division of an offset that might not be a multiple.
+        A term that is neither keeps the old way.
+        """
+        if aff.col_stride != 1 or aff.row_stride <= 1 or not aff.dynamic:
+            return None
+        rows, cols = [], []
+        for v, c in aff.dynamic:
+            if c % aff.row_stride == 0:
+                rows.append((v, c // aff.row_stride))
+            elif c == 1:
+                cols.append((v, 1))
+            else:
+                return None
+        key = (name, elem, aff.row_stride, aff.const, tuple(block))
+        desc = self._hoisted.get(key)
+        if desc is None:
+            ops = self.b.region.ops
+            mark = len(ops)
+            caches = ('_scalar_cache', '_fconst_cache', '_byte_offsets', '_aff_cache')
+            saved = {c: getattr(self, c) for c in caches}
+            saved_scratch = self._scratch
+            for c in caches:
+                setattr(self, c, {})
+            self._scratch = None
+            esize = self._ELEM_BYTES[elem]
+            base = self._arg_value(name)
+            if aff.const:
+                base = self.b.sbini('add', base, aff.const * esize,
+                                    comment=f"the constant part of the index ({aff.const} elements)")
+            desc = self._build_descriptor(
+                base=base, elem=elem, extents=[self._OPEN_EXTENT] * 2,
+                byte_strides=[aff.row_stride * esize, esize],
+                block_shape=list(block), what=what + ' (built once, at entry)')
+            for c in caches:
+                setattr(self, c, saved[c])
+            self._scratch = saved_scratch
+            built = ops[mark:]
+            del ops[mark:]
+            ops[self._prologue_pos:self._prologue_pos] = built
+            self._prologue_pos += len(built)
+            self._hoisted[key] = desc
+
+        def coord(terms):
+            total = None
+            for v, k in terms:
+                t = v if k == 1 else self.b.sbini('mul', v, k)
+                total = t if total is None else self.b.sbin('add', total, t)
+            return total if total is not None else self.b.const(0)
+        return desc, [coord(rows), coord(cols)]
+
     # ---- descriptors ------------------------------------------------------
 
     _ELEM_BYTES = {'f16': 2, 'bf16': 2, 'f32': 4, 'i8': 1, 'i32': 4,
@@ -2181,6 +2572,12 @@ class TTIRImporter:
                         remedy='pass scratch_addr, or compile with dynamic '
                                'arguments')
                 self._scratch = self.b.const(self.scratch_addr)
+                if self.scratch_stride:
+                    self._scratch = self.b.sbin(
+                        'add', self._scratch,
+                        self.b.sbin('mul', self.b.program_id(0),
+                                    self.b.const(self.scratch_stride)),
+                        comment='this program\'s own scratch')
                 return self._scratch
             self._scratch = self.b.sload(
                 self.b.special('arg_base'), offset=8 * self.argument_slots,
@@ -2282,7 +2679,7 @@ class TTIRImporter:
             result = self.b.splat(self.b.vextract(v, r), dtype=elem)
             return (self.b.vcmp('ne', result, self.b.vmovi(0))
                     if elem == 'i1' else result)
-        return Tile('lazy', row, rows or self.target.vlen, 1, elem)
+        return Tile('lazy', row, rows or self.target.vlen, 1, elem, vector=v)
 
     def _col_to_vector(self, tile, elem):
         """One value per row, gathered into one vector register.
@@ -2292,6 +2689,8 @@ class TTIRImporter:
         start -- which also means the sixteen inserts are one value's
         lifetime and not sixteen, and the allocator has to be told so.
         """
+        if tile.vector is not None:
+            return tile.vector
         out = self.b.vmovi(0, dtype=elem)
         self.b.comment('one value per row into one vector (ISA 0x09)')
         for r, x in enumerate(tile.handle):
@@ -2303,21 +2702,28 @@ class TTIRImporter:
         return out
 
     def _build_descriptor(self, *, base, elem, extents, byte_strides,
-                          block_shape, what):
+                          block_shape, what, pad=0, check=True):
         """Write a TensorMap into scratch and snapshot it.
 
         Every word is written, including the zero ones. The scratch
         buffer's previous contents are not this kernel's to assume, and
         a descriptor half-inherited from the last launch is a wrong
-        address rather than a fault.
+        address rather than a fault. An extent or stride that is a
+        run-time value is stored from its register.
+
+        `check` applies the engine's geometry rules (ISA sec 9E.2) here,
+        for a map that only ever feeds the engine. A `tl.make_tensor_
+        descriptor` map is also read through the LSU, so its geometry is
+        decided per operation instead (descriptors.dma_ok).
         """
-        try:
-            check_geometry(byte_strides=byte_strides,
-                           block_shape=block_shape,
-                           elem_bytes=self._ELEM_BYTES[elem])
-        except TileError as e:
-            raise Unsupported(str(e), source='doc/isa/TNCA-ISA-v0.1.md '
-                                             'sec 9E.2')
+        if check:
+            try:
+                check_geometry(byte_strides=byte_strides,
+                               block_shape=block_shape,
+                               elem_bytes=self._ELEM_BYTES[elem])
+            except TileError as e:
+                raise Unsupported(str(e), source='doc/isa/TNCA-ISA-v0.1.md '
+                                                 'sec 9E.2')
 
         slot = self.scratch_maps
         self.scratch_maps += 1
@@ -2325,9 +2731,13 @@ class TTIRImporter:
                             self._take_scratch(TENSORMAP_BYTES),
                             comment=f"TensorMap {slot}: {what}")
 
-        words = tensormap_words(base=0, extents=extents,
-                                byte_strides=byte_strides,
-                                block_shape=block_shape, dtype=elem)
+        literal = lambda x: x if isinstance(x, int) else 0
+        words = tensormap_words(base=0, extents=[literal(e) for e in extents],
+                                byte_strides=[literal(s) for s in byte_strides],
+                                block_shape=block_shape, dtype=elem, pad=pad)
+        runtime = {1 + i: e for i, e in enumerate(extents) if not isinstance(e, int)}
+        runtime.update({6 + i: s for i, s in enumerate(byte_strides)
+                        if not isinstance(s, int)})
         zero = self.b.const(0)
         for i, word in enumerate(words):
             if i == 0:
@@ -2335,60 +2745,22 @@ class TTIRImporter:
                 # from an argument slot.
                 self.b.sstore(addr, base, offset=0, size='d')
                 continue
+            if i in runtime:
+                self.b.sstore(addr, runtime[i], offset=i * 8, size='d')
+                continue
+            if word == 0 and self.sparse_maps:
+                continue                     # scratch arrives zero-filled
             self.b.sstore(addr, zero if word == 0 else self.b.const(word),
                           offset=i * 8, size='d')
         return _Descriptor(self.b.descriptor(addr, name=f"d{slot}"),
                            base=base, byte_strides=byte_strides,
-                           block=list(block_shape), elem=elem, address=addr, extents=extents)
+                           block=list(block_shape), elem=elem, address=addr, extents=extents,
+                           pad=pad)
 
     def _op_tt_make_tensor_descriptor(self, op):
-        """`tl.make_tensor_descriptor`, straight onto ISA sec 9D.
-
-        This is the case the hardware was designed for, so it is also
-        the shortest lowering in the file: the shape, the strides and
-        the block shape are what a TensorMap holds, and the operation
-        says all three.
-        """
-        ptr = op.get_operand(0)
-        n = op.get_num_operands()
-        rank = (n - 1) // 2
-        if rank != 2:
-            raise Unsupported(
-                f"a rank-{rank} tensor descriptor",
-                because='the tile path builds 16x16 fragments; a rank the '
-                        'MMA does not consume has nowhere to go yet',
-                source='doc/isa/TNCA-ISA-v0.1.md sec 9C.2')
-        elem = _pointee(str(ptr.get_type()))
-        if elem not in self._ELEM_BYTES:
-            raise Unsupported(f"a tensor descriptor of {elem}")
-        esize = self._ELEM_BYTES[elem]
-
-        extents, strides = [], []
-        for i in range(rank):
-            k = self._scalar_const(op.get_operand(1 + i).id())
-            if k is None:
-                raise Unsupported(
-                    'a tensor descriptor whose shape is a runtime value',
-                    because='the extents are written into the TensorMap, '
-                            'and only a constant can be written by the '
-                            'store that builds it',
-                    remedy='make the shape a tl.constexpr')
-            extents.append(k)
-        for i in range(rank):
-            k = self._scalar_const(op.get_operand(1 + rank + i).id())
-            if k is None:
-                raise Unsupported(
-                    'a tensor descriptor whose strides are runtime values')
-            strides.append(k * esize)
-
-        shape, _ = _parse_type(str(op.get_result(0).get_type()).replace(
-            '!tt.tensordesc<', 'tensor<').rstrip('>') + '>')
-        block = list(shape) if isinstance(shape, tuple) else [1, shape or 1]
-
-        self._descs[op.get_result(0).id()] = self._build_descriptor(
-            base=self._value(ptr), elem=elem, extents=extents,
-            byte_strides=strides, block_shape=block,
-            what='tl.make_tensor_descriptor')
+        """`tl.make_tensor_descriptor`, any rank 1-5 (descriptors.py)."""
+        from . import descriptors
+        descriptors.make(self, op)
 
     # Operations that may write memory a deferred load would read.
     _WRITES = ('tt.store', 'tt.descriptor_store', 'tt.atomic', 'tt.descriptor_scatter',
@@ -2421,6 +2793,14 @@ class TTIRImporter:
             us = users.get(op.get_result(0).id(), [])
             if not us or any(u.get_name() != 'tt.trans' for u in us):
                 continue
+            # A 16-bit tile in a window is an MMA operand and nothing else:
+            # only a transpose `tl.dot` reads (as A or B) may arrive as one.
+            # Inductor's attention reshapes (`split_transpose_view`) transpose
+            # a descriptor tile and then do arithmetic on it.
+            if any(d.get_name() != 'tt.dot' or k > 1
+                   for u in us for d, k in self._value_users.get(u.get_result(0).id(), [])
+                   ) or any(not self._value_users.get(u.get_result(0).id()) for u in us):
+                continue
             block = op.get_block().id()
             ok = True
             for u in us:
@@ -2434,6 +2814,52 @@ class TTIRImporter:
             if ok:
                 self._xpose_loads.add(op.get_result(0).id())
 
+    @staticmethod
+    def _users(ops):
+        """TTIR value id -> [(user op, operand index)]."""
+        users = {}
+        for op in ops:
+            for k in range(op.get_num_operands()):
+                users.setdefault(op.get_operand(k).id(), []).append((op, k))
+        return users
+
+    _TRANS_RE = re.compile(r'\btt\.trans\b[^{\n]*\{[^}\n]*\border\s*=\s*array<i32:\s*([0-9,\s]+)>')
+
+    def _read_trans_orders(self, module, func_name, ops):
+        """result value id of a tt.trans -> its `order` permutation.
+
+        The Python binding does not expose a DenseI32ArrayAttr, so the
+        permutation is read from the printed function, in program order --
+        the same way the CFG successors are. Each one is checked against the
+        operand and result shapes where it is used, so a mismatch is a
+        diagnostic rather than a wrong permutation.
+        """
+        trans = [op for op in ops if op.get_name() == 'tt.trans']
+        if not trans:
+            return {}
+        printed = str(module)
+        match = re.search(r'(?m)^  tt.func[^\n]*@' + re.escape(func_name) + r'\(', printed)
+        body = printed[match.start():] if match else printed
+        body = re.split(r'(?m)^  }', body, maxsplit=1)[0]
+        orders = [[int(x) for x in m.group(1).split(',')]
+                  for m in self._TRANS_RE.finditer(body)]
+        if len(orders) != len(trans):
+            raise Unsupported('cannot read the order of every tt.trans',
+                              because=f'{len(trans)} operations, {len(orders)} printed orders')
+        return {op.get_result(0).id(): order for op, order in zip(trans, orders)}
+
+    def _trans_order(self, op):
+        from .packed import shape
+        order = self._trans_orders.get(op.get_result(0).id())
+        src, _ = shape(op.get_operand(0))
+        dst, _ = shape(op.get_result(0))
+        if order is None:
+            order = list(reversed(range(len(src))))
+        if sorted(order) != list(range(len(src))) or \
+                [src[i] for i in order] != list(dst):
+            raise Unsupported(f'a tt.trans order {order} that does not take {src} to {dst}')
+        return order
+
     def _xpose_geometry_ok(self, d):
         """The engine's transposed-write rule (rtl/core/tnca_tensor.v S_TSETUP):
         a 2-D tile of 16-bit elements with 4, 8 or 16 source rows."""
@@ -2444,48 +2870,12 @@ class TTIRImporter:
         d = self._descs[op.get_operand(0).id()]
         coords = [self._value(op.get_operand(1 + i))
                   for i in range(op.get_num_operands() - 1)]
-        # A host descriptor is a TensorMap in the engine's own layout
-        # (tnca.tensor.TensorDescriptor.pack), so the transfer can use it
-        # directly; its run-time geometry is checked by the runtime before
-        # launch against the artifact's `dma_descriptors` (see aot.py).
         if (op.get_result(0).id() in self._xpose_loads and d.value is not None
-                and self._xpose_geometry_ok(d)):
+                and not d.host and self._xpose_geometry_ok(d)):
             self._deferred[op.get_result(0).id()] = (d, coords)
             return
-        if d.address is not None or len(d.block) > 2 or d.elem not in ('f16', 'bf16', 'f32'):
-            base = self._descriptor_origin(d, coords)
-            rows, cols = d.block[-2:]
-            extents = d.extents or [self.b.sload(d.address, offset=8+8*i, size='d')
-                                     for i in range(len(d.block))]
-            get_mask = self._descriptor_mask(d, coords, extents)
-            esize = self._ELEM_BYTES[d.elem]
-            def row(r):
-                at = self._scaled_address(base, r, d.byte_strides[-2])
-                return self.b.load(at, dtype=d.elem,
-                    size=_load_suffix(_SIZE_SUFFIX[esize], d.elem),
-                    mask=get_mask(r), other=0)
-            tile = self._materialise(row, rows, cols, d.elem)
-            self._tiles[op.get_result(0).id()] = tile
-        else:
-            self._tiles[op.get_result(0).id()] = self._dma_in(
-                d, coords, d.block, d.elem, 'tt.descriptor_load')
-
-    def _descriptor_mask(self, d, coords, extents):
-        def row(r):
-            mask = None
-            for axis, (coord, extent) in enumerate(zip(coords, extents)):
-                if isinstance(extent, int):
-                    extent = self.b.const(extent)
-                pos = self.b.splat(coord)
-                if axis == len(coords)-1:
-                    pos = self.b.vbin('add', pos, self.b.arange())
-                elif axis == len(coords)-2:
-                    pos = self.b.vbin('add', pos, self.b.splat(self.b.const(r)))
-                valid = self.b.pbin('and', self.b.vcmp('ge', pos, self.b.vmovi(0)),
-                                   self.b.vcmp('lt', pos, self.b.splat(extent)))
-                mask = valid if mask is None else self.b.pbin('and', mask, valid)
-            return self._shape_mask(d.block[-1], mask)
-        return row
+        from . import descriptors
+        descriptors.load(self, op)
 
     def _scaled_address(self, base, index, stride):
         index = self.b.const(index) if isinstance(index, int) else index
@@ -2500,38 +2890,21 @@ class TTIRImporter:
         return base
 
     def _op_tt_descriptor_store(self, op):
-        d = self._descs[op.get_operand(0).id()]
-        # The stored value is the tensor operand. Taking the last one
-        # got a coordinate, because MLIR prints `desc[i, j], value` and
-        # orders the operands `desc, value, i, j`.
-        value = None
-        for i in range(1, op.get_num_operands()):
-            cand = op.get_operand(i)
-            if isinstance(_parse_type(str(cand.get_type()))[0], tuple):
-                value = cand
-                break
-        if value is None:
-            raise Unsupported('a tt.descriptor_store with no tile to store')
-        tile = self._tile_of(value)
-        coords = [self._value(op.get_operand(i))
-                  for i in range(1, op.get_num_operands())
-                  if op.get_operand(i).id() != value.id()]
-        if tile.kind != 'window':
-            # The result is in an accumulator and the destination is
-            # described by a TensorMap whose base and stride this
-            # compiler wrote. Draining through the vector unit reaches
-            # it directly (ISA sec 9B); routing it back through a window
-            # would be a transfer to reach an address already in hand.
-            extents = d.extents or [self.b.sload(d.address, offset=8+8*i, size='d')
-                                    for i in range(len(d.block))]
-            self._drain_tile(tile, self._descriptor_origin(d, coords),
-                             d.byte_strides[-2], d.elem,
-                             self._descriptor_mask(d, coords, extents))
-            return
-        coords = [self._value(op.get_operand(i))
-                  for i in range(1, op.get_num_operands())
-                  if op.get_operand(i).id() != value.id()]
-        self._dma_out(d.value, coords, tile, d.elem, 'tt.descriptor_store')
+        from . import descriptors
+        descriptors.store(self, op)
+
+    def _op_tt_descriptor_reduce(self, op):
+        """`desc.atomic_add/min/max/and/or/xor`: one atomic per element."""
+        from . import descriptors
+        descriptors.reduce(self, op)
+
+    def _op_tt_descriptor_gather(self, op):
+        from . import descriptors
+        descriptors.gather(self, op)
+
+    def _op_tt_descriptor_scatter(self, op):
+        from . import descriptors
+        descriptors.scatter(self, op)
 
     # ---- tiles in and out -------------------------------------------------
 
@@ -2617,6 +2990,40 @@ class TTIRImporter:
                         'lowering')
         return t
 
+    def _relabel(self, op, tile, sdims, nonunit):
+        """A tt.trans that keeps the non-unit dimensions in order: the same
+        numbers in the same order, under another shape.
+
+        It is a rename, unless it carries the one non-unit dimension between
+        the rows and the columns of the tile -- `[N, 1] -> [1, N]`, which
+        Inductor writes for every per-channel weight it reads through a
+        rank-1 descriptor. One value per row and one row of lanes are the
+        same numbers held differently, and renaming one as the other read
+        row 0 for all of them.
+        """
+        from .packed import shape as _shape
+        rid = op.get_result(0).id()
+        rdims, _ = _shape(op.get_result(0))
+        if len(nonunit) == 1:
+            n = sdims[nonunit[0]]
+            to_row = rdims[-1] == n
+            elem = tile.dtype
+            if (tile.rows, tile.cols) == (n, 1) and to_row:
+                v = tile.vector
+                if v is None:
+                    rows = tile.handle if isinstance(tile.handle, (list, tuple)) else \
+                        [tile.handle(r) for r in range(n)]
+                    v = self._col_to_vector(Tile('col', list(rows), n, 1, elem), elem)
+                self._v[rid] = v
+                self._packed.add(rid)
+                self._tiles[rid] = Tile('rows', (v,), 1, n, elem)
+                return
+            if (tile.rows, tile.cols) == (1, n) and not to_row:
+                v = self._row_getter(op.get_operand(0), 1, elem)(0)
+                self._tiles[rid] = self._vector_to_col(v, elem, n)
+                return
+        self._tiles[rid] = tile
+
     def _op_tt_trans(self, op):
         """`tl.trans`, by reading the source down its columns.
 
@@ -2642,6 +3049,7 @@ class TTIRImporter:
         usable as an MMA operand and as nothing else.
         """
         src = op.get_operand(0)
+        order = self._trans_order(op)
         if src.id() in self._deferred:
             d, coords = self._deferred.pop(src.id())
             rows, cols = d.block
@@ -2658,6 +3066,22 @@ class TTIRImporter:
             self._tiles[op.get_result(0).id()] = Tile('window', window, cols, rows, d.elem)
             return
         tile = self._tile_of(src)
+        # An N-D value is a tile of its non-unit dimensions. A permutation
+        # that keeps their order only relabels it; one that swaps the two of
+        # them is the 2-D transpose below; anything else is not a tile
+        # operation this machine has.
+        from .packed import shape as _shape
+        sdims, _ = _shape(src)
+        nonunit = [i for i, n in enumerate(sdims) if n != 1]
+        moved = [i for i in order if sdims[i] != 1]
+        if moved == nonunit:
+            self._relabel(op, tile, sdims, nonunit)
+            return
+        if len(nonunit) != 2 or moved != nonunit[::-1] or \
+                (tile.rows, tile.cols) != (sdims[nonunit[0]], sdims[nonunit[1]]):
+            raise Unsupported(f'a tt.trans {order} of a {list(sdims)} tile',
+                              because='a tile is two dimensions; only swapping them '
+                                      'is a transpose')
         if tile.desc is None:
             elem = tile.store
             esize = self._ELEM_BYTES[elem]
@@ -2703,6 +3127,40 @@ class TTIRImporter:
         self._tiles[rid] = self._rows_to_window(
             lambda r: rows[r], elem, elem, tile.rows, nrows=tile.cols)
 
+    def _fuse_dot_add(self, op, a, b):
+        """`x + tl.dot(a, b, 0)` as one accumulate into x's accumulator.
+
+        Inductor's matmul template writes `acc += tl.dot(a, b)` as a dot into
+        zero and an add: on this machine a fresh accumulator, a zeroing, and
+        then sixteen rows of read-read-add-write to fold it into the carried
+        one -- around a single matrix command. ISA sec 9C accumulates in
+        place, so when x is an accumulator nothing else reads, the command
+        goes into x and the add is a rename. Returns the tile, or None.
+        """
+        if not self._is_zero_tensor(op.get_operand(2)):
+            return None
+        users = self._value_users.get(op.get_result(0).id(), [])
+        if len(users) != 1 or users[0][0].get_name() != 'arith.addf':
+            return None
+        add, k = users[0]
+        other = add.get_operand(1 - k)
+        x = self._tiles.get(other.id())
+        if x is None or x.kind != 'accumulator' or (x.rows, x.cols) != (a.rows, b.cols) \
+                or x.store != 'f32':
+            return None
+        if len(self._value_users.get(other.id(), [])) != 1:
+            return None
+        bar = self.b.barrier(name=f"mma{len(self.kernel.barriers)}")
+        tok = self.b.barrier_arm(bar, arrivals=0, ops=1)
+        self.b.comment('acc + tl.dot(a, b): accumulated in place (ISA sec 9C)')
+        self.b.mma_async(x.handle, a.handle, b.handle, tok,
+                         dtype=_FP8_FORMATS.get(a.dtype, a.dtype))
+        self.b.barrier_wait(tok)
+        tile = Tile('accumulator', x.handle, a.rows, b.cols, 'f32')
+        self._fused_add[add.get_result(0).id()] = tile
+        self._tiles[op.get_result(0).id()] = tile
+        return tile
+
     def _op_tt_dot(self, op):
         """`tl.dot`, onto ISA sec 9C.
 
@@ -2738,6 +3196,9 @@ class TTIRImporter:
                        'an integer input and a choice for a float one',
                 source='doc/isa/TNCA-ISA-v0.1.md sec 9C')
 
+        fused = self._fuse_dot_add(op, a, b) if self.index_opt else None
+        if fused is not None:
+            return
         acc = self.b.accumulator(name=f"acc{len(self.kernel.accumulators)}")
         # `tt.dot`'s third operand is the value accumulated into. Triton
         # passes an explicit zero tensor for a plain product, and an
@@ -2926,6 +3387,16 @@ class TTIRImporter:
             if elem == 'i1':
                 v = self.b.vcmp('ne', v, self.b.vmovi(0))
             return lambda r: v
+        # A one-row block (1, n) that an operation produced as a register
+        # rather than as a tile -- a row loaded through a descriptor, or a
+        # packed value: its only row is that register. Inductor's descriptor
+        # reductions (`sdpa_decode`) reach here with one.
+        held = self._v.get(value.id())
+        if (len(shape) == 2 and shape[0] == 1 and held is not None
+                and getattr(held, 'kind', None) == VECTOR):
+            if elem == 'i1':
+                held = self.b.vcmp('ne', held, self.b.vmovi(0))
+            return lambda r: held
         raise Unsupported(
             f"a 2-D operand of type {value.get_type()} that is not a tile")
 
@@ -2936,11 +3407,53 @@ class TTIRImporter:
         return active if mask is None else self.b.pbin('and', active, mask)
 
     def _affine_row(self, aff, r):
+        if self.index_opt:
+            return self._affine_row_opt(aff, r)
         base = self.b.const(aff.const + aff.row_stride * r)
         base = self._add_dynamic(base, aff, 1)
         lanes = self.b.vbin('mul', self.b.arange(),
                            self.b.splat(self.b.const(aff.col_stride)), dtype='i32')
         return self.b.vbin('add', lanes, self.b.splat(base), dtype='i32')
+
+    def _affine_row_opt(self, aff, r):
+        """Row r of an affine index, built from parts computed once
+        (index_opt): the runtime terms summed once per index, the lane ramp
+        once per stride; a row that does not vary across lanes is one
+        splat. Unoptimised, every row rebuilt all of it -- a 16x16 store's
+        mask and address were five hundred instructions."""
+        dyn_key = ('dyn', id(aff))
+        dyn = self._aff_cache.get(dyn_key)
+        if dyn is None and aff.dynamic:
+            dyn = self._add_dynamic(self.b.const(0), aff, 1)
+            self._aff_cache[dyn_key] = dyn
+        if aff.row_stride == 0:
+            # The same in every row: built once.
+            whole = self._aff_cache.get(('row', id(aff)))
+            if whole is not None:
+                return whole
+        k = aff.const + aff.row_stride * r
+        if dyn is None:
+            base = self._const_scalar(k)
+        else:
+            base = dyn if k == 0 else self.b.sbini('add', dyn, k)
+        if aff.col_stride == 0:
+            row = self.b.splat(base, dtype='i32')
+            if aff.row_stride == 0:
+                self._aff_cache[('row', id(aff))] = row
+            return row
+        lane_key = ('lanes', aff.col_stride)
+        lanes = self._aff_cache.get(lane_key)
+        if lanes is None:
+            lanes = self.b.arange() if aff.col_stride == 1 else self.b.vbin(
+                'mul', self.b.arange(), self.b.splat(self.b.const(aff.col_stride)), dtype='i32')
+            self._aff_cache[lane_key] = lanes
+        if k == 0 and dyn is None:
+            row = lanes
+        else:
+            row = self.b.vbin('add', lanes, self.b.splat(base), dtype='i32')
+        if aff.row_stride == 0:
+            self._aff_cache[('row', id(aff))] = row
+        return row
 
     def _offset_row(self, offset):
         if isinstance(offset, Affine2D):
@@ -3041,12 +3554,51 @@ class TTIRImporter:
     def _tile_binary(self, op, build):
         """An elementwise operation over a tile, a row at a time."""
         shape, elem = _parse_type(str(op.get_result(0).get_type()))
-        rows, cols = shape
+        # An N-D tile is prod(shape[:-1]) rows of shape[-1].
+        rows, cols = math.prod(shape[:-1]), shape[-1]
         getters = [self._row_getter(op.get_operand(i), rows, elem)
                    for i in range(op.get_num_operands())]
+        if self._deferrable(op):
+            self._tiles[op.get_result(0).id()] = Tile(
+                'lazy', lambda r: build([g(r) for g in getters], elem), rows, cols, elem)
+            return
         self._tiles[op.get_result(0).id()] = self._materialise(
             lambda r: build([g(r) for g in getters], elem),
             rows, cols, elem)
+
+    # Operations a deferred tile may not be computed across: they write
+    # memory or an accumulator in place (`acc + tl.dot` accumulates into the
+    # tile it reads), or leave the block.
+    _NOT_ACROSS = ('tt.store', 'tt.descriptor_store', 'tt.atomic_rmw', 'tt.atomic_cas',
+                   'tt.dot', 'tt.dot_scaled', 'tt.call', 'tt.return', 'tt.assert',
+                   'tt.print', 'tt.descriptor_scatter')
+
+    def _deferrable(self, op):
+        """index_opt: may this tile be a rule for its rows, computed where its
+        one user reads them, rather than written to an accumulator or to
+        scratch and read back (_materialise)?
+
+        Yes when the user is in the same block and nothing between the two
+        writes memory or an accumulator or leaves the block -- so a row
+        computed late is the row computed now. Inductor's GEMM epilogue is
+        the case: the bias loaded, widened, added to the accumulator,
+        narrowed and stored is five tile operations, and materialising each
+        made 112 accumulator and memory accesses a tile where reading the
+        accumulator, loading the bias row and storing take 48."""
+        if not self.index_opt:
+            return False
+        users = self._value_users.get(op.get_result(0).id(), [])
+        if len(users) != 1:
+            return False
+        user = users[0][0]
+        i, j = self._op_pos.get(id(op)), self._op_pos.get(id(user))
+        if i is None or j is None or j <= i or user.get_block().id() != op.get_block().id():
+            return False
+        for o in self._all_ops[i + 1:j]:
+            name = o.get_name()
+            if name in self._NOT_ACROSS or name.startswith(('scf.', 'cf.')):
+                return False
+        return True
 
     def _is_2d(self, op):
         return isinstance(
@@ -3260,6 +3812,18 @@ class TTIRImporter:
         if tile is not None:
             if rtype == tile.store:
                 self._tiles[res.id()] = tile
+                return
+            users = self._value_users.get(res.id(), [])
+            if (self.index_opt and tile.kind == 'accumulator' and len(users) == 1
+                    and users[0][0].get_name() == 'tt.store') or self._deferrable(op):
+                # A matmul's epilogue (`acc.to(f16)` then a store): each row is
+                # converted on its way out, where materialising the tile first
+                # put sixteen rows through scratch and read them back.
+                get = self._tile_row_getter(tile)
+                self._tiles[res.id()] = Tile(
+                    'lazy', lambda r, get=get: self.b.vcvt(tile.store, rtype, get(r)),
+                    tile.rows, tile.cols, rtype)
+                return
             else:
                 get = self._tile_row_getter(tile)
                 self._tiles[res.id()] = self._materialise(
@@ -3315,14 +3879,17 @@ class TTIRImporter:
             # registers, and handed two predicate registers as its data it
             # read the vector registers that share their numbers --
             # Inductor's `acc = tl.where(m, acc | x, acc)` in every `any`.
-            self._tile_binary(op, lambda xs, e: (
-                self.b.pbin('or', self.b.pbin('and', xs[0], xs[1]),
-                            self.b.pbin('and', self.b.pun('not', xs[0]), xs[2]))
-                if e == 'i1' else self.b.vselect(xs[0], xs[1], xs[2])))
+            def sel(xs, e):
+                if e != 'i1':
+                    return self.b.vselect(xs[0], xs[1], xs[2])
+                m, x, y = (self._as_pred(v) for v in xs)
+                return self.b.pbin('or', self.b.pbin('and', m, x),
+                                   self.b.pbin('and', self.b.pun('not', m), y))
+            self._tile_binary(op, sel)
             return
         shape, elem, _bcast = self._float_shape(op)
         if elem == 'i1':
-            mask, av, bv = self._value(cond), self._value(a), self._value(b)
+            mask, av, bv = (self._as_pred(self._value(x)) for x in (cond, a, b))
             self._v[op.get_result(0).id()] = self.b.pbin('or',
                 self.b.pbin('and', mask, av),
                 self.b.pbin('and', self.b.pun('not', mask), bv))
@@ -3350,7 +3917,8 @@ class TTIRImporter:
         a, b = op.get_operand(0), op.get_operand(1)
         rid = op.get_result(0).id()
         if self._is_2d(op):
-            self._tile_binary(op, lambda xs, e: (self.b.pbin(kind, xs[0], xs[1])
+            self._tile_binary(op, lambda xs, e: (self.b.pbin(kind, self._as_pred(xs[0]),
+                                                             self._as_pred(xs[1]))
                 if e == 'i1' else self.b.vbin(
                     kind, xs[0], xs[1], dtype=e, fmm=fmm)))
             return
@@ -3363,12 +3931,30 @@ class TTIRImporter:
             # predicate register number as though it were a scalar's.
             if kind not in ('and', 'or', 'xor'):
                 raise Unsupported(f"{kind!r} on two masks")
-            self._v[rid] = self.b.pbin(kind, self._value(a), self._value(b))
+            self._v[rid] = self.b.pbin(kind, self._as_pred(self._value(a)),
+                                       self._as_pred(self._value(b)))
             return
         shape, elem, _bcast = self._float_shape(op)
         if shape is None:
             self._v[rid] = self.b.sbin(kind, self._value(a), self._value(b))
+            if self.index_opt and kind == 'mul':
+                for x, y in ((a, b), (b, a)):
+                    k = self._scalar_const(y.id())
+                    if k is not None and k > 0:
+                        self._multiple[rid] = k * self._multiple.get(x.id(), 1)
+                        if x.id() in self._nonneg:
+                            self._nonneg.add(rid)
         else:
+            if self.index_opt and not elem.startswith('f') and kind in _UNIFORM_SBIN:
+                sa, sb = self._uniform_scalar(a), self._uniform_scalar(b)
+                if sa is not None and sb is not None:
+                    # Every lane the same: computed once, as a scalar, and
+                    # tracked so an address built from it stays contiguous.
+                    sc = self.b.sbin(kind, sa, sb)
+                    self._uscalar[rid] = sc
+                    self._offsets[rid] = ('uniform', rid)
+                    self._v[rid] = self.b.splat(sc, dtype=elem)
+                    return
             if elem.startswith('f'):
                 self.target.require('vector_fp32', f"emit a {elem} {kind}")
             self._v[rid] = self.b.vbin(kind, self._vec(a, elem),
@@ -3385,6 +3971,14 @@ class TTIRImporter:
         if {ka, kb} == {'uniform', 'arange'}:
             uni = a if ka == 'uniform' else b
             self._offsets[rid] = ('contiguous', self._offsets[uni.id()][1])
+        elif self.index_opt and {ka, kb} == {'uniform', 'contiguous'}:
+            # (uniform + arange) + uniform: still the lane index plus one
+            # lane-invariant amount, the sum of the two.
+            con, uni = (a, b) if ka == 'contiguous' else (b, a)
+            total = self.b.sbin('add', self._key_scalar(self._offsets[con.id()][1]),
+                                self._key_scalar(self._offsets[uni.id()][1]))
+            self._uscalar[rid] = total
+            self._offsets[rid] = ('contiguous', rid)
 
     def _op_arith_cmpi(self, op):
         self._compare(op, _CMP_I, 'i')
@@ -3403,6 +3997,19 @@ class TTIRImporter:
             rows, cols = shape
             xs = self._row_getter(a, rows, elem)
             ys = self._row_getter(b, rows, elem)
+            if self.index_opt:
+                # Rows whose operands are the same registers compare once (a
+                # column bound is the same in every row of a store's mask).
+                memo = {}
+
+                def row(r):
+                    x, y = xs(r), ys(r)
+                    key = (id(x), id(y))
+                    if key not in memo:
+                        memo[key] = self.b.vcmp(cc, x, y)
+                    return memo[key]
+                self._tiles[op.get_result(0).id()] = self._materialise(row, rows, cols, 'i1')
+                return
             self._tiles[op.get_result(0).id()] = self._materialise(
                 lambda r: self.b.vcmp(cc, xs(r), ys(r)), rows, cols, 'i1')
             return
@@ -3412,10 +4019,13 @@ class TTIRImporter:
             # unit does not take predicate registers.
             if cc not in ('eq', 'ne'):
                 raise Unsupported(f"a {cc!r} comparison of two masks")
-            x = self.b.pbin('xor', self._value(a), self._value(b))
+            x = self.b.pbin('xor', self._as_pred(self._value(a)),
+                            self._as_pred(self._value(b)))
             self._v[op.get_result(0).id()] = (
                 x if cc == 'ne' else self.b.pun('not', x))
             return
+        if shape is None and cc == 'ge' and self._scalar_const(b.id()) == 0:
+            self._ge0[op.get_result(0).id()] = a.id()
         self._v[op.get_result(0).id()] = self.b.vcmp(
             cc, self._vec(a, elem), self._vec(b, elem))
 
@@ -3477,9 +4087,9 @@ class TTIRImporter:
                 # scalar address and let the arange be the lane term.
                 pure_arange += 1
                 lane_terms.append(value)
-                scalar_terms.append(self._v[ouni])
+                scalar_terms.append(self._key_scalar(ouni))
             elif okind == 'uniform':
-                scalar_terms.append(self._v[ouni])
+                scalar_terms.append(self._key_scalar(ouni))
             elif off in self._v and getattr(self._v[off], 'kind',
                                             None) == 'scalar':
                 scalar_terms.append(self._v[off])
@@ -3542,6 +4152,53 @@ class TTIRImporter:
 
         return addr, _SIZE_SUFFIX[esize], elem, 'contiguous', None
 
+    def _transposed_tile_load(self, op, name, elem, aff, shape):
+        """A tile whose ROWS are contiguous, as one transposed transfer -- or
+        None (R39-12).
+
+        Inductor's GEMM template reads `B[k, n]` of a linear layer from the
+        weight `W[n, k]`: element (r, c) of the tile is `base + r + c*S`.
+        Read as rows, that is sixteen gathers, and then a 16-bit fragment
+        cannot be assembled in registers (ISA sec 8.4), so it went through
+        memory: 32 stores, a fence, 16 loads, a TensorMap and a transfer,
+        every K step. Read as the transpose it is a plain tile: `U[c, r] =
+        base + c*S + r`, row stride S, contiguous -- and ISA sec 9E mod[5]
+        writes U into the window transposed, which is the tile. The engine's
+        rule (tnca_tensor.v S_TSETUP) is 16-bit elements and 4, 8 or 16
+        source rows; a mask, another width or no `tensor_transpose` keeps
+        the gathered path -- and so does a tile anything but `tl.dot` reads:
+        a 16-bit tile in a window is an MMA operand and nothing else.
+        """
+        users = self._value_users.get(op.get_result(0).id(), [])
+        if not users or any(u.get_name() != 'tt.dot' or k > 1 for u, k in users):
+            return None
+        if (not self.target.has('tensor_transpose') or op.get_num_operands() > 1
+                or not isinstance(aff, Affine2D) or elem not in ('f16', 'bf16')
+                or aff.row_stride != 1 or aff.col_stride <= 1
+                or shape[0] != self.target.vlen or shape[1] not in (4, 8, 16)):
+            return None
+        u = Affine2D(row_stride=aff.col_stride, col_stride=1, const=aff.const,
+                     dynamic=aff.dynamic)
+        block = [shape[1], shape[0]]
+        what = 'a tile contiguous down its columns'
+        hoisted = (self._hoisted_tile_descriptor(name, elem, u, block, what)
+                   if self.index_opt else None)
+        if hoisted is not None:
+            desc, coords = hoisted
+        else:
+            desc = self._tile_descriptor(name, elem, u, block, what)
+            zero = self.b.const(0)
+            coords = [zero, zero]
+        window = self._window_for(shape[0], shape[1], elem)
+        bar = self.b.barrier(name=f"fill{len(self.kernel.barriers)}")
+        tok = self.b.barrier_arm(bar, arrivals=0, ops=1)
+        self.b.comment(f"{what}: its transpose is a plain tile, written "
+                       "transposed by the engine (ISA sec 9E mod[5])")
+        self.b.dma_load(window, desc.value if hasattr(desc, 'value') else desc,
+                        coords, tok, dtype=elem, transpose=True)
+        self.b.barrier_wait(tok)
+        return Tile('window', window, shape[0], shape[1], elem)
+
     def _scalar_const(self, vid):
         """The value of `vid` if it is a scalar constant, else None.
 
@@ -3573,6 +4230,14 @@ class TTIRImporter:
                             'describable as a TensorMap',
                     source='doc/isa/TNCA-ISA-v0.1.md sec 9E.2')
             name, elem, aff = spec
+            xt = self._transposed_tile_load(op, name, elem, aff, shape2d)
+            if xt is not None:
+                self._tiles[op.get_result(0).id()] = xt
+                return
+            if self._contiguous_rows(op, aff, shape2d, 1):
+                self._tiles[op.get_result(0).id()] = self._masked_rows_load(
+                    op, name, elem, aff, shape2d)
+                return
             if (op.get_num_operands() > 1 or not isinstance(aff, Affine2D)
                     or aff.col_stride != 1 or shape2d[1] != self.target.vlen):
                 base = self._arg_value(name)
@@ -3623,6 +4288,13 @@ class TTIRImporter:
                                   size=_load_suffix(_SIZE_SUFFIX[esize], elem))
                 self._tiles[op.get_result(0).id()] = Tile(
                     'lazy', lambda r, row=row: row, shape2d[0], shape2d[1], elem)
+                return
+            hoisted = self._hoisted_tile_descriptor(name, elem, aff, shape2d, 'a 2-D tt.load') \
+                if self.index_opt else None
+            if hoisted is not None:
+                desc, coords = hoisted
+                self._tiles[op.get_result(0).id()] = self._dma_in(
+                    desc, coords, list(shape2d), elem, 'a 2-D tt.load')
                 return
             desc = self._tile_descriptor(name, elem, aff, shape2d,
                                          'a 2-D tt.load')
@@ -3688,6 +4360,9 @@ class TTIRImporter:
                     source='doc/isa/TNCA-ISA-v0.1.md sec 9E.2')
             name, elem, aff = spec
             tile = self._tile_of(value)
+            if self._contiguous_rows(op, aff, shape2d, 2):
+                self._masked_rows_store(op, name, elem, aff, shape2d, tile)
+                return
             if (op.get_num_operands() > 2 or not isinstance(aff, Affine2D)
                     or aff.col_stride != 1 or shape2d[1] != self.target.vlen):
                 base = self._arg_value(name)
@@ -3765,6 +4440,71 @@ class TTIRImporter:
                            size=size)
 
     # ---- helpers ----------------------------------------------------------
+    def _as_pred(self, v):
+        """A mask as a predicate register. A dense i1 constant arrives as a
+        vector (`true` is `v.movi -1`), a scalar comparison as a scalar 0 or
+        1, and the predicate unit reads only predicate registers."""
+        kind = getattr(v, 'kind', None)
+        if kind == VECTOR:
+            return self.b.vcmp('ne', v, self.b.vmovi(0))
+        if kind == SCALAR:
+            return self.b.vcmp('ne', self.b.splat(v), self.b.vmovi(0))
+        return v
+
+    def _key_scalar(self, key):
+        """The scalar an `_offsets` 'uniform' or 'contiguous' entry names."""
+        s = self._uscalar.get(key)
+        if s is not None:
+            return s
+        k = self._scalar_const(key)
+        if k is not None and key not in self._v:
+            return self._const_scalar(k)
+        return self._v[key]
+
+    def _const_scalar(self, k):
+        v = self._scalar_cache.get(k)
+        if v is None:
+            v = self.b.const(k)
+            self._scalar_cache[k] = v
+        return v
+
+    def _uniform_scalar(self, x):
+        """The scalar every lane of 1-D integer value `x` holds, or None.
+
+        A splat of a scalar is uniform, so is a dense integer constant, and
+        so is integer arithmetic on uniform values (`64 * xindex` with
+        `xindex` the program id splatted: Inductor's reductions without an
+        x dimension address their row that way).
+        """
+        kind, key = self._offsets.get(x.id(), (None, None))
+        if kind == 'uniform':
+            return self._key_scalar(key)
+        pending = self._pending_const.get(x.id())
+        if pending is not None and pending[0] in ('scalar', 'vector') and \
+                str(pending[2]).startswith('i') and pending[2] != 'i1':
+            return self._const_scalar(int(pending[1]))
+        return None
+
+    def _scalar_ptr_value(self, vid):
+        """`p + k` for a scalar pointer `p` and a scalar offset `k` in
+        elements, as a byte address; None if either is not a scalar."""
+        base, offs = self._scalar_ptrs[vid]
+        esize = _DTYPE_BYTES.get(self._ptr_base[vid][1])
+        try:
+            bv = self._value(base)
+        except Unsupported:
+            return None
+        if getattr(bv, 'kind', None) != SCALAR or not esize:
+            return None
+        k = self._scalar_const(offs.id())
+        if k is not None:
+            return bv if k == 0 else self.b.sbini('add', bv, k * esize)
+        ov = self._v.get(offs.id())
+        if getattr(ov, 'kind', None) != SCALAR:
+            return None
+        scaled = ov if esize == 1 else self.b.sbini('shl', ov, esize.bit_length() - 1)
+        return self.b.sbin('add', bv, scaled)
+
     def _value(self, ttir_value):
         vid = ttir_value.id()
         v = self._v.get(vid)
@@ -3792,7 +4532,15 @@ class TTIRImporter:
                 v = self.b.vmovi(iv, dtype=elem)
             self._v[vid] = v
             return v
+        if vid in self._scalar_ptrs:
+            v = self._scalar_ptr_value(vid)
+            if v is not None:
+                self._v[vid] = v
+                return v
         tile = self._tiles.get(vid)
+        if tile is not None and tile.vector is not None:
+            self._v[vid] = tile.vector
+            return tile.vector
         if tile is not None and tile.kind == 'col':
             _, elem = _parse_type(str(ttir_value.get_type()))
             v = self._col_to_vector(tile, elem)

@@ -381,13 +381,13 @@ def own10(log):
 def _with_caps(**caps):
     """A copy of the default target with some capabilities overridden.
 
-    OWN-03 needs a machine that can source a `t.st.async`. No R1 profile can
-    -- the engine has no vector read port and the hardware raises
-    ILLEGAL_INSTRUCTION (tb/core/progs/t26_stfault.s) -- so the compiler
-    refuses to emit one, which is correct and also makes the ownership rule
-    untestable on a real profile. The contract puts each test at the layer
-    that can express it; this is that layer, and the refusal itself is the
-    first half of the case.
+    OWN-03 was written when no profile could source a `t.st.async` (the
+    engine had no vector read port and raised ILLEGAL_INSTRUCTION), so the
+    ownership rule was tested on a copy of the target with the capability
+    turned on. The engine now performs stores (rtl/core/tnca_tensor.v, t34),
+    the default target has the capability, and the case runs on it; this
+    copy turns the capability OFF, to show the compiler still refuses the
+    instruction where the machine cannot execute it.
     """
     import copy
     t = TargetInfo.default()
@@ -418,15 +418,23 @@ def _store_kernel(body, *, wait_before_body=False):
 
 def own03(log):
     """An async store's source overwritten before it is source-reusable."""
-    cap = _with_caps(tensor_store=True)
+    cap = TargetInfo.default()
 
-    # Half one: on a real profile the instruction is refused outright.
+    # Half one: the capability gates the instruction -- refused where the
+    # machine cannot execute it, emitted on the default target, which can.
     emitted, d0 = compile_ok(_store_kernel(lambda b, w: None,
-                                           wait_before_body=True))
+                                           wait_before_body=True),
+                             target=_with_caps(tensor_store=False))
+    native, dn = compile_ok(_store_kernel(lambda b, w: None,
+                                          wait_before_body=True))
     log.append(f"    on a profile without the capability -> "
-               f"{'EMITTED (bad)' if emitted else 'refused'}")
+               f"{'EMITTED (bad)' if emitted else 'refused'}; "
+               f"on the default target -> "
+               f"{'emitted' if native else 'REFUSED (bad)'}")
     if d0:
         log.append(f"      {str(d0).splitlines()[0][:120]}")
+    if dn:
+        log.append(f"      default target failed: {str(dn).splitlines()[0][:100]}")
 
     # Half two: where it can be emitted, the source window is held.
     def overwrite(b, w):
@@ -451,7 +459,7 @@ def own03(log):
     for tag, dd in (('positive twin', dg), ('concurrent read', dc)):
         if dd:
             log.append(f"      {tag} failed: {str(dd).splitlines()[0][:110]}")
-    return ((not emitted) and (not bad) and good and conc,
+    return ((not emitted) and native and (not bad) and good and conc,
             'a store source is live until the completion event (sec 13.4)')
 
 
@@ -633,16 +641,17 @@ def own09(log):
     ok &= (not bad) and good
 
     # The runtime half lives where it can be expressed: the error completion
-    # path is RTL, and tb/core/progs/t26_stfault.s is the executable form of
-    # "a failing command still signals its barrier, with the error bit set,
-    # so the waiter is released instead of hanging". Named here so the case
+    # path is RTL, and tb/core/progs/t35_tdesc_fpad2.s is the executable form
+    # of "a failing command still signals its barrier, with the error bit
+    # set, so the waiter is released instead of hanging" (t26_stfault was,
+    # until the engine learned to perform stores). Named here so the case
     # points at its evidence rather than claiming the compiler proved it.
     import os as _os
-    ev = _os.path.join(ROOT, 'tb', 'core', 'progs', 't26_stfault.s')
+    ev = _os.path.join(ROOT, 'tb', 'core', 'progs', 't35_tdesc_fpad2.s')
     have = _os.path.exists(ev)
     log.append(f"    error completion wakes the waiter: "
-               f"tb/core/progs/t26_stfault.s ({'present' if have else 'MISSING'}), "
-               f"run by `make core` with +expectfault=01")
+               f"tb/core/progs/t35_tdesc_fpad2.s ({'present' if have else 'MISSING'}), "
+               f"run by `make core` with +expectfault=04")
     ok &= have
     return ok, 'predication completes once; an error completion still wakes'
 

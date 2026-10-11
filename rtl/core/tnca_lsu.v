@@ -88,6 +88,12 @@ module tnca_lsu #(
     output reg  [VLEN*ELEN-1:0]     cpl_vdata,
     output reg  [VLEN-1:0]          cpl_lane_en,
 
+    // ---- state, for a wrapper that overlaps two of these (tnca_lsu_pair) ----
+    // o_draining: every beat is issued, only responses or the completion
+    // are outstanding. o_amo: the access is an atomic.
+    output wire                     o_draining,
+    output wire                     o_amo,
+
     // ---- memory port (tagged, responses may return out of order) ------------
     output wire                     mem_req_valid,
     input  wire                     mem_req_ready,
@@ -149,6 +155,8 @@ module tnca_lsu #(
     integer i, b;
 
     assign req_ready = (state == S_IDLE);
+    assign o_draining = (state == S_DRAIN) || (state == S_DONE);
+    assign o_amo      = r_amo;
 
     //--------------------------------------------------------------------------
     // Beat planning: which word, which lanes, which byte enables
@@ -166,6 +174,76 @@ module tnca_lsu #(
     reg [5:0]  lo_cnt, hi_cnt;
     reg        found;
     reg [3:0]  sel;
+
+    // Each lane's beat geometry, derived from the lane arrays and captured in
+    // S_SETUP -- the cycle that already separates them from the planner, and
+    // after which neither changes until the request completes: the words its
+    // first and last bytes fall in, whether those differ (it straddles), and
+    // the byte enables and write data of its low and high beats, already
+    // shifted into place (timing-006). The planner then only chooses a word
+    // and collects the lanes that hit it. With all of this inside the
+    // planner, an adder, a byte shift and a sixteen-step conditional
+    // accumulation sat between `pending` and the memory's write enables: up
+    // to 11 ns post-synthesis, 48 levels.
+    reg [63:0]          g_wlo   [0:VLEN-1];
+    reg [63:0]          g_whi   [0:VLEN-1];
+    reg [MEM_BYTES-1:0] g_lo_be [0:VLEN-1];
+    reg [MEM_BYTES-1:0] g_hi_be [0:VLEN-1];
+    reg [MEM_DW-1:0]    g_lo_wd [0:VLEN-1];
+    reg [MEM_DW-1:0]    g_hi_wd [0:VLEN-1];
+
+    always @(*) begin
+        for (i = 0; i < VLEN; i = i + 1) begin
+            la       = lane_addr[i];
+            w_lo     = la & WORD_MASK;
+            w_hi     = (la + {59'd0, nbytes} - 64'd1) & WORD_MASK;
+            boff     = la[MEM_SHIFT-1:0];
+            g_wlo[i] = w_lo;
+            g_whi[i] = w_hi;
+            // the high half of a straddling lane
+            hi_cnt = {1'd0, nbytes} - (MEM_BYTES - {1'd0, boff});
+            // the low half, or the whole of a lane that does not straddle
+            lo_cnt = (w_hi != w_lo) ? (MEM_BYTES - {1'd0, boff})
+                                    : {1'd0, nbytes};
+            g_lo_be[i] = {MEM_BYTES{1'b0}};
+            g_hi_be[i] = {MEM_BYTES{1'b0}};
+            g_lo_wd[i] = {MEM_DW{1'b0}};
+            g_hi_wd[i] = {MEM_DW{1'b0}};
+            for (b = 0; b < MEM_BYTES; b = b + 1) begin
+                if ((w_hi != w_lo) && (b < hi_cnt)) begin
+                    g_hi_be[i][b] = 1'b1;
+                    g_hi_wd[i][b*8 +: 8] =
+                        lane_wdata[i][(MEM_BYTES - boff + b)*8 +: 8];
+                end
+                if ((b >= boff) && (b < (boff + lo_cnt))) begin
+                    g_lo_be[i][b] = 1'b1;
+                    g_lo_wd[i][b*8 +: 8] = lane_wdata[i][(b - boff)*8 +: 8];
+                end
+            end
+        end
+    end
+
+    reg [63:0]          ln_wlo   [0:VLEN-1];
+    reg [63:0]          ln_whi   [0:VLEN-1];
+    reg [VLEN-1:0]      ln_strad;
+    reg [MEM_BYTES-1:0] ln_lo_be [0:VLEN-1];
+    reg [MEM_BYTES-1:0] ln_hi_be [0:VLEN-1];
+    reg [MEM_DW-1:0]    ln_lo_wd [0:VLEN-1];
+    reg [MEM_DW-1:0]    ln_hi_wd [0:VLEN-1];
+
+    always @(posedge clk) begin
+        if (state == S_SETUP) begin
+            for (i = 0; i < VLEN; i = i + 1) begin
+                ln_wlo[i]   <= g_wlo[i];
+                ln_whi[i]   <= g_whi[i];
+                ln_strad[i] <= (g_whi[i] != g_wlo[i]);
+                ln_lo_be[i] <= g_lo_be[i];
+                ln_hi_be[i] <= g_hi_be[i];
+                ln_lo_wd[i] <= g_lo_wd[i];
+                ln_hi_wd[i] <= g_hi_wd[i];
+            end
+        end
+    end
 
     always @(*) begin
         plan_valid = 1'b0;
@@ -187,44 +265,31 @@ module tnca_lsu #(
 
         if (found) begin
             plan_valid = 1'b1;
-            la   = lane_addr[sel];
-            w_lo = la & WORD_MASK;
-            w_hi = (la + {59'd0, nbytes} - 64'd1) & WORD_MASK;
-            plan_word = partial[sel] ? w_hi : w_lo;
+            plan_word  = partial[sel] ? ln_whi[sel] : ln_wlo[sel];
 
             for (i = 0; i < VLEN; i = i + 1) begin
-                if (pending[i]) begin
-                    la   = lane_addr[i];
-                    w_lo = la & WORD_MASK;
-                    w_hi = (la + {59'd0, nbytes} - 64'd1) & WORD_MASK;
-                    boff = la[MEM_SHIFT-1:0];
-
-                    if (partial[i]) begin
-                        // high half of a straddling lane
-                        if (w_hi == plan_word) begin
-                            hi_cnt = {1'd0, nbytes} - (MEM_BYTES - {1'd0, boff});
-                            plan_lanes[i] = 1'b1;
-                            plan_high[i]  = 1'b1;
-                            for (b = 0; b < MEM_BYTES; b = b + 1)
-                                if (b < hi_cnt) begin
-                                    plan_be[b] = plan_be[b] | wr_bytes;
-                                    plan_wdata[b*8 +: 8] = plan_wdata[b*8 +: 8] |
-                                        lane_wdata[i][(MEM_BYTES - boff + b)*8 +: 8];
-                                end
-                        end
-                    end else if (w_lo == plan_word) begin
+                if (pending[i] && partial[i]) begin
+                    // high half of a straddling lane
+                    if (ln_whi[i] == plan_word) begin
                         plan_lanes[i] = 1'b1;
-                        lo_cnt = (w_hi != w_lo) ? (MEM_BYTES - {1'd0, boff})
-                                                : {1'd0, nbytes};
-                        if (w_hi != w_lo) plan_low[i] = 1'b1;
-                        for (b = 0; b < MEM_BYTES; b = b + 1)
-                            if ((b >= boff) && (b < (boff + lo_cnt))) begin
-                                plan_be[b] = plan_be[b] | wr_bytes;
-                                plan_wdata[b*8 +: 8] = plan_wdata[b*8 +: 8] |
-                                    lane_wdata[i][(b - boff)*8 +: 8];
-                            end
+                        plan_high[i]  = 1'b1;
                     end
+                end else if (pending[i] && (ln_wlo[i] == plan_word)) begin
+                    plan_lanes[i] = 1'b1;
+                    plan_low[i]   = ln_strad[i];
                 end
+            end
+
+            // Lanes in one beat cover disjoint bytes of the word (or the same
+            // bytes, for a scatter that names one address twice -- which this
+            // has always ORed), so the collection is a plain OR over lanes.
+            for (i = 0; i < VLEN; i = i + 1) begin
+                plan_be = plan_be |
+                    ({MEM_BYTES{plan_lanes[i] && wr_bytes}} &
+                     (plan_high[i] ? ln_hi_be[i] : ln_lo_be[i]));
+                plan_wdata = plan_wdata |
+                    ({MEM_DW{plan_lanes[i]}} &
+                     (plan_high[i] ? ln_hi_wd[i] : ln_lo_wd[i]));
             end
         end
     end

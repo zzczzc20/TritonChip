@@ -1,0 +1,18 @@
+Scalable Clocks
+---------------
+   Name:      hbm_aclk
+   Index:     0
+   Type:      SYSTEM
+   Frequency: 450 MHz
+
+   Name:      KERNEL_CLK
+   Index:     1
+   Type:      KERNEL
+   Frequency: 500 MHz
+
+   Name:      DATA_CLK
+   Index:     2
+   Type:      DATA
+   Frequency: 150 MHz
+
+System Clocks

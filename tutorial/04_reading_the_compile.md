@@ -28,10 +28,11 @@ machine words.
 
 ```text
 stages the compiler kept:
-  default     ['asm', 'hex', 'tnir', 'ttir']
-  at O2       ['asm', 'hex', 'tnir', 'tnir_opt', 'ttir', 'ttir_opt']
+  default     ['asm', 'hex', 'tnir', 'ttir', 'ttir_inlined']
+  at O2       ['asm', 'hex', 'tnir', 'tnir_opt', 'ttir', 'ttir_inlined', 'ttir_opt']
 
-  files under scale_and_offset/: ['scale_and_offset.hex', 'scale_and_offset.json',
+  files under scale_and_offset/: ['scale_and_offset.hex',
+    'scale_and_offset.inlined.ttir', 'scale_and_offset.json',
     'scale_and_offset.opt.tnir', 'scale_and_offset.opt.ttir',
     'scale_and_offset.s', 'scale_and_offset.tnir', 'scale_and_offset.ttir']
 ```
@@ -39,7 +40,8 @@ stages the compiler kept:
 | file | what it is |
 |---|---|
 | `.ttir` | the Triton IR the frontend produced. Absent for a TNCA IR source, which never had one. |
-| `.opt.ttir` | the same IR after the pinned upstream canonicalizer and CSE |
+| `.inlined.ttir` | the same IR with Triton's library calls (`tl.exp`, `tl.sum`, ...) inlined. That happens at every level: no backend can lower a `tt.call`, so it is legalisation, not optimisation |
+| `.opt.ttir` | after the pinned upstream canonicalizer and CSE |
 | `.tnir` | the TNCA IR the importer built |
 | `.opt.tnir` | after the TNCA-level passes |
 | `.s` | the assembly |
@@ -85,7 +87,7 @@ opt_dead_pure_removed        1
 opt_immediate_compares       0
 opt_lane0_stores             0
 opt_ops_after                18
-opt_ops_before               22
+opt_ops_before               18
 opt_pipeline                 canonicalize,cse
 opt_pipeline_version         1
 opt_pure_scalar_merged       0
@@ -102,6 +104,12 @@ prov = art.manifest['optional_metadata']['provenance']
 
 A pass reporting `0` is not an error — it means that pass had nothing to
 do on this kernel, which is worth knowing when you expected otherwise.
+
+The script also prints what the passes bought in machine words:
+
+```text
+    32 machine word(s) at the default, 27 at O2
+```
 
 ## And it still computes the right thing
 

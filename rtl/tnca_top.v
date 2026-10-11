@@ -49,7 +49,13 @@ module tnca_top #(
     parameter RQ_N        = 8,
     parameter RQ_W        = 3,
     parameter NOC_DEPTH   = 4,
-    parameter NOC_AW      = 2
+    parameter NOC_AW      = 2,
+    // DCO: tensors the TMU tracks, dead-tile FIFO depth, and where its
+    // registers live (rtl/nuca/tnca_tmu.v)
+    parameter DCO_T       = 8,
+    parameter DCO_T_W     = 3,
+    parameter DCO_DEAD    = 16,
+    parameter [63:0] TMU_BASE = 64'h0000_0000_7FFF_0000
 ) (
     input  wire                     clk,
     input  wire                     rst_n,
@@ -91,7 +97,10 @@ module tnca_top #(
     output wire [NX*NY*32-1:0]      perf_merge,
     output wire [NX*NY*32-1:0]      perf_wb,
     output wire [NX*NY*32-1:0]      perf_mshr_full,
-    output wire [NX*NY*32-1:0]      perf_hit_past_block
+    output wire [NX*NY*32-1:0]      perf_hit_past_block,
+    output wire [NX*NY*32-1:0]      perf_bypass,
+    output wire [NX*NY*32-1:0]      perf_evict,
+    output wire [NX*NY*32-1:0]      perf_dead_evict
 );
 
     localparam N  = NX * NY;
@@ -112,6 +121,52 @@ module tnca_top #(
     wire [N-1:0] tile_idle;
     assign all_idle = &tile_idle;
 
+    //==========================================================================
+    // DCO: one TMU for the machine (doc/DCO.pdf; rtl/nuca/tnca_tmu.v)
+    //==========================================================================
+    localparam DCO_ID_W = 16;
+    localparam SRC_W    = 4;          // the slices' requester id: a core
+    wire [N-1:0]            tm_wv, tm_wr, tm_tv, tm_tr, tm_drop;
+    wire [N*12-1:0]         tm_woff, tm_roff;
+    wire [N*64-1:0]         tm_wdata, tm_rdata, tm_taddr;
+    wire [N*SRC_W-1:0]      tm_wsrc;
+    wire [7:0]              d_policy;
+    wire [3:0]              d_bbits, d_ginit;
+    wire [5:0]              d_lsb;
+    wire [15:0]             d_win, d_ub, d_lb;
+    wire [DCO_T-1:0]        d_tv, d_tbyp;
+    wire [DCO_T*64-1:0]     d_tbase, d_tsize;
+    wire [DCO_T*6-1:0]      d_tlsb;
+    wire [DCO_DEAD-1:0]     d_dv;
+    wire [DCO_DEAD*DCO_ID_W-1:0] d_did;
+    wire [75:0] dco_cfg = {d_lb, d_ub, d_win, d_ginit, 6'd0, d_lsb, d_bbits, d_policy};
+
+    tnca_tmu #(
+        .N_SLICE(N), .SRC_W(SRC_W), .N_SRC(N),
+        .TENSORS(DCO_T), .T_W(DCO_T_W), .DEAD(DCO_DEAD), .DEAD_W(4),
+        .ID_W(DCO_ID_W)
+    ) u_tmu (
+        .clk(clk), .rst_n(rst_n),
+        .mw_valid(tm_wv), .mw_ready(tm_wr), .mw_off(tm_woff), .mw_data(tm_wdata),
+        .mw_src(tm_wsrc), .mr_off(tm_roff), .mr_data(tm_rdata),
+        .tl_valid(tm_tv), .tl_ready(tm_tr), .tl_addr(tm_taddr), .tl_drop(tm_drop),
+        .policy(d_policy), .b_bits(d_bbits), .d_lsb(d_lsb),
+        .gear_init(d_ginit), .gear_window(d_win), .gear_ub(d_ub), .gear_lb(d_lb),
+        .t_valid(d_tv), .t_base(d_tbase), .t_size(d_tsize), .t_bypass(d_tbyp),
+        .t_lsb(d_tlsb),
+        .dead_valid(d_dv), .dead_id(d_did)
+    );
+
+    // gqa_bypass's "slower core of a pair" (sec IV-E): the one of tiles
+    // {2k, 2k+1} that has committed fewer instructions so far.
+    reg [15:0] dco_slow;
+    integer sp;
+    always @(*) begin
+        dco_slow = 16'd0;
+        for (sp = 0; sp < N; sp = sp + 1)
+            dco_slow[sp] = perf_issued[sp*64 +: 64] < perf_issued[(sp ^ 1)*64 +: 64];
+    end
+
     genvar t;
     generate
         for (t = 0; t < N; t = t + 1) begin : g_tile
@@ -126,7 +181,9 @@ module tnca_top #(
                 .SETS(SETS), .SET_W(SET_W), .WAYS(WAYS), .WAY_W(WAY_W),
                 .MSHR_N(MSHR_N), .MSHR_W(MSHR_W),
                 .TARGET_N(TARGET_N), .TARGET_W(TARGET_W),
-                .RQ_N(RQ_N), .RQ_W(RQ_W)
+                .RQ_N(RQ_N), .RQ_W(RQ_W),
+                .DCO_T(DCO_T), .DCO_DEAD(DCO_DEAD), .DCO_ID_W(DCO_ID_W),
+                .TMU_BASE(TMU_BASE)
             ) u_tile (
                 .clk(clk), .rst_n(rst_n),
                 .launch_valid(launch_valid), .launch_pc(launch_pc),
@@ -161,7 +218,20 @@ module tnca_top #(
                 .perf_merge(perf_merge[t*32 +: 32]),
                 .perf_wb(perf_wb[t*32 +: 32]),
                 .perf_mshr_full(perf_mshr_full[t*32 +: 32]),
-                .perf_hit_past_block(perf_hit_past_block[t*32 +: 32])
+                .perf_hit_past_block(perf_hit_past_block[t*32 +: 32]),
+                .dco_cfg(dco_cfg), .dco_t_valid(d_tv), .dco_t_base(d_tbase),
+                .dco_t_size(d_tsize), .dco_t_bypass(d_tbyp), .dco_t_lsb(d_tlsb),
+                .dco_dead_valid(d_dv), .dco_dead_id(d_did), .dco_slow(dco_slow),
+                .tmu_wr_valid(tm_wv[t]), .tmu_wr_ready(tm_wr[t]),
+                .tmu_wr_off(tm_woff[t*12 +: 12]), .tmu_wr_data(tm_wdata[t*64 +: 64]),
+                .tmu_wr_src(tm_wsrc[t*SRC_W +: SRC_W]),
+                .tmu_rd_off(tm_roff[t*12 +: 12]), .tmu_rd_data(tm_rdata[t*64 +: 64]),
+                .tmu_tl_valid(tm_tv[t]), .tmu_tl_ready(tm_tr[t]),
+                .tmu_tl_addr(tm_taddr[t*64 +: 64]), .tmu_tl_drop(tm_drop[t]),
+                .perf_bypass(perf_bypass[t*32 +: 32]),
+                .perf_evict(perf_evict[t*32 +: 32]),
+                .perf_dead_evict(perf_dead_evict[t*32 +: 32]),
+                .perf_gear()
             );
         end
     endgenerate

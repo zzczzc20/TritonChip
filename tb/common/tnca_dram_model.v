@@ -18,6 +18,10 @@ module tnca_dram_model #(
     parameter LATENCY    = 10,
     parameter RANDOM_STALL = 0,
     parameter REORDER    = 0,
+    // Bandwidth: at most one request (read or write) every INTERVAL cycles.
+    // 1 is the unlimited model every bench had before DCO; a cache policy
+    // that saves traffic only shows up in time when traffic costs time.
+    parameter INTERVAL   = 1,
     parameter SEED       = 32'hACE1_2345
 ) (
     input  wire                     clk,
@@ -51,7 +55,17 @@ module tnca_dram_model #(
         else        lfsr <= {lfsr[30:0], lfsr[31] ^ lfsr[21] ^ lfsr[1] ^ lfsr[0]};
     end
 
-    assign req_ready = (RANDOM_STALL != 0) ? lfsr[5] : 1'b1;
+    // Traffic, for the benches to report: lines read and written.
+    integer n_rd = 0, n_wr = 0;
+
+    reg [15:0] gap;
+    always @(posedge clk) begin
+        if (!rst_n)                                  gap <= 16'd0;
+        else if (req_valid && req_ready && INTERVAL > 1) gap <= INTERVAL - 1;
+        else if (gap != 16'd0)                        gap <= gap - 16'd1;
+    end
+
+    assign req_ready = ((RANDOM_STALL != 0) ? lfsr[5] : 1'b1) && (gap == 16'd0);
 
     reg [POOL-1:0]      p_valid;
     reg [LINE_BITS-1:0] p_data [0:POOL-1];
@@ -74,6 +88,7 @@ module tnca_dram_model #(
             rsp_valid <= 1'b0;
 
             if (req_valid && req_ready) begin
+                if (req_we) n_wr = n_wr + 1; else n_rd = n_rd + 1;
                 lidx     = req_addr >> OFF_W;
                 in_range = (lidx < LINES);
                 slot = -1;

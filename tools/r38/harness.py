@@ -37,7 +37,7 @@ def build_bench(profile, out, *, rtl=ROOT / 'rtl', tb=ROOT / 'tb'):
     argv = (['iverilog', '-g2005', '-I', str(Path(rtl) / 'common'),
              '-y', str(Path(rtl) / 'core'), '-y', str(Path(rtl) / 'common'),
              '-y', str(Path(rtl) / 'gen'), '-y', str(Path(tb) / 'common')]
-            + device.BENCH_PARAMS.get(profile, [])
+            + device.bench_params(profile)
             + ['-o', str(out), str(Path(tb) / 'device' / 'tnca_device.v'),
                str(Path(rtl) / 'tnca_shell.v')])
     r = subprocess.run(argv, capture_output=True, text=True)

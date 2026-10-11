@@ -4,7 +4,7 @@
 
 The harness as committed on top of `4b7767e`. What was run, and what was not.
 
-**Offline suite.** 82 tests pass on the development Mac (Python 3.9) and on
+**Offline suite.** 82 tests (85 since) pass on the development Mac (Python 3.9) and on
 the U280 host `acf3019` (Python 3.10.12), from a clean checkout in both
 places, and leave the checkout clean:
 
@@ -44,12 +44,47 @@ on the card.
   this branch's base. Before the parser was corrected the same command called
   that run FAIL for a missing DRC report and gave its hold slack as 167 090 ns.
 
-**Not done.** No link was started from this branch, and no board stage
-(program, conformance, ArchBench) was run through this version of the
-harness: the card is shared, and loading it is a decision for whoever holds
-the window. The verdicts above are therefore about real build output and a
-real host, not about a new measurement. A `measured-board` result still
-requires `submit` or `measure` on the worker, as `HANDOFF.md` describes.
+## On the board, 2026-10-12
+
+The first board stage run through this harness's own command, on `acf3019`,
+from a clean checkout of this branch (`5e7ad2a`):
+
+```text
+cli.py measure pr5-latest-b5c606d-u280-100mhz --manifest board-tiny.json
+```
+
+`board-tiny.json` gave the run its board block at measure time
+(`fpga-u280`, `core-vrf-sync-v2`, `program: false`, conformance, ArchBench
+tiny with counters). Nothing was loaded: the card already held this run's
+XCLBIN, left there by an earlier session, and the harness recorded that.
+
+| | |
+|---|---|
+| Result | `PASS`; `implementation_status` `PASS` |
+| Stages | `loaded_image` 0, `conformance` 0, `archbench` 0 |
+| Image | card xclbin UUID `78f04922-980e-d3cb-ee78-cf732d6ec13f`, the run's XCLBIN (sha256 `a2f3a930…ab79f1a`) |
+| Software | this checkout against the implemented `b5c606d`: `harness-only-diff`, clean |
+| Conformance | 5 of 5 cases, `--require-measured` |
+| ArchBench tiny | 27 of 27 pass, `measured-board`, 100 MHz |
+| Cycles | 4 459 740 (`done_cycles_total` the same); 1 541 692 instructions retired |
+
+`doctor --manifest` passed all 25 checks beforehand, including the ArchBench
+interpreter (`/usr/bin/python3`: torch 2.14.0+cpu, triton 3.8.0, `tnca` as
+Triton's `cpu` backend). The card held the same image afterwards and the
+checkout was still clean.
+
+The same image had been measured the day before by the earlier, uncommitted
+copy of the harness, driven as `core-vrf-sync-v1`: 4 434 372 cycles, and 22
+of the 27 points differ from the run above (−2.2 % to +2.7 %). The image is
+`core-vrf-sync-v2`. The profile a card is driven as changes what the compiler
+emits, which is why `board.profile` is required and checked.
+
+**Still not done.** The programmer's `--go` has not been run by this version
+of the harness, only `--check`; the load itself is the flow's own
+`program.sh`, which the earlier copy's runs did not use. No link has been
+started from this branch, and the small tier has not been run. A candidate's
+first `submit` with `program: true` will be the first to do all of it in one
+command.
 
 The sections below are the record of the harness as first written, against
 the `fpga-dev` checkout (`3ea50a8`) and the PR5 head of the time. They are

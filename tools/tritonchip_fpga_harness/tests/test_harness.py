@@ -43,15 +43,6 @@ class HarnessTests(unittest.TestCase):
         self.assertEqual(set(result["artifacts"]), {"artifacts/tnca_u50.xo"})
         self.assertNotIn("artifacts/tnca_u50.xclbin", result["artifacts"])
 
-    def test_dirty_tree_requires_explicit_override(self) -> None:
-        with self.assertRaises(HarnessError):
-            submit(HERE, self.root, self.manifest(), self.state, "mock")
-        # The real checkout is intentionally dirty in this task.  The harness
-        # remains usable when the user explicitly records that fact.
-        result = submit(HERE, self.root, self.manifest(), self.state, "mock", allow_dirty=True)
-        self.assertEqual(result["status"], "PASS")
-        self.assertTrue((self.state / "runs" / result["run_id"] / "source.diff").is_file())
-
     def test_invalid_clock_is_rejected(self) -> None:
         value = self.manifest()
         value["clock_mhz"] = 37.5

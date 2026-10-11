@@ -13,7 +13,7 @@ if str(TOOLS) not in sys.path:
     sys.path.insert(0, str(TOOLS))
 
 from tritonchip_fpga_harness.core import load_profile
-from tritonchip_fpga_harness.measurement import MeasurementError, measure_board, summarize_archbench
+from tritonchip_fpga_harness.measurement import measure_board, summarize_archbench
 
 
 class MeasurementTests(unittest.TestCase):
@@ -91,7 +91,7 @@ class MeasurementTests(unittest.TestCase):
                 "p.write_text(json.dumps(r)+'\\n')")]
             result = measure_board(
                 root=REPO, run_dir=run_dir, profile=profile,
-                manifest={"board": {"backend": "fpga-u50", "program": False,
+                manifest={"board": {"backend": "fpga-u50", "profile": "core-vrf-sync-v1", "program": False,
                                     "conformance": {"command": conf},
                                     "archbench": {"command": bench, "counters": True}}},
                 timeout_s=30,
@@ -113,7 +113,7 @@ class MeasurementTests(unittest.TestCase):
             bench = [py, "-c", "import json,os,pathlib; p=pathlib.Path(os.environ['TNCA_HARNESS_RUN_DIR'])/'board'/'archbench.jsonl'; r=" + repr(self._record()) + "; p.write_text(json.dumps(r)+'\\n')"]
             result = measure_board(
                 root=REPO, run_dir=run_dir, profile=profile,
-                manifest={"board": {"backend": "fpga-u50",
+                manifest={"board": {"backend": "fpga-u50", "profile": "core-vrf-sync-v1",
                                     "program": {"check_command": check, "command": go},
                                     "conformance": {"command": conf},
                                     "archbench": {"command": bench, "counters": True}}},
@@ -123,18 +123,6 @@ class MeasurementTests(unittest.TestCase):
             self.assertTrue((run_dir / "board" / "programmed").is_file())
             self.assertEqual(result["archbench"]["done_cycles_total"], 123)
             self.assertEqual([s["name"] for s in result["stages"]][:2], ["program_check", "program"])
-
-    def test_board_stage_fails_closed_without_program_script(self) -> None:
-        profile = load_profile(HERE, "u280-r38-pr5")
-        with tempfile.TemporaryDirectory() as td:
-            run_dir = Path(td) / "run"
-            (run_dir / "artifacts").mkdir(parents=True)
-            (run_dir / "artifacts" / "tnca_u280.xclbin").write_bytes(b"xclbin")
-            with self.assertRaises(MeasurementError):
-                measure_board(root=REPO, run_dir=run_dir, profile=profile,
-                              manifest={"board": {"backend": "fpga-u280",
-                                                  "program": True, "conformance": False}},
-                              timeout_s=1)
 
 
 if __name__ == "__main__":

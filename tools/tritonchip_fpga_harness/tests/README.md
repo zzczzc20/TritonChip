@@ -21,6 +21,16 @@ measurement exists.  Those claims require the harness worker on the U50 host
 and are represented by the implementation harness's mock and live evidence
 tests.
 
+`test_board_stage.py` runs the post-link half -- `submit` with a `board`
+block, `submit --skip-board` followed by `measure`, and every failure verdict
+-- in a throwaway git repository, with each vendor step replaced by a
+manifest-supplied command.  Four of its tests instead read the checkout the
+harness is committed in: the profiles' scripts exist, the default conformance
+and ArchBench commands use options those tools accept, the example manifest
+names the device profile the RTL defaults build, and the board results
+recorded under `spec/r39/` summarize as a clean `measured-board` run.  They
+skip in a checkout that does not carry those files.
+
 The complete offline suite, including mock package/link lifecycle and the
 zero-exit-code-without-xclbin regression, is:
 

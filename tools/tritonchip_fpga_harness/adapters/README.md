@@ -72,6 +72,7 @@ runs conformance with `--require-measured`, and then invokes ArchBench. The
 board stage is separate from this adapter so it can run in a later board-access
 window. It records `board_measurement.json`, raw conformance/ArchBench output,
 and `archbench_summary.json` containing `done_cycles`, `done_retired`, and the
-`perf_*` attribution counters. The U280 programmer requires an explicit
-`TNCA_BDF` (or manifest `bdf`) so a worker cannot silently program the wrong
-card.
+`perf_*` attribution counters. Both boards are loaded by the flow's own
+`flow/fpga/program.sh`, which selects the card through `TNCA_BOARD` and
+`flow/fpga/boards.sh` and refuses a device whose shell interface UUID is not
+that board's; a manifest `bdf` overrides the address `boards.sh` records.

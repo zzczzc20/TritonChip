@@ -58,6 +58,8 @@ def validate_manifest(value: dict[str, Any]) -> dict[str, Any]:
         for key in ("backend", "profile", "bdf", "program_script"):
             if key in board and not isinstance(board[key], str):
                 raise SchemaError(f"board.{key} must be a string")
+        if not board.get("profile"):
+            raise SchemaError("board.profile is required: name the device profile of the image")
         for key in ("program", "conformance"):
             if key in board and not isinstance(board[key], (bool, dict)):
                 raise SchemaError(f"board.{key} must be a boolean or object")

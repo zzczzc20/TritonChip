@@ -7,7 +7,7 @@
   "source_commit": "HEAD",
   "board": {
     "backend": "fpga-u280",
-    "profile": "core-vrf-sync-v1",
+    "profile": "core-vrf-sync-v2",
     "program": true,
     "conformance": true,
     "archbench": {

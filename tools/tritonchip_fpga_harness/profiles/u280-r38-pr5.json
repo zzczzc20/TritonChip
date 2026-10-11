@@ -12,7 +12,7 @@
   "full_slots": 1,
   "package_script": "flow/fpga/package_xo.tcl",
   "link_script": "flow/fpga/link.sh",
-  "program_script": "flow/fpga/u280/program.sh",
+  "program_script": "flow/fpga/program.sh",
   "xo_name": "tnca_u50.xo",
   "xclbin_name": "tnca_u280.xclbin",
   "board_vpp_opts": "--connectivity.slr tnca_u50_1:SLR1",

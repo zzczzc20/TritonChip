@@ -23,11 +23,16 @@ from . import __version__ as HARNESS_VERSION
 from .adapters.u50 import U50Adapter as VendorU50Adapter, U50Config
 from .adapters.u50 import execute_command
 from .adapters.u280 import U280FlowAdapter
-from .measurement import MeasurementError, measure_board
+from .measurement import MeasurementError, image_profile_contract, measure_board
 
 
 class HarnessError(RuntimeError):
     """A recoverable harness or flow error."""
+
+
+# Where this package lives in a candidate checkout.  A checkout that differs
+# from the implemented commit only below this path builds the same image.
+HARNESS_TREE = "tools/tritonchip_fpga_harness"
 
 
 def repo_root(start: Path) -> Path:
@@ -91,6 +96,50 @@ def source_identity(root: Path) -> dict[str, Any]:
         "ignored_generated_digest": hashlib.sha256("\n".join(ignored_paths).encode()).hexdigest(),
         "ignored_generated_sample": ignored_paths[:20],
         "untracked_inventory": inventory,
+    }
+
+
+def software_identity(root: Path, implemented_commit: str | None, current: dict[str, Any] | None = None) -> dict[str, Any]:
+    """Relate the checkout that drives the card to the commit the image was built from.
+
+    Conformance and ArchBench run the runtime and compiler of ``root``.  That
+    is the implemented commit when build and measurement are one ``submit``;
+    a later ``measure`` may run from another checkout, and the measurement
+    has to say which.  ``relation`` is ``same-commit``, ``same-tree`` (other
+    commit, no file differs), ``harness-only-diff`` (every differing path is
+    below ``HARNESS_TREE``), ``differs`` or ``unknown`` (the implemented
+    commit is not in this repository, so nothing can be compared).
+    """
+    current = current or source_identity(root)
+    changed: list[str] | None
+    if not implemented_commit:
+        relation, changed = "unknown", None
+    elif implemented_commit == current["commit"]:
+        relation, changed = "same-commit", []
+    else:
+        out = subprocess.run(
+            ["git", "-C", str(root), "diff", "--name-only", implemented_commit, "HEAD"],
+            capture_output=True, text=True,
+        )
+        if out.returncode:
+            relation, changed = "unknown", None
+        else:
+            changed = [line for line in out.stdout.splitlines() if line]
+            if not changed:
+                relation = "same-tree"
+            elif all(path.startswith(HARNESS_TREE + "/") for path in changed):
+                relation = "harness-only-diff"
+            else:
+                relation = "differs"
+    return {
+        "commit": current["commit"],
+        "implemented_commit": implemented_commit,
+        "relation": relation,
+        "dirty": current["dirty"],
+        "tree_digest": current["tree_digest"],
+        "working_tree_digest": current["working_tree_digest"],
+        "changed_count": None if changed is None else len(changed),
+        "changed_paths": None if changed is None else changed[:50],
     }
 
 
@@ -564,6 +613,8 @@ def plan(package_dir: Path, root: Path, manifest: dict[str, Any], adapter_name: 
             "bdf": (manifest.get("board") or {}).get("bdf"),
             "archbench": bool((manifest.get("board") or {}).get("archbench")),
             "completion_fields": ["done_cycles", "done_retired"],
+            "image_profile": image_profile_contract(root, manifest["board"]["profile"])
+            if isinstance(manifest.get("board"), dict) else None,
         },
         "profile_contract": {
             "expected_adapter": profile.expected_adapter,
@@ -644,6 +695,33 @@ def _configured_ooc(root: Path, run_dir: Path, manifest: dict[str, Any], timeout
     return stages
 
 
+def _implementation_verdict(run_dir: Path, profile: Profile, manifest: dict[str, Any], stages: list[dict[str, Any]]) -> dict[str, Any]:
+    """Judge the package/link (or OOC) stages from what they left behind."""
+    missing = [str(p.relative_to(run_dir)) for p in _expected_artifacts(run_dir, profile, manifest["mode"], manifest) if not p.is_file()]
+    stage_ok = all(s.get("returncode") == 0 for s in stages)
+    validation = run_dir / "artifact_validation.json"
+    validation_value = load_json(validation) if validation.is_file() else None
+    validation_ok = validation_value is None or bool(validation_value.get("ok", False))
+    failed_checks = {check.get("name", "") for check in (validation_value or {}).get("checks", []) if not check.get("ok", False)}
+    if stage_ok and not missing and validation_ok:
+        status = "PASS"
+    elif manifest["mode"] == "ooc" and not validation_ok:
+        status = "OOC_FAIL"
+    elif failed_checks & {"timing_clean", "drc_clean"}:
+        # A routed report exists and says the design did not close.  v++ exits
+        # non-zero for that too, so this has to be asked before "the link
+        # command failed" -- otherwise a timing failure is filed as a build
+        # failure and the report that explains it is never looked at.
+        status = "TIMING_FAIL"
+    elif not stage_ok or missing:
+        status = "BUILD_FAIL"
+    elif any(name.startswith("timing_") or name in {"routed_timing_report", "drc_report"} for name in failed_checks):
+        status = "TIMING_FAIL"
+    else:
+        status = "BUILD_FAIL"
+    return {"status": status, "missing": missing, "validation": validation_value}
+
+
 def submit(package_dir: Path, root: Path, manifest: dict[str, Any], state_dir: Path, adapter_name: str, allow_dirty: bool = False, timeout_s: int | None = None, run_id: str | None = None, skip_board: bool = False) -> dict[str, Any]:
     validate_manifest(manifest)
     source = source_identity(root)
@@ -696,53 +774,42 @@ def submit(package_dir: Path, root: Path, manifest: dict[str, Any], state_dir: P
                 shutil.copy2(source_path, destination)
         run["status"] = "RUNNING"
         dump_json(run_dir / "run.json", run)
+        measurement: dict[str, Any] | None = None
+        measurement_error: str | None = None
+        board_status: str | None = None
+        board_requested = manifest["mode"] == "full" and bool(manifest.get("board")) and not skip_board
         if manifest["mode"] == "ooc" and adapter_name != "mock":
             # OOC concurrency is deliberately user-configured through the
             # submitted experiment; profiles no longer reserve phantom OOC
             # slots. Full implementations still use the host-wide lease.
             stages = _configured_ooc(root, run_dir, manifest, timeout_s)
+            verdict = _implementation_verdict(run_dir, profile, manifest, stages)
         else:
             lease_context = lease(state_dir, "full") if manifest["mode"] == "full" else contextlib.nullcontext()
             with lease_context:
                 stages = adapter.run(root, run_dir, profile, manifest["mode"], timeout_s)
-        missing = [str(p.relative_to(run_dir)) for p in _expected_artifacts(run_dir, profile, manifest["mode"], manifest) if not p.is_file()]
-        stage_ok = all(s.get("returncode") == 0 for s in stages)
-        validation = run_dir / "artifact_validation.json"
-        validation_value = load_json(validation) if validation.is_file() else None
-        validation_ok = validation_value is None or bool(validation_value.get("ok", False))
-        failed_checks = {check.get("name", "") for check in (validation_value or {}).get("checks", []) if not check.get("ok", False)}
-        measurement: dict[str, Any] | None = None
-        measurement_error: str | None = None
-        # Programming and board execution are a second, explicit gate after
-        # link validation.  Keeping it under the same full lease prevents a
-        # second worker from replacing the image between conformance and the
-        # ArchBench run.  Existing manifests without ``board`` retain the
-        # build-only behaviour for offline and OOC workflows.
-        if manifest["mode"] == "full" and manifest.get("board") and not skip_board and stage_ok and not missing and validation_ok:
-            try:
-                with lease(state_dir, "full"):
-                    measurement = measure_board(
-                        root=root, run_dir=run_dir, profile=profile,
-                        manifest=manifest, timeout_s=timeout_s,
-                    )
-                stages.extend(measurement.get("stages", []))
-            except (MeasurementError, OSError, ValueError) as exc:
-                measurement_error = str(exc)
-        if stage_ok and not missing and validation_ok:
-            final_status = "PASS"
-        elif manifest["mode"] == "ooc" and not validation_ok:
-            final_status = "OOC_FAIL"
-        elif not stage_ok or missing:
-            final_status = "BUILD_FAIL"
-        elif any(name.startswith("timing_") or name in {"routed_timing_report", "drc_clean", "drc_report"} for name in failed_checks):
-            final_status = "TIMING_FAIL"
-        else:
-            final_status = "BUILD_FAIL"
-        if manifest["mode"] == "full" and manifest.get("board") and not skip_board and stage_ok and not missing and validation_ok:
-            if measurement_error:
-                final_status = "BOARD_FAIL"
-            elif measurement is None:
-                final_status = "BOARD_FAIL"
+                verdict = _implementation_verdict(run_dir, profile, manifest, stages)
+                # Programming and board execution are a second, explicit gate
+                # after link validation.  They run under the lease the build
+                # took, not a new one, so a second worker cannot replace the
+                # image between the link, conformance and the ArchBench run.
+                # Manifests without ``board`` keep the build-only behaviour.
+                if board_requested and verdict["status"] == "PASS":
+                    try:
+                        measurement = measure_board(
+                            root=root, run_dir=run_dir, profile=profile,
+                            manifest=manifest, timeout_s=timeout_s,
+                            software=software_identity(root, source["commit"], source),
+                        )
+                    except MeasurementError as exc:
+                        measurement, measurement_error, board_status = exc.partial, str(exc), exc.status
+                    except (OSError, ValueError) as exc:
+                        measurement_error, board_status = str(exc), "BOARD_FAIL"
+                    if measurement:
+                        stages.extend(measurement.get("stages", []))
+        final_status = board_status or verdict["status"]
+        missing = verdict["missing"]
+        validation_value = verdict["validation"]
         result = {"schema_version": 1, "run_id": run_id, "status": final_status, "source_commit": source["commit"], "target": manifest["target"], "mode": manifest["mode"], "stages": stages, "missing_artifacts": missing, "artifact_validation": validation_value, "measurement": measurement, "measurement_error": measurement_error, "board_deferred": bool(skip_board and manifest.get("board")), "artifacts": {str(p.relative_to(run_dir)): file_sha256(p) for p in run_dir.rglob("*") if p.is_file() and p.parent.name == "artifacts"}, "resource_before": resource_before, "resource_after": host_resource_snapshot(state_dir), "elapsed_s": time.time() - started}
         dump_json(run_dir / "result.json", result)
         run.update({"status": result["status"], "finished_at": time.time()})
@@ -773,13 +840,33 @@ def status(state_dir: Path, run_id: str) -> dict[str, Any]:
     return run
 
 
-def measure_existing(package_dir: Path, root: Path, state_dir: Path, run_id: str, timeout_s: int | None = None) -> dict[str, Any]:
+def measure_existing(
+    package_dir: Path,
+    root: Path,
+    state_dir: Path,
+    run_id: str,
+    timeout_s: int | None = None,
+    *,
+    board_manifest: dict[str, Any] | None = None,
+    allow_dirty: bool = False,
+    allow_source_mismatch: bool = False,
+) -> dict[str, Any]:
     """Run the board stage for an already-linked Harness run.
 
     This is useful when implementation and board-access windows are managed
-    separately.  It reuses the manifest and exact XCLBIN recorded by the run;
-    callers cannot accidentally measure a different artifact by pointing at a
+    separately.  It reuses the exact XCLBIN recorded by the run; callers
+    cannot accidentally measure a different artifact by pointing at a
     convenient build directory.
+
+    The board configuration is the one the run was submitted with.  A run
+    submitted without one can be given it here (``board_manifest``): that
+    manifest must name the same candidate, target and mode, and may only name
+    the commit the run was built from.
+
+    ``root`` supplies the runtime, conformance suite and ArchBench that drive
+    the card, and it may have moved on since the build.  It must be clean, and
+    it may differ from the implemented commit only below ``HARNESS_TREE``;
+    anything else needs the explicit override and is recorded as such.
     """
     run_dir = state_dir / "runs" / run_id
     run_path = run_dir / "run.json"
@@ -789,11 +876,36 @@ def measure_existing(package_dir: Path, root: Path, state_dir: Path, run_id: str
     run = load_json(run_path)
     result = load_json(result_path)
     manifest = run.get("manifest")
-    if not isinstance(manifest, dict) or not manifest.get("board"):
-        raise HarnessError(f"run {run_id} has no board measurement configuration")
-    if result.get("mode") != "full" or result.get("status") not in {"PASS", "BOARD_FAIL"}:
+    if not isinstance(manifest, dict):
+        raise HarnessError(f"run {run_id} recorded no manifest")
+    implemented_commit = (run.get("source") or {}).get("commit") or result.get("source_commit")
+    board_config_source = "submit"
+    if board_manifest is not None:
+        validate_manifest(board_manifest)
+        if not isinstance(board_manifest.get("board"), dict):
+            raise HarnessError("the manifest given to measure has no board block")
+        for key in ("candidate_id", "target", "mode"):
+            if board_manifest.get(key) != manifest.get(key):
+                raise HarnessError(
+                    f"the manifest given to measure names {key} {board_manifest.get(key)!r}; "
+                    f"run {run_id} was built as {manifest.get(key)!r}"
+                )
+        wanted = board_manifest.get("source_commit")
+        if wanted and wanted != implemented_commit:
+            raise HarnessError(
+                f"the manifest given to measure names source_commit {wanted!r}; "
+                f"run {run_id} was built from {implemented_commit!r}"
+            )
+        manifest = dict(manifest, board=board_manifest["board"])
+        board_config_source = "measure"
+    if not manifest.get("board"):
+        raise HarnessError(
+            f"run {run_id} has no board measurement configuration; "
+            "pass measure --manifest with a board block"
+        )
+    if result.get("mode") != "full" or result.get("status") not in {"PASS", "BOARD_FAIL", "ARCHBENCH_FAIL"}:
         raise HarnessError(f"run {run_id} is not a successful full implementation")
-    profile = load_profile(package_dir, str(run.get("target")))
+    profile = load_profile(package_dir, str(manifest["target"]))
     current_profile_hash = hashlib.sha256(
         json.dumps(profile.data, sort_keys=True).encode()
     ).hexdigest()
@@ -803,24 +915,51 @@ def measure_existing(package_dir: Path, root: Path, state_dir: Path, run_id: str
             f"run {run_id} profile changed after implementation; "
             "rebuild the implementation before measuring it"
         )
+    software = software_identity(root, implemented_commit)
+    if software["dirty"] and not allow_dirty:
+        raise HarnessError(
+            "working tree is dirty; commit the checkout that drives the card or pass --allow-dirty"
+        )
+    if software["relation"] in {"differs", "unknown"} and not allow_source_mismatch:
+        raise HarnessError(
+            f"this checkout ({software['commit']}) is not the commit run {run_id} was built from "
+            f"({implemented_commit}) and differs outside {HARNESS_TREE} "
+            f"(relation: {software['relation']}); check out the implemented commit "
+            "or pass --allow-source-mismatch"
+        )
+    if board_config_source == "measure":
+        dump_json(run_dir / "board_manifest.json", board_manifest)
+    measurement: dict[str, Any] | None = None
+    error: str | None = None
+    final_status = "PASS"
     with lease(state_dir, "full"):
         try:
             measurement = measure_board(root=root, run_dir=run_dir, profile=profile,
-                                         manifest=manifest, timeout_s=timeout_s)
-        except (MeasurementError, OSError, ValueError) as exc:
-            result["measurement"] = None
-            result["measurement_error"] = str(exc)
-            result["status"] = "BOARD_FAIL"
-            dump_json(result_path, result)
-            run.update({"status": "BOARD_FAIL", "finished_at": time.time(),
-                        "error": str(exc)})
-            dump_json(run_path, run)
-            return result
-    result["measurement"] = measurement
-    result["measurement_error"] = None
-    result["status"] = "PASS"
+                                         manifest=manifest, timeout_s=timeout_s,
+                                         software=software)
+        except MeasurementError as exc:
+            measurement, error, final_status = exc.partial, str(exc), exc.status
+        except (OSError, ValueError) as exc:
+            error, final_status = str(exc), "BOARD_FAIL"
+    # The implementation stages keep their place; the board stages of an
+    # earlier attempt are replaced by this one's.
+    board_stage_names = {"program_check", "program", "conformance", "archbench"}
+    stages = [s for s in result.get("stages", []) if s.get("name") not in board_stage_names]
+    stages.extend((measurement or {}).get("stages", []))
+    result.update({
+        "stages": stages,
+        "measurement": measurement,
+        "measurement_error": error,
+        "status": final_status,
+        "board_deferred": False,
+        "board_config_source": board_config_source,
+    })
     dump_json(result_path, result)
-    run.update({"status": "PASS", "finished_at": time.time()})
+    run.update({"status": final_status, "finished_at": time.time()})
+    if error:
+        run["error"] = error
+    else:
+        run.pop("error", None)
     dump_json(run_path, run)
     return result
 
@@ -832,8 +971,13 @@ def reconcile(state_dir: Path, run_id: str, *, terminate: bool = False) -> dict[
     if not run_path.is_file():
         raise HarnessError(f"unknown run {run_id}")
     run = load_json(run_path)
-    active_path = run_dir / "active_process.json"
-    active = load_json(active_path) if active_path.is_file() else None
+    # execute_command leaves the record two levels above its log: the run
+    # directory for a build stage, logs/ for a board stage.
+    active = None
+    for active_path in (run_dir / "active_process.json", run_dir / "logs" / "active_process.json"):
+        if active_path.is_file():
+            active = load_json(active_path)
+            break
     alive = bool(active and _same_process(active))
     terminated = False
     if terminate and alive:

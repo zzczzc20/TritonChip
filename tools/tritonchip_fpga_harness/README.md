@@ -77,7 +77,9 @@ checks before it starts Vivado. It writes raw logs and artifacts outside the
 checkout; a PASS still requires a non-empty XO/XCLBIN, `VPP_RC=0`, `LINK_OK`,
 clock readback, a routed timing report with clean WNS/TNS/WHS/THS and zero
 failing endpoints, and a DRC report with zero errors. Results distinguish
-`PASS`, `TIMING_FAIL`, `BUILD_FAIL`, and `OOC_FAIL`.
+`PASS`, `TIMING_FAIL`, `BUILD_FAIL`, and `OOC_FAIL`. A link that produced a
+routed report saying the design did not close is `TIMING_FAIL` even though
+`v++` exited non-zero; `BUILD_FAIL` is a link that did not get that far.
 
 If an SSH session or controller is lost during a vendor run, the worker leaves
 an `active_process.json` record with PID start time, process group, and boot ID.
@@ -165,8 +167,7 @@ hardware conformance suite, and collect raw ArchBench records:
 {
   "board": {
     "backend": "fpga-u280",
-    "bdf": "0000:65:00.1",
-    "profile": "core-vrf-sync-v1",
+    "profile": "core-vrf-sync-v2",
     "program": true,
     "conformance": true,
     "archbench": {"tiers": ["tiny", "small"], "jobs": 1, "counters": true}
@@ -174,12 +175,30 @@ hardware conformance suite, and collect raw ArchBench records:
 }
 ```
 
-`submit` first validates the routed build, then holds the full-board lease
-while it runs the profile programmer's `--check` and `--go`, conformance with
-`--require-measured`, and ArchBench. U50 and U280 use their profile's
-programmer (`flow/fpga/program.sh` and `flow/fpga/u280/program.sh`); a worker
-may override any step with an explicit argv-only command. The U280 programmer
-requires `TNCA_BDF` or the manifest `bdf` and refuses to guess among cards.
+`submit` validates the routed build and then, under the same full lease, runs
+the programmer's `--check` and `--go`, conformance with `--require-measured`,
+and ArchBench. Both boards use the flow's own programmer,
+`flow/fpga/program.sh`, which takes its card from `TNCA_BOARD` and
+`flow/fpga/boards.sh` and checks the shell's interface UUID, the device being
+idle, and the temperatures before it loads anything. The harness sets
+`TNCA_BOARD` from the target profile. `board.bdf` is optional: it overrides the
+card `boards.sh` records for that board (exported to the programmer as `BDF`),
+for a host whose card sits at another address. A worker may replace any step
+with an explicit argv-only command.
+
+`board.profile` is the device profile conformance and ArchBench drive the card
+as. The flow takes no profile argument -- the image is whatever the RTL
+parameter defaults elaborate to -- so the harness compares the named profile's
+parameters (`spec/r1_profiles.json`) with those defaults before it touches the
+card:
+
+- a parameter the profile declares and the RTL contradicts stops the run
+  (`BOARD_FAIL`, `failed_stage: image_profile`);
+- a profile that matches while another profile matches *and* pins down more
+  switches is reported as `image_profile.more_specific` in `plan` and in the
+  measurement. That is the sign of an older name on a newer image: at this
+  revision the default build is `core-vrf-sync-v2`, and `core-vrf-sync-v1`
+  would label its cycles as a machine that was not on the card.
 
 The ArchBench stage writes the untouched JSONL plus `archbench_summary.json`.
 The summary retains total and per-tier cycles, `done_cycles_total`,
@@ -189,11 +208,17 @@ its timing unit is cycles, and the requested counters are present.
 `done_cycles` is the completion latency used by ArchBench; `perf_*` counters
 are retained for stall attribution and are never substituted for it.
 
-If implementation and board access are separate, run the second gate later:
+Every board stage, passed or failed, leaves `board_measurement.json`: the
+stages that ran, the XCLBIN hash, the profile check, and the identity of the
+checkout whose runtime drove the card. A failure names its `failed_stage`.
+Programming or conformance failing is `BOARD_FAIL`; an ArchBench point that is
+missing, simulated, failed, or without its completion counters is
+`ARCHBENCH_FAIL`.
 
-Submit the board manifest with `--skip-board` during the implementation
-window; this retains the board configuration and exact XCLBIN without loading
-the card.
+If implementation and board access are separate windows, submit the board
+manifest with `--skip-board` during the implementation window; this keeps the
+board configuration and the exact XCLBIN without loading the card. Run the
+second gate later:
 
 ```bash
 python3 tools/tritonchip_fpga_harness/cli.py submit candidate-u280.json \
@@ -202,10 +227,23 @@ python3 tools/tritonchip_fpga_harness/cli.py measure RUN_ID \
   --state-dir "$HOME/.tritonchip-fpga-harness" --timeout 21600 --json
 ```
 
+A run that was submitted with no `board` block can be given one at that point
+with `measure RUN_ID --manifest candidate-u280.json`. The manifest must name
+the same candidate, target and mode, and no commit other than the one the run
+was built from; the run's own `manifest.json` is left as submitted and the
+late block is kept beside it as `board_manifest.json`.
+
+`measure` drives the card with the runtime, conformance suite and ArchBench of
+the checkout it is run from, which may have moved on since the build. It
+refuses a dirty checkout, and one that differs from the implemented commit
+anywhere outside `tools/tritonchip_fpga_harness/`; `--allow-dirty` and
+`--allow-source-mismatch` override that and are recorded in
+`measurement.software` (`relation`: `same-commit`, `same-tree`,
+`harness-only-diff`, `differs` or `unknown`).
+
 The result and `export` packet contain the exact source commit, XCLBIN hash,
 board/profile, command logs, conformance JSON, raw ArchBench JSONL, and the
-cycle/counter summary. Missing board evidence, simulated records, missing
-completion cycles, or an incomplete ArchBench point produces `BOARD_FAIL`.
+cycle/counter summary.
 
 ## SSH worker dispatch
 

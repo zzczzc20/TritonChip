@@ -63,6 +63,9 @@ def main(argv: list[str] | None = None) -> int:
     m.add_argument("run_id")
     m.add_argument("--state-dir")
     m.add_argument("--timeout", type=int)
+    m.add_argument("--manifest", type=Path, help="board configuration for a run submitted without one; must name the same candidate, target and mode")
+    m.add_argument("--allow-dirty", action="store_true", help="measure from a checkout with uncommitted changes; recorded in the result")
+    m.add_argument("--allow-source-mismatch", action="store_true", help="measure from a checkout that differs from the implemented commit outside the harness; recorded in the result")
     m.add_argument("--json", action="store_true")
     rd = sub.add_parser("dispatch", help="submit a manifest to a prepared U50/U280 SSH worker")
     rd.add_argument("host")
@@ -129,7 +132,12 @@ def main(argv: list[str] | None = None) -> int:
         elif args.command == "status":
             value = status(_state(args.state_dir, root), args.run_id)
         elif args.command == "measure":
-            value = measure_existing(HERE, root, _state(args.state_dir, root), args.run_id, args.timeout)
+            value = measure_existing(
+                HERE, root, _state(args.state_dir, root), args.run_id, args.timeout,
+                board_manifest=load_json(args.manifest) if args.manifest else None,
+                allow_dirty=args.allow_dirty,
+                allow_source_mismatch=args.allow_source_mismatch,
+            )
         elif args.command == "dispatch":
             value = dispatch_manifest(
                 host=args.host,

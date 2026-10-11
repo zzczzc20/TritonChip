@@ -13,6 +13,7 @@
     "hypothesis": {"type": "string"},
     "board": {
       "type": "object",
+      "required": ["profile"],
       "properties": {
         "backend": {"type": "string", "minLength": 1},
         "profile": {"type": "string", "minLength": 1},

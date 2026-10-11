@@ -9,8 +9,10 @@ is accepted only when it is explicitly marked ``measured-board``.
 
 from __future__ import annotations
 
+import hashlib
 import json
 import os
+import re
 import sys
 from pathlib import Path
 from typing import Any, Mapping, Sequence
@@ -20,7 +22,18 @@ from .schema import dump_json
 
 
 class MeasurementError(RuntimeError):
-    """The board or benchmark evidence did not satisfy the harness contract."""
+    """The board or benchmark evidence did not satisfy the harness contract.
+
+    ``status`` is the result status the failure maps to.  ``partial`` is the
+    record of the stages that did run, so a board stage that stopped half way
+    still says how far it got instead of leaving only log files behind.
+    """
+
+    def __init__(self, message: str, *, status: str = "BOARD_FAIL",
+                 partial: dict[str, Any] | None = None) -> None:
+        super().__init__(message)
+        self.status = status
+        self.partial = partial
 
 
 def _replace(value: str, substitutions: Mapping[str, str]) -> str:
@@ -74,13 +87,18 @@ def _run(
 
 
 def _default_conformance(
-    *, root: Path, run_dir: Path, backend: str, xclbin: Path, result_file: Path
+    *, root: Path, run_dir: Path, backend: str, profile: str, xclbin: Path, result_file: Path
 ) -> list[str]:
+    # conformance.py defaults to core-vrf-sync-v1 whatever image is loaded.
+    # Name the profile the manifest names, so conformance and ArchBench drive
+    # the card as the same machine.
     return [
         sys.executable,
         str(root / "tools/r36/conformance.py"),
         "--backends",
         backend,
+        "--profile",
+        profile,
         "--xclbin",
         str(xclbin),
         "--require-measured",
@@ -122,6 +140,80 @@ def _default_archbench(
         "--out",
         str(output),
     ] + (["--counters"] if counters else [])
+
+
+_PARAMETER = re.compile(r"(?m)^\s*parameter\s+(?:integer\s+)?([A-Za-z_]\w*)\s*=\s*(\d+)\b")
+
+# Outermost first.  Each level passes the parameters it declares down to the
+# next, so the first module to declare a name decides its value in the image.
+_IMAGE_RTL = ("rtl/board/tnca_u50_xo.v", "rtl/fpga/tnca_u50_top.v", "rtl/fpga/tnca_fpga_top.v")
+
+
+def _declared_parameters(profile: Mapping[str, Any]) -> dict[str, int]:
+    declared: dict[str, int] = {}
+    for section in (profile.get("elaboration"), (profile.get("implementation") or {}).get("rtl_parameters")):
+        if isinstance(section, dict):
+            declared.update({str(k): v for k, v in section.items() if isinstance(v, int) and not isinstance(v, bool)})
+    return declared
+
+
+def image_profile_contract(root: Path, arch_profile: str) -> dict[str, Any] | None:
+    """Compare a device profile's parameters with the image this checkout builds.
+
+    The package/link flow takes no profile argument: the image is whatever the
+    RTL parameter defaults elaborate to.  A manifest that names another
+    profile would label the measurement as a machine that was not on the card.
+
+    Returns ``None`` when the checkout has no profile table or board RTL to
+    read (the contract is then unknown, not passed).  ``mismatches`` are
+    parameters the named profile declares and the RTL defaults contradict.
+    ``more_specific`` names profiles that also match and pin down more of the
+    switches -- the usual sign that an older profile name was reused for a
+    newer image.
+    """
+    try:
+        profiles = json.loads((root / "spec/r1_profiles.json").read_text(encoding="utf-8"))["profiles"]
+    except (OSError, ValueError, KeyError, TypeError):
+        return None
+    if not isinstance(profiles, dict) or not isinstance(profiles.get(arch_profile), dict):
+        return None
+    defaults: dict[str, int] = {}
+    for relative in _IMAGE_RTL:
+        try:
+            text = (root / relative).read_text(encoding="utf-8", errors="replace")
+        except OSError:
+            continue
+        for name, value in _PARAMETER.findall(text):
+            defaults.setdefault(name, int(value))
+    if not defaults:
+        return None
+
+    def compare(name: str) -> tuple[dict[str, int], list[dict[str, Any]]]:
+        checked: dict[str, int] = {}
+        wrong: list[dict[str, Any]] = []
+        for key, want in sorted(_declared_parameters(profiles[name]).items()):
+            if key not in defaults:
+                continue
+            checked[key] = want
+            if defaults[key] != want:
+                wrong.append({"parameter": key, "profile": want, "rtl_default": defaults[key]})
+        return checked, wrong
+
+    checked, mismatches = compare(arch_profile)
+    more_specific = []
+    for other in sorted(profiles):
+        if other == arch_profile or not isinstance(profiles[other], dict):
+            continue
+        other_checked, other_wrong = compare(other)
+        if not other_wrong and set(other_checked) > set(checked):
+            more_specific.append(other)
+    return {
+        "profile": arch_profile,
+        "checked": checked,
+        "mismatches": mismatches,
+        "more_specific": more_specific,
+        "sources": ["spec/r1_profiles.json", *_IMAGE_RTL],
+    }
 
 
 def _is_conformance_pass(path: Path) -> tuple[bool, dict[str, Any]]:
@@ -275,8 +367,17 @@ def measure_board(
     profile: Any,
     manifest: dict[str, Any],
     timeout_s: int | None,
+    software: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
-    """Program a board, run conformance, and optionally run ArchBench."""
+    """Program a board, run conformance, and optionally run ArchBench.
+
+    ``software`` is the identity of the checkout whose runtime, conformance
+    suite and ArchBench drive the card; it is recorded with the measurement
+    because that checkout need not be the commit the image was built from.
+
+    Every exit, pass or fail, writes ``board_measurement.json``.  A failure
+    raises :class:`MeasurementError` carrying the same record.
+    """
     config = manifest.get("board")
     if not isinstance(config, dict):
         raise MeasurementError("board measurement requires a manifest.board object")
@@ -294,7 +395,11 @@ def measure_board(
             f"board backend {backend!r} does not match profile board {board!r} "
             f"(expected {expected_backend!r})"
         )
-    arch_profile = str(config.get("profile", "core-vrf-sync-v1"))
+    arch_profile = config.get("profile")
+    if not isinstance(arch_profile, str) or not arch_profile:
+        # No default: the profile is a claim about which machine is on the
+        # card, and a guessed one would be recorded with every cycle count.
+        raise MeasurementError("board.profile is required: name the device profile of the image")
     substitutions = {
         "{repo}": str(root.resolve()),
         "{run_dir}": str(run_dir.resolve()),
@@ -310,18 +415,71 @@ def measure_board(
         "TNCA_HARNESS_XCLBIN": str(xclbin.resolve()),
     }
     # Vendor commands are executed without a shell so that argv is recorded
-    # exactly.  Add the profile's tool directories explicitly instead of
-    # relying on a user's interactive shell having sourced settings64.sh.
+    # exactly.  Add the tool directories explicitly instead of relying on a
+    # user's interactive shell having sourced settings64.sh or XRT's setup.sh:
+    # the programmer needs xclbinutil, and both installations ship one.
+    tool_dirs: list[str] = []
     vitis_root = profile.data.get("vitis_root")
     if vitis_root:
         env["XILINX_VITIS"] = str(vitis_root)
         env["XILINX_PLATFORMS"] = str(profile.data.get("platforms_root", ""))
-        env["PATH"] = os.pathsep.join([str(Path(vitis_root) / "bin"), os.environ.get("PATH", "")])
+        tool_dirs.append(str(Path(vitis_root) / "bin"))
+    xrt_bin = Path(os.environ.get("XILINX_XRT", "/opt/xilinx/xrt")) / "bin"
+    if xrt_bin.is_dir():
+        tool_dirs.append(str(xrt_bin))
+    if tool_dirs:
+        env["PATH"] = os.pathsep.join(tool_dirs + [os.environ.get("PATH", "")])
     for key, value in profile.data.get("environment", {}).items():
         env[str(key)] = str(value)
     if config.get("bdf"):
+        # flow/fpga/program.sh reads BDF; without it the card is the one
+        # flow/fpga/boards.sh records for TNCA_BOARD.  TNCA_BDF is kept for
+        # manifest-supplied commands.
+        env["BDF"] = str(config["bdf"])
         env["TNCA_BDF"] = str(config["bdf"])
+
     stages: list[dict[str, Any]] = []
+    conformance_summary: dict[str, Any] | None = None
+    arch_summary: dict[str, Any] | None = None
+    contract = image_profile_contract(root, arch_profile)
+    xclbin_sha256 = _sha256(xclbin)
+
+    def record(status: str, error: str | None = None, failed_stage: str | None = None) -> dict[str, Any]:
+        value: dict[str, Any] = {
+            "schema_version": 1,
+            "schema": "tritonchip-fpga-harness-board-measurement/1",
+            "status": status,
+            "board": board,
+            "backend": backend,
+            "bdf": config.get("bdf"),
+            "xclbin": str(xclbin.relative_to(run_dir)),
+            "xclbin_sha256": xclbin_sha256,
+            "profile": arch_profile,
+            "profile_hash": _profile_hash(profile),
+            "image_profile": contract,
+            "clock_hz": float(profile.data.get("device_clock_mhz", 0)) * 1e6,
+            "software": software,
+            "stages": stages,
+            "conformance": conformance_summary,
+            "archbench": arch_summary,
+        }
+        if error is not None:
+            value["error"] = error
+            value["failed_stage"] = failed_stage
+        dump_json(run_dir / "board_measurement.json", value)
+        return value
+
+    def fail(message: str, stage: str, status: str = "BOARD_FAIL") -> MeasurementError:
+        return MeasurementError(message, status=status, partial=record(status, message, stage))
+
+    if contract and contract["mismatches"]:
+        detail = ", ".join(
+            f"{m['parameter']}: profile {m['profile']}, RTL default {m['rtl_default']}" for m in contract["mismatches"]
+        )
+        raise fail(
+            f"board profile {arch_profile!r} is not the image this checkout builds ({detail})",
+            "image_profile",
+        )
 
     program_cfg = config.get("program", True)
     if program_cfg:
@@ -331,53 +489,54 @@ def measure_board(
         else:
             script = config.get("program_script") or profile.data.get("program_script")
             if not script:
-                raise MeasurementError(
-                    f"{board} has no program_script; set board.program.command explicitly"
-                )
+                raise fail(f"{board} has no program_script; set board.program.command explicitly", "program_check")
             check_command = [str(root / str(script)), "--check", "{xclbin}"]
             go_command = [str(root / str(script)), "--go", "{xclbin}"]
         if check_command:
-            checked, record = _run(
+            checked, stage = _run(
                 _argv(check_command, substitutions, "board.program.check_command"),
                 root=root, run_dir=run_dir, log_name="program_check", env=env, timeout_s=timeout_s,
             )
-            stages.append(record)
+            stages.append(stage)
             if checked.returncode != 0:
-                raise MeasurementError("board programming preflight failed")
-        loaded, record = _run(
+                raise fail("board programming preflight failed", "program_check")
+        loaded, stage = _run(
             _argv(go_command, substitutions, "board.program.command"),
             root=root, run_dir=run_dir, log_name="program", env=env, timeout_s=timeout_s,
         )
-        stages.append(record)
+        stages.append(stage)
         if loaded.returncode != 0:
-            raise MeasurementError("board programming failed")
+            raise fail("board programming failed", "program")
 
-    conformance_summary: dict[str, Any] | None = None
     conformance_cfg = config.get("conformance", True)
     if conformance_cfg:
         conformance_cfg = conformance_cfg if isinstance(conformance_cfg, dict) else {}
         result_name = str(conformance_cfg.get("result_file", "board/conformance.json"))
         result_path = _relative(result_name, run_dir)
+        result_path.parent.mkdir(parents=True, exist_ok=True)
+        if result_path.exists():
+            # A verdict left by an earlier attempt must not answer for this one.
+            result_path.unlink()
         command = conformance_cfg.get("command") or _default_conformance(
-            root=root, run_dir=run_dir, backend=backend, xclbin=xclbin, result_file=result_path
+            root=root, run_dir=run_dir, backend=backend, profile=arch_profile,
+            xclbin=xclbin, result_file=result_path,
         )
-        finished, record = _run(
+        finished, stage = _run(
             _argv(command, substitutions, "board.conformance.command"),
             root=root, run_dir=run_dir, log_name="conformance", env=env, timeout_s=timeout_s,
         )
-        stages.append(record)
+        stages.append(stage)
         passed, conformance_summary = _is_conformance_pass(result_path)
         conformance_summary["result_file"] = str(result_path.relative_to(run_dir)) if result_path.is_file() else None
         if finished.returncode != 0 or not passed:
-            raise MeasurementError("board conformance failed")
+            raise fail("board conformance failed", "conformance")
 
-    arch_summary: dict[str, Any] | None = None
     arch_cfg = config.get("archbench")
     if arch_cfg:
         arch_cfg = arch_cfg if isinstance(arch_cfg, dict) else {}
         tiers = arch_cfg.get("tiers", ["tiny", "small"])
         if not isinstance(tiers, list) or not tiers or not all(isinstance(x, str) and x for x in tiers):
-            raise MeasurementError("board.archbench.tiers must be a non-empty string list")
+            raise fail("board.archbench.tiers must be a non-empty string list", "archbench", "ARCHBENCH_FAIL")
         output_name = str(arch_cfg.get("result_file", "board/archbench.jsonl"))
         output_path = _relative(output_name, run_dir)
         output_path.parent.mkdir(parents=True, exist_ok=True)
@@ -388,43 +547,28 @@ def measure_board(
             tiers=tiers, output=output_path, jobs=int(arch_cfg.get("jobs", 1)),
             counters=bool(arch_cfg.get("counters", True)),
         )
-        finished, record = _run(
+        finished, stage = _run(
             _argv(command, substitutions, "board.archbench.command"),
             root=root, run_dir=run_dir, log_name="archbench", env=env,
             timeout_s=arch_cfg.get("timeout_s", timeout_s),
         )
-        stages.append(record)
-        arch_summary = summarize_archbench(
-            output_path, backend=backend,
-            expected_clock_hz=profile.data.get("device_clock_mhz", 0) * 1e6,
-            require_counters=bool(arch_cfg.get("counters", True)),
-        )
+        stages.append(stage)
+        try:
+            arch_summary = summarize_archbench(
+                output_path, backend=backend,
+                expected_clock_hz=profile.data.get("device_clock_mhz", 0) * 1e6,
+                require_counters=bool(arch_cfg.get("counters", True)),
+            )
+        except MeasurementError as exc:
+            raise fail(str(exc), "archbench", "ARCHBENCH_FAIL") from exc
         dump_json(run_dir / "archbench_summary.json", arch_summary)
         if finished.returncode != 0 or arch_summary["status"] != "PASS":
-            raise MeasurementError("ArchBench measurement failed")
+            raise fail("ArchBench measurement failed", "archbench", "ARCHBENCH_FAIL")
 
-    result = {
-        "schema_version": 1,
-        "schema": "tritonchip-fpga-harness-board-measurement/1",
-        "status": "PASS",
-        "board": board,
-        "backend": backend,
-        "xclbin": str(xclbin.relative_to(run_dir)),
-        "xclbin_sha256": _sha256(xclbin),
-        "profile": arch_profile,
-        "profile_hash": _profile_hash(profile),
-        "clock_hz": float(profile.data.get("device_clock_mhz", 0)) * 1e6,
-        "stages": stages,
-        "conformance": conformance_summary,
-        "archbench": arch_summary,
-    }
-    dump_json(run_dir / "board_measurement.json", result)
-    return result
+    return record("PASS")
 
 
 def _sha256(path: Path) -> str:
-    import hashlib
-
     h = hashlib.sha256()
     with path.open("rb") as fh:
         for block in iter(lambda: fh.read(1024 * 1024), b""):
@@ -434,8 +578,5 @@ def _sha256(path: Path) -> str:
 
 def _profile_hash(profile: Any) -> str:
     """Hash the exact board profile used for programming and measurement."""
-    import hashlib
-
     payload = json.dumps(profile.data, sort_keys=True).encode()
     return hashlib.sha256(payload).hexdigest()
-

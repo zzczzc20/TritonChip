@@ -29,14 +29,19 @@ For a U280 worker, also verify:
 
 - Vitis 2023.2 and the U280 platform
   `xilinx_u280_gen3x16_xdma_1_202211_1`;
-- the U280 XRT device and its PCIe BDF;
-- `TNCA_BDF` is set, or the manifest contains `board.bdf`;
-- the checkout contains the U280 board-selectable flow and
-  `flow/fpga/u280/program.sh`.
+- the U280 XRT device, at the PCIe BDF `flow/fpga/boards.sh` records for
+  `u280` -- or the manifest's `board.bdf` if this host's card is elsewhere;
+- the checkout contains the board-selectable flow (`flow/fpga/boards.sh` with
+  a `u280)` case, and `flow/fpga/program.sh`).
 
-The programmer refuses to guess a U280 card. This is intentional: a successful
-program operation on a different card would invalidate the cycles while still
-looking like a successful command.
+The card is never guessed. The flow's programmer loads only when the device
+at that BDF reports the shell interface UUID `boards.sh` expects for the
+board, so a program operation cannot land on a different card and still look
+like a successful command.
+
+The card is shared. Loading an image replaces whatever another user had
+loaded; agree a window with them before a board stage, and do not kill
+another user's process.
 
 Before a real run, stop or reconcile stale Vivado/Vitis/XRT processes owned by
 the worker account. Do not kill another user's process. The Harness acquires
@@ -81,8 +86,7 @@ profile and `fpga-u280` with a U280 profile; the Harness rejects a mismatch.
   "source_commit": "<FULL_COMMIT_SHA>",
   "board": {
     "backend": "fpga-u280",
-    "bdf": "0000:65:00.1",
-    "profile": "core-vrf-sync-v1",
+    "profile": "core-vrf-sync-v2",
     "program": true,
     "conformance": true,
     "archbench": {
@@ -94,6 +98,12 @@ profile and `fpga-u280` with a U280 profile; the Harness rejects a mismatch.
   }
 }
 ```
+
+`board.profile` must be the device profile of the image the candidate builds.
+`plan` prints the check (`board_measurement.image_profile`): `mismatches` must
+be empty, and a non-empty `more_specific` means a newer profile describes the
+image better than the one named. At this revision the default build is
+`core-vrf-sync-v2`.
 
 Use `program: false` only when the worker has already loaded the exact XCLBIN
 being tested and that loaded-image identity is documented. It still runs
@@ -223,7 +233,22 @@ python3 tools/tritonchip_fpga_harness/cli.py --repo "$PWD" \
 
 `measure` reuses the recorded XCLBIN and manifest. It refuses to measure if
 the profile changed after implementation, so a later board run cannot silently
-use a different flow contract.
+use a different flow contract. It also refuses a dirty checkout, and a
+checkout that differs from the implemented commit outside
+`tools/tritonchip_fpga_harness/`: the runtime and ArchBench that drive the
+card come from the checkout `measure` is run in, and the measurement records
+which one that was (`measurement.software`).
+
+A run built from a manifest with no `board` block is measured by giving the
+board block then:
+
+```bash
+python3 tools/tritonchip_fpga_harness/cli.py --repo "$PWD" \
+  measure RUN_ID --manifest candidate-u280.json \
+  --state-dir "$HOME/.tritonchip-fpga-harness" \
+  --timeout 21600 \
+  --json
+```
 
 ## Evidence and acceptance
 
@@ -288,12 +313,15 @@ failure_or_limitations:
 
 ## Failure handling
 
-Use the result status rather than inferring from a log fragment:
+Use the result status rather than inferring from a log fragment. A failed
+board stage still writes `board_measurement.json`, with `failed_stage` and the
+stages that did run:
 
 - `ENV_FAIL`/doctor failure: worker toolchain, platform, XRT or board setup;
 - `BUILD_FAIL`: package/link/artifact failure;
 - `TIMING_FAIL`: routed timing or DRC acceptance failure;
-- `BOARD_FAIL`: programming or conformance failure;
+- `BOARD_FAIL`: the board profile contradicts the image, or programming or
+  conformance failed;
 - `ARCHBENCH_FAIL`: one or more measured points/counters invalid;
 - `ORPHANED`: controller disappeared during a vendor process.
 
@@ -317,7 +345,7 @@ PYTHONPATH=tools python3 -m unittest discover \
   -s tools/tritonchip_fpga_harness/tests -p 'test_*.py'
 python3 -m py_compile tools/tritonchip_fpga_harness/*.py \
   tools/tritonchip_fpga_harness/adapters/*.py
-bash -n flow/fpga/u280/program.sh
+bash -n flow/fpga/program.sh
 ```
 
 These checks prove the Harness lifecycle and validators. They do not prove that

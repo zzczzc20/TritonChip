@@ -350,7 +350,10 @@ U280 有三个 SLR，HBM 接口位于 SLR0；板卡提供 8 GB HBM、32 个 AXI 
 - predicate 按实际容量重建；直线 IR 的长寿命 vector 可用私有 per-program scratch。
   128-wide int64 图实测触发 896 B / 14 slot，制品为每 role 52 VRF / 两 role，数值正确。
   控制流 spill 仍拒绝；修复 RCTX fallback 漏掉 plain kernel 最后一次重试的问题。
-- 多行/wide reduction、大 GEMM tile、bank 分配、完整资源压力、旧制品合同与冻结性能 gate 待测。
+- 单行 wide reduction 的 sum/amax/RMSNorm/softmax/LayerNorm 在 32/64/128 各 20/20；
+  通用多输出 argmax fold 在 16/32/64/128 各 4/4，覆盖 NaN 与首个并列索引。
+  scalar-carry loop 保持逐迭代内存顺序；实际宽度/kind 写入制品 provenance。
+- 多行 reduction、大 GEMM tile、bank 分配、完整资源压力、旧制品合同与冻结性能 gate 待测。
   证据 `evidence/r40/R40-03/`，默认 block cap 仍 16。
 
 ### R40-04：单核真实 HBM 与可扩展外存接口

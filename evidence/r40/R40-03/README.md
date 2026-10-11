@@ -19,6 +19,15 @@ no HBM bandwidth or performance improvement is claimed. The final RCTX
 resource fallback now retries the plain kernel and returns ResourceError
 instead of an unbound assembly local.
 
-Multi-row/wide reductions, larger GEMM tiles, bank allocation, full resource
+Wide single-row reductions now pass standard Torch sum/amax/RMSNorm/softmax/
+LayerNorm graphs at 32/64/128 (20/20 per width). Scalar-carry loops execute
+in iteration order, with chunked carried state; stores preserve alias order.
+Multi-output body-defined argmax folds pass 4/4 per width (16/32/64/128),
+including NaN propagation, first equal maximum, tails and exact indices.
+All measured launches have zero resident tensor H2D/D2H bytes. The provenance
+records actual reduction widths and kinds. Float LayerNorm uses two-pass
+variance here; this is not Welford or multi-row coverage.
+
+Multi-row reductions, larger GEMM tiles, bank allocation, full resource
 pressure coverage, old-profile contract and frozen performance gates remain
 unmeasured. All R40-03 gates remain not-measured.

@@ -766,14 +766,7 @@ class TTIRImporter:
                     else:
                         self.b._emit('assign', [], [dst, src])
             else:
-                from .packed import lower
-                from .wide import lower as lower_wide
-                if lower_wide(self, inner) or lower(self, inner):
-                    continue
-                handler = getattr(self, '_op_' + name.replace('.', '_'), None)
-                if handler is None:
-                    raise Unsupported(f"no TNCA lowering for TTIR operation {name!r}")
-                handler(inner)
+                self._dispatch(inner)
         nxt = self.b.sbin('add', iv, step)
         self.b._emit('assign', [], [iv, nxt])
         self.b.branch_nz(self.b.const(1), start)
@@ -1692,7 +1685,11 @@ class TTIRImporter:
         if start:
             v = self.b.vbin('add', v, self.b.vmovi(start))
         self._v[op.get_result(0).id()] = v
-        self._offsets[op.get_result(0).id()] = ('arange' if not start else 'indexed', None)
+        rid = op.get_result(0).id()
+        self._offsets[rid] = ('arange' if not start else 'indexed', None)
+        if start and self.index_opt and getattr(op, '_register_chunk', False):
+            self._uscalar[rid] = self._const_scalar(start)
+            self._offsets[rid] = ('contiguous', rid)
 
     def _op_tt_splat(self, op):
         src = op.get_operand(0)

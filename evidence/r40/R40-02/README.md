@@ -46,3 +46,8 @@ actual reserved/high-water heap and code bytes per recovery epoch.
 Recovery 3/3 and deferred lifetime 2/2 revalidated with this allocator.
 Concurrent-stream/thread 1000-call stress passed 5/5; logical storage peaked
 at 4608 B and ended at 2560 B, four buffers, zero leases/unfinished tasks.
+
+Physical heap ledger in the 1000-call stress: actual reserved heap peaked at
+9216 B and ended at 2560 B; code used/peak 5632 B, capacity 393216 B.
+This replaces the earlier missing high-water observation, not the frozen
+latency or replay stress acceptance. See batch_stress_physical.log.

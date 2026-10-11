@@ -659,6 +659,7 @@ def _lower_ttir(module, ctx, kernel_name, params, target, prov, options, stages,
         spill_plan = spill_vectors(imp)
         prov.record('vector_spill', spill_plan)
         prov.record('register_blocks', {'vlen': target.vlen, 'widths': block_widths,
+                                       'reductions': sorted(getattr(imp, '_register_reductions', ())),
                                        'predicate_rematerializations': len(getattr(imp, '_register_predicates', {})),
                                        'external_spill_bytes': spill_plan.get('scratch_bytes', 0)})
     if sparse:

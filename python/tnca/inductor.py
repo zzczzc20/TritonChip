@@ -85,7 +85,7 @@ def _clamp(configs, cap, rows=None):
     return [best] if best is not None else []
 
 
-def _register(cap, reduction_rows=1):
+def _register(cap, reduction_rows=1, gemm_tile=(16,16,16)):
     global _registered
     if _registered:
         return
@@ -115,7 +115,11 @@ def _register(cap, reduction_rows=1):
     from torch._inductor.kernel.bmm import bmm_template
 
     def one_fragment(self):
-        self.mm_configs = [tt.GemmConfig(16, 16, 16, 1, 1, group_m=1)]
+        # These dimensions describe legal TNCA fragments. The inherited
+        # CPU heuristic halves them for CPU compile cost, which would make
+        # the requested wide logical tile disappear before TTIR generation.
+        self.should_scale_configs = False
+        self.mm_configs = [tt.GemmConfig(*gemm_tile, 1, 1, group_m=1)]
         self.exhaustive_configs = list(self.mm_configs)
 
     @register_template_heuristic(mm_template.uid, 'tnca')
@@ -123,7 +127,7 @@ def _register(cap, reduction_rows=1):
     @register_template_heuristic(mm_template.uid, 'cpu')
     @register_template_heuristic(bmm_template.uid, 'cpu')
     class TNCAMMTemplateConfigHeuristic(tt.CPUMMTemplateConfigHeuristic):
-        """One 16x16x16 configuration: the MMA fragment."""
+        """One legal logical tile, lowered into physical MMA fragments."""
 
         def __init__(self):
             super().__init__()
@@ -240,6 +244,9 @@ def configure(max_block=None, tensor_descriptors=None, no_x_dim=None):
     if no_x_dim is None:
         # On for the standard path since R39-02a's ablation passed.
         no_x_dim = os.environ.get('TNCA_NO_X_DIM', '1') != '0'
+    gemm_tile = tuple(int(n) for n in os.environ.get('TNCA_GEMM_TILE', '16,16,16').split(','))
+    if gemm_tile not in ((16,16,16), (16,32,16), (16,64,16)):
+        raise ValueError('TNCA_GEMM_TILE currently supports 16,16,16 / 16,32,16 / 16,64,16')
     reduction_rows = int(os.environ.get('TNCA_REDUCTION_ROWS', '1'))
     if reduction_rows not in (1, 2, 4, 8, 16):
         raise ValueError('TNCA_REDUCTION_ROWS must be 1, 2, 4, 8 or 16')
@@ -274,14 +281,14 @@ def configure(max_block=None, tensor_descriptors=None, no_x_dim=None):
     config.fx_graph_remote_cache = False
     import torch._functorch.config as functorch_config
     functorch_config.enable_autograd_cache = False
-    _register(max_block, reduction_rows)
+    _register(max_block, reduction_rows, gemm_tile)
     _decompose_cpu_attention()
     out = dict(cpu_backend=config.cpu_backend, max_block=max_block,
                persistent_reductions=config.triton.persistent_reductions,
                compile_threads=config.compile_threads,
                max_autotune_gemm_backends=config.max_autotune_gemm_backends,
                tensor_descriptors=bool(tensor_descriptors),
-               no_x_dim=bool(no_x_dim), reduction_rows=reduction_rows)
+               no_x_dim=bool(no_x_dim), reduction_rows=reduction_rows, gemm_tile=gemm_tile)
     return out
 
 

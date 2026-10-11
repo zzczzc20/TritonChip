@@ -360,7 +360,15 @@ U280 有三个 SLR，HBM 接口位于 SLR0；板卡提供 8 GB HBM、32 个 AXI 
 - 默认 core-sim 的 O0/O1/O2 制品与冻结 B39 独立重建参考逐字节一致（447/447）；
   RCTX SPMD/roles 在 v4/v5 均通过。参考 commit 和完整 inventory 由
   `tools/r40/contract_tests.py` 校验；此项不构成性能测量。
-- 大 GEMM tile、bank 分配、完整资源压力与冻结性能 gate 待测。
+- 标准 native Torch 的 mm/addmm 在逻辑 16×16/16×32/16×64、K16 下各 4/4；
+  静态 shape guard 覆盖 17×65×33 与 33×31×65，驻留 launch 传输为零。
+  制品确认实际宽 tile；共享 A fragment 仅在同一个逻辑 dot 内复用，
+  避免重复打包占用窗口。descriptor 分块只偏移末坐标，两个坐标同用零值
+  的真实 Triton→RTL 回归通过；默认制品合同复验 447/447。
+- RTL harness 在 kernel exit 后直接核验停机内存；恢复坐标错误的 mutation
+  被检出。compiler RTL 68/68，覆盖合法 26 B stride 和非法 rank 的错误传播；
+  异步 fault 后 issued 计数使用同一 running ROI，周期分区保持精确。
+- K32/K64 逻辑选择、bank 分配、完整资源压力与冻结性能 gate 待测。
   证据 `evidence/r40/R40-03/`，默认 block cap 仍 16。
 
 ### R40-04：单核真实 HBM 与可扩展外存接口

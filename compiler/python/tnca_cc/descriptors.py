@@ -259,6 +259,11 @@ def gather_plan(imp, d, coords, extents):
 # ---------------------------------------------------------------------------
 
 def users_of(imp, value_id):
+    # Register chunks retain the original TTIR consumer contract. Treating
+    # a synthetic ID as unused could select a packed DMA window even when
+    # an arithmetic consumer needs individually unpacked elements.
+    if isinstance(value_id, tuple) and value_id[0] == 'register-chunk':
+        value_id = value_id[1]
     return imp._value_users.get(value_id, [])
 
 

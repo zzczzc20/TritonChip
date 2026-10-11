@@ -54,5 +54,27 @@ RCTX SPMD/roles suites pass on both v4 and v5, using the old CPU migration
 path with CUDA_VISIBLE_DEVICES empty. CUDA/TNCA alternation is checked
 separately by the native device suite.
 
-Larger GEMM tiles, bank allocation, full resource pressure and frozen
-performance gates remain unmeasured. All R40-03 gates remain not-measured.
+Logical GEMM checkpoint: TNCA_GEMM_TILE selects 16,16,16 (default),
+16,32,16 or 16,64,16. Standard native Torch mm/addmm graphs with static
+shape guards pass 4/4 for each configuration (12/12), including shapes
+17x65x33 and 33x31x65, FP16 inputs and zero resident launch transfers.
+The inherited CPU config scaling no longer halves the requested tile.
+Provenance confirms the wide tiles; their shared A fragment is packed once
+per logical dot, with one/three reuses for 32/64 columns. Reuse is scoped
+to that dot, preserving control-flow and iteration lifetimes.
+Descriptor chunks preserve extents/strides/padding and shift only the last
+coordinate operand, even when row and column coordinates share zero.
+Triton-to-RTL checks pass 7/7, including this two-row, 64-column copy.
+The harness now also compares post-idle RTL memory, so a kernel's exit
+cannot bypass the appended assertions. Restoring the coordinate bug is
+detected by the numerical checker. Compiler RTL passes 68/68, including
+legal 26-byte row strides and invalid-rank error propagation with untouched
+output sentinels. Issued counters use the same running ROI after async faults
+as cycle/stall/frontend counters.
+The default B39 artifact contract revalidates 447/447; frozen protocol
+checks pass 33/33. See gemm16x*_final.log, triton_e2e_gemm_final.log and
+contract_gemm_final.log. These groups are included in make r40-tiles.
+
+K32/K64 logical selection, bank allocation, full resource pressure and
+frozen performance gates remain unmeasured. All R40-03 gates remain
+not-measured.

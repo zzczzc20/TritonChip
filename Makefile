@@ -1437,14 +1437,15 @@ r40-residency: $(R2_DATA_STAMP) | dirs
 	@$(TORCH_PYTHON) tools/r40/batch_tests.py --calls 1000
 	@TNCA_BACKEND=sim-file $(TORCH_PYTHON) tools/r40/recovery_tests.py
 	@TNCA_BACKEND=sim-file $(TORCH_PYTHON) tools/r40/replay_tests.py
-# R40-03 capability checkpoint; reduction/GEMM and frozen performance gates
-# remain independent of these standard Torch register-block checks.
+# R40-03 correctness checkpoint; frozen performance gates remain independent
+# of these standard Torch register-block, reduction and GEMM checks.
 .PHONY: r40-tiles
 r40-tiles: $(R2_DATA_STAMP) | dirs
 	@for width in 16 32 64 128; do $(TORCH_PYTHON) tools/r40/tiles_tests.py --width $$width || exit $$?; done
 	@for width in 16 32 64 128; do $(TORCH_PYTHON) tools/r40/reduction_tests.py --width $$width || exit $$?; $(TORCH_PYTHON) tools/r40/fold_tests.py --width $$width || exit $$?; done
 	@for width in 16 32 64; do $(TORCH_PYTHON) tools/r40/reduction_tests.py --width $$width --rows 2 || exit $$?; done
 	@$(TORCH_PYTHON) tools/r40/fold_tests.py --width 32 --rows 2 --index-bias 1099511627776
+	@for columns in 16 32 64; do $(TORCH_PYTHON) tools/r40/gemm_tiles_tests.py --columns $$columns || exit $$?; done
 	@$(TRITON_PYTHON) tools/r40/contract_tests.py
 # R40-04: single-core HBM (rtl/fpga/tnca_axi_bridge.v). What runs without a
 # board: the bridge against a reference under late, reordered, backpressured,

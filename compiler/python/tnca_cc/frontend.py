@@ -3390,6 +3390,17 @@ class TTIRImporter:
             row, a.rows, b.cols, 'f32')
 
     def _as_fragment(self, tile, what):
+        cache = getattr(self, '_register_mma_fragment_cache', None)
+        if cache is None:
+            return self._as_fragment_uncached(tile, what)
+        key = id(tile)
+        if key not in cache:
+            cache[key] = self._as_fragment_uncached(tile, what)
+        else:
+            self._mma_fragment_reuses = getattr(self, '_mma_fragment_reuses', 0) + 1
+        return cache[key]
+
+    def _as_fragment_uncached(self, tile, what):
         """This tile in the layout `m.mma.async` reads."""
         if tile.dtype in ('i8', 'i32'):
             return self._integer_fragment(tile)

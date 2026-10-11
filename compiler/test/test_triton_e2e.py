@@ -52,10 +52,10 @@ class TestTritonToRTL(unittest.TestCase):
         if not H.available():
             self.skipTest(H.why_unavailable())
 
-    def _compile(self, fn, name, block=None):
+    def _compile(self, fn, name, block=None, scratch_addr=None):
         block = self.target.vlen if block is None else block
         mod, _ctx = triton_bridge.make_ttir(fn, SIG, {'BLOCK': block})
-        imp = TTIRImporter(self.target, name)
+        imp = TTIRImporter(self.target, name, scratch_addr=scratch_addr)
         kernel, _ = imp.run(mod, name,
                             {'x_ptr': X, 'y_ptr': Y, 'o_ptr': O, 'n': N},
                             param_names=triton_bridge.param_names(fn))
@@ -207,6 +207,23 @@ class TestTritonToRTL(unittest.TestCase):
                     param_names=triton_bridge.param_names(K.add_kernel))
         self.assertIn('register block width 256', str(cm.exception))
         self.assertIn('up to 128', str(cm.exception))
+
+    def test_wide_descriptor_shared_coordinates(self):
+        """Column fragments must not shift a shared zero row coordinate."""
+        import kernels_triton as K
+        block = 64
+        cg = self._compile(K.descriptor_copy_kernel, 'descriptor_copy_kernel',
+                           block=block, scratch_addr=0x5000)
+        p = H.Program('triton_descriptor_copy')
+        p.kernel(cg)
+        values = [f2b(i + 1.0) for i in range(2 * block)]
+        p.words(X, H.pack32(values), 'xs')
+        p.words(O, H.pack32([SENTINEL] * (2 * block)), 'os')
+        p.check_base(O)
+        for i, value in enumerate(values):
+            p.check_word(O, i * 4, value)
+        ok, out = H.run(p)
+        self.assertTrue(ok, f"wide descriptor copy failed on the RTL:\n{out}")
 
 
 if __name__ == '__main__':

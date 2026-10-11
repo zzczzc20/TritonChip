@@ -76,7 +76,7 @@ class _OpView:
 # operations fail rather than accidentally executing a region once per chunk.
 _ALLOWED = {'tt.make_range', 'tt.splat', 'tt.addptr', 'tt.load', 'tt.store',
             'tt.broadcast', 'tt.bitcast', 'tt.fp_to_fp', 'tt.clamp', 'tt.reduce',
-            'tt.expand_dims', 'tt.reshape'}
+            'tt.expand_dims', 'tt.reshape', 'tt.dot'}
 
 
 def lower(imp, op):
@@ -108,10 +108,25 @@ def lower(imp, op):
         return _loop(imp, op, width)
     if name == 'scf.if':
         return _if(imp, op, width)
+    if name in ('tt.descriptor_load', 'tt.descriptor_store', 'tt.descriptor_reduce'):
+        return _descriptor(imp, op, width)
+    if name == 'tt.dot':
+        from .frontend import _parse_type
+        a, _ = _parse_type(str(op.get_operand(0).get_type()))
+        b, _ = _parse_type(str(op.get_operand(1).get_type()))
+        tiles = getattr(imp, '_logical_gemm_tiles', set())
+        tiles.add((a[0], b[1], a[1]))
+        imp._logical_gemm_tiles = tiles
     if name not in _ALLOWED and not name.startswith(('arith.', 'math.')):
         raise Unsupported(f'wide register block operation {name}')
     if name == 'tt.reduce':
         return _reduce(imp, op, width)
+    fragment_cache = getattr(imp, '_register_mma_fragment_cache', None)
+    if name == 'tt.dot':
+        # A is shared by the column fragments of this one logical dot.
+        # Limit reuse to this operation so it cannot cross a control-flow
+        # boundary or reuse a window after another iteration overwrites it.
+        imp._register_mma_fragment_cache = {}
     imp._in_register_chunk = True
     try:
         for chunk in range(width // imp.target.vlen):
@@ -139,6 +154,7 @@ def lower(imp, op):
                 imp._dispatch(view)
     finally:
         imp._in_register_chunk = False
+        imp._register_mma_fragment_cache = fragment_cache
     return True
 
 
@@ -333,4 +349,74 @@ def _reduce_general(imp, op, width):
     seen = getattr(imp, '_register_reductions', set())
     seen.add((width, 'body-fold', op.get_int_attr('axis')))
     imp._register_reductions = seen
+    return True
+
+
+class _CoordinateView:
+    def __init__(self, value, chunk):
+        self.value, self.chunk = value, chunk
+
+    def id(self):
+        return ('descriptor-chunk-coordinate', self.value.id(), self.chunk)
+
+    def __getattr__(self, name):
+        return getattr(self.value, name)
+
+
+class _DescriptorOpView(_OpView):
+    def __init__(self, op, chunk, vlen, coordinate, coordinate_index):
+        super().__init__(op, chunk, vlen)
+        self.coordinate = coordinate
+        self.coordinate_index = coordinate_index
+
+    def get_operand(self, i):
+        if i == self.coordinate_index:
+            return self.coordinate
+        return super().get_operand(i)
+
+
+def _descriptor(imp, op, width):
+    from .frontend import Unsupported
+    from . import descriptors
+    import copy
+    key = op.get_operand(0).id()
+    original = imp._descs[key]
+    if original.block[-1] != width:
+        raise Unsupported('register block and descriptor box widths differ')
+    if op.get_name() == 'tt.descriptor_load':
+        coordinate = op.get_operand(op.get_num_operands() - 1)
+    else:
+        _, coords = descriptors._store_operands(op)
+        coordinate = coords[-1]
+    # Several dimensions may use the same scalar SSA value (notably zero).
+    # Shift the last coordinate operand, rather than every use of that value.
+    coordinate_index = max(i for i in range(1, op.get_num_operands())
+                           if op.get_operand(i).id() == coordinate.id())
+    block = list(original.block)
+    block[-1] = imp.target.vlen
+    if original.host:
+        # Preserve runtime padding, extents and strides from the original
+        # host map. The LSU slices the box; it cannot assume DMA alignment.
+        fragment = copy.copy(original)
+        fragment.block = block
+    else:
+        fragment = imp._build_descriptor(base=original.base, elem=original.elem,
+            extents=descriptors.extents_of(imp, original),
+            byte_strides=original.byte_strides, block_shape=block,
+            what='register-block descriptor fragment', pad=original.pad, check=False)
+    # One fragment map per operation, within the same control region: a
+    # map first materialised in a branch must not be reused outside it.
+    imp._descs[key] = fragment
+    imp._in_register_chunk = True
+    try:
+        base_coordinate = imp._value(coordinate)
+        for chunk in range(width // imp.target.vlen):
+            shifted = _CoordinateView(coordinate, chunk)
+            imp._v[shifted.id()] = (base_coordinate if chunk == 0 else
+                imp.b.sbini('add', base_coordinate, chunk * imp.target.vlen))
+            imp._dispatch(_DescriptorOpView(op, chunk, imp.target.vlen, shifted,
+                                           coordinate_index))
+    finally:
+        imp._descs[key] = original
+        imp._in_register_chunk = False
     return True

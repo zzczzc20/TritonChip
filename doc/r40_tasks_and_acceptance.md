@@ -368,7 +368,13 @@ U280 有三个 SLR，HBM 接口位于 SLR0；板卡提供 8 GB HBM、32 个 AXI 
 - RTL harness 在 kernel exit 后直接核验停机内存；恢复坐标错误的 mutation
   被检出。compiler RTL 68/68，覆盖合法 26 B stride 和非法 rank 的错误传播；
   异步 fault 后 issued 计数使用同一 running ROI，周期分区保持精确。
-- K32/K64 逻辑选择、bank 分配、完整资源压力与冻结性能 gate 待测。
+- bank 分配 checkpoint：`TNCA_BANK_ALLOC=1` 按 profile 的真实四-bank 契约
+  优先选择低冲突临时寄存器；搜索有界，保留 window、role slice 与 ownership 检查。
+  默认关闭，关闭时 B39 合同 447/447；开启时 64/128 各 12/12。
+  native Torch 的 triad / LayerNorm / f32 dot 两模式各 3/3；最终汇编的静态
+  冲突读数分别为 8→0、19→1、110→110，无新增 move。f32 dot 无周期收益，
+  寄存器前缀 41→42；这不是冻结性能签收。
+- K32/K64 逻辑选择、完整资源压力与冻结性能 gate 待测。
   证据 `evidence/r40/R40-03/`，默认 block cap 仍 16。
 
 ### R40-04：单核真实 HBM 与可扩展外存接口

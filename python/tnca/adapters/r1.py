@@ -147,7 +147,7 @@ def require_capabilities(target, needed):
 
 
 def emit(kernel, target, *, prov=None, check_protocol=True,
-         opt_level=0):
+         opt_level=0, bank_alloc=False):
     """TNCA IR -> assembly text, with R1's safety checks on.
 
     `check_protocol` selects the channel model, which is about a
@@ -156,14 +156,14 @@ def emit(kernel, target, *, prov=None, check_protocol=True,
     There is deliberately no argument that turns them off.
     """
     r1 = _r1()
-    cg = r1['CodeGen'](kernel, target, check_protocol=check_protocol,
-                       opt_level=opt_level)
     try:
+        cg = r1['CodeGen'](kernel, target, check_protocol=check_protocol,
+                           opt_level=opt_level, bank_alloc=bank_alloc)
         if len(kernel.roles) > 1:
             # R39-12: a producer and a consumer per program (Mode A).
             from tnca_cc.codegen import emit_roles
             text, cg = emit_roles(kernel, target, check_protocol=check_protocol,
-                                  opt_level=opt_level)
+                                  opt_level=opt_level, bank_alloc=bank_alloc)
         else:
             cg.assign_shared()
             cg.run()
@@ -182,6 +182,11 @@ def emit(kernel, target, *, prov=None, check_protocol=True,
         prov.record('codegen', 'tnca_cc.codegen.CodeGen')
         prov.record('ownership_check', 'unconditional')
         prov.record('assembly_sha256', _sha(text))
+        if bank_alloc:
+            from tnca_cc.bankcost import conflicts
+            cost = conflicts(text, cg.bank_banks)
+            prov.record('bank_allocation', dict(banks=cg.bank_banks,
+                        static_extra_reads=cost['extra_cycles'], sites=cost['sites']))
     return text, cg
 
 

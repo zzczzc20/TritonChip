@@ -78,3 +78,22 @@ contract_gemm_final.log. These groups are included in make r40-tiles.
 K32/K64 logical selection, bank allocation, full resource pressure and
 frozen performance gates remain unmeasured. All R40-03 gates remain
 not-measured.
+
+Bank allocation checkpoint: TNCA_BANK_ALLOC=1 uses the declared banked
+profile and its low-bit four-bank contract. A bounded search over free
+temporary names scores currently mapped co-read SSA values; windows and
+role slices stay reserved. Ownership and lifetime checks are unchanged.
+Non-banked profiles refuse the option. The option participates in the
+Triton cache key; default off retains the 447/447 B39 artifact contract.
+
+Native Torch triad, LayerNorm and FP32 dot pass 3/3 in each mode. The
+verified assembly dump hash matches its artifact, and the physical-map
+ledger reproduces provenance exactly. Static extra reads: triad 8 to 0,
+LayerNorm 19 to 1, FP32 dot 110 to 110. Moves stay 0/24/0 in both modes.
+Diagnostic RTL cycles: 587 to 573, 3437 to 3286, 2384 unchanged. FP32 dot
+uses a 42-register prefix versus 41; scratch remains 512 bytes. No gain
+is claimed there. These are correctness diagnostics, not frozen subset
+performance measurements. Wide 64/128 suites pass 12/12 each, compiler
+unit checks 74/74. See bank_*.log and bank_off/on.json.
+The off/on checks are included in make r40-tiles; the option stays off
+by default and R40-03 remains not accepted.

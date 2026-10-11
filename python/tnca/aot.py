@@ -914,13 +914,19 @@ def _emit(kernel, target, prov, opt_level, options, stages):
     """
     options = options or {}
     check = bool(options.get('check_protocol', False))
+    bank_alloc = options.get('bank_alloc')
+    if bank_alloc is None:
+        bank_alloc = int(os.environ.get('TNCA_BANK_ALLOC', '0'))
+    if bank_alloc not in (0, 1):
+        raise ValueError('bank_alloc must be 0 or 1')
     # Unset, the environment decides (TNCA_SCHEDULE, default off), so a
     # whole suite -- `make r37`, the torch tests -- can run scheduled.
     schedule = options.get('schedule')
     if schedule is None:
         schedule = int(os.environ.get('TNCA_SCHEDULE', '0'))
     if not schedule:
-        return adapter.emit(kernel, target, prov=prov, opt_level=opt_level, check_protocol=check)
+        return adapter.emit(kernel, target, prov=prov, opt_level=opt_level,
+                            check_protocol=check, bank_alloc=bank_alloc)
     import copy
     from tnca_cc.schedule import schedule_kernel
     original = copy.deepcopy(kernel)
@@ -940,13 +946,14 @@ def _emit(kernel, target, prov, opt_level, options, stages):
         stages.record('tnir_sched', str(trial))
         try:
             return adapter.emit(trial, target, prov=prov, opt_level=opt_level,
-                                check_protocol=check)
+                                check_protocol=check, bank_alloc=bank_alloc)
         except CompileError as e:
             if e.detail.get('kind') != 'ResourceError':
                 raise
             last = e
     prov.record('schedule_fallback', f'program order: {str(last)[:200]}')
-    return adapter.emit(original, target, prov=prov, opt_level=opt_level, check_protocol=check)
+    return adapter.emit(original, target, prov=prov, opt_level=opt_level,
+                        check_protocol=check, bank_alloc=bank_alloc)
 
 
 def _compile_tnca_ir(build, kernel_name, signature, constexprs, target, prov,

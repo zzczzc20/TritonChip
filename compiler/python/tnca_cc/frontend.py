@@ -351,7 +351,8 @@ class TTIRImporter:
                 continue
             from .packed import lower
             from .wide import lower as lower_wide
-            if lower_wide(self, op) or lower(self, op):
+            from .register_blocks import lower as lower_blocks
+            if lower_blocks(self, op) or lower_wide(self, op) or lower(self, op):
                 continue
             handler = getattr(self, '_op_' + name.replace('.', '_'), None)
             if handler is None:
@@ -634,7 +635,8 @@ class TTIRImporter:
     def _dispatch(self, op):
         from .packed import lower
         from .wide import lower as lower_wide
-        if lower_wide(self, op) or lower(self, op):
+        from .register_blocks import lower as lower_blocks
+        if lower_blocks(self, op) or lower_wide(self, op) or lower(self, op):
             return
         handler = getattr(self, '_op_' + op.get_name().replace('.', '_'), None)
         if handler is None:
@@ -4596,6 +4598,10 @@ class TTIRImporter:
 
     def _value(self, ttir_value):
         vid = ttir_value.id()
+        predicate = getattr(self, "_register_predicates", {}).get(vid)
+        if predicate is not None:
+            self._dispatch(predicate)
+            return self._v.pop(vid)
         v = self._v.get(vid)
         if v is not None:
             return v

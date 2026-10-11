@@ -1,0 +1,20 @@
+{
+  "gates": {
+    "R40-03.tiles": {
+      "status": "not-measured",
+      "detail": "1-D register-block capability checkpoint only; see README.md"
+    },
+    "R40-03.wide-blocks": {
+      "status": "not-measured",
+      "detail": "1-D register-block capability checkpoint only; see README.md"
+    },
+    "R40-03.gemm-tile": {
+      "status": "not-measured",
+      "detail": "1-D register-block capability checkpoint only; see README.md"
+    },
+    "R40-03.contract": {
+      "status": "not-measured",
+      "detail": "1-D register-block capability checkpoint only; see README.md"
+    }
+  }
+}

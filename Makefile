@@ -1436,6 +1436,11 @@ r40-residency: $(R2_DATA_STAMP) | dirs
 	@$(TORCH_PYTHON) tools/r40/batch_tests.py --calls 1000
 	@TNCA_BACKEND=sim-file $(TORCH_PYTHON) tools/r40/recovery_tests.py
 	@TNCA_BACKEND=sim-file $(TORCH_PYTHON) tools/r40/replay_tests.py
+# R40-03 capability checkpoint; reduction/GEMM and frozen performance gates
+# remain independent of these standard Torch register-block checks.
+.PHONY: r40-tiles
+r40-tiles: $(R2_DATA_STAMP) | dirs
+	@for width in 16 32 64 128; do $(TORCH_PYTHON) tools/r40/tiles_tests.py --width $$width || exit $$?; done
 # R40-04: single-core HBM (rtl/fpga/tnca_axi_bridge.v). What runs without a
 # board: the bridge against a reference under late, reordered, backpressured,
 # refusing and reset AXI traffic, its mutations, and the tnca device on the

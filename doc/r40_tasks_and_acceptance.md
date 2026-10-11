@@ -336,6 +336,17 @@ U280 有三个 SLR，HBM 接口位于 SLR0；板卡提供 8 GB HBM、32 个 AXI 
 2. pointwise/reduction 的冻结 medium + HBM 子集相对窄块 `S_geo ≥1.3`；更大 GEMM tile 的冻结 reuse 子集 `S_geo ≥1.15`。每个独立机制最终贡献仍按 §3.2 验证。
 3. 开关关时旧 profile 制品合同通过；新的能力不能由 U280 PC / SLR 或 benchmark family 名称决定。
 
+进展（2026-10-11，能力 checkpoint，未签收）：
+
+- 标准 Torch 路径的 1-D block 跨 VLEN 寄存器分块；16/32/64/128 各 12/12，
+  包含 tail、int64、fp16/bf16/i8/i16/i32、stride/offset/alias 与原地更新。
+  测试检查制品真实宽度，避免只把 cap 字段当作执行宽度。
+- predicate 按实际容量重建；直线 IR 的长寿命 vector 可用私有 per-program scratch。
+  128-wide int64 图实测触发 896 B / 14 slot，制品为每 role 52 VRF / 两 role，数值正确。
+  控制流 spill 仍拒绝；修复 RCTX fallback 漏掉 plain kernel 最后一次重试的问题。
+- 多行/wide reduction、大 GEMM tile、bank 分配、完整资源压力、旧制品合同与冻结性能 gate 待测。
+  证据 `evidence/r40/R40-03/`，默认 block cap 仍 16。
+
 ### R40-04：单核真实 HBM 与可扩展外存接口
 
 交付：

@@ -653,6 +653,14 @@ def _lower_ttir(module, ctx, kernel_name, params, target, prov, options, stages,
         module, kernel_name, _placeholders(params),
         param_names=[n for n, _t in params], target=target, prov=prov,
         dynamic_args=True, index_opt=bool(index_opt), sparse_maps=bool(sparse))
+    block_widths = sorted(getattr(imp, '_register_block_widths', ()))
+    if block_widths:
+        from tnca_cc.vector_spill import spill as spill_vectors
+        spill_plan = spill_vectors(imp)
+        prov.record('vector_spill', spill_plan)
+        prov.record('register_blocks', {'vlen': target.vlen, 'widths': block_widths,
+                                       'predicate_rematerializations': len(getattr(imp, '_register_predicates', {})),
+                                       'external_spill_bytes': spill_plan.get('scratch_bytes', 0)})
     if sparse:
         prov.record('sparse_tensormaps', True)
     if index_opt:
@@ -743,14 +751,14 @@ def _lower_ttir(module, ctx, kernel_name, params, target, prov, options, stages,
     if not programs_per_launch:
         programs_per_launch = _rctx_spmd(kernel, target, prov, options, stages,
                                          scratch_bytes, 8 * len(params))
-    for retry in ('none', 'off'):
+    for retry in ('none', 'off', 'fail'):
         if roles_per_program == 2:
             break
         try:
             asm_text, cg = _emit(kernel, target, prov, opt_level, options, stages)
             break
         except CompileError as e:
-            if programs_per_launch == 1 or e.detail.get('kind') != 'ResourceError':
+            if retry == 'fail' or programs_per_launch == 1 or e.detail.get('kind') != 'ResourceError':
                 raise
             prov.record('rctx_spmd_fallback', f'{retry}: {str(e)[:160]}')
             kernel = _copy.deepcopy(plain)

@@ -17,3 +17,12 @@ The board run: u280_r39h, software of this commit's parent tree,
 records are under `sim/build/r40/native1/`. On tiny, request latency is
 3.59× B39's CPU path (geometric mean, range 1.66–17×), because no tensor
 crosses the host interface per launch.
+
+R40 resource-property regression checkpoint: reporting TNCA's truthful zero
+shared-memory capacity exposed Triton's ordinal-only cached limit. After a
+TNCA:0 kernel load, CUDA:0 incorrectly inherited zero and refused a CUDA
+kernel requiring 1152 B. The locked-version compatibility hook now queries
+the active backend at kernel load. Standard native graph, alternating
+CUDA/TNCA and resource-property checks pass 3/3; CUDA receives its actual
+limit, and TNCA remains zero. The full device regression is being repeated.
+See mixed_backend_cache.log. No complete native/performance gate is claimed.

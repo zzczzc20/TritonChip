@@ -228,6 +228,16 @@ def register_inductor():
     from tnca.triton_backend.compiler import TNCABackend
     from tnca.triton_backend.driver import TNCADriver
     triton.runtime.driver.active.get_current_target()
+    # Locked Triton caches shared-memory limits by device ordinal alone.
+    # TNCA:0 and CUDA:0 share that ordinal but have different resources.
+    # Query the active backend at kernel load; TNCA's truthful zero must
+    # never become CUDA's limit after an alternating-device compilation.
+    import triton.compiler.compiler as tc
+    if not getattr(tc.max_shared_mem, '_tnca', False):
+        def max_shared_mem(device):
+            return triton.runtime.driver.active.utils.get_device_properties(device)['max_shared_mem']
+        max_shared_mem._tnca = True
+        tc.max_shared_mem = max_shared_mem
     if NAME not in triton.backends.backends:
         class _NamesTheDevice(TNCABackend):
             """Registry entry `tnca`: the driver is TNCA's; compiling is the

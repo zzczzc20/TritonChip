@@ -320,6 +320,12 @@ U280 有三个 SLR，HBM 接口位于 SLR0；板卡提供 8 GB HBM、32 个 AXI 
   shape/stride/storage alias 和 recovery epoch 在首条 admission 前整图校验；
   失败后须 reset/重新捕获。实测 4/4；含更新输入与拒绝部分执行的负例。
 
+- allocator 在容量不足且有未完成任务时，等最早任务释放 retired storage 后重试；
+  容量检查与分配在同一 Session 锁内。393216 B 真实片上 heap 下 12 次调用通过 2/2：
+  12 次容量背压均低于 8-task 队列上限，实际保留字节峰值 328704 B，最终 65536 B。
+  `Session.memory_stats` 计入 retired lease 与 scratch，并报告每 epoch 的 heap/code 高水位。
+  新 allocator 的恢复 3/3、lifetime 2/2 复验通过；并发 1000-call 5/5。
+
 ### R40-03：通用 tile、布局与资源分配
 
 交付：

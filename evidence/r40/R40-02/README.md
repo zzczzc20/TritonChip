@@ -35,3 +35,14 @@ concurrent-thread smoke passed 5/5.
 The frozen chained-graph/decode audit, latency thresholds, replay stress
 and explicit high-water ledger remain unmeasured. No R40-02 gate is
 claimed passing by this checkpoint.
+
+Allocation pressure checkpoint: 12 native batched calls in the real
+393216-byte on-chip heap passed 2/2. All 12 waits occurred below queue
+capacity, proving allocation backpressure rather than the 8-task limit.
+Logical storage peaked at 196608 B; actual reserved heap peaked at 328704 B
+(including retired leases/task arguments). Final reserved heap was 65536 B,
+the sole input; no outstanding leases remained. Session.memory_stats exposes
+actual reserved/high-water heap and code bytes per recovery epoch.
+Recovery 3/3 and deferred lifetime 2/2 revalidated with this allocator.
+Concurrent-stream/thread 1000-call stress passed 5/5; logical storage peaked
+at 4608 B and ended at 2560 B, four buffers, zero leases/unfinished tasks.

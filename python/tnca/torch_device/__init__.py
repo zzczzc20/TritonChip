@@ -79,14 +79,25 @@ class DeviceMemory:
         # Whole words: a transfer starts on an 8-byte boundary, and staging
         # rounds a span out to words, which must stay inside the storage.
         nbytes = (int(nbytes) + WORD - 1) // WORD * WORD
-        heap = s._heap
-        free = sum(size for _addr, size in heap.free_list) + (heap.limit - heap.next)
-        if free - nbytes < LAUNCH_RESERVE:
-            from tnca.errors import BufferError as _BE
-            raise _BE(f'out of device memory: a {nbytes}-byte storage would leave '
-                      f'{free - nbytes} of the heap\'s free bytes, less than the '
-                      f'{LAUNCH_RESERVE} kept for launches')
-        buf = s.allocate(nbytes, name=f'storage@{len(self.buffers)}')
+        while True:
+            with s._lock:
+                heap = s._heap
+                free = sum(size for _addr, size in heap.free_list) + (heap.limit - heap.next)
+                if free - nbytes >= LAUNCH_RESERVE:
+                    buf = s.allocate(nbytes, name=f'storage@{len(self.buffers)}')
+                    break
+                pending = s.unfinished
+                if not pending:
+                    from tnca.errors import BufferError as _BE
+                    raise _BE(f'out of device memory: a {nbytes}-byte storage would leave '
+                              f'{free - nbytes} of the heap\'s free bytes, less than the '
+                              f'{LAUNCH_RESERVE} kept for launches')
+                oldest = pending[0]
+            # A retired temporary can still be owned by queued work. Wait
+            # outside the admission lock, then retry with its leases released.
+            s.wait(oldest)
+            if not oldest.ok:
+                raise oldest.error
         self.buffers[buf.addr] = buf
         self.next_token += 1
         token = self.next_token

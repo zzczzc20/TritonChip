@@ -121,6 +121,7 @@ def main():
     print(f'AUDIT storage_live_bytes={D.MEMORY.live} storage_peak_bytes={D.MEMORY.peak} '
           f'live_buffers={sum(b.alive for b in s._buffers.values())} '
           f'leases={sum(b.leases for b in s._buffers.values())} unfinished={len(s.unfinished)}', flush=True)
+    print(f'AUDIT {s.memory_stats}', flush=True)
     print('r40-batch-tests PASS (5/5)', flush=True)
     return 0
 

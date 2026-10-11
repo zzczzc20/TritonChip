@@ -1,0 +1,6 @@
+  already built: /home/zhongchun/.cache/tnca/devices/core-vrf-sync-v5-a8f9e2a0291d254a-f30a9b914657/tnca_device_vrf5.vvp
+PASS 12 native calls under a 393216-byte heap, correct output
+PASS 12 allocation waits below queue capacity; storage peak 196608 B, final 65536 B
+AUDIT {'epoch': 0, 'heap_capacity_bytes': 393216, 'heap_allocated_bytes': 65536, 'heap_peak_bytes': 328704, 'code_allocated_bytes': 256, 'code_peak_bytes': 256}
+r40-allocation-pressure-tests PASS (2/2)
+EXIT:0

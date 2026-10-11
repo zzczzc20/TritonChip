@@ -179,6 +179,11 @@ class _Allocator:
         self.limit = limit
         self.next = base
         self.free_list = []
+        self.high_water = 0
+
+    @property
+    def used(self):
+        return self.next - self.base - sum(size for _addr, size in self.free_list)
 
     def alloc(self, size, align=DEFAULT_ALIGN):
         if size <= 0:
@@ -199,6 +204,7 @@ class _Allocator:
                 if blocksize > prefix + need:
                     rest.append((aligned + need, blocksize - prefix - need))
                 self.free_list[i:i + 1] = rest
+                self.high_water = max(self.high_water, self.used)
                 return aligned, need
         addr = (self.next + align - 1) // align * align
         if addr + need > self.limit:
@@ -211,6 +217,7 @@ class _Allocator:
             # sit between two blocks and stop them ever merging.
             self.free_list.append((self.next, addr - self.next))
         self.next = addr + need
+        self.high_water = max(self.high_water, self.used)
         return addr, need
 
     def release(self, addr, size):
@@ -387,6 +394,14 @@ class Session:
     def unfinished(self):
         with self._lock:
             return [e for e in self._events.values() if not e.terminal]
+
+    @property
+    def memory_stats(self):
+        """Actual reserved bytes, including retired leases and task scratch."""
+        with self._lock:
+            return dict(epoch=self.epoch, heap_capacity_bytes=self._heap.limit - self._heap.base,
+                        heap_allocated_bytes=self._heap.used, heap_peak_bytes=self._heap.high_water,
+                        code_allocated_bytes=self._code.used, code_peak_bytes=self._code.high_water)
 
     @property
     def latest_event(self):

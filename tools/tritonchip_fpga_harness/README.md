@@ -76,7 +76,12 @@ requires a clean source tree, one available full slot, and all vendor/platform
 checks before it starts Vivado. It writes raw logs and artifacts outside the
 checkout; a PASS still requires a non-empty XO/XCLBIN, `VPP_RC=0`, `LINK_OK`,
 clock readback, a routed timing report with clean WNS/TNS/WHS/THS and zero
-failing endpoints, and a DRC report with zero errors. Results distinguish
+failing endpoints, and DRC with zero errors. Timing is read from the routed
+report's "Design Timing Summary" -- the whole design, every clock and
+crossing, setup, hold and pulse width -- not from the kernel clock's own row.
+A Vitis link writes no DRC report, so DRC is read from the implementation
+run's log, where Vivado records each precondition check
+(`DRC finished with 0 Errors`). Results distinguish
 `PASS`, `TIMING_FAIL`, `BUILD_FAIL`, and `OOC_FAIL`. A link that produced a
 routed report saying the design did not close is `TIMING_FAIL` even though
 `v++` exited non-zero; `BUILD_FAIL` is a link that did not get that far.

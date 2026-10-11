@@ -504,7 +504,8 @@ class U50Adapter:
                     add(
                         "timing_clean",
                         metrics["wns_ns"] >= 0 and metrics["tns_ns"] >= 0 and metrics["whs_ns"] >= 0
-                        and metrics["ths_ns"] >= 0 and metrics["failing_endpoints"] == 0,
+                        and metrics["ths_ns"] >= 0 and metrics.get("wpws_ns", 0) >= 0
+                        and metrics["failing_endpoints"] == 0,
                         json.dumps(metrics, sort_keys=True),
                     )
         if require_xclbin and self.config.require_drc:
@@ -522,6 +523,50 @@ class U50Adapter:
             timing=timing,
         )
 
+    # Vivado's "Design Timing Summary" row, by position.  The table is the
+    # first in a timing summary report whose header starts with WNS(ns); the
+    # per-clock tables below it start with "Clock" and have the same columns
+    # shifted by one.
+    _DESIGN_SUMMARY = (
+        "wns_ns", "tns_ns", "tns_failing_endpoints", "tns_total_endpoints",
+        "whs_ns", "ths_ns", "ths_failing_endpoints", "ths_total_endpoints",
+        "wpws_ns", "tpws_ns", "tpws_failing_endpoints", "tpws_total_endpoints",
+    )
+
+    @staticmethod
+    def _design_timing_summary(text: str) -> dict[str, float | int] | None:
+        """The whole design's worst slacks and failing endpoints, or None.
+
+        This is the row to accept or reject a build on: it covers every clock
+        and every crossing, setup, hold and pulse width.  A per-clock row for
+        the kernel clock alone says nothing about a path into the shell.
+        """
+        lines = text.splitlines()
+        for index, line in enumerate(lines):
+            header = line.split()
+            if not header or header[0] != "WNS(ns)" or "WHS(ns)" not in header or "THS(ns)" not in header:
+                continue
+            for row in lines[index + 1:index + 6]:
+                fields = row.split()
+                if not fields or set(row.strip()) <= {"-", " "}:
+                    continue
+                try:
+                    values = [float(item) for item in fields]
+                except ValueError:
+                    return None
+                if len(values) < 8:
+                    return None
+                metrics: dict[str, float | int] = {}
+                for name, value in zip(U50Adapter._DESIGN_SUMMARY, values):
+                    metrics[name] = int(value) if name.endswith("_endpoints") else value
+                metrics["failing_endpoints"] = sum(
+                    int(metrics.get(key, 0))
+                    for key in ("tns_failing_endpoints", "ths_failing_endpoints", "tpws_failing_endpoints")
+                )
+                return metrics
+            return None
+        return None
+
     @staticmethod
     def _timing_reports(build_dir: Path) -> dict[str, Any]:
         candidates = sorted(
@@ -533,6 +578,12 @@ class U50Adapter:
         candidates.sort(key=lambda p: ("routed" not in p.name.lower(), len(str(p))))
         for path in candidates:
             text = U50Adapter._read_text(path)
+            design = U50Adapter._design_timing_summary(text)
+            if design is not None:
+                return {"report": str(path), "sha256": sha256(path), "metrics": design, "scope": "design"}
+            # Not a Vivado timing summary.  The forms below are for a flow that
+            # writes its own digest; they must never be tried on a Vivado
+            # report, whose per-clock rows have other columns in these places.
             metrics: dict[str, float | int] = {}
             for key, pattern in {
                 "wns_ns": r"\bWNS(?:\s*\(ns\))?\s*[=:]?\s*([+-]?\d+(?:\.\d+)?)",
@@ -546,8 +597,6 @@ class U50Adapter:
             failed = re.search(r"(?:Failing\s+Endpoints|Violating\s+Endpoints|Endpoints\s+with\s+timing\s+violations)\s*[:=]\s*(\d+)", text, flags=re.IGNORECASE)
             if failed:
                 metrics["failing_endpoints"] = int(failed.group(1))
-            # Vivado tables commonly expose the count as a final integer on a
-            # summary line.  Do not invent a zero when the report is silent.
             if "failing_endpoints" not in metrics:
                 count = re.search(r"Number\s+of\s+Failing\s+Endpoints\s*[:=]\s*(\d+)", text, flags=re.IGNORECASE)
                 if count:
@@ -555,7 +604,8 @@ class U50Adapter:
             if "failing_endpoints" not in metrics:
                 for line in text.splitlines():
                     fields = line.split()
-                    if fields and fields[0].lower() in {"ap_clk", "data_clk", "kernel_00"} and len(fields) >= 6:
+                    # Exactly "<clock> WNS TNS WHS THS failing": a digest row.
+                    if len(fields) == 6 and fields[0].lower() in {"ap_clk", "data_clk", "kernel_00"}:
                         try:
                             values = [float(item) for item in fields[1:6]]
                         except ValueError:
@@ -565,7 +615,7 @@ class U50Adapter:
                         metrics["failing_endpoints"] = int(values[4])
                         break
             if metrics:
-                return {"report": str(path), "sha256": sha256(path), "metrics": metrics}
+                return {"report": str(path), "sha256": sha256(path), "metrics": metrics, "scope": "digest"}
         return {"report": None, "metrics": {}}
 
     @staticmethod
@@ -578,7 +628,21 @@ class U50Adapter:
             text = U50Adapter._read_text(path)
             match = re.search(r"(?:Number\s+of\s+Errors|Errors)\s*[:=]\s*(\d+)", text, flags=re.IGNORECASE)
             if match:
-                return {"report": str(path), "sha256": sha256(path), "errors": int(match.group(1))}
+                return {"report": str(path), "sha256": sha256(path), "errors": int(match.group(1)), "source": "drc-report"}
+        # A Vitis link keeps no DRC report.  Vivado runs DRC as a precondition
+        # to opt, place, route and write_bitstream and writes each verdict in
+        # the implementation run's log; that is the evidence there is.
+        for path in sorted(build_dir.rglob("runme.log")):
+            if not any(part.startswith("impl_") for part in path.parts):
+                continue
+            text = U50Adapter._read_text(path)
+            counts = [int(n) for n in re.findall(r"DRC finished with (\d+) Errors", text)]
+            if counts:
+                return {
+                    "report": str(path), "sha256": sha256(path), "errors": max(counts),
+                    "source": "implementation-log", "checks": len(counts),
+                    "bitstream_precondition": "precondition to command write_bitstream" in text,
+                }
         return {"report": None, "errors": None}
 
     @staticmethod

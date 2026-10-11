@@ -1,0 +1,69 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "TritonChip FPGA candidate manifest",
+  "type": "object",
+  "required": ["candidate_id", "target", "mode"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "candidate_id": {"type": "string", "minLength": 1},
+    "target": {"type": "string", "minLength": 1},
+    "mode": {"enum": ["full", "ooc"]},
+    "clock_mhz": {"type": "number", "exclusiveMinimum": 0},
+    "source_commit": {"type": "string", "minLength": 1},
+    "hypothesis": {"type": "string"},
+    "board": {
+      "type": "object",
+      "properties": {
+        "backend": {"type": "string", "minLength": 1},
+        "profile": {"type": "string", "minLength": 1},
+        "bdf": {"type": "string", "minLength": 1},
+        "program_script": {"type": "string", "minLength": 1},
+        "program": {
+          "oneOf": [
+            {"type": "boolean"},
+            {"type": "object", "properties": {
+              "command": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}},
+              "check_command": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}}
+            }, "additionalProperties": false}
+          ]
+        },
+        "conformance": {
+          "oneOf": [
+            {"type": "boolean"},
+            {"type": "object", "properties": {
+              "command": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}},
+              "result_file": {"type": "string", "minLength": 1}
+            }, "additionalProperties": false}
+          ]
+        },
+        "archbench": {
+          "type": "object",
+          "properties": {
+            "command": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}},
+            "result_file": {"type": "string", "minLength": 1},
+            "tiers": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}},
+            "jobs": {"type": "integer", "minimum": 1},
+            "counters": {"type": "boolean"},
+            "timeout_s": {"type": "number", "exclusiveMinimum": 0}
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "ooc": {
+      "type": "object",
+      "required": ["command", "artifacts"],
+      "properties": {
+        "top": {"type": "string"},
+        "script": {"type": "string"},
+        "clock_mhz": {"type": "number", "exclusiveMinimum": 0},
+        "result_file": {"type": "string", "minLength": 1},
+        "command": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}},
+        "artifacts": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}}
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

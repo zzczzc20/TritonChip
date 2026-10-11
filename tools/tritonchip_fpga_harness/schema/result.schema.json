@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "TritonChip FPGA harness result",
+  "type": "object",
+  "required": ["run_id", "status", "source_commit", "target", "mode", "stages", "missing_artifacts"],
+  "properties": {
+    "run_id": {"type": "string", "minLength": 1},
+    "status": {"enum": ["PASS", "FAIL", "CANCELLED", "TIMING_FAIL", "BUILD_FAIL", "OOC_FAIL", "BOARD_FAIL", "ARCHBENCH_FAIL", "ENV_FAIL", "INFRA_FAIL", "ORPHANED", "HISTORICAL", "UNATTRIBUTED"]},
+    "source_commit": {"type": "string", "minLength": 1},
+    "target": {"type": "string", "minLength": 1},
+    "mode": {"enum": ["full", "ooc"]},
+    "stages": {"type": "array"},
+    "missing_artifacts": {"type": "array", "items": {"type": "string"}},
+    "artifacts": {"type": "object"},
+    "artifact_validation": {"type": ["object", "null"]}
+  },
+  "additionalProperties": true
+}

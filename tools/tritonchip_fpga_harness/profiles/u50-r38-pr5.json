@@ -1,0 +1,16 @@
+{
+  "name": "u50-r38-pr5",
+  "board": "u50",
+  "part": "xcu50-fsvh2104-2-e",
+  "platform": "xilinx_u50_gen3x16_xdma_5_202210_1",
+  "kernel_clock_mhz": 100,
+  "device_clock_mhz": 100,
+  "device_divider": 1,
+  "full_slots": 1,
+  "package_script": "flow/fpga/package_xo.tcl",
+  "link_script": "flow/fpga/link.sh",
+  "program_script": "flow/fpga/program.sh",
+  "expected_artifacts": ["tnca_u50.xo", "tnca_u50.xclbin"],
+  "require_routed_timing": true,
+  "require_drc": true
+}

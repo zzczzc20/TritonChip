@@ -1,0 +1,8 @@
+{
+  "schema_version": 1,
+  "candidate_id": "baseline-u50",
+  "target": "u50-legacy",
+  "mode": "full",
+  "clock_mhz": 150,
+  "source_commit": "HEAD"
+}

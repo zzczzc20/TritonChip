@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "candidate_id": "pr5-u280-full",
+  "target": "u280-r38-pr5",
+  "mode": "full",
+  "clock_mhz": 100,
+  "source_commit": "HEAD",
+  "board": {
+    "backend": "fpga-u280",
+    "profile": "core-vrf-sync-v1",
+    "program": true,
+    "conformance": true,
+    "archbench": {
+      "tiers": ["tiny", "small"],
+      "jobs": 1,
+      "counters": true,
+      "timeout_s": 21600
+    }
+  }
+}

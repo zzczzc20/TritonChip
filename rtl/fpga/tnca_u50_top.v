@@ -82,8 +82,9 @@
 module tnca_u50_top #(
     // ---- AXI4-Lite, host side ----------------------------------------------
     // Twelve bits of byte address covers 0x000..0xFFF. The register map ends at
-    // 0x0A4, and tnca_axi_lite decodes the low eight bits, so the four bits
-    // above them are ignored by design rather than by accident.
+    // 0x0BC (R40-04 added 0xA8..0xBC), and tnca_axi_lite decodes the low eight
+    // bits, so the four bits above them are ignored by design rather than by
+    // accident.
     parameter S_AXI_ADDR_W   = 12,
 
     // ---- the device --------------------------------------------------------
@@ -99,7 +100,36 @@ module tnca_u50_top #(
 
     parameter NUM_RCTX       = 2,
     parameter RCTX_W         = 1,
-    parameter VREGS_PER_RCTX = 64
+    parameter VREGS_PER_RCTX = 64,
+    // Architectural switches passed from the image profile, with legacy defaults.
+    parameter HAS_SFU              = 1,
+    parameter HAS_ATOMICS          = 1,
+    parameter HAS_SYS_ATOMICS      = 0,
+    parameter USE_BANKED_VRF       = 1,
+    parameter VRF_BYPASS           = 1,
+    parameter FE_NOBUBBLE          = 1,
+    parameter VRF_PREFETCH         = 1,
+    parameter RCTX_SWITCH          = 0,
+    parameter LSU_INFLIGHT         = 1,
+    parameter FPU_OVERLAP          = 0,
+    parameter RSLICE               = 0,
+    parameter RPAIR                = 0,
+    parameter MTX_ABUF             = 0,
+    parameter HAS_TENSOR_XPOSE     = 0,
+
+
+    // R40-04: the data memory above LOCAL_LIMIT is an AXI4 memory reached
+    // through m_axi_hbm (rtl/fpga/tnca_axi_bridge.v). The master is in the
+    // clk_dev domain: an image that sets DATA_AXI gives the device ap_clk
+    // itself (rtl/board/tnca_hbm_xo.v), so the platform's interconnect and
+    // the bridge share a clock. 0: the ports are driven idle.
+    parameter DATA_AXI       = 0,
+    parameter LOCAL_LIMIT    = 64'h20000,
+    parameter AXI_OUT_N      = 8,
+    parameter AXI_LINE       = 0,           // tnca_fpga_top: the burst mechanism
+    parameter AXI_LB_N       = 8,
+    parameter AXI_PF         = 1,
+    parameter AXI_WAIT_N     = 8
 ) (
     //---- bus side, ap_clk domain -------------------------------------------
     input  wire                    ap_clk,
@@ -132,7 +162,38 @@ module tnca_u50_top #(
     output wire [31:0]             s_axi_tnca_rdata,
     output wire [1:0]              s_axi_tnca_rresp,
     output wire                    s_axi_tnca_rvalid,
-    input  wire                    s_axi_tnca_rready
+    input  wire                    s_axi_tnca_rready,
+
+    //---- R40-04 AXI4 master, clk_dev domain ---------------------------------
+    output wire                    m_axi_hbm_awvalid,
+    input  wire                    m_axi_hbm_awready,
+    output wire [63:0]             m_axi_hbm_awaddr,
+    output wire [4:0]              m_axi_hbm_awid,
+    output wire [7:0]              m_axi_hbm_awlen,
+    output wire [2:0]              m_axi_hbm_awsize,
+    output wire [1:0]              m_axi_hbm_awburst,
+    output wire                    m_axi_hbm_wvalid,
+    input  wire                    m_axi_hbm_wready,
+    output wire [63:0]             m_axi_hbm_wdata,
+    output wire [7:0]              m_axi_hbm_wstrb,
+    output wire                    m_axi_hbm_wlast,
+    input  wire                    m_axi_hbm_bvalid,
+    output wire                    m_axi_hbm_bready,
+    input  wire [4:0]              m_axi_hbm_bid,
+    input  wire [1:0]              m_axi_hbm_bresp,
+    output wire                    m_axi_hbm_arvalid,
+    input  wire                    m_axi_hbm_arready,
+    output wire [63:0]             m_axi_hbm_araddr,
+    output wire [4:0]              m_axi_hbm_arid,
+    output wire [7:0]              m_axi_hbm_arlen,
+    output wire [2:0]              m_axi_hbm_arsize,
+    output wire [1:0]              m_axi_hbm_arburst,
+    input  wire                    m_axi_hbm_rvalid,
+    output wire                    m_axi_hbm_rready,
+    input  wire [63:0]             m_axi_hbm_rdata,
+    input  wire [4:0]              m_axi_hbm_rid,
+    input  wire [1:0]              m_axi_hbm_rresp,
+    input  wire                    m_axi_hbm_rlast
 );
 
     //==========================================================================
@@ -231,9 +292,31 @@ module tnca_u50_top #(
         .NUM_RCTX(NUM_RCTX),
         .RCTX_W(RCTX_W),
         .VREGS_PER_RCTX(VREGS_PER_RCTX),
+        .HAS_SFU(HAS_SFU),
+        .HAS_ATOMICS(HAS_ATOMICS),
+        .HAS_SYS_ATOMICS(HAS_SYS_ATOMICS),
+        .USE_BANKED_VRF(USE_BANKED_VRF),
+        .VRF_BYPASS(VRF_BYPASS),
+        .FE_NOBUBBLE(FE_NOBUBBLE),
+        .VRF_PREFETCH(VRF_PREFETCH),
+        .RCTX_SWITCH(RCTX_SWITCH),
+        .LSU_INFLIGHT(LSU_INFLIGHT),
+        .FPU_OVERLAP(FPU_OVERLAP),
+        .RSLICE(RSLICE),
+        .RPAIR(RPAIR),
+        .MTX_ABUF(MTX_ABUF),
+        .HAS_TENSOR_XPOSE(HAS_TENSOR_XPOSE),
         .WORDS(WORDS),
         .ADDR_W(ADDR_W),
-        .ADDR_BITS(ADDR_BITS)
+        .ADDR_BITS(ADDR_BITS),
+        .LSU_TAG_W(5),
+        .DATA_AXI(DATA_AXI),
+        .LOCAL_LIMIT(LOCAL_LIMIT),
+        .AXI_OUT_N(AXI_OUT_N),
+        .AXI_LINE(AXI_LINE),
+        .AXI_LB_N(AXI_LB_N),
+        .AXI_PF(AXI_PF),
+        .AXI_WAIT_N(AXI_WAIT_N)
     ) u_device (
         .clk(clk_dev),
         .rst_n_async(rst_n_async),
@@ -242,7 +325,24 @@ module tnca_u50_top #(
         .reg_wdata(reg_wdata),
         .reg_we(reg_we),
         .reg_re(reg_re),
-        .reg_rdata(reg_rdata)
+        .reg_rdata(reg_rdata),
+
+        .m_axi_awvalid(m_axi_hbm_awvalid), .m_axi_awready(m_axi_hbm_awready),
+        .m_axi_awaddr(m_axi_hbm_awaddr), .m_axi_awid(m_axi_hbm_awid),
+        .m_axi_awlen(m_axi_hbm_awlen), .m_axi_awsize(m_axi_hbm_awsize),
+        .m_axi_awburst(m_axi_hbm_awburst),
+        .m_axi_wvalid(m_axi_hbm_wvalid), .m_axi_wready(m_axi_hbm_wready),
+        .m_axi_wdata(m_axi_hbm_wdata), .m_axi_wstrb(m_axi_hbm_wstrb),
+        .m_axi_wlast(m_axi_hbm_wlast),
+        .m_axi_bvalid(m_axi_hbm_bvalid), .m_axi_bready(m_axi_hbm_bready),
+        .m_axi_bid(m_axi_hbm_bid), .m_axi_bresp(m_axi_hbm_bresp),
+        .m_axi_arvalid(m_axi_hbm_arvalid), .m_axi_arready(m_axi_hbm_arready),
+        .m_axi_araddr(m_axi_hbm_araddr), .m_axi_arid(m_axi_hbm_arid),
+        .m_axi_arlen(m_axi_hbm_arlen), .m_axi_arsize(m_axi_hbm_arsize),
+        .m_axi_arburst(m_axi_hbm_arburst),
+        .m_axi_rvalid(m_axi_hbm_rvalid), .m_axi_rready(m_axi_hbm_rready),
+        .m_axi_rdata(m_axi_hbm_rdata), .m_axi_rid(m_axi_hbm_rid),
+        .m_axi_rresp(m_axi_hbm_rresp), .m_axi_rlast(m_axi_hbm_rlast)
     );
 
 endmodule

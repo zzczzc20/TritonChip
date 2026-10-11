@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  The kernel description of the R40-04 image (rtl/board/tnca_hbm_xo.v): the
+  register port of fpga/kernel.xml, whose comment covers everything that is the
+  same, and one AXI4 master more.
+
+  m_axi_hbm is 64 bits of data and 64 of address, addressable over the whole
+  space: the device reaches it at axi_base + (address - LOCAL_LIMIT), and the
+  host chooses axi_base (R_AXI_BASE) from the buffer it allocates in the bank
+  the link connected the port to.
+
+  The argument is there because connectivity is stated per argument
+  (`sp=tnca_u50_1.hbm:HBM[..]`), not per port. Its offset is 0xA8, which is
+  R_AXI_BASE in rtl/fpga/tnca_mmio.v, 64 bits as two 32-bit halves, low half
+  first: an XRT that writes the argument writes the window's base, which is
+  what the argument is. The runtime writes the register itself (it drives the
+  device through the register file, hwControlProtocol ap_ctrl_none), so
+  nothing depends on XRT doing it.
+-->
+<root versionMajor="1" versionMinor="6">
+  <kernel name="tnca_u50" language="ip_c" vlnv="tnca.com:kernel:tnca_u50:1.0"
+          attributes="" preferredWorkGroupSizeMultiple="0" workGroupSize="1"
+          interrupt="false" hwControlProtocol="ap_ctrl_none">
+    <ports>
+      <port name="s_axi_tnca" mode="slave" range="0x1000" dataWidth="32"
+            portType="addressable" base="0x0"/>
+      <port name="m_axi_hbm" mode="master" range="0xFFFFFFFFFFFFFFFF" dataWidth="64"
+            portType="addressable" base="0x0"/>
+    </ports>
+    <args>
+      <arg name="hbm" addressQualifier="1" id="0" port="m_axi_hbm" size="0x8"
+           offset="0xA8" hostOffset="0x0" hostSize="0x8" type="void*"/>
+    </args>
+  </kernel>
+</root>

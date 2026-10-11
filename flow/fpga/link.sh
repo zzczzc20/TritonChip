@@ -116,6 +116,14 @@
 # is kept at <build-dir>/xclbin.info so that the parse can be checked by eye.
 #
 #------------------------------------------------------------------------------
+# LINK_EXTRA
+#
+# More v++ options, logged with the rest. The R40-04 image (package_xo.tcl's
+# `hbm` variant) is linked with its master's connectivity here, e.g.
+#   LINK_EXTRA="--connectivity.sp tnca_u50_1.hbm:HBM[0:31]"
+# so the bank map is a recorded input of the link, not a property of a config
+# file nobody kept.
+#
 # WHAT THIS SCRIPT DOES NOT DO
 #
 # It does not touch the board. No step here needs root, no step here loads
@@ -190,6 +198,7 @@ else
         echo "XO=$XO"
         echo "BOARD=$BOARD"
         echo "BOARD_VPP_OPTS=$BOARD_VPP_OPTS"
+        echo "LINK_EXTRA=${LINK_EXTRA:-}"
         echo "PLATFORM=$PLATFORM"
         echo "KERNEL_FREQUENCY_ARG=--kernel_frequency 0:$EXPECT_MHZ"
         echo "EXPECT_MHZ=$EXPECT_MHZ"
@@ -209,6 +218,7 @@ else
         --platform "$PLATFORM" \
         ${VPP_JOBS:+--jobs $VPP_JOBS} \
         $BOARD_VPP_OPTS \
+        ${LINK_EXTRA:-} \
         --kernel_frequency 0:$EXPECT_MHZ \
         --temp_dir "$OUT/tmp" \
         --log_dir "$OUT/vpp_logs" \

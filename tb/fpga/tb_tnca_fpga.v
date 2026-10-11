@@ -33,6 +33,10 @@
 `timescale 1ns/1ps
 
 module tb_tnca_fpga;
+    // PERF_NUM_COUNTERS: the index past the last counter is read from the
+    // generated header, not written down -- R39-00 added a counter and a
+    // hard-coded 20 became a real one.
+`include "tnca_perf_count.vh"
 
     parameter WORDS          = 65536;
     parameter ADDR_W         = 16;
@@ -474,7 +478,7 @@ module tb_tnca_fpga;
                 status, r0, r1);
         check("perf_cycles does not go backwards between reads",
               {63'd0, {r1[31:0], r0[31:0]} >= perf_a}, 64'd1);
-        mailbox(OP_PERF_READ, 64'd20, 64'd0, 64'd0, 64'd0, 64'd0, 64'd0,
+        mailbox(OP_PERF_READ, PERF_NUM_COUNTERS, 64'd0, 64'd0, 64'd0, 64'd0, 64'd0,
                 status, r0, r1);
         check_status("PERF_READ past the last counter", status, ST_REFUSED);
 

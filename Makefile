@@ -1425,6 +1425,14 @@ R40_NATIVE ?= $(BUILD)/r40/native
 r40-device: $(R2_DATA_STAMP) | dirs
 	@$(TORCH_PYTHON) tools/r40/device_tests.py --evidence; \
 	 $(PYTHON) tools/r40/device_time.py --native $(R40_NATIVE) --evidence
+# R40-04: single-core HBM (rtl/fpga/tnca_axi_bridge.v). What runs without a
+# board: the bridge against a reference under late, reordered, backpressured,
+# refusing and reset AXI traffic, its mutations, and the tnca device on the
+# simulated /hbm memory mode. The board's measurements are added by their own
+# runs; until then the gates say not-measured.
+.PHONY: r40-hbm
+r40-hbm: $(R2_DATA_STAMP) | dirs
+	@TORCH_PYTHON=$(TORCH_PYTHON) $(PYTHON) tools/r40/hbm_tests.py --evidence
 
 # One suite, every backend. This is the suite a downstream branch runs.
 r36-conformance: $(R2_DATA_STAMP) | dirs

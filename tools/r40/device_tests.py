@@ -223,13 +223,15 @@ def _child(code, timeout=1800):
     env['PYTHONPATH'] = os.pathsep.join(str(p) for p in (ROOT, ROOT / 'python', ROOT / 'compiler' / 'python',
                                                           ROOT / 'tools' / 'asm'))
     import tempfile
-    with tempfile.NamedTemporaryFile('w', suffix='.py', delete=False) as fh:
-        fh.write(code)              # a file, so a spawned worker can import its __main__
-    try:
-        r = subprocess.run([sys.executable, fh.name], env=env, capture_output=True, text=True,
+    # A file, so a spawned worker can import its __main__, in a directory of
+    # its own: a script's directory is first on its sys.path, and a shared
+    # /tmp holds other people's modules (a `tabulate.py` there broke dynamo).
+    with tempfile.TemporaryDirectory() as d:
+        script = os.path.join(d, 'child.py')
+        with open(script, 'w') as fh:
+            fh.write(code)
+        r = subprocess.run([sys.executable, script], env=env, capture_output=True, text=True,
                            timeout=timeout, cwd=str(ROOT))
-    finally:
-        os.unlink(fh.name)
     ok = [l for l in r.stdout.splitlines() if l.startswith('OK')]
     assert r.returncode == 0 and ok, \
         f'child exited {r.returncode}: {(r.stderr.strip().splitlines() or [""])[-1][:200]}'
@@ -353,10 +355,11 @@ def unsupported_dtypes():
 @case
 def properties():
     from torch._dynamo.device_interface import get_interface_for_device
+    from tnca import device as _device
     from tnca.adapters import r1
     iface = get_interface_for_device('tnca')
     p = iface.get_device_properties()
-    target, _ = r1.target_for(os.environ['TNCA_PROFILE'])
+    target, _ = r1.target_for(_device.base_profile(os.environ['TNCA_PROFILE']))
     assert p.multi_processor_count == target.num_cores
     assert p.num_rctx == target.num_rctx and p.vlen == target.vlen
     assert iface.is_bf16_supported() == bool(dict(target.capabilities).get('matrix_bf16'))

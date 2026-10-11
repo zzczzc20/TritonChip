@@ -141,7 +141,16 @@ RTLLIB = ['common', 'core', 'gen', 'nuca', 'noc', 'tile']
 # The modules that carry the wrapper's own logic, each elaborated at the
 # root. The wrapper itself is checked separately because it needs the
 # whole library behind it.
-STANDALONE = ['tnca_mmio', 'tnca_fpga_mem', 'tnca_axi_lite']
+STANDALONE = ['tnca_mmio', 'tnca_fpga_mem', 'tnca_axi_lite', 'tnca_axi_bridge', 'tnca_axi_bridge_lb']
+
+# The wrapper's elaborations: as the board has run it until R40-04, and with
+# the data memory behind the AXI bridge (DATA_AXI=1) -- single-beat, and the
+# line-buffered one (AXI_LINE=8) -- whose generate branches the default never
+# reaches. `chparam` before `hierarchy` re-derives the
+# module under its own name, so the `select` and the stat verdict below still
+# find it.
+TOP_VARIANTS = [('', ''), ('DATA_AXI=1', f'chparam -set DATA_AXI 1 {TOP}\n'),
+                ('DATA_AXI=1 AXI_LINE=8', f'chparam -set DATA_AXI 1 -set AXI_LINE 8 {TOP}\n')]
 
 # The bench that drives the adapter from the bus side, and the file it
 # drives. Named here rather than globbed: a second bench under tb/fpga/
@@ -379,23 +388,26 @@ def fpga02(log):
 
 
 def fpga03(log):
-    """proc, then check -assert, on the wrapper."""
+    """proc, then check -assert, on the wrapper, in each elaboration."""
     files = ' '.join(_library_files())
-    ok, text = _run_yosys(
-        f'read_verilog -DSYNTHESIS {" ".join(INCS)} {files}\n'
-        f'hierarchy -top {TOP} -check\n'
-        f'select {TOP}\n'
-        f'proc\n'
-        f'check -assert\n'
-        f'stat\n', log, f'proc on {TOP}')
-    if not ok:
-        for line in _interesting(text):
-            log.append('      ' + line)
-        return False, f'proc or check -assert failed on {TOP}'
-    ok = _verdict(log, f'proc; check -assert on {TOP}', text, TOP)
-    return ok, ('no latch, no combinational loop, no multiple driver, no '
-                'width problem in the board wrapper' if ok
-                else f'check -assert is not clean on {TOP}')
+    for tag, pre in TOP_VARIANTS:
+        what = f'{TOP} {tag}'.strip()
+        ok, text = _run_yosys(
+            f'read_verilog -DSYNTHESIS {" ".join(INCS)} {files}\n'
+            f'{pre}'
+            f'hierarchy -top {TOP} -check\n'
+            f'select {TOP}\n'
+            f'proc\n'
+            f'check -assert\n'
+            f'stat\n', log, f'proc on {what}')
+        if not ok:
+            for line in _interesting(text):
+                log.append('      ' + line)
+            return False, f'proc or check -assert failed on {what}'
+        if not _verdict(log, f'proc; check -assert on {what}', text, TOP):
+            return False, f'check -assert is not clean on {what}'
+    return True, ('no latch, no combinational loop, no multiple driver, no '
+                  'width problem in the board wrapper, with and without the AXI bridge')
 
 
 def fpga04(log):

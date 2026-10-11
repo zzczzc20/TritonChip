@@ -248,12 +248,15 @@ class TNCABackend(BaseBackend):
         stages['tnca'] = lambda src, metadata: self.make_tnca(src, metadata, options)
 
     def make_tnca(self, module, metadata, options):
-        from tnca import aot, dump as _dump
+        from tnca import aot, device as _device, dump as _dump
         from tnca.adapters import r1 as adapter
         text = str(module)
         kernel_name, params = ttir_params(text)
         prov = adapter.Provenance()
-        target, pinfo = adapter.target_for(options.profile, prov)
+        # The artifact is for the architecture; a memory mode ('.../hbm',
+        # '.../slow') only says where the session runs it, which
+        # tnca_profile below keeps for the launcher.
+        target, pinfo = adapter.target_for(_device.base_profile(options.profile), prov)
         prov.record('source_sha256', hashlib.sha256(text.encode()).hexdigest())
         prov.record('source_kind', 'triton')
         prov.record('entry_point', 'triton-backend')

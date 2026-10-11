@@ -1,7 +1,7 @@
 # R40：原生 TNCA 设备、可扩展多核 NUCA 与 HBM
 
 版本：0.1，2026-10-10。状态：**PROPOSED / NOT ACCEPTED**。
-执行状态（2026-10-10）：R40-00 已关闭（`evidence/r40/R40-00/`）；R40-01 进行中。
+执行状态（2026-10-11）：R40-00 已关闭（`evidence/r40/R40-00/`）；R40-01 功能完成，全量 gate 待 HBM；R40-04 进行中（首个 HBM link 时序失败，正在修复约束并重建；仿真复验进行中）。
 起点：R39 尾声；本次审查为 `r39` 分支、HEAD `3a546702db3fda63547b4c1ff0a9d779a6c5cfbe`，工作区另有未提交的 R39 改动。正式起点由 R40-00 冻结，不能把当前工作区或尚未签收的镜像当作基线。
 签收名：`R40_NATIVE_DEVICE_SCALABLE_NUCA_HBM`。
 上位与前序：[R39 tasks & acceptance](r39_tasks_and_acceptance.md)、[R39 报告](r39_report.md)、[ArchBench 协议](../archbench/PROTOCOL.md)。仓库阶段文档目录为 `doc/`，本文沿用此惯例。
@@ -330,6 +330,32 @@ U280 有三个 SLR，HBM 接口位于 SLR0；板卡提供 8 GB HBM、32 个 AXI 
 1. `make r40-hbm`：标准 Torch 图的权重或工作集 ≥64 MiB，明显超过片上 RAM，实际 HBM traffic 非零；全地址空间的 host/device 抽样与高位地址测试正确，不能只测第一个 PC。
 2. 大于 cache 4× 的标准 Torch streaming 读、写、copy：各方向有效带宽 ≥冻结瓶颈峰值的 **50%**；独立宽入口/并发改进的目标子集 `S_geo ≥1.5`，同时报告 burst efficiency 和读写 traffic 放大。
 3. 乱序 response、随机背压、相同 line 的 subword stores、错误、timeout/reset、跨边界事务通过；HBM 模型 fidelity 满足 §3.4，板上数据正确且 timing/CDC gate 通过。
+
+进展（2026-10-10，进行中；设计、验证与带宽数据见 `doc/r40_hbm.md`）：
+
+- **接口**：核心的数据口不变，后面接一个桥。
+  - 低于 `LOCAL_LIMIT`（0x20000）的地址仍走片上 RAM，包括代码与参数。
+  - 其余地址走 AXI 窗口：`axi_base + (A − LOCAL_LIMIT)`，由 host 写 `R_AXI_BASE`/`R_AXI_SIZE`。
+  - 新寄存器 0xA8–0xD8：窗口、粘滞错误/无主响应、AXI 读/写/读延迟/R 拍计数器。旧镜像读为 0。
+- **两个桥**（`burst` 机制的 A/B，`AXI_LINE`）：
+  - `tnca_axi_bridge`：单拍，按字的 hazard 表；atomic 在桥里做读-改-写；复位后 1024 拍的静默窗口吸收在途的旧响应。
+  - `tnca_axi_bridge_lb`：读按 64 B 行，INCR burst 进入全相联行缓冲，预取下一行。写直达，FIFO 化。`inv` 在每条命令时拉一拍，保证 host DMA 之后可见。
+  - 顺序规则与变异：单拍桥 5 个变异，行缓冲桥 6 个，全部被抓到。
+- **仿真**：内存模式 `core-vrf-sync-v5/hbm`。编译、能力与 artifact 按 base profile 走；bench 带 32 MiB 的 AXI 窗口与可调时序的 AXI 模型。
+  - `make r40-hbm`：桥在 4 种几何下各 7 个用例，覆盖乱序、背压、SLVERR、在途复位、DMA 后失效。
+  - device tests 16/16，恶劣时序下 5/5；张量在窗口 24 MiB 处的图正确；整窗 32 个样本先全部写入后再读回，正确。
+  - `DATA_AXI=0` 不变：B4 sim tiny 27/27 与 B39 逐拍相同；R39 合入 gate 照冻结数复跑；`r36-fpga-tests` 以 `DATA_AXI=0/1` 两种方式展开。
+  - 另修复了 `R36-FPGA-08` 在 HEAD 上的既有失败：bench 写死的“越界计数器”下标 20，在 R39-00 增加计数器后成了真实计数器。
+- **板卡**：`rtl/board/tnca_hbm_xo.v` 与 `fpga/kernel_hbm.xml`；设备直接运行在 ap_clk 上。
+  - link 时 `sp=tnca_u50_1.hbm:HBM[0:31]`。
+  - runtime 按 xclbin 的 group connectivity 在所连 bank 中分配窗口 BO，写入基址；窗口内的传输走 XRT DMA，heap 以设备报告的大小为界。
+  - 首个镜像 `u280_r40a`（单拍桥，v5 参数）：OOC 100 MHz 时 WNS +1.367 ns；link 于 2026-10-11 失败（WNS −0.683 ns），没有可装载 xclbin。OOC 主时钟误入整机实现，修复及复测见 `doc/r40_hbm.md` §7。板卡共享，装载前检查占用；作者已于 2026-10-11 授权持续推进到 R40 验收并 commit/push。
+- **带宽**（仿真，AXI 延迟 30 拍）：
+  - 行缓冲 16 行 / 32 waiter / OUT_N 16 时，read/write/copy 为片上 RAM 的 91% / 81% / 77%；延迟 1 拍时与片上 RAM 逐拍相同。
+  - 天花板是核心本身：16 元素块下仅 2.3–3.7 B/cycle，约为 8 B 入口的 30–45%。所以验收 2 的 50% 门限依赖 R40-03 的宽块与 32 B 入口，只改桥达不到。
+- **三核可行性**（§5 要求尽早验证）：单核约占 SLR1 的 64.6% LUT（27.9 万）。
+  - 三个 CU（每 SLR 一个、各自接 HBM）的 link 已开始，但与单核 link 并行时共享主机内存只剩约 10 GB（另有其他用户的 Vivado），已停止，待单核镜像完成后再跑。
+- **gate**：`R40-04.robustness` 与 `R40-04.hbm` 的仿真部分全部通过，均为 not-measured，等板上部分；`R40-04.bandwidth` 为 not-measured。
 
 ### R40-05：多 SLR 物理多核接入公共 runtime
 

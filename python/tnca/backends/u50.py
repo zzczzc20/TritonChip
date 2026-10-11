@@ -122,6 +122,18 @@ R_HOST_STATUS = 0x90
 
 R_MAGIC = 0x98
 R_SERVED = 0xA0
+# R40-04: the AXI window of an image with external memory (rtl/fpga/tnca_mmio.v,
+# DATA_AXI). An image without one reads all three as zero.
+R_AXI_BASE = 0xA8
+R_AXI_SIZE = 0xB0
+R_AXI_STAT = 0xB8
+AXI_STAT_ERR = 0x1          # sticky: an AXI error response came back
+AXI_STAT_PRESENT = 0x2      # the image has the window
+AXI_STAT_STRAY = 0x4        # sticky: an AXI response matched nothing in flight
+R_AXI_RD = 0xC0             # AXI reads issued, free-running
+R_AXI_WR = 0xC8             # AXI writes issued
+R_AXI_LAT = 0xD0            # sum over cycles of the reads in flight
+R_AXI_RBEAT = 0xD8          # R beats taken (reads x burst length)
 
 #: Version 1.0 and "TNCA" in ASCII. Read before anything else is written:
 #: a host that has opened the wrong BAR, or a board with no bitstream
@@ -208,6 +220,21 @@ class U50Link(abc.ABC):
         """
         return []
 
+    # ---- R40-04: external memory (optional) -------------------------------
+    def hbm_open(self, nbytes):
+        """Allocate the AXI window's memory: (device address, bytes), or None
+        when this medium has no way to. Only an image whose R_AXI_STAT says it
+        has a window is asked."""
+        return None
+
+    def hbm_write(self, offset, data):
+        """Bytes into the window's memory at `offset`, by DMA."""
+        raise NotImplementedError
+
+    def hbm_read(self, offset, nbytes):
+        """Bytes out of the window's memory at `offset`, by DMA."""
+        raise NotImplementedError
+
 
 class U50Backend(Transport):
     """core-vrf-sync-v1, on rtl/fpga/tnca_fpga_top.v, over a register port.
@@ -228,7 +255,8 @@ class U50Backend(Transport):
 
     def __init__(self, link, *, epoch=0, host_timeout=30.0,
                  deadline_cycles=2_000_000, poll_interval=0.001,
-                 trace=False, image_profile=None, **kw):
+                 trace=False, image_profile=None, hbm_bytes=None, hbm_dma=True,
+                 **kw):
         # The profile the loaded image (or the simulated harness) was built
         # as. Nothing in the hardware says which (spec/r1_profiles.json: the
         # R39 switches change no capability register), so it is what the
@@ -275,6 +303,14 @@ class U50Backend(Transport):
         self.seq = 0
         self.history = []
         self.opened = False
+        # R40-04: an image with an AXI window (R_AXI_STAT) gets its memory
+        # here at start(). How much: hbm_bytes, or TNCA_HBM_BYTES, or 1 GiB.
+        # Transfers wholly inside the window go by DMA unless hbm_dma is off
+        # (the register window still reaches every address).
+        self.hbm_bytes = int(hbm_bytes or os.environ.get('TNCA_HBM_BYTES') or (1 << 30))
+        self.hbm_dma = bool(int(hbm_dma)) if not isinstance(hbm_dma, bool) else hbm_dma
+        self.local_limit = None
+        self.memory_bytes = None
 
     # ---- lifetime ---------------------------------------------------------
     def start(self):
@@ -320,6 +356,9 @@ class U50Backend(Transport):
             # then answers a ping has a working command path, where a
             # process that started has a working process.
             self.request(OP_PING)
+            stat = self.link.read_reg(R_AXI_STAT)
+            if stat & AXI_STAT_PRESENT:
+                self._open_window(stat)
         except BaseException:
             self.opened = False
             self.link.close()
@@ -328,6 +367,70 @@ class U50Backend(Transport):
 
     def alive(self):
         return self.opened and self.link.alive()
+
+    def _open_window(self, stat):
+        """R40-04: give the image's AXI window its memory.
+
+        The device reaches address A >= LOCAL_LIMIT at R_AXI_BASE + (A -
+        LOCAL_LIMIT); the memory is a buffer XRT allocates in the bank the
+        link connected m_axi_hbm to, and R_AXI_BASE is that buffer's device
+        address. LOCAL_LIMIT comes from the device (R_AXI_STAT 63:32, in 4 KiB
+        pages), not from a constant here.
+        """
+        local = (stat >> 32) << 12
+        got = self.link.hbm_open(self.hbm_bytes)
+        if got is None:
+            raise DependencyFailed(
+                'the image has an AXI window and this medium cannot allocate '
+                'its memory',
+                detail={'medium': self.link.describe(), 'axi_stat': stat},
+                remedy='open the board through XDMALink (XRT), which allocates '
+                       'it; without it every address from LOCAL_LIMIT up would '
+                       'read zero')
+        base, size = got
+        self.link.write_reg(R_AXI_BASE, base)
+        self.link.write_reg(R_AXI_SIZE, size)
+        if (self.link.read_reg(R_AXI_BASE), self.link.read_reg(R_AXI_SIZE)) != (base, size):
+            raise DeviceLost('the AXI window registers did not keep what was written',
+                             detail={'base': base, 'size': size,
+                                     'medium': self.link.describe()})
+        self.local_limit = local
+        self.memory_bytes = local + size
+        self.link.words = self.memory_bytes // WORD
+        self.axi_window = dict(base=base, size=size, local_limit=local, dma=self.hbm_dma)
+
+    def axi_status(self):
+        """R_AXI_STAT's sticky flags, or None on an image without a window."""
+        if self.local_limit is None:
+            return None
+        stat = self.link.read_reg(R_AXI_STAT)
+        return dict(error=bool(stat & AXI_STAT_ERR), stray=bool(stat & AXI_STAT_STRAY))
+
+    def axi_counters(self):
+        """The bridge's free-running counters, or None without a window:
+        reads, writes, read-cycles in flight (mean read latency in cycles is
+        read_cycles / reads, by Little's law) and R beats (read_beats / reads
+        is the burst length)."""
+        if self.local_limit is None:
+            return None
+        r = self.link.read_reg
+        return dict(reads=r(R_AXI_RD), writes=r(R_AXI_WR), read_cycles=r(R_AXI_LAT),
+                    read_beats=r(R_AXI_RBEAT))
+
+    def launch(self, *a, **kw):
+        reply = super().launch(*a, **kw)
+        if self.local_limit is not None:
+            st = self.axi_status()
+            if st['error'] or st['stray']:
+                # Sticky until the image is reset: every later result is
+                # suspect too, so the device is reported lost, not faulted.
+                raise DeviceLost(
+                    'the AXI memory answered with an error during a launch'
+                    if st['error'] else
+                    'the AXI memory answered a request that was not in flight',
+                    detail=dict(self._gone_detail(), axi=st),
+                    remedy='reload the image; R_AXI_STAT stays set until reset')
+        return reply
 
     def stop(self):
         if not self.opened:
@@ -498,17 +601,32 @@ class U50Backend(Transport):
                        'RTL was built with')
         return None if write else self.link.read_reg(R_HOST_DATA)
 
+    def _dma_split(self, addr, nwords):
+        """How many of the words from `addr` go through the register window:
+        all of them, unless part of the range is in an AXI window that DMA
+        reaches, in which case only those below LOCAL_LIMIT."""
+        if self.local_limit is None or not self.hbm_dma:
+            return nwords
+        return max(0, min(nwords, (self.local_limit - addr) // WORD))
+
     def _put_payload(self, addr, words):
         self._check_window(addr, len(words), 'upload')
-        for i, word in enumerate(words):
+        k = self._dma_split(addr, len(words))
+        for i, word in enumerate(words[:k]):
             self._window(addr + i * WORD, word, write=True)
+        if k < len(words):
+            data = b''.join(int(w).to_bytes(WORD, 'little') for w in words[k:])
+            self.link.hbm_write(addr + k * WORD - self.local_limit, data)
 
     def _get_payload(self, addr, nwords):
         self._check_window(addr, nwords, 'download')
+        k = self._dma_split(addr, nwords)
         out = bytearray()
-        for i in range(nwords):
+        for i in range(k):
             got = self._window(addr + i * WORD, None, write=False)
             out += got.to_bytes(WORD, 'little')
+        if k < nwords:
+            out += self.link.hbm_read(addr + k * WORD - self.local_limit, (nwords - k) * WORD)
         return bytes(out)
 
     def capabilities(self):
@@ -666,6 +784,84 @@ def _file_carries_uuid(path, uuid):
     return uuid in head
 
 
+class _XclBOProperties(ctypes.Structure):
+    """deprecated/xrt.h: struct xclBOProperties."""
+    _fields_ = [('handle', ctypes.c_uint32), ('flags', ctypes.c_uint32),
+                ('size', ctypes.c_uint64), ('paddr', ctypes.c_uint64),
+                ('reserved', ctypes.c_int)]
+
+
+NULLBO = 0xFFFF_FFFF
+XCL_BO_SYNC_BO_TO_DEVICE = 0
+XCL_BO_SYNC_BO_FROM_DEVICE = 1
+
+# xclbin.h section kinds
+_MEM_TOPOLOGY, _CONNECTIVITY, _IP_LAYOUT = 6, 7, 8
+_ASK_GROUP_TOPOLOGY, _ASK_GROUP_CONNECTIVITY = 26, 27
+
+
+def _xclbin_sections(path):
+    """{kind: bytes} of an .xclbin (xclbin.h: struct axlf; the section
+    headers start at 456 -- the 304-byte prefix, then axlf_header with
+    m_numSections at 448 -- and are 40 bytes each)."""
+    import struct
+    with open(path, 'rb') as fh:
+        blob = fh.read()
+    if not blob.startswith(XCLBIN_MAGIC):
+        raise DependencyFailed(f'{path} is not an .xclbin', detail={'path': path})
+    (n,) = struct.unpack_from('<I', blob, 448)
+    out = {}
+    for i in range(n):
+        kind, _name, off, size = struct.unpack_from('<I16s4xQQ', blob, 456 + 40 * i)
+        out.setdefault(kind, blob[off:off + size])
+    return out
+
+
+def _xclbin_bank(path, ip_name, arg_index=0):
+    """The memory index XRT allocates in for argument `arg_index` of
+    `ip_name`, and that bank's tag and size in bytes.
+
+    From the group sections when the link made any (a connection to a range
+    such as HBM[0:31] is one group bank spanning them), else the plain ones;
+    of the banks the argument is connected to, the largest, which is the
+    group. xclbin.h: ip_layout {int32 count; ip_data[80 B] from 8},
+    connectivity {int32 count; connection[12 B] from 4}, mem_topology {int32
+    count; mem_data[40 B] from 8, m_size in KiB}.
+    """
+    import struct
+    sec = _xclbin_sections(path)
+    ips = sec.get(_IP_LAYOUT)
+    if ips is None:
+        raise DependencyFailed(f'{path} has no IP_LAYOUT', detail={'path': path})
+    (n_ip,) = struct.unpack_from('<i', ips, 0)
+    names = [struct.unpack_from('<IIQ64s', ips, 8 + 80 * i)[3].split(b'\0')[0].decode()
+             for i in range(n_ip)]
+    if ip_name not in names:
+        raise DependencyFailed(f'{path} has no IP {ip_name!r}', detail={'ips': names})
+    ip = names.index(ip_name)
+    conn = sec.get(_ASK_GROUP_CONNECTIVITY) or sec.get(_CONNECTIVITY)
+    topo = sec.get(_ASK_GROUP_TOPOLOGY) or sec.get(_MEM_TOPOLOGY)
+    if conn is None or topo is None:
+        raise DependencyFailed(f'{path} has no connectivity for {ip_name!r}',
+                               detail={'sections': sorted(sec)})
+    (n_c,) = struct.unpack_from('<i', conn, 0)
+    (n_m,) = struct.unpack_from('<i', topo, 0)
+    mems = []
+    for i in range(n_m):
+        mtype, used, size_kb, base, tag = struct.unpack_from('<BB6xQQ16s', topo, 8 + 40 * i)
+        mems.append(dict(index=i, used=used, size=size_kb * 1024, base=base,
+                         tag=tag.split(b'\0')[0].decode(errors='replace')))
+    banks = []
+    for i in range(n_c):
+        arg, ipi, mi = struct.unpack_from('<iii', conn, 4 + 12 * i)
+        if arg == arg_index and ipi == ip and 0 <= mi < n_m:
+            banks.append(mems[mi])
+    if not banks:
+        raise DependencyFailed(f'argument {arg_index} of {ip_name!r} is connected to no memory',
+                               detail={'path': path})
+    return max(banks, key=lambda m: m['size'])
+
+
 def _xrt_library():
     """libxrt_core.so, loaded once, with every signature declared.
 
@@ -731,6 +927,24 @@ def _xrt_library():
     lib.xclRegRead.restype = c.c_int
     lib.xclRegWrite.argtypes = [c.c_void_p, c.c_uint, c.c_uint, c.c_uint32]
     lib.xclRegWrite.restype = c.c_int
+
+    # R40-04, the AXI window's memory: deprecated/xrt.h (XRT 2.16), each
+    # checked with `nm -D` on libxrt_core.so. xclBufferHandle is `unsigned
+    # int` on Linux and NULLBO 0xffffffff; xclWriteBO/xclReadBO copy to and
+    # from the BO's host backing store and xclSyncBO moves a range of it by
+    # DMA (XCL_BO_SYNC_BO_TO_DEVICE = 0, ..._FROM_DEVICE = 1).
+    lib.xclAllocBO.argtypes = [c.c_void_p, c.c_size_t, c.c_int, c.c_uint]
+    lib.xclAllocBO.restype = c.c_uint
+    lib.xclFreeBO.argtypes = [c.c_void_p, c.c_uint]
+    lib.xclFreeBO.restype = None
+    lib.xclGetBOProperties.argtypes = [c.c_void_p, c.c_uint, c.POINTER(_XclBOProperties)]
+    lib.xclGetBOProperties.restype = c.c_int
+    lib.xclWriteBO.argtypes = [c.c_void_p, c.c_uint, c.c_void_p, c.c_size_t, c.c_size_t]
+    lib.xclWriteBO.restype = c.c_size_t
+    lib.xclReadBO.argtypes = [c.c_void_p, c.c_uint, c.c_void_p, c.c_size_t, c.c_size_t]
+    lib.xclReadBO.restype = c.c_size_t
+    lib.xclSyncBO.argtypes = [c.c_void_p, c.c_uint, c.c_int, c.c_size_t, c.c_size_t]
+    lib.xclSyncBO.restype = c.c_int
 
     _LIB = lib
     return lib
@@ -816,6 +1030,9 @@ class _XRTRegisters:
         # Kept as an attribute and not a local: ctypes does not own the
         # buffer, and the context holds the pointer for as long as it is open.
         self._uuid = None
+        # R40-04: the AXI window's buffer object, if one was allocated.
+        self._bo = None
+        self._bo_size = 0
 
     # ---- lifetime ---------------------------------------------------------
     def open(self):
@@ -897,7 +1114,61 @@ class _XRTRegisters:
         """Safe on a device that already died, and safe to call twice."""
         self._close_everything()
 
+    # ---- R40-04: the AXI window's memory ------------------------------------
+    def bo_open(self, nbytes, bank):
+        """Allocate `nbytes` in memory index `bank`; returns its device address."""
+        if self._handle is None:
+            raise DeviceLost('the board is not open', detail={'medium': self._what})
+        bo = self._lib.xclAllocBO(self._handle, nbytes, 0, bank)
+        if bo == NULLBO:
+            raise DependencyFailed(
+                f'XRT would not allocate {nbytes} bytes in memory index {bank}',
+                detail={'medium': self._what, 'bank': bank, 'bytes': nbytes},
+                remedy='ask for less (TNCA_HBM_BYTES), or check the bank the '
+                       'link connected m_axi_hbm to (xclbinutil --info)')
+        props = _XclBOProperties()
+        rc = self._lib.xclGetBOProperties(self._handle, bo, ctypes.byref(props))
+        if rc != 0:
+            self._lib.xclFreeBO(self._handle, bo)
+            raise DependencyFailed('XRT gave no properties for the buffer it allocated',
+                                   detail={'rc': rc, 'medium': self._what})
+        self._bo, self._bo_size = bo, nbytes
+        return props.paddr
+
+    def bo_write(self, offset, data):
+        n = len(data)
+        if offset < 0 or offset + n > self._bo_size:
+            raise ArgumentError(f'{n} bytes at {offset:#x} runs past the AXI window')
+        buf = ctypes.create_string_buffer(bytes(data), n)
+        if self._lib.xclWriteBO(self._handle, self._bo, buf, n, offset) != 0:
+            raise DeviceLost('XRT refused to stage a write into the AXI window',
+                             detail={'offset': offset, 'bytes': n, 'medium': self._what})
+        rc = self._lib.xclSyncBO(self._handle, self._bo, XCL_BO_SYNC_BO_TO_DEVICE, n, offset)
+        if rc != 0:
+            raise DeviceLost('the DMA into the AXI window failed',
+                             detail={'rc': rc, 'offset': offset, 'bytes': n, 'medium': self._what})
+
+    def bo_read(self, offset, nbytes):
+        if offset < 0 or offset + nbytes > self._bo_size:
+            raise ArgumentError(f'{nbytes} bytes at {offset:#x} runs past the AXI window')
+        rc = self._lib.xclSyncBO(self._handle, self._bo, XCL_BO_SYNC_BO_FROM_DEVICE, nbytes, offset)
+        if rc != 0:
+            raise DeviceLost('the DMA out of the AXI window failed',
+                             detail={'rc': rc, 'offset': offset, 'bytes': nbytes,
+                                     'medium': self._what})
+        buf = ctypes.create_string_buffer(nbytes)
+        if self._lib.xclReadBO(self._handle, self._bo, buf, nbytes, offset) != 0:
+            raise DeviceLost('XRT refused to read back the AXI window',
+                             detail={'offset': offset, 'bytes': nbytes, 'medium': self._what})
+        return buf.raw
+
     def _close_everything(self):
+        if self._bo is not None and self._lib is not None and self._handle is not None:
+            try:
+                self._lib.xclFreeBO(self._handle, self._bo)
+            except Exception:
+                pass
+        self._bo = None
         lib, self._lib = self._lib, None
         handle, self._handle = self._handle, None
         ip, self._ip = self._ip, None
@@ -1049,6 +1320,21 @@ class XDMALink(U50Link):
             raise DeviceLost('the board is not open',
                              detail={'medium': self._what})
         self._accessor.write(offset, int(value) & 0xFFFF_FFFF_FFFF_FFFF)
+
+    # ---- R40-04: the AXI window's memory, through XRT ----------------------
+    def hbm_open(self, nbytes):
+        if self._accessor is None or not hasattr(self._accessor, 'bo_open'):
+            return None
+        bank = _xclbin_bank(self.xclbin, self.ip_name, arg_index=0)
+        nbytes = min(int(nbytes), bank['size'])
+        self.hbm_bank = bank
+        return self._accessor.bo_open(nbytes, bank['index']), nbytes
+
+    def hbm_write(self, offset, data):
+        self._accessor.bo_write(offset, data)
+
+    def hbm_read(self, offset, nbytes):
+        return self._accessor.bo_read(offset, nbytes)
 
     def _open_access(self):
         """Build the platform accessor. The board-dependent step.

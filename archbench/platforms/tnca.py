@@ -372,8 +372,9 @@ def _host_steady(steady):
 
 def _provenance(profile, backend, backend_kwargs, plat, log, clock):
     try:
+        from tnca import device as _device
         from tnca.adapters import r1
-        target, _info = r1.target_for(profile)
+        target, _info = r1.target_for(_device.base_profile(profile))
         caps = target.capabilities if isinstance(target.capabilities, dict) else dict(target.capabilities)
         capabilities = sorted(k for k, v in caps.items() if v)
     except Exception as e:                                   # noqa: BLE001

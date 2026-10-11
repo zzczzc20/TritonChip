@@ -38,9 +38,10 @@ _registered = False
 @functools.cache
 def properties(index=0):
     """The device's properties, from the profile's target file."""
+    from tnca import device as _device
     from tnca.adapters import r1
     profile = os.environ.get('TNCA_PROFILE', 'core-sim')
-    target, info = r1.target_for(profile)
+    target, info = r1.target_for(_device.base_profile(profile))
     caps = target.capabilities if isinstance(target.capabilities, dict) else dict(target.capabilities)
     num_cores = int(getattr(target, 'num_cores', 1) or 1)
     num_rctx = int(getattr(target, 'num_rctx', 1) or 1)

@@ -264,7 +264,7 @@ class Session:
     _counter = 0
 
     def __init__(self, profile='core-sim', *, bench=None, workdir=None,
-                 code_base=0, heap_base=0x20000, heap_limit=0x80000,
+                 code_base=0, heap_base=0x20000, heap_limit=None,
                  deadline_cycles=2_000_000, host_timeout=600.0, trace=False,
                  backend='sim-file', counters=False, **backend_kwargs):
         Session._counter += 1
@@ -328,6 +328,11 @@ class Session:
         self._events = OrderedDict()
         self._next_buffer = 0
         self._next_job = 0
+        explicit_limit = heap_limit is not None
+        if heap_limit is None:
+            # The profile's memory: 512 KiB on chip, or an /hbm memory mode's
+            # AXI window (R40-04).
+            heap_limit = _device.memory_limit(profile)
         self._code = _Allocator(code_base, heap_base)
         self._heap = _Allocator(heap_base, heap_limit)
         self._worker = None
@@ -339,6 +344,12 @@ class Session:
                                 host_timeout=host_timeout, trace=trace,
                                 epoch=self.epoch, **self._backend_kwargs)
         self.dev.start()
+        # A board with external memory says how much it gave the device
+        # (R40-04: the AXI window's buffer); that, not the profile's simulated
+        # size, is where the heap ends.
+        mem = getattr(self.dev, 'memory_bytes', None)
+        if mem and not explicit_limit:
+            self._heap = _Allocator(heap_base, mem)
         self._start_worker()
 
     # ---- housekeeping -----------------------------------------------------

@@ -26,3 +26,15 @@ the active backend at kernel load. Standard native graph, alternating
 CUDA/TNCA and resource-property checks pass 3/3; CUDA receives its actual
 limit, and TNCA remains zero. The full device regression is being repeated.
 See mixed_backend_cache.log. No complete native/performance gate is claimed.
+
+Native compile-capacity checkpoint (2026-10-11): compile-only now uses the
+active Session heap rather than the CPU migration staging limit. With the
+32 MiB RTL HBM profile, all 77 frozen tiny/small/medium points compile; the
+records retain `not-measured`, null correctness/timing and no executed
+kernels. This does not close either device gate.
+
+The unchanged large LayerNorm point needs 4,202,496 argument bytes. Native
+HBM compile succeeds against the reported 33,554,432-byte heap; the CPU
+migration control still reports `capacity-exceeded` against 393,216 bytes.
+See native_large_compile_capacity.*, cpu_large_compile_capacity.* and
+native_hbm_compile77.*. Shapes, frozen thresholds and CPU limits are unchanged.

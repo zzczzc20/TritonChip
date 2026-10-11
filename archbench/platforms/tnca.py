@@ -208,7 +208,12 @@ def run(point, *, profile='core-sim', opt_level=2, seed=0, counters=False, warmu
         if expected is not None and len(log) != expected:
             rec['status'] = 'runtime-fault'
             rec['problems'].append(f'{len(log)} launches for {expected} in the wrapper (autotuning?)')
-        heap = HEAP_BYTES
+        # Native storage uses the active Session's real heap. The frozen
+        # CPU migration path retains its original on-chip staging limit.
+        heap = (tnca.torch_device.MEMORY.session().memory_stats['heap_capacity_bytes']
+                if native else HEAP_BYTES)
+        if native:
+            rec['host']['heap_capacity_bytes'] = heap
         if biggest > heap:
             rec['status'] = 'capacity-exceeded'
             rec['problems'].append(f'the largest launch needs {biggest} bytes of arguments; '

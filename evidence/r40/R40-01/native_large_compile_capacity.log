@@ -1,0 +1,4 @@
+not-measured       op.layernorm/large/fp16-r512-d2048                         time=None eta=None err=None [162.0s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+1/1 compile in 162s -> sim/build/r40/native_large_compile_capacity.jsonl
+EXIT:0

@@ -129,11 +129,7 @@ jobs:
       # builds the same set). Only the benches are built: the programs that
       # run on them are other targets' business, not this job's.
       - name: R1 profile and capability checks
-        run: |
-          make core4
-          make sim/build/tb_core_vrf.vvp
-          make sim/build/tb_core_xpose.vvp
-          python3 tools/r1/profile_tests.py
+        run: make r1-profile-tests
 
       # R3's performance model: six graphs whose cycle counts are worked out
       # by hand in the test, and exact agreement required. No RTL, no

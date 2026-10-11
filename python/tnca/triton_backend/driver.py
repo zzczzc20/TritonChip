@@ -252,6 +252,10 @@ class TNCALauncher:
         """
         torch = _torch()
         buffers, bound = {}, {}
+        native_staged = {}
+        transfer_policy = os.environ.get('TNCA_TRANSFER_POLICY', 'resident')
+        if transfer_policy not in ('resident', 'per-kernel'):
+            raise TNCALaunchError(f'unknown TNCA_TRANSFER_POLICY {transfer_policy!r}')
         moved = {'upload_bytes': 0, 'download_bytes': 0}
         t_start = time.perf_counter()
 
@@ -273,8 +277,22 @@ class TNCALauncher:
                 buf, base_off = MEMORY.locate(storage_address(v))
                 if buf.session_id != session.id or buf.epoch != session.epoch:
                     raise TNCALaunchError(f'{name}: its storage belongs to another session or epoch')
-                moved['resident_bytes'] = moved.get('resident_bytes', 0) + v.untyped_storage().nbytes()
                 off = base_off + v.storage_offset() * v.element_size()
+                if transfer_policy == 'per-kernel':
+                    # The native-device staging control uses identical
+                    # compiled code. A distinct storage makes one round trip
+                    # through host bytes into a temporary device buffer; all
+                    # aliases bind to that same buffer with their own offset.
+                    if buf.id not in native_staged:
+                        shadow = session.allocate(buf.size, name=f'staging:{name}')
+                        native_staged[buf.id] = (buf, shadow)
+                        data = session.download(buf)
+                        session.upload(shadow, data)
+                        moved['download_bytes'] += len(data)
+                        moved['upload_bytes'] += len(data)
+                    buf = native_staged[buf.id][1]
+                else:
+                    moved['resident_bytes'] = moved.get('resident_bytes', 0) + v.untyped_storage().nbytes()
                 return (buf, off) if off else buf
             if v.device.type != 'cpu':
                 raise TNCALaunchError(f'{name}: tensor on {v.device}; TNCA takes host or tnca tensors')
@@ -341,6 +359,11 @@ class TNCALauncher:
             if event.state != 'SUCCEEDED':
                 raise TNCALaunchError(f'{self.metadata.name}: {event.error}')
             outputs = {}
+            for original, shadow in native_staged.values():
+                data = session.download(shadow)
+                session.upload(original, data)
+                moved['download_bytes'] += len(data)
+                moved['upload_bytes'] += len(data)
             for key, (handle, raw, name) in buffers.items():
                 n = raw.numel()
                 if guard:
@@ -357,6 +380,11 @@ class TNCALauncher:
                 moved['download_bytes'] += n
             return event, outputs, moved, (t_start, t_submit, t_done)
         finally:
+            for _original, shadow in native_staged.values():
+                try:
+                    session.free(shadow)
+                except Exception:                        # noqa: BLE001
+                    pass
             for handle, _raw, _name in buffers.values():
                 try:
                     session.free(handle)

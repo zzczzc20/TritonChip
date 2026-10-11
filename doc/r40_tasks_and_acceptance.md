@@ -298,6 +298,16 @@ U280 有三个 SLR，HBM 接口位于 SLR0；板卡提供 8 GB HBM、32 个 AXI 
 2. 在预冻结的 ≥3-kernel 图子集，resident 相对 staging 的 steady request latency `S_geo ≥1.5`；批量/replay 在独立冻结的小 kernel 图子集 resident call latency `S_geo ≥1.2`。全量退化按 §3.2 处理。
 3. 1000 次图调用、非连续 alias/offset、异步 free/realloc、多 stream event、故障恢复后的 stale handle、replay 失效通过；buffer 高水位及末尾未释放 storage 可审计，不要求缓存 allocator 归零。
 
+进展（2026-10-11，进行中）：
+
+- `TNCA_TRANSFER_POLICY=resident/per-kernel` 已接入原生 launcher；两者使用同一标准路径制品。
+  staging 为每个 distinct storage 分配临时 device buffer，host bytes 往返搬运，
+  offset/view 别名共用该临时 buffer；完成后复制回原 storage，并记录全部实际传输字节。
+- `tools/r40/residency_tests.py`：驻留零 kernel H2D/D2H、staging 实际往返、
+  两策略制品身份、两策略非连续 offset/alias 原地更新，以及未知策略拒绝，6/6。
+- `make r40-residency` 当前为能力 checkpoint；冻结链式图、多步 decode、
+  1000-call/异步/多 stream/replay 压力与性能 gate 尚未完成，不能据此签收 R40-02。
+
 ### R40-03：通用 tile、布局与资源分配
 
 交付：

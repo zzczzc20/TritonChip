@@ -86,7 +86,7 @@ def validate_manifest(value: dict[str, Any]) -> dict[str, Any]:
             bench = board["archbench"]
             if not isinstance(bench, dict):
                 raise SchemaError("board.archbench must be an object")
-            unknown = sorted(set(bench) - {"command", "result_file", "tiers", "jobs", "counters", "timeout_s"})
+            unknown = sorted(set(bench) - {"command", "result_file", "tiers", "jobs", "counters", "timeout_s", "python"})
             if unknown:
                 raise SchemaError("board.archbench has unsupported fields: " + ", ".join(unknown))
             if "command" in bench and (not isinstance(bench["command"], list) or not bench["command"] or
@@ -94,6 +94,8 @@ def validate_manifest(value: dict[str, Any]) -> dict[str, Any]:
                 raise SchemaError("board.archbench.command must be a non-empty argv list")
             if "result_file" in bench and not isinstance(bench["result_file"], str):
                 raise SchemaError("board.archbench.result_file must be a string")
+            if "python" in bench and (not isinstance(bench["python"], str) or not bench["python"]):
+                raise SchemaError("board.archbench.python must be an interpreter path")
             if "tiers" in bench and (not isinstance(bench["tiers"], list) or not bench["tiers"] or
                                       not all(isinstance(item, str) and item for item in bench["tiers"])):
                 raise SchemaError("board.archbench.tiers must be a non-empty string list")

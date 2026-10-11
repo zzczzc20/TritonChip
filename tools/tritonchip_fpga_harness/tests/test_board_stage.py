@@ -9,11 +9,13 @@ results) skip when it does not carry them.
 from __future__ import annotations
 
 import json
+import os
 import subprocess
 import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 HERE = Path(__file__).resolve().parents[1]
 REPO = HERE.parents[1]
@@ -22,11 +24,12 @@ if str(TOOLS) not in sys.path:
     sys.path.insert(0, str(TOOLS))
 
 from tritonchip_fpga_harness.core import (
-    HARNESS_TREE, HarnessError, _implementation_verdict, load_profile, measure_existing,
+    HARNESS_TREE, HarnessError, _implementation_verdict, doctor, load_profile, measure_existing,
     plan, reconcile, software_identity, submit,
 )
 from tritonchip_fpga_harness.measurement import (
-    MeasurementError, _default_conformance, image_profile_contract, measure_board, summarize_archbench,
+    MeasurementError, _default_archbench, _default_conformance, archbench_python, board_preflight,
+    image_profile_contract, measure_board, summarize_archbench,
 )
 
 PY = sys.executable
@@ -280,6 +283,97 @@ class ImageProfile(BoardStageCase):
     def test_unknown_profile_or_checkout_without_a_table_is_unknown_not_passed(self) -> None:
         self.assertIsNone(image_profile_contract(self.repo, "no-such-profile"))
         self.assertIsNone(image_profile_contract(self.tmp, "base-v1"))
+
+
+class BoardPreflight(BoardStageCase):
+    """What the board stage needs, asked before the link instead of after it."""
+
+    def interpreter(self, name: str, body: str) -> str:
+        path = self.tmp / name
+        path.write_text("#!/bin/sh\n" + body + "\n", encoding="utf-8")
+        path.chmod(0o755)
+        return str(path)
+
+    def without_pytorch(self) -> str:
+        return self.interpreter("python-bare", "echo \"ModuleNotFoundError: No module named 'torch'\" >&2; exit 1")
+
+    def with_pytorch(self, tnca_backend: bool = True) -> str:
+        seen = json.dumps({"torch": "2.14.0", "triton": "3.8.0", "tnca_backend": tnca_backend})
+        return self.interpreter(f"python-torch-{tnca_backend}", f"echo 'HARNESS-PROBE {seen}'")
+
+    def failed(self, checks: list[dict[str, object]]) -> dict[str, str]:
+        return {str(c["name"]): str(c["detail"]) for c in checks if not c["ok"]}
+
+    def test_interpreter_without_pytorch_is_env_fail_before_any_build(self) -> None:
+        manifest = self.manifest(conformance=False, archbench={"tiers": ["tiny"], "python": self.without_pytorch()})
+        result = submit(HERE, self.repo, manifest, self.state, "mock")
+        self.assertEqual(result["status"], "ENV_FAIL")
+        self.assertEqual(result["stages"], [])
+        self.assertIn("No module named 'torch'", self.failed(result["board_preflight"])["board_archbench_python"])
+        self.assertIn("board_archbench_python", result["error"])
+        # The implementation never started: there is nothing to mistake for a build.
+        self.assertFalse((self.run_dir(result) / "artifacts").exists())
+
+    def test_pytorch_without_the_tnca_backend_is_not_ready(self) -> None:
+        manifest = self.manifest(conformance=False, archbench={"python": self.with_pytorch(tnca_backend=False)})
+        failed = self.failed(board_preflight(root=self.repo, profile=load_profile(HERE, "u50-legacy"), manifest=manifest))
+        self.assertIn("tnca package is not installed", failed["board_archbench_python"])
+
+    def test_a_ready_host_passes_every_check(self) -> None:
+        xrt = self.tmp / "xrt"
+        for relative in ("bin/xbutil", "bin/xclbinutil", "lib/libxrt_core.so"):
+            (xrt / relative).parent.mkdir(parents=True, exist_ok=True)
+            (xrt / relative).write_text("", encoding="utf-8")
+            (xrt / relative).chmod(0o755)
+        for relative in ("flow/fpga/program.sh", "tools/r36/conformance.py", "archbench/run.py"):
+            (self.repo / relative).parent.mkdir(parents=True, exist_ok=True)
+            (self.repo / relative).write_text("", encoding="utf-8")
+            (self.repo / relative).chmod(0o755)
+        manifest = self.manifest(program=True, archbench={"python": self.with_pytorch()})
+        with mock.patch.dict(os.environ, {"XILINX_XRT": str(xrt)}):
+            checks = board_preflight(root=self.repo, profile=load_profile(HERE, "u50-legacy"), manifest=manifest)
+        self.assertEqual(self.failed(checks), {})
+        self.assertEqual({c["name"] for c in checks}, {
+            "board_program_script", "board_xbutil", "board_xclbinutil", "board_conformance_tool",
+            "board_xrt_library", "board_archbench_runner", "board_archbench_python",
+        })
+
+    def test_steps_the_manifest_replaces_are_not_checked(self) -> None:
+        manifest = self.manifest(program={"command": [PY, "-c", "pass"]}, conformance={"command": conformance()},
+                                 archbench={"command": archbench()})
+        self.assertEqual(board_preflight(root=self.repo, profile=load_profile(HERE, "u50-legacy"), manifest=manifest), [])
+        self.assertEqual(board_preflight(root=self.repo, profile=load_profile(HERE, "u50-legacy"),
+                                         manifest={"candidate_id": "c", "target": "u50-legacy", "mode": "full"}), [])
+
+    def test_measure_reports_an_unready_host_and_writes_nothing_against_the_run(self) -> None:
+        manifest = self.manifest(conformance=False, archbench={"python": self.without_pytorch()})
+        built = submit(HERE, self.repo, manifest, self.state, "mock", skip_board=True)
+        self.assertEqual(built["status"], "PASS")
+        before = (self.run_dir(built) / "result.json").read_text(encoding="utf-8")
+        with self.assertRaisesRegex(HarnessError, "cannot start on this host.*board_archbench_python"):
+            measure_existing(HERE, self.repo, self.state, str(built["run_id"]))
+        self.assertEqual((self.run_dir(built) / "result.json").read_text(encoding="utf-8"), before)
+        self.assertFalse((self.run_dir(built) / "board_measurement.json").exists())
+
+    def test_doctor_checks_a_manifests_board_stage_when_given_one(self) -> None:
+        manifest = self.manifest(conformance=False, archbench={"python": self.without_pytorch()})
+        self.assertTrue(doctor(HERE, self.repo, "u50-legacy", "mock")["ok"])
+        report = doctor(HERE, self.repo, "u50-legacy", "mock", manifest)
+        self.assertFalse(report["ok"])
+        self.assertIn("board_archbench_python", self.failed(report["checks"]))
+
+    def test_archbench_runs_under_the_interpreter_the_manifest_or_torch_python_names(self) -> None:
+        with mock.patch.dict(os.environ, {"TORCH_PYTHON": "/env/torch/bin/python"}):
+            self.assertEqual(archbench_python({"archbench": {"python": "/explicit/python"}}), "/explicit/python")
+            self.assertEqual(archbench_python({"archbench": {"tiers": ["tiny"]}}), "/env/torch/bin/python")
+        with mock.patch.dict(os.environ, clear=False):
+            os.environ.pop("TORCH_PYTHON", None)
+            self.assertEqual(archbench_python({"archbench": {}}), sys.executable)
+        argv = _default_archbench(root=self.repo, python="/env/torch/bin/python", backend="fpga-u280",
+                                  profile="core-vrf-sync-v2", xclbin=Path("/run/a.xclbin"), tiers=["tiny"],
+                                  output=Path("/run/board/archbench.jsonl"), jobs=1, counters=True)
+        self.assertEqual(argv[:3], ["/env/torch/bin/python", "-m", "archbench.run"])
+        self.assertEqual(json.loads(argv[argv.index("--backend-args") + 1]), {"xclbin": "/run/a.xclbin"})
 
 
 class Verdicts(unittest.TestCase):

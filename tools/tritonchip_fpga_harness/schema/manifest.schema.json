@@ -42,6 +42,7 @@
           "properties": {
             "command": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}},
             "result_file": {"type": "string", "minLength": 1},
+            "python": {"type": "string", "minLength": 1},
             "tiers": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}},
             "jobs": {"type": "integer", "minimum": 1},
             "counters": {"type": "boolean"},

@@ -23,7 +23,7 @@ from . import __version__ as HARNESS_VERSION
 from .adapters.u50 import U50Adapter as VendorU50Adapter, U50Config
 from .adapters.u50 import execute_command
 from .adapters.u280 import U280FlowAdapter
-from .measurement import MeasurementError, image_profile_contract, measure_board
+from .measurement import MeasurementError, archbench_python, board_preflight, image_profile_contract, measure_board
 
 
 class HarnessError(RuntimeError):
@@ -292,7 +292,9 @@ def environment_snapshot(root: Path, profile: Profile, adapter_name: str) -> dic
             "vivado": _probe(["vivado", "-version"]),
             "v++": _probe_with_settings("v++", settings),
             "xclbinutil": _probe_with_settings("xclbinutil", settings),
-            "xbutil": _probe_with_settings("xbutil", settings),
+            # XRT, not Vitis, ships xbutil, and settings64.sh does not put it
+            # on PATH; the programmer calls it by this path too.
+            "xbutil": _probe([str(Path(os.environ.get("XILINX_XRT", "/opt/xilinx/xrt")) / "bin" / "xbutil"), "--version"]),
         },
         "environment": {str(k): str(v) for k, v in data.get("environment", {}).items()},
     }
@@ -521,12 +523,20 @@ def adapter_for(name: str) -> Adapter:
     raise HarnessError(f"unknown adapter {name!r}")
 
 
-def doctor(package_dir: Path, root: Path, target: str, adapter_name: str) -> dict[str, Any]:
+def doctor(package_dir: Path, root: Path, target: str, adapter_name: str,
+           manifest: dict[str, Any] | None = None) -> dict[str, Any]:
+    """Readiness of this host for ``target``; with a manifest, for its board stage too."""
+    if manifest is not None:
+        validate_manifest(manifest)
+        if manifest["target"] != target:
+            raise SchemaError(f"manifest target {manifest['target']!r} is not {target!r}")
     profile = load_profile(package_dir, target)
     if adapter_name in ("u50", "u280", "real") and profile.expected_adapter != ("u50" if adapter_name == "real" else adapter_name):
         raise SchemaError(f"target {profile.name} requires adapter {profile.expected_adapter}, got {adapter_name}")
     adapter = adapter_for(adapter_name)
     checks = adapter.doctor(root, profile)
+    if manifest is not None:
+        checks = checks + board_preflight(root=root, profile=profile, manifest=manifest)
     return {
         "schema_version": 1,
         "target": target,
@@ -612,6 +622,8 @@ def plan(package_dir: Path, root: Path, manifest: dict[str, Any], adapter_name: 
             "backend": (manifest.get("board") or {}).get("backend", f"fpga-{profile.data.get('board', 'unknown')}"),
             "bdf": (manifest.get("board") or {}).get("bdf"),
             "archbench": bool((manifest.get("board") or {}).get("archbench")),
+            "archbench_python": archbench_python(manifest["board"])
+            if isinstance(manifest.get("board"), dict) and manifest["board"].get("archbench") else None,
             "completion_fields": ["done_cycles", "done_retired"],
             "image_profile": image_profile_contract(root, manifest["board"]["profile"])
             if isinstance(manifest.get("board"), dict) else None,
@@ -778,6 +790,15 @@ def submit(package_dir: Path, root: Path, manifest: dict[str, Any], state_dir: P
         measurement_error: str | None = None
         board_status: str | None = None
         board_requested = manifest["mode"] == "full" and bool(manifest.get("board")) and not skip_board
+        board_checks = board_preflight(root=root, profile=profile, manifest=manifest) if board_requested else []
+        if any(not check["ok"] for check in board_checks):
+            # The board stage could not start on this host.  Say so now: the
+            # link in front of it takes hours and would end in the same place.
+            result = {"schema_version": 1, "run_id": run_id, "status": "ENV_FAIL", "source_commit": source["commit"], "target": manifest["target"], "mode": manifest["mode"], "stages": [], "missing_artifacts": [], "artifact_validation": None, "measurement": None, "measurement_error": None, "board_preflight": board_checks, "error": "the board stage cannot start on this host: " + "; ".join(f"{c['name']} ({c['detail']})" for c in board_checks if not c["ok"]), "resource_before": resource_before, "resource_after": host_resource_snapshot(state_dir), "elapsed_s": time.time() - started}
+            dump_json(run_dir / "result.json", result)
+            run.update({"status": "ENV_FAIL", "finished_at": time.time(), "error": result["error"]})
+            dump_json(run_dir / "run.json", run)
+            return result
         if manifest["mode"] == "ooc" and adapter_name != "mock":
             # OOC concurrency is deliberately user-configured through the
             # submitted experiment; profiles no longer reserve phantom OOC
@@ -926,6 +947,13 @@ def measure_existing(
             f"({implemented_commit}) and differs outside {HARNESS_TREE} "
             f"(relation: {software['relation']}); check out the implemented commit "
             "or pass --allow-source-mismatch"
+        )
+    blocked = [c for c in board_preflight(root=root, profile=profile, manifest=manifest) if not c["ok"]]
+    if blocked:
+        # Nothing ran, so nothing is written against the run.
+        raise HarnessError(
+            "the board stage cannot start on this host: "
+            + "; ".join(f"{c['name']} ({c['detail']})" for c in blocked)
         )
     if board_config_source == "measure":
         dump_json(run_dir / "board_manifest.json", board_manifest)

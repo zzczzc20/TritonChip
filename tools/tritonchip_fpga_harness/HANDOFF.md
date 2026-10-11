@@ -20,8 +20,11 @@ For a U50 worker, the profile currently expects:
 
 - a Linux checkout at the exact candidate commit;
 - the U50 platform and the profile's Vitis environment;
-- Vivado/Vitis, XRT, `xclbinutil`, `xbutil`, Python and the ArchBench/TNCA
-  dependencies;
+- Vivado/Vitis, XRT, `xclbinutil`, `xbutil`;
+- a Python environment with PyTorch, Triton and the `tnca` package installed
+  (`spec/r38/torch.lock.json`), named by `TORCH_PYTHON` or by
+  `board.archbench.python` in the manifest. The system `python3` that runs the
+  harness does not need them and on the FPGA hosts does not have them;
 - the U50 card visible through XRT and an explicit BDF in the programmer
   environment when the host has more than one card.
 
@@ -123,6 +126,17 @@ python3 tools/tritonchip_fpga_harness/cli.py --repo "$PWD" \
 The doctor must pass the repository flow checks, profile clocks/divider,
 platform paths, and vendor-tool checks. A doctor failure is an environment or
 flow-contract failure; do not start a long implementation until it is fixed.
+
+Give the doctor the manifest and it also checks the board stage that manifest
+asks for -- the programmer, XRT, and the ArchBench interpreter:
+
+```bash
+python3 tools/tritonchip_fpga_harness/cli.py --repo "$PWD" \
+  doctor --adapter u280 --manifest candidate-u280.json --json
+```
+
+`submit` makes the same checks before it starts Vivado and ends in `ENV_FAIL`
+if one fails, rather than linking for hours and failing at the card.
 
 Inspect the resolved plan before submission:
 
@@ -317,7 +331,9 @@ Use the result status rather than inferring from a log fragment. A failed
 board stage still writes `board_measurement.json`, with `failed_stage` and the
 stages that did run:
 
-- `ENV_FAIL`/doctor failure: worker toolchain, platform, XRT or board setup;
+- `ENV_FAIL`/doctor failure: worker toolchain, platform, XRT or board setup,
+  including an ArchBench interpreter without PyTorch, Triton or `tnca`.
+  `result.json` lists the failed checks under `board_preflight`;
 - `BUILD_FAIL`: package/link/artifact failure;
 - `TIMING_FAIL`: routed timing or DRC acceptance failure;
 - `BOARD_FAIL`: the board profile contradicts the image, or programming or

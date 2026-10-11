@@ -13,6 +13,8 @@ import hashlib
 import json
 import os
 import re
+import shutil
+import subprocess
 import sys
 from pathlib import Path
 from typing import Any, Mapping, Sequence
@@ -107,9 +109,108 @@ def _default_conformance(
     ]
 
 
+def archbench_python(config: Mapping[str, Any]) -> str:
+    """The interpreter ArchBench runs under.
+
+    ArchBench needs PyTorch, Triton and the installed ``tnca`` package
+    (spec/r38/torch.lock.json), which the repository keeps in an environment
+    of its own and names ``TORCH_PYTHON``.  The harness itself needs only the
+    standard library, so the two are usually different interpreters.
+    """
+    arch = config.get("archbench")
+    chosen = arch.get("python") if isinstance(arch, dict) else None
+    return str(chosen or os.environ.get("TORCH_PYTHON") or sys.executable)
+
+
+def _xrt_root() -> Path:
+    return Path(os.environ.get("XILINX_XRT", "/opt/xilinx/xrt"))
+
+
+def _tool_dirs(profile: Any) -> list[str]:
+    """Directories the board commands need on PATH, most specific first."""
+    dirs: list[str] = []
+    vitis_root = profile.data.get("vitis_root")
+    if vitis_root:
+        dirs.append(str(Path(vitis_root) / "bin"))
+    xrt_bin = _xrt_root() / "bin"
+    if xrt_bin.is_dir():
+        dirs.append(str(xrt_bin))
+    return dirs
+
+
+_ARCHBENCH_PROBE = (
+    "import json, torch, triton, triton.backends; "
+    "print('HARNESS-PROBE ' + json.dumps({'torch': torch.__version__, 'triton': triton.__version__, "
+    "'tnca_backend': 'cpu' in triton.backends.backends}))"
+)
+
+
+def board_preflight(*, root: Path, profile: Any, manifest: Mapping[str, Any]) -> list[dict[str, Any]]:
+    """Check, cheaply, that the board stage this manifest asks for can start.
+
+    A link takes hours and the board stage follows it; an interpreter without
+    PyTorch or a host without XRT should be found before the link, not after.
+    Only the steps the harness would run itself are checked: one the manifest
+    replaces with its own command is the manifest's business.
+    """
+    config = manifest.get("board")
+    if not isinstance(config, dict):
+        return []
+    checks: list[dict[str, Any]] = []
+
+    def add(name: str, ok: bool, detail: Any) -> None:
+        checks.append({"name": name, "ok": bool(ok), "detail": str(detail), "severity": "error"})
+
+    program = config.get("program", True)
+    if program and not (isinstance(program, dict) and program.get("command")):
+        script = config.get("program_script") or profile.data.get("program_script")
+        path = root / str(script) if script else None
+        add("board_program_script", bool(path and path.is_file() and os.access(path, os.X_OK)),
+            path if path else "the target profile names no program_script")
+        xbutil = Path(os.environ.get("XRT_BIN") or _xrt_root() / "bin") / "xbutil"
+        add("board_xbutil", xbutil.is_file(), xbutil)
+        search = os.pathsep.join(_tool_dirs(profile) + [os.environ.get("PATH", "")])
+        xclbinutil = shutil.which("xclbinutil", path=search)
+        add("board_xclbinutil", xclbinutil is not None, xclbinutil or "xclbinutil is in neither Vitis, XRT nor PATH")
+
+    conformance = config.get("conformance", True)
+    own_conformance = bool(conformance) and not (isinstance(conformance, dict) and conformance.get("command"))
+    arch = config.get("archbench")
+    own_archbench = bool(arch) and not (isinstance(arch, dict) and arch.get("command"))
+    if own_conformance:
+        tool = root / "tools/r36/conformance.py"
+        add("board_conformance_tool", tool.is_file(), tool)
+    if own_conformance or own_archbench:
+        library = _xrt_root() / "lib" / "libxrt_core.so"
+        add("board_xrt_library", library.is_file(), library)
+    if own_archbench:
+        runner = root / "archbench/run.py"
+        add("board_archbench_runner", runner.is_file(), runner)
+        python = archbench_python(config)
+        try:
+            probe = subprocess.run([python, "-c", _ARCHBENCH_PROBE], capture_output=True, text=True,
+                                   timeout=300, check=False)
+            found = [line for line in probe.stdout.splitlines() if line.startswith("HARNESS-PROBE ")]
+            if probe.returncode == 0 and found:
+                seen = json.loads(found[-1][len("HARNESS-PROBE "):])
+                add("board_archbench_python", bool(seen.get("tnca_backend")),
+                    f"{python}: torch {seen.get('torch')}, triton {seen.get('triton')}, "
+                    + ("tnca is its Triton cpu backend" if seen.get("tnca_backend")
+                       else "but the tnca package is not installed there (no triton.backends 'cpu')"))
+            else:
+                reason = (probe.stderr.strip().splitlines() or ["no output"])[-1]
+                add("board_archbench_python", False,
+                    f"{python}: {reason} -- ArchBench needs PyTorch, Triton and tnca "
+                    "(spec/r38/torch.lock.json); set TORCH_PYTHON or board.archbench.python")
+        except (OSError, subprocess.TimeoutExpired, ValueError) as exc:
+            add("board_archbench_python", False, f"{python}: {exc}")
+    return checks
+
+
 def _default_archbench(
     *,
     root: Path,
+    python: str,
     backend: str,
     profile: str,
     xclbin: Path,
@@ -122,7 +223,7 @@ def _default_archbench(
     # token here, rather than asking a shell to quote it, keeps paths with
     # spaces and remote worker wrappers deterministic.
     return [
-        sys.executable,
+        python,
         "-m",
         "archbench.run",
         "--platform",
@@ -418,15 +519,11 @@ def measure_board(
     # exactly.  Add the tool directories explicitly instead of relying on a
     # user's interactive shell having sourced settings64.sh or XRT's setup.sh:
     # the programmer needs xclbinutil, and both installations ship one.
-    tool_dirs: list[str] = []
     vitis_root = profile.data.get("vitis_root")
     if vitis_root:
         env["XILINX_VITIS"] = str(vitis_root)
         env["XILINX_PLATFORMS"] = str(profile.data.get("platforms_root", ""))
-        tool_dirs.append(str(Path(vitis_root) / "bin"))
-    xrt_bin = Path(os.environ.get("XILINX_XRT", "/opt/xilinx/xrt")) / "bin"
-    if xrt_bin.is_dir():
-        tool_dirs.append(str(xrt_bin))
+    tool_dirs = _tool_dirs(profile)
     if tool_dirs:
         env["PATH"] = os.pathsep.join(tool_dirs + [os.environ.get("PATH", "")])
     for key, value in profile.data.get("environment", {}).items():
@@ -459,6 +556,7 @@ def measure_board(
             "image_profile": contract,
             "clock_hz": float(profile.data.get("device_clock_mhz", 0)) * 1e6,
             "software": software,
+            "archbench_python": archbench_python(config) if config.get("archbench") else None,
             "stages": stages,
             "conformance": conformance_summary,
             "archbench": arch_summary,
@@ -543,7 +641,7 @@ def measure_board(
         if output_path.exists():
             output_path.unlink()
         command = arch_cfg.get("command") or _default_archbench(
-            root=root, backend=backend, profile=arch_profile, xclbin=xclbin,
+            root=root, python=archbench_python(config), backend=backend, profile=arch_profile, xclbin=xclbin,
             tiers=tiers, output=output_path, jobs=int(arch_cfg.get("jobs", 1)),
             counters=bool(arch_cfg.get("counters", True)),
         )

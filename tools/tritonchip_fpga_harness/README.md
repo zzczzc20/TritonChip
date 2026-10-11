@@ -200,6 +200,21 @@ card:
   revision the default build is `core-vrf-sync-v2`, and `core-vrf-sync-v1`
   would label its cycles as a machine that was not on the card.
 
+ArchBench needs PyTorch, Triton and the installed `tnca` package
+(`spec/r38/torch.lock.json`), which this repository keeps in an environment of
+its own; the harness needs only the standard library. The ArchBench stage
+therefore runs under `board.archbench.python` if the manifest names one, else
+`$TORCH_PYTHON` (the Makefile's variable), else the interpreter running the
+harness. Conformance needs none of that and runs under the harness's own.
+
+Before a build that is to be followed by a board stage, the harness checks
+that the stage can start on this host: the programmer and `xbutil`, XRT's
+library, the conformance tool, and that the ArchBench interpreter imports
+PyTorch and Triton and has `tnca` as Triton's `cpu` backend. A failure is
+`ENV_FAIL` and no vendor tool is started -- the link takes hours and would end
+in the same place. `doctor --manifest candidate.json` runs the same checks on
+their own, and `measure` runs them before it takes the lease.
+
 The ArchBench stage writes the untouched JSONL plus `archbench_summary.json`.
 The summary retains total and per-tier cycles, `done_cycles_total`,
 `done_retired_total`, and every counter total. A record is accepted only when

@@ -39,8 +39,9 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--repo", help="repository root or path inside it")
     sub = parser.add_subparsers(dest="command", required=True)
     d = sub.add_parser("doctor")
-    d.add_argument("--target", default="u50-legacy")
+    d.add_argument("--target", help="target profile; defaults to the manifest's, else u50-legacy")
     d.add_argument("--adapter", default="u50", choices=("u50", "u280", "mock"))
+    d.add_argument("--manifest", type=Path, help="also check that this manifest's board stage can start on this host")
     d.add_argument("--json", action="store_true")
     p = sub.add_parser("plan")
     p.add_argument("manifest", type=Path)
@@ -124,7 +125,8 @@ def main(argv: list[str] | None = None) -> int:
     try:
         root = _root(args.repo)
         if args.command == "doctor":
-            value = doctor(HERE, root, args.target, args.adapter)
+            board = load_json(args.manifest) if args.manifest else None
+            value = doctor(HERE, root, args.target or (board or {}).get("target") or "u50-legacy", args.adapter, board)
         elif args.command == "plan":
             value = plan(HERE, root, load_json(args.manifest), args.adapter)
         elif args.command == "submit":

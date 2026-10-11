@@ -28,10 +28,13 @@ refused by the dispatcher (NotImplementedError), never run on the host.
 One Session per device, the one the Triton launcher uses (driver._Sessions),
 so a kernel's argument is the tensor's own buffer and offset. `torch.tnca`
 is the device module: is_available, device_count, current_device,
-set_device, synchronize, Stream, Event -- launches complete before they
-return in R40-01, so a stream is in order and an event is always done.
+set_device, synchronize, Stream, Event. Batched launches retain storage
+until completion; stream identities share the physical device FIFO and
+events report actual queue completion.
 """
 import atexit
+import contextlib
+import itertools
 import os
 import threading
 from pathlib import Path
@@ -56,6 +59,8 @@ class DeviceMemory:
 
     def __init__(self):
         self.buffers = {}            # address -> Buffer
+        self.allocations = {}        # unique token -> Buffer, across recovery
+        self.next_token = 0
         self.peak = 0
         self.live = 0
 
@@ -83,21 +88,32 @@ class DeviceMemory:
                       f'{LAUNCH_RESERVE} kept for launches')
         buf = s.allocate(nbytes, name=f'storage@{len(self.buffers)}')
         self.buffers[buf.addr] = buf
+        self.next_token += 1
+        token = self.next_token
+        self.allocations[token] = buf
         self.live += buf.size
         self.peak = max(self.peak, self.live)
-        return buf.addr
+        return buf.addr, token
 
-    def free(self, addr, index=0):
-        buf = self.buffers.pop(addr, None)
+    def free(self, addr, token, index=0):
+        buf = self.allocations.pop(token, None)
         if buf is None:
             return
+        if self.buffers.get(addr) is buf:
+            self.buffers.pop(addr)
         self.live -= buf.size
         try:
-            self.session(index).free(buf)
+            self.session(index).retire(buf)
         except Exception:                                    # noqa: BLE001
             # A dead or recovered session has no buffer to free; the storage
             # went with it.
             pass
+
+    def validate(self, token):
+        buf = self.allocations.get(token)
+        s = self.session()
+        if buf is None or not buf.alive or buf.session_id != s.id or buf.epoch != s.epoch:
+            raise RuntimeError('tnca: storage belongs to a stale session or recovery epoch')
 
     def locate(self, addr):
         """(Buffer, byte offset) of a device address inside a live storage."""
@@ -110,6 +126,7 @@ class DeviceMemory:
         """Bytes to the device at any address: the words at either end that
         the data only partly covers are read first and written back whole,
         so no byte outside [addr, addr + len) changes."""
+        self.synchronize()
         data = bytes(data)
         a0 = addr - addr % WORD
         a1 = -(-(addr + len(data)) // WORD) * WORD
@@ -122,6 +139,7 @@ class DeviceMemory:
 
     def read(self, addr, nbytes):
         """Bytes from the device at any address (transfers are word-aligned)."""
+        self.synchronize()
         a0 = addr - addr % WORD
         buf, off = self.locate(a0)
         data = self.session().download(buf, nbytes + (addr - a0), off)
@@ -130,6 +148,13 @@ class DeviceMemory:
     def copy(self, dst, src, nbytes):
         """Device to device (a growing resize); staged through the host."""
         self.write(dst, self.read(src, nbytes))
+
+    def synchronize(self):
+        s = self.session()
+        last = s.latest_event
+        s.drain()
+        if last is not None and not last.ok:
+            raise last.error
 
 
 MEMORY = DeviceMemory()
@@ -152,7 +177,7 @@ def _span(t):
         else:
             hi += ext
     item = t.element_size()
-    base = _ext.storage_address(t) + (t.storage_offset() + lo) * item
+    base = storage_address(t) + (t.storage_offset() + lo) * item
     return base, (hi - lo + 1) * item, lo
 
 
@@ -236,25 +261,33 @@ def _register_ops(lib):
 
 
 # ---- the device module (torch.tnca) -------------------------------------------
-class _Stream:
-    """In-order and synchronous in R40-01: every launch completes before it
-    returns, so there is nothing to wait for."""
+_stream_local = threading.local()
+_stream_ids = itertools.count(1)
+_streams = {}
 
-    def __init__(self, device=None, priority=0):
+
+class _Stream:
+    """Streams share the single device's in-order queue in this profile."""
+
+    def __init__(self, device=None, priority=0, *, _id=None):
         import torch
         self.device = torch.device(NAME, 0) if device is None else torch.device(device)
+        if self.device.type != NAME or self.device.index not in (None, 0):
+            raise RuntimeError(f'unsupported tnca stream device {self.device}')
+        self.stream_id = next(_stream_ids) if _id is None else _id
+        _streams[self.stream_id] = self
 
     def synchronize(self):
-        pass
+        MEMORY.synchronize()
 
     def query(self):
-        return True
+        return not MEMORY.session().unfinished
 
     def wait_event(self, event):
-        pass
+        event.synchronize()
 
     def wait_stream(self, stream):
-        pass
+        stream.synchronize()
 
     def record_event(self, event=None):
         event = event or _Event()
@@ -265,18 +298,34 @@ class _Stream:
 class _Event:
     def __init__(self, enable_timing=False, blocking=False, interprocess=False):
         self.recorded = False
+        self.events = ()
+        self.session = None
+        self.epoch = None
 
     def record(self, stream=None):
         self.recorded = True
+        self.session = MEMORY.session()
+        self.epoch = self.session.epoch
+        latest = self.session.latest_event
+        self.events = (latest,) if latest is not None else ()
 
     def query(self):
-        return True
+        self._check_epoch()
+        return all(ev.terminal for ev in self.events)
 
     def synchronize(self):
-        pass
+        self._check_epoch()
+        for ev in self.events:
+            self.session.wait(ev)
+            if not ev.ok:
+                raise ev.error
 
     def wait(self, stream=None):
-        pass
+        self.synchronize()
+
+    def _check_epoch(self):
+        if self.session is not None and self.session.epoch != self.epoch:
+            raise RuntimeError('tnca event belongs to a recovered session epoch')
 
 
 class _DeviceModule:
@@ -304,15 +353,38 @@ class _DeviceModule:
 
     @staticmethod
     def synchronize(device=None):
-        pass
+        MEMORY.synchronize()
 
     @staticmethod
     def current_stream(device=None):
-        return _Stream(device)
+        return getattr(_stream_local, 'current', None) or _DeviceModule.default_stream(device)
 
     @staticmethod
     def default_stream(device=None):
-        return _Stream(device)
+        return _streams.get(0) or _Stream(device, _id=0)
+
+    @staticmethod
+    def set_stream(stream):
+        if not isinstance(stream, _Stream):
+            raise TypeError('set_stream expects a tnca Stream')
+        _stream_local.current = stream
+
+    @staticmethod
+    @contextlib.contextmanager
+    def stream(stream):
+        previous = _DeviceModule.current_stream()
+        if stream is not None:
+            _DeviceModule.set_stream(stream)
+        try:
+            yield stream
+        finally:
+            _DeviceModule.set_stream(previous)
+
+    @staticmethod
+    def _set_stream_by_id(stream_id, device_index, device_type):
+        if device_index != 0 or stream_id not in _streams:
+            raise RuntimeError('unknown tnca stream or device')
+        _DeviceModule.set_stream(_streams[stream_id])
 
     @staticmethod
     def get_device_name(device=None):
@@ -355,7 +427,7 @@ def register():
         import torch
         torch.utils.rename_privateuse1_backend(NAME)
         _ext = _build()
-        _ext.set_memory_callbacks(MEMORY.alloc, MEMORY.free, MEMORY.copy)
+        _ext.set_memory_callbacks(MEMORY.alloc, MEMORY.free, MEMORY.copy, MEMORY.validate)
         _ext.set_device_count(1)
         atexit.register(_ext.shutdown)
         torch._register_device_module(NAME, _DeviceModule())

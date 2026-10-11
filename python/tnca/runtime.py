@@ -388,6 +388,11 @@ class Session:
         with self._lock:
             return [e for e in self._events.values() if not e.terminal]
 
+    @property
+    def latest_event(self):
+        with self._lock:
+            return next(reversed(self._events.values()), None)
+
     # ---- buffers ----------------------------------------------------------
     def allocate(self, nbytes, *, name=None):
         self._check_usable()
@@ -439,6 +444,8 @@ class Session:
         self._check_usable()
         with self._lock:
             self._validate_buffer(buf, why='download')
+            if not buf.valid:
+                raise BufferError(f'download: {buf.name} was written by a failed task')
             nbytes = buf.size - offset if nbytes is None else nbytes
             if offset < 0 or offset + nbytes > buf.size:
                 raise BufferError(
@@ -456,6 +463,22 @@ class Session:
             self._validate_buffer(buf, why='free')
             buf.alive = False
             self._heap.release(buf.addr, buf.reserved)
+            return True
+
+    def retire(self, buf):
+        """Drop storage ownership; recycle its bytes after the final lease.
+
+        Unlike free(), this is for an allocator destructor while asynchronous
+        tasks still reference the storage. Queued tasks retain their leases;
+        new submissions cannot use the retired handle.
+        """
+        self._check_usable()
+        with self._lock:
+            if not isinstance(buf, Buffer) or buf.session_id != self.id or buf.epoch != self.epoch or not buf.alive:
+                raise BufferError('retire: not a live buffer of this session and epoch')
+            buf.alive = False
+            if not buf.leases:
+                self._heap.release(buf.addr, buf.reserved)
             return True
 
     # ---- modules ----------------------------------------------------------
@@ -687,7 +710,7 @@ class Session:
                         remedy='pass a handle from this session; a host '
                                'address is not a device address')
                 if buf.session_id != self.id or buf.epoch != self.epoch \
-                        or not buf.alive:
+                        or not buf.alive or not buf.valid:
                     raise ArgumentError(
                         f"{name!r}: {buf.name} is not a live buffer of this "
                         f"session and epoch")
@@ -887,6 +910,8 @@ class Session:
             self._heap.release(*allocation)
         for buf in task['leased']:
             buf.leases = max(0, buf.leases - 1)
+            if not buf.leases and not buf.alive:
+                self._heap.release(buf.addr, buf.reserved)
             if state == FAILED:
                 # Not a rollback -- the contract does not promise one. A
                 # marker, so an ordinary read cannot consume it as a result.

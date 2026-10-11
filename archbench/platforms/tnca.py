@@ -315,7 +315,9 @@ def _steady(compiled, inputs, n, expected, launch_log, torch):
         with torch.no_grad(), launch_log() as lg:
             t = time.monotonic()
             got = compiled(*inputs)
-            dt = time.monotonic() - t
+        # launch_log waits for queued TNCA events at graph completion. Keep
+        # that wait inside request latency when submission is asynchronous.
+        dt = time.monotonic() - t
         c = dict(index=i, request_s=dt, launches=len(lg),
                  device_cycles=sum(e['device_cycles'] or 0 for e in lg),
                  upload_s=sum(e['host_seconds']['upload'] for e in lg),

@@ -103,18 +103,39 @@ import atexit as _atexit                                 # noqa: E402
 _atexit.register(_Sessions.close_all)
 
 
-_logs = []
+_log_local = threading.local()
+
+
+def _active_logs():
+    if not hasattr(_log_local, "logs"):
+        _log_local.logs = []
+    return _log_local.logs
 
 
 @contextlib.contextmanager
 def launch_log():
     """Collect one dict per launch made while open (nested logs all see it)."""
     log = []
-    _logs.append(log)
+    _active_logs().append(log)
     try:
         yield log
     finally:
-        _logs.remove(log)
+        assert _active_logs().pop() is log
+        # An asynchronous launch log is measured through completion, never
+        # just submission. Nested contexts share each entry's final values.
+        for entry in log:
+            ev = entry.pop('_event', None)
+            if ev is not None:
+                session = entry.pop('_session')
+                session.wait(ev)
+                if not ev.ok:
+                    raise TNCALaunchError(f'{entry["kernel"]}: {ev.error}')
+                entry['device_cycles'] = ev.device_cycles
+                entry['program_cycles'] = list(ev.program_cycles or [])
+                entry['counters'] = ev.counters
+                stamps = dict(ev.history)
+                entry['host_seconds']['run'] = round(
+                    stamps.get('SUCCEEDED', 0) - stamps.get('RUNNING', 0), 6)
 
 
 class TNCALaunchError(RuntimeError):
@@ -182,7 +203,7 @@ class TNCALauncher:
                          host_seconds=dict(upload=0.0, run=0.0, download=0.0),
                          upload_bytes=sum(storages.values()), download_bytes=0,
                          buffers=len(storages), skipped=True)
-            for log in _logs:
+            for log in _active_logs():
                 log.append(entry)
             if launch_exit_hook is not None:
                 launch_exit_hook(launch_metadata)
@@ -209,9 +230,15 @@ class TNCALauncher:
         session, module = _load(_Sessions.get(self.profile), function)
         guard, poisons = _guards()
         grid = (max(gridX, 1), max(gridY, 1), max(gridZ, 1))
-        runs = [self._launch_once(session, module, values, grid, guard, poison)
+        submit_policy = os.environ.get('TNCA_SUBMIT', 'single')
+        if submit_policy not in ('single', 'batched'):
+            raise TNCALaunchError(f'unsupported TNCA_SUBMIT {submit_policy!r}')
+        asynchronous = submit_policy == 'batched'
+        runs = [self._launch_once(session, module, values, grid, guard, poison,
+                                  asynchronous=asynchronous)
                 for poison in poisons]
         event, outputs, moved, (t_start, t_submit, t_done) = runs[-1]
+        event.stream_id = getattr(stream, 'stream_id', stream)
         if len(runs) > 1:
             differ = sorted({name for k, (name, _raw, data) in outputs.items()
                              if runs[0][1][k][2] != data})
@@ -223,9 +250,10 @@ class TNCALauncher:
         for _name, raw, data in outputs.values():
             if data:
                 raw.copy_(torch.frombuffer(bytearray(data), dtype=torch.uint8))
-        if _logs:
+        if _active_logs():
             entry = dict(kernel=self.metadata.name, grid=grid, profile=self.profile,
                          backend=session.backend_name,
+                         stream_id=event.stream_id,
                          artifact=_artifact_sha256(function), artifact_path=function,
                          device_cycles=event.device_cycles,
                          program_cycles=list(event.program_cycles or []),
@@ -234,12 +262,14 @@ class TNCALauncher:
                                            run=round(t_done - t_submit, 6),
                                            download=round(time.perf_counter() - t_done, 6)),
                          **moved)
-            for log in _logs:
+            if asynchronous:
+                entry.update(_event=event, _session=session)
+            for log in _active_logs():
                 log.append(entry)
         if launch_exit_hook is not None:
             launch_exit_hook(launch_metadata)
 
-    def _launch_once(self, session, module, values, grid, guard, poison):
+    def _launch_once(self, session, module, values, grid, guard, poison, *, asynchronous=False):
         """Upload every distinct storage, run the grid, download them.
 
         Returns (event, {storage: (argument name, host bytes view, device
@@ -265,6 +295,8 @@ class TNCALauncher:
         if len(devices) > 1:
             raise TNCALaunchError(f'{self.metadata.name}: tensors on {sorted(devices)}; a kernel\'s '
                                   'tensors are all on the tnca device or all on the host')
+        if asynchronous and (devices - {'tnca'} or guard or transfer_policy != 'resident'):
+            raise TNCALaunchError('batched submission requires native resident tensors without staging guards')
 
         def device_ref(name, v):
             if v.device.type == 'tnca':
@@ -350,7 +382,21 @@ class TNCALauncher:
                 else:
                     raise TNCALaunchError(f'{name}: unsupported argument type {type(v).__name__}')
             t_submit = time.perf_counter()
-            event = session.submit(module, bound, grid=grid)
+            if asynchronous:
+                from tnca.runtime import MAX_UNFINISHED
+                while len(session.unfinished) >= MAX_UNFINISHED:
+                    oldest = session.unfinished[0]
+                    session.wait(oldest)
+                    if not oldest.ok:
+                        raise TNCALaunchError(f'queued predecessor failed: {oldest.error}')
+            previous = session.latest_event if asynchronous else None
+            event = session.submit(module, bound, grid=grid,
+                                   depends_on=[previous] if previous is not None else [])
+            if asynchronous:
+                self.last_event = event
+                self.last_cycles = None
+                TNCALauncher.last = self
+                return event, {}, moved, (t_start, t_submit, time.perf_counter())
             session.wait(event)
             t_done = time.perf_counter()
             self.last_event = event
@@ -438,6 +484,7 @@ def _load(session, path):
             # with it. Instead the modules launched longest ago give their
             # code space back (Session.unload) until this one fits; only if
             # it cannot fit at all is the code region a capacity limit.
+            session.drain()
             for old_key in list(_loaded):
                 if old_key[0] != id(session) or old_key[1] != session.epoch:
                     continue
@@ -543,6 +590,9 @@ class TNCADriver(DriverBase):
         pass
 
     def get_current_stream(self, device=None):
+        torch = _torch()
+        if hasattr(torch, "tnca") and os.environ.get("TNCA_TORCH_DEVICE") == "native":
+            return torch.tnca.current_stream().stream_id
         return 0
 
     def get_device_interface(self):

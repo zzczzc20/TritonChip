@@ -302,6 +302,10 @@ class U50Backend(Transport):
         self.trace = trace
         self.seq = 0
         self.history = []
+        # U50Backend does not call Transport.__init__; its inherited mailbox
+        # operations still need the same payload/sequence transaction lock.
+        import threading
+        self._io_lock = threading.RLock()
         self.opened = False
         # R40-04: an image with an AXI window (R_AXI_STAT) gets its memory
         # here at start(). How much: hbm_bytes, or TNCA_HBM_BYTES, or 1 GiB.

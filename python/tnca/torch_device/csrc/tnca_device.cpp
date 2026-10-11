@@ -12,7 +12,7 @@
 // (tnca.torch_device), and reaches the device through tnca.runtime.Session.
 //
 // Memory: the allocator calls back into Python (`set_memory_callbacks`):
-// alloc(nbytes, device) -> address, free(address, device). The address is the
+// alloc(nbytes, device) -> (address, token), free(address, token). The address is the
 // device's own, so `tensor.data_ptr()` is where the bytes are on the device
 // and a launch passes it as is. A resize that grows a storage allocates anew
 // and copies on the device through the `copy` callback; nothing here ever
@@ -32,6 +32,7 @@
 #include <c10/core/impl/DeviceGuardImplInterface.h>
 
 #include <atomic>
+#include <memory>
 #include <mutex>
 
 namespace tnca {
@@ -45,6 +46,7 @@ static std::mutex g_mu;
 static py::object* g_alloc = nullptr;
 static py::object* g_free = nullptr;
 static py::object* g_copy = nullptr;
+static py::object* g_validate = nullptr;
 static std::atomic<bool> g_live{false};      // false after shutdown(): no callbacks
 static thread_local c10::DeviceIndex g_current = 0;
 static c10::DeviceIndex g_count = 1;
@@ -53,13 +55,19 @@ static c10::Device device_of(c10::DeviceIndex i) {
   return c10::Device(c10::DeviceType::PrivateUse1, i);
 }
 
+struct StorageContext {
+  uint64_t addr;
+  uint64_t token;
+};
+
 static void raw_free(void* p) {
-  if (p == nullptr || !g_live.load()) {
+  std::unique_ptr<StorageContext> ctx(static_cast<StorageContext*>(p));
+  if (!ctx || !g_live.load()) {
     return;
   }
   py::gil_scoped_acquire gil;
   try {
-    (*g_free)(reinterpret_cast<uint64_t>(p));
+    (*g_free)(ctx->addr, ctx->token);
   } catch (const std::exception& e) {
     // A free that fails must not throw through a destructor; the runtime
     // reports a leak or a busy buffer itself.
@@ -76,11 +84,14 @@ struct TncaAllocator final : c10::Allocator {
     TORCH_CHECK(g_live.load(), "tnca: the device runtime is not registered "
                 "(tnca.torch_device.register())");
     uint64_t addr = 0;
+    uint64_t token = 0;
     std::string why;
     {
       py::gil_scoped_acquire gil;
       try {
-        addr = (*g_alloc)(nbytes, static_cast<int>(dev)).cast<uint64_t>();
+        py::tuple allocation = (*g_alloc)(nbytes, static_cast<int>(dev)).cast<py::tuple>();
+        addr = allocation[0].cast<uint64_t>();
+        token = allocation[1].cast<uint64_t>();
       } catch (py::error_already_set& e) {
         // The runtime's refusal (a full device heap: "out of device memory")
         // becomes torch's own out-of-memory error with the runtime's words,
@@ -92,10 +103,12 @@ struct TncaAllocator final : c10::Allocator {
     TORCH_CHECK_WITH(OutOfMemoryError, why.empty(), "tnca: ", why);
     TORCH_CHECK(addr != 0, "tnca: the runtime returned device address 0");
     void* p = reinterpret_cast<void*>(addr);
-    return {p, p, &raw_free, device_of(dev)};
+    return {p, new StorageContext{addr, token}, &raw_free, device_of(dev)};
   }
   c10::DeleterFnPtr raw_deleter() const override {
-    return &raw_free;
+    // Context is an allocation token, not the address. Raw allocate/free
+    // cannot represent this ownership; DataPtr carries the proper deleter.
+    return nullptr;
   }
   void copy_data(void* dest, const void* src, std::size_t count) const override {
     py::gil_scoped_acquire gil;
@@ -194,6 +207,12 @@ static void grow_storage(const c10::Storage& storage, size_t nbytes) {
   if (nbytes <= storage.nbytes()) {
     return;
   }
+  if (storage.data() != nullptr) {
+    auto* ctx = static_cast<StorageContext*>(storage.data_ptr().get_context());
+    TORCH_CHECK(ctx != nullptr, "tnca: storage has no allocation context");
+    py::gil_scoped_acquire gil;
+    (*g_validate)(ctx->token);
+  }
   c10::DataPtr fresh = g_allocator.allocate(nbytes);
   if (storage.nbytes() > 0 && storage.data() != nullptr) {
     g_allocator.copy_data(fresh.get(), storage.data(), storage.nbytes());
@@ -275,11 +294,12 @@ TORCH_LIBRARY_IMPL(aten, PrivateUse1, m) {
 }
 
 // ---- Python ---------------------------------------------------------------
-static void set_memory_callbacks(py::object alloc, py::object free, py::object copy) {
+static void set_memory_callbacks(py::object alloc, py::object free, py::object copy, py::object validate) {
   std::lock_guard<std::mutex> lk(g_mu);
   g_alloc = new py::object(std::move(alloc));
   g_free = new py::object(std::move(free));
   g_copy = new py::object(std::move(copy));
+  g_validate = new py::object(std::move(validate));
   g_live.store(true);
 }
 
@@ -295,6 +315,13 @@ static void set_device_count(int n) {
 }
 
 static uint64_t storage_address(const at::Tensor& t) {
+  TORCH_CHECK(t.device().type() == c10::DeviceType::PrivateUse1, "tnca: not a device tensor");
+  if (t.storage().data() != nullptr) {
+    auto* ctx = static_cast<StorageContext*>(t.storage().data_ptr().get_context());
+    TORCH_CHECK(ctx != nullptr, "tnca: storage has no allocation context");
+    py::gil_scoped_acquire gil;
+    (*g_validate)(ctx->token);
+  }
   return reinterpret_cast<uint64_t>(t.storage().data());
 }
 
@@ -303,7 +330,7 @@ static uint64_t storage_address(const at::Tensor& t) {
 PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
   m.doc() = "The tnca PyTorch device: device-memory storage and the metadata operators";
   m.def("set_memory_callbacks", &tnca::set_memory_callbacks,
-        "alloc(nbytes, device) -> address; free(address); copy(dst, src, nbytes)");
+        "alloc(nbytes, device) -> (address, token); free(address, token); copy(dst, src, nbytes); validate(token)");
   m.def("shutdown", &tnca::shutdown);
   m.def("set_device_count", &tnca::set_device_count);
   m.def("storage_address", &tnca::storage_address,

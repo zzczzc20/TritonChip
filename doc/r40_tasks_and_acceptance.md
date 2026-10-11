@@ -305,8 +305,14 @@ U280 有三个 SLR，HBM 接口位于 SLR0；板卡提供 8 GB HBM、32 个 AXI 
   offset/view 别名共用该临时 buffer；完成后复制回原 storage，并记录全部实际传输字节。
 - `tools/r40/residency_tests.py`：驻留零 kernel H2D/D2H、staging 实际往返、
   两策略制品身份、两策略非连续 offset/alias 原地更新，以及未知策略拒绝，6/6。
+- `TNCA_SUBMIT=batched` 使用有界 runtime 队列和真实 completion event；
+  中间 storage 在最后一个任务释放 lease 后回收。stream context 传递实际逻辑 ID，
+  当前单核仍通过同一 FIFO 保证顺序，不声称物理 copy/compute overlap。
+- 分配 token 与物理地址分离，恢复后同地址重分配不会让旧 tensor/deleter 命中新 storage。
+  async lifetime 2/2、三次恢复 epoch 的 stale handle 隔离 3/3、payload 并发与 mutation 2/2；
+  原生设备完整回归 16/16，runtime 生命周期与 batch 旧回归各 7/7。
 - `make r40-residency` 当前为能力 checkpoint；冻结链式图、多步 decode、
-  1000-call/异步/多 stream/replay 压力与性能 gate 尚未完成，不能据此签收 R40-02。
+  1000-call 完整压力、guarded replay 和性能 gate 尚未完成，不能据此签收 R40-02。
 
 ### R40-03：通用 tile、布局与资源分配
 

@@ -22,15 +22,31 @@ simulator between them would make "the intermediate result stayed in device
 memory" a sentence with no content.
 """
 import ctypes
+import functools
 import os
 import shutil
 import signal
 import subprocess
 import tempfile
+import threading
 import time
 
 from .errors import DeviceLost, TncaError
 from . import backend as _backend
+
+
+def serialized_io(fn):
+    """A mailbox operation owns its sequence and payload through the reply.
+
+    A request-only lock is insufficient: a second upload can overwrite the
+    first payload before its request, or a download can consume another
+    request's payload. RLock permits upload/download to call request.
+    """
+    @functools.wraps(fn)
+    def call(self, *args, **kwargs):
+        with self._io_lock:
+            return fn(self, *args, **kwargs)
+    return call
 
 #: PR_SET_PDEATHSIG, from <linux/prctl.h>: "signal this process when its
 #: parent dies". 1 is the option number, not a flag.
@@ -131,6 +147,7 @@ class Transport(_backend.Backend):
         self.seq = 0
         self.proc = None
         self.history = []
+        self._io_lock = threading.RLock()
 
     # ---- lifetime ---------------------------------------------------------
     def start(self):
@@ -248,6 +265,7 @@ class Transport(_backend.Backend):
         return bytes(out)
 
     # ---- the protocol -----------------------------------------------------
+    @serialized_io
     def request(self, op, a0=0, a1=0, a2=0, a3=0, a4=0, a5=0, *,
                 timeout=None):
         if not self.alive():
@@ -334,6 +352,7 @@ class Transport(_backend.Backend):
             return []
 
     # ---- operations -------------------------------------------------------
+    @serialized_io
     def upload(self, addr, data):
         """Bytes into device memory, through the device's memory system."""
         _backend.check_transfer(addr, len(data), what='upload')
@@ -343,6 +362,7 @@ class Transport(_backend.Backend):
                                                 'little') for i in range(n)])
         return self.request(OP_UPLOAD, addr, n)
 
+    @serialized_io
     def download(self, addr, nbytes):
         _backend.check_transfer(addr, nbytes, what='download')
         words = (nbytes + WORD - 1) // WORD

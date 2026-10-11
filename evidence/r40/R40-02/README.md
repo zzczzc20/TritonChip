@@ -9,6 +9,18 @@ Staging records both original-to-shadow and shadow-to-original host byte
 round trips, deduplicates backing storage and preserves strided offset
 aliases and in-place updates. Unknown policy values are rejected.
 
-The frozen chained-graph/decode audit, latency thresholds, batched/replay
-submission and asynchronous stress remain unmeasured. No R40-02 gate is
+The next checkpoint adds bounded asynchronous submission with dependency
+failure propagation, actual completion timing, logical streams, deferred
+storage recycling and allocation tokens independent of reused addresses.
+A held RTL worker tests retirement while dependent tasks still own leases;
+three forced recovery epochs test stale tensor/event access and destructors.
+Transport payload/request/reply sequences are serialized per backend.
+
+Validation: lifetime 2/2, recovery 3/3, payload concurrency/mutation 2/2,
+original runtime lifetime 7/7, runtime batch 7/7, backend regression 3/3,
+native device regression 16/16, native resident/staging control 6/6,
+queued graph/stream/concurrent logging and 10-call smoke 5/5.
+
+The frozen chained-graph/decode audit, latency thresholds, graph replay and
+1000-call stress remain unmeasured. No R40-02 gate is
 claimed passing by this checkpoint.

@@ -76,9 +76,9 @@ class _device:
 
 
 def get_raw_stream(device_idx=0):
-    """The stream handle Inductor's wrapper passes to a launch: R40-01 has one
-    synchronous stream per device, 0."""
-    return 0
+    """Return the current logical stream identity for the native wrapper."""
+    import torch
+    return torch.tnca.current_stream().stream_id
 
 
 def _interface():
@@ -126,15 +126,15 @@ def _interface():
 
         @staticmethod
         def stream(stream):
-            return contextlib.nullcontext()
+            return mod.stream(stream)
 
         @staticmethod
         def set_stream(stream):
-            pass
+            mod.set_stream(stream)
 
         @staticmethod
         def _set_stream_by_id(stream_id, device_index, device_type):
-            pass
+            mod._set_stream_by_id(stream_id, device_index, device_type)
 
         @staticmethod
         def get_device_properties(device=None):

@@ -107,3 +107,11 @@ frozen be877793 sources and retaining all 149 R38 values unchanged. The
 historical R38 file/check remains available. Any later capability/config
 change, nondeterminism or cycle difference still fails. See
 ci_b39_profile_migration.log. The two per-case reports are retained by CI.
+
+2026-10-12 CI configuration audit: R36 CFG-01 mistook the scheduler
+model JSON field data[latency] for the separate target latency assumptions.
+The audit now examines syntax, retains explicit target-key read checks,
+and perturbs the actual target latency fields to verify that the selected
+scheduler model is unchanged. CFG-01/02/03 pass; no production identity,
+profile, numeric tolerance or frozen cycle is changed by this test fix.
+See cfg01_latency_namespace_fix.log.

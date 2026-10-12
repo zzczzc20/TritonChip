@@ -83,12 +83,13 @@ class CodeGen:
     """Lower one role's region to assembly."""
 
     def __init__(self, kernel, target, builder=None, *, check_protocol=True,
-                 opt_level=0, bank_alloc=False):
+                 opt_level=0, bank_alloc=False, window_reuse=False):
         # Phase 3.5 section 4.3. At 0 this is B0: every lowering decision
         # below is the one the stage was frozen with, so O0 and B0 emit
         # the same bytes. From 1 up, a lowering may choose a cheaper form
         # for the same meaning.
         self.opt_level = int(opt_level or 0)
+        self.window_reuse = bool(window_reuse)
         self.kernel = kernel
         self.target = target
         self.b = builder or AsmBuilder(target, kernel.name)
@@ -135,6 +136,15 @@ class CodeGen:
             a.reg = i
         for i, d in enumerate(k.descriptors):
             d.reg = i
+
+        if self.window_reuse:
+            from .window_lifetime import assign
+            self._compute_last_uses(k.role(0).region.ops)
+            count = assign(k, t.vregs_per_rctx, self._last_use)
+            if count:
+                self.alloc.reserve_vector(t.vregs_per_rctx - count, count)
+            self.window_registers = count
+            return
 
         # Windows are contiguous vector ranges, packed from the top of the
         # file downwards so role-local temporaries get the low registers.
@@ -1191,7 +1201,8 @@ class CodeGen:
         self._emit('a.vread', f"v{v.reg}", f"a{acc.reg}", f"s{row.reg}")
 
 
-def emit_roles(kernel, target, *, check_protocol=False, opt_level=0, bank_alloc=False):
+def emit_roles(kernel, target, *, check_protocol=False, opt_level=0, bank_alloc=False,
+               window_reuse=False):
     """A kernel of several roles as one program (R39-12, Mode A).
 
     Every context starts at the same PC (a launch has one); each reads
@@ -1207,6 +1218,8 @@ def emit_roles(kernel, target, *, check_protocol=False, opt_level=0, bank_alloc=
     per context and need no such care.
     """
     import copy
+    if window_reuse:
+        raise ResourceError('window lifetime reuse requires a single IR role')
     if len(kernel.roles) != 2:
         raise Diagnostic(f"{len(kernel.roles)} roles; this emits two")
     trial = copy.deepcopy(kernel)

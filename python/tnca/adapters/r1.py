@@ -147,7 +147,7 @@ def require_capabilities(target, needed):
 
 
 def emit(kernel, target, *, prov=None, check_protocol=True,
-         opt_level=0, bank_alloc=False):
+         opt_level=0, bank_alloc=False, window_reuse=False):
     """TNCA IR -> assembly text, with R1's safety checks on.
 
     `check_protocol` selects the channel model, which is about a
@@ -158,12 +158,12 @@ def emit(kernel, target, *, prov=None, check_protocol=True,
     r1 = _r1()
     try:
         cg = r1['CodeGen'](kernel, target, check_protocol=check_protocol,
-                           opt_level=opt_level, bank_alloc=bank_alloc)
+                           opt_level=opt_level, bank_alloc=bank_alloc, window_reuse=window_reuse)
         if len(kernel.roles) > 1:
             # R39-12: a producer and a consumer per program (Mode A).
             from tnca_cc.codegen import emit_roles
             text, cg = emit_roles(kernel, target, check_protocol=check_protocol,
-                                  opt_level=opt_level, bank_alloc=bank_alloc)
+                                  opt_level=opt_level, bank_alloc=bank_alloc, window_reuse=window_reuse)
         else:
             cg.assign_shared()
             cg.run()
@@ -187,6 +187,11 @@ def emit(kernel, target, *, prov=None, check_protocol=True,
             cost = conflicts(text, cg.bank_banks)
             prov.record('bank_allocation', dict(banks=cg.bank_banks,
                         static_extra_reads=cost['extra_cycles'], sites=cost['sites']))
+        if window_reuse:
+            prov.record('window_lifetime', dict(logical_registers=sum(w.length for w in kernel.windows),
+                reserved_registers=cg.window_registers,
+                layouts=[dict(window=i, start=w.reg, count=w.length)
+                         for i, w in enumerate(kernel.windows)]))
     return text, cg
 
 

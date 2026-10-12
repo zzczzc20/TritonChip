@@ -389,7 +389,14 @@ U280 有三个 SLR，HBM 接口位于 SLR0；板卡提供 8 GB HBM、32 个 AXI 
   row/column chunks 保留已加载值后按通用规则 repack；实际 K32 MMA 编码核验，
   默认 B39 制品仍为 447/447。BF16 两种 tile 也各 4/4；
   N32 保留首次主机 600 s 超时与更长等待的成功复测，设备 deadline 不变。
-- K64、较宽 K32 的 window 生命周期、完整资源压力与冻结性能 gate 待完成。
+- 单 IR role 的 `TNCA_WINDOW_REUSE=1` 对已等待且不重叠的 window 生命周期
+  复用物理寄存器；包含 alias read、loop back edge、异步 reader/writer 完成。
+  未等待、条件等待与跨 role 共享明确拒绝，普通临时寄存器仍与窗口分离。
+  11 个安全/账本用例通过；16×64×32 的标准 mm/addmm 4/4，
+  实际机器码 K32，逻辑窗口 80→保留 32。原显式操作数计数漏掉窗口访问；
+  六份保留制品的机器码审计核验四个 GEMM 各实际使用 47 个 vector 寄存器，
+  新 opt-in 制品账本已补齐该 union；默认合同仍为 447/447。
+- K64、descriptor/barrier 生命周期、完整资源压力与冻结性能 gate 待完成。
   证据 `evidence/r40/R40-03/`，默认 block cap 仍 16。
 
 ### R40-04：单核真实 HBM 与可扩展外存接口

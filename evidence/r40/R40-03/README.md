@@ -133,3 +133,25 @@ N32 first attempt (600-second host wait) and the successful rerun
 (TNCA_HOST_TIMEOUT=172800, unchanged device cycle deadline). These
 results close dtype correctness for these two tiles; K64 and frozen
 performance thresholds remain pending.
+
+2026-10-12 awaited window reuse checkpoint (default off): single IR role
+only, async reads/writes pinned until matching waits, aliases and loop
+back edges included. Unsupported conditional completion and shared roles
+are refused. Window-free scalar control flow remains supported.
+11 safety/ledger tests pass; compiler-unit 85 tests, 5 MLIR tests skipped
+on the local host without MLIR tools. CI supplies those tools.
+
+Native mm/addmm at 16x64x32 pass 4/4 tails, actual K32 machine encoding,
+zero steady launch transfers, logical window sum 80 -> reserved 32.
+window_gemm_n64_k32.log retains the original execution ledger. Its old
+explicit-operand counter reports 17 vectors; window_binary_resources6.log
+independently decodes the six preserved artifacts and counts 47 per GEMM
+including implicit window ranges (two copy kernels have no windows).
+Artifacts were not rewritten or re-executed by that audit. New opt-in
+sealing counts the union, including reuse/alias deduplication; unit tests
+exercise emitted w.def and a sealed TNCA IR artifact was also verified.
+
+window_default_contract447.log confirms default-off B39 447/447 with the
+new counter implementation. The stronger public GEMM audit now checks
+window definitions directly against its actual artifact and provenance.
+K64, other resource lifetimes and frozen performance remain pending.

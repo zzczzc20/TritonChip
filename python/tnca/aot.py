@@ -45,6 +45,7 @@ ABI_VERSION = list(abi.ABI_VERSION)
 # something and been told nothing, and the artifact they get back is not the
 # one they asked for (CMP-02).
 KNOWN_OPTIONS = {
+    'window_reuse': 'int, 0 or 1; reuse disjoint awaited single-role window lifetimes',
     'no_ll': 'bool; at opt_level 2, switch the layout algebra off and use a legal plan instead. The ablation of phase 3.5 section 4.3, not a fallback: O2 without it never silently stops using LinearLayout',
     'opt_level': 'int, 0..2. 0 is the frozen baseline and emits what this driver has always emitted. 1 runs the pinned upstream canonicalizer and CSE over the kernel and lowers a constant to its narrowest correct form. 2 adds the layout and allocation work (phase 3.5 section 4.3)',
     'debug': 'bool; adds a compile report, never changes the code',
@@ -168,7 +169,7 @@ def _strip_asm(asm_text):
     return out
 
 
-def measure_resources(asm_text, target, code=b''):
+def measure_resources(asm_text, target, code=b'', *, include_windows=False):
     """Counted from the emitted instructions, or UNKNOWN.
 
     Returned alongside the profile's limits so a reader can see the headroom
@@ -186,6 +187,19 @@ def measure_resources(asm_text, target, code=b''):
             for m in rx.finditer(line):
                 seen.add(int(m.group(1)))
         used[kind] = sorted(seen)
+
+    if include_windows:
+        # w.def encodes a vector range as immediates, so ordinary vN
+        # operand scans miss DMA/MMA's implicit register accesses. Use
+        # the union: reused and explicitly aliased ranges count once.
+        vectors = set(used['vector'])
+        for line in asm_text.splitlines():
+            match = re.fullmatch(r'\s*w\.def\s+w\d+,\s*#(\d+),\s*#(\d+)\s*',
+                                 line.split('//')[0])
+            if match:
+                start, count = map(int, match.groups())
+                vectors.update(range(start, start + count))
+        used['vector'] = sorted(vectors)
 
     issued = sum(1 for line in body if _ASYNC.match(line))
     # Two different counts, and they are not the same number: `.li` expands
@@ -468,7 +482,8 @@ def compile_aot(source, *, kernel_name=None, signature=None, constexprs=None,
 def _seal(output, kernel_name, params, asm_text, code, report, target, pinfo,
           constexprs, options, prov, source_kind):
     """Manifest and container for compiled code: shared by every entry point."""
-    measured = measure_resources(asm_text, target, code=code)
+    measured = measure_resources(asm_text, target, code=code,
+                                 include_windows='window_lifetime' in prov.entries)
     # The emitter cannot see this one: it is a requirement the frontend
     # recorded, not a count of something in the assembly.
     if 'scratch_bytes' in report:
@@ -919,6 +934,11 @@ def _emit(kernel, target, prov, opt_level, options, stages):
         bank_alloc = int(os.environ.get('TNCA_BANK_ALLOC', '0'))
     if bank_alloc not in (0, 1):
         raise ValueError('bank_alloc must be 0 or 1')
+    window_reuse = options.get('window_reuse')
+    if window_reuse is None:
+        window_reuse = int(os.environ.get('TNCA_WINDOW_REUSE', '0'))
+    if window_reuse not in (0, 1):
+        raise ValueError('window_reuse must be 0 or 1')
     # Unset, the environment decides (TNCA_SCHEDULE, default off), so a
     # whole suite -- `make r37`, the torch tests -- can run scheduled.
     schedule = options.get('schedule')
@@ -926,7 +946,7 @@ def _emit(kernel, target, prov, opt_level, options, stages):
         schedule = int(os.environ.get('TNCA_SCHEDULE', '0'))
     if not schedule:
         return adapter.emit(kernel, target, prov=prov, opt_level=opt_level,
-                            check_protocol=check, bank_alloc=bank_alloc)
+                            check_protocol=check, bank_alloc=bank_alloc, window_reuse=window_reuse)
     import copy
     from tnca_cc.schedule import schedule_kernel
     original = copy.deepcopy(kernel)
@@ -946,14 +966,14 @@ def _emit(kernel, target, prov, opt_level, options, stages):
         stages.record('tnir_sched', str(trial))
         try:
             return adapter.emit(trial, target, prov=prov, opt_level=opt_level,
-                                check_protocol=check, bank_alloc=bank_alloc)
+                                check_protocol=check, bank_alloc=bank_alloc, window_reuse=window_reuse)
         except CompileError as e:
             if e.detail.get('kind') != 'ResourceError':
                 raise
             last = e
     prov.record('schedule_fallback', f'program order: {str(last)[:200]}')
     return adapter.emit(original, target, prov=prov, opt_level=opt_level,
-                        check_protocol=check, bank_alloc=bank_alloc)
+                        check_protocol=check, bank_alloc=bank_alloc, window_reuse=window_reuse)
 
 
 def _compile_tnca_ir(build, kernel_name, signature, constexprs, target, prov,

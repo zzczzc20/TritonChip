@@ -1,0 +1,16 @@
+test_alias_read_extends_the_window (test_window_lifetime.TestWindowLifetime.test_alias_read_extends_the_window) ... ok
+test_break_after_async_issue_is_not_a_loop_entry_guard (test_window_lifetime.TestWindowLifetime.test_break_after_async_issue_is_not_a_loop_entry_guard) ... ok
+test_completed_windows_share_registers (test_window_lifetime.TestWindowLifetime.test_completed_windows_share_registers) ... ok
+test_conditional_wait_cannot_establish_a_lifetime (test_window_lifetime.TestWindowLifetime.test_conditional_wait_cannot_establish_a_lifetime) ... ok
+test_outer_window_stays_live_across_iterations (test_window_lifetime.TestWindowLifetime.test_outer_window_stays_live_across_iterations) ... ok
+test_outstanding_writer_cannot_share (test_window_lifetime.TestWindowLifetime.test_outstanding_writer_cannot_share) ... ok
+test_resource_ledger_counts_implicit_window_registers (test_window_lifetime.TestWindowLifetime.test_resource_ledger_counts_implicit_window_registers) ... ok
+test_reuse_is_opt_in (test_window_lifetime.TestWindowLifetime.test_reuse_is_opt_in) ... ok
+test_scalar_loop_entry_guard_is_supported (test_window_lifetime.TestWindowLifetime.test_scalar_loop_entry_guard_is_supported) ... ok
+test_shared_roles_are_refused (test_window_lifetime.TestWindowLifetime.test_shared_roles_are_refused) ... ok
+test_window_free_control_flow_needs_no_window_analysis (test_window_lifetime.TestWindowLifetime.test_window_free_control_flow_needs_no_window_analysis) ... ok
+
+----------------------------------------------------------------------
+Ran 11 tests in 0.028s
+
+OK

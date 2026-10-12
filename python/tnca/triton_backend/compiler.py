@@ -76,6 +76,13 @@ def _bank_alloc():
     return value
 
 
+def _window_reuse():
+    value = int(os.environ.get('TNCA_WINDOW_REUSE', '0'))
+    if value not in (0, 1):
+        raise ValueError('TNCA_WINDOW_REUSE must be 0 or 1')
+    return value
+
+
 @dataclass(frozen=True)
 class TNCAOptions:
     # What ASTSource.make_ir reads; tnca_cc.triton_options.frontend_options
@@ -108,6 +115,7 @@ class TNCAOptions:
     sparse_tensormaps: int = field(default_factory=_sparse_tensormaps)
     rctx_roles: int = field(default_factory=_rctx_roles)
     bank_alloc: int = field(default_factory=_bank_alloc)
+    window_reuse: int = field(default_factory=_window_reuse)
 
     def hash(self):
         key = '_'.join(f'{k}-{v}' for k, v in sorted(self.__dict__.items()))
@@ -287,6 +295,8 @@ class TNCABackend(BaseBackend):
             compile_options['rctx_roles'] = options.rctx_roles
         if options.bank_alloc:
             compile_options['bank_alloc'] = options.bank_alloc
+        if options.window_reuse:
+            compile_options['window_reuse'] = options.window_reuse
         # The dump switches of doc/dumping_ir.md (TNCA_KERNEL_DUMP=1, written
         # under TNCA_DUMP_DIR/<kernel>/), on this entry point as on AOT --
         # and written for a kernel that FAILS to lower too, with every stage

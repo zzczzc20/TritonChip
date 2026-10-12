@@ -1468,9 +1468,10 @@ r40-tiles: $(R2_DATA_STAMP) | dirs
 	@for width in 16 32 64; do $(TORCH_PYTHON) tools/r40/reduction_tests.py --width $$width --rows 2 || exit $$?; done
 	@$(TORCH_PYTHON) tools/r40/fold_tests.py --width 32 --rows 2 --index-bias 1099511627776
 	@for columns in 16 32 64; do $(TORCH_PYTHON) tools/r40/gemm_tiles_tests.py --columns $$columns || exit $$?; done
-	@for columns in 16 32; do $(TORCH_PYTHON) tools/r40/gemm_tiles_tests.py --columns $$columns --depth 32 || exit $$?; done
+	@for columns in 16 32; do for dtype in float16 bfloat16; do TNCA_HOST_TIMEOUT=$(R40_HOST_TIMEOUT) $(TORCH_PYTHON) tools/r40/gemm_tiles_tests.py --columns $$columns --depth 32 --dtype $$dtype || exit $$?; done; done
+	@TNCA_WINDOW_REUSE=1 TNCA_HOST_TIMEOUT=$(R40_HOST_TIMEOUT) $(TORCH_PYTHON) tools/r40/gemm_tiles_tests.py --columns 64 --depth 32
 	@for mode in 0 1; do $(TORCH_PYTHON) tools/r40/bank_tests.py --enabled $$mode --out $(BUILD)/r40/bank_$$mode.json || exit $$?; done
-	@TNCA_BANK_ALLOC=0 $(TRITON_PYTHON) tools/r40/contract_tests.py
+	@TNCA_BANK_ALLOC=0 TNCA_WINDOW_REUSE=0 $(TRITON_PYTHON) tools/r40/contract_tests.py
 # R40-04: single-core HBM (rtl/fpga/tnca_axi_bridge.v). What runs without a
 # board: the bridge against a reference under late, reordered, backpressured,
 # refusing and reset AXI traffic, its mutations, and the tnca device on the

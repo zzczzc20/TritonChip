@@ -381,7 +381,10 @@ U280 有三个 SLR，HBM 接口位于 SLR0；板卡提供 8 GB HBM、32 个 AXI 
   native Torch 的 triad / LayerNorm / f32 dot 两模式各 3/3；最终汇编的静态
   冲突读数分别为 8→0、19→1、110→110，无新增 move。f32 dot 无周期收益，
   寄存器前缀 41→42；这不是冻结性能签收。
-- K32/K64 逻辑选择、完整资源压力与冻结性能 gate 待测。
+- 2026-10-12：FP16 的 16×16×32 与 16×32×32 标准 mm/addmm 各 4/4，
+  row/column chunks 保留已加载值后按通用规则 repack；实际 K32 MMA 编码核验，
+  默认 B39 制品仍为 447/447。BF16 复验正在运行。
+- K64、较宽 K32 的 window 生命周期、完整资源压力与冻结性能 gate 待完成。
   证据 `evidence/r40/R40-03/`，默认 block cap 仍 16。
 
 ### R40-04：单核真实 HBM 与可扩展外存接口

@@ -3101,6 +3101,28 @@ class TTIRImporter:
     def _tile_of(self, value):
         t = self._tiles.get(value.id())
         if t is None:
+            # Compose pointer-loaded chunks without rereading their source.
+            # The original TTIR value is an immutable snapshot even when
+            # subsequent stores alias its address.
+            shape, elem = _parse_type(str(value.get_type()))
+            if isinstance(shape, tuple) and len(shape) == 2:
+                rows, cols = shape
+                vid = value.id()
+                original, column = (vid[1], vid[2]) if isinstance(vid, tuple) \
+                    and vid[0] == 'register-chunk' else (vid, 0)
+                if rows > self.target.vlen:
+                    parts = [self._tiles.get(('register-row-chunk', original, r, column))
+                             for r in range(rows // self.target.vlen)]
+                    if parts and all(p is not None for p in parts):
+                        t = Tile('row-chunks', tuple(parts), rows, cols, elem)
+                elif cols > self.target.vlen:
+                    parts = [self._tiles.get(('register-chunk', original, c))
+                             for c in range(cols // self.target.vlen)]
+                    if parts and all(p is not None for p in parts):
+                        t = Tile('column-chunks', tuple(parts), rows, cols, elem)
+                if t is not None:
+                    self._tiles[vid] = t
+        if t is None:
             raise Unsupported(
                 f"a 2-D value that is not a tile (type {value.get_type()})",
                 because='a 16x16 block lives in a transfer-engine window or '
@@ -3272,7 +3294,7 @@ class TTIRImporter:
         bar = self.b.barrier(name=f"mma{len(self.kernel.barriers)}")
         tok = self.b.barrier_arm(bar, arrivals=0, ops=1)
         self.b.comment('acc + tl.dot(a, b): accumulated in place (ISA sec 9C)')
-        self.b.mma_async(x.handle, a.handle, b.handle, tok,
+        self.b.mma_async(x.handle, a.handle, b.handle, tok, k=self._mma_k(a),
                          dtype=_FP8_FORMATS.get(a.dtype, a.dtype))
         self.b.barrier_wait(tok)
         tile = Tile('accumulator', x.handle, a.rows, b.cols, 'f32')
@@ -3337,7 +3359,7 @@ class TTIRImporter:
 
         bar = self.b.barrier(name=f"mma{len(self.kernel.barriers)}")
         tok = self.b.barrier_arm(bar, arrivals=0, ops=1)
-        self.b.mma_async(acc, a.handle, b.handle, tok,
+        self.b.mma_async(acc, a.handle, b.handle, tok, k=self._mma_k(a),
                          dtype=_FP8_FORMATS.get(a.dtype, a.dtype))
         # ISA sec 9C.3: the accumulator may not be read by the vector
         # unit before the command completes, and its sources may not be
@@ -3356,6 +3378,12 @@ class TTIRImporter:
                 lambda r: self.b.vcvt('f32', 's32', get(r)),
                 a.rows, b.cols, rtype)
         self._tiles[op.get_result(0).id()] = tile
+
+    def _mma_k(self, a):
+        k = f'k{max(16, a.cols)}'
+        if k not in self.target.mma['k_steps']:
+            raise Unsupported(f'MMA K={a.cols} is not implemented by this target')
+        return k
 
     def _dot_f32(self, op, a, b):
         """Full binary32 dot through vector FMAs, with no FP16 narrowing.
@@ -3402,6 +3430,32 @@ class TTIRImporter:
 
     def _as_fragment_uncached(self, tile, what):
         """This tile in the layout `m.mma.async` reads."""
+        if tile.kind == 'row-chunks':
+            getters = [self._tile_row_getter(p) for p in tile.handle]
+            return self._rows_to_window(
+                lambda r: getters[r // self.target.vlen](r % self.target.vlen),
+                tile.handle[0].store, tile.dtype, tile.cols, nrows=tile.rows)
+        if tile.kind == 'column-chunks':
+            # Pack each row's K chunks into one row-major fragment. Narrow
+            # stores preserve lane bits; computed f32 rows convert explicitly.
+            esize = self._ELEM_BYTES[tile.dtype]
+            addr = self._spill_region(tile.rows * tile.cols * esize)
+            for column, part in enumerate(tile.handle):
+                get = self._tile_row_getter(part)
+                for r in range(tile.rows):
+                    v = get(r)
+                    if part.store != tile.dtype:
+                        v = self.b.vcvt(part.store, tile.dtype, v)
+                    offset = (r * tile.cols + column * self.target.vlen) * esize
+                    at = addr if offset == 0 else self.b.sbini('add', addr, offset)
+                    self.b.store(at, v, size=_SIZE_SUFFIX[esize])
+            self.b.fence()
+            desc = self._build_descriptor(base=addr, elem=tile.dtype,
+                extents=[tile.rows, tile.cols], byte_strides=[tile.cols * esize, esize],
+                block_shape=[tile.rows, tile.cols], what='K-wide matrix repack')
+            zero = self.b.const(0)
+            return self._dma_in(desc, [zero, zero], [tile.rows, tile.cols], tile.dtype,
+                                'K-wide matrix repack')
         if tile.dtype in ('i8', 'i32'):
             return self._integer_fragment(tile)
         if tile.kind == 'window':

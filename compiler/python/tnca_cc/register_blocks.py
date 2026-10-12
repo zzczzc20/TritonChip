@@ -13,6 +13,11 @@ def _width(value):
     return int(match.group(1)) if match else None
 
 
+def _rows(value):
+    match = re.match(r'^tensor<(\d+)x\d+x', str(value.get_type()))
+    return int(match.group(1)) if match else 1
+
+
 class _ValueView:
     def __init__(self, value, chunk, vlen):
         self.value, self.chunk, self.vlen = value, chunk, vlen
@@ -72,6 +77,77 @@ class _OpView:
         return str(self.op)
 
 
+class _MatrixOpView(_OpView):
+    def get_operand(self, i):
+        # Column fragments share the complete K-wide left operand. Its
+        # contiguous dimension is K, whereas the result's dimension is N.
+        return self.op.get_operand(0) if i == 0 else super().get_operand(i)
+
+
+class _RowValueView(_ValueView):
+    def __init__(self, value, row, chunk, vlen):
+        super().__init__(value, chunk, vlen)
+        self.row = row
+
+    def id(self):
+        if _rows(self.value) > self.vlen:
+            col = self.chunk if (_width(self.value) or 0) > self.vlen else 0
+            return ('register-row-chunk', self.value.id(), self.row, col)
+        return super().id()
+
+    def get_type(self):
+        text = str(super().get_type())
+        if _rows(self.value) > self.vlen:
+            text = re.sub(r'^tensor<\d+x', f'tensor<{self.vlen}x', text)
+        return text
+
+
+class _RowOpView(_OpView):
+    def __init__(self, op, row, chunk, vlen):
+        super().__init__(op, chunk, vlen)
+        self.row = row
+
+    def get_operand(self, i):
+        value = self.op.get_operand(i)
+        if self.op.get_name() == 'tt.expand_dims' and self.op.get_int_attr('axis') == 1:
+            return _ValueView(value, self.row, self.vlen)
+        return _RowValueView(value, self.row, self.chunk, self.vlen)
+
+    def get_result(self, i):
+        return _RowValueView(self.op.get_result(i), self.row, self.chunk, self.vlen)
+
+
+def _native_matrix(imp, op):
+    if op.get_name() != 'tt.dot':
+        return None
+    from .frontend import _parse_type
+    a, ae = _parse_type(str(op.get_operand(0).get_type()))
+    b, be = _parse_type(str(op.get_operand(1).get_type()))
+    if not isinstance(a, tuple) or not isinstance(b, tuple) or len(a) != 2 or len(b) != 2:
+        return None
+    if (ae != be or ae not in ('f16', 'bf16') or a[0] > imp.target.vlen or
+            a[1] != b[0] or a[1] not in (32, 64) or
+            f'k{a[1]}' not in imp.target.mma['k_steps']):
+        return None
+    return a, b
+
+
+def _matrix_descriptor(imp, op):
+    if op.get_name() != 'tt.descriptor_load':
+        return None
+    from . import descriptors
+    users = descriptors.users_of(imp, op.get_result(0).id())
+    if not users or any(_native_matrix(imp, u) is None or k not in (0, 1)
+                        for u, k in users):
+        return None
+    # Only an actual transfer-engine window can carry more than one VLEN
+    # of K. A host map or an arithmetic consumer retains the existing path.
+    d = imp._descs[op.get_operand(0).id()]
+    if not descriptors.dma_ok(imp, d, op.get_result(0).id(), d.block[0], d.block[1]):
+        return None
+    return {k for _u, k in users}
+
+
 # Side effects and control flow require explicit semantics. Unrecognised
 # operations fail rather than accidentally executing a region once per chunk.
 _ALLOWED = {'tt.make_range', 'tt.splat', 'tt.addptr', 'tt.load', 'tt.store',
@@ -82,22 +158,50 @@ _ALLOWED = {'tt.make_range', 'tt.splat', 'tt.addptr', 'tt.load', 'tt.store',
 def lower(imp, op):
     if getattr(imp, '_in_register_chunk', False):
         return False
+    matrix = _native_matrix(imp, op)
+    matrix_descriptor = _matrix_descriptor(imp, op)
+    if matrix_descriptor == {0}:
+        # A's wide contiguous dimension is read directly by K32/K64 MMA,
+        # not by a vector ALU. Preserve its packed, snapshot window.
+        return False
     values = ([op.get_operand(i) for i in range(op.get_num_operands())] +
               [op.get_result(i) for i in range(op.get_num_results())])
     widths = {_width(v) for v in values if _width(v) and _width(v) > imp.target.vlen}
-    if not widths:
+    row_sizes = {_rows(v) for v in values if _rows(v) > imp.target.vlen}
+    if row_sizes and op.get_name() == 'tt.expand_dims' and op.get_int_attr('axis') == 1:
+        # The vector's lane chunks become rows, not a second independent
+        # column axis in the [K, 1] result.
+        widths = set()
+    # DMA matrix windows preserve all K rows; pointer and arithmetic tiles
+    # instead keep independent row chunks until their MMA repack.
+    if matrix or matrix_descriptor == {1}:
+        row_sizes = set()
+    if matrix:
+        a, b = matrix
+        tiles = getattr(imp, '_logical_gemm_tiles', set())
+        tiles.add((a[0], b[1], a[1]))
+        imp._logical_gemm_tiles = tiles
+        widths_seen = getattr(imp, '_register_block_widths', set())
+        widths_seen.add(a[1])
+        imp._register_block_widths = widths_seen
+        widths = {b[1]} if b[1] > imp.target.vlen else set()
+    if not widths and not row_sizes:
         return False
     for value in values:
         dims = re.match(r'^tensor<((?:\d+x)+)', str(value.get_type()))
         if dims:
             shape = [int(n) for n in dims.group(1).split('x') if n]
-            if len(shape) > 2 or (len(shape) == 2 and shape[0] > imp.target.vlen):
+            matrix_rows = matrix is not None or matrix_descriptor == {1} or bool(row_sizes)
+            if len(shape) > 2 or (len(shape) == 2 and shape[0] > imp.target.vlen and not matrix_rows):
                 from .frontend import Unsupported
                 raise Unsupported('register block requires at most VLEN rows and rank <= 2')
     from .frontend import Unsupported
-    if len(widths) != 1:
+    if len(widths) > 1 or len(row_sizes) > 1:
         raise Unsupported('register-block operation with mismatched widths')
-    width = widths.pop()
+    width = next(iter(widths), imp.target.vlen)
+    rows = next(iter(row_sizes), imp.target.vlen)
+    if rows % imp.target.vlen or rows > 64:
+        raise Unsupported('register block rows must be a VLEN multiple up to 64')
     if width % imp.target.vlen or width > 128:
         raise Unsupported(f'register block width {width}; expected a VLEN multiple up to 128')
     widths_seen = getattr(imp, '_register_block_widths', set())
@@ -105,10 +209,14 @@ def lower(imp, op):
     imp._register_block_widths = widths_seen
     name = op.get_name()
     if name == 'scf.for':
+        if row_sizes:
+            raise Unsupported('register block loop with wide row-carried state')
         return _loop(imp, op, width)
     if name == 'scf.if':
         return _if(imp, op, width)
     if name in ('tt.descriptor_load', 'tt.descriptor_store', 'tt.descriptor_reduce'):
+        if row_sizes:
+            raise Unsupported('wide descriptor rows require matrix consumers')
         return _descriptor(imp, op, width)
     if name == 'tt.dot':
         from .frontend import _parse_type
@@ -129,8 +237,10 @@ def lower(imp, op):
         imp._register_mma_fragment_cache = {}
     imp._in_register_chunk = True
     try:
-        for chunk in range(width // imp.target.vlen):
-            view = _OpView(op, chunk, imp.target.vlen)
+        for part in range((width // imp.target.vlen) * (rows // imp.target.vlen)):
+            row, chunk = divmod(part, width // imp.target.vlen)
+            view = (_RowOpView(op, row, chunk, imp.target.vlen) if row_sizes else
+                    (_MatrixOpView if matrix else _OpView)(op, chunk, imp.target.vlen))
             # Decimal/hex float literals are indexed during the original
             # module walk; the virtual SSA identities retain that literal.
             for i in range(op.get_num_results()):

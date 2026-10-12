@@ -245,8 +245,9 @@ def configure(max_block=None, tensor_descriptors=None, no_x_dim=None):
         # On for the standard path since R39-02a's ablation passed.
         no_x_dim = os.environ.get('TNCA_NO_X_DIM', '1') != '0'
     gemm_tile = tuple(int(n) for n in os.environ.get('TNCA_GEMM_TILE', '16,16,16').split(','))
-    if gemm_tile not in ((16,16,16), (16,32,16), (16,64,16)):
-        raise ValueError('TNCA_GEMM_TILE currently supports 16,16,16 / 16,32,16 / 16,64,16')
+    if gemm_tile not in ((16,16,16), (16,32,16), (16,64,16), (16,16,32), (16,32,32)):
+        raise ValueError('TNCA_GEMM_TILE supports K16 with N16/32/64, or K32 with N16/32; '
+                         'larger combinations require window lifetime reuse')
     reduction_rows = int(os.environ.get('TNCA_REDUCTION_ROWS', '1'))
     if reduction_rows not in (1, 2, 4, 8, 16):
         raise ValueError('TNCA_REDUCTION_ROWS must be 1, 2, 4, 8 or 16')

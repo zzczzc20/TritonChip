@@ -115,3 +115,13 @@ and perturbs the actual target latency fields to verify that the selected
 scheduler model is unchanged. CFG-01/02/03 pass; no production identity,
 profile, numeric tolerance or frozen cycle is changed by this test fix.
 See cfg01_latency_namespace_fix.log.
+
+2026-10-12 K32 checkpoint: native FP16 mm/addmm pass 4/4 each for
+16x16x32 and 16x32x32, including 17x65x33 and 33x31x65 tails. Row and
+column chunks retain loaded snapshots and pack into the target-declared
+K32 MMA layout. The N32 test verifies the actual assembly K encoding
+against the executed artifact assembly hash; its A fragment is reused
+within each dot. See gemm_k32_n16.log and gemm_k32_n32.log. Default B39
+artifacts still match 447/447 (k32_default_contract447.log). BF16 reruns
+are pending; K64, wider K32 combinations and frozen speed thresholds
+remain open and are not enabled as public GEMM configurations.

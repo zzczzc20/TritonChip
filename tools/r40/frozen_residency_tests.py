@@ -58,6 +58,7 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument('--point', required=True)
     ap.add_argument('--steps', type=int, default=2)
+    ap.add_argument('--source-tree', help='require this parent suite software digest')
     args = ap.parse_args()
     if args.steps < 2:
         ap.error('--steps must be at least 2')
@@ -65,6 +66,10 @@ def main():
     frozen = {p['id']: p['sha256'] for p in subset['points']}
     if args.point not in frozen:
         ap.error('point must belong to the frozen R40-02.graphs3 subset')
+    if args.source_tree:
+        from archbench.provenance import software_tree
+        if software_tree() != args.source_tree:
+            raise RuntimeError('software tree changed during the frozen suite')
     point = registry.get(args.point)
     assert point.definition_sha256() == frozen[point.id], 'frozen definition changed'
     if os.environ.get('TNCA_LAUNCH') == 'skip':

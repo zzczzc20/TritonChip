@@ -326,6 +326,13 @@ U280 有三个 SLR，HBM 接口位于 SLR0；板卡提供 8 GB HBM、32 个 AXI 
   `Session.memory_stats` 计入 retired lease 与 scratch，并报告每 epoch 的 heap/code 高水位。
   新 allocator 的恢复 3/3、lifetime 2/2 复验通过；并发 1000-call 5/5。
 
+- 2026-10-12 checkpoint：保留的图实际 replay 1000 次通过，制品身份、
+  零 kernel 传输、heap/code 高水位、末尾 leases 均核验。
+  冻结 tiny attention_decode 与 llama_decode 的两策略稳态各 4/4；
+  实际 Session 传输与 launcher 账本一致，resident 为零，staging 为真实往返。
+  `make r40-frozen-residency` 新增完整 24 点的隔离进程入口，逐点保留日志；
+  全量正在跳板机运行，KV 增长、物理 copy overlap 与性能 gate 仍未关闭。
+
 ### R40-03：通用 tile、布局与资源分配
 
 交付：

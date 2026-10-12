@@ -81,3 +81,19 @@ policies keep identical artifacts and meet the unchanged frozen tolerance.
 This repeats the fixed-cache-length point, not growing KV or generating
 new tokens. Full subset and latency gates remain pending.
 See frozen_residency_llama_tiny.log.
+
+2026-10-12 frozen inventory runner checkpoint: the independent child
+audit on /hbm passes 4/4 for the frozen tiny attention_decode point,
+with actual resident 0/0 B versus staging 5440/5440 B on each call.
+The report explicitly says full_inventory=false; see frozen_suite_smoke_hbm.*.
+The runner rejects unknown points and nonempty output directories,
+retains per-point logs/checkpoints, and kills simulator descendants on
+timeout. New reports hash software, audit tools and raw logs; children
+verify the parent software digest before running.
+
+The complete unchanged 24-point inventory is running with two workers
+on gx10-6646, under sim/build/r40/frozen_residency_full24_20261012.
+That initial run has its source digest in source_manifest.json. It is
+pending, not passed; repeated fixed-cache audits do not establish KV
+growth, copy overlap or any latency threshold. The public full entry
+is make r40-frozen-residency; choose a fresh R40_RESIDENCY_OUT for reruns.

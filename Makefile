@@ -1442,6 +1442,15 @@ r40-residency: $(R2_DATA_STAMP) | dirs
 	@TNCA_BACKEND=sim-file $(TORCH_PYTHON) tools/r40/recovery_tests.py
 	@TNCA_BACKEND=sim-file $(TORCH_PYTHON) tools/r40/replay_tests.py --replays 1000
 	@$(TORCH_PYTHON) tools/r40/frozen_residency_tests.py --point op.attention_decode/tiny/fp16-b1-h2-l16-d16
+
+# Full frozen transfer-correctness inventory. RTL runs can take days; keep
+# each attempt in a fresh directory and run heavy suites on the jump host.
+.PHONY: r40-frozen-residency
+R40_RESIDENCY_OUT ?= $(BUILD)/r40/frozen_residency_suite
+R40_RESIDENCY_JOBS ?= 2
+r40-frozen-residency: $(R2_DATA_STAMP) | dirs
+	@$(TORCH_PYTHON) tools/r40/frozen_residency_suite.py \
+	   --jobs $(R40_RESIDENCY_JOBS) --out $(R40_RESIDENCY_OUT)
 # R40-03 correctness checkpoint; frozen performance gates remain independent
 # of these standard Torch register-block, reduction and GEMM checks.
 .PHONY: r40-tiles

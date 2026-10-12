@@ -79,12 +79,28 @@ of the 27 points differ from the run above (−2.2 % to +2.7 %). The image is
 `core-vrf-sync-v2`. The profile a card is driven as changes what the compiler
 emits, which is why `board.profile` is required and checked.
 
-**Still not done.** The programmer's `--go` has not been run by this version
-of the harness, only `--check`; the load itself is the flow's own
-`program.sh`, which the earlier copy's runs did not use. No link has been
-started from this branch, and the small tier has not been run. A candidate's
-first `submit` with `program: true` will be the first to do all of it in one
-command.
+Later the same day the run was measured again with `program: true`, from
+`c9f34b6`, the card still holding that image and idle:
+
+| | |
+|---|---|
+| Stages | `program_check` 0, `program` 0, `conformance` 0, `archbench` 0 |
+| Load | the flow's `program.sh`: every gate of `--check`, then `--go` -- `xbutil program succeeded`, the device reporting the XCLBIN's UUID, the HBM sensor reading after the load |
+| Conformance | 5 of 5 cases |
+| ArchBench tiny | 27 of 27 pass, `measured-board` |
+| Cycles | 4 459 740 again; each of the 27 points has the count it had before the reload |
+
+That is the board stage whole, in one command: load, conformance, ArchBench,
+cycles. The first measurement's records were replaced in the run directory by
+this one's, as `measure` does; a copy is kept on the host beside the harness's
+work files.
+
+**Still not done.** No link has been started from this branch: both board
+runs used the link the earlier copy built from `b5c606d`. So `submit` has not
+run end to end on a real host, only its two halves -- the build half on a
+played flow and `validate` on real output, the board half on the card. The
+small tier has not been run, and nothing has been run on the U50 host from
+this branch.
 
 The sections below are the record of the harness as first written, against
 the `fpga-dev` checkout (`3ea50a8`) and the PR5 head of the time. They are

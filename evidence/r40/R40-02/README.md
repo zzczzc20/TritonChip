@@ -64,3 +64,20 @@ provide a positive control for the copy observer outside the graph audit.
 Included in make r40-residency; the full frozen graph subset, model weight
 retransfer, KV growth and latency gates remain pending.
 See frozen_residency_attention_tiny.log and tools/r40/frozen_residency_tests.py.
+
+Replay stress checkpoint: 1000 actual retained graph replays pass, 5/5
+including shape/stride/storage and recovery invalidation. Replays cannot
+reenter the Triton wrapper; every retained command has positive device
+cycles and zero resident launch transfers. Output, unchanged live storage
+and zero outstanding tasks/leases are verified after completion. The real
+393216-byte heap peaks at 11264 bytes and ends at 3072 bytes; code stays
+at 5312 bytes. make r40-residency now requires this full replay stress.
+See replay_stress1000.log.
+
+The frozen Llama decode tiny point also passes the copy observer's four
+calls: 42 kernels per call, resident 0/0 actual tensor bytes and staging
+691456/691456 bytes. Parameter storage addresses/sizes stay stable, both
+policies keep identical artifacts and meet the unchanged frozen tolerance.
+This repeats the fixed-cache-length point, not growing KV or generating
+new tokens. Full subset and latency gates remain pending.
+See frozen_residency_llama_tiny.log.

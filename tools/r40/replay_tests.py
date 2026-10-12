@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Guarded replay captured from real compiled native Torch graphs."""
+import argparse
 import os
 from pathlib import Path
 import sys
@@ -27,6 +28,11 @@ def refused(g, s):
 
 
 def main():
+    ap = argparse.ArgumentParser(description=__doc__)
+    ap.add_argument('--replays', type=int, default=0)
+    args = ap.parse_args()
+    if args.replays < 0:
+        ap.error('--replays must be nonnegative')
     if os.environ.get('TNCA_BACKEND', 'sim-file') != 'sim-file':
         raise RuntimeError('replay recovery check uses an isolated RTL simulator')
     device.prepare(os.environ['TNCA_PROFILE'])
@@ -64,6 +70,25 @@ def main():
     finally:
         TNCALauncher.__call__ = original
     assert D.MEMORY.live == live
+    if args.replays:
+        before = s.memory_stats['heap_allocated_bytes']
+        TNCALauncher.__call__ = deny
+        try:
+            with launch_log() as stress_log:
+                for _ in range(args.replays):
+                    event = g.replay()
+            assert event.ok
+        finally:
+            TNCALauncher.__call__ = original
+        assert len(stress_log) == args.replays * len(g.commands)
+        assert all(e['replay'] and e['device_cycles'] > 0 and
+                   e['upload_bytes'] == e['download_bytes'] == 0 for e in stress_log)
+        torch.testing.assert_close(y.cpu(), fn(updated, hw), rtol=2e-3, atol=2e-3)
+        assert D.MEMORY.live == live
+        assert s.memory_stats['heap_allocated_bytes'] == before
+        assert not s.unfinished and all(not b.leases for b in s._buffers.values())
+        print(f'PASS {args.replays} retained graph replays, bounded submission and storage/lease audit', flush=True)
+        print(f'AUDIT {s.memory_stats}', flush=True)
     print('PASS retained multi-kernel Torch graph replay, updated input, artifact and byte audit', flush=True)
     x.resize_(8, 32)
     refused(g, s)
@@ -84,7 +109,8 @@ def main():
     refused(g, s)
     print('PASS recovery epoch rejects whole graph without submission', flush=True)
     g.reset()
-    print('r40-replay-tests PASS (4/4)', flush=True)
+    checks = 5 if args.replays else 4
+    print(f'r40-replay-tests PASS ({checks}/{checks})', flush=True)
     return 0
 
 

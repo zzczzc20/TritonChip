@@ -300,7 +300,10 @@ A complete real-board handoff requires all of the following:
 
 1. candidate commit and profile hash are recorded;
 2. implementation status is `PASS` with a non-empty exact XCLBIN;
-3. programming check and programming command both pass;
+3. programming check and programming command both pass, and the measurement
+   says `reconfigured: true` -- or `false` with the reason understood: the
+   card already held this exact image, XRT downloaded nothing, and the device
+   was not reset;
 4. conformance passes with `--require-measured`;
 5. every requested ArchBench point passes with `measured-board` evidence;
 6. `done_cycles`, `done_retired`, clock and `perf_*` counters are present;

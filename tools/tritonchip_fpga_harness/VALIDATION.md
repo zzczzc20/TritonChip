@@ -79,24 +79,48 @@ of the 27 points differ from the run above (−2.2 % to +2.7 %). The image is
 `core-vrf-sync-v2`. The profile a card is driven as changes what the compiler
 emits, which is why `board.profile` is required and checked.
 
+### The load
+
 Later the same day the run was measured again with `program: true`, from
-`c9f34b6`, the card still holding that image and idle:
+`c9f34b6`. Every stage returned 0 and ArchBench gave the same 4 459 740
+cycles -- **and nothing had been loaded.** The card already held that XCLBIN,
+and XRT does not download an image the device has: it returns success and the
+device keeps its state. The device says so itself. Its request counter stood
+at 62336 at the conformance run that followed; a device that has just been
+configured starts again at 2. That run is a second unprogrammed measurement,
+and the harness had recorded it as programmed. An earlier version of this
+record called it the load, and was wrong.
 
-| | |
-|---|---|
-| Stages | `program_check` 0, `program` 0, `conformance` 0, `archbench` 0 |
-| Load | the flow's `program.sh`: every gate of `--check`, then `--go` -- `xbutil program succeeded`, the device reporting the XCLBIN's UUID, the HBM sensor reading after the load |
-| Conformance | 5 of 5 cases |
-| ArchBench tiny | 27 of 27 pass, `measured-board` |
-| Cycles | 4 459 740 again; each of the 27 points has the count it had before the reload |
+The harness now records what a load replaced and whether the image changed
+(`replaced_xclbin_uuid`, `loaded_xclbin_uuid`, `reconfigured`), and the load
+was tested as what it is, a change of image, in both directions, each through
+`measure` from `8d0026d`:
 
-That is the board stage whole, in one command: load, conformance, ArchBench,
-cycles. The first measurement's records were replaced in the run directory by
-this one's, as `measure` does; a copy is kept on the host beside the harness's
-work files.
+| Run | Image on the card | `reconfigured` | Device counter after | Then |
+|---|---|---|---|---|
+| `timing011-u280-full-20261010`, with `--allow-source-mismatch` | `78f04922…` → `c4637d43…` | true | 2 | conformance 5 of 5 as `core-vrf-sync-v1` |
+| `pr5-latest-b5c606d-u280-100mhz` | `c4637d43…` → `78f04922…` | true | 2 | conformance 5 of 5, ArchBench tiny 27 of 27 `measured-board`, 4 459 740 cycles |
 
-**Still not done.** No link has been started from this branch: both board
-runs used the link the earlier copy built from `b5c606d`. So `submit` has not
+The second row is the board stage whole, in one command: the programmer's
+gates, a load that replaced another image, conformance, ArchBench, cycles.
+All 27 points have the cycle counts of both earlier measurements of this
+image. The first row drove an image built from another commit (`8d8e4e9`)
+with this checkout's runtime; the measurement says so (`software.relation:
+differs`). The card was left holding the image it held before.
+
+Two things the first attempt at this showed:
+
+- The flow's programmer refuses to load while any process's command line
+  matches `(xbutil|xbmgmt).*program`, and the SSH command that started the
+  harness did. The harness stopped at `program_check` with `BOARD_FAIL` and
+  the card was not touched. Start the harness from a script file or a short
+  command line.
+- `measure` replaces the board records of the previous attempt in the run
+  directory. Copies of the two earlier measurements are kept on the host
+  beside the harness's work files.
+
+**Still not done.** No link has been started from this branch: every board
+run above used a link the earlier copy built. So `submit` has not
 run end to end on a real host, only its two halves -- the build half on a
 played flow and `validate` on real output, the board half on the card. The
 small tier has not been run, and nothing has been run on the U50 host from

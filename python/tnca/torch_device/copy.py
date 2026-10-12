@@ -120,9 +120,11 @@ def copy_tensor(src, dst):
         return copy_tensor(temporary, dst)
     raw = src.dtype == dst.dtype
     count = dst.numel() * (dst.element_size() if raw else 1)
-    if count >= (1 << 31) or any(s * n >= (1 << 31)
-                               for s, n in zip(source_strides, shape)) or any(
-            s * n >= (1 << 31) for s, n in zip(dst.stride(), shape)):
+    source_extent = src.element_size() * (1 + sum((n - 1) * s
+                                                  for s, n in zip(source_strides, shape)))
+    destination_extent = dst.element_size() * (1 + sum((n - 1) * s
+                                                       for s, n in zip(dst.stride(), shape)))
+    if max(count, source_extent, destination_extent) >= (1 << 31):
         raise RuntimeError('tnca copy: 64-bit copy indexing is not implemented')
     contiguous = src.is_contiguous() and dst.is_contiguous() and tuple(src.shape) == shape
     block = 128 if contiguous else 16

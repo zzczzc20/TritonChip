@@ -1,0 +1,38 @@
+| Design Timing Summary
+| ---------------------
+------------------------------------------------------------------------------------------------
+
+    WNS(ns)      TNS(ns)  TNS Failing Endpoints  TNS Total Endpoints      WHS(ns)      THS(ns)  THS Failing Endpoints  THS Total Endpoints     WPWS(ns)     TPWS(ns)  TPWS Failing Endpoints  TPWS Total Endpoints  
+    -------      -------  ---------------------  -------------------      -------      -------  ---------------------  -------------------     --------     --------  ----------------------  --------------------  
+     -0.336     -226.125                   1905               628595        0.003        0.000                      0               626866        0.000        0.000                       0                271684  
+
+
+Timing constraints are not met.
+
+
+
+
+
+Max Delay Paths
+--------------------------------------------------------------------------------------
+Slack (VIOLATED) :        -0.336ns  (required time - arrival time)
+  Source:                 level0_i/ulp/tnca_u50_1/inst/u_top/u_device/u_shell/u_core/g_lsu_pair.u_lsu/g_unit[1].u/pending_reg[10]/C
+                            (rising edge-triggered cell FDRE clocked by clk_kernel_00_unbuffered_net  {rise@0.000ns fall@5.000ns period=10.000ns})
+  Destination:            level0_i/ulp/tnca_u50_1/inst/u_top/u_device/u_mem/mem_reg_0_0_1/WEA[0]
+                            (rising edge-triggered cell RAMB36E2 clocked by clk_kernel_00_unbuffered_net  {rise@0.000ns fall@5.000ns period=10.000ns})
+  Path Group:             clk_kernel_00_unbuffered_net
+  Path Type:              Setup (Max at Slow Process Corner)
+  Requirement:            10.000ns  (clk_kernel_00_unbuffered_net rise@10.000ns - clk_kernel_00_unbuffered_net rise@0.000ns)
+  Data Path Delay:        9.968ns  (logic 1.518ns (15.229%)  route 8.450ns (84.771%))
+  Logic Levels:           16  (CARRY8=2 LUT3=1 LUT5=2 LUT6=11)
+  Clock Path Skew:        0.085ns (DCD - SCD + CPR)
+    Destination Clock Delay (DCD):    7.823ns = ( 17.823 - 10.000 ) 
+    Source Clock Delay      (SCD):    7.672ns
+    Clock Pessimism Removal (CPR):    -0.066ns
+  Clock Uncertainty:      0.058ns  ((TSJ^2 + DJ^2)^1/2) / 2 + PE
+    Total System Jitter     (TSJ):    0.071ns
+    Discrete Jitter          (DJ):    0.093ns
+    Phase Error              (PE):    0.000ns
+  Clock Net Delay (Source):      2.607ns (routing 1.107ns, distribution 1.500ns)
+  Clock Net Delay (Destination): 2.589ns (routing 1.004ns, distribution 1.585ns)
+

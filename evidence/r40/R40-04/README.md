@@ -44,3 +44,13 @@ see tensor_bounds_compiler_rtl_current.log. The initial isolated snapshot
 had the superseded stride-refusal test, which failed as expected for a
 now-supported legal stride; current tests retain both numerical stride
 validation and invalid-rank fault propagation.
+
+2026-10-12: bounds-optimized image still failed its unchanged 100MHz
+link. bounds_link_timing.txt extracts the report summary and worst path;
+bounds_link_timing.json records its full-report hash and source commit.
+WNS -0.336ns, TNS -226.125ns, 1905 setup failures; automatic 96MHz
+rejected. No image was programmed. The worst path is now LSU request
+selection through local RAM write enable; follow-up pipelining is pending
+functional validation and a new timing/CDC implementation.
+Standalone hardware export also passes 3/3 after declaring the optional
+AXI dependencies (export_axi_dependencies.log).

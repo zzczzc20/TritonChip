@@ -177,3 +177,13 @@ TNS −156.731 ns、2446 个 setup 端点失败。工具自动改频到 97.9 MHz
 `tools/r40/tensor_bounds_tests.py` 从实际 RTL 提取函数，由 Yosys SAT
 对全部 160 位自由输入证明与原始 64 位加法/符号/比较公式等价。
 形式证明已接入 CI 和 `make r40-hbm`；新的板上 timing/CDC 结果仍待重新实现。
+
+`u280_r40bounds` 的新 routed 结果仍失败：WNS −0.336 ns、
+TNS −226.125 ns、1905 个 setup 端点；自动 96 MHz 被拒绝，未装载。
+最差路径已经移到 LSU `pending_reg[10]` → local BRAM `WEA[0]`，
+数据延迟 9.968 ns，16 级逻辑，route 占 84.771%。
+证据为 `evidence/r40/R40-04/bounds_link_timing.{txt,json}`；
+JSON 保留完整 routed 报告的 SHA256，原件在板卡主机的构建目录。
+下一步检查 burst bridge 的 local RAM 请求是否也应经过现有两项 FIFO；
+该机制默认关闭，必须先通过乱序、背压、原子、错误和复位审计，
+再重新进行 100 MHz link。

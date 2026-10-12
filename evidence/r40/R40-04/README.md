@@ -29,3 +29,18 @@ profile; its actual memory ingress remains 8 B/cycle, not HBM peak.
 ArchBench selftest passes all tiny/small checks with HBM bounds included.
 See native_hbm_mlp_bound_fix.* and hbm_bounds_selftest.log. This is RTL
 execution and does not close any physical-board or performance gate.
+
+2026-10-12 timing checkpoint: the fresh OOC-only-clock link still fails
+100 MHz (WNS -0.209 ns, 2446 failing setup endpoints); automatic scaling
+to 97.9 MHz is rejected. See hbm_100mhz_failed_timing.log. The optimized
+descriptor row predicate is formally equivalent to the original 64-bit
+wrapping sum/sign/bounds contract for all 160 input bits (Yosys 0.33),
+with no added cycles. See tensor_bounds_formal.log and the three passing
+transposed-transfer RTL cases in tensor_bounds_xpose.log. A new physical
+implementation is required; this proof does not establish timing closure.
+
+The current compiler RTL suite passes 68/68 after the bounds change;
+see tensor_bounds_compiler_rtl_current.log. The initial isolated snapshot
+had the superseded stride-refusal test, which failed as expected for a
+now-supported legal stride; current tests retain both numerical stride
+validation and invalid-rank fault propagation.

@@ -106,6 +106,7 @@ jobs:
         run: |
           make core-vrf
           make r38-xpose-rtl
+          python3 tools/r40/tensor_bounds_tests.py
 
       # R38's counter list is generated in three places and must agree; the
       # evidence registry must reject each of its injected mutations.

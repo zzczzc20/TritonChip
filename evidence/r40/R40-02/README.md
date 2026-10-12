@@ -97,3 +97,20 @@ That initial run has its source digest in source_manifest.json. It is
 pending, not passed; repeated fixed-cache audits do not establish KV
 growth, copy overlap or any latency threshold. The public full entry
 is make r40-frozen-residency; choose a fresh R40_RESIDENCY_OUT for reruns.
+
+2026-10-12 native copy checkpoint: same-device Tensor.copy_ now executes
+a general Triton transfer kernel, including broadcast, dtype conversion
+and strided destinations; raw same-dtype copies preserve bytes. Disjoint
+views of one storage use a native intermediate; overlapping copies are
+refused before writing. The active Triton driver is restored after each
+copy. Allocator resize also copies its prefix on the device using a
+profile/epoch-bound byte-copy module. No model-specific code is used.
+
+Actual Session transfer audits pass 15/15 on CUDA-visible and CUDA-hidden
+runs, covering 10 dtypes, stride gaps, broadcasting, conversion, alias
+views and storage resize, with zero tensor host transfers. The complete
+CUDA-visible device regression after the Tensor.copy_ change passes 16/16.
+See native_copy15_resize*.log and native_device_after_copy_cuda.log.
+Growing decode remains under validation; this does not close latency,
+copy-overlap, replay or KV-growth gates. Copy indexing currently explicitly
+refuses byte counts or stride extents requiring 64-bit indexing.

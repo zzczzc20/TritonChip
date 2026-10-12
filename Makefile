@@ -1438,6 +1438,7 @@ r40-residency: $(R2_DATA_STAMP) | dirs
 	@$(TORCH_PYTHON) tools/r40/lifetime_tests.py
 	@TNCA_BACKEND=sim-file $(TORCH_PYTHON) tools/r40/allocation_pressure_tests.py
 	@$(TORCH_PYTHON) tools/r40/residency_tests.py --evidence
+	@$(TORCH_PYTHON) tools/r40/device_copy_tests.py
 	@$(TORCH_PYTHON) tools/r40/batch_tests.py --calls 1000
 	@TNCA_BACKEND=sim-file $(TORCH_PYTHON) tools/r40/recovery_tests.py
 	@TNCA_BACKEND=sim-file $(TORCH_PYTHON) tools/r40/replay_tests.py --replays 1000

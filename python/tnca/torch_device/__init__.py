@@ -157,8 +157,9 @@ class DeviceMemory:
         return data[addr - a0:]
 
     def copy(self, dst, src, nbytes):
-        """Device to device (a growing resize); staged through the host."""
-        self.write(dst, self.read(src, nbytes))
+        """Device to device when an allocator grows a storage."""
+        from .copy import copy_storage
+        copy_storage(self, dst, src, nbytes)
 
     def synchronize(self):
         s = self.session()
@@ -239,7 +240,8 @@ def _register_ops(lib):
         _refuse(self)
         _refuse(dst)
         if self.device.type == NAME and dst.device.type == NAME:
-            from_host(dst, to_host(self))
+            from .copy import copy_tensor
+            copy_tensor(self, dst)
         elif self.device.type == NAME:
             dst.copy_(to_host(self))
         elif dst.device.type == NAME:

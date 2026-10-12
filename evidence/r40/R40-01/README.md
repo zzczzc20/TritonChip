@@ -39,11 +39,19 @@ migration control still reports `capacity-exceeded` against 393,216 bytes.
 See native_large_compile_capacity.*, cpu_large_compile_capacity.* and
 native_hbm_compile77.*. Shapes, frozen thresholds and CPU limits are unchanged.
 
-Current full regression checkpoint: CUDA hidden passes 16/16. CUDA visible
+2026-10-11 full regression attempt: CUDA hidden passes 16/16. CUDA visible
 passes 14/16; import_orders and mixed_devices fail with CUDA context
 allocation errors. A standalone one-element CUDA allocation also fails
 with cuDevicePrimaryCtxRetain returning CUDA_ERROR_OUT_OF_MEMORY.
-The CUDA-visible full rerun remains pending a working CUDA context; the
+At that checkpoint the CUDA-visible rerun awaited a working context; the
 logs retain both failures. Child diagnostics now retain bounded stderr
 and stdout so the underlying exception is visible instead of only the
 last Dynamo hint. No failed case is changed into a skip.
+
+2026-10-12: the full CUDA-visible native device regression passes 16/16
+after preparing the current RTL cache. This includes all three import
+orders, CUDA/TNCA alternation in one process, worker registration,
+numerical compiled graphs and view/storage/copy behavior. See
+native_device_cuda_20261012.log. Prior CUDA-context allocation failures
+remain recorded; they are not converted to skips. Full HBM and physical
+performance gates remain open.

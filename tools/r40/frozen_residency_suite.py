@@ -28,11 +28,13 @@ def main():
     parser.add_argument('--jobs', type=int, default=2)
     parser.add_argument('--steps', type=int, default=2)
     parser.add_argument('--timeout', type=float, default=7 * 24 * 3600)
+    parser.add_argument('--host-timeout', type=float, default=172800,
+                        help='host seconds per launch; device cycle deadline is unchanged')
     parser.add_argument('--out', type=Path,
                         default=ROOT / 'sim/build/r40/frozen_residency_suite')
     args = parser.parse_args()
-    if args.jobs < 1 or args.steps < 2 or args.timeout <= 0:
-        parser.error('jobs >= 1, steps >= 2 and timeout > 0 are required')
+    if args.jobs < 1 or args.steps < 2 or args.timeout <= 0 or args.host_timeout <= 0:
+        parser.error('jobs >= 1, steps >= 2 and positive timeouts are required')
     frozen = json.loads(SUBSET.read_text())
     by_id = {p['id']: p for p in frozen['points']}
     if len(by_id) != len(frozen['points']):
@@ -55,7 +57,8 @@ def main():
                   sources={f: hashlib.sha256((ROOT / f).read_bytes()).hexdigest()
                            for f in ('tools/r40/frozen_residency_suite.py',
                                      'tools/r40/frozen_residency_tests.py')},
-                  steps=args.steps, measured_performance=False, results=[])
+                  steps=args.steps, host_timeout_s=args.host_timeout,
+                  child_timeout_s=args.timeout, measured_performance=False, results=[])
     (args.out / 'report.json').write_text(json.dumps(report, indent=2) + '\n')
 
     def run(point):
@@ -67,7 +70,8 @@ def main():
                  '--point', point['id'], '--steps', str(args.steps),
                  '--source-tree', report['software_tree']],
                 cwd=ROOT, stdout=stream, stderr=subprocess.STDOUT,
-                start_new_session=True)
+                start_new_session=True,
+                env=dict(os.environ, TNCA_HOST_TIMEOUT=str(args.host_timeout)))
             timed_out = False
             try:
                 code = child.wait(timeout=args.timeout)

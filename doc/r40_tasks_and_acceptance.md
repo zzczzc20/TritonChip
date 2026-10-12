@@ -331,7 +331,11 @@ U280 有三个 SLR，HBM 接口位于 SLR0；板卡提供 8 GB HBM、32 个 AXI 
   冻结 tiny attention_decode 与 llama_decode 的两策略稳态各 4/4；
   实际 Session 传输与 launcher 账本一致，resident 为零，staging 为真实往返。
   `make r40-frozen-residency` 新增完整 24 点的隔离进程入口，逐点保留日志；
-  全量正在跳板机运行，KV 增长、物理 copy overlap 与性能 gate 仍未关闭。
+  首轮全量 10/24，其余 14 点为主机等待 600 s 超时，保留失败记录；
+  更长主机等待的完整复跑正在跳板机运行，设备周期 deadline 不变。
+- 连续 KV 增长 checkpoint：标准 fullgraph Torch 的 3 步均通过，KV 16→19；
+  每步 45 个实际 kernel，稳态 Session 张量传输为零，cache 地址与权重 storage 不变。
+  64 步正在运行；物理 copy overlap、online attention 与性能 gate 仍未关闭。
 
 ### R40-03：通用 tile、布局与资源分配
 

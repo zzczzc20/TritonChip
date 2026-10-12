@@ -26,15 +26,19 @@ from tnca.triton_backend.driver import launch_log
 
 
 @contextmanager
-def transfers(session):
+def transfers(session, *, stacks=False):
     """Observe successful runtime copies without changing their payloads."""
     events = []
     upload, download = session.upload, session.download
 
     def record(direction, buf, size):
-        events.append(dict(direction=direction, bytes=size, name=buf.name,
-                           tensor=D.MEMORY.buffers.get(buf.addr) is buf,
-                           staging=buf.name.startswith('staging:')))
+        event = dict(direction=direction, bytes=size, name=buf.name,
+                     tensor=D.MEMORY.buffers.get(buf.addr) is buf,
+                     staging=buf.name.startswith('staging:'))
+        if stacks and (event['tensor'] or event['staging']):
+            import traceback
+            event['stack'] = traceback.format_stack(limit=12)
+        events.append(event)
 
     def put(buf, data, offset=0):
         count = upload(buf, data, offset)

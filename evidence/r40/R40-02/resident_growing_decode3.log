@@ -1,0 +1,7 @@
+  already built: /home/zhongchun/.cache/tnca/devices/core-vrf-sync-v5-hbm-a8f9e2a0291d254a-ba09d41820d5/tnca_device_vrf5_hbm.vvp
+W1012 02:28:42.492000 4181725 torch/utils/cpp_extension.py:183] No CUDA runtime is found, using CUDA_HOME='/usr/local/cuda'
+PASS position=16 KV=17/19: 45 kernels, tensor transfers=0, max_rel_err=0.00025034
+PASS position=17 KV=18/19: 45 kernels, tensor transfers=0, max_rel_err=0.000313729
+PASS position=18 KV=19/19: 45 kernels, tensor transfers=0, max_rel_err=0.000226289
+AUDIT {'epoch': 0, 'heap_capacity_bytes': 33554432, 'heap_allocated_bytes': 219840, 'heap_peak_bytes': 224576, 'code_allocated_bytes': 127424, 'code_peak_bytes': 127424}
+r40-decode-residency-tests PASS (3/3), KV 16->19, fixed cache addresses, weights unchanged

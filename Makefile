@@ -1452,6 +1452,13 @@ R40_RESIDENCY_JOBS ?= 2
 r40-frozen-residency: $(R2_DATA_STAMP) | dirs
 	@$(TORCH_PYTHON) tools/r40/frozen_residency_suite.py \
 	   --jobs $(R40_RESIDENCY_JOBS) --out $(R40_RESIDENCY_OUT)
+# Growing state is separate from fixed-input frozen transfer audits.
+.PHONY: r40-decode-residency
+R40_DECODE_STEPS ?= 64
+R40_HOST_TIMEOUT ?= 172800
+r40-decode-residency: $(R2_DATA_STAMP) | dirs
+	@TNCA_PROFILE=core-vrf-sync-v5/hbm TNCA_HOST_TIMEOUT=$(R40_HOST_TIMEOUT) \
+	   $(TORCH_PYTHON) tools/r40/decode_residency_tests.py --steps $(R40_DECODE_STEPS)
 # R40-03 correctness checkpoint; frozen performance gates remain independent
 # of these standard Torch register-block, reduction and GEMM checks.
 .PHONY: r40-tiles

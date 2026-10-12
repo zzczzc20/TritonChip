@@ -114,3 +114,19 @@ See native_copy15_resize*.log and native_device_after_copy_cuda.log.
 Growing decode remains under validation; this does not close latency,
 copy-overlap, replay or KV-growth gates. Copy indexing currently explicitly
 refuses byte counts or stride extents requiring 64-bit indexing.
+
+2026-10-12 growing KV checkpoint: resident_growing_decode3.log passes
+3/3 guarded standard fullgraph calls, KV length 16 -> 19, 45 actual
+kernels per steady call, fixed cache addresses, unchanged weight storage
+and zero tensor/staging Session transfers. Compile initialization and
+explicit correctness downloads are outside the steady audit. This is
+correctness evidence, not online attention or latency acceptance.
+The complete 64-step run is pending. make r40-decode-residency defaults
+to 64 steps and records actual memory high water at completion.
+
+The first full frozen transfer audit completed 10/24; all 14 failures
+were the default 600-second host wait. Retain its report in
+frozen_residency_full24_600s.json. The isolated runner now exposes and
+records --host-timeout (default 172800s), independently of its child
+process timeout and the unchanged device cycle deadline. Full rerun
+is pending; no failed record has been replaced with a pass.

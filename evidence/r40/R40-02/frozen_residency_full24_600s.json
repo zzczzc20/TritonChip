@@ -1,0 +1,229 @@
+{
+  "schema": "tnca-r40-frozen-residency-suite/1",
+  "subset_sha256": "fe1b3ec887421c51c79437b6128b0ffa40f9dc54c1853225cb233b4b70336dfd",
+  "selected": [
+    "model.gpt2_block/tiny/fp16-d64-h4-b1-s16",
+    "model.llama_decode/tiny/fp16-b1-p16",
+    "model.llama_prefill/tiny/fp16-b1-s16",
+    "model.resnet_block/tiny/fp32-n1-c8-hw8",
+    "op.attention_decode/tiny/fp16-b1-h2-l16-d16",
+    "op.attention_prefill/tiny/fp16-b1-h2-s16-d16",
+    "op.conv2d/tiny/fp32-n1-cin4-h8-w8-cout8",
+    "op.rope/tiny/fp16-b1-h2-s16-d16",
+    "model.gpt2_block/small/fp16-d128-h4-b1-s64",
+    "model.llama_decode/small/fp16-b1-p128",
+    "model.llama_prefill/small/fp16-b1-s64",
+    "model.resnet_block/small/fp32-n1-c16-hw16",
+    "op.attention_decode/small/fp16-b1-h4-l256-d32",
+    "op.attention_prefill/small/fp16-b1-h4-s64-d32",
+    "op.conv2d/small/fp32-n1-cin16-h16-w16-cout16",
+    "op.rope/small/fp16-b1-h4-s64-d32",
+    "model.gpt2_block/medium/fp16-d160-h5-b1-s64",
+    "model.llama_decode/medium/fp16-b1-p256",
+    "model.llama_prefill/medium/fp16-b1-s64",
+    "model.resnet_block/medium/fp32-n1-c24-hw16",
+    "op.attention_decode/medium/fp16-b1-h8-l256-d32",
+    "op.attention_prefill/medium/fp16-b1-h4-s96-d32",
+    "op.conv2d/medium/fp32-n1-cin24-h16-w16-cout24",
+    "op.rope/medium/fp16-b1-h8-s128-d32"
+  ],
+  "full_inventory": true,
+  "profile": "core-vrf-sync-v5/hbm",
+  "steps": 2,
+  "measured_performance": false,
+  "results": [
+    {
+      "point_id": "model.llama_decode/tiny/fp16-b1-p16",
+      "definition_sha256": "9889060c587f03f485fbc2e16e4c3b6788cf830c616747040259517c3e81b63a",
+      "status": "pass",
+      "returncode": 0,
+      "log": "model.llama_decode__tiny__fp16-b1-p16.log",
+      "host_elapsed_s": 3749.1798014151864
+    },
+    {
+      "point_id": "model.gpt2_block/tiny/fp16-d64-h4-b1-s16",
+      "definition_sha256": "c6ac63596b04acf91cdb6fd7da6cf742d3da62e6f02951df35f1b6a538b5bdc4",
+      "status": "pass",
+      "returncode": 0,
+      "log": "model.gpt2_block__tiny__fp16-d64-h4-b1-s16.log",
+      "host_elapsed_s": 4028.8110725749284
+    },
+    {
+      "point_id": "model.resnet_block/tiny/fp32-n1-c8-hw8",
+      "definition_sha256": "080606dc05ff1b13636f93504e4c71cf8bd2c40d09a0430998669ed262d26dfd",
+      "status": "pass",
+      "returncode": 0,
+      "log": "model.resnet_block__tiny__fp32-n1-c8-hw8.log",
+      "host_elapsed_s": 4442.569196201861
+    },
+    {
+      "point_id": "op.attention_decode/tiny/fp16-b1-h2-l16-d16",
+      "definition_sha256": "5b80febf2036b8a8b337cf9f5d28d3dd5df2b1c0370263c33c5cf6a0dfcb4c91",
+      "status": "pass",
+      "returncode": 0,
+      "log": "op.attention_decode__tiny__fp16-b1-h2-l16-d16.log",
+      "host_elapsed_s": 149.27235059533268
+    },
+    {
+      "point_id": "op.attention_prefill/tiny/fp16-b1-h2-s16-d16",
+      "definition_sha256": "eb5c0145c4c95f225ddedb70032fa797303883b0498ec54a1b9bd9065ff48a52",
+      "status": "pass",
+      "returncode": 0,
+      "log": "op.attention_prefill__tiny__fp16-b1-h2-s16-d16.log",
+      "host_elapsed_s": 585.6649551866576
+    },
+    {
+      "point_id": "op.conv2d/tiny/fp32-n1-cin4-h8-w8-cout8",
+      "definition_sha256": "86bb96a8692f4c67bad0ad607ff461e13ffd21db588893f619f8b0f787c09e62",
+      "status": "pass",
+      "returncode": 0,
+      "log": "op.conv2d__tiny__fp32-n1-cin4-h8-w8-cout8.log",
+      "host_elapsed_s": 1575.4013311872259
+    },
+    {
+      "point_id": "op.rope/tiny/fp16-b1-h2-s16-d16",
+      "definition_sha256": "e5e6096b39bf6df53c6f90eef2aac7a3714f5c590ab1c5d5e6d91fd1703fa7e9",
+      "status": "pass",
+      "returncode": 0,
+      "log": "op.rope__tiny__fp16-b1-h2-s16-d16.log",
+      "host_elapsed_s": 64.6644548131153
+    },
+    {
+      "point_id": "model.gpt2_block/small/fp16-d128-h4-b1-s64",
+      "definition_sha256": "75533c2b96d185e7fd2bdf0a168ef57d4d53f0ed019e0aaba37aa43c7757c7f6",
+      "status": "fail",
+      "returncode": 1,
+      "log": "model.gpt2_block__small__fp16-d128-h4-b1-s64.log",
+      "host_elapsed_s": 973.1830207090825
+    },
+    {
+      "point_id": "model.llama_prefill/tiny/fp16-b1-s16",
+      "definition_sha256": "6d14a4a6373ba814884be0e62ed485960e3da63c6fe51b6e2de35492dbde69bc",
+      "status": "pass",
+      "returncode": 0,
+      "log": "model.llama_prefill__tiny__fp16-b1-s16.log",
+      "host_elapsed_s": 8846.880878480617
+    },
+    {
+      "point_id": "model.llama_decode/small/fp16-b1-p128",
+      "definition_sha256": "a83153ccb5eccc8f9b328aeed2fd648df5e7e9deecfd940d986ebc5129ee53c1",
+      "status": "fail",
+      "returncode": 1,
+      "log": "model.llama_decode__small__fp16-b1-p128.log",
+      "host_elapsed_s": 882.4833151497878
+    },
+    {
+      "point_id": "model.llama_prefill/small/fp16-b1-s64",
+      "definition_sha256": "a4aa11b171f8875f87051a5ebfbd9fbeecfc53ac8f48f5c67e1902ffbf490ae0",
+      "status": "fail",
+      "returncode": 1,
+      "log": "model.llama_prefill__small__fp16-b1-s64.log",
+      "host_elapsed_s": 750.8593406393193
+    },
+    {
+      "point_id": "model.resnet_block/small/fp32-n1-c16-hw16",
+      "definition_sha256": "5238ddb9e794f37c05c358ecddf18e348afc1e556e3fc76adb42eef4bd958413",
+      "status": "fail",
+      "returncode": 1,
+      "log": "model.resnet_block__small__fp32-n1-c16-hw16.log",
+      "host_elapsed_s": 760.618315954227
+    },
+    {
+      "point_id": "op.attention_prefill/small/fp16-b1-h4-s64-d32",
+      "definition_sha256": "d4034b40444b352ce5541f585017b84ede0aa83e6bcac78c70af743db82c1dc1",
+      "status": "fail",
+      "returncode": 1,
+      "log": "op.attention_prefill__small__fp16-b1-h4-s64-d32.log",
+      "host_elapsed_s": 865.1800943110138
+    },
+    {
+      "point_id": "op.attention_decode/small/fp16-b1-h4-l256-d32",
+      "definition_sha256": "df633231c46b52878fd433bafca00947f171dc7c7c4e74ab1f28b7d8babc101f",
+      "status": "fail",
+      "returncode": 1,
+      "log": "op.attention_decode__small__fp16-b1-h4-l256-d32.log",
+      "host_elapsed_s": 1035.6776596019045
+    },
+    {
+      "point_id": "op.conv2d/small/fp32-n1-cin16-h16-w16-cout16",
+      "definition_sha256": "d5181555b6f724fa531e2d80074df12585f537f9221326da80d58bce175a8bc7",
+      "status": "fail",
+      "returncode": 1,
+      "log": "op.conv2d__small__fp32-n1-cin16-h16-w16-cout16.log",
+      "host_elapsed_s": 755.445385355968
+    },
+    {
+      "point_id": "op.rope/small/fp16-b1-h4-s64-d32",
+      "definition_sha256": "63dc112adfc11a22ec7bd0a0a383c064e6f9ff52c95efc6e3a02a027392558e4",
+      "status": "pass",
+      "returncode": 0,
+      "log": "op.rope__small__fp16-b1-h4-s64-d32.log",
+      "host_elapsed_s": 957.0427465918474
+    },
+    {
+      "point_id": "model.gpt2_block/medium/fp16-d160-h5-b1-s64",
+      "definition_sha256": "2746d763693c5849cb5f3ce10030c23f3244c69df5c622c00bdd4c06e255f0a1",
+      "status": "fail",
+      "returncode": 1,
+      "log": "model.gpt2_block__medium__fp16-d160-h5-b1-s64.log",
+      "host_elapsed_s": 1077.5244284947403
+    },
+    {
+      "point_id": "model.llama_decode/medium/fp16-b1-p256",
+      "definition_sha256": "dafdc2dd0f86b5b55e3922d2a91c44987ee1df0311ee6e3b57369fc3fb0fe0d5",
+      "status": "fail",
+      "returncode": 1,
+      "log": "model.llama_decode__medium__fp16-b1-p256.log",
+      "host_elapsed_s": 1140.6802045581862
+    },
+    {
+      "point_id": "model.llama_prefill/medium/fp16-b1-s64",
+      "definition_sha256": "01c5f5834948841ad9674e61a49aeb0a90670833fbc3596c4fefc05a56790b55",
+      "status": "fail",
+      "returncode": 1,
+      "log": "model.llama_prefill__medium__fp16-b1-s64.log",
+      "host_elapsed_s": 892.2202844871208
+    },
+    {
+      "point_id": "model.resnet_block/medium/fp32-n1-c24-hw16",
+      "definition_sha256": "9777dfb0edb415ee3dbce5eb80025fd81bcce573c2d24eee0a569131069cde43",
+      "status": "fail",
+      "returncode": 1,
+      "log": "model.resnet_block__medium__fp32-n1-c24-hw16.log",
+      "host_elapsed_s": 697.4313895548694
+    },
+    {
+      "point_id": "op.attention_decode/medium/fp16-b1-h8-l256-d32",
+      "definition_sha256": "e21f75129e697caa502bc53bf34be531aacca011304c594f6bdd90145499daea",
+      "status": "fail",
+      "returncode": 1,
+      "log": "op.attention_decode__medium__fp16-b1-h8-l256-d32.log",
+      "host_elapsed_s": 625.9519638507627
+    },
+    {
+      "point_id": "op.attention_prefill/medium/fp16-b1-h4-s96-d32",
+      "definition_sha256": "8126b8242b0e6524a5f4844ac470b2d4048ffd10874c89760b10b3630ad76c01",
+      "status": "fail",
+      "returncode": 1,
+      "log": "op.attention_prefill__medium__fp16-b1-h4-s96-d32.log",
+      "host_elapsed_s": 984.1882651657797
+    },
+    {
+      "point_id": "op.conv2d/medium/fp32-n1-cin24-h16-w16-cout24",
+      "definition_sha256": "8f2118258e8f12907d7aa621ab87c7195d2495a68422174a4f83f47a3c9b215a",
+      "status": "fail",
+      "returncode": 1,
+      "log": "op.conv2d__medium__fp32-n1-cin24-h16-w16-cout24.log",
+      "host_elapsed_s": 691.304495328106
+    },
+    {
+      "point_id": "op.rope/medium/fp16-b1-h8-s128-d32",
+      "definition_sha256": "68efb08c431333d93590c4004b4ff31a19ae4b76b78d112fd9a7cb30693a3194",
+      "status": "pass",
+      "returncode": 0,
+      "log": "op.rope__medium__fp16-b1-h8-s128-d32.log",
+      "host_elapsed_s": 3595.24023680808
+    }
+  ],
+  "execution_note": "Original run: per-launch host timeout 600s, unchanged device deadline. All 14 failures were WAIT_TIMEOUT. This attempt is retained; longer-host-wait rerun pending. Not performance evidence."
+}

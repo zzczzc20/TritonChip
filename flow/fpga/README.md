@@ -50,12 +50,15 @@ is built from -- `shell_ucs_subsystem_v3_0`, unpacked from the platform's
 `hw.xsa`, whose `component.xml` gives `FREQ_HZ_KERNEL_CLOCK_00` a
 `minimum="10" maximum="650"` in MHz. 150 is inside that range.
 
-**This build asks for 150 MHz.** `link.sh` passes `--kernel_frequency 0:150`,
-`ooc.xdc` constrains 6.667 ns, `package_xo.tcl` declares the same figure in the
-IP, and `rtl/board/tnca_u50_xo.v` divides by four -- so the device runs at
-**37.5 MHz**, which is where it ran before, when the bus was at 300 and the
-divide was eight. The bus came down because the first link failed on it; the
-device was deliberately held still so that every measurement about it survives.
+**This build asks for 100 MHz and the device runs on it undivided.**
+`link.sh` passes `--kernel_frequency 0:100`, `ooc.xdc` constrains 10 ns,
+`package_xo.tcl` declares the same figure in the IP, and
+`rtl/board/tnca_u50_xo.v` divides by `DEV_DIV = 1`.
+
+How it got here:
+- **First:** the bus was 300 MHz, divided by eight.
+- **Then:** the bus came down to 150 MHz because the first link failed on it, and the divide went to four to hold the device still at **37.5 MHz**, so every measurement about it survived.
+- **R38's timing work:** the divide went to two, **75 MHz**, then to one with the bus at 100, **100 MHz**. Both were measured on the U280 (below, and `evidence/r38/u280_75mhz/`, `evidence/r38/u280_100mhz/`).
 
 `link.sh` still checks the resulting frequency rather than assuming it -- `v++`
 can lower a kernel clock on its own and still report success
@@ -329,3 +332,44 @@ measurement is taken on the board:
 
 The build steps, the order of the checks on the new image, and what each must
 show are in [`doc/r38_board_bringup.md`](../../doc/r38_board_bringup.md).
+
+## 75 MHz on the U280 (2026-10-09)
+
+R38's timing work (`doc/r38_board_bringup.md` sec. 6) cut the device's worst
+path from a 60-level loop in the matrix unit to 7.76 ns post-synthesis. On
+that RTL the build ran with `DEV_DIV = 2`:
+
+- **The link:** clk_dev routed at **+0.471 ns** of slack against 13.333 ns,
+  with nothing failing. The design WNS is +0.016 ns, the platform's own
+  near-zero path. v++ printed only AUTO-FREQ-SCALING-08.
+- **The board:** conformance, the profiler, and ArchBench tiny 27/27 pass.
+  Every point's device cycle count is identical to the RTL simulation
+  (`tools/r38/board_vs_sim.py`).
+- **The clock:** the shell's counter reads 150 MHz.
+  `measure_clock.py` -- the device's own cycle count over host-timed spin
+  kernels -- reads 74.97 and 75.02 MHz.
+
+The files, the image's sha256 and the routed path are in
+[`evidence/r38/u280_75mhz/`](../../evidence/r38/u280_75mhz/README.md).
+
+## 100 MHz on the U280, undivided (2026-10-09)
+
+Two further changes, neither of which moves a cycle:
+- timing-004..010 brought the device to 6.84 ns post-synthesis;
+- timing-011 moved the accumulator file from 131 072 flip-flops into distributed RAM.
+
+The second cleared the routing congestion of an SLR whose CLBs were 97.7 % used.
+
+- **The link:** kernel clock 100 MHz with `DEV_DIV = 1`. It routed with
+  the kernel clock domain at **+0.127 ns** of slack, nothing failing of 566 734
+  endpoints (design WNS +0.016 ns, the platform's path). v++ kept 100 MHz.
+- **The board:** conformance, the profiler and ArchBench tiny 27/27 pass.
+  Every point's device cycle count is identical to the RTL simulation of
+  the same RTL.
+- **The clock:** the shell's counter reads 100 MHz.
+  `measure_clock.py` reads **100.07 and 100.01 MHz**.
+
+[`evidence/r38/u280_100mhz/`](../../evidence/r38/u280_100mhz/README.md) has
+the files. This is now the flow's default: 100 MHz in the four places, and
+`DEV_DIV = 1`.
+

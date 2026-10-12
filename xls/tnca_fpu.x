@@ -16,11 +16,11 @@
 // rtl/core/tnca_fp32_fma.v already handles subnormals and is checked against
 // an exact Fraction oracle over half a million vectors.
 //
-// So the arithmetic stays where it is verified, and XLS does what it is
-// genuinely better at: the format work around it. rtl/core/tnca_fpu_multi.v
-// composes them -- XLS widening, the existing FMA, XLS narrowing -- which
-// gives FP8 and FP16 operands without a second arithmetic implementation for
-// anybody to keep in agreement with the first.
+// So the arithmetic is not taken from apfloat. Since R38 it is written in
+// tnca_fma.x without it -- subnormals kept -- and generated like everything
+// here; rtl/core/tnca_fpu_multi.v composes XLS widening, that FMA and XLS
+// narrowing, which gives FP8 and FP16 operands with one arithmetic
+// implementation.
 //
 // The SFU is the opposite case and lives in tnca_sfu.x: it is approximate by
 // contract, and ISA sec 8.8 *specifies* that SFU operations flush subnormals.

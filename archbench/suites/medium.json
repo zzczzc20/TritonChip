@@ -1,0 +1,287 @@
+{
+ "families": [
+  "add",
+  "argmax",
+  "attention_decode",
+  "attention_prefill",
+  "bmm",
+  "conv2d",
+  "cumsum",
+  "embedding",
+  "gelu_tanh",
+  "gemv",
+  "gpt2_block",
+  "layernorm",
+  "linear",
+  "llama_decode",
+  "llama_prefill",
+  "matmul",
+  "mlp",
+  "resnet_block",
+  "rmsnorm",
+  "rope",
+  "silu",
+  "softmax",
+  "swiglu",
+  "transpose"
+ ],
+ "points": [
+  {
+   "dtype": "fp16",
+   "family": "gpt2_block",
+   "id": "model.gpt2_block/medium/fp16-d160-h5-b1-s64",
+   "kind": "model",
+   "sha256": "2746d763693c5849cb5f3ce10030c23f3244c69df5c622c00bdd4c06e255f0a1",
+   "track": [
+    "llm",
+    "general"
+   ]
+  },
+  {
+   "dtype": "fp16",
+   "family": "llama_decode",
+   "id": "model.llama_decode/medium/fp16-b1-p256",
+   "kind": "model",
+   "sha256": "dafdc2dd0f86b5b55e3922d2a91c44987ee1df0311ee6e3b57369fc3fb0fe0d5",
+   "track": [
+    "llm"
+   ]
+  },
+  {
+   "dtype": "fp16",
+   "family": "llama_prefill",
+   "id": "model.llama_prefill/medium/fp16-b1-s64",
+   "kind": "model",
+   "sha256": "01c5f5834948841ad9674e61a49aeb0a90670833fbc3596c4fefc05a56790b55",
+   "track": [
+    "llm"
+   ]
+  },
+  {
+   "dtype": "fp16",
+   "family": "mlp",
+   "id": "model.mlp/medium/fp16-t128-d128",
+   "kind": "model",
+   "sha256": "e902898ba8ac399b55fbd6fb1f451a8c1e0f3aed4a37d03c72be9d26518ab1cf",
+   "track": [
+    "llm",
+    "general"
+   ]
+  },
+  {
+   "dtype": "fp32",
+   "family": "resnet_block",
+   "id": "model.resnet_block/medium/fp32-n1-c24-hw16",
+   "kind": "model",
+   "sha256": "9777dfb0edb415ee3dbce5eb80025fd81bcce573c2d24eee0a569131069cde43",
+   "track": [
+    "general"
+   ]
+  },
+  {
+   "dtype": "fp16",
+   "family": "add",
+   "id": "op.add/medium/fp16-n49152",
+   "kind": "op",
+   "sha256": "d93003fba972fe2516663455b54617bf43536590b601707e44b194ff5705ccb7",
+   "track": [
+    "llm"
+   ]
+  },
+  {
+   "dtype": "fp16",
+   "family": "argmax",
+   "id": "op.argmax/medium/fp16-r32-v4096",
+   "kind": "op",
+   "sha256": "fb10339355602d4e14d3cd98fc6b579fec00b5c064e106d9352adefd72a4cff9",
+   "track": [
+    "llm"
+   ]
+  },
+  {
+   "dtype": "fp16",
+   "family": "attention_decode",
+   "id": "op.attention_decode/medium/fp16-b1-h8-l256-d32",
+   "kind": "op",
+   "sha256": "e21f75129e697caa502bc53bf34be531aacca011304c594f6bdd90145499daea",
+   "track": [
+    "llm"
+   ]
+  },
+  {
+   "dtype": "fp16",
+   "family": "attention_prefill",
+   "id": "op.attention_prefill/medium/fp16-b1-h4-s96-d32",
+   "kind": "op",
+   "sha256": "8126b8242b0e6524a5f4844ac470b2d4048ffd10874c89760b10b3630ad76c01",
+   "track": [
+    "llm"
+   ]
+  },
+  {
+   "dtype": "fp16",
+   "family": "bmm",
+   "id": "op.bmm/medium/fp16-b16-m64-k32-n64",
+   "kind": "op",
+   "sha256": "b377b0e53eab312336e85287a3ed0ab7c463c58977085140b2a8466dbb5fe595",
+   "track": [
+    "llm"
+   ]
+  },
+  {
+   "dtype": "fp32",
+   "family": "conv2d",
+   "id": "op.conv2d/medium/fp32-n1-cin24-h16-w16-cout24",
+   "kind": "op",
+   "sha256": "8f2118258e8f12907d7aa621ab87c7195d2495a68422174a4f83f47a3c9b215a",
+   "track": [
+    "general"
+   ]
+  },
+  {
+   "dtype": "fp32",
+   "family": "cumsum",
+   "id": "op.cumsum/medium/fp32-r128-c256",
+   "kind": "op",
+   "sha256": "e7bbefe83b854a602e9fb7ce29202f8a9cc3e57b1519621a91767d125f1f3e88",
+   "track": [
+    "general"
+   ]
+  },
+  {
+   "dtype": "fp16",
+   "family": "embedding",
+   "id": "op.embedding/medium/fp16-v1024-d128-t256",
+   "kind": "op",
+   "sha256": "c2dd95dbb4ad7a7bdc5b876b0e1e8f575ad8c6b6e56cad299b212c5593e57eb1",
+   "track": [
+    "llm"
+   ]
+  },
+  {
+   "dtype": "fp16",
+   "family": "gelu_tanh",
+   "id": "op.gelu_tanh/medium/fp16-n65536",
+   "kind": "op",
+   "sha256": "1838b4f8e12687df2627242ad0c072db36a2920c2e4a712f908b5f67de871882",
+   "track": [
+    "llm"
+   ]
+  },
+  {
+   "dtype": "fp16",
+   "family": "gemv",
+   "id": "op.gemv/medium/fp16-k320-n448",
+   "kind": "op",
+   "sha256": "fd15161f24b0d9305fdc83fde76124d2a8fa398f2db5eb98a6b3448b36d0f3ea",
+   "track": [
+    "llm"
+   ]
+  },
+  {
+   "dtype": "fp16",
+   "family": "layernorm",
+   "id": "op.layernorm/medium/fp16-r128-d512",
+   "kind": "op",
+   "sha256": "f351ad8ceb8baee68994ac5d31a62e3be15d95bada5116eb38e638c4e5f53791",
+   "track": [
+    "llm",
+    "general"
+   ]
+  },
+  {
+   "dtype": "fp16",
+   "family": "linear",
+   "id": "op.linear/medium/fp16-m128-k320-n256",
+   "kind": "op",
+   "sha256": "af00fd1e34ac660423c1cc3d8cc4d10443a9c2f9e69080514274b96db068693d",
+   "track": [
+    "llm"
+   ]
+  },
+  {
+   "dtype": "fp16",
+   "family": "matmul",
+   "id": "op.matmul/medium/fp16-m128-k192-n128",
+   "kind": "op",
+   "sha256": "5fcd1986d57a317c831dfb5bb8b3334475169939d8e9c957ba15f7f06e8cef5a",
+   "track": [
+    "llm",
+    "general"
+   ]
+  },
+  {
+   "dtype": "fp32",
+   "family": "matmul",
+   "id": "op.matmul/medium/fp32-m128-k192-n128",
+   "kind": "op",
+   "sha256": "6b6b368b24dfedbd7c53df61c1f1d6359500ce485dc4bd6c126abcb626626505",
+   "track": [
+    "general"
+   ]
+  },
+  {
+   "dtype": "fp16",
+   "family": "rmsnorm",
+   "id": "op.rmsnorm/medium/fp16-r128-d512",
+   "kind": "op",
+   "sha256": "1a2fc8c15e6adf8fb88f0b2eb673d17c515dec7ae27106b91f9f6c6dce0cbcab",
+   "track": [
+    "llm"
+   ]
+  },
+  {
+   "dtype": "fp16",
+   "family": "rope",
+   "id": "op.rope/medium/fp16-b1-h8-s128-d32",
+   "kind": "op",
+   "sha256": "68efb08c431333d93590c4004b4ff31a19ae4b76b78d112fd9a7cb30693a3194",
+   "track": [
+    "llm"
+   ]
+  },
+  {
+   "dtype": "fp16",
+   "family": "silu",
+   "id": "op.silu/medium/fp16-n65536",
+   "kind": "op",
+   "sha256": "5f681ae194441bdea0d48b41cede0e168229ee92d0ea499b75f6828a8089ac0e",
+   "track": [
+    "llm"
+   ]
+  },
+  {
+   "dtype": "fp16",
+   "family": "softmax",
+   "id": "op.softmax/medium/fp16-r80-c512",
+   "kind": "op",
+   "sha256": "966020f31402593850ac045f3105fe20a58f0e27872ca7557a1c4329cad0c725",
+   "track": [
+    "llm"
+   ]
+  },
+  {
+   "dtype": "fp16",
+   "family": "swiglu",
+   "id": "op.swiglu/medium/fp16-n49152",
+   "kind": "op",
+   "sha256": "1e532bfb03b6b67e1c473b66687c94c9c20ee365136c983d1e1a35c393dbb2a3",
+   "track": [
+    "llm"
+   ]
+  },
+  {
+   "dtype": "fp32",
+   "family": "transpose",
+   "id": "op.transpose/medium/fp32-r160-c256",
+   "kind": "op",
+   "sha256": "b3ccc55a669cb014583ecdf3f38887daad9b95a5d230ee9bb979d60fe23429b2",
+   "track": [
+    "general"
+   ]
+  }
+ ],
+ "schema": "archbench-suite/1",
+ "sha256": "f79429252a41ee2f00ee17bdf15da6e8e9dc56a577cb994fb90fa777679f8470",
+ "tier": "medium"
+}

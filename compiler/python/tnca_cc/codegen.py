@@ -289,6 +289,9 @@ class CodeGen:
         return f"{prefix}{v.reg}"
 
     def _pred(self, mask):
+        if mask is not None and getattr(mask, 'kind', None) != PRED:
+            raise Diagnostic(f"a {mask.kind} {mask!r} used as an execution mask; "
+                             f"masks are predicate registers")
         return f"p{mask.reg}" if mask is not None else None
 
     # ---- the walk ---------------------------------------------------------
@@ -443,7 +446,9 @@ class CodeGen:
 
     def _op_assign(self, op):
         dst, src = op.operands
-        bank = 'v' if dst.kind == VECTOR else 's'
+        bank = {VECTOR: 'v', PRED: 'p'}.get(dst.kind, 's')
+        if src.kind != dst.kind:
+            raise Diagnostic(f"assign of a {src.kind} into a {dst.kind} {dst!r}")
         self._emit(f'{bank}.mov', f'{bank}{dst.reg}', f'{bank}{src.reg}')
 
     # ---- vector ops -------------------------------------------------------
@@ -619,17 +624,32 @@ class CodeGen:
         if mnem is None:
             raise Diagnostic(f"no predicate lowering for {op.attrs['op']!r}",
                              source='doc/isa/opcode-map.md sec 0x13')
+        self._check_pred_operands(op, a, b)
         self._emit(mnem, f"p{p.reg}", f"p{a.reg}", f"p{b.reg}")
+
+    @staticmethod
+    def _check_pred_operands(op, *values):
+        """A predicate instruction names predicate registers. A vector
+        operand here would be printed as the predicate register with the
+        same number -- whatever that happens to hold -- which is a wrong
+        answer that only an allocation change reveals (R39-01 found
+        `xmask ^ true` reading `true` that way)."""
+        for v in values:
+            if getattr(v, 'kind', None) != PRED:
+                raise Diagnostic(f"{op.kind} {op.attrs.get('op')!r} on a {v.kind} operand "
+                                 f"{v!r}; it takes predicates")
 
     def _op_pun(self, op):
         a = op.operands[0]
         p = op.results[0]
         self._alloc(p)
+        self._check_pred_operands(op, a)
         self._emit(_PUN[op.attrs['op']], f"p{p.reg}", f"p{a.reg}")
 
     def _op_vselect(self, op):
         p, a, b = op.operands
         v = op.results[0]
+        self._check_pred_operands(op, p)
         self._alloc(v)
         self._emit('v.sel', f"v{v.reg}", f"v{a.reg}", f"v{b.reg}",
                     pred=f"p{p.reg}")
@@ -913,6 +933,13 @@ class CodeGen:
         # safety checks concluded, which is exactly what it must not do.
         for cmd in self._mma_pending.pop(bar, []):
             self.own.release(cmd)
+        # R39-12: a producer waiting for the consumer to release a ring stage
+        # knows the transfers it filled the stage with are complete -- the
+        # consumer waited for them before it read the windows -- so the
+        # windows are the producer's to fill again.
+        for other in op.attrs.get('retires', ()):
+            for cmd in self._mma_pending.pop(other.reg, []):
+                self.own.release(cmd)
 
     def _op_barrier_token(self, op):
         bar = op.operands[0]
@@ -966,11 +993,9 @@ class CodeGen:
         mnem = 't.st.async' if store else 't.ld.async'
         self.target.require('tensor_dma', f'emit {mnem}')
         if store:
-            # ISA sec 9E func 0x08 exists; no engine in any R1 profile can
-            # source it (tnca_tensor has a vector write port and no read
-            # port) and the hardware raises ILLEGAL_INSTRUCTION. A compiler
-            # that emits an instruction the machine refuses has moved a
-            # compile error into a runtime trap.
+            # ISA sec 9E func 0x08. The engine reads the window through its
+            # own VRF port; a target without it still refuses here rather
+            # than trapping at run time.
             self.target.require('tensor_store', 'emit t.st.async')
         if len(coords) > self.target.dma_max_rank:
             raise Diagnostic(
@@ -992,17 +1017,18 @@ class CodeGen:
 
         bar = self._token_barrier[id(token)]
         self._count_operation(bar)
-        suffix = {'f16': 'h', 'bf16': 'h', 'f32': 'w'}[op.attrs['dtype']]
+        suffix = {'f16': 'h', 'bf16': 'h', 'i16': 'h', 'f32': 'w', 'i32': 'w',
+                  'i8': 'b', 'f8E4M3FN': 'b', 'f8E5M2': 'b'}[op.attrs['dtype']]
         widx = self.kernel.windows.index(window)
         # ISA sec 9A.3: a fully predicated-off asynchronous command still
         # completes once, so the static operation count stays correct under
         # predication. The count above is therefore unconditional.
         mask = op.attrs.get('mask')
         if op.attrs.get('transpose'):
-            # sec 9E mod[5]. Specified, encodable, and not decoded by
-            # any engine here -- `tnca_core.v` hands the engine
-            # `x_mod[2:0]` and stops. So the capability is false
-            # everywhere and asking for it is a compile error, which is
+            # sec 9E mod[5]. The engine executes it only where the core
+            # was built with HAS_TENSOR_XPOSE (R38 S1-07), and anywhere
+            # else raises ILLEGAL_INSTRUCTION. So asking for it on a
+            # target without the capability is a compile error, which is
             # the one outcome that is neither a wrong answer nor a
             # runtime trap.
             self.target.require('tensor_transpose',
@@ -1137,3 +1163,55 @@ class CodeGen:
         v = op.results[0]
         self._alloc(v)
         self._emit('a.vread', f"v{v.reg}", f"a{acc.reg}", f"s{row.reg}")
+
+
+def emit_roles(kernel, target, *, check_protocol=False, opt_level=0):
+    """A kernel of several roles as one program (R39-12, Mode A).
+
+    Every context starts at the same PC (a launch has one); each reads
+    ROLE_ID and branches to its role's code, role = ROLE_ID mod the number
+    of roles -- a Role Context pair (RPAIR) is contexts 2k and 2k+1, so the
+    even one runs role 0 and the odd one role 1. Labels are the roles' own
+    already (tnca_cc.partition renames them).
+
+    A pair shares its vector registers, so the roles' temporaries must not
+    meet: the windows are at the top of the file (assign_shared), role 0's
+    temporaries just below them, and role 1's from v0 up. Role 0 is
+    compiled once to measure how many it takes. Scalars and predicates are
+    per context and need no such care.
+    """
+    import copy
+    if len(kernel.roles) != 2:
+        raise Diagnostic(f"{len(kernel.roles)} roles; this emits two")
+    trial = copy.deepcopy(kernel)
+    cg = CodeGen(trial, target, check_protocol=check_protocol, opt_level=opt_level)
+    cg.assign_shared()
+    cg.run(0)
+    need = cg.alloc.max_vector + 1
+    top = min([w.reg for w in trial.windows], default=target.vregs_per_rctx)
+    if need > top:
+        raise ResourceError(f"role 0 needs {need} vector registers below the windows at v{top}")
+    texts, gens = [], []
+    for r, (lo, hi) in ((0, (top - need, top)), (1, (0, top - need))):
+        g = CodeGen(kernel, target, check_protocol=check_protocol, opt_level=opt_level)
+        g.assign_shared()
+        g.alloc.limit_vectors(lo, hi)
+        g.run(r)
+        texts.append(g.b.text())
+        gens.append(g)
+        for v in _values_of(kernel.role(r)):
+            if v.kind in (VECTOR, SCALAR, PRED, EVENT, TOKEN):
+                v.reg = None
+    head = AsmBuilder(target, kernel.name)
+    head.comment(f"R39-12: {kernel.roles[0].name} on even contexts, "
+                 f"{kernel.roles[1].name} on odd ones (ROLE_ID mod 2)")
+    head.emit('s.rdspecial', 's61', 'role_id')
+    head.emit('s.andi', 's61', 's61', '#1')
+    head.emit('br.nz', 's61', '__tnca_role1')
+    text = head.text() + texts[0] + '__tnca_role1:\n' + texts[1]
+    return text, gens[1]
+
+
+def _values_of(role):
+    for op in role.region.ops:
+        yield from op.results

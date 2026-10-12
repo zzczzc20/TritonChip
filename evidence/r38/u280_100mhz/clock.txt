@@ -1,0 +1,6 @@
+n=   5000000  cycles=   30000006  wall=0.3019s  cycles/iter=6.000
+n=  40000000  cycles=  240000006  wall=2.4005s  cycles/iter=6.000
+n=   5000000  cycles=   30000006  wall=0.3010s  cycles/iter=6.000
+n=  40000000  cycles=  240000006  wall=2.4008s  cycles/iter=6.000
+device clock: (240000006 - 30000006) / (2.4005 - 0.3019) = 100.067 MHz
+device clock: (240000006 - 30000006) / (2.4008 - 0.3010) = 100.009 MHz

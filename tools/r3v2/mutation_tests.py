@@ -68,7 +68,7 @@ def build_core(lab, mutated=False):
     bench in would be the unmutated design wearing the mutated tree's name.
 
     Every program is assembled, not a chosen few: FLOW-03 reaches for
-    t13_share, t17_descfault and t26_stfault, and a checker that cannot
+    t13_share, t17_descfault and t35_tdesc_fpad2, and a checker that cannot
     find its program fails for a reason that has nothing to do with the
     mutation -- which reads as "the baseline does not pass" and concludes
     nothing.

@@ -1,0 +1,50 @@
+{
+  "schema": "r38-design-change/1",
+  "id": "timing-004",
+  "parent_commit": "6ae7430",
+  "claims_three_layer": false,
+  "hypothesis": "After timing-003 the VALU's integer reduction is still the device's worst path, and four of its five nanoseconds are the min/max tournament: four 32-bit compares in series, each steering a 32-bit mux with fan-out 32-65. Comparing every pair of lanes once, in parallel, and picking the winner one-hot makes it one compare deep without moving a cycle.",
+  "evidence_for_hypothesis": "tnca_fpga_top post-synthesis, 6.667 ns target, after timing-003: w_class -> w_sdata 7.759 ns / 32 levels; the max tree is 1.0 -> 6.0 ns of it (four CARRY8 compare levels plus the 32-65 fan-out muxes)",
+  "touched_layers": [
+    "microarch"
+  ],
+  "semantic_change": false,
+  "feature": "clock",
+  "layers": {
+    "microarch": {
+      "files": [
+        "rtl/core/tnca_vector_alu.v"
+      ],
+      "change": "min/max reduction as VLEN*(VLEN-1)/2 parallel key compares; lane i wins if its key is above every lower lane's and at least every higher lane's (exactly one winner, the lowest-numbered maximum), result picked by a one-hot AND-OR; inactive lanes keep key 0, so the empty mask still yields the identity"
+    }
+  },
+  "compatibility": {
+    "cycles": "unchanged: R2 cycle check over the 149 R37 O2 cases, and every core program",
+    "artifacts": "unchanged",
+    "numerics": "t36_reduce (all eight integer reductions x 8 vectors x 8 mask shapes including empty, 544 checks) passes on both register files"
+  },
+  "resource": {
+    "kind": "Vivado 2023.2 post-synthesis, out of context, xcu280-fsvh2892-2L-e, 6.667 ns target",
+    "module": "tnca_fpga_top",
+    "parent": {
+      "group": "core -> core (reduction -> scalar writeback)",
+      "worst_ns": 7.759,
+      "worst_levels": 32
+    },
+    "change": {
+      "group": "core -> core",
+      "worst_ns": 6.706,
+      "worst_levels": 28,
+      "worst_path": "now the vector integer multiply (timing-007), not the reduction"
+    }
+  },
+  "results": {
+    "correctness": "lint, core 31/31, core-vrf 31/31; t36_reduce 544/544 on both"
+  },
+  "rollback": "revert rtl/core/tnca_vector_alu.v (the min/max block is self-contained)",
+  "evidence": [
+    "tb/core/progs/gen_t36_reduce.py",
+    "doc/r38_board_bringup.md"
+  ],
+  "status": "implemented"
+}

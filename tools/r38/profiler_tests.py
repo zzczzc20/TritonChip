@@ -3,7 +3,8 @@
 
 doc/r38_stage1_tasks_and_acceptance.md S1-02, tests 1-8.
 
-    1 exclusive stalls sum to perf_stall_total, per program, exactly
+    1 exclusive stalls sum to perf_stall_total, per program, exactly; and
+      issued + stall_total + frontend == perf_cycles (R39-00)
     2 delta perf_issued == done_retired; 0 <= done + slack - delta perf_cycles,
       and the slack is attained (it is the real window offset, not a margin)
     3 stall_total and every overlapping count <= delta perf_cycles
@@ -51,6 +52,12 @@ def identity_problems(rows):
             if sum(p[n] for n in EXCL) != p['perf_stall_total']:
                 bad.append(f'{tag}: exclusive stalls sum to {sum(p[n] for n in EXCL)}, '
                            f'total says {p["perf_stall_total"]}')
+            # R39-00: every running cycle issues, stalls or has nothing to
+            # issue (perf_x_frontend), so the three partition the cycles.
+            if 'perf_x_frontend' in p and (p['perf_issued'] + p['perf_stall_total']
+                                           + p['perf_x_frontend'] != p['perf_cycles']):
+                bad.append(f'{tag}: issued {p["perf_issued"]} + stalled {p["perf_stall_total"]} '
+                           f'+ frontend {p["perf_x_frontend"]} != cycles {p["perf_cycles"]}')
             if p['perf_issued'] != p['done_retired']:
                 bad.append(f'{tag}: issued {p["perf_issued"]} != retired {p["done_retired"]}')
             drain = p['done_cycles'] + SLACK - p['perf_cycles']

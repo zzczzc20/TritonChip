@@ -110,8 +110,11 @@ def obs01(log):
     log.append(f"    {rep['vector_regs_used']} of {lim['vector_regs']} "
                f"vector registers: a usage, not the limit")
 
-    # 4. an unmeasured cost is 'unknown', never 0
-    unmeasured = ['commands_outstanding', 'scratch_bytes']
+    # 4. an unmeasured cost is 'unknown', never 0. (scratch_bytes was one
+    #    until the frontend began recording the scratch it allocates
+    #    (imp.scratch_used, 4b91e41): a TTIR kernel's 0 is now a count, and
+    #    is checked as one below.)
+    unmeasured = ['commands_outstanding']
     for field in unmeasured:
         v = mres[field]
         if v == 0 or v == '0':
@@ -120,6 +123,14 @@ def obs01(log):
             ok = False
         else:
             log.append(f"    {field:<22s} -> {v!r}")
+
+    if not isinstance(mres['scratch_bytes'], int):
+        log.append(f"    scratch_bytes is {mres['scratch_bytes']!r}, not the "
+                   f"frontend's count (bad)")
+        ok = False
+    else:
+        log.append(f"    scratch_bytes          -> {mres['scratch_bytes']} "
+                   f"(the frontend's count)")
 
     # 5. and a measurable one IS a number, so 'unknown' is not a blanket
     if not isinstance(rep['async_commands_issued'], int):
@@ -133,11 +144,11 @@ def obs01(log):
 
     # 6. the counter can be non-zero: a measurement that cannot move is not
     #    a measurement. Checked against assembly that does use transfers.
-    probe = os.path.join(ROOT, 'tb', 'core', 'progs', 't26_stfault.s')
+    probe = os.path.join(ROOT, 'tb', 'core', 'progs', 't35_tdesc_fpad2.s')
     if os.path.exists(probe):
         body = aot._strip_asm(open(probe).read())
         n = sum(1 for line in body if aot._ASYNC.match(line))
-        log.append(f"    the same counter on t26_stfault.s -> {n} async "
+        log.append(f"    the same counter on t35_tdesc_fpad2.s -> {n} async "
                    f"command(s)")
         if n == 0:
             log.append("    it never fires, so 0 above means nothing (bad)")

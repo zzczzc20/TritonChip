@@ -62,7 +62,7 @@ module tb_rf_bank;
         .PHYS_W(PHYS_W), .NUM_BANKS(NUM_BANKS), .BANK_W(BANK_W),
         .READ_LATENCY(1), .NUM_PORTS(NUM_PORTS)
     ) u_l1 (
-        .clk(clk), .rst_n(rst_n), .vbase(vbase),
+        .clk(clk), .rst_n(rst_n), .clear(1'b0), .vbase(vbase),
         .req_valid(req_valid), .req_rctx(req_rctx), .req_idx(req_idx),
         .req_accept(req_accept),
         // Always ready: this bench predates the handshake and its cases are
@@ -82,7 +82,7 @@ module tb_rf_bank;
         .PHYS_W(PHYS_W), .NUM_BANKS(NUM_BANKS), .BANK_W(BANK_W),
         .READ_LATENCY(2), .NUM_PORTS(NUM_PORTS)
     ) u_l2 (
-        .clk(clk), .rst_n(rst_n), .vbase(vbase),
+        .clk(clk), .rst_n(rst_n), .clear(1'b0), .vbase(vbase),
         .req_valid(req_valid), .req_rctx(req_rctx), .req_idx(req_idx),
         .req_accept(a2), .rsp_ready({NUM_PORTS{1'b1}}),
         .rsp_valid(v2), .rsp_data(d2),

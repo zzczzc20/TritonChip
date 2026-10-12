@@ -26,7 +26,7 @@ torch.compile(model)            ← 上游 Dynamo / AOTAutograd / Inductor（不
 Inductor 生成的 @triton.jit kernel + wrapper   ← 上游
    │  triton.compile(...)  ← 上游 JIT / 缓存 / 参数特化
    ▼
-Triton 后端插件 "tnca"（entry point triton.backends）    ← 我们：薄层
+Triton 后端插件（entry point triton.backends: cpu，2026-10-08 前为 tnca）    ← 我们：薄层
    compiler.py : BaseBackend，stages = ttir（上游 make_ir）→ tnca（共享 _compile_ttir）
    driver.py   : DriverBase，target=GPUTarget('tnca'), launcher → Session
    ▼
@@ -56,7 +56,7 @@ tnca.runtime.Session → RTL（core-sim / core-xpose-v1）   ← 已有
 | 组件 | 位置 | 说明 |
 |---|---|---|
 | 共享 lowering | `tnca.aot._lower_ttir`、`tnca.aot._seal` | `compile_aot` 与插件共用；重构后 R37 447 个产物与冻结基线逐字节相同 |
-| Triton 插件 | `python/tnca/triton_backend/`（entry point `triton.backends: tnca`） | compiler：TTIR 原样进入共享 lowering；driver：launcher 按存储上传/下载 torch CPU 张量，经 `Session` 执行；`libdevice` 只提供语义精确的函数 |
+| Triton 插件 | `python/tnca/triton_backend/`（entry point `triton.backends: cpu`；Inductor 以这个名字识别 CPU 的 Triton 后端，才会为 CPU 张量生成 tensor descriptor） | compiler：TTIR 原样进入共享 lowering；driver：launcher 按存储上传/下载 torch CPU 张量，经 `Session` 执行；`libdevice` 只提供语义精确的函数 |
 | Inductor 集成 | `tnca.inductor.configure()` | 全部通过上游扩展点：`cpu_backend="triton"`；为 device `cpu` 注册的 pointwise/reduction 启发式（块 ≤ 16）；单一 16×16×16 的 mm 模板配置；`persistent_reductions=False`；`compile_threads=1` |
 | 测试 | `make r38-torch` | `plugin_identity.py`（O0/O1/O2 代码段逐字节相同）、`triton_native_run.py`（R37 149 例原生 `kernel[grid]` 启动）、`torch_tests.py`（12 张图） |
 

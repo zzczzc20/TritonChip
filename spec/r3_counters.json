@@ -28,7 +28,7 @@
     "stall_exclusive": {
       "note": "Every blocked cycle is charged to exactly one of these, by the fixed priority below. Their sum equals perf_stall_total over any window. This is the group COUNT-02 means by 主stall互斥计数.",
       "priority": ["hazard", "lsu", "fpu", "mtx", "txf", "fence", "arrive",
-                   "rsv", "wb"],
+                   "rsv", "wb", "vrf", "vrfwb"],
       "perf_stall_total": {
         "event": "one per cycle where stall_front is true and something is running",
         "width": 64
@@ -41,7 +41,9 @@
       "perf_x_fence":  {"event": "a fence has not retired", "width": 64},
       "perf_x_arrive": {"event": "a barrier arrive cannot be taken", "width": 64},
       "perf_x_rsv":    {"event": "the writeback slot this instruction needs is reserved", "width": 64},
-      "perf_x_wb":     {"event": "a completion stole the writeback port", "width": 64}
+      "perf_x_wb":     {"event": "a completion stole the writeback port", "width": 64},
+      "perf_x_vrf":    {"event": "the banked register file has not returned an operand (bank conflict or read latency); zero on the behavioural file", "width": 64},
+      "perf_x_vrfwb":  {"event": "the banked register file refused the writeback this cycle (the transfer engine took the bank); zero on the behavioural file", "width": 64}
     },
     "stall_overlapping": {
       "note": "The same cycles counted per cause, WITHOUT exclusivity: a cycle blocked by both a hazard and the LSU appears in both. Listed separately because 'how many cycles did the LSU contribute to' is a real question with a different answer, and because adding these up does not give a time. COUNT-02: 重叠计数另列，不重复累计总体时间.",

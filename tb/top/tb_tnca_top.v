@@ -17,6 +17,15 @@
 //                     traffic, wrong for one that only reads special
 //                     registers -- and a program that reads no memory must
 //                     not be failed for not reading memory.
+//   +data=<file>      $readmemh image of 64-bit words (with @word-address
+//                     lines) loaded into DRAM on top of the program image,
+//                     for workloads whose tensors do not fit in it
+//   +dco_policy=<n>   TMU POLICY register before launch (rtl/nuca/tnca_tmu.v);
+//   +dco_bbits=<n> +dco_gear=<n> +dco_window=<n> +dco_ub=<n> +dco_lb=<n>
+//                     the rest of the knobs the host would set. A host write,
+//                     here done from the bench: the program under test may
+//                     also write them through the TMU window.
+//   +progress=<n>     print a line every n cycles (long runs)
 //   +needevict        additionally require that the slices missed and evicted;
 //                     for programs whose whole point is cache pressure. A test
 //                     that only touches three lines should not be asked to
@@ -45,9 +54,16 @@ module tb_tnca_top;
     parameter MSHR_W   = 3;
     parameter DRAM_LINES = 8192;      // 512 KiB
     parameter DRAM_LAT   = 20;
+    parameter DRAM_INTERVAL = 1;      // cycles per DRAM request (bandwidth)
     parameter DRAM_STALL = 1;
     parameter DRAM_OOO   = 1;
     parameter IWORDS     = 4096;
+    // The slices' geometry. The defaults are tnca_top's; the DCO bench
+    // (make dco) builds a smaller last level so its workloads thrash it.
+    parameter SETS       = 64;
+    parameter SET_W      = 6;
+    parameter WAYS       = 8;
+    parameter WAY_W      = 3;
     localparam FLIT_W    = 2 + 2 + `TNCA_NOC_PAYLOAD_W;
 
     reg clk = 1'b0, rst_n = 1'b0;
@@ -82,11 +98,13 @@ module tb_tnca_top;
 
     wire [N*64-1:0] perf_cycles, perf_issued;
     wire [N*32-1:0] perf_hit, perf_miss, perf_merge, perf_wb,
-                    perf_mshr_full, perf_hit_past_block;
+                    perf_mshr_full, perf_hit_past_block,
+                    perf_bypass, perf_evict, perf_dead_evict;
 
     tnca_top #(
         .NX(NX), .NY(NY), .NUM_RCTX(NUM_RCTX), .LINE_BITS(LINE_BITS),
-        .MSHR_W(MSHR_W)
+        .MSHR_W(MSHR_W),
+        .SETS(SETS), .SET_W(SET_W), .WAYS(WAYS), .WAY_W(WAY_W)
     ) dut (
         .clk(clk), .rst_n(rst_n),
         .launch_valid(launch_valid), .launch_pc(launch_pc),
@@ -105,13 +123,16 @@ module tb_tnca_top;
         .perf_cycles(perf_cycles), .perf_issued(perf_issued),
         .perf_hit(perf_hit), .perf_miss(perf_miss), .perf_merge(perf_merge),
         .perf_wb(perf_wb), .perf_mshr_full(perf_mshr_full),
-        .perf_hit_past_block(perf_hit_past_block)
+        .perf_hit_past_block(perf_hit_past_block),
+        .perf_bypass(perf_bypass), .perf_evict(perf_evict),
+        .perf_dead_evict(perf_dead_evict)
     );
 
     tnca_dram_model #(
         .ADDR_W(64), .LINE_BYTES(64), .LINE_BITS(LINE_BITS),
         .LINES(DRAM_LINES), .TAG_W(MSHR_W), .SRC_W(2),
-        .LATENCY(DRAM_LAT), .RANDOM_STALL(DRAM_STALL), .REORDER(DRAM_OOO)
+        .LATENCY(DRAM_LAT), .RANDOM_STALL(DRAM_STALL), .REORDER(DRAM_OOO),
+        .INTERVAL(DRAM_INTERVAL)
     ) u_dram (
         .clk(clk), .rst_n(rst_n),
         .req_valid(m_req_valid), .req_ready(m_req_ready),
@@ -190,13 +211,19 @@ module tb_tnca_top;
     // without asking the program under test to report on itself.
     //==========================================================================
     integer dset, dway, didx;
-    reg [63:0] dba, dword;
+    reg [63:0] dba, dword, dtag;
+    integer    dhome;
     reg        dfound;
 
     reg [1023:0] hexfile, dumpfile;
     integer dumpbase, dumpwords, dumpfh;
     integer maxcycles, cyc, k;
     integer tot_hit, tot_miss, tot_wb, tot_mshr_full, tot_block;
+    integer tot_byp, tot_ev, tot_dead;
+    reg [1023:0] datafile;
+    reg [63:0]   dimg [0:DRAM_LINES*8-1];
+    integer      dval;
+    integer      progress;
 
     initial begin
         remote_flits = 0; local_flits = 0;
@@ -215,6 +242,13 @@ module tb_tnca_top;
         for (k = 0; k < 64; k = k + 1)
             u_dram.preload_word(64'h8000 + k*8, k);
 
+        if ($value$plusargs("data=%s", datafile)) begin
+            for (k = 0; k < DRAM_LINES*8; k = k + 1) dimg[k] = 64'bx;
+            $readmemh(datafile, dimg);
+            for (k = 0; k < DRAM_LINES*8; k = k + 1)
+                if (^dimg[k] !== 1'bx) u_dram.preload_word(k*8, dimg[k]);
+        end
+
         launch_role_mask = $test$plusargs("allroles") ? {NUM_RCTX{1'b1}}
                                                      : {{(NUM_RCTX-1){1'b0}}, 1'b1};
         for (k = 0; k < NUM_RCTX; k = k + 1)
@@ -224,6 +258,14 @@ module tb_tnca_top;
         #1 rst_n = 1'b1;
         repeat (2) @(posedge clk);
         #1;
+        // The host's DCO configuration, before launch.
+        if ($value$plusargs("dco_policy=%d", dval)) dut.u_tmu.policy      = dval;
+        if ($value$plusargs("dco_bbits=%d", dval))  dut.u_tmu.b_bits      = dval;
+        if ($value$plusargs("dco_gear=%d", dval))   dut.u_tmu.gear_init   = dval;
+        if ($value$plusargs("dco_window=%d", dval)) dut.u_tmu.gear_window = dval;
+        if ($value$plusargs("dco_ub=%d", dval))     dut.u_tmu.gear_ub     = dval;
+        if ($value$plusargs("dco_lb=%d", dval))     dut.u_tmu.gear_lb     = dval;
+        if ($value$plusargs("dco_dlsb=%d", dval))   dut.u_tmu.d_lsb       = dval;
         launch_pc    = 64'd0;
         launch_valid = 1'b1;
         @(posedge clk);
@@ -231,9 +273,16 @@ module tb_tnca_top;
         repeat (4) @(posedge clk);
 
         cyc = 0;
+        if (!$value$plusargs("progress=%d", progress)) progress = 0;
         while (!all_idle && cyc < maxcycles) begin
             @(posedge clk);
             cyc = cyc + 1;
+            if (progress != 0 && cyc % progress == 0) begin
+                $display("progress: cycle %0d issued %0d %0d %0d %0d", cyc,
+                         perf_issued[0 +: 64], perf_issued[64 +: 64],
+                         perf_issued[128 +: 64], perf_issued[192 +: 64]);
+                $fflush;          // a log file is block-buffered otherwise
+            end
         end
 
         tot_hit = 0; tot_miss = 0; tot_wb = 0; tot_mshr_full = 0; tot_block = 0;
@@ -254,6 +303,16 @@ module tb_tnca_top;
         $display("totals: hit=%0d miss=%0d wb=%0d mshr_full=%0d hit_past_block=%0d",
                  tot_hit, tot_miss, tot_wb, tot_mshr_full, tot_block);
         $display("mesh: local_home=%0d remote_home=%0d", local_flits, remote_flits);
+        tot_byp = 0; tot_ev = 0; tot_dead = 0;
+        for (k = 0; k < N; k = k + 1) begin
+            tot_byp  = tot_byp  + perf_bypass[k*32 +: 32];
+            tot_ev   = tot_ev   + perf_evict[k*32 +: 32];
+            tot_dead = tot_dead + perf_dead_evict[k*32 +: 32];
+        end
+        $display("dco: policy=%0d bypass=%0d evict=%0d dead_evict=%0d registered=%0d tlw=%0d dead=%0d dropped=%0d",
+                 dut.u_tmu.policy, tot_byp, tot_ev, tot_dead, dut.u_tmu.stat_reg,
+                 dut.u_tmu.stat_tlw, dut.u_tmu.stat_dead, dut.u_tmu.stat_drop);
+        $display("dram: reads=%0d writes=%0d", u_dram.n_rd, u_dram.n_wr);
 
         if ($value$plusargs("dump=%s", dumpfile)) begin
             if (!$value$plusargs("dumpbase=%h", dumpbase)) dumpbase = 0;
@@ -261,39 +320,43 @@ module tb_tnca_top;
             dumpfh = $fopen(dumpfile, "w");
             for (k = 0; k < dumpwords; k = k + 1) begin
                 dba    = dumpbase + k*8;
-                dset   = (dba >> 6) & 63;
+                // A line lives only in its home slice (line[1:0] ^ line[3:2]),
+                // whose sets are indexed by the line bits above the home bits.
+                dset   = (dba >> 8) & ((1 << SET_W) - 1);
+                dhome  = ((dba >> 6) ^ (dba >> 8)) & 3;
+                dtag   = dba >> (8 + SET_W);
                 dfound = 1'b0;
                 dword  = 64'd0;
-                for (dway = 0; dway < 8; dway = dway + 1) begin
-                    didx = dset*8 + dway;
-                    if (!dfound &&
+                for (dway = 0; dway < WAYS; dway = dway + 1) begin
+                    didx = dset*WAYS + dway;
+                    if (!dfound && dhome == 0 &&
                         dut.g_tile[0].u_tile.u_slice.v_bits[didx] &&
                         (dut.g_tile[0].u_tile.u_slice.tag_mem[didx] ==
-                         dba[63:12])) begin
+                         dtag)) begin
                         dfound = 1'b1;
                         dword  = dut.g_tile[0].u_tile.u_slice.data_mem[didx]
                                  [dba[5:3]*64 +: 64];
                     end
-                    if (!dfound &&
+                    if (!dfound && dhome == 1 &&
                         dut.g_tile[1].u_tile.u_slice.v_bits[didx] &&
                         (dut.g_tile[1].u_tile.u_slice.tag_mem[didx] ==
-                         dba[63:12])) begin
+                         dtag)) begin
                         dfound = 1'b1;
                         dword  = dut.g_tile[1].u_tile.u_slice.data_mem[didx]
                                  [dba[5:3]*64 +: 64];
                     end
-                    if (!dfound &&
+                    if (!dfound && dhome == 2 &&
                         dut.g_tile[2].u_tile.u_slice.v_bits[didx] &&
                         (dut.g_tile[2].u_tile.u_slice.tag_mem[didx] ==
-                         dba[63:12])) begin
+                         dtag)) begin
                         dfound = 1'b1;
                         dword  = dut.g_tile[2].u_tile.u_slice.data_mem[didx]
                                  [dba[5:3]*64 +: 64];
                     end
-                    if (!dfound &&
+                    if (!dfound && dhome == 3 &&
                         dut.g_tile[3].u_tile.u_slice.v_bits[didx] &&
                         (dut.g_tile[3].u_tile.u_slice.tag_mem[didx] ==
-                         dba[63:12])) begin
+                         dtag)) begin
                         dfound = 1'b1;
                         dword  = dut.g_tile[3].u_tile.u_slice.data_mem[didx]
                                  [dba[5:3]*64 +: 64];

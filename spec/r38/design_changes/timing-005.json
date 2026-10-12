@@ -1,0 +1,50 @@
+{
+  "schema": "r38-design-change/1",
+  "id": "timing-005",
+  "parent_commit": "6ae7430",
+  "claims_three_layer": false,
+  "hypothesis": "The vector FPU decodes the FMA array's controls (operand form, negate, multiply-only, reduction override) from the X-stage opcode, and that decode drives ~1500 operand-mux bits across sixteen lanes in front of the FMA's first stage. Decoding it in R from the same opcode and registering it with the opcode removes the decode and most of the fan-out tree without moving a cycle.",
+  "evidence_for_hypothesis": "tnca_fpga_top post-synthesis, 6.667 ns target, after timing-003: x_func -> u_vfpu/g_fma[12].u_fma p0_res_sign_mag 7.167 ns / 28 levels, 2.3 ns of it before the multiplier's B input (x_func fan-out 185 into the operand muxes)",
+  "touched_layers": [
+    "microarch"
+  ],
+  "semantic_change": false,
+  "feature": "clock",
+  "layers": {
+    "microarch": {
+      "files": [
+        "rtl/core/tnca_vector_fpu.v",
+        "rtl/core/tnca_core.v"
+      ],
+      "change": "tnca_vector_fpu takes fpctl[4:0] = {is FP reduction, vf.mul, vf.sub|vf.fms, func==MUL, func==ADD|SUB}, decoded by the core from r_major/r_func and loaded into x_fpctl in the same R->X transfer as x_major/x_func; the unit's own case on major/func for the FMA operands is gone"
+    }
+  },
+  "compatibility": {
+    "cycles": "unchanged: R2 cycle check over the 149 R37 O2 cases, and every core program",
+    "artifacts": "unchanged",
+    "numerics": "identical by construction: fpctl is the same function of the same opcode one register earlier; unit fp32 benches and every core program"
+  },
+  "resource": {
+    "kind": "Vivado 2023.2 post-synthesis, out of context, xcu280-fsvh2892-2L-e, 6.667 ns target",
+    "module": "tnca_fpga_top",
+    "parent": {
+      "group": "core -> u_vfpu FMA stage 0",
+      "worst_ns": 7.422,
+      "worst_levels": 29
+    },
+    "change": {
+      "group": "u_vfpu -> FMA stage 0",
+      "worst_ns": 6.83,
+      "worst_levels": 27,
+      "worst_path": "x_fpctl[4] -> operand mux -> 24x24 multiplier -> alignment compare; the rest is inside the generated FMA's first stage"
+    }
+  },
+  "results": {
+    "correctness": "lint, unit, core 31/31, core-vrf 31/31, top"
+  },
+  "rollback": "revert the two files",
+  "evidence": [
+    "doc/r38_board_bringup.md"
+  ],
+  "status": "implemented"
+}

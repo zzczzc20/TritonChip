@@ -347,6 +347,11 @@ class Builder:
         return out
 
     def vselect(self, p, a, b):
+        if getattr(p, 'kind', None) != PRED:
+            # v.sel takes its condition in a predicate register; a vector
+            # here would be read as the predicate register with its number.
+            raise Diagnostic(f"vselect on a {getattr(p, 'kind', None)} condition {p!r}; "
+                             f"it takes a predicate")
         v = self._value(VECTOR, a.dtype, hint='v')
         self._emit('vselect', [v], [p, a, b])
         return v

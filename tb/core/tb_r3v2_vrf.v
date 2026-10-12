@@ -29,7 +29,11 @@ module tb_r3v2_vrf;
 
     localparam VLEN = 16, ELEN = 32, WIDTH = VLEN*ELEN;
     localparam RCTX_W = 1, PHYS_W = 7, NUM_BANKS = 4, BANK_W = 2;
-    localparam NUM_PORTS = 4;
+    // A parameter, not a localparam: the core instantiates the file with
+    // five read ports (three operands, the matrix, the transfer engine's
+    // store read), and a bench fixed at four never exercised the fifth --
+    // which is how a two-bit round-robin pointer went unnoticed (R39-00, B2).
+    parameter NUM_PORTS = 4;
 
     reg clk = 0, rst_n = 0;
     always #5 clk = ~clk;
@@ -51,7 +55,7 @@ module tb_r3v2_vrf;
     wire [NUM_PORTS*WIDTH-1:0]  a_rd, r_rd;
 
 `define VRF_PORTS(ACC, RV, RD, WOK) \
-        .clk(clk), .rst_n(rst_n), .vbase(vbase), \
+        .clk(clk), .rst_n(rst_n), .clear(1'b0), .vbase(vbase), \
         .req_valid(req_valid), .req_rctx(req_rctx), .req_idx(req_idx), \
         .req_accept(ACC), .rsp_ready(rsp_ready), \
         .rsp_valid(RV), .rsp_data(RD), \
@@ -194,19 +198,47 @@ module tb_r3v2_vrf;
             read_back(8'd4);
 
         end else if (which == 7) begin
-            // ---- fairness: four requesters, one bank -------------------
+            // ---- fairness: every requester, one bank --------------------
             //
-            // R3V2-FLOW-02. v0, v4, v8, v12 are all bank 0, so the four
-            // ports ask for the same single read port every cycle. The
-            // contract freezes the wait at (C-1)*B+A = 4 cycles.
-            do_write(8'd0,  {VLEN{1'b1}}, 32'h1000);
-            do_write(8'd4,  {VLEN{1'b1}}, 32'h2000);
-            do_write(8'd8,  {VLEN{1'b1}}, 32'h3000);
-            do_write(8'd12, {VLEN{1'b1}}, 32'h4000);
+            // R3V2-FLOW-02. v0, v4, v8, ... are all bank 0, so every port
+            // asks for the same single read port every cycle. The contract
+            // freezes the wait at (C-1)*B+A = 4 cycles for four ports; with
+            // NUM_PORTS ports every one must be served within NUM_PORTS
+            // grants.
+            for (n = 0; n < NUM_PORTS; n = n + 1)
+                do_write(4 * n, {VLEN{1'b1}}, 32'h1000 * (n + 1));
             @(negedge clk);
-            req_valid = 4'b1111;
+            req_valid = {NUM_PORTS{1'b1}};
             req_rctx  = 0;
-            req_idx   = {8'd12, 8'd8, 8'd4, 8'd0};
+            for (n = 0; n < NUM_PORTS; n = n + 1)
+                req_idx[n*8 +: 8] = 4 * n;
+            for (i = 0; i < 24; i = i + 1) begin
+                #1;
+                $display("GRANT %0d %b", cyc, a_acc);
+                @(negedge clk);
+                cyc = cyc + 1;
+            end
+            req_valid = 0;
+
+        end else if (which == 8) begin
+            // ---- fairness when two banks are served in one cycle --------
+            //
+            // R39-05: port 0 alone on bank 1 (v1), ports 1 and 3 both on
+            // bank 0 (v0, v4), all asking every cycle -- D's prefetch and
+            // the matrix, as four contexts met them. Ports 1 and 0 served in
+            // the order 1 2 3 0 used to put the pointer back on 1, and port
+            // 3 never won bank 0. It must be served within NUM_PORTS cycles.
+            do_write(8'd0, {VLEN{1'b1}}, 32'h1000);
+            do_write(8'd1, {VLEN{1'b1}}, 32'h2000);
+            do_write(8'd4, {VLEN{1'b1}}, 32'h3000);
+            @(negedge clk);
+            req_valid = 0;
+            req_valid[0] = 1'b1; req_valid[1] = 1'b1; req_valid[3] = 1'b1;
+            req_rctx  = 0;
+            req_idx   = 0;
+            req_idx[0*8 +: 8] = 8'd1;
+            req_idx[1*8 +: 8] = 8'd0;
+            req_idx[3*8 +: 8] = 8'd4;
             for (i = 0; i < 24; i = i + 1) begin
                 #1;
                 $display("GRANT %0d %b", cyc, a_acc);

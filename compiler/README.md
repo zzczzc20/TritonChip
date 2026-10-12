@@ -49,7 +49,8 @@ Entry points:
 
 - **AOT** — `tnca.aot.compile_aot(fn, signature=..., constexprs=...)`.
 - **Triton backend plugin** — `tnca.triton_backend`, registered as the
-  `triton.backends` entry point `tnca`. It serves `kernel[grid](...)` and PyTorch
+  `triton.backends` entry point `cpu` (the backend Inductor's `cpu_backend = "triton"`
+  uses). It serves `kernel[grid](...)` and PyTorch
   Inductor (`tnca.inductor.configure()`); see
   [`doc/r38_pytorch_p1plus.md`](../doc/r38_pytorch_p1plus.md).
 - **TNCA IR builders** — `kernels.py`, `gemm.py`, `pipeline.py`, `partition.py`
@@ -76,6 +77,7 @@ it cannot map raises a diagnostic naming the operation and is never skipped
 | Small N-D tensor | Packed into one vector in row-major order (`packed.py`); broadcasts and reductions permute lanes explicitly. |
 | `tl.dot` | FP16 / BF16 / FP8 → `m.mma.async` with binary32 accumulation; FP32 → exact vector FMAs (no narrowing); INT8 → FP16 MMA, exact for K ≤ 1024. |
 | Transcendentals, division | SFU approximations (≤ 2⁻²² relative) with Newton refinement where needed; each function states its accuracy (`mathlib.py`). |
+| Tensor descriptors | Rank 1–5, as Triton defines them for TMA: `tl.make_tensor_descriptor` (run-time shapes and strides), host `TensorDescriptor` arguments, `load`/`store`/`atomic_*`/`gather`/`scatter`, zero/NaN padding, signed coordinates. A box goes through the transfer engine (`t.ld.async`/`t.st.async`) when the result can live in a window, else through masked LSU accesses (`descriptors.py`). |
 | 64-bit integers | Exact, as pairs of 32-bit lanes (`wide.py`) for 1-D blocks and one-row 2-D blocks. A 64-bit offset reaching a pointer is narrowed to a 32-bit gather index **with a check** that traps (`TRAP_USER 0xA5564`) instead of wrapping. |
 | `tl.device_assert` | A real check: any failing active lane raises `TRAP_USER 0xA55E7`. |
 | `tt.reduce` / `tt.scan` | ISA §8.7 reductions; multi-operand folds (argmax) and scans unrolled across lanes; NaN-propagating `maximumf`/`minimumf` built from specified behaviour. |

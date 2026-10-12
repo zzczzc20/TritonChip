@@ -27,6 +27,14 @@ PYTHONPATH=python:compiler/python ~/tritonenv/bin/python tutorial/examples/01_he
 Installed as a package (`make r2-package` and `pip install` the wheel),
 you do not need `PYTHONPATH` — that line is for working in a checkout.
 
+[10](10_torch_compile.md) needs PyTorch at its locked version in a separate
+environment; [11](11_running_on_the_u280.md) runs anywhere for its simulated
+half and needs the host with the card for the rest. Each page says how.
+
+*Re-run on 2026-10-09 against the RTL of that day (r38-dco): word counts,
+cache keys and the GEMM's cycles changed since the pages were first written,
+and the pages now show what the scripts print today.*
+
 ## The pages
 
 | | what it covers | example |
@@ -39,7 +47,9 @@ you do not need `PYTHONPATH` — that line is for working in a checkout.
 | [06](06_errors_and_faults.md) | what is refused, what faults, and what you are told | `06_errors_and_faults.py` |
 | [07](07_backends_and_cache.md) | profiles vs backends, and what is in the cache key | `07_backends_and_cache.py` |
 | [08](08_triton_gemm.md) | tiled `tl.dot`, runtime K loops, masked tails, and O0/O1/O2 | `08_triton_gemm.py` |
-| [09](09_tensor_descriptors.md) | host descriptors, bounds and descriptor GEMM through AOT | `09_tensor_descriptors.py` |
+| [09](09_tensor_descriptors.md) | host descriptors, bounds and descriptor GEMM through AOT; rank 1-5, padding, stores | `09_tensor_descriptors.py` |
+| [10](10_torch_compile.md) | PyTorch: `torch.compile` -> Inductor -> TNCA, and how a host fallback is reported | `10_torch_compile.py` |
+| [11](11_running_on_the_u280.md) | one artifact on the simulator, the board's twin and the U280, cycle for cycle | `11_on_the_board.py` |
 
 ## The three ideas worth having before you read on
 

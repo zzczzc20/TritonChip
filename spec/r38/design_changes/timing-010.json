@@ -1,0 +1,49 @@
+{
+  "schema": "r38-design-change/1",
+  "id": "timing-010",
+  "parent_commit": "d8efc73",
+  "claims_three_layer": false,
+  "hypothesis": "On the banked register file, the operand fetch waits for the instruction's whole stall decision (stall_other: every scoreboard lookup, every busy unit, the writeback reservation) before asking the banks, which puts that decision in series with the bank arbiters: 6.2 ns post-synthesis and 77 % routing, the kind of path that grows most in place and route. Only a vector source whose producer is still in flight can make a fetched value stale -- only an older instruction can write the register, and every older writer is in the scoreboard -- so gating the fetch on the vector-source hazards alone is safe, takes the stall decision off the path, and lets the fetch overlap the other stalls.",
+  "evidence_for_hypothesis": "tnca_fpga_top post-synthesis, 6.667 ns target, after timing-008: r_major -> g_vrf_banked.u_vrf/g_bank[2].u_bank/s1_byp_mask 6.166 ns / 25 levels, route 76.6 %: R-stage decode -> stall_other (12 levels) -> of_want -> bank arbitration. The routed worst path of the 75 MHz image (x_pm_idx -> w_vdata) was 80 % routing at 1.6x its post-synthesis delay.",
+  "touched_layers": [
+    "microarch"
+  ],
+  "semantic_change": false,
+  "feature": "clock",
+  "layers": {
+    "microarch": {
+      "files": [
+        "rtl/core/tnca_core.v"
+      ],
+      "change": "of_enable = r_valid && !r_vsrc_haz, r_vsrc_haz = hz_va | hz_vb | hz_vc (was r_valid && !stall_other); the instruction still leaves R only when nothing stalls it, and vrf_stall stays last in the stall attribution chain"
+    }
+  },
+  "compatibility": {
+    "cycles": "core-sim (the frozen R2 baseline's profile, behavioural file): unchanged, R2 cycle check 149/149 two runs. core-vrf-sync-v1 (banked file, the board's profile): 5 of 32 core programs faster by 1-14 cycles (t29_vrfbank 793 -> 779), none slower, total -0.03 %. The board-vs-simulation reference (ArchBench tiny on fpga-u50-sim) must be regenerated for an image with this change",
+    "numerics": "unchanged: core, core-vrf, core-slowmem, top; r3-model/plan/rf, r3v2-count; r38-profiler cases 1-5 on both profiles",
+    "artifacts": "unchanged"
+  },
+  "resource": {
+    "kind": "Vivado 2023.2 post-synthesis, out of context, xcu280-fsvh2892-2L-e, 6.667 ns target",
+    "module": "tnca_fpga_top",
+    "parent": {
+      "group": "core -> VRF bank",
+      "worst_ns": 6.166,
+      "worst_levels": 25,
+      "route_pct": 76.6
+    },
+    "change": {
+      "group": "core -> VRF bank",
+      "worst_ns_below": 5.37,
+      "note": "no longer among the groups above 5.37 ns; device worst unchanged at 6.837 ns (the vector FMA's first generated stage), WNS at 150 MHz -0.188 ns"
+    }
+  },
+  "results": {
+    "correctness": "lint, core, core-vrf, core-slowmem, top: 103 PASS; r3-model-tests, r3-plan, r3-rf-tests, r3v2-count PASS; R2 cycle check 149/149"
+  },
+  "rollback": "revert the of_enable line (and r_vsrc_haz) in rtl/core/tnca_core.v",
+  "evidence": [
+    "doc/r38_board_bringup.md"
+  ],
+  "status": "implemented"
+}

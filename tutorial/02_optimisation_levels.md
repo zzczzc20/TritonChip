@@ -26,10 +26,10 @@ and every comparison against it would be measuring two changes at once.
 
 ```text
 mode            words  cycles   vs B0  code == B0  correct
-B0 (default)       30     226      +0  yes         yes
-O0                 30     226      +0  yes         yes
-O1                 24     204     +22  no          yes
-O2                 24     204     +22  no          yes
+B0 (default)       31     226      +0  yes         yes
+O0                 31     226      +0  yes         yes
+O1                 25     204     +22  no          yes
+O2                 25     204     +22  no          yes
 ```
 
 The kernel is a masked AXPY with a real tail — `n=17` against `BLOCK=16`
@@ -38,8 +38,9 @@ over a grid of two, so the second program has one active lane.
 ## The thing worth internalising
 
 **Six fewer instructions bought twenty-two fewer cycles here. On the
-GEMM in [05](05_matrix_multiply.md), seventy-three fewer instructions
-buy about twenty-four fewer cycles.**
+GEMM in [05](05_matrix_multiply.md), sixty-four fewer instructions buy
+seven fewer cycles** (156 words and 1206 cycles at O0, 92 and 1199 at
+O2, measured by compiling that example at both levels).
 
 Those are not contradictory; they are the same fact seen twice. An
 instruction removed from a cycle where the core was *already stalled* —

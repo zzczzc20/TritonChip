@@ -246,9 +246,9 @@ def flow03(log, ctx):
                f"{line[-1].strip() if line else 'no result'}")
     ok &= r.returncode == 0
 
-    for prog in ('t13_share', 't17_descfault', 't26_stfault'):
+    for prog in ('t13_share', 't17_descfault', 't35_tdesc_fpad2'):
         res = core_run(prog, ctx['args'].get(prog, []))
-        log.append(f"    {prog:<14s} on the candidate: "
+        log.append(f"    {prog:<15s} on the candidate: "
                    f"{'PASS' if res['passed'] else 'FAIL'}")
         ok &= res['passed']
     return ok, 'reuse, flush, a late return, and ownership intact'
@@ -273,7 +273,7 @@ def main():
            # produced three failures that were mine, not the design's.
            'args': {'t13_share': ['+allroles', '+aliasvrf'],
                     't17_descfault': ['+expectfault=04'],
-                    't26_stfault': ['+expectfault=01']}}
+                    't35_tdesc_fpad2': ['+expectfault=04']}}
     builds = [(VRF_BENCH, ctx['vrf'], ()),
               (OC_BENCH, ctx['oc1'],
                ('-P', 'tb_operand_collector.RF_LAT=1')),

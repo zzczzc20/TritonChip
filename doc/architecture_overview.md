@@ -36,7 +36,7 @@ What exists today is a verified single-core implementation of that core, plus th
 | Core RTL | One in-order core: 16-lane × 32-bit vector unit, 16×16 FP32-accumulating matrix unit, tensor transfer engine, mbarriers, atomics, SFU, 2 role contexts. Verilog-2005, simulated with Icarus Verilog. |
 | Multi-tile RTL | A 2×2 mesh with NUCA slices and a NoC (`rtl/tnca_top.v`). It is exercised by RTL tests only; the runtime does not use it. |
 | ISA | TNCA-ISA v0.1: fixed 64-bit instructions, 20 major groups, 169 instructions, one machine-readable source. |
-| FPGA | The single core (`core-vrf-sync-v1`) runs on an Alveo U50 and, since 2026-10-08, an Alveo U280. The kernel clock is 150 MHz, divided by 4 to a 37.5 MHz device clock. 512 KiB of on-chip memory. |
+| FPGA | The single core (`core-vrf-sync-v1`) runs on an Alveo U50 and, since 2026-10-08, an Alveo U280. The kernel clock is 150 MHz. The loaded images divide it by 4, for a 37.5 MHz device clock. Builds from the R38 timing work divide by 3, for 50 MHz ([`r38_board_bringup.md`](r38_board_bringup.md) §6). 512 KiB of on-chip memory. |
 | Software | Triton → TNCA compiler; PyTorch `torch.compile` → Inductor → Triton → TNCA, with no host fallback on any tiny- or small-tier ArchBench point. |
 | Measured | ArchBench tiny (27 points) and small (25 points) pass on the U280. The board's cycle counts equal the RTL simulator's, launch by launch, on every tiny-tier point. The GB10 GPU passes all 76 points under the same protocol. |
 
@@ -55,11 +55,11 @@ The design draft ([`design/tnca_v1_architecture_draft.md`](design/tnca_v1_archit
 | Matrix unit (§6) | M16×N16, K16/32/64, 256 MAC/cycle per tile | M16×N16, K = 16/32/64, **16 MAC/cycle** (1/16 of the reference). FP32 accumulation, one rounding per step. |
 | Vector RF (§5) | 32 KiB per tile | **8 KiB:** 128 physical registers × 16 lanes × 32 bits. Optional 4-bank synchronous organisation with an operand collector (`core-vrf-sync-v1`). |
 | Accumulator RF (§5.1) | 16 KiB per tile | **16 KiB:** 16 slots × 16 × 16 × FP32. |
-| TensorMap (§7) | 256-byte descriptor; semantics separated from hints | 256-byte descriptor; rank 1–2 only; no hint fields act yet. |
-| NUCA cache (§8) | 512 KiB/slice, 8 MiB, 96 MSHRs; TensorMap-aware replacement and bypass | 2×2 system only: 32 KiB/slice (64 sets × 8 ways × 64 B), 8 MSHRs. No TensorMap metadata, dead-block prediction, bypass or admission control. |
+| TensorMap (§7) | 256-byte descriptor; semantics separated from hints | 256-byte descriptor; **rank 1–5** with signed coordinates and zero/NaN/fault padding — the TMA contract Triton exposes on NVIDIA GPUs, with no alignment requirement on base or strides; no hint fields act yet. |
+| NUCA cache (§8) | 512 KiB/slice, 8 MiB, 96 MSHRs; TensorMap-aware replacement and bypass | 2×2 system only: 32 KiB/slice (64 sets × 8 ways × 64 B), 8 MSHRs. DCO ([`dco.md`](dco.md)): a Tensor Management Unit with compiler-registered nAcc, dead-block prediction, anti-thrashing and LRU replacement, dynamic, tensor and gqa bypass. Each is selected per run; the default stays round-robin. No admission control or MSHR-aware arbitration. |
 | Transaction control (§9) | Credits, MSHR-aware arbitration, admission | Not implemented. |
 | Async protocol (§13) | mbarrier with ready/free events | **Implemented:** 32 mbarriers per core, counting arrivals and operations separately; the matrix unit signals result-ready and source-free separately. |
-| Clock (§3.1) | 1 GHz modelling assumption | Not a physical design: 37.5 MHz on FPGA. Synthesis numbers are structural proxies, not PPA (roadmap §1.2). |
+| Clock (§3.1) | 1 GHz modelling assumption | Not a physical design: 37.5 MHz on the loaded FPGA image, 50 MHz for new builds. Synthesis numbers are structural proxies, not PPA (roadmap §1.2). |
 
 The draft's own staging (§21) placed "prove function on one core" first and "Tensor DMA, RF windows, matrix" second. Both are done on a single core. Stage 3, a 2×2 mesh with reliable NUCA, exists in RTL but not in the runtime. Stages 4–5 (the cache-policy ideas and the 4×4 scale-up) have not started.
 
@@ -92,7 +92,7 @@ A launch names a PC, an argument block, a role mask and the program id/count. A 
 
 ### 3.2 The multi-tile system (RTL only)
 
-`rtl/tnca_top.v` instantiates an NX×NY mesh (default 2×2). Each tile (`rtl/tile/tnca_tile.v`) has a core, a NUCA slice (`rtl/nuca/tnca_nuca_slice.v`) and network interfaces. The NoC is in `rtl/noc/` (mesh, routers, core and slice NIs), with a DRAM model behind a memory arbiter. The `system-2x2` profile describes it, with the SFU disabled. CI builds and runs it (`make top`). It is the starting point for the multi-core work in §13. Neither the runtime nor ArchBench targets it.
+`rtl/tnca_top.v` instantiates an NX×NY mesh (default 2×2). Each tile (`rtl/tile/tnca_tile.v`) has a core, a NUCA slice (`rtl/nuca/tnca_nuca_slice.v`) and network interfaces. The NoC is in `rtl/noc/` (mesh, routers, core and slice NIs), with a DRAM model behind a memory arbiter. One Tensor Management Unit (`rtl/nuca/tnca_tmu.v`) serves all slices: it holds the tensor metadata and dead-tile FIFO that DCO's replacement and bypass policies read, and software reaches it through an uncached register window at `0x7FFF0000` ([`dco.md`](dco.md)). The `system-2x2` profile describes it, with the SFU disabled. CI builds and runs it (`make top`). It is the starting point for the multi-core work in §13. Neither the runtime nor ArchBench targets it.
 
 ## 4. Core microarchitecture
 
@@ -134,7 +134,7 @@ A launch names a PC, an argument block, a role mask and the program id/count. A 
 | Vector FPU | 16 lanes, 2-cycle latency; lane reductions take log2(16) = 4 steps on the FMA array |
 | SFU | One shared slice computing exp2, log2, reciprocal and rsqrt; one lane per cycle, 6-cycle latency, ≤ 2⁻²² relative error, subnormals flushed. A 16-lane op occupies it for VLEN + 8 cycles. Generated from XLS (`rtl/gen/`). |
 | Matrix | `C16×16 += A·B`, K = 16/32/64, 16 MACs per cycle (one k step per 16 cycles); separate result-ready and source-free completion events |
-| Tensor transfer engine | Loads rank-1/2 tiles described by a descriptor snapshot into RF windows, asynchronously, completing on an mbarrier. Rows must be whole 8-byte units, or a descriptor fault is raised. `t.st.async` (tensor store) is not implemented. `core-xpose-v1` adds a transposed window write for 16-bit elements (§7). |
+| Tensor transfer engine | `t.ld.async` / `t.st.async` of a rank-1–5 box between memory and an RF window, asynchronously, one completion per command on an mbarrier. Coordinates are five consecutive scalar registers, signed and of any alignment; base and strides need no alignment either. A misaligned row is assembled from two memory words per 8-byte unit. Out-of-bounds elements are filled on a load (zero, or the dtype's NaN) and not written by a store (byte enables). The store reads the window through its own VRF port. Box rows must be whole 8-byte units, block dimensions 1–256. `core-xpose-v1` adds a transposed window write for 16-bit elements (§7). |
 | LSU | Ordinary loads, stores, gathers and scatters, coalesced onto 64-bit words; up to 8 beats outstanding, completed out of order by tag; one instruction in flight |
 | Memory mux | Merges the LSU and the transfer engine onto the core's single 64-bit data port; the transfer engine wins |
 | Banked VRF (option) | 4 banks, each 1R1W with synchronous read; an operand collector with 4 entries × 3 sources (`core-vrf-sync-v1`, the board profile) |
@@ -388,8 +388,10 @@ ArchBench compares platforms on the same PyTorch programs, each compiled by its 
 3. **Host round trips.** Every launch uploads its argument storages and downloads them back, one 64-bit word per register access. On the board this host time dwarfs device time: tiny LLaMA decode spends 1.9 s in transfers for 0.094 s of device time.
 4. **Throughput.** Single issue, one 8 B/cycle port, 16 MAC/cycle matrix, a one-lane SFU, and no instruction scheduling in the compiler. η is about 1 % on models.
 5. **Narrow tiles.** At most 16 elements per block dimension (compiler limit, [`compiler_overview.md`](compiler_overview.md) §14). This caps matrix-unit use.
-6. **Transfer engine.** Rank 1–2 descriptors only; no tensor store; no byte-granular window writes.
-7. **Not a physical design.** FPGA timing at 37.5 MHz and yosys structural proxies. No ASIC PPA, no power measurement yet.
+6. **Transfer engine.** A box row must be a whole number of 8-byte units (the compiler reads other boxes through the LSU), and a misaligned row costs two memory reads per unit. There is no transposed store, no TMA-style gather4/multicast, and no reduce-in-memory (descriptor atomics are per-element LSU atomics).
+7. **Not a physical design.**
+   - FPGA timing: the loaded image runs at 37.5 MHz. The R38 timing work makes 50 MHz the default for new builds; this is estimated out of context and not yet linked.
+   - Otherwise there are only yosys structural proxies: no ASIC PPA, and no power measurement yet.
 8. **Documentation drift.**
    - ISA text: atomics and register classes marked reserved; vector-register base.
    - `spec/r2_transport_v1.json` lacks op 7.
@@ -401,12 +403,26 @@ Ordered by what the R38 plan needs first. Each item names the decision or eviden
 
 ### 13.1 Close Stage 1 and record the board
 
+- **Rebuild the board image for the rank-5 transfer engine. Done, 2026-10-09.** The U280 now runs a 100 MHz undivided image of r38-dco `8d8e4e9`, which has the rank-5 engine and `t.st.async` (`evidence/r38/u280_100mhz/`). The image loaded on 2026-10-08 executed rank 1–2 only and must not run descriptor kernels; it is no longer loaded. On the new image, through `fpga-u280`:
+  - `tools/r38/tdesc_tests.py` passes 10/10, including rank-3 transfers both ways and the rank-5 zero fill;
+  - `tools/r38/torch_tests.py` with `TNCA_TENSOR_DESCRIPTORS=1` passes 24/24 (R39-00).
+
 - **Record the board as evidence.**
   - The U280 results (B1–B6) are in the runbook (§5 there) and in `doc/r38_stage1_status.md`.
   - Promote the `fpga-board` claim in the evidence registry from `documented`, using the Stage 2 levels.
   - Record per-kernel utilisation from the U280 link reports.
 - **Finish the open Stage 1 items:** S1-05 item 7 (degraded RTL builds), S1-08 ablations, S1-09 L2 promotion run, S1-11 related work.
 - **Fix the drift listed in §12.8.** Bump the transport spec to 1.1 with op 7, and revise the ISA text to v0.2.
+
+### 13.1a The board clock
+
+The first timing pass is done ([`r38_board_bringup.md`](r38_board_bringup.md) §6).
+
+- **What changed:** the matrix unit's accumulate loop is cut. The FMA is generated by XLS, and the latency-2 instance is a drop-in. The tensor engine's window check is precomputed when the descriptor loads.
+- **Result:** with cycle counts unchanged, new builds default to 50 MHz.
+- **Next:**
+  - Link once at /3 to confirm.
+  - Then decide on `FP_LAT=3`, which is what 75 MHz needs. It is a cycle change, so it means a re-frozen baseline and a design-change record.
 
 ### 13.2 Memory: the next hardware decision
 
@@ -435,7 +451,7 @@ The counters say where to start. Each change below is an R38 cross-layer case: t
 ### 13.5 Toward the design: multiple cores and the cache
 
 - Bring the 2×2 system into the runtime: grid programs distributed across tiles, and per-tile counters.
-- Then the draft's Stage 4 cache ideas, one at a time with an ablation each: TensorMap metadata to the NUCA, use-complete and dead hints, coordinated replacement/bypass, MSHR-aware arbitration, request admission.
+- The draft's Stage 4 cache ideas, one at a time with an ablation each. TensorMap metadata to the NUCA, dead hints and coordinated replacement/bypass are now in, as DCO ([`dco.md`](dco.md); measured there per policy on the 2×2 RTL). What remains is MSHR-aware arbitration and request admission. The DCO results also need a faster system simulator, since the 2×2 RTL runs at about 300 cycles/s under iverilog, and a full-size last level.
 - A 4×4 configuration needs the parameterisation fixed first (audit F05).
 
 ### 13.6 Physical evidence
@@ -450,6 +466,7 @@ The counters say where to start. Each change below is an R38 cross-layer case: t
 | Core | `rtl/core/tnca_core.v` and units in `rtl/core/` |
 | Device top | `rtl/tnca_shell.v` |
 | Multi-tile system | `rtl/tnca_top.v`, `rtl/tile/`, `rtl/nuca/`, `rtl/noc/` |
+| DCO (cache orchestration) | `rtl/nuca/tnca_tmu.v`, `rtl/nuca/tnca_nuca_slice.v`, `compiler/python/tnca_cc/dco.py`, `tools/r38/dco_bench.py`; [`dco.md`](dco.md) |
 | Generated datapaths | `rtl/gen/` (from `xls/`) |
 | FPGA | `rtl/fpga/`, `rtl/board/`, `flow/fpga/` |
 | Benches | `tb/` (`tb/device/tnca_device.v` is the simulator device behind the runtime) |

@@ -519,7 +519,11 @@ def main():
                          'as N/A. Use it wherever the result will be read '
                          'as evidence that hardware was tested')
     ap.add_argument('--json')
+    ap.add_argument('--profile', default=PROFILE,
+                    help='the simulated machine the suite runs against '
+                         '(R39-05: core-vrf-sync-v4, four Role Contexts)')
     args = ap.parse_args()
+    globals()['PROFILE'] = args.profile
     # Said here rather than three frames down, so that a typo in a path is
     # a typo in a path and not a board that could not be reached. The two
     # are reported the same way otherwise, and only one of them is the

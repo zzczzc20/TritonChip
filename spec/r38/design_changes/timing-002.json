@@ -1,0 +1,56 @@
+{
+  "schema": "r38-design-change/1",
+  "id": "timing-002",
+  "parent_commit": "b104721",
+  "claims_three_layer": false,
+  "hypothesis": "After timing-001 the device's worst path is the matrix unit's A operand: the vector file's block-RAM read, the element select and the widening share a cycle with the FMA's first stage. Registering the MAC operands after the widening takes that path apart at the cost of one cycle per m.mma command, which the accumulate interleave (16 rows) absorbs.",
+  "evidence_for_hypothesis": "tnca_fpga_top, Vivado 2023.2 post-synthesis out of context at 13.333 ns (U280 part): worst 10.188 ns / 40 levels, 2 672 endpoints in one group g_vrf_banked.u_bank -> u_mtx/g_mac.u_mac/u_fma (flow/synth/vivado_ooc.sh + path_groups.py)",
+  "touched_layers": [
+    "microarch"
+  ],
+  "semantic_change": false,
+  "feature": "clock",
+  "layers": {
+    "microarch": {
+      "files": [
+        "rtl/core/tnca_fpu_multi.v",
+        "rtl/core/tnca_matrix.v",
+        "rtl/core/tnca_acc_rf.v",
+        "flow/synth/vivado_ooc.sh",
+        "flow/synth/vivado_ooc_timing.tcl",
+        "flow/synth/path_groups.py"
+      ],
+      "change": "tnca_fpu_multi IN_REG: a register between the widening and the FMA; tnca_matrix OPND_REG (default 1) uses it and lengthens its result-tag pipeline and drain to PIPE = FMA_LAT + OPND_REG. The OOC flow now writes every path near failing as CSV, groups it by module pair, and keeps a checkpoint."
+    }
+  },
+  "compatibility": {
+    "cycles": "+1 cycle per m.mma command at the end of its dependency chain: 14 of 149 R37 O2 cases move by +1 to +4 cycles (spec/r38/baseline_cycles.json, amendment 3); all 149 pass numerically",
+    "artifacts": "unchanged (no compiler, target or ISA change)",
+    "board": "the board's elaboration (core-vrf-sync-v1) changes with the core; a board image built after this runs the same cycles as its simulation, as before"
+  },
+  "resource": {
+    "kind": "Vivado 2023.2 post-synthesis, out of context, xcu280-fsvh2892-2L-e, 13.333 ns target",
+    "module": "tnca_fpga_top",
+    "parent": {
+      "worst_ns": 10.188,
+      "worst_levels": 40,
+      "group": "VRF bank -> matrix MAC FMA stage 0"
+    },
+    "change": {
+      "worst_ns": 9.298,
+      "worst_levels": 37,
+      "group": "x_pm_idx -> w_sdata: the VALU's single-cycle masked integer reduction into scalar writeback (56 endpoints)",
+      "registers_added": 2000
+    }
+  },
+  "results": {
+    "first_link_at_75MHz": "started 2026-10-08 23:58 HKT with DEV_DIV = 2 from this tree; the routed result decides whether the reduction must be pipelined too",
+    "correctness": "unit, core 31/31, core-vrf 31/31, r38-xpose-rtl, top, e2e; R37 O2 149/149"
+  },
+  "rollback": "OPND_REG = 0 restores the previous matrix timing and cycles",
+  "evidence": [
+    "doc/r38_board_bringup.md",
+    "flow/synth/path_groups.py"
+  ],
+  "status": "implemented"
+}

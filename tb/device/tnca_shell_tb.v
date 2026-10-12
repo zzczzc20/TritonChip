@@ -31,6 +31,15 @@ module tnca_shell_tb;
     parameter RANDOM_STALL   = 0;
     parameter MEM_REORDER    = 0;
     parameter USE_BANKED_VRF = 0;
+    parameter VRF_BYPASS     = 0;
+    parameter FE_NOBUBBLE    = 0;
+    parameter VRF_PREFETCH   = 0;
+    parameter RCTX_SWITCH    = 0;
+    parameter LSU_INFLIGHT   = 1;
+    parameter FPU_OVERLAP    = 0;
+    parameter RSLICE         = 0;
+    parameter RPAIR          = 0;
+    parameter MTX_ABUF       = 0;
     parameter WORDS          = 4096;
     parameter NUM_RCTX       = 2;
     parameter RCTX_W         = 1;
@@ -60,6 +69,7 @@ module tnca_shell_tb;
     reg  [3:0]  cmd_op = CMD_NOP;
     reg  [63:0] cmd_pc = 64'd0, cmd_arg_base = 64'd0;
     reg  [NUM_RCTX-1:0] cmd_role_mask = 1;
+    reg  [3:0]          cmd_slice = 0;
     reg  [31:0] px = 0, py = 0, pz = 0, nx = 1, ny = 1, nz = 1;
     reg  [63:0] cmd_deadline = 64'd2000000;
     wire        cmd_ready, done_valid, busy, core_idle;
@@ -80,12 +90,16 @@ module tnca_shell_tb;
 
     tnca_shell #(
         .NUM_RCTX(NUM_RCTX), .RCTX_W(RCTX_W), .LSU_TAG_W(LSU_TAG_W),
-        .USE_BANKED_VRF(USE_BANKED_VRF)
+        .USE_BANKED_VRF(USE_BANKED_VRF),
+        .VRF_BYPASS(VRF_BYPASS), .FE_NOBUBBLE(FE_NOBUBBLE),
+        .VRF_PREFETCH(VRF_PREFETCH), .RCTX_SWITCH(RCTX_SWITCH),
+        .LSU_INFLIGHT(LSU_INFLIGHT), .FPU_OVERLAP(FPU_OVERLAP), .RSLICE(RSLICE),
+        .RPAIR(RPAIR), .MTX_ABUF(MTX_ABUF)
     ) dut (
         .clk(clk), .rst_n(rst_n),
         .cmd_valid(cmd_valid), .cmd_ready(cmd_ready), .cmd_op(cmd_op),
         .cmd_pc(cmd_pc), .cmd_arg_base(cmd_arg_base),
-        .cmd_role_mask(cmd_role_mask),
+        .cmd_role_mask(cmd_role_mask), .cmd_slice(cmd_slice),
         .cmd_pid_x(px), .cmd_pid_y(py), .cmd_pid_z(pz),
         .cmd_npid_x(nx), .cmd_npid_y(ny), .cmd_npid_z(nz),
         .cmd_deadline(cmd_deadline),

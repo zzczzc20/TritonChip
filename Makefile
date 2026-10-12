@@ -1340,6 +1340,10 @@ r38-baseline: $(R2_DATA_STAMP) | dirs
 r38-baseline-check: $(R2_DATA_STAMP) | dirs
 	@$(TRITON_PYTHON) tools/r38/baseline.py --check --source $(TILEBENCH_SOURCE)
 
+.PHONY: r40-baseline-check
+r40-baseline-check: $(R2_DATA_STAMP) | dirs
+	@TNCA_BANK_ALLOC=0 $(TRITON_PYTHON) tools/r38/baseline.py --check --source $(TILEBENCH_SOURCE) --reference spec/r40/b39/core_sim_cycles.json
+
 r38-profiler: $(R2_DATA_STAMP) | dirs
 	@$(TRITON_PYTHON) tools/r38/profiler_tests.py
 

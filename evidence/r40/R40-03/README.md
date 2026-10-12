@@ -97,3 +97,13 @@ performance measurements. Wide 64/128 suites pass 12/12 each, compiler
 unit checks 74/74. See bank_*.log and bank_off/on.json.
 The off/on checks are included in make r40-tiles; the option stays off
 by default and R40-03 remains not accepted.
+
+CI cycle contract migration: R38's historical profile hash no longer
+matches the frozen B39 capability configuration. CI run 38139803505
+completed two full 149-case numerical runs; only that hash check failed,
+with every original cycle value exact. R40 now selects a separate reference
+(spec/r40/b39/core_sim_cycles.json), pinning the profile hash computed from
+frozen be877793 sources and retaining all 149 R38 values unchanged. The
+historical R38 file/check remains available. Any later capability/config
+change, nondeterminism or cycle difference still fails. See
+ci_b39_profile_migration.log. The two per-case reports are retained by CI.

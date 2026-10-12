@@ -125,3 +125,11 @@ within each dot. See gemm_k32_n16.log and gemm_k32_n32.log. Default B39
 artifacts still match 447/447 (k32_default_contract447.log). BF16 reruns
 are pending; K64, wider K32 combinations and frozen speed thresholds
 remain open and are not enabled as public GEMM configurations.
+
+2026-10-12 BF16 K32 validation: 16x16x32 and 16x32x32 both pass
+4/4 native fullgraph mm/addmm cases, with zero launch transfers and
+actual K32 assembly bound to the executed artifact hash. Preserve the
+N32 first attempt (600-second host wait) and the successful rerun
+(TNCA_HOST_TIMEOUT=172800, unchanged device cycle deadline). These
+results close dtype correctness for these two tiles; K64 and frozen
+performance thresholds remain pending.

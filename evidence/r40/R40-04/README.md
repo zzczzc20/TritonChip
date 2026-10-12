@@ -54,3 +54,11 @@ selection through local RAM write enable; follow-up pipelining is pending
 functional validation and a new timing/CDC implementation.
 Standalone hardware export also passes 3/3 after declaring the optional
 AXI dependencies (export_axi_dependencies.log).
+
+Local RAM pipeline checkpoint: 49/49 bridge cases (seven geometries),
+13/13 semantic mutations detected including queued-tag and FIFO-pop
+mutations, 8/8 FPGA wrapper tests and 4/4 representative native device
+cases. Validation used ~/tritonchip-r40-ci on gx10-6646. Pipeline defaults
+to zero; explicit image --local-pipeline requires an HBM burst bridge.
+See localpipe_*.log. This adds local request latency; no speedup, timing
+or bandwidth acceptance is claimed. New 100MHz implementation pending.

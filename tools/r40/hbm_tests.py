@@ -62,6 +62,8 @@ BRIDGE_BUILDS = {
     # the geometry the bandwidth sweep chose (doc/r40_hbm.md sec 6)
     'line8w': (BRIDGE_LB, ['-DBRIDGE_LB=8', '-DLB_SLOTS=16', '-DLB_WAIT=32', '-DLB_PF=1', '-DBR_OUT=16']),
     'one16': (BRIDGE, ['-DBR_OUT=16']),
+    'line8w-local-pipe': (BRIDGE_LB, ['-DBRIDGE_LB=8', '-DLB_SLOTS=16',
+        '-DLB_WAIT=32', '-DLB_PF=1', '-DBR_OUT=16', '-DLB_LOCAL_PIPE=1']),
 }
 
 # name -> plusargs. Latencies are the slave's, from acceptance of a channel to
@@ -110,6 +112,14 @@ MUTATIONS = [
     ('lb-amo-keeps-line', 'line8', [("                        if (lb_v[i] && lb_line[i] == a_line) "
                                      "lb_v[i] <= 1'b0;", '                        ;')], 'fast',
      'an atomic leaves its line buffered with the old value'),
+    ('local-pipe-tag', 'line8w-local-pipe',
+     [('assign l_req_tag   = LOCAL_PIPE ? h_tag : req_tag;',
+       'assign l_req_tag   = req_tag;')], 'ooo-bp',
+     'a queued local request uses the live input tag'),
+    ('local-pipe-pop', 'line8w-local-pipe',
+     [('wire f_pop = acc || (LOCAL_PIPE && l_req_valid && l_req_ready);',
+       'wire f_pop = acc;')], 'fast',
+     'a completed local request is never removed from the FIFO'),
 ]
 
 HBM_PROFILE = 'core-vrf-sync-v5/hbm'
@@ -250,6 +260,7 @@ elif which == 'capacity':
 
 
 LINE8 = 'AXI_LINE=8'          # the burst mechanism, as an RTL override of the /hbm bench
+LOCAL_PIPE = 'AXI_LINE=8,AXI_LB_N=16,AXI_WAIT_N=32,AXI_OUT_N=16,AXI_LOCAL_PIPE=1'
 
 
 def _child(which, plusargs='', timeout=7200, rtl=''):
@@ -315,6 +326,8 @@ def group_device():
     ok, tail = _prepare()
     if ok:
         ok, tail = _prepare(LINE8)
+    if ok:
+        ok, tail = _prepare(LOCAL_PIPE)
     if not ok:
         checks.append(dict(name='device:prepare', ok=False, detail=f'the /hbm bench does not build: {tail[0]}'))
         print(f'  FAIL  device:prepare  {tail[0]}', flush=True)
@@ -331,6 +344,11 @@ def group_device():
             ADVERSE, only=['storage', 'copies', 'module', 'compile_graphs', 'compile_views'], rtl=LINE8)),
         ('line8-capacity', lambda: _child('capacity', rtl=LINE8)),
         ('line8-samples-adverse', lambda: _child('samples', ADVERSE, rtl=LINE8)),
+        ('local-pipe-device-tests-adverse', lambda: _device_tests(
+            ADVERSE, only=['storage', 'copies', 'module', 'compile_graphs', 'compile_views'],
+            rtl=LOCAL_PIPE)),
+        ('local-pipe-capacity', lambda: _child('capacity', rtl=LOCAL_PIPE)),
+        ('local-pipe-samples-adverse', lambda: _child('samples', ADVERSE, rtl=LOCAL_PIPE)),
     ]
     for name, fn in runs:
         ok, detail = fn()

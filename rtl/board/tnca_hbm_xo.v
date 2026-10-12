@@ -62,6 +62,7 @@ module tnca_hbm_xo #(
     parameter AXI_LINE       = 0,
     parameter AXI_LB_N       = 8,
     parameter AXI_PF         = 1,
+    parameter AXI_LOCAL_PIPE = 0,
     parameter AXI_WAIT_N     = 8
 ) (
     //---- the platform's clock ----------------------------------------------
@@ -157,6 +158,7 @@ module tnca_hbm_xo #(
         .AXI_LINE(AXI_LINE),
         .AXI_LB_N(AXI_LB_N),
         .AXI_PF(AXI_PF),
+        .AXI_LOCAL_PIPE(AXI_LOCAL_PIPE),
         .AXI_WAIT_N(AXI_WAIT_N)
     ) u_top (
         .ap_clk(ap_clk),

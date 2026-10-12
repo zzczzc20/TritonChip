@@ -58,7 +58,8 @@ module tnca_axi_bridge_lb #(
     parameter LINE_BEATS  = 8,          // 8-byte beats per line (a power of two, >= 2)
     parameter LB_N        = 8,          // lines in the buffer
     parameter WAIT_N      = 8,          // reads accepted and not yet answered
-    parameter PF          = 1           // lines fetched ahead of the one asked for
+    parameter PF          = 1,          // lines fetched ahead of the one asked for
+    parameter LOCAL_PIPE  = 0           // queue local RAM requests as well
 ) (
     input  wire              clk,
     input  wire              rst_n,
@@ -177,6 +178,7 @@ module tnca_axi_bridge_lb #(
     wire             h_amo   = f_amo[f_h];
     wire [3:0]       h_aop   = f_aop[f_h];
     wire [63:0]      h_cmp   = f_cmp[f_h];
+    wire            h_local = LOCAL_PIPE && h_addr < LOCAL_LIMIT;
 
     //--------------------------------------------------------------------------
     // The window request at the FIFO's head
@@ -379,26 +381,30 @@ module tnca_axi_bridge_lb #(
     wire can_null  = !null_v;
 
     assign req_ready = quiet_now ? 1'b0
+                     : LOCAL_PIPE ? (f_n != 2'd2)
                      : req_local ? l_req_ready
                      : (f_n != 2'd2);
-    wire f_push  = req_valid && !req_local && !quiet_now && (f_n != 2'd2);
+    wire f_push  = req_valid && (LOCAL_PIPE || !req_local) && !quiet_now && (f_n != 2'd2);
     // the head is taken
-    wire acc     = h_v && (!in_range ? can_null
+    wire acc     = h_v && !h_local && (!in_range ? can_null
                            : h_amo ? can_amo
                            : h_we ? can_write : can_read);
     wire acc_axi = acc && in_range;
     wire acc_rd  = acc_axi && !h_we && !h_amo;
     wire acc_wr  = acc_axi && h_we && !h_amo;
 
-    assign l_req_valid = req_valid && req_local && !quiet_now;
-    assign l_req_addr  = req_addr;
-    assign l_req_we    = req_we;
-    assign l_req_be    = req_be;
-    assign l_req_wdata = req_wdata;
-    assign l_req_tag   = req_tag;
-    assign l_req_amo   = req_amo;
-    assign l_req_aop   = req_aop;
-    assign l_req_cmp   = req_cmp;
+    // In the pipelined mode only registered head fields reach BRAM.
+    // Keep the complete request stable until the local ready handshake.
+    assign l_req_valid = !quiet_now && (LOCAL_PIPE ? h_v && h_local : req_valid && req_local);
+    assign l_req_addr  = LOCAL_PIPE ? h_addr : req_addr;
+    assign l_req_we    = LOCAL_PIPE ? h_we : req_we;
+    assign l_req_be    = LOCAL_PIPE ? h_be : req_be;
+    assign l_req_wdata = LOCAL_PIPE ? h_wdata : req_wdata;
+    assign l_req_tag   = LOCAL_PIPE ? h_tag : req_tag;
+    assign l_req_amo   = LOCAL_PIPE ? h_amo : req_amo;
+    assign l_req_aop   = LOCAL_PIPE ? h_aop : req_aop;
+    assign l_req_cmp   = LOCAL_PIPE ? h_cmp : req_cmp;
+    wire f_pop = acc || (LOCAL_PIPE && l_req_valid && l_req_ready);
 
     //--------------------------------------------------------------------------
     // Responses: the RAM first, then out-of-range, an atomic, a read, a write
@@ -621,8 +627,8 @@ module tnca_axi_bridge_lb #(
                 f_aop[f_t] <= req_aop; f_cmp[f_t] <= req_cmp;
                 f_t <= ~f_t;
             end
-            if (acc) f_h <= ~f_h;
-            f_n <= f_n + (f_push ? 2'd1 : 2'd0) - (acc ? 2'd1 : 2'd0);
+            if (f_pop) f_h <= ~f_h;
+            f_n <= f_n + (f_push ? 2'd1 : 2'd0) - (f_pop ? 2'd1 : 2'd0);
 
             // ---- occupancy of the write table ---------------------------------
             t_n <= t_n + (acc_wr ? 1 : 0)

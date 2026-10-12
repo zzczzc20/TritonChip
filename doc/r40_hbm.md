@@ -187,3 +187,21 @@ JSON 保留完整 routed 报告的 SHA256，原件在板卡主机的构建目录
 下一步检查 burst bridge 的 local RAM 请求是否也应经过现有两项 FIFO；
 该机制默认关闭，必须先通过乱序、背压、原子、错误和复位审计，
 再重新进行 100 MHz link。
+
+## 9. Local RAM 请求流水 checkpoint
+
+`AXI_LOCAL_PIPE=1` 将 local RAM 与窗口请求一起放入 burst bridge 的
+现有两项 FIFO。上游 ready 只依赖注册的 occupancy；local BRAM 从
+注册的 head 读取全部 address/data/mask/tag/atomic 字段，并在本地
+ready 握手后才出队。默认 0 保留旧 bypass，不改变片上配置。
+镜像生成器的 `--local-pipeline` 只允许 HBM burst 模式，所有 wrapper
+与仿真 override 均贯通这个独立开关。local 请求增加 FIFO 延迟，
+这里只验证语义，实际性能必须重新测量。
+
+跳板机验证：七种桥几何合计 49/49；13/13 语义变异均检出
+（包括队列 head tag 被 live tag 替换、local 请求不出队）；
+FPGA wrapper/协议 8/8；原生 storage/refusal/fullgraph/strided view
+4/4，包含 pointwise/reduction/norm/GEMM/SDPA、驻留零 launch 上传。
+日志在 `evidence/r40/R40-04/localpipe_*.log`，测试树为
+`~/tritonchip-r40-ci`。这些检查不构成 timing/CDC 或 HBM 带宽签收。
+新 100 MHz link 将使用显式开关并保留镜像配置。

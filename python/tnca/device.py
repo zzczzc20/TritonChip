@@ -118,7 +118,7 @@ RTL_SWITCHES = ('VRF_BYPASS', 'FE_NOBUBBLE', 'VRF_PREFETCH', 'RCTX_SWITCH', 'LSU
                 # R40-04's AXI mechanisms, for an /hbm memory mode
                 # (tb/device/tnca_device.v): burst lines, buffered lines,
                 # lines ahead, writes in flight
-                'AXI_LINE', 'AXI_LB_N', 'AXI_PF', 'AXI_WAIT_N', 'AXI_OUT_N')
+                'AXI_LOCAL_PIPE', 'AXI_LINE', 'AXI_LB_N', 'AXI_PF', 'AXI_WAIT_N', 'AXI_OUT_N')
 
 
 def rtl_overrides():

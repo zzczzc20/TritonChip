@@ -1,0 +1,14 @@
+  PASS  mutation:no-hazard        caught by ooo-bp
+  PASS  mutation:no-drain         caught by ooo-bp
+  PASS  mutation:no-quiet         caught by reset
+  PASS  mutation:no-error         caught by error
+  PASS  mutation:local-not-first  caught by fast
+  PASS  mutation:lb-fill-past-write caught by ooo-bp
+  PASS  mutation:lb-no-inv        caught by ooo-bp
+  PASS  mutation:lb-write-into-fill caught by ooo-bp
+  PASS  mutation:lb-write-past-waiter caught by ooo-bp
+  PASS  mutation:lb-no-merge      caught by fast
+  PASS  mutation:lb-amo-keeps-line caught by fast
+  PASS  mutation:local-pipe-tag   caught by ooo-bp
+  PASS  mutation:local-pipe-pop   caught by fast
+r40-hbm-tests  PASS  (13/13)

@@ -266,11 +266,42 @@ class UnprogrammedMeasurement(BoardStageCase):
         self.assertEqual(result["status"], "PASS", result.get("measurement_error"))
         self.assertIsNone(result["measurement"]["loaded_xclbin_uuid"])
 
+    def loader(self, replacing: str, now: str) -> list[str]:
+        # What flow/fpga/program.sh --go prints around the load.
+        return [PY, "-c", f"print('  REPLACING={replacing}'); print('  INFO: xbutil program succeeded on 0000:04:00.1'); "
+                          f"print('program.sh: OK -- device now reports xclbin {now}')"]
+
+    def test_a_load_that_changed_the_image_is_a_reconfiguration(self) -> None:
+        go = self.loader("c4637d43-d9de-4f0d-1bde-4e3c335093d2", "78f04922-980e-d3cb-ee78-cf732d6ec13f")
+        measurement = submit(HERE, self.repo, self.manifest(program={"command": go}, conformance=False),
+                             self.state, "mock")["measurement"]
+        self.assertTrue(measurement["reconfigured"])
+        self.assertEqual(measurement["replaced_xclbin_uuid"], "c4637d43-d9de-4f0d-1bde-4e3c335093d2")
+        self.assertEqual(measurement["loaded_xclbin_uuid"], "78f04922-980e-d3cb-ee78-cf732d6ec13f")
+
+    def test_a_load_of_the_image_already_there_is_recorded_as_no_reconfiguration(self) -> None:
+        # XRT returns success and downloads nothing; the device keeps its state.
+        same = "78f04922-980e-d3cb-ee78-cf732d6ec13f"
+        result = submit(HERE, self.repo, self.manifest(program={"command": self.loader(same, same)}, conformance=False),
+                        self.state, "mock")
+        self.assertEqual(result["status"], "PASS")
+        self.assertTrue(result["measurement"]["programmed"])
+        self.assertIs(result["measurement"]["reconfigured"], False)
+
+    def test_a_first_load_onto_an_empty_region_is_a_reconfiguration(self) -> None:
+        go = self.loader("<none>", "78f04922-980e-d3cb-ee78-cf732d6ec13f")
+        measurement = submit(HERE, self.repo, self.manifest(program={"command": go}, conformance=False),
+                             self.state, "mock")["measurement"]
+        self.assertTrue(measurement["reconfigured"])
+        self.assertIsNone(measurement["replaced_xclbin_uuid"])
+
     def test_a_programmed_run_asks_for_no_report(self) -> None:
         go = [PY, "-c", "pass"]
         result = submit(HERE, self.repo, self.manifest(program={"command": go}, conformance=False), self.state, "mock")
         self.assertTrue(result["measurement"]["programmed"])
         self.assertIsNone(result["measurement"]["loaded_xclbin_uuid"])
+        # A programmer that does not say what it replaced leaves the question open.
+        self.assertIsNone(result["measurement"]["reconfigured"])
         self.assertEqual([s["name"] for s in result["measurement"]["stages"]], ["program"])
 
 

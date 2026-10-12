@@ -537,6 +537,8 @@ def measure_board(
 
     stages: list[dict[str, Any]] = []
     loaded_image: str | None = None
+    replaced_image: str | None = None
+    reconfigured: bool | None = None
     conformance_summary: dict[str, Any] | None = None
     arch_summary: dict[str, Any] | None = None
     contract = image_profile_contract(root, arch_profile)
@@ -551,7 +553,12 @@ def measure_board(
             "backend": backend,
             "bdf": config.get("bdf"),
             "programmed": bool(config.get("program", True)),
+            "replaced_xclbin_uuid": replaced_image,
             "loaded_xclbin_uuid": loaded_image,
+            # True: the load put a different image on the card.  False: the
+            # card already held this one and XRT downloaded nothing.  None:
+            # nothing was loaded, or the programmer's log does not say.
+            "reconfigured": reconfigured,
             "xclbin": str(xclbin.relative_to(run_dir)),
             "xclbin_sha256": xclbin_sha256,
             "profile": arch_profile,
@@ -608,6 +615,23 @@ def measure_board(
         stages.append(stage)
         if loaded.returncode != 0:
             raise fail("board programming failed", "program")
+        # A load that succeeds is not always a load that happened.  XRT does
+        # not download an image the card already holds: it returns success,
+        # the device keeps its state, and its UUID is the file's as before.
+        # The flow's programmer logs what it replaced and what the device
+        # reports afterwards; the two being the same is that case.
+        try:
+            text = Path(loaded.log_path).read_text(encoding="utf-8", errors="replace")
+        except OSError:
+            text = ""
+        before = re.findall(r"REPLACING=(\S+)", text)
+        after = re.findall(r"device now reports xclbin (\S+)", text)
+        if before and before[-1] != "<none>":
+            replaced_image = before[-1].lower()
+        if after:
+            loaded_image = after[-1].lower()
+        if before and after:
+            reconfigured = before[-1].lower() != after[-1].lower()
 
     else:
         # Nothing is loaded, so the measurement is of whatever the card holds.

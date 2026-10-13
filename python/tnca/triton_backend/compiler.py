@@ -295,7 +295,9 @@ class TNCABackend(BaseBackend):
             compile_options['rctx_roles'] = options.rctx_roles
         if options.bank_alloc:
             compile_options['bank_alloc'] = options.bank_alloc
-        if options.window_reuse:
+        # An explicit JIT override must win over the environment used by
+        # AOT's default. Keep the ordinary off case absent for B39 bytes.
+        if options.window_reuse or int(os.environ.get('TNCA_WINDOW_REUSE', '0')) != options.window_reuse:
             compile_options['window_reuse'] = options.window_reuse
         # The dump switches of doc/dumping_ir.md (TNCA_KERNEL_DUMP=1, written
         # under TNCA_DUMP_DIR/<kernel>/), on this entry point as on AOT --

@@ -664,10 +664,18 @@ def _lower_ttir(module, ctx, kernel_name, params, target, prov, options, stages,
     sparse = (options or {}).get('sparse_tensormaps')
     if sparse is None:
         sparse = int(os.environ.get('TNCA_SPARSE_TENSORMAPS', '0'))
+    window_reuse = (options or {}).get('window_reuse')
+    if window_reuse is None:
+        window_reuse = int(os.environ.get('TNCA_WINDOW_REUSE', '0'))
+    if window_reuse not in (0, 1):
+        raise ValueError('window_reuse must be 0 or 1')
     kernel, _builder, imp = adapter.import_ttir(
         module, kernel_name, _placeholders(params),
         param_names=[n for n, _t in params], target=target, prov=prov,
-        dynamic_args=True, index_opt=bool(index_opt), sparse_maps=bool(sparse))
+        dynamic_args=True, index_opt=bool(index_opt), sparse_maps=bool(sparse),
+        window_reuse=bool(window_reuse))
+    if getattr(imp, '_mma_retiles', None):
+        prov.record('mma_retiles', sorted(imp._mma_retiles))
     reduction_tiles = sorted(getattr(imp, '_reduction_tiles', ()))
     if reduction_tiles and int(os.environ.get('TNCA_REDUCTION_ROWS', '1')) > 1:
         prov.record('reduction_tiles', reduction_tiles)

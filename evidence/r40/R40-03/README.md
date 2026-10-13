@@ -155,3 +155,20 @@ window_default_contract447.log confirms default-off B39 447/447 with the
 new counter implementation. The stronger public GEMM audit now checks
 window definitions directly against its actual artifact and provenance.
 K64, other resource lifetimes and frozen performance remain pending.
+
+2026-10-13 K64 resource retile checkpoint: immutable pointer-loaded
+row/column chunks split into the largest target-declared K fragment that
+leaves private VRF. With window reuse enabled on this 64-register target,
+logical 16x16x64 uses two ordered K32 MMA commands into one accumulator.
+FP16 mm/addmm 4/4 pass, including both tails, zero steady transfers,
+actual machine K/dtype/window definitions and logical tile provenance.
+Windows 64 -> reserved 32; complete vector union 44 or 45.
+Packed source windows are refused until a snapshot retile is implemented;
+inputs are never silently reread. BF16 execution is pending.
+
+Retile unit 4/4 includes ordered accumulation, stable parent cache keys,
+packed-input refusal and default-off K64 preservation. Compiler-unit 89
+tests (5 local MLIR skips). Default B39 contract remains 447/447.
+window_options4.log also proves explicit JIT off wins over environment on,
+while ordinary default off remains absent from the AOT semantic options.
+These are correctness/resource checks, not frozen GEMM speed acceptance.

@@ -396,7 +396,13 @@ U280 有三个 SLR，HBM 接口位于 SLR0；板卡提供 8 GB HBM、32 个 AXI 
   实际机器码 K32，逻辑窗口 80→保留 32。原显式操作数计数漏掉窗口访问；
   六份保留制品的机器码审计核验四个 GEMM 各实际使用 47 个 vector 寄存器，
   新 opt-in 制品账本已补齐该 union；默认合同仍为 447/447。
-- K64、descriptor/barrier 生命周期、完整资源压力与冻结性能 gate 待完成。
+- K64 resource retile checkpoint：在窗口开启且完整操作数占满 VRF 时，
+  从 target 支持的 K step 中选择可保留私有寄存器的最大片段。
+  16×16×64 的 FP16 mm/addmm 4/4；按 K 顺序执行两个 K32 MMA，
+  共享同一 accumulator，使用已有 immutable row/column chunks，
+  不重读输入、不替换 TTIR。实际窗口 64→32，VRF 44/45；
+  默认合同仍 447/447。packed 输入窗口仍明确拒绝，BF16 复验正在运行。
+- descriptor/barrier 生命周期、更广的 retile/spill 与冻结性能 gate 待完成。
   证据 `evidence/r40/R40-03/`，默认 block cap 仍 16。
 
 ### R40-04：单核真实 HBM 与可扩展外存接口

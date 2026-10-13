@@ -3321,8 +3321,8 @@ class TTIRImporter:
         # sec 8.4 reserves the pack that would put it there -- so it
         # goes out to memory and comes back through the engine, which
         # is the repack path a scratchpad-free design leaves.
-        a = self._as_fragment(a, 'the left operand of tl.dot')
-        b = self._as_fragment(b, 'the right operand of tl.dot')
+        fragments = iter(self._mma_fragments(a, b))
+        a, b = next(fragments)
         if a.dtype != b.dtype:
             raise Unsupported(
                 f"a tl.dot of {a.dtype} with {b.dtype}: ISA sec 9C's "
@@ -3339,6 +3339,8 @@ class TTIRImporter:
 
         fused = self._fuse_dot_add(op, a, b) if self.index_opt else None
         if fused is not None:
+            for left, right in fragments:
+                self._mma_into(fused.handle, left, right)
             return
         acc = self.b.accumulator(name=f"acc{len(self.kernel.accumulators)}")
         # `tt.dot`'s third operand is the value accumulated into. Triton
@@ -3357,14 +3359,9 @@ class TTIRImporter:
                     row = self.b.vcvt('s32', 'f32', row)
                 self.b.acc_write(acc, self.b.const(r), row)
 
-        bar = self.b.barrier(name=f"mma{len(self.kernel.barriers)}")
-        tok = self.b.barrier_arm(bar, arrivals=0, ops=1)
-        self.b.mma_async(acc, a.handle, b.handle, tok, k=self._mma_k(a),
-                         dtype=_FP8_FORMATS.get(a.dtype, a.dtype))
-        # ISA sec 9C.3: the accumulator may not be read by the vector
-        # unit before the command completes, and its sources may not be
-        # overwritten. The wait is what makes both true.
-        self.b.barrier_wait(tok)
+        self._mma_into(acc, a, b)
+        for left, right in fragments:
+            self._mma_into(acc, left, right)
 
         _, rtype = _parse_type(str(op.get_result(0).get_type()))
         tile = Tile('accumulator', acc, a.rows, b.cols, 'f32')
@@ -3384,6 +3381,62 @@ class TTIRImporter:
         if k not in self.target.mma['k_steps']:
             raise Unsupported(f'MMA K={a.cols} is not implemented by this target')
         return k
+
+    def _mma_into(self, acc, a, b):
+        bar = self.b.barrier(name=f"mma{len(self.kernel.barriers)}")
+        tok = self.b.barrier_arm(bar, arrivals=0, ops=1)
+        self.b.mma_async(acc, a.handle, b.handle, tok, k=self._mma_k(a),
+                         dtype=_FP8_FORMATS.get(a.dtype, a.dtype))
+        self.b.barrier_wait(tok)
+
+    def _mma_fragments(self, a, b):
+        """Retile immutable chunks when full operands leave no private VRF.
+
+        K advances in order into the same accumulator, preserving sec 9C's
+        binary32 product/sum order. No input is reloaded from its source.
+        """
+        from .footprints import fragment_registers
+        logical = a.cols
+        step = logical
+        if (getattr(self, '_window_reuse', False) and
+                a.dtype == b.dtype and a.dtype in ('f16', 'bf16') and
+                2 * fragment_registers(16, logical, 16) >= self.target.vregs_per_rctx):
+            candidates = [int(k[1:]) for k in self.target.mma['k_steps']
+                          if int(k[1:]) < logical and logical % int(k[1:]) == 0
+                          and 2 * fragment_registers(16, int(k[1:]), 16)
+                          < self.target.vregs_per_rctx]
+            if not candidates:
+                raise Unsupported('no MMA fragment leaves private vector registers')
+            step = max(candidates)
+        if step == logical:
+            yield (self._as_fragment(a, 'the left operand of tl.dot'),
+                   self._as_fragment(b, 'the right operand of tl.dot'))
+            return
+        if a.kind != 'column-chunks' or b.kind != 'row-chunks' or any(
+                p.kind == 'window' for p in a.handle + b.handle):
+            raise Unsupported('MMA resource retile requires immutable row/column chunks',
+                              remedy='snapshot packed input windows before retile')
+        plans = getattr(self, '_mma_retiles', set())
+        plans.add((logical, step))
+        self._mma_retiles = plans
+        cache = getattr(self, '_register_mma_fragment_cache', None)
+        for start in range(0, logical, step):
+            pair = []
+            for side, parent in enumerate((a, b)):
+                key = ('mma-k-slice', id(parent), side, start, step)
+                if cache is not None and key in cache:
+                    self._mma_fragment_reuses = getattr(self, '_mma_fragment_reuses', 0) + 1
+                    pair.append(cache[key])
+                    continue
+                parts = parent.handle[start // self.target.vlen:(start + step) // self.target.vlen]
+                tile = Tile(parent.kind, parts, parent.rows if side == 0 else step,
+                            step if side == 0 else parent.cols, parent.dtype,
+                            store=parent.store)
+                fragment = self._as_fragment_uncached(tile, 'resource-retiled tl.dot')
+                if cache is not None:
+                    cache[key] = fragment
+                pair.append(fragment)
+            yield tuple(pair)
 
     def _dot_f32(self, op, a, b):
         """Full binary32 dot through vector FMAs, with no FP16 narrowing.

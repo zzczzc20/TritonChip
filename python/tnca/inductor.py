@@ -250,10 +250,10 @@ def configure(max_block=None, tensor_descriptors=None, no_x_dim=None):
         raise ValueError('TNCA_WINDOW_REUSE must be 0 or 1')
     supported_tiles = ((16,16,16), (16,32,16), (16,64,16), (16,16,32), (16,32,32))
     if window_reuse:
-        supported_tiles += ((16,64,32),)
+        supported_tiles += ((16,64,32), (16,16,64))
     if gemm_tile not in supported_tiles:
         raise ValueError('TNCA_GEMM_TILE supports K16 with N16/32/64, or K32 with N16/32; '
-                         'larger combinations require window lifetime reuse')
+                         'window reuse additionally supports N64 K32 and N16 K64')
     reduction_rows = int(os.environ.get('TNCA_REDUCTION_ROWS', '1'))
     if reduction_rows not in (1, 2, 4, 8, 16):
         raise ValueError('TNCA_REDUCTION_ROWS must be 1, 2, 4, 8 or 16')

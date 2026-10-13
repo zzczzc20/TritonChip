@@ -14,6 +14,8 @@ ap = argparse.ArgumentParser(description=__doc__)
 ap.add_argument('--columns', type=int, choices=(16,32,64), default=32)
 ap.add_argument('--depth', type=int, choices=(16,32,64), default=16)
 ap.add_argument('--dtype', choices=('float16', 'bfloat16'), default='float16')
+ap.add_argument('--dump-dir', type=Path,
+                help='retain compiler stages and artifacts in a fresh directory')
 args = ap.parse_args()
 os.environ['TNCA_GEMM_TILE'] = f'16,{args.columns},{args.depth}'
 os.environ.setdefault('TNCA_PROFILE', 'core-vrf-sync-v5')
@@ -26,8 +28,14 @@ from tnca_isa import decode_fields, MAJ, MMA_K, MMA_DT
 
 
 def main():
-    dump = tempfile.mkdtemp(prefix='r40-gemm-asm-')
-    atexit.register(shutil.rmtree, dump)
+    if args.dump_dir is None:
+        dump = tempfile.mkdtemp(prefix='r40-gemm-asm-')
+        atexit.register(shutil.rmtree, dump)
+    else:
+        if args.dump_dir.exists() and any(args.dump_dir.iterdir()):
+            ap.error('--dump-dir must be empty; preserve earlier attempts')
+        args.dump_dir.mkdir(parents=True, exist_ok=True)
+        dump = str(args.dump_dir.resolve())
     os.environ['TRITON_CACHE_DIR'] = os.path.join(dump, 'cache')
     os.environ['TNCA_KERNEL_DUMP'] = '1'
     os.environ['TNCA_DUMP_DIR'] = dump
@@ -59,7 +67,12 @@ def main():
                           for i in range(0, len(code), 8)]
                 commands = [f for f in fields if f['major'] == MAJ['MATRIX'] and f['func'] == 1]
                 dtype_code = MMA_DT['bf16' if args.dtype == 'bfloat16' else 'f16']
-                assert commands and all((f['mod'] & 3) == MMA_K[f'k{args.depth}'] and
+                retiles = prov.get('mma_retiles', [])
+                physical_depth = next((step for logical, step in retiles
+                                       if logical == args.depth), args.depth)
+                assert args.depth % physical_depth == 0
+                assert len(commands) % (args.depth // physical_depth) == 0
+                assert commands and all((f['mod'] & 3) == MMA_K[f'k{physical_depth}'] and
                     ((f['mod'] >> 2) & 3) == dtype_code for f in commands), commands
                 if int(os.environ.get('TNCA_WINDOW_REUSE', '0')):
                     layout = prov['window_lifetime']
@@ -75,7 +88,8 @@ def main():
                     assert all(n >= len(registers) for n in
                                manifest['resources']['rf_private_per_role'].values())
                     print(f'AUDIT awaited window layout: {layout}', flush=True)
-                print(f'AUDIT physical MMA K={args.depth}: {manifest["resources"]}', flush=True)
+                print(f'AUDIT logical K={args.depth}, physical MMA K={physical_depth}, '
+                      f'retiles={retiles}: {manifest["resources"]}', flush=True)
             if args.columns > 16 or args.depth > 16:
                 plans = [artifact.load(e['artifact_path'])[0]['optional_metadata']['provenance']
                          .get('register_blocks',{}) for e in log]

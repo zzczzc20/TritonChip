@@ -277,7 +277,19 @@ def _reduce(imp, op, width):
     shape, elem = _parse_type(str(op.get_operand(0).get_type()))
     if elem in ('i64', 'u64'):
         raise Unsupported('wide int64 reduction requires a cross-chunk carry fold')
-    if op.get_int_attr('axis') != (1 if isinstance(shape, tuple) else 0):
+    axis = op.get_int_attr('axis')
+    if isinstance(shape, tuple) and axis == 0:
+        # Each output lane combines the same column across rows. Columns
+        # in different VLEN chunks are independent, so retain a distinct
+        # result SSA identity per chunk rather than folding them together.
+        imp._in_register_chunk = True
+        try:
+            for chunk in range(width // imp.target.vlen):
+                imp._dispatch(_OpView(op, chunk, imp.target.vlen))
+        finally:
+            imp._in_register_chunk = False
+        return True
+    if axis != (1 if isinstance(shape, tuple) else 0):
         raise Unsupported('wide reduction axis must be the contiguous lane axis')
     kind = imp._combinator(op)
     seen = getattr(imp, '_register_reductions', set())

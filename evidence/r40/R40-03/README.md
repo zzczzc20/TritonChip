@@ -202,3 +202,20 @@ The complete CI environment must still check those tool-dependent paths.
 Online SDPA's separate standard Torch checkpoint exercises this capability;
 no tile/attention speed threshold or full resource-lifetime acceptance is
 claimed here. Reproduce with make r40-packed-window-unpack.
+
+2026-10-13 wide column reduction checkpoint: register-block lowering now
+handles axis-0 reductions over bounded-row tiles with more than 16 columns.
+Each VLEN chunk combines only its own rows and retains a separate output
+SSA identity; sum and NaN-propagating min/max keep their existing semantics.
+The other-axis cross-chunk fold is unchanged. Unit tests pass 2/2; source-only
+compiler discovery passes 170 tests with 55 unavailable-tool skips (115
+executed). Default B39 artifacts remain byte-identical, 447/447.
+
+`tools/r40/wide_column_attention_probe.py` reproduces an RTL diagnostic with
+17 keys and a 32-wide head: FP32 stable online state, two independent output
+chunks, FP16 input/output, maximum absolute error 1.47745e-5 against a Torch
+FP32 reference. This handwritten Triton probe validates compilation and
+numerical execution only; it is not standard Torch performance evidence,
+actual descriptor-DMA coverage or R40-08 acceptance. The frozen simulator
+has the pre-clock-register staged RTL; the warning in the log is retained.
+See wide_columns_{unit,compiler170,default_contract,rtl}.log.

@@ -55,7 +55,9 @@ def main():
         raise RuntimeError('this audit requires actual execution')
     if os.environ.get('TNCA_TRANSFER_POLICY', 'resident') != 'resident':
         raise RuntimeError('this audit requires resident transfers')
-    device.prepare(os.environ['TNCA_PROFILE'])
+    from tnca.backend import needs_elaborator
+    if needs_elaborator(os.environ.get('TNCA_BACKEND', 'sim-file')):
+        device.prepare(os.environ['TNCA_PROFILE'])
     D.register()
     point = registry.get('model.llama_decode/tiny/fp16-b1-p16')
     frozen = json.loads((ROOT / 'spec/r40/suites/R40-02.graphs3.json').read_text())

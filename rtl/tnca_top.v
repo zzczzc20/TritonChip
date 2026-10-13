@@ -31,6 +31,19 @@ module tnca_top #(
     parameter LW          = 4,
     parameter VREGS_PER_RCTX = 64,
     parameter PHYS_VREGS  = 128,
+    // Optional R39/v5 core mechanisms; legacy system defaults stay unchanged.
+    parameter USE_BANKED_VRF = 0,
+    parameter VRF_BYPASS = 0,
+    parameter FE_NOBUBBLE = 0,
+    parameter VRF_PREFETCH = 0,
+    parameter RCTX_SWITCH = 0,
+    parameter MTX_ABUF = 0,
+    parameter LSU_INFLIGHT = 1,
+    parameter FPU_OVERLAP = 0,
+    parameter RSLICE = 0,
+    parameter RPAIR = 0,
+    parameter HAS_SYS_ATOMICS = 0,
+    parameter HAS_TENSOR_XPOSE = 0,
     parameter HAS_SFU     = 0,
     parameter HAS_ATOMICS = 1,
     parameter PHYS_W      = 7,
@@ -164,7 +177,8 @@ module tnca_top #(
     always @(*) begin
         dco_slow = 16'd0;
         for (sp = 0; sp < N; sp = sp + 1)
-            dco_slow[sp] = perf_issued[sp*64 +: 64] < perf_issued[(sp ^ 1)*64 +: 64];
+            if ((sp ^ 1) < N)
+                dco_slow[sp] = perf_issued[sp*64 +: 64] < perf_issued[(sp ^ 1)*64 +: 64];
     end
 
     genvar t;
@@ -175,6 +189,18 @@ module tnca_top #(
                 .NUM_RCTX(NUM_RCTX), .RCTX_W(RCTX_W), .VLEN(VLEN), .ELEN(ELEN),
                 .LW(LW), .VREGS_PER_RCTX(VREGS_PER_RCTX),
                 .PHYS_VREGS(PHYS_VREGS), .PHYS_W(PHYS_W),
+                .USE_BANKED_VRF(USE_BANKED_VRF),
+                .VRF_BYPASS(VRF_BYPASS),
+                .FE_NOBUBBLE(FE_NOBUBBLE),
+                .VRF_PREFETCH(VRF_PREFETCH),
+                .RCTX_SWITCH(RCTX_SWITCH),
+                .MTX_ABUF(MTX_ABUF),
+                .LSU_INFLIGHT(LSU_INFLIGHT),
+                .FPU_OVERLAP(FPU_OVERLAP),
+                .RSLICE(RSLICE),
+                .RPAIR(RPAIR),
+                .HAS_SYS_ATOMICS(HAS_SYS_ATOMICS),
+                .HAS_TENSOR_XPOSE(HAS_TENSOR_XPOSE),
                 .HAS_SFU(HAS_SFU), .HAS_ATOMICS(HAS_ATOMICS),
                 .LSU_BEATS(LSU_BEATS), .LSU_TAG_W(LSU_TAG_W),
                 .LINE_BYTES(LINE_BYTES), .LINE_BITS(LINE_BITS),

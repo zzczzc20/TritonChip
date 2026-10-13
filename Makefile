@@ -1517,6 +1517,10 @@ r40-large-grid: $(R2_DATA_STAMP) | dirs
 	@$(PYTHON) tools/r40/large_grid_tests.py
 	@$(TRITON_PYTHON) tools/r40/large_grid_rtl_tests.py
 
+.PHONY: r40-core-parameters
+r40-core-parameters: | dirs
+	@$(PYTHON) tools/r40/core_parameter_tests.py
+
 .PHONY: r40-device-clock
 r40-device-clock: $(R2_DATA_STAMP) | dirs
 	@$(TORCH_PYTHON) tools/r40/device_clock_tests.py

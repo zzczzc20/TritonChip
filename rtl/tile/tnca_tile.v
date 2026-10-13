@@ -41,6 +41,19 @@ module tnca_tile #(
     // not a defect -- but hard-coding it here is what let the target
     // description claim otherwise (audit F03). spec/r1_profiles.json is the
     // one place the value is chosen.
+    // Optional R39/v5 core mechanisms; legacy system defaults stay unchanged.
+    parameter USE_BANKED_VRF = 0,
+    parameter VRF_BYPASS = 0,
+    parameter FE_NOBUBBLE = 0,
+    parameter VRF_PREFETCH = 0,
+    parameter RCTX_SWITCH = 0,
+    parameter MTX_ABUF = 0,
+    parameter LSU_INFLIGHT = 1,
+    parameter FPU_OVERLAP = 0,
+    parameter RSLICE = 0,
+    parameter RPAIR = 0,
+    parameter HAS_SYS_ATOMICS = 0,
+    parameter HAS_TENSOR_XPOSE = 0,
     parameter HAS_SFU     = 0,
     parameter HAS_ATOMICS = 1,
     parameter LSU_BEATS   = 8,
@@ -167,6 +180,18 @@ module tnca_tile #(
         .NUM_RCTX(NUM_RCTX), .RCTX_W(RCTX_W), .VLEN(VLEN), .ELEN(ELEN), .LW(LW),
         .VREGS_PER_RCTX(VREGS_PER_RCTX), .PHYS_VREGS(PHYS_VREGS), .PHYS_W(PHYS_W),
         .CORE_ID(TILE_ID), .NUM_CORES(NUM_TILES),
+        .USE_BANKED_VRF(USE_BANKED_VRF),
+        .VRF_BYPASS(VRF_BYPASS),
+        .FE_NOBUBBLE(FE_NOBUBBLE),
+        .VRF_PREFETCH(VRF_PREFETCH),
+        .RCTX_SWITCH(RCTX_SWITCH),
+        .MTX_ABUF(MTX_ABUF),
+        .LSU_INFLIGHT(LSU_INFLIGHT),
+        .FPU_OVERLAP(FPU_OVERLAP),
+        .RSLICE(RSLICE),
+        .RPAIR(RPAIR),
+        .HAS_SYS_ATOMICS(HAS_SYS_ATOMICS),
+        .HAS_TENSOR_XPOSE(HAS_TENSOR_XPOSE),
         .HAS_SFU(HAS_SFU), .HAS_ATOMICS(HAS_ATOMICS),
         .LSU_BEATS(LSU_BEATS), .LSU_TAG_W(LSU_TAG_W)
     ) u_core (

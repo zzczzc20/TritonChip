@@ -25,6 +25,7 @@
 module tnca_tile #(
     parameter TILE_ID     = 0,
     parameter NUM_TILES   = 4,
+    parameter GLOBAL_GRID = 0,
     parameter XW          = 2,
     parameter YW          = 2,
     // core
@@ -88,6 +89,8 @@ module tnca_tile #(
     input  wire [NUM_RCTX-1:0]      launch_role_mask,
     input  wire [63:0]              launch_arg_base,
     input  wire [NUM_RCTX*PHYS_W-1:0] launch_vbase,
+    input wire [31:0] grid_pid_x, grid_pid_y, grid_pid_z,
+    input wire [31:0] grid_npid_x, grid_npid_y, grid_npid_z,
     output wire                     core_idle,
 
     output wire                     fault_valid,
@@ -198,8 +201,10 @@ module tnca_tile #(
         .clk(clk), .rst_n(rst_n),
         .launch_valid(launch_valid), .launch_pc(launch_pc),
         .launch_role_mask(launch_role_mask), .launch_slice(4'd0),
-        .launch_pid_x(TILE_ID_32), .launch_pid_y(32'd0), .launch_pid_z(32'd0),
-        .launch_npid_x(NUM_TILES_32), .launch_npid_y(32'd1), .launch_npid_z(32'd1),
+        .launch_pid_x(GLOBAL_GRID ? grid_pid_x : TILE_ID_32),
+        .launch_pid_y(GLOBAL_GRID ? grid_pid_y : 32'd0), .launch_pid_z(GLOBAL_GRID ? grid_pid_z : 32'd0),
+        .launch_npid_x(GLOBAL_GRID ? grid_npid_x : NUM_TILES_32),
+        .launch_npid_y(GLOBAL_GRID ? grid_npid_y : 32'd1), .launch_npid_z(GLOBAL_GRID ? grid_npid_z : 32'd1),
         .launch_arg_base(launch_arg_base), .launch_vbase(launch_vbase),
         .core_idle(core_idle),
         .fault_valid(fault_valid), .fault_code(fault_code),

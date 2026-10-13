@@ -20,6 +20,7 @@
 `include "tnca_noc_pkg.vh"
 
 module tnca_top #(
+    parameter GLOBAL_GRID = 0,
     parameter NX          = 2,
     parameter NY          = 2,
     parameter XW          = 2,
@@ -78,6 +79,17 @@ module tnca_top #(
     input  wire [NUM_RCTX-1:0]      launch_role_mask,
     input  wire [63:0]              launch_arg_base,
     input  wire [NUM_RCTX*PHYS_W-1:0] launch_vbase,
+    input wire grid_valid,
+    output wire grid_ready,
+    input wire [63:0] grid_id, grid_arg_stride,
+    input wire [31:0] grid_x, grid_y, grid_z,
+    input wire [NX*NY-1:0] grid_cores,
+    output wire grid_done_valid,
+    input wire grid_done_ready,
+    output wire [3:0] grid_done_status,
+    output wire [63:0] grid_done_id, grid_done_cycles,
+    output wire [((NX*NY>1)?$clog2(NX*NY):1)-1:0] grid_fault_core,
+    output wire [NX*NY*32-1:0] grid_issued, grid_completed,
     output wire                     all_idle,
 
     output wire [NX*NY-1:0]         fault_valid,
@@ -134,6 +146,50 @@ module tnca_top #(
     wire [N-1:0] tile_idle;
     assign all_idle = &tile_idle;
 
+    wire [N-1:0] tile_launch, dispatch_busy;
+    wire [63:0] dispatch_pc;
+    wire [N*64-1:0] dispatch_args;
+    wire [N*32-1:0] dispatch_x, dispatch_y, dispatch_z;
+    wire [31:0] dispatch_nx, dispatch_ny, dispatch_nz;
+    wire [NUM_RCTX-1:0] tile_roles;
+    wire [NUM_RCTX*PHYS_W-1:0] tile_vbase;
+    generate if (GLOBAL_GRID) begin: g_dispatch
+        reg [NUM_RCTX-1:0] roles_q;
+        reg [NUM_RCTX*PHYS_W-1:0] vbase_q;
+        wire [N-1:0] command_valid;
+        wire [N*4-1:0] status;
+        for(genvar d=0;d<N;d=d+1) begin: g_status
+            assign status[d*4+:4]=fault_valid[d] ? 4'd1 : 4'd0;
+        end
+        always @(posedge clk) begin
+            if(!rst_n) begin roles_q<=0;vbase_q<=0;end
+            else if(grid_valid && grid_ready) begin roles_q<=launch_role_mask;vbase_q<=launch_vbase;end
+        end
+        assign tile_roles=roles_q;assign tile_vbase=vbase_q;
+        assign tile_launch=command_valid & tile_idle;
+        tnca_grid_dispatch #(.CORE_N(N)) u_dispatch (
+            .clk(clk),.rst_n(rst_n),.launch_valid(grid_valid),.launch_ready(grid_ready),
+            .launch_id(grid_id),.launch_pc(launch_pc),.launch_arg_base(launch_arg_base),
+            .launch_arg_stride(grid_arg_stride),.launch_gx(grid_x),.launch_gy(grid_y),.launch_gz(grid_z),
+            .launch_cores((|launch_role_mask) ? grid_cores : {N{1'b0}}),
+            .cmd_valid(command_valid),.cmd_ready(tile_idle),.cmd_id(),.cmd_pc(dispatch_pc),
+            .cmd_arg_base(dispatch_args),.cmd_x(dispatch_x),.cmd_y(dispatch_y),.cmd_z(dispatch_z),
+            .cmd_nx(dispatch_nx),.cmd_ny(dispatch_ny),.cmd_nz(dispatch_nz),.cmd_cancel(),
+            .core_done(dispatch_busy & tile_idle),.core_abort(fault_valid),.core_status(status),
+            .done_valid(grid_done_valid),.done_ready(grid_done_ready),.done_status(grid_done_status),
+            .done_id(grid_done_id),.done_cycles(grid_done_cycles),.fault_core(grid_fault_core),
+            .core_busy(dispatch_busy),.issued(grid_issued),.completed(grid_completed));
+    end else begin: g_legacy_launch
+        assign tile_launch={N{launch_valid}};
+        assign tile_roles=launch_role_mask;assign tile_vbase=launch_vbase;
+        assign dispatch_pc=launch_pc;assign dispatch_args={N{launch_arg_base}};
+        assign dispatch_x=0;assign dispatch_y=0;assign dispatch_z=0;
+        assign dispatch_nx=0;assign dispatch_ny=0;assign dispatch_nz=0;
+        assign dispatch_busy=0;assign grid_ready=0;assign grid_done_valid=0;
+        assign grid_done_status=0;assign grid_done_id=0;assign grid_done_cycles=0;
+        assign grid_fault_core=0;assign grid_issued=0;assign grid_completed=0;
+    end endgenerate
+
     //==========================================================================
     // DCO: one TMU for the machine (doc/DCO.pdf; rtl/nuca/tnca_tmu.v)
     //==========================================================================
@@ -185,7 +241,7 @@ module tnca_top #(
     generate
         for (t = 0; t < N; t = t + 1) begin : g_tile
             tnca_tile #(
-                .TILE_ID(t), .NUM_TILES(N), .XW(XW), .YW(YW),
+                .TILE_ID(t), .NUM_TILES(N), .GLOBAL_GRID(GLOBAL_GRID), .XW(XW), .YW(YW),
                 .NUM_RCTX(NUM_RCTX), .RCTX_W(RCTX_W), .VLEN(VLEN), .ELEN(ELEN),
                 .LW(LW), .VREGS_PER_RCTX(VREGS_PER_RCTX),
                 .PHYS_VREGS(PHYS_VREGS), .PHYS_W(PHYS_W),
@@ -212,10 +268,13 @@ module tnca_top #(
                 .TMU_BASE(TMU_BASE)
             ) u_tile (
                 .clk(clk), .rst_n(rst_n),
-                .launch_valid(launch_valid), .launch_pc(launch_pc),
-                .launch_role_mask(launch_role_mask),
-                .launch_arg_base(launch_arg_base),
-                .launch_vbase(launch_vbase),
+                .launch_valid(tile_launch[t]), .launch_pc(dispatch_pc),
+                .launch_role_mask(tile_roles),
+                .launch_arg_base(dispatch_args[t*64+:64]),
+                .launch_vbase(tile_vbase),
+                .grid_pid_x(dispatch_x[t*32+:32]), .grid_pid_y(dispatch_y[t*32+:32]),
+                .grid_pid_z(dispatch_z[t*32+:32]), .grid_npid_x(dispatch_nx),
+                .grid_npid_y(dispatch_ny), .grid_npid_z(dispatch_nz),
                 .core_idle(tile_idle[t]),
                 .fault_valid(fault_valid[t]),
                 .fault_code(fault_code[t*8 +: 8]),

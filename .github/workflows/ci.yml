@@ -71,6 +71,9 @@ jobs:
       - name: Elaboration
         run: make lint
 
+      - name: R40 bounded global dispatcher and real cores
+        run: make r40-grid-dispatch
+
       - name: Unit benches
         run: make unit
 

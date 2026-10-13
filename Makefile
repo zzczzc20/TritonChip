@@ -2034,3 +2034,9 @@ r1-acceptance: r1-gate-selftest
 r1-verify-evidence:
 	@test -n "$(EVIDENCE)" || { echo "usage: make r1-verify-evidence EVIDENCE=<dir>"; exit 2; }
 	@$(PYTHON) tools/r1/verify_evidence.py $(EVIDENCE)
+
+# Scheduler protocol and real-core execution diagnostics. Native Torch and
+# routed multi-SLR performance remain separate R40-05 acceptance requirements.
+.PHONY: r40-grid-dispatch
+r40-grid-dispatch: | dirs
+	@$(PYTHON) tools/r40/grid_dispatch_tests.py

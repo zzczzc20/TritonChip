@@ -30,3 +30,6 @@ code/data transfers finished at 79514 / 32752 / 20251 simulation cycles.
 The preceding invalid entry cases returned status 3 with their own launch IDs;
 normal grids returned status 0. The existing coherent-host tests and all four
 legacy 2x2 system tests passed after adding the slice metadata plumbing.
+
+This checkpoint's source hashes refer to c6f4359. Global deadline stop-and-drain
+is verified separately in `../deadline/`.

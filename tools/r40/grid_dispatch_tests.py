@@ -22,7 +22,7 @@ def main():
                 if bench == 'tb_mem_arbiter_r40':
                     command.extend(['rtl/nuca/tnca_mem_arbiter.v', 'tb/tb_mem_arbiter_r40.v'])
                 else:
-                    command.extend(['rtl/tnca_grid_dispatch.v',
+                    command.extend(['rtl/tnca_grid_dispatch.v', 'rtl/tnca_grid_deadline.v',
                                     'tb/top/tb_grid_cores.v' if bench == 'tb_grid_cores' else 'tb/tb_grid_dispatch.v'])
                 subprocess.run(command, cwd=ROOT, check=True, timeout=180)
                 subprocess.run(['vvp', output, '+hex=' + image], cwd=ROOT, check=True, timeout=600 if memory else 180)

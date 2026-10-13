@@ -8,6 +8,8 @@ module tnca_grid_dispatch #(
 )(
     input wire clk, rst_n,
     input wire launch_valid,
+    input wire abort_valid,
+    input wire [3:0] abort_status,
     output wire launch_ready,
     input wire [63:0] launch_id, launch_pc, launch_arg_base, launch_arg_stride,
     input wire [31:0] launch_gx, launch_gy, launch_gz,
@@ -40,7 +42,7 @@ module tnca_grid_dispatch #(
     reg fault_now;
     integer f;
     always @* begin
-        fault_now=unexpected_done | (|(core_abort & core_busy));
+        fault_now=(abort_valid && running) | unexpected_done | (|(core_abort & core_busy));
         for(f=0;f<CORE_N;f=f+1)
             if(core_done[f] && core_busy[f] && core_status[f*4+:4]!=0) fault_now=1;
     end
@@ -112,6 +114,10 @@ module tnca_grid_dispatch #(
                         fault_core<=c;selected_fault=1;
                         done_status<=!core_busy[c] || core_status[c*4+:4]==0 ? 1 : core_status[c*4+:4];
                     end
+                end
+                if(!faulted && !selected_fault && abort_valid) begin
+                    done_status<=abort_status==0 ? 4'd1 : abort_status;
+                    fault_core<=0;
                 end
                 if(fault_now) faulted<=1;
                 if(|enqueue) begin

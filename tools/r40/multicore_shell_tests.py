@@ -20,7 +20,7 @@ def main():
             for library in ('common','core','gen','nuca','noc','tile'):
                 command.extend(['-y','rtl/'+library])
             command.extend(str(p.relative_to(ROOT)) for p in sorted((ROOT/'rtl/common').glob('*.v')))
-            command.extend(['rtl/tnca_top.v','rtl/tnca_grid_dispatch.v','rtl/tnca_multicore_shell.v',
+            command.extend(['rtl/tnca_top.v','rtl/tnca_grid_dispatch.v', 'rtl/tnca_grid_deadline.v','rtl/tnca_multicore_shell.v',
                             'tb/common/tnca_dram_model.v','tb/device/tb_multicore_shell.v'])
             subprocess.run(command,cwd=ROOT,check=True,timeout=180)
             subprocess.run(['vvp',output,'+hex='+image],cwd=ROOT,check=True,timeout=900)

@@ -22,7 +22,7 @@ def main():
         for library in ('common', 'core', 'gen', 'nuca', 'noc', 'tile'):
             command.extend(['-y', 'rtl/'+library])
         command.extend(str(p.relative_to(ROOT)) for p in sorted((ROOT/'rtl/common').glob('*.v')))
-        command.extend(['rtl/tnca_top.v', 'rtl/tnca_grid_dispatch.v',
+        command.extend(['rtl/tnca_top.v', 'rtl/tnca_grid_dispatch.v', 'rtl/tnca_grid_deadline.v',
                         'tb/common/tnca_dram_model.v', 'tb/top/tb_grid_cores.v'])
         run(command)
         run(['vvp', output, '+hex='+image], timeout=600)

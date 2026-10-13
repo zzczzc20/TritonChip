@@ -13,7 +13,7 @@ module tnca_multicore_shell #(
 )(
  input wire clk,rst_n,
  input wire cmd_valid,output wire cmd_ready,
- input wire [63:0] cmd_id,cmd_pc,cmd_arg_base,cmd_arg_stride,
+ input wire [63:0] cmd_id,cmd_pc,cmd_arg_base,cmd_arg_stride,cmd_deadline,
  input wire [31:0] cmd_gx,cmd_gy,cmd_gz,
  input wire [N-1:0] cmd_cores,input wire [NUM_RCTX-1:0] cmd_roles,
  input wire [3:0] cmd_slice,input wire [NUM_RCTX*PHYS_W-1:0] cmd_vbase,
@@ -25,7 +25,7 @@ module tnca_multicore_shell #(
  input wire [63:0] host_addr,host_wdata,input wire [7:0] host_be,
  output wire host_rsp_valid,output wire [63:0] host_rsp_data,
  output wire [3:0] host_rsp_status,
- output wire busy,output wire all_idle,
+ output wire busy,output wire all_idle,output wire timed_out,
  output wire [N-1:0] fault_valid,output wire [N*8-1:0] fault_code,
  output wire [N*64-1:0] fault_pc,output wire [N*24-1:0] fault_detail,
  output wire mem_req_valid,input wire mem_req_ready,output wire [63:0] mem_req_addr,
@@ -39,7 +39,11 @@ module tnca_multicore_shell #(
  wire grid_ready,grid_done,host_busy,data_ready,data_rsp;
  wire [63:0] data_rdata,grid_id,grid_cycles;
  wire [3:0] grid_status;
- reg invalid_done,code_pending,bad_host_pending;
+ reg invalid_done,code_pending,bad_host_pending,launch_live;
+ wire deadline_abort;
+ wire start_grid=cmd_valid && cmd_ready && !bad_pc;
+ tnca_grid_deadline u_deadline(.clk(clk),.rst_n(rst_n),.start(start_grid),
+  .active(launch_live && !grid_done),.deadline(cmd_deadline),.abort_valid(deadline_abort),.timed_out(timed_out),.elapsed());
  reg [63:0] invalid_id;
  wire [63:0] code_rdata;
  wire bad_host_addr=|host_addr[2:0];
@@ -76,9 +80,11 @@ module tnca_multicore_shell #(
   assign insn[c*64+:64]=instruction;
  end endgenerate
  always @(posedge clk) begin
-  if(!rst_n)begin invalid_done<=0;invalid_id<=0;code_pending<=0;bad_host_pending<=0;end
+  if(!rst_n)begin launch_live<=0;invalid_done<=0;invalid_id<=0;code_pending<=0;bad_host_pending<=0;end
   else begin
    code_pending<=0;bad_host_pending<=0;
+   if(start_grid)launch_live<=1;
+   if(grid_done)launch_live<=0;
    if(invalid_done && done_ready)invalid_done<=0;
    if(cmd_valid && cmd_ready && bad_pc)begin invalid_done<=1;invalid_id<=cmd_id;end
    if(code_fire)code_pending<=1;
@@ -93,7 +99,7 @@ module tnca_multicore_shell #(
   .RSLICE(RSLICE),.RPAIR(RPAIR),.HAS_TENSOR_XPOSE(HAS_TENSOR_XPOSE),
   .SETS(SETS),.SET_W(SET_W),.WAYS(WAYS),.WAY_W(WAY_W)) u_system (
   .clk(clk),.rst_n(rst_n),.launch_valid(1'b0),.launch_pc(cmd_pc),.launch_arg_base(cmd_arg_base),
-  .launch_role_mask(cmd_roles),.launch_vbase(cmd_vbase),.grid_slice(cmd_slice),
+  .grid_abort(deadline_abort),.grid_abort_status(4'd2),.launch_role_mask(cmd_roles),.launch_vbase(cmd_vbase),.grid_slice(cmd_slice),
   .grid_valid(cmd_valid && !bad_pc && !code_pending && !bad_host_pending && !invalid_done),.grid_ready(grid_ready),
   .grid_id(cmd_id),.grid_arg_stride(cmd_arg_stride),.grid_x(cmd_gx),.grid_y(cmd_gy),.grid_z(cmd_gz),
   .grid_cores(cmd_cores),.grid_done_valid(grid_done),.grid_done_ready(done_ready && !invalid_done),

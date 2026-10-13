@@ -2046,5 +2046,12 @@ r40-coherent-host: | dirs
 	@$(PYTHON) tools/r40/coherent_host_tests.py
 
 .PHONY: r40-multicore-shell
-r40-multicore-shell: | dirs
+r40-multicore-shell: r40-grid-deadline | dirs
 	@$(PYTHON) tools/r40/multicore_shell_tests.py
+
+.PHONY: r40-grid-deadline
+r40-grid-deadline: | dirs
+	@mkdir -p $(BUILD)/r40
+	@$(IVERILOG) $(IVFLAGS) -s tb_grid_deadline -o $(BUILD)/r40/grid_deadline.vvp \
+	  $(RTL)/tnca_grid_deadline.v $(TB)/tb_grid_deadline.v
+	@$(VVP) $(BUILD)/r40/grid_deadline.vvp

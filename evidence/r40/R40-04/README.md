@@ -117,3 +117,27 @@ addresses above 4 GiB, correct host DMA and in-place device increment.
 The separate 64 MiB capacity/96 MiB streaming audit is running. This does
 not yet close R40-04 or establish its bandwidth/performance thresholds.
 The image predates the new common-clock registers.
+
+2026-10-13 capacity and epoch correction: the first full board attempt is
+preserved in ram_image/ram_board_full.json and r40_ram_board_full.log.
+Capacity initially failed at relative error 0.0388002; streaming was refused
+at 6144 programs by the legacy 4096 admission policy. No threshold changed.
+A standard Torch diagnostic verifies input/weight copies exactly before and
+after compute: K=128/512 pass near 0.00028 relative error; K=4096 errors are
+confined to the last 32 outputs. With the existing general RCTX_SPMD=0
+switch, the same 64 MiB graph passes at 0.000311608. Window, all-32-PC samples
+and capacity pass 3/3; see ram_board_capacity_serial.json and the exact shell
+invocation (software 576b310, same ac580b0 image). This is capacity capability
+evidence, not a performance claim or acceptance of the SPMD-on path.
+
+The barrier counter used 16 bits although ISA tokens carry 48. A role-SPMD
+launch can arm a barrier more than 65535 times before the next launch reset;
+the wrapped token zero looked complete while its command was outstanding.
+The RTL now uses all 48 bits and faults explicitly at exhaustion rather than
+wrapping. Public-port regression tests cover 0..65537 generations, delayed
+completion, sleeping waiter release, old completed tokens, and a reduced
+width exhaustion/init test. Both pass; the old RTL fails precisely at 65536.
+The complete FPGA regression passes 8/8 on a fresh source snapshot. Full HBM
+regression is running. This correction still requires a new timing-closed
+board image and SPMD-on capacity verification; the currently loaded ac580b0
+image remains unchanged. make r40-hbm requires make r40-barrier-epoch.

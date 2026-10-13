@@ -1,0 +1,2 @@
+BAD_INDICES []
+CASE 4096 8192 max_rel_err 0.00031160793150775135 worst_index 199 actual -4.40625 ref -4.40794563293457 input_copies_exact

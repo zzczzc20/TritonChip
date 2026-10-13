@@ -1495,8 +1495,18 @@ r40-online-attention: $(R2_DATA_STAMP) | dirs
 # refusing and reset AXI traffic, its mutations, and the tnca device on the
 # simulated /hbm memory mode. The board's measurements are added by their own
 # runs; until then the gates say not-measured.
+.PHONY: r40-barrier-epoch
+r40-barrier-epoch: | dirs
+	@mkdir -p $(BUILD)/r40
+	@$(IVERILOG) $(IVFLAGS) -s tb_barrier_epoch -o $(BUILD)/r40/barrier_epoch.vvp \
+	  $(RTL)/core/tnca_barrier.v $(TB)/core/tb_barrier_epoch.v
+	@$(VVP) $(BUILD)/r40/barrier_epoch.vvp
+	@$(IVERILOG) $(IVFLAGS) -DEPOCH_EXHAUST -s tb_barrier_epoch \
+	  -o $(BUILD)/r40/barrier_exhaust.vvp $(RTL)/core/tnca_barrier.v $(TB)/core/tb_barrier_epoch.v
+	@$(VVP) $(BUILD)/r40/barrier_exhaust.vvp
+
 .PHONY: r40-hbm
-r40-hbm: $(R2_DATA_STAMP) | dirs
+r40-hbm: $(R2_DATA_STAMP) r40-barrier-epoch | dirs
 	@$(PYTHON) tools/r40/tensor_bounds_tests.py --log $(BUILD)/r40/tensor_bounds_formal.log
 	@$(PYTHON) tools/r40/ram_cache_inference_tests.py
 	@TORCH_PYTHON=$(TORCH_PYTHON) $(PYTHON) tools/r40/hbm_tests.py --evidence

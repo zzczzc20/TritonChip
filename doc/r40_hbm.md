@@ -277,3 +277,18 @@ kernel；保留完整报告和逐路径范围审查，不将其表述为全平�
 设备更新。64 MiB capacity / 96 MiB streaming 的独立审计仍在运行。
 证据在 `evidence/r40/R40-04/ram_image/`；尚未关闭 R40-04，也未声称
 满足带宽门限。该镜像尚无新的公共时钟寄存器。
+
+### 2026-10-13：64 MiB 容量与 barrier epoch 缺口
+
+首次 capacity 的误差 3.88% 超过 2% 门限，失败结果完整保留。输入和权重
+在计算前后逐位一致，异常集中在最后两个 output tile。关闭已有通用
+`TNCA_RCTX_SPMD` 开关后，同一个标准 Torch 图误差降为 0.03116%，
+window / 全 32 PC samples / 64 MiB capacity 上板 3/3 通过。
+这是容量能力证据，不是 SPMD-on 通过或性能收益。
+
+barrier 的 epoch 实际只保存 16 位，第 65536 次 arm 回绕为 token 0，
+使尚未完成的操作提前通过 wait。RTL 已改为 ISA 的 48 位 epoch，
+耗尽时明确 fault；跨 65536、sleep/wake、晚到旧 token 和耗尽后 init
+测试通过，旧 RTL 在 65536 被反例捕获，FPGA 回归 8/8。
+须重新实现并在新镜像上复验 SPMD-on；当前板卡镜像仍为 ac580b0。
+96 MiB streaming 还被旧的 4096-program admission 拒绝，未关闭带宽 gate。

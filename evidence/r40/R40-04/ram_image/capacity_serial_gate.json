@@ -1,0 +1,31 @@
+{
+ "gates": {
+  "R40-04.hbm": {
+   "status": "capability-pass",
+   "checks": [
+    {
+     "name": "board:window",
+     "ok": true,
+     "detail": "{\"base\": \"0x0\", \"size\": 8589934592, \"local_limit\": \"0x20000\", \"bank\": \"MBG[0:31]\", \"bank_bytes\": 8589934592, \"bank_index\": 41, \"heap_end\": \"0x200020000\", \"dma\": true}"
+    },
+    {
+     "name": "board:samples",
+     "ok": true,
+     "detail": "{\"samples\": 32, \"first\": \"0x21000\", \"last\": \"0x1f0021000\", \"pseudo_channels\": 32, \"pc_first\": 0, \"pc_last\": 31, \"all_pc_coverage\": true}"
+    },
+    {
+     "name": "board:capacity",
+     "ok": true,
+     "detail": "{\"working_set\": 67133440, \"rel_err\": 0.00031160793150775135, \"launches\": 1, \"device_cycles\": 312495441, \"axi\": {\"reads\": 13767663, \"writes\": 9311744, \"read_cycles\": 1297512775, \"read_beats\": 110141304}, \"read_bytes_per_cycle\": 2.8197, \"mean_read_latency\": 94.24}"
+    },
+    {
+     "name": "board:all-32-PCs",
+     "ok": true,
+     "detail": "sampling must cover HBM[0:31], including the final PC"
+    }
+   ],
+   "detail": "U280 HBM image: window, whole-window samples, >=64 MiB standard Torch graph",
+   "written": "2026-10-13T05:52:11+00:00"
+  }
+ }
+}

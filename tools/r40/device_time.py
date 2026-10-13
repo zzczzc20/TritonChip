@@ -66,7 +66,13 @@ def main(argv=None):
         # The diagnostic: the points that passed on both sides.
         ran = {pid: sha for pid, sha in subset.items()
                if native.get(pid, {}).get('status') == 'pass'}
-        diag = ablate.compare(a, bpath, ran, exp['vary'], legacy_a=True, timing=exp['timing']) if ran else None
+        diag_refused = None
+        try:
+            diag = ablate.compare(a, bpath, ran, exp['vary'], legacy_a=True, timing=exp['timing']) if ran else None
+        except ablate.Refused as e:
+            # A changed image/knob may refuse the diagnostic too. Keep the
+            # independent native inventory verdict and the strict refusal.
+            diag, diag_refused = None, str(e)
     statuses = {}
     for pid in subset:
         st = native.get(pid, {}).get('status', 'absent')
@@ -85,7 +91,7 @@ def main(argv=None):
     detail = (f"points: {statuses}; " + (f"S_geo {res['s_geo']:.4f}" if res else f'refused ({refused.kind})')
               + (f"; diagnostic over the {len(ran)} that ran: S_geo {diag['s_geo']:.4f}, {ident} "
                  f"cycle-identical, worst {diag['worst']['point']} {diag['worst']['speedup']:.3f}"
-                 if diag else ''))
+                 if diag else f'; diagnostic refused: {diag_refused}' if diag_refused else ''))
     print(f'R40-01.device-time  {status}  {detail}')
     # Acceptance 1: every point through model.to("tnca") and torch.compile
     # on the device, outputs on it, no host fallback, nothing staged.

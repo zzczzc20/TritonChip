@@ -1,0 +1,28 @@
+{
+  "points": 77,
+  "passed": 77,
+  "tiers": {
+    "tiny": 27,
+    "small": 25,
+    "medium": 25
+  },
+  "native": true,
+  "tensor_descriptors": true,
+  "fallbacks": 0,
+  "warmup": 5,
+  "timed": 30,
+  "source_tree": [
+    "files:194d159026549dcd7def42490533cc1f850e54922fef27798dc705eb4954f534"
+  ],
+  "image": [
+    "xclbin:62751b3ca7904465"
+  ],
+  "knobs": {
+    "TNCA_HBM_BYTES": "8589934592",
+    "TNCA_RCTX_SPMD": "0",
+    "TNCA_TORCH_DEVICE": "native"
+  },
+  "inventory_sha256": "3f254ec02800bfad9b1c1447e04816540a5f528b9a4f6e9ebf6ab5b4cc548050",
+  "device_time_gate": "refused: undeclared TNCA_HBM_BYTES and TNCA_RCTX_SPMD differences",
+  "full_r40_accepted": false
+}

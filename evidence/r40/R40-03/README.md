@@ -164,7 +164,9 @@ FP16 mm/addmm 4/4 pass, including both tails, zero steady transfers,
 actual machine K/dtype/window definitions and logical tile provenance.
 Windows 64 -> reserved 32; complete vector union 44 or 45.
 Packed source windows are refused until a snapshot retile is implemented;
-inputs are never silently reread. BF16 execution is pending.
+inputs are never silently reread. BF16 execution also passes 4/4
+(`gemm_k64_retile_bf16.log`), with both mm/addmm tail shapes and the same
+actual K32 command/window/register audits. `r40-tiles` runs both dtypes.
 
 Retile unit 4/4 includes ordered accumulation, stable parent cache keys,
 packed-input refusal and default-off K64 preservation. Compiler-unit 89

@@ -262,3 +262,18 @@ wrapper/协议 8/8 通过。变异覆盖 live tag、覆盖 held 回复、
 `--ram-cache` 只允许 HBM burst 配置；公共 `make r40-hbm` 加入映射核验。
 新 100 MHz link 将显式开启 local pipeline 和 RAM cache，仍保留
 16 line / 32 waiter / OUT_N16 / 8-beat / PF1 的容量与并发配置。
+
+### 2026-10-13：首个保持 100 MHz 的真实 HBM 镜像
+
+`u280_r40ram`（硬件 ac580b0）完成 post-route：setup WNS +0.016 ns、
+TNS 0，hold WHS +0.006 ns、THS 0，pulse-width 失败为 0，无未约束内部
+endpoint。v++ 保持 kernel/device 100 MHz、HBM 450 MHz。完整 CDC 的
+58 条 critical 均为平台 PCIe/ERT/clock/HBM IP 内部路径，未涉及 TNCA
+kernel；保留完整报告和逐路径范围审查，不将其表述为全平台零 critical。
+
+确认板卡空闲、无打开的用户和温度正常后，`program.sh --check/--go`
+均通过，新 UUID `e576c850-23ec-61c0-f728-74a1c19676ea`。真实标准 Torch
+测试通过 8 GiB HBM 窗口、32/32 PC、高于 4 GiB 的地址、DMA 和原地
+设备更新。64 MiB capacity / 96 MiB streaming 的独立审计仍在运行。
+证据在 `evidence/r40/R40-04/ram_image/`；尚未关闭 R40-04，也未声称
+满足带宽门限。该镜像尚无新的公共时钟寄存器。

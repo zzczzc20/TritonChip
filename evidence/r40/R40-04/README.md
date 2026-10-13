@@ -93,3 +93,27 @@ reading uninitialized RAM; gapped/partial views preserve neighboring bytes.
 Host copy units 4/4, native copy 15/15, runtime 7/7, backend 3/3 pass.
 See device_clock_* and host_* logs. The current ac580b0 RAM image build
 does not include these clock registers; no board clock evidence is claimed.
+
+2026-10-13 first timing-closed HBM image: source ac580b0 (the optional
+local request pipeline and synchronous RAM cache), single physical core,
+SLR1, HBM[0:31], 100 MHz kernel/device, 450 MHz HBM. Post-route setup WNS
++0.016 ns / TNS 0; hold WHS +0.006 ns / THS 0; pulse-width violations 0,
+no unconstrained internal endpoints. v++ retained both requested clocks.
+The xclbin SHA256 is 62751b3ca79044655bcb617a805f7ca2d2360efb752bcf63280fb59f25417413.
+
+The complete routed CDC report has 58 critical findings, all internal to
+vendor platform PCIe/ERT/clock/HBM IP; no reported crossing involves the
+TNCA kernel. This is an explicit scope review, not a claim that the platform
+report has zero critical findings. The raw report, all critical endpoints
+and source hierarchy classification are preserved in ram_image/. Full
+reports are gzip-compressed; reports.json retains their uncompressed hashes.
+
+The card was idle, had no open users and measured FPGA 32 C / HBM 27 C.
+program.sh --check and --go passed; the loaded UUID is
+e576c850-23ec-61c0-f728-74a1c19676ea. Standard native Torch window and address
+sampling pass 2/2 on software 576b310: an 8 GiB MBG[0:31] BO, 32 distinct
+pseudo-channels, first sample 0x21000, final sample 0x1f0021000, including
+addresses above 4 GiB, correct host DMA and in-place device increment.
+The separate 64 MiB capacity/96 MiB streaming audit is running. This does
+not yet close R40-04 or establish its bandwidth/performance thresholds.
+The image predates the new common-clock registers.

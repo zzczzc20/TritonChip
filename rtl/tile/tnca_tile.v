@@ -26,6 +26,7 @@ module tnca_tile #(
     parameter TILE_ID     = 0,
     parameter NUM_TILES   = 4,
     parameter GLOBAL_GRID = 0,
+    parameter NX = 2, NY = 2,
     parameter XW          = 2,
     parameter YW          = 2,
     // core
@@ -231,7 +232,7 @@ module tnca_tile #(
     wire [FW-1:0]   ni_out_f_rsp;
 
     tnca_core_ni #(
-        .XW(XW), .YW(YW), .TAG_W(LSU_TAG_W), .SRC_W(SLICE_SRC_W),
+        .NX(NX), .NY(NY), .XW(XW), .YW(YW), .TAG_W(LSU_TAG_W), .SRC_W(SLICE_SRC_W),
         .MY_ID(TILE_ID), .LINE_SH(6)
     ) u_cni (
         .clk(clk), .rst_n(rst_n),
@@ -267,7 +268,7 @@ module tnca_tile #(
     wire [FW-1:0]   ni_out_f_req;
 
     tnca_slice_ni #(
-        .XW(XW), .YW(YW), .TAG_W(SLICE_TAG_W), .SRC_W(SLICE_SRC_W)
+        .NX(NX), .NY(NY), .XW(XW), .YW(YW), .TAG_W(SLICE_TAG_W), .SRC_W(SLICE_SRC_W)
     ) u_sni (
         .clk(clk), .rst_n(rst_n),
         .req_valid(s_req_valid), .req_ready(s_req_ready),
@@ -288,6 +289,7 @@ module tnca_tile #(
     // NUCA slice
     //==========================================================================
     tnca_nuca_slice #(
+        .FULL_LINE_TAG(!(NX==2 && NY==2)),
         .ADDR_W(64), .LINE_BYTES(LINE_BYTES), .LINE_BITS(LINE_BITS),
         .WORD_BITS(64), .WORD_BYTES(8),
         .SETS(SETS), .SET_W(SET_W), .WAYS(WAYS), .WAY_W(WAY_W),

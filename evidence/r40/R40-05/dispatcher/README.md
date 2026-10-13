@@ -25,3 +25,7 @@ Legacy GLOBAL_GRID=0 retains the old broadcast launch and tile ID semantics.
 Public runtime/multicore backend, compiler role-SPMD compatibility, memory traffic
 with 8-core requester tags, pipelined SLR links, physical placement and board
 performance remain required. This diagnostic does not mark R40-05 accepted.
+
+This initial checkpoint was committed at b4a3d4f. Its source hashes refer to
+that revision. Subsequent real-memory routing and visibility tests, with their
+own source hashes and failure/retry records, are in `../memory_routing/`.

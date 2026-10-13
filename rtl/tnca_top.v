@@ -23,6 +23,7 @@ module tnca_top #(
     parameter GLOBAL_GRID = 0,
     parameter NX          = 2,
     parameter NY          = 2,
+    parameter MEM_SRC_W   = (NX*NY>4 ? $clog2(NX*NY) : 2),
     parameter XW          = 2,
     parameter YW          = 2,
     parameter NUM_RCTX    = 2,
@@ -108,10 +109,10 @@ module tnca_top #(
     output wire                     mem_req_we,
     output wire [LINE_BITS-1:0]     mem_req_wdata,
     output wire [MSHR_W-1:0]        mem_req_tag,
-    output wire [1:0]               mem_req_src,
+    output wire [MEM_SRC_W-1:0]     mem_req_src,
     input  wire                     mem_rsp_valid,
     input  wire [MSHR_W-1:0]        mem_rsp_tag,
-    input  wire [1:0]               mem_rsp_src,
+    input  wire [MEM_SRC_W-1:0]     mem_rsp_src,
     input  wire [LINE_BITS-1:0]     mem_rsp_rdata,
 
     // ---- counters -----------------------------------------------------------
@@ -241,7 +242,7 @@ module tnca_top #(
     generate
         for (t = 0; t < N; t = t + 1) begin : g_tile
             tnca_tile #(
-                .TILE_ID(t), .NUM_TILES(N), .GLOBAL_GRID(GLOBAL_GRID), .XW(XW), .YW(YW),
+                .TILE_ID(t), .NUM_TILES(N), .GLOBAL_GRID(GLOBAL_GRID), .NX(NX), .NY(NY), .XW(XW), .YW(YW),
                 .NUM_RCTX(NUM_RCTX), .RCTX_W(RCTX_W), .VLEN(VLEN), .ELEN(ELEN),
                 .LW(LW), .VREGS_PER_RCTX(VREGS_PER_RCTX),
                 .PHYS_VREGS(PHYS_VREGS), .PHYS_W(PHYS_W),
@@ -332,7 +333,7 @@ module tnca_top #(
     );
 
     tnca_mem_arbiter #(
-        .N(N), .N_W(2), .ADDR_W(64), .LINE_BITS(LINE_BITS), .TAG_W(MSHR_W)
+        .N(N), .N_W(MEM_SRC_W), .ADDR_W(64), .LINE_BITS(LINE_BITS), .TAG_W(MSHR_W)
     ) u_marb (
         .clk(clk), .rst_n(rst_n),
         .s_req_valid(m_req_valid), .s_req_ready(m_req_ready),

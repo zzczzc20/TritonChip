@@ -72,6 +72,8 @@ module tnca_nuca_slice #(
     // so every line this slice sees has those two bits fixed by its id.
     parameter SLICE_ID   = 0,
     parameter HOME_W     = 2,
+    // Generic home hashes cannot recover omitted address bits from slice ID.
+    parameter FULL_LINE_TAG = 0,
     // DCO (rtl/nuca/tnca_tmu.v): tensor-table entries, dead-FIFO entries,
     // tile-identifier width, and the address window of the TMU's registers.
     parameter DCO_T      = 8,
@@ -165,7 +167,8 @@ module tnca_nuca_slice #(
     // that reaches this slice, so indexing with them -- as this slice did
     // until R38 -- left only SETS/4 of its sets reachable and three quarters
     // of the array unused. The tag is everything above the set.
-    localparam TAGB     = ADDR_W - OFF_W - HOME_W - SET_W;
+    localparam HOME_SKIP = FULL_LINE_TAG ? 0 : HOME_W;
+    localparam TAGB     = ADDR_W - OFF_W - HOME_SKIP - SET_W;
     localparam LINES    = SETS * WAYS;
     localparam LINE_W   = SET_W + WAY_W;
 
@@ -186,7 +189,7 @@ module tnca_nuca_slice #(
     //==========================================================================
     // Address decomposition
     //==========================================================================
-    `define SLICE_SET(ad)  (ad[OFF_W + HOME_W +: SET_W])
+    `define SLICE_SET(ad)  (ad[OFF_W + HOME_SKIP +: SET_W])
     `define SLICE_TAG(ad)  (ad[ADDR_W-1 -: TAGB])
     `define SLICE_WSEL(ad) (ad[WORD_BYTES==8 ? 3 : 2 +: WSEL_W])
 
@@ -198,7 +201,8 @@ module tnca_nuca_slice #(
         reg   [HOME_W-1:0] home;
         begin
             home = SLICE_ID[HOME_W-1:0] ^ st[HOME_W-1:0];
-            line_addr = {tg, st, home, {OFF_W{1'b0}}};
+            if(FULL_LINE_TAG) line_addr = {tg, st, {OFF_W{1'b0}}};
+            else line_addr = {tg, st, home, {OFF_W{1'b0}}};
         end
     endfunction
 

@@ -424,6 +424,45 @@ class Transport(_backend.Backend):
                             timeout=timeout)
 
     @serialized_io
+    def physical_grid_capability(self):
+        """Read-only opt-in negotiation; old images explicitly refuse opcode 10."""
+        if not hasattr(self, '_physical_grid_capability'):
+            reply = self.request(10)
+            if reply.status == ST_REFUSED:
+                self._physical_grid_capability = None
+            elif reply.ok and 1 <= reply.r0 <= 16 and 1 <= reply.r1 <= 0xFFFFFFFF:
+                self._physical_grid_capability = (reply.r0, reply.r1)
+            else:
+                raise DeviceLost('malformed physical grid capability response')
+        return self._physical_grid_capability
+
+    def launch_grid(self, pc, arg_base, grid, *, arg_stride=0,
+                    active_cores=None, role_mask=1, timeout=None):
+        """One hardware command for the whole grid; no host per-program loop."""
+        dims = tuple(operator.index(v) for v in grid)
+        if len(dims) != 3 or any(v < 0 or v > 0xFFFFFFFF for v in dims):
+            raise ValueError('grid must contain three unsigned 32-bit axes')
+        pc, arg_base, arg_stride, role_mask = map(operator.index,
+                                                (pc, arg_base, arg_stride, role_mask))
+        if any(v < 0 or v > 0xFFFFFFFFFFFFFFFF or v % 8 for v in (pc, arg_base, arg_stride)):
+            raise ValueError('PC, argument base and stride must be aligned uint64 values')
+        if role_mask < 0 or role_mask > 0xFFFFFFFF or role_mask & 0x0FFFFFF0:
+            raise ValueError('role mask must contain only four context bits and slice flags')
+        capability = self.physical_grid_capability()
+        if capability is None:
+            raise ValueError('image does not support physical grid dispatch')
+        cores, limit = capability
+        mask = (1 << cores) - 1 if active_cores is None else operator.index(active_cores)
+        if mask <= 0 or mask >= 1 << cores:
+            raise ValueError('active core mask is outside the advertised physical cores')
+        gx, gy, gz = dims
+        if gx * gy * gz > limit:
+            raise ValueError('grid exceeds the advertised streaming budget')
+        return self.request(11, pc, arg_base, role_mask,
+                            gx | (gy << 32), gz | (mask << 32), arg_stride,
+                            timeout=timeout)
+
+    @serialized_io
     def large_grid_limit(self):
         """Query once per backend epoch; old images explicitly refuse op 8."""
         if not hasattr(self, '_large_grid_limit'):

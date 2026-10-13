@@ -2055,3 +2055,10 @@ r40-grid-deadline: | dirs
 	@$(IVERILOG) $(IVFLAGS) -s tb_grid_deadline -o $(BUILD)/r40/grid_deadline.vvp \
 	  $(RTL)/tnca_grid_deadline.v $(TB)/tb_grid_deadline.v
 	@$(VVP) $(BUILD)/r40/grid_deadline.vvp
+
+# Mailbox protocol diagnostic. Standard Torch multicore acceptance is separate.
+.PHONY: r40-physical-grid-transport
+r40-physical-grid-transport: | dirs
+	@$(TRITON_PYTHON) tools/r40/physical_grid_option_tests.py
+	@$(TRITON_PYTHON) tools/r40/multicore_transport_tests.py
+	@$(TRITON_PYTHON) tools/r40/large_grid_tests.py

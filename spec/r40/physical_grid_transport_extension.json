@@ -1,0 +1,20 @@
+{
+  "schema": "tnca-r40-physical-grid-extension/1",
+  "legacy_contract": "spec/r2_transport_v1.json (unchanged)",
+  "opt_in": "Transport.launch_grid; not enabled by default Session",
+  "operations": {
+    "10": {"name": "PHYSICAL_GRID_CAP", "read_only": true, "r0": "physical core count (1..16)", "r1": "maximum programs in a streaming grid", "old_image": "REFUSED; no physical dispatch fallback"},
+    "11": {"name": "PHYSICAL_GRID_LAUNCH", "a0": "entry PC", "a1": "core-0 argument block", "a2": "legacy uint32 role/slice flags", "a3": "gx | gy<<32", "a4": "gz | active_cores<<32", "a5": "per-core argument block stride in bytes", "launch_id": "request sequence", "success_r0": "global cycles low 32 bits", "success_r1": "global cycles high 32 bits"}
+  },
+  "rules": [
+    "Negotiate capability before launch; never infer physical cores from role contexts.",
+    "One request dispatches the complete logical grid, with bounded hardware queues.",
+    "Each core's arguments are at a1 + physical_core_id*a5; the host populates private scratch pointers in those blocks.",
+    "All logical axes are unsigned 32-bit and the product is checked against the advertised budget.",
+    "Code is uploaded to the shell's private-code window before launch; data accesses use coherent NUCA.",
+    "The binding preserves request sequence identity through hardware completion.",
+    "An expiry diagnostic before hardware drain poisons the simulation epoch; further writes and launches are refused.",
+    "Capability does not imply compiler role-SPMD compatibility; public runtime partitioning remains a separate integration requirement.",
+    "The new simulation binding refuses unsupported legacy single-program opcodes rather than reinterpret their metadata."
+  ]
+}

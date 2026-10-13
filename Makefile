@@ -1477,6 +1477,7 @@ r40-tiles: $(R2_DATA_STAMP) | dirs
 	@TNCA_WINDOW_REUSE=1 TNCA_HOST_TIMEOUT=$(R40_HOST_TIMEOUT) $(TORCH_PYTHON) tools/r40/gemm_tiles_tests.py --columns 64 --depth 32
 	@for dtype in float16 bfloat16; do TNCA_WINDOW_REUSE=1 TNCA_HOST_TIMEOUT=$(R40_HOST_TIMEOUT) $(TORCH_PYTHON) tools/r40/gemm_tiles_tests.py --columns 16 --depth 64 --dtype $$dtype || exit $$?; done
 	@$(TRITON_PYTHON) tools/r40/window_options_tests.py
+	@$(TRITON_PYTHON) tools/r40/compile_switch_tests.py
 	@$(PYTHON) tools/r40/packed_window_options_tests.py
 	@for mode in 0 1; do $(TORCH_PYTHON) tools/r40/bank_tests.py --enabled $$mode --out $(BUILD)/r40/bank_$$mode.json || exit $$?; done
 	@TNCA_BANK_ALLOC=0 TNCA_WINDOW_REUSE=0 TNCA_PACKED_WINDOW_UNPACK=0 $(TRITON_PYTHON) tools/r40/contract_tests.py

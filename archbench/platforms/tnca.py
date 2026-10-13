@@ -277,7 +277,14 @@ def run(point, *, profile='core-sim', opt_level=2, seed=0, counters=False, warmu
     rec['schema'] = SCHEMA2
     first = dict(wall_s=round(wall, 3), device_cycles=cycles or None)
     calls = []
-    if rec['status'] == 'pass' and (warmup or timed):
+    # Native FakeTensor constant propagation can clone real device literals
+    # while compiling. Preserve that cold call, but require each measured
+    # steady call to execute exactly the generated wrapper's launches.
+    cold_setup = (native and timed > 0 and rec['status'] == 'not-measured'
+                  and expected is not None and len(log) != expected
+                  and cmp['ok'] and not rec['fallbacks'] and len(problems) == 1)
+    measured_log = log
+    if (rec['status'] == 'pass' or cold_setup) and (warmup or timed):
         got = None               # the first call's outputs are not held across the timed calls
         try:
             calls = _steady(compiled, inputs, warmup + timed, expected, launch_log, torch)
@@ -289,11 +296,20 @@ def run(point, *, profile='core-sim', opt_level=2, seed=0, counters=False, warmu
         if bad:
             rec['status'] = 'not-measured'
             rec['problems'].append(f'steady call {bad[0]["index"]}: {bad[0]["problem"]}')
-        elif not compare(calls[-1].pop('out'), ref, point.tolerance)['ok']:
+        elif calls and not compare(calls[-1].pop('out'), ref, point.tolerance)['ok']:
             rec['status'] = 'numeric-error'
             rec['problems'].append('the last timed call does not match the reference')
+        elif calls and cold_setup:
+            rec['cold_call'] = dict(first_call=dict(first), problem=problems[0],
+                provenance=_provenance(profile, backend, backend_kwargs, plat, log, clock))
+            rec['status'], rec['problems'] = 'pass', []
+            measured_log = calls[warmup]['_launch_log']
+            rec['time']['launches'] = len(measured_log)
+            rec['time']['per_launch'] = [dict(kernel=e['kernel'], grid=e['grid'],
+                cycles=e['device_cycles'], programs=len(e['program_cycles'])) for e in measured_log]
         for c in calls:
             c.pop('out', None)
+            c.pop('_launch_log', None)
     steady = [c for c in calls[warmup:]] if calls else []
     rec['timings'] = _timings(cycles, steady, warmup, clock)
     rec['time'].update(kind='device-cycles-serial-grid',
@@ -303,16 +319,24 @@ def run(point, *, profile='core-sim', opt_level=2, seed=0, counters=False, warmu
     if steady:
         rec['time']['device'] = rec['timings']['device-cycles-serial-grid']['median']
         rec['time']['device_seconds'] = rec['time']['device'] / clock if clock else None
+        if cold_setup and rec['status'] == 'pass' and rec['time']['device']:
+            rec['eta'] = L / rec['time']['device']
+            if rec['eta'] > 1:
+                rec['problems'].append(f'AUDIT: eta {rec["eta"]:.4f} > 1 -- a measurement below its strict bound')
     rec['host'].update(first_call_s=first['wall_s'],
                        steady=_host_steady(steady) if steady else None,
                        # the raw per-call breakdown, timed calls only
                        calls=[{k: round(c[k], 6) for k in ('request_s', 'upload_s', 'run_s',
                                                           'download_s')} for c in steady] or None)
-    rec['provenance'] = _provenance(profile, backend, backend_kwargs, plat, log, clock)
+    rec['provenance'] = _provenance(profile, backend, backend_kwargs, plat, measured_log, clock)
     if bundle:
         rec['provenance']['bundle'] = _prov.write_bundle(
             bundle, point_id=point.id, graph_text=graph.text, wrapper_code=code,
-            launches=log, dump_dir=None)
+            launches=measured_log, dump_dir=None)
+        if rec.get('cold_call'):
+            rec['cold_call']['provenance']['bundle'] = _prov.write_bundle(
+                os.path.join(bundle, 'cold_call'), point_id=point.id, graph_text=graph.text,
+                wrapper_code=code, launches=log, dump_dir=None)
     return rec
 
 
@@ -328,7 +352,7 @@ def _steady(compiled, inputs, n, expected, launch_log, torch):
         # launch_log waits for queued TNCA events at graph completion. Keep
         # that wait inside request latency when submission is asynchronous.
         dt = time.monotonic() - t
-        c = dict(index=i, request_s=dt, launches=len(lg),
+        c = dict(index=i, request_s=dt, launches=len(lg), _launch_log=lg,
                  device_cycles=sum(e['device_cycles'] or 0 for e in lg),
                  upload_s=sum(e['host_seconds']['upload'] for e in lg),
                  run_s=sum(e['host_seconds']['run'] for e in lg),

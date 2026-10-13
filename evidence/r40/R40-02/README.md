@@ -153,3 +153,14 @@ frozen_residency_full24_600s.json. The isolated runner now exposes and
 records --host-timeout (default 172800s), independently of its child
 process timeout and the unchanged device cycle deadline. Full rerun
 is pending; no failed record has been replaced with a pass.
+
+2026-10-13 fixed-bucket board audit passes 64/64 on the timing-closed
+ac580b0 U280 image with general TNCA_RCTX_SPMD=0 (software 9630b9b overlay
+on the frozen 576b310 source archive). KV grows from 16 to 80; every position
+executes 40 standard Torch-generated kernels with zero tensor transfers,
+unchanged weights and fixed KV addresses. Exactly one graph is compiled.
+Final heap allocated/peak are 240128/264448 bytes; code allocated/peak
+127296/127296 bytes. See bucket_decode64_board.{log,sh}. The shader source
+is the unchanged frozen tiny LLaMA point checked by its definition hash.
+This completes this 64-step correctness checkpoint; it is not online
+attention, latency, overlap or full R40-02/R40-08 acceptance.

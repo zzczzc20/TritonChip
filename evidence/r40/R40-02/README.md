@@ -11,8 +11,12 @@ remains available separately.
 
 `bucket_decode_cpu.log` passes the CPU semantic/graph test: three positions,
 exact cache placement, unchanged prefix/future slots, poisoned future KV
-masked out, one full graph. Native three-step execution is pending on
-gx10-6646 (`tritonchip-r40-k64/sim/build/r40/bucket_decode3_retry.log`).
+masked out, one full graph. Native three-step execution passed 3/3 on
+gx10-6646; see `bucket_decode3_native.log`. Positions 16–18 each execute
+40 kernels with zero steady tensor transfers, fixed KV storage and unchanged
+weights. The largest relative error is 0.000313729. The audit confirms
+exactly one compiled graph and a resident tensor position. A separate frozen
+64-step run is in progress; this checkpoint does not satisfy that gate.
 The initial attempt explicitly refused unsupported eager device arange;
 slot initialization now uses a one-time explicit upload before the ledger.
 This wrapper touches the full cache bucket on update and uses decomposed

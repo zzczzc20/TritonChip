@@ -174,3 +174,12 @@ tests (5 local MLIR skips). Default B39 contract remains 447/447.
 window_options4.log also proves explicit JIT off wins over environment on,
 while ordinary default off remains absent from the AOT semantic options.
 These are correctness/resource checks, not frozen GEMM speed acceptance.
+
+2026-10-13 CI fault-injection checkpoint: ERR-05 previously raced the
+real PING response overwriting its forged reply before the host read it.
+The test now pauses its owned RTL child, observes the actual stale file
+through the real reader before resuming, and holds the future forgery
+stable until it is rejected. No product transport rule changed.
+ci_err05_synchronized.log confirms the stale sequence was observed and
+future sequence 108 was refused; the full fault suite passes 7/7 in
+ci_err05_fault_suite7.log. This fixes an injection race, not a relaxed gate.

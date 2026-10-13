@@ -1,0 +1,43 @@
+R2-11 faults, drain and recovery
+  ERR-01  PASS  a fault is FAILED, with a trap code and a PC
+    a trapping kernel: FAILED
+    the states it passed through: SUBMITTED -> VALIDATED -> QUEUED -> RUNNING -> FAILING -> DRAINING -> FAILED
+    the error: [KERNEL_FAULT] kernel trapped: code 0x40 at pc 0x50
+    attribution: {'trap': 64, 'pc': 80, 'program': 0}
+    it passed through FAILING and DRAINING: True
+  ERR-02  PASS  a drained fault leaves the session usable
+    the faulting task: FAILED
+    the session after it: poisoned=False
+    an independent task afterwards: SUCCEEDED, correct=True
+  ERR-03  PASS  the deadline poisons, the queue fails, recover() works
+    the kernel that outran the 2000-cycle device deadline: FAILED [DEVICE_LOST]
+    the task queued behind it: FAILED [DEVICE_LOST]
+    the session: poisoned=True
+    submitting to a poisoned session -> [SESSION_POISONED]
+    after recover(): SUCCEEDED, correct=True
+  ERR-04  PASS  a new epoch, every old handle refused, and work again
+    recover(): epoch 0 -> 1
+    a buffer from the old epoch      -> [BUFFER_INVALID]
+    a module from the old epoch      -> [ADMISSION_REFUSED]
+    after re-uploading and re-loading: SUCCEEDED, correct=True
+  ERR-05  PASS  a stale reply is ignored; one from the future is reported
+    a normal task first: SUCCEEDED, correct=True
+    stale sequence actually observed: True
+    forged a FAULT reply for sequence 4, then asked for 8
+    the transport returned: <Reply seq=8 OK r0=8 r1=0> (the real answer)
+    a reply ahead of the request -> [DEVICE_LOST] the device answered sequence 108 while 9 was out
+    a buffer from the previous epoch -> [BUFFER_INVALID]
+  ERR-06  PASS  a dead device is DEVICE_LOST, reaped, and recoverable
+    the device is pid 181336
+    a request to a dead device -> [DEVICE_LOST] the device process is not running
+    it kept the log: device.log
+    the device process is still running: False
+    after recover(): SUCCEEDED, correct=True
+  ERR-07  PASS  16 alternating tasks, no leak, no task reported wrongly
+    8 faulting tasks: ['FAILED']
+    8 legitimate tasks: ['SUCCEEDED']
+    events without a terminal state: none
+    buffers still leased: none
+    tasks that reached RUNNING: 16 of 16
+
+  r2-fault-tests         PASS   7 check(s)

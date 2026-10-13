@@ -1486,6 +1486,10 @@ r40-packed-window-unpack: $(R2_DATA_STAMP) | dirs
 	@PYTHONPATH=compiler/python $(PYTHON) -m unittest discover -s compiler/test -p test_packed_window_unpack.py
 	@$(PYTHON) tools/r40/packed_window_options_tests.py
 	@$(TRITON_PYTHON) tools/r40/packed_window_snapshot_tests.py
+
+.PHONY: r40-online-attention
+r40-online-attention: $(R2_DATA_STAMP) | dirs
+	@$(TORCH_PYTHON) tools/r40/online_attention_tests.py
 # R40-04: single-core HBM (rtl/fpga/tnca_axi_bridge.v). What runs without a
 # board: the bridge against a reference under late, reordered, backpressured,
 # refusing and reset AXI traffic, its mutations, and the tnca device on the

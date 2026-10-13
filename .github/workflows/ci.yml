@@ -75,6 +75,7 @@ jobs:
         run: |
           make r40-grid-dispatch
           make r40-coherent-host
+          make r40-multicore-shell
 
       - name: Unit benches
         run: make unit

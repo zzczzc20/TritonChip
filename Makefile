@@ -2044,3 +2044,7 @@ r40-grid-dispatch: | dirs
 .PHONY: r40-coherent-host
 r40-coherent-host: | dirs
 	@$(PYTHON) tools/r40/coherent_host_tests.py
+
+.PHONY: r40-multicore-shell
+r40-multicore-shell: | dirs
+	@$(PYTHON) tools/r40/multicore_shell_tests.py

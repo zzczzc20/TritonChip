@@ -82,6 +82,7 @@ module tnca_top #(
     input  wire [63:0]              launch_arg_base,
     input  wire [NUM_RCTX*PHYS_W-1:0] launch_vbase,
     input wire grid_valid,
+    input wire [3:0] grid_slice,
     output wire grid_ready,
     input wire [63:0] grid_id, grid_arg_stride,
     input wire [31:0] grid_x, grid_y, grid_z,
@@ -165,9 +166,11 @@ module tnca_top #(
     wire [N*32-1:0] dispatch_x, dispatch_y, dispatch_z;
     wire [31:0] dispatch_nx, dispatch_ny, dispatch_nz;
     wire [NUM_RCTX-1:0] tile_roles;
+    wire [3:0] tile_slice;
     wire [NUM_RCTX*PHYS_W-1:0] tile_vbase;
     generate if (GLOBAL_GRID) begin: g_dispatch
         reg [NUM_RCTX-1:0] roles_q;
+        reg [3:0] slice_q;
         reg [NUM_RCTX*PHYS_W-1:0] vbase_q;
         wire [N-1:0] command_valid;
         wire [N*4-1:0] status;
@@ -175,10 +178,11 @@ module tnca_top #(
             assign status[d*4+:4]=fault_valid[d] ? 4'd1 : 4'd0;
         end
         always @(posedge clk) begin
-            if(!rst_n) begin roles_q<=0;vbase_q<=0;end
-            else if(grid_valid && grid_ready) begin roles_q<=launch_role_mask;vbase_q<=launch_vbase;end
+            if(!rst_n) begin roles_q<=0;vbase_q<=0;slice_q<=0;end
+            else if(grid_valid && grid_ready) begin roles_q<=launch_role_mask;vbase_q<=launch_vbase;slice_q<=grid_slice;end
         end
         assign grid_ready=dispatch_ready && !host_busy;
+        assign tile_slice=slice_q;
         assign tile_roles=roles_q;assign tile_vbase=vbase_q;
         assign tile_launch=command_valid & tile_idle;
         tnca_grid_dispatch #(.CORE_N(N)) u_dispatch (
@@ -195,6 +199,7 @@ module tnca_top #(
             .core_busy(dispatch_busy),.issued(grid_issued),.completed(grid_completed));
     end else begin: g_legacy_launch
         assign tile_launch={N{launch_valid}};
+        assign tile_slice=0;
         assign tile_roles=launch_role_mask;assign tile_vbase=launch_vbase;
         assign dispatch_pc=launch_pc;assign dispatch_args={N{launch_arg_base}};
         assign dispatch_x=0;assign dispatch_y=0;assign dispatch_z=0;
@@ -286,7 +291,7 @@ module tnca_top #(
                 .launch_role_mask(tile_roles),
                 .launch_arg_base(dispatch_args[t*64+:64]),
                 .launch_vbase(tile_vbase),
-                .grid_pid_x(dispatch_x[t*32+:32]), .grid_pid_y(dispatch_y[t*32+:32]),
+                .grid_slice(tile_slice), .grid_pid_x(dispatch_x[t*32+:32]), .grid_pid_y(dispatch_y[t*32+:32]),
                 .grid_pid_z(dispatch_z[t*32+:32]), .grid_npid_x(dispatch_nx),
                 .grid_npid_y(dispatch_ny), .grid_npid_z(dispatch_nz),
                 .host_allow(host_allow), .host_valid(host_valid && t==0), .host_we(host_we),

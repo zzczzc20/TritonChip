@@ -1,0 +1,19 @@
+MULTICORE SHELL GRID PASS N=1 id=9 status=3 cycles=1552
+MULTICORE SHELL GRID PASS N=1 id=10 status=3 cycles=1560
+MULTICORE SHELL GRID PASS N=1 id=11 status=0 cycles=39073
+MULTICORE SHELL GRID PASS N=1 id=12 status=0 cycles=74306
+MULTICORE PERSISTENT SHELL PASS N=1
+tb/device/tb_multicore_shell.v:74: $finish called at 795140000 (1ps)
+MULTICORE SHELL GRID PASS N=3 id=9 status=3 cycles=1552
+MULTICORE SHELL GRID PASS N=3 id=10 status=3 cycles=1560
+MULTICORE SHELL GRID PASS N=3 id=11 status=0 cycles=14564
+MULTICORE SHELL GRID PASS N=3 id=12 status=0 cycles=26707
+MULTICORE PERSISTENT SHELL PASS N=3
+tb/device/tb_multicore_shell.v:74: $finish called at 327520000 (1ps)
+MULTICORE SHELL GRID PASS N=8 id=9 status=3 cycles=1552
+MULTICORE SHELL GRID PASS N=8 id=10 status=3 cycles=1560
+MULTICORE SHELL GRID PASS N=8 id=11 status=0 cycles=7622
+MULTICORE SHELL GRID PASS N=8 id=12 status=0 cycles=13270
+MULTICORE PERSISTENT SHELL PASS N=8
+tb/device/tb_multicore_shell.v:74: $finish called at 202510000 (1ps)
+r40-multicore-shell-tests PASS

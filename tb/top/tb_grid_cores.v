@@ -42,7 +42,7 @@ integer seen[0:454];integer total=0,cycles=0;
 tnca_top #(.NX(MX),.NY(N/MX),.GLOBAL_GRID(1),.HOST_ACCESS(HOST),.SETS(4),.SET_W(2),.WAYS(2),.WAY_W(1)) dut (
 .clk(clk),.rst_n(rst_n),.launch_valid(1'b0),.launch_pc(launch_pc),.launch_role_mask(2'b01),
 .launch_arg_base(64'h1000),.launch_vbase(14'd0),.grid_valid(valid),.grid_ready(ready),
-.grid_id(64'd17),.grid_arg_stride(64'h100),.grid_x(32'd13),.grid_y(32'd7),.grid_z(32'd5),
+.grid_slice(4'd0),.grid_id(64'd17),.grid_arg_stride(64'h100),.grid_x(32'd13),.grid_y(32'd7),.grid_z(32'd5),
 .grid_cores({N{1'b1}}),.grid_done_valid(done),.grid_done_ready(ack),.grid_done_status(status),
 .host_valid(hv),.host_we(hw),.host_addr(ha),.host_wdata(hd),.host_be(hbe),
 .host_ready(hr),.host_rsp_valid(hrv),.host_rsp_data(hrd),.host_busy(hb),

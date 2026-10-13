@@ -91,6 +91,7 @@ module tnca_tile #(
     input  wire [NUM_RCTX-1:0]      launch_role_mask,
     input  wire [63:0]              launch_arg_base,
     input  wire [NUM_RCTX*PHYS_W-1:0] launch_vbase,
+    input wire [3:0] grid_slice,
     input wire [31:0] grid_pid_x, grid_pid_y, grid_pid_z,
     input wire [31:0] grid_npid_x, grid_npid_y, grid_npid_z,
     input wire host_allow, host_valid, host_we,
@@ -207,7 +208,7 @@ module tnca_tile #(
     ) u_core (
         .clk(clk), .rst_n(rst_n),
         .launch_valid(launch_valid), .launch_pc(launch_pc),
-        .launch_role_mask(launch_role_mask), .launch_slice(4'd0),
+        .launch_role_mask(launch_role_mask), .launch_slice(GLOBAL_GRID ? grid_slice : 4'd0),
         .launch_pid_x(GLOBAL_GRID ? grid_pid_x : TILE_ID_32),
         .launch_pid_y(GLOBAL_GRID ? grid_pid_y : 32'd0), .launch_pid_z(GLOBAL_GRID ? grid_pid_z : 32'd0),
         .launch_npid_x(GLOBAL_GRID ? grid_npid_x : NUM_TILES_32),

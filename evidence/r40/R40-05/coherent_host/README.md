@@ -20,3 +20,7 @@ This is functional RTL evidence for the coherent word port. The public
 persistent transport, instruction upload/fetch binding, bulk DMA coherence,
 role scheduling, fault/deadline recovery and board integration remain required.
 It is not a native Torch, board or complete R40-05/R40-06 acceptance claim.
+
+This checkpoint's source hashes refer to a48e4e4. The subsequent private-code
+persistent shell and explicit slice metadata have independent evidence in
+`../persistent_shell/`.

@@ -274,10 +274,18 @@ class Session:
     def __init__(self, profile='core-sim', *, bench=None, workdir=None,
                  code_base=0, heap_base=0x20000, heap_limit=None,
                  deadline_cycles=2_000_000, host_timeout=600.0, trace=False,
-                 backend='sim-file', counters=False, **backend_kwargs):
+                 backend='sim-file', counters=False, large_grid=None, **backend_kwargs):
         Session._counter += 1
         self.id = Session._counter
         self.profile = profile
+        if large_grid is None:
+            value = os.environ.get('TNCA_LARGE_GRID', '0')
+            if value not in ('0', '1'):
+                raise ValueError('TNCA_LARGE_GRID must be 0 or 1')
+            large_grid = value == '1'
+        if not isinstance(large_grid, bool):
+            raise ValueError('large_grid must be a bool')
+        self.large_grid = large_grid
         # Phase 3.6 section 3.1: the profile is a COMPILE target and the
         # backend is how this host reaches a device. They were one thing
         # and are now two, because a target that meant "this simulator
@@ -616,16 +624,24 @@ class Session:
                     raise AdmissionError(
                         f"grid.{axis} = {g} is outside 0..2**32-1")
             total = gx * gy * gz
-            if total > 4096:
+            limit = 4096
+            if total > limit and self.large_grid:
+                query = getattr(self.dev, 'large_grid_limit', None)
+                if query is not None:
+                    try:
+                        limit = query() or limit
+                    except DeviceLost:
+                        self.poisoned = True
+                        raise
+            if total > limit:
                 raise AdmissionError(
-                    f"{total} programs exceeds the 4096 limit",
+                    f"{total} programs exceeds the {limit} limit",
                     where=f"{module.manifest['identity']['kernel_name']} "
                           f"grid {gx}x{gy}x{gz}",
-                    detail={'requested': total, 'limit': 4096,
+                    detail={'requested': total, 'limit': limit,
                             'grid': [gx, gy, gz]},
-                    remedy='split the work across several launches; the '
-                           'limit is the grid the transport encodes, '
-                           'sixteen bits per axis with a 4096 cap')
+                    remedy='large grids require large_grid=True and an image '
+                           'advertising the R40 GRID_CAP extension')
 
             # Resolve and validate every argument BEFORE anything starts.
             resolved, leased = self._resolve(module, args)

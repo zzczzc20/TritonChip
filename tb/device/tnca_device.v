@@ -524,6 +524,12 @@ module tnca_device;
                                    a3 & 32'hFFFF, (a3 >> 16) & 32'hFFFF,
                                    a4 & 32'hFFFF, (a4 >> 16) & 32'hFFFF,
                                    a5 & 32'hFFFF, (a5 >> 16) & 32'hFFFF);
+                        // R40 negotiated extension; legacy opcode 3 is unchanged.
+                        8: begin r0 = 32; r1 = 16777216; end
+                        9: run_cmd(CMD_LAUNCH, a0, a1, a2,
+                                   a3[31:0], a3[63:32],
+                                   a4[31:0], a4[63:32],
+                                   a5[31:0], a5[63:32]);
                         4: run_cmd(CMD_QUIESCE, 64'd0, 64'd0, 0,
                                    0, 0, 0, 1, 1, 1);
                         5: begin                       // SHUTDOWN

@@ -1,0 +1,12 @@
+  already built: /home/zhongchun/.cache/tnca/devices/core-vrf-sync-v2-d8ab4dc2ea14be49-69b12737e344/tnca_device_vrf2.vvp
+PASS sim-file: core PID=(2, 3, 4) extent=(5, 6, 7)
+PASS sim-file: core PID=(65536, 65537, 65538) extent=(65539, 65540, 65541)
+PASS sim-file: core PID=(2147483649, 2147483650, 2147483651) extent=(4294967295, 4294967294, 4294967293)
+PASS sim-file: grid=(6144, 1, 1), 6144 unique IDs, exactly 6144 atomics
+PASS sim-file: grid=(64, 32, 3), 6144 unique IDs, exactly 6144 atomics
+PASS fpga-u50-sim: core PID=(2, 3, 4) extent=(5, 6, 7)
+PASS fpga-u50-sim: core PID=(65536, 65537, 65538) extent=(65539, 65540, 65541)
+PASS fpga-u50-sim: core PID=(2147483649, 2147483650, 2147483651) extent=(4294967295, 4294967294, 4294967293)
+PASS fpga-u50-sim: grid=(6144, 1, 1), 6144 unique IDs, exactly 6144 atomics
+PASS fpga-u50-sim: grid=(64, 32, 3), 6144 unique IDs, exactly 6144 atomics
+r40-large-grid-rtl PASS (10/10)

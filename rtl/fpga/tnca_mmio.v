@@ -244,6 +244,8 @@ module tnca_mmio #(
     localparam [3:0] OP_SHUTDOWN = 4'd5;
     localparam [3:0] OP_PING     = 4'd6;
     localparam [3:0] OP_PERF_READ = 4'd7;
+    localparam [3:0] OP_GRID_CAP = 4'd8;
+    localparam [3:0] OP_LAUNCH32 = 4'd9;
 
     localparam [3:0] RSP_OK      = 4'd0;
     localparam [3:0] RSP_FAULT   = 4'd1;
@@ -497,7 +499,7 @@ module tnca_mmio #(
                     // Everything that is not a launch completes here: it has
                     // an answer already and nothing for the core to do.
                     case (req_op[3:0])
-                    OP_LAUNCH: begin
+                    OP_LAUNCH, OP_LAUNCH32: begin
                         launch_start <= device_clock;
                         launch_time_seq <= 64'd0;
                         cmd_op        <= 4'd1;
@@ -506,12 +508,12 @@ module tnca_mmio #(
                         cmd_role_mask <= req_a2[NUM_RCTX-1:0];
                         // {pair, slice, log2 slices}: bits 28, 31, 30:29.
                         cmd_slice     <= {req_a2[28], req_a2[31:29]};
-                        cmd_pid_x     <= req_a3[15:0];
-                        cmd_pid_y     <= req_a3[31:16];
-                        cmd_pid_z     <= req_a4[15:0];
-                        cmd_npid_x    <= req_a4[31:16];
-                        cmd_npid_y    <= req_a5[15:0];
-                        cmd_npid_z    <= req_a5[31:16];
+                        cmd_pid_x     <= req_op[3:0] == OP_LAUNCH32 ? req_a3[31:0] : {16'd0, req_a3[15:0]};
+                        cmd_pid_y     <= req_op[3:0] == OP_LAUNCH32 ? req_a3[63:32] : {16'd0, req_a3[31:16]};
+                        cmd_pid_z     <= req_op[3:0] == OP_LAUNCH32 ? req_a4[31:0] : {16'd0, req_a4[15:0]};
+                        cmd_npid_x    <= req_op[3:0] == OP_LAUNCH32 ? req_a4[63:32] : {16'd0, req_a4[31:16]};
+                        cmd_npid_y    <= req_op[3:0] == OP_LAUNCH32 ? req_a5[31:0] : {16'd0, req_a5[15:0]};
+                        cmd_npid_z    <= req_op[3:0] == OP_LAUNCH32 ? req_a5[63:32] : {16'd0, req_a5[31:16]};
                         cmd_deadline  <= req_deadline;
                         cmd_valid     <= 1'b1;
                         ms            <= MS_ISSUE;
@@ -563,6 +565,12 @@ module tnca_mmio #(
                         // off by one against the simulation binding.
                         rsp_r0     <= req_seq;
                         rsp_r1     <= 64'd0;
+                    end
+                    OP_GRID_CAP: begin
+                        rsp_seq    <= req_seq;
+                        rsp_status <= RSP_OK;
+                        rsp_r0     <= 64'd32;
+                        rsp_r1     <= 64'd16777216;
                     end
                     OP_PERF_READ: begin
                         rsp_seq    <= req_seq;

@@ -1,0 +1,17 @@
+R3.6 Gate B: the board wrapper, which the export walk cannot reach
+  R36-FPGA-08  PASS  the register protocol holds through tnca_mmio, PERF_READ included
+    common-clock version ok (0000000000000001)
+    timestamp sequence, first launch ok (0000000000000003)
+    launch endpoints advance ok (0000000000000001)
+    PERF_READ perf_cycles ok (status 0)
+    PERF_READ answers in 32-bit halves ok (0000000000000000)
+    perf_cycles is past zero after a launch ok (0000000000000001)
+    PERF_READ perf_issued ok (status 0)
+    perf_issued is past zero after a launch ok (0000000000000001)
+    perf_cycles does not go backwards between reads ok (0000000000000001)
+    PERF_READ past the last counter ok (status 3)
+    timestamp sequence, second launch ok (000000000000000d)
+    common clock includes intervening host work ok (0000000000000001)
+    graph span exceeds sum of launch spans ok (0000000000000001)
+
+  r36-fpga-tests         PASS   1 check(s)

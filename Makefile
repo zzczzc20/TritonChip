@@ -1511,6 +1511,11 @@ r40-hbm: $(R2_DATA_STAMP) r40-barrier-epoch | dirs
 	@$(PYTHON) tools/r40/ram_cache_inference_tests.py
 	@TORCH_PYTHON=$(TORCH_PYTHON) $(PYTHON) tools/r40/hbm_tests.py --evidence
 
+.PHONY: r40-large-grid
+r40-large-grid: $(R2_DATA_STAMP) | dirs
+	@$(PYTHON) tools/r40/large_grid_tests.py
+	@$(TRITON_PYTHON) tools/r40/large_grid_rtl_tests.py
+
 .PHONY: r40-device-clock
 r40-device-clock: $(R2_DATA_STAMP) | dirs
 	@$(TORCH_PYTHON) tools/r40/device_clock_tests.py

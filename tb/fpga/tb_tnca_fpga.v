@@ -82,6 +82,7 @@ module tb_tnca_fpga;
     localparam [3:0] OP_SHUTDOWN = 4'd5;
     localparam [3:0] OP_PING     = 4'd6;
     localparam [3:0] OP_PERF_READ = 4'd7;
+    localparam [3:0] OP_GRID_CAP = 4'd8;
 
     localparam [3:0] ST_OK      = 4'd0;
     localparam [3:0] ST_FAULT   = 4'd1;
@@ -462,7 +463,7 @@ module tb_tnca_fpga;
                 status, r0, r1);
         check_status("upload of zero words", status, ST_REFUSED);
 
-        mailbox(4'd9, 64'd0, 64'd0, 64'd0, 64'd0, 64'd0, 64'd0,
+        mailbox(4'd15, 64'd0, 64'd0, 64'd0, 64'd0, 64'd0, 64'd0,
                 status, r0, r1);
         check_status("an opcode the device does not have", status, ST_REFUSED);
 
@@ -535,6 +536,12 @@ module tb_tnca_fpga;
         repeat (20) @(posedge clk);
         reg_rd(R_RSP_SEQ, got);
         check("a duplicate ring produced no new completion", got, seq);
+
+        mailbox(OP_GRID_CAP, 64'd0, 64'd0, 64'd0, 64'd0, 64'd0, 64'd0,
+                status, r0, r1);
+        check_status("GRID_CAP query", status, ST_OK);
+        check("GRID_CAP axis bits", r0, 64'd32);
+        check("GRID_CAP streaming admission budget", r1, 64'd16777216);
 
         //---- the verdict ----------------------------------------------------
         if (fails == 0)

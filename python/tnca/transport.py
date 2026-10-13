@@ -24,6 +24,7 @@ memory" a sentence with no content.
 import ctypes
 import functools
 import os
+import operator
 import shutil
 import signal
 import subprocess
@@ -80,6 +81,9 @@ OP_SHUTDOWN = 5
 OP_PING = 6
 # Transport 1.1: read one device counter; r0/r1 = its low/high 32 bits.
 OP_PERF_READ = 7
+# R40 additive extension; legacy LAUNCH keeps its original 16-bit packing.
+OP_GRID_CAP = 8
+OP_LAUNCH32 = 9
 
 ST_OK = 0
 ST_FAULT = 1
@@ -89,7 +93,8 @@ ST_REFUSED = 3
 OP_NAME = {OP_UPLOAD: 'UPLOAD', OP_DOWNLOAD: 'DOWNLOAD',
            OP_LAUNCH: 'LAUNCH', OP_QUIESCE: 'QUIESCE',
            OP_SHUTDOWN: 'SHUTDOWN', OP_PING: 'PING',
-           OP_PERF_READ: 'PERF_READ'}
+           OP_PERF_READ: 'PERF_READ', OP_GRID_CAP: 'GRID_CAP',
+           OP_LAUNCH32: 'LAUNCH32'}
 
 STATUS_NAME = {ST_OK: 'OK', ST_FAULT: 'FAULT', ST_TIMEOUT: 'TIMEOUT',
                ST_REFUSED: 'REFUSED'}
@@ -399,13 +404,37 @@ class Transport(_backend.Backend):
         Sending only x meant a 2x3 grid handed every program the LINEAR id
         under the name of the x index, and a kernel cannot tell.
         """
-        px, py, pz = pid
-        nx, ny, nz = npid
+        try:
+            values = tuple(operator.index(v) for v in (*pid, *npid))
+        except TypeError:
+            raise ValueError('launch grid values must be integers') from None
+        px, py, pz, nx, ny, nz = values
+        if any(v < 0 or v > 0xFFFFFFFF for v in values):
+            raise ValueError('launch grid values must fit unsigned 32 bits')
+        if any(v > 0xFFFF for v in values):
+            if self.large_grid_limit() is None:
+                raise ValueError('this image does not support 32-bit launch grids')
+            return self.request(OP_LAUNCH32, pc, arg_base, role_mask,
+                                px | (py << 32), pz | (nx << 32), ny | (nz << 32),
+                                timeout=timeout)
         a3 = (px & 0xFFFF) | ((py & 0xFFFF) << 16)
         a4 = (pz & 0xFFFF) | ((nx & 0xFFFF) << 16)
         a5 = (ny & 0xFFFF) | ((nz & 0xFFFF) << 16)
         return self.request(OP_LAUNCH, pc, arg_base, role_mask, a3, a4, a5,
                             timeout=timeout)
+
+    @serialized_io
+    def large_grid_limit(self):
+        """Query once per backend epoch; old images explicitly refuse op 8."""
+        if not hasattr(self, '_large_grid_limit'):
+            reply = self.request(OP_GRID_CAP)
+            if reply.status == ST_REFUSED:
+                self._large_grid_limit = None
+            elif reply.ok and reply.r0 == 32 and 4096 < reply.r1 <= 0xFFFFFFFF:
+                self._large_grid_limit = reply.r1
+            else:
+                raise DeviceLost('invalid GRID_CAP response', detail={'reply': repr(reply)})
+        return self._large_grid_limit
 
     def quiesce(self):
         return self.request(OP_QUIESCE)

@@ -46,6 +46,9 @@ def main():
         ('float_all_mask_row', 1, 1, 3, 17, 'float16', 'float', False),
         ('strided_batch_heads', 2, 2, 3, 17, 'float16', None, False),
         ('bf16_tail', 1, 1, 1, 17, 'bfloat16', None, False),
+        ('gqa_tail', 1, 4, 3, 19, 'float16', None, False),
+        ('mqa_causal_tail', 1, 4, 3, 17, 'bfloat16', None, True),
+        ('long_prefill_tail', 1, 1, 17, 129, 'float16', None, False),
     ]
     by_name = {spec[0]: spec for spec in specs}
     if args.case and (len(set(args.case)) != len(args.case) or set(args.case) - by_name.keys()):
@@ -57,8 +60,9 @@ def main():
     for name, batch, heads, length, seq, dtype, mask_kind, causal in selected:
         torch.manual_seed(43)
         dtype = getattr(torch, dtype)
-        q, k, v = [(torch.randn(batch, size, heads, 16) * .1).to(dtype).transpose(1, 2)
-                   for size in (length, seq, seq)]
+        key_heads = 2 if name == 'gqa_tail' else 1 if name == 'mqa_causal_tail' else heads
+        q, k, v = [(torch.randn(batch, size, count, 16) * .1).to(dtype).transpose(1, 2)
+                   for size, count in ((length, heads), (seq, key_heads), (seq, key_heads))]
         mask = None
         if mask_kind == 'bool':
             mask = torch.ones(length, seq, dtype=torch.bool)
@@ -70,7 +74,8 @@ def main():
             mask[0, 1::2] = -.5
         dq, dk, dv = [t.to('tnca') for t in (q, k, v)]
         dm = mask.to('tnca') if mask is not None else None
-        fn = lambda a, b, c, m: F.scaled_dot_product_attention(a, b, c, attn_mask=m, is_causal=causal)
+        fn = lambda a, b, c, m: F.scaled_dot_product_attention(
+            a, b, c, attn_mask=m, is_causal=causal, enable_gqa=key_heads != heads)
         compiled = torch.compile(fn, fullgraph=True, dynamic=False)
         allocated = []
         allocate = session.allocate

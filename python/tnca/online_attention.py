@@ -111,19 +111,24 @@ def enable():
             MS0=strides[0], MS1=strides[1], MS2=strides[2], MS3=strides[3])
         return choice.output_node()
 
-    def decompose(q, k, v, dropout_p=0., is_causal=False, *, attn_mask=None, scale=None):
+    def eligible_inputs(q, k, v, dropout_p=0., is_causal=False, *, attn_mask=None, scale=None):
         eligible = (q.device.type == 'tnca' and q.ndim == k.ndim == v.ndim == 4
                     and q.dtype in (torch.float16, torch.bfloat16) and k.dtype == v.dtype == q.dtype
                     and q.shape[-1] == k.shape[-1] == v.shape[-1] == 16
                     and q.stride(-1) == k.stride(-1) == v.stride(-1) == 1
                     and q.shape[0] == k.shape[0] == v.shape[0]
-                    and k.shape[1:3] == v.shape[1:3] and q.shape[1] % k.shape[1] == 0
+                    and k.shape[1:3] == v.shape[1:3] and k.shape[1] > 0
+                    and q.shape[1] > 0 and q.shape[1] % k.shape[1] == 0
                     and q.shape[-2] > 0 and k.shape[-2] > 0 and dropout_p == 0.
                     and not (torch.is_grad_enabled() and any(t.requires_grad for t in (q, k, v))))
         if attn_mask is not None:
             shape = (1,) * (4 - attn_mask.ndim) + tuple(attn_mask.shape)
-            eligible = eligible and attn_mask.ndim <= 4 and all(
+            eligible = eligible and attn_mask.device == q.device and attn_mask.dtype in (torch.bool, q.dtype, torch.float32) and attn_mask.ndim <= 4 and all(
                 dim in (1, want) for dim, want in zip(shape, (q.shape[0], q.shape[1], q.shape[2], k.shape[2])))
+        return eligible
+
+    def decompose(q, k, v, dropout_p=0., is_causal=False, *, attn_mask=None, scale=None):
+        eligible = eligible_inputs(q, k, v, dropout_p, is_causal, attn_mask=attn_mask, scale=scale)
         baseline = original(q, k, v, dropout_p, is_causal, attn_mask=attn_mask, scale=scale)
         if not eligible:
             return baseline
@@ -134,4 +139,17 @@ def enable():
         return result, baseline[1]
 
     decompositions[original_op] = decompose
+    public_op = torch.ops.aten.scaled_dot_product_attention.default
+    original_public = decompositions[public_op]
+
+    def public(q, k, v, attn_mask=None, dropout_p=0., is_causal=False, *, scale=None, enable_gqa=False):
+        legal_heads = q.ndim == k.ndim == 4 and (enable_gqa or q.shape[1] == k.shape[1])
+        if (legal_heads and not (is_causal and attn_mask is not None)
+                and eligible_inputs(q, k, v, dropout_p, is_causal, attn_mask=attn_mask, scale=scale)):
+            return torch.ops.tnca.sdpa_online_v1(q, k, v, attn_mask, is_causal,
+                                                scale if scale is not None else 16 ** -.5)
+        return original_public(q, k, v, attn_mask, dropout_p, is_causal,
+                               scale=scale, enable_gqa=enable_gqa)
+
+    decompositions[public_op] = public
     _library = library

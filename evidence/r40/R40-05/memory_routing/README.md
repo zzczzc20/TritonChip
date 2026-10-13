@@ -32,3 +32,6 @@ cycle 7014 and read-only verification at cycle 12761, all 455 PIDs per grid.
 The runner now uses that longer wall-clock budget for real-memory cases.
 The full old 2x2 system (4 cases), NUCA (9 cases) and parameter propagation
 (6 configurations) also passed. The logs retain the timeout and final retry.
+
+This checkpoint's source hashes refer to commit 8583671. Later coherent-host
+interface changes and their independent source hashes are in `../coherent_host/`.

@@ -3,6 +3,9 @@
 module tb_grid_cores;
 parameter N=3;
 parameter MEMORY=0;
+parameter HOST=0;
+reg hv=0,hw=0;reg [63:0] ha=0,hd=0;reg [7:0] hbe=8'hff;
+wire hr,hrv,hb;wire [63:0] hrd;
 localparam MX=N>4?4:N;
 localparam SW=N>4?$clog2(N):2;
 reg clk=0;always #5 clk=~clk;
@@ -36,11 +39,13 @@ always @(posedge clk) if(rst_n) begin
  stalled_tag<=mt;stalled_we<=mwe;stalled_data<=mw;
 end
 integer seen[0:454];integer total=0,cycles=0;
-tnca_top #(.NX(MX),.NY(N/MX),.GLOBAL_GRID(1),.SETS(4),.SET_W(2),.WAYS(2),.WAY_W(1)) dut (
+tnca_top #(.NX(MX),.NY(N/MX),.GLOBAL_GRID(1),.HOST_ACCESS(HOST),.SETS(4),.SET_W(2),.WAYS(2),.WAY_W(1)) dut (
 .clk(clk),.rst_n(rst_n),.launch_valid(1'b0),.launch_pc(launch_pc),.launch_role_mask(2'b01),
 .launch_arg_base(64'h1000),.launch_vbase(14'd0),.grid_valid(valid),.grid_ready(ready),
 .grid_id(64'd17),.grid_arg_stride(64'h100),.grid_x(32'd13),.grid_y(32'd7),.grid_z(32'd5),
 .grid_cores({N{1'b1}}),.grid_done_valid(done),.grid_done_ready(ack),.grid_done_status(status),
+.host_valid(hv),.host_we(hw),.host_addr(ha),.host_wdata(hd),.host_be(hbe),
+.host_ready(hr),.host_rsp_valid(hrv),.host_rsp_data(hrd),.host_busy(hb),
 .grid_issued(issued),.grid_completed(completed),.fault_valid(faults),.imem_addr(imem_addr),
 .imem_data(imem_data),.mem_req_valid(mr),.mem_req_ready(mready),.mem_req_addr(ma),
 .mem_req_we(mwe),.mem_req_wdata(mw),.mem_req_tag(mt),.mem_req_src(ms),
@@ -49,6 +54,8 @@ always @(posedge clk)begin
  for(integer t=0;t<N;t=t+1)
   imem_data[t*64+:64]<=MEMORY ? program_mem[(imem_addr[t*64+:64]>>3)%256] : 64'h021f000000000000;
  prev_launch<=dut.tile_launch;
+ if(HOST && hb && ready)$fatal(1,"grid admitted while host outstanding");
+ if(HOST && hr && (|dut.dispatch_busy))$fatal(1,"host access admitted during grid");
  cycles=cycles+1;
  if(N==8 && MEMORY && cycles%1000==0)begin
   $display("GRID progress cycles=%0d accepted=%0d busy=%h",cycles,total,dut.dispatch_busy);$fflush();
@@ -65,6 +72,19 @@ for(genvar c=0;c<N;c=c+1)begin: monitor
   if(dut.g_tile[c].u_tile.u_core.npid_x!=13 || dut.g_tile[c].u_tile.u_core.npid_y!=7 || dut.g_tile[c].u_tile.u_core.npid_z!=5)$fatal(1,"actual core grid wrong");
  end
 end
+task host_word;
+ input write_enable;input [63:0] address,value;input [7:0] mask;
+ begin
+  @(negedge clk);hv=1;hw=write_enable;ha=address;hd=value;hbe=mask;
+  @(posedge clk);while(!hr)@(posedge clk);
+  @(negedge clk);hv=0;valid=1;
+  #1;if(ready)$fatal(1,"launch request accepted during host transfer");
+  while(!hrv)begin @(negedge clk);if(ready)$fatal(1,"launch escaped host drain gate");end
+  valid=0;
+  if(!write_enable && hrd!==value)$fatal(1,"coherent host download mismatch addr=%h got=%h expected=%h",address,hrd,value);
+  @(negedge clk);
+ end
+endtask
 initial begin
  if(MEMORY) begin
   for(integer w=0;w<256;w=w+1)program_mem[w]=64'h021f000000000000;
@@ -77,6 +97,7 @@ initial begin
   for(integer k=0;k<455;k=k+1)seen[k]=0;
   total=0;launch_pc=phase*256;valid=1;
   @(negedge clk);valid=0;
+  if(HOST)begin hv=1;@(negedge clk);if(hr)$fatal(1,"host concurrent request accepted");hv=0;end
   wait(done);@(negedge clk);
   if(status!=0) $display("DEBUG expected=%h actual=%h address=%h dram0=%h",dut.g_tile[0].u_tile.u_core.u_srf.mem[1],dut.g_tile[0].u_tile.u_core.u_srf.mem[6],dut.g_tile[0].u_tile.u_core.u_srf.mem[5],ram.mem[1024][63:0]);
   if(status!=0 || faults!=0 || total!=455 || !dut.all_idle)$fatal(1,"actual core execution failed status=%0d faults=%h total=%0d pc=%h",status,faults,total,dut.g_tile[0].u_tile.u_core.fault_pc);
@@ -85,6 +106,14 @@ initial begin
   if(MEMORY && ram.n_rd==0)$fatal(1,"no real memory traffic");
   $display("GRID REAL CORES PASS N=%0d memory=%0d phase=%0d programs=%0d cycles=%0d",N,MEMORY,phase,total,cycles);
   ack=1;@(negedge clk);ack=0;
+ end
+ if(HOST)begin
+  for(integer k=0;k<455;k=k+1)host_word(0,65536+k*8,4096+k,8'hff);
+  host_word(1,65536,64'hfedcba9876543210,8'hff);
+  host_word(0,65536,64'hfedcba9876543210,8'hff);
+  host_word(1,65536,64'h1234,8'h03);
+  host_word(0,65536,64'hfedcba9876541234,8'hff);
+  $display("GRID COHERENT HOST PASS N=%0d downloads=457 uploads=2",N);
  end
  $finish;
 end

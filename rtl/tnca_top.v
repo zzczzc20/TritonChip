@@ -21,6 +21,7 @@
 
 module tnca_top #(
     parameter GLOBAL_GRID = 0,
+    parameter HOST_ACCESS = 0,
     parameter NX          = 2,
     parameter NY          = 2,
     parameter MEM_SRC_W   = (NX*NY>4 ? $clog2(NX*NY) : 2),
@@ -91,6 +92,11 @@ module tnca_top #(
     output wire [63:0] grid_done_id, grid_done_cycles,
     output wire [((NX*NY>1)?$clog2(NX*NY):1)-1:0] grid_fault_core,
     output wire [NX*NY*32-1:0] grid_issued, grid_completed,
+    input wire host_valid, host_we,
+    input wire [63:0] host_addr, host_wdata,
+    input wire [7:0] host_be,
+    output wire host_ready, host_rsp_valid, host_busy,
+    output wire [63:0] host_rsp_data,
     output wire                     all_idle,
 
     output wire [NX*NY-1:0]         fault_valid,
@@ -148,6 +154,12 @@ module tnca_top #(
     assign all_idle = &tile_idle;
 
     wire [N-1:0] tile_launch, dispatch_busy;
+    wire [N-1:0] host_readies, host_responses, host_busy_tiles;
+    wire [N*64-1:0] host_response_data;
+    wire dispatch_ready;
+    wire host_allow=GLOBAL_GRID && HOST_ACCESS && dispatch_ready && !grid_valid && all_idle;
+    assign host_ready=host_readies[0];assign host_rsp_valid=host_responses[0];
+    assign host_busy=host_busy_tiles[0];assign host_rsp_data=host_response_data[63:0];
     wire [63:0] dispatch_pc;
     wire [N*64-1:0] dispatch_args;
     wire [N*32-1:0] dispatch_x, dispatch_y, dispatch_z;
@@ -166,10 +178,11 @@ module tnca_top #(
             if(!rst_n) begin roles_q<=0;vbase_q<=0;end
             else if(grid_valid && grid_ready) begin roles_q<=launch_role_mask;vbase_q<=launch_vbase;end
         end
+        assign grid_ready=dispatch_ready && !host_busy;
         assign tile_roles=roles_q;assign tile_vbase=vbase_q;
         assign tile_launch=command_valid & tile_idle;
         tnca_grid_dispatch #(.CORE_N(N)) u_dispatch (
-            .clk(clk),.rst_n(rst_n),.launch_valid(grid_valid),.launch_ready(grid_ready),
+            .clk(clk),.rst_n(rst_n),.launch_valid(grid_valid && !host_busy),.launch_ready(dispatch_ready),
             .launch_id(grid_id),.launch_pc(launch_pc),.launch_arg_base(launch_arg_base),
             .launch_arg_stride(grid_arg_stride),.launch_gx(grid_x),.launch_gy(grid_y),.launch_gz(grid_z),
             .launch_cores((|launch_role_mask) ? grid_cores : {N{1'b0}}),
@@ -186,7 +199,7 @@ module tnca_top #(
         assign dispatch_pc=launch_pc;assign dispatch_args={N{launch_arg_base}};
         assign dispatch_x=0;assign dispatch_y=0;assign dispatch_z=0;
         assign dispatch_nx=0;assign dispatch_ny=0;assign dispatch_nz=0;
-        assign dispatch_busy=0;assign grid_ready=0;assign grid_done_valid=0;
+        assign dispatch_busy=0;assign dispatch_ready=0;assign grid_ready=0;assign grid_done_valid=0;
         assign grid_done_status=0;assign grid_done_id=0;assign grid_done_cycles=0;
         assign grid_fault_core=0;assign grid_issued=0;assign grid_completed=0;
     end endgenerate
@@ -242,7 +255,7 @@ module tnca_top #(
     generate
         for (t = 0; t < N; t = t + 1) begin : g_tile
             tnca_tile #(
-                .TILE_ID(t), .NUM_TILES(N), .GLOBAL_GRID(GLOBAL_GRID), .NX(NX), .NY(NY), .XW(XW), .YW(YW),
+                .TILE_ID(t), .NUM_TILES(N), .GLOBAL_GRID(GLOBAL_GRID), .HOST_ACCESS(HOST_ACCESS && GLOBAL_GRID && t==0), .NX(NX), .NY(NY), .XW(XW), .YW(YW),
                 .NUM_RCTX(NUM_RCTX), .RCTX_W(RCTX_W), .VLEN(VLEN), .ELEN(ELEN),
                 .LW(LW), .VREGS_PER_RCTX(VREGS_PER_RCTX),
                 .PHYS_VREGS(PHYS_VREGS), .PHYS_W(PHYS_W),
@@ -276,6 +289,10 @@ module tnca_top #(
                 .grid_pid_x(dispatch_x[t*32+:32]), .grid_pid_y(dispatch_y[t*32+:32]),
                 .grid_pid_z(dispatch_z[t*32+:32]), .grid_npid_x(dispatch_nx),
                 .grid_npid_y(dispatch_ny), .grid_npid_z(dispatch_nz),
+                .host_allow(host_allow), .host_valid(host_valid && t==0), .host_we(host_we),
+                .host_addr(host_addr), .host_wdata(host_wdata), .host_be(host_be),
+                .host_ready(host_readies[t]), .host_rsp_valid(host_responses[t]),
+                .host_rsp_data(host_response_data[t*64+:64]), .host_busy(host_busy_tiles[t]),
                 .core_idle(tile_idle[t]),
                 .fault_valid(fault_valid[t]),
                 .fault_code(fault_code[t*8 +: 8]),

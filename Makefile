@@ -2040,3 +2040,7 @@ r1-verify-evidence:
 .PHONY: r40-grid-dispatch
 r40-grid-dispatch: | dirs
 	@$(PYTHON) tools/r40/grid_dispatch_tests.py
+
+.PHONY: r40-coherent-host
+r40-coherent-host: | dirs
+	@$(PYTHON) tools/r40/coherent_host_tests.py

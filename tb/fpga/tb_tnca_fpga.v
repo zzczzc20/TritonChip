@@ -134,6 +134,7 @@ module tb_tnca_fpga;
     reg [63:0] seq;
     reg [63:0] got, r0, r1;
     reg [63:0] perf_a;          // a PERF_READ result kept for the second read
+    reg [63:0] time_start_a, time_end_a, time_start_b, time_end_b;
     reg [3:0]  status;
     reg        quiet;
     integer    i, fails, step;
@@ -413,6 +414,13 @@ module tb_tnca_fpga;
         end
 
         //---- 4: the results -------------------------------------------------
+        reg_rd(8'hE0, got);
+        check("common-clock version", got, 64'd1);
+        reg_rd(8'hF8, got);
+        check("timestamp sequence, first launch", got, seq);
+        reg_rd(8'hE8, time_start_a);
+        reg_rd(8'hF0, time_end_a);
+        check("launch endpoints advance", {63'd0, time_end_a > time_start_a}, 64'd1);
         step = 4;
         win_get(RESULT_BASE + 0,  got);
         check("partial stores", got, WANT_PARTIAL);
@@ -503,6 +511,15 @@ module tb_tnca_fpga;
                 64'd0, 64'd1 << 16, (64'd1) | (64'd1 << 16),
                 status, r0, r1);
         check_status("launch, second time", status, ST_OK);
+        reg_rd(8'hF8, got);
+        check("timestamp sequence, second launch", got, seq);
+        reg_rd(8'hE8, time_start_b);
+        reg_rd(8'hF0, time_end_b);
+        check("common clock includes intervening host work",
+              {63'd0, time_start_b > time_end_a}, 64'd1);
+        check("graph span exceeds sum of launch spans",
+              {63'd0, (time_end_b - time_start_a) >
+                       ((time_end_a - time_start_a) + (time_end_b - time_start_b))}, 64'd1);
         win_get(RESULT_BASE + 0,  got);
         check("partial stores, second launch", got, WANT_PARTIAL);
         win_get(RESULT_BASE + 16, got);

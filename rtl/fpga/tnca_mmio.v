@@ -291,6 +291,19 @@ module tnca_mmio #(
     localparam [ADDR_W-1:0] R_AXI_WR     = 8'hC8;
     localparam [ADDR_W-1:0] R_AXI_LAT    = 8'hD0;
     localparam [ADDR_W-1:0] R_AXI_RBEAT  = 8'hD8;
+    // Optional read-only extension. Older images read these holes as zero.
+    localparam [ADDR_W-1:0] R_TIME_CAP   = 8'hE0;
+    localparam [ADDR_W-1:0] R_TIME_START = 8'hE8;
+    localparam [ADDR_W-1:0] R_TIME_END   = 8'hF0;
+    localparam [ADDR_W-1:0] R_TIME_SEQ   = 8'hF8;
+    reg [63:0] device_clock, launch_start, launch_end, launch_time_seq;
+
+    // One common clock, including idle, host submission gaps and backpressure.
+    // Unlike perf_cycles this never stops when the core is idle.
+    always @(posedge clk or negedge rst_n) begin
+        if (!rst_n) device_clock <= 64'd0;
+        else device_clock <= device_clock + 64'd1;
+    end
 
     // Version 1.0, then "TNCA" as ASCII in the low half.
     localparam [63:0] MAGIC = {16'h0001, 16'h0000, 32'h544E_4341};
@@ -447,6 +460,9 @@ module tnca_mmio #(
             cmd_deadline <= 64'd0;
             done_ready <= 1'b0;
             axi_inv <= 1'b0;
+            launch_start <= 64'd0;
+            launch_end <= 64'd0;
+            launch_time_seq <= 64'd0;
         end else begin
             axi_inv <= 1'b0;
             // A doorbell write is a one-cycle pulse into this flag. Holding
@@ -482,6 +498,8 @@ module tnca_mmio #(
                     // an answer already and nothing for the core to do.
                     case (req_op[3:0])
                     OP_LAUNCH: begin
+                        launch_start <= device_clock;
+                        launch_time_seq <= 64'd0;
                         cmd_op        <= 4'd1;
                         cmd_pc        <= req_a0;
                         cmd_arg_base  <= req_a1;
@@ -574,6 +592,10 @@ module tnca_mmio #(
 
             MS_RUN: begin
                 if (done_valid) begin
+                    if (req_op[3:0] == OP_LAUNCH) begin
+                        launch_end <= device_clock;
+                        launch_time_seq <= req_seq;
+                    end
                     done_ready <= 1'b1;
                     rsp_seq    <= req_seq;
                     rsp_status <= done_status;
@@ -720,6 +742,10 @@ module tnca_mmio #(
         R_AXI_WR:     reg_rdata = DATA_AXI ? axi_cnt_wr  : 64'd0;
         R_AXI_LAT:    reg_rdata = DATA_AXI ? axi_cnt_lat : 64'd0;
         R_AXI_RBEAT:  reg_rdata = DATA_AXI ? axi_cnt_rbeat : 64'd0;
+        R_TIME_CAP:   reg_rdata = 64'd1;
+        R_TIME_START: reg_rdata = launch_start;
+        R_TIME_END:   reg_rdata = launch_end;
+        R_TIME_SEQ:   reg_rdata = launch_time_seq;
         // DOORBELL and HOST_CTRL are write-only. Reading one returns zero
         // rather than the last value written, so a host cannot mistake a
         // write-only register for a status it can poll.

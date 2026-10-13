@@ -436,6 +436,31 @@ class U50Backend(Transport):
                     remedy='reload the image; R_AXI_STAT stays set until reset')
         return reply
 
+    def launch_timestamps(self, sequence):
+        """Common-clock endpoints for one completed launch, or None.
+
+        These count idle/submission gaps as well as execution. Call before
+        submitting another launch; a stale sequence is explicitly rejected.
+        A reset starts a new clock epoch, so callers must retain backend epoch.
+        This optional MMIO extension leaves the transport reply unchanged.
+        """
+        with self._io_lock:
+            r = self.link.read_reg
+            version = r(0xE0)
+            if version == 0:
+                return None  # old image, not a measured zero duration
+            if version != 1:
+                raise _backend.BackendError(f'unsupported launch timestamp version {version}')
+            for _ in range(8):
+                before = r(0xF8)
+                start, end = r(0xE8), r(0xF0)
+                if r(0xF8) == before:
+                    if before != sequence or before == 0:
+                        raise _backend.BackendError('launch timestamps do not belong to the requested sequence')
+                    return dict(start=start, end=end, sequence=before, epoch=self.epoch,
+                                clock='mmio-device-clock/1')
+            raise DeviceLost('launch timestamp registers changed during every read')
+
     def stop(self):
         if not self.opened:
             return

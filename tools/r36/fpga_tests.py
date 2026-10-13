@@ -855,7 +855,9 @@ def fpga08(log):
     for line in lines:
         if line.startswith('FAIL'):
             log.append('    ' + line)
-    perf = [l.strip() for l in lines if 'PERF_READ' in l or 'perf_' in l]
+    perf = [l.strip() for l in lines if any(s in l for s in
+            ('PERF_READ', 'perf_', 'common-clock', 'timestamp sequence',
+             'launch endpoints', 'common clock', 'graph span'))]
     for line in perf:
         log.append('    ' + line)
     ok = any(l.startswith('PASS tb_tnca_fpga') for l in lines)

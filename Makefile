@@ -1490,6 +1490,11 @@ r40-hbm: $(R2_DATA_STAMP) | dirs
 	@$(PYTHON) tools/r40/ram_cache_inference_tests.py
 	@TORCH_PYTHON=$(TORCH_PYTHON) $(PYTHON) tools/r40/hbm_tests.py --evidence
 
+.PHONY: r40-device-clock
+r40-device-clock: $(R2_DATA_STAMP) | dirs
+	@$(PYTHON) tools/r40/device_clock_tests.py
+	@$(PYTHON) tools/r36/fpga_tests.py --only R36-FPGA-08
+
 # One suite, every backend. This is the suite a downstream branch runs.
 r36-conformance: $(R2_DATA_STAMP) | dirs
 	@$(TRITON_PYTHON) tools/r36/conformance.py \

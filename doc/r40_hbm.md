@@ -27,6 +27,27 @@ R40-04 不改这个口，只在它后面放一个桥：
 | 0xD0 | AXI_LAT | 每拍在途读数的累加；除以读数即平均读延迟（Little 定律） |
 | 0xD8 | AXI_RBEAT | R 拍数；与 AXI_RD 之比即 burst 长度 |
 
+公共设备时钟扩展（2026-10-13，当前在建的 `ac580b0` 镜像尚不包含）：
+
+| 偏移 | 名称 | 内容 |
+|---|---|---|
+| 0xE0 | TIME_CAP | 只读版本 1；旧镜像返回 0，表示不可用 |
+| 0xE8 | TIME_START | 最近一次接受 LAUNCH 的公共时钟时间戳 |
+| 0xF0 | TIME_END | 同一次 LAUNCH 的 completion 到达 MMIO 的时间戳 |
+| 0xF8 | TIME_SEQ | 对应请求序号；新 LAUNCH 尚未完成时为 0 |
+
+64 位计数器自复位起每个设备时钟递增，包括 idle、提交间隙和背压。
+PING、QUIESCE 和 PERF_READ 不覆盖 LAUNCH 时间戳。读取必须先后两次
+校验 TIME_SEQ，并与预期请求序号匹配；复位前后不可组合，同一次
+backend epoch 内的差值按 64 位模数计算。`U50Backend.launch_timestamps`
+实现此读取，旧镜像返回 None，序号过期、正在运行及未知版本明确拒绝。
+
+`make r40-device-clock`：host 单测 6/6，FPGA register protocol 实际
+RTL 测试通过，证明两次 launch 之间的 host 工作被包含在公共时钟中，
+graph 时间跨度大于两次 launch 各自跨度之和。该检查点尚未连接
+Session/ArchBench 的 graph makespan 采样，也没有板上计时证据。
+原来的 serial-grid 周期和 request-latency 记录继续保持原义。
+
 ## 2. 两个桥（`burst` 机制的 A/B）
 
 `tnca_fpga_top` 的 `AXI_LINE` 选桥：0 为单拍桥，>0 为行缓冲桥，两者端口相同。

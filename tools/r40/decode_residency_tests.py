@@ -46,6 +46,8 @@ class DecodeStep(torch.nn.Module):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--steps', type=int, default=3)
+    parser.add_argument('--bucket', action='store_true',
+                        help='fixed capacity with resident tensor position; require one graph')
     args = parser.parse_args()
     if not 2 <= args.steps <= 64:
         parser.error('steps must be between 2 and 64')
@@ -82,12 +84,21 @@ def main():
     # Different prefix lengths deliberately use guarded specializations.
     # Bound their cache budget to this explicit sequence length.
     torch._dynamo.config.recompile_limit = args.steps + 2
-    compiled = torch.compile(DecodeStep(model), fullgraph=True, dynamic=False)
+    if args.bucket:
+        from bucket_decode import BucketDecodeStep
+        step = BucketDecodeStep(model, dcos, dsin, capacity)
+        dposition = torch.tensor([prefix], dtype=torch.int64).to('tnca')
+    else:
+        step = DecodeStep(model)
+    from torch._dynamo.utils import counters
+    graphs_before = counters['stats']['unique_graphs']
+    compiled = torch.compile(step, fullgraph=True, dynamic=False)
     session = D.MEMORY.session()
     with torch.no_grad():
         for position in range(prefix, capacity):
-            model.cos = dcos[position:position + 1, :]
-            model.sin = dsin[position:position + 1, :]
+            if not args.bucket:
+                model.cos = dcos[position:position + 1, :]
+                model.sin = dsin[position:position + 1, :]
             reference.cos = ref_cos[position:position + 1, :]
             reference.sin = ref_sin[position:position + 1, :]
             want = reference(token, ref_k[..., :position, :], ref_v[..., :position, :])
@@ -96,15 +107,18 @@ def main():
             # Compile and initialize this guarded prefix specialization before
             # auditing a steady call. Repeating the append at this position
             # is idempotent: the model reads only the preceding prefix.
-            with transfers(session) as initialization:
-                warm = compiled(dtoken, dkeys, dvalues, position)
-            assert not [e for e in initialization
-                        if e['direction'] == 'h2d' and e['name'] in weight_names], \
-                'prefix specialization retransferred model weights'
-            assert compare(tuple(t.cpu() for t in warm[:3]), want, point.tolerance)['ok']
-            del warm
+            if not args.bucket or position == prefix:
+                with transfers(session) as initialization:
+                    warm = compiled(dtoken, dkeys, dvalues,
+                                    dposition if args.bucket else position)
+                assert not [e for e in initialization
+                            if e['direction'] == 'h2d' and e['name'] in weight_names], \
+                    'prefix specialization retransferred model weights'
+                assert compare(tuple(t.cpu() for t in warm[:3]), want, point.tolerance)['ok']
+                del warm
             with transfers(session, stacks=True) as events, launch_log() as launches:
-                out = compiled(dtoken, dkeys, dvalues, position)
+                out = compiled(dtoken, dkeys, dvalues,
+                               dposition if args.bucket else position)
             assert launches and len(launches) >= 3
             tensor = [e for e in events if e['tensor'] or e['staging']]
             if tensor:
@@ -123,6 +137,11 @@ def main():
             assert verdict['ok'], verdict
             assert torch.equal(got[3], got[0].argmax(dim=-1))
             token, dtoken = got[3], out[3]
+            if args.bucket:
+                assert got[4].item() == position + 1
+                dposition = out[4]
+                assert counters['stats']['unique_graphs'] - graphs_before == 1, \
+                    'fixed bucket recompiled for a new tensor position'
             print(f'PASS position={position} KV={position + 1}/{capacity}: '
                   f'{len(launches)} kernels, tensor transfers=0, '
                   f'max_rel_err={verdict["max_rel_err"]:.6g}', flush=True)
@@ -132,6 +151,8 @@ def main():
     verdict = compare((dkeys.cpu(), dvalues.cpu()), (ref_k, ref_v), point.tolerance)
     assert verdict['ok'], verdict
     assert not session.unfinished and all(not b.leases for b in session._buffers.values())
+    if args.bucket:
+        print('AUDIT fixed bucket: one compiled graph, resident tensor position', flush=True)
     print(f'AUDIT {session.memory_stats}', flush=True)
     print(f'r40-decode-residency-tests PASS ({args.steps}/{args.steps}), '
           f'KV {prefix}->{capacity}, fixed cache addresses, weights unchanged', flush=True)

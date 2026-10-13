@@ -1459,6 +1459,11 @@ R40_HOST_TIMEOUT ?= 172800
 r40-decode-residency: $(R2_DATA_STAMP) | dirs
 	@TNCA_PROFILE=core-vrf-sync-v5/hbm TNCA_HOST_TIMEOUT=$(R40_HOST_TIMEOUT) \
 	   $(TORCH_PYTHON) tools/r40/decode_residency_tests.py --steps $(R40_DECODE_STEPS)
+.PHONY: r40-bucket-decode
+r40-bucket-decode: $(R2_DATA_STAMP) | dirs
+	@$(TORCH_PYTHON) tools/r40/bucket_decode_tests.py
+	@TNCA_PROFILE=core-vrf-sync-v5/hbm TNCA_HOST_TIMEOUT=$(R40_HOST_TIMEOUT) \
+	   $(TORCH_PYTHON) tools/r40/decode_residency_tests.py --steps $(R40_DECODE_STEPS) --bucket
 # R40-03 correctness checkpoint; frozen performance gates remain independent
 # of these standard Torch register-block, reduction and GEMM checks.
 .PHONY: r40-tiles

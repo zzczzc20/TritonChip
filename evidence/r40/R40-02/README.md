@@ -1,5 +1,24 @@
 # R40-02 control checkpoint, 2026-10-11 — not accepted
 
+2026-10-13 fixed-capacity decode checkpoint: `make r40-bucket-decode`
+adds an independent standard Torch wrapper around the unchanged frozen
+tiny LLaMA model. Position is a resident int64 tensor; the RoPE table,
+slot indices, weights and fixed-address KV buffers are initialized once.
+Masked full-bucket updates and standard SDPA keep input shapes constant.
+The audit requires exactly one Dynamo graph across every position and
+zero steady tensor/staging transfers. The default growing-prefix audit
+remains available separately.
+
+`bucket_decode_cpu.log` passes the CPU semantic/graph test: three positions,
+exact cache placement, unchanged prefix/future slots, poisoned future KV
+masked out, one full graph. Native three-step execution is pending on
+gx10-6646 (`tritonchip-r40-k64/sim/build/r40/bucket_decode3_retry.log`).
+The initial attempt explicitly refused unsupported eager device arange;
+slot initialization now uses a one-time explicit upload before the ledger.
+This wrapper touches the full cache bucket on update and uses decomposed
+SDPA. It does not establish online attention, lower traffic, the 64-step
+gate, latency thresholds or R40-08 acceptance.
+
 On gx10-6646, core-vrf-sync-v5 RTL, locked torch/Triton:
 `tools/r40/residency_tests.py --evidence` passed 6/6.
 

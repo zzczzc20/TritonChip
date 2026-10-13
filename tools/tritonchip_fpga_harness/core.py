@@ -503,6 +503,7 @@ class U50FlowAdapter(Adapter):
         for command in result.commands:
             name = "package" if command.argv and command.argv[0] == "vivado" else "link"
             stages.append({"name": name, "returncode": command.returncode, "log": str(Path(command.log_path).relative_to(run_dir)), "timed_out": command.timed_out, "resource": command.resource})
+        dump_json(run_dir / "preflight.json", result.preflight.as_dict())
         if result.artifacts is not None:
             dump_json(run_dir / "artifact_validation.json", result.artifacts.as_dict())
         return stages
@@ -715,6 +716,14 @@ def _implementation_verdict(run_dir: Path, profile: Profile, manifest: dict[str,
     validation_value = load_json(validation) if validation.is_file() else None
     validation_ok = validation_value is None or bool(validation_value.get("ok", False))
     failed_checks = {check.get("name", "") for check in (validation_value or {}).get("checks", []) if not check.get("ok", False)}
+    preflight_path = run_dir / "preflight.json"
+    preflight = load_json(preflight_path) if preflight_path.is_file() else None
+    refused = [c for c in (preflight or {}).get("checks", []) if not c.get("ok") and c.get("severity") == "error"]
+    if refused:
+        # The adapter would not start: this host, or this checkout's flow,
+        # cannot run the target.  No vendor tool ran, so there is no build to
+        # call failed -- and the result must say which check refused.
+        return {"status": "ENV_FAIL", "missing": missing, "validation": validation_value, "preflight_failed": refused}
     if stage_ok and not missing and validation_ok:
         status = "PASS"
     elif manifest["mode"] == "ooc" and not validation_ok:
@@ -831,7 +840,10 @@ def submit(package_dir: Path, root: Path, manifest: dict[str, Any], state_dir: P
         final_status = board_status or verdict["status"]
         missing = verdict["missing"]
         validation_value = verdict["validation"]
-        result = {"schema_version": 1, "run_id": run_id, "status": final_status, "source_commit": source["commit"], "target": manifest["target"], "mode": manifest["mode"], "stages": stages, "missing_artifacts": missing, "artifact_validation": validation_value, "measurement": measurement, "measurement_error": measurement_error, "board_deferred": bool(skip_board and manifest.get("board")), "artifacts": {str(p.relative_to(run_dir)): file_sha256(p) for p in run_dir.rglob("*") if p.is_file() and p.parent.name == "artifacts"}, "resource_before": resource_before, "resource_after": host_resource_snapshot(state_dir), "elapsed_s": time.time() - started}
+        refused = verdict.get("preflight_failed") or []
+        result = {"schema_version": 1, "run_id": run_id, "status": final_status, "source_commit": source["commit"], "target": manifest["target"], "mode": manifest["mode"], "stages": stages, "missing_artifacts": missing, "artifact_validation": validation_value, "measurement": measurement, "measurement_error": measurement_error, "preflight_failed": refused, "board_deferred": bool(skip_board and manifest.get("board")), "artifacts": {str(p.relative_to(run_dir)): file_sha256(p) for p in run_dir.rglob("*") if p.is_file() and p.parent.name == "artifacts"}, "resource_before": resource_before, "resource_after": host_resource_snapshot(state_dir), "elapsed_s": time.time() - started}
+        if refused:
+            result["error"] = "the target cannot run here: " + "; ".join(f"{c['name']} ({c['detail']})" for c in refused)
         dump_json(run_dir / "result.json", result)
         run.update({"status": result["status"], "finished_at": time.time()})
         dump_json(run_dir / "run.json", run)

@@ -68,8 +68,9 @@ class U280FlowAdapter:
                 "timed_out": command.timed_out,
                 "resource": command.resource,
             })
+        from ..schema import dump_json
+        dump_json(run_dir / "preflight.json", result.preflight.as_dict())
         if result.artifacts is not None:
-            from ..schema import dump_json
             dump_json(run_dir / "artifact_validation.json", result.artifacts.as_dict())
         return stages
 

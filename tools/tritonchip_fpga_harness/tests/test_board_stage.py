@@ -442,6 +442,22 @@ class BoardPreflight(BoardStageCase):
         self.assertEqual(json.loads(argv[argv.index("--backend-args") + 1]), {"xclbin": "/run/a.xclbin"})
 
 
+class RefusedTargets(BoardStageCase):
+    """A target the checkout or the host cannot run is not a failed build."""
+
+    def test_a_checkout_without_the_flow_is_env_fail_and_says_which_checks(self) -> None:
+        # The throwaway repository has no flow/fpga at all.
+        result = submit(HERE, self.repo, {"candidate_id": "c", "target": "u280-r38-pr5", "mode": "full"},
+                        self.state, "u280")
+        self.assertEqual(result["status"], "ENV_FAIL")
+        self.assertEqual(result["stages"], [])
+        refused = {c["name"] for c in result["preflight_failed"]}
+        self.assertLessEqual({"package_script", "link_script", "flow_clock_contract", "device_divider_contract"}, refused)
+        self.assertIn("flow_clock_contract", result["error"])
+        self.assertTrue((self.run_dir(result) / "preflight.json").is_file())
+        self.assertFalse((self.run_dir(result) / "artifacts" / "tnca_u50.xo").exists())
+
+
 class Verdicts(unittest.TestCase):
     def verdict(self, checks: list[dict[str, object]], returncode: int) -> str:
         profile = load_profile(HERE, "u50-legacy")

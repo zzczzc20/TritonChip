@@ -6,6 +6,9 @@ measurement: a new implementation produces an XCLBIN, that exact XCLBIN is
 loaded onto the selected card, ArchBench runs through the physical-board
 backend, and the returned JSONL contains real completion cycles and counters.
 
+What each stage does, every check and how to read the results are in
+[`README.md`](README.md); this is the checklist for running one.
+
 The Harness is an orchestration and evidence layer. It does not decide
 whether a change is timing-011, timing-012, FMA, LSU, reduction, or another
 optimization. Those are candidate labels in the manifest. The board profile
@@ -337,9 +340,11 @@ Use the result status rather than inferring from a log fragment. A failed
 board stage still writes `board_measurement.json`, with `failed_stage` and the
 stages that did run:
 
-- `ENV_FAIL`/doctor failure: worker toolchain, platform, XRT or board setup,
+- `ENV_FAIL`/doctor failure: the checkout's flow does not match the target,
+  or the worker's toolchain, platform, XRT or board setup is not ready --
   including an ArchBench interpreter without PyTorch, Triton or `tnca`.
-  `result.json` lists the failed checks under `board_preflight`;
+  Nothing was built. `result.json` lists the failed checks under
+  `preflight_failed` (flow and host) or `board_preflight` (board stage);
 - `BUILD_FAIL`: package/link/artifact failure;
 - `TIMING_FAIL`: routed timing or DRC acceptance failure;
 - `BOARD_FAIL`: the board profile contradicts the image, or programming or

@@ -44,9 +44,24 @@ backend epoch 内的差值按 64 位模数计算。`U50Backend.launch_timestamps
 
 `make r40-device-clock`：host 单测 6/6，FPGA register protocol 实际
 RTL 测试通过，证明两次 launch 之间的 host 工作被包含在公共时钟中，
-graph 时间跨度大于两次 launch 各自跨度之和。该检查点尚未连接
-Session/ArchBench 的 graph makespan 采样，也没有板上计时证据。
+graph 时间跨度大于两次 launch 各自跨度之和。
 原来的 serial-grid 周期和 request-latency 记录继续保持原义。
+
+软件接入：backend args `device_clock: true` 显式开启每个 program
+完成后的 MMIO 时间戳读取，默认关闭。Session 为时间戳附加 session id，
+跨时钟域、复位 epoch、缺失端点及歧义跨度均不允许组成完整 graph 测量；
+64 位 wrap 与乱序 completion 的跨度有独立测试。异步 launch 日志在
+wait 完成后补齐端点。ArchBench timed calls 只有端点完整时才新增
+`device-graph-makespan` 采样，包含提交间隙和背压；每 program 的
+MMIO 读取开销属于测量 instrumentation，A/B 必须使用相同开关。
+目前仍无板上计时证据，协议 2 的采样、性能阈值和新镜像验证未完成。
+
+MMIO 原生 Torch 检查还暴露了初始化 copy 的边界问题。密集转置布局
+覆盖整个 span 时直接写入，不读取未初始化目标；完整 Storage copy
+只补齐 allocator 的末端 word padding（Storage.nbytes 之外，不可被
+有效 alias 命名）。部分 Storage copy 和有空隙的视图保留已有字节。
+模拟绑定遇到带 `end` 的完整 X/非法值响应明确报 DeviceLost，
+不再将它误判成 host 超时；不完整响应继续等待。
 
 ## 2. 两个桥（`burst` 机制的 A/B）
 

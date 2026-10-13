@@ -256,6 +256,7 @@ class U50Backend(Transport):
     def __init__(self, link, *, epoch=0, host_timeout=30.0,
                  deadline_cycles=2_000_000, poll_interval=0.001,
                  trace=False, image_profile=None, hbm_bytes=None, hbm_dma=True,
+                 device_clock=False,
                  **kw):
         # The profile the loaded image (or the simulated harness) was built
         # as. Nothing in the hardware says which (spec/r1_profiles.json: the
@@ -264,6 +265,9 @@ class U50Backend(Transport):
         # core-vrf-sync-v2 since R39, and an older image (r39b and before)
         # is core-vrf-sync-v1 and says so through this argument.
         self.image_profile = image_profile or BOARD_PROFILE
+        if not isinstance(device_clock, bool):
+            raise ArgumentError('device_clock must be a boolean')
+        self.device_clock = device_clock
         # Transport's constructor sets up four filenames and a child
         # process. None of that is here, so it is not called.
         if link is None:
@@ -422,19 +426,22 @@ class U50Backend(Transport):
                     read_beats=r(R_AXI_RBEAT))
 
     def launch(self, *a, **kw):
-        reply = super().launch(*a, **kw)
-        if self.local_limit is not None:
-            st = self.axi_status()
-            if st['error'] or st['stray']:
-                # Sticky until the image is reset: every later result is
-                # suspect too, so the device is reported lost, not faulted.
-                raise DeviceLost(
-                    'the AXI memory answered with an error during a launch'
-                    if st['error'] else
-                    'the AXI memory answered a request that was not in flight',
-                    detail=dict(self._gone_detail(), axi=st),
-                    remedy='reload the image; R_AXI_STAT stays set until reset')
-        return reply
+        with self._io_lock:
+            reply = super().launch(*a, **kw)
+            if self.local_limit is not None:
+                st = self.axi_status()
+                if st['error'] or st['stray']:
+                    # Sticky until the image is reset: every later result is
+                    # suspect too, so the device is reported lost, not faulted.
+                    raise DeviceLost(
+                        'the AXI memory answered with an error during a launch'
+                        if st['error'] else
+                        'the AXI memory answered a request that was not in flight',
+                        detail=dict(self._gone_detail(), axi=st),
+                        remedy='reload the image; R_AXI_STAT stays set until reset')
+            if getattr(self, 'device_clock', False):
+                reply.device_timing = self.launch_timestamps(reply.seq)
+            return reply
 
     def launch_timestamps(self, sequence):
         """Common-clock endpoints for one completed launch, or None.

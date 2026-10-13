@@ -104,6 +104,7 @@ class Event:
         # that sum is serial-grid time, not the makespan of a device that
         # runs programs concurrently.
         self.program_cycles = None
+        self.device_timing = None
         # Session(counters=True): {'available', 'programs', 'total'}; None
         # when counters were not asked for. See _counter_summary.
         self.counters = None
@@ -834,6 +835,7 @@ class Session:
             total = launches_x * gy * gz
             cycles = 0
             per_program = []
+            device_times = []
             probe = self._counters is not None
             deltas = []
             for linear in range(total):
@@ -867,6 +869,8 @@ class Session:
                                         pid=(x, y, z), npid=(gx, gy, gz))
                 cycles += reply.r0
                 per_program.append(reply.r0)
+                stamp = getattr(reply, 'device_timing', None)
+                device_times.append(dict(stamp, session_id=self.id) if stamp else None)
                 if probe and reply.status == T.ST_OK:
                     after = self._snapshot()
                     deltas.append(dict(
@@ -898,6 +902,8 @@ class Session:
             self.dev.quiesce()
             ev.device_cycles = cycles
             ev.program_cycles = per_program
+            from .device_timing import clock_span
+            ev.device_timing = clock_span(device_times)
             if self._counters is not None:
                 ev.counters = (_counter_summary(deltas) if probe
                                else {'available': False})

@@ -1492,8 +1492,10 @@ r40-hbm: $(R2_DATA_STAMP) | dirs
 
 .PHONY: r40-device-clock
 r40-device-clock: $(R2_DATA_STAMP) | dirs
-	@$(PYTHON) tools/r40/device_clock_tests.py
+	@$(TORCH_PYTHON) tools/r40/device_clock_tests.py
+	@$(TORCH_PYTHON) tools/r40/host_copy_tests.py
 	@$(PYTHON) tools/r36/fpga_tests.py --only R36-FPGA-08
+	@$(TORCH_PYTHON) tools/r40/device_clock_native_tests.py
 
 # One suite, every backend. This is the suite a downstream branch runs.
 r36-conformance: $(R2_DATA_STAMP) | dirs

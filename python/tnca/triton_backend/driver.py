@@ -132,6 +132,7 @@ def launch_log():
                     raise TNCALaunchError(f'{entry["kernel"]}: {ev.error}')
                 entry['device_cycles'] = ev.device_cycles
                 entry['program_cycles'] = list(ev.program_cycles or [])
+                entry['device_timing'] = ev.device_timing
                 entry['counters'] = ev.counters
                 stamps = dict(ev.history)
                 entry['host_seconds']['run'] = round(
@@ -259,6 +260,7 @@ class TNCALauncher:
                          artifact=_artifact_sha256(function), artifact_path=function,
                          device_cycles=event.device_cycles,
                          program_cycles=list(event.program_cycles or []),
+                         device_timing=event.device_timing,
                          counters=event.counters,
                          host_seconds=dict(upload=round(t_submit - t_start, 6),
                                            run=round(t_done - t_submit, 6),

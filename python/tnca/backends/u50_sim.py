@@ -319,7 +319,9 @@ class SimLink(U50Link):
         try:
             return int(toks[0]), [int(t, 16) for t in toks[1:-1]]
         except ValueError:
-            return None
+            raise DeviceLost('the completed MMIO response contains an invalid or unknown value',
+                             detail={'log': self.log},
+                             remedy='initialize memory before reading it; inspect the RTL response')
 
     # ---- bringing the harness up -----------------------------------------
     def _await_up(self):
@@ -388,7 +390,8 @@ def stand_in(**kw):
         link = SimLink(harness=kw.pop('harness', None),
                        words=kw.pop('words', DEFAULT_WORDS),
                        workdir=kw.pop('workdir', None),
-                       rtl_params=kw.pop('rtl_params', None))
+                       rtl_params=kw.pop('rtl_params', None),
+                       host_timeout=kw.get('host_timeout', 30.0))
         if 'image_profile' not in kw and link.rtl_params and \
                 not any(link.rtl_params.get(k, 1) for k in ('VRF_BYPASS', 'FE_NOBUBBLE', 'VRF_PREFETCH')):
             kw['image_profile'] = 'core-vrf-sync-v1'

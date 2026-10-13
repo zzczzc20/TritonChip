@@ -27,6 +27,11 @@ cycles are the one sample, marked deterministic; there is then no latency.
 The record carries its provenance (archbench/provenance.py): the software
 tree, every artifact's sha256, the profile and its capabilities, the image
 and clock, the launch map, and with `bundle` the files of the chain.
+
+With backend_args.device_clock=true on an image providing MMIO clock
+endpoints, timed calls additionally report device-graph-makespan from first
+accepted launch to last completion, including submission gaps. Missing
+endpoints leave this measurement unavailable; serial-grid keeps its meaning.
 """
 import os
 import time
@@ -328,6 +333,8 @@ def _steady(compiled, inputs, n, expected, launch_log, torch):
                  upload_s=sum(e['host_seconds']['upload'] for e in lg),
                  run_s=sum(e['host_seconds']['run'] for e in lg),
                  download_s=sum(e['host_seconds']['download'] for e in lg))
+        from tnca.device_timing import clock_span
+        c['device_timing'] = clock_span([e.get('device_timing') for e in lg])
         if expected is not None and len(lg) != expected:
             c['problem'] = f'{len(lg)} launches, the wrapper makes {expected}'
         elif not c['device_cycles']:
@@ -358,6 +365,14 @@ def _timings(first_cycles, steady, warmup, clock):
         out['device-cycles-serial-grid'] = dict(unit='cycles', samples=cyc, median=_median(cyc),
                                                 p95=_p95(cyc), warmup=warmup, deterministic=False,
                                                 clock_hz=clock)
+        if all(c.get('device_timing') is not None for c in steady):
+            spans = [c['device_timing']['cycles'] for c in steady]
+            out['device-graph-makespan'] = dict(
+                unit='cycles', samples=spans, median=_median(spans), p95=_p95(spans),
+                warmup=warmup, clock_hz=clock, deterministic=False,
+                boundaries='first accepted launch to last device completion',
+                includes=['device execution', 'submission gaps', 'backpressure'],
+                instrumentation='sequence-checked MMIO endpoints after each program')
         lat = [round(c['request_s'], 6) for c in steady]
         out['request-latency'] = dict(unit='s', samples=lat, median=_median(lat), p95=_p95(lat),
                                       warmup=warmup,

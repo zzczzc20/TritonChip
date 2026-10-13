@@ -74,3 +74,22 @@ geometry maps to 2 RAMB36E2, 8 LUT2, no data flip-flops in Yosys XCU.
 Bridge 70/70, semantic mutations 16/16, adverse native cases 4/4 and
 FPGA wrapper/protocol 8/8 pass. See ram_cache_*.log. Cache-hit latency
 increases by one cycle; no speedup or board timing is claimed.
+
+2026-10-13 common-clock software checkpoint: opt-in `device_clock: true`
+captures each program's sequence-checked MMIO start/completion endpoints.
+Session and asynchronous launch logs retain one clock/session/epoch domain;
+ArchBench timed samples add device-graph-makespan only with complete
+endpoints. Existing serial-grid cycles keep their meaning. Counter wrap,
+out-of-order completion, missing programs, reset/domain mismatch, old image
+unavailability and timing-field separation pass unit 16/16.
+
+The standard native Torch mm -> sum graph runs through fpga-u50-sim,
+one physical core and two dependent kernels: single/batched both pass,
+zero steady tensor transfers, active cycles 4550 vs graph spans 5646/5626.
+This is functional RTL evidence with submission gaps, not a performance
+comparison or protocol-2 measurement. Native initialization also verifies
+word padding outside a whole Storage and dense-transpose writes without
+reading uninitialized RAM; gapped/partial views preserve neighboring bytes.
+Host copy units 4/4, native copy 15/15, runtime 7/7, backend 3/3 pass.
+See device_clock_* and host_* logs. The current ac580b0 RAM image build
+does not include these clock registers; no board clock evidence is claimed.

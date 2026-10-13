@@ -215,10 +215,32 @@ def from_host(dst, src):
     if dst.numel() == 0:
         return
     base, n, lo = _span(dst)
+    def write_dense(data):
+        # A whole storage copy may define its allocator's word padding.
+        # Those bytes lie beyond Storage.nbytes(), so no valid alias names
+        # them. Partial storage copies still preserve neighboring bytes.
+        if dst.storage_offset() == 0 and n == dst.untyped_storage().nbytes():
+            data += bytes(-len(data) % WORD)
+        MEMORY.write(base, data)
     if dst.is_contiguous() and n == dst.numel() * dst.element_size():
         host = torch.empty(dst.shape, dtype=dst.dtype)
         host.copy_(src)
-        MEMORY.write(base, host.view(-1).view(torch.uint8).numpy().tobytes())
+        write_dense(host.view(-1).view(torch.uint8).numpy().tobytes())
+        return
+    dense, extent = True, 1
+    for stride, size in sorted((stride, size) for size, stride in
+                               zip(dst.shape, dst.stride()) if size > 1):
+        if stride != extent:
+            dense = False
+            break
+        extent *= size
+    if dense:
+        # A dense permutation covers every byte of the span. Reading first
+        # needlessly observes uninitialized board RAM on a fresh allocation.
+        flat = torch.empty(n, dtype=torch.uint8)
+        view = flat.view(dst.dtype).as_strided(dst.shape, dst.stride(), -lo)
+        view.copy_(src)
+        write_dense(flat.numpy().tobytes())
         return
     # A view with gaps: the bytes between its elements belong to other
     # tensors and must come back unchanged, so the span is read first.

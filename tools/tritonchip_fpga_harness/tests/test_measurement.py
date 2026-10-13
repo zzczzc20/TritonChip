@@ -27,8 +27,8 @@ class MeasurementTests(unittest.TestCase):
             "evidence_level": "measured-board",
             "platform": {"backend": "fpga-u50", "kind": "tnca"},
             "time": {
-                "unit": "cycles", "device": 123, "clock_hz": 37_500_000,
-                "device_seconds": 123 / 37_500_000,
+                "unit": "cycles", "device": 123, "clock_hz": 100_000_000,
+                "device_seconds": 123 / 100_000_000,
                 "timing": "serial-grid", "launches": 1,
                 "per_launch": [{"kernel": "k", "cycles": 123}],
             },
@@ -42,7 +42,7 @@ class MeasurementTests(unittest.TestCase):
             path = Path(td) / "archbench.jsonl"
             path.write_text(json.dumps(self._record()) + "\n", encoding="utf-8")
             result = summarize_archbench(path, backend="fpga-u50",
-                                         expected_clock_hz=37_500_000,
+                                         expected_clock_hz=100_000_000,
                                          require_counters=True)
         self.assertEqual(result["status"], "PASS")
         self.assertEqual(result["cycles_total"], 123)
@@ -57,7 +57,7 @@ class MeasurementTests(unittest.TestCase):
             path = Path(td) / "archbench.jsonl"
             path.write_text(json.dumps(row) + "\n", encoding="utf-8")
             result = summarize_archbench(path, backend="fpga-u50",
-                                         expected_clock_hz=37_500_000,
+                                         expected_clock_hz=100_000_000,
                                          require_counters=True)
         self.assertEqual(result["status"], "ARCHBENCH_FAIL")
         self.assertTrue(result["failures"])
@@ -69,14 +69,14 @@ class MeasurementTests(unittest.TestCase):
             path = Path(td) / "archbench.jsonl"
             path.write_text(json.dumps(row) + "\n", encoding="utf-8")
             result = summarize_archbench(path, backend="fpga-u50",
-                                         expected_clock_hz=37_500_000,
+                                         expected_clock_hz=100_000_000,
                                          require_counters=True)
         self.assertEqual(result["status"], "ARCHBENCH_FAIL")
         self.assertIn("done_cycles 124 != time.device 123",
                       result["failures"][0]["problems"])
 
     def test_board_stage_writes_completion_and_archbench_evidence(self) -> None:
-        profile = load_profile(HERE, "u50-legacy")
+        profile = load_profile(HERE, "u50")
         with tempfile.TemporaryDirectory() as td:
             run_dir = Path(td) / "run"
             (run_dir / "artifacts").mkdir(parents=True)
@@ -101,7 +101,7 @@ class MeasurementTests(unittest.TestCase):
             self.assertTrue((run_dir / "board_measurement.json").is_file())
 
     def test_board_stage_programs_then_reads_cycles(self) -> None:
-        profile = load_profile(HERE, "u50-legacy")
+        profile = load_profile(HERE, "u50")
         with tempfile.TemporaryDirectory() as td:
             run_dir = Path(td) / "run"
             (run_dir / "artifacts").mkdir(parents=True)

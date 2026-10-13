@@ -1,6 +1,6 @@
 """U280 adapter for the board-selectable TritonChip FPGA flow.
 
-The PR5 flow keeps the RTL/package top named ``tnca_u50`` for compatibility,
+The flow keeps the RTL/package top named ``tnca_u50`` on every card,
 but selects the U280 platform, SLR placement and output xclbin through
 ``TNCA_BOARD=u280``.  This adapter makes those choices explicit in the run
 manifest and reuses the U50 adapter's fail-closed artifact checks.

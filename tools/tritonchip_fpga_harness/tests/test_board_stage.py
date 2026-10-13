@@ -37,7 +37,7 @@ RUN = "import json,os,pathlib; run=pathlib.Path(os.environ['TNCA_HARNESS_RUN_DIR
 BOARD_RECORD = {
     "schema": "archbench-torch-record/1", "point_id": "op.add/tiny/fp32-n1", "family": "add", "tier": "tiny",
     "status": "pass", "evidence_level": "measured-board", "platform": {"backend": "fpga-u50", "kind": "tnca"},
-    "time": {"unit": "cycles", "device": 123, "clock_hz": 37_500_000, "launches": 1},
+    "time": {"unit": "cycles", "device": 123, "clock_hz": 100_000_000, "launches": 1},
     "counters": {"done_cycles": 123, "done_retired": 9, "perf_cycles": 120}, "problems": [],
 }
 
@@ -80,7 +80,7 @@ class BoardStageCase(unittest.TestCase):
         return git(self.repo, "rev-parse", "HEAD")
 
     def manifest(self, **board: object) -> dict[str, object]:
-        value: dict[str, object] = {"candidate_id": "board-test", "target": "u50-legacy", "mode": "full"}
+        value: dict[str, object] = {"candidate_id": "board-test", "target": "u50", "mode": "full"}
         if board:
             value["board"] = {"backend": "fpga-u50", "profile": "core-vrf-sync-v1", "program": False, **board}
         return value
@@ -382,7 +382,7 @@ class BoardPreflight(BoardStageCase):
 
     def test_pytorch_without_the_tnca_backend_is_not_ready(self) -> None:
         manifest = self.manifest(conformance=False, archbench={"python": self.with_pytorch(tnca_backend=False)})
-        failed = self.failed(board_preflight(root=self.repo, profile=load_profile(HERE, "u50-legacy"), manifest=manifest))
+        failed = self.failed(board_preflight(root=self.repo, profile=load_profile(HERE, "u50"), manifest=manifest))
         self.assertIn("tnca package is not installed", failed["board_archbench_python"])
 
     def test_a_ready_host_passes_every_check(self) -> None:
@@ -397,7 +397,7 @@ class BoardPreflight(BoardStageCase):
             (self.repo / relative).chmod(0o755)
         manifest = self.manifest(program=True, archbench={"python": self.with_pytorch()})
         with mock.patch.dict(os.environ, {"XILINX_XRT": str(xrt)}):
-            checks = board_preflight(root=self.repo, profile=load_profile(HERE, "u50-legacy"), manifest=manifest)
+            checks = board_preflight(root=self.repo, profile=load_profile(HERE, "u50"), manifest=manifest)
         self.assertEqual(self.failed(checks), {})
         self.assertEqual({c["name"] for c in checks}, {
             "board_program_script", "board_xbutil", "board_xclbinutil", "board_conformance_tool",
@@ -407,9 +407,9 @@ class BoardPreflight(BoardStageCase):
     def test_steps_the_manifest_replaces_are_not_checked(self) -> None:
         manifest = self.manifest(program={"command": [PY, "-c", "pass"]}, conformance={"command": conformance()},
                                  archbench={"command": archbench()})
-        self.assertEqual(board_preflight(root=self.repo, profile=load_profile(HERE, "u50-legacy"), manifest=manifest), [])
-        self.assertEqual(board_preflight(root=self.repo, profile=load_profile(HERE, "u50-legacy"),
-                                         manifest={"candidate_id": "c", "target": "u50-legacy", "mode": "full"}), [])
+        self.assertEqual(board_preflight(root=self.repo, profile=load_profile(HERE, "u50"), manifest=manifest), [])
+        self.assertEqual(board_preflight(root=self.repo, profile=load_profile(HERE, "u50"),
+                                         manifest={"candidate_id": "c", "target": "u50", "mode": "full"}), [])
 
     def test_measure_reports_an_unready_host_and_writes_nothing_against_the_run(self) -> None:
         manifest = self.manifest(conformance=False, archbench={"python": self.without_pytorch()})
@@ -423,8 +423,8 @@ class BoardPreflight(BoardStageCase):
 
     def test_doctor_checks_a_manifests_board_stage_when_given_one(self) -> None:
         manifest = self.manifest(conformance=False, archbench={"python": self.without_pytorch()})
-        self.assertTrue(doctor(HERE, self.repo, "u50-legacy", "mock")["ok"])
-        report = doctor(HERE, self.repo, "u50-legacy", "mock", manifest)
+        self.assertTrue(doctor(HERE, self.repo, "u50", "mock")["ok"])
+        report = doctor(HERE, self.repo, "u50", "mock", manifest)
         self.assertFalse(report["ok"])
         self.assertIn("board_archbench_python", self.failed(report["checks"]))
 
@@ -447,7 +447,7 @@ class RefusedTargets(BoardStageCase):
 
     def test_a_checkout_without_the_flow_is_env_fail_and_says_which_checks(self) -> None:
         # The throwaway repository has no flow/fpga at all.
-        result = submit(HERE, self.repo, {"candidate_id": "c", "target": "u280-r38-pr5", "mode": "full"},
+        result = submit(HERE, self.repo, {"candidate_id": "c", "target": "u280", "mode": "full"},
                         self.state, "u280")
         self.assertEqual(result["status"], "ENV_FAIL")
         self.assertEqual(result["stages"], [])
@@ -460,7 +460,7 @@ class RefusedTargets(BoardStageCase):
 
 class Verdicts(unittest.TestCase):
     def verdict(self, checks: list[dict[str, object]], returncode: int) -> str:
-        profile = load_profile(HERE, "u50-legacy")
+        profile = load_profile(HERE, "u50")
         with tempfile.TemporaryDirectory() as td:
             run_dir = Path(td)
             (run_dir / "artifacts").mkdir()
@@ -501,7 +501,7 @@ class Reconcile(unittest.TestCase):
 
 class MeasureBoardWithoutACard(unittest.TestCase):
     def measure(self, root: Path, **board: object) -> dict[str, object]:
-        profile = load_profile(HERE, "u280-r38-pr5")
+        profile = load_profile(HERE, "u280")
         run_dir = root / "run"
         (run_dir / "artifacts").mkdir(parents=True)
         (run_dir / "artifacts" / "tnca_u280.xclbin").write_bytes(b"xclbin")
@@ -524,7 +524,7 @@ class MeasureBoardWithoutACard(unittest.TestCase):
     def test_board_profile_is_never_defaulted(self) -> None:
         from tritonchip_fpga_harness.schema import SchemaError, validate_manifest
         with self.assertRaisesRegex(SchemaError, "board.profile is required"):
-            validate_manifest({"candidate_id": "c", "target": "u280-r38-pr5", "mode": "full",
+            validate_manifest({"candidate_id": "c", "target": "u280", "mode": "full",
                                "board": {"backend": "fpga-u280"}})
         with tempfile.TemporaryDirectory() as td:
             with self.assertRaisesRegex(MeasurementError, "board.profile is required"):
@@ -547,7 +547,7 @@ class ThisCheckout(unittest.TestCase):
         boards = REPO / "flow" / "fpga" / "boards.sh"
         if not boards.is_file() or "u280)" not in boards.read_text(encoding="utf-8"):
             self.skipTest("checkout predates the board-selectable flow")
-        for target in ("u280-r38-pr5", "u50-r38-pr5"):
+        for target in ("u280", "u50"):
             data = load_profile(HERE, target).data
             for key in ("package_script", "link_script", "program_script"):
                 self.assertTrue((REPO / data[key]).is_file(), f"{target}: {key} {data[key]} is not in this checkout")

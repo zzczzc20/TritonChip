@@ -34,7 +34,7 @@ class WorkerTests(unittest.TestCase):
                 operation="submit",
                 adapter="u280",
                 ssh_binary=str(fake),
-                manifest={"candidate_id": "w-1", "target": "u280-r38-pr5", "mode": "full"},
+                manifest={"candidate_id": "w-1", "target": "u280", "mode": "full"},
             )
         self.assertTrue(result["ok"])
         self.assertEqual(result["remote"]["result"]["status"], "PASS")

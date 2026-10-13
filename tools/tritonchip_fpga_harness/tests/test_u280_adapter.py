@@ -15,9 +15,9 @@ from tritonchip_fpga_harness.core import load_profile
 
 
 class U280AdapterTests(unittest.TestCase):
-    def test_pr5_command_and_environment_contract(self) -> None:
-        profile = load_profile(HERE, "u280-r38-pr5")
-        impl = U280FlowAdapter()._impl(Path("/tmp/pr5-u280-source"), profile)
+    def test_command_and_environment_contract(self) -> None:
+        profile = load_profile(HERE, "u280")
+        impl = U280FlowAdapter()._impl(Path("/tmp/u280-source"), profile)
         self.assertEqual(impl.config.expected_ap_clk_mhz, 100)
         self.assertEqual(impl.config.expected_device_divider, 1)
         self.assertEqual(impl.config.xo_name, "tnca_u50.xo")
@@ -30,12 +30,12 @@ class U280AdapterTests(unittest.TestCase):
         self.assertEqual(impl.package_command(Path("/tmp/build"))[-1], "xcu280-fsvh2892-2L-e")
 
     def test_u280_profile_allows_only_advisory_scaling_rule(self) -> None:
-        profile = load_profile(HERE, "u280-r38-pr5")
+        profile = load_profile(HERE, "u280")
         self.assertEqual(profile.data["allowed_auto_frequency_rules"], ["AUTO-FREQ-SCALING-08"])
 
     def test_u280_artifact_accepts_advisory_but_rejects_clock_change(self) -> None:
-        profile = load_profile(HERE, "u280-r38-pr5")
-        impl = U280FlowAdapter()._impl(Path("/tmp/pr5-u280-source"), profile)
+        profile = load_profile(HERE, "u280")
+        impl = U280FlowAdapter()._impl(Path("/tmp/u280-source"), profile)
         with tempfile.TemporaryDirectory() as td:
             out = Path(td)
             (out / "tnca_u50.xo").write_bytes(b"xo")
@@ -57,8 +57,8 @@ class U280AdapterTests(unittest.TestCase):
             self.assertFalse(impl.validate_artifacts(out).ok)
 
     def test_u280_full_validation_requires_routed_timing_and_drc(self) -> None:
-        profile = load_profile(HERE, "u280-r38-pr5")
-        impl = U280FlowAdapter()._impl(Path("/tmp/pr5-u280-source"), profile)
+        profile = load_profile(HERE, "u280")
+        impl = U280FlowAdapter()._impl(Path("/tmp/u280-source"), profile)
         with tempfile.TemporaryDirectory() as td:
             out = Path(td)
             (out / "tnca_u50.xo").write_bytes(b"xo")

@@ -8,9 +8,8 @@ Run from the repository root with::
 
     python tools/tritonchip_fpga_harness/tests/test_u50_flow_guard.py
 
-The full implementation harness adds its own mock-worker tests next to this
-file.  This file remains useful as a regression check for the wrapped legacy
-flow itself.
+The harness's own lifecycle tests are next to this file.  This one is a
+regression check on the flow script the harness wraps.
 """
 
 from __future__ import annotations

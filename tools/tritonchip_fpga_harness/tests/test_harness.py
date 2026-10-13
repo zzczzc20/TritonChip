@@ -21,11 +21,11 @@ class HarnessTests(unittest.TestCase):
         self.state = Path(tempfile.mkdtemp(prefix="tritonchip-harness-test-"))
 
     def manifest(self, mode: str = "full") -> dict[str, object]:
-        return {"candidate_id": "test-candidate", "target": "u50-legacy", "mode": mode, "clock_mhz": 150}
+        return {"candidate_id": "test-candidate", "target": "u50", "mode": mode, "clock_mhz": 100}
 
     def test_mock_lifecycle_and_export(self) -> None:
         value = plan(HERE, self.root, self.manifest(), "mock")
-        self.assertEqual(value["clock_mhz"], 150)
+        self.assertEqual(value["clock_mhz"], 100)
         result = submit(HERE, self.root, self.manifest(), self.state, "mock", allow_dirty=True)
         self.assertEqual(result["status"], "PASS")
         self.assertEqual(set(result["artifacts"]), {"artifacts/tnca_u50.xo", "artifacts/tnca_u50.xclbin", "artifacts/timing_summary.json"})
@@ -50,20 +50,20 @@ class HarnessTests(unittest.TestCase):
             plan(HERE, self.root, value, "mock")
 
     def test_doctor_has_structured_checks(self) -> None:
-        result = doctor(HERE, self.root, "u50-legacy", "mock")
+        result = doctor(HERE, self.root, "u50", "mock")
         self.assertTrue(result["ok"])
         self.assertEqual(result["checks"][0]["name"], "mock-adapter")
 
-    def test_pr5_profile_records_kernel_and_device_contract(self) -> None:
-        profile = load_profile(HERE, "u50-r38-pr5")
+    def test_target_records_kernel_and_device_contract(self) -> None:
+        profile = load_profile(HERE, "u50")
         self.assertEqual(profile.expected_clock, 100)
         self.assertEqual(profile.expected_device_divider, 1)
         self.assertEqual(profile.data["device_clock_mhz"], 100)
 
     def test_u280_mock_lifecycle_uses_u280_artifact_name(self) -> None:
         value = {
-            "candidate_id": "pr5-u280-mock",
-            "target": "u280-r38-pr5",
+            "candidate_id": "u280-mock",
+            "target": "u280",
             "mode": "full",
             "clock_mhz": 100,
         }
@@ -75,7 +75,7 @@ class HarnessTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             plan(HERE, self.root, {
                 "candidate_id": "bad-target-adapter",
-                "target": "u280-r38-pr5",
+                "target": "u280",
                 "mode": "full",
                 "clock_mhz": 100,
             }, "u50")
@@ -109,14 +109,51 @@ class HarnessTests(unittest.TestCase):
         ]
         manifest = {
             "candidate_id": "fma-ooc",
-            "target": "u50-legacy",
+            "target": "u50",
             "mode": "ooc",
-            "clock_mhz": 150,
+            "clock_mhz": 100,
             "ooc": {"top": "u_mac", "command": command, "artifacts": ["artifacts/fma_ooc.dcp"]},
         }
         result = submit(HERE, self.root, manifest, self.state, "u50", allow_dirty=True)
         self.assertEqual(result["status"], "PASS", result)
         self.assertEqual(result["stages"][0]["name"], "ooc")
+
+
+class CommandLine(unittest.TestCase):
+    """The command line, on the checkout the harness is committed in."""
+
+    def cli(self, *argv: str) -> tuple[int, dict[str, object]]:
+        import contextlib
+        import io
+
+        from tritonchip_fpga_harness.cli import main
+        out = io.StringIO()
+        with contextlib.redirect_stdout(out), contextlib.redirect_stderr(io.StringIO()):
+            code = main(["--repo", str(HERE), *argv])
+        return code, (json.loads(out.getvalue()) if out.getvalue().strip() else {})
+
+    def test_a_target_is_built_by_its_own_adapter_unless_another_is_asked_for(self) -> None:
+        example = str(HERE / "examples" / "candidate-u280.json")
+        code, planned = self.cli("plan", example)
+        self.assertEqual((code, planned["adapter"], planned["target"]), (0, "u280", "u280"))
+        self.assertEqual(self.cli("plan", example, "--adapter", "mock")[1]["adapter"], "mock")
+        self.assertEqual(self.cli("plan", str(HERE / "examples" / "candidate.json"))[1]["adapter"], "u50")
+
+    def test_doctor_takes_its_target_from_the_manifest_or_is_told(self) -> None:
+        self.assertEqual(self.cli("doctor")[0], 2)
+        code, report = self.cli("doctor", "--manifest", str(HERE / "examples" / "candidate-u280.json"), "--adapter", "mock")
+        self.assertEqual(report["target"], "u280")
+
+    def test_an_unknown_target_is_answered_with_the_ones_there_are(self) -> None:
+        with self.assertRaisesRegex(HarnessError, "this checkout has: .*u280.*u50"):
+            load_profile(HERE, "u280-of-some-other-time")
+
+    def test_every_target_file_is_named_for_what_it_says_it_is(self) -> None:
+        for path in sorted((HERE / "targets").glob("*.json")):
+            data = json.loads(path.read_text(encoding="utf-8"))
+            self.assertEqual(data["name"], path.stem)
+            self.assertEqual(path.stem.split("-")[0], data["board"])
+            validate_profile(Profile(path.stem, data))
 
 
 if __name__ == "__main__":

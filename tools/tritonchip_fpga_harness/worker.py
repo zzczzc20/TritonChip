@@ -43,11 +43,10 @@ def _safe_arg(value: str, name: str) -> str:
 
 
 def _board_for_target(target: str) -> str:
-    target_lower = target.lower()
-    if "u280" in target_lower:
-        return "u280"
-    if "u50" in target_lower or target_lower == "u50-legacy":
-        return "u50"
+    # A target is named for its card, with an optional variant after a dash.
+    board = target.lower().split("-", 1)[0]
+    if board in {"u50", "u280"}:
+        return board
     raise DispatchError(
         f"cannot infer FPGA server board from target {target!r}; pass --board u50|u280"
     )

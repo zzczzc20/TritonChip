@@ -1,5 +1,5 @@
 {
-  "name": "u280-r38-pr5",
+  "name": "u280",
   "adapter": "u280",
   "board": "u280",
   "part": "xcu280-fsvh2892-2L-e",
@@ -16,11 +16,16 @@
   "xo_name": "tnca_u50.xo",
   "xclbin_name": "tnca_u280.xclbin",
   "board_vpp_opts": "--connectivity.slr tnca_u50_1:SLR1",
-  "allowed_auto_frequency_rules": ["AUTO-FREQ-SCALING-08"],
+  "allowed_auto_frequency_rules": [
+    "AUTO-FREQ-SCALING-08"
+  ],
   "environment": {
     "VPP_JOBS": "8"
   },
-  "expected_artifacts": ["tnca_u50.xo", "tnca_u280.xclbin"],
+  "expected_artifacts": [
+    "tnca_u50.xo",
+    "tnca_u280.xclbin"
+  ],
   "require_routed_timing": true,
   "require_drc": true
 }

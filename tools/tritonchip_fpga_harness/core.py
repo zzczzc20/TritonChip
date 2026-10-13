@@ -357,11 +357,15 @@ def validate_profile(profile: Profile) -> None:
 
 
 def load_profile(package_dir: Path, target: str) -> Profile:
-    path = package_dir / "profiles" / f"{target.replace('/', '_')}.json"
-    if target == "u50-legacy":
-        path = package_dir / "profiles" / "u50.json"
+    """A target: one card, as this checkout's flow builds for it.
+
+    The file lives beside the flow it describes and changes in the same
+    commit, so a target is named for the card and nothing else.
+    """
+    path = package_dir / "targets" / f"{target.replace('/', '_')}.json"
     if not path.is_file():
-        raise HarnessError(f"unknown target {target!r}; expected {path}")
+        known = ", ".join(sorted(p.stem for p in (package_dir / "targets").glob("*.json")))
+        raise HarnessError(f"unknown target {target!r}; this checkout has: {known}")
     value = load_json(path)
     profile = Profile(target, value)
     validate_profile(profile)

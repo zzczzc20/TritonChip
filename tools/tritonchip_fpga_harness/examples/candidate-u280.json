@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
-  "candidate_id": "pr5-u280-full",
-  "target": "u280-r38-pr5",
+  "candidate_id": "example-u280",
+  "target": "u280",
   "mode": "full",
   "clock_mhz": 100,
   "source_commit": "HEAD",
@@ -11,7 +11,10 @@
     "program": true,
     "conformance": true,
     "archbench": {
-      "tiers": ["tiny", "small"],
+      "tiers": [
+        "tiny",
+        "small"
+      ],
       "jobs": 1,
       "counters": true,
       "timeout_s": 21600

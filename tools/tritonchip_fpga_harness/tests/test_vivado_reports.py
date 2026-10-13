@@ -84,7 +84,7 @@ class VitisLinkOutput(unittest.TestCase):
         (self.out / "link.log").write_text(
             "VPP_RC=0\nclock name 'kernel_00' (clock ID '0') is being mapped to clock name 'DATA_CLK'\nLINK_OK\n",
             encoding="utf-8")
-        self.adapter = U280FlowAdapter()._impl(Path("/nonexistent/source"), load_profile(HERE, "u280-r38-pr5"))
+        self.adapter = U280FlowAdapter()._impl(Path("/nonexistent/source"), load_profile(HERE, "u280"))
 
     def link(self, design_row: str = CLEAN, log: str = IMPLEMENTATION_LOG) -> dict[str, object]:
         for path in (self.reports / "impl_1_hw_bb_locked_timing_summary_routed.rpt",

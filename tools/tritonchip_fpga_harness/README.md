@@ -15,12 +15,6 @@ says exactly which commit, image and software a number came from.
 It needs only the Python standard library (3.9 or later), so the same code
 plans a run on a laptop and executes it on an FPGA host.
 
-| Document | For |
-|---|---|
-| this file | what the harness does and how to read its results |
-| [`HANDOFF.md`](HANDOFF.md) | the operator's checklist for a real board run |
-| [`VALIDATION.md`](VALIDATION.md) | what has been run, on which host, and what has not |
-
 ## Contents
 
 1. [At a glance](#1-at-a-glance)
@@ -34,7 +28,9 @@ plans a run on a laptop and executes it on an FPGA host.
 9. [The manifest](#9-the-manifest)
 10. [Out-of-context runs](#10-out-of-context-runs)
 11. [SSH worker dispatch](#11-ssh-worker-dispatch)
-12. [What the harness does not do](#12-what-the-harness-does-not-do)
+12. [Running a real candidate](#12-running-a-real-candidate)
+13. [What has been run](#13-what-has-been-run)
+14. [What the harness does not do](#14-what-the-harness-does-not-do)
 
 ## 1. At a glance
 
@@ -77,17 +73,22 @@ From the repository root. None of this needs an FPGA tool:
 
 ```bash
 H=tools/tritonchip_fpga_harness
-python3 $H/cli.py doctor --target u280-r38-pr5 --adapter u280 --json   # what this host lacks
-python3 $H/cli.py plan $H/examples/candidate-u280.json --adapter u280  # what would run
+python3 $H/cli.py doctor --target u280 --json                          # what this host lacks
+python3 $H/cli.py plan $H/examples/candidate-u280.json                 # what would run
 python3 $H/cli.py submit $H/examples/candidate-u280.json --adapter mock --skip-board
 PYTHONPATH=tools python3 -m unittest discover -s $H/tests -p 'test_*.py'
 ```
 
-`--adapter mock` plays the build without Vivado, to exercise the lifecycle.
+`--adapter mock` plays the build without Vivado, to exercise the lifecycle;
+without it a target is built by its own adapter. The tests need no vendor
+tool either: most run in throwaway git repositories with each vendor step
+played by a command, and a few read this checkout's flow scripts, profile
+table and recorded board results, skipping where a checkout has none.
+
 On the U280 host the real thing is one command:
 
 ```bash
-python3 $H/cli.py --repo "$PWD" submit candidate-u280.json --adapter u280 \
+python3 $H/cli.py --repo "$PWD" submit candidate-u280.json \
   --state-dir "$HOME/.tritonchip-fpga-harness" --timeout 28800 --json
 ```
 
@@ -103,17 +104,21 @@ A run prints its result as JSON and exits 0 only for `PASS`. Its state is in
 
 ### 3.1 Targets
 
-A target is a profile in [`profiles/`](profiles/): the card, the platform, the
-clocks, the scripts, and what a build must produce.
+A target is one card, as this checkout's flow builds for it: the part and
+platform, the kernel and device clocks, the scripts to run, what a build must
+produce and what it must prove. It is a file in [`targets/`](targets/), and a
+manifest names it.
 
-| Target | Card | Platform | Kernel clock → device clock | Vitis | Admitted on |
-|---|---|---|---|---|---|
-| `u280-r38-pr5` | Alveo U280, kernel in SLR1 | `xilinx_u280_gen3x16_xdma_1_202211_1` | 100 MHz → 100 MHz (÷1) | 2023.2 | the flow on `main` |
-| `u50-r38-pr5` | Alveo U50 | `xilinx_u50_gen3x16_xdma_5_202210_1` | 100 MHz → 100 MHz (÷1) | 2022.2 | the flow on `main` |
-| `u50-legacy` | Alveo U50 | the same | 150 MHz → 37.5 MHz (÷4) | 2022.2 | the flow before R38's timing work |
+| Target | Card | Platform | Kernel clock → device clock | Vitis |
+|---|---|---|---|---|
+| `u280` | Alveo U280, kernel in SLR1 | `xilinx_u280_gen3x16_xdma_1_202211_1` | 100 MHz → 100 MHz (÷1) | 2023.2 |
+| `u50` | Alveo U50 | `xilinx_u50_gen3x16_xdma_5_202210_1` | 100 MHz → 100 MHz (÷1) | 2022.2 |
 
-"Admitted on" is enforced, not advisory (§3.3): `u50-legacy` on today's `main`
-fails four contract checks and starts nothing.
+A target is named for its card and nothing else, because its file lives
+beside the flow it describes. A commit that moves the flow to another clock
+changes `link.sh`, `package_xo.tcl`, `ooc.xdc` and the target file together;
+if it forgets the target, the checks of §3.3 fail and nothing starts. There is
+never a second target for "the flow as it used to be".
 
 ### 3.2 What runs
 
@@ -140,17 +145,17 @@ return code 124.
 
 ### 3.3 Before anything runs
 
-A profile is a claim about the checkout's flow. `doctor` checks the claim, and
-`submit` checks it again before it starts Vivado, so a profile cannot be
+A target is a claim about the checkout's flow. `doctor` checks the claim, and
+`submit` checks it again before it starts Vivado, so a target cannot be
 applied to a tree it does not describe. A run refused here ends `ENV_FAIL`
 with the failed checks in `preflight_failed` and in `preflight.json`.
 
 | Check | Reads | Must hold |
 |---|---|---|
-| `flow_clock_contract` | `EXPECT_MHZ=` in `flow/fpga/link.sh` | the profile's kernel clock |
+| `flow_clock_contract` | `EXPECT_MHZ=` in `flow/fpga/link.sh` | the target's kernel clock |
 | `package_clock_contract` | `set AP_CLK_HZ` in `flow/fpga/package_xo.tcl` | the same, in Hz |
 | `ooc_clock_contract` | `create_clock -period` in `flow/fpga/ooc.xdc` | that clock's period |
-| `device_divider_contract` | `DEV_DIV` in `rtl/board/tnca_u50_xo.v` | the profile's divider |
+| `device_divider_contract` | `DEV_DIV` in `rtl/board/tnca_u50_xo.v` | the target's divider |
 | `board_contract` (U280) | `flow/fpga/boards.sh` | has a `u280)` case |
 | `board_options_contract` (U280) | `flow/fpga/boards.sh` | carries `--connectivity.slr tnca_u50_1:SLR1` |
 
@@ -196,8 +201,8 @@ output, and the verdict is the conjunction of these checks:
 | `xo`, `xclbin` | the two artifacts | each exists and is not empty |
 | `vpp_rc` | `VPP_RC=` in `link.log` | 0 |
 | `link_ok_marker` | `link.log` | carries `LINK_OK` |
-| `no_auto_frequency_scaling` | `AUTO-FREQ-SCALING` rules in `link.log` | none, or only those the profile allows (U280: rule 08, which reports that the requested clock was kept) |
-| `clock_info`, `expected_clock` | the clock-mapping line in `link.log`, and `xclbin.info` | the XCLBIN's entry for kernel clock 0 is read back and is the profile's kernel clock |
+| `no_auto_frequency_scaling` | `AUTO-FREQ-SCALING` rules in `link.log` | none, or only those the target allows (U280: rule 08, which reports that the requested clock was kept) |
+| `clock_info`, `expected_clock` | the clock-mapping line in `link.log`, and `xclbin.info` | the XCLBIN's entry for kernel clock 0 is read back and is the target's kernel clock |
 | `routed_timing_report` | a routed `*timing_summary*.rpt` under `artifacts/` | one is found |
 | `timing_clean` | that report's Design Timing Summary | WNS, TNS, WHS, THS and WPWS are all ≥ 0 and no endpoint fails |
 | `drc_report`, `drc_clean` | `DRC finished with N Errors` in the implementation run's `runme.log` | found, and N is 0 every time |
@@ -261,7 +266,7 @@ the design closes with 16 ps of setup slack and 6 ps of hold slack over
 To judge a build that already exists, without starting a tool:
 
 ```bash
-python3 $H/cli.py validate --target u280-r38-pr5 --build-dir <state-dir>/runs/<RUN_ID>/artifacts --json
+python3 $H/cli.py validate --target u280 --build-dir <state-dir>/runs/<RUN_ID>/artifacts --json
 ```
 
 `validate` needs the build's `run.json` beside it, so an old or unrelated
@@ -322,7 +327,7 @@ checks alone, and `measure` runs them before it takes the lease.
 
 | Check | Must hold |
 |---|---|
-| `board_program_script` | the profile's programmer exists and is executable |
+| `board_program_script` | the target's programmer exists and is executable |
 | `board_xbutil`, `board_xclbinutil` | XRT's `xbutil`, and an `xclbinutil` from Vitis, XRT or `PATH` |
 | `board_xrt_library` | `$XILINX_XRT/lib/libxrt_core.so` (default `/opt/xilinx/xrt`) |
 | `board_conformance_tool`, `board_archbench_runner` | `tools/r36/conformance.py`, `archbench/run.py` |
@@ -400,7 +405,7 @@ A record is accepted as a board measurement only if all of this holds:
 - `evidence_level` is `measured-board` -- a simulator's `measured-rtl` is not;
 - `status` is `pass`, which includes the numerical check against the reference;
 - `time.unit` is `cycles` and `time.device` is a positive integer;
-- `time.clock_hz` is the profile's device clock, within 1 %;
+- `time.clock_hz` is the target's device clock, within 1 %;
 - with counters: `done_cycles` and `done_retired` are present, and
   `done_cycles` equals `time.device`.
 
@@ -410,7 +415,7 @@ reason in `archbench_summary.json` under `failures`.
 ### 5.6 Build now, measure later
 
 ```bash
-python3 $H/cli.py submit candidate-u280.json --adapter u280 --skip-board --timeout 28800 --json
+python3 $H/cli.py submit candidate-u280.json --skip-board --timeout 28800 --json
 python3 $H/cli.py measure RUN_ID --state-dir "$HOME/.tritonchip-fpga-harness" --timeout 21600 --json
 ```
 
@@ -441,7 +446,7 @@ Three files, from raw to digested:
 | `archbench_summary.json` | the harness's check of them, and the totals |
 | `board_measurement.json` | the whole board stage: image, profile, software, stages, conformance, and that summary |
 
-`archbench_summary.json`, from the U280 run recorded in `VALIDATION.md`:
+`archbench_summary.json`, from the U280 run of §13:
 
 ```json
 {
@@ -493,16 +498,15 @@ interpreter. A comparison means something only between runs of the same
 tiers, the same `board.profile` and the same software commit; each run's
 `board_measurement.json` records all three.
 
-In the runs recorded in `VALIDATION.md`, one image under one profile and one
-software commit gave the same cycle count for every point across three
-measurements and a reload. So a point that differs between two runs is
+In the runs of §13, one image under one profile and one software commit gave
+the same cycle count for every point across three measurements and a reload. So a point that differs between two runs is
 something to explain, not to average.
 
 ## 7. The run directory and the evidence packet
 
 ```text
 <state-dir>/runs/<RUN_ID>/
-  run.json                    manifest, source identity, target profile and its hash, host, status
+  run.json                    manifest, source identity, the target and its hash, host, status
   preflight.json              the flow-contract and host checks, as run before the build
   manifest.json               the manifest as submitted
   environment.json            host, tool versions, platform and script fingerprints
@@ -541,15 +545,15 @@ harness or manifest error.
 
 | Command | Does | Options |
 |---|---|---|
-| `doctor` | checks the flow contract and the host for a target; with `--manifest`, that manifest's board stage too | `--target`, `--adapter`, `--manifest` |
-| `plan <manifest>` | resolves a manifest: source identity, clocks, artifacts, board stage, profile check. Starts nothing | `--adapter` |
-| `submit <manifest>` | runs it | `--adapter u50\|u280\|mock`, `--state-dir`, `--timeout`, `--run-id`, `--skip-board`, `--allow-dirty` |
+| `doctor` | checks the flow contract and the host for a target; with `--manifest`, that manifest's board stage too | `--target` or `--manifest` |
+| `plan <manifest>` | resolves a manifest: source identity, clocks, artifacts, board stage, profile check. Starts nothing | |
+| `submit <manifest>` | runs it | `--state-dir`, `--timeout`, `--run-id`, `--skip-board`, `--allow-dirty`, `--adapter mock` to play the build |
 | `measure <run>` | the board stage of an existing run | `--state-dir`, `--timeout`, `--manifest`, `--allow-dirty`, `--allow-source-mismatch` |
 | `status <run>` | a run's record and result; marks a run whose controller is gone `ORPHANED` | `--state-dir` |
 | `reconcile <run>` | finds the vendor process a lost run left; `--terminate` ends its process group | `--state-dir`, `--terminate` |
 | `validate` | judges an existing build directory | `--target`, `--build-dir`, `--historical`, `--output` |
 | `export <run>` | writes the evidence packet | `--state-dir`, `--output` |
-| `dispatch <host> <manifest>` | sends a manifest to a worker over SSH (§11) | `--remote-repo`, `--adapter`, `--state-dir`, `--timeout`, `--ssh-timeout`, `--skip-board`, `--output` |
+| `dispatch <host> <manifest>` | sends a manifest to a worker over SSH (§11) | `--remote-repo`, `--state-dir`, `--timeout`, `--ssh-timeout`, `--skip-board`, `--output` |
 | `worker --stdin` | the remote end of `dispatch` | |
 | `budget reserve\|settle\|status` | a token ledger for a managed worker; a usage that is unknown stays reserved rather than counting as zero | `--ledger`, `--limit` |
 
@@ -559,7 +563,7 @@ harness or manifest error.
 {
   "schema_version": 1,
   "candidate_id": "fma-retime-01",
-  "target": "u280-r38-pr5",
+  "target": "u280",
   "mode": "full",
   "clock_mhz": 100,
   "source_commit": "<full SHA, or HEAD>",
@@ -570,7 +574,7 @@ harness or manifest error.
 
 | Field | |
 |---|---|
-| `candidate_id`, `target`, `mode` | required. `mode` is `full` or `ooc` |
+| `candidate_id`, `target`, `mode` | required. `target` is a file in `targets/` (§3.1); `mode` is `full` or `ooc` |
 | `clock_mhz` | if given, must be the target's kernel clock |
 | `source_commit` | if given, must be the checkout's `HEAD`. Name the full SHA for anything that will be compared |
 | `hypothesis` | free text, kept with the run |
@@ -578,7 +582,7 @@ harness or manifest error.
 | `board.profile` | required: the device profile of the image (§5.1) |
 | `board.bdf` | the card's PCI address, if not the one `boards.sh` records |
 | `board.program` | `true` (default), `false`, or `{"check_command": [...], "command": [...]}` |
-| `board.program_script` | another programmer, relative to the checkout, in place of the profile's |
+| `board.program_script` | another programmer, relative to the checkout, in place of the target's |
 | `board.conformance` | `true` (default), `false`, or `{"command": [...], "result_file": "..."}` |
 | `board.archbench` | `{"tiers": [...], "jobs": 1, "counters": true, "timeout_s": ..., "python": "..."}`, or `{"command": [...]}`. Absent: ArchBench does not run |
 
@@ -596,7 +600,7 @@ says how to run it:
 
 ```json
 {
-  "candidate_id": "fma-ooc-01", "target": "u280-r38-pr5", "mode": "ooc", "clock_mhz": 100,
+  "candidate_id": "fma-ooc-01", "target": "u280", "mode": "ooc", "clock_mhz": 100,
   "ooc": {
     "top": "u_mac",
     "command": ["vivado", "-mode", "batch", "-source", "{repo}/flow/fpga/ooc_fma.tcl",
@@ -619,7 +623,7 @@ prepared checkout on an FPGA host, which runs the same harness there:
 
 ```bash
 python3 $H/cli.py --repo "$PWD" dispatch u280-worker candidate-u280.json \
-  --remote-repo /srv/tritonchip --adapter u280 --state-dir /srv/tritonchip-harness \
+  --remote-repo /srv/tritonchip --state-dir /srv/tritonchip-harness \
   --timeout 21600 --output dispatch.json --json
 ```
 
@@ -630,7 +634,57 @@ and a hash and tail of each remote log. The logs, the XCLBIN and the evidence
 stay on the worker until exported there. A zero SSH exit status is not a
 result: read `remote.result.status`.
 
-## 12. What the harness does not do
+## 12. Running a real candidate
+
+1. **Check out the candidate's commit on the FPGA host**, in a clean tree.
+   The harness does not fetch.
+2. **Agree a window for the card.** It is shared: a load replaces whatever
+   anyone had on it, and the lease (§3.4) covers the harness only. Never end
+   another user's process.
+3. **Write the manifest** (§9) with the full SHA and a `board` block whose
+   `profile` is the image the checkout builds (§5.1). `plan` shows the check
+   under `board_measurement.image_profile`: `mismatches` and `more_specific`
+   must both be empty.
+4. **`doctor --manifest candidate.json`.** Every check must pass (§3.3, §5.2).
+   The usual gap on a host is the ArchBench interpreter: set `TORCH_PYTHON` or
+   `board.archbench.python`.
+5. **`submit`**, from a script file (§2), with a `--timeout` that allows a
+   link of several hours. Or `submit --skip-board` now and `measure` in the
+   card's window (§5.6).
+6. **Read the result** (§4.1). For a complete one: `status` is `PASS`;
+   `artifact_validation.timing.metrics` has the slack; in
+   `board_measurement.json`, `reconfigured` is `true`, conformance passed and
+   every ArchBench record is `measured-board`.
+7. **`export`** the run (§7), and quote the run id, the commit and the
+   XCLBIN's SHA-256 with any number taken from it.
+
+If the session is lost during a link, `status RUN_ID` and then `reconcile`
+(§3.4); do not start a second run on top of it.
+
+## 13. What has been run
+
+On `acf3019` (Alveo U280, Vitis 2023.2, XRT 2.16), from clean checkouts, on
+2026-10-11 and 12. The image is the link of `b5c606d`, whose tree is that of
+the commit this harness was added on.
+
+| What | Result |
+|---|---|
+| The suite, 93 tests | passes on macOS (Python 3.9) and on the host (Python 3.10) |
+| `doctor` for the U280 target, alone and with a board manifest | every check passes |
+| `validate` on three real links | two `PASS`: design WNS +0.016 ns, WHS +0.006 ns, no failing endpoint of 584 460 and of 566 734, DRC 0 errors. One, a link that missed timing, rejected with its numbers: WNS −0.079 ns, 304 endpoints |
+| `measure` without a load, the card already holding the image | conformance 5 of 5; ArchBench `tiny` 27 of 27 `measured-board`; 4 459 740 cycles |
+| `measure` with a load of that same image | `xbutil` reported success and nothing was written: the device's request counter read 62336 afterwards, not 2. Such a load is now recorded as `reconfigured: false` (§5.3) |
+| `measure` with a load that changes the image, both ways between two links | `reconfigured: true` and a request counter of 2 each time; conformance 5 of 5 after each; ArchBench `tiny` 27 of 27, 4 459 740 cycles, every point equal to the earlier measurements |
+
+Not run:
+
+- **a link started by this harness.** Every board run above used a link built
+  earlier, so `submit` has run end to end only with a played build; its build
+  half is covered by `validate` on real output, its board half by `measure`;
+- **the `small` tier**;
+- **anything on the U50 host.**
+
+## 14. What the harness does not do
 
 - **It does not rank or compare candidates.** It accepts or rejects one build
   and one measurement. Slack, utilisation and cycles are recorded for a
@@ -644,6 +698,3 @@ result: read `remote.result.status`.
 - **It cannot force a reload of the image already on the card**, and says so
   (`reconfigured: false`) instead of reporting a load.
 - **It does not fetch code.** A run is of the checkout as it stands.
-- **It has not been run on the U50 host from this version**, and no link has
-  been started from it on either host. [`VALIDATION.md`](VALIDATION.md) says
-  what has been run, and where.

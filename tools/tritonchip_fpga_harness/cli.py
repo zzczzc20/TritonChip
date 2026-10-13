@@ -11,12 +11,12 @@ from pathlib import Path
 if __package__ in (None, ""):
     sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
     from tritonchip_fpga_harness.budget import BudgetError, TokenLedger
-    from tritonchip_fpga_harness.core import HarnessError, doctor, export_evidence, measure_existing, plan, reconcile, repo_root, status, submit, validate_existing
+    from tritonchip_fpga_harness.core import HarnessError, doctor, export_evidence, load_profile, measure_existing, plan, reconcile, repo_root, status, submit, validate_existing
     from tritonchip_fpga_harness.worker import DispatchError, dispatch_manifest, worker_main
     from tritonchip_fpga_harness.schema import SchemaError, load_json
 else:
     from .budget import BudgetError, TokenLedger
-    from .core import HarnessError, doctor, export_evidence, measure_existing, plan, reconcile, repo_root, status, submit, validate_existing
+    from .core import HarnessError, doctor, export_evidence, load_profile, measure_existing, plan, reconcile, repo_root, status, submit, validate_existing
     from .worker import DispatchError, dispatch_manifest, worker_main
     from .schema import SchemaError, load_json
 
@@ -34,22 +34,27 @@ def _state(value: str | None, root: Path) -> Path:
     return (Path(value) if value else root.parent / ".tritonchip-fpga-harness").resolve()
 
 
+def _adapter(asked: str | None, target: str) -> str:
+    """The adapter a target is built with, unless another (`mock`) is asked for."""
+    return asked or load_profile(HERE, target).expected_adapter
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="tritonchip-fpga-harness")
     parser.add_argument("--repo", help="repository root or path inside it")
     sub = parser.add_subparsers(dest="command", required=True)
     d = sub.add_parser("doctor")
-    d.add_argument("--target", help="target profile; defaults to the manifest's, else u50-legacy")
-    d.add_argument("--adapter", default="u50", choices=("u50", "u280", "mock"))
+    d.add_argument("--target", help="the target to check; taken from --manifest if that is given")
+    d.add_argument("--adapter", choices=("u50", "u280", "mock"), help="default: the target's own")
     d.add_argument("--manifest", type=Path, help="also check that this manifest's board stage can start on this host")
     d.add_argument("--json", action="store_true")
     p = sub.add_parser("plan")
     p.add_argument("manifest", type=Path)
-    p.add_argument("--adapter", default="u50", choices=("u50", "u280", "mock"))
+    p.add_argument("--adapter", choices=("u50", "u280", "mock"), help="default: the target's own")
     p.add_argument("--json", action="store_true")
     s = sub.add_parser("submit")
     s.add_argument("manifest", type=Path)
-    s.add_argument("--adapter", default="u50", choices=("u50", "u280", "mock"))
+    s.add_argument("--adapter", choices=("u50", "u280", "mock"), help="default: the target's own")
     s.add_argument("--state-dir")
     s.add_argument("--allow-dirty", action="store_true")
     s.add_argument("--timeout", type=int)
@@ -101,7 +106,7 @@ def main(argv: list[str] | None = None) -> int:
     e.add_argument("--output", required=True)
     e.add_argument("--json", action="store_true")
     v = sub.add_parser("validate")
-    v.add_argument("--target", default="u50-legacy")
+    v.add_argument("--target", required=True)
     v.add_argument("--build-dir", required=True, type=Path)
     v.add_argument("--output", type=Path)
     v.add_argument("--historical", action="store_true", help="inspect an artifact without Harness lineage; result is marked HISTORICAL")
@@ -126,11 +131,16 @@ def main(argv: list[str] | None = None) -> int:
         root = _root(args.repo)
         if args.command == "doctor":
             board = load_json(args.manifest) if args.manifest else None
-            value = doctor(HERE, root, args.target or (board or {}).get("target") or "u50-legacy", args.adapter, board)
+            target = args.target or (board or {}).get("target")
+            if not target:
+                raise HarnessError("doctor needs --target or --manifest")
+            value = doctor(HERE, root, target, _adapter(args.adapter, target), board)
         elif args.command == "plan":
-            value = plan(HERE, root, load_json(args.manifest), args.adapter)
+            manifest = load_json(args.manifest)
+            value = plan(HERE, root, manifest, _adapter(args.adapter, str(manifest.get("target", ""))))
         elif args.command == "submit":
-            value = submit(HERE, root, load_json(args.manifest), _state(args.state_dir, root), args.adapter, args.allow_dirty, args.timeout, args.run_id, args.skip_board)
+            manifest = load_json(args.manifest)
+            value = submit(HERE, root, manifest, _state(args.state_dir, root), _adapter(args.adapter, str(manifest.get("target", ""))), args.allow_dirty, args.timeout, args.run_id, args.skip_board)
         elif args.command == "status":
             value = status(_state(args.state_dir, root), args.run_id)
         elif args.command == "measure":

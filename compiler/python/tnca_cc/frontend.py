@@ -3727,6 +3727,24 @@ class TTIRImporter:
                 tile.handle[r], elem or tile.dtype)
         if tile.kind == 'accumulator':
             return lambda r: self.b.acc_read(tile.handle, self.b.const(r))
+        if (tile.kind == 'window' and getattr(self, '_packed_window_unpack', False)
+                and tile.store in ('f16', 'bf16') and tile.cols == self.target.vlen):
+            def unpack(r):
+                # The fragment packs two 16-bit elements in each 32-bit lane,
+                # and two VLEN-wide rows in each window register. Read that
+                # snapshot through existing v.get/v.put, never external memory.
+                packed = self.b.window_reg(tile.handle, r // 2, dtype='i32')
+                out = self.b.splat(self.b.const(0), dtype=tile.store)
+                mask = self.b.const(0xffff)
+                for pair in range(self.target.vlen // 2):
+                    word = self.b.vextract(packed, (r % 2) * (self.target.vlen // 2) + pair)
+                    low = self.b.sbin('and', word, mask)
+                    high = self.b.sbin('and', self.b.sbini('lshr', word, 16), mask)
+                    self.b.vinsert(out, 2 * pair, low)
+                    self.b.vinsert(out, 2 * pair + 1, high)
+                self._packed_unpack_rows = getattr(self, '_packed_unpack_rows', 0) + 1
+                return out
+            return unpack
         if tile.kind == 'window' and tile.desc is not None and self._ELEM_BYTES[tile.store] < 4:
             desc, coords = tile.desc
             base = self._descriptor_origin(desc, coords)

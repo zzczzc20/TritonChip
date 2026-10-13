@@ -83,6 +83,13 @@ def _window_reuse():
     return value
 
 
+def _packed_window_unpack():
+    value = int(os.environ.get('TNCA_PACKED_WINDOW_UNPACK', '0'))
+    if value not in (0, 1):
+        raise ValueError('TNCA_PACKED_WINDOW_UNPACK must be 0 or 1')
+    return value
+
+
 @dataclass(frozen=True)
 class TNCAOptions:
     # What ASTSource.make_ir reads; tnca_cc.triton_options.frontend_options
@@ -116,6 +123,7 @@ class TNCAOptions:
     rctx_roles: int = field(default_factory=_rctx_roles)
     bank_alloc: int = field(default_factory=_bank_alloc)
     window_reuse: int = field(default_factory=_window_reuse)
+    packed_window_unpack: int = field(default_factory=_packed_window_unpack)
 
     def hash(self):
         key = '_'.join(f'{k}-{v}' for k, v in sorted(self.__dict__.items()))
@@ -299,6 +307,8 @@ class TNCABackend(BaseBackend):
         # AOT's default. Keep the ordinary off case absent for B39 bytes.
         if options.window_reuse or int(os.environ.get('TNCA_WINDOW_REUSE', '0')) != options.window_reuse:
             compile_options['window_reuse'] = options.window_reuse
+        if options.packed_window_unpack or _packed_window_unpack() != options.packed_window_unpack:
+            compile_options['packed_window_unpack'] = options.packed_window_unpack
         # The dump switches of doc/dumping_ir.md (TNCA_KERNEL_DUMP=1, written
         # under TNCA_DUMP_DIR/<kernel>/), on this entry point as on AOT --
         # and written for a kernel that FAILS to lower too, with every stage

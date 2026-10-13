@@ -45,6 +45,8 @@ ABI_VERSION = list(abi.ABI_VERSION)
 # something and been told nothing, and the artifact they get back is not the
 # one they asked for (CMP-02).
 KNOWN_OPTIONS = {
+    'bank_alloc': 'int, 0 or 1; use the target bank-aware vector allocator',
+    'packed_window_unpack': 'int, 0 or 1; software lane unpack of packed FP16/BF16 DMA windows',
     'window_reuse': 'int, 0 or 1; reuse disjoint awaited single-role window lifetimes',
     'no_ll': 'bool; at opt_level 2, switch the layout algebra off and use a legal plan instead. The ablation of phase 3.5 section 4.3, not a fallback: O2 without it never silently stops using LinearLayout',
     'opt_level': 'int, 0..2. 0 is the frozen baseline and emits what this driver has always emitted. 1 runs the pinned upstream canonicalizer and CSE over the kernel and lowers a constant to its narrowest correct form. 2 adds the layout and allocation work (phase 3.5 section 4.3)',
@@ -278,6 +280,19 @@ def check_options(options):
             remedy='an option this driver does not understand is refused '
                    'rather than ignored, so a misspelling cannot silently '
                    'produce a different artifact')
+    # Resolve allocation/lowering switches before either cache lookup or
+    # compilation. Default off stays absent for the frozen B39 contract.
+    for name, env in (('packed_window_unpack', 'TNCA_PACKED_WINDOW_UNPACK'),
+                      ('window_reuse', 'TNCA_WINDOW_REUSE'),
+                      ('bank_alloc', 'TNCA_BANK_ALLOC')):
+        value = options.get(name)
+        if value is None:
+            value = int(os.environ.get(env, '0'))
+            options.pop(name, None)
+            if value:
+                options[name] = value
+        if value not in (0, 1):
+            raise ValueError(f'{name} must be 0 or 1')
     return options
 
 
@@ -669,11 +684,18 @@ def _lower_ttir(module, ctx, kernel_name, params, target, prov, options, stages,
         window_reuse = int(os.environ.get('TNCA_WINDOW_REUSE', '0'))
     if window_reuse not in (0, 1):
         raise ValueError('window_reuse must be 0 or 1')
+    packed_unpack = (options or {}).get('packed_window_unpack')
+    if packed_unpack is None:
+        packed_unpack = int(os.environ.get('TNCA_PACKED_WINDOW_UNPACK', '0'))
+    if packed_unpack not in (0, 1):
+        raise ValueError('packed_window_unpack must be 0 or 1')
     kernel, _builder, imp = adapter.import_ttir(
         module, kernel_name, _placeholders(params),
         param_names=[n for n, _t in params], target=target, prov=prov,
         dynamic_args=True, index_opt=bool(index_opt), sparse_maps=bool(sparse),
-        window_reuse=bool(window_reuse))
+        window_reuse=bool(window_reuse), packed_window_unpack=bool(packed_unpack))
+    if getattr(imp, '_packed_unpack_rows', 0):
+        prov.record('packed_window_unpack_rows', imp._packed_unpack_rows)
     if getattr(imp, '_mma_retiles', None):
         prov.record('mma_retiles', sorted(imp._mma_retiles))
     reduction_tiles = sorted(getattr(imp, '_reduction_tiles', ()))

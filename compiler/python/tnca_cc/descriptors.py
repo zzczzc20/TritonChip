@@ -279,6 +279,9 @@ def window_consumers_ok(imp, rid, elem, cols):
     """
     if imp._ELEM_BYTES[elem] == 4 and cols == imp.target.vlen:
         return True
+    if (getattr(imp, '_packed_window_unpack', False) and elem in ('f16', 'bf16')
+            and cols == imp.target.vlen):
+        return True
     seen, work = set(), [rid]
     while work:
         v = work.pop()

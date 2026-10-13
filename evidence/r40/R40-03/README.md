@@ -183,3 +183,22 @@ stable until it is rejected. No product transport rule changed.
 ci_err05_synchronized.log confirms the stale sequence was observed and
 future sequence 108 was refused; the full fault suite passes 7/7 in
 ci_err05_fault_suite7.log. This fixes an injection race, not a relaxed gate.
+
+2026-10-13 packed window checkpoint: opt-in TNCA_PACKED_WINDOW_UNPACK=1
+uses existing v.get/v.put, scalar masks and shifts to expose FP16/BF16 DMA
+snapshot lanes, without rereading source memory or using reserved v.unpack.
+The compiler prefers real DMA for supported 16-column descriptor arithmetic.
+Unit 2/2 checks both packed row halves and the default refusal boundary;
+packed_snapshot2.log executes RTL after overwriting the original source,
+preserving exact zeros/signs/Inf/NaN payload bits for both dtypes (2/2).
+This IR-builder test is diagnostic, not standard Torch performance evidence.
+
+AOT cache options resolve packed unpack, window reuse and bank allocation
+before lookup. Explicit off overrides environment on; default off stays
+absent. Bank allocation is now a named public AOT option. Option units 3/3
+and default B39 byte contract 447/447 pass. Compiler discovery ran 163 tests:
+113 passed, 50 unavailable MLIR/tool checks skipped on this source-only host.
+The complete CI environment must still check those tool-dependent paths.
+Online SDPA's separate standard Torch checkpoint exercises this capability;
+no tile/attention speed threshold or full resource-lifetime acceptance is
+claimed here. Reproduce with make r40-packed-window-unpack.

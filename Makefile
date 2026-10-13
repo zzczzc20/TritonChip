@@ -2062,3 +2062,7 @@ r40-physical-grid-transport: | dirs
 	@$(TRITON_PYTHON) tools/r40/physical_grid_option_tests.py
 	@$(TRITON_PYTHON) tools/r40/multicore_transport_tests.py
 	@$(TRITON_PYTHON) tools/r40/large_grid_tests.py
+
+.PHONY: r40-physical-grid-runtime
+r40-physical-grid-runtime: | dirs
+	@$(TRITON_PYTHON) tools/r40/physical_grid_runtime_tests.py

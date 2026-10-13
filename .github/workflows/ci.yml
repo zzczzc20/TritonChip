@@ -222,7 +222,9 @@ jobs:
           $HOME/tritonenv/bin/python tools/r40/compile_switch_tests.py
 
       - name: R40 physical grid mailbox protocol
-        run: make r40-physical-grid-transport TRITON_PYTHON=$HOME/tritonenv/bin/python
+        run: |
+          make r40-physical-grid-transport TRITON_PYTHON=$HOME/tritonenv/bin/python
+          make r40-physical-grid-runtime TRITON_PYTHON=$HOME/tritonenv/bin/python
 
       - name: Triton source to RTL, one core and the whole machine
         run: |

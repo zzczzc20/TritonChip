@@ -34,6 +34,7 @@ one is a fault.
 """
 import json
 import os
+import operator
 import struct
 import threading
 import time
@@ -101,8 +102,8 @@ class Event:
         self.device_cycles = None
         # One entry per program, in linear order. `device_cycles` is their
         # sum because the runtime launches a grid one program at a time;
-        # that sum is serial-grid time, not the makespan of a device that
-        # runs programs concurrently.
+        # that sum is serial-grid time. Physical-grid sessions instead report
+        # the global makespan and leave program_cycles unset.
         self.program_cycles = None
         self.device_timing = None
         # Session(counters=True): {'available', 'programs', 'total'}; None
@@ -274,7 +275,8 @@ class Session:
     def __init__(self, profile='core-sim', *, bench=None, workdir=None,
                  code_base=0, heap_base=0x20000, heap_limit=None,
                  deadline_cycles=2_000_000, host_timeout=600.0, trace=False,
-                 backend='sim-file', counters=False, large_grid=None, **backend_kwargs):
+                 backend='sim-file', counters=False, large_grid=None, physical_grid=False,
+                 active_cores=None, **backend_kwargs):
         Session._counter += 1
         self.id = Session._counter
         self.profile = profile
@@ -286,6 +288,14 @@ class Session:
         if not isinstance(large_grid, bool):
             raise ValueError('large_grid must be a bool')
         self.large_grid = large_grid
+        if not isinstance(physical_grid, bool):
+            raise ValueError('physical_grid must be a bool')
+        if active_cores is not None and not physical_grid:
+            raise ValueError('active_cores requires physical_grid=True')
+        self.physical_grid = physical_grid
+        self._requested_active_cores = active_cores
+        self._physical_core_count = 1
+        self.active_cores = None
         # Phase 3.6 section 3.1: the profile is a COMPILE target and the
         # backend is how this host reaches a device. They were one thing
         # and are now two, because a target that meant "this simulator
@@ -360,6 +370,7 @@ class Session:
                                 host_timeout=host_timeout, trace=trace,
                                 epoch=self.epoch, **self._backend_kwargs)
         self.dev.start()
+        self._negotiate_physical_grid()
         # A board with external memory says how much it gave the device
         # (R40-04: the AXI window's buffer); that, not the profile's simulated
         # size, is where the heap ends.
@@ -367,6 +378,25 @@ class Session:
         if mem and not explicit_limit:
             self._heap = _Allocator(heap_base, mem)
         self._start_worker()
+
+    def _negotiate_physical_grid(self):
+        if not self.physical_grid:
+            return
+        try:
+            query = getattr(self.dev, 'physical_grid_capability', None)
+            capability = query() if query else None
+            if capability is None:
+                raise AdmissionError('image does not support physical grid dispatch')
+            cores, _limit = capability
+            mask = ((1 << cores) - 1 if self._requested_active_cores is None
+                    else operator.index(self._requested_active_cores))
+            if mask <= 0 or mask >= 1 << cores:
+                raise AdmissionError('active_cores exceeds the physical grid capability')
+            self._physical_core_count = cores
+            self.active_cores = mask
+        except Exception:
+            self.dev.stop()
+            raise
 
     # ---- housekeeping -----------------------------------------------------
     def _snapshot(self):
@@ -618,13 +648,24 @@ class Session:
                     remedy='wait for one to finish; this does not block and '
                            'does not discard an older task')
 
-            gx, gy, gz = (int(g) for g in grid)
+            if self.physical_grid:
+                try:
+                    gx, gy, gz = (operator.index(g) for g in grid)
+                except (TypeError, ValueError) as exc:
+                    raise AdmissionError('physical grid must contain three integer axes') from exc
+            else:
+                gx, gy, gz = (int(g) for g in grid)
             for axis, g in zip('xyz', (gx, gy, gz)):
                 if g < 0 or g > 0xFFFFFFFF:
                     raise AdmissionError(
                         f"grid.{axis} = {g} is outside 0..2**32-1")
             total = gx * gy * gz
             limit = 4096
+            if self.physical_grid:
+                limit = self.dev.physical_grid_capability()[1]
+                p2r = module.manifest.get('execution', {}).get('program_to_role', {'0': ['role0']})
+                if p2r != {'0': ['role0']}:
+                    raise AdmissionError('physical dispatch requires a per-program artifact; role-SPMD partitioning is not yet supported')
             if total > limit and self.large_grid:
                 query = getattr(self.dev, 'large_grid_limit', None)
                 if query is not None:
@@ -683,7 +724,10 @@ class Session:
             slots = abi.block_size(len(module.params)) + (8 if scratch else 0)
             map_start = (slots + 255) // 256 * 256
             scratch_start = map_start + 256 * len(maps)
-            arg_addr, reserved = self._heap.alloc(max(scratch_start + scratch, slots, WORD), align=256)
+            arg_size = max(scratch_start + scratch, slots, WORD)
+            arg_stride = (arg_size + 255) // 256 * 256 if self.physical_grid else 0
+            arg_addr, reserved = self._heap.alloc(arg_stride * self._physical_core_count
+                                                  if self.physical_grid else arg_size, align=256)
             # Scratch is handed over zero-filled: the upload covers it, so a
             # TensorMap the kernel builds there needs only its non-zero words
             # stored (compile option sparse_tensormaps).
@@ -697,7 +741,21 @@ class Session:
             if scratch:
                 struct.pack_into('<Q', block, abi.block_size(len(module.params)), arg_addr+scratch_start)
 
-            task = dict(event=ev, module=module, block=block,
+            if self.physical_grid:
+                table = bytearray(arg_stride * self._physical_core_count)
+                for core in range(self._physical_core_count):
+                    core_args = dict(resolved)
+                    core_base = arg_addr + core * arg_stride
+                    core_block = bytearray(block)
+                    for i, (name, _data) in enumerate(maps):
+                        core_args[name] = core_base + map_start + 256*i
+                    core_block[:abi.block_size(len(module.params))] = abi.encode_block(module.params, core_args)
+                    if scratch:
+                        struct.pack_into('<Q', core_block, abi.block_size(len(module.params)), core_base + scratch_start)
+                    table[core*arg_stride:core*arg_stride+len(core_block)] = core_block
+                block = table
+
+            task = dict(event=ev, module=module, block=block, arg_stride=arg_stride,
                         arg_addr=arg_addr, allocation=(arg_addr, reserved), grid=(gx, gy, gz),
                         depends_on=list(depends_on), leased=leased,
                         # Kept so a failure can be saved and run again
@@ -835,6 +893,9 @@ class Session:
             if task['block']:
                 self.dev.upload(task['arg_addr'], task['block'])
             ev._to(RUNNING)
+            if self.physical_grid:
+                self._run_physical_grid(task)
+                return
             # R39-05 Mode B: a kernel whose manifest maps programs onto
             # `per` Role Contexts runs a whole row of the grid in one launch,
             # context r looping over programs r, r + per, ... (the kernel
@@ -938,6 +999,31 @@ class Session:
                 if not ev.terminal:
                     self._finish(task, FAILED, e)
 
+    def _run_physical_grid(self, task):
+        ev = task['event']
+        reply = self.dev.launch_grid(task['module'].code_addr, task['arg_addr'], task['grid'],
+                                     arg_stride=task['arg_stride'], active_cores=self.active_cores)
+        if reply.status == T.ST_TIMEOUT:
+            raise DeviceLost('physical grid deadline expired; epoch must be recovered')
+        if reply.status != T.ST_OK:
+            ev._to(FAILING)
+            if not self.dev.quiesce().ok:
+                raise DeviceLost('physical grid fault did not quiesce the device')
+            ev._to(DRAINING)
+            with self._lock:
+                self._finish(task, FAILED, TncaError('physical grid refused or faulted',
+                                                   code='KERNEL_FAULT', detail={'status': reply.status}))
+            return
+        ev._to(DRAINING)
+        if not self.dev.quiesce().ok:
+            raise DeviceLost('physical grid completion did not quiesce the device')
+        ev.device_cycles = (reply.r0 & 0xFFFFFFFF) | ((reply.r1 & 0xFFFFFFFF) << 32)
+        ev.program_cycles = None  # global makespan; no fabricated per-program samples
+        if self._counters is not None:
+            ev.counters = {'available': False}
+        with self._lock:
+            self._finish(task, SUCCEEDED)
+
     def _finish(self, task, state, error=None):
         ev = task['event']
         if not ev.terminal:
@@ -1021,6 +1107,7 @@ class Session:
                                     trace=self._trace, epoch=self.epoch,
                                     **self._backend_kwargs)
             self.dev.start()
+            self._negotiate_physical_grid()
         self._start_worker()
         return self.epoch
 

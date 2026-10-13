@@ -285,19 +285,29 @@ def _child(which, plusargs='', timeout=7200, rtl=''):
         env['TNCA_DEVICE_PLUSARGS'] = plusargs
     if rtl:
         env['TNCA_RTL_PARAMS'] = rtl
-    with tempfile.TemporaryDirectory() as tmp:
-        script = Path(tmp) / 'hbm_child.py'
-        script.write_text(_CHILD)
-        try:
-            r = subprocess.run([_torch_python(), str(script), which], cwd=tmp, env=env,
-                               capture_output=True, text=True, timeout=timeout)
-        except subprocess.TimeoutExpired:
-            return False, 'timed out'
+    # Keep each attempt's script and complete streams: a warning must not
+    # be the only surviving evidence of a failed device child.
+    attempts = ROOT / 'sim/build/r40/hbm_children'
+    attempts.mkdir(parents=True, exist_ok=True)
+    tmp = tempfile.mkdtemp(prefix=which + '-', dir=attempts)
+    script = Path(tmp) / 'hbm_child.py'
+    script.write_text(_CHILD)
+    try:
+        r = subprocess.run([_torch_python(), str(script), which], cwd=tmp, env=env,
+                           capture_output=True, text=True, timeout=timeout)
+    except subprocess.TimeoutExpired as error:
+        for name, output in (('stdout', error.stdout), ('stderr', error.stderr)):
+            if isinstance(output, bytes):
+                output = output.decode(errors='replace')
+            (Path(tmp) / (name + '.log')).write_text(output or '')
+        return False, f'timed out; complete streams at {tmp}'
+    (Path(tmp) / 'stdout.log').write_text(r.stdout)
+    (Path(tmp) / 'stderr.log').write_text(r.stderr)
     ok_lines = [l for l in r.stdout.splitlines() if l.startswith('OK')]
     if r.returncode == 0 and ok_lines:
         return True, ok_lines[-1][3:]
     tail = (r.stdout + r.stderr).strip().splitlines()[-3:]
-    return False, f'exit {r.returncode}: ' + ' | '.join(tail)
+    return False, f'exit {r.returncode}: ' + ' | '.join(tail) + f'; complete streams at {tmp}'
 
 
 def _device_tests(plusargs, only=None, timeout=14400, rtl=''):

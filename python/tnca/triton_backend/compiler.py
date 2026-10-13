@@ -289,26 +289,17 @@ class TNCABackend(BaseBackend):
         stages.record('ttir', text)
         ctx = module.context
         compile_options = {'opt_level': options.opt_level}
-        # Only when on: an option that is off must leave the artifact
-        # byte-identical to one compiled before the option existed.
-        if options.schedule:
-            compile_options['schedule'] = options.schedule
-        if options.index_opt:
-            compile_options['index_opt'] = options.index_opt
-        if options.rctx_spmd:
-            compile_options['rctx_spmd'] = options.rctx_spmd
-        if options.sparse_tensormaps:
-            compile_options['sparse_tensormaps'] = options.sparse_tensormaps
-        if options.rctx_roles:
-            compile_options['rctx_roles'] = options.rctx_roles
-        if options.bank_alloc:
-            compile_options['bank_alloc'] = options.bank_alloc
-        # An explicit JIT override must win over the environment used by
-        # AOT's default. Keep the ordinary off case absent for B39 bytes.
-        if options.window_reuse or int(os.environ.get('TNCA_WINDOW_REUSE', '0')) != options.window_reuse:
-            compile_options['window_reuse'] = options.window_reuse
-        if options.packed_window_unpack or _packed_window_unpack() != options.packed_window_unpack:
-            compile_options['packed_window_unpack'] = options.packed_window_unpack
+        # Resolved JIT values override environment defaults, including zero.
+        # Keep default off absent to preserve the frozen B39 artifact bytes.
+        for name, env in (('schedule', 'TNCA_SCHEDULE'), ('index_opt', 'TNCA_INDEX_OPT'),
+                          ('rctx_spmd', 'TNCA_RCTX_SPMD'),
+                          ('sparse_tensormaps', 'TNCA_SPARSE_TENSORMAPS'),
+                          ('rctx_roles', 'TNCA_RCTX_ROLES'), ('bank_alloc', 'TNCA_BANK_ALLOC'),
+                          ('window_reuse', 'TNCA_WINDOW_REUSE'),
+                          ('packed_window_unpack', 'TNCA_PACKED_WINDOW_UNPACK')):
+            value = getattr(options, name)
+            if value or int(os.environ.get(env, '0')) != value:
+                compile_options[name] = value
         # The dump switches of doc/dumping_ir.md (TNCA_KERNEL_DUMP=1, written
         # under TNCA_DUMP_DIR/<kernel>/), on this entry point as on AOT --
         # and written for a kernel that FAILS to lower too, with every stage

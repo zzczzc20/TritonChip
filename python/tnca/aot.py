@@ -65,11 +65,11 @@ KNOWN_OPTIONS = {
                  'launch, context r looping over programs r, r + R, ... (R39-05 Mode B, '
                  'tnca_cc.rctx_spmd), when the kernel shares nothing between programs but '
                  'memory; the manifest says so, and a refusal is recorded in the provenance',
-    'rctx_roles': 'int, 0 or 1. 1 compiles a loop that fills windows an MMA reads as two '
+    'rctx_roles': 'int, 0, 1 or 2. 1 compiles a loop that fills windows an MMA reads as two '
                   'roles of one program on a Role Context pair -- a producer issuing the '
                   'transfers and a consumer running the MMAs and the epilogue, over a '
                   'two-stage ring of windows (R39-12 Mode A, tnca_cc.partition.specialize_loop) '
-                  '-- on a target with rctx_pair, the pairs running a grid row as rctx_spmd '
+                  '-- 2 forces the legal split; on a target with rctx_pair, the pairs run a grid row as rctx_spmd '
                   'does, where tnca_cc.partition.ring_estimate expects a gain; 2 skips the '
                   'estimate (tests of the mechanism); a refusal is recorded in the provenance',
     'alias': 'list of [param, param] pairs that MAY point at the same '
@@ -284,15 +284,21 @@ def check_options(options):
     # compilation. Default off stays absent for the frozen B39 contract.
     for name, env in (('packed_window_unpack', 'TNCA_PACKED_WINDOW_UNPACK'),
                       ('window_reuse', 'TNCA_WINDOW_REUSE'),
-                      ('bank_alloc', 'TNCA_BANK_ALLOC')):
+                      ('bank_alloc', 'TNCA_BANK_ALLOC'),
+                      ('index_opt', 'TNCA_INDEX_OPT'),
+                      ('sparse_tensormaps', 'TNCA_SPARSE_TENSORMAPS'),
+                      ('schedule', 'TNCA_SCHEDULE'),
+                      ('rctx_spmd', 'TNCA_RCTX_SPMD'),
+                      ('rctx_roles', 'TNCA_RCTX_ROLES')):
         value = options.get(name)
         if value is None:
             value = int(os.environ.get(env, '0'))
             options.pop(name, None)
             if value:
                 options[name] = value
-        if value not in (0, 1):
-            raise ValueError(f'{name} must be 0 or 1')
+        allowed = (0, 1, 2) if name == 'rctx_roles' else (0, 1)
+        if value not in allowed:
+            raise ValueError(f'{name} must be one of {allowed}')
     return options
 
 

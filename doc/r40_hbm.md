@@ -205,3 +205,24 @@ FPGA wrapper/协议 8/8；原生 storage/refusal/fullgraph/strided view
 日志在 `evidence/r40/R40-04/localpipe_*.log`，测试树为
 `~/tritonchip-r40-ci`。这些检查不构成 timing/CDC 或 HBM 带宽签收。
 新 100 MHz link 将使用显式开关并保留镜像配置。
+
+## 10. 2026-10-13 行数据 RAM checkpoint
+
+`u280_r40localpipe`（`ccede7a`、100 MHz）因路由拥塞失败：
+2270 条信号未布通、2225 个 node overlap，错误集中在 `lb_data_reg`。
+link 返回失败；无验收镜像、未装载，不能将未完成路由的 slack 当成结果。
+
+可选 `AXI_RAM_CACHE=1` 将 line 数据放入同步双端口 RAM：
+A 端写 fill beat；B 端读取等待完成的 line 或按 byte enable 更新 store hit。
+同步读取保存 tag，回复因 local/null/atomic 优先级被阻塞时保持 data/tag；
+该期间禁止覆盖 B 端输出。waiter 在读取捕获时释放，写同 line 的 hazard
+仍受原有规则约束。默认 0 保留旧实现。增加一个 cache-hit 回复周期，
+但连续读取可以每周期一次；实际性能须重新测量。
+
+随机桥 70/70、变异 16/16、恶劣 AXI 下代表原生图 4/4、
+wrapper/协议 8/8 通过。变异覆盖 live tag、覆盖 held 回复、
+错用 full-byte mask。Yosys XCU 映射为 2 个 RAMB36E2、8 个 LUT2、
+0 个数据触发器；这不是 Vivado timing 签收。
+`--ram-cache` 只允许 HBM burst 配置；公共 `make r40-hbm` 加入映射核验。
+新 100 MHz link 将显式开启 local pipeline 和 RAM cache，仍保留
+16 line / 32 waiter / OUT_N16 / 8-beat / PF1 的容量与并发配置。

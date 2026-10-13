@@ -141,7 +141,8 @@ RTLLIB = ['common', 'core', 'gen', 'nuca', 'noc', 'tile']
 # The modules that carry the wrapper's own logic, each elaborated at the
 # root. The wrapper itself is checked separately because it needs the
 # whole library behind it.
-STANDALONE = ['tnca_mmio', 'tnca_fpga_mem', 'tnca_axi_lite', 'tnca_axi_bridge', 'tnca_axi_bridge_lb']
+STANDALONE = ['tnca_mmio', 'tnca_fpga_mem', 'tnca_axi_lite', 'tnca_axi_bridge',
+              'tnca_axi_bridge_lb', 'tnca_axi_line_ram']
 
 # The wrapper's elaborations: as the board has run it until R40-04, and with
 # the data memory behind the AXI bridge (DATA_AXI=1) -- single-beat, and the
@@ -150,7 +151,10 @@ STANDALONE = ['tnca_mmio', 'tnca_fpga_mem', 'tnca_axi_lite', 'tnca_axi_bridge', 
 # module under its own name, so the `select` and the stat verdict below still
 # find it.
 TOP_VARIANTS = [('', ''), ('DATA_AXI=1', f'chparam -set DATA_AXI 1 {TOP}\n'),
-                ('DATA_AXI=1 AXI_LINE=8', f'chparam -set DATA_AXI 1 -set AXI_LINE 8 {TOP}\n')]
+                ('DATA_AXI=1 AXI_LINE=8', f'chparam -set DATA_AXI 1 -set AXI_LINE 8 {TOP}\n'),
+                ('DATA_AXI=1 AXI_LINE=8 AXI_RAM_CACHE=1',
+                 f'chparam -set DATA_AXI 1 -set AXI_LINE 8 -set AXI_LOCAL_PIPE 1 '
+                 f'-set AXI_RAM_CACHE 1 {TOP}\n')]
 
 # The bench that drives the adapter from the bus side, and the file it
 # drives. Named here rather than globbed: a second bench under tb/fpga/

@@ -46,7 +46,7 @@ sys.path.insert(0, str(HERE))
 BRIDGE = 'rtl/fpga/tnca_axi_bridge.v'
 BRIDGE_LB = 'rtl/fpga/tnca_axi_bridge_lb.v'
 BRIDGE_TB = 'tb/fpga/tb_axi_bridge.v'
-BRIDGE_DEPS = ['rtl/fpga/tnca_fpga_mem.v']
+BRIDGE_DEPS = ['rtl/fpga/tnca_fpga_mem.v', 'rtl/fpga/tnca_axi_line_ram.v']
 
 # The bridges and the geometries they are tested in: name -> (source, iverilog
 # defines). `one` is the single-beat bridge; the `line*` builds are the burst
@@ -64,6 +64,10 @@ BRIDGE_BUILDS = {
     'one16': (BRIDGE, ['-DBR_OUT=16']),
     'line8w-local-pipe': (BRIDGE_LB, ['-DBRIDGE_LB=8', '-DLB_SLOTS=16',
         '-DLB_WAIT=32', '-DLB_PF=1', '-DBR_OUT=16', '-DLB_LOCAL_PIPE=1']),
+    'line8w-ram': (BRIDGE_LB, ['-DBRIDGE_LB=8', '-DLB_SLOTS=16',
+        '-DLB_WAIT=32', '-DLB_PF=1', '-DBR_OUT=16', '-DLB_LOCAL_PIPE=1', '-DLB_RAM_CACHE=1']),
+    'line8-ram': (BRIDGE_LB, ['-DBRIDGE_LB=8', '-DLB_RAM_CACHE=1']),
+    'line2-ram': (BRIDGE_LB, ['-DBRIDGE_LB=2', '-DLB_SLOTS=2', '-DLB_PF=0', '-DLB_RAM_CACHE=1']),
 }
 
 # name -> plusargs. Latencies are the slave's, from acceptance of a channel to
@@ -120,6 +124,15 @@ MUTATIONS = [
      [('wire f_pop = acc || (LOCAL_PIPE && l_req_valid && l_req_ready);',
        'wire f_pop = acc;')], 'fast',
      'a completed local request is never removed from the FIFO'),
+    ('ram-live-tag', 'line8w-ram', [('tag <= w_tag[wr_i];', 'tag <= req_tag;')],
+     'ooo-bp', 'the synchronous cache reply carries a later request tag'),
+    ('ram-overwrite-held', 'line8w-ram',
+     [('wire cache_read = RAM_CACHE && wr_go && cache_port_free;',
+       'wire cache_read = RAM_CACHE && wr_go;')],
+     'ooo-bp', 'another RAM read overwrites a reply held by local-port priority'),
+    ('ram-full-mask', 'line8w-ram',
+     [(".b_we(write_hit ? h_be : 8'd0)", ".b_we(write_hit ? 8'hff : 8'd0)")],
+     'ooo-bp', 'a subword store overwrites the other bytes of its cached word'),
 ]
 
 HBM_PROFILE = 'core-vrf-sync-v5/hbm'
@@ -261,6 +274,7 @@ elif which == 'capacity':
 
 LINE8 = 'AXI_LINE=8'          # the burst mechanism, as an RTL override of the /hbm bench
 LOCAL_PIPE = 'AXI_LINE=8,AXI_LB_N=16,AXI_WAIT_N=32,AXI_OUT_N=16,AXI_LOCAL_PIPE=1'
+RAM_CACHE = LOCAL_PIPE + ',AXI_RAM_CACHE=1'
 
 
 def _child(which, plusargs='', timeout=7200, rtl=''):
@@ -328,6 +342,8 @@ def group_device():
         ok, tail = _prepare(LINE8)
     if ok:
         ok, tail = _prepare(LOCAL_PIPE)
+    if ok:
+        ok, tail = _prepare(RAM_CACHE)
     if not ok:
         checks.append(dict(name='device:prepare', ok=False, detail=f'the /hbm bench does not build: {tail[0]}'))
         print(f'  FAIL  device:prepare  {tail[0]}', flush=True)
@@ -349,6 +365,11 @@ def group_device():
             rtl=LOCAL_PIPE)),
         ('local-pipe-capacity', lambda: _child('capacity', rtl=LOCAL_PIPE)),
         ('local-pipe-samples-adverse', lambda: _child('samples', ADVERSE, rtl=LOCAL_PIPE)),
+        ('ram-cache-device-tests-adverse', lambda: _device_tests(
+            ADVERSE, only=['storage', 'copies', 'module', 'compile_graphs', 'compile_views'],
+            rtl=RAM_CACHE)),
+        ('ram-cache-capacity', lambda: _child('capacity', rtl=RAM_CACHE)),
+        ('ram-cache-samples-adverse', lambda: _child('samples', ADVERSE, rtl=RAM_CACHE)),
     ]
     for name, fn in runs:
         ok, detail = fn()

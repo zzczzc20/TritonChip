@@ -59,7 +59,8 @@ module tnca_axi_bridge_lb #(
     parameter LB_N        = 8,          // lines in the buffer
     parameter WAIT_N      = 8,          // reads accepted and not yet answered
     parameter PF          = 1,          // lines fetched ahead of the one asked for
-    parameter LOCAL_PIPE  = 0           // queue local RAM requests as well
+    parameter LOCAL_PIPE  = 0,          // queue local RAM requests as well
+    parameter RAM_CACHE   = 0           // synchronous dual-port line storage
 ) (
     input  wire              clk,
     input  wire              rst_n,
@@ -202,6 +203,11 @@ module tnca_axi_bridge_lb #(
     reg [63:0]       lb_line [0:LB_N-1];
     reg [LW:0]       lb_cnt  [0:LB_N-1];
     reg [63:0]       lb_data [0:LB_N*LINE_BEATS-1];
+    wire             cache_rsp_valid;
+    wire [TAG_W-1:0]  cache_rsp_tag;
+    wire [63:0]       cache_rsp_data;
+    reg              wr_go;
+    reg [WT_W-1:0]    wr_i;
     reg [LB_W-1:0]   lb_rr;
 
     // waiters
@@ -223,6 +229,8 @@ module tnca_axi_bridge_lb #(
     reg              amo_rsp_v;
     reg [TAG_W-1:0]  amo_rsp_tag;
     reg [63:0]       amo_rsp_data;
+    wire cache_port_free = !cache_rsp_valid ||
+                           (!l_rsp_valid && !null_v && !amo_rsp_v);
 
     localparam A_IDLE = 3'd0, A_DRAIN = 3'd1, A_AR = 3'd2, A_R = 3'd3,
                A_W = 3'd4, A_B = 3'd5;
@@ -376,7 +384,8 @@ module tnca_axi_bridge_lb #(
     wire can_read  = axi_path_free && have_wait && (l_hit || l_pend || have_slot);
     // a write: not into a line on its way or one a waiter still reads
     wire can_write = axi_path_free && !l_pend && !w_line_ref && !t_word_hz &&
-                     (t_n < OUT_N) && w_room;
+                     (t_n < OUT_N) && w_room &&
+                     (!RAM_CACHE || !l_hit || (cache_port_free && !wr_go));
     wire can_amo   = axi_path_free;
     wire can_null  = !null_v;
 
@@ -409,8 +418,6 @@ module tnca_axi_bridge_lb #(
     //--------------------------------------------------------------------------
     // Responses: the RAM first, then out-of-range, an atomic, a read, a write
     //--------------------------------------------------------------------------
-    reg              wr_go;                  // a waiter whose line is in
-    reg [WT_W-1:0]   wr_i;
     always @(*) begin
         wr_go = 1'b0; wr_i = 0;
         for (k = WAIT_N - 1; k >= 0; k = k - 1)
@@ -427,11 +434,40 @@ module tnca_axi_bridge_lb #(
 
     wire take_null = !l_rsp_valid && null_v;
     wire take_amo  = !l_rsp_valid && !null_v && amo_rsp_v;
-    wire take_w    = !l_rsp_valid && !null_v && !amo_rsp_v && wr_go;
-    wire take_b    = !l_rsp_valid && !null_v && !amo_rsp_v && !wr_go && m_bvalid && !amo_own
+    wire read_response = RAM_CACHE ? cache_rsp_valid : wr_go;
+    wire cache_read = RAM_CACHE && wr_go && cache_port_free;
+    wire take_w    = !l_rsp_valid && !null_v && !amo_rsp_v && read_response;
+    wire take_b    = !l_rsp_valid && !null_v && !amo_rsp_v && !read_response && m_bvalid && !amo_own
                      && !drop_b;
     assign m_rready = 1'b1;                  // fills land in the buffer; never held
     assign m_bready = drop_b || (amo_own ? (a_st == A_B) : take_b);
+
+    generate if (RAM_CACHE) begin : g_line_ram
+        reg pending;
+        reg [TAG_W-1:0] tag;
+        wire write_hit = acc_wr && l_hit;
+        tnca_axi_line_ram #(.WORDS(LB_N*LINE_BEATS), .ADDR_W(LB_W+LW)) u_data (
+            .clk(clk), .a_we(r_fill && !drop_r),
+            .a_addr({m_rid[LB_W-1:0], lb_cnt[m_rid[LB_W-1:0]][LW-1:0]}),
+            .a_wdata(m_rdata), .b_en(cache_read || write_hit),
+            .b_we(write_hit ? h_be : 8'd0),
+            .b_addr(cache_read ? {w_ent[wr_i], w_bt[wr_i]} : {l_ent, rbeat}),
+            .b_wdata(h_wdata), .b_rdata(cache_rsp_data)
+        );
+        assign cache_rsp_valid = pending;
+        assign cache_rsp_tag = tag;
+        always @(posedge clk or negedge rst_n) begin
+            if (!rst_n) begin pending <= 1'b0; tag <= 0; end
+            else begin
+                if (take_w) pending <= 1'b0;
+                if (cache_read) begin pending <= 1'b1; tag <= w_tag[wr_i]; end
+            end
+        end
+    end else begin : g_line_registers
+        assign cache_rsp_valid = 1'b0;
+        assign cache_rsp_tag = {TAG_W{1'b0}};
+        assign cache_rsp_data = 64'd0;
+    end endgenerate
 
     always @(*) begin
         rsp_valid = 1'b0;
@@ -444,8 +480,8 @@ module tnca_axi_bridge_lb #(
         end else if (take_amo) begin
             rsp_valid = 1'b1; rsp_tag = amo_rsp_tag; rsp_rdata = amo_rsp_data;
         end else if (take_w) begin
-            rsp_valid = 1'b1; rsp_tag = w_tag[wr_i];
-            rsp_rdata = lb_data[{w_ent[wr_i], w_bt[wr_i]}];
+            rsp_valid = 1'b1; rsp_tag = RAM_CACHE ? cache_rsp_tag : w_tag[wr_i];
+            rsp_rdata = RAM_CACHE ? cache_rsp_data : lb_data[{w_ent[wr_i], w_bt[wr_i]}];
         end else if (take_b) begin
             rsp_valid = 1'b1; rsp_tag = wq[wq_head];
         end
@@ -498,13 +534,13 @@ module tnca_axi_bridge_lb #(
             // (the write FIFOs' counts are settled at the end of this block)
             if (take_null) null_v <= 1'b0;
             if (take_amo)  amo_rsp_v <= 1'b0;
-            if (take_w)    w_v[wr_i] <= 1'b0;
+            if (RAM_CACHE ? cache_read : take_w) w_v[wr_i] <= 1'b0;
 
             // ---- a fill beat ------------------------------------------------
             if (r_fill && !drop_r) begin
                 re = m_rid[LB_W-1:0];
                 if (m_rresp[1]) axi_err <= 1'b1;
-                lb_data[{re, lb_cnt[re][LW-1:0]}] <= m_rdata;
+                if (!RAM_CACHE) lb_data[{re, lb_cnt[re][LW-1:0]}] <= m_rdata;
                 lb_cnt[re] <= lb_cnt[re] + 1'b1;
                 if (m_rlast || lb_cnt[re] == LINE_BEATS - 1) begin
                     lb_fill[re] <= 1'b0;
@@ -559,7 +595,7 @@ module tnca_axi_bridge_lb #(
                 awq_a[awq_t] <= axi_addr;
                 wq_d[wqq_t] <= h_wdata; wq_s[wqq_t] <= h_be;
                 wq[wq_tail] <= h_tag; wq_tail <= wq_tail + 1'b1;
-                if (l_hit)
+                if (l_hit && !RAM_CACHE)
                     lb_data[{l_ent, rbeat}] <= merge(lb_data[{l_ent, rbeat}], h_wdata, h_be);
             end
             if (acc_axi && h_amo) begin

@@ -1480,6 +1480,7 @@ r40-tiles: $(R2_DATA_STAMP) | dirs
 .PHONY: r40-hbm
 r40-hbm: $(R2_DATA_STAMP) | dirs
 	@$(PYTHON) tools/r40/tensor_bounds_tests.py --log $(BUILD)/r40/tensor_bounds_formal.log
+	@$(PYTHON) tools/r40/ram_cache_inference_tests.py
 	@TORCH_PYTHON=$(TORCH_PYTHON) $(PYTHON) tools/r40/hbm_tests.py --evidence
 
 # One suite, every backend. This is the suite a downstream branch runs.

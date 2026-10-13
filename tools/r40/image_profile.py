@@ -42,6 +42,8 @@ def main():
     ap.add_argument('--prefetch', type=int, default=1)
     ap.add_argument('--local-pipeline', action='store_true',
                     help='queue local requests in the burst bridge before BRAM')
+    ap.add_argument('--ram-cache', action='store_true',
+                    help='store burst lines in synchronous dual-port RAM')
     args = ap.parse_args()
     params = parameters(args.profile)
     if args.hbm:
@@ -50,13 +52,17 @@ def main():
             ap.error('HBM slot counts must fit the bridge and its 5-bit AXI IDs')
         params.update(AXI_LINE=args.line_beats, AXI_OUT_N=args.outstanding,
                       AXI_LB_N=args.lines, AXI_WAIT_N=args.waiters, AXI_PF=args.prefetch,
-                      AXI_LOCAL_PIPE=int(args.local_pipeline))
+                      AXI_LOCAL_PIPE=int(args.local_pipeline), AXI_RAM_CACHE=int(args.ram_cache))
         if args.local_pipeline and not args.line_beats:
             ap.error('--local-pipeline requires a burst bridge (--line-beats)')
+        if args.ram_cache and not args.line_beats:
+            ap.error('--ram-cache requires a burst bridge (--line-beats)')
     elif args.line_beats:
         ap.error('--line-beats requires --hbm')
     elif args.local_pipeline:
         ap.error('--local-pipeline requires --hbm')
+    elif args.ram_cache:
+        ap.error('--ram-cache requires --hbm')
     manifest = dict(profile=args.profile, variant='hbm' if args.hbm else 'onchip',
                     parameters=params,
                     profiles_sha256=hashlib.sha256((ROOT / 'spec/r1_profiles.json').read_bytes()).hexdigest())

@@ -150,6 +150,7 @@ module tnca_fpga_top #(
     parameter AXI_LB_N        = 8,
     parameter AXI_PF          = 1,
     parameter AXI_LOCAL_PIPE  = 0,
+    parameter AXI_RAM_CACHE   = 0,
     parameter AXI_WAIT_N      = 8
 ) (
     input  wire                    clk,
@@ -421,7 +422,7 @@ module tnca_fpga_top #(
         tnca_axi_bridge_lb #(
             .TAG_W(LSU_TAG_W), .OUT_N(AXI_OUT_N), .LOCAL_LIMIT(LOCAL_LIMIT),
             .AXI_ID_W(LSU_TAG_W), .LINE_BEATS(AXI_LINE), .LB_N(AXI_LB_N),
-            .WAIT_N(AXI_WAIT_N), .PF(AXI_PF), .LOCAL_PIPE(AXI_LOCAL_PIPE)
+            .WAIT_N(AXI_WAIT_N), .PF(AXI_PF), .LOCAL_PIPE(AXI_LOCAL_PIPE), .RAM_CACHE(AXI_RAM_CACHE)
         ) u_bridge (
             .clk(clk), .rst_n(rst_n),
             .req_valid(mem_req_valid), .req_ready(mem_req_ready), .req_addr(mem_req_addr),

@@ -130,6 +130,7 @@ module tnca_u50_top #(
     parameter AXI_LB_N       = 8,
     parameter AXI_PF         = 1,
     parameter AXI_LOCAL_PIPE = 0,
+    parameter AXI_RAM_CACHE  = 0,
     parameter AXI_WAIT_N     = 8
 ) (
     //---- bus side, ap_clk domain -------------------------------------------
@@ -318,6 +319,7 @@ module tnca_u50_top #(
         .AXI_LB_N(AXI_LB_N),
         .AXI_PF(AXI_PF),
         .AXI_LOCAL_PIPE(AXI_LOCAL_PIPE),
+        .AXI_RAM_CACHE(AXI_RAM_CACHE),
         .AXI_WAIT_N(AXI_WAIT_N)
     ) u_device (
         .clk(clk_dev),

@@ -94,6 +94,7 @@ module tnca_device;
     parameter AXI_LB_N       = 8;
     parameter AXI_PF         = 1;
     parameter AXI_LOCAL_PIPE = 0;
+    parameter AXI_RAM_CACHE  = 0;
     parameter AXI_WAIT_N     = 8;
     parameter AXI_OUT_N      = 8;
     // What the mailbox's range checks measure against.
@@ -254,7 +255,7 @@ module tnca_device;
         );
         end else begin : g_line
         tnca_axi_bridge_lb #(.TAG_W(LSU_TAG_W), .OUT_N(AXI_OUT_N), .LOCAL_LIMIT(LOCAL_LIMIT),
-                .LINE_BEATS(AXI_LINE), .LB_N(AXI_LB_N), .WAIT_N(AXI_WAIT_N), .PF(AXI_PF), .LOCAL_PIPE(AXI_LOCAL_PIPE)) u_bridge (
+                .LINE_BEATS(AXI_LINE), .LB_N(AXI_LB_N), .WAIT_N(AXI_WAIT_N), .PF(AXI_PF), .LOCAL_PIPE(AXI_LOCAL_PIPE), .RAM_CACHE(AXI_RAM_CACHE)) u_bridge (
             .clk(clk), .rst_n(rst_n),
             .req_valid(mreq_valid), .req_ready(mreq_ready), .req_addr(mreq_addr),
             .req_we(mreq_we), .req_be(mreq_be), .req_wdata(mreq_wdata), .req_tag(mreq_tag),

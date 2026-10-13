@@ -52,6 +52,9 @@
 `ifndef LB_SLOTS
 `define LB_SLOTS 4
 `endif
+`ifndef LB_RAM_CACHE
+`define LB_RAM_CACHE 0
+`endif
 `ifndef LB_LOCAL_PIPE
 `define LB_LOCAL_PIPE 0
 `endif
@@ -146,7 +149,7 @@ module tb_axi_bridge;
 
 `ifdef BRIDGE_LB
     tnca_axi_bridge_lb #(.TAG_W(TAG_W), .OUT_N(`BR_OUT), .LOCAL_LIMIT(LOCAL_LIMIT), .QUIET(QUIET),
-                         .LINE_BEATS(`BRIDGE_LB), .LB_N(`LB_SLOTS), .WAIT_N(`LB_WAIT), .PF(`LB_PF), .LOCAL_PIPE(`LB_LOCAL_PIPE)) dut (
+                         .LINE_BEATS(`BRIDGE_LB), .LB_N(`LB_SLOTS), .WAIT_N(`LB_WAIT), .PF(`LB_PF), .LOCAL_PIPE(`LB_LOCAL_PIPE), .RAM_CACHE(`LB_RAM_CACHE)) dut (
 `else
     tnca_axi_bridge #(.TAG_W(TAG_W), .OUT_N(`BR_OUT), .LOCAL_LIMIT(LOCAL_LIMIT), .QUIET(QUIET)) dut (
 `endif

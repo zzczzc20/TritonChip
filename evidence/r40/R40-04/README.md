@@ -62,3 +62,15 @@ cases. Validation used ~/tritonchip-r40-ci on gx10-6646. Pipeline defaults
 to zero; explicit image --local-pipeline requires an HBM burst bridge.
 See localpipe_*.log. This adds local request latency; no speedup, timing
 or bandwidth acceptance is claimed. New 100MHz implementation pending.
+
+2026-10-13 RAM cache checkpoint: the local-pipeline image failed legal
+routing (2270 unrouted signals, 2225 overlaps in line-data flops); no
+image was programmed. localpipe_link_failure.json records that attempt.
+
+An optional synchronous dual-port line RAM keeps held replies and their
+tags stable, arbitrates cache-hit writes against reads, and uses byte
+enables for subword updates. Defaults remain zero. The same 16-line
+geometry maps to 2 RAMB36E2, 8 LUT2, no data flip-flops in Yosys XCU.
+Bridge 70/70, semantic mutations 16/16, adverse native cases 4/4 and
+FPGA wrapper/protocol 8/8 pass. See ram_cache_*.log. Cache-hit latency
+increases by one cycle; no speedup or board timing is claimed.

@@ -135,6 +135,9 @@ def be01(log):
     BINDINGS = {
         'python/tnca/backends/multicore_file.py':
             'the sim-multicore binding: prepares parameterized RTL and reaches its persistent mailbox',
+        'python/tnca/backends/multicore_mmio_sim.py':
+            'the explicit fpga-multicore-sim binding: elaborates AXI/MMIO RTL; '
+            'its shared board host binding multicore_mmio.py remains scanned',
         'python/tnca/transport.py':
             'the sim-file backend: the file mailbox and the vvp child '
             'it speaks to',

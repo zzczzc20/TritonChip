@@ -249,6 +249,8 @@ class U50Backend(Transport):
     "an external branch registers an implementation".
     """
 
+    identity_magic = MAGIC
+    opcode_mask = OP_MASK
     name = 'fpga-u50'
     state = _backend.REFERENCE_AVAILABLE
     launch_is_idempotent = False
@@ -335,10 +337,10 @@ class U50Backend(Transport):
             self.link.open()
             self.opened = True
             magic = self.link.read_reg(R_MAGIC)
-            if magic != MAGIC:
+            if magic != self.identity_magic:
                 raise DeviceLost(
                     f"the device answered {magic:#018x} from its identity "
-                    f"register, not {MAGIC:#018x}",
+                    f"register, not {self.identity_magic:#018x}",
                     detail={'epoch': self.epoch, 'magic': magic,
                             'medium': self.link.describe()},
                     remedy='this is the wrong BAR, or a board with no '
@@ -504,10 +506,10 @@ class U50Backend(Transport):
         # operation. This is the only place that knows the field is four
         # bits; the device cannot tell a truncated opcode from a real one,
         # so nobody downstream can catch it.
-        if op < 0 or op > OP_MASK:
+        if op < 0 or op > self.opcode_mask:
             raise TncaError(
                 f"opcode {op} does not fit the device's "
-                f"{OP_MASK + 1}-wide opcode field",
+                f"{self.opcode_mask + 1}-wide opcode field",
                 code='ARGUMENT_INVALID',
                 remedy='the board decodes four bits of the opcode register, '
                        'so this would arrive as a different operation '

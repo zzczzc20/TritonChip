@@ -350,6 +350,12 @@ def _register_builtin():
              what='the TNCA device on an Alveo U280: the U50 kernel and '
                   'register port (rtl/fpga/tnca_fpga_top.v) built for the '
                   'U280 shell, reached through the same U50Backend')
+    register('fpga-u280-multicore', _lazy('tnca.backends.multicore_mmio', 'board'),
+             state=REFERENCE_AVAILABLE, needs_elaborator=False, needs_hardware=True,
+             physical_grid=True, what='opt-in MMIO v2 physical-grid/AXI binding; requires a matching board image')
+    register('fpga-multicore-sim', _lazy('tnca.backends.multicore_mmio_sim', 'stand_in'),
+             state=REFERENCE_AVAILABLE, needs_elaborator=False, physical_grid=True,
+             what='explicit RTL stand-in for the multicore MMIO v2 board binding')
     register('fpga-u50-sim', _lazy('tnca.backends.u50_sim', 'stand_in'),
              state=REFERENCE_AVAILABLE, needs_elaborator=False,
              what='the same device and the same register protocol, on real '

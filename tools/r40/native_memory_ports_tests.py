@@ -4,8 +4,8 @@ import argparse,json,os,sys
 from pathlib import Path
 ROOT=Path(__file__).resolve().parents[2]
 for path in (ROOT/'python',ROOT/'compiler/python',ROOT/'tools/asm'):sys.path.insert(0,str(path))
-parser=argparse.ArgumentParser();parser.add_argument('--cores',type=int,default=3,choices=(1,2,3,4,8));parser.add_argument('--ports',type=int,default=3);args=parser.parse_args()
-os.environ.update(TNCA_PROFILE='core-vrf-sync-v5',TNCA_BACKEND='sim-multicore',TNCA_BACKEND_ARGS=json.dumps({'core_count':args.cores,'memory_ports':args.ports}),TNCA_RCTX_SPMD='1')
+parser=argparse.ArgumentParser();parser.add_argument('--backend',choices=('sim-multicore','fpga-multicore-sim'),default='sim-multicore');parser.add_argument('--cores',type=int,default=3,choices=(1,2,3,4,8));parser.add_argument('--ports',type=int,default=3);args=parser.parse_args()
+os.environ.update(TNCA_PROFILE='core-vrf-sync-v5',TNCA_BACKEND=args.backend,TNCA_BACKEND_ARGS=json.dumps({'core_count':args.cores,'memory_ports':args.ports}),TNCA_RCTX_SPMD='1')
 os.environ.setdefault('TNCA_HOST_TIMEOUT','1800')
 import torch
 import triton

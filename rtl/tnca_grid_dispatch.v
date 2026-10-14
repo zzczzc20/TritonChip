@@ -14,6 +14,7 @@ module tnca_grid_dispatch #(
     input wire [63:0] launch_id, launch_pc, launch_arg_base, launch_arg_stride,
     input wire [31:0] launch_gx, launch_gy, launch_gz,
     input wire [CORE_N-1:0] launch_cores,
+    input wire [1:0] launch_group_log2,
     output reg [CORE_N-1:0] cmd_valid,
     input wire [CORE_N-1:0] cmd_ready,
     output wire [63:0] cmd_id, cmd_pc,
@@ -38,6 +39,12 @@ module tnca_grid_dispatch #(
     reg [63:0] id_q, pc_q, args_q, stride_q;
     reg [31:0] nx, ny, nz, x, y, z, remaining;
     reg [CORE_W-1:0] rr;
+    reg [2:0] group_width;
+    reg [CORE_N*3-1:0] accepted_width;
+    wire [2:0] requested_width = launch_group_log2 === 2'd2 ? 3'd4 :
+                                 (launch_group_log2 === 2'd1 ? 3'd2 : 3'd1);
+    wire [63:0] groups_x=({32'd0,launch_gx}+requested_width-1) >> (requested_width==4 ? 2 : requested_width==2 ? 1 : 0);
+    wire [95:0] groups_total=groups_x*{64'd0,launch_gy}*{64'd0,launch_gz};
     integer j, choice, candidate;
     reg found;
     wire unexpected_done = |(core_done & ~core_busy);
@@ -90,23 +97,24 @@ module tnca_grid_dispatch #(
             running<=0; faulted<=0; active<=0; core_busy<=0;pending<=0;cmd_x<=0;cmd_y<=0;cmd_z<=0;
             done_valid<=0; done_status<=0; done_id<=0; done_cycles<=0;
             fault_core<=0; issued<=0; completed<=0; peak_active<=0; active_cycles<=0;
-            id_q<=0;pc_q<=0;args_q<=0;stride_q<=0;
+            id_q<=0;pc_q<=0;args_q<=0;stride_q<=0;group_width<=1;accepted_width<=0;
             nx<=0;ny<=0;nz<=0;x<=0;y<=0;z<=0;remaining<=0;rr<=0;
         end else begin
             if(done_valid && done_ready) done_valid<=0;
             if(launch_valid && launch_ready) begin
                 id_q<=launch_id;pc_q<=launch_pc;args_q<=launch_arg_base;stride_q<=launch_arg_stride;
+                group_width<=requested_width;accepted_width<=0;
                 nx<=launch_gx;ny<=launch_gy;nz<=launch_gz;active<=launch_cores;
                 x<=0;y<=0;z<=0;rr<=0;core_busy<=0;pending<=0;faulted<=0;fault_core<=0;
                 issued<=0;completed<=0;peak_active<=0;active_cycles<=0;done_id<=launch_id;done_cycles<=0;done_status<=0;
-                if(total>MAX_PROGRAMS || last_args[95:64]!=0 ||
+                if(total>MAX_PROGRAMS || launch_group_log2 === 2'd3 || last_args[95:64]!=0 ||
                    launch_pc[2:0]!=0 || launch_arg_base[2:0]!=0 || launch_arg_stride[2:0]!=0 ||
                    (total!=0 && launch_cores==0)) begin
                     done_valid<=1;done_status<=3;running<=0;remaining<=0;
                 end else if(total==0) begin
                     done_valid<=1;running<=0;remaining<=0;
                 end else begin
-                    remaining<=total[31:0];running<=1;
+                    remaining<=groups_total[31:0];running<=1;
                 end
             end else if(running) begin
                 done_cycles<=done_cycles+1'b1;
@@ -116,8 +124,11 @@ module tnca_grid_dispatch #(
                 selected_fault=0;
                 for(c=0;c<CORE_N;c=c+1) begin
                     if(core_busy[c]) active_cycles[c*64+:64]<=active_cycles[c*64+:64]+1'b1;
-                    if(accepted[c]) issued[c*32+:32]<=issued[c*32+:32]+1'b1;
-                    if(core_done[c] && core_busy[c]) completed[c*32+:32]<=completed[c*32+:32]+1'b1;
+                    if(accepted[c]) begin
+                        accepted_width[c*3+:3]<=nx-cmd_x[c*32+:32]<group_width ? nx-cmd_x[c*32+:32] : group_width;
+                        issued[c*32+:32]<=issued[c*32+:32]+(nx-cmd_x[c*32+:32]<group_width ? nx-cmd_x[c*32+:32] : group_width);
+                    end
+                    if(core_done[c] && core_busy[c]) completed[c*32+:32]<=completed[c*32+:32]+accepted_width[c*3+:3];
                     if(!faulted && !selected_fault && (core_done[c] || (core_abort[c] && core_busy[c])) &&
                        ((core_done[c] && !core_busy[c]) || core_abort[c] || core_status[c*4+:4]!=0)) begin
                         fault_core<=c;selected_fault=1;
@@ -133,11 +144,11 @@ module tnca_grid_dispatch #(
                     cmd_x[choice*32+:32]<=x;cmd_y[choice*32+:32]<=y;cmd_z[choice*32+:32]<=z;
                     remaining<=remaining-1'b1;
                     rr<=choice==CORE_N-1 ? 0 : choice+1;
-                    if(x+1==nx) begin
+                    if({1'b0,x}+group_width>=nx) begin
                         x<=0;
                         if(y+1==ny) begin y<=0;z<=z+1'b1;end
                         else y<=y+1'b1;
-                    end else x<=x+1'b1;
+                    end else x<=x+group_width;
                 end
                 if((faulted || fault_now || remaining==0) && busy_after==0 && (faulted || fault_now || pending_after==0)) begin
                     running<=0;done_valid<=1;

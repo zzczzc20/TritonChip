@@ -665,12 +665,22 @@ class Session:
                     raise AdmissionError(
                         f"grid.{axis} = {g} is outside 0..2**32-1")
             total = gx * gy * gz
+            if not self.physical_grid and module.manifest.get('execution', {}).get('dynamic_constraints', {}).get('program_partition') == 'physical-x-chunk-v1':
+                raise AdmissionError('physical chunk artifact requires physical grid dispatch')
             limit = 4096
             if self.physical_grid:
                 limit = self.dev.physical_grid_capability()[1]
                 p2r = module.manifest.get('execution', {}).get('program_to_role', {'0': ['role0']})
-                if p2r != {'0': ['role0']}:
-                    raise AdmissionError('physical dispatch requires a per-program artifact; role-SPMD partitioning is not yet supported')
+                partition=module.manifest.get('execution', {}).get('dynamic_constraints', {}).get('program_partition')
+                if partition == 'physical-x-chunk-v1':
+                    width=len(p2r)
+                    roles_per_program=len(p2r.get('0', []))
+                    expected={str(i):[f'role{j}' for j in range(i*roles_per_program,(i+1)*roles_per_program)] for i in range(width)}
+                    capability=self.dev.physical_chunk_capability()
+                    if width not in (1,2,4) or roles_per_program not in (1,2) or width*roles_per_program>4 or p2r!=expected or capability is None or width>capability:
+                        raise AdmissionError('physical chunk partition does not match the device capability')
+                elif partition is not None or p2r != {'0': ['role0']}:
+                    raise AdmissionError('physical dispatch requires a per-program artifact or negotiated physical-x-chunk-v1 partition')
             if total > limit and self.large_grid:
                 query = getattr(self.dev, 'large_grid_limit', None)
                 if query is not None:
@@ -1006,8 +1016,15 @@ class Session:
 
     def _run_physical_grid(self, task):
         ev = task['event']
+        execution=task['module'].manifest.get('execution', {})
+        mapping=execution.get('program_to_role', {'0':['role0']})
+        width=len(mapping);rpp=len(mapping['0'])
+        mask=(1<<(width*rpp))-1
+        if rpp==2:mask|=1<<28
+        if width>1:mask|=(1<<31)|((width.bit_length()-1)<<29)
         reply = self.dev.launch_grid(task['module'].code_addr, task['arg_addr'], task['grid'],
-                                     arg_stride=task['arg_stride'], active_cores=self.active_cores)
+                                     arg_stride=task['arg_stride'], active_cores=self.active_cores,
+                                     role_mask=mask, group_width=width)
         if reply.status == T.ST_TIMEOUT:
             raise DeviceLost('physical grid deadline expired; epoch must be recovered')
         if reply.status != T.ST_OK:

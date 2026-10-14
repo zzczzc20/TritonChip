@@ -61,6 +61,7 @@ KNOWN_OPTIONS = {
     'sparse_tensormaps': 'int, 0 or 1. 1 stores only the non-zero words of a TensorMap the '
                          'kernel builds in scratch, which the launch path hands over zero-filled '
                          '(7 stores of 32 for rank 2)',
+    'physical_chunks': 'int, 0 or 1. Bounded global-PID chunks for the physical dispatcher; requires chunk-capable runtime/RTL',
     'rctx_spmd': 'int, 0 or 1. 1 runs a grid row on every Role Context of the target in one '
                  'launch, context r looping over programs r, r + R, ... (R39-05 Mode B, '
                  'tnca_cc.rctx_spmd), when the kernel shares nothing between programs but '
@@ -282,7 +283,8 @@ def check_options(options):
                    'produce a different artifact')
     # Resolve allocation/lowering switches before either cache lookup or
     # compilation. Default off stays absent for the frozen B39 contract.
-    for name, env in (('packed_window_unpack', 'TNCA_PACKED_WINDOW_UNPACK'),
+    for name, env in (('physical_chunks', 'TNCA_PHYSICAL_CHUNKS'),
+                      ('packed_window_unpack', 'TNCA_PACKED_WINDOW_UNPACK'),
                       ('window_reuse', 'TNCA_WINDOW_REUSE'),
                       ('bank_alloc', 'TNCA_BANK_ALLOC'),
                       ('index_opt', 'TNCA_INDEX_OPT'),
@@ -292,7 +294,7 @@ def check_options(options):
                       ('rctx_roles', 'TNCA_RCTX_ROLES')):
         value = options.get(name)
         if value is None:
-            value = int(os.environ.get(env, '0'))
+            value = _physical_chunks_default() if name == 'physical_chunks' else int(os.environ.get(env, '0'))
             options.pop(name, None)
             if value:
                 options[name] = value
@@ -300,6 +302,13 @@ def check_options(options):
         if value not in allowed:
             raise ValueError(f'{name} must be one of {allowed}')
     return options
+
+
+def _physical_chunks_default():
+    if 'TNCA_PHYSICAL_CHUNKS' in os.environ:
+        return int(os.environ['TNCA_PHYSICAL_CHUNKS'])
+    from .backend import physical_grid
+    return int(physical_grid(os.environ.get('TNCA_BACKEND', 'sim-file')))
 
 
 def _constexpr_metadata(values):
@@ -836,6 +845,8 @@ def _lower_ttir(module, ctx, kernel_name, params, target, prov, options, stages,
                   scratch_bytes=scratch_bytes,
                   programs_per_launch=programs_per_launch,
                   roles_per_program=roles_per_program)
+    if (options or {}).get("physical_chunks", 0):
+        report["physical_chunks"]=True
     return kernel_name, params, asm_text, code, symbols, report, stages
 
 
@@ -876,7 +887,8 @@ def _rctx_roles(kernel, target, prov, options, stages, scratch_bytes, scratch_sl
         info = None
         if why is None:
             try:
-                rctx_spmd.apply(trial, pairs, scratch_slot, scratch_bytes, pair=True)
+                rctx_spmd.apply(trial, pairs, scratch_slot, scratch_bytes, pair=True,
+                                physical_chunk=bool((options or {}).get("physical_chunks", 0)))
                 force = int((options or {}).get('rctx_roles')
                             or os.environ.get('TNCA_RCTX_ROLES', '0') or 0) >= 2
                 info = partition.specialize_loop(trial, target, stages=2, force=force)
@@ -942,7 +954,8 @@ def _rctx_spmd(kernel, target, prov, options, stages, scratch_bytes, scratch_slo
         prov.record('rctx_spmd_refused', why)
         return 1
     try:
-        hoisted = rctx_spmd.apply(kernel, contexts, scratch_slot, scratch_bytes, hoist=hoist)
+        hoisted = rctx_spmd.apply(kernel, contexts, scratch_slot, scratch_bytes, hoist=hoist,
+                                    physical_chunk=bool((options or {}).get("physical_chunks", 0)))
     except ValueError as e:            # nothing was changed
         prov.record('rctx_spmd_refused', str(e))
         return 1
@@ -1144,8 +1157,10 @@ def _manifest(kernel_name, params, target, pinfo, constexprs, options, prov,
             'role_mask': (1 << len(roles)) - 1,
             'program_to_role': {str(i): roles[i * per_program:(i + 1) * per_program]
                                 for i in range(programs)},
-            'grid_dims_supported': [True, False, False],
-            'dynamic_constraints': {},
+            'grid_dims_supported': ([True, True, True] if (report or {}).get('physical_chunks')
+                                    else [True, False, False]),
+            'dynamic_constraints': ({'program_partition': 'physical-x-chunk-v1'}
+                                    if (report or {}).get('physical_chunks') else {}),
         },
         'resources': {
             'rf_private_per_role': {

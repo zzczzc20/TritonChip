@@ -14,7 +14,7 @@
       "name": "PHYSICAL_GRID_LAUNCH",
       "a0": "entry PC",
       "a1": "core-0 argument block",
-      "a2": "legacy uint32 role/slice flags",
+      "a2": "uint32 role/slice flags; bits 9:8 select log2(programs per physical batch), 0/1/2; other reserved bits remain refused",
       "a3": "gx | gy<<32",
       "a4": "gz | active_cores<<32",
       "a5": "per-core argument block stride in bytes",
@@ -35,6 +35,13 @@
       "a0": "physical core index",
       "r0": "peak simultaneously occupied physical cores",
       "r1": "occupied cycles for selected core"
+    },
+    "14": {
+      "name": "PHYSICAL_CHUNK_CAP",
+      "read_only": true,
+      "r0": "bit 0: physical-x-chunk-v1 compiler/dispatcher contract",
+      "r1": "maximum logical programs per accepted per-core batch (1/2/4)",
+      "old_image": "REFUSED; no reinterpretation of legacy row-SPMD artifacts"
     }
   },
   "rules": [
@@ -47,6 +54,7 @@
     "An expiry diagnostic before hardware drain poisons the simulation epoch; further writes and launches are refused.",
     "Capability does not imply compiler role-SPMD compatibility; public runtime partitioning remains a separate integration requirement.",
     "The new simulation binding refuses unsupported legacy single-program opcodes rather than reinterpret their metadata.",
-    "Telemetry is synthesized in the dispatcher from accepted work until core completion, including memory stalls; retained after completion until the next accepted dispatcher launch. Invalid/zero-work dispatcher launches reset counters. Out-of-range telemetry indices are refused; opcode 15 remains reserved/refused."
+    "Telemetry is synthesized in the dispatcher from accepted work until core completion, including memory stalls; retained after completion until the next accepted dispatcher launch. Invalid/zero-work dispatcher launches reset counters. Out-of-range telemetry indices are refused; opcode 15 remains reserved/refused.",
+    "physical-x-chunk-v1 artifacts start at global pid.x + role lane (ROLE_ID>>1 for pairs); each active lane executes once and tail lanes exit before scratch/descriptor side effects. Global num_programs is preserved. The dispatcher reserves ceil(gx/group_width)*gy*gz batches, never crosses rows, and counts logical issued/drained programs including partial tails. Legacy row-SPMD artifacts remain refused by physical dispatch."
   ]
 }

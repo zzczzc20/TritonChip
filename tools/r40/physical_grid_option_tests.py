@@ -48,5 +48,23 @@ def main():
         try:dev.physical_grid_metrics()
         except DeviceLost:pass
         else:raise AssertionError('invalid telemetry accepted: '+bad)
-    print('physical-grid-option-tests PASS (15 cases)',flush=True)
+    for width in (0,3,8,1.5):
+        rejects(fake(),TypeError if isinstance(width,float) else ValueError,group_width=width)
+    dev=fake()
+    old_request=dev.request
+    def chunk_request(op,*args,**kwargs):
+        if op==14:
+            dev.calls.append((op,args));return Reply(len(dev.calls),0,1,4)
+        return old_request(op,*args,**kwargs)
+    dev.request=chunk_request
+    dev.launch_grid(0,0x20000,(17,3,2),role_mask=0xc000000f,group_width=4)
+    assert dev.calls[-1]==(11,(0,131072,0xc000020f,17|(3<<32),2|(7<<32),0))
+    dev=fake()
+    old_request=dev.request
+    def missing_chunk(op,*args,**kwargs):
+        if op==14:return Reply(1,3,0,0)
+        return old_request(op,*args,**kwargs)
+    dev.request=missing_chunk
+    rejects(dev,ValueError,group_width=2)
+    print('physical-grid-option-tests PASS (21 cases)',flush=True)
 if __name__=='__main__':main()

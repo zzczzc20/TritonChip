@@ -84,6 +84,7 @@ module tnca_top #(
     input wire grid_valid, grid_abort,
     input wire [3:0] grid_abort_status,
     input wire [3:0] grid_slice,
+    input wire [1:0] grid_group_log2,
     output wire grid_ready,
     input wire [63:0] grid_id, grid_arg_stride,
     input wire [31:0] grid_x, grid_y, grid_z,
@@ -190,7 +191,7 @@ module tnca_top #(
         assign tile_launch=command_valid & tile_idle;
         tnca_grid_dispatch #(.CORE_N(N)) u_dispatch (
             .clk(clk),.rst_n(rst_n),.abort_valid(grid_abort),.abort_status(grid_abort_status),.launch_valid(grid_valid && !host_busy),.launch_ready(dispatch_ready),
-            .launch_id(grid_id),.launch_pc(launch_pc),.launch_arg_base(launch_arg_base),
+            .launch_group_log2(grid_group_log2),.launch_id(grid_id),.launch_pc(launch_pc),.launch_arg_base(launch_arg_base),
             .launch_arg_stride(grid_arg_stride),.launch_gx(grid_x),.launch_gy(grid_y),.launch_gz(grid_z),
             .launch_cores((|launch_role_mask) ? grid_cores : {N{1'b0}}),
             .cmd_valid(command_valid),.cmd_ready(tile_idle),.cmd_id(),.cmd_pc(dispatch_pc),

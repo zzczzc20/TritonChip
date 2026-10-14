@@ -6,6 +6,7 @@ module tnca_multicore_shell #(
  parameter NX=3,NY=1,N=NX*NY,CODE_WORDS=16384,
  parameter SRC_W=(N>4?$clog2(N):2),
  parameter NUM_RCTX=4,RCTX_W=2,PHYS_VREGS=256,PHYS_W=8,
+ parameter VREGS_PER_RCTX=64,AUTO_VBASE=1,
  parameter HAS_SFU=1,USE_BANKED_VRF=1,VRF_BYPASS=1,FE_NOBUBBLE=1,
  parameter VRF_PREFETCH=1,RCTX_SWITCH=2,MTX_ABUF=1,LSU_INFLIGHT=2,
  parameter FPU_OVERLAP=1,RSLICE=1,RPAIR=1,HAS_TENSOR_XPOSE=1,
@@ -15,6 +16,7 @@ module tnca_multicore_shell #(
  input wire cmd_valid,output wire cmd_ready,
  input wire [63:0] cmd_id,cmd_pc,cmd_arg_base,cmd_arg_stride,cmd_deadline,
  input wire [31:0] cmd_gx,cmd_gy,cmd_gz,
+ input wire [1:0] cmd_group_log2,
  input wire [N-1:0] cmd_cores,input wire [NUM_RCTX-1:0] cmd_roles,
  input wire [3:0] cmd_slice,input wire [NUM_RCTX*PHYS_W-1:0] cmd_vbase,
  output wire done_valid,input wire done_ready,
@@ -37,6 +39,12 @@ module tnca_multicore_shell #(
 );
  localparam CODE_BYTES=CODE_WORDS*8;
  wire [N*64-1:0] ia, insn;
+ wire [NUM_RCTX*PHYS_W-1:0] effective_vbase;
+ generate for(genvar r=0;r<NUM_RCTX;r=r+1) begin: g_vbase
+  // RPAIR remaps odd contexts to their even partner inside the core.
+  // Independent programs always begin in distinct physical VRF ranges.
+  assign effective_vbase[r*PHYS_W+:PHYS_W]=AUTO_VBASE ? r*VREGS_PER_RCTX : cmd_vbase[r*PHYS_W+:PHYS_W];
+ end endgenerate
  wire grid_ready,grid_done,host_busy,data_ready,data_rsp;
  wire [63:0] data_rdata,grid_id,grid_cycles;
  wire [3:0] grid_status;
@@ -51,7 +59,13 @@ module tnca_multicore_shell #(
  wire code_selected=host_addr<CODE_BYTES;
  wire code_ready=grid_ready && !cmd_valid && !invalid_done && !code_pending && all_idle;
  wire code_fire=host_valid && host_ready && code_selected && !bad_host_addr;
- wire bad_pc=cmd_pc>=CODE_BYTES || cmd_pc[2:0]!=0;
+ wire [2:0] chunk_width=cmd_group_log2===2'd2 ? 3'd4 : (cmd_group_log2===2'd1 ? 3'd2 : 3'd1);
+ wire [3:0] chunk_roles=chunk_width << cmd_slice[3];
+ wire bad_chunk=(cmd_group_log2===2'd3) ||
+   ((cmd_group_log2===2'd1 || cmd_group_log2===2'd2) &&
+    (chunk_roles>NUM_RCTX || cmd_roles!=((1<<chunk_roles)-1) ||
+     !cmd_slice[2] || cmd_slice[1:0]!=cmd_group_log2));
+ wire bad_pc=cmd_pc>=CODE_BYTES || cmd_pc[2:0]!=0 || bad_chunk;
  assign cmd_ready=rst_n && grid_ready && !code_pending && !bad_host_pending && !invalid_done;
  assign done_valid=invalid_done || grid_done;
  assign done_status=invalid_done ? 4'd3 : grid_status;
@@ -94,15 +108,16 @@ module tnca_multicore_shell #(
  end
  tnca_top #(.NX(NX),.NY(NY),.GLOBAL_GRID(1),.HOST_ACCESS(1),.MEM_SRC_W(SRC_W),
   .NUM_RCTX(NUM_RCTX),.RCTX_W(RCTX_W),.PHYS_VREGS(PHYS_VREGS),.PHYS_W(PHYS_W),
+  .VREGS_PER_RCTX(VREGS_PER_RCTX),
   .HAS_SFU(HAS_SFU),.USE_BANKED_VRF(USE_BANKED_VRF),.VRF_BYPASS(VRF_BYPASS),
   .FE_NOBUBBLE(FE_NOBUBBLE),.VRF_PREFETCH(VRF_PREFETCH),.RCTX_SWITCH(RCTX_SWITCH),
   .MTX_ABUF(MTX_ABUF),.LSU_INFLIGHT(LSU_INFLIGHT),.FPU_OVERLAP(FPU_OVERLAP),
   .RSLICE(RSLICE),.RPAIR(RPAIR),.HAS_TENSOR_XPOSE(HAS_TENSOR_XPOSE),
   .SETS(SETS),.SET_W(SET_W),.WAYS(WAYS),.WAY_W(WAY_W)) u_system (
   .clk(clk),.rst_n(rst_n),.launch_valid(1'b0),.launch_pc(cmd_pc),.launch_arg_base(cmd_arg_base),
-  .grid_abort(deadline_abort),.grid_abort_status(4'd2),.launch_role_mask(cmd_roles),.launch_vbase(cmd_vbase),.grid_slice(cmd_slice),
+  .grid_abort(deadline_abort),.grid_abort_status(4'd2),.launch_role_mask(cmd_roles),.launch_vbase(effective_vbase),.grid_slice(cmd_slice),
   .grid_valid(cmd_valid && !bad_pc && !code_pending && !bad_host_pending && !invalid_done),.grid_ready(grid_ready),
-  .grid_id(cmd_id),.grid_arg_stride(cmd_arg_stride),.grid_x(cmd_gx),.grid_y(cmd_gy),.grid_z(cmd_gz),
+  .grid_group_log2(cmd_group_log2),.grid_id(cmd_id),.grid_arg_stride(cmd_arg_stride),.grid_x(cmd_gx),.grid_y(cmd_gy),.grid_z(cmd_gz),
   .grid_cores(cmd_cores),.grid_done_valid(grid_done),.grid_done_ready(done_ready && !invalid_done),
   .grid_done_status(grid_status),.grid_done_id(grid_id),.grid_done_cycles(grid_cycles),
   .grid_fault_core(fault_core),.grid_issued(issued),.grid_completed(completed),

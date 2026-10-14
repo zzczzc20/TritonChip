@@ -2077,3 +2077,12 @@ r40-multicore-backend: | dirs
 r40-multicore-native-smoke: | dirs
 	@$(TRITON_PYTHON) tools/r40/native_multicore_tests.py --cores 3
 	@$(TRITON_PYTHON) tools/r40/native_multicore_tests.py --cores 8
+
+.PHONY: r40-physical-chunks
+r40-physical-chunks: r40-grid-dispatch | dirs
+	@$(PYTHON) tools/r40/physical_chunk_tests.py
+	@$(TRITON_PYTHON) tools/r40/physical_chunk_runtime_tests.py --cores 3
+	@TNCA_RCTX_SPMD=1 TNCA_PHYSICAL_CHUNKS=1 $(TRITON_PYTHON) tools/r40/native_multicore_tests.py --cores 3
+	@TNCA_RCTX_SPMD=1 TNCA_PHYSICAL_CHUNKS=1 $(TRITON_PYTHON) tools/r40/native_multicore_tests.py --cores 8
+	@$(TRITON_PYTHON) tools/r40/native_multicore_features.py --cores 3
+	@$(TRITON_PYTHON) tools/r40/native_multicore_features.py --cores 3 --pair

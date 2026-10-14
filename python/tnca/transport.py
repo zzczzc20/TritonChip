@@ -437,7 +437,7 @@ class Transport(_backend.Backend):
         return self._physical_grid_capability
 
     def launch_grid(self, pc, arg_base, grid, *, arg_stride=0,
-                    active_cores=None, role_mask=1, timeout=None):
+                    active_cores=None, role_mask=1, group_width=1, timeout=None):
         """One hardware command for the whole grid; no host per-program loop."""
         dims = tuple(operator.index(v) for v in grid)
         if len(dims) != 3 or any(v < 0 or v > 0xFFFFFFFF for v in dims):
@@ -446,6 +446,13 @@ class Transport(_backend.Backend):
                                                 (pc, arg_base, arg_stride, role_mask))
         if any(v < 0 or v > 0xFFFFFFFFFFFFFFFF or v % 8 for v in (pc, arg_base, arg_stride)):
             raise ValueError('PC, argument base and stride must be aligned uint64 values')
+        group_width=operator.index(group_width)
+        if group_width not in (1,2,4):
+            raise ValueError('physical program group width must be 1, 2 or 4')
+        if group_width>1:
+            capability_group=self.physical_chunk_capability()
+            if capability_group is None or group_width>capability_group:
+                raise ValueError('image does not support this physical chunk width')
         if role_mask < 0 or role_mask > 0xFFFFFFFF or role_mask & 0x0FFFFFF0:
             raise ValueError('role mask must contain only four context bits and slice flags')
         capability = self.physical_grid_capability()
@@ -458,9 +465,21 @@ class Transport(_backend.Backend):
         gx, gy, gz = dims
         if gx * gy * gz > limit:
             raise ValueError('grid exceeds the advertised streaming budget')
-        return self.request(11, pc, arg_base, role_mask,
+        return self.request(11, pc, arg_base, role_mask | ((group_width.bit_length()-1)<<8),
                             gx | (gy << 32), gz | (mask << 32), arg_stride,
                             timeout=timeout)
+
+    @serialized_io
+    def physical_chunk_capability(self):
+        if not hasattr(self, '_physical_chunk_capability'):
+            reply=self.request(14)
+            if reply.status == ST_REFUSED:
+                self._physical_chunk_capability=None
+            elif reply.ok and reply.r0 & 1 and reply.r1 in (1,2,4):
+                self._physical_chunk_capability=reply.r1
+            else:
+                raise DeviceLost('invalid physical chunk capability')
+        return self._physical_chunk_capability
 
     @serialized_io
     def physical_grid_metrics(self):

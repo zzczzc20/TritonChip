@@ -31,7 +31,7 @@ tnca_multicore_shell #(.NX(NX),.NY(N/NX),.CODE_WORDS(16384),.VRF_BYPASS(VRF_BYPA
 .VRF_PREFETCH(VRF_PREFETCH),.RCTX_SWITCH(RCTX_SWITCH),.LSU_INFLIGHT(LSU_INFLIGHT),
 .FPU_OVERLAP(FPU_OVERLAP),.MTX_ABUF(MTX_ABUF),.SETS(4),.SET_W(2),.WAYS(2),.WAY_W(1)) dut(
 .clk(clk),.rst_n(rst),.cmd_valid(cv),.cmd_ready(cr),.cmd_id(id),.cmd_pc(pc),
-.cmd_deadline(deadline),.timed_out(timed_out),.cmd_arg_base(arg_base),.cmd_arg_stride(arg_stride),.cmd_gx(gx),.cmd_gy(gy),.cmd_gz(gz),
+.cmd_group_log2(role_flags[9:8]),.cmd_deadline(deadline),.timed_out(timed_out),.cmd_arg_base(arg_base),.cmd_arg_stride(arg_stride),.cmd_gx(gx),.cmd_gy(gy),.cmd_gz(gz),
 .cmd_cores(cores),.cmd_roles(role_flags[3:0]),.cmd_slice({role_flags[28],role_flags[31:29]}),.cmd_vbase(32'd0),
 .done_valid(dv),.done_ready(ack),.done_status(ds),.done_id(did),.done_cycles(dc),
 .issued(issued),.completed(completed),.host_valid(hv),.host_ready(hr),.host_we(hw),
@@ -138,8 +138,9 @@ initial begin
       if(a0<0 || a0>=N)status=3;
       else begin r0=peak_active;r1=active_cycles[a0*64+:64];end
      end
+     14:begin r0=1;r1=4;end // physical-x-chunk-v1, maximum four lanes
      11:begin
-      if(a2[63:32]!=0 || (a2 & 64'h0ffffff0)!=0 || a4[63:32]==0 || (a4[63:32]>>N)!=0)status=3;
+      if(a2[63:32]!=0 || (a2 & 64'h0ffffcf0)!=0 || a2[9:8]==3 || a4[63:32]==0 || (a4[63:32]>>N)!=0)status=3;
       else launch_grid();
      end
      default:status=3;

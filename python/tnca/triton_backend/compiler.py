@@ -55,6 +55,11 @@ def _sparse_tensormaps():
     return int(os.environ.get('TNCA_SPARSE_TENSORMAPS', '1'))
 
 
+def _physical_chunks():
+    from tnca.aot import _physical_chunks_default
+    return _physical_chunks_default()
+
+
 def _rctx_spmd():
     # R39-05's switch: every Role Context runs programs of one grid row, for
     # a kernel that allows it. On for the standard path since its ablation
@@ -118,6 +123,7 @@ class TNCAOptions:
     opt_level: int = field(default_factory=_opt_level)
     schedule: int = field(default_factory=_schedule)
     index_opt: int = field(default_factory=_index_opt)
+    physical_chunks: int = field(default_factory=_physical_chunks)
     rctx_spmd: int = field(default_factory=_rctx_spmd)
     sparse_tensormaps: int = field(default_factory=_sparse_tensormaps)
     rctx_roles: int = field(default_factory=_rctx_roles)
@@ -245,7 +251,10 @@ class TNCABackend(BaseBackend):
         for k, v in list(args.items()):
             if isinstance(v, list):
                 args[k] = tuple(v)
-        return TNCAOptions(**args)
+        resolved = TNCAOptions(**args)
+        if not isinstance(resolved.physical_chunks, int) or resolved.physical_chunks not in (0, 1):
+            raise ValueError('physical_chunks must be 0 or 1')
+        return resolved
 
     def pack_metadata(self, metadata):
         return (metadata.num_warps, metadata.num_ctas, metadata.shared)
@@ -291,7 +300,8 @@ class TNCABackend(BaseBackend):
         compile_options = {'opt_level': options.opt_level}
         # Resolved JIT values override environment defaults, including zero.
         # Keep default off absent to preserve the frozen B39 artifact bytes.
-        for name, env in (('schedule', 'TNCA_SCHEDULE'), ('index_opt', 'TNCA_INDEX_OPT'),
+        for name, env in (('physical_chunks', 'TNCA_PHYSICAL_CHUNKS'),
+                          ('schedule', 'TNCA_SCHEDULE'), ('index_opt', 'TNCA_INDEX_OPT'),
                           ('rctx_spmd', 'TNCA_RCTX_SPMD'),
                           ('sparse_tensormaps', 'TNCA_SPARSE_TENSORMAPS'),
                           ('rctx_roles', 'TNCA_RCTX_ROLES'), ('bank_alloc', 'TNCA_BANK_ALLOC'),

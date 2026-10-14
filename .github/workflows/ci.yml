@@ -227,6 +227,7 @@ jobs:
           make r40-physical-grid-runtime TRITON_PYTHON=$HOME/tritonenv/bin/python
           make r40-multicore-backend TRITON_PYTHON=$HOME/tritonenv/bin/python
           make r40-multicore-native-smoke TRITON_PYTHON=$HOME/tritonenv/bin/python
+          make r40-physical-chunks TRITON_PYTHON=$HOME/tritonenv/bin/python
 
       - name: Triton source to RTL, one core and the whole machine
         run: |

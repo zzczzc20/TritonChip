@@ -32,6 +32,10 @@ def main():
             assert dev.physical_grid_capability()==(3,16777216)
             code=b''.join(int(line,16).to_bytes(8,'little') for line in image.read_text().splitlines())
             assert dev.upload(0,code).ok
+            assert dev.physical_chunk_capability()==4
+            # Capability alone must not authorize incompatible role resources.
+            assert dev.launch_grid(0,0x40000,(5,1,1),group_width=4,role_mask=1).status==3
+            assert dev.launch_grid(0,0x40000,(5,1,1),group_width=2,role_mask=3).status==3
             grid=(13,7,5) if args.programs==455 else (args.programs,1,1)
             before=len(dev.history)
             reply=dev.launch_grid(0,0x40000,grid,arg_stride=256)

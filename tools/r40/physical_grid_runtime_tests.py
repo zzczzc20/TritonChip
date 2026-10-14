@@ -39,7 +39,7 @@ def main():
         stub.dev=SimpleNamespace(launch_grid=lambda *args,**kw:Reply(1,status,0,0),
                                  quiesce=lambda:Reply(2,1,0,0))
         event=SimpleNamespace(_to=lambda state:None)
-        task={'event':event,'module':SimpleNamespace(code_addr=0),'arg_addr':0x20000,
+        task={'event':event,'module':SimpleNamespace(code_addr=0,manifest={'execution':{'program_to_role':{'0':['role0']}}}),'arg_addr':0x20000,
               'grid':(1,1,1),'arg_stride':256}
         try:stub._run_physical_grid(task)
         except DeviceLost:pass

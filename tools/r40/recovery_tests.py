@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """Native storage identity when recovery reuses the same physical address."""
 import gc
+import argparse
+import json
 import os
 from pathlib import Path
 import sys
@@ -25,9 +27,17 @@ def refused(fn):
 
 
 def main():
-    if os.environ.get('TNCA_BACKEND', 'sim-file') != 'sim-file':
-        raise RuntimeError('recovery ownership check uses an isolated RTL simulator')
-    device.prepare(os.environ['TNCA_PROFILE'])
+    parser=argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--multicore-dma',action='store_true')
+    args=parser.parse_args()
+    if args.multicore_dma:
+        os.environ.update(TNCA_BACKEND='fpga-multicore-sim',TNCA_BACKEND_ARGS=json.dumps(
+            dict(core_count=3,memory_ports=3,maintenance=True,hbm_dma=True,
+                 noc_link_stages=2,dispatch_stages=2,home_stages=2,code_stages=2,board_top=True)))
+    elif os.environ.get('TNCA_BACKEND', 'sim-file') != 'sim-file':
+        raise RuntimeError('select --multicore-dma for the isolated multicore ownership binding')
+    else:
+        device.prepare(os.environ['TNCA_PROFILE'])
     D.register()
     h = torch.arange(16, dtype=torch.float32)
     graph = torch.compile(lambda t: t * 2 + 1, fullgraph=True)
@@ -54,7 +64,7 @@ def main():
     print('PASS 3 recovery epochs with forced physical address reuse')
     print('PASS stale event, copy, view, launch and growing resize rejected')
     print('PASS old storage destruction preserves the new allocation at the same address')
-    print('r40-recovery-tests PASS (3/3)')
+    print(f'r40-recovery-tests PASS (3/3) multicore_dma={args.multicore_dma}')
     return 0
 
 

@@ -2143,6 +2143,7 @@ r40-multicore-dma:
 	@$(PYTHON) tools/r40/multicore_dma_tests.py --cores 3 --ports 3 --pipeline 2 --board-top
 	@CUDA_VISIBLE_DEVICES= $(TORCH_PYTHON) tools/r40/native_memory_ports_tests.py \
 	  --backend fpga-multicore-sim --cores 3 --ports 3 --pipeline 2 --board-top --dma
+	@CUDA_VISIBLE_DEVICES= $(TORCH_PYTHON) tools/r40/recovery_tests.py --multicore-dma
 
 r40-nuca: r40-coherent-host r40-memory-ports r40-line-axi r40-cache-maintenance r40-multicore-dma
 	@$(PYTHON) tools/r40/acceptance.py --wp R40-06

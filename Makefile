@@ -2105,10 +2105,12 @@ r40-line-axi: | dirs
 # Versioned register path; shared board host binding driven by the AXI RTL.
 .PHONY: r40-multicore-mmio
 r40-multicore-mmio: | dirs
+	@$(PYTHON) tools/r40/mesh_pipeline_tests.py
 	@$(PYTHON) tools/r40/multicore_mmio_synth_tests.py
 	@$(PYTHON) tools/r40/multicore_mmio_option_tests.py
 	@$(TRITON_PYTHON) tools/r40/multicore_mmio_tests.py --cores 1 --ports 1
 	@$(TRITON_PYTHON) tools/r40/multicore_mmio_tests.py --cores 3 --ports 3
-	@$(TRITON_PYTHON) tools/r40/native_memory_ports_tests.py --backend fpga-multicore-sim --cores 3 --ports 3
-	@$(TRITON_PYTHON) tools/r40/native_multicore_features.py --backend fpga-multicore-sim --cores 3
-	@$(TRITON_PYTHON) tools/r40/native_multicore_features.py --backend fpga-multicore-sim --cores 3 --pair
+	@$(TRITON_PYTHON) tools/r40/multicore_mmio_tests.py --cores 3 --ports 3 --pipeline 2 --board-top
+	@$(TRITON_PYTHON) tools/r40/native_memory_ports_tests.py --backend fpga-multicore-sim --cores 3 --ports 3 --pipeline 2 --board-top
+	@$(TRITON_PYTHON) tools/r40/native_multicore_features.py --backend fpga-multicore-sim --cores 3 --pipeline 2 --board-top
+	@$(TRITON_PYTHON) tools/r40/native_multicore_features.py --backend fpga-multicore-sim --cores 3 --pair --pipeline 2 --board-top

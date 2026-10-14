@@ -7,9 +7,9 @@
 `default_nettype none
 module tnca_multicore_mmio #(
  parameter N=3,PORTS=3,NUM_RCTX=4,PHYS_W=8,CODE_WORDS=16384,
- parameter MEM_BASE=64'h20000
+ parameter MEM_BASE=64'h20000,REG_ADDR_W=8
 )(
- input wire clk,rst_n,input wire [7:0] reg_addr,
+ input wire clk,rst_n,input wire [REG_ADDR_W-1:0] reg_addr,
  input wire [63:0] reg_wdata,input wire reg_we,reg_re,
  output reg [63:0] reg_rdata,
  output reg cmd_valid,input wire cmd_ready,
@@ -62,7 +62,7 @@ module tnca_multicore_mmio #(
    8'h70:reg_rdata=window_addr;8'h78:reg_rdata=window_data;
    8'h80:reg_rdata=window_be;8'h90:reg_rdata=window_status;
    8'h98:reg_rdata=MAGIC;8'ha0:reg_rdata=served;
-   8'ha8:reg_rdata=axi_base;8'hb0:reg_rdata=axi_size;
+   8'ha8,9'h100,9'h108:reg_rdata=axi_base;8'hb0:reg_rdata=axi_size;
    8'hb8:reg_rdata=((MEM_BASE>>12)<<32) | 64'd2 | ((|axi_fault)?64'd1:64'd0);
    // R_AXI_STAT 63:32 is LOCAL_LIMIT in 4 KiB pages, as in v1.
    8'he0:reg_rdata=1;8'he8:reg_rdata=launch_start;
@@ -96,7 +96,7 @@ module tnca_multicore_mmio #(
     8'h28:a3<=reg_wdata;8'h30:a4<=reg_wdata;8'h38:a5<=reg_wdata;
     8'h40:deadline<=reg_wdata;
     8'h70:window_addr<=reg_wdata;8'h78:window_data<=reg_wdata;8'h80:window_be<=reg_wdata[7:0];
-    8'ha8:if(state==IDLE && host_state==IDLE && all_idle)axi_base<=reg_wdata;
+    8'ha8,9'h100,9'h108:if(state==IDLE && host_state==IDLE && all_idle)axi_base<=reg_wdata;
     8'hb0:if(state==IDLE && host_state==IDLE && all_idle)axi_size<=reg_wdata;
     8'h88:if(reg_wdata[1] && host_state==IDLE)begin
      if(state!=IDLE || !all_idle || !host_address_ok)window_status<=3'b100;

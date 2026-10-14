@@ -3,11 +3,11 @@
 // This module alone is not a deployable board image.
 `default_nettype none
 module tnca_multicore_axi #(
- parameter NX=3,NY=1,N=NX*NY,CODE_WORDS=16384,MEM_PORTS=1,
+ parameter NX=3,NY=1,N=NX*NY,CODE_WORDS=16384,MEM_PORTS=1,NOC_LINK_STAGES=0,DISPATCH_STAGES=0,MEM_HOME_STAGES=0,
  parameter SRC_W=(N>4?$clog2(N):2),
  parameter NUM_RCTX=4,RCTX_W=2,PHYS_VREGS=256,PHYS_W=8,
  parameter VREGS_PER_RCTX=64,AUTO_VBASE=1,
- parameter HAS_SFU=1,USE_BANKED_VRF=1,VRF_BYPASS=1,FE_NOBUBBLE=1,
+ parameter HAS_SFU=1,HAS_ATOMICS=1,HAS_SYS_ATOMICS=0,USE_BANKED_VRF=1,VRF_BYPASS=1,FE_NOBUBBLE=1,
  parameter VRF_PREFETCH=1,RCTX_SWITCH=2,MTX_ABUF=1,LSU_INFLIGHT=2,
  parameter FPU_OVERLAP=1,RSLICE=1,RPAIR=1,HAS_TENSOR_XPOSE=1,
  parameter SETS=64,SET_W=6,WAYS=8,WAY_W=3,LINK_STAGES=2,AXI_DATA_W=256,AXI_OUT_N=8,
@@ -95,7 +95,7 @@ module tnca_multicore_axi #(
  wire [3:0] shell_done_status;
  wire memory_drained=(&axi_idle) && (&link_idle);
  assign cmd_ready=shell_cmd_ready && memory_drained;
- assign done_valid=shell_done_valid && memory_drained;
+ assign done_valid=shell_done_valid && memory_drained && shell_all_idle;
  assign done_status=(|axi_fault) ? 4'd1 : shell_done_status;
  assign all_idle=shell_all_idle && memory_drained;
  assign busy=shell_busy || !memory_drained;
@@ -105,6 +105,9 @@ module tnca_multicore_axi #(
   .N(N),
   .CODE_WORDS(CODE_WORDS),
   .MEM_PORTS(MEM_PORTS),
+  .NOC_LINK_STAGES(NOC_LINK_STAGES),
+  .DISPATCH_STAGES(DISPATCH_STAGES),
+  .MEM_HOME_STAGES(MEM_HOME_STAGES),
   .SRC_W(SRC_W),
   .NUM_RCTX(NUM_RCTX),
   .RCTX_W(RCTX_W),
@@ -113,6 +116,8 @@ module tnca_multicore_axi #(
   .VREGS_PER_RCTX(VREGS_PER_RCTX),
   .AUTO_VBASE(AUTO_VBASE),
   .HAS_SFU(HAS_SFU),
+  .HAS_ATOMICS(HAS_ATOMICS),
+  .HAS_SYS_ATOMICS(HAS_SYS_ATOMICS),
   .USE_BANKED_VRF(USE_BANKED_VRF),
   .VRF_BYPASS(VRF_BYPASS),
   .FE_NOBUBBLE(FE_NOBUBBLE),
@@ -148,7 +153,7 @@ module tnca_multicore_axi #(
   .cmd_slice(cmd_slice),
   .cmd_vbase(cmd_vbase),
   .done_valid(shell_done_valid),
-  .done_ready(done_ready && memory_drained),
+  .done_ready(done_ready && memory_drained && shell_all_idle),
   .done_status(shell_done_status),
   .done_id(done_id),
   .done_cycles(done_cycles),

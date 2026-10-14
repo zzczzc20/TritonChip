@@ -23,7 +23,7 @@ def main():
                 "iverilog", "-g2012", "-s", "tb_line_axi",
                 f"-Ptb_line_axi.DATA_W={width}",
                 f"-Ptb_line_axi.WRITE_ACK={write_ack}", f"-Ptb_line_axi.STAGES={stages}", f"-Ptb_line_axi.OUT_N={slots}", f"-Ptb_line_axi.MODE={mode}",
-                "-o", output, "rtl/fpga/tnca_line_axi.v", "tb/fpga/tb_line_axi.v", "rtl/fpga/tnca_line_link.v", "rtl/common/tnca_fifo.v",
+                "-o", output, "rtl/fpga/tnca_line_axi.v", "tb/fpga/tb_line_axi.v", "rtl/common/tnca_line_link.v", "rtl/common/tnca_fifo.v",
             ], cwd=ROOT, check=True, timeout=60)
             subprocess.run(["vvp", output], cwd=ROOT, check=True, timeout=60)
     print(f"LINE AXI MATRIX PASS {len(cases)} configurations", flush=True)

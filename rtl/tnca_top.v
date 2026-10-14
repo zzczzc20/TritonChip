@@ -25,6 +25,7 @@ module tnca_top #(
     parameter NX          = 2,
     parameter NY          = 2,
     parameter MEM_PORTS   = 1,
+    parameter NOC_LINK_STAGES=0,DISPATCH_STAGES=0,MEM_HOME_STAGES=0,
     parameter MEM_SRC_W   = (NX*NY>4 ? $clog2(NX*NY) : 2),
     parameter XW          = 2,
     parameter YW          = 2,
@@ -172,8 +173,38 @@ module tnca_top #(
     wire [N*MSHR_W-1:0]     m_rsp_tag;
     wire [N*LINE_BITS-1:0]  m_rsp_rdata;
 
+    wire [N-1:0] home_link_idle;
+    wire [N-1:0] outlet_req_valid,outlet_req_ready,outlet_req_we,outlet_rsp_valid;
+    wire [N*64-1:0] outlet_req_addr;
+    wire [N*LINE_BITS-1:0] outlet_req_wdata,outlet_rsp_rdata;
+    wire [N*MSHR_W-1:0] outlet_req_tag,outlet_rsp_tag;
+    generate if(MEM_HOME_STAGES<0 || (MEM_HOME_STAGES>0 && LINE_BITS!=512))begin:g_bad_home_pipeline
+        tnca_invalid_home_pipeline_geometry invalid_configuration();
+    end endgenerate
+    generate for(genvar h=0;h<N;h=h+1)begin:g_home_link
+        localparam [MEM_SRC_W-1:0] HOME_SRC=h;
+        if(MEM_HOME_STAGES==0)begin:g_direct
+            assign home_link_idle[h]=1'b1;
+            assign outlet_req_valid[h]=m_req_valid[h];assign m_req_ready[h]=outlet_req_ready[h];
+            assign outlet_req_we[h]=m_req_we[h];assign outlet_req_addr[h*64+:64]=m_req_addr[h*64+:64];
+            assign outlet_req_wdata[h*LINE_BITS+:LINE_BITS]=m_req_wdata[h*LINE_BITS+:LINE_BITS];
+            assign outlet_req_tag[h*MSHR_W+:MSHR_W]=m_req_tag[h*MSHR_W+:MSHR_W];
+            assign m_rsp_valid[h]=outlet_rsp_valid[h];assign m_rsp_tag[h*MSHR_W+:MSHR_W]=outlet_rsp_tag[h*MSHR_W+:MSHR_W];
+            assign m_rsp_rdata[h*LINE_BITS+:LINE_BITS]=outlet_rsp_rdata[h*LINE_BITS+:LINE_BITS];
+        end else begin:g_pipeline
+            tnca_line_link #(.SRC_W(MEM_SRC_W),.TAG_W(MSHR_W),.STAGES(MEM_HOME_STAGES)) link(
+                .clk(clk),.rst_n(rst_n),.idle(home_link_idle[h]),
+                .s_req_valid(m_req_valid[h]),.s_req_ready(m_req_ready[h]),.s_req_addr(m_req_addr[h*64+:64]),
+                .s_req_we(m_req_we[h]),.s_req_wdata(m_req_wdata[h*LINE_BITS+:LINE_BITS]),.s_req_src(HOME_SRC),.s_req_tag(m_req_tag[h*MSHR_W+:MSHR_W]),
+                .s_rsp_valid(m_rsp_valid[h]),.s_rsp_rdata(m_rsp_rdata[h*LINE_BITS+:LINE_BITS]),.s_rsp_src(),.s_rsp_tag(m_rsp_tag[h*MSHR_W+:MSHR_W]),
+                .m_req_valid(outlet_req_valid[h]),.m_req_ready(outlet_req_ready[h]),.m_req_addr(outlet_req_addr[h*64+:64]),
+                .m_req_we(outlet_req_we[h]),.m_req_wdata(outlet_req_wdata[h*LINE_BITS+:LINE_BITS]),.m_req_src(),.m_req_tag(outlet_req_tag[h*MSHR_W+:MSHR_W]),
+                .m_rsp_valid(outlet_rsp_valid[h]),.m_rsp_rdata(outlet_rsp_rdata[h*LINE_BITS+:LINE_BITS]),.m_rsp_src(HOME_SRC),.m_rsp_tag(outlet_rsp_tag[h*MSHR_W+:MSHR_W]));
+        end
+    end endgenerate
+
     wire [N-1:0] tile_idle;
-    assign all_idle = &tile_idle;
+    assign all_idle = (&tile_idle) && !(|dispatch_busy) && (&home_link_idle);
 
     wire [N-1:0] tile_launch, dispatch_busy;
     wire [N-1:0] host_readies, host_responses, host_busy_tiles;
@@ -189,11 +220,17 @@ module tnca_top #(
     wire [NUM_RCTX-1:0] tile_roles;
     wire [3:0] tile_slice;
     wire [NUM_RCTX*PHYS_W-1:0] tile_vbase;
+    wire [N*64-1:0] launch_pcs,launch_args;
+    wire [N*192-1:0] launch_grids;
+    wire [N*NUM_RCTX-1:0] launch_roles;
+    wire [N*4-1:0] launch_slices;
+    wire [N*NUM_RCTX*PHYS_W-1:0] launch_vbases;
     generate if (GLOBAL_GRID) begin: g_dispatch
         reg [NUM_RCTX-1:0] roles_q;
         reg [3:0] slice_q;
         reg [NUM_RCTX*PHYS_W-1:0] vbase_q;
-        wire [N-1:0] command_valid;
+        wire [N-1:0] command_valid,command_ready,completion_valid,completion_abort;
+        wire [N*4-1:0] completion_status;
         wire [N*4-1:0] status;
         for(genvar d=0;d<N;d=d+1) begin: g_status
             assign status[d*4+:4]=fault_valid[d] ? 4'd1 : 4'd0;
@@ -205,22 +242,55 @@ module tnca_top #(
         assign grid_ready=dispatch_ready && !host_busy;
         assign tile_slice=slice_q;
         assign tile_roles=roles_q;assign tile_vbase=vbase_q;
-        assign tile_launch=command_valid & tile_idle;
+        localparam COMMAND_W=128+192+NUM_RCTX+4+NUM_RCTX*PHYS_W;
+        for(genvar c=0;c<N;c=c+1)begin:g_command_link
+            wire cv,cr;
+            wire [COMMAND_W-1:0] payload;
+            tnca_elastic_link #(.W(COMMAND_W),.STAGES(DISPATCH_STAGES)) commands(
+                .clk(clk),.rst_n(rst_n),.in_valid(command_valid[c]),.in_ready(command_ready[c]),
+                .in_data({dispatch_pc,dispatch_args[c*64+:64],dispatch_x[c*32+:32],dispatch_y[c*32+:32],dispatch_z[c*32+:32],dispatch_nx,dispatch_ny,dispatch_nz,tile_roles,tile_slice,tile_vbase}),
+                .out_valid(cv),.out_ready(cr),.out_data(payload),.empty());
+            assign {launch_pcs[c*64+:64],launch_args[c*64+:64],launch_grids[c*192+:192],launch_roles[c*NUM_RCTX+:NUM_RCTX],launch_slices[c*4+:4],launch_vbases[c*NUM_RCTX*PHYS_W+:NUM_RCTX*PHYS_W]}=payload;
+            if(DISPATCH_STAGES==0)begin:g_direct
+                assign cr=tile_idle[c];assign tile_launch[c]=cv && cr;
+                assign completion_valid[c]=dispatch_busy[c] && tile_idle[c];
+                assign completion_abort[c]=fault_valid[c];assign completion_status[c*4+:4]=status[c*4+:4];
+            end else begin:g_pipeline
+                reg started;
+                wire ready;
+                assign cr=tile_idle[c] && !started;
+                assign tile_launch[c]=cv && cr;
+                always @(posedge clk)begin
+                    if(!rst_n)started<=0;
+                    else begin
+                        if(tile_launch[c])started<=1;
+                        if(started && tile_idle[c] && ready)started<=0;
+                    end
+                end
+                tnca_elastic_link #(.W(4),.STAGES(DISPATCH_STAGES)) completions(
+                    .clk(clk),.rst_n(rst_n),.in_valid(started && tile_idle[c]),.in_ready(ready),.in_data(status[c*4+:4]),
+                    .out_valid(completion_valid[c]),.out_ready(1'b1),.out_data(completion_status[c*4+:4]),.empty());
+                assign completion_abort[c]=completion_valid[c] && completion_status[c*4+:4]!=0;
+            end
+        end
         tnca_grid_dispatch #(.CORE_N(N)) u_dispatch (
             .clk(clk),.rst_n(rst_n),.abort_valid(grid_abort || (|memory_protocol_fault)),.abort_status((|memory_protocol_fault) ? 4'd1 : grid_abort_status),.launch_valid(grid_valid && !host_busy),.launch_ready(dispatch_ready),
             .launch_group_log2(grid_group_log2),.launch_id(grid_id),.launch_pc(launch_pc),.launch_arg_base(launch_arg_base),
             .launch_arg_stride(grid_arg_stride),.launch_gx(grid_x),.launch_gy(grid_y),.launch_gz(grid_z),
             .launch_cores((|launch_role_mask) ? grid_cores : {N{1'b0}}),
-            .cmd_valid(command_valid),.cmd_ready(tile_idle),.cmd_id(),.cmd_pc(dispatch_pc),
+            .cmd_valid(command_valid),.cmd_ready(command_ready),.cmd_id(),.cmd_pc(dispatch_pc),
             .cmd_arg_base(dispatch_args),.cmd_x(dispatch_x),.cmd_y(dispatch_y),.cmd_z(dispatch_z),
             .cmd_nx(dispatch_nx),.cmd_ny(dispatch_ny),.cmd_nz(dispatch_nz),.cmd_cancel(),
-            .core_done(dispatch_busy & tile_idle),.core_abort(fault_valid),.core_status(status),
+            .core_done(completion_valid),.core_abort(completion_abort),.core_status(completion_status),
             .done_valid(grid_done_valid),.done_ready(grid_done_ready),.done_status(grid_done_status),
             .done_id(grid_done_id),.done_cycles(grid_done_cycles),.fault_core(grid_fault_core),
             .core_busy(dispatch_busy),.issued(grid_issued),.completed(grid_completed),
             .peak_active(grid_peak_active),.active_cycles(grid_active_cycles));
     end else begin: g_legacy_launch
         assign tile_launch={N{launch_valid}};
+        assign launch_pcs={N{launch_pc}};assign launch_args={N{launch_arg_base}};
+        assign launch_grids=0;assign launch_roles={N{launch_role_mask}};
+        assign launch_slices=0;assign launch_vbases={N{launch_vbase}};
         assign tile_slice=0;
         assign tile_roles=launch_role_mask;assign tile_vbase=launch_vbase;
         assign dispatch_pc=launch_pc;assign dispatch_args={N{launch_arg_base}};
@@ -310,13 +380,13 @@ module tnca_top #(
                 .TMU_BASE(TMU_BASE)
             ) u_tile (
                 .clk(clk), .rst_n(rst_n),
-                .launch_valid(tile_launch[t]), .launch_pc(dispatch_pc),
-                .launch_role_mask(tile_roles),
-                .launch_arg_base(dispatch_args[t*64+:64]),
-                .launch_vbase(tile_vbase),
-                .grid_slice(tile_slice), .grid_pid_x(dispatch_x[t*32+:32]), .grid_pid_y(dispatch_y[t*32+:32]),
-                .grid_pid_z(dispatch_z[t*32+:32]), .grid_npid_x(dispatch_nx),
-                .grid_npid_y(dispatch_ny), .grid_npid_z(dispatch_nz),
+                .launch_valid(tile_launch[t]), .launch_pc(launch_pcs[t*64+:64]),
+                .launch_role_mask(launch_roles[t*NUM_RCTX+:NUM_RCTX]),
+                .launch_arg_base(launch_args[t*64+:64]),
+                .launch_vbase(launch_vbases[t*NUM_RCTX*PHYS_W+:NUM_RCTX*PHYS_W]),
+                .grid_slice(launch_slices[t*4+:4]), .grid_pid_x(launch_grids[t*192+160+:32]), .grid_pid_y(launch_grids[t*192+128+:32]),
+                .grid_pid_z(launch_grids[t*192+96+:32]), .grid_npid_x(launch_grids[t*192+64+:32]),
+                .grid_npid_y(launch_grids[t*192+32+:32]), .grid_npid_z(launch_grids[t*192+:32]),
                 .host_allow(host_allow), .host_valid(host_valid && t==0), .host_we(host_we),
                 .host_addr(host_addr), .host_wdata(host_wdata), .host_be(host_be),
                 .host_ready(host_readies[t]), .host_rsp_valid(host_responses[t]),
@@ -370,7 +440,7 @@ module tnca_top #(
     tnca_mesh #(
         .NX(NX), .NY(NY), .XW(XW), .YW(YW),
         .PAYLOAD_W(`TNCA_NOC_PAYLOAD_W), .NV(NV),
-        .DEPTH(NOC_DEPTH), .AW(NOC_AW)
+        .DEPTH(NOC_DEPTH), .AW(NOC_AW),.LINK_STAGES(NOC_LINK_STAGES)
     ) u_mesh (
         .clk(clk), .rst_n(rst_n),
         .l_in_valid(li_valid), .l_in_ready(li_ready), .l_in_flit(li_flit),
@@ -397,11 +467,11 @@ module tnca_top #(
         .N(N), .N_W(MEM_SRC_W), .ADDR_W(64), .LINE_BITS(LINE_BITS), .TAG_W(MSHR_W)
     ) u_marb (
         .clk(clk), .rst_n(rst_n),
-        .s_req_valid(m_req_valid), .s_req_ready(m_req_ready),
-        .s_req_addr(m_req_addr), .s_req_we(m_req_we),
-        .s_req_wdata(m_req_wdata), .s_req_tag(m_req_tag),
-        .s_rsp_valid(m_rsp_valid), .s_rsp_tag(m_rsp_tag),
-        .s_rsp_rdata(m_rsp_rdata),
+        .s_req_valid(outlet_req_valid), .s_req_ready(outlet_req_ready),
+        .s_req_addr(outlet_req_addr), .s_req_we(outlet_req_we),
+        .s_req_wdata(outlet_req_wdata), .s_req_tag(outlet_req_tag),
+        .s_rsp_valid(outlet_rsp_valid), .s_rsp_tag(outlet_rsp_tag),
+        .s_rsp_rdata(outlet_rsp_rdata),
         .m_req_valid(mem_req_valid), .m_req_ready(mem_req_ready),
         .m_req_addr(mem_req_addr), .m_req_we(mem_req_we),
         .m_req_wdata(mem_req_wdata), .m_req_tag(mem_req_tag),
@@ -423,9 +493,9 @@ module tnca_top #(
         assign mem_req_wdata=0;assign mem_req_tag=0;assign mem_req_src=0;
         tnca_mem_ports #(.N(N),.PORTS(MEM_PORTS),.N_W(MEM_SRC_W),
           .LINE_BITS(LINE_BITS),.TAG_W(MSHR_W)) outlets(
-          .clk(clk),.rst_n(rst_n),.s_req_valid(m_req_valid),.s_req_ready(m_req_ready),
-          .s_req_addr(m_req_addr),.s_req_we(m_req_we),.s_req_wdata(m_req_wdata),.s_req_tag(m_req_tag),
-          .s_rsp_valid(m_rsp_valid),.s_rsp_tag(m_rsp_tag),.s_rsp_rdata(m_rsp_rdata),
+          .clk(clk),.rst_n(rst_n),.s_req_valid(outlet_req_valid),.s_req_ready(outlet_req_ready),
+          .s_req_addr(outlet_req_addr),.s_req_we(outlet_req_we),.s_req_wdata(outlet_req_wdata),.s_req_tag(outlet_req_tag),
+          .s_rsp_valid(outlet_rsp_valid),.s_rsp_tag(outlet_rsp_tag),.s_rsp_rdata(outlet_rsp_rdata),
           .m_req_valid(ports_req_valid),.m_req_ready(ports_req_ready),.m_req_addr(ports_req_addr),
           .m_req_we(ports_req_we),.m_req_wdata(ports_req_wdata),.m_req_tag(ports_req_tag),
           .m_req_src(ports_req_src),.m_rsp_valid(ports_rsp_valid),.m_rsp_tag(ports_rsp_tag),

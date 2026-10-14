@@ -20,6 +20,7 @@
 `timescale 1ns/1ps
 
 module tb_mesh;
+    parameter LINK_STAGES=0;
 
     localparam NX = 2, NY = 2, N = NX*NY;
     localparam XW = 2, YW = 2;
@@ -39,7 +40,7 @@ module tb_mesh;
 
     tnca_mesh #(
         .NX(NX), .NY(NY), .XW(XW), .YW(YW),
-        .PAYLOAD_W(PAYLOAD_W), .NV(NV), .DEPTH(4), .AW(2)
+        .PAYLOAD_W(PAYLOAD_W), .NV(NV), .DEPTH(4), .AW(2), .LINK_STAGES(LINK_STAGES)
     ) dut (
         .clk(clk), .rst_n(rst_n),
         .l_in_valid(li_valid), .l_in_ready(li_ready), .l_in_flit(li_flit),

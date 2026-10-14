@@ -373,3 +373,20 @@ The second cleared the routing congestion of an SLR whose CLBs were 97.7 % used.
 the files. This is now the flow's default: 100 MHz in the four places, and
 `DEV_DIV = 1`.
 
+
+R40 three-core HBM packaging uses `multicore-hbm`,
+`rtl/board/tnca_multicore_hbm_xo.v`, and `fpga/kernel_multicore_hbm.xml`.
+Generate a frozen config with `tools/r40/image_profile.py --profile core-vrf-sync-v5
+--multicore-hbm --out <build>/image.tcl`, then set `TNCA_IMAGE_CONFIG` when invoking
+`package_xo.tcl`. The wrapper has three physical tiles, three named 256-bit masters,
+and two-stage NoC/dispatch/home/outlet pipelines. `--memory-ports 1` makes a
+single-outlet ablation with the same physical tiles and cache capacity.
+
+All three XML buffer arguments must use the identical allocation. The connectivity
+input `fpga/u280_multicore_hbm.cfg` gives each argument the same 32-PC HBM group;
+the board binding checks the resulting xclbin group indices before allocation.
+Use the board-specific `place_r40_multicore.tcl` as the linked implementation's
+`PLACE_DESIGN.TCL.PRE` hook. It fails on missing tile/router/pipeline hierarchy.
+Confirm SLR0/1/2 occupancy, timing, reset/CDC and each port's real traffic in the
+routed image before claiming acceptance. `synth_r40_multicore.tcl` produces a
+separate diagnostic OOC checkpoint and reports; it does not sign off the image.

@@ -4,8 +4,12 @@ import argparse,json,os,sys
 from pathlib import Path
 ROOT=Path(__file__).resolve().parents[2]
 for path in (ROOT/'python',ROOT/'compiler/python',ROOT/'tools/asm'):sys.path.insert(0,str(path))
-parser=argparse.ArgumentParser();parser.add_argument('--backend',choices=('sim-multicore','fpga-multicore-sim'),default='sim-multicore');parser.add_argument('--cores',type=int,default=3,choices=(1,2,3,4,8));parser.add_argument('--ports',type=int,default=3);args=parser.parse_args()
-os.environ.update(TNCA_PROFILE='core-vrf-sync-v5',TNCA_BACKEND=args.backend,TNCA_BACKEND_ARGS=json.dumps({'core_count':args.cores,'memory_ports':args.ports}),TNCA_RCTX_SPMD='1')
+parser=argparse.ArgumentParser();parser.add_argument('--backend',choices=('sim-multicore','fpga-multicore-sim'),default='sim-multicore');parser.add_argument('--cores',type=int,default=3,choices=(1,2,3,4,8));parser.add_argument('--ports',type=int,default=3);parser.add_argument('--pipeline',type=int,default=0);parser.add_argument('--board-top',action='store_true');args=parser.parse_args()
+extra={}
+if args.pipeline or args.board_top:
+    if args.backend!='fpga-multicore-sim':parser.error('pipeline/board-top selects the MMIO AXI RTL stand-in')
+    extra=dict(noc_link_stages=args.pipeline,dispatch_stages=args.pipeline,home_stages=args.pipeline,board_top=args.board_top)
+os.environ.update(TNCA_PROFILE='core-vrf-sync-v5',TNCA_BACKEND=args.backend,TNCA_BACKEND_ARGS=json.dumps({'core_count':args.cores,'memory_ports':args.ports,**extra}),TNCA_RCTX_SPMD='1')
 os.environ.setdefault('TNCA_HOST_TIMEOUT','1800')
 import torch
 import triton

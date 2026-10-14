@@ -1,8 +1,8 @@
 """Opt-in v2 register binding; no legacy image or simulator substitution."""
 import operator
 
-from ..errors import ArgumentError, DeviceLost
-from .u50 import U50Backend, XDMALink, IP_NAME, DEFAULT_WORDS
+from ..errors import ArgumentError, DeviceLost, DependencyFailed
+from .u50 import U50Backend, XDMALink, IP_NAME, DEFAULT_WORDS, _xclbin_bank
 
 
 class MulticoreMMIOBackend(U50Backend):
@@ -14,8 +14,8 @@ class MulticoreMMIOBackend(U50Backend):
                  hbm_dma=False, **kwargs):
         self.core_count = operator.index(core_count)
         self.memory_ports = operator.index(memory_ports)
-        if not 1 <= self.memory_ports <= self.core_count <= 16:
-            raise ArgumentError('memory_ports/core_count must satisfy 1 <= ports <= cores <= 16')
+        if not (1 <= self.memory_ports <= min(3, self.core_count) and self.core_count <= 16):
+            raise ArgumentError('MMIO v2 needs 1..3 outlets and 1..16 cores, with ports <= cores')
         if bool(int(hbm_dma)):
             raise ArgumentError('multicore DMA bypass needs an implemented ownership transfer')
         kwargs['image_profile'] = kwargs.get('image_profile') or 'core-vrf-sync-v5'
@@ -58,11 +58,23 @@ class MulticoreMMIOBackend(U50Backend):
             return reply
 
 
+class MulticoreXDMALink(XDMALink):
+    """The platform's three argument aliases require one reachable BO group."""
+    def hbm_open(self, nbytes):
+        if self._accessor is None or not hasattr(self._accessor, 'bo_open'):
+            return None
+        banks = [_xclbin_bank(self.xclbin, self.ip_name, arg_index=i) for i in range(3)]
+        if any(not bank['used'] for bank in banks) or len({bank['index'] for bank in banks}) != 1:
+            raise DependencyFailed('multicore AXI masters must share the same XRT allocation group',
+                                   detail={'banks': banks})
+        return super().hbm_open(nbytes)
+
+
 def board(**kwargs):
     kwargs.pop('bench', None)
     link = kwargs.pop('link', None)
     if link is None:
-        link = XDMALink(xclbin=kwargs.pop('xclbin', None),
+        link = MulticoreXDMALink(xclbin=kwargs.pop('xclbin', None),
                         accessor=kwargs.pop('accessor', None),
                         index=kwargs.pop('index', 0),
                         ip_name=kwargs.pop('ip_name', IP_NAME),

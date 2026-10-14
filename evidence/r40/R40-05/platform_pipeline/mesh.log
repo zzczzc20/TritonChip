@@ -1,0 +1,25 @@
+LINK_STAGES=1
+---- mesh 2x2, 2 VNs ----
+seed=40 trace_hash=41f0721587d8644a
+sent=20000 received=20000 pairs_covered=32/32 backpressure_cycles=6078
+PASS
+tb/noc/tb_mesh.v:256: $finish called at 37276000 (1ps)
+LINK_STAGES=2
+---- mesh 2x2, 2 VNs ----
+seed=40 trace_hash=25630c120deb1df9
+sent=20000 received=20000 pairs_covered=32/32 backpressure_cycles=6198
+PASS
+tb/noc/tb_mesh.v:256: $finish called at 36456000 (1ps)
+LINK_STAGES=2
+---- mesh 2x2, 2 VNs ----
+seed=41 trace_hash=281cee56fc8de209
+sent=20000 received=20000 pairs_covered=32/32 backpressure_cycles=6167
+PASS
+tb/noc/tb_mesh.v:256: $finish called at 37046000 (1ps)
+LINK_STAGES=4
+---- mesh 2x2, 2 VNs ----
+seed=41 trace_hash=94dc13046b515d9f
+sent=20000 received=20000 pairs_covered=32/32 backpressure_cycles=6331
+PASS
+tb/noc/tb_mesh.v:256: $finish called at 35946000 (1ps)
+MESH PIPELINE PASS 4 randomized configurations

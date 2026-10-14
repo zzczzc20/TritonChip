@@ -2,6 +2,7 @@
 
 版本：0.1，2026-10-10。状态：**PROPOSED / NOT ACCEPTED**。
 执行状态（2026-10-14）：R40-00 已关闭（`evidence/r40/R40-00/`）；R40-01/04 继续推进原生设备、HBM 与共同计时验收。R40-05 的全局 dispatcher、bounded role chunks、原生三/八核及 descriptor/pair 功能证据已提交（`evidence/r40/R40-05/role_chunks/`）。R40-06 的独立多出口、公共协商与实际仿真流量已提交（`evidence/r40/R40-06/memory_ports/`）；缓存行 AXI 与 elastic link 的联合功能证据见 `evidence/r40/R40-06/line_axi/`。R40-05/06 的三 SLR/HBM 板级、性能、locality/DCO 等验收仍未关闭；这些功能子项不等同于工作包签收。
+R40-05/06 跨区流水与三路 AXI 板级顶层的功能 checkpoint 见 `evidence/r40/R40-05/platform_pipeline/`：AXI-Lite 提交、NoC 随机背压、模块综合与 XO 打包已验证；实际三 SLR placement/route、上板和性能签收仍待完成。
 起点：R39 尾声；本次审查为 `r39` 分支、HEAD `3a546702db3fda63547b4c1ff0a9d779a6c5cfbe`，工作区另有未提交的 R39 改动。正式起点由 R40-00 冻结，不能把当前工作区或尚未签收的镜像当作基线。
 签收名：`R40_NATIVE_DEVICE_SCALABLE_NUCA_HBM`。
 上位与前序：[R39 tasks & acceptance](r39_tasks_and_acceptance.md)、[R39 报告](r39_report.md)、[ArchBench 协议](../archbench/PROTOCOL.md)。仓库阶段文档目录为 `doc/`，本文沿用此惯例。

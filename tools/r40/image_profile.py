@@ -35,6 +35,9 @@ def main():
     ap.add_argument('--profile', required=True)
     ap.add_argument('--out', type=Path, required=True)
     ap.add_argument('--hbm', action='store_true')
+    ap.add_argument('--multicore-hbm', action='store_true')
+    ap.add_argument('--memory-ports', type=int, choices=(1, 2, 3), default=3)
+    ap.add_argument('--link-stages', type=int, default=2)
     ap.add_argument('--line-beats', type=int, choices=(0, 2, 4, 8, 16), default=0)
     ap.add_argument('--outstanding', type=int, default=8)
     ap.add_argument('--lines', type=int, default=8)
@@ -46,7 +49,16 @@ def main():
                     help='store burst lines in synchronous dual-port RAM')
     args = ap.parse_args()
     params = parameters(args.profile)
-    if args.hbm:
+    if args.multicore_hbm:
+        if args.hbm or args.line_beats or args.local_pipeline or args.ram_cache:
+            ap.error('multicore HBM uses the native line adapter, not the single-core bridge')
+        if args.link_stages < 1 or not 1 <= args.outstanding <= 16:
+            ap.error('multicore HBM needs positive pipeline stages and 1..16 outstanding slots')
+        params.update(MEM_PORTS=args.memory_ports, AXI_DATA_W=256, AXI_OUT_N=args.outstanding,
+                      AXI_ID_W=max(1, (args.outstanding - 1).bit_length()),
+                      NOC_LINK_STAGES=args.link_stages, DISPATCH_STAGES=args.link_stages,
+                      MEM_HOME_STAGES=args.link_stages, LINK_STAGES=args.link_stages)
+    elif args.hbm:
         if not (1 <= args.outstanding <= 16 and 1 <= args.lines <= 16
                 and args.waiters >= 1 and args.prefetch >= 0):
             ap.error('HBM slot counts must fit the bridge and its 5-bit AXI IDs')
@@ -63,7 +75,7 @@ def main():
         ap.error('--local-pipeline requires --hbm')
     elif args.ram_cache:
         ap.error('--ram-cache requires --hbm')
-    manifest = dict(profile=args.profile, variant='hbm' if args.hbm else 'onchip',
+    manifest = dict(profile=args.profile, variant='multicore-hbm' if args.multicore_hbm else ('hbm' if args.hbm else 'onchip'),
                     parameters=params,
                     profiles_sha256=hashlib.sha256((ROOT / 'spec/r1_profiles.json').read_bytes()).hexdigest())
     args.out.parent.mkdir(parents=True, exist_ok=True)

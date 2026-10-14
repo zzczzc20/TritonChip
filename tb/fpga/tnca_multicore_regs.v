@@ -2,7 +2,7 @@
 `timescale 1ns/1ps
 `default_nettype none
 module tnca_multicore_regs;
- parameter N=3,PORTS=3,MEMORY_BYTES=1048576,STAGES=2;
+ parameter N=3,PORTS=3,MEMORY_BYTES=1048576,STAGES=2,NOC_PIPE=0,DISPATCH_PIPE=0,HOME_PIPE=0;
  localparam NX=N>4?4:N,ADDR_BITS=8,WORDS=(131072+MEMORY_BYTES)/8;
  reg clk=0,rst_n_async=0;always #5 clk=~clk;
  reg [7:0] reg_addr;reg [63:0] reg_wdata;reg reg_we,reg_re;
@@ -36,7 +36,7 @@ module tnca_multicore_regs;
  wire [PORTS*3-1:0] m_rid;
  wire [PORTS*2-1:0] m_rresp;
  wire [PORTS-1:0] m_rlast;
- tnca_multicore_fpga #(.NX(NX),.NY(N/NX),.MEM_PORTS(PORTS),.LINK_STAGES(STAGES),.SETS(4),.SET_W(2),.WAYS(2),.WAY_W(1)) dut(
+ tnca_multicore_fpga #(.NX(NX),.NY(N/NX),.MEM_PORTS(PORTS),.LINK_STAGES(STAGES),.NOC_LINK_STAGES(NOC_PIPE),.DISPATCH_STAGES(DISPATCH_PIPE),.MEM_HOME_STAGES(HOME_PIPE),.SETS(4),.SET_W(2),.WAYS(2),.WAY_W(1)) dut(
  .clk(clk),.rst_n(rst_n_async),.reg_addr(reg_addr),.reg_wdata(reg_wdata),.reg_we(reg_we),.reg_re(reg_re),.reg_rdata(reg_rdata),
  .m_awvalid(m_awvalid),
  .m_awready(m_awready),

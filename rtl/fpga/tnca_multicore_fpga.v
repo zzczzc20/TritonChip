@@ -4,18 +4,18 @@
 // DMA bypass remains refused until ownership transfer is implemented.
 `default_nettype none
 module tnca_multicore_fpga #(
- parameter NX=3,NY=1,N=NX*NY,CODE_WORDS=16384,MEM_PORTS=1,
+ parameter NX=3,NY=1,N=NX*NY,CODE_WORDS=16384,MEM_PORTS=1,NOC_LINK_STAGES=0,DISPATCH_STAGES=0,MEM_HOME_STAGES=0,
  parameter SRC_W=(N>4?$clog2(N):2),
  parameter NUM_RCTX=4,RCTX_W=2,PHYS_VREGS=256,PHYS_W=8,
  parameter VREGS_PER_RCTX=64,AUTO_VBASE=1,
- parameter HAS_SFU=1,USE_BANKED_VRF=1,VRF_BYPASS=1,FE_NOBUBBLE=1,
+ parameter HAS_SFU=1,HAS_ATOMICS=1,HAS_SYS_ATOMICS=0,USE_BANKED_VRF=1,VRF_BYPASS=1,FE_NOBUBBLE=1,
  parameter VRF_PREFETCH=1,RCTX_SWITCH=2,MTX_ABUF=1,LSU_INFLIGHT=2,
  parameter FPU_OVERLAP=1,RSLICE=1,RPAIR=1,HAS_TENSOR_XPOSE=1,
  parameter SETS=64,SET_W=6,WAYS=8,WAY_W=3,LINK_STAGES=2,AXI_DATA_W=256,AXI_OUT_N=8,
- parameter AXI_ID_W=(AXI_OUT_N>1?$clog2(AXI_OUT_N):1),MEM_BASE=64'h20000
+ parameter AXI_ID_W=(AXI_OUT_N>1?$clog2(AXI_OUT_N):1),MEM_BASE=64'h20000,REG_ADDR_W=8
 )(
  input wire clk,rst_n,
- input wire [7:0] reg_addr,input wire [63:0] reg_wdata,
+ input wire [REG_ADDR_W-1:0] reg_addr,input wire [63:0] reg_wdata,
  input wire reg_we,reg_re,output wire [63:0] reg_rdata,
  output wire [MEM_PORTS-1:0] axi_fault,axi_idle,link_idle,
  output wire [MEM_PORTS*64-1:0] axi_read_lines,axi_write_lines,axi_read_beats,axi_write_beats,
@@ -92,6 +92,9 @@ wire cmd_valid;
   .N(N),
   .CODE_WORDS(CODE_WORDS),
   .MEM_PORTS(MEM_PORTS),
+  .NOC_LINK_STAGES(NOC_LINK_STAGES),
+  .DISPATCH_STAGES(DISPATCH_STAGES),
+  .MEM_HOME_STAGES(MEM_HOME_STAGES),
   .SRC_W(SRC_W),
   .NUM_RCTX(NUM_RCTX),
   .RCTX_W(RCTX_W),
@@ -100,6 +103,8 @@ wire cmd_valid;
   .VREGS_PER_RCTX(VREGS_PER_RCTX),
   .AUTO_VBASE(AUTO_VBASE),
   .HAS_SFU(HAS_SFU),
+  .HAS_ATOMICS(HAS_ATOMICS),
+  .HAS_SYS_ATOMICS(HAS_SYS_ATOMICS),
   .USE_BANKED_VRF(USE_BANKED_VRF),
   .VRF_BYPASS(VRF_BYPASS),
   .FE_NOBUBBLE(FE_NOBUBBLE),
@@ -203,7 +208,7 @@ wire cmd_valid;
   .m_rresp(m_rresp),
   .m_rlast(m_rlast)
  );
- tnca_multicore_mmio #(.N(N),.PORTS(MEM_PORTS),.NUM_RCTX(NUM_RCTX),.PHYS_W(PHYS_W),.CODE_WORDS(CODE_WORDS),.MEM_BASE(MEM_BASE)) control(
+ tnca_multicore_mmio #(.N(N),.PORTS(MEM_PORTS),.NUM_RCTX(NUM_RCTX),.PHYS_W(PHYS_W),.CODE_WORDS(CODE_WORDS),.MEM_BASE(MEM_BASE),.REG_ADDR_W(REG_ADDR_W)) control(
   .clk(clk),
   .rst_n(rst_n),
   .reg_addr(reg_addr),

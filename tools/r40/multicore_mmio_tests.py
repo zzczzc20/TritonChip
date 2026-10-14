@@ -16,6 +16,8 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--cores', type=int, choices=(1, 2, 3, 4, 8), default=3)
     parser.add_argument('--ports', type=int, default=3)
+    parser.add_argument('--board-top', action='store_true')
+    parser.add_argument('--pipeline', type=int, default=0)
     args = parser.parse_args()
     with tempfile.TemporaryDirectory(prefix='r40-mmio-') as temp:
         image = Path(temp) / 'grid.bin'
@@ -24,7 +26,8 @@ def main():
                         '--size', '256'], cwd=ROOT, check=True, timeout=30)
         code = b''.join(int(line, 16).to_bytes(8, 'little')
                         for line in image.with_suffix('.hex').read_text().splitlines())
-        dev = stand_in(core_count=args.cores, memory_ports=args.ports, host_timeout=1800)
+        dev = stand_in(core_count=args.cores, memory_ports=args.ports, host_timeout=1800,
+                       noc_link_stages=args.pipeline, dispatch_stages=args.pipeline, home_stages=args.pipeline, board_top=args.board_top)
         try:
             dev.start()
             assert dev.request(8).status == 3
@@ -36,6 +39,11 @@ def main():
             assert dev.upload(0, code).ok
             reply, data = dev.download(0, len(code))
             assert reply.ok and data == code
+            if args.board_top:
+                base=dev.link.read_reg(0xa8)
+                for alias in (0x100,0x108):
+                    dev.link.write_reg(alias,base)
+                    assert dev.link.read_reg(alias)==base and dev.link.read_reg(0xa8)==base
             before = dev.physical_grid_metrics()
             rejected = dev.request(11, 0, 0x40000, 0x1000, 13 | (7 << 32),
                                    5 | (((1 << args.cores) - 1) << 32), 256)

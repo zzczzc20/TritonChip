@@ -1,6 +1,6 @@
 # R40 交付关键路径与集中验证计划
 
-更新：2026-10-14；盘点源码：`25c2049`。验收合同仍是
+更新：2026-10-14；本轮盘点源码：`3ee636e`（另有未提交的 autotune 基础实现）。验收合同仍是
 `doc/r40_tasks_and_acceptance.md` 和 `spec/r40/plan.json`，本计划不修改门限。
 
 ## 当前阻塞
@@ -8,7 +8,8 @@
 只读运行 `tools/r40/acceptance.py`：36 个必需 gate，5 个通过。
 R40-00 已关闭；R40-01 device/mixed-device 通过，device-time 失败。
 其余工作包均未关闭。已有 RTL/板上 checkpoint 不自动等于完整 gate。
-R40-05～09 的正式 Make target 缺失，必须补齐实际执行与证据汇总入口。
+R40-05/06/07 已有正式 Make target；R40-08/09 入口仍缺失，必须补齐
+实际执行与证据汇总，已有入口也需要完整板测证据。
 
 R40-01 原生全量 77/77 正确，但相对 B39 的 S_geo=0.5872。
 同一 HBM 镜像的 CPU/native 对照在 75 个成功共同点上约为 0.999，
@@ -17,6 +18,47 @@ R40-01 原生全量 77/77 正确，但相对 B39 的 S_geo=0.5872。
 构建，仅为候选，尚未证明能消除回退。
 
 ## 四批实施及退出条件
+
+### 执行排程：下一批先做什么
+
+按硬件依赖排程，而不是按工作包编号逐项串行。板卡实验串行；跳板机
+软件/RTL 验证与 FPGA server 构建并行。以下是执行优先级，不是通过预测。
+
+| 顺序 | 一次实施的边界 | 批次结束的验证 | 决定下一步的结果 |
+|---|---|---|---|
+| A：立即 | 收齐现有 hybrid / 三核构建；审查 ownership/code2 OOC 和 placement；修复 autotune 设备记录接口，补齐 08/09 runner 与 manifest | gate 入口与失败传播；计时/缓存/预算检查；native 候选数值、零 staging、日志隔离 | 入口完整；候选硬件身份可追溯；明确性能回退与硬件风险 |
+| B：最终 RTL 前 | 从标准图计数确认瓶颈，集中完成宽入口/并发、矩阵服务时间、ownership/fault、atomic/fence 与 locality/DCO；同步完善编译资源与 spill | 受影响合同、资源边界、随机背压/故障、核数/端口矩阵和真实 overlap；随后 OOC/placement | RTL 功能闭环、资源/时序可行，冻结最终配置并启动完整 link |
+| C：link 期间 | 完成标准 attention、KV/bucket、replay/1000-call stress、预算共享与持久缓存、自动选择接入和大模型；准备所有 A/B/LOO 运行清单 | 对应功能与生命周期矩阵；标准 Torch 全图/零 fallback；样本/配置身份审计 | 软件功能及正式实验脚本就绪，避免镜像完成后再等待软件 |
+| D：最终板测 | 同一冻结镜像按机制分组跑全量正确性、性能、消融、交互和 GPU 对照 | 冻结 5 warmup/30 timed/3 blocks（长任务用已登记例外）；独立 session；最终 CI 与全部 36 gate | 所有必需 gate 通过才关闭 R40；失败回到具体机制，不降低门限 |
+
+2026-10-14 本轮检查：hybrid link 已进入 bitstream generation；旧三核
+link 仍在 routing；ownership/code2 OOC 尚无终验结论。保留活作业，
+不启动重复 route。hybrid 完成后先审核 timing/CDC/镜像身份，再板测
+最差 transpose 和 streaming，判断是否值得启动完整 77 点复测。
+诊断收益不能替代冻结全量验收。autotune 本地策略检查 7/7，但真实
+native 测量因 endpoint records 格式检查失败，尚未形成通过证据。
+
+### 测试预算与影响范围
+
+- 每批开始写清修改文件、受影响接口、必须回归的目标与退出条件；
+  批内仅做必要的语法/构建或阻断性诊断，相关功能集中完成后再测。
+- runtime/计时/缓存修改集中跑事件、epoch/recovery、replay、预算与
+  native 图审计；compiler/layout 修改集中跑资源/unsupported 边界、
+  descriptor/barrier/tail、旧合同和对应标准 Torch 图。
+- RTL 修改集中跑 ownership/atomic/fence、随机背压/乱序/fault/reset、
+  实际 DMA/MMA overlap，再跑受影响核数/端口矩阵；RTL 冻结后才做
+  完整 route。软件改动不重跑与其无关的完整 FPGA build。
+- 长测试每个任务只保留一个实例，记录 PID、源码、配置与输出位置。
+  失败保留原始日志；只有相关修复后才重跑受影响组。CI 一批 push
+  一次，已有 CI 仍运行时避免纯文档 push 触发整轮取消。
+- 正式性能按同镜像、同配置和相同计时边界复用匹配的基线样本；只在
+  采样协议允许且所有相关身份相同时复用，不拼接不同源码/镜像结果。
+  一次冻结全量验收仍必须执行，局部回归不能代替最终测试。
+
+进度以“gate 有执行入口 → 功能证据完整 → 板上性能达标 → 独立复现”
+四步记录。每个 gate 对应原始日志、样本和身份清单；工作包全部通过
+后单独提交关闭记录，中间实现批次也及时 commit。当前关键瓶颈仍是
+设备回退和最终硬件能力/实现收敛，不给缺少证据的固定完工日期。
 
 ### 第一批：验收入口、计时与硬件可行性
 

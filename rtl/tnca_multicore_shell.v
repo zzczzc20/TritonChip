@@ -100,7 +100,10 @@ module tnca_multicore_shell #(
   wire [63:0] command_addr,command_data;
   wire [7:0] command_be;
   wire [136:0] payload;
-  tnca_elastic_link #(.W(137),.STAGES(CODE_LINK_STAGES)) commands(
+  // Broadcast inputs can make these queues logically identical. Preserve
+  // each physical copy so the board can place its last stage at its RAM;
+  // merging copies would remove the intended registered SLR boundary.
+  (* DONT_TOUCH="yes" *) tnca_elastic_link #(.W(137),.STAGES(CODE_LINK_STAGES)) commands(
    .clk(clk),.rst_n(rst_n),.in_valid(code_fire),.in_ready(code_command_ready[c]),
    .in_data({host_we,host_addr,host_wdata,host_be}),
    .out_valid(command_valid),.out_ready(1'b1),.out_data(payload),.empty());
@@ -112,7 +115,7 @@ module tnca_multicore_shell #(
   // One accepted broadcast is outstanding until every reply is consumed.
   // Thus each reply FIFO is empty when its next RAM reply arrives, so it
   // cannot apply backpressure to the synchronous read port.
-  tnca_elastic_link #(.W(64),.STAGES(CODE_LINK_STAGES)) replies(
+  (* DONT_TOUCH="yes" *) tnca_elastic_link #(.W(64),.STAGES(CODE_LINK_STAGES)) replies(
    .clk(clk),.rst_n(rst_n),.in_valid(reply_valid),.in_ready(),.in_data(host_read),
    .out_valid(code_reply_valid[c]),.out_ready(1'b1),.out_data(code_reply_data[c*64+:64]),.empty());
   integer b;

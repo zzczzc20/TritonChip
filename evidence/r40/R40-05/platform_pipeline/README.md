@@ -66,7 +66,7 @@ Synthesis has zero errors and zero critical warnings. OOC utilization is 911882
 LUTs, 314376 FFs, 192 RAMB36, 45 RAMB18 and 531 DSPs. This excludes the platform,
 HBM fabric and routed implementation costs; it is not a timing signoff.
 
-`pblock_check.log` records the constraints successfully applied to the real
+`pblock_check.log.gz` records the constraints successfully applied to the real
 synthesized DCP and written to `placement_pblocks.dcp`. Private code RAM,
 tile/router groups, command/completion FIFOs and both request/response memory
 pipeline storage are assigned with Pblocks. Vivado ignores USER_SLR_ASSIGNMENT

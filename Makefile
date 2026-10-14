@@ -2133,9 +2133,10 @@ r40-nuca: r40-coherent-host r40-memory-ports r40-line-axi
 
 # Ring tests are mechanism diagnostics. Standard Torch overlap, frozen
 # long-K/matrix A/B and policy measurements must supply the package evidence.
-r40-pipeline-checks: r40-barrier-epoch
+r40-pipeline-checks: $(R2_DATA_STAMP) r40-barrier-epoch
 	@$(PYTHON) tools/r40/engine_overlap_tests.py
 	@$(TRITON_PYTHON) tools/r40/pipeline_stage_options_tests.py
+	@$(TRITON_PYTHON) -c "from tnca import device; device.prepare('core-vrf-sync-v5')"
 	@for stages in 2 3; do CUDA_VISIBLE_DEVICES= TNCA_RCTX_STAGES=$$stages \
 	  $(TRITON_PYTHON) tools/r39/rctx_roles_tests.py || exit $$?; \
 	  r40_trace_dir=$$(mktemp -d $(BUILD)/r40/pipeline$$stages.XXXXXX) || exit $$?; \

@@ -1,7 +1,7 @@
 {
   "schema": "tnca-r40-physical-grid-extension/1",
   "legacy_contract": "spec/r2_transport_v1.json (unchanged)",
-  "opt_in": "Transport.launch_grid; not enabled by default Session",
+  "opt_in": "Transport.launch_grid; Session selects it explicitly or via the sim-multicore backend contract",
   "operations": {
     "10": {"name": "PHYSICAL_GRID_CAP", "read_only": true, "r0": "physical core count (1..16)", "r1": "maximum programs in a streaming grid", "old_image": "REFUSED; no physical dispatch fallback"},
     "11": {"name": "PHYSICAL_GRID_LAUNCH", "a0": "entry PC", "a1": "core-0 argument block", "a2": "legacy uint32 role/slice flags", "a3": "gx | gy<<32", "a4": "gz | active_cores<<32", "a5": "per-core argument block stride in bytes", "launch_id": "request sequence", "success_r0": "global cycles low 32 bits", "success_r1": "global cycles high 32 bits"}

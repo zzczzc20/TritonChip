@@ -2,6 +2,8 @@
 module tnca_multicore_device;
 parameter N=3;
 parameter TOTAL_WORDS=1048576;
+parameter VRF_BYPASS=1,FE_NOBUBBLE=1,VRF_PREFETCH=1,RCTX_SWITCH=2;
+parameter LSU_INFLIGHT=2,FPU_OVERLAP=1,MTX_ABUF=1;
 localparam NX=N>4?4:N,SW=N>4?$clog2(N):2;
 reg clk=0;always #5 clk=~clk;
 reg rst=0,cv=0,ack=0,hv=0,hw=0;
@@ -23,7 +25,9 @@ reg [63:0] r0,r1,word_data,read_data;
 integer op,status,fd,n,j,k,pollcycles=20;
 reg poisoned=0;
 integer cycles=0;
-tnca_multicore_shell #(.NX(NX),.NY(N/NX),.CODE_WORDS(16384),.SETS(4),.SET_W(2),.WAYS(2),.WAY_W(1)) dut(
+tnca_multicore_shell #(.NX(NX),.NY(N/NX),.CODE_WORDS(16384),.VRF_BYPASS(VRF_BYPASS),.FE_NOBUBBLE(FE_NOBUBBLE),
+.VRF_PREFETCH(VRF_PREFETCH),.RCTX_SWITCH(RCTX_SWITCH),.LSU_INFLIGHT(LSU_INFLIGHT),
+.FPU_OVERLAP(FPU_OVERLAP),.MTX_ABUF(MTX_ABUF),.SETS(4),.SET_W(2),.WAYS(2),.WAY_W(1)) dut(
 .clk(clk),.rst_n(rst),.cmd_valid(cv),.cmd_ready(cr),.cmd_id(id),.cmd_pc(pc),
 .cmd_deadline(deadline),.timed_out(timed_out),.cmd_arg_base(arg_base),.cmd_arg_stride(arg_stride),.cmd_gx(gx),.cmd_gy(gy),.cmd_gz(gz),
 .cmd_cores(cores),.cmd_roles(role_flags[3:0]),.cmd_slice({role_flags[28],role_flags[31:29]}),.cmd_vbase(32'd0),

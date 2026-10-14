@@ -275,7 +275,7 @@ class Session:
     def __init__(self, profile='core-sim', *, bench=None, workdir=None,
                  code_base=0, heap_base=0x20000, heap_limit=None,
                  deadline_cycles=2_000_000, host_timeout=600.0, trace=False,
-                 backend='sim-file', counters=False, large_grid=None, physical_grid=False,
+                 backend='sim-file', counters=False, large_grid=None, physical_grid=None,
                  active_cores=None, **backend_kwargs):
         Session._counter += 1
         self.id = Session._counter
@@ -288,6 +288,11 @@ class Session:
         if not isinstance(large_grid, bool):
             raise ValueError('large_grid must be a bool')
         self.large_grid = large_grid
+        from . import backend as _backend
+        if physical_grid is None:
+            physical_grid = _backend.physical_grid(backend)
+        if _backend.physical_grid(backend) and not physical_grid:
+            raise ValueError('this backend requires physical_grid=True')
         if not isinstance(physical_grid, bool):
             raise ValueError('physical_grid must be a bool')
         if active_cores is not None and not physical_grid:
@@ -332,7 +337,7 @@ class Session:
         from . import device as _device
         self.bench = bench
         if bench is None and _backend.needs_elaborator(self.backend_name):
-            self.bench = _device.require(profile)
+            self.bench = _backend.prepare_bench(self.backend_name, profile, **backend_kwargs)
 
         self._workdir = workdir
         self._deadline = deadline_cycles

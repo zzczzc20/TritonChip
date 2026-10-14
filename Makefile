@@ -1144,8 +1144,8 @@ r3-model-tests:
 # longer in the tree. That is audit F04 again, in a second place: a stale
 # artefact presented as a test result.
 $(R2_DATA_STAMP): $(RTL_DEPS) $(wildcard $(TB)/common/*.v) \
-                  $(wildcard $(TB)/common/*.vh) $(TB)/device/tnca_device.v \
-                  $(wildcard spec/*.json) $(wildcard compiler/targets/*.json) \
+                  $(wildcard $(TB)/common/*.vh) $(wildcard $(TB)/device/*.v) \
+                  $(wildcard spec/*.json) $(wildcard spec/r40/*.json) $(wildcard compiler/targets/*.json) \
                   $(wildcard isa/*.json) \
                   tools/asm/tnca_asm.py tools/asm/tnca_isa.py
 	@$(MAKE) --no-print-directory r2-stage-data
@@ -1155,6 +1155,7 @@ r2-stage-data:
 	@mkdir -p $(R2_DATA)/spec $(R2_DATA)/compiler/targets $(R2_DATA)/isa
 	@cp spec/*.json $(R2_DATA)/spec/
 	@mkdir -p $(R2_DATA)/spec/r38 && cp spec/r38/*.json $(R2_DATA)/spec/r38/
+	@mkdir -p $(R2_DATA)/spec/r40 && cp spec/r40/*.json $(R2_DATA)/spec/r40/
 	@cp compiler/targets/*.json $(R2_DATA)/compiler/targets/
 	@cp isa/*.json $(R2_DATA)/isa/
 	@mkdir -p $(R2_DATA)/rtl $(R2_DATA)/tb
@@ -2066,3 +2067,13 @@ r40-physical-grid-transport: | dirs
 .PHONY: r40-physical-grid-runtime
 r40-physical-grid-runtime: | dirs
 	@$(TRITON_PYTHON) tools/r40/physical_grid_runtime_tests.py
+
+# Real native Torch smoke; this is not the complete board/performance gate.
+.PHONY: r40-multicore-backend r40-multicore-native-smoke
+r40-multicore-backend: | dirs
+	@$(TRITON_PYTHON) tools/r40/physical_grid_runtime_tests.py --automatic --cores 3
+	@$(TRITON_PYTHON) tools/r36/conformance.py --backends sim-multicore --require-measured
+
+r40-multicore-native-smoke: | dirs
+	@$(TRITON_PYTHON) tools/r40/native_multicore_tests.py --cores 3
+	@$(TRITON_PYTHON) tools/r40/native_multicore_tests.py --cores 8

@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Public Session/AOT -> one grid request -> real physical cores/NUCA."""
 from pathlib import Path
+import argparse
 import struct
 import subprocess
 import sys
@@ -29,6 +30,10 @@ def kernel(b,target):
     b.atomic('add',counter,b.const(1),size='d');b.fence();b.exit()
 
 def main():
+    parser=argparse.ArgumentParser()
+    parser.add_argument('--automatic',action='store_true')
+    parser.add_argument('--cores',type=int,choices=(1,2,3,4,8),default=3)
+    options=parser.parse_args()
     for status in (0,1):
         stub=Session.__new__(Session);stub.active_cores=1
         stub.dev=SimpleNamespace(launch_grid=lambda *args,**kw:Reply(1,status,0,0),
@@ -46,14 +51,18 @@ def main():
         command.extend(str(p.relative_to(ROOT)) for p in sorted((ROOT/'rtl/common').glob('*.v')))
         command.extend(['rtl/tnca_top.v','rtl/tnca_grid_dispatch.v','rtl/tnca_grid_deadline.v',
                         'rtl/tnca_multicore_shell.v','tb/common/tnca_dram_model.v','tb/device/tnca_multicore_device.v'])
-        subprocess.run(command,cwd=ROOT,check=True,timeout=180)
+        if not options.automatic:
+            subprocess.run(command,cwd=ROOT,check=True,timeout=180)
         bundle=aot.compile_aot(kernel,kernel_name='physical_grid_runtime',signature={'out':'*i64','counter':'*i64'},
                                source_kind='tnca-ir',profile='core-vrf-sync-v5',options={'rctx_spmd':0},output=str(temp/'kernel.tnca'))
         aot.compile_aot(role_loop,kernel_name='role_loop',signature={'x_ptr':'*fp32','o_ptr':'*fp32','n':'i32','BLOCK':'constexpr'},
                         constexprs={'BLOCK':16},profile='core-vrf-sync-v5',options={'rctx_spmd':1},output=str(temp/'role_loop.tnca'))
         aot.compile_aot(role_loop,kernel_name='role_loop',signature={'x_ptr':'*fp32','o_ptr':'*fp32','n':'i32','BLOCK':'constexpr'},
                         constexprs={'BLOCK':16},profile='core-vrf-sync-v5',options={'rctx_spmd':0},output=str(temp/'vector.tnca'))
-        with Session(profile='core-vrf-sync-v5',bench=str(bench),physical_grid=True,host_timeout=1800) as session:
+        config=({'backend':'sim-multicore','core_count':options.cores} if options.automatic
+                else {'bench':str(bench),'physical_grid':True})
+        cores=options.cores if options.automatic else 3
+        with Session(profile='core-vrf-sync-v5',host_timeout=1800,**config) as session:
             out=session.allocate(455*8);counter=session.allocate(8)
             session.upload(out,bytes(out.size));session.upload(counter,bytes(8))
             module=session.load(str(temp/'kernel.tnca'))
@@ -72,8 +81,8 @@ def main():
             event=session.submit(module,{'out':out,'counter':counter},grid=(13,7,5))
             session.wait(event)
             table=event._task['block'];stride=event._task['arg_stride']
-            assert stride%256==0 and len(table)==3*stride
-            for core in range(3):
+            assert stride%256==0 and len(table)==cores*stride
+            for core in range(cores):
                 assert struct.unpack_from('<QQ',table,core*stride)==(out.addr,counter.addr)
             assert event.device_cycles>0 and event.program_cycles is None
             assert sum(record['op']==11 for record in session.dev.history[before:])==1

@@ -133,6 +133,8 @@ def be01(log):
     # start a simulator, that is what it is for, and the list is short
     # enough to read.
     BINDINGS = {
+        'python/tnca/backends/multicore_file.py':
+            'the sim-multicore binding: prepares parameterized RTL and reaches its persistent mailbox',
         'python/tnca/transport.py':
             'the sim-file backend: the file mailbox and the vvp child '
             'it speaks to',

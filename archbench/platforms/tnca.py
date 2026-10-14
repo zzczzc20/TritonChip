@@ -337,6 +337,16 @@ def run(point, *, profile='core-sim', opt_level=2, seed=0, counters=False, warmu
             rec['cold_call']['provenance']['bundle'] = _prov.write_bundle(
                 os.path.join(bundle, 'cold_call'), point_id=point.id, graph_text=graph.text,
                 wrapper_code=code, launches=log, dump_dir=None)
+    if native:
+        memory = tnca.torch_device.MEMORY
+        session = memory.session()
+        with session._lock:
+            rec['native_memory'] = dict(
+                tensor_live_bytes=memory.live, tensor_peak_bytes=memory.peak,
+                session=session.memory_stats,
+                window=getattr(session.dev, 'axi_window', None),
+                live_buffers=[dict(address=b.addr, bytes=b.size, reserved=b.reserved)
+                              for b in memory.buffers.values() if b.alive])
     return rec
 
 

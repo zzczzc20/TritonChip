@@ -8,8 +8,8 @@
 只读运行 `tools/r40/acceptance.py`：36 个必需 gate，5 个通过。
 R40-00 已关闭；R40-01 device/mixed-device 通过，device-time 失败。
 其余工作包均未关闭。已有 RTL/板上 checkpoint 不自动等于完整 gate。
-R40-05/06/07 已有正式 Make target；R40-08/09 入口仍缺失，必须补齐
-实际执行与证据汇总，已有入口也需要完整板测证据。
+R40-05～09 已有正式 Make target；08/09 的功能 runner 与现有证据判断
+接通，但完整实现、板测与性能证据仍缺失，不能据此签收。
 
 R40-01 原生全量 77/77 正确，但相对 B39 的 S_geo=0.5872。
 同一 HBM 镜像的 CPU/native 对照在 75 个成功共同点上约为 0.999，
@@ -31,12 +31,14 @@ R40-01 原生全量 77/77 正确，但相对 B39 的 S_geo=0.5872。
 | C：link 期间 | 完成标准 attention、KV/bucket、replay/1000-call stress、预算共享与持久缓存、自动选择接入和大模型；准备所有 A/B/LOO 运行清单 | 对应功能与生命周期矩阵；标准 Torch 全图/零 fallback；样本/配置身份审计 | 软件功能及正式实验脚本就绪，避免镜像完成后再等待软件 |
 | D：最终板测 | 同一冻结镜像按机制分组跑全量正确性、性能、消融、交互和 GPU 对照 | 冻结 5 warmup/30 timed/3 blocks（长任务用已登记例外）；独立 session；最终 CI 与全部 36 gate | 所有必需 gate 通过才关闭 R40；失败回到具体机制，不降低门限 |
 
-2026-10-14 本轮检查：hybrid link 已进入 bitstream generation；旧三核
-link 仍在 routing；ownership/code2 OOC 尚无终验结论。保留活作业，
-不启动重复 route。hybrid 完成后先审核 timing/CDC/镜像身份，再板测
-最差 transpose 和 streaming，判断是否值得启动完整 77 点复测。
-诊断收益不能替代冻结全量验收。autotune 本地策略检查 7/7，但真实
-native 测量因 endpoint records 格式检查失败，尚未形成通过证据。
+2026-10-14 本轮检查：hybrid 已完成 timing/CDC 审计并加载；三点诊断
+数值通过，add 对 B39 仍退化超过 5%，transpose 初测与重复结果不一致，
+原始负结果保留。旧三核 link 仍在 routing。ownership/code2 OOC 完成，
+实际 DCP 暴露广播 code queue 被合并、缺少 tile 1 的物理寄存级；
+`09ebe06` 保留独立队列，6 配置 RTL 回归通过，新 OOC 正在运行。
+没有启动重复 route。诊断收益不能替代冻结全量验收。autotune 的计时
+缺失已在 `9fdbc84` 修复，策略 9/9、grid clock 3/3 和原生测量通过；
+完整自动选择、holdout、worker/持久缓存与模型性能仍未关闭。
 
 ### 测试预算与影响范围
 

@@ -535,6 +535,13 @@ U280 有三个 SLR，HBM 接口位于 SLR0；板卡提供 8 GB HBM、32 个 AXI 
 
 ### R40-08：标准 Torch 的 attention / reduction 与驻留 KV
 
+进展（2026-10-14，验证入口，未签收）：`make r40-attention-checks`
+组织冻结的 15 个原有 attention/llama/GPT-2 图、全部现有 online SDPA
+检查及 64-step bucket KV 检查。原有图的结果额外核对 point hash、原生
+设备、descriptor、零 fallback/staging；日志独立保存，单次功能采样
+不作为性能证据。`make r40-attention` 继续判断全部 R40-08 gate，缺少
+板测、完整 shape/traffic 与 prefill 性能证据仍不通过。
+
 交付：
 
 - `torch.nn.functional.scaled_dot_product_attention` 经设备 lowering / Inductor 模板生成融合 Triton，descriptor 分块加载、在线 softmax / 稳定 reduction；能力不足时走同一标准数学分解并明确说明。
@@ -558,7 +565,8 @@ resource 预过滤、共享线程候选预算、600 秒图预算与完整配置�
 日志隔离。多核 grid 的后端端点现已传入 runtime Event，缺计时仍拒绝。
 `make r40-autotune-checks` 为功能验证入口；自动编译候选、成本模型、
 持久缓存/跨进程 worker、冻结 holdout/完整套件/模型和板测性能仍待完成，
-该入口不代替正式 `make r40-autotune` 验收。
+正式 `make r40-autotune` 在功能检查后判断所有 R40-09 gate；缺少上述
+证据仍不通过，不能用基础检查替代完整验收。
 
 交付：
 

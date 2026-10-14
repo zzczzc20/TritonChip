@@ -1386,9 +1386,11 @@ archbench-gpu:
 .PHONY: r40-protocol r40-freeze r40-freeze-check r40-api-lock r40-hbm-coverage \
         r40-b39-gates r40-b39 r40-acceptance
 # Acceptance 1 and 3: every manipulation of a comparison refused, identity 1;
-# nothing missing passes a gate. Synthetic records: no torch, no board.
+# nothing missing passes a gate. Protocol/manifest checks need no torch or board.
 r40-protocol:
 	@$(PYTHON) tools/r40/acceptance_runner_tests.py
+	@$(PYTHON) tools/r40/audit_xo_sources_tests.py
+	@$(PYTHON) tools/r40/attention_checks_tests.py
 	@$(PYTHON) tools/r40/protocol_tests.py --evidence
 # Write the plan, subsets and ablation matrix (an amendment once frozen).
 r40-freeze:
@@ -2166,8 +2168,21 @@ r40-pipeline: r40-pipeline-checks
 	@$(PYTHON) tools/r40/acceptance.py --wp R40-07
 
 # Functional tuning checks; frozen holdout/model evidence is still required.
-.PHONY: r40-autotune-checks
+.PHONY: r40-autotune-checks r40-autotune
 r40-autotune-checks:
 	@$(PYTHON) tools/r40/autotune_policy_tests.py
 	@$(PYTHON) tools/r40/physical_grid_clock_tests.py
 	@CUDA_VISIBLE_DEVICES= $(TORCH_PYTHON) tools/r40/autotune_native_tests.py
+
+r40-autotune: r40-autotune-checks
+	@$(PYTHON) tools/r40/acceptance.py --wp R40-09
+
+.PHONY: r40-attention-checks r40-attention
+R40_ATTENTION_PROFILE ?= core-vrf-sync-v5/hbm
+r40-attention-checks: $(R2_DATA_STAMP) | dirs
+	@r40_attention_dir=$$(mktemp -d $(BUILD)/r40/attention.XXXXXX) || exit $$?; \
+	  CUDA_VISIBLE_DEVICES= $(TORCH_PYTHON) tools/r40/attention_checks.py \
+	    --profile $(R40_ATTENTION_PROFILE) --out "$$r40_attention_dir/results"
+
+r40-attention: r40-attention-checks
+	@$(PYTHON) tools/r40/acceptance.py --wp R40-08

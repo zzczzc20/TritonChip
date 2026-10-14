@@ -1,0 +1,304 @@
+{
+  "critical_paths": 58,
+  "tnca_endpoint_critical_paths": 0,
+  "rules": {
+    "CDC-1": 1,
+    "CDC-7": 13,
+    "CDC-10": 5,
+    "CDC-11": 35,
+    "CDC-13": 4
+  },
+  "user_paths": [],
+  "critical_path_details": [
+    {
+      "rule": "CDC-13",
+      "source": "level0_i/ulp/ulp_ucs/inst/ucs_control_status/gpio_ucs_control_status/U0/gpio_core_1/Dual.gpio2_Data_Out_reg[31]/C",
+      "destination": "level0_i/ulp/ulp_ucs/inst/aclk_kernel_00_hierarchy/clock_throttling_aclk_kernel_00/U0/ECCLK/CE"
+    },
+    {
+      "rule": "CDC-13",
+      "source": "level0_i/ulp/ulp_ucs/inst/ucs_control_status/gpio_ucs_control_status/U0/gpio_core_1/Dual.gpio2_Data_Out_reg[31]/C",
+      "destination": "level0_i/ulp/ulp_ucs/inst/aclk_kernel_01_hierarchy/clock_throttling_aclk_kernel_01/U0/ECCLK/CE"
+    },
+    {
+      "rule": "CDC-10",
+      "source": "level0_i/blp/blp_i/PLP/ss_fic/inst/data_firewalls_and_regslices/axi_firewall_data_c2h/inst/gen_si.si_r_error_i_reg/C",
+      "destination": "level0_i/blp/blp_i/PLP/ss_dma/inst/axi_intc_aggregated_mgmt/U0/INTC_CORE_I/INTR_DETECT_GEN[0].ASYNC_GEN.intr_ff_reg[0]/D"
+    },
+    {
+      "rule": "CDC-10",
+      "source": "level0_i/blp/blp_i/ss_cmp/inst/psreset_mdm/U0/ACTIVE_LOW_PR_OUT_DFF[0].FDRE_PER_N/C",
+      "destination": "level0_i/blp/blp_i/PLP/ss_ert/inst/reset_hierarchy/psreset_scheduler/U0/EXT_LPF/ACTIVE_LOW_EXT.ACT_LO_EXT/GENERATE_LEVEL_P_S_CDC.SINGLE_BIT.CROSS_PLEVEL_IN2SCNDRY_IN_cdc_to/D"
+    },
+    {
+      "rule": "CDC-7",
+      "source": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/sys_reset_in_async_rst_inst/arststages_ff_reg[1]/C",
+      "destination": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/debug_wrapper_U/debug_probes_inst/cur_ltssm_st_reg[0]/CLR"
+    },
+    {
+      "rule": "CDC-7",
+      "source": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/sys_reset_in_async_rst_inst/arststages_ff_reg[1]/C",
+      "destination": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/debug_wrapper_U/debug_probes_inst/cur_ltssm_st_reg[1]/CLR"
+    },
+    {
+      "rule": "CDC-7",
+      "source": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/sys_reset_in_async_rst_inst/arststages_ff_reg[1]/C",
+      "destination": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/debug_wrapper_U/debug_probes_inst/cur_ltssm_st_reg[2]/CLR"
+    },
+    {
+      "rule": "CDC-7",
+      "source": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/sys_reset_in_async_rst_inst/arststages_ff_reg[1]/C",
+      "destination": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/debug_wrapper_U/debug_probes_inst/cur_ltssm_st_reg[3]/CLR"
+    },
+    {
+      "rule": "CDC-7",
+      "source": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/sys_reset_in_async_rst_inst/arststages_ff_reg[1]/C",
+      "destination": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/debug_wrapper_U/debug_probes_inst/cur_ltssm_st_reg[4]/CLR"
+    },
+    {
+      "rule": "CDC-7",
+      "source": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/sys_reset_in_async_rst_inst/arststages_ff_reg[1]/C",
+      "destination": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/debug_wrapper_U/debug_probes_inst/cur_ltssm_st_reg[5]/CLR"
+    },
+    {
+      "rule": "CDC-7",
+      "source": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/sys_reset_in_async_rst_inst/arststages_ff_reg[1]/C",
+      "destination": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/debug_wrapper_U/debug_probes_inst/pre_ltssm_st_reg[0]/CLR"
+    },
+    {
+      "rule": "CDC-7",
+      "source": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/sys_reset_in_async_rst_inst/arststages_ff_reg[1]/C",
+      "destination": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/debug_wrapper_U/debug_probes_inst/pre_ltssm_st_reg[1]/CLR"
+    },
+    {
+      "rule": "CDC-7",
+      "source": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/sys_reset_in_async_rst_inst/arststages_ff_reg[1]/C",
+      "destination": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/debug_wrapper_U/debug_probes_inst/pre_ltssm_st_reg[2]/CLR"
+    },
+    {
+      "rule": "CDC-7",
+      "source": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/sys_reset_in_async_rst_inst/arststages_ff_reg[1]/C",
+      "destination": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/debug_wrapper_U/debug_probes_inst/pre_ltssm_st_reg[3]/CLR"
+    },
+    {
+      "rule": "CDC-7",
+      "source": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/sys_reset_in_async_rst_inst/arststages_ff_reg[1]/C",
+      "destination": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/debug_wrapper_U/debug_probes_inst/pre_ltssm_st_reg[4]/CLR"
+    },
+    {
+      "rule": "CDC-7",
+      "source": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/sys_reset_in_async_rst_inst/arststages_ff_reg[1]/C",
+      "destination": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/debug_wrapper_U/debug_probes_inst/pre_ltssm_st_reg[5]/CLR"
+    },
+    {
+      "rule": "CDC-10",
+      "source": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/sys_reset_in_async_rst_inst/arststages_ff_reg[1]/C",
+      "destination": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/sys_or_hot_rst_uclk_inst/arststages_ff_reg[0]/PRE"
+    },
+    {
+      "rule": "CDC-10",
+      "source": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/sys_reset_in_async_rst_inst/arststages_ff_reg[1]/C",
+      "destination": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/user_lnk_up_cdc/arststages_ff_reg[0]/CLR"
+    },
+    {
+      "rule": "CDC-7",
+      "source": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/sys_rst_n_sbr_reg/C",
+      "destination": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/user_lnk_up_reg/CLR"
+    },
+    {
+      "rule": "CDC-11",
+      "source": "level0_i/ulp/hmss_0/inst/hbm_inst/inst/ONE_STACK.u_hbm_top/ONE_STACK_HBM.hbm_one_stack_intf/HBM_SNGLBLI_INTF_APB_INST/PCLK",
+      "destination": "level0_i/ulp/hmss_0/inst/hbm_reset_sync_SLR0/U0/EXT_LPF/ACTIVE_HIGH_AUX.ACT_HI_AUX/GENERATE_LEVEL_P_S_CDC.SINGLE_BIT.CROSS_PLEVEL_IN2SCNDRY_IN_cdc_to/D"
+    },
+    {
+      "rule": "CDC-11",
+      "source": "level0_i/ulp/hmss_0/inst/hbm_inst/inst/ONE_STACK.u_hbm_top/ONE_STACK_HBM.hbm_one_stack_intf/HBM_SNGLBLI_INTF_APB_INST/PCLK",
+      "destination": "level0_i/ulp/hmss_0/inst/hbm_reset_sync_SLR1/U0/EXT_LPF/ACTIVE_HIGH_AUX.ACT_HI_AUX/GENERATE_LEVEL_P_S_CDC.SINGLE_BIT.CROSS_PLEVEL_IN2SCNDRY_IN_cdc_to/D"
+    },
+    {
+      "rule": "CDC-11",
+      "source": "level0_i/ulp/hmss_0/inst/hbm_inst/inst/ONE_STACK.u_hbm_top/ONE_STACK_HBM.hbm_one_stack_intf/HBM_SNGLBLI_INTF_APB_INST/PCLK",
+      "destination": "level0_i/ulp/hmss_0/inst/hbm_reset_sync_SLR2/U0/EXT_LPF/ACTIVE_HIGH_AUX.ACT_HI_AUX/GENERATE_LEVEL_P_S_CDC.SINGLE_BIT.CROSS_PLEVEL_IN2SCNDRY_IN_cdc_to/D"
+    },
+    {
+      "rule": "CDC-13",
+      "source": "level0_i/ulp/ulp_ucs/inst/ucs_control_status/gpio_ucs_control_status/U0/gpio_core_1/Dual.gpio2_Data_Out_reg[31]/C",
+      "destination": "level0_i/ulp/ulp_ucs/inst/aclk_hbm_hierarchy/clkwiz_hbm/inst/CLK_CORE_DRP_I/clk_inst/clkout1_buf/CE"
+    },
+    {
+      "rule": "CDC-11",
+      "source": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/phy_pipeline/phy_rate_chain/with_ff_chain.ff_chain_gen[0].sync_rst.ff_chain_reg[1][1]/C",
+      "destination": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/phy_lane[0].cdr_ctrl_on_eidle_i/sync_gen34/sync_vec[0].sync_cell_i/sync_reg[0]/D"
+    },
+    {
+      "rule": "CDC-11",
+      "source": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/phy_pipeline/as_mac_in_detect_chain/with_ff_chain.ff_chain_gen[0].sync_rst.ff_chain_reg[1][0]/C",
+      "destination": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/phy_lane[0].receiver_detect_termination_i/sync_mac_in_detect/sync_vec[0].sync_cell_i/sync_reg[0]/D"
+    },
+    {
+      "rule": "CDC-11",
+      "source": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/phy_pipeline/phy_rate_chain/with_ff_chain.ff_chain_gen[0].sync_rst.ff_chain_reg[1][1]/C",
+      "destination": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/phy_lane[10].cdr_ctrl_on_eidle_i/sync_gen34/sync_vec[0].sync_cell_i/sync_reg[0]/D"
+    },
+    {
+      "rule": "CDC-11",
+      "source": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/phy_pipeline/as_mac_in_detect_chain/with_ff_chain.ff_chain_gen[0].sync_rst.ff_chain_reg[1][0]/C",
+      "destination": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/phy_lane[10].receiver_detect_termination_i/sync_mac_in_detect/sync_vec[0].sync_cell_i/sync_reg[0]/D"
+    },
+    {
+      "rule": "CDC-11",
+      "source": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/phy_pipeline/phy_rate_chain/with_ff_chain.ff_chain_gen[0].sync_rst.ff_chain_reg[1][1]/C",
+      "destination": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/phy_lane[11].cdr_ctrl_on_eidle_i/sync_gen34/sync_vec[0].sync_cell_i/sync_reg[0]/D"
+    },
+    {
+      "rule": "CDC-11",
+      "source": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/phy_pipeline/as_mac_in_detect_chain/with_ff_chain.ff_chain_gen[0].sync_rst.ff_chain_reg[1][0]/C",
+      "destination": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/phy_lane[11].receiver_detect_termination_i/sync_mac_in_detect/sync_vec[0].sync_cell_i/sync_reg[0]/D"
+    },
+    {
+      "rule": "CDC-11",
+      "source": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/phy_pipeline/phy_rate_chain/with_ff_chain.ff_chain_gen[0].sync_rst.ff_chain_reg[1][1]/C",
+      "destination": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/phy_lane[12].cdr_ctrl_on_eidle_i/sync_gen34/sync_vec[0].sync_cell_i/sync_reg[0]/D"
+    },
+    {
+      "rule": "CDC-11",
+      "source": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/phy_pipeline/as_mac_in_detect_chain/with_ff_chain.ff_chain_gen[0].sync_rst.ff_chain_reg[1][0]/C",
+      "destination": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/phy_lane[12].receiver_detect_termination_i/sync_mac_in_detect/sync_vec[0].sync_cell_i/sync_reg[0]/D"
+    },
+    {
+      "rule": "CDC-11",
+      "source": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/phy_pipeline/phy_rate_chain/with_ff_chain.ff_chain_gen[0].sync_rst.ff_chain_reg[1][1]/C",
+      "destination": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/phy_lane[13].cdr_ctrl_on_eidle_i/sync_gen34/sync_vec[0].sync_cell_i/sync_reg[0]/D"
+    },
+    {
+      "rule": "CDC-11",
+      "source": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/phy_pipeline/as_mac_in_detect_chain/with_ff_chain.ff_chain_gen[0].sync_rst.ff_chain_reg[1][0]/C",
+      "destination": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/phy_lane[13].receiver_detect_termination_i/sync_mac_in_detect/sync_vec[0].sync_cell_i/sync_reg[0]/D"
+    },
+    {
+      "rule": "CDC-11",
+      "source": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/phy_pipeline/phy_rate_chain/with_ff_chain.ff_chain_gen[0].sync_rst.ff_chain_reg[1][1]/C",
+      "destination": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/phy_lane[14].cdr_ctrl_on_eidle_i/sync_gen34/sync_vec[0].sync_cell_i/sync_reg[0]/D"
+    },
+    {
+      "rule": "CDC-11",
+      "source": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/phy_pipeline/as_mac_in_detect_chain/with_ff_chain.ff_chain_gen[0].sync_rst.ff_chain_reg[1][0]/C",
+      "destination": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/phy_lane[14].receiver_detect_termination_i/sync_mac_in_detect/sync_vec[0].sync_cell_i/sync_reg[0]/D"
+    },
+    {
+      "rule": "CDC-11",
+      "source": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/phy_pipeline/phy_rate_chain/with_ff_chain.ff_chain_gen[0].sync_rst.ff_chain_reg[1][1]/C",
+      "destination": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/phy_lane[15].cdr_ctrl_on_eidle_i/sync_gen34/sync_vec[0].sync_cell_i/sync_reg[0]/D"
+    },
+    {
+      "rule": "CDC-11",
+      "source": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/phy_pipeline/as_mac_in_detect_chain/with_ff_chain.ff_chain_gen[0].sync_rst.ff_chain_reg[1][0]/C",
+      "destination": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/phy_lane[15].receiver_detect_termination_i/sync_mac_in_detect/sync_vec[0].sync_cell_i/sync_reg[0]/D"
+    },
+    {
+      "rule": "CDC-11",
+      "source": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/phy_pipeline/phy_rate_chain/with_ff_chain.ff_chain_gen[0].sync_rst.ff_chain_reg[1][1]/C",
+      "destination": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/phy_lane[1].cdr_ctrl_on_eidle_i/sync_gen34/sync_vec[0].sync_cell_i/sync_reg[0]/D"
+    },
+    {
+      "rule": "CDC-11",
+      "source": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/phy_pipeline/as_mac_in_detect_chain/with_ff_chain.ff_chain_gen[0].sync_rst.ff_chain_reg[1][0]/C",
+      "destination": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/phy_lane[1].receiver_detect_termination_i/sync_mac_in_detect/sync_vec[0].sync_cell_i/sync_reg[0]/D"
+    },
+    {
+      "rule": "CDC-11",
+      "source": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/phy_pipeline/phy_rate_chain/with_ff_chain.ff_chain_gen[0].sync_rst.ff_chain_reg[1][1]/C",
+      "destination": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/phy_lane[2].cdr_ctrl_on_eidle_i/sync_gen34/sync_vec[0].sync_cell_i/sync_reg[0]/D"
+    },
+    {
+      "rule": "CDC-11",
+      "source": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/phy_pipeline/as_mac_in_detect_chain/with_ff_chain.ff_chain_gen[0].sync_rst.ff_chain_reg[1][0]/C",
+      "destination": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/phy_lane[2].receiver_detect_termination_i/sync_mac_in_detect/sync_vec[0].sync_cell_i/sync_reg[0]/D"
+    },
+    {
+      "rule": "CDC-11",
+      "source": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/phy_pipeline/phy_rate_chain/with_ff_chain.ff_chain_gen[0].sync_rst.ff_chain_reg[1][1]/C",
+      "destination": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/phy_lane[3].cdr_ctrl_on_eidle_i/sync_gen34/sync_vec[0].sync_cell_i/sync_reg[0]/D"
+    },
+    {
+      "rule": "CDC-11",
+      "source": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/phy_pipeline/as_mac_in_detect_chain/with_ff_chain.ff_chain_gen[0].sync_rst.ff_chain_reg[1][0]/C",
+      "destination": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/phy_lane[3].receiver_detect_termination_i/sync_mac_in_detect/sync_vec[0].sync_cell_i/sync_reg[0]/D"
+    },
+    {
+      "rule": "CDC-11",
+      "source": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/phy_pipeline/phy_rate_chain/with_ff_chain.ff_chain_gen[0].sync_rst.ff_chain_reg[1][1]/C",
+      "destination": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/phy_lane[4].cdr_ctrl_on_eidle_i/sync_gen34/sync_vec[0].sync_cell_i/sync_reg[0]/D"
+    },
+    {
+      "rule": "CDC-11",
+      "source": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/phy_pipeline/as_mac_in_detect_chain/with_ff_chain.ff_chain_gen[0].sync_rst.ff_chain_reg[1][0]/C",
+      "destination": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/phy_lane[4].receiver_detect_termination_i/sync_mac_in_detect/sync_vec[0].sync_cell_i/sync_reg[0]/D"
+    },
+    {
+      "rule": "CDC-11",
+      "source": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/phy_pipeline/phy_rate_chain/with_ff_chain.ff_chain_gen[0].sync_rst.ff_chain_reg[1][1]/C",
+      "destination": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/phy_lane[5].cdr_ctrl_on_eidle_i/sync_gen34/sync_vec[0].sync_cell_i/sync_reg[0]/D"
+    },
+    {
+      "rule": "CDC-11",
+      "source": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/phy_pipeline/as_mac_in_detect_chain/with_ff_chain.ff_chain_gen[0].sync_rst.ff_chain_reg[1][0]/C",
+      "destination": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/phy_lane[5].receiver_detect_termination_i/sync_mac_in_detect/sync_vec[0].sync_cell_i/sync_reg[0]/D"
+    },
+    {
+      "rule": "CDC-11",
+      "source": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/phy_pipeline/phy_rate_chain/with_ff_chain.ff_chain_gen[0].sync_rst.ff_chain_reg[1][1]/C",
+      "destination": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/phy_lane[6].cdr_ctrl_on_eidle_i/sync_gen34/sync_vec[0].sync_cell_i/sync_reg[0]/D"
+    },
+    {
+      "rule": "CDC-11",
+      "source": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/phy_pipeline/as_mac_in_detect_chain/with_ff_chain.ff_chain_gen[0].sync_rst.ff_chain_reg[1][0]/C",
+      "destination": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/phy_lane[6].receiver_detect_termination_i/sync_mac_in_detect/sync_vec[0].sync_cell_i/sync_reg[0]/D"
+    },
+    {
+      "rule": "CDC-11",
+      "source": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/phy_pipeline/phy_rate_chain/with_ff_chain.ff_chain_gen[0].sync_rst.ff_chain_reg[1][1]/C",
+      "destination": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/phy_lane[7].cdr_ctrl_on_eidle_i/sync_gen34/sync_vec[0].sync_cell_i/sync_reg[0]/D"
+    },
+    {
+      "rule": "CDC-11",
+      "source": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/phy_pipeline/as_mac_in_detect_chain/with_ff_chain.ff_chain_gen[0].sync_rst.ff_chain_reg[1][0]/C",
+      "destination": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/phy_lane[7].receiver_detect_termination_i/sync_mac_in_detect/sync_vec[0].sync_cell_i/sync_reg[0]/D"
+    },
+    {
+      "rule": "CDC-11",
+      "source": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/phy_pipeline/phy_rate_chain/with_ff_chain.ff_chain_gen[0].sync_rst.ff_chain_reg[1][1]/C",
+      "destination": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/phy_lane[8].cdr_ctrl_on_eidle_i/sync_gen34/sync_vec[0].sync_cell_i/sync_reg[0]/D"
+    },
+    {
+      "rule": "CDC-11",
+      "source": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/phy_pipeline/as_mac_in_detect_chain/with_ff_chain.ff_chain_gen[0].sync_rst.ff_chain_reg[1][0]/C",
+      "destination": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/phy_lane[8].receiver_detect_termination_i/sync_mac_in_detect/sync_vec[0].sync_cell_i/sync_reg[0]/D"
+    },
+    {
+      "rule": "CDC-11",
+      "source": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/phy_pipeline/phy_rate_chain/with_ff_chain.ff_chain_gen[0].sync_rst.ff_chain_reg[1][1]/C",
+      "destination": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/phy_lane[9].cdr_ctrl_on_eidle_i/sync_gen34/sync_vec[0].sync_cell_i/sync_reg[0]/D"
+    },
+    {
+      "rule": "CDC-11",
+      "source": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/phy_pipeline/as_mac_in_detect_chain/with_ff_chain.ff_chain_gen[0].sync_rst.ff_chain_reg[1][0]/C",
+      "destination": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/phy_lane[9].receiver_detect_termination_i/sync_mac_in_detect/sync_vec[0].sync_cell_i/sync_reg[0]/D"
+    },
+    {
+      "rule": "CDC-13",
+      "source": "level0_i/blp/blp_i/PLP/ss_ert/inst/ert_microblaze/U0/MicroBlaze_Core_I/Performance.Core/Use_Debug_Logic.Master_Core.Debug_Perf/Serial_Dbg_Intf.shift_count_reg[2]/C",
+      "destination": "level0_i/blp/blp_i/ss_cmp/inst/jtag_fallback/inst/bs_switch/inst/BSCAN_SWITCH.N_EXT_BSCAN.bscan_inst/SERIES7_BSCAN.bscan_inst/TDO"
+    },
+    {
+      "rule": "CDC-1",
+      "source": "level0_i/blp/blp_i/PLP/ss_ert/inst/ert_microblaze/U0/MicroBlaze_Core_I/Performance.Core/Use_Debug_Logic.Master_Core.Debug_Perf/Serial_Dbg_Intf.shift_count_reg[2]/C",
+      "destination": "level0_i/blp/blp_i/ss_cmp/inst/mgmt_debug_bridge/inst/bsip/inst/USE_SOFTBSCAN.U_BSCAN_TAP/U_BASETAP/TDO_O_reg/D"
+    },
+    {
+      "rule": "CDC-10",
+      "source": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/sys_reset_in_async_rst_inst/arststages_ff_reg[1]/C",
+      "destination": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/sys_or_hot_rst_pclk_inst/arststages_ff_reg[0]/PRE"
+    }
+  ]
+}

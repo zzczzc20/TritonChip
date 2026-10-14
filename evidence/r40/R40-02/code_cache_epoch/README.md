@@ -13,5 +13,7 @@ kernel remains an explicit code-capacity refusal.
 `rtl.log` executes six alternating kernels through the actual RTL with a region
 that holds exactly one module. Numerical writes, a live data handle, session ID
 and epoch stay correct through eviction. This is a correctness diagnostic, not
-Torch performance evidence. The two failed board CPU controls are being rerun
-with the patched driver; their result is pending.
+Torch performance evidence. Both previously failed board CPU controls now pass with 5 warmups and 30 timed
+calls (`board_retry.*.gz`), including graph-clock aggregation. The original 75/77
+control remains a separate source snapshot; this retry is not silently merged
+into a uniform 77-point performance measurement.

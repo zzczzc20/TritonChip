@@ -17,7 +17,8 @@ private code upload/readback, coherent shared-line stores, timestamps, port
 traffic, zero launch, stale/invalid requests and deadline drain pass with the
 code pipeline enabled. These are functional results, not routed timing evidence.
 The legacy FPGA regression also passes 8/8 (`legacy_fpga.log`). The new native
-Torch run is pending separately.
+Torch run also passes (`native_3.log`): 257 logical programs, peak three physical
+cores, zero measured tensor staging and reads/writes at every outlet.
 
 The earlier three-master linked build continues from its immutable pre-code-link
 snapshot. Its route results must not be attributed to this code revision.

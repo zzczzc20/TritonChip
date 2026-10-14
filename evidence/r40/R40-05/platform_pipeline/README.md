@@ -46,7 +46,8 @@ Native three-core board-top Torch, descriptor and pair runs have now passed.
 staging, and real read/write traffic on every outlet. `descriptor_3.log` and
 `pair_3.log` record the generated artifacts, actual descriptor loads, physical
 chunk widths, resource partitioning and three-core activity. Eight-core pipelined
-Torch is still live; no pass is inferred from progress.
+Torch now passes (`native_8.log`): 257 programs complete with peak eight, every
+core has issued/completed work and all three memory outlets carry traffic.
 
 Packaged XO SHA256: `df9eeff80746c5d5e3df101d03c1887777b45f3ae196218fc61096419af47e49`.
 `packaged_sources.sha256` records the exact RTL input tree. The committed
@@ -72,3 +73,11 @@ tile/router groups, command/completion FIFOs and both request/response memory
 pipeline storage are assigned with Pblocks. Vivado ignores USER_SLR_ASSIGNMENT
 on primitive cells, so that earlier hint-only approach has been replaced.
 This checks constraints, not actual placed or routed locations.
+
+`large_grid_3.log` exercises 4103 programs with active masks 1/3/7 on the same
+three-core board-top simulation, with all output slots zeroed before each run.
+Every result is read back; issue/completion totals match, inactive cores receive
+no work and peak occupancy matches each mask. The complete protocol test then
+passes deadline drain and zero/stale/invalid cases. This is diagnostic function
+coverage, not a Torch speedup measurement. These two runs use the earlier
+pre-code-link snapshot, separately from the new code-upload tests.

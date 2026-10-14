@@ -1041,6 +1041,9 @@ class Session:
             raise DeviceLost('physical grid completion did not quiesce the device')
         ev.device_cycles = (reply.r0 & 0xFFFFFFFF) | ((reply.r1 & 0xFFFFFFFF) << 32)
         ev.program_cycles = None  # global makespan; no fabricated per-program samples
+        stamp = getattr(reply, 'device_timing', None)
+        from .device_timing import clock_span
+        ev.device_timing = clock_span([dict(stamp, session_id=self.id)] if stamp else [None])
         if self._counters is not None:
             ev.counters = {'available': False}
         with self._lock:

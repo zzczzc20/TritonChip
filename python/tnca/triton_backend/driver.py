@@ -113,14 +113,21 @@ def _active_logs():
 
 
 @contextlib.contextmanager
-def launch_log():
+def launch_log(*, isolated=False):
     """Collect one dict per launch made while open (nested logs all see it)."""
     log = []
+    previous = _active_logs() if isolated else None
+    if isolated:
+        _log_local.logs = []
     _active_logs().append(log)
     try:
         yield log
     finally:
+        # Restore the outer collection before waiting; async entries already
+        # belong to this log and completion does not issue new launches.
         assert _active_logs().pop() is log
+        if previous is not None:
+            _log_local.logs = previous
         # An asynchronous launch log is measured through completion, never
         # just submission. Nested contexts share each entry's final values.
         for entry in log:

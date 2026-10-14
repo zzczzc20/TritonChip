@@ -552,6 +552,14 @@ U280 有三个 SLR，HBM 接口位于 SLR0；板卡提供 8 GB HBM、32 个 AXI 
 
 ### R40-09：有预算的自动选择、应用与扩展验证
 
+进展（2026-10-14，基础实现，未签收）：公共候选选择支持 capability/
+resource 预过滤、共享线程候选预算、600 秒图预算与完整配置缓存键。
+只接受同 session/epoch 的共同设备时钟端点，候选测量与正式 launch
+日志隔离。多核 grid 的后端端点现已传入 runtime Event，缺计时仍拒绝。
+`make r40-autotune-checks` 为功能验证入口；自动编译候选、成本模型、
+持久缓存/跨进程 worker、冻结 holdout/完整套件/模型和板测性能仍待完成，
+该入口不代替正式 `make r40-autotune` 验收。
+
 交付：
 
 - template/tile/stage/core count/placement 的合法候选由 capability 与 cost model 过滤，允许板上 device event 计时的受预算 autotune；禁止以 RTL simulator 的 wall time 排序。

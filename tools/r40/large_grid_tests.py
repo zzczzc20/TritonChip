@@ -65,6 +65,7 @@ class GridTests(unittest.TestCase):
         m = SimpleNamespace(epoch=0, alive=True, name='grid',
                             manifest={'identity': {'kernel_name': 'grid'}})
         s.large_grid = False
+        s.physical_grid = False
         with self.assertRaises(AdmissionError):
             s.submit(m, {}, grid=(6144, 1, 1))
         s.dev.large_grid_limit.assert_not_called()

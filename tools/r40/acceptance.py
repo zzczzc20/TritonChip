@@ -97,10 +97,17 @@ def main(argv=None):
     ap.add_argument('--json', type=Path)
     args = ap.parse_args(argv)
     plan = json.loads(args.plan.read_text())
+    known = {wp['id'] for wp in plan['work_packages']}
+    unknown = set(args.wp or ()) - known
+    if unknown:
+        ap.error('unknown work package(s): ' + ', '.join(sorted(unknown)))
     report = dict(schema='tnca-r40-acceptance/1', plan=str(args.plan.relative_to(ROOT)
                   if args.plan.is_absolute() and ROOT in args.plan.parents else args.plan),
                   work_packages={})
     all_ok = True
+    # A package command produces several gates. Running it once per gate
+    # repeated the full board/simulation suite and could mix separate trials.
+    command_results = {}
     for wp in plan['work_packages']:
         if args.wp and wp['id'] not in args.wp:
             continue
@@ -108,7 +115,11 @@ def main(argv=None):
         for gate in wp['gates']:
             ran = None
             if args.run and gate.get('command'):
-                ran = subprocess.run(gate['command'], shell=True, cwd=ROOT).returncode
+                command = gate['command']
+                if command not in command_results:
+                    command_results[command] = subprocess.run(
+                        command, shell=True, cwd=ROOT).returncode
+                ran = command_results[command]
             status, why = judge(gate, ran=ran)
             rows.append(dict(id=gate['id'], kind=gate['kind'], required=gate.get('required', True),
                              status=status, why=why))

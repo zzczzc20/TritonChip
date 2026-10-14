@@ -1388,6 +1388,7 @@ archbench-gpu:
 # Acceptance 1 and 3: every manipulation of a comparison refused, identity 1;
 # nothing missing passes a gate. Synthetic records: no torch, no board.
 r40-protocol:
+	@$(PYTHON) tools/r40/acceptance_runner_tests.py
 	@$(PYTHON) tools/r40/protocol_tests.py --evidence
 # Write the plan, subsets and ablation matrix (an amendment once frozen).
 r40-freeze:
@@ -1429,7 +1430,7 @@ R40_NATIVE ?= $(BUILD)/r40/native
 .PHONY: r40-device
 r40-device: $(R2_DATA_STAMP) | dirs
 	@$(TORCH_PYTHON) tools/r40/properties_tests.py
-	@$(TORCH_PYTHON) tools/r40/device_tests.py --evidence; \
+	@$(TORCH_PYTHON) tools/r40/device_tests.py --evidence && \
 	 $(PYTHON) tools/r40/device_time.py --native $(R40_NATIVE) --evidence
 # R40-02 capability checkpoint. Frozen performance and asynchronous stress
 # remain not-measured until their independent runners supply the evidence.

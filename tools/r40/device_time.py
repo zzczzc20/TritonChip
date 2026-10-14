@@ -113,7 +113,7 @@ def main(argv=None):
     other = [c for c in dev_checks if not c['ok'] and c['why'] != 'capacity-exceeded']
     dev_status = 'fail' if other else ('not-measured' if cap else 'capability-pass')
     dev_detail = (f'{sum(c["ok"] for c in dev_checks)}/{len(dev_checks)} pass on the device; '
-                  f'{len(cap)} capacity-exceeded on this image (resident tensors in the on-chip heap)')
+                  f'{len(cap)} capacity-exceeded on this image (resident tensors in the device heap)')
     print(f'R40-01.device  {dev_status}  {dev_detail}')
     if args.evidence:
         EV.record('R40-01.device', dev_status, dev_checks, detail=dev_detail)

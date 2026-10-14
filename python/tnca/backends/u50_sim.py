@@ -195,16 +195,16 @@ class SimLink(U50Link):
         if self.trace:
             argv.append('+trace')
         # The stand-in dies with the process that owns it, as the sim-file
-        # device does (transport._arm_parent_death): a host that exits
+        # device does: a host that exits
         # without stopping its link -- a benchmark worker, a killed test --
         # otherwise left the simulator spinning against a mailbox nobody
         # would write again. Sixteen of them were found running, parented
         # to init, after one benchmark sweep.
-        from ..transport import _arm_parent_death
-        spawn = {'preexec_fn': _arm_parent_death} if hasattr(os, 'fork') else {}
+        from .._child_exec import child_argv
         with open(self.log, 'w') as lg:
-            self.proc = subprocess.Popen(argv, stdout=lg, stderr=subprocess.STDOUT,
-                                         start_new_session=True, **spawn)
+            self.proc = subprocess.Popen(child_argv(argv), stdout=lg,
+                                         stderr=subprocess.STDOUT,
+                                         start_new_session=True)
         self._await_up()
         return self
 

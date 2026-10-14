@@ -21,12 +21,10 @@ thirty-two launches in one session, and a runtime that quietly relaunched the
 simulator between them would make "the intermediate result stayed in device
 memory" a sentence with no content.
 """
-import ctypes
 import functools
 import os
 import operator
 import shutil
-import signal
 import subprocess
 import tempfile
 import threading
@@ -34,6 +32,7 @@ import time
 
 from .errors import DeviceLost, TncaError
 from . import backend as _backend
+from ._child_exec import child_argv
 
 
 def serialized_io(fn):
@@ -48,30 +47,6 @@ def serialized_io(fn):
         with self._io_lock:
             return fn(self, *args, **kwargs)
     return call
-
-#: PR_SET_PDEATHSIG, from <linux/prctl.h>: "signal this process when its
-#: parent dies". 1 is the option number, not a flag.
-_PR_SET_PDEATHSIG = 1
-
-
-def _arm_parent_death():
-    """Ask the kernel to terminate this process when its parent dies.
-
-    Called in the child between fork and exec, so the request is in place
-    before the device starts. It survives the exec: the parent-death signal
-    is cleared only for set-user-ID, set-group-ID and capability-bearing
-    binaries, and a simulator is none of those.
-
-    Best-effort on purpose. A child that could not arm the signal must still
-    run -- refusing to start a device because it could not promise to die
-    later would trade a leak for an outage, and the leak is the smaller
-    problem.
-    """
-    try:
-        libc = ctypes.CDLL('libc.so.6', use_errno=True)
-        libc.prctl(_PR_SET_PDEATHSIG, signal.SIGTERM)
-    except Exception:
-        pass
 
 OP_UPLOAD = 1
 OP_DOWNLOAD = 2
@@ -192,14 +167,12 @@ class Transport(_backend.Backend):
         # to end the child instead, which is the one promise SIGKILL cannot
         # break.
         #
-        # `preexec_fn` is documented as unsafe in a process with threads. This
-        # runtime is single-threaded host code; if that ever stops being true,
-        # this is the line that needs revisiting.
-        spawn = {'preexec_fn': _arm_parent_death} if hasattr(os, 'fork') else {}
+        # The runtime and Torch have threads. Install the death signal in a
+        # fresh executable, never in a Python callback between fork and exec.
         with open(self.log, 'w') as log:
             self.proc = subprocess.Popen(
-                argv, stdout=log, stderr=subprocess.STDOUT,
-                start_new_session=True, **spawn)
+                child_argv(argv), stdout=log, stderr=subprocess.STDOUT,
+                start_new_session=True)
         # The device writes sequence 0 when it is up. Waiting for that is the
         # difference between "slow to start" and "never started", and a
         # runtime that cannot tell them apart reports the wrong one.

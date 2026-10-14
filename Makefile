@@ -1436,6 +1436,7 @@ r40-device: $(R2_DATA_STAMP) | dirs
 # remain not-measured until their independent runners supply the evidence.
 .PHONY: r40-residency
 r40-residency: $(R2_DATA_STAMP) | dirs
+	@$(PYTHON) tools/r40/child_exec_tests.py
 	@$(PYTHON) tools/r40/io_concurrency_tests.py
 	@$(TORCH_PYTHON) tools/r40/lifetime_tests.py
 	@TNCA_BACKEND=sim-file $(TORCH_PYTHON) tools/r40/allocation_pressure_tests.py

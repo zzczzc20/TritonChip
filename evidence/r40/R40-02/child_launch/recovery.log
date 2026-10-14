@@ -1,0 +1,6 @@
+  building core-vrf-sync-v5 -> /home/zhongchun/.cache/tnca/devices/core-vrf-sync-v5-a8f9e2a0291d254a-ddd87cad0ade/tnca_device_vrf5.vvp
+  built 17674928 bytes
+PASS 3 recovery epochs with forced physical address reuse
+PASS stale event, copy, view, launch and growing resize rejected
+PASS old storage destruction preserves the new allocation at the same address
+r40-recovery-tests PASS (3/3)

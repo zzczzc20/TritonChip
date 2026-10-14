@@ -136,6 +136,19 @@ set -u
 OUT=${1:?usage: link.sh <build-dir>    # the directory package_xo.tcl wrote into}
 REPO=$(cd "$(dirname "$0")/../.." && pwd)
 
+# Variant metadata is written only after successful XO packaging.
+TNCA_KERNEL_VARIANT=none
+if [ -f "$OUT/tnca_variant.txt" ]; then
+    TNCA_KERNEL_VARIANT=$(cat "$OUT/tnca_variant.txt")
+fi
+case "$TNCA_KERNEL_VARIANT" in
+none|hbm|multicore-hbm) ;;
+*) echo "link.sh: unknown packaged variant $TNCA_KERNEL_VARIANT" >&2; exit 2 ;;
+esac
+if [ "$TNCA_KERNEL_VARIANT" = multicore-hbm ] && [ "${TNCA_BOARD:-u50}" != u280 ]; then
+    echo "link.sh: multicore-hbm requires TNCA_BOARD=u280" >&2; exit 2
+fi
+
 # The card: TNCA_BOARD=u50 (default) or u280, from flow/fpga/boards.sh.
 . "$(dirname "$0")/boards.sh"
 VITIS=${XILINX_VITIS:-$BOARD_VITIS}
@@ -153,6 +166,15 @@ EXPECT_MHZ=100
 XO=$OUT/tnca_u50.xo
 XCLBIN=$OUT/tnca_${BOARD}.xclbin
 LOG=$OUT/link.log
+if [ "$TNCA_KERNEL_VARIANT" = multicore-hbm ]; then
+    # Keep total HBM capacity fixed; all three aliases need the same BO group.
+    # Pass literal paths to v++ without routing them through LINK_EXTRA splitting.
+    MULTICORE_CFG=$REPO/fpga/u280_multicore_hbm.cfg
+    MULTICORE_PLACE=$REPO/flow/fpga/place_r40_multicore.tcl
+    [ -f "$MULTICORE_CFG" ] && [ -f "$MULTICORE_PLACE" ] || {
+        echo "link.sh: multicore connectivity/placement inputs missing" >&2; exit 2;
+    }
+fi
 INFO=$OUT/xclbin.info
 
 #------------------------------------------------------------------------------
@@ -197,6 +219,10 @@ else
         echo "RTL_COMMIT=$(git -C "$REPO" rev-parse HEAD 2>/dev/null || echo 'not a git tree')"
         echo "XO=$XO"
         echo "BOARD=$BOARD"
+        echo "KERNEL_VARIANT=$TNCA_KERNEL_VARIANT"
+        if [ "$TNCA_KERNEL_VARIANT" = multicore-hbm ]; then
+            sha256sum "$MULTICORE_CFG" "$MULTICORE_PLACE"
+        fi
         echo "BOARD_VPP_OPTS=$BOARD_VPP_OPTS"
         echo "LINK_EXTRA=${LINK_EXTRA:-}"
         echo "PLATFORM=$PLATFORM"
@@ -214,10 +240,16 @@ else
     #--------------------------------------------------------------------------
     # VPP_JOBS bounds the parallelism on a shared host (v++ --jobs); unset, v++
     # chooses.
+    multicore_args=()
+    if [ "$TNCA_KERNEL_VARIANT" = multicore-hbm ]; then
+        multicore_args=(--config "$MULTICORE_CFG"
+            --vivado.prop "run.impl_1.STEPS.PLACE_DESIGN.TCL.PRE=$MULTICORE_PLACE")
+    fi
     v++ -l -t hw \
         --platform "$PLATFORM" \
         ${VPP_JOBS:+--jobs $VPP_JOBS} \
         $BOARD_VPP_OPTS \
+        "${multicore_args[@]}" \
         ${LINK_EXTRA:-} \
         --kernel_frequency 0:$EXPECT_MHZ \
         --temp_dir "$OUT/tmp" \

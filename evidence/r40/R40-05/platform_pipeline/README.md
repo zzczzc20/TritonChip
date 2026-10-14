@@ -41,8 +41,12 @@ separate gates. `place_r40_multicore.tcl` is a strict placement input requiring
 three tile/router hierarchies and two-stage links; its actual placement must be
 verified from the linked routed DCP. It does not constitute placement evidence.
 
-Native three-core board-top Torch, descriptor/pair, and eight-core pipelined
-Torch runs are still live at this checkpoint; no pass is inferred from progress.
+Native three-core board-top Torch, descriptor and pair runs have now passed.
+`native_3.log` records 257 programs, all three cores active, zero measured tensor
+staging, and real read/write traffic on every outlet. `descriptor_3.log` and
+`pair_3.log` record the generated artifacts, actual descriptor loads, physical
+chunk widths, resource partitioning and three-core activity. Eight-core pipelined
+Torch is still live; no pass is inferred from progress.
 
 Packaged XO SHA256: `df9eeff80746c5d5e3df101d03c1887777b45f3ae196218fc61096419af47e49`.
 `packaged_sources.sha256` records the exact RTL input tree. The committed
@@ -50,3 +54,21 @@ Packaged XO SHA256: `df9eeff80746c5d5e3df101d03c1887777b45f3ae196218fc61096419af
 with an equivalent width-qualified localparam, to preserve the legacy Verilog
 parser gate; other packaged RTL inputs match this checkpoint. Repackage the
 committed tree before linking a deliverable image.
+
+Final XO repackaging is recorded in `package_final.log`, SHA256 `c10beabaf7c89a9f93d50cf1b5c59d2576e0c63343e11130e72f7254b78e2d60`.
+`packaged_final_sources.sha256` now matches the committed RTL, including the
+Verilog-compatible home ID localparam. The packager emits `tnca_variant.txt`;
+link.sh uses it to select multicore connectivity and placement and omit the
+legacy whole-kernel SLR1 constraint. Actual linked placement/route is pending.
+
+`ooc/` contains diagnostic Vivado 2023.2 synthesis resource/timing/check reports.
+Synthesis has zero errors and zero critical warnings. OOC utilization is 911882
+LUTs, 314376 FFs, 192 RAMB36, 45 RAMB18 and 531 DSPs. This excludes the platform,
+HBM fabric and routed implementation costs; it is not a timing signoff.
+
+`pblock_check.log` records the constraints successfully applied to the real
+synthesized DCP and written to `placement_pblocks.dcp`. Private code RAM,
+tile/router groups, command/completion FIFOs and both request/response memory
+pipeline storage are assigned with Pblocks. Vivado ignores USER_SLR_ASSIGNMENT
+on primitive cells, so that earlier hint-only approach has been replaced.
+This checks constraints, not actual placed or routed locations.

@@ -1,0 +1,20 @@
+{
+  "points": 77,
+  "passed": 77,
+  "tiers": {
+    "tiny": 27,
+    "small": 25,
+    "medium": 25
+  },
+  "fallbacks": 0,
+  "measured_upload_bytes": 0,
+  "measured_download_bytes": 0,
+  "warmup": 5,
+  "timed": 30,
+  "software_commit": "a6dd1e2",
+  "image_uuid": "50f1225b-ffe2-2271-d855-a77ee4c8f950",
+  "image_sha256": "8b53a664d851fff15d06c8c57e0460bd7e2951fbde2fdd85a5e1bab3c87ccc2d",
+  "device_time_gate": "fail",
+  "s_geo": 0.5872,
+  "full_r40_accepted": false
+}

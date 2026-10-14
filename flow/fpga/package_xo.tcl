@@ -269,4 +269,7 @@ foreach {tag id} {ASSOC ASSOCIATED_BUSIF FREQ FREQ_HZ} {
 package_xo -kernel_xml $KXML -kernel_name $NAME \
     -ip_directory $IPDIR -xo_path $XO -force
 
+set variant_file [open $OUT/tnca_variant.txt w]
+puts $variant_file $VARIANT
+close $variant_file
 puts "TNCA_PKG_DONE=$XO"

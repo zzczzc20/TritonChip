@@ -1,44 +1,73 @@
 # PLACE_DESIGN.TCL.PRE for the three-tile U280 platform binding.
 # Logical RTL stays platform independent. This binding requires two stages.
 # A missing hierarchy is fatal; do not silently produce a single-SLR image.
+set r40_hier_cells [get_cells -hierarchical -filter {IS_PRIMITIVE == 0}]
+set r40_hier_names [get_property NAME $r40_hier_cells]
+set r40_leaf_cells [get_cells -hierarchical -filter {IS_PRIMITIVE == 1}]
+set r40_leaf_names [get_property NAME $r40_leaf_cells]
+proc r40_assign {cells slr} {
+    # USER_SLR_ASSIGNMENT is ignored on leaves. Pblocks constrain both
+    # hierarchical groups and primitive response/code storage cells.
+    set name r40_slr$slr
+    set block [get_pblocks -quiet $name]
+    if {[llength $block] == 0} {
+        set block [create_pblock $name]
+        resize_pblock $block -add SLR$slr
+    }
+    add_cells_to_pblock $block $cells
+}
 proc r40_place {suffix slr} {
+    global r40_hier_cells r40_hier_names
     set matches [list]
-    foreach cell [get_cells -hierarchical -filter {IS_PRIMITIVE == 0}] {
-        set name [get_property NAME $cell]
+    foreach cell $r40_hier_cells name $r40_hier_names {
         if {[string match "*/$suffix" $name]} {lappend matches $cell}
     }
     if {[llength $matches] != 1} {
         error "R40 placement: expected one $suffix, found [llength $matches]"
     }
-    set_property USER_SLR_ASSIGNMENT SLR$slr $matches
+    r40_assign $matches $slr
     puts "R40_PLACEMENT $matches SLR$slr"
 }
 # Escape literal generate brackets for string match (Tcl glob syntax).
 proc r40_index {name index} {return [format {%s\[%d\]} $name $index]}
+proc r40_place_responses {stage_suffix slr} {
+    global r40_leaf_cells r40_leaf_names
+    set responses [list]
+    foreach cell $r40_leaf_cells name $r40_leaf_names {
+        if {[string match "*/$stage_suffix.rd_reg*" $name] ||
+            [string match "*/$stage_suffix.rv_reg*" $name]} {
+            lappend responses $cell
+        }
+    }
+    if {[llength $responses] == 0} {error "R40 placement: missing response pipeline $stage_suffix"}
+    r40_assign $responses $slr
+}
 set y [r40_index g_y 0]
 for {set tile 0} {$tile < 3} {incr tile} {
     set t [r40_index g_tile $tile]
     r40_place "u_system/$t.u_tile" $tile
+    # Private instruction RAM is owned by the shell, outside u_tile.
+    # Keep RAMs and their read mux/registers beside the consuming core.
+    set code [r40_index g_code $tile]
+    set private_code [list]
+    foreach cell $r40_leaf_cells name $r40_leaf_names {
+        if {[string match "*/shell/$code.*" $name]} {lappend private_code $cell}
+    }
+    if {[llength $private_code] == 0} {error "R40 placement: private code RAM missing for tile $tile"}
+    r40_assign $private_code $tile
+    puts "R40_PLACEMENT_PRIVATE_CODE tile=$tile cells=[llength $private_code] SLR$tile"
     set x [r40_index g_x $tile]
     r40_place "u_system/u_mesh/$y.$x.u_r" $tile
     set c [r40_index g_command_link $tile]
     set h [r40_index g_home_link $tile]
     for {set stage 0} {$stage < 2} {incr stage} {
         set s [r40_index g_stage $stage]
-        r40_place "u_system/g_dispatch/$c.commands/$s.queue" [expr {$stage == 0 ? 1 : $tile}]
-        r40_place "u_system/g_dispatch/$c.g_pipeline.completions/$s.queue" [expr {$stage == 0 ? $tile : 1}]
+        r40_place "u_system/g_dispatch.$c.commands/$s.queue" [expr {$stage == 0 ? 1 : $tile}]
+        r40_place "u_system/g_dispatch.$c.g_pipeline.completions/$s.queue" [expr {$stage == 0 ? $tile : 1}]
         set home_slr [expr {$stage == 0 ? $tile : 1}]
         r40_place "u_system/$h.g_pipeline.link/$s.request" $home_slr
-        set responses [list]
-        foreach cell [get_cells -hierarchical -filter {IS_PRIMITIVE == 1}] {
-            set name [get_property NAME $cell]
-            if {[string match "*/u_system/$h.g_pipeline.link/$s.rd_reg*" $name] ||
-                [string match "*/u_system/$h.g_pipeline.link/$s.rv_reg*" $name]} {
-                lappend responses $cell
-            }
-        }
-        if {[llength $responses] == 0} {error "R40 placement: missing home response pipeline $tile/$stage"}
-        set_property USER_SLR_ASSIGNMENT SLR$home_slr $responses
+        r40_place_responses "u_system/$h.g_pipeline.link/$s" $home_slr
+
     }
     foreach direction {e w} {
         set peer [expr {$direction eq "e" ? $tile+1 : $tile-1}]
@@ -52,11 +81,22 @@ for {set tile 0} {$tile < 3} {incr tile} {
         }
     }
 }
-# HBM-facing links/adapters stay in SLR0. This must be checked in routed DCP.
-foreach cell [get_cells -hierarchical -filter {IS_PRIMITIVE == 0}] {
-    set name [get_property NAME $cell]
-    if {[regexp {/g_outlet\[[0-2]\]\.adapter$} $name]} {
-        set_property USER_SLR_ASSIGNMENT SLR0 $cell
+# One or three active outlets use the same tile/home/PC capacity.
+set adapters [list]
+foreach cell $r40_hier_cells name $r40_hier_names {
+    if {[regexp {/g_outlet\[([0-2])\]\.adapter$} $name unused port]} {
+        r40_assign $cell 0
+        lappend adapters $cell
         puts "R40_PLACEMENT $cell SLR0"
+        set outlet [r40_index g_outlet $port]
+        for {set stage 0} {$stage < 2} {incr stage} {
+            set s [r40_index g_stage $stage]
+            set slr [expr {$stage == 0 ? 1 : 0}]
+            r40_place "system/$outlet.link/$s.request" $slr
+            r40_place_responses "system/$outlet.link/$s" $slr
+        }
     }
+}
+if {[llength $adapters] < 1 || [llength $adapters] > 3} {
+    error "R40 placement: expected 1..3 HBM-facing adapters, found [llength $adapters]"
 }

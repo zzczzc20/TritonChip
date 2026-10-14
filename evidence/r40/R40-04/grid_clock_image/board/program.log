@@ -1,0 +1,56 @@
+the .xclbin
+  file   /home/zzhouch/tnca_build/u280_r40grid/tnca_u280.xclbin
+  size   57917857 bytes
+  sha256 8b53a664d851fff15d06c8c57e0460bd7e2951fbde2fdd85a5e1bab3c87ccc2d
+  [ ok ] parses as an .xclbin
+  [ ok ] platform VBNV xilinx_u280_gen3x16_xdma_1_202211_1
+  [ ok ] interface UUID matches the shell contract
+  xclbin UUID 50f1225b-ffe2-2271-d855-a77ee4c8f950
+
+the device
+  [ ok ] present at 0000:04:00.1
+  [ ok ] live shell interface UUID matches
+  [ ok ] idle: contexts 0, outstanding 0, no client
+  loaded now 57f52a5a-5120-f9ed-7c19-ff36003920cb
+
+other loaders
+  [ ok ] no other program/load running
+
+thermal
+  Thermals
+    Temperature    Celcius  
+    ------------------------
+    PCB Top Front  26       
+    PCB Top Rear   24       
+    FPGA           33       
+    FPGA HBM       28       
+  
+  
+  [ ok ] FPGA 33 C, under 85
+  [ ok ] HBM 28 C, under 80
+
+
+loader detached (setsid, own session, fds off the terminal)
+  log  /home/zzhouch/tnca_build/u280_r40grid/program.log
+  it will survive this shell dying, which is not a hypothetical here.
+waiting for it to finish (up to 180s)...
+
+--- /home/zzhouch/tnca_build/u280_r40grid/program.log ---
+  === PROGRAM START Wed Oct 14 14:55:44 HKT 2026 ===
+  BDF=0000:04:00.1
+  XCLBIN=/home/zzhouch/tnca_build/u280_r40grid/tnca_u280.xclbin
+  SHA256=8b53a664d851fff15d06c8c57e0460bd7e2951fbde2fdd85a5e1bab3c87ccc2d
+  REPLACING=57f52a5a-5120-f9ed-7c19-ff36003920cb
+  THERMAL= ------------------------------------------------- [0000:04:00.1] : xilinx_u280_gen3x16_xdma_base_1 ------------------------------------------------- Thermals Temperature Celcius ------------------------ PCB Top Front 26 PCB Top Rear 24 FPGA 33 FPGA HBM 28 
+  ---
+  INFO: xbutil program succeeded on 0000:04:00.1
+  EXIT=0 Wed Oct 14 14:55:44 HKT 2026
+------------
+
+HBM, after the load (up to 60s for the sensor to appear)
+  [ ok ] HBM 27 C, under 80 -- the sensor is
+         reading, which is what the load was supposed to
+         make happen. It appeared after 0s.
+
+program.sh: OK -- device now reports xclbin 50f1225b-ffe2-2271-d855-a77ee4c8f950
+         loading is done; running a kernel on it is a separate step.

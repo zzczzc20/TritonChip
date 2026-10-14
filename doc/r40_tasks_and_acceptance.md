@@ -501,6 +501,20 @@ U280 有三个 SLR，HBM 接口位于 SLR0；板卡提供 8 GB HBM、32 个 AXI 
 2. 长 K GEMM 标准路径子集的 pipeline 相对串行 `S_geo ≥1.2`；选定矩阵改造相对同 tile/同软件/同频基线 compute-bound 子集 `S_geo ≥1.2`。每项资源开销、实际秒级收益与最终 LOO ≥3% 同时满足。
 3. 短 K 与低并行度点由冻结的自动策略选择，完整 tiny + small + medium 无未解决 >5% 回退。100 MHz 目标未收敛时按实际频率 gate，不能只报 cycles。
 
+进展（2026-10-14，功能 checkpoint，未签收）：
+
+- 公共 AOT/JIT lowering 接入 `rctx_stages=2/3`，显式选项、环境、缓存键
+  一致；参数检查 18/18，默认制品合同保持 447/447。三级 ring 的 odd-K、
+  跨 program epoch、单步与 carried-pointer 合法拒绝诊断 4/4。
+- 标准 native Torch fullgraph mm/addmm，在 16×16×48、17×31×65 两种
+  shape 下，两级和三级各 4/4 数值、实际 ring/role、稳态零 staging 通过。
+  按 runtime launch sequence 选择测量区间，真实 engine trace 的 DMA/MMA
+  overlap 分别为 1272/1664 cycles；raw trace 与实际制品可重新核验。
+  overlap 数量不等于 speedup，不能替代冻结 ≥1.2 性能、LOO、自动策略
+  与恶劣 HBM/fault 覆盖。证据 `evidence/r40/R40-07/`。
+- `make r40-pipeline-checks` 执行功能诊断；正式 `make r40-pipeline`
+  还要求全部冻结 gate 的证据。未测量的板上性能仍不通过。
+
 ### R40-08：标准 Torch 的 attention / reduction 与驻留 KV
 
 交付：

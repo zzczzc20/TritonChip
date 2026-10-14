@@ -20,10 +20,12 @@ reports remain active; requesting a third stage does not relax ownership.
 - `contract.log`: default O0/O1/O2 artifacts remain 447/447 byte-identical to
   the independent frozen B39 reconstruction.
 
-The added `native_pipeline_tests.py` audits standard fullgraph Torch mm/addmm,
-tail and odd-K, actual ring buffers and role mappings, and zero steady tensor
-staging. Complete two/three-stage native results are recorded separately after
-the running jobs finish. No passing package JSON is written by this checkpoint.
+`native2.log` and `native3.log`: the `0f4639d` version of
+`native_pipeline_tests.py` passes 4/4 in each mode through standard fullgraph
+Torch mm/addmm. Shapes 16x16x48 and 17x31x65 cover odd-K, tail and multiple
+programs; artifacts confirm actual two/three-stage rings and two roles, with
+zero steady tensor staging. The later trace audit is recorded separately.
+No passing package JSON is written by this checkpoint.
 
 `make r40-pipeline` runs stage-option, barrier and ring/native diagnostics then
 judges the frozen R40-07 evidence. Actual DMA/MMA overlap, full adverse-memory

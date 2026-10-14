@@ -51,9 +51,10 @@ def main():
     other = Link()
     refused(lambda: MulticoreMMIOBackend(other).start(), DeviceLost)
     assert other.closed and not other.writes  # legacy magic cannot receive v2 writes
-    for options in ({'hbm_dma': True}, {'core_count': 0}, {'core_count': 17},
+    for options in ({'core_count': 0}, {'core_count': 17},
                     {'memory_ports': 4}, {'core_count':8,'memory_ports':4}, {'core_count': 1.5}):
         refused(lambda opts=options: MulticoreMMIOBackend(Link(), **opts), (ArgumentError, TypeError))
+    refused(lambda: MulticoreMMIOBackend(Link(), hbm_dma=True)._open_window(2), ArgumentError)
     assert MulticoreMMIOBackend(Link(), image_profile=None).image_profile == 'core-vrf-sync-v5'
     allocation_link = MulticoreXDMALink(xclbin='unopened-test.xclbin')
     class Allocator:

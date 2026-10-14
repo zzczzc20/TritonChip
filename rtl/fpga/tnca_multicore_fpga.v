@@ -1,7 +1,7 @@
 // Coherent register binding and persistent physical-grid AXI shell.
 // One allocated global memory window is visible through all AXI masters.
 // Platform supplies AXI-Lite crossing, HBM connectivity, resets and placement.
-// DMA bypass remains refused until ownership transfer is implemented.
+// DMA capability requires the optional ownership barrier and physical drain.
 `default_nettype none
 module tnca_multicore_fpga #(
  parameter NX=3,NY=1,N=NX*NY,CODE_WORDS=16384,CODE_LINK_STAGES=0,MEM_PORTS=1,NOC_LINK_STAGES=0,DISPATCH_STAGES=0,MEM_HOME_STAGES=0,
@@ -12,7 +12,7 @@ module tnca_multicore_fpga #(
  parameter VRF_PREFETCH=1,RCTX_SWITCH=2,MTX_ABUF=1,LSU_INFLIGHT=2,
  parameter FPU_OVERLAP=1,RSLICE=1,RPAIR=1,HAS_TENSOR_XPOSE=1,
  parameter SETS=64,SET_W=6,WAYS=8,WAY_W=3,LINK_STAGES=2,AXI_DATA_W=256,AXI_OUT_N=8,
- parameter AXI_ID_W=(AXI_OUT_N>1?$clog2(AXI_OUT_N):1),MEM_BASE=64'h20000,REG_ADDR_W=8
+ parameter AXI_ID_W=(AXI_OUT_N>1?$clog2(AXI_OUT_N):1),MEM_BASE=64'h20000,REG_ADDR_W=8,CACHE_MAINTENANCE=0
 )(
  input wire clk,rst_n,
  input wire [REG_ADDR_W-1:0] reg_addr,input wire [63:0] reg_wdata,
@@ -50,6 +50,8 @@ module tnca_multicore_fpga #(
  input wire [MEM_PORTS-1:0] m_rlast
 );
 wire cmd_valid;
+ wire cache_maint_valid,cache_maint_ready,cache_maint_done;
+ wire [63:0] cache_maint_base,cache_maint_size;
  wire cmd_ready;
  wire [63:0] cmd_id,cmd_pc,cmd_arg_base,cmd_arg_stride,cmd_deadline;
  wire [31:0] cmd_gx,cmd_gy,cmd_gz;
@@ -87,6 +89,7 @@ wire cmd_valid;
  end endgenerate
  assign cmd_vbase=0;
  tnca_multicore_axi #(
+  .CACHE_MAINTENANCE(CACHE_MAINTENANCE),
   .NX(NX),
   .NY(NY),
   .N(N),
@@ -129,6 +132,8 @@ wire cmd_valid;
  ) system(
   .clk(clk),
   .rst_n(rst_n),
+  .cache_maint_valid(cache_maint_valid),.cache_maint_base(cache_maint_base),.cache_maint_size(cache_maint_size),
+  .cache_maint_ready(cache_maint_ready),.cache_maint_done(cache_maint_done),
   .cmd_valid(cmd_valid),
   .cmd_ready(cmd_ready),
   .cmd_id(cmd_id),
@@ -209,9 +214,11 @@ wire cmd_valid;
   .m_rresp(m_rresp),
   .m_rlast(m_rlast)
  );
- tnca_multicore_mmio #(.N(N),.PORTS(MEM_PORTS),.NUM_RCTX(NUM_RCTX),.PHYS_W(PHYS_W),.CODE_WORDS(CODE_WORDS),.MEM_BASE(MEM_BASE),.REG_ADDR_W(REG_ADDR_W)) control(
+ tnca_multicore_mmio #(.CACHE_MAINTENANCE(CACHE_MAINTENANCE),.N(N),.PORTS(MEM_PORTS),.NUM_RCTX(NUM_RCTX),.PHYS_W(PHYS_W),.CODE_WORDS(CODE_WORDS),.MEM_BASE(MEM_BASE),.REG_ADDR_W(REG_ADDR_W)) control(
   .clk(clk),
   .rst_n(rst_n),
+  .cache_maint_valid(cache_maint_valid),.cache_maint_base(cache_maint_base),.cache_maint_size(cache_maint_size),
+  .cache_maint_ready(cache_maint_ready),.cache_maint_done(cache_maint_done),
   .reg_addr(reg_addr),
   .reg_wdata(reg_wdata),
   .reg_we(reg_we),

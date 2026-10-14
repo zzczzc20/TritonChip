@@ -10,8 +10,11 @@ from .u50_sim import SimLink, _repo_root, _tools
 
 class MulticoreMMIOLink(SimLink):
     def __init__(self, *, core_count=3, memory_ports=3,
-                 memory_bytes=1 << 20, link_stages=2, noc_link_stages=0, dispatch_stages=0, home_stages=0, code_stages=0, board_top=False, **kwargs):
+                 memory_bytes=1 << 20, link_stages=2, noc_link_stages=0, dispatch_stages=0, home_stages=0, code_stages=0, board_top=False, maintenance=False, **kwargs):
         self.board_top = bool(board_top)
+        self.maintenance = operator.index(maintenance)
+        if self.maintenance not in (0,1):
+            raise ArgumentError('maintenance must be 0 or 1')
         self.core_count = operator.index(core_count)
         self.memory_ports = operator.index(memory_ports)
         self.memory_bytes = operator.index(memory_bytes)
@@ -39,6 +42,35 @@ class MulticoreMMIOLink(SimLink):
             raise ArgumentError('simulated AXI allocation must contain complete lines')
         return 0x100000000, size
 
+    def _dma_commands(self, offset, count, data=None):
+        offset,count=operator.index(offset),operator.index(count)
+        if not self.maintenance or offset<0 or count<0 or offset>self.memory_bytes-count:
+            raise ArgumentError('DMA model range/capability is invalid')
+        out=bytearray()
+        width=8 if offset%8==0 and count%8==0 else 1
+        chunk=4096*width
+        for start in range(0,count,chunk):
+            indices=range(start,min(count,start+chunk),width)
+            read_op,write_op=('D','B') if width==8 else ('d','b')
+            commands=[f'{read_op} {offset+i}' if data is None else
+                      f'{write_op} {offset+i} {int.from_bytes(data[i:i+width],"little")}' for i in indices]
+            values=self._round_trip(self._pending+commands)
+            self._pending=[]
+            if data is None:
+                if len(values)!=len(commands) or any(not 0<=v<1<<(width*8) for v in values):
+                    raise DependencyFailed('DMA model returned an invalid byte stream')
+                for value in values:out.extend(value.to_bytes(width,'little'))
+            elif values:
+                raise DependencyFailed('DMA model returned values for a write')
+        return bytes(out)
+
+    def hbm_write(self, offset, data):
+        data=bytes(data)
+        self._dma_commands(offset,len(data),data)
+
+    def hbm_read(self, offset, nbytes):
+        return self._dma_commands(offset,nbytes)
+
     def _build(self):
         root = Path(_repo_root())
         iverilog, self._vvp = _tools()
@@ -48,7 +80,7 @@ class MulticoreMMIOLink(SimLink):
                    '-s', top, '-o', output]
         for name, value in dict(N=self.core_count, PORTS=self.memory_ports,
                                 MEMORY_BYTES=self.memory_bytes, STAGES=self.link_stages,
-                                NOC_PIPE=self.noc_link_stages, DISPATCH_PIPE=self.dispatch_stages, HOME_PIPE=self.home_stages, CODE_PIPE=self.code_stages).items():
+                                NOC_PIPE=self.noc_link_stages, DISPATCH_PIPE=self.dispatch_stages, HOME_PIPE=self.home_stages, CODE_PIPE=self.code_stages, MAINTENANCE=self.maintenance).items():
             command += [f'-P{top}.{name}={value}']
         for library in ('common', 'core', 'gen', 'nuca', 'noc', 'tile'):
             command += ['-y', 'rtl/' + library]
@@ -74,6 +106,7 @@ def stand_in(**kwargs):
                             home_stages=kwargs.pop('home_stages', 0),
                             code_stages=kwargs.pop('code_stages', 0),
                             board_top=kwargs.pop('board_top', False),
+                            maintenance=kwargs.pop('maintenance', False),
                             host_timeout=kwargs.get('host_timeout', 30.0))
     return MulticoreMMIOBackend(link, core_count=core_count,
                                memory_ports=memory_ports, **kwargs)

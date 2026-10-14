@@ -494,8 +494,13 @@ U280 有三个 SLR，HBM 接口位于 SLR0；板卡提供 8 GB HBM、32 个 AXI 
   地址、范围溢出与 reset；1/3/8 home 汇总；160,000 请求差分压力；
   0/2 级流水三核真实执行、455 dirty 结果与单字节 DMA 模型更新核验。
   证据 `evidence/r40/R40-06/cache_maintenance/`。
-- MMIO/capability、板级 drain/error、XRT transfer、独立 copy overlap
-  和真实板测仍待贯通；模型刺激不是 XRT DMA 或性能签收。
+- MMIO opcode 18、capability、shell/AXI drain/error 与共同 runtime 的
+  BO read/write 前 ownership 已贯通。旧镜像拒绝 DMA，新路径 opt-in。
+  真实三核平台 RTL 的 BO bypass 模型、partial dirty 邻居和标准 Torch
+  4097-element/257-program 图通过，peak active=3、三出口实际流量、
+  稳态 tensor staging=0。证据 `evidence/r40/R40-02/multicore_dma/`。
+  XRT 板测、独立 copy overlap、timeout/recovery 与冻结性能仍待验收；
+  BO 模型不是 XRT 时间测量，当前旧镜像不会自动增加新 capability。
 
 ### R40-07：异步流水、布局搬运与矩阵吞吐
 

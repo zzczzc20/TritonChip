@@ -498,7 +498,9 @@ jobs:
         run: make r40-physical-chunks TRITON_PYTHON=$HOME/tritonenv/bin/python
       - name: Multiple memory outlets and line AXI
         if: matrix.suite == 'memory'
-        run: make r40-memory-ports r40-line-axi TRITON_PYTHON=$HOME/tritonenv/bin/python
+        run: |
+          make r40-memory-ports r40-line-axi r40-cache-maintenance r40-multicore-dma \
+            TRITON_PYTHON=$HOME/tritonenv/bin/python TORCH_PYTHON=$HOME/tritonenv/bin/python
       - name: Two and three stage native pipelines and engine overlap
         if: matrix.suite == 'pipeline'
         run: |

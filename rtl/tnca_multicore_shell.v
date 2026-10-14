@@ -10,9 +10,11 @@ module tnca_multicore_shell #(
  parameter HAS_SFU=1,HAS_ATOMICS=1,HAS_SYS_ATOMICS=0,USE_BANKED_VRF=1,VRF_BYPASS=1,FE_NOBUBBLE=1,
  parameter VRF_PREFETCH=1,RCTX_SWITCH=2,MTX_ABUF=1,LSU_INFLIGHT=2,
  parameter FPU_OVERLAP=1,RSLICE=1,RPAIR=1,HAS_TENSOR_XPOSE=1,
- parameter SETS=64,SET_W=6,WAYS=8,WAY_W=3,PLATFORM_FAULT=0
+ parameter SETS=64,SET_W=6,WAYS=8,WAY_W=3,PLATFORM_FAULT=0,CACHE_MAINTENANCE=0
 )(
  input wire clk,rst_n,input wire platform_fault,
+ input wire cache_maint_valid,input wire [63:0] cache_maint_base,cache_maint_size,
+ input wire cache_maint_memory_drained,output wire cache_maint_ready,cache_maint_done,
  input wire cmd_valid,output wire cmd_ready,
  input wire [63:0] cmd_id,cmd_pc,cmd_arg_base,cmd_arg_stride,cmd_deadline,
  input wire [31:0] cmd_gx,cmd_gy,cmd_gz,
@@ -54,6 +56,7 @@ module tnca_multicore_shell #(
   assign effective_vbase[r*PHYS_W+:PHYS_W]=AUTO_VBASE ? r*VREGS_PER_RCTX : cmd_vbase[r*PHYS_W+:PHYS_W];
  end endgenerate
  wire grid_ready,grid_done,host_busy,data_ready,data_rsp;
+ wire system_maint_ready;
  wire [63:0] data_rdata,grid_id,grid_cycles;
  wire [3:0] grid_status;
  reg invalid_done,bad_host_pending,launch_live;
@@ -79,6 +82,7 @@ module tnca_multicore_shell #(
      !cmd_slice[2] || cmd_slice[1:0]!=cmd_group_log2));
  wire bad_pc=cmd_pc>=CODE_BYTES || cmd_pc[2:0]!=0 || bad_chunk;
  assign cmd_ready=rst_n && grid_ready && !code_busy && !bad_host_pending && !invalid_done;
+ assign cache_maint_ready=system_maint_ready && !code_busy && !bad_host_pending && !invalid_done;
  assign done_valid=invalid_done || grid_done;
  assign done_status=invalid_done ? 4'd3 : grid_status;
  assign done_id=invalid_done ? invalid_id : grid_id;
@@ -154,7 +158,7 @@ module tnca_multicore_shell #(
    if(host_valid && host_ready && bad_host_addr)bad_host_pending<=1;
   end
  end
- tnca_top #(.NX(NX),.NY(NY),.MEM_PORTS(MEM_PORTS),.GLOBAL_GRID(1),.HOST_ACCESS(1),.MEM_SRC_W(SRC_W),.NOC_LINK_STAGES(NOC_LINK_STAGES),.DISPATCH_STAGES(DISPATCH_STAGES),.MEM_HOME_STAGES(MEM_HOME_STAGES),
+ tnca_top #(.CACHE_MAINTENANCE(CACHE_MAINTENANCE),.NX(NX),.NY(NY),.MEM_PORTS(MEM_PORTS),.GLOBAL_GRID(1),.HOST_ACCESS(1),.MEM_SRC_W(SRC_W),.NOC_LINK_STAGES(NOC_LINK_STAGES),.DISPATCH_STAGES(DISPATCH_STAGES),.MEM_HOME_STAGES(MEM_HOME_STAGES),
   .NUM_RCTX(NUM_RCTX),.RCTX_W(RCTX_W),.PHYS_VREGS(PHYS_VREGS),.PHYS_W(PHYS_W),
   .VREGS_PER_RCTX(VREGS_PER_RCTX),
   .HAS_SFU(HAS_SFU),.HAS_ATOMICS(HAS_ATOMICS),.HAS_SYS_ATOMICS(HAS_SYS_ATOMICS),.USE_BANKED_VRF(USE_BANKED_VRF),.VRF_BYPASS(VRF_BYPASS),
@@ -168,6 +172,8 @@ module tnca_multicore_shell #(
   .ports_rsp_src(ports_rsp_src),.ports_rsp_rdata(ports_rsp_rdata),.memory_protocol_fault(memory_protocol_fault),
   .memory_reads(memory_reads),.memory_writes(memory_writes),
   .clk(clk),.rst_n(rst_n),.launch_valid(1'b0),.launch_pc(cmd_pc),.launch_arg_base(cmd_arg_base),
+  .cache_maint_valid(cache_maint_valid && !code_busy && !bad_host_pending && !invalid_done),.cache_maint_base(cache_maint_base),.cache_maint_size(cache_maint_size),
+  .cache_maint_memory_drained(cache_maint_memory_drained),.cache_maint_ready(system_maint_ready),.cache_maint_done(cache_maint_done),
   .grid_abort(deadline_abort || (PLATFORM_FAULT && platform_fault)),.grid_abort_status((PLATFORM_FAULT && platform_fault) ? 4'd1 : 4'd2),.launch_role_mask(cmd_roles),.launch_vbase(effective_vbase),.grid_slice(cmd_slice),
   .grid_valid(cmd_valid && !bad_pc && !code_busy && !bad_host_pending && !invalid_done),.grid_ready(grid_ready),
   .grid_group_log2(cmd_group_log2),.grid_id(cmd_id),.grid_arg_stride(cmd_arg_stride),.grid_x(cmd_gx),.grid_y(cmd_gy),.grid_z(cmd_gz),

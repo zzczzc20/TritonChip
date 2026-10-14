@@ -43,6 +43,11 @@ proc r40_place_responses {stage_suffix slr} {
     r40_assign $responses $slr
 }
 set y [r40_index g_y 0]
+set r40_maintenance 0
+foreach name $r40_hier_names {
+    if {[string match {*/u_system/g_cache_handoff.ownership} $name]} {set r40_maintenance 1}
+}
+if {$r40_maintenance} {r40_place "u_system/g_cache_handoff.ownership" 1}
 for {set tile 0} {$tile < 3} {incr tile} {
     set t [r40_index g_tile $tile]
     r40_place "u_system/$t.u_tile" $tile
@@ -78,6 +83,10 @@ for {set tile 0} {$tile < 3} {incr tile} {
         set home_slr [expr {$stage == 0 ? $tile : 1}]
         r40_place "u_system/$h.g_pipeline.link/$s.request" $home_slr
         r40_place_responses "u_system/$h.g_pipeline.link/$s" $home_slr
+        if {$r40_maintenance} {
+            r40_place "u_system/g_cache_handoff.$h.command/$s.queue" [expr {$stage == 0 ? 1 : $tile}]
+            r40_place "u_system/g_cache_handoff.$h.response/$s.queue" [expr {$stage == 0 ? $tile : 1}]
+        }
 
     }
     foreach direction {e w} {

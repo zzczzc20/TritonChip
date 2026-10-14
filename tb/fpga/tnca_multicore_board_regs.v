@@ -2,7 +2,7 @@
 `timescale 1ns/1ps
 `default_nettype none
 module tnca_multicore_board_regs;
- parameter N=3,PORTS=3,MEMORY_BYTES=1048576,STAGES=2,NOC_PIPE=0,DISPATCH_PIPE=0,HOME_PIPE=0,CODE_PIPE=0;
+ parameter N=3,PORTS=3,MEMORY_BYTES=1048576,STAGES=2,NOC_PIPE=0,DISPATCH_PIPE=0,HOME_PIPE=0,CODE_PIPE=0,MAINTENANCE=0;
  localparam NX=N>4?4:N,ADDR_BITS=9,WORDS=(131072+MEMORY_BYTES)/8;
  reg clk=0,rst_n_async=0;always #5 clk=~clk;
  reg [8:0] reg_addr;reg [63:0] reg_wdata;reg reg_we,reg_re;
@@ -39,7 +39,7 @@ module tnca_multicore_board_regs;
  reg awvalid=0,wvalid=0,bready=0,arvalid=0,rready=0;
  reg [11:0] awaddr=0,araddr=0;reg [31:0] wdata=0;reg [3:0] wstrb=15;
  wire awready,wready,bvalid,arready,rvalid;wire [31:0] rdata;wire [1:0] bresp,rresp;
- tnca_multicore_hbm_xo #(.MEM_PORTS(PORTS),.LINK_STAGES(STAGES),.CODE_LINK_STAGES(CODE_PIPE),.NOC_LINK_STAGES(NOC_PIPE),.DISPATCH_STAGES(DISPATCH_PIPE),.MEM_HOME_STAGES(HOME_PIPE),.SETS(4),.SET_W(2),.WAYS(2),.WAY_W(1)) dut(
+ tnca_multicore_hbm_xo #(.CACHE_MAINTENANCE(MAINTENANCE),.MEM_PORTS(PORTS),.LINK_STAGES(STAGES),.CODE_LINK_STAGES(CODE_PIPE),.NOC_LINK_STAGES(NOC_PIPE),.DISPATCH_STAGES(DISPATCH_PIPE),.MEM_HOME_STAGES(HOME_PIPE),.SETS(4),.SET_W(2),.WAYS(2),.WAY_W(1)) dut(
  .ap_clk(clk),.ap_rst_n(rst_n_async),
  .s_axi_tnca_awvalid(awvalid),
  .s_axi_tnca_awready(awready),
@@ -178,6 +178,7 @@ module tnca_multicore_board_regs;
  .m_rresp(m_rresp[p*(2)+:(2)]),
  .m_rlast(m_rlast[p*(1)+:(1)]));
  end endgenerate
+`include "tb/fpga/tnca_multicore_dma.vh"
     reg [8*512-1:0] cmd_path, rsp_path;
     integer         pollcycles, intercycle, watchdog;
 
@@ -252,11 +253,23 @@ module tnca_multicore_board_regs;
                             if (do_trace)
                                 $display("  r %0d -> %016h", arg_off,
                                          values[nvalues-1]);
+                        end else if(kind=="b" || kind=="d" || kind=="B" || kind=="D")begin
+                            if(!MAINTENANCE || arg_off>=MEMORY_BYTES || !dut.device.all_idle)
+                                $fatal(1,"DMA attempted without quiescent supported memory");
+                            dma_wide=(kind=="B" || kind=="D");
+                            if(dma_wide && (arg_off[2:0]!=0 || arg_off>MEMORY_BYTES-8))$fatal(1,"unaligned/past-end BO word");
+                            dma_offset=arg_off;dma_word=arg_val;#1;
+                            if(kind=="b" || kind=="B")begin
+                                dma_byte=arg_val[7:0];dma_write=1;
+                                #1;dma_write=0;
+                            end else begin
+                                values[nvalues]=dma_wide ? dma_read_word[dma_port*64+:64] : dma_read[dma_port*8+:8];nvalues=nvalues+1;
+                            end
                         end else begin
                             $display("tnca_fpga_regs: unknown command %0s",
                                      kind);
                         end
-                        repeat (intercycle) @(posedge clk);
+                        if(kind=="w" || kind=="r")repeat (intercycle) @(posedge clk);
                         #1;
                     end
                 end

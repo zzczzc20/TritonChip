@@ -2122,7 +2122,7 @@ r40-multicore-mmio: | dirs
 # Formal package entry points: functionality alone never signs off a package.
 # The evidence judge also requires physical placement, board measurements and
 # every performance gate from the frozen plan. Missing evidence exits nonzero.
-.PHONY: r40-multicore r40-nuca r40-pipeline r40-pipeline-checks r40-cache-maintenance
+.PHONY: r40-multicore r40-nuca r40-pipeline r40-pipeline-checks r40-cache-maintenance r40-multicore-dma
 r40-multicore: r40-core-parameters r40-multicore-shell \
   r40-physical-grid-transport r40-multicore-backend \
   r40-multicore-native-smoke r40-physical-chunks r40-multicore-mmio
@@ -2131,7 +2131,20 @@ r40-multicore: r40-core-parameters r40-multicore-shell \
 r40-cache-maintenance:
 	@$(PYTHON) tools/r40/cache_maintenance_tests.py --global-grid
 
-r40-nuca: r40-coherent-host r40-memory-ports r40-line-axi r40-cache-maintenance
+r40-multicore-dma:
+	@$(PYTHON) tools/r40/multicore_mmio_option_tests.py
+	@$(PYTHON) tools/r40/dma_handoff_guard_tests.py
+	@mkdir -p $(BUILD)/r40
+	@for enabled in 0 1; do $(IVERILOG) $(IVFLAGS) -s tb_mmio_cache_handoff \
+	  -Ptb_mmio_cache_handoff.ENABLE=$$enabled -o $(BUILD)/r40/mmio_handoff$$enabled.vvp \
+	  $(RTL)/fpga/tnca_multicore_mmio.v $(TB)/fpga/tb_mmio_cache_handoff.v || exit $$?; \
+	  $(VVP) $(BUILD)/r40/mmio_handoff$$enabled.vvp || exit $$?; done
+	@$(PYTHON) tools/r40/multicore_dma_tests.py --cores 1 --ports 1 --pipeline 0
+	@$(PYTHON) tools/r40/multicore_dma_tests.py --cores 3 --ports 3 --pipeline 2 --board-top
+	@CUDA_VISIBLE_DEVICES= $(TORCH_PYTHON) tools/r40/native_memory_ports_tests.py \
+	  --backend fpga-multicore-sim --cores 3 --ports 3 --pipeline 2 --board-top --dma
+
+r40-nuca: r40-coherent-host r40-memory-ports r40-line-axi r40-cache-maintenance r40-multicore-dma
 	@$(PYTHON) tools/r40/acceptance.py --wp R40-06
 
 # Ring tests are mechanism diagnostics. Standard Torch overlap, frozen

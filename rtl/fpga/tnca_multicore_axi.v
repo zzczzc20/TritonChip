@@ -11,9 +11,11 @@ module tnca_multicore_axi #(
  parameter VRF_PREFETCH=1,RCTX_SWITCH=2,MTX_ABUF=1,LSU_INFLIGHT=2,
  parameter FPU_OVERLAP=1,RSLICE=1,RPAIR=1,HAS_TENSOR_XPOSE=1,
  parameter SETS=64,SET_W=6,WAYS=8,WAY_W=3,LINK_STAGES=2,AXI_DATA_W=256,AXI_OUT_N=8,
- parameter AXI_ID_W=(AXI_OUT_N>1?$clog2(AXI_OUT_N):1),MEM_BASE=64'h20000
+ parameter AXI_ID_W=(AXI_OUT_N>1?$clog2(AXI_OUT_N):1),MEM_BASE=64'h20000,CACHE_MAINTENANCE=0
 )(
  input wire clk,rst_n,
+ input wire cache_maint_valid,input wire [63:0] cache_maint_base,cache_maint_size,
+ output wire cache_maint_ready,cache_maint_done,
  input wire cmd_valid,output wire cmd_ready,
  input wire [63:0] cmd_id,cmd_pc,cmd_arg_base,cmd_arg_stride,cmd_deadline,
  input wire [31:0] cmd_gx,cmd_gy,cmd_gz,
@@ -100,6 +102,7 @@ module tnca_multicore_axi #(
  assign all_idle=shell_all_idle && memory_drained;
  assign busy=shell_busy || !memory_drained;
  tnca_multicore_shell #(
+  .CACHE_MAINTENANCE(CACHE_MAINTENANCE),
   .NX(NX),
   .NY(NY),
   .N(N),
@@ -137,6 +140,8 @@ module tnca_multicore_axi #(
   .PLATFORM_FAULT(1)) shell(
   .clk(clk),
   .rst_n(rst_n),
+  .cache_maint_valid(cache_maint_valid),.cache_maint_base(cache_maint_base),.cache_maint_size(cache_maint_size),
+  .cache_maint_memory_drained(memory_drained),.cache_maint_ready(cache_maint_ready),.cache_maint_done(cache_maint_done),
   .platform_fault(platform_fault),
   .cmd_valid(cmd_valid && memory_drained),
   .cmd_ready(shell_cmd_ready),

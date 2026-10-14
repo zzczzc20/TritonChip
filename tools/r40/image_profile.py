@@ -62,7 +62,7 @@ def main():
             ap.error('multicore HBM uses the native line adapter, not the single-core bridge')
         if args.link_stages < 1 or not 1 <= args.outstanding <= 16:
             ap.error('multicore HBM needs positive pipeline stages and 1..16 outstanding slots')
-        params.update(MEM_PORTS=args.memory_ports, AXI_DATA_W=256, AXI_OUT_N=args.outstanding,
+        params.update(CACHE_MAINTENANCE=1, MEM_PORTS=args.memory_ports, AXI_DATA_W=256, AXI_OUT_N=args.outstanding,
                       AXI_ID_W=max(1, (args.outstanding - 1).bit_length()),
                       CODE_LINK_STAGES=args.link_stages, NOC_LINK_STAGES=args.link_stages, DISPATCH_STAGES=args.link_stages,
                       MEM_HOME_STAGES=args.link_stages, LINK_STAGES=args.link_stages)

@@ -1,0 +1,6 @@
+MULTICORE SHELL GRID PASS N=3 id=9 status=3 cycles=1552
+MULTICORE SHELL GRID PASS N=3 id=10 status=3 cycles=1560
+MULTICORE SHELL GRID PASS N=3 id=13 status=2 cycles=1712
+MULTICORE SHELL GRID PASS N=3 id=11 status=0 cycles=15888
+FATAL: tb/fpga/tb_multicore_axi.v:143: completion mismatch status= 1 expected= 0 id=                  12 idle=1 axi_fault=000 protocol_fault=000 core_fault=404040 pc=00000000000001e800000000000001e800000000000001e8 detail=000001000001000001
+       Time: 160410000  Scope: tb_multicore_axi.launch

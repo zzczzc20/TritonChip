@@ -1,0 +1,43 @@
+{
+  "version": 1,
+  "status": "functional RTL adapter; board integration and R40 acceptance remain open",
+  "line_bytes": 64,
+  "axi_data_widths": [
+    64,
+    128,
+    256,
+    512
+  ],
+  "address": {
+    "alignment_bytes": 64,
+    "translation": "axi_base[port] + req_addr - MEM_BASE",
+    "admission": "complete line fits axi_size; base/end cannot overflow uint64; invalid requests fault and are refused",
+    "controller_assignment": "existing unique home modulo memory outlet count; no new home hash",
+    "capacity": "each outlet exposes its configured logical window; neither duplicated simulator storage nor AXI width establishes board capacity"
+  },
+  "request_order": "same line with any write waits until prior AXI completion; different lines and read/read overlap",
+  "response": "read bursts assemble one complete line with original home source/tag; NUCA writebacks receive no home response; B completion frees adapter slot",
+  "ids": "independent outstanding slot IDs; tags may repeat across homes and writebacks",
+  "links": {
+    "stages": "platform parameter, zero or more",
+    "request": "two-entry FIFO per stage, ready derives from registered occupancy, no combinational ready propagation across stages",
+    "response": "one full-line register per stage, no backpressure at home interface",
+    "placement": "platform must place stages and supply constraints; functional RTL does not establish three-SLR routing/timing"
+  },
+  "completion": "public done_valid/cmd_ready/all_idle wait for every adapter and request/response link to drain; physical AXI error overrides done status to 1",
+  "fault": "sticky on AXI error, stray ID, malformed burst or invalid address; stop adapter admission and global issue; drain valid accepted AXI responses; lost/malformed responses or queued requests blocked behind a fault require platform reset, never a fabricated successful completion",
+  "reset": "platform must reset AXI fabric and attached controller along with core/link/adapter; resetting the adapter alone with outstanding AW/W/R/B is unsupported",
+  "counters": "64-bit free-running accepted AR/AW line transactions and R/W beats; not board HBM measurement",
+  "ideal_limits_bytes_per_cycle": {
+    "read": "min(32, DATA_W/8), one captured request plus AR cycle; ignores latency/credits/backpressure",
+    "write": "64/(512/DATA_W+1), serialized noninterleaved W bursts plus request capture; ignores B/credits/backpressure",
+    "link": "64 per direction per outlet at steady state; finite FIFO may stall"
+  },
+  "remaining": [
+    "AXI-Lite register/runtime binding",
+    "HBM connectivity and capacity mapping",
+    "SLR placement and timing/CDC",
+    "native Torch board validation",
+    "same-resource bandwidth and performance gates"
+  ]
+}

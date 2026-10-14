@@ -16,7 +16,7 @@ wire [2:0] mt,mrt;wire [SW-1:0] ms,mrs;
 reg [63:0] image[0:255];reg [1023:0] hexfile;
 integer cycles=0;
 tnca_multicore_shell #(.NX(NX),.NY(N/NX),.CODE_WORDS(256),.SETS(4),.SET_W(2),.WAYS(2),.WAY_W(1)) dut(
-.clk(clk),.rst_n(rst),.cmd_valid(cv),.cmd_ready(cr),.cmd_id(id),.cmd_pc(pc),
+.clk(clk),.rst_n(rst),.platform_fault(1'b0),.cmd_valid(cv),.cmd_ready(cr),.cmd_id(id),.cmd_pc(pc),
 .cmd_deadline(deadline),.timed_out(timed_out),.cmd_arg_base(64'h8000),.cmd_arg_stride(64'h100),.cmd_gx(32'd13),.cmd_gy(32'd7),.cmd_gz(32'd5),
 .cmd_cores({N{1'b1}}),.cmd_roles(4'b0001),.cmd_slice(4'd0),.cmd_vbase(32'd0),
 .done_valid(dv),.done_ready(ack),.done_status(ds),.done_id(did),.done_cycles(dc),

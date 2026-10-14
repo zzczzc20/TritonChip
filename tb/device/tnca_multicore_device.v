@@ -35,7 +35,7 @@ integer cycles=0;
 tnca_multicore_shell #(.MEM_PORTS(PORTS),.NX(NX),.NY(N/NX),.CODE_WORDS(16384),.VRF_BYPASS(VRF_BYPASS),.FE_NOBUBBLE(FE_NOBUBBLE),
 .VRF_PREFETCH(VRF_PREFETCH),.RCTX_SWITCH(RCTX_SWITCH),.LSU_INFLIGHT(LSU_INFLIGHT),
 .FPU_OVERLAP(FPU_OVERLAP),.MTX_ABUF(MTX_ABUF),.SETS(4),.SET_W(2),.WAYS(2),.WAY_W(1)) dut(
-.clk(clk),.rst_n(rst),.cmd_valid(cv),.cmd_ready(cr),.cmd_id(id),.cmd_pc(pc),
+.clk(clk),.rst_n(rst),.platform_fault(1'b0),.cmd_valid(cv),.cmd_ready(cr),.cmd_id(id),.cmd_pc(pc),
 .cmd_group_log2(role_flags[9:8]),.cmd_deadline(deadline),.timed_out(timed_out),.cmd_arg_base(arg_base),.cmd_arg_stride(arg_stride),.cmd_gx(gx),.cmd_gy(gy),.cmd_gz(gz),
 .cmd_cores(cores),.cmd_roles(role_flags[3:0]),.cmd_slice({role_flags[28],role_flags[31:29]}),.cmd_vbase(32'd0),
 .done_valid(dv),.done_ready(ack),.done_status(ds),.done_id(did),.done_cycles(dc),

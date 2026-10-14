@@ -2094,3 +2094,10 @@ r40-memory-ports: | dirs
 	@$(PYTHON) tools/r40/memory_ports_tests.py
 	@$(TRITON_PYTHON) tools/r40/native_memory_ports_tests.py --cores 3 --ports 2
 	@$(TRITON_PYTHON) tools/r40/native_memory_ports_tests.py --cores 3 --ports 3
+
+# Full-line AXI plumbing; board placement and performance remain separate gates.
+.PHONY: r40-line-axi
+r40-line-axi: | dirs
+	@$(PYTHON) tools/r40/line_axi_tests.py
+	@$(PYTHON) tools/r40/multicore_axi_tests.py
+	@$(PYTHON) tools/r40/multicore_axi_tests.py --cores 3 --write-delay 300

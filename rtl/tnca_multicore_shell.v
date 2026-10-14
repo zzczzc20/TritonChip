@@ -10,9 +10,9 @@ module tnca_multicore_shell #(
  parameter HAS_SFU=1,USE_BANKED_VRF=1,VRF_BYPASS=1,FE_NOBUBBLE=1,
  parameter VRF_PREFETCH=1,RCTX_SWITCH=2,MTX_ABUF=1,LSU_INFLIGHT=2,
  parameter FPU_OVERLAP=1,RSLICE=1,RPAIR=1,HAS_TENSOR_XPOSE=1,
- parameter SETS=64,SET_W=6,WAYS=8,WAY_W=3
+ parameter SETS=64,SET_W=6,WAYS=8,WAY_W=3,PLATFORM_FAULT=0
 )(
- input wire clk,rst_n,
+ input wire clk,rst_n,input wire platform_fault,
  input wire cmd_valid,output wire cmd_ready,
  input wire [63:0] cmd_id,cmd_pc,cmd_arg_base,cmd_arg_stride,cmd_deadline,
  input wire [31:0] cmd_gx,cmd_gy,cmd_gz,
@@ -128,7 +128,7 @@ module tnca_multicore_shell #(
   .ports_rsp_src(ports_rsp_src),.ports_rsp_rdata(ports_rsp_rdata),.memory_protocol_fault(memory_protocol_fault),
   .memory_reads(memory_reads),.memory_writes(memory_writes),
   .clk(clk),.rst_n(rst_n),.launch_valid(1'b0),.launch_pc(cmd_pc),.launch_arg_base(cmd_arg_base),
-  .grid_abort(deadline_abort),.grid_abort_status(4'd2),.launch_role_mask(cmd_roles),.launch_vbase(effective_vbase),.grid_slice(cmd_slice),
+  .grid_abort(deadline_abort || (PLATFORM_FAULT && platform_fault)),.grid_abort_status((PLATFORM_FAULT && platform_fault) ? 4'd1 : 4'd2),.launch_role_mask(cmd_roles),.launch_vbase(effective_vbase),.grid_slice(cmd_slice),
   .grid_valid(cmd_valid && !bad_pc && !code_pending && !bad_host_pending && !invalid_done),.grid_ready(grid_ready),
   .grid_group_log2(cmd_group_log2),.grid_id(cmd_id),.grid_arg_stride(cmd_arg_stride),.grid_x(cmd_gx),.grid_y(cmd_gy),.grid_z(cmd_gz),
   .grid_cores(cmd_cores),.grid_done_valid(grid_done),.grid_done_ready(done_ready && !invalid_done),

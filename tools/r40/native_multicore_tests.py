@@ -37,5 +37,11 @@ def main():
     assert not any(record['op'] in (3,9) for record in session.dev.history[before:])
     assert all(record['grid'][0]*record['grid'][1]*record['grid'][2]>=args.cores for record in launches)
     assert session.physical_grid and session._physical_core_count==args.cores
+    metrics=session.dev.physical_grid_metrics()
+    programs=launches[-1]['grid'][0]*launches[-1]['grid'][1]*launches[-1]['grid'][2]
+    assert metrics['peak_active']==args.cores,metrics
+    assert sum(row['issued'] for row in metrics['cores'])==programs,metrics
+    assert all(row['issued']==row['completed'] and row['occupied_cycles']>0 for row in metrics['cores']),metrics
+    print('HARDWARE MULTICORE METRICS '+json.dumps(metrics,sort_keys=True),flush=True)
     print(f'NATIVE MULTICORE TORCH PASS cores={args.cores} elements=4097 kernels={len(launches)} whole_grid_launches={len(actual)} tensor_staging=0',flush=True)
 if __name__=='__main__':main()

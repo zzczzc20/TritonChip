@@ -12,14 +12,30 @@ wire [N*32-1:0] px,py,pz,issued,completed;
 wire [N*64-1:0] args;
 wire [63:0] id,pc,did,cycles;wire [31:0] nx,ny,nz;
 wire [3:0] status;wire [CW-1:0] fc;
+wire [31:0] peak;
+wire [N*64-1:0] occupied;
 tnca_grid_dispatch #(.CORE_N(N)) dut(.clk(clk),.rst_n(rst_n),.launch_valid(lv),.launch_ready(lr),
 .abort_valid(ga),.abort_status(4'd2),.launch_id(64'd71),.launch_pc(64'h100),.launch_arg_base(64'h1000),.launch_arg_stride(64'h100),
 .launch_gx(gx),.launch_gy(gy),.launch_gz(gz),.launch_cores(mask),.cmd_valid(cv),.cmd_ready(ready),
 .cmd_id(id),.cmd_pc(pc),.cmd_arg_base(args),.cmd_x(px),.cmd_y(py),.cmd_z(pz),
 .cmd_nx(nx),.cmd_ny(ny),.cmd_nz(nz),.core_done(cd),.core_abort(ab),.core_status(cs),.cmd_cancel(cancel),
 .done_valid(dv),.done_ready(dr),.done_status(status),.done_id(did),.done_cycles(cycles),.fault_core(fc),
-.core_busy(busy),.issued(issued),.completed(completed));
+.core_busy(busy),.issued(issued),.completed(completed),.peak_active(peak),.active_cycles(occupied));
 integer timer[0:N-1],seen[0:7000];
+integer oracle_peak=0,oracle_active=0;
+reg [63:0] oracle_cycles[0:N-1];
+always @(posedge clk) begin
+ if(!rst_n || (lv && lr)) begin
+  oracle_peak=0;
+  for(integer m=0;m<N;m=m+1)oracle_cycles[m]=0;
+ end else if(!dv) begin
+  oracle_active=0;
+  for(integer m=0;m<N;m=m+1)if(busy[m])begin
+   oracle_active=oracle_active+1;oracle_cycles[m]=oracle_cycles[m]+1;
+  end
+  if(oracle_active>oracle_peak)oracle_peak=oracle_active;
+ end
+end
 integer tick=0,i,key,count=0,finish=0,inject=-1,fault_seen=0;
 reg [N-1:0] held=0;
 reg [N*32-1:0] oldx,oldy,oldz;
@@ -57,6 +73,7 @@ task invalid_grid;
  @(negedge clk);gx=ax;gy=ay;gz=az;lv=1;
  @(negedge clk);lv=0;
  if(!dv || status!=3 || cv!=0 || busy!=0)$fatal(1,"invalid grid accepted");
+ if(peak!=0 || occupied!=0)$fatal(1,"invalid grid telemetry not reset");
  dr=1;@(negedge clk);dr=0;
  $display("PASS N=%0d invalid grid refused",N);
  end
@@ -77,6 +94,8 @@ task run;
  if(badcore>=0 && (status!=5 || fc!=badcore || count>=expected))$fatal(1,"fault not drained");
  sum_i=0;sum_c=0;for(k=0;k<N;k=k+1) begin sum_i=sum_i+issued[k*32+:32];sum_c=sum_c+completed[k*32+:32];end
  if(sum_i!=count || sum_c!=finish)$fatal(1,"counter mismatch");
+ if(peak!=oracle_peak)$fatal(1,"peak activity mismatch");
+ for(k=0;k<N;k=k+1)if(occupied[k*64+:64]!=oracle_cycles[k])$fatal(1,"occupied cycle mismatch");
  repeat(4)begin @(negedge clk);if(!dv || lr || did!=71)$fatal(1,"completion not retained");end
  dr=1;@(negedge clk);dr=0;
  $display("PASS N=%0d grid=%0dx%0dx%0d issued=%0d fault=%0d",N,ax,ay,az,count,badcore);

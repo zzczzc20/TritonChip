@@ -13,6 +13,8 @@ wire cr,dv,hr,hrv,busy,idle;
 wire [3:0] ds,hs;
 wire [63:0] did,dc,hrd;
 wire [N*32-1:0] issued,completed;
+wire [31:0] peak_active;
+wire [N*64-1:0] active_cycles;
 wire mr,mready,mwe,mrv;
 wire [63:0] ma;wire [511:0] mw,md;
 wire [2:0] mt,mrt;wire [SW-1:0] ms,mrs;
@@ -33,6 +35,7 @@ tnca_multicore_shell #(.NX(NX),.NY(N/NX),.CODE_WORDS(16384),.VRF_BYPASS(VRF_BYPA
 .cmd_cores(cores),.cmd_roles(role_flags[3:0]),.cmd_slice({role_flags[28],role_flags[31:29]}),.cmd_vbase(32'd0),
 .done_valid(dv),.done_ready(ack),.done_status(ds),.done_id(did),.done_cycles(dc),
 .issued(issued),.completed(completed),.host_valid(hv),.host_ready(hr),.host_we(hw),
+.peak_active(peak_active),.active_cycles(active_cycles),
 .host_addr(ha),.host_wdata(hd),.host_be(8'hff),.host_rsp_valid(hrv),.host_rsp_data(hrd),.host_rsp_status(hs),
 .busy(busy),.all_idle(idle),.mem_req_valid(mr),.mem_req_ready(mready),.mem_req_addr(ma),
 .mem_req_we(mwe),.mem_req_wdata(mw),.mem_req_tag(mt),.mem_req_src(ms),
@@ -127,6 +130,14 @@ initial begin
      6:begin r0=served;end
      8:begin r0=32;r1=16777216;end
      10:begin r0=N;r1=16777216;end // physical grid capability
+     12:begin // synthesized per-core program counts, last accepted launch
+      if(a0<0 || a0>=N)status=3;
+      else begin r0=issued[a0*32+:32];r1=completed[a0*32+:32];end
+     end
+     13:begin // synthesized concurrency peak and per-core occupied cycles
+      if(a0<0 || a0>=N)status=3;
+      else begin r0=peak_active;r1=active_cycles[a0*64+:64];end
+     end
      11:begin
       if(a2[63:32]!=0 || (a2 & 64'h0ffffff0)!=0 || a4[63:32]==0 || (a4[63:32]>>N)!=0)status=3;
       else launch_grid();

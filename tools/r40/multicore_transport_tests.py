@@ -38,6 +38,12 @@ def main():
             assert reply.ok,reply
             launches=[r for r in dev.history[before:] if r['op']==11]
             assert len(launches)==1 and not any(r['op'] in (3,9) for r in dev.history[before:])
+            metrics=dev.physical_grid_metrics()
+            assert metrics['peak_active']==min(3,args.programs),metrics
+            assert sum(row['issued'] for row in metrics['cores'])==args.programs,metrics
+            assert all(row['issued']==row['completed'] for row in metrics['cores']),metrics
+            assert dev.request(12,3).status==3
+            assert dev.request(13,3).status==3
             reply,data=dev.download(0x20000,args.programs*8)
             assert reply.ok,reply
             assert list(struct.unpack('<'+'Q'*args.programs,data))==list(range(4096,4096+args.programs))

@@ -38,5 +38,15 @@ def main():
     dev.launch_grid(0,0x20000,(1<<31,0,1))
     assert sum(op==10 for op,_ in dev.calls)==1
     assert dev.calls[-1][1][3]==1<<31
-    print('physical-grid-option-tests PASS (11 cases)',flush=True)
+    for bad in ('refused','peak','completed','unstable'):
+        dev=fake()
+        def metrics_request(op,*args,**kwargs):
+            if op==10:return Reply(1,0,3,16777216)
+            if op==12:return Reply(2,3 if bad=='refused' else 0,7,8 if bad=='completed' else 7)
+            return Reply(3,0,4 if bad=='peak' else (args[0] if bad=='unstable' else 3),100)
+        dev.request=metrics_request
+        try:dev.physical_grid_metrics()
+        except DeviceLost:pass
+        else:raise AssertionError('invalid telemetry accepted: '+bad)
+    print('physical-grid-option-tests PASS (15 cases)',flush=True)
 if __name__=='__main__':main()

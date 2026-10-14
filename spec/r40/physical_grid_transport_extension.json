@@ -3,8 +3,39 @@
   "legacy_contract": "spec/r2_transport_v1.json (unchanged)",
   "opt_in": "Transport.launch_grid; Session selects it explicitly or via the sim-multicore backend contract",
   "operations": {
-    "10": {"name": "PHYSICAL_GRID_CAP", "read_only": true, "r0": "physical core count (1..16)", "r1": "maximum programs in a streaming grid", "old_image": "REFUSED; no physical dispatch fallback"},
-    "11": {"name": "PHYSICAL_GRID_LAUNCH", "a0": "entry PC", "a1": "core-0 argument block", "a2": "legacy uint32 role/slice flags", "a3": "gx | gy<<32", "a4": "gz | active_cores<<32", "a5": "per-core argument block stride in bytes", "launch_id": "request sequence", "success_r0": "global cycles low 32 bits", "success_r1": "global cycles high 32 bits"}
+    "10": {
+      "name": "PHYSICAL_GRID_CAP",
+      "read_only": true,
+      "r0": "physical core count (1..16)",
+      "r1": "maximum programs in a streaming grid",
+      "old_image": "REFUSED; no physical dispatch fallback"
+    },
+    "11": {
+      "name": "PHYSICAL_GRID_LAUNCH",
+      "a0": "entry PC",
+      "a1": "core-0 argument block",
+      "a2": "legacy uint32 role/slice flags",
+      "a3": "gx | gy<<32",
+      "a4": "gz | active_cores<<32",
+      "a5": "per-core argument block stride in bytes",
+      "launch_id": "request sequence",
+      "success_r0": "global cycles low 32 bits",
+      "success_r1": "global cycles high 32 bits"
+    },
+    "12": {
+      "name": "PHYSICAL_CORE_COUNTS",
+      "read_only": true,
+      "a0": "physical core index",
+      "r0": "issued programs",
+      "r1": "completed programs"
+    },
+    "13": {
+      "name": "PHYSICAL_CORE_ACTIVITY",
+      "read_only": true,
+      "a0": "physical core index",
+      "r0": "peak simultaneously occupied physical cores",
+      "r1": "occupied cycles for selected core"
+    }
   },
   "rules": [
     "Negotiate capability before launch; never infer physical cores from role contexts.",
@@ -15,6 +46,7 @@
     "The binding preserves request sequence identity through hardware completion.",
     "An expiry diagnostic before hardware drain poisons the simulation epoch; further writes and launches are refused.",
     "Capability does not imply compiler role-SPMD compatibility; public runtime partitioning remains a separate integration requirement.",
-    "The new simulation binding refuses unsupported legacy single-program opcodes rather than reinterpret their metadata."
+    "The new simulation binding refuses unsupported legacy single-program opcodes rather than reinterpret their metadata.",
+    "Telemetry is synthesized in the dispatcher from accepted work until core completion, including memory stalls; retained after completion until the next accepted dispatcher launch. Invalid/zero-work dispatcher launches reset counters. Out-of-range telemetry indices are refused; opcode 15 remains reserved/refused."
   ]
 }

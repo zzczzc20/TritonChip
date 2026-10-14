@@ -463,6 +463,32 @@ class Transport(_backend.Backend):
                             timeout=timeout)
 
     @serialized_io
+    def physical_grid_metrics(self):
+        """Hardware counters for the last accepted launch, retained until the next.
+
+        Occupied cycles count accepted work awaiting core completion, including
+        memory stalls; they are not instruction-retirement or utilization rates.
+        """
+        capability = self.physical_grid_capability()
+        if capability is None:
+            raise ValueError('image does not support physical grid dispatch')
+        rows=[]
+        peak=None
+        for core in range(capability[0]):
+            counts=self.request(12, core)
+            activity=self.request(13, core)
+            if not counts.ok or not activity.ok:
+                raise DeviceLost('physical grid telemetry is unavailable')
+            if not (0 <= counts.r1 <= counts.r0 <= 0xFFFFFFFF and
+                    0 <= activity.r1 <= 0xFFFFFFFFFFFFFFFF and
+                    0 <= activity.r0 <= capability[0]) or (peak is not None and peak != activity.r0):
+                raise DeviceLost('invalid physical grid telemetry')
+            peak=activity.r0
+            rows.append({'core':core,'issued':counts.r0,'completed':counts.r1,
+                         'occupied_cycles':activity.r1})
+        return {'peak_active':peak,'cores':rows}
+
+    @serialized_io
     def large_grid_limit(self):
         """Query once per backend epoch; old images explicitly refuse op 8."""
         if not hasattr(self, '_large_grid_limit'):

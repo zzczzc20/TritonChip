@@ -29,7 +29,9 @@ module tnca_grid_dispatch #(
     output reg [63:0] done_id, done_cycles,
     output reg [CORE_W-1:0] fault_core,
     output reg [CORE_N-1:0] core_busy,
-    output reg [CORE_N*32-1:0] issued, completed
+    output reg [CORE_N*32-1:0] issued, completed,
+    output reg [31:0] peak_active,
+    output reg [CORE_N*64-1:0] active_cycles
 );
     reg running, faulted;
     reg [CORE_N-1:0] active, pending;
@@ -78,11 +80,16 @@ module tnca_grid_dispatch #(
 
     integer c;
     reg selected_fault;
+    integer active_count;
+    always @* begin
+        active_count=0;
+        for(integer a=0;a<CORE_N;a=a+1) active_count=active_count+core_busy[a];
+    end
     always @(posedge clk) begin
         if(!rst_n) begin
             running<=0; faulted<=0; active<=0; core_busy<=0;pending<=0;cmd_x<=0;cmd_y<=0;cmd_z<=0;
             done_valid<=0; done_status<=0; done_id<=0; done_cycles<=0;
-            fault_core<=0; issued<=0; completed<=0;
+            fault_core<=0; issued<=0; completed<=0; peak_active<=0; active_cycles<=0;
             id_q<=0;pc_q<=0;args_q<=0;stride_q<=0;
             nx<=0;ny<=0;nz<=0;x<=0;y<=0;z<=0;remaining<=0;rr<=0;
         end else begin
@@ -91,7 +98,7 @@ module tnca_grid_dispatch #(
                 id_q<=launch_id;pc_q<=launch_pc;args_q<=launch_arg_base;stride_q<=launch_arg_stride;
                 nx<=launch_gx;ny<=launch_gy;nz<=launch_gz;active<=launch_cores;
                 x<=0;y<=0;z<=0;rr<=0;core_busy<=0;pending<=0;faulted<=0;fault_core<=0;
-                issued<=0;completed<=0;done_id<=launch_id;done_cycles<=0;done_status<=0;
+                issued<=0;completed<=0;peak_active<=0;active_cycles<=0;done_id<=launch_id;done_cycles<=0;done_status<=0;
                 if(total>MAX_PROGRAMS || last_args[95:64]!=0 ||
                    launch_pc[2:0]!=0 || launch_arg_base[2:0]!=0 || launch_arg_stride[2:0]!=0 ||
                    (total!=0 && launch_cores==0)) begin
@@ -103,10 +110,12 @@ module tnca_grid_dispatch #(
                 end
             end else if(running) begin
                 done_cycles<=done_cycles+1'b1;
+                if(active_count>peak_active) peak_active<=active_count;
                 core_busy<=busy_after;
                 pending<=faulted || fault_now ? 0 : pending_after;
                 selected_fault=0;
                 for(c=0;c<CORE_N;c=c+1) begin
+                    if(core_busy[c]) active_cycles[c*64+:64]<=active_cycles[c*64+:64]+1'b1;
                     if(accepted[c]) issued[c*32+:32]<=issued[c*32+:32]+1'b1;
                     if(core_done[c] && core_busy[c]) completed[c*32+:32]<=completed[c*32+:32]+1'b1;
                     if(!faulted && !selected_fault && (core_done[c] || (core_abort[c] && core_busy[c])) &&

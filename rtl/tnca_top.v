@@ -94,6 +94,8 @@ module tnca_top #(
     output wire [63:0] grid_done_id, grid_done_cycles,
     output wire [((NX*NY>1)?$clog2(NX*NY):1)-1:0] grid_fault_core,
     output wire [NX*NY*32-1:0] grid_issued, grid_completed,
+    output wire [31:0] grid_peak_active,
+    output wire [NX*NY*64-1:0] grid_active_cycles,
     input wire host_valid, host_we,
     input wire [63:0] host_addr, host_wdata,
     input wire [7:0] host_be,
@@ -197,7 +199,8 @@ module tnca_top #(
             .core_done(dispatch_busy & tile_idle),.core_abort(fault_valid),.core_status(status),
             .done_valid(grid_done_valid),.done_ready(grid_done_ready),.done_status(grid_done_status),
             .done_id(grid_done_id),.done_cycles(grid_done_cycles),.fault_core(grid_fault_core),
-            .core_busy(dispatch_busy),.issued(grid_issued),.completed(grid_completed));
+            .core_busy(dispatch_busy),.issued(grid_issued),.completed(grid_completed),
+            .peak_active(grid_peak_active),.active_cycles(grid_active_cycles));
     end else begin: g_legacy_launch
         assign tile_launch={N{launch_valid}};
         assign tile_slice=0;
@@ -208,6 +211,7 @@ module tnca_top #(
         assign dispatch_busy=0;assign dispatch_ready=0;assign grid_ready=0;assign grid_done_valid=0;
         assign grid_done_status=0;assign grid_done_id=0;assign grid_done_cycles=0;
         assign grid_fault_core=0;assign grid_issued=0;assign grid_completed=0;
+        assign grid_peak_active=0;assign grid_active_cycles=0;
     end endgenerate
 
     //==========================================================================

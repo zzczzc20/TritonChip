@@ -24,6 +24,7 @@ module tnca_top #(
     parameter HOST_ACCESS = 0,
     parameter NX          = 2,
     parameter NY          = 2,
+    parameter MEM_PORTS   = 1,
     parameter MEM_SRC_W   = (NX*NY>4 ? $clog2(NX*NY) : 2),
     parameter XW          = 2,
     parameter YW          = 2,
@@ -113,6 +114,22 @@ module tnca_top #(
     output wire [NX*NY*64-1:0]      imem_addr,
     input  wire [NX*NY*64-1:0]      imem_data,
 
+    // Multi-controller interface, used only when MEM_PORTS > 1. Legacy scalar
+    // memory ports remain the MEM_PORTS=1 contract.
+    output wire [MEM_PORTS-1:0] ports_req_valid,
+    input wire [MEM_PORTS-1:0] ports_req_ready,
+    output wire [MEM_PORTS*64-1:0] ports_req_addr,
+    output wire [MEM_PORTS-1:0] ports_req_we,
+    output wire [MEM_PORTS*LINE_BITS-1:0] ports_req_wdata,
+    output wire [MEM_PORTS*MSHR_W-1:0] ports_req_tag,
+    output wire [MEM_PORTS*MEM_SRC_W-1:0] ports_req_src,
+    input wire [MEM_PORTS-1:0] ports_rsp_valid,
+    input wire [MEM_PORTS*MSHR_W-1:0] ports_rsp_tag,
+    input wire [MEM_PORTS*MEM_SRC_W-1:0] ports_rsp_src,
+    input wire [MEM_PORTS*LINE_BITS-1:0] ports_rsp_rdata,
+    output wire [MEM_PORTS-1:0] memory_protocol_fault,
+    output reg [MEM_PORTS*64-1:0] memory_reads,memory_writes,
+
     // ---- one shared DRAM port -----------------------------------------------
     output wire                     mem_req_valid,
     input  wire                     mem_req_ready,
@@ -190,7 +207,7 @@ module tnca_top #(
         assign tile_roles=roles_q;assign tile_vbase=vbase_q;
         assign tile_launch=command_valid & tile_idle;
         tnca_grid_dispatch #(.CORE_N(N)) u_dispatch (
-            .clk(clk),.rst_n(rst_n),.abort_valid(grid_abort),.abort_status(grid_abort_status),.launch_valid(grid_valid && !host_busy),.launch_ready(dispatch_ready),
+            .clk(clk),.rst_n(rst_n),.abort_valid(grid_abort || (|memory_protocol_fault)),.abort_status((|memory_protocol_fault) ? 4'd1 : grid_abort_status),.launch_valid(grid_valid && !host_busy),.launch_ready(dispatch_ready),
             .launch_group_log2(grid_group_log2),.launch_id(grid_id),.launch_pc(launch_pc),.launch_arg_base(launch_arg_base),
             .launch_arg_stride(grid_arg_stride),.launch_gx(grid_x),.launch_gy(grid_y),.launch_gz(grid_z),
             .launch_cores((|launch_role_mask) ? grid_cores : {N{1'b0}}),
@@ -360,6 +377,22 @@ module tnca_top #(
         .l_out_valid(lo_valid), .l_out_ready(lo_ready), .l_out_flit(lo_flit)
     );
 
+    always @(posedge clk)begin
+        if(!rst_n)begin memory_reads<=0;memory_writes<=0;end
+        else if(MEM_PORTS==1)begin
+            if(mem_req_valid && mem_req_ready)begin
+                if(mem_req_we)memory_writes<=memory_writes+1'b1;
+                else memory_reads<=memory_reads+1'b1;
+            end
+        end else begin
+            for(integer outlet=0;outlet<MEM_PORTS;outlet=outlet+1)
+                if(ports_req_valid[outlet] && ports_req_ready[outlet])begin
+                    if(ports_req_we[outlet])memory_writes[outlet*64+:64]<=memory_writes[outlet*64+:64]+1'b1;
+                    else memory_reads[outlet*64+:64]<=memory_reads[outlet*64+:64]+1'b1;
+                end
+        end
+    end
+    generate if(MEM_PORTS==1) begin: g_single_memory
     tnca_mem_arbiter #(
         .N(N), .N_W(MEM_SRC_W), .ADDR_W(64), .LINE_BITS(LINE_BITS), .TAG_W(MSHR_W)
     ) u_marb (
@@ -376,5 +409,27 @@ module tnca_top #(
         .m_rsp_valid(mem_rsp_valid), .m_rsp_tag(mem_rsp_tag),
         .m_rsp_src(mem_rsp_src), .m_rsp_rdata(mem_rsp_rdata)
     );
+
+        assign ports_req_valid=0;assign ports_req_addr=0;assign ports_req_we=0;
+        assign ports_req_wdata=0;assign ports_req_tag=0;assign ports_req_src=0;
+        reg single_protocol_fault;
+        always @(posedge clk)begin
+            if(!rst_n)single_protocol_fault<=0;
+            else if(mem_rsp_valid && mem_rsp_src>=N)single_protocol_fault<=1;
+        end
+        assign memory_protocol_fault=single_protocol_fault;
+    end else begin: g_multiple_memory
+        assign mem_req_valid=0;assign mem_req_addr=0;assign mem_req_we=0;
+        assign mem_req_wdata=0;assign mem_req_tag=0;assign mem_req_src=0;
+        tnca_mem_ports #(.N(N),.PORTS(MEM_PORTS),.N_W(MEM_SRC_W),
+          .LINE_BITS(LINE_BITS),.TAG_W(MSHR_W)) outlets(
+          .clk(clk),.rst_n(rst_n),.s_req_valid(m_req_valid),.s_req_ready(m_req_ready),
+          .s_req_addr(m_req_addr),.s_req_we(m_req_we),.s_req_wdata(m_req_wdata),.s_req_tag(m_req_tag),
+          .s_rsp_valid(m_rsp_valid),.s_rsp_tag(m_rsp_tag),.s_rsp_rdata(m_rsp_rdata),
+          .m_req_valid(ports_req_valid),.m_req_ready(ports_req_ready),.m_req_addr(ports_req_addr),
+          .m_req_we(ports_req_we),.m_req_wdata(ports_req_wdata),.m_req_tag(ports_req_tag),
+          .m_req_src(ports_req_src),.m_rsp_valid(ports_rsp_valid),.m_rsp_tag(ports_rsp_tag),
+          .m_rsp_src(ports_rsp_src),.m_rsp_rdata(ports_rsp_rdata),.protocol_fault(memory_protocol_fault));
+    end endgenerate
 
 endmodule

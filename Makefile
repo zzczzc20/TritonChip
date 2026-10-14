@@ -2086,3 +2086,11 @@ r40-physical-chunks: r40-grid-dispatch | dirs
 	@TNCA_RCTX_SPMD=1 TNCA_PHYSICAL_CHUNKS=1 $(TRITON_PYTHON) tools/r40/native_multicore_tests.py --cores 8
 	@$(TRITON_PYTHON) tools/r40/native_multicore_features.py --cores 3
 	@$(TRITON_PYTHON) tools/r40/native_multicore_features.py --cores 3 --pair
+
+# Multi-controller functionality; HBM bandwidth/locality acceptance is separate.
+.PHONY: r40-memory-ports
+r40-memory-ports: | dirs
+	@$(TRITON_PYTHON) tools/r40/memory_port_option_tests.py
+	@$(PYTHON) tools/r40/memory_ports_tests.py
+	@$(TRITON_PYTHON) tools/r40/native_memory_ports_tests.py --cores 3 --ports 2
+	@$(TRITON_PYTHON) tools/r40/native_memory_ports_tests.py --cores 3 --ports 3

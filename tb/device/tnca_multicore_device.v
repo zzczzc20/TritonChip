@@ -1,6 +1,6 @@
 `timescale 1ns/1ps
 module tnca_multicore_device;
-parameter N=3;
+parameter N=3,PORTS=1;
 parameter TOTAL_WORDS=1048576;
 parameter VRF_BYPASS=1,FE_NOBUBBLE=1,VRF_PREFETCH=1,RCTX_SWITCH=2;
 parameter LSU_INFLIGHT=2,FPU_OVERLAP=1,MTX_ABUF=1;
@@ -15,6 +15,11 @@ wire [63:0] did,dc,hrd;
 wire [N*32-1:0] issued,completed;
 wire [31:0] peak_active;
 wire [N*64-1:0] active_cycles;
+wire [PORTS-1:0] pv,pr,pw,rv,pfault;
+wire [PORTS*64-1:0] pa,preads,pwrites;
+wire [PORTS*512-1:0] pd,rd;
+wire [PORTS*3-1:0] pt,rt;
+wire [PORTS*SW-1:0] ps,rs;
 wire mr,mready,mwe,mrv;
 wire [63:0] ma;wire [511:0] mw,md;
 wire [2:0] mt,mrt;wire [SW-1:0] ms,mrs;
@@ -27,7 +32,7 @@ reg [63:0] r0,r1,word_data,read_data;
 integer op,status,fd,n,j,k,pollcycles=20;
 reg poisoned=0;
 integer cycles=0;
-tnca_multicore_shell #(.NX(NX),.NY(N/NX),.CODE_WORDS(16384),.VRF_BYPASS(VRF_BYPASS),.FE_NOBUBBLE(FE_NOBUBBLE),
+tnca_multicore_shell #(.MEM_PORTS(PORTS),.NX(NX),.NY(N/NX),.CODE_WORDS(16384),.VRF_BYPASS(VRF_BYPASS),.FE_NOBUBBLE(FE_NOBUBBLE),
 .VRF_PREFETCH(VRF_PREFETCH),.RCTX_SWITCH(RCTX_SWITCH),.LSU_INFLIGHT(LSU_INFLIGHT),
 .FPU_OVERLAP(FPU_OVERLAP),.MTX_ABUF(MTX_ABUF),.SETS(4),.SET_W(2),.WAYS(2),.WAY_W(1)) dut(
 .clk(clk),.rst_n(rst),.cmd_valid(cv),.cmd_ready(cr),.cmd_id(id),.cmd_pc(pc),
@@ -37,12 +42,27 @@ tnca_multicore_shell #(.NX(NX),.NY(N/NX),.CODE_WORDS(16384),.VRF_BYPASS(VRF_BYPA
 .issued(issued),.completed(completed),.host_valid(hv),.host_ready(hr),.host_we(hw),
 .peak_active(peak_active),.active_cycles(active_cycles),
 .host_addr(ha),.host_wdata(hd),.host_be(8'hff),.host_rsp_valid(hrv),.host_rsp_data(hrd),.host_rsp_status(hs),
+.ports_req_valid(pv),.ports_req_ready(pr),.ports_req_addr(pa),.ports_req_we(pw),
+.ports_req_wdata(pd),.ports_req_tag(pt),.ports_req_src(ps),.ports_rsp_valid(rv),
+.ports_rsp_tag(rt),.ports_rsp_src(rs),.ports_rsp_rdata(rd),.memory_protocol_fault(pfault),
+.memory_reads(preads),.memory_writes(pwrites),
 .busy(busy),.all_idle(idle),.mem_req_valid(mr),.mem_req_ready(mready),.mem_req_addr(ma),
 .mem_req_we(mwe),.mem_req_wdata(mw),.mem_req_tag(mt),.mem_req_src(ms),
 .mem_rsp_valid(mrv),.mem_rsp_tag(mrt),.mem_rsp_src(mrs),.mem_rsp_rdata(md));
+generate if(PORTS==1)begin: g_single_ram
 tnca_dram_model #(.SRC_W(SW),.TAG_W(3),.LINES(TOTAL_WORDS/8),.LATENCY(11),.RANDOM_STALL(1),.REORDER(1)) ram(
 .clk(clk),.rst_n(rst),.req_valid(mr),.req_ready(mready),.req_addr(ma),.req_we(mwe),
 .req_wdata(mw),.req_tag(mt),.req_src(ms),.rsp_valid(mrv),.rsp_tag(mrt),.rsp_src(mrs),.rsp_rdata(md));
+end else begin: g_multiple_ram
+ for(genvar p=0;p<PORTS;p=p+1)begin: g_controller
+  // Each controller models the global byte-address space; only the unique
+  // owning home stores a given line. Logical capacity remains TOTAL_WORDS*8.
+  tnca_dram_model #(.SRC_W(SW),.TAG_W(3),.LINES(TOTAL_WORDS/8),.LATENCY(11+p*7),.RANDOM_STALL(1),.REORDER(1)) ram(
+   .clk(clk),.rst_n(rst),.req_valid(pv[p]),.req_ready(pr[p]),.req_addr(pa[p*64+:64]),
+   .req_we(pw[p]),.req_wdata(pd[p*512+:512]),.req_tag(pt[p*3+:3]),.req_src(ps[p*SW+:SW]),
+   .rsp_valid(rv[p]),.rsp_tag(rt[p*3+:3]),.rsp_src(rs[p*SW+:SW]),.rsp_rdata(rd[p*512+:512]));
+ end
+end endgenerate
 // Only clocks, external memory and file-to-port translation live here.
 task response;
  begin
@@ -138,6 +158,8 @@ initial begin
       if(a0<0 || a0>=N)status=3;
       else begin r0=peak_active;r1=active_cycles[a0*64+:64];end
      end
+     16:begin r0=PORTS;r1=1;end // home-index modulo port count
+     17:begin if(a0<0 || a0>=PORTS)status=3;else begin r0=preads[a0*64+:64];r1=pwrites[a0*64+:64];end end
      14:begin r0=1;r1=4;end // physical-x-chunk-v1, maximum four lanes
      11:begin
       if(a2[63:32]!=0 || (a2 & 64'h0ffffcf0)!=0 || a2[9:8]==3 || a4[63:32]==0 || (a4[63:32]>>N)!=0)status=3;

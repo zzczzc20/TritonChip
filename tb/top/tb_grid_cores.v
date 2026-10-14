@@ -4,6 +4,8 @@ module tb_grid_cores;
 parameter N=3;
 parameter MEMORY=0;
 parameter HOST=0;
+parameter PORTS=1;
+parameter INJECT_BAD_SOURCE=0;
 reg hv=0,hw=0;reg [63:0] ha=0,hd=0;reg [7:0] hbe=8'hff;
 wire hr,hrv,hb;wire [63:0] hrd;
 localparam MX=N>4?4:N;
@@ -19,6 +21,11 @@ reg [N*64-1:0] imem_data;
 reg [N-1:0] prev_launch=0;
 reg [63:0] program_mem[0:255];
 reg [1023:0] hexfile;
+wire [PORTS-1:0] pv,pr,pw,rv,pfault;
+wire [PORTS*64-1:0] pa,preads,pwrites;
+wire [PORTS*512-1:0] pd,rd;
+wire [PORTS*3-1:0] pt,rt;
+wire [PORTS*SW-1:0] ps,rs;
 wire mr,mready,mwe,mrv;
 wire [63:0] ma;
 wire [511:0] mw,md;
@@ -27,6 +34,14 @@ wire [SW-1:0] ms,mrs;
 tnca_dram_model #(.SRC_W(SW),.TAG_W(3),.LINES(2048),.LATENCY(11),.RANDOM_STALL(1),.REORDER(1)) ram (
 .clk(clk),.rst_n(rst_n),.req_valid(mr),.req_ready(mready),.req_addr(ma),.req_we(mwe),
 .req_wdata(mw),.req_tag(mt),.req_src(ms),.rsp_valid(mrv),.rsp_tag(mrt),.rsp_src(mrs),.rsp_rdata(md));
+generate if(PORTS>1)begin: g_memory_ports
+ for(genvar p=0;p<PORTS;p=p+1)begin: g_controller
+  tnca_dram_model #(.SRC_W(SW),.TAG_W(3),.LINES(2048),.LATENCY(11+p*7),.RANDOM_STALL(1),.REORDER(1)) ram(
+   .clk(clk),.rst_n(rst_n),.req_valid(pv[p]),.req_ready(pr[p]),.req_addr(pa[p*64+:64]),
+   .req_we(pw[p]),.req_wdata(pd[p*512+:512]),.req_tag(pt[p*3+:3]),.req_src(ps[p*SW+:SW]),
+   .rsp_valid(rv[p]),.rsp_tag(rt[p*3+:3]),.rsp_src(rs[p*SW+:SW]),.rsp_rdata(rd[p*512+:512]));
+ end
+end endgenerate
 reg stalled=0;
 reg [63:0] stalled_addr;
 reg [SW-1:0] stalled_src;
@@ -39,7 +54,7 @@ always @(posedge clk) if(rst_n) begin
  stalled_tag<=mt;stalled_we<=mwe;stalled_data<=mw;
 end
 integer seen[0:454];integer total=0,cycles=0;
-tnca_top #(.NX(MX),.NY(N/MX),.GLOBAL_GRID(1),.HOST_ACCESS(HOST),.SETS(4),.SET_W(2),.WAYS(2),.WAY_W(1)) dut (
+tnca_top #(.MEM_PORTS(PORTS),.NX(MX),.NY(N/MX),.GLOBAL_GRID(1),.HOST_ACCESS(HOST),.SETS(4),.SET_W(2),.WAYS(2),.WAY_W(1)) dut (
 .clk(clk),.rst_n(rst_n),.launch_valid(1'b0),.launch_pc(launch_pc),.launch_role_mask(2'b01),
 .launch_arg_base(64'h1000),.launch_vbase(14'd0),.grid_valid(valid),.grid_ready(ready),
 .grid_abort(1'b0),.grid_abort_status(4'd0),.grid_slice(4'd0),.grid_id(64'd17),.grid_arg_stride(64'h100),.grid_x(32'd13),.grid_y(32'd7),.grid_z(32'd5),
@@ -47,7 +62,10 @@ tnca_top #(.NX(MX),.NY(N/MX),.GLOBAL_GRID(1),.HOST_ACCESS(HOST),.SETS(4),.SET_W(
 .host_valid(hv),.host_we(hw),.host_addr(ha),.host_wdata(hd),.host_be(hbe),
 .host_ready(hr),.host_rsp_valid(hrv),.host_rsp_data(hrd),.host_busy(hb),
 .grid_issued(issued),.grid_completed(completed),.fault_valid(faults),.imem_addr(imem_addr),
-.imem_data(imem_data),.mem_req_valid(mr),.mem_req_ready(mready),.mem_req_addr(ma),
+.imem_data(imem_data),.ports_req_valid(pv),.ports_req_ready(pr),.ports_req_addr(pa),.ports_req_we(pw),
+.ports_req_wdata(pd),.ports_req_tag(pt),.ports_req_src(ps),.ports_rsp_valid(rv),
+.ports_rsp_tag(rt),.ports_rsp_src(rs),.ports_rsp_rdata(rd),.memory_protocol_fault(pfault),
+.memory_reads(preads),.memory_writes(pwrites),.mem_req_valid(mr),.mem_req_ready(mready),.mem_req_addr(ma),
 .mem_req_we(mwe),.mem_req_wdata(mw),.mem_req_tag(mt),.mem_req_src(ms),
 .mem_rsp_valid(mrv),.mem_rsp_tag(mrt),.mem_rsp_src(mrs),.mem_rsp_rdata(md));
 always @(posedge clk)begin
@@ -103,8 +121,11 @@ initial begin
   if(status!=0 || faults!=0 || total!=455 || !dut.all_idle)$fatal(1,"actual core execution failed status=%0d faults=%h total=%0d pc=%h",status,faults,total,dut.g_tile[0].u_tile.u_core.fault_pc);
   for(integer k=0;k<455;k=k+1)if(!seen[k])$fatal(1,"actual core missing PID");
   for(integer k=0;k<N;k=k+1)if(issued[k*32+:32]==0 || issued[k*32+:32]!=completed[k*32+:32])$fatal(1,"inactive or undrained core");
-  if(MEMORY && ram.n_rd==0)$fatal(1,"no real memory traffic");
-  $display("GRID REAL CORES PASS N=%0d memory=%0d phase=%0d programs=%0d cycles=%0d",N,MEMORY,phase,total,cycles);
+  if(MEMORY)for(integer port=0;port<PORTS;port=port+1)
+   if(preads[port*64+:64]==0)$fatal(1,"controller has no real read traffic");
+  if(MEMORY && pwrites==0)$fatal(1,"no real dirty writeback traffic");
+  if(pfault!=0)$fatal(1,"memory controller source ownership fault");
+  $display("GRID REAL CORES PASS N=%0d memory=%0d ports=%0d phase=%0d programs=%0d cycles=%0d",N,MEMORY,PORTS,phase,total,cycles);
   ack=1;@(negedge clk);ack=0;
  end
  if(HOST)begin
@@ -114,6 +135,14 @@ initial begin
   host_word(1,65536,64'h1234,8'h03);
   host_word(0,65536,64'hfedcba9876541234,8'hff);
   $display("GRID COHERENT HOST PASS N=%0d downloads=457 uploads=2",N);
+ end
+ if(INJECT_BAD_SOURCE)begin
+  force dut.mem_rsp_valid=1'b1;force dut.mem_rsp_src=N;
+  @(posedge clk);#1;if(pfault!=1)$fatal(1,"single-controller invalid source not latched");
+  release dut.mem_rsp_valid;release dut.mem_rsp_src;
+  @(negedge clk);valid=1;@(negedge clk);valid=0;wait(done);@(negedge clk);
+  if(status!=1 || issued!=0 || completed!=0)$fatal(1,"dispatch continued after controller protocol fault");
+  $display("SINGLE MEMORY PROTOCOL FAULT PASS");
  end
  $finish;
 end

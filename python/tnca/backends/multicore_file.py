@@ -21,10 +21,12 @@ def configuration(core_count, memory_bytes):
     return core_count,memory_bytes
 
 
-def prepare(profile='core-vrf-sync-v5', *, core_count=3, memory_bytes=8*1024*1024, **kwargs):
+def prepare(profile='core-vrf-sync-v5', *, core_count=3, memory_bytes=8*1024*1024, memory_ports=1, **kwargs):
     if profile!='core-vrf-sync-v5':
         raise ProfileMismatch('sim-multicore requires the core-vrf-sync-v5 per-core architecture')
     core_count,memory_bytes=configuration(core_count,memory_bytes)
+    memory_ports=operator.index(memory_ports)
+    if not 1<=memory_ports<=core_count:raise ValueError('memory_ports must be within 1..core_count')
     rtl_path,tb_path=device._package_data('rtl'),device._package_data('tb')
     if not rtl_path or not tb_path:
         raise DeviceLost('multicore package does not contain RTL and device binding sources')
@@ -39,7 +41,7 @@ def prepare(profile='core-vrf-sync-v5', *, core_count=3, memory_bytes=8*1024*102
     version=subprocess.run([compiler,'-V'],capture_output=True,text=True,timeout=30)
     if version.returncode:
         raise DeviceLost('cannot identify the multicore RTL compiler')
-    identity={'schema':2,'core_count':core_count,'memory_bytes':memory_bytes,
+    identity={'schema':3,'core_count':core_count,'memory_bytes':memory_bytes,'memory_ports':memory_ports,
               'compiler':os.path.realpath(compiler),'compiler_version':version.stdout,
               'source':device.source_fingerprint(profile),'rtl_overrides':overrides}
     digest=hashlib.sha256(json.dumps(identity,sort_keys=True).encode()).hexdigest()
@@ -51,7 +53,7 @@ def prepare(profile='core-vrf-sync-v5', *, core_count=3, memory_bytes=8*1024*102
         output=Path(temp)/'device.vvp'
         args=[compiler,'-g2012','-I',str(rtl/'common'),'-I',str(rtl/'noc'),
               '-s','tnca_multicore_device',f'-Ptnca_multicore_device.N={core_count}',
-              f'-Ptnca_multicore_device.TOTAL_WORDS={memory_bytes//8}','-o',str(output)]
+              f'-Ptnca_multicore_device.TOTAL_WORDS={memory_bytes//8}',f'-Ptnca_multicore_device.PORTS={memory_ports}','-o',str(output)]
         args += [f'-Ptnca_multicore_device.{key}={value}' for key,value in sorted(overrides.items())]
         for library in ('common','core','gen','nuca','noc','tile'):args+=['-y',str(rtl/library)]
         args += [str(p) for p in sorted((rtl/'common').glob('*.v'))]
@@ -66,9 +68,11 @@ def prepare(profile='core-vrf-sync-v5', *, core_count=3, memory_bytes=8*1024*102
 
 
 class MulticoreFileBackend(Transport):
-    def __init__(self, bench=None, *, core_count=3, memory_bytes=8*1024*1024, **kwargs):
+    def __init__(self, bench=None, *, core_count=3, memory_bytes=8*1024*1024, memory_ports=1, **kwargs):
         self.core_count,self.memory_bytes=configuration(core_count,memory_bytes)
-        super().__init__(bench or prepare(core_count=core_count,memory_bytes=memory_bytes),**kwargs)
+        self.memory_ports=operator.index(memory_ports)
+        if not 1<=self.memory_ports<=self.core_count:raise ValueError('memory_ports must be within 1..core_count')
+        super().__init__(bench or prepare(core_count=core_count,memory_bytes=memory_bytes,memory_ports=memory_ports),**kwargs)
 
     def _await(self, seq, **kwargs):
         reply=super()._await(seq,**kwargs)
@@ -79,7 +83,7 @@ class MulticoreFileBackend(Transport):
         out=super().capabilities()
         out.update({'physical_grid':True,'memory_bytes':self.memory_bytes,
                     'completion_counters':'global-makespan-u64',
-                    'fault_detail':False})
+                    'fault_detail':False,'memory_ports':self.memory_ports})
         return out
 
     def start(self):
@@ -88,6 +92,8 @@ class MulticoreFileBackend(Transport):
             capability=self.physical_grid_capability()
             if capability is None or capability[0]!=self.core_count or self.boot.r0*8!=self.memory_bytes:
                 raise DeviceLost('multicore image does not match requested core count/memory capacity')
+            if self.memory_port_capability()!=self.memory_ports:
+                raise DeviceLost('multicore image does not match the memory outlet contract')
             return self
         except Exception:
             self.stop()

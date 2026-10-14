@@ -482,6 +482,27 @@ class Transport(_backend.Backend):
         return self._physical_chunk_capability
 
     @serialized_io
+    def memory_port_capability(self):
+        if not hasattr(self, '_memory_port_capability'):
+            reply=self.request(16)
+            if reply.status==ST_REFUSED:self._memory_port_capability=None
+            elif reply.ok and 1<=reply.r0<=16 and reply.r1==1:self._memory_port_capability=reply.r0
+            else:raise DeviceLost('invalid memory outlet capability')
+        return self._memory_port_capability
+
+    @serialized_io
+    def memory_port_metrics(self):
+        ports=self.memory_port_capability()
+        if ports is None:raise ValueError('image does not expose memory outlet counters')
+        rows=[]
+        for port in range(ports):
+            reply=self.request(17,port)
+            if not reply.ok or not (0<=reply.r0<=0xFFFFFFFFFFFFFFFF and 0<=reply.r1<=0xFFFFFFFFFFFFFFFF):
+                raise DeviceLost('invalid memory outlet counters')
+            rows.append({'port':port,'read_lines':reply.r0,'write_lines':reply.r1})
+        return rows
+
+    @serialized_io
     def physical_grid_metrics(self):
         """Hardware counters for the last accepted launch, retained until the next.
 

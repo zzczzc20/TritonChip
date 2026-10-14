@@ -3,7 +3,7 @@
 // External line memory remains a platform port, not simulator storage.
 `default_nettype none
 module tnca_multicore_shell #(
- parameter NX=3,NY=1,N=NX*NY,CODE_WORDS=16384,
+ parameter NX=3,NY=1,N=NX*NY,CODE_WORDS=16384,MEM_PORTS=1,
  parameter SRC_W=(N>4?$clog2(N):2),
  parameter NUM_RCTX=4,RCTX_W=2,PHYS_VREGS=256,PHYS_W=8,
  parameter VREGS_PER_RCTX=64,AUTO_VBASE=1,
@@ -31,6 +31,14 @@ module tnca_multicore_shell #(
  output wire busy,output wire all_idle,output wire timed_out,
  output wire [N-1:0] fault_valid,output wire [N*8-1:0] fault_code,
  output wire [N*64-1:0] fault_pc,output wire [N*24-1:0] fault_detail,
+ output wire [MEM_PORTS-1:0] ports_req_valid,input wire [MEM_PORTS-1:0] ports_req_ready,
+ output wire [MEM_PORTS*64-1:0] ports_req_addr,output wire [MEM_PORTS-1:0] ports_req_we,
+ output wire [MEM_PORTS*512-1:0] ports_req_wdata,output wire [MEM_PORTS*3-1:0] ports_req_tag,
+ output wire [MEM_PORTS*SRC_W-1:0] ports_req_src,
+ input wire [MEM_PORTS-1:0] ports_rsp_valid,input wire [MEM_PORTS*3-1:0] ports_rsp_tag,
+ input wire [MEM_PORTS*SRC_W-1:0] ports_rsp_src,input wire [MEM_PORTS*512-1:0] ports_rsp_rdata,
+ output wire [MEM_PORTS-1:0] memory_protocol_fault,
+ output wire [MEM_PORTS*64-1:0] memory_reads,memory_writes,
  output wire mem_req_valid,input wire mem_req_ready,output wire [63:0] mem_req_addr,
  output wire mem_req_we,output wire [511:0] mem_req_wdata,
  output wire [2:0] mem_req_tag,output wire [SRC_W-1:0] mem_req_src,
@@ -106,7 +114,7 @@ module tnca_multicore_shell #(
    if(host_valid && host_ready && bad_host_addr)bad_host_pending<=1;
   end
  end
- tnca_top #(.NX(NX),.NY(NY),.GLOBAL_GRID(1),.HOST_ACCESS(1),.MEM_SRC_W(SRC_W),
+ tnca_top #(.NX(NX),.NY(NY),.MEM_PORTS(MEM_PORTS),.GLOBAL_GRID(1),.HOST_ACCESS(1),.MEM_SRC_W(SRC_W),
   .NUM_RCTX(NUM_RCTX),.RCTX_W(RCTX_W),.PHYS_VREGS(PHYS_VREGS),.PHYS_W(PHYS_W),
   .VREGS_PER_RCTX(VREGS_PER_RCTX),
   .HAS_SFU(HAS_SFU),.USE_BANKED_VRF(USE_BANKED_VRF),.VRF_BYPASS(VRF_BYPASS),
@@ -114,6 +122,11 @@ module tnca_multicore_shell #(
   .MTX_ABUF(MTX_ABUF),.LSU_INFLIGHT(LSU_INFLIGHT),.FPU_OVERLAP(FPU_OVERLAP),
   .RSLICE(RSLICE),.RPAIR(RPAIR),.HAS_TENSOR_XPOSE(HAS_TENSOR_XPOSE),
   .SETS(SETS),.SET_W(SET_W),.WAYS(WAYS),.WAY_W(WAY_W)) u_system (
+  .ports_req_valid(ports_req_valid),.ports_req_ready(ports_req_ready),.ports_req_addr(ports_req_addr),
+  .ports_req_we(ports_req_we),.ports_req_wdata(ports_req_wdata),.ports_req_tag(ports_req_tag),
+  .ports_req_src(ports_req_src),.ports_rsp_valid(ports_rsp_valid),.ports_rsp_tag(ports_rsp_tag),
+  .ports_rsp_src(ports_rsp_src),.ports_rsp_rdata(ports_rsp_rdata),.memory_protocol_fault(memory_protocol_fault),
+  .memory_reads(memory_reads),.memory_writes(memory_writes),
   .clk(clk),.rst_n(rst_n),.launch_valid(1'b0),.launch_pc(cmd_pc),.launch_arg_base(cmd_arg_base),
   .grid_abort(deadline_abort),.grid_abort_status(4'd2),.launch_role_mask(cmd_roles),.launch_vbase(effective_vbase),.grid_slice(cmd_slice),
   .grid_valid(cmd_valid && !bad_pc && !code_pending && !bad_host_pending && !invalid_done),.grid_ready(grid_ready),

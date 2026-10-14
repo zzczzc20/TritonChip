@@ -2122,7 +2122,7 @@ r40-multicore-mmio: | dirs
 # Formal package entry points: functionality alone never signs off a package.
 # The evidence judge also requires physical placement, board measurements and
 # every performance gate from the frozen plan. Missing evidence exits nonzero.
-.PHONY: r40-multicore r40-nuca
+.PHONY: r40-multicore r40-nuca r40-pipeline
 r40-multicore: r40-core-parameters r40-multicore-shell \
   r40-physical-grid-transport r40-multicore-backend \
   r40-multicore-native-smoke r40-physical-chunks r40-multicore-mmio
@@ -2130,3 +2130,12 @@ r40-multicore: r40-core-parameters r40-multicore-shell \
 
 r40-nuca: r40-coherent-host r40-memory-ports r40-line-axi
 	@$(PYTHON) tools/r40/acceptance.py --wp R40-06
+
+# Ring tests are mechanism diagnostics. Standard Torch overlap, frozen
+# long-K/matrix A/B and policy measurements must supply the package evidence.
+r40-pipeline: r40-barrier-epoch
+	@$(TRITON_PYTHON) tools/r40/pipeline_stage_options_tests.py
+	@for stages in 2 3; do CUDA_VISIBLE_DEVICES= TNCA_RCTX_STAGES=$$stages \
+	  $(TRITON_PYTHON) tools/r39/rctx_roles_tests.py || exit $$?; \
+	  CUDA_VISIBLE_DEVICES= $(TORCH_PYTHON) tools/r40/native_pipeline_tests.py --stages $$stages || exit $$?; done
+	@$(PYTHON) tools/r40/acceptance.py --wp R40-07

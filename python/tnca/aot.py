@@ -69,10 +69,12 @@ KNOWN_OPTIONS = {
     'rctx_roles': 'int, 0, 1 or 2. 1 compiles a loop that fills windows an MMA reads as two '
                   'roles of one program on a Role Context pair -- a producer issuing the '
                   'transfers and a consumer running the MMAs and the epilogue, over a '
-                  'two-stage ring of windows (R39-12 Mode A, tnca_cc.partition.specialize_loop) '
+                  'ring of windows (R39-12 Mode A, tnca_cc.partition.specialize_loop) '
                   '-- 2 forces the legal split; on a target with rctx_pair, the pairs run a grid row as rctx_spmd '
                   'does, where tnca_cc.partition.ring_estimate expects a gain; 2 skips the '
                   'estimate (tests of the mechanism); a refusal is recorded in the provenance',
+    'rctx_stages': 'int, 2 or 3. Number of buffers in the producer/consumer ring; '
+                   'default 2. Resource and lifetime checks still apply (R40-07)',
     'alias': 'list of [param, param] pairs that MAY point at the same '
              'memory. An elementwise kernel that reads and writes the same '
              'index can run in place; one that does not is a different '
@@ -301,6 +303,14 @@ def check_options(options):
         allowed = (0, 1, 2) if name == 'rctx_roles' else (0, 1)
         if value not in allowed:
             raise ValueError(f'{name} must be one of {allowed}')
+    stages = options.get('rctx_stages')
+    if stages is None:
+        stages = int(os.environ.get('TNCA_RCTX_STAGES', '2'))
+        options.pop('rctx_stages', None)
+        if stages != 2:
+            options['rctx_stages'] = stages
+    if type(stages) is not int or stages not in (2, 3):
+        raise ValueError('rctx_stages must be 2 or 3')
     return options
 
 
@@ -891,7 +901,8 @@ def _rctx_roles(kernel, target, prov, options, stages, scratch_bytes, scratch_sl
                                 physical_chunk=bool((options or {}).get("physical_chunks", 0)))
                 force = int((options or {}).get('rctx_roles')
                             or os.environ.get('TNCA_RCTX_ROLES', '0') or 0) >= 2
-                info = partition.specialize_loop(trial, target, stages=2, force=force)
+                ring_stages = (options or {}).get('rctx_stages', 2)
+                info = partition.specialize_loop(trial, target, stages=ring_stages, force=force)
             except (partition.NotSpecialised, ValueError) as e:
                 why = str(e)
         if info is not None and sizes is not None:

@@ -74,6 +74,13 @@ def _rctx_roles():
     return int(os.environ.get('TNCA_RCTX_ROLES', '0'))
 
 
+def _rctx_stages():
+    value = int(os.environ.get('TNCA_RCTX_STAGES', '2'))
+    if value not in (2, 3):
+        raise ValueError('TNCA_RCTX_STAGES must be 2 or 3')
+    return value
+
+
 def _bank_alloc():
     value = int(os.environ.get('TNCA_BANK_ALLOC', '0'))
     if value not in (0, 1):
@@ -127,9 +134,14 @@ class TNCAOptions:
     rctx_spmd: int = field(default_factory=_rctx_spmd)
     sparse_tensormaps: int = field(default_factory=_sparse_tensormaps)
     rctx_roles: int = field(default_factory=_rctx_roles)
+    rctx_stages: int = field(default_factory=_rctx_stages)
     bank_alloc: int = field(default_factory=_bank_alloc)
     window_reuse: int = field(default_factory=_window_reuse)
     packed_window_unpack: int = field(default_factory=_packed_window_unpack)
+
+    def __post_init__(self):
+        if type(self.rctx_stages) is not int or self.rctx_stages not in (2, 3):
+            raise ValueError('rctx_stages must be 2 or 3')
 
     def hash(self):
         key = '_'.join(f'{k}-{v}' for k, v in sorted(self.__dict__.items()))
@@ -298,6 +310,8 @@ class TNCABackend(BaseBackend):
         stages.record('ttir', text)
         ctx = module.context
         compile_options = {'opt_level': options.opt_level}
+        if options.rctx_stages != 2 or int(os.environ.get('TNCA_RCTX_STAGES', '2')) != options.rctx_stages:
+            compile_options['rctx_stages'] = options.rctx_stages
         # Resolved JIT values override environment defaults, including zero.
         # Keep default off absent to preserve the frozen B39 artifact bytes.
         for name, env in (('physical_chunks', 'TNCA_PHYSICAL_CHUNKS'),

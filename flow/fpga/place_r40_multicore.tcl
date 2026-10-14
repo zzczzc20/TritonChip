@@ -51,11 +51,22 @@ for {set tile 0} {$tile < 3} {incr tile} {
     set code [r40_index g_code $tile]
     set private_code [list]
     foreach cell $r40_leaf_cells name $r40_leaf_names {
-        if {[string match "*/shell/$code.*" $name]} {lappend private_code $cell}
+        if {[string match "*/shell/$code.*" $name] &&
+            ![string match "*/shell/$code.commands/*" $name] &&
+            ![string match "*/shell/$code.replies/*" $name]} {lappend private_code $cell}
     }
     if {[llength $private_code] == 0} {error "R40 placement: private code RAM missing for tile $tile"}
     r40_assign $private_code $tile
     puts "R40_PLACEMENT_PRIVATE_CODE tile=$tile cells=[llength $private_code] SLR$tile"
+    # Source command stage is central; private RAM and first reply stage are local.
+    for {set stage 0} {$stage < 2} {incr stage} {
+        set s [r40_index g_stage $stage]
+        r40_place "shell/$code.commands/$s.queue" [expr {$stage == 0 ? 1 : $tile}]
+        # Only core zero returns read data. Other reply payloads may be optimized
+        # to zero width; their valid/count state still belongs to the queue.
+        r40_place "shell/$code.replies/$s.queue" [expr {$stage == 0 ? $tile : 1}]
+    }
+
     set x [r40_index g_x $tile]
     r40_place "u_system/u_mesh/$y.$x.u_r" $tile
     set c [r40_index g_command_link $tile]

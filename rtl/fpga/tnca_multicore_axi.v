@@ -3,7 +3,7 @@
 // This module alone is not a deployable board image.
 `default_nettype none
 module tnca_multicore_axi #(
- parameter NX=3,NY=1,N=NX*NY,CODE_WORDS=16384,MEM_PORTS=1,NOC_LINK_STAGES=0,DISPATCH_STAGES=0,MEM_HOME_STAGES=0,
+ parameter NX=3,NY=1,N=NX*NY,CODE_WORDS=16384,CODE_LINK_STAGES=0,MEM_PORTS=1,NOC_LINK_STAGES=0,DISPATCH_STAGES=0,MEM_HOME_STAGES=0,
  parameter SRC_W=(N>4?$clog2(N):2),
  parameter NUM_RCTX=4,RCTX_W=2,PHYS_VREGS=256,PHYS_W=8,
  parameter VREGS_PER_RCTX=64,AUTO_VBASE=1,
@@ -104,6 +104,7 @@ module tnca_multicore_axi #(
   .NY(NY),
   .N(N),
   .CODE_WORDS(CODE_WORDS),
+  .CODE_LINK_STAGES(CODE_LINK_STAGES),
   .MEM_PORTS(MEM_PORTS),
   .NOC_LINK_STAGES(NOC_LINK_STAGES),
   .DISPATCH_STAGES(DISPATCH_STAGES),

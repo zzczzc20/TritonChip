@@ -38,6 +38,8 @@ def main():
     ap.add_argument('--multicore-hbm', action='store_true')
     ap.add_argument('--memory-ports', type=int, choices=(1, 2, 3), default=3)
     ap.add_argument('--link-stages', type=int, default=2)
+    ap.add_argument('--local-bytes', type=lambda v:int(v,0), default=None,
+                    help='single-core local RAM prefix; 128 KiB code minimum, 512 KiB physical maximum')
     ap.add_argument('--line-beats', type=int, choices=(0, 2, 4, 8, 16), default=0)
     ap.add_argument('--outstanding', type=int, default=8)
     ap.add_argument('--lines', type=int, default=8)
@@ -49,6 +51,12 @@ def main():
                     help='store burst lines in synchronous dual-port RAM')
     args = ap.parse_args()
     params = parameters(args.profile)
+    if args.local_bytes is not None:
+        if not args.hbm or args.multicore_hbm:
+            ap.error('--local-bytes applies to the single-core HBM wrapper')
+        if not 131072 <= args.local_bytes <= 524288 or args.local_bytes % 64:
+            ap.error('local prefix must be line aligned within the physical 128..512 KiB RAM')
+        params['LOCAL_LIMIT'] = args.local_bytes
     if args.multicore_hbm:
         if args.hbm or args.line_beats or args.local_pipeline or args.ram_cache:
             ap.error('multicore HBM uses the native line adapter, not the single-core bridge')
@@ -56,7 +64,7 @@ def main():
             ap.error('multicore HBM needs positive pipeline stages and 1..16 outstanding slots')
         params.update(MEM_PORTS=args.memory_ports, AXI_DATA_W=256, AXI_OUT_N=args.outstanding,
                       AXI_ID_W=max(1, (args.outstanding - 1).bit_length()),
-                      NOC_LINK_STAGES=args.link_stages, DISPATCH_STAGES=args.link_stages,
+                      CODE_LINK_STAGES=args.link_stages, NOC_LINK_STAGES=args.link_stages, DISPATCH_STAGES=args.link_stages,
                       MEM_HOME_STAGES=args.link_stages, LINK_STAGES=args.link_stages)
     elif args.hbm:
         if not (1 <= args.outstanding <= 16 and 1 <= args.lines <= 16

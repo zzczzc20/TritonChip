@@ -16,6 +16,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--cores', type=int, choices=(1, 2, 3, 4, 8), default=3)
     parser.add_argument('--ports', type=int, default=3)
+    parser.add_argument('--large-grid', action='store_true')
     parser.add_argument('--board-top', action='store_true')
     parser.add_argument('--pipeline', type=int, default=0)
     args = parser.parse_args()
@@ -27,7 +28,7 @@ def main():
         code = b''.join(int(line, 16).to_bytes(8, 'little')
                         for line in image.with_suffix('.hex').read_text().splitlines())
         dev = stand_in(core_count=args.cores, memory_ports=args.ports, host_timeout=1800,
-                       noc_link_stages=args.pipeline, dispatch_stages=args.pipeline, home_stages=args.pipeline, board_top=args.board_top)
+                       noc_link_stages=args.pipeline, dispatch_stages=args.pipeline, home_stages=args.pipeline, code_stages=args.pipeline, board_top=args.board_top)
         try:
             dev.start()
             assert dev.request(8).status == 3
@@ -81,6 +82,22 @@ def main():
             assert dev.launch_grid(0, 0x40000, (0, 7, 5), arg_stride=256).ok
             zero = dev.physical_grid_metrics()
             assert zero['peak_active'] == 0 and all(row['issued'] == row['completed'] == 0 for row in zero['cores'])
+            if args.large_grid:
+                # Same three-tile image, same home/port budget, successive masks.
+                # Read every produced slot: counts alone cannot detect a duplicate
+                # PID that silently replaces a missing PID.
+                for mask in ((1 << n) - 1 for n in range(1, args.cores + 1)):
+                    assert dev.upload(0x30000,bytes(4103*8)).ok
+                    assert dev.launch_grid(0, 0x40000, (4103, 1, 1), active_cores=mask).ok
+                    large=dev.physical_grid_metrics()
+                    assert sum(row['issued'] for row in large['cores'])==4103
+                    assert all(row['issued']==row['completed'] for row in large['cores'])
+                    assert large['peak_active']==mask.bit_count()
+                    assert all(row['issued']==0 for i,row in enumerate(large['cores']) if not (mask >> i) & 1)
+                    result,slots=dev.download(0x30000,4103*8)
+                    assert result.ok
+                    assert [int.from_bytes(slots[i:i+8],'little') for i in range(0,len(slots),8)]==list(range(4096,8199))
+                    print(f'LARGE PHYSICAL GRID PASS programs=4103 active_mask={mask:#x} metrics={large}',flush=True)
             old_deadline = dev.deadline_cycles
             dev.deadline_cycles = 20
             timeout_reply = dev.launch_grid(0, 0x40000, (13, 7, 5), arg_stride=256)

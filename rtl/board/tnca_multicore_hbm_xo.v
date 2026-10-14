@@ -5,7 +5,7 @@
 // an AW accepted without its W or repair a lost response.
 `default_nettype none
 module tnca_multicore_hbm_xo #(
- parameter S_AXI_ADDR_W=12,MEM_PORTS=3,CODE_WORDS=16384,
+ parameter S_AXI_ADDR_W=12,MEM_PORTS=3,CODE_WORDS=16384,CODE_LINK_STAGES=2,
  parameter NOC_LINK_STAGES=2,DISPATCH_STAGES=2,LINK_STAGES=2,MEM_HOME_STAGES=2,
  parameter AXI_DATA_W=256,AXI_OUT_N=8,
  parameter AXI_ID_W=(AXI_OUT_N>1?$clog2(AXI_OUT_N):1),
@@ -330,6 +330,7 @@ module tnca_multicore_hbm_xo #(
  tnca_multicore_fpga #(.NX(3),.NY(1),.REG_ADDR_W(9),
   .MEM_PORTS(MEM_PORTS),
   .CODE_WORDS(CODE_WORDS),
+  .CODE_LINK_STAGES(CODE_LINK_STAGES),
   .NOC_LINK_STAGES(NOC_LINK_STAGES),
   .DISPATCH_STAGES(DISPATCH_STAGES),
   .MEM_HOME_STAGES(MEM_HOME_STAGES),

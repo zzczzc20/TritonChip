@@ -2105,6 +2105,8 @@ r40-line-axi: | dirs
 # Versioned register path; shared board host binding driven by the AXI RTL.
 .PHONY: r40-multicore-mmio
 r40-multicore-mmio: | dirs
+	@$(TRITON_PYTHON) tools/r40/code_cache_epoch_tests.py
+	@$(PYTHON) tools/r40/code_link_tests.py
 	@$(PYTHON) tools/r40/mesh_pipeline_tests.py
 	@$(PYTHON) tools/r40/multicore_mmio_synth_tests.py
 	@$(PYTHON) tools/r40/multicore_mmio_option_tests.py

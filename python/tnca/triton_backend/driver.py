@@ -470,14 +470,12 @@ def _artifact_sha256(path):
 def _load(session, path):
     """The module for `path` in this session, loading it if needed.
 
-    A process-wide session accumulates code: the runtime places each module
-    and never unloads one, and the code region below the heap is finite. When
-    it is full the session is replaced (a fresh device, empty code region)
-    and the module loaded there; buffers never outlive a launch, so nothing
-    is lost.
+    Reclaim least-recently-used modules after their launches drain. Preserve
+    the device session and clock epoch for both CPU migration and resident
+    tensors; replacing a session mid-graph invalidates common-clock spans.
     """
     from tnca.errors import BufferError as _BE
-    key = (id(session), session.epoch, path)
+    key = (session.id, session.epoch, path)
     m = _loaded.pop(key, None)
     if m is not None:
         _loaded[key] = m             # most recently used last (eviction order)
@@ -487,40 +485,23 @@ def _load(session, path):
     except _BE as e:
         if 'overlaps the device heap' not in str(e):
             raise
-        try:
-            from tnca.torch_device import MEMORY
-            resident = any(b.session_id == session.id for b in MEMORY.buffers.values())
-        except ImportError:
-            resident = False
-        if resident:
-            # Replacing the session would take every tnca tensor's storage
-            # with it. Instead the modules launched longest ago give their
-            # code space back (Session.unload) until this one fits; only if
-            # it cannot fit at all is the code region a capacity limit.
-            session.drain()
-            for old_key in list(_loaded):
-                if old_key[0] != id(session) or old_key[1] != session.epoch:
-                    continue
-                session.unload(_loaded.pop(old_key))
-                global evicted
-                evicted += 1
-                try:
-                    m = session.load(path)
-                    break
-                except _BE as again:
-                    if 'overlaps the device heap' not in str(again):
-                        raise
-            else:
-                raise TNCALaunchError(
-                    'the code region cannot hold this kernel even with every other module '
-                    'unloaded (capacity-exceeded: code region)') from e
-            _loaded[key] = m
-            return session, m
-        profile = session.profile
-        session.close()
-        session = _Sessions.get(profile)
-        m = session.load(path)
-        key = (id(session), session.epoch, path)
+        session.drain()
+        for old_key in list(_loaded):
+            if old_key[0] != session.id or old_key[1] != session.epoch:
+                continue
+            session.unload(_loaded.pop(old_key))
+            global evicted
+            evicted += 1
+            try:
+                m = session.load(path)
+                break
+            except _BE as again:
+                if 'overlaps the device heap' not in str(again):
+                    raise
+        else:
+            raise TNCALaunchError(
+                'the code region cannot hold this kernel even with every other module '
+                'unloaded (capacity-exceeded: code region)') from e
     _loaded[key] = m
     return session, m
 

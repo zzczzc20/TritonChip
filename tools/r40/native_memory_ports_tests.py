@@ -8,7 +8,7 @@ parser=argparse.ArgumentParser();parser.add_argument('--backend',choices=('sim-m
 extra={}
 if args.pipeline or args.board_top:
     if args.backend!='fpga-multicore-sim':parser.error('pipeline/board-top selects the MMIO AXI RTL stand-in')
-    extra=dict(noc_link_stages=args.pipeline,dispatch_stages=args.pipeline,home_stages=args.pipeline,board_top=args.board_top)
+    extra=dict(noc_link_stages=args.pipeline,dispatch_stages=args.pipeline,home_stages=args.pipeline,code_stages=args.pipeline,board_top=args.board_top)
 os.environ.update(TNCA_PROFILE='core-vrf-sync-v5',TNCA_BACKEND=args.backend,TNCA_BACKEND_ARGS=json.dumps({'core_count':args.cores,'memory_ports':args.ports,**extra}),TNCA_RCTX_SPMD='1')
 os.environ.setdefault('TNCA_HOST_TIMEOUT','1800')
 import torch

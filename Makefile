@@ -2117,3 +2117,15 @@ r40-multicore-mmio: | dirs
 	@$(TRITON_PYTHON) tools/r40/native_memory_ports_tests.py --backend fpga-multicore-sim --cores 3 --ports 3 --pipeline 2 --board-top
 	@$(TRITON_PYTHON) tools/r40/native_multicore_features.py --backend fpga-multicore-sim --cores 3 --pipeline 2 --board-top
 	@$(TRITON_PYTHON) tools/r40/native_multicore_features.py --backend fpga-multicore-sim --cores 3 --pair --pipeline 2 --board-top
+
+# Formal package entry points: functionality alone never signs off a package.
+# The evidence judge also requires physical placement, board measurements and
+# every performance gate from the frozen plan. Missing evidence exits nonzero.
+.PHONY: r40-multicore r40-nuca
+r40-multicore: r40-core-parameters r40-multicore-shell \
+  r40-physical-grid-transport r40-multicore-backend \
+  r40-multicore-native-smoke r40-physical-chunks r40-multicore-mmio
+	@$(PYTHON) tools/r40/acceptance.py --wp R40-05
+
+r40-nuca: r40-coherent-host r40-memory-ports r40-line-axi
+	@$(PYTHON) tools/r40/acceptance.py --wp R40-06

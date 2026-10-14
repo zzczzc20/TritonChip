@@ -484,6 +484,19 @@ U280 有三个 SLR，HBM 接口位于 SLR0；板卡提供 8 GB HBM、32 个 AXI 
 3. locality/DCO 在预冻结 reuse/remote-traffic 子集 `S_geo ≥1.1`，至少一项实际 remote bytes 或 HBM bytes 降低 ≥20%；两种机制单独消融。流式负载默认策略不得强制绕远或反复污染 cache。
 4. 同一 Torch 图在 1/2/3/4/8 核功能矩阵与不同 memory latency / port count 下保持语义，参数调整不需要修改 model、ISA opcode 或 frontend 算子规则。
 
+进展（2026-10-14，ownership 功能 checkpoint，未签收）：
+
+- 可选范围维护在 home slice 写回并失效相交缓存行，保留 partial DMA
+  范围以外的 dirty 字节。全局控制器收齐各 home 的确认，并额外等待
+  physical memory drain；命令/回复通过 elastic link，期间禁止新 grid
+  和 coherent host 请求。默认关闭，尚未开启 runtime bulk DMA。
+- 19/19：两种 tag 布局、三种延迟与背压；dirty/clean/zero/alias、高位
+  地址、范围溢出与 reset；1/3/8 home 汇总；160,000 请求差分压力；
+  0/2 级流水三核真实执行、455 dirty 结果与单字节 DMA 模型更新核验。
+  证据 `evidence/r40/R40-06/cache_maintenance/`。
+- MMIO/capability、板级 drain/error、XRT transfer、独立 copy overlap
+  和真实板测仍待贯通；模型刺激不是 XRT DMA 或性能签收。
+
 ### R40-07：异步流水、布局搬运与矩阵吞吐
 
 交付：

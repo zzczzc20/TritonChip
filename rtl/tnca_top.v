@@ -22,6 +22,7 @@
 module tnca_top #(
     parameter GLOBAL_GRID = 0,
     parameter HOST_ACCESS = 0,
+    parameter CACHE_MAINTENANCE = 0,
     parameter NX          = 2,
     parameter NY          = 2,
     parameter MEM_PORTS   = 1,
@@ -105,6 +106,10 @@ module tnca_top #(
     output wire host_ready, host_rsp_valid, host_busy,
     output wire [63:0] host_rsp_data,
     output wire                     all_idle,
+    input wire cache_maint_valid,
+    input wire [63:0] cache_maint_base,cache_maint_size,
+    input wire cache_maint_memory_drained,
+    output wire cache_maint_ready,cache_maint_done,
 
     output wire [NX*NY-1:0]         fault_valid,
     output wire [NX*NY*8-1:0]       fault_code,
@@ -204,13 +209,45 @@ module tnca_top #(
     end endgenerate
 
     wire [N-1:0] tile_idle;
-    assign all_idle = (&tile_idle) && !(|dispatch_busy) && (&home_link_idle);
+    wire cache_quiescent = (&tile_idle) && !(|dispatch_busy) && (&home_link_idle);
+    wire maintenance_requested=(CACHE_MAINTENANCE!=0) && cache_maint_valid;
+    wire maintenance_busy;
+    wire [N-1:0] maintenance_valid,maintenance_ready,maintenance_done;
+    wire [N-1:0] home_maintenance_valid,home_maintenance_ready,home_maintenance_done;
+    wire [N*128-1:0] home_maintenance_range;
+    wire [63:0] maintenance_base,maintenance_size;
+    assign all_idle = cache_quiescent && !maintenance_busy;
+    generate if(CACHE_MAINTENANCE!=0)begin:g_cache_handoff
+        tnca_cache_handoff #(.N(N)) ownership(
+            .clk(clk),.rst_n(rst_n),.valid(maintenance_requested),.ready(cache_maint_ready),
+            .quiescent(cache_quiescent && !host_busy && (GLOBAL_GRID || !launch_valid)),
+            .base(cache_maint_base),.size(cache_maint_size),
+            .home_valid(maintenance_valid),.home_ready(maintenance_ready),.home_done(maintenance_done),
+            .home_base(maintenance_base),.home_size(maintenance_size),
+            .memory_drained(cache_maint_memory_drained && (&home_link_idle)),
+            .done(cache_maint_done),.busy(maintenance_busy));
+        for(genvar h=0;h<N;h=h+1)begin:g_home_link
+            tnca_elastic_link #(.W(128),.STAGES(MEM_HOME_STAGES)) command(
+                .clk(clk),.rst_n(rst_n),.in_valid(maintenance_valid[h]),.in_ready(maintenance_ready[h]),
+                .in_data({maintenance_base,maintenance_size}),
+                .out_valid(home_maintenance_valid[h]),.out_ready(home_maintenance_ready[h]),
+                .out_data(home_maintenance_range[h*128+:128]),.empty());
+            // One outstanding handoff per home; its response path is empty
+            // before the next request, and the receiver always consumes it.
+            tnca_elastic_link #(.W(1),.STAGES(MEM_HOME_STAGES)) response(
+                .clk(clk),.rst_n(rst_n),.in_valid(home_maintenance_done[h]),.in_ready(),.in_data(1'b1),
+                .out_valid(maintenance_done[h]),.out_ready(1'b1),.out_data(),.empty());
+        end
+    end else begin:g_no_cache_handoff
+        assign cache_maint_ready=0;assign cache_maint_done=0;assign maintenance_busy=0;
+        assign home_maintenance_valid=0;assign home_maintenance_range=0;
+    end endgenerate
 
     wire [N-1:0] tile_launch, dispatch_busy;
     wire [N-1:0] host_readies, host_responses, host_busy_tiles;
     wire [N*64-1:0] host_response_data;
     wire dispatch_ready;
-    wire host_allow=GLOBAL_GRID && HOST_ACCESS && dispatch_ready && !grid_valid && all_idle;
+    wire host_allow=GLOBAL_GRID && HOST_ACCESS && dispatch_ready && !grid_valid && all_idle && !maintenance_requested;
     assign host_ready=host_readies[0];assign host_rsp_valid=host_responses[0];
     assign host_busy=host_busy_tiles[0];assign host_rsp_data=host_response_data[63:0];
     wire [63:0] dispatch_pc;
@@ -239,7 +276,7 @@ module tnca_top #(
             if(!rst_n) begin roles_q<=0;vbase_q<=0;slice_q<=0;end
             else if(grid_valid && grid_ready) begin roles_q<=launch_role_mask;vbase_q<=launch_vbase;slice_q<=grid_slice;end
         end
-        assign grid_ready=dispatch_ready && !host_busy;
+        assign grid_ready=dispatch_ready && !host_busy && !maintenance_requested && !maintenance_busy;
         assign tile_slice=slice_q;
         assign tile_roles=roles_q;assign tile_vbase=vbase_q;
         localparam COMMAND_W=128+192+NUM_RCTX+4+NUM_RCTX*PHYS_W;
@@ -274,7 +311,7 @@ module tnca_top #(
             end
         end
         tnca_grid_dispatch #(.CORE_N(N)) u_dispatch (
-            .clk(clk),.rst_n(rst_n),.abort_valid(grid_abort || (|memory_protocol_fault)),.abort_status((|memory_protocol_fault) ? 4'd1 : grid_abort_status),.launch_valid(grid_valid && !host_busy),.launch_ready(dispatch_ready),
+            .clk(clk),.rst_n(rst_n),.abort_valid(grid_abort || (|memory_protocol_fault)),.abort_status((|memory_protocol_fault) ? 4'd1 : grid_abort_status),.launch_valid(grid_valid && !host_busy && !maintenance_requested && !maintenance_busy),.launch_ready(dispatch_ready),
             .launch_group_log2(grid_group_log2),.launch_id(grid_id),.launch_pc(launch_pc),.launch_arg_base(launch_arg_base),
             .launch_arg_stride(grid_arg_stride),.launch_gx(grid_x),.launch_gy(grid_y),.launch_gz(grid_z),
             .launch_cores((|launch_role_mask) ? grid_cores : {N{1'b0}}),
@@ -287,7 +324,7 @@ module tnca_top #(
             .core_busy(dispatch_busy),.issued(grid_issued),.completed(grid_completed),
             .peak_active(grid_peak_active),.active_cycles(grid_active_cycles));
     end else begin: g_legacy_launch
-        assign tile_launch={N{launch_valid}};
+        assign tile_launch={N{launch_valid && !maintenance_requested && !maintenance_busy}};
         assign launch_pcs={N{launch_pc}};assign launch_args={N{launch_arg_base}};
         assign launch_grids=0;assign launch_roles={N{launch_role_mask}};
         assign launch_slices=0;assign launch_vbases={N{launch_vbase}};
@@ -353,6 +390,7 @@ module tnca_top #(
     generate
         for (t = 0; t < N; t = t + 1) begin : g_tile
             tnca_tile #(
+                .CACHE_MAINTENANCE(CACHE_MAINTENANCE),
                 .TILE_ID(t), .NUM_TILES(N), .GLOBAL_GRID(GLOBAL_GRID), .HOST_ACCESS(HOST_ACCESS && GLOBAL_GRID && t==0), .NX(NX), .NY(NY), .XW(XW), .YW(YW),
                 .NUM_RCTX(NUM_RCTX), .RCTX_W(RCTX_W), .VLEN(VLEN), .ELEN(ELEN),
                 .LW(LW), .VREGS_PER_RCTX(VREGS_PER_RCTX),
@@ -381,6 +419,8 @@ module tnca_top #(
             ) u_tile (
                 .clk(clk), .rst_n(rst_n),
                 .launch_valid(tile_launch[t]), .launch_pc(launch_pcs[t*64+:64]),
+                .cache_maint_valid(home_maintenance_valid[t]),.cache_maint_ready(home_maintenance_ready[t]),.cache_maint_done(home_maintenance_done[t]),
+                .cache_maint_base(home_maintenance_range[t*128+64+:64]),.cache_maint_size(home_maintenance_range[t*128+:64]),
                 .launch_role_mask(launch_roles[t*NUM_RCTX+:NUM_RCTX]),
                 .launch_arg_base(launch_args[t*64+:64]),
                 .launch_vbase(launch_vbases[t*NUM_RCTX*PHYS_W+:NUM_RCTX*PHYS_W]),

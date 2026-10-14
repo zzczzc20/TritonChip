@@ -2122,13 +2122,16 @@ r40-multicore-mmio: | dirs
 # Formal package entry points: functionality alone never signs off a package.
 # The evidence judge also requires physical placement, board measurements and
 # every performance gate from the frozen plan. Missing evidence exits nonzero.
-.PHONY: r40-multicore r40-nuca r40-pipeline r40-pipeline-checks
+.PHONY: r40-multicore r40-nuca r40-pipeline r40-pipeline-checks r40-cache-maintenance
 r40-multicore: r40-core-parameters r40-multicore-shell \
   r40-physical-grid-transport r40-multicore-backend \
   r40-multicore-native-smoke r40-physical-chunks r40-multicore-mmio
 	@$(PYTHON) tools/r40/acceptance.py --wp R40-05
 
-r40-nuca: r40-coherent-host r40-memory-ports r40-line-axi
+r40-cache-maintenance:
+	@$(PYTHON) tools/r40/cache_maintenance_tests.py --global-grid
+
+r40-nuca: r40-coherent-host r40-memory-ports r40-line-axi r40-cache-maintenance
 	@$(PYTHON) tools/r40/acceptance.py --wp R40-06
 
 # Ring tests are mechanism diagnostics. Standard Torch overlap, frozen

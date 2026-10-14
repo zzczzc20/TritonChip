@@ -78,11 +78,22 @@ module tnca_nuca_slice #(
     // tile-identifier width, and the address window of the TMU's registers.
     parameter DCO_T      = 8,
     parameter DCO_DEAD   = 16,
+    parameter MAINTENANCE = 0,
     parameter DCO_ID_W   = 16,
     parameter [63:0] TMU_BASE = 64'h0000_0000_7FFF_0000
 ) (
     input  wire                     clk,
     input  wire                     rst_n,
+
+    // Quiescent DMA ownership handoff. Write back and invalidate every
+    // overlapping line, including partial-line ranges. Completion means
+    // writebacks were accepted; the platform must also drain memory links
+    // and physical write responses before allowing host DMA.
+    input  wire                     maint_valid,
+    output wire                     maint_ready,
+    input  wire [ADDR_W-1:0]         maint_base, maint_size,
+    output reg                      maint_done,
+    output wire                     maint_busy,
 
     // ---- requester side -----------------------------------------------------
     output wire                     req_ready,
@@ -335,7 +346,8 @@ module tnca_nuca_slice #(
             end
     end
 
-    assign req_ready = rq_has_free;
+    wire maint_requested = (MAINTENANCE != 0) && maint_valid;
+    assign req_ready = rq_has_free && !maint_busy && !maint_requested;
 
     //==========================================================================
     // Arbiter: oldest entry that is neither blocked nor shadowed by an older
@@ -471,7 +483,10 @@ module tnca_nuca_slice #(
                E_MREQ  = 4'd6,
                E_FILL  = 4'd7,
                E_WAKE  = 4'd8,
-               E_MMIO  = 4'd9;   // a TMU register, never cached
+               E_MMIO  = 4'd9,   // a TMU register, never cached
+               E_MSCAN = 4'd10,
+               E_MREAD = 4'd11,
+               E_MSEND = 4'd12;
 
     reg [3:0]            est;
     reg [RQ_W-1:0]       cur_rq;
@@ -486,6 +501,23 @@ module tnca_nuca_slice #(
     reg [TAG_W-1:0]      cur_tag;
     reg [MSHR_W-1:0]     cur_ms;
     reg [LINE_BITS-1:0]  wb_buf;
+    reg [LINE_W-1:0] maint_index;
+    reg [ADDR_W-1:0] maint_first, maint_line;
+    reg [ADDR_W:0] maint_end;
+    reg maint_ms_free;
+    integer maint_i;
+    always @* begin
+        maint_ms_free = 1'b1;
+        for (maint_i=0; maint_i<MSHR_N; maint_i=maint_i+1)
+            if (ms_state[maint_i] != MS_FREE) maint_ms_free = 1'b0;
+    end
+    assign maint_busy = (est==E_MSCAN || est==E_MREAD || est==E_MSEND);
+    assign maint_ready = (MAINTENANCE != 0) && rst_n && est==E_SEL &&
+                         rq_v==0 && rsq_cnt==0 && tg_v==0 && maint_ms_free && !mem_rsp_valid;
+    wire [SET_W-1:0] maint_set = maint_index / WAYS;
+    wire [ADDR_W-1:0] maint_address = line_addr(tag_mem[maint_index], maint_set);
+    wire maint_overlap = ({1'b0,maint_address} < maint_end) &&
+                         ({1'b0,maint_address}+LINE_BYTES > {1'b0,maint_first});
 
     wire [SET_W-1:0]  cur_set  = `SLICE_SET(cur_addr);
     wire [TAGB-1:0]   cur_tagb = `SLICE_TAG(cur_addr);
@@ -658,9 +690,10 @@ module tnca_nuca_slice #(
     end
 
     // ---- memory request, straight off the engine state ----------------------
-    assign mem_req_valid = (est == E_MREQ) || (est == E_WBSND);
-    assign mem_req_we    = (est == E_WBSND);
-    assign mem_req_addr  = (est == E_WBSND) ? ms_wbadr[cur_ms] : ms_addr[cur_ms];
+    assign mem_req_valid = (est == E_MREQ) || (est == E_WBSND) || (est == E_MSEND);
+    assign mem_req_we    = (est == E_WBSND) || (est == E_MSEND);
+    assign mem_req_addr  = (est == E_MSEND) ? maint_line :
+                          (est == E_WBSND) ? ms_wbadr[cur_ms] : ms_addr[cur_ms];
     assign mem_req_wdata = wb_buf;
     assign mem_req_tag   = cur_ms;
 
@@ -709,6 +742,7 @@ module tnca_nuca_slice #(
     always @(posedge clk) begin
         if (!rst_n) begin
             est           <= E_SEL;
+            maint_done <= 0; maint_index <= 0; maint_first <= 0; maint_end <= 0; maint_line <= 0;
             rq_v          <= {RQ_N{1'b0}};
             rq_blocked    <= {RQ_N{1'b0}};
             for (i = 0; i < RQ_N; i = i + 1) older[i] <= {RQ_N{1'b0}};
@@ -730,6 +764,7 @@ module tnca_nuca_slice #(
             tl_v <= 1'b0; tl_a <= 64'd0; tmu_tl_drop <= 1'b0;
             gear <= 4'd0; gear_seed <= 1'b1; ev_cnt <= 16'd0; win_cnt <= 16'd0;
         end else begin
+            maint_done <= 0;
             push_rsp = 1'b0;
             tl_load  = 1'b0;
             tl_naddr = 64'd0;
@@ -778,7 +813,13 @@ module tnca_nuca_slice #(
 
             //---------------------------------------------------------------
             E_SEL: begin
-                if (ms_pick) begin
+                if (maint_requested && maint_ready) begin
+                    maint_first <= maint_base;
+                    maint_end <= {1'b0,maint_base}+{1'b0,maint_size};
+                    maint_index <= 0;
+                    if (maint_size==0) maint_done <= 1;
+                    else est <= E_MSCAN;
+                end else if (ms_pick) begin
                     cur_ms <= ms_pick_id;
                     case (ms_pick_st)
                     MS_WAKE: est <= E_WAKE;
@@ -799,6 +840,33 @@ module tnca_nuca_slice #(
                     cur_tag   <= rq_tag[sel_idx];
                     if (any_blocked) perf_hit_past_block <= perf_hit_past_block + 1;
                     est <= E_LOOK;
+                end
+            end
+
+            E_MSCAN: begin
+                if (v_bits[maint_index] && maint_overlap && d_bits[maint_index]) begin
+                    maint_line <= maint_address;
+                    est <= E_MREAD;
+                end else begin
+                    if (v_bits[maint_index] && maint_overlap) begin
+                        v_bits[maint_index] <= 0;
+                        d_bits[maint_index] <= 0;
+                    end
+                    if (maint_index==LINES-1) begin maint_done<=1; est<=E_SEL; end
+                    else maint_index<=maint_index+1'b1;
+                end
+            end
+            E_MREAD: begin
+                wb_buf <= data_mem[maint_index];
+                est <= E_MSEND;
+            end
+            E_MSEND: begin
+                if (mem_req_fire) begin
+                    perf_wb <= perf_wb+1'b1;
+                    v_bits[maint_index] <= 0;
+                    d_bits[maint_index] <= 0;
+                    if (maint_index==LINES-1) begin maint_done<=1; est<=E_SEL; end
+                    else begin maint_index<=maint_index+1'b1; est<=E_MSCAN; end
                 end
             end
 

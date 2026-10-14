@@ -1,0 +1,11 @@
+{
+  "rtl/nuca/tnca_nuca_slice.v": "8fdc27836dfb2dcdd4a45b617ec3d41a2676b42422f4a5679767046f3eeb76ba",
+  "rtl/nuca/tnca_cache_handoff.v": "1163ab952a5d1ee079a6cc100f238b2f3e3cfc7632b7fd7b5538c5aadd250f35",
+  "rtl/tile/tnca_tile.v": "7711448f22f0534c56199610dfb49fa55083c43972e139de53cdee8e70a85acb",
+  "rtl/tnca_top.v": "a24bb6f0b8c41bf96a858ca8d0776b3c864c31fc50c3a641ecbf5d57ce4f4df1",
+  "tb/nuca/tb_nuca_slice.v": "43bd94244871af74f5339d542d55c59fcaaef501ad97757a758e3b221a6faf61",
+  "tb/nuca/tb_nuca_maintenance.v": "eda833d95bd685599da40deb081cb4e54c1fee7f2fdf872301684f6dc11f8182",
+  "tb/nuca/tb_cache_handoff.v": "39968056078d86bfa37b2c6d4f936c578783553e95e3e43ab47b5449fe918716",
+  "tb/top/tb_grid_cores.v": "62b666e3f913eaddf7bcd635a3635e83b4aa7f6a654cdf104adbc2105fc7a667",
+  "tools/r40/cache_maintenance_tests.py": "f33c9bf22d1575cbe7d07387489bde0eb5ce395775e2d618e6f3650be7171bec"
+}

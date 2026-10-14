@@ -56,6 +56,7 @@ module tnca_tile #(
     parameter RSLICE = 0,
     parameter RPAIR = 0,
     parameter HAS_SYS_ATOMICS = 0,
+    parameter CACHE_MAINTENANCE = 0,
     parameter HAS_TENSOR_XPOSE = 0,
     parameter HAS_SFU     = 0,
     parameter HAS_ATOMICS = 1,
@@ -95,6 +96,9 @@ module tnca_tile #(
     input wire [31:0] grid_pid_x, grid_pid_y, grid_pid_z,
     input wire [31:0] grid_npid_x, grid_npid_y, grid_npid_z,
     input wire host_allow, host_valid, host_we,
+    input wire cache_maint_valid,
+    input wire [63:0] cache_maint_base,cache_maint_size,
+    output wire cache_maint_ready,cache_maint_done,
     input wire [63:0] host_addr, host_wdata,
     input wire [7:0] host_be,
     output wire host_ready, host_rsp_valid, host_busy,
@@ -320,6 +324,7 @@ module tnca_tile #(
     // NUCA slice
     //==========================================================================
     tnca_nuca_slice #(
+        .MAINTENANCE(CACHE_MAINTENANCE),
         .FULL_LINE_TAG(!(NX==2 && NY==2)),
         .ADDR_W(64), .LINE_BYTES(LINE_BYTES), .LINE_BITS(LINE_BITS),
         .WORD_BITS(64), .WORD_BYTES(8),
@@ -333,6 +338,8 @@ module tnca_tile #(
         .TMU_BASE(TMU_BASE)
     ) u_slice (
         .clk(clk), .rst_n(rst_n),
+        .maint_valid(cache_maint_valid),.maint_base(cache_maint_base),.maint_size(cache_maint_size),
+        .maint_ready(cache_maint_ready),.maint_done(cache_maint_done),.maint_busy(),
         .req_ready(s_req_ready), .req_valid(s_req_valid),
         .req_addr(s_req_addr), .req_we(s_req_we), .req_be(s_req_be),
         .req_wdata(s_req_wdata), .req_src(s_req_src), .req_tag(s_req_tag),

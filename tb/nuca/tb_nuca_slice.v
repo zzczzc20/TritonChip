@@ -28,6 +28,7 @@ module tb_nuca_slice;
     // -- replacement, bypass and dead-block prediction move only where a line
     // lives, never what it holds.
     parameter POLICY     = 0;
+    parameter MAINTENANCE = 0;
 
     localparam ADDR_W     = 64;
     localparam LINE_BYTES = 64;
@@ -103,6 +104,7 @@ module tb_nuca_slice;
     wire [63:0]             tl_addr;
 
     tnca_nuca_slice #(
+        .MAINTENANCE(MAINTENANCE),
         .ADDR_W(ADDR_W), .LINE_BYTES(LINE_BYTES), .LINE_BITS(LINE_BITS),
         .WORD_BITS(WORD_BITS), .WORD_BYTES(WORD_BYTES),
         .SETS(SETS), .SET_W(SET_W), .WAYS(WAYS), .WAY_W(WAY_W),
@@ -112,6 +114,7 @@ module tb_nuca_slice;
         .SLICE_ID(SLICE_ID), .DCO_T(2)
     ) dut (
         .clk(clk), .rst_n(rst_n),
+        .maint_valid(1'b0), .maint_base(64'd0), .maint_size(64'd0),
         .req_ready(req_ready), .req_valid(req_valid), .req_addr(req_addr),
         .req_we(req_we), .req_be(req_be), .req_wdata(req_wdata),
         .req_src(req_src), .req_tag(req_tag),

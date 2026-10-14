@@ -6,6 +6,11 @@ parameter MEMORY=0;
 parameter HOST=0;
 parameter PORTS=1;
 parameter INJECT_BAD_SOURCE=0;
+parameter MAINTENANCE=0;
+parameter PIPELINE=0;
+reg cache_valid=0,memory_drained=0;
+reg [63:0] cache_base=0,cache_size=0;
+wire cache_ready,cache_done;
 reg hv=0,hw=0;reg [63:0] ha=0,hd=0;reg [7:0] hbe=8'hff;
 wire hr,hrv,hb;wire [63:0] hrd;
 localparam MX=N>4?4:N;
@@ -54,8 +59,10 @@ always @(posedge clk) if(rst_n) begin
  stalled_tag<=mt;stalled_we<=mwe;stalled_data<=mw;
 end
 integer seen[0:454];integer total=0,cycles=0;
-tnca_top #(.MEM_PORTS(PORTS),.NX(MX),.NY(N/MX),.GLOBAL_GRID(1),.HOST_ACCESS(HOST),.SETS(4),.SET_W(2),.WAYS(2),.WAY_W(1)) dut (
+tnca_top #(.CACHE_MAINTENANCE(MAINTENANCE),.NOC_LINK_STAGES(PIPELINE),.DISPATCH_STAGES(PIPELINE),.MEM_HOME_STAGES(PIPELINE),.MEM_PORTS(PORTS),.NX(MX),.NY(N/MX),.GLOBAL_GRID(1),.HOST_ACCESS(HOST),.SETS(4),.SET_W(2),.WAYS(2),.WAY_W(1)) dut (
 .clk(clk),.rst_n(rst_n),.launch_valid(1'b0),.launch_pc(launch_pc),.launch_role_mask(2'b01),
+.cache_maint_valid(cache_valid),.cache_maint_base(cache_base),.cache_maint_size(cache_size),
+.cache_maint_memory_drained(memory_drained),.cache_maint_ready(cache_ready),.cache_maint_done(cache_done),
 .launch_arg_base(64'h1000),.launch_vbase(14'd0),.grid_valid(valid),.grid_ready(ready),
 .grid_abort(1'b0),.grid_abort_status(4'd0),.grid_slice(4'd0),.grid_id(64'd17),.grid_arg_stride(64'h100),.grid_x(32'd13),.grid_y(32'd7),.grid_z(32'd5),
 .grid_cores({N{1'b1}}),.grid_done_valid(done),.grid_done_ready(ack),.grid_done_status(status),
@@ -135,6 +142,26 @@ initial begin
   host_word(1,65536,64'h1234,8'h03);
   host_word(0,65536,64'hfedcba9876541234,8'hff);
   $display("GRID COHERENT HOST PASS N=%0d downloads=457 uploads=2",N);
+ end
+ if(MAINTENANCE)begin
+  if(!HOST || !MEMORY || PORTS!=1)$fatal(1,"ownership test requires coherent host and single backing store");
+  @(negedge clk);cache_valid=1;cache_base=65537;cache_size=455*8-1;
+  @(posedge clk);while(!cache_ready)@(posedge clk);
+  @(negedge clk);cache_valid=0;cache_base=0;cache_size=0;
+  repeat(1000)begin
+   @(negedge clk);if(cache_done || dut.all_idle || ready)$fatal(1,"ownership granted before physical drain");
+  end
+  hv=1;valid=1;@(negedge clk);
+  if(hr || ready)$fatal(1,"host/grid admitted during ownership transfer");
+  hv=0;valid=0;memory_drained=1;
+  wait(cache_done);@(negedge clk);
+  for(integer k=0;k<455;k=k+1)
+   if(ram.mem[1024+k/8][(k%8)*64+:64] !== (k==0 ? 64'hfedcba9876541234 : 64'd4096+k))
+    $fatal(1,"dirty global result missing from backing memory at PID %0d",k);
+  // A one-byte DMA update must supersede the now-invalidated home copy.
+  ram.mem[1024][15:8]=8'hab;
+  host_word(0,65536,64'hfedcba987654ab34,8'hff);
+  $display("GLOBAL CACHE HANDOFF PASS N=%0d dirty_results=455 partial_dma=1",N);
  end
  if(INJECT_BAD_SOURCE)begin
   force dut.mem_rsp_valid=1'b1;force dut.mem_rsp_src=N;

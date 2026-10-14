@@ -21,10 +21,14 @@ module tnca_mem_ports #(
  input wire [PORTS*N_W-1:0] m_rsp_src,input wire [PORTS*LINE_BITS-1:0] m_rsp_rdata,
  output reg [PORTS-1:0] protocol_fault
 );
- initial begin
-  if(PORTS<1 || PORTS>N)$fatal(1,"memory ports must be within 1..N");
-  if((1<<N_W)<N)$fatal(1,"memory source width does not cover all homes");
- end
+ generate
+  if(PORTS<1 || PORTS>N)begin:g_bad_ports
+   tnca_invalid_memory_port_count invalid_configuration();
+  end
+  if((1<<N_W)<N)begin:g_bad_source_width
+   tnca_invalid_memory_source_width invalid_configuration();
+  end
+ endgenerate
  genvar p,s;
  generate for(p=0;p<PORTS;p=p+1) begin: g_port
   wire [N-1:0] requests,ready,replies;

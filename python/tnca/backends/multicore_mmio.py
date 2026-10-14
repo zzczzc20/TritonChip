@@ -18,7 +18,7 @@ class MulticoreMMIOBackend(U50Backend):
             raise ArgumentError('memory_ports/core_count must satisfy 1 <= ports <= cores <= 16')
         if bool(int(hbm_dma)):
             raise ArgumentError('multicore DMA bypass needs an implemented ownership transfer')
-        kwargs.setdefault('image_profile', 'core-vrf-sync-v5')
+        kwargs['image_profile'] = kwargs.get('image_profile') or 'core-vrf-sync-v5'
         kwargs.setdefault('device_clock', True)
         super().__init__(link, hbm_dma=False, **kwargs)
 

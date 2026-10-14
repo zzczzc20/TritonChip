@@ -45,6 +45,8 @@ module tnca_line_link #(
   assign reply_valid[s]=rv;assign reply[s*RW+:RW]=rd;
   assign occupied[s]=(|count) || rv;
  end endgenerate
- initial if(STAGES<0)$fatal(1,"negative link stage count");
+ generate if(STAGES<0)begin:g_bad_stages
+  tnca_invalid_line_link_stage_count invalid_configuration();
+ end endgenerate
 endmodule
 `default_nettype wire

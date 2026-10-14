@@ -458,3 +458,32 @@ jobs:
           name: archbench-coverage
           path: sim/build/archbench/coverage.jsonl
           if-no-files-found: ignore
+
+  r40-mmio:
+    name: "R40 multicore MMIO and native AXI graphs"
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - name: Toolchain
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends \
+            iverilog yosys build-essential cmake ninja-build python3 python3-venv \
+            libmlir-20-dev mlir-20-tools llvm-20-dev
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: pip-${{ hashFiles('spec/r1_toolchain.lock.json') }}
+      - name: Locked Torch, Triton and plugin
+        run: |
+          set -euo pipefail
+          V=$(python3 -c "import json;print(json.load(open('spec/r1_toolchain.lock.json'))['triton']['version'])")
+          PV=$(python3 -c "import json;print(json.load(open('spec/r38/torch.lock.json'))['version'])")
+          python3 -m venv ~/tritonenv
+          ~/tritonenv/bin/pip install -q "triton==$V" "torch==$PV" numpy
+          make python/tnca/data/.staged
+          ~/tritonenv/bin/pip install -q -e .
+          make tnca-opt
+      - name: Real registers, AXI and resident Torch graphs
+        run: make r40-multicore-mmio TRITON_PYTHON=$HOME/tritonenv/bin/python

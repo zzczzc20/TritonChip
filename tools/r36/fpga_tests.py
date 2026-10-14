@@ -372,7 +372,7 @@ def fpga02(log):
     """The wrapper elaborates, and its ports connect."""
     files = ' '.join(_library_files())
     ok, text = _run_yosys(
-        f'read_verilog -DSYNTHESIS {" ".join(INCS)} {files}\n'
+        f'read_verilog -sv -DSYNTHESIS {" ".join(INCS)} {files}\n'
         f'hierarchy -top {TOP} -check\n'
         f'check -noinit\n'
         # So that the verdict below can say the top is in the design
@@ -397,7 +397,7 @@ def fpga03(log):
     for tag, pre in TOP_VARIANTS:
         what = f'{TOP} {tag}'.strip()
         ok, text = _run_yosys(
-            f'read_verilog -DSYNTHESIS {" ".join(INCS)} {files}\n'
+            f'read_verilog -sv -DSYNTHESIS {" ".join(INCS)} {files}\n'
             f'{pre}'
             f'hierarchy -top {TOP} -check\n'
             f'select {TOP}\n'
@@ -424,7 +424,7 @@ def fpga04(log):
             ok = False
             continue
         got, text = _run_yosys(
-            f'read_verilog -DSYNTHESIS {" ".join(INCS)} {src}\n'
+            f'read_verilog -sv -DSYNTHESIS {" ".join(INCS)} {src}\n'
             f'hierarchy -top {name}\n'
             f'proc\n'
             f'check -assert\n'

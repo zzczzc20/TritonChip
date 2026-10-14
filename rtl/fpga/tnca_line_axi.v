@@ -80,11 +80,17 @@ module tnca_line_axi #(
  assign m_rready=rst_n;
  // Only one line completion per cycle at the non-backpressured home port.
  assign m_bready=rst_n && !read_final;
- initial begin
-  if(!(DATA_W==64 || DATA_W==128 || DATA_W==256 || DATA_W==512))$fatal(1,"AXI data width must divide a 64-byte line");
-  if(OUT_N<1 || OUT_N>(1<<ID_W))$fatal(1,"AXI IDs must cover outstanding slots");
-  if(MEM_BASE%64!=0)$fatal(1,"memory base must be line aligned");
- end
+ generate
+  if(!(DATA_W==64 || DATA_W==128 || DATA_W==256 || DATA_W==512))begin:g_bad_width
+   tnca_invalid_axi_data_width invalid_configuration();
+  end
+  if(OUT_N<1 || OUT_N>(1<<ID_W))begin:g_bad_slots
+   tnca_invalid_axi_slot_geometry invalid_configuration();
+  end
+  if(MEM_BASE%64!=0)begin:g_bad_base
+   tnca_invalid_axi_base_alignment invalid_configuration();
+  end
+ endgenerate
  always @(posedge clk)begin
   if(!rst_n)begin
    active<=0;writing<=0;sent<=0;issue_valid<=0;issue_slot<=0;

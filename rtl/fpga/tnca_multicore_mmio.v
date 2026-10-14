@@ -70,10 +70,14 @@ module tnca_multicore_mmio #(
    default:reg_rdata=0;
   endcase
  end
- initial begin
-  if(N<1 || N>16 || PORTS<1 || PORTS>N)$fatal(1,"invalid physical grid register geometry");
-  if(MEM_BASE<CODE_BYTES || MEM_BASE%4096!=0)$fatal(1,"memory base must cover private code and be page aligned");
- end
+ generate
+  if(N<1 || N>16 || PORTS<1 || PORTS>N)begin:g_bad_geometry
+   tnca_invalid_mmio_grid_geometry invalid_configuration();
+  end
+  if(MEM_BASE<CODE_BYTES || MEM_BASE%4096!=0)begin:g_bad_memory
+   tnca_invalid_mmio_memory_base invalid_configuration();
+  end
+ endgenerate
  always @(posedge clk)begin
   if(!rst_n)begin
    req_seq<=0;req_op<=0;a0<=0;a1<=0;a2<=0;a3<=0;a4<=0;a5<=0;deadline<=0;
@@ -108,7 +112,7 @@ module tnca_multicore_mmio #(
       64'd4:begin end // fully drained idle is required to admit this doorbell
       64'd5:begin end // no destructive board shutdown
       64'd6:rsp_r0<=req_seq;
-      64'd8:begin rsp_r0<=32;rsp_r1<=16777216;end
+      64'd8:rsp_status<=3; // legacy LAUNCH32 is not this binding's command
       64'd10:begin rsp_r0<=N;rsp_r1<=16777216;end
       64'd12:begin
        if(a0>=N)rsp_status<=3;
@@ -118,7 +122,7 @@ module tnca_multicore_mmio #(
        if(a0>=N)rsp_status<=3;
        else begin rsp_r0<=peak_active;rsp_r1<=active_cycles[a0*64+:64];end
       end
-      64'd14:begin rsp_r0<=1;rsp_r1<=4;end
+      64'd14:begin rsp_r0<=1;rsp_r1<=NUM_RCTX>=4?4:(NUM_RCTX>=2?2:1);end
       64'd16:begin rsp_r0<=PORTS;rsp_r1<=1;end
       64'd17:begin
        if(a0>=PORTS)rsp_status<=3;

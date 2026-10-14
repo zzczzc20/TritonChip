@@ -53,7 +53,8 @@ def main():
     for options in ({'hbm_dma': True}, {'core_count': 0}, {'core_count': 17},
                     {'memory_ports': 4}, {'core_count': 1.5}):
         refused(lambda opts=options: MulticoreMMIOBackend(Link(), **opts), (ArgumentError, TypeError))
-    print('MULTICORE MMIO OPTIONS PASS 9 boundaries', flush=True)
+    assert MulticoreMMIOBackend(Link(), image_profile=None).image_profile == 'core-vrf-sync-v5'
+    print('MULTICORE MMIO OPTIONS PASS 10 boundaries', flush=True)
 
 
 if __name__ == '__main__':

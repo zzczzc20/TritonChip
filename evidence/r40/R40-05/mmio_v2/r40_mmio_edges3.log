@@ -1,0 +1,1 @@
+MULTICORE MMIO PASS cores=3 ports=3 programs=455 timestamps=2 counters=[{'port': 0, 'read_lines': 57, 'write_lines': 19}, {'port': 1, 'read_lines': 57, 'write_lines': 19}, {'port': 2, 'read_lines': 57, 'write_lines': 19}]

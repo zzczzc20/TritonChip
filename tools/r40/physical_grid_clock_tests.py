@@ -5,13 +5,37 @@ import sys
 import threading
 from types import SimpleNamespace
 import unittest
+from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / 'python'))
-from tnca.runtime import Session, SUCCEEDED
+from tnca.runtime import Session, SUCCEEDED, _active_core_mask
 from tnca.transport import Reply
 
 
 class GridClockTests(unittest.TestCase):
+    def test_frozen_active_core_count_is_not_a_transport_mask(self):
+        for count, mask in ((1, 1), (2, 3), (3, 7)):
+            with patch.dict('os.environ', TNCA_ACTIVE_CORES=str(count)):
+                self.assertEqual(_active_core_mask(True, None), mask)
+                self.assertEqual(_active_core_mask(True, mask), mask)
+                with self.assertRaisesRegex(ValueError, 'conflicts'):
+                    _active_core_mask(True, 16)
+                with self.assertRaisesRegex(ValueError, 'physical-grid'):
+                    _active_core_mask(False, None)
+        for value in ('0', '17', 'bad'):
+            with patch.dict('os.environ', TNCA_ACTIVE_CORES=value):
+                with self.assertRaisesRegex(ValueError, 'count'):
+                    _active_core_mask(True, None)
+
+    def test_active_mask_above_actual_physical_capacity_is_refused(self):
+        session = Session.__new__(Session)
+        session.physical_grid = True
+        session._requested_active_cores = 15
+        session.dev = SimpleNamespace(physical_grid_capability=lambda: (3, 16777216),
+                                     stop=lambda: None)
+        with self.assertRaisesRegex(Exception, 'exceeds the physical grid'):
+            session._negotiate_physical_grid()
+
     def run_grid(self, stamp):
         reply = Reply(7, 0, 123, 1)
         if stamp is not None:

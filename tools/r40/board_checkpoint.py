@@ -48,6 +48,7 @@ def main():
         os.environ.update(TNCA_BACKEND='fpga-u280-multicore',
                           TNCA_BACKEND_ARGS=json.dumps(config),
                           TNCA_PROFILE='core-vrf-sync-v5', TNCA_TORCH_DEVICE='native',
+                          TNCA_ACTIVE_CORES='3',
                           CUDA_VISIBLE_DEVICES='', R40_CONTRACT='v2')
         os.environ.setdefault('TNCA_HOST_TIMEOUT', '7200')
         os.environ.setdefault('TNCA_DEADLINE', '4000000000')
@@ -141,6 +142,8 @@ def main():
         assert report['cores']['peak_active'] == 3
         assert all(c['issued'] == c['completed'] > 0 and c['occupied_cycles'] > 0
                    for c in report['cores']['cores'])
+        grid = launches[-1]['grid']
+        assert sum(c['issued'] for c in report['cores']['cores']) == grid[0]*grid[1]*grid[2]
         assert all(p['read_lines'] > 0 and p['write_lines'] > 0 for p in report['outlets'])
         assert not any(dev.axi_status().values()), dev.axi_status()
         # Host visibility is checked through the standard ownership handoff,

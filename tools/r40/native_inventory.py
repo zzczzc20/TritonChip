@@ -25,7 +25,7 @@ def audit(paths):
         missing=[key for key in ablate.PROVENANCE if not prov.get(key)]
         good=(r.get('status')=='pass' and r.get('point_sha256')==subset[pid]
               and not r.get('fallbacks') and not missing
-              and p.get('backend')=='fpga-u280'
+              and p.get('backend') in ('fpga-u280', 'fpga-u280-multicore')
               and k.get('TNCA_TORCH_DEVICE')=='native'
               and k.get('TNCA_TRANSFER_POLICY','resident')=='resident'
               and host.get('upload_bytes')==0 and host.get('download_bytes')==0

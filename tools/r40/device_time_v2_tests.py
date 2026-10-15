@@ -27,6 +27,12 @@ class DeviceTimeTests(unittest.TestCase):
             def save():path.write_text(''.join(json.dumps(r)+'\n' for r in rows))
             save()
             self.assertTrue(all(c['ok'] for c in audit([path])))
+            for r in rows:r['platform']['backend']='fpga-u280-multicore'
+            save()
+            self.assertTrue(all(c['ok'] for c in audit([path])))
+            rows[0]['platform']['backend']='fpga-multicore-sim';save()
+            self.assertFalse(all(c['ok'] for c in audit([path])))
+            rows[0]['platform']['backend']='fpga-u280-multicore'
             rows[0]['host']['upload_bytes']=64;save()
             self.assertFalse(all(c['ok'] for c in audit([path])))
             rows[0]['host']['upload_bytes']=0
@@ -67,6 +73,24 @@ class DeviceTimeTests(unittest.TestCase):
             paths=self.fixture(Path(d),slowdown=1.06)
             _,checks=runner.judge(*paths)
             self.assertFalse(all(c['ok'] for c in checks))
+
+    def test_final_multicore_board_backend_and_simulator_refusal(self):
+        with tempfile.TemporaryDirectory() as d,patch('ablate.BOOT',40):
+            paths=self.fixture(Path(d))
+            for side in paths:
+                for path in side:
+                    rows=[json.loads(line) for line in path.read_text().splitlines()]
+                    for row in rows:
+                        row['platform']['backend']='fpga-u280-multicore'
+                    path.write_text(''.join(json.dumps(row)+'\n' for row in rows))
+            _,checks=runner.judge(*paths)
+            self.assertTrue(all(c['ok'] for c in checks))
+            path=paths[1][0]
+            rows=[json.loads(line) for line in path.read_text().splitlines()]
+            rows[0]['platform']['backend']='fpga-multicore-sim'
+            path.write_text(''.join(json.dumps(row)+'\n' for row in rows))
+            with self.assertRaisesRegex(ValueError,'actual U280'):
+                runner.judge(*paths)
 
     def test_bad_inventory_sessions_order_and_config_are_refused(self):
         for mutation,expected in [('duplicate','exactly once'),('session','reused'),('order','random order'),('compiler','mixed')]:

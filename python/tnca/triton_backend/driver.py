@@ -74,7 +74,8 @@ class _Sessions:
     def get(cls, profile):
         from tnca.runtime import Session
         backend, kwargs = backend_choice()
-        key = (profile, backend, json.dumps(kwargs, sort_keys=True))
+        key = (profile, backend, json.dumps(kwargs, sort_keys=True),
+               os.environ.get('TNCA_ACTIVE_CORES'))
         with cls.lock:
             s = cls.open.get(key)
             if s is None or s.closed or s.poisoned:

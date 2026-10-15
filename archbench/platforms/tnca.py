@@ -455,10 +455,19 @@ def _provenance(profile, backend, backend_kwargs, plat, log, clock):
         launches.append(dict(kernel=e['kernel'], grid=list(e['grid']),
                              programs=len(e.get('program_cycles') or []), artifact=e.get('artifact')))
         seen.add(e['kernel'])
+    launch_map = dict(timing='serial-grid', cores=[0], launches=launches)
+    if backend == 'fpga-u280-multicore':
+        from tnca.triton_backend.driver import _Sessions
+        session = _Sessions.get(profile)
+        if not session.physical_grid:
+            raise RuntimeError('multicore board record requires a physical-grid session')
+        launch_map.update(timing='physical-grid',
+                          cores=[i for i in range(session._physical_core_count)
+                                 if session.active_cores & (1 << i)])
     return dict(software_tree=_prov.software_tree(), git=_prov.git_commit(),
                 artifacts=arts, profile=profile, capabilities=capabilities,
                 image=plat.get('device_id'), clock_hz=clock, backend=backend,
-                launch_map=dict(timing='serial-grid', cores=[0], launches=launches))
+                launch_map=launch_map)
 
 
 def _wrapper_launches(code):

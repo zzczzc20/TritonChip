@@ -89,6 +89,25 @@ class Buffer:
                 f"{'' if self.valid else ' INVALID'}>")
 
 
+def _active_core_mask(physical_grid, explicit_mask):
+    """Frozen ablation knob is a core count; transport uses a low-bit mask."""
+    value = os.environ.get('TNCA_ACTIVE_CORES')
+    if value is None:
+        return explicit_mask
+    if not physical_grid:
+        raise ValueError('TNCA_ACTIVE_CORES requires a physical-grid backend')
+    try:
+        count = int(value)
+    except ValueError:
+        raise ValueError('TNCA_ACTIVE_CORES must be a count in 1..16') from None
+    if not 1 <= count <= 16:
+        raise ValueError('TNCA_ACTIVE_CORES must be a count in 1..16')
+    mask = (1 << count) - 1
+    if explicit_mask is not None and explicit_mask != mask:
+        raise ValueError('TNCA_ACTIVE_CORES conflicts with explicit active_cores mask')
+    return mask
+
+
 class Event:
     """One submitted task. Exactly one terminal state, ever."""
 
@@ -295,6 +314,7 @@ class Session:
             raise ValueError('this backend requires physical_grid=True')
         if not isinstance(physical_grid, bool):
             raise ValueError('physical_grid must be a bool')
+        active_cores = _active_core_mask(physical_grid, active_cores)
         if active_cores is not None and not physical_grid:
             raise ValueError('active_cores requires physical_grid=True')
         self.physical_grid = physical_grid

@@ -29,7 +29,8 @@ def read_block(path, subset, exp, identity):
         pid = r['point_id']
         p = r.get('platform', {})
         knobs = p.get('knobs', {})
-        if p.get('backend') != 'fpga-u280' or r.get('status') != 'pass' or r.get('fallbacks'):
+        if (p.get('backend') not in ('fpga-u280', 'fpga-u280-multicore')
+                or r.get('status') != 'pass' or r.get('fallbacks')):
             raise ValueError(f'{pid}: requires passing actual U280 execution without fallback')
         if knobs.get('TNCA_TORCH_DEVICE', 'cpu') != identity:
             raise ValueError(f'{pid}: wrong device identity')

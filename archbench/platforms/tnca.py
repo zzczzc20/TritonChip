@@ -43,7 +43,7 @@ from .common import SCHEMA2, base_record, classify, compare, error_text, referen
 
 EVIDENCE = {'sim-file': 'measured-rtl', 'sim-socket': 'measured-rtl',
             'fpga-u50-sim': 'measured-rtl', 'fpga-u50': 'measured-board',
-            'fpga-u280': 'measured-board'}
+            'fpga-u280': 'measured-board', 'fpga-u280-multicore': 'measured-board'}
 
 # The clock a cycle count may be converted with, by backend. Only a board
 # has one; a simulated cycle has no duration (Stage 1 rule).
@@ -61,10 +61,11 @@ BOARD_CLOCK_HZ = {'fpga-u50': 37.5e6,
                   # host-timed spin kernels gives 100.01-100.07 MHz
                   # (flow/fpga/measure_clock.py). Earlier the same day: /2 of
                   # 150, 75 MHz; until R38's timing work, /4, 37.5 MHz.
-                  'fpga-u280': 100e6}
+                  'fpga-u280': 100e6, 'fpga-u280-multicore': 100e6}
 # How each board's clock is set (a configuration field of protocol-2 records:
 # two runs at different clock policies are different configurations).
-BOARD_CLOCK_POLICY = {'fpga-u50': '150MHz/4', 'fpga-u280': '100MHz-undivided'}
+BOARD_CLOCK_POLICY = {'fpga-u50': '150MHz/4', 'fpga-u280': '100MHz-undivided',
+                      'fpga-u280-multicore': '100MHz-undivided'}
 
 # The device heap a launch's argument storages must fit: Session's default
 # heap, 0x20000..0x80000, of the 512 KiB memory the simulator and the U50

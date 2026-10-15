@@ -42,6 +42,8 @@
 //                             now enforced by the shell rather than counted
 //                             here.
 //   +trace                    one line per served request
+//   +observe=<file>           the observer's log: the platform's own count of
+//                             each command, and memory activity outside one
 //
 // Op 7 (PERF_READ, transport 1.1) reads one device counter by index.
 //==============================================================================
@@ -196,6 +198,109 @@ module tnca_device;
     integer status, r0, r1;
     reg [63:0] word;
     reg settled;
+
+    //==========================================================================
+    // The observer: the platform's own account of the device's time
+    //
+    // `done_cycles` is the shell's report of how long a command took, and the
+    // shell is the device: whoever designs the device decides what it reports.
+    // An evaluator that scores a design cannot take the design's word for it,
+    // so the platform counts for itself, at the ports it owns, and touches
+    // nothing inside the shell:
+    //
+    //   - a command's time is the number of clock edges from the edge that
+    //     accepts it (cmd_valid && cmd_ready) to the first edge at which
+    //     done_valid is high;
+    //   - a memory request (mreq_valid && mreq_ready) belongs to the command
+    //     in flight or to the host transfer in flight. One after completion
+    //     is raised but before it is taken is `after_done`; one that belongs
+    //     to nothing is `outside` -- the device working when nobody asked it
+    //     to, for instance on inputs while they are still being uploaded;
+    //   - a host transfer moves one word, so it causes at most one memory
+    //     request. More is `extra`.
+    //
+    // With +observe=<file>, one line per command and one at shutdown go to
+    // <file>; `outside` and `extra` count since the previous line. The
+    // device cannot reach the file: it is the platform's, and an evaluator
+    // runs the device where nothing else can write it either.
+    //==========================================================================
+    reg [1023:0] obs_path;
+    integer      obs_fh;
+    reg [63:0]   obs_now, obs_t0, obs_cycles, obs_seq, obs_span;
+    reg [63:0]   obs_inside, obs_after, obs_outside, obs_extra, obs_host_reqs;
+    reg [3:0]    obs_op;
+    reg          obs_cmd, obs_done_seen, obs_host;
+    wire         obs_host_win = obs_host || (host_req_valid && host_req_ready);
+    wire         obs_cmd_win  = (obs_cmd && !obs_done_seen) || (cmd_valid && cmd_ready);
+
+    initial begin
+        obs_fh = 0;
+        obs_now = 0; obs_t0 = 0; obs_cycles = 0; obs_seq = 0;
+        obs_inside = 0; obs_after = 0; obs_outside = 0; obs_extra = 0; obs_host_reqs = 0;
+        obs_op = 4'd0; obs_cmd = 1'b0; obs_done_seen = 1'b0; obs_host = 1'b0;
+        if ($value$plusargs("observe=%s", obs_path))
+            obs_fh = $fopen(obs_path, "w");
+    end
+
+    always @(posedge clk) begin
+        obs_now <= obs_now + 64'd1;
+
+        if (mreq_valid && mreq_ready) begin
+            if (obs_cmd_win)                    obs_inside  <= obs_inside + 64'd1;
+            else if (obs_cmd && obs_done_seen)  obs_after   <= obs_after + 64'd1;
+            else if (obs_host_win) begin
+                if (obs_host_reqs != 0)         obs_extra   <= obs_extra + 64'd1;
+                obs_host_reqs <= obs_host_reqs + 64'd1;
+            end
+            else                                obs_outside <= obs_outside + 64'd1;
+        end
+
+        if (host_req_valid && host_req_ready) begin
+            obs_host      <= 1'b1;
+            obs_host_reqs <= (mreq_valid && mreq_ready) ? 64'd1 : 64'd0;
+        end else if (obs_host && host_rsp_valid)
+            obs_host <= 1'b0;
+
+        if (cmd_valid && cmd_ready) begin
+            obs_cmd       <= 1'b1;
+            obs_done_seen <= 1'b0;
+            obs_t0        <= obs_now;
+            obs_op        <= cmd_op;
+            obs_seq       <= seq;
+            obs_inside    <= (mreq_valid && mreq_ready) ? 64'd1 : 64'd0;
+            obs_after     <= 64'd0;
+        end else if (obs_cmd) begin
+            // The first edge that sees completion ends the count. The bench
+            // may take the completion on that same edge, so the two are
+            // judged separately rather than one after the other.
+            obs_span = obs_done_seen ? obs_cycles : (obs_now - obs_t0);
+            if (!obs_done_seen && done_valid) begin
+                obs_done_seen <= 1'b1;
+                obs_cycles    <= obs_span;
+            end
+            if (done_valid && done_ready) begin
+                obs_cmd <= 1'b0;
+                if (obs_fh != 0) begin
+                    $fwrite(obs_fh, "cmd op=%0d seq=%0d obs=%0d done=%0d status=%0d inside=%0d after_done=%0d outside=%0d extra=%0d\n",
+                            obs_op, obs_seq, obs_span, done_cycles, done_status,
+                            obs_inside, obs_after, obs_outside, obs_extra);
+                    $fflush(obs_fh);
+                end
+                obs_outside <= 64'd0;
+                obs_extra   <= 64'd0;
+            end
+        end
+    end
+
+    task obs_finish;
+        begin
+            if (obs_fh != 0) begin
+                $fwrite(obs_fh, "end outside=%0d extra=%0d\n", obs_outside, obs_extra);
+                $fclose(obs_fh);
+                obs_fh = 0;
+            end
+        end
+    endtask
 
     task write_response;
         input integer rseq;
@@ -387,6 +492,7 @@ module tnca_device;
                                    0, 0, 0, 1, 1, 1);
                         5: begin                       // SHUTDOWN
                             write_response(seq, 0, 0, 0);
+                            obs_finish;
                             $display("DEVICE SHUTDOWN after %0d requests", served);
                             $finish;
                         end

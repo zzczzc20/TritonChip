@@ -12,10 +12,16 @@ that owns whatever the platform is and speaks one protocol to the
 runtime -- which is why it is a module of its own rather than a helper
 inside the adapter.
 
-    python -m tnca.backends.relay <bench> [--workdir D] [--deadline N]
+    python -m tnca.backends.relay <bench> [--workdir D] [--deadline N] [--unix PATH]
+
+With --unix the relay listens on a Unix socket instead of a TCP port. That is
+how an evaluator runs the device out of the reach of the code it measures: the
+relay and the simulator in a container of their own, the client in another,
+and nothing between them but the socket file (P2).
 """
 import argparse
 import json
+import os
 import signal
 import socket
 import struct
@@ -125,6 +131,7 @@ def main(argv=None):
     ap.add_argument('--image')
     ap.add_argument('--epoch', type=int, default=0)
     ap.add_argument('--port', type=int, default=0)
+    ap.add_argument('--unix', help='listen on this Unix socket path instead of a TCP port')
     # Bounds how long this process may outlive its client. Zero disables
     # it, which is only correct for a relay somebody else supervises.
     ap.add_argument('--idle-timeout', type=float, default=120.0)
@@ -136,14 +143,21 @@ def main(argv=None):
                       epoch=args.epoch)
     dev.start()
 
-    srv = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    srv.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    srv.bind(('127.0.0.1', args.port))
+    if args.unix:
+        if os.path.exists(args.unix):
+            os.unlink(args.unix)
+        srv = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+        srv.bind(args.unix)
+        where = f"unix:{args.unix}"
+    else:
+        srv = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        srv.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        srv.bind(('127.0.0.1', args.port))
+        where = str(srv.getsockname()[1])
     srv.listen(4)
-    port = srv.getsockname()[1]
     # The client waits for this line. Printing it before the device is up
     # would hand out an address that cannot answer.
-    print(f"listening {port}", flush=True)
+    print(f"listening {where}", flush=True)
 
     # SIGTERM has to run the cleanup below.
     #
@@ -194,7 +208,8 @@ def main(argv=None):
             # thinking, not on an idle moment. A timeout inherited from
             # the listener would cut off a long launch instead.
             conn.settimeout(None)
-            conn.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
+            if not args.unix:
+                conn.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
             try:
                 said_bye = serve(conn, dev, args.epoch)
             finally:
@@ -206,6 +221,8 @@ def main(argv=None):
     finally:
         dev.stop()
         srv.close()
+        if args.unix and os.path.exists(args.unix):
+            os.unlink(args.unix)
     return 0
 
 

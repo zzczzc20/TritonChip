@@ -32,3 +32,15 @@ The new OOC resources are 954722 LUTs, 315709 FFs, 192 RAMB36,
 45 RAMB18 and 531 DSPs. The separate older route-congestion failure remains
 retained in `../route_congestion/`; this successful contract audit does not
 clear that physical routing risk.
+
+The new XO SHA256 is
+`8461d27318a69ef12c9d9b0fe71c8f283b3b207d6d89eaa90bd0caeb09d1b2de`.
+`dcp_audit/xo_sources.json` matches all 60 packaged RTL sources to `09ebe06`.
+The image parameters and exact launch wrapper are retained alongside it.
+The detached link started on 2026-10-15, PID 566545 on the FPGA host,
+with `SSI_SpreadSLLs` and 100 MHz. Local Vivado 2023.2 command help confirms
+the directive; its stdout is retained as `place_help.log.gz`. This is a
+placement-strategy experiment against the recorded localized SLL congestion,
+not a routed/timing result. Authoritative completion is
+`~/tnca_build/u280_r40ownership_preserved09/build/link.exit` and
+`xo/link.log`; preserve the existing run while it is live.

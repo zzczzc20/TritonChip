@@ -451,6 +451,13 @@ U280 有三个 SLR，HBM 接口位于 SLR0；板卡提供 8 GB HBM、32 个 AXI 
 
 ### R40-05：多 SLR 物理多核接入公共 runtime
 
+进展（2026-10-15，未签收）：保留队列的 `09ebe06` 候选综合完成，
+实际 DCP 的完整 hierarchy/SLR assignment contract 检查通过，三组私有
+code command/reply 队列均保留。新 XO 的 60 个 RTL 文件逐字节匹配该
+提交，已启动保持 100 MHz 的 `SSI_SpreadSLLs` link。前一候选因全局
+拥塞等级 7 失败，原始日志保留；DCP assignment 检查不是实际 placement/
+route，通过该检查不代表物理或性能 gate 已通过。
+
 交付：
 
 - 统一 single-core / multi-core 的 capability 和核心参数贯穿，保留 R39 已验收的 SFU、descriptor、role-SPMD、pair / slice 等能力；每核私有代码、参数、scratch 与资源隔离。
@@ -542,6 +549,13 @@ U280 有三个 SLR，HBM 接口位于 SLR0；板卡提供 8 GB HBM、32 个 AXI 
 不作为性能证据。`make r40-attention` 继续判断全部 R40-08 gate，缺少
 板测、完整 shape/traffic 与 prefill 性能证据仍不通过。
 
+进展（2026-10-15，未签收）：在线模板扩展至 16/32/64 维 FP16/BF16
+head，顺序消费 16 列 K/V fragment。`TNCA_SDPA=fused/decomposed` 标准
+配置支持重复切换；宽维原生 decode/mask/GQA/MQA 功能批次 6/6 通过，
+配置切换及自动启用的 D32 用例已通过，其余自动启用用例仍在运行。
+该批次保留实际 descriptor load、寄存器、分配和零 staging 证据；不作为
+冻结长序列性能或完整模型验收。
+
 交付：
 
 - `torch.nn.functional.scaled_dot_product_attention` 经设备 lowering / Inductor 模板生成融合 Triton，descriptor 分块加载、在线 softmax / 稳定 reduction；能力不足时走同一标准数学分解并明确说明。
@@ -564,9 +578,15 @@ resource 预过滤、共享线程候选预算、600 秒图预算与完整配置�
 只接受同 session/epoch 的共同设备时钟端点，候选测量与正式 launch
 日志隔离。多核 grid 的后端端点现已传入 runtime Event，缺计时仍拒绝。
 `make r40-autotune-checks` 为功能验证入口；自动编译候选、成本模型、
-持久缓存/跨进程 worker、冻结 holdout/完整套件/模型和板测性能仍待完成，
+worker 强制超时、冻结 holdout/完整套件/模型和板测性能仍待完成，
 正式 `make r40-autotune` 在功能检查后判断所有 R40-09 gate；缺少上述
 证据仍不通过，不能用基础检查替代完整验收。
+
+进展（2026-10-15，未签收）：持久候选缓存支持原子发布、完整身份失效
+和损坏恢复；原生三核标准图证明缓存重开后不重新测量、正式 launch
+零 staging。共享 worker 图预算保留首个 deadline，SQLite transaction
+保证多个进程对同一 kernel 合计最多 16 次 admission；策略检查 14/14
+通过。该预算属于协作式 admission，尚未实现终止已超时的 worker。
 
 交付：
 

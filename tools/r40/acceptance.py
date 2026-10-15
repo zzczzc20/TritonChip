@@ -73,7 +73,8 @@ def judge(gate, *, ran=None):
         return 'fail', f'{ev}: {e}'
     entry = doc.get('gates', {}).get(gate['id']) if isinstance(doc, dict) else None
     if entry is None:
-        return 'fail', f"{ev} does not name gate {gate['id']}"
+        status = 'not-measured' if gate.get('contract_version') == 2 else 'fail'
+        return status, f"{ev} does not name gate {gate['id']}"
     status = entry.get('status')
     if gate.get('contract_version') == 2:
         from contract_v2 import LOCK_SHA256

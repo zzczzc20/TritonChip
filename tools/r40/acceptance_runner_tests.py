@@ -62,6 +62,18 @@ class RunnerTests(unittest.TestCase):
                 acceptance.main(['--wp', 'R40-typo'])
         self.assertEqual(error.exception.code, 2)
 
+    def test_partial_v2_evidence_keeps_missing_gate_unmeasured(self):
+        with tempfile.TemporaryDirectory() as directory:
+            evidence = Path(directory) / 'partial.json'
+            evidence.write_text(json.dumps({'gates': {}}))
+            gate = dict(id='R40-01.device-time', kind='capability',
+                        command='board-experiment', evidence=str(evidence))
+            self.assertEqual(acceptance.judge(gate)[0], 'fail')
+            gate['contract_version'] = 2
+            self.assertEqual(acceptance.judge(gate)[0], 'not-measured')
+            # An executed experiment's failure cannot become missing data.
+            self.assertEqual(acceptance.judge(gate, ran=7)[0], 'fail')
+
 
 if __name__ == '__main__':
     unittest.main()

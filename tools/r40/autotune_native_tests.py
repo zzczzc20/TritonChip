@@ -103,10 +103,16 @@ def main():
                cache=PersistentCache(cache_directory.name))
     assert hit['cache_hit'] and hit['selected']==result['selected']
     session.active_cores=(1<<result['selected']['knobs']['cores'])-1
+    if args.isolated_workers:
+        # Workers compiled their own graphs. Warm the supervisor's selected
+        # graph outside the formal log as well; first-call compilation emits
+        # helper kernels and is not a steady execution sample.
+        torch.testing.assert_close(graph(dx,dy).cpu(),original(x,y))
     with launch_log() as formal:
         output=graph(dx,dy)
     torch.testing.assert_close(output.cpu(),original(x,y))
     assert formal and all(row['upload_bytes']==row['download_bytes']==0 for row in formal)
+    assert len(formal)==1, 'compilation or helper launches polluted the formal graph call'
     cache_directory.cleanup()
     print('AUTOTUNE NATIVE DEVICE EVENTS PASS '+json.dumps(dict(identity=identity,
         identity_key=result['identity_key'],device_records=[r.get('device_records') for r in result['rows']],selected=result['selected'],

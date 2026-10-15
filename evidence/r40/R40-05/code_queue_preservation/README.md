@@ -23,7 +23,7 @@ synthesis and this check before it proceeds to route. The old DCP failure is
 retained; no physical placement or performance pass is claimed here.
 
 The immutable `09ebe06` candidate has now completed synthesis and this
-actual-DCP check. `dcp_audit/placement.log` ends with
+actual-DCP check. `dcp_audit/placement.log.gz` ends with
 `R40_MULTICORE_PLACEMENT_CONTRACT_PASS`; all three private code queue
 copies are present. The assignment report explicitly states that no placement
 or route was performed. DCP SHA256:

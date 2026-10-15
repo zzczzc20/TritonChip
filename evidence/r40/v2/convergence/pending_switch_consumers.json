@@ -1,0 +1,23 @@
+{
+  "scope": "source audit, not gate evidence",
+  "status": "not-measured",
+  "software_commit": "ba56eb05d3b516db7013766cdf662ac434a6b291",
+  "knobs": {
+    "TNCA_DCO": {
+      "matches": [],
+      "result": "no literal consumer found"
+    },
+    "TNCA_LOCALITY": {
+      "matches": [],
+      "result": "no literal consumer found"
+    },
+    "TNCA_PIPELINE": {
+      "matches": [],
+      "result": "no literal consumer found"
+    },
+    "TNCA_TUNE": {
+      "matches": [],
+      "result": "no literal consumer found"
+    }
+  }
+}

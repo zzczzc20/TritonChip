@@ -32,6 +32,12 @@ def read_block(path, subset, exp, identity):
         if (p.get('backend') not in ('fpga-u280', 'fpga-u280-multicore')
                 or r.get('status') != 'pass' or r.get('fallbacks')):
             raise ValueError(f'{pid}: requires passing actual U280 execution without fallback')
+        if not all(p.get('toolchain', {}).get(k) for k in ('torch','triton','python')):
+            raise ValueError(f'{pid}: missing compiler/environment identity')
+        if (not isinstance(p.get('image_sha256'), str) or len(p['image_sha256']) != 64
+                or any(c not in '0123456789abcdef' for c in p['image_sha256'])
+                or p.get('image') != 'xclbin:'+p['image_sha256'][:16]):
+            raise ValueError(f'{pid}: missing complete image SHA256')
         if knobs.get('TNCA_TORCH_DEVICE', 'cpu') != identity:
             raise ValueError(f'{pid}: wrong device identity')
         if knobs.get('TNCA_TRANSFER_POLICY') != 'per-kernel':

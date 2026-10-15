@@ -35,6 +35,7 @@ endpoints leave this measurement unavailable; serial-grid keeps its meaning.
 """
 import os
 import time
+import sys
 from pathlib import Path
 
 from .. import provenance as _prov
@@ -96,7 +97,7 @@ def knobs():
             if k.startswith('TNCA_') and k not in NOT_KNOBS}
 
 
-def device_id(profile, backend, backend_kwargs):
+def device_id(profile, backend, backend_kwargs, *, full=False):
     """What the device actually was: the simulator build, named by its
     profile and RTL hashes, or the board image, named by its sha256. Two
     runs with the same profile name on different RTL must not be merged."""
@@ -108,11 +109,13 @@ def device_id(profile, backend, backend_kwargs):
             with open(xclbin, 'rb') as f:
                 for chunk in iter(lambda: f.read(1 << 20), b''):
                     h.update(chunk)
-            return f'xclbin:{h.hexdigest()[:16]}'
+            return h.hexdigest() if full else f'xclbin:{h.hexdigest()[:16]}'
+        if full:
+            return None
         from tnca import device
         return f'sim:{os.path.basename(os.path.dirname(device.expected_path(profile)))}'
     except Exception as e:                                   # noqa: BLE001
-        return f'unknown:{type(e).__name__}'
+        return None if full else f'unknown:{type(e).__name__}'
 
 
 def run(point, *, profile='core-sim', opt_level=2, seed=0, counters=False, warmup=0, timed=0,
@@ -149,7 +152,9 @@ def run(point, *, profile='core-sim', opt_level=2, seed=0, counters=False, warmu
     # The configuration a protocol-2 comparison checks, on every record --
     # one that fails as much as one that passes (tools/r40/ablate.py `mixed`).
     plat.update(image=plat.get('device_id'), clock_policy=BOARD_CLOCK_POLICY.get(backend),
-                software_tree=_prov.software_tree())
+                image_sha256=device_id(profile, backend, backend_kwargs, full=True),
+                software_tree=_prov.software_tree(),
+                toolchain=dict(torch=torch.__version__, triton=triton.__version__, python=sys.version))
     rec = base_record(point, plat, EVIDENCE.get(backend, 'measured-rtl'))
     rec['schema'] = SCHEMA2
 

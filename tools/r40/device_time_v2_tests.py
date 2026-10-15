@@ -51,6 +51,10 @@ class DeviceTimeTests(unittest.TestCase):
                 first=rng.randrange(2)
                 for side in (0,1):
                     r=record(pt,.001*(slowdown if side else 1),kind='device-cycles-serial-grid')
+                    r['platform']['toolchain']=dict(torch='fixture-torch',triton='fixture-triton',python='fixture-python')
+                    r['platform']['backend_args']=dict(core_count=3,memory_ports=3,hbm_bytes=1<<30)
+                    r['platform']['image_sha256']='a'*64
+                    r['platform']['image']=r['platform']['device_id']='xclbin:'+'a'*16
                     r['platform']['knobs']={'TNCA_TORCH_DEVICE':'native' if side else 'cpu','TNCA_TRANSFER_POLICY':'per-kernel'}
                     r['platform']['inductor']['device']='tnca' if side else 'cpu'
                     r['time'].update(warmup=5,deterministic=False)
@@ -93,7 +97,7 @@ class DeviceTimeTests(unittest.TestCase):
                 runner.judge(*paths)
 
     def test_bad_inventory_sessions_order_and_config_are_refused(self):
-        for mutation,expected in [('duplicate','exactly once'),('session','reused'),('order','random order'),('compiler','mixed')]:
+        for mutation,expected in [('duplicate','exactly once'),('session','reused'),('order','random order'),('compiler','mixed'),('toolchain','mixed'),('memory','mixed')]:
             with self.subTest(mutation=mutation),tempfile.TemporaryDirectory() as d,patch('ablate.BOOT',40):
                 paths=self.fixture(Path(d))
                 path=paths[1][1]
@@ -102,6 +106,8 @@ class DeviceTimeTests(unittest.TestCase):
                 if mutation=='session':rows[0]['measurement']['process_session']='0-1'
                 if mutation=='order':rows[0]['measurement'].update(started_ns=1,ended_ns=2)
                 if mutation=='compiler':rows[0]['platform']['inductor']['max_block']=64
+                if mutation=='toolchain':rows[0]['platform']['toolchain']['triton']='different'
+                if mutation=='memory':rows[0]['platform']['backend_args']['hbm_bytes']=1<<31
                 path.write_text(''.join(json.dumps(r)+'\n' for r in rows))
                 with self.assertRaisesRegex((ValueError,runner.ablate.Refused),expected):runner.judge(*paths)
 

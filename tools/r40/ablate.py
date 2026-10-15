@@ -72,8 +72,8 @@ PROVENANCE = ('software_tree', 'artifacts', 'profile', 'capabilities', 'image',
 
 # Platform fields that make a configuration; A and B may differ only in the
 # declared knobs.
-CONFIG_FIELDS = ('kind', 'profile', 'backend', 'opt_level', 'inductor', 'device_id',
-                 'image', 'clock_policy', 'software_tree', 'suite', 'weights')
+CONFIG_FIELDS = ('kind', 'profile', 'backend', 'backend_args', 'toolchain', 'opt_level', 'inductor', 'device_id',
+                 'image', 'image_sha256', 'clock_policy', 'software_tree', 'suite', 'weights')
 
 BOOT = 2000
 ALPHA = 0.05

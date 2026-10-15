@@ -8,18 +8,29 @@ cannot pass a gate by saying so.
 """
 import datetime
 import json
+import os
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 
 
 def path_for(gate_id):
-    return ROOT / 'sim' / 'build' / 'r40' / f"{gate_id.split('.', 1)[0]}.json"
+    root = ROOT / 'sim' / 'build' / 'r40'
+    version = os.environ.get('R40_CONTRACT', 'v1')
+    if version not in ('v1', 'v2'):
+        raise ValueError('R40_CONTRACT must be v1 or v2')
+    if version == 'v2':
+        root = root / 'v2'
+    return root / f"{gate_id.split('.', 1)[0]}.json"
 
 
 def record(gate_id, status, checks, *, detail='', path=None, **extra):
     """Write one gate's evidence; returns the path written."""
     p = Path(path) if path else path_for(gate_id)
+    if os.environ.get('R40_CONTRACT') == 'v2':
+        from contract_v2 import verify, LOCK_SHA256
+        verify()
+        extra.update(contract_version=2, contract_sha256=LOCK_SHA256)
     p.parent.mkdir(parents=True, exist_ok=True)
     try:
         doc = json.loads(p.read_text())

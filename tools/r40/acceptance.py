@@ -27,6 +27,7 @@ the judgement.
 """
 import argparse
 import json
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -74,6 +75,10 @@ def judge(gate, *, ran=None):
     if entry is None:
         return 'fail', f"{ev} does not name gate {gate['id']}"
     status = entry.get('status')
+    if gate.get('contract_version') == 2:
+        from contract_v2 import LOCK_SHA256
+        if entry.get('contract_sha256') != LOCK_SHA256:
+            return 'not-measured', 'evidence is not bound to the frozen R40 v2 contract'
     if status not in STATUSES:
         return 'fail', f'{ev}: status {status!r} is not one of {STATUSES}'
     if gate['kind'] == 'capability' and status == 'perf-pass':
@@ -91,12 +96,24 @@ def judge(gate, *, ran=None):
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument('--plan', type=Path, default=ROOT / 'spec' / 'r40' / 'plan.json')
+    default_plan = ROOT / 'spec' / 'r40'
+    if os.environ.get('R40_CONTRACT') == 'v2':
+        default_plan = default_plan / 'v2'
+    ap.add_argument('--plan', type=Path, default=default_plan / 'plan.json')
     ap.add_argument('--wp', nargs='*')
     ap.add_argument('--run', action='store_true')
     ap.add_argument('--json', type=Path)
     args = ap.parse_args(argv)
     plan = json.loads(args.plan.read_text())
+    if plan.get('contract_version') == 2:
+        from contract_v2 import verify
+        try:
+            lock = verify()
+            import hashlib
+            if hashlib.sha256(args.plan.read_bytes()).hexdigest() != lock['files']['spec/r40/v2/plan.json']:
+                raise ValueError('acceptance must use the exact frozen R40 v2 plan')
+        except (OSError, ValueError, KeyError) as error:
+            ap.error(str(error))
     known = {wp['id'] for wp in plan['work_packages']}
     unknown = set(args.wp or ()) - known
     if unknown:
@@ -117,8 +134,11 @@ def main(argv=None):
             if args.run and gate.get('command'):
                 command = gate['command']
                 if command not in command_results:
+                    run_env = dict(os.environ)
+                    if plan.get('contract_version') == 2:
+                        run_env['R40_CONTRACT'] = 'v2'
                     command_results[command] = subprocess.run(
-                        command, shell=True, cwd=ROOT).returncode
+                        command, shell=True, cwd=ROOT, env=run_env).returncode
                 ran = command_results[command]
             status, why = judge(gate, ran=ran)
             rows.append(dict(id=gate['id'], kind=gate['kind'], required=gate.get('required', True),

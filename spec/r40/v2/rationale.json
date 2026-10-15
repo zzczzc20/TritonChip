@@ -1,0 +1,39 @@
+{
+  "schema": 1,
+  "authorization": "User 2026-10-15: permit only workload-scale justified changes; freeze v2 once.",
+  "inherited_commit": "f2b081e",
+  "changes": [
+    {
+      "id": "device-capability",
+      "reason": "Device registration alone need not accelerate identical kernels. Comparing B39 on-chip RAM against a new HBM image confounds memory-system changes.",
+      "floor": 0.9523809523809523,
+      "max_point_slowdown": 1.05,
+      "matched_controls": true
+    },
+    {
+      "id": "reachable-capacity",
+      "reason": "Frozen transpose 8192x8192 fp32 input/output totals 536870912 bytes; frozen model weights total 221267968 bytes. Unallocated PCs add no capacity or throughput to those runs.",
+      "minimum_exposed_bytes": 1073741824,
+      "minimum_peak_headroom": 1.25,
+      "minimum_tested_physical_pcs": 2
+    },
+    {
+      "id": "consumer-bandwidth",
+      "reason": "An 8 B/cycle core at 100 MHz peaks at 0.8 GB/s; three total 2.4 GB/s. Requiring 32 B/core/cycle regardless of consumer demand is not a workload throughput criterion.",
+      "retained_direction_peak_fraction": 0.5,
+      "retained_memory_service_speedup": 1.5,
+      "outstanding_control": [
+        1,
+        8
+      ]
+    }
+  ],
+  "not_waived": [
+    "numeric correctness including local-memory paths",
+    "all 77 existing and 14 HBM points",
+    "three physical SLR cores",
+    "all other performance thresholds",
+    "full frozen model",
+    "final clean rebuild and same-image board signoff"
+  ]
+}

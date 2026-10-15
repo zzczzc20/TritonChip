@@ -21,6 +21,7 @@ never as the gate, since a subset chosen after measuring is not a frozen one.
 import argparse
 import json
 import math
+import os
 import sys
 import tempfile
 from pathlib import Path
@@ -36,6 +37,8 @@ TIERS = ('tiny', 'small', 'medium')
 
 
 def main(argv=None):
+    if os.environ.get('R40_CONTRACT') == 'v2':
+        raise SystemExit('B39 device_time.py is v1 only; use the matched-control device_time_v2.py runner')
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument('--native', type=Path, required=True)

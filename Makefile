@@ -1388,6 +1388,7 @@ archbench-gpu:
 # Acceptance 1 and 3: every manipulation of a comparison refused, identity 1;
 # nothing missing passes a gate. Protocol/manifest checks need no torch or board.
 r40-protocol:
+	@$(PYTHON) tools/r40/contract_v2_tests.py
 	@$(PYTHON) tools/r40/acceptance_runner_tests.py
 	@$(PYTHON) tools/r40/audit_xo_sources_tests.py
 	@$(PYTHON) tools/r40/attention_checks_tests.py
@@ -1423,6 +1424,12 @@ r40-b39:
 	   --gates $(BUILD)/r40/b39_gates_run.json --evidence
 r40-acceptance:
 	@$(PYTHON) tools/r40/acceptance.py --json $(BUILD)/r40/acceptance.json
+
+.PHONY: r40-v2-contract-check r40-v2-acceptance
+r40-v2-contract-check:
+	@$(PYTHON) tools/r40/contract_v2.py
+r40-v2-acceptance: r40-v2-contract-check
+	@$(PYTHON) tools/r40/acceptance.py --plan spec/r40/v2/plan.json --json $(BUILD)/r40/v2/acceptance.json
 # R40-01: the tnca PyTorch device (doc/r40_tnca_device.md). The device tests
 # on this host -- run once on a host with CUDA and once on one without
 # (acceptance 2) -- then the native suite's records (R40_NATIVE: the

@@ -103,6 +103,14 @@ def config_of(rec, vary):
     p = rec.get('platform') or {}
     fields = {v.split('.', 1)[1] for v in vary if v.startswith('platform.')}
     cfg = {k: p.get(k) for k in CONFIG_FIELDS if k in p and k not in fields}
+    # A device migration may change only inductor.device, while block/tile
+    # settings remain fixed. Never exempt the whole Inductor configuration.
+    for field in fields:
+        if '.' in field:
+            parent, child = field.split('.', 1)
+            if parent in cfg and isinstance(cfg[parent], dict):
+                cfg[parent] = dict(cfg[parent])
+                cfg[parent].pop(child, None)
     knobs = dict(p.get('knobs') or {})
     for k in vary:
         knobs.pop(k, None)
@@ -366,6 +374,13 @@ def main(argv=None):
     explained = ()
     if args.plan and args.experiment:
         plan = json.loads(args.plan.read_text())
+        if plan.get('contract_version') == 2:
+            from contract_v2 import verify, ROOT as CONTRACT_ROOT
+            lock = verify()
+            if hashlib.sha256(args.plan.read_bytes()).hexdigest() != lock['files']['spec/r40/v2/plan.json']:
+                ap.error('the supplied v2 plan is not the frozen contract')
+            if plan['experiments'][args.experiment].get('comparison_rule') == 'capability-non-regression':
+                ap.error('use device_time_v2.py for the three-block capability comparison')
         exp = plan['experiments'][args.experiment]
         subset, _ = load_subset(ROOT / exp['subset'])
         vary = exp['vary']

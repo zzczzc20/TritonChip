@@ -518,29 +518,69 @@ parameter of every instance has the same value and width as before, and cycles
 are identical on the points measured. Not yet migrated: the core-level benches,
 `tnca_shell_tb`, the FPGA top.
 
-**P2, the observer (planned; required).** Today the cycle count that scores a
-run is `run_cycles` in `rtl/tnca_shell.v`, which the agent may edit. And the
-measuring process runs candidate code: the candidate's compiler, and its
-versions of the `python/tnca/` modules that are design paths (among them the
-ABI and artifact implementations `abi.py` and `artifact.py`, `cli.py` behind
-`tnca-sim prepare`, and `__init__.py`); that process also checks correctness
-and writes the record. The observer closes both:
+**P2, the observer (planned; required).** Two facts make it necessary.
+The cycle count that scores a run is `run_cycles` in `rtl/tnca_shell.v`, which
+the agent may edit. And the measuring process runs candidate code: the
+candidate's compiler, and its versions of the `python/tnca/` modules that are
+design paths (among them `abi.py`, `artifact.py`, `cli.py` behind `tnca-sim
+prepare`, and `__init__.py`). That same process starts the simulator as its own
+child (`python/tnca/transport.py`), checks correctness and writes the record.
 
-- **Count from the platform.** The evaluator's simulation platform (`tb/device/`) counts cycles from command accept to completion itself and monitors every memory-port and host-port write. The board platform does the same: everything above `tnca_shell`, `rtl/board/tnca_u50_xo.v` and `rtl/fpga/` (`tnca_fpga_top`, `tnca_mmio`, `tnca_fpga_mem`, `tnca_axi_lite`, `tnca_u50_top`), becomes evaluator-owned; today it is under the design path.
-- **Measure outside the candidate's process.** The simulator runs in its own container, reached over a socket between the two containers (the existing `sim-socket` binding is the starting point). The observer's log is written where candidate code cannot reach it.
-- **Judge correctness from outside.** The evaluator computes reference outputs in a clean process and checks that the outputs were written by the device inside the launch window, not through the host port.
-- **Candidate RTL may not use file or system tasks** (`$fopen`, `$fwrite`, `$system`, `$readmem*` with paths outside the design) that could reach the observer or the host.
+**Why a second container.** Inside one container every process runs as the
+same unprivileged user, so an observer placed there can be overwritten, and the
+simulator it watches can be replaced, by the candidate's code; without
+privileges no second user can be made to separate them. Candidate code and the
+observer must therefore not share a container. The seam already exists: the
+device is a separate process behind the transport protocol
+(`spec/r2_transport_v1.json`), and moving it to another container changes only
+the medium, which the protocol allows. The existing `sim-socket` relay does not
+give this by itself: the untrusted process starts it, over TCP. The design
+principles stay: the agent owns the design, the evaluator owns the observation;
+the contract (ports, ABI, transport, container) does not change.
 
-| Cheat | What the observer shows |
+**P2.1: the cycle count (the first step).**
+
+```text
+host container (candidate; as today)               device container (evaluator-owned; new)
+ PyTorch + candidate compiler + runtime + ArchBench   relay + vvp
+   └ sim-socket backend ──── Unix socket ──────────►   └ testbench (platform) + observer + candidate RTL
+                                                         └ observer log, written only to the evaluator's directory
+```
+
+1. **The device container runs no candidate Python.** Its tree is the base commit with only the candidate's hardware paths laid on (`rtl/`, `spec/r1_profiles.json`, and `isa/` where the device build reads it), and the base's `device.py` builds the simulator. Building with the candidate's tree would execute its `tnca/__init__.py`.
+2. **One device container per point**, each with its own socket. The evaluator runs `archbench.run` once per point (up to `jobs` at a time) with that point's socket, so every observer log belongs to exactly one point.
+3. **The observer** (main repository, `tb/device/tnca_device.v`): the platform counts the cycles from the shell accepting a launch to the shell presenting its completion, and flags any memory-port request while neither a launch nor a host operation is in progress. Per launch it appends one line (sequence, platform count, `done_cycles`, status, requests inside and outside the window) to a log named by a plusarg.
+4. **The relay** (main repository, `python/tnca/backends/`): the client connects to a relay that is already running instead of starting one, and the relay listens on a Unix socket. The protocol on the wire is unchanged.
+5. **Candidate RTL is checked before the build:** no `$fopen`, `$fwrite`, `$fdisplay` to a file, `$system` or `$readmem*`, and no `` `include `` of an absolute path or one with `..`. A violation rejects the candidate. Today `rtl/` uses only `$value$plusargs`.
+6. **Scoring** uses the platform's count, summed over the point's launches; `done_cycles` is kept only to cross-check. A point fails if its observer log is missing, if a request fell outside a launch window, or if a launch did not complete.
+7. **The board platform becomes evaluator-owned:** everything above `tnca_shell`, `rtl/board/tnca_u50_xo.v` and `rtl/fpga/` (`tnca_fpga_top`, `tnca_mmio`, `tnca_fpga_mem`, `tnca_axi_lite`, `tnca_u50_top`), today under the design path.
+8. **Device time is redefined** as the platform's count (O4). It differs from `done_cycles` by the shell's few handshake cycles, so the base is measured again once.
+
+**P2.2: the results (the second step).** The rule: **the host may move data,
+never compute it.** The relay sees every upload and download. The evaluator
+checks that every upload is an input of the point (generated from its seed by
+base code), a block the device returned earlier, or the program and its
+arguments; that the program images and arguments are identical when the point
+runs again with a second seed; and that the outputs, taken from the device's
+downloads rather than from the candidate's record, match a reference computed
+by base code. Provenance is judged by content, not by which side wrote memory:
+host writes reach memory through the agent's own shell (`rtl/tnca_shell.v`
+merges host and core requests onto one memory port), which could delay them
+into a launch window. The second run makes P2.2 a final-evaluation step only.
+
+| Cheat | Caught by |
 |---|---|
-| The shell's counter edited | the platform's count ≠ `done_cycles`; the platform's number stands |
-| `core_idle` raised early | memory writes after completion |
-| Results computed on the host | outputs written through the host port, not by the device in the window |
-| The runtime fakes outputs | the evaluator reads device memory itself |
+| The shell's counter edited | P2.1: the score uses the platform's count |
+| Completion raised early, work continued | P2.1: memory requests outside the launch window |
+| Work started while inputs were uploaded | P2.1: memory requests outside the launch window |
+| The cycle number rewritten in the measuring process | P2.1: the observer log lives in the device container |
+| Results computed on the host | P2.2: an upload that is neither an input, a returned block nor the program |
+| Results baked into the program image | P2.2: the image changes with the seed |
+| The runtime fakes outputs | P2.2: outputs come from the device's downloads |
 
-ArchBench's `PROTOCOL.md` §3.1 defines device time from
-`launch_accept_to_core_idle`; that definition must be restated against the
-boundary (O4).
+**Owned by the main repository:** the observer in the testbench (3), the relay
+(4), and `PROTOCOL.md` §3.1 (8, O4). The rest is the harness's. The open points
+are being settled with the main author (P2-a to P2-f in the decision brief).
 
 ## 12. In-run services: scoring and FPGA
 
@@ -738,6 +778,7 @@ result.
 | O17 | The size of the validation and final sets. Of the 27 tiny points, each matrix-multiply family has a single shape (matmul in two dtypes), so "same operation, unseen shape" needs new tiny-scale points | main author |
 | O18 | Whether the hidden benchmark is split into a validation set (aggregates during the run) and a final set (only after the run), as proposed in §6.4 | user |
 | O19 | Rewording the residual leaks in the repository (§6.5) and reshaping the tests and tutorial that duplicate points | main author |
+| O20 | P2's details (§11): who writes the testbench observer, the relay change, the board platform's ownership, the RTL check, P2.2's method | main author |
 
 ## 17. Progress
 
@@ -777,7 +818,7 @@ Status: **done** (built and verified), **in progress** (being built now),
 | Evaluator | `gave-up` class; provenance and diff audit | planned | — |
 | Device boundary | P1: the profile header | done | commit `8c49e2b`, merged in `9035f0f`; parameters identical on nine builds |
 | Device boundary | P1: core benches, `tnca_shell_tb`, FPGA top | planned | — |
-| Device boundary | P2: the observer | planned (required) | — |
+| Device boundary | P2: the observer | planned (required) | design in §11 (P2.1, P2.2); main-repository parts wait on O4, O20 |
 | Services | Cheap estimators in the sandbox | planned | §12.1 |
 | Services | Service channel and accounting | planned (required) | both services need it |
 | Services | Scoring service | planned (required) | decided 2026-10-15 |

@@ -1,0 +1,233 @@
+# Performance Diagnosis Harness
+
+A workflow for AI agents and engineers to combine resource screening, device
+counters, Proton traces, controlled RTL experiments, and FPGA evidence.
+The objective is to eliminate unsound candidates early and reserve synthesis
+and implementation runs for changes with a specific, testable justification.
+
+This harness belongs to the existing R40 work. It introduces no work packages,
+changes no frozen acceptance requirements, and does not update gate status.
+Start with the [required-gate blocker ledger](../../evidence/r40/v2/convergence/README.md).
+Report gate status changes first; diagnostic test counts and commits are not
+acceptance progress. For each unresolved gate, retain its current blocker,
+direct evidence, next experiment command, and actions for either outcome.
+
+## 1. Define the question and freeze the experiment identity
+
+Write a falsifiable hypothesis before collecting data. For example:
+“Three cores contend for one physical PC; distributing requests across two
+allocated PCs should reduce outlet backpressure without changing useful work.”
+Identify the expected counter changes, competing explanations, and the
+smallest experiment that distinguishes them.
+
+Bind every measurement to the complete software file-tree SHA, source commit
+and dirty state, compiler/runtime configuration, target profile, actual
+toolchain versions, loaded image SHA, device clock, and contract SHA.
+Use `archbench.provenance.software_tree(refresh=True)` before and after an
+experiment: a cached digest cannot detect source changes during execution.
+Hash the diagnostic harness as well. Label simulator images and virtual
+clocks explicitly; they are not FPGA images or measured operating frequencies.
+
+Preserve the original graph, shapes, seed, and numerical reference.
+Microbenchmarks can establish mechanisms; they cannot replace the original
+77 native points, 14 frozen HBM points, frozen holdout, or full model.
+Report missing measurements as `not-measured`, with unknown numeric fields
+set to `null`. Never relabel a reduced workload as its original benchmark.
+
+## 2. Establish an uninstrumented counter baseline
+
+`Session(counters=True)` exposes counters supported by the selected device.
+`tnca.costmodel.counter_diagnosis` checks the exclusive cycle partition for
+one program/core, reports component fractions, and computes optimistic Amdahl
+ceilings for eliminating individual stall components. These ceilings are not
+predicted speedups.
+
+Do not add overlapping stall indicators. Do not divide cumulative multicore
+cycles by global makespan and call the result utilization. Some physical
+multicore backends currently return program-level counters as unavailable;
+use actual dispatcher/core/outlet telemetry and retain that limitation.
+`tools/r40/board_checkpoint.py` demonstrates capturing outlet traffic before
+the CPU ownership handoff.
+
+`tools/r38/profiler_tests.py` checks counter identities and the historical
+noninterference baseline. Run it when changing counter RTL, rather than
+repeating the full suite for presentation-only changes.
+
+## 3. Screen candidates before synthesis
+
+```bash
+python tools/r40/cost_screen.py INPUT.json --out NEW_OUTPUT.json
+```
+
+The input contains a reference measurement `identity`, a `demand` map,
+`candidates` mapping names to capacity maps, and an optional `cycle_budget`.
+Each demand entry has `work`, `unit`, and `source`; each corresponding
+capacity entry has `per_cycle`, `unit`, and `source`.
+
+Required identity fields are `software_sha256`, `config_sha256`,
+`image_sha256`, `contract_sha256` (complete 64-digit lowercase SHA256 values),
+`clock_hz`, and `backend`. A hypothetical candidate is identified by its
+capacity specification and assumptions. Do not invent a measured image
+identity for a candidate that has not been implemented.
+
+Demands must be lower bounds that remain valid under the candidate's
+assumptions; capacities must be optimistic upper bounds. Changing compilation,
+caching, fusion, layout, or communication may invalidate traffic measured on
+the reference. Re-derive the bound and document that dependency.
+
+Use separate resource keys for actual PCs, directions, NoC cuts, and cores.
+Shared bandwidth does not multiply with core count. Convert capacities across
+clock domains into the same reference device cycles.
+
+The model computes `max(work / capacity)`. Exceeding a cycle budget rejects
+an impossible candidate under the stated assumptions. Fitting the budget
+only means the candidate has not been excluded.
+
+Optional `implementation` entries provide per-candidate `floors` and
+`available` maps for proven physical resource minima. Each floor has
+`minimum/unit/source`; each capacity has `capacity/unit/source`.
+Check resources per actual region: an overloaded SLR cannot borrow capacity
+from another SLR. Synthesis LUT counts are not automatically post-placement
+lower bounds. Capacity checks cannot certify routability or 100 MHz timing.
+
+For empirical predictions, provide `calibration` with `candidate`, `dev`,
+and `validation`. Each record contains
+`id/split/identity/instrumented=false/demand/cycles`.
+The model fits startup and scale by resource-bottleneck regime, then calibrates
+on disjoint validation records. A different identity, unseen regime, or
+bottleneck bound outside the fitted range returns `out-of-domain`.
+Never use frozen holdout data for fitting, threshold selection, or calibration.
+At least nine validation residuals are needed for a potentially finite 90%
+interval; its interpretation still depends on representative calibration data.
+Production-workload accuracy of this new model is currently **not-measured**.
+
+The legacy `tools/r38/costmodel/` model remains a single-core, serial-grid
+operator model. Do not divide its estimates by core count.
+`spec/r39_sched_model.json`, `tools/r39/latency_probe.py`, and
+`tools/r39/load_latency.py` support instruction/LSU calibration. A one-cycle
+bench memory cannot substitute for a board memory-path measurement.
+
+## 4. Instrument only where counters leave an unresolved question
+
+The TNCA backend preserves upstream `proton.record start/end` scope semantics
+through the pinned Triton 3.8.0 dialect and Python TNCA IR. At the TNCA IR level:
+
+```python
+from tnca_cc.proton import lower_records
+
+b.proton_record("load_wait")
+# Emit operations. Include an explicit wait if completion is being measured.
+b.proton_record("load_wait", start=False)
+
+instrumented, layout = lower_records(
+    kernel, buffer_base=capture.addr, buffer_bytes=capture.size, grid=grid)
+```
+
+Invoke lowering explicitly after normal optimization and before CodeGen.
+The caller owns a disjoint, freshly zeroed capture buffer, its lifetime,
+launch, completion wait, and CPU ownership handoff. `enabled=False` removes
+markers; compiling unlowered markers refuses rather than silently dropping
+samples. This is an explicit TNCA recording backend, not an automatic Torch
+collector or a port of CUDA/CUPTI collection through `proton.start()`.
+
+Scope names must be unique and properly nested. Each program/role owns a
+fixed slot; launch dimensions and contexts must match the layout.
+Loops may execute inside an outer scope. Branches that skip or repeat a
+marker are unsupported; move the scope outside the loop.
+Insufficient capture memory or scalar registers produces an explicit refusal,
+with no silent event loss, wraparound, or register spilling.
+
+Scopes read the existing 64-bit ISA clock. Timestamps remain in scalar
+registers until epilogue stores, avoiding trace HBM stores inside the region.
+Instrumentation still changes instruction count, register pressure,
+scheduling, and contention. Issue timestamps do not establish asynchronous
+engine completion. Each physical core has a reset-relative clock; separately
+rebased viewer lanes do not establish cross-core ordering.
+
+Run larger experiments on the jump host. Reproducible RTL calibration examples:
+
+```bash
+python tools/r40/proton_profile.py --out /tmp/proton-fine --iterations 128
+python tools/r40/proton_profile.py --out /tmp/proton-coarse --iterations 8192
+python tools/r40/proton_profile.py --out /tmp/proton-loop --iterations 128 --loop
+```
+
+These diagnose the recording mechanism, not production graph performance.
+Open `trace.chrome_trace` with a Chrome Trace/Perfetto JSON viewer. Do not
+automatically upload private traces to an external service.
+
+## 5. Report perturbation and uncertainty
+
+Warm up uninstrumented A and instrumented B independently, then alternate
+AB/BA pairs under identical configuration and image identity. Validate
+numerics after every execution. The current tool requires at least five
+pairs; this minimum does not guarantee coverage of all noise sources.
+Retain raw device cycles, order, code hashes, sample count, median overhead,
+and observed range.
+
+Recalibrate on representative workloads after changing concurrency, core
+count, cache conditions, scope density, or register pressure. Existing RTL
+microbenchmark observations are 77.551% whole-program overhead for 128
+unrolled additions, 1.388% for 8192 additions, and 5.891% for 128 runtime-loop
+iterations. See the [raw evidence](../../evidence/r40/R40-09/performance_tools/README.md).
+Deterministic repeats do not establish zero systematic error.
+
+The default 1% value is an adjustable diagnostic prompt, **not an acceptance
+gate, delivery requirement, or universal trace admission threshold**.
+A more perturbed trace may still answer a useful question; disclose that it
+may change the bottleneck. Choose sufficient granularity without pursuing
+unattainable zero-overhead instrumentation.
+
+Report whole-program perturbation separately from region timestamp error.
+An observed whole-program overhead is not a bound on each region's error.
+Unknown region error bounds remain `null`. Do not subtract one constant from
+all regions and claim to reconstruct uninstrumented execution. Formal
+performance results use instrumentation-disabled runs and the frozen protocol.
+
+Audit a completed bundle and optionally combine it with resource screening:
+
+```bash
+python tools/performance_harness/audit.py \
+  --report /tmp/proton-fine/report.json --out /tmp/proton-audit.json
+# Optional: --cost-input INPUT.json, with exactly the report's identity.
+```
+
+The auditor regenerates events from the raw buffer, checks trace identity,
+AB/BA ordering, code hashes, and raw cycles, and emits input and analysis-source
+hashes. Compare those hashes against previously retained manifests or commits.
+Self-consistent input files alone cannot prove that their source was truthful.
+An audited diagnostic bundle remains diagnostic evidence.
+
+## 6. Escalate with a causal experiment
+
+After screening, choose the smallest RTL experiment that resolves the main
+uncertainty. Change the mechanism named by the hypothesis, preserve failure
+reproductions and mutations, and compare numerics, device cycles, counters,
+and resource effects.
+
+Use `tools/r40/engine_overlap.py` for device-side overlap analysis and
+`tools/r40/window_resources_tests.py` to audit implicit DMA/MMA window usage
+from machine code. Explicit operand counts alone miss those resources.
+`tools/r40/ablate.py` and `device_time_v2_collect.py` support formal comparisons
+and frozen sampling. Never rank candidates by simulator wall time. Move from
+necessary infrastructure repairs to real compiled candidates promptly.
+
+Start synthesis or implementation only when physical evidence is needed.
+For every rerun, record a concrete root-cause hypothesis, corresponding change,
+expected improvement, and falsification condition. Do not poll unexplained
+directives. Reused results must match complete sources, parameters,
+constraints, and tool versions. Preserve immutable build directories and
+avoid modifying an active implementation run.
+
+Use `tools/r40/resources.py` for actual routed utilization/timing reports,
+`flow/fpga/audit_r40_image.tcl` for CDC/timing audits, and
+`flow/fpga/audit_r40_placed_cores.tcl` for actual core-to-SLR placement.
+Pblock intent and synthesis checkpoints do not replace placement/route.
+A loadable image, 100 MHz timing, CDC, and actual HBM/PC/ownership behavior
+remain subject to the required-gate ledger.
+
+Conclude each investigation with the experiment identity, primary bottleneck,
+direct evidence, competing explanations, prediction and applicability,
+observed instrumentation perturbation, next command, and actions for either
+outcome. Leave unsupported speedup, frequency, routing, area, and gate claims
+unmeasured.

@@ -72,3 +72,14 @@ Upstream references: [Proton record semantics](https://triton-lang.org/main/dial
 [official intra-kernel example](https://github.com/triton-lang/triton/blob/main/third_party/proton/tutorials/intra_kernel/example_dsl.py).
 The installed 3.8.0 dialect is the actual compatibility test; current main
 documentation is not permission to change the project's pinned toolchain.
+
+After the recording/model checkpoint, `tools/performance_harness/` adds the
+English agent workflow and a read-only bundle auditor. `harness_audit.json`
+replays the preserved fine04 capture and checks its trace, AB/BA raw runs,
+code identities and counter partitions. `harness_cost_input.json` asks a
+deliberately hypothetical question: can the same binary on the same
+single-issue core run twice as fast? Its 136 retired instructions already
+exceed that 73.5-cycle budget. This is a resource-bound demonstration on the
+recorded microbenchmark, not an R40 speedup target or a production prediction.
+The auditor's mutation checks refuse changed trace durations, raw-cycle
+disagreements, mismatched code, incomplete buffers and incomplete reports.

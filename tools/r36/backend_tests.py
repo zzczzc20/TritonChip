@@ -14,6 +14,7 @@ the same device cycle count -- a mock would have to reproduce the
 cycle-accurate timing of a core it does not have.
 """
 import argparse
+import ast
 import json
 import os
 import struct
@@ -29,6 +30,36 @@ sys.path.insert(0, os.path.join(ROOT, 'compiler', 'python'))
 import r1lib as R                                          # noqa: E402
 
 PROFILE = 'core-vrf-sync-v1'
+
+
+def startup_hits(rel, body):
+    """Keep simulator logic in bindings; allow the generic tuning supervisor.
+
+    The exception describes one call, not an excluded runtime module. Any
+    simulator name or additional process launch in that module still fails.
+    """
+    hits = [word for word in ('vvp', 'iverilog') if word in body]
+    if 'Popen' not in body:
+        return hits
+    supervised = False
+    if rel == 'python/tnca/autotune.py' and body.count('Popen') == 1:
+        tree = ast.parse(body)
+        for owner in tree.body:
+            if isinstance(owner, ast.FunctionDef) and owner.name == 'run_measurement':
+                for call in ast.walk(owner):
+                    if not isinstance(call, ast.Call):
+                        continue
+                    supervised |= (
+                        ast.unparse(call.func) == 'subprocess.Popen'
+                        and len(call.args) == 1
+                        and ast.unparse(call.args[0]) == 'child_argv(command)'
+                        and any(k.arg == 'stdin' and ast.unparse(k.value) == 'subprocess.DEVNULL'
+                                for k in call.keywords)
+                        and any(k.arg == 'start_new_session' and isinstance(k.value, ast.Constant)
+                                and k.value.value is True for k in call.keywords))
+    if not supervised:
+        hits.append('Popen')
+    return hits
 
 
 def build_axpy():
@@ -169,8 +200,7 @@ def be01(log):
                     continue
                 scanned += 1
                 body = open(os.path.join(base, f)).read()
-                hits = [w for w in ('vvp', 'iverilog', 'Popen')
-                        if w in body]
+                hits = startup_hits(rel, body)
                 if hits:
                     found[rel] = hits
     log.append(f"    {scanned} file(s) of the general runtime and the "
@@ -181,6 +211,23 @@ def be01(log):
     log.append("    simulator startup or connection logic in the general "
                "code: " + (str(found) if found else 'none'))
     ok &= not found
+    supervisor_rel = 'python/tnca/autotune.py'
+    with open(os.path.join(ROOT, supervisor_rel)) as stream:
+        supervisor = stream.read()
+    mutations = {
+        'simulator lookup beside the permitted call': supervisor + '\ncommand = ["vvp"]\n',
+        'elaborator lookup beside the permitted call': supervisor + '\ncommand = ["iverilog"]\n',
+        'simulator in the worker command': supervisor.replace(
+            'child_argv(command)', "child_argv(['vvp'])"),
+        'another process launch': supervisor + '\nsubprocess.Popen(command)\n',
+        'worker without owned process group': supervisor.replace(
+            'start_new_session=True', 'start_new_session=False'),
+    }
+    rejected = all(startup_hits(supervisor_rel, body) for body in mutations.values())
+    rejected &= bool(startup_hits('python/tnca/runtime.py', supervisor))
+    ok &= rejected
+    log.append(f"    generic measurement supervisor permitted only at its owned worker call; "
+               f"simulator/extra-launch/unowned-group/relocation mutations refused: {rejected}")
     log.append("    it names a backend and the registry resolves it, so "
                "an external branch registers an implementation rather "
                "than editing the state machine")

@@ -2138,6 +2138,7 @@ r40-multicore-mmio: | dirs
 	@$(PYTHON) tools/r40/code_link_tests.py
 	@$(PYTHON) tools/r40/mesh_pipeline_tests.py
 	@$(PYTHON) tools/r40/multicore_mmio_synth_tests.py
+	@$(PYTHON) tools/r40/placed_core_audit_tests.py
 	@$(PYTHON) tools/r40/multicore_mmio_option_tests.py
 	@$(TRITON_PYTHON) tools/r40/multicore_mmio_tests.py --cores 1 --ports 1
 	@$(TRITON_PYTHON) tools/r40/multicore_mmio_tests.py --cores 3 --ports 3

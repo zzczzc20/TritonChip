@@ -47,37 +47,24 @@
 //==============================================================================
 `timescale 1ns/1ps
 
+`include "tnca_uarch_defaults.vh"
+
 module tnca_device;
 
-    // 1 elaborates the R3 v2 candidate's register file. Set with -P, so
-    // core-sim and core-vrf-sync-v1 come from the same bench source and a
-    // difference between them cannot be a difference in the device.
-    parameter USE_BANKED_VRF = 0;
-    parameter VRF_BYPASS     = 0;
-    parameter FE_NOBUBBLE    = 0;
-    parameter VRF_PREFETCH   = 0;
-    parameter RCTX_SWITCH    = 0;
-    parameter LSU_INFLIGHT   = 1;
-    parameter FPU_OVERLAP    = 0;
-    parameter RSLICE         = 0;
-    parameter RPAIR          = 0;
-    parameter MTX_ABUF       = 0;
-    // 1 elaborates the transposed tensor-DMA write (profile core-xpose-v1).
-    parameter HAS_TENSOR_XPOSE = 0;
+    // The device's shape at its ports, from the profile's generated header
+    // (TNCA_IF_*). Its microarchitecture (TNCA_UARCH_*) reaches the shell the
+    // same way and is not named here: a platform that named it would have to
+    // change with every new feature, and it is a platform's job to measure
+    // the device, not to know what is inside it.
+    parameter NUM_RCTX       = `TNCA_IF_NUM_RCTX;
+    parameter RCTX_W         = `TNCA_IF_RCTX_W;
+    parameter LSU_TAG_W      = `TNCA_IF_LSU_TAG_W;
 
-    parameter NUM_RCTX       = 2;
-    parameter RCTX_W         = 1;
-    parameter VLEN           = 16;
-    parameter ELEN           = 32;
-    parameter VREGS_PER_RCTX = 64;
-    parameter PHYS_VREGS     = NUM_RCTX * VREGS_PER_RCTX;
-    parameter PHYS_W         = 7;
+    // The memory model's own behaviour: the platform's, set with -P.
     parameter WORDS          = 65536;
     parameter MEM_LATENCY    = 1;
     parameter RANDOM_STALL   = 0;
     parameter MEM_REORDER    = 0;
-    parameter LSU_TAG_W      = 5;
-    parameter HAS_SFU        = 1;
 
     localparam [3:0] CMD_NOP     = 4'd0;
     localparam [3:0] CMD_LAUNCH  = 4'd1;
@@ -141,15 +128,7 @@ module tnca_device;
     wire [63:0] perf_rdata;
 
     tnca_shell #(
-        .NUM_RCTX(NUM_RCTX), .RCTX_W(RCTX_W), .VLEN(VLEN), .ELEN(ELEN),
-        .VREGS_PER_RCTX(VREGS_PER_RCTX), .PHYS_VREGS(PHYS_VREGS),
-        .PHYS_W(PHYS_W), .LSU_TAG_W(LSU_TAG_W), .HAS_SFU(HAS_SFU),
-        .USE_BANKED_VRF(USE_BANKED_VRF),
-        .VRF_BYPASS(VRF_BYPASS), .FE_NOBUBBLE(FE_NOBUBBLE),
-        .VRF_PREFETCH(VRF_PREFETCH), .RCTX_SWITCH(RCTX_SWITCH),
-        .LSU_INFLIGHT(LSU_INFLIGHT), .FPU_OVERLAP(FPU_OVERLAP), .RSLICE(RSLICE),
-        .RPAIR(RPAIR), .MTX_ABUF(MTX_ABUF),
-        .HAS_TENSOR_XPOSE(HAS_TENSOR_XPOSE)
+        .NUM_RCTX(NUM_RCTX), .RCTX_W(RCTX_W), .LSU_TAG_W(LSU_TAG_W)
     ) dut (
         .clk(clk), .rst_n(rst_n),
         .cmd_valid(cmd_valid), .cmd_ready(cmd_ready), .cmd_op(cmd_op),

@@ -96,6 +96,53 @@ def config_hash(name):
     return hashlib.sha256(blob.encode()).hexdigest()
 
 
+# The parameters that shape the device's ports (rtl/common/tnca_uarch_defaults.vh).
+# A platform reads these; every other parameter is the device's own business.
+INTERFACE_PARAMETERS = ('NUM_RCTX', 'RCTX_W', 'LSU_TAG_W')
+
+
+# What the RTL computes from other parameters (rtl/common/tnca_uarch_defaults.vh).
+DERIVED = {
+    'PHYS_VREGS': lambda p: p.get('NUM_RCTX', 2) * p.get('VREGS_PER_RCTX', 64),
+}
+
+
+def rtl_parameters(name):
+    """Every RTL parameter the profile states: its elaboration and its
+    implementation's rtl_parameters. A parameter it does not state takes the
+    RTL default, which is off."""
+    p = profile(name)
+    params = dict(p['elaboration'])
+    params.update((p.get('implementation') or {}).get('rtl_parameters') or {})
+    return params
+
+
+def uarch_header(name, overrides=()):
+    """The profile as one Verilog header: `define TNCA_IF_<K> / TNCA_UARCH_<K>.
+
+    Compiled before the platform and the device, it is how a profile reaches
+    the RTL; no platform passes a microarchitectural parameter by name. A
+    new parameter is an entry in the profile and a parameter in the device.
+    """
+    params = rtl_parameters(name)
+    params.update(dict(overrides))
+    # A value the RTL derives itself is left to it when the profile states the
+    # same value: the device is then elaborated exactly as it always was.
+    for key, derive in DERIVED.items():
+        if key in params and params[key] == derive(params):
+            del params[key]
+    lines = [f'// GENERATED from spec/r1_profiles.json, profile {name}, by '
+             'tnca.profiles.uarch_header. Do not edit: change the profile.']
+    for key in sorted(params):
+        value = params[key]
+        if not key.isidentifier() or not key.isupper() or isinstance(value, bool) \
+                or not isinstance(value, int):
+            raise ValueError(f'profile {name}: {key}={value!r} is not NAME=<integer>')
+        kind = 'IF' if key in INTERFACE_PARAMETERS else 'UARCH'
+        lines.append(f'`define TNCA_{kind}_{key} {value}')
+    return '\n'.join(lines) + '\n'
+
+
 def check_executes(machine, manifest, *, where=''):
     """Refuse an artifact this machine cannot run, before any code is placed.
 

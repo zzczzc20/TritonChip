@@ -127,14 +127,14 @@ def cfg01(log):
                f"{'identical' if not diff else 'DIFFER ' + str(diff)}")
     ok &= not diff
 
-    # 2. The target and what the RTL was actually built with. The
-    #    device module holds the parameters it elaborates; a difference
-    #    here is a compiler describing a core that was not built.
+    # 2. The target and what the RTL was actually built with. The device
+    #    is compiled with the profile's own header; a difference here is a
+    #    compiler describing a core that was not built.
     from tnca import device
-    params = device.BENCH_PARAMS.get(PROFILE, [])
-    banked = any('USE_BANKED_VRF=1' in p for p in params)
+    header = device.uarch_header(PROFILE)
+    banked = '`define TNCA_UARCH_USE_BANKED_VRF 1' in header.splitlines()
     impl = prof.get('implementation', {})
-    log.append(f"    the device elaborates {params}")
+    log.append(f"    the device is compiled with {header.count('`define')} profile parameter(s)")
     log.append(f"    the profile says the register file is "
                f"{impl.get('vector_register_file')!r}, and the bench is "
                f"built banked: {banked}")

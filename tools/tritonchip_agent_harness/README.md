@@ -571,7 +571,7 @@ returns an aggregate (§6.4). The number of requests per run is fixed and stated
 in the syllabus (O16). It runs on its own CPU allocation, so it neither slows
 the agent nor lets two concurrent runs disturb each other.
 
-### 12.4 The FPGA service (decided; quick tier being built)
+### 12.4 The FPGA service (decided; not built; the quick tier's feasibility is verified)
 
 **The agent decides whether and when to use it. Its time is limited, the
 syllabus says by how much, and the limit is enforced** (decided 2026-10-15).
@@ -741,9 +741,9 @@ result.
 
 ## 17. Progress
 
-Status: **done** (built and verified), **in progress**, **planned**,
-**deferred**, **not needed**. Evidence names the test, run or commit that
-shows it.
+Status: **done** (built and verified), **in progress** (being built now),
+**planned (required)** (the user has required it), **planned**, **deferred**,
+**not needed**. Evidence names the test, run or commit that shows it.
 
 | Area | Item | Status | Evidence |
 |---|---|---|---|
@@ -768,8 +768,8 @@ shows it.
 | Workspace | Gate: ignore rules from the base tree; shadowing of owned modules | planned | §9 |
 | Visibility | ArchBench hidden from the `replay-mzero` workspace | done | §6.5: 29 hide entries; no point id or shape string left |
 | Visibility | Syllabus for `replay-mzero` | done | `tasks/replay-mzero/instruction.md` |
-| Visibility | Residual leaks reworded in the repository | planned | O19 |
-| Visibility | Export-time leak check over the tree and the git objects | planned | — |
+| Visibility | Residual leaks reworded in the repository | planned (required) | O19; the user's rule: no point visible in any sense |
+| Visibility | Export-time leak check over the tree and the git objects | planned (required) | — |
 | Visibility | TileBench in the image checked against ArchBench | planned | — |
 | Evaluator | CHIA-level evaluator: base plus overlay, own copies | done | noop scores 1.000, reference 1.016 / 1.010 |
 | Evaluator | Each point judged alone; validation and final sets | done | `tests/test_evaluator.py` |
@@ -779,9 +779,10 @@ shows it.
 | Device boundary | P1: core benches, `tnca_shell_tb`, FPGA top | planned | — |
 | Device boundary | P2: the observer | planned (required) | — |
 | Services | Cheap estimators in the sandbox | planned | §12.1 |
-| Services | Service channel and accounting | planned | — |
-| Services | Scoring service | planned | — |
-| Services | FPGA quick tier | in progress | no license or network needed, with a control (§12.5); container image and profile parameters next |
+| Services | Service channel and accounting | planned (required) | both services need it |
+| Services | Scoring service | planned (required) | decided 2026-10-15 |
+| Services | FPGA quick tier: license and isolation feasibility | done | OOC synthesis with no license and no network, with a control (§12.5) |
+| Services | FPGA quick tier service: worker container, scored-profile parameters, enforced FPGA budget | planned (required) | decided 2026-10-15 |
 | Services | FPGA slow tier | planned | waits on O13, O14 |
 | Metering | Tokens as reported, gateway bytes | done | run records |
 | Metering | Cross-check; one token schema; API-equivalent cost | planned | — |

@@ -339,7 +339,7 @@ footer { font-size: 13px; color: var(--muted); border-top: 1px solid var(--line)
   <div class="tbl"><table>
     <thead><tr><th>档</th><th>执行什么</th><th class="nowrap">大约</th><th>返回</th><th>状态</th></tr></thead>
     <tbody>
-      <tr><td><strong>快档</strong></td><td>整器件 out-of-context 综合 + 时序，<code>flow/synth/vivado_ooc.sh tnca_fpga_top &lt;period&gt;</code>，按被评分的 profile（含候选的改动）传参数</td><td class="nowrap">25 分钟</td><td>状态；目标周期下的最差 slack 和推出的频率；最差路径（agent 自己 RTL 里的起止点）；资源 LUT/FF/DSP/BRAM/URAM</td><td><span class="chip wip">in progress</span></td></tr>
+      <tr><td><strong>快档</strong></td><td>整器件 out-of-context 综合 + 时序，<code>flow/synth/vivado_ooc.sh tnca_fpga_top &lt;period&gt;</code>，按被评分的 profile（含候选的改动）传参数</td><td class="nowrap">25 分钟</td><td>状态；目标周期下的最差 slack 和推出的频率；最差路径（agent 自己 RTL 里的起止点）；资源 LUT/FF/DSP/BRAM/URAM</td><td><span class="chip req">planned · required</span><br><span class="muted" style="font-size:12.5px">可行性已验证</span></td></tr>
       <tr><td><strong>慢档</strong></td><td>经 FPGA harness 实现（package、link、判定时序与 DRC），再在验证集上做上板阶段</td><td class="nowrap">数小时</td><td>时序收敛（WNS、TNS、失败端点）；资源；上板阶段只给汇总，不给逐点记录和日志</td><td><span class="chip plan">planned</span></td></tr>
     </tbody>
   </table></div>

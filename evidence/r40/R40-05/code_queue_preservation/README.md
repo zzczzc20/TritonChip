@@ -21,3 +21,14 @@ RAM assignments on an actual DCP, checks ownership hierarchy against the image
 capability, and fails missing stages. A new immutable candidate must complete
 synthesis and this check before it proceeds to route. The old DCP failure is
 retained; no physical placement or performance pass is claimed here.
+
+The immutable `09ebe06` candidate has now completed synthesis and this
+actual-DCP check. `dcp_audit/placement.log` ends with
+`R40_MULTICORE_PLACEMENT_CONTRACT_PASS`; all three private code queue
+copies are present. The assignment report explicitly states that no placement
+or route was performed. DCP SHA256:
+`3402a97b6cc2899c027491a560bcaedca6f7bb48164cef7cafc5e4dd09099931`.
+The new OOC resources are 954722 LUTs, 315709 FFs, 192 RAMB36,
+45 RAMB18 and 531 DSPs. The separate older route-congestion failure remains
+retained in `../route_congestion/`; this successful contract audit does not
+clear that physical routing risk.

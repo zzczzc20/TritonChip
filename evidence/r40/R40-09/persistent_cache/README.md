@@ -11,7 +11,11 @@ identity and the selected candidate's legality before skipping measurement.
 image invalidation, thread and independent-process publication, and the
 existing event/budget/resource policy. These synthetic records prove policy
 behavior, not performance. The native integration test now reopens the cache
-before its second selection; its current three-core RTL run is still pending.
+before its second selection. `native.log` records the completed three-core
+RTL integration: unchanged standard Torch graph, candidates 1/3 cores,
+8 cores refused before measurement, common device-event spans 3253/1900
+cycles, reopened cache hit without remeasurement, and one separate formal
+resident launch with zero staging. This is functional evidence, not holdout.
 
 Concurrent searches can repeat measurement. This cache does not implement
 cross-process candidate admission or kill over-budget workers. Automatic

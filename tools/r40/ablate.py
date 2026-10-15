@@ -375,7 +375,7 @@ def main(argv=None):
     if args.plan and args.experiment:
         plan = json.loads(args.plan.read_text())
         if plan.get('contract_version') == 2:
-            from contract_v2 import verify, ROOT as CONTRACT_ROOT
+            from contract_v2 import verify
             lock = verify()
             if hashlib.sha256(args.plan.read_bytes()).hexdigest() != lock['files']['spec/r40/v2/plan.json']:
                 ap.error('the supplied v2 plan is not the frozen contract')

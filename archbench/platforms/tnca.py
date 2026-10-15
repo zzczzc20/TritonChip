@@ -35,6 +35,7 @@ endpoints leave this measurement unavailable; serial-grid keeps its meaning.
 """
 import os
 import time
+from pathlib import Path
 
 from .. import provenance as _prov
 from ..bounds import VERSION, tnca_bound, tnca_peak
@@ -69,6 +70,12 @@ BOARD_CLOCK_POLICY = {'fpga-u50': '150MHz/4', 'fpga-u280': '100MHz-undivided'}
 # heap, 0x20000..0x80000, of the 512 KiB memory the simulator and the U50
 # image both have (python/tnca/runtime.py, rtl/fpga/tnca_fpga_mem.v WORDS).
 HEAP_BYTES = 0x80000 - 0x20000
+
+# Measurement identity is metadata, recorded after all timed work. Separate
+# processes cannot accidentally count copies of one session as three blocks.
+import uuid as _uuid
+_MEASUREMENT_SESSION = _uuid.uuid4().hex
+_MEASUREMENT_BOOT = Path('/proc/sys/kernel/random/boot_id').read_text().strip() if Path('/proc/sys/kernel/random/boot_id').exists() else None
 
 
 # The TNCA_* environment variables that do NOT change what is compiled or how
@@ -109,6 +116,7 @@ def device_id(profile, backend, backend_kwargs):
 
 def run(point, *, profile='core-sim', opt_level=2, seed=0, counters=False, warmup=0, timed=0,
         bundle=None):
+    measurement_start = time.monotonic_ns()
     os.environ['TNCA_PROFILE'] = profile
     os.environ['TNCA_OPT_LEVEL'] = str(opt_level)
     if counters:
@@ -347,6 +355,10 @@ def run(point, *, profile='core-sim', opt_level=2, seed=0, counters=False, warmu
                 window=getattr(session.dev, 'axi_window', None),
                 live_buffers=[dict(address=b.addr, bytes=b.size, reserved=b.reserved)
                               for b in memory.buffers.values() if b.alive])
+    rec['measurement'] = dict(block_id=os.environ.get('ARCHBENCH_BLOCK_ID'),
+                              process_session=_MEASUREMENT_SESSION,
+                              boot_id=_MEASUREMENT_BOOT,
+                              started_ns=measurement_start, ended_ns=time.monotonic_ns())
     return rec
 
 

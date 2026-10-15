@@ -1430,6 +1430,13 @@ r40-v2-contract-check:
 	@$(PYTHON) tools/r40/contract_v2.py
 r40-v2-acceptance: r40-v2-contract-check
 	@$(PYTHON) tools/r40/acceptance.py --plan spec/r40/v2/plan.json --json $(BUILD)/r40/v2/acceptance.json
+.PHONY: r40-device-time-v2
+# Three complete interleaved board blocks per side; no legacy B39 evidence.
+R40_V2_CONTROL ?= $(BUILD)/r40/v2/device/control0.jsonl $(BUILD)/r40/v2/device/control1.jsonl $(BUILD)/r40/v2/device/control2.jsonl
+R40_V2_NATIVE ?= $(BUILD)/r40/v2/device/native0.jsonl $(BUILD)/r40/v2/device/native1.jsonl $(BUILD)/r40/v2/device/native2.jsonl
+r40-device-time-v2: r40-v2-contract-check
+	@$(PYTHON) tools/r40/device_time_v2.py --control $(R40_V2_CONTROL) --native $(R40_V2_NATIVE) \
+	  --json $(BUILD)/r40/v2/device_time.json --evidence
 # R40-01: the tnca PyTorch device (doc/r40_tnca_device.md). The device tests
 # on this host -- run once on a host with CUDA and once on one without
 # (acceptance 2) -- then the native suite's records (R40_NATIVE: the

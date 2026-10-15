@@ -1416,11 +1416,11 @@ def ring_estimate(ops, producer_idx, first, last):
     is two transfers per K step adds nothing Mode B does not already give:
     two programs on two contexts overlap one's transfers with the other's
     MMAs, the matrix unit bounds both, and the second role's copy of the
-    address arithmetic costs issue slots on a single-issue core (measured on
-    the board: linear, mlp and matmul at small and medium 2-5 % slower).
-    One that also loads, gathers or stores in the loop -- a GEMV's single A
-    row, loaded and repacked through scratch every step -- does overlap
-    (gemv +11 %, llama_decode +5 % in simulation). Raises NotSpecialised."""
+    address arithmetic costs issue slots on a single-issue core (on the
+    board such a split ran slower than Mode B). One that also loads,
+    gathers or stores in the loop -- a single A row, loaded and repacked
+    through scratch every step -- does overlap, and ran faster split in
+    simulation. Raises NotSpecialised."""
     work = sum(1 for i in producer_idx if first <= i <= last and ops[i].kind in _LSU_WORK)
     if not work:
         raise NotSpecialised('the producer would only issue transfers, which Mode B already '

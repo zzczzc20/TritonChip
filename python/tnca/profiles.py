@@ -21,10 +21,15 @@ parameters and accepted by one whose comment changed.
 import hashlib
 import json
 import os
+import re
 
 from .errors import ProfileMismatch
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
+
+# A parameter name as uarch_header writes it into a `define: an upper-case
+# letter, then upper-case letters, digits and underscores.
+_PARAMETER_NAME = re.compile(r'[A-Z][A-Z0-9_]*')
 
 
 def _search_paths(*parts):
@@ -135,8 +140,8 @@ def uarch_header(name, overrides=()):
              'tnca.profiles.uarch_header. Do not edit: change the profile.']
     for key in sorted(params):
         value = params[key]
-        if not key.isidentifier() or not key.isupper() or isinstance(value, bool) \
-                or not isinstance(value, int):
+        if not isinstance(key, str) or not _PARAMETER_NAME.fullmatch(key) \
+                or isinstance(value, bool) or not isinstance(value, int):
             raise ValueError(f'profile {name}: {key}={value!r} is not NAME=<integer>')
         kind = 'IF' if key in INTERFACE_PARAMETERS else 'UARCH'
         lines.append(f'`define TNCA_{kind}_{key} {value}')

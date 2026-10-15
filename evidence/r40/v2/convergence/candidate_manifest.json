@@ -1,5 +1,5 @@
 {
-  "recorded_utc": "2026-10-15T08:16:10.547644+00:00",
+  "recorded_utc": "2026-10-15T11:34:20.467812+00:00",
   "contract_sha256": "49fc0e02733139707ae2292eff2ef893e76e73f0723d0d002b2e7e1864af71c8",
   "software_commit": "8abf5278a8ab6fe44cd77f3d94e5ee3658c3a64d",
   "software_tree": "files:bd04f1ecc57ad18bc2813c1743b28df07d616f946502d35d2978ea133c0f383e",
@@ -9,14 +9,14 @@
   "hardware_source": "09ebe06",
   "hardware_rtl_and_cfg_diff_to_software_commit": "empty (git diff 09ebe06..85fa7d8 -- rtl fpga/u280_multicore_hbm.cfg)",
   "implementation_root": "/home/zzhouch/tnca_build/u280_r40ownership_preserved09",
-  "implementation_phase": "Phase 4.1.1.3 Post Placement Timing Optimization",
-  "placement_complete": false,
+  "implementation_phase": "route_design: Phase 3.4 Initial Net Routing",
+  "placement_complete": true,
   "route_complete": false,
   "clock_target_hz": 100000000,
   "timing_qualification": "not-measured",
   "cdc_qualification": "not-measured",
   "image_sha256": null,
-  "raw_placement_sha256": "10354cce0619ad6a02b75fdcb41086db3ab286dce4513f82458fa992df961c93",
+  "raw_placement_sha256": "1f6ae36dba495809c0ce31b45962bcc463d45379907df7992553a267ba2b096f",
   "deferred_optimization_stash": "93a482e1c530e5f4a725cd5bef4e01c31703cd76",
   "prior_behavioral_validation_snapshot": {
     "software_commit": "85fa7d82377d2f28efa19a042f88b6c23ab9e35d",
@@ -29,10 +29,34 @@
   "source_change_since_native_active_core_proof": "archbench/tooling identity and collection only; python/ and compiler/ unchanged",
   "checkpoint_harness_sha256": "6c164ebe65627e13f7962f56a535bd62a876219359b44a187927a946b737f96c",
   "paired_collector_sha256": "037ad42e4da6acd85f2d8be9572f74f5ddc6ef0d95c5f6f12f10e8c7a22f3c69",
-  "placement_log_artifact": "evidence/r40/v2/convergence/placement_followup/impl_20261015.log.gz",
+  "placement_log_artifact": "evidence/r40/v2/convergence/placement_followup/route_initial_20261015.log.gz",
   "actual_core_placement_observer_pid": 867326,
   "postroute_observer_pid": 605017,
   "actual_core_placement_collector_sha256": "56215b7a2298a2c4075fa0a03274662931e39e55e0420f8e6ce363b5c98892fa",
   "implementation_pid": 594866,
-  "implementation_observation": "same live PID; link terminal file absent; no restart"
+  "implementation_observation": "PID 594866 confirmed live; link terminal file absent; Route 35-447 congestion warning; no restart",
+  "intermediate_route_wns_ns": -38.938,
+  "local_sll_peak_demand_percent": 204,
+  "directive_hypothesis_status": "SSI_SpreadSLLs was actually applied; local estimated demand still reaches 204%, so spreading alone has not resolved congestion",
+  "placed_resource_observation": {
+    "source": "evidence/r40/v2/convergence/placement_followup/slr_util_placed_20261015.rpt",
+    "sha256": "c2db7da6f57288fca5d13e9a149557293a6d61570e4fca2448413579b2465042",
+    "state": "Fully Placed; not routed",
+    "slr_clb_occupancy_percent": [
+      97.59,
+      96.54,
+      86.54
+    ],
+    "slr_lut_utilization_percent": [
+      84.08,
+      91.09,
+      75.83
+    ],
+    "slr_unique_control_sets": [
+      5105,
+      5966,
+      3554
+    ],
+    "qualification": "diagnostic only; no candidate resource floor or timing certification"
+  }
 }

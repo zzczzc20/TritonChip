@@ -93,6 +93,10 @@ Optional `implementation` entries provide per-candidate `floors` and
 Check resources per actual region: an overloaded SLR cannot borrow capacity
 from another SLR. Synthesis LUT counts are not automatically post-placement
 lower bounds. Capacity checks cannot certify routability or 100 MHz timing.
+Track placed CLB occupancy and unique control sets alongside LUT utilization:
+packing pressure may exhaust a region before its LUT count reaches capacity.
+An observed baseline footprint is not automatically a resource floor for a
+modified candidate.
 
 For empirical predictions, provide `calibration` with `candidate`, `dev`,
 and `validation`. Each record contains
@@ -110,6 +114,18 @@ operator model. Do not divide its estimates by core count.
 `spec/r39_sched_model.json`, `tools/r39/latency_probe.py`, and
 `tools/r39/load_latency.py` support instruction/LSU calibration. A one-cycle
 bench memory cannot substitute for a board memory-path measurement.
+
+For changes to DCO owner selection, use
+`tools/r40/dco_owner_order_proof.py` to check the actual RTL through the
+documented membership and order abstraction. The default SMT engine requires
+Yosys and Z3; `--engine sat` retains the original bit-level proof path.
+`tools/r40/dco_owner_screen.py --mapping-only --shared-calls 9 --out NEW_DIR`
+compares generic LUT6 depth and cell counts for independent queries sharing a
+tensor table, without repeating the bit-level equivalence run.
+Keep proof timeouts as unproven results. Generic mapping can justify further
+evaluation, but does not establish FPGA timing, whole-slice area, or graph
+performance. See the [candidate evidence and proof assumptions](
+../../evidence/r40/R40-06/owner_selection/README.md).
 
 ## 4. Instrument unresolved performance questions
 

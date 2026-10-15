@@ -1,0 +1,109 @@
+{
+  "schema": "tnca-owner-selection-prescreen/1",
+  "recorded_utc": "2026-10-15T11:41:26.239612+00:00",
+  "contract_sha256": "49fc0e02733139707ae2292eff2ef893e76e73f0723d0d002b2e7e1864af71c8",
+  "reference_commit": "09ebe06",
+  "reference_source_sha256": "8fdc27836dfb2dcdd4a45b617ec3d41a2676b42422f4a5679767046f3eeb76ba",
+  "candidate_source_sha256": "8b5000f6bb9e338568d73188b05147a593410694681cbaab4e1b494b1874b89f",
+  "tools": {
+    "tools/r40/dco_owner_order_proof.py": "dd2062f9cf6feebf44e166c37afa07ada2416b65de7cc1e062f3632674ddfb59",
+    "tools/r40/dco_owner_screen.py": "e518a2c40581ec8b60d2d8592e3210c34861887a2ed8ede2e6ce848e377700aa",
+    "tools/r1/r1lib.py": "c0a5c35dade7effbbdf2682132cf13ba7df6dc70def3d6d4bea49f5a1576ecd1"
+  },
+  "proof": {
+    "compositional_report": "r40_owner_order_smt13/report.json",
+    "entries": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16
+    ],
+    "status": "compositional-proof-pass",
+    "harness_sha256": "58e1b97d78e26c180cf2629f8ed914723898dc1e61a608477b53a302ef0c4ec6",
+    "solver": "Z3 version 5.3.0 - 64 bit",
+    "yosys": "Yosys 0.33 (git sha1 2584903a060)",
+    "full_width_report": "r40_owner_fullwidth15/report.json",
+    "full_width_8": "proven",
+    "full_width_16": "unproven-timeout",
+    "tie_mutation": "counterexample",
+    "membership_mutation": "refused",
+    "width_narrowing_mutation": "refused",
+    "base_arithmetic_mutation": "refused"
+  },
+  "mapping": {
+    "report": "r40_owner_mapping13/report.json",
+    "status": "mapping-only-equivalence-not-run",
+    "results": [
+      {
+        "name": "depth_8_owner_gold",
+        "status": "PASS",
+        "lut_path_length": 55,
+        "generic_lut6_cells": 2628
+      },
+      {
+        "name": "depth_8_owner_gate",
+        "status": "PASS",
+        "lut_path_length": 30,
+        "generic_lut6_cells": 3300
+      },
+      {
+        "name": "shared9_owner_gold",
+        "status": "PASS",
+        "lut_path_length": 61,
+        "generic_lut6_cells": 24030
+      },
+      {
+        "name": "shared9_owner_gate",
+        "status": "PASS",
+        "lut_path_length": 30,
+        "generic_lut6_cells": 18675
+      }
+    ]
+  },
+  "regression": {
+    "command": "make nuca-dco",
+    "policies": [
+      1,
+      2,
+      46,
+      62,
+      74
+    ],
+    "seeds": [
+      1,
+      7
+    ],
+    "requests_per_run": 2000,
+    "status": "pass",
+    "reference_policy46_seed1_trace_hash": "177f11965447aacd"
+  },
+  "performance": {
+    "gate_status": "not-measured",
+    "image_sha256": null,
+    "clock_hz": null,
+    "routed_fmax_hz": null,
+    "graph_speedup": null,
+    "whole_slice_area": null
+  },
+  "live_hardware": {
+    "source": "09ebe06",
+    "modified_or_restarted": false
+  },
+  "artifacts": {
+    "README.md": "2d19db26a24b1514791db0511943aa137a8ce0fc37fcc277af470bb1751b036c",
+    "raw.tar.gz": "831070bf74835d55d995cd1fa9fc2b5791495d9bf134bf6d6d53eced020f43d5",
+    "reference_ooc_timing.rpt.gz": "35e0f341a28ddac95a1e72ae8ea9b9483ec8eb76ce288723aea8490ac0d324f3"
+  }
+}

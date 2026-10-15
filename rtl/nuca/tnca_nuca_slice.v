@@ -244,19 +244,21 @@ module tnca_nuca_slice #(
     // size of 0, the registered tensor with the highest base not above it (the
     // TMU's rule, tnca_tmu.v). Returns {hit, bypass, index[3:0], tile lsb[5:0]};
     // a tile lsb of 0 means "the default granule", D_LSB.
-    function [11:0] owner;
-        input [ADDR_W-1:0]      a;
-        input [DCO_T-1:0]       tv;
-        input [DCO_T*64-1:0]    tbase;
-        input [DCO_T*64-1:0]    tsize;
-        input [DCO_T-1:0]       tbyp;
-        input [DCO_T*6-1:0]     tlsb;
-        integer k;
-        reg     hit, byp;
-        reg [63:0] best, b, z;
-        reg [3:0]  idx;
-        reg [5:0]  lsb;
+    function automatic [11:0] owner;
+        input [ADDR_W-1:0] a;
+        input [DCO_T-1:0] tv;
+        input [DCO_T*64-1:0] tbase, tsize;
+        input [DCO_T-1:0] tbyp;
+        input [DCO_T*6-1:0] tlsb;
+        integer k, j;
+        reg hit, byp, blocked;
+        reg [63:0] b, z, best;
+        reg [3:0] idx;
+        reg [5:0] lsb;
+        reg [DCO_T-1:0] matches;
+        reg [11:0] selected;
         begin
+          if (DCO_T < 8) begin
             hit = 1'b0; best = 64'd0; byp = 1'b0; idx = 4'd0; lsb = 6'd0;
             for (k = 0; k < DCO_T; k = k + 1) begin
                 b = tbase[k*64 +: 64];
@@ -268,6 +270,35 @@ module tnca_nuca_slice #(
                 end
             end
             owner = {hit, byp, idx, lsb};
+          end else begin
+            // Address membership is query-dependent. Base-to-base priority
+            // is not: all owner calls sharing the table can share those
+            // comparisons, without a query-dependent serial winner chain.
+            matches = {DCO_T{1'b0}};
+            for (k = 0; k < DCO_T; k = k + 1) begin
+                b = tbase[k*64 +: 64];
+                z = tsize[k*64 +: 64];
+                if (tv[k] && (a >= b) && ((z == 64'd0) || (a - b < z)))
+                    matches[k] = 1'b1;
+            end
+            owner = 12'd0;
+            for (k = 0; k < DCO_T; k = k + 1) begin
+                b = tbase[k*64 +: 64];
+                blocked = 1'b0;
+                for (j = 0; j < DCO_T; j = j + 1) begin
+                    if (j < k) begin
+                        if (matches[j] && tbase[j*64 +: 64] >= b) blocked = 1'b1;
+                    end else if (j > k) begin
+                        if (matches[j] && tbase[j*64 +: 64] > b) blocked = 1'b1;
+                    end
+                end
+                // Highest matching base wins; equal bases choose the lower
+                // table index. Exactly one or zero candidates can survive.
+                selected = (matches[k] && !blocked) ?
+                    {1'b1, tbyp[k], k[3:0], tlsb[k*6 +: 6]} : 12'd0;
+                owner = owner | selected;
+            end
+          end
         end
     endfunction
 

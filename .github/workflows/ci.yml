@@ -222,6 +222,8 @@ jobs:
           $HOME/tritonenv/bin/python tools/r40/compile_switch_tests.py
           $HOME/tritonenv/bin/python tools/r40/pipeline_stage_options_tests.py
           python3 tools/r40/child_exec_tests.py
+          python3 tools/r40/proton_tests.py
+          $HOME/tritonenv/bin/python tools/r40/proton_upstream_tests.py
 
       - name: Triton source to RTL, one core and the whole machine
         run: |

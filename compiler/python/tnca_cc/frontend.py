@@ -299,6 +299,21 @@ class TTIRImporter:
         self._value_users = self._users(ops)
         self._all_ops = ops
         self._op_pos = {id(o): i for i, o in enumerate(ops)}
+        records = [o for o in ops if o.get_name() == 'proton.record']
+        self._proton_phases = {}
+        if records:
+            # UnitAttr queries are absent from the pinned Python bindings.
+            # Read only start/end from this function's dialect printer; names
+            # and operation identity still come from the actual MLIR objects.
+            printed = str(module)
+            match = re.search(r'(?m)^  tt.func[^\n]*@' + re.escape(func_name) + r'\(', printed)
+            if match is None:
+                raise Unsupported('cannot locate Proton function effects')
+            body = re.split(r'(?m)^  }', printed[match.start():], maxsplit=1)[0]
+            phases = re.findall(r'(?m)^\s*proton\.record\s+(start|end)\s+"', body)
+            if len(phases) != len(records):
+                raise Unsupported('Proton printed effects do not match function operation identities')
+            self._proton_phases = {id(o): p for o, p in zip(records, phases)}
         self._trans_orders = self._read_trans_orders(module, func_name, ops)
         self._plan_transposes(ops)
 
@@ -642,6 +657,17 @@ class TTIRImporter:
         if handler is None:
             raise Unsupported(f'no TNCA lowering for {op.get_name()}')
         handler(op)
+
+    def _op_proton_record(self, op):
+        """Preserve upstream Proton effects until explicit TNCA capture lowering.
+
+        The pinned Python binding exposes StringAttr but not UnitAttr queries;
+        use the dialect's printed start/end syntax for isStart (a UnitAttr).
+        """
+        phase = self._proton_phases.get(id(op))
+        if phase is None:
+            raise Unsupported('unrecognised upstream proton.record syntax')
+        self.b.proton_record(op.get_str_attr('name'), start=phase == 'start')
 
     def _op_scf_for(self, op):
         block, body = self._region_block(op)

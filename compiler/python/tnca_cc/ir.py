@@ -475,6 +475,12 @@ class Builder:
     def comment(self, text):
         self._emit('comment', [], [], text=text)
 
+    def proton_record(self, name, *, start=True):
+        """Effectful Proton scope marker; requires explicit profiling lowering."""
+        if not isinstance(name, str) or not name or type(start) is not bool:
+            raise ValueError('proton.record needs a nonempty name and boolean start')
+        self._emit('proton.record', name=name, isStart=start)
+
     # ---- resources (sec 10.1: whole-program, fixed before role-local) -----
     def window(self, length, name=None):
         w = Value(name=name or f"w{len(self.kernel.windows)}", kind=WINDOW,
@@ -716,6 +722,10 @@ def make_kernel(name, num_roles=1):
 
 def format_op(op, indent='    '):
     """One operation, one line."""
+    if op.kind == 'proton.record':
+        import json
+        phase = 'start' if op.attrs['isStart'] else 'end'
+        return f"{indent}proton.record {phase} {json.dumps(op.attrs['name'])}"
     if op.kind == 'label':
         return f"  ^{op.attrs.get('name', '?')}:"
     if op.kind == 'comment':

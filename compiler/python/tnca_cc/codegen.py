@@ -414,6 +414,12 @@ class CodeGen:
     def _op_comment(self, op):
         self.b.comment(op.attrs['text'])
 
+    def _op_proton_timestamp(self, op):
+        # Effectful: clocks must never be CSE'd or treated as PURE specials.
+        v = op.results[0]
+        self._alloc(v)
+        self._emit('s.rdspecial', f's{v.reg}', 'clock')
+
     def _op_label(self, op):
         self.b.label(op.attrs['name'])
 

@@ -50,10 +50,10 @@ def _tree_files(root):
 _tree_cache = {}
 
 
-def software_tree(root=ROOT):
+def software_tree(root=ROOT, *, refresh=False):
     """`files:<sha256>` over (path, content sha256) of TREE_DIRS."""
     root = Path(root)
-    if root in _tree_cache:
+    if not refresh and root in _tree_cache:
         return _tree_cache[root]
     h = hashlib.sha256()
     for f in _tree_files(root):

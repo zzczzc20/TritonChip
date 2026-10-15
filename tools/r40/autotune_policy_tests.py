@@ -6,8 +6,9 @@ from pathlib import Path
 import sys
 import unittest
 import tempfile
+import time
 sys.path.insert(0,str(Path(__file__).resolve().parents[2]/'python'))
-from tnca.autotune import GraphBudget, PersistentCache, select, identity_key, event_seconds
+from tnca.autotune import GraphBudget, SharedGraphBudget, PersistentCache, select, identity_key, event_seconds
 
 
 def identity():
@@ -24,7 +25,34 @@ def publish_cache(directory, number):
     PersistentCache(directory)['a'*64]={'candidate':number}
 
 
+def shared_admission(path):
+    return SharedGraphBudget(path).admit('same-kernel')
+
+
 class PolicyTests(unittest.TestCase):
+    def test_reopening_expired_worker_budget_does_not_reset_time(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path=Path(directory)/'expired.sqlite'
+            first=SharedGraphBudget(path,max_seconds=.02)
+            time.sleep(.03)
+            reopened=SharedGraphBudget(path,max_seconds=.02)
+            self.assertEqual(first.started,reopened.started)
+            self.assertFalse(reopened.admit('new-kernel'))
+            self.assertTrue(reopened.exceeded)
+
+    def test_worker_processes_share_candidate_limit_and_deadline(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path=Path(directory)/'graph.sqlite'
+            first=SharedGraphBudget(path)
+            with ProcessPoolExecutor(max_workers=4) as workers:
+                accepted=list(workers.map(shared_admission,[path]*64))
+            self.assertEqual(sum(accepted),16)
+            reopened=SharedGraphBudget(path)
+            self.assertEqual(first.started,reopened.started)
+            self.assertFalse(reopened.admit('same-kernel'))
+            self.assertTrue(reopened.admit('other-kernel'))
+            with self.assertRaisesRegex(ValueError,'configuration'):
+                SharedGraphBudget(path,max_seconds=300)
     def test_persistent_cache_reopens_and_rejects_damage(self):
         with tempfile.TemporaryDirectory() as directory:
             candidates=[dict(knobs={'tile':16})]

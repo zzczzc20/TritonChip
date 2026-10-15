@@ -11,6 +11,8 @@ import threading
 import os
 from pathlib import Path
 import tempfile
+import sqlite3
+from contextlib import contextmanager
 
 from .device_timing import clock_span
 
@@ -156,6 +158,56 @@ class GraphBudget:
         with self._lock:
             self.exceeded |= self.clock()-self.started>self.max_seconds
             return self.exceeded
+
+
+class SharedGraphBudget(GraphBudget):
+    """Cooperative graph budget shared by workers on the same Linux host.
+
+    Use a new path for each graph tuning invocation. Reopening that path
+    preserves the first worker's deadline and per-kernel admission counts.
+    This admission policy does not terminate an already running measurement.
+    """
+    def __init__(self, path, *, max_seconds=600, max_candidates=16):
+        super().__init__(max_seconds=max_seconds, max_candidates=max_candidates)
+        self.path = Path(path)
+        self.path.parent.mkdir(parents=True, exist_ok=True)
+        boot = Path('/proc/sys/kernel/random/boot_id').read_text().strip()
+        with self._database() as db:
+            db.execute('CREATE TABLE IF NOT EXISTS graph (id INTEGER PRIMARY KEY, boot TEXT, started REAL, seconds REAL, candidates INTEGER)')
+            db.execute('CREATE TABLE IF NOT EXISTS kernels (name TEXT PRIMARY KEY, count INTEGER NOT NULL)')
+            db.execute('INSERT OR IGNORE INTO graph VALUES (1, ?, ?, ?, ?)',
+                       (boot, self.started, max_seconds, max_candidates))
+            stored = db.execute('SELECT boot, started, seconds, candidates FROM graph WHERE id=1').fetchone()
+            if stored[0] != boot or stored[2:] != (max_seconds, max_candidates):
+                raise ValueError('shared tuning budget belongs to another boot or budget configuration')
+            self.started = stored[1]
+            self.counts = dict(db.execute('SELECT name, count FROM kernels'))
+
+    @contextmanager
+    def _database(self):
+        # IMMEDIATE transactions serialize independent processes before they
+        # inspect a count. Closing also rolls back any exceptional admission.
+        db = sqlite3.connect(self.path, timeout=30)
+        try:
+            db.execute('BEGIN IMMEDIATE')
+            yield db
+            db.commit()
+        finally:
+            db.close()
+
+    def admit(self, kernel):
+        with self._lock, self._database() as db:
+            if self.clock() - self.started >= self.max_seconds:
+                self.exceeded = True
+                return False
+            row = db.execute('SELECT count FROM kernels WHERE name=?', (kernel,)).fetchone()
+            count = row[0] if row else 0
+            if count >= self.max_candidates:
+                return False
+            db.execute('INSERT INTO kernels VALUES (?, ?) ON CONFLICT(name) DO UPDATE SET count=excluded.count',
+                       (kernel, count + 1))
+            self.counts = dict(db.execute('SELECT name, count FROM kernels'))
+            return True
 
 
 def select(identity, candidates, *, capacities, capabilities, budget, measure, cache=None):

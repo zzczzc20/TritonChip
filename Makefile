@@ -1534,6 +1534,7 @@ r40-barrier-epoch: | dirs
 
 .PHONY: r40-hbm
 r40-hbm: $(R2_DATA_STAMP) r40-barrier-epoch | dirs
+	@$(PYTHON) tools/r40/hbm_topology_tests.py
 	@$(PYTHON) tools/r40/tensor_bounds_tests.py --log $(BUILD)/r40/tensor_bounds_formal.log
 	@$(PYTHON) tools/r40/ram_cache_inference_tests.py
 	@TORCH_PYTHON=$(TORCH_PYTHON) $(PYTHON) tools/r40/hbm_tests.py --evidence

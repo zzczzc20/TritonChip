@@ -408,6 +408,9 @@ class U50Backend(Transport):
         self.memory_bytes = local + size
         self.link.words = self.memory_bytes // WORD
         self.axi_window = dict(base=base, size=size, local_limit=local, dma=self.hbm_dma)
+        allocation=getattr(self.link,'hbm_allocation',None)
+        if allocation is not None:
+            self.axi_window['allocation']=dict(allocation)
 
     def axi_status(self):
         """R_AXI_STAT's sticky flags, or None on an image without a window."""
@@ -900,6 +903,44 @@ def _xclbin_bank(path, ip_name, arg_index=0):
     return max(banks, key=lambda m: m['size'])
 
 
+def _xclbin_hbm_allocation(path, base, size):
+    """Map an actual BO range using the image's physical memory topology.
+
+    PC IDs come from HBM[n] topology tags, never from logical address bits or
+    an assumed 256 MiB channel size. Missing/ambiguous coverage is uncertified.
+    """
+    import hashlib
+    import re
+    import struct
+    if type(base) is not int or type(size) is not int or base < 0 or size <= 0 or base+size > 1 << 64:
+        raise DependencyFailed('invalid physical HBM allocation range')
+    topo = _xclbin_sections(path).get(_MEM_TOPOLOGY)
+    if topo is None or len(topo) < 8:
+        raise DependencyFailed('image has no physical HBM memory topology')
+    (count,) = struct.unpack_from('<i', topo, 0)
+    if count < 0 or 8+40*count > len(topo):
+        raise DependencyFailed('truncated physical HBM memory topology')
+    banks=[]
+    for i in range(count):
+        _,used,kib,start,tag = struct.unpack_from('<BB6xQQ16s',topo,8+40*i)
+        tag=tag.split(b'\0')[0].decode(errors='replace')
+        match=re.fullmatch(r'HBM\[(\d+)\]',tag)
+        lo,hi=max(base,start),min(base+size,start+kib*1024)
+        if match and lo < hi:
+            banks.append(dict(pc=int(match[1]),memory_index=i,tag=tag,
+                              base=start,size=kib*1024,used=bool(used),
+                              allocated_base=lo,allocated_size=hi-lo))
+    banks.sort(key=lambda b:b['allocated_base'])
+    cursor=base
+    for bank in banks:
+        if bank['allocated_base'] != cursor:
+            raise DependencyFailed('physical HBM topology has a gap or overlapping PC ranges')
+        cursor += bank['allocated_size']
+    if cursor != base+size or len({b['pc'] for b in banks}) != len(banks):
+        raise DependencyFailed('physical HBM topology does not uniquely cover the BO')
+    return dict(physical_banks=banks,topology_sha256=hashlib.sha256(topo).hexdigest())
+
+
 def _xrt_library():
     """libxrt_core.so, loaded once, with every signature declared.
 
@@ -1364,9 +1405,19 @@ class XDMALink(U50Link):
         if self._accessor is None or not hasattr(self._accessor, 'bo_open'):
             return None
         bank = _xclbin_bank(self.xclbin, self.ip_name, arg_index=0)
-        nbytes = min(int(nbytes), bank['size'])
+        requested = int(nbytes)
+        nbytes = min(requested, bank['size'])
         self.hbm_bank = bank
-        return self._accessor.bo_open(nbytes, bank['index']), nbytes
+        base = self._accessor.bo_open(nbytes, bank['index'])
+        self.hbm_allocation = dict(requested_bytes=requested,exposed_bytes=nbytes,
+                                   connected_memory=dict(bank))
+        try:
+            self.hbm_allocation.update(_xclbin_hbm_allocation(self.xclbin,base,nbytes))
+        except (DependencyFailed,OSError) as error:
+            # Legacy functional images can still run; an absent physical map
+            # must remain explicit and cannot become a certified v2 HBM gate.
+            self.hbm_allocation['mapping_error']=str(error)
+        return base, nbytes
 
     def hbm_write(self, offset, data):
         self._accessor.bo_write(offset, data)

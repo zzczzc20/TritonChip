@@ -47,7 +47,7 @@ import triton                                           # noqa: E402,F401
 import tnca.torch_device as D                           # noqa: E402
 
 CASES = []
-from hbm_address import PC_BYTES, probe_offsets
+from hbm_address import PC_BYTES, probe_offsets, topology_probe_offsets
 CLOCK_HZ = 100e6
 # --small: the same cases at sizes the RTL simulator runs in minutes, against
 # the simulated /hbm memory mode (TNCA_PROFILE=core-vrf-sync-v5/hbm) -- a dry
@@ -107,9 +107,13 @@ def window():
     assert s._heap.limit == w['local_limit'] + w['size'], (s._heap.limit, w)
     st = dev.axi_status() if hasattr(dev, 'axi_status') else dict(error=False, stray=False)
     assert not st['error'] and not st['stray'], st
+    if os.environ.get('R40_CONTRACT')=='v2':
+        assert w['size']>=1<<30, 'v2 requires >=1 GiB actually exposed HBM, not the requested size'
+        topology_probe_offsets(w)  # Refuse absent/ambiguous physical mapping.
+        assert len(w['allocation']['physical_banks'])>=2, 'v2 requires at least two allocated physical PCs'
     return dict(base=hex(w['base']), size=w['size'], local_limit=hex(w['local_limit']),
                 bank=bank.get('tag'), bank_bytes=bank.get('size'), bank_index=bank.get('index'),
-                heap_end=hex(s._heap.limit), dma=w['dma'])
+                heap_end=hex(s._heap.limit), dma=w['dma'], allocation=w.get('allocation'))
 
 
 @case
@@ -117,7 +121,11 @@ def samples():
     s = _session()
     w = _window(s)
     local, size = w['local_limit'], w['size']
-    offsets = probe_offsets(w['base'], size)
+    v2=os.environ.get('R40_CONTRACT')=='v2'
+    offsets = topology_probe_offsets(w) if v2 else probe_offsets(w['base'], size)
+    # The final v2 probe reaches the BO end. Preserve a separate small frame
+    # region, then release it before launching the unchanged Torch operations.
+    control=s.allocate(65536,name='hbm-boundary-control-reserve') if v2 else None
     n = len(offsets)
     bump = torch.compile(lambda t: t.add_(1), fullgraph=True)
     held, got = [], []
@@ -137,10 +145,22 @@ def samples():
         x.copy_(h)
         got.append((h, x))
     addrs = [x.untyped_storage().data_ptr() for _, x in got]
+    if control is not None:s.free(control)
     for _, x in got:
         bump(x)
     bad = [i for i, (h, x) in enumerate(got) if not torch.equal(x.cpu(), h + 1)]
     assert not bad, f'samples {bad[:8]} wrong (of {n}), at {[hex(addrs[i]) for i in bad[:4]]}'
+    if v2:
+        banks=w['allocation']['physical_banks']
+        spans=[(a-local+w['base'],a-local+w['base']+512) for a in addrs]
+        hits=[[b['pc'] for b in banks if lo<b['allocated_base']+b['allocated_size']
+               and hi>b['allocated_base']] for lo,hi in spans]
+        pcs=sorted({pc for group in hits for pc in group})
+        wanted=sorted(b['pc'] for b in banks)
+        assert pcs==wanted and any(len(group)>1 for group in hits), 'allocated-PC boundary coverage incomplete'
+        return dict(samples=n,physical_pcs=pcs,configured_pc_coverage=True,
+                    boundary_crossings=[dict(offset=offsets[i],pcs=group) for i,group in enumerate(hits) if len(group)>1],
+                    topology_sha256=w['allocation']['topology_sha256'])
     pcs = sorted({(a - local + w['base']) // PC_BYTES for a in addrs})
     return dict(samples=n, first=hex(addrs[0]), last=hex(addrs[-1]),
                 pseudo_channels=len(pcs), pc_first=pcs[0], pc_last=pcs[-1],
@@ -237,6 +257,12 @@ def main(argv=None):
         checks = [dict(name=f"board:{r['name']}", ok=r['ok'], detail=json.dumps(r['detail'], default=str)[:600])
                   for r in results]
         if len(need) == 3:
+            if os.environ.get('R40_CONTRACT')=='v2':
+                # Mapping/one graph alone cannot certify the inherited full
+                # inventory, model peak +25% headroom or every active port.
+                EV.record('R40-04.hbm','not-measured' if all(r['ok'] for r in need) else 'fail',checks,
+                          detail='v2 allocation/boundary/64 MiB checkpoint; full-suite/model peak, all-port traffic and range/alias evidence still required')
+                return 0 if passed==len(results) else 1
             sample = next(r for r in need if r['name'] == 'samples')
             full_map = sample['ok'] and sample['detail'].get('all_pc_coverage', False)
             checks.append(dict(name='board:all-32-PCs', ok=full_map,

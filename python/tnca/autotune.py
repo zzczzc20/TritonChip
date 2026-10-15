@@ -8,12 +8,73 @@ import json
 import math
 import time
 import threading
+import os
+from pathlib import Path
+import tempfile
 
 from .device_timing import clock_span
 
 
 IDENTITY_FIELDS = ('kernel_source', 'shape', 'stride', 'dtype', 'software_tree', 'compiler',
                    'profile', 'capabilities', 'rtl', 'memory_map', 'image', 'clock_hz')
+
+
+class PersistentCache:
+    """Atomic per-search records shared by independent tuning processes.
+
+    Identity and candidate-set invalidation stays in ``select``. A damaged
+    record is a miss; no unvalidated winner can bypass resource checks.
+    Writers publish complete files with replace, so readers never see partial
+    JSON. Concurrent writers may repeat a search but cannot corrupt a record.
+    """
+    def __init__(self, directory):
+        self.directory = Path(directory)
+        self.directory.mkdir(parents=True, exist_ok=True)
+
+    def _path(self, key):
+        if not isinstance(key, str) or len(key) != 64 or any(c not in '0123456789abcdef' for c in key):
+            raise ValueError('cache key must be a SHA256 digest')
+        return self.directory / (key + '.json')
+
+    def _read(self, key):
+        try:
+            record = json.loads(self._path(key).read_text())
+            value = record['value']
+            payload = json.dumps(value, sort_keys=True, separators=(',', ':'), allow_nan=False)
+            if (record['schema'] != 'tnca-autotune-cache/1' or record['key'] != key
+                    or record['sha256'] != hashlib.sha256(payload.encode()).hexdigest()):
+                return None
+            return value
+        except (OSError, ValueError, KeyError, TypeError):
+            return None
+
+    def __contains__(self, key):
+        return self._read(key) is not None
+
+    def __getitem__(self, key):
+        value = self._read(key)
+        if value is None:
+            raise KeyError(key)
+        return value
+
+    def __setitem__(self, key, value):
+        path = self._path(key)
+        payload = json.dumps(value, sort_keys=True, separators=(',', ':'), allow_nan=False)
+        record = dict(schema='tnca-autotune-cache/1', key=key, value=value,
+                      sha256=hashlib.sha256(payload.encode()).hexdigest())
+        temporary = None
+        try:
+            with tempfile.NamedTemporaryFile(mode='w', dir=self.directory, delete=False) as stream:
+                temporary = stream.name
+                json.dump(record, stream, allow_nan=False)
+                stream.write('\n')
+                stream.flush()
+                os.fsync(stream.fileno())
+            os.replace(temporary, path)
+            temporary = None
+        finally:
+            if temporary is not None:
+                os.unlink(temporary)
 
 
 def identity_key(identity):
@@ -112,10 +173,23 @@ def select(identity, candidates, *, capacities, capabilities, budget, measure, c
     available={k for k,v in capabilities.items() if v is True} if isinstance(capabilities,dict) else set(capabilities)
     context=json.dumps(dict(capacities=capacities,capabilities=sorted(available)),sort_keys=True,allow_nan=False)
     search_key=hashlib.sha256((key+'\n'+context+'\n'+'\n'.join(encoded)).encode()).hexdigest()
-    if cache is not None and search_key in cache:
-        result=json.loads(json.dumps(cache[search_key]))
-        result['cache_hit']=True
-        return result
+    if cache is not None:
+        try:
+            result=json.loads(json.dumps(cache[search_key], allow_nan=False))
+        except (KeyError, TypeError, ValueError):
+            result=None
+        if (isinstance(result, dict) and result.get('identity') == identity
+                and result.get('identity_key') == key and result.get('selected') in candidates
+                and not result.get('budget_exceeded', True)
+                and type(result.get('seconds')) in (int, float)
+                and math.isfinite(result['seconds']) and result['seconds'] >= 0):
+            candidate=result['selected']
+            legal=(not (set(candidate.get('requires', ())) - available)
+                   and all(k in capacities and type(v) is int and 0 <= v <= capacities[k]
+                           for k, v in candidate.get('resources', {}).items()))
+            if legal:
+                result['cache_hit']=True
+                return result
     rows=[]
     for candidate in candidates:
         missing=set(candidate.get('requires',()))-available

@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 """Budget/cache/event policy tests; synthetic records cannot sign off performance."""
 import copy
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
 from pathlib import Path
 import sys
 import unittest
+import tempfile
 sys.path.insert(0,str(Path(__file__).resolve().parents[2]/'python'))
-from tnca.autotune import GraphBudget, select, identity_key, event_seconds
+from tnca.autotune import GraphBudget, PersistentCache, select, identity_key, event_seconds
 
 
 def identity():
@@ -19,7 +20,39 @@ def events(cycles):
     return [dict(clock='mmio-device-clock/1',epoch=1,session_id=2,start=10,end=10+cycles)]
 
 
+def publish_cache(directory, number):
+    PersistentCache(directory)['a'*64]={'candidate':number}
+
+
 class PolicyTests(unittest.TestCase):
+    def test_persistent_cache_reopens_and_rejects_damage(self):
+        with tempfile.TemporaryDirectory() as directory:
+            candidates=[dict(knobs={'tile':16})]
+            self.choose(candidates,lambda _:events(7),cache=PersistentCache(directory))
+            reopened=PersistentCache(directory)
+            self.assertTrue(self.choose(candidates,lambda _:self.fail('cache reran'),cache=reopened)['cache_hit'])
+            next(Path(directory).glob('*.json')).write_text('{broken')
+            self.assertFalse(self.choose(candidates,lambda _:events(8),cache=reopened)['cache_hit'])
+            changed=identity();changed['image']='other-board-image'
+            self.assertFalse(self.choose(candidates,lambda _:events(9),cache=reopened,ident=changed)['cache_hit'])
+
+    def test_persistent_concurrent_publication_is_complete(self):
+        with tempfile.TemporaryDirectory() as directory:
+            cache=PersistentCache(directory);key='a'*64
+            with ThreadPoolExecutor(max_workers=8) as workers:
+                list(workers.map(lambda n:cache.__setitem__(key,{'candidate':n}),range(32)))
+            self.assertIn(cache[key]['candidate'],range(32))
+            self.assertEqual(len(list(Path(directory).iterdir())),1)
+            with self.assertRaises(ValueError):cache['../unsafe']={}
+
+    def test_independent_processes_share_atomic_records(self):
+        with tempfile.TemporaryDirectory() as directory:
+            with ProcessPoolExecutor(max_workers=4) as workers:
+                futures=[workers.submit(publish_cache,directory,n) for n in range(12)]
+                for future in futures:future.result()
+            self.assertIn(PersistentCache(directory)['a'*64]['candidate'],range(12))
+            self.assertEqual(len(list(Path(directory).iterdir())),1)
+
     def choose(self,candidates,measure,budget=None,cache=None,ident=None,caps=None):
         return select(ident or identity(),candidates,capacities={'vrf':64},
                       capabilities=caps or ['mma'],budget=budget or GraphBudget(),

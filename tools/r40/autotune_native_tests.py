@@ -7,6 +7,7 @@ import hashlib
 import json
 import os
 import inspect
+import tempfile
 from pathlib import Path
 import sys
 
@@ -20,7 +21,7 @@ os.environ.setdefault('TNCA_HOST_TIMEOUT','1800')
 import torch
 import triton
 import tnca.torch_device as D
-from tnca.autotune import GraphBudget,measure_native,select
+from tnca.autotune import GraphBudget,PersistentCache,measure_native,select
 from tnca.triton_backend.driver import launch_log
 
 
@@ -63,20 +64,23 @@ def main():
         for output in outputs:
             torch.testing.assert_close(output.cpu(),original(x,y))
         return records
-    cache={}
+    cache_directory=tempfile.TemporaryDirectory(prefix='tnca-native-tuning-cache-')
+    cache=PersistentCache(cache_directory.name)
     with launch_log() as outer:
         result=select(identity,candidates,capacities={'cores':3},capabilities=['physical_grid'],
                       budget=GraphBudget(),measure=measure,cache=cache)
     assert not outer,'tuning polluted the formal launch log'
     assert calls==[1,3] and result['rows'][2]['status']=='refused',result
     hit=select(identity,candidates,capacities={'cores':3},capabilities=['physical_grid'],
-               budget=GraphBudget(),measure=lambda c:(_ for _ in ()).throw(AssertionError('cache reran')),cache=cache)
+               budget=GraphBudget(),measure=lambda c:(_ for _ in ()).throw(AssertionError('cache reran')),
+               cache=PersistentCache(cache_directory.name))
     assert hit['cache_hit'] and hit['selected']==result['selected']
     session.active_cores=(1<<result['selected']['knobs']['cores'])-1
     with launch_log() as formal:
         output=graph(dx,dy)
     torch.testing.assert_close(output.cpu(),original(x,y))
     assert formal and all(row['upload_bytes']==row['download_bytes']==0 for row in formal)
+    cache_directory.cleanup()
     print('AUTOTUNE NATIVE DEVICE EVENTS PASS '+json.dumps(dict(identity=identity,
         identity_key=result['identity_key'],device_records=[r.get('device_records') for r in result['rows']],selected=result['selected'],
         seconds=[row.get('seconds') for row in result['rows']],cache_hit=hit['cache_hit'],

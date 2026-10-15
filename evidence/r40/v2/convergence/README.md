@@ -88,3 +88,5 @@ PYTHONPATH=python:compiler/python:tools/asm CUDA_VISIBLE_DEVICES= \
 ```
 
 The collector fixes the complete frozen 77-point inventory, 5 warmups/30 samples, three blocks and frozen random order. Every independent subprocess report is preserved before judging. Full image SHA, compiler/Python versions and backend arguments participate in configuration matching. This command has not measured the final board. Success proceeds to the frozen non-regression audit; a collection failure preserves partial records and an audit failure preserves the actual verdict. Partial collection cannot pass.
+
+The software frozen for V is **8abf527**, archive SHA `5ca01fb61573b71e9ff89f18814fb8ef0c2414dbc969160262967ffe2a878fee`, tree `files:bd04f1ecc57ad18bc2813c1743b28df07d616f946502d35d2978ea133c0f383e`. Both jump and FPGA hosts verified that tree and frozen contract. Native 1/2/3-core functional evidence remains attributed to 85fa7d8; its python/ and compiler/ sources are byte-identical to the frozen V software. Only collection/provenance tooling changed. Required gate statuses remain in required_gates.json; final image/clock/CDC qualification are not-measured.

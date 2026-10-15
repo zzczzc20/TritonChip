@@ -1,18 +1,21 @@
-# Performance Diagnosis Harness
+# Performance Analysis Harness
 
-A workflow for AI agents and engineers to combine resource screening, device
-counters, Proton traces, controlled RTL experiments, and FPGA evidence.
-The objective is to eliminate unsound candidates early and reserve synthesis
-and implementation runs for changes with a specific, testable justification.
+A reproducible workflow for AI agents and engineers investigating TNCA
+performance. It combines resource feasibility analysis, device counters,
+Proton traces, controlled RTL experiments, and physical implementation evidence
+to identify bottlenecks and evaluate architectural changes before committing
+to expensive FPGA synthesis and implementation runs.
 
-This harness belongs to the existing R40 work. It introduces no work packages,
-changes no frozen acceptance requirements, and does not update gate status.
+This harness supports the existing R40 scope. It introduces no additional work
+packages, preserves the frozen acceptance requirements, and does not modify
+gate status.
 Start with the [required-gate blocker ledger](../../evidence/r40/v2/convergence/README.md).
-Report gate status changes first; diagnostic test counts and commits are not
-acceptance progress. For each unresolved gate, retain its current blocker,
-direct evidence, next experiment command, and actions for either outcome.
+Begin progress reports with changes to required-gate status. Diagnostic test
+counts and commit counts do not establish acceptance progress. For each
+unresolved gate, record the current blocker, supporting evidence, next
+experiment command, and follow-up actions for both possible outcomes.
 
-## 1. Define the question and freeze the experiment identity
+## 1. Define the hypothesis and establish experiment provenance
 
 Write a falsifiable hypothesis before collecting data. For example:
 “Three cores contend for one physical PC; distributing requests across two
@@ -34,7 +37,7 @@ Microbenchmarks can establish mechanisms; they cannot replace the original
 Report missing measurements as `not-measured`, with unknown numeric fields
 set to `null`. Never relabel a reduced workload as its original benchmark.
 
-## 2. Establish an uninstrumented counter baseline
+## 2. Establish an uninstrumented baseline
 
 `Session(counters=True)` exposes counters supported by the selected device.
 `tnca.costmodel.counter_diagnosis` checks the exclusive cycle partition for
@@ -42,8 +45,8 @@ one program/core, reports component fractions, and computes optimistic Amdahl
 ceilings for eliminating individual stall components. These ceilings are not
 predicted speedups.
 
-Do not add overlapping stall indicators. Do not divide cumulative multicore
-cycles by global makespan and call the result utilization. Some physical
+Overlapping stall indicators must not be summed. Cumulative multicore cycles
+divided by global makespan do not constitute a utilization metric. Some physical
 multicore backends currently return program-level counters as unavailable;
 use actual dispatcher/core/outlet telemetry and retain that limitation.
 `tools/r40/board_checkpoint.py` demonstrates capturing outlet traffic before
@@ -53,7 +56,7 @@ the CPU ownership handoff.
 noninterference baseline. Run it when changing counter RTL, rather than
 repeating the full suite for presentation-only changes.
 
-## 3. Screen candidates before synthesis
+## 3. Assess candidate feasibility before synthesis
 
 ```bash
 python tools/r40/cost_screen.py INPUT.json --out NEW_OUTPUT.json
@@ -80,8 +83,9 @@ Shared bandwidth does not multiply with core count. Convert capacities across
 clock domains into the same reference device cycles.
 
 The model computes `max(work / capacity)`. Exceeding a cycle budget rejects
-an impossible candidate under the stated assumptions. Fitting the budget
-only means the candidate has not been excluded.
+an impossible candidate under the stated assumptions. A candidate within the
+budget remains eligible for further evaluation; the bound does not establish
+implementation feasibility or predict achieved performance.
 
 Optional `implementation` entries provide per-candidate `floors` and
 `available` maps for proven physical resource minima. Each floor has
@@ -107,7 +111,7 @@ operator model. Do not divide its estimates by core count.
 `tools/r39/load_latency.py` support instruction/LSU calibration. A one-cycle
 bench memory cannot substitute for a board memory-path measurement.
 
-## 4. Instrument only where counters leave an unresolved question
+## 4. Instrument unresolved performance questions
 
 The TNCA backend preserves upstream `proton.record start/end` scope semantics
 through the pinned Triton 3.8.0 dialect and Python TNCA IR. At the TNCA IR level:
@@ -126,8 +130,8 @@ instrumented, layout = lower_records(
 Invoke lowering explicitly after normal optimization and before CodeGen.
 The caller owns a disjoint, freshly zeroed capture buffer, its lifetime,
 launch, completion wait, and CPU ownership handoff. `enabled=False` removes
-markers; compiling unlowered markers refuses rather than silently dropping
-samples. This is an explicit TNCA recording backend, not an automatic Torch
+markers. Compilation rejects unlowered markers to prevent silent sample loss.
+This is an explicit TNCA recording backend, not an automatic Torch
 collector or a port of CUDA/CUPTI collection through `proton.start()`.
 
 Scope names must be unique and properly nested. Each program/role owns a
@@ -156,7 +160,7 @@ These diagnose the recording mechanism, not production graph performance.
 Open `trace.chrome_trace` with a Chrome Trace/Perfetto JSON viewer. Do not
 automatically upload private traces to an external service.
 
-## 5. Report perturbation and uncertainty
+## 5. Quantify instrumentation overhead and uncertainty
 
 Warm up uninstrumented A and instrumented B independently, then alternate
 AB/BA pairs under identical configuration and image identity. Validate
@@ -174,9 +178,10 @@ Deterministic repeats do not establish zero systematic error.
 
 The default 1% value is an adjustable diagnostic prompt, **not an acceptance
 gate, delivery requirement, or universal trace admission threshold**.
-A more perturbed trace may still answer a useful question; disclose that it
-may change the bottleneck. Choose sufficient granularity without pursuing
-unattainable zero-overhead instrumentation.
+A trace with higher overhead may still resolve a diagnostic question, provided
+the analysis discloses the possibility that instrumentation changes the
+bottleneck. Select scope granularity appropriate to the question and report
+the observed perturbation and its applicability.
 
 Report whole-program perturbation separately from region timestamp error.
 An observed whole-program overhead is not a bound on each region's error.
@@ -198,7 +203,7 @@ hashes. Compare those hashes against previously retained manifests or commits.
 Self-consistent input files alone cannot prove that their source was truthful.
 An audited diagnostic bundle remains diagnostic evidence.
 
-## 6. Escalate with a causal experiment
+## 6. Validate the mechanism and justify physical implementation
 
 After screening, choose the smallest RTL experiment that resolves the main
 uncertainty. Change the mechanism named by the hypothesis, preserve failure
@@ -214,9 +219,9 @@ necessary infrastructure repairs to real compiled candidates promptly.
 
 Start synthesis or implementation only when physical evidence is needed.
 For every rerun, record a concrete root-cause hypothesis, corresponding change,
-expected improvement, and falsification condition. Do not poll unexplained
-directives. Reused results must match complete sources, parameters,
-constraints, and tool versions. Preserve immutable build directories and
+expected improvement, and falsification condition. Changes to implementation
+directives require an explicit technical rationale. Reused results must match
+complete sources, parameters, constraints, and tool versions. Preserve immutable build directories and
 avoid modifying an active implementation run.
 
 Use `tools/r40/resources.py` for actual routed utilization/timing reports,

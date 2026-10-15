@@ -1,0 +1,30 @@
+77 records -> /tmp/tmpkjt3uib7/b39.jsonl
+  PASS  r37                  
+  PASS  core                 
+  PASS  core-vrf             
+  PASS  core-slowmem         
+  PASS  core-ooo             
+  PASS  top                  
+  PASS  nuca                 
+  PASS  core-r39hw           
+  PASS  core-r39sw           
+  PASS  core-r39sw4          
+  PASS  core-r39sw5          
+  PASS  r38-xpose-rtl        
+  PASS  r1-profile-tests     
+  PASS  r38-l0               
+  PASS  r38-baseline-check   
+  PASS  r38-profiler         
+  PASS  r38-identity         
+  PASS  r38-tdesc            
+  PASS  r38-torch            
+  PASS  archbench-selftest   
+  PASS  rctx-roles-v5        
+  PASS  rctx-roles-v4        
+  PASS  rctx-spmd-v4         
+  PASS  rctx-spmd-v5         
+  PASS  r39-schedule         
+  PASS  r39-ablate           
+  PASS  r39-vrf-fairness     
+b39-gates  PASS  (27/27)
+r40-b39  PASS  B39 rerun: 77/77 pass, 77 cycle-identical; protocol 2: 77/77 consistent, 77 with B39's cycles

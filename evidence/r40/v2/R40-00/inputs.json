@@ -1,0 +1,26 @@
+{
+  "b39_rerun_u280_medium.jsonl.gz": {
+    "source": "sim/build/r40/b39_rerun/u280_medium.jsonl",
+    "raw_sha256": "c298216d5268336fb2c54e62ee24eef6edd4d804810c18d1b766190b4c40a0e5"
+  },
+  "b39_rerun_u280_small.jsonl.gz": {
+    "source": "sim/build/r40/b39_rerun/u280_small.jsonl",
+    "raw_sha256": "2b9001775e76271744a58a32ab6ab378f1ed909b36f6c40d4fd24eec3cb47c5b"
+  },
+  "b39_rerun_u280_tiny.jsonl.gz": {
+    "source": "sim/build/r40/b39_rerun/u280_tiny.jsonl",
+    "raw_sha256": "9a29904213e84a779ec937e8f91f8eb25678796d66bd42595ecde5a0fc9babfe"
+  },
+  "b39_p2_u280_medium.jsonl.gz": {
+    "source": "sim/build/r40/b39_p2/u280_medium.jsonl",
+    "raw_sha256": "84c42bacafaa0b4f5e639bd19b0188f6aea2973f6bb292d0033449b4fc9a6952"
+  },
+  "b39_p2_u280_small.jsonl.gz": {
+    "source": "sim/build/r40/b39_p2/u280_small.jsonl",
+    "raw_sha256": "56a72776fce17ac83c845142bc83ffe25361158c88dc7730c05fc1ae1f771dd2"
+  },
+  "b39_p2_u280_tiny.jsonl.gz": {
+    "source": "sim/build/r40/b39_p2/u280_tiny.jsonl",
+    "raw_sha256": "758e23bb683b1b0eda67f8545323576ac2254e9e2caeac80382de8b4dcf512db"
+  }
+}

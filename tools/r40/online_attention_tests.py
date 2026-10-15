@@ -34,7 +34,9 @@ def main():
         parser.error('--out must be new; preserve prior evidence')
     if os.environ.get('TNCA_LAUNCH') == 'skip':
         raise RuntimeError('actual native execution is required')
-    device.prepare(os.environ['TNCA_PROFILE'])
+    backend = os.environ.get('TNCA_BACKEND', 'sim-file')
+    if backend not in ('fpga-u50', 'fpga-u280'):
+        device.prepare(os.environ['TNCA_PROFILE'])
     D.register()
     from torch._inductor import config
     config.fx_graph_cache = False

@@ -30,6 +30,63 @@
       ],
       "kernels": 1,
       "steady_tensor_transfers": 0
+    },
+    {
+      "case": "gqa_d64_tail",
+      "head_dim": 64,
+      "status": "pass",
+      "tensor_allocations": [
+        1536
+      ],
+      "online_artifacts": [
+        {
+          "artifact": "55e6334e2ddd03f942d11d5f0ee166b78d91bb8e4ba4486e87194ab6552aad60",
+          "descriptor_loads": 8,
+          "resources": {
+            "accumulators": 0,
+            "barriers": 8,
+            "commands_outstanding": "unknown",
+            "descriptors": 2,
+            "rf_private_per_role": {
+              "role0": 58,
+              "role1": 58
+            },
+            "scratch_bytes": 512,
+            "shared_windows": []
+          }
+        }
+      ],
+      "kernels": 1,
+      "steady_tensor_transfers": 0
+    },
+    {
+      "case": "bool_all_mask_d32",
+      "head_dim": 32,
+      "status": "pass",
+      "tensor_allocations": [
+        120,
+        384
+      ],
+      "online_artifacts": [
+        {
+          "artifact": "44d0ccab5a7dea131857d7a190d6213a16db275966bb97be4a0524741ce9a432",
+          "descriptor_loads": 4,
+          "resources": {
+            "accumulators": 0,
+            "barriers": 4,
+            "commands_outstanding": "unknown",
+            "descriptors": 2,
+            "rf_private_per_role": {
+              "role0": 52,
+              "role1": 52
+            },
+            "scratch_bytes": 512,
+            "shared_windows": []
+          }
+        }
+      ],
+      "kernels": 2,
+      "steady_tensor_transfers": 0
     }
   ]
 }

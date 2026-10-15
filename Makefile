@@ -2132,6 +2132,7 @@ r40-line-axi: | dirs
 r40-multicore-mmio: | dirs
 	@$(PYTHON) tools/r40/physical_grid_clock_tests.py
 	@$(PYTHON) tools/r40/autotune_policy_tests.py
+	@$(PYTHON) tools/r40/autotune_worker_tests.py
 	@$(TRITON_PYTHON) tools/r40/code_cache_epoch_tests.py
 	@$(PYTHON) tools/r40/code_link_tests.py
 	@$(PYTHON) tools/r40/mesh_pipeline_tests.py
@@ -2192,6 +2193,7 @@ r40-pipeline: r40-pipeline-checks
 .PHONY: r40-autotune-checks r40-autotune
 r40-autotune-checks:
 	@$(PYTHON) tools/r40/autotune_policy_tests.py
+	@$(PYTHON) tools/r40/autotune_worker_tests.py
 	@$(PYTHON) tools/r40/physical_grid_clock_tests.py
 	@CUDA_VISIBLE_DEVICES= $(TORCH_PYTHON) tools/r40/autotune_native_tests.py
 

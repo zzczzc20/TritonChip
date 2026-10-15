@@ -12,6 +12,8 @@ import os
 from pathlib import Path
 import tempfile
 import sqlite3
+import signal
+import subprocess
 from contextlib import contextmanager
 
 from .device_timing import clock_span
@@ -159,6 +161,73 @@ class GraphBudget:
             self.exceeded |= self.clock()-self.started>self.max_seconds
             return self.exceeded
 
+    def time_left(self):
+        with self._lock:
+            return max(0.0, self.max_seconds-(self.clock()-self.started))
+
+
+class CandidateFailed(RuntimeError):
+    """An isolated candidate did not produce valid device measurements."""
+
+
+class CandidateTimedOut(TimeoutError):
+    """The graph deadline terminated an isolated candidate and its children."""
+
+
+def run_measurement(command, *, budget, result_path, log_path, cwd=None, env=None):
+    """Compile/run an external worker within the original graph deadline.
+
+    The worker publishes a JSON list of device endpoint records. Host elapsed
+    time bounds the search; it never ranks candidates. Call from select's
+    measurement callback after admission. Every worker owns a process group,
+    so a deadline also terminates compiler/simulator descendants.
+    """
+    if not isinstance(command, (list, tuple)) or not command or any(not isinstance(a,str) for a in command):
+        raise ValueError('candidate command must be a nonempty argument list')
+    result_path,log_path=Path(result_path).absolute(),Path(log_path).absolute()
+    if result_path==log_path or result_path.exists() or log_path.exists():
+        raise ValueError('candidate result/log paths must be distinct and new')
+    remaining=budget.time_left()
+    if remaining<=0:
+        budget.exceeded=True
+        raise CandidateTimedOut('graph deadline reached before worker launch')
+    result_path.parent.mkdir(parents=True,exist_ok=True)
+    log_path.parent.mkdir(parents=True,exist_ok=True)
+    from ._child_exec import child_argv
+    proc=None
+    try:
+        with log_path.open('xb') as log:
+            proc=subprocess.Popen(child_argv(command),cwd=cwd,env=env,
+                                  stdin=subprocess.DEVNULL,stdout=log,
+                                  stderr=subprocess.STDOUT,start_new_session=True)
+            try:
+                # Include process startup, compilation and publication in the
+                # same deadline, rather than granting each worker 600 seconds.
+                code=proc.wait(timeout=budget.time_left())
+            except subprocess.TimeoutExpired as error:
+                budget.exceeded=True
+                raise CandidateTimedOut('candidate exceeded the graph deadline') from error
+            if code:
+                raise CandidateFailed(f'candidate worker exited {code}; see {log_path}')
+        if budget.check_elapsed():
+            raise CandidateTimedOut('candidate publication exceeded the graph deadline')
+        try:
+            records=json.loads(result_path.read_text())
+            if not isinstance(records,list):raise ValueError('expected a JSON list')
+            event_seconds(records,1)
+        except (OSError,ValueError,TypeError,KeyError) as error:
+            raise CandidateFailed(f'invalid candidate device records: {error}') from error
+        if budget.check_elapsed():
+            raise CandidateTimedOut('candidate validation exceeded the graph deadline')
+        return records
+    finally:
+        if proc is not None:
+            # Kill the owned group even when the leader exited successfully:
+            # a compiler child must not outlive its completed measurement.
+            try:os.killpg(proc.pid,signal.SIGKILL)
+            except ProcessLookupError:pass
+            proc.wait()
+
 
 class SharedGraphBudget(GraphBudget):
     """Cooperative graph budget shared by workers on the same Linux host.
@@ -254,7 +323,15 @@ def select(identity, candidates, *, capacities, capabilities, budget, measure, c
         if not budget.admit(identity['kernel_source']):
             rows.append(dict(candidate=candidate,status='not-measured',reason='budget'))
             continue
-        records=measure(candidate)
+        try:
+            records=measure(candidate)
+        except CandidateTimedOut as error:
+            budget.exceeded=True
+            rows.append(dict(candidate=candidate,status='over-budget',reason=str(error)))
+            continue
+        except CandidateFailed as error:
+            rows.append(dict(candidate=candidate,status='refused',reason=str(error)))
+            continue
         # A measurement cannot supply a host elapsed time in place of endpoints.
         seconds=event_seconds(records,identity['clock_hz'])
         over=budget.check_elapsed()

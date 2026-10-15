@@ -1,0 +1,18 @@
+{
+  "functional_only": true,
+  "measured_performance": false,
+  "budget_seconds": 600,
+  "elapsed": 9.835772753925994,
+  "budget_exceeded": false,
+  "records": [
+    {
+      "clock": "mmio-device-clock/1",
+      "epoch": 0,
+      "session_id": 1,
+      "start": 3010928049602,
+      "end": 3010928050397,
+      "cycles": 795
+    }
+  ],
+  "worker_sha256": "4fa445b0ff956519dd51f64b64f83cfb15d19c182944aeacb044f3a4c1e07552"
+}

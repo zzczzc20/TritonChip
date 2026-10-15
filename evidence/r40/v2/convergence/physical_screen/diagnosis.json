@@ -1,0 +1,221 @@
+{
+  "schema": "tnca-placement-diagnosis/1",
+  "status": "diagnostic-only",
+  "design_state": "Fully Placed",
+  "total": {
+    "lut": 1090775,
+    "ff": 493355,
+    "clb": 152504,
+    "control_sets": 14544,
+    "bram": 414,
+    "uram": 0,
+    "dsp": 535
+  },
+  "slr": {
+    "SLR0": {
+      "clb": 53637,
+      "lut": 369666,
+      "ff": 187423,
+      "bram": 139,
+      "uram": 0,
+      "dsp": 171,
+      "control_sets": 5105
+    },
+    "SLR1": {
+      "clb": 52134,
+      "lut": 393504,
+      "ff": 173987,
+      "bram": 153.5,
+      "uram": 0,
+      "dsp": 189,
+      "control_sets": 5966
+    },
+    "SLR2": {
+      "clb": 46733,
+      "lut": 327605,
+      "ff": 131945,
+      "bram": 121.5,
+      "uram": 0,
+      "dsp": 175,
+      "control_sets": 3554
+    }
+  },
+  "global_total_available": true,
+  "reported_slr_percentages": {
+    "SLR0": {
+      "CLB": "97.59",
+      "CLB LUTs": "84.08",
+      "Unique Control Sets": "4.64"
+    },
+    "SLR1": {
+      "CLB": "96.54",
+      "CLB LUTs": "91.09",
+      "Unique Control Sets": "5.52"
+    },
+    "SLR2": {
+      "CLB": "86.54",
+      "CLB LUTs": "75.83",
+      "Unique Control Sets": "3.29"
+    }
+  },
+  "summed_reported_slrs": {
+    "lut": 1090775,
+    "ff": 493355,
+    "bram": 414.0,
+    "uram": 0,
+    "dsp": 535,
+    "clb": 152504
+  },
+  "density_threshold": 0.9,
+  "dense_slrs": [
+    "SLR0",
+    "SLR1"
+  ],
+  "placed_slr_connectivity": {
+    "SLR2<->SLR1": {
+      "used": 9630,
+      "available": 23040
+    },
+    "SLR1<->SLR0": {
+      "used": 14423,
+      "available": 23040
+    }
+  },
+  "estimated_sll_by_column": {
+    "SLR1<->SLR2": {
+      "estimated_demand": [
+        72,
+        185,
+        462,
+        835,
+        738,
+        883,
+        973,
+        745,
+        118,
+        96,
+        253,
+        700,
+        1644,
+        2940,
+        2917,
+        2874
+      ],
+      "available_per_column": 1440,
+      "overloaded_columns": [
+        12,
+        13,
+        14,
+        15
+      ],
+      "peak_demand_ratio": 2.0416666666666665,
+      "aggregate_demand_ratio": 0.7133246527777778
+    },
+    "SLR0<->SLR1": {
+      "estimated_demand": [
+        77,
+        622,
+        782,
+        1139,
+        1321,
+        1778,
+        1610,
+        1149,
+        623,
+        504,
+        357,
+        975,
+        1542,
+        1534,
+        1509,
+        1502
+      ],
+      "available_per_column": 1440,
+      "overloaded_columns": [
+        5,
+        6,
+        12,
+        13,
+        14,
+        15
+      ],
+      "peak_demand_ratio": 1.2347222222222223,
+      "aggregate_demand_ratio": 0.7388888888888889
+    }
+  },
+  "congestion_warning_present": true,
+  "interpretation": "observed packing and estimated crossing pressure; not a candidate resource floor",
+  "gate_status": "not-measured",
+  "routed_timing": "not-measured",
+  "predicted_speedup": null,
+  "candidate_area": null,
+  "build_identity": {
+    "recorded_utc": "2026-10-15T11:34:20.467812+00:00",
+    "contract_sha256": "49fc0e02733139707ae2292eff2ef893e76e73f0723d0d002b2e7e1864af71c8",
+    "software_commit": "8abf5278a8ab6fe44cd77f3d94e5ee3658c3a64d",
+    "software_tree": "files:bd04f1ecc57ad18bc2813c1743b28df07d616f946502d35d2978ea133c0f383e",
+    "source_archive_sha256": "5ca01fb61573b71e9ff89f18814fb8ef0c2414dbc969160262967ffe2a878fee",
+    "software_root_fpga": "/home/zzhouch/tnca_srcR40convergence_8abf527",
+    "software_root_jump": "/home/zhongchun/tritonchip-r40-convergence-8abf527",
+    "hardware_source": "09ebe06",
+    "hardware_rtl_and_cfg_diff_to_software_commit": "empty (git diff 09ebe06..85fa7d8 -- rtl fpga/u280_multicore_hbm.cfg)",
+    "implementation_root": "/home/zzhouch/tnca_build/u280_r40ownership_preserved09",
+    "implementation_phase": "route_design: Phase 3.4 Initial Net Routing",
+    "placement_complete": true,
+    "route_complete": false,
+    "clock_target_hz": 100000000,
+    "timing_qualification": "not-measured",
+    "cdc_qualification": "not-measured",
+    "image_sha256": null,
+    "raw_placement_sha256": "1f6ae36dba495809c0ce31b45962bcc463d45379907df7992553a267ba2b096f",
+    "deferred_optimization_stash": "93a482e1c530e5f4a725cd5bef4e01c31703cd76",
+    "prior_behavioral_validation_snapshot": {
+      "software_commit": "85fa7d82377d2f28efa19a042f88b6c23ab9e35d",
+      "software_tree": "files:2e1c5342c0eeb24b99d6fc82eb6f82499c8f7b91f4742a6604459222a0c896ee",
+      "source_archive_sha256": "b84fb53bc4eeb28d4228ef11cc166586b5f36095e08d1a3d28e92cba570253a3",
+      "software_root_fpga": "/home/zzhouch/tnca_srcR40convergence_85fa7d8",
+      "software_root_jump": "/home/zhongchun/tritonchip-r40-convergence-85fa7d8"
+    },
+    "software_status": "frozen for vertical checkpoint; both hosts verified same software tree and contract",
+    "source_change_since_native_active_core_proof": "archbench/tooling identity and collection only; python/ and compiler/ unchanged",
+    "checkpoint_harness_sha256": "6c164ebe65627e13f7962f56a535bd62a876219359b44a187927a946b737f96c",
+    "paired_collector_sha256": "037ad42e4da6acd85f2d8be9572f74f5ddc6ef0d95c5f6f12f10e8c7a22f3c69",
+    "placement_log_artifact": "evidence/r40/v2/convergence/placement_followup/route_initial_20261015.log.gz",
+    "actual_core_placement_observer_pid": 867326,
+    "postroute_observer_pid": 605017,
+    "actual_core_placement_collector_sha256": "56215b7a2298a2c4075fa0a03274662931e39e55e0420f8e6ce363b5c98892fa",
+    "implementation_pid": 594866,
+    "implementation_observation": "PID 594866 confirmed live; link terminal file absent; Route 35-447 congestion warning; no restart",
+    "intermediate_route_wns_ns": -38.938,
+    "local_sll_peak_demand_percent": 204,
+    "directive_hypothesis_status": "SSI_SpreadSLLs was actually applied; local estimated demand still reaches 204%, so spreading alone has not resolved congestion",
+    "placed_resource_observation": {
+      "source": "evidence/r40/v2/convergence/placement_followup/slr_util_placed_20261015.rpt",
+      "sha256": "c2db7da6f57288fca5d13e9a149557293a6d61570e4fca2448413579b2465042",
+      "state": "Fully Placed; not routed",
+      "slr_clb_occupancy_percent": [
+        97.59,
+        96.54,
+        86.54
+      ],
+      "slr_lut_utilization_percent": [
+        84.08,
+        91.09,
+        75.83
+      ],
+      "slr_unique_control_sets": [
+        5105,
+        5966,
+        3554
+      ],
+      "qualification": "diagnostic only; no candidate resource floor or timing certification"
+    }
+  },
+  "input_sha256": {
+    "evidence/r40/v2/convergence/placement_followup/full_util_placed_20261015.rpt.gz": "cc3594d818ce440417fbade5446472d51050c4a612eb6d57a9aecad099da59e7",
+    "evidence/r40/v2/convergence/placement_followup/route_initial_20261015.log.gz": "1f6ae36dba495809c0ce31b45962bcc463d45379907df7992553a267ba2b096f",
+    "evidence/r40/v2/convergence/candidate_manifest.json": "43261475b63253fa29b312b62e546190b241dabb72211e7289eee129f5b12890"
+  },
+  "analysis_source_sha256": "f99fd2cb9d3f1f953061331d81a9f5ad1ea20e674a53dd960955ab3671b16f88",
+  "measured_clock_hz": null
+}

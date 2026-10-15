@@ -1,0 +1,14 @@
+test_actual_full_report_and_optional_packing_resources (__main__.ResourceEvidenceTests.test_actual_full_report_and_optional_packing_resources) ... ok
+test_build_identity_and_raw_inputs_are_bound (__main__.ResourceEvidenceTests.test_build_identity_and_raw_inputs_are_bound) ... ok
+test_cli_diagnostic_cannot_claim_image_timing_or_overwrite (__main__.ResourceEvidenceTests.test_cli_diagnostic_cannot_claim_image_timing_or_overwrite) ... ok
+test_column_order_and_missing_percentage_are_explicit (__main__.ResourceEvidenceTests.test_column_order_and_missing_percentage_are_explicit) ... ok
+test_conflicting_totals_refused (__main__.ResourceEvidenceTests.test_conflicting_totals_refused) ... ok
+test_corrupt_or_incomplete_sll_capacity_refused (__main__.ResourceEvidenceTests.test_corrupt_or_incomplete_sll_capacity_refused) ... ok
+test_density_threshold_is_configurable_and_not_a_gate (__main__.ResourceEvidenceTests.test_density_threshold_is_configurable_and_not_a_gate) ... ok
+test_local_sll_pressure_survives_aggregate_headroom (__main__.ResourceEvidenceTests.test_local_sll_pressure_survives_aggregate_headroom) ... ok
+test_slr_only_report_cannot_become_global_total (__main__.ResourceEvidenceTests.test_slr_only_report_cannot_become_global_total) ... ok
+
+----------------------------------------------------------------------
+Ran 9 tests in 0.418s
+
+OK

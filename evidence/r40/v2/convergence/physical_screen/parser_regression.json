@@ -1,0 +1,17 @@
+{
+  "schema": "tnca-resource-parser-regression/1",
+  "reference_commit": "b81f04dd1f480c0d9798fda508d06e61bd44eb4f",
+  "reference_source_sha256": "c9a50b5db309b3cdd17ff1894944b9fbaa02b531ad01bbd7ec42c7e68d483ee5",
+  "candidate_source_sha256": "f99fd2cb9d3f1f953061331d81a9f5ad1ea20e674a53dd960955ab3671b16f88",
+  "per_slr_only_input_old_global_total": {
+    "lut": 369666,
+    "ff": 187423,
+    "bram": 139,
+    "uram": 0,
+    "dsp": 171
+  },
+  "corrected_global_total": {},
+  "sum_of_reported_slr_luts": 1090775,
+  "interpretation": "Per-SLR columns are not global Used counts. A sum of reported regions is labeled separately; unique control sets are not additive.",
+  "gate_status": "not-measured"
+}

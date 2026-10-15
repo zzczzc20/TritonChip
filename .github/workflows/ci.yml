@@ -120,6 +120,7 @@ jobs:
         run: |
           python3 tools/r38/gen_counters.py --check
           python3 tools/r38/evidence_tests.py
+          python3 tools/r40/resources_tests.py
 
       - name: Build tnca-opt against the distribution MLIR
         run: make tnca-opt

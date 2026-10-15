@@ -98,6 +98,27 @@ packing pressure may exhaust a region before its LUT count reaches capacity.
 An observed baseline footprint is not automatically a resource floor for a
 modified candidate.
 
+Inspect existing placement evidence before requesting another implementation
+run:
+
+```bash
+python3 tools/r40/resources.py --diagnose-placement \
+  --util PATH_TO_PLACED_UTILIZATION.rpt \
+  --implementation-log PATH_TO_IMPLEMENTATION.log.gz \
+  --build-manifest PATH_TO_BUILD_MANIFEST.json --out NEW_DIAGNOSIS.json
+```
+
+The build manifest identifies `hardware_source`, `implementation_root`,
+`clock_target_hz`, and the frozen `contract_sha256`; retain the complete
+software/configuration/build identity in it. The output binds the manifest,
+raw reports, and analysis source by hash. It distinguishes global `Used`
+columns from per-SLR counts, reports CLB density and unique control sets,
+and checks per-column SLL demand independently of aggregate crossing capacity.
+A per-SLR-only report leaves global totals unavailable. The default 90% CLB
+density hint is configurable with `--pressure-threshold`; it is not a gate
+or a routability predictor. Missing timing and measured clock remain unknown.
+Do not convert an earlier build's observed footprint into a candidate minimum.
+
 For empirical predictions, provide `calibration` with `candidate`, `dev`,
 and `validation`. Each record contains
 `id/split/identity/instrumented=false/demand/cycles`.

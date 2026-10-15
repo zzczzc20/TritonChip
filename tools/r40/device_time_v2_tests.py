@@ -12,6 +12,27 @@ from protocol_tests import record
 
 
 class DeviceTimeTests(unittest.TestCase):
+    def test_native_resident_inventory_is_separate_from_timing_controls(self):
+        from native_inventory import audit
+        with tempfile.TemporaryDirectory() as d:
+            paths=self.fixture(Path(d))
+            path=paths[1][0]
+            self.assertFalse(all(c['ok'] for c in audit([path])))
+            rows=[json.loads(line) for line in path.read_text().splitlines()]
+            for r in rows:
+                r['platform']['knobs']['TNCA_TRANSFER_POLICY']='resident'
+                r['host']={'upload_bytes':0,'download_bytes':0}
+                r['time']['launches']=1
+                r['native_memory']={'tensor_peak_bytes':1024}
+            def save():path.write_text(''.join(json.dumps(r)+'\n' for r in rows))
+            save()
+            self.assertTrue(all(c['ok'] for c in audit([path])))
+            rows[0]['host']['upload_bytes']=64;save()
+            self.assertFalse(all(c['ok'] for c in audit([path])))
+            rows[0]['host']['upload_bytes']=0
+            rows[0]['point_sha256']='changed';save()
+            self.assertFalse(all(c['ok'] for c in audit([path])))
+
     def fixture(self,root,slowdown=1.0):
         plan=json.loads((contract_v2.ROOT/'spec/r40/v2/plan.json').read_text())
         pts=json.loads((contract_v2.ROOT/'spec/r40/suites/existing.json').read_text())['points']

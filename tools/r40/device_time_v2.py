@@ -124,10 +124,10 @@ def main():
     if args.json.exists():ap.error('preserve existing reports; --json must be new')
     try:
         result,checks=judge(args.control,args.native)
-    except (ValueError,KeyError,ablate.Refused) as error:
+    except (ValueError,KeyError,OSError,ablate.Refused) as error:
         result={};checks=[dict(name='matched measurement accepted',ok=False,why=str(error))]
     status='capability-pass' if all(c['ok'] for c in checks) else 'fail'
-    inputs={str(p):hashlib.sha256(p.read_bytes()).hexdigest() for p in args.control+args.native}
+    inputs={str(p):hashlib.sha256(p.read_bytes()).hexdigest() for p in args.control+args.native if p.exists()}
     report=dict(status=status,checks=checks,comparison=result,inputs=inputs,contract_sha256=contract_v2.LOCK_SHA256)
     args.json.parent.mkdir(parents=True,exist_ok=True)
     args.json.write_text(json.dumps(report,indent=2)+'\n')

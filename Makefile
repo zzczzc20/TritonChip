@@ -1389,6 +1389,7 @@ archbench-gpu:
 # nothing missing passes a gate. Protocol/manifest checks need no torch or board.
 r40-protocol:
 	@$(PYTHON) tools/r40/contract_v2_tests.py
+	@$(PYTHON) tools/r40/device_time_v2_tests.py
 	@$(PYTHON) tools/r40/acceptance_runner_tests.py
 	@$(PYTHON) tools/r40/audit_xo_sources_tests.py
 	@$(PYTHON) tools/r40/attention_checks_tests.py
@@ -1446,8 +1447,13 @@ R40_NATIVE ?= $(BUILD)/r40/native
 .PHONY: r40-device
 r40-device: $(R2_DATA_STAMP) | dirs
 	@$(TORCH_PYTHON) tools/r40/properties_tests.py
-	@$(TORCH_PYTHON) tools/r40/device_tests.py --evidence && \
-	 $(PYTHON) tools/r40/device_time.py --native $(R40_NATIVE) --evidence
+	@$(TORCH_PYTHON) tools/r40/device_tests.py --evidence
+ifeq ($(R40_CONTRACT),v2)
+	@$(PYTHON) tools/r40/native_inventory.py --native $(R40_NATIVE) --evidence
+	@$(MAKE) r40-device-time-v2
+else
+	@$(PYTHON) tools/r40/device_time.py --native $(R40_NATIVE) --evidence
+endif
 # R40-02 capability checkpoint. Frozen performance and asynchronous stress
 # remain not-measured until their independent runners supply the evidence.
 .PHONY: r40-residency

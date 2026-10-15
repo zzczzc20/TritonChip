@@ -225,6 +225,7 @@ jobs:
           python3 tools/r40/proton_tests.py
           python3 tools/performance_harness/tests.py
           $HOME/tritonenv/bin/python tools/r40/proton_upstream_tests.py
+          $HOME/tritonenv/bin/python tools/r40/hbm_measurement_tests.py
 
       - name: Triton source to RTL, one core and the whole machine
         run: |

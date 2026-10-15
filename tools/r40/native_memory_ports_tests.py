@@ -32,6 +32,16 @@ def main():
     assert sum(row['op']==11 for row in session.dev.history[start:])==len(launches)
     assert not any(row['op'] in (3,9) for row in session.dev.history[start:])
     delta=[{'port':b['port'],'read_lines':b['read_lines']-a['read_lines'],'write_lines':b['write_lines']-a['write_lines']} for a,b in zip(before,after)]
+    if args.backend=='fpga-multicore-sim':
+        from tnca.backends.u50 import U50Backend
+        assert session.dev.axi_counters() is None, 'unimplemented v2 legacy registers must be unavailable'
+        # Reproduce the old inherited API against the actual RTL register mux.
+        # These reads are outside the collected graph traffic/timing interval.
+        legacy=U50Backend.axi_counters(session.dev)
+        assert legacy is not None and all(v==0 for v in legacy.values()),legacy
+        assert sum(r['read_lines'] for r in delta)>0,delta
+        print('LEGACY COUNTER FAILURE REPRO '+json.dumps(dict(legacy_register_defaults=legacy,
+            actual_outlet_delta=delta,corrected_legacy_api='unavailable'),sort_keys=True),flush=True)
     assert len(delta)==args.ports and all(row['read_lines']>0 and row['write_lines']>0 for row in delta),delta
     assert activity['peak_active']==args.cores,activity
     assert sum(row['issued'] for row in activity['cores'])==257 and all(row['issued']==row['completed'] for row in activity['cores']),activity

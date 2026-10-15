@@ -80,6 +80,15 @@ class MulticoreMMIOBackend(U50Backend):
                    cache_ownership_handoff=getattr(self, '_ownership_cap', False))
         return out
 
+    def axi_counters(self):
+        """Legacy C0..D8 registers do not exist in the v2 binding.
+
+        Use memory_port_metrics() for actual per-outlet line counts. Reading
+        the legacy addresses would return the register mux's default zeros.
+        Read latency and AXI beat counts are unavailable through this ABI.
+        """
+        return None
+
     def launch_grid(self, *args, **kwargs):
         with self._io_lock:
             reply = super().launch_grid(*args, **kwargs)

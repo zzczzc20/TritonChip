@@ -45,6 +45,7 @@ def main():
     refused(lambda: legacy._put_request(1, 17, 0, 0, 0, 0, 0, 0), TncaError)
     assert not link.writes
     newer = MulticoreMMIOBackend(link)
+    assert newer.axi_counters() is None  # v2 C0..D8 defaults are not measured zeros
     newer._put_request(1, 17, 0, 0, 0, 0, 0, 0)
     assert (R_REQ_OP, 17) in link.writes and link.writes[-1] == (R_DOORBELL, 1)
     refused(lambda: newer._put_request(2, 256, 0, 0, 0, 0, 0, 0), TncaError)

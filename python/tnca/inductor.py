@@ -257,6 +257,9 @@ def configure(max_block=None, tensor_descriptors=None, no_x_dim=None):
     reduction_rows = int(os.environ.get('TNCA_REDUCTION_ROWS', '1'))
     if reduction_rows not in (1, 2, 4, 8, 16):
         raise ValueError('TNCA_REDUCTION_ROWS must be 1, 2, 4, 8 or 16')
+    sdpa_mode = os.environ.get('TNCA_SDPA', 'decomposed')
+    if sdpa_mode not in ('decomposed', 'fused'):
+        raise ValueError('TNCA_SDPA must be decomposed or fused')
     # Dropping the row dimension is valid only for a single-row program.
     no_x_dim = bool(no_x_dim) and reduction_rows == 1
     _NO_X_DIM[0] = bool(no_x_dim)
@@ -290,6 +293,11 @@ def configure(max_block=None, tensor_descriptors=None, no_x_dim=None):
     functorch_config.enable_autograd_cache = False
     _register(max_block, reduction_rows, gemm_tile)
     _decompose_cpu_attention()
+    from . import online_attention
+    if sdpa_mode == 'fused':
+        online_attention.enable()
+    else:
+        online_attention.disable()
     out = dict(cpu_backend=config.cpu_backend, max_block=max_block,
                persistent_reductions=config.triton.persistent_reductions,
                compile_threads=config.compile_threads,

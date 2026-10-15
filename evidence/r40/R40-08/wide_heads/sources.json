@@ -1,0 +1,12 @@
+{
+  "schema": "tnca-r40-source-overlay/1",
+  "base_commit": "1212b450e012825b4d2c8ec8fbae98eeefcc305b",
+  "files": {
+    "python/tnca/online_attention.py": "f5d4089ddc0087c07d82304cf1b7d9055c92658c328f158f9dfd2fd3be31365c",
+    "python/tnca/inductor.py": "61b33e3359470caf78110840fc6c223cf291d015fe1b35aca079d183b51b7457",
+    "tools/r40/online_attention_tests.py": "38e95d4f5e67236374e38f04e0b3560d818028b33fe924d611b873115a038f1d",
+    "tools/r40/sdpa_configuration_tests.py": "34b3b2d1777161159908938a853e2269b87380191e4a973f71f9a211095510a3"
+  },
+  "manual_activation": "Earlier same-width template batch used explicit enable; automatic-activation evidence uses this overlay.",
+  "measured_performance": false
+}

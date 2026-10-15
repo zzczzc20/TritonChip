@@ -1,0 +1,35 @@
+{
+  "schema": "tnca-online-sdpa-checkpoint/1",
+  "measured_performance": false,
+  "full_inventory": false,
+  "results": [
+    {
+      "case": "decode_d32_tail",
+      "head_dim": 32,
+      "status": "pass",
+      "tensor_allocations": [
+        64
+      ],
+      "online_artifacts": [
+        {
+          "artifact": "bbd856cbdcda6bb1a6508ae30123c57d0af89a14fcb8bbd995789cdb8246298d",
+          "descriptor_loads": 4,
+          "resources": {
+            "accumulators": 0,
+            "barriers": 4,
+            "commands_outstanding": "unknown",
+            "descriptors": 2,
+            "rf_private_per_role": {
+              "role0": 52,
+              "role1": 52
+            },
+            "scratch_bytes": 512,
+            "shared_windows": []
+          }
+        }
+      ],
+      "kernels": 1,
+      "steady_tensor_transfers": 0
+    }
+  ]
+}

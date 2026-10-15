@@ -1495,6 +1495,7 @@ r40-packed-window-unpack: $(R2_DATA_STAMP) | dirs
 
 .PHONY: r40-online-attention
 r40-online-attention: $(R2_DATA_STAMP) | dirs
+	@$(TORCH_PYTHON) tools/r40/sdpa_configuration_tests.py
 	@$(TORCH_PYTHON) tools/r40/online_attention_tests.py
 # R40-04: single-core HBM (rtl/fpga/tnca_axi_bridge.v). What runs without a
 # board: the bridge against a reference under late, reordered, backpressured,

@@ -2,12 +2,14 @@
 
 `make r40-online-attention` uses real native TNCA tensors and standard
 `torch.nn.functional.scaled_dot_product_attention` under fullgraph Inductor.
-The opt-in `tnca.online_attention.enable()` installs a device-specific
+The opt-in `TNCA_SDPA=fused` configuration installs a device-specific
 decomposition and Inductor Triton template. It requires FX graph caching
 off and `TNCA_PACKED_WINDOW_UNPACK=1`. The audit also enables window reuse.
-Default SDPA behavior remains the upstream mathematical decomposition.
+Default `TNCA_SDPA=decomposed` behavior remains the upstream mathematical
+decomposition. Reconfiguring restores either mode without duplicate operator
+registration. `sdpa_configuration_tests.py` verifies switching and prerequisites.
 
-Initial scope: inference, FP16/BF16, 16-wide heads with contiguous last
+Current scope: inference, FP16/BF16, 16/32/64-wide heads with contiguous last
 dimension. A program owns one query, streams 16 keys at a time, and retains
 FP32 running max, normalization sum and output numerator. K/V use actual
 descriptor DMA, followed by software unpack of the window snapshot.
@@ -31,7 +33,14 @@ six checkpoint cases. A previous probe had descriptor metadata but LSU
 data reads; the machine-code audit rejected it, prompting real packed DMA
 unpack. It is not part of the positive evidence.
 
+`wide_heads/manual_activation.json` extends the correctness checkpoint to
+32/64-wide decode, all-mask rows, GQA and MQA. Head fragments stream
+sequentially rather than retaining an entire wide K/V tile. D32 uses four
+descriptor loads and 52 registers per role; D64 uses eight loads and 58
+registers per role. Both retain 512 B private scratch. This first batch used
+explicit enable; the separate automatic-activation batch exercises configure.
+
 This is a correctness/allocation checkpoint, not frozen performance
-acceptance. Long prefill, fused GQA/MQA, broader head dimensions, measured
+acceptance. Frozen long prefill performance, measured
 intermediate HBM traffic, the 1.5 speed threshold and full attention/model
 inventory remain pending. Fixed-bucket/64-step KV evidence is separate.

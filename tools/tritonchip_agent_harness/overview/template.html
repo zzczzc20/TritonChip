@@ -1,0 +1,466 @@
+<title>TritonChip Agent Harness</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: one reading column for text, wide bands for the diagram and the tables; summary first, detail after.
+   Mirrors README sections 3, 4, 5 (with its mechanism table), 6 (with the leak audit), 7, 12 (static text) and reads 16, 17, 19 and git (generated). */
+:root {
+  --bg: #f3f5f8; --surface: #ffffff; --ink: #18212d; --muted: #586477; --line: #d6dce5;
+  --accent: #2b4ea2; --accent-soft: #e5ebf8; --copper: #a4561c; --copper-soft: #f6eadf;
+  --ok: #2c7a4b; --ok-soft: #e2f1e8; --wip: #a06400; --wip-soft: #f8edd9;
+  --plan: #56677d; --plan-soft: #e8ecf1; --off: #8a939f; --risk: #b03838; --risk-soft: #f6e3e3;
+  --display: "IBM Plex Sans Condensed", "IBM Plex Sans", "PingFang SC", "Noto Sans SC", "Microsoft YaHei", sans-serif;
+  --body: "IBM Plex Sans", "PingFang SC", "Noto Sans SC", "Microsoft YaHei", system-ui, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0f141b; --surface: #161d27; --ink: #e5e9ef; --muted: #9ba6b6; --line: #2a3443;
+  --accent: #86a6f2; --accent-soft: #1d2a45; --copper: #e19a5b; --copper-soft: #3a2616;
+  --ok: #63c08a; --ok-soft: #173325; --wip: #e5ab3c; --wip-soft: #392b10;
+  --plan: #9aa9be; --plan-soft: #222c39; --off: #6d7886; --risk: #e27474; --risk-soft: #3d1c1c;
+  color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #0f141b; --surface: #161d27; --ink: #e5e9ef; --muted: #9ba6b6; --line: #2a3443;
+  --accent: #86a6f2; --accent-soft: #1d2a45; --copper: #e19a5b; --copper-soft: #3a2616;
+  --ok: #63c08a; --ok-soft: #173325; --wip: #e5ab3c; --wip-soft: #392b10;
+  --plan: #9aa9be; --plan-soft: #222c39; --off: #6d7886; --risk: #e27474; --risk-soft: #3d1c1c;
+  color-scheme: dark }
+
+* { box-sizing: border-box }
+body { background: var(--bg); color: var(--ink); font: 15px/1.6 var(--body); padding-inline: 16px; padding-block: 0 48px }
+.wrap { max-width: 1100px; margin: 0 auto; display: grid; gap: 40px }
+h1, h2, h3 { font-family: var(--display); font-weight: 600; text-wrap: balance; margin: 0; letter-spacing: .005em }
+h1 { font-size: clamp(28px, 4.2vw, 40px); line-height: 1.15 }
+h2 { font-size: 22px; line-height: 1.3 }
+h3 { font-size: 16px }
+p { margin: 0; max-width: 68ch }
+code { font-family: var(--mono); font-size: .88em; background: var(--plan-soft); padding: 0 .3em; border-radius: 3px }
+.muted { color: var(--muted) }
+.eyebrow { font: 500 12px var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted) }
+
+header { padding-block: 40px 8px; display: grid; gap: 16px; border-bottom: 1px solid var(--line); padding-bottom: 24px }
+.premise { font-size: 18px; max-width: 60ch; border-left: 3px solid var(--accent); padding-left: 14px }
+.meta { display: flex; flex-wrap: wrap; gap: 8px 18px; font: 13px var(--mono); color: var(--muted) }
+nav { display: flex; flex-wrap: wrap; gap: 8px; position: sticky; top: env(safe-area-inset-top, 0px); z-index: 2; background: var(--bg); padding-block: 10px; border-bottom: 1px solid var(--line) }
+nav a { font-size: 13px; color: var(--ink); text-decoration: none; padding: 3px 10px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface) }
+nav a:hover, nav a:focus-visible { border-color: var(--accent); color: var(--accent); outline: none }
+
+section { display: grid; gap: 16px; scroll-margin-top: 64px }
+.sec-head { display: grid; gap: 6px }
+
+.counts { display: flex; flex-wrap: wrap; gap: 10px }
+.count { display: grid; gap: 2px; min-width: 110px; padding: 10px 14px; background: var(--surface); border: 1px solid var(--line); border-radius: 8px }
+.count b { font: 600 26px var(--display); font-variant-numeric: tabular-nums }
+.count span { font-size: 12.5px; color: var(--muted) }
+.bar { display: flex; height: 10px; border-radius: 999px; overflow: hidden; background: var(--plan-soft) }
+.bar i { display: block; height: 100% }
+
+.chip { display: inline-block; font: 500 12px var(--mono); padding: 1px 8px; border-radius: 999px; white-space: nowrap; border: 1px solid transparent }
+.chip.ok { color: var(--ok); background: var(--ok-soft) }
+.chip.wip { color: var(--wip); background: var(--wip-soft) }
+.chip.plan { color: var(--plan); background: var(--plan-soft) }
+.chip.off { color: var(--off); background: transparent; border-color: var(--line) }
+.chip.req { color: var(--risk); background: var(--risk-soft) }
+.chip.local { color: var(--wip); background: var(--wip-soft) }
+.chip.pushed { color: var(--ok); background: var(--ok-soft) }
+.chip.back { color: var(--copper); background: var(--copper-soft) }
+.chip.never { color: var(--off); border-color: var(--line) }
+.chip.all { color: var(--accent); background: var(--accent-soft) }
+
+.diagram { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; overflow-x: auto; padding: 8px }
+.diagram svg { display: block; min-width: 760px; width: 100%; height: auto }
+svg .box { fill: var(--surface); stroke: var(--line); stroke-width: 1.5 }
+svg .box.agent { stroke: var(--accent); stroke-width: 2; fill: var(--accent-soft) }
+svg .box.trusted { fill: var(--bg) }
+svg .t { fill: var(--ink); font: 600 15px var(--body) }
+svg .s { fill: var(--muted); font: 12.5px var(--body) }
+svg .m { fill: var(--muted); font: 11.5px var(--mono) }
+svg .flow { stroke: var(--muted); stroke-width: 1.6; fill: none }
+svg .back { stroke: var(--copper); stroke-width: 2; fill: none; stroke-dasharray: 6 4 }
+svg .never { stroke: var(--off); stroke-width: 1.2; fill: none; stroke-dasharray: 2 4 }
+svg .lbl-back { fill: var(--copper); font: 600 12.5px var(--body) }
+svg .lbl-never { fill: var(--off); font: 600 12.5px var(--body) }
+svg .dot { fill: var(--accent) }
+.legend { display: flex; flex-wrap: wrap; gap: 8px 20px; font-size: 13px; color: var(--muted); padding: 4px 6px 2px }
+.legend span { display: inline-flex; align-items: center; gap: 8px }
+.legend svg { width: 34px; height: 8px; min-width: 0 }
+
+.tbl { overflow-x: auto; background: var(--surface); border: 1px solid var(--line); border-radius: 10px }
+table { border-collapse: collapse; width: 100%; font-size: 14px }
+th, td { text-align: left; vertical-align: top; padding: 9px 12px; border-bottom: 1px solid var(--line) }
+th { font: 500 12px var(--mono); letter-spacing: .05em; text-transform: uppercase; color: var(--muted); background: var(--bg) }
+tr:last-child td { border-bottom: 0 }
+td.nowrap, th.nowrap { white-space: nowrap }
+td.area { font: 500 12.5px var(--mono); color: var(--muted); white-space: nowrap }
+.tbl table { min-width: 640px }
+
+.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; display: grid; gap: 8px; align-content: start; min-width: 0 }
+.card .row { display: grid; gap: 2px }
+.card .k { font: 500 11.5px var(--mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted) }
+.card .top { display: flex; justify-content: space-between; gap: 8px; align-items: baseline }
+
+.cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px }
+.cols > * { min-width: 0 }
+ul.plain { margin: 0; padding-left: 1.1em; display: grid; gap: 6px; max-width: 70ch }
+
+.timeline { display: grid; gap: 0; background: var(--surface); border: 1px solid var(--line); border-radius: 10px }
+.timeline .ev { display: grid; grid-template-columns: 100px 1fr; gap: 12px; padding: 9px 14px; border-bottom: 1px solid var(--line) }
+.timeline .ev:last-child { border-bottom: 0 }
+.timeline time { font: 13px var(--mono); color: var(--muted); font-variant-numeric: tabular-nums }
+
+.commits { display: grid; background: var(--surface); border: 1px solid var(--line); border-radius: 10px }
+.commit { display: grid; grid-template-columns: auto auto 1fr auto; gap: 12px; align-items: baseline; padding: 8px 14px; border-bottom: 1px solid var(--line) }
+.commit:last-child { border-bottom: 0 }
+.commit .h { font: 500 13px var(--mono); color: var(--accent) }
+.commit time { font: 12.5px var(--mono); color: var(--muted) }
+.commit .subj { min-width: 0 }
+.note { font-size: 13.5px; color: var(--muted); max-width: 75ch }
+.callout { border-left: 3px solid var(--copper); background: var(--copper-soft); padding: 10px 14px; border-radius: 0 8px 8px 0; max-width: 80ch }
+footer { font-size: 13px; color: var(--muted); border-top: 1px solid var(--line); padding-top: 16px }
+
+@media (max-width: 560px) {
+  .timeline .ev { grid-template-columns: 1fr; gap: 2px }
+  .commit { grid-template-columns: auto 1fr; }
+  .commit time { grid-column: 2 } .commit .subj { grid-column: 1 / -1 }
+}
+@media (prefers-reduced-motion: no-preference) { nav a { transition: border-color .15s, color .15s } }
+</style>
+
+<div class="wrap">
+<header>
+  <div class="eyebrow">TritonChip · TNCA · PR #9</div>
+  <h1>TritonChip Agent Harness</h1>
+  <p class="premise">让不同的 agent + 模型在同一套环境里联合优化 TNCA 的编译器、ISA 和微架构。前提只有一条：<strong>只有当 agent 碰不到产生分数的东西时，分数才值得比较。</strong></p>
+  <div class="meta"><span id="meta-head">HEAD —</span><span>来源：<code>tools/tritonchip_agent_harness/README.md</code></span><span>进度只在 README §17 维护</span></div>
+</header>
+
+<nav aria-label="页面目录">
+  <a href="#summary">进度概览</a><a href="#roles">角色与信息流</a><a href="#visibility">可见性</a><a href="#boundaries">隔离边界</a><a href="#mechanisms">隔离实现</a>
+  <a href="#fpga">FPGA 服务</a><a href="#threats">威胁与防线</a><a href="#progress">进度明细</a><a href="#decisions">决定</a><a href="#commits">提交</a><a href="#pilot">Pilot 1</a>
+</nav>
+
+<section id="summary">
+  <div class="sec-head"><div class="eyebrow">进度概览</div><h2>做到哪了</h2></div>
+  <div class="counts" id="counts"></div>
+  <div class="bar" id="bar" role="img" aria-label="按状态统计的进度"></div>
+  <div class="cols">
+    <div class="card"><div class="k">进行中</div><ul class="plain" id="now"></ul></div>
+    <div class="card"><div class="k">必须做、尚未开始</div><ul class="plain" id="required"></ul></div>
+  </div>
+</section>
+
+<section id="roles">
+  <div class="sec-head"><div class="eyebrow">README §3</div><h2>六个角色：结果会不会回到 agent 手里</h2>
+  <p class="muted">区分它们只需要问一个问题。会回来的只有 agent 自己产生的东西和服务给出的汇总；终评的结果永远不回来。</p></div>
+  <div class="diagram">
+  <svg viewBox="0 0 1000 630" role="img" aria-labelledby="dg-title">
+    <title id="dg-title">Agent sandbox、提交闸门、评分服务、FPGA 服务、FPGA harness 与终评之间的信息流</title>
+    <defs>
+      <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" style="fill: var(--muted)"/></marker>
+      <marker id="ahc" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" style="fill: var(--copper)"/></marker>
+    </defs>
+    <rect class="box agent" x="20" y="20" width="470" height="210" rx="10"/>
+    <text class="t" x="40" y="52">Agent sandbox · agent 容器</text>
+    <circle class="dot" cx="46" cy="83" r="3.5"/><text class="t" x="58" y="88" style="font-weight:500">工作区：base 的单一提交</text>
+    <text class="s" x="58" y="107">没有 ArchBench、没有 git 历史、没有 harness 代码</text>
+    <circle class="dot" cx="46" cy="135" r="3.5"/><text class="t" x="58" y="140" style="font-weight:500">工具链 + 周期精确仿真器</text>
+    <text class="s" x="58" y="159">agent 用自己写的测试用例自测，结果全部可见</text>
+    <circle class="dot" cx="46" cy="187" r="3.5"/><text class="t" x="58" y="192" style="font-weight:500">tnca-service 命令</text>
+    <text class="s" x="58" y="211">按需申请评分或 FPGA，按预算扣减</text>
+
+    <rect class="box trusted" x="560" y="36" width="180" height="70" rx="8"/>
+    <text class="t" x="576" y="64">网关 CONNECT</text><text class="s" x="576" y="86">offline：只放行模型 API</text>
+    <rect class="box trusted" x="800" y="36" width="180" height="70" rx="8"/>
+    <text class="t" x="816" y="64">模型服务</text><text class="s" x="816" y="86">按账号的主机白名单</text>
+    <path class="flow" d="M490,71 H556" marker-end="url(#ah)"/><path class="flow" d="M740,71 H796" marker-end="url(#ah)"/>
+    <text class="m" x="560" y="128">容器本身 --network none</text>
+
+    <rect class="box trusted" x="140" y="270" width="400" height="62" rx="8"/>
+    <text class="t" x="160" y="297">提交闸门 · Submission gate</text><text class="s" x="160" y="318">只取设计目录的改动，与源仓库里的 base 比较</text>
+    <path class="flow" d="M340,230 V266" marker-end="url(#ah)"/><text class="m" x="350" y="254">service socket（计划）</text>
+
+    <rect class="box trusted" x="20" y="380" width="300" height="100" rx="8"/>
+    <text class="t" x="36" y="408">评分服务</text><text class="s" x="36" y="430">隐藏的验证集，仿真</text><text class="s" x="36" y="450">每个 run 限次数</text>
+    <rect class="box trusted" x="360" y="380" width="300" height="100" rx="8"/>
+    <text class="t" x="376" y="408">FPGA 服务</text><text class="s" x="376" y="430">快档：OOC 综合 + 时序，约 25 分钟</text><text class="s" x="376" y="450">慢档：link + 上板，数小时</text><text class="s" x="376" y="470">FPGA 时间有上限，并真实执行</text>
+    <rect class="box trusted" x="700" y="380" width="280" height="100" rx="8"/>
+    <text class="t" x="716" y="408">FPGA harness</text><text class="s" x="716" y="430">build worker：所有构建，容器隔离</text><text class="s" x="716" y="450">card host：只做上板，沙盒</text>
+    <path class="flow" d="M240,332 V356 H170 V376" marker-end="url(#ah)"/>
+    <path class="flow" d="M440,332 V356 H510 V376" marker-end="url(#ah)"/>
+    <path class="flow" d="M660,430 H696" marker-end="url(#ah)"/>
+
+    <path class="back" d="M44,380 V234" marker-end="url(#ahc)"/>
+    <text class="lbl-back" x="54" y="352">只回汇总</text>
+    <path class="back" d="M620,380 V170 H494" marker-end="url(#ahc)"/>
+    <text class="lbl-back" x="630" y="300">时序 · 资源</text><text class="lbl-back" x="630" y="318">· 汇总</text>
+
+    <line class="never" x1="20" y1="512" x2="980" y2="512"/>
+    <text class="m" x="20" y="535">agent 停止之后</text>
+    <rect class="box trusted" x="20" y="548" width="430" height="70" rx="8"/>
+    <text class="t" x="36" y="576">终评 · Final evaluator</text><text class="s" x="36" y="598">完整 base + 最终候选，测终测集和验证集，逐点判定</text>
+    <rect class="box trusted" x="520" y="548" width="240" height="70" rx="8"/>
+    <text class="t" x="536" y="576">Run 记录</text><text class="s" x="536" y="598">run.json，留在 agent 之外</text>
+    <path class="flow" d="M450,583 H516" marker-end="url(#ah)"/>
+    <text class="lbl-never" x="790" y="590">永不回到 agent</text>
+  </svg>
+  <div class="legend">
+    <span><svg viewBox="0 0 34 8" aria-hidden="true"><line x1="0" y1="4" x2="34" y2="4" style="stroke: var(--muted); stroke-width: 2"/></svg>请求与数据</span>
+    <span><svg viewBox="0 0 34 8" aria-hidden="true"><line x1="0" y1="4" x2="34" y2="4" style="stroke: var(--copper); stroke-width: 2; stroke-dasharray: 6 4"/></svg>回到 agent 的结果（受限）</span>
+    <span><svg viewBox="0 0 34 8" aria-hidden="true"><line x1="0" y1="4" x2="34" y2="4" style="stroke: var(--off); stroke-width: 1.5; stroke-dasharray: 2 4"/></svg>从此往下不返回</span>
+  </div>
+  </div>
+  <div class="tbl"><table>
+    <thead><tr><th>角色</th><th>做什么</th><th class="nowrap">何时</th><th class="nowrap">谁触发</th><th>回到 agent 的</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Agent sandbox</strong></td><td>agent 工作的地方：新的工作区、工具链、仿真器。它自己测的东西都在这里测，用自己写的测试用例。除此之外，它只能从服务拿到有预算的结果</td><td class="nowrap">运行中</td><td>harness</td><td><span class="chip all">自己产生的全部</span></td></tr>
+      <tr><td><strong>提交闸门</strong></td><td>只取设计目录下的改动，存成 base 提交 + overlay</td><td class="nowrap">每次服务请求、结束时</td><td>harness</td><td><span class="chip never">无</span></td></tr>
+      <tr><td><strong>评分服务</strong></td><td>从源码重建 base + 候选，在仿真里测隐藏的验证集</td><td class="nowrap">运行中，按需</td><td>agent，限次</td><td><span class="chip back">只有汇总</span></td></tr>
+      <tr><td><strong>FPGA 服务</strong></td><td>快档：整器件 OOC 综合与时序；慢档：实现 + 上板。经由 FPGA harness，构建在 build worker 上，上板阶段在 card host 上</td><td class="nowrap">运行中，按需</td><td>agent，限 FPGA 时间</td><td><span class="chip back">时序、资源；上板时为汇总</span></td></tr>
+      <tr><td><strong>终评</strong></td><td>重建 base + 最终候选，测终测集（以及验证集，留档）</td><td class="nowrap">agent 停止后</td><td>harness</td><td><span class="chip never">永远没有</span></td></tr>
+      <tr><td><strong>FPGA harness</strong></td><td>FPGA 的执行与证据层：驱动仓库自己的 flow、判定构建、烧卡并测量</td><td class="nowrap">FPGA 服务之下；操作员选定候选的板级认证</td><td>FPGA 服务或操作员</td><td><span class="chip never">只经 FPGA 服务</span></td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section id="visibility">
+  <div class="sec-head"><div class="eyebrow">README §6</div><h2>可见性：ArchBench 对 agent 完全隐藏</h2>
+  <p class="muted">目前（harness 搭建期间）agent 看不到任何一个点，也看不到定义点的代码：没有 id、形状、代码、结果，也没有能推出点的东西。任务说明是"考纲"，按设计只写负载类别、判分方式和预算。</p></div>
+  <div class="tbl"><table>
+    <caption class="note" style="caption-side:bottom; text-align:left; padding:8px 12px">拆成验证集和终测集两套是提议，尚未决定（O18）；任务和评测器已经按两套实现。</caption>
+    <thead><tr><th>点集</th><th>agent 看得到点吗</th><th>agent 拿得到结果吗</th><th>由谁测</th></tr></thead>
+    <tbody>
+      <tr><td><strong>agent 自己的测试</strong></td><td>能，它自己写的</td><td><span class="chip all">全部</span></td><td>它自己的 sandbox</td></tr>
+      <tr><td><strong>验证集</strong>（隐藏）</td><td>不能</td><td><span class="chip back">只有汇总，限次</span></td><td>评分服务、慢档的上板阶段（都在计划中）</td></tr>
+      <tr><td><strong>终测集</strong>（隐藏）</td><td>不能</td><td><span class="chip never">永远不能</span></td><td>终评，在 agent 停止之后</td></tr>
+    </tbody>
+  </table></div>
+  <div class="cols">
+    <div class="card"><div class="k">为什么要两套隐藏集</div><p>能反复拿到分数的集合会被慢慢拟合；而且候选自己的编译器一定会处理被测的点，可以把看到的东西编码进时序里。限次和只给汇总能把这条通道压窄，只有在 agent 停止之后才运行的终测集能把它彻底关上。</p></div>
+    <div class="card"><div class="k">汇总里有什么</div><p>点数、通过数、通过点的几何平均加速比、<code>fast_1</code>（全部点中既通过又快于 base 的比例）。没有点名、形状、周期，也没有报错原文："unsupported shape 64×128" 这样的报错本身就是题目。</p></div>
+    <div class="card"><div class="k">怎么藏、怎么交付</div><p>ArchBench 留在开发者的仓库里照常维护；导出工作区时去掉它和泄露审计列出的文件；评测器和服务测的是含隐藏包的 base。交付时拆成公开包和隐藏包。harness 只定义可见性，不另造 benchmark。hide 条目一个文件都匹配不到时，导出直接失败。</p></div>
+  </div>
+  <div class="cards">
+    <div class="card"><div class="top"><h3>泄露审计</h3><span class="chip ok">done</span></div><p>4 个范围各一个查找 agent（直接引用、文档、软件里的等价负载、硬件侧文件），按 101 个点、24 个族的目录逐一比对；每条结论再由另一个 agent 反驳。118 条结论：56 条真泄露。</p></div>
+    <div class="card"><div class="top"><h3>replay-mzero 的工作区</h3><span class="chip ok">done</span></div><p>29 个 hide 条目：<code>archbench/</code>、r39 的 ArchBench 基线、各种 suite 和 workload 清单、和点完全等价的测试、旧的打分副本、带逐点结果的文档、示例正好是终测集点的教程。导出后，工作区和它的提交里<strong>没有任何点 id 或形状字符串</strong>。</p></div>
+    <div class="card"><div class="top"><h3>导出删不掉的残留</h3><span class="chip plan">主作者改</span></div><p>4 处代码注释，在流程必需的文件里：<code>tnca_core.v</code>（tiny 有 27 个点）、<code>tnca_u50_xo.v</code>（"27/27"）、<code>partition.py</code>（按族的结果）、<code>runtime.py</code>（某个模型点存在）。改写建议已列在 README §6.5（O19）。</p></div>
+  </div>
+</section>
+
+<section id="boundaries">
+  <div class="sec-head"><div class="eyebrow">README §5</div><h2>五道边界</h2>
+  <p class="muted">agent 拥有设计；评测器拥有观测和题目。没有"受保护"的文件：改动要么进入候选，要么被忽略。</p></div>
+  <div class="cards">
+    <div class="card"><div class="top"><h3>容器</h3><span class="chip ok">done</span></div><div class="row"><span class="k">隔开</span>agent 与主机、与其他 run</div><div class="row"><span class="k">能过的</span>工作区、CLI 配置目录、bridge 脚本（单个只读文件）、网关 socket 目录</div><div class="row"><span class="k">证据</span><span>doctor 29/29，host class formal</span></div></div>
+    <div class="card"><div class="top"><h3>网络</h3><span class="chip ok">done</span></div><div class="row"><span class="k">隔开</span>agent 与互联网</div><div class="row"><span class="k">能过的</span>网关 socket（模型 API）；服务 socket（计划中）</div><div class="row"><span class="k">模式</span><span><code>offline</code> / <code>open</code>，没有中间态；<code>open</code> 也拒绝回环、内网和链路本地地址</span></div></div>
+    <div class="card"><div class="top"><h3>可见性</h3><span class="chip ok">done · replay-mzero</span></div><div class="row"><span class="k">隔开</span>agent 与基准</div><div class="row"><span class="k">能过的</span>终测集：无；验证集：汇总（服务在计划中）</div><div class="row"><span class="k">剩下的</span><span>4 处代码注释交主作者；导出时的自动泄露检查</span></div></div>
+    <div class="card"><div class="top"><h3>提交闸门</h3><span class="chip ok">done</span></div><div class="row"><span class="k">隔开</span>工作区与一切测量</div><div class="row"><span class="k">能过的</span>与源仓库 base 的 diff，不信任工作区的 <code>.git</code></div><div class="row"><span class="k">已知缺口</span><span>忽略规则来自工作区；被评测器拥有的模块可能被同名包或 .so 遮蔽（计划修）</span></div></div>
+    <div class="card"><div class="top"><h3>观测</h3><span class="chip req">planned · required</span></div><div class="row"><span class="k">隔开</span>设计与它的测量</div><div class="row"><span class="k">能过的</span>评测器在设备边界上自己测的数</div><div class="row"><span class="k">今天的缺口</span><span>周期计数器在 agent 可改的 <code>rtl/tnca_shell.v</code>；候选的编译器和测量在同一个进程（P2 修）</span></div></div>
+  </div>
+</section>
+
+<section id="mechanisms">
+  <div class="sec-head"><div class="eyebrow">README §5 · §7</div><h2>隔离是用什么实现的</h2>
+  <p class="muted">每个 run 都在测试主机上起几个 Docker 容器：agent 容器本身断网，只能通过一个只读挂载的 Unix socket 找到网关；评测在另一个没有凭证的容器里做。FPGA 两台 worker 上的沙盒还在计划中（虚线框）。</p></div>
+  <div class="diagram">
+  <svg viewBox="0 0 1000 480" role="img" aria-labelledby="mc-title">
+    <title id="mc-title">测试主机上的网关 sidecar 容器、Unix socket、agent 容器和评测容器，以及计划中的 FPGA build worker 与 card host 沙盒</title>
+    <defs>
+      <marker id="ah2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" style="fill: var(--muted)"/></marker>
+    </defs>
+    <rect class="box" x="10" y="10" width="980" height="310" rx="12" style="fill: var(--bg)"/>
+    <text class="m" x="28" y="36">测试主机 · Linux · rootful Docker · cgroup v2 · doctor 29/29</text>
+
+    <rect class="box trusted" x="30" y="56" width="270" height="124" rx="8" style="fill: var(--surface)"/>
+    <text class="t" x="46" y="82">网关 sidecar 容器</text>
+    <text class="m" x="46" y="104">gateway.py · --network host</text>
+    <text class="s" x="46" y="126">只接受 CONNECT，不解密 TLS</text>
+    <text class="s" x="46" y="146">按账号的主机白名单，逐条记日志</text>
+    <text class="s" x="46" y="166">只读根文件系统 · 无 capability</text>
+
+    <rect class="box" x="330" y="96" width="160" height="50" rx="25" style="fill: var(--surface)"/>
+    <text class="t" x="352" y="118" style="font-size:14px">Unix socket</text>
+    <text class="m" x="352" y="136">只读挂载进 agent</text>
+    <path class="flow" d="M300,121 H326" marker-end="url(#ah2)" marker-start="url(#ah2)"/>
+    <path class="flow" d="M490,121 H516" marker-end="url(#ah2)" marker-start="url(#ah2)"/>
+
+    <rect class="box agent" x="520" y="56" width="450" height="244" rx="10"/>
+    <text class="t" x="538" y="82">Agent 容器 · agent 镜像</text>
+    <text class="m" x="538" y="104">--network none</text>
+    <text class="s" x="538" y="126">bridge.py 把 socket 变成 127.0.0.1:3128，作为 CLI 的 HTTPS_PROXY</text>
+    <text class="m" x="538" y="150">--read-only  --cap-drop ALL  no-new-privileges</text>
+    <text class="m" x="538" y="170">--user 非 root  --init  --cpus  --memory  --pids-limit</text>
+    <text class="s" x="538" y="194">tmpfs /tmp 和 home · 默认 seccomp · 无设备 · 无 Docker socket</text>
+    <text class="s" x="538" y="218">挂载：工作区 /work（可写）· CLI 配置目录 · 只读的 bridge.py 一个文件</text>
+    <text class="s" x="538" y="242">凭证：--env-file 或每次复制的 CODEX_HOME，从不出现在命令行</text>
+    <text class="s" x="538" y="266">工作区：git plumbing 从源仓库导出的单一提交，去掉隐藏路径</text>
+    <text class="s" x="538" y="288">结束后：提交闸门与源仓库的 base 比较，不信任工作区 .git</text>
+
+    <rect class="box trusted" x="30" y="200" width="460" height="100" rx="8" style="fill: var(--surface)"/>
+    <text class="t" x="46" y="226">评测容器 · toolchain 镜像</text>
+    <text class="m" x="46" y="248">--network none · 同样的加固 · 没有凭证</text>
+    <text class="s" x="46" y="270">完整 base + 候选 overlay</text>
+    <text class="s" x="46" y="290">用自己的 testbench、ArchBench、工具和 flow</text>
+
+    <rect class="box" x="10" y="350" width="480" height="116" rx="10" style="stroke-dasharray: 6 4"/>
+    <text class="t" x="28" y="378">FPGA build worker</text><text class="m" x="190" y="378">计划</text>
+    <text class="s" x="28" y="402">每个任务一个 Docker 容器</text>
+    <text class="s" x="28" y="424">无网络 · Vivado 只读挂载 · 只有任务目录可写</text>
+    <text class="s" x="28" y="446">CPU、内存限额 · 没有 home 目录</text>
+    <rect class="box" x="510" y="350" width="480" height="116" rx="10" style="stroke-dasharray: 6 4"/>
+    <text class="t" x="528" y="378">Card host</text><text class="m" x="625" y="378">计划</text>
+    <text class="s" x="528" y="402">bubblewrap（这台机器上可用的沙盒工具）</text>
+    <text class="s" x="528" y="424">--unshare-net · 系统只读 · 只给卡的设备节点</text>
+    <text class="s" x="528" y="446">候选的编译器在这里运行，所以必须隔离</text>
+  </svg>
+  </div>
+  <div class="tbl"><table>
+    <thead><tr><th>边界</th><th>用什么实现</th><th>具体设置</th><th>怎么验证</th><th>状态</th></tr></thead>
+    <tbody>
+      <tr><td><strong>容器</strong></td><td>Docker（rootful；rootless Podman 计划中），每个 run 一个容器，<code>provider.py</code>。只挂 <code>bridge.py</code> 一个只读文件，不挂存放任务包的 harness 目录（2026-10-15 修复）</td><td><code>--network none</code>、<code>--cap-drop ALL</code>、<code>no-new-privileges</code>、<code>--read-only</code>、<code>--user 1000:1000</code>、<code>--init</code>、CPU/内存/进程数限额、tmpfs、默认 seccomp、无设备</td><td><code>doctor</code> 金丝雀容器；<code>tests/test_runner.py</code></td><td><span class="chip ok">done</span></td></tr>
+      <tr><td><strong>网络</strong></td><td>sidecar 容器里的 CONNECT 代理 <code>gateway.py</code> + 只读挂载的 Unix socket + 容器内的 <code>bridge.py</code></td><td><code>offline</code>：账号的主机白名单，443 端口。<code>open</code>：任意公网主机，443 和 80，拒绝回环、内网、链路本地地址。不解密 TLS；每条连接和拒绝都记 JSON 日志</td><td><code>tests/test_gateway.py</code>、<code>doctor</code>、smoke</td><td><span class="chip ok">done</span></td></tr>
+      <tr><td><strong>凭证</strong></td><td>每个 run 一份新副本：<code>--env-file</code> 或复制的 <code>CODEX_HOME</code></td><td>从不出现在命令行；取回会话记录时逐个文件复制，跳过凭证文件；Codex 刷新后的凭证要通过检查才写回</td><td><code>tests/test_siteconfig.py</code>、<code>tests/test_runner.py</code></td><td><span class="chip ok">done</span></td></tr>
+      <tr><td><strong>可见性</strong></td><td>用 git plumbing（<code>cat-file --batch</code>）从源仓库的一个提交导出工作区，去掉隐藏路径，用固定作者和日期重新提交</td><td>没有历史和 reflog；去掉 agent 指令文件、两个 harness、<code>evidence/</code> 和任务的隐藏路径；hide 条目匹配不到就失败</td><td><code>tests/test_workspace.py</code>；泄露审计</td><td><span class="chip ok">done · replay-mzero</span></td></tr>
+      <tr><td><strong>提交闸门</strong></td><td>把工作区和源仓库里的 base 提交逐文件比较，不读工作区的 <code>.git</code></td><td>设计目录收下；evaluator-owned 路径丢弃；设计目录里的符号链接、特殊文件、嵌套仓库拒绝</td><td><code>tests/test_workspace.py</code></td><td><span class="chip ok">done，有已知缺口</span></td></tr>
+      <tr><td><strong>评测</strong></td><td>toolchain 镜像起的独立容器，同样加固，没有凭证</td><td>完整 base + 候选 overlay，用评测器自己的 testbench、ArchBench、工具和 flow</td><td>noop 与 reference 运行</td><td><span class="chip ok">done</span></td></tr>
+      <tr><td><strong>观测（P2）</strong></td><td>仿真器放进自己的容器，经 <code>sim-socket</code> 连接；平台侧计数器和写监视</td><td>—</td><td>—</td><td><span class="chip req">planned · required</span></td></tr>
+      <tr><td><strong>FPGA build worker</strong></td><td>每个任务一个容器</td><td>无网络、Vivado 只读、只有任务目录可写、资源限额</td><td>license 测试：综合不需要 license 和网络</td><td><span class="chip plan">planned</span></td></tr>
+      <tr><td><strong>Card host</strong></td><td>bubblewrap（<code>bwrap</code>）</td><td>无网络、系统只读、只给卡的设备节点；看不到任何人的 home、harness 状态和编译缓存</td><td>—</td><td><span class="chip plan">planned</span></td></tr>
+    </tbody>
+  </table></div>
+  <div class="card"><div class="k">doctor 在每台主机上实测这些保证，不信配置</div>
+  <p>容器里看不到宿主用户的 home 路径，容器的 home 里没有 <code>.ssh</code>，只有预期的挂载；DNS 和 TCP 直连外网必须失败，经网关的请求必须成功，未列出的主机被拒绝；内存超限的进程会被杀掉，cgroup v2 文件里能看到 CPU、内存、进程数限额；没有 <code>/dev/xcl*</code>、<code>/dev/dri</code> 等设备节点；前一个金丝雀留下的标记后一个看不到。有一项不满足，doctor 就以非零退出。计划中：在宿主 home、<code>~/.ssh</code>、其他 run 和隐藏任务路径里埋文件并尝试读取；磁盘余量；run-task 遇到不合格的主机拒绝启动。</p></div>
+</section>
+
+<section id="fpga">
+  <div class="sec-head"><div class="eyebrow">README §12</div><h2>FPGA 服务：由 agent 决定用不用，时间有上限且真实执行</h2>
+  <p class="muted">先用便宜的估计器（沙盒里的性能模型、正确性模型、映射到 FPGA 的初步综合），让 agent 很少需要真正跑 FPGA。FPGA 服务只在需要真实时序和资源时才用。</p></div>
+  <div class="tbl"><table>
+    <thead><tr><th>档</th><th>执行什么</th><th class="nowrap">大约</th><th>返回</th><th>状态</th></tr></thead>
+    <tbody>
+      <tr><td><strong>快档</strong></td><td>整器件 out-of-context 综合 + 时序，<code>flow/synth/vivado_ooc.sh tnca_fpga_top &lt;period&gt;</code>，按被评分的 profile（含候选的改动）传参数</td><td class="nowrap">25 分钟</td><td>状态；目标周期下的最差 slack 和推出的频率；最差路径（agent 自己 RTL 里的起止点）；资源 LUT/FF/DSP/BRAM/URAM</td><td><span class="chip req">planned · required</span><br><span class="muted" style="font-size:12.5px">可行性已验证</span></td></tr>
+      <tr><td><strong>慢档</strong></td><td>经 FPGA harness 实现（package、link、判定时序与 DRC），再在验证集上做上板阶段</td><td class="nowrap">数小时</td><td>时序收敛（WNS、TNS、失败端点）；资源；上板阶段只给汇总，不给逐点记录和日志</td><td><span class="chip plan">planned</span></td></tr>
+    </tbody>
+  </table></div>
+  <div class="cols">
+    <div class="card"><div class="k">怎么限制</div><ul class="plain">
+      <li>每个 run 一份 FPGA 时间预算，按 worker 实际用时扣</li>
+      <li>同一时间每个 run 只能有一个 FPGA 请求</li>
+      <li>最长耗时超过剩余预算的请求直接拒绝</li>
+      <li>任务到截止时间就杀掉，已用时间照扣</li>
+      <li>排队时间不扣 FPGA 预算，但 run 的墙钟照走</li>
+    </ul></div>
+    <div class="card"><div class="k">在哪里跑、怎么隔离</div><ul class="plain">
+      <li><strong>build worker</strong>：所有构建。容器内无网络，Vivado 只读挂载，只有任务目录可写，没有 home</li>
+      <li><strong>card host</strong>：只做上板。候选的编译器在这里运行，所以放进沙盒：无网络、系统只读、只给卡的设备节点，看不到任何人的 home、harness 状态和编译缓存</li>
+      <li>卡是共享的：上板需要约定时间窗口（O14）；换人之前重新烧卡或清空显存，不让一个会话读到另一个会话留下的数据</li>
+      <li>候选 RTL 先做检查：<code>`include</code>、<code>$readmem*</code>、<code>$fopen</code> 里不能有绝对路径或 <code>..</code></li>
+    </ul></div>
+    <div class="card"><div class="k">要知道的</div><ul class="plain">
+      <li>综合估计偏乐观：这个设计布线后的最差路径约为综合估计的 1.6 倍。快档用来排序和筛选，最终频率以慢档为准</li>
+      <li>license：已实测，U280/U50 器件的 OOC 综合<strong>不需要 license</strong>，断网、license 完全藏住也能跑（有对照组证明确实藏住了）。真实单元 <code>tnca_matrix</code> 1.8 分钟综合完。下一步是做真正的容器镜像</li>
+      <li>版本：仓库的 flow 把 U280 固定在 Vitis 2023.2（O13）</li>
+    </ul></div>
+  </div>
+</section>
+
+<section id="threats">
+  <div class="sec-head"><div class="eyebrow">README §4</div><h2>威胁与防线</h2></div>
+  <div class="tbl"><table>
+    <thead><tr><th>#</th><th>威胁</th><th>例子</th><th>防线</th><th>状态</th></tr></thead>
+    <tbody>
+      <tr><td class="nowrap">T1</td><td>看到不该看的</td><td>ArchBench 的点或结果、任务定义和标准答案、其他 run、git 历史、宿主凭证</td><td>sandbox、工作区与可见性</td><td><span class="chip wip">mostly · 残留注释</span></td></tr>
+      <tr><td class="nowrap">T2</td><td>上网</td><td>抓取答案、外传凭证、访问 harness 主机上的服务</td><td>网关；<code>open</code> 模式也拒绝内网地址</td><td><span class="chip ok">done</span></td></tr>
+      <tr><td class="nowrap">T3</td><td>篡改测量</td><td>改 shell 计数器、提前结束 launch、runtime 伪造输出、在 host 上算</td><td>观测器 P2</td><td><span class="chip req">planned · required</span></td></tr>
+      <tr><td class="nowrap">T4</td><td>跳过链路</td><td>host fallback、为某个 kernel 手写 ISA、按基准查表</td><td>隐藏基准；fallback 记为失败</td><td><span class="chip wip">partly</span></td></tr>
+      <tr><td class="nowrap">T5</td><td>通过结果探测隐藏基准</td><td>大量评分请求、报错里带形状、编译器把看到的东西编进时序</td><td>只给汇总、预算、终测集运行中从不打分</td><td><span class="chip plan">planned</span></td></tr>
+      <tr><td class="nowrap">T6</td><td>伤害 worker 主机</td><td>综合时 <code>$readmemh</code> 读主机文件；候选代码在 card host 上读别人的文件或卡上残留的数据</td><td>每台 worker 上的沙盒</td><td><span class="chip plan">planned</span></td></tr>
+      <tr><td class="nowrap">T7</td><td>跨 run 污染</td><td>用共享缓存传消息</td><td>每个 run 全新状态</td><td><span class="chip ok">done</span></td></tr>
+      <tr><td class="nowrap">T8</td><td>逃避预算</td><td>同一凭证起嵌套 CLI、少报 token、FPGA 时间不计</td><td>计量、服务记账</td><td><span class="chip wip">partly</span></td></tr>
+      <tr><td class="nowrap">T9</td><td>条件不对等</td><td>配置、资源、限速、模型回退、排队</td><td>条件对齐</td><td><span class="chip wip">partly</span></td></tr>
+      <tr><td class="nowrap">T10</td><td>逃出容器</td><td>写工作区之外</td><td>provider 加固</td><td><span class="chip ok">done</span></td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section id="progress">
+  <div class="sec-head"><div class="eyebrow">README §17 · 生成</div><h2>进度明细</h2><p class="note">由 README 的进度表生成，英文原文。</p></div>
+  <div class="tbl"><table>
+    <thead><tr><th>领域</th><th>事项</th><th>状态</th><th>证据</th></tr></thead>
+    <tbody id="progress-body"></tbody>
+  </table></div>
+</section>
+
+<section id="decisions">
+  <div class="sec-head"><div class="eyebrow">README §16 · 生成</div><h2>决定</h2><p class="note">已定的按日期排列，待定的写明由谁来定。英文原文。</p></div>
+  <div class="cols">
+    <div style="display:grid; gap:10px"><h3>已定</h3><div class="timeline" id="decided"></div></div>
+    <div style="display:grid; gap:10px"><h3>待定</h3><div class="tbl"><table style="min-width:0"><thead><tr><th>#</th><th>事项</th><th>由谁定</th></tr></thead><tbody id="open"></tbody></table></div></div>
+  </div>
+</section>
+
+<section id="commits">
+  <div class="sec-head"><div class="eyebrow">git · 生成</div><h2>这个 PR 的提交</h2><p class="note">相对 <code>main</code> 的提交，新的在上。"已推送"表示已在 PR #9 的远端分支上。</p></div>
+  <div id="dirty" class="callout" hidden>harness 目录里还有未提交的改动。</div>
+  <div class="commits" id="commit-list"></div>
+</section>
+
+<section id="pilot">
+  <div class="sec-head"><div class="eyebrow">README §19 · 生成</div><h2>Pilot 1</h2></div>
+  <p class="callout">这些运行都早于"隐藏基准"：dev 点当时直接告诉了 agent，held-out 点在工作区里看得到，所以 held-out 数字不能说明通用性。每种配置只跑了一次，不是对比。</p>
+  <div class="tbl"><table><thead id="pilot-head"></thead><tbody id="pilot-body"></tbody></table></div>
+</section>
+
+<footer>本页由 <code>tools/tritonchip_agent_harness/overview/build.py</code> 从 README 和 git 记录生成。两者有出入时以 README 为准。</footer>
+</div>
+
+<script>
+const DATA = /*@DATA@*/null;
+(function () {
+  if (!DATA) return;
+  const $ = (id) => document.getElementById(id);
+  const kind = (s) => {
+    const t = s.toLowerCase();
+    if (t.startsWith("done")) return ["ok", "done"];
+    if (t.startsWith("in progress")) return ["wip", "in progress"];
+    if (t.includes("required")) return ["req", "planned · required"];
+    if (t.startsWith("planned")) return ["plan", "planned"];
+    return ["off", s];
+  };
+  const chip = (s) => { const [c, label] = kind(s); return `<span class="chip ${c}">${label}</span>`; };
+
+  $("meta-head").textContent = "HEAD " + DATA.head + (DATA.dirty ? " · 有未提交的改动" : "");
+
+  const order = ["ok", "wip", "req", "plan", "off"];
+  const names = { ok: "已完成", wip: "进行中", req: "必须做", plan: "计划中", off: "推迟 / 不需要" };
+  const colors = { ok: "var(--ok)", wip: "var(--wip)", req: "var(--risk)", plan: "var(--plan)", off: "var(--off)" };
+  const n = {}; order.forEach((k) => (n[k] = 0));
+  DATA.progress.forEach((p) => n[kind(p.status)[0]]++);
+  const total = DATA.progress.length;
+  $("counts").innerHTML = `<div class="count"><b>${total}</b><span>事项</span></div>` +
+    order.map((k) => `<div class="count"><b style="color:${colors[k]}">${n[k]}</b><span>${names[k]}</span></div>`).join("");
+  $("bar").innerHTML = order.map((k) => n[k] ? `<i style="width:${(100 * n[k] / total).toFixed(2)}%;background:${colors[k]}" title="${names[k]} ${n[k]}"></i>` : "").join("");
+  const li = (p) => `<li>${p.item} <span class="muted">· ${p.area}</span></li>`;
+  $("now").innerHTML = DATA.progress.filter((p) => kind(p.status)[0] === "wip").map(li).join("") || "<li>无</li>";
+  $("required").innerHTML = DATA.progress.filter((p) => kind(p.status)[0] === "req").map(li).join("") || "<li>无</li>";
+
+  let last = "";
+  $("progress-body").innerHTML = DATA.progress.map((p) => {
+    const area = p.area === last ? "" : p.area; last = p.area;
+    return `<tr><td class="area">${area}</td><td>${p.item}</td><td>${chip(p.status)}</td><td class="muted">${p.evidence === "—" ? "" : p.evidence}</td></tr>`;
+  }).join("");
+
+  $("decided").innerHTML = DATA.decided.slice().reverse().map((d) => `<div class="ev"><time>${d.date}</time><div>${d.text}</div></div>`).join("");
+  $("open").innerHTML = DATA.open.map((o) => `<tr><td class="nowrap">${o.id}</td><td>${o.text}</td><td class="muted">${o.owner}</td></tr>`).join("");
+
+  $("dirty").hidden = !DATA.dirty;
+  $("commit-list").innerHTML = DATA.commits.map((c) => `<div class="commit"><span class="h">${c.hash}</span><time>${c.date}</time><span class="subj">${c.subject}</span><span class="chip ${c.pushed ? "pushed" : "local"}">${c.pushed ? "已推送" : "仅本地"}</span></div>`).join("");
+
+  if (DATA.pilot.length) {
+    const cols = Object.keys(DATA.pilot[0]);
+    $("pilot-head").innerHTML = "<tr>" + cols.map((c) => `<th>${c}</th>`).join("") + "</tr>";
+    $("pilot-body").innerHTML = DATA.pilot.map((r) => "<tr>" + cols.map((c) => `<td>${r[c]}</td>`).join("") + "</tr>").join("");
+  }
+})();
+</script>

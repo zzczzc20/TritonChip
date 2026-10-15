@@ -1,0 +1,8 @@
+{
+  "schema_version": 1,
+  "candidate_id": "example-u50",
+  "target": "u50",
+  "mode": "full",
+  "clock_mhz": 100,
+  "source_commit": "HEAD"
+}

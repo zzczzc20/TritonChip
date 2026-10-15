@@ -1,0 +1,52 @@
+{
+  "schema": "tritonchip-agent-site/1",
+  "provider": "docker",
+  "images": {
+    "toolchain": "tritonchip-toolchain:dev",
+    "agent": "tritonchip-agent:dev"
+  },
+  "resources": {
+    "cpus": 8,
+    "memory": "16g",
+    "pids": 4096
+  },
+  "state_dir": "~/tritonchip-agent-harness-state",
+  "network": {
+    "routes": {
+      "api.anthropic.com": "direct",
+      "chatgpt.com": "direct",
+      "auth.openai.com": "direct",
+      "open.bigmodel.cn": "direct"
+    }
+  },
+  "accounts": [
+    {
+      "label": "claude-subscription",
+      "cli": "claude-code",
+      "auth": "subscription",
+      "credential": "~/.config/tritonchip-agent-harness/claude.env",
+      "hosts": ["api.anthropic.com"],
+      "models": {"main": "claude-haiku-5-5"}
+    },
+    {
+      "label": "codex-subscription",
+      "cli": "codex",
+      "auth": "subscription",
+      "credential": "~/.config/tritonchip-agent-harness/codex-home",
+      "hosts": ["chatgpt.com", "auth.openai.com"],
+      "models": {"main": "gpt-6.1-sol"}
+    },
+    {
+      "label": "glm-coding-plan",
+      "cli": "opencode",
+      "auth": "api-key",
+      "credential": "~/.config/tritonchip-agent-harness/glm.env",
+      "hosts": ["open.bigmodel.cn"],
+      "models": {"main": "glm-5.3", "small": "glm-5.3-flash"},
+      "options": {
+        "provider": "zhipuai-coding-plan",
+        "base_url": "https://open.bigmodel.cn/api/coding/paas/v4"
+      }
+    }
+  ]
+}

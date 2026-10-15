@@ -255,7 +255,7 @@ module tnca_nuca_slice #(
         reg [63:0] b, z, best;
         reg [3:0] idx;
         reg [5:0] lsb;
-        reg [DCO_T-1:0] matches;
+        reg [DCO_T-1:0] eligible_mask;
         reg [11:0] selected;
         begin
           if (DCO_T < 8) begin
@@ -274,12 +274,12 @@ module tnca_nuca_slice #(
             // Address membership is query-dependent. Base-to-base priority
             // is not: all owner calls sharing the table can share those
             // comparisons, without a query-dependent serial winner chain.
-            matches = {DCO_T{1'b0}};
+            eligible_mask = {DCO_T{1'b0}};
             for (k = 0; k < DCO_T; k = k + 1) begin
                 b = tbase[k*64 +: 64];
                 z = tsize[k*64 +: 64];
                 if (tv[k] && (a >= b) && ((z == 64'd0) || (a - b < z)))
-                    matches[k] = 1'b1;
+                    eligible_mask[k] = 1'b1;
             end
             owner = 12'd0;
             for (k = 0; k < DCO_T; k = k + 1) begin
@@ -287,14 +287,14 @@ module tnca_nuca_slice #(
                 blocked = 1'b0;
                 for (j = 0; j < DCO_T; j = j + 1) begin
                     if (j < k) begin
-                        if (matches[j] && tbase[j*64 +: 64] >= b) blocked = 1'b1;
+                        if (eligible_mask[j] && tbase[j*64 +: 64] >= b) blocked = 1'b1;
                     end else if (j > k) begin
-                        if (matches[j] && tbase[j*64 +: 64] > b) blocked = 1'b1;
+                        if (eligible_mask[j] && tbase[j*64 +: 64] > b) blocked = 1'b1;
                     end
                 end
                 // Highest matching base wins; equal bases choose the lower
                 // table index. Exactly one or zero candidates can survive.
-                selected = (matches[k] && !blocked) ?
+                selected = (eligible_mask[k] && !blocked) ?
                     {1'b1, tbyp[k], k[3:0], tlsb[k*6 +: 6]} : 12'd0;
                 owner = owner | selected;
             end

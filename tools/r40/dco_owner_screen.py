@@ -73,6 +73,22 @@ def main():
         (args.out/'report.json').write_text(json.dumps(report,indent=2)+'\n')
         return result, R.read_text(result['stdout'])+R.read_text(result['stderr'])
 
+    # The existing policy bench uses Verilog-2005, while system/CI benches
+    # use SystemVerilog-2012. Check both before spending time on proof/mapping;
+    # Yosys's accepted language subset is not a substitute for either parser.
+    syntax_source=args.out/'frontend.v'
+    syntax_source.write_text(module('owner_gold',gold,8)+module('owner_gate',gate,8))
+    for standard in ('2005','2012'):
+        result=R.run_step(['iverilog','-g'+standard,'-s','owner_gate','-o',
+            str((args.out/f'frontend_{standard}.vvp').resolve()),str(syntax_source.resolve())],
+            kind='build',case_dir=str(args.out),name='frontend_'+standard,cap_override=30)
+        report['results'].append(dict(result))
+        if result['status']!=R.PASS:
+            report['status']='frontend-refused'
+            (args.out/'report.json').write_text(json.dumps(report,indent=2)+'\n')
+            print(f'iverilog -g{standard}: {result["status"]}; proof/mapping not run',flush=True)
+            return 1
+
     failed=False
     for entries in args.entries:
         source=args.out/f'owner_{entries}.v'

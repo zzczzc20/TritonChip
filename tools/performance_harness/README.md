@@ -143,6 +143,9 @@ Yosys and Z3; `--engine sat` retains the original bit-level proof path.
 `tools/r40/dco_owner_screen.py --mapping-only --shared-calls 9 --out NEW_DIR`
 compares generic LUT6 depth and cell counts for independent queries sharing a
 tensor table, without repeating the bit-level equivalence run.
+The screen first checks both Verilog-2005 and SystemVerilog-2012 with Icarus;
+acceptance by Yosys alone does not establish compatibility with the system
+simulation frontend.
 Keep proof timeouts as unproven results. Generic mapping can justify further
 evaluation, but does not establish FPGA timing, whole-slice area, or graph
 performance. See the [candidate evidence and proof assumptions](

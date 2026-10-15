@@ -1,0 +1,21 @@
+{
+  "recorded_utc": "2026-10-15T03:54:46.783583+00:00",
+  "contract_sha256": "49fc0e02733139707ae2292eff2ef893e76e73f0723d0d002b2e7e1864af71c8",
+  "software_commit": "85fa7d82377d2f28efa19a042f88b6c23ab9e35d",
+  "software_tree": "files:2e1c5342c0eeb24b99d6fc82eb6f82499c8f7b91f4742a6604459222a0c896ee",
+  "source_archive_sha256": "b84fb53bc4eeb28d4228ef11cc166586b5f36095e08d1a3d28e92cba570253a3",
+  "software_root_fpga": "/home/zzhouch/tnca_srcR40convergence_85fa7d8",
+  "software_root_jump": "/home/zhongchun/tritonchip-r40-convergence-85fa7d8",
+  "hardware_source": "09ebe06",
+  "hardware_rtl_and_cfg_diff_to_software_commit": "empty (git diff 09ebe06..85fa7d8 -- rtl fpga/u280_multicore_hbm.cfg)",
+  "implementation_root": "/home/zzhouch/tnca_build/u280_r40ownership_preserved09",
+  "implementation_phase": "Phase 2 Global Placement / Phase 2.1 Floorplanning",
+  "placement_complete": false,
+  "route_complete": false,
+  "clock_target_hz": 100000000,
+  "timing_qualification": "not-measured",
+  "cdc_qualification": "not-measured",
+  "image_sha256": null,
+  "raw_placement_sha256": "154f1e997c8e83314d61da5171a2b223662925ceaf235a004835895555cf7407",
+  "deferred_optimization_stash": "93a482e1c530e5f4a725cd5bef4e01c31703cd76"
+}

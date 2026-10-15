@@ -10,6 +10,7 @@ from unittest.mock import patch
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / 'python'))
 from tnca.runtime import Session, SUCCEEDED, _active_core_mask
 from tnca.transport import Reply
+from tnca.errors import AdmissionError
 
 
 class GridClockTests(unittest.TestCase):
@@ -33,7 +34,7 @@ class GridClockTests(unittest.TestCase):
         session._requested_active_cores = 15
         session.dev = SimpleNamespace(physical_grid_capability=lambda: (3, 16777216),
                                      stop=lambda: None)
-        with self.assertRaisesRegex(Exception, 'exceeds the physical grid'):
+        with self.assertRaisesRegex(AdmissionError, 'exceeds the physical grid'):
             session._negotiate_physical_grid()
 
     def run_grid(self, stamp):

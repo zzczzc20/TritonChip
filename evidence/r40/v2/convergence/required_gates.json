@@ -95,28 +95,28 @@
           "kind": "capability",
           "required": true,
           "status": "not-measured",
-          "why": "no evidence at sim/build/r40/v2/R40-03.json"
+          "why": "sim/build/r40/v2/R40-03.json does not name gate R40-03.tiles"
         },
         {
           "id": "R40-03.wide-blocks",
           "kind": "perf",
           "required": true,
           "status": "not-measured",
-          "why": "no evidence at sim/build/r40/v2/R40-03.json"
+          "why": "sim/build/r40/v2/R40-03.json does not name gate R40-03.wide-blocks"
         },
         {
           "id": "R40-03.gemm-tile",
           "kind": "perf",
           "required": true,
           "status": "not-measured",
-          "why": "no evidence at sim/build/r40/v2/R40-03.json"
+          "why": "sim/build/r40/v2/R40-03.json does not name gate R40-03.gemm-tile"
         },
         {
           "id": "R40-03.contract",
           "kind": "capability",
           "required": true,
-          "status": "not-measured",
-          "why": "no evidence at sim/build/r40/v2/R40-03.json"
+          "status": "capability-pass",
+          "why": "disabled-option legacy profile contract; no physical image, tile functional, or performance signoff"
         }
       ]
     },

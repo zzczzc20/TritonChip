@@ -59,6 +59,7 @@ def main():
         from tnca.triton_backend.driver import launch_log
         from archbench import registry
         from archbench.platforms.common import reference, compare
+        from archbench.platforms.tnca import knobs
         from hbm_address import topology_probe_offsets
         point = registry.get('op.add/hbm/fp16-n67108864')
         frozen = json.loads((ROOT/'spec/r40/suites/R40-04.streaming.json').read_text())
@@ -67,6 +68,7 @@ def main():
         report['point'] = dict(id=point.id, sha256=expected_sha, seed=0,
                                definition=point.definition())
         D.register()
+        report['identity']['knobs'] = knobs()
         session = D.MEMORY.session()
         dev = session.dev
         assert dev.name == 'fpga-u280-multicore'

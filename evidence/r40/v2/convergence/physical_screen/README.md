@@ -10,7 +10,7 @@ requires an explicit global `Used` column; per-SLR-only input leaves global
 totals unavailable. The independent full utilization report gives 1,090,775
 LUTs, matching the sum of the three reported SLR counts.
 
-`diagnosis.json` binds the existing build manifest, full placed utilization
+`diagnosis.json` binds the immutable `input_build_manifest.json`, full placed utilization
 report, implementation log, and analysis source by SHA256. It records:
 
 - CLB occupancy of 97.59%, 96.54%, and 86.54% across SLR0/1/2, with separate
@@ -33,7 +33,7 @@ Reproduce from the repository root with a fresh output path:
 python3 tools/r40/resources.py --diagnose-placement \
   --util evidence/r40/v2/convergence/placement_followup/full_util_placed_20261015.rpt.gz \
   --implementation-log evidence/r40/v2/convergence/placement_followup/route_initial_20261015.log.gz \
-  --build-manifest evidence/r40/v2/convergence/candidate_manifest.json \
+  --build-manifest evidence/r40/v2/convergence/physical_screen/input_build_manifest.json \
   --out /tmp/r40-physical-diagnosis-new.json
 python3 tools/r40/resources_tests.py
 ```
@@ -44,3 +44,8 @@ placement claims, and diagnostic image/timing qualification arguments. They
 also check column reordering, unavailable global totals, non-additive control
 sets, incomplete later SLL snapshots, and preservation of existing outputs.
 The unmodified reference parser is retained in `reference_resources.py.gz`.
+
+The original `3d3267e` diagnosis is retained byte-for-byte as
+`diagnosis_3d3267e.json`. Its manifest path refers to that commit's execution
+ledger. The current diagnosis uses a frozen manifest copy so later ledger
+updates do not change its inputs. Both analyze the same original reports.

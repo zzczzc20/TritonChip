@@ -214,8 +214,8 @@
   "input_sha256": {
     "evidence/r40/v2/convergence/placement_followup/full_util_placed_20261015.rpt.gz": "cc3594d818ce440417fbade5446472d51050c4a612eb6d57a9aecad099da59e7",
     "evidence/r40/v2/convergence/placement_followup/route_initial_20261015.log.gz": "1f6ae36dba495809c0ce31b45962bcc463d45379907df7992553a267ba2b096f",
-    "evidence/r40/v2/convergence/candidate_manifest.json": "43261475b63253fa29b312b62e546190b241dabb72211e7289eee129f5b12890"
+    "evidence/r40/v2/convergence/physical_screen/input_build_manifest.json": "43261475b63253fa29b312b62e546190b241dabb72211e7289eee129f5b12890"
   },
-  "analysis_source_sha256": "f99fd2cb9d3f1f953061331d81a9f5ad1ea20e674a53dd960955ab3671b16f88",
+  "analysis_source_sha256": "452c15d08aef0bdeb663f576f11f3235159f5d9cce980a200726445c93863f81",
   "measured_clock_hz": null
 }

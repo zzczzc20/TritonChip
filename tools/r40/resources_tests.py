@@ -6,6 +6,7 @@ import json
 from pathlib import Path
 import subprocess
 import sys
+import tarfile
 import tempfile
 import unittest
 
@@ -94,6 +95,19 @@ class ResourceEvidenceTests(unittest.TestCase):
 '''
         with self.assertRaises(ValueError):
             R.parse_util(text)
+
+    def test_synthesis_lut_footnote_keeps_explicit_global_column(self):
+        archive = ROOT/'evidence/r40/R40-06/owner_selection/slice_ooc/baseline_and_failures.tar.gz'
+        with tarfile.open(archive) as bundle:
+            text = bundle.extractfile('r40_owner_slice_ooc_b81f04d_02/baseline/ooc/utilization.rpt').read().decode()
+        self.assertEqual(R.parse_util(text)[0]['lut'], 83925)
+        text = '''| Site Type | Used | Available |
+| CLB LUTs* | 83925 | 1303680 |
+'''
+        self.assertEqual(R.parse_util(text)[0]['lut'], 83925)
+        # A footnote must not turn the first regional column into global Used.
+        regional = text.replace('Used | Available', 'SLR0 | SLR1')
+        self.assertEqual(R.parse_util(regional)[0], {})
 
     def test_build_identity_and_raw_inputs_are_bound(self):
         result = R.placement_bundle(SLR, LOG, MANIFEST)

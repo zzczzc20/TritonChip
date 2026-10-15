@@ -66,7 +66,7 @@ def parse_util(text):
     labels = dict(TOTAL_ROWS, **OPTIONAL_ROWS)
     for header, cells in _util_tables(text):
         for key, label in labels.items():
-            if cells[0] != label:
+            if cells[0].rstrip('*').strip() != label:
                 continue
             columns = [(name, i) for i, name in enumerate(header) if re.fullmatch(r'SLR\d+', name)]
             if 'Used' in header and not columns:

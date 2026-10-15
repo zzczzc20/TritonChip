@@ -118,6 +118,8 @@ A per-SLR-only report leaves global totals unavailable. The default 90% CLB
 density hint is configurable with `--pressure-threshold`; it is not a gate
 or a routability predictor. Missing timing and measured clock remain unknown.
 Do not convert an earlier build's observed footprint into a candidate minimum.
+Retain an immutable manifest copy in the evidence bundle; a live convergence
+ledger may change while an earlier diagnostic remains valid.
 
 For empirical predictions, provide `calibration` with `candidate`, `dev`,
 and `validation`. Each record contains

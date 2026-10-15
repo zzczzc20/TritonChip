@@ -245,6 +245,20 @@ def apply(kernel, contexts, scratch_slot=None, scratch_bytes=0, hoist=True,
                  if op.kind == 'special' and op.attrs.get('name') == 'arg_base'}
         before = _own_scratch(before, bases, scratch_slot, scratch_bytes, 'pre', pair)
         out = _own_scratch(out, bases, scratch_slot, scratch_bytes, 'body', pair)
+    # Hoisting the invariant map words can leave only the dynamic base store
+    # beside td.load. The LSU and descriptor engine are independent requesters:
+    # without publication the snapshot can read the old base (including zero)
+    # before that last store commits. Preserve ordering in both loop regions.
+    written_maps = {id(op.operands[0]) for op in ops
+                    if op.kind == 'sstore' and id(op.operands[0]) in maps}
+    def publish_maps(block):
+        published = []
+        for op in block:
+            if op.kind == 'desc_snapshot' and id(op.operands[0]) in written_maps:
+                published.append(Op('fence', [], [], {'order':'release','scope':'device'}))
+            published.append(op)
+        return published
+    before, out = publish_maps(before), publish_maps(out)
     # Inactive tail lanes must exit before descriptor/scratch side effects.
     region.ops = head + before + out + tail if physical_chunk else before + head + out + tail
     return len(before)

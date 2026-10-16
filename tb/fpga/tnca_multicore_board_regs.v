@@ -235,6 +235,7 @@ module tnca_multicore_board_regs;
         input [63:0] tid;
         begin
             nvalues = 0;
+            journal_begin(tid);
             fh = $fopen(cmd_path, "r");
             if (fh != 0) begin
                 // Skip the id line; it was read to get here.
@@ -277,6 +278,7 @@ module tnca_multicore_board_regs;
                 $fclose(fh);
             end
 
+            journal_end(tid);
             fh = $fopen(rsp_path, "w");
             if (fh == 0) begin
                 $display("tnca_fpga_regs: cannot write %0s", rsp_path);
@@ -296,6 +298,7 @@ module tnca_multicore_board_regs;
     //==========================================================================
     // Run
     //==========================================================================
+`include "tb/fpga/tnca_mmio_journal.vh"
     initial begin
         reg_addr  = {ADDR_BITS{1'b0}};
         reg_wdata = 64'd0;
@@ -320,6 +323,7 @@ module tnca_multicore_board_regs;
         // silently -- a simulation that stops without a line is a simulation
         // nobody can tell from a slow one.
         if (!$value$plusargs("watchdog=%d", watchdog)) watchdog = 200000000;
+        journal_init;
 
         // Reset, asserted asynchronously and released synchronously, the same
         // shape rtl/fpga/tnca_fpga_top.v asks a board to supply.
@@ -335,11 +339,13 @@ module tnca_multicore_board_regs;
         // log is what a person reads when it goes wrong.
         $fflush;
 
+        journal_replay_run;
         wd = 0;
         while (wd < watchdog) begin
             repeat (pollcycles) @(posedge clk);
             wd = wd + pollcycles;
             #1;
+            journal_poll_stop;
             fh = $fopen(cmd_path, "r");
             if (fh != 0) begin
                 if ($fscanf(fh, "%d", tid_max) == 1) begin

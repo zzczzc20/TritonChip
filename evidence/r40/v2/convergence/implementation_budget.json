@@ -58,7 +58,10 @@
         "python_pid": 1126940,
         "out": "/home/zzhouch/tnca_build/r40_attempt01_followup",
         "scope": "read-only after terminal marker; no implementation retry"
-      }
+      },
+      "latest_observed_utc": "2026-10-16T08:46:25.826651+00:00",
+      "latest_observed_phase": "Phase 3.3.2.1 Slice Area Swap Initial",
+      "latest_observation": "attempt01/detail_placement_observation.json"
     }
   ],
   "first_attempt_prerequisites": [

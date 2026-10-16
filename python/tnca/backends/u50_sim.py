@@ -29,6 +29,8 @@ with a different link, which is why `fpga-u50` can be reference-
 available and `platform-verified` stays reserved for an actual board.
 """
 import os
+import hashlib
+import json
 import re
 import shutil
 import subprocess
@@ -196,6 +198,19 @@ class SimLink(U50Link):
             argv.append('+assert_fatal')
         if self.trace:
             argv.append('+trace')
+        journal = getattr(self, 'journal_dir', None)
+        if journal:
+            os.makedirs(journal, exist_ok=False)
+            argv.append(f'+journal={journal}')
+            with open(bench, 'rb') as stream:
+                harness_hash = hashlib.file_digest(stream, 'sha256').hexdigest() if hasattr(hashlib, 'file_digest') else hashlib.sha256(stream.read()).hexdigest()
+            metadata = dict(schema='tnca-mmio-timed-journal/1', harness=os.path.abspath(bench),
+                            harness_sha256=harness_hash, runtime=self._vvp, argv=argv,
+                            backend=self.describe(), diagnostic_only=True,
+                            wall_time_overhead='not-measured', source_root=_repo_root(),
+                            simulator_log=self.log)
+            with open(os.path.join(journal, 'metadata.json'), 'x') as stream:
+                json.dump(metadata, stream, indent=2)
         # The stand-in dies with the process that owns it, as the sim-file
         # device does: a host that exits
         # without stopping its link -- a benchmark worker, a killed test --
@@ -220,6 +235,14 @@ class SimLink(U50Link):
                 pass
         if self.proc is None:
             return
+        journal = getattr(self, 'journal_dir', None)
+        if journal and self.proc.poll() is None:
+            with open(os.path.join(journal, 'stop.request'), 'w') as stream:
+                stream.write('stop\n')
+            try:
+                self.proc.wait(timeout=10)
+            except subprocess.TimeoutExpired:
+                pass  # Missing terminal marker remains an incomplete capture.
         if self.proc.poll() is None:
             self.proc.terminate()
             try:
@@ -227,6 +250,8 @@ class SimLink(U50Link):
             except Exception:
                 self.proc.kill()
                 self.proc.wait(timeout=10)
+        if journal and os.path.isfile(self.log):
+            shutil.copyfile(self.log, os.path.join(journal, 'capture.log'))
         self.proc = None
 
     def alive(self):

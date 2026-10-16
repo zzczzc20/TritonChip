@@ -84,3 +84,17 @@ Next observer command on the FPGA server:
 On `reports-ready-review-required`, inspect every raw sign-off report and the
 image/clock identities before V. On failure, retain the specific checkpoint/log
 and diagnose it before considering the one remaining implementation attempt.
+
+## Detailed placement observed at 08:46 UTC
+
+The live implementation reached Phase 3.3.2.1, Slice Area Swap Initial.
+`detail_placement_observation.json` preserves the timestamp, exact build/source,
+raw vendor log tail and its full-log hash at observation, and the live detached
+runner, Vivado and report-observer processes. Global placement has completed;
+complete placement, route, setup/hold, CDC and a loadable image remain pending.
+The terminal `build/attempt.exit` did not exist at this observation.
+No second implementation has started; one of the two additional attempts remains.
+
+The immediate command and success/failure branches above still apply. This is
+implementation progress, not a required-gate transition. Session loss does not
+terminate the detached build or its read-only post-completion observer.

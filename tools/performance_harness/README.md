@@ -80,6 +80,8 @@ comparisons. Functional RTL checks are available through
 noninterference baseline. Run it when changing counter RTL, rather than
 repeating the full suite for presentation-only changes.
 
+For timing-sensitive RTL failures, use the optional [timed mailbox journal](mmio_journal.md) to preserve the exact simulated input schedule before adding diagnostic probes. Journal capture and replay are functional diagnostics; their wall time is not a performance result.
+
 ## 3. Screen candidates using conservative bounds
 
 ```bash

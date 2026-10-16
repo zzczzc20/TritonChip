@@ -4,7 +4,7 @@
 Functional mechanism evidence only; simulator wall time and this small graph
 are not R40 board performance or frozen-inventory acceptance evidence.
 """
-import os,json,sys
+import argparse,os,json,sys
 from pathlib import Path
 ROOT=Path(__file__).resolve().parents[2]
 for p in (ROOT/'python',ROOT/'compiler/python',ROOT/'tools/asm'):sys.path.insert(0,str(p))
@@ -18,12 +18,21 @@ import tnca.torch_device as D
 from tnca.triton_backend.driver import launch_log
 
 def main():
+    parser=argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--journal',action='store_true',help='record timed MMIO/DMA stimuli for functional replay')
+    args=parser.parse_args()
+    if args.journal:
+        configuration=json.loads(os.environ['TNCA_BACKEND_ARGS'])
+        configuration['journal']=True
+        os.environ['TNCA_BACKEND_ARGS']=json.dumps(configuration)
     D.register();torch.manual_seed(40)
     x,y=torch.randn(4097),torch.randn(4097)
     a,b=x.to('tnca'),y.to('tnca')
     fn=torch.compile(lambda a,b:(a+b)*0.5,fullgraph=True,dynamic=False)
     out=fn(a,b);torch.testing.assert_close(out.cpu(),(x+y)*0.5);del out
     dev=D.MEMORY.session().dev
+    if args.journal:
+        print('MMIO_JOURNAL '+json.dumps(dict(directory=dev.link.journal_dir)),flush=True)
     for phase,(ports,limit) in enumerate([(3,8),(1,8),(1,1),(3,1)]):
         # Fresh values distinguish current output from stale data in another
         # outlet view or an allocator-reused output buffer.

@@ -10,7 +10,9 @@ from .u50_sim import SimLink, _repo_root, _tools
 
 class MulticoreMMIOLink(SimLink):
     def __init__(self, *, core_count=3, memory_ports=3,
-                 memory_bytes=1 << 20, link_stages=2, noc_link_stages=0, dispatch_stages=0, home_stages=0, code_stages=0, board_top=False, maintenance=False, memory_controls=False, **kwargs):
+                 memory_bytes=1 << 20, link_stages=2, noc_link_stages=0, dispatch_stages=0, home_stages=0, code_stages=0, board_top=False, maintenance=False, memory_controls=False, journal=False, **kwargs):
+        if type(journal) is not bool or (journal and not board_top):
+            raise ArgumentError('journal requires a boolean and the board-top stand-in')
         self.assert_fatal = True
         self.board_top = bool(board_top)
         self.memory_controls = bool(memory_controls)
@@ -34,6 +36,7 @@ class MulticoreMMIOLink(SimLink):
         if self.memory_bytes < 4096 or self.memory_bytes % 64 or min(self.link_stages, self.noc_link_stages, self.dispatch_stages, self.home_stages, self.code_stages) < 0:
             raise ArgumentError('memory must contain whole lines; link stages must be nonnegative')
         super().__init__(**kwargs)
+        self.journal_dir = str(Path(self.dir)/'journal') if journal else None
 
     def describe(self):
         return f'RTL MMIO v2: {self.core_count} cores, {self.memory_ports} AXI outlets'
@@ -110,6 +113,7 @@ def stand_in(**kwargs):
                             board_top=kwargs.pop('board_top', False),
                             maintenance=kwargs.pop('maintenance', False),
                             memory_controls=kwargs.pop('memory_controls', False),
+                            journal=kwargs.pop('journal', False),
                             host_timeout=kwargs.get('host_timeout', 30.0))
     return MulticoreMMIOBackend(link, core_count=core_count,
                                memory_ports=memory_ports, **kwargs)

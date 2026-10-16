@@ -66,6 +66,7 @@ def register_range(b, target):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--out', type=Path, required=True)
+    parser.add_argument('--journal', action='store_true', help='retain simulated-time MMIO/DMA batches')
     args = parser.parse_args()
     out = args.out.resolve()
     out.mkdir(parents=True, exist_ok=False)
@@ -84,11 +85,17 @@ def main():
                                  for name,path in paths.items()}
     with Session(profile='core-vrf-sync-v5', backend='fpga-multicore-sim',
                  core_count=3, memory_ports=3, maintenance=True, hbm_dma=True,
-                 board_top=True, memory_controls=True, host_timeout=1800) as session:
+                 board_top=True, memory_controls=True, journal=args.journal, host_timeout=1800) as session:
         modules = {name:session.load(path) for name,path in paths.items()}
         result, ranges, records = session.allocate(24), session.allocate(192), session.allocate(192)
         session.upload(ranges, bytes(192))
         session.upload(records, bytes(192))
+        if args.journal:
+            # Exercise the test mailbox's byte DMA opcodes directly. Public
+            # Session transfers retain their existing eight-byte alignment.
+            offset = ranges.addr-session.dev.axi_window['local_limit']+1
+            session.dev.link.hbm_write(offset, b'\x12\x34\x56')
+            assert session.dev.link.hbm_read(offset, 3) == b'\x12\x34\x56'
         def policy(value, reset=False):
             event = session.wait(session.submit(modules['reset' if reset else 'policy'],
                                                 {'out':result, 'policy':value}))
@@ -119,6 +126,7 @@ def main():
         policy(0, reset=True)
         report['final_control_grid'] = session.dev.physical_grid_metrics()
         report['simulator_directory'] = session.dev.link.dir
+        report['journal_directory'] = session.dev.link.journal_dir
         report['status'] = 'functional-pass'
     (out/'report.json').write_text(json.dumps(report, indent=2)+'\n')
     print('TMU CONTROL TRANSPORT PASS; standard Torch DCO and board gates not-measured', flush=True)

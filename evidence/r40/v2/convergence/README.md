@@ -43,6 +43,13 @@ failure remains unexplained and is preserved in
 This known functional risk remains under investigation alongside the physical
 build; no qualification or performance gate is promoted.
 
+The new [timed mailbox capture](../../R40-04/runtime_memory_controls/timed_journal/README.md)
+reproduced a reservation-X failure on the original four-configuration native
+graph. Exact-harness replay matches the first assertion verbatim at the same
+simulated time/core/context/PC. A separate first-unknown diagnostic replay is
+launched against these fixed inputs; it consumes no full implementation budget.
+The producing cause and repair remain unresolved.
+
 **Next command:** `tail -60 /home/zzhouch/tnca_build/r40_attempt01_20261016/xo/link.log`
 on the FPGA server. **Success:** inspect complete placement/route, setup/hold,
 CDC and image identity, then run the diagnostic V checkpoint in the default

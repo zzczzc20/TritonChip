@@ -39,3 +39,13 @@ only the test model PRNG initialization in separate immutable directories;
 their model hashes and rationale are retained. These passes do not explain
 snapshot09 and do not close the reservation-X blocker. No production RTL was
 changed to clamp unknown state or add host delays.
+
+## Timed failure capture
+
+[Timed mailbox diagnostics](timed_journal/README.md) now retain a new reservation-X
+failure on the same four-configuration native graph, its simulated input schedule,
+responses, abnormal stop and exact harness. Normal replay and response/time/partial
+mutations validate the reproducer boundary. The undefined reservation source is
+still the blocker; this package does not close it or qualify the final image.
+Use the next command and success/failure branches in that package rather than
+adding live MMIO probes that change the host schedule.

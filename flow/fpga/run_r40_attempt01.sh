@@ -8,7 +8,11 @@ mkdir -p "$R40_ATTEMPT_ROOT/build"
 exec >"$R40_ATTEMPT_ROOT/build/runner.log" 2>&1
 trap 'rc=$?; printf "%s\n" "$rc" > "$R40_ATTEMPT_ROOT/build/attempt.exit"' EXIT
 cd "$R40_SOURCE_ROOT"
+set +u
 source /tools/Xilinx/Vivado/2023.2/settings64.sh >/dev/null 2>&1
+source /tools/Xilinx/Vitis/2023.2/settings64.sh >/dev/null 2>&1
+source /opt/xilinx/xrt/setup.sh >/dev/null 2>&1
+set -u
 export TNCA_IMAGE_CONFIG="$R40_SOURCE_ROOT/evidence/r40/v2/convergence/attempt01/image.tcl"
 export TNCA_BOARD=u280 VPP_JOBS=2
 # Preserve the prior placement strategy; the hypothesis concerns RTL/geometry.

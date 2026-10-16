@@ -60,3 +60,12 @@ Torch checkpoint on the immutable software snapshot, then the complete
 native 77, HBM 14 and frozen model inventories. Numerical, ownership,
 three-core/outlet traffic and visibility evidence are required; a checkpoint
 failure must preserve its exact inputs and output before any correction.
+
+The running full-system kernel has completed cross-boundary/area optimization
+and emitted its preliminary RAM inference report. `tag_inference.json` records
+all reported synchronous tag-bank rows and binds the captured original log
+prefix in `kernel_inference_prefix.log.gz`: 32 x 53 bits per way infer four
+RAM32M16 macros per way. Repeated/specialized module rows are not a final
+instantiated primitive census. This supports the intended storage mapping;
+final mapped/placed counts, locality, routed timing, CDC and image remain
+unqualified. No required gate is promoted.

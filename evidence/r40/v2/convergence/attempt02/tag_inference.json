@@ -1,0 +1,115 @@
+{
+  "schema": "tnca-r40-in-progress-tag-inference/1",
+  "observed_utc": "2026-10-16T23:13:56.314406+00:00",
+  "source_commit": "0c397939952d2a6bc881d08623b1bb9114a54ab8",
+  "clock_target_hz": 100000000,
+  "contract_sha256": "49fc0e02733139707ae2292eff2ef893e76e73f0723d0d002b2e7e1864af71c8",
+  "configuration": "image.json",
+  "import_identity_evidence": "synthesis_started.json",
+  "log_path": "/home/zzhouch/tnca_build/r40_attempt02_20261016/xo/tmp/link/vivado/vpl/prj/prj.runs/ulp_tnca_u50_1_0_synth_1/runme.log",
+  "log_prefix_bytes": 380075,
+  "log_prefix_sha256": "0f21dc9241cc061b8c55380656531106e8b9839956529f47c08fc21721abc6d4",
+  "archive": "kernel_inference_prefix.log.gz",
+  "archive_sha256": "9058ba17f4c76f4ac638357eb22599217d6b8570a254e83f72601c0c343cc3b2",
+  "tag_ram_rows": [
+    {
+      "line": 2676,
+      "text": "|tnca_nuca_slice__GB0                                | g_sync_tags.g_way[7].bank_reg                                                | User Attribute | 32 x 53              | RAM32M16 x 4    | "
+    },
+    {
+      "line": 2677,
+      "text": "|tnca_nuca_slice__GB0                                | g_sync_tags.g_way[1].bank_reg                                                | User Attribute | 32 x 53              | RAM32M16 x 4    | "
+    },
+    {
+      "line": 2678,
+      "text": "|tnca_nuca_slice__GB0                                | g_sync_tags.g_way[2].bank_reg                                                | User Attribute | 32 x 53              | RAM32M16 x 4    | "
+    },
+    {
+      "line": 2679,
+      "text": "|tnca_nuca_slice__GB0                                | g_sync_tags.g_way[3].bank_reg                                                | User Attribute | 32 x 53              | RAM32M16 x 4    | "
+    },
+    {
+      "line": 2680,
+      "text": "|tnca_nuca_slice__GB0                                | g_sync_tags.g_way[6].bank_reg                                                | User Attribute | 32 x 53              | RAM32M16 x 4    | "
+    },
+    {
+      "line": 2683,
+      "text": "|tnca_nuca_slice__GB3                                | g_sync_tags.g_way[0].bank_reg                                                | User Attribute | 32 x 53              | RAM32M16 x 4    | "
+    },
+    {
+      "line": 2684,
+      "text": "|tnca_nuca_slice__GB3                                | g_sync_tags.g_way[5].bank_reg                                                | User Attribute | 32 x 53              | RAM32M16 x 4    | "
+    },
+    {
+      "line": 2685,
+      "text": "|tnca_nuca_slice__GB3                                | g_sync_tags.g_way[4].bank_reg                                                | User Attribute | 32 x 53              | RAM32M16 x 4    | "
+    },
+    {
+      "line": 2710,
+      "text": "|tnca_nuca_slice__parameterized0__GB3                | g_sync_tags.g_way[2].bank_reg                                                | User Attribute | 32 x 53              | RAM32M16 x 4    | "
+    },
+    {
+      "line": 2711,
+      "text": "|tnca_nuca_slice__parameterized0__GB3                | g_sync_tags.g_way[1].bank_reg                                                | User Attribute | 32 x 53              | RAM32M16 x 4    | "
+    },
+    {
+      "line": 2712,
+      "text": "|tnca_nuca_slice__parameterized0__GB3                | g_sync_tags.g_way[0].bank_reg                                                | User Attribute | 32 x 53              | RAM32M16 x 4    | "
+    },
+    {
+      "line": 2713,
+      "text": "|tnca_nuca_slice__parameterized0__GB3                | g_sync_tags.g_way[7].bank_reg                                                | User Attribute | 32 x 53              | RAM32M16 x 4    | "
+    },
+    {
+      "line": 2714,
+      "text": "|tnca_nuca_slice__parameterized0__GB3                | g_sync_tags.g_way[6].bank_reg                                                | User Attribute | 32 x 53              | RAM32M16 x 4    | "
+    },
+    {
+      "line": 2715,
+      "text": "|tnca_nuca_slice__parameterized0__GB3                | g_sync_tags.g_way[5].bank_reg                                                | User Attribute | 32 x 53              | RAM32M16 x 4    | "
+    },
+    {
+      "line": 2716,
+      "text": "|tnca_nuca_slice__parameterized0__GB3                | g_sync_tags.g_way[3].bank_reg                                                | User Attribute | 32 x 53              | RAM32M16 x 4    | "
+    },
+    {
+      "line": 2717,
+      "text": "|tnca_nuca_slice__parameterized0__GB3                | g_sync_tags.g_way[4].bank_reg                                                | User Attribute | 32 x 53              | RAM32M16 x 4    | "
+    },
+    {
+      "line": 2745,
+      "text": "|tnca_nuca_slice__parameterized1__GB1                | g_sync_tags.g_way[4].bank_reg                                                | User Attribute | 32 x 53              | RAM32M16 x 4    | "
+    },
+    {
+      "line": 2746,
+      "text": "|tnca_nuca_slice__parameterized1__GB1                | g_sync_tags.g_way[5].bank_reg                                                | User Attribute | 32 x 53              | RAM32M16 x 4    | "
+    },
+    {
+      "line": 2747,
+      "text": "|tnca_nuca_slice__parameterized1__GB1                | g_sync_tags.g_way[0].bank_reg                                                | User Attribute | 32 x 53              | RAM32M16 x 4    | "
+    },
+    {
+      "line": 2748,
+      "text": "|tnca_nuca_slice__parameterized1__GB1                | g_sync_tags.g_way[6].bank_reg                                                | User Attribute | 32 x 53              | RAM32M16 x 4    | "
+    },
+    {
+      "line": 2749,
+      "text": "|tnca_nuca_slice__parameterized1__GB1                | g_sync_tags.g_way[7].bank_reg                                                | User Attribute | 32 x 53              | RAM32M16 x 4    | "
+    },
+    {
+      "line": 2750,
+      "text": "|tnca_nuca_slice__parameterized1__GB1                | g_sync_tags.g_way[3].bank_reg                                                | User Attribute | 32 x 53              | RAM32M16 x 4    | "
+    },
+    {
+      "line": 2751,
+      "text": "|tnca_nuca_slice__parameterized1__GB1                | g_sync_tags.g_way[2].bank_reg                                                | User Attribute | 32 x 53              | RAM32M16 x 4    | "
+    },
+    {
+      "line": 2752,
+      "text": "|tnca_nuca_slice__parameterized1__GB1                | g_sync_tags.g_way[1].bank_reg                                                | User Attribute | 32 x 53              | RAM32M16 x 4    | "
+    }
+  ],
+  "gate_status": "not-measured",
+  "qualification": "preliminary synthesis inference; repeated/specialized module rows are not a final instantiated primitive census; final mapped/placed devices, timing, CDC and image still required",
+  "errors_observed": []
+}

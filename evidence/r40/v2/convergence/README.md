@@ -56,7 +56,7 @@ route failed with global congestion level 7; no qualified image exists.
 DCP (`ed1facba…90360e8`). The read-only observer completed all eight diagnostic reports without retry.
 Registered ranges and half the cache sets did not solve routability.
 
-**Next command:** `tail -60 ~/tnca_build/r40_p0ab_screen/case11.log` on the
+**Next command:** `tail -50 ~/tnca_build/r40_attempt01_focused_p1/stdout.log` on the
 FPGA server (module-level screening only). **Diagnostic success:** inspect complete critical-path, SLR packing
 and congestion reports; formulate and functionally/resource-screen one concrete
 structural correction before spending the final implementation attempt. Only
@@ -79,8 +79,8 @@ Current CLB occupancy is 95.83%/90.81%/87.37% for SLR0/1/2.
 `cross_slr_modules_ranked.tsv` ranks 4,963 unique connected nets with
 endpoints in multiple actual SLRs; it does not count routed SLL capacity.
 The largest sampled driver group is tile 2's slice (2,536 nets between
-SLR1/2); TMU metadata is also prominent. Core internal placement remains
-unverified. `cross_slr_driver_columns.tsv` reports driver SLICE X positions,
+SLR1/2); TMU metadata is also prominent. The failed snapshot's core and slice internals are each physically confined to their assigned SLR,
+with no unplaced nonconstant cells; this does not qualify the newer candidate. `cross_slr_driver_columns.tsv` reports driver SLICE X positions,
 **not crossing columns**. `sll_estimated_columns.tsv` separately preserves
 the router's printed per-column demand estimates, including 203%; mapping
 specific buses onto physical SLL columns is still not-measured.
@@ -94,6 +94,24 @@ this candidate. **Screen success:** review those results together with
 specific SLL hotspot corrections and actual pipeline/core locations before
 considering the final attempt. **Screen failure:** retain the counterexample
 or critical cone and correct its cause; do not spend the remaining attempt.
+
+The completed [P0 screen](p0_pipeline/README.md) now establishes both mapped
+register boundaries, actual distributed tag RAM and a same-source balanced
+victim comparison: 49 to 34 levels, 12.476 to 8.579 ns data delay, estimated
+WNS -2.719 to +1.178 ns. This is an unplaced setup screen, not a P gate pass.
+The pipeline-only candidate's retained downstream failure motivated that change.
+The source-bound function and mutation results are retained with the reports.
+
+The [physical boundary audit](attempt01/physical_boundaries_v2.json) rules out
+core/slice SLR spill in the failed image and finds only six kernel DONT_TOUCH
+code-link objects; the much larger protected population belongs to the platform.
+No protection is removed. Its LAG-node query recovered no actual crossing
+columns, so that attribution remains not-measured. The focused P1 read-only
+probe separates actual pipeline state from combinational cells and traces the
+sampled shared slice2 logic to its sequential producers and consumers.
+**Success:** use those facts to screen a concrete SLL correction and audit the
+new final candidate. **Failure:** preserve the missing information; do not
+replace it with a placement-property check or spend the last attempt by default.
 
 **Full-implementation budget:** at most two additional attempts. The exact
 launch identity, state and remaining balance are recorded in

@@ -1,0 +1,123 @@
+{
+  "schema": "tnca-r40-failed-physical-boundary-audit/1",
+  "scope": "failed cf330dc hardware snapshot only; not validation of the newer P0 candidate",
+  "gate_status": "not-measured",
+  "checkpoint_sha256": "ed1facba2dd686078b02f49f05cdbaf920704120a46a24f4d2fc4e90290360e8",
+  "archive_sha256": "ea8b765e167fb88152613bd404a68ab9006f70336c9ea36a4e3f21cc741c467f",
+  "actual_cores_and_slices": [
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_tile[0].u_tile/u_core",
+      "primitive_count": "327993",
+      "placed_count": "327757",
+      "unplaced_nonconstant": "0",
+      "actual_slrs": "SLR0",
+      "sample_actual_locs": "SLICE_X85Y165 SLICE_X85Y167 SLICE_X85Y167 SLICE_X85Y167 SLICE_X85Y167 SLICE_X85Y167 SLICE_X85Y167 SLICE_X85Y167"
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_tile[0].u_tile/u_slice",
+      "primitive_count": "74592",
+      "placed_count": "74589",
+      "unplaced_nonconstant": "0",
+      "actual_slrs": "SLR0",
+      "sample_actual_locs": "SLICE_X157Y152 SLICE_X149Y169 SLICE_X149Y169 SLICE_X148Y167 SLICE_X148Y167 SLICE_X148Y168 SLICE_X148Y168 SLICE_X152Y177"
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_tile[1].u_tile/u_core",
+      "primitive_count": "327976",
+      "placed_count": "327740",
+      "unplaced_nonconstant": "0",
+      "actual_slrs": "SLR1",
+      "sample_actual_locs": "SLICE_X121Y369 SLICE_X118Y366 SLICE_X118Y366 SLICE_X118Y366 SLICE_X118Y366 SLICE_X118Y366 SLICE_X118Y366 SLICE_X118Y366"
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_tile[1].u_tile/u_slice",
+      "primitive_count": "72434",
+      "placed_count": "72430",
+      "unplaced_nonconstant": "0",
+      "actual_slrs": "SLR1",
+      "sample_actual_locs": "SLICE_X141Y436 SLICE_X141Y436 SLICE_X150Y426 SLICE_X150Y426 SLICE_X132Y439 SLICE_X132Y439 SLICE_X131Y460 SLICE_X131Y460"
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_tile[2].u_tile/u_core",
+      "primitive_count": "327712",
+      "placed_count": "327476",
+      "unplaced_nonconstant": "0",
+      "actual_slrs": "SLR2",
+      "sample_actual_locs": "SLICE_X77Y508 SLICE_X99Y517 SLICE_X99Y517 SLICE_X99Y517 SLICE_X99Y517 SLICE_X99Y517 SLICE_X99Y517 SLICE_X99Y517"
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_tile[2].u_tile/u_slice",
+      "primitive_count": "74405",
+      "placed_count": "74402",
+      "unplaced_nonconstant": "0",
+      "actual_slrs": "SLR2",
+      "sample_actual_locs": "SLICE_X131Y497 SLICE_X131Y497 SLICE_X133Y498 SLICE_X133Y498 SLICE_X128Y494 SLICE_X128Y494 SLICE_X138Y491 SLICE_X138Y491"
+    }
+  ],
+  "clb_occupancy_percent_slr0_1_2": [
+    95.83,
+    90.81,
+    87.37
+  ],
+  "unique_control_sets_slr0_1_2": [
+    4430,
+    5298,
+    2861
+  ],
+  "protection": {
+    "kernel_cells": [
+      {
+        "cell": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/g_code[0].commands",
+        "primitive": "ulp_tnca_u50_1_0_tnca_elastic_link__1",
+        "loc": ""
+      },
+      {
+        "cell": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/g_code[0].replies",
+        "primitive": "ulp_tnca_u50_1_0_tnca_elastic_link__parameterized0__1",
+        "loc": ""
+      },
+      {
+        "cell": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/g_code[1].commands",
+        "primitive": "ulp_tnca_u50_1_0_tnca_elastic_link__2",
+        "loc": ""
+      },
+      {
+        "cell": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/g_code[1].replies",
+        "primitive": "ulp_tnca_u50_1_0_tnca_elastic_link__parameterized0__2",
+        "loc": ""
+      },
+      {
+        "cell": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/g_code[2].commands",
+        "primitive": "ulp_tnca_u50_1_0_tnca_elastic_link",
+        "loc": ""
+      },
+      {
+        "cell": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/g_code[2].replies",
+        "primitive": "ulp_tnca_u50_1_0_tnca_elastic_link__parameterized0",
+        "loc": ""
+      }
+    ],
+    "platform_protected_count": 283132,
+    "interpretation": "six explicit kernel code command/reply links; no broad kernel protection found; preserve required queues"
+  },
+  "route_column_coverage": {
+    "sampled_connected_crossing_nets": 4963,
+    "nets_with_matching_LAG_nodes": 0,
+    "method": "get_nodes of connected net segments, filter NAME=*LAG*; no matching nodes recovered; not a zero-demand claim or exhaustive proof of absent routing",
+    "actual_bus_to_sll_columns": "not-measured"
+  },
+  "pipeline_scope": {
+    "prior_report": "all primitive categories; one other-logic group spans regions, insufficient to infer misplaced state",
+    "next_probe": "~/tnca_build/r40_attempt01_focused_p1",
+    "purpose": "query actual FF/RAM state separately, including cnt_reg, and fanin/fanout of twelve high-fanout slice2 shared cones"
+  },
+  "next_command": "tail -50 ~/tnca_build/r40_attempt01_focused_p1/stdout.log",
+  "on_success": "inspect register state and shared-logic startpoints/endpoints; select only evidence-supported SLL correction before the final attempt",
+  "on_failure": "retain partial query results and repair focused extraction; do not rerun implementation",
+  "remaining_full_implementations": 1,
+  "source_commit": "cf330dc64b6e1df535c31c9bb1a5d735e6bc0fb7",
+  "contract_sha256": "49fc0e02733139707ae2292eff2ef893e76e73f0723d0d002b2e7e1864af71c8",
+  "clock_target_hz": 100000000,
+  "image_sha256": null,
+  "configuration": "attempt01/image.json"
+}

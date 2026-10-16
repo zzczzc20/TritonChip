@@ -1,0 +1,4 @@
+source_family	destination_family	sampled_endpoints	worst_slack_ns	data_delay_ns	logic_delay_ns	net_delay_ns	logic_levels
+level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/u_tmu/tb_reg[*][*]	level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_tile[0].u_tile/u_slice/ms_wbadr_reg	17	-19.631	28.999	3.447	25.552	53
+level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_tile[0].u_tile/u_slice/cur_addr_reg[*]_replica	level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_tile[0].u_tile/u_slice/tl_a_reg[*]	4	-19.560	28.852	3.465	25.387	57
+level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_tile[0].u_tile/u_slice/cur_addr_reg[*]_replica	level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_tile[0].u_tile/u_slice/ms_wbadr_reg	9	-19.556	28.918	3.737	25.181	62

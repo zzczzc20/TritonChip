@@ -1,15 +1,20 @@
-# Performance Analysis Harness
+# TNCA Performance Analysis Harness
 
-A reproducible workflow for AI agents and engineers investigating TNCA
-performance. It combines resource feasibility analysis, device counters,
-Proton traces, controlled RTL experiments, and physical implementation evidence
-to identify bottlenecks and evaluate architectural changes before committing
-to expensive FPGA synthesis and implementation runs.
+This harness provides a reproducible workflow for diagnosing TNCA performance
+and screening architectural changes before FPGA synthesis and implementation.
+It combines analytical cost bounds, device counters, Proton instrumentation,
+controlled RTL experiments, and physical implementation reports. Engineers and
+AI agents should use these tools together to identify bottlenecks, test specific
+hypotheses, and determine whether a candidate warrants an implementation run.
 
-This harness supports the existing R40 scope. It introduces no additional work
-packages, preserves the frozen acceptance requirements, and does not modify
-gate status.
-Start with the [required-gate blocker ledger](../../evidence/r40/v2/convergence/README.md).
+Diagnostic evidence must state its provenance, assumptions, and measurement
+uncertainty. Instrumentation inevitably perturbs execution; minimize that
+perturbation and characterize its magnitude for the intended workload before
+interpreting a trace. Screening results and diagnostic traces do not establish
+acceptance compliance.
+
+This workflow operates within the existing R40 work packages and frozen
+acceptance contract. Start with the [required-gate blocker ledger](../../evidence/r40/v2/convergence/README.md).
 Begin progress reports with changes to required-gate status. Diagnostic test
 counts and commit counts do not establish acceptance progress. For each
 unresolved gate, record the current blocker, supporting evidence, next
@@ -56,7 +61,7 @@ the CPU ownership handoff.
 noninterference baseline. Run it when changing counter RTL, rather than
 repeating the full suite for presentation-only changes.
 
-## 3. Assess candidate feasibility before synthesis
+## 3. Screen candidates using conservative bounds
 
 ```bash
 python tools/r40/cost_screen.py INPUT.json --out NEW_OUTPUT.json
@@ -153,7 +158,7 @@ evaluation, but does not establish FPGA timing, whole-slice area, or graph
 performance. See the [candidate evidence and proof assumptions](
 ../../evidence/r40/R40-06/owner_selection/README.md).
 
-## 4. Instrument unresolved performance questions
+## 4. Instrument execution to resolve specific hypotheses
 
 The TNCA backend preserves upstream `proton.record start/end` scope semantics
 through the pinned Triton 3.8.0 dialect and Python TNCA IR. At the TNCA IR level:
@@ -190,7 +195,8 @@ scheduling, and contention. Issue timestamps do not establish asynchronous
 engine completion. Each physical core has a reset-relative clock; separately
 rebased viewer lanes do not establish cross-core ordering.
 
-Run larger experiments on the jump host. Reproducible RTL calibration examples:
+Run resource-intensive experiments on the jump host. The following commands
+produce reproducible RTL instrumentation calibration bundles:
 
 ```bash
 python tools/r40/proton_profile.py --out /tmp/proton-fine --iterations 128
@@ -218,12 +224,13 @@ unrolled additions, 1.388% for 8192 additions, and 5.891% for 128 runtime-loop
 iterations. See the [raw evidence](../../evidence/r40/R40-09/performance_tools/README.md).
 Deterministic repeats do not establish zero systematic error.
 
-The default 1% value is an adjustable diagnostic prompt, **not an acceptance
-gate, delivery requirement, or universal trace admission threshold**.
-A trace with higher overhead may still resolve a diagnostic question, provided
-the analysis discloses the possibility that instrumentation changes the
-bottleneck. Select scope granularity appropriate to the question and report
-the observed perturbation and its applicability.
+The default 1% overhead reference is a configurable diagnostic advisory.
+It does not define an acceptance gate or determine whether a trace is usable.
+A trace with higher overhead can still resolve a specific hypothesis if the
+analysis accounts for the possibility that instrumentation changes the
+bottleneck. Choose scope granularity for the question being investigated, and
+report the measured perturbation, observed range, and conditions under which
+those observations apply.
 
 Report whole-program perturbation separately from region timestamp error.
 An observed whole-program overhead is not a bound on each region's error.
@@ -263,8 +270,8 @@ Start synthesis or implementation only when physical evidence is needed.
 For every rerun, record a concrete root-cause hypothesis, corresponding change,
 expected improvement, and falsification condition. Changes to implementation
 directives require an explicit technical rationale. Reused results must match
-complete sources, parameters, constraints, and tool versions. Preserve immutable build directories and
-avoid modifying an active implementation run.
+complete sources, parameters, constraints, and tool versions. Preserve immutable
+build directories and avoid modifying an active implementation run.
 
 Use `tools/r40/resources.py` for actual routed utilization/timing reports,
 `flow/fpga/audit_r40_image.tcl` for CDC/timing audits, and
@@ -273,8 +280,13 @@ Pblock intent and synthesis checkpoints do not replace placement/route.
 A loadable image, 100 MHz timing, CDC, and actual HBM/PC/ownership behavior
 remain subject to the required-gate ledger.
 
-Conclude each investigation with the experiment identity, primary bottleneck,
-direct evidence, competing explanations, prediction and applicability,
-observed instrumentation perturbation, next command, and actions for either
-outcome. Leave unsupported speedup, frequency, routing, area, and gate claims
-unmeasured.
+Each investigation should produce a concise decision record containing:
+
+- The complete experiment identity and the hypothesis under evaluation.
+- The primary bottleneck, direct evidence, and competing explanations.
+- The prediction, its assumptions, and its domain of applicability.
+- Instrumentation overhead, observed variability, and unresolved error bounds.
+- The next experiment command and the actions warranted by either outcome.
+
+Record unsupported speedup, frequency, routing, area, and acceptance claims as
+`not-measured`; retain `null` for unknown numerical values.

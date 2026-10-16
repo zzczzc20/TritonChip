@@ -1,29 +1,66 @@
 # R40 v2 delivery convergence ledger
 
-This is a dated execution ledger, **not a contract amendment**. The frozen v2 contract and all thresholds remain unchanged. Snapshot: 2026-10-15 UTC; vertical software snapshot 8abf527; candidate hardware source 09ebe06. Existing functional passes do not certify the final image. Required gate changes: R40-01.device and R40-03.contract now capability-pass; missing mixed-device/device-time entries are not-measured. All other required statuses are in required_gates.json. No performance gate has been promoted.
+This is a dated execution ledger, **not a contract amendment**. The frozen v2 contract and all thresholds remain unchanged. Snapshot: 2026-10-16 UTC; vertical software snapshot 8abf527; candidate hardware source 09ebe06. Existing functional passes do not certify the final image. Required gate changes: R40-01.device and R40-03.contract now capability-pass; missing mixed-device/device-time entries are not-measured. All other required statuses are in required_gates.json. No performance gate has been promoted.
 
 ## Immediate experiment commands and branches
 
-**P — observe the already running implementation, without starting a retry.** On FPGA server:
+**P — diagnose the terminal failed route before choosing a replacement.** The
+original `09ebe06` implementation stopped at 2026-10-15 22:53:10 UTC. Its
+`build/link.exit` is **1** and PID 594866 is absent. Vivado reports
+`Route 35-3: Design is not routable as its global congestion level is 7`,
+followed by `Route 35-4445`. Raw log, terminal exit and checkpoint SHA are in
+`route_failure_20261016/`; the retained error DCP is 595,473,030 bytes with SHA256
+`8d82bd375ce489ca433aba15f83692b53b409bc045381a7a8f44ed44811a50d9`.
+This was a failed implementation attempt, not a completed routed image.
+Required gate statuses remain unchanged and final qualification is not-measured.
+
+The existing `SSI_SpreadSLLs` directive did not resolve the problem. Earlier
+local SLL demand reached 204%; placement CLB occupancy was
+97.59%/96.54%/86.54%, despite LUT utilization of 84.08%/91.09%/75.83%.
+The router identified at least 8,651 high-pin-utilization CLBs. These are
+specific congestion observations, not proof that any one mechanism caused
+all failures. The -38.938 ns intermediate WNS is not final routed timing.
+
+**Current blocker:** no routable, qualified three-core image. A bounded,
+read-only checkpoint diagnosis was launched in
+`~/tnca_build/r40_failed_route_diagnosis_20261016` using
+`flow/fpga/diagnose_r40_checkpoint.tcl`; it runs no synthesis/place/route.
+**Next command, on FPGA server:**
 
 ```sh
-tail -25 ~/tnca_build/u280_r40ownership_preserved09/xo/tmp/link/vivado/vpl/prj/prj.runs/impl_1/runme.log
+tail -30 ~/tnca_build/r40_failed_route_diagnosis_20261016/diagnosis.log
 ```
 
-The implementation reached routing with the requested `SSI_SpreadSLLs` directive actually applied, but estimated local SLL demand still reaches **204%** and `Route 35-447` reports congestion preventing all nets from routing. The earlier hypothesis that this directive alone would resolve local SLL demand is therefore unsupported by the current observation. Latest phase: `route_design`, Phase 3.6 Initial Net Routing; PID 594866 remains live, with no link exit file. Raw evidence: `placement_followup/route_progress_20261015.log.gz`; earlier congestion estimates remain in `route_initial_20261015.log.gz`. Intermediate route WNS is **-38.938 ns**, not a final routed timing result. Placement has completed; final core-to-SLR audit, route, 100 MHz timing, CDC, and loadability remain unqualified. The actual fully placed utilization report (`placement_followup/slr_util_placed_20261015.rpt`) shows CLB occupancy of 97.59%/96.54%/86.54% across SLR0/1/2, despite LUT utilization of 84.08%/91.09%/75.83%. This is direct packing-pressure evidence; aggregate LUT headroom alone is insufficient to diagnose routability. It is not a proven resource floor for a modified candidate. A source-bound offline diagnosis is retained in `physical_screen/diagnosis.json`; `physical_screen/parser_regression.json` reproduces and fixes the previous parser's erroneous SLR0-as-global total. This changes diagnosis quality, not gate status.
+**Success:** retain route status, actual limiting paths, hierarchy/SLR resource
+and congestion reports; identify a falsifiable source-level or placement
+cause and screen the corresponding change before consuming an implementation
+attempt. **Failure:** retain partial reports and command errors, repair only
+the diagnostic or inspect an alternative report. Never restart implementation
+because observation fails or a diagnostic times out. Physical P qualification
+still requires actual route, placement, 100 MHz setup/hold, CDC and a loadable
+image; only then proceed to V. No unexplained directive rotation.
 
-**Current blocker:** a qualified final routed image is unavailable. **Next command:** the `tail` command above observes the same live run; do not restart it merely because observation expires. **Success:** retain the actual routed DCP, placement/resource map, 100 MHz setup/hold, CDC, complete xclbin SHA, and load/clock reports. **Failure:** retain logs/checkpoints and identify the actual linked critical path and congested crossing locations before changing RTL or floorplanning. The owner-selection pre-screen in `evidence/r40/R40-06/owner_selection/` addresses an observed OOC logic-depth problem; it does not establish the cause of this linked run's critical path or localized SLL demand. No unexplained directive rotation.
+**Full-implementation budget:** the user permits at most **two additional
+complete synthesis/place/route attempts**, starting from the terminal failure
+above. **Used: 0; remaining: 2.** The first must combine all necessary hardware
+changes and gate-required controls after feasibility and functional screening.
+The second is reserved for a specific diagnosed correction. The budget does
+not relax the frozen contract. Report extraction and bounded module-level
+screening do not constitute a complete system implementation. Every future
+attempt must be entered in `implementation_budget.json` before launch.
 
-
-**S — isolated owner-selection screening completed, while P continues unchanged.** The reference (`09ebe06`) and corrected candidate (`cbb6402`) use the actual three-core tile-zero geometry, Vivado 2023.2, four threads, and identical constraints. Verified baseline dependency reuse avoided another baseline synthesis. LUT count fell **83,925 → 79,258**; internal estimated WNS improved **-13.417 → -5.957 ns**; the worst path fell **114 → 66 logic levels**. Evidence, inputs, reports, and setup/grammar failure reproductions are in `../../R40-06/owner_selection/slice_ooc/`. The local hypothesis is supported, but setup remains negative and no gate changes.
-
-**Current architectural blocker:** the remaining query-address-to-writeback-enable path has 15.714 ns estimated data delay. **Next experiment command:** on FPGA server, inspect the actual limiting cone:
-
-```sh
-sed -n '16,110p' ~/tnca_build/r40_owner_slice_ooc_cbb6402_03/candidate/ooc/critical_paths.rpt
-```
-
-**Success:** a source-level explanation identifies arithmetic or selection that can be removed/shared or safely staged; prove full unsigned-64 semantics and metadata visibility before another bounded module experiment. **Failure:** retain this measured limit and inspect competing paths; no unsupported frequency/speedup claim or automatic full-system rerun. OOC timing uses an ideal unconstrained clock source and does not qualify 100 MHz operation, placement, CDC, or a loadable image.
+**S — registered-range screening is complete.** The source-bound functional,
+mutation and compositional proof package is in
+[registered_ranges](../../R40-06/registered_ranges/README.md). A paired actual
+TMU-plus-slice OOC screen reduced LUTs **83,353 → 78,543**, but estimated WNS
+improved only **-6.333 → -6.037 ns**. Both variants still have the worst path
+from `slice/cur_addr_reg[7]` to writeback-address RAM write enable, with
+essentially unchanged logic delay. This supports an area reduction, but does
+not justify another full implementation. Its next experiment is P's linked
+checkpoint diagnosis above: success determines whether the local cone also
+limits the complete design; failure preserves the local result without
+attributing the linked congestion to it. No operating-frequency, graph-speedup
+or gate claim follows from OOC estimates.
 
 **V — vertical checkpoint after P yields a qualified loadable image.** From a clean immutable archive on FPGA server, after `source ~/tc_env/env.sh` and XRT setup:
 
@@ -54,7 +91,7 @@ All rows are `not-measured`. Each row has one immediate missing prerequisite, it
 | R40-04.hbm | 实际 ≥1 GiB 多 PC 窗口尚无合格三核镜像可验证 | `required_gates.json`: no evidence at sim/build/r40/v2/R40-04.json; `evidence/r40/R40-04/physical_map_v2/` proves legacy image only exposes 256 MiB / PC0 | P → V | After V, collect frozen `make r40-hbm` package evidence on final identity; judge this gate separately | Preserve P/V first failing evidence; fix that cause; gate remains not-measured |
 | R40-04.bandwidth | 最终镜像方向带宽及 memory-service outstanding 1/8 匹配记录缺失 | `required_gates.json`: no evidence at sim/build/r40/v2/R40-04.json | P → V | After V, collect frozen `make r40-hbm` package evidence on final identity; judge this gate separately | Preserve P/V first failing evidence; fix that cause; gate remains not-measured |
 | R40-04.robustness | 最终实际分配 PC 的边界/high64/alias/越界证据缺失 | `required_gates.json`: no evidence at sim/build/r40/v2/R40-04.json | P → V | After V, collect frozen `make r40-hbm` package evidence on final identity; judge this gate separately | Preserve P/V first failing evidence; fix that cause; gate remains not-measured |
-| R40-05.multicore | 三核候选正在 route，缺少最终时序/CDC/可装载镜像 | `required_gates.json`: no evidence at sim/build/r40/v2/R40-05.json; route Phase 3.6 in `placement_followup/route_progress_20261015.log.gz`, with the retained congestion warning (P) | P → V | After V, collect frozen `make r40-multicore` package evidence on final identity; judge this gate separately | Preserve P/V first failing evidence; fix that cause; gate remains not-measured |
+| R40-05.multicore | 三核候选 route 已因全局拥塞 level 7 失败，无合格镜像 | `required_gates.json`: no evidence at sim/build/r40/v2/R40-05.json; terminal `Route 35-3` and `link.exit=1` in `route_failure_20261016/` (P) | P → V | After V, collect frozen `make r40-multicore` package evidence on final identity; judge this gate separately | Preserve P/V first failing evidence; fix that cause; gate remains not-measured |
 | R40-05.scaling | 最终镜像冻结 compute 的 1/2/3 核 A/B 缺失 | `required_gates.json`: no evidence at sim/build/r40/v2/R40-05.json | P → V | After V, collect frozen `make r40-multicore` package evidence on final identity; judge this gate separately | Preserve P/V first failing evidence; fix that cause; gate remains not-measured |
 | R40-05.dispatch | 最终镜像原始大图的三物理核完成/分发计数缺失 | `required_gates.json`: no evidence at sim/build/r40/v2/R40-05.json | P → V | After V, collect frozen `make r40-multicore` package evidence on final identity; judge this gate separately | Preserve P/V first failing evidence; fix that cause; gate remains not-measured |
 | R40-06.nuca | 最终镜像 active outlet 的实际负载流量证据缺失 | `required_gates.json`: no evidence at sim/build/r40/v2/R40-06.json | P → V | After V, collect frozen `make r40-nuca` package evidence on final identity; judge this gate separately | Preserve P/V first failing evidence; fix that cause; gate remains not-measured |
@@ -104,7 +141,7 @@ The collector fixes the complete frozen 77-point inventory, 5 warmups/30 samples
 
 The software frozen for V is **8abf527**, archive SHA `5ca01fb61573b71e9ff89f18814fb8ef0c2414dbc969160262967ffe2a878fee`, tree `files:bd04f1ecc57ad18bc2813c1743b28df07d616f946502d35d2978ea133c0f383e`. Both jump and FPGA hosts verified that tree and frozen contract. Native 1/2/3-core functional evidence remains attributed to 85fa7d8; its python/ and compiler/ sources are byte-identical to the frozen V software. Only collection/provenance tooling changed. Required gate statuses remain in required_gates.json; final image/clock/CDC qualification are not-measured.
 
-## Current implementation and CI checkpoint
+## Historical implementation and CI checkpoint (superseded by P above)
 
 The same candidate advanced to Phase 4.1.1.3 Post Placement Timing Optimization; its original implementation process remains live. No implementation retry was started. Base post-route reports remain queued behind successful link completion. A second, sequential observer then queries actual placed primitive cells of each core using `get_slrs -of_objects`, records unplaced logic and excludes only unplaced GND/VCC netlist constants. It requires the three physical core hierarchies to occupy SLR0/1/2. This is independent of pblock intentions; it is not yet physical evidence. Its Tcl query API was checked against installed Vivado 2023.2 help. Collector refusal tests cover shared SLRs, missing cores, unplaced logic and preserved previous reports. The observers never mark a gate accepted or rerun implementation.
 

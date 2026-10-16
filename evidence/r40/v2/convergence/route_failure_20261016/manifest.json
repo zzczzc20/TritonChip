@@ -1,0 +1,13 @@
+{
+  "schema": "tnca-route-failure-evidence/1",
+  "gate_status": "not-measured",
+  "implementation_exit_code": 1,
+  "terminal_cause": "Route 35-3: global congestion level 7",
+  "contract_sha256": "49fc0e02733139707ae2292eff2ef893e76e73f0723d0d002b2e7e1864af71c8",
+  "artifacts": {
+    "README.md": "39c61657dca3dfce27f77b069141879c278a15635857e35b4b26f63f727ff795",
+    "link.exit": "4355a46b19d348dc2f57c046f8ef63d4538ebb936000f3c9ee954a27460dd865",
+    "observation.json": "0623d326797149addbeea84ce55f138384f973306b2160e08de670f7a8a1c06d",
+    "runme.log.gz": "9be300b5dc42b3a6b50b4e610da448df16b8aea5e1429507d740aeac7e1a2878"
+  }
+}

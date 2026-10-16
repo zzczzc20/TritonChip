@@ -1,0 +1,62 @@
+{
+  "schema": "tnca-r40-final-image-readiness-audit/1",
+  "source_commit": "ce814d3",
+  "contract_sha256": "49fc0e02733139707ae2292eff2ef893e76e73f0723d0d002b2e7e1864af71c8",
+  "scope": "Source audit only; no gate promotion and no implementation launch",
+  "first_full_attempt_ready": false,
+  "findings": [
+    {
+      "control": "TNCA_RTL_OUTSTANDING",
+      "gate": "R40-04.bandwidth",
+      "source": "rtl/fpga/tnca_line_axi.v",
+      "blocker": "OUT_N is an elaboration parameter; no runtime admission cap exists",
+      "next_action": "Add a quiescent runtime 1/8 admission cap, capability/readback and actual in-flight validation before first full attempt",
+      "source_sha256": "7d923cf6db84b57f19ba987d4779bcdebb2ebf32b2ef98109f7a54873b6bf2b3"
+    },
+    {
+      "control": "TNCA_RTL_MEM_PORTS",
+      "gate": "R40-06.ports",
+      "source": "rtl/nuca/tnca_mem_ports.v",
+      "blocker": "PORTS and home-to-outlet routing are elaboration-time constants",
+      "next_action": "Add quiescent one/three outlet selection with all homes still reachable, reply source validation, drain and capability/readback before first full attempt",
+      "source_sha256": "420ce282c76169d2b6eadfb5abb8a30f959a57c7c73502e5f515d41f1c8ddb4f"
+    },
+    {
+      "control": "TNCA_LOCALITY",
+      "gate": "R40-06.locality",
+      "source": "rtl/noc/tnca_core_ni.v",
+      "blocker": "Address-only home hash is fixed; existing immutable software audit has no runtime switch consumer",
+      "next_action": "Implement allocation/dispatch locality with coherent unique physical home semantics; retain unchanged-work A/B evidence",
+      "source_sha256": "ba3c39d09949b95dbfa178d37f89b0bf5d985c644bee11cf5ea8e58a9e6af637"
+    },
+    {
+      "control": "TNCA_DCO",
+      "gate": "R40-06.dco",
+      "source": "rtl/nuca/tnca_tmu.v",
+      "blocker": "Hardware metadata/policy path exists; standard-path runtime switch and registration lifecycle remain unwired",
+      "next_action": "Connect standard generated descriptor/storage metadata with atomic ownership lifetime; test concurrent roles and unchanged disabled artifacts",
+      "source_sha256": "29c326b4cc7da6c928ed41119416880362704b8d0b544889b6ad99daeb144ea3"
+    },
+    {
+      "control": "TNCA_PIPELINE",
+      "gate": "R40-07.pipeline",
+      "source": "compiler/python",
+      "blocker": "Existing role/stage mechanism differs from frozen control; standard-path switch consumer remains missing",
+      "next_action": "Bind frozen compile control to actual supported role/stage lowering and record generated artifacts; no new hardware knob assumed without review",
+      "source_sha256": null
+    },
+    {
+      "control": "TNCA_TUNE",
+      "gate": "R40-09.holdout",
+      "source": "tools/r40",
+      "blocker": "Existing real compiled candidates and bounded worker infrastructure are retained; frozen full holdout execution is not measured",
+      "next_action": "Use actual compiled candidates on final identity and frozen holdout; fitting/calibration must exclude holdout",
+      "source_sha256": null
+    }
+  ],
+  "evidence_dependencies": [
+    "pending_switch_consumers.json",
+    "implementation_budget.json",
+    "route_failure_20261016/observation.json"
+  ]
+}

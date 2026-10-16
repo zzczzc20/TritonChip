@@ -1,0 +1,18 @@
+{
+  "schema": "tnca-r40-full-implementation-budget/1",
+  "recorded_utc": "2026-10-16",
+  "authorization": "At most two additional full-system synthesis/place/route attempts before R40 v2 delivery; frozen contract unchanged",
+  "starts_after_failed_hardware_source": "09ebe06",
+  "previous_failure_checkpoint_sha256": "8d82bd375ce489ca433aba15f83692b53b409bc045381a7a8f44ed44811a50d9",
+  "maximum_additional_attempts": 2,
+  "used": 0,
+  "remaining": 2,
+  "attempts": [],
+  "first_attempt_prerequisites": [
+    "actual failed-checkpoint diagnosis identifies limiting paths and congestion",
+    "all frozen-gate-required hardware controls audited and integrated",
+    "functional/mutation evidence and bounded resource/timing screening support the combined candidate",
+    "immutable source/configuration/constraints/toolchain manifest recorded"
+  ],
+  "second_attempt_policy": "Reserve for a concrete root-cause correction from the first; never rotate directives without evidence"
+}

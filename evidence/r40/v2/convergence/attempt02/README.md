@@ -40,3 +40,23 @@ build directory and never retries or loads a board. Success must be followed
 by actual placement, route, clock/setup/hold, CDC and image qualification,
 then the unscaled >=64 MiB standard Torch checkpoint and complete frozen
 inventories. Failure retains logs/DCP and does not trigger another attempt.
+
+Started at 2026-10-16 22:33:29 UTC from immutable source `0c39793`;
+[launch.json](launch.json) records the exact archive, source, configuration,
+clock, contract, process and observer identities. The implementation budget
+is now two used, zero remaining. No acceptance gate is promoted at launch.
+
+Current physical-gate blocker: this candidate has not completed full route.
+Direct evidence: the runner has started; route/timing/CDC/image results are
+not-measured. Next command on the FPGA host:
+`cat ~/tnca_build/r40_attempt02_followup/state.json`.
+Success: inspect complete actual-placement, route, 100 MHz setup/hold, CDC
+and image reports before loading. Failure: retain logs and DCP and diagnose;
+never retry automatically or lower the clock/cores/workload.
+
+The vertical hardware/workload gates are blocked by that same unqualified
+image. After physical qualification, run the existing original >=64 MiB
+Torch checkpoint on the immutable software snapshot, then the complete
+native 77, HBM 14 and frozen model inventories. Numerical, ownership,
+three-core/outlet traffic and visibility evidence are required; a checkpoint
+failure must preserve its exact inputs and output before any correction.

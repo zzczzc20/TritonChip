@@ -36,9 +36,11 @@
       "control": "TNCA_DCO",
       "gate": "R40-06.dco",
       "source": "rtl/nuca/tnca_tmu.v",
-      "blocker": "Hardware metadata/policy path exists; standard-path runtime switch and registration lifecycle remain unwired",
-      "next_action": "Connect standard generated descriptor/storage metadata with atomic ownership lifetime; test concurrent roles and unchanged disabled artifacts",
-      "source_sha256": "29c326b4cc7da6c928ed41119416880362704b8d0b544889b6ad99daeb144ea3"
+      "blocker": "Standard Torch metadata registration and correct ownership/liveness integration remain unwired",
+      "next_action": "Integrate the verified core-program transport with authoritative standard launch/storage metadata and ownership lifetimes; do not enable unproven last-use hints",
+      "source_sha256": "29c326b4cc7da6c928ed41119416880362704b8d0b544889b6ad99daeb144ea3",
+      "evidence": "../../R40-06/core_tmu_transport/README.md",
+      "implementation": "Actual three-core Session/AOT control programs reach existing TMU policy/register/notice paths; no host register aperture is needed for that transport"
     },
     {
       "control": "TNCA_PIPELINE",

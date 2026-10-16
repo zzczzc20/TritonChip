@@ -1,0 +1,174 @@
+{
+  "captured_utc": "2026-10-16T07:10:51.322473+00:00",
+  "gate_status": "not-measured",
+  "scope": "IR/Session control-transport diagnostic; not standard Torch DCO or final image qualification",
+  "archive_sha256": "844f52fb3bb07eb715d4b479727d1bf74ff460fcb512ae44edc8c7d36095ee39",
+  "archive_bytes": 38457,
+  "tool_sha256": "f927df2e033381be8cb36c77321ccd850be09eef06b7d84a3f9f6def8f9a4b4e",
+  "configuration": {
+    "core_count": 3,
+    "memory_ports": 3,
+    "board_top": true,
+    "maintenance": true,
+    "hbm_dma": true,
+    "memory_controls": true,
+    "cache_sets": 4,
+    "cache_ways": 2,
+    "registered_ranges": 0
+  },
+  "report": {
+    "scope": "functional TMU transport only",
+    "gate_status": "not-measured",
+    "physical_image_sha256": null,
+    "measured_performance": false,
+    "results": [
+      {
+        "operation": "policy",
+        "value": 4,
+        "registered": 0,
+        "tile_notices": 0
+      },
+      {
+        "operation": "policy",
+        "value": 4,
+        "registered": 3,
+        "tile_notices": 3
+      },
+      {
+        "operation": "register",
+        "total": 3,
+        "tile_notices": 3,
+        "per_program": [
+          1,
+          3,
+          3
+        ],
+        "physical_grid": {
+          "peak_active": 3,
+          "cores": [
+            {
+              "core": 0,
+              "issued": 1,
+              "completed": 1,
+              "occupied_cycles": 197
+            },
+            {
+              "core": 1,
+              "issued": 1,
+              "completed": 1,
+              "occupied_cycles": 238
+            },
+            {
+              "core": 2,
+              "issued": 1,
+              "completed": 1,
+              "occupied_cycles": 251
+            }
+          ]
+        }
+      },
+      {
+        "operation": "policy",
+        "value": 4,
+        "registered": 6,
+        "tile_notices": 6
+      },
+      {
+        "operation": "register",
+        "total": 6,
+        "tile_notices": 6,
+        "per_program": [
+          4,
+          6,
+          6
+        ],
+        "physical_grid": {
+          "peak_active": 3,
+          "cores": [
+            {
+              "core": 0,
+              "issued": 1,
+              "completed": 1,
+              "occupied_cycles": 169
+            },
+            {
+              "core": 1,
+              "issued": 1,
+              "completed": 1,
+              "occupied_cycles": 207
+            },
+            {
+              "core": 2,
+              "issued": 1,
+              "completed": 1,
+              "occupied_cycles": 229
+            }
+          ]
+        }
+      },
+      {
+        "operation": "policy",
+        "value": 1,
+        "registered": 6,
+        "tile_notices": 6
+      },
+      {
+        "operation": "policy",
+        "value": 2,
+        "registered": 6,
+        "tile_notices": 6
+      },
+      {
+        "operation": "policy",
+        "value": 34,
+        "registered": 6,
+        "tile_notices": 6
+      },
+      {
+        "operation": "policy",
+        "value": 0,
+        "registered": 6,
+        "tile_notices": 6
+      },
+      {
+        "operation": "policy",
+        "value": 0,
+        "registered": 6,
+        "tile_notices": 6
+      }
+    ],
+    "contract_sha256": "49fc0e02733139707ae2292eff2ef893e76e73f0723d0d002b2e7e1864af71c8",
+    "artifact_sha256": {
+      "reset": "4b0a1863ed53337c90656e6b6840d2e9d6362bb0e065f30da2bb0c975c63d43d",
+      "policy": "a816d759306616943153cf7dad9e773e9c996e5b080bb6cac8d7202638da7e99",
+      "register": "d6505f91a97560561f1dba668257705343631f8243358cd28656d339edcdda69"
+    },
+    "final_control_grid": {
+      "peak_active": 1,
+      "cores": [
+        {
+          "core": 0,
+          "issued": 1,
+          "completed": 1,
+          "occupied_cycles": 231
+        },
+        {
+          "core": 1,
+          "issued": 0,
+          "completed": 0,
+          "occupied_cycles": 0
+        },
+        {
+          "core": 2,
+          "issued": 0,
+          "completed": 0,
+          "occupied_cycles": 0
+        }
+      ]
+    },
+    "simulator_directory": "/tmp/r40_tmu_control19/sim/build/u50-sim/link-72wojqd7",
+    "status": "functional-pass"
+  },
+  "source_base_commit": "642c66031b1a1b92ba1ca24f17fb285ceb34f14d",
+  "archive": "functional_evidence.tar.gz"
+}

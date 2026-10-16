@@ -68,6 +68,10 @@ Requests buffered upstream are a separate quantity and can exceed that limit.
 A one-outlet experiment still addresses every home and the same shared BO.
 Query configuration before and after an experiment block, outside the measured
 interval. These controls add no per-launch configuration-register probes.
+Sample per-grid dispatch telemetry before any subsequent control grid. A policy
+readback implemented as a core program is itself a grid and resets issued,
+completed and peak-activity counters. Include its duration and traffic if it
+runs inside the measured graph; retain cumulative outlet counters separately.
 Keep image, allocation, ingress width, burst size and clock fixed during these
 comparisons. Functional RTL checks are available through
 `tools/r40/memory_control_tests.py`; they do not measure board bandwidth.

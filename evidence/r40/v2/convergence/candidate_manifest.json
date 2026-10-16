@@ -73,5 +73,7 @@
   "new_candidate_source_commit": "cf330dc64b6e1df535c31c9bb1a5d735e6bc0fb7",
   "new_candidate_build_root": "/home/zzhouch/tnca_build/r40_attempt01_20261016",
   "new_candidate_final_software_qualification": "pending: runtime-control software differs from historical 8abf527 snapshot; final native77/HBM14/model and immutable software identity must be re-established",
-  "new_candidate_phase": "placement-running; synthesis complete; route/timing/CDC/image not qualified"
+  "new_candidate_phase": "placement-running; synthesis complete; route/timing/CDC/image not qualified",
+  "active_checkpoint_snapshot": "checkpoint_snapshot_642c660.json",
+  "historical_snapshot_scope": "Top-level 8abf527 and 09ebe06 identities preserve the terminal previous candidate; upcoming V uses checkpoint_snapshot_642c660.json and attempt01"
 }

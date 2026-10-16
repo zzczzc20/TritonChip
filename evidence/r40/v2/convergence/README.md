@@ -1,6 +1,6 @@
 # R40 v2 delivery convergence ledger
 
-This is a dated execution ledger, **not a contract amendment**. The frozen v2 contract and all thresholds remain unchanged. Snapshot: 2026-10-16 UTC; vertical software snapshot 8abf527; previous failed hardware source 09ebe06; additional attempt 1 source cf330dc. Existing functional passes do not certify the final image. Required gate changes: R40-01.device and R40-03.contract now capability-pass; missing mixed-device/device-time entries are not-measured. All other required statuses are in required_gates.json. No performance gate has been promoted.
+This is a dated execution ledger, **not a contract amendment**. The frozen v2 contract and all thresholds remain unchanged. Snapshot: 2026-10-16 UTC; active vertical checkpoint software snapshot 642c660; previous failed hardware source 09ebe06; additional attempt 1 source cf330dc. Existing functional passes do not certify the final image. Required gate changes: R40-01.device and R40-03.contract now capability-pass; missing mixed-device/device-time entries are not-measured. All other required statuses are in required_gates.json. No performance gate has been promoted.
 
 ## Immediate experiment commands and branches
 
@@ -45,8 +45,9 @@ build; no qualification or performance gate is promoted.
 
 **Next command:** `tail -60 /home/zzhouch/tnca_build/r40_attempt01_20261016/xo/link.log`
 on the FPGA server. **Success:** inspect complete placement/route, setup/hold,
-CDC and image identity, then run V only after qualification and resolution of
-the functional blocker. **Failure:** retain the first fatal vendor diagnostic
+CDC and image identity, then run the diagnostic V checkpoint in the default
+three-outlet/eight-outstanding mode. Retain the unresolved reservation-X issue
+against the full control matrix; V cannot close that gate or certify delivery. **Failure:** retain the first fatal vendor diagnostic
 and checkpoint; reserve the second implementation for a demonstrated correction.
 
 **Full-implementation budget:** at most two additional attempts. The exact
@@ -66,9 +67,12 @@ limits the complete design; failure preserves the local result without
 attributing the linked congestion to it. No operating-frequency, graph-speedup
 or gate claim follows from OOC estimates.
 
-**V — vertical checkpoint after P yields a qualified loadable image.** From a clean immutable archive on FPGA server, after `source ~/tc_env/env.sh` and XRT setup:
+**V — vertical checkpoint after P yields a qualified loadable image.** From the verified immutable archive on the FPGA server:
 
 ```sh
+cd ~/tnca_srcR40checkpoint_642c660
+source /opt/xilinx/xrt/setup.sh
+export TORCH_EXTENSIONS_DIR="$HOME/.cache/tnca/r40_checkpoint642_extensions"
 PYTHONPATH=python:compiler/python:tools/asm CUDA_VISIBLE_DEVICES= \
   ~/tc_env/torchenv/bin/python tools/r40/board_checkpoint.py \
   --xclbin "$R40_FINAL_XCLBIN" --image-sha256 "$R40_FINAL_IMAGE_SHA256" \
@@ -143,7 +147,7 @@ PYTHONPATH=python:compiler/python:tools/asm CUDA_VISIBLE_DEVICES= \
 
 The collector fixes the complete frozen 77-point inventory, 5 warmups/30 samples, three blocks and frozen random order. Every independent subprocess report is preserved before judging. Full image SHA, compiler/Python versions and backend arguments participate in configuration matching. This command has not measured the final board. Success proceeds to the frozen non-regression audit; a collection failure preserves partial records and an audit failure preserves the actual verdict. Partial collection cannot pass.
 
-The software frozen for V is **8abf527**, archive SHA `5ca01fb61573b71e9ff89f18814fb8ef0c2414dbc969160262967ffe2a878fee`, tree `files:bd04f1ecc57ad18bc2813c1743b28df07d616f946502d35d2978ea133c0f383e`. Both jump and FPGA hosts verified that tree and frozen contract. Native 1/2/3-core functional evidence remains attributed to 85fa7d8; its python/ and compiler/ sources are byte-identical to the frozen V software. Only collection/provenance tooling changed. Required gate statuses remain in required_gates.json; final image/clock/CDC qualification are not-measured.
+The active V software snapshot is **642c660**, tree `files:ba3d9b0207b2520e1773e993b9ffce5db87410cc61237cfecf85908d29988613`, archive SHA `fab753e704ea5b56354f3d6ea01bb50877402a723abd2091100ff0557d56d802`. Both hosts verified this exact tree and frozen contract; paths and reconstruction command are in `checkpoint_snapshot_642c660.json`. FPGA Python 3.10.12, Torch 2.14.0+cpu and Triton 3.8.0 are available. Native device registration was prepared in a snapshot-specific extension cache without opening a device. Historical 8abf527/85fa7d8 archives and results remain attributed to those identities. This checkpoint snapshot includes the current runtime-memory/measurement fixes and pipeline control; it is not final R40 software qualification, and no legacy native77 or performance result is reattributed to it.
 
 ## Historical implementation and CI checkpoint (superseded by P above)
 
@@ -157,4 +161,4 @@ CI run 38679960975 failed only R36-BE-01: its broad Popen token check classified
 
 ## Necessary HBM measurement correction
 
-`evidence/r40/R40-04/measurement_boundary/` reproduces the v2 MMIO register-default bug on actual three-core RTL: legacy C0..D8 reads return zero despite positive traffic at all three outlets. The current backend correctly reports the legacy interface unavailable, and the HBM diagnostic uses opcode-17 outlet line counts. It captures traffic before CPU validation and keeps common-clock graph spans separate from summed kernel cycles. Request/control traffic outside launch endpoints is explicitly labelled; it is not certified HBM peak bandwidth. Include this correction in the final measurement software after V; the immutable 8abf527 V archive has not been modified. No required gate changes as a result of this diagnostic correction.
+`evidence/r40/R40-04/measurement_boundary/` reproduces the v2 MMIO register-default bug on actual three-core RTL: legacy C0..D8 reads return zero despite positive traffic at all three outlets. The current backend correctly reports the legacy interface unavailable, and the HBM diagnostic uses opcode-17 outlet line counts. It captures traffic before CPU validation and keeps common-clock graph spans separate from summed kernel cycles. Request/control traffic outside launch endpoints is explicitly labelled; it is not certified HBM peak bandwidth. The active 642c660 checkpoint archive includes this correction; the historical immutable 8abf527 archive has not been modified. No required gate changes as a result of this diagnostic correction.

@@ -1,0 +1,35 @@
+{
+  "software_commit": "642c66031b1a1b92ba1ca24f17fb285ceb34f14d",
+  "software_tree": "files:ba3d9b0207b2520e1773e993b9ffce5db87410cc61237cfecf85908d29988613",
+  "archive_sha256": "fab753e704ea5b56354f3d6ea01bb50877402a723abd2091100ff0557d56d802",
+  "checkpoint_harness_sha256": "6c164ebe65627e13f7962f56a535bd62a876219359b44a187927a946b737f96c",
+  "contract_sha256": "49fc0e02733139707ae2292eff2ef893e76e73f0723d0d002b2e7e1864af71c8",
+  "scope": "Immutable software for the next V checkpoint; not final R40 software qualification",
+  "hardware_source": "cf330dc64b6e1df535c31c9bb1a5d735e6bc0fb7",
+  "hardware_diff_to_candidate": "empty for rtl/ and fpga/",
+  "image_sha256": null,
+  "qualification": "not-measured",
+  "archive_recipe": "git archive 642c660 archbench python compiler tools spec rtl tb isa flow fpga Makefile pyproject.toml doc/r40_tasks_and_acceptance_v2.md | gzip",
+  "software_root_jump": "/home/zhongchun/tritonchip-r40-checkpoint-642c660",
+  "software_root_fpga": "/home/zzhouch/tnca_srcR40checkpoint_642c660",
+  "host_verification": {
+    "jump": {
+      "software_tree": "files:ba3d9b0207b2520e1773e993b9ffce5db87410cc61237cfecf85908d29988613",
+      "contract": "pass"
+    },
+    "fpga": {
+      "software_tree": "files:ba3d9b0207b2520e1773e993b9ffce5db87410cc61237cfecf85908d29988613",
+      "contract": "pass"
+    }
+  },
+  "python_fpga": "/home/zzhouch/tc_env/torchenv/bin/python",
+  "xrt_setup_fpga": "/opt/xilinx/xrt/setup.sh",
+  "torch_extensions_dir_fpga": "/home/zzhouch/.cache/tnca/r40_checkpoint642_extensions",
+  "pending": [
+    "matching image SHA and actual route/setup/hold/CDC qualification",
+    "reservation-X root-cause investigation",
+    "unscaled board checkpoint and final inventories"
+  ],
+  "environment_probe": "checkpoint642_environment.json",
+  "environment_preparation": "Native extension compiled/registered and XRT C library loaded; zero device sessions opened"
+}

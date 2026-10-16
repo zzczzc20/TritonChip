@@ -1,0 +1,25 @@
+{
+  "launch": {
+    "pid": 1126939,
+    "source_root": "/home/zzhouch/tnca_build/r40_attempt01_audit_tools",
+    "build": "/home/zzhouch/tnca_build/r40_attempt01_20261016",
+    "out": "/home/zzhouch/tnca_build/r40_attempt01_followup",
+    "source_archive_sha256": "93d4d50763e8f769cfd9513eb1ec89fdfa42dbd29a1b472455b20831effdedf1",
+    "started_utc": "2026-10-16T07:32:07.663677+00:00",
+    "scope": "read-only reports after terminal marker; no retry, synthesis, route or board load"
+  },
+  "state": {
+    "scope": "report extraction only; no synthesis/place/route/load/retry",
+    "gate_status": "not-measured",
+    "build": "/home/zzhouch/tnca_build/r40_attempt01_20261016",
+    "runner_pid": 894704,
+    "image_sha256": null,
+    "steps": [],
+    "watcher_sha256": "dc44a21b105fba2abe1f6f2f9a3f8cf89f2c493e92c84e3ead40c08ce293fb85",
+    "status": "watching-existing-build",
+    "observed_utc": "2026-10-16T07:32:07.719682+00:00"
+  },
+  "runner_process": "    PID    PPID     ELAPSED STAT COMMAND\n1126939       1       01:20 Ss   bash /home/zzhouch/tnca_build/r40_attempt01_followup_runner.sh\n1126940 1126939       01:20 S    /usr/bin/python3 /home/zzhouch/tnca_build/r40_attempt01_audit_tools/tools/r40/watch_implementation.py --build /home/zzhouch/tnca_build/r40_attempt01_20261016 --runner-pid 894704 --out /home/zzhouch/tnca_build/r40_attempt01_followup\n",
+  "log": "",
+  "exit": null
+}

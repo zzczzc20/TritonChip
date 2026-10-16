@@ -66,3 +66,21 @@ constraints; they are diagnostic context, not a controlled percentage saving.
 The observed SLR0/1 crossing demand is 15,396 of 23,040 SLLs. That preliminary
 placement message cannot establish final local congestion or routability.
 No extra Vivado report process was started while placement consumes memory.
+
+## Detached read-only completion observer
+
+`followup_observer.json` records the live observer (runner 1126939, Python
+1126940) at `~/tnca_build/r40_attempt01_followup/`. It watches only this existing
+attempt and its `build/attempt.exit`. It starts no synthesis, placement, route,
+second attempt or board load. After successful link it extracts route status,
+CDC, clocks, timing, resource and actual-core-location reports. A failed link
+retains checkpoint diagnostics when a suitable DCP exists. The observer waits
+until implementation termination before loading a large checkpoint, avoiding
+competition with the live placer/router. Reports require review; extraction
+never promotes a required gate. Observation expiry does not cancel the build.
+
+Next observer command on the FPGA server:
+`cat ~/tnca_build/r40_attempt01_followup/state.json`.
+On `reports-ready-review-required`, inspect every raw sign-off report and the
+image/clock identities before V. On failure, retain the specific checkpoint/log
+and diagnose it before considering the one remaining implementation attempt.

@@ -72,21 +72,26 @@ and descriptor faults. The first standalone decoder driver incorrectly selected
 SystemVerilog for this Verilog-2005 testbench (`expect` is a reserved keyword);
 its failure is preserved, and the corrected driver uses the Makefile's `-g2005`.
 
-Current blocker: full native four-configuration numerical validation of the
-repair, with recording enabled and disabled, is still running. Next commands
-on the jump host:
+The complete native regressions have now passed with journaling enabled and
+disabled. `native_repair_validation.json` retains both complete host logs, exit
+0, all four configuration/readback/outlet/numerical/staging verdicts, exact
+source-tree and harness identities. Both snapshots have execution-tree identity
+`files:a11a4f6bae489207b800147ade6d1cd6a00c9479376e300ec526d6550bc2deeb`.
+The recorded run also terminates cleanly with `T 3571616 1`. The archive
+`fixed_native_capture.tar.gz` retains its complete journal, exact compiled
+harness and decoder/test sources; SHA256
+`cd1d37622a88458ae26e49db3a5ab21b5aea5b0099de8d4aca40dfa8b42f78f3`.
+The original failure, its exact replay, prefix diagnostic and old-source
+mutation remain retained. These results validate this functional repair; they
+do not measure instrumentation overhead or board performance.
 
-```sh
-cat /tmp/r40_illegal30_native.exit /tmp/r40_illegal32_default.exit
-tail -12 /tmp/r40_illegal30_native.log
-tail -12 /tmp/r40_illegal32_default.log
-```
-
-Success requires all four numerical/outlet/staging checks and exit 0 in each
-run; retain the complete logs, source hashes and recorded journal. Failure
-retains the first assertion or numerical discrepancy and its input history
-before further changes. Neither outcome substitutes for the full native 77,
-HBM 14 or frozen model on the final immutable software/image identity.
+Current delivery blocker: the final immutable hardware/software identity has
+not completed physical qualification and the full frozen inventories. Next
+command on the FPGA host: `cat ~/tnca_build/r40_attempt01_followup/state.json`.
+After successful route/timing/CDC/image review, run the unchanged V checkpoint
+from the convergence ledger, then the complete native 77, HBM 14 and frozen
+model. On failure, retain the first vendor/runtime/numerical failure and fix
+that cause. Never transfer these development results to a different image.
 
 The active FPGA implementation still uses cf330dc and does not contain the
 later decoder repair. Preserve that distinction when evaluating the image;

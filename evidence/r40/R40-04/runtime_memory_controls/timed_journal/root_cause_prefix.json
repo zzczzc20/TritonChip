@@ -20,5 +20,5 @@
     ]
   },
   "raw_replay_archive_sha256": "201d89210812e08cc9a37d5878ee1f6cb16580cdb8f08639539e35fe8739c40a",
-  "complete_native_regression": "running"
+  "complete_native_regression": "native_repair_validation.json: all four configurations pass, recording enabled and disabled"
 }

@@ -1,0 +1,24 @@
+{
+  "number": 1,
+  "state": "started-packaging-before-vitis-link",
+  "source_commit": "cf330dc64b6e1df535c31c9bb1a5d735e6bc0fb7",
+  "source_archive_sha256": "9050487dbff7675c859e3401849ee023137c4607f3ccb17654585def72c20869",
+  "source_root": "/home/zzhouch/tnca_src_r40_attempt01_cf330dc",
+  "build_root": "/home/zzhouch/tnca_build/r40_attempt01_20261016",
+  "command": "bash flow/fpga/run_r40_attempt01.sh /home/zzhouch/tnca_build/r40_attempt01_20261016",
+  "configuration": "attempt01/image.json",
+  "clock_target_hz": 100000000,
+  "contract_sha256": "49fc0e02733139707ae2292eff2ef893e76e73f0723d0d002b2e7e1864af71c8",
+  "hypothesis": "Registered owner ranges reduce metadata cone; 32 rather than 64 cache sets reduces async tag mux/storage and CLB packing pressure; directive unchanged",
+  "known_risks": [
+    "Reservation-X in snapshot09 unresolved despite later passing runtime-control runs",
+    "100 MHz not established by local OOC estimates"
+  ],
+  "functional_geometry_screen": "32 sets/8 ways randomized actual slice passed both replacement policies on jump host",
+  "image_sha256": null,
+  "timing_qualification": "not-measured",
+  "cdc_qualification": "not-measured",
+  "runner_pid": 894704,
+  "started_utc": "2026-10-16T03:18:04.496272+00:00",
+  "launch_record_fpga": "/home/zzhouch/tnca_build/r40_attempt01_20261016.launch.json"
+}

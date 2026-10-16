@@ -10,7 +10,7 @@
   "attempts": [
     {
       "number": 1,
-      "state": "reserved-before-launch",
+      "state": "started-packaging-before-vitis-link",
       "source_commit": "cf330dc64b6e1df535c31c9bb1a5d735e6bc0fb7",
       "source_archive_sha256": "9050487dbff7675c859e3401849ee023137c4607f3ccb17654585def72c20869",
       "source_root": "/home/zzhouch/tnca_src_r40_attempt01_cf330dc",
@@ -27,7 +27,10 @@
       "functional_geometry_screen": "32 sets/8 ways randomized actual slice passed both replacement policies on jump host",
       "image_sha256": null,
       "timing_qualification": "not-measured",
-      "cdc_qualification": "not-measured"
+      "cdc_qualification": "not-measured",
+      "runner_pid": 894704,
+      "started_utc": "2026-10-16T03:18:04.496272+00:00",
+      "launch_record_fpga": "/home/zzhouch/tnca_build/r40_attempt01_20261016.launch.json"
     }
   ],
   "first_attempt_prerequisites": [

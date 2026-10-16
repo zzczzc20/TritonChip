@@ -13,7 +13,9 @@ after each step, one lease so two runs cannot share a card, and a record that
 says exactly which commit, image and software a number came from.
 
 It needs only the Python standard library (3.9 or later), so the same code
-plans a run on a laptop and executes it on an FPGA host.
+plans a run on a laptop and executes it on an FPGA host. The Vivado flow and
+the card need not be on one host: `pipeline` builds on one server and measures
+on another (§11.2).
 
 ## Contents
 
@@ -27,7 +29,7 @@ plans a run on a laptop and executes it on an FPGA host.
 8. [Commands](#8-commands)
 9. [The manifest](#9-the-manifest)
 10. [Out-of-context runs](#10-out-of-context-runs)
-11. [SSH worker dispatch](#11-ssh-worker-dispatch)
+11. [Remote servers: dispatch, and a pipeline over two](#11-remote-servers-dispatch-and-a-pipeline-over-two)
 12. [Running a real candidate](#12-running-a-real-candidate)
 13. [What has been run](#13-what-has-been-run)
 14. [What the harness does not do](#14-what-the-harness-does-not-do)
@@ -111,8 +113,16 @@ manifest names it.
 
 | Target | Card | Platform | Kernel clock → device clock | Vitis |
 |---|---|---|---|---|
-| `u280` | Alveo U280, kernel in SLR1 | `xilinx_u280_gen3x16_xdma_1_202211_1` | 100 MHz → 100 MHz (÷1) | 2023.2 |
+| `u280` | Alveo U280, kernel in SLR1 | `xilinx_u280_gen3x16_xdma_1_202211_1` | 100 MHz → 100 MHz (÷1) | 2023.2 by default; 2022.2 or 2023.2 accepted |
 | `u50` | Alveo U50 | `xilinx_u50_gen3x16_xdma_5_202210_1` | 100 MHz → 100 MHz (÷1) | 2022.2 |
+
+Where Vitis is installed is the host's business, not the card's. The target's
+`vitis_root` and `platforms_root` are the card host's paths; a host that keeps
+them elsewhere sets `FPGA_HARNESS_VITIS_ROOT` and `FPGA_HARNESS_PLATFORMS_ROOT`
+(a hosts file does it for a pipeline, §11.2). `vitis_versions` lists the
+versions the card accepts images from, and a root outside it is refused
+(`vitis_version`, §3.3). A run records the roots it used and whether the host
+or the target named them (`environment.json`, `tool_roots`).
 
 A target is named for its card and nothing else, because its file lives
 beside the flow it describes. A commit that moves the flow to another clock
@@ -165,6 +175,7 @@ Then the host:
 |---|---|
 | `vivado`, `v++`, `xclbinutil` | on the `PATH` of the shell that starts the harness |
 | `vitis_settings`, `platform` | `<vitis_root>/settings64.sh` and the platform directory exist |
+| `vitis_version` | the root's version (its last path component) is one the target accepts |
 | `existing_vendor_processes` | this account has no `vivado`, `vpl`, `v++` or `loader` already running |
 | `build_outside_repo`, `build_parent_writable` | the build directory is outside the checkout and can be written |
 
@@ -552,9 +563,12 @@ harness or manifest error.
 | `status <run>` | a run's record and result; marks a run whose controller is gone `ORPHANED` | `--state-dir` |
 | `reconcile <run>` | finds the vendor process a lost run left; `--terminate` ends its process group | `--state-dir`, `--terminate` |
 | `validate` | judges an existing build directory | `--target`, `--build-dir`, `--historical`, `--output` |
-| `export <run>` | writes the evidence packet | `--state-dir`, `--output` |
-| `dispatch <host> <manifest>` | sends a manifest to a worker over SSH (§11) | `--remote-repo`, `--state-dir`, `--timeout`, `--ssh-timeout`, `--skip-board`, `--output` |
-| `worker --stdin` | the remote end of `dispatch` | |
+| `export <run>` | writes the evidence packet; `--light` leaves out v++'s working tree | `--state-dir`, `--output`, `--light` |
+| `import` | installs a run built on another host from its light packet, every file's hash checked (§11.2) | `--state-dir`, `--from-tar FILE\|-` |
+| `pipeline <manifest>` | builds on one server of a hosts file and measures on another (§11.2) | `--hosts`, `--build-host`, `--board-host`, `--timeout`, `--poll`, `--skip-board`, `--build-run`, `--no-sync`, `--output` |
+| `sync <host>` | puts a clean checkout of a commit on a server, from a git bundle | `--hosts`, `--commit` |
+| `dispatch <host> <manifest>` | sends a manifest to a worker over SSH (§11.1) | `--remote-repo`, `--state-dir`, `--timeout`, `--ssh-timeout`, `--skip-board`, `--output` |
+| `worker --stdin` | the remote end of `dispatch` and `pipeline`: `doctor`, `submit`, `status`, `export`, `measure` | |
 | `budget reserve\|settle\|status` | a token ledger for a managed worker; a usage that is unknown stays reserved rather than counting as zero | `--ledger`, `--limit` |
 
 ## 9. The manifest
@@ -616,7 +630,9 @@ The command must write `ooc_result.json` with `{"status": "PASS"}` or
 declared artifacts, and records their hashes. An OOC run takes no lease and
 never produces an XCLBIN; `OOC_FAIL` is its failing status.
 
-## 11. SSH worker dispatch
+## 11. Remote servers: dispatch, and a pipeline over two
+
+### 11.1 One server: `dispatch`
 
 A coordinator without Vivado, XRT or a board account can send a manifest to a
 prepared checkout on an FPGA host, which runs the same harness there:
@@ -633,6 +649,81 @@ records the destination, the exact argv, the return code, the remote result,
 and a hash and tail of each remote log. The logs, the XCLBIN and the evidence
 stay on the worker until exported there. A zero SSH exit status is not a
 result: read `remote.result.status`.
+
+### 11.2 Two servers: `pipeline`
+
+The Vivado flow wants a fast CPU and memory to spare; the card is wherever the
+card is. On 2026-10-17 the same commit linked in 103 minutes on a build server
+with Vitis 2022.2 and in 213 on the card host with 2023.2, and the 2022.2
+image loaded on the card (§13). So the flow can run on one server and the
+board stage on another, with a controller -- any machine whose SSH reaches
+both -- doing what one `submit` does:
+
+```text
+ controller                     build server                    card server
+ ──────────                     ────────────                    ───────────
+ sync ── git bundle ──────────► mirror.git → checkouts/<sha>
+      ── git bundle ────────────────────────────────────────►  mirror.git → checkouts/<sha>
+ doctor ─────────────────────►  flow + Vivado/Vitis checks
+        ──────────────────────────────────────────────────────►  board-stage checks
+ build ──────────────────────►  submit --skip-board, detached
+ (polls status) ◄────────────   PASS / TIMING_FAIL / BUILD_FAIL
+ export ─────────────────────►  light packet: image, records, routed reports
+ transfer   ◄── tar ──────────  packet
+            ── tar ────────────────────────────────────────────►  import: every hash checked
+ measure ────────────────────────────────────────────────────►  measure RUN_ID, detached
+ (polls status) ◄──────────────────────────────────────────────  PASS / BOARD_FAIL / ARCHBENCH_FAIL
+```
+
+```bash
+python3 $H/cli.py --repo "$PWD" pipeline candidate-u280.json \
+  --hosts ~/.config/tritonchip-fpga-harness/hosts.json \
+  --build-host build --board-host card --timeout 28800 --output pipeline.json --json
+```
+
+**The hosts file** is the operator's and stays outside the repository
+([`examples/hosts.example.json`](examples/hosts.example.json), `hosts.py`). Per
+server: an `ssh` destination that the controller's own SSH configuration
+resolves (user, key, jump host: the harness adds none), its `roles` (`build`,
+`board`), the `python` (3.9 or later) that runs the harness there, a
+`workspace`, a `state_dir`, and for a build server the `vitis_root` it keeps.
+`environment` passes further variables to every remote command: on a build
+server a `PATH` with Vivado's and Vitis's `bin` first (a remote command does
+not read the login shell's profile), on a card server the ArchBench
+interpreter. Every value is one shell-safe token; anything else is refused
+when the file is read.
+
+**What each step does.**
+
+| Step | Where | |
+|---|---|---|
+| `sync` | each server | a clean checkout of the commit at `<workspace>/checkouts/<sha>`, a worktree of the bare `mirror.git`. The controller sends the commit as a git bundle, so the servers need no access to the repository's remote. A checkout already there is used if it is at the commit and clean, and refused otherwise; nothing on a server is deleted |
+| `doctor` | both | the build server's flow contract and vendor tools, with its own Vitis root (§3.3); the card server's board-stage checks only (§5.2), so it needs no Vivado. Both checkouts must be the commit, clean |
+| `build` | build server | `submit --skip-board`, started in a session of its own: the link does not depend on the controller's SSH connection, and the controller polls `status` |
+| `export` | build server | a light packet: the run's records and logs, the XO and XCLBIN, and the routed text reports, without v++'s working tree (about 1 GB a link) |
+| `transfer` | controller | the packet as a tar stream from one server into `import` on the other; the servers never connect to each other |
+| `import` | card server | accepts only plain files under one run directory, every file's hash as the packet lists it, and an image that is the one the build's own result recorded; a run already present is accepted only if it is the same packet |
+| `measure` | card server | `measure RUN_ID`, detached, polled: §5 on the image the build server built, driven by the card server's checkout of the same commit |
+
+**What it leaves.** The build's run directory on the build server (with v++'s
+working tree), the imported run with its board records on the card server
+(`imported.json` says where it came from), and on the controller the record
+`pipeline` prints: the commit, the servers, each step's timing and outcome,
+the build's verdict and slack, the image's hash on both sides, and the board
+stage's result. Its `status` is the board stage's, or the build's when that
+did not pass; `PIPELINE_FAIL` is a step that could not be done, with the
+reason in `error`.
+
+**Picking up.** A build or measurement survives the controller. `status` on
+the server reports `STARTING`, `RUNNING`, `MEASURING`, a verdict, or
+`FAILED_TO_START` with the tail of the child's log. `pipeline --build-run
+RUN_ID` attaches to a build that is running or done and carries on from there,
+so a failed transfer or board stage does not cost a link. `--skip-board` stops
+after the build; `--no-sync` uses the checkouts as they are.
+
+**One run at a time, per server.** Each server's harness takes its own lease
+(§3.4): a build on the build server and a board stage on the card server can
+overlap, two links on one build server cannot.
 
 ## 12. Running a real candidate
 
@@ -663,13 +754,27 @@ If the session is lost during a link, `status RUN_ID` and then `reconcile`
 
 ## 13. What has been run
 
+**A U280 image built on another server** (2026-10-17, by hand with the flow's
+own scripts, before `pipeline` existed). `b5c606d` packaged and linked on a
+build server (Core i5-11400, Vivado/Vitis 2022.2, no licence file: 2022.2
+grants xcu280 implementation itself): 103 minutes, against 213 for the same
+commit on the card host with 2023.2. Place 22 min (68), route 34 (67), kernel
+synthesis 12 (26). Routed ap_clk WNS +0.138 ns (2023.2: +0.177), design WNS
++0.016 ns on both (the platform's own path), clock 100 MHz. On the card host,
+`program.sh --check` passed every gate with that XCLBIN (its interface UUID is
+the shell's) and `--go` loaded it: the device reports its UUID, `DATA_CLK`
+100 MHz. No kernel was run on it.
+
+**`pipeline`** has run end to end only between two directories of one machine
+(`tests/test_split_hosts.py`); not yet between two servers.
+
 On `acf3019` (Alveo U280, Vitis 2023.2, XRT 2.16), from clean checkouts, on
 2026-10-11 and 12. The image is the link of `b5c606d`, whose tree is that of
 the commit this harness was added on.
 
 | What | Result |
 |---|---|
-| The suite, 93 tests | passes on macOS (Python 3.9) and on the host (Python 3.10) |
+| The suite, 93 tests (108 with the split-server tests of 2026-10-17, on macOS) | passes on macOS (Python 3.9) and on the host (Python 3.10) |
 | `doctor` for the U280 target, alone and with a board manifest | every check passes |
 | `validate` on three real links | two `PASS`: design WNS +0.016 ns, WHS +0.006 ns, no failing endpoint of 584 460 and of 566 734, DRC 0 errors. One, a link that missed timing, rejected with its numbers: WNS −0.079 ns, 304 endpoints |
 | `measure` without a load, the card already holding the image | conformance 5 of 5; ArchBench `tiny` 27 of 27 `measured-board`; 4 459 740 cycles |
@@ -697,4 +802,6 @@ Not run:
   state directory. Someone loading the card by hand is outside it.
 - **It cannot force a reload of the image already on the card**, and says so
   (`reconfigured: false`) instead of reporting a load.
-- **It does not fetch code.** A run is of the checkout as it stands.
+- **It does not fetch code.** A run is of the checkout as it stands. `sync`
+  puts a checkout on a server from a bundle the controller sends, never from a
+  remote, and never deletes or rewrites one that is there.

@@ -5,6 +5,10 @@
   "part": "xcu280-fsvh2892-2L-e",
   "platform": "xilinx_u280_gen3x16_xdma_1_202211_1",
   "vitis_root": "/tools/Xilinx/Vitis/2023.2",
+  "vitis_versions": [
+    "2022.2",
+    "2023.2"
+  ],
   "platforms_root": "/opt/xilinx/platforms",
   "kernel_clock_mhz": 100,
   "device_clock_mhz": 100,

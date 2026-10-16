@@ -2,18 +2,78 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "TritonChip FPGA SSH worker request",
   "type": "object",
-  "required": ["schema_version", "operation", "board", "adapter", "manifest"],
+  "required": [
+    "schema_version",
+    "operation",
+    "board",
+    "adapter",
+    "manifest"
+  ],
   "properties": {
-    "schema_version": {"const": 1},
-    "operation": {"enum": ["doctor", "submit"]},
-    "board": {"enum": ["u50", "u280"]},
-    "adapter": {"enum": ["u50", "u280"]},
-    "manifest": {"$ref": "manifest.schema.json"},
-    "state_dir": {"type": "string", "minLength": 1},
-    "allow_dirty": {"type": "boolean"},
-    "skip_board": {"type": "boolean"},
-    "timeout": {"type": "integer", "minimum": 1},
-    "run_id": {"type": "string", "minLength": 1}
+    "schema_version": {
+      "const": 1
+    },
+    "operation": {
+      "enum": [
+        "doctor",
+        "submit",
+        "status",
+        "export",
+        "measure"
+      ]
+    },
+    "board": {
+      "enum": [
+        "u50",
+        "u280"
+      ]
+    },
+    "adapter": {
+      "enum": [
+        "u50",
+        "u280",
+        "mock"
+      ]
+    },
+    "manifest": {
+      "$ref": "manifest.schema.json"
+    },
+    "state_dir": {
+      "type": "string",
+      "minLength": 1
+    },
+    "allow_dirty": {
+      "type": "boolean"
+    },
+    "skip_board": {
+      "type": "boolean"
+    },
+    "timeout": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "run_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "scope": {
+      "enum": [
+        "build",
+        "board"
+      ]
+    },
+    "detach": {
+      "type": "boolean"
+    },
+    "light": {
+      "type": "boolean"
+    },
+    "since": {
+      "type": "number"
+    },
+    "allow_source_mismatch": {
+      "type": "boolean"
+    }
   },
   "additionalProperties": false
 }

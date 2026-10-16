@@ -24,6 +24,8 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any, Callable, Mapping, Protocol, Sequence
 
+from ..toolroots import vitis_version
+
 
 ADAPTER_VERSION = "u50-adapter-v0.2"
 
@@ -62,6 +64,8 @@ class U50Config:
     xo_name: str = "tnca_u50.xo"
     xclbin_name: str = "tnca_u50.xclbin"
     allowed_auto_frequency_rules: tuple[str, ...] = ()
+    # The Vitis versions the card accepts images from; empty means unchecked.
+    accepted_vitis_versions: tuple[str, ...] = ()
     require_routed_timing: bool = False
     require_drc: bool = False
     environment: dict[str, str] = field(default_factory=dict)
@@ -86,6 +90,7 @@ class U50Config:
             xo_name=self.xo_name,
             xclbin_name=self.xclbin_name,
             allowed_auto_frequency_rules=tuple(self.allowed_auto_frequency_rules),
+            accepted_vitis_versions=tuple(self.accepted_vitis_versions),
             require_routed_timing=self.require_routed_timing,
             require_drc=self.require_drc,
             environment=dict(self.environment),
@@ -338,6 +343,13 @@ class U50Adapter:
                 "warning" if (dry_run or not require_vendor_tools) and not settings_ok else "error")
             add("platform", platform_ok or dry_run or not require_vendor_tools, str(c.platform_path),
                 "warning" if (dry_run or not require_vendor_tools) and not platform_ok else "error")
+            if c.accepted_vitis_versions:
+                # The image is loaded by a shell that was validated with these
+                # versions; a newer Vitis may not even carry the platform.
+                found = vitis_version(c.vitis_root)
+                add("vitis_version", found in c.accepted_vitis_versions,
+                    f"{found or 'unknown'} at {c.vitis_root}; the target accepts "
+                    + ", ".join(c.accepted_vitis_versions))
             # v++ and xclbinutil are provided after settings64 is sourced by
             # link.sh; checking the host PATH here catches obvious local
             # mistakes, but does not replace the script's post-source check.

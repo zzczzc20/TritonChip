@@ -10,6 +10,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
+from ..toolroots import tool_roots
 from .u50 import U50Adapter, U50Config
 
 
@@ -19,10 +20,13 @@ class U280FlowAdapter:
     def _impl(self, root: Path, profile: Any) -> U50Adapter:
         data = profile.data
         expected_artifacts = list(data["expected_artifacts"])
+        # The target names the card host's installation; a build host that
+        # keeps Vitis elsewhere overrides it (toolroots.py).
+        roots = tool_roots(data)
         environment = {
             "TNCA_BOARD": "u280",
-            "XILINX_VITIS": str(data.get("vitis_root", "/tools/Xilinx/Vitis/2023.2")),
-            "XILINX_PLATFORMS": str(data.get("platforms_root", "/opt/xilinx/platforms")),
+            "XILINX_VITIS": str(roots["vitis_root"] or "/tools/Xilinx/Vitis/2023.2"),
+            "XILINX_PLATFORMS": str(roots["platforms_root"]),
         }
         environment.update({str(k): str(v) for k, v in data.get("environment", {}).items()})
         return U50Adapter(
@@ -41,6 +45,7 @@ class U280FlowAdapter:
                 xo_name=str(expected_artifacts[0]),
                 xclbin_name=str(expected_artifacts[1]),
                 allowed_auto_frequency_rules=tuple(data.get("allowed_auto_frequency_rules", [])),
+                accepted_vitis_versions=tuple(str(v) for v in data.get("vitis_versions", [])),
                 environment=environment,
                 package_script=root / str(data["package_script"]),
                 link_script=root / str(data["link_script"]),

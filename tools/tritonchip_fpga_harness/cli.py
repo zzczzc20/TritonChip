@@ -11,12 +11,16 @@ from pathlib import Path
 if __package__ in (None, ""):
     sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
     from tritonchip_fpga_harness.budget import BudgetError, TokenLedger
-    from tritonchip_fpga_harness.core import HarnessError, doctor, export_evidence, load_profile, measure_existing, plan, reconcile, repo_root, status, submit, validate_existing
+    from tritonchip_fpga_harness.core import HarnessError, doctor, export_evidence, import_run, load_profile, measure_existing, plan, reconcile, repo_root, status, submit, validate_existing
+    from tritonchip_fpga_harness.hosts import load_hosts
+    from tritonchip_fpga_harness.pipeline import PipelineError, resolve_commit, run_pipeline, sync
     from tritonchip_fpga_harness.worker import DispatchError, dispatch_manifest, worker_main
     from tritonchip_fpga_harness.schema import SchemaError, load_json
 else:
     from .budget import BudgetError, TokenLedger
-    from .core import HarnessError, doctor, export_evidence, load_profile, measure_existing, plan, reconcile, repo_root, status, submit, validate_existing
+    from .core import HarnessError, doctor, export_evidence, import_run, load_profile, measure_existing, plan, reconcile, repo_root, status, submit, validate_existing
+    from .hosts import load_hosts
+    from .pipeline import PipelineError, resolve_commit, run_pipeline, sync
     from .worker import DispatchError, dispatch_manifest, worker_main
     from .schema import SchemaError, load_json
 
@@ -104,7 +108,32 @@ def main(argv: list[str] | None = None) -> int:
     e.add_argument("run_id")
     e.add_argument("--state-dir")
     e.add_argument("--output", required=True)
+    e.add_argument("--light", action="store_true", help="leave out v++'s working tree: the packet a card host measures from")
     e.add_argument("--json", action="store_true")
+    im = sub.add_parser("import", help="install a run built on another host, from its light packet")
+    im.add_argument("--state-dir")
+    im.add_argument("--from-tar", required=True, help="the packet as a tar file, or '-' for a tar stream on stdin")
+    im.add_argument("--json", action="store_true")
+    pl = sub.add_parser("pipeline", help="build on one server and measure on another, as a hosts file names them")
+    pl.add_argument("manifest", type=Path)
+    pl.add_argument("--hosts", required=True, type=Path, help="the operator's hosts file (hosts.py)")
+    pl.add_argument("--build-host", required=True)
+    pl.add_argument("--board-host", help="required when the manifest has a board block, unless --skip-board")
+    pl.add_argument("--adapter", choices=("u50", "u280", "mock"), help="default: the target's own; mock plays the build")
+    pl.add_argument("--timeout", type=int, help="per remote step (the link, the board stage), in seconds")
+    pl.add_argument("--poll", type=float, default=60.0, help="seconds between status polls")
+    pl.add_argument("--skip-board", action="store_true", help="build only")
+    pl.add_argument("--build-run", help="a build already started or finished on the build host; skip the submit")
+    pl.add_argument("--no-sync", action="store_true", help="the checkouts are already on the servers")
+    pl.add_argument("--ssh-binary", default="ssh")
+    pl.add_argument("--output", type=Path, help="also write the record here")
+    pl.add_argument("--json", action="store_true")
+    sy = sub.add_parser("sync", help="put a clean checkout of a commit on a server of the hosts file")
+    sy.add_argument("host")
+    sy.add_argument("--hosts", required=True, type=Path)
+    sy.add_argument("--commit", default="HEAD")
+    sy.add_argument("--ssh-binary", default="ssh")
+    sy.add_argument("--json", action="store_true")
     v = sub.add_parser("validate")
     v.add_argument("--target", required=True)
     v.add_argument("--build-dir", required=True, type=Path)
@@ -176,6 +205,28 @@ def main(argv: list[str] | None = None) -> int:
                 args.output.write_text(json.dumps(value, indent=2, sort_keys=True) + "\n", encoding="utf-8")
         elif args.command == "worker":
             return worker_main(package_dir=HERE, root=root)
+        elif args.command == "import":
+            state = _state(args.state_dir, root)
+            if args.from_tar == "-":
+                value = import_run(state, sys.stdin.buffer)
+            else:
+                with open(args.from_tar, "rb") as packet:
+                    value = import_run(state, packet)
+        elif args.command == "pipeline":
+            value = run_pipeline(
+                local_repo=root, hosts=load_hosts(args.hosts), manifest=load_json(args.manifest),
+                build_host=args.build_host, board_host=args.board_host, adapter=args.adapter,
+                timeout=args.timeout, poll_s=args.poll, skip_board=args.skip_board,
+                build_run=args.build_run, do_sync=not args.no_sync, ssh_binary=args.ssh_binary,
+            )
+            if args.output:
+                args.output.parent.mkdir(parents=True, exist_ok=True)
+                args.output.write_text(json.dumps(value, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+        elif args.command == "sync":
+            hosts = load_hosts(args.hosts)
+            if args.host not in hosts:
+                raise SchemaError(f"no host {args.host!r} in {args.hosts}")
+            value = dict(sync(hosts[args.host], resolve_commit(root, args.commit), root, ssh_binary=args.ssh_binary), ok=True)
         elif args.command == "reconcile":
             value = reconcile(_state(args.state_dir, root), args.run_id, terminate=args.terminate)
         elif args.command == "validate":
@@ -185,7 +236,7 @@ def main(argv: list[str] | None = None) -> int:
                 args.output.write_text(json.dumps(value, indent=2, sort_keys=True) + "\n", encoding="utf-8")
         else:
             if args.command == "export":
-                destination = export_evidence(_state(args.state_dir, root), args.run_id, Path(args.output).resolve())
+                destination = export_evidence(_state(args.state_dir, root), args.run_id, Path(args.output).resolve(), light=args.light)
                 value = {"run_id": args.run_id, "evidence_dir": str(destination)}
             else:
                 ledger = TokenLedger(Path(args.ledger), args.limit)
@@ -197,7 +248,7 @@ def main(argv: list[str] | None = None) -> int:
                     value = ledger.status()
         print(json.dumps(value, indent=2, sort_keys=True) if getattr(args, "json", False) else json.dumps(value, indent=2, sort_keys=True))
         return 0 if value.get("ok", value.get("status", "PASS") in ("PASS", "PENDING", "RUNNING")) else 1
-    except (HarnessError, SchemaError, BudgetError, DispatchError, OSError) as exc:
+    except (HarnessError, SchemaError, BudgetError, DispatchError, PipelineError, OSError) as exc:
         print(f"harness: {exc}", file=sys.stderr)
         return 2
 

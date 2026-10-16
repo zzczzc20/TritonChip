@@ -21,6 +21,7 @@ from typing import Any, Mapping, Sequence
 
 from .adapters.u50 import CommandResult, execute_command
 from .schema import dump_json
+from .toolroots import tool_roots
 
 
 class MeasurementError(RuntimeError):
@@ -129,7 +130,7 @@ def _xrt_root() -> Path:
 def _tool_dirs(profile: Any) -> list[str]:
     """Directories the board commands need on PATH, most specific first."""
     dirs: list[str] = []
-    vitis_root = profile.data.get("vitis_root")
+    vitis_root = tool_roots(profile.data)["vitis_root"]
     if vitis_root:
         dirs.append(str(Path(vitis_root) / "bin"))
     xrt_bin = _xrt_root() / "bin"
@@ -519,10 +520,10 @@ def measure_board(
     # exactly.  Add the tool directories explicitly instead of relying on a
     # user's interactive shell having sourced settings64.sh or XRT's setup.sh:
     # the programmer needs xclbinutil, and both installations ship one.
-    vitis_root = profile.data.get("vitis_root")
-    if vitis_root:
-        env["XILINX_VITIS"] = str(vitis_root)
-        env["XILINX_PLATFORMS"] = str(profile.data.get("platforms_root", ""))
+    roots = tool_roots(profile.data)
+    if roots["vitis_root"]:
+        env["XILINX_VITIS"] = str(roots["vitis_root"])
+        env["XILINX_PLATFORMS"] = str(roots["platforms_root"])
     tool_dirs = _tool_dirs(profile)
     if tool_dirs:
         env["PATH"] = os.pathsep.join(tool_dirs + [os.environ.get("PATH", "")])

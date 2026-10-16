@@ -6,17 +6,20 @@ import contextlib
 import hashlib
 import json
 import os
+import re
 import platform as host_platform
 import shlex
 import socket
 import shutil
 import signal
 import subprocess
+import tarfile
+import tempfile
 import time
 import uuid
 from dataclasses import dataclass
-from pathlib import Path
-from typing import Any, Iterator, Sequence
+from pathlib import Path, PurePosixPath
+from typing import Any, BinaryIO, Iterator, Sequence
 
 from .schema import SchemaError, dump_json, load_json, validate_manifest
 from . import __version__ as HARNESS_VERSION
@@ -24,6 +27,7 @@ from .adapters.u50 import U50Adapter as VendorU50Adapter, U50Config
 from .adapters.u50 import execute_command
 from .adapters.u280 import U280FlowAdapter
 from .measurement import MeasurementError, archbench_python, board_preflight, image_profile_contract, measure_board
+from .toolroots import tool_roots
 
 
 class HarnessError(RuntimeError):
@@ -263,8 +267,10 @@ def environment_snapshot(root: Path, profile: Profile, adapter_name: str) -> dic
     """
     data = profile.data
     default_vitis = "/home/x4/Software/Xilinx/Vitis/2022.2" if adapter_name in {"u50", "real"} else ""
-    vitis_root = Path(str(data.get("vitis_root", os.environ.get("XILINX_VITIS", default_vitis))))
-    platforms_root = Path(str(data.get("platforms_root", os.environ.get("XILINX_PLATFORMS", "/opt/xilinx/platforms"))))
+    roots = tool_roots(data)
+    vitis_root = Path(str(roots["vitis_root"] or os.environ.get("XILINX_VITIS", default_vitis)))
+    platforms_root = Path(str(roots["platforms_root"] if data.get("platforms_root") or roots["platforms_source"] == "host"
+                              else os.environ.get("XILINX_PLATFORMS", "/opt/xilinx/platforms")))
     settings = vitis_root / "settings64.sh" if str(vitis_root) else Path("")
     return {
         "schema_version": 1,
@@ -280,6 +286,9 @@ def environment_snapshot(root: Path, profile: Profile, adapter_name: str) -> dic
         "kernel_clock_mhz": data.get("kernel_clock_mhz"),
         "device_clock_mhz": data.get("device_clock_mhz"),
         "device_divider": data.get("device_divider", 4),
+        # Which installation this host used, and whether the host or the
+        # target named it (a build host may keep Vitis elsewhere).
+        "tool_roots": dict(roots, vitis_root=str(vitis_root), platforms_root=str(platforms_root)),
         "paths": {
             "vitis_root": _path_fingerprint(vitis_root),
             "settings64": _path_fingerprint(settings),
@@ -865,7 +874,7 @@ def status(state_dir: Path, run_id: str) -> dict[str, Any]:
     if not path.is_file():
         raise HarnessError(f"unknown run {run_id}")
     run = load_json(path)
-    if run.get("status") == "RUNNING":
+    if run.get("status") in ("RUNNING", "MEASURING"):
         controller = run.get("controller", {})
         if controller and not _same_process(controller):
             run["status"] = "ORPHANED"
@@ -973,6 +982,12 @@ def measure_existing(
         )
     if board_config_source == "measure":
         dump_json(run_dir / "board_manifest.json", board_manifest)
+    # From here the run is being measured, by this process: a coordinator
+    # polling `status` must not take the build's PASS for the board's, and a
+    # measurement whose controller dies is ORPHANED like a lost build.
+    run.update({"status": "MEASURING", "measure_started_at": time.time(),
+                "controller": {**_process_identity(os.getpid()), "kind": "harness-measure"}})
+    dump_json(run_path, run)
     measurement: dict[str, Any] | None = None
     error: str | None = None
     final_status = "PASS"
@@ -1039,7 +1054,31 @@ def reconcile(state_dir: Path, run_id: str, *, terminate: bool = False) -> dict[
     return {"run_id": run_id, "status": run.get("status"), "active_process": active, "process_alive": alive, "terminated": terminated}
 
 
-def export_evidence(state_dir: Path, run_id: str, output: Path) -> Path:
+# What a light packet leaves out: v++'s working tree (about a gigabyte per
+# link) and the intermediate Vivado projects.  It keeps the image, the run's
+# records and logs, and the routed text reports the verdict was read from.
+_HEAVY = ("artifacts/tmp", "artifacts/vpp_logs", "artifacts/proj", "artifacts/ip_repo")
+_KEPT_REPORTS = "artifacts/tmp/reports/link/imp"
+
+
+def _light_ignore(run_dir: Path):
+    def ignore(directory: str, names: list[str]) -> set[str]:
+        relative = Path(directory).resolve().relative_to(run_dir.resolve()).as_posix()
+        skipped = {"active_process.json"}
+        for name in names:
+            path = f"{relative}/{name}" if relative != "." else name
+            if any(path == heavy for heavy in _HEAVY):
+                skipped.add(name)
+        return skipped
+    return ignore
+
+
+def export_evidence(state_dir: Path, run_id: str, output: Path, *, light: bool = False) -> Path:
+    """Copy a run with a SHA-256 for every file.
+
+    ``light`` is the packet that carries a build to another host for its board
+    stage: everything but v++'s working tree, plus the routed text reports.
+    """
     run_dir = state_dir / "runs" / run_id
     if not (run_dir / "result.json").is_file():
         raise HarnessError(f"run {run_id} has no result")
@@ -1050,15 +1089,118 @@ def export_evidence(state_dir: Path, run_id: str, output: Path) -> Path:
     destination = output / run_id
     if destination.exists():
         shutil.rmtree(destination)
-    shutil.copytree(run_dir, destination, ignore=shutil.ignore_patterns("active_process.json"))
+    if light:
+        shutil.copytree(run_dir, destination, ignore=_light_ignore(run_dir))
+        reports = run_dir / _KEPT_REPORTS
+        if reports.is_dir():
+            for report in sorted(reports.glob("*.rpt")):
+                target = destination / _KEPT_REPORTS / report.name
+                target.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(report, target)
+    else:
+        shutil.copytree(run_dir, destination, ignore=shutil.ignore_patterns("active_process.json"))
     files: dict[str, str] = {}
     for path in sorted(destination.rglob("*")):
-        if path.is_file() and path.name != "evidence-manifest.json":
+        if path.is_file() and path.name not in ("evidence-manifest.json", "README.txt"):
             files[str(path.relative_to(destination))] = file_sha256(path)
-    dump_json(destination / "evidence-manifest.json", {"schema_version": 1, "run_id": run_id, "files": files})
+    dump_json(destination / "evidence-manifest.json",
+              {"schema_version": 1, "run_id": run_id, "packet": "light" if light else "full", "files": files})
     (destination / "README.txt").write_text(
         "This directory is a self-contained FPGA harness evidence packet. "
         "The hashes in evidence-manifest.json cover logs, reports, source snapshot, "
         "XO/XCLBIN and run metadata.\n", encoding="utf-8"
     )
     return destination
+
+
+_SAFE_RUN_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.-]*$")
+
+
+def _member_path(name: str) -> PurePosixPath:
+    path = PurePosixPath(name)
+    if path.is_absolute() or not path.parts or any(part in ("", ".", "..") for part in path.parts):
+        raise HarnessError(f"packet member {name!r} is not a plain relative path")
+    return path
+
+
+def import_run(state_dir: Path, stream: BinaryIO) -> dict[str, Any]:
+    """Install a run built on another host, from its packet as a tar stream.
+
+    The board host measures what the build host built.  The packet is the
+    build host's ``export --light`` of one run: a single top-level directory
+    named for the run.  Only plain files and directories are accepted, every
+    file must carry the hash ``evidence-manifest.json`` gives it, and the image
+    must be the one the build's own result recorded.  Nothing is installed
+    unless all of that holds.  A run already present is accepted only if it is
+    the same packet.
+    """
+    incoming = state_dir / "incoming"
+    incoming.mkdir(parents=True, exist_ok=True)
+    staging = Path(tempfile.mkdtemp(prefix="import-", dir=str(incoming)))
+    try:
+        top: str | None = None
+        with tarfile.open(fileobj=stream, mode="r|*") as archive:
+            for member in archive:
+                path = _member_path(member.name)
+                if top is None:
+                    top = path.parts[0]
+                if path.parts[0] != top:
+                    raise HarnessError("a packet holds exactly one run directory")
+                target = staging.joinpath(*path.parts)
+                if member.isdir():
+                    target.mkdir(parents=True, exist_ok=True)
+                elif member.isfile():
+                    target.parent.mkdir(parents=True, exist_ok=True)
+                    source = archive.extractfile(member)
+                    if source is None:
+                        raise HarnessError(f"packet member {member.name!r} has no data")
+                    with target.open("wb") as out:
+                        shutil.copyfileobj(source, out)
+                else:
+                    raise HarnessError(f"packet member {member.name!r} is not a plain file or directory")
+        if top is None or not _SAFE_RUN_ID.fullmatch(top):
+            raise HarnessError(f"packet run directory {top!r} is not a run id")
+        packet = staging / top
+        manifest_path = packet / "evidence-manifest.json"
+        if not manifest_path.is_file():
+            raise HarnessError("packet has no evidence-manifest.json")
+        manifest = load_json(manifest_path)
+        if manifest.get("run_id") != top:
+            raise HarnessError(f"packet manifest names run {manifest.get('run_id')!r}, directory is {top!r}")
+        listed = manifest.get("files") or {}
+        present = {str(p.relative_to(packet)) for p in packet.rglob("*") if p.is_file()} - {"evidence-manifest.json", "README.txt"}
+        if present != set(listed):
+            extra, missing = sorted(present - set(listed)), sorted(set(listed) - present)
+            raise HarnessError(f"packet files differ from its manifest (extra {extra[:5]}, missing {missing[:5]})")
+        for relative, digest in listed.items():
+            if file_sha256(packet / relative) != digest:
+                raise HarnessError(f"packet file {relative} does not match its hash")
+        result = load_json(packet / "result.json")
+        run = load_json(packet / "run.json")
+        if result.get("mode") != "full" or result.get("status") != "PASS":
+            raise HarnessError(f"run {top} is {result.get('mode')}/{result.get('status')}; only a passed full build is measured")
+        expected = list((run.get("profile") or {}).get("expected_artifacts") or [])
+        if len(expected) != 2:
+            raise HarnessError(f"run {top} records no expected artifacts")
+        xclbin = f"artifacts/{expected[-1]}"
+        recorded = (result.get("artifacts") or {}).get(xclbin)
+        if not recorded or listed.get(xclbin) != recorded:
+            raise HarnessError(f"{xclbin} in the packet is not the image run {top} recorded")
+        destination = state_dir / "runs" / top
+        if destination.exists():
+            existing = destination / "evidence-manifest.json"
+            if existing.is_file() and load_json(existing).get("files") == listed:
+                return {"ok": True, "run_id": top, "already_present": True, "files": len(listed), "xclbin_sha256": recorded}
+            raise HarnessError(f"run {top} already exists on this host and is not this packet")
+        dump_json(packet / "imported.json", {
+            "schema_version": 1,
+            "imported_at": time.time(),
+            "built_on": ((run.get("environment") or {}).get("host") or {}).get("hostname"),
+            "imported_by": _host_identity(),
+            "packet_manifest_sha256": file_sha256(manifest_path),
+        })
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        os.replace(packet, destination)
+        return {"ok": True, "run_id": top, "already_present": False, "files": len(listed), "xclbin_sha256": recorded}
+    finally:
+        shutil.rmtree(staging, ignore_errors=True)

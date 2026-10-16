@@ -130,6 +130,9 @@ def validate_manifest(value: dict[str, Any]) -> dict[str, Any]:
     return value
 
 
+WORKER_OPERATIONS = ("doctor", "submit", "status", "export", "measure")
+
+
 def validate_worker_request(value: dict[str, Any]) -> dict[str, Any]:
     """Validate the JSON envelope exchanged by the SSH controller/worker."""
     if not isinstance(value, dict):
@@ -140,29 +143,36 @@ def validate_worker_request(value: dict[str, Any]) -> dict[str, Any]:
     missing = [key for key in required if key not in value]
     if missing:
         raise SchemaError("worker request missing: " + ", ".join(missing))
-    if value["operation"] not in ("doctor", "submit"):
-        raise SchemaError("worker operation must be 'doctor' or 'submit'")
+    if value["operation"] not in WORKER_OPERATIONS:
+        raise SchemaError("worker operation must be one of " + ", ".join(WORKER_OPERATIONS))
     if value["board"] not in ("u50", "u280"):
         raise SchemaError("worker board must be 'u50' or 'u280'")
-    if value["adapter"] not in ("u50", "u280"):
-        raise SchemaError("worker adapter must be 'u50' or 'u280'")
-    if value["adapter"] != value["board"]:
+    # `mock` plays the build without Vivado; it exists to exercise a split
+    # pipeline end to end, and its runs say so (run.json adapter).
+    if value["adapter"] not in ("u50", "u280", "mock"):
+        raise SchemaError("worker adapter must be 'u50', 'u280' or 'mock'")
+    if value["adapter"] != "mock" and value["adapter"] != value["board"]:
         raise SchemaError("worker adapter must match board")
     validate_manifest(value["manifest"])
-    if "allow_dirty" in value and not isinstance(value["allow_dirty"], bool):
-        raise SchemaError("worker allow_dirty must be boolean")
-    if "skip_board" in value and not isinstance(value["skip_board"], bool):
-        raise SchemaError("worker skip_board must be boolean")
+    for key in ("allow_dirty", "skip_board", "detach", "light", "allow_source_mismatch"):
+        if key in value and not isinstance(value[key], bool):
+            raise SchemaError(f"worker {key} must be boolean")
     if "timeout" in value and (not isinstance(value["timeout"], int) or value["timeout"] <= 0):
         raise SchemaError("worker timeout must be a positive integer")
     for key in ("state_dir", "run_id"):
         if key in value and (not isinstance(value[key], str) or not value[key]):
             raise SchemaError(f"worker {key} must be a non-empty string")
+    if "scope" in value and value["scope"] not in ("build", "board"):
+        raise SchemaError("worker scope must be 'build' or 'board'")
+    if "since" in value and (isinstance(value["since"], bool) or not isinstance(value["since"], (int, float))):
+        raise SchemaError("worker since must be a number")
+    if value["operation"] in ("status", "export", "measure") and "run_id" not in value:
+        raise SchemaError(f"worker operation {value['operation']} needs run_id")
     unknown = sorted(set(value) - {
         "schema_version", "operation", "board", "adapter", "manifest",
         "state_dir", "allow_dirty", "skip_board", "timeout", "run_id",
+        "scope", "detach", "light", "since", "allow_source_mismatch",
     })
     if unknown:
         raise SchemaError("worker request has unsupported fields: " + ", ".join(unknown))
     return value
-

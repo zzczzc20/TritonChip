@@ -1,0 +1,15 @@
+iverilog -g2012 -g2005 -I rtl/common -y rtl/common -y rtl/core -y rtl/gen -y rtl/nuca -y rtl/noc -y rtl/tile -y rtl/fpga -y rtl -I rtl/noc -o sim/build/tb_top.vvp tb/top/tb_tnca_top.v rtl/tnca_top.v \
+   tb/common/tnca_dram_model.v
+WARNING: tb/top/tb_tnca_top.v:249: $readmemh(sim/build/t24_amo_mesh.hex): Too many words in the file for the requested range [0:4095].
+---- tnca 2x2 ----
+cycles=2829
+  tile0 issued=538  slice: hit=520 miss=1 wb=0
+  tile1 issued=538  slice: hit=55 miss=2 wb=0
+  tile2 issued=534  slice: hit=16 miss=1 wb=0
+  tile3 issued=536  slice: hit=0 miss=0 wb=0
+totals: hit=591 miss=4 wb=0 mshr_full=0 hit_past_block=0
+mesh: local_home=148 remote_home=449
+dco: policy=0 bypass=0 evict=0 dead_evict=0 registered=0 tlw=0 dead=0 dropped=0
+dram: reads=4 writes=0
+PASS
+tb/top/tb_tnca_top.v:403: $finish called at 28395000 (1ps)

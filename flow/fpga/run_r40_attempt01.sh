@@ -1,8 +1,10 @@
 #!/bin/bash
 # One immutable, fresh-directory implementation. Never retries or loads a board.
 set -euo pipefail
-R40_ATTEMPT_ROOT=${1:?usage: run_r40_attempt01.sh FRESH_BUILD_ROOT}
+R40_ATTEMPT_ROOT=${1:?usage: run_r40_attempt01.sh FRESH_BUILD_ROOT [IMAGE_CONFIG]}
 R40_SOURCE_ROOT=$(cd "$(dirname "$0")/../.." && pwd)
+R40_IMAGE_CONFIG=${2:-"$R40_SOURCE_ROOT/evidence/r40/v2/convergence/attempt01/image.tcl"}
+[ -f "$R40_IMAGE_CONFIG" ] || { echo 'image configuration missing' >&2; exit 2; }
 [ ! -e "$R40_ATTEMPT_ROOT" ] || { echo 'refusing existing build root' >&2; exit 2; }
 mkdir -p "$R40_ATTEMPT_ROOT/build"
 exec >"$R40_ATTEMPT_ROOT/build/runner.log" 2>&1
@@ -13,7 +15,7 @@ source /tools/Xilinx/Vivado/2023.2/settings64.sh >/dev/null 2>&1
 source /tools/Xilinx/Vitis/2023.2/settings64.sh >/dev/null 2>&1
 source /opt/xilinx/xrt/setup.sh >/dev/null 2>&1
 set -u
-export TNCA_IMAGE_CONFIG="$R40_SOURCE_ROOT/evidence/r40/v2/convergence/attempt01/image.tcl"
+export TNCA_IMAGE_CONFIG="$R40_IMAGE_CONFIG"
 export TNCA_BOARD=u280 VPP_JOBS=2
 # Preserve the prior placement strategy; the hypothesis concerns RTL/geometry.
 export LINK_EXTRA='--vivado.prop run.impl_1.STEPS.PLACE_DESIGN.ARGS.DIRECTIVE=SSI_SpreadSLLs'

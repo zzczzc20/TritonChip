@@ -56,16 +56,22 @@ route failed with global congestion level 7; no qualified image exists.
 DCP (`ed1facba…90360e8`). The read-only observer completed all eight diagnostic reports without retry.
 Registered ranges and half the cache sets did not solve routability.
 
-**Next command:** `tail -50 ~/tnca_build/r40_hierarchy_screen/case1.log` on the
-FPGA server (module-level screening only). **Diagnostic success:** inspect complete critical-path, SLR packing
-and congestion reports; formulate and functionally/resource-screen one concrete
-structural correction before spending the final implementation attempt. Only
-a future candidate with complete route, 100 MHz setup/hold, CDC and image
-qualification can unlock V. **Diagnostic failure:** retain partial reports and
-fix extraction; do not rerun synthesis or implementation to obtain diagnostics.
-The failing candidate's later software-only decoder repair is not present in
-its immutable hardware source. Full controls and frozen inventories remain
-unaccepted.
+**Final-candidate preflight:** the complete three-slice/shared-TMU paired
+rebuilt-synthesis and post-optimization screen is retained in
+[attempt02](attempt02/README.md). Preserving only the cache hierarchy removes
+all sampled private-register combinational consumers outside each cache after
+`opt_design` (4,144/5,208/4,153 -> 0/0/0), at +63 LUT/+15 FF. Actual failed-DCP
+site queries establish that such private logic previously detoured through
+SLR1 from SLR2. This is the structural correction for the final attempt;
+module estimates do not promote any full-image gate.
+
+**Next command:** run the one-shot runner against the committed attempt02
+configuration in a fresh FPGA build directory, then use
+`tools/r40/watch_implementation.py` on that exact build/PID. **Success:**
+qualify actual placement, complete route, 100 MHz setup/hold, CDC and image
+identity before the unscaled Torch checkpoint. **Failure:** retain terminal
+logs and DCP, diagnose the observed mechanism and report remaining gates;
+there is no third authorized full implementation or automatic retry.
 
 **P0/P1 physical convergence baseline:**
 `attempt01/physical_postmortem.tar.gz` retains all failed-checkpoint reports

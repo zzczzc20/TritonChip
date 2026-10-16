@@ -10,26 +10,26 @@ module tnca_range_grid_ooc #(
     parameter WORD_BITS  = 64,
     parameter WORD_BYTES = 8,
     parameter SETS       = 64,
-    parameter SET_W      = 6,        
+    parameter SET_W      = 6,
     parameter WAYS       = 8,
-    parameter WAY_W      = 3,        
+    parameter WAY_W      = 3,
     parameter MSHR_N     = 8,
     parameter MSHR_W     = 3,
     parameter TARGET_N   = 16,
     parameter TARGET_W   = 4,
-    parameter RQ_N       = 8,        
+    parameter RQ_N       = 8,
     parameter RQ_W       = 3,
     parameter SRC_W      = 4,
     parameter TAG_W      = 4,
-    
-    
-    
+
+
+
     parameter SLICE_ID   = 0,
     parameter HOME_W     = 2,
-    
+
     parameter FULL_LINE_TAG = 0,
-    
-    
+
+
     parameter DCO_T      = 8,
     parameter DCO_REGISTERED_RANGES = 0,
     parameter SYNC_TAG_BANK = 1,

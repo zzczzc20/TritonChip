@@ -326,7 +326,9 @@ module tnca_tile #(
     //==========================================================================
     // NUCA slice
     //==========================================================================
-    tnca_nuca_slice #(
+    // Keep private cache lookup/replacement logic with its state, so the
+    // tile's SLR constraint also owns the complete combinational cone.
+    (* KEEP_HIERARCHY = "yes" *) tnca_nuca_slice #(
         .REGISTER_VICTIM_OWNER(1), .MAINTENANCE(CACHE_MAINTENANCE), .DCO_REGISTERED_RANGES(DCO_REGISTERED_RANGES),
         .FULL_LINE_TAG(!(NX==2 && NY==2)),
         .ADDR_W(64), .LINE_BYTES(LINE_BYTES), .LINE_BITS(LINE_BITS),

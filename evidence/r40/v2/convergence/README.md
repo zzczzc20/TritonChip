@@ -48,7 +48,7 @@ reproduced a reservation-X failure on the original four-configuration native
 graph. Exact-harness replay matches the first assertion verbatim at the same
 simulated time/core/context/PC. A separate first-unknown diagnostic replay is
 launched against these fixed inputs; it consumes no full implementation budget.
-The producing cause and repair remain unresolved.
+The trace now locates illegal-opcode classification leaking into shared stall/fetch-valid control. A candidate repair passes the failing input prefix and core regressions; full native four-configuration checks are running. The live cf330dc hardware build does not contain this later repair.
 
 **Next command:** `tail -60 /home/zzhouch/tnca_build/r40_attempt01_20261016/xo/link.log`
 on the FPGA server. **Success:** inspect complete placement/route, setup/hold,

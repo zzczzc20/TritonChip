@@ -22,7 +22,7 @@ assertions. The run was deliberately terminated after observing the assertion.
 The simulator now stops at the first reservation mismatch and prints the decode
 state; this failure-only diagnostic is excluded from synthesis.
 
-Current blocker: the undefined reservation source is not explained. Next
+Historical pre-journal blocker: the undefined reservation source was not explained. Next
 experiment: run `python3 tools/r40/memory_control_tests.py --native --python
 $HOME/tc_env/torchenv/bin/python --out /tmp/r40-memory-controls-next` on the jump
 host with its environment loaded and a fresh output directory. On failure,
@@ -45,7 +45,8 @@ changed to clamp unknown state or add host delays.
 [Timed mailbox diagnostics](timed_journal/README.md) now retain a new reservation-X
 failure on the same four-configuration native graph, its simulated input schedule,
 responses, abnormal stop and exact harness. Normal replay and response/time/partial
-mutations validate the reproducer boundary. The undefined reservation source is
-still the blocker; this package does not close it or qualify the final image.
+mutations validate the reproducer boundary. Later strict replay locates the illegal-opcode classification source and validates
+a candidate repair through the failing input prefix. Full native regression and
+final-image validation remain separate requirements.
 Use the next command and success/failure branches in that package rather than
 adding live MMIO probes that change the host schedule.

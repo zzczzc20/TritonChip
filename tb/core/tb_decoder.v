@@ -16,12 +16,13 @@ module tb_decoder;
     reg  [63:0] insn;
     wire        illegal;
     wire [2:0]  fu, dstc;
-    wire [7:0]  dsti;
+    wire [7:0]  dsti, major, func;
+    wire [9:0]  mod_bits;
 
     tnca_decoder u_dec (
         .insn(insn),
         .o_illegal(illegal), .o_fu(fu),
-        .o_major(), .o_func(), .o_mod(),
+        .o_major(major), .o_func(func), .o_mod(mod_bits),
         .o_dst_class(dstc), .o_dst_idx(dsti),
         .o_sa_en(), .o_sa_idx(), .o_sb_en(), .o_sb_idx(),
         .o_sc_en(), .o_sc_idx(),
@@ -70,6 +71,22 @@ module tb_decoder;
             end
         end
         $fclose(fh);
+        // A speculative fetch past an exit can contain unspecified bits.
+        // Illegal still reaches the trap pipeline, but raw X opcode bits
+        // must not select FPU/multiply resources in another RCTX's pipeline.
+        insn = 64'hxxxxxxxxxxxxxxxx;
+        #1;
+        if (illegal !== 1'b1 || fu !== 3'd0 || dstc !== 3'd0 ||
+            major !== 8'd0 || func !== 8'd0 || mod_bits !== 10'd0) begin
+            fails = fails + 1;
+            $display("FAIL unspecified illegal opcode leaked execution classification");
+        end
+        insn = 64'hff00000000000000;
+        #1;
+        if (illegal !== 1'b1 || major !== 8'd0 || func !== 8'd0 || mod_bits !== 10'd0) begin
+            fails = fails + 1;
+            $display("FAIL known illegal opcode did not retain inert classification");
+        end
         $display("tb_decoder: %0d vectors, %0d failures", n, fails);
         if (fails == 0) $display("PASS"); else $display("FAIL");
         $finish;

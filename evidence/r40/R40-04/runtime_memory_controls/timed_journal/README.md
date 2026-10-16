@@ -44,44 +44,54 @@ replay/Verilog sources. The mutations archive includes the modified journal
 inputs and corrected-interpreter default-driver report. `observations.json`
 retains process exit codes and bounded original logs.
 
-Current blocker: the first source of unknown reservation/decode state is not
-explained. The exact-harness failure replay completed with the identical first assertion,
-including simulated time, cycle, core, context and PC. `failure_replay.json`
-retains the raw result; `reproduction.json` checks the original and replay first
-assertions verbatim. The replay exited 1, as a reproduced DUT failure must.
-Its retained command on the jump host was:
+## Located cause and candidate repair
+
+`diagnostic_replays_27_29.json.gz` retains the full strict replay reports and
+short cycle traces. `root_cause_prefix.json` compares the original and candidate
+frames. At cycle 332423, context 2 exits while its younger instruction contains
+unspecified opcode bits. The decoder correctly marks that instruction illegal
+and clears its write enables, but retains raw opcode classification. The core
+also selects functional units from those classification bits, so the killed
+instruction makes the shared stall unknown. Another context is being fetched;
+fetch-valid, D-valid, R-valid and finally the writeback reservation become X.
+
+The candidate assigns inert SYS/NOP classification and zero modifier bits only
+when the decoder has already determined the instruction is illegal. The illegal
+flag remains asserted, so a non-squashed illegal instruction still traps. This
+is not a blanket unknown-to-zero conversion. On the same recorded input times,
+the candidate keeps the critical stall and valid signals known and completes
+the originally failing batch. The unchanged replay oracle then refuses the
+partial capture: the original recording has no successful response or later
+inputs for that batch. This expected rejection is **not** relabeled replay-pass
+or a complete application result.
+
+`decoder_core_regression.json.gz` retains decoder legality checks, the old-source
+mutation which fails the new unknown/illegal-classification checks, and complete
+`make -j3 core core-vrf core-slowmem` logs. These include illegal-trap isolation
+and descriptor faults. The first standalone decoder driver incorrectly selected
+SystemVerilog for this Verilog-2005 testbench (`expect` is a reserved keyword);
+its failure is preserved, and the corrected driver uses the Makefile's `-g2005`.
+
+Current blocker: full native four-configuration numerical validation of the
+repair, with recording enabled and disabled, is still running. Next commands
+on the jump host:
 
 ```sh
-source ~/tc_env/env.sh
-cd /tmp/r40_mmio_journal24
-python3 tools/r40/replay_mmio_journal.py \
-  --journal /tmp/r40_mmio_journal25_native/sim/build/u50-sim/link-1his1__i/journal \
-  --out /tmp/r40_mmio_journal25_failure_replay --cap-seconds 1800
+cat /tmp/r40_illegal30_native.exit /tmp/r40_illegal32_default.exit
+tail -12 /tmp/r40_illegal30_native.log
+tail -12 /tmp/r40_illegal32_default.log
 ```
 
-The first monitor (snapshot 26) stopped earlier on an unknown decoded delay in
-a killed instruction (`kill=1`, `books=0`, reservation still zero), at 430200 ns.
-That is not evidence for the later reservation corruption: a killed instruction
-does not book writeback. `first_unknown_launch.json` retains this observation.
+Success requires all four numerical/outlet/staging checks and exit 0 in each
+run; retain the complete logs, source hashes and recorded journal. Failure
+retains the first assertion or numerical discrepancy and its input history
+before further changes. Neither outcome substitutes for the full native 77,
+HBM 14 or frozen model on the final immutable software/image identity.
 
-The next experiment is launched in the separate snapshot
-`/tmp/r40_mmio_journal27_first_unknown`. Its monitor still stops on unknown
-reservation or valid state, but checks decoded delay only for an explicitly
-valid, non-killed instruction. This filters inactive decode noise without
-masking unknown architectural state or changing DUT behavior. The experiment
-scripts retain both monitor versions and exact launch commands.
-It compiles only an Icarus diagnostic harness and uses the explicit diagnostic
-override on the same recorded inputs. Next observation command on the jump host:
+The active FPGA implementation still uses cf330dc and does not contain the
+later decoder repair. Preserve that distinction when evaluating the image;
+these simulator results cannot qualify that hardware or spend another full
+implementation attempt. Snapshot 09 lacks a complete timed history, so no
+claim of exact replay of that older failure is made.
 
-```sh
-cat /tmp/r40_mmio_journal27_build.exit
-tail -40 /tmp/r40_mmio_journal27_first_unknown_replay.log
-```
-
-If the first unknown is located, retain the report and producing-state evidence
-before proposing a correction and mutation. If compilation, replay timing or
-responses diverge, retain the first diagnostic and correct the monitor/replay
-boundary before changing DUT behavior. A timeout remains inconclusive. The
-monitor's intentional fatal is not a passing application verdict. Neither branch
-authorizes another full FPGA implementation. See the
-[usage and uncertainty guidance](../../../../../tools/performance_harness/mmio_journal.md).
+See the [usage and uncertainty guidance](../../../../../tools/performance_harness/mmio_journal.md).

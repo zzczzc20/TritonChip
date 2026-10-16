@@ -98,3 +98,23 @@ No second implementation has started; one of the two additional attempts remains
 The immediate command and success/failure branches above still apply. This is
 implementation progress, not a required-gate transition. Session loss does not
 terminate the detached build or its read-only post-completion observer.
+
+## Actual routing observed at 12:00 UTC
+
+Placement has completed and the existing implementation reached route Phase
+3.9 Update Timing. `routing_observation.json` retains the exact log hash, raw
+tail, localized SLL demand warnings and live processes. The largest reported
+column demand is about 203%; the router explicitly prioritizes completing
+routing over timing optimization because of congestion. These are intermediate
+observations, not a terminal routing failure or final timing qualification.
+The runner and post-completion observer remain live; no additional attempt
+has started. Continue the existing completion observation and review its final
+route/timing/CDC/image reports. Preserve the first terminal failure and checkpoint
+if routing fails; the last attempt requires a specific root-cause correction.
+
+A separate software/RTL diagnostic now identifies illegal-opcode classification
+as the source of the reproduced reservation-X corruption; its candidate fix and
+full native regressions are recorded in the runtime-control package. This live
+hardware build remains bound to its immutable cf330dc source, which does not
+contain that later fix. Do not relabel the running candidate or transfer later
+functional evidence to it.

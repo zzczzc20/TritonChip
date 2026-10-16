@@ -9,7 +9,7 @@ The source run was not restarted or modified during this investigation.
 
 - `link.exit` is the actual terminal link exit code: **1**.
 - `runme.log.gz` is the complete implementation log, compressed without
-  altering its contents. Vivado exited at **2026-10-15 22:53:10 UTC**.
+  altering its contents. Vivado exited at **2026-10-15 14:53:10 UTC** (22:53:10 HKT).
 - `observation.json` records the observation time, actual process listing,
   and path, size and SHA256 of `level0_wrapper_routed_error.dcp`.
   The implementation PID 594866 was absent at observation.
@@ -28,12 +28,18 @@ Intermediate timing estimates remain diagnostic only.
 
 ## Next experiment and decision
 
-A read-only report extraction uses `flow/fpga/diagnose_r40_checkpoint.tcl`
+The completed read-only report extraction uses `flow/fpga/diagnose_r40_checkpoint.tcl`
 against the retained error DCP. The fresh output root is
 `~/tnca_build/r40_failed_route_diagnosis_20261016`. It has a 3,600-second wall
 limit, four Vivado threads and no synthesis, placement or routing commands.
 
-On the FPGA server, observe the same diagnostic process:
+All reports completed with exit code zero. The complete bundle is
+`diagnostic_reports_complete.tar.gz`; `diagnostic_reports_01.tar.gz` preserves
+the earlier partial observation. `critical_paths.json` groups the 30 reported
+endpoints, while `next_candidate_hypotheses.md` records the next bounded
+architecture investigation. Neither bundle qualifies the failed image.
+
+To inspect the completed diagnostic log on the FPGA server:
 
 ```sh
 tail -30 ~/tnca_build/r40_failed_route_diagnosis_20261016/diagnosis.log
@@ -49,3 +55,7 @@ The [convergence ledger](../README.md) contains every unresolved required gate,
 its current blocker, evidence, next experiment and both outcome branches.
 The [implementation budget](../implementation_budget.json) permits at most
 two additional complete implementation attempts; none has been launched.
+
+`time_metadata.json` records the server’s UTC+8 offset and filesystem UTC
+timestamps. An earlier ledger incorrectly labelled the local exit time as UTC;
+the corrected UTC time above agrees with the raw log’s modification timestamp.

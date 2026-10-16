@@ -192,6 +192,8 @@ class SimLink(U50Link):
                 f'+pollcycles={self.pollcycles}',
                 f'+intercycle={self.intercycle}',
                 f'+watchdog={self.watchdog}']
+        if getattr(self, 'assert_fatal', False):
+            argv.append('+assert_fatal')
         if self.trace:
             argv.append('+trace')
         # The stand-in dies with the process that owns it, as the sim-file

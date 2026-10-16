@@ -1,9 +1,16 @@
 # Actual TMU + slice boundaries, so endpoint arithmetic cannot move off-clock.
 # vivado -mode batch -source THIS_FILE -tclargs SOURCE_ROOT NEW_OUTPUT MODE
-if {[llength $argv] != 3} {error "expected SOURCE_ROOT NEW_OUTPUT MODE"}
+if {[llength $argv] ni {3 5}} {error "expected SOURCE_ROOT NEW_OUTPUT MODE ?SETS SET_W?"}
 set root [file normalize [lindex $argv 0]]
 set out [file normalize [lindex $argv 1]]
 set mode [lindex $argv 2]
+set geometry [list]
+if {[llength $argv] == 5} {
+    set sets [lindex $argv 3]
+    set set_w [lindex $argv 4]
+    if {$sets < 2 || $sets != (1 << $set_w)} {error "inconsistent cache geometry"}
+    set geometry [list SETS=$sets SET_W=$set_w]
+}
 if {$mode ni {0 1}} {error "MODE must be 0 or 1"}
 if {[file exists $out]} {error "output must be fresh: $out"}
 file mkdir $out
@@ -12,7 +19,7 @@ read_verilog -sv [list $root/rtl/nuca/tnca_tmu.v $root/rtl/nuca/tnca_nuca_slice.
 set_property include_dirs [list $root/rtl/common] [current_fileset]
 synth_design -top tnca_range_slice_ooc -part xcu280-fsvh2892-2L-e \
     -mode out_of_context -flatten_hierarchy none \
-    -generic [list MAINTENANCE=1 FULL_LINE_TAG=1 TAG_W=5 SLICE_ID=0 DCO_REGISTERED_RANGES=$mode]
+    -generic [concat [list MAINTENANCE=1 FULL_LINE_TAG=1 TAG_W=5 SLICE_ID=0 DCO_REGISTERED_RANGES=$mode] $geometry]
 create_clock -name clk -period 10 [get_ports clk]
 report_utilization -hierarchical -file $out/utilization.rpt
 report_utilization -file $out/total_utilization.rpt

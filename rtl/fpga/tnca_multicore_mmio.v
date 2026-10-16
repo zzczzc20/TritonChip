@@ -8,6 +8,7 @@
 `default_nettype none
 module tnca_multicore_mmio #(
  parameter N=3,PORTS=3,NUM_RCTX=4,PHYS_W=8,CODE_WORDS=16384,
+ parameter MEMORY_CONTROLS=0,AXI_OUT_N=8,
  parameter MEM_BASE=64'h20000,REG_ADDR_W=8,CACHE_MAINTENANCE=0
 )(
  input wire clk,rst_n,input wire [REG_ADDR_W-1:0] reg_addr,
@@ -30,6 +31,7 @@ module tnca_multicore_mmio #(
  output wire cache_maint_valid,input wire cache_maint_ready,cache_maint_done,
  output reg [63:0] cache_maint_base,cache_maint_size,
  input wire [PORTS*64-1:0] memory_reads,memory_writes,
+ output reg [7:0] memory_active_ports,memory_outstanding,
  output reg [63:0] axi_base,axi_size
 );
  localparam MAGIC=64'h00020000544e4341,CODE_BYTES=CODE_WORDS*8;
@@ -70,14 +72,20 @@ module tnca_multicore_mmio #(
    8'h98:reg_rdata=MAGIC;8'ha0:reg_rdata=served;
    8'ha8,9'h100,9'h108:reg_rdata=axi_base;8'hb0:reg_rdata=axi_size;
    8'hb8:reg_rdata=((MEM_BASE>>12)<<32) | 64'd2 | ((|axi_fault)?64'd1:64'd0) |
-                  (CACHE_MAINTENANCE!=0 ? 64'd16 : 64'd0);
+                  (CACHE_MAINTENANCE!=0 ? 64'd16 : 64'd0) |
+                  (MEMORY_CONTROLS!=0 ? 64'd32 : 64'd0);
    // R_AXI_STAT 63:32 is LOCAL_LIMIT in 4 KiB pages, as in v1.
+   9'h110:if(MEMORY_CONTROLS)reg_rdata={48'd0,memory_active_ports,memory_outstanding};
+   9'h118:if(MEMORY_CONTROLS)reg_rdata=64'h5234304d00010000 | (PORTS<<8) | AXI_OUT_N;
    8'he0:reg_rdata=1;8'he8:reg_rdata=launch_start;
    8'hf0:reg_rdata=launch_end;8'hf8:reg_rdata=launch_sequence;
    default:reg_rdata=0;
   endcase
  end
  generate
+  if(MEMORY_CONTROLS && (REG_ADDR_W<9 || AXI_OUT_N<1 || AXI_OUT_N>255 || PORTS>255))begin:g_bad_memory_controls
+   tnca_invalid_memory_control_geometry invalid_configuration();
+  end
   if(N<1 || N>16 || PORTS<1 || PORTS>N)begin:g_bad_geometry
    tnca_invalid_mmio_grid_geometry invalid_configuration();
   end
@@ -94,11 +102,17 @@ module tnca_multicore_mmio #(
    state<=IDLE;cmd_valid<=0;cmd_id<=0;cmd_pc<=0;cmd_arg_base<=0;cmd_arg_stride<=0;
    cmd_deadline<=0;cmd_gx<=0;cmd_gy<=0;cmd_gz<=0;cmd_group_log2<=0;
    cmd_cores<=0;cmd_roles<=0;cmd_slice<=0;
+   memory_active_ports<=PORTS;memory_outstanding<=AXI_OUT_N;
    axi_base<=0;axi_size<=0;device_clock<=0;launch_start<=0;launch_end<=0;launch_sequence<=0;
    maintenance_cmd<=0;maintenance_complete<=0;maintenance_sequence<=0;cache_maint_base<=0;cache_maint_size<=0;
   end else begin
    device_clock<=device_clock+1;
    if(reg_we)case(reg_addr)
+    9'h110:if(MEMORY_CONTROLS && state==IDLE && host_state==IDLE && all_idle &&
+      reg_wdata[63:16]==0 && (reg_wdata[15:8]==1 || reg_wdata[15:8]==PORTS) &&
+      reg_wdata[7:0]>=1 && reg_wdata[7:0]<=AXI_OUT_N)begin
+     memory_active_ports<=reg_wdata[15:8];memory_outstanding<=reg_wdata[7:0];
+    end
     8'h00:req_seq<=reg_wdata;8'h08:req_op<=reg_wdata;
     8'h10:a0<=reg_wdata;8'h18:a1<=reg_wdata;8'h20:a2<=reg_wdata;
     8'h28:a3<=reg_wdata;8'h30:a4<=reg_wdata;8'h38:a5<=reg_wdata;

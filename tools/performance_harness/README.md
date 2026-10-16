@@ -57,6 +57,21 @@ use actual dispatcher/core/outlet telemetry and retain that limitation.
 `tools/r40/board_checkpoint.py` demonstrates capturing outlet traffic before
 the CPU ownership handoff.
 
+For images advertising runtime memory controls, query
+`session.dev.memory_configuration()` and retain the actual readback in the
+experiment identity. `configure_memory(active_ports=1, outstanding=8)` changes
+routing and admission on the same image only after the device confirms complete
+drain. `TNCA_RTL_MEM_PORTS` and `TNCA_RTL_OUTSTANDING` select startup values;
+explicit requests are refused on older images. The outstanding limit applies
+per physical outlet to adapter slots, including writes awaiting B responses.
+Requests buffered upstream are a separate quantity and can exceed that limit.
+A one-outlet experiment still addresses every home and the same shared BO.
+Query configuration before and after an experiment block, outside the measured
+interval. These controls add no per-launch configuration-register probes.
+Keep image, allocation, ingress width, burst size and clock fixed during these
+comparisons. Functional RTL checks are available through
+`tools/r40/memory_control_tests.py`; they do not measure board bandwidth.
+
 `tools/r38/profiler_tests.py` checks counter identities and the historical
 noninterference baseline. Run it when changing counter RTL, rather than
 repeating the full suite for presentation-only changes.

@@ -1,6 +1,6 @@
 `timescale 1ns/1ps
 module tb_line_axi;
- parameter DATA_W=256,OUT_N=8,MODE=0,STAGES=0,WRITE_ACK=1;
+ parameter DATA_W=256,OUT_N=8,MODE=0,STAGES=0,WRITE_ACK=1,RUNTIME_LIMIT=0;
  localparam ID_W=(OUT_N>1?$clog2(OUT_N):1),BEATS=512/DATA_W;
  reg clk=0,rst_n=0;always #5 clk=~clk;
  reg req_valid=0,req_we=0;wire req_ready;
@@ -25,11 +25,11 @@ module tb_line_axi;
  .s_rsp_valid(rsp_valid),.s_rsp_rdata(rsp_rdata),.s_rsp_src(rsp_src),.s_rsp_tag(rsp_tag),
  .m_req_valid(qv),.m_req_ready(qr),.m_req_addr(qa),.m_req_we(qwe),.m_req_wdata(qd),.m_req_src(qs),.m_req_tag(qt),
  .m_rsp_valid(rv),.m_rsp_rdata(rd),.m_rsp_src(rs),.m_rsp_tag(rt));
- tnca_line_axi #(.WRITE_RESPONSES(WRITE_ACK),.SRC_W(3),.TAG_W(5),.OUT_N(OUT_N),.DATA_W(DATA_W)) dut(
+ tnca_line_axi #(.WRITE_RESPONSES(WRITE_ACK),.SRC_W(3),.TAG_W(5),.OUT_N(OUT_N),.DATA_W(DATA_W),.DYNAMIC_LIMIT(RUNTIME_LIMIT!=0)) dut(
   .clk(clk),.rst_n(rst_n),.req_valid(qv),.req_ready(qr),
   .req_addr(qa),.req_we(qwe),.req_wdata(qd),.req_src(qs),.req_tag(qt),
   .rsp_valid(rv),.rsp_rdata(rd),.rsp_src(rs),.rsp_tag(rt),
-  .axi_base(64'h100000000),.axi_size(64'd1024),.fault(fault),.idle(idle),
+  .admission_limit(8'(RUNTIME_LIMIT)),.axi_base(64'h100000000),.axi_size(64'd1024),.fault(fault),.idle(idle),
   .read_lines(read_lines),.write_lines(write_lines),.read_beats(read_beats),.write_beats(write_beats),
   .m_awvalid(m_awvalid),.m_awready(m_awready),.m_awaddr(m_awaddr),.m_awid(m_awid),
   .m_awlen(m_awlen),.m_awsize(m_awsize),.m_awburst(m_awburst),
@@ -38,6 +38,13 @@ module tb_line_axi;
   .m_arvalid(m_arvalid),.m_arready(m_arready),.m_araddr(m_araddr),.m_arid(m_arid),
   .m_arlen(m_arlen),.m_arsize(m_arsize),.m_arburst(m_arburst),
   .m_rvalid(m_rvalid),.m_rready(m_rready),.m_rdata(m_rdata),.m_rid(m_rid),.m_rresp(m_rresp),.m_rlast(m_rlast));
+ integer slot_count,slot_index,peak_slots=0;
+ always @(negedge clk)if(rst_n)begin
+  slot_count=0;
+  for(slot_index=0;slot_index<OUT_N;slot_index=slot_index+1)slot_count=slot_count+dut.active[slot_index];
+  if(slot_count>peak_slots)peak_slots=slot_count;
+  if(RUNTIME_LIMIT && slot_count>RUNTIME_LIMIT)$fatal(1,"runtime outstanding limit exceeded");
+ end
  reg [511:0] memory[0:15],oracle[0:15],expected[0:255];
  reg seen[0:255],wanted[0:255];
  reg [OUT_N-1:0] reads=0,writes=0;
@@ -147,7 +154,7 @@ module tb_line_axi;
    wait((WRITE_ACK ? completed==16 : idle) && link_idle);
    for(i=16;i<192;i=i+1)send(i,(i%5==0),i%16);
    wait(completed==(WRITE_ACK ? 192 : 141) && idle && link_idle);@(negedge clk);
-   if(fault || !idle || !link_idle || (OUT_N>1 && peak<2))$fatal(1,"normal drain or concurrency");
+   if(fault || !idle || !link_idle || ((RUNTIME_LIMIT?RUNTIME_LIMIT:OUT_N)>1 && peak<2))$fatal(1,"normal drain or concurrency");
    if(read_beats!=read_lines*BEATS || write_beats!=write_lines*BEATS)$fatal(1,"traffic count mismatch");
    if(STAGES==0)begin
    if(MODE==3)begin
@@ -165,6 +172,9 @@ module tb_line_axi;
    end
    end
   end
+  if(RUNTIME_LIMIT>1 && peak_slots<2)$fatal(1,"runtime multi-slot case did not overlap");
+  if(RUNTIME_LIMIT && !peak_slots)$fatal(1,"runtime slot check saw no work");
+  $display("RUNTIME LIMIT limit=%0d peak_slots=%0d",RUNTIME_LIMIT,peak_slots);
   $display("LINE AXI PASS width=%0d slots=%0d mode=%0d stages=%0d write_ack=%0d completed=%0d peak=%0d collisions=%0d reads=%0d writes=%0d",DATA_W,OUT_N,MODE,STAGES,WRITE_ACK,completed,peak,collisions,read_lines,write_lines);$finish;
  end
 endmodule

@@ -5,7 +5,7 @@ This is a dated execution ledger, **not a contract amendment**. The frozen v2 co
 ## Immediate experiment commands and branches
 
 **P — diagnose the terminal failed route before choosing a replacement.** The
-original `09ebe06` implementation stopped at 2026-10-15 22:53:10 UTC. Its
+original `09ebe06` implementation stopped at 2026-10-15 14:53:10 UTC (22:53:10 HKT). Its
 `build/link.exit` is **1** and PID 594866 is absent. Vivado reports
 `Route 35-3: Design is not routable as its global congestion level is 7`,
 followed by `Route 35-4445`. Raw log, terminal exit and checkpoint SHA are in
@@ -21,33 +21,38 @@ The router identified at least 8,651 high-pin-utilization CLBs. These are
 specific congestion observations, not proof that any one mechanism caused
 all failures. The -38.938 ns intermediate WNS is not final routed timing.
 
-**Current blocker:** no routable, qualified three-core image. A bounded,
-read-only checkpoint diagnosis was launched in
-`~/tnca_build/r40_failed_route_diagnosis_20261016` using
-`flow/fpga/diagnose_r40_checkpoint.tcl`; it runs no synthesis/place/route.
-**Next command, on FPGA server:**
+**Current blocker:** no functionally validated, routable three-core final
+candidate. Read-only checkpoint diagnosis completed successfully; all eight
+reports and the exact script are in
+`route_failure_20261016/diagnostic_reports_complete.tar.gz`. Thirty reported
+endpoints reduce to two source registers: TMU base metadata and slice tag
+storage, feeding writeback-address RAM enables. Worst reported data delay is
+50.082 ns (91 logic levels); this includes estimates in a substantially
+unrouted design and cannot qualify timing. The
+[bounded candidate hypotheses](route_failure_20261016/next_candidate_hypotheses.md)
+identify tag-bank/owner-pipeline screening and its correctness prerequisites.
 
-```sh
-tail -30 ~/tnca_build/r40_failed_route_diagnosis_20261016/diagnosis.log
-```
+**Candidate launch update:** the user requested starting the first of the two
+remaining complete attempts before the session allowance expires. Candidate
+parameters and the one-shot runner are in [attempt01](attempt01/README.md).
+Registered ranges plus 32 sets/eight ways target the observed metadata and
+packing pressure; the placement directive and HBM PC range are unchanged.
+Snapshot 11 passed the runtime-control matrix, but snapshot 09's reservation-X
+failure remains unexplained and is preserved in
+[the runtime-control evidence](../../R40-04/runtime_memory_controls/README.md).
+This known functional risk remains under investigation alongside the physical
+build; no qualification or performance gate is promoted.
 
-**Success:** retain route status, actual limiting paths, hierarchy/SLR resource
-and congestion reports; identify a falsifiable source-level or placement
-cause and screen the corresponding change before consuming an implementation
-attempt. **Failure:** retain partial reports and command errors, repair only
-the diagnostic or inspect an alternative report. Never restart implementation
-because observation fails or a diagnostic times out. Physical P qualification
-still requires actual route, placement, 100 MHz setup/hold, CDC and a loadable
-image; only then proceed to V. No unexplained directive rotation.
+**Next command:** `tail -40 /home/zzhouch/tnca_build/r40_attempt01_20261016/build/runner.log`
+on the FPGA server. **Success:** inspect complete placement/route, setup/hold,
+CDC and image identity, then run V only after qualification and resolution of
+the functional blocker. **Failure:** retain the first fatal vendor diagnostic
+and checkpoint; reserve the second implementation for a demonstrated correction.
 
-**Full-implementation budget:** the user permits at most **two additional
-complete synthesis/place/route attempts**, starting from the terminal failure
-above. **Used: 0; remaining: 2.** The first must combine all necessary hardware
-changes and gate-required controls after feasibility and functional screening.
-The second is reserved for a specific diagnosed correction. The budget does
-not relax the frozen contract. Report extraction and bounded module-level
-screening do not constitute a complete system implementation. Every future
-attempt must be entered in `implementation_budget.json` before launch.
+**Full-implementation budget:** at most two additional attempts. The exact
+launch identity, state and remaining balance are recorded in
+`implementation_budget.json`; report extraction and module-level screening
+are not full implementations. The contract remains frozen.
 
 **S — registered-range screening is complete.** The source-bound functional,
 mutation and compositional proof package is in
@@ -55,9 +60,8 @@ mutation and compositional proof package is in
 TMU-plus-slice OOC screen reduced LUTs **83,353 → 78,543**, but estimated WNS
 improved only **-6.333 → -6.037 ns**. Both variants still have the worst path
 from `slice/cur_addr_reg[7]` to writeback-address RAM write enable, with
-essentially unchanged logic delay. This supports an area reduction, but does
-not justify another full implementation. Its next experiment is P's linked
-checkpoint diagnosis above: success determines whether the local cone also
+essentially unchanged logic delay. This supports an area reduction. The completed linked diagnosis and the
+parameter-only geometry screen support the bounded first attempt above: success determines whether the local cone also
 limits the complete design; failure preserves the local result without
 attributing the linked congestion to it. No operating-frequency, graph-speedup
 or gate claim follows from OOC estimates.

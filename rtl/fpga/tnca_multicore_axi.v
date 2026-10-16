@@ -3,7 +3,7 @@
 // This module alone is not a deployable board image.
 `default_nettype none
 module tnca_multicore_axi #(
- parameter DCO_REGISTERED_RANGES=0,
+ parameter DCO_REGISTERED_RANGES=0,MEMORY_CONTROLS=0,
  parameter NX=3,NY=1,N=NX*NY,CODE_WORDS=16384,CODE_LINK_STAGES=0,MEM_PORTS=1,NOC_LINK_STAGES=0,DISPATCH_STAGES=0,MEM_HOME_STAGES=0,
  parameter SRC_W=(N>4?$clog2(N):2),
  parameter NUM_RCTX=4,RCTX_W=2,PHYS_VREGS=256,PHYS_W=8,
@@ -15,6 +15,7 @@ module tnca_multicore_axi #(
  parameter AXI_ID_W=(AXI_OUT_N>1?$clog2(AXI_OUT_N):1),MEM_BASE=64'h20000,CACHE_MAINTENANCE=0
 )(
  input wire clk,rst_n,
+ input wire [7:0] memory_active_ports,memory_outstanding,
  input wire cache_maint_valid,input wire [63:0] cache_maint_base,cache_maint_size,
  output wire cache_maint_ready,cache_maint_done,
  input wire cmd_valid,output wire cmd_ready,
@@ -93,7 +94,10 @@ module tnca_multicore_axi #(
  wire [2:0] mem_rsp_tag;
  wire [SRC_W-1:0] mem_rsp_src;
  wire [511:0] mem_rsp_rdata;
- wire platform_fault=(|axi_fault);
+ wire memory_mode_fault;
+ wire [MEM_PORTS-1:0] adapter_fault;
+ assign axi_fault=adapter_fault | {{(MEM_PORTS-1){1'b0}},memory_mode_fault};
+ wire platform_fault=(|axi_fault) || memory_mode_fault;
  wire shell_cmd_ready,shell_done_valid,shell_all_idle,shell_busy;
  wire [3:0] shell_done_status;
  wire memory_drained=(&axi_idle) && (&link_idle);
@@ -240,21 +244,44 @@ module tnca_multicore_axi #(
  end endgenerate
  assign raw_ports_rsp_valid=ports_rsp_valid;assign raw_ports_rsp_tag=ports_rsp_tag;
  assign raw_ports_rsp_src=ports_rsp_src;assign raw_ports_rsp_rdata=ports_rsp_rdata;
+ wire [MEM_PORTS-1:0] mode_req_valid,mode_req_ready,mode_req_we,mode_rsp_valid;
+ wire [MEM_PORTS*64-1:0] mode_req_addr;
+ wire [MEM_PORTS*512-1:0] mode_req_wdata,mode_rsp_rdata;
+ wire [MEM_PORTS*3-1:0] mode_req_tag,mode_rsp_tag;
+ wire [MEM_PORTS*SRC_W-1:0] mode_req_src,mode_rsp_src;
+ generate if(MEMORY_CONTROLS)begin:g_memory_mode
+  tnca_memory_mode #(.PORTS(MEM_PORTS),.N_SRC(N),.SRC_W(SRC_W)) mode(
+   .clk(clk),.rst_n(rst_n),.single_port(memory_active_ports==1),
+   .s_req_valid(ports_req_valid),.s_req_ready(ports_req_ready),.s_req_addr(ports_req_addr),
+   .s_req_we(ports_req_we),.s_req_wdata(ports_req_wdata),.s_req_tag(ports_req_tag),.s_req_src(ports_req_src),
+   .s_rsp_valid(ports_rsp_valid),.s_rsp_tag(ports_rsp_tag),.s_rsp_src(ports_rsp_src),.s_rsp_rdata(ports_rsp_rdata),
+   .m_req_valid(mode_req_valid),.m_req_ready(mode_req_ready),.m_req_addr(mode_req_addr),
+   .m_req_we(mode_req_we),.m_req_wdata(mode_req_wdata),.m_req_tag(mode_req_tag),.m_req_src(mode_req_src),
+   .m_rsp_valid(mode_rsp_valid),.m_rsp_tag(mode_rsp_tag),.m_rsp_src(mode_rsp_src),.m_rsp_rdata(mode_rsp_rdata),
+   .fault(memory_mode_fault));
+ end else begin:g_static_memory_mode
+  assign mode_req_valid=ports_req_valid;assign ports_req_ready=mode_req_ready;
+  assign mode_req_addr=ports_req_addr;assign mode_req_we=ports_req_we;
+  assign mode_req_wdata=ports_req_wdata;assign mode_req_tag=ports_req_tag;assign mode_req_src=ports_req_src;
+  assign ports_rsp_valid=mode_rsp_valid;assign ports_rsp_tag=mode_rsp_tag;
+  assign ports_rsp_src=mode_rsp_src;assign ports_rsp_rdata=mode_rsp_rdata;
+  assign memory_mode_fault=1'b0;
+ end endgenerate
  generate for(genvar p=0;p<MEM_PORTS;p=p+1)begin:g_outlet
   wire qv,qr,qwe,rv;wire [63:0] qa;wire [511:0] qd,rd;
   wire [SRC_W-1:0] qs,rs;wire [2:0] qt,rt;
   tnca_line_link #(.SRC_W(SRC_W),.TAG_W(3),.STAGES(LINK_STAGES)) link(
    .clk(clk),.rst_n(rst_n),.idle(link_idle[p]),
-   .s_req_valid(ports_req_valid[p]),.s_req_ready(ports_req_ready[p]),
-   .s_req_addr(ports_req_addr[p*64+:64]),.s_req_we(ports_req_we[p]),
-   .s_req_wdata(ports_req_wdata[p*512+:512]),.s_req_src(ports_req_src[p*SRC_W+:SRC_W]),.s_req_tag(ports_req_tag[p*3+:3]),
-   .s_rsp_valid(ports_rsp_valid[p]),.s_rsp_rdata(ports_rsp_rdata[p*512+:512]),.s_rsp_src(ports_rsp_src[p*SRC_W+:SRC_W]),.s_rsp_tag(ports_rsp_tag[p*3+:3]),
+   .s_req_valid(mode_req_valid[p]),.s_req_ready(mode_req_ready[p]),
+   .s_req_addr(mode_req_addr[p*64+:64]),.s_req_we(mode_req_we[p]),
+   .s_req_wdata(mode_req_wdata[p*512+:512]),.s_req_src(mode_req_src[p*SRC_W+:SRC_W]),.s_req_tag(mode_req_tag[p*3+:3]),
+   .s_rsp_valid(mode_rsp_valid[p]),.s_rsp_rdata(mode_rsp_rdata[p*512+:512]),.s_rsp_src(mode_rsp_src[p*SRC_W+:SRC_W]),.s_rsp_tag(mode_rsp_tag[p*3+:3]),
    .m_req_valid(qv),.m_req_ready(qr),.m_req_addr(qa),.m_req_we(qwe),.m_req_wdata(qd),.m_req_src(qs),.m_req_tag(qt),
    .m_rsp_valid(rv),.m_rsp_rdata(rd),.m_rsp_src(rs),.m_rsp_tag(rt));
-  tnca_line_axi #(.SRC_W(SRC_W),.TAG_W(3),.DATA_W(AXI_DATA_W),.OUT_N(AXI_OUT_N),.ID_W(AXI_ID_W),.MEM_BASE(MEM_BASE)) adapter(
+  tnca_line_axi #(.SRC_W(SRC_W),.TAG_W(3),.DATA_W(AXI_DATA_W),.OUT_N(AXI_OUT_N),.DYNAMIC_LIMIT(MEMORY_CONTROLS),.ID_W(AXI_ID_W),.MEM_BASE(MEM_BASE)) adapter(
    .clk(clk),.rst_n(rst_n),.req_valid(qv),.req_ready(qr),.req_addr(qa),.req_we(qwe),.req_wdata(qd),.req_src(qs),.req_tag(qt),
    .rsp_valid(rv),.rsp_rdata(rd),.rsp_src(rs),.rsp_tag(rt),
-   .axi_base(axi_base[p*64+:64]),.axi_size(axi_size[p*64+:64]),.fault(axi_fault[p]),.idle(axi_idle[p]),
+   .admission_limit(memory_outstanding),.axi_base(axi_base[p*64+:64]),.axi_size(axi_size[p*64+:64]),.fault(adapter_fault[p]),.idle(axi_idle[p]),
    .read_lines(axi_read_lines[p*64+:64]),.write_lines(axi_write_lines[p*64+:64]),.read_beats(axi_read_beats[p*64+:64]),.write_beats(axi_write_beats[p*64+:64]),
    .m_awvalid(m_awvalid[p]),
    .m_awready(m_awready[p]),

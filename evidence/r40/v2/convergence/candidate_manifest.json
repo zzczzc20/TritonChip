@@ -34,7 +34,7 @@
   "postroute_observer_pid": 605017,
   "actual_core_placement_collector_sha256": "56215b7a2298a2c4075fa0a03274662931e39e55e0420f8e6ce363b5c98892fa",
   "implementation_pid": 594866,
-  "implementation_observation": "PID 594866 absent; link.exit=1; exited 2026-10-15 22:53:10 UTC; no retry",
+  "implementation_observation": "PID 594866 absent; link.exit=1; exited 2026-10-15 14:53:10 UTC (22:53:10 HKT); no retry",
   "intermediate_route_wns_ns": -38.938,
   "local_sll_peak_demand_percent": 204,
   "directive_hypothesis_status": "SSI_SpreadSLLs was applied, but the attempt terminated with global congestion level 7; no directive retry authorized by this evidence",
@@ -62,5 +62,12 @@
   "implementation_exit_code": 1,
   "error_checkpoint_sha256": "8d82bd375ce489ca433aba15f83692b53b409bc045381a7a8f44ed44811a50d9",
   "diagnostic_root": "/home/zzhouch/tnca_build/r40_failed_route_diagnosis_20261016",
-  "diagnostic_only": true
+  "diagnostic_only": true,
+  "failed_checkpoint_diagnosis": "completed-diagnostic-only",
+  "failed_checkpoint_report_archive": "evidence/r40/v2/convergence/route_failure_20261016/diagnostic_reports_complete.tar.gz",
+  "failed_checkpoint_report_sha256": "b5348e1a3f1fd2fde62c9b01a7877de4526e85b9cb6da6aa060fde4c31cdd77d",
+  "next_complete_implementation_ready": false,
+  "runtime_control_functional_blocker": "Snapshot09 reservation-X remains unresolved; snapshots10/11 passed, not a fix",
+  "additional_candidate": "attempt01/image.json",
+  "expedited_launch_authorization": "User requests first of two bounded attempts within remaining approximately 20 minutes; physical build proceeds with recorded functional risk"
 }

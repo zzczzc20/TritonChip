@@ -4,7 +4,7 @@
 // DMA capability requires the optional ownership barrier and physical drain.
 `default_nettype none
 module tnca_multicore_fpga #(
- parameter DCO_REGISTERED_RANGES=0,
+ parameter DCO_REGISTERED_RANGES=0,MEMORY_CONTROLS=0,
  parameter NX=3,NY=1,N=NX*NY,CODE_WORDS=16384,CODE_LINK_STAGES=0,MEM_PORTS=1,NOC_LINK_STAGES=0,DISPATCH_STAGES=0,MEM_HOME_STAGES=0,
  parameter SRC_W=(N>4?$clog2(N):2),
  parameter NUM_RCTX=4,RCTX_W=2,PHYS_VREGS=256,PHYS_W=8,
@@ -84,12 +84,14 @@ wire cmd_valid;
  wire [N*8-1:0] fault_code;
  wire [N*64-1:0] fault_pc;
  wire [N*24-1:0] fault_detail;
+ wire [7:0] memory_active_ports,memory_outstanding;
  wire [63:0] base,size;wire [MEM_PORTS*64-1:0] axi_base,axi_size;
  generate for(genvar p=0;p<MEM_PORTS;p=p+1)begin:g_window
   assign axi_base[p*64+:64]=base;assign axi_size[p*64+:64]=size;
  end endgenerate
  assign cmd_vbase=0;
  tnca_multicore_axi #(
+  .MEMORY_CONTROLS(MEMORY_CONTROLS),
   .CACHE_MAINTENANCE(CACHE_MAINTENANCE), .DCO_REGISTERED_RANGES(DCO_REGISTERED_RANGES),
   .NX(NX),
   .NY(NY),
@@ -131,6 +133,7 @@ wire cmd_valid;
   .AXI_ID_W(AXI_ID_W),
   .MEM_BASE(MEM_BASE)
  ) system(
+  .memory_active_ports(memory_active_ports),.memory_outstanding(memory_outstanding),
   .clk(clk),
   .rst_n(rst_n),
   .cache_maint_valid(cache_maint_valid),.cache_maint_base(cache_maint_base),.cache_maint_size(cache_maint_size),
@@ -215,7 +218,8 @@ wire cmd_valid;
   .m_rresp(m_rresp),
   .m_rlast(m_rlast)
  );
- tnca_multicore_mmio #(.CACHE_MAINTENANCE(CACHE_MAINTENANCE),.N(N),.PORTS(MEM_PORTS),.NUM_RCTX(NUM_RCTX),.PHYS_W(PHYS_W),.CODE_WORDS(CODE_WORDS),.MEM_BASE(MEM_BASE),.REG_ADDR_W(REG_ADDR_W)) control(
+ tnca_multicore_mmio #(.MEMORY_CONTROLS(MEMORY_CONTROLS),.AXI_OUT_N(AXI_OUT_N),.CACHE_MAINTENANCE(CACHE_MAINTENANCE),.N(N),.PORTS(MEM_PORTS),.NUM_RCTX(NUM_RCTX),.PHYS_W(PHYS_W),.CODE_WORDS(CODE_WORDS),.MEM_BASE(MEM_BASE),.REG_ADDR_W(REG_ADDR_W)) control(
+  .memory_active_ports(memory_active_ports),.memory_outstanding(memory_outstanding),
   .clk(clk),
   .rst_n(rst_n),
   .cache_maint_valid(cache_maint_valid),.cache_maint_base(cache_maint_base),.cache_maint_size(cache_maint_size),

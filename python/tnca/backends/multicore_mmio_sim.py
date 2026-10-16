@@ -10,8 +10,10 @@ from .u50_sim import SimLink, _repo_root, _tools
 
 class MulticoreMMIOLink(SimLink):
     def __init__(self, *, core_count=3, memory_ports=3,
-                 memory_bytes=1 << 20, link_stages=2, noc_link_stages=0, dispatch_stages=0, home_stages=0, code_stages=0, board_top=False, maintenance=False, **kwargs):
+                 memory_bytes=1 << 20, link_stages=2, noc_link_stages=0, dispatch_stages=0, home_stages=0, code_stages=0, board_top=False, maintenance=False, memory_controls=False, **kwargs):
+        self.assert_fatal = True
         self.board_top = bool(board_top)
+        self.memory_controls = bool(memory_controls)
         self.maintenance = operator.index(maintenance)
         if self.maintenance not in (0,1):
             raise ArgumentError('maintenance must be 0 or 1')
@@ -80,7 +82,7 @@ class MulticoreMMIOLink(SimLink):
                    '-s', top, '-o', output]
         for name, value in dict(N=self.core_count, PORTS=self.memory_ports,
                                 MEMORY_BYTES=self.memory_bytes, STAGES=self.link_stages,
-                                NOC_PIPE=self.noc_link_stages, DISPATCH_PIPE=self.dispatch_stages, HOME_PIPE=self.home_stages, CODE_PIPE=self.code_stages, MAINTENANCE=self.maintenance).items():
+                                NOC_PIPE=self.noc_link_stages, DISPATCH_PIPE=self.dispatch_stages, HOME_PIPE=self.home_stages, CODE_PIPE=self.code_stages, MAINTENANCE=self.maintenance, MEMORY_CONTROLS=int(self.memory_controls)).items():
             command += [f'-P{top}.{name}={value}']
         for library in ('common', 'core', 'gen', 'nuca', 'noc', 'tile'):
             command += ['-y', 'rtl/' + library]
@@ -107,6 +109,7 @@ def stand_in(**kwargs):
                             code_stages=kwargs.pop('code_stages', 0),
                             board_top=kwargs.pop('board_top', False),
                             maintenance=kwargs.pop('maintenance', False),
+                            memory_controls=kwargs.pop('memory_controls', False),
                             host_timeout=kwargs.get('host_timeout', 30.0))
     return MulticoreMMIOBackend(link, core_count=core_count,
                                memory_ports=memory_ports, **kwargs)

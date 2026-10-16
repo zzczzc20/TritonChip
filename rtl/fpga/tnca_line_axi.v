@@ -10,11 +10,12 @@
 // or missing replies require platform recovery; no completion is fabricated.
 `default_nettype none
 module tnca_line_axi #(
- parameter SRC_W=2,TAG_W=3,OUT_N=8,DATA_W=256,
+ parameter SRC_W=2,TAG_W=3,OUT_N=8,DATA_W=256,DYNAMIC_LIMIT=0,
  parameter ID_W=(OUT_N>1?$clog2(OUT_N):1),
  parameter MEM_BASE=64'h20000,WRITE_RESPONSES=0
 )(
  input wire clk,rst_n,
+ input wire [7:0] admission_limit,
  input wire req_valid,output wire req_ready,
  input wire [63:0] req_addr,input wire req_we,
  input wire [511:0] req_wdata,input wire [TAG_W-1:0] req_tag,
@@ -50,6 +51,15 @@ module tnca_line_axi #(
  reg [BEAT_W-1:0] wbeat;
  integer i,free_slot;
  reg hazard;
+ localparam COUNT_W=$clog2(OUT_N+1);
+ reg [COUNT_W-1:0] active_count;
+ integer count_i;
+ always @*begin
+  active_count=0;
+  for(count_i=0;count_i<OUT_N;count_i=count_i+1)active_count=active_count+active[count_i];
+ end
+ wire admission_ok=!DYNAMIC_LIMIT ||
+   (admission_limit>=1 && admission_limit<=OUT_N && active_count<admission_limit);
  wire legal_address=req_addr>=MEM_BASE && req_addr[5:0]==0 &&
    axi_base[5:0]==0 && axi_size>=64 && req_addr-MEM_BASE<=axi_size-64 &&
    axi_base<=64'hffffffffffffffc0-(req_addr-MEM_BASE);
@@ -62,7 +72,7 @@ module tnca_line_axi #(
  end
  // Invalid addresses are refused and latched as faults, never translated into
  // zero-valued successful memory responses.
- assign req_ready=rst_n && !fault && !issue_valid && free_slot>=0 && !hazard && legal_address;
+ assign req_ready=rst_n && !fault && !issue_valid && free_slot>=0 && !hazard && legal_address && admission_ok;
  assign idle=!(|active) && !issue_valid;
  assign m_arvalid=issue_valid && !writing[issue_slot];
  assign m_araddr=bus_address[issue_slot];

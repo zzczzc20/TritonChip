@@ -88,6 +88,9 @@ jobs:
           done
           make nuca-dco IVFLAGS='-g2012 -I rtl/common -Ptb_nuca_slice.DCO_REGISTERED_RANGES=1'
 
+      - name: R40 runtime memory routing and admission controls
+        run: python3 tools/r40/memory_control_tests.py --out /tmp/r40-memory-controls
+
       - name: Unit benches
         run: make unit
 

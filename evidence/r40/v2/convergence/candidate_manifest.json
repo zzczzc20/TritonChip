@@ -67,10 +67,11 @@
   "failed_checkpoint_report_archive": "evidence/r40/v2/convergence/route_failure_20261016/diagnostic_reports_complete.tar.gz",
   "failed_checkpoint_report_sha256": "b5348e1a3f1fd2fde62c9b01a7877de4526e85b9cb6da6aa060fde4c31cdd77d",
   "next_complete_implementation_ready": false,
-  "runtime_control_functional_blocker": "Snapshot09 reservation-X remains unresolved; snapshots10/11 passed, not a fix",
+  "runtime_control_functional_blocker": "Snapshot09 reservation-X unresolved; snapshot12 and seed7/2026 passed all four configurations without extra per-launch probes; passes are not a root-cause fix",
   "additional_candidate": "attempt01/image.json",
   "expedited_launch_authorization": "User requests first of two bounded attempts within remaining approximately 20 minutes; physical build proceeds with recorded functional risk",
   "new_candidate_source_commit": "cf330dc64b6e1df535c31c9bb1a5d735e6bc0fb7",
   "new_candidate_build_root": "/home/zzhouch/tnca_build/r40_attempt01_20261016",
-  "new_candidate_final_software_qualification": "pending: runtime-control software differs from historical 8abf527 snapshot; final native77/HBM14/model and immutable software identity must be re-established"
+  "new_candidate_final_software_qualification": "pending: runtime-control software differs from historical 8abf527 snapshot; final native77/HBM14/model and immutable software identity must be re-established",
+  "new_candidate_phase": "placement-running; synthesis complete; route/timing/CDC/image not qualified"
 }

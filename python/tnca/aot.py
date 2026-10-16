@@ -73,7 +73,7 @@ KNOWN_OPTIONS = {
                   '-- 2 forces the legal split; on a target with rctx_pair, the pairs run a grid row as rctx_spmd '
                   'does, where tnca_cc.partition.ring_estimate expects a gain; 2 skips the '
                   'estimate (tests of the mechanism); a refusal is recorded in the provenance',
-    'rctx_stages': 'int, 2 or 3. Number of buffers in the producer/consumer ring; '
+    'rctx_stages': 'int, 1, 2 or 3. Number of buffers in the producer/consumer ring; '
                    'default 2. Resource and lifetime checks still apply (R40-07)',
     'alias': 'list of [param, param] pairs that MAY point at the same '
              'memory. An elementwise kernel that reads and writes the same '
@@ -273,6 +273,18 @@ def _alias_pairs(options, params):
     return sorted(pairs)
 
 
+def _pipeline_stages_default():
+    """Resolve the frozen stage control without silently ignoring legacy input."""
+    frozen = os.environ.get('TNCA_PIPELINE')
+    legacy = os.environ.get('TNCA_RCTX_STAGES')
+    if frozen is not None and legacy is not None and int(frozen) != int(legacy):
+        raise ValueError('TNCA_PIPELINE conflicts with TNCA_RCTX_STAGES')
+    value = int(frozen if frozen is not None else (legacy if legacy is not None else '2'))
+    if value not in (1, 2, 3):
+        raise ValueError('pipeline stages must be 1, 2 or 3')
+    return value
+
+
 def check_options(options):
     options = dict(options or {})
     unknown = sorted(set(options) - set(KNOWN_OPTIONS))
@@ -305,12 +317,12 @@ def check_options(options):
             raise ValueError(f'{name} must be one of {allowed}')
     stages = options.get('rctx_stages')
     if stages is None:
-        stages = int(os.environ.get('TNCA_RCTX_STAGES', '2'))
+        stages = _pipeline_stages_default()
         options.pop('rctx_stages', None)
         if stages != 2:
             options['rctx_stages'] = stages
-    if type(stages) is not int or stages not in (2, 3):
-        raise ValueError('rctx_stages must be 2 or 3')
+    if type(stages) is not int or stages not in (1, 2, 3):
+        raise ValueError('rctx_stages must be 1, 2 or 3')
     return options
 
 

@@ -8,7 +8,7 @@ from pathlib import Path
 import sys
 
 ap = argparse.ArgumentParser(description=__doc__)
-ap.add_argument('--stages', type=int, choices=(2, 3), required=True)
+ap.add_argument('--stages', type=int, choices=(1, 2, 3), required=True)
 ap.add_argument('--trace-dir', type=Path, help='retain engine trace and measured launch identity')
 ap.add_argument('--require-overlap', action='store_true')
 args = ap.parse_args()

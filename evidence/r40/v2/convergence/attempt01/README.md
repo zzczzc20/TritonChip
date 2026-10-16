@@ -54,3 +54,15 @@ run `ulp_tnca_u50_1_0_synth_1`); the vendor launched synthesis at 03:23:25 UTC.
 The process has a detached runner and persistent stdout/stderr; session expiry
 will not stop the build. There is no automatic second attempt. Required gate
 inventory remains five capability passes and 31 not-measured entries.
+
+## Implementation progress observed at 06:36 UTC
+
+The complete Vitis synthesis step finished and placement started; route and
+qualification are still pending. `kernel_utilization_synth.rpt` is the actual
+kernel synthesis report: 867,764 LUTs, 273,821 FF, 214.5 BRAM tiles and 531 DSPs.
+`post_synthesis_observation.json` preserves the linked flow and placement log
+snapshot. Earlier OOC and placed resource reports use different stages and
+constraints; they are diagnostic context, not a controlled percentage saving.
+The observed SLR0/1 crossing demand is 15,396 of 23,040 SLLs. That preliminary
+placement message cannot establish final local congestion or routability.
+No extra Vivado report process was started while placement consumes memory.

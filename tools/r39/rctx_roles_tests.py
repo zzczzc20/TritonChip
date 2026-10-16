@@ -182,7 +182,7 @@ def main():
         off, on = res['0'], res['2']
         manifest_ok = off.get('roles') == 1 and on.get('roles') == (2 if on.get('accept') else 1)
         if on.get('accept'):
-            manifest_ok &= (on.get('ring') or {}).get('stages') == int(os.environ.get('TNCA_RCTX_STAGES', '2'))
+            manifest_ok &= (on.get('ring') or {}).get('stages') == int(os.environ.get('TNCA_PIPELINE', os.environ.get('TNCA_RCTX_STAGES', '2')))
         ok = off['ok'] and on['ok'] and manifest_ok
         good &= ok
         sp = (off['cycles'] / on['cycles']) if off.get('cycles') and on.get('cycles') else None

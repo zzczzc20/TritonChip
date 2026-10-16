@@ -29,3 +29,13 @@ host with its environment loaded and a fresh output directory. On failure,
 preserve the first assertion and identify the producing instruction/state;
 on success, vary controlled backpressure to reproduce snapshot 09. Do not add
 MMIO delays or hide unknown state to obtain a pass.
+
+## Follow-up backpressure experiments
+
+`followup_reports.tar.gz` retains snapshot12 and controlled AXI-model seed7
+and seed2026 runs. All completed the same four native configurations with
+correct values and active/disabled outlet checks. The seed experiments change
+only the test model PRNG initialization in separate immutable directories;
+their model hashes and rationale are retained. These passes do not explain
+snapshot09 and do not close the reservation-X blocker. No production RTL was
+changed to clamp unknown state or add host delays.

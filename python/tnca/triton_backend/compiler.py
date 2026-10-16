@@ -75,10 +75,8 @@ def _rctx_roles():
 
 
 def _rctx_stages():
-    value = int(os.environ.get('TNCA_RCTX_STAGES', '2'))
-    if value not in (2, 3):
-        raise ValueError('TNCA_RCTX_STAGES must be 2 or 3')
-    return value
+    from tnca.aot import _pipeline_stages_default
+    return _pipeline_stages_default()
 
 
 def _bank_alloc():
@@ -140,8 +138,8 @@ class TNCAOptions:
     packed_window_unpack: int = field(default_factory=_packed_window_unpack)
 
     def __post_init__(self):
-        if type(self.rctx_stages) is not int or self.rctx_stages not in (2, 3):
-            raise ValueError('rctx_stages must be 2 or 3')
+        if type(self.rctx_stages) is not int or self.rctx_stages not in (1, 2, 3):
+            raise ValueError('rctx_stages must be 1, 2 or 3')
 
     def hash(self):
         key = '_'.join(f'{k}-{v}' for k, v in sorted(self.__dict__.items()))
@@ -310,7 +308,8 @@ class TNCABackend(BaseBackend):
         stages.record('ttir', text)
         ctx = module.context
         compile_options = {'opt_level': options.opt_level}
-        if options.rctx_stages != 2 or int(os.environ.get('TNCA_RCTX_STAGES', '2')) != options.rctx_stages:
+        stage_default = os.environ.get('TNCA_PIPELINE', os.environ.get('TNCA_RCTX_STAGES', '2'))
+        if options.rctx_stages != 2 or int(stage_default) != options.rctx_stages:
             compile_options['rctx_stages'] = options.rctx_stages
         # Resolved JIT values override environment defaults, including zero.
         # Keep default off absent to preserve the frozen B39 artifact bytes.

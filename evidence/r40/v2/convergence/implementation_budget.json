@@ -10,7 +10,7 @@
   "attempts": [
     {
       "number": 1,
-      "state": "kernel-synthesis-running",
+      "state": "placement-running",
       "source_commit": "cf330dc64b6e1df535c31c9bb1a5d735e6bc0fb7",
       "source_archive_sha256": "9050487dbff7675c859e3401849ee023137c4607f3ccb17654585def72c20869",
       "source_root": "/home/zzhouch/tnca_src_r40_attempt01_cf330dc",
@@ -42,7 +42,17 @@
       },
       "synthesis_launch_utc": "2026-10-16T03:23:25Z",
       "kernel_synthesis_pid": 900339,
-      "synthesis_start_evidence": "attempt01/synthesis_started.json"
+      "synthesis_start_evidence": "attempt01/synthesis_started.json",
+      "synthesis_complete": true,
+      "placement_complete": false,
+      "route_complete": false,
+      "post_synthesis_observation": "attempt01/post_synthesis_observation.json",
+      "kernel_synthesis_utilization": {
+        "luts": 867764,
+        "flip_flops": 273821,
+        "bram_tiles": 214.5,
+        "dsps": 531
+      }
     }
   ],
   "first_attempt_prerequisites": [

@@ -1,18 +1,41 @@
 {
   "schema": "tnca-r40-full-implementation-budget/1",
-  "recorded_utc": "2026-10-16",
+  "recorded_utc": "2026-10-16T03:17:30.957254+00:00",
   "authorization": "At most two additional full-system synthesis/place/route attempts before R40 v2 delivery; frozen contract unchanged",
   "starts_after_failed_hardware_source": "09ebe06",
   "previous_failure_checkpoint_sha256": "8d82bd375ce489ca433aba15f83692b53b409bc045381a7a8f44ed44811a50d9",
   "maximum_additional_attempts": 2,
-  "used": 0,
-  "remaining": 2,
-  "attempts": [],
+  "used": 1,
+  "remaining": 1,
+  "attempts": [
+    {
+      "number": 1,
+      "state": "reserved-before-launch",
+      "source_commit": "cf330dc64b6e1df535c31c9bb1a5d735e6bc0fb7",
+      "source_archive_sha256": "9050487dbff7675c859e3401849ee023137c4607f3ccb17654585def72c20869",
+      "source_root": "/home/zzhouch/tnca_src_r40_attempt01_cf330dc",
+      "build_root": "/home/zzhouch/tnca_build/r40_attempt01_20261016",
+      "command": "bash flow/fpga/run_r40_attempt01.sh /home/zzhouch/tnca_build/r40_attempt01_20261016",
+      "configuration": "attempt01/image.json",
+      "clock_target_hz": 100000000,
+      "contract_sha256": "49fc0e02733139707ae2292eff2ef893e76e73f0723d0d002b2e7e1864af71c8",
+      "hypothesis": "Registered owner ranges reduce metadata cone; 32 rather than 64 cache sets reduces async tag mux/storage and CLB packing pressure; directive unchanged",
+      "known_risks": [
+        "Reservation-X in snapshot09 unresolved despite later passing runtime-control runs",
+        "100 MHz not established by local OOC estimates"
+      ],
+      "functional_geometry_screen": "32 sets/8 ways randomized actual slice passed both replacement policies on jump host",
+      "image_sha256": null,
+      "timing_qualification": "not-measured",
+      "cdc_qualification": "not-measured"
+    }
+  ],
   "first_attempt_prerequisites": [
     "actual failed-checkpoint diagnosis identifies limiting paths and congestion",
     "all frozen-gate-required hardware controls audited and integrated",
     "functional/mutation evidence and bounded resource/timing screening support the combined candidate",
     "immutable source/configuration/constraints/toolchain manifest recorded"
   ],
-  "second_attempt_policy": "Reserve for a concrete root-cause correction from the first; never rotate directives without evidence"
+  "second_attempt_policy": "Reserve for a concrete root-cause correction from the first; never rotate directives without evidence",
+  "expedited_launch_override": "User requested first attempt start within approximately 20 minutes. Complete final functional qualification remains pending; preserve failure and run physical implementation concurrently. Frozen contract unchanged."
 }

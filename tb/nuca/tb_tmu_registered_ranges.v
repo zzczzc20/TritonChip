@@ -22,12 +22,23 @@ wire [3:0] dead_valid;
 reg [PORTS-1:0] notice_accepted=0;
 integer notice_step=0,notice_hits=0,dead_checks=0;
 integer checks=0,commits=0;
+// Epoch changes atomically with table commits/clear, never staging writes.
+wire owner_epoch;
+reg expected_epoch;
+always @(posedge clk) begin
+ if (!rst_n) expected_epoch=0;
+ else expected_epoch=owner_epoch ^ (dut.mw_go && dut.w_srcf<16 &&
+       ((dut.w_off[11:8]==0 && dut.w_off[7:0]==8'h18) ||
+        (dut.w_off[11:8]==1 && dut.w_off[5:0]==6'h10)));
+end
+always @(negedge clk)
+ if(owner_epoch!==expected_epoch)$fatal(1,"owner epoch changed outside commit/clear or missed update");
 tnca_tmu #(.REGISTERED_RANGES(1),.N_SLICE(PORTS),.N_SRC(16),.SRC_W(5),.TENSORS(8),.T_W(3),
  .LIVE(4),.LIVE_W(2),.DEAD(4),.DEAD_W(2)) dut(
  .clk(clk),.rst_n(rst_n),.mw_valid(valid),.mw_ready(ready),.mw_off(off),.mw_data(data),.mw_src(src),
  .mr_off({PORTS*12{1'b0}}),.mr_data(),.tl_valid(notices),.tl_ready(notice_ready),.tl_addr(notice_addr),.tl_drop(drops),
  .policy(),.b_bits(),.d_lsb(),.gear_init(),.gear_window(),.gear_ub(),.gear_lb(),
- .t_valid(tv),.t_base(bases),.t_size(sizes),.t_end(endpoints),.t_bypass(),.t_lsb(),.dead_valid(dead_valid),.dead_id(dead_ids));
+ .owner_epoch(owner_epoch),.t_valid(tv),.t_base(bases),.t_size(sizes),.t_end(endpoints),.t_bypass(),.t_lsb(),.dead_valid(dead_valid),.dead_id(dead_ids));
 wire [PORTS-1:0] reference_ready,reference_notice_ready;
 wire [3:0] reference_dead_valid;
 wire [63:0] reference_dead_ids;

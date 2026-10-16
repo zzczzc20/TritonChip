@@ -95,6 +95,7 @@ module tnca_tmu #(
     output reg  [15:0]                  gear_window,
     output reg  [15:0]                  gear_ub,
     output reg  [15:0]                  gear_lb,
+    output reg                          owner_epoch,
     output reg  [TENSORS-1:0]           t_valid,
     output wire [TENSORS*64-1:0]        t_base,
     output wire [TENSORS*64-1:0]        t_size,
@@ -268,6 +269,7 @@ module tnca_tmu #(
             gear_window <= 16'd1024;
             gear_ub     <= 16'd48;
             gear_lb     <= 16'd8;
+            owner_epoch <= 1'b0;
             t_valid     <= {TENSORS{1'b0}};
             t_bypass    <= {TENSORS{1'b0}};
             t_next      <= {T_W{1'b0}};
@@ -297,6 +299,7 @@ module tnca_tmu #(
                         gear_lb     <= w_data[47:32];
                     end
                     8'h18: begin
+                        owner_epoch <= ~owner_epoch;
                         t_valid    <= {TENSORS{1'b0}};
                         t_bypass   <= {TENSORS{1'b0}};
                         lv_valid   <= {LIVE{1'b0}};
@@ -310,6 +313,7 @@ module tnca_tmu #(
                     6'h00: st_base[w_src] <= w_data;
                     6'h08: st_size[w_src] <= w_data;
                     6'h10: begin
+                        owner_epoch <= ~owner_epoch;
                         t_valid[rg_slot]  <= 1'b1;
                         tb[rg_slot]       <= st_base[w_src];
                         ts[rg_slot]       <= st_size[w_src];

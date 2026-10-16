@@ -1,5 +1,6 @@
 `timescale 1ns/1ps
 module tb_nuca_maintenance;
+ parameter SYNC_TAG_BANK=1;
  parameter LATENCY=8,STALL=1,REORDER=1,FULL_TAG=1;
  reg clk=0,rst_n=0; always #5 clk=~clk;
  reg req_valid=0,req_we=0,rsp_ready=1;
@@ -16,7 +17,7 @@ module tb_nuca_maintenance;
  reg waiting_memory=0;reg [577:0] held;
  wire [577:0] offered={mem_we,mem_tag,mem_addr,mem_data};
  assign mem_ready=model_ready && !stall_memory;
- tnca_nuca_slice #(.MAINTENANCE(1),.FULL_LINE_TAG(FULL_TAG),
+ tnca_nuca_slice #(.MAINTENANCE(1),.SYNC_TAG_BANK(SYNC_TAG_BANK),.FULL_LINE_TAG(FULL_TAG),
   .SETS(4),.SET_W(2),.WAYS(2),.WAY_W(1),.MSHR_N(2),.MSHR_W(1),
   .TARGET_N(4),.TARGET_W(2),.RQ_N(4),.RQ_W(2),.TAG_W(5),.DCO_T(1),.DCO_DEAD(1)) dut(
   .clk(clk),.rst_n(rst_n),.maint_valid(maint_valid),.maint_ready(maint_ready),
@@ -31,6 +32,18 @@ module tb_nuca_maintenance;
   .dco_cfg(76'd0),.dco_t_valid(1'b0),.dco_t_base(64'd0),.dco_t_size(64'd0),
   .dco_t_bypass(1'b0),.dco_t_lsb(6'd0),.dco_dead_valid(1'b0),.dco_dead_id(16'd0),
   .dco_slow(16'd0),.tmu_wr_ready(1'b1),.tmu_rd_data(64'd0),.tmu_tl_ready(1'b1));
+ // Validate selected-set alignment, including requests draining while a
+ // maintenance request is pending. Checking data alone can miss a stale tag
+ // read when the request happens to miss in both implementations.
+ genvar tag_way;
+ generate if(SYNC_TAG_BANK) begin : g_check_tags
+  for(tag_way=0;tag_way<2;tag_way=tag_way+1)begin : g_way
+   always @(negedge clk)
+    if(rst_n && dut.est==1 && dut.v_bits[dut.cur_set*2+tag_way] &&
+       dut.lookup_tag[tag_way] !== dut.g_sync_tags.g_way[tag_way].bank[dut.cur_set])
+     $fatal(1,"synchronous tag read did not follow selected request set");
+  end
+ end endgenerate
  tnca_dram_model #(.LINES(128),.TAG_W(1),.LATENCY(LATENCY),
   .RANDOM_STALL(STALL),.REORDER(REORDER)) memory(
   .clk(clk),.rst_n(rst_n),.req_valid(mem_valid && !stall_memory),.req_ready(model_ready),
@@ -102,11 +115,14 @@ module tb_nuca_maintenance;
   maintain(address(0,1)+1,1);memory.mem[0][79:72]=8'hcc;
   access(address(0,1),0,64'h112233445566cc88,0,8'hff);
   if(writes!=write_before)$fatal(1,"clean line wrote back");
+  // Populate unequal tags in another set, then return the read port to set 0.
+  access(address(5,0),0,64'h100+address(5,0)/8,0,8'hff);
+  access(address(0,1),0,64'h112233445566cc88,0,8'hff);
   // Admission waits for queued requests and a stalled response to drain.
   rsp_ready=0;
   fork
-   access(address(8,0),0,64'h100+address(8,0)/8,0,8'hff);
-   begin wait(req_valid && req_ready);maintain(address(8,0),1);end
+   access(address(9,0),0,64'h100+address(9,0)/8,0,8'hff);
+   begin wait(req_valid && req_ready);maintain(address(9,0),1);end
    begin wait(req_valid && req_ready);repeat(20)@(negedge clk);
     if(maint_ready || maint_busy || maint_done)$fatal(1,"maintenance overtook response");
     rsp_ready=1;

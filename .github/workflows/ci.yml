@@ -87,6 +87,9 @@ jobs:
             vvp /tmp/r40-tmu-ranges-$ports.vvp
           done
           make nuca-dco IVFLAGS='-g2012 -I rtl/common -Ptb_nuca_slice.DCO_REGISTERED_RANGES=1'
+          # Exercise the staged owner with metadata changing at E_LOOK edges.
+          make nuca-dco DCO_POLICIES='2 74' DCO_SEEDS='1 7' \
+            IVFLAGS='-g2012 -I rtl/common -Ptb_nuca_slice.DCO_REGISTERED_RANGES=1 -Ptb_nuca_slice.REGISTER_VICTIM_OWNER=1 -Ptb_nuca_slice.EPOCH_CHURN=1'
 
       - name: R40 runtime memory routing and admission controls
         run: python3 tools/r40/memory_control_tests.py --out /tmp/r40-memory-controls

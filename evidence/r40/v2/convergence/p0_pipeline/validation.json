@@ -1,0 +1,84 @@
+{
+  "schema": "tnca-r40-p0-pipeline/1",
+  "gate_status": "not-measured",
+  "qualification": "functional validation complete; matched OOC screening pending; no full implementation launched",
+  "clock_target_hz": 100000000,
+  "image_sha256": null,
+  "contract_sha256": "49fc0e02733139707ae2292eff2ef893e76e73f0723d0d002b2e7e1864af71c8",
+  "source_sha256": {
+    "rtl/nuca/tnca_nuca_slice.v": "9c2ecdc86ed78e0762570074bb7c7ae894c9ddcaeebc1fdc392284e77fb72c7c",
+    "rtl/nuca/tnca_tmu.v": "c09a71109e6cc7a5ecf330cce01d5c02d38446892b198b0c4e396fcb40e0dccc",
+    "rtl/tile/tnca_tile.v": "ccadd8603b542395d14bcf555e9cb85a6bd1273eb2d60c168f20e5e6808cdf0a",
+    "rtl/tnca_top.v": "28da3a9a4938a8bee8d40345afb7814674907d0c6fe109db420a48206fef5f94",
+    "rtl/core/tnca_decoder.v": "fad46133110797293a9086f5c486cfaeb2dae30f6df3ebc393afe4f96f0499ce",
+    "flow/fpga/tnca_range_slice_ooc.v": "a886795b88025e48da4302bb3e476e7531b4d63e6015b0009d5efd2829092762",
+    "flow/fpga/synth_r40_range_slice.tcl": "4ce4bd9c831368ed791e311e7a6931bcbe5a796ff730aec74fbb9e64df17c47f"
+  },
+  "functional_archive_sha256": "738e4d16875006d48decb9ba81cf7af2930a4af0ed15778e36e6d69350553ee7",
+  "boundaries": [
+    "E_SEL -> registered per-way tag read -> E_LOOK",
+    "E_LOOK -> victim_owner_q/request_owner_q -> E_MISS",
+    "TMU owner_epoch changes with tensor commit/clear; E_MISS retries at E_LOOK on mismatch before effects"
+  ],
+  "functional": {
+    "status": "pass",
+    "matrix": {
+      "sync_tag_bank": [
+        0,
+        1
+      ],
+      "registered_victim_owner": [
+        0,
+        1
+      ],
+      "registered_ranges": [
+        0,
+        1
+      ],
+      "policy": [
+        0,
+        2,
+        46,
+        74
+      ],
+      "seed": [
+        1,
+        7
+      ],
+      "requests_per_case": 20000
+    },
+    "checks": [
+      "every differential read response",
+      "live metadata epoch mutations",
+      "removed epoch guard mutation rejected",
+      "maintenance selected-set alignment mutation rejected",
+      "full/high tags; dirty writeback; same-set fill/read",
+      "actual three-core ownership and dirty handoff, link stages 0 and 2",
+      "TMU commits/clear/staging/invalid requester with 3 and 8 ports"
+    ],
+    "limitations": [
+      "functional cases do not replace final native77/HBM14/frozen models",
+      "initial targeted TMU invocation used unsupported one-port bench configuration; failure retained, corrected invocation uses 3 and 8",
+      "source binding check passed; SMT rerun initially unavailable because z3 missing, isolated solver rerun pending"
+    ]
+  },
+  "physical": {
+    "status": "screening",
+    "fpga_root": "~/tnca_build/r40_p0ab_screen",
+    "configuration": "actual TMU plus slice; 32 sets, 8 ways, full tags, maintenance, registered ranges; identical ideal 10 ns OOC constraints",
+    "variants": [
+      "00: async tags, combinational owner",
+      "10: synchronous tags, combinational owner",
+      "01: async tags, registered owner",
+      "11: synchronous tags, registered owner"
+    ],
+    "comparability": "all four use the same new source; async control is not byte-identical to cf330dc RTL, whose source and inference differ",
+    "combined_worst_path": null,
+    "combined_logic_levels": null,
+    "combined_logic_delay_ns": null,
+    "combined_estimated_net_delay_ns": null,
+    "route_status": "not-measured",
+    "fmax_hz": null
+  },
+  "remaining_full_implementations": 1
+}

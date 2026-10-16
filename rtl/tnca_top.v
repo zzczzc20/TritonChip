@@ -353,6 +353,7 @@ module tnca_top #(
     wire [3:0]              d_bbits, d_ginit;
     wire [5:0]              d_lsb;
     wire [15:0]             d_win, d_ub, d_lb;
+    wire d_owner_epoch;
     wire [DCO_T-1:0]        d_tv, d_tbyp;
     wire [DCO_T*64-1:0]     d_tbase, d_tsize;
     wire [DCO_T*65-1:0]     d_tend;
@@ -372,7 +373,7 @@ module tnca_top #(
         .tl_valid(tm_tv), .tl_ready(tm_tr), .tl_addr(tm_taddr), .tl_drop(tm_drop),
         .policy(d_policy), .b_bits(d_bbits), .d_lsb(d_lsb),
         .gear_init(d_ginit), .gear_window(d_win), .gear_ub(d_ub), .gear_lb(d_lb),
-        .t_valid(d_tv), .t_base(d_tbase), .t_size(d_tsize), .t_end(d_tend), .t_bypass(d_tbyp),
+        .owner_epoch(d_owner_epoch), .t_valid(d_tv), .t_base(d_tbase), .t_size(d_tsize), .t_end(d_tend), .t_bypass(d_tbyp),
         .t_lsb(d_tlsb),
         .dead_valid(d_dv), .dead_id(d_did)
     );
@@ -462,7 +463,7 @@ module tnca_top #(
                 .perf_wb(perf_wb[t*32 +: 32]),
                 .perf_mshr_full(perf_mshr_full[t*32 +: 32]),
                 .perf_hit_past_block(perf_hit_past_block[t*32 +: 32]),
-                .dco_cfg(dco_cfg), .dco_t_valid(d_tv), .dco_t_base(d_tbase),
+                .dco_owner_epoch(d_owner_epoch), .dco_cfg(dco_cfg), .dco_t_valid(d_tv), .dco_t_base(d_tbase),
                 .dco_t_end(d_tend), .dco_t_size(d_tsize), .dco_t_bypass(d_tbyp), .dco_t_lsb(d_tlsb),
                 .dco_dead_valid(d_dv), .dco_dead_id(d_did), .dco_slow(dco_slow),
                 .tmu_wr_valid(tm_wv[t]), .tmu_wr_ready(tm_wr[t]),

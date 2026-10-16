@@ -136,6 +136,7 @@ module tnca_tile #(
 
     // ---- DCO: this slice's side of the TMU (straight through) -----------------
     input  wire [75:0]              dco_cfg,
+    input  wire                       dco_owner_epoch,
     input  wire [DCO_T-1:0]         dco_t_valid,
     input  wire [DCO_T*64-1:0]      dco_t_base,
     input  wire [DCO_T*64-1:0]      dco_t_size,
@@ -326,7 +327,7 @@ module tnca_tile #(
     // NUCA slice
     //==========================================================================
     tnca_nuca_slice #(
-        .MAINTENANCE(CACHE_MAINTENANCE), .DCO_REGISTERED_RANGES(DCO_REGISTERED_RANGES),
+        .REGISTER_VICTIM_OWNER(1), .MAINTENANCE(CACHE_MAINTENANCE), .DCO_REGISTERED_RANGES(DCO_REGISTERED_RANGES),
         .FULL_LINE_TAG(!(NX==2 && NY==2)),
         .ADDR_W(64), .LINE_BYTES(LINE_BYTES), .LINE_BITS(LINE_BITS),
         .WORD_BITS(64), .WORD_BYTES(8),
@@ -356,7 +357,7 @@ module tnca_tile #(
         .perf_hit(perf_hit), .perf_miss(perf_miss), .perf_merge(perf_merge),
         .perf_mshr_full(perf_mshr_full), .perf_target_full(),
         .perf_wb(perf_wb), .perf_hit_past_block(perf_hit_past_block),
-        .dco_cfg(dco_cfg), .dco_t_valid(dco_t_valid), .dco_t_base(dco_t_base),
+        .dco_owner_epoch(dco_owner_epoch), .dco_cfg(dco_cfg), .dco_t_valid(dco_t_valid), .dco_t_base(dco_t_base),
         .dco_t_end(dco_t_end), .dco_t_size(dco_t_size), .dco_t_bypass(dco_t_bypass), .dco_t_lsb(dco_t_lsb),
         .dco_dead_valid(dco_dead_valid), .dco_dead_id(dco_dead_id),
         .dco_slow(dco_slow),

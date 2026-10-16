@@ -51,7 +51,7 @@ def main():
     slice_text=compact(slice_path.read_text());tmu_text=compact(tmu_path.read_text())
     bindings=(
         'owner_registered(cur_addr,dco_t_valid,dco_t_base,dco_t_end,dco_t_bypass,dco_t_lsb)',
-        'owner_registered(line_addr(vtag,cur_set),dco_t_valid,dco_t_base,dco_t_end,dco_t_bypass,dco_t_lsb)')
+        'owner_registered(line_addr(lookup_tag[owner_bank],cur_set),dco_t_valid,dco_t_base,dco_t_end,dco_t_bypass,dco_t_lsb)')
     if any(text not in slice_text for text in bindings):raise ValueError('slice endpoint consumer binding changed')
     if 'owner_registered(n_addr,t_valid,t_base,t_end,t_bypass,t_lsb)' not in tmu_text:
         raise ValueError('TMU endpoint consumer binding changed')

@@ -30,6 +30,8 @@ module tnca_range_slice_ooc #(
     
     parameter DCO_T      = 8,
     parameter DCO_REGISTERED_RANGES = 0,
+    parameter SYNC_TAG_BANK = 1,
+    parameter REGISTER_VICTIM_OWNER = 0,
     parameter DCO_DEAD   = 16,
     parameter MAINTENANCE = 0,
     parameter DCO_ID_W   = 16,
@@ -116,13 +118,14 @@ assign dco_cfg={lb,ub,win,ginit,6'd0,granule,bbits,policy};
 assign tmu_wr_ready=wr_ready[0];assign peer_wr_ready=wr_ready[2:1];
 assign tmu_tl_ready=tl_ready[0];assign peer_tl_ready=tl_ready[2:1];
 assign tmu_rd_data=read_data[63:0];
+wire owner_epoch;
 tnca_tmu #(.REGISTERED_RANGES(DCO_REGISTERED_RANGES),.N_SLICE(3),.N_SRC(3),.SRC_W(4),.TENSORS(DCO_T),.T_W(DCO_T>1?$clog2(DCO_T):1),.DEAD(DCO_DEAD),.ID_W(DCO_ID_W)) tmu(
 .clk(clk),.rst_n(rst_n),.mw_valid({peer_wr_valid,tmu_wr_valid}),.mw_ready(wr_ready),
 .mw_off({peer_wr_off,tmu_wr_off}),.mw_data({peer_wr_data,tmu_wr_data}),.mw_src({peer_wr_src,tmu_wr_src}),
 .mr_off({24'd0,tmu_rd_off}),.mr_data(read_data),.tl_valid({peer_tl_valid,tmu_tl_valid}),.tl_ready(tl_ready),
 .tl_addr({peer_tl_addr,tmu_tl_addr}),.tl_drop({peer_tl_drop,tmu_tl_drop}),
 .policy(policy),.b_bits(bbits),.d_lsb(granule),.gear_init(ginit),.gear_window(win),.gear_ub(ub),.gear_lb(lb),
-.t_valid(dco_t_valid),.t_base(dco_t_base),.t_size(dco_t_size),.t_end(dco_t_end),
+.owner_epoch(owner_epoch),.t_valid(dco_t_valid),.t_base(dco_t_base),.t_size(dco_t_size),.t_end(dco_t_end),
 .t_bypass(dco_t_bypass),.t_lsb(dco_t_lsb),.dead_valid(dco_dead_valid),.dead_id(dco_dead_id));
 tnca_nuca_slice #(
 .ADDR_W(ADDR_W),
@@ -147,6 +150,8 @@ tnca_nuca_slice #(
 .FULL_LINE_TAG(FULL_LINE_TAG),
 .DCO_T(DCO_T),
 .DCO_REGISTERED_RANGES(DCO_REGISTERED_RANGES),
+.SYNC_TAG_BANK(SYNC_TAG_BANK),
+.REGISTER_VICTIM_OWNER(REGISTER_VICTIM_OWNER),
 .DCO_DEAD(DCO_DEAD),
 .MAINTENANCE(MAINTENANCE),
 .DCO_ID_W(DCO_ID_W),
@@ -184,7 +189,7 @@ tnca_nuca_slice #(
 .mem_rsp_valid(mem_rsp_valid),
 .mem_rsp_tag(mem_rsp_tag),
 .mem_rsp_rdata(mem_rsp_rdata),
-.dco_cfg(dco_cfg),
+.dco_owner_epoch(owner_epoch),.dco_cfg(dco_cfg),
 .dco_t_valid(dco_t_valid),
 .dco_t_base(dco_t_base),
 .dco_t_size(dco_t_size),

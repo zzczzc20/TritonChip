@@ -78,6 +78,8 @@ module tnca_nuca_slice #(
     // tile-identifier width, and the address window of the TMU's registers.
     parameter DCO_T      = 8,
     parameter DCO_REGISTERED_RANGES = 0,
+    parameter SYNC_TAG_BANK = 1,
+    parameter REGISTER_VICTIM_OWNER = 0,
     parameter DCO_DEAD   = 16,
     parameter MAINTENANCE = 0,
     parameter DCO_ID_W   = 16,
@@ -137,6 +139,7 @@ module tnca_nuca_slice #(
 
     // ---- DCO: policy and metadata, from the TMU ------------------------------
     input  wire [75:0]              dco_cfg,        // see `DCO_*` slices below
+    input  wire                       dco_owner_epoch,
     input  wire [DCO_T-1:0]         dco_t_valid,
     input  wire [DCO_T*64-1:0]      dco_t_base,
     input  wire [DCO_T*64-1:0]      dco_t_size,
@@ -339,7 +342,8 @@ module tnca_nuca_slice #(
     // Arrays
     //==========================================================================
     reg [LINE_BITS-1:0] data_mem [0:LINES-1];
-    reg [TAGB-1:0]      tag_mem  [0:LINES-1];
+    wire [TAGB-1:0]     lookup_tag [0:WAYS-1];
+    wire [TAGB-1:0]     maint_tag;
     reg [LINES-1:0]     v_bits;
     reg [LINES-1:0]     d_bits;
     reg [WAY_W-1:0]     victim_ptr [0:SETS-1];
@@ -521,7 +525,8 @@ module tnca_nuca_slice #(
                E_MMIO  = 4'd9,   // a TMU register, never cached
                E_MSCAN = 4'd10,
                E_MREAD = 4'd11,
-               E_MSEND = 4'd12;
+               E_MSEND = 4'd12,
+               E_MTAG  = 4'd13; // synchronous maintenance tag prefetch
 
     reg [3:0]            est;
     reg [RQ_W-1:0]       cur_rq;
@@ -546,11 +551,11 @@ module tnca_nuca_slice #(
         for (maint_i=0; maint_i<MSHR_N; maint_i=maint_i+1)
             if (ms_state[maint_i] != MS_FREE) maint_ms_free = 1'b0;
     end
-    assign maint_busy = (est==E_MSCAN || est==E_MREAD || est==E_MSEND);
+    assign maint_busy = (est==E_MTAG || est==E_MSCAN || est==E_MREAD || est==E_MSEND);
     assign maint_ready = (MAINTENANCE != 0) && rst_n && est==E_SEL &&
                          rq_v==0 && rsq_cnt==0 && tg_v==0 && maint_ms_free && !mem_rsp_valid;
     wire [SET_W-1:0] maint_set = maint_index / WAYS;
-    wire [ADDR_W-1:0] maint_address = line_addr(tag_mem[maint_index], maint_set);
+    wire [ADDR_W-1:0] maint_address = line_addr(maint_tag, maint_set);
     wire maint_overlap = ({1'b0,maint_address} < maint_end) &&
                          ({1'b0,maint_address}+LINE_BYTES > {1'b0,maint_first});
 
@@ -558,13 +563,52 @@ module tnca_nuca_slice #(
     wire [TAGB-1:0]   cur_tagb = `SLICE_TAG(cur_addr);
     wire [WSEL_W-1:0] cur_wsel = cur_addr[3 +: WSEL_W];
 
+    // One independent bank per way. E_SEL reads the SELECTED request's
+    // set (not cur_set, which is updated on that same edge); E_LOOK consumes
+    // registered outputs. Tags have no reset: v_bits alone establishes validity.
+    // Shallow 32/64-entry banks use LUTRAM with an explicit output register.
+    // No fill can coincide with lookup/maintenance reads in this single engine,
+    // so same-set read-after-fill sees the completed write on the next E_SEL.
+    wire tag_read_en = (est == E_SEL && !(maint_requested && maint_ready) && !ms_pick &&
+                        sel_valid && !rsq_full) || est == E_MTAG;
+    wire [SET_W-1:0] tag_read_set = (est == E_MTAG) ? maint_set :
+                                   `SLICE_SET(rq_addr[sel_idx]);
+    genvar tag_way;
+    generate
+        if (SYNC_TAG_BANK) begin : g_sync_tags
+            for (tag_way=0; tag_way<WAYS; tag_way=tag_way+1) begin : g_way
+                (* ram_style = "distributed" *) reg [TAGB-1:0] bank [0:SETS-1];
+                reg [TAGB-1:0] read_tag;
+                always @(posedge clk) begin
+                    if (rst_n && est == E_FILL && !ms_byp[cur_ms] &&
+                        ms_way[cur_ms] == tag_way)
+                        bank[ms_set[cur_ms]] <= ms_addr[cur_ms][ADDR_W-1 -: TAGB];
+                    if (tag_read_en) read_tag <= bank[tag_read_set];
+                end
+                assign lookup_tag[tag_way] = read_tag;
+            end
+            assign maint_tag = lookup_tag[maint_index % WAYS];
+        end else begin : g_async_tags
+            // Retained solely for matched-geometry A/B screening.
+            reg [TAGB-1:0] tag_mem [0:LINES-1];
+            always @(posedge clk)
+                if (rst_n && est == E_FILL && !ms_byp[cur_ms])
+                    tag_mem[ms_set[cur_ms]*WAYS+ms_way[cur_ms]] <=
+                        ms_addr[cur_ms][ADDR_W-1 -: TAGB];
+            for (tag_way=0; tag_way<WAYS; tag_way=tag_way+1) begin : g_way
+                assign lookup_tag[tag_way] = tag_mem[cur_set*WAYS+tag_way];
+            end
+            assign maint_tag = tag_mem[maint_index];
+        end
+    endgenerate
+
     // ---- tag lookup (combinational over the ways of one set) ----------------
     reg            hit;
     reg [WAY_W-1:0] hit_way;
     always @(*) begin
         hit = 1'b0; hit_way = {WAY_W{1'b0}};
         for (w = 0; w < WAYS; w = w + 1)
-            if (v_bits[cur_set*WAYS + w] && (tag_mem[cur_set*WAYS + w] == cur_tagb)) begin
+            if (v_bits[cur_set*WAYS + w] && (lookup_tag[w] == cur_tagb)) begin
                 hit = 1'b1; hit_way = w[WAY_W-1:0];
             end
     end
@@ -579,6 +623,33 @@ module tnca_nuca_slice #(
                 (ms_addr[i][ADDR_W-1:OFF_W] == cur_addr[ADDR_W-1:OFF_W])) begin
                 ms_match = 1'b1; ms_match_id = i[MSHR_W-1:0];
             end
+    end
+
+    // Owner classification ends at E_LOOK. The TMU toggles its epoch on
+    // each tensor-table commit/clear. E_MISS is exactly the following cycle:
+    // an epoch mismatch returns to E_LOOK before any request/MSHR/TLW effect.
+    // A one-bit epoch cannot ABA in that single-edge interval. Dead hints and
+    // policy are deliberately consumed live in E_MISS; only owner is cached.
+    reg [11:0] victim_owner_q [0:WAYS-1];
+    reg [11:0] request_owner_q;
+    reg owner_epoch_q;
+    integer owner_way;
+    wire [11:0] victim_owner_live [0:WAYS-1];
+    genvar owner_bank;
+    generate for (owner_bank=0; owner_bank<WAYS; owner_bank=owner_bank+1) begin : g_victim_owner
+        assign victim_owner_live[owner_bank] = DCO_REGISTERED_RANGES ?
+            owner_registered(line_addr(lookup_tag[owner_bank],cur_set),
+                dco_t_valid,dco_t_base,dco_t_end,dco_t_bypass,dco_t_lsb) :
+            owner(line_addr(lookup_tag[owner_bank],cur_set),
+                dco_t_valid,dco_t_base,dco_t_size,dco_t_bypass,dco_t_lsb);
+    end endgenerate
+    always @(posedge clk) begin
+        if (est == E_LOOK && REGISTER_VICTIM_OWNER) begin
+            for (owner_way=0;owner_way<WAYS;owner_way=owner_way+1)
+                victim_owner_q[owner_way] <= victim_owner_live[owner_way];
+            request_owner_q <= request_owner_live;
+            owner_epoch_q <= dco_owner_epoch;
+        end
     end
 
     // ---- victim selection: invalid first, then the policy, never a way that
@@ -631,12 +702,9 @@ module tnca_nuca_slice #(
             end else if (!vic_ok) begin
                 for (vw = 0; vw < WAYS; vw = vw + 1) begin
                     vidx  = cur_set*WAYS + vw;
-                    vtag  = tag_mem[vidx];
-                    vown  = DCO_REGISTERED_RANGES ?
-                            owner_registered(line_addr(vtag, cur_set), dco_t_valid, dco_t_base,
-                                             dco_t_end, dco_t_bypass, dco_t_lsb) :
-                            owner(line_addr(vtag, cur_set), dco_t_valid, dco_t_base,
-                                  dco_t_size, dco_t_bypass, dco_t_lsb);
+                    vtag  = lookup_tag[vw];
+                    vown  = REGISTER_VICTIM_OWNER ? victim_owner_q[vw] :
+                            victim_owner_live[vw];
                     vdead = pol_dbp && vown[11] &&
                             (vown[10] ||
                              dead_tile(tile_id(line_addr(vtag, cur_set), vown, d_lsb),
@@ -669,11 +737,13 @@ module tnca_nuca_slice #(
     reg  [3:0]  gear;
     wire [3:0]  gear_eff  = pol_static ? gear_init : gear;
     wire [3:0]  cur_prio  = cur_tagb[3:0] & bmask;
-    wire [11:0] cur_own   = DCO_REGISTERED_RANGES ?
+    wire [11:0] request_owner_live = DCO_REGISTERED_RANGES ?
                           owner_registered(cur_addr, dco_t_valid, dco_t_base, dco_t_end,
                                            dco_t_bypass, dco_t_lsb) :
                           owner(cur_addr, dco_t_valid, dco_t_base, dco_t_size,
                                   dco_t_bypass, dco_t_lsb);
+    wire [11:0] cur_own = (REGISTER_VICTIM_OWNER && est == E_MISS) ?
+                           request_owner_q : request_owner_live;
     wire        cur_tbyp  = pol_tbyp && cur_own[11] && cur_own[10];
     wire        cur_dbyp  = pol_dyn && cur_own[11] &&
                             ({1'b0, cur_prio} < {1'b0, gear_eff}) &&
@@ -859,7 +929,7 @@ module tnca_nuca_slice #(
                     maint_end <= {1'b0,maint_base}+{1'b0,maint_size};
                     maint_index <= 0;
                     if (maint_size==0) maint_done <= 1;
-                    else est <= E_MSCAN;
+                    else est <= SYNC_TAG_BANK ? E_MTAG : E_MSCAN;
                 end else if (ms_pick) begin
                     cur_ms <= ms_pick_id;
                     case (ms_pick_st)
@@ -884,6 +954,8 @@ module tnca_nuca_slice #(
                 end
             end
 
+            E_MTAG: est <= E_MSCAN;
+
             E_MSCAN: begin
                 if (v_bits[maint_index] && maint_overlap && d_bits[maint_index]) begin
                     maint_line <= maint_address;
@@ -894,7 +966,10 @@ module tnca_nuca_slice #(
                         d_bits[maint_index] <= 0;
                     end
                     if (maint_index==LINES-1) begin maint_done<=1; est<=E_SEL; end
-                    else maint_index<=maint_index+1'b1;
+                    else begin
+                        maint_index<=maint_index+1'b1;
+                        est<=SYNC_TAG_BANK ? E_MTAG : E_MSCAN;
+                    end
                 end
             end
             E_MREAD: begin
@@ -907,7 +982,10 @@ module tnca_nuca_slice #(
                     v_bits[maint_index] <= 0;
                     d_bits[maint_index] <= 0;
                     if (maint_index==LINES-1) begin maint_done<=1; est<=E_SEL; end
-                    else begin maint_index<=maint_index+1'b1; est<=E_MSCAN; end
+                    else begin
+                        maint_index<=maint_index+1'b1;
+                        est<=SYNC_TAG_BANK ? E_MTAG : E_MSCAN;
+                    end
                 end
             end
 
@@ -986,6 +1064,9 @@ module tnca_nuca_slice #(
 
             //---------------------------------------------------------------
             E_MISS: begin
+                if (REGISTER_VICTIM_OWNER && owner_epoch_q != dco_owner_epoch) begin
+                    est <= E_LOOK;
+                end else begin
                 if (ms_match && ms_byp[ms_match_id] && (cur_we || cur_amo)) begin
                     // A store cannot ride a bypassed miss: there is no way for
                     // it to write. It waits for the miss to retire, then
@@ -1058,7 +1139,7 @@ module tnca_nuca_slice #(
                     // A dirty victim must leave before the fill overwrites it.
                     if (v_bits[cur_set*WAYS + vic_way] && d_bits[cur_set*WAYS + vic_way]) begin
                         ms_state[ms_free_idx] <= MS_WB;
-                        ms_wbadr[ms_free_idx] <= line_addr(tag_mem[cur_set*WAYS + vic_way],
+                        ms_wbadr[ms_free_idx] <= line_addr(lookup_tag[vic_way],
                                                            cur_set);
                     end else begin
                         ms_state[ms_free_idx] <= MS_REQ;
@@ -1088,6 +1169,7 @@ module tnca_nuca_slice #(
                     rq_blocked[cur_rq] <= 1'b1;
                 end
                 est <= E_SEL;
+                end // coherent owner snapshot
             end
 
             //---------------------------------------------------------------
@@ -1119,7 +1201,6 @@ module tnca_nuca_slice #(
                 fill_way = ms_way[cur_ms];
                 if (!ms_byp[cur_ms]) begin
                     data_mem[fill_set*WAYS + fill_way] <= ms_line[cur_ms];
-                    tag_mem[fill_set*WAYS + fill_way]  <= ms_addr[cur_ms][ADDR_W-1 -: TAGB];
                     v_bits[fill_set*WAYS + fill_way]   <= 1'b1;
                     d_bits[fill_set*WAYS + fill_way]   <= 1'b0;
                     touch(fill_set, fill_way);

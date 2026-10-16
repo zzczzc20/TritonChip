@@ -19,6 +19,7 @@
 `timescale 1ns/1ps
 
 module tb_nuca_slice;
+    parameter DCO_REGISTERED_RANGES = 0;
 
     parameter DRAM_LAT   = 40;
     parameter DRAM_STALL = 1;
@@ -104,7 +105,7 @@ module tb_nuca_slice;
     wire [63:0]             tl_addr;
 
     tnca_nuca_slice #(
-        .MAINTENANCE(MAINTENANCE),
+        .MAINTENANCE(MAINTENANCE), .DCO_REGISTERED_RANGES(DCO_REGISTERED_RANGES),
         .ADDR_W(ADDR_W), .LINE_BYTES(LINE_BYTES), .LINE_BITS(LINE_BITS),
         .WORD_BITS(WORD_BITS), .WORD_BYTES(WORD_BYTES),
         .SETS(SETS), .SET_W(SET_W), .WAYS(WAYS), .WAY_W(WAY_W),
@@ -133,6 +134,7 @@ module tb_nuca_slice;
         .dco_t_valid(2'b11),
         .dco_t_base({64'd0, T_BYP}),
         .dco_t_size({64'd0, T_BYP}),
+        .dco_t_end({1'b1, 64'd0, ({1'b0,T_BYP}+{1'b0,T_BYP})}),
         .dco_t_bypass(2'b01), .dco_t_lsb({6'd0, 6'd9}),
         .dco_dead_valid(dead_v), .dco_dead_id(dead_id), .dco_slow(dco_slow),
         .tmu_wr_valid(tmw_valid), .tmu_wr_ready(1'b1), .tmu_wr_off(),

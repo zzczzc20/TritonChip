@@ -3,6 +3,7 @@
 // This module alone is not a deployable board image.
 `default_nettype none
 module tnca_multicore_axi #(
+ parameter DCO_REGISTERED_RANGES=0,
  parameter NX=3,NY=1,N=NX*NY,CODE_WORDS=16384,CODE_LINK_STAGES=0,MEM_PORTS=1,NOC_LINK_STAGES=0,DISPATCH_STAGES=0,MEM_HOME_STAGES=0,
  parameter SRC_W=(N>4?$clog2(N):2),
  parameter NUM_RCTX=4,RCTX_W=2,PHYS_VREGS=256,PHYS_W=8,
@@ -102,7 +103,7 @@ module tnca_multicore_axi #(
  assign all_idle=shell_all_idle && memory_drained;
  assign busy=shell_busy || !memory_drained;
  tnca_multicore_shell #(
-  .CACHE_MAINTENANCE(CACHE_MAINTENANCE),
+  .CACHE_MAINTENANCE(CACHE_MAINTENANCE), .DCO_REGISTERED_RANGES(DCO_REGISTERED_RANGES),
   .NX(NX),
   .NY(NY),
   .N(N),

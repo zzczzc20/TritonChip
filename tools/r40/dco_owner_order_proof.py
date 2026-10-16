@@ -38,7 +38,7 @@ def abstract(body, expected_memberships):
         'input[ADDR_W-1:0]a;',
         'input[DCO_T*64-1:0]tbase,tsize;',
         'input[DCO_T*64-1:0]tbase;', 'input[DCO_T*64-1:0]tsize;',
-        'reg[63:0]best,b,z;', 'reg[63:0]b,z,best;',
+        'reg[63:0]best,b,z;', 'reg[63:0]b,z,best;', 'reg[63:0]b;',
         'b=tbase[k*64+:64];', 'z=tsize[k*64+:64];',
         "best=64'd0;", 'best=b;']
     for term in allowed:compact=compact.replace(term,'')

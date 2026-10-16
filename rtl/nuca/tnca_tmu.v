@@ -57,6 +57,7 @@
 //==============================================================================
 module tnca_tmu #(
     parameter N_SLICE  = 4,
+    parameter REGISTERED_RANGES = 0,
     parameter SRC_W    = 4,
     parameter N_SRC    = 4,
     parameter TENSORS  = 8,
@@ -97,6 +98,7 @@ module tnca_tmu #(
     output reg  [TENSORS-1:0]           t_valid,
     output wire [TENSORS*64-1:0]        t_base,
     output wire [TENSORS*64-1:0]        t_size,
+    output wire [TENSORS*65-1:0]        t_end,
     output reg  [TENSORS-1:0]           t_bypass,
     output wire [TENSORS*6-1:0]         t_lsb,
     output reg  [DEAD-1:0]              dead_valid,
@@ -112,6 +114,9 @@ module tnca_tmu #(
     //==========================================================================
     reg [63:0] tb   [0:TENSORS-1];
     reg [63:0] ts   [0:TENSORS-1];
+    // Commit with base/size, so slices never combine different metadata epochs.
+    // Bit 64 also represents an unbounded (size-zero) interval.
+    reg [64:0] te   [0:TENSORS-1];
     reg [31:0] tn   [0:TENSORS-1];     // nAcc
     reg [3:0]  top  [0:TENSORS-1];     // operand id (recorded, informational)
     reg [5:0]  tls  [0:TENSORS-1];     // tile granule, log2 bytes (0: D_LSB)
@@ -122,6 +127,7 @@ module tnca_tmu #(
         for (g = 0; g < TENSORS; g = g + 1) begin : g_tout
             assign t_base[g*64 +: 64] = tb[g];
             assign t_size[g*64 +: 64] = ts[g];
+            assign t_end[g*65 +: 65]  = te[g];
             assign t_lsb[g*6 +: 6]    = tls[g];
         end
     endgenerate
@@ -146,28 +152,30 @@ module tnca_tmu #(
     endgenerate
 
     reg [31:0] stat_reg, stat_tlw, stat_dead, stat_drop;
-    reg [2:0]  n_drop;
+    localparam DROP_W = $clog2(N_SLICE+1);
+    reg [DROP_W-1:0] n_drop;
     always @(*) begin
-        n_drop = 3'd0;
-        for (k_dr = 0; k_dr < N_SLICE; k_dr = k_dr + 1) n_drop = n_drop + {2'd0, tl_drop[k_dr]};
+        n_drop = {DROP_W{1'b0}};
+        for (k_dr = 0; k_dr < N_SLICE; k_dr = k_dr + 1) n_drop = n_drop + tl_drop[k_dr];
     end
 
     //==========================================================================
     // Arbitration: one register write and one tile notice per cycle, rotating
     //==========================================================================
-    reg [1:0] mw_rr, tl_rr;
+    localparam SELECT_W = N_SLICE > 1 ? $clog2(N_SLICE) : 1;
+    reg [SELECT_W-1:0] mw_rr, tl_rr;
     reg       mw_go, tl_go;
-    reg [1:0] mw_sel, tl_sel;
+    reg [SELECT_W-1:0] mw_sel, tl_sel;
     always @(*) begin
-        mw_go = 1'b0; mw_sel = 2'd0; mw_ready = {N_SLICE{1'b0}};
-        tl_go = 1'b0; tl_sel = 2'd0; tl_ready = {N_SLICE{1'b0}};
+        mw_go = 1'b0; mw_sel = {SELECT_W{1'b0}}; mw_ready = {N_SLICE{1'b0}};
+        tl_go = 1'b0; tl_sel = {SELECT_W{1'b0}}; tl_ready = {N_SLICE{1'b0}};
         for (k_ar = N_SLICE-1; k_ar >= 0; k_ar = k_ar - 1) begin
             s_ar = (k_ar + mw_rr) % N_SLICE;
-            if (mw_valid[s_ar]) begin mw_go = 1'b1; mw_sel = s_ar[1:0]; end
+            if (mw_valid[s_ar]) begin mw_go = 1'b1; mw_sel = s_ar[SELECT_W-1:0]; end
         end
         for (k_ar = N_SLICE-1; k_ar >= 0; k_ar = k_ar - 1) begin
             s_ar = (k_ar + tl_rr) % N_SLICE;
-            if (tl_valid[s_ar]) begin tl_go = 1'b1; tl_sel = s_ar[1:0]; end
+            if (tl_valid[s_ar]) begin tl_go = 1'b1; tl_sel = s_ar[SELECT_W-1:0]; end
         end
         if (mw_go) mw_ready[mw_sel] = 1'b1;
         if (tl_go) tl_ready[tl_sel] = 1'b1;
@@ -176,7 +184,8 @@ module tnca_tmu #(
     wire [11:0]      w_off  = mw_off[mw_sel*12 +: 12];
     wire [63:0]      w_data = mw_data[mw_sel*64 +: 64];
     wire [SRC_W-1:0] w_srcf = mw_src[mw_sel*SRC_W +: SRC_W];
-    wire [1:0]       w_src  = w_srcf[1:0];
+    // Staging belongs to the complete requester ID, including cores 4..15.
+    wire [SRC_W-1:0] w_src  = w_srcf;
     wire [63:0]      n_addr = tl_addr[tl_sel*64 +: 64];
 
     // Register reads
@@ -200,17 +209,26 @@ module tnca_tmu #(
     //==========================================================================
     // The tensor an address belongs to: inside [base, base+size), or with a
     // size of 0, at or above the base and below the next registered base.
+    localparam ADDR_W = 64, DCO_T = TENSORS;
+`include "tnca_dco_owner_registered.vh"
+    wire [11:0] nt_registered = REGISTERED_RANGES ?
+        owner_registered(n_addr,t_valid,t_base,t_end,t_bypass,t_lsb) : 12'd0;
     reg            nt_hit;
     reg [T_W-1:0]  nt_idx;
     reg [63:0]     nt_best;
     always @(*) begin
         nt_hit = 1'b0; nt_idx = {T_W{1'b0}}; nt_best = 64'd0;
+        if (REGISTERED_RANGES) begin
+            nt_hit = nt_registered[11];
+            nt_idx = nt_registered[6 +: T_W];
+        end else begin
         for (k_nt = 0; k_nt < TENSORS; k_nt = k_nt + 1)
             if (t_valid[k_nt] && (n_addr >= tb[k_nt]) &&
                 ((ts[k_nt] != 64'd0) ? (n_addr - tb[k_nt] < ts[k_nt]) : 1'b1) &&
                 (!nt_hit || tb[k_nt] > nt_best)) begin
                 nt_hit = 1'b1; nt_idx = k_nt[T_W-1:0]; nt_best = tb[k_nt];
             end
+        end
     end
     // tile identifier = {tensor index, chunk number in the tensor's granule};
     // the slices form the same one for a victim (tnca_nuca_slice.v tile_id)
@@ -257,15 +275,15 @@ module tnca_tmu #(
             dead_valid  <= {DEAD{1'b0}};
             dq_wr       <= {DEAD_W{1'b0}};
             stat_reg <= 32'd0; stat_tlw <= 32'd0; stat_dead <= 32'd0; stat_drop <= 32'd0;
-            mw_rr <= 2'd0; tl_rr <= 2'd0;
+            mw_rr <= {SELECT_W{1'b0}}; tl_rr <= {SELECT_W{1'b0}};
         end else begin
-            stat_drop <= stat_drop + {29'd0, n_drop};
+            stat_drop <= stat_drop + n_drop;
             //------------------------------------------------------------------
             // register write
             //------------------------------------------------------------------
             if (mw_go) begin
-                mw_rr <= mw_sel + 2'd1;
-                if (w_off[11:8] == 4'h0) begin
+                mw_rr <= mw_sel + 1'b1;
+                if ((w_srcf < N_SRC) && w_off[11:8] == 4'h0) begin
                     case (w_off[7:0])
                     8'h00: policy <= w_data[7:0];
                     8'h08: begin
@@ -286,7 +304,7 @@ module tnca_tmu #(
                     end
                     default: ;
                     endcase
-                end else if (w_off[11:8] == 4'h1) begin
+                end else if ((w_srcf < N_SRC) && w_off[11:8] == 4'h1) begin
                     // staging lines 0x100 + 64*src (the src the store came from)
                     case (w_off[5:0])
                     6'h00: st_base[w_src] <= w_data;
@@ -295,6 +313,9 @@ module tnca_tmu #(
                         t_valid[rg_slot]  <= 1'b1;
                         tb[rg_slot]       <= st_base[w_src];
                         ts[rg_slot]       <= st_size[w_src];
+                        te[rg_slot]       <= (st_size[w_src] == 64'd0) ?
+                            {1'b1, 64'd0} :
+                            ({1'b0, st_base[w_src]} + {1'b0, st_size[w_src]});
                         tn[rg_slot]       <= w_data[31:0];
                         t_bypass[rg_slot] <= w_data[32];
                         top[rg_slot]      <= w_data[39:36];
@@ -311,7 +332,7 @@ module tnca_tmu #(
             // tile-last-word notice
             //------------------------------------------------------------------
             if (tl_go) begin
-                tl_rr <= tl_sel + 2'd1;
+                tl_rr <= tl_sel + 1'b1;
                 if (nt_hit && n_nacc != 32'd0) begin
                     stat_tlw <= stat_tlw + 32'd1;
                     if (n_cnt >= n_nacc) begin

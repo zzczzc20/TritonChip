@@ -77,6 +77,7 @@ module tnca_nuca_slice #(
     // DCO (rtl/nuca/tnca_tmu.v): tensor-table entries, dead-FIFO entries,
     // tile-identifier width, and the address window of the TMU's registers.
     parameter DCO_T      = 8,
+    parameter DCO_REGISTERED_RANGES = 0,
     parameter DCO_DEAD   = 16,
     parameter MAINTENANCE = 0,
     parameter DCO_ID_W   = 16,
@@ -139,6 +140,7 @@ module tnca_nuca_slice #(
     input  wire [DCO_T-1:0]         dco_t_valid,
     input  wire [DCO_T*64-1:0]      dco_t_base,
     input  wire [DCO_T*64-1:0]      dco_t_size,
+    input  wire [DCO_T*65-1:0]      dco_t_end,
     input  wire [DCO_T-1:0]         dco_t_bypass,
     input  wire [DCO_T*6-1:0]       dco_t_lsb,      // per-tensor tile granule (0: D_LSB)
     input  wire [DCO_DEAD-1:0]      dco_dead_valid,
@@ -301,6 +303,8 @@ module tnca_nuca_slice #(
           end
         end
     endfunction
+
+`include "tnca_dco_owner_registered.vh"
 
     // A tile's identifier, as the TMU forms it: the owning tensor's index
     // above the tile's number within the address space, in that tensor's own
@@ -628,7 +632,10 @@ module tnca_nuca_slice #(
                 for (vw = 0; vw < WAYS; vw = vw + 1) begin
                     vidx  = cur_set*WAYS + vw;
                     vtag  = tag_mem[vidx];
-                    vown  = owner(line_addr(vtag, cur_set), dco_t_valid, dco_t_base,
+                    vown  = DCO_REGISTERED_RANGES ?
+                            owner_registered(line_addr(vtag, cur_set), dco_t_valid, dco_t_base,
+                                             dco_t_end, dco_t_bypass, dco_t_lsb) :
+                            owner(line_addr(vtag, cur_set), dco_t_valid, dco_t_base,
                                   dco_t_size, dco_t_bypass, dco_t_lsb);
                     vdead = pol_dbp && vown[11] &&
                             (vown[10] ||
@@ -662,7 +669,10 @@ module tnca_nuca_slice #(
     reg  [3:0]  gear;
     wire [3:0]  gear_eff  = pol_static ? gear_init : gear;
     wire [3:0]  cur_prio  = cur_tagb[3:0] & bmask;
-    wire [11:0] cur_own   = owner(cur_addr, dco_t_valid, dco_t_base, dco_t_size,
+    wire [11:0] cur_own   = DCO_REGISTERED_RANGES ?
+                          owner_registered(cur_addr, dco_t_valid, dco_t_base, dco_t_end,
+                                           dco_t_bypass, dco_t_lsb) :
+                          owner(cur_addr, dco_t_valid, dco_t_base, dco_t_size,
                                   dco_t_bypass, dco_t_lsb);
     wire        cur_tbyp  = pol_tbyp && cur_own[11] && cur_own[10];
     wire        cur_dbyp  = pol_dyn && cur_own[11] &&

@@ -23,6 +23,7 @@ module tnca_top #(
     parameter GLOBAL_GRID = 0,
     parameter HOST_ACCESS = 0,
     parameter CACHE_MAINTENANCE = 0,
+    parameter DCO_REGISTERED_RANGES = 0,
     parameter NX          = 2,
     parameter NY          = 2,
     parameter MEM_PORTS   = 1,
@@ -354,13 +355,14 @@ module tnca_top #(
     wire [15:0]             d_win, d_ub, d_lb;
     wire [DCO_T-1:0]        d_tv, d_tbyp;
     wire [DCO_T*64-1:0]     d_tbase, d_tsize;
+    wire [DCO_T*65-1:0]     d_tend;
     wire [DCO_T*6-1:0]      d_tlsb;
     wire [DCO_DEAD-1:0]     d_dv;
     wire [DCO_DEAD*DCO_ID_W-1:0] d_did;
     wire [75:0] dco_cfg = {d_lb, d_ub, d_win, d_ginit, 6'd0, d_lsb, d_bbits, d_policy};
 
     tnca_tmu #(
-        .N_SLICE(N), .SRC_W(SRC_W), .N_SRC(N),
+        .N_SLICE(N), .SRC_W(SRC_W), .N_SRC(N), .REGISTERED_RANGES(DCO_REGISTERED_RANGES),
         .TENSORS(DCO_T), .T_W(DCO_T_W), .DEAD(DCO_DEAD), .DEAD_W(4),
         .ID_W(DCO_ID_W)
     ) u_tmu (
@@ -370,7 +372,7 @@ module tnca_top #(
         .tl_valid(tm_tv), .tl_ready(tm_tr), .tl_addr(tm_taddr), .tl_drop(tm_drop),
         .policy(d_policy), .b_bits(d_bbits), .d_lsb(d_lsb),
         .gear_init(d_ginit), .gear_window(d_win), .gear_ub(d_ub), .gear_lb(d_lb),
-        .t_valid(d_tv), .t_base(d_tbase), .t_size(d_tsize), .t_bypass(d_tbyp),
+        .t_valid(d_tv), .t_base(d_tbase), .t_size(d_tsize), .t_end(d_tend), .t_bypass(d_tbyp),
         .t_lsb(d_tlsb),
         .dead_valid(d_dv), .dead_id(d_did)
     );
@@ -390,7 +392,7 @@ module tnca_top #(
     generate
         for (t = 0; t < N; t = t + 1) begin : g_tile
             tnca_tile #(
-                .CACHE_MAINTENANCE(CACHE_MAINTENANCE),
+                .CACHE_MAINTENANCE(CACHE_MAINTENANCE), .DCO_REGISTERED_RANGES(DCO_REGISTERED_RANGES),
                 .TILE_ID(t), .NUM_TILES(N), .GLOBAL_GRID(GLOBAL_GRID), .HOST_ACCESS(HOST_ACCESS && GLOBAL_GRID && t==0), .NX(NX), .NY(NY), .XW(XW), .YW(YW),
                 .NUM_RCTX(NUM_RCTX), .RCTX_W(RCTX_W), .VLEN(VLEN), .ELEN(ELEN),
                 .LW(LW), .VREGS_PER_RCTX(VREGS_PER_RCTX),
@@ -461,7 +463,7 @@ module tnca_top #(
                 .perf_mshr_full(perf_mshr_full[t*32 +: 32]),
                 .perf_hit_past_block(perf_hit_past_block[t*32 +: 32]),
                 .dco_cfg(dco_cfg), .dco_t_valid(d_tv), .dco_t_base(d_tbase),
-                .dco_t_size(d_tsize), .dco_t_bypass(d_tbyp), .dco_t_lsb(d_tlsb),
+                .dco_t_end(d_tend), .dco_t_size(d_tsize), .dco_t_bypass(d_tbyp), .dco_t_lsb(d_tlsb),
                 .dco_dead_valid(d_dv), .dco_dead_id(d_did), .dco_slow(dco_slow),
                 .tmu_wr_valid(tm_wv[t]), .tmu_wr_ready(tm_wr[t]),
                 .tmu_wr_off(tm_woff[t*12 +: 12]), .tmu_wr_data(tm_wdata[t*64 +: 64]),

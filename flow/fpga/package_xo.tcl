@@ -105,9 +105,14 @@ foreach f [lsort [glob -nocomplain $ROOT/rtl/*.v]] {
 lappend RTL $ROOT/rtl/board/$TOP.v
 
 set INCS [list $ROOT/rtl/common $ROOT/rtl/noc]
+set HEADERS [list]
+foreach d $INCS {
+    foreach f [lsort [glob -nocomplain $d/*.vh]] {lappend HEADERS $f}
+}
 
 puts "TNCA_PKG_ROOT=$ROOT"
 puts "TNCA_PKG_FILES=[llength $RTL]"
+puts "TNCA_PKG_HEADERS=[llength $HEADERS]"
 
 #------------------------------------------------------------------------------
 # The IP
@@ -115,6 +120,9 @@ puts "TNCA_PKG_FILES=[llength $RTL]"
 create_project -force tnca_xo $OUT/proj -part $PART
 
 add_files -norecurse $RTL
+add_files -norecurse $HEADERS
+# Function templates are included separately inside each module.
+set_property IS_GLOBAL_INCLUDE false [get_files $HEADERS]
 # The mesh/dispatcher and elastic links use SystemVerilog generate syntax.
 set_property FILE_TYPE SystemVerilog [get_files $RTL]
 foreach d $INCS {

@@ -8,6 +8,7 @@ parameter PORTS=1;
 parameter INJECT_BAD_SOURCE=0;
 parameter MAINTENANCE=0;
 parameter PIPELINE=0;
+parameter DCO_REGISTERED_RANGES=0;
 reg cache_valid=0,memory_drained=0;
 reg [63:0] cache_base=0,cache_size=0;
 wire cache_ready,cache_done;
@@ -59,7 +60,7 @@ always @(posedge clk) if(rst_n) begin
  stalled_tag<=mt;stalled_we<=mwe;stalled_data<=mw;
 end
 integer seen[0:454];integer total=0,cycles=0;
-tnca_top #(.CACHE_MAINTENANCE(MAINTENANCE),.NOC_LINK_STAGES(PIPELINE),.DISPATCH_STAGES(PIPELINE),.MEM_HOME_STAGES(PIPELINE),.MEM_PORTS(PORTS),.NX(MX),.NY(N/MX),.GLOBAL_GRID(1),.HOST_ACCESS(HOST),.SETS(4),.SET_W(2),.WAYS(2),.WAY_W(1)) dut (
+tnca_top #(.DCO_REGISTERED_RANGES(DCO_REGISTERED_RANGES),.CACHE_MAINTENANCE(MAINTENANCE),.NOC_LINK_STAGES(PIPELINE),.DISPATCH_STAGES(PIPELINE),.MEM_HOME_STAGES(PIPELINE),.MEM_PORTS(PORTS),.NX(MX),.NY(N/MX),.GLOBAL_GRID(1),.HOST_ACCESS(HOST),.SETS(4),.SET_W(2),.WAYS(2),.WAY_W(1)) dut (
 .clk(clk),.rst_n(rst_n),.launch_valid(1'b0),.launch_pc(launch_pc),.launch_role_mask(2'b01),
 .cache_maint_valid(cache_valid),.cache_maint_base(cache_base),.cache_maint_size(cache_size),
 .cache_maint_memory_drained(memory_drained),.cache_maint_ready(cache_ready),.cache_maint_done(cache_done),

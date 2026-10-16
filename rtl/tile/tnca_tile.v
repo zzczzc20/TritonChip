@@ -79,6 +79,7 @@ module tnca_tile #(
     parameter SLICE_TAG_W = 5,
     // DCO (rtl/nuca/tnca_tmu.v)
     parameter DCO_T       = 8,
+    parameter DCO_REGISTERED_RANGES = 0,
     parameter DCO_DEAD    = 16,
     parameter DCO_ID_W    = 16,
     parameter [63:0] TMU_BASE = 64'h0000_0000_7FFF_0000
@@ -138,6 +139,7 @@ module tnca_tile #(
     input  wire [DCO_T-1:0]         dco_t_valid,
     input  wire [DCO_T*64-1:0]      dco_t_base,
     input  wire [DCO_T*64-1:0]      dco_t_size,
+    input  wire [DCO_T*65-1:0]      dco_t_end,
     input  wire [DCO_T-1:0]         dco_t_bypass,
     input  wire [DCO_T*6-1:0]       dco_t_lsb,
     input  wire [DCO_DEAD-1:0]      dco_dead_valid,
@@ -324,7 +326,7 @@ module tnca_tile #(
     // NUCA slice
     //==========================================================================
     tnca_nuca_slice #(
-        .MAINTENANCE(CACHE_MAINTENANCE),
+        .MAINTENANCE(CACHE_MAINTENANCE), .DCO_REGISTERED_RANGES(DCO_REGISTERED_RANGES),
         .FULL_LINE_TAG(!(NX==2 && NY==2)),
         .ADDR_W(64), .LINE_BYTES(LINE_BYTES), .LINE_BITS(LINE_BITS),
         .WORD_BITS(64), .WORD_BYTES(8),
@@ -355,7 +357,7 @@ module tnca_tile #(
         .perf_mshr_full(perf_mshr_full), .perf_target_full(),
         .perf_wb(perf_wb), .perf_hit_past_block(perf_hit_past_block),
         .dco_cfg(dco_cfg), .dco_t_valid(dco_t_valid), .dco_t_base(dco_t_base),
-        .dco_t_size(dco_t_size), .dco_t_bypass(dco_t_bypass), .dco_t_lsb(dco_t_lsb),
+        .dco_t_end(dco_t_end), .dco_t_size(dco_t_size), .dco_t_bypass(dco_t_bypass), .dco_t_lsb(dco_t_lsb),
         .dco_dead_valid(dco_dead_valid), .dco_dead_id(dco_dead_id),
         .dco_slow(dco_slow),
         .tmu_wr_valid(tmu_wr_valid), .tmu_wr_ready(tmu_wr_ready),

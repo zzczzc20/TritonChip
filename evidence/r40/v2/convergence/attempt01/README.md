@@ -118,3 +118,24 @@ full native regressions are recorded in the runtime-control package. This live
 hardware build remains bound to its immutable cf330dc source, which does not
 contain that later fix. Do not relabel the running candidate or transfer later
 functional evidence to it.
+
+## Terminal failure: 12:18 UTC
+
+`build/attempt.exit` is 1. The runner and implementation Vivado processes are
+absent. `Route 35-3` reports global congestion level 7 and `Route 35-4445`
+terminates initial routing. No loadable image or final timing/CDC qualification
+was produced. `terminal_failure.json` retains the raw vendor tail, live
+postmortem child, terminal exit and error-DCP SHA256. The saved checkpoint is
+542,186,588 bytes, SHA256
+`ed1facba2dd686078b02f49f05cdbaf920704120a46a24f4d2fc4e90290360e8`.
+
+The detached observer automatically opened this retained DCP for read-only
+route, timing, utilization, congestion and clock reports. The current blocker
+is an unsolved physical-congestion cause; the registration/geometry change
+was insufficient. Next command: `cat ~/tnca_build/r40_attempt01_followup/state.json`.
+If diagnosis completes, inspect the actual limiting paths, packing and SLL
+regions, then screen a specific structural correction before considering the
+one remaining full implementation. If extraction fails, preserve partial
+reports and correct the diagnostic failure without rerunning implementation.
+No directive rotation, automatic retry, board load, contract amendment or gate
+promotion is authorized by the observer.

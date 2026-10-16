@@ -10,7 +10,7 @@
   "attempts": [
     {
       "number": 1,
-      "state": "routing-running",
+      "state": "failed-global-congestion-7",
       "source_commit": "cf330dc64b6e1df535c31c9bb1a5d735e6bc0fb7",
       "source_archive_sha256": "9050487dbff7675c859e3401849ee023137c4607f3ccb17654585def72c20869",
       "source_root": "/home/zzhouch/tnca_src_r40_attempt01_cf330dc",
@@ -59,9 +59,12 @@
         "out": "/home/zzhouch/tnca_build/r40_attempt01_followup",
         "scope": "read-only after terminal marker; no implementation retry"
       },
-      "latest_observed_utc": "2026-10-16T12:00:08.015180+00:00",
-      "latest_observed_phase": "Phase 3.9 Update Timing in actual routing",
-      "latest_observation": "attempt01/routing_observation.json"
+      "latest_observed_utc": "2026-10-16T12:20:41.068063+00:00",
+      "latest_observed_phase": "Terminal route_design failure, global congestion level 7",
+      "latest_observation": "attempt01/terminal_failure.json",
+      "implementation_exit_code": 1,
+      "failed_checkpoint_sha256": "ed1facba2dd686078b02f49f05cdbaf920704120a46a24f4d2fc4e90290360e8",
+      "failed_checkpoint_bytes": 542186588
     }
   ],
   "first_attempt_prerequisites": [

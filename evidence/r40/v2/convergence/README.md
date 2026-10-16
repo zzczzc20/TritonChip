@@ -1,6 +1,6 @@
 # R40 v2 delivery convergence ledger
 
-This is a dated execution ledger, **not a contract amendment**. The frozen v2 contract and all thresholds remain unchanged. Snapshot: 2026-10-16 UTC; active vertical checkpoint software snapshot 642c660; previous failed hardware source 09ebe06; additional attempt 1 source cf330dc. Existing functional passes do not certify the final image. Required gate changes: R40-01.device and R40-03.contract now capability-pass; missing mixed-device/device-time entries are not-measured. All other required statuses are in required_gates.json. No performance gate has been promoted.
+This is a dated execution ledger, **not a contract amendment**. The frozen v2 contract and all thresholds remain unchanged. Snapshot: 2026-10-16 UTC; active vertical checkpoint software snapshot 642c660; previous failed hardware source 09ebe06; additional attempt 1 source cf330dc failed actual routing with global congestion level 7. Existing functional passes do not certify the final image. Required gate changes: R40-01.device and R40-03.contract now capability-pass; missing mixed-device/device-time entries are not-measured. All other required statuses are in required_gates.json. No performance gate has been promoted.
 
 ## Immediate experiment commands and branches
 
@@ -40,8 +40,8 @@ packing pressure; the placement directive and HBM PC range are unchanged.
 Snapshot 11 passed the runtime-control matrix, but snapshot 09's reservation-X
 failure remains unexplained and is preserved in
 [the runtime-control evidence](../../R40-04/runtime_memory_controls/README.md).
-This known functional risk remains under investigation alongside the physical
-build; no qualification or performance gate is promoted.
+The hardware candidate predates the later decoder repair described below.
+Mechanism passes cannot qualify its image; no required gate is promoted.
 
 The new [timed mailbox capture](../../R40-04/runtime_memory_controls/timed_journal/README.md)
 reproduced a reservation-X failure on the original four-configuration native
@@ -50,12 +50,22 @@ simulated time/core/context/PC. A separate first-unknown diagnostic replay is
 launched against these fixed inputs; it consumes no full implementation budget.
 The trace now locates illegal-opcode classification leaking into shared stall/fetch-valid control. A candidate repair passes the failing input prefix and core regressions; complete four-configuration native checks now pass with recording enabled and disabled. The full 77/14/model inventories and final-image evidence remain outstanding. The live cf330dc hardware build does not contain this later repair.
 
-**Next command:** `tail -60 /home/zzhouch/tnca_build/r40_attempt01_20261016/xo/link.log`
-on the FPGA server. **Success:** inspect complete placement/route, setup/hold,
-CDC and image identity, then run the diagnostic V checkpoint in the default
-three-outlet/eight-outstanding mode. Retain the unresolved reservation-X issue
-against the full control matrix; V cannot close that gate or certify delivery. **Failure:** retain the first fatal vendor diagnostic
-and checkpoint; reserve the second implementation for a demonstrated correction.
+**Current P result:** additional attempt 1 has terminal exit 1. Its actual
+route failed with global congestion level 7; no qualified image exists.
+`attempt01/terminal_failure.json` binds the vendor failure and retained error
+DCP (`ed1facba…90360e8`). The read-only observer has started opening that DCP.
+Registered ranges and half the cache sets did not solve routability.
+
+**Next command:** `cat ~/tnca_build/r40_attempt01_followup/state.json` on the
+FPGA server. **Diagnostic success:** inspect complete critical-path, SLR packing
+and congestion reports; formulate and functionally/resource-screen one concrete
+structural correction before spending the final implementation attempt. Only
+a future candidate with complete route, 100 MHz setup/hold, CDC and image
+qualification can unlock V. **Diagnostic failure:** retain partial reports and
+fix extraction; do not rerun synthesis or implementation to obtain diagnostics.
+The failing candidate's later software-only decoder repair is not present in
+its immutable hardware source. Full controls and frozen inventories remain
+unaccepted.
 
 **Full-implementation budget:** at most two additional attempts. The exact
 launch identity, state and remaining balance are recorded in

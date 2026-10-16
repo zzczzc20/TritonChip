@@ -43,7 +43,7 @@ failure remains unexplained and is preserved in
 This known functional risk remains under investigation alongside the physical
 build; no qualification or performance gate is promoted.
 
-**Next command:** `tail -40 /home/zzhouch/tnca_build/r40_attempt01_20261016/build/runner.log`
+**Next command:** `tail -60 /home/zzhouch/tnca_build/r40_attempt01_20261016/xo/link.log`
 on the FPGA server. **Success:** inspect complete placement/route, setup/hold,
 CDC and image identity, then run V only after qualification and resolution of
 the functional blocker. **Failure:** retain the first fatal vendor diagnostic

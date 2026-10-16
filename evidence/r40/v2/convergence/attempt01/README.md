@@ -23,7 +23,7 @@ an assertion that candidate qualification is complete. The earlier 64-set OOC
 screen still misses 100 MHz; smaller geometry cannot be assumed to fix timing.
 
 Current blocker: no completed candidate placement/route evidence. Next command:
-`tail -40 /home/zzhouch/tnca_build/r40_attempt01_20261016/build/runner.log` on the
+`tail -60 /home/zzhouch/tnca_build/r40_attempt01_20261016/xo/link.log` on the
 FPGA host, followed by the vendor run log named there. Success requires actual
 placement, full route, 100 MHz setup/hold, CDC and a loadable image before the
 unscaled board checkpoint. Failure preserves raw reports/checkpoints and uses
@@ -47,3 +47,10 @@ at 03:18:36 UTC. The packaged XO SHA256 is
 XO is an intermediate, not a loadable image. The immutable source archive SHA256
 is `9050487dbff7675c859e3401849ee023137c4607f3ccb17654585def72c20869`;
 source/configuration identities are in `input_identity.json` and `launch.json`.
+
+Main kernel synthesis was confirmed running at 03:24:31 UTC (process 900339,
+run `ulp_tnca_u50_1_0_synth_1`); the vendor launched synthesis at 03:23:25 UTC.
+`synthesis_started.json` preserves the live kernel log and parent launch log.
+The process has a detached runner and persistent stdout/stderr; session expiry
+will not stop the build. There is no automatic second attempt. Required gate
+inventory remains five capability passes and 31 not-measured entries.

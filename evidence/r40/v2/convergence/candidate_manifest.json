@@ -69,5 +69,8 @@
   "next_complete_implementation_ready": false,
   "runtime_control_functional_blocker": "Snapshot09 reservation-X remains unresolved; snapshots10/11 passed, not a fix",
   "additional_candidate": "attempt01/image.json",
-  "expedited_launch_authorization": "User requests first of two bounded attempts within remaining approximately 20 minutes; physical build proceeds with recorded functional risk"
+  "expedited_launch_authorization": "User requests first of two bounded attempts within remaining approximately 20 minutes; physical build proceeds with recorded functional risk",
+  "new_candidate_source_commit": "cf330dc64b6e1df535c31c9bb1a5d735e6bc0fb7",
+  "new_candidate_build_root": "/home/zzhouch/tnca_build/r40_attempt01_20261016",
+  "new_candidate_final_software_qualification": "pending: runtime-control software differs from historical 8abf527 snapshot; final native77/HBM14/model and immutable software identity must be re-established"
 }

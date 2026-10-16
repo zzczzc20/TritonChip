@@ -29,3 +29,21 @@ placement, full route, 100 MHz setup/hold, CDC and a loadable image before the
 unscaled board checkpoint. Failure preserves raw reports/checkpoints and uses
 the final remaining attempt only for a specifically diagnosed correction.
 All required gate statuses and performance values remain unchanged/not-measured.
+
+## Completed local screen and launch observation
+
+Actual TMU plus full-line-tag slice, with identical ideal 10 ns OOC constraints:
+registered-range 64 sets used 78,543 LUTs and 33,818 FF; 32 sets used 49,905 LUTs
+and 19,419 FF. Estimated WNS changed from -6.037 to -5.811 ns, still failing.
+This is evidence for reduced resources, not 100 MHz qualification or a prediction
+that routing will succeed. `geometry_screen.tar.gz` preserves the exact sources,
+script, log and raw reports. `geometry_functional.tar.gz` preserves both
+replacement-policy random differential runs; its explicit limitations are in
+`geometry_functional.json`.
+
+Detached runner PID 894704 started at 2026-10-16 03:18:04 UTC. Vitis link started
+at 03:18:36 UTC. The packaged XO SHA256 is
+`ae9b958a7e54c1744b76ea3f2aa6f4cad8675b55e2aff29f4f1d3f84d110e9e8`.
+XO is an intermediate, not a loadable image. The immutable source archive SHA256
+is `9050487dbff7675c859e3401849ee023137c4607f3ccb17654585def72c20869`;
+source/configuration identities are in `input_identity.json` and `launch.json`.

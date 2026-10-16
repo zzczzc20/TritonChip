@@ -1,6 +1,6 @@
 {
   "number": 1,
-  "state": "started-packaging-before-vitis-link",
+  "state": "vitis-link-running-generate-target",
   "source_commit": "cf330dc64b6e1df535c31c9bb1a5d735e6bc0fb7",
   "source_archive_sha256": "9050487dbff7675c859e3401849ee023137c4607f3ccb17654585def72c20869",
   "source_root": "/home/zzhouch/tnca_src_r40_attempt01_cf330dc",
@@ -20,5 +20,14 @@
   "cdc_qualification": "not-measured",
   "runner_pid": 894704,
   "started_utc": "2026-10-16T03:18:04.496272+00:00",
-  "launch_record_fpga": "/home/zzhouch/tnca_build/r40_attempt01_20261016.launch.json"
+  "launch_record_fpga": "/home/zzhouch/tnca_build/r40_attempt01_20261016.launch.json",
+  "link_started_utc": "2026-10-16T03:18:36Z",
+  "xo_sha256": "ae9b958a7e54c1744b76ea3f2aa6f4cad8675b55e2aff29f4f1d3f84d110e9e8",
+  "geometry_screen": {
+    "status": "completed-diagnostic-only",
+    "actual_tmu_slice_luts": 49905,
+    "actual_tmu_slice_flip_flops": 19419,
+    "estimated_wns_ns": -5.811,
+    "raw_archive_sha256": "9a0b81652aa6b05086d2165024cd4a56d2f75a4d8363c2c32de42296c23c76db"
+  }
 }

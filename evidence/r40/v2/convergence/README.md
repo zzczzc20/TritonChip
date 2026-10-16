@@ -1,6 +1,6 @@
 # R40 v2 delivery convergence ledger
 
-This is a dated execution ledger, **not a contract amendment**. The frozen v2 contract and all thresholds remain unchanged. Snapshot: 2026-10-16 UTC; vertical software snapshot 8abf527; candidate hardware source 09ebe06. Existing functional passes do not certify the final image. Required gate changes: R40-01.device and R40-03.contract now capability-pass; missing mixed-device/device-time entries are not-measured. All other required statuses are in required_gates.json. No performance gate has been promoted.
+This is a dated execution ledger, **not a contract amendment**. The frozen v2 contract and all thresholds remain unchanged. Snapshot: 2026-10-16 UTC; vertical software snapshot 8abf527; previous failed hardware source 09ebe06; additional attempt 1 source cf330dc. Existing functional passes do not certify the final image. Required gate changes: R40-01.device and R40-03.contract now capability-pass; missing mixed-device/device-time entries are not-measured. All other required statuses are in required_gates.json. No performance gate has been promoted.
 
 ## Immediate experiment commands and branches
 

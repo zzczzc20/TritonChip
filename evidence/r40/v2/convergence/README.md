@@ -65,13 +65,23 @@ site queries establish that such private logic previously detoured through
 SLR1 from SLR2. This is the structural correction for the final attempt;
 module estimates do not promote any full-image gate.
 
-**Next command:** run the one-shot runner against the committed attempt02
-configuration in a fresh FPGA build directory, then use
-`tools/r40/watch_implementation.py` on that exact build/PID. **Success:**
-qualify actual placement, complete route, 100 MHz setup/hold, CDC and image
-identity before the unscaled Torch checkpoint. **Failure:** retain terminal
-logs and DCP, diagnose the observed mechanism and report remaining gates;
-there is no third authorized full implementation or automatic retry.
+**Final attempt is running:** immutable source `0c39793` started at
+2026-10-16 22:33:29 UTC; XO packaging completed and Vitis link started at
+22:34:02 UTC. [attempt02/launch.json](attempt02/launch.json) records exact
+source/archive/configuration/clock/contract/process identities. The two-attempt
+budget is exhausted (used 2, remaining 0). No required gate is promoted.
+
+**Current physical blocker:** no terminal complete route, 100 MHz setup/hold,
+CDC or loadable-image qualification for this candidate. **Direct evidence:**
+[attempt02/start_observation.json](attempt02/start_observation.json) records
+successful packaging and link start without a terminal marker.
+**Next command:** `cat ~/tnca_build/r40_attempt02_followup/state.json` on the
+FPGA host. The existing observer waits for terminal completion before opening
+any DCP. **Success:** review actual placement, complete route, 100 MHz
+setup/hold, CDC and image identity before V. **Failure:** retain logs and DCP,
+report the observed cause and remaining gates; never start a third full run.
+The vertical and frozen-inventory gates remain blocked by the unqualified
+image; the exact V command and per-gate success/failure branches below apply.
 
 **P0/P1 physical convergence baseline:**
 `attempt01/physical_postmortem.tar.gz` retains all failed-checkpoint reports

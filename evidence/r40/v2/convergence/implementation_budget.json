@@ -68,7 +68,7 @@
     },
     {
       "number": 2,
-      "state": "launched",
+      "state": "kernel-synthesis-running",
       "source_commit": "0c397939952d2a6bc881d08623b1bb9114a54ab8",
       "source_archive_sha256": "9c37aa74471979b1e305fbc861045a426811e1e1a02ad59f77542536a18212b6",
       "source_root": "/home/zzhouch/tnca_src_r40_attempt02_0c39793",
@@ -95,7 +95,10 @@
         "out": "/home/zzhouch/tnca_build/r40_attempt02_followup",
         "scope": "read-only after terminal marker; no retry or board load"
       },
-      "launch_record_fpga": "/home/zzhouch/tnca_build/r40_attempt02_20261016.launch.json"
+      "launch_record_fpga": "/home/zzhouch/tnca_build/r40_attempt02_20261016.launch.json",
+      "synthesis_start_evidence": "attempt02/synthesis_started.json",
+      "latest_observed_utc": "2026-10-16T22:43:39.333449+00:00",
+      "latest_observed_phase": "kernel RTL elaboration; no completion or physical qualification claimed"
     }
   ],
   "first_attempt_prerequisites": [

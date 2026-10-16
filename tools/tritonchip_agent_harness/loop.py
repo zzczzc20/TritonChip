@@ -21,6 +21,7 @@ from pathlib import Path
 from typing import Optional
 
 from . import __version__, evaluator, runner
+from .services import Broker
 from .siteconfig import Site, SiteError
 from .task import Task, render
 from .workspace import export, gate
@@ -58,8 +59,9 @@ def run_task(site: Site, task: Task, agent: str, mode: str = "offline", model: O
         account = site.account(agent)
         if model:
             account = dataclasses.replace(account, models={**account.models, "main": model})
+        broker = Broker(site, repo, task, workspace, run_dir) if task.services else None
         record["agent_result"] = runner.run_agent(site, account, prompt, mode, run_dir, workspace,
-                                                  timeout=float(task.wall_seconds))
+                                                  timeout=float(task.wall_seconds), services=broker)
 
     g = gate(repo, task.base_commit, task.hide, task.design, workspace, out=run_dir / "candidate",
              evaluator_owned=task.evaluator_owned)
@@ -67,12 +69,15 @@ def run_task(site: Site, task: Task, agent: str, mode: str = "offline", model: O
                       "dropped": [c["path"] for c in g["dropped"]][:200],
                       "evaluator_owned_changes": [c["path"] for c in g["dropped"] if c.get("reason") == "evaluator-owned"],
                       "rejected": g["rejected"]}
+    # Candidate RTL is simulated beside the observer's log: no file or system tasks.
+    rtl = evaluator.rtl_check(run_dir / "candidate") if g["verdict"] == "PASS" and g["taken"] else []
+    record["gate"]["rtl_check"] = rtl
 
     pseudo = agent in PSEUDO or agent.startswith("patch:")
     if pseudo and agent != "noop" and not record["agent_result"]["applied"]:
         # The loop's own check failed; nothing it measured would mean anything.
         record["validity"] = "infra-invalid"
-    elif g["verdict"] != "PASS":
+    elif g["verdict"] != "PASS" or rtl:
         record["validity"] = "integrity-rejected"
     else:
         candidate = run_dir / "candidate" if g["taken"] else None

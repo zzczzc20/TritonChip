@@ -14,10 +14,14 @@ the points that passed, and fast_1, the share of ALL points that passed and
 beat the base. fast_1 is there because the passed-only mean alone would reward
 breaking a point the candidate had made slower.
 
-Known gap, to be closed by the boundary observer (README section 8, P2): the
-candidate's Python runs in the same process that reports the cycles, so a
-candidate that tampers with that process is not caught here. The diff audit
-and the observer are what catch that.
+With an observer (the task names an evaluator platform), the device runs out
+of the candidate's reach (README section 11, P2.1): it is built from the base
+code with only the candidate's hardware on top, and each point's device runs
+in a container of its own, behind a Unix socket, where the platform counts the
+device's cycles and flags memory activity outside a launch. The score is that
+count, not the number the measuring process reports. The candidate's code still
+runs in that process (it is the compiler); P2.2 is what checks the results it
+hands back.
 """
 
 from __future__ import annotations
@@ -25,7 +29,9 @@ from __future__ import annotations
 import hashlib
 import json
 import math
+import re
 import shutil
+import time
 from pathlib import Path
 from typing import Optional
 
@@ -42,6 +48,191 @@ make -s python/tnca/data/.staged > /out/stage.log 2>&1
 /opt/torchenv/bin/python -m archbench.run --platform tnca --profile {profile} --jobs {jobs} \\
     --point {points} --out /out/archbench.jsonl > /out/archbench.log 2>&1 || true
 """
+
+
+# The candidate's paths the device is built from. Everything else in the
+# device's tree is the base's, so building it runs no candidate code.
+HARDWARE = ("rtl/", "spec/r1_profiles.json")
+# The device's own deadline for one launch, as the runtime's default session sets it.
+DEADLINE = 5_000_000
+SOCKETS = "/run/tnca-device"
+
+BUILD = """set -e
+cd /work
+make -s python/tnca/data/.staged > /out/stage.log 2>&1
+/opt/torchenv/bin/tnca-sim prepare --profile {profile} > /out/prepare.log 2>&1
+/opt/torchenv/bin/python -c "from tnca import device; print(device.require('{profile}'))" > /out/bench.txt
+"""
+
+# Candidate RTL is simulated where the observer writes its log, so it may not
+# reach files or the host: no file or system tasks, no include from outside the tree.
+_RTL_FORBIDDEN = re.compile(r"\$(fopen|fclose|fwrite|fdisplay|fstrobe|fmonitor|fflush|fscanf|fgets|fgetc|fread|"
+                            r"ungetc|rewind|fseek|system|readmemh|readmemb|writememh|writememb|dumpfile|dumpvars)\b")
+_RTL_INCLUDE = re.compile(r'`include\s+"([^"]+)"')
+_RTL_COMMENT = re.compile(r"//[^\n]*|/\*.*?\*/", re.S)
+
+
+def rtl_check(candidate: Optional[Path]) -> list:
+    """Why the candidate's RTL may not be built and simulated; [] when it may."""
+    if candidate is None:
+        return []
+    report = json.loads((candidate / "candidate.json").read_text(encoding="utf-8"))
+    problems = set()
+    for c in report["taken"]:
+        path = c["path"]
+        if c["status"] == "deleted" or not path.startswith("rtl/"):
+            continue
+        text = _RTL_COMMENT.sub(" ", (candidate / "files" / path).read_text(encoding="utf-8", errors="replace"))
+        for m in _RTL_FORBIDDEN.finditer(text):
+            problems.add(f"{path}: ${m.group(1)}")
+        for m in _RTL_INCLUDE.finditer(text):
+            if m.group(1).startswith("/") or ".." in Path(m.group(1)).parts:
+                problems.add(f'{path}: `include "{m.group(1)}"')
+    return sorted(problems)
+
+
+def _overlay_platform(repo: Path, platform: dict, tree: Path) -> None:
+    """The evaluator's own platform, from the commit the task pins, over whatever the base had."""
+    for path in platform["paths"]:
+        target = tree / path
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_bytes(git("-C", str(repo), "show", f"{platform['commit']}:{path}"))
+
+
+def read_observer(path: Path) -> Optional[dict]:
+    """The platform's log for one device: its count of every launch, and activity outside one."""
+    if not path.exists():
+        return None
+    cmds, end = [], None
+    for line in path.read_text(encoding="utf-8", errors="replace").splitlines():
+        words = line.split()
+        if not words:
+            continue
+        try:
+            fields = {k: int(v) for k, v in (w.split("=", 1) for w in words[1:])}
+        except ValueError:
+            continue
+        if words[0] == "cmd":
+            cmds.append(fields)
+        elif words[0] == "end":
+            end = fields
+    launches = [c for c in cmds if c.get("op") == 1]
+    return {"launches": len(launches),
+            "cycles": sum(c.get("obs", 0) for c in launches),
+            "done_cycles": sum(c.get("done", 0) for c in launches),
+            "failed_launches": sum(1 for c in launches if c.get("status", 0) != 0),
+            "after_done": sum(c.get("after_done", 0) for c in cmds),
+            "outside": sum(c.get("outside", 0) for c in cmds) + (end or {}).get("outside", 0),
+            "extra": sum(c.get("extra", 0) for c in cmds) + (end or {}).get("extra", 0),
+            "ended": end is not None}
+
+
+def observed_point(record: Optional[dict], obs: Optional[dict]) -> dict:
+    """One point as the evaluator scores it: the record's verdict, the observer's cycles."""
+    rec_cycles = ((record or {}).get("time") or {}).get("device")
+    status = (record or {}).get("status")
+    problem = None
+    if obs is None or not obs["ended"] or obs["launches"] == 0:
+        problem = "no-observation"
+    elif obs["outside"] or obs["extra"] or obs["after_done"]:
+        problem = "activity-outside-launch"
+    elif rec_cycles is not None and rec_cycles % 2**32 != obs["done_cycles"] % 2**32:
+        # The measuring process reported cycles the device never did: it was tampered with.
+        problem = "record-disagrees"
+    if status == "pass" and problem:
+        status = problem
+    return {"status": status, "cycles": obs["cycles"] if obs else None, "record_cycles": rec_cycles,
+            "fallbacks": (record or {}).get("fallbacks"),
+            "max_rel_err": ((record or {}).get("correctness") or {}).get("max_rel_err"),
+            "observer": obs, "observer_problem": problem}
+
+
+def _build_device(site: Site, devtree: Path, task: Task, out: Path, name: str) -> Optional[str]:
+    """The device the points run on, built in a container from the base code and the candidate's hardware."""
+    profile = task.evaluation["profile"]
+    out.mkdir(parents=True, exist_ok=True)
+    (out / "build.sh").write_text(BUILD.format(profile=profile), encoding="utf-8")
+    c = AgentContainer(name=name, image=site.images["toolchain"], cpus=site.cpus, memory=site.memory,
+                       pids=site.pids, mounts=[Mount(devtree, "/work", read_only=False), Mount(out, "/out", read_only=False)],
+                       env={"TNCA_CACHE": "/work/.tnca-cache"},
+                       labels={"tritonchip-agent-harness": "evaluator-device-build"}, workdir="/work")
+    provider.docker(*c.run_args(["sh", "/out/build.sh"], detach=False, remove=True),
+                    check=False, timeout=float(task.evaluation["timeout_seconds"]))
+    bench = (out / "bench.txt").read_text(encoding="utf-8").strip() if (out / "bench.txt").exists() else ""
+    return bench or None
+
+
+def _measure_observed(site: Site, hosttree: Path, devtree: Path, task: Task, out: Path, name: str) -> dict:
+    """Each point against its own device, in a container the candidate's code cannot reach."""
+    ev = task.evaluation
+    points = list(ev["validation"]) + list(ev["final"])
+    out.mkdir(parents=True, exist_ok=True)
+    bench = _build_device(site, devtree, task, out / "device-build", f"{name}-build")
+    if bench is None:
+        return {"exit": None, "points": {}, "missing": points, "device_build": "failed"}
+    sockets = out / "sockets"
+    sockets.mkdir(exist_ok=True)
+    sockets.chmod(0o777)
+    timeout = float(ev["timeout_seconds"])
+    devices = []
+    for i, _ in enumerate(points):
+        obs = out / f"observer-{i}"
+        obs.mkdir(exist_ok=True)
+        obs.chmod(0o777)
+        dname = f"{name}-dev{i}"
+        d = AgentContainer(name=dname, image=site.images["toolchain"], cpus=1, memory="2g", pids=256,
+                           mounts=[Mount(devtree, "/work"), Mount(sockets, SOCKETS, read_only=False),
+                                   Mount(obs, "/obs", read_only=False)],
+                           env={"TNCA_CACHE": "/work/.tnca-cache", "PYTHONDONTWRITEBYTECODE": "1",
+                                "TNCA_DEVICE_PLUSARGS": "+observe=/obs/observe.log"},
+                           labels={"tritonchip-agent-harness": "evaluator-device"}, workdir="/work")
+        provider.docker(*d.run_args(["/opt/torchenv/bin/python", "-m", "tnca.backends.relay", bench,
+                                     "--unix", f"{SOCKETS}/{i}.sock", "--workdir", "/tmp/dev",
+                                     "--deadline", str(DEADLINE), "--idle-timeout", f"{timeout:g}"],
+                                    detach=True, remove=False))
+        devices.append(dname)
+    lines = ["set -e", "cd /work", "make -s python/tnca/data/.staged > /out/stage.log 2>&1",
+             "run() {",
+             f'  TNCA_BACKEND=sim-socket TNCA_BACKEND_ARGS="{{\\"address\\": \\"{SOCKETS}/$1.sock\\", '
+             f'\\"bench\\": \\"device-container\\"}}" /opt/torchenv/bin/python -m archbench.run --platform tnca '
+             f'--profile {ev["profile"]} --point "$2" --out /out/archbench-$1.jsonl > /out/archbench-$1.log 2>&1 || true',
+             "}"]
+    jobs = max(1, int(ev["jobs"]))
+    for k in range(0, len(points), jobs):
+        lines += [f"run {i} '{points[i]}' &" for i in range(k, min(k + jobs, len(points)))] + ["wait"]
+    (out / "evaluate.sh").write_text("\n".join(lines) + "\n", encoding="utf-8")
+    h = AgentContainer(name=name, image=site.images["toolchain"], cpus=site.cpus, memory=site.memory,
+                       pids=site.pids, mounts=[Mount(hosttree, "/work", read_only=False), Mount(out, "/out", read_only=False),
+                                               Mount(sockets, SOCKETS)],
+                       labels={"tritonchip-agent-harness": "evaluator"}, workdir="/work")
+    proc = provider.docker(*h.run_args(["sh", "/out/evaluate.sh"], detach=False, remove=True),
+                           check=False, timeout=timeout)
+    deadline = time.time() + 60
+    for dname in devices:
+        # A device whose client said goodbye has stopped; one that is still up
+        # gets the rest of a minute, then its log is kept and it is removed.
+        while time.time() < deadline and provider.inspect_state(dname).get("Status") == "running":
+            time.sleep(1)
+        logs = provider.docker("logs", dname, check=False)
+        (out / f"{dname.rsplit('-', 1)[-1]}.log").write_text((logs.stdout or "") + (logs.stderr or ""), encoding="utf-8")
+        provider.remove(dname)
+    records = {}
+    for i, p in enumerate(points):
+        rec = None
+        path = out / f"archbench-{i}.jsonl"
+        if path.exists():
+            for line in path.read_text(encoding="utf-8").splitlines():
+                try:
+                    r = json.loads(line)
+                except json.JSONDecodeError:
+                    continue
+                if r.get("point_id") == p:
+                    rec = r
+        obs = read_observer(out / f"observer-{i}" / "observe.log")
+        if rec is not None or obs is not None:
+            records[p] = observed_point(rec, obs)
+    return {"exit": proc.returncode, "points": records, "missing": [p for p in points if p not in records],
+            "observed": True}
 
 
 def _measure(site: Site, tree: Path, task: Task, out: Path, name: str) -> dict:
@@ -70,22 +261,72 @@ def _measure(site: Site, tree: Path, task: Task, out: Path, name: str) -> dict:
             "missing": [p for p in points if p not in records]}
 
 
+def _trees(repo: Path, task: Task, candidate: Optional[Path], work: Path) -> tuple:
+    """The host's tree (base plus the candidate) and the device's (base plus its hardware only)."""
+    host = work / "host-tree"
+    shutil.rmtree(host, ignore_errors=True)
+    if candidate is None:
+        export(repo, task.base_commit, (), host)
+    else:
+        apply_candidate(repo, task.base_commit, candidate, host)
+    platform = task.evaluation.get("platform")
+    if not platform:
+        return host, None
+    _overlay_platform(repo, platform, host)
+    dev = work / "device-tree"
+    shutil.rmtree(dev, ignore_errors=True)
+    if candidate is None:
+        export(repo, task.base_commit, (), dev)
+    else:
+        apply_candidate(repo, task.base_commit, candidate, dev, only=HARDWARE)
+    _overlay_platform(repo, platform, dev)
+    return host, dev
+
+
+def _measure_trees(site: Site, host: Path, dev: Optional[Path], task: Task, out: Path, name: str) -> dict:
+    if dev is None:
+        return _measure(site, host, task, out, name)
+    return _measure_observed(site, host, dev, task, out, name)
+
+
 def baseline(site: Site, repo: Path, task: Task) -> dict:
-    """The base's own cycles, measured once per (base commit, profile, points) and kept."""
+    """The base's own cycles, measured once per (base commit, profile, points, platform) and kept."""
     ev = task.evaluation
     points = hashlib.sha256(json.dumps([ev["validation"], ev["final"]]).encode()).hexdigest()[:8]
-    key = f"{task.base_commit[:12]}-{ev['profile']}-{points}"
+    platform = ev.get("platform")
+    key = f"{task.base_commit[:12]}-{ev['profile']}-{points}" + (f"-obs{platform['commit'][:12]}" if platform else "")
     cache = site.state_dir / "baselines" / f"{key}.json"
     if cache.exists():
         return json.loads(cache.read_text(encoding="utf-8"))
     work = site.state_dir / "baselines" / key
     shutil.rmtree(work, ignore_errors=True)
-    export(repo, task.base_commit, (), work / "tree")
-    result = _measure(site, work / "tree", task, work / "out", f"tnca-eval-base-{key}")
-    shutil.rmtree(work / "tree", ignore_errors=True)
+    host, dev = _trees(repo, task, None, work)
+    result = _measure_trees(site, host, dev, task, work / "out", f"tnca-eval-base-{key}")
+    shutil.rmtree(host, ignore_errors=True)
+    if dev is not None:
+        shutil.rmtree(dev, ignore_errors=True)
     if not result["missing"] and all(p["status"] == "pass" for p in result["points"].values()):
         cache.write_text(json.dumps(result, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     return result
+
+
+def measure_validation(site: Site, repo: Path, task: Task, candidate: Optional[Path], job_dir: Path, name: str) -> dict:
+    """The scoring service: the validation set alone, the final evaluator's way; an aggregate for the agent."""
+    import dataclasses
+    base = baseline(site, repo, task)
+    host, dev = _trees(repo, task, candidate, job_dir)
+    vtask = dataclasses.replace(task, evaluation={**task.evaluation, "final": []})
+    got = _measure_trees(site, host, dev, vtask, job_dir / "eval", name)
+    shutil.rmtree(host, ignore_errors=True)
+    if dev is not None:
+        shutil.rmtree(dev, ignore_errors=True)
+    full = score(base["points"], got["points"], task.evaluation["validation"])
+    build = None
+    if got.get("device_build") == "failed":
+        log = job_dir / "eval" / "device-build" / "prepare.log"
+        build = (log.read_text(errors="replace").splitlines()[-20:] if log.exists() else ["the device did not build"])
+    return {"aggregate": {k: full[k] for k in ("n", "passed", "speedup_geomean", "fast_1")},
+            "device_build_errors": build, "full": full}
 
 
 def _rtl_parameters(profiles_json: str, name: str) -> dict:
@@ -140,15 +381,12 @@ def score(base: dict, got: dict, names) -> dict:
 
 def evaluate(site: Site, repo: Path, task: Task, candidate: Optional[Path], run_dir: Path) -> dict:
     base = baseline(site, repo, task)
-    tree = run_dir / "eval-tree"
-    shutil.rmtree(tree, ignore_errors=True)
-    if candidate is None:
-        export(repo, task.base_commit, (), tree)
-    else:
-        apply_candidate(repo, task.base_commit, candidate, tree)
-    machine = machine_change(repo, task, tree)
-    got = _measure(site, tree, task, run_dir / "eval", f"tnca-eval-{run_dir.name}")
-    shutil.rmtree(tree, ignore_errors=True)
+    host, dev = _trees(repo, task, candidate, run_dir)
+    machine = machine_change(repo, task, host)
+    got = _measure_trees(site, host, dev, task, run_dir / "eval", f"tnca-eval-{run_dir.name}")
+    shutil.rmtree(host, ignore_errors=True)
+    if dev is not None:
+        shutil.rmtree(dev, ignore_errors=True)
     validation = score(base["points"], got["points"], task.evaluation["validation"])
     final = score(base["points"], got["points"], task.evaluation["final"])
     return {
@@ -158,8 +396,10 @@ def evaluate(site: Site, repo: Path, task: Task, candidate: Optional[Path], run_
         "validation": validation, "final": final,
         "all_passed": validation["passed"] == validation["n"] and final["passed"] == final["n"],
         "evaluator_exit": got["exit"],
+        "observed": bool(got.get("observed")),
+        "platform": task.evaluation.get("platform"),
         "machine": machine,
     }
 
 
-__all__ = ["baseline", "evaluate", "score"]
+__all__ = ["HARDWARE", "baseline", "evaluate", "measure_validation", "observed_point", "read_observer", "rtl_check", "score"]

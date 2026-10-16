@@ -61,6 +61,8 @@ class Site:
     routes: dict[str, str]
     accounts: dict[str, Account]
     repository: Optional[Path] = None  # the TritonChip clone workspaces are exported from
+    # The FPGA service's build worker: {"ssh", "workdir", "vivado_settings", "ro_binds", "threads", "part"}
+    fpga_worker: Optional[dict] = None
 
     def account(self, label: str) -> Account:
         if label not in self.accounts:
@@ -92,7 +94,7 @@ def load_site(path: Optional[Path] = None) -> Site:
     except (OSError, json.JSONDecodeError) as exc:
         raise SiteError(f"cannot read site configuration {path}: {exc}") from exc
     _keys(str(path), value, {"schema", "provider", "images", "resources", "state_dir", "network", "accounts"},
-          {"repository"})
+          {"repository", "fpga_worker"})
     if value["schema"] != SCHEMA:
         raise SiteError(f"{path}: schema must be {SCHEMA}")
     if value["provider"] != "docker":
@@ -159,6 +161,14 @@ def load_site(path: Optional[Path] = None) -> Site:
             hosts=tuple(hosts), models=dict(models), options=dict(options),
         )
 
+    worker = value.get("fpga_worker")
+    if worker is not None:
+        _keys("fpga_worker", worker, {"ssh", "workdir", "vivado_settings"}, {"ro_binds", "threads", "part"})
+        if not all(isinstance(worker[k], str) and worker[k] for k in ("ssh", "workdir", "vivado_settings")):
+            raise SiteError("fpga_worker: ssh, workdir and vivado_settings must be strings")
+        if not isinstance(worker.get("ro_binds", []), list):
+            raise SiteError("fpga_worker.ro_binds must be a list of paths")
+
     return Site(
         path=path, provider=value["provider"], images=dict(images),
         cpus=float(res["cpus"]), memory=res["memory"], pids=res["pids"],
@@ -166,6 +176,7 @@ def load_site(path: Optional[Path] = None) -> Site:
         upstream_proxy=upstream.rstrip("/") if upstream else None,
         routes=dict(routes), accounts=accounts,
         repository=_path(value["repository"], "repository") if value.get("repository") else None,
+        fpga_worker=dict(worker) if worker else None,
     )
 
 

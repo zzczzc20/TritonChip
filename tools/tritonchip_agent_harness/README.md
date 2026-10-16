@@ -85,7 +85,7 @@ sections it names.
 | A6 | The agent may change the compiler, ISA and RTL freely. The constraint is the chain: PyTorch → Triton → TNCA IR → ISA → RTL, nothing skipped | §10, §11 |
 | A7 | The agent's sandbox has the full toolchain, the cycle-accurate simulator included. It measures its own test cases with it | §3, §6 |
 | A8 | For now, while the harness is built, all of ArchBench is hidden from the agent (§6) | §6, §12 |
-| A9 | The evaluator runs no candidate code except the design it evaluates. Today that design code (the candidate's compiler, and the parts of `python/tnca/` it may change) runs in the measuring process; P2 removes that (§11) | §10, §11 |
+| A9 | The evaluator runs no candidate code except the design it evaluates. The candidate's compiler (and the parts of `python/tnca/` it may change) still runs in the host-side measuring process; P2.1 moved the device and its count out of that process's reach, and P2.2 will check the results it reports (§11) | §10, §11 |
 | A10 | RTL simulation cycles are deterministic; board measurements are not exactly | §13 |
 | A11 | FPGA builds are slow: synthesis of the whole device takes about 25 minutes, a full link about 4 hours. The agent's use of them is budgeted, and the budget is enforced | §12 |
 
@@ -160,10 +160,10 @@ trusted.
 | Boundary | Separates | What crosses it |
 |---|---|---|
 | **Container** | the agent from the host and from other runs | its workspace, its CLI config directory, the bridge script, the gateway's socket directory |
-| **Network** | the agent from the internet and from the harness host | the gateway socket (model API); the service socket (planned) |
-| **Visibility** | the agent from the benchmark | nothing about the final set; aggregates about the validation set (the services are planned) |
+| **Network** | the agent from the internet and from the harness host | the gateway socket (model API); the service socket (§12) |
+| **Visibility** | the agent from the benchmark | nothing about the final set; aggregates about the validation set |
 | **Submission gate** | the workspace from everything that measures it | a diff against the base commit, read from the source repository, never from the agent's `.git` |
-| **Observation** | the design from its measurement | numbers the evaluator measured itself, at the device boundary (§11, planned) |
+| **Observation** | the design from its measurement | numbers the platform counted itself, at the device boundary (§11, P2.1) |
 
 The rule that ties them together: **the agent owns the design; the evaluator
 owns the observation and the questions.** No file is "protected" in the sense
@@ -183,8 +183,8 @@ time (§11).
 | Visibility | The workspace is written with git plumbing (`cat-file --batch`) from one commit of the source repository, minus the hidden paths, and committed again with a fixed author and date | no history and no reflog; instruction files, both harnesses, `evidence/` and the task's hidden paths removed; a hide entry that matches nothing stops the export | `tests/test_workspace.py`; the leak audit (§6.5) | done for `replay-mzero` |
 | Gate | Compares the workspace with the base commit read from the source repository, never from the workspace's `.git` | design paths taken; evaluator-owned paths dropped; under a design path, a symbolic link, special file or nested repository rejects the candidate | `tests/test_workspace.py` | done, with the gaps in §9 |
 | Evaluation | A separate container from the `toolchain` image, with the same hardening and no credential, on the base plus the candidate's overlay | its own copies of the testbench, ArchBench, the tools and the flow | the noop and reference runs | done |
-| Observation (P2) | The simulator in its own container behind a socket transport; a counter and write monitor in the evaluator's platform | — | — | planned |
-| FPGA build worker | A container per job | no network, Vivado mounted read-only, only the job's tree writable, CPU and memory limits, no home | the license test (§12.5): synthesis needs no license or network | planned |
+| Observation (P2.1) | Each point's device (relay, simulator, the platform's observer) in an evaluator-owned container, built from the base code with only the candidate's hardware, reached over a Unix socket | `--network none`, the same hardening; the observer's log written where candidate code cannot reach it; candidate RTL checked for file and system tasks | §19: a halved shell counter scores 1.000; `$fopen` is rejected | done |
+| FPGA build worker | bubblewrap per job, run over SSH by the FPGA service | `--unshare-all` (no network), a read-only system and Vivado installation, only the job's directory writable, no home, a hard `timeout` | the license test and the service check (§12.5, §19) | in progress |
 | Card host | bubblewrap (`bwrap`), the sandbox tool available there | no network, a read-only system, only the card's device nodes, no home or harness state | — | planned |
 
 ## 6. The hidden benchmark
@@ -208,7 +208,7 @@ general improvements.
 ### 6.2 How it is hidden
 
 - **In the developers' repository, ArchBench stays where it is** and is maintained with everything else. Agents never see the repository, only a workspace exported from it.
-- **The workspace export removes it.** For `replay-mzero`: `archbench/` and the 28 other paths the leak audit found (§6.5). A hide entry that matches nothing stops the export, because a typo, or a directory written without its trailing slash, would otherwise leave what it names in the workspace.
+- **The workspace export removes it.** For `replay-mzero`: `archbench/` and the 25 other paths the leak audit found (§6.5). A hide entry that matches nothing stops the export, because a typo, or a directory written without its trailing slash, would otherwise leave what it names in the workspace.
 - **The final evaluator and the services measure the base commit with the hidden package in it.** In the developers' repository, which contains all of ArchBench, that is simply the full base commit.
 - **For delivery, the benchmark is split into a public and a hidden package.** The harness defines visibility; it does not create a benchmark. A task's validation and final sets belong to the hidden package: in a delivered harness the task refers to them, and the operator's copy supplies the point ids.
 
@@ -262,43 +262,36 @@ matched against them. Every finding was then checked by a separate agent asked
 to refute it, and a completeness critic looked for what all of them missed.
 118 verdicts: 56 real leaks, 62 harmless or refuted.
 
-**Removed from the workspace (29 hide entries).** `archbench/`; the r39
+**Fixed in the repository (`6f2bdee`, 2026-10-16), not hidden.** Four comments
+in files the agent's flow needs (`rtl/core/tnca_core.v`,
+`rtl/board/tnca_u50_xo.v`, `compiler/python/tnca_cc/partition.py`,
+`python/tnca/runtime.py`) named the tiny tier's size, per-family results or a
+model point's sizes; they now describe the mechanism only. Seven graphs of
+`tools/r38/torch_tests.py` and the example of the torch.compile tutorial were
+exactly a point's workload; their shapes changed (torch tests 24/24 pass; the
+tutorial's printed output re-recorded from a real run), so the agent keeps its
+main regression suite and the tutorial. `replay-mzero`'s base moved to
+`9a3b1378`: its old base plus this commit, nothing else.
+
+**Removed from the workspace (26 hide entries).** `archbench/`; the r39
 ArchBench baselines (`spec/r39/baseline_archbench*.json[l]`); suite and workload
 lists (`spec/r38/suites/dev.json`, `spec/r38/evidence_registry.json`,
 `spec/r38/design_changes/xpose-dma-001.json`, `spec/r3_workloads.json`,
-`spec/r35_workloads.json`, `spec/r3v2_inventory.json`); tests that are exactly
-a point's workload (`tools/r38/torch_tests.py`, `tools/r38/dev_cases.py`,
+`spec/r35_workloads.json`, `spec/r3v2_inventory.json`); tests and scripts that
+are exactly a point's workload (`tools/r38/dev_cases.py`,
 `tools/r37/upstream_cases.py`, `tools/r37/aot_run.py`,
 `tools/r38/triton_native_run.py`, `tools/r38/tdesc_tests.py`); the old scoring
 copy `tools/r38/archbench/`; documents with per-point or per-family results
 (`doc/architecture_overview.md`, `doc/compiler_overview.md`,
 `doc/r38_board_bringup.md`, `doc/r38_pytorch_p1plus.md`,
 `doc/r38_stage1_status.md`, `compiler/README.md`, `flow/fpga/README.md`); the
-tutorials whose example computes a final-set point
-(`tutorial/10_torch_compile.md`, `tutorial/examples/10_torch_compile.py`) or
-quotes board cycles (`tutorial/11_running_on_the_u280.md`); and, as before,
+tutorial that quotes board cycles (`tutorial/11_running_on_the_u280.md`); and
 the two r39 planning documents. None of them is read by the agent's flow
-(staging, `tnca-sim prepare`, the compiler, the runtime); `make r38-torch`
-and `make tutorial` lose their inputs.
+(staging, `tnca-sim prepare`, the compiler, the runtime).
 
 **After removal:** no point id and no shape string appears in the exported
-working tree or its commit. 21 files still name "ArchBench" (Makefile targets,
-comments), which the audit judged harmless.
-
-**Residual leaks the export cannot remove** (comments in files the flow needs;
-for the main author to reword in the repository, O19):
-
-| File | What it says | Rewording the audit proposes |
-|---|---|---|
-| `rtl/core/tnca_core.v` L252–253, L2297–2298 | the tiny tier has 27 points; 14 % of ArchBench's cycles were unnamed | "a few points"; "a sizeable share of measured cycles" |
-| `rtl/board/tnca_u50_xo.v` L93, L105–106 | "ArchBench tiny 27/27" | "passed conformance and the profiler with every cycle count identical to RTL simulation" |
-| `compiler/python/tnca_cc/partition.py` L1418–1423 | per-family results (linear, mlp, matmul, gemv, llama_decode at small and medium) | describe the mechanism, without families, tiers or numbers |
-| `python/tnca/runtime.py` L169–172 | that `llama_decode/small` exists, and its output-head size | a generic case with no model, tier or size |
-
-The audit also recommends reshaping, rather than hiding, the tests that are the
-agent's main regression suite (`tools/r38/torch_tests.py`: change five shapes)
-and the torch.compile tutorial (change its example's shape), both in the main
-repository.
+working tree or its commit (570 files). Files that still name "ArchBench"
+(Makefile targets, comments) were judged harmless by the audit.
 
 **Not yet checked:** `/opt/Tilebench`, the TileBench checkout in the agent
 image; it is a separate benchmark, but its shapes were not compared with
@@ -457,9 +450,12 @@ At the level of CHIA (§20): it rebuilds from source with no AI involved and
 measures with its own copies. It exports the base commit without the task's
 hide list (the harnesses, `evidence/` and agent instruction files are still
 left out) and lays the candidate's overlay on top, so the testbench, ArchBench,
-the tools and the flow are the base's. It then runs ArchBench on the validation
-and final sets, in a hardened container with no network and no credential, and
-compares each point with the base's own cycles. The base is measured once per
+the tools and the flow are the base's. Its platform (the testbench with the
+observer, the relay) comes from the commit the task pins
+(`evaluation.platform`) and is laid over every tree it builds, whatever the
+base had. It then runs ArchBench on the validation and final sets, with each
+point's device in a container of its own (P2.1, §11), and compares each point
+with the base's own cycles, both counted by the platform. The base is measured once per
 (base commit, profile, point list) and kept; a run whose base does not measure
 cleanly is `infra-invalid`.
 
@@ -488,10 +484,27 @@ point the candidate had made slower. How they combine into one score is open
 4. **Planned:** provenance and a diff audit. Provenance must regenerate or verify each stage from TNCA IR to ISA with evaluator-owned code; the stage files the candidate's compiler writes (`TNCA_KERNEL_DUMP=1`) are only its own claim. The diff audit looks for large instruction literals and branches on kernel names or shape constants. Monitors fix the environment; they are not part of the score.
 5. **ISA extensions are allowed.** They must take effect through compiler lowering. How their resources are charged is open (O11); until then the FPGA service reports their utilisation (§12) and hardware-changing candidates are reported separately (§13).
 
-**Machine changes are recorded.** A candidate may change the profile it is
-measured on. The evaluator records every changed `elaboration` and
-`rtl_parameters` entry of the task's profile; other profile keys, compiler
-target files and RTL changes appear in the gate's list of files taken.
+**The machine is the agent's to choose; the starting point is the task's.**
+A profile is a machine configuration: the same RTL with switches on or off and
+its parameters set. `spec/r1_profiles.json` is a design path, so the agent may
+turn on, turn off or add any switch of the profile it is scored on (pilot 1's
+Claude Code run enabled seven), and everything that measures follows the
+candidate's configuration: the simulated device is built from the candidate's
+`rtl/` and profile (`evaluator.HARDWARE`), and the FPGA quick tier synthesises
+the same configuration (`fpga_quick.effective_params`). The task's
+`evaluation.profile` names only where the agent starts. What the task fixes is
+that starting point and the baseline it is compared with: today core-sim, the
+simulation reference machine, while the board's image is core-vrf-sync-v2.
+From core-sim, enabling the board's existing switches counts as a gain and the
+FPGA cost compares only relatively; from the board's configuration, only going
+beyond the current design counts, and resources and frequency compare with the
+board's image directly. With hardware cost in the score (O11) either start is
+fair; which to use is O23.
+
+**Machine changes are recorded.** The evaluator records every changed
+`elaboration` and `rtl_parameters` entry of the task's profile; other profile
+keys, compiler target files and RTL changes appear in the gate's list of files
+taken.
 
 ## 11. The device-boundary contract and the observer
 
@@ -518,7 +531,7 @@ parameter of every instance has the same value and width as before, and cycles
 are identical on the points measured. Not yet migrated: the core-level benches,
 `tnca_shell_tb`, the FPGA top.
 
-**P2, the observer (planned; required).** Two facts make it necessary.
+**P2, the observer (P2.1 built and verified 2026-10-16; P2.2 planned, required).** Two facts make it necessary.
 The cycle count that scores a run is `run_cycles` in `rtl/tnca_shell.v`, which
 the agent may edit. And the measuring process runs candidate code: the
 candidate's compiler, and its versions of the `python/tnca/` modules that are
@@ -538,7 +551,7 @@ give this by itself: the untrusted process starts it, over TCP. The design
 principles stay: the agent owns the design, the evaluator owns the observation;
 the contract (ports, ABI, transport, container) does not change.
 
-**P2.1: the cycle count (the first step).**
+**P2.1: the cycle count (built).**
 
 ```text
 host container (candidate; as today)               device container (evaluator-owned; new)
@@ -578,9 +591,26 @@ into a launch window. The second run makes P2.2 a final-evaluation step only.
 | Results baked into the program image | P2.2: the image changes with the seed |
 | The runtime fakes outputs | P2.2: outputs come from the device's downloads |
 
-**Owned by the main repository:** the observer in the testbench (3), the relay
-(4), and `PROTOCOL.md` §3.1 (8, O4). The rest is the harness's. The open points
-are being settled with the main author (P2-a to P2-f in the decision brief).
+**Where it lives.** The observer (3) and the relay (4) are in the main
+repository (`55872ef`); `PROTOCOL.md` §3.1 states who counts (8). The evaluator
+takes them from the platform commit the task pins, so a task's older base gets
+the current platform. The rest is the harness's: the two trees and the device
+containers (`evaluator._measure_observed`), the RTL check
+(`evaluator.rtl_check`, applied by the loop after the gate), and scoring from
+the observer's log (`evaluator.observed_point`), where a point whose log is
+missing or incomplete, that shows memory activity outside a launch, or whose
+record disagrees with what the device reported, fails.
+
+**Verified (2026-10-16, `replay-mzero`).** On core-sim a launch reads the
+platform's count six cycles above `done_cycles` (the shell's handshake), and the
+base shows no activity outside a launch.
+
+| Run | Result |
+|---|---|
+| `noop` | 1.000 on both sets |
+| `reference` | 1.016 / 1.010, as before P2.1 |
+| a shell whose `done_cycles` reports half its count | 1.000 / 1.000: the score is the platform's count |
+| RTL that opens the observer's log with `$fopen` | `integrity-rejected` before anything is built |
 
 ## 12. In-run services: scoring and FPGA
 
@@ -593,53 +623,56 @@ synthesis mapped to the FPGA (LUT, FF, DSP and BRAM estimates, logic levels,
 and an Fmax estimate calibrated against Vivado). Today the sandbox has the
 cycle-accurate simulator and generic Yosys synthesis (`make synth`). Planned.
 
-### 12.2 The channel
+### 12.2 The channel (built)
 
-One Unix socket, mounted into the sandbox like the gateway's, and a small CLI
-inside it (`tnca-service`, name provisional): `submit score`,
-`submit fpga-quick`, `submit fpga-slow` (waits on O13, O14), `status`,
-`result`. A request does not carry files: the harness takes the snapshot
-itself, through the same gate as the final evaluation, so a service measures
-exactly what the final evaluator would. Requests are asynchronous; the agent
-may keep working while one runs. Every request and result is written to the run
-record. Planned.
+The broker (`services.py`) runs in the harness process beside the agent's run.
+It listens on a Unix socket in a short directory of its own (a socket's path is
+limited to about 100 bytes, and a run directory is longer), mounted read-only
+into the sandbox at `/run/tnca-service`. `tnca-service` (`service_cli.py`,
+mounted as one read-only file at `/usr/local/bin/tnca-service`) is the agent's
+side: `budget`, `submit score`, `submit fpga-quick`, `status [ID]`,
+`result ID`, `wait ID`. One JSON line in, one out.
 
-### 12.3 The scoring service (decided; not built)
+- **A request is a snapshot, not files.** The broker passes the workspace through the same gate as the final evaluation, so only changes under the design paths count. A rejected snapshot, or RTL that fails the check of §11, is refused before anything is charged.
+- **Asynchronous, one per service at a time.** The run's clock keeps going.
+- **Budgets come from the task** (`services` in `task.json`) and the syllabus states them (`task.render`).
+- **Everything goes into the run record** (`agent_result.services`): each request, the snapshot it measured, what the agent saw, and the full result it did not.
 
-Measures the validation set in simulation, with the final evaluator's code, and
-returns an aggregate (§6.4). The number of requests per run is fixed and stated
-in the syllabus (O16). It runs on its own CPU allocation, so it neither slows
-the agent nor lets two concurrent runs disturb each other.
+### 12.3 The scoring service (built)
 
-### 12.4 The FPGA service (decided; not built; the quick tier's feasibility is verified)
+Measures the validation set the final evaluator's way, P2.1 included
+(`evaluator.measure_validation`), and returns the aggregate of §6.4: points,
+passed, `speedup_geomean`, `fast_1`. If the candidate's device does not build,
+the build's last lines come back, since they concern only its own RTL. A
+request is charged when it is accepted.
+
+### 12.4 The FPGA service
 
 **The agent decides whether and when to use it. Its time is limited, the
 syllabus says by how much, and the limit is enforced** (decided 2026-10-15).
 
-| Tier | What runs | About | Returns |
-|---|---|---|---|
-| **Quick** | out-of-context synthesis and timing of the whole device, `flow/synth/vivado_ooc.sh tnca_fpga_top <period>`, on the profile the run is scored on | 25 min | status; worst slack at the target period and the frequency it implies; the worst paths, as start and end points in the agent's own RTL; utilisation (LUT, FF, DSP, BRAM, URAM) |
-| **Slow** | implementation through the FPGA harness (package, link, judged timing and DRC), then a board stage on the validation set | hours | timing closure (WNS, TNS, failing endpoints); utilisation; the board stage's aggregate |
+| Tier | What runs | About | Returns | State |
+|---|---|---|---|---|
+| **Quick** | out-of-context synthesis and timing of the whole device (`fpga_quick.py`): the repository's own `flow/synth/vivado_ooc_timing.tcl` on the candidate's hardware, for the profile the run is scored on | 25 min | status; worst slack at the target period and the frequency it implies; the worst paths, as start and end points in the agent's own RTL; utilisation (LUT, FF, DSP, BRAM, URAM) | in progress |
+| **Slow** | implementation through the FPGA harness (package, link, judged timing and DRC), then a board stage on the validation set | hours | timing closure; utilisation; the board stage's aggregate | planned |
 
-**The quick tier must time the scored profile, with the candidate's changes.**
-Until P1 reaches the FPGA top, whose parameters are set by hand to
-core-vrf-sync-v2's, the service passes that profile's parameters to
-`vivado_ooc.sh` as `NAME=VALUE`.
+**The quick tier times the agent's configuration** of the scored profile
+(§10.3). The FPGA top's parameters are still written by hand, set to
+core-vrf-sync-v2's, because P1 has not reached it. So the service passes the
+candidate's profile to it as `NAME=VALUE`: the defaults in
+`rtl/common/tnca_uarch_defaults.vh`, then the profile's own values, limited to
+parameters the top has. It calls the Tcl script directly, into a short output
+directory: `vivado_ooc.sh` names its output after every pair, and a whole
+profile's worth is longer than a file name may be.
 
-**The slow tier's board stage returns only an aggregate.** It runs the
-validation set from the evaluator's tree, never whole tiers, and never returns
-the FPGA harness's per-point records, logs or dispatch tails. The FPGA harness
-today runs whole tiers and records per point, so agent-triggered jobs need a
-request schema of their own.
+**Enforcement (built).**
 
-**Enforcement.**
-
-- Each run has an FPGA time budget, charged as worker time.
-- One FPGA request per run at a time.
-- A request whose maximum duration exceeds the remaining budget is refused.
-- A job is killed at its deadline; the time it used is charged.
-- Queue waits are not charged to the FPGA budget; the run's wall clock goes on.
-- Pilots run one agent at a time on the build worker, so no run waits behind another.
+- Each run has an FPGA time budget, charged as the worker's actual time.
+- One FPGA request at a time.
+- A request that could run past what is left is refused: each may take up to the task's `job_minutes`.
+- On the worker the job runs under `timeout`, so it ends at its deadline whatever happens to the harness.
+- A job still running when the agent stops is stopped (`pkill` on the worker, with a pattern that cannot match its own command line) and charged.
+- Queue waits are not charged; the run's wall clock goes on.
 
 **Synthesis estimates are optimistic.** Before routing, delays leave out most
 of the wire: on this design the routed worst path was about 1.6 times the
@@ -650,13 +683,15 @@ The syllabus says so.
 ### 12.5 Where the FPGA work runs, and how it is isolated
 
 **Placement (decided 2026-10-15).** All FPGA builds run on the **build
-worker**; the **card host** is used only for the board stage. "FPGA hosts"
-means both. Both will be named in the site configuration.
+worker**; the **card host** is used only for the board stage. The site
+configuration names the build worker (`fpga_worker`: SSH target, job directory,
+Vivado settings script, read-only binds, threads, part).
 
-- **The build worker** runs each job in a container: no network, the Vivado installation mounted read-only, only the job's tree writable, CPU and memory limits, no home directory. Candidate RTL is read by Vivado, so the sandbox is what stops `$readmemh` of a host file (T6); RTL is also linted for absolute or `..` paths in `` `include ``, `$readmem*` and `$fopen`.
-- **The card host** runs the board stage. The candidate's compiler compiles the benchmark there, so that is candidate code on a shared machine. It runs in a sandbox with no network, a read-only view of the system, only the card's device nodes, and no home directory, harness state or compiler caches (`/tmp/torchinductor_*`, `~/.triton`) of anyone's. The card is shared, so board stages happen in agreed windows (O14), and between owners the card is reprogrammed or its memory cleared, so no session reads what another left in device memory.
-- **License (tested 2026-10-15): none is needed.** Vivado 2022.2 ran OOC synthesis, timing and utilisation for the U280 and U50 parts with no license reachable and no network; Vivado reports the entitlement for these parts as built in. A control proved the license was really hidden: on a device that needs one, the same hiding turned a passing synthesis into a license error, and a file watcher saw the license file opened in every visible run and in no hidden one. The real unit `tnca_matrix` synthesised the same way in 1.8 minutes (worst slack +3.9 ns at 10 ns). Still to test: a real container image, which needs the installation's system libraries, a writable home for Vivado's own files, and a non-root user.
-- **Versions (open, O13).** The repository's flow pins the U280 to Vitis 2023.2. A build worker that has only 2022.2 needs either a 2023.2 installation or a flow that accepts 2022.2 for the U280, followed by one full validation on the card.
+- **The build worker (built).** Each job runs in a bubblewrap sandbox: no network (`--unshare-all`), a read-only `/usr`, `/etc`, libraries and Vivado installation, only the job's own directory writable, a fresh `/tmp` and home, and nobody's home directory or harness state visible. Candidate RTL is read by Vivado, so the sandbox is what stops `$readmemh` of a host file (T6). (The design first named a container; bubblewrap needs no image, and it is already the card host's tool.)
+- **License (tested 2026-10-15): none is needed.** Vivado 2022.2 ran OOC synthesis, timing and utilisation for the U280 and U50 parts with no license reachable and no network; it reports the entitlement for these parts as built in. A control proved the license was really hidden. The unit `tnca_matrix` synthesised the same way in 1.8 minutes.
+- **The card host (planned).** The candidate's compiler compiles the benchmark there, so it runs in a sandbox with no network, a read-only system, only the card's device nodes, and no home directory, harness state or compiler cache of anyone's. The card is shared, so board stages happen in agreed windows (O14), and between owners the card is reprogrammed or its memory cleared.
+- **Versions (decided 2026-10-17, was O13).** The Vivado flow runs on the build worker with its Vitis 2022.2; the card host only loads and measures. Validated once on the card: `b5c606d` linked there in 103 minutes (213 on the card host with 2023.2), closed 100 MHz with ap_clk WNS +0.138 ns (2023.2: +0.177), and its XCLBIN loaded on the card's 2023.2/XRT 2.16 shell, whose gates check only the platform's interface UUID. The U280 target accepts images from 2022.2 and 2023.2, and the build worker's installation overrides the target's default path.
+- **How a candidate crosses (built, FPGA harness).** `pipeline` in `tools/tritonchip_fpga_harness` (its README §11.2) runs one candidate across the two: a clean checkout of the commit on each from a git bundle, the build detached on the build worker, a light packet of the image and records streamed through the controller into the card host, where every file's hash is checked before the run is installed, and the board stage there. The servers never connect to each other. Not yet run between the two servers.
 
 ## 13. Fair comparison and statistics
 
@@ -741,7 +776,7 @@ result.
 | Date | Decision |
 |---|---|
 | 2026-10-14 | Our own thin core rather than adopting Harbor or Inspect, with Harbor-compatible formats. The test environment is a separate, clean host |
-| 2026-10-14 | P1 is prototyped on `main` by Claude; the user takes the contract design to the main author |
+| 2026-10-14 | P1 is prototyped on `main` by Claude; the user takes the contract design to the collaborator |
 | 2026-10-15 | P1 is merged into the agent-harness branch (PR #9) rather than opened as a separate PR |
 | 2026-10-15 | Network modes: `offline` and `open`, nothing in between |
 | 2026-10-15 | Tokens: the CLI's report plus the gateway's bytes is enough for pilots; the API-key proxy is deferred |
@@ -757,28 +792,31 @@ result.
 | 2026-10-15 | An FPGA service, used at the agent's discretion; FPGA time limited, stated in the syllabus, enforced; the agent sees results, never the points. Testing starts with the quick tier |
 | 2026-10-15 | FPGA builds on the build worker; the card host only for the board stage |
 | 2026-10-15 | For delivery, the benchmark is split into a public and a hidden package; the harness defines only visibility |
+| 2026-10-16 | The decision brief's recommendations are adopted and built until the collaborator confirms them (rows marked *provisional*) |
+| 2026-10-16 | *Provisional (O20, O4).* P2: we write the testbench observer and the collaborator reviews it; device time is the platform's count (`archbench/PROTOCOL.md` §3.1); the relay listens on a Unix socket; the board platform (`rtl/board/`, `rtl/fpga/`) is evaluator-owned; P2.1 first, P2.2 in the final evaluation only; candidate RTL may not use file or system tasks |
+| 2026-10-16 | *Provisional (O2).* The contract's first version is the single-core `tnca_shell`; a second follows r40 |
+| 2026-10-16 | *Provisional (O3).* A microarchitecture parameter's name matches `^[A-Z][A-Z0-9_]*$` |
+| 2026-10-16 | *Provisional (O19).* The comments that revealed ArchBench are reworded and the tests and tutorial that duplicated points reshaped, in the repository |
+| 2026-10-16 | *Provisional (O18).* Two hidden sets: validation (aggregates during the run) and final (only after it) |
+| 2026-10-16 | *Provisional (O11, O12).* Hardware enters the score through the clock (quick-tier estimates during the run, the slow tier's achieved clock at the end) and a resource cap; the three aggregates are reported and runs rank by `fast_1`, then `speedup_geomean`. Neither is built |
+| 2026-10-16 | *Provisional.* Until P1 reaches the FPGA top, the quick tier passes the scored profile to it as `NAME=VALUE`; the slow tier's board stage returns aggregates only, through a request schema of its own |
+| 2026-10-16 | *Provisional (O16).* Pilot budgets: 3 scoring requests; 45 FPGA minutes, up to 20 per request (35 let only one request fit, §19) |
+| 2026-10-17 | The Vivado flow (package, link) runs on the build worker with Vitis 2022.2; the card host is used only to load and measure. Validated once on the card (§12.5). Closes O13 |
 
 **Open.**
 
 | # | Decision | Owner |
 |---|---|---|
-| O2 | The contract's first version: single-core `tnca_shell`, the r40 multicore shell, or both. r40 (PR #7) rewrites much of the platform side | main author |
-| O3 | Naming rules for new microarchitecture parameters | main author |
-| O4 | Restating ArchBench device time against the observer (`PROTOCOL.md` §3.1) | ArchBench owner |
-| O6 | Replay tasks: which commits (candidates: `49da68a`, compiler; `d795aa2`, MTX_ABUF, RTL) | main author |
+| O6 | Replay tasks: which commits (candidates: `49da68a`, compiler; `d795aa2`, MTX_ABUF, RTL) | collaborator |
 | O7 | Whether Codex can drive GLM | to verify |
 | O8 | Whether a CLI switches models automatically under subscription limits | to verify |
 | O10 | When and how dedicated accounts are obtained; each account's training setting; GLM's data policy and Coding Plan terms | user |
-| O11 | The final score's hardware term: device time as cycles × achieved clock period, a resource budget, or both | user, main author |
-| O12 | How `passed`, `speedup_geomean` and `fast_1` combine into one score, and whether those aggregates are the ones | user |
-| O13 | The slow tier's Vitis version for the U280: install 2023.2 on the build worker, or let the flow accept 2022.2 | main author |
 | O14 | Windows for the shared card | user, lab |
 | O15 | How specific a task's syllabus may be | user |
-| O16 | The scoring-request count and FPGA minutes per run | user (pilots decide) |
-| O17 | The size of the validation and final sets. Of the 27 tiny points, each matrix-multiply family has a single shape (matmul in two dtypes), so "same operation, unseen shape" needs new tiny-scale points | main author |
-| O18 | Whether the hidden benchmark is split into a validation set (aggregates during the run) and a final set (only after the run), as proposed in §6.4 | user |
-| O19 | Rewording the residual leaks in the repository (§6.5) and reshaping the tests and tutorial that duplicate points | main author |
-| O20 | P2's details (§11): who writes the testbench observer, the relay change, the board platform's ownership, the RTL check, P2.2's method | main author |
+| O17 | The size of the hidden sets. Of the 27 tiny points, each matrix-multiply family has a single shape (matmul in two dtypes), so "same operation, unseen shape" needs new tiny-scale points | collaborator |
+| O21 | How ArchBench splits into a public and a hidden package for delivery: by family, or by shape tables made data | collaborator |
+| O22 | Who migrates P1's remainder (the FPGA top first, then the core benches and `tnca_shell_tb`) | collaborator |
+| O23 | Where a task starts, and what it is compared with. The configuration is the agent's to choose: the profile is a design path, and both the simulated device and the FPGA quick tier follow the candidate's profile. What is open is the starting point and baseline: core-sim, the simulation reference machine (enabling the board's existing switches counts as a gain; its FPGA cost compares only relatively), or the board's configuration, core-vrf-sync-v2 (only going beyond the current design counts; resources and frequency compare with the board's image directly). Recommended: start from the board's configuration. With hardware cost in the score (O11), either is fair | collaborator |
 
 ## 17. Progress
 
@@ -807,30 +845,35 @@ Status: **done** (built and verified), **in progress** (being built now),
 | Workspace | A hide entry that matches nothing stops the export | done | `tests/test_workspace.py` |
 | Workspace | Gate: design paths, evaluator-owned paths, rejections | done | `tests/test_workspace.py` |
 | Workspace | Gate: ignore rules from the base tree; shadowing of owned modules | planned | §9 |
-| Visibility | ArchBench hidden from the `replay-mzero` workspace | done | §6.5: 29 hide entries; no point id or shape string left |
-| Visibility | Syllabus for `replay-mzero` | done | `tasks/replay-mzero/instruction.md` |
-| Visibility | Residual leaks reworded in the repository | planned (required) | O19; the user's rule: no point visible in any sense |
+| Visibility | ArchBench hidden from the `replay-mzero` workspace | done | §6.5: 26 hide entries on base `9a3b1378`; no point id or shape string in the tree or the commit |
+| Visibility | Syllabus for `replay-mzero`, with the services and their budgets | done | `tasks/replay-mzero/instruction.md`, `task.render` |
+| Visibility | Residual leaks reworded; tests and tutorial reshaped | done | `6f2bdee`; torch tests 24/24 pass; task base `9a3b1378` |
 | Visibility | Export-time leak check over the tree and the git objects | planned (required) | — |
 | Visibility | TileBench in the image checked against ArchBench | planned | — |
-| Evaluator | CHIA-level evaluator: base plus overlay, own copies | done | noop scores 1.000, reference 1.016 / 1.010 |
+| Evaluator | CHIA-level evaluator: base plus overlay, own copies | done | noop 1.000; reference 1.016 / 1.010 |
+| Evaluator | The evaluator's platform from a pinned commit, laid over every tree | done | `task.json` `evaluation.platform` |
 | Evaluator | Each point judged alone; validation and final sets | done | `tests/test_evaluator.py` |
 | Evaluator | Machine-change record (profile `elaboration` and `rtl_parameters`) | done | pilot runs |
 | Evaluator | `gave-up` class; provenance and diff audit | planned | — |
 | Device boundary | P1: the profile header | done | commit `8c49e2b`, merged in `9035f0f`; parameters identical on nine builds |
-| Device boundary | P1: core benches, `tnca_shell_tb`, FPGA top | planned | — |
-| Device boundary | P2: the observer | planned (required) | design in §11 (P2.1, P2.2); main-repository parts wait on O4, O20 |
+| Device boundary | P1: FPGA top, core benches, `tnca_shell_tb` | planned | O22 |
+| Device boundary | P2.1: the platform's count, the device in its own container, the RTL check | done | `55872ef`; §19: a halved shell counter scores 1.000, `$fopen` in RTL is rejected |
+| Device boundary | P2.2: the host may move data, never compute it | planned (required) | §11 |
 | Services | Cheap estimators in the sandbox | planned | §12.1 |
-| Services | Service channel and accounting | planned (required) | both services need it |
-| Services | Scoring service | planned (required) | decided 2026-10-15 |
+| Services | Service channel and accounting | done | `services.py`, `service_cli.py`, `tests/test_services.py` |
+| Services | Scoring service | done | §19: 48 s, the aggregate equal to the reference's validation numbers |
 | Services | FPGA quick tier: license and isolation feasibility | done | OOC synthesis with no license and no network, with a control (§12.5) |
-| Services | FPGA quick tier service: worker container, scored-profile parameters, enforced FPGA budget | planned (required) | decided 2026-10-15 |
-| Services | FPGA slow tier | planned | waits on O13, O14 |
+| Services | FPGA quick tier service: bubblewrap on the build worker, the agent's configuration, an enforced budget | done | §19: `ok` in 11.8 min, +2.313 ns at 10 ns |
+| Services | FPGA slow tier | planned | waits on O14; the FPGA harness can now build on the build worker and measure on the card host |
+| FPGA harness | The Vivado flow on the build worker, the board stage on the card host (`pipeline`, `sync`, `import`, host tool roots) | done | `tools/tritonchip_fpga_harness/tests/test_split_hosts.py`, between two directories of one machine; a 2022.2 build loaded on the card by hand (§12.5) |
+| FPGA harness | `pipeline` between the two servers, a real candidate | planned | needs a card window |
 | Metering | Tokens as reported, gateway bytes | done | run records |
 | Metering | Cross-check; one token schema; API-equivalent cost | planned | — |
 | Red team | Scripted (§15 item 2) | planned | — |
 | Red team | LLM red team | deferred | not needed for now (decided 2026-10-15) |
 | Loop | `run-task` with noop, reference, `patch:` and real agents | done | §19 |
 | Pilots | Pilot 1: three configurations, one run each | done | §19; before ArchBench was hidden |
+| Pilots | An agent that uses the services on its own | in progress | §19 pilot 2: Claude Code and Codex scored on their own; neither asked for FPGA, which the score gives no reason to (O11) |
 
 ## 18. Quick start
 
@@ -843,8 +886,11 @@ mkdir -p ~/.config/tritonchip-agent-harness && cp tools/tritonchip_agent_harness
 ```
 
 Edit it: accounts (CLI, auth mode, credential path, hosts, models), routes
-(`direct` or `upstream`, and `network.upstream_proxy` for `upstream`), and
-`repository`, the clone workspaces are exported from. Each credential is a file
+(`direct` or `upstream`, and `network.upstream_proxy` for `upstream`),
+`repository`, the clone workspaces are exported from (it must contain the task's
+base commit and its pinned platform commit), and, for the FPGA service,
+`fpga_worker`: a host you reach by SSH with keys, where Vivado is installed and
+`bwrap` works (§12.5). Each credential is a file
 you create, mode 0600:
 
 - `CLAUDE_CODE_OAUTH_TOKEN=…`, from `claude setup-token`;
@@ -906,7 +952,7 @@ python3 tools/tritonchip_agent_harness/overview/build.py overview.html
 ## 19. What has been run
 
 All on the test host (rootful Docker 27.5, cgroup v2, kernel 6.8),
-2026-10-14 and 15. **Every agent run below predates the hidden benchmark:** its
+2026-10-14 to 16. **Every agent run before "P2.1" below predates the hidden benchmark:** its
 "dev" points (today's validation set) were named to the agent, and its
 "held-out" points (today's final set) were visible in the workspace, so the
 held-out numbers do not measure generality. The task package was also readable
@@ -960,6 +1006,44 @@ mount; `noop` scores 1.000 on both sets (3/3, 2/2 passed); `reference` scores
 1.016 on the validation set and 1.010 on the final set, as before. The
 workspace has no `archbench/`, no r39 baseline and no reflog, and the prompt
 names no point.
+
+**P2.1** (2026-10-15, base `9a3b1378`, platform files from `55872ef`): the
+device of every point in an evaluator-owned container, counted by the
+platform's observer.
+
+| Candidate | Validation | Final | What it tests |
+|---|---|---|---|
+| `noop` | 1.000 (3/3) | 1.000 (2/2) | the observer's count equals the old one on the base |
+| `reference` | 1.016 (3/3) | 1.010 (2/2) | unchanged from before P2.1, point by point |
+| `rtl/tnca_shell.v` reports half the cycles | 1.000 (3/3) | 1.000 (2/2) | the shell's counter no longer scores |
+| `$fopen` in `rtl/tnca_shell.v` | — | — | integrity-rejected by the RTL check, before any measurement |
+
+**Services, without an agent** (2026-10-15, the `reference` change as the
+snapshot). Scoring: 48 s; the agent's view is `{n: 3, passed: 3,
+speedup_geomean: 1.0162, fast_1: 0.667}`, the reference's own validation
+numbers. FPGA quick tier on the build worker: `ok` in 710 s (11.8 min) for the
+core-sim configuration; worst slack +2.313 ns at 10 ns, 130.1 MHz estimated,
+0 of 340,477 endpoints failing; 317,438 LUT, 111,823 FF, 135 BRAM, 171 DSP;
+the worst paths run from `x_va_idx_reg` into the vector FPU's FMA, 32 logic
+levels. The first try failed on a file name: `vivado_ooc.sh` names its output
+after every parameter, so the service calls the flow's Tcl with a short
+directory of its own. At 35 minutes a request only one fitted in the 45-minute
+budget; `job_minutes` is 20.
+
+**Pilot 2: an agent with services** (2026-10-16, hidden benchmark, base
+`9a3b1378`, offline, 60 minutes, 3 scoring requests and 45 FPGA minutes).
+
+| Configuration | Used | Change taken | Validation | Final | Services |
+|---|---|---|---|---|---|
+| Claude Code 2.1.287 + Sonnet 5.5 | 10.7 min, 60 turns | `frontend.py`, `ir.py`: each tile load waits where its data is first needed, so the two matmul operand loads overlap | 1.0046 (3/3) | 1.0013 (2/2) | 1 score, after its own tests; no FPGA |
+| Codex 0.162.1 + gpt-5.6-luna | 2.8 min | core-sim profile: `FE_NOBUBBLE` 1, `RCTX_SWITCH` 2, `LSU_INFLIGHT` 2, `FPU_OVERLAP` 1 | 1.0728 (3/3) | 1.1270 (2/2) | 1 score, then stopped before its result; no FPGA |
+
+- **Both chose to score on their own,** once each: the syllabus and `tnca-service` were enough to find and use the service.
+- **Claude tried the machine and dropped it.** In its own simulator it copied core-vrf-sync-v5's switches into core-sim: the banked VRF made matmuls 20–40% slower and `MTX_ABUF` changed nothing, so it reverted the profile.
+- **Codex changed the machine and never asked what it costs.** Four timing switches, from its own 16×16 matmul (1065 → 1006 cycles), then a scoring request, then it stopped with the request running. Neither agent asked for FPGA. The reason is the score: it counts cycles only, the clock and the resources do not enter it yet (O11 is provisional and not built), and the syllabus says so. An agent that optimises the score has no use for synthesis, so the FPGA service matters only once O11 is built.
+- **Both stopped early:** Claude with 49 minutes left, Codex with 57.
+- **A cancelled request's numbers were kept as its result.** Codex's scoring request was cancelled when it stopped, while its point containers were being removed; the half-measured aggregate (2 of 3 passed) went into the record as the result. Fixed: such numbers are kept only as `full`, and the syllabus says a request still running at the end is lost.
+- **Tokens.** Claude: 120 input, 91,519 cache writes, 3,868,404 cache reads, 22,455 output; $1.36 at list price. Codex: 1,488,541 input, 1,418,496 of them cached; 7,800 output, 2,071 of them reasoning.
 
 ## 20. Sources
 

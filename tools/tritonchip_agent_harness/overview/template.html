@@ -232,7 +232,7 @@ footer { font-size: 13px; color: var(--muted); border-top: 1px solid var(--line)
     <thead><tr><th>点集</th><th>agent 看得到点吗</th><th>agent 拿得到结果吗</th><th>由谁测</th></tr></thead>
     <tbody>
       <tr><td><strong>agent 自己的测试</strong></td><td>能，它自己写的</td><td><span class="chip all">全部</span></td><td>它自己的 sandbox</td></tr>
-      <tr><td><strong>验证集</strong>（隐藏）</td><td>不能</td><td><span class="chip back">只有汇总，限次</span></td><td>评分服务、慢档的上板阶段（都在计划中）</td></tr>
+      <tr><td><strong>验证集</strong>（隐藏）</td><td>不能</td><td><span class="chip back">只有汇总，限次</span></td><td>评分服务（已实现）；慢档的上板阶段（计划中）</td></tr>
       <tr><td><strong>终测集</strong>（隐藏）</td><td>不能</td><td><span class="chip never">永远不能</span></td><td>终评，在 agent 停止之后</td></tr>
     </tbody>
   </table></div>
@@ -243,8 +243,8 @@ footer { font-size: 13px; color: var(--muted); border-top: 1px solid var(--line)
   </div>
   <div class="cards">
     <div class="card"><div class="top"><h3>泄露审计</h3><span class="chip ok">done</span></div><p>4 个范围各一个查找 agent（直接引用、文档、软件里的等价负载、硬件侧文件），按 101 个点、24 个族的目录逐一比对；每条结论再由另一个 agent 反驳。118 条结论：56 条真泄露。</p></div>
-    <div class="card"><div class="top"><h3>replay-mzero 的工作区</h3><span class="chip ok">done</span></div><p>29 个 hide 条目：<code>archbench/</code>、r39 的 ArchBench 基线、各种 suite 和 workload 清单、和点完全等价的测试、旧的打分副本、带逐点结果的文档、示例正好是终测集点的教程。导出后，工作区和它的提交里<strong>没有任何点 id 或形状字符串</strong>。</p></div>
-    <div class="card"><div class="top"><h3>导出删不掉的残留</h3><span class="chip plan">主作者改</span></div><p>4 处代码注释，在流程必需的文件里：<code>tnca_core.v</code>（tiny 有 27 个点）、<code>tnca_u50_xo.v</code>（"27/27"）、<code>partition.py</code>（按族的结果）、<code>runtime.py</code>（某个模型点存在）。改写建议已列在 README §6.5（O19）。</p></div>
+    <div class="card"><div class="top"><h3>replay-mzero 的工作区</h3><span class="chip ok">done</span></div><p>26 个 hide 条目：<code>archbench/</code>、r39 的 ArchBench 基线、各种 suite 和 workload 清单、和点完全等价的脚本、旧的打分副本、带逐点结果的文档。任务的 base 是 <code>9a3b1378</code>。导出后，工作区（570 个文件）和它的提交里<strong>没有任何点 id 或形状字符串</strong>。</p></div>
+    <div class="card"><div class="top"><h3>在仓库里改掉的</h3><span class="chip ok">done</span></div><p>流程必需的文件里有 4 处注释透露了点（tiny 的点数、按族的结果、某个模型点的存在），已改写成只描述机制。7 个与点完全相同的 torch 测试图和 torch.compile 教程的例子改了形状（<code>6f2bdee</code>，torch 测试 24/24 通过），agent 可以保留回归测试和教程。</p></div>
   </div>
 </section>
 
@@ -253,19 +253,22 @@ footer { font-size: 13px; color: var(--muted); border-top: 1px solid var(--line)
   <p class="muted">agent 拥有设计；评测器拥有观测和题目。没有"受保护"的文件：改动要么进入候选，要么被忽略。</p></div>
   <div class="cards">
     <div class="card"><div class="top"><h3>容器</h3><span class="chip ok">done</span></div><div class="row"><span class="k">隔开</span>agent 与主机、与其他 run</div><div class="row"><span class="k">能过的</span>工作区、CLI 配置目录、bridge 脚本（单个只读文件）、网关 socket 目录</div><div class="row"><span class="k">证据</span><span>doctor 29/29，host class formal</span></div></div>
-    <div class="card"><div class="top"><h3>网络</h3><span class="chip ok">done</span></div><div class="row"><span class="k">隔开</span>agent 与互联网</div><div class="row"><span class="k">能过的</span>网关 socket（模型 API）；服务 socket（计划中）</div><div class="row"><span class="k">模式</span><span><code>offline</code> / <code>open</code>，没有中间态；<code>open</code> 也拒绝回环、内网和链路本地地址</span></div></div>
-    <div class="card"><div class="top"><h3>可见性</h3><span class="chip ok">done · replay-mzero</span></div><div class="row"><span class="k">隔开</span>agent 与基准</div><div class="row"><span class="k">能过的</span>终测集：无；验证集：汇总（服务在计划中）</div><div class="row"><span class="k">剩下的</span><span>4 处代码注释交主作者；导出时的自动泄露检查</span></div></div>
+    <div class="card"><div class="top"><h3>网络</h3><span class="chip ok">done</span></div><div class="row"><span class="k">隔开</span>agent 与互联网</div><div class="row"><span class="k">能过的</span>网关 socket（模型 API）；服务 socket（评分和 FPGA，有预算）</div><div class="row"><span class="k">模式</span><span><code>offline</code> / <code>open</code>，没有中间态；<code>open</code> 也拒绝回环、内网和链路本地地址</span></div></div>
+    <div class="card"><div class="top"><h3>可见性</h3><span class="chip ok">done · replay-mzero</span></div><div class="row"><span class="k">隔开</span>agent 与基准</div><div class="row"><span class="k">能过的</span>终测集：无；验证集：只有汇总，经评分服务</div><div class="row"><span class="k">剩下的</span><span>导出时的自动泄露检查</span></div></div>
     <div class="card"><div class="top"><h3>提交闸门</h3><span class="chip ok">done</span></div><div class="row"><span class="k">隔开</span>工作区与一切测量</div><div class="row"><span class="k">能过的</span>与源仓库 base 的 diff，不信任工作区的 <code>.git</code></div><div class="row"><span class="k">已知缺口</span><span>忽略规则来自工作区；被评测器拥有的模块可能被同名包或 .so 遮蔽（计划修）</span></div></div>
-    <div class="card"><div class="top"><h3>观测</h3><span class="chip req">planned · required</span></div><div class="row"><span class="k">隔开</span>设计与它的测量</div><div class="row"><span class="k">能过的</span>评测器在设备边界上自己测的数</div><div class="row"><span class="k">今天的缺口</span><span>周期计数器在 agent 可改的 <code>rtl/tnca_shell.v</code>；候选的编译器和测量在同一个进程（P2 修）</span></div></div>
+    <div class="card"><div class="top"><h3>观测</h3><span class="chip ok">P2.1 done</span></div><div class="row"><span class="k">隔开</span>设计与它的测量</div><div class="row"><span class="k">能过的</span>平台自己数的周期；设备在评测器自己的容器里</div><div class="row"><span class="k">还差</span><span>结果是否真由设备算出（P2.2：主机只能搬运数据，不能计算）</span></div></div>
   </div>
+  <div class="card"><div class="top"><h3>机器配置由 agent 决定，起点和基线归任务</h3><span class="chip all">README §10.3</span></div>
+  <p>profile 就是一份机器配置：同一套 RTL，打开或关闭哪些开关、参数取多少。<code>spec/r1_profiles.json</code> 在设计目录里，agent 可以打开、关闭或新增被评分 profile 的任何开关（pilot 1 的 Claude 打开了 7 个）。所有测量都按候选改过的配置来做：仿真设备用候选的 <code>rtl/</code> 和 profile 构建，FPGA 快档综合同一个配置。任务里的 <code>evaluation.profile</code> 只说明从哪台机器出发。</p>
+  <p class="muted">任务固定的是起点和基线：今天是 core-sim（仿真参考机），而板上的镜像是 core-vrf-sync-v2。从 core-sim 出发，打开板上已有的开关就算提升，FPGA 成本只能相对比较；从板上的配置出发，只有超出现有设计才算提升，资源和频率可以直接对比。硬件成本进了分数以后两者都公平，用哪个是 O23。</p></div>
 </section>
 
 <section id="mechanisms">
   <div class="sec-head"><div class="eyebrow">README §5 · §7</div><h2>隔离是用什么实现的</h2>
-  <p class="muted">每个 run 都在测试主机上起几个 Docker 容器：agent 容器本身断网，只能通过一个只读挂载的 Unix socket 找到网关；评测在另一个没有凭证的容器里做。FPGA 两台 worker 上的沙盒还在计划中（虚线框）。</p></div>
+  <p class="muted">每个 run 都在测试主机上起几个 Docker 容器：agent 容器本身断网，只能通过只读挂载的 Unix socket 找到网关和服务；评测在没有凭证的容器里做，每个点的设备另起一个容器。FPGA build worker 上每个任务一个 bubblewrap 沙盒；card host 的沙盒还在计划中（虚线框）。</p></div>
   <div class="diagram">
   <svg viewBox="0 0 1000 480" role="img" aria-labelledby="mc-title">
-    <title id="mc-title">测试主机上的网关 sidecar 容器、Unix socket、agent 容器和评测容器，以及计划中的 FPGA build worker 与 card host 沙盒</title>
+    <title id="mc-title">测试主机上的网关 sidecar 容器、Unix socket、agent 容器和评测容器，FPGA build worker 上的 bubblewrap 沙盒，以及计划中的 card host 沙盒</title>
     <defs>
       <marker id="ah2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" style="fill: var(--muted)"/></marker>
     </defs>
@@ -298,16 +301,16 @@ footer { font-size: 13px; color: var(--muted); border-top: 1px solid var(--line)
     <text class="s" x="538" y="288">结束后：提交闸门与源仓库的 base 比较，不信任工作区 .git</text>
 
     <rect class="box trusted" x="30" y="200" width="460" height="100" rx="8" style="fill: var(--surface)"/>
-    <text class="t" x="46" y="226">评测容器 · toolchain 镜像</text>
+    <text class="t" x="46" y="226">评测 · toolchain 镜像</text>
     <text class="m" x="46" y="248">--network none · 同样的加固 · 没有凭证</text>
-    <text class="s" x="46" y="270">完整 base + 候选 overlay</text>
-    <text class="s" x="46" y="290">用自己的 testbench、ArchBench、工具和 flow</text>
+    <text class="s" x="46" y="270">主机容器：完整 base + 候选 overlay，跑 ArchBench</text>
+    <text class="s" x="46" y="290">每个点一个设备容器：中继 + 仿真 + 观测器（P2.1）</text>
 
-    <rect class="box" x="10" y="350" width="480" height="116" rx="10" style="stroke-dasharray: 6 4"/>
-    <text class="t" x="28" y="378">FPGA build worker</text><text class="m" x="190" y="378">计划</text>
-    <text class="s" x="28" y="402">每个任务一个 Docker 容器</text>
-    <text class="s" x="28" y="424">无网络 · Vivado 只读挂载 · 只有任务目录可写</text>
-    <text class="s" x="28" y="446">CPU、内存限额 · 没有 home 目录</text>
+    <rect class="box trusted" x="10" y="350" width="480" height="116" rx="10" style="fill: var(--surface)"/>
+    <text class="t" x="28" y="378">FPGA build worker</text><text class="m" x="190" y="378">快档已可用</text>
+    <text class="s" x="28" y="402">每个任务一个 bubblewrap 沙盒，经 SSH 启动</text>
+    <text class="s" x="28" y="424">无网络 · 系统和 Vivado 只读 · 只有任务目录可写</text>
+    <text class="s" x="28" y="446">没有 home · timeout 硬上限 · 用时按实际扣</text>
     <rect class="box" x="510" y="350" width="480" height="116" rx="10" style="stroke-dasharray: 6 4"/>
     <text class="t" x="528" y="378">Card host</text><text class="m" x="625" y="378">计划</text>
     <text class="s" x="528" y="402">bubblewrap（这台机器上可用的沙盒工具）</text>
@@ -318,14 +321,14 @@ footer { font-size: 13px; color: var(--muted); border-top: 1px solid var(--line)
   <div class="tbl"><table>
     <thead><tr><th>边界</th><th>用什么实现</th><th>具体设置</th><th>怎么验证</th><th>状态</th></tr></thead>
     <tbody>
-      <tr><td><strong>容器</strong></td><td>Docker（rootful；rootless Podman 计划中），每个 run 一个容器，<code>provider.py</code>。只挂 <code>bridge.py</code> 一个只读文件，不挂存放任务包的 harness 目录（2026-10-15 修复）</td><td><code>--network none</code>、<code>--cap-drop ALL</code>、<code>no-new-privileges</code>、<code>--read-only</code>、<code>--user 1000:1000</code>、<code>--init</code>、CPU/内存/进程数限额、tmpfs、默认 seccomp、无设备</td><td><code>doctor</code> 金丝雀容器；<code>tests/test_runner.py</code></td><td><span class="chip ok">done</span></td></tr>
+      <tr><td><strong>容器</strong></td><td>Docker（rootful；rootless Podman 计划中），每个 run 一个容器，<code>provider.py</code>。只挂 <code>bridge.py</code> 和 <code>tnca-service</code> 两个只读文件和服务 socket 的目录，不挂存放任务包的 harness 目录（2026-10-15 修复）</td><td><code>--network none</code>、<code>--cap-drop ALL</code>、<code>no-new-privileges</code>、<code>--read-only</code>、<code>--user 1000:1000</code>、<code>--init</code>、CPU/内存/进程数限额、tmpfs、默认 seccomp、无设备</td><td><code>doctor</code> 金丝雀容器；<code>tests/test_runner.py</code></td><td><span class="chip ok">done</span></td></tr>
       <tr><td><strong>网络</strong></td><td>sidecar 容器里的 CONNECT 代理 <code>gateway.py</code> + 只读挂载的 Unix socket + 容器内的 <code>bridge.py</code></td><td><code>offline</code>：账号的主机白名单，443 端口。<code>open</code>：任意公网主机，443 和 80，拒绝回环、内网、链路本地地址。不解密 TLS；每条连接和拒绝都记 JSON 日志</td><td><code>tests/test_gateway.py</code>、<code>doctor</code>、smoke</td><td><span class="chip ok">done</span></td></tr>
       <tr><td><strong>凭证</strong></td><td>每个 run 一份新副本：<code>--env-file</code> 或复制的 <code>CODEX_HOME</code></td><td>从不出现在命令行；取回会话记录时逐个文件复制，跳过凭证文件；Codex 刷新后的凭证要通过检查才写回</td><td><code>tests/test_siteconfig.py</code>、<code>tests/test_runner.py</code></td><td><span class="chip ok">done</span></td></tr>
       <tr><td><strong>可见性</strong></td><td>用 git plumbing（<code>cat-file --batch</code>）从源仓库的一个提交导出工作区，去掉隐藏路径，用固定作者和日期重新提交</td><td>没有历史和 reflog；去掉 agent 指令文件、两个 harness、<code>evidence/</code> 和任务的隐藏路径；hide 条目匹配不到就失败</td><td><code>tests/test_workspace.py</code>；泄露审计</td><td><span class="chip ok">done · replay-mzero</span></td></tr>
       <tr><td><strong>提交闸门</strong></td><td>把工作区和源仓库里的 base 提交逐文件比较，不读工作区的 <code>.git</code></td><td>设计目录收下；evaluator-owned 路径丢弃；设计目录里的符号链接、特殊文件、嵌套仓库拒绝</td><td><code>tests/test_workspace.py</code></td><td><span class="chip ok">done，有已知缺口</span></td></tr>
       <tr><td><strong>评测</strong></td><td>toolchain 镜像起的独立容器，同样加固，没有凭证</td><td>完整 base + 候选 overlay，用评测器自己的 testbench、ArchBench、工具和 flow</td><td>noop 与 reference 运行</td><td><span class="chip ok">done</span></td></tr>
-      <tr><td><strong>观测（P2）</strong></td><td>仿真器放进自己的容器，经 <code>sim-socket</code> 连接；平台侧计数器和写监视</td><td>—</td><td>—</td><td><span class="chip req">planned · required</span></td></tr>
-      <tr><td><strong>FPGA build worker</strong></td><td>每个任务一个容器</td><td>无网络、Vivado 只读、只有任务目录可写、资源限额</td><td>license 测试：综合不需要 license 和网络</td><td><span class="chip plan">planned</span></td></tr>
+      <tr><td><strong>观测（P2.1）</strong></td><td>每个点的设备（中继、仿真器、平台观测器）在评测器自己的容器里，用 base 代码加候选的硬件构建，经 Unix socket 连接</td><td>平台从接受命令数到 done；launch 窗口外的内存活动判失败；候选 RTL 禁止文件和系统任务</td><td>shell 计数器减半的作弊得 1.000；<code>$fopen</code> 被拒</td><td><span class="chip ok">done</span></td></tr>
+      <tr><td><strong>FPGA build worker</strong></td><td>每个任务一个 bubblewrap 沙盒，由 FPGA 服务经 SSH 启动</td><td><code>--unshare-all</code>（无网络）、系统和 Vivado 只读、只有任务目录可写、没有 home、<code>timeout</code> 硬上限</td><td>license 测试；服务实测 11.8 分钟，slack +2.3 ns</td><td><span class="chip ok">done（快档）</span></td></tr>
       <tr><td><strong>Card host</strong></td><td>bubblewrap（<code>bwrap</code>）</td><td>无网络、系统只读、只给卡的设备节点；看不到任何人的 home、harness 状态和编译缓存</td><td>—</td><td><span class="chip plan">planned</span></td></tr>
     </tbody>
   </table></div>
@@ -339,7 +342,7 @@ footer { font-size: 13px; color: var(--muted); border-top: 1px solid var(--line)
   <div class="tbl"><table>
     <thead><tr><th>档</th><th>执行什么</th><th class="nowrap">大约</th><th>返回</th><th>状态</th></tr></thead>
     <tbody>
-      <tr><td><strong>快档</strong></td><td>整器件 out-of-context 综合 + 时序，<code>flow/synth/vivado_ooc.sh tnca_fpga_top &lt;period&gt;</code>，按被评分的 profile（含候选的改动）传参数</td><td class="nowrap">25 分钟</td><td>状态；目标周期下的最差 slack 和推出的频率；最差路径（agent 自己 RTL 里的起止点）；资源 LUT/FF/DSP/BRAM/URAM</td><td><span class="chip req">planned · required</span><br><span class="muted" style="font-size:12.5px">可行性已验证</span></td></tr>
+      <tr><td><strong>快档</strong></td><td>整器件 out-of-context 综合 + 时序（仓库自己的 <code>vivado_ooc_timing.tcl</code>），按 agent 选定的配置传参数</td><td class="nowrap">约 12 分钟（实测）</td><td>状态；目标周期下的最差 slack 和推出的频率；最差路径（agent 自己 RTL 里的起止点）；资源 LUT/FF/DSP/BRAM/URAM</td><td><span class="chip ok">done</span></td></tr>
       <tr><td><strong>慢档</strong></td><td>经 FPGA harness 实现（package、link、判定时序与 DRC），再在验证集上做上板阶段</td><td class="nowrap">数小时</td><td>时序收敛（WNS、TNS、失败端点）；资源；上板阶段只给汇总，不给逐点记录和日志</td><td><span class="chip plan">planned</span></td></tr>
     </tbody>
   </table></div>
@@ -352,15 +355,16 @@ footer { font-size: 13px; color: var(--muted); border-top: 1px solid var(--line)
       <li>排队时间不扣 FPGA 预算，但 run 的墙钟照走</li>
     </ul></div>
     <div class="card"><div class="k">在哪里跑、怎么隔离</div><ul class="plain">
-      <li><strong>build worker</strong>：所有构建。容器内无网络，Vivado 只读挂载，只有任务目录可写，没有 home</li>
+      <li><strong>build worker</strong>：所有构建，包括完整的 Vivado flow（package、link），用它自己的 Vitis 2022.2。快档每个任务一个 bubblewrap 沙盒：无网络，系统和 Vivado 只读，只有任务目录可写，没有 home（已实现）</li>
+      <li><strong>两台之间怎么交接</strong>：FPGA harness 的 <code>pipeline</code>。两边各自从 git bundle 建出同一提交的干净 checkout；构建在 build worker 后台跑、轮询；轻量包（镜像、记录、布线报告）经协调机以 tar 流传到 card host，逐个文件核对 sha256 后才导入；再在 card host 上板。两台服务器之间不直连（已实现，单机测试通过；两台服务器之间还没跑过）</li>
       <li><strong>card host</strong>：只做上板。候选的编译器在这里运行，所以放进沙盒：无网络、系统只读、只给卡的设备节点，看不到任何人的 home、harness 状态和编译缓存</li>
       <li>卡是共享的：上板需要约定时间窗口（O14）；换人之前重新烧卡或清空显存，不让一个会话读到另一个会话留下的数据</li>
       <li>候选 RTL 先做检查：<code>`include</code>、<code>$readmem*</code>、<code>$fopen</code> 里不能有绝对路径或 <code>..</code></li>
     </ul></div>
     <div class="card"><div class="k">要知道的</div><ul class="plain">
-      <li>综合估计偏乐观：这个设计布线后的最差路径约为综合估计的 1.6 倍。快档用来排序和筛选，最终频率以慢档为准</li>
-      <li>license：已实测，U280/U50 器件的 OOC 综合<strong>不需要 license</strong>，断网、license 完全藏住也能跑（有对照组证明确实藏住了）。真实单元 <code>tnca_matrix</code> 1.8 分钟综合完。下一步是做真正的容器镜像</li>
-      <li>版本：仓库的 flow 把 U280 固定在 Vitis 2023.2（O13）</li>
+      <li>综合估计偏乐观：这个设计布线后的最差路径约为综合估计的 1.6 倍。快档只能用来筛掉明显放不下的设计，能否收敛以慢档的布线结果为准</li>
+      <li>license：已实测，U280/U50 器件的 OOC 综合<strong>不需要 license</strong>，断网、license 完全藏住也能跑（有对照组证明确实藏住了）。真实单元 <code>tnca_matrix</code> 1.8 分钟综合完</li>
+      <li>版本（2026-10-17 定，原 O13）：build worker 上用 Vitis 2022.2 构建，card host 只烧录和测量。已在卡上验证一次：<code>b5c606d</code> 103 分钟 link 完（card host 上 2023.2 要 213 分钟），ap_clk WNS +0.138 ns，xclbin 在卡的 2023.2/XRT 2.16 shell 上正常加载</li>
     </ul></div>
   </div>
 </section>
@@ -372,10 +376,10 @@ footer { font-size: 13px; color: var(--muted); border-top: 1px solid var(--line)
     <tbody>
       <tr><td class="nowrap">T1</td><td>看到不该看的</td><td>ArchBench 的点或结果、任务定义和标准答案、其他 run、git 历史、宿主凭证</td><td>sandbox、工作区与可见性</td><td><span class="chip wip">mostly · 残留注释</span></td></tr>
       <tr><td class="nowrap">T2</td><td>上网</td><td>抓取答案、外传凭证、访问 harness 主机上的服务</td><td>网关；<code>open</code> 模式也拒绝内网地址</td><td><span class="chip ok">done</span></td></tr>
-      <tr><td class="nowrap">T3</td><td>篡改测量</td><td>改 shell 计数器、提前结束 launch、runtime 伪造输出、在 host 上算</td><td>观测器 P2</td><td><span class="chip req">planned · required</span></td></tr>
+      <tr><td class="nowrap">T3</td><td>篡改测量</td><td>改 shell 计数器、提前结束 launch、runtime 伪造输出、在 host 上算</td><td>观测器：P2.1 管计数（已完成），P2.2 管结果（计划中）</td><td><span class="chip wip">partly</span></td></tr>
       <tr><td class="nowrap">T4</td><td>跳过链路</td><td>host fallback、为某个 kernel 手写 ISA、按基准查表</td><td>隐藏基准；fallback 记为失败</td><td><span class="chip wip">partly</span></td></tr>
-      <tr><td class="nowrap">T5</td><td>通过结果探测隐藏基准</td><td>大量评分请求、报错里带形状、编译器把看到的东西编进时序</td><td>只给汇总、预算、终测集运行中从不打分</td><td><span class="chip plan">planned</span></td></tr>
-      <tr><td class="nowrap">T6</td><td>伤害 worker 主机</td><td>综合时 <code>$readmemh</code> 读主机文件；候选代码在 card host 上读别人的文件或卡上残留的数据</td><td>每台 worker 上的沙盒</td><td><span class="chip plan">planned</span></td></tr>
+      <tr><td class="nowrap">T5</td><td>通过结果探测隐藏基准</td><td>大量评分请求、报错里带形状、编译器把看到的东西编进时序</td><td>只给汇总、预算、终测集运行中从不打分</td><td><span class="chip wip">partly</span></td></tr>
+      <tr><td class="nowrap">T6</td><td>伤害 worker 主机</td><td>综合时 <code>$readmemh</code> 读主机文件；候选代码在 card host 上读别人的文件或卡上残留的数据</td><td>build worker 的 bubblewrap 沙盒（已完成）；card host 的沙盒（计划中）</td><td><span class="chip wip">partly</span></td></tr>
       <tr><td class="nowrap">T7</td><td>跨 run 污染</td><td>用共享缓存传消息</td><td>每个 run 全新状态</td><td><span class="chip ok">done</span></td></tr>
       <tr><td class="nowrap">T8</td><td>逃避预算</td><td>同一凭证起嵌套 CLI、少报 token、FPGA 时间不计</td><td>计量、服务记账</td><td><span class="chip wip">partly</span></td></tr>
       <tr><td class="nowrap">T9</td><td>条件不对等</td><td>配置、资源、限速、模型回退、排队</td><td>条件对齐</td><td><span class="chip wip">partly</span></td></tr>

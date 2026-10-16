@@ -39,6 +39,7 @@ class Task:
     reference: Optional[Path]
     wall_seconds: int
     evaluation: dict
+    services: dict
     path: Path
     sha256: str
 
@@ -50,7 +51,7 @@ def load_task(path: Path) -> Task:
     raw = path.read_bytes()
     v = json.loads(raw)
     required = {"schema", "task_id", "kind", "base_commit", "design", "hide", "instruction", "budget", "evaluation"}
-    unknown = set(v) - required - {"note", "reference", "evaluator_owned"}
+    unknown = set(v) - required - {"note", "reference", "evaluator_owned", "services"}
     missing = required - set(v)
     if missing or unknown:
         raise TaskError(f"{path}: missing {sorted(missing)}, unknown {sorted(unknown)}")
@@ -66,6 +67,7 @@ def load_task(path: Path) -> Task:
     return Task(task_id=v["task_id"], kind=v["kind"], base_commit=v["base_commit"], design=tuple(v["design"]),
                 evaluator_owned=tuple(v.get("evaluator_owned", ())), hide=tuple(v["hide"]), instruction=(path.parent / v["instruction"]).read_text(encoding="utf-8"),
                 reference=ref, wall_seconds=int(v["budget"]["wall_seconds"]), evaluation=dict(ev),
+                services=dict(v.get("services") or {}),
                 path=path.resolve(), sha256=hashlib.sha256(raw).hexdigest())
 
 
@@ -75,7 +77,8 @@ def render(task: Task, mode: str) -> str:
            "and no download." if mode == "offline" else
            "The network is open. Every connection is logged.")
     design = ", ".join(f"`{d}`" for d in task.design)
-    return task.instruction.rstrip() + f"""
+    services = _services_text(task.services)
+    return task.instruction.rstrip() + services + f"""
 
 ## The rules of this run
 
@@ -90,6 +93,34 @@ def render(task: Task, mode: str) -> str:
   it is your submission.
 - If you conclude the task cannot be done, say so and stop. That is a valid result.
 """
+
+
+def _services_text(cfg: dict) -> str:
+    """How the agent may ask the evaluator for a measurement, and how much it may ask."""
+    if not cfg:
+        return ""
+    score, fpga = cfg.get("score") or {}, cfg.get("fpga_quick") or {}
+    lines = ["", "", "## Measurements you can ask for", "",
+             "From your shell, `tnca-service` asks the evaluator to measure a snapshot of your working directory "
+             "the way the final evaluation will (only changes under the paths it takes count). Whether and when "
+             "to use it is up to you. Requests run in the background and your time keeps running while they do. "
+             "A request still running when you stop is cancelled, and its result is lost.", ""]
+    if score:
+        lines.append(f"- `tnca-service submit score`: the hidden validation set, in simulation. You get how many "
+                     f"points passed, the geometric-mean speedup over the points that passed, and the share of all "
+                     f"points that passed and got faster. No point names, shapes or errors. You have "
+                     f"{int(score.get('requests', 0))} such requests.")
+    if fpga:
+        lines.append(f"- `tnca-service submit fpga-quick`: out-of-context synthesis and timing of the whole device "
+                     f"on the FPGA part at a {float(fpga.get('period_ns', 10.0)):g} ns clock, for the profile you are "
+                     f"scored on: worst slack, the frequency it implies, the worst paths and the utilisation. A "
+                     f"request may take up to {float(fpga.get('job_minutes', 30)):g} minutes. You have "
+                     f"{float(fpga.get('minutes', 0)):g} minutes of FPGA time in total, charged as used; one request "
+                     f"at a time, and one that could run past what is left is refused. Post-synthesis timing is "
+                     f"optimistic: routing adds delay.")
+    lines += ["- `tnca-service budget`, `tnca-service status [ID]`, `tnca-service result ID`, "
+              "`tnca-service wait ID`: what is left, and the results."]
+    return "\n".join(lines)
 
 
 __all__ = ["Task", "TaskError", "load_task", "render"]

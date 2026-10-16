@@ -2,8 +2,8 @@
   "schema": "tritonchip-agent-task/1",
   "task_id": "replay-mzero",
   "kind": "cross-layer",
-  "note": "A replay on main + the profile header (P1): the zero-accumulator m.zero lowering of 49da68a removed. reference.patch is the developers' change; a no-op agent scores 1.0. Cross-layer: the agent may change the compiler, the ISA and the hardware. ArchBench is hidden: archbench/ and every file the 2026-10-15 leak audit found revealing its points are removed from the workspace. Residual leaks the export cannot remove (comments in files the flow needs) are listed in the README, section 6.5.",
-  "base_commit": "58ce8f980218d10c2735b222452d4e110ca79449",
+  "note": "A replay on main + the profile header (P1) + the leak cleanup (6f2bdee): the zero-accumulator m.zero lowering of 49da68a removed. reference.patch is the developers' change; a no-op agent scores 1.0. Cross-layer: the agent may change the compiler, the ISA and the hardware. ArchBench is hidden: archbench/ and every file the 2026-10-15 leak audit found revealing its points are removed from the workspace. Residual leaks the export cannot remove (comments in files the flow needs) are listed in the README, section 6.5.",
+  "base_commit": "9a3b1378fe86eba8d82d786e38dbba71f464b18e",
   "design": [
     "compiler/",
     "python/tnca/",
@@ -20,7 +20,9 @@
     "python/tnca/triton_backend/driver.py",
     "python/tnca/inductor.py",
     "python/tnca/profiles.py",
-    "python/tnca/_data.py"
+    "python/tnca/_data.py",
+    "rtl/board/",
+    "rtl/fpga/"
   ],
   "hide": [
     "archbench/",
@@ -47,11 +49,8 @@
     "tools/r38/archbench/",
     "tools/r38/dev_cases.py",
     "tools/r38/tdesc_tests.py",
-    "tools/r38/torch_tests.py",
     "tools/r38/triton_native_run.py",
-    "tutorial/10_torch_compile.md",
-    "tutorial/11_running_on_the_u280.md",
-    "tutorial/examples/10_torch_compile.py"
+    "tutorial/11_running_on_the_u280.md"
   ],
   "instruction": "instruction.md",
   "reference": "reference.patch",
@@ -70,6 +69,24 @@
       "op.gemv/tiny/fp16-k64-n64"
     ],
     "jobs": 5,
-    "timeout_seconds": 1800
+    "timeout_seconds": 1800,
+    "platform": {
+      "commit": "55872ef523b494e04767299d1cdff638630d5080",
+      "paths": [
+        "tb/device/tnca_device.v",
+        "python/tnca/backends/relay.py",
+        "python/tnca/backends/socket_relay.py"
+      ]
+    }
+  },
+  "services": {
+    "score": {
+      "requests": 3
+    },
+    "fpga_quick": {
+      "minutes": 45,
+      "job_minutes": 20,
+      "period_ns": 10.0
+    }
   }
 }

@@ -195,12 +195,18 @@ def gate(repo: Path, commit: str, hide: Iterable[str], design: Iterable[str], wo
     return report
 
 
-def apply_candidate(repo: Path, commit: str, candidate: Path, dest: Path) -> None:
-    """The evaluator's tree: the FULL base (nothing hidden) with the candidate's files on top."""
+def apply_candidate(repo: Path, commit: str, candidate: Path, dest: Path, only: Optional[tuple] = None) -> None:
+    """The evaluator's tree: the FULL base (nothing hidden) with the candidate's files on top.
+
+    `only` limits the files laid on to those under these prefixes: the device
+    the evaluator builds takes the candidate's hardware and nothing else.
+    """
     report = json.loads((candidate / "candidate.json").read_text(encoding="utf-8"))
     if not dest.exists() or not any(dest.iterdir()):
         export(repo, commit, (), dest)
     for c in report["taken"]:
+        if only is not None and not c["path"].startswith(tuple(only)):
+            continue
         target = dest / c["path"]
         if c["status"] == "deleted":
             if target.exists():

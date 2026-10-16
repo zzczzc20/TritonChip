@@ -25,28 +25,52 @@
       "cli": "claude-code",
       "auth": "subscription",
       "credential": "~/.config/tritonchip-agent-harness/claude.env",
-      "hosts": ["api.anthropic.com"],
-      "models": {"main": "claude-haiku-5-5"}
+      "hosts": [
+        "api.anthropic.com"
+      ],
+      "models": {
+        "main": "claude-haiku-5-5"
+      }
     },
     {
       "label": "codex-subscription",
       "cli": "codex",
       "auth": "subscription",
       "credential": "~/.config/tritonchip-agent-harness/codex-home",
-      "hosts": ["chatgpt.com", "auth.openai.com"],
-      "models": {"main": "gpt-6.1-sol"}
+      "hosts": [
+        "chatgpt.com",
+        "auth.openai.com"
+      ],
+      "models": {
+        "main": "gpt-6.1-sol"
+      }
     },
     {
       "label": "glm-coding-plan",
       "cli": "opencode",
       "auth": "api-key",
       "credential": "~/.config/tritonchip-agent-harness/glm.env",
-      "hosts": ["open.bigmodel.cn"],
-      "models": {"main": "glm-5.3", "small": "glm-5.3-flash"},
+      "hosts": [
+        "open.bigmodel.cn"
+      ],
+      "models": {
+        "main": "glm-5.3",
+        "small": "glm-5.3-flash"
+      },
       "options": {
         "provider": "zhipuai-coding-plan",
         "base_url": "https://open.bigmodel.cn/api/coding/paas/v4"
       }
     }
-  ]
+  ],
+  "fpga_worker": {
+    "ssh": "user@fpga-build-worker",
+    "workdir": "/path/on/worker/tnca-fpga-jobs",
+    "vivado_settings": "/path/to/Xilinx/Vivado/2022.2/settings64.sh",
+    "ro_binds": [
+      "/path/to/Xilinx"
+    ],
+    "threads": 6,
+    "part": "xcu280-fsvh2892-2L-e"
+  }
 }

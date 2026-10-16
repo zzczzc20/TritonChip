@@ -25,6 +25,9 @@ BINARY = {"claude-code": "claude", "codex": "codex", "opencode": "opencode"}
 # socket. Never the harness directory, which holds the task packages (their
 # point lists and reference patches) and the evaluator.
 BRIDGE_SCRIPT = "/opt/tnca-bridge/bridge.py"
+# The agent's side of the in-run services (services.py), and where their socket appears.
+SERVICE_CLI = "/usr/local/bin/tnca-service"
+SERVICE_DIR = "/run/tnca-service"
 # A Codex credential the CLI refreshed is copied back only if it still looks like one.
 AUTH_JSON_LIMIT = 64 * 1024
 # Where each CLI keeps its transcript inside the container (collected at the end).
@@ -101,7 +104,8 @@ def _collect(name: str, account: Account, dest: Path) -> None:
 
 
 def run_agent(site: Site, account: Account, prompt: str, mode: str, run_dir: Path,
-              workspace: Optional[Path], timeout: float) -> dict:
+              workspace: Optional[Path], timeout: float, services=None) -> dict:
+    """`services`, when given, is a started-on-demand services.Broker the agent reaches with `tnca-service`."""
     run_id = run_dir.name
     gw, agent = f"tnca-gw-{run_id}", f"tnca-agent-{run_id}"
     result: dict = {"label": account.label, "cli": account.cli, "auth": account.auth, "mode": mode,
@@ -125,9 +129,13 @@ def run_agent(site: Site, account: Account, prompt: str, mode: str, run_dir: Pat
         open_route = "upstream" if site.upstream_proxy else "direct"
     try:
         socket_dir, log = doctor.start_gateway(site, run_dir, gw, list(account.hosts), open_route=open_route)
-        mounts = agent_mounts(socket_dir, workspace, launch.mounts)
+        extra, env = list(launch.mounts), dict(launch.env)
+        if services is not None:
+            extra += [Mount(services.start(), SERVICE_DIR), Mount(doctor.HERE / "service_cli.py", SERVICE_CLI)]
+            env["TNCA_SERVICE"] = f"{SERVICE_DIR}/service.sock"
+        mounts = agent_mounts(socket_dir, workspace, extra)
         c = AgentContainer(name=agent, image=site.images["agent"], cpus=site.cpus, memory=site.memory,
-                           pids=site.pids, mounts=mounts, env=launch.env, env_files=launch.env_files,
+                           pids=site.pids, mounts=mounts, env=env, env_files=launch.env_files,
                            labels={"tritonchip-agent-harness": "agent", "run": run_id}, workdir=adapters.WORKDIR)
         provider.docker(*c.run_args(["python3", BRIDGE_SCRIPT, "--listen", doctor.BRIDGE,
                                      "--socket", doctor.SOCKET], detach=True, remove=False))
@@ -158,6 +166,9 @@ def run_agent(site: Site, account: Account, prompt: str, mode: str, run_dir: Pat
     finally:
         provider.remove(agent)
         doctor.stop_gateway(gw)
+        if services is not None:
+            services.stop()
+            result["services"] = services.record()
 
     entries = doctor.read_log(run_dir / "gateway-log" / "tunnels.jsonl")
     tunnels = [e for e in entries if e.get("event") == "tunnel"]
@@ -185,4 +196,4 @@ def run_agent(site: Site, account: Account, prompt: str, mode: str, run_dir: Pat
     return result
 
 
-__all__ = ["BRIDGE_SCRIPT", "agent_mounts", "codex_auth_ok", "proxy_env", "run_agent"]
+__all__ = ["BRIDGE_SCRIPT", "SERVICE_CLI", "agent_mounts", "codex_auth_ok", "proxy_env", "run_agent"]

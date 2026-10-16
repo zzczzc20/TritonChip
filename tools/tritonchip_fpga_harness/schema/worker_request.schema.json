@@ -54,12 +54,13 @@
     },
     "run_id": {
       "type": "string",
-      "minLength": 1
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$"
     },
     "scope": {
       "enum": [
         "build",
-        "board"
+        "board",
+        "source"
       ]
     },
     "detach": {
@@ -68,11 +69,14 @@
     "light": {
       "type": "boolean"
     },
-    "since": {
-      "type": "number"
-    },
     "allow_source_mismatch": {
       "type": "boolean"
+    },
+    "step": {
+      "enum": [
+        "submit",
+        "measure"
+      ]
     }
   },
   "additionalProperties": false

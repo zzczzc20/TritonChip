@@ -39,7 +39,8 @@ _SAFE_ARG = re.compile(r"^[A-Za-z0-9_./:@%+=,-]+$")
 
 
 def _safe_arg(value: str, name: str) -> str:
-    if not isinstance(value, str) or not value or not _SAFE_ARG.fullmatch(value):
+    # A leading '-' would make a value an option of ssh or of the remote program.
+    if not isinstance(value, str) or not value or value.startswith("-") or not _SAFE_ARG.fullmatch(value):
         raise DispatchError(
             f"{name} contains unsupported characters; SSH arguments must be "
             "single shell-safe argv tokens"
@@ -94,7 +95,9 @@ def ssh_prefix(
         argv.extend(["-o", f"ConnectTimeout={connect_timeout}"])
     for option in options:
         argv.extend(["-o", _safe_arg(option, "ssh option")])
-    argv.append(host)
+    # '--' ends ssh's options: OpenSSH otherwise reads options that follow the
+    # destination too, and the remote argv's first word would be one.
+    argv.extend(["--", host])
     if env:
         argv.append("env")
         for key, value in sorted(env.items()):
@@ -333,9 +336,31 @@ def _worker_error(message: str) -> dict[str, Any]:
 LIVE_STATUSES = ("PENDING", "RUNNING", "MEASURING", "STARTING")
 
 
-def _spawn_paths(state: Path, run_id: str, operation: str) -> tuple[Path, Path]:
-    requests = state / "requests"
-    return requests / f"{run_id}.{operation}.json", requests / f"{run_id}.{operation}.log"
+RUN_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.-]*$")
+
+
+def check_run_id(run_id: str) -> str:
+    """A run id names a directory under ``runs/``: a plain name, never a path."""
+    if not isinstance(run_id, str) or not RUN_ID.fullmatch(run_id):
+        raise ValueError(f"run id {run_id!r} is not a plain name")
+    return run_id
+
+
+def _attempts(state: Path, run_id: str, operation: str) -> list[tuple[int, Path]]:
+    found = []
+    for path in (state / "requests").glob(f"{run_id}.{operation}.*.json"):
+        number = path.name[len(f"{run_id}.{operation}."):-len(".json")]
+        if number.isdigit():
+            found.append((int(number), path))
+    return sorted(found)
+
+
+def _latest(state: Path, run_id: str, operation: str) -> tuple[str | None, dict[str, Any] | None]:
+    attempts = _attempts(state, run_id, operation)
+    if not attempts:
+        return None, None
+    number, path = attempts[-1]
+    return f"{run_id}.{operation}.{number}", load_json(path)
 
 
 def _spawn(package_dir: Path, root: Path, state: Path, request: dict[str, Any]) -> dict[str, Any]:
@@ -343,23 +368,30 @@ def _spawn(package_dir: Path, root: Path, state: Path, request: dict[str, Any]) 
 
     The child is the Harness CLI of this checkout, with the request's options
     as arguments; it inherits this process's environment (the host settings
-    the controller passed through ``env``).  Its output goes to a log in
-    ``<state>/requests/``, beside a record of its PID that ``status`` reads.
+    the controller passed through ``env``).  Each attempt has its own record
+    and log in ``<state>/requests/``, named ``<run>.<operation>.<n>``; the
+    name is the attempt's id, which a measurement writes into the run's record
+    so that ``status`` can tell its verdict from an earlier one.  While the
+    latest attempt's child is alive, a new request attaches to it instead of
+    starting another.
     """
     from .core import _process_identity
 
     operation = request["operation"]
-    run_id = request.get("run_id") or (time.strftime("%Y%m%dT%H%M%SZ", time.gmtime()) + "-" + uuid.uuid4().hex[:8])
-    if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_.-]*", run_id):
-        raise ValueError(f"run id {run_id!r} is not a plain name")
-    record_path, log_path = _spawn_paths(state, run_id, operation)
-    record_path.parent.mkdir(parents=True, exist_ok=True)
-    if record_path.exists():
-        raise ValueError(f"a detached {operation} of run {run_id} was already requested on this host")
+    run_id = check_run_id(request.get("run_id") or (time.strftime("%Y%m%dT%H%M%SZ", time.gmtime()) + "-" + uuid.uuid4().hex[:8]))
+    requests = state / "requests"
+    requests.mkdir(parents=True, exist_ok=True)
+    attempt, latest = _latest(state, run_id, operation)
+    if latest and _alive(latest):
+        return {"run_id": run_id, "detached": True, "attached": True, "attempt": attempt,
+                "pid": latest.get("pid"), "requested_at": latest.get("requested_at"), "log": latest.get("log")}
+    number = (_attempts(state, run_id, operation) or [(0, None)])[-1][0] + 1
+    attempt = f"{run_id}.{operation}.{number}"
+    record_path, log_path = requests / f"{attempt}.json", requests / f"{attempt}.log"
     cli = str(package_dir / "cli.py")
     argv = [sys.executable, cli, "--repo", str(root)]
     if operation == "submit":
-        manifest_path = state / "requests" / f"{run_id}.manifest.json"
+        manifest_path = requests / f"{attempt}.manifest.json"
         dump_json(manifest_path, request["manifest"])
         argv += ["submit", str(manifest_path), "--state-dir", str(state), "--run-id", run_id,
                  "--adapter", request["adapter"]]
@@ -368,7 +400,13 @@ def _spawn(package_dir: Path, root: Path, state: Path, request: dict[str, Any]) 
         if request.get("allow_dirty"):
             argv.append("--allow-dirty")
     else:
-        argv += ["measure", run_id, "--state-dir", str(state)]
+        argv += ["measure", run_id, "--state-dir", str(state), "--request", attempt]
+        if isinstance(request["manifest"].get("board"), dict):
+            # The board stage the controller asked for, not the one the run
+            # was submitted with; measure checks it names the same candidate.
+            manifest_path = requests / f"{attempt}.manifest.json"
+            dump_json(manifest_path, request["manifest"])
+            argv += ["--manifest", str(manifest_path)]
         if request.get("allow_source_mismatch"):
             argv.append("--allow-source-mismatch")
     if request.get("timeout"):
@@ -378,10 +416,10 @@ def _spawn(package_dir: Path, root: Path, state: Path, request: dict[str, Any]) 
         child = subprocess.Popen(argv, cwd=str(root), stdin=subprocess.DEVNULL, stdout=log,
                                  stderr=subprocess.STDOUT, start_new_session=True)
     record = {**_process_identity(child.pid), "argv": argv, "log": str(log_path),
-              "operation": operation, "requested_at": requested_at}
+              "operation": operation, "attempt": attempt, "requested_at": requested_at}
     dump_json(record_path, record)
-    return {"run_id": run_id, "detached": True, "pid": child.pid, "requested_at": requested_at,
-            "log": str(log_path)}
+    return {"run_id": run_id, "detached": True, "attached": False, "attempt": attempt, "pid": child.pid,
+            "requested_at": requested_at, "log": str(log_path)}
 
 
 def _alive(spawn: Mapping[str, Any] | None) -> bool:
@@ -408,50 +446,58 @@ def _alive(spawn: Mapping[str, Any] | None) -> bool:
     return True
 
 
-def _tail(path: Path, lines: int = 30) -> list[str]:
+def _tail(path: Path | None, lines: int = 30) -> list[str]:
+    if path is None:
+        return []
     try:
         return path.read_text(encoding="utf-8", errors="replace").splitlines()[-lines:]
     except OSError:
         return []
 
 
-def remote_status(state: Path, run_id: str, *, since: float | None = None,
-                  operation: str | None = None) -> dict[str, Any]:
-    """Where a run stands on this host, including a detached child not yet in its record.
+def remote_status(state: Path, run_id: str, *, operation: str = "submit") -> dict[str, Any]:
+    """Where a run stands on this host, for the latest detached ``operation`` on it.
 
-    ``since`` is when the controller asked for the step it is waiting on (the
-    worker's own clock, from the detach answer): a finished record older than
-    that is the previous step's, so the run is still ``STARTING`` -- or, if the
-    child is gone, it never started (``FAILED_TO_START``, with its log).
+    For a build, the run's own record answers once it exists. For a
+    measurement, the record answers only once it names this attempt
+    (``measure_request``, written by the measurement itself on this host's
+    clock): until then an imported build's PASS is not the board stage's, and
+    the run is ``STARTING`` while the child lives or ``FAILED_TO_START``, with
+    its log, once it is gone.
     """
     from .core import status as run_status
 
-    spawn: dict[str, Any] | None = None
-    spawn_log: Path | None = None
-    for op in ([operation] if operation else ["measure", "submit"]):
-        record_path, log_path = _spawn_paths(state, run_id, op)
-        if record_path.is_file():
-            spawn, spawn_log = load_json(record_path), log_path
-            break
+    check_run_id(run_id)
+    attempt, spawn = _latest(state, run_id, operation)
+    log = Path(spawn["log"]) if spawn and spawn.get("log") else None
     alive = _alive(spawn)
     run_path = state / "runs" / run_id / "run.json"
-    value: dict[str, Any] = {"run_id": run_id, "spawn_alive": alive}
-    if not run_path.is_file():
+    value: dict[str, Any] = {"run_id": run_id, "operation": operation, "attempt": attempt, "spawn_alive": alive}
+
+    def not_yet() -> dict[str, Any]:
         if alive:
             value["status"] = "STARTING"
         elif spawn:
-            value.update(status="FAILED_TO_START", log_tail=_tail(spawn_log) if spawn_log else [])
+            value.update(status="FAILED_TO_START", log_tail=_tail(log))
         else:
             value["status"] = "UNKNOWN"
         return value
+
+    if not run_path.is_file():
+        return not_yet()
+    if operation == "measure":
+        if load_json(run_path).get("measure_request") != attempt or attempt is None:
+            return not_yet()
     run = run_status(state, run_id)
     current = str(run.get("status"))
-    if since is not None and current not in LIVE_STATUSES and float(run.get("finished_at") or 0) < since:
-        current = "STARTING" if alive else "FAILED_TO_START"
-        if current == "FAILED_TO_START" and spawn_log:
-            value["log_tail"] = _tail(spawn_log)
     value["status"] = current
-    if current not in LIVE_STATUSES and current != "FAILED_TO_START":
+    manifest = run.get("manifest") or {}
+    value["run"] = {"candidate_id": manifest.get("candidate_id"), "target": manifest.get("target"),
+                    "mode": manifest.get("mode"), "commit": (run.get("source") or {}).get("commit"),
+                    "adapter": run.get("adapter")}
+    if current in ("ORPHANED",) and log:
+        value["log_tail"] = _tail(log)
+    if current not in LIVE_STATUSES:
         value["result"] = run.get("result")
     return value
 
@@ -481,7 +527,12 @@ def worker_main(
         from .measurement import board_preflight
 
         if operation == "doctor":
-            if request.get("scope") == "board":
+            if request.get("scope") == "source":
+                # Only which commit this checkout is: for a controller that
+                # attaches to a build already running here, whose vendor
+                # processes a full doctor would count against it.
+                result = {"schema_version": 1, "target": manifest["target"], "scope": "source", "checks": [], "ok": True}
+            elif request.get("scope") == "board":
                 # A card host needs no Vivado: only what the board stage runs.
                 checks = board_preflight(root=root, profile=load_profile(package_dir, manifest["target"]),
                                          manifest=manifest)
@@ -514,17 +565,18 @@ def worker_main(
             ok = result.get("status") == "PASS"
             state_for_logs = state
         elif operation == "measure":
-            run_id = request["run_id"]
+            run_id = check_run_id(request["run_id"])
             result = measure_existing(package_dir, root, state, run_id, request.get("timeout"),
+                                      board_manifest=manifest if isinstance(manifest.get("board"), dict) else None,
                                       allow_source_mismatch=bool(request.get("allow_source_mismatch", False)))
             ok = result.get("status") == "PASS"
             state_for_logs = state
         elif operation == "status":
             run_id = request["run_id"]
-            result = remote_status(state, run_id, since=request.get("since"))
+            result = remote_status(state, run_id, operation=request.get("step", "submit"))
             ok, state_for_logs = result["status"] != "UNKNOWN", None
         else:  # export
-            run_id = request["run_id"]
+            run_id = check_run_id(request["run_id"])
             packet = export_evidence(state, run_id, state / "outgoing", light=request.get("light", True))
             listed = load_json(packet / "evidence-manifest.json")["files"]
             result = {"run_id": run_id, "packet": str(packet), "parent": str(packet.parent),

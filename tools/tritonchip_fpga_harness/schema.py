@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import re
 from pathlib import Path
 from typing import Any
 
@@ -159,19 +160,22 @@ def validate_worker_request(value: dict[str, Any]) -> dict[str, Any]:
             raise SchemaError(f"worker {key} must be boolean")
     if "timeout" in value and (not isinstance(value["timeout"], int) or value["timeout"] <= 0):
         raise SchemaError("worker timeout must be a positive integer")
-    for key in ("state_dir", "run_id"):
-        if key in value and (not isinstance(value[key], str) or not value[key]):
-            raise SchemaError(f"worker {key} must be a non-empty string")
-    if "scope" in value and value["scope"] not in ("build", "board"):
-        raise SchemaError("worker scope must be 'build' or 'board'")
-    if "since" in value and (isinstance(value["since"], bool) or not isinstance(value["since"], (int, float))):
-        raise SchemaError("worker since must be a number")
+    if "state_dir" in value and (not isinstance(value["state_dir"], str) or not value["state_dir"]):
+        raise SchemaError("worker state_dir must be a non-empty string")
+    # A run id names a directory under runs/: a plain name, never a path.
+    if "run_id" in value and (not isinstance(value["run_id"], str)
+                              or not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_.-]*", value["run_id"])):
+        raise SchemaError(f"worker run_id {value.get('run_id')!r} is not a plain name")
+    if "scope" in value and value["scope"] not in ("build", "board", "source"):
+        raise SchemaError("worker scope must be 'build', 'board' or 'source'")
+    if "step" in value and value["step"] not in ("submit", "measure"):
+        raise SchemaError("worker step must be 'submit' or 'measure'")
     if value["operation"] in ("status", "export", "measure") and "run_id" not in value:
         raise SchemaError(f"worker operation {value['operation']} needs run_id")
     unknown = sorted(set(value) - {
         "schema_version", "operation", "board", "adapter", "manifest",
         "state_dir", "allow_dirty", "skip_board", "timeout", "run_id",
-        "scope", "detach", "light", "since", "allow_source_mismatch",
+        "scope", "detach", "light", "step", "allow_source_mismatch",
     })
     if unknown:
         raise SchemaError("worker request has unsupported fields: " + ", ".join(unknown))

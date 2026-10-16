@@ -76,6 +76,7 @@ def main(argv: list[str] | None = None) -> int:
     m.add_argument("--manifest", type=Path, help="board configuration for a run submitted without one; must name the same candidate, target and mode")
     m.add_argument("--allow-dirty", action="store_true", help="measure from a checkout with uncommitted changes; recorded in the result")
     m.add_argument("--allow-source-mismatch", action="store_true", help="measure from a checkout that differs from the implemented commit outside the harness; recorded in the result")
+    m.add_argument("--request", help="the attempt id a detached worker gave this measurement; recorded with MEASURING")
     m.add_argument("--json", action="store_true")
     rd = sub.add_parser("dispatch", help="submit a manifest to a prepared U50/U280 SSH worker")
     rd.add_argument("host")
@@ -120,10 +121,10 @@ def main(argv: list[str] | None = None) -> int:
     pl.add_argument("--build-host", required=True)
     pl.add_argument("--board-host", help="required when the manifest has a board block, unless --skip-board")
     pl.add_argument("--adapter", choices=("u50", "u280", "mock"), help="default: the target's own; mock plays the build")
-    pl.add_argument("--timeout", type=int, help="per remote step (the link, the board stage), in seconds")
+    pl.add_argument("--timeout", type=int, help="each remote command's limit (package, link, load, conformance), in seconds; the controller waits for each stage what its commands may take, plus an hour")
     pl.add_argument("--poll", type=float, default=60.0, help="seconds between status polls")
     pl.add_argument("--skip-board", action="store_true", help="build only")
-    pl.add_argument("--build-run", help="a build already started or finished on the build host; skip the submit")
+    pl.add_argument("--build-run", help="a build already started or finished on the build host: attach to it instead of submitting; a board stage is repeated or attached to")
     pl.add_argument("--no-sync", action="store_true", help="the checkouts are already on the servers")
     pl.add_argument("--ssh-binary", default="ssh")
     pl.add_argument("--output", type=Path, help="also write the record here")
@@ -178,6 +179,7 @@ def main(argv: list[str] | None = None) -> int:
                 board_manifest=load_json(args.manifest) if args.manifest else None,
                 allow_dirty=args.allow_dirty,
                 allow_source_mismatch=args.allow_source_mismatch,
+                request=args.request,
             )
         elif args.command == "dispatch":
             value = dispatch_manifest(
@@ -247,7 +249,7 @@ def main(argv: list[str] | None = None) -> int:
                 else:
                     value = ledger.status()
         print(json.dumps(value, indent=2, sort_keys=True) if getattr(args, "json", False) else json.dumps(value, indent=2, sort_keys=True))
-        return 0 if value.get("ok", value.get("status", "PASS") in ("PASS", "PENDING", "RUNNING")) else 1
+        return 0 if value.get("ok", value.get("status", "PASS") in ("PASS", "PENDING", "RUNNING", "MEASURING")) else 1
     except (HarnessError, SchemaError, BudgetError, DispatchError, PipelineError, OSError) as exc:
         print(f"harness: {exc}", file=sys.stderr)
         return 2

@@ -47,7 +47,9 @@ RECORD = {
 CONFORMANCE = [PY, "-c", RUN + "(run/'board'/'conformance.json').write_text(json.dumps([{'id':'R36-TEST-01','passed':True}]))"]
 ARCHBENCH = [PY, "-c", RUN + "(run/'board'/'archbench.jsonl').write_text(json.dumps(" + repr(RECORD) + ")+'\\n')"]
 
-# Runs the command after the destination locally: two directories stand for two servers.
+# Runs the command after the destination locally, as OpenSSH does on the
+# server: the words are joined with spaces and given to a shell. Two
+# directories stand for two servers.
 FAKE_SSH = """#!{python}
 import os, sys
 args = sys.argv[1:]
@@ -57,11 +59,13 @@ while i < len(args):
         i += 1
     elif args[i] in ("-p", "-i", "-o"):
         i += 2
+    elif args[i] == "--":
+        i += 1
+        break
     else:
         break
 os.environ["COPYFILE_DISABLE"] = "1"   # no AppleDouble entries from macOS tar
-command = args[i + 1:]
-os.execvp(command[0], command)
+os.execvp("sh", ["sh", "-c", " ".join(args[i + 1:])])
 """
 
 
@@ -245,16 +249,18 @@ class DetachedWorker(unittest.TestCase):
             # In a worker the child outlives its parent; here this process
             # is the parent and has to reap it.
             os.waitpid(started["pid"], 0)
-            # A step asked for after this verdict is not answered by it.
-            self.assertEqual(remote_status(state, run_id, since=time.time() + 5)["status"], "FAILED_TO_START")
+            self.assertEqual(started["attempt"], f"{run_id}.submit.1")
+            # The build's PASS does not answer for a board stage nobody asked for.
+            self.assertEqual(remote_status(state, run_id, operation="measure")["status"], "UNKNOWN")
 
     def test_status_of_a_child_that_died_before_its_run(self) -> None:
         with tempfile.TemporaryDirectory() as td:
             state = Path(td)
             (state / "requests").mkdir()
-            (state / "requests" / "r1.submit.json").write_text(json.dumps({"pid": 999999, "pgid": 999999,
-                                                                           "pid_starttime": "1", "boot_id": "x"}))
-            (state / "requests" / "r1.submit.log").write_text("harness: working tree is dirty\n")
+            log = state / "requests" / "r1.submit.1.log"
+            (state / "requests" / "r1.submit.1.json").write_text(json.dumps({
+                "pid": 999999, "pgid": 999999, "pid_starttime": "1", "boot_id": "x", "log": str(log)}))
+            log.write_text("harness: working tree is dirty\n")
             value = remote_status(state, "r1")
             self.assertEqual(value["status"], "FAILED_TO_START")
             self.assertIn("working tree is dirty", value["log_tail"][-1])
@@ -313,6 +319,199 @@ class Pipeline(unittest.TestCase):
         manifest = {"candidate_id": "x", "target": "u50", "mode": "full", "board": {"backend": "fpga-u50", "profile": "p"}}
         with self.assertRaisesRegex(RuntimeError, "board-host"):
             run_pipeline(local_repo=HERE, hosts=hosts, manifest=manifest, build_host="builder")
+
+
+class MeasurementMarker(unittest.TestCase):
+    """An imported build's PASS, whatever its clock says, is never the board stage's verdict."""
+
+    def setUp(self) -> None:
+        tmp = tempfile.TemporaryDirectory(prefix="tc-marker-")
+        self.addCleanup(tmp.cleanup)
+        self.state = Path(tmp.name)
+        run = self.state / "runs" / "r1"
+        run.mkdir(parents=True)
+        # Built on a server whose clock runs an hour ahead.
+        (run / "run.json").write_text(json.dumps({"status": "PASS", "finished_at": time.time() + 3600,
+                                                   "manifest": {"candidate_id": "c"}}))
+        (run / "result.json").write_text(json.dumps({"status": "PASS"}))
+        (self.state / "requests").mkdir()
+
+    def attempt(self, pid: int) -> None:
+        (self.state / "requests" / "r1.measure.1.json").write_text(json.dumps(
+            {"pid": pid, "pgid": pid, "pid_starttime": None, "boot_id": None,
+             "log": str(self.state / "requests" / "r1.measure.1.log")}))
+
+    def test_a_live_measurement_that_has_not_named_itself_is_starting(self) -> None:
+        self.attempt(os.getpid())
+        self.assertEqual(remote_status(self.state, "r1", operation="measure")["status"], "STARTING")
+
+    def test_a_dead_one_never_started(self) -> None:
+        self.attempt(999999)
+        self.assertEqual(remote_status(self.state, "r1", operation="measure")["status"], "FAILED_TO_START")
+
+    def test_once_named_the_record_answers(self) -> None:
+        self.attempt(999999)
+        run = self.state / "runs" / "r1" / "run.json"
+        value = json.loads(run.read_text())
+        value.update(status="BOARD_FAIL", measure_request="r1.measure.1")
+        run.write_text(json.dumps(value))
+        self.assertEqual(remote_status(self.state, "r1", operation="measure")["status"], "BOARD_FAIL")
+
+
+class MeasureRecord(unittest.TestCase):
+    def setUp(self) -> None:
+        tmp = tempfile.TemporaryDirectory(prefix="tc-measure-")
+        self.addCleanup(tmp.cleanup)
+        self.tmp = Path(tmp.name)
+        self.repo, self.commit = candidate_repo(self.tmp)
+        self.state = self.tmp / "state"
+        self.manifest = {"candidate_id": "m-1", "target": "u50", "mode": "full",
+                         "board": {"backend": "fpga-u50", "profile": "core-vrf-sync-v1", "program": False,
+                                   "conformance": {"command": CONFORMANCE}}}
+        self.run_id = submit(HERE, self.repo, self.manifest, self.state, "mock", skip_board=True)["run_id"]
+        self.run_json = self.state / "runs" / self.run_id / "run.json"
+
+    def test_a_measure_that_cannot_take_the_lease_leaves_the_record_alone(self) -> None:
+        from tritonchip_fpga_harness.core import lease, measure_existing
+        before = self.run_json.read_text()
+        with lease(self.state, "full"):
+            with self.assertRaisesRegex(HarnessError, "no full slot"):
+                measure_existing(HERE, self.repo, self.state, self.run_id)
+        self.assertEqual(self.run_json.read_text(), before)
+
+    def test_a_change_to_accepted_versions_does_not_make_a_build_stale(self) -> None:
+        import hashlib
+        from tritonchip_fpga_harness.core import measure_existing
+        run = load_json(self.run_json)
+        run["profile"] = dict(run["profile"], vitis_versions=["2019.1"])
+        run["profile_hash"] = hashlib.sha256(json.dumps(run["profile"], sort_keys=True).encode()).hexdigest()
+        self.run_json.write_text(json.dumps(run))
+        result = measure_existing(HERE, self.repo, self.state, self.run_id, request="r.measure.1")
+        self.assertEqual(result["status"], "PASS", result.get("measurement_error"))
+        self.assertIn("vitis_versions", result["profile_note"])
+        self.assertEqual(load_json(self.run_json)["measure_request"], "r.measure.1")
+        # A change to what the image is still refuses.
+        run["profile"] = dict(run["profile"], part="xcu55c-fsvh2892-2L-e")
+        self.run_json.write_text(json.dumps(run))
+        with self.assertRaisesRegex(HarnessError, "profile changed"):
+            measure_existing(HERE, self.repo, self.state, self.run_id)
+
+    def test_reconcile_orphans_a_lost_measurement(self) -> None:
+        from tritonchip_fpga_harness.core import reconcile
+        run = load_json(self.run_json)
+        run.update(status="MEASURING", controller={"pid": 999999, "pid_starttime": "1", "boot_id": "x"})
+        self.run_json.write_text(json.dumps(run))
+        self.assertEqual(reconcile(self.state, self.run_id)["status"], "ORPHANED")
+
+
+class Hardening(unittest.TestCase):
+    def test_run_ids_are_names_not_paths(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            with self.assertRaises(HarnessError):
+                export_evidence(Path(td), "../runs/x", Path(td) / "out")
+            with self.assertRaises(HarnessError):
+                export_evidence(Path(td), "/abs/run", Path(td) / "out")
+        with self.assertRaises(SchemaError):
+            validate_worker_request({"operation": "export", "board": "u280", "adapter": "u280", "run_id": "/data/runs/x",
+                                     "manifest": {"candidate_id": "x", "target": "u280", "mode": "full"}})
+
+    def test_no_value_can_become_an_ssh_option(self) -> None:
+        from tritonchip_fpga_harness.worker import DispatchError, ssh_prefix
+        argv = ssh_prefix(host="card-host", env={"A": "1"})
+        self.assertEqual(argv[argv.index("--") + 1], "card-host")
+        with self.assertRaises(DispatchError):
+            ssh_prefix(host="-oProxyCommand=x")
+        data = HostsFile().good()
+        data["hosts"]["card"]["python"] = "-oProxyCommand=/tmp/x"
+        with self.assertRaises(SchemaError):
+            parse_hosts(data)
+
+    def test_nested_readme_is_hashed_and_imported(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="tc-readme-") as td:
+            repo, _ = candidate_repo(Path(td))
+            state = Path(td) / "state"
+            run_id = submit(HERE, repo, {"candidate_id": "r", "target": "u50", "mode": "full"}, state, "mock")["run_id"]
+            run_dir = state / "runs" / run_id
+            (run_dir / "artifacts" / "kernel").mkdir(parents=True)
+            (run_dir / "artifacts" / "kernel" / "README.txt").write_text("kept\n")
+            impl = run_dir / "artifacts/tmp/link/vivado/vpl/prj/prj.runs/impl_1"
+            impl.mkdir(parents=True)
+            (impl / "runme.log").write_text("DRC finished with 0 Errors\n")
+            packet = export_evidence(state, run_id, Path(td) / "out", light=True)
+            files = load_json(packet / "evidence-manifest.json")["files"]
+            self.assertIn("artifacts/kernel/README.txt", files)
+            self.assertIn("artifacts/tmp/link/vivado/vpl/prj/prj.runs/impl_1/runme.log", files)
+            data = io.BytesIO()
+            with tarfile.open(fileobj=data, mode="w") as archive:
+                archive.add(packet, arcname=run_id)
+            data.seek(0)
+            self.assertEqual(import_run(Path(td) / "card", data)["files"], len(files))
+
+    def test_u50_links_with_the_root_it_records(self) -> None:
+        from tritonchip_fpga_harness.core import U50FlowAdapter, environment_snapshot
+        profile = load_profile(HERE, "u50")
+        with mock.patch.dict(os.environ, {VITIS_ENV: "/opt/Xilinx/Vitis/2022.2"}):
+            config = U50FlowAdapter()._impl(HERE.parents[1], profile).config
+            recorded = environment_snapshot(HERE.parents[1], profile, "u50")["tool_roots"]
+        self.assertEqual(config.environment["XILINX_VITIS"], "/opt/Xilinx/Vitis/2022.2")
+        self.assertEqual((recorded["vitis_root"], recorded["vitis_source"]), ("/opt/Xilinx/Vitis/2022.2", "host"))
+
+
+class PipelineRecovery(unittest.TestCase):
+    """What --build-run is for: repeating a board stage, and refusing the wrong run."""
+
+    def setUp(self) -> None:
+        tmp = tempfile.TemporaryDirectory(prefix="tc-recover-")
+        self.addCleanup(tmp.cleanup)
+        self.tmp = Path(tmp.name)
+        self.repo, self.commit = candidate_repo(self.tmp)
+        self.ssh = self.tmp / "ssh"
+        self.ssh.write_text(FAKE_SSH.format(python=PY), encoding="utf-8")
+        self.ssh.chmod(self.ssh.stat().st_mode | stat.S_IXUSR)
+        self.hosts = parse_hosts({"schema_version": 1, "hosts": {
+            "builder": {"ssh": "builder", "roles": ["build"], "python": PY,
+                        "workspace": str(self.tmp / "builder"), "state_dir": str(self.tmp / "builder-state")},
+            "card": {"ssh": "card", "roles": ["board"], "python": PY,
+                     "workspace": str(self.tmp / "card"), "state_dir": str(self.tmp / "card-state")},
+            "both": {"ssh": "both", "roles": ["build", "board"], "python": PY,
+                     "workspace": str(self.tmp / "both"), "state_dir": str(self.tmp / "both-state")},
+        }})
+
+    def manifest(self, conformance_rc: int = 0, candidate: str = "rec-1") -> dict:
+        command = [PY, "-c", RUN + "(run/'board'/'conformance.json').write_text(json.dumps([{'id':'R36-TEST-01','passed':True}])); "
+                   + f"raise SystemExit({conformance_rc})"]
+        return {"candidate_id": candidate, "target": "u50", "mode": "full",
+                "board": {"backend": "fpga-u50", "profile": "core-vrf-sync-v1", "program": False,
+                          "conformance": {"command": command}}}
+
+    def pipe(self, manifest: dict, **options) -> dict:
+        options.setdefault("build_host", "builder")
+        options.setdefault("board_host", "card")
+        return run_pipeline(local_repo=self.repo, hosts=self.hosts, manifest=manifest, adapter="mock",
+                            poll_s=0.2, ssh_binary=str(self.ssh), **options)
+
+    def test_a_failed_board_stage_is_repeated_without_building_again(self) -> None:
+        first = self.pipe(self.manifest(conformance_rc=3))
+        self.assertEqual(first["status"], "BOARD_FAIL", first.get("error"))
+        second = self.pipe(self.manifest(), build_run=first["run_id"])
+        self.assertEqual(second["status"], "PASS", second.get("error"))
+        self.assertNotIn("build:submit", [s["name"] for s in second["steps"]])
+        self.assertEqual(second["board"]["attempt"], f"{first['run_id']}.measure.2")
+        result = load_json(self.tmp / "card-state" / "runs" / first["run_id"] / "result.json")
+        self.assertEqual(result["board_config_source"], "measure")
+
+    def test_build_run_must_be_this_candidate(self) -> None:
+        first = self.pipe(self.manifest(), skip_board=True)
+        other = self.pipe(self.manifest(candidate="rec-2"), build_run=first["run_id"])
+        self.assertEqual(other["status"], "PIPELINE_FAIL")
+        self.assertIn("is not this candidate", other["error"])
+        bad = self.pipe(self.manifest(), build_run="../../etc")
+        self.assertEqual(bad["status"], "PIPELINE_FAIL")
+
+    def test_one_server_with_both_roles_measures_in_place(self) -> None:
+        record = self.pipe(self.manifest(), build_host="both", board_host="both")
+        self.assertEqual(record["status"], "PASS", record.get("error"))
+        self.assertNotIn("transfer", [s["name"] for s in record["steps"]])
 
 
 if __name__ == "__main__":

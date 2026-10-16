@@ -565,7 +565,7 @@ harness or manifest error.
 | `validate` | judges an existing build directory | `--target`, `--build-dir`, `--historical`, `--output` |
 | `export <run>` | writes the evidence packet; `--light` leaves out v++'s working tree | `--state-dir`, `--output`, `--light` |
 | `import` | installs a run built on another host from its light packet, every file's hash checked (§11.2) | `--state-dir`, `--from-tar FILE\|-` |
-| `pipeline <manifest>` | builds on one server of a hosts file and measures on another (§11.2) | `--hosts`, `--build-host`, `--board-host`, `--timeout`, `--poll`, `--skip-board`, `--build-run`, `--no-sync`, `--output` |
+| `pipeline <manifest>` | builds on one server of a hosts file and measures on another (§11.2) | `--hosts`, `--build-host`, `--board-host`, `--timeout`, `--poll`, `--skip-board`, `--build-run`, `--no-sync`, `--adapter mock`, `--output` |
 | `sync <host>` | puts a clean checkout of a commit on a server, from a git bundle | `--hosts`, `--commit` |
 | `dispatch <host> <manifest>` | sends a manifest to a worker over SSH (§11.1) | `--remote-repo`, `--state-dir`, `--timeout`, `--ssh-timeout`, `--skip-board`, `--output` |
 | `worker --stdin` | the remote end of `dispatch` and `pipeline`: `doctor`, `submit`, `status`, `export`, `measure` | |
@@ -653,9 +653,10 @@ result: read `remote.result.status`.
 ### 11.2 Two servers: `pipeline`
 
 The Vivado flow wants a fast CPU and memory to spare; the card is wherever the
-card is. On 2026-10-17 the same commit linked in 103 minutes on a build server
-with Vitis 2022.2 and in 213 on the card host with 2023.2, and the 2022.2
-image loaded on the card (§13). So the flow can run on one server and the
+card is. The same commit linked in 103 minutes on a build server with Vitis
+2022.2 (2026-10-17) and in 213 on the card host with 2023.2 (2026-10-10), and
+the 2022.2 image loaded on the card (§13). That is one link on each side, with
+both the machine and the Vitis version different. So the flow can run on one server and the
 board stage on another, with a controller -- any machine whose SSH reaches
 both -- doing what one `submit` does:
 
@@ -687,11 +688,13 @@ server: an `ssh` destination that the controller's own SSH configuration
 resolves (user, key, jump host: the harness adds none), its `roles` (`build`,
 `board`), the `python` (3.9 or later) that runs the harness there, a
 `workspace`, a `state_dir`, and for a build server the `vitis_root` it keeps.
-`environment` passes further variables to every remote command: on a build
-server a `PATH` with Vivado's and Vitis's `bin` first (a remote command does
-not read the login shell's profile), on a card server the ArchBench
-interpreter. Every value is one shell-safe token; anything else is refused
-when the file is read.
+`environment` passes further variables to every command the controller runs
+there: on a build server a `PATH` with Vivado's and Vitis's `bin` first (a
+remote command does not read the login shell's profile), on a card server the
+ArchBench interpreter. Every value is one shell-safe token that does not start
+with `-`; anything else is refused when the file is read. The harness passes
+`--` before the destination, and quotes for the remote shell every word it did
+not take from the hosts file.
 
 **What each step does.**
 
@@ -700,10 +703,10 @@ when the file is read.
 | `sync` | each server | a clean checkout of the commit at `<workspace>/checkouts/<sha>`, a worktree of the bare `mirror.git`. The controller sends the commit as a git bundle, so the servers need no access to the repository's remote. A checkout already there is used if it is at the commit and clean, and refused otherwise; nothing on a server is deleted |
 | `doctor` | both | the build server's flow contract and vendor tools, with its own Vitis root (§3.3); the card server's board-stage checks only (§5.2), so it needs no Vivado. Both checkouts must be the commit, clean |
 | `build` | build server | `submit --skip-board`, started in a session of its own: the link does not depend on the controller's SSH connection, and the controller polls `status` |
-| `export` | build server | a light packet: the run's records and logs, the XO and XCLBIN, and the routed text reports, without v++'s working tree (about 1 GB a link) |
+| `export` | build server | a light packet: the run's records and logs, the XO and XCLBIN, the routed text reports and the implementation logs the DRC verdict is read from, without the rest of v++'s working tree (about 1 GB a link) |
 | `transfer` | controller | the packet as a tar stream from one server into `import` on the other; the servers never connect to each other |
 | `import` | card server | accepts only plain files under one run directory, every file's hash as the packet lists it, and an image that is the one the build's own result recorded; a run already present is accepted only if it is the same packet |
-| `measure` | card server | `measure RUN_ID`, detached, polled: §5 on the image the build server built, driven by the card server's checkout of the same commit |
+| `measure` | card server | `measure RUN_ID`, detached, polled: §5 on the image the build server built, driven by the card server's checkout of the same commit, with the board block of the manifest given to `pipeline` (which must name the same candidate, target, mode and commit). A server with both roles and one state directory measures the build in place, with no packet |
 
 **What it leaves.** The build's run directory on the build server (with v++'s
 working tree), the imported run with its board records on the card server
@@ -714,12 +717,30 @@ stage's result. Its `status` is the board stage's, or the build's when that
 did not pass; `PIPELINE_FAIL` is a step that could not be done, with the
 reason in `error`.
 
-**Picking up.** A build or measurement survives the controller. `status` on
-the server reports `STARTING`, `RUNNING`, `MEASURING`, a verdict, or
-`FAILED_TO_START` with the tail of the child's log. `pipeline --build-run
-RUN_ID` attaches to a build that is running or done and carries on from there,
-so a failed transfer or board stage does not cost a link. `--skip-board` stops
-after the build; `--no-sync` uses the checkouts as they are.
+**Picking up.** A build or measurement survives the controller. Each
+detached step is an attempt with its own record and log on the server
+(`<state_dir>/requests/<run>.<submit|measure>.<n>`), and a measurement writes
+its attempt's name into the run's record when it starts, on that server's
+clock. `status` reports `STARTING`, `RUNNING`, `MEASURING`, a verdict,
+`ORPHANED` (the process is gone), or `FAILED_TO_START` with the tail of the
+child's log; a measurement's verdict is reported only once the record names
+the latest attempt, so the imported build's `PASS` never answers for the
+board. `pipeline --build-run RUN_ID` attaches to a build that is running or
+done (checking only the build server's checkout, since a full doctor would
+count that build's own Vivado against it), refuses a run that is not this
+manifest's candidate, target, mode and commit, and carries on from there: a
+failed transfer or board stage does not cost a link, and a board stage still
+running from an earlier controller is attached to rather than started again.
+`--skip-board` stops after the build; `--no-sync` uses the checkouts as they
+are; `--adapter mock` plays the build (and its board stage measures a
+placeholder image), to exercise the servers without Vivado.
+
+**How long the controller waits.** `--timeout` is each remote command's limit
+on the server (package, link, load, conformance; ArchBench has its own
+`board.archbench.timeout_s`). The controller waits for the build what its two
+commands may take, and for the board stage what its three commands and
+ArchBench may take, each plus an hour; then it stops waiting and says so, and
+the stage can be attached to again.
 
 **One run at a time, per server.** Each server's harness takes its own lease
 (§3.4): a build on the build server and a board stage on the card server can
@@ -765,8 +786,20 @@ synthesis 12 (26). Routed ap_clk WNS +0.138 ns (2023.2: +0.177), design WNS
 the shell's) and `--go` loaded it: the device reports its UUID, `DATA_CLK`
 100 MHz. No kernel was run on it.
 
-**`pipeline`** has run end to end only between two directories of one machine
-(`tests/test_split_hosts.py`); not yet between two servers.
+**`pipeline` between the two servers** (2026-10-17, commit `8082597`). With a
+played build (`--adapter mock`) and a board stage that loaded nothing and ran
+no conformance: sync created a checkout on each server from an 11 MB bundle,
+the build server's doctor used its own Vitis 2022.2 (`vitis_source: host`),
+the packet's 9 files were checked on the card server, and the board stage read
+the card as it was (the image above) from a checkout of the same commit; 3
+minutes in all. The real U280 doctor on the build server passed all 22 checks
+with Vivado, `v++` and `xclbinutil` from 2022.2. A real link through
+`pipeline` has not run yet. The review that followed (four lenses, each
+finding re-checked) found that a board stage could not be repeated, that an
+imported build's PASS could answer for the board, that a refused measure
+damaged the run's record, that `--build-run` was not checked against the
+manifest, and that run ids and option-like values were not refused; all are
+fixed and tested (`tests/test_split_hosts.py`).
 
 On `acf3019` (Alveo U280, Vitis 2023.2, XRT 2.16), from clean checkouts, on
 2026-10-11 and 12. The image is the link of `b5c606d`, whose tree is that of
@@ -774,7 +807,7 @@ the commit this harness was added on.
 
 | What | Result |
 |---|---|
-| The suite, 93 tests (108 with the split-server tests of 2026-10-17, on macOS) | passes on macOS (Python 3.9) and on the host (Python 3.10) |
+| The suite, 93 tests (122 with the split-server tests of 2026-10-17, run on macOS) | passes on macOS (Python 3.9) and on the host (Python 3.10) |
 | `doctor` for the U280 target, alone and with a board manifest | every check passes |
 | `validate` on three real links | two `PASS`: design WNS +0.016 ns, WHS +0.006 ns, no failing endpoint of 584 460 and of 566 734, DRC 0 errors. One, a link that missed timing, rejected with its numbers: WNS −0.079 ns, 304 endpoints |
 | `measure` without a load, the card already holding the image | conformance 5 of 5; ArchBench `tiny` 27 of 27 `measured-board`; 4 459 740 cycles |

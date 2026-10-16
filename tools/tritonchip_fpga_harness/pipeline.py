@@ -21,7 +21,9 @@ repeated without building again.
 
 from __future__ import annotations
 
+import hashlib
 import json
+import shlex
 import subprocess
 import sys
 import time
@@ -30,7 +32,7 @@ from typing import Any, Callable, Mapping
 
 from .hosts import Host, host_for
 from .schema import validate_manifest
-from .worker import LIVE_STATUSES, _board_for_target, build_ssh_argv, call_worker, ssh_prefix
+from .worker import LIVE_STATUSES, _board_for_target, build_ssh_argv, call_worker, check_run_id, ssh_prefix
 
 SSH_OPTIONS = ("BatchMode=yes", "ServerAliveInterval=30", "ServerAliveCountMax=6")
 CONNECT_TIMEOUT = 20
@@ -52,10 +54,17 @@ def _ssh(host: Host, ssh_binary: str, *, env: bool) -> list[str]:
                       env=host.remote_env() if env else None, ssh_binary=ssh_binary)
 
 
+def _remote_argv(host: Host, argv: list[str], ssh_binary: str) -> list[str]:
+    # OpenSSH joins the remote argv with spaces and hands it to the login
+    # shell, so each word is quoted for that shell: a path the controller did
+    # not choose (or `<sha>^{commit}`) stays one word and is never run.
+    return _ssh(host, ssh_binary, env=True) + [shlex.quote(str(word)) for word in argv]
+
+
 def remote(host: Host, argv: list[str], *, ssh_binary: str = "ssh", data: bytes | None = None,
            timeout: int | None = 600, check: bool = True) -> subprocess.CompletedProcess:
-    """Run one plain command on ``host`` (git, tar, mkdir, dd), without a shell string."""
-    full = _ssh(host, ssh_binary, env=False) + list(argv)
+    """Run one plain command on ``host`` (git, tar, mkdir, dd) with the host's environment."""
+    full = _remote_argv(host, list(argv), ssh_binary)
     done = subprocess.run(full, input=data, capture_output=True, timeout=timeout, check=False)
     if check and done.returncode != 0:
         detail = done.stderr.decode("utf-8", errors="replace").strip().splitlines()[-3:]
@@ -141,16 +150,19 @@ def _remote_value(reply: dict[str, Any], what: str) -> dict[str, Any]:
     return remote_value.get("result") or {}
 
 
-def poll(host: Host, commit: str, base: dict[str, Any], run_id: str, *, since: float | None = None,
+def poll(host: Host, commit: str, base: dict[str, Any], run_id: str, *, step: str = "submit",
          poll_s: float = 60.0, deadline: float | None = None, ssh_binary: str = "ssh",
          sleep: Callable[[float], None] = time.sleep, label: str = "") -> dict[str, Any]:
-    """Ask ``status`` until the run leaves the live states; transient failures are retried."""
+    """Ask ``status`` until the run leaves the live states; transient failures are retried.
+
+    ``step`` is the detached operation being waited for: for ``measure`` the
+    server answers with the verdict only once the latest measurement has
+    named itself in the run's record (worker.remote_status).
+    """
     failures = 0
     last = None
     while True:
-        request = dict(base, operation="status", run_id=run_id)
-        if since is not None:
-            request["since"] = since
+        request = dict(base, operation="status", run_id=run_id, step=step)
         reply = worker(host, commit, request, ssh_binary=ssh_binary, timeout=120)
         value = (reply.get("remote") or {}).get("result")
         if reply.get("ok") and isinstance(value, dict):
@@ -173,10 +185,15 @@ def poll(host: Host, commit: str, base: dict[str, Any], run_id: str, *, since: f
         sleep(poll_s)
 
 
-def transfer(source: Host, packet_parent: str, run_id: str, destination: Host, commit: str, *,
+def transfer(source: Host, run_id: str, destination: Host, commit: str, *,
              ssh_binary: str = "ssh", timeout: int | None = 1800) -> dict[str, Any]:
-    """Stream a packet from the build server into `import` on the card server."""
-    send = _ssh(source, ssh_binary, env=False) + ["tar", "-C", packet_parent, "-cf", "-", run_id]
+    """Stream a packet from the build server into `import` on the card server.
+
+    The packet is where the worker's export puts it, ``<state_dir>/outgoing``;
+    the path is the controller's, not one the server reported.
+    """
+    check_run_id(run_id)
+    send = _remote_argv(source, ["tar", "-C", f"{source.state_dir}/outgoing", "-cf", "-", run_id], ssh_binary)
     receive = _ssh(destination, ssh_binary, env=True) + [
         destination.python, destination.cli(commit), "--repo", destination.checkout(commit),
         "import", "--state-dir", destination.state_dir, "--from-tar", "-",
@@ -308,8 +325,16 @@ def run_pipeline(
         _log(f"done: {status}" + (f" ({error})" if error else ""))
         return record
 
-    deadline = None if timeout is None else time.time() + timeout + 3600
+    def deadline_for(commands: int, extra: float = 0.0) -> float | None:
+        # The controller waits for a stage what its remote commands may take
+        # (each is limited to `timeout` there), plus an hour; then it stops
+        # waiting, and the stage can be attached to again with --build-run.
+        return None if timeout is None else time.time() + commands * timeout + extra + 3600
+
     try:
+        if build_run:
+            check_run_id(build_run)
+        same_state = bool(card and card.ssh == builder.ssh and card.state_dir == builder.state_dir)
         servers = [builder] + ([card] if card and card.name != builder.name else [])
         if do_sync:
             for server in servers:
@@ -329,7 +354,9 @@ def run_pipeline(
             return {"scope": scope, "checks": len(value.get("checks", [])),
                     "tool_roots": (value.get("environment") or {}).get("tool_roots")}
 
-        step(f"doctor:{builder.name}", lambda: doctor(builder, "build"))
+        # Attaching to a build that may still be linking: a full doctor would
+        # count its own Vivado against it, so only the checkout is checked.
+        step(f"doctor:{builder.name}", lambda: doctor(builder, "source" if build_run else "build"))
         if card:
             step(f"doctor:{card.name}", lambda: doctor(card, "board"))
 
@@ -343,31 +370,46 @@ def run_pipeline(
                 worker(builder, commit, request, ssh_binary=ssh_binary), f"submit on {builder.name}"))
             run_id = started["run_id"]
         record["run_id"] = run_id
-        built = step("build", lambda: poll(builder, commit, base, run_id, poll_s=poll_s, deadline=deadline,
+        built = step("build", lambda: poll(builder, commit, base, run_id, poll_s=poll_s, deadline=deadline_for(2),
                                            ssh_binary=ssh_binary, sleep=sleep, label="build"))
+        seen = built.get("run") or {}
+        wanted = {"candidate_id": manifest["candidate_id"], "target": manifest["target"], "mode": manifest["mode"],
+                  "commit": commit}
+        differs = {key: (seen.get(key), value) for key, value in wanted.items() if seen.get(key) != value}
+        if differs:
+            raise PipelineError(f"run {run_id} on {builder.name} is not this candidate: "
+                                + ", ".join(f"{key} {got!r}, not {want!r}" for key, (got, want) in differs.items()))
         record["build"] = dict(_build_summary(built), run_id=run_id, host=builder.name)
         if built.get("status") != "PASS":
             return finish(str(built.get("status")), "the build did not pass")
         if not want_board:
             return finish("PASS")
-
-        packet = step("export", lambda: _remote_value(
-            worker(builder, commit, dict(base, operation="export", run_id=run_id, light=True), ssh_binary=ssh_binary),
-            f"export on {builder.name}"))
         assert card is not None
-        imported = step("transfer", lambda: transfer(builder, packet["parent"], run_id, card, commit,
-                                                     ssh_binary=ssh_binary))
-        if imported.get("xclbin_sha256") != record["build"]["xclbin_sha256"]:
-            raise PipelineError("the card server installed an image whose hash is not the build's")
+        if same_state:
+            # One server, one state directory: the board stage measures the
+            # build where it is.
+            record["transfer"] = "none: the build and the card share a state directory"
+        else:
+            step("export", lambda: _remote_value(
+                worker(builder, commit, dict(base, operation="export", run_id=run_id, light=True), ssh_binary=ssh_binary),
+                f"export on {builder.name}"))
+            imported = step("transfer", lambda: transfer(builder, run_id, card, commit, ssh_binary=ssh_binary))
+            if imported.get("xclbin_sha256") != record["build"]["xclbin_sha256"]:
+                raise PipelineError("the card server installed an image whose hash is not the build's")
         request = dict(base, operation="measure", run_id=run_id, detach=True)
         if timeout:
             request["timeout"] = timeout
+        record["board_block_sha256"] = hashlib.sha256(
+            json.dumps(manifest["board"], sort_keys=True).encode()).hexdigest()
         asked = step("board:measure", lambda: _remote_value(
             worker(card, commit, request, ssh_binary=ssh_binary), f"measure on {card.name}"))
-        measured = step("board", lambda: poll(card, commit, base, run_id, since=float(asked["requested_at"]),
-                                              poll_s=poll_s, deadline=deadline, ssh_binary=ssh_binary,
+        arch = manifest["board"].get("archbench")
+        arch_s = float(arch.get("timeout_s") or timeout or 0) if isinstance(arch, dict) else 0.0
+        measured = step("board", lambda: poll(card, commit, base, run_id, step="measure", poll_s=poll_s,
+                                              deadline=deadline_for(3, arch_s), ssh_binary=ssh_binary,
                                               sleep=sleep, label="board"))
-        record["board"] = dict(_board_summary(measured), run_id=run_id, host=card.name)
+        record["board"] = dict(_board_summary(measured), run_id=run_id, host=card.name,
+                               attempt=asked.get("attempt"), attached=asked.get("attached"))
         return finish(str(measured.get("status")))
     except (PipelineError, OSError, subprocess.SubprocessError, ValueError) as exc:
         return finish("PIPELINE_FAIL", str(exc))

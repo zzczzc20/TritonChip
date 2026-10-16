@@ -268,9 +268,16 @@ def environment_snapshot(root: Path, profile: Profile, adapter_name: str) -> dic
     data = profile.data
     default_vitis = "/home/x4/Software/Xilinx/Vitis/2022.2" if adapter_name in {"u50", "real"} else ""
     roots = tool_roots(data)
-    vitis_root = Path(str(roots["vitis_root"] or os.environ.get("XILINX_VITIS", default_vitis)))
-    platforms_root = Path(str(roots["platforms_root"] if data.get("platforms_root") or roots["platforms_source"] == "host"
-                              else os.environ.get("XILINX_PLATFORMS", "/opt/xilinx/platforms")))
+    if roots["vitis_root"]:
+        vitis_root = Path(roots["vitis_root"])
+    else:
+        vitis_root = Path(os.environ.get("XILINX_VITIS", default_vitis))
+        roots["vitis_source"] = "env" if os.environ.get("XILINX_VITIS") else ("default" if default_vitis else None)
+    if roots["platforms_source"] == "default" and os.environ.get("XILINX_PLATFORMS"):
+        platforms_root = Path(os.environ["XILINX_PLATFORMS"])
+        roots["platforms_source"] = "env"
+    else:
+        platforms_root = Path(str(roots["platforms_root"]))
     settings = vitis_root / "settings64.sh" if str(vitis_root) else Path("")
     return {
         "schema_version": 1,
@@ -479,15 +486,28 @@ class MockAdapter(Adapter):
         return stages
 
 
+def _u50_roots(profile: Profile) -> tuple[str, str]:
+    """The U50 target names no installation: a host override, else XILINX_VITIS, else the U50 host's."""
+    roots = tool_roots(profile.data)
+    vitis = roots["vitis_root"] or os.environ.get("XILINX_VITIS", "/home/x4/Software/Xilinx/Vitis/2022.2")
+    platforms = roots["platforms_root"] if roots["platforms_source"] != "default" else os.environ.get(
+        "XILINX_PLATFORMS", "/opt/xilinx/platforms")
+    return str(vitis), str(platforms)
+
+
 class U50FlowAdapter(Adapter):
     name = "u50"
 
     def _impl(self, root: Path, profile: Profile) -> VendorU50Adapter:
         expected_artifacts = list(profile.data["expected_artifacts"])
+        vitis, platforms = _u50_roots(profile)
         return VendorU50Adapter(U50Config(
             repo=root,
-            vitis_root=Path(os.environ.get("XILINX_VITIS", "/home/x4/Software/Xilinx/Vitis/2022.2")),
-            platforms_root=Path(os.environ.get("XILINX_PLATFORMS", "/opt/xilinx/platforms")),
+            vitis_root=Path(vitis),
+            platforms_root=Path(platforms),
+            # link.sh takes the installation from these, so the link uses the
+            # root the run records.
+            environment={"XILINX_VITIS": vitis, "XILINX_PLATFORMS": platforms},
             platform=str(profile.data["platform"]),
             expected_ap_clk_mhz=int(profile.expected_clock),
             expected_device_divider=profile.expected_device_divider,
@@ -767,7 +787,7 @@ def submit(package_dir: Path, root: Path, manifest: dict[str, Any], state_dir: P
     p = plan(package_dir, root, manifest, adapter_name)
     profile = load_profile(package_dir, manifest["target"])
     adapter = adapter_for(adapter_name)
-    run_id = run_id or (time.strftime("%Y%m%dT%H%M%SZ", time.gmtime()) + "-" + uuid.uuid4().hex[:8])
+    run_id = check_run_id(run_id or (time.strftime("%Y%m%dT%H%M%SZ", time.gmtime()) + "-" + uuid.uuid4().hex[:8]))
     run_dir = state_dir / "runs" / run_id
     if run_dir.exists():
         raise HarnessError(f"run already exists: {run_id}")
@@ -869,7 +889,24 @@ def submit(package_dir: Path, root: Path, manifest: dict[str, Any], state_dir: P
         raise
 
 
+def check_run_id(run_id: str) -> str:
+    """A run id names a directory under ``runs/``: a plain name, never a path."""
+    if not isinstance(run_id, str) or not _SAFE_RUN_ID.fullmatch(run_id):
+        raise HarnessError(f"run id {run_id!r} is not a plain name")
+    return run_id
+
+
+# Target keys that say which installations and versions a host may use, not
+# what the image is: a change to them does not make an earlier build stale.
+_ACCEPTANCE_KEYS = frozenset({"vitis_versions", "vitis_root", "platforms_root"})
+
+
+def _image_profile(data: dict[str, Any]) -> dict[str, Any]:
+    return {key: value for key, value in data.items() if key not in _ACCEPTANCE_KEYS}
+
+
 def status(state_dir: Path, run_id: str) -> dict[str, Any]:
+    check_run_id(run_id)
     path = state_dir / "runs" / run_id / "run.json"
     if not path.is_file():
         raise HarnessError(f"unknown run {run_id}")
@@ -896,6 +933,7 @@ def measure_existing(
     board_manifest: dict[str, Any] | None = None,
     allow_dirty: bool = False,
     allow_source_mismatch: bool = False,
+    request: str | None = None,
 ) -> dict[str, Any]:
     """Run the board stage for an already-linked Harness run.
 
@@ -913,7 +951,12 @@ def measure_existing(
     the card, and it may have moved on since the build.  It must be clean, and
     it may differ from the implemented commit only below ``HARNESS_TREE``;
     anything else needs the explicit override and is recorded as such.
+
+    ``request`` names the attempt a detached worker started; it is written
+    with ``MEASURING`` so that a controller can tell this measurement's
+    verdict from an earlier one.
     """
+    check_run_id(run_id)
     run_dir = state_dir / "runs" / run_id
     run_path = run_dir / "run.json"
     result_path = run_dir / "result.json"
@@ -956,11 +999,17 @@ def measure_existing(
         json.dumps(profile.data, sort_keys=True).encode()
     ).hexdigest()
     recorded_profile_hash = run.get("profile_hash")
+    profile_note = None
     if recorded_profile_hash and recorded_profile_hash != current_profile_hash:
-        raise HarnessError(
-            f"run {run_id} profile changed after implementation; "
-            "rebuild the implementation before measuring it"
-        )
+        recorded_profile = run.get("profile")
+        if not isinstance(recorded_profile, dict) or _image_profile(recorded_profile) != _image_profile(profile.data):
+            raise HarnessError(
+                f"run {run_id} profile changed after implementation; "
+                "rebuild the implementation before measuring it"
+            )
+        # Only which installations a host may use has changed, not the image.
+        profile_note = "the target changed after the build only in " + ", ".join(sorted(
+            key for key in _ACCEPTANCE_KEYS if recorded_profile.get(key) != profile.data.get(key)))
     software = software_identity(root, implemented_commit)
     if software["dirty"] and not allow_dirty:
         raise HarnessError(
@@ -982,16 +1031,22 @@ def measure_existing(
         )
     if board_config_source == "measure":
         dump_json(run_dir / "board_manifest.json", board_manifest)
-    # From here the run is being measured, by this process: a coordinator
-    # polling `status` must not take the build's PASS for the board's, and a
-    # measurement whose controller dies is ORPHANED like a lost build.
-    run.update({"status": "MEASURING", "measure_started_at": time.time(),
-                "controller": {**_process_identity(os.getpid()), "kind": "harness-measure"}})
-    dump_json(run_path, run)
     measurement: dict[str, Any] | None = None
     error: str | None = None
     final_status = "PASS"
     with lease(state_dir, "full"):
+        # From here the run is being measured, by this process: a controller
+        # polling `status` must not take the build's PASS for the board's, and
+        # a measurement whose process dies is ORPHANED like a lost build. It is
+        # written under the lease, so a measure that cannot take it leaves the
+        # record as it was.
+        current = load_json(run_path)
+        if current.get("status") == "MEASURING" and _same_process(current.get("controller") or {}):
+            raise HarnessError(f"run {run_id} is being measured by process {current['controller'].get('pid')}")
+        run = current
+        run.update({"status": "MEASURING", "measure_started_at": time.time(), "measure_request": request,
+                    "controller": {**_process_identity(os.getpid()), "kind": "harness-measure"}})
+        dump_json(run_path, run)
         try:
             measurement = measure_board(root=root, run_dir=run_dir, profile=profile,
                                          manifest=manifest, timeout_s=timeout_s,
@@ -1016,6 +1071,8 @@ def measure_existing(
         "board_deferred": False,
         "board_config_source": board_config_source,
     })
+    if profile_note:
+        result["profile_note"] = profile_note
     dump_json(result_path, result)
     run.update({"status": final_status, "finished_at": time.time()})
     if error:
@@ -1028,6 +1085,7 @@ def measure_existing(
 
 def reconcile(state_dir: Path, run_id: str, *, terminate: bool = False) -> dict[str, Any]:
     """Reconcile a run after controller loss and optionally kill its vendor group."""
+    check_run_id(run_id)
     run_dir = state_dir / "runs" / run_id
     run_path = run_dir / "run.json"
     if not run_path.is_file():
@@ -1048,7 +1106,7 @@ def reconcile(state_dir: Path, run_id: str, *, terminate: bool = False) -> dict[
             terminated = True
         except (OSError, KeyError, ValueError):
             terminated = False
-    if run.get("status") == "RUNNING" and not alive:
+    if run.get("status") in ("RUNNING", "MEASURING") and not alive:
         run.update({"status": "ORPHANED", "recovery_required": True, "reconciled_at": time.time()})
         dump_json(run_path, run)
     return {"run_id": run_id, "status": run.get("status"), "active_process": active, "process_alive": alive, "terminated": terminated}
@@ -1056,9 +1114,12 @@ def reconcile(state_dir: Path, run_id: str, *, terminate: bool = False) -> dict[
 
 # What a light packet leaves out: v++'s working tree (about a gigabyte per
 # link) and the intermediate Vivado projects.  It keeps the image, the run's
-# records and logs, and the routed text reports the verdict was read from.
+# records and logs, the routed text reports, and the implementation logs the
+# DRC verdict is read from.
 _HEAVY = ("artifacts/tmp", "artifacts/vpp_logs", "artifacts/proj", "artifacts/ip_repo")
-_KEPT_REPORTS = "artifacts/tmp/reports/link/imp"
+_KEPT_FROM_HEAVY = ("artifacts/tmp/reports/link/imp/*.rpt",
+                    "artifacts/tmp/link/vivado/vpl/prj/prj.runs/impl_*/runme.log")
+_PACKET_FILES = frozenset({"evidence-manifest.json", "README.txt"})
 
 
 def _light_ignore(run_dir: Path):
@@ -1077,32 +1138,37 @@ def export_evidence(state_dir: Path, run_id: str, output: Path, *, light: bool =
     """Copy a run with a SHA-256 for every file.
 
     ``light`` is the packet that carries a build to another host for its board
-    stage: everything but v++'s working tree, plus the routed text reports.
+    stage: everything but v++'s working tree, plus the routed text reports and
+    the implementation logs.
     """
+    check_run_id(run_id)
     run_dir = state_dir / "runs" / run_id
     if not (run_dir / "result.json").is_file():
         raise HarnessError(f"run {run_id} has no result")
     output = output.resolve()
-    if output == run_dir or run_dir in output.parents:
+    if output == run_dir.resolve() or run_dir.resolve() in output.parents:
         raise HarnessError("evidence output must be outside the run directory")
     output.mkdir(parents=True, exist_ok=True)
     destination = output / run_id
+    if destination.resolve().parent != output or destination.resolve() == run_dir.resolve():
+        raise HarnessError(f"evidence for {run_id} would not land inside {output}")
     if destination.exists():
         shutil.rmtree(destination)
     if light:
         shutil.copytree(run_dir, destination, ignore=_light_ignore(run_dir))
-        reports = run_dir / _KEPT_REPORTS
-        if reports.is_dir():
-            for report in sorted(reports.glob("*.rpt")):
-                target = destination / _KEPT_REPORTS / report.name
-                target.parent.mkdir(parents=True, exist_ok=True)
-                shutil.copy2(report, target)
+        for pattern in _KEPT_FROM_HEAVY:
+            for kept in sorted(run_dir.glob(pattern)):
+                if kept.is_file():
+                    target = destination / kept.relative_to(run_dir)
+                    target.parent.mkdir(parents=True, exist_ok=True)
+                    shutil.copy2(kept, target)
     else:
         shutil.copytree(run_dir, destination, ignore=shutil.ignore_patterns("active_process.json"))
     files: dict[str, str] = {}
     for path in sorted(destination.rglob("*")):
-        if path.is_file() and path.name not in ("evidence-manifest.json", "README.txt"):
-            files[str(path.relative_to(destination))] = file_sha256(path)
+        relative = str(path.relative_to(destination))
+        if path.is_file() and relative not in _PACKET_FILES:
+            files[relative] = file_sha256(path)
     dump_json(destination / "evidence-manifest.json",
               {"schema_version": 1, "run_id": run_id, "packet": "light" if light else "full", "files": files})
     (destination / "README.txt").write_text(
@@ -1168,7 +1234,7 @@ def import_run(state_dir: Path, stream: BinaryIO) -> dict[str, Any]:
         if manifest.get("run_id") != top:
             raise HarnessError(f"packet manifest names run {manifest.get('run_id')!r}, directory is {top!r}")
         listed = manifest.get("files") or {}
-        present = {str(p.relative_to(packet)) for p in packet.rglob("*") if p.is_file()} - {"evidence-manifest.json", "README.txt"}
+        present = {str(p.relative_to(packet)) for p in packet.rglob("*") if p.is_file()} - _PACKET_FILES
         if present != set(listed):
             extra, missing = sorted(present - set(listed)), sorted(set(listed) - present)
             raise HarnessError(f"packet files differ from its manifest (extra {extra[:5]}, missing {missing[:5]})")

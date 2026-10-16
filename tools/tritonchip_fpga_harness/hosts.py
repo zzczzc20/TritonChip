@@ -34,10 +34,13 @@ and what it does::
 - ``state_dir`` is the harness state directory on that server.
 - ``vitis_root`` and ``platforms_root`` override the target's installation
   paths on that server (toolroots.py); ``environment`` passes further
-  variables (an ArchBench interpreter, ``XILINX_XRT``) to every remote command.
+  variables (an ArchBench interpreter, ``XILINX_XRT``, a ``PATH``) to every
+  command the controller runs there.
 
-Every value is checked to be one shell-safe token: OpenSSH runs the remote
-command through the login shell.
+Every value is checked to be one shell-safe token that does not start with
+'-': OpenSSH runs the remote command through the login shell, and reads
+options after the destination unless they follow '--' (which the harness
+always passes).
 """
 
 from __future__ import annotations
@@ -103,8 +106,9 @@ class Host:
 
 
 def _token(value: Any, where: str) -> str:
-    if not isinstance(value, str) or not value or not _SAFE.fullmatch(value):
-        raise SchemaError(f"{where} must be one shell-safe token, got {value!r}")
+    # A leading '-' would make the value an option of ssh or of the remote program.
+    if not isinstance(value, str) or not value or value.startswith("-") or not _SAFE.fullmatch(value):
+        raise SchemaError(f"{where} must be one shell-safe token not starting with '-', got {value!r}")
     return value
 
 

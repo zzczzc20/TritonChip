@@ -219,6 +219,13 @@ class U50Adapter:
             c.vivado,
             "-mode",
             "batch",
+            # Vivado's journal and log go with the build, not into the
+            # checkout: a second build there would leave a backup journal
+            # that git does not ignore, and the checkout would count as dirty.
+            "-journal",
+            str(build_dir / "package_vivado.jou"),
+            "-log",
+            str(build_dir / "package_vivado.log"),
             "-source",
             str(c.package_script),
             "-tclargs",

@@ -56,7 +56,7 @@ route failed with global congestion level 7; no qualified image exists.
 DCP (`ed1facba…90360e8`). The read-only observer completed all eight diagnostic reports without retry.
 Registered ranges and half the cache sets did not solve routability.
 
-**Next command:** `tail -50 ~/tnca_build/r40_attempt01_focused_p1/stdout.log` on the
+**Next command:** `tail -50 ~/tnca_build/r40_hierarchy_screen/case1.log` on the
 FPGA server (module-level screening only). **Diagnostic success:** inspect complete critical-path, SLR packing
 and congestion reports; formulate and functionally/resource-screen one concrete
 structural correction before spending the final implementation attempt. Only
@@ -225,3 +225,25 @@ CI run 38679960975 failed only R36-BE-01: its broad Popen token check classified
 ## Necessary HBM measurement correction
 
 `evidence/r40/R40-04/measurement_boundary/` reproduces the v2 MMIO register-default bug on actual three-core RTL: legacy C0..D8 reads return zero despite positive traffic at all three outlets. The current backend correctly reports the legacy interface unavailable, and the HBM diagnostic uses opcode-17 outlet line counts. It captures traffic before CPU validation and keeps common-clock graph spans separate from summed kernel cycles. Request/control traffic outside launch endpoints is explicitly labelled; it is not certified HBM peak bandwidth. The active 642c660 checkpoint archive includes this correction; the historical immutable 8abf527 archive has not been modified. No required gate changes as a result of this diagnostic correction.
+
+The [focused cache-cone audit](attempt01/cache_cone_ownership.json) resolves a
+physical ownership issue: a sampled cache-private cone starts and ends in
+slice2, but seventeen of its direct LUT neighbours are reconstructed under
+TMU and physically placed in SLR1, confirmed independently from actual LOCs.
+All192 queried pipeline state groups match their intended SLR assignments;
+that does not establish locality of combinational logic moved outside those
+named groups. A targeted cache-boundary comparison under rebuilt synthesis
+is running before the remaining full attempt. The historical single-slice
+OOC wrapper also omitted `maint_base`; the corrected input-complete screen
+must replace its incomplete maintenance timing evidence. Required gate
+statuses and actual performance remain unchanged/not-measured.
+
+Source regression CI [38910228700](https://github.com/zzczzc20/TritonChip/actions/runs/38910228700)
+completed successfully for `1df03591f933284a94370e7ecdf452e479ffebe7`, now
+published to `r40`. This does not promote the hardware gates. The corrected
+three-slice shared-TMU control has completed under rebuilt hierarchy: its
+unplaced worst setup path is33 levels/8.383 ns, estimated WNS+1.374 ns,
+but TMU combinational startpoints still include private tag-output/owner/age
+registers from the caches. Positive unplaced timing therefore does not resolve
+the observed physical ownership problem. The targeted boundary-preserved
+variant is still running; no production hierarchy attribute has been applied.

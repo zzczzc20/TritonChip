@@ -1,0 +1,193 @@
+{
+  "schema": "tnca-r40-cache-cone-ownership/1",
+  "source_commit": "cf330dc64b6e1df535c31c9bb1a5d735e6bc0fb7",
+  "checkpoint_sha256": "ed1facba2dd686078b02f49f05cdbaf920704120a46a24f4d2fc4e90290360e8",
+  "gate_status": "not-measured",
+  "observed": {
+    "direct_cells": 38,
+    "tmu_primitives_physically_in_slr1": [
+      {
+        "cell": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/u_tmu/victim_ptr[0][2]_i_13146__0",
+        "primitive": "LUT4",
+        "is_primitive": "1",
+        "loc": "SLICE_X165Y448",
+        "cell_query_slrs": "SLR1",
+        "site_query_slrs": "SLR1",
+        "sites": "SLICE_X165Y448"
+      },
+      {
+        "cell": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/u_tmu/victim_ptr[0][2]_i_15602__0",
+        "primitive": "LUT4",
+        "is_primitive": "1",
+        "loc": "SLICE_X123Y402",
+        "cell_query_slrs": "SLR1",
+        "site_query_slrs": "SLR1",
+        "sites": "SLICE_X123Y402"
+      },
+      {
+        "cell": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/u_tmu/victim_ptr[0][2]_i_15610__0",
+        "primitive": "LUT4",
+        "is_primitive": "1",
+        "loc": "SLICE_X123Y402",
+        "cell_query_slrs": "SLR1",
+        "site_query_slrs": "SLR1",
+        "sites": "SLICE_X123Y402"
+      },
+      {
+        "cell": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/u_tmu/victim_ptr[0][2]_i_15632__0",
+        "primitive": "LUT4",
+        "is_primitive": "1",
+        "loc": "SLICE_X134Y449",
+        "cell_query_slrs": "SLR1",
+        "site_query_slrs": "SLR1",
+        "sites": "SLICE_X134Y449"
+      },
+      {
+        "cell": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/u_tmu/victim_ptr[0][2]_i_15640__0",
+        "primitive": "LUT4",
+        "is_primitive": "1",
+        "loc": "SLICE_X134Y449",
+        "cell_query_slrs": "SLR1",
+        "site_query_slrs": "SLR1",
+        "sites": "SLICE_X134Y449"
+      },
+      {
+        "cell": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/u_tmu/victim_ptr[0][2]_i_15692__0",
+        "primitive": "LUT4",
+        "is_primitive": "1",
+        "loc": "SLICE_X138Y444",
+        "cell_query_slrs": "SLR1",
+        "site_query_slrs": "SLR1",
+        "sites": "SLICE_X138Y444"
+      },
+      {
+        "cell": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/u_tmu/victim_ptr[0][2]_i_15700__0",
+        "primitive": "LUT4",
+        "is_primitive": "1",
+        "loc": "SLICE_X138Y444",
+        "cell_query_slrs": "SLR1",
+        "site_query_slrs": "SLR1",
+        "sites": "SLICE_X138Y444"
+      },
+      {
+        "cell": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/u_tmu/victim_ptr[0][2]_i_294__0",
+        "primitive": "LUT6",
+        "is_primitive": "1",
+        "loc": "SLICE_X163Y447",
+        "cell_query_slrs": "SLR1",
+        "site_query_slrs": "SLR1",
+        "sites": "SLICE_X163Y447"
+      },
+      {
+        "cell": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/u_tmu/victim_ptr[0][2]_i_298__0",
+        "primitive": "LUT6",
+        "is_primitive": "1",
+        "loc": "SLICE_X163Y447",
+        "cell_query_slrs": "SLR1",
+        "site_query_slrs": "SLR1",
+        "sites": "SLICE_X163Y447"
+      },
+      {
+        "cell": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/u_tmu/victim_ptr[0][2]_i_15444__0",
+        "primitive": "LUT4",
+        "is_primitive": "1",
+        "loc": "SLICE_X136Y443",
+        "cell_query_slrs": "SLR1",
+        "site_query_slrs": "SLR1",
+        "sites": "SLICE_X136Y443"
+      },
+      {
+        "cell": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/u_tmu/victim_ptr[0][2]_i_15595__0",
+        "primitive": "LUT4",
+        "is_primitive": "1",
+        "loc": "SLICE_X137Y441",
+        "cell_query_slrs": "SLR1",
+        "site_query_slrs": "SLR1",
+        "sites": "SLICE_X137Y441"
+      },
+      {
+        "cell": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/u_tmu/victim_ptr[0][2]_i_15625__0",
+        "primitive": "LUT4",
+        "is_primitive": "1",
+        "loc": "SLICE_X122Y421",
+        "cell_query_slrs": "SLR1",
+        "site_query_slrs": "SLR1",
+        "sites": "SLICE_X122Y421"
+      },
+      {
+        "cell": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/u_tmu/victim_ptr[0][2]_i_15662__0",
+        "primitive": "LUT4",
+        "is_primitive": "1",
+        "loc": "SLICE_X138Y440",
+        "cell_query_slrs": "SLR1",
+        "site_query_slrs": "SLR1",
+        "sites": "SLICE_X138Y440"
+      },
+      {
+        "cell": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/u_tmu/victim_ptr[0][2]_i_15685__0",
+        "primitive": "LUT4",
+        "is_primitive": "1",
+        "loc": "SLICE_X138Y436",
+        "cell_query_slrs": "SLR1",
+        "site_query_slrs": "SLR1",
+        "sites": "SLICE_X138Y436"
+      },
+      {
+        "cell": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/u_tmu/victim_ptr[0][2]_i_15722__0",
+        "primitive": "LUT4",
+        "is_primitive": "1",
+        "loc": "SLICE_X136Y447",
+        "cell_query_slrs": "SLR1",
+        "site_query_slrs": "SLR1",
+        "sites": "SLICE_X136Y447"
+      },
+      {
+        "cell": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/u_tmu/victim_ptr[0][2]_i_15752",
+        "primitive": "LUT4",
+        "is_primitive": "1",
+        "loc": "SLICE_X131Y438",
+        "cell_query_slrs": "SLR1",
+        "site_query_slrs": "SLR1",
+        "sites": "SLICE_X131Y438"
+      },
+      {
+        "cell": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/u_tmu/victim_ptr[0][2]_i_15782__0",
+        "primitive": "LUT4",
+        "is_primitive": "1",
+        "loc": "SLICE_X128Y454",
+        "cell_query_slrs": "SLR1",
+        "site_query_slrs": "SLR1",
+        "sites": "SLICE_X128Y454"
+      }
+    ],
+    "all_sampled_sequential_endpoints": "tile2 slice only",
+    "sampled_startpoints": "tile2 tag memory and current-address registers",
+    "interpretation": "cache-private combinational cone traverses primitives reconstructed under TMU in another physical SLR; correct named core/slice placement does not establish functional-cone locality"
+  },
+  "excluded_hypotheses": [
+    "these twelve sampled nodes are not shared sequentially by other cores",
+    "pipeline-state placement: all192 FF/RAM stage-role groups match intended SLR assignments",
+    "no broad kernel DONT_TOUCH: only six required code links"
+  ],
+  "limits": [
+    "one immediate net has explicit LOC->site->SLR confirmation; do not generalize its17 cells as the total spill",
+    "actual routed bus-to-SLL-column attribution still not-measured"
+  ],
+  "next_experiment": {
+    "root": "~/tnca_build/r40_hierarchy_screen",
+    "design": "three actual slices plus actual shared TMU, no cores/NoC/HBM shell",
+    "difference": "rebuilt hierarchy, identical RTL and all maintenance inputs; only targeted KEEP_HIERARCHY cache-instance attribute differs",
+    "command": "tail -50 ~/tnca_build/r40_hierarchy_screen/case1.log",
+    "on_success": "inspect raw TMU combinational startpoints/endpoints for private cache dependencies, resource/timing costs and tag mapping; adopt only if the cause changes",
+    "on_failure": "retain failure and remaining foreign cone; do not launch final full implementation"
+  },
+  "maintenance_screen_correction": "prior single-slice wrapper omitted maint_base; fixed, both wrappers passed -Wall elaboration with no dangling/width-mismatch inputs; new grid screen reconnects all66 actual slice ports",
+  "references": {
+    "KEEP_HIERARCHY_2023_2": "https://docs.amd.com/r/2023.2-English/ug912-vivado-properties/KEEP_HIERARCHY"
+  },
+  "archives": {
+    "focused_p1.tar.gz": "5f53cf8b231a63ceae0d791e7312b67538e203f6a0a9f86773bb7797d769d596",
+    "immediate_sites.tar.gz": "a7cf675cd91f9fd7e96c7da5d83a78740cbbf4c79453d06be23876d150f34c42"
+  },
+  "remaining_full_implementations": 1
+}

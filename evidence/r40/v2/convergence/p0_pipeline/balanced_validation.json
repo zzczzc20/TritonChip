@@ -222,7 +222,10 @@
     },
     "qualification": "screening passes only; final three-core placement/route/setup/hold/CDC/image remain unmeasured",
     "route_status": "not-measured",
-    "fmax_hz": null
+    "fmax_hz": null,
+    "limitations": [
+      "The historical single-slice wrapper in this archive omitted maint_base. The controlled serial/balanced comparison remains recorded, but it does not establish complete maintenance timing. Corrected three-slice rebuilt-hierarchy comparison is running separately."
+    ]
   },
   "archives": {
     "balanced_functional.tar.gz": "9ce5be5e8baadbebf3fcc11e5afdb43670b4fcf805f30c1cc29780aa29c131ed",

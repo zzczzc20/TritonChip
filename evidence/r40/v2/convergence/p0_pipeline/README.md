@@ -4,6 +4,14 @@ Functional validation passes for the synchronous tag banks and registered
 victim-owner path, independently and together. Physical qualification remains
 **not-measured**. The final full implementation attempt has not been started.
 
+**Screen correction:** inspection found that the historical single-slice
+wrapper omitted `maint_base`. The connection is now fixed. The paired results
+below remain a controlled argmin comparison, but do not establish complete
+maintenance timing. A new three-slice/shared-TMU screen connects all actual
+slice inputs and compares rebuilt hierarchy with and without a targeted cache
+boundary attribute. Neither historical estimates nor this small model qualify
+a full image.
+
 ## Latest candidate: balanced victim ranking
 
 The source-identical serial/balanced comparison in `balanced_ooc.tar.gz`

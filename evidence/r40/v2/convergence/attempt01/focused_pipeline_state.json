@@ -1,0 +1,1161 @@
+{
+  "scope": "failed cf330dc snapshot only, actual FF/RAM state grouped by stage/role; combinational cells excluded",
+  "expected_assignment_source": "flow/fpga/place_r40_multicore.tcl",
+  "actual_state_groups": [
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/g_outlet[0].link/g_stage[0]:payload",
+      "actual_slrs": "SLR1",
+      "expected_slr": "SLR1",
+      "state_cells": 1231
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/g_outlet[0].link/g_stage[0]:valid",
+      "actual_slrs": "SLR1",
+      "expected_slr": "SLR1",
+      "state_cells": 1
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/g_outlet[0].link/g_stage[1]:payload",
+      "actual_slrs": "SLR0",
+      "expected_slr": "SLR0",
+      "state_cells": 1231
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/g_outlet[0].link/g_stage[1]:valid",
+      "actual_slrs": "SLR0",
+      "expected_slr": "SLR0",
+      "state_cells": 1
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/g_outlet[0].link/g_stage[0]:occupancy_ready",
+      "actual_slrs": "SLR1",
+      "expected_slr": "SLR1",
+      "state_cells": 2
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/g_outlet[0].link/g_stage[0]:pointer",
+      "actual_slrs": "SLR1",
+      "expected_slr": "SLR1",
+      "state_cells": 3
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/g_outlet[0].link/g_stage[1]:occupancy_ready",
+      "actual_slrs": "SLR0",
+      "expected_slr": "SLR0",
+      "state_cells": 2
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/g_outlet[0].link/g_stage[1]:pointer",
+      "actual_slrs": "SLR0",
+      "expected_slr": "SLR0",
+      "state_cells": 2
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/g_outlet[1].link/g_stage[0]:payload",
+      "actual_slrs": "SLR1",
+      "expected_slr": "SLR1",
+      "state_cells": 1231
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/g_outlet[1].link/g_stage[0]:valid",
+      "actual_slrs": "SLR1",
+      "expected_slr": "SLR1",
+      "state_cells": 1
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/g_outlet[1].link/g_stage[1]:payload",
+      "actual_slrs": "SLR0",
+      "expected_slr": "SLR0",
+      "state_cells": 1231
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/g_outlet[1].link/g_stage[1]:valid",
+      "actual_slrs": "SLR0",
+      "expected_slr": "SLR0",
+      "state_cells": 1
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/g_outlet[1].link/g_stage[0]:occupancy_ready",
+      "actual_slrs": "SLR1",
+      "expected_slr": "SLR1",
+      "state_cells": 2
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/g_outlet[1].link/g_stage[0]:pointer",
+      "actual_slrs": "SLR1",
+      "expected_slr": "SLR1",
+      "state_cells": 3
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/g_outlet[1].link/g_stage[1]:occupancy_ready",
+      "actual_slrs": "SLR0",
+      "expected_slr": "SLR0",
+      "state_cells": 2
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/g_outlet[1].link/g_stage[1]:pointer",
+      "actual_slrs": "SLR0",
+      "expected_slr": "SLR0",
+      "state_cells": 2
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/g_outlet[2].link/g_stage[0]:payload",
+      "actual_slrs": "SLR1",
+      "expected_slr": "SLR1",
+      "state_cells": 1231
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/g_outlet[2].link/g_stage[0]:valid",
+      "actual_slrs": "SLR1",
+      "expected_slr": "SLR1",
+      "state_cells": 1
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/g_outlet[2].link/g_stage[1]:payload",
+      "actual_slrs": "SLR0",
+      "expected_slr": "SLR0",
+      "state_cells": 1231
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/g_outlet[2].link/g_stage[1]:valid",
+      "actual_slrs": "SLR0",
+      "expected_slr": "SLR0",
+      "state_cells": 1
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/g_outlet[2].link/g_stage[0]:occupancy_ready",
+      "actual_slrs": "SLR1",
+      "expected_slr": "SLR1",
+      "state_cells": 2
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/g_outlet[2].link/g_stage[0]:pointer",
+      "actual_slrs": "SLR1",
+      "expected_slr": "SLR1",
+      "state_cells": 3
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/g_outlet[2].link/g_stage[1]:occupancy_ready",
+      "actual_slrs": "SLR0",
+      "expected_slr": "SLR0",
+      "state_cells": 2
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/g_outlet[2].link/g_stage[1]:pointer",
+      "actual_slrs": "SLR0",
+      "expected_slr": "SLR0",
+      "state_cells": 2
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/g_code[0].commands/g_stage[0]:occupancy_ready",
+      "actual_slrs": "SLR1",
+      "expected_slr": "SLR1",
+      "state_cells": 2
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/g_code[0].commands/g_stage[0]:payload",
+      "actual_slrs": "SLR1",
+      "expected_slr": "SLR1",
+      "state_cells": 170
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/g_code[0].commands/g_stage[0]:pointer",
+      "actual_slrs": "SLR1",
+      "expected_slr": "SLR1",
+      "state_cells": 2
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/g_code[0].commands/g_stage[1]:occupancy_ready",
+      "actual_slrs": "SLR0",
+      "expected_slr": "SLR0",
+      "state_cells": 2
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/g_code[0].commands/g_stage[1]:payload",
+      "actual_slrs": "SLR0",
+      "expected_slr": "SLR0",
+      "state_cells": 170
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/g_code[0].commands/g_stage[1]:pointer",
+      "actual_slrs": "SLR0",
+      "expected_slr": "SLR0",
+      "state_cells": 2
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/g_code[0].replies/g_stage[0]:occupancy_ready",
+      "actual_slrs": "SLR0",
+      "expected_slr": "SLR0",
+      "state_cells": 2
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/g_code[0].replies/g_stage[0]:payload",
+      "actual_slrs": "SLR0",
+      "expected_slr": "SLR0",
+      "state_cells": 85
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/g_code[0].replies/g_stage[0]:pointer",
+      "actual_slrs": "SLR0",
+      "expected_slr": "SLR0",
+      "state_cells": 2
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/g_code[0].replies/g_stage[1]:occupancy_ready",
+      "actual_slrs": "SLR1",
+      "expected_slr": "SLR1",
+      "state_cells": 2
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/g_code[0].replies/g_stage[1]:payload",
+      "actual_slrs": "SLR1",
+      "expected_slr": "SLR1",
+      "state_cells": 85
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/g_code[0].replies/g_stage[1]:pointer",
+      "actual_slrs": "SLR1",
+      "expected_slr": "SLR1",
+      "state_cells": 2
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/g_code[1].commands/g_stage[0]:occupancy_ready",
+      "actual_slrs": "SLR1",
+      "expected_slr": "SLR1",
+      "state_cells": 2
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/g_code[1].commands/g_stage[0]:payload",
+      "actual_slrs": "SLR1",
+      "expected_slr": "SLR1",
+      "state_cells": 170
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/g_code[1].commands/g_stage[0]:pointer",
+      "actual_slrs": "SLR1",
+      "expected_slr": "SLR1",
+      "state_cells": 2
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/g_code[1].commands/g_stage[1]:occupancy_ready",
+      "actual_slrs": "SLR1",
+      "expected_slr": "SLR1",
+      "state_cells": 2
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/g_code[1].commands/g_stage[1]:payload",
+      "actual_slrs": "SLR1",
+      "expected_slr": "SLR1",
+      "state_cells": 170
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/g_code[1].commands/g_stage[1]:pointer",
+      "actual_slrs": "SLR1",
+      "expected_slr": "SLR1",
+      "state_cells": 2
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/g_code[1].replies/g_stage[0]:occupancy_ready",
+      "actual_slrs": "SLR1",
+      "expected_slr": "SLR1",
+      "state_cells": 2
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/g_code[1].replies/g_stage[0]:payload",
+      "actual_slrs": "SLR1",
+      "expected_slr": "SLR1",
+      "state_cells": 85
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/g_code[1].replies/g_stage[0]:pointer",
+      "actual_slrs": "SLR1",
+      "expected_slr": "SLR1",
+      "state_cells": 2
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/g_code[1].replies/g_stage[1]:occupancy_ready",
+      "actual_slrs": "SLR1",
+      "expected_slr": "SLR1",
+      "state_cells": 2
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/g_code[1].replies/g_stage[1]:payload",
+      "actual_slrs": "SLR1",
+      "expected_slr": "SLR1",
+      "state_cells": 85
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/g_code[1].replies/g_stage[1]:pointer",
+      "actual_slrs": "SLR1",
+      "expected_slr": "SLR1",
+      "state_cells": 2
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/g_code[2].commands/g_stage[0]:occupancy_ready",
+      "actual_slrs": "SLR1",
+      "expected_slr": "SLR1",
+      "state_cells": 2
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/g_code[2].commands/g_stage[0]:payload",
+      "actual_slrs": "SLR1",
+      "expected_slr": "SLR1",
+      "state_cells": 170
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/g_code[2].commands/g_stage[0]:pointer",
+      "actual_slrs": "SLR1",
+      "expected_slr": "SLR1",
+      "state_cells": 2
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/g_code[2].commands/g_stage[1]:occupancy_ready",
+      "actual_slrs": "SLR2",
+      "expected_slr": "SLR2",
+      "state_cells": 2
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/g_code[2].commands/g_stage[1]:payload",
+      "actual_slrs": "SLR2",
+      "expected_slr": "SLR2",
+      "state_cells": 170
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/g_code[2].commands/g_stage[1]:pointer",
+      "actual_slrs": "SLR2",
+      "expected_slr": "SLR2",
+      "state_cells": 2
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/g_code[2].replies/g_stage[0]:occupancy_ready",
+      "actual_slrs": "SLR2",
+      "expected_slr": "SLR2",
+      "state_cells": 2
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/g_code[2].replies/g_stage[0]:payload",
+      "actual_slrs": "SLR2",
+      "expected_slr": "SLR2",
+      "state_cells": 85
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/g_code[2].replies/g_stage[0]:pointer",
+      "actual_slrs": "SLR2",
+      "expected_slr": "SLR2",
+      "state_cells": 2
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/g_code[2].replies/g_stage[1]:occupancy_ready",
+      "actual_slrs": "SLR1",
+      "expected_slr": "SLR1",
+      "state_cells": 2
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/g_code[2].replies/g_stage[1]:payload",
+      "actual_slrs": "SLR1",
+      "expected_slr": "SLR1",
+      "state_cells": 85
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/g_code[2].replies/g_stage[1]:pointer",
+      "actual_slrs": "SLR1",
+      "expected_slr": "SLR1",
+      "state_cells": 2
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_cache_handoff.g_home_link[0].command/g_stage[0]:occupancy_ready",
+      "actual_slrs": "SLR1",
+      "expected_slr": "SLR1",
+      "state_cells": 2
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_cache_handoff.g_home_link[0].command/g_stage[0]:payload",
+      "actual_slrs": "SLR1",
+      "expected_slr": "SLR1",
+      "state_cells": 159
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_cache_handoff.g_home_link[0].command/g_stage[0]:pointer",
+      "actual_slrs": "SLR1",
+      "expected_slr": "SLR1",
+      "state_cells": 2
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_cache_handoff.g_home_link[0].command/g_stage[1]:occupancy_ready",
+      "actual_slrs": "SLR0",
+      "expected_slr": "SLR0",
+      "state_cells": 2
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_cache_handoff.g_home_link[0].command/g_stage[1]:payload",
+      "actual_slrs": "SLR0",
+      "expected_slr": "SLR0",
+      "state_cells": 159
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_cache_handoff.g_home_link[0].command/g_stage[1]:pointer",
+      "actual_slrs": "SLR0",
+      "expected_slr": "SLR0",
+      "state_cells": 2
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_cache_handoff.g_home_link[0].response/g_stage[0]:occupancy_ready",
+      "actual_slrs": "SLR0",
+      "expected_slr": "SLR0",
+      "state_cells": 2
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_cache_handoff.g_home_link[0].response/g_stage[1]:occupancy_ready",
+      "actual_slrs": "SLR1",
+      "expected_slr": "SLR1",
+      "state_cells": 2
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_cache_handoff.g_home_link[1].command/g_stage[0]:occupancy_ready",
+      "actual_slrs": "SLR1",
+      "expected_slr": "SLR1",
+      "state_cells": 2
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_cache_handoff.g_home_link[1].command/g_stage[0]:payload",
+      "actual_slrs": "SLR1",
+      "expected_slr": "SLR1",
+      "state_cells": 159
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_cache_handoff.g_home_link[1].command/g_stage[0]:pointer",
+      "actual_slrs": "SLR1",
+      "expected_slr": "SLR1",
+      "state_cells": 2
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_cache_handoff.g_home_link[1].command/g_stage[1]:occupancy_ready",
+      "actual_slrs": "SLR1",
+      "expected_slr": "SLR1",
+      "state_cells": 2
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_cache_handoff.g_home_link[1].command/g_stage[1]:payload",
+      "actual_slrs": "SLR1",
+      "expected_slr": "SLR1",
+      "state_cells": 159
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_cache_handoff.g_home_link[1].command/g_stage[1]:pointer",
+      "actual_slrs": "SLR1",
+      "expected_slr": "SLR1",
+      "state_cells": 2
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_cache_handoff.g_home_link[1].response/g_stage[0]:occupancy_ready",
+      "actual_slrs": "SLR1",
+      "expected_slr": "SLR1",
+      "state_cells": 2
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_cache_handoff.g_home_link[1].response/g_stage[1]:occupancy_ready",
+      "actual_slrs": "SLR1",
+      "expected_slr": "SLR1",
+      "state_cells": 2
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_cache_handoff.g_home_link[2].command/g_stage[0]:occupancy_ready",
+      "actual_slrs": "SLR1",
+      "expected_slr": "SLR1",
+      "state_cells": 2
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_cache_handoff.g_home_link[2].command/g_stage[0]:payload",
+      "actual_slrs": "SLR1",
+      "expected_slr": "SLR1",
+      "state_cells": 159
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_cache_handoff.g_home_link[2].command/g_stage[0]:pointer",
+      "actual_slrs": "SLR1",
+      "expected_slr": "SLR1",
+      "state_cells": 2
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_cache_handoff.g_home_link[2].command/g_stage[1]:occupancy_ready",
+      "actual_slrs": "SLR2",
+      "expected_slr": "SLR2",
+      "state_cells": 2
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_cache_handoff.g_home_link[2].command/g_stage[1]:payload",
+      "actual_slrs": "SLR2",
+      "expected_slr": "SLR2",
+      "state_cells": 159
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_cache_handoff.g_home_link[2].command/g_stage[1]:pointer",
+      "actual_slrs": "SLR2",
+      "expected_slr": "SLR2",
+      "state_cells": 2
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_cache_handoff.g_home_link[2].response/g_stage[0]:occupancy_ready",
+      "actual_slrs": "SLR2",
+      "expected_slr": "SLR2",
+      "state_cells": 2
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_cache_handoff.g_home_link[2].response/g_stage[1]:occupancy_ready",
+      "actual_slrs": "SLR1",
+      "expected_slr": "SLR1",
+      "state_cells": 2
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_dispatch.g_command_link[0].commands/g_stage[0]:occupancy_ready",
+      "actual_slrs": "SLR1",
+      "expected_slr": "SLR1",
+      "state_cells": 2
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_dispatch.g_command_link[0].commands/g_stage[0]:payload",
+      "actual_slrs": "SLR1",
+      "expected_slr": "SLR1",
+      "state_cells": 408
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_dispatch.g_command_link[0].commands/g_stage[0]:pointer",
+      "actual_slrs": "SLR1",
+      "expected_slr": "SLR1",
+      "state_cells": 2
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_dispatch.g_command_link[0].commands/g_stage[1]:occupancy_ready",
+      "actual_slrs": "SLR0",
+      "expected_slr": "SLR0",
+      "state_cells": 2
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_dispatch.g_command_link[0].commands/g_stage[1]:payload",
+      "actual_slrs": "SLR0",
+      "expected_slr": "SLR0",
+      "state_cells": 408
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_dispatch.g_command_link[0].commands/g_stage[1]:pointer",
+      "actual_slrs": "SLR0",
+      "expected_slr": "SLR0",
+      "state_cells": 2
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_dispatch.g_command_link[0].g_pipeline.completions/g_stage[0]:occupancy_ready",
+      "actual_slrs": "SLR0",
+      "expected_slr": "SLR0",
+      "state_cells": 2
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_dispatch.g_command_link[0].g_pipeline.completions/g_stage[0]:payload",
+      "actual_slrs": "SLR0",
+      "expected_slr": "SLR0",
+      "state_cells": 6
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_dispatch.g_command_link[0].g_pipeline.completions/g_stage[0]:pointer",
+      "actual_slrs": "SLR0",
+      "expected_slr": "SLR0",
+      "state_cells": 2
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_dispatch.g_command_link[0].g_pipeline.completions/g_stage[1]:occupancy_ready",
+      "actual_slrs": "SLR1",
+      "expected_slr": "SLR1",
+      "state_cells": 2
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_dispatch.g_command_link[0].g_pipeline.completions/g_stage[1]:payload",
+      "actual_slrs": "SLR1",
+      "expected_slr": "SLR1",
+      "state_cells": 6
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_dispatch.g_command_link[0].g_pipeline.completions/g_stage[1]:pointer",
+      "actual_slrs": "SLR1",
+      "expected_slr": "SLR1",
+      "state_cells": 2
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_dispatch.g_command_link[1].commands/g_stage[0]:occupancy_ready",
+      "actual_slrs": "SLR1",
+      "expected_slr": "SLR1",
+      "state_cells": 2
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_dispatch.g_command_link[1].commands/g_stage[0]:payload",
+      "actual_slrs": "SLR1",
+      "expected_slr": "SLR1",
+      "state_cells": 408
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_dispatch.g_command_link[1].commands/g_stage[0]:pointer",
+      "actual_slrs": "SLR1",
+      "expected_slr": "SLR1",
+      "state_cells": 2
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_dispatch.g_command_link[1].commands/g_stage[1]:occupancy_ready",
+      "actual_slrs": "SLR1",
+      "expected_slr": "SLR1",
+      "state_cells": 2
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_dispatch.g_command_link[1].commands/g_stage[1]:payload",
+      "actual_slrs": "SLR1",
+      "expected_slr": "SLR1",
+      "state_cells": 408
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_dispatch.g_command_link[1].commands/g_stage[1]:pointer",
+      "actual_slrs": "SLR1",
+      "expected_slr": "SLR1",
+      "state_cells": 2
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_dispatch.g_command_link[1].g_pipeline.completions/g_stage[0]:occupancy_ready",
+      "actual_slrs": "SLR1",
+      "expected_slr": "SLR1",
+      "state_cells": 2
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_dispatch.g_command_link[1].g_pipeline.completions/g_stage[0]:payload",
+      "actual_slrs": "SLR1",
+      "expected_slr": "SLR1",
+      "state_cells": 6
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_dispatch.g_command_link[1].g_pipeline.completions/g_stage[0]:pointer",
+      "actual_slrs": "SLR1",
+      "expected_slr": "SLR1",
+      "state_cells": 2
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_dispatch.g_command_link[1].g_pipeline.completions/g_stage[1]:occupancy_ready",
+      "actual_slrs": "SLR1",
+      "expected_slr": "SLR1",
+      "state_cells": 2
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_dispatch.g_command_link[1].g_pipeline.completions/g_stage[1]:payload",
+      "actual_slrs": "SLR1",
+      "expected_slr": "SLR1",
+      "state_cells": 6
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_dispatch.g_command_link[1].g_pipeline.completions/g_stage[1]:pointer",
+      "actual_slrs": "SLR1",
+      "expected_slr": "SLR1",
+      "state_cells": 2
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_dispatch.g_command_link[2].commands/g_stage[0]:occupancy_ready",
+      "actual_slrs": "SLR1",
+      "expected_slr": "SLR1",
+      "state_cells": 2
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_dispatch.g_command_link[2].commands/g_stage[0]:payload",
+      "actual_slrs": "SLR1",
+      "expected_slr": "SLR1",
+      "state_cells": 408
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_dispatch.g_command_link[2].commands/g_stage[0]:pointer",
+      "actual_slrs": "SLR1",
+      "expected_slr": "SLR1",
+      "state_cells": 2
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_dispatch.g_command_link[2].commands/g_stage[1]:occupancy_ready",
+      "actual_slrs": "SLR2",
+      "expected_slr": "SLR2",
+      "state_cells": 2
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_dispatch.g_command_link[2].commands/g_stage[1]:payload",
+      "actual_slrs": "SLR2",
+      "expected_slr": "SLR2",
+      "state_cells": 408
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_dispatch.g_command_link[2].commands/g_stage[1]:pointer",
+      "actual_slrs": "SLR2",
+      "expected_slr": "SLR2",
+      "state_cells": 2
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_dispatch.g_command_link[2].g_pipeline.completions/g_stage[0]:occupancy_ready",
+      "actual_slrs": "SLR2",
+      "expected_slr": "SLR2",
+      "state_cells": 2
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_dispatch.g_command_link[2].g_pipeline.completions/g_stage[0]:payload",
+      "actual_slrs": "SLR2",
+      "expected_slr": "SLR2",
+      "state_cells": 6
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_dispatch.g_command_link[2].g_pipeline.completions/g_stage[0]:pointer",
+      "actual_slrs": "SLR2",
+      "expected_slr": "SLR2",
+      "state_cells": 2
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_dispatch.g_command_link[2].g_pipeline.completions/g_stage[1]:occupancy_ready",
+      "actual_slrs": "SLR1",
+      "expected_slr": "SLR1",
+      "state_cells": 2
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_dispatch.g_command_link[2].g_pipeline.completions/g_stage[1]:payload",
+      "actual_slrs": "SLR1",
+      "expected_slr": "SLR1",
+      "state_cells": 6
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_dispatch.g_command_link[2].g_pipeline.completions/g_stage[1]:pointer",
+      "actual_slrs": "SLR1",
+      "expected_slr": "SLR1",
+      "state_cells": 2
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_home_link[0].g_pipeline.link/g_stage[0]:payload",
+      "actual_slrs": "SLR0",
+      "expected_slr": "SLR0",
+      "state_cells": 1229
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_home_link[0].g_pipeline.link/g_stage[0]:valid",
+      "actual_slrs": "SLR0",
+      "expected_slr": "SLR0",
+      "state_cells": 1
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_home_link[0].g_pipeline.link/g_stage[1]:payload",
+      "actual_slrs": "SLR1",
+      "expected_slr": "SLR1",
+      "state_cells": 1229
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_home_link[0].g_pipeline.link/g_stage[1]:valid",
+      "actual_slrs": "SLR1",
+      "expected_slr": "SLR1",
+      "state_cells": 1
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_home_link[0].g_pipeline.link/g_stage[0]:occupancy_ready",
+      "actual_slrs": "SLR0",
+      "expected_slr": "SLR0",
+      "state_cells": 2
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_home_link[0].g_pipeline.link/g_stage[0]:pointer",
+      "actual_slrs": "SLR0",
+      "expected_slr": "SLR0",
+      "state_cells": 2
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_home_link[0].g_pipeline.link/g_stage[1]:occupancy_ready",
+      "actual_slrs": "SLR1",
+      "expected_slr": "SLR1",
+      "state_cells": 2
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_home_link[0].g_pipeline.link/g_stage[1]:pointer",
+      "actual_slrs": "SLR1",
+      "expected_slr": "SLR1",
+      "state_cells": 2
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_home_link[1].g_pipeline.link/g_stage[0]:payload",
+      "actual_slrs": "SLR1",
+      "expected_slr": "SLR1",
+      "state_cells": 1229
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_home_link[1].g_pipeline.link/g_stage[0]:valid",
+      "actual_slrs": "SLR1",
+      "expected_slr": "SLR1",
+      "state_cells": 1
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_home_link[1].g_pipeline.link/g_stage[1]:payload",
+      "actual_slrs": "SLR1",
+      "expected_slr": "SLR1",
+      "state_cells": 1229
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_home_link[1].g_pipeline.link/g_stage[1]:valid",
+      "actual_slrs": "SLR1",
+      "expected_slr": "SLR1",
+      "state_cells": 1
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_home_link[1].g_pipeline.link/g_stage[0]:occupancy_ready",
+      "actual_slrs": "SLR1",
+      "expected_slr": "SLR1",
+      "state_cells": 2
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_home_link[1].g_pipeline.link/g_stage[0]:pointer",
+      "actual_slrs": "SLR1",
+      "expected_slr": "SLR1",
+      "state_cells": 2
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_home_link[1].g_pipeline.link/g_stage[1]:occupancy_ready",
+      "actual_slrs": "SLR1",
+      "expected_slr": "SLR1",
+      "state_cells": 2
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_home_link[1].g_pipeline.link/g_stage[1]:pointer",
+      "actual_slrs": "SLR1",
+      "expected_slr": "SLR1",
+      "state_cells": 2
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_home_link[2].g_pipeline.link/g_stage[0]:payload",
+      "actual_slrs": "SLR2",
+      "expected_slr": "SLR2",
+      "state_cells": 1229
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_home_link[2].g_pipeline.link/g_stage[0]:valid",
+      "actual_slrs": "SLR2",
+      "expected_slr": "SLR2",
+      "state_cells": 1
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_home_link[2].g_pipeline.link/g_stage[1]:payload",
+      "actual_slrs": "SLR1",
+      "expected_slr": "SLR1",
+      "state_cells": 1229
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_home_link[2].g_pipeline.link/g_stage[1]:valid",
+      "actual_slrs": "SLR1",
+      "expected_slr": "SLR1",
+      "state_cells": 1
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_home_link[2].g_pipeline.link/g_stage[0]:occupancy_ready",
+      "actual_slrs": "SLR2",
+      "expected_slr": "SLR2",
+      "state_cells": 2
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_home_link[2].g_pipeline.link/g_stage[0]:pointer",
+      "actual_slrs": "SLR2",
+      "expected_slr": "SLR2",
+      "state_cells": 2
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_home_link[2].g_pipeline.link/g_stage[1]:occupancy_ready",
+      "actual_slrs": "SLR1",
+      "expected_slr": "SLR1",
+      "state_cells": 2
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_home_link[2].g_pipeline.link/g_stage[1]:pointer",
+      "actual_slrs": "SLR1",
+      "expected_slr": "SLR1",
+      "state_cells": 2
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/u_mesh/g_y[0].g_x[0].g_v[0].g_e.link/g_stage[0]:occupancy_ready",
+      "actual_slrs": "SLR0",
+      "expected_slr": "SLR0",
+      "state_cells": 2
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/u_mesh/g_y[0].g_x[0].g_v[0].g_e.link/g_stage[0]:payload",
+      "actual_slrs": "SLR0",
+      "expected_slr": "SLR0",
+      "state_cells": 272
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/u_mesh/g_y[0].g_x[0].g_v[0].g_e.link/g_stage[0]:pointer",
+      "actual_slrs": "SLR0",
+      "expected_slr": "SLR0",
+      "state_cells": 2
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/u_mesh/g_y[0].g_x[0].g_v[0].g_e.link/g_stage[1]:occupancy_ready",
+      "actual_slrs": "SLR1",
+      "expected_slr": "SLR1",
+      "state_cells": 2
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/u_mesh/g_y[0].g_x[0].g_v[0].g_e.link/g_stage[1]:payload",
+      "actual_slrs": "SLR1",
+      "expected_slr": "SLR1",
+      "state_cells": 272
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/u_mesh/g_y[0].g_x[0].g_v[0].g_e.link/g_stage[1]:pointer",
+      "actual_slrs": "SLR1",
+      "expected_slr": "SLR1",
+      "state_cells": 2
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/u_mesh/g_y[0].g_x[0].g_v[1].g_e.link/g_stage[0]:occupancy_ready",
+      "actual_slrs": "SLR0",
+      "expected_slr": "SLR0",
+      "state_cells": 2
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/u_mesh/g_y[0].g_x[0].g_v[1].g_e.link/g_stage[0]:payload",
+      "actual_slrs": "SLR0",
+      "expected_slr": "SLR0",
+      "state_cells": 102
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/u_mesh/g_y[0].g_x[0].g_v[1].g_e.link/g_stage[0]:pointer",
+      "actual_slrs": "SLR0",
+      "expected_slr": "SLR0",
+      "state_cells": 2
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/u_mesh/g_y[0].g_x[0].g_v[1].g_e.link/g_stage[1]:occupancy_ready",
+      "actual_slrs": "SLR1",
+      "expected_slr": "SLR1",
+      "state_cells": 2
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/u_mesh/g_y[0].g_x[0].g_v[1].g_e.link/g_stage[1]:payload",
+      "actual_slrs": "SLR1",
+      "expected_slr": "SLR1",
+      "state_cells": 102
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/u_mesh/g_y[0].g_x[0].g_v[1].g_e.link/g_stage[1]:pointer",
+      "actual_slrs": "SLR1",
+      "expected_slr": "SLR1",
+      "state_cells": 2
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/u_mesh/g_y[0].g_x[1].g_v[0].g_e.link/g_stage[0]:occupancy_ready",
+      "actual_slrs": "SLR1",
+      "expected_slr": "SLR1",
+      "state_cells": 2
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/u_mesh/g_y[0].g_x[1].g_v[0].g_e.link/g_stage[0]:payload",
+      "actual_slrs": "SLR1",
+      "expected_slr": "SLR1",
+      "state_cells": 272
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/u_mesh/g_y[0].g_x[1].g_v[0].g_e.link/g_stage[0]:pointer",
+      "actual_slrs": "SLR1",
+      "expected_slr": "SLR1",
+      "state_cells": 2
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/u_mesh/g_y[0].g_x[1].g_v[0].g_e.link/g_stage[1]:occupancy_ready",
+      "actual_slrs": "SLR2",
+      "expected_slr": "SLR2",
+      "state_cells": 2
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/u_mesh/g_y[0].g_x[1].g_v[0].g_e.link/g_stage[1]:payload",
+      "actual_slrs": "SLR2",
+      "expected_slr": "SLR2",
+      "state_cells": 272
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/u_mesh/g_y[0].g_x[1].g_v[0].g_e.link/g_stage[1]:pointer",
+      "actual_slrs": "SLR2",
+      "expected_slr": "SLR2",
+      "state_cells": 2
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/u_mesh/g_y[0].g_x[1].g_v[0].g_w.link/g_stage[0]:occupancy_ready",
+      "actual_slrs": "SLR1",
+      "expected_slr": "SLR1",
+      "state_cells": 2
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/u_mesh/g_y[0].g_x[1].g_v[0].g_w.link/g_stage[0]:payload",
+      "actual_slrs": "SLR1",
+      "expected_slr": "SLR1",
+      "state_cells": 272
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/u_mesh/g_y[0].g_x[1].g_v[0].g_w.link/g_stage[0]:pointer",
+      "actual_slrs": "SLR1",
+      "expected_slr": "SLR1",
+      "state_cells": 2
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/u_mesh/g_y[0].g_x[1].g_v[0].g_w.link/g_stage[1]:occupancy_ready",
+      "actual_slrs": "SLR0",
+      "expected_slr": "SLR0",
+      "state_cells": 2
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/u_mesh/g_y[0].g_x[1].g_v[0].g_w.link/g_stage[1]:payload",
+      "actual_slrs": "SLR0",
+      "expected_slr": "SLR0",
+      "state_cells": 272
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/u_mesh/g_y[0].g_x[1].g_v[0].g_w.link/g_stage[1]:pointer",
+      "actual_slrs": "SLR0",
+      "expected_slr": "SLR0",
+      "state_cells": 2
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/u_mesh/g_y[0].g_x[1].g_v[1].g_e.link/g_stage[0]:occupancy_ready",
+      "actual_slrs": "SLR1",
+      "expected_slr": "SLR1",
+      "state_cells": 2
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/u_mesh/g_y[0].g_x[1].g_v[1].g_e.link/g_stage[0]:payload",
+      "actual_slrs": "SLR1",
+      "expected_slr": "SLR1",
+      "state_cells": 102
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/u_mesh/g_y[0].g_x[1].g_v[1].g_e.link/g_stage[0]:pointer",
+      "actual_slrs": "SLR1",
+      "expected_slr": "SLR1",
+      "state_cells": 2
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/u_mesh/g_y[0].g_x[1].g_v[1].g_e.link/g_stage[1]:occupancy_ready",
+      "actual_slrs": "SLR2",
+      "expected_slr": "SLR2",
+      "state_cells": 2
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/u_mesh/g_y[0].g_x[1].g_v[1].g_e.link/g_stage[1]:payload",
+      "actual_slrs": "SLR2",
+      "expected_slr": "SLR2",
+      "state_cells": 102
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/u_mesh/g_y[0].g_x[1].g_v[1].g_e.link/g_stage[1]:pointer",
+      "actual_slrs": "SLR2",
+      "expected_slr": "SLR2",
+      "state_cells": 2
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/u_mesh/g_y[0].g_x[1].g_v[1].g_w.link/g_stage[0]:occupancy_ready",
+      "actual_slrs": "SLR1",
+      "expected_slr": "SLR1",
+      "state_cells": 2
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/u_mesh/g_y[0].g_x[1].g_v[1].g_w.link/g_stage[0]:payload",
+      "actual_slrs": "SLR1",
+      "expected_slr": "SLR1",
+      "state_cells": 102
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/u_mesh/g_y[0].g_x[1].g_v[1].g_w.link/g_stage[0]:pointer",
+      "actual_slrs": "SLR1",
+      "expected_slr": "SLR1",
+      "state_cells": 2
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/u_mesh/g_y[0].g_x[1].g_v[1].g_w.link/g_stage[1]:occupancy_ready",
+      "actual_slrs": "SLR0",
+      "expected_slr": "SLR0",
+      "state_cells": 2
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/u_mesh/g_y[0].g_x[1].g_v[1].g_w.link/g_stage[1]:payload",
+      "actual_slrs": "SLR0",
+      "expected_slr": "SLR0",
+      "state_cells": 102
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/u_mesh/g_y[0].g_x[1].g_v[1].g_w.link/g_stage[1]:pointer",
+      "actual_slrs": "SLR0",
+      "expected_slr": "SLR0",
+      "state_cells": 2
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/u_mesh/g_y[0].g_x[2].g_v[0].g_w.link/g_stage[0]:occupancy_ready",
+      "actual_slrs": "SLR2",
+      "expected_slr": "SLR2",
+      "state_cells": 2
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/u_mesh/g_y[0].g_x[2].g_v[0].g_w.link/g_stage[0]:payload",
+      "actual_slrs": "SLR2",
+      "expected_slr": "SLR2",
+      "state_cells": 272
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/u_mesh/g_y[0].g_x[2].g_v[0].g_w.link/g_stage[0]:pointer",
+      "actual_slrs": "SLR2",
+      "expected_slr": "SLR2",
+      "state_cells": 2
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/u_mesh/g_y[0].g_x[2].g_v[0].g_w.link/g_stage[1]:occupancy_ready",
+      "actual_slrs": "SLR1",
+      "expected_slr": "SLR1",
+      "state_cells": 2
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/u_mesh/g_y[0].g_x[2].g_v[0].g_w.link/g_stage[1]:payload",
+      "actual_slrs": "SLR1",
+      "expected_slr": "SLR1",
+      "state_cells": 272
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/u_mesh/g_y[0].g_x[2].g_v[0].g_w.link/g_stage[1]:pointer",
+      "actual_slrs": "SLR1",
+      "expected_slr": "SLR1",
+      "state_cells": 2
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/u_mesh/g_y[0].g_x[2].g_v[1].g_w.link/g_stage[0]:occupancy_ready",
+      "actual_slrs": "SLR2",
+      "expected_slr": "SLR2",
+      "state_cells": 2
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/u_mesh/g_y[0].g_x[2].g_v[1].g_w.link/g_stage[0]:payload",
+      "actual_slrs": "SLR2",
+      "expected_slr": "SLR2",
+      "state_cells": 102
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/u_mesh/g_y[0].g_x[2].g_v[1].g_w.link/g_stage[0]:pointer",
+      "actual_slrs": "SLR2",
+      "expected_slr": "SLR2",
+      "state_cells": 2
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/u_mesh/g_y[0].g_x[2].g_v[1].g_w.link/g_stage[1]:occupancy_ready",
+      "actual_slrs": "SLR1",
+      "expected_slr": "SLR1",
+      "state_cells": 2
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/u_mesh/g_y[0].g_x[2].g_v[1].g_w.link/g_stage[1]:payload",
+      "actual_slrs": "SLR1",
+      "expected_slr": "SLR1",
+      "state_cells": 102
+    },
+    {
+      "scope": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/u_mesh/g_y[0].g_x[2].g_v[1].g_w.link/g_stage[1]:pointer",
+      "actual_slrs": "SLR1",
+      "expected_slr": "SLR1",
+      "state_cells": 2
+    }
+  ],
+  "unrecognized": [],
+  "mismatches": [],
+  "not_a_final_candidate_gate_pass": true
+}

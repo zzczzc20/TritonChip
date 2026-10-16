@@ -163,6 +163,7 @@ tnca_nuca_slice #(
 .rst_n(rst_n),
 .maint_valid(maint_valid),
 .maint_ready(maint_ready),
+.maint_base(maint_base),
 .maint_size(maint_size),
 .maint_done(maint_done),
 .maint_busy(maint_busy),

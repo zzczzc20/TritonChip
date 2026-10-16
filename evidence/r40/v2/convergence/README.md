@@ -53,11 +53,11 @@ The trace now locates illegal-opcode classification leaking into shared stall/fe
 **Current P result:** additional attempt 1 has terminal exit 1. Its actual
 route failed with global congestion level 7; no qualified image exists.
 `attempt01/terminal_failure.json` binds the vendor failure and retained error
-DCP (`ed1facba…90360e8`). The read-only observer has started opening that DCP.
+DCP (`ed1facba…90360e8`). The read-only observer completed all eight diagnostic reports without retry.
 Registered ranges and half the cache sets did not solve routability.
 
-**Next command:** `cat ~/tnca_build/r40_attempt01_followup/state.json` on the
-FPGA server. **Diagnostic success:** inspect complete critical-path, SLR packing
+**Next command:** `tail -60 ~/tnca_build/r40_p0ab_screen/case11.log` on the
+FPGA server (module-level screening only). **Diagnostic success:** inspect complete critical-path, SLR packing
 and congestion reports; formulate and functionally/resource-screen one concrete
 structural correction before spending the final implementation attempt. Only
 a future candidate with complete route, 100 MHz setup/hold, CDC and image
@@ -66,6 +66,34 @@ fix extraction; do not rerun synthesis or implementation to obtain diagnostics.
 The failing candidate's later software-only decoder repair is not present in
 its immutable hardware source. Full controls and frozen inventories remain
 unaccepted.
+
+**P0/P1 physical convergence baseline:**
+`attempt01/physical_postmortem.tar.gz` retains all failed-checkpoint reports
+and the actual-endpoint-region boundary audit. The worst sampled cone is
+TMU `tb_reg[0][63]` to slice writeback-address storage: 53 logic levels,
+28.999 ns data delay (3.447 ns logic, 25.552 ns net). This is substantially
+unrouted diagnostic timing, never 100 MHz qualification. The 30 sampled
+endpoints collapse to three logical source/storage families in
+`critical_cones_ranked.json`; this sample is not exhaustive.
+Current CLB occupancy is 95.83%/90.81%/87.37% for SLR0/1/2.
+`cross_slr_modules_ranked.tsv` ranks 4,963 unique connected nets with
+endpoints in multiple actual SLRs; it does not count routed SLL capacity.
+The largest sampled driver group is tile 2's slice (2,536 nets between
+SLR1/2); TMU metadata is also prominent. Core internal placement remains
+unverified. `cross_slr_driver_columns.tsv` reports driver SLICE X positions,
+**not crossing columns**. `sll_estimated_columns.tsv` separately preserves
+the router's printed per-column demand estimates, including 203%; mapping
+specific buses onto physical SLL columns is still not-measured.
+
+The active P0 hypothesis is per-way synchronous tag RAM plus an E_LOOK
+owner register boundary, with explicit TMU commit/clear epoch retry before
+E_MISS effects. Independent functional and matched 10 ns TMU+slice screens
+must report the cut boundary, new worst path/levels/logic/net delay and
+actual tag primitives. No OOC timing or mapping result has yet qualified
+this candidate. **Screen success:** review those results together with
+specific SLL hotspot corrections and actual pipeline/core locations before
+considering the final attempt. **Screen failure:** retain the counterexample
+or critical cone and correct its cause; do not spend the remaining attempt.
 
 **Full-implementation budget:** at most two additional attempts. The exact
 launch identity, state and remaining balance are recorded in

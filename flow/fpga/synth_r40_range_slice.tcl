@@ -1,6 +1,6 @@
 # Actual TMU + slice boundaries, so endpoint arithmetic cannot move off-clock.
 # vivado -mode batch -source THIS_FILE -tclargs SOURCE_ROOT NEW_OUTPUT MODE
-if {[llength $argv] ni {3 5 6 7}} {error "expected SOURCE_ROOT NEW_OUTPUT MODE ?SETS SET_W? ?SYNC_TAG_BANK? ?REGISTER_VICTIM_OWNER?"}
+if {[llength $argv] ni {3 5 6 7 8}} {error "expected SOURCE_ROOT NEW_OUTPUT MODE ?SETS SET_W? ?SYNC_TAG_BANK? ?REGISTER_VICTIM_OWNER? ?BALANCED_VICTIM?"}
 set root [file normalize [lindex $argv 0]]
 set out [file normalize [lindex $argv 1]]
 set mode [lindex $argv 2]
@@ -12,7 +12,8 @@ if {[llength $argv] >= 5} {
     set geometry [list SETS=$sets SET_W=$set_w]
 }
 if {[llength $argv] >= 6} {lappend geometry SYNC_TAG_BANK=[lindex $argv 5]}
-if {[llength $argv] == 7} {lappend geometry REGISTER_VICTIM_OWNER=[lindex $argv 6]}
+if {[llength $argv] >= 7} {lappend geometry REGISTER_VICTIM_OWNER=[lindex $argv 6]}
+if {[llength $argv] == 8} {lappend geometry BALANCED_VICTIM=[lindex $argv 7]}
 if {$mode ni {0 1}} {error "MODE must be 0 or 1"}
 if {[file exists $out]} {error "output must be fresh: $out"}
 file mkdir $out

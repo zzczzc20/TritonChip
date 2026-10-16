@@ -1,7 +1,7 @@
 {
   "schema": "tnca-r40-p0-pipeline/1",
   "gate_status": "not-measured",
-  "qualification": "functional validation complete; matched OOC screening pending; no full implementation launched",
+  "qualification": "functional validation complete; same-source OOC proves register cut and LUTRAM mapping, but fails 10 ns; balanced ranking correction being screened separately",
   "clock_target_hz": 100000000,
   "image_sha256": null,
   "contract_sha256": "49fc0e02733139707ae2292eff2ef893e76e73f0723d0d002b2e7e1864af71c8",
@@ -59,11 +59,11 @@
     "limitations": [
       "functional cases do not replace final native77/HBM14/frozen models",
       "initial targeted TMU invocation used unsupported one-port bench configuration; failure retained, corrected invocation uses 3 and 8",
-      "source binding check passed; SMT rerun initially unavailable because z3 missing, isolated solver rerun pending"
+      "registered-range membership/selection proof and mutations rerun successfully with isolated Z3 4.13.0.0; raw package retained"
     ]
   },
   "physical": {
-    "status": "screening",
+    "status": "completed-diagnostic-fails-10ns",
     "fpga_root": "~/tnca_build/r40_p0ab_screen",
     "configuration": "actual TMU plus slice; 32 sets, 8 ways, full tags, maintenance, registered ranges; identical ideal 10 ns OOC constraints",
     "variants": [
@@ -73,12 +73,109 @@
       "11: synchronous tags, registered owner"
     ],
     "comparability": "all four use the same new source; async control is not byte-identical to cf330dc RTL, whose source and inference differ",
-    "combined_worst_path": null,
-    "combined_logic_levels": null,
-    "combined_logic_delay_ns": null,
-    "combined_estimated_net_delay_ns": null,
+    "combined_worst_path": [
+      "slice/victim_owner_q_reg[0][4]/C",
+      "slice/ms_wbadr_reg_0_7_0_13/RAMA/WE"
+    ],
+    "combined_logic_levels": 51,
+    "combined_logic_delay_ns": 3.561,
+    "combined_estimated_net_delay_ns": 9.346,
     "route_status": "not-measured",
-    "fmax_hz": null
+    "fmax_hz": null,
+    "results": {
+      "00": {
+        "worst_source": "slice/cur_addr_reg[6]_rep__4/C",
+        "worst_destination": "slice/perf_dead_evict_reg[0]/CE",
+        "slack_ns": -5.646,
+        "data_delay_ns": 15.542,
+        "logic_delay_ns": 4.333,
+        "estimated_net_delay_ns": 11.209,
+        "logic_levels": 64,
+        "resources": {
+          "lut": 38188,
+          "ff": 5866
+        },
+        "tag_mapping_hierarchy_counts": {
+          "RAM64M8": 288,
+          "LUT1": 6,
+          "LUT3": 3,
+          "LUT5": 4,
+          "LUT4": 1,
+          "RAMD64E": 2304
+        }
+      },
+      "10": {
+        "worst_source": "slice/perf_evict1[-1111111111]_rep/C",
+        "worst_destination": "slice/ms_wbadr_reg_0_7_0_13/RAMA/WE",
+        "slack_ns": -4.779,
+        "data_delay_ns": 14.536,
+        "logic_delay_ns": 4.323,
+        "estimated_net_delay_ns": 10.213,
+        "logic_levels": 59,
+        "resources": {
+          "lut": 36225,
+          "ff": 6247
+        },
+        "tag_mapping_hierarchy_counts": {
+          "RAM32M16": 32,
+          "LUT4": 8,
+          "MUXF7": 5,
+          "LUT5": 1,
+          "LUT6": 21,
+          "LUT3": 1,
+          "FDRE": 424,
+          "RAMD32": 448,
+          "RAMS32": 64
+        }
+      },
+      "01": {
+        "worst_source": "slice/perf_evict1[-1111111111]_rep__27/C",
+        "worst_destination": "slice/perf_dead_evict_reg[0]/CE",
+        "slack_ns": -2.381,
+        "data_delay_ns": 12.277,
+        "logic_delay_ns": 3.875,
+        "estimated_net_delay_ns": 8.402,
+        "logic_levels": 48,
+        "resources": {
+          "lut": 37799,
+          "ff": 5959
+        },
+        "tag_mapping_hierarchy_counts": {
+          "RAM64M8": 288,
+          "MUXF7": 9,
+          "LUT6": 18,
+          "LUT4": 1,
+          "LUT5": 4,
+          "RAMD64E": 2304
+        }
+      },
+      "11": {
+        "worst_source": "slice/victim_owner_q_reg[0][4]/C",
+        "worst_destination": "slice/ms_wbadr_reg_0_7_0_13/RAMA/WE",
+        "slack_ns": -3.15,
+        "data_delay_ns": 12.907,
+        "logic_delay_ns": 3.561,
+        "estimated_net_delay_ns": 9.346,
+        "logic_levels": 51,
+        "resources": {
+          "lut": 37122,
+          "ff": 6332
+        },
+        "tag_mapping_hierarchy_counts": {
+          "RAM32M16": 32,
+          "LUT4": 8,
+          "FDRE": 424,
+          "MUXF7": 6,
+          "LUT1": 1,
+          "LUT6": 23,
+          "LUT5": 1,
+          "RAMD32": 448,
+          "RAMS32": 64
+        }
+      }
+    },
+    "matched_ooc_archive_sha256": "c41dcde1f8e0fc4437635a3d66af31cd8f08919f59eb14bb0ef20355a8fce730",
+    "mapping_scope": "RAM32M16 macro and its RAMD32/RAMS32 children are hierarchy views, not additive storage counts"
   },
   "remaining_full_implementations": 1
 }

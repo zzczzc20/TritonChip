@@ -80,6 +80,7 @@ module tnca_nuca_slice #(
     parameter DCO_REGISTERED_RANGES = 0,
     parameter SYNC_TAG_BANK = 1,
     parameter REGISTER_VICTIM_OWNER = 0,
+    parameter BALANCED_VICTIM = 1,
     parameter DCO_DEAD   = 16,
     parameter MAINTENANCE = 0,
     parameter DCO_ID_W   = 16,
@@ -672,7 +673,59 @@ module tnca_nuca_slice #(
     reg [TAGB-1:0]   vtag;
     reg [3:0]        vprio;
     reg [11:0]       vown;
-    integer          vidx, vw, vi;
+    integer          vidx, vw;
+    // Claimed-way calculation is independent of the selection result. Keep
+    // it in its own block so a combinational tree does not feed back into the
+    // procedural block which produces its inputs in event-driven simulation.
+    integer claim_way, claim_ms;
+    always @* begin
+        for (claim_way=0;claim_way<WAYS;claim_way=claim_way+1) begin
+            way_claimed[claim_way]=1'b0;
+            if (est==E_MISS)
+                for (claim_ms=0;claim_ms<MSHR_N;claim_ms=claim_ms+1)
+                    if (ms_state[claim_ms]!=MS_FREE && !ms_byp[claim_ms] &&
+                        ms_set[claim_ms]==cur_set && ms_way[claim_ms]==claim_way)
+                        way_claimed[claim_way]=1'b1;
+        end
+    end
+
+    // Preserve exactly the serial fold's key and lower-way tie-break, while
+    // replacing WAYS-1 dependent comparisons with log2(WAYS) comparisons.
+    // The low dead bit is payload: the unique way index resolves every tie
+    // before that bit participates in the record comparison.
+    localparam VICTIM_LEAVES = 1 << $clog2(WAYS);
+    localparam VICTIM_RECORD_W = 10 + WAY_W;
+    wire [VICTIM_RECORD_W-1:0] victim_tree [0:2*VICTIM_LEAVES-2];
+    genvar rank_way, rank_node;
+    generate if (BALANCED_VICTIM) begin : g_balanced_victim
+        for(rank_way=0;rank_way<VICTIM_LEAVES;rank_way=rank_way+1)begin : g_leaf
+            if(rank_way<WAYS)begin : g_present
+                wire [11:0] own = REGISTER_VICTIM_OWNER ? victim_owner_q[rank_way] :
+                                                          victim_owner_live[rank_way];
+                wire [TAGB-1:0] tag_value = lookup_tag[rank_way];
+                wire is_dead = (est==E_MISS) ? pol_dbp && own[11] &&
+                    (own[10] || dead_tile(tile_id(line_addr(tag_value,cur_set),own,d_lsb),
+                                         dco_dead_valid,dco_dead_id)) : 1'b0;
+                wire [3:0] priority_value = (pol_repl!=2'd2) ? 4'd0 :
+                    (!own[11] || age[cur_set*WAYS+rank_way]<(WAYS/2)) ? bmask :
+                                                                 (tag_value[3:0]&bmask);
+                wire [7:0] rank_key = {!is_dead,priority_value,~age[cur_set*WAYS+rank_way]};
+                assign victim_tree[VICTIM_LEAVES-1+rank_way] =
+                    way_claimed[rank_way] ? {VICTIM_RECORD_W{1'b1}} :
+                    {1'b0,rank_key,rank_way[WAY_W-1:0],is_dead};
+            end else begin : g_padding
+                assign victim_tree[VICTIM_LEAVES-1+rank_way] = {VICTIM_RECORD_W{1'b1}};
+            end
+        end
+        for(rank_node=0;rank_node<VICTIM_LEAVES-1;rank_node=rank_node+1)begin : g_min
+            assign victim_tree[rank_node] =
+                (victim_tree[2*rank_node+1] <= victim_tree[2*rank_node+2]) ?
+                 victim_tree[2*rank_node+1] : victim_tree[2*rank_node+2];
+        end
+    end else begin : g_serial_victim
+        assign victim_tree[0]={VICTIM_RECORD_W{1'b1}};
+    end endgenerate
+
     // Its own loop variables: a loop index shared with another always block
     // puts each block in the other's sensitivity list, and the simulator
     // then re-runs both on every write to it. Only E_MISS reads the result,
@@ -680,13 +733,7 @@ module tnca_nuca_slice #(
     // sixteen dead-tile compares per way on every cycle of a simulation.
     always @(*) begin
         vic_way = {WAY_W{1'b0}}; vic_ok = 1'b0; vic_dead = 1'b0; vbest = 8'hFF;
-        for (vw = 0; vw < WAYS; vw = vw + 1) way_claimed[vw] = 1'b0;
         if (est == E_MISS) begin
-            for (vw = 0; vw < WAYS; vw = vw + 1)
-                for (vi = 0; vi < MSHR_N; vi = vi + 1)
-                    if ((ms_state[vi] != MS_FREE) && !ms_byp[vi] && (ms_set[vi] == cur_set) &&
-                        (ms_way[vi] == vw[WAY_W-1:0]))
-                        way_claimed[vw] = 1'b1;
             // invalid ways first
             for (vw = WAYS-1; vw >= 0; vw = vw - 1)
                 if (!v_bits[cur_set*WAYS + vw] && !way_claimed[vw]) begin
@@ -698,6 +745,12 @@ module tnca_nuca_slice #(
                     if (!way_claimed[cand]) begin
                         vic_way = cand; vic_ok = 1'b1;
                     end
+                end
+            end else if (!vic_ok && BALANCED_VICTIM) begin
+                if (!victim_tree[0][VICTIM_RECORD_W-1]) begin
+                    vic_ok=1'b1;
+                    vic_way=victim_tree[0][WAY_W:1];
+                    vic_dead=victim_tree[0][0];
                 end
             end else if (!vic_ok) begin
                 for (vw = 0; vw < WAYS; vw = vw + 1) begin

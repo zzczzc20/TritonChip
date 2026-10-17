@@ -1,12 +1,12 @@
 {
   "schema": "tnca-r40-full-implementation-budget/1",
-  "recorded_utc": "2026-10-17T14:07:50.428529+00:00",
+  "recorded_utc": "2026-10-17T21:20:13.746618+00:00",
   "authorization": "Original maximum two additional full implementations, plus one further full implementation explicitly authorized on 2026-10-17; frozen contract unchanged",
   "starts_after_failed_hardware_source": "09ebe06",
   "previous_failure_checkpoint_sha256": "8d82bd375ce489ca433aba15f83692b53b409bc045381a7a8f44ed44811a50d9",
   "maximum_additional_attempts": 3,
-  "used": 2,
-  "remaining": 1,
+  "used": 3,
+  "remaining": 0,
   "attempts": [
     {
       "number": 1,
@@ -120,6 +120,68 @@
       "implementation_exit_code": 1,
       "error_checkpoint_sha256": "b5be49c0529b92a76ed084964cb51a2eec541744f235dfaf9ab7c98c5ee77612",
       "error_checkpoint_path": "/home/zzhouch/tnca_build/r40_attempt02_20261016/xo/tmp/link/vivado/vpl/prj/prj.runs/impl_1/level0_wrapper_routed_error.dcp"
+    },
+    {
+      "number": 3,
+      "state": "launched",
+      "source_commit": "54249f7f7ac0cf8f5d1b82d8e63a3046d27522d3",
+      "source_archive_sha256": "6b254137501f4a3802c11f9e084e961c60724093a4da5654ce721b70a0d8db84",
+      "source_root": "/home/zzhouch/tnca_src_r40_attempt03_54249f7",
+      "build_root": "/home/zzhouch/tnca_build/r40_attempt03_20261017",
+      "command": [
+        "bash",
+        "/home/zzhouch/tnca_src_r40_attempt03_54249f7/flow/fpga/run_r40_attempt01.sh",
+        "/home/zzhouch/tnca_build/r40_attempt03_20261017",
+        "/home/zzhouch/tnca_src_r40_attempt03_54249f7/evidence/r40/v2/convergence/attempt03/image.tcl"
+      ],
+      "configuration": "attempt03/image.json",
+      "configuration_sha256": "2795cb283b85befb262fd1fd6547669421b9a7fb76df89c02fef0a314b27bf1b",
+      "clock_target_hz": 100000000,
+      "contract_sha256": "49fc0e02733139707ae2292eff2ef893e76e73f0723d0d002b2e7e1864af71c8",
+      "hypothesis": "Complete synchronous tag/owner/pair/selected boundaries; remove live owner fallback on all consuming paths. Exact before/after data/TLW/counter cycle evidence and real mapped cut are retained. Byte writes, local coherent metadata, write inbox and existing paired response FF SLL guidance target observed paths/crossings. Clock/cores/outlets/PC budget/capacities/directive are retained.",
+      "started_utc": "2026-10-17T21:20:13.746618+00:00",
+      "preflight": {
+        "schema": "tnca-r40-attempt03-one-off-queue/1",
+        "state": "preflight-passed",
+        "queued_utc": "2026-10-17T21:20:13.505987+00:00",
+        "source_commit": "54249f7f7ac0cf8f5d1b82d8e63a3046d27522d3",
+        "source_archive_sha256": "6b254137501f4a3802c11f9e084e961c60724093a4da5654ce721b70a0d8db84",
+        "source_root": "/home/zzhouch/tnca_src_r40_attempt03_54249f7",
+        "build_root": "/home/zzhouch/tnca_build/r40_attempt03_20261017",
+        "configuration_sha256": "2795cb283b85befb262fd1fd6547669421b9a7fb76df89c02fef0a314b27bf1b",
+        "launcher_sha256": "978b57f4dc3c49c0140c602027f30e46fb8ddd8f9b68443c58d11951c6dd7ec8",
+        "module": "r40_hit_owner_module_20261017",
+        "mapped_cut": "r40_owner_boundary_synth_v2_20261017",
+        "clock_target_hz": 100000000,
+        "contract_sha256": "49fc0e02733139707ae2292eff2ef893e76e73f0723d0d002b2e7e1864af71c8",
+        "maximum_full_attempts": 3,
+        "used": 2,
+        "remaining": 1,
+        "policy": "Wait existing route; verify accurate minmax/legal route/actual local state and tag roots, exact mapped cut and immutable inputs. Atomically reserve final attempt only when starting existing runner. CI in parallel; required before board loading/qualification. Existing observer reused.",
+        "timer_pid": 1917220,
+        "preflight_utc": "2026-10-17T21:20:13.745554+00:00",
+        "module_setup_wns_ns": 0.361,
+        "module_hold_whs_ns": 0.01,
+        "proof_hashes": {
+          "/home/zzhouch/tnca_build/r40_hit_owner_module_20261017/reports/timing.rpt": "27625b77147145455642ecffae78e5c5968c9ca994973f93f6091c88e77e834d",
+          "/home/zzhouch/tnca_build/r40_hit_owner_module_20261017/reports/route_status.rpt": "3ad66a269e486557c18f7749abf2593acffc86376f23ff10591a6e4b2b0379e4",
+          "/home/zzhouch/tnca_build/r40_hit_owner_module_20261017/reports/tmu_state_locations.tsv": "a17c655e617c23efe96e3c1659dbbbb8fa818655e017b4ced026c15f0fa22004",
+          "/home/zzhouch/tnca_build/r40_hit_owner_module_20261017/reports/tag_mapping.tsv": "2535ad78e2b2259541d7e722a3948e246879b6fb8bd0c714f996042edfe805c0",
+          "/home/zzhouch/tnca_build/r40_owner_boundary_synth_v2_20261017/reports/owner_boundary.txt": "023c9ddc90c863915e494179508121feb5ed4b38e60b0f93baf9d8c22f5650d6",
+          "/home/zzhouch/tnca_build/r40_owner_boundary_synth_v2_20261017/reports/optimized.dcp": "fbf6a0f46fea970f900f40ca32e80da21f5ad6e1844f39fd075a07de9359bcb7"
+        }
+      },
+      "image_sha256": null,
+      "timing_qualification": "not-measured",
+      "cdc_qualification": "not-measured",
+      "no_retry": true,
+      "ci_policy": "Exact code CI continues in parallel; success is mandatory before board loading or qualification",
+      "runner_pid": 1917223,
+      "report_observer": {
+        "runner_pid": 1917224,
+        "out": "/home/zzhouch/tnca_build/r40_attempt03_followup",
+        "scope": "existing read-only observer, after terminal marker"
+      }
     }
   ],
   "first_attempt_prerequisites": [
@@ -142,5 +204,5 @@
       "user_instruction": "\u76ee\u524d\u770b\u8d77\u6765\u5931\u8d25\u7684\u53ef\u80fd\u6027\u6bd4\u8f83\u5927\uff0c\u5f53\u7136\u8fd8\u5f97\u89c2\u5bdf\uff0c\u6211\u53ef\u4ee5\u591a\u7ed9\u4f60\u4e00\u6b21\u7efc\u5408budget (\u4e4b\u524d\u4e0a\u677f2\u6b21\u7528\u5149\u6211\u7ed9\u4f60\u7684\u9884\u7b97\u4e86\uff09\u8fd9\u6b21\u4f60\u8981\u5f88\u8c28\u614e\uff0c\u771f\u7684\u4f18\u5316\u597d\u4ee5\u6ee1\u8db3\u8981\u6c42"
     }
   ],
-  "third_attempt_policy": "Reserved, not launched. Allow attempt02 to reach terminal completion. If it fails qualification, identify limiting actual physical paths and localized crossing demand, implement and validate a structural correction with matched functional/resource/timing screens, then freeze source/configuration before a single third launch. No directive polling, reduced core/clock/workload, automatic retry or frozen-contract amendments."
+  "third_attempt_policy": "Final authorized attempt started once after terminal actual module route and min/max timing, mapped cut, functional cycle equivalence and immutable source checks. No automatic retry and no remaining full-implementation budget."
 }

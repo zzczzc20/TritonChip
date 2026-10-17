@@ -2,128 +2,54 @@
 
 ## Immediate experiment commands and branches
 
-**Required gate delta: no additional gate passed. Attempt 2 is terminal failed.**
-Immutable hardware `0c397939952d2a6bc881d08623b1bb9114a54ab8` exited with
-code 1. The retained routed-error DCP SHA is
-`b5be49c0529b92a76ed084964cb51a2eec541744f235dfaf9ab7c98c5ee77612`.
-[Terminal evidence](attempt02/terminal_failure.json) binds the complete raw
-report archive to hardware, configuration, 100 MHz and the unchanged contract.
-No loadable image exists; CDC and all final-image workload/performance results
-remain not-measured. Budget is maximum 3, used 2, remaining 1; attempt 3 has
-not started. No retry or board load was issued.
+**Required gate delta: no additional gate passed. Final authorized implementation
+3 started at 2026-10-17 21:20:13 UTC. Budget: maximum 3, used 3, remaining 0.**
+Hardware source is `54249f7f7ac0cf8f5d1b82d8e63a3046d27522d3`, with the explicit
+immutable configuration and archive identity in [attempt03](attempt03/README.md).
+The frozen contract is unchanged. No final-image timing, CDC, HBM or workload
+result is claimed; missing measurements remain not-measured.
 
-**P — diagnose and correct the terminal physical failure.** The route report
-has two HBM response nets competing for `INT_X79Y186/NN1_W_BEG7`, plus two
-kernel nets with antenna/island errors. Correcting the HBM conflict alone is
-insufficient: the worst sampled kernel setup path is slice2 `tl_a_reg[0]` to
-TMU `dq_id_reg[13][4]/CE`, 30 levels, 20.561 ns data delay (2.520 logic /
-18.041 routed net), slack -11.159 ns on the actual 10 ns kernel clock. The
-30 endpoint sample reduces to two destination families, `dq_id` and
-`dead_valid`; it is not an exhaustive cone census or legal-route timing
-qualification. Earlier intermediate -0.952 ns timing is superseded by this
-failed-DCP observation; final fmax remains not-measured.
-
-**Unique current physical blocker:** no legal 100 MHz three-core image,
-with the TLW classification/live-count/dead-update chain now directly identified.
-**Direct evidence:** `attempt02/terminal_reports.tar.gz`, especially
-`critical_paths.rpt`, `critical_cones_ranked.tsv` and `route_status.rpt`.
-**Next commands:**
+**P — qualify the same final three-SLR build.** The unique blocker is the
+absence of legal full-image route, 100 MHz min/max timing, CDC and a loadable
+image. Direct evidence is [the launch manifest](attempt03/launch.json), whose
+image SHA is null and qualifications are not-measured. Attempt 2's terminal
+failure remains in [its raw record](attempt02/terminal_failure.json).
+Next experiment on the FPGA host:
 
 ```sh
-# FPGA host: inspect the exact TLW predicate candidate, without a full retry.
-tail -n 25 ~/tnca_build/r40_owner_boundary_synth_v2_20261017/stdout.log
-# ARM jump host: inspect the larger-wait retry of the original timed-out point.
-tail -n 25 ~/r40_native_argmax_timeout_20261017/runner.log
+tail -n 30 ~/tnca_build/r40_attempt03_20261017/xo/link.log
+cat ~/tnca_build/r40_attempt03_20261017/build/attempt.exit
 ```
 
-R4 completed route with 75,184/75,184 routable nets and zero routing errors.
-Its accurate internal 10 ns setup WNS is +0.630 ns and hold WHS +0.004 ns.
-The original script exited during a cell-to-SLR query on a located RAM macro;
-a read-only completion from the saved routed DCP passed using actual sites.
-It confirms 96 RAM32M16 tag roots and all three local TMU copies in SLR0/1/2.
-These sparse module results exclude cores, NoC, HBM and timed I/O and cannot
-qualify the full image. The remaining 21-level TLW predicate path motivates
-one exact, zero-cycle arithmetic rewrite, now in matched module screening.
-The full R4 pressure/maintenance, legacy system and four-memory-mode native
-Torch/backend regressions completed. The previous maintenance summary failure
-was a success-marker mismatch; original raw failure and the eight-case
-completion are both retained. No third full implementation has started.
-**Success:** review actual paths, logic/net delay, mapped tag devices, packing,
-SLR/SLL contributors and matched functional results before freezing the last
-full candidate. **Failure:** preserve the specific failed query, cone or
-physical hotspot; fix that cause, without spending the reserve by default.
+The terminal marker is absent during execution. The existing read-only observer
+collects reports after terminal completion. Success requires actual three-core
+SLR placement, legal route, all-clock setup/hold, CDC and a complete image hash;
+then proceed to V. Failure preserves the checkpoint, actual limiting paths and
+route errors; no full-implementation budget remains and no retry is automatic.
 
-The [selected-victim/TLW candidate evidence](p0_selected_victim_tlw/report.json)
-retains actual RTL, independent memory comparisons, pressure/maintenance
-traffic, epoch mutations and an accepted-transaction TMU reference. A new
-`E_MISS/E_ALLOC` boundary registers the victim decision. The TLW candidate
-registers the raw selected address and then classified tile ID/nAcc before
-live counting/dead publication. Pending writes stop new notices, drain all
-older accepted notices and only then acknowledge the metadata write; tables
-and owner epoch still publish on that acknowledged edge. The observed
-functional results cover depths 0/1/2 and ports 3/4, including an interlock
-mutation. Notice/dead counters acquire 0/1/2 cycles of processing latency;
-this is not hidden. Physical qualification remains pending. Production RTL
-has not yet been changed to these candidates.
+[Prerequisite evidence](attempt03/prerequisites.json) retains the routed
+predecessor module: WNS +0.361 ns, WHS +0.010 ns, zero TNS/THS and route errors,
+96 RAM32M16 tag roots and actual local TMU state in SLR0/1/2. Its new worst
+sampled path is MSHR index to data RAM, 18 levels / 9.203 ns (1.446 logic /
+7.757 routed net). Sparse module timing excludes cores, NoC, HBM and timed I/O.
+The final owner-mux completion passed exact data/hint/counter cycle comparisons;
+the exact final mapped netlist has zero direct metadata-to-notice paths, with
+nonempty metadata, notice and owner-snapshot endpoint sets. This final completion
+has synth/opt evidence, not a second module route; full-image route is in progress.
 
-The [matched response-register screen](p1_response_sll/README.md) establishes
-actual paired Laguna TX/RX locations for 517/517 payload pairs, versus 0/517
-without guidance, with sampled setup slack +8.857 ns and hold +0.010 ns.
-It supports only targeted guidance on direct single-load response FF pairs.
-It does not establish full-image placement, setup/hold, CDC or routability.
-Request FIFOs, valid/ready behavior, latency and protected queues are retained.
+**V — original unscaled Torch checkpoint after P.** Its unique blocker is the
+qualified final image. The immutable software and concrete board command below
+remain unchanged. Success must demonstrate numerical correctness, all three
+physical cores/outlets, actual multi-PC HBM, ownership and drained visibility
+for the original >=64 MiB workload; then run native77, HBM14 and frozen models.
+Failure preserves the first incorrect result or missing traffic/visibility
+requirement without shrinking the workload.
 
-The vertical checkpoint V and every final-inventory/performance gate below
-remain blocked by P. Their per-gate evidence, commands and success/failure
-branches are unchanged. Frozen native77, HBM14 and original models must run on
-the final immutable software/image, after the original unscaled >=64 MiB Torch
-checkpoint establishes numerical correctness, all three cores/outlets, actual
-PC/window coverage, ownership and visible drained completion. The active
-software snapshot remains `642c660`, as recorded below.
-
-## Latest optional RTL and active experiments
-
-The [completed R4 physical record](p0_selected_victim_tlw/r4_physical_terminal.json)
-binds actual route, min/max timing, tag mapping, register cuts and site-based
-TMU locations to its immutable module source and routed DCP. The
-[completed functional record](p0_selected_victim_tlw/r4_completed_functional.json)
-retains all cache pressure, write/notice, replica, maintenance, system, native
-memory-control and backend evidence, plus failures and mutations. CI run
-39047006244 passed on source `1f821c6`; newer source requires its own CI result.
-
-The latest local TLW predicate rewrite replaces a variable shift/subtract mask
-with fixed-bit tests. All-input symbolic equivalence and an off-by-one mutation
-check passed, together with full-cycle comparisons against the exact R4 slice
-under DBP-enabled policies. It adds no state or cycle. Its matched three-cache/
-three-TMU physical screen is running; it is not another full-image attempt.
-
-The exact-mask candidate still exposes the live owner classification on hits.
-The final local correction reuses E_LOOK's request-owner snapshot in E_HIT and
-suppresses an unformed hint if the adjacent metadata epoch changed. Data
-responses retain their cycles. The complete data-cycle/oracle and metadata
-mutation evidence is in [hit_owner_functional.json](p0_selected_victim_tlw/hit_owner_functional.json);
-its own matched module screen is running. The new site-query CI stub regression
-was diagnosed and fixed, preserving all refusal paths and adding RAM/TMU cases;
-new head CI must still complete before freezing the final source.
-
-The remaining inactive-state classifier mux arc is now removed: registered-owner
-mode directly selects the E_LOOK snapshot for every consumer. Exact data/TLW/
-main-counter cycle comparisons against the preceding candidate passed. A queued
-synth/opt-only screen checks the mapped cut without a false-path exception and
-saves its DCP before report assertions. Existing module routes continue. This
-is an implementation completion, with no new state/cycle or work package;
-[details and evidence](p0_selected_victim_tlw/owner_boundary_complete.json).
-After this screen, freeze the final source/config and use the reserved full
-implementation. Exact-source CI remains mandatory for board load/qualification
-and may run alongside the expensive implementation.
-
-The full original R3 native77 simulation remains incomplete: some original
-medium points exceeded the 1800-second host wait. Those rows remain timeout,
-not numerical passes. A diagnostic retries the original medium argmax point
-with identical source/work and an explicit 7200-second wait. It does not replace
-the complete final-board inventory. The qualified-image prerequisite remains
-open for every final-image workload/performance gate below. The final full
-implementation reserve is one; the frozen contract is unchanged.
+CI for exact source `54249f7` runs in parallel; success is mandatory before
+qualification or board load. The earlier full R3 native77 simulation still has
+original points exceeding the 1800-second host wait. Those rows remain timeouts;
+the unchanged original argmax point has a separate 7200-second-wait diagnostic.
+Neither simulation result substitutes for the final-image inventory.
 
 ## Latest detailed diagnosis and candidate screening
 
@@ -211,7 +137,7 @@ new final candidate. **Failure:** preserve the missing information; do not
 replace it with a placement-property check or spend the last attempt by default.
 
 **Full-implementation budget:** the original two additional attempts plus one
-further attempt authorized on 2026-10-17 (maximum 3, used 2, remaining 1). The exact
+further attempt authorized on 2026-10-17 (maximum 3, used 3, remaining 0). The exact
 launch identity, state and remaining balance are recorded in
 `implementation_budget.json`; report extraction and module-level screening
 are not full implementations. The contract remains frozen.
@@ -260,7 +186,7 @@ All rows are `not-measured`. Each row has one immediate missing prerequisite, it
 | R40-04.hbm | 实际 ≥1 GiB 多 PC 窗口尚无合格三核镜像可验证 | `required_gates.json`: no evidence at sim/build/r40/v2/R40-04.json; `evidence/r40/R40-04/physical_map_v2/` proves legacy image only exposes 256 MiB / PC0 | P → V | After V, collect frozen `make r40-hbm` package evidence on final identity; judge this gate separately | Preserve P/V first failing evidence; fix that cause; gate remains not-measured |
 | R40-04.bandwidth | 最终镜像方向带宽及 memory-service outstanding 1/8 匹配记录缺失 | `required_gates.json`: no evidence at sim/build/r40/v2/R40-04.json | P → V | After V, collect frozen `make r40-hbm` package evidence on final identity; judge this gate separately | Preserve P/V first failing evidence; fix that cause; gate remains not-measured |
 | R40-04.robustness | 最终实际分配 PC 的边界/high64/alias/越界证据缺失 | `required_gates.json`: no evidence at sim/build/r40/v2/R40-04.json | P → V | After V, collect frozen `make r40-hbm` package evidence on final identity; judge this gate separately | Preserve P/V first failing evidence; fix that cause; gate remains not-measured |
-| R40-05.multicore | 最后候选尚未完成 route 和物理资格审核，无合格镜像 | `attempt02/terminal_failure.json`: terminal exit 1, illegal route and no qualified image (P) | P → V | After V, collect frozen `make r40-multicore` package evidence on final identity; judge this gate separately | Preserve P/V first failing evidence; fix that cause; gate remains not-measured |
+| R40-05.multicore | 最后候选尚未完成 route 和物理资格审核，无合格镜像 | `attempt03/launch.json`: final implementation launched; route/timing/CDC/image pending (P) | P → V | After V, collect frozen `make r40-multicore` package evidence on final identity; judge this gate separately | Preserve P/V first failing evidence; fix that cause; gate remains not-measured |
 | R40-05.scaling | 最终镜像冻结 compute 的 1/2/3 核 A/B 缺失 | `required_gates.json`: no evidence at sim/build/r40/v2/R40-05.json | P → V | After V, collect frozen `make r40-multicore` package evidence on final identity; judge this gate separately | Preserve P/V first failing evidence; fix that cause; gate remains not-measured |
 | R40-05.dispatch | 最终镜像原始大图的三物理核完成/分发计数缺失 | `required_gates.json`: no evidence at sim/build/r40/v2/R40-05.json | P → V | After V, collect frozen `make r40-multicore` package evidence on final identity; judge this gate separately | Preserve P/V first failing evidence; fix that cause; gate remains not-measured |
 | R40-06.nuca | 最终镜像 active outlet 的实际负载流量证据缺失 | `required_gates.json`: no evidence at sim/build/r40/v2/R40-06.json | P → V | After V, collect frozen `make r40-nuca` package evidence on final identity; judge this gate separately | Preserve P/V first failing evidence; fix that cause; gate remains not-measured |

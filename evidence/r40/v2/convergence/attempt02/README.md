@@ -160,3 +160,5 @@ named nets with the final crossing and pipeline-cut reports.
 to revision `2176e7d`, script hashes and its completed successful source CI.
 Vendor execution remains pending. This tool identity is separate from the
 immutable hardware source `0c39793`; no live hardware source was overwritten.
+
+The subsequent read-only detail package is in `physical_detail.json` and `physical_detail.tar.gz`. Tag/cut/boundary reports completed, including actual LAG routing-tile attribution for the sampled tile-connected nets. The final HBM endpoint query failed to resolve leaf source pins; its exit 1 and exact query are preserved. This partial diagnostic outcome does not erase the completed raw reports or qualify the failed image. No implementation retry was performed.

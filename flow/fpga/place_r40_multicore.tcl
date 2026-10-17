@@ -42,6 +42,44 @@ proc r40_place_responses {stage_suffix slr} {
     if {[llength $responses] == 0} {error "R40 placement: missing response pipeline $stage_suffix"}
     r40_assign $responses $slr
 }
+proc r40_guide_response_crossing {link_suffix} {
+    global r40_leaf_cells r40_leaf_names
+    set sender [r40_index g_stage 1]
+    set receiver [r40_index g_stage 0]
+    set pairs 0
+    set skipped 0
+    set sender_pattern "$link_suffix/$sender.rd_reg*"
+    set receiver_pattern "$link_suffix/$receiver.rd_reg*"
+    foreach cell $r40_leaf_cells name $r40_leaf_names {
+        if {(![string match "*/$sender_pattern" $name] &&
+             ![string match $sender_pattern $name]) ||
+            ![string match FD* [get_property REF_NAME $cell]]} {continue}
+        set q [get_pins -quiet -of_objects $cell -filter {REF_PIN_NAME == Q}]
+        set nets [get_nets -segments -quiet -of_objects $q]
+        set loads [get_pins -leaf -quiet -of_objects $nets -filter {DIRECTION == IN}]
+        # Guide only the direct, single-load payload FF pair screened on U280.
+        # Valid/ready and locally consumed payloads retain ordinary placement.
+        if {[llength $loads] != 1 || [get_property REF_PIN_NAME $loads] ne "D"} {
+            incr skipped
+            continue
+        }
+        set destination [get_cells -quiet -of_objects $loads]
+        if {![string match FD* [get_property REF_NAME $destination]] ||
+            (![string match "*/$receiver_pattern" [get_property NAME $destination]] &&
+             ![string match $receiver_pattern [get_property NAME $destination]])} {
+            incr skipped
+            continue
+        }
+        # Preserve Vivado object handles; concat can stringify a collection
+        # into an invalid object argument when the hierarchy contains brackets.
+        set_property USER_SLL_REG TRUE $cell
+        set_property USER_SLL_REG TRUE $destination
+        incr pairs
+    }
+    if {$pairs == 0} {error "R40 placement: no eligible response FF pairs in $link_suffix"}
+    puts "R40_RESPONSE_SLL_GUIDANCE link=$link_suffix pairs=$pairs skipped=$skipped"
+    # This is placement guidance. Final LOC/BEL and setup/hold still need audit.
+}
 set y [r40_index g_y 0]
 set r40_maintenance 0
 foreach name $r40_hier_names {
@@ -89,6 +127,7 @@ for {set tile 0} {$tile < 3} {incr tile} {
         }
 
     }
+    if {$tile != 1} {r40_guide_response_crossing "u_system/$h.g_pipeline.link"}
     foreach direction {e w} {
         set peer [expr {$direction eq "e" ? $tile+1 : $tile-1}]
         if {$peer < 0 || $peer > 2} {continue}
@@ -115,6 +154,7 @@ foreach cell $r40_hier_cells name $r40_hier_names {
             r40_place "system/$outlet.link/$s.request" $slr
             r40_place_responses "system/$outlet.link/$s" $slr
         }
+        r40_guide_response_crossing "system/$outlet.link"
     }
 }
 if {[llength $adapters] < 1 || [llength $adapters] > 3} {

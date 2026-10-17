@@ -73,6 +73,43 @@ checkpoint establishes numerical correctness, all three cores/outlets, actual
 PC/window coverage, ownership and visible drained completion. The active
 software snapshot remains `642c660`, as recorded below.
 
+## Latest detailed diagnosis and candidate screening
+
+The read-only [actual failed-DCP detail](attempt02/physical_detail.json)
+confirms 96 RAM32M16 tag roots, 1,272 tag-output registers and these sampled
+cuts: metadata-to-owner 7 levels/12.342 ns, tag-to-owner 9/10.849 ns,
+owner-to-writeback 31/17.752 ns, request-owner-to-TLW 16/7.595 ns.
+These are actual failed-DCP path delays, not legal-route qualification.
+
+The sampled tile-boundary audit finds 2,331 canonical crossing nets and
+actual LAG route nodes for 2,330. TMU contributes 1,600 of this boundary
+sample, including 1,439 nets spanning all three SLRs. Actual physical
+`LAG_LAG` routing-tile X attribution is retained separately from driver
+SLICE X and the router's printed capacity-column indices. In the three-SLR
+TMU sample, tile X87 is used by 778 unique nets and X96 by 468; a net may
+use multiple tile Xs. These are connected-net counts, not channel demand,
+and this tile-boundary sample does not cover every NoC/platform crossing.
+The tag/cut/boundary reports completed; the final HBM endpoint query failed
+to resolve a leaf driver and remains explicitly incomplete. Its exact failed
+query and all prior reports are retained; no implementation was rerun.
+
+The exact production response-guidance helper now passed a real small-DCP
+API probe (517 pairs/1,034 attributes, exit 0), after correcting its collection
+handling and a probe-only success-marker error. Both failures are preserved.
+The matched routed Laguna experiment remains separate from that API probe.
+
+[Follow-up candidates](p0_selected_victim_tlw/followup_report.json) retain
+successful actual-geometry V1-select/shared-TMU integration regressions,
+plus independent registered-pair-ranking and coherent local-TMU unit/mutation
+checks. The V1 integrated result does not endorse the newer composition.
+A new bounded module screen at
+`~/tnca_build/r40_local_tmu_rank_module_20261017` combines local coherent
+TMU state, raw/classified TLW registers, first-pair ranking registers and
+selected-way registers, while retaining the same geometry, 10 ns clock and
+directive. Its hypothesis addresses the actual broadcast and owner cones
+above. This is still module screening, not the reserved full implementation.
+No required acceptance gate has changed.
+
 ## Earlier P0/P1 evidence (historical identities retained)
 
 **P0/P1 physical convergence baseline:**

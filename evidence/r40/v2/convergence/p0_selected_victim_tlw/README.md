@@ -104,3 +104,65 @@ Success permits review of source-matched exact setup/hold paths, tag primitives,
 local TMU locations and packing before freezing attempt 3. Failure preserves the
 first numerical, protocol, mapping or timing error and repairs that cause.
 Required gates, final-image acceptance and the frozen contract are unchanged.
+
+
+## Completed R4 physical and functional evidence
+
+[r4_physical_terminal.json](r4_physical_terminal.json) and its raw archive
+establish 75,184 fully routed routable nets with zero routing errors; accurate
+internal setup WNS +0.630 ns and hold WHS +0.004 ns at a 10 ns clock; 96 RAM32M16
+tag roots; and 2,571 mapped state rows per local TMU, each confined to its own
+SLR. RAMD32/RAMS32 children are not additional tag roots. The owner chain ends
+at first-pair registers (worst sampled owner-to-pair: 14 levels, 7.429 ns =
+1.662 logic + 5.767 routed net), then selected-way registers (8 levels, 3.620 ns
+= 1.227 + 2.393), then allocation outputs (6 levels, 7.044 ns = 0.859 + 6.185).
+No direct combinational owner-to-selected path was reported after these cuts.
+
+The remaining module worst path is slice2 `cur_addr[18]` to `tl_a[10]/CE`:
+21 levels, 8.970 ns = 2.109 logic + 6.861 routed net. The local write inbox
+separates a sampled 3-level/5.673 ns ingress path from a 10-level/6.486 ns
+local commit path. Hit-word capture is 7 levels/7.884 ns; consumption is
+13 levels/5.923 ns. These are actual routed module paths, not full-image timing.
+Matched post-opt resource records show the byte-enabled/inbox changes trade
+logic for LUTRAM: R3 115,247 total LUTs / 24,692 LUTRAMs / 19,725 FFs versus
+R4 108,608 / 29,936 / 20,144. Module occupancy is much lower than the failed
+complete design; neither resource savings nor positive module slack guarantee
+full-image closure.
+
+The original R4 report failed because a located RAM256X1S macro returned no
+SLR when queried as a cell. Its actual site resolves correctly. The read-only
+completion performs site-to-SLR checks, retains all rows, and completed with
+no unresolved or misplaced state. The production actual-placement audit now
+uses the same site relationship, including macros without IS_PLACED. No
+physical implementation was rerun for the report correction.
+
+[r4_completed_functional.json](r4_completed_functional.json) preserves the
+complete R4 cache matrix, all maintenance configurations, metadata/replica
+comparisons, atomic widths/mutations, whole-system ownership, all four native
+memory-control Torch configurations and backend tests. Legacy default-mode
+mesh/atomic programs passed in single-role and all-role modes. The original
+maintenance aggregator rejected its existing `NUCA MAINTENANCE PASS` line;
+all eight unchanged cases were subsequently completed with that exact success
+marker. The DUT was not modified to satisfy the runner. CI run 39047006244 is
+successful on commit `1f821c6`.
+
+## Last local predicate correction before freezing
+
+The exact TLW predicate can avoid `(1 << lsb) - 1`: a last-word address requires
+all bit positions 3 through lsb-1 to be set. The replacement reduces missing
+fixed bits and retains the original granule/owner/policy/read guards. Symbolic
+SAT proves equality for every 64-bit address, every six-bit granule and every
+guard input. An off-by-one mutant produces a counterexample. Complete-slice
+cycle comparisons against immutable R4 pass with DBP enabled, partial writes
+and upper/lower 32-bit and 64-bit atomics. No state or clock cycle is added.
+Exact source, proof logs, mutant and cycle-miter stimulus are in the archived
+`r40_tlw_predicate_20261017_complete.tar.gz`.
+
+The matching module screen is `~/tnca_build/r40_tlw_predicate_module_20261017`.
+It preserves geometry, clock and directive, corrects the report query, and saves
+the routed checkpoint once before expensive reporting. Next experiment:
+`tail -n 25 ~/tnca_build/r40_tlw_predicate_module_20261017/stdout.log`.
+Success permits final configuration/source freeze and the last full-image run,
+subject to the exact physical and functional evidence. Failure retains the new
+worst path and repairs a demonstrated cause. No required gate, full-image
+clock/CDC/loadability result or board performance is inferred from these screens.

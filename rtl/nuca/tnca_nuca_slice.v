@@ -873,9 +873,18 @@ module tnca_nuca_slice #(
     assign tmu_tl_addr  = tl_a;
     // Only a registered tensor's tiles are counted, each in its own granule.
     wire [5:0]  cur_lsb  = (cur_own[5:0] != 6'd0) ? cur_own[5:0] : d_lsb;
-    wire [63:0] tlw_mask = ((64'd1 << cur_lsb) - 64'd1) & ~64'd7;
+    // A last-word address has every bit below the granule set, except
+    // the three byte-offset bits. Test fixed bit positions directly rather
+    // than build (1 << lsb) - 1 with a variable shifter and carry chain.
+    wire [63:0] tlw_address = cur_addr;
+    wire [59:0] tlw_missing;
+    genvar tlw_bit;
+    generate for(tlw_bit=3;tlw_bit<63;tlw_bit=tlw_bit+1)begin:g_tlw_predicate
+        assign tlw_missing[tlw_bit-3] =
+            (cur_lsb > tlw_bit) && !tlw_address[tlw_bit];
+    end endgenerate
     wire        cur_tlw  = pol_dbp && cur_own[11] && !cur_we && !cur_amo &&
-                           (cur_lsb >= 6'd3) && ((cur_addr & tlw_mask) == tlw_mask);
+                           (cur_lsb >= 6'd3) && !(|tlw_missing);
 
     // ---- pending work elsewhere ---------------------------------------------
     reg              ms_pick;       // some MSHR wants the engine

@@ -30,7 +30,11 @@ for {set core 0} {$core < 3} {incr core} {
             # Netlist constants have no physical site; report their exclusion.
             if {$reference in {GND VCC}} {
                 incr constants
-            } elseif {$location} {
+            } elseif {$location in {1 true TRUE}} {
+                lappend placed $cell
+            } elseif {[llength [get_sites -quiet -of_objects $cell]]} {
+                # RAM macros can expose LOC/site without IS_PLACED or a
+                # direct cell->SLR relationship in Vivado 2023.2.
                 lappend placed $cell
             } else {
                 incr unplaced
@@ -39,9 +43,9 @@ for {set core 0} {$core < 3} {incr core} {
     }
     set slrs [list]
     if {[llength $placed]} {
-        # Vivado 2023.2 get_slrs explicitly supports cell objects. This queries
-        # their actual mapped sites, independently of USER_SLR_ASSIGNMENT.
-        set regions [get_slrs -of_objects $placed]
+        # Query actual mapped sites. Some RAM macro cell objects do not
+        # resolve directly to SLRs. Assignment intentions are not evidence.
+        set regions [get_slrs -of_objects [get_sites -of_objects $placed]]
         if {[llength $regions]} {set slrs [lsort -unique [get_property NAME $regions]]}
     }
     set expected [format "SLR%d" $core]
@@ -65,10 +69,12 @@ for {set replica 0} {$replica<3} {incr replica} {
     set unplaced 0
     foreach cell $members {
         if {[get_property REF_NAME $cell] in {GND VCC}} {continue}
-        if {[get_property IS_PLACED $cell]} {lappend placed $cell} else {incr unplaced}
+        if {[llength [get_sites -quiet -of_objects $cell]]} {
+            lappend placed $cell
+        } else {incr unplaced}
     }
     set slrs [list]
-    if {[llength $placed]} {set slrs [lsort -unique [get_property NAME [get_slrs -of_objects $placed]]]}
+    if {[llength $placed]} {set slrs [lsort -unique [get_property NAME [get_slrs -of_objects [get_sites -of_objects $placed]]]]}
     set expected "SLR$replica"
     set ok [expr {[llength $placed]>0 && $unplaced==0 && $slrs eq [list $expected]}]
     puts $stream "local_tmu $replica primitive_count [llength $members] placed [llength $placed] unplaced $unplaced actual_slrs {$slrs} expected $expected pass $ok"

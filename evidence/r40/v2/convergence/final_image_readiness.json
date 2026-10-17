@@ -1,28 +1,28 @@
 {
   "schema": "tnca-r40-final-image-readiness-audit/1",
-  "source_commit": "34820bf plus source hashes below",
+  "source_commit": "base 1f821c6 with the SHA-256 source snapshots recorded below",
   "contract_sha256": "49fc0e02733139707ae2292eff2ef893e76e73f0723d0d002b2e7e1864af71c8",
-  "scope": "Current source audit and experiment pointers; not gate qualification",
+  "scope": "Current source and actual module evidence; no full-image acceptance credit",
   "findings": [
     {
       "control": "TNCA_RTL_OUTSTANDING",
       "gate": "R40-04.bandwidth",
       "source": "rtl/fpga/tnca_line_axi.v",
-      "blocker": "Snapshot09 core reservation-X remains unexplained; final board memory-service evidence absent",
-      "next_action": "Inspect /tmp/r40_memory_controls12_results/native.stderr and simulator first assertion; then measure frozen memory-service A/B on qualified attempt01 image",
+      "blocker": "Qualified final three-core 100 MHz HBM image and same-image board outstanding1/8 measurements absent",
+      "next_action": "Complete last root-caused physical candidate qualification, run original large Torch board checkpoint, then frozen outstanding A/B",
       "source_sha256": "2dd2f04258e6447ffd778932ee44638cbfe2bbbb77d6e9d755d1c9cc2c481d33",
       "implementation": "Idle-only MMIO runtime admission limit, advertised capability/readback; actual AXI slot cap tested at 1 and 8",
-      "evidence": "../../R40-04/runtime_memory_controls/README.md"
+      "evidence": "p0_selected_victim_tlw/r4_completed_functional.json"
     },
     {
       "control": "TNCA_RTL_MEM_PORTS",
       "gate": "R40-06.ports",
       "source": "rtl/fpga/tnca_memory_mode.v",
-      "blocker": "Snapshot09 core reservation-X remains unexplained; final board port A/B absent",
-      "next_action": "Resolve captured reservation-X; validate actual PC topology and all active outlets on qualified attempt01 image",
+      "blocker": "Qualified final three-core HBM image and actual multi-PC board port A/B absent",
+      "next_action": "Qualify final physical candidate; verify actual multi-PC allocation/all active outlets in original large graph, then frozen port A/B",
       "source_sha256": "18c38d6a64449418a7c2dd1679058cad028303678be9af7c7aeee0b6258f8602",
       "implementation": "Same-image one/all outlet routing preserves all home source IDs; actual disabled/active outlet traffic tested",
-      "evidence": "../../R40-04/runtime_memory_controls/README.md"
+      "evidence": "p0_selected_victim_tlw/r4_completed_functional.json"
     },
     {
       "control": "TNCA_LOCALITY",
@@ -38,7 +38,7 @@
       "source": "rtl/nuca/tnca_tmu.v",
       "blocker": "Standard Torch metadata registration and correct ownership/liveness integration remain unwired",
       "next_action": "Integrate the verified core-program transport with authoritative standard launch/storage metadata and ownership lifetimes; do not enable unproven last-use hints",
-      "source_sha256": "29c326b4cc7da6c928ed41119416880362704b8d0b544889b6ad99daeb144ea3",
+      "source_sha256": "31d8ac1ec0d470f10e41a903a5846039278354182463060396c71e3a5ad0636a",
       "evidence": "../../R40-06/core_tmu_transport/README.md",
       "implementation": "Actual three-core Session/AOT control programs reach existing TMU policy/register/notice paths; no host register aperture is needed for that transport"
     },
@@ -62,12 +62,16 @@
     }
   ],
   "evidence_dependencies": [
-    "pending_switch_consumers.json",
     "implementation_budget.json",
-    "route_failure_20261016/observation.json"
+    "pending_switch_consumers.json",
+    "attempt02/terminal_failure.json",
+    "p0_selected_victim_tlw/r4_physical_terminal.json",
+    "p0_selected_victim_tlw/r4_completed_functional.json"
   ],
   "previous_source_audit": "ce814d3 (historical audit retained in git)",
   "final_image_qualified": false,
-  "first_full_attempt_state": "placement-running; synthesis complete; attempt01/launch.json",
-  "remaining_full_attempts": 1
+  "first_full_attempt_state": "terminal failed: implementation_budget.json attempt1",
+  "remaining_full_attempts": 1,
+  "second_full_attempt_state": "terminal failed: attempt02/terminal_failure.json",
+  "current_module_state": "R4 routed: setup+.630ns/hold+.004ns at10ns,75184fullyrouted/0errors; site-based TMU audit completion passed. Zero-cycle TLW predicate rewrite equivalence passed; matched module screen running. No full-image qualification."
 }

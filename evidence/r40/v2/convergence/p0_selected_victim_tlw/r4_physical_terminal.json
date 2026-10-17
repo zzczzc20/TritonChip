@@ -1,0 +1,350 @@
+{
+  "files": {
+    "original/clockInfo.txt": {
+      "sha256": "da201d632946401a879a28a4960a6f43589ea8712aecb7f5a3a756465224602e",
+      "bytes": 949
+    },
+    "original/identity.json": {
+      "sha256": "3f63b4b7af6526aa6eea0f13784b979a02d6482744764c18116fa199e9ca9ab1",
+      "bytes": 3147
+    },
+    "original/iter_100_CongestedCLBsAndNets.txt": {
+      "sha256": "795a13533ba6cb46557c5770d6165427028d147c8d58c44e2dedf63b698a66da",
+      "bytes": 244
+    },
+    "original/reports/checks.rpt": {
+      "sha256": "bb735fcce67e4bd172f22af51c3011716ba422f45208ac80ce1b10f641a37a10",
+      "bytes": 100300
+    },
+    "original/reports/critical_paths.rpt": {
+      "sha256": "28c490f8cf57ff29637b530b8e507665edbb0dcd2b8bdb19901c21686cb1eaf6",
+      "bytes": 341008
+    },
+    "original/reports/hit_word_capture.rpt": {
+      "sha256": "a2b29820db61e82fdab70990ee772f688a80f5db3b4f62cb6b1d85e37ef0c6b9",
+      "bytes": 74424
+    },
+    "original/reports/hit_word_consume.rpt": {
+      "sha256": "b98b264c700bc82520654e1bc80de2339602b4701d4fffcfebd2df6b1c6e6e8d",
+      "bytes": 91030
+    },
+    "original/reports/local_inbox_commit.rpt": {
+      "sha256": "021be04f2b32a7dcd14887c3acb81ba5a3ce221f0fd91e28fe78cec0004950c5",
+      "bytes": 83708
+    },
+    "original/reports/mw_to_local_inbox.rpt": {
+      "sha256": "0ef564d58bf406b81530ab55bfe5ff7c995aa834d63bd6f864a205b0c927eea7",
+      "bytes": 59501
+    },
+    "original/reports/optimized_paths.rpt": {
+      "sha256": "03eb29bc80ff50c222fef72359240f1f4baf2824aea0c4a1a60febc116c0dbb6",
+      "bytes": 309142
+    },
+    "original/reports/optimized_utilization.rpt": {
+      "sha256": "d593e8d1edbff44343972a83ef3bd93eb68b2ec9b7500da5e10fe50ee1cc50c9",
+      "bytes": 3013
+    },
+    "original/reports/placed_paths.rpt": {
+      "sha256": "bea03d0fa7333a6ad91ac60dc6b0c85bc11e4f97c9af33bfea3250821c69bd0f",
+      "bytes": 339002
+    },
+    "original/reports/placed_timing.rpt": {
+      "sha256": "a81e590e12c291216c26f37a053f60b93ecc4b42872cdb2770e21f20c9b1ea22",
+      "bytes": 24520
+    },
+    "original/reports/placed_utilization_slr.rpt": {
+      "sha256": "ba18b7c72c9c9ab5b966f2897aeb0bfb7d5ee227df2364cd28991e294ba05412",
+      "bytes": 6509
+    },
+    "original/reports/route_status.rpt": {
+      "sha256": "393b57e1394a7a3ddad21eb35fac2bccb1b931e1af4598bb1a916ff5c49dbe44",
+      "bytes": 714
+    },
+    "original/reports/timing.rpt": {
+      "sha256": "0ad29536ead53580a284a640c51ba4a31e8eba74f57519242cb4080bb51a4e44",
+      "bytes": 25828
+    },
+    "original/reports/tlw_classification.rpt": {
+      "sha256": "f8ed0b5a46b2d323b5c09e1ae5e1d189a10112fb139fef46d88846dbe69cca5d",
+      "bytes": 101467
+    },
+    "original/reports/tlw_raw_input.rpt": {
+      "sha256": "8267de99a0194a0da862094ab66f4190ce50bedf4e575b22fc11f64b10d059ab",
+      "bytes": 60020
+    },
+    "original/reports/tlw_update.rpt": {
+      "sha256": "c5bb49451401c8b9d3f0a46f810b54e68249668909eadfa91bba4e7193a246d4",
+      "bytes": 97800
+    },
+    "original/reports/tmu_state_locations.tsv": {
+      "sha256": "9bd5e0a7c129db2047dbe50482bf7772a52ec3f44c658665c666e64b2050b2dd",
+      "bytes": 23921
+    },
+    "original/reports/utilization_hierarchy.rpt": {
+      "sha256": "3869a52cbd17d26325b05b00fb3d171f2fd390859306aaee85dca0ff1f64e5e4",
+      "bytes": 3129
+    },
+    "original/reports/utilization_slr.rpt": {
+      "sha256": "2767d50fdbeb26b13654cedefcdbe56f79c2e794340807c44647e47bcb38b6f5",
+      "bytes": 6491
+    },
+    "original/reports/wrapper.v": {
+      "sha256": "81342cc49335eecc1ced16603b5800ef889ffb6d30fea7515e70598b5e50aed4",
+      "bytes": 8693
+    },
+    "original/run.sh": {
+      "sha256": "5ed0ea4d98bbabfa85f9bba32cc020b1601d2fddb4074871c7da11e740581daf",
+      "bytes": 418
+    },
+    "original/runner.exit": {
+      "sha256": "4355a46b19d348dc2f57c046f8ef63d4538ebb936000f3c9ee954a27460dd865",
+      "bytes": 2
+    },
+    "original/source/flow/fpga/screen_local_tmu_rank.tcl": {
+      "sha256": "b5f07b3bd96be39a0c25c216bb990e756c6d00da3129ca0dffae67eca3d11cc2",
+      "bytes": 7611
+    },
+    "original/source/flow/fpga/screen_replicated_tmu.tcl": {
+      "sha256": "2b9f11efd72193701e04c1b8ba90b710c520653c7de366acdffb42206ba7a3fe",
+      "bytes": 5699
+    },
+    "original/source/flow/fpga/tnca_range_grid_ooc.v": {
+      "sha256": "e707f6e97022e1f33c46cb68f2f5dc913fd3cc79bf2e1e76dec6508aa01a0622",
+      "bytes": 8689
+    },
+    "original/source/rtl/common/tnca_amo.vh": {
+      "sha256": "1e18fa968eba2ff12e3df6b45c550a2a8b6797eb1300bfdee11beda77737b7cd",
+      "bytes": 2922
+    },
+    "original/source/rtl/common/tnca_dco_owner_registered.vh": {
+      "sha256": "a8d06b7cb702d9b54e14a7a0ec50eaeca1b4c34700a71adf46e12f3b2b4c340b",
+      "bytes": 1662
+    },
+    "original/source/rtl/common/tnca_defs.vh": {
+      "sha256": "0d4eaa5507a74c45048dc7481a5bbb97ae92d8a5ac15b01c0f37e84783a80c89",
+      "bytes": 20141
+    },
+    "original/source/rtl/common/tnca_perf_count.vh": {
+      "sha256": "00499e52d3214453385fadbf553a795c252e301add8c42cfbb93321183329391",
+      "bytes": 162
+    },
+    "original/source/rtl/common/tnca_perf_sel.vh": {
+      "sha256": "890eac0ece3c7377774db98f31a703ad93c43f80e70ad8456ba98ef5216fe6d1",
+      "bytes": 1003
+    },
+    "original/source/rtl/nuca/tnca_nuca_slice.v": {
+      "sha256": "09e89d045814fbf7588889551227e3d113c61508fd104f1ba2e792bbd6663945",
+      "bytes": 73737
+    },
+    "original/source/rtl/nuca/tnca_replicated_tmu.v": {
+      "sha256": "b1af44faa38d4d90978a2478cc752274bbb8398a897e3c706727356ed9d0d0ef",
+      "bytes": 2991
+    },
+    "original/source/rtl/nuca/tnca_tmu.v": {
+      "sha256": "da94fe33f872b03d27d93dee0521b92f5f50743396ff1b71138df5bf094a7280",
+      "bytes": 22041
+    },
+    "original/source/tb/common/tnca_dram_model.v": {
+      "sha256": "37401a0a88d48d8226e1a4e94dd818b2d37dfaab12829c767603a3982f9bd5ac",
+      "bytes": 5422
+    },
+    "original/source/tb/nuca/tb_nuca_maintenance.v": {
+      "sha256": "32e4f159d4c9b3b20a9bc6192d372407332405f7f51444d8cbbb45a86f814546",
+      "bytes": 7718
+    },
+    "original/source/tb/nuca/tb_nuca_slice.v": {
+      "sha256": "d5bf59b106fa317860a64aaf7b03cd81db0f75b72b251d1d0a977e56820b2a35",
+      "bytes": 27270
+    },
+    "original/source/tb/nuca/tb_tmu_pipeline_quiet.v": {
+      "sha256": "ae4432c02855f2fa1579e566a45dc2888b18e37f2acb711df3964cd0019a5863",
+      "bytes": 8625
+    },
+    "original/source/tb/nuca/tb_tmu_replicated.v": {
+      "sha256": "645e37a4d700d091565b0b43f4fc0162aacd9a5666a4aa0303172be6a4f50639",
+      "bytes": 11167
+    },
+    "original/stdout.log": {
+      "sha256": "14a5d07b0810ce73fb72e577ce85130de0e8cfafaa0f77e6e1d48305c8bf092e",
+      "bytes": 245343
+    },
+    "original/vivado.log": {
+      "sha256": "42a61ac263da6668a70ab9d0b1ca387aa73eb1f6b12fcd7ac9245d3a313c9934",
+      "bytes": 246657
+    },
+    "mapping_probe/probe.tcl": {
+      "sha256": "7d8299f16a00c41de3f18b2f7c775e4a31a5bfbe5e2097778567fca894eef80c",
+      "bytes": 1346
+    },
+    "mapping_probe/reports/unresolved.tsv": {
+      "sha256": "17e705d8863cbeaef6cc904ab1c79a655e9c00a1f5a1c95191d2667a01d48f0c",
+      "bytes": 152783
+    },
+    "mapping_probe/run.sh": {
+      "sha256": "4044a73e5267aed3533a444c16d41b606b7a8fe839583bd78edf4fb82f91889e",
+      "bytes": 362
+    },
+    "mapping_probe/runner.exit": {
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
+      "bytes": 2
+    },
+    "mapping_probe/stdout.log": {
+      "sha256": "2d2bed9c431a7e778c47eddf90a64e9729f4616a8394bbb5997df45a4c5a101b",
+      "bytes": 5354
+    },
+    "mapping_probe/vivado.log": {
+      "sha256": "ed990310970cc109283d90256232f51a56868e0f6a39ca4b4fef471244a6b955",
+      "bytes": 5923
+    },
+    "mapping_completion/complete.tcl": {
+      "sha256": "09b2c23075cd9feaeae2b12f294819a4769b6d354504769f849af282131dc42e",
+      "bytes": 2972
+    },
+    "mapping_completion/reports/location_failures.txt": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    "mapping_completion/reports/owner_to_pair.rpt": {
+      "sha256": "cf25ea4dc8cc6f9bdc8c69461004e8fe186944bc26a7573e33f4b25aa2eca901",
+      "bytes": 96187
+    },
+    "mapping_completion/reports/owner_to_selected.rpt": {
+      "sha256": "2db25aa8d8eb3297a4bf73936ec4b64de35b6da550fc1bb7afea581e0df6761a",
+      "bytes": 1592
+    },
+    "mapping_completion/reports/pair_to_selected.rpt": {
+      "sha256": "6769eed3a134f667716488deedadb2bb4baeb13974cf51c17ddc214236d8af4f",
+      "bytes": 72907
+    },
+    "mapping_completion/reports/registered_boundaries.tsv": {
+      "sha256": "949c31b5ec5ab57648ffcc1d88d0bb36d310014d843e4b59773aebe159cc7a45",
+      "bytes": 19887
+    },
+    "mapping_completion/reports/selected_output.rpt": {
+      "sha256": "33e0983b442a05381a5b42418b5d4e1c696e670f443efb64a04c408d6674768f",
+      "bytes": 67517
+    },
+    "mapping_completion/reports/tag_mapping.tsv": {
+      "sha256": "62c561b573da4a62a5cfffe8aa4e660c615416a3a7f5c15ea66f8112fbf85f9a",
+      "bytes": 154728
+    },
+    "mapping_completion/reports/tmu_state_locations.tsv": {
+      "sha256": "f251ac01b97fa53aca9361222cc5edddd42a27f16bb2b040430230d514ad95e3",
+      "bytes": 674796
+    },
+    "mapping_completion/run.sh": {
+      "sha256": "8866c408c3d31675df6eed8cd17e7ff933762061bb35fe06af777ab9eed7fc48",
+      "bytes": 375
+    },
+    "mapping_completion/runner.exit": {
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
+      "bytes": 2
+    },
+    "mapping_completion/stdout.log": {
+      "sha256": "3235762d509a68ab266e073c30b7b68eb71624942a6bd0aad5397dfbde82a619",
+      "bytes": 8823
+    },
+    "mapping_completion/vivado.log": {
+      "sha256": "8b33cc4b76725cb93e58e14c598367d746f355868cd3e9153d48b82c8889d110",
+      "bytes": 9415
+    }
+  },
+  "checkpoints": {
+    "placed.dcp": {
+      "path": "/home/zzhouch/tnca_build/r40_r4_module_20261017/reports/placed.dcp",
+      "sha256": "56514c733cf7fee86a546fb4293d839f9ed64716d8ae2cb213052addd5ad35cf",
+      "bytes": 44295914
+    },
+    "routed.dcp": {
+      "path": "/home/zzhouch/tnca_build/r40_r4_module_20261017/reports/routed.dcp",
+      "sha256": "60363c5ec820f20f00f5d691d9e5da2ff2ff990dfac53f0511bcf19e81f88ad0",
+      "bytes": 61044765
+    }
+  },
+  "scope": "Actual routed three-cache/three-local-TMU module, no cores/NoC/HBM/timed I/O; not full-image gate qualification",
+  "archive": "r4_physical_terminal.tar.gz",
+  "archive_sha256": "eef5290604c70e7eeee176f07eccdb869333664142d747b98dedc0c30a394f5a",
+  "original_exit": 1,
+  "original_failure": "Reporting directly queried SLR of a located RAM256X1S macro; cell->SLR returned empty although LOC/site existed. Route and exact timing had already completed and routed DCP was saved.",
+  "mapping_completion_exit": 0,
+  "mapping_method": "Actual mapped sites -> SLR for every FF/RAM/SRL state cell; no intention/property-only acceptance",
+  "tmu_state_rows": {
+    "0": 2571,
+    "1": 2571,
+    "2": 2571
+  },
+  "tag_mapping_reference_counts": {
+    "RAM32M16": 96,
+    "LUT4": 24,
+    "LUT1": 5,
+    "LUT3": 2,
+    "MUXF7": 16,
+    "LUT6": 65,
+    "RAMD32": 1344,
+    "RAMS32": 192
+  },
+  "tag_root_count": 96,
+  "cut_paths": {
+    "owner_to_selected.rpt": [],
+    "owner_to_pair.rpt": [
+      {
+        "slack_ns": 2.358,
+        "source": "g_tile[2].u_slice/victim_owner_q_reg[5][2]/C",
+        "destination": "g_tile[2].u_slice/victim_pair_q_reg[2][0]/D",
+        "path_type": "Setup (Max at Slow Process Corner)",
+        "requirement_ns": 10.0,
+        "data_delay_ns": 7.429,
+        "logic_delay_ns": 1.662,
+        "route_delay_ns": 5.767,
+        "logic_levels": 14,
+        "clock_period_ns": 10.0
+      }
+    ],
+    "pair_to_selected.rpt": [
+      {
+        "slack_ns": 6.31,
+        "source": "g_tile[0].u_slice/victim_pair_q_reg[3][0]/C",
+        "destination": "g_tile[0].u_slice/selected_way_q_reg[0]_rep__0/D",
+        "path_type": "Setup (Max at Slow Process Corner)",
+        "requirement_ns": 10.0,
+        "data_delay_ns": 3.62,
+        "logic_delay_ns": 1.227,
+        "route_delay_ns": 2.393,
+        "logic_levels": 8,
+        "clock_period_ns": 10.0
+      }
+    ],
+    "selected_output.rpt": [
+      {
+        "slack_ns": 2.712,
+        "source": "g_tile[0].u_slice/selected_way_q_reg[0]/C",
+        "destination": "g_tile[0].u_slice/ms_wbadr_reg_0_7_56_63/RAMA/WE",
+        "path_type": "Setup (Max at Slow Process Corner)",
+        "requirement_ns": 10.0,
+        "data_delay_ns": 7.044,
+        "logic_delay_ns": 0.859,
+        "route_delay_ns": 6.185,
+        "logic_levels": 6,
+        "clock_period_ns": 10.0
+      }
+    ]
+  },
+  "setup_wns_ns": 0.63,
+  "hold_whs_ns": 0.004,
+  "clock_hz": 100000000,
+  "fully_routed_nets": 75184,
+  "routing_errors": 0,
+  "new_worst": {
+    "source": "slice2 cur_addr[18]",
+    "destination": "slice2 tl_a[10]/CE",
+    "levels": 21,
+    "data_ns": 8.97,
+    "logic_ns": 2.109,
+    "net_ns": 6.861
+  },
+  "required_gate_promotions": [],
+  "full_image_fmax_hz": null,
+  "next_experiment": "Exact TLW predicate rewrite: symbolic equivalence and DBP-enabled full-cycle miter passed; inspect matched module results before last full image",
+  "on_success": "Freeze candidate with actual tag mapping, SLR placement, setup/hold and source-matched system evidence; retain full-image gate requirements",
+  "on_failure": "Keep remaining exact path/physical region and fix only demonstrated cause; no blind directive polling"
+}

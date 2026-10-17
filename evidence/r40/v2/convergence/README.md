@@ -30,20 +30,24 @@ with the TLW classification/live-count/dead-update chain now directly identified
 **Next commands:**
 
 ```sh
-# ARM jump host: inspect the immutable R4 functional batch.
-cat ~/r40_r4_functional_v2_20261017/runner.exit
-tail -n 25 ~/r40_r4_functional_v2_20261017/runner.log
-# FPGA host: inspect the terminal R3 module diagnostics.
-cat ~/tnca_build/r40_local_tmu_rank_module_20261017/runner.exit
+# FPGA host: inspect the exact TLW predicate candidate, without a full retry.
+tail -n 25 ~/tnca_build/r40_tlw_predicate_module_20261017/stdout.log
+# ARM jump host: inspect the larger-wait retry of the original timed-out point.
+tail -n 25 ~/r40_native_argmax_timeout_20261017/runner.log
 ```
 
-The failed-DCP diagnostic is terminal partial: tag/cut/crossing reports completed,
-and the final HBM endpoint query failed. The shared-TMU module screen timed out
-without signoff. The R3 local-TMU/pair-rank module completed `route_design`, but
-its 3600-second cap interrupted the subsequent accurate timing report. Its
-router estimates (+0.348 ns setup / +0.014 ns hold) are not signoff. A future
-module run must save the routed checkpoint immediately and leave reporting
-headroom. No automatic retry or third full implementation has started.
+R4 completed route with 75,184/75,184 routable nets and zero routing errors.
+Its accurate internal 10 ns setup WNS is +0.630 ns and hold WHS +0.004 ns.
+The original script exited during a cell-to-SLR query on a located RAM macro;
+a read-only completion from the saved routed DCP passed using actual sites.
+It confirms 96 RAM32M16 tag roots and all three local TMU copies in SLR0/1/2.
+These sparse module results exclude cores, NoC, HBM and timed I/O and cannot
+qualify the full image. The remaining 21-level TLW predicate path motivates
+one exact, zero-cycle arithmetic rewrite, now in matched module screening.
+The full R4 pressure/maintenance, legacy system and four-memory-mode native
+Torch/backend regressions completed. The previous maintenance summary failure
+was a success-marker mismatch; original raw failure and the eight-case
+completion are both retained. No third full implementation has started.
 **Success:** review actual paths, logic/net delay, mapped tag devices, packing,
 SLR/SLL contributors and matched functional results before freezing the last
 full candidate. **Failure:** preserve the specific failed query, cone or
@@ -79,14 +83,27 @@ software snapshot remains `642c660`, as recorded below.
 
 ## Latest optional RTL and active experiments
 
-The [R4 candidate record](p0_selected_victim_tlw/README.md#r4-implementation-and-running-validation)
-describes the now-integrated optional RTL, exact enable parameters, added cycles,
-source-matched functional evidence and remaining physical qualification. Defaults
-preserve the existing mode. A local metadata write inbox and byte-enabled data
-writes/E_LOOK hit-word capture address measured residual cones. No full-image
-clock, image, CDC or workload gate has been promoted. The final implementation
-reserve is still one. The R4 module screen and source-matched system/default-mode
-regressions are active; inspect their terminal reports before freezing attempt 3.
+The [completed R4 physical record](p0_selected_victim_tlw/r4_physical_terminal.json)
+binds actual route, min/max timing, tag mapping, register cuts and site-based
+TMU locations to its immutable module source and routed DCP. The
+[completed functional record](p0_selected_victim_tlw/r4_completed_functional.json)
+retains all cache pressure, write/notice, replica, maintenance, system, native
+memory-control and backend evidence, plus failures and mutations. CI run
+39047006244 passed on source `1f821c6`; newer source requires its own CI result.
+
+The latest local TLW predicate rewrite replaces a variable shift/subtract mask
+with fixed-bit tests. All-input symbolic equivalence and an off-by-one mutation
+check passed, together with full-cycle comparisons against the exact R4 slice
+under DBP-enabled policies. It adds no state or cycle. Its matched three-cache/
+three-TMU physical screen is running; it is not another full-image attempt.
+
+The full original R3 native77 simulation remains incomplete: some original
+medium points exceeded the 1800-second host wait. Those rows remain timeout,
+not numerical passes. A diagnostic retries the original medium argmax point
+with identical source/work and an explicit 7200-second wait. It does not replace
+the complete final-board inventory. The qualified-image prerequisite remains
+open for every final-image workload/performance gate below. The final full
+implementation reserve is one; the frozen contract is unchanged.
 
 ## Latest detailed diagnosis and candidate screening
 

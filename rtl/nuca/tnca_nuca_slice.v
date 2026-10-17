@@ -847,7 +847,7 @@ module tnca_nuca_slice #(
                                            dco_t_bypass, dco_t_lsb) :
                           owner(cur_addr, dco_t_valid, dco_t_base, dco_t_size,
                                   dco_t_bypass, dco_t_lsb);
-    wire [11:0] cur_own = (REGISTER_VICTIM_OWNER && (est == E_MISS || (REGISTER_VICTIM_SELECT && (est == E_ALLOC || (RANK_PIPE && est == E_RANK))))) ?
+    wire [11:0] cur_own = (REGISTER_VICTIM_OWNER && (est == E_HIT || est == E_MISS || (REGISTER_VICTIM_SELECT && (est == E_ALLOC || (RANK_PIPE && est == E_RANK))))) ?
                            request_owner_q : request_owner_live;
     wire        cur_tbyp  = pol_tbyp && cur_own[11] && cur_own[10];
     wire        cur_dbyp  = pol_dyn && cur_own[11] &&
@@ -1204,7 +1204,13 @@ module tnca_nuca_slice #(
                                 [cur_wsel*WORD_BITS +: WORD_BITS];
                 end
                 touch(cur_set, data_hit_way);
-                if (cur_tlw) tl_note(cur_addr);
+                // Reuse E_LOOK's owner classification on hits too. A metadata
+                // commit in between invalidates this hint, never the data
+                // response. Suppress the unversioned hint conservatively;
+                // fewer TLW notices can only postpone dead prediction.
+                if (cur_tlw && (!REGISTER_VICTIM_OWNER ||
+                                owner_epoch_q == dco_owner_epoch))
+                    tl_note(cur_addr);
                 rq_v[cur_rq] <= 1'b0;
                 est <= E_SEL;
             end

@@ -1,6 +1,12 @@
 # PLACE_DESIGN.TCL.PRE for the three-tile U280 platform binding.
 # Logical RTL stays platform independent. This binding requires two stages.
 # A missing hierarchy is fatal; do not silently produce a single-SLR image.
+# The vendor pre-hook inherits the immutable image config from the launcher.
+# Bind replica checks to that config even when Vivado runs this in a fresh Tcl
+# interpreter rather than the standalone diagnostic's existing config scope.
+if {![info exists TNCA_IMAGE_PARAMS] && [info exists ::env(TNCA_IMAGE_CONFIG)]} {
+    source [file normalize $::env(TNCA_IMAGE_CONFIG)]
+}
 set r40_hier_cells [get_cells -hierarchical -filter {IS_PRIMITIVE == 0}]
 set r40_hier_names [get_property NAME $r40_hier_cells]
 set r40_leaf_cells [get_cells -hierarchical -filter {IS_PRIMITIVE == 1}]

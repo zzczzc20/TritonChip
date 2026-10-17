@@ -31,7 +31,7 @@ with the TLW classification/live-count/dead-update chain now directly identified
 
 ```sh
 # FPGA host: inspect the exact TLW predicate candidate, without a full retry.
-tail -n 25 ~/tnca_build/r40_tlw_predicate_module_20261017/stdout.log
+tail -n 25 ~/tnca_build/r40_hit_owner_module_20261017/stdout.log
 # ARM jump host: inspect the larger-wait retry of the original timed-out point.
 tail -n 25 ~/r40_native_argmax_timeout_20261017/runner.log
 ```
@@ -96,6 +96,15 @@ with fixed-bit tests. All-input symbolic equivalence and an off-by-one mutation
 check passed, together with full-cycle comparisons against the exact R4 slice
 under DBP-enabled policies. It adds no state or cycle. Its matched three-cache/
 three-TMU physical screen is running; it is not another full-image attempt.
+
+The exact-mask candidate still exposes the live owner classification on hits.
+The final local correction reuses E_LOOK's request-owner snapshot in E_HIT and
+suppresses an unformed hint if the adjacent metadata epoch changed. Data
+responses retain their cycles. The complete data-cycle/oracle and metadata
+mutation evidence is in [hit_owner_functional.json](p0_selected_victim_tlw/hit_owner_functional.json);
+its own matched module screen is running. The new site-query CI stub regression
+was diagnosed and fixed, preserving all refusal paths and adding RAM/TMU cases;
+new head CI must still complete before freezing the final source.
 
 The full original R3 native77 simulation remains incomplete: some original
 medium points exceeded the 1800-second host wait. Those rows remain timeout,

@@ -1,0 +1,37 @@
+{
+  "scope": "CI collector regression and exact local tests; not physical qualification",
+  "failed_commit": "0827d0353d5d237b44adf4cf2e8267fa8b1f6230",
+  "failed_run": 39066066431,
+  "failed_job": 117493884000,
+  "cause": "Production collector now queries mapped sites; old Tcl query stub lacked get_sites and aborted before native graph steps. No failing numerical graph result was reported by this job.",
+  "fix": "Add a site query stub, model observed located RAM macros with empty IS_PLACED/direct cell->SLR, and retain/extend wrong-SLR, missing, unplaced and overwrite refusal cases for cores and local TMUs.",
+  "archive": "site_query_ci_regression.tar.gz",
+  "archive_sha256": "b24e42fde1be04d3709a30beb84b46b5894b60283edfc9f7e35accedeeeaffd2",
+  "files": {
+    "failed_job.log": "a9189f02a70de4db860b350cfdba0b335178a44435483eb54ccde8842b4aec58",
+    "fixed_collector_tests.py": "c3ddef1a87fa0af182b8ea42a0b253c34662eda4ef94ea324a8357e1651269b9",
+    "actual_collector.tcl": "c9e1e87119bab5dd4a7599af7b656956118e8ef18a3ec5e4d365f2fef2a4b9f2"
+  },
+  "checks": [
+    {
+      "command": [
+        "python3",
+        "tools/r40/placed_core_audit_tests.py"
+      ],
+      "exit": 0,
+      "stdout": "",
+      "stderr": ".....\n----------------------------------------------------------------------\nRan 5 tests in 0.066s\n\nOK\n"
+    },
+    {
+      "command": [
+        "python3",
+        "tools/r40/physical_grid_clock_tests.py"
+      ],
+      "exit": 0,
+      "stdout": "",
+      "stderr": ".....\n----------------------------------------------------------------------\nRan 5 tests in 0.003s\n\nOK\n"
+    }
+  ],
+  "new_head_ci": "pending",
+  "required_gate_promotions": []
+}

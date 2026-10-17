@@ -166,3 +166,44 @@ Success permits final configuration/source freeze and the last full-image run,
 subject to the exact physical and functional evidence. Failure retains the new
 worst path and repairs a demonstrated cause. No required gate, full-image
 clock/CDC/loadability result or board performance is inferred from these screens.
+
+
+## Complete the HIT owner boundary
+
+The exact-mask candidate's post-opt worst path still starts at local TMU tensor
+metadata and ends at the TLW buffer enable: 20 levels, 4.847 ns with estimated
+routing. Source inspection identifies the reason: E_HIT bypassed the E_LOOK
+request-owner registers. The final local candidate reuses that owner snapshot
+on hits. If the adjacent owner epoch changed, it suppresses only the unformed
+hint. It does not retry the data request, add state, or add a hit cycle. Policy
+and default granule still use their current values. Existing formed notices
+retain their original valid/ready behavior.
+
+[hit_owner_functional.json](hit_owner_functional.json) retains all three bench
+iterations with identical DUT RTL. Random churn initially missed stale last-word
+hits in one seed; forcing every eligible hit then removed stable-hint coverage.
+The completed stimulus invalidates the first four eligible hits and retains
+independent periodic miss/rank churn, both coverage floors, original request
+streams and numerical checks. All fixed/changing-metadata policy/seed cases and
+the removed-epoch-guard mutation passed. The complete-slice data-cycle miter
+checks response and backing-memory timing/values against the prior candidate;
+the scalar oracle covers partial writes and 32/64-bit atomics.
+
+The original STAT_DROP remains the busy-buffer loss counter. It does not measure
+intentionally unformed stale-owner hints; zero STAT_DROP does not prove zero
+stale-hint suppression. These tests and comparisons provide no board performance
+measurement. The [matched module identity](hit_owner_module_identity.json) binds
+this correction to the same geometry/clock/directive. Next command:
+`tail -n 25 ~/tnca_build/r40_hit_owner_module_20261017/stdout.log`.
+Success requires actual min/max timing, tag mapping and local-state placement,
+followed by exact source CI and final immutable configuration freeze. Failure
+preserves the remaining physical path; do not claim the earlier R4 module proves
+this newer source's route.
+
+The separate [CI regression record](site_query_ci_regression.json) preserves the
+0827d03 failed job: the site-query correction had not updated the query stub.
+The fixed tests model the observed RAM macro and retain wrong-location/missing/
+unplaced refusal tests, including local TMUs. Both collector and physical-clock
+local suites pass. New source CI remains pending until its own run completes.
+The placement pre-hook now reads the launcher's immutable TNCA_IMAGE_CONFIG when
+not already loaded, so final-image replica checks are bound to the actual config.

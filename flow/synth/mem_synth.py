@@ -63,6 +63,10 @@ TOPS = {
 # capacity or hidden. SYN-01: "remaining valid/bypass/collector bits 独立
 # 列账".
 SMALL_ARRAY_BITS = 1024
+# Semantic metadata remains separate even when it exceeds the size heuristic.
+# ARF has one reset-valid bit per FP32 element; those bits add physical
+# storage, but do not increase its architectural data capacity.
+CONTROL_ARRAYS = {'tnca_acc_rf': {'valid'}}
 
 FF_CELLS = ('$dff', '$dffe', '$sdff', '$sdffe', '$sdffce', '$adff',
             '$adffe', '$dffsr', '$dffsre', '$aldff', '$aldffe')
@@ -145,8 +149,9 @@ def run_top(top, files, flatten=False):
                                  r'combinational loop|multiple drivers|'
                                  r'wire .* is used but has no driver',
                                  l)]
-        data = [m for m in mems if m['bits'] >= SMALL_ARRAY_BITS]
-        small = [m for m in mems if m['bits'] < SMALL_ARRAY_BITS]
+        small = [m for m in mems if m['bits'] < SMALL_ARRAY_BITS or
+                 m['name'] in CONTROL_ARRAYS.get(top, set())]
+        data = [m for m in mems if m not in small]
         out.update(problems=problems, explained_warnings=explained)
         out.update(ok=True, memories=mems, data_memories=data,
                    small_arrays=small, ff_bits=ff_bits,

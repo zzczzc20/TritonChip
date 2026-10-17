@@ -1,0 +1,10 @@
+{
+  "base_software_commit": "9fdbc84",
+  "initial_runs": "unmodified base software",
+  "native_memory_repeat": "post-measurement native_memory metadata added",
+  "diagnostic_probe": "allocation instrumentation, not formal performance evidence",
+  "overlay_sha256": {
+    "archbench/platforms/tnca.py": "fdb082baebbf6a1a71fd0b74adf9713ae0e6b7829cb7bfe1d44d5e9d58d64910",
+    "tools/r40/allocation_probe.py": "d255a0915ff35a388448b640cec4514800f25d45b69007e6b5086c3e5a1f967e"
+  }
+}

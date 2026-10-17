@@ -1,0 +1,6 @@
+W1012 11:58:57.237000 77959 torch/utils/cpp_extension.py:183] No CUDA runtime is found, using CUDA_HOME='/usr/local/cuda'
+  PASS  storage          storage at 0x20000; 6 views alias it
+  PASS  refusals         eager op refused; mixed host/device graph refused
+  PASS  compile_graphs   pointwise: 1 launch(es), 6000 B resident; reduction: 1 launch(es), 6400 B resident; norm: 1 launch(es), 1152 B resident; gemm: 1 launch(es), 9472 B resident; sdpa: 7 launch(es), 28672 B resident
+  PASS  compile_views    1 launch(es) over transposed and offset views
+r40-device-tests  PASS  (4/4)

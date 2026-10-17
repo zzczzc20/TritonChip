@@ -116,7 +116,7 @@ def _hoistable(op, invariant, arg_base, mutated):
 
 
 def apply(kernel, contexts, scratch_slot=None, scratch_bytes=0, hoist=True,
-          pair=False):
+          pair=False, physical_chunk=False):
     """Wrap the role's body in the loop over its programs. Returns the number
     of operations computed once before the loop.
 
@@ -131,9 +131,17 @@ def apply(kernel, contexts, scratch_slot=None, scratch_bytes=0, hoist=True,
     dominate -- is offset here by ROLE_ID * scratch_bytes, so each context
     builds its TensorMaps and repacks its tiles in a buffer of its own.
 
+    `physical_chunk=True` uses the dispatcher's global pid.x as the first
+    lane, runs at most one program per context/pair, preserves global
+    num_programs, and exits inactive tail lanes before invariant stores.
+    The runtime must negotiate physical-x-chunk-v1 and the dispatcher must
+    advance its global x coordinate by `contexts`, without crossing rows.
+
     `hoist=False` computes nothing once: every value the loop would have
     carried across programs is recomputed in each, which is what a kernel
     whose scalars do not fit otherwise needs (the allocator has no spill)."""
+    if physical_chunk and contexts not in (1, 2, 4):
+        raise ValueError('physical chunks require 1, 2 or 4 program contexts')
     region = kernel.roles[0].region
     ops = region.ops
     entry = next((i for i, op in enumerate(ops) if op.kind in _CONTROL), len(ops)) \
@@ -212,12 +220,47 @@ def apply(kernel, contexts, scratch_slot=None, scratch_bytes=0, hoist=True,
             Op('assign', [], [x, nxt]),
             Op('branch_nz', [], [more], {'target': _BODY}),
             Op('exit', [], [])]
+    if physical_chunk:
+        # Preserve num_programs as the global logical dimension. The physical
+        # dispatcher owns row traversal; each context executes only its lane.
+        start = Value(name='rctx_chunk_start', kind=SCALAR, dtype=x.dtype)
+        lane = Value(name='rctx_chunk_lane', kind=SCALAR, dtype=x.dtype)
+        outside = Value(name='rctx_chunk_outside', kind=SCALAR, dtype='i32')
+        head = [Op('special', [lane], [], {'name': 'role_id'})]
+        if pair:
+            raw = lane
+            lane = Value(name='rctx_chunk_pair', kind=SCALAR, dtype=x.dtype)
+            head.append(Op('sbini', [lane], [raw], {'op': 'lshr', 'imm': 1}))
+        head += [Op('program_id', [start], [], {'dim': 0}),
+                 Op('sbin', [x], [start, lane], {'op': 'add'}),
+                 Op('num_programs', [npid], [], {'dim': 0}),
+                 Op('scmp', [outside], [x, npid], {'cc': 'ge'}),
+                 Op('branch_nz', [], [outside], {'target': _LATCH})]
+        if any(op.kind == 'branch_nz' and op.attrs.get('target') == _LATCH for op in out):
+            head.append(Op('const', [one], [], {'value': 1}))
+        head.append(Op('label', [], [], {'name': _BODY}))
+        tail = [Op('label', [], [], {'name': _LATCH}), Op('exit', [], [])]
     if scratch_slot is not None and scratch_bytes:
         bases = {id(op.results[0]) for op in before + out
                  if op.kind == 'special' and op.attrs.get('name') == 'arg_base'}
         before = _own_scratch(before, bases, scratch_slot, scratch_bytes, 'pre', pair)
         out = _own_scratch(out, bases, scratch_slot, scratch_bytes, 'body', pair)
-    region.ops = before + head + out + tail
+    # Hoisting the invariant map words can leave only the dynamic base store
+    # beside td.load. The LSU and descriptor engine are independent requesters:
+    # without publication the snapshot can read the old base (including zero)
+    # before that last store commits. Preserve ordering in both loop regions.
+    written_maps = {id(op.operands[0]) for op in ops
+                    if op.kind == 'sstore' and id(op.operands[0]) in maps}
+    def publish_maps(block):
+        published = []
+        for op in block:
+            if op.kind == 'desc_snapshot' and id(op.operands[0]) in written_maps:
+                published.append(Op('fence', [], [], {'order':'release','scope':'device'}))
+            published.append(op)
+        return published
+    before, out = publish_maps(before), publish_maps(out)
+    # Inactive tail lanes must exit before descriptor/scratch side effects.
+    region.ops = head + before + out + tail if physical_chunk else before + head + out + tail
     return len(before)
 
 

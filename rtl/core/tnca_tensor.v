@@ -325,10 +325,23 @@ module tnca_tensor #(
         input [63:0] c;
         input [31:0] i;
         input [63:0] e;
-        reg   [63:0] g;
+        reg   [32:0] lo;
+        reg   [31:0] hi0, hi1;
+        reg          valid0, valid1;
         begin
-            g = c + {32'd0, i};
-            in_dim = !g[63] && (g < e);
+            // Evaluate both upper halves before the low-half carry arrives.
+            // Preserve the original 64-bit wrapping sum, including a negative
+            // coordinate crossing zero and a positive sum crossing bit 63.
+            // This avoids serial 64-bit addition and comparison carry chains
+            // on the descriptor issue path; it adds no state or latency.
+            lo = {1'b0, c[31:0]} + {1'b0, i};
+            hi0 = c[63:32];
+            hi1 = hi0 + 32'd1;
+            valid0 = !hi0[31] && ((hi0 < e[63:32]) ||
+                     ((hi0 == e[63:32]) && (lo[31:0] < e[31:0])));
+            valid1 = !hi1[31] && ((hi1 < e[63:32]) ||
+                     ((hi1 == e[63:32]) && (lo[31:0] < e[31:0])));
+            in_dim = lo[32] ? valid1 : valid0;
         end
     endfunction
 

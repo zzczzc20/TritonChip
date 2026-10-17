@@ -1,0 +1,126 @@
+{
+  "files": {
+    "identity.json": {
+      "sha256": "100af5998df5917be5d8bfe2a2d940cabb35f4014cd62c6e62d857d68bf3caab",
+      "bytes": 2488
+    },
+    "run.sh": {
+      "sha256": "93af942586dad6ca41686447aef67b1c3eaee696f9654f3f8dd9a0a6cde60b8a",
+      "bytes": 466
+    },
+    "runner.exit": {
+      "sha256": "ca2ebdf97d7469496b1f4b78958f9dc8447efdcb623953fee7b6996b762f6fff",
+      "bytes": 4
+    },
+    "vivado.log": {
+      "sha256": "70888a7be8a97d13ab1db08859d9e23dd31950d49e995623c3d765c7a99e676b",
+      "bytes": 231807
+    },
+    "stdout.log": {
+      "sha256": "9c3545afb806d50b61dc5b536a783a1175d23ca6db453d04133832153e0e1213",
+      "bytes": 230421
+    },
+    "reports/optimized_paths.rpt": {
+      "sha256": "9f884478046894c815dd99afcf2d69dea987ad4a645d79ecd07dc8742d44a682",
+      "bytes": 306172
+    },
+    "reports/optimized_utilization.rpt": {
+      "sha256": "deb03e3638711df61704477f2a2cafc29e74572d8f1334fb6d1cb3e593ae55e1",
+      "bytes": 3043
+    },
+    "reports/placed_paths.rpt": {
+      "sha256": "8416da1c739941f82654ff991295925bdc3f037739877501941008062c0f800b",
+      "bytes": 296994
+    },
+    "reports/placed_timing.rpt": {
+      "sha256": "3137c628c88a517779c2ffa11992623f6b54172e2cf2ba75f3ca929549288b09",
+      "bytes": 24005
+    },
+    "reports/placed_utilization_slr.rpt": {
+      "sha256": "f846361892d6b527f3000bcd760dcd3a2a5d12deac52e69fe2847e956c5a598a",
+      "bytes": 6523
+    },
+    "reports/route_status.rpt": {
+      "sha256": "834aa6e70f5c118da4620f7545933070e3d1e1a1156c03f033ffd3473719a416",
+      "bytes": 714
+    },
+    "reports/utilization_hierarchy.rpt": {
+      "sha256": "be5af36d39d319eddaed0a84fc17a8973ca39c1fb156f3a54d9ecab27ccffa07",
+      "bytes": 3159
+    },
+    "reports/utilization_slr.rpt": {
+      "sha256": "378b3bd70a51843d7fe3e672bcab47267d9ab7266133dc0956062faf8a3409b9",
+      "bytes": 6503
+    },
+    "source/flow/fpga/tnca_range_grid_ooc.v": {
+      "sha256": "ace19d86db318632ab2b21b778e85585e5d4cfc05a7a446a7c761b621d08dd89",
+      "bytes": 8644
+    },
+    "source/rtl/nuca/tnca_nuca_slice.v": {
+      "sha256": "1627260d0615ecdc186900dc8de3f30a32ee465e4395830ddb1745f0ea731884",
+      "bytes": 70608
+    },
+    "source/rtl/nuca/tnca_replicated_tmu.v": {
+      "sha256": "1a8ec579837d3aff0faf69b8ef107b659b6fca810963e0d35bad75f6b1d672ac",
+      "bytes": 2939
+    },
+    "source/rtl/nuca/tnca_tmu.v": {
+      "sha256": "ab77f9b1114adb47f83890bd8347886b8ed2ec0be16c63b09bda929da9ab690c",
+      "bytes": 20774
+    },
+    "source/tb/nuca/tb_tmu_replicated.v": {
+      "sha256": "645e37a4d700d091565b0b43f4fc0162aacd9a5666a4aa0303172be6a4f50639",
+      "bytes": 11167
+    },
+    "source/rtl/common/tnca_amo.vh": {
+      "sha256": "1e18fa968eba2ff12e3df6b45c550a2a8b6797eb1300bfdee11beda77737b7cd",
+      "bytes": 2922
+    },
+    "source/rtl/common/tnca_dco_owner_registered.vh": {
+      "sha256": "a8d06b7cb702d9b54e14a7a0ec50eaeca1b4c34700a71adf46e12f3b2b4c340b",
+      "bytes": 1662
+    },
+    "source/rtl/common/tnca_defs.vh": {
+      "sha256": "0d4eaa5507a74c45048dc7481a5bbb97ae92d8a5ac15b01c0f37e84783a80c89",
+      "bytes": 20141
+    },
+    "source/rtl/common/tnca_perf_count.vh": {
+      "sha256": "00499e52d3214453385fadbf553a795c252e301add8c42cfbb93321183329391",
+      "bytes": 162
+    },
+    "source/rtl/common/tnca_perf_sel.vh": {
+      "sha256": "890eac0ece3c7377774db98f31a703ad93c43f80e70ad8456ba98ef5216fe6d1",
+      "bytes": 1003
+    },
+    "source/flow/fpga/screen_local_tmu_rank.tcl": {
+      "sha256": "330833d20aa32e2be7aacac1e3d6087c44dbd651f7900f04d55e41396e93ae5f",
+      "bytes": 6890
+    },
+    "source/flow/fpga/screen_replicated_tmu.tcl": {
+      "sha256": "2b9f11efd72193701e04c1b8ba90b710c520653c7de366acdffb42206ba7a3fe",
+      "bytes": 5699
+    }
+  },
+  "placed_dcp": {
+    "path": "/home/zzhouch/tnca_build/r40_local_tmu_rank_module_20261017/reports/placed.dcp",
+    "sha256": "71afc4fa3af484cd4dd29cf7be592e4c8b2add05b8bf47a328ea43e9c8399701",
+    "bytes": 45155306
+  },
+  "route_status": "Design Route Status\n                                               :      # nets :\n   ------------------------------------------- : ----------- :\n   # of logical nets.......................... :      180058 :\n       # of nets not needing routing.......... :       90020 :\n           # of internally routed nets........ :       81828 :\n           # of nets with no loads............ :        3628 :\n           # of implicitly routed ports....... :        4564 :\n       # of routable nets..................... :       90038 :\n           # of fully routed nets............. :       90038 :\n       # of nets with routing errors.......... :           0 :\n   ------------------------------------------- : ----------- :\n\n",
+  "scope": "R3 three-cache/three-local-TMU module only; no cores, NoC, HBM or timed I/O; no image/gate/Fmax qualification",
+  "archive": "r3_module_terminal.tar.gz",
+  "archive_sha256": "db147fbedadb28dbbaf015a72637ed152b0b6f220e4336b710504bfd440e84eb",
+  "terminal_exit": 124,
+  "router_returned_success": true,
+  "router_estimated": {
+    "setup_wns_ns": 0.348,
+    "hold_whs_ns": 0.014,
+    "signoff": false
+  },
+  "precise_timing": "not-measured: cap interrupted report_timing_summary",
+  "routed_checkpoint": null,
+  "required_gate_promotions": [],
+  "next_experiment": "R4 root-caused module screen: write inbox plus byte-enabled cache data/hit-word cut; same geometry, clock and directive; save routed DCP before reports and allow report headroom",
+  "on_success": "Assess exact min/max paths, primitive mapping, actual replica SLRs and source-matched functional evidence before final implementation",
+  "on_failure": "Preserve mapped intermediate reports and exact remaining path, repair that cause without directive polling"
+}

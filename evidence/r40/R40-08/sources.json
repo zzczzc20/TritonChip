@@ -1,0 +1,14 @@
+{
+  "schema": "tnca-online-sdpa-sources/1",
+  "compiler_checkpoint": "c1912e4",
+  "measured_performance": false,
+  "sources": {
+    "python/tnca/online_attention.py": "6bafee5f1e2e21316259a1fade2b9712ed50741aa87d26c5b75d11a99514e789",
+    "tools/r40/online_attention_tests.py": "7736cfdd9faa7a6471b6c0a260912f88b1c5eb3f49f081793fe5b40958ab34c6",
+    "compiler/python/tnca_cc/descriptors.py": "ed9b2394b24143fdfe71d00be2a28ded3bb8c5a86e61c6ebf9b83698df9141d3",
+    "compiler/python/tnca_cc/frontend.py": "cf6f20df96821530fc3bfcd0ac30112e3a2b8c028d586b3cabee986e48e9aaee",
+    "python/tnca/aot.py": "6be1e3d609dcf30f7f832ea57ce397e97f01bf4c09f931539c2bfa9f47be63fb",
+    "python/tnca/adapters/r1.py": "eb5f23897fda99b7315b49931f5a1fb4bef6dc52afd76d30f9db1bd3f8c132f8",
+    "python/tnca/triton_backend/compiler.py": "b7902586870a03a4bdec260bb431412805e7b177c6fc0fd0b2ccb33325e5088d"
+  }
+}

@@ -1,0 +1,321 @@
+{
+ "gates": {
+  "R40-04.robustness": {
+   "status": "not-measured",
+   "checks": [
+    {
+     "name": "address:sim-32MiB",
+     "ok": true,
+     "detail": "32 probes, PCs 0..0"
+    },
+    {
+     "name": "address:one-GiB",
+     "ok": true,
+     "detail": "4 probes, PCs 0..3"
+    },
+    {
+     "name": "address:all-32-PCs",
+     "ok": true,
+     "detail": "32 probes, PCs 0..31"
+    },
+    {
+     "name": "address:shifted-window",
+     "ok": true,
+     "detail": "32 probes, PCs 0..31"
+    },
+    {
+     "name": "address:high-address",
+     "ok": true,
+     "detail": "16 probes, PCs 16..31"
+    },
+    {
+     "name": "address:minimal-window",
+     "ok": true,
+     "detail": "1 probes, PCs 0..0"
+    },
+    {
+     "name": "address:too-small",
+     "ok": true,
+     "detail": "invalid window refused"
+    },
+    {
+     "name": "address:unaligned",
+     "ok": true,
+     "detail": "invalid window refused"
+    },
+    {
+     "name": "address:short-final-PC",
+     "ok": true,
+     "detail": "invalid window refused"
+    },
+    {
+     "name": "bridge:one:fast",
+     "ok": true,
+     "detail": "tb_axi_bridge seed=1 n=20000 lat=1..1 reorder=0 bp=0% err=0 rst=0 dma=0: 5963 on-chip, 13458 AXI, 579 out of range, 0 refused, 2975 atomics, 0 resets, 0 dmas, 7304 ARs, 7304 R beats, 41083 cycles: PASS"
+    },
+    {
+     "name": "bridge:one:slow",
+     "ok": true,
+     "detail": "tb_axi_bridge seed=2 n=20000 lat=20..200 reorder=0 bp=0% err=0 rst=0 dma=0: 5906 on-chip, 13509 AXI, 585 out of range, 0 refused, 3011 atomics, 0 resets, 0 dmas, 7425 ARs, 7425 R beats, 856617 cycles: PASS"
+    },
+    {
+     "name": "bridge:one:ooo-bp",
+     "ok": true,
+     "detail": "tb_axi_bridge seed=3 n=20000 lat=1..40 reorder=1 bp=30% err=0 rst=0 dma=1: 6029 on-chip, 13397 AXI, 574 out of range, 0 refused, 3017 atomics, 0 resets, 9 dmas, 7410 ARs, 7410 R beats, 184156 cycles: PASS"
+    },
+    {
+     "name": "bridge:one:ooo-slow-bp",
+     "ok": true,
+     "detail": "tb_axi_bridge seed=4 n=20000 lat=20..200 reorder=1 bp=60% err=0 rst=0 dma=1: 6012 on-chip, 13405 AXI, 583 out of range, 0 refused, 3019 atomics, 0 resets, 0 dmas, 7292 ARs, 7292 R beats, 841160 cycles: PASS"
+    },
+    {
+     "name": "bridge:one:error",
+     "ok": true,
+     "detail": "tb_axi_bridge seed=5 n=20000 lat=1..40 reorder=1 bp=30% err=1 rst=0 dma=0: 5985 on-chip, 13362 AXI, 653 out of range, 1636 refused, 2972 atomics, 0 resets, 0 dmas, 7346 ARs, 7346 R beats, 182975 cycles: PASS"
+    },
+    {
+     "name": "bridge:one:reset",
+     "ok": true,
+     "detail": "tb_axi_bridge seed=6 n=20000 lat=1..60 reorder=1 bp=30% err=0 rst=1 dma=1: 5858 on-chip, 13532 AXI, 610 out of range, 0 refused, 2949 atomics, 4 resets, 10 dmas, 1539 ARs, 1539 R beats, 256801 cycles: PASS"
+    },
+    {
+     "name": "bridge:one:reset-error-slow",
+     "ok": true,
+     "detail": "tb_axi_bridge seed=7 n=20000 lat=100..400 reorder=1 bp=20% err=1 rst=1 dma=0: 5953 on-chip, 13427 AXI, 620 out of range, 1709 refused, 2958 atomics, 4 resets, 0 dmas, 1479 ARs, 1479 R beats, 1800336 cycles: PASS"
+    },
+    {
+     "name": "bridge:line8:fast",
+     "ok": true,
+     "detail": "tb_axi_bridge[lb] seed=1 n=20000 lat=1..1 reorder=0 bp=0% err=0 rst=0 dma=0: 5927 on-chip, 13446 AXI, 627 out of range, 0 refused, 2981 atomics, 0 resets, 0 dmas, 3571 ARs, 14708 R beats, 47121 cycles: PASS"
+    },
+    {
+     "name": "bridge:line8:slow",
+     "ok": true,
+     "detail": "tb_axi_bridge[lb] seed=2 n=20000 lat=20..200 reorder=0 bp=0% err=0 rst=0 dma=0: 5952 on-chip, 13471 AXI, 577 out of range, 0 refused, 2978 atomics, 0 resets, 0 dmas, 3638 ARs, 14985 R beats, 842077 cycles: PASS"
+    },
+    {
+     "name": "bridge:line8:ooo-bp",
+     "ok": true,
+     "detail": "tb_axi_bridge[lb] seed=3 n=20000 lat=1..40 reorder=1 bp=30% err=0 rst=0 dma=1: 5944 on-chip, 13503 AXI, 553 out of range, 0 refused, 2955 atomics, 0 resets, 5 dmas, 3623 ARs, 14886 R beats, 188521 cycles: PASS"
+    },
+    {
+     "name": "bridge:line8:ooo-slow-bp",
+     "ok": true,
+     "detail": "tb_axi_bridge[lb] seed=4 n=20000 lat=20..200 reorder=1 bp=60% err=0 rst=0 dma=1: 6106 on-chip, 13351 AXI, 543 out of range, 0 refused, 3022 atomics, 0 resets, 5 dmas, 3639 ARs, 15007 R beats, 852018 cycles: PASS"
+    },
+    {
+     "name": "bridge:line8:error",
+     "ok": true,
+     "detail": "tb_axi_bridge[lb] seed=5 n=20000 lat=1..40 reorder=1 bp=30% err=1 rst=0 dma=0: 5997 on-chip, 13357 AXI, 646 out of range, 1688 refused, 3054 atomics, 0 resets, 0 dmas, 3663 ARs, 14989 R beats, 189850 cycles: PASS"
+    },
+    {
+     "name": "bridge:line8:reset",
+     "ok": true,
+     "detail": "tb_axi_bridge[lb] seed=6 n=20000 lat=1..60 reorder=1 bp=30% err=0 rst=1 dma=1: 5951 on-chip, 13428 AXI, 621 out of range, 0 refused, 3033 atomics, 4 resets, 10 dmas, 750 ARs, 3053 R beats, 270380 cycles: PASS"
+    },
+    {
+     "name": "bridge:line8:reset-error-slow",
+     "ok": true,
+     "detail": "tb_axi_bridge[lb] seed=7 n=20000 lat=100..400 reorder=1 bp=20% err=1 rst=1 dma=0: 5991 on-chip, 13436 AXI, 573 out of range, 1689 refused, 3025 atomics, 4 resets, 0 dmas, 713 ARs, 2960 R beats, 1839617 cycles: PASS"
+    },
+    {
+     "name": "bridge:line2:fast",
+     "ok": true,
+     "detail": "tb_axi_bridge[lb] seed=1 n=20000 lat=1..1 reorder=0 bp=0% err=0 rst=0 dma=0: 5995 on-chip, 13422 AXI, 583 out of range, 0 refused, 3025 atomics, 0 resets, 0 dmas, 6564 ARs, 11097 R beats, 42887 cycles: PASS"
+    },
+    {
+     "name": "bridge:line2:slow",
+     "ok": true,
+     "detail": "tb_axi_bridge[lb] seed=2 n=20000 lat=20..200 reorder=0 bp=0% err=0 rst=0 dma=0: 5984 on-chip, 13420 AXI, 596 out of range, 0 refused, 2980 atomics, 0 resets, 0 dmas, 6536 ARs, 11052 R beats, 893281 cycles: PASS"
+    },
+    {
+     "name": "bridge:line2:ooo-bp",
+     "ok": true,
+     "detail": "tb_axi_bridge[lb] seed=3 n=20000 lat=1..40 reorder=1 bp=30% err=0 rst=0 dma=1: 5920 on-chip, 13524 AXI, 556 out of range, 0 refused, 3040 atomics, 0 resets, 0 dmas, 6459 ARs, 10914 R beats, 195829 cycles: PASS"
+    },
+    {
+     "name": "bridge:line2:ooo-slow-bp",
+     "ok": true,
+     "detail": "tb_axi_bridge[lb] seed=4 n=20000 lat=20..200 reorder=1 bp=60% err=0 rst=0 dma=1: 6019 on-chip, 13379 AXI, 602 out of range, 0 refused, 2977 atomics, 0 resets, 1 dmas, 6471 ARs, 10901 R beats, 913623 cycles: PASS"
+    },
+    {
+     "name": "bridge:line2:error",
+     "ok": true,
+     "detail": "tb_axi_bridge[lb] seed=5 n=20000 lat=1..40 reorder=1 bp=30% err=1 rst=0 dma=0: 6035 on-chip, 13360 AXI, 605 out of range, 1714 refused, 2981 atomics, 0 resets, 0 dmas, 6448 ARs, 10858 R beats, 195318 cycles: PASS"
+    },
+    {
+     "name": "bridge:line2:reset",
+     "ok": true,
+     "detail": "tb_axi_bridge[lb] seed=6 n=20000 lat=1..60 reorder=1 bp=30% err=0 rst=1 dma=1: 5965 on-chip, 13460 AXI, 575 out of range, 0 refused, 3050 atomics, 4 resets, 5 dmas, 1380 ARs, 2332 R beats, 276606 cycles: PASS"
+    },
+    {
+     "name": "bridge:line2:reset-error-slow",
+     "ok": true,
+     "detail": "tb_axi_bridge[lb] seed=7 n=20000 lat=100..400 reorder=1 bp=20% err=1 rst=1 dma=0: 6050 on-chip, 13362 AXI, 588 out of range, 1611 refused, 3057 atomics, 4 resets, 0 dmas, 1297 ARs, 2158 R beats, 1968214 cycles: PASS"
+    },
+    {
+     "name": "bridge:line4:fast",
+     "ok": true,
+     "detail": "tb_axi_bridge[lb] seed=1 n=20000 lat=1..1 reorder=0 bp=0% err=0 rst=0 dma=0: 5883 on-chip, 13485 AXI, 632 out of range, 0 refused, 2966 atomics, 0 resets, 0 dmas, 3722 ARs, 8852 R beats, 41202 cycles: PASS"
+    },
+    {
+     "name": "bridge:line4:slow",
+     "ok": true,
+     "detail": "tb_axi_bridge[lb] seed=2 n=20000 lat=20..200 reorder=0 bp=0% err=0 rst=0 dma=0: 6044 on-chip, 13397 AXI, 559 out of range, 0 refused, 2964 atomics, 0 resets, 0 dmas, 3681 ARs, 8763 R beats, 795280 cycles: PASS"
+    },
+    {
+     "name": "bridge:line4:ooo-bp",
+     "ok": true,
+     "detail": "tb_axi_bridge[lb] seed=3 n=20000 lat=1..40 reorder=1 bp=30% err=0 rst=0 dma=1: 6011 on-chip, 13344 AXI, 645 out of range, 0 refused, 2983 atomics, 0 resets, 21 dmas, 3811 ARs, 9235 R beats, 175871 cycles: PASS"
+    },
+    {
+     "name": "bridge:line4:ooo-slow-bp",
+     "ok": true,
+     "detail": "tb_axi_bridge[lb] seed=4 n=20000 lat=20..200 reorder=1 bp=60% err=0 rst=0 dma=1: 6107 on-chip, 13303 AXI, 590 out of range, 0 refused, 2994 atomics, 0 resets, 5 dmas, 3740 ARs, 8987 R beats, 808860 cycles: PASS"
+    },
+    {
+     "name": "bridge:line4:error",
+     "ok": true,
+     "detail": "tb_axi_bridge[lb] seed=5 n=20000 lat=1..40 reorder=1 bp=30% err=1 rst=0 dma=0: 5932 on-chip, 13443 AXI, 625 out of range, 1688 refused, 2961 atomics, 0 resets, 0 dmas, 3648 ARs, 8724 R beats, 172238 cycles: PASS"
+    },
+    {
+     "name": "bridge:line4:reset",
+     "ok": true,
+     "detail": "tb_axi_bridge[lb] seed=6 n=20000 lat=1..60 reorder=1 bp=30% err=0 rst=1 dma=1: 5946 on-chip, 13465 AXI, 589 out of range, 0 refused, 3073 atomics, 4 resets, 17 dmas, 816 ARs, 1965 R beats, 255436 cycles: PASS"
+    },
+    {
+     "name": "bridge:line4:reset-error-slow",
+     "ok": true,
+     "detail": "tb_axi_bridge[lb] seed=7 n=20000 lat=100..400 reorder=1 bp=20% err=1 rst=1 dma=0: 6038 on-chip, 13331 AXI, 631 out of range, 1647 refused, 2977 atomics, 4 resets, 0 dmas, 764 ARs, 1844 R beats, 1708047 cycles: PASS"
+    },
+    {
+     "name": "bridge:line8w:fast",
+     "ok": true,
+     "detail": "tb_axi_bridge[lb] seed=1 n=20000 lat=1..1 reorder=0 bp=0% err=0 rst=0 dma=0: 5927 on-chip, 13446 AXI, 627 out of range, 0 refused, 2981 atomics, 0 resets, 0 dmas, 3571 ARs, 14708 R beats, 47121 cycles: PASS"
+    },
+    {
+     "name": "bridge:line8w:slow",
+     "ok": true,
+     "detail": "tb_axi_bridge[lb] seed=2 n=20000 lat=20..200 reorder=0 bp=0% err=0 rst=0 dma=0: 6003 on-chip, 13397 AXI, 600 out of range, 0 refused, 2988 atomics, 0 resets, 0 dmas, 3569 ARs, 14678 R beats, 830125 cycles: PASS"
+    },
+    {
+     "name": "bridge:line8w:ooo-bp",
+     "ok": true,
+     "detail": "tb_axi_bridge[lb] seed=3 n=20000 lat=1..40 reorder=1 bp=30% err=0 rst=0 dma=1: 6079 on-chip, 13354 AXI, 567 out of range, 0 refused, 2979 atomics, 0 resets, 2 dmas, 3621 ARs, 14898 R beats, 190672 cycles: PASS"
+    },
+    {
+     "name": "bridge:line8w:ooo-slow-bp",
+     "ok": true,
+     "detail": "tb_axi_bridge[lb] seed=4 n=20000 lat=20..200 reorder=1 bp=60% err=0 rst=0 dma=1: 5999 on-chip, 13390 AXI, 611 out of range, 0 refused, 3006 atomics, 0 resets, 6 dmas, 3614 ARs, 14975 R beats, 850533 cycles: PASS"
+    },
+    {
+     "name": "bridge:line8w:error",
+     "ok": true,
+     "detail": "tb_axi_bridge[lb] seed=5 n=20000 lat=1..40 reorder=1 bp=30% err=1 rst=0 dma=0: 6019 on-chip, 13376 AXI, 605 out of range, 1747 refused, 3007 atomics, 0 resets, 0 dmas, 3633 ARs, 14931 R beats, 189396 cycles: PASS"
+    },
+    {
+     "name": "bridge:line8w:reset",
+     "ok": true,
+     "detail": "tb_axi_bridge[lb] seed=6 n=20000 lat=1..60 reorder=1 bp=30% err=0 rst=1 dma=1: 6059 on-chip, 13343 AXI, 598 out of range, 0 refused, 3050 atomics, 4 resets, 11 dmas, 789 ARs, 3253 R beats, 269228 cycles: PASS"
+    },
+    {
+     "name": "bridge:line8w:reset-error-slow",
+     "ok": true,
+     "detail": "tb_axi_bridge[lb] seed=7 n=20000 lat=100..400 reorder=1 bp=20% err=1 rst=1 dma=0: 5990 on-chip, 13404 AXI, 606 out of range, 1652 refused, 3002 atomics, 4 resets, 0 dmas, 734 ARs, 3044 R beats, 1802949 cycles: PASS"
+    },
+    {
+     "name": "bridge:one16:fast",
+     "ok": true,
+     "detail": "tb_axi_bridge seed=1 n=20000 lat=1..1 reorder=0 bp=0% err=0 rst=0 dma=0: 5963 on-chip, 13458 AXI, 579 out of range, 0 refused, 2975 atomics, 0 resets, 0 dmas, 7304 ARs, 7304 R beats, 41083 cycles: PASS"
+    },
+    {
+     "name": "bridge:one16:slow",
+     "ok": true,
+     "detail": "tb_axi_bridge seed=2 n=20000 lat=20..200 reorder=0 bp=0% err=0 rst=0 dma=0: 5870 on-chip, 13514 AXI, 616 out of range, 0 refused, 2975 atomics, 0 resets, 0 dmas, 7498 ARs, 7498 R beats, 835959 cycles: PASS"
+    },
+    {
+     "name": "bridge:one16:ooo-bp",
+     "ok": true,
+     "detail": "tb_axi_bridge seed=3 n=20000 lat=1..40 reorder=1 bp=30% err=0 rst=0 dma=1: 5963 on-chip, 13397 AXI, 640 out of range, 0 refused, 2965 atomics, 0 resets, 8 dmas, 7363 ARs, 7363 R beats, 181823 cycles: PASS"
+    },
+    {
+     "name": "bridge:one16:ooo-slow-bp",
+     "ok": true,
+     "detail": "tb_axi_bridge seed=4 n=20000 lat=20..200 reorder=1 bp=60% err=0 rst=0 dma=1: 6006 on-chip, 13403 AXI, 591 out of range, 0 refused, 3047 atomics, 0 resets, 0 dmas, 7377 ARs, 7377 R beats, 851202 cycles: PASS"
+    },
+    {
+     "name": "bridge:one16:error",
+     "ok": true,
+     "detail": "tb_axi_bridge seed=5 n=20000 lat=1..40 reorder=1 bp=30% err=1 rst=0 dma=0: 6032 on-chip, 13322 AXI, 646 out of range, 1651 refused, 2984 atomics, 0 resets, 0 dmas, 7360 ARs, 7360 R beats, 182499 cycles: PASS"
+    },
+    {
+     "name": "bridge:one16:reset",
+     "ok": true,
+     "detail": "tb_axi_bridge seed=6 n=20000 lat=1..60 reorder=1 bp=30% err=0 rst=1 dma=1: 5959 on-chip, 13504 AXI, 537 out of range, 0 refused, 2980 atomics, 4 resets, 8 dmas, 1550 ARs, 1550 R beats, 260518 cycles: PASS"
+    },
+    {
+     "name": "bridge:one16:reset-error-slow",
+     "ok": true,
+     "detail": "tb_axi_bridge seed=7 n=20000 lat=100..400 reorder=1 bp=20% err=1 rst=1 dma=0: 6078 on-chip, 13300 AXI, 622 out of range, 1668 refused, 3028 atomics, 4 resets, 0 dmas, 1501 ARs, 1501 R beats, 1786037 cycles: PASS"
+    },
+    {
+     "name": "mutation:no-hazard",
+     "ok": true,
+     "detail": "a request may pass an AXI access to the same word: caught by ooo-bp (tb_axi_bridge seed=3 n=20000 lat=1..40 reorder=1 bp=30% err=0 rst=0 dma=1: 5956 on-chip, 13441 AXI, 603 out of range, 0 refused, 3014 atomics, 0 resets, 6 dmas,)"
+    },
+    {
+     "name": "mutation:no-drain",
+     "ok": true,
+     "detail": "an atomic reads before the accesses ahead of it complete: caught by ooo-bp (tb_axi_bridge seed=3 n=20000 lat=1..40 reorder=1 bp=30% err=0 rst=0 dma=1: 21 on-chip, 43 AXI, 2 out of range, 0 refused, 11 atomics, 0 resets, 0 dmas, 28 ARs, )"
+    },
+    {
+     "name": "mutation:no-quiet",
+     "ok": true,
+     "detail": "answers to requests made before a reset are taken as new ones: caught by reset (tb_axi_bridge seed=6 n=20000 lat=1..60 reorder=1 bp=30% err=0 rst=1 dma=1: 5886 on-chip, 13508 AXI, 606 out of range, 0 refused, 2881 atomics, 4 resets, 12 dmas)"
+    },
+    {
+     "name": "mutation:no-error",
+     "ok": true,
+     "detail": "an error response is not reported: caught by error (tb_axi_bridge seed=5 n=20000 lat=1..40 reorder=1 bp=30% err=1 rst=0 dma=0: 5985 on-chip, 13362 AXI, 653 out of range, 1636 refused, 2972 atomics, 0 resets, 0 dm)"
+    },
+    {
+     "name": "mutation:local-not-first",
+     "ok": true,
+     "detail": "the RAM's fixed-latency answers lose the response port: caught by fast (tb_axi_bridge seed=1 n=20000 lat=1..1 reorder=0 bp=0% err=0 rst=0 dma=0: 32 on-chip, 70 AXI, 3 out of range, 0 refused, 19 atomics, 0 resets, 0 dmas, 37 ARs, 37)"
+    },
+    {
+     "name": "mutation:lb-fill-past-write",
+     "ok": true,
+     "detail": "a line is fetched while a write to it is in flight: caught by ooo-bp (tb_axi_bridge[lb] seed=3 n=20000 lat=1..40 reorder=1 bp=30% err=0 rst=0 dma=1: 5975 on-chip, 13439 AXI, 586 out of range, 0 refused, 2987 atomics, 0 resets, 12 )"
+    },
+    {
+     "name": "mutation:lb-no-inv",
+     "ok": true,
+     "detail": "memory written by the host's DMA is not seen: caught by ooo-bp (tb_axi_bridge[lb] seed=3 n=20000 lat=1..40 reorder=1 bp=30% err=0 rst=0 dma=1: 5978 on-chip, 13452 AXI, 570 out of range, 0 refused, 2961 atomics, 0 resets, 6 d)"
+    },
+    {
+     "name": "mutation:lb-write-into-fill",
+     "ok": true,
+     "detail": "a write lands in a line its fill then overwrites: caught by ooo-bp (tb_axi_bridge[lb] seed=3 n=20000 lat=1..40 reorder=1 bp=30% err=0 rst=0 dma=1: 6077 on-chip, 13352 AXI, 571 out of range, 0 refused, 2971 atomics, 0 resets, 4 d)"
+    },
+    {
+     "name": "mutation:lb-write-past-waiter",
+     "ok": true,
+     "detail": "a read accepted first sees a later write: caught by ooo-bp (tb_axi_bridge[lb] seed=3 n=20000 lat=1..40 reorder=1 bp=30% err=0 rst=0 dma=1: 5923 on-chip, 13504 AXI, 573 out of range, 0 refused, 2932 atomics, 0 resets, 4 d)"
+    },
+    {
+     "name": "mutation:lb-no-merge",
+     "ok": true,
+     "detail": "a write does not update the buffered line: caught by fast (tb_axi_bridge[lb] seed=1 n=20000 lat=1..1 reorder=0 bp=0% err=0 rst=0 dma=0: 5927 on-chip, 13446 AXI, 627 out of range, 0 refused, 2981 atomics, 0 resets, 0 dma)"
+    },
+    {
+     "name": "mutation:lb-amo-keeps-line",
+     "ok": true,
+     "detail": "an atomic leaves its line buffered with the old value: caught by fast (tb_axi_bridge[lb] seed=1 n=20000 lat=1..1 reorder=0 bp=0% err=0 rst=0 dma=0: 5963 on-chip, 13440 AXI, 597 out of range, 0 refused, 3011 atomics, 0 resets, 0 dma)"
+    }
+   ],
+   "detail": "simulation 62/62; the board half of acceptance 3 (data on the U280 HBM image, post-route timing and CDC, the HBM model calibrated against the board) is not measured yet",
+   "written": "2026-10-11T04:21:32+00:00"
+  }
+ }
+}

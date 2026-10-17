@@ -1,0 +1,28 @@
+  already built: /home/zhongchun/.cache/tnca/devices/core-vrf-sync-v5-a8f9e2a0291d254a-f30a9b914657/tnca_device_vrf5.vvp
+AUDIT sum reductions: [{'external_spill_bytes': 0, 'predicate_rematerializations': 8, 'reductions': [[128, 'add', 0]], 'vlen': 16, 'widths': [128]}]
+PASS sum, width cap 128, shape (3, 127)
+PASS sum, width cap 128, shape (3, 17)
+PASS sum, width cap 128, shape (3, 33)
+PASS sum, width cap 128, shape (3, 65)
+AUDIT amax reductions: [{'external_spill_bytes': 0, 'predicate_rematerializations': 8, 'reductions': [[128, 'max_prop', 0]], 'vlen': 16, 'widths': [128]}]
+PASS amax, width cap 128, shape (3, 127)
+PASS amax, width cap 128, shape (3, 17)
+PASS amax, width cap 128, shape (3, 33)
+PASS amax, width cap 128, shape (3, 65)
+AUDIT rmsnorm reductions: [{'external_spill_bytes': 0, 'predicate_rematerializations': 8, 'reductions': [[128, 'add', 0]], 'vlen': 16, 'widths': [128]}]
+PASS rmsnorm, width cap 128, shape (3, 127)
+PASS rmsnorm, width cap 128, shape (3, 17)
+PASS rmsnorm, width cap 128, shape (3, 33)
+PASS rmsnorm, width cap 128, shape (3, 65)
+AUDIT softmax reductions: [{'external_spill_bytes': 0, 'predicate_rematerializations': 8, 'reductions': [[128, 'add', 0], [128, 'max_prop', 0]], 'vlen': 16, 'widths': [128]}]
+PASS softmax, width cap 128, shape (3, 127)
+PASS softmax, width cap 128, shape (3, 17)
+PASS softmax, width cap 128, shape (3, 33)
+PASS softmax, width cap 128, shape (3, 65)
+AUDIT layernorm reductions: [{'external_spill_bytes': 0, 'predicate_rematerializations': 8, 'reductions': [[128, 'add', 0]], 'vlen': 16, 'widths': [128]}]
+PASS layernorm, width cap 128, shape (3, 127)
+PASS layernorm, width cap 128, shape (3, 17)
+PASS layernorm, width cap 128, shape (3, 33)
+PASS layernorm, width cap 128, shape (3, 65)
+r40-reduction-tests PASS (20/20)
+EXIT:0

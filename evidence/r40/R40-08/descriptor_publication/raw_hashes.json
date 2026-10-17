@@ -1,0 +1,10 @@
+{
+  "snapshot.bin.gz": {
+    "bytes": 524288,
+    "sha256": "9fb92cf555f590c072753aec9c36551abf5f30c18f445bd090dee3f3763d3b65"
+  },
+  "old_rtl_requests.log.gz": {
+    "bytes": 17235,
+    "sha256": "cd569631f66401a43b46ad31af2edc327beaad9292f0df730fd7d9bd9e647b85"
+  }
+}

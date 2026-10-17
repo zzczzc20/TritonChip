@@ -1,0 +1,193 @@
+{
+  "schema": "tnca-r40-p1-head-fifo-screen/1",
+  "observed_utc": "2026-10-17T12:56:05.828960+00:00",
+  "gate_status": "not-measured",
+  "scope": "isolated component functional equivalence and Yosys UltraScale Plus logic mapping; no Vivado synthesis, placement, routing, CDC, timing or image qualification",
+  "tool": "Yosys 0.33 (git sha1 2584903a060)",
+  "family": "xcup",
+  "clock_target_hz": 100000000,
+  "timing_status": "not-measured",
+  "physical_area_status": "not-measured",
+  "sll_demand_status": "not-measured",
+  "functional": {
+    "payload_bits": 8,
+    "capacity": 2,
+    "proof": "unbounded temporal induction after initial reset; arbitrary data, valid, ready and subsequent reset",
+    "properties": [
+      "identical input ready",
+      "identical output valid",
+      "identical occupancy count",
+      "identical valid output data"
+    ],
+    "invalid_output_data": "unobserved while output valid is low",
+    "mutation": "full-queue pop loads arbitrary input rather than queued tail; equivalence fails and bounded witness retained"
+  },
+  "mapping": {
+    "64": {
+      "ref": {
+        "top_level_cell_types": {
+          "LUT2": 1,
+          "LUT3": 1,
+          "LUT5": 4,
+          "INV": 1,
+          "FDRE": 5,
+          "LUT4": 1,
+          "RAM32M16": 5
+        },
+        "direct_out_data_driver_bits_by_type": {
+          "RAM32M16": 64
+        },
+        "storage_accounting": "RAM macros are root cells; do not add nested implementation children or infer CLB area by adding macro and LUT counts"
+      },
+      "head": {
+        "top_level_cell_types": {
+          "LUT5": 68,
+          "LUT2": 1,
+          "INV": 1,
+          "FDRE": 130
+        },
+        "direct_out_data_driver_bits_by_type": {
+          "FDRE": 64
+        },
+        "storage_accounting": "RAM macros are root cells; do not add nested implementation children or infer CLB area by adding macro and LUT counts"
+      }
+    },
+    "137": {
+      "ref": {
+        "top_level_cell_types": {
+          "LUT2": 1,
+          "LUT3": 1,
+          "LUT5": 4,
+          "INV": 1,
+          "FDRE": 5,
+          "LUT4": 1,
+          "RAM32M16": 10
+        },
+        "direct_out_data_driver_bits_by_type": {
+          "RAM32M16": 137
+        },
+        "storage_accounting": "RAM macros are root cells; do not add nested implementation children or infer CLB area by adding macro and LUT counts"
+      },
+      "head": {
+        "top_level_cell_types": {
+          "LUT5": 141,
+          "LUT2": 1,
+          "INV": 1,
+          "FDRE": 276
+        },
+        "direct_out_data_driver_bits_by_type": {
+          "FDRE": 137
+        },
+        "storage_accounting": "RAM macros are root cells; do not add nested implementation children or infer CLB area by adding macro and LUT counts"
+      }
+    },
+    "220": {
+      "ref": {
+        "top_level_cell_types": {
+          "LUT2": 1,
+          "LUT3": 1,
+          "LUT5": 4,
+          "INV": 1,
+          "FDRE": 5,
+          "LUT4": 1,
+          "RAM32M16": 16
+        },
+        "direct_out_data_driver_bits_by_type": {
+          "RAM32M16": 220
+        },
+        "storage_accounting": "RAM macros are root cells; do not add nested implementation children or infer CLB area by adding macro and LUT counts"
+      },
+      "head": {
+        "top_level_cell_types": {
+          "LUT5": 224,
+          "LUT2": 1,
+          "INV": 1,
+          "FDRE": 442
+        },
+        "direct_out_data_driver_bits_by_type": {
+          "FDRE": 220
+        },
+        "storage_accounting": "RAM macros are root cells; do not add nested implementation children or infer CLB area by adding macro and LUT counts"
+      }
+    },
+    "517": {
+      "ref": {
+        "top_level_cell_types": {
+          "LUT2": 1,
+          "LUT3": 1,
+          "LUT5": 4,
+          "INV": 1,
+          "FDRE": 5,
+          "LUT4": 1,
+          "RAM32M16": 37
+        },
+        "direct_out_data_driver_bits_by_type": {
+          "RAM32M16": 517
+        },
+        "storage_accounting": "RAM macros are root cells; do not add nested implementation children or infer CLB area by adding macro and LUT counts"
+      },
+      "head": {
+        "top_level_cell_types": {
+          "LUT5": 521,
+          "LUT2": 1,
+          "INV": 1,
+          "FDRE": 1036
+        },
+        "direct_out_data_driver_bits_by_type": {
+          "FDRE": 517
+        },
+        "storage_accounting": "RAM macros are root cells; do not add nested implementation children or infer CLB area by adding macro and LUT counts"
+      }
+    },
+    "582": {
+      "ref": {
+        "top_level_cell_types": {
+          "LUT2": 1,
+          "LUT3": 1,
+          "LUT5": 4,
+          "INV": 1,
+          "FDRE": 5,
+          "LUT4": 1,
+          "RAM32M16": 42
+        },
+        "direct_out_data_driver_bits_by_type": {
+          "RAM32M16": 582
+        },
+        "storage_accounting": "RAM macros are root cells; do not add nested implementation children or infer CLB area by adding macro and LUT counts"
+      },
+      "head": {
+        "top_level_cell_types": {
+          "LUT5": 586,
+          "LUT2": 1,
+          "INV": 1,
+          "FDRE": 1166
+        },
+        "direct_out_data_driver_bits_by_type": {
+          "FDRE": 582
+        },
+        "storage_accounting": "RAM macros are root cells; do not add nested implementation children or infer CLB area by adding macro and LUT counts"
+      }
+    }
+  },
+  "source_hashes": {
+    "fifo_ref.v": "ebeed309d721ca6d23e1e483f4b9157a596979b19c495cbf09da533738415908",
+    "fifo_head.v": "efc56f9febc6d779b18d94393d25d696d984e8353a88411f32f6e5a72bffe704",
+    "fifo_head_mut.v": "bf9ea086361acf8ca314ad16d8e11eba0c9e831badc20acf3384447d6aae9fff",
+    "miter.v": "2209df56bb6ed826bfc90809f48635a4f0e03fbe71a9bfa0aba31ec1c18ca975"
+  },
+  "decision": "Candidate remains isolated. No blanket FIFO replacement: direct FF outputs cost additional FFs and logic LUTs while releasing distributed RAM. Evaluate only evidence-selected crossing senders with matched Vivado physical screening and actual final-DCP attribution before inclusion in a full candidate.",
+  "archive_sha256": "f001ccb5346b08625c7af92217a659c08e41d5ff84f6180a2df46a64220de853",
+  "archive": "screen.tar.gz",
+  "baseline_hardware_source_commit": "0c397939952d2a6bc881d08623b1bb9114a54ab8",
+  "baseline_source_path": "rtl/common/tnca_fifo.v",
+  "baseline_source_sha256": "c4c407a9b15b8a8068b62ede9d38a84a5fbdb80a9609b68a1fcac880c4a7e854",
+  "baseline_transform": "rename module tnca_fifo to fifo_ref; no behavior changes",
+  "frozen_contract_sha256": "49fc0e02733139707ae2292eff2ef893e76e73f0723d0d002b2e7e1864af71c8",
+  "width_roles": {
+    "64": "code reply",
+    "137": "code command",
+    "220": "NoC payload 216 plus X/Y route bits 2+2",
+    "517": "line reply 512+source2+tag3",
+    "582": "line request 64+write1+512+source2+tag3"
+  }
+}

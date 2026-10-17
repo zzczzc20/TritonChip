@@ -1,0 +1,17 @@
+{
+  ".github/workflows/ci.yml": "0e3b592cad9dc79cf06a09b78c17fded36d729f0ac3bdaea7025326615d006b6",
+  "Makefile": "4b79cf04dadca22eb72d1d3841a398bec78c88007c22cdae9a994ebe32303760",
+  "doc/r40_tasks_and_acceptance.md": "eec7d486db994649b1900983ef173be4680c7dfdb8e5d5760d87143e9007322a",
+  "rtl/fpga/tnca_line_axi.v": "b2300b05944168115d734adedcd3d1eea39c26d6be455504c2d9c33337c52b68",
+  "rtl/fpga/tnca_line_link.v": "eb4e456383b62a86e67bfe0f6a8b9abdaff90d9a0822200aab6cdbf4be6af885",
+  "rtl/fpga/tnca_multicore_axi.v": "50794b15f86ddf8f341db6794a147c9c72111ef1f529c0f18424574edf243870",
+  "rtl/tnca_multicore_shell.v": "019d601c8d1c08231e704dacab5afd70ad92a7deaaa8d5a6711da1750140f3d5",
+  "spec/r40/line_axi_contract.json": "3dedb143d3e6ec5fcd1c1786cbca8bb65eeb73c9266da2854c1b3884e41ab492",
+  "tb/common/tnca_axi_line_model.v": "b7d2ba6421189215e99185c83e6394e879a883f7708f14250ffa123d5c00a400",
+  "tb/device/tb_multicore_shell.v": "e8235929736984cb1229e79f3d33d3b0512df649a21cd39fa26711d5e597fc3d",
+  "tb/device/tnca_multicore_device.v": "7a94307f287e5c107ae9e6a537071d6c847c7a30cf666e46e0ea71aa989b631c",
+  "tb/fpga/tb_line_axi.v": "c41c2bfe4afbcb2e86baff2aacee14dfced3b30bbd8ef4e02e0571205407816a",
+  "tb/fpga/tb_multicore_axi.v": "45cb0b07ad63327d7c1b83d27b19d695cb5a48964fadae3b4adadd42fc11a334",
+  "tools/r40/line_axi_tests.py": "c321fe13494476b9ec357bea79482d0550f3fb46d12390f7cd087bc99a190522",
+  "tools/r40/multicore_axi_tests.py": "f522f0946fe1b0b83b2d4acd43bfd09ce5f082c4cd0496ff97a20cca68f8d4b4"
+}

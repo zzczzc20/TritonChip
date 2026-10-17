@@ -1,0 +1,15 @@
+GRID progress cycles=1000 accepted=72 busy=ff
+GRID progress cycles=2000 accepted=136 busy=ff
+GRID progress cycles=3000 accepted=200 busy=ff
+GRID progress cycles=4000 accepted=264 busy=ff
+GRID progress cycles=5000 accepted=328 busy=ff
+GRID progress cycles=6000 accepted=392 busy=ff
+GRID progress cycles=7000 accepted=455 busy=da
+GRID REAL CORES PASS N=8 memory=1 phase=0 programs=455 cycles=7014
+GRID progress cycles=8000 accepted=80 busy=ff
+GRID progress cycles=9000 accepted=160 busy=ff
+GRID progress cycles=10000 accepted=240 busy=ff
+GRID progress cycles=11000 accepted=320 busy=ff
+GRID progress cycles=12000 accepted=400 busy=ff
+GRID REAL CORES PASS N=8 memory=1 phase=1 programs=455 cycles=12761
+tb/top/tb_grid_cores.v:89: $finish called at 127620000 (1ps)

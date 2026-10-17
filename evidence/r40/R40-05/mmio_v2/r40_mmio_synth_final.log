@@ -1,0 +1,5 @@
+SYNTHESIS PASS tnca_line_axi
+SYNTHESIS PASS tnca_line_link
+SYNTHESIS PASS tnca_multicore_mmio
+SYNTHESIS PASS tnca_mem_ports
+MULTICORE CONTROL SYNTHESIS PASS 4 modules and 8 rejected geometries

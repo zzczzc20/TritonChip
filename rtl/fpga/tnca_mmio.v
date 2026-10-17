@@ -138,7 +138,13 @@ module tnca_mmio #(
     parameter WORDS = 65536,
     // Forwarded to the shell through the command port.
     parameter NUM_RCTX = 2,
-    parameter RCTX_W   = 1
+    parameter RCTX_W   = 1,
+    // R40-04: an AXI memory behind the data port (rtl/fpga/tnca_axi_bridge.v).
+    // When set, the device's memory is the on-chip RAM below LOCAL_LIMIT and
+    // the AXI window above it, of the size the host writes to R_AXI_SIZE; the
+    // range guards measure against that end. When clear nothing here changes.
+    parameter DATA_AXI    = 0,
+    parameter LOCAL_LIMIT = 64'h20000
 ) (
     input  wire                     clk,
     input  wire                     rst_n,
@@ -207,7 +213,23 @@ module tnca_mmio #(
     // To the shell: the counter read port (PERF_READ)
     //--------------------------------------------------------------------------
     output wire [4:0]               perf_sel,
-    input  wire [63:0]              perf_rdata
+    input  wire [63:0]              perf_rdata,
+
+    // R40-04: the AXI window the host sets, and the bridge's sticky flags
+    // ({an R or B that matched nothing, an error response}).
+    output reg  [63:0]              axi_base,
+    output reg  [63:0]              axi_size,
+    input  wire [1:0]               axi_err,
+    // and its counters: AXI reads, writes, and the sum over cycles of reads
+    // in flight (tnca_axi_bridge.v, COUNTERS)
+    input  wire [63:0]              axi_cnt_rd,
+    input  wire [63:0]              axi_cnt_wr,
+    input  wire [63:0]              axi_cnt_lat,
+    input  wire [63:0]              axi_cnt_rbeat,
+    // One cycle high whenever a command is served: the host's DMA into the
+    // window always comes before one, so a buffer in front of AXI drops what
+    // it holds here (tnca_axi_bridge_lb, WHAT THE BUFFER DOES NOT SEE).
+    output reg                      axi_inv
 );
 
 `include "tnca_perf_count.vh"
@@ -222,6 +244,8 @@ module tnca_mmio #(
     localparam [3:0] OP_SHUTDOWN = 4'd5;
     localparam [3:0] OP_PING     = 4'd6;
     localparam [3:0] OP_PERF_READ = 4'd7;
+    localparam [3:0] OP_GRID_CAP = 4'd8;
+    localparam [3:0] OP_LAUNCH32 = 4'd9;
 
     localparam [3:0] RSP_OK      = 4'd0;
     localparam [3:0] RSP_FAULT   = 4'd1;
@@ -257,6 +281,31 @@ module tnca_mmio #(
     localparam [ADDR_W-1:0] R_HOST_STAT  = 8'h90;
     localparam [ADDR_W-1:0] R_MAGIC      = 8'h98;
     localparam [ADDR_W-1:0] R_SERVED     = 8'hA0;
+    // R40-04 (DATA_AXI images only; elsewhere they read zero). AXI_STAT bit 0
+    // is the bridge's sticky error response, bit 1 says the AXI window exists,
+    // bit 2 is its sticky stray response, and bits 63:32 give LOCAL_LIMIT in
+    // 4 KiB pages. AXI_RD, AXI_WR, AXI_LAT and AXI_RBEAT are the bridge's
+    // counters.
+    localparam [ADDR_W-1:0] R_AXI_BASE   = 8'hA8;
+    localparam [ADDR_W-1:0] R_AXI_SIZE   = 8'hB0;
+    localparam [ADDR_W-1:0] R_AXI_STAT   = 8'hB8;
+    localparam [ADDR_W-1:0] R_AXI_RD     = 8'hC0;
+    localparam [ADDR_W-1:0] R_AXI_WR     = 8'hC8;
+    localparam [ADDR_W-1:0] R_AXI_LAT    = 8'hD0;
+    localparam [ADDR_W-1:0] R_AXI_RBEAT  = 8'hD8;
+    // Optional read-only extension. Older images read these holes as zero.
+    localparam [ADDR_W-1:0] R_TIME_CAP   = 8'hE0;
+    localparam [ADDR_W-1:0] R_TIME_START = 8'hE8;
+    localparam [ADDR_W-1:0] R_TIME_END   = 8'hF0;
+    localparam [ADDR_W-1:0] R_TIME_SEQ   = 8'hF8;
+    reg [63:0] device_clock, launch_start, launch_end, launch_time_seq;
+
+    // One common clock, including idle, host submission gaps and backpressure.
+    // Unlike perf_cycles this never stops when the core is idle.
+    always @(posedge clk or negedge rst_n) begin
+        if (!rst_n) device_clock <= 64'd0;
+        else device_clock <= device_clock + 64'd1;
+    end
 
     // Version 1.0, then "TNCA" as ASCII in the low half.
     localparam [63:0] MAGIC = {16'h0001, 16'h0000, 32'h544E_4341};
@@ -371,7 +420,9 @@ module tnca_mmio #(
     // caught out by; `(!host_addr[2:0])` is the alignment test and the
     // comparison against the end is done on the word index.
     wire host_addr_aligned = (host_addr[2:0] == 3'd0);
-    wire host_addr_in_range = (host_addr[63:3] < MEM_WORDS);
+    // With an AXI window the memory ends where the window does.
+    wire [63:0] mem_words = DATA_AXI ? ((LOCAL_LIMIT + axi_size) >> 3) : MEM_WORDS;
+    wire host_addr_in_range = (host_addr[63:3] < mem_words);
     wire host_addr_ok = host_addr_aligned && host_addr_in_range;
 
     // The UPLOAD and DOWNLOAD guards, word for word from tnca_device.v.
@@ -379,7 +430,7 @@ module tnca_mmio #(
     // that a host address with the top bit set cannot arrive negative.
     wire [63:0] req_a0_words = req_a0 >> 3;
     wire req_guard_ok = (req_a0[2:0] == 3'd0) && (req_a1 != 64'd0) &&
-                        ((req_a0_words + req_a1) <= MEM_WORDS);
+                        ((req_a0_words + req_a1) <= mem_words);
 
     // The counter a PERF_READ names. Combinational from the descriptor, and
     // read by the shell combinationally: the doorbell is served in one
@@ -410,7 +461,12 @@ module tnca_mmio #(
             cmd_npid_x <= 32'd1; cmd_npid_y <= 32'd1; cmd_npid_z <= 32'd1;
             cmd_deadline <= 64'd0;
             done_ready <= 1'b0;
+            axi_inv <= 1'b0;
+            launch_start <= 64'd0;
+            launch_end <= 64'd0;
+            launch_time_seq <= 64'd0;
         end else begin
+            axi_inv <= 1'b0;
             // A doorbell write is a one-cycle pulse into this flag. Holding
             // the doorbell register high would ring once per cycle for as
             // long as the host left it set.
@@ -438,23 +494,26 @@ module tnca_mmio #(
                 // prevent.
                 if (doorbell_q && (req_seq > served)) begin
                     served <= req_seq;
+                    axi_inv <= 1'b1;
 
                     // Everything that is not a launch completes here: it has
                     // an answer already and nothing for the core to do.
                     case (req_op[3:0])
-                    OP_LAUNCH: begin
+                    OP_LAUNCH, OP_LAUNCH32: begin
+                        launch_start <= device_clock;
+                        launch_time_seq <= 64'd0;
                         cmd_op        <= 4'd1;
                         cmd_pc        <= req_a0;
                         cmd_arg_base  <= req_a1;
                         cmd_role_mask <= req_a2[NUM_RCTX-1:0];
                         // {pair, slice, log2 slices}: bits 28, 31, 30:29.
                         cmd_slice     <= {req_a2[28], req_a2[31:29]};
-                        cmd_pid_x     <= req_a3[15:0];
-                        cmd_pid_y     <= req_a3[31:16];
-                        cmd_pid_z     <= req_a4[15:0];
-                        cmd_npid_x    <= req_a4[31:16];
-                        cmd_npid_y    <= req_a5[15:0];
-                        cmd_npid_z    <= req_a5[31:16];
+                        cmd_pid_x     <= req_op[3:0] == OP_LAUNCH32 ? req_a3[31:0] : {16'd0, req_a3[15:0]};
+                        cmd_pid_y     <= req_op[3:0] == OP_LAUNCH32 ? req_a3[63:32] : {16'd0, req_a3[31:16]};
+                        cmd_pid_z     <= req_op[3:0] == OP_LAUNCH32 ? req_a4[31:0] : {16'd0, req_a4[15:0]};
+                        cmd_npid_x    <= req_op[3:0] == OP_LAUNCH32 ? req_a4[63:32] : {16'd0, req_a4[31:16]};
+                        cmd_npid_y    <= req_op[3:0] == OP_LAUNCH32 ? req_a5[31:0] : {16'd0, req_a5[15:0]};
+                        cmd_npid_z    <= req_op[3:0] == OP_LAUNCH32 ? req_a5[63:32] : {16'd0, req_a5[31:16]};
                         cmd_deadline  <= req_deadline;
                         cmd_valid     <= 1'b1;
                         ms            <= MS_ISSUE;
@@ -507,6 +566,12 @@ module tnca_mmio #(
                         rsp_r0     <= req_seq;
                         rsp_r1     <= 64'd0;
                     end
+                    OP_GRID_CAP: begin
+                        rsp_seq    <= req_seq;
+                        rsp_status <= RSP_OK;
+                        rsp_r0     <= 64'd32;
+                        rsp_r1     <= 64'd16777216;
+                    end
                     OP_PERF_READ: begin
                         rsp_seq    <= req_seq;
                         rsp_status <= perf_index_ok ? RSP_OK : RSP_REFUSED;
@@ -535,6 +600,10 @@ module tnca_mmio #(
 
             MS_RUN: begin
                 if (done_valid) begin
+                    if (req_op[3:0] == OP_LAUNCH) begin
+                        launch_end <= device_clock;
+                        launch_time_seq <= req_seq;
+                    end
                     done_ready <= 1'b1;
                     rsp_seq    <= req_seq;
                     rsp_status <= done_status;
@@ -674,6 +743,17 @@ module tnca_mmio #(
                                    host_status_valid, host_busy};
         R_MAGIC:      reg_rdata = MAGIC;
         R_SERVED:     reg_rdata = served;
+        R_AXI_BASE:   reg_rdata = DATA_AXI ? axi_base : 64'd0;
+        R_AXI_SIZE:   reg_rdata = DATA_AXI ? axi_size : 64'd0;
+        R_AXI_STAT:   reg_rdata = DATA_AXI ? {LOCAL_LIMIT[43:12], 29'd0, axi_err[1], 1'b1, axi_err[0]} : 64'd0;
+        R_AXI_RD:     reg_rdata = DATA_AXI ? axi_cnt_rd  : 64'd0;
+        R_AXI_WR:     reg_rdata = DATA_AXI ? axi_cnt_wr  : 64'd0;
+        R_AXI_LAT:    reg_rdata = DATA_AXI ? axi_cnt_lat : 64'd0;
+        R_AXI_RBEAT:  reg_rdata = DATA_AXI ? axi_cnt_rbeat : 64'd0;
+        R_TIME_CAP:   reg_rdata = 64'd1;
+        R_TIME_START: reg_rdata = launch_start;
+        R_TIME_END:   reg_rdata = launch_end;
+        R_TIME_SEQ:   reg_rdata = launch_time_seq;
         // DOORBELL and HOST_CTRL are write-only. Reading one returns zero
         // rather than the last value written, so a host cannot mistake a
         // write-only register for a status it can poll.
@@ -701,6 +781,8 @@ module tnca_mmio #(
             req_deadline <= 64'd0;
             host_addr <= 64'd0;
             host_be   <= 8'hFF;
+            axi_base  <= 64'd0;
+            axi_size  <= 64'd0;
         end else if (reg_we) begin
             case (reg_addr)
             R_REQ_SEQ:  req_seq  <= reg_wdata;
@@ -714,6 +796,8 @@ module tnca_mmio #(
             R_REQ_DEAD: req_deadline <= reg_wdata;
             R_HOST_ADDR: host_addr <= reg_wdata;
             R_HOST_BE:   host_be   <= reg_wdata[7:0];
+            R_AXI_BASE:  if (DATA_AXI) axi_base <= reg_wdata;
+            R_AXI_SIZE:  if (DATA_AXI) axi_size <= reg_wdata;
             default: ;
             endcase
         end

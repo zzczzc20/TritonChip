@@ -1,0 +1,24 @@
+{
+  "points": 77,
+  "passed": 75,
+  "paired_s_geo": 0.9989978331418906,
+  "failed": [
+    {
+      "point_id": "model.llama_prefill/small/fp16-b1-s64",
+      "status": "runtime-fault",
+      "problems": [
+        "steady calls: ValueError: device timestamps cross a clock domain or reset epoch\n"
+      ]
+    },
+    {
+      "point_id": "model.llama_prefill/medium/fp16-b1-s64",
+      "status": "runtime-fault",
+      "problems": [
+        "steady calls: ValueError: device timestamps cross a clock domain or reset epoch\n"
+      ]
+    }
+  ],
+  "software_commit": "a6dd1e2",
+  "image_uuid": "50f1225b-ffe2-2271-d855-a77ee4c8f950",
+  "scope": "same-image diagnostic, not frozen B39 replacement"
+}

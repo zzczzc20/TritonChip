@@ -45,10 +45,26 @@ def bank_of(phys, banks=None):
     return int(phys) % banks
 
 
+def geometry(target):
+    """The banked implementation this target's profile actually elaborates."""
+    from .diagnostics import Diagnostic
+    with open(find('spec', 'r1_profiles.json')) as fh:
+        profiles = json.load(fh)['profiles']
+    profile = target._d.get('profile')
+    implementation = profiles.get(profile, {}).get('implementation', {})
+    contract = hardware()
+    if (implementation.get('vector_register_file') != 'banked' or
+            implementation.get('banks') != contract['banks'] or
+            implementation.get('ports_per_bank') != '1 read, 1 write'):
+        raise Diagnostic('bank allocation requires a declared banked VRF '
+                         'matching the low-bit interleaving contract')
+    return contract['banks']
+
+
 # Instructions that read more than one vector register in one go, and
 # therefore can collide in a bank. A store reads its data register; a
 # three-source FMA reads three.
-_READS = re.compile(r'^\s*(?:@\w+\s+)?([\w.]+)\s+(.*)$')
+_READS = re.compile(r'^\s*(?:@!?\w+\s+)?([\w.]+)\s+(.*)$')
 
 
 def reads_of(line):

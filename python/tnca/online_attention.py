@@ -1,0 +1,193 @@
+"""Opt-in standard SDPA inference template with streamed head fragments.
+
+One query per program streams 16 keys at a time through descriptors. The
+stable FP32 softmax state stays in registers. Other shapes retain the
+upstream math decomposition. This checkpoint requires FX graph caching off.
+"""
+_library = None
+_bindings = {}
+
+
+def disable():
+    if not _bindings:
+        return
+    from torch._inductor.decomposition import decompositions
+    for op, (original, fused) in _bindings.items():
+        if decompositions.get(op) is fused:
+            decompositions[op] = original
+
+
+def enable():
+    global _library
+    import os
+    from torch._inductor import config
+    if config.fx_graph_cache:
+        raise RuntimeError('experimental online SDPA requires fx_graph_cache=False')
+    if os.environ.get('TNCA_PACKED_WINDOW_UNPACK', '0') != '1':
+        raise RuntimeError('online SDPA requires TNCA_PACKED_WINDOW_UNPACK=1 for real DMA loads')
+    if _library is not None:
+        from torch._inductor.decomposition import decompositions
+        for op, (_, fused) in _bindings.items():
+            decompositions[op] = fused
+        return
+    import torch
+    from torch._decomp import decomposition_table
+    from torch._inductor import config, ir
+    from torch._inductor.decomposition import decompositions
+    from torch._inductor.lowering import register_lowering
+    from torch._inductor.select_algorithm import TritonTemplate, realize_inputs
+    original_op = torch.ops.aten._scaled_dot_product_flash_attention_for_cpu.default
+    original = decomposition_table[original_op]
+    previous = decompositions.get(original_op, original)
+    library = torch.library.Library('tnca', 'FRAGMENT')
+    library.define('sdpa_online_v1(Tensor q, Tensor k, Tensor v, Tensor? mask, bool causal, float scale) -> Tensor')
+
+    def refuse(*args, **kwargs):
+        raise RuntimeError('tnca online SDPA requires torch.compile(fullgraph=True)')
+    library.impl('sdpa_online_v1', refuse, 'PrivateUse1')
+
+    @torch.library.register_fake('tnca::sdpa_online_v1')
+    def fake(q, k, v, mask, causal, scale):
+        b, h, length, width = q.shape
+        return torch.empty((length, b, h, width), dtype=q.dtype,
+                           device=q.device).permute(1, 2, 0, 3)
+
+    def grid(b, h, length, width, meta):
+        return (b * h * length, 1, 1)
+
+    common = '''
+    B = {{size("Q", 0)}}
+    H = {{size("Q", 1)}}
+    L = {{size("Q", 2)}}
+    S = {{size("K", 2)}}
+    HK = {{size("K", 1)}}
+    pid = tl.program_id(0)
+    row = pid % L
+    head = (pid // L) % H
+    batch = pid // (L * H)
+    kh = head // (H // HK)
+    d = tl.arange(0, 16)
+    r = tl.arange(0, 16)
+    QUERY_CODE
+    kd = tl.make_tensor_descriptor(K + batch * {{stride("K", 0)}} + kh * {{stride("K", 1)}}, shape=[S, HEAD_DIM], strides=[{{stride("K", 2)}}, 1], block_shape=[16, 16])
+    vd = tl.make_tensor_descriptor(V + batch * {{stride("V", 0)}} + kh * {{stride("V", 1)}}, shape=[S, HEAD_DIM], strides=[{{stride("V", 2)}}, 1], block_shape=[16, 16])
+    m = tl.full((), -float('inf'), tl.float32)
+    z = tl.full((), 0, tl.float32)
+    OUTPUT_INIT
+    for block in range(tl.cdiv(S, 16)):
+        pos = block * 16 + r
+        SCORE_CODE
+        score = score * SCALE
+        valid = pos < S
+        if CAUSAL:
+            valid = valid & (pos <= row)
+        MASK_CODE
+        score = tl.where(valid, score, -float('inf'))
+        new_m = tl.maximum(m, tl.max(score, 0))
+        safe_m = tl.where(new_m == -float('inf'), 0., new_m)
+        alpha = tl.exp(m - safe_m)
+        p = tl.exp(score - safe_m)
+        VALUE_CODE
+        z = z * alpha + tl.sum(p, 0)
+        m = new_m
+    STORE_CODE
+'''
+    mask_code = '''mask = tl.load(Mask + batch * MS0 + head * MS1 + row * MS2 + pos * MS3, pos < S, other=0)
+        if BOOL_MASK:
+            valid = valid & mask
+        else:
+            score = score + mask.to(tl.float32)'''
+    templates = {}
+    for width in (16, 32, 64):
+        # Consume one 16-column fragment before loading the next. Keeping
+        # the whole [16, width] K/V tile live would exceed private VRF.
+        columns = list(range(0, width, 16))
+        query = '\n    '.join(
+            f'q{i} = tl.load(Q + batch * {{{{stride("Q", 0)}}}} + head * {{{{stride("Q", 1)}}}} + row * {{{{stride("Q", 2)}}}} + d + {col}).to(tl.float32)'
+            for i, col in enumerate(columns))
+        init = '\n    '.join(f'o{i} = tl.full((16,), 0, tl.float32)' for i in range(len(columns)))
+        scores = []
+        values = []
+        stores = []
+        for i, col in enumerate(columns):
+            scores += [f'k{i} = kd.load([block * 16, {col}]).to(tl.float32)',
+                       f'score = ' + ('' if i == 0 else 'score + ') + f'tl.sum(k{i} * q{i}[None, :], 1)']
+            values += [f'v{i} = vd.load([block * 16, {col}]).to(tl.float32)',
+                       f'o{i} = o{i} * alpha + tl.sum(p[:, None] * v{i}, 0)']
+            stores += [f'result{i} = o{i} / tl.where(z > 0., z, 1.)',
+                       '{{store_output(("batch", "head", "row", "d + ' + str(col) + '"), "result' + str(i) + '", "d < 16", val_shape=(16,))}}']
+        source = common.replace('QUERY_CODE', query).replace('OUTPUT_INIT', init)
+        source = source.replace('SCORE_CODE', '\n        '.join(scores))
+        source = source.replace('VALUE_CODE', '\n        '.join(values))
+        source = source.replace('STORE_CODE', '\n    '.join(stores))
+        for has_mask in (False, True):
+            header = '{{def_kernel("Q", "K", "V"' + (', "Mask"' if has_mask else '') + ')}}'
+            templates[width, has_mask] = TritonTemplate(
+                name=f'tnca_sdpa_online_v1_d{width}_{int(has_mask)}', grid=grid,
+                source=header + source.replace('MASK_CODE', mask_code if has_mask else ''))
+
+    @register_lowering(torch.ops.tnca.sdpa_online_v1.default, type_promotion_kind=None)
+    def lower(q, k, v, mask, causal, scale):
+        nodes = list(realize_inputs(q, k, v))
+        strides = [0, 0, 0, 0]
+        if mask is not None:
+            mask = realize_inputs(mask)
+            nodes.append(mask)
+            sizes, actual = list(mask.get_size()), list(mask.get_stride())
+            strides = [0] * (4 - len(sizes)) + [0 if size == 1 else stride
+                                                         for size, stride in zip(sizes, actual)]
+        b, h, length, width = q.get_size()
+        layout = ir.FixedLayout(q.get_device(), q.get_dtype(), [b, h, length, width],
+                                [h * width, width, b * h * width, 1])
+        choice = templates[int(width), mask is not None].generate(
+            input_nodes=tuple(nodes), layout=layout, num_stages=1, num_warps=1,
+            call_sizes=[b, h, length, width], HEAD_DIM=int(width), CAUSAL=causal, SCALE=scale,
+            BOOL_MASK=mask is not None and mask.get_dtype() == torch.bool,
+            MS0=strides[0], MS1=strides[1], MS2=strides[2], MS3=strides[3])
+        return choice.output_node()
+
+    def eligible_inputs(q, k, v, dropout_p=0., is_causal=False, *, attn_mask=None, scale=None):
+        eligible = (q.device.type == 'tnca' and q.ndim == k.ndim == v.ndim == 4
+                    and q.dtype in (torch.float16, torch.bfloat16) and k.dtype == v.dtype == q.dtype
+                    and q.shape[-1] == k.shape[-1] == v.shape[-1]
+                    and q.shape[-1] in (16, 32, 64)
+                    and q.stride(-1) == k.stride(-1) == v.stride(-1) == 1
+                    and q.shape[0] == k.shape[0] == v.shape[0]
+                    and k.shape[1:3] == v.shape[1:3] and k.shape[1] > 0
+                    and q.shape[1] > 0 and q.shape[1] % k.shape[1] == 0
+                    and q.shape[-2] > 0 and k.shape[-2] > 0 and dropout_p == 0.
+                    and not (torch.is_grad_enabled() and any(t.requires_grad for t in (q, k, v))))
+        if attn_mask is not None:
+            shape = (1,) * (4 - attn_mask.ndim) + tuple(attn_mask.shape)
+            eligible = eligible and not (torch.is_grad_enabled() and attn_mask.requires_grad) and attn_mask.device == q.device and attn_mask.dtype in (torch.bool, q.dtype, torch.float32) and attn_mask.ndim <= 4 and all(
+                dim in (1, want) for dim, want in zip(shape, (q.shape[0], q.shape[1], q.shape[2], k.shape[2])))
+        return eligible
+
+    def decompose(q, k, v, dropout_p=0., is_causal=False, *, attn_mask=None, scale=None):
+        eligible = eligible_inputs(q, k, v, dropout_p, is_causal, attn_mask=attn_mask, scale=scale)
+        baseline = original(q, k, v, dropout_p, is_causal, attn_mask=attn_mask, scale=scale)
+        if not eligible:
+            return baseline
+        result = torch.ops.tnca.sdpa_online_v1(q, k, v, attn_mask, is_causal,
+                                              scale if scale is not None else q.shape[-1] ** -.5)
+        # Keep the upstream auxiliary-output semantics. F.sdpa consumes only
+        # output 0; AOT/Inductor DCE removes the unused math graph entirely.
+        return result, baseline[1]
+
+    decompositions[original_op] = decompose
+    _bindings[original_op] = (previous, decompose)
+    public_op = torch.ops.aten.scaled_dot_product_attention.default
+    original_public = decompositions[public_op]
+
+    def public(q, k, v, attn_mask=None, dropout_p=0., is_causal=False, *, scale=None, enable_gqa=False):
+        legal_heads = q.ndim == k.ndim == 4 and (enable_gqa or q.shape[1] == k.shape[1])
+        if (legal_heads and not (is_causal and attn_mask is not None)
+                and eligible_inputs(q, k, v, dropout_p, is_causal, attn_mask=attn_mask, scale=scale)):
+            return torch.ops.tnca.sdpa_online_v1(q, k, v, attn_mask, is_causal,
+                                                scale if scale is not None else q.shape[-1] ** -.5)
+        return original_public(q, k, v, attn_mask, dropout_p, is_causal,
+                               scale=scale, enable_gqa=enable_gqa)
+
+    decompositions[public_op] = public
+    _bindings[public_op] = (original_public, public)
+    _library = library

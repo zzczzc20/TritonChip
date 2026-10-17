@@ -1,0 +1,48 @@
+  PASS  window     {"base": "0x0", "size": 8589934592, "local_limit": "0x20000", "bank": "MBG[0:31]", "bank_bytes": 8589934592, "bank_index": 41, "heap_end": "0x200020000", "dma": true}
+  PASS  samples    {"samples": 32, "first": "0x21000", "last": "0x1f0021000", "pseudo_channels": 32, "pc_first": 0, "pc_last": 31, "all_pc_coverage": true}
+Traceback (most recent call last):
+  File "/home/zzhouch/tritonchip-r40-board/tools/r40/hbm_board.py", line 220, in main
+    detail = fn()
+  File "/home/zzhouch/tritonchip-r40-board/tools/r40/hbm_board.py", line 163, in capacity
+    assert err < 2e-2, f'relative error {err}'
+AssertionError: relative error 0.03880021721124649
+  FAIL  capacity   "AssertionError: relative error 0.03880021721124649"
+Traceback (most recent call last):
+  File "/home/zzhouch/tritonchip-r40-board/tools/r40/hbm_board.py", line 220, in main
+    detail = fn()
+  File "/home/zzhouch/tritonchip-r40-board/tools/r40/hbm_board.py", line 186, in stream
+    g(x)                                            # compile outside the measurement
+  File "/home/zzhouch/tc_env/torchenv/lib/python3.10/site-packages/torch/_dynamo/eval_frame.py", line 1261, in compile_wrapper
+    result = fn(*args, **kwargs)
+  File "/home/zzhouch/tritonchip-r40-board/tools/r40/hbm_board.py", line 181, in <lambda>
+    'read': (torch.compile(lambda t: t.sum(), fullgraph=True), n * 4),
+  File "/home/zzhouch/tc_env/torchenv/lib/python3.10/site-packages/torch/_dynamo/eval_frame.py", line 1548, in _fn
+    return fn(*args, **kwargs)
+  File "/home/zzhouch/tc_env/torchenv/lib/python3.10/site-packages/torch/_functorch/aot_autograd.py", line 1289, in forward
+    return compiled_fn(full_args)
+  File "/home/zzhouch/tc_env/torchenv/lib/python3.10/site-packages/torch/_functorch/_aot_autograd/runtime_wrappers.py", line 1189, in runtime_wrapper
+    result = _codegen_runtime_wrapper(
+  File "/home/zzhouch/tc_env/torchenv/lib/python3.10/site-packages/torch/_functorch/_aot_autograd/codegen.py:codegen(runtime_wrapper_orchestration)", line 8, in _runtime_wrapper
+  File "/home/zzhouch/tc_env/torchenv/lib/python3.10/site-packages/torch/_inductor/output_code.py", line 828, in __call__
+    return self.current_callable(inputs)
+  File "/home/zzhouch/tritonchip-r40-board/sim/build/r40/ram_board_cache/ds/cdst5lhimbswrlow7luxe322wjhtgwm4w2a3bxujq7fa3s2zmpau.py", line 166, in call
+    triton_red_fused_sum_0.run(arg0_1, buf0, 6144, 4096, stream=raw_stream0)
+  File "/home/zzhouch/tc_env/torchenv/lib/python3.10/site-packages/torch/_inductor/runtime/triton_heuristics.py", line 2558, in run
+    result = launcher(*args, **kwargs, stream=stream)
+  File "<string>", line 5, in launcher
+  File "/home/zzhouch/tritonchip-r40-board/python/tnca/triton_backend/driver.py", line 238, in __call__
+    runs = [self._launch_once(session, module, values, grid, guard, poison,
+  File "/home/zzhouch/tritonchip-r40-board/python/tnca/triton_backend/driver.py", line 238, in <listcomp>
+    runs = [self._launch_once(session, module, values, grid, guard, poison,
+  File "/home/zzhouch/tritonchip-r40-board/python/tnca/triton_backend/driver.py", line 404, in _launch_once
+    event = session.submit(module, bound, grid=grid,
+  File "/home/zzhouch/tritonchip-r40-board/python/tnca/runtime.py", line 620, in submit
+    raise AdmissionError(
+tnca.errors.AdmissionError: [ADMISSION_REFUSED] 6144 programs exceeds the 4096 limit
+  at: triton_red_fused_sum_0 grid 6144x1x1
+  grid: [6144, 1, 1]
+  limit: 4096
+  requested: 6144
+  try: split the work across several launches; the limit is the grid the transport encodes, sixteen bits per axis with a 4096 cap
+  FAIL  stream     "AdmissionError: [ADMISSION_REFUSED] 6144 programs exceeds the 4096 limit\n  at: triton_red_fused_sum_0 grid 6144x1x1\n  grid: [6144, 1, 1]\n  limit: 4096\n  requested: 6144\n  try: split the work across several launches; the limit is the grid the transport encodes, sixteen bits per axis with a 4096 cap"
+r40-hbm-board  FAIL  (2/4)

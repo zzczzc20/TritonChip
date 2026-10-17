@@ -1,0 +1,300 @@
+{
+ "schema": "tnca-r40-baseline/1",
+ "name": "B39",
+ "what": "The frozen R39 baseline (doc/r40_tasks_and_acceptance.md sec 3.1): R39's signed-off software, its final board image and configuration, on the CPU migration path (torch CPU tensors -> Inductor cpu_backend=\"triton\" -> tnca).",
+ "software": {
+  "commit": "be877793a4a5c1c522c0da65cc80a3fe921c0bda",
+  "tree": "90f5ca7e340f4e47e1e81704d56cefecd29913e2",
+  "tree_digest": "files:04338f16318be25ca7afefae78426c3b300d9a6eb39d45c6a7b1a3ddf9008a03",
+  "merged": "b5c606d54384f6febb8949936537c49cafb75c5c",
+  "knobs": {
+   "TNCA_RCTX_ROLES": "0"
+  },
+  "defaults": {
+   "compile": {
+    "opt_level": 2,
+    "TNCA_SCHEDULE": 1,
+    "TNCA_INDEX_OPT": 1,
+    "TNCA_RCTX_SPMD": 1,
+    "TNCA_SPARSE_TENSORMAPS": 1,
+    "TNCA_RCTX_ROLES": 0,
+    "source": "python/tnca/triton_backend/compiler.py (_schedule, _index_opt, _rctx_spmd, _sparse_tensormaps, _rctx_roles)"
+   },
+   "inductor": {
+    "cpu_backend": "triton",
+    "max_block": 16,
+    "persistent_reductions": false,
+    "compile_threads": 1,
+    "max_autotune_gemm_backends": "TRITON",
+    "tensor_descriptors": true,
+    "no_x_dim": true,
+    "source": "python/tnca/inductor.py configure(); recorded per record in platform.inductor"
+   },
+   "runtime": {
+    "path": "CPU tensors -> Inductor cpu_backend=\"triton\" -> tnca driver; every launch uploads its argument storages and downloads them",
+    "heap_bytes": 393216
+   },
+   "knobs_recorded": {
+    "TNCA_RCTX_ROLES": "0"
+   },
+   "knobs_note": "The board records set TNCA_RCTX_ROLES=0 explicitly (--set), equal to the default; a comparison against B39 declares it if the other side leaves it unset."
+  }
+ },
+ "image": {
+  "name": "u280_r39h",
+  "board": "xilinx_u280_gen3x16_xdma_1_202211_1",
+  "xclbin_sha256": "c56d492f6a33400077bc65bce0a04397eedc4a4f89ffd657084e2c875e44ea7d",
+  "profile": "core-vrf-sync-v5",
+  "capabilities": [
+   "atomics_device",
+   "fence",
+   "gather_scatter",
+   "matrix_bf16",
+   "matrix_f16",
+   "matrix_fp8",
+   "mbarrier",
+   "rctx_pair",
+   "rctx_slice",
+   "sfu",
+   "tensor_dma",
+   "tensor_store",
+   "tensor_transpose",
+   "vector_fp32"
+  ],
+  "elaboration": {
+   "NUM_RCTX": 4,
+   "RCTX_W": 2,
+   "VREGS_PER_RCTX": 64,
+   "PHYS_VREGS": 256,
+   "HAS_SFU": 1,
+   "HAS_ATOMICS": 1,
+   "HAS_SYS_ATOMICS": 0,
+   "RSLICE": 1,
+   "HAS_TENSOR_XPOSE": 1,
+   "RPAIR": 1
+  },
+  "rtl_parameters": {
+   "USE_BANKED_VRF": 1,
+   "VRF_BYPASS": 1,
+   "FE_NOBUBBLE": 1,
+   "VRF_PREFETCH": 1,
+   "RCTX_SWITCH": 2,
+   "LSU_INFLIGHT": 2,
+   "FPU_OVERLAP": 1,
+   "MTX_ABUF": 1
+  },
+  "memory": {
+   "kind": "on-chip RAM",
+   "bytes": 524288,
+   "heap": [
+    131072,
+    524288
+   ],
+   "note": "rtl/fpga/tnca_fpga_mem.v; one core, one 8 B/cycle data port"
+  },
+  "clock_hz": 100000000.0,
+  "clock_policy": "100MHz-undivided",
+  "clock_measured_mhz": [
+   100.022,
+   99.989
+  ],
+  "clock_measured_how": "flow/fpga/measure_clock.py: device cycles over host-timed spin kernels, two runs",
+  "timing": {
+   "clock": "ap_clk",
+   "wns_ns": 0.088,
+   "whs_ns": 0.01,
+   "design_wns_ns": 0.016
+  },
+  "resources": "spec/r40/b39/resources.json",
+  "built": "2026-10-10 (v++ link finished 16:49 HKT on acf3019)",
+  "b1_conformance": "pass (spec/r40/b39/b1_conformance.json)"
+ },
+ "toolchain": {
+  "board_host": {
+   "host": "acf3019",
+   "os": "Ubuntu 22.04.5 LTS",
+   "kernel": "5.15.0-191-generic",
+   "vitis": "2023.2",
+   "vivado": "2023.2",
+   "xrt": "2.16.204 (2023.2, fa4c004)",
+   "shell": "xilinx u280 gen3x16_xdma_1 202211.1",
+   "python": "3.10.12",
+   "torch": "2.14.0+cpu",
+   "triton": "3.8.0"
+  },
+  "build_host": {
+   "host": "GB10 (aarch64)",
+   "kernel": "6.14.0-1013-nvidia",
+   "python": "3.12.3",
+   "torch": "2.14.0+cu130",
+   "triton": "3.8.0",
+   "iverilog": "12.0 (stable)",
+   "yosys": "0.33 (2584903a060)",
+   "verilator": null
+  },
+  "note": "R40 is locked to torch 2.14.0 and Triton 3.8.0 (doc sec R40-00); an upgrade is its own compatibility ablation. The extension APIs actually present are in spec/r40/api_lock.json."
+ },
+ "records": {
+  "medium": {
+   "path": "spec/r40/b39/medium.jsonl",
+   "points": 25,
+   "passing": 25,
+   "sha256": "dce9018707d93c457a486b57282a3782f1fa024f57be934222f1565995e824ec"
+  },
+  "small": {
+   "path": "spec/r40/b39/small.jsonl",
+   "points": 25,
+   "passing": 25,
+   "sha256": "e9f377276ca6e611bd98f978e3ee006e72fcb14ea1fd12718c2f1dd9571bf124"
+  },
+  "tiny": {
+   "path": "spec/r40/b39/tiny.jsonl",
+   "points": 27,
+   "passing": 27,
+   "sha256": "7b86c60463d6d828699b7c6b3196eb278186c21034ddd1c8e11512e9fd513c28"
+  }
+ },
+ "timing": {
+  "kind": "device-cycles-serial-grid",
+  "note": "protocol 1: the sum over the call's launches of launch_accept_to_core_idle in device cycles; programs of a grid run one after another; one deterministic run per point (the first call); host transfers excluded. Seconds = cycles / clock_hz.",
+  "boundaries": {
+   "device": "time.device, time.per_launch[].cycles: launch accepted -> core idle",
+   "host_transfer": "host.transfer_s: every launch's upload + download (first call)",
+   "host_wall": "host.wall_s: the first call -- Dynamo, Inductor, Triton and the tnca lowering, then the launches; compile time = wall_s - transfer_s - device seconds - dispatch, not separately recorded in protocol 1",
+   "process": "host.process_s: the child process, including the CPU reference"
+  }
+ },
+ "open_items": [
+  {
+   "id": "B39-OI-1",
+   "title": "B4: llama_decode tiny is 2 cycles longer on the board after gpt2_block",
+   "status": "open",
+   "owner": "R40-00 (investigation), RTL owner of the core",
+   "blocks": [
+    "B4 on the on-chip-RAM image (doc sec 3.4: stays open, not closed by HBM rules)"
+   ],
+   "does_not_block": [
+    "numerics (bit-identical results)",
+    "any R40 performance gate (0.0004 % of the point)"
+   ],
+   "evidence": [
+    "board u280_r39h: 545162 alone (twice); 545164 after gpt2_block, and on every later run until the device state changes (after llama_decode, after add, alone again)",
+    "one kernel differs: triton_poi_fused__unsafe_view_neg_split_transpose_view_3, grid 2, 161 -> 162 cycles at both of its launches; the other 40 launches identical",
+    "not memory next to the buffers: 4 KiB guards filled 0xFF and 0x00 both give 545164, results identical",
+    "a one-session simulation of gpt2_block then llama_decode twice gives 545162 every time (buffers at other addresses than a fresh process on the board)"
+   ],
+   "next": "find the state a launch does not reset: rerun the one kernel on the board after gpt2_block with the counters per context, and in simulation with the board's buffer addresses",
+   "refs": [
+    "doc/r39_report.md sec 8.4"
+   ]
+  },
+  {
+   "id": "B39-OI-2",
+   "title": "B4: attention_decode tiny 10252 vs 10251 in the u280_r39e suite run",
+   "status": "open, not reproduced",
+   "owner": "R40-00",
+   "blocks": [
+    "B4 on the on-chip-RAM image"
+   ],
+   "does_not_block": [
+    "numerics",
+    "performance gates"
+   ],
+   "evidence": [
+    "u280_r39e (v4): 10252 in the suite run, 10251 alone and after argmax",
+    "u280_r39h (v5): equal to simulation in the suite run"
+   ],
+   "next": "same class as B39-OI-1; closed with it if the cause is the same state",
+   "refs": [
+    "doc/r39_report.md sec 4"
+   ]
+  },
+  {
+   "id": "B39-OI-3",
+   "title": "softmax fp16 tiny is faster with any one of four timing switches off",
+   "status": "open",
+   "owner": "R40-07 (pipeline and matrix: the timing model is updated there)",
+   "blocks": [],
+   "does_not_block": [
+    "numerics",
+    "the point is still 4.36x the R39-00 baseline"
+   ],
+   "evidence": [
+    "full v4: 4489 cycles; FE_NOBUBBLE off: 3965; FPU_OVERLAP, VRF_BYPASS or RCTX_SWITCH off also 2-12 % faster"
+   ],
+   "refs": [
+    "doc/r39_report.md sec 3"
+   ]
+  },
+  {
+   "id": "B39-OI-4",
+   "title": "fp32 matmul small/medium and conv2d fp32 0.7-1.4 % slower on u280_r39h than u280_r39f",
+   "status": "open, below the 2 % rule",
+   "owner": "R40-07",
+   "blocks": [],
+   "does_not_block": [
+    "the R39 gates (v5 is >= v4 on every point)"
+   ],
+   "evidence": [
+    "board: 0.987, 0.986 (matmul fp32 small, medium), 0.993 (conv2d fp32); the change is MTX_ABUF and RCTX_SWITCH=2"
+   ],
+   "refs": [
+    "doc/r39_report.md sec 8.4"
+   ]
+  },
+  {
+   "id": "B39-OI-5",
+   "title": "GitHub Actions do not start (account billing)",
+   "status": "open (repository owner)",
+   "owner": "repository owner",
+   "blocks": [
+    "CI as an independent check of a pushed commit"
+   ],
+   "does_not_block": [
+    "the gates, which run on the build host (spec/r40/b39/gates.json)"
+   ],
+   "evidence": [
+    "PR #6 and #5: every job \"not started because recent account payments have failed or your spending limit needs to be increased\""
+   ],
+   "refs": [
+    "https://github.com/zzczzc20/TritonChip/pull/6"
+   ]
+  },
+  {
+   "id": "B39-OI-6",
+   "title": "CPU-path kernels reload a stored intermediate through the transfer engine with no fence",
+   "status": "open (found in R40-01)",
+   "owner": "R40-03 (compiler: order a store before a later transfer read of the same buffer)",
+   "blocks": [
+    "a correctness argument for B39 kernels that store and reload within one launch"
+   ],
+   "does_not_block": [
+    "the B39 numbers (every point passes, on the board and in simulation)"
+   ],
+   "evidence": [
+    "Inductor emits tl.debug_barrier() before reading back a buffer stored in a reduction loop only for non-CPU devices (torch/_inductor/codegen/triton.py, load()); on CPU tensors it does not",
+    "op.softmax/tiny fp16 on the CPU path stores exp(x - max) and reloads it through a tensor descriptor (the transfer engine) in the next loop, with no fence between",
+    "the ISA does not order an LSU store and a later transfer read of the same bytes (tnca_cc.frontend _op_ttg_barrier); the reload comes many instructions later, which is why it has always been right",
+    "on the tnca device the same kernel gets the barrier, which the compiler lowers to a fence (+20 cycles on that point)"
+   ],
+   "refs": [
+    "doc/r40_tnca_device.md sec 3"
+   ]
+  }
+ ],
+ "b4": {
+  "reference": "spec/r40/b39/b4_sim_tiny.jsonl",
+  "what": "device-level RTL simulation of the same RTL and software, tiny, each point from reset (archbench.run --jobs 6)",
+  "identical": 26,
+  "different": [
+   {
+    "point": "model.llama_decode/tiny/fp16-b1-p16",
+    "board": 545164,
+    "sim": 545162
+   }
+  ],
+  "compared": 27
+ },
+ "b1_conformance": "spec/r40/b39/b1_conformance.json",
+ "resources": "spec/r40/b39/resources.json"
+}

@@ -1,0 +1,28 @@
+  already built: /home/zhongchun/.cache/tnca/devices/core-vrf-sync-v5-a8f9e2a0291d254a-f30a9b914657/tnca_device_vrf5.vvp
+AUDIT actual row tiles: [[2, 16, 1]]
+PASS sum, width cap 16, shape (3, 127)
+PASS sum, width cap 16, shape (3, 17)
+PASS sum, width cap 16, shape (3, 33)
+PASS sum, width cap 16, shape (3, 65)
+AUDIT actual row tiles: [[2, 16, 1]]
+PASS amax, width cap 16, shape (3, 127)
+PASS amax, width cap 16, shape (3, 17)
+PASS amax, width cap 16, shape (3, 33)
+PASS amax, width cap 16, shape (3, 65)
+AUDIT actual row tiles: [[2, 16, 1]]
+PASS rmsnorm, width cap 16, shape (3, 127)
+PASS rmsnorm, width cap 16, shape (3, 17)
+PASS rmsnorm, width cap 16, shape (3, 33)
+PASS rmsnorm, width cap 16, shape (3, 65)
+AUDIT actual row tiles: [[2, 16, 1]]
+PASS softmax, width cap 16, shape (3, 127)
+PASS softmax, width cap 16, shape (3, 17)
+PASS softmax, width cap 16, shape (3, 33)
+PASS softmax, width cap 16, shape (3, 65)
+AUDIT actual row tiles: [[2, 16, 1]]
+PASS layernorm, width cap 16, shape (3, 127)
+PASS layernorm, width cap 16, shape (3, 17)
+PASS layernorm, width cap 16, shape (3, 33)
+PASS layernorm, width cap 16, shape (3, 65)
+r40-reduction-tests PASS (20/20)
+EXIT:0

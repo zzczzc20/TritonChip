@@ -1,0 +1,1 @@
+NATIVE MULTICORE TORCH PASS cores=3 elements=4097 kernels=1 whole_grid_launches=1 tensor_staging=0

@@ -1,0 +1,42 @@
+{
+  "r40_mmio_journal24_capture": {
+    "exit": "0\n",
+    "log": "TMU CONTROL TRANSPORT PASS; standard Torch DCO and board gates not-measured\n"
+  },
+  "r40_mmio_journal24_replay": {
+    "exit": "0\n",
+    "log": "tnca_fpga_regs: up (words=147456)\nMMIO_JOURNAL_REPLAY_PASS batches=713 time=565957000\n./tb/fpga/tnca_mmio_journal.vh:114: $finish called at 565957000 (1ps)\nMMIO journal replay PASS\n"
+  },
+  "r40_journal_mutation_response": {
+    "exit": "1\n",
+    "log": "tnca_fpga_regs: up (words=147456)\nFATAL: ./tb/fpga/tnca_mmio_journal.vh:67: replay response differs for batch 1\n       Time: 626000  Scope: tnca_multicore_board_regs.journal_compare_response\nMMIO journal replay FAIL\n"
+  },
+  "r40_journal_mutation_completion_time": {
+    "exit": "1\n",
+    "log": "tnca_fpga_regs: up (words=147456)\nFATAL: ./tb/fpga/tnca_mmio_journal.vh:122: replay timing differs at batch 1\n       Time: 626000  Scope: tnca_multicore_board_regs.journal_replay_run\nMMIO journal replay FAIL\n"
+  },
+  "r40_journal_mutation_partial": {
+    "exit": "2\n",
+    "log": "usage: replay_mmio_journal.py [-h] --journal JOURNAL --out OUT\n                              [--harness HARNESS | --diagnostic-harness DIAGNOSTIC_HARNESS]\n                              [--runtime RUNTIME] [--capture-log CAPTURE_LOG]\n                              [--cap-seconds CAP_SECONDS]\nreplay_mmio_journal.py: error: capture has no terminal marker; partial/live captures cannot certify complete replay\n"
+  },
+  "r40_journal24_controls": {
+    "exit": "0\n",
+    "log": "memory_mode_build: PASS\nmemory_mode: PASS\nmmio_0_build: PASS\nmmio_0: PASS\nmmio_1_build: PASS\nmmio_1: PASS\nline_limit1_stages0_build: PASS\nline_limit1_stages0: PASS\nline_limit1_stages2_build: PASS\nline_limit1_stages2: PASS\nline_limit8_stages0_build: PASS\nline_limit8_stages0: PASS\nline_limit8_stages2_build: PASS\nline_limit8_stages2: PASS\nhost: PASS\nlegacy_options: PASS\nRUNTIME MEMORY CONTROLS FUNCTIONAL PASS; board performance not-measured\n"
+  },
+  "r40_journal24_default": {
+    "exit": "1\n",
+    "log": "Traceback (most recent call last):\n  File \"/tmp/r40_mmio_journal24/tools/r40/tmu_control_rtl_tests.py\", line 17, in <module>\n    import triton  # Load the compiler plugin before its runtime adapters.\n    ^^^^^^^^^^^^^\nModuleNotFoundError: No module named 'triton'\n"
+  },
+  "r40_journal24_default_pinned": {
+    "exit": "0\n",
+    "log": "TMU CONTROL TRANSPORT PASS; standard Torch DCO and board gates not-measured\n"
+  },
+  "r40_mmio_journal25_native": {
+    "exit": "1\n",
+    "log": "W1016 08:26:57.220000 1333139 torch/utils/cpp_extension.py:183] No CUDA runtime is found, using CUDA_HOME='/usr/local/cuda'\nMMIO_JOURNAL {\"directory\": \"/tmp/r40_mmio_journal25_native/sim/build/u50-sim/link-1his1__i/journal\"}\nNATIVE MEMORY CONTROL PASS {\"configuration\": {\"active_ports\": 3, \"maximum_outstanding\": 8, \"outstanding\": 8, \"physical_ports\": 3, \"version\": 1}, \"numerical\": true, \"outlet_delta\": [{\"port\": 0, \"read_lines\": 261, \"write_lines\": 83}, {\"port\": 1, \"read_lines\": 335, \"write_lines\": 82}, {\"port\": 2, \"read_lines\": 285, \"write_lines\": 82}], \"scope\": \"functional RTL only\", \"zero_tensor_staging\": true}\nNATIVE MEMORY CONTROL PASS {\"configuration\": {\"active_ports\": 1, \"maximum_outstanding\": 8, \"outstanding\": 8, \"physical_ports\": 3, \"version\": 1}, \"numerical\": true, \"outlet_delta\": [{\"port\": 0, \"read_lines\": 890, \"write_lines\": 247}, {\"port\": 1, \"read_lines\": 0, \"write_lines\": 0}, {\"port\": 2, \"read_lines\": 0, \"write_lines\": 0}], \"scope\": \"functional RTL only\", \"zero_tensor_staging\": true}\nNATIVE MEMORY CONTROL PASS {\"configuration\": {\"active_ports\": 1, \"maximum_outstanding\": 8, \"outstanding\": 1, \"physical_ports\": 3, \"version\": 1}, \"numerical\": true, \"outlet_delta\": [{\"port\": 0, \"read_lines\": 881, \"write_lines\": 247}, {\"port\": 1, \"read_lines\": 0, \"write_lines\": 0}, {\"port\": 2, \"read_lines\": 0, \"write_lines\": 0}], \"scope\": \"functional RTL only\", \"zero_tensor_staging\": true}\nTraceback (most recent call last):\n  File \"/tmp/r40_mmio_journal25_native/tools/r40/native_memory_control_tests.py\", line 54, in <module>\n    if __name__=='__main__':main()\n                            ^^^^^^\n  File \"/tmp/r40_mmio_journal25_native/tools/r40/native_memory_control_tests.py\", line 43, in main\n    with launch_log() as launches:out=fn(a,b)\n                                      ^^^^^^^\n  File \"/home/zhongchun/tc_env/torchenv/lib/python3.12/site-packages/torch/_dynamo/eval_frame.py\", line 1261, in compile_wrapper\n    result = fn(*args, **kwargs)\n             ^^^^^^^^^^^^^^^^^^^\n  File \"/tmp/r40_mmio_journal25_native/tools/r40/native_memory_control_tests.py\", line 31, in <lambda>\n    fn=torch.compile(lambda a,b:(a+b)*0.5,fullgraph=True,dynamic=False)\n  File \"/home/zhongchun/tc_env/torchenv/lib/python3.12/site-packages/torch/_dynamo/eval_frame.py\", line 1548, in _fn\n    return fn(*args, **kwargs)\n           ^^^^^^^^^^^^^^^^^^^\n  File \"/home/zhongchun/tc_env/torchenv/lib/python3.12/site-packages/torch/_functorch/aot_autograd.py\", line 1289, in forward\n    return compiled_fn(full_args)\n           ^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/zhongchun/tc_env/torchenv/lib/python3.12/site-packages/torch/_functorch/_aot_autograd/runtime_wrappers.py\", line 1189, in runtime_wrapper\n    result = _codegen_runtime_wrapper(\n             ^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/zhongchun/tc_env/torchenv/lib/python3.12/site-packages/torch/_functorch/_aot_autograd/codegen.py:codegen(runtime_wrapper_orchestration)\", line 8, in _runtime_wrapper\n  File \"/home/zhongchun/tc_env/torchenv/lib/python3.12/site-packages/torch/_inductor/output_code.py\", line 828, in __call__\n    return self.current_callable(inputs)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/tmp/torchinductor_zhongchun/a7/ca7wr6irg33gveyhgebjp7z7urrsv4njbivu274zv7zrj5hr7t3g.py\", line 103, in call\n    triton_poi_fused_add_mul_0.run(arg0_1, arg1_1, buf0, 4097, stream=raw_stream0)\n  File \"/home/zhongchun/tc_env/torchenv/lib/python3.12/site-packages/torch/_inductor/runtime/triton_heuristics.py\", line 2467, in run\n    return fast(*args, stream=stream)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"<string>\", line 5, in launcher\n  File \"/tmp/r40_mmio_journal25_native/python/tnca/triton_backend/driver.py\", line 246, in __call__\n    runs = [self._launch_once(session, module, values, grid, guard, poison,\n            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/tmp/r40_mmio_journal25_native/python/tnca/triton_backend/driver.py\", line 427, in _launch_once\n    raise TNCALaunchError(f'{self.metadata.name}: {event.error}')\ntnca.triton_backend.driver.TNCALaunchError: triton_poi_fused_add_mul_0: [DEVICE_LOST] the device process is not running\n  exit: 1\n  log: /tmp/r40_mmio_journal25_native/sim/build/u50-sim/link-1his1__i/regs.log\n  tail: ['tnca_fpga_regs: up (words=147456)', 'FAIL tnca_core assert tnca_multicore_board_regs.dut.device.system.shell.u_system.g_tile[1].u_tile.u_core @3324375000: reservation disagrees with reality (sched=0 rsv0=x alu=0 fp=0 mul=0) cycle=332427 running=1000 rsv=xxxxxxxx pc=0000000000001408 ctx=2 major=11 func=01 dst=2 delay=X issue(valid,stall,kill,book)=xx0x hazard=0 lsu=0 fpu=0 mtx=0 arrive=0 rsv_stall=x steal=0 vrf=x', 'FATAL: rtl/core/tnca_core.v:2712: scheduled writeback reservation mismatch', '       Time: 3324375000  Scope: tnca_multicore_board_regs.dut.device.system.shell.u_system.g_tile[1].u_tile.u_core']\n  try: call Session.recover() to start a new epoch\n"
+  },
+  "r40_mmio_journal25_failure_replay": {
+    "exit": "1\n",
+    "log": "tnca_fpga_regs: up (words=147456)\nFAIL tnca_core assert tnca_multicore_board_regs.dut.device.system.shell.u_system.g_tile[1].u_tile.u_core @3324375000: reservation disagrees with reality (sched=0 rsv0=x alu=0 fp=0 mul=0) cycle=332427 running=1000 rsv=xxxxxxxx pc=0000000000001408 ctx=2 major=11 func=01 dst=2 delay=X issue(valid,stall,kill,book)=xx0x hazard=0 lsu=0 fpu=0 mtx=0 arrive=0 rsv_stall=x steal=0 vrf=x\nFATAL: rtl/core/tnca_core.v:2712: scheduled writeback reservation mismatch\n       Time: 3324375000  Scope: tnca_multicore_board_regs.dut.device.system.shell.u_system.g_tile[1].u_tile.u_core\nMMIO journal replay FAIL\n"
+  }
+}

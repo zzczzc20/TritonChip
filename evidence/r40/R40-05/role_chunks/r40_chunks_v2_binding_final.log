@@ -1,0 +1,55 @@
+PHYSICAL GRID TRITON VECTOR PASS elements=257 programs=17 host_launches=1
+PHYSICAL GRID RUNTIME PASS programs=455 exact_atomic_count=455 host_launches=1
+The backend conformance suite
+  5 case(s) in 5 group(s), against 1 backend(s)
+    sim-multicore CONF-LIFE    PASS  open, query, quiesce, close
+      ok  [liveness] alive after open: the process exists
+      ok  [declaration] capabilities: ['bench', 'completion_counters', 'concurrent_requests', 'fau
+      ok  [protocol] PING: seq 2, status 0, served 2
+      ok  [protocol] QUIESCE on an idle device: seq 3, status 0, 0 cycle(s)
+      ok  [protocol] an operation the device does not have: status 3
+    sim-multicore CONF-XFER    PASS  upload, download, alignment, range
+      ok  [protocol] UPLOAD: seq 5, status 0, 4 word(s)
+      ok  [protocol+oracle] DOWNLOAD returns what went in: oracle: the four words the host wrote; 
+      ok  [oracle] a single word at an offset: oracle: 0xfedcba9876543210
+      ok  [protocol] an unaligned upload: [ARGUMENT_INVALID] refused
+      ok  [protocol] an unaligned download: [ARGUMENT_INVALID] refused
+      ok  [protocol] a transfer past the end of memory: status 3
+    sim-multicore CONF-COMPAT  PASS  what the backend claims to be
+      ok  [declaration] the backend says what it is: medium 'a shared directory', reaches 'the RTL
+      ok  [registry] no backend claims platform-verified: states ['interface-defined', 'reference-
+    sim-multicore CONF-DONE    PASS  a launch that succeeds, and what it reports
+      ok  [protocol] LAUNCH: seq 11, status 0, 34 cycle(s)
+      ok  [protocol] the declared completion counters are nonzero: global makespan 34
+      ok  [oracle] the kernel wrote what the oracle says: oracle: 0xdefaced, got 0xdefaced
+      ok  [protocol+oracle] a second launch in the same session: no restart in between; the oracle
+    sim-multicore CONF-FAULT   PASS  a launch that traps, and after it
+      ok  [protocol] a trapping kernel is a FAULT: status 1, seq 17
+      ok  [declaration] fault detail is explicitly unavailable: physical-grid completion reports s
+      ok  [protocol] the session still works after a fault: status 0
+
+  conformance            PASS   1 of 1 backend(s) measured
+GRID DEADLINE PASS
+tb/tb_grid_deadline.v:21: $finish called at 360000 (1ps)
+MULTICORE SHELL GRID PASS N=1 id=9 status=3 cycles=1552
+MULTICORE SHELL GRID PASS N=1 id=10 status=3 cycles=1560
+MULTICORE SHELL GRID PASS N=1 id=13 status=2 cycles=1663
+MULTICORE SHELL GRID PASS N=1 id=11 status=0 cycles=39158
+MULTICORE SHELL GRID PASS N=1 id=12 status=0 cycles=74422
+MULTICORE PERSISTENT SHELL PASS N=1
+tb/device/tb_multicore_shell.v:83: $finish called at 796070000 (1ps)
+MULTICORE SHELL GRID PASS N=3 id=9 status=3 cycles=1552
+MULTICORE SHELL GRID PASS N=3 id=10 status=3 cycles=1560
+MULTICORE SHELL GRID PASS N=3 id=13 status=2 cycles=1673
+MULTICORE SHELL GRID PASS N=3 id=11 status=0 cycles=14663
+MULTICORE SHELL GRID PASS N=3 id=12 status=0 cycles=26806
+MULTICORE PERSISTENT SHELL PASS N=3
+tb/device/tb_multicore_shell.v:83: $finish called at 328750000 (1ps)
+MULTICORE SHELL GRID PASS N=8 id=9 status=3 cycles=1552
+MULTICORE SHELL GRID PASS N=8 id=10 status=3 cycles=1560
+MULTICORE SHELL GRID PASS N=8 id=13 status=2 cycles=1705
+MULTICORE SHELL GRID PASS N=8 id=11 status=0 cycles=7734
+MULTICORE SHELL GRID PASS N=8 id=12 status=0 cycles=13365
+MULTICORE PERSISTENT SHELL PASS N=8
+tb/device/tb_multicore_shell.v:83: $finish called at 203670000 (1ps)
+r40-multicore-shell-tests PASS

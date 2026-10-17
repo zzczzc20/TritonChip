@@ -1,0 +1,31 @@
+{
+  "scope": "source audit, not gate evidence",
+  "status": "not-measured",
+  "knobs": {
+    "TNCA_DCO": {
+      "matches": [],
+      "result": "no literal consumer found"
+    },
+    "TNCA_LOCALITY": {
+      "matches": [],
+      "result": "no literal consumer found"
+    },
+    "TNCA_PIPELINE": {
+      "matches": [
+        {
+          "path": "python/tnca/aot.py",
+          "symbol": "_pipeline_stages_default",
+          "sha256": "f6fc417becc32a08d37912523c375f704e1680d8364c15bf756391291ae8ffaa"
+        }
+      ],
+      "result": "Frozen control implemented; standard Torch numerical validation at stages1/2/3 completed; final-image long-K/overlap measurements not-measured",
+      "evidence": "../../R40-07/frozen_stage_control/README.md"
+    },
+    "TNCA_TUNE": {
+      "matches": [],
+      "result": "no literal consumer found"
+    }
+  },
+  "historical_software_commit": "ba56eb05d3b516db7013766cdf662ac434a6b291",
+  "software_base_commit": "34820bf6a78cffd91d45aab1209550d5d8de27f2"
+}

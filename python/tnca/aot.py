@@ -45,6 +45,9 @@ ABI_VERSION = list(abi.ABI_VERSION)
 # something and been told nothing, and the artifact they get back is not the
 # one they asked for (CMP-02).
 KNOWN_OPTIONS = {
+    'bank_alloc': 'int, 0 or 1; use the target bank-aware vector allocator',
+    'packed_window_unpack': 'int, 0 or 1; software lane unpack of packed FP16/BF16 DMA windows',
+    'window_reuse': 'int, 0 or 1; reuse disjoint awaited single-role window lifetimes',
     'no_ll': 'bool; at opt_level 2, switch the layout algebra off and use a legal plan instead. The ablation of phase 3.5 section 4.3, not a fallback: O2 without it never silently stops using LinearLayout',
     'opt_level': 'int, 0..2. 0 is the frozen baseline and emits what this driver has always emitted. 1 runs the pinned upstream canonicalizer and CSE over the kernel and lowers a constant to its narrowest correct form. 2 adds the layout and allocation work (phase 3.5 section 4.3)',
     'debug': 'bool; adds a compile report, never changes the code',
@@ -58,17 +61,20 @@ KNOWN_OPTIONS = {
     'sparse_tensormaps': 'int, 0 or 1. 1 stores only the non-zero words of a TensorMap the '
                          'kernel builds in scratch, which the launch path hands over zero-filled '
                          '(7 stores of 32 for rank 2)',
+    'physical_chunks': 'int, 0 or 1. Bounded global-PID chunks for the physical dispatcher; requires chunk-capable runtime/RTL',
     'rctx_spmd': 'int, 0 or 1. 1 runs a grid row on every Role Context of the target in one '
                  'launch, context r looping over programs r, r + R, ... (R39-05 Mode B, '
                  'tnca_cc.rctx_spmd), when the kernel shares nothing between programs but '
                  'memory; the manifest says so, and a refusal is recorded in the provenance',
-    'rctx_roles': 'int, 0 or 1. 1 compiles a loop that fills windows an MMA reads as two '
+    'rctx_roles': 'int, 0, 1 or 2. 1 compiles a loop that fills windows an MMA reads as two '
                   'roles of one program on a Role Context pair -- a producer issuing the '
                   'transfers and a consumer running the MMAs and the epilogue, over a '
-                  'two-stage ring of windows (R39-12 Mode A, tnca_cc.partition.specialize_loop) '
-                  '-- on a target with rctx_pair, the pairs running a grid row as rctx_spmd '
+                  'ring of windows (R39-12 Mode A, tnca_cc.partition.specialize_loop) '
+                  '-- 2 forces the legal split; on a target with rctx_pair, the pairs run a grid row as rctx_spmd '
                   'does, where tnca_cc.partition.ring_estimate expects a gain; 2 skips the '
                   'estimate (tests of the mechanism); a refusal is recorded in the provenance',
+    'rctx_stages': 'int, 1, 2 or 3. Number of buffers in the producer/consumer ring; '
+                   'default 2. Resource and lifetime checks still apply (R40-07)',
     'alias': 'list of [param, param] pairs that MAY point at the same '
              'memory. An elementwise kernel that reads and writes the same '
              'index can run in place; one that does not is a different '
@@ -168,7 +174,7 @@ def _strip_asm(asm_text):
     return out
 
 
-def measure_resources(asm_text, target, code=b''):
+def measure_resources(asm_text, target, code=b'', *, include_windows=False):
     """Counted from the emitted instructions, or UNKNOWN.
 
     Returned alongside the profile's limits so a reader can see the headroom
@@ -186,6 +192,19 @@ def measure_resources(asm_text, target, code=b''):
             for m in rx.finditer(line):
                 seen.add(int(m.group(1)))
         used[kind] = sorted(seen)
+
+    if include_windows:
+        # w.def encodes a vector range as immediates, so ordinary vN
+        # operand scans miss DMA/MMA's implicit register accesses. Use
+        # the union: reused and explicitly aliased ranges count once.
+        vectors = set(used['vector'])
+        for line in asm_text.splitlines():
+            match = re.fullmatch(r'\s*w\.def\s+w\d+,\s*#(\d+),\s*#(\d+)\s*',
+                                 line.split('//')[0])
+            if match:
+                start, count = map(int, match.groups())
+                vectors.update(range(start, start + count))
+        used['vector'] = sorted(vectors)
 
     issued = sum(1 for line in body if _ASYNC.match(line))
     # Two different counts, and they are not the same number: `.li` expands
@@ -254,6 +273,18 @@ def _alias_pairs(options, params):
     return sorted(pairs)
 
 
+def _pipeline_stages_default():
+    """Resolve the frozen stage control without silently ignoring legacy input."""
+    frozen = os.environ.get('TNCA_PIPELINE')
+    legacy = os.environ.get('TNCA_RCTX_STAGES')
+    if frozen is not None and legacy is not None and int(frozen) != int(legacy):
+        raise ValueError('TNCA_PIPELINE conflicts with TNCA_RCTX_STAGES')
+    value = int(frozen if frozen is not None else (legacy if legacy is not None else '2'))
+    if value not in (1, 2, 3):
+        raise ValueError('pipeline stages must be 1, 2 or 3')
+    return value
+
+
 def check_options(options):
     options = dict(options or {})
     unknown = sorted(set(options) - set(KNOWN_OPTIONS))
@@ -264,7 +295,42 @@ def check_options(options):
             remedy='an option this driver does not understand is refused '
                    'rather than ignored, so a misspelling cannot silently '
                    'produce a different artifact')
+    # Resolve allocation/lowering switches before either cache lookup or
+    # compilation. Default off stays absent for the frozen B39 contract.
+    for name, env in (('physical_chunks', 'TNCA_PHYSICAL_CHUNKS'),
+                      ('packed_window_unpack', 'TNCA_PACKED_WINDOW_UNPACK'),
+                      ('window_reuse', 'TNCA_WINDOW_REUSE'),
+                      ('bank_alloc', 'TNCA_BANK_ALLOC'),
+                      ('index_opt', 'TNCA_INDEX_OPT'),
+                      ('sparse_tensormaps', 'TNCA_SPARSE_TENSORMAPS'),
+                      ('schedule', 'TNCA_SCHEDULE'),
+                      ('rctx_spmd', 'TNCA_RCTX_SPMD'),
+                      ('rctx_roles', 'TNCA_RCTX_ROLES')):
+        value = options.get(name)
+        if value is None:
+            value = _physical_chunks_default() if name == 'physical_chunks' else int(os.environ.get(env, '0'))
+            options.pop(name, None)
+            if value:
+                options[name] = value
+        allowed = (0, 1, 2) if name == 'rctx_roles' else (0, 1)
+        if value not in allowed:
+            raise ValueError(f'{name} must be one of {allowed}')
+    stages = options.get('rctx_stages')
+    if stages is None:
+        stages = _pipeline_stages_default()
+        options.pop('rctx_stages', None)
+        if stages != 2:
+            options['rctx_stages'] = stages
+    if type(stages) is not int or stages not in (1, 2, 3):
+        raise ValueError('rctx_stages must be 1, 2 or 3')
     return options
+
+
+def _physical_chunks_default():
+    if 'TNCA_PHYSICAL_CHUNKS' in os.environ:
+        return int(os.environ['TNCA_PHYSICAL_CHUNKS'])
+    from .backend import physical_grid
+    return int(physical_grid(os.environ.get('TNCA_BACKEND', 'sim-file')))
 
 
 def _constexpr_metadata(values):
@@ -468,7 +534,8 @@ def compile_aot(source, *, kernel_name=None, signature=None, constexprs=None,
 def _seal(output, kernel_name, params, asm_text, code, report, target, pinfo,
           constexprs, options, prov, source_kind):
     """Manifest and container for compiled code: shared by every entry point."""
-    measured = measure_resources(asm_text, target, code=code)
+    measured = measure_resources(asm_text, target, code=code,
+                                 include_windows='window_lifetime' in prov.entries)
     # The emitter cannot see this one: it is a requirement the frontend
     # recorded, not a count of something in the assembly.
     if 'scratch_bytes' in report:
@@ -649,10 +716,39 @@ def _lower_ttir(module, ctx, kernel_name, params, target, prov, options, stages,
     sparse = (options or {}).get('sparse_tensormaps')
     if sparse is None:
         sparse = int(os.environ.get('TNCA_SPARSE_TENSORMAPS', '0'))
+    window_reuse = (options or {}).get('window_reuse')
+    if window_reuse is None:
+        window_reuse = int(os.environ.get('TNCA_WINDOW_REUSE', '0'))
+    if window_reuse not in (0, 1):
+        raise ValueError('window_reuse must be 0 or 1')
+    packed_unpack = (options or {}).get('packed_window_unpack')
+    if packed_unpack is None:
+        packed_unpack = int(os.environ.get('TNCA_PACKED_WINDOW_UNPACK', '0'))
+    if packed_unpack not in (0, 1):
+        raise ValueError('packed_window_unpack must be 0 or 1')
     kernel, _builder, imp = adapter.import_ttir(
         module, kernel_name, _placeholders(params),
         param_names=[n for n, _t in params], target=target, prov=prov,
-        dynamic_args=True, index_opt=bool(index_opt), sparse_maps=bool(sparse))
+        dynamic_args=True, index_opt=bool(index_opt), sparse_maps=bool(sparse),
+        window_reuse=bool(window_reuse), packed_window_unpack=bool(packed_unpack))
+    if getattr(imp, '_packed_unpack_rows', 0):
+        prov.record('packed_window_unpack_rows', imp._packed_unpack_rows)
+    if getattr(imp, '_mma_retiles', None):
+        prov.record('mma_retiles', sorted(imp._mma_retiles))
+    reduction_tiles = sorted(getattr(imp, '_reduction_tiles', ()))
+    if reduction_tiles and int(os.environ.get('TNCA_REDUCTION_ROWS', '1')) > 1:
+        prov.record('reduction_tiles', reduction_tiles)
+    block_widths = sorted(getattr(imp, '_register_block_widths', ()))
+    if block_widths:
+        from tnca_cc.vector_spill import spill as spill_vectors
+        spill_plan = spill_vectors(imp)
+        prov.record('vector_spill', spill_plan)
+        prov.record('register_blocks', {'vlen': target.vlen, 'widths': block_widths,
+                                       'reductions': sorted(getattr(imp, '_register_reductions', ())),
+                                       'gemm_tiles': sorted(getattr(imp, '_logical_gemm_tiles', ())),
+                                       'mma_fragment_reuses': getattr(imp, '_mma_fragment_reuses', 0),
+                                       'predicate_rematerializations': len(getattr(imp, '_register_predicates', {})),
+                                       'external_spill_bytes': spill_plan.get('scratch_bytes', 0)})
     if sparse:
         prov.record('sparse_tensormaps', True)
     if index_opt:
@@ -743,14 +839,14 @@ def _lower_ttir(module, ctx, kernel_name, params, target, prov, options, stages,
     if not programs_per_launch:
         programs_per_launch = _rctx_spmd(kernel, target, prov, options, stages,
                                          scratch_bytes, 8 * len(params))
-    for retry in ('none', 'off'):
+    for retry in ('none', 'off', 'fail'):
         if roles_per_program == 2:
             break
         try:
             asm_text, cg = _emit(kernel, target, prov, opt_level, options, stages)
             break
         except CompileError as e:
-            if programs_per_launch == 1 or e.detail.get('kind') != 'ResourceError':
+            if retry == 'fail' or programs_per_launch == 1 or e.detail.get('kind') != 'ResourceError':
                 raise
             prov.record('rctx_spmd_fallback', f'{retry}: {str(e)[:160]}')
             kernel = _copy.deepcopy(plain)
@@ -771,6 +867,8 @@ def _lower_ttir(module, ctx, kernel_name, params, target, prov, options, stages,
                   scratch_bytes=scratch_bytes,
                   programs_per_launch=programs_per_launch,
                   roles_per_program=roles_per_program)
+    if (options or {}).get("physical_chunks", 0):
+        report["physical_chunks"]=True
     return kernel_name, params, asm_text, code, symbols, report, stages
 
 
@@ -811,10 +909,12 @@ def _rctx_roles(kernel, target, prov, options, stages, scratch_bytes, scratch_sl
         info = None
         if why is None:
             try:
-                rctx_spmd.apply(trial, pairs, scratch_slot, scratch_bytes, pair=True)
+                rctx_spmd.apply(trial, pairs, scratch_slot, scratch_bytes, pair=True,
+                                physical_chunk=bool((options or {}).get("physical_chunks", 0)))
                 force = int((options or {}).get('rctx_roles')
                             or os.environ.get('TNCA_RCTX_ROLES', '0') or 0) >= 2
-                info = partition.specialize_loop(trial, target, stages=2, force=force)
+                ring_stages = (options or {}).get('rctx_stages', 2)
+                info = partition.specialize_loop(trial, target, stages=ring_stages, force=force)
             except (partition.NotSpecialised, ValueError) as e:
                 why = str(e)
         if info is not None and sizes is not None:
@@ -877,7 +977,8 @@ def _rctx_spmd(kernel, target, prov, options, stages, scratch_bytes, scratch_slo
         prov.record('rctx_spmd_refused', why)
         return 1
     try:
-        hoisted = rctx_spmd.apply(kernel, contexts, scratch_slot, scratch_bytes, hoist=hoist)
+        hoisted = rctx_spmd.apply(kernel, contexts, scratch_slot, scratch_bytes, hoist=hoist,
+                                    physical_chunk=bool((options or {}).get("physical_chunks", 0)))
     except ValueError as e:            # nothing was changed
         prov.record('rctx_spmd_refused', str(e))
         return 1
@@ -900,13 +1001,24 @@ def _emit(kernel, target, prov, opt_level, options, stages):
     """
     options = options or {}
     check = bool(options.get('check_protocol', False))
+    bank_alloc = options.get('bank_alloc')
+    if bank_alloc is None:
+        bank_alloc = int(os.environ.get('TNCA_BANK_ALLOC', '0'))
+    if bank_alloc not in (0, 1):
+        raise ValueError('bank_alloc must be 0 or 1')
+    window_reuse = options.get('window_reuse')
+    if window_reuse is None:
+        window_reuse = int(os.environ.get('TNCA_WINDOW_REUSE', '0'))
+    if window_reuse not in (0, 1):
+        raise ValueError('window_reuse must be 0 or 1')
     # Unset, the environment decides (TNCA_SCHEDULE, default off), so a
     # whole suite -- `make r37`, the torch tests -- can run scheduled.
     schedule = options.get('schedule')
     if schedule is None:
         schedule = int(os.environ.get('TNCA_SCHEDULE', '0'))
     if not schedule:
-        return adapter.emit(kernel, target, prov=prov, opt_level=opt_level, check_protocol=check)
+        return adapter.emit(kernel, target, prov=prov, opt_level=opt_level,
+                            check_protocol=check, bank_alloc=bank_alloc, window_reuse=window_reuse)
     import copy
     from tnca_cc.schedule import schedule_kernel
     original = copy.deepcopy(kernel)
@@ -926,13 +1038,14 @@ def _emit(kernel, target, prov, opt_level, options, stages):
         stages.record('tnir_sched', str(trial))
         try:
             return adapter.emit(trial, target, prov=prov, opt_level=opt_level,
-                                check_protocol=check)
+                                check_protocol=check, bank_alloc=bank_alloc, window_reuse=window_reuse)
         except CompileError as e:
             if e.detail.get('kind') != 'ResourceError':
                 raise
             last = e
     prov.record('schedule_fallback', f'program order: {str(last)[:200]}')
-    return adapter.emit(original, target, prov=prov, opt_level=opt_level, check_protocol=check)
+    return adapter.emit(original, target, prov=prov, opt_level=opt_level,
+                        check_protocol=check, bank_alloc=bank_alloc, window_reuse=window_reuse)
 
 
 def _compile_tnca_ir(build, kernel_name, signature, constexprs, target, prov,
@@ -1067,8 +1180,10 @@ def _manifest(kernel_name, params, target, pinfo, constexprs, options, prov,
             'role_mask': (1 << len(roles)) - 1,
             'program_to_role': {str(i): roles[i * per_program:(i + 1) * per_program]
                                 for i in range(programs)},
-            'grid_dims_supported': [True, False, False],
-            'dynamic_constraints': {},
+            'grid_dims_supported': ([True, True, True] if (report or {}).get('physical_chunks')
+                                    else [True, False, False]),
+            'dynamic_constraints': ({'program_partition': 'physical-x-chunk-v1'}
+                                    if (report or {}).get('physical_chunks') else {}),
         },
         'resources': {
             'rf_private_per_role': {

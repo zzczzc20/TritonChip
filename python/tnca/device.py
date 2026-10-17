@@ -50,6 +50,11 @@ BENCH_NAME = {
     'core-vrf-sync-v4/slow': 'tnca_device_vrf4_slow.vvp',
     'core-vrf-sync-v5': 'tnca_device_vrf5.vvp',
     'core-vrf-sync-v5/slow': 'tnca_device_vrf5_slow.vvp',
+    # R40-04: external memory. Every address from the heap up goes through
+    # rtl/fpga/tnca_axi_bridge.v to an AXI memory, as on the U280's HBM image;
+    # the architecture is v5's. Its timing is the AXI model's (+axi_* plusargs,
+    # TNCA_DEVICE_PLUSARGS).
+    'core-vrf-sync-v5/hbm': 'tnca_device_vrf5_hbm.vvp',
 }
 
 # Parameters a profile's device is elaborated with. Both profiles come from
@@ -77,6 +82,11 @@ _FOUR = ['-P', 'tnca_device.NUM_RCTX=4', '-P', 'tnca_device.RCTX_W=2',
 _V5 = ['-P', 'tnca_device.HAS_TENSOR_XPOSE=1', '-P', 'tnca_device.RPAIR=1',
        '-P', 'tnca_device.MTX_ABUF=1']
 _R39_SW5 = [a.replace('RCTX_SWITCH=1', 'RCTX_SWITCH=2') for a in _R39_SW]
+# R40-04: the AXI window of the /hbm memory mode, in 64-bit words (32 MiB).
+HBM_SIM_WORDS = 1 << 22
+HBM_LOCAL_LIMIT = 0x20000
+_HBM = ['-P', 'tnca_device.DATA_AXI=1', '-P', f'tnca_device.AXI_WORDS={HBM_SIM_WORDS}',
+        '-P', f'tnca_device.LOCAL_LIMIT={HBM_LOCAL_LIMIT}']
 
 BENCH_PARAMS = {
     'core-vrf-sync-v1': _BANKED,
@@ -90,6 +100,7 @@ BENCH_PARAMS = {
     'core-vrf-sync-v4/slow': _BANKED + _R39_SW + _FOUR + _SLOW,
     'core-vrf-sync-v5': _BANKED + _R39_SW5 + _FOUR + _V5,
     'core-vrf-sync-v5/slow': _BANKED + _R39_SW5 + _FOUR + _V5 + _SLOW,
+    'core-vrf-sync-v5/hbm': _BANKED + _R39_SW5 + _FOUR + _V5 + _HBM,
     'core-xpose-v1': ['-P', 'tnca_device.HAS_TENSOR_XPOSE=1'],
     'core-xpose-v1/slow': ['-P', 'tnca_device.HAS_TENSOR_XPOSE=1'] + _SLOW,
 }
@@ -103,7 +114,11 @@ BENCH_PARAMS = {
 # overrides are part of the cache key, and archbench records them with
 # `--set` like any other knob.
 RTL_SWITCHES = ('VRF_BYPASS', 'FE_NOBUBBLE', 'VRF_PREFETCH', 'RCTX_SWITCH', 'LSU_INFLIGHT',
-                'FPU_OVERLAP', 'MTX_ABUF')
+                'FPU_OVERLAP', 'MTX_ABUF',
+                # R40-04's AXI mechanisms, for an /hbm memory mode
+                # (tb/device/tnca_device.v): burst lines, buffered lines,
+                # lines ahead, writes in flight
+                'AXI_RAM_CACHE', 'AXI_LOCAL_PIPE', 'AXI_LINE', 'AXI_LB_N', 'AXI_PF', 'AXI_WAIT_N', 'AXI_OUT_N')
 
 
 def rtl_overrides():
@@ -123,6 +138,15 @@ def bench_params(profile):
     """The -P arguments this profile's device is elaborated with."""
     return BENCH_PARAMS.get(profile, []) + [
         a for k, v in rtl_overrides() for a in ('-P', f'tnca_device.{k}={v}')]
+
+
+def memory_limit(profile):
+    """The end of the device memory a Session's heap may use, in bytes: the
+    512 KiB the on-chip devices have, or for an /hbm memory mode the AXI
+    window above the on-chip region."""
+    if profile.endswith('/hbm'):
+        return HBM_LOCAL_LIMIT + HBM_SIM_WORDS * 8
+    return 0x80000
 
 
 def base_profile(name):
@@ -484,7 +508,10 @@ def prepare(profile='core-sim', *, force=False, verbose=True):
              '-y', os.path.join(rtl, 'core'),
              '-y', os.path.join(rtl, 'common'),
              '-y', os.path.join(rtl, 'gen'),
-             '-y', os.path.join(tb, 'common')]
+             '-y', os.path.join(tb, 'common'),
+             # rtl/fpga for the AXI bridge an /hbm memory mode puts in front
+             # of its memory; a module there is only elaborated if named.
+             '-y', os.path.join(rtl, 'fpga')]
             + bench_params(profile)
             + ['-o', target, source, shell])
     if verbose:

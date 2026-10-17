@@ -1,0 +1,2 @@
+MULTICORE DMA OWNERSHIP PASS cores=3 ports=3 pipeline=2 board=True
+dirty download, clean invalidation, partial-line preservation, zero/range guards PASS

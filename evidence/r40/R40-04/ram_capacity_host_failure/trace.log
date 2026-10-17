@@ -1,0 +1,66 @@
+W1013 08:10:43.078000 241224 torch/utils/cpp_extension.py:183] No CUDA runtime is found, using CUDA_HOME='/usr/local/cuda'
+CHECK registered
+CHECK pad allocated
+CHECK input upload
+Timeout (0:02:00)!
+Thread 0x0000e042da4df180 (most recent call first):
+  File "/home/zhongchun/tritonchip-r40-bar-full/python/tnca/transport.py", line 332 in _await
+  File "/home/zhongchun/tritonchip-r40-bar-full/python/tnca/transport.py", line 279 in request
+  File "/home/zhongchun/tritonchip-r40-bar-full/python/tnca/transport.py", line 48 in call
+  File "/home/zhongchun/tritonchip-r40-bar-full/python/tnca/transport.py", line 407 in launch
+  File "/home/zhongchun/tritonchip-r40-bar-full/python/tnca/runtime.py", line 867 in _run_one
+  File "/home/zhongchun/tritonchip-r40-bar-full/python/tnca/runtime.py", line 774 in _run_queue
+  File "/usr/lib/python3.12/threading.py", line 1010 in run
+  File "/usr/lib/python3.12/threading.py", line 1073 in _bootstrap_inner
+  File "/usr/lib/python3.12/threading.py", line 1030 in _bootstrap
+
+Thread 0x0000e043c9655720 (most recent call first):
+  File "/usr/lib/python3.12/threading.py", line 359 in wait
+  File "/usr/lib/python3.12/threading.py", line 655 in wait
+  File "/home/zhongchun/tritonchip-r40-bar-full/python/tnca/runtime.py", line 960 in wait
+  File "/home/zhongchun/tritonchip-r40-bar-full/python/tnca/triton_backend/driver.py", line 413 in _launch_once
+  File "/home/zhongchun/tritonchip-r40-bar-full/python/tnca/triton_backend/driver.py", line 238 in __call__
+  File "<string>", line 5 in launcher
+  File "/home/zhongchun/tc_env/torchenv/lib/python3.12/site-packages/torch/_inductor/runtime/triton_heuristics.py", line 2558 in run
+  File "/tmp/torchinductor_zhongchun/d2/cd2iirhqyvntvow3zwln3ikow2bjfmpabq6xcciks2uitjczgrsg.py", line 103 in call
+  File "/home/zhongchun/tc_env/torchenv/lib/python3.12/site-packages/torch/_inductor/output_code.py", line 828 in __call__
+  File "/home/zhongchun/tc_env/torchenv/lib/python3.12/site-packages/torch/_functorch/_aot_autograd/codegen.py:codegen(runtime_wrapper_orchestration)", line 8 in _runtime_wrapper
+  File "/home/zhongchun/tc_env/torchenv/lib/python3.12/site-packages/torch/_functorch/_aot_autograd/runtime_wrappers.py", line 1189 in runtime_wrapper
+  File "/home/zhongchun/tc_env/torchenv/lib/python3.12/site-packages/torch/_functorch/aot_autograd.py", line 1289 in forward
+  File "/home/zhongchun/tc_env/torchenv/lib/python3.12/site-packages/torch/_dynamo/eval_frame.py", line 1548 in _fn
+  File "/home/zhongchun/tritonchip-r40-bar-full/sim/build/r40/ram_capacity_trace/child.py", line 37 in <lambda>
+  File "/home/zhongchun/tc_env/torchenv/lib/python3.12/site-packages/torch/_dynamo/eval_frame.py", line 1261 in compile_wrapper
+  File "/home/zhongchun/tritonchip-r40-bar-full/sim/build/r40/ram_capacity_trace/child.py", line 38 in <module>
+Timeout (0:02:00)!
+Thread 0x0000e042da4df180 (most recent call first):
+  File "/home/zhongchun/tritonchip-r40-bar-full/python/tnca/transport.py", line 332 in _await
+  File "/home/zhongchun/tritonchip-r40-bar-full/python/tnca/transport.py", line 279 in request
+  File "/home/zhongchun/tritonchip-r40-bar-full/python/tnca/transport.py", line 48 in call
+  File "/home/zhongchun/tritonchip-r40-bar-full/python/tnca/transport.py", line 407 in launch
+  File "/home/zhongchun/tritonchip-r40-bar-full/python/tnca/runtime.py", line 867 in _run_one
+  File "/home/zhongchun/tritonchip-r40-bar-full/python/tnca/runtime.py", line 774 in _run_queue
+  File "/usr/lib/python3.12/threading.py", line 1010 in run
+  File "/usr/lib/python3.12/threading.py", line 1073 in _bootstrap_inner
+  File "/usr/lib/python3.12/threading.py", line 1030 in _bootstrap
+
+Thread 0x0000e043c9655720 (most recent call first):
+  File "/usr/lib/python3.12/threading.py", line 359 in wait
+  File "/usr/lib/python3.12/threading.py", line 655 in wait
+  File "/home/zhongchun/tritonchip-r40-bar-full/python/tnca/runtime.py", line 960 in wait
+  File "/home/zhongchun/tritonchip-r40-bar-full/python/tnca/triton_backend/driver.py", line 413 in _launch_once
+  File "/home/zhongchun/tritonchip-r40-bar-full/python/tnca/triton_backend/driver.py", line 238 in __call__
+  File "<string>", line 5 in launcher
+  File "/home/zhongchun/tc_env/torchenv/lib/python3.12/site-packages/torch/_inductor/runtime/triton_heuristics.py", line 2558 in run
+  File "/tmp/torchinductor_zhongchun/d2/cd2iirhqyvntvow3zwln3ikow2bjfmpabq6xcciks2uitjczgrsg.py", line 103 in call
+  File "/home/zhongchun/tc_env/torchenv/lib/python3.12/site-packages/torch/_inductor/output_code.py", line 828 in __call__
+  File "/home/zhongchun/tc_env/torchenv/lib/python3.12/site-packages/torch/_functorch/_aot_autograd/codegen.py:codegen(runtime_wrapper_orchestration)", line 8 in _runtime_wrapper
+  File "/home/zhongchun/tc_env/torchenv/lib/python3.12/site-packages/torch/_functorch/_aot_autograd/runtime_wrappers.py", line 1189 in runtime_wrapper
+  File "/home/zhongchun/tc_env/torchenv/lib/python3.12/site-packages/torch/_functorch/aot_autograd.py", line 1289 in forward
+  File "/home/zhongchun/tc_env/torchenv/lib/python3.12/site-packages/torch/_dynamo/eval_frame.py", line 1548 in _fn
+  File "/home/zhongchun/tritonchip-r40-bar-full/sim/build/r40/ram_capacity_trace/child.py", line 37 in <lambda>
+  File "/home/zhongchun/tc_env/torchenv/lib/python3.12/site-packages/torch/_dynamo/eval_frame.py", line 1261 in compile_wrapper
+  File "/home/zhongchun/tritonchip-r40-bar-full/sim/build/r40/ram_capacity_trace/child.py", line 38 in <module>
+Timeout (0:02:00)!
+Thread 0x0000e042da4df180 (most recent call first):
+  File "/usr/lib/python3.12/subprocess.py", line 2005 in _internal_poll
+  File 

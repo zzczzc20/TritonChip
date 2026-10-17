@@ -1,0 +1,18 @@
+{
+  "schema": "tnca-r40-grid-extension/1",
+  "legacy_contract": "spec/r2_transport_v1.json (unchanged)",
+  "default": "legacy admission cap of 4096 programs; original opcode-3 packet",
+  "opt_in": "Session(large_grid=True) or TNCA_LARGE_GRID=1",
+  "operations": {
+    "8": {"name": "GRID_CAP", "read_only": true, "r0": "32 (bits per axis)", "r1": "16777216 (runtime streaming admission budget)", "old_image": "REFUSED; retain legacy cap"},
+    "9": {"name": "LAUNCH32", "a0": "entry PC", "a1": "argument block address", "a2": "unchanged role mask and slice bits", "a3": "pid_x | pid_y<<32", "a4": "pid_z | npid_x<<32", "a5": "npid_y | npid_z<<32"}
+  },
+  "rules": [
+    "Query capability before admitting a grid above the legacy cap.",
+    "Use opcode 9 only if a PID or extent exceeds 65535; opcode 3 remains byte-identical otherwise.",
+    "Never silently truncate an axis or infer support from a compile profile.",
+    "Apply admission before argument allocation or kernel execution.",
+    "Existing bounded unfinished queue and role-SPMD looping remain in force.",
+    "This extension decodes wide metadata; it does not introduce a physical multicore dispatcher."
+  ]
+}

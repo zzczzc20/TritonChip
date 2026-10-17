@@ -1,0 +1,40 @@
+{
+  "schema": "tnca-r40-physical-hbm-map/1",
+  "gate_status": "not-measured",
+  "scope": "mapping only; functional PC/port/range and full-suite/model headroom checks are separate",
+  "source_record": {
+    "path": "/tmp/r40_native77_after_publication/results.jsonl",
+    "line_sha256": "67a87672f344987a175a9e281ddf4fbaa3e71350007ebfa33e8dced03ebf142e",
+    "point_id": "model.gpt2_block/tiny/fp16-d64-h4-b1-s16",
+    "software_tree": "files:155336508c3ebbf1e023577d059237b60662df4450553fff937d2273ef152ad1"
+  },
+  "image_sha256": "a3e43ced0b2918169bece31d7fdedbf34b195ec6dc7e4d1f5e67b83c6ea90978",
+  "window": {
+    "base": 0,
+    "size": 268435456,
+    "local_limit": 524288,
+    "dma": true
+  },
+  "connected_memory": {
+    "index": 0,
+    "used": 1,
+    "size": 268435456,
+    "base": 0,
+    "tag": "HBM[0]"
+  },
+  "physical_banks": [
+    {
+      "pc": 0,
+      "memory_index": 0,
+      "tag": "HBM[0]",
+      "base": 0,
+      "size": 268435456,
+      "used": true,
+      "allocated_base": 0,
+      "allocated_size": 268435456
+    }
+  ],
+  "topology_sha256": "343ad91949459bf25c5a58a8babe0b63d6eefec4c0d8f6f94decc1d1a00092ba",
+  "capacity_at_least_1GiB": false,
+  "at_least_two_allocated_physical_pcs": false
+}

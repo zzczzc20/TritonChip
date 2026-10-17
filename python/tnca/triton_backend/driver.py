@@ -74,7 +74,8 @@ class _Sessions:
     def get(cls, profile):
         from tnca.runtime import Session
         backend, kwargs = backend_choice()
-        key = (profile, backend, json.dumps(kwargs, sort_keys=True))
+        key = (profile, backend, json.dumps(kwargs, sort_keys=True),
+               os.environ.get('TNCA_ACTIVE_CORES'))
         with cls.lock:
             s = cls.open.get(key)
             if s is None or s.closed or s.poisoned:
@@ -103,18 +104,47 @@ import atexit as _atexit                                 # noqa: E402
 _atexit.register(_Sessions.close_all)
 
 
-_logs = []
+_log_local = threading.local()
+
+
+def _active_logs():
+    if not hasattr(_log_local, "logs"):
+        _log_local.logs = []
+    return _log_local.logs
 
 
 @contextlib.contextmanager
-def launch_log():
+def launch_log(*, isolated=False):
     """Collect one dict per launch made while open (nested logs all see it)."""
     log = []
-    _logs.append(log)
+    previous = _active_logs() if isolated else None
+    if isolated:
+        _log_local.logs = []
+    _active_logs().append(log)
     try:
         yield log
     finally:
-        _logs.remove(log)
+        # Restore the outer collection before waiting; async entries already
+        # belong to this log and completion does not issue new launches.
+        assert _active_logs().pop() is log
+        if previous is not None:
+            _log_local.logs = previous
+        # An asynchronous launch log is measured through completion, never
+        # just submission. Nested contexts share each entry's final values.
+        for entry in log:
+            ev = entry.pop('_event', None)
+            if ev is not None:
+                session = entry.pop('_session')
+                session.wait(ev)
+                if not ev.ok:
+                    raise TNCALaunchError(f'{entry["kernel"]}: {ev.error}')
+                entry['device_cycles'] = ev.device_cycles
+                entry['program_cycles'] = list(ev.program_cycles or [])
+                entry['device_timing'] = ev.device_timing
+                entry['counters'] = ev.counters
+                stamps = dict(ev.history)
+                entry['host_seconds']['run'] = round(
+                    stamps.get('SUCCEEDED', 0) - stamps.get('RUNNING', 0), 6)
 
 
 class TNCALaunchError(RuntimeError):
@@ -182,7 +212,7 @@ class TNCALauncher:
                          host_seconds=dict(upload=0.0, run=0.0, download=0.0),
                          upload_bytes=sum(storages.values()), download_bytes=0,
                          buffers=len(storages), skipped=True)
-            for log in _logs:
+            for log in _active_logs():
                 log.append(entry)
             if launch_exit_hook is not None:
                 launch_exit_hook(launch_metadata)
@@ -209,9 +239,15 @@ class TNCALauncher:
         session, module = _load(_Sessions.get(self.profile), function)
         guard, poisons = _guards()
         grid = (max(gridX, 1), max(gridY, 1), max(gridZ, 1))
-        runs = [self._launch_once(session, module, values, grid, guard, poison)
+        submit_policy = os.environ.get('TNCA_SUBMIT', 'single')
+        if submit_policy not in ('single', 'batched'):
+            raise TNCALaunchError(f'unsupported TNCA_SUBMIT {submit_policy!r}')
+        asynchronous = submit_policy == 'batched'
+        runs = [self._launch_once(session, module, values, grid, guard, poison,
+                                  asynchronous=asynchronous)
                 for poison in poisons]
         event, outputs, moved, (t_start, t_submit, t_done) = runs[-1]
+        event.stream_id = getattr(stream, 'stream_id', stream)
         if len(runs) > 1:
             differ = sorted({name for k, (name, _raw, data) in outputs.items()
                              if runs[0][1][k][2] != data})
@@ -223,22 +259,32 @@ class TNCALauncher:
         for _name, raw, data in outputs.values():
             if data:
                 raw.copy_(torch.frombuffer(bytearray(data), dtype=torch.uint8))
-        if _logs:
+        from tnca.torch_device.graph import active_capture
+        capture = active_capture()
+        if _active_logs() or capture is not None:
             entry = dict(kernel=self.metadata.name, grid=grid, profile=self.profile,
                          backend=session.backend_name,
+                         stream_id=event.stream_id,
+                         artifact=_artifact_sha256(function), artifact_path=function,
                          device_cycles=event.device_cycles,
                          program_cycles=list(event.program_cycles or []),
+                         device_timing=event.device_timing,
                          counters=event.counters,
                          host_seconds=dict(upload=round(t_submit - t_start, 6),
                                            run=round(t_done - t_submit, 6),
                                            download=round(time.perf_counter() - t_done, 6)),
                          **moved)
-            for log in _logs:
+            if asynchronous:
+                entry.update(_event=event, _session=session)
+            for log in _active_logs():
                 log.append(entry)
+            if capture is not None:
+                capture._append(event._replay_command, entry)
+                del event._replay_command
         if launch_exit_hook is not None:
             launch_exit_hook(launch_metadata)
 
-    def _launch_once(self, session, module, values, grid, guard, poison):
+    def _launch_once(self, session, module, values, grid, guard, poison, *, asynchronous=False):
         """Upload every distinct storage, run the grid, download them.
 
         Returns (event, {storage: (argument name, host bytes view, device
@@ -251,12 +297,52 @@ class TNCALauncher:
         """
         torch = _torch()
         buffers, bound = {}, {}
+        native_staged = {}
+        transfer_policy = os.environ.get('TNCA_TRANSFER_POLICY', 'resident')
+        if transfer_policy not in ('resident', 'per-kernel'):
+            raise TNCALaunchError(f'unknown TNCA_TRANSFER_POLICY {transfer_policy!r}')
         moved = {'upload_bytes': 0, 'download_bytes': 0}
         t_start = time.perf_counter()
 
+        devices = {a.device.type for a in values if isinstance(a, torch.Tensor)} | \
+            {a.base.device.type for a in values if type(a).__name__ == 'TensorDescriptor'
+             and hasattr(a, 'base')}
+        if len(devices) > 1:
+            raise TNCALaunchError(f'{self.metadata.name}: tensors on {sorted(devices)}; a kernel\'s '
+                                  'tensors are all on the tnca device or all on the host')
+        if asynchronous and (devices - {'tnca'} or guard or transfer_policy != 'resident'):
+            raise TNCALaunchError('batched submission requires native resident tensors without staging guards')
+
         def device_ref(name, v):
+            if v.device.type == 'tnca':
+                # R40-01: the tensor lives in device memory already. Its own
+                # buffer and byte offset are the argument; nothing is copied.
+                if guard:
+                    raise TNCALaunchError(f'{name}: TNCA_GUARD_* stages host tensors; '
+                                          'a tnca tensor is not staged')
+                from tnca.torch_device import MEMORY, storage_address
+                buf, base_off = MEMORY.locate(storage_address(v))
+                if buf.session_id != session.id or buf.epoch != session.epoch:
+                    raise TNCALaunchError(f'{name}: its storage belongs to another session or epoch')
+                off = base_off + v.storage_offset() * v.element_size()
+                if transfer_policy == 'per-kernel':
+                    # The native-device staging control uses identical
+                    # compiled code. A distinct storage makes one round trip
+                    # through host bytes into a temporary device buffer; all
+                    # aliases bind to that same buffer with their own offset.
+                    if buf.id not in native_staged:
+                        shadow = session.allocate(buf.size, name=f'staging:{name}')
+                        native_staged[buf.id] = (buf, shadow)
+                        data = session.download(buf)
+                        session.upload(shadow, data)
+                        moved['download_bytes'] += len(data)
+                        moved['upload_bytes'] += len(data)
+                    buf = native_staged[buf.id][1]
+                else:
+                    moved['resident_bytes'] = moved.get('resident_bytes', 0) + v.untyped_storage().nbytes()
+                return (buf, off) if off else buf
             if v.device.type != 'cpu':
-                raise TNCALaunchError(f'{name}: tensor on {v.device}; TNCA stage 1 takes host tensors')
+                raise TNCALaunchError(f'{name}: tensor on {v.device}; TNCA takes host or tnca tensors')
             st = v.untyped_storage()
             key = st.data_ptr()
             if key not in buffers:
@@ -310,8 +396,28 @@ class TNCALauncher:
                     raise TNCALaunchError(f'{name}: None argument')
                 else:
                     raise TNCALaunchError(f'{name}: unsupported argument type {type(v).__name__}')
+            from tnca.torch_device.graph import active_capture
+            capture = active_capture()
+            if capture is not None and (devices != {'tnca'} or guard or transfer_policy != 'resident'):
+                raise TNCALaunchError('graph capture requires native resident tensors without guards')
             t_submit = time.perf_counter()
-            event = session.submit(module, bound, grid=grid)
+            if asynchronous:
+                from tnca.runtime import MAX_UNFINISHED
+                while len(session.unfinished) >= MAX_UNFINISHED:
+                    oldest = session.unfinished[0]
+                    session.wait(oldest)
+                    if not oldest.ok:
+                        raise TNCALaunchError(f'queued predecessor failed: {oldest.error}')
+            previous = session.latest_event if asynchronous else None
+            event = session.submit(module, bound, grid=grid,
+                                   depends_on=[previous] if previous is not None else [])
+            if capture is not None:
+                event._replay_command = (session, module, bound, grid, tuple(values))
+            if asynchronous:
+                self.last_event = event
+                self.last_cycles = None
+                TNCALauncher.last = self
+                return event, {}, moved, (t_start, t_submit, time.perf_counter())
             session.wait(event)
             t_done = time.perf_counter()
             self.last_event = event
@@ -320,6 +426,11 @@ class TNCALauncher:
             if event.state != 'SUCCEEDED':
                 raise TNCALaunchError(f'{self.metadata.name}: {event.error}')
             outputs = {}
+            for original, shadow in native_staged.values():
+                data = session.download(shadow)
+                session.upload(original, data)
+                moved['download_bytes'] += len(data)
+                moved['upload_bytes'] += len(data)
             for key, (handle, raw, name) in buffers.items():
                 n = raw.numel()
                 if guard:
@@ -336,6 +447,11 @@ class TNCALauncher:
                 moved['download_bytes'] += n
             return event, outputs, moved, (t_start, t_submit, t_done)
         finally:
+            for _original, shadow in native_staged.values():
+                try:
+                    session.free(shadow)
+                except Exception:                        # noqa: BLE001
+                    pass
             for handle, _raw, _name in buffers.values():
                 try:
                     session.free(handle)
@@ -343,32 +459,57 @@ class TNCALauncher:
                     pass
 
 _loaded = {}
+_artifact_hashes = {}
+evicted = 0                  # modules unloaded to make code room (resident sessions)
+
+
+def _artifact_sha256(path):
+    """The sha256 of the .tnca a launch ran, for the record's provenance
+    (archbench/PROTOCOL.md, protocol 2): what was measured, named by content."""
+    h = _artifact_hashes.get(path)
+    if h is None and isinstance(path, str) and os.path.exists(path):
+        import hashlib
+        with open(path, 'rb') as fh:
+            h = hashlib.sha256(fh.read()).hexdigest()
+        _artifact_hashes[path] = h
+    return h
 
 
 def _load(session, path):
     """The module for `path` in this session, loading it if needed.
 
-    A process-wide session accumulates code: the runtime places each module
-    and never unloads one, and the code region below the heap is finite. When
-    it is full the session is replaced (a fresh device, empty code region)
-    and the module loaded there; buffers never outlive a launch, so nothing
-    is lost.
+    Reclaim least-recently-used modules after their launches drain. Preserve
+    the device session and clock epoch for both CPU migration and resident
+    tensors; replacing a session mid-graph invalidates common-clock spans.
     """
     from tnca.errors import BufferError as _BE
-    key = (id(session), session.epoch, path)
-    m = _loaded.get(key)
+    key = (session.id, session.epoch, path)
+    m = _loaded.pop(key, None)
     if m is not None:
+        _loaded[key] = m             # most recently used last (eviction order)
         return session, m
     try:
         m = session.load(path)
     except _BE as e:
         if 'overlaps the device heap' not in str(e):
             raise
-        profile = session.profile
-        session.close()
-        session = _Sessions.get(profile)
-        m = session.load(path)
-        key = (id(session), session.epoch, path)
+        session.drain()
+        for old_key in list(_loaded):
+            if old_key[0] != session.id or old_key[1] != session.epoch:
+                continue
+            session.unload(_loaded.pop(old_key))
+            global evicted
+            evicted += 1
+            try:
+                m = session.load(path)
+                break
+            except _BE as again:
+                if 'overlaps the device heap' not in str(again):
+                    raise
+        else:
+            raise TNCALaunchError(
+                'the code region cannot hold this kernel even with every other module '
+                'unloaded (capacity-exceeded: code region)') from e
     _loaded[key] = m
     return session, m
 
@@ -405,15 +546,19 @@ class TNCAUtils:
             with open(path, 'wb') as fh:
                 fh.write(kernel)
         # (module, function, n_regs, n_spills, n_max_threads)
-        return path, path, 0, 0, 1 << 20
+        return path, path, 0, 0, self.get_device_properties(device)["max_threads_per_block"]
 
     def unload_module(self, module):
         pass
 
     def get_device_properties(self, device):
-        return {'max_shared_mem': 1 << 30, 'multiprocessor_count': 1, 'max_num_regs': 1 << 16,
-                'warpSize': 1, 'sm_clock_rate': 0, 'mem_clock_rate': 0, 'mem_bus_width': 64,
-                'max_threads_per_block': 1 << 20}
+        from tnca.torch_device.inductor_device import properties
+        p = properties(device)
+        # TNCA has addressable global scratch, not CUDA shared memory.
+        return {'max_shared_mem': 0, 'multiprocessor_count': p.multi_processor_count,
+                'max_num_regs': p.regs_per_multiprocessor, 'warpSize': p.warp_size,
+                'sm_clock_rate': 0, 'mem_clock_rate': 0, 'mem_bus_width': 64,
+                'max_threads_per_block': p.max_threads_per_block}
 
 
 class TNCADriver(DriverBase):
@@ -451,6 +596,9 @@ class TNCADriver(DriverBase):
         pass
 
     def get_current_stream(self, device=None):
+        torch = _torch()
+        if hasattr(torch, "tnca"):
+            return torch.tnca.current_stream().stream_id
         return 0
 
     def get_device_interface(self):

@@ -1,0 +1,10 @@
+{
+  "probe_log": "{\"python\": \"3.10.12 (main, Aug 31 2026, 10:18:17) [GCC 11.4.0]\", \"torch\": \"2.14.0+cpu\", \"triton\": \"3.8.0\", \"device\": \"tnca\", \"opened_sessions\": 0, \"status\": \"software-registration-pass\"}\n",
+  "probe_exit": 0,
+  "probe_script": "import json,sys,torch,triton\nimport tnca.torch_device as D\nfrom tnca.triton_backend.driver import _Sessions\nD.register()\nassert not _Sessions.open, 'registration unexpectedly opened a device'\nprint(json.dumps(dict(python=sys.version,torch=torch.__version__,triton=triton.__version__,device=str(torch.device('tnca')),opened_sessions=len(_Sessions.open),status='software-registration-pass')),flush=True)\n",
+  "runner_script": "#!/bin/bash\nsource /opt/xilinx/xrt/setup.sh >/dev/null 2>&1\ncd /home/zzhouch/tnca_srcR40checkpoint_642c660 || exit 2\nexport PYTHONPATH=\"$PWD/python:$PWD/compiler/python:$PWD/tools/asm\"\nexport CUDA_VISIBLE_DEVICES='' MAX_JOBS=1\nexport TORCH_EXTENSIONS_DIR=\"$HOME/.cache/tnca/r40_checkpoint642_extensions\"\n\"$HOME/tc_env/torchenv/bin/python\" /home/zzhouch/tnca_build/r40_checkpoint642_prepare/probe.py > /home/zzhouch/tnca_build/r40_checkpoint642_prepare/probe.log 2>&1\nrc=$?\nprintf '%s\n' \"$rc\" > /home/zzhouch/tnca_build/r40_checkpoint642_prepare/prepare.exit\nexit \"$rc\"\n",
+  "xrt_loader": {
+    "xrt_library": "/opt/xilinx/xrt/lib/libxrt_core.so",
+    "device_opened": false
+  }
+}

@@ -33,6 +33,10 @@
 `timescale 1ns/1ps
 
 module tb_tnca_fpga;
+    // PERF_NUM_COUNTERS: the index past the last counter is read from the
+    // generated header, not written down -- R39-00 added a counter and a
+    // hard-coded 20 became a real one.
+`include "tnca_perf_count.vh"
 
     parameter WORDS          = 65536;
     parameter ADDR_W         = 16;
@@ -78,6 +82,7 @@ module tb_tnca_fpga;
     localparam [3:0] OP_SHUTDOWN = 4'd5;
     localparam [3:0] OP_PING     = 4'd6;
     localparam [3:0] OP_PERF_READ = 4'd7;
+    localparam [3:0] OP_GRID_CAP = 4'd8;
 
     localparam [3:0] ST_OK      = 4'd0;
     localparam [3:0] ST_FAULT   = 4'd1;
@@ -130,6 +135,7 @@ module tb_tnca_fpga;
     reg [63:0] seq;
     reg [63:0] got, r0, r1;
     reg [63:0] perf_a;          // a PERF_READ result kept for the second read
+    reg [63:0] time_start_a, time_end_a, time_start_b, time_end_b;
     reg [3:0]  status;
     reg        quiet;
     integer    i, fails, step;
@@ -409,6 +415,13 @@ module tb_tnca_fpga;
         end
 
         //---- 4: the results -------------------------------------------------
+        reg_rd(8'hE0, got);
+        check("common-clock version", got, 64'd1);
+        reg_rd(8'hF8, got);
+        check("timestamp sequence, first launch", got, seq);
+        reg_rd(8'hE8, time_start_a);
+        reg_rd(8'hF0, time_end_a);
+        check("launch endpoints advance", {63'd0, time_end_a > time_start_a}, 64'd1);
         step = 4;
         win_get(RESULT_BASE + 0,  got);
         check("partial stores", got, WANT_PARTIAL);
@@ -450,7 +463,7 @@ module tb_tnca_fpga;
                 status, r0, r1);
         check_status("upload of zero words", status, ST_REFUSED);
 
-        mailbox(4'd9, 64'd0, 64'd0, 64'd0, 64'd0, 64'd0, 64'd0,
+        mailbox(4'd15, 64'd0, 64'd0, 64'd0, 64'd0, 64'd0, 64'd0,
                 status, r0, r1);
         check_status("an opcode the device does not have", status, ST_REFUSED);
 
@@ -474,7 +487,7 @@ module tb_tnca_fpga;
                 status, r0, r1);
         check("perf_cycles does not go backwards between reads",
               {63'd0, {r1[31:0], r0[31:0]} >= perf_a}, 64'd1);
-        mailbox(OP_PERF_READ, 64'd20, 64'd0, 64'd0, 64'd0, 64'd0, 64'd0,
+        mailbox(OP_PERF_READ, PERF_NUM_COUNTERS, 64'd0, 64'd0, 64'd0, 64'd0, 64'd0,
                 status, r0, r1);
         check_status("PERF_READ past the last counter", status, ST_REFUSED);
 
@@ -499,6 +512,15 @@ module tb_tnca_fpga;
                 64'd0, 64'd1 << 16, (64'd1) | (64'd1 << 16),
                 status, r0, r1);
         check_status("launch, second time", status, ST_OK);
+        reg_rd(8'hF8, got);
+        check("timestamp sequence, second launch", got, seq);
+        reg_rd(8'hE8, time_start_b);
+        reg_rd(8'hF0, time_end_b);
+        check("common clock includes intervening host work",
+              {63'd0, time_start_b > time_end_a}, 64'd1);
+        check("graph span exceeds sum of launch spans",
+              {63'd0, (time_end_b - time_start_a) >
+                       ((time_end_a - time_start_a) + (time_end_b - time_start_b))}, 64'd1);
         win_get(RESULT_BASE + 0,  got);
         check("partial stores, second launch", got, WANT_PARTIAL);
         win_get(RESULT_BASE + 16, got);
@@ -514,6 +536,12 @@ module tb_tnca_fpga;
         repeat (20) @(posedge clk);
         reg_rd(R_RSP_SEQ, got);
         check("a duplicate ring produced no new completion", got, seq);
+
+        mailbox(OP_GRID_CAP, 64'd0, 64'd0, 64'd0, 64'd0, 64'd0, 64'd0,
+                status, r0, r1);
+        check_status("GRID_CAP query", status, ST_OK);
+        check("GRID_CAP axis bits", r0, 64'd32);
+        check("GRID_CAP streaming admission budget", r1, 64'd16777216);
 
         //---- the verdict ----------------------------------------------------
         if (fails == 0)

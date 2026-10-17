@@ -1,0 +1,240 @@
+{
+ "schema": "tnca-r40-api-lock/1",
+ "python": "3.12.3",
+ "versions": {
+  "torch": "2.14.0+cu130",
+  "triton": "3.8.0"
+ },
+ "apis": [
+  {
+   "module": "torch.utils",
+   "name": "rename_privateuse1_backend",
+   "used_for": "name PrivateUse1 \"tnca\"",
+   "present": true,
+   "signature": "(backend_name: str) -> None",
+   "file": "torch/utils/backend_registration.py",
+   "file_sha256": "05ed528373e947b75588d981d1d373f62b3d636558838e2b89430c85c8643496"
+  },
+  {
+   "module": "torch.utils",
+   "name": "generate_methods_for_privateuse1_backend",
+   "used_for": "Tensor.tnca(), is_tnca, ...",
+   "present": true,
+   "signature": "(for_tensor: bool = True, for_module: bool = True, for_packed_sequence: bool = True, for_storage: bool = False, unsupported_dtype: list[torch.dtype] | None = None) -> None",
+   "file": "torch/utils/backend_registration.py",
+   "file_sha256": "05ed528373e947b75588d981d1d373f62b3d636558838e2b89430c85c8643496"
+  },
+  {
+   "module": "torch",
+   "name": "_register_device_module",
+   "used_for": "torch.tnca module (device count, synchronize, streams)",
+   "present": true,
+   "signature": "(device_type: str, module: module) -> None",
+   "file": "torch/__init__.py",
+   "file_sha256": "bd4a10ff16357ed78f45aaf4b46ce5b771fdc0e8549402206e324d0eb792c672"
+  },
+  {
+   "module": "torch.utils.backend_registration",
+   "name": "_setup_privateuseone_for_python_backend",
+   "used_for": "a Python-only PrivateUse1 backend (allocator and kernels in Python)",
+   "present": true,
+   "signature": "(rename=None, backend_module=None, hook=None, device_guard=None) -> None",
+   "file": "torch/utils/backend_registration.py",
+   "file_sha256": "05ed528373e947b75588d981d1d373f62b3d636558838e2b89430c85c8643496"
+  },
+  {
+   "module": "torch._C",
+   "name": "_get_privateuse1_backend_name",
+   "used_for": "the registered name",
+   "present": true,
+   "signature": null,
+   "file": "torch/_C.cpython-312-aarch64-linux-gnu.so",
+   "file_sha256": "7aff7dffdebbfa6e7a8a64f1d814d6e18513f53fc8716e4ef48cf19c108543af"
+  },
+  {
+   "module": "torch.library",
+   "name": "Library",
+   "used_for": "registering aten kernels for PrivateUse1",
+   "present": true,
+   "signature": "(ns, kind, dispatch_key='')",
+   "file": "torch/library.py",
+   "file_sha256": "d5fffa699f39ec5d1352636d5c0bf777b45ac6534d0154f023e64e087f64fd26"
+  },
+  {
+   "module": "torch.library",
+   "name": "impl",
+   "used_for": "registering aten kernels for PrivateUse1",
+   "present": true,
+   "signature": "(qualname: str, types: str | collections.abc.Sequence[str], func: collections.abc.Callable[~_P, ~_T] | None = None, *, lib: torch.library.Library | None = None) -> object",
+   "file": "/usr/lib/python3.12/functools.py",
+   "file_sha256": "cca971c456e1bec8b751aecdf41466f34dbf72321ee0840627280ba2ccf9d033"
+  },
+  {
+   "module": "torch",
+   "name": "accelerator",
+   "used_for": "the device-generic accelerator API",
+   "present": true,
+   "signature": null,
+   "file": "torch/accelerator/__init__.py",
+   "file_sha256": "de5e2344403c2ddb9386401482f52a4847da225a55b918c386d608d68951e49d"
+  },
+  {
+   "module": "torch._dynamo.device_interface",
+   "name": "DeviceInterface",
+   "used_for": "the tnca device interface",
+   "present": true,
+   "signature": "()",
+   "file": "torch/_dynamo/device_interface.py",
+   "file_sha256": "b21d1fbaae999fee0bb98907c44f454f778bac6b28f43f4c2832930438208e8b"
+  },
+  {
+   "module": "torch._dynamo.device_interface",
+   "name": "register_interface_for_device",
+   "used_for": "registering it",
+   "present": true,
+   "signature": "(device: str | torch.device, device_interface: type[torch._dynamo.device_interface.DeviceInterface]) -> None",
+   "file": "torch/_dynamo/device_interface.py",
+   "file_sha256": "b21d1fbaae999fee0bb98907c44f454f778bac6b28f43f4c2832930438208e8b"
+  },
+  {
+   "module": "torch._subclasses.fake_tensor",
+   "name": "FakeTensorMode",
+   "used_for": "tracing on device \"tnca\"",
+   "present": true,
+   "signature": "(*, allow_fallback_kernels: 'bool' = True, allow_non_fake_inputs: 'bool' = False, shape_env: 'ShapeEnv | None' = None, static_shapes: 'bool | None' = None, export: 'bool' = False) -> 'None'",
+   "file": "torch/_subclasses/fake_tensor.py",
+   "file_sha256": "a650411e6a7adde3791e7a28821fbfc3858425c50433abf6d538629e17c33c58"
+  },
+  {
+   "module": "torch._inductor.codegen.common",
+   "name": "register_backend_for_device",
+   "used_for": "the tnca scheduling and wrapper (doc sec 0.2)",
+   "present": true,
+   "signature": "(device: 'str', device_scheduling: 'SchedulingConstructor', device_wrapper_codegen: 'WrapperConstructor', device_cpp_wrapper_codegen: 'WrapperConstructor | None' = None, device_fx_wrapper_codegen: 'WrapperConstructor | None' = None, device_custom_pass: 'CustomGraphModulePass | None' = None, device_custom_config: 'ConfigModule | None' = None) -> 'None'",
+   "file": "torch/_inductor/codegen/common.py",
+   "file_sha256": "3b244262921b936fc156ce394a2ae48e068b81bc621656e523f80a3d946f4466"
+  },
+  {
+   "module": "torch._inductor.codegen.common",
+   "name": "register_device_op_overrides",
+   "used_for": "device op overrides",
+   "present": true,
+   "signature": "(device: 'str', device_op_overrides: 'DeviceOpOverrides') -> 'None'",
+   "file": "torch/_inductor/codegen/common.py",
+   "file_sha256": "3b244262921b936fc156ce394a2ae48e068b81bc621656e523f80a3d946f4466"
+  },
+  {
+   "module": "torch._inductor.codegen.common",
+   "name": "DeviceOpOverrides",
+   "used_for": "device op overrides",
+   "present": true,
+   "signature": "()",
+   "file": "torch/_inductor/codegen/common.py",
+   "file_sha256": "3b244262921b936fc156ce394a2ae48e068b81bc621656e523f80a3d946f4466"
+  },
+  {
+   "module": "torch._inductor.codegen.common",
+   "name": "get_scheduling_for_device",
+   "used_for": "checking what is registered",
+   "present": true,
+   "signature": "(device: 'str') -> 'SchedulingConstructor | None'",
+   "file": "torch/_inductor/codegen/common.py",
+   "file_sha256": "3b244262921b936fc156ce394a2ae48e068b81bc621656e523f80a3d946f4466"
+  },
+  {
+   "module": "torch._inductor.codegen.common",
+   "name": "get_wrapper_codegen_for_device",
+   "used_for": "checking what is registered",
+   "present": true,
+   "signature": "(device: 'str', cpp_wrapper: 'bool' = False, fx_wrapper: 'bool' = False) -> 'WrapperConstructor | None'",
+   "file": "torch/_inductor/codegen/common.py",
+   "file_sha256": "3b244262921b936fc156ce394a2ae48e068b81bc621656e523f80a3d946f4466"
+  },
+  {
+   "module": "torch._inductor.codegen.triton",
+   "name": "TritonScheduling",
+   "used_for": "reused for the tnca device",
+   "present": true,
+   "signature": "(scheduler: 'Scheduler | None') -> 'None'",
+   "file": "torch/_inductor/codegen/triton.py",
+   "file_sha256": "7b924a88fe94374dc0dc33b5e6a592c52034f1180c85a9baf70c3e07d0cd0aaf"
+  },
+  {
+   "module": "torch._inductor.codegen.wrapper",
+   "name": "PythonWrapperCodegen",
+   "used_for": "the wrapper the tnca one extends",
+   "present": true,
+   "signature": "()",
+   "file": "torch/_inductor/codegen/wrapper.py",
+   "file_sha256": "d52e9acc719615a327b24fe87b85f70de31282686351fff0dc8d7f80e5cdefea"
+  },
+  {
+   "module": "torch._inductor.codegen.cpu_device_op_overrides",
+   "name": "CpuDeviceOpOverrides",
+   "used_for": "the CPU path (B39)",
+   "present": true,
+   "signature": "()",
+   "file": "torch/_inductor/codegen/cpu_device_op_overrides.py",
+   "file_sha256": "7dafb2d5c015db7e206c4d6a89ac251955ecb9f1fc42d8cb9c97f9ce02311735"
+  },
+  {
+   "module": "torch._inductor.config",
+   "name": "triton",
+   "used_for": "Inductor Triton options (tensor descriptors, max_block)",
+   "present": true,
+   "signature": null,
+   "file": "torch/_inductor/config.py",
+   "file_sha256": "9171c2ed249e13a19a2ae22dba0db14f3c4fe11762108f87c8a4e85f96945b0a"
+  },
+  {
+   "module": "triton.backends.compiler",
+   "name": "BaseBackend",
+   "used_for": "the tnca Triton backend",
+   "present": true,
+   "signature": "(target: triton.backends.compiler.GPUTarget) -> None",
+   "file": "triton/backends/compiler.py",
+   "file_sha256": "c5d3403b88b5bb728f8ac78c55163198e418430f126c842892c68cb4b6baaa78"
+  },
+  {
+   "module": "triton.backends.compiler",
+   "name": "GPUTarget",
+   "used_for": "the tnca target identity",
+   "present": true,
+   "signature": "(backend: str, arch: Union[int, str], warp_size: int) -> None",
+   "file": "triton/backends/compiler.py",
+   "file_sha256": "c5d3403b88b5bb728f8ac78c55163198e418430f126c842892c68cb4b6baaa78"
+  },
+  {
+   "module": "triton.backends.driver",
+   "name": "DriverBase",
+   "used_for": "the tnca driver",
+   "present": true,
+   "signature": "() -> None",
+   "file": "triton/backends/driver.py",
+   "file_sha256": "3aaa775f592533d06c13c99c23bd117430b1e7c732c2ae64c571d84d01ad2c39"
+  },
+  {
+   "module": "triton.backends",
+   "name": "backends",
+   "used_for": "entry-point discovery of tnca",
+   "present": true,
+   "signature": null,
+   "file": "triton/backends/__init__.py",
+   "file_sha256": "c8bd4497720e736a2f8a7c01667a802d4945083a4aee77d3ac4bfe4305c47a89"
+  },
+  {
+   "module": "triton.tools.tensor_descriptor",
+   "name": "TensorDescriptor",
+   "used_for": "host-side tensor descriptors",
+   "present": true,
+   "signature": "(base: Any, shape: List[int], strides: List[int], block_shape: List[int], padding: str = 'zero', round_f32_to_tf32: bool = False) -> None",
+   "file": "triton/tools/tensor_descriptor.py",
+   "file_sha256": "0b8ba39cab5fbbbade55b4db479291032fdc9cb5e16b5b4a61e0a7b9c10060dc"
+  }
+ ],
+ "triton_backends": [
+  "amd",
+  "cpu",
+  "nvidia"
+ ]
+}

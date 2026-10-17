@@ -55,6 +55,11 @@ def _sparse_tensormaps():
     return int(os.environ.get('TNCA_SPARSE_TENSORMAPS', '1'))
 
 
+def _physical_chunks():
+    from tnca.aot import _physical_chunks_default
+    return _physical_chunks_default()
+
+
 def _rctx_spmd():
     # R39-05's switch: every Role Context runs programs of one grid row, for
     # a kernel that allows it. On for the standard path since its ablation
@@ -67,6 +72,32 @@ def _rctx_roles():
     # Context pair (Mode A), on a target with rctx_pair. Off until its
     # ablation is in; TNCA_RCTX_ROLES=1 on.
     return int(os.environ.get('TNCA_RCTX_ROLES', '0'))
+
+
+def _rctx_stages():
+    from tnca.aot import _pipeline_stages_default
+    return _pipeline_stages_default()
+
+
+def _bank_alloc():
+    value = int(os.environ.get('TNCA_BANK_ALLOC', '0'))
+    if value not in (0, 1):
+        raise ValueError('TNCA_BANK_ALLOC must be 0 or 1')
+    return value
+
+
+def _window_reuse():
+    value = int(os.environ.get('TNCA_WINDOW_REUSE', '0'))
+    if value not in (0, 1):
+        raise ValueError('TNCA_WINDOW_REUSE must be 0 or 1')
+    return value
+
+
+def _packed_window_unpack():
+    value = int(os.environ.get('TNCA_PACKED_WINDOW_UNPACK', '0'))
+    if value not in (0, 1):
+        raise ValueError('TNCA_PACKED_WINDOW_UNPACK must be 0 or 1')
+    return value
 
 
 @dataclass(frozen=True)
@@ -97,9 +128,18 @@ class TNCAOptions:
     opt_level: int = field(default_factory=_opt_level)
     schedule: int = field(default_factory=_schedule)
     index_opt: int = field(default_factory=_index_opt)
+    physical_chunks: int = field(default_factory=_physical_chunks)
     rctx_spmd: int = field(default_factory=_rctx_spmd)
     sparse_tensormaps: int = field(default_factory=_sparse_tensormaps)
     rctx_roles: int = field(default_factory=_rctx_roles)
+    rctx_stages: int = field(default_factory=_rctx_stages)
+    bank_alloc: int = field(default_factory=_bank_alloc)
+    window_reuse: int = field(default_factory=_window_reuse)
+    packed_window_unpack: int = field(default_factory=_packed_window_unpack)
+
+    def __post_init__(self):
+        if type(self.rctx_stages) is not int or self.rctx_stages not in (1, 2, 3):
+            raise ValueError('rctx_stages must be 1, 2 or 3')
 
     def hash(self):
         key = '_'.join(f'{k}-{v}' for k, v in sorted(self.__dict__.items()))
@@ -221,7 +261,10 @@ class TNCABackend(BaseBackend):
         for k, v in list(args.items()):
             if isinstance(v, list):
                 args[k] = tuple(v)
-        return TNCAOptions(**args)
+        resolved = TNCAOptions(**args)
+        if not isinstance(resolved.physical_chunks, int) or resolved.physical_chunks not in (0, 1):
+            raise ValueError('physical_chunks must be 0 or 1')
+        return resolved
 
     def pack_metadata(self, metadata):
         return (metadata.num_warps, metadata.num_ctas, metadata.shared)
@@ -248,12 +291,15 @@ class TNCABackend(BaseBackend):
         stages['tnca'] = lambda src, metadata: self.make_tnca(src, metadata, options)
 
     def make_tnca(self, module, metadata, options):
-        from tnca import aot, dump as _dump
+        from tnca import aot, device as _device, dump as _dump
         from tnca.adapters import r1 as adapter
         text = str(module)
         kernel_name, params = ttir_params(text)
         prov = adapter.Provenance()
-        target, pinfo = adapter.target_for(options.profile, prov)
+        # The artifact is for the architecture; a memory mode ('.../hbm',
+        # '.../slow') only says where the session runs it, which
+        # tnca_profile below keeps for the launcher.
+        target, pinfo = adapter.target_for(_device.base_profile(options.profile), prov)
         prov.record('source_sha256', hashlib.sha256(text.encode()).hexdigest())
         prov.record('source_kind', 'triton')
         prov.record('entry_point', 'triton-backend')
@@ -262,18 +308,21 @@ class TNCABackend(BaseBackend):
         stages.record('ttir', text)
         ctx = module.context
         compile_options = {'opt_level': options.opt_level}
-        # Only when on: an option that is off must leave the artifact
-        # byte-identical to one compiled before the option existed.
-        if options.schedule:
-            compile_options['schedule'] = options.schedule
-        if options.index_opt:
-            compile_options['index_opt'] = options.index_opt
-        if options.rctx_spmd:
-            compile_options['rctx_spmd'] = options.rctx_spmd
-        if options.sparse_tensormaps:
-            compile_options['sparse_tensormaps'] = options.sparse_tensormaps
-        if options.rctx_roles:
-            compile_options['rctx_roles'] = options.rctx_roles
+        stage_default = os.environ.get('TNCA_PIPELINE', os.environ.get('TNCA_RCTX_STAGES', '2'))
+        if options.rctx_stages != 2 or int(stage_default) != options.rctx_stages:
+            compile_options['rctx_stages'] = options.rctx_stages
+        # Resolved JIT values override environment defaults, including zero.
+        # Keep default off absent to preserve the frozen B39 artifact bytes.
+        for name, env in (('physical_chunks', 'TNCA_PHYSICAL_CHUNKS'),
+                          ('schedule', 'TNCA_SCHEDULE'), ('index_opt', 'TNCA_INDEX_OPT'),
+                          ('rctx_spmd', 'TNCA_RCTX_SPMD'),
+                          ('sparse_tensormaps', 'TNCA_SPARSE_TENSORMAPS'),
+                          ('rctx_roles', 'TNCA_RCTX_ROLES'), ('bank_alloc', 'TNCA_BANK_ALLOC'),
+                          ('window_reuse', 'TNCA_WINDOW_REUSE'),
+                          ('packed_window_unpack', 'TNCA_PACKED_WINDOW_UNPACK')):
+            value = getattr(options, name)
+            if value or int(os.environ.get(env, '0')) != value:
+                compile_options[name] = value
         # The dump switches of doc/dumping_ir.md (TNCA_KERNEL_DUMP=1, written
         # under TNCA_DUMP_DIR/<kernel>/), on this entry point as on AOT --
         # and written for a kernel that FAILS to lower too, with every stage

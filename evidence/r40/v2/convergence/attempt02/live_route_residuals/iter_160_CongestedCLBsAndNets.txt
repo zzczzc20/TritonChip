@@ -1,0 +1,20 @@
+List of CLB Tiles
+CLEM_X85Y342
+CLEL_R_X85Y342
+CLEL_L_X84Y349
+CLEL_R_X84Y349
+CLEM_X89Y339
+CLEL_L_X86Y356
+CLEL_R_X86Y356
+CLEM_X79Y97
+CLEL_R_X79Y97
+
+List of Congested Nets
+level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_tile[1].u_tile/u_slice/tmu_rd_off[11]
+level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_tile[1].u_tile/u_slice/p_0_in25_in[57]
+level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_tile[1].u_tile/u_slice/p_0_in3_in[57]
+level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_tile[1].u_tile/u_slice/p_0_in25_in[53]
+level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_tile[1].u_tile/u_slice/g_balanced_victim.g_leaf[5].g_present.a[12]
+level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_tile[0].u_tile/u_core/u_valu/x_imm_reg[13]_1
+level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_tile[0].u_tile/u_core/u_valu/data5__0[13]
+

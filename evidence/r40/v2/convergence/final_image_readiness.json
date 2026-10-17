@@ -1,0 +1,73 @@
+{
+  "schema": "tnca-r40-final-image-readiness-audit/1",
+  "source_commit": "34820bf plus source hashes below",
+  "contract_sha256": "49fc0e02733139707ae2292eff2ef893e76e73f0723d0d002b2e7e1864af71c8",
+  "scope": "Current source audit and experiment pointers; not gate qualification",
+  "findings": [
+    {
+      "control": "TNCA_RTL_OUTSTANDING",
+      "gate": "R40-04.bandwidth",
+      "source": "rtl/fpga/tnca_line_axi.v",
+      "blocker": "Snapshot09 core reservation-X remains unexplained; final board memory-service evidence absent",
+      "next_action": "Inspect /tmp/r40_memory_controls12_results/native.stderr and simulator first assertion; then measure frozen memory-service A/B on qualified attempt01 image",
+      "source_sha256": "2dd2f04258e6447ffd778932ee44638cbfe2bbbb77d6e9d755d1c9cc2c481d33",
+      "implementation": "Idle-only MMIO runtime admission limit, advertised capability/readback; actual AXI slot cap tested at 1 and 8",
+      "evidence": "../../R40-04/runtime_memory_controls/README.md"
+    },
+    {
+      "control": "TNCA_RTL_MEM_PORTS",
+      "gate": "R40-06.ports",
+      "source": "rtl/fpga/tnca_memory_mode.v",
+      "blocker": "Snapshot09 core reservation-X remains unexplained; final board port A/B absent",
+      "next_action": "Resolve captured reservation-X; validate actual PC topology and all active outlets on qualified attempt01 image",
+      "source_sha256": "18c38d6a64449418a7c2dd1679058cad028303678be9af7c7aeee0b6258f8602",
+      "implementation": "Same-image one/all outlet routing preserves all home source IDs; actual disabled/active outlet traffic tested",
+      "evidence": "../../R40-04/runtime_memory_controls/README.md"
+    },
+    {
+      "control": "TNCA_LOCALITY",
+      "gate": "R40-06.locality",
+      "source": "rtl/noc/tnca_core_ni.v",
+      "blocker": "Address-only home hash is fixed; existing immutable software audit has no runtime switch consumer",
+      "next_action": "Implement allocation/dispatch locality with coherent unique physical home semantics; retain unchanged-work A/B evidence",
+      "source_sha256": "ba3c39d09949b95dbfa178d37f89b0bf5d985c644bee11cf5ea8e58a9e6af637"
+    },
+    {
+      "control": "TNCA_DCO",
+      "gate": "R40-06.dco",
+      "source": "rtl/nuca/tnca_tmu.v",
+      "blocker": "Standard Torch metadata registration and correct ownership/liveness integration remain unwired",
+      "next_action": "Integrate the verified core-program transport with authoritative standard launch/storage metadata and ownership lifetimes; do not enable unproven last-use hints",
+      "source_sha256": "29c326b4cc7da6c928ed41119416880362704b8d0b544889b6ad99daeb144ea3",
+      "evidence": "../../R40-06/core_tmu_transport/README.md",
+      "implementation": "Actual three-core Session/AOT control programs reach existing TMU policy/register/notice paths; no host register aperture is needed for that transport"
+    },
+    {
+      "control": "TNCA_PIPELINE",
+      "gate": "R40-07.pipeline",
+      "source": "python/tnca/aot.py",
+      "blocker": "Final qualified-board frozen long-K stage A/B and overlap evidence absent",
+      "next_action": "P -> V, then collect full frozen R40-07 inventory on immutable final software/image with independent role and stage controls",
+      "source_sha256": "f6fc417becc32a08d37912523c375f704e1680d8364c15bf756391291ae8ffaa",
+      "implementation": "Frozen 1/2/3 control reaches actual standard Torch ring lowering; all three stage counts numerically validated; explicit override/cache identity and frozen 447-artifact default guard passed",
+      "evidence": "../../R40-07/frozen_stage_control/README.md"
+    },
+    {
+      "control": "TNCA_TUNE",
+      "gate": "R40-09.holdout",
+      "source": "tools/r40",
+      "blocker": "Existing real compiled candidates and bounded worker infrastructure are retained; frozen full holdout execution is not measured",
+      "next_action": "Use actual compiled candidates on final identity and frozen holdout; fitting/calibration must exclude holdout",
+      "source_sha256": null
+    }
+  ],
+  "evidence_dependencies": [
+    "pending_switch_consumers.json",
+    "implementation_budget.json",
+    "route_failure_20261016/observation.json"
+  ],
+  "previous_source_audit": "ce814d3 (historical audit retained in git)",
+  "final_image_qualified": false,
+  "first_full_attempt_state": "placement-running; synthesis complete; attempt01/launch.json",
+  "remaining_full_attempts": 1
+}

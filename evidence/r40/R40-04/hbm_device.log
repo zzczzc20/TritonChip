@@ -1,0 +1,9 @@
+  PASS  device:device-tests           r40-device-tests  PASS  (16/16)
+  PASS  device:device-tests-adverse   r40-device-tests  PASS  (5/5)
+  PASS  device:capacity               3 x 128 KiB tensors from 0x1820000, 24 MiB into the device; pointwise and reduction right
+  PASS  device:samples                32 samples from 0x11e000 to 0x1fe3e00 (window end 0x2020000)
+  PASS  device:samples-adverse        32 samples from 0x11e000 to 0x1fe3e00 (window end 0x2020000)
+  PASS  device:line8-device-tests-adverse r40-device-tests  PASS  (5/5)
+  PASS  device:line8-capacity         3 x 128 KiB tensors from 0x1820000, 24 MiB into the device; pointwise and reduction right
+  PASS  device:line8-samples-adverse  32 samples from 0x11e000 to 0x1fe3e00 (window end 0x2020000)
+r40-hbm-tests  PASS  (8/8)

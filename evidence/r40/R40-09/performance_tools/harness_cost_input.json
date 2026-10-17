@@ -1,0 +1,29 @@
+{
+  "identity": {
+    "software_sha256": "1db1cbb3343f93daff31ed18ed78d7ab748db8dc42836ecc167786c6b95df337",
+    "config_sha256": "8a8e26221e7053dd504bb8145a8794f2d7c4a46956ecabe26757b6ca5ee8dfa5",
+    "image_sha256": "73257b8e9a20bc2c66b3e96b603e418241d62a10c91ac0f89b18eb74f1b1e00a",
+    "contract_sha256": "49fc0e02733139707ae2292eff2ef893e76e73f0723d0d002b2e7e1864af71c8",
+    "clock_hz": 100000000,
+    "backend": "sim-file",
+    "baseline_code_sha256": "0a35c5b1e701b4419048d94070f809aa310f43a3eb8ef28eff538b84bed11e3b",
+    "instrumented_code_sha256": "5ee6aa8e3ba2e5c1508dab91144802d9e55ca8f1502c0baadf12ec5951eeea6a"
+  },
+  "demand": {
+    "single-program/issue": {
+      "work": 136,
+      "unit": "instructions",
+      "source": "raw baseline perf_issued, frozen binary 0a35c5b1e701b4419048d94070f809aa310f43a3eb8ef28eff538b84bed11e3b"
+    }
+  },
+  "candidates": {
+    "same-binary-single-issue-core": {
+      "single-program/issue": {
+        "per_cycle": 1,
+        "unit": "instructions",
+        "source": "RTL tnca_core single issue; unchanged ISA/code hypothesis"
+      }
+    }
+  },
+  "cycle_budget": 73.5
+}

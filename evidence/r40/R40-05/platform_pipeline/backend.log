@@ -1,0 +1,38 @@
+R3.6 Gate A: the backend boundary, and a second binding on it
+  R36-BE-01  PASS  target, backend, implementation and platform are separate
+    the registry: fpga-multicore-sim (reference-available), fpga-prototype (interface-defined), fpga-u280 (reference-available), fpga-u280-multicore (reference-available), fpga-u50 (reference-available), fpga-u50-sim (reference-available), sim-file (reference-available), sim-multicore (reference-available), sim-socket (reference-available)
+    nothing claims platform-verified: True
+    registering platform-verified is refused: platform-verified is reserved: nothing in this repository has run 
+    the profile core-vrf-sync-v1 describes ['description', 'elaboration', 'implementation', 'num_cores', 'platform_binding', 'target_file']...
+    and names no executable, board or port among them: confirmed
+    its platform binding is a section of its own: kind=simulation, bench=sim/build/tb_core_vrf.vvp
+    the generated target the compiler reads names no binding at all: confirmed
+    68 file(s) of the general runtime and the compiler scanned, 7 binding(s) excluded by name
+      excluded python/tnca/backends/multicore_file.py: the sim-multicore binding: prepares parameterized RTL and reaches its persistent mailbox
+      excluded python/tnca/backends/multicore_mmio_sim.py: the explicit fpga-multicore-sim binding: elaborates AXI/MMIO RTL; its shared board host binding multicore_mmio.py remains scanned
+      excluded python/tnca/backends/relay.py: the relay process of the sim-socket backend
+      excluded python/tnca/backends/socket_relay.py: the sim-socket backend
+      excluded python/tnca/backends/u50_sim.py: the fpga-u50-sim backend: a simulator standing in for the board, driving the same register port on the same RTL. Its partner python/tnca/backends/u50.py is NOT on this list and must not be: that is the file that runs on the board, and a board binding that named a simulator would be a binding whose tested path and shipped path had come apart
+      excluded python/tnca/device.py: the simulation binding's build step: it elaborates the RTL the package ships
+      excluded python/tnca/transport.py: the sim-file backend: the file mailbox and the vvp child it speaks to
+    simulator startup or connection logic in the general code: none
+    it names a backend and the registry resolves it, so an external branch registers an implementation rather than editing the state machine
+  R36-BE-02  PASS  the same artifact, both bindings, the same cycles
+    one artifact: 25 word(s), key a68a5e6e39e7
+    sim-file    SUCCEEDED  correct=True cycles=204 medium=a shared directory
+    sim-socket  SUCCEEDED  correct=True cycles=204 medium=tcp
+    the same artifact ran on both without recompiling: a68a5e6e39e7
+    both report 204 device cycle(s): True
+    a mock returning the right numbers would have to reproduce the cycle count of a core it does not have, which is why the cycles are compared and not just the values
+    the adapter speaks a versioned protocol over a socket; medium=tcp, protocol=1
+    and starts no simulator itself: confirmed
+  R36-BE-03  PASS  unknown and unimplemented backends refuse, and nothing is substituted
+    nonesuch         refused: [BACKEND_UNKNOWN] [BACKEND_UNKNOWN] there is no backend named 'nonesuc
+    fpga-prototype   refused: [BACKEND_NOT_IMPLEMENTED] [BACKEND_NOT_IMPLEMENTED] the backend 'fpga-prototyp
+    missing-impl     refused: [BACKEND_UNAVAILABLE] [BACKEND_UNAVAILABLE] the backend's implementation t
+    a peer speaking protocol 1 when this client wants 2: [PROTOCOL_MISMATCH] [PROTOCOL_MISMATCH] the relay speaks protocol 1 an
+    a session on it: BackendError [BACKEND_NOT_IMPLEMENTED]
+    the registry never substitutes: a missing backend that became the simulator would report a platform working that was never there
+    the physical capability is recorded 'out of scope', not verified
+
+  r36-backend-tests      PASS   3 check(s)

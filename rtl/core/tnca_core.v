@@ -2450,7 +2450,10 @@ module tnca_core #(
                 x_is_fence   <= r_is_fence;
                 x_illegal    <= r_illegal;
 
-                if (r_valid && !kill_r) perf_issued <= perf_issued + 64'd1;
+                // Async faults may leave R occupied after every context
+                // stops. Use the same ROI as cycles/stalls/frontend.
+                if (|running && r_valid && !kill_r)
+                    perf_issued <= perf_issued + 64'd1;
             end else begin
                 x_valid <= 1'b0;             // bubble, never a repeat
             end
@@ -2699,9 +2702,16 @@ module tnca_core #(
             if (({2'd0, x_has_dest} + {2'd0, fp_wb} + {2'd0, mul_wb}) > 3'd1)
                 $display("FAIL tnca_core assert @%0t: two scheduled writebacks in one cycle (alu=%b fp=%b mul=%b)",
                          $time, x_has_dest, fp_wb, mul_wb);
-            if (sched_wb !== wb_rsv[0])
-                $display("FAIL tnca_core assert @%0t: reservation disagrees with reality (sched=%b rsv0=%b alu=%b fp=%b mul=%b)",
-                         $time, sched_wb, wb_rsv[0], x_has_dest, fp_wb, mul_wb);
+            if (sched_wb !== wb_rsv[0])begin
+                // Failure-only diagnostics preserve the healthy execution
+                // path: no extra clocked monitor state or MMIO probes.
+                $display("FAIL tnca_core assert %m @%0t: reservation disagrees with reality (sched=%b rsv0=%b alu=%b fp=%b mul=%b) cycle=%0d running=%b rsv=%b pc=%h ctx=%h major=%h func=%h dst=%h delay=%h issue(valid,stall,kill,book)=%b hazard=%b lsu=%b fpu=%b mtx=%b arrive=%b rsv_stall=%b steal=%b vrf=%b",
+                         $time, sched_wb, wb_rsv[0], x_has_dest, fp_wb, mul_wb,
+                         clock_ctr,running,wb_rsv,r_pc,r_rctx,r_major,r_func,r_dstc,r_wb_delay,
+                         {r_valid,stall_front,kill_r,r_books_wb},hazard,stall_lsu,stall_fpu,stall_mtx,
+                         stall_arrive,stall_rsv,wb_steal,vrf_stall);
+                if($test$plusargs("assert_fatal"))$fatal(1,"scheduled writeback reservation mismatch");
+            end
             // One fetch buffer entry is only enough because no fetch is issued
             // while it is occupied. If both ever hold a word, an instruction
             // has been dropped on the floor.

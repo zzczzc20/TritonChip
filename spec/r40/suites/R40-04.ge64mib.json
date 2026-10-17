@@ -1,0 +1,155 @@
+{
+ "schema": "tnca-r40-subset/1",
+ "name": "R40-04.ge64mib",
+ "rule": "large and hbm points whose semantic bytes (read + write) are at least 64 MiB",
+ "points": [
+  {
+   "id": "model.llama_decode/hbm/fp16-b1-p512",
+   "sha256": "23cc5a368f9c804105cace69fb9f772d116dbd510dc8bc3a5c5f4f9e8728de16",
+   "family": "llama_decode",
+   "tier": "hbm",
+   "dtype": "fp16"
+  },
+  {
+   "id": "model.llama_decode/large/fp16-b1-p512",
+   "sha256": "ca2a458450b5f19010b5207c158946500e055f2874dfd3344dca6f89dd4df111",
+   "family": "llama_decode",
+   "tier": "large",
+   "dtype": "fp16"
+  },
+  {
+   "id": "model.llama_prefill/hbm/fp16-b1-s512",
+   "sha256": "c5c8826fb47090de07d2c4860b32d84da88aaf1b22ab0a206eb4139fef6813e1",
+   "family": "llama_prefill",
+   "tier": "hbm",
+   "dtype": "fp16"
+  },
+  {
+   "id": "model.llama_prefill/large/fp16-b1-s512",
+   "sha256": "94d49ce2811ec2c20c73bb69401d68770f044dbc7e2437d98e2a06eaf78ff5fc",
+   "family": "llama_prefill",
+   "tier": "large",
+   "dtype": "fp16"
+  },
+  {
+   "id": "model.mlp/large/fp16-t512-d2048",
+   "sha256": "172c6551c70bc50f6afcf659b68118e46f984905727f7e9e5dff7b307faf8c80",
+   "family": "mlp",
+   "tier": "large",
+   "dtype": "fp16"
+  },
+  {
+   "id": "op.add/hbm/fp16-n67108864",
+   "sha256": "4c8c739081452e9ef3c1c8870031ae89ae86a9cc09e262fea5a7ccfc202bc85e",
+   "family": "add",
+   "tier": "hbm",
+   "dtype": "fp16"
+  },
+  {
+   "id": "op.add/large/fp16-n16777216",
+   "sha256": "d7c9131ab9a798ffa7ae4730d4634aa55452bf3135aab65821640d13037c31dc",
+   "family": "add",
+   "tier": "large",
+   "dtype": "fp16"
+  },
+  {
+   "id": "op.copy/hbm/fp16-n67108864",
+   "sha256": "985db43ad808d2f7bf11454bab05e082416c27d6284be0707cefe0d3db071027",
+   "family": "copy",
+   "tier": "hbm",
+   "dtype": "fp16"
+  },
+  {
+   "id": "op.embedding/hbm/fp16-v65536-d2048-t8192",
+   "sha256": "998ca4722412f6fa8c35b160c96e92e34582656b7cb917ff0f47157b69ced5a6",
+   "family": "embedding",
+   "tier": "hbm",
+   "dtype": "fp16"
+  },
+  {
+   "id": "op.gelu_tanh/large/fp16-n16777216",
+   "sha256": "dd8ccfe9bcf29e90a8b02f20f8c12f28286e281539f7ef7f880c1015ed906bd4",
+   "family": "gelu_tanh",
+   "tier": "large",
+   "dtype": "fp16"
+  },
+  {
+   "id": "op.gemv/hbm/fp16-k4096-n11008",
+   "sha256": "a65683795c4c05baf3c758fe40b6d0d6bc5994a11c2340fd17fbbc04d576baa9",
+   "family": "gemv",
+   "tier": "hbm",
+   "dtype": "fp16"
+  },
+  {
+   "id": "op.linear/hbm/fp16-m512-k4096-n11008",
+   "sha256": "1a898be55b59c02cbbc4e6b2a988ecfcd4793e472f6dae3aa3aca612f43d23bc",
+   "family": "linear",
+   "tier": "hbm",
+   "dtype": "fp16"
+  },
+  {
+   "id": "op.matmul/hbm/fp16-m4096-k4096-n4096",
+   "sha256": "c9873996038a73864d846e6d6496b954b71588b99a6f4c7fa69725d0563ade81",
+   "family": "matmul",
+   "tier": "hbm",
+   "dtype": "fp16"
+  },
+  {
+   "id": "op.rmsnorm/hbm/fp16-r8192-d4096",
+   "sha256": "cf35f8341664c0affaf6d5401ac648fa1782fc02e09715b23b1498639d2579d5",
+   "family": "rmsnorm",
+   "tier": "hbm",
+   "dtype": "fp16"
+  },
+  {
+   "id": "op.silu/hbm/fp16-n67108864",
+   "sha256": "ac289d78c2b64352cffab211799e71984b2403633d6fbeee25bd6aa538bd27fd",
+   "family": "silu",
+   "tier": "hbm",
+   "dtype": "fp16"
+  },
+  {
+   "id": "op.silu/large/fp16-n16777216",
+   "sha256": "23f3153bf547121552015ea1a6b3af5282113962775f09d32fb0c6dc3e305b57",
+   "family": "silu",
+   "tier": "large",
+   "dtype": "fp16"
+  },
+  {
+   "id": "op.softmax/hbm/fp16-r4096-c8192",
+   "sha256": "a97f2905a204dcf4d0108822bd6a1ca1bc94dfc04e226ba243efe81ee160443b",
+   "family": "softmax",
+   "tier": "hbm",
+   "dtype": "fp16"
+  },
+  {
+   "id": "op.softmax/large/fp16-r4096-c4096",
+   "sha256": "978edb42f8926f1330546ebfcd4360d0e168fb4271f955a17e2ef2acc5afca5d",
+   "family": "softmax",
+   "tier": "large",
+   "dtype": "fp16"
+  },
+  {
+   "id": "op.swiglu/large/fp16-n16777216",
+   "sha256": "f809d77b9aa35fada1e9986c7c66581a9a26ab25b3c8d2535b9ce00d8ff01af4",
+   "family": "swiglu",
+   "tier": "large",
+   "dtype": "fp16"
+  },
+  {
+   "id": "op.transpose/hbm/fp32-r8192-c8192",
+   "sha256": "178a8b5508f1155d44907970a91aa0a030aeec79618fa7b124df3a320579eb56",
+   "family": "transpose",
+   "tier": "hbm",
+   "dtype": "fp32"
+  },
+  {
+   "id": "op.transpose/large/fp32-r4096-c4096",
+   "sha256": "477491c3729f1e52270d07a9aa1c924de2821dfe659d5b78d460fd10a1ecbc5c",
+   "family": "transpose",
+   "tier": "large",
+   "dtype": "fp32"
+  }
+ ],
+ "sha256": "6c96fa4805da70b69ffe8e8a4888268bc8f12f557bf54cede9c9c78a75913fed"
+}

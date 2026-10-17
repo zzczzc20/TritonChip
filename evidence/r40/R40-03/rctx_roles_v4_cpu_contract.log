@@ -1,0 +1,10 @@
+  PASS  gemm_one_step            off    4123 cyc  on    4123 cyc   1.000x  roles 1->1
+  PASS  gemm_odd_steps           off    9513 cyc  on    9513 cyc   1.000x  roles 1->1
+  PASS  gemm_grid_3x2            off   59846 cyc  on   59846 cyc   1.000x  roles 1->1
+  PASS  gemm_five_programs       off   26670 cyc  on   26670 cyc   1.000x  roles 1->1
+  PASS  linear_one_program       off    8977 cyc  on    8977 cyc   1.000x  roles 1->1
+  PASS  linear_four_programs     off   24743 cyc  on   24743 cyc   1.000x  roles 1->1
+  PASS  linear_odd_steps_grid    off   34486 cyc  on   34486 cyc   1.000x  roles 1->1
+  PASS  gemm_carried_pointers    off   67256 cyc  on   67256 cyc   1.000x  roles 1->1
+r39-rctx-roles-tests [core-vrf-sync-v4]  PASS
+EXIT:0

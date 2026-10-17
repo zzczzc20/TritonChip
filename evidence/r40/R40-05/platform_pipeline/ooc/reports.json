@@ -1,0 +1,15 @@
+{
+  "scope": "diagnostic synthesized three-core design, not linked or routed",
+  "source_manifest": "../packaged_sources.sha256",
+  "parameters": "../r40-mc-image.json",
+  "lut": 911882,
+  "ff": 314376,
+  "ramb36": 192,
+  "ramb18": 45,
+  "dsp": 531,
+  "report_sha256": {
+    "check_timing.rpt": "340ccec6dd5f8abcc2a29bad0b0280e4a489caef3adfa7537b1d438e2d1591a1",
+    "utilization.rpt": "2e59cb801971d53a38bc8b4dc9f016de4307db9c87fca7655c79f394e9eabd9a",
+    "timing.rpt": "3e707739d2eb58c3f04500e76ceabaee8c564a705904ec3e2123dadb7db1b6a3"
+  }
+}

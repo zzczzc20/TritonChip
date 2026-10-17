@@ -21,40 +21,32 @@ thirty-two launches in one session, and a runtime that quietly relaunched the
 simulator between them would make "the intermediate result stayed in device
 memory" a sentence with no content.
 """
-import ctypes
+import functools
 import os
+import operator
 import shutil
-import signal
 import subprocess
 import tempfile
+import threading
 import time
 
 from .errors import DeviceLost, TncaError
 from . import backend as _backend
-
-#: PR_SET_PDEATHSIG, from <linux/prctl.h>: "signal this process when its
-#: parent dies". 1 is the option number, not a flag.
-_PR_SET_PDEATHSIG = 1
+from ._child_exec import child_argv
 
 
-def _arm_parent_death():
-    """Ask the kernel to terminate this process when its parent dies.
+def serialized_io(fn):
+    """A mailbox operation owns its sequence and payload through the reply.
 
-    Called in the child between fork and exec, so the request is in place
-    before the device starts. It survives the exec: the parent-death signal
-    is cleared only for set-user-ID, set-group-ID and capability-bearing
-    binaries, and a simulator is none of those.
-
-    Best-effort on purpose. A child that could not arm the signal must still
-    run -- refusing to start a device because it could not promise to die
-    later would trade a leak for an outage, and the leak is the smaller
-    problem.
+    A request-only lock is insufficient: a second upload can overwrite the
+    first payload before its request, or a download can consume another
+    request's payload. RLock permits upload/download to call request.
     """
-    try:
-        libc = ctypes.CDLL('libc.so.6', use_errno=True)
-        libc.prctl(_PR_SET_PDEATHSIG, signal.SIGTERM)
-    except Exception:
-        pass
+    @functools.wraps(fn)
+    def call(self, *args, **kwargs):
+        with self._io_lock:
+            return fn(self, *args, **kwargs)
+    return call
 
 OP_UPLOAD = 1
 OP_DOWNLOAD = 2
@@ -64,6 +56,9 @@ OP_SHUTDOWN = 5
 OP_PING = 6
 # Transport 1.1: read one device counter; r0/r1 = its low/high 32 bits.
 OP_PERF_READ = 7
+# R40 additive extension; legacy LAUNCH keeps its original 16-bit packing.
+OP_GRID_CAP = 8
+OP_LAUNCH32 = 9
 
 ST_OK = 0
 ST_FAULT = 1
@@ -73,7 +68,8 @@ ST_REFUSED = 3
 OP_NAME = {OP_UPLOAD: 'UPLOAD', OP_DOWNLOAD: 'DOWNLOAD',
            OP_LAUNCH: 'LAUNCH', OP_QUIESCE: 'QUIESCE',
            OP_SHUTDOWN: 'SHUTDOWN', OP_PING: 'PING',
-           OP_PERF_READ: 'PERF_READ'}
+           OP_PERF_READ: 'PERF_READ', OP_GRID_CAP: 'GRID_CAP',
+           OP_LAUNCH32: 'LAUNCH32'}
 
 STATUS_NAME = {ST_OK: 'OK', ST_FAULT: 'FAULT', ST_TIMEOUT: 'TIMEOUT',
                ST_REFUSED: 'REFUSED'}
@@ -131,6 +127,7 @@ class Transport(_backend.Backend):
         self.seq = 0
         self.proc = None
         self.history = []
+        self._io_lock = threading.RLock()
 
     # ---- lifetime ---------------------------------------------------------
     def start(self):
@@ -170,14 +167,12 @@ class Transport(_backend.Backend):
         # to end the child instead, which is the one promise SIGKILL cannot
         # break.
         #
-        # `preexec_fn` is documented as unsafe in a process with threads. This
-        # runtime is single-threaded host code; if that ever stops being true,
-        # this is the line that needs revisiting.
-        spawn = {'preexec_fn': _arm_parent_death} if hasattr(os, 'fork') else {}
+        # The runtime and Torch have threads. Install the death signal in a
+        # fresh executable, never in a Python callback between fork and exec.
         with open(self.log, 'w') as log:
             self.proc = subprocess.Popen(
-                argv, stdout=log, stderr=subprocess.STDOUT,
-                start_new_session=True, **spawn)
+                child_argv(argv), stdout=log, stderr=subprocess.STDOUT,
+                start_new_session=True)
         # The device writes sequence 0 when it is up. Waiting for that is the
         # difference between "slow to start" and "never started", and a
         # runtime that cannot tell them apart reports the wrong one.
@@ -248,6 +243,7 @@ class Transport(_backend.Backend):
         return bytes(out)
 
     # ---- the protocol -----------------------------------------------------
+    @serialized_io
     def request(self, op, a0=0, a1=0, a2=0, a3=0, a4=0, a5=0, *,
                 timeout=None):
         if not self.alive():
@@ -334,6 +330,7 @@ class Transport(_backend.Backend):
             return []
 
     # ---- operations -------------------------------------------------------
+    @serialized_io
     def upload(self, addr, data):
         """Bytes into device memory, through the device's memory system."""
         _backend.check_transfer(addr, len(data), what='upload')
@@ -343,6 +340,7 @@ class Transport(_backend.Backend):
                                                 'little') for i in range(n)])
         return self.request(OP_UPLOAD, addr, n)
 
+    @serialized_io
     def download(self, addr, nbytes):
         _backend.check_transfer(addr, nbytes, what='download')
         words = (nbytes + WORD - 1) // WORD
@@ -379,13 +377,142 @@ class Transport(_backend.Backend):
         Sending only x meant a 2x3 grid handed every program the LINEAR id
         under the name of the x index, and a kernel cannot tell.
         """
-        px, py, pz = pid
-        nx, ny, nz = npid
+        try:
+            values = tuple(operator.index(v) for v in (*pid, *npid))
+        except TypeError:
+            raise ValueError('launch grid values must be integers') from None
+        px, py, pz, nx, ny, nz = values
+        if any(v < 0 or v > 0xFFFFFFFF for v in values):
+            raise ValueError('launch grid values must fit unsigned 32 bits')
+        if any(v > 0xFFFF for v in values):
+            if self.large_grid_limit() is None:
+                raise ValueError('this image does not support 32-bit launch grids')
+            return self.request(OP_LAUNCH32, pc, arg_base, role_mask,
+                                px | (py << 32), pz | (nx << 32), ny | (nz << 32),
+                                timeout=timeout)
         a3 = (px & 0xFFFF) | ((py & 0xFFFF) << 16)
         a4 = (pz & 0xFFFF) | ((nx & 0xFFFF) << 16)
         a5 = (ny & 0xFFFF) | ((nz & 0xFFFF) << 16)
         return self.request(OP_LAUNCH, pc, arg_base, role_mask, a3, a4, a5,
                             timeout=timeout)
+
+    @serialized_io
+    def physical_grid_capability(self):
+        """Read-only opt-in negotiation; old images explicitly refuse opcode 10."""
+        if not hasattr(self, '_physical_grid_capability'):
+            reply = self.request(10)
+            if reply.status == ST_REFUSED:
+                self._physical_grid_capability = None
+            elif reply.ok and 1 <= reply.r0 <= 16 and 1 <= reply.r1 <= 0xFFFFFFFF:
+                self._physical_grid_capability = (reply.r0, reply.r1)
+            else:
+                raise DeviceLost('malformed physical grid capability response')
+        return self._physical_grid_capability
+
+    def launch_grid(self, pc, arg_base, grid, *, arg_stride=0,
+                    active_cores=None, role_mask=1, group_width=1, timeout=None):
+        """One hardware command for the whole grid; no host per-program loop."""
+        dims = tuple(operator.index(v) for v in grid)
+        if len(dims) != 3 or any(v < 0 or v > 0xFFFFFFFF for v in dims):
+            raise ValueError('grid must contain three unsigned 32-bit axes')
+        pc, arg_base, arg_stride, role_mask = map(operator.index,
+                                                (pc, arg_base, arg_stride, role_mask))
+        if any(v < 0 or v > 0xFFFFFFFFFFFFFFFF or v % 8 for v in (pc, arg_base, arg_stride)):
+            raise ValueError('PC, argument base and stride must be aligned uint64 values')
+        group_width=operator.index(group_width)
+        if group_width not in (1,2,4):
+            raise ValueError('physical program group width must be 1, 2 or 4')
+        if group_width>1:
+            capability_group=self.physical_chunk_capability()
+            if capability_group is None or group_width>capability_group:
+                raise ValueError('image does not support this physical chunk width')
+        if role_mask < 0 or role_mask > 0xFFFFFFFF or role_mask & 0x0FFFFFF0:
+            raise ValueError('role mask must contain only four context bits and slice flags')
+        capability = self.physical_grid_capability()
+        if capability is None:
+            raise ValueError('image does not support physical grid dispatch')
+        cores, limit = capability
+        mask = (1 << cores) - 1 if active_cores is None else operator.index(active_cores)
+        if mask <= 0 or mask >= 1 << cores:
+            raise ValueError('active core mask is outside the advertised physical cores')
+        gx, gy, gz = dims
+        if gx * gy * gz > limit:
+            raise ValueError('grid exceeds the advertised streaming budget')
+        return self.request(11, pc, arg_base, role_mask | ((group_width.bit_length()-1)<<8),
+                            gx | (gy << 32), gz | (mask << 32), arg_stride,
+                            timeout=timeout)
+
+    @serialized_io
+    def physical_chunk_capability(self):
+        if not hasattr(self, '_physical_chunk_capability'):
+            reply=self.request(14)
+            if reply.status == ST_REFUSED:
+                self._physical_chunk_capability=None
+            elif reply.ok and reply.r0 & 1 and reply.r1 in (1,2,4):
+                self._physical_chunk_capability=reply.r1
+            else:
+                raise DeviceLost('invalid physical chunk capability')
+        return self._physical_chunk_capability
+
+    @serialized_io
+    def memory_port_capability(self):
+        if not hasattr(self, '_memory_port_capability'):
+            reply=self.request(16)
+            if reply.status==ST_REFUSED:self._memory_port_capability=None
+            elif reply.ok and 1<=reply.r0<=16 and reply.r1==1:self._memory_port_capability=reply.r0
+            else:raise DeviceLost('invalid memory outlet capability')
+        return self._memory_port_capability
+
+    @serialized_io
+    def memory_port_metrics(self):
+        ports=self.memory_port_capability()
+        if ports is None:raise ValueError('image does not expose memory outlet counters')
+        rows=[]
+        for port in range(ports):
+            reply=self.request(17,port)
+            if not reply.ok or not (0<=reply.r0<=0xFFFFFFFFFFFFFFFF and 0<=reply.r1<=0xFFFFFFFFFFFFFFFF):
+                raise DeviceLost('invalid memory outlet counters')
+            rows.append({'port':port,'read_lines':reply.r0,'write_lines':reply.r1})
+        return rows
+
+    @serialized_io
+    def physical_grid_metrics(self):
+        """Hardware counters for the last accepted launch, retained until the next.
+
+        Occupied cycles count accepted work awaiting core completion, including
+        memory stalls; they are not instruction-retirement or utilization rates.
+        """
+        capability = self.physical_grid_capability()
+        if capability is None:
+            raise ValueError('image does not support physical grid dispatch')
+        rows=[]
+        peak=None
+        for core in range(capability[0]):
+            counts=self.request(12, core)
+            activity=self.request(13, core)
+            if not counts.ok or not activity.ok:
+                raise DeviceLost('physical grid telemetry is unavailable')
+            if not (0 <= counts.r1 <= counts.r0 <= 0xFFFFFFFF and
+                    0 <= activity.r1 <= 0xFFFFFFFFFFFFFFFF and
+                    0 <= activity.r0 <= capability[0]) or (peak is not None and peak != activity.r0):
+                raise DeviceLost('invalid physical grid telemetry')
+            peak=activity.r0
+            rows.append({'core':core,'issued':counts.r0,'completed':counts.r1,
+                         'occupied_cycles':activity.r1})
+        return {'peak_active':peak,'cores':rows}
+
+    @serialized_io
+    def large_grid_limit(self):
+        """Query once per backend epoch; old images explicitly refuse op 8."""
+        if not hasattr(self, '_large_grid_limit'):
+            reply = self.request(OP_GRID_CAP)
+            if reply.status == ST_REFUSED:
+                self._large_grid_limit = None
+            elif reply.ok and reply.r0 == 32 and 4096 < reply.r1 <= 0xFFFFFFFF:
+                self._large_grid_limit = reply.r1
+            else:
+                raise DeviceLost('invalid GRID_CAP response', detail={'reply': repr(reply)})
+        return self._large_grid_limit
 
     def quiesce(self):
         return self.request(OP_QUIESCE)

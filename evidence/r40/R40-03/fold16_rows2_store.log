@@ -1,0 +1,7 @@
+  already built: /home/zhongchun/.cache/tnca/devices/core-vrf-sync-v5-a8f9e2a0291d254a-f30a9b914657/tnca_device_vrf5.vvp
+PASS values/index fold, width 16, tail 127, NaN and first tie
+PASS values/index fold, width 16, tail 17, NaN and first tie
+PASS values/index fold, width 16, tail 33, NaN and first tie
+PASS values/index fold, width 16, tail 65, NaN and first tie
+r40-fold-tests PASS (4/4)
+EXIT:0

@@ -1,0 +1,7 @@
+  already built: /home/zhongchun/.cache/tnca/devices/core-vrf-sync-v5-a8f9e2a0291d254a-f30a9b914657/tnca_device_vrf5.vvp
+PASS mm, logical 16x16x16, shape 17x65x33
+PASS mm, logical 16x16x16, shape 33x31x65
+PASS addmm, logical 16x16x16, shape 17x65x33
+PASS addmm, logical 16x16x16, shape 33x31x65
+r40-gemm-tiles-tests PASS (4/4)
+EXIT:0

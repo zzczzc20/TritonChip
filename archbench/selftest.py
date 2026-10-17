@@ -77,7 +77,9 @@ def check_point(p):
     rb = _bytes(list(ins) + list(m.parameters()) + list(m.buffers()))
     if d.read_bytes > rb + 0.5:
         problems.append(f'declares {d.read_bytes} bytes read, inputs+weights are only {rb}')
-    for name, fn in (('tnca', lambda: tnca_bound(p, 'core-sim')), ('gpu', lambda: gpu_bound(p))):
+    for name, fn in (('tnca', lambda: tnca_bound(p, 'core-sim')),
+                     ('tnca/hbm', lambda: tnca_bound(p, 'core-vrf-sync-v5/hbm')),
+                     ('gpu', lambda: gpu_bound(p))):
         L, _binding, _terms = fn()
         if not L > 0:
             problems.append(f'{name} bound {L} is not positive')

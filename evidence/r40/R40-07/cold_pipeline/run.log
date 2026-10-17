@@ -1,0 +1,46 @@
+PASS barrier generations 0..65537: no early release at 16-bit boundary
+tb/core/tb_barrier_epoch.v:63: $finish called at 2621502000 (1ps)
+PASS barrier exhaustion faults before wrap; init recovers
+tb/core/tb_barrier_epoch.v:63: $finish called at 651000 (1ps)
+....
+----------------------------------------------------------------------
+Ran 4 tests in 0.000s
+
+OK
+r40-pipeline-stage-options PASS (18/18)
+  building core-vrf-sync-v5 -> /tmp/r40-cold-pipeline.aXwEnS/devices/core-vrf-sync-v5-a8f9e2a0291d254a-db3866154350/tnca_device_vrf5.vvp
+  built 17675506 bytes
+  PASS  gemm_one_step            off    3883 cyc  on    3883 cyc   1.000x  roles 1->1
+  PASS  gemm_odd_steps           off    8793 cyc  on    8228 cyc   1.069x  roles 1->2
+  PASS  gemm_grid_3x2            off   56776 cyc  on   56016 cyc   1.014x  roles 1->2
+  PASS  gemm_five_programs       off   25323 cyc  on   25370 cyc   0.998x  roles 1->2
+  PASS  linear_one_program       off    3664 cyc  on    3109 cyc   1.179x  roles 1->2
+  PASS  linear_four_programs     off    9975 cyc  on   10144 cyc   0.983x  roles 1->2
+  PASS  linear_odd_steps_grid    off   15104 cyc  on   14648 cyc   1.031x  roles 1->2
+  PASS  gemm_carried_pointers    off   65950 cyc  on   65950 cyc   1.000x  roles 1->1
+r39-rctx-roles-tests [core-vrf-sync-v5]  PASS
+W1014 16:55:33.005000 613874 torch/utils/cpp_extension.py:183] No CUDA runtime is found, using CUDA_HOME='/usr/local/cuda'
+  already built: /tmp/r40-cold-pipeline.aXwEnS/devices/core-vrf-sync-v5-a8f9e2a0291d254a-db3866154350/tnca_device_vrf5.vvp
+PASS mm 16x16x48, stages=2, rings=[{'consumer_ops': 308, 'direct': True, 'producer_ops': 200, 'ring_windows': 4, 'stages': 2}]
+PASS mm 17x31x65, stages=2, rings=[{'consumer_ops': 354, 'direct': False, 'producer_ops': 1463, 'ring_windows': 4, 'stages': 2}]
+PASS addmm 16x16x48, stages=2, rings=[{'consumer_ops': 423, 'direct': True, 'producer_ops': 201, 'ring_windows': 4, 'stages': 2}]
+PASS addmm 17x31x65, stages=2, rings=[{'consumer_ops': 469, 'direct': False, 'producer_ops': 1464, 'ring_windows': 4, 'stages': 2}]
+r40-native-pipeline PASS (4/4)
+AUDIT measured DMA/MMA overlap=1272 cycles
+  PASS  gemm_one_step            off    3883 cyc  on    3883 cyc   1.000x  roles 1->1
+  PASS  gemm_odd_steps           off    8793 cyc  on    8236 cyc   1.068x  roles 1->2
+  PASS  gemm_grid_3x2            off   56776 cyc  on   56168 cyc   1.011x  roles 1->2
+  PASS  gemm_five_programs       off   25323 cyc  on   25180 cyc   1.006x  roles 1->2
+  PASS  linear_one_program       off    3664 cyc  on    3096 cyc   1.183x  roles 1->2
+  PASS  linear_four_programs     off    9975 cyc  on   10492 cyc   0.951x  roles 1->2
+  PASS  linear_odd_steps_grid    off   15104 cyc  on   14270 cyc   1.058x  roles 1->2
+  PASS  gemm_carried_pointers    off   65950 cyc  on   65950 cyc   1.000x  roles 1->1
+r39-rctx-roles-tests [core-vrf-sync-v5]  PASS
+W1014 17:10:59.787000 625945 torch/utils/cpp_extension.py:183] No CUDA runtime is found, using CUDA_HOME='/usr/local/cuda'
+  already built: /tmp/r40-cold-pipeline.aXwEnS/devices/core-vrf-sync-v5-a8f9e2a0291d254a-db3866154350/tnca_device_vrf5.vvp
+PASS mm 16x16x48, stages=3, rings=[{'consumer_ops': 326, 'direct': True, 'producer_ops': 219, 'ring_windows': 6, 'stages': 3}]
+PASS mm 17x31x65, stages=3, rings=[{'consumer_ops': 374, 'direct': False, 'producer_ops': 2091, 'ring_windows': 6, 'stages': 3}]
+PASS addmm 16x16x48, stages=3, rings=[{'consumer_ops': 441, 'direct': True, 'producer_ops': 220, 'ring_windows': 6, 'stages': 3}]
+PASS addmm 17x31x65, stages=3, rings=[{'consumer_ops': 489, 'direct': False, 'producer_ops': 2092, 'ring_windows': 6, 'stages': 3}]
+r40-native-pipeline PASS (4/4)
+AUDIT measured DMA/MMA overlap=1664 cycles

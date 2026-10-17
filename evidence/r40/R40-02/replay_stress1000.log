@@ -1,0 +1,9 @@
+  already built: /home/zhongchun/.cache/tnca/devices/core-vrf-sync-v5-a8f9e2a0291d254a-f30a9b914657/tnca_device_vrf5.vvp
+PASS 1000 retained graph replays, bounded submission and storage/lease audit
+AUDIT {'epoch': 0, 'heap_capacity_bytes': 393216, 'heap_allocated_bytes': 3072, 'heap_peak_bytes': 11264, 'code_allocated_bytes': 5312, 'code_peak_bytes': 5312}
+PASS retained multi-kernel Torch graph replay, updated input, artifact and byte audit
+PASS shape/stride guard and permanent invalidation before admission
+PASS changed storage alias rejected before admission
+PASS recovery epoch rejects whole graph without submission
+r40-replay-tests PASS (5/5)
+EXIT:0

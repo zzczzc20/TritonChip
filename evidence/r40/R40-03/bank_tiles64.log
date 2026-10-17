@@ -1,0 +1,17 @@
+W1011 12:19:26.618000 4000242 torch/utils/cpp_extension.py:183] No CUDA runtime is found, using CUDA_HOME='/usr/local/cuda'
+  already built: /home/zhongchun/.cache/tnca/devices/core-vrf-sync-v5-a8f9e2a0291d254a-f13f42fcd493/tnca_device_vrf5.vvp
+AUDIT {"resources": {"accumulators": 0, "barriers": 0, "commands_outstanding": "unknown", "descriptors": 0, "rf_private_per_role": {"role0": 25, "role1": 25, "role2": 25, "role3": 25}, "scratch_bytes": 0, "shared_windows": []}, "spill": {"estimated_peak": 22, "scratch_bytes": 0, "slots": 0}, "width": 64}
+PASS block 64, tail 127, masked select/load/store
+PASS block 64, tail 17, masked select/load/store
+PASS block 64, tail 31, masked select/load/store
+PASS block 64, tail 33, masked select/load/store
+PASS block 64, tail 65, masked select/load/store
+AUDIT {"dtype": "int64", "resources": {"accumulators": 0, "barriers": 0, "commands_outstanding": "unknown", "descriptors": 0, "rf_private_per_role": {"role0": 35, "role1": 35, "role2": 35, "role3": 35}, "scratch_bytes": 0, "shared_windows": []}, "spill": {"estimated_peak": 34, "scratch_bytes": 0, "slots": 0}, "width": 64}
+PASS block 64, signed int64 values beyond 32 bits
+PASS block 64, torch.float16
+PASS block 64, torch.bfloat16
+PASS block 64, torch.int8
+PASS block 64, torch.int16
+PASS block 64, torch.int32
+PASS block 64, strided offset alias and in-place stores
+r40-tiles-tests PASS (12/12)

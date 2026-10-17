@@ -1,0 +1,81 @@
+{
+  "enabled": 0,
+  "cases": [
+    {
+      "name": "triad",
+      "ledgers": [
+        {
+          "static_extra_reads": 8,
+          "sites": 8,
+          "moves": 0,
+          "device_cycles": 587,
+          "resources": {
+            "accumulators": 0,
+            "barriers": 0,
+            "commands_outstanding": "unknown",
+            "descriptors": 0,
+            "rf_private_per_role": {
+              "role0": 27,
+              "role1": 27,
+              "role2": 27,
+              "role3": 27
+            },
+            "scratch_bytes": 0,
+            "shared_windows": []
+          },
+          "asm_sha256": "e4b9277a5fe0a49a821c5ac29e0501e439afdefc9d8acd8ff0a86d87e4e18ede"
+        }
+      ]
+    },
+    {
+      "name": "layernorm",
+      "ledgers": [
+        {
+          "static_extra_reads": 19,
+          "sites": 19,
+          "moves": 24,
+          "device_cycles": 3437,
+          "resources": {
+            "accumulators": 0,
+            "barriers": 0,
+            "commands_outstanding": "unknown",
+            "descriptors": 0,
+            "rf_private_per_role": {
+              "role0": 31,
+              "role1": 31,
+              "role2": 31,
+              "role3": 31
+            },
+            "scratch_bytes": 0,
+            "shared_windows": []
+          },
+          "asm_sha256": "e48bc8a93b9da82bc6bee4ca8860dbf416578a8b1e7377a187d51bf950c062af"
+        }
+      ]
+    },
+    {
+      "name": "f32-dot",
+      "ledgers": [
+        {
+          "static_extra_reads": 110,
+          "sites": 109,
+          "moves": 0,
+          "device_cycles": 2384,
+          "resources": {
+            "accumulators": 1,
+            "barriers": 2,
+            "commands_outstanding": "unknown",
+            "descriptors": 2,
+            "rf_private_per_role": {
+              "role0": 41,
+              "role1": 41
+            },
+            "scratch_bytes": 512,
+            "shared_windows": []
+          },
+          "asm_sha256": "3bdcf9ea7abef91117a51eecacd691f5c4771e1f7cf042d581e69cac45efff1d"
+        }
+      ]
+    }
+  ]
+}

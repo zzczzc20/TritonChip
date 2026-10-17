@@ -1,0 +1,47 @@
+{
+ "results": [
+  {
+   "name": "window",
+   "ok": true,
+   "detail": {
+    "base": "0x0",
+    "size": 8589934592,
+    "local_limit": "0x20000",
+    "bank": "MBG[0:31]",
+    "bank_bytes": 8589934592,
+    "bank_index": 41,
+    "heap_end": "0x200020000",
+    "dma": true
+   },
+   "wall_s": 3.3
+  },
+  {
+   "name": "samples",
+   "ok": true,
+   "detail": {
+    "samples": 32,
+    "first": "0x21000",
+    "last": "0x1f0021000",
+    "pseudo_channels": 32,
+    "pc_first": 0,
+    "pc_last": 31,
+    "all_pc_coverage": true
+   },
+   "wall_s": 3.2
+  },
+  {
+   "name": "capacity",
+   "ok": false,
+   "detail": "AssertionError: relative error 0.03880021721124649",
+   "wall_s": 10.9
+  },
+  {
+   "name": "stream",
+   "ok": false,
+   "detail": "AdmissionError: [ADMISSION_REFUSED] 6144 programs exceeds the 4096 limit\n  at: triton_red_fused_sum_0 grid 6144x1x1\n  grid: [6144, 1, 1]\n  limit: 4096\n  requested: 6144\n  try: split the work across several launches; the limit is the grid the transport encodes, sixteen bits per axis with a 4096 cap",
+   "wall_s": 11.9
+  }
+ ],
+ "backend_args": "{\"xclbin\":\"/home/zzhouch/tnca_build/u280_r40ram/tnca_u280.xclbin\",\"image_profile\":\"core-vrf-sync-v5\"}",
+ "hbm_bytes": "8589934592"
+}

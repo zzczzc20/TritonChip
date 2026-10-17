@@ -1,0 +1,164 @@
+# Final bounded implementation candidate
+
+The failed image reconstructed cache-private lookup/replacement logic under
+TMU and placed it across SLR boundaries. Explicit LOC-to-site queries confirmed
+this detour even though named core/slice groups and pipeline state occupied
+the intended regions. This candidate preserves cache instance hierarchy so
+that tile pblocks own the complete private cone, while retaining required
+code-queue protection and internal optimization.
+
+The corrected screen connects all maintenance inputs and uses three real
+slices sharing one real TMU under rebuilt synthesis and `opt_design`:
+
+| Cache boundary | LUT | FF | Foreign combinational consumers by cache | Worst data ns | Levels | Estimated WNS ns |
+| --- | ---: | ---: | --- | ---: | ---: | ---: |
+| Unpreserved | 99,976 | 15,509 | 4,144 / 5,208 / 4,153 | 8.383 | 33 | +1.374 |
+| Preserved | 100,039 | 15,524 | 0 / 0 / 0 | 8.344 | 33 | +1.413 |
+
+The selected-private-register fanout audit covers tag outputs, victim owners,
+ages and valid bits across all module namespaces, stopping at sequential
+endpoints. Counts are per-cache dependencies, not unique whole-design cells.
+Both versions retain 96 RAM32M16 tag macros and 1,272 tag-output flops across
+three caches. Macro children are not additional independent storage.
+
+The preserved worst path is victim-owner flop to writeback-address RAM enable:
+2.465 ns logic and 5.879 ns estimated net delay. Tag reads register at
+E_SEL/E_LOOK; owners register at E_LOOK/E_MISS with epoch retry; victim ranking
+uses a balanced tree without another request cycle. Functional/mutation and
+source-regression evidence is linked from the P0 package. The decoder repair
+is included in this candidate, unlike the failed cf330dc image.
+
+These are module-level, unplaced estimates. Cores, NoC and the HBM platform
+are absent; these reports cannot qualify full packing, routed setup/hold, CDC,
+a loadable image or frozen workloads. `preflight.json` binds scope, exact
+sources, configuration, clock, immutable contract and raw archives. Missing
+performance remains not-measured.
+
+The final full attempt retains three cores/outlets, HBM[0:31], 100 MHz,
+32 sets/eight ways, two-stage links and SSI_SpreadSLLs. It runs once in a fresh
+build directory and never retries or loads a board. Success must be followed
+by actual placement, route, clock/setup/hold, CDC and image qualification,
+then the unscaled >=64 MiB standard Torch checkpoint and complete frozen
+inventories. Failure retains logs/DCP and does not trigger another attempt.
+
+Started at 2026-10-16 22:33:29 UTC from immutable source `0c39793`;
+[launch.json](launch.json) records the exact archive, source, configuration,
+clock, contract, process and observer identities. At launch, the original two-attempt budget was exhausted. On 2026-10-17
+the user authorized one further full attempt; it remains reserved and unlaunched. No acceptance gate is promoted at launch.
+
+Terminal result: **exit 1; illegal route; no loadable image**. The retained
+[terminal record](terminal_failure.json) and `terminal_reports.tar.gz` contain
+the complete observer reports and raw implementation log. The error DCP is
+647,882,148 bytes, SHA
+`b5be49c0529b92a76ed084964cb51a2eec541744f235dfaf9ab7c98c5ee77612`.
+Two HBM `path_18` response nets conflict at `INT_X79Y186/NN1_W_BEG7`; two kernel
+nets also have antenna/island errors. The worst sampled setup path is slice2
+TLW address to TMU dead-FIFO enable: 30 levels, 20.561 ns data delay
+(2.520 ns logic, 18.041 ns net), slack -11.159 ns at a 10 ns kernel period.
+This diagnostic failed-DCP timing is not legal-route qualification or fmax.
+
+Current blocker: no legal 100 MHz three-core image. Next command on the FPGA
+host: `tail -n 25 ~/tnca_build/r40_attempt02_physical_detail_20261017/stdout.log`.
+Success: use actual register-cut, tag-device, crossing and HBM endpoint reports
+to validate the combined structural correction before considering attempt 3.
+Failure: retain partial diagnostic results and correct the query/cone; no
+implementation retry, frequency reduction or workload reduction.
+The original observer completed; the detailed diagnostic uses the separately
+frozen `2176e7d5` tools, preserving this immutable hardware source.
+
+The vertical hardware/workload gates are blocked by that same unqualified
+image. After physical qualification, run the existing original >=64 MiB
+Torch checkpoint on the immutable software snapshot, then the complete
+native 77, HBM 14 and frozen model inventories. Numerical, ownership,
+three-core/outlet traffic and visibility evidence are required; a checkpoint
+failure must preserve its exact inputs and output before any correction.
+
+The running full-system kernel has completed cross-boundary/area optimization
+and emitted its preliminary RAM inference report. `tag_inference.json` records
+all reported synchronous tag-bank rows and binds the captured original log
+prefix in `kernel_inference_prefix.log.gz`: 32 x 53 bits per way infer four
+RAM32M16 macros per way. Repeated/specialized module rows are not a final
+instantiated primitive census. This supports the intended storage mapping;
+final mapped/placed counts, locality, routed timing, CDC and image remain
+unqualified. No required gate is promoted.
+
+At 2026-10-17 03:17 UTC, actual placement reached Phase 4.1 Post Commit
+Optimization; route had not started. Kernel synthesis completed in 1:13:11
+with 821,876 LUTs, 236,357 FFs, 214.5 BRAM tiles and 531 DSPs. The completed
+logs, utilization report and generated synthesis script are preserved in
+`synthesis_reports.tar.gz`. `post_synthesis_observation.json` binds their
+hashes, the streamed SHA256 of the retained 156,828,189-byte kernel DCP,
+constraint/configuration hashes and the captured placement-log prefix.
+The DCP was hashed as bytes; no additional Vivado checkpoint reader was run.
+
+The placement log reports aggregate SLR0-to-SLR1 demand of 15,497/23,040 SLLs.
+This does not measure hotspot-column demand or establish final routability.
+Actual placement/locality, complete route, routed setup/hold, CDC and image
+qualification remain open. No required gate is promoted.
+
+Pinned-source CI [38976369917](https://github.com/zzczzc20/TritonChip/actions/runs/38976369917)
+completed successfully on exact hardware source `0c39793`; `source_ci.json`
+retains the authoritative run and job results. CI is source regression
+qualification, not board workload or physical implementation acceptance.
+
+`imported_rtl_identity.json` verifies every one of the 60 Verilog/SystemVerilog
+source/header files present in the actual synthesized kernel IP `src`
+directory against the frozen source archive. It records each imported hash
+and matching frozen path. This source-provenance audit excludes vendor
+wrappers, platform IP and non-source build artifacts; it does not qualify
+placement, timing, CDC, a loadable image or workloads.
+
+The existing `range-slice-cuts` diagnostic now emits a per-cache tag storage
+inventory and summary, separating storage roots, nested implementation cells,
+register fallback and non-storage helpers. RAM macros and their children
+must not be added together. A missing storage selection or conflicting
+canonical cell record is an extraction error. The mode also ranks the four
+existing boundary timing samples and 30 global worst setup paths, retaining
+logic levels and logic/net delay. Empty path samples are reported as errors;
+no extraction result accepts an image.
+
+After the implementation terminal marker and the existing observer finish,
+run the committed diagnostic tool revision against the retained final DCP in
+a fresh output directory:
+
+```sh
+vivado -mode batch -source "$R40_DIAGNOSTIC_SCRIPT" -tclargs \
+  "$R40_FINAL_DCP" "$R40_NEW_CUT_REPORTS" range-slice-cuts
+```
+
+Record the tool revision/script SHA separately from hardware source `0c39793`.
+The read-only analysis tool can be staged in a separate directory; the live
+immutable implementation source must remain intact. Local Tcl regression
+coverage checks hierarchy-aware accounting against the retained OOC inventory
+ratios, canonical duplicate handling, exploded RAM, FF fallback and refusal of
+missing/conflicting storage. Execution against the final Vivado DCP remains
+pending; no checkpoint reader was started alongside placement.
+
+At 2026-10-17 09:10 UTC, placement and physical optimization were complete;
+route was running at Phase 4.1 Global Iteration 0. The read-only capture in
+`routing_observation.json` retains `routing_progress.log.gz`,
+`slr_util_placed.rpt` and `full_util_placed.rpt` with their raw-byte hashes.
+Actual placed CLB occupancy is 93.53%/87.70%/86.07%, but the router still
+estimates a 213% SLR1–2 hotspot column. Aggregate placed connectivity and
+router estimated SLL demand are different measurements; neither establishes
+final routed capacity. Intermediate WNS/WHS of -0.952/-0.176 ns do not qualify
+100 MHz setup/hold. No required gate is promoted. Continue the existing
+observer command and success/failure branches above; do not open another
+checkpoint alongside the live router or start another full implementation.
+
+The live router emitted two iteration-specific residual CLB/net lists,
+retained with original-byte hashes and capture time in
+`live_route_residuals/observation.json`. Iteration 160 lists seven nets:
+five tile1 slice signals and two tile0 VALU signals. Iteration 180 lists two
+CLB tile entries and no net names. This sparse residual sample does not
+establish the limiting path, exhaustive congestion, or bus-to-SLL-column
+attribution; no RTL change or acceptance promotion follows from it alone.
+After terminal completion, compare actual timing and endpoints of these
+named nets with the final crossing and pipeline-cut reports.
+
+`staged_diagnostic_identity.json` binds the separately staged read-only tools
+to revision `2176e7d`, script hashes and its completed successful source CI.
+Vendor execution remains pending. This tool identity is separate from the
+immutable hardware source `0c39793`; no live hardware source was overwritten.
+
+The subsequent read-only detail package is in `physical_detail.json` and `physical_detail.tar.gz`. Tag/cut/boundary reports completed, including actual LAG routing-tile attribution for the sampled tile-connected nets. The final HBM endpoint query failed to resolve leaf source pins; its exit 1 and exact query are preserved. This partial diagnostic outcome does not erase the completed raw reports or qualify the failed image. No implementation retry was performed.

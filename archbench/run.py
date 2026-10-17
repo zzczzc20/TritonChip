@@ -34,8 +34,9 @@ def _one(args):
     p = registry.get(args.point[0])
     if args.platform == 'tnca':
         from archbench.platforms import tnca
+        bundle = str(Path(args.bundle_dir) / p.id.replace('/', '__')) if args.bundle_dir else None
         rec = tnca.run(p, profile=args.profile, opt_level=args.opt_level, seed=args.seed,
-                       counters=args.counters)
+                       counters=args.counters, warmup=args.warmup, timed=args.timed, bundle=bundle)
     else:
         from archbench.platforms import gpu
         rec = gpu.run(p, variant=args.variant, seed=args.seed, reps=args.reps)
@@ -54,7 +55,7 @@ def _platform(args):
 def _evidence(args):
     if args.platform == 'gpu':
         return 'measured-gpu'
-    return 'measured-board' if args.backend in ('fpga-u50', 'fpga-u280') else 'measured-rtl'
+    return 'measured-board' if args.backend in ('fpga-u50', 'fpga-u280', 'fpga-u280-multicore') else 'measured-rtl'
 
 
 def _child_env(args):
@@ -91,6 +92,9 @@ def _spawn(pid, args, logdir):
            '--seed', str(args.seed), '--variant', args.variant]
     if args.counters:
         cmd.append('--counters')
+    cmd += ['--warmup', str(args.warmup), '--timed', str(args.timed)]
+    if args.bundle_dir:
+        cmd += ['--bundle-dir', str(Path(args.bundle_dir).resolve())]
     if args.reps:
         cmd += ['--reps', str(args.reps)]
     t = time.monotonic()
@@ -133,6 +137,13 @@ def main(argv=None):
                     help='TNCA: compile every kernel, launch none (TNCA_LAUNCH=skip)')
     ap.add_argument('--variant', default='inductor-cudagraph')
     ap.add_argument('--reps', type=int)
+    ap.add_argument('--warmup', type=int, default=0,
+                    help='TNCA, protocol 2: untimed calls after the cold first call')
+    ap.add_argument('--timed', type=int, default=0,
+                    help='TNCA, protocol 2: timed calls, one sample each (0: the first call\'s device '
+                         'cycles are the one, deterministic, sample -- the simulator)')
+    ap.add_argument('--bundle-dir', type=Path,
+                    help='TNCA, protocol 2: write each point\'s provenance bundle under this directory')
     ap.add_argument('--seed', type=int, default=0)
     ap.add_argument('--jobs', type=int, default=1)
     ap.add_argument('--timeout', type=float, default=6 * 3600)

@@ -1,0 +1,166 @@
+{
+  "schema": "tnca-slice-ooc-followup/1",
+  "scope": "isolated module screening, no placement/route or graph performance qualification",
+  "contract_sha256": "49fc0e02733139707ae2292eff2ef893e76e73f0723d0d002b2e7e1864af71c8",
+  "experiment": {
+    "schema": "tnca-slice-ooc-experiment/1",
+    "scope": "isolated paired OOC; not routed, not a graph performance result",
+    "reference_commit": "09ebe06",
+    "candidate_commit": "cbb6402e72e3704d883831916b56fff464801372",
+    "contract_sha256": "49fc0e02733139707ae2292eff2ef893e76e73f0723d0d002b2e7e1864af71c8",
+    "part": "xcu280-fsvh2892-2L-e",
+    "clock_target_hz": 100000000,
+    "toolchain": "Vivado 2023.2",
+    "threads": 4,
+    "hypothesis": "Shared base-priority comparisons reduce actual Vivado-mapped slice logic and improve the internal register critical path, consistent with the preceding generic LUT experiment.",
+    "success": "Candidate LUT count does not increase and internal setup WNS improves under identical constraints; only then consider integration based on the linked run critical paths.",
+    "failure": "Preserve both reports and reject an unsupported whole-image improvement claim; inspect the new limiting cone before any full-system rerun.",
+    "parameters": {
+      "ADDR_W": 64,
+      "LINE_BYTES": 64,
+      "LINE_BITS": 512,
+      "WORD_BITS": 64,
+      "WORD_BYTES": 8,
+      "SETS": 64,
+      "SET_W": 6,
+      "WAYS": 8,
+      "WAY_W": 3,
+      "MSHR_N": 8,
+      "MSHR_W": 3,
+      "TARGET_N": 16,
+      "TARGET_W": 4,
+      "RQ_N": 8,
+      "RQ_W": 3,
+      "SRC_W": 4,
+      "TAG_W": 5,
+      "SLICE_ID": 0,
+      "HOME_W": 2,
+      "FULL_LINE_TAG": 1,
+      "DCO_T": 8,
+      "DCO_DEAD": 16,
+      "MAINTENANCE": 1,
+      "DCO_ID_W": 16,
+      "TMU_BASE": "0x7fff0000"
+    },
+    "gate_status": "not-measured",
+    "graph_speedup": null,
+    "routed_fmax_hz": null,
+    "image_sha256": null,
+    "input_sha256": {
+      "synth.tcl": "f7e604b92718781b4244543cf31905a6c58ad74c308f2e4afe0d981dd03b4bd6",
+      "candidate.v": "ed94c083be90a45873d0d3adc4e81242331e4688ff113c8c1caa64ab3961d159",
+      "baseline.v": "8fdc27836dfb2dcdd4a45b617ec3d41a2676b42422f4a5679767046f3eeb76ba",
+      "common/tnca_amo.vh": "1e18fa968eba2ff12e3df6b45c550a2a8b6797eb1300bfdee11beda77737b7cd",
+      "common/tnca_defs.vh": "0d4eaa5507a74c45048dc7481a5bbb97ae92d8a5ac15b01c0f37e84783a80c89"
+    },
+    "setup_followup": "Corrected SystemVerilog reserved identifier; re-run candidate only after exact source/parameter/constraint/tool matching permits baseline reuse.",
+    "baseline_reuse_root": "/home/zzhouch/tnca_build/r40_owner_slice_ooc_b81f04d_02"
+  },
+  "baseline": {
+    "status": "synthesis-pass",
+    "resources": {
+      "lut": 83925,
+      "ff": 32064,
+      "bram": 0,
+      "uram": 0,
+      "dsp": 0
+    },
+    "estimated_timing": {
+      "design_wns_ns": -13.417,
+      "design_whs_ns": 0.065,
+      "wns_ns": -13.417,
+      "whs_ns": 0.065,
+      "period_ns": 10.0,
+      "target_mhz": 100.0
+    },
+    "internal_path": {
+      "source": "perf_evict1[-1111111110]/C",
+      "destination": "ms_wbadr_reg_0_7_0_13/RAMA/WE",
+      "logic_levels": 114,
+      "data_delay_ns": 23.174,
+      "logic_delay_ns": 7.006,
+      "estimated_route_delay_ns": 16.168
+    }
+  },
+  "candidate": {
+    "status": "synthesis-pass",
+    "root": "/home/zzhouch/tnca_build/r40_owner_slice_ooc_cbb6402_03",
+    "vivado_pid": 884056,
+    "source_sha256": "ed94c083be90a45873d0d3adc4e81242331e4688ff113c8c1caa64ab3961d159",
+    "resources": {
+      "lut": 79258,
+      "ff": 32052,
+      "bram": 0,
+      "uram": 0,
+      "dsp": 0
+    },
+    "estimated_timing": {
+      "design_wns_ns": -5.957,
+      "design_whs_ns": 0.065,
+      "wns_ns": -5.957,
+      "whs_ns": 0.065,
+      "period_ns": 10.0,
+      "target_mhz": 100.0
+    },
+    "internal_path": {
+      "source": "cur_addr_reg[7]/C",
+      "destination": "ms_wbadr_reg_0_7_0_13/RAMA/WE",
+      "logic_levels": 66,
+      "data_delay_ns": 15.714,
+      "logic_delay_ns": 4.711,
+      "estimated_route_delay_ns": 11.003
+    },
+    "report_sha256": {
+      "utilization.rpt": "032708711c464ed22eaf800a8e4cbb2e05dec7690966f40103eb878bb7d908f6",
+      "timing.rpt": "179cbf1fe0b77a249a3786d94adaf0fe39a5c90ef357f5fe5b49750c78c3f4ba",
+      "critical_paths.rpt": "8841ec04aa1dea358f85c46708e5333002b575b3807b156ae060640b55db49a9",
+      "check_timing.rpt": "3f2d3f3dcce8a4186bdf9ab7f04c351c9d7790b4f5626d428168eddc25723d6a"
+    },
+    "checkpoint_sha256": "9d11a4582ee172d1a818efb77c43df3150b776763aba238045699bd3cef09260",
+    "checkpoint_path": "/home/zzhouch/tnca_build/r40_owner_slice_ooc_cbb6402_03/candidate/ooc/synth.dcp"
+  },
+  "baseline_reuse": {
+    "root": "/home/zzhouch/tnca_build/r40_owner_slice_ooc_b81f04d_02",
+    "status": "dependency-match",
+    "experiment_sha256": "e8e501fc77fdb5cf05ce0807f18afb60ae45cba53735c6ed0d9bde55338e828c",
+    "run_sha256": "b4382cd8a9b5e7bfe3fe3d90d348d6e374401daa31250b120c1233e6c6e5b4b2",
+    "used_dependency_sha256": {
+      "baseline.v": "8fdc27836dfb2dcdd4a45b617ec3d41a2676b42422f4a5679767046f3eeb76ba",
+      "common/tnca_defs.vh": "0d4eaa5507a74c45048dc7481a5bbb97ae92d8a5ac15b01c0f37e84783a80c89",
+      "common/tnca_amo.vh": "1e18fa968eba2ff12e3df6b45c550a2a8b6797eb1300bfdee11beda77737b7cd",
+      "synth.tcl": "f7e604b92718781b4244543cf31905a6c58ad74c308f2e4afe0d981dd03b4bd6"
+    },
+    "artifact_sha256": {
+      "baseline/ooc/utilization.rpt": "7ffc0d7d225233b40c5d1f5c4eb0a16f4b232ce3121719f5eab94b71537ff611",
+      "baseline/ooc/timing.rpt": "b41235f7c33706721e21c7c8644ecf7b9b78d978e3a3cb4107601b29d184c1ca",
+      "baseline/ooc/critical_paths.rpt": "f9cf04f31fdb6f7a814ca07fe676afca24e5d97a2e82252d61a0afd5bc2db9bf",
+      "baseline/ooc/check_timing.rpt": "f1c97c2ee8002b02a0a3f9674d92a96e8ade33a0ba0527f94997a145976e1d19",
+      "baseline/ooc/synth.dcp": "c8c93ee85f34a6c91b16afdc864506b1d3c2b5a2b69ee32f22cb0d806a0f217c"
+    }
+  },
+  "setup_failures": [
+    "unsupported read_verilog -include_dirs option before synthesis",
+    "SystemVerilog reserved keyword matches in superseded candidate"
+  ],
+  "analysis_source_sha256": "452c15d08aef0bdeb663f576f11f3235159f5d9cce980a200726445c93863f81",
+  "artifacts": {
+    "baseline_and_failures.tar.gz": "c7affa99fff8d07327de121e060c5642745e3ab72f12c57c32efc16f7edb2f9c",
+    "README.md": "3d70f89406ba183baf4ad2f69da0ead41b47b222b5718bd778e8e52662180295",
+    "final_identity.txt": "159b784daa1165385a7d4b58c279e5e0f24fab5614037da9fab26f8032788d57",
+    "candidate_complete.tar.gz": "0300a5c1870f1b83daa07c59ab3dd8e784e2deed64c304e5f810191d2c03bc7a",
+    "running_observation.json": "c9ce1bbc03fd0eac62786062acc27651fe1fa3c0327fe88acf39420fa6827be3"
+  },
+  "gate_status": "not-measured",
+  "image_sha256": null,
+  "measured_clock_hz": null,
+  "graph_speedup": null,
+  "routed_timing": null,
+  "comparison": {
+    "lut_delta": -4667,
+    "lut_relative_change": -0.055609174858504584,
+    "estimated_wns_improvement_ns": 7.46,
+    "local_hypothesis": "supported for isolated mapped area and internal estimated timing",
+    "clock_100mhz": "not-qualified; setup remains negative",
+    "next_causal_question": "Does sharing/precomputing range endpoints remove the remaining serial query-address arithmetic without changing unsigned-64 membership or metadata visibility?"
+  }
+}

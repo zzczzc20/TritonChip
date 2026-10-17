@@ -1,0 +1,12 @@
+{
+  "schema": "tnca-r40-physical-map-checkpoint/1",
+  "base_commit": "7c3306d",
+  "files": {
+    "python/tnca/backends/u50.py": "f5f062a1ffbdc519716b0ba3e028b3b4119df01a4286517582a5ae3490ae80dd",
+    "tools/r40/hbm_address.py": "920d92a9332135093bb4857a4558559138eed6bd6c17c7eb9142f8728afeea2f",
+    "tools/r40/hbm_topology.py": "309c8a49e66d07a8f642038c8be8757e616e2783b80602a8b9eda4299df7561b",
+    "tools/r40/hbm_board.py": "fae4dababda6c6e63a70c9b1f804de52075c8ba38ffc1793b7373aa1ddaeea28"
+  },
+  "functional_gate_closed": false,
+  "measured_performance": false
+}

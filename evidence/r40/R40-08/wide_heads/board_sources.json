@@ -1,0 +1,24 @@
+{
+  "schema": "tnca-r40-board-functional-checkpoint/1",
+  "base_commit": "f2b081e",
+  "files": {
+    "tools/r40/online_attention_tests.py": "4601b5d4b4b8f7d6f895b2917d720a2e32bf90366fe28b67d3f24e5bc64343eb"
+  },
+  "xclbin_sha256": "a3e43ced0b2918169bece31d7fdedbf34b195ec6dc7e4d1f5e67b83c6ea90978",
+  "expected_uuid": "826e9146-9f38-6edb-a226-255a4071ea25",
+  "profile": "core-vrf-sync-v5",
+  "backend": "fpga-u280",
+  "measured_performance": false,
+  "memory_note": "Small functional tensors may use the hybrid local prefix; no intermediate-HBM-traffic or throughput verdict.",
+  "full_inventory_hbm": {
+    "heap_base": 524288,
+    "cases": 14,
+    "passed": 14,
+    "performance": false
+  },
+  "default_local_prefix_failure_open": true,
+  "diagnostic_files": {
+    "board_failure_probe.py": "5b3759b308cca45f333fe4e26a79d095d9008f114ccf4b9454537093497bb03c",
+    "run_board_hbm.sh": "9884ff249f3e17a461d65402c79ab17c2c7f2c7d2a5e6ccdfac071bcc6e2a6f2"
+  }
+}

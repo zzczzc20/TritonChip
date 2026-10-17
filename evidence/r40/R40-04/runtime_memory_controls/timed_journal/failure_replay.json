@@ -1,0 +1,67 @@
+{
+  "report": {
+    "status": "replay-failed",
+    "scope": "DUT I/O and stop-history replay; excludes host/reference semantics and performance",
+    "gate_status": "not-measured",
+    "capture": {
+      "schema": "tnca-mmio-timed-journal/1",
+      "harness": "/tmp/r40_mmio_journal25_native/sim/build/u50-sim/link-1his1__i/multicore-mmio.vvp",
+      "harness_sha256": "eef3a9322ee1c9ce260070e9dfcbed4b71b48d22451bf3fa14f9514a9d118612",
+      "runtime": "/home/zhongchun/tc_env/bin/vvp",
+      "argv": [
+        "/home/zhongchun/tc_env/bin/vvp",
+        "/tmp/r40_mmio_journal25_native/sim/build/u50-sim/link-1his1__i/multicore-mmio.vvp",
+        "+cmd=/tmp/r40_mmio_journal25_native/sim/build/u50-sim/link-1his1__i/regs.cmd",
+        "+rsp=/tmp/r40_mmio_journal25_native/sim/build/u50-sim/link-1his1__i/regs.rsp",
+        "+pollcycles=20",
+        "+intercycle=8",
+        "+watchdog=200000000",
+        "+assert_fatal",
+        "+journal=/tmp/r40_mmio_journal25_native/sim/build/u50-sim/link-1his1__i/journal"
+      ],
+      "backend": "RTL MMIO v2: 3 cores, 3 AXI outlets",
+      "diagnostic_only": true,
+      "wall_time_overhead": "not-measured",
+      "source_root": "/tmp/r40_mmio_journal25_native",
+      "simulator_log": "/tmp/r40_mmio_journal25_native/sim/build/u50-sim/link-1his1__i/regs.log"
+    },
+    "replay_harness_sha256": "eef3a9322ee1c9ce260070e9dfcbed4b71b48d22451bf3fa14f9514a9d118612",
+    "diagnostic_override": false,
+    "capture_terminal": [
+      "T",
+      "3324375",
+      "0"
+    ],
+    "capture_failures": [
+      "FAIL tnca_core assert tnca_multicore_board_regs.dut.device.system.shell.u_system.g_tile[1].u_tile.u_core @3324375000: reservation disagrees with reality (sched=0 rsv0=x alu=0 fp=0 mul=0) cycle=332427 running=1000 rsv=xxxxxxxx pc=0000000000001408 ctx=2 major=11 func=01 dst=2 delay=X issue(valid,stall,kill,book)=xx0x hazard=0 lsu=0 fpu=0 mtx=0 arrive=0 rsv_stall=x steal=0 vrf=x",
+      "FATAL: rtl/core/tnca_core.v:2712: scheduled writeback reservation mismatch"
+    ],
+    "marker_problems": [
+      "simulator exit=1",
+      "expected PASS, got FAIL"
+    ],
+    "result": {
+      "name": "replay",
+      "argv": [
+        "/home/zhongchun/tc_env/bin/vvp",
+        "/tmp/r40_mmio_journal25_native/sim/build/u50-sim/link-1his1__i/multicore-mmio.vvp",
+        "+cmd=/tmp/r40_mmio_journal25_failure_replay/unused.cmd",
+        "+rsp=/tmp/r40_mmio_journal25_failure_replay/actual.rsp",
+        "+replay=/tmp/r40_mmio_journal25_native/sim/build/u50-sim/link-1his1__i/journal",
+        "+assert_fatal"
+      ],
+      "status": "FAIL",
+      "returncode": 1,
+      "seconds": 670.396,
+      "cap": 1800.0,
+      "notes": [],
+      "stdout": "../r40_mmio_journal25_failure_replay/replay.stdout",
+      "stderr": "../r40_mmio_journal25_failure_replay/replay.stderr",
+      "orphans": []
+    }
+  },
+  "stdout": "tnca_fpga_regs: up (words=147456)\nFAIL tnca_core assert tnca_multicore_board_regs.dut.device.system.shell.u_system.g_tile[1].u_tile.u_core @3324375000: reservation disagrees with reality (sched=0 rsv0=x alu=0 fp=0 mul=0) cycle=332427 running=1000 rsv=xxxxxxxx pc=0000000000001408 ctx=2 major=11 func=01 dst=2 delay=X issue(valid,stall,kill,book)=xx0x hazard=0 lsu=0 fpu=0 mtx=0 arrive=0 rsv_stall=x steal=0 vrf=x\nFATAL: rtl/core/tnca_core.v:2712: scheduled writeback reservation mismatch\n       Time: 3324375000  Scope: tnca_multicore_board_regs.dut.device.system.shell.u_system.g_tile[1].u_tile.u_core\n",
+  "stderr": "",
+  "exit": "1\n",
+  "log": "tnca_fpga_regs: up (words=147456)\nFAIL tnca_core assert tnca_multicore_board_regs.dut.device.system.shell.u_system.g_tile[1].u_tile.u_core @3324375000: reservation disagrees with reality (sched=0 rsv0=x alu=0 fp=0 mul=0) cycle=332427 running=1000 rsv=xxxxxxxx pc=0000000000001408 ctx=2 major=11 func=01 dst=2 delay=X issue(valid,stall,kill,book)=xx0x hazard=0 lsu=0 fpu=0 mtx=0 arrive=0 rsv_stall=x steal=0 vrf=x\nFATAL: rtl/core/tnca_core.v:2712: scheduled writeback reservation mismatch\n       Time: 3324375000  Scope: tnca_multicore_board_regs.dut.device.system.shell.u_system.g_tile[1].u_tile.u_core\nMMIO journal replay FAIL\n"
+}

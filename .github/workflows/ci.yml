@@ -51,8 +51,8 @@ jobs:
             iverilog yosys build-essential cmake ninja-build \
             python3 python3-venv \
             libmlir-20-dev mlir-20-tools llvm-20-dev
-          iverilog -V | head -1
-          make --version | head -1
+          iverilog -V | sed -n '1p'
+          make --version | sed -n '1p'
 
       - name: Report the toolchain against the lock
         run: make r1-doctor
@@ -70,6 +70,29 @@ jobs:
 
       - name: Elaboration
         run: make lint
+
+      - name: R40 bounded global dispatcher and real cores
+        run: |
+          make r40-grid-dispatch
+          make r40-coherent-host
+          make r40-multicore-shell
+
+      - name: R40 registered tensor ranges and complete requester identity
+        run: |
+          for ports in 3 8; do
+            iverilog -g2012 -I rtl/common -s tb_tmu_registered_ranges \
+              -Ptb_tmu_registered_ranges.PORTS=$ports \
+              -o /tmp/r40-tmu-ranges-$ports.vvp \
+              tb/nuca/tb_tmu_registered_ranges.v rtl/nuca/tnca_tmu.v
+            vvp /tmp/r40-tmu-ranges-$ports.vvp
+          done
+          make nuca-dco IVFLAGS='-g2012 -I rtl/common -Ptb_nuca_slice.DCO_REGISTERED_RANGES=1'
+          # Exercise the staged owner with metadata changing at E_LOOK edges.
+          make nuca-dco DCO_POLICIES='2 74' DCO_SEEDS='1 7' \
+            IVFLAGS='-g2012 -I rtl/common -Ptb_nuca_slice.DCO_REGISTERED_RANGES=1 -Ptb_nuca_slice.REGISTER_VICTIM_OWNER=1 -Ptb_nuca_slice.EPOCH_CHURN=1'
+
+      - name: R40 runtime memory routing and admission controls
+        run: python3 tools/r40/memory_control_tests.py --out /tmp/r40-memory-controls
 
       - name: Unit benches
         run: make unit
@@ -106,6 +129,7 @@ jobs:
         run: |
           make core-vrf
           make r38-xpose-rtl
+          python3 tools/r40/tensor_bounds_tests.py
 
       # R38's counter list is generated in three places and must agree; the
       # evidence registry must reject each of its injected mutations.
@@ -113,6 +137,7 @@ jobs:
         run: |
           python3 tools/r38/gen_counters.py --check
           python3 tools/r38/evidence_tests.py
+          python3 tools/r40/resources_tests.py
 
       - name: Build tnca-opt against the distribution MLIR
         run: make tnca-opt
@@ -129,11 +154,7 @@ jobs:
       # builds the same set). Only the benches are built: the programs that
       # run on them are other targets' business, not this job's.
       - name: R1 profile and capability checks
-        run: |
-          make core4
-          make sim/build/tb_core_vrf.vvp
-          make sim/build/tb_core_xpose.vvp
-          python3 tools/r1/profile_tests.py
+        run: make r1-profile-tests
 
       # R3's performance model: six graphs whose cycle counts are worked out
       # by hand in the test, and exact agreement required. No RTL, no
@@ -197,18 +218,32 @@ jobs:
       # The version comes from the lock, not from this file. 3.5.0 installs
       # and imports and has no `get_constant_value`, so "some Triton" is not
       # the same claim as "the locked Triton".
-      - name: Install the locked Triton
+      - name: Install locked Triton, Torch and the tutorial plugin
         run: |
           set -euo pipefail
           V=$(python3 -c "import json;print(json.load(open('spec/r1_toolchain.lock.json'))['triton']['version'])")
+          PV=$(python3 -c "import json;print(json.load(open('spec/r38/torch.lock.json'))['version'])")
           python3 -m venv ~/tritonenv
-          ~/tritonenv/bin/pip install -q "triton==$V" numpy
-          ~/tritonenv/bin/python -c "import triton;print('triton', triton.__version__)"
+          ~/tritonenv/bin/pip install -q "triton==$V" "torch==$PV" numpy
+          make python/tnca/data/.staged
+          ~/tritonenv/bin/pip install -q -e .
+          ~/tritonenv/bin/python -c "import torch, triton;print('torch', torch.__version__, 'triton', triton.__version__)"
 
       - name: Build what the end-to-end tests run on
         run: |
           make tnca-opt
           make sim/build/tb_core.vvp sim/build/tb_top.vvp
+
+      - name: R40 compile option identity and explicit overrides
+        run: |
+          python3 tools/r40/packed_window_options_tests.py
+          $HOME/tritonenv/bin/python tools/r40/compile_switch_tests.py
+          $HOME/tritonenv/bin/python tools/r40/pipeline_stage_options_tests.py
+          python3 tools/r40/child_exec_tests.py
+          python3 tools/r40/proton_tests.py
+          python3 tools/performance_harness/tests.py
+          $HOME/tritonenv/bin/python tools/r40/proton_upstream_tests.py
+          $HOME/tritonenv/bin/python tools/r40/hbm_measurement_tests.py
 
       - name: Triton source to RTL, one core and the whole machine
         run: |
@@ -349,13 +384,12 @@ jobs:
         run: make r37-aot-tests TRITON_PYTHON=$HOME/tritonenv/bin/python
       - name: Original kernels through AOT and Session
         run: make r37-run TRITON_PYTHON=$HOME/tritonenv/bin/python TILEBENCH_SOURCE=sim/build/Tilebench R37_OPT_LEVELS=${{ matrix.opt_level }}
-      # R38 rule R2: every case's device cycles equal the frozen baseline
-      # (spec/r38/baseline_cycles.json), run twice to show they are
-      # deterministic. A change that moves cycles has to re-freeze it, in the
-      # same commit, and say why.
-      - name: R38 cycle baseline
+      # Keep all 149 R38 cycle values exact, twice. B39 added the truthful
+      # tensor-store capability and RCTX flags, so R40 pins B39's profile
+      # hash explicitly while preserving the historical R38 reference.
+      - name: Frozen B39 core-sim cycle contract
         if: matrix.opt_level == 2
-        run: make r38-baseline-check TRITON_PYTHON=$HOME/tritonenv/bin/python TILEBENCH_SOURCE=sim/build/Tilebench
+        run: make r40-baseline-check TRITON_PYTHON=$HOME/tritonenv/bin/python TILEBENCH_SOURCE=sim/build/Tilebench
       # The profiler's attribution against the counters and the cost model.
       - name: R38 profiler
         if: matrix.opt_level == 1
@@ -368,6 +402,7 @@ jobs:
           path: |
             sim/build/r37_aot_run.json
             sim/build/r37_aot_run_artifacts/
+            sim/build/r38/baseline_check_*.json
 
   # The PyTorch path: torch.compile -> Inductor -> Triton -> the TNCA plugin
   # -> the RTL simulator, in the locked torch (spec/r38/torch.lock.json), in
@@ -437,3 +472,95 @@ jobs:
           name: archbench-coverage
           path: sim/build/archbench/coverage.jsonl
           if-no-files-found: ignore
+
+  # These real multicore RTL sweeps exceeded the frontend job's two-hour
+  # observation budget. Keep every target, isolate their failures, and run
+  # independent suites concurrently; device deadlines and workloads stay fixed.
+  r40-grid:
+    name: "R40 grid and pipeline (${{ matrix.suite }})"
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    strategy:
+      fail-fast: false
+      matrix:
+        suite: [transport, native, chunks, memory, pipeline]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Toolchain
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends \
+            iverilog yosys build-essential cmake ninja-build python3 python3-venv \
+            libmlir-20-dev mlir-20-tools llvm-20-dev
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: pip-${{ hashFiles('spec/r1_toolchain.lock.json') }}
+      - name: Locked Torch, Triton and plugin
+        run: |
+          set -euo pipefail
+          V=$(python3 -c "import json;print(json.load(open('spec/r1_toolchain.lock.json'))['triton']['version'])")
+          PV=$(python3 -c "import json;print(json.load(open('spec/r38/torch.lock.json'))['version'])")
+          python3 -m venv ~/tritonenv
+          ~/tritonenv/bin/pip install -q "triton==$V" "torch==$PV" numpy
+          make python/tnca/data/.staged
+          ~/tritonenv/bin/pip install -q -e .
+          make tnca-opt
+      - name: Mailbox and runtime protocol
+        if: matrix.suite == 'transport'
+        run: |
+          make r40-physical-grid-transport r40-physical-grid-runtime r40-multicore-backend \
+            TRITON_PYTHON=$HOME/tritonenv/bin/python
+      - name: Three and eight core native Torch
+        if: matrix.suite == 'native'
+        run: make r40-multicore-native-smoke TRITON_PYTHON=$HOME/tritonenv/bin/python
+      - name: Bounded role chunks, descriptor and pair
+        if: matrix.suite == 'chunks'
+        run: make r40-physical-chunks TRITON_PYTHON=$HOME/tritonenv/bin/python
+      - name: Multiple memory outlets and line AXI
+        if: matrix.suite == 'memory'
+        run: |
+          make r40-memory-ports r40-line-axi r40-cache-maintenance r40-multicore-dma \
+            TRITON_PYTHON=$HOME/tritonenv/bin/python TORCH_PYTHON=$HOME/tritonenv/bin/python
+      - name: Two and three stage native pipelines and engine overlap
+        if: matrix.suite == 'pipeline'
+        run: |
+          make r40-pipeline-checks TRITON_PYTHON=$HOME/tritonenv/bin/python \
+            TORCH_PYTHON=$HOME/tritonenv/bin/python
+      - name: Preserve pipeline trace and artifacts
+        if: always() && matrix.suite == 'pipeline'
+        uses: actions/upload-artifact@v4
+        with:
+          name: r40-pipeline-traces
+          path: sim/build/r40/pipeline*
+          if-no-files-found: ignore
+
+  r40-mmio:
+    name: "R40 multicore MMIO and native AXI graphs"
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - name: Toolchain
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends \
+            iverilog yosys build-essential cmake ninja-build python3 python3-venv \
+            libmlir-20-dev mlir-20-tools llvm-20-dev
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: pip-${{ hashFiles('spec/r1_toolchain.lock.json') }}
+      - name: Locked Torch, Triton and plugin
+        run: |
+          set -euo pipefail
+          V=$(python3 -c "import json;print(json.load(open('spec/r1_toolchain.lock.json'))['triton']['version'])")
+          PV=$(python3 -c "import json;print(json.load(open('spec/r38/torch.lock.json'))['version'])")
+          python3 -m venv ~/tritonenv
+          ~/tritonenv/bin/pip install -q "triton==$V" "torch==$PV" numpy
+          make python/tnca/data/.staged
+          ~/tritonenv/bin/pip install -q -e .
+          make tnca-opt
+      - name: Real registers, AXI and resident Torch graphs
+        run: make r40-multicore-mmio TRITON_PYTHON=$HOME/tritonenv/bin/python

@@ -1,0 +1,35 @@
+{
+ "gates": {
+  "R40-02.zero-transfer": {
+   "status": "not-measured",
+   "checks": [
+    {
+     "name": "resident:zero-kernel-transfers",
+     "ok": true
+    },
+    {
+     "name": "staging:actual-round-trips",
+     "ok": true
+    },
+    {
+     "name": "policy:artifact-identity",
+     "ok": true
+    },
+    {
+     "name": "resident:offset-alias",
+     "ok": true
+    },
+    {
+     "name": "staging:offset-alias",
+     "ok": true
+    },
+    {
+     "name": "policy:unknown-refused",
+     "ok": true
+    }
+   ],
+   "detail": "control and alias smoke passed; frozen chained graphs, multi-step decode and steady weight audit remain",
+   "written": "2026-10-11T04:27:33+00:00"
+  }
+ }
+}

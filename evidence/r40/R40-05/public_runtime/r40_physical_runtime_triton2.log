@@ -1,0 +1,2 @@
+PHYSICAL GRID TRITON VECTOR PASS elements=257 programs=17 host_launches=1
+PHYSICAL GRID RUNTIME PASS programs=455 exact_atomic_count=455 host_launches=1

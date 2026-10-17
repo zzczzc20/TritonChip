@@ -1,0 +1,4 @@
+W1013 01:02:09.901000 180557 torch/utils/cpp_extension.py:183] No CUDA runtime is found, using CUDA_HOME='/usr/local/cuda'
+PASS single: 2 kernels, active=4550, graph_span=5646, epoch=0
+PASS batched: 2 kernels, active=4550, graph_span=5626, epoch=0
+r40-device-clock-native-tests PASS (2/2)

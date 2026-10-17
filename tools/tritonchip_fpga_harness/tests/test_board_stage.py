@@ -29,7 +29,7 @@ from tritonchip_fpga_harness.core import (
 )
 from tritonchip_fpga_harness.measurement import (
     MeasurementError, _default_archbench, _default_conformance, archbench_python, board_preflight,
-    image_profile_contract, measure_board, summarize_archbench,
+    checkout_pythonpath, image_profile_contract, measure_board, summarize_archbench,
 )
 
 PY = sys.executable
@@ -99,6 +99,16 @@ class SubmitBoardVerdicts(BoardStageCase):
         self.assertEqual(software["relation"], "same-commit")
         self.assertEqual(software["commit"], result["source_commit"])
         self.assertFalse(software["dirty"])
+
+    def test_board_commands_import_the_checkouts_runtime_and_compiler_first(self) -> None:
+        seen = RUN + "(run/'board'/'pythonpath.txt').write_text(os.environ.get('PYTHONPATH', '')); "
+        command = [PY, "-c", seen + archbench()[2][len(RUN):]]
+        result = submit(HERE, self.repo, self.manifest(conformance=False, archbench={"command": command}),
+                        self.state, "mock")
+        self.assertEqual(result["status"], "PASS", result.get("measurement_error"))
+        first = (self.run_dir(result) / "board" / "pythonpath.txt").read_text(encoding="utf-8").split(os.pathsep)[:2]
+        self.assertEqual(first, [str((self.repo / "python").resolve()), str((self.repo / "compiler" / "python").resolve())])
+        self.assertEqual(result["measurement"]["pythonpath"].split(os.pathsep)[:2], first)
 
     def test_invalid_archbench_evidence_is_archbench_fail_and_keeps_the_record(self) -> None:
         simulated = dict(BOARD_RECORD, evidence_level="measured-rtl")
@@ -363,9 +373,22 @@ class BoardPreflight(BoardStageCase):
     def without_pytorch(self) -> str:
         return self.interpreter("python-bare", "echo \"ModuleNotFoundError: No module named 'torch'\" >&2; exit 1")
 
-    def with_pytorch(self, tnca_backend: bool = True) -> str:
-        seen = json.dumps({"torch": "2.14.0", "triton": "3.8.0", "tnca_backend": tnca_backend})
-        return self.interpreter(f"python-torch-{tnca_backend}", f"echo 'HARNESS-PROBE {seen}'")
+    def with_pytorch(self, tnca_backend: bool = True, installed: str | None = None) -> str:
+        # Where tnca and tnca_cc import from: the PYTHONPATH the probe is given
+        # (the checkout's packages first), or the tree an editable install names.
+        path = self.tmp / f"python-torch-{tnca_backend}-{bool(installed)}"
+        path.write_text(
+            f"#!{sys.executable}\n"
+            "import json, os\n"
+            f"installed = {installed!r}\n"
+            "first, second = (os.environ.get('PYTHONPATH', '') + '::').split(os.pathsep)[:2]\n"
+            "tnca = installed + '/python' if installed else first\n"
+            "tnca_cc = installed + '/compiler/python' if installed else second\n"
+            f"print('HARNESS-PROBE ' + json.dumps({{'torch': '2.14.0', 'triton': '3.8.0', 'tnca_backend': {tnca_backend!r}, "
+            "'tnca': tnca + '/tnca/__init__.py', 'tnca_cc': tnca_cc + '/tnca_cc/__init__.py'}))\n",
+            encoding="utf-8")
+        path.chmod(0o755)
+        return str(path)
 
     def failed(self, checks: list[dict[str, object]]) -> dict[str, str]:
         return {str(c["name"]): str(c["detail"]) for c in checks if not c["ok"]}
@@ -401,8 +424,18 @@ class BoardPreflight(BoardStageCase):
         self.assertEqual(self.failed(checks), {})
         self.assertEqual({c["name"] for c in checks}, {
             "board_program_script", "board_xbutil", "board_xclbinutil", "board_conformance_tool",
-            "board_xrt_library", "board_archbench_runner", "board_archbench_python",
+            "board_xrt_library", "board_archbench_runner", "board_archbench_python", "board_archbench_source",
         })
+
+    def test_an_interpreter_that_compiles_with_another_tree_is_not_ready(self) -> None:
+        # The U280 host's interpreter had an editable install of an older
+        # checkout; the board then counted that compiler's cycles.
+        manifest = self.manifest(conformance=False, archbench={"python": self.with_pytorch(installed="/home/u/old-tree")})
+        failed = self.failed(board_preflight(root=self.repo, profile=load_profile(HERE, "u50"), manifest=manifest))
+        self.assertIn("imports tnca from /home/u/old-tree/python/tnca/__init__.py", failed["board_archbench_source"])
+        self.assertNotIn("board_archbench_python", failed)
+        self.assertEqual(checkout_pythonpath(self.repo).split(os.pathsep)[:2],
+                         [str((self.repo / "python").resolve()), str((self.repo / "compiler" / "python").resolve())])
 
     def test_steps_the_manifest_replaces_are_not_checked(self) -> None:
         manifest = self.manifest(program={"command": [PY, "-c", "pass"]}, conformance={"command": conformance()},

@@ -110,13 +110,29 @@ def _default_conformance(
     ]
 
 
+def checkout_pythonpath(root: Path) -> str:
+    """``PYTHONPATH`` with this checkout's own runtime and compiler first.
+
+    ArchBench reaches TNCA through the installed package's Triton entry point,
+    which names a module, not a tree. Without this the module is whatever the
+    install points at: on the U280 host an editable install of an older
+    checkout compiled every point (found 2026-10-18, when the board counted
+    that compiler's cycles, not the checkout's).
+    """
+    own = [str((root / "python").resolve()), str((root / "compiler" / "python").resolve())]
+    existing = os.environ.get("PYTHONPATH")
+    return os.pathsep.join(own + ([existing] if existing else []))
+
+
 def archbench_python(config: Mapping[str, Any]) -> str:
     """The interpreter ArchBench runs under.
 
     ArchBench needs PyTorch, Triton and the installed ``tnca`` package
     (spec/r38/torch.lock.json), which the repository keeps in an environment
     of its own and names ``TORCH_PYTHON``.  The harness itself needs only the
-    standard library, so the two are usually different interpreters.
+    standard library, so the two are usually different interpreters.  The
+    install supplies only Triton's entry point: the runtime and the compiler
+    are imported from the checkout (``checkout_pythonpath``).
     """
     arch = config.get("archbench")
     chosen = arch.get("python") if isinstance(arch, dict) else None
@@ -140,10 +156,18 @@ def _tool_dirs(profile: Any) -> list[str]:
 
 
 _ARCHBENCH_PROBE = (
-    "import json, torch, triton, triton.backends; "
+    "import json, torch, triton, triton.backends, tnca, tnca_cc; "
     "print('HARNESS-PROBE ' + json.dumps({'torch': torch.__version__, 'triton': triton.__version__, "
-    "'tnca_backend': 'cpu' in triton.backends.backends}))"
+    "'tnca_backend': 'cpu' in triton.backends.backends, 'tnca': tnca.__file__, 'tnca_cc': tnca_cc.__file__}))"
 )
+
+
+def _within(path: Any, root: Path) -> bool:
+    try:
+        Path(str(path)).resolve().relative_to(root.resolve())
+        return bool(path)
+    except ValueError:
+        return False
 
 
 def board_preflight(*, root: Path, profile: Any, manifest: Mapping[str, Any]) -> list[dict[str, Any]]:
@@ -190,7 +214,8 @@ def board_preflight(*, root: Path, profile: Any, manifest: Mapping[str, Any]) ->
         python = archbench_python(config)
         try:
             probe = subprocess.run([python, "-c", _ARCHBENCH_PROBE], capture_output=True, text=True,
-                                   timeout=300, check=False)
+                                   timeout=300, check=False, cwd=root,
+                                   env=dict(os.environ, PYTHONPATH=checkout_pythonpath(root)))
             found = [line for line in probe.stdout.splitlines() if line.startswith("HARNESS-PROBE ")]
             if probe.returncode == 0 and found:
                 seen = json.loads(found[-1][len("HARNESS-PROBE "):])
@@ -198,6 +223,13 @@ def board_preflight(*, root: Path, profile: Any, manifest: Mapping[str, Any]) ->
                     f"{python}: torch {seen.get('torch')}, triton {seen.get('triton')}, "
                     + ("tnca is its Triton cpu backend" if seen.get("tnca_backend")
                        else "but the tnca package is not installed there (no triton.backends 'cpu')"))
+                # The points must be compiled by this checkout's compiler, not an installed tree's.
+                outside = {name: seen.get(name) for name in ("tnca", "tnca_cc")
+                           if not _within(seen.get(name), root)}
+                add("board_archbench_source", not outside,
+                    "tnca and tnca_cc come from this checkout" if not outside else
+                    f"{python} imports " + ", ".join(f"{k} from {v}" for k, v in outside.items())
+                    + f", not from {root}")
             else:
                 reason = (probe.stderr.strip().splitlines() or ["no output"])[-1]
                 add("board_archbench_python", False,
@@ -517,6 +549,8 @@ def measure_board(
         "TNCA_BOARD": board,
         "TNCA_HARNESS_RUN_DIR": str(run_dir.resolve()),
         "TNCA_HARNESS_XCLBIN": str(xclbin.resolve()),
+        # Conformance and ArchBench drive the card with this checkout's runtime and compiler.
+        "PYTHONPATH": checkout_pythonpath(root),
     }
     # Vendor commands are executed without a shell so that argv is recorded
     # exactly.  Add the tool directories explicitly instead of relying on a
@@ -579,6 +613,7 @@ def measure_board(
             "clock_hz": float(profile.data.get("device_clock_mhz", 0)) * 1e6,
             "software": software,
             "archbench_python": archbench_python(config) if config.get("archbench") else None,
+            "pythonpath": env["PYTHONPATH"],
             "stages": stages,
             "conformance": conformance_summary,
             "archbench": arch_summary,

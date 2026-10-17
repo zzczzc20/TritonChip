@@ -27,19 +27,23 @@ failed-DCP observation; final fmax remains not-measured.
 with the TLW classification/live-count/dead-update chain now directly identified.
 **Direct evidence:** `attempt02/terminal_reports.tar.gz`, especially
 `critical_paths.rpt`, `critical_cones_ranked.tsv` and `route_status.rpt`.
-**Next commands on the FPGA host:**
+**Next commands:**
 
 ```sh
-cat ~/tnca_build/r40_attempt02_physical_detail_20261017/runner.exit
-tail -n 25 ~/tnca_build/r40_attempt02_physical_detail_20261017/stdout.log
-tail -n 25 ~/tnca_build/r40_tmu_pipeline_module_20261017/stdout.log
+# ARM jump host: inspect the immutable R4 functional batch.
+cat ~/r40_r4_functional_v2_20261017/runner.exit
+tail -n 25 ~/r40_r4_functional_v2_20261017/runner.log
+# FPGA host: inspect the terminal R3 module diagnostics.
+cat ~/tnca_build/r40_local_tmu_rank_module_20261017/runner.exit
 ```
 
-The first job reuses one open immutable DCP for register-cut, tag-device,
-actual crossing and conflicted-HBM endpoint reports. It started after the
-implementation and original observer terminated. The second is an isolated
-three-real-slice/shared-TMU screen with fixed geometry, 10 ns BUFG clock and
-unchanged `SSI_SpreadSLLs`; it cannot qualify the full image.
+The failed-DCP diagnostic is terminal partial: tag/cut/crossing reports completed,
+and the final HBM endpoint query failed. The shared-TMU module screen timed out
+without signoff. The R3 local-TMU/pair-rank module completed `route_design`, but
+its 3600-second cap interrupted the subsequent accurate timing report. Its
+router estimates (+0.348 ns setup / +0.014 ns hold) are not signoff. A future
+module run must save the routed checkpoint immediately and leave reporting
+headroom. No automatic retry or third full implementation has started.
 **Success:** review actual paths, logic/net delay, mapped tag devices, packing,
 SLR/SLL contributors and matched functional results before freezing the last
 full candidate. **Failure:** preserve the specific failed query, cone or
@@ -208,7 +212,7 @@ All rows are `not-measured`. Each row has one immediate missing prerequisite, it
 | R40-04.hbm | 实际 ≥1 GiB 多 PC 窗口尚无合格三核镜像可验证 | `required_gates.json`: no evidence at sim/build/r40/v2/R40-04.json; `evidence/r40/R40-04/physical_map_v2/` proves legacy image only exposes 256 MiB / PC0 | P → V | After V, collect frozen `make r40-hbm` package evidence on final identity; judge this gate separately | Preserve P/V first failing evidence; fix that cause; gate remains not-measured |
 | R40-04.bandwidth | 最终镜像方向带宽及 memory-service outstanding 1/8 匹配记录缺失 | `required_gates.json`: no evidence at sim/build/r40/v2/R40-04.json | P → V | After V, collect frozen `make r40-hbm` package evidence on final identity; judge this gate separately | Preserve P/V first failing evidence; fix that cause; gate remains not-measured |
 | R40-04.robustness | 最终实际分配 PC 的边界/high64/alias/越界证据缺失 | `required_gates.json`: no evidence at sim/build/r40/v2/R40-04.json | P → V | After V, collect frozen `make r40-hbm` package evidence on final identity; judge this gate separately | Preserve P/V first failing evidence; fix that cause; gate remains not-measured |
-| R40-05.multicore | 最后候选尚未完成 route 和物理资格审核，无合格镜像 | `attempt02/routing_observation.json`: placement and phys_opt complete; route Global Iteration 0, no terminal marker or qualified image (P) | P → V | After V, collect frozen `make r40-multicore` package evidence on final identity; judge this gate separately | Preserve P/V first failing evidence; fix that cause; gate remains not-measured |
+| R40-05.multicore | 最后候选尚未完成 route 和物理资格审核，无合格镜像 | `attempt02/terminal_failure.json`: terminal exit 1, illegal route and no qualified image (P) | P → V | After V, collect frozen `make r40-multicore` package evidence on final identity; judge this gate separately | Preserve P/V first failing evidence; fix that cause; gate remains not-measured |
 | R40-05.scaling | 最终镜像冻结 compute 的 1/2/3 核 A/B 缺失 | `required_gates.json`: no evidence at sim/build/r40/v2/R40-05.json | P → V | After V, collect frozen `make r40-multicore` package evidence on final identity; judge this gate separately | Preserve P/V first failing evidence; fix that cause; gate remains not-measured |
 | R40-05.dispatch | 最终镜像原始大图的三物理核完成/分发计数缺失 | `required_gates.json`: no evidence at sim/build/r40/v2/R40-05.json | P → V | After V, collect frozen `make r40-multicore` package evidence on final identity; judge this gate separately | Preserve P/V first failing evidence; fix that cause; gate remains not-measured |
 | R40-06.nuca | 最终镜像 active outlet 的实际负载流量证据缺失 | `required_gates.json`: no evidence at sim/build/r40/v2/R40-06.json | P → V | After V, collect frozen `make r40-nuca` package evidence on final identity; judge this gate separately | Preserve P/V first failing evidence; fix that cause; gate remains not-measured |

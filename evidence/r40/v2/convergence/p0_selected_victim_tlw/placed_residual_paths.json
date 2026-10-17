@@ -1,0 +1,41 @@
+{
+  "scope": "post-placement estimates only; not legal routed timing, Fmax, image or gate qualification",
+  "archive": "placed_residual_paths.tar.gz",
+  "archive_sha256": "f097a4c83a199de6267dd4ef27b6606ea000bdc8d0bc9deabb8297cc2c711211",
+  "files": {
+    "r40_local_tmu_rank_module_20261017/placed_paths.rpt": "8416da1c739941f82654ff991295925bdc3f037739877501941008062c0f800b",
+    "r40_tmu_pipeline_module_20261017/placed_paths.rpt": "65d2747cc7bc7ecea89bb1256f5bfd0a43f0adbedaaada2d2d7c186180cfc88e",
+    "auxiliary_audit/task.txt": "864574541dc7a0a2a1b4f77453a80a3fcdca8984a816a74bdb13488c6da9d893",
+    "auxiliary_audit/result.json": "bac152ef3e0d450ca092941aa7dd58ac3d78a008fa207648d60c756d677af8be",
+    "auxiliary_audit/agy.log": "63bfc94335d7050de7a14b4383fa3c6bb05e0958094c48ba9fd687ef2392d238"
+  },
+  "required_gate_promotions": [],
+  "residuals": [
+    {
+      "candidate": "R3 local TMU / pair rank",
+      "start": "slice2 cur_we",
+      "end": "replica0 te[5][36]",
+      "levels": 14,
+      "data_ns": 9.034,
+      "logic_ns": 1.364,
+      "net_ns": 7.67,
+      "net_estimated": true,
+      "slack_ns": 0.512,
+      "hypothesis": "Register write ingress locally before metadata commit, preserving ACK-publication atomicity"
+    },
+    {
+      "candidate": "shared TMU / selected victim",
+      "start": "slice1 cur_addr[7]",
+      "end": "cache data RAM input",
+      "levels": 24,
+      "data_ns": 9.067,
+      "logic_ns": 1.527,
+      "net_ns": 7.54,
+      "net_estimated": true,
+      "slack_ns": 0.542,
+      "hypothesis": "Use byte write enables and capture hit word during existing E_LOOK, avoiding whole-line read/merge/write"
+    }
+  ],
+  "auxiliary_model": "gemini-3.8-flash-high, effort high",
+  "review": "Primary agent independently verified both report hashes and all six paths supporting quoted source lines. Auxiliary output is extraction only; no acceptance authority."
+}

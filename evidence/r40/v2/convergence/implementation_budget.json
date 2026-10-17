@@ -178,14 +178,23 @@
       "ci_policy": "Exact code CI continues in parallel; success is mandatory before board loading or qualification",
       "runner_pid": 1917223,
       "report_observer": {
-        "runner_pid": 1917224,
-        "out": "/home/zzhouch/tnca_build/r40_attempt03_followup",
-        "scope": "existing read-only observer, after terminal marker"
+        "runner_pid": 1926388,
+        "out": "/home/zzhouch/tnca_build/r40_attempt03_followup_cachecuts",
+        "scope": "read-only serial report extraction after terminal, including final-cache-cuts; no implementation restart",
+        "tooling_source_commit": "c2427cf5924901bf300e351ed3bd6628426aa6a6",
+        "replacement_evidence": "attempt03/observer_replacement.json"
       },
       "synthesis_start_evidence": "attempt03/synthesis_started.json",
       "latest_observed_utc": "2026-10-17T21:35:47Z",
       "xo_sha256": "3de447acb123567a37ce547258129d0a328a440cf9254ad56e4186c4c8614fef",
-      "latest_observed_phase": "Kernel synthesis has completed constraint validation; complete build remains live, no terminal marker"
+      "latest_observed_phase": "Kernel synthesis has completed constraint validation; complete build remains live, no terminal marker",
+      "report_observer_history": [
+        {
+          "runner_pid": 1917224,
+          "out": "/home/zzhouch/tnca_build/r40_attempt03_followup",
+          "scope": "existing read-only observer, after terminal marker"
+        }
+      ]
     }
   ],
   "first_attempt_prerequisites": [

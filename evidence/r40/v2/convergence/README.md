@@ -19,6 +19,7 @@ Next experiment on the FPGA host:
 ```sh
 tail -n 30 ~/tnca_build/r40_attempt03_20261017/xo/link.log
 cat ~/tnca_build/r40_attempt03_20261017/build/attempt.exit
+cat ~/tnca_build/r40_attempt03_followup_cachecuts/state.json
 ```
 
 The terminal marker is absent during execution. The existing read-only observer

@@ -55,7 +55,14 @@ cat ~/tnca_build/r40_attempt03_20261017/build/attempt.exit
 
 The exit marker does not exist while the run is active. The existing read-only
 observer waits for terminal completion, then collects reports without concurrent
-large-DCP inspection. Success requires actual placement/route, all-clock min/max
+large-DCP inspection. The current observer is recorded in
+`observer_replacement.json`; only the waiting reporter was replaced. Its separate
+immutable tooling bundle does not alter the frozen hardware source or launch.
+It also extracts the final owner/pair/selected register segments and actual
+tag mapping. `final_cut_query_probe.json` retains the successful read-only query
+on the saved predecessor module DCP, with the raw archive and all 20 file hashes.
+Missing required stages or timing segments fail extraction; an empty direct
+owner-to-selected report remains an absence, not a zero-delay measurement. Success requires actual placement/route, all-clock min/max
 timing, CDC and complete image identity before board loading. Failure preserves
 its terminal checkpoint and exact limiting paths; there is no remaining full
 implementation budget and no automatic retry.

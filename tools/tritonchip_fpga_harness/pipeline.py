@@ -27,6 +27,7 @@ import shlex
 import subprocess
 import sys
 import time
+import uuid
 from pathlib import Path
 from typing import Any, Callable, Mapping
 
@@ -38,6 +39,9 @@ SSH_OPTIONS = ("BatchMode=yes", "ServerAliveInterval=30", "ServerAliveCountMax=6
 CONNECT_TIMEOUT = 20
 # A status poll that fails is retried; this many in a row ends the wait.
 MAX_POLL_FAILURES = 10
+# OpenSSH exits 255 when the connection itself failed (a handshake that timed
+# out behind a jump host, a reset): such a call is repeated after these waits.
+SSH_RETRY_WAITS = (5.0, 15.0, 45.0)
 
 
 class PipelineError(RuntimeError):
@@ -61,11 +65,27 @@ def _remote_argv(host: Host, argv: list[str], ssh_binary: str) -> list[str]:
     return _ssh(host, ssh_binary, env=True) + [shlex.quote(str(word)) for word in argv]
 
 
+def _with_retries(call: Callable[[], Any], failed: Callable[[Any], bool], what: str,
+                  sleep: Callable[[float], None] = time.sleep) -> Any:
+    value = call()
+    for wait in SSH_RETRY_WAITS:
+        if not failed(value):
+            break
+        _log(f"{what}: the SSH connection failed; again in {wait:.0f}s")
+        sleep(wait)
+        value = call()
+    return value
+
+
 def remote(host: Host, argv: list[str], *, ssh_binary: str = "ssh", data: bytes | None = None,
            timeout: int | None = 600, check: bool = True) -> subprocess.CompletedProcess:
-    """Run one plain command on ``host`` (git, tar, mkdir, dd) with the host's environment."""
+    """Run one plain command on ``host`` (git, tar, mkdir, dd) with the host's environment.
+
+    Every command sync runs is safe to repeat, so a failed connection is retried.
+    """
     full = _remote_argv(host, list(argv), ssh_binary)
-    done = subprocess.run(full, input=data, capture_output=True, timeout=timeout, check=False)
+    done = _with_retries(lambda: subprocess.run(full, input=data, capture_output=True, timeout=timeout, check=False),
+                         lambda result: result.returncode == 255, f"{host.name}: {' '.join(argv[:2])}")
     if check and done.returncode != 0:
         detail = done.stderr.decode("utf-8", errors="replace").strip().splitlines()[-3:]
         raise PipelineError(f"{host.name}: {' '.join(argv[:4])} failed ({done.returncode}): {' | '.join(detail)}")
@@ -139,7 +159,12 @@ def worker(host: Host, commit: str, request: dict[str, Any], *, ssh_binary: str 
                           adapter=request["adapter"], remote_python=host.python, remote_cli=host.cli(commit),
                           port=host.port, identity_file=host.identity_file, connect_timeout=CONNECT_TIMEOUT,
                           options=SSH_OPTIONS, env=host.remote_env(), ssh_binary=ssh_binary)
-    return call_worker(dict(request, state_dir=host.state_dir), argv, ssh_timeout=timeout)
+    # Every worker request is safe to repeat: doctor, status and export read;
+    # a detached submit or measure names its run, and a repeated one attaches
+    # to the attempt the first started.
+    return _with_retries(lambda: call_worker(dict(request, state_dir=host.state_dir), argv, ssh_timeout=timeout),
+                         lambda reply: (reply.get("transport") or {}).get("returncode") == 255 and not reply.get("remote"),
+                         f"{host.name}: {request['operation']}")
 
 
 def _remote_value(reply: dict[str, Any], what: str) -> dict[str, Any]:
@@ -199,6 +224,23 @@ def transfer(source: Host, run_id: str, destination: Host, commit: str, *,
         "import", "--state-dir", destination.state_dir, "--from-tar", "-",
     ]
     started = time.time()
+    for wait in SSH_RETRY_WAITS + (None,):
+        try:
+            value = _transfer_once(send, receive, source, destination, run_id, timeout)
+            break
+        except PipelineError as exc:
+            # import is idempotent (the same packet is `already_present`), so
+            # a transfer cut by the network is simply sent again.
+            if wait is None or "(255)" not in str(exc):
+                raise
+            _log(f"transfer of {run_id}: the SSH connection failed; again in {wait:.0f}s")
+            time.sleep(wait)
+    value["elapsed_s"] = round(time.time() - started, 1)
+    return value
+
+
+def _transfer_once(send: list[str], receive: list[str], source: Host, destination: Host, run_id: str,
+                   timeout: int | None) -> dict[str, Any]:
     sender = subprocess.Popen(send, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     receiver = subprocess.Popen(receive, stdin=sender.stdout, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     assert sender.stdout is not None
@@ -212,7 +254,7 @@ def transfer(source: Host, run_id: str, destination: Host, commit: str, *,
         receiver.kill()
         raise PipelineError(f"the transfer of {run_id} did not finish in {timeout}s")
     if sender.returncode != 0:
-        raise PipelineError(f"{source.name}: tar of the packet failed: "
+        raise PipelineError(f"{source.name}: tar of the packet failed ({sender.returncode}): "
                             f"{send_err.decode('utf-8', errors='replace').strip()[-300:]}")
     text = out.decode("utf-8", errors="replace")
     try:
@@ -220,9 +262,8 @@ def transfer(source: Host, run_id: str, destination: Host, commit: str, *,
     except json.JSONDecodeError:
         value = {}
     if receiver.returncode != 0 or not value.get("ok"):
-        raise PipelineError(f"{destination.name}: import refused the packet: "
+        raise PipelineError(f"{destination.name}: import refused the packet ({receiver.returncode}): "
                             f"{err.decode('utf-8', errors='replace').strip()[-400:] or text[-400:]}")
-    value["elapsed_s"] = round(time.time() - started, 1)
     return value
 
 
@@ -363,7 +404,10 @@ def run_pipeline(
         if build_run:
             run_id = build_run
         else:
-            request = dict(base, operation="submit", detach=True, skip_board=True)
+            # The controller names the run, so a submit repeated after a lost
+            # answer attaches to the build the first one started.
+            request = dict(base, operation="submit", detach=True, skip_board=True,
+                           run_id=time.strftime("%Y%m%dT%H%M%SZ", time.gmtime()) + "-" + uuid.uuid4().hex[:8])
             if timeout:
                 request["timeout"] = timeout
             started = step("build:submit", lambda: _remote_value(

@@ -508,6 +508,22 @@ class PipelineRecovery(unittest.TestCase):
         bad = self.pipe(self.manifest(), build_run="../../etc")
         self.assertEqual(bad["status"], "PIPELINE_FAIL")
 
+    def test_a_flaky_connection_is_retried(self) -> None:
+        # Every third connection fails as a slow jump host does.
+        flaky = self.tmp / "flaky-ssh"
+        counter = self.tmp / "ssh-count"
+        flaky.write_text(FAKE_SSH.format(python=PY).replace(
+            'os.environ["COPYFILE_DISABLE"] = "1"',
+            f'import pathlib\nc = pathlib.Path({str(counter)!r})\nn = int(c.read_text()) + 1 if c.exists() else 1\n'
+            'c.write_text(str(n))\nif n % 3 == 0:\n    sys.stderr.write("Connection timed out during banner exchange\\n"); sys.exit(255)\n'
+            'os.environ["COPYFILE_DISABLE"] = "1"'), encoding="utf-8")
+        flaky.chmod(flaky.stat().st_mode | stat.S_IXUSR)
+        with mock.patch("tritonchip_fpga_harness.pipeline.SSH_RETRY_WAITS", (0.0, 0.0, 0.0)):
+            record = run_pipeline(local_repo=self.repo, hosts=self.hosts, manifest=self.manifest(), adapter="mock",
+                                  build_host="builder", board_host="card", poll_s=0.2, ssh_binary=str(flaky))
+        self.assertEqual(record["status"], "PASS", record.get("error"))
+        self.assertGreater(int(counter.read_text()), 20)
+
     def test_one_server_with_both_roles_measures_in_place(self) -> None:
         record = self.pipe(self.manifest(), build_host="both", board_host="both")
         self.assertEqual(record["status"], "PASS", record.get("error"))

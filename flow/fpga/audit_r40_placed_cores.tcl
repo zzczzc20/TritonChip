@@ -49,6 +49,35 @@ for {set core 0} {$core < 3} {incr core} {
     puts $stream "core $core primitive_count [llength $members] placed [llength $placed] unplaced $unplaced excluded_constants $constants actual_slrs {$slrs} expected $expected pass $ok"
     if {!$ok} {lappend failures $core}
 }
+# Local metadata state is a separate physical owner from each u_tile.
+set local_groups [dict create 0 [list] 1 [list] 2 [list]]
+foreach cell $cells name $names {
+    if {[regexp {(^|/)u_system/.*g_replica\[([0-2])\]\.local_tmu/} $name whole prefix replica]} {
+        dict lappend local_groups $replica $cell
+    }
+}
+set local_count 0
+for {set replica 0} {$replica<3} {incr replica} {
+    set members [dict get $local_groups $replica]
+    if {![llength $members]} {continue}
+    incr local_count
+    set placed [list]
+    set unplaced 0
+    foreach cell $members {
+        if {[get_property REF_NAME $cell] in {GND VCC}} {continue}
+        if {[get_property IS_PLACED $cell]} {lappend placed $cell} else {incr unplaced}
+    }
+    set slrs [list]
+    if {[llength $placed]} {set slrs [lsort -unique [get_property NAME [get_slrs -of_objects $placed]]]}
+    set expected "SLR$replica"
+    set ok [expr {[llength $placed]>0 && $unplaced==0 && $slrs eq [list $expected]}]
+    puts $stream "local_tmu $replica primitive_count [llength $members] placed [llength $placed] unplaced $unplaced actual_slrs {$slrs} expected $expected pass $ok"
+    if {!$ok} {lappend failures "local_tmu$replica"}
+}
+puts $stream "local_tmu_replica_count $local_count"
+if {$local_count!=0 && $local_count!=3} {lappend failures incomplete_local_tmu}
+# A legacy checkpoint legitimately has no local replicas. Its zero count is
+# explicit; final image qualification must match the frozen image parameters.
 puts $stream "failing_cores {$failures}"
 close $stream
 if {[llength $failures]} {error "actual core placement failed for cores $failures; see $report"}

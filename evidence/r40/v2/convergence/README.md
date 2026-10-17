@@ -77,6 +77,17 @@ checkpoint establishes numerical correctness, all three cores/outlets, actual
 PC/window coverage, ownership and visible drained completion. The active
 software snapshot remains `642c660`, as recorded below.
 
+## Latest optional RTL and active experiments
+
+The [R4 candidate record](p0_selected_victim_tlw/README.md#r4-implementation-and-running-validation)
+describes the now-integrated optional RTL, exact enable parameters, added cycles,
+source-matched functional evidence and remaining physical qualification. Defaults
+preserve the existing mode. A local metadata write inbox and byte-enabled data
+writes/E_LOOK hit-word capture address measured residual cones. No full-image
+clock, image, CDC or workload gate has been promoted. The final implementation
+reserve is still one. The R4 module screen and source-matched system/default-mode
+regressions are active; inspect their terminal reports before freezing attempt 3.
+
 ## Latest detailed diagnosis and candidate screening
 
 The read-only [actual failed-DCP detail](attempt02/physical_detail.json)

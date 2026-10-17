@@ -4,7 +4,7 @@
 # Count each canonical connected net once. These are endpoint-region crossings,
 # not routed SLL usage; SLICE X is a driver position, not an SLL column number.
 proc r40_driver_group {driver} {
-    if {[regexp {^(.*?/u_system/(g_tile\[[0-9]+\]\.u_tile/(u_core|u_slice)|u_tmu))/} $driver whole group]} {return $group}
+    if {[regexp {^(.*?/u_system/(g_tile\[[0-9]+\]\.u_tile/(u_core|u_slice)|u_tmu|g_shared_tmu\.u_tmu|g_local_tmu\.u_tmu/g_replica\[[0-9]+\]\.local_tmu))/} $driver whole group]} {return $group}
     return [join [lrange [split $driver /] 0 end-1] /]
 }
 proc r40_rank_crossings {cache out} {

@@ -86,6 +86,32 @@ foreach name $r40_hier_names {
     if {[string match {*/u_system/g_cache_handoff.ownership} $name]} {set r40_maintenance 1}
 }
 if {$r40_maintenance} {r40_place "u_system/g_cache_handoff.ownership" 1}
+# Coherent local TMU state must remain beside its consuming private slice.
+# Match retained local state hierarchy even if an intermediate wrapper rebuilds.
+set r40_local_tmu_count 0
+for {set tile 0} {$tile < 3} {incr tile} {
+    set suffix "[r40_index g_replica $tile].local_tmu"
+    set matches [list]
+    foreach cell $r40_hier_cells name $r40_hier_names {
+        if {[string match "*/u_system/*/$suffix" $name]} {lappend matches $cell}
+    }
+    if {[llength $matches] > 1} {error "R40 placement: duplicate local TMU $suffix"}
+    if {[llength $matches] == 1} {
+        r40_assign $matches $tile
+        incr r40_local_tmu_count
+        puts "R40_PLACEMENT_LOCAL_TMU $matches SLR$tile"
+    }
+}
+if {$r40_local_tmu_count != 0 && $r40_local_tmu_count != 3} {
+    error "R40 placement: incomplete coherent local TMU replicas ($r40_local_tmu_count)"
+}
+if {[info exists TNCA_IMAGE_PARAMS] && [dict exists $TNCA_IMAGE_PARAMS DCO_LOCAL_REPLICAS]} {
+    set expected_local [expr {[dict get $TNCA_IMAGE_PARAMS DCO_LOCAL_REPLICAS] ? 3 : 0}]
+    if {$r40_local_tmu_count != $expected_local} {
+        error "R40 placement: local TMU hierarchy disagrees with image configuration"
+    }
+}
+
 for {set tile 0} {$tile < 3} {incr tile} {
     set t [r40_index g_tile $tile]
     r40_place "u_system/$t.u_tile" $tile

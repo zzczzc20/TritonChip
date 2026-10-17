@@ -35,3 +35,72 @@ Success requires the numerical oracle, cycle miter, write-publication ordering,
 maintenance and mutations, followed by matching module physical evidence.
 Failure preserves the exact trace and repairs that cause before physical use.
 The final full implementation budget remains reserved.
+
+## R4 implementation and running validation
+
+The optional convergence RTL is now connected through the board wrapper, FPGA
+wrappers, shell, top and tile. Every new production parameter defaults to zero.
+The candidate explicitly enables `NUCA_REGISTER_VICTIM_SELECT=1`,
+`NUCA_REGISTER_VICTIM_RANK=1`, `NUCA_CACHE_DATA_PIPELINE=1`,
+`DCO_TLW_PIPE_STAGES=2`, `DCO_LOCAL_REPLICAS=1` and
+`DCO_REGISTER_WRITES=1`, alongside the existing registered ranges/owner settings.
+The three leaf RTL bodies match the immutable simulation/module inputs after
+normalizing those documented parameter defaults; both hashes are retained in
+[r4_functional_snapshot.json](r4_functional_snapshot.json).
+
+The local write inbox captures port, offset, data and source before acknowledging
+a write. Accepted TLW notices drain first. Table publication, owner epoch and ACK
+still occur on one edge. An isolated metadata write gains one cycle, with at most
+one write every two cycles; capture can overlap notice drain. The notice pipeline
+adds two cycles of counter/dead visibility, sustaining one accepted notice per
+cycle. Copies consume the same global accepted stream and publish coherently;
+only the consumed local state and pipeline boundaries receive preservation
+attributes. The placement hook assigns each retained local TMU to its slice's
+SLR. The final actual-location audit reports each copy independently of pblock
+intentions, and rejects an incomplete set of replicas.
+
+Cache hit-word capture uses the existing E_LOOK edge and adds no hit cycle.
+Stores and atomics share one byte-enabled write port, avoiding readback and
+rewrite of unaffected bytes. Fill writes all bytes; maintenance, dirty marking,
+whole-old-word atomic replies and zero-byte stores retain their prior semantics.
+The selected-victim stage adds one miss cycle; the pair-rank stage adds another
+for full-set ranked replacement. Invalid-way and round-robin shortcuts skip the
+rank stage. Adjacent epoch checks retry stale classification before side effects.
+These architecture costs are explicit; performance remains not-measured.
+
+The snapshot includes a cycle miter against the original data path, an independent
+scalar oracle for masked stores and 32/64-bit ADD/AND/OR/XOR/exchange/CAS/load/store,
+accepted-stream TMU checks at notice depths 0/1/2 with write registers off/on,
+three/four-port replica comparisons, maintenance and pressure traffic. The
+additional width test and all four mutations completed successfully: corrupting
+byte enables, corrupting hit-word capture, removing notice drain and acknowledging
+before inbox capture are detected. The full batch is still running in this
+snapshot; completed subsets do not stand in for its terminal result. The initial
+zero-width miter elaboration failure is preserved as a testbench failure, followed
+by the explicit-width correction with unchanged DUT RTL.
+
+The [R3 terminal module archive](r3_module_terminal.json) records 90,038 fully
+routed routable nets and zero routing errors, but accurate min/max timing and a
+routed checkpoint were not retained before the reporting cap. The
+[R4 module identity](r4_module_identity.json) binds the next screen to specific
+write-ingress/data-path hypotheses, the same geometry/10 ns clock/directive and
+5400-second bound. It saves a routed DCP immediately after route. This is a
+three-cache/three-TMU module experiment, with no cores, NoC, HBM or timed I/O;
+it does not consume or replace the final full-image implementation.
+
+Next commands, with independent outcomes retained:
+
+```sh
+# ARM jump host
+cat ~/r40_r4_functional_v2_20261017/runner.exit
+cat ~/r40_r4_functional_v2_20261017/mutations.exit
+cat ~/r40_r4_preflight_20261017/preflight.exit
+cat ~/r40_r4_legacy_20261017/legacy.exit
+# FPGA host
+tail -n 25 ~/tnca_build/r40_r4_module_20261017/stdout.log
+```
+
+Success permits review of source-matched exact setup/hold paths, tag primitives,
+local TMU locations and packing before freezing attempt 3. Failure preserves the
+first numerical, protocol, mapping or timing error and repairs that cause.
+Required gates, final-image acceptance and the frozen contract are unchanged.

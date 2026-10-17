@@ -80,6 +80,9 @@ module tnca_tile #(
     // DCO (rtl/nuca/tnca_tmu.v)
     parameter DCO_T       = 8,
     parameter DCO_REGISTERED_RANGES = 0,
+    parameter NUCA_REGISTER_VICTIM_SELECT = 0,
+    parameter NUCA_CACHE_DATA_PIPELINE = 0,
+    parameter NUCA_REGISTER_VICTIM_RANK = 0,
     parameter DCO_DEAD    = 16,
     parameter DCO_ID_W    = 16,
     parameter [63:0] TMU_BASE = 64'h0000_0000_7FFF_0000
@@ -329,7 +332,7 @@ module tnca_tile #(
     // Keep private cache lookup/replacement logic with its state, so the
     // tile's SLR constraint also owns the complete combinational cone.
     (* KEEP_HIERARCHY = "yes" *) tnca_nuca_slice #(
-        .REGISTER_VICTIM_OWNER(1), .MAINTENANCE(CACHE_MAINTENANCE), .DCO_REGISTERED_RANGES(DCO_REGISTERED_RANGES),
+        .REGISTER_VICTIM_OWNER(1), .REGISTER_VICTIM_SELECT(NUCA_REGISTER_VICTIM_SELECT), .CACHE_DATA_PIPELINE(NUCA_CACHE_DATA_PIPELINE), .REGISTER_VICTIM_RANK(NUCA_REGISTER_VICTIM_RANK), .MAINTENANCE(CACHE_MAINTENANCE), .DCO_REGISTERED_RANGES(DCO_REGISTERED_RANGES),
         .FULL_LINE_TAG(!(NX==2 && NY==2)),
         .ADDR_W(64), .LINE_BYTES(LINE_BYTES), .LINE_BITS(LINE_BITS),
         .WORD_BITS(64), .WORD_BYTES(8),

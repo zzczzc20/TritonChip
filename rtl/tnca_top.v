@@ -24,6 +24,12 @@ module tnca_top #(
     parameter HOST_ACCESS = 0,
     parameter CACHE_MAINTENANCE = 0,
     parameter DCO_REGISTERED_RANGES = 0,
+    parameter NUCA_REGISTER_VICTIM_SELECT = 0,
+    parameter NUCA_CACHE_DATA_PIPELINE = 0,
+    parameter NUCA_REGISTER_VICTIM_RANK = 0,
+    parameter DCO_TLW_PIPE_STAGES = 0,
+    parameter DCO_REGISTER_WRITES = 0,
+    parameter DCO_LOCAL_REPLICAS = 0,
     parameter NX          = 2,
     parameter NY          = 2,
     parameter MEM_PORTS   = 1,
@@ -349,20 +355,31 @@ module tnca_top #(
     wire [N*12-1:0]         tm_woff, tm_roff;
     wire [N*64-1:0]         tm_wdata, tm_rdata, tm_taddr;
     wire [N*SRC_W-1:0]      tm_wsrc;
-    wire [7:0]              d_policy;
-    wire [3:0]              d_bbits, d_ginit;
-    wire [5:0]              d_lsb;
-    wire [15:0]             d_win, d_ub, d_lb;
-    wire d_owner_epoch;
-    wire [DCO_T-1:0]        d_tv, d_tbyp;
-    wire [DCO_T*64-1:0]     d_tbase, d_tsize;
-    wire [DCO_T*65-1:0]     d_tend;
-    wire [DCO_T*6-1:0]      d_tlsb;
-    wire [DCO_DEAD-1:0]     d_dv;
-    wire [DCO_DEAD*DCO_ID_W-1:0] d_did;
-    wire [75:0] dco_cfg = {d_lb, d_ub, d_win, d_ginit, 6'd0, d_lsb, d_bbits, d_policy};
-
-    tnca_tmu #(
+    wire [N*(8)-1:0] d_policy;
+    wire [N*(4)-1:0] d_bbits;
+    wire [N*(4)-1:0] d_ginit;
+    wire [N*(6)-1:0] d_lsb;
+    wire [N*(16)-1:0] d_win;
+    wire [N*(16)-1:0] d_ub;
+    wire [N*(16)-1:0] d_lb;
+    wire [N*(1)-1:0] d_owner_epoch;
+    wire [N*(DCO_T)-1:0] d_tv;
+    wire [N*(DCO_T)-1:0] d_tbyp;
+    wire [N*(DCO_T*64)-1:0] d_tbase;
+    wire [N*(DCO_T*64)-1:0] d_tsize;
+    wire [N*(DCO_T*65)-1:0] d_tend;
+    wire [N*(DCO_T*6)-1:0] d_tlsb;
+    wire [N*(DCO_DEAD)-1:0] d_dv;
+    wire [N*(DCO_DEAD*DCO_ID_W)-1:0] d_did;
+    wire [N*76-1:0] dco_cfg;
+    genvar dco_copy;
+    generate for(dco_copy=0;dco_copy<N;dco_copy=dco_copy+1)begin:g_dco_cfg
+        assign dco_cfg[dco_copy*76+:76]={d_lb[dco_copy*16+:16],d_ub[dco_copy*16+:16],d_win[dco_copy*16+:16],
+            d_ginit[dco_copy*4+:4],6'd0,d_lsb[dco_copy*6+:6],d_bbits[dco_copy*4+:4],d_policy[dco_copy*8+:8]};
+    end endgenerate
+    generate if(DCO_LOCAL_REPLICAS)begin:g_local_tmu
+    tnca_replicated_tmu #(
+        .TLW_PIPE_STAGES(DCO_TLW_PIPE_STAGES), .REGISTER_WRITES(DCO_REGISTER_WRITES),
         .N_SLICE(N), .SRC_W(SRC_W), .N_SRC(N), .REGISTERED_RANGES(DCO_REGISTERED_RANGES),
         .TENSORS(DCO_T), .T_W(DCO_T_W), .DEAD(DCO_DEAD), .DEAD_W(4),
         .ID_W(DCO_ID_W)
@@ -377,6 +394,44 @@ module tnca_top #(
         .t_lsb(d_tlsb),
         .dead_valid(d_dv), .dead_id(d_did)
     );
+
+    end else begin:g_shared_tmu
+    tnca_tmu #(
+        .TLW_PIPE_STAGES(DCO_TLW_PIPE_STAGES), .REGISTER_WRITES(DCO_REGISTER_WRITES),
+        .N_SLICE(N), .SRC_W(SRC_W), .N_SRC(N), .REGISTERED_RANGES(DCO_REGISTERED_RANGES),
+        .TENSORS(DCO_T), .T_W(DCO_T_W), .DEAD(DCO_DEAD), .DEAD_W(4),
+        .ID_W(DCO_ID_W)
+    ) u_tmu (
+        .clk(clk), .rst_n(rst_n),
+        .mw_valid(tm_wv), .mw_ready(tm_wr), .mw_off(tm_woff), .mw_data(tm_wdata),
+        .mw_src(tm_wsrc), .mr_off(tm_roff), .mr_data(tm_rdata),
+        .tl_valid(tm_tv), .tl_ready(tm_tr), .tl_addr(tm_taddr), .tl_drop(tm_drop),
+        .policy(d_policy[0+:(8)]), .b_bits(d_bbits[0+:(4)]), .d_lsb(d_lsb[0+:(6)]),
+        .gear_init(d_ginit[0+:(4)]), .gear_window(d_win[0+:(16)]), .gear_ub(d_ub[0+:(16)]), .gear_lb(d_lb[0+:(16)]),
+        .owner_epoch(d_owner_epoch[0+:(1)]), .t_valid(d_tv[0+:(DCO_T)]), .t_base(d_tbase[0+:(DCO_T*64)]), .t_size(d_tsize[0+:(DCO_T*64)]), .t_end(d_tend[0+:(DCO_T*65)]), .t_bypass(d_tbyp[0+:(DCO_T)]),
+        .t_lsb(d_tlsb[0+:(DCO_T*6)]),
+        .dead_valid(d_dv[0+:(DCO_DEAD)]), .dead_id(d_did[0+:(DCO_DEAD*DCO_ID_W)])
+    );
+
+        for(dco_copy=1;dco_copy<N;dco_copy=dco_copy+1)begin:g_broadcast
+            assign d_policy[dco_copy*(8)+:(8)]=d_policy[0+:(8)];
+            assign d_bbits[dco_copy*(4)+:(4)]=d_bbits[0+:(4)];
+            assign d_ginit[dco_copy*(4)+:(4)]=d_ginit[0+:(4)];
+            assign d_lsb[dco_copy*(6)+:(6)]=d_lsb[0+:(6)];
+            assign d_win[dco_copy*(16)+:(16)]=d_win[0+:(16)];
+            assign d_ub[dco_copy*(16)+:(16)]=d_ub[0+:(16)];
+            assign d_lb[dco_copy*(16)+:(16)]=d_lb[0+:(16)];
+            assign d_owner_epoch[dco_copy*(1)+:(1)]=d_owner_epoch[0+:(1)];
+            assign d_tv[dco_copy*(DCO_T)+:(DCO_T)]=d_tv[0+:(DCO_T)];
+            assign d_tbyp[dco_copy*(DCO_T)+:(DCO_T)]=d_tbyp[0+:(DCO_T)];
+            assign d_tbase[dco_copy*(DCO_T*64)+:(DCO_T*64)]=d_tbase[0+:(DCO_T*64)];
+            assign d_tsize[dco_copy*(DCO_T*64)+:(DCO_T*64)]=d_tsize[0+:(DCO_T*64)];
+            assign d_tend[dco_copy*(DCO_T*65)+:(DCO_T*65)]=d_tend[0+:(DCO_T*65)];
+            assign d_tlsb[dco_copy*(DCO_T*6)+:(DCO_T*6)]=d_tlsb[0+:(DCO_T*6)];
+            assign d_dv[dco_copy*(DCO_DEAD)+:(DCO_DEAD)]=d_dv[0+:(DCO_DEAD)];
+            assign d_did[dco_copy*(DCO_DEAD*DCO_ID_W)+:(DCO_DEAD*DCO_ID_W)]=d_did[0+:(DCO_DEAD*DCO_ID_W)];
+        end
+    end endgenerate
 
     // gqa_bypass's "slower core of a pair" (sec IV-E): the one of tiles
     // {2k, 2k+1} that has committed fewer instructions so far.
@@ -393,7 +448,7 @@ module tnca_top #(
     generate
         for (t = 0; t < N; t = t + 1) begin : g_tile
             tnca_tile #(
-                .CACHE_MAINTENANCE(CACHE_MAINTENANCE), .DCO_REGISTERED_RANGES(DCO_REGISTERED_RANGES),
+                .CACHE_MAINTENANCE(CACHE_MAINTENANCE), .DCO_REGISTERED_RANGES(DCO_REGISTERED_RANGES), .NUCA_REGISTER_VICTIM_SELECT(NUCA_REGISTER_VICTIM_SELECT), .NUCA_CACHE_DATA_PIPELINE(NUCA_CACHE_DATA_PIPELINE), .NUCA_REGISTER_VICTIM_RANK(NUCA_REGISTER_VICTIM_RANK),
                 .TILE_ID(t), .NUM_TILES(N), .GLOBAL_GRID(GLOBAL_GRID), .HOST_ACCESS(HOST_ACCESS && GLOBAL_GRID && t==0), .NX(NX), .NY(NY), .XW(XW), .YW(YW),
                 .NUM_RCTX(NUM_RCTX), .RCTX_W(RCTX_W), .VLEN(VLEN), .ELEN(ELEN),
                 .LW(LW), .VREGS_PER_RCTX(VREGS_PER_RCTX),
@@ -463,9 +518,9 @@ module tnca_top #(
                 .perf_wb(perf_wb[t*32 +: 32]),
                 .perf_mshr_full(perf_mshr_full[t*32 +: 32]),
                 .perf_hit_past_block(perf_hit_past_block[t*32 +: 32]),
-                .dco_owner_epoch(d_owner_epoch), .dco_cfg(dco_cfg), .dco_t_valid(d_tv), .dco_t_base(d_tbase),
-                .dco_t_end(d_tend), .dco_t_size(d_tsize), .dco_t_bypass(d_tbyp), .dco_t_lsb(d_tlsb),
-                .dco_dead_valid(d_dv), .dco_dead_id(d_did), .dco_slow(dco_slow),
+                .dco_owner_epoch(d_owner_epoch[t*(1)+:(1)]), .dco_cfg(dco_cfg[t*76+:76]), .dco_t_valid(d_tv[t*(DCO_T)+:(DCO_T)]), .dco_t_base(d_tbase[t*(DCO_T*64)+:(DCO_T*64)]),
+                .dco_t_end(d_tend[t*(DCO_T*65)+:(DCO_T*65)]), .dco_t_size(d_tsize[t*(DCO_T*64)+:(DCO_T*64)]), .dco_t_bypass(d_tbyp[t*(DCO_T)+:(DCO_T)]), .dco_t_lsb(d_tlsb[t*(DCO_T*6)+:(DCO_T*6)]),
+                .dco_dead_valid(d_dv[t*(DCO_DEAD)+:(DCO_DEAD)]), .dco_dead_id(d_did[t*(DCO_DEAD*DCO_ID_W)+:(DCO_DEAD*DCO_ID_W)]), .dco_slow(dco_slow),
                 .tmu_wr_valid(tm_wv[t]), .tmu_wr_ready(tm_wr[t]),
                 .tmu_wr_off(tm_woff[t*12 +: 12]), .tmu_wr_data(tm_wdata[t*64 +: 64]),
                 .tmu_wr_src(tm_wsrc[t*SRC_W +: SRC_W]),

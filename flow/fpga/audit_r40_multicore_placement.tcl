@@ -13,6 +13,7 @@ set stream [open $report w]
 puts $stream "Diagnostic only: no placement or route performed"
 puts $stream "Checkpoint: $checkpoint"
 puts $stream "CACHE_MAINTENANCE=$r40_maintenance"
+puts $stream "LOCAL_TMU_REPLICAS=$r40_local_tmu_count"
 for {set slr 0} {$slr < 3} {incr slr} {
     set block [get_pblocks -quiet r40_slr$slr]
     if {[llength $block] != 1} {error "missing SLR$slr pblock"}

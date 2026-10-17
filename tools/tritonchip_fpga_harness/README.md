@@ -793,8 +793,20 @@ the build server's doctor used its own Vitis 2022.2 (`vitis_source: host`),
 the packet's 9 files were checked on the card server, and the board stage read
 the card as it was (the image above) from a checkout of the same commit; 3
 minutes in all. The real U280 doctor on the build server passed all 22 checks
-with Vivado, `v++` and `xclbinutil` from 2022.2. A real link through
-`pipeline` has not run yet. The review that followed (four lenses, each
+with Vivado, `v++` and `xclbinutil` from 2022.2.
+
+**A real candidate through `pipeline`** (2026-10-17, commit `ef4c4fc`, whose
+`rtl/` and `flow/` are the agent task's base: the RTL defaults,
+core-vrf-sync-v2, at 100 MHz). `PASS` end to end in 113 minutes. The link on
+the build server took 105 minutes (synthesis 25, place 23, route 34): design
+WNS +0.016 ns, ap_clk WNS +0.138 ns, no failing endpoint of 584 497, clock
+100 MHz. Export, transfer and import took under a minute (the hashes held),
+and the board stage 5 minutes: the load replaced the image on the card
+(`reconfigured: true`, now `8c9c8fca…`), conformance 5 of 5, ArchBench `tiny`
+27 of 27 `measured-board`, 4 459 740 cycles -- every point equal to the
+measurement of the same design linked on the card host with 2023.2
+(`pr5-latest-b5c606d-u280-100mhz`). Two SSH handshakes to the card host timed
+out on the way and were retried. The review that followed (four lenses, each
 finding re-checked) found that a board stage could not be repeated, that an
 imported build's PASS could answer for the board, that a refused measure
 damaged the run's record, that `--build-run` was not checked against the

@@ -82,6 +82,23 @@ repeating the full suite for presentation-only changes.
 
 For timing-sensitive RTL failures, use the optional [timed mailbox journal](mmio_journal.md) to preserve the exact simulated input schedule before adding diagnostic probes. Journal capture and replay are functional diagnostics; their wall time is not a performance result.
 
+New ArchBench `device-graph-makespan` entries retain
+`endpoint_schema: "tnca-launch-endpoints/1"` and `endpoint_records`: one complete
+list of launch start/end records for each timed graph call. Recompute the
+samples with `tnca.device_timing.audit_graph_samples(samples, endpoint_records,
+launch_counts=counts)`, using the recorded graph launch count for each sample.
+The auditor checks unsigned 64-bit counters, wraps, complete samples and a
+common clock/session/epoch within each call. The ablation reader rejects a
+new-schema record whose endpoints are missing or disagree with its samples.
+Historical records without these fields have no reconstructed raw endpoints.
+
+Endpoint retention reuses existing launch logs after all timed calls have
+finished. It adds no device register reads or target instructions inside the
+measured graph. JSON retention, validation and serialization still consume host
+time and memory outside that region; their wall-time cost is not a device
+performance result. Use the original raw endpoints for candidate ranking,
+and keep simulator cycles separate from qualified board time.
+
 ## 3. Screen candidates using conservative bounds
 
 ```bash

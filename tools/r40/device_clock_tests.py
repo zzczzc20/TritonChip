@@ -13,7 +13,7 @@ sys.path.insert(0, str(ROOT / 'python'))
 from tnca.backend import BackendError
 from tnca.backends.u50 import U50Backend
 from tnca.errors import DeviceLost
-from tnca.device_timing import clock_span, MASK
+from tnca.device_timing import clock_span, audit_graph_samples, MASK
 from tnca.transport import Reply
 
 
@@ -121,12 +121,63 @@ class ClockTests(unittest.TestCase):
 
     def test_archbench_keeps_serial_cycles_separate(self):
         from archbench.platforms.tnca import _timings
-        steady = [dict(device_cycles=20, request_s=.01, device_timing=dict(cycles=80)),
-                  dict(device_cycles=30, request_s=.02, device_timing=dict(cycles=100))]
+        import json
+        records = [[dict(self.record(100,120), clock='mmio-device-clock/1'),
+                    dict(self.record(140,180), clock='mmio-device-clock/1')],
+                   [dict(self.record(200,240), clock='mmio-device-clock/1'),
+                    dict(self.record(260,300), clock='mmio-device-clock/1')]]
+        steady = [dict(device_cycles=n, request_s=.01, device_timing=clock_span(r), launches=len(r),
+                       device_endpoints=r) for n,r in zip((20,30),records)]
         timings = _timings(999, steady, 5, 100_000_000)
         self.assertEqual(timings['device-cycles-serial-grid']['samples'], [20, 30])
         self.assertEqual(timings['device-graph-makespan']['samples'], [80, 100])
         self.assertEqual(timings['device-graph-makespan']['warmup'], 5)
+        saved = json.loads(json.dumps(timings))['device-graph-makespan']
+        self.assertEqual(saved['endpoint_schema'], 'tnca-launch-endpoints/1')
+        self.assertEqual(saved['endpoint_records'], records)
+        self.assertEqual([r['cycles'] for r in audit_graph_samples(
+            saved['samples'], saved['endpoint_records'], launch_counts=[2,2])], [80,100])
+
+    def test_raw_endpoints_refuse_active_sum_and_corruption(self):
+        records = [dict(self.record(100,120), clock='mmio-device-clock/1'),
+                   dict(self.record(140,180), clock='mmio-device-clock/1')]
+        with self.assertRaisesRegex(ValueError, 'differs'):
+            audit_graph_samples([60], [records], launch_counts=[2])  # active sum omits the gap
+        for malformed in (None, [], [None], records[:1],
+                          [dict(records[0], clock='host-wall-time'), records[1]],
+                          [dict(records[0], epoch=2), records[1]],
+                          [dict(records[0], start=-1), records[1]],
+                          [dict(records[0], start=True), records[1]],
+                          [dict(records[0], end=1<<64), records[1]]):
+            with self.subTest(malformed=malformed), self.assertRaises(ValueError):
+                audit_graph_samples([80], [malformed], launch_counts=[2])
+        with self.assertRaises(ValueError):
+            audit_graph_samples([80,80], [records], launch_counts=[2,2])
+        wrap = [dict(self.record(MASK-9,MASK-1), clock='mmio-device-clock/1'),
+                dict(self.record(3,12), clock='mmio-device-clock/1')]
+        self.assertEqual(audit_graph_samples([22], [wrap], launch_counts=[2])[0]['cycles'], 22)
+        # Dropping an interior launch leaves the outer span unchanged.
+        three = [records[0], dict(records[0], start=125,end=130), records[1]]
+        self.assertEqual(audit_graph_samples([80], [three], launch_counts=[3])[0]['cycles'],80)
+        with self.assertRaisesRegex(ValueError, 'launch count'):
+            audit_graph_samples([80], [records], launch_counts=[3])
+
+    def test_ablation_recomputes_raw_graph_samples(self):
+        import copy
+        sys.path.insert(0, str(ROOT/'tools/r40'))
+        import ablate
+        record = dict(point_id='fixture', time={'launches':2}, timings={'device-graph-makespan':dict(
+            samples=[80], endpoint_schema='tnca-launch-endpoints/1', endpoint_records=[[
+                dict(self.record(100,120), clock='mmio-device-clock/1'),
+                dict(self.record(140,180), clock='mmio-device-clock/1')]])})
+        self.assertEqual(ablate.samples_of(record,'device-graph-makespan')[1], [80])
+        bad = copy.deepcopy(record)
+        bad['timings']['device-graph-makespan']['endpoint_records'][0][-1]['end'] += 1
+        with self.assertRaises(ablate.Refused):
+            ablate.samples_of(bad,'device-graph-makespan')
+        del record['timings']['device-graph-makespan']['endpoint_records']
+        with self.assertRaises(ablate.Refused):
+            ablate.samples_of(record,'device-graph-makespan')
 
     def test_archbench_missing_endpoint_has_no_makespan_claim(self):
         from archbench.platforms.tnca import _timings

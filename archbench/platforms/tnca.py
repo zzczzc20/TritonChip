@@ -323,7 +323,11 @@ def run(point, *, profile='core-sim', opt_level=2, seed=0, counters=False, warmu
                 cycles=e['device_cycles'], programs=len(e['program_cycles'])) for e in measured_log]
         for c in calls:
             c.pop('out', None)
-            c.pop('_launch_log', None)
+            # Preserve raw endpoints only after all timed calls completed.
+            # Reuse the existing launch log: no new device reads or work in
+            # the measured call. A later audit can reproduce every makespan.
+            c['device_endpoints'] = [e.get('device_timing')
+                                     for e in c.pop('_launch_log', [])]
     steady = [c for c in calls[warmup:]] if calls else []
     rec['timings'] = _timings(cycles, steady, warmup, clock)
     rec['time'].update(kind='device-cycles-serial-grid',
@@ -425,6 +429,14 @@ def _timings(first_cycles, steady, warmup, clock):
                 boundaries='first accepted launch to last device completion',
                 includes=['device execution', 'submission gaps', 'backpressure'],
                 instrumentation='sequence-checked MMIO endpoints after each program')
+            if all(c.get('device_endpoints') for c in steady):
+                from tnca.device_timing import audit_graph_samples
+                endpoint_records = [c['device_endpoints'] for c in steady]
+                audit_graph_samples(spans, endpoint_records,
+                                    launch_counts=[c['launches'] for c in steady])
+                out['device-graph-makespan'].update(
+                    endpoint_schema='tnca-launch-endpoints/1',
+                    endpoint_records=endpoint_records)
         lat = [round(c['request_s'], 6) for c in steady]
         out['request-latency'] = dict(unit='s', samples=lat, median=_median(lat), p95=_p95(lat),
                                       warmup=warmup,

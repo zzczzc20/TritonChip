@@ -161,6 +161,17 @@ def samples_of(rec, timing=None):
     for flag in ('includes_autotune', 'includes_compile', 'includes_replay_warmup'):
         if t.get(flag):
             raise Refused('warmup', f"{rec['point_id']}: the timed region {flag[9:].replace('_', ' ')}")
+    if kind == 'device-graph-makespan' and ('endpoint_schema' in t or 'endpoint_records' in t):
+        try:
+            if t.get('endpoint_schema') != 'tnca-launch-endpoints/1':
+                raise ValueError('unknown launch-endpoint schema')
+            if str(ROOT/'python') not in sys.path:
+                sys.path.insert(0, str(ROOT/'python'))
+            from tnca.device_timing import audit_graph_samples
+            audit_graph_samples(vals, t.get('endpoint_records'),
+                                launch_counts=[(rec.get('time') or {}).get('launches')]*len(vals))
+        except (ValueError, TypeError, KeyError) as error:
+            raise Refused('timing', f"{rec['point_id']}: {error}") from error
     return kind, vals
 
 

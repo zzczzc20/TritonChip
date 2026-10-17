@@ -1,0 +1,117 @@
+{
+  "audit_metadata": {
+    "description": "Exact observation audit of timing.rpt, route_status.rpt, and critical_paths.rpt",
+    "directories_audited": [
+      "/tmp/r40_latest_module_reports/r40_tlw_predicate_module_20261017",
+      "/tmp/r40_latest_module_reports/r40_hit_owner_module_20261017"
+    ]
+  },
+  "reports": {
+    "/tmp/r40_latest_module_reports/r40_tlw_predicate_module_20261017": {
+      "directory": "/tmp/r40_latest_module_reports/r40_tlw_predicate_module_20261017",
+      "input_files_sha256": {
+        "/tmp/r40_latest_module_reports/r40_tlw_predicate_module_20261017/timing.rpt": "58d78b168de2e703815b9bc80585917db67e46012d9a74aee3284a5da2ef685b",
+        "/tmp/r40_latest_module_reports/r40_tlw_predicate_module_20261017/route_status.rpt": "edf4083821bd0594b367e2d69ed2119071246066832706fef0c0b66b6f058dad",
+        "/tmp/r40_latest_module_reports/r40_tlw_predicate_module_20261017/critical_paths.rpt": "c248f2b071ce086f726980882f5a3d6fa63e206337f1dbc8a4872845759d1d6c"
+      },
+      "timing_summary": {
+        "filename": "/tmp/r40_latest_module_reports/r40_tlw_predicate_module_20261017/timing.rpt",
+        "sha256": "58d78b168de2e703815b9bc80585917db67e46012d9a74aee3284a5da2ef685b",
+        "WNS_ns": 0.768,
+        "TNS_ns": 0.0,
+        "WHS_ns": 0.01,
+        "THS_ns": 0.0,
+        "exact_supporting_lines": {
+          "header": "    WNS(ns)      TNS(ns)  TNS Failing Endpoints  TNS Total Endpoints      WHS(ns)      THS(ns)  THS Failing Endpoints  THS Total Endpoints     WPWS(ns)     TPWS(ns)  TPWS Failing Endpoints  TPWS Total Endpoints  ",
+          "separator": "    -------      -------  ---------------------  -------------------      -------      -------  ---------------------  -------------------     --------     --------  ----------------------  --------------------  ",
+          "values": "      0.768        0.000                      0               296629        0.010        0.000                      0               296629        4.468        0.000                       0                 52739  "
+        }
+      },
+      "route_status": {
+        "filename": "/tmp/r40_latest_module_reports/r40_tlw_predicate_module_20261017/route_status.rpt",
+        "sha256": "edf4083821bd0594b367e2d69ed2119071246066832706fef0c0b66b6f058dad",
+        "fully_routed_net_count": 75527,
+        "routing_error_count": 0,
+        "exact_supporting_lines": {
+          "fully_routed_net_count": "           # of fully routed nets............. :       75527 :",
+          "routing_error_count": "       # of nets with routing errors.......... :           0 :"
+        }
+      },
+      "first_setup_path": {
+        "filename": "/tmp/r40_latest_module_reports/r40_tlw_predicate_module_20261017/critical_paths.rpt",
+        "sha256": "c248f2b071ce086f726980882f5a3d6fa63e206337f1dbc8a4872845759d1d6c",
+        "path_type": "Setup",
+        "startpoint": "g_tile[0].u_slice/cur_ms_reg[0]/C",
+        "endpoint": "g_tile[0].u_slice/data_mem_reg_r3_128_191_469_475/RAMD/I",
+        "logic_level_count": 19,
+        "data_path_delay": "9.229ns",
+        "data_path_delay_ns": 9.229,
+        "logic_delay": "1.673ns",
+        "logic_delay_ns": 1.673,
+        "route_delay": "7.556ns",
+        "route_delay_ns": 7.556,
+        "exact_supporting_lines": {
+          "startpoint": "  Source:                 g_tile[0].u_slice/cur_ms_reg[0]/C",
+          "endpoint": "  Destination:            g_tile[0].u_slice/data_mem_reg_r3_128_191_469_475/RAMD/I",
+          "logic_level_count": "  Logic Levels:           19  (CARRY8=3 LUT1=1 LUT2=1 LUT3=1 LUT6=9 MUXF7=2 MUXF8=1 RAMD64E=1)",
+          "data_path_delay": "  Data Path Delay:        9.229ns  (logic 1.673ns (18.128%)  route 7.556ns (81.872%))",
+          "logic_delay": "  Data Path Delay:        9.229ns  (logic 1.673ns (18.128%)  route 7.556ns (81.872%))",
+          "route_delay": "  Data Path Delay:        9.229ns  (logic 1.673ns (18.128%)  route 7.556ns (81.872%))"
+        }
+      }
+    },
+    "/tmp/r40_latest_module_reports/r40_hit_owner_module_20261017": {
+      "directory": "/tmp/r40_latest_module_reports/r40_hit_owner_module_20261017",
+      "input_files_sha256": {
+        "/tmp/r40_latest_module_reports/r40_hit_owner_module_20261017/timing.rpt": "27625b77147145455642ecffae78e5c5968c9ca994973f93f6091c88e77e834d",
+        "/tmp/r40_latest_module_reports/r40_hit_owner_module_20261017/route_status.rpt": "3ad66a269e486557c18f7749abf2593acffc86376f23ff10591a6e4b2b0379e4",
+        "/tmp/r40_latest_module_reports/r40_hit_owner_module_20261017/critical_paths.rpt": "65d751b166a8ec2d89aa7ee02ab4163ac36b060ceb885e687408dc4a8726399e"
+      },
+      "timing_summary": {
+        "filename": "/tmp/r40_latest_module_reports/r40_hit_owner_module_20261017/timing.rpt",
+        "sha256": "27625b77147145455642ecffae78e5c5968c9ca994973f93f6091c88e77e834d",
+        "WNS_ns": 0.361,
+        "TNS_ns": 0.0,
+        "WHS_ns": 0.01,
+        "THS_ns": 0.0,
+        "exact_supporting_lines": {
+          "header": "    WNS(ns)      TNS(ns)  TNS Failing Endpoints  TNS Total Endpoints      WHS(ns)      THS(ns)  THS Failing Endpoints  THS Total Endpoints     WPWS(ns)     TPWS(ns)  TPWS Failing Endpoints  TPWS Total Endpoints  ",
+          "separator": "    -------      -------  ---------------------  -------------------      -------      -------  ---------------------  -------------------     --------     --------  ----------------------  --------------------  ",
+          "values": "      0.361        0.000                      0               296383        0.010        0.000                      0               296383        4.468        0.000                       0                 52701  "
+        }
+      },
+      "route_status": {
+        "filename": "/tmp/r40_latest_module_reports/r40_hit_owner_module_20261017/route_status.rpt",
+        "sha256": "3ad66a269e486557c18f7749abf2593acffc86376f23ff10591a6e4b2b0379e4",
+        "fully_routed_net_count": 75780,
+        "routing_error_count": 0,
+        "exact_supporting_lines": {
+          "fully_routed_net_count": "           # of fully routed nets............. :       75780 :",
+          "routing_error_count": "       # of nets with routing errors.......... :           0 :"
+        }
+      },
+      "first_setup_path": {
+        "filename": "/tmp/r40_latest_module_reports/r40_hit_owner_module_20261017/critical_paths.rpt",
+        "sha256": "65d751b166a8ec2d89aa7ee02ab4163ac36b060ceb885e687408dc4a8726399e",
+        "path_type": "Setup",
+        "startpoint": "g_tile[1].u_slice/cur_ms_reg[1]_rep/C",
+        "endpoint": "g_tile[1].u_slice/data_mem_reg_r2_0_63_392_398/RAMC/I",
+        "logic_level_count": 18,
+        "data_path_delay": "9.203ns",
+        "data_path_delay_ns": 9.203,
+        "logic_delay": "1.446ns",
+        "logic_delay_ns": 1.446,
+        "route_delay": "7.757ns",
+        "route_delay_ns": 7.757,
+        "exact_supporting_lines": {
+          "startpoint": "  Source:                 g_tile[1].u_slice/cur_ms_reg[1]_rep/C",
+          "endpoint": "  Destination:            g_tile[1].u_slice/data_mem_reg_r2_0_63_392_398/RAMC/I",
+          "logic_level_count": "  Logic Levels:           18  (CARRY8=4 LUT3=2 LUT4=2 LUT6=7 MUXF7=2 RAMD64E=1)",
+          "data_path_delay": "  Data Path Delay:        9.203ns  (logic 1.446ns (15.712%)  route 7.757ns (84.288%))",
+          "logic_delay": "  Data Path Delay:        9.203ns  (logic 1.446ns (15.712%)  route 7.757ns (84.288%))",
+          "route_delay": "  Data Path Delay:        9.203ns  (logic 1.446ns (15.712%)  route 7.757ns (84.288%))"
+        }
+      }
+    }
+  }
+}

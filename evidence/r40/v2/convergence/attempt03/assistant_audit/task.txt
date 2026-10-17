@@ -1,0 +1,4 @@
+Read only these two local report directories:
+/tmp/r40_latest_module_reports/r40_tlw_predicate_module_20261017
+/tmp/r40_latest_module_reports/r40_hit_owner_module_20261017
+Task: extract exact observations, no engineering advice. For each directory output JSON with: timing.rpt design summary WNS/TNS/WHS/THS (ns), route_status.rpt fully routed net count and routing error count, and the FIRST setup path in critical_paths.rpt (startpoint, endpoint, logic level count, data path delay, logic delay, route delay). If a file/field is missing write null, never infer. Include filename and exact supporting lines for each field, and SHA256 of every input file used. Output /tmp/r40_agy_attempt03_audit/result.json only. Do not change any repository file; do not use remote access, git, Vivado, network or run any test. Do not label any gate passed. Use Python standard library if useful. The main agent will independently check the values.

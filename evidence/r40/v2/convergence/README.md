@@ -31,7 +31,7 @@ with the TLW classification/live-count/dead-update chain now directly identified
 
 ```sh
 # FPGA host: inspect the exact TLW predicate candidate, without a full retry.
-tail -n 25 ~/tnca_build/r40_hit_owner_module_20261017/stdout.log
+tail -n 25 ~/tnca_build/r40_owner_boundary_synth_v2_20261017/stdout.log
 # ARM jump host: inspect the larger-wait retry of the original timed-out point.
 tail -n 25 ~/r40_native_argmax_timeout_20261017/runner.log
 ```
@@ -105,6 +105,17 @@ mutation evidence is in [hit_owner_functional.json](p0_selected_victim_tlw/hit_o
 its own matched module screen is running. The new site-query CI stub regression
 was diagnosed and fixed, preserving all refusal paths and adding RAM/TMU cases;
 new head CI must still complete before freezing the final source.
+
+The remaining inactive-state classifier mux arc is now removed: registered-owner
+mode directly selects the E_LOOK snapshot for every consumer. Exact data/TLW/
+main-counter cycle comparisons against the preceding candidate passed. A queued
+synth/opt-only screen checks the mapped cut without a false-path exception and
+saves its DCP before report assertions. Existing module routes continue. This
+is an implementation completion, with no new state/cycle or work package;
+[details and evidence](p0_selected_victim_tlw/owner_boundary_complete.json).
+After this screen, freeze the final source/config and use the reserved full
+implementation. Exact-source CI remains mandatory for board load/qualification
+and may run alongside the expensive implementation.
 
 The full original R3 native77 simulation remains incomplete: some original
 medium points exceeded the 1800-second host wait. Those rows remain timeout,

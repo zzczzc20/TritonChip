@@ -847,8 +847,10 @@ module tnca_nuca_slice #(
                                            dco_t_bypass, dco_t_lsb) :
                           owner(cur_addr, dco_t_valid, dco_t_base, dco_t_size,
                                   dco_t_bypass, dco_t_lsb);
-    wire [11:0] cur_own = (REGISTER_VICTIM_OWNER && (est == E_HIT || est == E_MISS || (REGISTER_VICTIM_SELECT && (est == E_ALLOC || (RANK_PIPE && est == E_RANK))))) ?
-                           request_owner_q : request_owner_live;
+    // Every consumer runs after E_LOOK. Capture uses request_owner_live
+    // explicitly; do not leave a live classifier mux arc on the hint path
+    // for inactive states that never consume cur_own.
+    wire [11:0] cur_own = REGISTER_VICTIM_OWNER ? request_owner_q : request_owner_live;
     wire        cur_tbyp  = pol_tbyp && cur_own[11] && cur_own[10];
     wire        cur_dbyp  = pol_dyn && cur_own[11] &&
                             ({1'b0, cur_prio} < {1'b0, gear_eff}) &&

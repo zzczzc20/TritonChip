@@ -207,3 +207,42 @@ unplaced refusal tests, including local TMUs. Both collector and physical-clock
 local suites pass. New source CI remains pending until its own run completes.
 The placement pre-hook now reads the launcher's immutable TNCA_IMAGE_CONFIG when
 not already loaded, so final-image replica checks are bound to the actual config.
+
+
+## Remove the inactive-state classifier timing arc
+
+The synthesized HIT-snapshot candidate still exposed a live-classifier-to-TLW
+arc through the fallback branch of the state-dependent owner mux. The final
+completion selects the registered owner whenever registered-owner mode is on.
+All actual consumers run after E_LOOK; E_LOOK capture independently reads the
+live classifier. This removes an unused combinational input instead of adding
+pipeline state, hit latency, a false path or another architectural feature.
+
+[owner_boundary_complete.json](owner_boundary_complete.json) retains exact
+before/after whole-slice cycle comparisons, including data/backing requests,
+TLW valid/address/drop, metadata-write valid and main cache counters, plus the
+independent atomic/masked-write oracle and epoch-guard mutation. Fixed and
+changing metadata cases passed. The
+[full-tag pressure supplement](fulltag_high_address_pressure.json) separately
+covers the actual 32-set/eight-way/eight-MSHR/sixteen-target cache, full tags,
+a high global aperture base with explicit backing-model rebasing, DRAM400 and
+required resource-exhaustion/hit-past-block coverage. This is not HBM/PC proof.
+
+Only a synth/opt structural completion screen is added: verify nonempty table
+and notice endpoint sets and no direct live-table-to-notice timing path, retain
+snapshot-input/output paths, and save the optimized DCP before strict queries.
+It waits for an existing module task to terminate, keeping at most two owned
+small vendor jobs. Existing route runs continue unchanged; another full module
+route is not required for this cycle-equivalent mux-input removal. Its estimates
+do not qualify final-image timing. The last full implementation must still
+establish the exact final source's route, min/max timing, CDC and loadability.
+
+Current blocker remains no qualified final three-core image. Next FPGA command:
+`tail -n 25 ~/tnca_build/r40_owner_boundary_synth_v2_20261017/stdout.log`.
+Success: combine the mapped cut, existing state/cycle-matched routed architecture
+and functional evidence, freeze the immutable final source/configuration and
+start the reserved full implementation. CI must pass on the exact final source
+before board loading/qualification; it can run alongside the expensive build.
+Failure: retain the optimized DCP and identify the remaining live arc or report
+query error; do not spend a full implementation on an unexplained boundary.
+No further architecture expansion is planned before the final attempt.

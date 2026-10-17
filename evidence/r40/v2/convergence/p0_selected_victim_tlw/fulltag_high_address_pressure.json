@@ -1,0 +1,72 @@
+{
+  "files": {
+    "run_fulltag_pressure.py": "f2544f00e3e3f16e343a8b8e82bb37c57528b54c1e9d5d73a5d75b60025f18b0",
+    "run_fulltag_pressure.sh": "bca64df1d36d6962680251357772fd3f6046036a10371e274c4204c4966f5a8b",
+    "fulltag_pressure.log": "161c5ec1875020eb9485f6650bf56d5e2f0c8b8ef623c9e7f3ae0a668987aab5",
+    "fulltag_pressure.exit": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
+    "fulltag_pressure/tb_fulltag_pressure.v": "3363e56c5e6a35fae8bc3d0b675653bbbd6a0770834b3e763f046a11556d4d2d",
+    "fulltag_pressure/epoch0_policy46_seed1_build.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "fulltag_pressure/epoch0_policy46_seed1_run.log": "af49eba84c4e3e38fb9a405ac03d022ecb5491abec616a50cba14e90d57569f0",
+    "fulltag_pressure/epoch0_policy46_seed7_build.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "fulltag_pressure/epoch0_policy46_seed7_run.log": "48f75b2fbeab19cf2ab7642985312da4d99bad682193ddda9887944c9412ebeb",
+    "fulltag_pressure/epoch0_policy78_seed1_build.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "fulltag_pressure/epoch0_policy78_seed1_run.log": "5a35fcd7ec990fff7cdca639ab701e3806bc934919334ef7d39d5a60835cc9e2",
+    "fulltag_pressure/epoch0_policy78_seed7_build.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "fulltag_pressure/epoch0_policy78_seed7_run.log": "307d9d6a93c9c98cd3be5516249cf8ce5d8e60f5c4de9a1981f8576101ed66a8",
+    "fulltag_pressure/epoch5_policy46_seed1_build.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "fulltag_pressure/epoch5_policy46_seed1_run.log": "9fed39b7d6ccc3ff90ea94d82608e5a03da9f7acde7b4d8bd475d99c8e4a95c1",
+    "fulltag_pressure/epoch5_policy46_seed7_build.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "fulltag_pressure/epoch5_policy46_seed7_run.log": "b56386ef92def0c0371022242bf7b09bb6ddb419486cb8f1df60158d08004feb",
+    "fulltag_pressure/epoch5_policy78_seed1_build.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "fulltag_pressure/epoch5_policy78_seed1_run.log": "c7b56584a4f169967b780803e7d0ff62ab235da91c0153c5acb7285bca2922aa",
+    "fulltag_pressure/epoch5_policy78_seed7_build.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "fulltag_pressure/epoch5_policy78_seed7_run.log": "960a0ecf53775651b6a4623c9a0566ee66fa90b92b20182dd12e5ec95ca6690a",
+    "fulltag_pressure/report.json": "318780ab28ed8f8faf64db456cef4e2d4258750232aac78babf499df5ac791a1"
+  },
+  "rows": [
+    {
+      "name": "epoch0_policy46_seed1",
+      "status": "functional-pass",
+      "stdout": "---- nuca slice ----\nseed=1 trace_hash=3e58d1cc79927ae5 writes=3028\nissued=12000 reads_checked=9711 inflight_left=0\nhit=6193 miss=5640 merge=167 wb=2305 mshr_full=33704 target_full=116 hit_past_block=34756\nOWNER_EPOCH retries=0\npolicy=46 bypass=3 evict=5381 dead_evict=567 gear=0\nHIT_OWNER stable=13 stale_suppressed=0\nDATA_PIPELINE amo=3021 partial=3028 low32=724 high32=775\nPASS\nfulltag_pressure/tb_fulltag_pressure.v:586: $finish called at 2937236000 (1ps)\n"
+    },
+    {
+      "name": "epoch0_policy46_seed7",
+      "status": "functional-pass",
+      "stdout": "---- nuca slice ----\nseed=7 trace_hash=8350f91813df7815 writes=2973\nissued=12000 reads_checked=9795 inflight_left=0\nhit=6121 miss=5727 merge=152 wb=2286 mshr_full=34300 target_full=98 hit_past_block=35115\nOWNER_EPOCH retries=0\npolicy=46 bypass=3 evict=5468 dead_evict=604 gear=0\nHIT_OWNER stable=15 stale_suppressed=0\nDATA_PIPELINE amo=3031 partial=2973 low32=764 high32=746\nPASS\nfulltag_pressure/tb_fulltag_pressure.v:586: $finish called at 2981376000 (1ps)\n"
+    },
+    {
+      "name": "epoch0_policy78_seed1",
+      "status": "functional-pass",
+      "stdout": "---- nuca slice ----\nseed=1 trace_hash=3e58d1cc79927ae5 writes=3028\nissued=12000 reads_checked=9711 inflight_left=0\nhit=6146 miss=5681 merge=173 wb=2273 mshr_full=33727 target_full=68 hit_past_block=34775\nOWNER_EPOCH retries=0\npolicy=78 bypass=865 evict=4560 dead_evict=464 gear=2\nHIT_OWNER stable=10 stale_suppressed=0\nDATA_PIPELINE amo=3021 partial=3028 low32=724 high32=775\nPASS\nfulltag_pressure/tb_fulltag_pressure.v:586: $finish called at 2958496000 (1ps)\n"
+    },
+    {
+      "name": "epoch0_policy78_seed7",
+      "status": "functional-pass",
+      "stdout": "---- nuca slice ----\nseed=7 trace_hash=8350f91813df7815 writes=2973\nissued=12000 reads_checked=9795 inflight_left=0\nhit=5999 miss=5782 merge=219 wb=2264 mshr_full=34312 target_full=181 hit_past_block=35312\nOWNER_EPOCH retries=0\npolicy=78 bypass=881 evict=4645 dead_evict=500 gear=2\nHIT_OWNER stable=15 stale_suppressed=0\nDATA_PIPELINE amo=3031 partial=2973 low32=764 high32=746\nPASS\nfulltag_pressure/tb_fulltag_pressure.v:586: $finish called at 3012706000 (1ps)\n"
+    },
+    {
+      "name": "epoch5_policy46_seed1",
+      "status": "functional-pass",
+      "stdout": "---- nuca slice ----\nseed=1 trace_hash=3e58d1cc79927ae5 writes=3028\nissued=12000 reads_checked=9711 inflight_left=0\nhit=6281 miss=5621 merge=98 wb=2210 mshr_full=26073 target_full=54 hit_past_block=27370\nOWNER_EPOCH retries=20486\npolicy=46 bypass=1555 evict=3810 dead_evict=1417 gear=0\nHIT_OWNER stable=5 stale_suppressed=3\nDATA_PIPELINE amo=3021 partial=3028 low32=724 high32=775\nPASS\nfulltag_pressure/tb_fulltag_pressure.v:586: $finish called at 2938106000 (1ps)\n"
+    },
+    {
+      "name": "epoch5_policy46_seed7",
+      "status": "functional-pass",
+      "stdout": "---- nuca slice ----\nseed=7 trace_hash=8350f91813df7815 writes=2973\nissued=12000 reads_checked=9795 inflight_left=0\nhit=6158 miss=5708 merge=134 wb=2209 mshr_full=27249 target_full=40 hit_past_block=28304\nOWNER_EPOCH retries=21590\npolicy=46 bypass=1624 evict=3828 dead_evict=1483 gear=0\nHIT_OWNER stable=4 stale_suppressed=7\nDATA_PIPELINE amo=3031 partial=2973 low32=764 high32=746\nPASS\nfulltag_pressure/tb_fulltag_pressure.v:586: $finish called at 2982546000 (1ps)\n"
+    },
+    {
+      "name": "epoch5_policy78_seed1",
+      "status": "functional-pass",
+      "stdout": "---- nuca slice ----\nseed=1 trace_hash=3e58d1cc79927ae5 writes=3028\nissued=12000 reads_checked=9711 inflight_left=0\nhit=6268 miss=5637 merge=95 wb=2255 mshr_full=26649 target_full=36 hit_past_block=27890\nOWNER_EPOCH retries=21074\npolicy=78 bypass=841 evict=4540 dead_evict=2524 gear=2\nHIT_OWNER stable=3 stale_suppressed=6\nDATA_PIPELINE amo=3021 partial=3028 low32=724 high32=775\nPASS\nfulltag_pressure/tb_fulltag_pressure.v:586: $finish called at 2945886000 (1ps)\n"
+    },
+    {
+      "name": "epoch5_policy78_seed7",
+      "status": "functional-pass",
+      "stdout": "---- nuca slice ----\nseed=7 trace_hash=8350f91813df7815 writes=2973\nissued=12000 reads_checked=9795 inflight_left=0\nhit=6176 miss=5735 merge=89 wb=2244 mshr_full=27346 target_full=27 hit_past_block=28462\nOWNER_EPOCH retries=21637\npolicy=78 bypass=847 evict=4632 dead_evict=2635 gear=2\nHIT_OWNER stable=1 stale_suppressed=6\nDATA_PIPELINE amo=3031 partial=2973 low32=764 high32=746\nPASS\nfulltag_pressure/tb_fulltag_pressure.v:586: $finish called at 2997406000 (1ps)\n"
+    }
+  ],
+  "scope": "Single real-cache functional simulation, actual32sets/8ways/8MSHR/16targets/fulltag,12krequests percase,DRAM400,globalbase2^48 with explicit backing-model aperture rebasing; not actual HBM/PC or board evidence",
+  "archive": "fulltag_high_address_pressure.tar.gz",
+  "archive_sha256": "5a8d3d1b5d05a8972fb9f12b424176e2231541316534b48da98104faf853f594",
+  "required_gate_promotions": []
+}

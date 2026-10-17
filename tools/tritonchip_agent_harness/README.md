@@ -476,30 +476,28 @@ evaluator reports
 point the candidate had made slower. How they combine into one score is open
 (O12).
 
-**The machine and the latency (decided 2026-10-17, §16; not yet built).** The
-machine is the Alveo U280. Hardware cost is not scored; it is a constraint: a
-candidate's hardware must fit the U280 and close timing. The score is latency:
-device time, the platform's count of each launch with host transfers left out
-(`archbench/PROTOCOL.md` §3.1), at the candidate's own clock. The agent
-declares a target kernel clock; the certification link runs at it; if the
-routed design misses it, the evaluator links once more at the frequency the
-routed slack allows, rounded down, and scores at that. A point's speedup is
-then base latency / candidate latency = (base cycles / base clock) /
-(candidate cycles / candidate clock); simulated cycles do not depend on the
-clock (the U280's board and simulation agreed point by point at 75 and at
-100 MHz). So an RTL that is pipelined better closes at a higher clock and
-scores better, and one that closes only lower scores worse, not zero.
+**The machine and the latency (decided 2026-10-17, built 2026-10-18).** The
+machine is the Alveo U280, with its kernel clock fixed at 100 MHz. Hardware
+cost is not scored; it is a constraint: a candidate's machine must fit the U280
+and close timing at 100 MHz. The score is latency: device time, the platform's
+count of each launch with host transfers left out (`archbench/PROTOCOL.md`
+§3.1). At one fixed clock that is the simulated cycles, so the points are
+scored as they always were. Scoring at the candidate's own clock (the agent
+declares a target, a miss is linked again lower and scored there) was decided
+first and is deferred (§16): it needs a link of every candidate before any of
+its score is known, and a first version does without it.
 
-**Feasibility.** The FPGA quick tier screens a hardware-changing final
-candidate at its declared clock and rejects what clearly cannot fit (a share
-of SLR1 or a worst path beyond what has ever closed; thresholds O24). Every
-candidate that passes is certified by a routed link on the build worker (the
-FPGA harness's `pipeline`), and its score is *pending* until then. A
-candidate that does not fit -- resources beyond SLR1, or no route at any
-reasonable clock -- fails every point and the run stays valid; the record
-keeps the diagnosis (which resource, by how much, the worst paths) and a
-reference latency at the base clock, for analysis, never for the score. The
-agent sees the same diagnosis from the quick tier during the run.
+**Feasibility (built: `certify.py`, §10.4).** A final candidate that changed
+the machine -- an RTL file, or the parameters of the profile it is scored on
+(`evaluator.hardware_changed`) -- keeps its score only once it is certified:
+built for the U280 at 100 MHz and its points run on the card, each counting
+the cycles simulation counted for it. Its run record says
+`certification: pending` until then. A candidate that does not fit, does not
+close 100 MHz, or disagrees with simulation on the card fails every point; the
+run stays valid, and the certification record keeps the reason. A screen
+before the link (the quick tier's estimate against what has closed), the
+diagnosis of a candidate that does not fit and a reference latency for it are
+deferred.
 
 ### 10.3 Chain integrity and generality
 
@@ -518,18 +516,68 @@ candidate's configuration: the simulated device is built from the candidate's
 `rtl/` and profile (`evaluator.HARDWARE`), and the FPGA quick tier synthesises
 the same configuration (`fpga_quick.effective_params`). The task's
 `evaluation.profile` names only where the agent starts. What the task fixes is
-that starting point and the baseline it is compared with. Decided 2026-10-17
-(O23, the collaborator to confirm): core-vrf-sync-v5, the signed-off U280 image
-(u280_r39h), once the flow can build a named profile (r40's
-`TNCA_IMAGE_CONFIG`; today it builds the RTL defaults, which are
-core-vrf-sync-v2, whatever the profile says). `replay-mzero` still starts from
-core-sim until then; from core-sim, enabling the board's existing switches
-would count as a gain.
+that starting point and the baseline it is compared with: core-vrf-sync-v5,
+the signed-off U280 image (u280_r39h; O23, decided 2026-10-17, the
+collaborator to confirm). The flow builds it since `d1a00dd`: r40's
+`TNCA_IMAGE_CONFIG`, proposed to the collaborator, sets every switch the U280
+top passes from the profile (before, the package took the RTL defaults, which
+are core-vrf-sync-v2, whatever the profile said), and the FPGA harness refuses
+a profile the top cannot carry rather than build another machine.
+`replay-mzero` starts from v5 since base `083b57d`.
 
 **Machine changes are recorded.** The evaluator records every changed
 `elaboration` and `rtl_parameters` entry of the task's profile; other profile
 keys, compiler target files and RTL changes appear in the gate's list of files
 taken.
+
+### 10.4 Board certification (built)
+
+`certify` (`certify.py`) shows that a candidate's machine is real: that it
+fits the U280, closes 100 MHz, and counts on the card the cycles simulation
+counted. It runs on the **controller**, the one machine that reaches both FPGA
+servers; the servers never connect to each other, and the evaluation host does
+not reach the card server. It needs no site configuration, only the FPGA
+harness's hosts file and a clone with the task's commits.
+
+1. **The tree.** The base commit with nothing hidden, every file the gate took
+   from the candidate on top (compiler and hardware alike: the card compiles
+   the points with the candidate's compiler, as simulation did), then
+   `evaluation.certify.paths` -- the FPGA flow, the board wrapper and top, the
+   FPGA harness -- laid over whole from `evaluation.certify.commit`. The
+   candidate cannot have changed those paths (they are evaluator-owned or
+   outside the design paths), so the platform is the evaluator's. The tree is
+   committed with a fixed identity and date, so one candidate is one commit,
+   and both servers check out exactly it.
+2. **The build and the board.** The FPGA harness's `pipeline` (its README
+   §11.2) links the tree on the build server at 100 MHz with the scored
+   profile as the image (`image.profile`), then on the card server programs
+   it, runs conformance and runs the task's validation and final points
+   (`board.archbench.points`).
+3. **The comparison.** Each point that passed in simulation must pass on the
+   card, with no fallback, and the card's `time.device` must equal the
+   device's own count that simulation recorded (`done_cycles` in the run's
+   score rows; the observer checks that count against the record, §11).
+
+| Verdict | When | The score |
+|---|---|---|
+| `not-needed` | the machine is the base's | stands |
+| `certified` | 1-3 held | stands |
+| `infeasible` | the build failed: it does not fit or does not close 100 MHz, or the profile cannot be built as the image | every point fails |
+| `board-fail` | the image did not load, or the board stage did not reach the points | every point fails |
+| `board-disagrees` | a point failed on the card, fell back to the host, or counted other cycles | every point fails |
+| `no-verdict` | the pipeline or a server failed | re-run |
+
+The record, `certification.json` beside `run.json`, keeps the verdict and its
+reason, the tree's commit, the image's parameters, the build's timing, each
+point's two counts, and the run's score after certification. The base is
+certified the same way against the evaluator's baseline (`--base`): the
+machine every candidate is compared with must itself fit, close and agree.
+
+**What runs on the card server.** The card compiles the points with the
+candidate's compiler, and its sandbox is not built yet (§12.5). Until it is,
+that is code the operator runs having read it: `certify` without `--yes`
+builds the tree, lists the candidate's files that run on the card server, and
+builds nothing. A hardware-only candidate, and the base, run none.
 
 ## 11. The device-boundary contract and the observer
 
@@ -626,6 +674,20 @@ the observer's log (`evaluator.observed_point`), where a point whose log is
 missing or incomplete, that shows memory activity outside a launch, or whose
 record disagrees with what the device reported, fails.
 
+**The RTL check (built 2026-10-18).** Candidate RTL may not use file or
+system tasks (`$fopen`, `$system`, `$readmemh`, ...) or include a file from
+outside the tree: it is simulated beside the observer's log, and Vivado reads
+it on the build server. Since the card counts too, the check also refuses what
+lets simulation and synthesis see two designs, or lets the design reach into
+the testbench that counts it: synthesis pragmas (`translate_off`,
+`full_case`, `parallel_case`), branching on a tool's macro (`` `ifdef
+SYNTHESIS ``, `VERILATOR`, `__ICARUS__`, `XIL_*`, ...), `defparam`, and
+hierarchical references. Each is refused only where the candidate adds it: a
+line the base already has in the same file is the base's (the base's RTL
+has 17 such lines today). The
+check is cheap and catches the plain cases; what it misses, certification
+catches as a disagreement on the card (§10.4).
+
 **Verified (2026-10-16, `replay-mzero`).** On core-sim a launch reads the
 platform's count six cycles above `done_cycles` (the shell's handshake), and the
 base shows no activity outside a launch.
@@ -714,7 +776,7 @@ Vivado settings script, read-only binds, threads, part).
 
 - **The build worker (built).** Each job runs in a bubblewrap sandbox: no network (`--unshare-all`), a read-only `/usr`, `/etc`, libraries and Vivado installation, only the job's own directory writable, a fresh `/tmp` and home, and nobody's home directory or harness state visible. Candidate RTL is read by Vivado, so the sandbox is what stops `$readmemh` of a host file (T6). (The design first named a container; bubblewrap needs no image, and it is already the card host's tool.)
 - **License (tested 2026-10-15): none is needed.** Vivado 2022.2 ran OOC synthesis, timing and utilisation for the U280 and U50 parts with no license reachable and no network; it reports the entitlement for these parts as built in. A control proved the license was really hidden. The unit `tnca_matrix` synthesised the same way in 1.8 minutes.
-- **The card host (planned).** The candidate's compiler compiles the benchmark there, so it runs in a sandbox with no network, a read-only system, only the card's device nodes, and no home directory, harness state or compiler cache of anyone's. The card is shared, so board stages happen in agreed windows (O14), and between owners the card is reprogrammed or its memory cleared.
+- **The card host (planned).** The candidate's compiler compiles the benchmark there, so it runs in a sandbox with no network, a read-only system, only the card's device nodes, and no home directory, harness state or compiler cache of anyone's. The card is shared, so board stages happen in agreed windows (O14), and between owners the card is reprogrammed or its memory cleared. Until the sandbox is built, certification (§10.4) runs the candidate's compiler there only when the operator, having read what it lists, passes `--yes`.
 - **Versions (decided 2026-10-17, was O13).** The Vivado flow runs on the build worker with its Vitis 2022.2; the card host only loads and measures. Validated once: `b5c606d` linked on the build worker in 103 minutes (213 on the card host with 2023.2, an earlier link), closed 100 MHz with ap_clk WNS +0.138 ns (2023.2: +0.177), and its XCLBIN loaded on the card's 2023.2/XRT 2.16 shell, whose gates check only the platform's interface UUID. The U280 target accepts images from 2022.2 and 2023.2, and the build worker's installation overrides the target's default path.
 - **How a candidate crosses (built, FPGA harness).** `pipeline` in `tools/tritonchip_fpga_harness` (its README §11.2) runs one candidate across the two: a clean checkout of the commit on each from a git bundle, the build detached on the build worker, a light packet of the image and records streamed through the controller into the card host, where every file's hash is checked before the run is installed, and the board stage there. The servers never connect to each other. A real candidate ran through it on 2026-10-17: the base hardware linked on the build worker in 105 minutes (ap_clk WNS +0.138 ns), loaded on the card, conformance 5 of 5, ArchBench tiny 27 of 27 with every point's cycles equal to the same design built with 2023.2 on the card host.
 
@@ -778,7 +840,8 @@ One JSON per run (`run.json`), written outside the sandbox:
 - **usage:** tokens as the CLI reports them; gateway tunnels with bytes, and refusals;
 - **time:** started, finished, seconds, the reason the agent stopped;
 - **candidate:** the gate's verdict, the files taken, dropped, evaluator-owned changes, rejections;
-- **evaluation:** both sets, point by point and in aggregate; machine changes; the validity class.
+- **evaluation:** both sets, point by point (with the device's own count, `done_cycles`) and in aggregate; machine changes; the validity class;
+- **hardware:** whether the candidate changed the machine (the RTL files, the profile's changed parameters), and `certification`: `not-needed` or `pending`. Certification writes its own record, `certification.json`, beside this one (§10.4).
 
 Planned additions: the evaluator's image id for every run, pseudo-agents
 included; tokens normalised to one schema across CLIs (uncached input, cache
@@ -832,6 +895,9 @@ result.
 | 2026-10-17 | Feasibility: the quick tier screens; every hardware-changing final candidate that passes is certified by a routed link on the build worker; its score is pending until then |
 | 2026-10-17 | A candidate that does not fit (resources beyond SLR1, or no route at any reasonable clock) fails every point and the run stays valid; its diagnosis and a reference latency at the base clock are recorded, not scored |
 | 2026-10-17 | O23: `replay-mzero` starts from and is compared with core-vrf-sync-v5 (u280_r39h), once the flow can build a named profile (r40's `TNCA_IMAGE_CONFIG`). Decided by the user; the collaborator to confirm |
+| 2026-10-18 | *A first version, for now in place of the three entries on latency and feasibility above:* the kernel clock is fixed at 100 MHz and the score is the simulated cycles; a final candidate that changed the machine is certified on the card (`certify`, §10.4) -- it fits, closes 100 MHz, and each point counts on the card the cycles simulation counted -- or every point fails. The achieved and declared clock, the screen, the diagnosis and the reference latency are deferred |
+| 2026-10-18 | O23 built: the flow builds a named profile (`d1a00dd`: r40's `TNCA_IMAGE_CONFIG` and the U280 top's pass-through, proposed to the collaborator); `replay-mzero` moves to base `083b57d` (`9a3b1378` plus those three files) and core-vrf-sync-v5 |
+| 2026-10-18 | The RTL check also refuses, where the candidate adds them, synthesis pragmas, tool-macro branches, `defparam` and hierarchical references (§11) |
 
 **Open.**
 
@@ -846,8 +912,8 @@ result.
 | O17 | The size of the hidden sets. Of the 27 tiny points, each matrix-multiply family has a single shape (matmul in two dtypes), so "same operation, unseen shape" needs new tiny-scale points | collaborator |
 | O21 | How ArchBench splits into a public and a hidden package for delivery: by family, or by shape tables made data | collaborator |
 | O22 | Who migrates P1's remainder (the FPGA top first, then the core benches and `tnca_shell_tb`) | collaborator |
-| O24 | The quick-tier screen's thresholds (share of SLR1, worst path at the declared clock), calibrated on the images that closed (v2, v4, v5) | us, with the collaborator |
-| O25 | How the flow takes a requested kernel clock and a named profile (today `link.sh`, `package_xo.tcl` and `ooc.xdc` fix 100 MHz, and the FPGA top takes the RTL defaults), and where a candidate declares its clock | collaborator |
+| O24 | *Deferred with the screen.* The quick-tier screen's thresholds (share of SLR1, worst path at the declared clock), calibrated on the images that closed (v2, v4, v5) | us, with the collaborator |
+| O25 | *Deferred with the achieved clock.* How the flow takes a requested kernel clock (`link.sh`, `package_xo.tcl` and `ooc.xdc` fix 100 MHz, which the score now assumes), and where a candidate declares its clock. The named profile is built (`d1a00dd`); the collaborator to confirm that change | collaborator |
 
 ## 17. Progress
 
@@ -905,8 +971,12 @@ Status: **done** (built and verified), **in progress** (being built now),
 | Loop | `run-task` with noop, reference, `patch:` and real agents | done | §19 |
 | Pilots | Pilot 1: three configurations, one run each | done | §19; before ArchBench was hidden |
 | Pilots | An agent that uses the services on its own | in progress | §19 pilot 2: Claude Code and Codex scored on their own; neither asked for FPGA, which a cycles-only score gave no reason to |
-| Scoring | Latency at the achieved clock; the declared clock and the derated re-link; feasibility record (screen, certification, diagnosis, reference latency) | planned | §10.2; needs O25 |
-| Flow | A requested kernel clock and a named profile in the build (r40's `TNCA_IMAGE_CONFIG`) | planned | O25; required for the v5 baseline |
+| Scoring | Latency at a fixed 100 MHz: the simulated cycles; `hardware` and `certification` in the run record | done | §10.2; `replay-mzero` on v5: noop 1.000, reference 1.017 / 1.009 (§19) |
+| Scoring | Board certification of a final candidate (`certify`) | in progress | §10.4; `tests/test_certify.py`; the v5 base on the card: running |
+| Scoring | Latency at the achieved clock; the declared clock and the derated re-link; the screen, the diagnosis, the reference latency | deferred | §16 (2026-10-18); O24, O25 |
+| Flow | A named profile in the build (r40's `TNCA_IMAGE_CONFIG`, the U280 top's pass-through) | done | `d1a00dd`; packaged on the build worker: v5 gives r40's 17 parameters, the default package is unchanged (v2) |
+| Flow | A requested kernel clock | deferred | O25 |
+| Device boundary | RTL check: pragmas, tool macros, `defparam`, hierarchical references, where the candidate adds them | done | `tests/test_certify.py` (`SplitRtl`); the base's 58 RTL files pass |
 
 ## 18. Quick start
 
@@ -969,6 +1039,34 @@ and the files taken), `eval/` (the evaluator's logs and ArchBench records),
 `gateway-log/`, and `workspace/`. Also: `--agent patch:<file>` re-scores a
 change given as a git patch; `credentials` shows each account's credential
 from its metadata only.
+
+**5. Certify a candidate that changed the machine** (`run.json` says
+`certification: pending`; §10.4). On the controller, with a clone that has
+the task's base and `evaluation.certify.commit`, and the FPGA harness's hosts
+file (its README §11.1). Copy the run's record and candidate from the
+evaluation host:
+
+```bash
+mkdir -p runs && scp -r <eval host>:<state_dir>/runs/<run_id> runs/
+```
+
+Build the tree and see what would run, the candidate's code on the card server
+included; nothing is built:
+
+```bash
+PYTHONPATH=tools python3 -m tritonchip_agent_harness certify tools/tritonchip_agent_harness/tasks/replay-mzero --run runs/<run_id>
+```
+
+Then link it on the build server and run its points on the card (about two
+hours; `--build-run <id>` attaches to a build already started):
+
+```bash
+PYTHONPATH=tools python3 -m tritonchip_agent_harness certify tools/tritonchip_agent_harness/tasks/replay-mzero --run runs/<run_id> --hosts ~/.config/tritonchip-fpga-harness/hosts.json --build-host <build host> --board-host <card host> --yes
+```
+
+The verdict and the score after certification are in
+`runs/<run_id>/certification.json`. `--base <baseline json>` (from
+`<state_dir>/baselines/` on the evaluation host) certifies the base instead.
 
 **The harness's own tests** (Python 3.9 or later, no Docker):
 
@@ -1073,10 +1171,19 @@ budget; `job_minutes` is 20.
 
 - **Both chose to score on their own,** once each: the syllabus and `tnca-service` were enough to find and use the service.
 - **Claude tried the machine and dropped it.** In its own simulator it copied core-vrf-sync-v5's switches into core-sim: the banked VRF made matmuls 20–40% slower and `MTX_ABUF` changed nothing, so it reverted the profile.
-- **Codex changed the machine and never asked what it costs.** Four timing switches, from its own 16×16 matmul (1065 → 1006 cycles), then a scoring request, then it stopped with the request running. Neither agent asked for FPGA. The reason is the score: it counts cycles only, the clock and the resources do not enter it yet (O11 is provisional and not built), and the syllabus says so. An agent that optimises the score has no use for synthesis, so the FPGA service matters only once hardware reaches the score: decided 2026-10-17 through the achieved clock and the fit (§10.2), not yet built.
+- **Codex changed the machine and never asked what it costs.** Four timing switches, from its own 16×16 matmul (1065 → 1006 cycles), then a scoring request, then it stopped with the request running. Neither agent asked for FPGA. The reason is the score: it counts cycles only, the clock and the resources do not enter it yet (O11 is provisional and not built), and the syllabus says so. An agent that optimises the score has no use for synthesis, so the FPGA service matters only once hardware reaches the score. The first version (2026-10-18) brings in the fit: a changed machine must fit the U280, close 100 MHz and agree with simulation on the card, or every point fails (§10.4); the achieved clock is deferred.
 - **Both stopped early:** Claude with 49 minutes left, Codex with 57.
 - **A cancelled request's numbers were kept as its result.** Codex's scoring request was cancelled when it stopped, while its point containers were being removed; the half-measured aggregate (2 of 3 passed) went into the record as the result. Fixed: such numbers are kept only as `full`, and the syllabus says a request still running at the end is lost.
 - **Tokens.** Claude: 120 input, 91,519 cache writes, 3,868,404 cache reads, 22,455 output; $1.36 at list price. Codex: 1,488,541 input, 1,418,496 of them cached; 7,800 output, 2,071 of them reasoning.
+
+**`replay-mzero` on core-vrf-sync-v5** (2026-10-18, base `083b57d`, platform
+`55872ef`). The base measured cleanly on all five points (the platform's
+count: 1555, 8379, 2190, 4981, 9783 cycles; the device's own count is 6 less
+per launch, and bmm makes two launches). `noop` scores 1.000 on both sets.
+`reference` scores 1.0166 on validation (3 of 3 passed, 2 faster: the matmul
+1555 → 1497, the linear 8379 → 8285; bmm unchanged) and 1.0088 on final (2 of
+2, both faster), about what it gained on core-sim (1.016 / 1.010). Neither
+changes the machine: both records say `certification: not-needed`.
 
 ## 20. Sources
 

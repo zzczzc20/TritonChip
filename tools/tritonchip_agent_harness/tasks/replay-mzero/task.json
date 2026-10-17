@@ -2,8 +2,8 @@
   "schema": "tritonchip-agent-task/1",
   "task_id": "replay-mzero",
   "kind": "cross-layer",
-  "note": "A replay on main + the profile header (P1) + the leak cleanup (6f2bdee): the zero-accumulator m.zero lowering of 49da68a removed. reference.patch is the developers' change; a no-op agent scores 1.0. Cross-layer: the agent may change the compiler, the ISA and the hardware. ArchBench is hidden: archbench/ and every file the 2026-10-15 leak audit found revealing its points are removed from the workspace. Residual leaks the export cannot remove (comments in files the flow needs) are listed in the README, section 6.5.",
-  "base_commit": "9a3b1378fe86eba8d82d786e38dbba71f464b18e",
+  "note": "A replay on main + the profile header (P1) + the leak cleanup (6f2bdee) + the image build (d1a00dd): the zero-accumulator m.zero lowering of 49da68a removed. reference.patch is the developers' change; a no-op agent scores 1.0. Cross-layer: the agent may change the compiler, the ISA and the hardware. ArchBench is hidden: archbench/ and every file the 2026-10-15 leak audit found revealing its points are removed from the workspace. Residual leaks the export cannot remove (comments in files the flow needs) are listed in the README, section 6.5.",
+  "base_commit": "083b57d7a90f951daec658074208c7c588a21a7b",
   "design": [
     "compiler/",
     "python/tnca/",
@@ -58,7 +58,7 @@
     "wall_seconds": 2700
   },
   "evaluation": {
-    "profile": "core-sim",
+    "profile": "core-vrf-sync-v5",
     "validation": [
       "op.matmul/tiny/fp16-m16-k32-n16",
       "op.linear/tiny/fp16-m16-k64-n64",
@@ -77,6 +77,18 @@
         "python/tnca/backends/relay.py",
         "python/tnca/backends/socket_relay.py"
       ]
+    },
+    "certify": {
+      "commit": "d1a00dd3c63fef85dc4f9eb22824366c6ce94c3e",
+      "paths": [
+        "flow/fpga/",
+        "fpga/",
+        "rtl/board/",
+        "rtl/fpga/",
+        "tools/tritonchip_fpga_harness/"
+      ],
+      "target": "u280",
+      "clock_mhz": 100
     }
   },
   "services": {

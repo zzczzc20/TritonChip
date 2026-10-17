@@ -147,7 +147,7 @@ class Broker:
         g = gate(self.repo, self.task.base_commit, self.task.hide, self.task.design, self.workspace,
                  out=job_dir / "candidate", evaluator_owned=self.task.evaluator_owned)
         candidate = job_dir / "candidate" if g["taken"] else None
-        problems = [] if g["verdict"] != "PASS" else evaluator.rtl_check(candidate)
+        problems = [] if g["verdict"] != "PASS" else evaluator.rtl_check(candidate, self.repo)
         snapshot = {"taken": [c["path"] for c in g["taken"]],
                     "dropped": [c["path"] for c in g["dropped"]][:50]}
         if g["verdict"] != "PASS" or problems:

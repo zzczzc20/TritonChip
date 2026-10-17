@@ -70,10 +70,38 @@ _RTL_FORBIDDEN = re.compile(r"\$(fopen|fclose|fwrite|fdisplay|fstrobe|fmonitor|f
                             r"ungetc|rewind|fseek|system|readmemh|readmemb|writememh|writememb|dumpfile|dumpvars)\b")
 _RTL_INCLUDE = re.compile(r'`include\s+"([^"]+)"')
 _RTL_COMMENT = re.compile(r"//[^\n]*|/\*.*?\*/", re.S)
+_RTL_STRING = re.compile(r'"(?:\\.|[^"\\\n])*"')
+# Ways RTL can make simulation and synthesis see different designs, or reach
+# into the testbench that counts it. Each is refused where the candidate adds
+# it; what the base already has, in the same file, is not the candidate's.
+_RTL_SPLIT = (
+    ("synthesis pragma", re.compile(r"(?i)\b(?:synthesis|synopsys|pragma)\s+(?:translate_(?:off|on)|full_case|parallel_case)\b"),
+     "raw"),
+    ("tool macro", re.compile(r"`(?:ifdef|ifndef|elsif)\s+(?:SYNTHESIS|__ICARUS__|VERILATOR|XILINX_SIMULATOR|XIL_\w*|IVERILOG)\b"),
+     "code"),
+    ("defparam", re.compile(r"\bdefparam\b"), "code"),
+    ("hierarchical reference", re.compile(r"(?<![\w.$`'])\$?(?:root|[A-Za-z_][\w$]*)\.[A-Za-z_][\w$]*"), "code"),
+)
 
 
-def rtl_check(candidate: Optional[Path]) -> list:
-    """Why the candidate's RTL may not be built and simulated; [] when it may."""
+def _rtl_findings(text: str) -> set:
+    """(rule, the stripped line) for every construct of _RTL_SPLIT in one file."""
+    code = _RTL_STRING.sub('""', _RTL_COMMENT.sub(" ", text))
+    found = set()
+    for name, pattern, where in _RTL_SPLIT:
+        source = text if where == "raw" else code
+        for line in source.splitlines():
+            if pattern.search(line):
+                found.add((name, " ".join(line.split())))
+    return found
+
+
+def rtl_check(candidate: Optional[Path], repo: Optional[Path] = None) -> list:
+    """Why the candidate's RTL may not be built and simulated; [] when it may.
+
+    With ``repo``, a split construct the base already has on the same line of
+    the same file is the base's, not the candidate's.
+    """
     if candidate is None:
         return []
     report = json.loads((candidate / "candidate.json").read_text(encoding="utf-8"))
@@ -82,12 +110,22 @@ def rtl_check(candidate: Optional[Path]) -> list:
         path = c["path"]
         if c["status"] == "deleted" or not path.startswith("rtl/"):
             continue
-        text = _RTL_COMMENT.sub(" ", (candidate / "files" / path).read_text(encoding="utf-8", errors="replace"))
+        raw = (candidate / "files" / path).read_text(encoding="utf-8", errors="replace")
+        text = _RTL_COMMENT.sub(" ", raw)
         for m in _RTL_FORBIDDEN.finditer(text):
             problems.add(f"{path}: ${m.group(1)}")
         for m in _RTL_INCLUDE.finditer(text):
             if m.group(1).startswith("/") or ".." in Path(m.group(1)).parts:
                 problems.add(f'{path}: `include "{m.group(1)}"')
+        base = set()
+        if repo is not None and c["status"] != "added":
+            try:
+                base = _rtl_findings(git("-C", str(repo), "show", f"{report['base_commit']}:{path}").decode(
+                    "utf-8", errors="replace"))
+            except Exception:  # noqa: BLE001 -- a file the base does not have adds everything
+                base = set()
+        for name, line in sorted(_rtl_findings(raw) - base):
+            problems.add(f"{path}: {name}: {line[:80]}")
     return sorted(problems)
 
 
@@ -350,6 +388,25 @@ def machine_change(repo: Path, task: Task, tree: Path) -> dict:
     return {"profile": name, "changed": changed}
 
 
+def hardware_changed(repo: Path, task: Task, candidate: Optional[Path]) -> dict:
+    """Whether the candidate's machine differs from the base's: an RTL file, or the scored profile."""
+    if candidate is None:
+        return {"changed": False, "rtl": [], "profile": {}}
+    report = json.loads((candidate / "candidate.json").read_text(encoding="utf-8"))
+    rtl = sorted(c["path"] for c in report["taken"] if c["path"].startswith("rtl/"))
+    profile = {}
+    taken = {c["path"]: c for c in report["taken"]}
+    if "spec/r1_profiles.json" in taken:
+        name = task.evaluation["profile"]
+        before = _rtl_parameters(git("-C", str(repo), "show", f"{task.base_commit}:spec/r1_profiles.json").decode(), name)
+        if taken["spec/r1_profiles.json"]["status"] == "deleted":
+            after = {}
+        else:
+            after = _rtl_parameters((candidate / "files" / "spec/r1_profiles.json").read_text(encoding="utf-8"), name)
+        profile = {k: [before.get(k), after.get(k)] for k in sorted(set(before) | set(after)) if before.get(k) != after.get(k)}
+    return {"changed": bool(rtl or profile), "rtl": rtl, "profile": profile}
+
+
 def _geomean(xs: list) -> Optional[float]:
     return math.exp(sum(math.log(x) for x in xs) / len(xs)) if xs and all(x > 0 for x in xs) else None
 
@@ -371,7 +428,9 @@ def score(base: dict, got: dict, names) -> dict:
             failure = None
         speedup = b["cycles"] / c["cycles"] if failure is None else None
         rows.append({"point": p, "status": (c or {}).get("status"), "failure": failure,
-                     "base_cycles": b.get("cycles"), "cycles": (c or {}).get("cycles"), "speedup": speedup})
+                     "base_cycles": b.get("cycles"), "cycles": (c or {}).get("cycles"), "speedup": speedup,
+                     # The device's own count, which the card reports too (certify.py compares them).
+                     "done_cycles": (c or {}).get("record_cycles", (c or {}).get("cycles"))})
     passed = [r["speedup"] for r in rows if r["failure"] is None]
     n = len(rows)
     return {"points": rows, "n": n, "passed": len(passed),
@@ -402,4 +461,5 @@ def evaluate(site: Site, repo: Path, task: Task, candidate: Optional[Path], run_
     }
 
 
-__all__ = ["HARDWARE", "baseline", "evaluate", "measure_validation", "observed_point", "read_observer", "rtl_check", "score"]
+__all__ = ["HARDWARE", "baseline", "evaluate", "hardware_changed", "measure_validation", "observed_point",
+           "read_observer", "rtl_check", "score"]

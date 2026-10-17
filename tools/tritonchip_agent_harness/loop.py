@@ -70,7 +70,7 @@ def run_task(site: Site, task: Task, agent: str, mode: str = "offline", model: O
                       "evaluator_owned_changes": [c["path"] for c in g["dropped"] if c.get("reason") == "evaluator-owned"],
                       "rejected": g["rejected"]}
     # Candidate RTL is simulated beside the observer's log: no file or system tasks.
-    rtl = evaluator.rtl_check(run_dir / "candidate") if g["verdict"] == "PASS" and g["taken"] else []
+    rtl = evaluator.rtl_check(run_dir / "candidate", repo) if g["verdict"] == "PASS" and g["taken"] else []
     record["gate"]["rtl_check"] = rtl
 
     pseudo = agent in PSEUDO or agent.startswith("patch:")
@@ -82,6 +82,9 @@ def run_task(site: Site, task: Task, agent: str, mode: str = "offline", model: O
     else:
         candidate = run_dir / "candidate" if g["taken"] else None
         record["evaluation"] = evaluator.evaluate(site, repo, task, candidate, run_dir)
+        # A changed machine's score stands once certify.py has run it on the card.
+        record["hardware"] = evaluator.hardware_changed(repo, task, candidate)
+        record["certification"] = "pending" if record["hardware"]["changed"] else "not-needed"
         if not record["evaluation"]["valid"]:
             record["validity"] = "infra-invalid"
         elif not pseudo and record["agent_result"].get("stop_reason") == "timeout":

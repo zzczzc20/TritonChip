@@ -260,10 +260,10 @@ footer { font-size: 13px; color: var(--muted); border-top: 1px solid var(--line)
   </div>
   <div class="card"><div class="top"><h3>机器配置由 agent 决定，起点和基线归任务</h3><span class="chip all">README §10.3</span></div>
   <p>profile 就是一份机器配置：同一套 RTL，打开或关闭哪些开关、参数取多少。<code>spec/r1_profiles.json</code> 在设计目录里，agent 可以打开、关闭或新增被评分 profile 的任何开关（pilot 1 的 Claude 打开了 7 个）。所有测量都按候选改过的配置来做：仿真设备用候选的 <code>rtl/</code> 和 profile 构建，FPGA 快档综合同一个配置。任务里的 <code>evaluation.profile</code> 只说明从哪台机器出发。</p>
-  <p class="muted">任务固定的是起点和基线（2026-10-17 定，待合作者确认）：core-vrf-sync-v5，也就是签收的 U280 镜像 u280_r39h。前提是 flow 先能按 profile 构建（接入 r40 的 <code>TNCA_IMAGE_CONFIG</code>）；在那之前 flow 只能构建 RTL 默认参数（v2），<code>replay-mzero</code> 暂时还从 core-sim 出发。</p></div>
-  <div class="card"><div class="top"><h3>机器锁定 U280，分数是实际时钟下的 latency</h3><span class="chip req">2026-10-17 定 · 未实现</span></div>
-  <p>硬件成本不计分，只是约束：必须放得进 U280、时序能收敛。分数是 latency：平台观测器数的设备时间（不含 host 传输），按候选自己达到的时钟换算。agent 声明目标时钟；认证 link 在这个时钟下跑；没收敛就按布线后的 slack 算出能达到的频率（向下取整）再 link 一次，按那个频率算分。所以 RTL 流水切得好、能跑更高频，分数就更好；只能在低频收敛，分数变差，但不是零。</p>
-  <p class="muted">放得进怎么判：快档先筛掉明显放不下的，剩下每个改了硬件的最终候选都在 build worker 上 link 认证，认证前分数是 pending。真放不下（资源超出 SLR1，或任何合理时钟下都布不通）的候选所有点判失败、run 仍有效，另记诊断和参考 latency，只供分析。</p></div>
+  <p class="muted">任务固定的是起点和基线（2026-10-17 定，待合作者确认）：core-vrf-sync-v5，也就是签收的 U280 镜像 u280_r39h。flow 从 <code>d1a00dd</code> 起能按 profile 构建：接入 r40 的 <code>TNCA_IMAGE_CONFIG</code>，U280 顶层把开关透传下去（这个 flow 改动待合作者确认）；顶层传不了的 profile 参数，FPGA harness   <div class="card"><div class="top"><h3>机器锁定 U280，时钟固定 100 MHz，改了硬件就上板认证</h3><span class="chip ok">2026-10-18 第一版实现</span></div>
+  <p>硬件成本不计分，只是约束：必须放得进 U280、在 100 MHz 下时序收敛。分数是 latency：平台观测器数的设备时间（不含 host 传输）。时钟固定，latency 就是仿真周期数，点的评分方式不变。按候选自己达到的时钟算分（agent 声明目标时钟、没收敛就降频再 link）之前定过，第一版先推迟：那样每个候选都得先 link 完才知道分数。</p>
+  <p class="muted">怎么判（<code>certify</code>，README §10.4）：改了硬件（RTL 文件，或被评分 profile 的参数）的最终候选，先在 build worker 上以被评分 profile 为镜像、按 100 MHz link，再到 card host 上跑任务的全部点；每个点板上的设备周期必须等于仿真记下的周期。放不下、100 MHz 收敛不了、或者板上和仿真对不上，所有点判失败，run 仍有效，认证记录写明原因。认证之前 run 记录里是 <code>certification: pending</code>。快档预筛、诊断和参考 latency 推迟。</p></div>
+前分数是 pending。真放不下（资源超出 SLR1，或任何合理时钟下都布不通）的候选所有点判失败、run 仍有效，另记诊断和参考 latency，只供分析。</p></div>
 </section>
 
 <section id="mechanisms">

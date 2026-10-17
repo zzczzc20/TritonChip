@@ -88,3 +88,10 @@ Pinned-source CI [38976369917](https://github.com/zzczzc20/TritonChip/actions/ru
 completed successfully on exact hardware source `0c39793`; `source_ci.json`
 retains the authoritative run and job results. CI is source regression
 qualification, not board workload or physical implementation acceptance.
+
+`imported_rtl_identity.json` verifies every one of the 60 Verilog/SystemVerilog
+source/header files present in the actual synthesized kernel IP `src`
+directory against the frozen source archive. It records each imported hash
+and matching frozen path. This source-provenance audit excludes vendor
+wrappers, platform IP and non-source build artifacts; it does not qualify
+placement, timing, CDC, a loadable image or workloads.

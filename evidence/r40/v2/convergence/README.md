@@ -47,7 +47,12 @@ Failure preserves the first incorrect result or missing traffic/visibility
 requirement without shrinking the workload.
 
 CI for exact source `54249f7` runs in parallel; success is mandatory before
-qualification or board load. The earlier full R3 native77 simulation still has
+qualification or board load. A complete original native77 functional run now
+uses source a1fed22, the final-candidate RTL geometry and explicit testbench
+guards on the ARM host; [launch evidence](attempt03/final_native77_launch.json).
+Its new per-sample raw endpoint records are independently reproducible. This
+is functional RTL only, not the final-image inventory or a performance gate.
+The earlier R3 run is retained separately. The earlier full R3 native77 simulation still has
 original points exceeding the 1800-second host wait. Those rows remain timeouts;
 the unchanged original argmax point has a separate 7200-second-wait diagnostic.
 Neither simulation result substitutes for the final-image inventory.

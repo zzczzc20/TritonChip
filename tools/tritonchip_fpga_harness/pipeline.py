@@ -253,6 +253,12 @@ def _transfer_once(send: list[str], receive: list[str], source: Host, destinatio
         sender.kill()
         receiver.kill()
         raise PipelineError(f"the transfer of {run_id} did not finish in {timeout}s")
+    if 255 in (sender.returncode, receiver.returncode):
+        # Either connection dropping ends both ends: a receiver that is gone
+        # shows on the sender as a tar write error, so 255 on either side is
+        # the connection, and the transfer is sent again.
+        side = destination.name if receiver.returncode == 255 else source.name
+        raise PipelineError(f"{side}: the SSH connection failed (255) during the transfer of {run_id}")
     if sender.returncode != 0:
         raise PipelineError(f"{source.name}: tar of the packet failed ({sender.returncode}): "
                             f"{send_err.decode('utf-8', errors='replace').strip()[-300:]}")

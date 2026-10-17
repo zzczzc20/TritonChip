@@ -1,6 +1,8 @@
 # Diagnostic reports from an existing checkpoint, including failed routing.
 # This script never modifies the source checkpoint or runs implementation.
 # vivado -mode batch -source THIS_FILE -tclargs CHECKPOINT NEW_OUTPUT
+# Optional third argument range-slice-cuts adds tag storage accounting and
+# ranks the global worst paths plus the four register-boundary path samples.
 # Rank logical timing cones within the existing report's endpoint sample.
 # No timing query is repeated, and this is not an exhaustive path census.
 proc r40_timing_family {pin} {
@@ -62,6 +64,64 @@ proc r40_rank_timing_report {input output} {
     close $f
 }
 
+# Keep storage roots and their implementation children separate. For example,
+# RAM32M16 and its RAMD32/RAMS32 children are not independent memory resources.
+# Rows are {canonical_cell_name REF_NAME IS_PRIMITIVE}; no vendor calls here.
+proc r40_tag_storage_report {rows inventory summary} {
+    set cells [dict create]
+    foreach row $rows {
+        if {[llength $row] != 3} {error "invalid tag cell record: $row"}
+        lassign $row name ref primitive
+        if {[dict exists $cells $name] && [dict get $cells $name] ne [list $ref $primitive]} {
+            error "conflicting tag cell records: $name"
+        }
+        dict set cells $name [list $ref $primitive]
+    }
+    set records [list]
+    set counts [dict create]
+    set storage 0
+    foreach name [lsort [dict keys $cells]] {
+        lassign [dict get $cells $name] ref primitive
+        set cache {<unclassified>}
+        if {![regexp {^(.*?)[/.]g_sync_tags[/.]} $name whole cache]} {
+            if {[string match {g_sync_tags*} $name]} {set cache {<top>}}
+        }
+        set parent {}
+        set parts [split $name /]
+        while {[llength $parts] > 1} {
+            set parts [lrange $parts 0 end-1]
+            set ancestor [join $parts /]
+            if {[dict exists $cells $ancestor] &&
+                [string match RAM* [lindex [dict get $cells $ancestor] 0]]} {
+                set parent $ancestor
+                break
+            }
+        }
+        if {[string match RAM* $ref]} {
+            set kind [expr {$parent eq {} ? "storage_root" : "storage_child"}]
+            incr storage
+        } elseif {[string match FD* $ref]} {
+            set kind [expr {$parent eq {} ? "storage_flop" : "storage_child"}]
+            incr storage
+        } else {
+            set kind helper
+        }
+        lappend records [list $cache $kind $name $ref $primitive $parent]
+        dict incr counts [list $cache $kind $ref]
+    }
+    if {!$storage} {error "no mapped tag storage found; preserve and inspect the cell filter"}
+    set f [open $inventory {WRONLY CREAT EXCL}]
+    puts $f "cache\tscope\tcell\tprimitive\tis_primitive\tstorage_parent"
+    foreach row $records {puts $f [join $row \t]}
+    close $f
+    set f [open $summary {WRONLY CREAT EXCL}]
+    puts $f "cache\tscope\tprimitive\tunique_cells_DO_NOT_SUM_scopes"
+    foreach key [lsort [dict keys $counts]] {
+        puts $f [join [concat $key [list [dict get $counts $key]]] \t]
+    }
+    close $f
+}
+
 if {[llength $argv] ni {2 3}} {error "expected CHECKPOINT NEW_OUTPUT ?range-slice-cuts?"}
 set mode [lindex $argv 2]
 if {$mode ni {{} range-slice-cuts}} {error "unknown diagnostic mode: $mode"}
@@ -85,10 +145,28 @@ if {$mode eq "range-slice-cuts"} {
         foreach cell $cells {puts $f "$name\t[get_property NAME $cell]\t[get_property REF_NAME $cell]"}
     }
     close $f
+    set banks [get_cells -hierarchical -quiet -filter {NAME =~ "*g_sync_tags*" && NAME =~ "*bank_reg*"}]
+    set rows [list]
+    if {[llength $banks]} {
+        foreach name [get_property NAME $banks] ref [get_property REF_NAME $banks] \
+                primitive [get_property IS_PRIMITIVE $banks] {
+            lappend rows [list $name $ref $primitive]
+        }
+    }
+    r40_tag_storage_report $rows $out/tag_storage_cells.tsv $out/tag_storage_summary.tsv
     report_timing -to $owner_regs -max_paths 5 -file $out/owner_input.rpt
     report_timing -from $tag_regs -to $owner_regs -max_paths 5 -file $out/tag_to_owner.rpt
     report_timing -from $owner_regs -max_paths 5 -file $out/owner_output.rpt
     report_timing -from $request_regs -max_paths 5 -file $out/request_owner_output.rpt
+    report_timing -max_paths 30 -nworst 1 -path_type full_clock_expanded -file $out/critical_paths.rpt
+    foreach name {owner_input tag_to_owner owner_output request_owner_output critical_paths} {
+        r40_rank_timing_report $out/$name.rpt $out/${name}_ranked.tsv
+        set f [open $out/${name}_ranked.tsv r]
+        gets $f header
+        set found [gets $f first]
+        close $f
+        if {$found < 0} {error "no ranked timing paths for $name; inspect the preserved raw report"}
+    }
     puts "R40_RANGE_SLICE_CUT_DIAGNOSIS_DONE_diagnostic_only"
     exit
 }

@@ -95,3 +95,29 @@ directory against the frozen source archive. It records each imported hash
 and matching frozen path. This source-provenance audit excludes vendor
 wrappers, platform IP and non-source build artifacts; it does not qualify
 placement, timing, CDC, a loadable image or workloads.
+
+The existing `range-slice-cuts` diagnostic now emits a per-cache tag storage
+inventory and summary, separating storage roots, nested implementation cells,
+register fallback and non-storage helpers. RAM macros and their children
+must not be added together. A missing storage selection or conflicting
+canonical cell record is an extraction error. The mode also ranks the four
+existing boundary timing samples and 30 global worst setup paths, retaining
+logic levels and logic/net delay. Empty path samples are reported as errors;
+no extraction result accepts an image.
+
+After the implementation terminal marker and the existing observer finish,
+run the committed diagnostic tool revision against the retained final DCP in
+a fresh output directory:
+
+```sh
+vivado -mode batch -source "$R40_DIAGNOSTIC_SCRIPT" -tclargs \
+  "$R40_FINAL_DCP" "$R40_NEW_CUT_REPORTS" range-slice-cuts
+```
+
+Record the tool revision/script SHA separately from hardware source `0c39793`.
+The read-only analysis tool can be staged in a separate directory; the live
+immutable implementation source must remain intact. Local Tcl regression
+coverage checks hierarchy-aware accounting against the retained OOC inventory
+ratios, canonical duplicate handling, exploded RAM, FF fallback and refusal of
+missing/conflicting storage. Execution against the final Vivado DCP remains
+pending; no checkpoint reader was started alongside placement.

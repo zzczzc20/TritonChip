@@ -1,112 +1,79 @@
-# R40 v2 delivery convergence ledger
-
-This is a dated execution ledger, **not a contract amendment**. The frozen v2 contract and all thresholds remain unchanged. Latest physical observation: 2026-10-17 09:10 UTC; active vertical checkpoint software snapshot 642c660; previous failed hardware source 09ebe06; additional attempt 1 source cf330dc failed actual routing with global congestion level 7. Existing functional passes do not certify the final image. Required gate changes: R40-01.device and R40-03.contract now capability-pass; missing mixed-device/device-time entries are not-measured. All other required statuses are in required_gates.json. No performance gate has been promoted.
+# R40 v2 convergence checkpoint
 
 ## Immediate experiment commands and branches
 
-**P — diagnose the terminal failed route before choosing a replacement.** The
-original `09ebe06` implementation stopped at 2026-10-15 14:53:10 UTC (22:53:10 HKT). Its
-`build/link.exit` is **1** and PID 594866 is absent. Vivado reports
-`Route 35-3: Design is not routable as its global congestion level is 7`,
-followed by `Route 35-4445`. Raw log, terminal exit and checkpoint SHA are in
-`route_failure_20261016/`; the retained error DCP is 595,473,030 bytes with SHA256
-`8d82bd375ce489ca433aba15f83692b53b409bc045381a7a8f44ed44811a50d9`.
-This was a failed implementation attempt, not a completed routed image.
-Required gate statuses remain unchanged and final qualification is not-measured.
+**Required gate delta: no additional gate passed. Attempt 2 is terminal failed.**
+Immutable hardware `0c397939952d2a6bc881d08623b1bb9114a54ab8` exited with
+code 1. The retained routed-error DCP SHA is
+`b5be49c0529b92a76ed084964cb51a2eec541744f235dfaf9ab7c98c5ee77612`.
+[Terminal evidence](attempt02/terminal_failure.json) binds the complete raw
+report archive to hardware, configuration, 100 MHz and the unchanged contract.
+No loadable image exists; CDC and all final-image workload/performance results
+remain not-measured. Budget is maximum 3, used 2, remaining 1; attempt 3 has
+not started. No retry or board load was issued.
 
-The existing `SSI_SpreadSLLs` directive did not resolve the problem. Earlier
-local SLL demand reached 204%; placement CLB occupancy was
-97.59%/96.54%/86.54%, despite LUT utilization of 84.08%/91.09%/75.83%.
-The router identified at least 8,651 high-pin-utilization CLBs. These are
-specific congestion observations, not proof that any one mechanism caused
-all failures. The -38.938 ns intermediate WNS is not final routed timing.
+**P — diagnose and correct the terminal physical failure.** The route report
+has two HBM response nets competing for `INT_X79Y186/NN1_W_BEG7`, plus two
+kernel nets with antenna/island errors. Correcting the HBM conflict alone is
+insufficient: the worst sampled kernel setup path is slice2 `tl_a_reg[0]` to
+TMU `dq_id_reg[13][4]/CE`, 30 levels, 20.561 ns data delay (2.520 logic /
+18.041 routed net), slack -11.159 ns on the actual 10 ns kernel clock. The
+30 endpoint sample reduces to two destination families, `dq_id` and
+`dead_valid`; it is not an exhaustive cone census or legal-route timing
+qualification. Earlier intermediate -0.952 ns timing is superseded by this
+failed-DCP observation; final fmax remains not-measured.
 
-**Current blocker:** no functionally validated, routable three-core final
-candidate. Read-only checkpoint diagnosis completed successfully; all eight
-reports and the exact script are in
-`route_failure_20261016/diagnostic_reports_complete.tar.gz`. Thirty reported
-endpoints reduce to two source registers: TMU base metadata and slice tag
-storage, feeding writeback-address RAM enables. Worst reported data delay is
-50.082 ns (91 logic levels); this includes estimates in a substantially
-unrouted design and cannot qualify timing. The
-[bounded candidate hypotheses](route_failure_20261016/next_candidate_hypotheses.md)
-identify tag-bank/owner-pipeline screening and its correctness prerequisites.
+**Unique current physical blocker:** no legal 100 MHz three-core image,
+with the TLW classification/live-count/dead-update chain now directly identified.
+**Direct evidence:** `attempt02/terminal_reports.tar.gz`, especially
+`critical_paths.rpt`, `critical_cones_ranked.tsv` and `route_status.rpt`.
+**Next commands on the FPGA host:**
 
-**Candidate launch update:** the user requested starting the first of the two
-remaining complete attempts before the session allowance expires. Candidate
-parameters and the one-shot runner are in [attempt01](attempt01/README.md).
-Registered ranges plus 32 sets/eight ways target the observed metadata and
-packing pressure; the placement directive and HBM PC range are unchanged.
-Snapshot 11 passed the runtime-control matrix, but snapshot 09's reservation-X
-failure remains unexplained and is preserved in
-[the runtime-control evidence](../../R40-04/runtime_memory_controls/README.md).
-The hardware candidate predates the later decoder repair described below.
-Mechanism passes cannot qualify its image; no required gate is promoted.
+```sh
+cat ~/tnca_build/r40_attempt02_physical_detail_20261017/runner.exit
+tail -n 25 ~/tnca_build/r40_attempt02_physical_detail_20261017/stdout.log
+tail -n 25 ~/tnca_build/r40_tmu_pipeline_module_20261017/stdout.log
+```
 
-The new [timed mailbox capture](../../R40-04/runtime_memory_controls/timed_journal/README.md)
-reproduced a reservation-X failure on the original four-configuration native
-graph. Exact-harness replay matches the first assertion verbatim at the same
-simulated time/core/context/PC. A separate first-unknown diagnostic replay is
-launched against these fixed inputs; it consumes no full implementation budget.
-The trace now locates illegal-opcode classification leaking into shared stall/fetch-valid control. A candidate repair passes the failing input prefix and core regressions; complete four-configuration native checks now pass with recording enabled and disabled. The full 77/14/model inventories and final-image evidence remain outstanding. The live cf330dc hardware build does not contain this later repair.
+The first job reuses one open immutable DCP for register-cut, tag-device,
+actual crossing and conflicted-HBM endpoint reports. It started after the
+implementation and original observer terminated. The second is an isolated
+three-real-slice/shared-TMU screen with fixed geometry, 10 ns BUFG clock and
+unchanged `SSI_SpreadSLLs`; it cannot qualify the full image.
+**Success:** review actual paths, logic/net delay, mapped tag devices, packing,
+SLR/SLL contributors and matched functional results before freezing the last
+full candidate. **Failure:** preserve the specific failed query, cone or
+physical hotspot; fix that cause, without spending the reserve by default.
 
-**Current P result:** additional attempt 1 has terminal exit 1. Its actual
-route failed with global congestion level 7; no qualified image exists.
-`attempt01/terminal_failure.json` binds the vendor failure and retained error
-DCP (`ed1facba…90360e8`). The read-only observer completed all eight diagnostic reports without retry.
-Registered ranges and half the cache sets did not solve routability.
+The [selected-victim/TLW candidate evidence](p0_selected_victim_tlw/report.json)
+retains actual RTL, independent memory comparisons, pressure/maintenance
+traffic, epoch mutations and an accepted-transaction TMU reference. A new
+`E_MISS/E_ALLOC` boundary registers the victim decision. The TLW candidate
+registers the raw selected address and then classified tile ID/nAcc before
+live counting/dead publication. Pending writes stop new notices, drain all
+older accepted notices and only then acknowledge the metadata write; tables
+and owner epoch still publish on that acknowledged edge. The observed
+functional results cover depths 0/1/2 and ports 3/4, including an interlock
+mutation. Notice/dead counters acquire 0/1/2 cycles of processing latency;
+this is not hidden. Physical qualification remains pending. Production RTL
+has not yet been changed to these candidates.
 
-**Final-candidate preflight:** the complete three-slice/shared-TMU paired
-rebuilt-synthesis and post-optimization screen is retained in
-[attempt02](attempt02/README.md). Preserving only the cache hierarchy removes
-all sampled private-register combinational consumers outside each cache after
-`opt_design` (4,144/5,208/4,153 -> 0/0/0), at +63 LUT/+15 FF. Actual failed-DCP
-site queries establish that such private logic previously detoured through
-SLR1 from SLR2. This is the structural correction for the final attempt;
-module estimates do not promote any full-image gate.
+The [matched response-register screen](p1_response_sll/README.md) establishes
+actual paired Laguna TX/RX locations for 517/517 payload pairs, versus 0/517
+without guidance, with sampled setup slack +8.857 ns and hold +0.010 ns.
+It supports only targeted guidance on direct single-load response FF pairs.
+It does not establish full-image placement, setup/hold, CDC or routability.
+Request FIFOs, valid/ready behavior, latency and protected queues are retained.
 
-**Current candidate is routing; one further full attempt is reserved.**
-Immutable hardware source `0c39793` started at 2026-10-16 22:33:29 UTC.
-At 2026-10-17 09:10 UTC, placement and physical optimization were complete,
-and route was running at Phase 4.1 Global Iteration 0. Neither the terminal
-marker nor a route error marker existed. The matched implementation process
-was live. [attempt02/routing_observation.json](attempt02/routing_observation.json)
-binds the captured original log prefix and placed utilization reports to the
-hardware source, configuration, 100 MHz target and frozen contract.
-No required gate is promoted.
+The vertical checkpoint V and every final-inventory/performance gate below
+remain blocked by P. Their per-gate evidence, commands and success/failure
+branches are unchanged. Frozen native77, HBM14 and original models must run on
+the final immutable software/image, after the original unscaled >=64 MiB Torch
+checkpoint establishes numerical correctness, all three cores/outlets, actual
+PC/window coverage, ownership and visible drained completion. The active
+software snapshot remains `642c660`, as recorded below.
 
-Actual placed CLB occupancy is 93.53%/87.70%/86.07% for SLR0/1/2; unique
-control sets are 4,178/5,066/2,612. Placed connectivity reports 9,306
-SLR1–2 and 14,041 SLR0–1 crossings. These are distinct from the router's
-estimated SLL demands of 16,541 and 16,082. The router's hottest SLR1–2
-column is estimated at 3,062/1,440 (213%); the three hottest adjacent printed
-columns span 199%–213%. Total demand below aggregate capacity does not resolve
-this localized overload. The latest reported intermediate setup/hold
-slacks are -0.952/-0.176 ns; they are not final qualification. Bus-to-actual
-SLL-column attribution and final fmax remain not-measured.
-
-**Current physical blocker:** no terminal complete route, 100 MHz setup/hold,
-CDC or loadable-image qualification for this candidate. **Direct evidence:**
-`attempt02/routing_observation.json` and its raw reports above.
-**Next command:** `cat ~/tnca_build/r40_attempt02_followup/state.json` on the
-FPGA host. The existing observer waits for terminal completion before opening
-any DCP. **Success:** review actual placement, complete route, 100 MHz
-setup/hold, CDC and image identity before V. **Failure:** retain terminal
-logs and DCP; after the observer completes, use the staged diagnostic tools
-for actual crossing contributors, register locations, tag mapping and
-critical-path logic/net delay. Screen a correction to the observed failure
-mechanism before considering the reserved attempt. No automatic retry.
-The vertical and frozen-inventory gates remain blocked by the unqualified
-image; the exact V command and per-gate success/failure branches below apply.
-
-The user explicitly authorized one further full implementation on
-2026-10-17 after the previous two launches. **Budget: maximum 3, used 2,
-remaining 1; third attempt not launched.** This is a reserve, not an instruction
-to consume it. Current routing must finish; the current image may still
-qualify. If it does not, require a diagnosed physical cause, corresponding
-structural correction, matched functional/resource/timing screens and a new
-immutable candidate before spending this final reserve. The frozen contract,
-three physical cores, 100 MHz and original workload sizes remain unchanged.
+## Earlier P0/P1 evidence (historical identities retained)
 
 **P0/P1 physical convergence baseline:**
 `attempt01/physical_postmortem.tar.gz` retains all failed-checkpoint reports

@@ -46,13 +46,25 @@ Started at 2026-10-16 22:33:29 UTC from immutable source `0c39793`;
 clock, contract, process and observer identities. At launch, the original two-attempt budget was exhausted. On 2026-10-17
 the user authorized one further full attempt; it remains reserved and unlaunched. No acceptance gate is promoted at launch.
 
-Current physical-gate blocker: this candidate has not completed full route.
-Direct evidence: the runner has started; route/timing/CDC/image results are
-not-measured. Next command on the FPGA host:
-`cat ~/tnca_build/r40_attempt02_followup/state.json`.
-Success: inspect complete actual-placement, route, 100 MHz setup/hold, CDC
-and image reports before loading. Failure: retain logs and DCP and diagnose;
-never retry automatically or lower the clock/cores/workload.
+Terminal result: **exit 1; illegal route; no loadable image**. The retained
+[terminal record](terminal_failure.json) and `terminal_reports.tar.gz` contain
+the complete observer reports and raw implementation log. The error DCP is
+647,882,148 bytes, SHA
+`b5be49c0529b92a76ed084964cb51a2eec541744f235dfaf9ab7c98c5ee77612`.
+Two HBM `path_18` response nets conflict at `INT_X79Y186/NN1_W_BEG7`; two kernel
+nets also have antenna/island errors. The worst sampled setup path is slice2
+TLW address to TMU dead-FIFO enable: 30 levels, 20.561 ns data delay
+(2.520 ns logic, 18.041 ns net), slack -11.159 ns at a 10 ns kernel period.
+This diagnostic failed-DCP timing is not legal-route qualification or fmax.
+
+Current blocker: no legal 100 MHz three-core image. Next command on the FPGA
+host: `tail -n 25 ~/tnca_build/r40_attempt02_physical_detail_20261017/stdout.log`.
+Success: use actual register-cut, tag-device, crossing and HBM endpoint reports
+to validate the combined structural correction before considering attempt 3.
+Failure: retain partial diagnostic results and correct the query/cone; no
+implementation retry, frequency reduction or workload reduction.
+The original observer completed; the detailed diagnostic uses the separately
+frozen `2176e7d5` tools, preserving this immutable hardware source.
 
 The vertical hardware/workload gates are blocked by that same unqualified
 image. After physical qualification, run the existing original >=64 MiB

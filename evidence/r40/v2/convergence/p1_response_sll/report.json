@@ -1,0 +1,108 @@
+{
+  "schema": "tnca-r40-response-sll-screen/1",
+  "baseline_source_commit": "0c397939952d2a6bc881d08623b1bb9114a54ab8",
+  "contract_sha256": "49fc0e02733139707ae2292eff2ef893e76e73f0723d0d002b2e7e1864af71c8",
+  "tool": "Vivado 2023.2",
+  "part": "xcu280-fsvh2892-2L-e",
+  "clock_target_hz": 100000000,
+  "configuration": {
+    "stages": 2,
+    "src_w": 2,
+    "tag_w": 3,
+    "request_bits": 582,
+    "response_bits": 517,
+    "source_stage_slr": 1,
+    "destination_stage_slr": 2,
+    "directive": "SSI_SpreadSLLs"
+  },
+  "scope": "Matched same RTL/clock/SLRs/directive; only USER_SLL_REG guidance on eligible existing response FF pairs changes. No cores/HBM shell, I/O timing unspecified; no full-image gate.",
+  "cases": [
+    {
+      "mode": 0,
+      "user_sll_reg": false,
+      "scope": "routed isolated two-stage line-link, response SLR1->SLR2",
+      "response_pairs": 517,
+      "both_laguna_pairs": 0,
+      "worst_sampled_response_setup": {
+        "slack_ns": 8.21,
+        "source": "link/g_stage[1].rd_reg[183]/C",
+        "destination": "link/g_stage[0].rd_reg[183]/D",
+        "path_type": "Setup (Max at Slow Process Corner)",
+        "requirement_ns": 10.0,
+        "data_delay_ns": 1.602,
+        "logic_delay_ns": 0.081,
+        "route_delay_ns": 1.521,
+        "logic_levels": 0,
+        "clock_period_ns": 10.0
+      },
+      "worst_sampled_response_hold": {
+        "slack_ns": 0.028,
+        "source": "link/g_stage[1].rd_reg[419]/C",
+        "destination": "link/g_stage[0].rd_reg[419]/D",
+        "path_type": "Hold (Min at Slow Process Corner)",
+        "requirement_ns": 0.0,
+        "data_delay_ns": 0.483,
+        "logic_delay_ns": 0.059,
+        "route_delay_ns": 0.424,
+        "logic_levels": 0,
+        "clock_period_ns": 10.0
+      },
+      "input_sha256": {
+        "response_setup.rpt": "23ae6a1e203c2a2c8eced5acdf478b3812c523c1ca7582694e91bbe3a97273c9",
+        "response_hold.rpt": "faf20337e29eef3d58ef21e4ddfe06055fabe29945e7f9747b131ab73268985d",
+        "response_pairs.tsv": "1aebfac00bc51d570b95f05bdf93c80ead65673f74f9d0e012b2aa884b6ddca8"
+      }
+    },
+    {
+      "mode": 1,
+      "user_sll_reg": true,
+      "scope": "routed isolated two-stage line-link, response SLR1->SLR2",
+      "response_pairs": 517,
+      "both_laguna_pairs": 517,
+      "worst_sampled_response_setup": {
+        "slack_ns": 8.857,
+        "source": "link/g_stage[1].rd_reg[148]/C",
+        "destination": "link/g_stage[0].rd_reg[148]/D",
+        "path_type": "Setup (Max at Slow Process Corner)",
+        "requirement_ns": 10.0,
+        "data_delay_ns": 0.784,
+        "logic_delay_ns": 0.096,
+        "route_delay_ns": 0.688,
+        "logic_levels": 0,
+        "clock_period_ns": 10.0
+      },
+      "worst_sampled_response_hold": {
+        "slack_ns": 0.01,
+        "source": "link/g_stage[1].rd_reg[383]/C",
+        "destination": "link/g_stage[0].rd_reg[383]/D",
+        "path_type": "Hold (Min at Slow Process Corner)",
+        "requirement_ns": 0.0,
+        "data_delay_ns": 0.307,
+        "logic_delay_ns": 0.06,
+        "route_delay_ns": 0.247,
+        "logic_levels": 0,
+        "clock_period_ns": 10.0
+      },
+      "input_sha256": {
+        "response_setup.rpt": "06090779f59a54b445c9f1de4edb779dce02ddfa6584971680d2c795954acc58",
+        "response_hold.rpt": "82fa4d706f0286b9fe855ded961febdb672abdc3e684820d1d3494f670be937c",
+        "response_pairs.tsv": "fe8d338670362da65fadd22110f72b6c9f3252c92516c7926ceebf0f60334489"
+      }
+    }
+  ],
+  "archive": "screen.tar.gz",
+  "archive_sha256": "6f0f19123ce6c95248eb0391f88c252150133ac27a30b0e6ed248fdca3cf32c2",
+  "helper": {
+    "model": "gemini-3.8-flash-high",
+    "effort": "high",
+    "scope": "standard-library report parser only",
+    "review": "Script inspected for paths, arithmetic and no side effects; actual first setup/hold records manually checked against raw reports and TSV counts independently cross-checked. Never used as an acceptance checker."
+  },
+  "image_sha256": null,
+  "fmax_hz": null,
+  "required_gate_promotions": [],
+  "current_blocker": "Full candidate actual LOC/setup/hold not measured",
+  "next_command": "Audit final candidate response register LOC/BEL and both setup/hold after implementation; first dry-run production helper on retained small module DCP",
+  "on_success": "Retain only eligible direct single-load FF guidance in final physical binding; qualify full route and all clocks before board load",
+  "on_failure": "Preserve actual tool rejection or misplaced/negative-hold path; revise only the diagnosed link binding before reserved full attempt"
+}

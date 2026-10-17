@@ -133,3 +133,18 @@ final routed capacity. Intermediate WNS/WHS of -0.952/-0.176 ns do not qualify
 100 MHz setup/hold. No required gate is promoted. Continue the existing
 observer command and success/failure branches above; do not open another
 checkpoint alongside the live router or start another full implementation.
+
+The live router emitted two iteration-specific residual CLB/net lists,
+retained with original-byte hashes and capture time in
+`live_route_residuals/observation.json`. Iteration 160 lists seven nets:
+five tile1 slice signals and two tile0 VALU signals. Iteration 180 lists two
+CLB tile entries and no net names. This sparse residual sample does not
+establish the limiting path, exhaustive congestion, or bus-to-SLL-column
+attribution; no RTL change or acceptance promotion follows from it alone.
+After terminal completion, compare actual timing and endpoints of these
+named nets with the final crossing and pipeline-cut reports.
+
+`staged_diagnostic_identity.json` binds the separately staged read-only tools
+to revision `2176e7d`, script hashes and its completed successful source CI.
+Vendor execution remains pending. This tool identity is separate from the
+immutable hardware source `0c39793`; no live hardware source was overwritten.

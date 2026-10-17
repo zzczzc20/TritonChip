@@ -1,0 +1,20 @@
+{
+  "observed_utc": "2026-10-17T10:14:13.812390+00:00",
+  "files": {
+    "iter_160_CongestedCLBsAndNets.txt": {
+      "sha256": "5adcae5cec78709d5dace97f882aba091d27dc04b8540a50c03eb42daf1235a1",
+      "bytes": 898,
+      "modified_utc": "2026-10-17T09:24:42.501131+00:00"
+    },
+    "iter_180_CongestedCLBsAndNets.txt": {
+      "sha256": "df0a2ee94ee00f2a27b7a85f89d890cba47dd9f5d380295eb87a4d80ce7d423d",
+      "bytes": 71,
+      "modified_utc": "2026-10-17T09:36:31.047947+00:00"
+    }
+  },
+  "hardware_source_commit": "0c397939952d2a6bc881d08623b1bb9114a54ab8",
+  "scope": "Live-router iteration-specific CLB residual conflicts only; not final worst paths or exhaustive congestion/SLL contributors",
+  "gate_status": "not-measured",
+  "interpretation": "iter160 names seven congested nets: five tile1 slice nets and two tile0 VALU nets; iter180 has one tile pair and zero listed nets, not evidence of zero remaining conflicts",
+  "next_action": "Allow current route to finish; if terminal qualification fails, inspect actual final path and endpoints of the retained named nets before proposing an RTL or placement correction"
+}

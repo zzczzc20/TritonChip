@@ -1,0 +1,58 @@
+{
+  "observed_utc": "2026-10-17T21:35:47Z",
+  "processes": "    PID    PPID     ELAPSED COMMAND\n1917223       1       15:34 bash /home/zzhouch/tnca_src_r40_attempt03_54249f7/flow/fpga/run_r40_attempt01.sh /home/zzhouch/tnca_build/r40_attempt03_20261017 /home/zzhouch/tnca_src_r40_attempt03_54249f7/evidence/r40/v2/convergence/attempt03/image.tcl\n1917224       1       15:34 python3 /home/zzhouch/tnca_src_r40_attempt03_54249f7/tools/r40/watch_implementation.py --build /home/zzhouch/tnca_build/r40_attempt03_20261017 --runner-pid 1917223 --out /home/zzhouch/tnca_build/r40_attempt03_followup\n",
+  "kernel_run": "/home/zzhouch/tnca_build/r40_attempt03_20261017/xo/tmp/link/vivado/vpl/prj/prj.runs/ulp_tnca_u50_1_0_synth_1",
+  "xo_sha256": "3de447acb123567a37ce547258129d0a328a440cf9254ad56e4186c4c8614fef",
+  "source_inputs_reverified": 105,
+  "files": {
+    "kernel/runme.log": {
+      "sha256": "748c1039a124afaef87fb9b0b1bd92665f921c2b16f95e44d24a49b7f16bed8f",
+      "bytes": 117512
+    },
+    "package.log": {
+      "sha256": "a0dee8ac501308a88af549a517f63dc1d71e9d54bbcfbd54520c49788061862a",
+      "bytes": 14380
+    },
+    "link.log": {
+      "sha256": "1d0a0809e6b05e421e7ef450799d7eed932558c3fc4323275622fd75cf817521",
+      "bytes": 12268
+    },
+    "xo.sha256": {
+      "sha256": "73e435a88e19d114fc4d56dcdb875a5d1f6ef3730e2fc019be0919bd15ece692",
+      "bytes": 129
+    },
+    "link.started_utc": {
+      "sha256": "ad8cfddca2c81e6e0f26d15e8905446d232dc9c1c2cce0aea7fbf6a101ed6f84",
+      "bytes": 21
+    },
+    "kernel/runme.sh": {
+      "sha256": "95402ffa46b2be15019556220192c62580e005528f593d03f85190d1777dedda",
+      "bytes": 1144
+    },
+    "kernel/.Vivado_Synthesis.queue.rst": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    "kernel/.vivado.begin.rst": {
+      "sha256": "efde6cafff960a35f49a20d9016b192a4299b486ed927cc91751d5f82e2b21f5",
+      "bytes": 204
+    }
+  },
+  "schema": "tnca-r40-final-synthesis-observation/1",
+  "source_commit": "54249f7f7ac0cf8f5d1b82d8e63a3046d27522d3",
+  "source_archive_sha256": "6b254137501f4a3802c11f9e084e961c60724093a4da5654ce721b70a0d8db84",
+  "configuration_sha256": "2795cb283b85befb262fd1fd6547669421b9a7fb76df89c02fef0a314b27bf1b",
+  "contract_sha256": "49fc0e02733139707ae2292eff2ef893e76e73f0723d0d002b2e7e1864af71c8",
+  "clock_target_hz": 100000000,
+  "state": "kernel-synthesis-running",
+  "archive": "synthesis_started.tar.gz",
+  "archive_sha256": "630a87a5eff1304fc402be67d8fb702856394d8117b4eb71108eae3edb6759bd",
+  "image_sha256": null,
+  "actual_100mhz_timing": "not-measured",
+  "cdc": "not-measured",
+  "required_gate_promotions": [],
+  "current_blocker": "Final full-image route, timing, CDC and loadable image remain unavailable",
+  "next_command": "tail -n 30 ~/tnca_build/r40_attempt03_20261017/xo/link.log; cat ~/tnca_build/r40_attempt03_20261017/build/attempt.exit",
+  "on_success": "Review actual mapped resources, then legal full route/minmax timing/CDC/image identity before board checkpoint",
+  "on_failure": "Preserve terminal failure and exact paths; do not automatically restart; remaining full implementation budget is zero"
+}

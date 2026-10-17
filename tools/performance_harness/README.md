@@ -147,6 +147,27 @@ Do not convert an earlier build's observed footprint into a candidate minimum.
 Retain an immutable manifest copy in the evidence bundle; a live convergence
 ledger may change while an earlier diagnostic remains valid.
 
+For the final registered-cache candidate, retain the actual mapped tag devices
+and each register-boundary path from the saved routed checkpoint:
+
+```sh
+vivado -mode batch -source flow/fpga/diagnose_r40_checkpoint.tcl -tclargs \
+  ROUTED_CHECKPOINT.dcp NEW_CUT_REPORTS final-cache-cuts
+```
+
+This read-only mode reports tag-to-owner, owner-to-pair, pair-to-selected and
+selected-output paths, the global worst sampled paths, and tag storage roots
+separately from their implementation children. Missing pair/selected registers
+or required timing paths fail extraction and leave partial reports intact.
+The raw direct owner-to-selected report may legitimately contain no path;
+that absence is not a zero-delay measurement. Reports retain logic levels and
+logic/net delay rather than treating LUT count as a timing result.
+`watch_implementation.py --final-cache-cuts` adds these reports to the existing
+terminal observer for both success and failure. Use a separate immutable
+collector bundle if the build source is already frozen. Schedule checkpoint
+reads after implementation has terminated, and keep report collection serial.
+Successful extraction means review-ready evidence, not physical qualification.
+
 For empirical predictions, provide `calibration` with `candidate`, `dev`,
 and `validation`. Each record contains
 `id/split/identity/instrumented=false/demand/cycles`.

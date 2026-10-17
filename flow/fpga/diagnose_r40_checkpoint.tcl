@@ -3,6 +3,8 @@
 # vivado -mode batch -source THIS_FILE -tclargs CHECKPOINT NEW_OUTPUT
 # Optional third argument range-slice-cuts adds tag storage accounting and
 # ranks the global worst paths plus the four register-boundary path samples.
+# final-cache-cuts additionally reports the pair-minimum and selected-way
+# boundaries used by the final candidate. This is report extraction only.
 # Rank logical timing cones within the existing report's endpoint sample.
 # No timing query is repeated, and this is not an exhaustive path census.
 proc r40_timing_family {pin} {
@@ -122,9 +124,9 @@ proc r40_tag_storage_report {rows inventory summary} {
     close $f
 }
 
-if {[llength $argv] ni {2 3}} {error "expected CHECKPOINT NEW_OUTPUT ?range-slice-cuts?"}
+if {[llength $argv] ni {2 3}} {error "expected CHECKPOINT NEW_OUTPUT ?range-slice-cuts|final-cache-cuts?"}
 set mode [lindex $argv 2]
-if {$mode ni {{} range-slice-cuts}} {error "unknown diagnostic mode: $mode"}
+if {$mode ni {{} range-slice-cuts final-cache-cuts}} {error "unknown diagnostic mode: $mode"}
 set checkpoint [file normalize [lindex $argv 0]]
 set out [file normalize [lindex $argv 1]]
 if {![file isfile $checkpoint]} {error "checkpoint is absent: $checkpoint"}
@@ -132,16 +134,25 @@ if {[file exists $out]} {error "preserve existing reports: $out"}
 file mkdir $out
 set_param general.maxThreads 4
 open_checkpoint $checkpoint
-if {$mode eq "range-slice-cuts"} {
+if {$mode in {range-slice-cuts final-cache-cuts}} {
     set tag_regs [get_cells -hierarchical -quiet -filter {REF_NAME =~ "FD*" && NAME =~ "*read_tag_reg*"}]
     set owner_regs [get_cells -hierarchical -quiet -filter {REF_NAME =~ "FD*" && NAME =~ "*victim_owner_q_reg*"}]
     set request_regs [get_cells -hierarchical -quiet -filter {REF_NAME =~ "FD*" && NAME =~ "*request_owner_q_reg*"}]
     if {![llength $tag_regs] || ![llength $owner_regs] || ![llength $request_regs]} {
         error "expected mapped tag, victim-owner and request-owner register boundaries"
     }
+    set boundaries [list tag $tag_regs victim_owner $owner_regs request_owner $request_regs]
+    if {$mode eq "final-cache-cuts"} {
+        set pair_regs [get_cells -hierarchical -quiet -filter {REF_NAME =~ "FD*" && NAME =~ "*victim_pair_q_reg*"}]
+        set selected_regs [get_cells -hierarchical -quiet -filter {REF_NAME =~ "FD*" && NAME =~ "*selected_way_q_reg*"}]
+        if {![llength $pair_regs] || ![llength $selected_regs]} {
+            error "expected mapped pair-minimum and selected-way register boundaries"
+        }
+        lappend boundaries victim_pair $pair_regs selected_way $selected_regs
+    }
     set f [open $out/register_boundaries.tsv {WRONLY CREAT EXCL}]
     puts $f "boundary\tcell\tprimitive"
-    foreach {name cells} [list tag $tag_regs victim_owner $owner_regs request_owner $request_regs] {
+    foreach {name cells} $boundaries {
         foreach cell $cells {puts $f "$name\t[get_property NAME $cell]\t[get_property REF_NAME $cell]"}
     }
     close $f
@@ -159,7 +170,17 @@ if {$mode eq "range-slice-cuts"} {
     report_timing -from $owner_regs -max_paths 5 -file $out/owner_output.rpt
     report_timing -from $request_regs -max_paths 5 -file $out/request_owner_output.rpt
     report_timing -max_paths 30 -nworst 1 -path_type full_clock_expanded -file $out/critical_paths.rpt
-    foreach name {owner_input tag_to_owner owner_output request_owner_output critical_paths} {
+    set path_reports {owner_input tag_to_owner owner_output request_owner_output critical_paths}
+    if {$mode eq "final-cache-cuts"} {
+        report_timing -from $owner_regs -to $pair_regs -max_paths 10 -file $out/owner_to_pair.rpt
+        report_timing -from $pair_regs -to $selected_regs -max_paths 10 -file $out/pair_to_selected.rpt
+        report_timing -from $selected_regs -max_paths 10 -file $out/selected_output.rpt
+        # An empty direct path is expected across the pair register. Keep
+        # the raw report; do not turn an empty path into a zero-delay value.
+        report_timing -from $owner_regs -to $selected_regs -max_paths 10 -file $out/owner_to_selected.rpt
+        lappend path_reports owner_to_pair pair_to_selected selected_output
+    }
+    foreach name $path_reports {
         r40_rank_timing_report $out/$name.rpt $out/${name}_ranked.tsv
         set f [open $out/${name}_ranked.tsv r]
         gets $f header

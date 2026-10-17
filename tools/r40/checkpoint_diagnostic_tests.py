@@ -84,5 +84,89 @@ class StorageAccounting(unittest.TestCase):
                 self.assertFalse((out/'cells.tsv').exists())
 
 
+class FinalBoundaryReports(unittest.TestCase):
+    def run_reports(self, out, missing_pair=False, missing_cut=False):
+        checkpoint = out.parent/'fixture.dcp'
+        checkpoint.touch()
+        # Exercise the production report orchestration under Tcl. A real
+        # retained module DCP separately checks the Vivado API and filters.
+        body = r'''
+proc set_param {args} {}
+proc open_checkpoint {args} {}
+proc get_cells {args} {
+    global missing_pair
+    set pattern [lindex $args end]
+    foreach name {read_tag_reg victim_owner_q_reg request_owner_q_reg victim_pair_q_reg selected_way_q_reg} {
+        if {[string first $name $pattern]>=0} {
+            if {$missing_pair && $name eq "victim_pair_q_reg"} {return {}}
+            return [list $name]
+        }
+    }
+    return {g_sync_tags.bank_reg}
+}
+proc get_property {property cells} {
+    switch $property {
+        NAME {return $cells}
+        REF_NAME {if {[lindex $cells 0] eq "g_sync_tags.bank_reg"} {return RAM32M16}; return FDRE}
+        IS_PRIMITIVE {return 0}
+    }
+}
+proc report_timing {args} {
+    global missing_cut
+    set f [open [lindex $args end] w]
+    if {[string match */owner_to_selected.rpt [lindex $args end]] ||
+        ($missing_cut && [string match */owner_to_pair.rpt [lindex $args end]])} {
+        puts $f {No timing paths found.}
+    } else {
+        puts $f {Slack (MET) : 0.500ns}
+        puts $f {  Source: source/Q}
+        puts $f {  Destination: destination/D}
+        puts $f {  Data Path Delay: 9.000ns (logic 2.000ns (22%) route 7.000ns (78%))}
+        puts $f {  Logic Levels: 18}
+    }
+    close $f
+}
+'''
+        body += '\nset missing_pair ' + str(int(missing_pair))
+        body += '\nset missing_cut ' + str(int(missing_cut))
+        body += '\nset argv [list {' + str(checkpoint) + '} {' + str(out) + '} final-cache-cuts]\n'
+        body += 'if {[catch {source {' + str(SCRIPT) + '}} message]} {puts stderr $message; exit 1}\n'
+        return subprocess.run(['tclsh'], input=body, text=True,
+                              capture_output=True, timeout=15)
+
+    def test_final_reports_keep_registered_segments_and_absent_direct_path(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            out = Path(tmp)/'reports'
+            result = self.run_reports(out)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            with (out/'register_boundaries.tsv').open() as stream:
+                kinds = {row['boundary'] for row in csv.DictReader(stream, delimiter='\t')}
+            self.assertEqual(kinds, {'tag', 'victim_owner', 'request_owner', 'victim_pair', 'selected_way'})
+            for name in ('owner_to_pair', 'pair_to_selected', 'selected_output'):
+                with (out/(name+'_ranked.tsv')).open() as stream:
+                    rows = list(csv.DictReader(stream, delimiter='\t'))
+                self.assertEqual(rows[0]['logic_levels'], '18')
+            self.assertIn('No timing paths', (out/'owner_to_selected.rpt').read_text())
+            self.assertFalse((out/'owner_to_selected_ranked.tsv').exists())
+            # Existing reports, including a failed extraction, are immutable.
+            self.assertNotEqual(self.run_reports(out).returncode, 0)
+
+    def test_missing_pair_boundary_is_not_success(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            out = Path(tmp)/'reports'
+            result = self.run_reports(out, missing_pair=True)
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn('pair-minimum', result.stderr)
+            self.assertFalse((out/'owner_to_pair.rpt').exists())
+
+    def test_missing_required_segment_preserves_failed_report(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            out = Path(tmp)/'reports'
+            result = self.run_reports(out, missing_cut=True)
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn('no ranked timing paths for owner_to_pair', result.stderr)
+            self.assertIn('No timing paths', (out/'owner_to_pair.rpt').read_text())
+
+
 if __name__ == '__main__':
     unittest.main()

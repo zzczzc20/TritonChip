@@ -28,6 +28,8 @@ def main():
     ap.add_argument('--out', type=Path, required=True)
     ap.add_argument('--max-wait', type=float, default=172800)
     ap.add_argument('--poll-seconds', type=float, default=30)
+    ap.add_argument('--final-cache-cuts', action='store_true',
+                    help='also retain final tag mapping and registered cache path segments')
     args = ap.parse_args()
     build, out = args.build.resolve(), args.out.resolve()
     if not build.is_dir() or args.max_wait <= 0 or args.poll_seconds <= 0:
@@ -35,7 +37,8 @@ def main():
     out.mkdir(parents=True, exist_ok=False)
     record = dict(scope='report extraction only; no synthesis/place/route/load/retry',
                   gate_status='not-measured', build=str(build), runner_pid=args.runner_pid,
-                  image_sha256=None, steps=[], watcher_sha256=sha(Path(__file__)))
+                  image_sha256=None, steps=[], watcher_sha256=sha(Path(__file__)),
+                  final_cache_cuts=args.final_cache_cuts)
     def save(status):
         record.update(status=status, observed_utc=datetime.now(timezone.utc).isoformat())
         temporary = out/'state.tmp'
@@ -110,6 +113,9 @@ def main():
         if checkpoint:
             record.update(checkpoint=str(checkpoint), checkpoint_sha256=sha(checkpoint))
             report('failed_checkpoint', tools/'diagnose_r40_checkpoint.tcl', [checkpoint, out/'failed_checkpoint_reports'])
+            if args.final_cache_cuts:
+                report('cache_cuts', tools/'diagnose_r40_checkpoint.tcl',
+                       [checkpoint, out/'cache_cut_reports', 'final-cache-cuts'])
         save('implementation-failed-evidence-retained-no-retry')
         return 1
     checkpoint, image = runs/'level0_wrapper_routed.dcp', build/'xo/tnca_u280.xclbin'
@@ -121,12 +127,23 @@ def main():
     save('extracting-reports')
     audit_ok = report('postroute', tools/'audit_r40_image.tcl', [build/'xo'])
     placed_ok = report('actual_cores', tools/'audit_r40_placed_cores.tcl', [checkpoint, out/'actual_cores.rpt'])
+    cuts_ok = True
+    if args.final_cache_cuts:
+        cuts_ok = report('cache_cuts', tools/'diagnose_r40_checkpoint.tcl',
+                         [checkpoint, out/'cache_cut_reports', 'final-cache-cuts'])
     audit = build/'xo/r40_postroute_audit'
     expected = [audit/(name+'.rpt') for name in ('route_status', 'cdc', 'clock_interaction',
                                                'utilization_slr', 'timing', 'bus_skew', 'checks')]
     expected.append(out/'actual_cores.rpt')
+    if args.final_cache_cuts:
+        cuts = out/'cache_cut_reports'
+        expected.extend(cuts/name for name in ('register_boundaries.tsv', 'tag_storage_cells.tsv',
+                                               'tag_storage_summary.tsv', 'owner_to_selected.rpt'))
+        for name in ('owner_input', 'tag_to_owner', 'owner_output', 'request_owner_output',
+                     'critical_paths', 'owner_to_pair', 'pair_to_selected', 'selected_output'):
+            expected.extend((cuts/(name+'.rpt'), cuts/(name+'_ranked.tsv')))
     record['reports'] = {str(p):sha(p) for p in expected if p.is_file() and p.stat().st_size}
-    complete = audit_ok and placed_ok and len(record['reports']) == len(expected)
+    complete = audit_ok and placed_ok and cuts_ok and len(record['reports']) == len(expected)
     save('reports-ready-review-required' if complete else 'report-extraction-incomplete-needs-inspection')
     return 0 if complete else 1
 

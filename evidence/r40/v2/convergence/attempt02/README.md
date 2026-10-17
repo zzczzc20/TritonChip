@@ -43,8 +43,8 @@ inventories. Failure retains logs/DCP and does not trigger another attempt.
 
 Started at 2026-10-16 22:33:29 UTC from immutable source `0c39793`;
 [launch.json](launch.json) records the exact archive, source, configuration,
-clock, contract, process and observer identities. The implementation budget
-is now two used, zero remaining. No acceptance gate is promoted at launch.
+clock, contract, process and observer identities. At launch, the original two-attempt budget was exhausted. On 2026-10-17
+the user authorized one further full attempt; it remains reserved and unlaunched. No acceptance gate is promoted at launch.
 
 Current physical-gate blocker: this candidate has not completed full route.
 Direct evidence: the runner has started; route/timing/CDC/image results are
@@ -121,3 +121,15 @@ coverage checks hierarchy-aware accounting against the retained OOC inventory
 ratios, canonical duplicate handling, exploded RAM, FF fallback and refusal of
 missing/conflicting storage. Execution against the final Vivado DCP remains
 pending; no checkpoint reader was started alongside placement.
+
+At 2026-10-17 09:10 UTC, placement and physical optimization were complete;
+route was running at Phase 4.1 Global Iteration 0. The read-only capture in
+`routing_observation.json` retains `routing_progress.log.gz`,
+`slr_util_placed.rpt` and `full_util_placed.rpt` with their raw-byte hashes.
+Actual placed CLB occupancy is 93.53%/87.70%/86.07%, but the router still
+estimates a 213% SLR1–2 hotspot column. Aggregate placed connectivity and
+router estimated SLL demand are different measurements; neither establishes
+final routed capacity. Intermediate WNS/WHS of -0.952/-0.176 ns do not qualify
+100 MHz setup/hold. No required gate is promoted. Continue the existing
+observer command and success/failure branches above; do not open another
+checkpoint alongside the live router or start another full implementation.

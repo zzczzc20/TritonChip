@@ -1,12 +1,12 @@
 {
   "schema": "tnca-r40-full-implementation-budget/1",
-  "recorded_utc": "2026-10-16T22:33:45.406501+00:00",
-  "authorization": "At most two additional full-system synthesis/place/route attempts before R40 v2 delivery; frozen contract unchanged",
+  "recorded_utc": "2026-10-17T09:10:59.736992+00:00",
+  "authorization": "Original maximum two additional full implementations, plus one further full implementation explicitly authorized on 2026-10-17; frozen contract unchanged",
   "starts_after_failed_hardware_source": "09ebe06",
   "previous_failure_checkpoint_sha256": "8d82bd375ce489ca433aba15f83692b53b409bc045381a7a8f44ed44811a50d9",
-  "maximum_additional_attempts": 2,
+  "maximum_additional_attempts": 3,
   "used": 2,
-  "remaining": 0,
+  "remaining": 1,
   "attempts": [
     {
       "number": 1,
@@ -68,7 +68,7 @@
     },
     {
       "number": 2,
-      "state": "placement-running",
+      "state": "routing-running",
       "source_commit": "0c397939952d2a6bc881d08623b1bb9114a54ab8",
       "source_archive_sha256": "9c37aa74471979b1e305fbc861045a426811e1e1a02ad59f77542536a18212b6",
       "source_root": "/home/zzhouch/tnca_src_r40_attempt02_0c39793",
@@ -97,8 +97,8 @@
       },
       "launch_record_fpga": "/home/zzhouch/tnca_build/r40_attempt02_20261016.launch.json",
       "synthesis_start_evidence": "attempt02/synthesis_started.json",
-      "latest_observed_utc": "2026-10-17T03:17:32.899982+00:00",
-      "latest_observed_phase": "Phase 4.1 Post Commit Optimization",
+      "latest_observed_utc": "2026-10-17T09:10:54.161250+00:00",
+      "latest_observed_phase": "Phase 4.1 Global Iteration 0",
       "synthesis_complete": true,
       "synthesis_resources": {
         "luts": 821876,
@@ -112,7 +112,11 @@
         "sha256": "3092bcadca1fec0a82a8ee830e372bddc7fe76c8980df6bb56645ff808a52b05"
       },
       "post_synthesis_observation": "attempt02/post_synthesis_observation.json",
-      "source_ci": "attempt02/source_ci.json"
+      "source_ci": "attempt02/source_ci.json",
+      "latest_observation": "attempt02/routing_observation.json",
+      "placement_complete": true,
+      "phys_opt_complete": true,
+      "route_complete": false
     }
   ],
   "first_attempt_prerequisites": [
@@ -122,5 +126,18 @@
     "immutable source/configuration/constraints/toolchain manifest recorded"
   ],
   "second_attempt_policy": "Reserve for a concrete root-cause correction from the first; never rotate directives without evidence",
-  "expedited_launch_override": "User requested first attempt start within approximately 20 minutes. Complete final functional qualification remains pending; preserve failure and run physical implementation concurrently. Frozen contract unchanged."
+  "expedited_launch_override": "User requested first attempt start within approximately 20 minutes. Complete final functional qualification remains pending; preserve failure and run physical implementation concurrently. Frozen contract unchanged.",
+  "authorization_history": [
+    {
+      "maximum_additional_attempts": 2,
+      "source": "Original user limit before R40 v2 delivery"
+    },
+    {
+      "maximum_additional_attempts": 3,
+      "date_utc": "2026-10-17",
+      "source": "User explicitly authorizes one further attempt after both previous attempts were spent",
+      "user_instruction": "目前看起来失败的可能性比较大，当然还得观察，我可以多给你一次综合budget (之前上板2次用光我给你的预算了）这次你要很谨慎，真的优化好以满足要求"
+    }
+  ],
+  "third_attempt_policy": "Reserved, not launched. Allow attempt02 to reach terminal completion. If it fails qualification, identify limiting actual physical paths and localized crossing demand, implement and validate a structural correction with matched functional/resource/timing screens, then freeze source/configuration before a single third launch. No directive polling, reduced core/clock/workload, automatic retry or frozen-contract amendments."
 }

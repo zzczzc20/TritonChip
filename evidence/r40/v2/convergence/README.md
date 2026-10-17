@@ -1,6 +1,6 @@
 # R40 v2 delivery convergence ledger
 
-This is a dated execution ledger, **not a contract amendment**. The frozen v2 contract and all thresholds remain unchanged. Snapshot: 2026-10-16 UTC; active vertical checkpoint software snapshot 642c660; previous failed hardware source 09ebe06; additional attempt 1 source cf330dc failed actual routing with global congestion level 7. Existing functional passes do not certify the final image. Required gate changes: R40-01.device and R40-03.contract now capability-pass; missing mixed-device/device-time entries are not-measured. All other required statuses are in required_gates.json. No performance gate has been promoted.
+This is a dated execution ledger, **not a contract amendment**. The frozen v2 contract and all thresholds remain unchanged. Latest physical observation: 2026-10-17 09:10 UTC; active vertical checkpoint software snapshot 642c660; previous failed hardware source 09ebe06; additional attempt 1 source cf330dc failed actual routing with global congestion level 7. Existing functional passes do not certify the final image. Required gate changes: R40-01.device and R40-03.contract now capability-pass; missing mixed-device/device-time entries are not-measured. All other required statuses are in required_gates.json. No performance gate has been promoted.
 
 ## Immediate experiment commands and branches
 
@@ -65,30 +65,48 @@ site queries establish that such private logic previously detoured through
 SLR1 from SLR2. This is the structural correction for the final attempt;
 module estimates do not promote any full-image gate.
 
-**Final attempt is running:** immutable source `0c39793` started at
-2026-10-16 22:33:29 UTC; XO packaging completed and Vitis link started at
-22:34:02 UTC. [attempt02/launch.json](attempt02/launch.json) records exact
-source/archive/configuration/clock/contract/process identities. The two-attempt
-budget is exhausted (used 2, remaining 0). No required gate is promoted.
-Kernel synthesis is complete and actual placement reached Phase 4.1 at
-2026-10-17 03:17 UTC; route had not started. The completed synthesis package,
-checkpoint hash, placement-log prefix and exact configuration identities are
-in [attempt02/post_synthesis_observation.json](attempt02/post_synthesis_observation.json).
-Pinned-source CI completed successfully on `0c39793`, recorded in
-[attempt02/source_ci.json](attempt02/source_ci.json). Neither result qualifies
-routed timing, CDC, a loadable image or the board workloads.
+**Current candidate is routing; one further full attempt is reserved.**
+Immutable hardware source `0c39793` started at 2026-10-16 22:33:29 UTC.
+At 2026-10-17 09:10 UTC, placement and physical optimization were complete,
+and route was running at Phase 4.1 Global Iteration 0. Neither the terminal
+marker nor a route error marker existed. The matched implementation process
+was live. [attempt02/routing_observation.json](attempt02/routing_observation.json)
+binds the captured original log prefix and placed utilization reports to the
+hardware source, configuration, 100 MHz target and frozen contract.
+No required gate is promoted.
+
+Actual placed CLB occupancy is 93.53%/87.70%/86.07% for SLR0/1/2; unique
+control sets are 4,178/5,066/2,612. Placed connectivity reports 9,306
+SLR1–2 and 14,041 SLR0–1 crossings. These are distinct from the router's
+estimated SLL demands of 16,541 and 16,082. The router's hottest SLR1–2
+column is estimated at 3,062/1,440 (213%); the three hottest adjacent printed
+columns span 199%–213%. Total demand below aggregate capacity does not resolve
+this localized overload. The latest reported intermediate setup/hold
+slacks are -0.952/-0.176 ns; they are not final qualification. Bus-to-actual
+SLL-column attribution and final fmax remain not-measured.
 
 **Current physical blocker:** no terminal complete route, 100 MHz setup/hold,
 CDC or loadable-image qualification for this candidate. **Direct evidence:**
-[attempt02/start_observation.json](attempt02/start_observation.json) records
-successful packaging and link start without a terminal marker.
+`attempt02/routing_observation.json` and its raw reports above.
 **Next command:** `cat ~/tnca_build/r40_attempt02_followup/state.json` on the
 FPGA host. The existing observer waits for terminal completion before opening
 any DCP. **Success:** review actual placement, complete route, 100 MHz
-setup/hold, CDC and image identity before V. **Failure:** retain logs and DCP,
-report the observed cause and remaining gates; never start a third full run.
+setup/hold, CDC and image identity before V. **Failure:** retain terminal
+logs and DCP; after the observer completes, use the staged diagnostic tools
+for actual crossing contributors, register locations, tag mapping and
+critical-path logic/net delay. Screen a correction to the observed failure
+mechanism before considering the reserved attempt. No automatic retry.
 The vertical and frozen-inventory gates remain blocked by the unqualified
 image; the exact V command and per-gate success/failure branches below apply.
+
+The user explicitly authorized one further full implementation on
+2026-10-17 after the previous two launches. **Budget: maximum 3, used 2,
+remaining 1; third attempt not launched.** This is a reserve, not an instruction
+to consume it. Current routing must finish; the current image may still
+qualify. If it does not, require a diagnosed physical cause, corresponding
+structural correction, matched functional/resource/timing screens and a new
+immutable candidate before spending this final reserve. The frozen contract,
+three physical cores, 100 MHz and original workload sizes remain unchanged.
 
 **P0/P1 physical convergence baseline:**
 `attempt01/physical_postmortem.tar.gz` retains all failed-checkpoint reports
@@ -136,7 +154,8 @@ sampled shared slice2 logic to its sequential producers and consumers.
 new final candidate. **Failure:** preserve the missing information; do not
 replace it with a placement-property check or spend the last attempt by default.
 
-**Full-implementation budget:** at most two additional attempts. The exact
+**Full-implementation budget:** the original two additional attempts plus one
+further attempt authorized on 2026-10-17 (maximum 3, used 2, remaining 1). The exact
 launch identity, state and remaining balance are recorded in
 `implementation_budget.json`; report extraction and module-level screening
 are not full implementations. The contract remains frozen.
@@ -185,7 +204,7 @@ All rows are `not-measured`. Each row has one immediate missing prerequisite, it
 | R40-04.hbm | 实际 ≥1 GiB 多 PC 窗口尚无合格三核镜像可验证 | `required_gates.json`: no evidence at sim/build/r40/v2/R40-04.json; `evidence/r40/R40-04/physical_map_v2/` proves legacy image only exposes 256 MiB / PC0 | P → V | After V, collect frozen `make r40-hbm` package evidence on final identity; judge this gate separately | Preserve P/V first failing evidence; fix that cause; gate remains not-measured |
 | R40-04.bandwidth | 最终镜像方向带宽及 memory-service outstanding 1/8 匹配记录缺失 | `required_gates.json`: no evidence at sim/build/r40/v2/R40-04.json | P → V | After V, collect frozen `make r40-hbm` package evidence on final identity; judge this gate separately | Preserve P/V first failing evidence; fix that cause; gate remains not-measured |
 | R40-04.robustness | 最终实际分配 PC 的边界/high64/alias/越界证据缺失 | `required_gates.json`: no evidence at sim/build/r40/v2/R40-04.json | P → V | After V, collect frozen `make r40-hbm` package evidence on final identity; judge this gate separately | Preserve P/V first failing evidence; fix that cause; gate remains not-measured |
-| R40-05.multicore | 最后候选尚未完成 route 和物理资格审核，无合格镜像 | `attempt02/post_synthesis_observation.json`: kernel synthesis complete; placement Phase 4.1 running, route not started; no final R40-05 evidence (P) | P → V | After V, collect frozen `make r40-multicore` package evidence on final identity; judge this gate separately | Preserve P/V first failing evidence; fix that cause; gate remains not-measured |
+| R40-05.multicore | 最后候选尚未完成 route 和物理资格审核，无合格镜像 | `attempt02/routing_observation.json`: placement and phys_opt complete; route Global Iteration 0, no terminal marker or qualified image (P) | P → V | After V, collect frozen `make r40-multicore` package evidence on final identity; judge this gate separately | Preserve P/V first failing evidence; fix that cause; gate remains not-measured |
 | R40-05.scaling | 最终镜像冻结 compute 的 1/2/3 核 A/B 缺失 | `required_gates.json`: no evidence at sim/build/r40/v2/R40-05.json | P → V | After V, collect frozen `make r40-multicore` package evidence on final identity; judge this gate separately | Preserve P/V first failing evidence; fix that cause; gate remains not-measured |
 | R40-05.dispatch | 最终镜像原始大图的三物理核完成/分发计数缺失 | `required_gates.json`: no evidence at sim/build/r40/v2/R40-05.json | P → V | After V, collect frozen `make r40-multicore` package evidence on final identity; judge this gate separately | Preserve P/V first failing evidence; fix that cause; gate remains not-measured |
 | R40-06.nuca | 最终镜像 active outlet 的实际负载流量证据缺失 | `required_gates.json`: no evidence at sim/build/r40/v2/R40-06.json | P → V | After V, collect frozen `make r40-nuca` package evidence on final identity; judge this gate separately | Preserve P/V first failing evidence; fix that cause; gate remains not-measured |

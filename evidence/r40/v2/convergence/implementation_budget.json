@@ -68,7 +68,7 @@
     },
     {
       "number": 2,
-      "state": "kernel-synthesis-running",
+      "state": "placement-running",
       "source_commit": "0c397939952d2a6bc881d08623b1bb9114a54ab8",
       "source_archive_sha256": "9c37aa74471979b1e305fbc861045a426811e1e1a02ad59f77542536a18212b6",
       "source_root": "/home/zzhouch/tnca_src_r40_attempt02_0c39793",
@@ -97,8 +97,22 @@
       },
       "launch_record_fpga": "/home/zzhouch/tnca_build/r40_attempt02_20261016.launch.json",
       "synthesis_start_evidence": "attempt02/synthesis_started.json",
-      "latest_observed_utc": "2026-10-16T22:43:39.333449+00:00",
-      "latest_observed_phase": "kernel RTL elaboration; no completion or physical qualification claimed"
+      "latest_observed_utc": "2026-10-17T03:17:32.899982+00:00",
+      "latest_observed_phase": "Phase 4.1 Post Commit Optimization",
+      "synthesis_complete": true,
+      "synthesis_resources": {
+        "luts": 821876,
+        "flip_flops": 236357,
+        "bram_tiles": 214.5,
+        "dsps": 531
+      },
+      "synthesis_checkpoint": {
+        "path": "/home/zzhouch/tnca_build/r40_attempt02_20261016/xo/tmp/link/vivado/vpl/prj/prj.runs/ulp_tnca_u50_1_0_synth_1/ulp_tnca_u50_1_0.dcp",
+        "bytes": 156828189,
+        "sha256": "3092bcadca1fec0a82a8ee830e372bddc7fe76c8980df6bb56645ff808a52b05"
+      },
+      "post_synthesis_observation": "attempt02/post_synthesis_observation.json",
+      "source_ci": "attempt02/source_ci.json"
     }
   ],
   "first_attempt_prerequisites": [

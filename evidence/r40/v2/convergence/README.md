@@ -70,6 +70,13 @@ module estimates do not promote any full-image gate.
 22:34:02 UTC. [attempt02/launch.json](attempt02/launch.json) records exact
 source/archive/configuration/clock/contract/process identities. The two-attempt
 budget is exhausted (used 2, remaining 0). No required gate is promoted.
+Kernel synthesis is complete and actual placement reached Phase 4.1 at
+2026-10-17 03:17 UTC; route had not started. The completed synthesis package,
+checkpoint hash, placement-log prefix and exact configuration identities are
+in [attempt02/post_synthesis_observation.json](attempt02/post_synthesis_observation.json).
+Pinned-source CI completed successfully on `0c39793`, recorded in
+[attempt02/source_ci.json](attempt02/source_ci.json). Neither result qualifies
+routed timing, CDC, a loadable image or the board workloads.
 
 **Current physical blocker:** no terminal complete route, 100 MHz setup/hold,
 CDC or loadable-image qualification for this candidate. **Direct evidence:**

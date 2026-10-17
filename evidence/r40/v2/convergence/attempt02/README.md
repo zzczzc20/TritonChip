@@ -69,3 +69,22 @@ RAM32M16 macros per way. Repeated/specialized module rows are not a final
 instantiated primitive census. This supports the intended storage mapping;
 final mapped/placed counts, locality, routed timing, CDC and image remain
 unqualified. No required gate is promoted.
+
+At 2026-10-17 03:17 UTC, actual placement reached Phase 4.1 Post Commit
+Optimization; route had not started. Kernel synthesis completed in 1:13:11
+with 821,876 LUTs, 236,357 FFs, 214.5 BRAM tiles and 531 DSPs. The completed
+logs, utilization report and generated synthesis script are preserved in
+`synthesis_reports.tar.gz`. `post_synthesis_observation.json` binds their
+hashes, the streamed SHA256 of the retained 156,828,189-byte kernel DCP,
+constraint/configuration hashes and the captured placement-log prefix.
+The DCP was hashed as bytes; no additional Vivado checkpoint reader was run.
+
+The placement log reports aggregate SLR0-to-SLR1 demand of 15,497/23,040 SLLs.
+This does not measure hotspot-column demand or establish final routability.
+Actual placement/locality, complete route, routed setup/hold, CDC and image
+qualification remain open. No required gate is promoted.
+
+Pinned-source CI [38976369917](https://github.com/zzczzc20/TritonChip/actions/runs/38976369917)
+completed successfully on exact hardware source `0c39793`; `source_ci.json`
+retains the authoritative run and job results. CI is source regression
+qualification, not board workload or physical implementation acceptance.

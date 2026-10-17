@@ -476,13 +476,38 @@ evaluator reports
 point the candidate had made slower. How they combine into one score is open
 (O12).
 
+**The machine and the latency (decided 2026-10-17, §16; not yet built).** The
+machine is the Alveo U280. Hardware cost is not scored; it is a constraint: a
+candidate's hardware must fit the U280 and close timing. The score is latency:
+device time, the platform's count of each launch with host transfers left out
+(`archbench/PROTOCOL.md` §3.1), at the candidate's own clock. The agent
+declares a target kernel clock; the certification link runs at it; if the
+routed design misses it, the evaluator links once more at the frequency the
+routed slack allows, rounded down, and scores at that. A point's speedup is
+then base latency / candidate latency = (base cycles / base clock) /
+(candidate cycles / candidate clock); simulated cycles do not depend on the
+clock (the U280's board and simulation agreed point by point at 75 and at
+100 MHz). So an RTL that is pipelined better closes at a higher clock and
+scores better, and one that closes only lower scores worse, not zero.
+
+**Feasibility.** The FPGA quick tier screens a hardware-changing final
+candidate at its declared clock and rejects what clearly cannot fit (a share
+of SLR1 or a worst path beyond what has ever closed; thresholds O24). Every
+candidate that passes is certified by a routed link on the build worker (the
+FPGA harness's `pipeline`), and its score is *pending* until then. A
+candidate that does not fit -- resources beyond SLR1, or no route at any
+reasonable clock -- fails every point and the run stays valid; the record
+keeps the diagnosis (which resource, by how much, the worst paths) and a
+reference latency at the base clock, for analysis, never for the score. The
+agent sees the same diagnosis from the quick tier during the run.
+
 ### 10.3 Chain integrity and generality
 
 1. **The evaluator drives the chain.** It starts from its own ArchBench PyTorch modules and runs `torch.compile` → Inductor → Triton → the candidate's compiler → the candidate's RTL. A candidate supplies a toolchain and a design, never kernels or binaries.
 2. **A host fallback fails the point** (§10.2).
 3. **The benchmark is hidden** (§6; for `replay-mzero` since 2026-10-15), so nothing can be keyed on its kernels.
 4. **Planned:** provenance and a diff audit. Provenance must regenerate or verify each stage from TNCA IR to ISA with evaluator-owned code; the stage files the candidate's compiler writes (`TNCA_KERNEL_DUMP=1`) are only its own claim. The diff audit looks for large instruction literals and branches on kernel names or shape constants. Monitors fix the environment; they are not part of the score.
-5. **ISA extensions are allowed.** They must take effect through compiler lowering. How their resources are charged is open (O11); until then the FPGA service reports their utilisation (§12) and hardware-changing candidates are reported separately (§13).
+5. **ISA extensions are allowed.** They must take effect through compiler lowering. Their resources are not charged; like any hardware change they must fit the U280 (§10.2).
 
 **The machine is the agent's to choose; the starting point is the task's.**
 A profile is a machine configuration: the same RTL with switches on or off and
@@ -493,13 +518,13 @@ candidate's configuration: the simulated device is built from the candidate's
 `rtl/` and profile (`evaluator.HARDWARE`), and the FPGA quick tier synthesises
 the same configuration (`fpga_quick.effective_params`). The task's
 `evaluation.profile` names only where the agent starts. What the task fixes is
-that starting point and the baseline it is compared with: today core-sim, the
-simulation reference machine, while the board's image is core-vrf-sync-v2.
-From core-sim, enabling the board's existing switches counts as a gain and the
-FPGA cost compares only relatively; from the board's configuration, only going
-beyond the current design counts, and resources and frequency compare with the
-board's image directly. With hardware cost in the score (O11) either start is
-fair; which to use is O23.
+that starting point and the baseline it is compared with. Decided 2026-10-17
+(O23, the collaborator to confirm): core-vrf-sync-v5, the signed-off U280 image
+(u280_r39h), once the flow can build a named profile (r40's
+`TNCA_IMAGE_CONFIG`; today it builds the RTL defaults, which are
+core-vrf-sync-v2, whatever the profile says). `replay-mzero` still starts from
+core-sim until then; from core-sim, enabling the board's existing switches
+would count as a gain.
 
 **Machine changes are recorded.** The evaluator records every changed
 `elaboration` and `rtl_parameters` entry of the task's profile; other profile
@@ -728,9 +753,9 @@ the system prompt sits.
 interleaved in time; paired comparisons on the same task and start; means with
 bootstrap intervals, success rates with Wilson intervals; no best-of-k.
 Simulated cycles are deterministic and need no repeated measurement; board
-numbers do (A10). Confirmed cheating counts as failure. Hardware-changing and
-software-only candidates are reported separately until hardware cost enters the
-score (O11).
+numbers do (A10). Confirmed cheating counts as failure. Hardware-changing
+candidates are reported with their feasibility (pending, certified,
+infeasible); hardware cost does not enter the score (§10.2).
 
 **Validity classes.** Assigned today: `valid`; `infra-invalid` (the base did
 not measure cleanly, or a pseudo-agent's patch did not apply);
@@ -798,10 +823,15 @@ result.
 | 2026-10-16 | *Provisional (O3).* A microarchitecture parameter's name matches `^[A-Z][A-Z0-9_]*$` |
 | 2026-10-16 | *Provisional (O19).* The comments that revealed ArchBench are reworded and the tests and tutorial that duplicated points reshaped, in the repository |
 | 2026-10-16 | *Provisional (O18).* Two hidden sets: validation (aggregates during the run) and final (only after it) |
-| 2026-10-16 | *Provisional (O11, O12).* Hardware enters the score through the clock (quick-tier estimates during the run, the slow tier's achieved clock at the end) and a resource cap; the three aggregates are reported and runs rank by `fast_1`, then `speedup_geomean`. Neither is built |
+| 2026-10-16 | *Provisional (O12).* The three aggregates are reported, and runs rank by `fast_1`, then `speedup_geomean`. Not built. (Its other half, hardware in the score through the clock and a resource cap, was replaced on 2026-10-17) |
 | 2026-10-16 | *Provisional.* Until P1 reaches the FPGA top, the quick tier passes the scored profile to it as `NAME=VALUE`; the slow tier's board stage returns aggregates only, through a request schema of its own |
 | 2026-10-16 | *Provisional (O16).* Pilot budgets: 3 scoring requests; 45 FPGA minutes, up to 20 per request (35 let only one request fit, §19) |
 | 2026-10-17 | The Vivado flow (package, link) runs on the build worker with Vitis 2022.2; the card host is used only to load and measure. Validated once on the card (§12.5). Closes O13 |
+| 2026-10-16 | The machine is the Alveo U280 (agreed with the collaborator). Hardware cost is not scored; fitting the U280 and closing timing is a constraint (§10.2). Retires O11 |
+| 2026-10-17 | Latency is device time, the platform's count, host transfers left out, at the candidate's achieved clock: the agent declares a target clock, the certification link runs at it, and a miss is linked once more at the frequency the routed slack allows (rounded down) and scored there (§10.2) |
+| 2026-10-17 | Feasibility: the quick tier screens; every hardware-changing final candidate that passes is certified by a routed link on the build worker; its score is pending until then |
+| 2026-10-17 | A candidate that does not fit (resources beyond SLR1, or no route at any reasonable clock) fails every point and the run stays valid; its diagnosis and a reference latency at the base clock are recorded, not scored |
+| 2026-10-17 | O23: `replay-mzero` starts from and is compared with core-vrf-sync-v5 (u280_r39h), once the flow can build a named profile (r40's `TNCA_IMAGE_CONFIG`). Decided by the user; the collaborator to confirm |
 
 **Open.**
 
@@ -816,7 +846,8 @@ result.
 | O17 | The size of the hidden sets. Of the 27 tiny points, each matrix-multiply family has a single shape (matmul in two dtypes), so "same operation, unseen shape" needs new tiny-scale points | collaborator |
 | O21 | How ArchBench splits into a public and a hidden package for delivery: by family, or by shape tables made data | collaborator |
 | O22 | Who migrates P1's remainder (the FPGA top first, then the core benches and `tnca_shell_tb`) | collaborator |
-| O23 | Where a task starts, and what it is compared with. The configuration is the agent's to choose: the profile is a design path, and both the simulated device and the FPGA quick tier follow the candidate's profile. What is open is the starting point and baseline: core-sim, the simulation reference machine (enabling the board's existing switches counts as a gain; its FPGA cost compares only relatively), or the board's configuration, core-vrf-sync-v2 (only going beyond the current design counts; resources and frequency compare with the board's image directly). Recommended: start from the board's configuration. With hardware cost in the score (O11), either is fair | collaborator |
+| O24 | The quick-tier screen's thresholds (share of SLR1, worst path at the declared clock), calibrated on the images that closed (v2, v4, v5) | us, with the collaborator |
+| O25 | How the flow takes a requested kernel clock and a named profile (today `link.sh`, `package_xo.tcl` and `ooc.xdc` fix 100 MHz, and the FPGA top takes the RTL defaults), and where a candidate declares its clock | collaborator |
 
 ## 17. Progress
 
@@ -873,7 +904,9 @@ Status: **done** (built and verified), **in progress** (being built now),
 | Red team | LLM red team | deferred | not needed for now (decided 2026-10-15) |
 | Loop | `run-task` with noop, reference, `patch:` and real agents | done | §19 |
 | Pilots | Pilot 1: three configurations, one run each | done | §19; before ArchBench was hidden |
-| Pilots | An agent that uses the services on its own | in progress | §19 pilot 2: Claude Code and Codex scored on their own; neither asked for FPGA, which the score gives no reason to (O11) |
+| Pilots | An agent that uses the services on its own | in progress | §19 pilot 2: Claude Code and Codex scored on their own; neither asked for FPGA, which a cycles-only score gave no reason to |
+| Scoring | Latency at the achieved clock; the declared clock and the derated re-link; feasibility record (screen, certification, diagnosis, reference latency) | planned | §10.2; needs O25 |
+| Flow | A requested kernel clock and a named profile in the build (r40's `TNCA_IMAGE_CONFIG`) | planned | O25; required for the v5 baseline |
 
 ## 18. Quick start
 
@@ -1040,7 +1073,7 @@ budget; `job_minutes` is 20.
 
 - **Both chose to score on their own,** once each: the syllabus and `tnca-service` were enough to find and use the service.
 - **Claude tried the machine and dropped it.** In its own simulator it copied core-vrf-sync-v5's switches into core-sim: the banked VRF made matmuls 20–40% slower and `MTX_ABUF` changed nothing, so it reverted the profile.
-- **Codex changed the machine and never asked what it costs.** Four timing switches, from its own 16×16 matmul (1065 → 1006 cycles), then a scoring request, then it stopped with the request running. Neither agent asked for FPGA. The reason is the score: it counts cycles only, the clock and the resources do not enter it yet (O11 is provisional and not built), and the syllabus says so. An agent that optimises the score has no use for synthesis, so the FPGA service matters only once O11 is built.
+- **Codex changed the machine and never asked what it costs.** Four timing switches, from its own 16×16 matmul (1065 → 1006 cycles), then a scoring request, then it stopped with the request running. Neither agent asked for FPGA. The reason is the score: it counts cycles only, the clock and the resources do not enter it yet (O11 is provisional and not built), and the syllabus says so. An agent that optimises the score has no use for synthesis, so the FPGA service matters only once hardware reaches the score: decided 2026-10-17 through the achieved clock and the fit (§10.2), not yet built.
 - **Both stopped early:** Claude with 49 minutes left, Codex with 57.
 - **A cancelled request's numbers were kept as its result.** Codex's scoring request was cancelled when it stopped, while its point containers were being removed; the half-measured aggregate (2 of 3 passed) went into the record as the result. Fixed: such numbers are kept only as `full`, and the syllabus says a request still running at the end is lost.
 - **Tokens.** Claude: 120 input, 91,519 cache writes, 3,868,404 cache reads, 22,455 output; $1.36 at list price. Codex: 1,488,541 input, 1,418,496 of them cached; 7,800 output, 2,071 of them reasoning.

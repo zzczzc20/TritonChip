@@ -319,9 +319,27 @@ as (`spec/r1_profiles.json`). It is required, and never defaulted: the profile
 decides what the compiler emits, so the same image measured under two profile
 names gives two sets of cycle counts.
 
-The flow takes no profile argument. The image is whatever the RTL's parameter
-defaults elaborate to -- on `main`, `core-vrf-sync-v2` -- so the harness
-compares the named profile with those defaults before it touches the card:
+**A named profile as the image (`image.profile`).** With
+`"image": {"profile": "<name>"}` the build is that profile. `package_xo.tcl`
+sources the Tcl file `TNCA_IMAGE_CONFIG` names (r40's mechanism, since
+`d1a00dd`) and sets each parameter on the packaged core, printing
+`TNCA_IMAGE_PARAM name=value`; the wrapper and the U50/U280 top pass the
+switches through to `tnca_fpga_top`. The harness writes that file
+(`image.py`) the way simulation reads the profile: the values of
+`rtl/common/tnca_uarch_defaults.vh`, then the profile's `elaboration` and
+`implementation.rtl_parameters`, every switch the wrapper exposes set
+explicitly. It refuses, in `plan`, a profile with more than one core or a
+parameter the wrapper cannot carry, rather than build another machine than the
+one simulated; a build whose package log does not report every parameter is
+`BUILD_FAIL` (`image_unapplied`). The run keeps `image_config.tcl` and
+`image_config.json` (the parameters and the hashes of the files they came
+from), and the board stage takes the image's profile from there:
+`board.profile` must be `image.profile`.
+
+Without `image`, the flow takes no profile. The image is whatever the RTL's
+parameter defaults elaborate to -- on `main`, `core-vrf-sync-v2` -- so the
+harness compares the named profile with those defaults before it touches the
+card:
 
 - a parameter the profile declares and the RTL contradicts stops the run
   (`BOARD_FAIL`, `failed_stage: image_profile`);
@@ -404,6 +422,10 @@ could not be reached" a failure instead of a not-applicable. A failure here is
          --backend-args {"xclbin": "<xclbin>"} --tier <tiers...> --jobs <jobs>
          --out board/archbench.jsonl [--counters]
 ```
+
+`board.archbench.points` names points instead of tiers (`--point <ids...>`):
+an evaluator's hidden set, compared with its own simulation of the same
+points. The manifest takes one or the other.
 
 ArchBench compiles each point from PyTorch through Inductor and Triton to TNCA
 and launches it on the card. The tiers that fit the board are `tiny`
@@ -598,7 +620,8 @@ harness or manifest error.
 | `board.program` | `true` (default), `false`, or `{"check_command": [...], "command": [...]}` |
 | `board.program_script` | another programmer, relative to the checkout, in place of the target's |
 | `board.conformance` | `true` (default), `false`, or `{"command": [...], "result_file": "..."}` |
-| `board.archbench` | `{"tiers": [...], "jobs": 1, "counters": true, "timeout_s": ..., "python": "..."}`, or `{"command": [...]}`. Absent: ArchBench does not run |
+| `image` | `{"profile": "<name>"}`: build that profile instead of the RTL defaults (§5.1). Full mode only |
+| `board.archbench` | `{"tiers": [...]` or `"points": [...]`, `"jobs": 1, "counters": true, "timeout_s": ..., "python": "..."}`, or `{"command": [...]}`. Absent: ArchBench does not run |
 
 A command given in the manifest is an argv list, run without a shell. In it
 `{repo}`, `{run_dir}`, `{xclbin}`, `{backend}`, `{profile}`, `{board}` and
@@ -813,13 +836,22 @@ damaged the run's record, that `--build-run` was not checked against the
 manifest, and that run ids and option-like values were not refused; all are
 fixed and tested (`tests/test_split_hosts.py`).
 
+**A named profile packaged** (2026-10-17, package only, on the build server,
+the image build of `d1a00dd` before it was committed). Without
+`TNCA_IMAGE_CONFIG` the packaged core is what it was: v2's values (`NUM_RCTX`
+2, `RCTX_SWITCH` 0, `MTX_ABUF` 0). With the file `image.py` writes for
+core-vrf-sync-v5, the log reports all 17 parameters and the packaged
+`component.xml` carries them: `NUM_RCTX` 4, `RCTX_SWITCH` 2, `MTX_ABUF` 1,
+`LSU_INFLIGHT` 2, `FPU_OVERLAP` 1, `HAS_TENSOR_XPOSE` 1 among them -- r40's
+values for the signed-off image. Both packages exit 0.
+
 On `acf3019` (Alveo U280, Vitis 2023.2, XRT 2.16), from clean checkouts, on
 2026-10-11 and 12. The image is the link of `b5c606d`, whose tree is that of
 the commit this harness was added on.
 
 | What | Result |
 |---|---|
-| The suite, 93 tests (122 with the split-server tests of 2026-10-17, run on macOS) | passes on macOS (Python 3.9) and on the host (Python 3.10) |
+| The suite, 93 tests (129 with the split-server and image tests of 2026-10-17, run on macOS) | passes on macOS (Python 3.9) and on the host (Python 3.10) |
 | `doctor` for the U280 target, alone and with a board manifest | every check passes |
 | `validate` on three real links | two `PASS`: design WNS +0.016 ns, WHS +0.006 ns, no failing endpoint of 584 460 and of 566 734, DRC 0 errors. One, a link that missed timing, rejected with its numbers: WNS −0.079 ns, 304 endpoints |
 | `measure` without a load, the card already holding the image | conformance 5 of 5; ArchBench `tiny` 27 of 27 `measured-board`; 4 459 740 cycles |

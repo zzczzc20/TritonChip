@@ -423,6 +423,16 @@ could not be reached" a failure instead of a not-applicable. A failure here is
          --out board/archbench.jsonl [--counters]
 ```
 
+**Which compiler compiles the points.** ArchBench finds TNCA through the
+installed `tnca` package's Triton entry point, but the runtime and the
+compiler it imports must be the checkout's: conformance and ArchBench run with
+the checkout's `python/` and `compiler/python/` first on `PYTHONPATH`
+(recorded as `pythonpath` in `board_measurement.json`), and the board
+preflight refuses an interpreter that still imports `tnca` or `tnca_cc` from
+elsewhere (`board_archbench_source`). Until `969201b` it did not: on the U280
+host the package is an editable install of an older checkout, and every board
+stage there compiled with that tree whatever the checkout was (§13).
+
 `board.archbench.points` names points instead of tiers (`--point <ids...>`):
 an evaluator's hidden set, compared with its own simulation of the same
 points. The manifest takes one or the other.
@@ -836,6 +846,31 @@ damaged the run's record, that `--build-run` was not checked against the
 manifest, and that run ids and option-like values were not refused; all are
 fixed and tested (`tests/test_split_hosts.py`).
 
+**The board stage compiled with an installed tree, not the checkout**
+(found 2026-10-18). On the U280 host, `/usr/bin/python3` has an editable
+install of `tnca` 0.2.0 pointing at an older checkout (`4b7767e`, with local
+changes), and ArchBench imported `tnca` and `tnca_cc` from it: every board
+stage on that host compiled its points with that tree's compiler while
+`software.relation` said `same-commit` -- the real candidate above, the 2023.2
+measurement it was compared with, and the measurements in the table below.
+Those agree with one another because they all used it. It showed when
+the agent harness certified core-vrf-sync-v5 (its README §19): the card
+counted, point by point, the simulated cycles of a compiler with the m.zero
+lowering the task base removes. On the same image, with the checkout's own
+packages first, every point equals the base's simulation. Fixed in `969201b`
+(§5.5).
+
+**core-vrf-sync-v5 as the image, through `pipeline`** (2026-10-18, twice,
+`image.profile`, for the agent harness's certification of its task base). Each
+link took about two hours on the build server; the package log reported all 17
+parameters; ap_clk WNS +0.085 ns, design WNS +0.016 ns, no failing endpoint of
+590 869, 336 716 LUTs and 367 BRAM tiles, identical both times. On the card:
+`reconfigured: true`, conformance passed, ArchBench five named points
+(`board.archbench.points`) `measured-board`. The first board stage compiled
+with the installed tree (above); the second, with `969201b`, counted exactly
+the cycles the evaluator's simulation of the same commit counted, point by
+point.
+
 **A named profile packaged** (2026-10-17, package only, on the build server,
 the image build of `d1a00dd` before it was committed). Without
 `TNCA_IMAGE_CONFIG` the packaged core is what it was: v2's values (`NUM_RCTX`
@@ -851,7 +886,7 @@ the commit this harness was added on.
 
 | What | Result |
 |---|---|
-| The suite, 93 tests (129 with the split-server and image tests of 2026-10-17, run on macOS) | passes on macOS (Python 3.9) and on the host (Python 3.10) |
+| The suite, 93 tests (131 with the split-server, image and compiler-source tests of 2026-10-17 and 18, run on macOS) | passes on macOS (Python 3.9) and on the host (Python 3.10) |
 | `doctor` for the U280 target, alone and with a board manifest | every check passes |
 | `validate` on three real links | two `PASS`: design WNS +0.016 ns, WHS +0.006 ns, no failing endpoint of 584 460 and of 566 734, DRC 0 errors. One, a link that missed timing, rejected with its numbers: WNS −0.079 ns, 304 endpoints |
 | `measure` without a load, the card already holding the image | conformance 5 of 5; ArchBench `tiny` 27 of 27 `measured-board`; 4 459 740 cycles |

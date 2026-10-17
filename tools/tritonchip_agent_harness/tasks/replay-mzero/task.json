@@ -79,7 +79,7 @@
       ]
     },
     "certify": {
-      "commit": "d1a00dd3c63fef85dc4f9eb22824366c6ce94c3e",
+      "commit": "969201ba406ecc1c3fd740ecc68c247df8a1ef08",
       "paths": [
         "flow/fpga/",
         "fpga/",

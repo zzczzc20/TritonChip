@@ -132,7 +132,9 @@ learns in its sandbox.
 of the hidden benchmark, the build worker, the card host and the card windows.
 They are trusted; the agent is not. **The agent never runs on an FPGA host**;
 only candidate code built or measured there by a service does, inside a sandbox
-(§12.5).
+(§12.5). The exception, until the card host's sandbox is built: board
+certification (§10.4) compiles a candidate's points there with its compiler,
+when the operator who read it says so.
 
 ## 4. Threat model
 
@@ -778,7 +780,7 @@ Vivado settings script, read-only binds, threads, part).
 - **License (tested 2026-10-15): none is needed.** Vivado 2022.2 ran OOC synthesis, timing and utilisation for the U280 and U50 parts with no license reachable and no network; it reports the entitlement for these parts as built in. A control proved the license was really hidden. The unit `tnca_matrix` synthesised the same way in 1.8 minutes.
 - **The card host (planned).** The candidate's compiler compiles the benchmark there, so it runs in a sandbox with no network, a read-only system, only the card's device nodes, and no home directory, harness state or compiler cache of anyone's. The card is shared, so board stages happen in agreed windows (O14), and between owners the card is reprogrammed or its memory cleared. Until the sandbox is built, certification (§10.4) runs the candidate's compiler there only when the operator, having read what it lists, passes `--yes`.
 - **Versions (decided 2026-10-17, was O13).** The Vivado flow runs on the build worker with its Vitis 2022.2; the card host only loads and measures. Validated once: `b5c606d` linked on the build worker in 103 minutes (213 on the card host with 2023.2, an earlier link), closed 100 MHz with ap_clk WNS +0.138 ns (2023.2: +0.177), and its XCLBIN loaded on the card's 2023.2/XRT 2.16 shell, whose gates check only the platform's interface UUID. The U280 target accepts images from 2022.2 and 2023.2, and the build worker's installation overrides the target's default path.
-- **How a candidate crosses (built, FPGA harness).** `pipeline` in `tools/tritonchip_fpga_harness` (its README §11.2) runs one candidate across the two: a clean checkout of the commit on each from a git bundle, the build detached on the build worker, a light packet of the image and records streamed through the controller into the card host, where every file's hash is checked before the run is installed, and the board stage there. The servers never connect to each other. A real candidate ran through it on 2026-10-17: the base hardware linked on the build worker in 105 minutes (ap_clk WNS +0.138 ns), loaded on the card, conformance 5 of 5, ArchBench tiny 27 of 27 with every point's cycles equal to the same design built with 2023.2 on the card host.
+- **How a candidate crosses (built, FPGA harness).** `pipeline` in `tools/tritonchip_fpga_harness` (its README §11.2) runs one candidate across the two: a clean checkout of the commit on each from a git bundle, the build detached on the build worker, a light packet of the image and records streamed through the controller into the card host, where every file's hash is checked before the run is installed, and the board stage there. The servers never connect to each other. A real candidate ran through it on 2026-10-17: the base hardware linked on the build worker in 105 minutes (ap_clk WNS +0.138 ns), loaded on the card, conformance 5 of 5, ArchBench tiny 27 of 27 with every point's cycles equal to the same design built with 2023.2 on the card host. (Both board stages compiled with the card host's installed `tnca`, an older tree, not the checkout's; found and fixed on 2026-10-18, `969201b`, §19.)
 
 ## 13. Fair comparison and statistics
 
@@ -898,6 +900,7 @@ result.
 | 2026-10-18 | *A first version, for now in place of the three entries on latency and feasibility above:* the kernel clock is fixed at 100 MHz and the score is the simulated cycles; a final candidate that changed the machine is certified on the card (`certify`, §10.4) -- it fits, closes 100 MHz, and each point counts on the card the cycles simulation counted -- or every point fails. The achieved and declared clock, the screen, the diagnosis and the reference latency are deferred |
 | 2026-10-18 | O23 built: the flow builds a named profile (`d1a00dd`: r40's `TNCA_IMAGE_CONFIG` and the U280 top's pass-through, proposed to the collaborator); `replay-mzero` moves to base `083b57d` (`9a3b1378` plus those three files) and core-vrf-sync-v5 |
 | 2026-10-18 | The RTL check also refuses, where the candidate adds them, synthesis pragmas, tool-macro branches, `defparam` and hierarchical references (§11) |
+| 2026-10-18 | `replay-mzero` is a test task (it validates the loop: `noop` 1.000, `reference` the known gain); its base commits stay on local branches. The formal tasks replace it, and their bases go to the remote. Decided by the user |
 
 **Open.**
 
@@ -946,6 +949,7 @@ Status: **done** (built and verified), **in progress** (being built now),
 | Visibility | Syllabus for `replay-mzero`, with the services and their budgets | done | `tasks/replay-mzero/instruction.md`, `task.render` |
 | Visibility | Residual leaks reworded; tests and tutorial reshaped | done | `6f2bdee`; torch tests 24/24 pass; task base `9a3b1378` |
 | Visibility | Export-time leak check over the tree and the git objects | planned (required) | — |
+| Tasks | Formal tasks in place of the test task `replay-mzero`, with their base commits on the remote | planned | O6; `replay-mzero`'s bases (`agent-task/replay-mzero-base-p2` at `083b57d`) are local only, so the quick start's step 4 runs where they were bundled |
 | Visibility | TileBench in the image checked against ArchBench | planned | — |
 | Evaluator | CHIA-level evaluator: base plus overlay, own copies | done | noop 1.000; reference 1.016 / 1.010 |
 | Evaluator | The evaluator's platform from a pinned commit, laid over every tree | done | `task.json` `evaluation.platform` |
@@ -963,7 +967,8 @@ Status: **done** (built and verified), **in progress** (being built now),
 | Services | FPGA quick tier service: bubblewrap on the build worker, the agent's configuration, an enforced budget | done | §19: `ok` in 11.8 min, +2.313 ns at 10 ns |
 | Services | FPGA slow tier | planned | waits on O14; the FPGA harness can now build on the build worker and measure on the card host |
 | FPGA harness | The Vivado flow on the build worker, the board stage on the card host (`pipeline`, `sync`, `import`, host tool roots) | done | `tools/tritonchip_fpga_harness/tests/test_split_hosts.py`; between the two servers with a played build and no load; a 2022.2 build loaded on the card by hand (§12.5) |
-| FPGA harness | `pipeline` between the two servers, a real candidate | done | 2026-10-17: the base hardware (v2, 100 MHz) linked on the build worker in 105 min, ap_clk WNS +0.138 ns; loaded on the card, conformance 5/5, ArchBench tiny 27/27, every point's cycles equal to the 2023.2 build's |
+| FPGA harness | `pipeline` between the two servers, a real candidate | done | 2026-10-17: the base hardware (v2, 100 MHz) linked on the build worker in 105 min, ap_clk WNS +0.138 ns; loaded on the card, conformance 5/5, ArchBench tiny 27/27, every point's cycles equal to the 2023.2 build's (both compiled with the card host's installed tree) |
+| FPGA harness | The board stage compiles with the checkout's runtime and compiler, and refuses an interpreter that imports them from elsewhere | done | `969201b`; found by the v5 base certification (§19) |
 | Metering | Tokens as reported, gateway bytes | done | run records |
 | Metering | Cross-check; one token schema; API-equivalent cost | planned | — |
 | Red team | Scripted (§15 item 2) | planned | — |
@@ -972,7 +977,7 @@ Status: **done** (built and verified), **in progress** (being built now),
 | Pilots | Pilot 1: three configurations, one run each | done | §19; before ArchBench was hidden |
 | Pilots | An agent that uses the services on its own | in progress | §19 pilot 2: Claude Code and Codex scored on their own; neither asked for FPGA, which a cycles-only score gave no reason to |
 | Scoring | Latency at a fixed 100 MHz: the simulated cycles; `hardware` and `certification` in the run record | done | §10.2; `replay-mzero` on v5: noop 1.000, reference 1.017 / 1.009 (§19) |
-| Scoring | Board certification of a final candidate (`certify`) | in progress | §10.4; `tests/test_certify.py`; the v5 base on the card: running |
+| Scoring | Board certification of a final candidate (`certify`) | done | §10.4; `tests/test_certify.py`; the v5 base `certified` on the card, every point equal to simulation (§19) |
 | Scoring | Latency at the achieved clock; the declared clock and the derated re-link; the screen, the diagnosis, the reference latency | deferred | §16 (2026-10-18); O24, O25 |
 | Flow | A named profile in the build (r40's `TNCA_IMAGE_CONFIG`, the U280 top's pass-through) | done | `d1a00dd`; packaged on the build worker: v5 gives r40's 17 parameters, the default package is unchanged (v2) |
 | Flow | A requested kernel clock | deferred | O25 |
@@ -1184,6 +1189,30 @@ per launch, and bmm makes two launches). `noop` scores 1.000 on both sets.
 1555 → 1497, the linear 8379 → 8285; bmm unchanged) and 1.0088 on final (2 of
 2, both faster), about what it gained on core-sim (1.016 / 1.010). Neither
 changes the machine: both records say `certification: not-needed`.
+
+**The v5 base certified on the card** (2026-10-18, `certify --base`, tree
+`86230ed`: base `083b57d` with the platform of `969201b`). The build server
+linked it at 100 MHz with core-vrf-sync-v5 as the image in 121 minutes: all 17
+parameters reported set, ap_clk WNS +0.085 ns (the signed-off u280_r39h:
++0.088), design WNS +0.016 ns on the platform's own path, no failing endpoint
+of 590 869; 336 716 LUTs, 227 533 registers, 367 BRAM tiles (r39h: 336 334,
+227 496, 367). On the card the load replaced the image, conformance passed, and
+each of the five points counted exactly the cycles the evaluator's simulation
+of the base had counted (1549, 8373, 2178, 4975, 9777): `certified`.
+
+The first attempt, from the same RTL, linked identically (+0.085 ns, the same
+LUT count) and came back `board-disagrees` on four points. The card's counts
+were not noise: they were, point by point, the simulated cycles of the
+`reference` run (1491, 8279, 2178, 4917, 9721). The card host's interpreter
+has an editable install of `tnca` that points at an older checkout, which has
+the m.zero lowering the task base removes, and ArchBench had imported the
+runtime and the compiler from it, not from the checkout under test. Run again
+on the same image with the checkout's own packages first, every point equalled
+the base's simulation. The FPGA harness now does that and refuses an
+interpreter that imports them from elsewhere (`969201b`; its README §5.5);
+every earlier board result on that host used the installed tree. Exact
+equality is what showed it: the installed compiler was up to 4 % faster, and on
+bmm not at all.
 
 ## 20. Sources
 

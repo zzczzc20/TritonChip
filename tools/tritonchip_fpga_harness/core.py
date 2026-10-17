@@ -28,6 +28,7 @@ from .adapters.u50 import execute_command
 from .adapters.u280 import U280FlowAdapter
 from .measurement import MeasurementError, archbench_python, board_preflight, image_profile_contract, measure_board
 from .toolroots import tool_roots
+from .image import ImageError, applied as image_applied, image_parameters, write_image_config
 
 
 class HarnessError(RuntimeError):
@@ -453,7 +454,8 @@ class Adapter:
     def doctor(self, root: Path, profile: Profile) -> list[dict[str, Any]]:
         raise NotImplementedError
 
-    def run(self, root: Path, run_dir: Path, profile: Profile, mode: str, timeout_s: int | None) -> list[dict[str, Any]]:
+    def run(self, root: Path, run_dir: Path, profile: Profile, mode: str, timeout_s: int | None,
+            extra_env: dict[str, str] | None = None) -> list[dict[str, Any]]:
         raise NotImplementedError
 
 
@@ -463,7 +465,8 @@ class MockAdapter(Adapter):
     def doctor(self, root: Path, profile: Profile) -> list[dict[str, Any]]:
         return [{"name": "mock-adapter", "ok": True, "detail": "deterministic local simulation"}]
 
-    def run(self, root: Path, run_dir: Path, profile: Profile, mode: str, timeout_s: int | None) -> list[dict[str, Any]]:
+    def run(self, root: Path, run_dir: Path, profile: Profile, mode: str, timeout_s: int | None,
+            extra_env: dict[str, str] | None = None) -> list[dict[str, Any]]:
         stages = []
         artifacts = run_dir / "artifacts"
         artifacts.mkdir(parents=True, exist_ok=True)
@@ -498,7 +501,7 @@ def _u50_roots(profile: Profile) -> tuple[str, str]:
 class U50FlowAdapter(Adapter):
     name = "u50"
 
-    def _impl(self, root: Path, profile: Profile) -> VendorU50Adapter:
+    def _impl(self, root: Path, profile: Profile, extra_env: dict[str, str] | None = None) -> VendorU50Adapter:
         expected_artifacts = list(profile.data["expected_artifacts"])
         vitis, platforms = _u50_roots(profile)
         return VendorU50Adapter(U50Config(
@@ -507,7 +510,7 @@ class U50FlowAdapter(Adapter):
             platforms_root=Path(platforms),
             # link.sh takes the installation from these, so the link uses the
             # root the run records.
-            environment={"XILINX_VITIS": vitis, "XILINX_PLATFORMS": platforms},
+            environment={"XILINX_VITIS": vitis, "XILINX_PLATFORMS": platforms, **(extra_env or {})},
             platform=str(profile.data["platform"]),
             expected_ap_clk_mhz=int(profile.expected_clock),
             expected_device_divider=profile.expected_device_divider,
@@ -527,11 +530,12 @@ class U50FlowAdapter(Adapter):
         result = impl.preflight(root.parent / ".tritonchip-fpga-harness-doctor", stage="full", dry_run=False)
         return [{"name": c.name, "ok": c.ok, "detail": c.detail, "severity": c.severity} for c in result.checks]
 
-    def run(self, root: Path, run_dir: Path, profile: Profile, mode: str, timeout_s: int | None) -> list[dict[str, Any]]:
+    def run(self, root: Path, run_dir: Path, profile: Profile, mode: str, timeout_s: int | None,
+            extra_env: dict[str, str] | None = None) -> list[dict[str, Any]]:
         if mode == "ooc":
             raise HarnessError("the current U50 adapter supports full implementation only; add an OOC adapter explicitly")
         build = run_dir / "artifacts"
-        result = self._impl(root, profile).run(build, mode="full", timeout_s=timeout_s)
+        result = self._impl(root, profile, extra_env).run(build, mode="full", timeout_s=timeout_s)
         stages = []
         for command in result.commands:
             name = "package" if command.argv and command.argv[0] == "vivado" else "link"
@@ -639,6 +643,17 @@ def plan(package_dir: Path, root: Path, manifest: dict[str, Any], adapter_name: 
     requested_commit = manifest.get("source_commit")
     if requested_commit and requested_commit not in ("HEAD", identity["commit"]):
         raise SchemaError(f"source_commit {requested_commit!r} does not match current HEAD {identity['commit']}")
+    image = None
+    if manifest.get("image"):
+        packager = root / str(profile.data.get("package_script", "flow/fpga/package_xo.tcl"))
+        if "TNCA_IMAGE_CONFIG" not in (packager.read_text(encoding="utf-8") if packager.is_file() else ""):
+            raise SchemaError(f"image: this checkout's {packager.relative_to(root)} cannot build a named profile "
+                              "(no TNCA_IMAGE_CONFIG)")
+        try:
+            image = {"profile": manifest["image"]["profile"],
+                     "parameters": image_parameters(root, manifest["image"]["profile"])}
+        except (ImageError, OSError, KeyError, ValueError) as exc:
+            raise SchemaError(f"image: {exc}") from exc
     expected = manifest.get("clock_mhz", profile.expected_clock)
     if float(expected) != profile.expected_clock:
         raise SchemaError(f"clock_mhz {expected} does not match target {profile.expected_clock}")
@@ -659,9 +674,11 @@ def plan(package_dir: Path, root: Path, manifest: dict[str, Any], adapter_name: 
             "archbench_python": archbench_python(manifest["board"])
             if isinstance(manifest.get("board"), dict) and manifest["board"].get("archbench") else None,
             "completion_fields": ["done_cycles", "done_retired"],
-            "image_profile": image_profile_contract(root, manifest["board"]["profile"])
+            "image_profile": (_image_contract(image, manifest["board"]["profile"]) if image
+                              else image_profile_contract(root, manifest["board"]["profile"]))
             if isinstance(manifest.get("board"), dict) else None,
         },
+        "image": image,
         "profile_contract": {
             "expected_adapter": profile.expected_adapter,
             "kernel_clock_mhz": profile.data["kernel_clock_mhz"],
@@ -671,6 +688,14 @@ def plan(package_dir: Path, root: Path, manifest: dict[str, Any], adapter_name: 
             "program_script": profile.data.get("program_script"),
         },
     }
+
+
+def _image_contract(image: dict[str, Any], board_profile: str) -> dict[str, Any]:
+    """An image built from a profile is that profile: the board must name it."""
+    return {"source": "image", "profile": image["profile"], "parameters": image["parameters"],
+            "mismatches": [] if board_profile == image["profile"] else
+            [{"parameter": "profile", "profile": board_profile, "rtl_default": image["profile"]}],
+            "more_specific": []}
 
 
 def _expected_artifacts(run_dir: Path, profile: Profile, mode: str, manifest: dict[str, Any] | None = None) -> list[Path]:
@@ -848,10 +873,25 @@ def submit(package_dir: Path, root: Path, manifest: dict[str, Any], state_dir: P
             stages = _configured_ooc(root, run_dir, manifest, timeout_s)
             verdict = _implementation_verdict(run_dir, profile, manifest, stages)
         else:
+            image_env: dict[str, str] = {}
+            image_record = None
+            if manifest.get("image"):
+                # The profile's parameters, set by the packager (TNCA_IMAGE_CONFIG).
+                image_record = write_image_config(root, manifest["image"]["profile"], run_dir)
+                image_env = {"TNCA_IMAGE_CONFIG": str((run_dir / "image_config.tcl").resolve())}
             lease_context = lease(state_dir, "full") if manifest["mode"] == "full" else contextlib.nullcontext()
             with lease_context:
-                stages = adapter.run(root, run_dir, profile, manifest["mode"], timeout_s)
+                stages = adapter.run(root, run_dir, profile, manifest["mode"], timeout_s, image_env)
                 verdict = _implementation_verdict(run_dir, profile, manifest, stages)
+                if image_record and adapter.name != "mock" and verdict["status"] == "PASS":
+                    # The log must say each parameter was set: an image built at
+                    # a default the profile did not ask for is another machine.
+                    log = run_dir / "artifacts" / "package.log"
+                    unset = image_applied(log.read_text(encoding="utf-8", errors="replace") if log.is_file() else "",
+                                          image_record["parameters"])
+                    if unset:
+                        verdict = dict(verdict, status="BUILD_FAIL",
+                                       image_unapplied=unset)
                 # Programming and board execution are a second, explicit gate
                 # after link validation.  They run under the lease the build
                 # took, not a new one, so a second worker cannot replace the
@@ -874,7 +914,7 @@ def submit(package_dir: Path, root: Path, manifest: dict[str, Any], state_dir: P
         missing = verdict["missing"]
         validation_value = verdict["validation"]
         refused = verdict.get("preflight_failed") or []
-        result = {"schema_version": 1, "run_id": run_id, "status": final_status, "source_commit": source["commit"], "target": manifest["target"], "mode": manifest["mode"], "stages": stages, "missing_artifacts": missing, "artifact_validation": validation_value, "measurement": measurement, "measurement_error": measurement_error, "preflight_failed": refused, "board_deferred": bool(skip_board and manifest.get("board")), "artifacts": {str(p.relative_to(run_dir)): file_sha256(p) for p in run_dir.rglob("*") if p.is_file() and p.parent.name == "artifacts"}, "resource_before": resource_before, "resource_after": host_resource_snapshot(state_dir), "elapsed_s": time.time() - started}
+        result = {"schema_version": 1, "run_id": run_id, "status": final_status, "source_commit": source["commit"], "target": manifest["target"], "mode": manifest["mode"], "image": manifest.get("image"), "image_unapplied": verdict.get("image_unapplied"), "stages": stages, "missing_artifacts": missing, "artifact_validation": validation_value, "measurement": measurement, "measurement_error": measurement_error, "preflight_failed": refused, "board_deferred": bool(skip_board and manifest.get("board")), "artifacts": {str(p.relative_to(run_dir)): file_sha256(p) for p in run_dir.rglob("*") if p.is_file() and p.parent.name == "artifacts"}, "resource_before": resource_before, "resource_after": host_resource_snapshot(state_dir), "elapsed_s": time.time() - started}
         if refused:
             result["error"] = "the target cannot run here: " + "; ".join(f"{c['name']} ({c['detail']})" for c in refused)
         dump_json(run_dir / "result.json", result)

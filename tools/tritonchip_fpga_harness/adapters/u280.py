@@ -17,7 +17,7 @@ from .u50 import U50Adapter, U50Config
 class U280FlowAdapter:
     name = "u280"
 
-    def _impl(self, root: Path, profile: Any) -> U50Adapter:
+    def _impl(self, root: Path, profile: Any, extra_env: dict[str, str] | None = None) -> U50Adapter:
         data = profile.data
         expected_artifacts = list(data["expected_artifacts"])
         # The target names the card host's installation; a build host that
@@ -29,6 +29,7 @@ class U280FlowAdapter:
             "XILINX_PLATFORMS": str(roots["platforms_root"]),
         }
         environment.update({str(k): str(v) for k, v in data.get("environment", {}).items()})
+        environment.update(extra_env or {})
         return U50Adapter(
             U50Config(
                 repo=root,
@@ -57,11 +58,12 @@ class U280FlowAdapter:
         result = impl.preflight(root.parent / ".tritonchip-fpga-harness-doctor", stage="full", dry_run=False)
         return [{"name": c.name, "ok": c.ok, "detail": c.detail, "severity": c.severity} for c in result.checks]
 
-    def run(self, root: Path, run_dir: Path, profile: Any, mode: str, timeout_s: int | None) -> list[dict[str, Any]]:
+    def run(self, root: Path, run_dir: Path, profile: Any, mode: str, timeout_s: int | None,
+            extra_env: dict[str, str] | None = None) -> list[dict[str, Any]]:
         if mode == "ooc":
             raise RuntimeError("the current U280 adapter supports full implementation only")
         build = run_dir / "artifacts"
-        impl = self._impl(root, profile)
+        impl = self._impl(root, profile, extra_env)
         result = impl.run(build, mode="full", timeout_s=timeout_s)
         stages: list[dict[str, Any]] = []
         for command in result.commands:

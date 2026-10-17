@@ -441,6 +441,21 @@ class BoardPreflight(BoardStageCase):
         self.assertEqual(argv[:3], ["/env/torch/bin/python", "-m", "archbench.run"])
         self.assertEqual(json.loads(argv[argv.index("--backend-args") + 1]), {"xclbin": "/run/a.xclbin"})
 
+    def test_named_points_replace_the_tiers(self) -> None:
+        from tritonchip_fpga_harness.schema import SchemaError, validate_manifest
+        argv = _default_archbench(root=self.repo, python="py", backend="fpga-u280", profile="core-vrf-sync-v5",
+                                  xclbin=Path("/run/a.xclbin"), tiers=["tiny"], output=Path("/run/out.jsonl"),
+                                  jobs=1, counters=False, points=["op.a/tiny/x", "op.b/tiny/y"])
+        self.assertEqual(argv[argv.index("--point") + 1:argv.index("--jobs")], ["op.a/tiny/x", "op.b/tiny/y"])
+        self.assertNotIn("--tier", argv)
+        base = {"candidate_id": "c", "target": "u280", "mode": "full"}
+        board = {"backend": "fpga-u280", "profile": "core-vrf-sync-v5"}
+        validate_manifest(dict(base, board=dict(board, archbench={"points": ["op.a/tiny/x"]})))
+        with self.assertRaisesRegex(SchemaError, "tiers or points, not both"):
+            validate_manifest(dict(base, board=dict(board, archbench={"points": ["op.a/tiny/x"], "tiers": ["tiny"]})))
+        with self.assertRaisesRegex(SchemaError, "non-empty list of point ids"):
+            validate_manifest(dict(base, board=dict(board, archbench={"points": []})))
+
 
 class RefusedTargets(BoardStageCase):
     """A target the checkout or the host cannot run is not a failed build."""

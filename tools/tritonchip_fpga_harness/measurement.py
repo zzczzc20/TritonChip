@@ -219,6 +219,7 @@ def _default_archbench(
     output: Path,
     jobs: int,
     counters: bool,
+    points: list[str] | None = None,
 ) -> list[str]:
     # archbench.run accepts a JSON object for --backend-args.  Building this
     # token here, rather than asking a shell to quote it, keeps paths with
@@ -235,8 +236,9 @@ def _default_archbench(
         profile,
         "--backend-args",
         json.dumps({"xclbin": str(xclbin)}, separators=(",", ":")),
-        "--tier",
-        *tiers,
+        # Named points (an evaluator's hidden set, compared with its own
+        # simulation) or whole tiers.
+        *(["--point", *points] if points else ["--tier", *tiers]),
         "--jobs",
         str(jobs),
         "--out",
@@ -542,7 +544,16 @@ def measure_board(
     reconfigured: bool | None = None
     conformance_summary: dict[str, Any] | None = None
     arch_summary: dict[str, Any] | None = None
-    contract = image_profile_contract(root, arch_profile)
+    image_record = run_dir / "image_config.json"
+    if image_record.is_file():
+        # Built from a profile: the image is what its record says, not the RTL defaults.
+        built = json.loads(image_record.read_text(encoding="utf-8"))
+        contract = {"source": "image", "profile": built.get("profile"), "parameters": built.get("parameters"),
+                    "mismatches": [] if built.get("profile") == arch_profile else
+                    [{"parameter": "profile", "profile": arch_profile, "rtl_default": built.get("profile")}],
+                    "more_specific": []}
+    else:
+        contract = image_profile_contract(root, arch_profile)
     xclbin_sha256 = _sha256(xclbin)
 
     def record(status: str, error: str | None = None, failed_stage: str | None = None) -> dict[str, Any]:
@@ -686,7 +697,7 @@ def measure_board(
             output_path.unlink()
         command = arch_cfg.get("command") or _default_archbench(
             root=root, python=archbench_python(config), backend=backend, profile=arch_profile, xclbin=xclbin,
-            tiers=tiers, output=output_path, jobs=int(arch_cfg.get("jobs", 1)),
+            tiers=tiers, output=output_path, jobs=int(arch_cfg.get("jobs", 1)), points=arch_cfg.get("points"),
             counters=bool(arch_cfg.get("counters", True)),
         )
         finished, stage = _run(

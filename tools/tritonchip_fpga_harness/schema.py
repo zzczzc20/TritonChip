@@ -49,6 +49,16 @@ def validate_manifest(value: dict[str, Any]) -> dict[str, Any]:
         raise SchemaError("unsupported manifest schema_version; expected 1")
     if "hypothesis" in value and not isinstance(value["hypothesis"], str):
         raise SchemaError("hypothesis must be a string")
+    if "image" in value:
+        image = value["image"]
+        # A device profile to build instead of the RTL defaults (image.py).
+        if not isinstance(image, dict) or set(image) != {"profile"} or not isinstance(image["profile"], str) \
+                or not image["profile"]:
+            raise SchemaError("image must be {\"profile\": \"<a profile of spec/r1_profiles.json>\"}")
+        if value["mode"] != "full":
+            raise SchemaError("image is for a full build")
+        if isinstance(value.get("board"), dict) and value["board"].get("profile") not in (None, image["profile"]):
+            raise SchemaError("board.profile must be the image's profile")
     if "board" in value:
         board = value["board"]
         if not isinstance(board, dict):
@@ -87,7 +97,7 @@ def validate_manifest(value: dict[str, Any]) -> dict[str, Any]:
             bench = board["archbench"]
             if not isinstance(bench, dict):
                 raise SchemaError("board.archbench must be an object")
-            unknown = sorted(set(bench) - {"command", "result_file", "tiers", "jobs", "counters", "timeout_s", "python"})
+            unknown = sorted(set(bench) - {"command", "result_file", "tiers", "points", "jobs", "counters", "timeout_s", "python"})
             if unknown:
                 raise SchemaError("board.archbench has unsupported fields: " + ", ".join(unknown))
             if "command" in bench and (not isinstance(bench["command"], list) or not bench["command"] or
@@ -100,6 +110,11 @@ def validate_manifest(value: dict[str, Any]) -> dict[str, Any]:
             if "tiers" in bench and (not isinstance(bench["tiers"], list) or not bench["tiers"] or
                                       not all(isinstance(item, str) and item for item in bench["tiers"])):
                 raise SchemaError("board.archbench.tiers must be a non-empty string list")
+            if "points" in bench and (not isinstance(bench["points"], list) or not bench["points"] or
+                                       not all(isinstance(item, str) and item for item in bench["points"])):
+                raise SchemaError("board.archbench.points must be a non-empty list of point ids")
+            if "points" in bench and "tiers" in bench:
+                raise SchemaError("board.archbench takes tiers or points, not both")
             if "jobs" in bench and (not isinstance(bench["jobs"], int) or bench["jobs"] < 1):
                 raise SchemaError("board.archbench.jobs must be a positive integer")
             if "counters" in bench and not isinstance(bench["counters"], bool):
@@ -124,7 +139,7 @@ def validate_manifest(value: dict[str, Any]) -> dict[str, Any]:
     # Keep the checked-in JSON schema and the executable contract aligned for
     # the fields that affect orchestration.  This deliberately avoids a
     # third-party jsonschema dependency on FPGA hosts.
-    allowed = {"schema_version", "candidate_id", "target", "mode", "clock_mhz", "source_commit", "hypothesis", "ooc", "board"}
+    allowed = {"schema_version", "candidate_id", "target", "mode", "clock_mhz", "source_commit", "hypothesis", "ooc", "board", "image"}
     unknown = sorted(set(value) - allowed)
     if unknown:
         raise SchemaError("manifest has unsupported fields: " + ", ".join(unknown))

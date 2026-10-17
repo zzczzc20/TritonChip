@@ -128,6 +128,23 @@ module tnca_u50_xo #(
     parameter NUM_RCTX       = 2,
     parameter RCTX_W         = 1,
     parameter VREGS_PER_RCTX = 64,
+    // The machine's switches, set per image by TNCA_IMAGE_CONFIG
+    // (flow/fpga/package_xo.tcl); the defaults are tnca_fpga_top's, so an
+    // image built without a config is the one built before these existed.
+    parameter HAS_SFU          = 1,
+    parameter HAS_ATOMICS      = 1,
+    parameter HAS_SYS_ATOMICS  = 0,
+    parameter USE_BANKED_VRF   = 1,
+    parameter VRF_BYPASS       = 1,
+    parameter FE_NOBUBBLE      = 1,
+    parameter VRF_PREFETCH     = 1,
+    parameter RCTX_SWITCH      = 0,
+    parameter LSU_INFLIGHT     = 1,
+    parameter FPU_OVERLAP      = 0,
+    parameter RSLICE           = 0,
+    parameter RPAIR            = 0,
+    parameter MTX_ABUF         = 0,
+    parameter HAS_TENSOR_XPOSE = 0,
     // ap_clk / DEV_DIV is the device clock: 1 -> 100 MHz with the 100 MHz
     // kernel clock, measured on the U280 on 2026-10-09 (see above). The /2
     // image (150 MHz kernel clock, 75 MHz device) ran the same day; the one
@@ -208,6 +225,20 @@ module tnca_u50_xo #(
         .ADDR_W(ADDR_W),
         .NUM_RCTX(NUM_RCTX),
         .RCTX_W(RCTX_W),
+        .HAS_SFU(HAS_SFU),
+        .HAS_ATOMICS(HAS_ATOMICS),
+        .HAS_SYS_ATOMICS(HAS_SYS_ATOMICS),
+        .USE_BANKED_VRF(USE_BANKED_VRF),
+        .VRF_BYPASS(VRF_BYPASS),
+        .FE_NOBUBBLE(FE_NOBUBBLE),
+        .VRF_PREFETCH(VRF_PREFETCH),
+        .RCTX_SWITCH(RCTX_SWITCH),
+        .LSU_INFLIGHT(LSU_INFLIGHT),
+        .FPU_OVERLAP(FPU_OVERLAP),
+        .RSLICE(RSLICE),
+        .RPAIR(RPAIR),
+        .MTX_ABUF(MTX_ABUF),
+        .HAS_TENSOR_XPOSE(HAS_TENSOR_XPOSE),
         .VREGS_PER_RCTX(VREGS_PER_RCTX)
     ) u_top (
         .ap_clk(ap_clk),

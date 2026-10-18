@@ -3,7 +3,7 @@
 ## Immediate experiment commands and branches
 
 **Required gate delta: no additional gate passed. Attempt 3 remains live in
-detailed placement as of 2026-10-18 01:49:59 UTC, not a terminal failure.
+physical optimization after successful placement as of 2026-10-18 02:37 UTC.
 Budget: maximum 4, used 3, remaining 1, following the explicit final additional
 authorization on 2026-10-18. No fourth implementation has started.**
 Hardware source is `54249f7f7ac0cf8f5d1b82d8e63a3046d27522d3`, with the explicit
@@ -24,8 +24,12 @@ actual multi-PC allocation and traffic must be measured after that load.
 records the running implementation and observer, absent terminal marker and
 log identity. Two critical warnings remain for final review: a generated
 DONT_PARTITION query matched no objects, and an HDPR-5 severity downgrade was
-reported. Neither is classified as harmless or a terminal error without the
-final DRC and hierarchy evidence. No large DCP is opened beside the live placer.
+reported. [Generated constraint evidence](attempt03/generated_constraint_preflight_20261018.json)
+traces HDPR-5 to the Vitis-generated pre-place script. The generated kernel
+clock constraint uses a 12/12 generated-clock ratio, rather than a new
+independent primary clock. Actual timing and clock roots still require final
+report review. Neither critical warning is classified as harmless or terminal
+without the final DRC and hierarchy evidence. No large DCP is opened beside the live placer.
 
 **P — qualify the same final three-SLR build.** The unique blocker is the
 absence of legal full-image route, 100 MHz min/max timing, CDC and a loadable
@@ -39,6 +43,13 @@ tail -n 30 ~/tnca_build/r40_attempt03_20261017/xo/link.log
 cat ~/tnca_build/r40_attempt03_20261017/build/attempt.exit
 cat ~/tnca_build/r40_attempt03_followup_cachecuts/state.json
 ```
+
+[Actual placement completion](attempt03/placement_complete_20261018.json)
+records `place_design completed successfully`, followed by `phys_opt_design`.
+The retained post-placement SLR report shows CLB occupancy
+95.24% / 88.39% / 85.41%. SLR0 remains tightly packed. Boundary SLL usage is
+61.74% for SLR0/1 and 35.03% for SLR1/2; these aggregates do not establish
+per-column capacity or legal routing. No timing or route gate is promoted.
 
 The terminal marker is absent during execution. The existing read-only observer
 collects reports after terminal completion. Success requires actual three-core
@@ -339,3 +350,26 @@ but TMU combinational startpoints still include private tag-output/owner/age
 registers from the caches. Positive unplaced timing therefore does not resolve
 the observed physical ownership problem. The targeted boundary-preserved
 variant is still running; no production hierarchy attribute has been applied.
+
+## Candidate-worker source isolation
+
+The existing R40-09 supervisor now has a
+[real Torch worker bridge](../../R40-09/real_candidate_worker/README.md).
+It fixes an observed stale compiler import, records actual module/model
+origins and preserves compiler bundles plus complete raw endpoints. The
+functional validation remains partial: one original tiny candidate completed,
+the second reached the shared deadline. It does not implement standard-path
+`TNCA_TUNE`, select a policy using holdout data, or replace the full frozen
+inventories. Those required gates remain open.
+
+## Conditional MSHR-service fallback
+
+An isolated branch `r40-ms-service-snapshot` (commit `658c811a486f6c5c43691a69767f7887c2fa10c9`)
+captures immutable service descriptors on the existing arbitration edge.
+Cycle/oracle checks and mutation completed with explicit full tags, victim
+ranking and actual cache/MSHR/target geometry. The motivating predecessor
+path traverses RAM read, atomic ALU and RAM write data; a high-fanout read
+address net contributes 2.608 ns. No new timing or resource improvement is
+claimed, and the active attempt03 source is unchanged. Use this branch only
+if the terminal full-image diagnosis supports that cause, followed by matched
+physical screening. It has consumed no full-implementation reserve.

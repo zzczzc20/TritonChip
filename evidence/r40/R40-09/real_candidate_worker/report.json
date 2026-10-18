@@ -1,0 +1,80 @@
+{
+  "scope": "bounded real Torch candidate worker plumbing only; original unchanged tiny point; not frozen suites, holdout, board or autotune acceptance",
+  "raw_archive_sha256": "4f7b9b672cc401ad0fff25ec5dacf731b9e0e25006f27ba83612cf08a1ae20e1",
+  "raw_archive_bytes": 89603,
+  "final_worker_sha256": "7998bd19d4732a0a8ddf7f8fca26ceecac78ec2e24bbcf7201d924cecdbc5b8b",
+  "graph_deadline_seconds": 600,
+  "final_worker_validation": {
+    "width16": "original numeric and complete raw endpoint/bundle validation passed",
+    "width32": "not completed before shared graph deadline; no numerical result claimed",
+    "supervisor_exit_code": 1,
+    "budget_exceeded": true
+  },
+  "prior_failures": [
+    "Original draft imported an old installed compiler because compiler/python was absent from its source search path; both failures retained before execution",
+    "Second draft executed both original numeric candidates successfully but supervisor failed to catch the expected ablate.Refused mutation; retained unrelabelled",
+    "Final validation supervisor initially imported ablate before adding tools/r40 to its search path; no candidate had started; corrected supervisor has its own log and identity"
+  ],
+  "preflight_guards": {
+    "scope": "exact final worker preflight; real imported current and foreign compiler packages; no device execution",
+    "worker_sha256": "7998bd19d4732a0a8ddf7f8fca26ceecac78ec2e24bbcf7201d924cecdbc5b8b",
+    "rows": [
+      {
+        "case": "TNCA_DATA_DIR",
+        "exit_code": 1,
+        "passed": true,
+        "error_file": "/home/zhongchun/r40_real_candidate_worker_v3_20261018/guard_results_corrected/TNCA_DATA_DIR.events.error.json",
+        "device_execution": false
+      },
+      {
+        "case": "TNCA_COUNTERS",
+        "exit_code": 1,
+        "passed": true,
+        "error_file": "/home/zhongchun/r40_real_candidate_worker_v3_20261018/guard_results_corrected/TNCA_COUNTERS.events.error.json",
+        "device_execution": false
+      },
+      {
+        "case": "TNCA_TUNE",
+        "exit_code": 1,
+        "passed": true,
+        "error_file": "/home/zhongchun/r40_real_candidate_worker_v3_20261018/guard_results_corrected/TNCA_TUNE.events.error.json",
+        "device_execution": false
+      },
+      {
+        "case": "TNCA_DEADLINE",
+        "exit_code": 1,
+        "passed": true,
+        "error_file": "/home/zhongchun/r40_real_candidate_worker_v3_20261018/guard_results_corrected/TNCA_DEADLINE.events.error.json",
+        "device_execution": false
+      },
+      {
+        "case": "TNCA_HOST_TIMEOUT",
+        "exit_code": 1,
+        "passed": true,
+        "error_file": "/home/zhongchun/r40_real_candidate_worker_v3_20261018/guard_results_corrected/TNCA_HOST_TIMEOUT.events.error.json",
+        "device_execution": false
+      },
+      {
+        "case": "current_source",
+        "passed": true,
+        "exit_code": 0,
+        "stdout": "{\"tnca\": {\"path\": \"/home/zhongchun/r40_real_candidate_worker_v3_20261018/python/tnca/__init__.py\", \"sha256\": \"066cd515638302d5f398a873a2b4322a40e9d679a12e3fa130e297b56b229474\"}, \"tnca_cc\": {\"path\": \"/home/zhongchun/r40_real_candidate_worker_v3_20261018/compiler/python/tnca_cc/__init__.py\", \"sha256\": \"f46bb25c1a600506f9b0d6d37f2652e23305860424ca325bbdf605e744a87bf3\"}, \"archbench\": {\"path\": \"/home/zhongchun/r40_real_candidate_worker_v3_20261018/archbench/__init__.py\", \"sha256\": \"0e6e72aa80a9787a22f1e5175199b5ce0d62588d5332dd4ae67d61b1be80cc65\"}, \"scheduler_model\": {\"path\": \"/home/zhongchun/r40_real_candidate_worker_v3_20261018/spec/r39_sched_model.json\", \"sha256\": \"fcd8ecc57339286ec19e822147c1c7f1484ffeece162f10dc90c056a441afd2b\"}}\n",
+        "stderr": "",
+        "device_execution": false
+      },
+      {
+        "case": "foreign_compiler",
+        "passed": true,
+        "exit_code": 1,
+        "stdout": "",
+        "stderr": "Traceback (most recent call last):\n  File \"<string>\", line 1, in <module>\n  File \"/home/zhongchun/r40_real_candidate_worker_v3_20261018/tools/r40/autotune_candidate_worker.py\", line 87, in source_origins\n    raise ValueError(f'{name} imported outside the immutable source: {origin}')\nValueError: tnca_cc imported outside the immutable source: /home/zhongchun/tritonchip/compiler/python/tnca_cc/__init__.py\n",
+        "device_execution": false
+      }
+    ],
+    "status": "pass",
+    "required_gate_promotions": []
+  },
+  "image_sha256": null,
+  "actual_clock_hz": null,
+  "required_gate_promotions": []
+}

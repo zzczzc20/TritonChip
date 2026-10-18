@@ -1,6 +1,6 @@
 {
   "schema": "tnca-r40-full-implementation-budget/1",
-  "recorded_utc": "2026-10-18T01:49:48.299479+00:00",
+  "recorded_utc": "2026-10-18T02:37:21.061530+00:00",
   "authorization": "Previous maximum three attempts plus one FINAL additional attempt explicitly authorized on 2026-10-18; frozen contract unchanged",
   "starts_after_failed_hardware_source": "09ebe06",
   "previous_failure_checkpoint_sha256": "8d82bd375ce489ca433aba15f83692b53b409bc045381a7a8f44ed44811a50d9",
@@ -123,7 +123,7 @@
     },
     {
       "number": 3,
-      "state": "detail-placement-running",
+      "state": "placement-complete-physical-optimization-running",
       "source_commit": "54249f7f7ac0cf8f5d1b82d8e63a3046d27522d3",
       "source_archive_sha256": "6b254137501f4a3802c11f9e084e961c60724093a4da5654ce721b70a0d8db84",
       "source_root": "/home/zzhouch/tnca_src_r40_attempt03_54249f7",
@@ -185,9 +185,9 @@
         "replacement_evidence": "attempt03/observer_replacement.json"
       },
       "synthesis_start_evidence": "attempt03/synthesis_started.json",
-      "latest_observed_utc": "2026-10-18T01:49:48.299479+00:00",
+      "latest_observed_utc": "2026-10-18T02:37:21.061530+00:00",
       "xo_sha256": "3de447acb123567a37ce547258129d0a328a440cf9254ad56e4186c4c8614fef",
-      "latest_observed_phase": "Phase 3.3.2.1 Slice Area Swap Initial; runner1917223 and observer1926388 alive; terminal marker absent",
+      "latest_observed_phase": "place_design completed successfully; phys_opt_design initial timing update running; no terminal marker",
       "report_observer_history": [
         {
           "runner_pid": 1917224,
@@ -196,7 +196,8 @@
         }
       ],
       "synthesis_complete": true,
-      "latest_observation": "attempt03/placement_observation_20261018.json"
+      "latest_observation": "attempt03/placement_complete_20261018.json",
+      "placement_complete": true
     }
   ],
   "first_attempt_prerequisites": [

@@ -44,7 +44,9 @@ def systemc_library(binary):
     return dict(path=str(path), sha256=sha(path))
 
 
-def run(binary, config, trace, out, timeout=1800, source_identity=None, mode='memory'):
+def run(binary, config, trace, out, timeout=1800, source_identity=None, mode='memory', monitor='aggregate'):
+    if monitor not in ('off', 'aggregate', 'trace'):
+        raise ValueError('unknown socket monitor mode')
     binary, config, trace, out = (Path(p).resolve() for p in (binary, config, trace, out))
     if timeout <= 0:
         raise ValueError('positive host execution timeout required')
@@ -69,7 +71,7 @@ def run(binary, config, trace, out, timeout=1800, source_identity=None, mode='me
                 dependencies[str(path)] = sha(path)
     elif mode != 'memory':
         raise ValueError('unknown model mode')
-    identity = dict(schema='tnca-systemc-experiment/1', backend='systemc-tlm-prediction', mode=mode,
+    identity = dict(monitor=monitor, schema='tnca-systemc-experiment/1', backend='systemc-tlm-prediction', mode=mode,
                     binary_sha256=sha(binary), config_sha256=sha(config), trace_sha256=sha(trace),
                     sources=sources(), host=dict(machine=platform.machine(), node=platform.node()),
                     image_sha256=None, measured_clock_hz=None, calibration='not-measured',
@@ -81,7 +83,8 @@ def run(binary, config, trace, out, timeout=1800, source_identity=None, mode='me
     start = time.monotonic()
     code, timeout_hit = None, False
     with (out/'stdout.log').open('x') as stdout, (out/'stderr.log').open('x') as stderr:
-        process = subprocess.Popen(command, stdout=stdout, stderr=stderr, start_new_session=True)
+        process = subprocess.Popen(command, stdout=stdout, stderr=stderr, start_new_session=True,
+                                   env=dict(os.environ, TNCA_TLM_MONITOR=monitor))
         def expire():
             nonlocal timeout_hit
             if process.poll() is None:
@@ -131,10 +134,11 @@ def main():
     p.add_argument('--out', type=Path, required=True)
     p.add_argument('--timeout', type=float, default=1800)
     p.add_argument('--source-identity', type=Path)
+    p.add_argument('--monitor', choices=('off', 'aggregate', 'trace'), default='aggregate')
     p.add_argument('--mode', choices=('memory', 'chip'), default='memory')
     a = p.parse_args()
     identity = json.loads(a.source_identity.read_text()) if a.source_identity else None
-    report = run(a.binary, a.config, a.trace, a.out, a.timeout, identity, mode=a.mode)
+    report = run(a.binary, a.config, a.trace, a.out, a.timeout, identity, mode=a.mode, monitor=a.monitor)
     print(json.dumps({k: report[k] for k in ('status', 'host_elapsed_seconds', 'timing_error_bound_cycles', 'performance_gate')}))
     return 0 if report['status'] == 'completed-prediction' else 1
 

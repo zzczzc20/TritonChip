@@ -19,7 +19,11 @@ architecture coverage are incomplete; consult its coverage table before use.
 Its memory replay path is conditional on captured traffic and cannot substitute
 for native program execution or establish complete-chip prediction accuracy.
 RTL remains an independent offline validation source, outside the TLM execution
-path. No model build or simulation should run on the FPGA implementation host.
+path. Socket monitors and recording policies are described in the model README.
+Use `diagnose_systemc.py --report RUN/report.json --out diagnosis.json` to audit
+a sealed run and expose resource-pressure hypotheses; `--candidate` compares
+a compatible sensitivity experiment. Uncalibrated predictions cannot justify
+an implementation run by themselves. No model build or simulation should run on the FPGA implementation host.
 
 This workflow operates within the existing R40 work packages and frozen
 acceptance contract. Start with the [required-gate blocker ledger](../../evidence/r40/v2/convergence/README.md).

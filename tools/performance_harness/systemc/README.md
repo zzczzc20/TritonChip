@@ -43,14 +43,15 @@ Dependencies and resource availability schedule SystemC events directly.
 | Native executable | Canonical assembled 64-bit TNCA words; scalar/control, integer vectors, predicate operations, selected FP32/CVT/SFU, shuffles, reductions and scalar/vector LSU | Partial ISA; no claim of complete compiler coverage |
 | Grid execution | Bounded concurrent physical-core workers, dynamic program assignment, per-core telemetry | Dispatcher cycle and grouping/pair behavior are not calibrated |
 | Role execution | Private scalar/predicate state and scoreboards; timestamped, lane-masked physical VRF writeback; disjoint role banks or adjacent-pair aliasing | RSLICE, grouped programs, arbitrary vector-base mappings and complete role-mask coverage remain incomplete |
-| Barriers | Shared per-core generations, arrival/operation counters, sleeping waits, release writeback drain and explicit faults | Native DMA/MMA completion hooks are not yet integrated; timing is uncalibrated |
+| Barriers | Shared per-core generations, arrival/operation counters, sleeping waits, release writeback drain and explicit faults | Native DMA completion is integrated; MMA completion and timing calibration remain incomplete |
+| DMA | Immutable descriptor snapshots, rank/stride/padding, bounded asynchronous transfer resources, RF leases and barrier completion | Partial descriptor modifiers; no measured DMA timing calibration |
 | Core timing | Issue resource and scalar/vector result availability events | Timing constants are hypotheses; RF banks and all execution engines remain incomplete |
 | LSU | Byte enables, unaligned splitting, gather/scatter, word coalescing, bounded outstanding beats | Additional ordering and atomics integration remain required |
 | NoC | Unique-home mapping from `tnca_core_ni.v`; XY routes and directed-link service contention | Packet-level estimate; finite router buffers/VC behavior are not implemented |
 | NUCA | Set-associative writeback storage, invalid-first/round-robin replacement, finite MSHRs/targets, merges, same-line ordering and hit-under-miss | DCO policies, epochs and exact engine arbitration remain incomplete |
 | Memory | Shared byte-addressed storage, explicit contiguous PC mapping, independent PC transfer resources, finite outlet outstanding slots and write acknowledgements | No DRAM bank/row/refresh model; bandwidth/latency need calibration |
 | Visibility | Requester drain, parallel slice writeback/invalidation, completion after write acknowledgement, external host probes | Product ownership protocol adapter is not complete |
-| Profiling | Bounded Chrome trace, per-resource counters, deterministic simulated time with tracing enabled/disabled | Host tracing cost must be measured for each workload class |
+| Profiling | Passive socket monitors, bounded aggregate latency histograms, concurrency, resource queue/service counters; optional Chrome transactions | Host overhead is workload-specific; SCV recording is not implemented |
 
 `r40-three-core.cfg` binds the final-candidate cache geometry and three outlets.
 Its timing fields are explicitly **uncalibrated hypotheses**. The PC configuration
@@ -63,6 +64,64 @@ byte enables and response status. A typed extension carries source, request
 identity and atomic operation metadata. Blocking transport runs in concurrent
 SystemC processes with actual kernel-time waits. DMI and temporal decoupling
 are disabled to prevent shared-resource contention from being bypassed.
+
+## Performance diagnosis and recording policy
+
+The primary objective is rapid bottleneck diagnosis and architecture screening
+before an expensive implementation run. Functional execution generates demand;
+coverage alone is not a performance qualification metric. The event-driven path
+must demonstrate its speed and prediction error on matched workloads before
+claiming an orders-of-magnitude advantage over RTL.
+
+`run.py --monitor off|aggregate|trace` selects the recording policy and binds it
+to experiment identity. The default is `aggregate`: no per-transaction trace
+serialization. Passive `SocketMonitor` modules interpose standard TLM-2.0
+sockets at each NoC-to-home and cache-to-HBM boundary. They forward the original
+payload and delay without waits, additional events or payload extensions.
+They use `tlm_utils` sockets, not a vendor Probe/Monitor Socket package.
+**SCV Transaction Recording is not currently implemented.**
+
+Each boundary reports transaction/byte counts, read/write counts, error counts,
+peak outstanding calls, mean/max residence, a fixed 65-bin latency histogram,
+and the union of intervals with active calls. Bin 0 contains zero cycles;
+bin k contains [2^(k-1), 2^k-1]. Aggregate storage is bounded by socket count,
+not transaction count. `trace` adds bounded Chrome events with socket-local
+transaction sequence, address, length, source and home. `trace_events` limits
+all emitted events; dropped events are reported. `off` retains mandatory
+functional checks and existing architectural counters but disables socket
+statistics and detailed event recording. It is not a no-instrumentation RTL
+baseline.
+
+Socket residence includes downstream waits. Home and HBM intervals overlap;
+do not add their latency or busy fractions. Busy fraction describes an active
+transaction interval, not physical port utilization. Queue/wait cycle sums
+across concurrent requests can exceed elapsed cycles. Resource service counters
+provide supporting demand evidence, not a critical-path attribution.
+
+```sh
+python3 tools/performance_harness/systemc/validate_monitor.py \
+  --binary /tmp/tnca-systemc-build/tnca-tlm --out /fresh/path/monitor-study
+python3 tools/performance_harness/diagnose_systemc.py \
+  --report /fresh/path/monitor-study/run-0-aggregate/report.json \
+  --out /fresh/path/diagnosis.json
+```
+
+The monitor study uses alternating off/aggregate/trace order with warmup and
+reports the observed host-overhead range. It requires identical simulated
+results, counters and byte-for-byte responses. Its memory read stream does not
+establish native-chip speedup or a universal overhead bound. Host time includes
+process startup and output, excludes compilation and identity hashing, and
+must be interpreted against that scope. Prediction error and RTL speedup remain
+null until measured independently.
+
+`diagnose_systemc.py` verifies sealed outputs before interpreting counters.
+It exposes socket residence and resource pressure, then supports `--candidate`
+for a single-configuration sensitivity comparison with unchanged software and
+workload. Change one capacity or mapping, preserve useful work, and check that
+the expected queue and traffic changes accompany the predicted cycle change.
+A lower modeled cycle count alone does not authorize synthesis. Calibrate on
+independent RTL/board workloads, retain a frozen holdout and reject a ranking
+whose improvement is smaller than its established prediction uncertainty.
 
 ## Run and preserve an experiment
 

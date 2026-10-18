@@ -8,6 +8,7 @@
 #include <tlm_utils/simple_target_socket.h>
 #include <tlm_utils/multi_passthrough_target_socket.h>
 #include <array>
+#include <cstdlib>
 #include <algorithm>
 #include <cstdint>
 #include <deque>
@@ -47,7 +48,7 @@ struct Config {
             "outlets","active_outlets","outstanding","core_window","clock_hz","memory_base",
             "memory_bytes","pc_bytes","pc_count","pc_first","lookup_cycles","service_cycles",
             "noc_stages","noc_bytes_per_cycle","hbm_latency_cycles","hbm_bytes_per_cycle",
-            "outlet_issue_cycles","trace_events"};
+            "outlet_issue_cycles","trace_events","dma_queue","dma_unit_slots","dma_outstanding","dma_setup_cycles","dma_rf_cycles"};
         require(v.size()==keys.size(),"configuration key count mismatch (unknown or missing key)");
         for(auto& k:keys)require(v.count(k),"missing configuration: "+k);
         for(auto& k:keys)if(k!="memory_base" && k!="pc_first" && k!="trace_events" && k!="noc_stages" && k!="full_line_tag")
@@ -59,6 +60,7 @@ struct Config {
         require(get("full_line_tag")<=1 && (get("full_line_tag") || (get("nx")==2 && get("ny")==2)),"compressed tags require frozen 2x2 topology");
         require(get("active_outlets")==1 || get("active_outlets")==get("outlets"),"RTL supports one/all outlets");
         require(get("outstanding")<=256 && get("core_window")<=256,"unreasonable outstanding window");
+        require(get("dma_queue")<=16 && get("dma_unit_slots")<=64 && get("dma_outstanding")<=128,"unreasonable DMA resources");
         require(get("clock_hz")<=1000000000000ULL,"clock exceeds time resolution");
         require(get("memory_bytes")<=UINT64_MAX-get("memory_base"),"memory window overflow");
         require(get("memory_base")%64==0 && get("memory_bytes")%64==0,"line-aligned memory window required");
@@ -88,20 +90,47 @@ struct Context {
     const Config& c;
     std::map<std::string,u64> counts;
     std::ofstream trace;
+    std::string directory;
     u64 emitted=0,dropped=0;
-    explicit Context(const Config& cfg,const std::string& dir):c(cfg),trace(dir+"/trace.json"){
+    std::string monitor_mode="aggregate";
+    struct SocketStats {
+        u64 calls=0,bytes=0,reads=0,writes=0,errors=0,active=0,peak=0;
+        u64 latency_sum=0,latency_max=0,busy_cycles=0,last_cycle=0;
+        std::array<u64,65> histogram{};
+        void integrate(u64 now){if(active)busy_cycles+=now-last_cycle;last_cycle=now;}
+    };
+    std::map<std::string,SocketStats> sockets;
+    explicit Context(const Config& cfg,const std::string& dir):c(cfg),trace(dir+"/trace.json"),directory(dir){
+        if(const char* mode=std::getenv("TNCA_TLM_MONITOR"))monitor_mode=mode;
+        require(monitor_mode=="off" || monitor_mode=="aggregate" || monitor_mode=="trace","unknown monitor mode");
         require(bool(trace),"cannot create trace");trace<<"{\"displayTimeUnit\":\"ns\",\"traceEvents\":[";
+    }
+    ~Context(){
+        if(trace.is_open()){
+            std::ofstream partial(directory+"/partial.json");
+            partial<<"{\"schema\":\"tnca-model-partial/1\",\"status\":\"incomplete\",\"performance_gate\":\"not-measured\",\"cycles\":"<<now()<<",\"counters\":{";
+            bool first=true;for(auto& kv:counts){if(!first)partial<<',';first=false;partial<<'"'<<kv.first<<"\":"<<kv.second;}
+            partial<<"}}\n";close(false);
+        }
     }
     sc_time cycles(u64 n)const{return sc_time(double(n)/double(c.get("clock_hz")),SC_SEC);}
     u64 now()const{return u64(sc_time_stamp()/cycles(1)+0.5);}
     void span(const std::string& name,unsigned lane,sc_time start,u64 id) {
+        if(monitor_mode!="trace")return;
         if(emitted>=c.get("trace_events")){++dropped;return;}
         if(emitted++)trace<<',';
         trace<<"{\"name\":\""<<name<<"\",\"cat\":\"model-prediction\",\"ph\":\"X\",\"pid\":1,\"tid\":"<<lane
             <<",\"ts\":"<<std::setprecision(15)<<start.to_seconds()*1e6
             <<",\"dur\":"<<(sc_time_stamp()-start).to_seconds()*1e6<<",\"args\":{\"id\":"<<id<<"}}";
     }
-    void close(){trace<<"],\"metadata\":{\"backend\":\"systemc-tlm-prediction\",\"dropped_events\":"<<dropped<<"}}\n";trace.close();}
+    void close(bool complete=true){
+        std::ofstream stats(directory+"/sockets.json");
+        stats<<"{\"schema\":\"tnca-tlm-sockets/1\",\"mode\":\""<<monitor_mode<<"\",\"complete\":"<<(complete?"true":"false")<<",\"cycles\":"<<now()<<",\"sockets\":{";
+        bool first=true;for(auto& kv:sockets){auto& v=kv.second;v.integrate(now());if(!first)stats<<',';first=false;
+            stats<<'"'<<kv.first<<"\":{\"calls\":"<<v.calls<<",\"bytes\":"<<v.bytes<<",\"reads\":"<<v.reads<<",\"writes\":"<<v.writes<<",\"errors\":"<<v.errors<<",\"active\":"<<v.active<<",\"peak\":"<<v.peak<<",\"latency_sum_cycles\":"<<v.latency_sum<<",\"latency_max_cycles\":"<<v.latency_max<<",\"busy_cycles\":"<<v.busy_cycles<<",\"latency_log2_histogram\":[";
+            for(unsigned i=0;i<v.histogram.size();++i){if(i)stats<<',';stats<<v.histogram[i];}stats<<"]}";
+        }stats<<"}}\n";
+        trace<<"],\"metadata\":{\"backend\":\"systemc-tlm-prediction\",\"complete\":"<<(complete?"true":"false")<<",\"dropped_events\":"<<dropped<<"}}\n";trace.close();}
 };
 struct Request : tlm::tlm_extension<Request> {
     u64 id=0, value=0, compare=0;
@@ -112,6 +141,7 @@ struct Request : tlm::tlm_extension<Request> {
 struct Resource {
     sc_time available=SC_ZERO_TIME;
     void use(Context& x,u64 duration,const std::string& key) {
+        x.counts[key+"_service_cycles"]+=duration;
         sc_time begin=std::max(available,sc_time_stamp());
         x.counts[key+"_queue_cycles"]+=u64((begin-sc_time_stamp())/x.cycles(1)+.5);
         available=begin+x.cycles(duration);wait(available-sc_time_stamp());
@@ -290,5 +320,41 @@ struct Network : sc_module {
         if(delay!=SC_ZERO_TIME){wait(delay);delay=SC_ZERO_TIME;}
         auto* r=tx.get_extension<Request>();require(r && r->core<x.c.cores(),"invalid network source");
         r->home=x.c.home(tx.get_address());route(r->core,r->home,32);homes[r->home]->b_transport(tx,delay);route(r->home,r->core,16);
+    }
+};
+
+// Passive b_transport interposer. No wait, delay annotation, payload extension,
+// or event scheduling. Aggregate memory is bounded by elaborated socket count.
+struct SocketMonitor : sc_module {
+    tlm_utils::simple_target_socket<SocketMonitor> target;
+    tlm_utils::simple_initiator_socket<SocketMonitor> downstream;
+    Context& x; std::string label;unsigned lane;Context::SocketStats* stats=nullptr;
+    SocketMonitor(sc_module_name n,Context& ctx,std::string key,unsigned tid):
+        sc_module(n),target("target"),downstream("downstream"),x(ctx),label(std::move(key)),lane(tid){
+        target.register_b_transport(this,&SocketMonitor::transport);
+        if(x.monitor_mode!="off")stats=&x.sockets[label];
+    }
+    void transport(tlm::tlm_generic_payload& tx,sc_time& delay){
+        if(!stats){downstream->b_transport(tx,delay);return;}
+        auto& s=*stats;auto start=sc_time_stamp();u64 begin=x.now();
+        s.integrate(begin);u64 sequence=++s.calls;s.bytes+=tx.get_data_length();
+        s.reads+=tx.is_read();s.writes+=tx.is_write();s.peak=std::max(s.peak,++s.active);
+        try {downstream->b_transport(tx,delay);}
+        catch(...){finish(begin,true);throw;}
+        finish(begin,tx.is_response_error());
+        if(x.monitor_mode=="trace"){
+            if(x.emitted>=x.c.get("trace_events")){++x.dropped;return;}
+            if(x.emitted++)x.trace<<',';
+            auto* r=tx.get_extension<Request>();
+            x.trace<<"{\"name\":\""<<label<<"\",\"cat\":\"tlm-socket\",\"ph\":\"X\",\"pid\":2,\"tid\":"<<lane
+                <<",\"ts\":"<<std::setprecision(15)<<start.to_seconds()*1e6<<",\"dur\":"<<(sc_time_stamp()-start).to_seconds()*1e6
+                <<",\"args\":{\"transaction\":"<<sequence<<",\"address\":"<<tx.get_address()<<",\"bytes\":"<<tx.get_data_length()
+                <<",\"write\":"<<(tx.is_write()?"true":"false")<<",\"core\":"<<(r?r->core:0)<<",\"home\":"<<(r?r->home:0)<<"}}";
+        }
+    }
+    void finish(u64 begin,bool error){
+        auto& s=*stats;u64 end=x.now(),duration=end-begin;s.integrate(end);--s.active;s.errors+=error;
+        s.latency_sum+=duration;s.latency_max=std::max(s.latency_max,duration);
+        unsigned bucket=0;for(u64 v=duration;v;v>>=1)++bucket;++s.histogram[bucket];
     }
 };

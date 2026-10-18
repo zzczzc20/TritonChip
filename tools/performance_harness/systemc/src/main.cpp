@@ -79,7 +79,15 @@ int sc_main(int argc,char** argv){
         require(argc==4,"usage: tnca-tlm CONFIG TRACE OUTPUT_DIRECTORY (fresh directory required by runner)");
         sc_set_time_resolution(1,SC_PS);Config cfg(argv[1]);Context x(cfg,argv[3]);HBM hbm("hbm",x);Network net("noc",x);
         std::vector<std::unique_ptr<Slice>> caches;
-        for(unsigned i=0;i<cfg.cores();++i){caches.emplace_back(new Slice(("home"+std::to_string(i)).c_str(),x,i));net.homes[i].bind(caches.back()->target);caches.back()->memory.bind(hbm.target);}
+        std::vector<std::unique_ptr<SocketMonitor>> probes;
+    for(unsigned i=0;i<cfg.cores();++i){
+        caches.emplace_back(new Slice(("home"+std::to_string(i)).c_str(),x,i));
+        auto home="home_"+std::to_string(i),mem="hbm_"+std::to_string(i);
+        probes.emplace_back(new SocketMonitor(home.c_str(),x,home,500+i));
+        net.homes[i].bind(probes.back()->target);probes.back()->downstream.bind(caches.back()->target);
+        probes.emplace_back(new SocketMonitor(mem.c_str(),x,mem,600+i));
+        caches.back()->memory.bind(probes.back()->target);probes.back()->downstream.bind(hbm.target);
+    }
         Driver driver("driver",x,hbm,caches,argv[2],argv[3]);driver.socket.bind(net.target);sc_start();
         require(driver.terminal,"model deadlocked: no runnable process and no completed report");
         return driver.failures?1:0;

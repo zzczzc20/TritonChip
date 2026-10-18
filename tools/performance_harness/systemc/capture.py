@@ -11,6 +11,7 @@ from pathlib import Path
 import shutil
 import subprocess
 import sys
+import time
 
 from run import HERE, ROOT, sha
 
@@ -83,16 +84,22 @@ def capture(out, count=8000, seed=7, latency=40):
     command = ['iverilog', '-g2012', '-I', str(ROOT/'rtl/common'), '-y', str(ROOT/'rtl/common'),
                '-s', 'tb_nuca_slice', '-s', 'tnca_tlm_capture',
                '-P', f'tb_nuca_slice.DRAM_LAT={latency}', '-o', str(binary), *map(str, files)]
+    build_start=time.monotonic()
     with (out/'build.log').open('x') as log:
         subprocess.run(command, stdout=log, stderr=subprocess.STDOUT, check=True, timeout=180)
+    build_seconds=time.monotonic()-build_start
     command = ['vvp', str(binary), f'+nreq={count}', f'+seed={seed}', f'+tlm_capture={out}/rtl.capture']
+    execution_start=time.monotonic()
     with (out/'rtl.log').open('x') as log:
         result = subprocess.run(command, stdout=log, stderr=subprocess.STDOUT, check=False, timeout=600)
+    execution_seconds=time.monotonic()-execution_start
     log = (out/'rtl.log').read_text()
     if result.returncode or 'FAIL' in log or 'FATAL' in log or '\nPASS\n' not in log:
         raise ValueError('RTL run failed; preserve capture and logs')
     report = convert(out/'rtl.capture', out/'requests.trace')
-    report.update(identity=identity, capture_sha256=sha(out/'rtl.capture'), trace_sha256=sha(out/'requests.trace'))
+    report.update(build_seconds=build_seconds,execution_seconds=execution_seconds,
+                  host_time_scope='vvp process startup, complete testbench and capture output; compilation and trace conversion excluded',
+                  identity=identity, capture_sha256=sha(out/'rtl.capture'), trace_sha256=sha(out/'requests.trace'))
     (out/'capture.json').write_text(json.dumps(report, indent=2)+'\n')
     return report
 

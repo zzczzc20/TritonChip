@@ -146,8 +146,8 @@ def validate(binary, out):
     assert result['status']=='completed-prediction',out/'sfu/stderr.log'
     assert result['summary']['counters']['core_0_sfu_queue_cycles']>0
     results['sfu']=result['summary']
-    # An unsupported descriptor is a hard error, never a free operation.
-    code = out/'unsupported.hex';assemble('td.release d0\nexit\n', code)
+    # An uncovered engine operation is a hard error, never a free operation.
+    code = out/'unsupported.hex';assemble('m.zero a0\nexit\n', code)
     script = out/'unsupported.commands';script.write_text(f'code {code}\nlaunch 3 0 0 1 1 1\n')
     result = run(binary, cfg, script, out/'unsupported', mode='chip')
     assert result['status'] == 'failed' and result['returncode'] != 0

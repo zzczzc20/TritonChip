@@ -50,7 +50,10 @@ struct PhysicalRegisters {
     struct Write {unsigned index,mask;sc_time due;u64 sequence;Vector data;};
     std::array<Vector,256> values{};
     std::vector<Write> pending;
+    std::array<u64,256> writer{};
+    std::array<std::map<u64,unsigned>,256> readers;
     u64 sequence=0;
+    u64 owner_sequence=0;
     void commit(sc_time now){
         std::stable_sort(pending.begin(),pending.end(),[](const Write& a,const Write& b){return a.due<b.due || (a.due==b.due && a.sequence<b.sequence);});
         auto end=pending.begin();
@@ -60,8 +63,30 @@ struct PhysicalRegisters {
         }
         pending.erase(pending.begin(),end);
     }
-    void write(unsigned index,unsigned mask,sc_time due,const Vector& data){
-        require(index<256,"physical vector register overflow");pending.push_back({index,mask,due,sequence++,data});
+    void write(unsigned index,unsigned mask,sc_time due,const Vector& data,u64 owner=0){
+        require(index<256,"physical vector register overflow");
+        require((writer[index]==0 || writer[index]==owner) && readers[index].empty(),"RF_LIFETIME: overwrite before asynchronous source release");
+        pending.push_back({index,mask,due,sequence++,data});
     }
-    Vector read(unsigned index,sc_time now){require(index<256,"physical vector register overflow");commit(now);return values[index];}
+    Vector read(unsigned index,sc_time now,u64 owner=0){
+        require(index<256,"physical vector register overflow");
+        require(writer[index]==0 || writer[index]==owner,"RF_LIFETIME: read before asynchronous destination completion");
+        commit(now);return values[index];
+    }
+    u64 new_owner(){require(owner_sequence<UINT64_MAX,"register lease ID overflow");return ++owner_sequence;}
+    void acquire(unsigned base,unsigned length,u64 owner,bool write,sc_time now){
+        require(owner>0 && base<256 && length<=256-base,"invalid register lease range");commit(now);
+        for(auto& w:pending)require(w.index<base || w.index>=base+length,"RF_LIFETIME: lease before prior writes landed");
+        for(unsigned i=base;i<base+length;++i){
+            require(writer[i]==0 && (!write || readers[i].empty()),"RF_LIFETIME: conflicting asynchronous register lease");
+        }
+        for(unsigned i=base;i<base+length;++i){if(write)writer[i]=owner;else ++readers[i][owner];}
+    }
+    void release(unsigned base,unsigned length,u64 owner,bool write,sc_time now){
+        commit(now);
+        for(unsigned i=base;i<base+length;++i){
+            if(write){require(writer[i]==owner,"write lease release mismatch");writer[i]=0;}
+            else {auto it=readers[i].find(owner);require(it!=readers[i].end() && it->second>0,"read lease release mismatch");if(--it->second==0)readers[i].erase(it);}
+        }
+    }
 };

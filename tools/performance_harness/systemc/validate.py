@@ -70,8 +70,8 @@ class Traffic:
     def close(self): self.file.close()
 
 
-def require_run(binary, cfg, trace, out):
-    result = run(binary, cfg, trace, out)
+def require_run(binary, cfg, trace, out, monitor="aggregate"):
+    result = run(binary, cfg, trace, out, monitor=monitor)
     if result['status'] != 'completed-prediction':
         raise AssertionError(f'model failure; preserve {out}')
     return result
@@ -150,7 +150,7 @@ def validate(binary, out):
         values={}
         for mode in ((0, 1) if pair % 2 == 0 else (1, 0)):
             c = config(out/f'trace{pair}-{mode}.cfg', trace_events=100000 if mode else 0)
-            r = require_run(binary, c, trace, out/f'trace{pair}-{mode}')
+            r = require_run(binary, c, trace, out/f'trace{pair}-{mode}', monitor='trace')
             values[mode] = r
         assert values[0]['summary'] == values[1]['summary']
         assert sha(out/f'trace{pair}-0/responses.tsv') == sha(out/f'trace{pair}-1/responses.tsv')

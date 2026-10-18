@@ -4,6 +4,7 @@
 #include "../include/tnca_model.hpp"
 #include "../include/tnca_numeric.hpp"
 #include "../include/tnca_barrier_model.hpp"
+#include "../include/tnca_tensor_engine.hpp"
 #include "tnca_isa_generated.hpp"
 #include <cstring>
 #include <cmath>
@@ -47,7 +48,21 @@ struct Core : sc_module {
     tlm_utils::simple_initiator_socket<Core> memory;
     Context& x;unsigned id;Resource issue;Limit lsu;sc_time sfu_available=SC_ZERO_TIME;
     std::array<BarrierModel,32> barriers;
-    explicit Core(sc_module_name n,Context& ctx,unsigned i):sc_module(n),memory("memory"),x(ctx),id(i),lsu(2){}
+    TensorEngine tensor;
+    explicit Core(sc_module_name n,Context& ctx,unsigned i):sc_module(n),memory("memory"),x(ctx),id(i),lsu(2),
+        tensor("tensor",ctx,i,[this](u64 token){verify_async_token(token);},
+               [this](u64 token,bool error){complete_async(token,error);}){}
+    void verify_async_token(u64 token){
+        unsigned index=unsigned(token&65535);require(index<32,"BARRIER_FAULT: asynchronous token index");
+        auto& barrier=barriers[index];
+        require(!barrier.error && barrier.armed && barrier.epoch==(token>>16) && barrier.operations>0,"BARRIER_FAULT: asynchronous command generation/count");
+    }
+    void complete_async(u64 token,bool error){
+        unsigned index=unsigned(token&65535);require(index<32,"BARRIER_FAULT: asynchronous token index");
+        if(error){barriers[index].invalidate();return;}
+        require(barriers[index].epoch==(token>>16),"BARRIER_FAULT: command completed in a different generation");
+        barriers[index].complete();
+    }
     void ready(sc_time t){if(t>sc_time_stamp())wait(t-sc_time_stamp());}
     void publish(Frame& frame,unsigned index,unsigned mask,u64 latency){
         require(index<64,"logical vector register exceeds role allocation");
@@ -185,6 +200,23 @@ struct Core : sc_module {
                 }
                 if(func==24 || func==56){require(d<16,"predicate destination");if(d){f.p[d]=comparison;f.pr[d]=sc_time_stamp()+x.cycles(1);}}
                 else publish(f,d,func==25?65535:mask,3);
+            }else if(major==48){
+                require(mod==0,"reserved descriptor/window modifier");
+                tensor.configure(func,d,func==0?rs(a):0,imm);
+            }else if(major==49){
+                if(func!=16){
+                    require((mod&~0x27U)==0 && (mod&7)<=3 && b<63,"ILLEGAL_INSTRUCTION: transfer encoding");
+                    u64 token=rs(c);
+                    tensor.issue(a,d,token,1U<<(mod&7),func==8,mod&32,mask!=0,f.physical,f.vbase,
+                        [&](unsigned rank){
+                            require(b+rank<=64,"DESCRIPTOR_FAULT: coordinates exceed scalar file");
+                            std::array<u64,5> coordinates{};for(unsigned dim=0;dim<rank;++dim)coordinates[dim]=rs(b+dim);return coordinates;
+                        },[&](unsigned base,unsigned length){
+                            require(base<64 && length<=64-base,"DESCRIPTOR_FAULT: transfer exceeds role mapping");
+                            for(unsigned r=base;r<base+length;++r){ready(f.vr[r]);}
+                            f.physical->commit(sc_time_stamp());
+                        });
+                } // t.prefetch is an ignorable hint and promises no completion.
             }else if(major==80){
                 require(mod==0,"reserved barrier modifier");
                 if(func==0){require(d<32,"barrier index");barriers[d].reset();}
@@ -193,6 +225,7 @@ struct Core : sc_module {
                     require(a<32,"barrier index");
                     for(auto& t:f.sr)ready(t);
                     for(auto& t:f.vr)ready(t);
+                    tensor.drain();
                     f.physical->commit(sc_time_stamp());
                     barriers[a].arrive();
                 }else if(func==3 || func==4){
@@ -294,6 +327,7 @@ struct Core : sc_module {
     }
     void program(const std::vector<u64>& code,u64 pid,u64 pc,u64 arg,unsigned gx,unsigned gy,unsigned gz,unsigned roles,bool pair_alias){
         require(roles>0 && roles<16,"invalid role mask");
+        tensor.reset();
         for(auto& barrier:barriers)barrier.reset();
         auto values=std::make_shared<PhysicalRegisters>();
         unsigned active=unsigned(__builtin_popcount(roles)),remaining=active;sc_event done;
@@ -308,6 +342,7 @@ struct Core : sc_module {
             });
         }
         while(remaining)wait(done);
+        tensor.drain();
     }
 };
 struct Chip : sc_module {
@@ -318,7 +353,7 @@ struct Chip : sc_module {
     Chip(sc_module_name n,Context& ctx,HBM& mem,Network& net,std::vector<std::unique_ptr<Slice>>& s,const char* script,const std::string& out):
         sc_module(n),x(ctx),hbm(mem),caches(s),commands(script),result(out+"/summary.json"){
         require(bool(commands) && bool(result),"cannot open chip script/output");
-        for(unsigned i=0;i<x.c.cores();++i){cores.emplace_back(new Core(("core"+std::to_string(i)).c_str(),x,i));cores.back()->memory.bind(net.target);}
+        for(unsigned i=0;i<x.c.cores();++i){cores.emplace_back(new Core(("core"+std::to_string(i)).c_str(),x,i));cores.back()->memory.bind(net.target);cores.back()->tensor.memory.bind(net.target);}
         SC_THREAD(run);
     }
     void flush(){unsigned remaining=caches.size();sc_event done;
@@ -374,6 +409,14 @@ struct Chip : sc_module {
 int sc_main(int argc,char** argv){try{
     require(argc==4,"usage: tnca-chip CONFIG COMMANDS OUTPUT_DIRECTORY");sc_set_time_resolution(1,SC_PS);
     Config cfg(argv[1]);Context x(cfg,argv[3]);HBM hbm("hbm",x);Network net("noc",x);std::vector<std::unique_ptr<Slice>> caches;
-    for(unsigned i=0;i<cfg.cores();++i){caches.emplace_back(new Slice(("home"+std::to_string(i)).c_str(),x,i));net.homes[i].bind(caches.back()->target);caches.back()->memory.bind(hbm.target);}
+    std::vector<std::unique_ptr<SocketMonitor>> probes;
+    for(unsigned i=0;i<cfg.cores();++i){
+        caches.emplace_back(new Slice(("home"+std::to_string(i)).c_str(),x,i));
+        auto home="home_"+std::to_string(i),mem="hbm_"+std::to_string(i);
+        probes.emplace_back(new SocketMonitor(home.c_str(),x,home,500+i));
+        net.homes[i].bind(probes.back()->target);probes.back()->downstream.bind(caches.back()->target);
+        probes.emplace_back(new SocketMonitor(mem.c_str(),x,mem,600+i));
+        caches.back()->memory.bind(probes.back()->target);probes.back()->downstream.bind(hbm.target);
+    }
     Chip chip("chip",x,hbm,net,caches,argv[2],argv[3]);sc_start();require(chip.terminal,"native chip model deadlocked");return 0;
 }catch(const std::exception& e){std::cerr<<"MODEL_REFUSED: "<<e.what()<<'\n';return 2;}}

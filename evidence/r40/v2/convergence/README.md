@@ -30,6 +30,41 @@ module-screen MSHR bottleneck. Any later frequency optimization must address
 this measured cone and pass a matched screen before consuming the final full
 implementation budget. The usable 90 MHz image remains unchanged.
 
+## Formal runtime experiments after the functional inventory
+
+`tools/r40/board_ablation_collect.py` runs the unchanged frozen compute and
+streaming subsets for active cores 1/3, physical outlets 1/3 and outstanding
+1/8. Each experiment uses three independent random-interleaved A/B blocks,
+five warmups and thirty timed calls per original point. The same source tree,
+image, clock qualification, physical topology and 1 GiB pool are mandatory;
+only the experiment's frozen runtime knob changes. Every child retains its
+complete compiler bundle and raw device endpoints. Failed original points
+stop collection and remain in the aggregate inputs. A missing/mismatched
+source or image is refused before any measurement child starts.
+
+Use `--plan-only` to inspect the complete command sequence without device
+access. After I succeeds, stage the committed collector as an immutable harness
+and run, serially on the already loaded board:
+
+```sh
+~/tc_env/torchenv/bin/python tools/r40/board_ablation_collect.py \
+  --experiment R40-05.three-cores \
+  --xclbin "$HOME/tnca_images/r40_attempt03_90mhz_a88ebdf5/tnca_u280.xclbin" \
+  --image-sha256 a88ebdf59cfbbb2001ebd5b1b2c739c5d8cd33931f1e9202f18cac07c4c83083 \
+  --software-tree-sha256 files:cbc1340e1135ac301bfe6c39488bb3eb2b1571aafad46920e070ae701c58da52 \
+  --operating-clock-evidence "$HOME/tnca_build/r40_attempt03_conditional_90mhz/qualified_clock.json" \
+  --out "$HOME/tnca_runs_r40_three_core_90mhz"
+```
+
+Success yields raw complete blocks and separately audited per-block verdicts;
+it does not automatically promote a package gate. Cross-block statistics, the
+required two-core control, actual traffic/bandwidth floors and complete LOO
+remain required. Failure retains its first point, all prior samples and the
+exact command. No performance result has yet been collected by this tool.
+`native_model.py --active-cores 1|2|3` also permits the required same-image model
+control while preserving the complete original model, prompt and decode count;
+its default remains three cores and its output remains functional-only.
+
 ## Inventory collector correction after source-origin validation
 
 The source-origin correction passed its actual child preflight and repeated V
@@ -532,7 +567,7 @@ All rows are `not-measured`. Each row has one immediate missing prerequisite, it
 
 | Required gate | Unique current blocker | Direct evidence | Next experiment | If successful | If failed |
 |---|---|---|---|---|---|
-| R40-01.mixed-device | 最终快照/镜像上的 mixed-device 拒绝证据缺失 | `required_gates.json`: sim/build/r40/v2/R40-01.json does not name gate R40-01.mixed-device | I | After I, collect frozen `make r40-device` package evidence on final identity; judge this gate separately | Preserve I first failing evidence; fix that cause; gate remains not-measured |
+| R40-01.mixed-device | Complete CUDA-host conformance is running; matching no-CUDA-host conformance must follow | [GB10 launch](attempt03/cuda_conformance_997bd0b_v3_launch.json); no complete paired-host evidence yet | On GB10: `tail -n 20 ~/r40_cuda_conformance_997bd0b_v3/device-tests.log` | Review all original cases, then combine matching no-CUDA-host conformance; functional RTL is not board performance | Preserve first failing case and repair its actual cause; no partial case selection can certify the full gate |
 | R40-01.device-time | 同一最终身份的三组随机交错 CPU/native 5/30 配对记录缺失 | `required_gates.json`: sim/build/r40/v2/R40-01.json does not name gate R40-01.device-time | I | After I, collect frozen `make r40-device` package evidence on final identity; judge this gate separately | Preserve I first failing evidence; fix that cause; gate remains not-measured |
 | R40-02.zero-transfer | 最终镜像完整冻结 resident 图零搬运证据缺失 | `required_gates.json`: no evidence at sim/build/r40/v2/R40-02.json | I | After I, collect frozen `make r40-residency` package evidence on final identity; judge this gate separately | Preserve I first failing evidence; fix that cause; gate remains not-measured |
 | R40-02.resident | 冻结 graphs3 的 staging/resident 匹配 A/B 缺失 | `required_gates.json`: no evidence at sim/build/r40/v2/R40-02.json | I | After I, collect frozen `make r40-residency` package evidence on final identity; judge this gate separately | Preserve I first failing evidence; fix that cause; gate remains not-measured |

@@ -1,0 +1,9 @@
+{
+  "pid": 2307143,
+  "root": "/home/zhongchun/r40_cuda_conformance_997bd0b_v2",
+  "source": "/home/zhongchun/r40_cuda_conformance_997bd0b_source",
+  "controller_sha256": "aed72f70ff0f3bdcd12f1a978cfe38e1f27fdd349314083f7d48b2eff733968a",
+  "previous_failure": "/home/zhongchun/r40_cuda_conformance_997bd0b/supervisor.log",
+  "repair": "Controller source compiled before launch; corrected nested newline serialization; no test/device was opened by failed launcher",
+  "scope": "GB10-only complete CUDA-host conformance, no FPGA-host load or hardware access"
+}

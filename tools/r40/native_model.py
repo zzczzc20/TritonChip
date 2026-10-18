@@ -32,6 +32,8 @@ def main():
     ap.add_argument('--software-tree-sha256', required=True)
     ap.add_argument('--xclbin', type=Path)
     ap.add_argument('--image-sha256')
+    ap.add_argument('--active-cores', type=int, choices=(1,2,3), default=3,
+                    help='active cores on the same three-core image; the frozen model is unchanged')
     ap.add_argument('--out', type=Path, required=True)
     ap.add_argument('--operating-clock-evidence',type=Path)
     args = ap.parse_args()
@@ -158,7 +160,7 @@ def main():
                       core_count=3,memory_ports=3,hbm_dma=True,hbm_bytes=1<<30,device_clock=True)
         os.environ.update(TNCA_PROFILE='core-vrf-sync-v5',TNCA_BACKEND='fpga-u280-multicore',
                           TNCA_BACKEND_ARGS=json.dumps(config),TNCA_TRANSFER_POLICY='resident',
-                          TNCA_TORCH_DEVICE='native',TNCA_ACTIVE_CORES='3')
+                          TNCA_TORCH_DEVICE='native',TNCA_ACTIVE_CORES=str(args.active_cores))
         os.environ.setdefault('TNCA_HOST_TIMEOUT','7200')
         os.environ.setdefault('TNCA_DEADLINE','4000000000')
         import tnca.torch_device as D
@@ -287,6 +289,7 @@ def main():
         report['model_window_with_25pct_headroom'] = (peak*5+3)//4
         assert report['window']['size'] >= report['model_window_with_25pct_headroom']
         assert fresh_software_tree() == tree, 'software changed during native execution'
+        assert from_environment(image_sha) == operating_clock, 'operating clock qualification changed during native execution'
         report['status'] = 'functional-native-model-pass'
     except Exception:
         report['status'] = 'fail'

@@ -78,9 +78,9 @@ sections it names.
 | # | Assumption | Used in |
 |---|---|---|
 | A1 | Agents are untrusted and may be adversarial. Reward hacking is the expected behaviour, not an edge case | everywhere |
-| A2 | Claude Code (Claude Max) and Codex (ChatGPT Pro) run on subscriptions. Their credentials must travel with the unmodified CLI | §8 |
-| A3 | GLM runs on a Coding Plan, reached with an API key. With a key the credential could stay outside the sandbox; whether the plan's terms allow a key-injecting proxy and formal runs is to be checked (O10) | §8 |
-| A4 | Until dedicated experiment accounts exist, the subscriptions are personal accounts, used for development only | §8 |
+| A2 | Claude Code and Codex sign in with a subscription credential. Their credentials must travel with the unmodified CLI | §8 |
+| A3 | GLM is reached with an API key. With a key the credential could stay outside the sandbox; whether the plan's terms allow a key-injecting proxy and formal runs is to be checked (O10) | §8 |
+| A4 | Until dedicated experiment accounts exist, the accounts in use are for development only | §8 |
 | A5 | A host offers rootful Docker on cgroup v2. (`doctor`'s limit canaries read cgroup v2 files; rootless Podman is planned) | §7 |
 | A6 | The agent may change the compiler, ISA and RTL freely. The constraint is the chain: PyTorch → Triton → TNCA IR → ISA → RTL, nothing skipped | §10, §11 |
 | A7 | The agent's sandbox has the full toolchain, the cycle-accurate simulator included. It measures its own test cases with it | §3, §6 |
@@ -371,7 +371,7 @@ size whose JSON has the same top-level keys; otherwise the refusal is recorded.
 
 ## 8. Authentication and network
 
-| | Subscription (Claude Max, ChatGPT Pro) | API key (GLM Coding Plan) |
+| | Subscription credential | API key |
 |---|---|---|
 | Credential | inside the sandbox, with the CLI: `CLAUDE_CODE_OAUTH_TOKEN` from `claude setup-token`, or Codex `auth.json` in the run's `CODEX_HOME` | today: inside the sandbox, as an env file. Deferred: outside, injected by an API-key proxy |
 | Why | Anthropic does not permit third parties to "collect, store, or intermediate" claude.ai credentials; OAuth is for the unmodified Claude Code | the key owner may provision its own key |
@@ -399,7 +399,7 @@ invalidating a task run on one is planned. A rate limit is an infrastructure
 event: detecting it, and re-running the run it broke, is planned. One account
 carries one run at a time: for now the operator's responsibility, not enforced.
 
-**Credentials and data.** Personal subscriptions are for development only (A4).
+**Credentials and data.** The accounts in use now are for development only (A4).
 Before TritonChip code is sent, each account's model-training setting is
 checked and GLM's data policy read; the code is unpublished research. Formal
 experiments at scale use dedicated accounts or API keys.
@@ -793,7 +793,7 @@ Vivado settings script, read-only binds, threads, part).
 |---|---|---|---|
 | Claude Code | Claude | subscription | vendor pairing |
 | Codex | GPT | subscription | vendor pairing |
-| opencode | GLM | GLM Coding Plan (API key) | **neutral configuration**: an open, provider-agnostic scaffold |
+| opencode | GLM | API key | **neutral configuration**: an open, provider-agnostic scaffold |
 
 The primary comparison is between agent systems as their vendors pair them;
 models and scaffolds are trained together. The scaffold's and the model's
@@ -909,7 +909,7 @@ result.
 | O6 | Replay tasks: which commits (candidates: `49da68a`, compiler; `d795aa2`, MTX_ABUF, RTL) | collaborator |
 | O7 | Whether Codex can drive GLM | to verify |
 | O8 | Whether a CLI switches models automatically under subscription limits | to verify |
-| O10 | When and how dedicated accounts are obtained; each account's training setting; GLM's data policy and Coding Plan terms | user |
+| O10 | When and how dedicated accounts are obtained; each account's training setting; each provider's data policy and plan terms | user |
 | O14 | Windows for the shared card | user, lab |
 | O15 | How specific a task's syllabus may be | user |
 | O17 | The size of the hidden sets. Of the 27 tiny points, each matrix-multiply family has a single shape (matmul in two dtypes), so "same operation, unseen shape" needs new tiny-scale points | collaborator |

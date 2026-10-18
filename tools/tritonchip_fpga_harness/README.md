@@ -880,7 +880,7 @@ core-vrf-sync-v5, the log reports all 17 parameters and the packaged
 `LSU_INFLIGHT` 2, `FPU_OVERLAP` 1, `HAS_TENSOR_XPOSE` 1 among them -- r40's
 values for the signed-off image. Both packages exit 0.
 
-On `acf3019` (Alveo U280, Vitis 2023.2, XRT 2.16), from clean checkouts, on
+On the card host (Alveo U280, Vitis 2023.2, XRT 2.16), from clean checkouts, on
 2026-10-11 and 12. The image is the link of `b5c606d`, whose tree is that of
 the commit this harness was added on.
 

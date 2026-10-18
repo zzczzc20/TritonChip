@@ -21,7 +21,7 @@
   },
   "accounts": [
     {
-      "label": "claude-subscription",
+      "label": "claude",
       "cli": "claude-code",
       "auth": "subscription",
       "credential": "~/.config/tritonchip-agent-harness/claude.env",
@@ -33,7 +33,7 @@
       }
     },
     {
-      "label": "codex-subscription",
+      "label": "codex",
       "cli": "codex",
       "auth": "subscription",
       "credential": "~/.config/tritonchip-agent-harness/codex-home",
@@ -46,7 +46,7 @@
       }
     },
     {
-      "label": "glm-coding-plan",
+      "label": "glm",
       "cli": "opencode",
       "auth": "api-key",
       "credential": "~/.config/tritonchip-agent-harness/glm.env",

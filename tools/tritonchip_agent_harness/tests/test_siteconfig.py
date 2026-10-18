@@ -26,7 +26,7 @@ class SiteTest(unittest.TestCase):
 
     def test_example_loads_and_names_no_credential(self):
         site = load_site(EXAMPLE)
-        self.assertEqual(set(site.accounts), {"claude-subscription", "codex-subscription", "glm-coding-plan"})
+        self.assertEqual(set(site.accounts), {"claude", "codex", "glm"})
         text = EXAMPLE.read_text()
         for word in ("sk-ant", "token\":", "api_key\":", "password"):
             self.assertNotIn(word, text)
@@ -53,12 +53,12 @@ class SiteTest(unittest.TestCase):
         v = json.loads(EXAMPLE.read_text())
         v["accounts"] = [dict(v["accounts"][0], credential=str(env))]
         site = load_site(self.write(v))
-        status = credential_status(site.accounts["claude-subscription"])
+        status = credential_status(site.accounts["claude"])
         self.assertTrue(status["ok"], status)
         self.assertEqual(status["variables"], {"CLAUDE_CODE_OAUTH_TOKEN": 8})
         self.assertNotIn("abcdefgh", json.dumps(status))
         os.chmod(env, 0o644)
-        self.assertFalse(credential_status(site.accounts["claude-subscription"])["ok"])
+        self.assertFalse(credential_status(site.accounts["claude"])["ok"])
 
 
 class ProviderTest(unittest.TestCase):

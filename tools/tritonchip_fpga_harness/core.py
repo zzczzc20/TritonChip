@@ -267,7 +267,7 @@ def environment_snapshot(root: Path, profile: Profile, adapter_name: str) -> dic
     dry-run and for diagnosing the correct FPGA server.
     """
     data = profile.data
-    default_vitis = "/home/x4/Software/Xilinx/Vitis/2022.2" if adapter_name in {"u50", "real"} else ""
+    default_vitis = "/tools/Xilinx/Vitis/2022.2" if adapter_name in {"u50", "real"} else ""
     roots = tool_roots(data)
     if roots["vitis_root"]:
         vitis_root = Path(roots["vitis_root"])
@@ -490,9 +490,9 @@ class MockAdapter(Adapter):
 
 
 def _u50_roots(profile: Profile) -> tuple[str, str]:
-    """The U50 target names no installation: a host override, else XILINX_VITIS, else the U50 host's."""
+    """The U50 target names no installation: a host override, else XILINX_VITIS, else AMD's default install root."""
     roots = tool_roots(profile.data)
-    vitis = roots["vitis_root"] or os.environ.get("XILINX_VITIS", "/home/x4/Software/Xilinx/Vitis/2022.2")
+    vitis = roots["vitis_root"] or os.environ.get("XILINX_VITIS", "/tools/Xilinx/Vitis/2022.2")
     platforms = roots["platforms_root"] if roots["platforms_source"] != "default" else os.environ.get(
         "XILINX_PLATFORMS", "/opt/xilinx/platforms")
     return str(vitis), str(platforms)

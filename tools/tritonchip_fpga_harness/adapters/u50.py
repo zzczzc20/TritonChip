@@ -53,7 +53,7 @@ class U50Config:
 
     repo: Path
     vivado: str = "vivado"
-    vitis_root: Path = Path("/home/x4/Software/Xilinx/Vitis/2022.2")
+    vitis_root: Path = Path("/tools/Xilinx/Vitis/2022.2")
     platforms_root: Path = Path("/opt/xilinx/platforms")
     platform: str = "xilinx_u50_gen3x16_xdma_5_202210_1"
     expected_ap_clk_mhz: int = 150

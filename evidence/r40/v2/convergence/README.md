@@ -3,13 +3,21 @@
 ## Immediate experiment commands and branches
 
 **Required gate delta: no additional gate passed. Attempt 3 remains live in
-physical optimization after successful placement as of 2026-10-18 02:37 UTC.
+route_design after successful placement and physical optimization as of
+2026-10-18 03:04 UTC.
 Budget: maximum 4, used 3, remaining 1, following the explicit final additional
 authorization on 2026-10-18. No fourth implementation has started.**
 Hardware source is `54249f7f7ac0cf8f5d1b82d8e63a3046d27522d3`, with the explicit
 immutable configuration and archive identity in [attempt03](attempt03/README.md).
 The frozen contract is unchanged. No final-image timing, CDC, HBM or workload
 result is claimed; missing measurements remain not-measured.
+
+[Route-start evidence](attempt03/route_started_20261018.json) confirms the
+original implementation PID is live, physical optimization completed, and
+the route precondition DRC finished with zero errors. Routing has started;
+this is not a final route/DRC, WNS, CDC or image result. The current experiment
+and success/failure branches below remain unchanged. No additional full
+implementation has been launched.
 
 [Read-only device preflight](attempt03/preload_readonly_20261018.json) finds
 the U280 healthy and idle, with no asynchronous error or firewall fault. It

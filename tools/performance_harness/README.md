@@ -13,6 +13,14 @@ perturbation and characterize its magnitude for the intended workload before
 interpreting a trace. Screening results and diagnostic traces do not establish
 acceptance compliance.
 
+The [native SystemC architectural model](systemc/README.md) is being developed
+for event-driven complete-chip exploration on the GB10. Its current ISA and
+architecture coverage are incomplete; consult its coverage table before use.
+Its memory replay path is conditional on captured traffic and cannot substitute
+for native program execution or establish complete-chip prediction accuracy.
+RTL remains an independent offline validation source, outside the TLM execution
+path. No model build or simulation should run on the FPGA implementation host.
+
 This workflow operates within the existing R40 work packages and frozen
 acceptance contract. Start with the [required-gate blocker ledger](../../evidence/r40/v2/convergence/README.md).
 Begin progress reports with changes to required-gate status. Diagnostic test

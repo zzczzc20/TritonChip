@@ -61,11 +61,27 @@ cancelled job: its serial MMIO/native sweep exceeded the 120-minute job cap.
 [Raw cancellation evidence](attempt03/exact_source_ci_cancelled.json) is
 retained; this is not a CI pass. The original checks and six simulations are
 being scheduled as independent lanes, preserving all assertions and arguments.
-Successful source qualification is mandatory before board load. A complete original native77 functional run now
+Successful source qualification is mandatory before board load.
+[Replacement CI](attempt03/split_ci_started.json) is run `39087952712` on
+commit `16914f7`; its RTL tree exactly matches attempt03. Its software also
+contains endpoint-auditing changes, so it is not represented as a rerun of
+commit `54249f7`. Next command: `gh run view 39087952712`. Success permits
+review of matching source identities; cancellation or failure preserves the
+individual lane log and keeps board loading blocked. A complete original native77 functional run now
 uses source a1fed22, the final-candidate RTL geometry and explicit testbench
 guards on the ARM host; [launch evidence](attempt03/final_native77_launch.json).
 Its new per-sample raw endpoint records are independently reproducible. This
 is functional RTL only, not the final-image inventory or a performance gate.
+The [live partial snapshot](attempt03/native77_partial_20261018.json) retains
+the first observed failure: the unchanged original medium llama_decode point
+exceeded a 7,200-second host wait. The unique blocker for this diagnostic is
+unresolved forward progress at that wait limit. Next command on the ARM host:
+`tail -n 30 ~/r40_final_native77_a1fed22_20261017/native77_results/raw_logs/model.llama_decode__medium__fp16-b1-p256.log`.
+If completion/progress evidence establishes host slowness, retain this timeout
+and rerun the original point under a separately identified wait budget; if a
+protocol stall or wrong result is found, retain its journal and reproduce it
+before any candidate change. A busy simulator process alone proves neither
+forward progress nor correctness.
 The earlier R3 run is retained separately. The earlier full R3 native77 simulation still has
 original points exceeding the 1800-second host wait. Those rows remain timeouts.
 The unchanged original argmax diagnostic now passes with exact integer reference

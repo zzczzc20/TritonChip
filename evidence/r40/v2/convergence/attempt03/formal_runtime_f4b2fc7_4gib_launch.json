@@ -1,0 +1,6 @@
+{
+  "root": "/home/zzhouch/tnca_formal_runtime_f4b2fc7_4gib",
+  "pid": 2360711,
+  "controller_sha256": "cbafcd4adbac8313d2491e561dce36b6d1611669b402c865c150b2c1667c17d6",
+  "scope": "Queued only; waits for complete original delivery and host conformance before taking board; frozen B40-S/B40-N controls and prospective 10/30 sampling; no gate automatically promoted"
+}

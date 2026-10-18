@@ -27,6 +27,38 @@ its sample; qualification data never enter statistics. Its result is an audited
 experiment, not an automatic complete-package gate promotion. Runtime traffic
 floors, controls and LOO still require their own evidence.
 
+## Serialized formal runtime queue and two-host audit
+
+The immutable [formal snapshot](attempt03/conditional_software_f4b2fc7_formal.json)
+and [queue launch](attempt03/formal_runtime_f4b2fc7_4gib_launch.json) retain the
+same product tree/image/capacity. This queue waits for the entire active original
+functional delivery and no-CUDA-host conformance to finish successfully. It then
+runs memory-service, outlets, streaming cores, two-core compute and three-core
+compute, each followed by the complete raw three-block auditor. A failed original
+point or invalid audit stops the queue; measured but insufficient speedup remains
+an explicit comparison result. No frequency/programming/RTL change is scheduled.
+
+Next observation command on the FPGA host:
+
+```sh
+cat ~/tnca_formal_runtime_f4b2fc7_4gib/state.json
+```
+
+Success records independently audited experiments for the remaining package
+reviews. Failure preserves raw data and requires the specific cause to be fixed;
+no sample, point or baseline may be discarded. The queue rechecks the actual
+loaded UUID and 90 MHz counter before each experiment. Its launch/preflight is
+not performance evidence and closes no additional gate.
+
+`device_conformance_acceptance.py` combines the two complete original host-class
+runs after they finish. It requires the exact source/test-harness identities,
+terminal controller stages and launch hashes, all original cases without
+omissions/duplicates, and actual CUDA+TNCA alternation on the CUDA host. A
+"skipped: no CUDA" result cannot qualify a CUDA host. The other host must run
+against the actual final multicore image. Partial logs and earlier software
+identities cannot certify the current gate. No extra board test is scheduled
+while the original suite owns the card.
+
 ## Repaired original GEMM and declared capacity for the frozen compute suite
 
 The exact original GEMM4096 now returns the underlying deadline error cleanly

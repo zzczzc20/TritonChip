@@ -48,6 +48,16 @@ class BoardCollectionTests(unittest.TestCase):
                 self.assertEqual(a['TNCA_RTL_MEM_PORTS'],b['TNCA_RTL_MEM_PORTS'])
                 self.assertEqual(a['TNCA_RTL_OUTSTANDING'],b['TNCA_RTL_OUTSTANDING'])
 
+    def test_required_two_core_control_keeps_original_compute_points(self):
+        exp,two=collect.schedule('R40-05.three-cores','python',{},Path('/out'),compute_cores=2)
+        _,three=collect.schedule('R40-05.three-cores','python',{},Path('/out'))
+        self.assertEqual(exp['threshold'],1.5)
+        self.assertEqual([e['point'] for e in two],[e['point'] for e in three])
+        for entry in two:
+            self.assertEqual(entry['knobs']['TNCA_ACTIVE_CORES'],'1' if entry['side']=='control' else '2')
+        with self.assertRaises(ValueError):
+            collect.schedule('R40-06.ports','python',{},Path('/out'),compute_cores=2)
+
     def test_prospective_long_task_rule(self):
         sampling=json.loads((ROOT/'spec/r40/v2/plan.json').read_text())['sample_plan']['board']
         self.assertEqual(collect.sample_count(dict(control=1.,candidate=.1),sampling),30)

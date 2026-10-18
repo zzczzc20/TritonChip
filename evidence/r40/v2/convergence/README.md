@@ -1,5 +1,32 @@
 # R40 v2 convergence checkpoint
 
+## Final-candidate capability update
+
+**Required gate delta:** `R40-01.device` and `R40-05.multicore` now pass on the
+repaired `3520df32...03bec7` product tree, actual 4 GiB window and preserved
+qualified 90 MHz image. [Full native evidence](attempt03/native_inventory_b59119d_4gib.json)
+and [physical capability audit](attempt03/multicore_capability_b59119d_4gib.json)
+bind the complete original inventory to the exact software/image/clock and
+intact compiler bundles. The latter also verifies the unscaled large graph,
+three distinct physical SLR cores, positive reads/writes on every outlet,
+drained completion and host ownership visibility. Scaling, dispatch edge cases,
+HBM completeness, full model and all performance gates remain open.
+
+The complete original HBM inventory is running. Its next observation command
+and success/failure handling are I below. The active immutable run section
+records the baseline launch checkpoint; this section supersedes its earlier
+"no new gate" observation. No other frequency or contract exception is added.
+
+The formal collector also supports the already-required two-core compute
+control (`--compute-cores 2`), using the frozen 1.5 threshold and the identical
+original compute subset. `board_ablation_acceptance.py` checks all three blocks,
+prospective sample counts, exact configurations, raw child/aggregate equality,
+independent process identities, randomized nonoverlapping order and compiler
+bundles before pooling. Pooling preserves every device launch endpoint with
+its sample; qualification data never enter statistics. Its result is an audited
+experiment, not an automatic complete-package gate promotion. Runtime traffic
+floors, controls and LOO still require their own evidence.
+
 ## Repaired original GEMM and declared capacity for the frozen compute suite
 
 The exact original GEMM4096 now returns the underlying deadline error cleanly
@@ -661,7 +688,7 @@ Rows below remain open for the current repaired-source final candidate. Each row
 | R40-04.hbm | Actual 4 GiB multi-PC window passes; full original HBM inventory and measured peak headroom remain | Current [raw 4 GiB window/boundary and checkpoint evidence](attempt03/delivery_b59119d_4gib_checkpoint.json) passes; original HBM14 and measured suite/model peak +25% headroom still pending | I | After I, collect frozen `make r40-hbm` package evidence on final identity; judge this gate separately | Preserve I first failing evidence; fix that cause; gate remains not-measured |
 | R40-04.bandwidth | 最终镜像方向带宽及 memory-service outstanding 1/8 匹配记录缺失 | `required_gates.json`: no evidence at sim/build/r40/v2/R40-04.json | I | After I, collect frozen `make r40-hbm` package evidence on final identity; judge this gate separately | Preserve I first failing evidence; fix that cause; gate remains not-measured |
 | R40-04.robustness | Actual PC0..15 boundary/high-address/alias probes pass; explicit out-of-window refusal and full robustness review remain | `required_gates.json`: no evidence at sim/build/r40/v2/R40-04.json | I | After I, collect frozen `make r40-hbm` package evidence on final identity; judge this gate separately | Preserve I first failing evidence; fix that cause; gate remains not-measured |
-| R40-05.multicore | Complete physical capability audit must bind the now-passing native77 and large checkpoint to the reviewed image/SLRs/clock | Prior CBC identity passed; current repaired-source 4 GiB candidate must finish all native tiers and the automatically queued exact audit | `python tools/r40/multicore_board_acceptance.py --help` then execute its full immutable-image command against the retained final inventory | Promote only this capability gate after all source/image/clock, bundle, numerical, core/outlet and visibility checks pass | Preserve failed audit; repair the actual mismatch; no scaling or dispatch gate is inferred |
+| R40-05.multicore (closed on current candidate; retained for history) | Complete physical capability audit must bind the now-passing native77 and large checkpoint to the reviewed image/SLRs/clock | Prior CBC identity passed; current repaired-source 4 GiB candidate must finish all native tiers and the automatically queued exact audit | `python tools/r40/multicore_board_acceptance.py --help` then execute its full immutable-image command against the retained final inventory | Promote only this capability gate after all source/image/clock, bundle, numerical, core/outlet and visibility checks pass | Preserve failed audit; repair the actual mismatch; no scaling or dispatch gate is inferred |
 | R40-05.scaling | 最终镜像冻结 compute 的 1/2/3 核 A/B 缺失 | `required_gates.json`: no evidence at sim/build/r40/v2/R40-05.json | I | After I, collect frozen `make r40-multicore` package evidence on final identity; judge this gate separately | Preserve I first failing evidence; fix that cause; gate remains not-measured |
 | R40-05.dispatch | 最终镜像原始大图的三物理核完成/分发计数缺失 | `required_gates.json`: no evidence at sim/build/r40/v2/R40-05.json | I | After I, collect frozen `make r40-multicore` package evidence on final identity; judge this gate separately | Preserve I first failing evidence; fix that cause; gate remains not-measured |
 | R40-06.nuca | 最终镜像 active outlet 的实际负载流量证据缺失 | `required_gates.json`: no evidence at sim/build/r40/v2/R40-06.json | I | After I, collect frozen `make r40-nuca` package evidence on final identity; judge this gate separately | Preserve I first failing evidence; fix that cause; gate remains not-measured |

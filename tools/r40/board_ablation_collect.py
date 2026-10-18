@@ -68,11 +68,17 @@ def sampling_command(entry, *, warmup, timed, stem, out):
     return command
 
 
-def schedule(experiment, python, config, out):
+def schedule(experiment, python, config, out, *, compute_cores=3):
     contract_v2.verify()
     plan = json.loads((ROOT/'spec/r40/v2/plan.json').read_text())
-    exp = plan['experiments'][experiment]
+    exp = dict(plan['experiments'][experiment])
+    if compute_cores not in (2,3) or (compute_cores==2 and experiment!='R40-05.three-cores'):
+        raise ValueError('two-core control belongs only to the frozen compute scaling experiment')
+    if compute_cores==2:
+        assert exp['note']=='1 -> 3 active cores; 2 cores >= 1.5'
+        exp.update(threshold=1.5,required_compute_cores=2)
     knob, a, b = CONTROLS[experiment]
+    if compute_cores==2:b='2'
     if exp['vary'] != [knob]:
         raise ValueError('runtime control differs from the frozen experiment')
     points = sorted(json.loads((ROOT/exp['subset']).read_text())['points'], key=lambda p:p['id'])
@@ -109,6 +115,8 @@ def main():
     p.add_argument('--software-tree-sha256',required=True)
     p.add_argument('--operating-clock-evidence',type=Path,required=True)
     p.add_argument('--out',type=Path,required=True)
+    p.add_argument('--compute-cores',type=int,choices=(2,3),default=3,
+                   help='Required frozen 2/3-core compute control; all other experiments use the default')
     p.add_argument('--hbm-bytes',type=int,default=1<<30)
     p.add_argument('--plan-only',action='store_true')
     a=p.parse_args()
@@ -117,7 +125,7 @@ def main():
     out=a.out.resolve();out.mkdir(parents=True,exist_ok=False)
     config=dict(xclbin=str(a.xclbin.resolve()),image_profile='core-vrf-sync-v5',
                 core_count=3,memory_ports=3,hbm_dma=True,hbm_bytes=a.hbm_bytes,device_clock=True)
-    exp,entries=schedule(a.experiment,sys.executable,config,out)
+    exp,entries=schedule(a.experiment,sys.executable,config,out,compute_cores=a.compute_cores)
     report=dict(schema='tnca-r40-board-ablation-collection/1',status='planned',
                 experiment=a.experiment,frozen_experiment=exp,entries=entries,completed=[],
                 harness_sha256=hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),

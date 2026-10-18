@@ -2135,6 +2135,7 @@ r40-multicore-mmio-checks: | dirs
 	@$(PYTHON) tools/r40/operating_clock_tests.py
 	@$(PYTHON) tools/r40/storage_owner_tests.py
 	@$(PYTHON) tools/r40/board_ablation_tests.py
+	@$(PYTHON) tools/r40/board_ablation_acceptance_tests.py
 	@$(PYTHON) tools/r40/multicore_board_acceptance_tests.py
 	@$(PYTHON) tools/r40/hbm_probe_storage_tests.py
 	@$(PYTHON) tools/r40/physical_grid_clock_tests.py

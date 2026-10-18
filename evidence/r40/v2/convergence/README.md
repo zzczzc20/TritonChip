@@ -1,5 +1,35 @@
 # R40 v2 convergence checkpoint
 
+## Active immutable delivery run
+
+The corrected full runner is active from commit `997bd0b`, using software tree
+`files:cbc1340e1135ac301bfe6c39488bb3eb2b1571aafad46920e070ae701c58da52`
+and the unchanged loaded image `a88ebdf5...c4c83083` at qualified 90 MHz.
+[Snapshot identity](attempt03/conditional_software_997bd0b_full.json) and
+[launch manifest](attempt03/complete_functional_997bd0b_launch.json) name the full
+archive SHA, exact commands and preflight/controller hashes. Actual inventory
+child imports are now checked before any device session opens.
+
+The single next observation command for I in the unresolved-gate ledger is:
+
+```sh
+cat ~/tnca_runs_r40_conditional90_997bd0b_full/delivery.json
+tail -n 12 ~/tnca_runs_r40_conditional90_997bd0b_full/native77-tiny.log
+```
+
+Success continues the original native77/HBM14/model sequence; failure preserves
+the failing stage and requires its direct cause to be repaired. No complete
+required gate or performance result is inferred from a launch manifest.
+
+A read of the existing original 100 MHz routed report, without loading a DCP,
+identified its actual worst cone:
+[memory-active-port control to LSU pending](attempt03/original100_routed_path_diagnosis.json),
+14 logic levels and 11.183 ns data delay (0.872 ns logic, 10.311 ns routed net),
+WNS -1.002 ns. This is a control/response routing cone, distinct from the earlier
+module-screen MSHR bottleneck. Any later frequency optimization must address
+this measured cone and pass a matched screen before consuming the final full
+implementation budget. The usable 90 MHz image remains unchanged.
+
 ## Inventory collector correction after source-origin validation
 
 The source-origin correction passed its actual child preflight and repeated V

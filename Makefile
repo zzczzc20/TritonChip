@@ -2131,6 +2131,8 @@ r40-line-axi: | dirs
 # Versioned register path; shared board host binding driven by the AXI RTL.
 .PHONY: r40-multicore-mmio r40-multicore-mmio-checks
 r40-multicore-mmio-checks: | dirs
+	@$(PYTHON) tools/r40/runner_source_tests.py
+	@$(PYTHON) tools/r40/operating_clock_tests.py
 	@$(PYTHON) tools/r40/physical_grid_clock_tests.py
 	@$(PYTHON) tools/r40/autotune_policy_tests.py
 	@$(PYTHON) tools/r40/autotune_worker_tests.py

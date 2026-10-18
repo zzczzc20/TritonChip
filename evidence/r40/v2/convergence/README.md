@@ -37,6 +37,22 @@ or qualification check was removed. This avoids an extra checkpoint load on
 the critical path to V. Cache-cut evidence remains required before any later
 root-cause/frequency optimization decision.
 
+[Read-only load preflight](attempt03/load_preflight_90mhz.json) passes
+platform/interface compatibility, device-idle, loader exclusion and thermal
+checks on the actual complete image. The image remains unloaded.
+[Runtime metadata preflight](attempt03/packaged_hbm_preflight_90mhz.json)
+resolves all three kernel arguments to the same enabled 8 GiB group; an
+illustrative 1 GiB range spans physical PCs 0..3. This is metadata evidence,
+not an actual BO allocation, memory-window measurement or traffic pass.
+
+[Critical-path release](attempt03/diagnostic_release_for90.json) supersedes
+the earlier decision to let the extra historical report finish. Its owned
+report group was stopped after preserving partial outputs, allowing mandatory
+90 MHz qualification to proceed. The original implementation, routed checkpoint,
+complete image, original routed timing and all 90 MHz qualification checks are
+unchanged. Detailed 100 MHz cones/cache cuts are deferred until after the
+conditional functional baseline, before any frequency-optimization decision.
+
 **P90 — conditional operating path within the authorized 91 MHz ceiling.**
 Unique blocker: qualification of the preserved image at its actual operating
 clock. Direct evidence: the complete image has packaged 90 MHz metadata but no

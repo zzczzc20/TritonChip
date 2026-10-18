@@ -25,8 +25,26 @@ SUITES = {'holdout':'spec/r40/suites/R40-09.holdout.json',
 WIDTHS = (16, 32)  # Same predeclared candidates as compiled_candidates evidence.
 
 
+def expected_operating_clock(request, *, functional=False):
+    path=request.get('operating_clock_evidence')
+    if functional:
+        if path or request.get('clock_hz') is not None:
+            raise ValueError('functional RTL cannot use physical clock evidence')
+        return {}
+    if path:
+        from tnca.operating_clock import qualified_clock
+        result=qualified_clock(path,request['image_sha256'])
+        if request.get('clock_hz',result['clock_hz'])!=result['clock_hz']:
+            raise ValueError('candidate request clock differs from its reviewed evidence')
+        return result
+    if request.get('clock_hz',100000000)!=100000000:
+        raise ValueError('nonhistorical candidate clock requires reviewed image-bound evidence')
+    return dict(clock_hz=100000000,clock_policy='100MHz-undivided')
+
+
 def validate_result(record, request, *, functional=False, samples=1):
     """Accept complete resident numeric/device-event data, never host duration."""
+    expected_clock=expected_operating_clock(request,functional=functional)
     p = record.get('platform', {})
     backend = 'fpga-multicore-sim' if functional else 'fpga-u280-multicore'
     if (record.get('status') != 'pass' or record.get('fallbacks')
@@ -65,11 +83,13 @@ def validate_result(record, request, *, functional=False, samples=1):
         image = request['image_sha256']
         banks = window.get('allocation', {}).get('physical_banks', [])
         if (p.get('image_sha256') != image or p.get('image') != 'xclbin:'+image[:16]
-                or p.get('clock_policy') != '100MHz-undivided'
-                or entry.get('clock_hz') != 100000000
+                or p.get('clock_policy') != expected_clock['clock_policy']
+                or entry.get('clock_hz') != expected_clock['clock_hz']
                 or window.get('size', 0) < 1 << 30
                 or len({b['pc'] for b in banks}) < 2):
             raise ValueError('candidate physical image, clock or actual multi-PC window mismatch')
+    if expected_clock.get('operating_clock_evidence_sha256') and p.get('operating_clock_evidence_sha256')!=expected_clock['operating_clock_evidence_sha256']:
+        raise ValueError('candidate clock proof differs from the reviewed request')
     return entry['endpoint_records'][0]
 
 
@@ -129,11 +149,13 @@ def main():
         elif (config.get('hbm_bytes', 0) < 1 << 30 or config.get('device_clock') is not True
               or sha256_file(config['xclbin']) != request['image_sha256']):
             raise ValueError('candidate image hash, clock or allocation request mismatch')
+        expected_operating_clock(request,functional=args.functional_rtl)
         base = request.get('base_knobs', {})
         reserved = {'TNCA_BACKEND','TNCA_BACKEND_ARGS','TNCA_PROFILE','TNCA_OPT_LEVEL',
                     'TNCA_TRITON','TNCA_TORCH_DEVICE','TNCA_TRANSFER_POLICY','TNCA_ACTIVE_CORES',
                     'TNCA_MAX_BLOCK','TNCA_TENSOR_DESCRIPTORS','TNCA_LAUNCH',
-                    'TNCA_HOST_TIMEOUT','TNCA_DEADLINE','TNCA_COUNTERS','TNCA_TUNE','TNCA_DATA_DIR'}
+                    'TNCA_HOST_TIMEOUT','TNCA_DEADLINE','TNCA_COUNTERS','TNCA_TUNE','TNCA_DATA_DIR',
+                    'TNCA_OPERATING_CLOCK_EVIDENCE'}
         if any(not k.startswith('TNCA_') or not isinstance(v,str) or k in reserved for k,v in base.items()):
             raise ValueError('base knobs must be explicit strings and cannot replace worker invariants')
         for key in list(os.environ):
@@ -147,6 +169,8 @@ def main():
                           TNCA_MAX_BLOCK=str(request['max_block']), TNCA_TENSOR_DESCRIPTORS='1',
                           TNCA_COUNTERS='0', TNCA_TUNE='0',
                           TNCA_HOST_TIMEOUT='7200', TNCA_DEADLINE='4000000000', CUDA_VISIBLE_DEVICES='')
+        if request.get('operating_clock_evidence'):
+            os.environ['TNCA_OPERATING_CLOCK_EVIDENCE']=str(Path(request['operating_clock_evidence']).resolve())
         origins = source_origins()
         info.write_text(json.dumps(dict(request=request, module_origins=origins,
             request_sha256=sha256_file(args.request),worker_sha256=sha256_file(Path(__file__)),

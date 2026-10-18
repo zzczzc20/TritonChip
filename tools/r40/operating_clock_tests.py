@@ -70,6 +70,13 @@ class ClockEvidence(unittest.TestCase):
                       clock_source='measured-board-counter',physical_core_slrs={'0':0,'1':1,'2':2},evidence_files=files)
             path=d/'clock.json';path.write_text(json.dumps(data))
             self.assertEqual(qualified_clock(path,'a'*64)['clock_hz'],91_000_000)
+            from autotune_candidate_worker import expected_operating_clock
+            request=dict(image_sha256='a'*64,operating_clock_evidence=str(path))
+            self.assertEqual(expected_operating_clock(request)['clock_hz'],91_000_000)
+            with self.assertRaises(ValueError):expected_operating_clock(request,functional=True)
+            with self.assertRaises(ValueError):expected_operating_clock(dict(request,clock_hz=90_000_000))
+            with self.assertRaises(ValueError):expected_operating_clock(dict(clock_hz=90_000_000))
+            self.assertEqual(expected_operating_clock({})['clock_hz'],100_000_000)
             with self.assertRaises(ValueError):qualified_clock(path,'b'*64)
             for key,value in (('clock_hz',100_000_000),('setup_wns_ns',-0.001),
                               ('hold_whs_ns',float('nan')),('cdc_review','not-measured'),

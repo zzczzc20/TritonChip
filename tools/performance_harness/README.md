@@ -91,6 +91,10 @@ The auditor checks unsigned 64-bit counters, wraps, complete samples and a
 common clock/session/epoch within each call. The ablation reader rejects a
 new-schema record whose endpoints are missing or disagree with its samples.
 Historical records without these fields have no reconstructed raw endpoints.
+The frozen plan's `graph-makespan` resolves to ArchBench's
+`device-graph-makespan` only with this raw endpoint proof and cycle units.
+The source clock label and the frozen metric retain their original meanings;
+serial active cycles and host request latency remain separate measurements.
 
 Endpoint retention reuses existing launch logs after all timed calls have
 finished. It adds no device register reads or target instructions inside the

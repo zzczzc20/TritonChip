@@ -110,6 +110,46 @@ def run(argv=None):
     expect('a clean comparison', base_a, base_b, 'accepted')
     expect('identical inputs', base_a, copy.deepcopy(base_a), 'identity')
 
+    # The frozen plan calls it graph-makespan; the physical producer names
+    # its device clock. Its raw endpoint proof is mandatory for this alias.
+    def physical_records(records):
+        records = copy.deepcopy(records)
+        for r in records:
+            cycles = round(r['time']['device'] * r['provenance']['clock_hz'])
+            edges = []
+            for index in range(30):
+                start = 100 + index * cycles * 2
+                edges.append([dict(clock='mmio-device-clock/1',epoch=1,session_id=1,
+                                   start=start+a,end=start+b)
+                              for a,b in ((0,cycles//4),(cycles//3,cycles//2),
+                                          (3*cycles//4,cycles))])
+            active = sum(e['end']-e['start'] for e in edges[0])
+            r['time'].update(kind='device-cycles-serial-grid',unit='cycles',launches=3,
+                             samples=[active]*30,device=active,device_cycles=active)
+            r['timings'] = {'device-graph-makespan':dict(unit='cycles',samples=[cycles]*30,
+                warmup=5,deterministic=False,endpoint_schema='tnca-launch-endpoints/1',
+                endpoint_records=edges)}
+        return records
+    physical_a, physical_b = physical_records(base_a), physical_records(base_b)
+    expect('frozen graph metric from raw device clock',physical_a,physical_b,'accepted',timing='graph-makespan')
+    expect('explicit device graph metric',physical_a,physical_b,'accepted',timing='device-graph-makespan')
+    for field in ('endpoint_schema','endpoint_records'):
+        b = copy.deepcopy(physical_b)
+        del b[0]['timings']['device-graph-makespan'][field]
+        expect('device graph without '+field,physical_a,b,'timing',timing='graph-makespan')
+    b = copy.deepcopy(physical_b)
+    del b[0]['timings']['device-graph-makespan']['endpoint_records'][0][1]
+    expect('interior device launch removed',physical_a,b,'timing',timing='graph-makespan')
+    b = copy.deepcopy(physical_b)
+    b[0]['timings']['device-graph-makespan']['endpoint_records'][0][-1]['epoch'] += 1
+    expect('device graph crosses reset epoch',physical_a,b,'timing',timing='graph-makespan')
+    b = copy.deepcopy(physical_b)
+    b[0]['timings']['device-graph-makespan']['unit'] = 's'
+    expect('device graph counter units changed',physical_a,b,'timing',timing='graph-makespan')
+    b = copy.deepcopy(physical_b)
+    b[0]['timings']['device-graph-makespan']['derived_from'] = 'sum-of-kernels'
+    expect('device graph declares an active sum',physical_a,b,'timing',timing='graph-makespan')
+
     # 1. a slow point deleted from B
     b = [r for r in base_b if r['point_id'] != pts[-1]['id']]
     expect('slow point deleted', base_a, b, 'missing')

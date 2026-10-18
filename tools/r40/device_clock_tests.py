@@ -167,10 +167,11 @@ class ClockTests(unittest.TestCase):
         sys.path.insert(0, str(ROOT/'tools/r40'))
         import ablate
         record = dict(point_id='fixture', time={'launches':2}, timings={'device-graph-makespan':dict(
-            samples=[80], endpoint_schema='tnca-launch-endpoints/1', endpoint_records=[[
+            unit='cycles', samples=[80], endpoint_schema='tnca-launch-endpoints/1', endpoint_records=[[
                 dict(self.record(100,120), clock='mmio-device-clock/1'),
                 dict(self.record(140,180), clock='mmio-device-clock/1')]])})
         self.assertEqual(ablate.samples_of(record,'device-graph-makespan')[1], [80])
+        self.assertEqual(ablate.samples_of(record,'graph-makespan'), ('graph-makespan',[80]))
         bad = copy.deepcopy(record)
         bad['timings']['device-graph-makespan']['endpoint_records'][0][-1]['end'] += 1
         with self.assertRaises(ablate.Refused):

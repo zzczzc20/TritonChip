@@ -63,8 +63,8 @@ ROOT = Path(__file__).resolve().parents[2]
 
 # Timing kinds (archbench/PROTOCOL.md sec 3, protocol 2).
 TIMINGS = ('device-cycles-serial-grid', 'kernel-makespan', 'graph-makespan',
-           'resident-call-latency', 'request-latency')
-MAKESPANS = ('kernel-makespan', 'graph-makespan')
+           'device-graph-makespan', 'resident-call-latency', 'request-latency')
+MAKESPANS = ('kernel-makespan', 'graph-makespan', 'device-graph-makespan')
 
 # What a protocol-2 record's provenance must hold (doc sec 3.3, last item).
 PROVENANCE = ('software_tree', 'artifacts', 'profile', 'capabilities', 'image',
@@ -133,6 +133,14 @@ def timing_entry(rec, timing=None):
     tims = rec.get('timings') or {}
     if timing and timing in tims:
         return timing, tims[timing]
+    if timing == 'graph-makespan' and 'device-graph-makespan' in tims:
+        # The frozen experiment names the metric; ArchBench names the
+        # physical clock source. Accept that source only with reproducible
+        # raw endpoint evidence, never substitute serial active-cycle sums.
+        entry = tims['device-graph-makespan']
+        if entry.get('endpoint_schema') != 'tnca-launch-endpoints/1':
+            raise Refused('timing', f"{rec['point_id']}: device graph makespan lacks raw launch endpoints")
+        return timing, entry
     kind = t.get('kind') or (t.get('timing') == 'serial-grid' and 'device-cycles-serial-grid')
     if timing and kind != timing:
         raise Refused('timing', f"{rec['point_id']}: no {timing} samples (it has "
@@ -161,8 +169,12 @@ def samples_of(rec, timing=None):
     for flag in ('includes_autotune', 'includes_compile', 'includes_replay_warmup'):
         if t.get(flag):
             raise Refused('warmup', f"{rec['point_id']}: the timed region {flag[9:].replace('_', ' ')}")
-    if kind == 'device-graph-makespan' and ('endpoint_schema' in t or 'endpoint_records' in t):
+    if kind in MAKESPANS and t.get('derived_from') in ('sum-of-cores', 'sum-of-kernels'):
+        raise Refused('timing', f"{rec['point_id']}: makespan derived from active-cycle sums")
+    if kind == 'device-graph-makespan' or ('endpoint_schema' in t or 'endpoint_records' in t):
         try:
+            if t.get('unit') != 'cycles':
+                raise ValueError('raw device graph endpoint samples must be in cycles')
             if t.get('endpoint_schema') != 'tnca-launch-endpoints/1':
                 raise ValueError('unknown launch-endpoint schema')
             if str(ROOT/'python') not in sys.path:

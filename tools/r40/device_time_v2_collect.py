@@ -28,6 +28,7 @@ def main():
     ap.add_argument('--software-tree-sha256', required=True)
     ap.add_argument('--out', type=Path, required=True)
     ap.add_argument('--evidence', action='store_true')
+    ap.add_argument('--operating-clock-evidence',type=Path)
     args = ap.parse_args()
     args.out.mkdir(parents=True, exist_ok=False)
     report = dict(status='incomplete', performance='not-measured', gate_status='not-measured')
@@ -35,6 +36,10 @@ def main():
         contract_v2.verify()
         assert software_tree() == args.software_tree_sha256, 'source identity mismatch'
         assert hashlib.sha256(args.xclbin.read_bytes()).hexdigest() == args.image_sha256, 'image identity mismatch'
+        if args.operating_clock_evidence:
+            os.environ['TNCA_OPERATING_CLOCK_EVIDENCE']=str(args.operating_clock_evidence.resolve())
+        from tnca.operating_clock import from_environment
+        operating_clock=from_environment(args.image_sha256)
         plan = json.loads((ROOT/'spec/r40/v2/plan.json').read_text())
         exp = plan['experiments']['R40-01.device-time']
         points = sorted(json.loads((ROOT/exp['subset']).read_text())['points'], key=lambda p:p['id'])
@@ -49,6 +54,7 @@ def main():
                                 contract_sha256=contract_v2.LOCK_SHA256,
                                 backend='fpga-u280-multicore', backend_args=config,
                                 clock_policy='100MHz-undivided', clock_hz=100000000)
+        report['identity'].update(operating_clock)
         report['identity']['toolchain'] = dict(torch=version('torch'),triton=version('triton'),python=sys.version)
         (args.out/'identity.json').write_text(json.dumps(report['identity'], indent=2)+'\n')
         env = dict(os.environ, CUDA_VISIBLE_DEVICES='', R40_CONTRACT='v2', TNCA_ACTIVE_CORES='3')
@@ -91,6 +97,7 @@ def main():
                         aggregate.write(json.dumps(row)+'\n')
                     assert done.returncode==0 and row['status']=='pass', f'{stem}: preserve failed point; stop collection'
                     print(f'collected block={block} side={side} point={point["id"]}',flush=True)
+        assert from_environment(args.image_sha256)==operating_clock, 'operating clock evidence changed during collection'
         command = [sys.executable,str(ROOT/'tools/r40/device_time_v2.py'),
                    '--control',*[str(p.resolve()) for p in paths['control']],
                    '--native',*[str(p.resolve()) for p in paths['native']],

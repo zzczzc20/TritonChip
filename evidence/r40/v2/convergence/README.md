@@ -76,6 +76,16 @@ cover deferred properties, three-decimal precision and a wrong-frequency refusal
 output directory and the same immutable routed checkpoint. No implementation
 or programming was performed; P90 still awaits actual report review.
 
+The current authoritative v2 state is
+`~/tnca_reports_r40_operating_v2/state.json`, with progress in `runner.log`.
+Inspect this fresh report rather than the preserved v1 failure state under
+the image-preservation directory. Success proceeds to full report review,
+then the explicit load and actual clock capture. Any actual timing/CDC/placement
+failure preserves the usable baseline and is diagnosed before further action.
+The unchanged three-block, 77-point CPU/native device-time collector now accepts
+the same reviewed operating-clock evidence as the functional runners; its
+warmups, timed samples, independent blocks and frozen definitions are unchanged.
+
 **P90 — conditional operating path within the authorized 91 MHz ceiling.**
 Unique blocker: qualification of the preserved image at its actual operating
 clock. Direct evidence: the complete image has packaged 90 MHz metadata but no

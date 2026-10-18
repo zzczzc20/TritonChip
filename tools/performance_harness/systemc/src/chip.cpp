@@ -3,6 +3,7 @@
 // it must not be called a complete-chip qualification until those are delivered.
 #include "../include/tnca_model.hpp"
 #include "../include/tnca_numeric.hpp"
+#include "../include/tnca_barrier_model.hpp"
 #include "tnca_isa_generated.hpp"
 #include <cstring>
 #include <cmath>
@@ -33,17 +34,26 @@ static u64 alu(unsigned f,u64 a,u64 b,unsigned bits,unsigned cc){
 static float as_float(std::uint32_t value){float result;std::memcpy(&result,&value,4);return result;}
 static std::uint32_t as_bits(float value){std::uint32_t result;std::memcpy(&result,&value,4);return result;}
 struct Frame {
-    std::array<u64,64> s{};std::array<std::array<std::uint32_t,16>,256> v{};
+    std::shared_ptr<PhysicalRegisters> physical;
+    unsigned vbase=0;
+    std::array<u64,64> s{};std::array<PhysicalRegisters::Vector,64> v{};
     std::array<unsigned,16> p{};
-    std::array<sc_time,64> sr{};std::array<sc_time,256> vr{};std::array<sc_time,16> pr{};
-    u64 pid=0,pc=0,arg=0,retired=0;unsigned gx=1,gy=1,gz=1;
-    Frame(){p[0]=65535;}
+    std::array<sc_time,64> sr{};std::array<sc_time,64> vr{};std::array<sc_time,16> pr{};
+    u64 pid=0,pc=0,arg=0,retired=0;unsigned gx=1,gy=1,gz=1,role=0,role_count=1;
+    Frame():Frame(std::make_shared<PhysicalRegisters>(),0){}
+    Frame(std::shared_ptr<PhysicalRegisters> bank,unsigned base):physical(std::move(bank)),vbase(base){require(base<=192,"vector mapping overflow");p[0]=65535;}
 };
 struct Core : sc_module {
     tlm_utils::simple_initiator_socket<Core> memory;
     Context& x;unsigned id;Resource issue;Limit lsu;sc_time sfu_available=SC_ZERO_TIME;
+    std::array<BarrierModel,32> barriers;
     explicit Core(sc_module_name n,Context& ctx,unsigned i):sc_module(n),memory("memory"),x(ctx),id(i),lsu(2){}
     void ready(sc_time t){if(t>sc_time_stamp())wait(t-sc_time_stamp());}
+    void publish(Frame& frame,unsigned index,unsigned mask,u64 latency){
+        require(index<64,"logical vector register exceeds role allocation");
+        frame.vr[index]=sc_time_stamp()+x.cycles(latency);
+        frame.physical->write(frame.vbase+index,mask,frame.vr[index],frame.v[index]);
+    }
     u64 word(u64 address,bool store,u64 data,unsigned be,u64 instruction){
         if(!store)be=255; // NUCA returns the complete aligned word; LSU extracts bytes.
         Request ext;ext.id=instruction;ext.core=id;ext.op=store?1:0;ext.be=be;
@@ -70,7 +80,7 @@ struct Core : sc_module {
     }
     u64 special(unsigned spec,const Frame& f){
         switch(spec){case 0:return f.pid%f.gx;case 1:return (f.pid/f.gx)%f.gy;case 2:return f.pid/u64(f.gx)/f.gy;
-            case 4:return f.gx;case 5:return f.gy;case 6:return f.gz;case 8:return 0;case 9:return 1;
+            case 4:return f.gx;case 5:return f.gy;case 6:return f.gz;case 8:return f.role;case 9:return f.role_count;
             case 10:return id;case 11:return x.c.cores();case 12:return 16;case 13:return 64;
             case 16:return x.now();case 17:return f.retired;case 32:return f.arg;
             default:throw std::runtime_error("uncovered special register "+std::to_string(spec));}
@@ -88,12 +98,12 @@ struct Core : sc_module {
             require(isa::maskable(opcode) || (pred==0 && !invert),"predicate on unmaskable instruction");
             auto rs=[&](unsigned r){require(r<64,"scalar register index");ready(f.sr[r]);return r?f.s[r]:0ULL;};
             auto ws=[&](unsigned r,u64 value,u64 latency){require(r<64,"scalar destination");if(r){ready(f.sr[r]);f.s[r]=value;f.sr[r]=sc_time_stamp()+x.cycles(latency);}};
-            auto rv=[&](unsigned r){require(r<256,"vector register index");ready(f.vr[r]);};
+            auto rv=[&](unsigned r){require(r<64,"logical vector register exceeds role allocation");ready(f.vr[r]);f.v[r]=f.physical->read(f.vbase+r,sc_time_stamp());};
             unsigned mask=65535;
             if(major>=16){ready(f.pr[pred]);mask=f.p[pred];if(invert)mask^=65535;}
             // No cycle polling: issue and dependencies reserve their next event.
             issue.use(x,1,"core_"+std::to_string(id)+"_issue");
-            if(opcode==isa::exit){for(auto& t:f.sr)ready(t);for(auto& t:f.vr)ready(t);++f.retired;++x.counts["core_"+std::to_string(id)+"_instructions"];break;}
+            if(opcode==isa::exit){for(auto& t:f.sr)ready(t);for(auto& t:f.vr)ready(t);f.physical->commit(sc_time_stamp());++f.retired;++x.counts["core_"+std::to_string(id)+"_instructions"];break;}
             if(opcode==isa::nop || opcode==isa::yield){}
             else if(opcode==isa::s_rdspecial)ws(d,special(mod,f),2);
             else if(major==1){
@@ -157,7 +167,7 @@ struct Core : sc_module {
                         if(vector)f.v[d][lane]=std::uint32_t(value);else ws(d,value,1);
                     }
                 }
-                if(vector && !store)f.vr[d]=sc_time_stamp()+x.cycles(1);
+                if(vector && !store)publish(f,d,mask,1);
                 lsu.release();
             }else if(major==16){
                 rv(d);if(func!=64 && func!=27 && func!=26)rv(a);
@@ -174,7 +184,23 @@ struct Core : sc_module {
                     if(func==24 || func==56){if(value)comparison|=1<<lane;}else f.v[d][lane]=std::uint32_t(value);
                 }
                 if(func==24 || func==56){require(d<16,"predicate destination");if(d){f.p[d]=comparison;f.pr[d]=sc_time_stamp()+x.cycles(1);}}
-                else f.vr[d]=sc_time_stamp()+x.cycles(3);
+                else publish(f,d,func==25?65535:mask,3);
+            }else if(major==80){
+                require(mod==0,"reserved barrier modifier");
+                if(func==0){require(d<32,"barrier index");barriers[d].reset();}
+                else if(func==1){require(a<32,"barrier index");ws(d,barriers[a].arm(a,b,c),2);}
+                else if(func==2){
+                    require(a<32,"barrier index");
+                    for(auto& t:f.sr)ready(t);
+                    for(auto& t:f.vr)ready(t);
+                    f.physical->commit(sc_time_stamp());
+                    barriers[a].arrive();
+                }else if(func==3 || func==4){
+                    u64 token=rs(a);unsigned index=unsigned(token&65535);require(index<32,"BARRIER_FAULT: token index");
+                    if(func==3)ws(d,barriers[index].test(token),2);
+                    else {auto sleep=sc_time_stamp();barriers[index].sleep(token);x.counts["core_"+std::to_string(id)+"_barrier_sleep_cycles"]+=u64((sc_time_stamp()-sleep)/x.cycles(1)+.5);}
+                }else if(func==5){require(a<32,"barrier index");barriers[a].invalidate();}
+                else throw std::runtime_error("reserved barrier function");
             }else if(major==19){
                 require((a<16 || func==19) && (func>=16 || (d<16 && b<16)),"predicate index");
                 unsigned pa=0,pb=0;if(func!=19){ready(f.pr[a]);pa=f.p[a];}
@@ -210,7 +236,7 @@ struct Core : sc_module {
                     f.v[d][lane]=std::isnan(value)?0x7fc00000U:as_bits(value);
                 }
                 if(func==24){require(d<16,"predicate destination");if(d){f.p[d]=comparison;f.pr[d]=sc_time_stamp()+x.cycles(1);}}
-                else f.vr[d]=sc_time_stamp()+x.cycles(5);
+                else publish(f,d,mask,5);
             }else if(major==18){
                 rv(a);rv(d);
                 require(func<=4,"reserved conversion function");
@@ -223,14 +249,14 @@ struct Core : sc_module {
                     else if(func==2 || func==3)value=tnca_numeric::float_to_integer(input,func==2,mod&7);
                     else value=tnca_numeric::convert(mod&7,(mod>>3)&7,input);
                     f.v[d][lane]=value;
-                }f.vr[d]=sc_time_stamp()+x.cycles(5);
+                }publish(f,d,mask,5);
             }else if(major==22){
                 require(func<=3 && mod==0,"reserved SFU function/modifier");rv(a);rv(d);
                 auto waiting=sc_time_stamp();ready(sfu_available);
                 x.counts["core_"+std::to_string(id)+"_sfu_queue_cycles"]+=u64((sc_time_stamp()-waiting)/x.cycles(1)+.5);
                 sfu_available=sc_time_stamp()+x.cycles(24);
                 for(unsigned lane=0;lane<16;++lane)if(mask&(1<<lane))f.v[d][lane]=tnca_numeric::sfu(func,f.v[a][lane]);
-                f.vr[d]=sc_time_stamp()+x.cycles(28);
+                publish(f,d,mask,28);
             }else if(major==21){
                 require(func<=10 && (mod&~1U)==0,"reserved reduction function/modifier");rv(a);
                 std::array<std::uint32_t,16> values{};
@@ -246,10 +272,10 @@ struct Core : sc_module {
                     else value=tnca_numeric::minmax(left,right,func==9);
                     values[i]=value;
                 }
-                if(mod&1){rv(d);f.v[d].fill(values[0]);f.vr[d]=sc_time_stamp()+x.cycles(3);}
+                if(mod&1){rv(d);f.v[d].fill(values[0]);publish(f,d,65535,3);}
                 else ws(d,values[0],3);
             }else if(opcode==isa::v_extract){rv(a);ws(d,f.v[a][mod&15],2);}
-            else if(opcode==isa::v_insert){rv(d);auto value=std::uint32_t(rs(a));if(mask&(1<<(mod&15)))f.v[d][mod&15]=value;f.vr[d]=sc_time_stamp()+x.cycles(3);}
+            else if(opcode==isa::v_insert){rv(d);auto value=std::uint32_t(rs(a));if(mask&(1<<(mod&15)))f.v[d][mod&15]=value;publish(f,d,mask&(1<<(mod&15)),3);}
             else if(major==20 && func<=4){
                 rv(a);rv(d);auto source=f.v[a];auto indices=f.v[b];unsigned shift=0;
                 if(func==3){rv(b);indices=f.v[b];}else shift=unsigned(rs(b))&15;
@@ -259,12 +285,29 @@ struct Core : sc_module {
                     else if(func==2)from=lane+shift<16?lane+shift:lane;else if(func==3)from=indices[lane]&15;
                     else from=(lane+shift)&15;
                     f.v[d][lane]=source[from];
-                }f.vr[d]=sc_time_stamp()+x.cycles(3);
+                }publish(f,d,mask,3);
             }
             else throw std::runtime_error("uncovered instruction group major="+std::to_string(major)+" func="+std::to_string(func));
             ++f.retired;++x.counts["core_"+std::to_string(id)+"_instructions"];
             x.span("native instruction",id,begin,f.retired);f.pc=next;
         }
+    }
+    void program(const std::vector<u64>& code,u64 pid,u64 pc,u64 arg,unsigned gx,unsigned gy,unsigned gz,unsigned roles,bool pair_alias){
+        require(roles>0 && roles<16,"invalid role mask");
+        for(auto& barrier:barriers)barrier.reset();
+        auto values=std::make_shared<PhysicalRegisters>();
+        unsigned active=unsigned(__builtin_popcount(roles)),remaining=active;sc_event done;
+        for(unsigned role=0;role<4;++role)if(roles&(1<<role)){
+            sc_spawn([&,role](){
+                unsigned base=(pair_alias?(role&~1U):role)*64;
+                Frame f(values,base);f.pid=pid;f.pc=pc;f.arg=arg;f.gx=gx;f.gy=gy;f.gz=gz;f.role=role;f.role_count=active;
+                ++x.counts["core_"+std::to_string(id)+"_role_"+std::to_string(role)+"_issued"];
+                execute(code,f,10000000);
+                ++x.counts["core_"+std::to_string(id)+"_role_"+std::to_string(role)+"_completed"];
+                --remaining;done.notify(SC_ZERO_TIME);
+            });
+        }
+        while(remaining)wait(done);
     }
 };
 struct Chip : sc_module {
@@ -303,16 +346,21 @@ struct Chip : sc_module {
                     else {require(l[off]==static_cast<unsigned char>(c),"chip numerical mismatch at address "+std::to_string(address+count));++checked;}++count;}
                 require(count>0,"empty data file");
             }else if(kind=="fence"){end();flush();host_owned=true;}
-            else if(kind=="launch"){
+            else if(kind=="launch" || kind=="launch_roles"){
                 u64 id,pc,arg,total;unsigned gx,gy,gz;std::string pcstr,argstr;
                 require(bool(s>>id>>pcstr>>argstr>>gx>>gy>>gz),"launch requires id pc arg gx gy gz");pc=integer(pcstr);arg=integer(argstr);
+                unsigned roles=1;bool pair_alias=false;
+                if(kind=="launch_roles"){
+                    std::string role_str,pair_str;require(bool(s>>role_str>>pair_str),"launch_roles requires mask and pair-alias flag");
+                    auto mask=integer(role_str),pair=integer(pair_str);require(mask>0 && mask<16 && pair<=1,"invalid role mapping");roles=unsigned(mask);pair_alias=pair;
+                }
                 end();
                 require(gx && gy && gz && u64(gx)*gy<=16777216 && u64(gx)*gy*gz<=16777216,"invalid grid");
                 total=u64(gx)*gy*gz;u64 next=0;unsigned live=cores.size();sc_event done;auto start=sc_time_stamp();
                 for(auto& core:cores){auto* ptr=core.get();sc_spawn([&,ptr](){
-                    while(next<total){Frame f;f.pid=next++;f.pc=pc;f.arg=arg;f.gx=gx;f.gy=gy;f.gz=gz;
+                    while(next<total){u64 pid=next++;
                         ++x.counts["core_"+std::to_string(ptr->id)+"_programs_issued"];
-                        ptr->execute(code,f,10000000);++x.counts["core_"+std::to_string(ptr->id)+"_programs_completed"];}
+                        ptr->program(code,pid,pc,arg,gx,gy,gz,roles,pair_alias);++x.counts["core_"+std::to_string(ptr->id)+"_programs_completed"];}
                     --live;done.notify(SC_ZERO_TIME);
                 });}
                 while(live)wait(done);

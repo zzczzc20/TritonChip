@@ -42,6 +42,8 @@ Dependencies and resource availability schedule SystemC events directly.
 | --- | --- | --- |
 | Native executable | Canonical assembled 64-bit TNCA words; scalar/control, integer vectors, predicate operations, selected FP32/CVT/SFU, shuffles, reductions and scalar/vector LSU | Partial ISA; no claim of complete compiler coverage |
 | Grid execution | Bounded concurrent physical-core workers, dynamic program assignment, per-core telemetry | Dispatcher cycle and grouping/pair behavior are not calibrated |
+| Role execution | Private scalar/predicate state and scoreboards; timestamped, lane-masked physical VRF writeback; disjoint role banks or adjacent-pair aliasing | RSLICE, grouped programs, arbitrary vector-base mappings and complete role-mask coverage remain incomplete |
+| Barriers | Shared per-core generations, arrival/operation counters, sleeping waits, release writeback drain and explicit faults | Native DMA/MMA completion hooks are not yet integrated; timing is uncalibrated |
 | Core timing | Issue resource and scalar/vector result availability events | Timing constants are hypotheses; RF banks and all execution engines remain incomplete |
 | LSU | Byte enables, unaligned splitting, gather/scatter, word coalescing, bounded outstanding beats | Additional ordering and atomics integration remain required |
 | NoC | Unique-home mapping from `tnca_core_ni.v`; XY routes and directed-link service contention | Packet-level estimate; finite router buffers/VC behavior are not implemented |
@@ -83,10 +85,12 @@ directory; failures and partial files remain available for diagnosis.
 
 Native scripts support `code ABSOLUTE_HEX_FILE`,
 `data ADDRESS ABSOLUTE_BINARY_FILE`, `launch ID PC ARG_BASE GX GY GZ`, `fence`,
-and `expect ADDRESS ABSOLUTE_REFERENCE_FILE`. Direct data access requires
-initial or explicitly drained host ownership. Native execution currently uses
-one role per dispatched program; multi-role execution must be implemented and
-validated before those workloads are accepted.
+and `expect ADDRESS ABSOLUTE_REFERENCE_FILE`. `launch_roles ID PC ARG_BASE GX GY GZ
+ROLE_MASK PAIR_ALIAS` selects up to four active roles. The default maps role r
+to physical vector base `64*r`; `PAIR_ALIAS=1` maps each odd role to its even
+partner's vector base. This is explicit vector aliasing, not RSLICE or grouped
+program support. Direct data access requires initial or explicitly drained
+host ownership.
 Unknown commands, trailing launch fields and undefined opcodes are refused.
 Opcode identifiers and predicate legality come from the canonical ISA schema.
 
@@ -122,6 +126,8 @@ python3 tools/performance_harness/systemc/validate_chip.py \
   --binary /tmp/tnca-systemc-build/tnca-chip --out /fresh/path/chip-validation
 python3 tools/performance_harness/systemc/validate_numeric.py \
   --binary /tmp/tnca-systemc-build/tnca-numeric-probe --out /fresh/path/numeric-validation
+python3 tools/performance_harness/systemc/validate_roles.py \
+  --binary /tmp/tnca-systemc-build/tnca-chip --out /fresh/path/role-validation
 ```
 
 Memory validation checks partial writes, every implemented home-atomic ALU
@@ -139,6 +145,14 @@ aliasing shuffles, predicate selection, SFU specials, untouched tail sentinels
 and unsupported-operation refusal. These are development diagnostics, not the original native77/HBM14 or
 the frozen model/holdout acceptance runs.
 
+Role validation checks private register/predicate banks, explicit pair aliasing,
+future-generation sleeping, release visibility, a generation beyond 65535,
+initialization under a waiter, invalidation, count underflow and deadlock refusal.
+The retained campaign additionally compiles a separate source clone with only
+the arrive writeback wait removed; the consumer then reads the old physical
+value and numerical checking fails. Global shared readiness must never make
+that mutation appear correct. See the [role evidence](../../../evidence/r40/R40-09/systemc_native/roles_v12/README.md).
+
 `analyze_replay.py` reports signed and absolute per-request completion errors
 against retained RTL responses. Fixed-arrival replay error is not a production
 prediction interval. Future calibration must keep fitting, independent
@@ -153,7 +167,7 @@ mean zero host overhead or perfect model accuracy.
 
 ## Complete-chip qualification still required
 
-The remaining coverage includes multi-role contexts and register aliasing,
+The remaining coverage includes complete role-mask/RSLICE/grouping behavior,
 RF bank/read/write resources, descriptors/windows, asynchronous DMA and MMA,
 barrier generations and completion obligations, remaining numerical modifiers
 and complete instruction integration coverage, DCO/ownership epochs, bounded router queues,

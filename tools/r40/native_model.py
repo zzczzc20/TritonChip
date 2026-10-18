@@ -33,6 +33,7 @@ def main():
     ap.add_argument('--xclbin', type=Path)
     ap.add_argument('--image-sha256')
     ap.add_argument('--out', type=Path, required=True)
+    ap.add_argument('--operating-clock-evidence',type=Path)
     args = ap.parse_args()
     if not args.reference_only and (args.xclbin is None or args.image_sha256 is None):
         ap.error('native execution requires --xclbin and --image-sha256')
@@ -149,6 +150,10 @@ def main():
 
         image_sha = hashlib.sha256(args.xclbin.read_bytes()).hexdigest()
         assert image_sha == args.image_sha256, 'immutable image differs'
+        if args.operating_clock_evidence:
+            os.environ['TNCA_OPERATING_CLOCK_EVIDENCE']=str(args.operating_clock_evidence.resolve())
+        from tnca.operating_clock import from_environment
+        operating_clock=from_environment(image_sha)
         config = dict(xclbin=str(args.xclbin.resolve()),image_profile='core-vrf-sync-v5',
                       core_count=3,memory_ports=3,hbm_dma=True,hbm_bytes=1<<30,device_clock=True)
         os.environ.update(TNCA_PROFILE='core-vrf-sync-v5',TNCA_BACKEND='fpga-u280-multicore',
@@ -168,6 +173,7 @@ def main():
         report['identity'].update(image_sha256=image_sha,backend='fpga-u280-multicore',
                                   backend_args=config,knobs=knobs(),clock_hz=100000000,
                                   clock_qualification='requires matching route/timing and board clock reports')
+        report['identity'].update(operating_clock)
         report['window'] = session.dev.axi_window
         assert report['window']['size'] >= 1<<30
         topology_probe_offsets(report['window'])

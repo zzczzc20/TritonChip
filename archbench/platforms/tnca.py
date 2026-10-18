@@ -146,6 +146,10 @@ def run(point, *, profile='core-sim', opt_level=2, seed=0, counters=False, warmu
         tnca.torch_device.register()
         config = dict(config, device='tnca')
     backend, backend_kwargs = backend_choice()
+    from tnca.operating_clock import from_environment
+    if os.environ.get('TNCA_OPERATING_CLOCK_EVIDENCE') and backend not in BOARD_CLOCK_HZ:
+        raise ValueError('board clock evidence cannot label a simulator')
+    operating_clock=from_environment(device_id(profile,backend,backend_kwargs,full=True))
     plat = dict(kind='tnca', name=f'tnca:{profile}@{backend}', profile=profile, backend=backend,
                 backend_args=backend_kwargs, opt_level=opt_level, inductor=config,
                 knobs=knobs(), device_id=device_id(profile, backend, backend_kwargs))
@@ -155,6 +159,7 @@ def run(point, *, profile='core-sim', opt_level=2, seed=0, counters=False, warmu
                 image_sha256=device_id(profile, backend, backend_kwargs, full=True),
                 software_tree=_prov.software_tree(),
                 toolchain=dict(torch=torch.__version__, triton=triton.__version__, python=sys.version))
+    plat.update(operating_clock)
     rec = base_record(point, plat, EVIDENCE.get(backend, 'measured-rtl'))
     rec['schema'] = SCHEMA2
 
@@ -240,7 +245,7 @@ def run(point, *, profile='core-sim', opt_level=2, seed=0, counters=False, warmu
         return rec
 
     cycles = sum(e['device_cycles'] or 0 for e in log)
-    clock = BOARD_CLOCK_HZ.get(backend)
+    clock = operating_clock.get('clock_hz',BOARD_CLOCK_HZ.get(backend))
     rec['time'] = dict(unit='cycles', device=cycles or None, timing='serial-grid',
                        roi='launch_accept_to_core_idle', launches=len(log),
                        per_launch=[dict(kernel=e['kernel'], grid=e['grid'], cycles=e['device_cycles'],
@@ -457,6 +462,11 @@ def _host_steady(steady):
 
 
 def _provenance(profile, backend, backend_kwargs, plat, log, clock):
+    if plat.get('operating_clock_evidence_sha256'):
+        from tnca.operating_clock import from_environment
+        fresh=from_environment(plat['image_sha256'])
+        if fresh.get('operating_clock_evidence_sha256')!=plat['operating_clock_evidence_sha256']:
+            raise ValueError('operating clock evidence changed during measurement')
     try:
         from tnca import device as _device
         from tnca.adapters import r1

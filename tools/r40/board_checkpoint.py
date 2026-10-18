@@ -49,6 +49,7 @@ def main():
                                 clock_qualification='requires matching route/timing and board clock reports')
         if args.operating_clock_evidence:
             from operating_clock import qualified_clock
+            os.environ['TNCA_OPERATING_CLOCK_EVIDENCE']=str(args.operating_clock_evidence.resolve())
             report['identity'].update(qualified_clock(args.operating_clock_evidence,image_sha))
             report['acceptance_basis']='conditional-r40v2-20261018; original 100MHz gate remains not-passed'
         os.environ.update(TNCA_BACKEND='fpga-u280-multicore',

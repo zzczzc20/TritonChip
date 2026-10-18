@@ -63,11 +63,11 @@ class ClockEvidence(unittest.TestCase):
         with tempfile.TemporaryDirectory() as d:
             d=Path(d);raw=d/'raw.txt';raw.write_text('test fixture only')
             files={k:dict(path='raw.txt',sha256=hashlib.sha256(raw.read_bytes()).hexdigest())
-                   for k in ('timing','route','cdc','board_clock')}
+                   for k in ('timing','route','cdc','board_clock','placement')}
             data=dict(schema='tnca-qualified-operating-clock/1',image_sha256='a'*64,
                       qualification='conditional-r40v2-20261018',clock_hz=91_000_000,
                       setup_wns_ns=0.01,hold_whs_ns=0.001,route_legal=True,cdc_review='passed',
-                      clock_source='measured-board-counter',evidence_files=files)
+                      clock_source='measured-board-counter',physical_core_slrs={'0':0,'1':1,'2':2},evidence_files=files)
             path=d/'clock.json';path.write_text(json.dumps(data))
             self.assertEqual(qualified_clock(path,'a'*64)['clock_hz'],91_000_000)
             with self.assertRaises(ValueError):qualified_clock(path,'b'*64)

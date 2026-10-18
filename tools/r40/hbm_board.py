@@ -286,6 +286,8 @@ def main(argv=None):
                     python=sys.version, contract=os.environ.get('R40_CONTRACT','v1'),
                     clock_hz=None,clock_qualification='requires matched image and qualified board clock reports',
                     performance_status='diagnostic-only; no FPGA bandwidth gate certification')
+    from tnca.operating_clock import from_environment
+    identity.update(from_environment(identity['image_sha256']))
     if identity['contract']=='v2':
         import contract_v2
         contract_v2.verify()

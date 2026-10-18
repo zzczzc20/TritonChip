@@ -57,8 +57,8 @@ The `tnca-qualified-operating-clock/1` file must contain the exact image SHA,
 positive integer `clock_hz` no greater than 91,000,000, qualification
 `conditional-r40v2-20261018`, finite nonnegative `setup_wns_ns` and `hold_whs_ns`,
 `route_legal=true`, `cdc_review=passed`, and
-`clock_source=measured-board-counter`. `evidence_files` must bind the reviewed
-`timing`, `route`, `cdc`, and `board_clock` files by path and SHA256. This is a
+`clock_source=measured-board-counter`, and `physical_core_slrs={"0":0,"1":1,"2":2}`. `evidence_files` must bind the reviewed
+`timing`, `route`, `cdc`, `placement`, and `board_clock` files by path and SHA256. This is a
 reviewed qualification record, not an automatically inferred pass from report
 existence. It cannot be created honestly until the reports and board clock
 measurement exist. Evidence is rechecked before sealing checkpoint success.
@@ -68,3 +68,23 @@ Current running preservation/audit command and PID are retained in
 `~/tnca_build/r40_attempt03_conditional_91mhz/state.json`. It waits for both the
 original implementation and its serial report observer before opening the
 checkpoint. No extra implementation or board load has been started.
+
+
+## Continuous functional delivery
+
+`tools/r40/conditional_delivery.py` prepares and executes the existing functional
+sequence without another implementation: original >=64 MiB checkpoint, all 77
+frozen native points, inventory audit, all 14 `hbm-core.json` points, and the
+unmodified frozen model. It verifies frozen point definitions and fresh
+software/image identity, runs one board job at a time, and stops on stage
+failure while preserving outputs. `--plan-only` writes commands without opening
+a device. A successful sequence remains a functional checkpoint requiring gate
+review; performance A/B and frozen holdout remain separate obligations.
+
+`TNCA_OPERATING_CLOCK_EVIDENCE` now propagates the same reviewed clock through
+ArchBench native records, the HBM board diagnostic and frozen model identity.
+The shared validator is `python/tnca/operating_clock.py`. No default clock was
+changed globally and no missing board clock was filled in from a request.
+The 100 MHz historical path retains its existing behavior; conditional runs
+must provide explicit evidence. Source/compiler/runtime identities must be
+refrozen after this reporting change before starting the new sequence.

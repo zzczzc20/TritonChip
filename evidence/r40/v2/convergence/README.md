@@ -1,5 +1,47 @@
 # R40 v2 convergence checkpoint
 
+## Authoritative guarded candidate and serialized queues
+
+**Required gate delta:** no new gate is promoted on the guarded product tree
+`44051ad9...5d2436` yet. The complete native and physical multicore capability
+passes below remain bound to `3520df32...03bec7`. Guarded final-candidate
+revalidation is queued, never silently inherited from the previous software.
+
+[Guarded source](attempt03/conditional_software_6bd07b7_formal.json),
+[delivery queue](attempt03/delivery_6bd07b7_4gib_launch.json),
+[formal runtime queue](attempt03/formal_runtime_6bd07b7_4gib_launch.json) and
+[GB10 queue](attempt03/ownerfix_gb10_6bd07b7_validation_launch.json) retain exact
+identities and controller hashes. The prior formal queue was
+[superseded before any measurement](attempt03/formal_f4b2fc7_superseded_before_measurement.json).
+The currently running original HBM/model and CUDA-host experiments are preserved.
+A prior failure stops the dependent queue for diagnosis; it does not trigger a
+blind repeat. The [observed states](attempt03/guarded_6bd07b7_queue_state.json)
+show that the guarded board and formal experiments have not taken the card.
+
+For the unresolved-gate ledger, **I now denotes the guarded complete delivery**:
+
+```sh
+cat ~/tnca_delivery_6bd07b7_4gib/state.json
+cat ~/tnca_formal_runtime_6bd07b7_4gib/state.json
+```
+
+On GB10, observe the matching full host conformance with:
+
+```sh
+cat ~/r40_runtime_ownerfix_6bd07b7/state.json
+```
+
+Success requires the same complete original native77, HBM14 and model, plus
+matching final-identity capability audits and both complete host classes.
+Failure retains the first raw evidence and stops dependent measurements.
+The three-core 90 MHz image, exposed 4 GiB and original numerical workload remain
+unchanged; no fourth implementation or programming operation is scheduled.
+
+CI for product commit `6bd07b7` was dispatched separately as run `39164382436`
+on `r40-convergence-evidence`, leaving the earlier PR run intact. It is running,
+not reported passing. The final non-Draft PR must target `main` only after all
+remaining required gates pass; the existing `r38-dco` Draft PR is not delivery.
+
 ## Signed copy-range guard — next product candidate
 
 The out-of-window review found that `Session.download` and the XRT BO accessor
@@ -733,7 +775,7 @@ Rows below remain open for the current repaired-source final candidate. Each row
 
 | Required gate | Unique current blocker | Direct evidence | Next experiment | If successful | If failed |
 |---|---|---|---|---|---|
-| R40-01.mixed-device | Complete CUDA-host conformance is running; matching no-CUDA-host conformance must follow | [Repaired-source GB10 launch](attempt03/ownerfix_gb10_validation_launch.json); matching board-host conformance queued after I | On GB10: `cat ~/r40_runtime_ownerfix_a3820e5/state.json; tail -n 20 ~/r40_runtime_ownerfix_a3820e5/cuda-device-conformance.log` | Review all original cases, then combine matching no-CUDA-host conformance; functional RTL is not board performance | Preserve first failing case and repair its actual cause; no partial case selection can certify the full gate |
+| R40-01.mixed-device | Complete CUDA-host conformance is running; matching no-CUDA-host conformance must follow | [Repaired-source GB10 launch](attempt03/ownerfix_gb10_validation_launch.json); matching board-host conformance queued after I | On GB10: `cat ~/r40_runtime_ownerfix_6bd07b7/state.json` | Review all original cases, then combine matching no-CUDA-host conformance; functional RTL is not board performance | Preserve first failing case and repair its actual cause; no partial case selection can certify the full gate |
 | R40-01.device-time | 同一最终身份的三组随机交错 CPU/native 5/30 配对记录缺失 | `required_gates.json`: sim/build/r40/v2/R40-01.json does not name gate R40-01.device-time | I | After I, collect frozen `make r40-device` package evidence on final identity; judge this gate separately | Preserve I first failing evidence; fix that cause; gate remains not-measured |
 | R40-02.zero-transfer | 最终镜像完整冻结 resident 图零搬运证据缺失 | `required_gates.json`: no evidence at sim/build/r40/v2/R40-02.json | I | After I, collect frozen `make r40-residency` package evidence on final identity; judge this gate separately | Preserve I first failing evidence; fix that cause; gate remains not-measured |
 | R40-02.resident | 冻结 graphs3 的 staging/resident 匹配 A/B 缺失 | `required_gates.json`: no evidence at sim/build/r40/v2/R40-02.json | I | After I, collect frozen `make r40-residency` package evidence on final identity; judge this gate separately | Preserve I first failing evidence; fix that cause; gate remains not-measured |

@@ -1,0 +1,8 @@
+{
+  "pid": 2384255,
+  "root": "/home/zhongchun/r40_runtime_ownerfix_6bd07b7",
+  "source": "/home/zhongchun/r40_runtime_ownerfix_6bd07b7_source",
+  "controller_sha256": "1e6fa2c47c7214b16b8d294f524c7f3de7f934fcc103183042966bbe8d526e25",
+  "tools": "/home/zhongchun/tc_env/bin/iverilog\n/home/zhongchun/tc_env/bin/vvp\n",
+  "scope": "GB10-only repaired-source recovery and complete CUDA coexistence; no board load or FPGA-server simulation"
+}

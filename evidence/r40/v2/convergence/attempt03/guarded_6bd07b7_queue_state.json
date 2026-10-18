@@ -1,0 +1,127 @@
+{
+  "tnca_delivery_b59119d_4gib": {
+    "status": "running",
+    "software_tree": "files:3520df32c20aefcc593c0da6ff80ab2e9aa03556ecb1a942ac709a916903bec7",
+    "image_sha256": "a88ebdf59cfbbb2001ebd5b1b2c739c5d8cd33931f1e9202f18cac07c4c83083",
+    "hbm_bytes": 4294967296,
+    "deadline_cycles": 24000000000,
+    "completed": [
+      {
+        "name": "storage-owner-regression",
+        "exit_code": 0
+      },
+      {
+        "name": "probe-allocator-regression",
+        "exit_code": 0
+      },
+      {
+        "name": "device-entry-preflight",
+        "exit_code": 0
+      },
+      {
+        "name": "actual-window-and-pc-boundaries",
+        "exit_code": 0
+      }
+    ],
+    "required_gate_promotions": [],
+    "scope": "Same preserved qualified image; original full definitions, repaired runtime, declared 4GiB capacity and uniform watchdog; no synthesis/load/shape reduction",
+    "current": "full-original-functional-delivery",
+    "observed_utc": "2026-10-18T20:04:32.778831+00:00",
+    "child_pid": 2358807
+  },
+  "tnca_delivery_6bd07b7_4gib": {
+    "status": "queued-behind-prior-functional",
+    "software_tree": "files:44051ad9c76c544f59b57afb9f297608bb3f0362c9f4f4479f977690645d2436",
+    "image_sha256": "a88ebdf59cfbbb2001ebd5b1b2c739c5d8cd33931f1e9202f18cac07c4c83083",
+    "hbm_bytes": 4294967296,
+    "deadline_cycles": 24000000000,
+    "completed": [],
+    "required_gate_promotions": [],
+    "scope": "Same preserved qualified image; original full definitions, repaired runtime, declared 4GiB capacity and uniform watchdog; no synthesis/load/shape reduction",
+    "observed_utc": "2026-10-18T20:39:42.041572+00:00",
+    "upstream_status": "running",
+    "upstream_current": "full-original-functional-delivery"
+  },
+  "tnca_formal_runtime_6bd07b7_4gib": {
+    "status": "queued-behind-functional-delivery",
+    "software_tree": "files:44051ad9c76c544f59b57afb9f297608bb3f0362c9f4f4479f977690645d2436",
+    "image_sha256": "a88ebdf59cfbbb2001ebd5b1b2c739c5d8cd33931f1e9202f18cac07c4c83083",
+    "clock_hz": 90000000,
+    "hbm_bytes": 4294967296,
+    "deadline_cycles": 24000000000,
+    "completed": [],
+    "required_gate_promotions": [],
+    "scope": "Serial original runtime experiments and full three-block audits; same image/product; no synthesis, programming or workload shrink",
+    "observed_utc": "2026-10-18T20:39:45.683049+00:00",
+    "upstream_status": "queued-behind-prior-functional",
+    "upstream_current": null
+  },
+  "delivery": {
+    "status": "running",
+    "current_stage": "original-hbm14",
+    "completed": [
+      {
+        "name": "original-ge64mib-checkpoint",
+        "exit_code": 0
+      },
+      {
+        "name": "native77-tiny",
+        "exit_code": 0
+      },
+      {
+        "name": "native77-small",
+        "exit_code": 0
+      },
+      {
+        "name": "native77-medium",
+        "exit_code": 0
+      },
+      {
+        "name": "native77-audit",
+        "exit_code": 0
+      }
+    ]
+  },
+  "hbm_points": [
+    {
+      "point_id": "model.llama_decode/hbm/fp16-b1-p512",
+      "status": "pass"
+    },
+    {
+      "point_id": "model.llama_prefill/hbm/fp16-b1-s512",
+      "status": "pass"
+    },
+    {
+      "point_id": "op.add/hbm/fp16-n67108864",
+      "status": "pass"
+    },
+    {
+      "point_id": "op.attention_decode/large/fp16-b1-h32-l2048-d64",
+      "status": "pass"
+    },
+    {
+      "point_id": "op.attention_prefill/large/fp16-b1-h32-s512-d64",
+      "status": "pass"
+    },
+    {
+      "point_id": "op.copy/hbm/fp16-n67108864",
+      "status": "pass"
+    },
+    {
+      "point_id": "op.embedding/hbm/fp16-v65536-d2048-t8192",
+      "status": "pass"
+    },
+    {
+      "point_id": "op.gemv/hbm/fp16-k4096-n11008",
+      "status": "pass"
+    },
+    {
+      "point_id": "op.linear/hbm/fp16-m512-k4096-n11008",
+      "status": "pass"
+    },
+    {
+      "point_id": "op.matmul/hbm/fp16-m4096-k4096-n4096",
+      "status": "pass"
+    }
+  ]
+}

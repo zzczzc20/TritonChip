@@ -33,6 +33,8 @@ def plan(python,image,image_sha,tree,clock,out):
             command=[python,'-u','-m','archbench.run','--platform','tnca',
                      '--profile','core-vrf-sync-v5','--backend','fpga-u280-multicore',
                      '--backend-args',json.dumps(config),'--point',*ids,'--jobs','1',
+                     '--warmup','1','--timed','1',
+                     '--bundle-dir',str(out/'bundles/native'),
                      '--out',str(out/'native'/f'u280_{tier}.jsonl')]))
     stages.append(dict(name='native77-audit',command=[python,str(ROOT/'tools/r40/native_inventory.py'),
                   '--native',str(out/'native')]))
@@ -41,6 +43,8 @@ def plan(python,image,image_sha,tree,clock,out):
         command=[python,'-u','-m','archbench.run','--platform','tnca',
                  '--profile','core-vrf-sync-v5','--backend','fpga-u280-multicore',
                  '--backend-args',json.dumps(config),'--point',*ids,'--jobs','1',
+                 '--warmup','1','--timed','1',
+                 '--bundle-dir',str(out/'bundles/hbm'),
                  '--out',str(out/'hbm14.jsonl')]))
     stages.append(dict(name='frozen-original-model',command=[python,'-u',str(ROOT/'tools/r40/native_model.py'),
                   *common,'--out',str(out/'model')]))
@@ -60,6 +64,8 @@ def main():
                 a.operating_clock_evidence.resolve(),out)
     record=dict(schema='tnca-conditional-delivery/1',status='planned',stages=stages,
                 performance_gate='not-measured',original_100mhz_gate='not-passed',
+                inventory_sampling='functional only: one untimed warmup and one steady call; cold compiler copies retained separately; not the frozen performance sample plan',
+                harness_sha256=hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
                 acceptance_basis='conditional-r40v2-20261018',completed=[])
     def save():
         temporary=out/'delivery.tmp';temporary.write_text(json.dumps(record,indent=2)+'\n');temporary.replace(out/'delivery.json')

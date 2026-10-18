@@ -1,5 +1,25 @@
 # R40 v2 convergence checkpoint
 
+## Inventory collector correction after source-origin validation
+
+The source-origin correction passed its actual child preflight and repeated V
+successfully on software tree `cbc1340e1135ac301bfe6c39488bb3eb2b1571aafad46920e070ae701c58da52`.
+The next inventory blocker was cold-call contamination: native FakeTensor
+constant propagation launched `_copy_kernel` while compiling model graphs.
+The first numerical results were correct, but the launch-count guard correctly
+reported `not-measured`. [Cold records and second full checkpoint](attempt03/cold_inventory_3c403a4.json)
+retain that evidence without dropping launches or weakening the guard.
+
+The functional pipeline now requests one untimed warmup and one independent
+steady graph call using the existing cold-setup separation in ArchBench, and
+retains complete compiler/provenance bundles for every original point. This is
+functional inventory sampling, explicitly not a performance measurement or a
+change to the frozen 5/30/3 performance plan. Original 77 and 14 point identities
+are unchanged. Its manifest binds the collector SHA. Success requires exact
+steady wrapper launch counts, original numerical tolerances and zero implicit
+staging, then the same full model stage. Failure preserves the first original
+point; no development point or smaller shape can replace it.
+
 ## Vertical checkpoint passed; inventory source-origin repair
 
 **Required gate delta: V passed on the preserved 90 MHz image. No complete

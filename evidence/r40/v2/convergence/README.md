@@ -3,8 +3,9 @@
 ## Immediate experiment commands and branches
 
 **Required gate delta: no additional gate passed. Attempt 3 remains live in
-route_design after successful placement and physical optimization as of
-2026-10-18 03:04 UTC.
+post-skew route timing cleanup after successful placement and physical
+optimization as of 2026-10-18 06:59 UTC. The source-CI prerequisite is now
+successful; no physical/workload gate is promoted.
 Budget: maximum 4, used 3, remaining 1, following the explicit final additional
 authorization on 2026-10-18. No fourth implementation has started.**
 Hardware source is `54249f7f7ac0cf8f5d1b82d8e63a3046d27522d3`, with the explicit
@@ -18,6 +19,17 @@ the route precondition DRC finished with zero errors. Routing has started;
 this is not a final route/DRC, WNS, CDC or image result. The current experiment
 and success/failure branches below remain unchanged. No additional full
 implementation has been launched.
+
+[Post-hold/intermediate timing](attempt03/post_hold_intermediate_20261018.json)
+retains the live original PID and raw intermediate summaries. Setup WNS was
+-1.300 ns after hold repair and improved to -1.006 ns during skew/delay cleanup;
+the latter summary still has TNS -7278.353 ns, WHS -0.027 ns and THS -0.080 ns.
+These are intermediate, unqualified results, not a final 100 MHz pass or terminal
+failure. P remains blocked by final route/timing/CDC/image evidence. The next
+command is the existing terminal observer below. Success proceeds to identity
+review and V; failure requires the actual final limiting paths before spending
+the one remaining implementation attempt. No large DCP reader runs alongside
+the active route process.
 
 [Read-only device preflight](attempt03/preload_readonly_20261018.json) finds
 the U280 healthy and idle, with no asynchronous error or firewall fault. It
@@ -93,9 +105,13 @@ Successful source qualification is mandatory before board load.
 [Replacement CI](attempt03/split_ci_started.json) is run `39087952712` on
 commit `16914f7`; its RTL tree exactly matches attempt03. Its software also
 contains endpoint-auditing changes, so it is not represented as a rerun of
-commit `54249f7`. Next command: `gh run view 39087952712`. Success permits
-review of matching source identities; cancellation or failure preserves the
-individual lane log and keeps board loading blocked. A complete original native77 functional run now
+commit `54249f7`. [Terminal success](attempt03/split_ci_terminal_success_20261018.json)
+records all lanes successful. This resolves the source-CI prerequisite for that
+specific software/RTL snapshot, not physical qualification or CI of later model
+tooling commits. Board loading remains blocked by P. The next experiment is the
+existing terminal route/timing/CDC collector above; success permits identity
+review and V, failure retains the terminal reports and keeps loading blocked.
+A complete original native77 functional run now
 uses source a1fed22, the final-candidate RTL geometry and explicit testbench
 guards on the ARM host; [launch evidence](attempt03/final_native77_launch.json).
 Its new per-sample raw endpoint records are independently reproducible. This

@@ -57,7 +57,12 @@ def run(binary, config, trace, out, timeout=1800, source_identity=None, mode='me
     if mode == 'chip':
         for line in trace.read_text().splitlines():
             fields = shlex.split(line, comments=True)
-            if fields and fields[0] in ('code', 'data', 'expect'):
+            if not fields:
+                continue
+            arity = {'code': 2, 'data': 3, 'expect': 3, 'launch': 7, 'fence': 1}
+            if fields[0] not in arity or len(fields) != arity[fields[0]]:
+                raise ValueError('unsupported chip command or trailing fields')
+            if fields[0] in ('code', 'data', 'expect'):
                 path = Path(fields[-1])
                 if not path.is_absolute():
                     raise ValueError('chip script data/code/expect paths must be absolute')

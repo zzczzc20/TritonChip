@@ -2,6 +2,7 @@
 // This first execution slice deliberately refuses uncovered instruction groups;
 // it must not be called a complete-chip qualification until those are delivered.
 #include "../include/tnca_model.hpp"
+#include "../include/tnca_numeric.hpp"
 #include "tnca_isa_generated.hpp"
 #include <cstring>
 #include <cmath>
@@ -18,6 +19,8 @@ static u64 alu(unsigned f,u64 a,u64 b,unsigned bits,unsigned cc){
     auto sa=bits==64?std::int64_t(a):std::int64_t(std::int32_t(a));
     auto sb=bits==64?std::int64_t(b):std::int64_t(std::int32_t(b));
     switch(f){case 0:return a;case 1:return (a+b)&mask;case 2:return (a-b)&mask;case 3:return (a*b)&mask;
+        case 4:return bits==64?tnca_numeric::multiply_high(a,b,true):u64(std::int64_t(std::int32_t(a))*std::int64_t(std::int32_t(b)))>>32;
+        case 5:return bits==64?tnca_numeric::multiply_high(a,b,false):(a*b)>>32;
         case 8:return a&b;case 9:return a|b;case 10:return a^b;case 11:return a&~b;
         case 12:return (a<<(b&(bits-1)))&mask;case 13:return a>>(b&(bits-1));
         case 14:return u64(sa>>(b&(bits-1)))&mask;
@@ -38,7 +41,7 @@ struct Frame {
 };
 struct Core : sc_module {
     tlm_utils::simple_initiator_socket<Core> memory;
-    Context& x;unsigned id;Resource issue;Limit lsu;
+    Context& x;unsigned id;Resource issue;Limit lsu;sc_time sfu_available=SC_ZERO_TIME;
     explicit Core(sc_module_name n,Context& ctx,unsigned i):sc_module(n),memory("memory"),x(ctx),id(i),lsu(2){}
     void ready(sc_time t){if(t>sc_time_stamp())wait(t-sc_time_stamp());}
     u64 word(u64 address,bool store,u64 data,unsigned be,u64 instruction){
@@ -81,6 +84,8 @@ struct Core : sc_module {
             unsigned pred=unsigned(ins>>12)&15,mod=unsigned(ins)&1023;bool invert=(ins>>10)&1;
             unsigned imm=(b<<8)|c;u64 simm=u64(std::int64_t(std::int16_t(imm))),next=f.pc+8;
             unsigned opcode=(major<<8)|func;auto begin=sc_time_stamp();
+            require(isa::defined(opcode),"undefined ISA opcode");
+            require(isa::maskable(opcode) || (pred==0 && !invert),"predicate on unmaskable instruction");
             auto rs=[&](unsigned r){require(r<64,"scalar register index");ready(f.sr[r]);return r?f.s[r]:0ULL;};
             auto ws=[&](unsigned r,u64 value,u64 latency){require(r<64,"scalar destination");if(r){ready(f.sr[r]);f.s[r]=value;f.sr[r]=sc_time_stamp()+x.cycles(latency);}};
             auto rv=[&](unsigned r){require(r<256,"vector register index");ready(f.vr[r]);};
@@ -159,10 +164,10 @@ struct Core : sc_module {
                 bool immediate=func>=32 && func<=63;
                 if(!immediate && func!=0 && func!=20 && func!=21 && func!=26 && func!=27 && func!=64)rv(b);
                 unsigned comparison=0;
-                for(unsigned lane=0;lane<16;++lane)if(mask&(1<<lane)){
+                for(unsigned lane=0;lane<16;++lane)if(func==25 || (mask&(1<<lane))){
                     u64 value=0;
                     if(func==27)value=lane;else if(func==26)value=rs(a);else if(func==64)value=simm;
-                    else if(func==25){unsigned select=c&15;ready(f.pr[select]);value=(f.p[select]&(1<<lane))?f.v[a][lane]:f.v[b][lane];}
+                    else if(func==25)value=(mask&(1<<lane))?f.v[a][lane]:f.v[b][lane];
                     else {u64 right=immediate?((func==40 || func==41 || func==42 || func==44 || func==45 || func==46)?imm:simm):f.v[b][lane];
                         unsigned af=immediate?(func==32?1:func==33?2:func==34?3:func-32):func;
                         value=alu(af,f.v[a][lane],right,32,mod&15);}
@@ -191,6 +196,7 @@ struct Core : sc_module {
                     float left=as_float(f.v[a][lane]),right=as_float(f.v[b][lane]),value=0;
                     if(func==1)value=left+right;else if(func==2)value=left-right;else if(func==3)value=left*right;
                     else if(func==6 || func==7)value=std::fma(left,right,func==6?as_float(f.v[c][lane]):-as_float(f.v[c][lane]));
+                    else if(func==16 || func==17){f.v[d][lane]=tnca_numeric::minmax(f.v[a][lane],f.v[b][lane],func==17,mod&3);continue;}
                     else if(func==20){f.v[d][lane]=f.v[a][lane]^0x80000000U;continue;}
                     else if(func==21){f.v[d][lane]=f.v[a][lane]&0x7fffffffU;continue;}
                     else if(func==24){bool condition=false;unsigned cc=mod&15;
@@ -205,8 +211,56 @@ struct Core : sc_module {
                 }
                 if(func==24){require(d<16,"predicate destination");if(d){f.p[d]=comparison;f.pr[d]=sc_time_stamp()+x.cycles(1);}}
                 else f.vr[d]=sc_time_stamp()+x.cycles(5);
+            }else if(major==18){
+                rv(a);rv(d);
+                require(func<=4,"reserved conversion function");
+                if(func==4)require((mod>>6)==0 && (mod&7)<5 && ((mod>>3)&7)<5,"reserved conversion format/modifier");
+                else require((mod>>3)==0 && (func<2?mod==0:mod<=3),"reserved conversion modifier");
+                for(unsigned lane=0;lane<16;++lane)if(mask&(1<<lane)){
+                    auto input=f.v[a][lane];std::uint32_t value=0;
+                    if(func==0)value=as_bits(float(std::int32_t(input)));
+                    else if(func==1)value=as_bits(float(input));
+                    else if(func==2 || func==3)value=tnca_numeric::float_to_integer(input,func==2,mod&7);
+                    else value=tnca_numeric::convert(mod&7,(mod>>3)&7,input);
+                    f.v[d][lane]=value;
+                }f.vr[d]=sc_time_stamp()+x.cycles(5);
+            }else if(major==22){
+                require(func<=3 && mod==0,"reserved SFU function/modifier");rv(a);rv(d);
+                auto waiting=sc_time_stamp();ready(sfu_available);
+                x.counts["core_"+std::to_string(id)+"_sfu_queue_cycles"]+=u64((sc_time_stamp()-waiting)/x.cycles(1)+.5);
+                sfu_available=sc_time_stamp()+x.cycles(24);
+                for(unsigned lane=0;lane<16;++lane)if(mask&(1<<lane))f.v[d][lane]=tnca_numeric::sfu(func,f.v[a][lane]);
+                f.vr[d]=sc_time_stamp()+x.cycles(28);
+            }else if(major==21){
+                require(func<=10 && (mod&~1U)==0,"reserved reduction function/modifier");rv(a);
+                std::array<std::uint32_t,16> values{};
+                std::uint32_t identity=func==1?0x80000000U:func==2?0x7fffffffU:func==3 || func==7?0xffffffffU:func==9?0xff800000U:func==10?0x7f800000U:0;
+                for(unsigned lane=0;lane<16;++lane)values[lane]=(mask&(1<<lane))?f.v[a][lane]:identity;
+                for(unsigned width=16;width>1;width/=2)for(unsigned i=0;i<width/2;++i){
+                    auto left=values[i*2],right=values[i*2+1];std::uint32_t value=0;
+                    if(func==0)value=left+right;
+                    else if(func==1 || func==2)value=std::uint32_t(alu(func==1?17:16,left,right,32,0));
+                    else if(func==3)value=left&right;else if(func==4)value=left|right;else if(func==5)value=left^right;
+                    else if(func==6)value=std::max(left,right);else if(func==7)value=std::min(left,right);
+                    else if(func==8){value=as_bits(as_float(left)+as_float(right));if(tnca_numeric::nan(0,value))value=0x7fc00000U;}
+                    else value=tnca_numeric::minmax(left,right,func==9);
+                    values[i]=value;
+                }
+                if(mod&1){rv(d);f.v[d].fill(values[0]);f.vr[d]=sc_time_stamp()+x.cycles(3);}
+                else ws(d,values[0],3);
             }else if(opcode==isa::v_extract){rv(a);ws(d,f.v[a][mod&15],2);}
-            else if(opcode==isa::v_insert){rv(d);f.v[d][mod&15]=std::uint32_t(rs(a));f.vr[d]=sc_time_stamp()+x.cycles(3);}
+            else if(opcode==isa::v_insert){rv(d);auto value=std::uint32_t(rs(a));if(mask&(1<<(mod&15)))f.v[d][mod&15]=value;f.vr[d]=sc_time_stamp()+x.cycles(3);}
+            else if(major==20 && func<=4){
+                rv(a);rv(d);auto source=f.v[a];auto indices=f.v[b];unsigned shift=0;
+                if(func==3){rv(b);indices=f.v[b];}else shift=unsigned(rs(b))&15;
+                for(unsigned lane=0;lane<16;++lane)if(mask&(1<<lane)){
+                    unsigned from=lane;
+                    if(func==0)from=lane^shift;else if(func==1)from=lane>=shift?lane-shift:lane;
+                    else if(func==2)from=lane+shift<16?lane+shift:lane;else if(func==3)from=indices[lane]&15;
+                    else from=(lane+shift)&15;
+                    f.v[d][lane]=source[from];
+                }f.vr[d]=sc_time_stamp()+x.cycles(3);
+            }
             else throw std::runtime_error("uncovered instruction group major="+std::to_string(major)+" func="+std::to_string(func));
             ++f.retired;++x.counts["core_"+std::to_string(id)+"_instructions"];
             x.span("native instruction",id,begin,f.retired);f.pc=next;
@@ -234,21 +288,25 @@ struct Chip : sc_module {
         while(std::getline(commands,line)){
             if(line.empty() || line[0]=='#')continue;
             std::istringstream s(line);std::string kind;s>>kind;
+            auto end=[&](){s>>std::ws;require(s.eof() || s.peek()=='#',"trailing chip command fields");};
             if(kind=="code"){
-                std::string file;s>>file;std::ifstream input(file);require(bool(input),"code image missing");
+                std::string file;require(bool(s>>std::quoted(file)),"code requires a file");end();
+                std::ifstream input(file);require(bool(input),"code image missing");
                 code.clear();std::string word;while(input>>word)code.push_back(integer("0x"+word));
                 require(!code.empty() && code.size()<=16384,"invalid code image size");
             }else if(kind=="data" || kind=="expect"){
-                std::string addr,file;s>>addr>>file;u64 address=integer(addr);require(host_owned,"host data access requires drained ownership");
+                std::string addr,file;require(bool(s>>addr>>std::quoted(file)),"data/expect require address and file");end();
+                u64 address=integer(addr);require(host_owned,"host data access requires drained ownership");
                 std::ifstream input(file,std::ios::binary);require(bool(input),"data file missing");char c;u64 count=0;
                 while(input.get(c)){x.c.address(address+count,1);auto& l=hbm.memory[(address+count)&~63ULL];unsigned off=unsigned((address+count)&63);
                     if(kind=="data")l[off]=static_cast<unsigned char>(c);
                     else {require(l[off]==static_cast<unsigned char>(c),"chip numerical mismatch at address "+std::to_string(address+count));++checked;}++count;}
                 require(count>0,"empty data file");
-            }else if(kind=="fence"){flush();host_owned=true;}
+            }else if(kind=="fence"){end();flush();host_owned=true;}
             else if(kind=="launch"){
                 u64 id,pc,arg,total;unsigned gx,gy,gz;std::string pcstr,argstr;
                 require(bool(s>>id>>pcstr>>argstr>>gx>>gy>>gz),"launch requires id pc arg gx gy gz");pc=integer(pcstr);arg=integer(argstr);
+                end();
                 require(gx && gy && gz && u64(gx)*gy<=16777216 && u64(gx)*gy*gz<=16777216,"invalid grid");
                 total=u64(gx)*gy*gz;u64 next=0;unsigned live=cores.size();sc_event done;auto start=sc_time_stamp();
                 for(auto& core:cores){auto* ptr=core.get();sc_spawn([&,ptr](){

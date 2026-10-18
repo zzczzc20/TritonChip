@@ -11,6 +11,15 @@ immutable configuration and archive identity in [attempt03](attempt03/README.md)
 The frozen contract is unchanged. No final-image timing, CDC, HBM or workload
 result is claimed; missing measurements remain not-measured.
 
+[Read-only device preflight](attempt03/preload_readonly_20261018.json) finds
+the U280 healthy and idle, with no asynchronous error or firewall fault. It
+records the pre-existing image UUID, actual clock table and memory inventory.
+No memory bank is reported enabled in that existing image, and no buffer
+objects are allocated. These are not attempt03 measurements. Final loading
+remains conditional on its legal route, timing, CDC, DRC and source review;
+actual multi-PC allocation and traffic must be measured after that load.
+
+
 [Live placement evidence](attempt03/placement_observation_20261018.json)
 records the running implementation and observer, absent terminal marker and
 log identity. Two critical warnings remain for final review: a generated
@@ -82,6 +91,25 @@ and rerun the original point under a separately identified wait budget; if a
 protocol stall or wrong result is found, retain its journal and reproduce it
 before any candidate change. A busy simulator process alone proves neither
 forward progress nor correctness.
+[Original-point diagnosis](attempt03/llama_progress_started.json) now runs in
+a separate immutable source directory on the ARM host. It preserves the
+original final geometry and point hash, enables the existing timed mailbox
+journal, and records read-only instruction/program progress every 65,536
+clocks. The diagnostic harness compiled successfully and its live log emitted
+the first progress record. No DUT signals are driven by this monitor. Device
+instruction overhead is zero; host overhead is not measured, so the run is
+excluded from performance comparisons. Next commands:
+
+```sh
+cat ~/r40_final_llama_progress_20261018/results/runner.exit
+tail -n 12 ~/r40_final_llama_progress_20261018/sim/build/u50-sim/link-*/regs.log
+```
+
+Success requires the unchanged original numerical comparison. If it still
+times out, preserve launch IDs, instruction/program progress and the journal
+to isolate a simulator-rate limit or protocol/kernel stall. Neither a busy
+process nor advancing time alone clears the original failure.
+
 The earlier R3 run is retained separately. The earlier full R3 native77 simulation still has
 original points exceeding the 1800-second host wait. Those rows remain timeouts.
 The unchanged original argmax diagnostic now passes with exact integer reference

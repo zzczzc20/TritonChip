@@ -17,6 +17,16 @@ with all operating results explicitly labelled at their actual frequency.
 The original 100 MHz gate is not passed. No conditional workload gate is yet
 qualified; actual clock, timing, CDC, route and placement still require review.
 
+[Independent read-only image backup](attempt03/preserved_image_90mhz_20261018.json)
+now retains both the complete xclbin and generated partial bitstream outside the
+implementation working directory, with matching source/copy SHA256 and read-only
+permissions. No programming or frequency change was performed.
+[The staged continuous plan](attempt03/conditional_delivery_plan_12a0340.json)
+binds all original 77 native IDs and 14 HBM-core IDs to concrete commands on the
+FPGA host. It remains planned, with no workload or clock measurement claimed.
+The active serial qualification observer is recorded in
+[conditional_90mhz_launch.json](attempt03/conditional_90mhz_launch.json).
+
 **P90 — conditional operating path within the authorized 91 MHz ceiling.**
 Unique blocker: qualification of the preserved image at its actual operating
 clock. Direct evidence: the complete image has packaged 90 MHz metadata but no

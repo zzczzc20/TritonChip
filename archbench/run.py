@@ -60,7 +60,14 @@ def _evidence(args):
 
 def _child_env(args):
     env = dict(os.environ)
-    env['PYTHONPATH'] = os.pathsep.join([str(ROOT), str(ROOT / 'python'), env.get('PYTHONPATH', '')])
+    source_paths = [ROOT, ROOT / 'python']
+    if args.platform == 'tnca':
+        # A fresh snapshot must also own the compiler and assembler imports.
+        # An editable installation can otherwise resolve a different checkout,
+        # even while the runner/runtime provenance names this source tree.
+        source_paths += [ROOT / 'compiler/python', ROOT / 'tools/asm']
+    env['PYTHONPATH'] = os.pathsep.join([*(str(p) for p in source_paths),
+                                       env.get('PYTHONPATH', '')])
     if args.platform == 'tnca':
         env['CUDA_VISIBLE_DEVICES'] = ''
         env['TNCA_TRITON'] = '1'

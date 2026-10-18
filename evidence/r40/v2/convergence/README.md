@@ -63,6 +63,19 @@ zero opened sessions, and the exact post-qualification launch script. Its
 single low-priority preparation worker performed no RTL/TLM run or board open.
 The script inherits that prepared cache and remains unexecuted pending P90.
 
+**Operating-audit guard correction.** The first report stopped before producing
+operating timing/CDC evidence, at its generated-clock PERIOD identity guard;
+[the failure is retained](attempt03/operating_audit_v1_guard_failure.json).
+[Installed Vivado 2023.2 API probes](attempt03/clock_property_probe_vivado2023_2.json)
+show PERIOD=0.000 before `update_timing`, then 11.111 after update for the
+requested 11.111111... ns period. The correction updates timing before reading
+the property and compares within its displayed 0.001 ns quantum. It does not
+relax setup/hold slack or permit a different operating clock. Regression checks
+cover deferred properties, three-decimal precision and a wrong-frequency refusal.
+[The v2 report-only launch](attempt03/operating_audit_v2_launch.json) uses a fresh
+output directory and the same immutable routed checkpoint. No implementation
+or programming was performed; P90 still awaits actual report review.
+
 **P90 — conditional operating path within the authorized 91 MHz ceiling.**
 Unique blocker: qualification of the preserved image at its actual operating
 clock. Direct evidence: the complete image has packaged 90 MHz metadata but no

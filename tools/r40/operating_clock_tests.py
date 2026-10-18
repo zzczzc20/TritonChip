@@ -17,8 +17,10 @@ proc get_property {args} {return $::period}
 proc create_generated_clock {args} {
     set divide [lindex $args [expr {[lsearch $args -divide_by]+1}]]
     set multiply [lindex $args [expr {[lsearch $args -multiply_by]+1}]]
-    set ::period [expr {10.0*$divide/$multiply}]
+    set ::pending_period [expr {10.0*$divide/$multiply}]
+    set ::period 0.0
 }
+proc update_timing {} {set ::period $::pending_period}
 foreach op {report_clocks report_route_status report_timing_summary report_timing report_clock_interaction report_cdc check_timing report_drc} {
     proc $op {args} {set f [open [lindex $args end] w];puts $f recorded;close $f}
 }

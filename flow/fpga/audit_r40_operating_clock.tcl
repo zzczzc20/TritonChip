@@ -24,6 +24,9 @@ report_clocks -file [file join $out clocks_original.rpt]
 # Preserve the master relationship used by the generated Vitis constraint.
 # The original is multiply/divide 12/12. Re-analysis uses mhz/100 only.
 create_generated_clock -name $name -divide_by 100 -multiply_by $mhz -source $source $target
+# Generated-clock properties are unresolved (PERIOD=0.000) until timing
+# propagation updates their master relationship in Vivado 2023.2.
+update_timing
 set after [get_property PERIOD [get_clocks $name]]
 set expected_period [expr {1000.0/$mhz}]
 # Vivado exposes PERIOD rounded to 0.001 ns. Compare within half that

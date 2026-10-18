@@ -25,8 +25,15 @@ report_clocks -file [file join $out clocks_original.rpt]
 # The original is multiply/divide 12/12. Re-analysis uses mhz/100 only.
 create_generated_clock -name $name -divide_by 100 -multiply_by $mhz -source $source $target
 set after [get_property PERIOD [get_clocks $name]]
-if {abs($after-1000.0/$mhz)>0.0001} {error "requested operating period was not applied"}
+set expected_period [expr {1000.0/$mhz}]
+# Vivado exposes PERIOD rounded to 0.001 ns. Compare within half that
+# reporting quantum; this is an identity guard, not a slack tolerance.
+set period_reporting_tolerance 0.00051
+puts "R40_CLOCK_PERIOD_CHECK actual_ns=$after expected_ns=$expected_period property_tolerance_ns=$period_reporting_tolerance"
 report_clocks -file [file join $out clocks_operating.rpt]
+if {abs($after-$expected_period)>$period_reporting_tolerance} {
+    error "requested operating period was not applied: actual=$after expected=$expected_period"
+}
 report_route_status -file [file join $out route_status.rpt]
 report_timing_summary -delay_type min_max -report_unconstrained -file [file join $out timing.rpt]
 report_timing -delay_type max -max_paths 25 -path_type full_clock_expanded -file [file join $out setup_paths.rpt]

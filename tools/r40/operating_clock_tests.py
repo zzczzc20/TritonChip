@@ -29,10 +29,13 @@ foreach op {synth_design opt_design place_design phys_opt_design route_design wr
 
 
 class ClockAnalysis(unittest.TestCase):
-    def invoke(self,d,mhz):
+    def invoke(self,d,mhz,round_period=False,wrong_ratio=False):
         d=Path(d);cp=d/'routed.dcp';cp.touch()
         driver=d/'driver.tcl'
-        driver.write_text(STUB+f'\nset argv [list {{{cp}}} {{{d/"audit"}}} {mhz}]\n'+
+        stub=STUB
+        if round_period:stub=stub.replace('return $::period','return [format %.3f $::period]')
+        if wrong_ratio:stub=stub.replace('10.0*$divide/$multiply','10.0')
+        driver.write_text(stub+f'\nset argv [list {{{cp}}} {{{d/"audit"}}} {mhz}]\n'+
                           f'if {{[catch {{source {{{SCRIPT}}}}} why]}} {{puts stderr $why;exit 1}}\n')
         return subprocess.run(['tclsh',str(driver)],capture_output=True,text=True)
 
@@ -42,6 +45,19 @@ class ClockAnalysis(unittest.TestCase):
             self.assertEqual(result.returncode,0,result.stderr)
             self.assertIn('analysis_period_ns\t10.989',(Path(d)/'audit/analysis.tsv').read_text())
             self.assertIn('R40_OPERATING_CLOCK_ANALYSIS_DONE',result.stdout)
+
+    def test_realistic_three_decimal_90mhz_property(self):
+        with tempfile.TemporaryDirectory() as d:
+            r=self.invoke(d,90,round_period=True)
+            self.assertEqual(r.returncode,0,r.stderr)
+            self.assertIn('actual_ns=11.111 expected_ns=11.111111',r.stdout)
+
+    def test_wrong_clock_still_refused(self):
+        with tempfile.TemporaryDirectory() as d:
+            r=self.invoke(d,90,round_period=True,wrong_ratio=True)
+            self.assertNotEqual(r.returncode,0)
+            self.assertIn('actual=10.000 expected=11.111111',r.stderr)
+            self.assertTrue((Path(d)/'audit/clocks_operating.rpt').exists())
 
     def test_invalid_frequency_refused(self):
         for frequency in (0,101,'nan'):

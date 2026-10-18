@@ -12,6 +12,12 @@ three distinct physical SLR cores, positive reads/writes on every outlet,
 drained completion and host ownership visibility. Scaling, dispatch edge cases,
 HBM completeness, full model and all performance gates remain open.
 
+[Complete final-candidate native raw archive](attempt03/native77_b59119d_raw.tar.gz)
+and [verified manifest](attempt03/native77_b59119d_raw_manifest.json) preserve
+all original records, checkpoint and compiler bundles. Local streaming audit
+verified all 6,447 bundle file hashes and the archived capability inputs. Active
+HBM/model files are excluded so the completed inventory is a consistent snapshot.
+
 The complete original HBM inventory is running. Its next observation command
 and success/failure handling are I below. The active immutable run section
 records the baseline launch checkpoint; this section supersedes its earlier

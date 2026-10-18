@@ -4,7 +4,9 @@ set checkpoint [file normalize [lindex $argv 0]]
 set report [file normalize [lindex $argv 1]]
 if {[llength $argv] != 2} {error "ROUTED_DCP and NEW_REPORT are required"}
 if {[file exists $report]} {error "preserve the prior placement report: $report"}
-open_checkpoint $checkpoint
+if {[info exists ::r40_shared_checkpoint]} {
+    if {[file normalize $::r40_shared_checkpoint] ne $checkpoint} {error "shared checkpoint identity mismatch"}
+} else {open_checkpoint $checkpoint}
 
 set cells [get_cells -hierarchical -filter {IS_PRIMITIVE}]
 set names [get_property NAME $cells]
@@ -88,4 +90,4 @@ puts $stream "failing_cores {$failures}"
 close $stream
 if {[llength $failures]} {error "actual core placement failed for cores $failures; see $report"}
 puts "R40_ACTUAL_CORE_PLACEMENT_PASS"
-exit
+if {![info exists ::r40_shared_checkpoint]} {exit}

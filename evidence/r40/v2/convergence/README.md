@@ -2,30 +2,40 @@
 
 ## Immediate experiment commands and branches
 
-**Required gate delta: no additional gate passed. Attempt 3 completed route
-and reached bitstream generation on 2026-10-18. Its routed timing report fails
-setup: WNS -1.002 ns, TNS -6679.026 ns, 17,332 failing endpoints; hold is clean.
-The source-CI prerequisite is successful. No physical/workload gate is promoted.
-Budget: maximum 4, used 3, remaining 1, following the explicit final additional
-authorization on 2026-10-18. No fourth implementation has started.**
-The user subsequently authorized [91 MHz conditional acceptance](attempt03/conditional_91mhz_authorization.md).
-The original 100 MHz gate remains failed; conditionally qualified results will
-bind the actual measured operating clock and unchanged bitstream identity.
-No conditional workload gate has passed yet. Preserve the generated image and
-complete the clock/CDC/route audit before advancing to V. The existing build
-and report observer continue without a new implementation launch.
+**Required gate delta: no additional gate passed. Attempt 3 completed route,
+bitstream generation and xclbin packaging. Its original launcher exited 3
+because Vitis moved DATA_CLK from the requested 100 MHz to 90 MHz. The complete
+image is retained; this is a clock-policy rejection, not a missing bitstream.
+The original routed 100 MHz report fails setup (WNS -1.002 ns, TNS -6679.026 ns).
+Budget: maximum 4, used 3, remaining 1. No fourth implementation has started.**
 
-**P91 — authorized conditional path.** Its unique blocker is an operating
-image qualified at its actual measured clock. Direct evidence: the latest
-terminal marker and packaged image are absent; the 100 MHz routed report fails
-setup. Next command: `cat ~/tnca_build/r40_attempt03_conditional_91mhz/state.json`
-and inspect its immutable image/clock reports after completion. If timing,
-hold, route and CDC pass and the actual programmed clock is verified, proceed
-to V using `--operating-clock-evidence` and label results conditional. If they
-fail, preserve the image and diagnose the limiting condition; do not erase the
-baseline or silently call it 100 MHz. For conditional runs, the P prerequisite
-in the unresolved-gate table means P91; the original P/100 MHz result remains
-separately failed. All downstream workload gates are still not-measured.
+[Terminal image evidence](attempt03/terminal_image_90mhz_20261018.json) binds the
+79,202,018-byte xclbin, complete SHA, raw clock topology info and original link
+outcome. Packaged DATA_CLK is **90 MHz**, not a board measurement. It is retained
+under the user's [91 MHz conditional-acceptance authorization](attempt03/conditional_91mhz_authorization.md),
+with all operating results explicitly labelled at their actual frequency.
+The original 100 MHz gate is not passed. No conditional workload gate is yet
+qualified; actual clock, timing, CDC, route and placement still require review.
+
+**P90 — conditional operating path within the authorized 91 MHz ceiling.**
+Unique blocker: qualification of the preserved image at its actual operating
+clock. Direct evidence: the complete image has packaged 90 MHz metadata but no
+board-clock measurement or reviewed 90 MHz timing/CDC report. Next command:
+inspect the serial operating-image audit state and reports. If timing/hold,
+route, CDC and physical SLR placement pass, load the preserved image and verify
+the actual clock; then execute V with `--operating-clock-evidence`. If they fail,
+retain the baseline and repair that specific qualification issue without a new
+implementation. The earlier planned 91 MHz report is superseded by analysis
+matching the actual packaged 90 MHz. For conditional runs, the P prerequisite
+in the unresolved-gate table means P90; P/100 MHz remains separately failed.
+All downstream workload gates remain not-measured.
+
+[Immutable conditional software](attempt03/conditional_software_12a0340.json)
+is already staged on the FPGA host, with the contract, software-tree and archive
+hashes verified. No device was opened. It includes continuous original >=64 MiB
+checkpoint -> native77 -> HBM14 -> frozen-model execution and shared measured
+clock provenance. The original graph sizes, numerical checks and traffic/
+visibility assertions are unchanged. This is preparation, not workload evidence.
 
 Hardware source is `54249f7f7ac0cf8f5d1b82d8e63a3046d27522d3`, with the explicit
 immutable configuration and archive identity in [attempt03](attempt03/README.md).

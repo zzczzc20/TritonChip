@@ -1,8 +1,9 @@
 # Post-route analysis only: no synth/opt/place/route/bitstream/checkpoint writes.
 # Usage: vivado ... -tclargs ROUTED_DCP FRESH_OUTPUT_DIR INTEGER_MHZ
 # Runtime MMCM programming and measured board clocks require separate evidence.
-if {[llength $argv] != 3} {error "expected ROUTED_DCP FRESH_OUTPUT_DIR INTEGER_MHZ"}
-lassign $argv checkpoint out mhz
+if {[llength $argv] ni {3 4}} {error "expected ROUTED_DCP FRESH_OUTPUT_DIR INTEGER_MHZ"}
+lassign $argv checkpoint out mhz extra
+if {$extra ni {{} placement}} {error "unknown optional audit mode"}
 if {![string is integer -strict $mhz] || $mhz < 1 || $mhz > 100} {
     error "operating frequency must be an integer in 1..100 MHz"
 }
@@ -34,6 +35,15 @@ report_clock_interaction -file [file join $out clock_interaction.rpt]
 report_cdc -details -file [file join $out cdc.rpt]
 check_timing -verbose -file [file join $out checks.rpt]
 report_drc -file [file join $out drc.rpt]
+if {$extra eq "placement"} {
+    set ::r40_shared_checkpoint [file normalize $checkpoint]
+    proc r40_read_placement {script cp report} {
+        set argv [list $cp $report]
+        source $script
+    }
+    r40_read_placement [file join [file dirname [info script]] audit_r40_placed_cores.tcl] $checkpoint [file join $out actual_cores.rpt]
+    unset ::r40_shared_checkpoint
+}
 set f [open [file join $out analysis.tsv] {WRONLY CREAT EXCL}]
 puts $f "checkpoint\t$checkpoint"
 puts $f "requested_mhz\t$mhz"

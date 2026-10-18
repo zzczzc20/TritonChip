@@ -88,3 +88,17 @@ changed globally and no missing board clock was filled in from a request.
 The 100 MHz historical path retains its existing behavior; conditional runs
 must provide explicit evidence. Source/compiler/runtime identities must be
 refrozen after this reporting change before starting the new sequence.
+
+
+## Actual packaged operating point
+
+The final Vitis package contains DATA_CLK at **90 MHz**, as recorded in
+`terminal_image_90mhz_20261018.json`. The original launcher returned 3 for
+`freq-moved`; the complete xclbin and partial bitstream exist. The baseline will
+be qualified and measured at 90 MHz under the authorized 91 MHz ceiling, with
+90 MHz stated explicitly in every result. The planned exact-91 MHz audit is
+superseded by a report at the packaged operating point; this does not alter the
+frozen contract or the failed 100 MHz result. The existing 100 MHz diagnostic
+collector is allowed to finish; no second DCP reader is started alongside it.
+The operating-clock report includes actual core/SLR placement in the same DCP
+session to avoid an additional full checkpoint load.

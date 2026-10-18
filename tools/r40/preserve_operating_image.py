@@ -101,7 +101,7 @@ def main():
     record['clock_audit_script_sha256']=sha(script)
     ok=execute('operating-clock',['vivado','-mode','batch','-log',str(out/'operating.vivado.log'),
                '-journal',str(out/'operating.vivado.jou'),'-source',str(script),'-tclargs',
-               str(checkpoint),str(out/'operating-clock-audit'),str(a.mhz)])
+               str(checkpoint),str(out/'operating-clock-audit'),str(a.mhz),'placement'])
     save('preserved-reports-ready-review-required' if ok else 'preserved-report-failure-review-required')
     return 0 if ok else 1
 

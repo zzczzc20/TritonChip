@@ -82,70 +82,70 @@ The GB10 CUDA-host complete conformance run finished successfully; its raw
 are preserved. No-CUDA-host conformance and matching repaired-source validation
 remain necessary before `R40-01.mixed-device` can pass.
 
-## Active immutable delivery run
+## Active immutable delivery run — repaired source, actual 4 GiB
 
-The corrected full runner is active from commit `997bd0b`, using software tree
-`files:cbc1340e1135ac301bfe6c39488bb3eb2b1571aafad46920e070ae701c58da52`
-and the unchanged loaded image `a88ebdf5...c4c83083` at qualified 90 MHz.
-[Snapshot identity](attempt03/conditional_software_997bd0b_full.json) and
-[launch manifest](attempt03/complete_functional_997bd0b_launch.json) name the full
-archive SHA, exact commands and preflight/controller hashes. Actual inventory
-child imports are now checked before any device session opens.
+The authoritative candidate is commit `b59119d`, product tree
+`files:3520df32c20aefcc593c0da6ff80ab2e9aa03556ecb1a942ac709a916903bec7`,
+the preserved image `a88ebdf59cfbbb2001ebd5b1b2c739c5d8cd33931f1e9202f18cac07c4c83083`
+and qualified actual 90 MHz. All stages declare 4,294,967,296 exposed bytes and
+24,000,000,000 watchdog cycles. [Snapshot](attempt03/conditional_software_b59119d_full.json),
+[launch](attempt03/delivery_b59119d_4gib_launch.json) and
+[raw checkpoint](attempt03/delivery_b59119d_4gib_checkpoint.json) retain complete
+commands, controller state, original large graph, boundary results and file hashes.
 
-The single next observation command for I in the unresolved-gate ledger is:
+**Required gate delta: no new final-candidate required gate is closed yet.**
+Actual window/PC-boundary diagnostics passed: PC0..15, all 15 physical boundary
+crossings, both exact BO ends, and a final virtual address above 2^32. Distinct
+patterns are modified through standard Torch and all readbacks follow all
+writes. Original >=64 MiB checkpoint passed on this candidate, including three
+physical cores/outlets and drained/host visibility. Native tiny and small are
+complete; medium is running. These facts are prerequisites, not full HBM,
+robustness, scaling or model acceptance. Earlier identities below are historical.
+
+I in the unresolved-gate ledger means the running complete original functional
+pipeline, followed automatically by exact capability audit, full native evidence
+and complete no-CUDA-host conformance. Its next observation command is:
 
 ```sh
-cat ~/tnca_runs_r40_conditional90_997bd0b_full/delivery.json
-tail -n 12 ~/tnca_runs_r40_conditional90_997bd0b_full/native77-tiny.log
+cat ~/tnca_delivery_b59119d_4gib/state.json
+cat ~/tnca_runs_r40_conditional90_b59119d_4gib/delivery.json
 ```
 
-Success continues the original native77/HBM14/model sequence; failure preserves
-the failing stage and requires its direct cause to be repaired. No complete
-required gate or performance result is inferred from a launch manifest.
+Success advances through native77, HBM14 and the full frozen model, without
+reduced points. Failure preserves the first failing stage and stops the queue.
+Do not launch another board workload while this controller owns the card.
 
-A read of the existing original 100 MHz routed report, without loading a DCP,
-identified its actual worst cone:
-[memory-active-port control to LSU pending](attempt03/original100_routed_path_diagnosis.json),
-14 logic levels and 11.183 ns data delay (0.872 ns logic, 10.311 ns routed net),
-WNS -1.002 ns. This is a control/response routing cone, distinct from the earlier
-module-screen MSHR bottleneck. Any later frequency optimization must address
-this measured cone and pass a matched screen before consuming the final full
-implementation budget. The usable 90 MHz image remains unchanged.
+The original 100 MHz worst cone remains
+[memory-active-port control to LSU pending](attempt03/original100_routed_path_diagnosis.json):
+14 logic levels, 11.183 ns data delay (0.872 logic, 10.311 routed net), WNS
+-1.002 ns. No fourth implementation has started. The usable 90 MHz image stays
+preserved while correctness and frozen performance gates proceed.
 
 ## Formal runtime experiments after the functional inventory
 
-`tools/r40/board_ablation_collect.py` runs the unchanged frozen compute and
-streaming subsets for active cores 1/3, physical outlets 1/3 and outstanding
-1/8. Each experiment uses three independent random-interleaved A/B blocks,
-five warmups and thirty timed calls per original point. The same source tree,
-image, clock qualification, physical topology and 1 GiB pool are mandatory;
-only the experiment's frozen runtime knob changes. Every child retains its
-complete compiler bundle and raw device endpoints. Failed original points
-stop collection and remain in the aggregate inputs. A missing/mismatched
-source or image is refused before any measurement child starts.
+`tools/r40/board_ablation_collect.py` retains the unchanged frozen subsets and
+three independent randomized A/B blocks. B40-S controls explicitly use one
+core, one outlet, one outstanding request, per-kernel staging and one pipeline
+stage, with software performance settings off. B40-N keeps the same image,
+capacity, outlets, cache and compile settings; only active cores change.
+Inherited TNCA tuning settings are cleared before child execution. Transport
+deadlines are declared identically for both sides and retained in the manifest.
 
-Use `--plan-only` to inspect the complete command sequence without device
-access. After I succeeds, stage the committed collector as an immutable harness
-and run, serially on the already loaded board:
+The already-frozen long-task rule is applied prospectively: one separate steady
+qualification call on each side establishes duration from audited raw device
+endpoints. Before any formal block starts, a read-only, hashed manifest seals
+all original point identities and their sample counts. A point exceeding 1 s
+on either side receives 10 timed samples per block; all others receive 30.
+Every formal side retains five warmups and three blocks. Qualification failures
+stop collection and remain on disk; qualification samples never enter formal
+statistics. The contract, threshold and subset are unchanged.
 
-```sh
-~/tc_env/torchenv/bin/python tools/r40/board_ablation_collect.py \
-  --experiment R40-05.three-cores \
-  --xclbin "$HOME/tnca_images/r40_attempt03_90mhz_a88ebdf5/tnca_u280.xclbin" \
-  --image-sha256 a88ebdf59cfbbb2001ebd5b1b2c739c5d8cd33931f1e9202f18cac07c4c83083 \
-  --software-tree-sha256 files:cbc1340e1135ac301bfe6c39488bb3eb2b1571aafad46920e070ae701c58da52 \
-  --operating-clock-evidence "$HOME/tnca_build/r40_attempt03_conditional_90mhz/qualified_clock.json" \
-  --out "$HOME/tnca_runs_r40_three_core_90mhz"
-```
-
-Success yields raw complete blocks and separately audited per-block verdicts;
-it does not automatically promote a package gate. Cross-block statistics, the
-required two-core control, actual traffic/bandwidth floors and complete LOO
-remain required. Failure retains its first point, all prior samples and the
-exact command. No performance result has yet been collected by this tool.
-`native_model.py --active-cores 1|2|3` also permits the required same-image model
-control while preserving the complete original model, prompt and decode count;
-its default remains three cores and its output remains functional-only.
+The next command after I succeeds is the collector's full manifest-bound run
+(`python tools/r40/board_ablation_collect.py --help` lists required identities).
+Success yields raw complete blocks and per-block audits; cross-block statistics,
+two-core controls, traffic/bandwidth floors, LOO and complete package evidence
+remain required. Failure preserves its raw point, command and preceding data.
+No performance result has yet been collected by this tool.
 
 ## Inventory collector correction after source-origin validation
 
@@ -645,11 +645,11 @@ These four variables must be bound in the retained run manifest before execution
 
 ## Every currently unpassed required gate
 
-All rows are `not-measured`. Each row has one immediate missing prerequisite, its direct evidence, the next experiment, and both outcomes. P90 and V have passed. I is the full original inventory/model rerun after the documented child source-origin repair. Running a Make target alone does not supply absent board/performance evidence.
+Rows below remain open for the current repaired-source final candidate. Each row has one immediate missing prerequisite, its direct evidence, the next experiment, and both outcomes. P90 and V have passed. I is the authoritative b59119d / 4 GiB original inventory/model pipeline described above; earlier 997bd0b results are retained history. Running a Make target alone does not supply absent board/performance evidence.
 
 | Required gate | Unique current blocker | Direct evidence | Next experiment | If successful | If failed |
 |---|---|---|---|---|---|
-| R40-01.mixed-device | Complete CUDA-host conformance is running; matching no-CUDA-host conformance must follow | [GB10 launch](attempt03/cuda_conformance_997bd0b_v3_launch.json); no complete paired-host evidence yet | On GB10: `tail -n 20 ~/r40_cuda_conformance_997bd0b_v3/device-tests.log` | Review all original cases, then combine matching no-CUDA-host conformance; functional RTL is not board performance | Preserve first failing case and repair its actual cause; no partial case selection can certify the full gate |
+| R40-01.mixed-device | Complete CUDA-host conformance is running; matching no-CUDA-host conformance must follow | [Repaired-source GB10 launch](attempt03/ownerfix_gb10_validation_launch.json); matching board-host conformance queued after I | On GB10: `cat ~/r40_runtime_ownerfix_a3820e5/state.json; tail -n 20 ~/r40_runtime_ownerfix_a3820e5/cuda-device-conformance.log` | Review all original cases, then combine matching no-CUDA-host conformance; functional RTL is not board performance | Preserve first failing case and repair its actual cause; no partial case selection can certify the full gate |
 | R40-01.device-time | 同一最终身份的三组随机交错 CPU/native 5/30 配对记录缺失 | `required_gates.json`: sim/build/r40/v2/R40-01.json does not name gate R40-01.device-time | I | After I, collect frozen `make r40-device` package evidence on final identity; judge this gate separately | Preserve I first failing evidence; fix that cause; gate remains not-measured |
 | R40-02.zero-transfer | 最终镜像完整冻结 resident 图零搬运证据缺失 | `required_gates.json`: no evidence at sim/build/r40/v2/R40-02.json | I | After I, collect frozen `make r40-residency` package evidence on final identity; judge this gate separately | Preserve I first failing evidence; fix that cause; gate remains not-measured |
 | R40-02.resident | 冻结 graphs3 的 staging/resident 匹配 A/B 缺失 | `required_gates.json`: no evidence at sim/build/r40/v2/R40-02.json | I | After I, collect frozen `make r40-residency` package evidence on final identity; judge this gate separately | Preserve I first failing evidence; fix that cause; gate remains not-measured |
@@ -658,10 +658,10 @@ All rows are `not-measured`. Each row has one immediate missing prerequisite, it
 | R40-03.tiles | 最终镜像宽 block 与 tile 冻结功能库存缺失 | `required_gates.json`: no evidence at sim/build/r40/v2/R40-03.json | I | After I, collect frozen `make r40-tiles` package evidence on final identity; judge this gate separately | Preserve I first failing evidence; fix that cause; gate remains not-measured |
 | R40-03.wide-blocks | 冻结 pointwise/reduction 宽 block 匹配 A/B 缺失 | `required_gates.json`: no evidence at sim/build/r40/v2/R40-03.json | I | After I, collect frozen `make r40-tiles` package evidence on final identity; judge this gate separately | Preserve I first failing evidence; fix that cause; gate remains not-measured |
 | R40-03.gemm-tile | 冻结 GEMM reuse 的 tile 匹配 A/B 缺失 | `required_gates.json`: no evidence at sim/build/r40/v2/R40-03.json | I | After I, collect frozen `make r40-tiles` package evidence on final identity; judge this gate separately | Preserve I first failing evidence; fix that cause; gate remains not-measured |
-| R40-04.hbm | 实际 ≥1 GiB 多 PC 窗口及完整原始 HBM 库存未完成验证 | `required_gates.json`: no evidence at sim/build/r40/v2/R40-04.json; `evidence/r40/R40-04/physical_map_v2/` proves legacy image only exposes 256 MiB / PC0 | I | After I, collect frozen `make r40-hbm` package evidence on final identity; judge this gate separately | Preserve I first failing evidence; fix that cause; gate remains not-measured |
+| R40-04.hbm | Actual 4 GiB multi-PC window passes; full original HBM inventory and measured peak headroom remain | Current [raw 4 GiB window/boundary and checkpoint evidence](attempt03/delivery_b59119d_4gib_checkpoint.json) passes; original HBM14 and measured suite/model peak +25% headroom still pending | I | After I, collect frozen `make r40-hbm` package evidence on final identity; judge this gate separately | Preserve I first failing evidence; fix that cause; gate remains not-measured |
 | R40-04.bandwidth | 最终镜像方向带宽及 memory-service outstanding 1/8 匹配记录缺失 | `required_gates.json`: no evidence at sim/build/r40/v2/R40-04.json | I | After I, collect frozen `make r40-hbm` package evidence on final identity; judge this gate separately | Preserve I first failing evidence; fix that cause; gate remains not-measured |
-| R40-04.robustness | 最终实际分配 PC 的边界/high64/alias/越界证据缺失 | `required_gates.json`: no evidence at sim/build/r40/v2/R40-04.json | I | After I, collect frozen `make r40-hbm` package evidence on final identity; judge this gate separately | Preserve I first failing evidence; fix that cause; gate remains not-measured |
-| R40-05.multicore | Complete physical capability audit must bind the now-passing native77 and large checkpoint to the reviewed image/SLRs/clock | Final 997bd0b pipeline completed all native tiers and native77-audit; P90 and original V passed | `python tools/r40/multicore_board_acceptance.py --help` then execute its full immutable-image command against the retained final inventory | Promote only this capability gate after all source/image/clock, bundle, numerical, core/outlet and visibility checks pass | Preserve failed audit; repair the actual mismatch; no scaling or dispatch gate is inferred |
+| R40-04.robustness | Actual PC0..15 boundary/high-address/alias probes pass; explicit out-of-window refusal and full robustness review remain | `required_gates.json`: no evidence at sim/build/r40/v2/R40-04.json | I | After I, collect frozen `make r40-hbm` package evidence on final identity; judge this gate separately | Preserve I first failing evidence; fix that cause; gate remains not-measured |
+| R40-05.multicore | Complete physical capability audit must bind the now-passing native77 and large checkpoint to the reviewed image/SLRs/clock | Prior CBC identity passed; current repaired-source 4 GiB candidate must finish all native tiers and the automatically queued exact audit | `python tools/r40/multicore_board_acceptance.py --help` then execute its full immutable-image command against the retained final inventory | Promote only this capability gate after all source/image/clock, bundle, numerical, core/outlet and visibility checks pass | Preserve failed audit; repair the actual mismatch; no scaling or dispatch gate is inferred |
 | R40-05.scaling | 最终镜像冻结 compute 的 1/2/3 核 A/B 缺失 | `required_gates.json`: no evidence at sim/build/r40/v2/R40-05.json | I | After I, collect frozen `make r40-multicore` package evidence on final identity; judge this gate separately | Preserve I first failing evidence; fix that cause; gate remains not-measured |
 | R40-05.dispatch | 最终镜像原始大图的三物理核完成/分发计数缺失 | `required_gates.json`: no evidence at sim/build/r40/v2/R40-05.json | I | After I, collect frozen `make r40-multicore` package evidence on final identity; judge this gate separately | Preserve I first failing evidence; fix that cause; gate remains not-measured |
 | R40-06.nuca | 最终镜像 active outlet 的实际负载流量证据缺失 | `required_gates.json`: no evidence at sim/build/r40/v2/R40-06.json | I | After I, collect frozen `make r40-nuca` package evidence on final identity; judge this gate separately | Preserve I first failing evidence; fix that cause; gate remains not-measured |

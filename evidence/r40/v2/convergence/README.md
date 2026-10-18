@@ -2,12 +2,21 @@
 
 ## Immediate experiment commands and branches
 
-**Required gate delta: no additional gate passed. Final authorized implementation
-3 started at 2026-10-17 21:20:13 UTC. Budget: maximum 3, used 3, remaining 0.**
+**Required gate delta: no additional gate passed. Attempt 3 remains live in
+detailed placement as of 2026-10-18 01:49:59 UTC, not a terminal failure.
+Budget: maximum 4, used 3, remaining 1, following the explicit final additional
+authorization on 2026-10-18. No fourth implementation has started.**
 Hardware source is `54249f7f7ac0cf8f5d1b82d8e63a3046d27522d3`, with the explicit
 immutable configuration and archive identity in [attempt03](attempt03/README.md).
 The frozen contract is unchanged. No final-image timing, CDC, HBM or workload
 result is claimed; missing measurements remain not-measured.
+
+[Live placement evidence](attempt03/placement_observation_20261018.json)
+records the running implementation and observer, absent terminal marker and
+log identity. Two critical warnings remain for final review: a generated
+DONT_PARTITION query matched no objects, and an HDPR-5 severity downgrade was
+reported. Neither is classified as harmless or a terminal error without the
+final DRC and hierarchy evidence. No large DCP is opened beside the live placer.
 
 **P — qualify the same final three-SLR build.** The unique blocker is the
 absence of legal full-image route, 100 MHz min/max timing, CDC and a loadable
@@ -26,7 +35,8 @@ The terminal marker is absent during execution. The existing read-only observer
 collects reports after terminal completion. Success requires actual three-core
 SLR placement, legal route, all-clock setup/hold, CDC and a complete image hash;
 then proceed to V. Failure preserves the checkpoint, actual limiting paths and
-route errors; no full-implementation budget remains and no retry is automatic.
+route errors. The one remaining attempt requires a source-bound root-cause
+correction and matched validation before launch; no retry is automatic.
 
 [Prerequisite evidence](attempt03/prerequisites.json) retains the routed
 predecessor module: WNS +0.361 ns, WHS +0.010 ns, zero TNS/THS and route errors,
@@ -46,16 +56,23 @@ for the original >=64 MiB workload; then run native77, HBM14 and frozen models.
 Failure preserves the first incorrect result or missing traffic/visibility
 requirement without shrinking the workload.
 
-CI for exact source `54249f7` runs in parallel; success is mandatory before
-qualification or board load. A complete original native77 functional run now
+CI for exact source `54249f7` completed with 12 successful jobs and one
+cancelled job: its serial MMIO/native sweep exceeded the 120-minute job cap.
+[Raw cancellation evidence](attempt03/exact_source_ci_cancelled.json) is
+retained; this is not a CI pass. The original checks and six simulations are
+being scheduled as independent lanes, preserving all assertions and arguments.
+Successful source qualification is mandatory before board load. A complete original native77 functional run now
 uses source a1fed22, the final-candidate RTL geometry and explicit testbench
 guards on the ARM host; [launch evidence](attempt03/final_native77_launch.json).
 Its new per-sample raw endpoint records are independently reproducible. This
 is functional RTL only, not the final-image inventory or a performance gate.
 The earlier R3 run is retained separately. The earlier full R3 native77 simulation still has
-original points exceeding the 1800-second host wait. Those rows remain timeouts;
-the unchanged original argmax point has a separate 7200-second-wait diagnostic.
-Neither simulation result substitutes for the final-image inventory.
+original points exceeding the 1800-second host wait. Those rows remain timeouts.
+The unchanged original argmax diagnostic now passes with exact integer reference
+equality; its steady call took 3,200.963 host seconds.
+[Raw terminal evidence](native_argmax_timeout_terminal.json) retains both the
+original timeout and successful longer-wait result. Neither result substitutes
+for the final-candidate or final-image inventory.
 
 ## Latest detailed diagnosis and candidate screening
 
@@ -142,8 +159,9 @@ sampled shared slice2 logic to its sequential producers and consumers.
 new final candidate. **Failure:** preserve the missing information; do not
 replace it with a placement-property check or spend the last attempt by default.
 
-**Full-implementation budget:** the original two additional attempts plus one
-further attempt authorized on 2026-10-17 (maximum 3, used 3, remaining 0). The exact
+**Full-implementation budget:** the original two additional attempts, one
+further attempt authorized on 2026-10-17, and one final additional attempt
+authorized on 2026-10-18 (maximum 4, used 3, remaining 1). The exact
 launch identity, state and remaining balance are recorded in
 `implementation_budget.json`; report extraction and module-level screening
 are not full implementations. The contract remains frozen.

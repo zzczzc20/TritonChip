@@ -1,12 +1,12 @@
 {
   "schema": "tnca-r40-full-implementation-budget/1",
-  "recorded_utc": "2026-10-17T21:35:47Z",
-  "authorization": "Original maximum two additional full implementations, plus one further full implementation explicitly authorized on 2026-10-17; frozen contract unchanged",
+  "recorded_utc": "2026-10-18T01:49:48.299479+00:00",
+  "authorization": "Previous maximum three attempts plus one FINAL additional attempt explicitly authorized on 2026-10-18; frozen contract unchanged",
   "starts_after_failed_hardware_source": "09ebe06",
   "previous_failure_checkpoint_sha256": "8d82bd375ce489ca433aba15f83692b53b409bc045381a7a8f44ed44811a50d9",
-  "maximum_additional_attempts": 3,
+  "maximum_additional_attempts": 4,
   "used": 3,
-  "remaining": 0,
+  "remaining": 1,
   "attempts": [
     {
       "number": 1,
@@ -123,7 +123,7 @@
     },
     {
       "number": 3,
-      "state": "kernel-synthesis-running",
+      "state": "detail-placement-running",
       "source_commit": "54249f7f7ac0cf8f5d1b82d8e63a3046d27522d3",
       "source_archive_sha256": "6b254137501f4a3802c11f9e084e961c60724093a4da5654ce721b70a0d8db84",
       "source_root": "/home/zzhouch/tnca_src_r40_attempt03_54249f7",
@@ -185,16 +185,18 @@
         "replacement_evidence": "attempt03/observer_replacement.json"
       },
       "synthesis_start_evidence": "attempt03/synthesis_started.json",
-      "latest_observed_utc": "2026-10-17T21:35:47Z",
+      "latest_observed_utc": "2026-10-18T01:49:48.299479+00:00",
       "xo_sha256": "3de447acb123567a37ce547258129d0a328a440cf9254ad56e4186c4c8614fef",
-      "latest_observed_phase": "Kernel synthesis has completed constraint validation; complete build remains live, no terminal marker",
+      "latest_observed_phase": "Phase 3.3.2.1 Slice Area Swap Initial; runner1917223 and observer1926388 alive; terminal marker absent",
       "report_observer_history": [
         {
           "runner_pid": 1917224,
           "out": "/home/zzhouch/tnca_build/r40_attempt03_followup",
           "scope": "existing read-only observer, after terminal marker"
         }
-      ]
+      ],
+      "synthesis_complete": true,
+      "latest_observation": "attempt03/placement_observation_20261018.json"
     }
   ],
   "first_attempt_prerequisites": [
@@ -214,8 +216,15 @@
       "maximum_additional_attempts": 3,
       "date_utc": "2026-10-17",
       "source": "User explicitly authorizes one further attempt after both previous attempts were spent",
-      "user_instruction": "\u76ee\u524d\u770b\u8d77\u6765\u5931\u8d25\u7684\u53ef\u80fd\u6027\u6bd4\u8f83\u5927\uff0c\u5f53\u7136\u8fd8\u5f97\u89c2\u5bdf\uff0c\u6211\u53ef\u4ee5\u591a\u7ed9\u4f60\u4e00\u6b21\u7efc\u5408budget (\u4e4b\u524d\u4e0a\u677f2\u6b21\u7528\u5149\u6211\u7ed9\u4f60\u7684\u9884\u7b97\u4e86\uff09\u8fd9\u6b21\u4f60\u8981\u5f88\u8c28\u614e\uff0c\u771f\u7684\u4f18\u5316\u597d\u4ee5\u6ee1\u8db3\u8981\u6c42"
+      "user_instruction": "目前看起来失败的可能性比较大，当然还得观察，我可以多给你一次综合budget (之前上板2次用光我给你的预算了）这次你要很谨慎，真的优化好以满足要求"
+    },
+    {
+      "maximum_additional_attempts": 4,
+      "date_utc": "2026-10-18",
+      "source": "Explicit user authorization, final further attempt; attempt03 remains live, no new implementation started",
+      "user_instruction": "据我所知昨天上板失败了，我很震惊这样的新错误没有更早发现，我会给你最后一次上板机会，你需要吸取经验教训通过这次上板"
     }
   ],
-  "third_attempt_policy": "Final authorized attempt started once after terminal actual module route and min/max timing, mapped cut, functional cycle equivalence and immutable source checks. No automatic retry and no remaining full-implementation budget."
+  "third_attempt_policy": "Attempt03 remains live; no restart and no source mutation. Await complete terminal evidence before considering final remaining attempt.",
+  "fourth_attempt_policy": "One final attempt held in reserve. Start only after actual attempt03 terminal diagnosis, source-bound correction and matched screening of each blocking failure; exact-source functional/CI qualification, immutable source/config/toolchain/contract identity required. No unexplained directive change, automatic retry, or budget rollover."
 }

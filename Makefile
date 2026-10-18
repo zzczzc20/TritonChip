@@ -2129,8 +2129,8 @@ r40-line-axi: | dirs
 	@$(PYTHON) tools/r40/multicore_axi_tests.py --cores 3 --write-delay 300
 
 # Versioned register path; shared board host binding driven by the AXI RTL.
-.PHONY: r40-multicore-mmio
-r40-multicore-mmio: | dirs
+.PHONY: r40-multicore-mmio r40-multicore-mmio-checks
+r40-multicore-mmio-checks: | dirs
 	@$(PYTHON) tools/r40/physical_grid_clock_tests.py
 	@$(PYTHON) tools/r40/autotune_policy_tests.py
 	@$(PYTHON) tools/r40/autotune_worker_tests.py
@@ -2140,6 +2140,9 @@ r40-multicore-mmio: | dirs
 	@$(PYTHON) tools/r40/multicore_mmio_synth_tests.py
 	@$(PYTHON) tools/r40/placed_core_audit_tests.py
 	@$(PYTHON) tools/r40/multicore_mmio_option_tests.py
+
+# Keep the complete local entry point; CI schedules these independent lanes separately.
+r40-multicore-mmio: r40-multicore-mmio-checks
 	@$(TRITON_PYTHON) tools/r40/multicore_mmio_tests.py --cores 1 --ports 1
 	@$(TRITON_PYTHON) tools/r40/multicore_mmio_tests.py --cores 3 --ports 3
 	@$(TRITON_PYTHON) tools/r40/multicore_mmio_tests.py --cores 3 --ports 3 --pipeline 2 --board-top

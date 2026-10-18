@@ -537,9 +537,27 @@ jobs:
           if-no-files-found: ignore
 
   r40-mmio:
-    name: "R40 multicore MMIO and native AXI graphs"
+    name: "R40 multicore MMIO (${{ matrix.lane }})"
     runs-on: ubuntu-24.04
     timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - lane: checks
+            command: make r40-multicore-mmio-checks TRITON_PYTHON=$HOME/tritonenv/bin/python
+          - lane: registers-1
+            command: $HOME/tritonenv/bin/python tools/r40/multicore_mmio_tests.py --cores 1 --ports 1
+          - lane: registers-3
+            command: $HOME/tritonenv/bin/python tools/r40/multicore_mmio_tests.py --cores 3 --ports 3
+          - lane: registers-board
+            command: $HOME/tritonenv/bin/python tools/r40/multicore_mmio_tests.py --cores 3 --ports 3 --pipeline 2 --board-top
+          - lane: native-ports
+            command: $HOME/tritonenv/bin/python tools/r40/native_memory_ports_tests.py --backend fpga-multicore-sim --cores 3 --ports 3 --pipeline 2 --board-top
+          - lane: native-features
+            command: $HOME/tritonenv/bin/python tools/r40/native_multicore_features.py --backend fpga-multicore-sim --cores 3 --pipeline 2 --board-top
+          - lane: native-pair
+            command: $HOME/tritonenv/bin/python tools/r40/native_multicore_features.py --backend fpga-multicore-sim --cores 3 --pair --pipeline 2 --board-top
     steps:
       - uses: actions/checkout@v4
       - name: Toolchain
@@ -563,4 +581,4 @@ jobs:
           ~/tritonenv/bin/pip install -q -e .
           make tnca-opt
       - name: Real registers, AXI and resident Torch graphs
-        run: make r40-multicore-mmio TRITON_PYTHON=$HOME/tritonenv/bin/python
+        run: ${{ matrix.command }}

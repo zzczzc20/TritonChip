@@ -1,0 +1,115 @@
+{
+  "schema": "tnca-live-operating-clock-audit/1",
+  "observed_utc": "2026-10-18T08:47:23.993494+00:00",
+  "pid": 2192863,
+  "process_command": "/tools/Xilinx/Vivado/2023.2/bin/unwrapped/lnx64.o/vivado -mode batch -log /home/zzhouch/tnca_build/r40_attempt03_conditional_90mhz/operating.vivado.log -journal /home/zzhouch/tnca_build/r40_attempt03_conditional_90mhz/operating.vivado.jou -source /home/zzhouch/tnca_reports_r40_conditional90_18466e2/flow/fpga/audit_r40_operating_clock.tcl -tclargs /home/zzhouch/tnca_build/r40_attempt03_20261017/xo/tmp/link/vivado/vpl/prj/prj.runs/impl_1/level0_wrapper_routed.dcp /home/zzhouch/tnca_build/r40_attempt03_conditional_90mhz/operating-clock-audit 90 placement ",
+  "process_stat": "2192863 (vivado) S 2192842 2192823 2192823 0 -1 1077936128 6176229 0 6 0 43259 856 0 0 20 0 7 0 147410631 10437652480 2380073 18446744073709551615 4206592 4213789 140732737451312 0 0 0 0 4096 1262 0 0 0 17 7 0 0 0 0 0 4225384 4227336 241569792 140732737452746 140732737453304 140732737453304 140732737458111 0\n",
+  "state": {
+    "schema": "tnca-preserved-operating-image/1",
+    "scope": "Preserve a terminal implementation and serially audit an operating clock.\n\nNo implementation, bitstream regeneration, programming, clock programming or\nacceptance promotion. Wait for the existing report observer before opening DCP.\n",
+    "build": "/home/zzhouch/tnca_build/r40_attempt03_20261017",
+    "requested_mhz": 90,
+    "original_contract_gate": "not-passed",
+    "conditional_gate": "not-measured",
+    "tool_sha256": "4c1a1fe9d4bafd368dca52a1205d485ccb4edae351cb2d38020bbdc15974f971",
+    "artifacts": [
+      {
+        "source": "/home/zzhouch/tnca_build/r40_attempt03_20261017/xo/tmp/link/vivado/vpl/prj/prj.runs/impl_1/level0_i_ulp_my_rm_partial.bit",
+        "preserved": "/home/zzhouch/tnca_build/r40_attempt03_conditional_90mhz/preserved-level0_i_ulp_my_rm_partial.bit",
+        "bytes": 79094414,
+        "sha256": "1c2dfd57a4e215574b4f6d017526c1c5415a9b49b8bff37148b5f9ba1b418857"
+      },
+      {
+        "source": "/home/zzhouch/tnca_build/r40_attempt03_20261017/xo/tnca_u280.xclbin",
+        "preserved": "/home/zzhouch/tnca_build/r40_attempt03_conditional_90mhz/preserved-tnca_u280.xclbin",
+        "bytes": 79202018,
+        "sha256": "a88ebdf59cfbbb2001ebd5b1b2c739c5d8cd33931f1e9202f18cac07c4c83083"
+      }
+    ],
+    "steps": [
+      {
+        "label": "xclbin-info",
+        "command": [
+          "/opt/xilinx/xrt/bin/xclbinutil",
+          "--input",
+          "/home/zzhouch/tnca_build/r40_attempt03_conditional_90mhz/preserved-tnca_u280.xclbin",
+          "--info"
+        ],
+        "exit_code": 0
+      },
+      {
+        "label": "clock-topology",
+        "command": [
+          "/opt/xilinx/xrt/bin/xclbinutil",
+          "--input",
+          "/home/zzhouch/tnca_build/r40_attempt03_conditional_90mhz/preserved-tnca_u280.xclbin",
+          "--dump-section",
+          "CLOCK_FREQ_TOPOLOGY:JSON:/home/zzhouch/tnca_build/r40_attempt03_conditional_90mhz/clock_topology.json"
+        ],
+        "exit_code": 0
+      }
+    ],
+    "status": "artifacts-preserved-extracting-serial-clock-audit",
+    "observed_utc": "2026-10-18T08:41:18.355869+00:00",
+    "implementation_exit_code": 3,
+    "original_observer_state": {
+      "scope": "report extraction only; no synthesis/place/route/load/retry",
+      "gate_status": "not-measured",
+      "build": "/home/zzhouch/tnca_build/r40_attempt03_20261017",
+      "runner_pid": 1917223,
+      "image_sha256": null,
+      "steps": [],
+      "watcher_sha256": "3d0d1d093e116eac2c6ace87ea6dc59b347edcf23adf3df66ca29e73ad566fa4",
+      "final_cache_cuts": true,
+      "status": "historical-extra-report-interrupted-preserved-for90-qualification",
+      "observed_utc": "2026-10-18T08:41:10.156636+00:00",
+      "priority_change": "allow current original report to finish; defer not-yet-started cache-cut report until after 90 MHz functional baseline",
+      "original_observer_stopped_pid": 1926388,
+      "owned_report_continues_pid": 2191463,
+      "interrupted_owned_report_pid": 2191463,
+      "interrupted_owned_process_group": 2191423,
+      "reason": "original 100MHz routed timing already retained; additional historical diagnostic cannot qualify 90MHz and was delaying the mandatory operating-clock audit",
+      "deferred": "historical detailed cones/cache-cut reports after conditional functional baseline",
+      "historical_report_exit_code": null
+    },
+    "checkpoint": {
+      "path": "/home/zzhouch/tnca_build/r40_attempt03_20261017/xo/tmp/link/vivado/vpl/prj/prj.runs/impl_1/level0_wrapper_routed.dcp",
+      "sha256": "f6fc4da97b7febb20466ec80645fc03cd242cdd8ff9143bd910f1329df5356f9"
+    }
+  },
+  "clock_topology": {
+    "clock_freq_topology": {
+      "m_count": "3",
+      "m_clock_freq": [
+        {
+          "m_freq_Mhz": "450",
+          "m_type": "SYSTEM",
+          "m_name": "hbm_aclk"
+        },
+        {
+          "m_freq_Mhz": "500",
+          "m_type": "KERNEL",
+          "m_name": "KERNEL_CLK"
+        },
+        {
+          "m_freq_Mhz": "90",
+          "m_type": "DATA",
+          "m_name": "DATA_CLK"
+        }
+      ]
+    }
+  },
+  "clock_topology_sha256": "971fdc69b5fd8c882686a4cfa5cc0280c0cde40ab0d10b8ea1f9dc5e44ec6142",
+  "log_tail": [
+    "WARNING: [Constraints 18-550] Could not create 'IBUF_LOW_PWR' constraint because net 'level0_i/blp/blp_i/freerun_clk/freerun_clk_ibufds/IBUF_OUT[0]' is not directly connected to top level port. 'IBUF_LOW_PWR' is ignored for synthesis but preserved for implementation.",
+    "Read ShapeDB Complete: Time (s): cpu = 00:00:02 ; elapsed = 00:00:03 . Memory (MB): peak = 6215.910 ; gain = 206.711 ; free physical = 27233 ; free virtual = 39076",
+    "INFO: [Timing 38-478] Restoring timing data from binary archive.",
+    "INFO: [Timing 38-479] Binary timing data restore complete.",
+    "INFO: [Project 1-856] Restoring constraints from binary archive.",
+    "INFO: [Constraints 18-4422] SNAPPING_MODE is set so implementation will use the DERIVED_RANGES which may be different then the GRID_RANGES.",
+    "INFO: [Constraints 18-4421] A LAGUNA range, without usable sites, was added to DERIVED_RANGES for purposes of keeping the Programmable Unit together within the reconfigurable pblock.",
+    "INFO: [Power 33-23] Power model is not available for STARTUP_8SERIES_GEN.STARTUP3_8SERIES_inst"
+  ],
+  "scope": "confirmed live serial 90MHz timing/route/CDC/placement report; no programming or new implementation; all qualifications pending",
+  "required_gate_promotions": []
+}

@@ -1,0 +1,9 @@
+{
+  "schema": "tnca-conditional-host-prepare/1",
+  "observed_utc": "2026-10-18T08:43:58.730796+00:00",
+  "pid": 2192992,
+  "root": "/home/zzhouch/tnca_prepare_conditional12a0340",
+  "cache": "/home/zzhouch/.cache/tnca/r40_conditional12a0340_extensions",
+  "worker_sha256": "699b87cc936e88b73106e6a33ea408cb553a291c9f7e66ad3632ec51617d697a",
+  "scope": "necessary device extension preparation; one low-priority compiler worker; all backend opens explicitly refused; no TLM/RTL run"
+}

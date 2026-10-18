@@ -53,6 +53,16 @@ complete image, original routed timing and all 90 MHz qualification checks are
 unchanged. Detailed 100 MHz cones/cache cuts are deferred until after the
 conditional functional baseline, before any frequency-optimization decision.
 
+[Live operating audit](attempt03/operating_audit_live_90mhz.json) confirms
+Vivado PID 2192863 actually executing the serial 90 MHz timing/route/CDC/
+placement report. Packaged clock topology and both preserved artifact hashes
+are retained. This is a live report process, not a qualification result.
+[Prepared execution environment](attempt03/conditional_delivery_ready.json)
+records a compiled native Torch extension, matching frozen software tree,
+zero opened sessions, and the exact post-qualification launch script. Its
+single low-priority preparation worker performed no RTL/TLM run or board open.
+The script inherits that prepared cache and remains unexecuted pending P90.
+
 **P90 — conditional operating path within the authorized 91 MHz ceiling.**
 Unique blocker: qualification of the preserved image at its actual operating
 clock. Direct evidence: the complete image has packaged 90 MHz metadata but no

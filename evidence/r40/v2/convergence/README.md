@@ -27,6 +27,16 @@ FPGA host. It remains planned, with no workload or clock measurement claimed.
 The active serial qualification observer is recorded in
 [conditional_90mhz_launch.json](attempt03/conditional_90mhz_launch.json).
 
+[Qualification priority change](attempt03/qualification_priority_90mhz.json)
+retains the currently running original 100 MHz diagnostic but defers the
+not-yet-started cache-cut DCP load until after the conditional functional
+baseline. The original watcher parent was stopped; its owned report continues.
+A lightweight controller marks that historical report terminal, then the
+existing operating-image collector proceeds. No implementation, running report
+or qualification check was removed. This avoids an extra checkpoint load on
+the critical path to V. Cache-cut evidence remains required before any later
+root-cause/frequency optimization decision.
+
 **P90 — conditional operating path within the authorized 91 MHz ceiling.**
 Unique blocker: qualification of the preserved image at its actual operating
 clock. Direct evidence: the complete image has packaged 90 MHz metadata but no

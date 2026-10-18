@@ -1,0 +1,28 @@
+{
+  "schema": "tnca-r40-conditional-physical-checkpoint/1",
+  "image_sha256": "a88ebdf59cfbbb2001ebd5b1b2c739c5d8cd33931f1e9202f18cac07c4c83083",
+  "clock_hz": 90000000,
+  "qualification": "conditional-r40v2-20261018",
+  "original_100mhz_gate": "not-passed",
+  "conditional_physical_prerequisite": "passed",
+  "setup_wns_ns": 0.016,
+  "hold_whs_ns": 0.0,
+  "physical_core_slrs": {
+    "0": 0,
+    "1": 1,
+    "2": 2
+  },
+  "raw_bundle_sha256": "5bc231cf4b6db66ba492f4f23a73946a5f5c8950ac720ee09d269a47b4e6a22b",
+  "required_gate_promotions": [],
+  "pull_request": {
+    "base": "main",
+    "draft": false,
+    "condition": "All remaining frozen gates must be supported by final-identity evidence; authorized 90MHz exception disclosed"
+  },
+  "next_stage": "Original >=64MiB Torch graph on unchanged loaded image; then native77, HBM14, frozen model",
+  "retained_failures": [
+    "Initial archive omitted tools/r38; failed before compute submission",
+    "Complete-archive preflight imported TNCA driver before Triton discovery completed; failed before device open"
+  ],
+  "repair": "Full same-commit archive with all tools; preflight imports Triton before its plugin; immutable source and workloads unchanged"
+}

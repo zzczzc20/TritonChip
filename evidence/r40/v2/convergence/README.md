@@ -1,5 +1,68 @@
 # R40 v2 convergence checkpoint
 
+## Current delivery state — 2026-10-18
+
+**Required gate delta: no new complete required gate has passed. The conditional
+physical prerequisite P90 has passed and the preserved image is loaded.** Actual
+DATA_CLK counter samples are 90 MHz (1 MHz readout resolution). Analysis at the
+matching operating clock reports WNS +0.016 ns, TNS 0, WHS 0 and no setup, hold,
+pulse-width or route failures. All three physical cores and TMU replicas are
+placed in SLR0/1/2. The original 100 MHz report remains failed. The user has
+explicitly authorized the approximately 10 MHz reduction; no other frozen
+threshold, workload, sampling plan or gate has been relaxed.
+
+[Conditional physical checkpoint](attempt03/conditional_physical_checkpoint.json),
+[loaded clock qualification](attempt03/qualified_clock90_after_load.json), and
+[exact endpoint review](attempt03/operating_preload_review_90mhz.json) bind the
+image, software/configuration, actual clock and raw reports. The compressed
+[raw qualification and retained failures](attempt03/qualified90_raw.tar.gz)
+contains timing, route, placement, CDC, DRC, load log and board-clock samples.
+All five raw evidence hashes in the qualified-clock proof were checked against
+this archive. CDC review retains 56 Critical findings in unchanged vendor
+platform structures, each reviewed by exact endpoints; it does not claim zero
+raw Critical findings. No TNCA endpoint appears in the CDC crossing report.
+Seven input and three output unconstrained board-management pins are retained
+in the scoped review; internal endpoints have complete clock coverage.
+
+**V — current unique blocker:** the original graph has not yet completed its
+numerical, physical-traffic and drained-visibility assertions. The first launch
+failed before compute submission because its archive omitted `tools/r38`.
+The complete same-commit archive preserved that failure; its first preflight
+then exposed an import-order cycle in Triton plugin discovery, also before
+device open. The corrected preflight passed all entrypoint imports and native
+extension readiness with zero sessions opened. It automatically started the
+unchanged full delivery pipeline on the same loaded image. Neither repair
+changes the software tree, graph size, tolerances or hardware.
+
+Next experiment command (observe the already running experiment; do not launch
+a concurrent board job):
+
+```sh
+cat ~/tnca_prepare_conditional12a0340_full_importfix/state.json
+cat ~/tnca_runs_r40_conditional90_12a0340_full/checkpoint/report.json
+cat ~/tnca_runs_r40_conditional90_12a0340_full/delivery.json
+```
+
+Success requires numerical correctness of the original 67,108,864-element
+FP16 add graph, actual >=1 GiB multi-PC memory allocation, three physical cores,
+all three physical outlets, and drained completion plus host visibility.
+It unlocks the already queued original native77, HBM14 and frozen model stages;
+it does not replace any complete gate. Failure preserves the first raw report
+and stops the queue for that specific cause. No reduced workload, reprogramming
+or further implementation is part of this experiment.
+
+The final delivery PR must be **non-Draft and target `main`** after all remaining
+gates pass, with the 90 MHz exception disclosed. Existing Draft PR #7 targets
+`r38-dco` and is not the requested final delivery PR.
+
+The table under “Every currently unpassed required gate” remains the per-gate
+blocker/evidence/experiment ledger. Its V prerequisite is the running experiment
+above; P90 is complete. Historical passed inventory evidence is not proof of
+rerunning the inventory on this final identity. Missing measurements remain
+`not-measured`. Earlier chronological observations below are retained history
+and are superseded by this current state.
+
+
 ## Immediate experiment commands and branches
 
 **Required gate delta: no additional gate passed. Attempt 3 completed route,
@@ -383,40 +446,40 @@ These four variables must be bound in the retained run manifest before execution
 
 ## Every currently unpassed required gate
 
-All rows are `not-measured`. Each row has one immediate missing prerequisite, its direct evidence, the next experiment, and both outcomes. P is the current runnable experiment for final-image-dependent gates; V is conditional on P qualification. Running a Make target alone does not supply absent board/performance evidence.
+All rows are `not-measured`. Each row has one immediate missing prerequisite, its direct evidence, the next experiment, and both outcomes. P90 has passed; V is the already running final-image checkpoint described above. Running a Make target alone does not supply absent board/performance evidence.
 
 | Required gate | Unique current blocker | Direct evidence | Next experiment | If successful | If failed |
 |---|---|---|---|---|---|
-| R40-01.mixed-device | 最终快照/镜像上的 mixed-device 拒绝证据缺失 | `required_gates.json`: sim/build/r40/v2/R40-01.json does not name gate R40-01.mixed-device | P → V | After V, collect frozen `make r40-device` package evidence on final identity; judge this gate separately | Preserve P/V first failing evidence; fix that cause; gate remains not-measured |
-| R40-01.device-time | 同一最终身份的三组随机交错 CPU/native 5/30 配对记录缺失 | `required_gates.json`: sim/build/r40/v2/R40-01.json does not name gate R40-01.device-time | P → V | After V, collect frozen `make r40-device` package evidence on final identity; judge this gate separately | Preserve P/V first failing evidence; fix that cause; gate remains not-measured |
-| R40-02.zero-transfer | 最终镜像完整冻结 resident 图零搬运证据缺失 | `required_gates.json`: no evidence at sim/build/r40/v2/R40-02.json | P → V | After V, collect frozen `make r40-residency` package evidence on final identity; judge this gate separately | Preserve P/V first failing evidence; fix that cause; gate remains not-measured |
-| R40-02.resident | 冻结 graphs3 的 staging/resident 匹配 A/B 缺失 | `required_gates.json`: no evidence at sim/build/r40/v2/R40-02.json | P → V | After V, collect frozen `make r40-residency` package evidence on final identity; judge this gate separately | Preserve P/V first failing evidence; fix that cause; gate remains not-measured |
-| R40-02.batched | 冻结小核图 single/batched 匹配 A/B 缺失 | `required_gates.json`: no evidence at sim/build/r40/v2/R40-02.json | P → V | After V, collect frozen `make r40-residency` package evidence on final identity; judge this gate separately | Preserve P/V first failing evidence; fix that cause; gate remains not-measured |
-| R40-02.stress | 最终镜像长期 replay/恢复/代码淘汰证据缺失 | `required_gates.json`: no evidence at sim/build/r40/v2/R40-02.json | P → V | After V, collect frozen `make r40-residency` package evidence on final identity; judge this gate separately | Preserve P/V first failing evidence; fix that cause; gate remains not-measured |
-| R40-03.tiles | 最终镜像宽 block 与 tile 冻结功能库存缺失 | `required_gates.json`: no evidence at sim/build/r40/v2/R40-03.json | P → V | After V, collect frozen `make r40-tiles` package evidence on final identity; judge this gate separately | Preserve P/V first failing evidence; fix that cause; gate remains not-measured |
-| R40-03.wide-blocks | 冻结 pointwise/reduction 宽 block 匹配 A/B 缺失 | `required_gates.json`: no evidence at sim/build/r40/v2/R40-03.json | P → V | After V, collect frozen `make r40-tiles` package evidence on final identity; judge this gate separately | Preserve P/V first failing evidence; fix that cause; gate remains not-measured |
-| R40-03.gemm-tile | 冻结 GEMM reuse 的 tile 匹配 A/B 缺失 | `required_gates.json`: no evidence at sim/build/r40/v2/R40-03.json | P → V | After V, collect frozen `make r40-tiles` package evidence on final identity; judge this gate separately | Preserve P/V first failing evidence; fix that cause; gate remains not-measured |
-| R40-04.hbm | 实际 ≥1 GiB 多 PC 窗口尚无合格三核镜像可验证 | `required_gates.json`: no evidence at sim/build/r40/v2/R40-04.json; `evidence/r40/R40-04/physical_map_v2/` proves legacy image only exposes 256 MiB / PC0 | P → V | After V, collect frozen `make r40-hbm` package evidence on final identity; judge this gate separately | Preserve P/V first failing evidence; fix that cause; gate remains not-measured |
-| R40-04.bandwidth | 最终镜像方向带宽及 memory-service outstanding 1/8 匹配记录缺失 | `required_gates.json`: no evidence at sim/build/r40/v2/R40-04.json | P → V | After V, collect frozen `make r40-hbm` package evidence on final identity; judge this gate separately | Preserve P/V first failing evidence; fix that cause; gate remains not-measured |
-| R40-04.robustness | 最终实际分配 PC 的边界/high64/alias/越界证据缺失 | `required_gates.json`: no evidence at sim/build/r40/v2/R40-04.json | P → V | After V, collect frozen `make r40-hbm` package evidence on final identity; judge this gate separately | Preserve P/V first failing evidence; fix that cause; gate remains not-measured |
-| R40-05.multicore | 最后候选尚未完成 route 和物理资格审核，无合格镜像 | `attempt03/launch.json`: final implementation launched; route/timing/CDC/image pending (P) | P → V | After V, collect frozen `make r40-multicore` package evidence on final identity; judge this gate separately | Preserve P/V first failing evidence; fix that cause; gate remains not-measured |
-| R40-05.scaling | 最终镜像冻结 compute 的 1/2/3 核 A/B 缺失 | `required_gates.json`: no evidence at sim/build/r40/v2/R40-05.json | P → V | After V, collect frozen `make r40-multicore` package evidence on final identity; judge this gate separately | Preserve P/V first failing evidence; fix that cause; gate remains not-measured |
-| R40-05.dispatch | 最终镜像原始大图的三物理核完成/分发计数缺失 | `required_gates.json`: no evidence at sim/build/r40/v2/R40-05.json | P → V | After V, collect frozen `make r40-multicore` package evidence on final identity; judge this gate separately | Preserve P/V first failing evidence; fix that cause; gate remains not-measured |
-| R40-06.nuca | 最终镜像 active outlet 的实际负载流量证据缺失 | `required_gates.json`: no evidence at sim/build/r40/v2/R40-06.json | P → V | After V, collect frozen `make r40-nuca` package evidence on final identity; judge this gate separately | Preserve P/V first failing evidence; fix that cause; gate remains not-measured |
-| R40-06.streaming-scaling | 冻结 streaming 的 1/3 核匹配 A/B 缺失 | `required_gates.json`: no evidence at sim/build/r40/v2/R40-06.json | P → V | After V, collect frozen `make r40-nuca` package evidence on final identity; judge this gate separately | Preserve P/V first failing evidence; fix that cause; gate remains not-measured |
+| R40-01.mixed-device | 最终快照/镜像上的 mixed-device 拒绝证据缺失 | `required_gates.json`: sim/build/r40/v2/R40-01.json does not name gate R40-01.mixed-device | V | After V, collect frozen `make r40-device` package evidence on final identity; judge this gate separately | Preserve V first failing evidence; fix that cause; gate remains not-measured |
+| R40-01.device-time | 同一最终身份的三组随机交错 CPU/native 5/30 配对记录缺失 | `required_gates.json`: sim/build/r40/v2/R40-01.json does not name gate R40-01.device-time | V | After V, collect frozen `make r40-device` package evidence on final identity; judge this gate separately | Preserve V first failing evidence; fix that cause; gate remains not-measured |
+| R40-02.zero-transfer | 最终镜像完整冻结 resident 图零搬运证据缺失 | `required_gates.json`: no evidence at sim/build/r40/v2/R40-02.json | V | After V, collect frozen `make r40-residency` package evidence on final identity; judge this gate separately | Preserve V first failing evidence; fix that cause; gate remains not-measured |
+| R40-02.resident | 冻结 graphs3 的 staging/resident 匹配 A/B 缺失 | `required_gates.json`: no evidence at sim/build/r40/v2/R40-02.json | V | After V, collect frozen `make r40-residency` package evidence on final identity; judge this gate separately | Preserve V first failing evidence; fix that cause; gate remains not-measured |
+| R40-02.batched | 冻结小核图 single/batched 匹配 A/B 缺失 | `required_gates.json`: no evidence at sim/build/r40/v2/R40-02.json | V | After V, collect frozen `make r40-residency` package evidence on final identity; judge this gate separately | Preserve V first failing evidence; fix that cause; gate remains not-measured |
+| R40-02.stress | 最终镜像长期 replay/恢复/代码淘汰证据缺失 | `required_gates.json`: no evidence at sim/build/r40/v2/R40-02.json | V | After V, collect frozen `make r40-residency` package evidence on final identity; judge this gate separately | Preserve V first failing evidence; fix that cause; gate remains not-measured |
+| R40-03.tiles | 最终镜像宽 block 与 tile 冻结功能库存缺失 | `required_gates.json`: no evidence at sim/build/r40/v2/R40-03.json | V | After V, collect frozen `make r40-tiles` package evidence on final identity; judge this gate separately | Preserve V first failing evidence; fix that cause; gate remains not-measured |
+| R40-03.wide-blocks | 冻结 pointwise/reduction 宽 block 匹配 A/B 缺失 | `required_gates.json`: no evidence at sim/build/r40/v2/R40-03.json | V | After V, collect frozen `make r40-tiles` package evidence on final identity; judge this gate separately | Preserve V first failing evidence; fix that cause; gate remains not-measured |
+| R40-03.gemm-tile | 冻结 GEMM reuse 的 tile 匹配 A/B 缺失 | `required_gates.json`: no evidence at sim/build/r40/v2/R40-03.json | V | After V, collect frozen `make r40-tiles` package evidence on final identity; judge this gate separately | Preserve V first failing evidence; fix that cause; gate remains not-measured |
+| R40-04.hbm | 实际 ≥1 GiB 多 PC 窗口及完整原始 HBM 库存未完成验证 | `required_gates.json`: no evidence at sim/build/r40/v2/R40-04.json; `evidence/r40/R40-04/physical_map_v2/` proves legacy image only exposes 256 MiB / PC0 | V | After V, collect frozen `make r40-hbm` package evidence on final identity; judge this gate separately | Preserve V first failing evidence; fix that cause; gate remains not-measured |
+| R40-04.bandwidth | 最终镜像方向带宽及 memory-service outstanding 1/8 匹配记录缺失 | `required_gates.json`: no evidence at sim/build/r40/v2/R40-04.json | V | After V, collect frozen `make r40-hbm` package evidence on final identity; judge this gate separately | Preserve V first failing evidence; fix that cause; gate remains not-measured |
+| R40-04.robustness | 最终实际分配 PC 的边界/high64/alias/越界证据缺失 | `required_gates.json`: no evidence at sim/build/r40/v2/R40-04.json | V | After V, collect frozen `make r40-hbm` package evidence on final identity; judge this gate separately | Preserve V first failing evidence; fix that cause; gate remains not-measured |
+| R40-05.multicore | P90 已通过；最终镜像三核运行功能证据尚未完成 | `attempt03/launch.json`: conditional_physical_checkpoint.json passes P90; V remains incomplete | V | After V, collect frozen `make r40-multicore` package evidence on final identity; judge this gate separately | Preserve V first failing evidence; fix that cause; gate remains not-measured |
+| R40-05.scaling | 最终镜像冻结 compute 的 1/2/3 核 A/B 缺失 | `required_gates.json`: no evidence at sim/build/r40/v2/R40-05.json | V | After V, collect frozen `make r40-multicore` package evidence on final identity; judge this gate separately | Preserve V first failing evidence; fix that cause; gate remains not-measured |
+| R40-05.dispatch | 最终镜像原始大图的三物理核完成/分发计数缺失 | `required_gates.json`: no evidence at sim/build/r40/v2/R40-05.json | V | After V, collect frozen `make r40-multicore` package evidence on final identity; judge this gate separately | Preserve V first failing evidence; fix that cause; gate remains not-measured |
+| R40-06.nuca | 最终镜像 active outlet 的实际负载流量证据缺失 | `required_gates.json`: no evidence at sim/build/r40/v2/R40-06.json | V | After V, collect frozen `make r40-nuca` package evidence on final identity; judge this gate separately | Preserve V first failing evidence; fix that cause; gate remains not-measured |
+| R40-06.streaming-scaling | 冻结 streaming 的 1/3 核匹配 A/B 缺失 | `required_gates.json`: no evidence at sim/build/r40/v2/R40-06.json | V | After V, collect frozen `make r40-nuca` package evidence on final identity; judge this gate separately | Preserve V first failing evidence; fix that cause; gate remains not-measured |
 | R40-06.locality | 冻结 LOCALITY/DCO 开关尚未接入标准 Torch 编译/分配路径 | `pending_switch_consumers.json`; `frontend.py` has only explicit DCO importer input | `rg -n -e TNCA_LOCALITY -e TNCA_DCO -e 'dco=' python/tnca/aot.py python/tnca/inductor.py python/tnca/triton_backend/compiler.py` | If a consumer exists, trace emitted registrations and bytes on V-qualified hardware | If absent, connect standard-path DCO/locality within R40-06 after V; keep gate open |
-| R40-06.semantics | 最终镜像 ownership/完成可见性纵向闭环缺失 | `required_gates.json`: no evidence at sim/build/r40/v2/R40-06.json | P → V | After V, collect frozen `make r40-nuca` package evidence on final identity; judge this gate separately | Preserve P/V first failing evidence; fix that cause; gate remains not-measured |
-| R40-07.pipeline | 最终镜像标准 Torch 图中的实际流水重叠证据缺失 | `required_gates.json`: no evidence at sim/build/r40/v2/R40-07.json | P → V | After V, collect frozen `make r40-pipeline` package evidence on final identity; judge this gate separately | Preserve P/V first failing evidence; fix that cause; gate remains not-measured |
-| R40-07.long-k | 最终合格镜像上的完整 long-K stage A/B 缺失 | `../../R40-07/frozen_stage_control/README.md`: frozen control reaches actual 1/2/3-stage Torch rings; final frozen performance evidence absent | P → V, then `make r40-pipeline` with final identity | Collect unchanged frozen shapes, hold roles constant, verify stage provenance and the frozen speedup threshold | Preserve first failing shape/program/numerical or protocol result; repair cause without shrinking workload; gate remains not-measured |
-| R40-07.matrix | 冻结 compute-bound 的 matrix 匹配 A/B 缺失 | `required_gates.json`: no evidence at sim/build/r40/v2/R40-07.json | P → V | After V, collect frozen `make r40-pipeline` package evidence on final identity; judge this gate separately | Preserve P/V first failing evidence; fix that cause; gate remains not-measured |
-| R40-07.policy | 最终镜像策略边界与资源拒绝证据缺失 | `required_gates.json`: no evidence at sim/build/r40/v2/R40-07.json | P → V | After V, collect frozen `make r40-pipeline` package evidence on final identity; judge this gate separately | Preserve P/V first failing evidence; fix that cause; gate remains not-measured |
-| R40-08.attention | 修复后 attention 尚未在最终三核镜像完成冻结验证 | `required_gates.json`: no evidence at sim/build/r40/v2/R40-08.json; `evidence/r40/R40-08/descriptor_publication/` retains original failure, RAM snapshot and mutation | P → V | After V, collect frozen `make r40-attention` package evidence on final identity; judge this gate separately | Preserve P/V first failing evidence; fix that cause; gate remains not-measured |
-| R40-08.prefill | 冻结 long-prefill 的时间及中间字节匹配 A/B 缺失 | `required_gates.json`: no evidence at sim/build/r40/v2/R40-08.json; `evidence/r40/R40-08/descriptor_publication/` retains original failure, RAM snapshot and mutation | P → V | After V, collect frozen `make r40-attention` package evidence on final identity; judge this gate separately | Preserve P/V first failing evidence; fix that cause; gate remains not-measured |
-| R40-08.decode | 冻结模型原始 decode64 在最终镜像上的数值验证缺失 | `required_gates.json`: no evidence at sim/build/r40/v2/R40-08.json; `evidence/r40/R40-08/descriptor_publication/` retains original failure, RAM snapshot and mutation | P → V | After V, collect frozen `make r40-attention` package evidence on final identity; judge this gate separately | Preserve P/V first failing evidence; fix that cause; gate remains not-measured |
+| R40-06.semantics | 最终镜像 ownership/完成可见性纵向闭环缺失 | `required_gates.json`: no evidence at sim/build/r40/v2/R40-06.json | V | After V, collect frozen `make r40-nuca` package evidence on final identity; judge this gate separately | Preserve V first failing evidence; fix that cause; gate remains not-measured |
+| R40-07.pipeline | 最终镜像标准 Torch 图中的实际流水重叠证据缺失 | `required_gates.json`: no evidence at sim/build/r40/v2/R40-07.json | V | After V, collect frozen `make r40-pipeline` package evidence on final identity; judge this gate separately | Preserve V first failing evidence; fix that cause; gate remains not-measured |
+| R40-07.long-k | 最终合格镜像上的完整 long-K stage A/B 缺失 | `../../R40-07/frozen_stage_control/README.md`: frozen control reaches actual 1/2/3-stage Torch rings; final frozen performance evidence absent | V, then `make r40-pipeline` with final identity | Collect unchanged frozen shapes, hold roles constant, verify stage provenance and the frozen speedup threshold | Preserve first failing shape/program/numerical or protocol result; repair cause without shrinking workload; gate remains not-measured |
+| R40-07.matrix | 冻结 compute-bound 的 matrix 匹配 A/B 缺失 | `required_gates.json`: no evidence at sim/build/r40/v2/R40-07.json | V | After V, collect frozen `make r40-pipeline` package evidence on final identity; judge this gate separately | Preserve V first failing evidence; fix that cause; gate remains not-measured |
+| R40-07.policy | 最终镜像策略边界与资源拒绝证据缺失 | `required_gates.json`: no evidence at sim/build/r40/v2/R40-07.json | V | After V, collect frozen `make r40-pipeline` package evidence on final identity; judge this gate separately | Preserve V first failing evidence; fix that cause; gate remains not-measured |
+| R40-08.attention | 修复后 attention 尚未在最终三核镜像完成冻结验证 | `required_gates.json`: no evidence at sim/build/r40/v2/R40-08.json; `evidence/r40/R40-08/descriptor_publication/` retains original failure, RAM snapshot and mutation | V | After V, collect frozen `make r40-attention` package evidence on final identity; judge this gate separately | Preserve V first failing evidence; fix that cause; gate remains not-measured |
+| R40-08.prefill | 冻结 long-prefill 的时间及中间字节匹配 A/B 缺失 | `required_gates.json`: no evidence at sim/build/r40/v2/R40-08.json; `evidence/r40/R40-08/descriptor_publication/` retains original failure, RAM snapshot and mutation | V | After V, collect frozen `make r40-attention` package evidence on final identity; judge this gate separately | Preserve V first failing evidence; fix that cause; gate remains not-measured |
+| R40-08.decode | 冻结模型原始 decode64 在最终镜像上的数值验证缺失 | `required_gates.json`: no evidence at sim/build/r40/v2/R40-08.json; `evidence/r40/R40-08/descriptor_publication/` retains original failure, RAM snapshot and mutation | V | After V, collect frozen `make r40-attention` package evidence on final identity; judge this gate separately | Preserve V first failing evidence; fix that cause; gate remains not-measured |
 | R40-09.autotune | 标准路径 TNCA_TUNE 尚未连接冻结形状的真实候选选择 | `pending_switch_consumers.json`; compiled_candidates has actual compilation; autotune_native_tests uses a small graph | `rg -n -F -e TNCA_TUNE -e 'select(' python/tnca/inductor.py python/tnca/triton_backend/compiler.py` | Trace actual frozen-shape candidates into measured selection and cache, then frozen holdout | Connect frozen-shape selection using existing budget/workers after V; do not extend framework |
-| R40-09.holdout | 冻结 14 点 holdout 的实际 tune/control 与 regret 记录缺失 | `required_gates.json`: no evidence at sim/build/r40/v2/R40-09.json; worker_deadline/formal_call is explicitly functional RTL only | P → V | After V, collect frozen `make r40-autotune` package evidence on final identity; judge this gate separately | Preserve P/V first failing evidence; fix that cause; gate remains not-measured |
-| R40-09.suites | 最终不可变身份下完整原生77及HBM14记录缺失 | `required_gates.json`: no evidence at sim/build/r40/v2/R40-09.json; worker_deadline/formal_call is explicitly functional RTL only | P → V | After V, collect frozen `make r40-autotune` package evidence on final identity; judge this gate separately | Preserve P/V first failing evidence; fix that cause; gate remains not-measured |
-| R40-09.model | 冻结四层原始模型在最终镜像的 1/3 核匹配记录缺失 | `required_gates.json`: no evidence at sim/build/r40/v2/R40-09.json; worker_deadline/formal_call is explicitly functional RTL only | P → V | After V, collect frozen `make r40-autotune` package evidence on final identity; judge this gate separately | Preserve P/V first failing evidence; fix that cause; gate remains not-measured |
+| R40-09.holdout | 冻结 14 点 holdout 的实际 tune/control 与 regret 记录缺失 | `required_gates.json`: no evidence at sim/build/r40/v2/R40-09.json; worker_deadline/formal_call is explicitly functional RTL only | V | After V, collect frozen `make r40-autotune` package evidence on final identity; judge this gate separately | Preserve V first failing evidence; fix that cause; gate remains not-measured |
+| R40-09.suites | 最终不可变身份下完整原生77及HBM14记录缺失 | `required_gates.json`: no evidence at sim/build/r40/v2/R40-09.json; worker_deadline/formal_call is explicitly functional RTL only | V | After V, collect frozen `make r40-autotune` package evidence on final identity; judge this gate separately | Preserve V first failing evidence; fix that cause; gate remains not-measured |
+| R40-09.model | 冻结四层原始模型在最终镜像的 1/3 核匹配记录缺失 | `required_gates.json`: no evidence at sim/build/r40/v2/R40-09.json; worker_deadline/formal_call is explicitly functional RTL only | V | After V, collect frozen `make r40-autotune` package evidence on final identity; judge this gate separately | Preserve V first failing evidence; fix that cause; gate remains not-measured |
 | R40-10.acceptance | 上游 required gates 尚未全部通过 | `required_gates.json`: no evidence at sim/build/r40/v2/R40-10.json | `python3 tools/r40/acceptance.py --plan spec/r40/v2/plan.json --json /tmp/r40-v2-final.json` | Archive final report only if every required gate passes and final identities match | Keep acceptance open; work the first unsatisfied prerequisite |
 
 ## Execution order after V

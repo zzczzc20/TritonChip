@@ -1,0 +1,10 @@
+{
+  "schema": "tnca-conditional-functional-run/1",
+  "observed_utc": "2026-10-18T14:54:24.849028+00:00",
+  "pid": 2347934,
+  "script": "/home/zzhouch/tnca_prepare_conditional12a0340/run-qualified-delivery.sh",
+  "script_sha256": "e36bb7cf9ac1004cb43a8492ae6361ecdf69a379d1f97f3ab1cfcac2bbfffb60",
+  "qualified_clock_sha256": "8ad4b3bd30a3f5fe8819fe59ef8ad160fd0de1478aaa506dc33d82785fb9f487",
+  "output": "/home/zzhouch/tnca_runs_r40_conditional90_12a0340",
+  "scope": "original ge64MiB Torch checkpoint then full frozen native77/HBM14/model; one board job at a time; no reduced workloads; stop/preserve first failed stage"
+}

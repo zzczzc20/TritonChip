@@ -1,0 +1,8 @@
+{
+  "schema": "tnca-attempt03-load-launch/1",
+  "observed_utc": "2026-10-18T14:49:14.743040+00:00",
+  "supervisor_pid": 2347454,
+  "root": "/home/zzhouch/tnca_runs_r40_attempt03_load90_20261018",
+  "worker_sha256": "fc24c51b5ed3471d04ca385ec19c43c85d03114efd9ba59b6a2c1009d52ae028",
+  "scope": "one authorized load of preserved 90MHz package after reviewed physical qualification; no implementation or automatic retry"
+}

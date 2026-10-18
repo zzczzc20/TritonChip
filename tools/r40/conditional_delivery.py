@@ -20,11 +20,12 @@ def frozen(name):
     return json.loads((ROOT/'spec/r40/suites'/name).read_text())['points']
 
 
-def plan(python,image,image_sha,tree,clock,out):
+def plan(python,image,image_sha,tree,clock,out,hbm_bytes=1<<30):
     config=dict(xclbin=str(image),image_profile='core-vrf-sync-v5',core_count=3,
-                memory_ports=3,hbm_dma=True,hbm_bytes=1<<30,device_clock=True)
+                memory_ports=3,hbm_dma=True,hbm_bytes=hbm_bytes,device_clock=True)
     common=['--xclbin',str(image),'--image-sha256',image_sha,
-            '--software-tree-sha256',tree,'--operating-clock-evidence',str(clock)]
+            '--software-tree-sha256',tree,'--operating-clock-evidence',str(clock),
+            '--hbm-bytes',str(hbm_bytes)]
     stages=[dict(name='original-ge64mib-checkpoint',command=[python,str(ROOT/'tools/r40/board_checkpoint.py'),
                 *common,'--out',str(out/'checkpoint')])]
     for tier in ('tiny','small','medium'):
@@ -58,10 +59,14 @@ def main():
     p.add_argument('--software-tree-sha256',required=True)
     p.add_argument('--operating-clock-evidence',type=Path,required=True)
     p.add_argument('--out',type=Path,required=True)
+    p.add_argument('--hbm-bytes',type=int,default=1<<30)
     p.add_argument('--plan-only',action='store_true')
-    a=p.parse_args();out=a.out.resolve();out.mkdir(parents=True,exist_ok=False)
+    a=p.parse_args()
+    if a.hbm_bytes < 1<<30 or a.hbm_bytes % 64:
+        p.error('--hbm-bytes must be line aligned and at least 1 GiB')
+    out=a.out.resolve();out.mkdir(parents=True,exist_ok=False)
     stages=plan(sys.executable,a.xclbin.resolve(),a.image_sha256,a.software_tree_sha256,
-                a.operating_clock_evidence.resolve(),out)
+                a.operating_clock_evidence.resolve(),out,a.hbm_bytes)
     record=dict(schema='tnca-conditional-delivery/1',status='planned',stages=stages,
                 performance_gate='not-measured',original_100mhz_gate='not-passed',
                 inventory_sampling='functional only: one untimed warmup and one steady call; cold compiler copies retained separately; not the frozen performance sample plan',

@@ -34,6 +34,28 @@ def topology_probe_offsets(window):
     return result
 
 
+def topology_probe_storage(window, frame_bytes=65536):
+    """Cover the exact BO edges while leaving a real launch-frame hole.
+
+    Allocate the first probe before reserving the control frame. Release that
+    frame before the final allocation, whose prefix is larger than the free
+    hole, so first-fit places it at the BO tail. Its final 512-byte view reaches
+    the exact end without disabling the production launch reserve.
+    """
+    if type(frame_bytes) is not int or frame_bytes<=0 or frame_bytes%64:
+        raise ValueError('frame reserve must be positive and line aligned')
+    offsets=topology_probe_offsets(window)
+    result=[]
+    for i,offset in enumerate(offsets):
+        prefix=frame_bytes if i==len(offsets)-1 else 0
+        start=offset-prefix
+        if start<0 or (result and start<result[-1]['offset']+PROBE_BYTES):
+            raise ValueError('BO tail is too small for disjoint probes and the launch-frame hole')
+        result.append(dict(offset=offset,storage_start=start,
+                           storage_bytes=prefix+PROBE_BYTES,view_offset=prefix))
+    return result
+
+
 def probe_offsets(base, size):
     """Probe every physical PC intersecting the window, including the last.
 

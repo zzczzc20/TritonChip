@@ -24,9 +24,13 @@ def main():
     ap.add_argument('--software-tree-sha256', required=True,
                     help='exact ArchBench files:<sha256> identity of the immutable archive')
     ap.add_argument('--out', type=Path, required=True)
+    ap.add_argument('--hbm-bytes', type=int, default=1<<30,
+                    help='declared actual BO window, shared by all paired runs')
     ap.add_argument('--operating-clock-evidence',type=Path,
                     help='reviewed image-bound measured clock evidence for user-authorized conditional acceptance')
     args = ap.parse_args()
+    if args.hbm_bytes < 1<<30 or args.hbm_bytes % 64:
+        ap.error('--hbm-bytes must be line aligned and at least 1 GiB')
     # Exclusive creation preserves failed attempts as well as successful ones.
     args.out.mkdir(parents=True, exist_ok=False)
     report = dict(status='fail', gate_status='not-measured', performance='not-measured')
@@ -40,7 +44,7 @@ def main():
         assert tree == args.software_tree_sha256, 'software differs from preregistered snapshot'
         config = dict(xclbin=str(args.xclbin.resolve()), image_profile='core-vrf-sync-v5',
                       core_count=3, memory_ports=3, hbm_dma=True,
-                      hbm_bytes=1 << 30, device_clock=True)
+                      hbm_bytes=args.hbm_bytes, device_clock=True)
         report['identity'] = dict(software_tree=tree, image_sha256=image_sha,
                                 harness_sha256=hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
                                 contract_sha256=contract_v2.LOCK_SHA256,
@@ -85,6 +89,7 @@ def main():
         assert dev.capabilities()['cache_ownership_handoff']
         report['window'] = dev.axi_window
         assert dev.axi_window['size'] >= 1 << 30
+        assert dev.axi_window['size'] == args.hbm_bytes, 'actual BO differs from declared window'
         topology_probe_offsets(dev.axi_window)
         assert len(dev.axi_window['allocation']['physical_banks']) >= 2
         ref = reference(point, 0)

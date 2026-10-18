@@ -32,11 +32,14 @@ def main():
     ap.add_argument('--software-tree-sha256', required=True)
     ap.add_argument('--xclbin', type=Path)
     ap.add_argument('--image-sha256')
+    ap.add_argument('--hbm-bytes', type=int, default=1<<30)
     ap.add_argument('--active-cores', type=int, choices=(1,2,3), default=3,
                     help='active cores on the same three-core image; the frozen model is unchanged')
     ap.add_argument('--out', type=Path, required=True)
     ap.add_argument('--operating-clock-evidence',type=Path)
     args = ap.parse_args()
+    if args.hbm_bytes < 1<<30 or args.hbm_bytes % 64:
+        ap.error('--hbm-bytes must be line aligned and at least 1 GiB')
     if not args.reference_only and (args.xclbin is None or args.image_sha256 is None):
         ap.error('native execution requires --xclbin and --image-sha256')
     args.out.mkdir(parents=True, exist_ok=False)
@@ -157,7 +160,7 @@ def main():
         from tnca.operating_clock import from_environment
         operating_clock=from_environment(image_sha)
         config = dict(xclbin=str(args.xclbin.resolve()),image_profile='core-vrf-sync-v5',
-                      core_count=3,memory_ports=3,hbm_dma=True,hbm_bytes=1<<30,device_clock=True)
+                      core_count=3,memory_ports=3,hbm_dma=True,hbm_bytes=args.hbm_bytes,device_clock=True)
         os.environ.update(TNCA_PROFILE='core-vrf-sync-v5',TNCA_BACKEND='fpga-u280-multicore',
                           TNCA_BACKEND_ARGS=json.dumps(config),TNCA_TRANSFER_POLICY='resident',
                           TNCA_TORCH_DEVICE='native',TNCA_ACTIVE_CORES=str(args.active_cores))
@@ -178,6 +181,7 @@ def main():
         report['identity'].update(operating_clock)
         report['window'] = session.dev.axi_window
         assert report['window']['size'] >= 1<<30
+        assert report['window']['size'] == args.hbm_bytes, 'actual BO differs from declared window'
         topology_probe_offsets(report['window'])
         assert len(report['window']['allocation']['physical_banks']) >= 2
         assert session.dev.physical_grid_capability()[0] == 3

@@ -38,8 +38,6 @@ def checkpoint_checks(report, *, tree, image, clock):
     require(identity.get('clock_hz')==clock['clock_hz'] and
             identity.get('operating_clock_evidence_sha256')==clock['operating_clock_evidence_sha256'],
             'checkpoint uses the reviewed actual operating clock')
-    require(identity.get('harness_sha256')==sha256_file(ROOT/'tools/r40/board_checkpoint.py'),
-            'original checkpoint assertions match the reviewed harness')
     point=report.get('point',{})
     expected=next(p for p in json.loads((ROOT/'spec/r40/suites/R40-04.streaming.json').read_text())['points']
                   if p['id']=='op.add/hbm/fp16-n67108864')
@@ -101,6 +99,7 @@ def main():
         from tnca.operating_clock import qualified_clock
         clock=qualified_clock(a.operating_clock_evidence,a.image_sha256)
         checkpoint=json.loads(a.checkpoint.read_text())
+        assert checkpoint.get('identity',{}).get('harness_sha256')==sha256_file(ROOT/'tools/r40/board_checkpoint.py'), 'checkpoint assertions differ from the reviewed harness'
         checks+=checkpoint_checks(checkpoint,tree=a.software_tree_sha256,image=a.image_sha256,clock=clock)
         paths=[a.native/f'u280_{tier}.jsonl' for tier in ('tiny','small','medium')]
         checks+=native_inventory.audit(paths)

@@ -27,9 +27,12 @@ def main():
     ap.add_argument('--image-sha256', required=True)
     ap.add_argument('--software-tree-sha256', required=True)
     ap.add_argument('--out', type=Path, required=True)
+    ap.add_argument('--hbm-bytes',type=int,default=1<<30)
     ap.add_argument('--evidence', action='store_true')
     ap.add_argument('--operating-clock-evidence',type=Path)
     args = ap.parse_args()
+    if args.hbm_bytes < 1<<30 or args.hbm_bytes % 64:
+        ap.error('--hbm-bytes must be line aligned and at least 1 GiB')
     args.out.mkdir(parents=True, exist_ok=False)
     report = dict(status='incomplete', performance='not-measured', gate_status='not-measured')
     try:
@@ -46,7 +49,7 @@ def main():
         assert len(points) == 77
         rng = random.Random(plan['sample_plan']['bootstrap']['seed'])
         config = dict(xclbin=str(args.xclbin.resolve()), image_profile='core-vrf-sync-v5',
-                      core_count=3, memory_ports=3, hbm_dma=True, hbm_bytes=1<<30,
+                      core_count=3, memory_ports=3, hbm_dma=True, hbm_bytes=args.hbm_bytes,
                       device_clock=True)
         report['identity'] = dict(software_tree=args.software_tree_sha256,
                                 image_sha256=args.image_sha256,

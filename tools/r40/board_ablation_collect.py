@@ -73,10 +73,14 @@ def main():
     p.add_argument('--software-tree-sha256',required=True)
     p.add_argument('--operating-clock-evidence',type=Path,required=True)
     p.add_argument('--out',type=Path,required=True)
+    p.add_argument('--hbm-bytes',type=int,default=1<<30)
     p.add_argument('--plan-only',action='store_true')
-    a=p.parse_args();out=a.out.resolve();out.mkdir(parents=True,exist_ok=False)
+    a=p.parse_args()
+    if a.hbm_bytes < 1<<30 or a.hbm_bytes % 64:
+        p.error('--hbm-bytes must be line aligned and at least 1 GiB')
+    out=a.out.resolve();out.mkdir(parents=True,exist_ok=False)
     config=dict(xclbin=str(a.xclbin.resolve()),image_profile='core-vrf-sync-v5',
-                core_count=3,memory_ports=3,hbm_dma=True,hbm_bytes=1<<30,device_clock=True)
+                core_count=3,memory_ports=3,hbm_dma=True,hbm_bytes=a.hbm_bytes,device_clock=True)
     exp,entries=schedule(a.experiment,sys.executable,config,out)
     report=dict(schema='tnca-r40-board-ablation-collection/1',status='planned',
                 experiment=a.experiment,frozen_experiment=exp,entries=entries,completed=[],

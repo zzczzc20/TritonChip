@@ -44,7 +44,7 @@ for p in (ROOT, ROOT / 'python', ROOT / 'compiler' / 'python', ROOT / 'tools' / 
 os.environ.setdefault('TNCA_PROFILE', 'core-vrf-sync-v5')
 
 CASES = []
-from hbm_address import PC_BYTES, probe_offsets, topology_probe_offsets
+from hbm_address import PC_BYTES, probe_offsets, topology_probe_offsets, topology_probe_storage
 # --small: the same cases at sizes the RTL simulator runs in minutes, against
 # the simulated /hbm memory mode (TNCA_PROFILE=core-vrf-sync-v5/hbm) -- a dry
 # run of this tool, not evidence for the gate.
@@ -154,28 +154,36 @@ def samples():
     local, size = w['local_limit'], w['size']
     v2=os.environ.get('R40_CONTRACT')=='v2'
     offsets = topology_probe_offsets(w) if v2 else probe_offsets(w['base'], size)
-    # The final v2 probe reaches the BO end. Preserve a separate small frame
-    # region, then release it before launching the unchanged Torch operations.
-    control=s.allocate(65536,name='hbm-boundary-control-reserve') if v2 else None
+    layout=(topology_probe_storage(w) if v2 else
+            [dict(offset=o,storage_start=o,storage_bytes=512,view_offset=0) for o in offsets])
+    control=None
     n = len(offsets)
     bump = torch.compile(lambda t: t.add_(1), fullgraph=True)
     held, got = [], []
-    for i, offset in enumerate(offsets):
-        # A pad from wherever the heap's top is to this sample's place: the
-        # probe's address is where the pad then starts (first fit).
-        probe = torch.empty(8, dtype=torch.uint8, device='tnca')
-        top = probe.untyped_storage().data_ptr()
-        del probe
-        gap = local + offset - top
+    for i, entry in enumerate(layout):
+        offset=entry['offset']
+        # Do not query first-fit with a temporary after freeing the frame:
+        # that would observe the reusable hole rather than the high watermark.
+        with s._lock:top=s._heap.next
+        if v2 and i==n-1:
+            s.free(control);control=None
+        gap = local + entry['storage_start'] - top
         assert gap >= 0, f'allocator passed probe {i}: {top:#x} > {local + offset:#x}'
         if gap:
             held.append(torch.empty(gap, dtype=torch.uint8, device='tnca'))
-        x = torch.empty(64, dtype=torch.int64, device='tnca')
-        assert x.untyped_storage().data_ptr() == local + offset, 'probe allocation moved'
-        h = torch.arange(64, dtype=torch.int64) * 1000003 + i * 7919 + (1 << 40) + (i << 50)
+        storage=torch.empty(entry['storage_bytes']//4,dtype=torch.int32,device='tnca')
+        held.append(storage)
+        x=storage[entry['view_offset']//4:]
+        assert x.numel()==128 and x.data_ptr()==local+offset,'probe allocation moved'
+        # Distinct nonzero halves of each 64-bit bus word exercise aliasing;
+        # address width is checked by the actual pointer, without requiring
+        # unsupported vector-int64 arithmetic from the kernel compiler.
+        lane=torch.arange(128,dtype=torch.int32)
+        h=lane*1000003+i*7919+(1<<28)+(lane%2)*(1<<28)
         x.copy_(h)
         got.append((h, x))
-    addrs = [x.untyped_storage().data_ptr() for _, x in got]
+        if v2 and i==0:control=s.allocate(65536,name='hbm-boundary-control-reserve')
+    addrs = [x.data_ptr() for _, x in got]
     if control is not None:s.free(control)
     for _, x in got:
         bump(x)
@@ -190,6 +198,9 @@ def samples():
         wanted=sorted(b['pc'] for b in banks)
         assert pcs==wanted and any(len(group)>1 for group in hits), 'allocated-PC boundary coverage incomplete'
         return dict(samples=n,physical_pcs=pcs,configured_pc_coverage=True,
+                    first_virtual_address=addrs[0],last_virtual_address=addrs[-1],
+                    high_32bit_virtual_address_tested=any(a>=1<<32 for a in addrs),
+                    probe_storage=layout,launch_frame_reserve_bytes=65536,
                     boundary_crossings=[dict(offset=offsets[i],pcs=group) for i,group in enumerate(hits) if len(group)>1],
                     topology_sha256=w['allocation']['topology_sha256'])
     pcs = sorted({(a - local + w['base']) // PC_BYTES for a in addrs})

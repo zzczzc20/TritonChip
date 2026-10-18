@@ -1,5 +1,49 @@
 # R40 v2 convergence checkpoint
 
+## Repaired original GEMM and declared capacity for the frozen compute suite
+
+The exact original GEMM4096 now returns the underlying deadline error cleanly
+at 4,000,000,000 cycles, without SIGSEGV or an implicit context replacement.
+[Negative control](attempt03/gemm4096_ownerfix_4b_result.json) retains the complete
+record. With only the watchdog extended to 24,000,000,000 cycles, the same shape
+passed numerically at **4,251,016,301 cycles**, maximum relative error 0.00033164
+(tolerance 0.02). [Positive control and 4 GiB allocation preflight](attempt03/gemm4096_ownerfix_24b_pass.json)
+verify that its compiled artifact is byte-identical to the artifact in the
+original failed run (`5965eeaf...00fdb`). No numerical code, size, precision,
+image or clock changed to obtain this result. The ordinary 4e9 watchdog was
+shorter than a valid frozen kernel; final paired runs will declare the same
+24e9 bound on both sides. Functional-only samples do not certify performance.
+
+The original frozen compute subset also includes the unscaled large Llama
+shape (2048 dimensions, 16 layers, 8192 FFN, untied 128256-token head). Its
+parameter shapes alone require 2,996,965,376 bytes, before tensors/scratch/code;
+1 GiB cannot execute that required subset. The collectors now propagate an
+explicit `--hbm-bytes` value without changing workloads or defaults. A 4 GiB
+XRT allocation preflight succeeded on the preserved image and reports actual
+PC0..15. This is allocation evidence, not PC traffic/capacity acceptance.
+Measured full-suite/model peak and 25% headroom remain mandatory. PC16..31 are
+outside this proposed exposed window and remain uncertified/unallocatable.
+
+Before the next complete immutable run, the existing BO-boundary diagnostic
+was corrected using the actual first-fit allocator: a head probe must precede
+the frame reservation, and the final 512-byte view must coexist with a reusable
+64 KiB frame hole. No production launch reserve is disabled. The address
+patterns use supported int32 arithmetic with distinct nonzero halves of each
+64-bit bus word; address width is verified by actual pointers, independently
+of unsupported vector-int64 arithmetic. The 4 GiB endpoint reaches a virtual
+address above 2^32. Allocator regression checks exercise all declared physical
+PC boundaries and retain 32 KiB of required launch reserve throughout.
+The complete native77 compiler bundles and original HBM failure are retained
+in [the full raw archive](attempt03/native77_997bd0b_raw.tar.gz), with
+[verified manifest](attempt03/native77_997bd0b_raw_manifest.json).
+
+The next candidate uses the repaired product tree
+`3520df32c20aefcc593c0da6ff80ab2e9aa03556ecb1a942ac709a916903bec7`,
+actual 4 GiB window and the identical 90 MHz image. It must revalidate the
+original checkpoint/native77/HBM14/model and rebind its capability evidence.
+Earlier capability passes are retained as measurements of their named software
+identity, not silently applied to this new candidate.
+
 ## Physical capability audit and first HBM failure
 
 **Required gate delta:** `R40-05.multicore` passed for measured software tree

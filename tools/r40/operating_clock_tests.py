@@ -56,4 +56,28 @@ class ClockAnalysis(unittest.TestCase):
             self.assertEqual(marker.read_text(),'retain')
 
 
+class ClockEvidence(unittest.TestCase):
+    def test_bound_evidence_and_refusals(self):
+        import hashlib,json
+        from operating_clock import qualified_clock
+        with tempfile.TemporaryDirectory() as d:
+            d=Path(d);raw=d/'raw.txt';raw.write_text('test fixture only')
+            files={k:dict(path='raw.txt',sha256=hashlib.sha256(raw.read_bytes()).hexdigest())
+                   for k in ('timing','route','cdc','board_clock')}
+            data=dict(schema='tnca-qualified-operating-clock/1',image_sha256='a'*64,
+                      qualification='conditional-r40v2-20261018',clock_hz=91_000_000,
+                      setup_wns_ns=0.01,hold_whs_ns=0.001,route_legal=True,cdc_review='passed',
+                      clock_source='measured-board-counter',evidence_files=files)
+            path=d/'clock.json';path.write_text(json.dumps(data))
+            self.assertEqual(qualified_clock(path,'a'*64)['clock_hz'],91_000_000)
+            with self.assertRaises(ValueError):qualified_clock(path,'b'*64)
+            for key,value in (('clock_hz',100_000_000),('setup_wns_ns',-0.001),
+                              ('hold_whs_ns',float('nan')),('cdc_review','not-measured'),
+                              ('clock_source','metadata')):
+                bad=dict(data);bad[key]=value;path.write_text(json.dumps(bad))
+                with self.assertRaises(ValueError):qualified_clock(path,'a'*64)
+            path.write_text(json.dumps(data));raw.write_text('changed')
+            with self.assertRaises(ValueError):qualified_clock(path,'a'*64)
+
+
 if __name__=='__main__':unittest.main()

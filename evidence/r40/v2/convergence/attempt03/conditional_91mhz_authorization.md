@@ -43,3 +43,28 @@ from these numbers. Next command: inspect `build/attempt.exit`, image clock
 metadata and the existing observer state. Terminal success advances to the
 unchanged-netlist clock audit. Failure preserves all generated artifacts and
 checks whether the usable bitstream can be packaged without implementation.
+
+## Prepared conditional checkpoint interface
+
+`board_checkpoint.py --operating-clock-evidence REVIEWED_CLOCK.json` uses the
+reviewed, image-bound measured frequency instead of its historical 100 MHz
+identity. It retains `gate_status=not-measured` and explicitly labels the
+conditional acceptance basis; a numerical checkpoint pass does not promote a
+gate automatically. The original code/data graph and all traffic, memory-map
+and visibility assertions remain intact.
+
+The `tnca-qualified-operating-clock/1` file must contain the exact image SHA,
+positive integer `clock_hz` no greater than 91,000,000, qualification
+`conditional-r40v2-20261018`, finite nonnegative `setup_wns_ns` and `hold_whs_ns`,
+`route_legal=true`, `cdc_review=passed`, and
+`clock_source=measured-board-counter`. `evidence_files` must bind the reviewed
+`timing`, `route`, `cdc`, and `board_clock` files by path and SHA256. This is a
+reviewed qualification record, not an automatically inferred pass from report
+existence. It cannot be created honestly until the reports and board clock
+measurement exist. Evidence is rechecked before sealing checkpoint success.
+
+Current running preservation/audit command and PID are retained in
+`conditional_91mhz_launch.json`. Its state is
+`~/tnca_build/r40_attempt03_conditional_91mhz/state.json`. It waits for both the
+original implementation and its serial report observer before opening the
+checkpoint. No extra implementation or board load has been started.

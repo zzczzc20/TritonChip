@@ -15,6 +15,18 @@ No conditional workload gate has passed yet. Preserve the generated image and
 complete the clock/CDC/route audit before advancing to V. The existing build
 and report observer continue without a new implementation launch.
 
+**P91 — authorized conditional path.** Its unique blocker is an operating
+image qualified at its actual measured clock. Direct evidence: the latest
+terminal marker and packaged image are absent; the 100 MHz routed report fails
+setup. Next command: `cat ~/tnca_build/r40_attempt03_conditional_91mhz/state.json`
+and inspect its immutable image/clock reports after completion. If timing,
+hold, route and CDC pass and the actual programmed clock is verified, proceed
+to V using `--operating-clock-evidence` and label results conditional. If they
+fail, preserve the image and diagnose the limiting condition; do not erase the
+baseline or silently call it 100 MHz. For conditional runs, the P prerequisite
+in the unresolved-gate table means P91; the original P/100 MHz result remains
+separately failed. All downstream workload gates are still not-measured.
+
 Hardware source is `54249f7f7ac0cf8f5d1b82d8e63a3046d27522d3`, with the explicit
 immutable configuration and archive identity in [attempt03](attempt03/README.md).
 The frozen contract is unchanged. No final-image timing, CDC, HBM or workload

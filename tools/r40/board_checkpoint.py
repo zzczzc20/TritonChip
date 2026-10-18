@@ -24,6 +24,8 @@ def main():
     ap.add_argument('--software-tree-sha256', required=True,
                     help='exact ArchBench files:<sha256> identity of the immutable archive')
     ap.add_argument('--out', type=Path, required=True)
+    ap.add_argument('--operating-clock-evidence',type=Path,
+                    help='reviewed image-bound measured clock evidence for user-authorized conditional acceptance')
     args = ap.parse_args()
     # Exclusive creation preserves failed attempts as well as successful ones.
     args.out.mkdir(parents=True, exist_ok=False)
@@ -45,6 +47,10 @@ def main():
                                 backend='fpga-u280-multicore', backend_args=config,
                                 clock_policy='100MHz-undivided', clock_hz=100000000,
                                 clock_qualification='requires matching route/timing and board clock reports')
+        if args.operating_clock_evidence:
+            from operating_clock import qualified_clock
+            report['identity'].update(qualified_clock(args.operating_clock_evidence,image_sha))
+            report['acceptance_basis']='conditional-r40v2-20261018; original 100MHz gate remains not-passed'
         os.environ.update(TNCA_BACKEND='fpga-u280-multicore',
                           TNCA_BACKEND_ARGS=json.dumps(config),
                           TNCA_PROFILE='core-vrf-sync-v5', TNCA_TORCH_DEVICE='native',
@@ -162,6 +168,9 @@ def main():
         from archbench.provenance import _tree_cache
         _tree_cache.pop(ROOT, None)
         assert software_tree() == tree, 'software changed during experiment'
+        if args.operating_clock_evidence:
+            # Recheck raw clock/timing evidence before sealing a successful run.
+            assert qualified_clock(args.operating_clock_evidence,image_sha)['operating_clock_evidence_sha256'] == report['identity']['operating_clock_evidence_sha256']
         report['status'] = 'checkpoint-pass'
     except Exception:
         report['error'] = traceback.format_exc()

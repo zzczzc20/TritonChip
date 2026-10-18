@@ -78,7 +78,10 @@ class _Sessions:
                os.environ.get('TNCA_ACTIVE_CORES'))
         with cls.lock:
             s = cls.open.get(key)
-            if s is None or s.closed or s.poisoned:
+            # A poisoned session requires explicit recovery. Opening another
+            # board context here can race its still-owned XRT resources,
+            # including from tensor destructors unwinding the failed launch.
+            if s is None or s.closed:
                 s = Session(profile=profile, deadline_cycles=int(os.environ.get('TNCA_DEADLINE', '5000000')),
                             host_timeout=float(os.environ.get('TNCA_HOST_TIMEOUT', '600')),
                             counters=os.environ.get('TNCA_COUNTERS') == '1',

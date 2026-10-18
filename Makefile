@@ -2133,6 +2133,9 @@ r40-line-axi: | dirs
 r40-multicore-mmio-checks: | dirs
 	@$(PYTHON) tools/r40/runner_source_tests.py
 	@$(PYTHON) tools/r40/operating_clock_tests.py
+	@$(PYTHON) tools/r40/storage_owner_tests.py
+	@$(PYTHON) tools/r40/board_ablation_tests.py
+	@$(PYTHON) tools/r40/multicore_board_acceptance_tests.py
 	@$(PYTHON) tools/r40/physical_grid_clock_tests.py
 	@$(PYTHON) tools/r40/autotune_policy_tests.py
 	@$(PYTHON) tools/r40/autotune_worker_tests.py

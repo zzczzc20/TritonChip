@@ -1,5 +1,43 @@
 # R40 v2 convergence checkpoint
 
+## Physical capability audit and first HBM failure
+
+**Required gate delta:** `R40-05.multicore` passed for measured software tree
+`cbc1340e...c58da52` on the qualified 90 MHz image. The complete original native77
+inventory and all compiler bundles passed the source/image/clock audit, together
+with actual SLR0/1/2 placement and the original large graph's three-core,
+three-outlet and visibility evidence.
+[Raw audit and gate evidence](attempt03/multicore_capability_90mhz.json)
+retain all checks. This does not pass scaling, the dispatcher edge matrix or
+complete R40. A new runtime repair below changes software identity and therefore
+requires final-candidate inventory and capability revalidation.
+
+HBM14 completed with one failure: original
+`op.matmul/hbm/fp16-m4096-k4096-n4096` exited on SIGSEGV. The other original HBM
+points, including the complete frozen prefill512/decode model points, passed.
+The full generation model was correctly not started after that failed stage.
+[Original failure and exact-shape reproduction](attempt03/gemm4096_sigsegv_reproduction.json)
+retain both attempts and the Python fatal traceback. It identifies tensor
+cleanup calling `DeviceMemory.free -> session -> _Sessions.get -> xclOpenContext`
+while the failed session remains owned. This is not an unsupported block,
+reduced workload or timing exception.
+
+The repair retains each allocation's owning session for destruction and stops
+implicit replacement of poisoned sessions. Explicit recovery remains required.
+Regression mutations exercise the actual allocator/cache definitions: failed
+retirement must not resolve/open a new session, address reuse must preserve the
+new storage, and a poisoned cache entry must not create another device context.
+The kernel compiler, workload, numerical tolerance and preserved RTL/image are
+unchanged. The fixed candidate will repeat the exact original GEMM at the old
+watchdog first, then diagnose the underlying reported error before running the
+full original inventories/model again. No gate for the new software identity
+is promoted on the strength of the old successful inventory.
+
+The GB10 CUDA-host complete conformance run finished successfully; its raw
+[terminal state, all cases and retained launch failures](attempt03/cuda_conformance_997bd0b_complete.json)
+are preserved. No-CUDA-host conformance and matching repaired-source validation
+remain necessary before `R40-01.mixed-device` can pass.
+
 ## Active immutable delivery run
 
 The corrected full runner is active from commit `997bd0b`, using software tree

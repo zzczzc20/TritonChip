@@ -60,6 +60,7 @@ class DeviceMemory:
     def __init__(self):
         self.buffers = {}            # address -> Buffer
         self.allocations = {}        # unique token -> Buffer, across recovery
+        self.owners = {}             # token -> allocating Session; destruction never opens a device
         self.next_token = 0
         self.peak = 0
         self.live = 0
@@ -102,19 +103,22 @@ class DeviceMemory:
         self.next_token += 1
         token = self.next_token
         self.allocations[token] = buf
+        self.owners[token] = s
         self.live += buf.size
         self.peak = max(self.peak, self.live)
         return buf.addr, token
 
     def free(self, addr, token, index=0):
         buf = self.allocations.pop(token, None)
+        owner = self.owners.pop(token, None)
         if buf is None:
             return
         if self.buffers.get(addr) is buf:
             self.buffers.pop(addr)
         self.live -= buf.size
         try:
-            self.session(index).retire(buf)
+            if owner is not None:
+                owner.retire(buf)
         except Exception:                                    # noqa: BLE001
             # A dead or recovered session has no buffer to free; the storage
             # went with it.

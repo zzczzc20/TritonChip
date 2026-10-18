@@ -1,0 +1,12 @@
+{
+  "schema": "tnca-complete-conditional-snapshot/1",
+  "commit": "350eb13",
+  "software_tree": "files:cbc1340e1135ac301bfe6c39488bb3eb2b1571aafad46920e070ae701c58da52",
+  "archive_sha256": "0c3203fd3673269a961e2f6b2fb65ccb9b931d7a20927affeaae9e0c5fd67f8a",
+  "archive_bytes": 2241853,
+  "source": "/home/zzhouch/tnca_src_r40_conditional_350eb13_full",
+  "contract_sha256": "49fc0e02733139707ae2292eff2ef893e76e73f0723d0d002b2e7e1864af71c8",
+  "reason": "same immutable product tree; complete physical capability audit and formal runtime collectors",
+  "scope": "same committed compiler/runtime and unchanged workload definitions; fresh complete package; failed first run preserved; no device/programming operation",
+  "historical_bounds_sha256": "42f224030264f93cf79a209d0082bae6b955ccd521ef8a2a4cfaf9e75807c40a"
+}

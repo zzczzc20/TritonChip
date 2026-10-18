@@ -526,7 +526,7 @@ class Session:
             if not buf.valid:
                 raise BufferError(f'download: {buf.name} was written by a failed task')
             nbytes = buf.size - offset if nbytes is None else nbytes
-            if offset < 0 or offset + nbytes > buf.size:
+            if nbytes < 0 or offset < 0 or offset + nbytes > buf.size:
                 raise BufferError(
                     f"download of {nbytes} bytes at offset {offset} runs "
                     f"past {buf.name} ({buf.size} bytes)")

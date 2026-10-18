@@ -1,5 +1,24 @@
 # R40 v2 convergence checkpoint
 
+## Signed copy-range guard — next product candidate
+
+The out-of-window review found that `Session.download` and the XRT BO accessor
+checked the end address but did not reject a negative length before entering
+the external device/C boundary. [Original method-level failure](attempt03/negative_copy_length_reproduction.json)
+uses the actual methods with boundary spies; it performs no board operation.
+Both boundaries now reject negative lengths before device I/O. Exact valid
+last-byte reads remain covered, including the 4 GiB BO end. The regression also
+checks negative offsets, overrun and oversized lengths.
+
+This error-path repair changes the product tree to
+`files:44051ad9c76c544f59b57afb9f297608bb3f0362c9f4f4479f977690645d2436`.
+The running original functional experiment remains immutable on its recorded
+`3520df32...` tree. Its completed capabilities below are evidence for that named
+candidate; they must be revalidated before final promotion on the guarded tree.
+The not-yet-started formal performance queue must be rebound to the guarded
+snapshot, preserving its prior launch and queue state. No positive-workload
+compiler, RTL, image, tolerance or clock changes accompany this repair.
+
 ## Final-candidate capability update
 
 **Required gate delta:** `R40-01.device` and `R40-05.multicore` now pass on the

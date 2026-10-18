@@ -1228,7 +1228,7 @@ class _XRTRegisters:
                              detail={'rc': rc, 'offset': offset, 'bytes': n, 'medium': self._what})
 
     def bo_read(self, offset, nbytes):
-        if offset < 0 or offset + nbytes > self._bo_size:
+        if nbytes < 0 or offset < 0 or offset + nbytes > self._bo_size:
             raise ArgumentError(f'{nbytes} bytes at {offset:#x} runs past the AXI window')
         rc = self._lib.xclSyncBO(self._handle, self._bo, XCL_BO_SYNC_BO_FROM_DEVICE, nbytes, offset)
         if rc != 0:

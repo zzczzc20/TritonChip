@@ -2,16 +2,35 @@
 
 ## Immediate experiment commands and branches
 
-**Required gate delta: no additional gate passed. Attempt 3 remains live in
-post-skew route timing cleanup after successful placement and physical
-optimization as of 2026-10-18 06:59 UTC. The source-CI prerequisite is now
-successful; no physical/workload gate is promoted.
+**Required gate delta: no additional gate passed. Attempt 3 completed route
+and reached bitstream generation on 2026-10-18. Its routed timing report fails
+setup: WNS -1.002 ns, TNS -6679.026 ns, 17,332 failing endpoints; hold is clean.
+The source-CI prerequisite is successful. No physical/workload gate is promoted.
 Budget: maximum 4, used 3, remaining 1, following the explicit final additional
 authorization on 2026-10-18. No fourth implementation has started.**
+The user subsequently authorized [91 MHz conditional acceptance](attempt03/conditional_91mhz_authorization.md).
+The original 100 MHz gate remains failed; conditionally qualified results will
+bind the actual measured operating clock and unchanged bitstream identity.
+No conditional workload gate has passed yet. Preserve the generated image and
+complete the clock/CDC/route audit before advancing to V. The existing build
+and report observer continue without a new implementation launch.
+
 Hardware source is `54249f7f7ac0cf8f5d1b82d8e63a3046d27522d3`, with the explicit
 immutable configuration and archive identity in [attempt03](attempt03/README.md).
 The frozen contract is unchanged. No final-image timing, CDC, HBM or workload
 result is claimed; missing measurements remain not-measured.
+
+[Routed timing evidence](attempt03/routed_summary_20261018.json) binds the
+completed route and routed timing-report SHA. P's current blocker is failed
+setup in the actual routed candidate. The original build had no terminal
+marker at observation, and CDC/image qualification remains outstanding.
+Next experiment: run the existing terminal observer command below to extract
+final min/max paths, clock/CDC evidence and actual cache mapping after the
+original implementation exits. If the final audit passes all requirements,
+review immutable image/source identity and proceed to V. If setup remains
+negative, diagnose the actual limiting paths, validate a source-bound correction
+and a matched physical screen before spending the final implementation attempt.
+Do not load the timing-failing candidate as a qualified 100 MHz image.
 
 [Route-start evidence](attempt03/route_started_20261018.json) confirms the
 original implementation PID is live, physical optimization completed, and

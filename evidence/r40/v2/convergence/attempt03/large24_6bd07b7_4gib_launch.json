@@ -1,0 +1,6 @@
+{
+  "root": "/home/zzhouch/tnca_large24_6bd07b7_4gib",
+  "pid": 2361969,
+  "controller_sha256": "93b437316ed505a8e427f7e68f5d92a176b4019edbad337c17a1963b2b7c18bb",
+  "scope": "Serial complete frozen original large24 after guarded full native/HBM/model/conformance; no shrink or board contention"
+}

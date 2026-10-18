@@ -1,5 +1,37 @@
 # R40 v2 convergence checkpoint
 
+## Original large coverage and completed older HBM inventory
+
+The complete original HBM14 inventory passed on immutable product tree
+`3520df32...03bec7`, actual 4 GiB and the preserved 90 MHz image, including the
+original GEMM4096 that previously exposed the watchdog/cleanup fault.
+[Complete raw records](attempt03/hbm14_complete_b59119d_4gib.json) retain every
+frozen point identity, result, source/image/clock and compiler-bundle manifest;
+all actual compiler bundles were verified before collection. This is 1/1
+functional inventory evidence for that named identity, not a performance pass
+or guarded-candidate promotion. Its full original generation model is running.
+
+The inherited original **large** tier contains 24 points beyond the native77
+inventory; HBM14 does not replace that tier. Its unchanged complete collection
+is [queued explicitly](attempt03/large24_6bd07b7_4gib_launch.json) after guarded
+native77/HBM14/model and no-CUDA conformance. The previous guarded formal queue
+was [superseded before any measurement](attempt03/formal_6bd07b7_superseded_for_large24.json).
+The [replacement formal queue](attempt03/formal_runtime_6bd07b7_v2_4gib_launch.json)
+waits for large24 correctness, then performs the same frozen runtime controls.
+No source, subset, threshold or active measurement was changed by this ordering.
+
+The authoritative observation commands for these subsequent stages are:
+
+```sh
+cat ~/tnca_large24_6bd07b7_4gib/state.json
+cat ~/tnca_formal_runtime_6bd07b7_v2_4gib/state.json
+```
+
+Success unlocks formal runtime measurements after all original functional
+coverage. Failure preserves the first original point and stops the downstream
+queue; it cannot be replaced by a smaller point or removed from acceptance.
+The earlier formal-queue paths below remain retained historical launches.
+
 ## Authoritative guarded candidate and serialized queues
 
 **Required gate delta:** no new gate is promoted on the guarded product tree

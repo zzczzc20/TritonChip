@@ -146,11 +146,13 @@ def validate(binary, out):
     assert result['status']=='completed-prediction',out/'sfu/stderr.log'
     assert result['summary']['counters']['core_0_sfu_queue_cycles']>0
     results['sfu']=result['summary']
-    # An uncovered engine operation is a hard error, never a free operation.
-    code = out/'unsupported.hex';assemble('m.zero a0\nexit\n', code)
+    # An uncovered operation is a hard error, never a free operation. The
+    # matrix engine is implemented since M1; device atomics remain refused.
+    code = out/'unsupported.hex';assemble('.li s2, #0x40000\natom.add.d s1, [s2], s3\nexit\n', code)
     script = out/'unsupported.commands';script.write_text(f'code {code}\nlaunch 3 0 0 1 1 1\n')
     result = run(binary, cfg, script, out/'unsupported', mode='chip')
     assert result['status'] == 'failed' and result['returncode'] != 0
+    assert 'MODEL_REFUSED unimplemented' in (out/'unsupported/stderr.log').read_text()
     code = out/'reserved.hex';code.write_text(f'{(16<<56)|(22<<48):016x}\n')
     script = out/'reserved.commands';script.write_text(f'code {code}\nlaunch 4 0 0 1 1 1\n')
     result = run(binary, cfg, script, out/'reserved', mode='chip')
@@ -163,9 +165,8 @@ def validate(binary, out):
     else:
         raise AssertionError('trailing launch fields were silently accepted')
     report = dict(schema='tnca-native-chip-validation/1', status='passed', results=results,
-        uncovered=['multi-role contexts', 'DMA/descriptors/windows', 'MMA/accumulators',
-                   'barriers', 'complete FP/CVT/SFU/shuffle/reduction semantics',
-                   'RF bank/port contention', 'calibrated core timing', 'standard Torch graph adapter'],
+        uncovered=['device atomics', 'RF bank/port contention', 'calibrated core timing',
+                   'non-blocking LSU stores', 'instruction fetch timing'],
         performance_gate='not-measured', whole_chip_qualified=False,
         compiler_sources_sha256={str(p.relative_to(ROOT)): sha(p) for p in (ROOT/'compiler/python/tnca_cc').glob('*.py')},
         isa_schema_sha256=sha(ROOT/'isa/tnca-isa-v0.1.json'))

@@ -17,11 +17,18 @@ add_custom_command(OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/tnca_isa_generated.hpp"
   COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/generate_isa.py"
           "${ISA_SCHEMA}" "${CMAKE_CURRENT_BINARY_DIR}/tnca_isa_generated.hpp"
   DEPENDS "${ISA_SCHEMA}" generate_isa.py VERBATIM)
-add_executable(tnca-chip src/chip.cpp "${CMAKE_CURRENT_BINARY_DIR}/tnca_isa_generated.hpp")
+set(SFU_TABLES "${CMAKE_CURRENT_SOURCE_DIR}/../../../xls/tnca_sfu_tables.x")
+add_custom_command(OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/tnca_sfu_tables_generated.hpp"
+  COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/generate_sfu.py"
+          "${SFU_TABLES}" "${CMAKE_CURRENT_BINARY_DIR}/tnca_sfu_tables_generated.hpp"
+  DEPENDS "${SFU_TABLES}" generate_sfu.py VERBATIM)
+add_executable(tnca-chip src/chip.cpp "${CMAKE_CURRENT_BINARY_DIR}/tnca_isa_generated.hpp"
+  "${CMAKE_CURRENT_BINARY_DIR}/tnca_sfu_tables_generated.hpp")
 target_include_directories(tnca-chip PRIVATE "${CMAKE_CURRENT_BINARY_DIR}")
 target_compile_definitions(tnca-chip PRIVATE SC_INCLUDE_DYNAMIC_PROCESSES)
 target_compile_options(tnca-chip PRIVATE -Wall -Wextra -Wpedantic -Werror)
 target_link_libraries(tnca-chip PRIVATE SystemC::systemc)
 install(TARGETS tnca-chip RUNTIME DESTINATION bin)
-add_executable(tnca-numeric-probe src/numeric_probe.cpp)
+add_executable(tnca-numeric-probe src/numeric_probe.cpp "${CMAKE_CURRENT_BINARY_DIR}/tnca_sfu_tables_generated.hpp")
+target_include_directories(tnca-numeric-probe PRIVATE "${CMAKE_CURRENT_BINARY_DIR}")
 target_compile_options(tnca-numeric-probe PRIVATE -Wall -Wextra -Wpedantic -Werror)

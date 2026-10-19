@@ -61,7 +61,7 @@ def run(binary, config, trace, out, timeout=1800, source_identity=None, mode='me
             fields = shlex.split(line, comments=True)
             if not fields:
                 continue
-            arity = {'code': 2, 'data': 3, 'expect': 3, 'launch': 7, 'launch_roles': 9, 'fence': 1}
+            arity = {'code': 2, 'data': 3, 'expect': 3, 'launch': 7, 'launch_roles': 9, 'launch_mask': 8, 'fence': 1}
             if fields[0] not in arity or len(fields) != arity[fields[0]]:
                 raise ValueError('unsupported chip command or trailing fields')
             if fields[0] in ('code', 'data', 'expect'):

@@ -1,0 +1,3830 @@
+{
+ "schema": "tnca-opcode-inventory/1",
+ "sources": [
+  "A=/home/zhongchun/r40v3_fix2/A_fix2/runs",
+  "B=/home/zhongchun/r40v3_fix2/B_fix2/runs"
+ ],
+ "scanned": {
+  "runs": 228,
+  "kernels": 1235,
+  "words": 836008,
+  "point_runs": {
+   "A": {
+    "runs": 113,
+    "before": 40,
+    "after": 113,
+    "before_bit_exact": 18
+   },
+   "B": {
+    "runs": 115,
+    "before": 29,
+    "after": 115,
+    "before_bit_exact": 14
+   }
+  }
+ },
+ "classifier": "/home/zhongchun/tlm_m1/bin_m1c/tnca-chip",
+ "note": "static instruction counts in assembled images; a kernel is a distinct (label, name, image)",
+ "rows": [
+  {
+   "kind": "opcode",
+   "name": "s.movz",
+   "major_func": "0x01.0x40",
+   "static": 84933,
+   "kernels": 744,
+   "points": 107,
+   "runs": 212,
+   "distinct_words": 3454,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+scalar_latency"
+   ],
+   "refusal_reasons": [
+    "salu "
+   ]
+  },
+  {
+   "kind": "opcode",
+   "name": "s.addi",
+   "major_func": "0x01.0x20",
+   "static": 62613,
+   "kernels": 657,
+   "points": 89,
+   "runs": 186,
+   "distinct_words": 15074,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+scalar_latency"
+   ],
+   "refusal_reasons": [
+    "salu "
+   ]
+  },
+  {
+   "kind": "opcode",
+   "name": "v.extract",
+   "major_func": "0x14.0x08",
+   "static": 62030,
+   "kernels": 360,
+   "points": 61,
+   "runs": 112,
+   "distinct_words": 5592,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+shuffle_latency"
+   ],
+   "refusal_reasons": [
+    "extract "
+   ]
+  },
+  {
+   "kind": "opcode",
+   "name": "v.splat",
+   "major_func": "0x10.0x1a",
+   "static": 59702,
+   "kernels": 898,
+   "points": 113,
+   "runs": 228,
+   "distinct_words": 610,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+vector_int_latency"
+   ],
+   "refusal_reasons": [
+    "vint "
+   ]
+  },
+  {
+   "kind": "opcode",
+   "name": "v.movi",
+   "major_func": "0x10.0x40",
+   "static": 43384,
+   "kernels": 730,
+   "points": 113,
+   "runs": 228,
+   "distinct_words": 443,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+vector_int_latency"
+   ],
+   "refusal_reasons": [
+    "vint "
+   ]
+  },
+  {
+   "kind": "opcode",
+   "name": "v.cmp",
+   "major_func": "0x10.0x18",
+   "static": 37846,
+   "kernels": 871,
+   "points": 113,
+   "runs": 228,
+   "distinct_words": 915,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+compare_latency"
+   ],
+   "refusal_reasons": [
+    "vint "
+   ]
+  },
+  {
+   "kind": "opcode",
+   "name": "a.vread",
+   "major_func": "0x41.0x00",
+   "static": 35568,
+   "kernels": 342,
+   "points": 58,
+   "runs": 137,
+   "distinct_words": 924,
+   "before_m1": "refused",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+matrix_engine_free+acc_read_latency"
+   ],
+   "refusal_reasons": [
+    "a_vread "
+   ]
+  },
+  {
+   "kind": "opcode",
+   "name": "v.insert",
+   "major_func": "0x14.0x09",
+   "static": 30292,
+   "kernels": 133,
+   "points": 34,
+   "runs": 62,
+   "distinct_words": 2103,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+shuffle_latency"
+   ],
+   "refusal_reasons": [
+    "insert "
+   ]
+  },
+  {
+   "kind": "opcode",
+   "name": "v.st",
+   "major_func": "0x20.0x18",
+   "static": 28670,
+   "kernels": 770,
+   "points": 109,
+   "runs": 222,
+   "distinct_words": 1082,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+lsu_slots+noc+nuca+hbm(+load_latency)"
+   ],
+   "refusal_reasons": [
+    "lsu "
+   ]
+  },
+  {
+   "kind": "opcode",
+   "name": "v.ld",
+   "major_func": "0x20.0x10",
+   "static": 27185,
+   "kernels": 640,
+   "points": 96,
+   "runs": 195,
+   "distinct_words": 748,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+lsu_slots+noc+nuca+hbm(+load_latency)"
+   ],
+   "refusal_reasons": [
+    "lsu "
+   ]
+  },
+  {
+   "kind": "opcode",
+   "name": "v.add",
+   "major_func": "0x10.0x01",
+   "static": 24183,
+   "kernels": 898,
+   "points": 113,
+   "runs": 228,
+   "distinct_words": 1089,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+vector_int_latency"
+   ],
+   "refusal_reasons": [
+    "vint "
+   ]
+  },
+  {
+   "kind": "opcode",
+   "name": "v.sel",
+   "major_func": "0x10.0x19",
+   "static": 23897,
+   "kernels": 606,
+   "points": 113,
+   "runs": 228,
+   "distinct_words": 1126,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+vector_int_latency"
+   ],
+   "refusal_reasons": [
+    "vint "
+   ]
+  },
+  {
+   "kind": "opcode",
+   "name": "vf.fma",
+   "major_func": "0x11.0x06",
+   "static": 23042,
+   "kernels": 180,
+   "points": 57,
+   "runs": 110,
+   "distinct_words": 288,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+vector_fp_latency"
+   ],
+   "refusal_reasons": [
+    "vfp "
+   ]
+  },
+  {
+   "kind": "opcode",
+   "name": "s.movk",
+   "major_func": "0x01.0x41",
+   "static": 20961,
+   "kernels": 671,
+   "points": 94,
+   "runs": 198,
+   "distinct_words": 480,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+scalar_latency"
+   ],
+   "refusal_reasons": [
+    "salu "
+   ]
+  },
+  {
+   "kind": "opcode",
+   "name": "p.and",
+   "major_func": "0x13.0x01",
+   "static": 20326,
+   "kernels": 605,
+   "points": 74,
+   "runs": 162,
+   "distinct_words": 72,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+predicate_latency"
+   ],
+   "refusal_reasons": [
+    "pred "
+   ]
+  },
+  {
+   "kind": "opcode",
+   "name": "v.sub",
+   "major_func": "0x10.0x02",
+   "static": 18813,
+   "kernels": 331,
+   "points": 113,
+   "runs": 228,
+   "distinct_words": 565,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+vector_int_latency"
+   ],
+   "refusal_reasons": [
+    "vint "
+   ]
+  },
+  {
+   "kind": "opcode",
+   "name": "s.shli",
+   "major_func": "0x01.0x2c",
+   "static": 17062,
+   "kernels": 871,
+   "points": 113,
+   "runs": 228,
+   "distinct_words": 396,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+scalar_latency"
+   ],
+   "refusal_reasons": [
+    "salu "
+   ]
+  },
+  {
+   "kind": "opcode",
+   "name": "s.add",
+   "major_func": "0x01.0x01",
+   "static": 16100,
+   "kernels": 898,
+   "points": 113,
+   "runs": 228,
+   "distinct_words": 1720,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+scalar_latency"
+   ],
+   "refusal_reasons": [
+    "salu "
+   ]
+  },
+  {
+   "kind": "opcode",
+   "name": "s.lshri",
+   "major_func": "0x01.0x2d",
+   "static": 14676,
+   "kernels": 453,
+   "points": 63,
+   "runs": 146,
+   "distinct_words": 535,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+scalar_latency"
+   ],
+   "refusal_reasons": [
+    "salu "
+   ]
+  },
+  {
+   "kind": "opcode",
+   "name": "s.or",
+   "major_func": "0x01.0x09",
+   "static": 12652,
+   "kernels": 425,
+   "points": 54,
+   "runs": 128,
+   "distinct_words": 447,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+scalar_latency"
+   ],
+   "refusal_reasons": [
+    "salu "
+   ]
+  },
+  {
+   "kind": "opcode",
+   "name": "vf.cvt",
+   "major_func": "0x12.0x04",
+   "static": 11975,
+   "kernels": 644,
+   "points": 85,
+   "runs": 182,
+   "distinct_words": 260,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+convert_latency"
+   ],
+   "refusal_reasons": [
+    "cvt "
+   ]
+  },
+  {
+   "kind": "opcode",
+   "name": "s.cmp",
+   "major_func": "0x01.0x18",
+   "static": 11082,
+   "kernels": 898,
+   "points": 113,
+   "runs": 228,
+   "distinct_words": 1034,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+scalar_latency"
+   ],
+   "refusal_reasons": [
+    "salu "
+   ]
+  },
+  {
+   "kind": "opcode",
+   "name": "vf.mul",
+   "major_func": "0x11.0x03",
+   "static": 9823,
+   "kernels": 395,
+   "points": 62,
+   "runs": 116,
+   "distinct_words": 570,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+vector_fp_latency"
+   ],
+   "refusal_reasons": [
+    "vfp "
+   ]
+  },
+  {
+   "kind": "opcode",
+   "name": "s.sub",
+   "major_func": "0x01.0x02",
+   "static": 9609,
+   "kernels": 336,
+   "points": 57,
+   "runs": 139,
+   "distinct_words": 1119,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+scalar_latency"
+   ],
+   "refusal_reasons": [
+    "salu "
+   ]
+  },
+  {
+   "kind": "opcode",
+   "name": "a.vwrite",
+   "major_func": "0x41.0x01",
+   "static": 9520,
+   "kernels": 146,
+   "points": 46,
+   "runs": 91,
+   "distinct_words": 574,
+   "before_m1": "refused",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+matrix_engine_occupancy"
+   ],
+   "refusal_reasons": [
+    "a_row "
+   ]
+  },
+  {
+   "kind": "opcode",
+   "name": "vf.add",
+   "major_func": "0x11.0x01",
+   "static": 8079,
+   "kernels": 494,
+   "points": 90,
+   "runs": 178,
+   "distinct_words": 382,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+vector_fp_latency"
+   ],
+   "refusal_reasons": [
+    "vfp "
+   ]
+  },
+  {
+   "kind": "opcode",
+   "name": "s.st",
+   "major_func": "0x20.0x08",
+   "static": 7553,
+   "kernels": 483,
+   "points": 60,
+   "runs": 145,
+   "distinct_words": 677,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+lsu_slots+noc+nuca+hbm(+load_latency)"
+   ],
+   "refusal_reasons": [
+    "lsu "
+   ]
+  },
+  {
+   "kind": "opcode",
+   "name": "s.and",
+   "major_func": "0x01.0x08",
+   "static": 7430,
+   "kernels": 306,
+   "points": 45,
+   "runs": 117,
+   "distinct_words": 258,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+scalar_latency"
+   ],
+   "refusal_reasons": [
+    "salu "
+   ]
+  },
+  {
+   "kind": "opcode",
+   "name": "v.ld.gather",
+   "major_func": "0x20.0x20",
+   "static": 7182,
+   "kernels": 419,
+   "points": 113,
+   "runs": 228,
+   "distinct_words": 387,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+lsu_slots+noc+nuca+hbm(+load_latency)"
+   ],
+   "refusal_reasons": [
+    "lsu "
+   ]
+  },
+  {
+   "kind": "opcode",
+   "name": "s.rdspecial",
+   "major_func": "0x00.0x01",
+   "static": 6675,
+   "kernels": 898,
+   "points": 113,
+   "runs": 228,
+   "distinct_words": 61,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+scalar_latency"
+   ],
+   "refusal_reasons": [
+    "special "
+   ]
+  },
+  {
+   "kind": "opcode",
+   "name": "s.mov",
+   "major_func": "0x01.0x00",
+   "static": 5760,
+   "kernels": 611,
+   "points": 78,
+   "runs": 173,
+   "distinct_words": 322,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+scalar_latency"
+   ],
+   "refusal_reasons": [
+    "salu "
+   ]
+  },
+  {
+   "kind": "opcode",
+   "name": "v.mul",
+   "major_func": "0x10.0x03",
+   "static": 5161,
+   "kernels": 336,
+   "points": 113,
+   "runs": 228,
+   "distinct_words": 364,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+vector_int_latency"
+   ],
+   "refusal_reasons": [
+    "vint "
+   ]
+  },
+  {
+   "kind": "opcode",
+   "name": "v.iota",
+   "major_func": "0x10.0x1b",
+   "static": 5106,
+   "kernels": 898,
+   "points": 113,
+   "runs": 228,
+   "distinct_words": 25,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+vector_int_latency"
+   ],
+   "refusal_reasons": [
+    "vint "
+   ]
+  },
+  {
+   "kind": "opcode",
+   "name": "br.nz",
+   "major_func": "0x02.0x01",
+   "static": 5016,
+   "kernels": 898,
+   "points": 113,
+   "runs": 228,
+   "distinct_words": 603,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue"
+   ],
+   "refusal_reasons": [
+    "branch "
+   ]
+  },
+  {
+   "kind": "opcode",
+   "name": "s.ld",
+   "major_func": "0x20.0x00",
+   "static": 4898,
+   "kernels": 898,
+   "points": 113,
+   "runs": 228,
+   "distinct_words": 246,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+lsu_slots+noc+nuca+hbm(+load_latency)"
+   ],
+   "refusal_reasons": [
+    "lsu "
+   ]
+  },
+  {
+   "kind": "opcode",
+   "name": "s.xor",
+   "major_func": "0x01.0x0a",
+   "static": 4794,
+   "kernels": 336,
+   "points": 57,
+   "runs": 139,
+   "distinct_words": 619,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+scalar_latency"
+   ],
+   "refusal_reasons": [
+    "salu "
+   ]
+  },
+  {
+   "kind": "opcode",
+   "name": "s.muli",
+   "major_func": "0x01.0x22",
+   "static": 4328,
+   "kernels": 582,
+   "points": 67,
+   "runs": 154,
+   "distinct_words": 847,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+scalar_mul_latency"
+   ],
+   "refusal_reasons": [
+    "salu "
+   ]
+  },
+  {
+   "kind": "opcode",
+   "name": "s.mul",
+   "major_func": "0x01.0x03",
+   "static": 3752,
+   "kernels": 601,
+   "points": 84,
+   "runs": 180,
+   "distinct_words": 431,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+scalar_mul_latency"
+   ],
+   "refusal_reasons": [
+    "salu "
+   ]
+  },
+  {
+   "kind": "opcode",
+   "name": "s.ashri",
+   "major_func": "0x01.0x2e",
+   "static": 3350,
+   "kernels": 113,
+   "points": 27,
+   "runs": 49,
+   "distinct_words": 61,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+scalar_latency"
+   ],
+   "refusal_reasons": [
+    "salu "
+   ]
+  },
+  {
+   "kind": "opcode",
+   "name": "vf.fms",
+   "major_func": "0x11.0x07",
+   "static": 3291,
+   "kernels": 325,
+   "points": 58,
+   "runs": 108,
+   "distinct_words": 231,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+vector_fp_latency"
+   ],
+   "refusal_reasons": [
+    "vfp "
+   ]
+  },
+  {
+   "kind": "opcode",
+   "name": "v.lshr",
+   "major_func": "0x10.0x0d",
+   "static": 3247,
+   "kernels": 286,
+   "points": 113,
+   "runs": 228,
+   "distinct_words": 112,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+vector_int_latency"
+   ],
+   "refusal_reasons": [
+    "vint "
+   ]
+  },
+  {
+   "kind": "opcode",
+   "name": "v.and",
+   "major_func": "0x10.0x08",
+   "static": 3216,
+   "kernels": 326,
+   "points": 113,
+   "runs": 228,
+   "distinct_words": 151,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+vector_int_latency"
+   ],
+   "refusal_reasons": [
+    "vint "
+   ]
+  },
+  {
+   "kind": "opcode",
+   "name": "vf.cmp",
+   "major_func": "0x11.0x18",
+   "static": 3116,
+   "kernels": 330,
+   "points": 62,
+   "runs": 114,
+   "distinct_words": 160,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+compare_latency"
+   ],
+   "refusal_reasons": [
+    "vfp "
+   ]
+  },
+  {
+   "kind": "opcode",
+   "name": "v.st.scatter",
+   "major_func": "0x20.0x28",
+   "static": 2865,
+   "kernels": 192,
+   "points": 113,
+   "runs": 228,
+   "distinct_words": 92,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+lsu_slots+noc+nuca+hbm(+load_latency)"
+   ],
+   "refusal_reasons": [
+    "lsu "
+   ]
+  },
+  {
+   "kind": "opcode",
+   "name": "fence",
+   "major_func": "0x21.0x20",
+   "static": 2241,
+   "kernels": 500,
+   "points": 63,
+   "runs": 148,
+   "distinct_words": 2,
+   "before_m1": "refused",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+own_scoreboard_drain"
+   ],
+   "refusal_reasons": [
+    "fence "
+   ]
+  },
+  {
+   "kind": "opcode",
+   "name": "v.cmpi",
+   "major_func": "0x10.0x38",
+   "static": 1905,
+   "kernels": 57,
+   "points": 24,
+   "runs": 46,
+   "distinct_words": 96,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+compare_latency"
+   ],
+   "refusal_reasons": [
+    "vint "
+   ]
+  },
+  {
+   "kind": "opcode",
+   "name": "v.mov",
+   "major_func": "0x10.0x00",
+   "static": 1803,
+   "kernels": 288,
+   "points": 49,
+   "runs": 91,
+   "distinct_words": 161,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+vector_int_latency"
+   ],
+   "refusal_reasons": [
+    "vint "
+   ]
+  },
+  {
+   "kind": "opcode",
+   "name": "vf.neg",
+   "major_func": "0x11.0x14",
+   "static": 1786,
+   "kernels": 333,
+   "points": 58,
+   "runs": 108,
+   "distinct_words": 80,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+vector_fp_latency"
+   ],
+   "refusal_reasons": [
+    "vfp "
+   ]
+  },
+  {
+   "kind": "opcode",
+   "name": "exit",
+   "major_func": "0x02.0x1f",
+   "static": 1356,
+   "kernels": 898,
+   "points": 113,
+   "runs": 228,
+   "distinct_words": 1,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue"
+   ],
+   "refusal_reasons": [
+    "exit "
+   ]
+  },
+  {
+   "kind": "opcode",
+   "name": "td.load",
+   "major_func": "0x30.0x00",
+   "static": 1129,
+   "kernels": 483,
+   "points": 60,
+   "runs": 145,
+   "distinct_words": 63,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+tensor_engine_admission(+descriptor_snapshot_via_noc_nuca)"
+   ],
+   "refusal_reasons": [
+    "desc "
+   ]
+  },
+  {
+   "kind": "opcode",
+   "name": "s.andi",
+   "major_func": "0x01.0x28",
+   "static": 1123,
+   "kernels": 303,
+   "points": 45,
+   "runs": 116,
+   "distinct_words": 167,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+scalar_latency"
+   ],
+   "refusal_reasons": [
+    "salu "
+   ]
+  },
+  {
+   "kind": "opcode",
+   "name": "v.rcp.approx",
+   "major_func": "0x16.0x01",
+   "static": 1026,
+   "kernels": 295,
+   "points": 54,
+   "runs": 100,
+   "distinct_words": 53,
+   "before_m1": "implemented-inexact",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+sfu_occupancy+sfu_latency"
+   ],
+   "refusal_reasons": [
+    "sfu "
+   ]
+  },
+  {
+   "kind": "opcode",
+   "name": "s.subi",
+   "major_func": "0x01.0x21",
+   "static": 950,
+   "kernels": 329,
+   "points": 49,
+   "runs": 123,
+   "distinct_words": 67,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+scalar_latency"
+   ],
+   "refusal_reasons": [
+    "salu "
+   ]
+  },
+  {
+   "kind": "opcode",
+   "name": "mb.arm",
+   "major_func": "0x50.0x01",
+   "static": 937,
+   "kernels": 274,
+   "points": 43,
+   "runs": 111,
+   "distinct_words": 106,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+barrier_latency+event_wake"
+   ],
+   "refusal_reasons": [
+    "barrier "
+   ]
+  },
+  {
+   "kind": "opcode",
+   "name": "mb.wait",
+   "major_func": "0x50.0x04",
+   "static": 937,
+   "kernels": 274,
+   "points": 43,
+   "runs": 111,
+   "distinct_words": 29,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+barrier_latency+event_wake"
+   ],
+   "refusal_reasons": [
+    "barrier "
+   ]
+  },
+  {
+   "kind": "opcode",
+   "name": "v.exp2.approx",
+   "major_func": "0x16.0x00",
+   "static": 770,
+   "kernels": 103,
+   "points": 45,
+   "runs": 85,
+   "distinct_words": 38,
+   "before_m1": "implemented-inexact",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+sfu_occupancy+sfu_latency"
+   ],
+   "refusal_reasons": [
+    "sfu "
+   ]
+  },
+  {
+   "kind": "opcode",
+   "name": "vf.sub",
+   "major_func": "0x11.0x02",
+   "static": 716,
+   "kernels": 110,
+   "points": 44,
+   "runs": 84,
+   "distinct_words": 70,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+vector_fp_latency"
+   ],
+   "refusal_reasons": [
+    "vfp "
+   ]
+  },
+  {
+   "kind": "opcode",
+   "name": "s.lshr",
+   "major_func": "0x01.0x0d",
+   "static": 656,
+   "kernels": 303,
+   "points": 45,
+   "runs": 116,
+   "distinct_words": 84,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+scalar_latency"
+   ],
+   "refusal_reasons": [
+    "salu "
+   ]
+  },
+  {
+   "kind": "opcode",
+   "name": "p.or",
+   "major_func": "0x13.0x02",
+   "static": 655,
+   "kernels": 76,
+   "points": 34,
+   "runs": 63,
+   "distinct_words": 24,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+predicate_latency"
+   ],
+   "refusal_reasons": [
+    "pred "
+   ]
+  },
+  {
+   "kind": "opcode",
+   "name": "v.shl",
+   "major_func": "0x10.0x0c",
+   "static": 643,
+   "kernels": 87,
+   "points": 28,
+   "runs": 50,
+   "distinct_words": 77,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+vector_int_latency"
+   ],
+   "refusal_reasons": [
+    "vint "
+   ]
+  },
+  {
+   "kind": "opcode",
+   "name": "s.shl",
+   "major_func": "0x01.0x0c",
+   "static": 630,
+   "kernels": 303,
+   "points": 45,
+   "runs": 116,
+   "distinct_words": 66,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+scalar_latency"
+   ],
+   "refusal_reasons": [
+    "salu "
+   ]
+  },
+  {
+   "kind": "opcode",
+   "name": "w.def",
+   "major_func": "0x30.0x10",
+   "static": 623,
+   "kernels": 274,
+   "points": 43,
+   "runs": 111,
+   "distinct_words": 15,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+tensor_engine_admission(+descriptor_snapshot_via_noc_nuca)"
+   ],
+   "refusal_reasons": [
+    "desc "
+   ]
+  },
+  {
+   "kind": "opcode",
+   "name": "t.ld.async",
+   "major_func": "0x31.0x00",
+   "static": 623,
+   "kernels": 274,
+   "points": 43,
+   "runs": 111,
+   "distinct_words": 104,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+tensor_engine(dma_units,noc,nuca,hbm)+barrier_completion"
+   ],
+   "refusal_reasons": [
+    "xfer "
+   ]
+  },
+  {
+   "kind": "opcode",
+   "name": "v.or",
+   "major_func": "0x10.0x09",
+   "static": 576,
+   "kernels": 32,
+   "points": 15,
+   "runs": 27,
+   "distinct_words": 59,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+vector_int_latency"
+   ],
+   "refusal_reasons": [
+    "vint "
+   ]
+  },
+  {
+   "kind": "opcode",
+   "name": "vf.reduce.add",
+   "major_func": "0x15.0x08",
+   "static": 529,
+   "kernels": 270,
+   "points": 36,
+   "runs": 70,
+   "distinct_words": 74,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+fp_reduction_latency"
+   ],
+   "refusal_reasons": [
+    "reduce "
+   ]
+  },
+  {
+   "kind": "opcode",
+   "name": "v.rsqrt.approx",
+   "major_func": "0x16.0x02",
+   "static": 469,
+   "kernels": 208,
+   "points": 27,
+   "runs": 53,
+   "distinct_words": 26,
+   "before_m1": "implemented-inexact",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+sfu_occupancy+sfu_latency"
+   ],
+   "refusal_reasons": [
+    "sfu "
+   ]
+  },
+  {
+   "kind": "opcode",
+   "name": "v.reduce.or",
+   "major_func": "0x15.0x04",
+   "static": 420,
+   "kernels": 132,
+   "points": 33,
+   "runs": 60,
+   "distinct_words": 44,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+reduction_latency"
+   ],
+   "refusal_reasons": [
+    "reduce "
+   ]
+  },
+  {
+   "kind": "opcode",
+   "name": "m.zero",
+   "major_func": "0x40.0x00",
+   "static": 419,
+   "kernels": 320,
+   "points": 52,
+   "runs": 129,
+   "distinct_words": 8,
+   "before_m1": "refused",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+matrix_engine_occupancy"
+   ],
+   "refusal_reasons": [
+    "m_zero "
+   ]
+  },
+  {
+   "kind": "opcode",
+   "name": "s.min.s",
+   "major_func": "0x01.0x10",
+   "static": 388,
+   "kernels": 303,
+   "points": 45,
+   "runs": 116,
+   "distinct_words": 56,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+scalar_latency"
+   ],
+   "refusal_reasons": [
+    "salu "
+   ]
+  },
+  {
+   "kind": "opcode",
+   "name": "vf.abs",
+   "major_func": "0x11.0x15",
+   "static": 329,
+   "kernels": 20,
+   "points": 12,
+   "runs": 22,
+   "distinct_words": 10,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+vector_fp_latency"
+   ],
+   "refusal_reasons": [
+    "vfp "
+   ]
+  },
+  {
+   "kind": "opcode",
+   "name": "trap",
+   "major_func": "0x02.0x18",
+   "static": 318,
+   "kernels": 82,
+   "points": 15,
+   "runs": 27,
+   "distinct_words": 2,
+   "before_m1": "refused",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+fault"
+   ],
+   "refusal_reasons": [
+    "trap "
+   ]
+  },
+  {
+   "kind": "opcode",
+   "name": "vf.max",
+   "major_func": "0x11.0x11",
+   "static": 316,
+   "kernels": 61,
+   "points": 28,
+   "runs": 56,
+   "distinct_words": 29,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+vector_fp_latency"
+   ],
+   "refusal_reasons": [
+    "vfp "
+   ]
+  },
+  {
+   "kind": "opcode",
+   "name": "m.mma.async",
+   "major_func": "0x40.0x01",
+   "static": 296,
+   "kernels": 249,
+   "points": 37,
+   "runs": 98,
+   "distinct_words": 52,
+   "before_m1": "refused",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+matrix_engine_occupancy+barrier_completion"
+   ],
+   "refusal_reasons": [
+    "mma "
+   ]
+  },
+  {
+   "kind": "opcode",
+   "name": "p.xor",
+   "major_func": "0x13.0x03",
+   "static": 221,
+   "kernels": 30,
+   "points": 16,
+   "runs": 26,
+   "distinct_words": 11,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+predicate_latency"
+   ],
+   "refusal_reasons": [
+    "pred "
+   ]
+  },
+  {
+   "kind": "opcode",
+   "name": "v.ashr",
+   "major_func": "0x10.0x0e",
+   "static": 159,
+   "kernels": 82,
+   "points": 15,
+   "runs": 27,
+   "distinct_words": 15,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+vector_int_latency"
+   ],
+   "refusal_reasons": [
+    "vint "
+   ]
+  },
+  {
+   "kind": "opcode",
+   "name": "p.mov",
+   "major_func": "0x13.0x00",
+   "static": 105,
+   "kernels": 32,
+   "points": 18,
+   "runs": 35,
+   "distinct_words": 6,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+predicate_latency"
+   ],
+   "refusal_reasons": [
+    "pred "
+   ]
+  },
+  {
+   "kind": "opcode",
+   "name": "vf.reduce.max",
+   "major_func": "0x15.0x09",
+   "static": 62,
+   "kernels": 53,
+   "points": 28,
+   "runs": 56,
+   "distinct_words": 12,
+   "before_m1": "implemented-inexact",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+fp_reduction_latency"
+   ],
+   "refusal_reasons": [
+    "reduce "
+   ]
+  },
+  {
+   "kind": "opcode",
+   "name": "s.ori",
+   "major_func": "0x01.0x29",
+   "static": 48,
+   "kernels": 16,
+   "points": 8,
+   "runs": 16,
+   "distinct_words": 26,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+scalar_latency"
+   ],
+   "refusal_reasons": [
+    "salu "
+   ]
+  },
+  {
+   "kind": "opcode",
+   "name": "p.not",
+   "major_func": "0x13.0x04",
+   "static": 43,
+   "kernels": 40,
+   "points": 22,
+   "runs": 43,
+   "distinct_words": 5,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+predicate_latency"
+   ],
+   "refusal_reasons": [
+    "pred "
+   ]
+  },
+  {
+   "kind": "opcode",
+   "name": "mb.arrive",
+   "major_func": "0x50.0x02",
+   "static": 33,
+   "kernels": 16,
+   "points": 8,
+   "runs": 16,
+   "distinct_words": 5,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+barrier_latency+event_wake"
+   ],
+   "refusal_reasons": [
+    "barrier "
+   ]
+  },
+  {
+   "kind": "opcode",
+   "name": "v.reduce.add",
+   "major_func": "0x15.0x00",
+   "static": 5,
+   "kernels": 3,
+   "points": 3,
+   "runs": 5,
+   "distinct_words": 1,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+reduction_latency"
+   ],
+   "refusal_reasons": [
+    "reduce "
+   ]
+  },
+  {
+   "kind": "variant",
+   "name": "s.movz",
+   "major_func": "0x01.0x40",
+   "static": 84933,
+   "kernels": 744,
+   "points": 107,
+   "runs": 212,
+   "distinct_words": 3454,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+scalar_latency"
+   ],
+   "refusal_reasons": [
+    "salu "
+   ]
+  },
+  {
+   "kind": "variant",
+   "name": "s.addi",
+   "major_func": "0x01.0x20",
+   "static": 62613,
+   "kernels": 657,
+   "points": 89,
+   "runs": 186,
+   "distinct_words": 15074,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+scalar_latency"
+   ],
+   "refusal_reasons": [
+    "salu "
+   ]
+  },
+  {
+   "kind": "variant",
+   "name": "v.extract",
+   "major_func": "0x14.0x08",
+   "static": 62030,
+   "kernels": 360,
+   "points": 61,
+   "runs": 112,
+   "distinct_words": 5592,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+shuffle_latency"
+   ],
+   "refusal_reasons": [
+    "extract "
+   ]
+  },
+  {
+   "kind": "variant",
+   "name": "v.splat",
+   "major_func": "0x10.0x1a",
+   "static": 59702,
+   "kernels": 898,
+   "points": 113,
+   "runs": 228,
+   "distinct_words": 610,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+vector_int_latency"
+   ],
+   "refusal_reasons": [
+    "vint "
+   ]
+  },
+  {
+   "kind": "variant",
+   "name": "v.movi",
+   "major_func": "0x10.0x40",
+   "static": 43384,
+   "kernels": 730,
+   "points": 113,
+   "runs": 228,
+   "distinct_words": 443,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+vector_int_latency"
+   ],
+   "refusal_reasons": [
+    "vint "
+   ]
+  },
+  {
+   "kind": "variant",
+   "name": "a.vread",
+   "major_func": "0x41.0x00",
+   "static": 35568,
+   "kernels": 342,
+   "points": 58,
+   "runs": 137,
+   "distinct_words": 924,
+   "before_m1": "refused",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+matrix_engine_free+acc_read_latency"
+   ],
+   "refusal_reasons": [
+    "a_vread "
+   ]
+  },
+  {
+   "kind": "variant",
+   "name": "v.insert",
+   "major_func": "0x14.0x09",
+   "static": 30292,
+   "kernels": 133,
+   "points": 34,
+   "runs": 62,
+   "distinct_words": 2103,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+shuffle_latency"
+   ],
+   "refusal_reasons": [
+    "insert "
+   ]
+  },
+  {
+   "kind": "variant",
+   "name": "v.cmp.lt",
+   "major_func": "0x10.0x18",
+   "static": 27779,
+   "kernels": 855,
+   "points": 113,
+   "runs": 228,
+   "distinct_words": 483,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+compare_latency"
+   ],
+   "refusal_reasons": [
+    "vint "
+   ]
+  },
+  {
+   "kind": "variant",
+   "name": "v.add",
+   "major_func": "0x10.0x01",
+   "static": 24183,
+   "kernels": 898,
+   "points": 113,
+   "runs": 228,
+   "distinct_words": 1089,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+vector_int_latency"
+   ],
+   "refusal_reasons": [
+    "vint "
+   ]
+  },
+  {
+   "kind": "variant",
+   "name": "v.sel (predicated)",
+   "major_func": "0x10.0x19",
+   "static": 23897,
+   "kernels": 606,
+   "points": 113,
+   "runs": 228,
+   "distinct_words": 1126,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+vector_int_latency"
+   ],
+   "refusal_reasons": [
+    "vint "
+   ]
+  },
+  {
+   "kind": "variant",
+   "name": "vf.fma",
+   "major_func": "0x11.0x06",
+   "static": 23042,
+   "kernels": 180,
+   "points": 57,
+   "runs": 110,
+   "distinct_words": 288,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+vector_fp_latency"
+   ],
+   "refusal_reasons": [
+    "vfp "
+   ]
+  },
+  {
+   "kind": "variant",
+   "name": "v.ld.w",
+   "major_func": "0x20.0x10",
+   "static": 21824,
+   "kernels": 124,
+   "points": 32,
+   "runs": 65,
+   "distinct_words": 280,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+lsu_slots+noc+nuca+hbm(+load_latency)"
+   ],
+   "refusal_reasons": [
+    "lsu "
+   ]
+  },
+  {
+   "kind": "variant",
+   "name": "s.movk",
+   "major_func": "0x01.0x41",
+   "static": 20961,
+   "kernels": 671,
+   "points": 94,
+   "runs": 198,
+   "distinct_words": 480,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+scalar_latency"
+   ],
+   "refusal_reasons": [
+    "salu "
+   ]
+  },
+  {
+   "kind": "variant",
+   "name": "p.and",
+   "major_func": "0x13.0x01",
+   "static": 20326,
+   "kernels": 605,
+   "points": 74,
+   "runs": 162,
+   "distinct_words": 72,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+predicate_latency"
+   ],
+   "refusal_reasons": [
+    "pred "
+   ]
+  },
+  {
+   "kind": "variant",
+   "name": "v.st.w",
+   "major_func": "0x20.0x18",
+   "static": 19058,
+   "kernels": 157,
+   "points": 34,
+   "runs": 68,
+   "distinct_words": 476,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+lsu_slots+noc+nuca+hbm(+load_latency)"
+   ],
+   "refusal_reasons": [
+    "lsu "
+   ]
+  },
+  {
+   "kind": "variant",
+   "name": "v.sub",
+   "major_func": "0x10.0x02",
+   "static": 18813,
+   "kernels": 331,
+   "points": 113,
+   "runs": 228,
+   "distinct_words": 565,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+vector_int_latency"
+   ],
+   "refusal_reasons": [
+    "vint "
+   ]
+  },
+  {
+   "kind": "variant",
+   "name": "s.shli",
+   "major_func": "0x01.0x2c",
+   "static": 17062,
+   "kernels": 871,
+   "points": 113,
+   "runs": 228,
+   "distinct_words": 396,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+scalar_latency"
+   ],
+   "refusal_reasons": [
+    "salu "
+   ]
+  },
+  {
+   "kind": "variant",
+   "name": "s.add",
+   "major_func": "0x01.0x01",
+   "static": 16100,
+   "kernels": 898,
+   "points": 113,
+   "runs": 228,
+   "distinct_words": 1720,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+scalar_latency"
+   ],
+   "refusal_reasons": [
+    "salu "
+   ]
+  },
+  {
+   "kind": "variant",
+   "name": "s.lshri",
+   "major_func": "0x01.0x2d",
+   "static": 14676,
+   "kernels": 453,
+   "points": 63,
+   "runs": 146,
+   "distinct_words": 535,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+scalar_latency"
+   ],
+   "refusal_reasons": [
+    "salu "
+   ]
+  },
+  {
+   "kind": "variant",
+   "name": "s.or",
+   "major_func": "0x01.0x09",
+   "static": 12652,
+   "kernels": 425,
+   "points": 54,
+   "runs": 128,
+   "distinct_words": 447,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+scalar_latency"
+   ],
+   "refusal_reasons": [
+    "salu "
+   ]
+  },
+  {
+   "kind": "variant",
+   "name": "vf.mul",
+   "major_func": "0x11.0x03",
+   "static": 9823,
+   "kernels": 395,
+   "points": 62,
+   "runs": 116,
+   "distinct_words": 570,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+vector_fp_latency"
+   ],
+   "refusal_reasons": [
+    "vfp "
+   ]
+  },
+  {
+   "kind": "variant",
+   "name": "s.sub",
+   "major_func": "0x01.0x02",
+   "static": 9609,
+   "kernels": 336,
+   "points": 57,
+   "runs": 139,
+   "distinct_words": 1119,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+scalar_latency"
+   ],
+   "refusal_reasons": [
+    "salu "
+   ]
+  },
+  {
+   "kind": "variant",
+   "name": "a.vwrite",
+   "major_func": "0x41.0x01",
+   "static": 9520,
+   "kernels": 146,
+   "points": 46,
+   "runs": 91,
+   "distinct_words": 574,
+   "before_m1": "refused",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+matrix_engine_occupancy"
+   ],
+   "refusal_reasons": [
+    "a_row "
+   ]
+  },
+  {
+   "kind": "variant",
+   "name": "vf.add",
+   "major_func": "0x11.0x01",
+   "static": 8079,
+   "kernels": 494,
+   "points": 90,
+   "runs": 178,
+   "distinct_words": 382,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+vector_fp_latency"
+   ],
+   "refusal_reasons": [
+    "vfp "
+   ]
+  },
+  {
+   "kind": "variant",
+   "name": "s.st.d",
+   "major_func": "0x20.0x08",
+   "static": 7551,
+   "kernels": 483,
+   "points": 60,
+   "runs": 145,
+   "distinct_words": 676,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+lsu_slots+noc+nuca+hbm(+load_latency)"
+   ],
+   "refusal_reasons": [
+    "lsu "
+   ]
+  },
+  {
+   "kind": "variant",
+   "name": "s.and",
+   "major_func": "0x01.0x08",
+   "static": 7430,
+   "kernels": 306,
+   "points": 45,
+   "runs": 117,
+   "distinct_words": 258,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+scalar_latency"
+   ],
+   "refusal_reasons": [
+    "salu "
+   ]
+  },
+  {
+   "kind": "variant",
+   "name": "v.cmp.ne",
+   "major_func": "0x10.0x18",
+   "static": 7227,
+   "kernels": 174,
+   "points": 45,
+   "runs": 81,
+   "distinct_words": 258,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+compare_latency"
+   ],
+   "refusal_reasons": [
+    "vint "
+   ]
+  },
+  {
+   "kind": "variant",
+   "name": "s.rdspecial",
+   "major_func": "0x00.0x01",
+   "static": 6675,
+   "kernels": 898,
+   "points": 113,
+   "runs": 228,
+   "distinct_words": 61,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+scalar_latency"
+   ],
+   "refusal_reasons": [
+    "special "
+   ]
+  },
+  {
+   "kind": "variant",
+   "name": "vf.cvt.f16.f32",
+   "major_func": "0x12.0x04",
+   "static": 6109,
+   "kernels": 456,
+   "points": 71,
+   "runs": 141,
+   "distinct_words": 197,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+convert_latency"
+   ],
+   "refusal_reasons": [
+    "cvt "
+   ]
+  },
+  {
+   "kind": "variant",
+   "name": "vf.cvt.f32.f16",
+   "major_func": "0x12.0x04",
+   "static": 5866,
+   "kernels": 565,
+   "points": 81,
+   "runs": 176,
+   "distinct_words": 63,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+convert_latency"
+   ],
+   "refusal_reasons": [
+    "cvt "
+   ]
+  },
+  {
+   "kind": "variant",
+   "name": "s.mov",
+   "major_func": "0x01.0x00",
+   "static": 5760,
+   "kernels": 611,
+   "points": 78,
+   "runs": 173,
+   "distinct_words": 322,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+scalar_latency"
+   ],
+   "refusal_reasons": [
+    "salu "
+   ]
+  },
+  {
+   "kind": "variant",
+   "name": "v.mul",
+   "major_func": "0x10.0x03",
+   "static": 5161,
+   "kernels": 336,
+   "points": 113,
+   "runs": 228,
+   "distinct_words": 364,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+vector_int_latency"
+   ],
+   "refusal_reasons": [
+    "vint "
+   ]
+  },
+  {
+   "kind": "variant",
+   "name": "v.iota",
+   "major_func": "0x10.0x1b",
+   "static": 5106,
+   "kernels": 898,
+   "points": 113,
+   "runs": 228,
+   "distinct_words": 25,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+vector_int_latency"
+   ],
+   "refusal_reasons": [
+    "vint "
+   ]
+  },
+  {
+   "kind": "variant",
+   "name": "br.nz",
+   "major_func": "0x02.0x01",
+   "static": 5016,
+   "kernels": 898,
+   "points": 113,
+   "runs": 228,
+   "distinct_words": 603,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue"
+   ],
+   "refusal_reasons": [
+    "branch "
+   ]
+  },
+  {
+   "kind": "variant",
+   "name": "v.st.h (predicated)",
+   "major_func": "0x20.0x18",
+   "static": 4940,
+   "kernels": 502,
+   "points": 63,
+   "runs": 139,
+   "distinct_words": 334,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+lsu_slots+noc+nuca+hbm(+load_latency)"
+   ],
+   "refusal_reasons": [
+    "lsu "
+   ]
+  },
+  {
+   "kind": "variant",
+   "name": "s.ld.d",
+   "major_func": "0x20.0x00",
+   "static": 4898,
+   "kernels": 898,
+   "points": 113,
+   "runs": 228,
+   "distinct_words": 246,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+lsu_slots+noc+nuca+hbm(+load_latency)"
+   ],
+   "refusal_reasons": [
+    "lsu "
+   ]
+  },
+  {
+   "kind": "variant",
+   "name": "s.xor",
+   "major_func": "0x01.0x0a",
+   "static": 4794,
+   "kernels": 336,
+   "points": 57,
+   "runs": 139,
+   "distinct_words": 619,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+scalar_latency"
+   ],
+   "refusal_reasons": [
+    "salu "
+   ]
+  },
+  {
+   "kind": "variant",
+   "name": "s.muli",
+   "major_func": "0x01.0x22",
+   "static": 4328,
+   "kernels": 582,
+   "points": 67,
+   "runs": 154,
+   "distinct_words": 847,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+scalar_mul_latency"
+   ],
+   "refusal_reasons": [
+    "salu "
+   ]
+  },
+  {
+   "kind": "variant",
+   "name": "s.cmp.ge",
+   "major_func": "0x01.0x18",
+   "static": 4140,
+   "kernels": 898,
+   "points": 113,
+   "runs": 228,
+   "distinct_words": 333,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+scalar_latency"
+   ],
+   "refusal_reasons": [
+    "salu "
+   ]
+  },
+  {
+   "kind": "variant",
+   "name": "s.cmp.lt",
+   "major_func": "0x01.0x18",
+   "static": 3818,
+   "kernels": 418,
+   "points": 62,
+   "runs": 144,
+   "distinct_words": 397,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+scalar_latency"
+   ],
+   "refusal_reasons": [
+    "salu "
+   ]
+  },
+  {
+   "kind": "variant",
+   "name": "s.mul",
+   "major_func": "0x01.0x03",
+   "static": 3752,
+   "kernels": 601,
+   "points": 84,
+   "runs": 180,
+   "distinct_words": 431,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+scalar_mul_latency"
+   ],
+   "refusal_reasons": [
+    "salu "
+   ]
+  },
+  {
+   "kind": "variant",
+   "name": "v.ld.h (predicated)",
+   "major_func": "0x20.0x10",
+   "static": 3418,
+   "kernels": 361,
+   "points": 51,
+   "runs": 102,
+   "distinct_words": 312,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+lsu_slots+noc+nuca+hbm(+load_latency)"
+   ],
+   "refusal_reasons": [
+    "lsu "
+   ]
+  },
+  {
+   "kind": "variant",
+   "name": "s.ashri",
+   "major_func": "0x01.0x2e",
+   "static": 3350,
+   "kernels": 113,
+   "points": 27,
+   "runs": 49,
+   "distinct_words": 61,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+scalar_latency"
+   ],
+   "refusal_reasons": [
+    "salu "
+   ]
+  },
+  {
+   "kind": "variant",
+   "name": "vf.fms",
+   "major_func": "0x11.0x07",
+   "static": 3291,
+   "kernels": 325,
+   "points": 58,
+   "runs": 108,
+   "distinct_words": 231,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+vector_fp_latency"
+   ],
+   "refusal_reasons": [
+    "vfp "
+   ]
+  },
+  {
+   "kind": "variant",
+   "name": "v.lshr",
+   "major_func": "0x10.0x0d",
+   "static": 3247,
+   "kernels": 286,
+   "points": 113,
+   "runs": 228,
+   "distinct_words": 112,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+vector_int_latency"
+   ],
+   "refusal_reasons": [
+    "vint "
+   ]
+  },
+  {
+   "kind": "variant",
+   "name": "v.and",
+   "major_func": "0x10.0x08",
+   "static": 3216,
+   "kernels": 326,
+   "points": 113,
+   "runs": 228,
+   "distinct_words": 151,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+vector_int_latency"
+   ],
+   "refusal_reasons": [
+    "vint "
+   ]
+  },
+  {
+   "kind": "variant",
+   "name": "v.st.h",
+   "major_func": "0x20.0x18",
+   "static": 2809,
+   "kernels": 166,
+   "points": 52,
+   "runs": 108,
+   "distinct_words": 103,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+lsu_slots+noc+nuca+hbm(+load_latency)"
+   ],
+   "refusal_reasons": [
+    "lsu "
+   ]
+  },
+  {
+   "kind": "variant",
+   "name": "v.cmp.ge",
+   "major_func": "0x10.0x18",
+   "static": 2452,
+   "kernels": 530,
+   "points": 62,
+   "runs": 132,
+   "distinct_words": 124,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+compare_latency"
+   ],
+   "refusal_reasons": [
+    "vint "
+   ]
+  },
+  {
+   "kind": "variant",
+   "name": "vf.cmp.o",
+   "major_func": "0x11.0x18",
+   "static": 2265,
+   "kernels": 325,
+   "points": 58,
+   "runs": 108,
+   "distinct_words": 58,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+compare_latency"
+   ],
+   "refusal_reasons": [
+    "vfp "
+   ]
+  },
+  {
+   "kind": "variant",
+   "name": "v.cmpi.lt",
+   "major_func": "0x10.0x38",
+   "static": 1905,
+   "kernels": 57,
+   "points": 24,
+   "runs": 46,
+   "distinct_words": 96,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+compare_latency"
+   ],
+   "refusal_reasons": [
+    "vint "
+   ]
+  },
+  {
+   "kind": "variant",
+   "name": "v.st.w (predicated)",
+   "major_func": "0x20.0x18",
+   "static": 1850,
+   "kernels": 171,
+   "points": 45,
+   "runs": 84,
+   "distinct_words": 167,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+lsu_slots+noc+nuca+hbm(+load_latency)"
+   ],
+   "refusal_reasons": [
+    "lsu "
+   ]
+  },
+  {
+   "kind": "variant",
+   "name": "v.ld.gather.sb (predicated)",
+   "major_func": "0x20.0x20",
+   "static": 1839,
+   "kernels": 16,
+   "points": 113,
+   "runs": 228,
+   "distinct_words": 10,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+lsu_slots+noc+nuca+hbm(+load_latency)"
+   ],
+   "refusal_reasons": [
+    "lsu "
+   ]
+  },
+  {
+   "kind": "variant",
+   "name": "v.st.scatter.b (predicated)",
+   "major_func": "0x20.0x28",
+   "static": 1824,
+   "kernels": 2,
+   "points": 113,
+   "runs": 228,
+   "distinct_words": 8,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+lsu_slots+noc+nuca+hbm(+load_latency)"
+   ],
+   "refusal_reasons": [
+    "lsu "
+   ]
+  },
+  {
+   "kind": "variant",
+   "name": "v.mov",
+   "major_func": "0x10.0x00",
+   "static": 1803,
+   "kernels": 288,
+   "points": 49,
+   "runs": 91,
+   "distinct_words": 161,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+vector_int_latency"
+   ],
+   "refusal_reasons": [
+    "vint "
+   ]
+  },
+  {
+   "kind": "variant",
+   "name": "vf.neg",
+   "major_func": "0x11.0x14",
+   "static": 1786,
+   "kernels": 333,
+   "points": 58,
+   "runs": 108,
+   "distinct_words": 80,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+vector_fp_latency"
+   ],
+   "refusal_reasons": [
+    "vfp "
+   ]
+  },
+  {
+   "kind": "variant",
+   "name": "v.ld.gather.w",
+   "major_func": "0x20.0x20",
+   "static": 1740,
+   "kernels": 74,
+   "points": 23,
+   "runs": 43,
+   "distinct_words": 90,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+lsu_slots+noc+nuca+hbm(+load_latency)"
+   ],
+   "refusal_reasons": [
+    "lsu "
+   ]
+  },
+  {
+   "kind": "variant",
+   "name": "v.ld.w (predicated)",
+   "major_func": "0x20.0x10",
+   "static": 1604,
+   "kernels": 97,
+   "points": 40,
+   "runs": 74,
+   "distinct_words": 109,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+lsu_slots+noc+nuca+hbm(+load_latency)"
+   ],
+   "refusal_reasons": [
+    "lsu "
+   ]
+  },
+  {
+   "kind": "variant",
+   "name": "v.ld.gather.h (predicated)",
+   "major_func": "0x20.0x20",
+   "static": 1377,
+   "kernels": 193,
+   "points": 22,
+   "runs": 44,
+   "distinct_words": 91,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+lsu_slots+noc+nuca+hbm(+load_latency)"
+   ],
+   "refusal_reasons": [
+    "lsu "
+   ]
+  },
+  {
+   "kind": "variant",
+   "name": "exit",
+   "major_func": "0x02.0x1f",
+   "static": 1356,
+   "kernels": 898,
+   "points": 113,
+   "runs": 228,
+   "distinct_words": 1,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue"
+   ],
+   "refusal_reasons": [
+    "exit "
+   ]
+  },
+  {
+   "kind": "variant",
+   "name": "fence.acq_rel.device",
+   "major_func": "0x21.0x20",
+   "static": 1316,
+   "kernels": 204,
+   "points": 43,
+   "runs": 85,
+   "distinct_words": 1,
+   "before_m1": "refused",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+own_scoreboard_drain"
+   ],
+   "refusal_reasons": [
+    "fence "
+   ]
+  },
+  {
+   "kind": "variant",
+   "name": "v.ld.gather.h",
+   "major_func": "0x20.0x20",
+   "static": 1169,
+   "kernels": 119,
+   "points": 30,
+   "runs": 57,
+   "distinct_words": 69,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+lsu_slots+noc+nuca+hbm(+load_latency)"
+   ],
+   "refusal_reasons": [
+    "lsu "
+   ]
+  },
+  {
+   "kind": "variant",
+   "name": "td.load",
+   "major_func": "0x30.0x00",
+   "static": 1129,
+   "kernels": 483,
+   "points": 60,
+   "runs": 145,
+   "distinct_words": 63,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+tensor_engine_admission(+descriptor_snapshot_via_noc_nuca)"
+   ],
+   "refusal_reasons": [
+    "desc "
+   ]
+  },
+  {
+   "kind": "variant",
+   "name": "s.andi",
+   "major_func": "0x01.0x28",
+   "static": 1123,
+   "kernels": 303,
+   "points": 45,
+   "runs": 116,
+   "distinct_words": 167,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+scalar_latency"
+   ],
+   "refusal_reasons": [
+    "salu "
+   ]
+  },
+  {
+   "kind": "variant",
+   "name": "v.ld.gather.w (predicated)",
+   "major_func": "0x20.0x20",
+   "static": 1057,
+   "kernels": 95,
+   "points": 29,
+   "runs": 54,
+   "distinct_words": 127,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+lsu_slots+noc+nuca+hbm(+load_latency)"
+   ],
+   "refusal_reasons": [
+    "lsu "
+   ]
+  },
+  {
+   "kind": "variant",
+   "name": "v.rcp.approx",
+   "major_func": "0x16.0x01",
+   "static": 1026,
+   "kernels": 295,
+   "points": 54,
+   "runs": 100,
+   "distinct_words": 53,
+   "before_m1": "implemented-inexact",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+sfu_occupancy+sfu_latency"
+   ],
+   "refusal_reasons": [
+    "sfu "
+   ]
+  },
+  {
+   "kind": "variant",
+   "name": "s.cmp.eq",
+   "major_func": "0x01.0x18",
+   "static": 980,
+   "kernels": 385,
+   "points": 50,
+   "runs": 121,
+   "distinct_words": 113,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+scalar_latency"
+   ],
+   "refusal_reasons": [
+    "salu "
+   ]
+  },
+  {
+   "kind": "variant",
+   "name": "s.subi",
+   "major_func": "0x01.0x21",
+   "static": 950,
+   "kernels": 329,
+   "points": 49,
+   "runs": 123,
+   "distinct_words": 67,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+scalar_latency"
+   ],
+   "refusal_reasons": [
+    "salu "
+   ]
+  },
+  {
+   "kind": "variant",
+   "name": "mb.arm",
+   "major_func": "0x50.0x01",
+   "static": 937,
+   "kernels": 274,
+   "points": 43,
+   "runs": 111,
+   "distinct_words": 106,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+barrier_latency+event_wake"
+   ],
+   "refusal_reasons": [
+    "barrier "
+   ]
+  },
+  {
+   "kind": "variant",
+   "name": "mb.wait",
+   "major_func": "0x50.0x04",
+   "static": 937,
+   "kernels": 274,
+   "points": 43,
+   "runs": 111,
+   "distinct_words": 29,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+barrier_latency+event_wake"
+   ],
+   "refusal_reasons": [
+    "barrier "
+   ]
+  },
+  {
+   "kind": "variant",
+   "name": "fence.release.device",
+   "major_func": "0x21.0x20",
+   "static": 925,
+   "kernels": 392,
+   "points": 60,
+   "runs": 144,
+   "distinct_words": 1,
+   "before_m1": "refused",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+own_scoreboard_drain"
+   ],
+   "refusal_reasons": [
+    "fence "
+   ]
+  },
+  {
+   "kind": "variant",
+   "name": "v.st.scatter.w (predicated)",
+   "major_func": "0x20.0x28",
+   "static": 860,
+   "kernels": 50,
+   "points": 17,
+   "runs": 33,
+   "distinct_words": 54,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+lsu_slots+noc+nuca+hbm(+load_latency)"
+   ],
+   "refusal_reasons": [
+    "lsu "
+   ]
+  },
+  {
+   "kind": "variant",
+   "name": "s.cmp.le",
+   "major_func": "0x01.0x18",
+   "static": 800,
+   "kernels": 26,
+   "points": 13,
+   "runs": 28,
+   "distinct_words": 51,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+scalar_latency"
+   ],
+   "refusal_reasons": [
+    "salu "
+   ]
+  },
+  {
+   "kind": "variant",
+   "name": "v.exp2.approx",
+   "major_func": "0x16.0x00",
+   "static": 770,
+   "kernels": 103,
+   "points": 45,
+   "runs": 85,
+   "distinct_words": 38,
+   "before_m1": "implemented-inexact",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+sfu_occupancy+sfu_latency"
+   ],
+   "refusal_reasons": [
+    "sfu "
+   ]
+  },
+  {
+   "kind": "variant",
+   "name": "vf.sub",
+   "major_func": "0x11.0x02",
+   "static": 716,
+   "kernels": 110,
+   "points": 44,
+   "runs": 84,
+   "distinct_words": 70,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+vector_fp_latency"
+   ],
+   "refusal_reasons": [
+    "vfp "
+   ]
+  },
+  {
+   "kind": "variant",
+   "name": "s.cmp.ne",
+   "major_func": "0x01.0x18",
+   "static": 688,
+   "kernels": 40,
+   "points": 22,
+   "runs": 43,
+   "distinct_words": 64,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+scalar_latency"
+   ],
+   "refusal_reasons": [
+    "salu "
+   ]
+  },
+  {
+   "kind": "variant",
+   "name": "s.lshr",
+   "major_func": "0x01.0x0d",
+   "static": 656,
+   "kernels": 303,
+   "points": 45,
+   "runs": 116,
+   "distinct_words": 84,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+scalar_latency"
+   ],
+   "refusal_reasons": [
+    "salu "
+   ]
+  },
+  {
+   "kind": "variant",
+   "name": "s.cmp.geu",
+   "major_func": "0x01.0x18",
+   "static": 656,
+   "kernels": 303,
+   "points": 45,
+   "runs": 116,
+   "distinct_words": 76,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+scalar_latency"
+   ],
+   "refusal_reasons": [
+    "salu "
+   ]
+  },
+  {
+   "kind": "variant",
+   "name": "p.or",
+   "major_func": "0x13.0x02",
+   "static": 655,
+   "kernels": 76,
+   "points": 34,
+   "runs": 63,
+   "distinct_words": 24,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+predicate_latency"
+   ],
+   "refusal_reasons": [
+    "pred "
+   ]
+  },
+  {
+   "kind": "variant",
+   "name": "v.shl",
+   "major_func": "0x10.0x0c",
+   "static": 643,
+   "kernels": 87,
+   "points": 28,
+   "runs": 50,
+   "distinct_words": 77,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+vector_int_latency"
+   ],
+   "refusal_reasons": [
+    "vint "
+   ]
+  },
+  {
+   "kind": "variant",
+   "name": "s.shl",
+   "major_func": "0x01.0x0c",
+   "static": 630,
+   "kernels": 303,
+   "points": 45,
+   "runs": 116,
+   "distinct_words": 66,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+scalar_latency"
+   ],
+   "refusal_reasons": [
+    "salu "
+   ]
+  },
+  {
+   "kind": "variant",
+   "name": "w.def",
+   "major_func": "0x30.0x10",
+   "static": 623,
+   "kernels": 274,
+   "points": 43,
+   "runs": 111,
+   "distinct_words": 15,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+tensor_engine_admission(+descriptor_snapshot_via_noc_nuca)"
+   ],
+   "refusal_reasons": [
+    "desc "
+   ]
+  },
+  {
+   "kind": "variant",
+   "name": "v.or",
+   "major_func": "0x10.0x09",
+   "static": 576,
+   "kernels": 32,
+   "points": 15,
+   "runs": 27,
+   "distinct_words": 59,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+vector_int_latency"
+   ],
+   "refusal_reasons": [
+    "vint "
+   ]
+  },
+  {
+   "kind": "variant",
+   "name": "vf.reduce.add.b",
+   "major_func": "0x15.0x08",
+   "static": 529,
+   "kernels": 270,
+   "points": 36,
+   "runs": 70,
+   "distinct_words": 74,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+fp_reduction_latency"
+   ],
+   "refusal_reasons": [
+    "reduce "
+   ]
+  },
+  {
+   "kind": "variant",
+   "name": "v.rsqrt.approx",
+   "major_func": "0x16.0x02",
+   "static": 469,
+   "kernels": 208,
+   "points": 27,
+   "runs": 53,
+   "distinct_words": 26,
+   "before_m1": "implemented-inexact",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+sfu_occupancy+sfu_latency"
+   ],
+   "refusal_reasons": [
+    "sfu "
+   ]
+  },
+  {
+   "kind": "variant",
+   "name": "m.zero",
+   "major_func": "0x40.0x00",
+   "static": 419,
+   "kernels": 320,
+   "points": 52,
+   "runs": 129,
+   "distinct_words": 8,
+   "before_m1": "refused",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+matrix_engine_occupancy"
+   ],
+   "refusal_reasons": [
+    "m_zero "
+   ]
+  },
+  {
+   "kind": "variant",
+   "name": "s.min.s",
+   "major_func": "0x01.0x10",
+   "static": 388,
+   "kernels": 303,
+   "points": 45,
+   "runs": 116,
+   "distinct_words": 56,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+scalar_latency"
+   ],
+   "refusal_reasons": [
+    "salu "
+   ]
+  },
+  {
+   "kind": "variant",
+   "name": "t.ld.async.h",
+   "major_func": "0x31.0x00",
+   "static": 365,
+   "kernels": 260,
+   "points": 38,
+   "runs": 99,
+   "distinct_words": 72,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+tensor_engine(dma_units,noc,nuca,hbm)+barrier_completion"
+   ],
+   "refusal_reasons": [
+    "xfer "
+   ]
+  },
+  {
+   "kind": "variant",
+   "name": "v.ld.h",
+   "major_func": "0x20.0x10",
+   "static": 339,
+   "kernels": 140,
+   "points": 40,
+   "runs": 89,
+   "distinct_words": 47,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+lsu_slots+noc+nuca+hbm(+load_latency)"
+   ],
+   "refusal_reasons": [
+    "lsu "
+   ]
+  },
+  {
+   "kind": "variant",
+   "name": "vf.abs",
+   "major_func": "0x11.0x15",
+   "static": 329,
+   "kernels": 20,
+   "points": 12,
+   "runs": 22,
+   "distinct_words": 10,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+vector_fp_latency"
+   ],
+   "refusal_reasons": [
+    "vfp "
+   ]
+  },
+  {
+   "kind": "variant",
+   "name": "vf.cmp.lt",
+   "major_func": "0x11.0x18",
+   "static": 329,
+   "kernels": 20,
+   "points": 12,
+   "runs": 22,
+   "distinct_words": 13,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+compare_latency"
+   ],
+   "refusal_reasons": [
+    "vfp "
+   ]
+  },
+  {
+   "kind": "variant",
+   "name": "trap",
+   "major_func": "0x02.0x18",
+   "static": 318,
+   "kernels": 82,
+   "points": 15,
+   "runs": 27,
+   "distinct_words": 2,
+   "before_m1": "refused",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+fault"
+   ],
+   "refusal_reasons": [
+    "trap "
+   ]
+  },
+  {
+   "kind": "variant",
+   "name": "m.mma.async",
+   "major_func": "0x40.0x01",
+   "static": 296,
+   "kernels": 249,
+   "points": 37,
+   "runs": 98,
+   "distinct_words": 52,
+   "before_m1": "refused",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+matrix_engine_occupancy+barrier_completion"
+   ],
+   "refusal_reasons": [
+    "mma "
+   ]
+  },
+  {
+   "kind": "variant",
+   "name": "v.cmp.geu",
+   "major_func": "0x10.0x18",
+   "static": 288,
+   "kernels": 32,
+   "points": 15,
+   "runs": 27,
+   "distinct_words": 34,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+compare_latency"
+   ],
+   "refusal_reasons": [
+    "vint "
+   ]
+  },
+  {
+   "kind": "variant",
+   "name": "vf.max.prop",
+   "major_func": "0x11.0x11",
+   "static": 286,
+   "kernels": 33,
+   "points": 15,
+   "runs": 26,
+   "distinct_words": 25,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+vector_fp_latency"
+   ],
+   "refusal_reasons": [
+    "vfp "
+   ]
+  },
+  {
+   "kind": "variant",
+   "name": "v.reduce.or",
+   "major_func": "0x15.0x04",
+   "static": 263,
+   "kernels": 122,
+   "points": 27,
+   "runs": 50,
+   "distinct_words": 28,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+reduction_latency"
+   ],
+   "refusal_reasons": [
+    "reduce "
+   ]
+  },
+  {
+   "kind": "variant",
+   "name": "t.ld.async.h.t",
+   "major_func": "0x31.0x00",
+   "static": 226,
+   "kernels": 215,
+   "points": 28,
+   "runs": 64,
+   "distinct_words": 19,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+tensor_engine(dma_units,noc,nuca,hbm)+barrier_completion"
+   ],
+   "refusal_reasons": [
+    "xfer "
+   ]
+  },
+  {
+   "kind": "variant",
+   "name": "p.xor",
+   "major_func": "0x13.0x03",
+   "static": 221,
+   "kernels": 30,
+   "points": 16,
+   "runs": 26,
+   "distinct_words": 11,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+predicate_latency"
+   ],
+   "refusal_reasons": [
+    "pred "
+   ]
+  },
+  {
+   "kind": "variant",
+   "name": "vf.cmp.ne",
+   "major_func": "0x11.0x18",
+   "static": 192,
+   "kernels": 5,
+   "points": 4,
+   "runs": 6,
+   "distinct_words": 21,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+compare_latency"
+   ],
+   "refusal_reasons": [
+    "vfp "
+   ]
+  },
+  {
+   "kind": "variant",
+   "name": "vf.cmp.eq",
+   "major_func": "0x11.0x18",
+   "static": 172,
+   "kernels": 49,
+   "points": 27,
+   "runs": 53,
+   "distinct_words": 41,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+compare_latency"
+   ],
+   "refusal_reasons": [
+    "vfp "
+   ]
+  },
+  {
+   "kind": "variant",
+   "name": "v.ashr",
+   "major_func": "0x10.0x0e",
+   "static": 159,
+   "kernels": 82,
+   "points": 15,
+   "runs": 27,
+   "distinct_words": 15,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+vector_int_latency"
+   ],
+   "refusal_reasons": [
+    "vint "
+   ]
+  },
+  {
+   "kind": "variant",
+   "name": "p.mov",
+   "major_func": "0x13.0x00",
+   "static": 105,
+   "kernels": 32,
+   "points": 18,
+   "runs": 35,
+   "distinct_words": 6,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+predicate_latency"
+   ],
+   "refusal_reasons": [
+    "pred "
+   ]
+  },
+  {
+   "kind": "variant",
+   "name": "vf.cmp.gt",
+   "major_func": "0x11.0x18",
+   "static": 99,
+   "kernels": 8,
+   "points": 7,
+   "runs": 9,
+   "distinct_words": 17,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+compare_latency"
+   ],
+   "refusal_reasons": [
+    "vfp "
+   ]
+  },
+  {
+   "kind": "variant",
+   "name": "v.reduce.or (predicated)",
+   "major_func": "0x15.0x04",
+   "static": 98,
+   "kernels": 46,
+   "points": 5,
+   "runs": 14,
+   "distinct_words": 7,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+reduction_latency"
+   ],
+   "refusal_reasons": [
+    "reduce "
+   ]
+  },
+  {
+   "kind": "variant",
+   "name": "v.cmp.eq",
+   "major_func": "0x10.0x18",
+   "static": 92,
+   "kernels": 58,
+   "points": 26,
+   "runs": 49,
+   "distinct_words": 14,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+compare_latency"
+   ],
+   "refusal_reasons": [
+    "vint "
+   ]
+  },
+  {
+   "kind": "variant",
+   "name": "v.st.scatter.h (predicated)",
+   "major_func": "0x20.0x28",
+   "static": 91,
+   "kernels": 77,
+   "points": 12,
+   "runs": 19,
+   "distinct_words": 15,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+lsu_slots+noc+nuca+hbm(+load_latency)"
+   ],
+   "refusal_reasons": [
+    "lsu "
+   ]
+  },
+  {
+   "kind": "variant",
+   "name": "v.st.scatter.h",
+   "major_func": "0x20.0x28",
+   "static": 90,
+   "kernels": 63,
+   "points": 10,
+   "runs": 22,
+   "distinct_words": 15,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+lsu_slots+noc+nuca+hbm(+load_latency)"
+   ],
+   "refusal_reasons": [
+    "lsu "
+   ]
+  },
+  {
+   "kind": "variant",
+   "name": "vf.reduce.max.b",
+   "major_func": "0x15.0x09",
+   "static": 62,
+   "kernels": 53,
+   "points": 28,
+   "runs": 56,
+   "distinct_words": 12,
+   "before_m1": "implemented-inexact",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+fp_reduction_latency"
+   ],
+   "refusal_reasons": [
+    "reduce "
+   ]
+  },
+  {
+   "kind": "variant",
+   "name": "vf.cmp.uo",
+   "major_func": "0x11.0x18",
+   "static": 59,
+   "kernels": 50,
+   "points": 28,
+   "runs": 53,
+   "distinct_words": 10,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+compare_latency"
+   ],
+   "refusal_reasons": [
+    "vfp "
+   ]
+  },
+  {
+   "kind": "variant",
+   "name": "v.reduce.or.b",
+   "major_func": "0x15.0x04",
+   "static": 59,
+   "kernels": 50,
+   "points": 28,
+   "runs": 53,
+   "distinct_words": 9,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+reduction_latency"
+   ],
+   "refusal_reasons": [
+    "reduce "
+   ]
+  },
+  {
+   "kind": "variant",
+   "name": "s.ori",
+   "major_func": "0x01.0x29",
+   "static": 48,
+   "kernels": 16,
+   "points": 8,
+   "runs": 16,
+   "distinct_words": 26,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+scalar_latency"
+   ],
+   "refusal_reasons": [
+    "salu "
+   ]
+  },
+  {
+   "kind": "variant",
+   "name": "p.not",
+   "major_func": "0x13.0x04",
+   "static": 43,
+   "kernels": 40,
+   "points": 22,
+   "runs": 43,
+   "distinct_words": 5,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+predicate_latency"
+   ],
+   "refusal_reasons": [
+    "pred "
+   ]
+  },
+  {
+   "kind": "variant",
+   "name": "mb.arrive",
+   "major_func": "0x50.0x02",
+   "static": 33,
+   "kernels": 16,
+   "points": 8,
+   "runs": 16,
+   "distinct_words": 5,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+barrier_latency+event_wake"
+   ],
+   "refusal_reasons": [
+    "barrier "
+   ]
+  },
+  {
+   "kind": "variant",
+   "name": "t.ld.async.w",
+   "major_func": "0x31.0x00",
+   "static": 32,
+   "kernels": 14,
+   "points": 7,
+   "runs": 16,
+   "distinct_words": 13,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+tensor_engine(dma_units,noc,nuca,hbm)+barrier_completion"
+   ],
+   "refusal_reasons": [
+    "xfer "
+   ]
+  },
+  {
+   "kind": "variant",
+   "name": "vf.max.ieee",
+   "major_func": "0x11.0x11",
+   "static": 30,
+   "kernels": 28,
+   "points": 13,
+   "runs": 30,
+   "distinct_words": 4,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+vector_fp_latency"
+   ],
+   "refusal_reasons": [
+    "vfp "
+   ]
+  },
+  {
+   "kind": "variant",
+   "name": "v.st.b (predicated)",
+   "major_func": "0x20.0x18",
+   "static": 13,
+   "kernels": 12,
+   "points": 8,
+   "runs": 13,
+   "distinct_words": 2,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+lsu_slots+noc+nuca+hbm(+load_latency)"
+   ],
+   "refusal_reasons": [
+    "lsu "
+   ]
+  },
+  {
+   "kind": "variant",
+   "name": "v.reduce.add",
+   "major_func": "0x15.0x00",
+   "static": 5,
+   "kernels": 3,
+   "points": 3,
+   "runs": 5,
+   "distinct_words": 1,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+reduction_latency"
+   ],
+   "refusal_reasons": [
+    "reduce "
+   ]
+  },
+  {
+   "kind": "variant",
+   "name": "v.cmp.gt",
+   "major_func": "0x10.0x18",
+   "static": 5,
+   "kernels": 3,
+   "points": 3,
+   "runs": 5,
+   "distinct_words": 1,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+compare_latency"
+   ],
+   "refusal_reasons": [
+    "vint "
+   ]
+  },
+  {
+   "kind": "variant",
+   "name": "v.cmp.le",
+   "major_func": "0x10.0x18",
+   "static": 3,
+   "kernels": 3,
+   "points": 3,
+   "runs": 3,
+   "distinct_words": 1,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+compare_latency"
+   ],
+   "refusal_reasons": [
+    "vint "
+   ]
+  },
+  {
+   "kind": "variant",
+   "name": "s.st.b",
+   "major_func": "0x20.0x08",
+   "static": 2,
+   "kernels": 2,
+   "points": 1,
+   "runs": 2,
+   "distinct_words": 1,
+   "before_m1": "implemented",
+   "semantics": "implemented",
+   "refused_words": 0,
+   "timing": [
+    "issue+lsu_slots+noc+nuca+hbm(+load_latency)"
+   ],
+   "refusal_reasons": [
+    "lsu "
+   ]
+  }
+ ]
+}

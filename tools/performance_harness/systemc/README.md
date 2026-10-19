@@ -8,12 +8,15 @@ or measured workload stall trace. RTL is an independent offline validation
 source. The model must generate dynamic memory traffic from program semantics
 before it can predict the effects of compiler or compute-architecture changes.
 
-**Qualification status: incomplete.** The current native machine-word executor
-supports only part of the ISA. The memory subsystem and the initial native
-execution path require the validation described below. Neither executable is
-qualified as a complete-chip reference or as an R40 performance result.
-Unsupported instructions fail explicitly. Do not bypass those failures or
-substitute a memory replay for a complete-chip experiment.
+**Qualification status: functionally executing the compiler's output;
+timing uncalibrated.** Since M1 the native executor implements every opcode
+the frozen suites' compiled kernels contain (`opcode_inventory.py`), with the
+RTL as the numeric authority (bit-exact against offline RTL oracles, below).
+Device atomics and anything else not implemented are refused explicitly. All
+timing constants are **uncalibrated hypotheses**; no cycle count produced here
+is an R40 performance result, and the model is not qualified as a
+complete-chip timing reference. Do not bypass refusals or substitute a memory
+replay for a complete-chip experiment.
 
 ## Execution host and dependency identity
 
@@ -40,13 +43,15 @@ Dependencies and resource availability schedule SystemC events directly.
 
 | Component | Current implementation | Qualification limitation |
 | --- | --- | --- |
-| Native executable | Canonical assembled 64-bit TNCA words; scalar/control, integer vectors, predicate operations, selected FP32/CVT/SFU, shuffles, reductions and scalar/vector LSU | Partial ISA; no claim of complete compiler coverage |
-| Grid execution | Bounded concurrent physical-core workers, dynamic program assignment, per-core telemetry | Dispatcher cycle and grouping/pair behavior are not calibrated |
-| Role execution | Private scalar/predicate state and scoreboards; timestamped, lane-masked physical VRF writeback; disjoint role banks or adjacent-pair aliasing | RSLICE, grouped programs, arbitrary vector-base mappings and complete role-mask coverage remain incomplete |
-| Barriers | Shared per-core generations, arrival/operation counters, sleeping waits, release writeback drain and explicit faults | Native DMA completion is integrated; MMA completion and timing calibration remain incomplete |
+| Native executable | Words decoded once (`--classify` prints the verdict per word); scalar/control, integer and FP32 vectors (incl. `.ftz`), all conversions, predicates, shuffles, reductions, SFU (bit-exact port of `xls/tnca_sfu.x`), scalar/vector/gather/scatter LSU, `fence`, `trap` as an architectural fault, special registers per `tnca_core.v` | Device atomics refused; vector-FPU/conversion/SFU/reduction lane functions checked bit-exactly against RTL-recorded vectors |
+| Matrix engine | Core-wide accumulators A0..A15, `m.zero`, `m.mma.async` (FP16/BF16/E5M2/E4M3, K16/32/64, source-free event), `a.vread/a.vwrite/a.mul.row/a.fma.row/a.zero`; one command at a time; result and source-free barrier completions | Arithmetic bit-exact against `tnca_matrix.v`; busy-cycle formula uncalibrated |
+| Grid execution | `tnca_grid_dispatch.v` order: groups of 1/2/4 x along x, then y, z; per-core argument stride; active-core mask; fault stops dispatch; four persistent Role Context processes per core (no SystemC process per program) | Dispatcher cycle and grouping/pair behavior are not calibrated |
+| Role execution | Private scalar/predicate state and scoreboards; timestamped, lane-masked physical VRF writeback; RPAIR vector-base aliasing; RSLICE remap of accumulator, barrier, descriptor, window indices and barrier tokens from the runtime's role mask | Arbitrary vector-base mappings beyond 64*r remain unmodelled |
+| Barriers | Shared per-core generations, arrival/operation counters, sleeping waits; `mb.arrive` drains own register writes and own engine commands (RPAIR precision); DMA and MMA completions; faults invalidate and wake | Timing calibration remains incomplete |
+| Runtime adapter | `tlm_backend.py` registers `systemc-tlm` (per-program) and `systemc-tlm-grid` (physical grid) into the runtime's backend table from outside the product tree; one long-lived `tnca-chip --serve` process per Session | Host transfers are functionally coherent and take no modeled time |
 | DMA | Immutable descriptor snapshots, rank/stride/padding, bounded asynchronous transfer resources, RF leases and barrier completion | Partial descriptor modifiers; no measured DMA timing calibration |
-| Core timing | Issue resource and scalar/vector result availability events | Timing constants are hypotheses; RF banks and all execution engines remain incomplete |
-| LSU | Byte enables, unaligned splitting, gather/scatter, word coalescing, bounded outstanding beats | Additional ordering and atomics integration remain required |
+| Core timing | Issue resource, per-class result latencies, SFU occupancy, matrix-engine occupancy, all from configuration keys | Every constant is an uncalibrated hypothesis; RF banks/ports and fetch are not modelled |
+| LSU | Byte enables, unaligned splitting, gather/scatter, word coalescing, bounded outstanding beats on persistent workers; scalar accesses use lane 0 of the mask | A role waits for its own access (no non-blocking stores); atomics refused |
 | NoC | Unique-home mapping from `tnca_core_ni.v`; XY routes and directed-link service contention | Packet-level estimate; finite router buffers/VC behavior are not implemented |
 | NUCA | Set-associative writeback storage, invalid-first/round-robin replacement, finite MSHRs/targets, merges, same-line ordering and hit-under-miss | DCO policies, epochs and exact engine arbitration remain incomplete |
 | Memory | Shared byte-addressed storage, explicit contiguous PC mapping, independent PC transfer resources, finite outlet outstanding slots and write acknowledgements | No DRAM bank/row/refresh model; bandwidth/latency need calibration |
@@ -64,6 +69,65 @@ byte enables and response status. A typed extension carries source, request
 identity and atomic operation metadata. Blocking transport runs in concurrent
 SystemC processes with actual kernel-time waits. DMI and temporal decoupling
 are disabled to prevent shared-resource contention from being bypassed.
+
+## Executing ArchBench graphs (M1)
+
+The standard path is unchanged: torch.compile -> Inductor -> Triton -> TNCA
+artifact -> `Session`, which launches into the model through a backend the
+harness registers at import (`tlm_backend.register()`); nothing under
+`archbench/`, `python/`, `compiler/`, `tools/asm/`, `spec/`, `rtl/` or
+`tb/device/` is modified. `run_graphs.py` runs each point in a fresh child
+(one Session, one model process per graph) through
+`archbench.platforms.tnca.run`, which compiles, compares with the PyTorch
+reference at the point's own tolerance and counts host fallbacks. Records
+carry `evidence_level: model-prediction-uncalibrated`.
+
+```sh
+python3 tools/performance_harness/systemc/run_graphs.py --source-root SRC   --binary BUILD/tnca-chip --out FRESH_DIR   --suite SRC/spec/r40/suites/existing.json --tier tiny   --knobs-from PREFLIGHT/A_fix2/runs --torch-extensions-dir EXT --jobs 4
+```
+
+The default backend `systemc-tlm-grid` reproduces the delivered board
+configuration (native tensors, physical grid, `TNCA_ACTIVE_CORES=1`,
+`TNCA_RTL_MEM_PORTS/OUTSTANDING` mapped onto the model's outlets); the
+point's compile knobs are copied from the compile preflight's `result.json`.
+`--backend systemc-tlm` uses per-program launches, the sequence the
+`sim-file` RTL simulator receives, and `--backend sim-file` runs the same
+child on the RTL simulator for wall-time comparisons only. The native path
+measures the steady call after the cold call (ArchBench `cold_setup`).
+Each model process leaves `identity.json`, `launches.json` (per-launch
+modeled cycles, retired instructions, host seconds), `counters.json`
+(including per-core instruction classes, dependency, engine and barrier
+waits) and `sockets.json` under its run directory.
+
+`tnca-chip --serve CONFIG OUT IN_FD OUT_FD` is the host protocol: `W addr n`
++payload, `R addr n`, `L` (one program: pc, argument base, role mask, pid,
+npid, deadline), `G` (one grid: pc, argument base, role mask, gx gy gz,
+active cores, argument stride, group width, deadline), `C` (counters), `F`
+(writeback/invalidate maintenance), `X`. A launch replies `DONE status code
+pc start end retired`; an architectural fault (TRAP_USER, BARRIER_FAULT,
+DESCRIPTOR_FAULT, ...) is status 1, a deadline overrun status 2, and a model
+refusal or deadlock terminates the process with `ERR`, which the backend
+raises as a lost device. Host reads and writes are coherent with the NUCA
+homes and cost no modeled time.
+
+## Numeric authority: offline RTL oracles
+
+The RTL is the semantic authority, used offline only:
+`rtl_oracle/rtl_oracle.py` records `tnca_vector_fpu` outputs (vf.*, all
+conversions, FP reductions, SFU) and `rtl_oracle/matrix_oracle.py` records
+`tnca_matrix` accumulators (MMA in every dtype/K, row operations) with
+iverilog; `tnca-numeric-probe vfpu|matrix` then checks the executor's own
+lane functions (`include/tnca_vector_ops.hpp`, `include/tnca_matrix_ops.hpp`)
+word by word. Following the RTL exposes four places where
+`tnca_vector_fpu.v`'s float-to-integer conversion differs from ISA sec 8.4
+(8-bit shift wrap for |x| in [2^24, 2^31), RNE rounding of odd values in
+[2^23, 2^24), unsigned saturation from 2^31, all-ones for negative fractions
+to unsigned); `validate_numeric.py` records each divergence. No such
+conversion occurs in the frozen suites.
+
+`opcode_inventory.py` scans assembled kernel images, identifies opcodes with
+the canonical ISA tables and asks `tnca-chip --classify` for the executor's
+verdict and timing class per word, beside the pre-M1 acceptance logic.
 
 ## Performance diagnosis and recording policy
 
@@ -147,11 +211,16 @@ Native scripts support `code ABSOLUTE_HEX_FILE`,
 and `expect ADDRESS ABSOLUTE_REFERENCE_FILE`. `launch_roles ID PC ARG_BASE GX GY GZ
 ROLE_MASK PAIR_ALIAS` selects up to four active roles. The default maps role r
 to physical vector base `64*r`; `PAIR_ALIAS=1` maps each odd role to its even
-partner's vector base. This is explicit vector aliasing, not RSLICE or grouped
-program support. Direct data access requires initial or explicitly drained
+partner's vector base. This is explicit vector aliasing. `launch_mask ID PC ARG GX GY GZ MASK`
+passes the runtime's full 32-bit role mask (contexts, RPAIR bit 28, RSLICE
+bit 31 with log2 slices in bits 30:29). Direct data access requires initial or explicitly drained
 host ownership.
-Unknown commands, trailing launch fields and undefined opcodes are refused.
-Opcode identifiers and predicate legality come from the canonical ISA schema.
+`code` places the image at address 0 of model memory, where the runtime's
+code allocator also starts; instructions are fetched from memory and decoded
+once per address. Unknown commands and trailing launch fields are refused;
+an illegal encoding is an ILLEGAL_INSTRUCTION fault and an unimplemented one
+a model refusal. Opcode identifiers and predicate legality come from the
+canonical ISA schema.
 
 Memory replay rows contain eleven whitespace-separated fields:
 
@@ -187,7 +256,14 @@ python3 tools/performance_harness/systemc/validate_numeric.py \
   --binary /tmp/tnca-systemc-build/tnca-numeric-probe --out /fresh/path/numeric-validation
 python3 tools/performance_harness/systemc/validate_roles.py \
   --binary /tmp/tnca-systemc-build/tnca-chip --out /fresh/path/role-validation
+python3 tools/performance_harness/systemc/validate_matrix.py \
+  --binary /tmp/tnca-systemc-build/tnca-chip --out /fresh/path/matrix-validation
 ```
+
+`validate_matrix.py` runs MMA in all dtype/K combinations with result and
+source-free barriers, accumulator row operations under a lane mask, an RSLICE
+launch whose unsliced negative control must fail, `trap` as a reported fault
+and an illegal encoding, against exact Fraction references.
 
 Memory validation checks partial writes, every implemented home-atomic ALU
 operation at both widths, dirty thrashing, finite-resource stalls, one/all
@@ -226,11 +302,11 @@ mean zero host overhead or perfect model accuracy.
 
 ## Complete-chip qualification still required
 
-The remaining coverage includes complete role-mask/RSLICE/grouping behavior,
-RF bank/read/write resources, descriptors/windows, asynchronous DMA and MMA,
-barrier generations and completion obligations, remaining numerical modifiers
-and complete instruction integration coverage, DCO/ownership epochs, bounded router queues,
-the standard Torch/runtime adapter, and independent end-to-end timing validation.
+The remaining work includes timing calibration against board counters (every
+latency key in the configuration), RF bank/read/write port resources,
+instruction fetch, non-blocking stores, device atomics, DCO/ownership epochs
+and host-transfer cost, bounded router queues, and independent end-to-end
+timing validation on matched workloads.
 Unsupported cases remain refused until their semantics and timing assumptions
 have direct validation. Production timing error and complete-chip performance
 are **not-measured**. The frozen R40 v2 contract is unchanged.

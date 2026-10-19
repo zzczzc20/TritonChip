@@ -12,6 +12,7 @@
 #include <algorithm>
 #include <cstdint>
 #include <deque>
+#include <functional>
 #include <fstream>
 #include <iomanip>
 #include <iostream>
@@ -28,6 +29,14 @@ using Line = std::array<unsigned char,64>;
 static void require(bool b, const std::string& why) {
     if (!b) throw std::runtime_error(why);
 }
+// An architectural fault (ISA sec 10): the device would stop the raising
+// context and report FAULT for the launch. Distinct from a model refusal
+// (std::runtime_error), which means the model cannot answer at all.
+struct ArchFault : std::runtime_error {
+    unsigned code;
+    ArchFault(unsigned c,const std::string& why):std::runtime_error(why),code(c){}
+};
+inline void arch(bool ok,unsigned code,const std::string& why){if(!ok)throw ArchFault(code,why);}
 static u64 integer(const std::string& s) {
     require(!s.empty() && s[0]!='-', "negative or empty integer");
     size_t n=0; auto v=std::stoull(s,&n,0);
@@ -48,11 +57,21 @@ struct Config {
             "outlets","active_outlets","outstanding","core_window","clock_hz","memory_base",
             "memory_bytes","pc_bytes","pc_count","pc_first","lookup_cycles","service_cycles",
             "noc_stages","noc_bytes_per_cycle","hbm_latency_cycles","hbm_bytes_per_cycle",
-            "outlet_issue_cycles","trace_events","dma_queue","dma_unit_slots","dma_outstanding","dma_setup_cycles","dma_rf_cycles"};
+            "outlet_issue_cycles","trace_events","dma_queue","dma_unit_slots","dma_outstanding","dma_setup_cycles","dma_rf_cycles",
+            // Core and engine timing: every value is an UNCALIBRATED hypothesis.
+            "issue_cycles","scalar_latency","scalar_mul_latency","vector_int_latency","vector_fp_latency",
+            "convert_latency","compare_latency","predicate_latency","shuffle_latency","reduction_latency",
+            "fp_reduction_latency","sfu_occupancy","sfu_latency","load_latency","lsu_slots","lsu_beat_slots",
+            "barrier_latency","acc_read_latency","mtx_abuf","mtx_rf_read_cycles","mtx_mac_cycles",
+            "mtx_mac_unbuffered_cycles","mtx_pipe_cycles","mtx_complete_cycles","mtx_zero_cycles",
+            "mtx_row_cycles","launch_cycles","dispatch_cycles"};
         require(v.size()==keys.size(),"configuration key count mismatch (unknown or missing key)");
         for(auto& k:keys)require(v.count(k),"missing configuration: "+k);
-        for(auto& k:keys)if(k!="memory_base" && k!="pc_first" && k!="trace_events" && k!="noc_stages" && k!="full_line_tag")
+        cache_hot();
+        for(auto& k:keys)if(k!="memory_base" && k!="pc_first" && k!="trace_events" && k!="noc_stages" && k!="full_line_tag"
+                            && k!="mtx_abuf" && k!="launch_cycles" && k!="dispatch_cycles" && k!="load_latency")
             require(v.at(k)>0,"zero configuration: "+k);
+        require(get("mtx_abuf")<=1 && get("lsu_slots")<=64 && get("lsu_beat_slots")<=64,"invalid core engine configuration");
         require(get("nx")*get("ny")<=16,"at most 16 homes");
         require(get("sets")<=65536 && (get("sets")&(get("sets")-1))==0,"sets must be power of two <=65536");
         require(get("ways")<=32 && get("mshrs")<=256 && get("targets")<=4096,"unreasonable cache geometry");
@@ -68,22 +87,27 @@ struct Config {
         require((get("memory_bytes")-1)/get("pc_bytes")<get("pc_count")-get("pc_first"),"window exceeds PC map");
     }
     u64 get(const std::string& k)const{return v.at(k);}
-    unsigned cores()const{return unsigned(get("nx")*get("ny"));}
+    // Hot-path copies of fixed geometry (set once by cache_hot()).
+    u64 nx_=0,ny_=0,sets_=1,full_line_=1,base_=0,bytes_=0;unsigned cores_=1;
+    void cache_hot(){nx_=get("nx");ny_=get("ny");sets_=get("sets");full_line_=get("full_line_tag");
+        base_=get("memory_base");bytes_=get("memory_bytes");cores_=unsigned(nx_*ny_);}
+    unsigned cores()const{return cores_;}
     unsigned home(u64 a)const {
         u64 line=a>>6;
-        if(get("nx")==2 && get("ny")==2)return unsigned((line^(line>>2))&3);
+        if(nx_==2 && ny_==2)return unsigned((line^(line>>2))&3);
         unsigned h=0;for(unsigned i=0;i<8;++i)h^=unsigned((line>>(i*8))&255);
-        return h%cores();
+        return h%cores_;
     }
     // FULL_LINE_TAG=1 selects low line bits for generic topologies. The frozen
     // 2x2 compressed-tag profile drops the reconstructible HOME_W low bits.
     unsigned set(u64 a)const {
-        return unsigned((a>>(get("full_line_tag") ? 6:8))&(get("sets")-1));
+        return unsigned((a>>(full_line_ ? 6:8))&(sets_-1));
     }
     void address(u64 a,unsigned n)const {
-        require(a>=get("memory_base") && n<=get("memory_bytes") &&
-            a-get("memory_base")<=get("memory_bytes")-n,"address outside model memory window");
-        require(!(a<0x80000000ULL && a+n>0x7fff0000ULL),"TMU MMIO is not ordinary model memory");
+        require(a>=base_ && n<=bytes_ && a-base_<=bytes_-n,"address outside model memory window");
+        // The 4 KiB TMU register page every shipped NUCA image decodes before
+        // external memory (python/tnca/runtime.py DEVICE_RESERVED_RANGES).
+        require(!(a<0x7fff1000ULL && a+n>0x7fff0000ULL),"TMU MMIO is not ordinary model memory");
     }
 };
 struct Context {
@@ -100,7 +124,10 @@ struct Context {
         void integrate(u64 now){if(active)busy_cycles+=now-last_cycle;last_cycle=now;}
     };
     std::map<std::string,SocketStats> sockets;
+    u64 unit=0; // time-resolution units per reference cycle, when exact
     explicit Context(const Config& cfg,const std::string& dir):c(cfg),trace(dir+"/trace.json"),directory(dir){
+        double units=1.0/double(c.get("clock_hz"))/sc_get_time_resolution().to_seconds();
+        if(units>=1 && std::fabs(units-std::round(units))<1e-9)unit=u64(std::llround(units));
         if(const char* mode=std::getenv("TNCA_TLM_MONITOR"))monitor_mode=mode;
         require(monitor_mode=="off" || monitor_mode=="aggregate" || monitor_mode=="trace","unknown monitor mode");
         require(bool(trace),"cannot create trace");trace<<"{\"displayTimeUnit\":\"ns\",\"traceEvents\":[";
@@ -113,8 +140,9 @@ struct Context {
             partial<<"}}\n";close(false);
         }
     }
-    sc_time cycles(u64 n)const{return sc_time(double(n)/double(c.get("clock_hz")),SC_SEC);}
-    u64 now()const{return u64(sc_time_stamp()/cycles(1)+0.5);}
+    sc_time cycles(u64 n)const{return unit?sc_time::from_value(n*unit):sc_time(double(n)/double(c.get("clock_hz")),SC_SEC);}
+    u64 to_cycles(const sc_time& t)const{return unit?(t.value()+unit/2)/unit:u64(t/cycles(1)+0.5);}
+    u64 now()const{return to_cycles(sc_time_stamp());}
     void span(const std::string& name,unsigned lane,sc_time start,u64 id) {
         if(monitor_mode!="trace")return;
         if(emitted>=c.get("trace_events")){++dropped;return;}
@@ -140,19 +168,56 @@ struct Request : tlm::tlm_extension<Request> {
 };
 struct Resource {
     sc_time available=SC_ZERO_TIME;
+    u64* service=nullptr; u64* queue=nullptr;
+    // Counter slots bind on first use: the key a Resource is used with never
+    // changes, and the set of reported counters stays exactly as before.
     void use(Context& x,u64 duration,const std::string& key) {
-        x.counts[key+"_service_cycles"]+=duration;
-        sc_time begin=std::max(available,sc_time_stamp());
-        x.counts[key+"_queue_cycles"]+=u64((begin-sc_time_stamp())/x.cycles(1)+.5);
-        available=begin+x.cycles(duration);wait(available-sc_time_stamp());
+        if(!service)bind(x,key);
+        *service+=duration;
+        sc_time now=sc_time_stamp(),begin=std::max(available,now);
+        *queue+=x.to_cycles(begin-now);
+        available=begin+x.cycles(duration);wait(available-now);
     }
+    // Same accounting with counter slots bound once (std::map nodes are stable).
+    void bind(Context& x,const std::string& key){service=&x.counts[key+"_service_cycles"];queue=&x.counts[key+"_queue_cycles"];}
+    void use(const Context& x,const sc_time& duration,u64 cycles){
+        *service+=cycles;sc_time now=sc_time_stamp(),begin=std::max(available,now);
+        *queue+=x.to_cycles(begin-now);available=begin+duration;wait(available-now);
+    }
+};
+// Byte-addressed backing store in lazily allocated 1 MiB pages, so a model
+// window of many GiB costs memory only where the workload touches it.
+struct Store {
+    static constexpr u64 page_lines=16384;
+    u64 base=0;std::vector<std::unique_ptr<Line[]>> pages;
+    void configure(u64 window_base,u64 bytes){base=window_base;pages.resize((bytes/64+page_lines-1)/page_lines);}
+    Line& operator[](u64 a){
+        u64 line=(a-base)>>6;require(a>=base && line/page_lines<pages.size(),"store address outside window");
+        auto& page=pages[line/page_lines];if(!page)page.reset(new Line[page_lines]());
+        return page[line%page_lines];
+    }
+    const Line* find(u64 a)const{
+        u64 line=(a-base)>>6;if(a<base || line/page_lines>=pages.size() || !pages[line/page_lines])return nullptr;
+        return &pages[line/page_lines][line%page_lines];
+    }
+};
+// Persistent worker processes consuming a job queue: concurrency without
+// creating a SystemC process per memory beat or transfer unit.
+struct Pool {
+    std::deque<std::function<void()>> jobs;sc_event work;
+    explicit Pool(unsigned n){
+        for(unsigned i=0;i<n;++i)sc_spawn([this](){for(;;){while(jobs.empty())wait(work);auto job=std::move(jobs.front());jobs.pop_front();job();}});
+    }
+    void submit(std::function<void()> job){jobs.push_back(std::move(job));work.notify(SC_ZERO_TIME);}
 };
 struct Limit {
     unsigned used=0,peak=0,capacity; sc_event changed;
     explicit Limit(unsigned n):capacity(n){}
+    u64* waited=nullptr; // bound on first use; one key per Limit
     void acquire(Context& x,const std::string& key) {
+        if(!waited)waited=&x.counts[key+"_wait_cycles"];
         auto t=sc_time_stamp();while(used==capacity)wait(changed);
-        x.counts[key+"_wait_cycles"]+=u64((sc_time_stamp()-t)/x.cycles(1)+.5);
+        *waited+=x.to_cycles(sc_time_stamp()-t);
         peak=std::max(peak,++used);
     }
     void release(){require(used>0,"resource underflow");--used;changed.notify(SC_ZERO_TIME);}
@@ -161,31 +226,42 @@ struct Limit {
 // resources, shared outstanding slots and issue bandwidth per actual outlet.
 struct HBM : sc_module {
     tlm_utils::multi_passthrough_target_socket<HBM> target;
-    Context& x; std::map<u64,Line> memory;
+    Context& x; Store memory;
     std::vector<std::unique_ptr<Limit>> slots;
     std::vector<Resource> ports,pcs;
+    std::vector<std::string> port_keys,pc_keys;
+    struct PortCounters {u64 *writes=nullptr,*reads=nullptr,*peak=nullptr;};
+    std::vector<PortCounters> port_counts;std::vector<u64*> pc_bytes;
+    u64 active_outlets,outlets,pc_first,memory_base,pc_size,issue_cycles,transfer,latency;
     HBM(sc_module_name n,Context& ctx):sc_module(n),target("target"),x(ctx),
         ports(x.c.get("outlets")),pcs(x.c.get("pc_count")) {
-        target.register_b_transport(this,&HBM::transport);
+        target.register_b_transport(this,&HBM::transport);memory.configure(x.c.get("memory_base"),x.c.get("memory_bytes"));
         for(u64 i=0;i<x.c.get("outlets");++i)slots.emplace_back(new Limit(unsigned(x.c.get("outstanding"))));
+        for(u64 i=0;i<x.c.get("outlets");++i)port_keys.push_back("outlet_"+std::to_string(i));
+        for(u64 i=0;i<x.c.get("pc_count");++i)pc_keys.push_back("pc_"+std::to_string(i));
+        port_counts.resize(port_keys.size());pc_bytes.assign(pc_keys.size(),nullptr);
+        active_outlets=x.c.get("active_outlets");outlets=x.c.get("outlets");pc_first=x.c.get("pc_first");
+        memory_base=x.c.get("memory_base");pc_size=x.c.get("pc_bytes");issue_cycles=x.c.get("outlet_issue_cycles");
+        transfer=(64+x.c.get("hbm_bytes_per_cycle")-1)/x.c.get("hbm_bytes_per_cycle");latency=x.c.get("hbm_latency_cycles");
     }
     void transport(int,tlm::tlm_generic_payload& tx,sc_time& delay){
         if(delay!=SC_ZERO_TIME){wait(delay);delay=SC_ZERO_TIME;}
         auto* r=tx.get_extension<Request>();require(r,"missing request identity");
         u64 a=tx.get_address();x.c.address(a,64);
         require(a%64==0 && tx.get_data_length()==64 && tx.get_streaming_width()==64 && !tx.get_byte_enable_ptr(),"invalid HBM line transaction");
-        unsigned port=x.c.get("active_outlets")==1 ? 0:r->home%x.c.get("outlets");
-        unsigned pc=unsigned(x.c.get("pc_first")+(a-x.c.get("memory_base"))/x.c.get("pc_bytes"));
-        auto key="outlet_"+std::to_string(port);auto begin=sc_time_stamp();
-        slots[port]->acquire(x,key);ports[port].use(x,x.c.get("outlet_issue_cycles"),key);
-        u64 transfer=(64+x.c.get("hbm_bytes_per_cycle")-1)/x.c.get("hbm_bytes_per_cycle");
-        pcs[pc].use(x,transfer,"pc_"+std::to_string(pc));
-        wait(x.cycles(x.c.get("hbm_latency_cycles")));
+        unsigned port=active_outlets==1 ? 0:unsigned(r->home%outlets);
+        unsigned pc=unsigned(pc_first+(a-memory_base)/pc_size);
+        const auto& key=port_keys[port];auto begin=sc_time_stamp();auto& pcnt=port_counts[port];
+        slots[port]->acquire(x,key);ports[port].use(x,issue_cycles,key);
+        pcs[pc].use(x,transfer,pc_keys[pc]);
+        wait(x.cycles(latency));
         auto& data=memory[a];
-        if(tx.is_write()){std::copy_n(tx.get_data_ptr(),64,data.begin());++x.counts[key+"_writes"];}
-        else {require(tx.is_read(),"invalid HBM command");std::copy(data.begin(),data.end(),tx.get_data_ptr());++x.counts[key+"_reads"];}
-        x.counts["pc_"+std::to_string(pc)+"_bytes"]+=64;
-        x.counts[key+"_peak_outstanding"]=slots[port]->peak;
+        if(tx.is_write()){std::copy_n(tx.get_data_ptr(),64,data.begin());if(!pcnt.writes)pcnt.writes=&x.counts[key+"_writes"];++*pcnt.writes;}
+        else {require(tx.is_read(),"invalid HBM command");std::copy(data.begin(),data.end(),tx.get_data_ptr());if(!pcnt.reads)pcnt.reads=&x.counts[key+"_reads"];++*pcnt.reads;}
+        if(!pc_bytes[pc])pc_bytes[pc]=&x.counts[pc_keys[pc]+"_bytes"];
+        *pc_bytes[pc]+=64;
+        if(!pcnt.peak)pcnt.peak=&x.counts[key+"_peak_outstanding"];
+        *pcnt.peak=slots[port]->peak;
         slots[port]->release();tx.set_response_status(tlm::TLM_OK_RESPONSE);
         x.span(tx.is_write()?"HBM write acknowledged":"HBM read",200+port,begin,r->id);
     }
@@ -205,20 +281,32 @@ struct Slice : sc_module {
     Slice(sc_module_name n,Context& ctx,unsigned i):sc_module(n),target("target"),memory("memory"),x(ctx),id(i),
         lines(x.c.get("sets")*x.c.get("ways")),rr(x.c.get("sets"),0){target.register_b_transport(this,&Slice::transport);}
     std::string key(const std::string& s)const{return "home_"+std::to_string(id)+"_"+s;}
+    // Counter slots, bound on first use so the reported set is unchanged:
+    // writebacks, target_full_events, merges, hits, mshr_full_events,
+    // set_busy_events, misses, peak_mshrs, evictions, resolution_cycles,
+    // maintenance_completed.
+    std::array<u64*,11> slots{};std::string engine_key=key("engine");unsigned ways=unsigned(x.c.get("ways"));
+    u64 service_cycles=x.c.get("service_cycles"),lookup_cycles=x.c.get("lookup_cycles"),targets=x.c.get("targets"),mshrs=x.c.get("mshrs");
+    u64& cnt(unsigned i){
+        static const char* names[11]={"writebacks","target_full_events","merges","hits","mshr_full_events","set_busy_events",
+            "misses","peak_mshrs","evictions","resolution_cycles","maintenance_completed"};
+        if(!slots[i])slots[i]=&x.counts[key(names[i])];
+        return *slots[i];
+    }
     void transfer(CacheLine& l,bool write,Request& r) {
         tlm::tlm_generic_payload tx;Request sub=r;sub.home=id;
         tx.set_extension(&sub);tx.set_address(l.address);tx.set_command(write?tlm::TLM_WRITE_COMMAND:tlm::TLM_READ_COMMAND);
         tx.set_data_ptr(l.data.data());tx.set_data_length(64);tx.set_streaming_width(64);sc_time d=SC_ZERO_TIME;
         memory->b_transport(tx,d);tx.clear_extension<Request>();require(tx.is_response_ok(),"HBM response failure");
-        if(write){l.dirty=false;++x.counts[key("writebacks")];}
+        if(write){l.dirty=false;++cnt(0);}
     }
     CacheLine* find(u64 a) {
-        unsigned start=x.c.set(a)*unsigned(x.c.get("ways"));
-        for(unsigned w=0;w<x.c.get("ways");++w){auto& l=lines[start+w];if(l.valid && l.address==a)return &l;}
+        unsigned start=x.c.set(a)*ways;
+        for(unsigned w=0;w<ways;++w){auto& l=lines[start+w];if(l.valid && l.address==a)return &l;}
         return nullptr;
     }
     CacheLine* victim(u64 a) {
-        unsigned s=x.c.set(a),wN=unsigned(x.c.get("ways")),base=s*wN;
+        unsigned s=x.c.set(a),wN=ways,base=s*wN;
         for(unsigned w=0;w<wN;++w)if(!lines[base+w].valid && !lines[base+w].pins){rr[s]=(w+1)%wN;return &lines[base+w];}
         for(unsigned i=0;i<wN;++i){unsigned w=(rr[s]+i)%wN;if(!lines[base+w].pins){rr[s]=(w+1)%wN;return &lines[base+w];}}
         return nullptr;
@@ -251,7 +339,7 @@ struct Slice : sc_module {
         auto start=sc_time_stamp();auto previous=tails[base];auto self=std::make_shared<Done>();tails[base]=self;
         // Only same-line requests wait for their predecessors; a blocked miss
         // never holds the global lookup resource or prevents unrelated hits.
-        engine.use(x,x.c.get("service_cycles"),key("engine"));wait(x.cycles(x.c.get("lookup_cycles")));
+        engine.use(x,service_cycles,engine_key);wait(x.cycles(lookup_cycles));
         CacheLine* line=nullptr;std::shared_ptr<Fill> fill;bool target_owned=false;
         auto blocked=sc_time_stamp();
         for(;;){
@@ -259,20 +347,20 @@ struct Slice : sc_module {
             if(e!=evicting.end()){auto pending=e->second;while(!pending->done)wait(pending->event);continue;}
             auto f=fills.find(base);
             if(f!=fills.end() && !f->second->ready){
-                if(target_count==x.c.get("targets")){++x.counts[key("target_full_events")];wait(changed);continue;}
+                if(target_count==targets){++cnt(1);wait(changed);continue;}
                 fill=f->second;++fill->targets;++target_count;line=fill->line;++line->pins;target_owned=true;
-                ++x.counts[key("merges")];while(!fill->ready)wait(fill->event);break;
+                ++cnt(2);while(!fill->ready)wait(fill->event);break;
             }
-            line=find(base);if(line){++line->pins;++x.counts[key("hits")];break;}
-            if(fills.size()>=x.c.get("mshrs")){++x.counts[key("mshr_full_events")];wait(changed);continue;}
-            if(target_count==x.c.get("targets")){++x.counts[key("target_full_events")];wait(changed);continue;}
-            line=victim(base);if(!line){++x.counts[key("set_busy_events")];wait(changed);continue;}
+            line=find(base);if(line){++line->pins;++cnt(3);break;}
+            if(fills.size()>=mshrs){++cnt(4);wait(changed);continue;}
+            if(target_count==targets){++cnt(1);wait(changed);continue;}
+            line=victim(base);if(!line){++cnt(5);wait(changed);continue;}
             fill=std::make_shared<Fill>();fill->line=line;fill->targets=1;fills[base]=fill;
-            ++target_count;++line->pins;target_owned=true;++x.counts[key("misses")];
-            x.counts[key("peak_mshrs")]=std::max<u64>(x.counts[key("peak_mshrs")],fills.size());
+            ++target_count;++line->pins;target_owned=true;++cnt(6);
+            cnt(7)=std::max<u64>(cnt(7),fills.size());
             bool was_valid=line->valid;line->valid=false;
             if(was_valid){
-                ++x.counts[key("evictions")];
+                ++cnt(8);
                 if(line->dirty){
                     auto old=line->address;auto completion=std::make_shared<Done>();evicting[old]=completion;
                     transfer(*line,true,*r);completion->done=true;completion->event.notify(SC_ZERO_TIME);evicting.erase(old);
@@ -281,7 +369,7 @@ struct Slice : sc_module {
             line->address=base;transfer(*line,false,*r);line->valid=true;line->dirty=false;
             fill->ready=true;fill->event.notify(SC_ZERO_TIME);changed.notify(SC_ZERO_TIME);break;
         }
-        x.counts[key("resolution_cycles")]+=u64((sc_time_stamp()-blocked)/x.cycles(1)+.5);
+        cnt(9)+=x.to_cycles(sc_time_stamp()-blocked);
         if(previous)while(!previous->done)wait(previous->event);
         require(line->valid && line->address==base && line->pins,"cache reservation lost");
         u64 old=load(line->data,unsigned(a&63)),next=input;
@@ -298,22 +386,26 @@ struct Slice : sc_module {
         require(fills.empty() && tails.empty() && target_count==0,"maintenance started before requester drain");
         Request r;r.home=id;
         for(auto& line:lines)if(line.valid){require(!line.pins,"pinned line at maintenance");if(line.dirty)transfer(line,true,r);line.valid=false;}
-        ++x.counts[key("maintenance_completed")];
+        ++cnt(10);
     }
 };
 struct Network : sc_module {
     tlm_utils::multi_passthrough_target_socket<Network> target;
     sc_vector<tlm_utils::simple_initiator_socket<Network>> homes;
-    Context& x; std::map<std::pair<unsigned,unsigned>,Resource> links;
-    Network(sc_module_name n,Context& ctx):sc_module(n),target("target"),homes("homes",ctx.c.cores()),x(ctx){target.register_b_transport(this,&Network::transport);}
+    struct Link {Resource resource;std::string key;u64* bytes=nullptr;};
+    Context& x; std::map<std::pair<unsigned,unsigned>,Link> links;
+    unsigned nx;u64 width,stages;
+    Network(sc_module_name n,Context& ctx):sc_module(n),target("target"),homes("homes",ctx.c.cores()),x(ctx),
+        nx(unsigned(ctx.c.get("nx"))),width(ctx.c.get("noc_bytes_per_cycle")),stages(ctx.c.get("noc_stages")){target.register_b_transport(this,&Network::transport);}
     void route(unsigned from,unsigned to,u64 bytes) {
-        unsigned nx=unsigned(x.c.get("nx"));
         while(from!=to){unsigned next=from;
             if(from%nx!=to%nx)next=from%nx<to%nx?from+1:from-1;
             else next=from/nx<to/nx?from+nx:from-nx;
-            auto k="link_"+std::to_string(from)+"_"+std::to_string(next);
-            links[{from,next}].use(x,(bytes+x.c.get("noc_bytes_per_cycle")-1)/x.c.get("noc_bytes_per_cycle"),k);
-            x.counts[k+"_bytes"]+=bytes;wait(x.cycles(x.c.get("noc_stages")));from=next;
+            auto& link=links[{from,next}];
+            if(link.key.empty())link.key="link_"+std::to_string(from)+"_"+std::to_string(next);
+            link.resource.use(x,(bytes+width-1)/width,link.key);
+            if(!link.bytes)link.bytes=&x.counts[link.key+"_bytes"];
+            *link.bytes+=bytes;wait(x.cycles(stages));from=next;
         }
     }
     void transport(int,tlm::tlm_generic_payload& tx,sc_time& delay) {

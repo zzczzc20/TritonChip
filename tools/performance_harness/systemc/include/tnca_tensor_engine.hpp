@@ -13,15 +13,22 @@ struct TensorEngine : sc_module {
     std::array<Descriptor,16> descriptors;
     std::array<Window,32> windows;
     Context& x;unsigned core;Limit admission,word_slots;sc_mutex controller;Resource rf_port;
+    Pool unit_workers,beat_workers,command_worker;
     std::function<void(u64)> verify_token;
     std::function<void(u64,bool)> completion;
     u64 sequence=0;
+    // Commands issued and not yet completed, per issuing context: what an
+    // mb.arrive waits for under RPAIR's precise release (tnca_core.v arr_txf).
+    std::array<unsigned,4> outstanding{};sc_event role_done;
     TensorEngine(sc_module_name name,Context& context,unsigned id,
                  std::function<void(u64)> verify,std::function<void(u64,bool)> done):
         sc_module(name),memory("memory"),x(context),core(id),
         admission(unsigned(x.c.get("dma_queue"))),word_slots(unsigned(x.c.get("dma_outstanding"))),
+        unit_workers(unsigned(x.c.get("dma_unit_slots"))),beat_workers(unsigned(x.c.get("dma_unit_slots"))),command_worker(1),
         verify_token(std::move(verify)),completion(std::move(done)){}
     std::string key(const std::string& suffix)const{return "core_"+std::to_string(core)+"_dma_"+suffix;}
+    std::string units_key=key("units"),tags_key=key("tags"),rf_key=key("rf"),read_key=key("read_words"),write_key=key("write_words"),peak_key=key("peak_tags");
+    u64 *reads=nullptr,*writes=nullptr,*peak=nullptr;u64 rf_cycles=x.c.get("dma_rf_cycles");
     void drain(){while(admission.used)wait(admission.changed);}
     void reset(){
         require(admission.used==0 && word_slots.used==0,"DMA reset before command drain");
@@ -29,7 +36,7 @@ struct TensorEngine : sc_module {
         for(auto& w:windows)w=Window{};
     }
     u64 word(u64 address,bool store,u64 value,unsigned mask){
-        x.c.address(address,8);word_slots.acquire(x,key("tags"));
+        x.c.address(address,8);word_slots.acquire(x,tags_key);
         std::array<unsigned char,8> data{},enables{};
         for(unsigned b=0;b<8;++b){data[b]=static_cast<unsigned char>(value>>(b*8));enables[b]=(mask&(1<<b))?255:0;}
         Request request;request.id=++sequence;request.core=core;request.op=store?1:0;request.be=mask;
@@ -38,14 +45,16 @@ struct TensorEngine : sc_module {
         payload.set_byte_enable_ptr(enables.data());payload.set_byte_enable_length(8);payload.set_extension(&request);
         sc_time delay=SC_ZERO_TIME;memory->b_transport(payload,delay);payload.clear_extension<Request>();
         require(payload.is_response_ok() && delay==SC_ZERO_TIME,"DMA memory response failure");
-        word_slots.release();++x.counts[key(store?"write_words":"read_words")];
-        x.counts[key("peak_tags")]=word_slots.peak;
+        word_slots.release();
+        if(store){if(!writes)writes=&x.counts[write_key];++*writes;}else{if(!reads)reads=&x.counts[read_key];++*reads;}
+        if(!peak)peak=&x.counts[peak_key];
+        *peak=word_slots.peak;
         u64 result=0;for(unsigned b=0;b<8;++b)result|=u64(data[b])<<(b*8);return result;
     }
     void configure(unsigned function,unsigned slot,u64 address,unsigned immediate){
-        require((function<16 && slot<16) || (function>=16 && slot<32),"DESCRIPTOR_FAULT: configuration slot");
-        if(function==2)require(descriptors[slot].references==0,"RESOURCE_EXHAUSTED: descriptor still referenced");
-        if(function==16 || function==17)require(windows[slot].references==0,"RESOURCE_EXHAUSTED: window still referenced");
+        arch((function<16 && slot<16) || (function>=16 && slot<32),4,"DESCRIPTOR_FAULT: configuration slot");
+        if(function==2)arch(descriptors[slot].references==0,6,"RESOURCE_EXHAUSTED: descriptor still referenced");
+        if(function==16 || function==17)arch(windows[slot].references==0,6,"RESOURCE_EXHAUSTED: window still referenced");
         admission.acquire(x,key("admission"));controller.lock();
         try{
             if(function==0){
@@ -56,7 +65,7 @@ struct TensorEngine : sc_module {
             }else if(function==2)descriptors[slot].snapshot.reset();
             else if(function==16){
                 unsigned base=(immediate>>8)&255,length=immediate&255;
-                require(length && base<64 && length<=64-base,"DESCRIPTOR_FAULT: window exceeds role register mapping");
+                arch(length && base<64 && length<=64-base,4,"DESCRIPTOR_FAULT: window exceeds role register mapping");
                 windows[slot]={true,base,length,0};
             }else if(function==17)windows[slot]=Window{};
             else throw std::runtime_error("reserved descriptor/window operation");
@@ -64,12 +73,12 @@ struct TensorEngine : sc_module {
         controller.unlock();admission.release();
     }
     u64 rf_read(const std::shared_ptr<PhysicalRegisters>& bank,unsigned base,unsigned byte,u64 owner){
-        rf_port.use(x,x.c.get("dma_rf_cycles"),key("rf"));
+        rf_port.use(x,rf_cycles,rf_key);
         auto data=bank->read(base+byte/64,sc_time_stamp(),owner);unsigned lane=(byte%64)/4;
         return u64(data[lane])|(u64(data[lane+1])<<32);
     }
     void rf_write(const std::shared_ptr<PhysicalRegisters>& bank,unsigned base,unsigned byte,u64 value,u64 owner){
-        rf_port.use(x,x.c.get("dma_rf_cycles"),key("rf"));
+        rf_port.use(x,rf_cycles,rf_key);
         unsigned index=base+byte/64,lane=(byte%64)/4;auto data=bank->read(index,sc_time_stamp(),owner);
         data[lane]=std::uint32_t(value);data[lane+1]=std::uint32_t(value>>32);
         bank->write(index,3U<<lane,sc_time_stamp(),data,owner);bank->commit(sc_time_stamp());
@@ -84,8 +93,13 @@ struct TensorEngine : sc_module {
                 beat.mask|=1<<offset;beat.value|=((data>>(b*8))&255)<<(offset*8);}
         }
         require(beats.size()<=2,"DMA unit expanded beyond two aligned memory words");
+        // At most two beats: the second is issued in parallel by a pooled
+        // worker, the first by this unit's own process.
         unsigned pending=0;sc_event done;
-        for(auto& item:beats){auto* beat=&item;++pending;sc_spawn([&,beat](){beat->second.value=word(beat->first,store,beat->second.value,store?beat->second.mask:255);--pending;done.notify(SC_ZERO_TIME);});}
+        auto first=beats.begin();
+        if(beats.size()==2){auto* beat=&*std::next(first);++pending;
+            beat_workers.submit([&,beat](){beat->second.value=word(beat->first,store,beat->second.value,store?beat->second.mask:255);if(--pending==0)done.notify(SC_ZERO_TIME);});}
+        if(first!=beats.end())first->second.value=word(first->first,store,first->second.value,store?first->second.mask:255);
         while(pending)wait(done);
         u64 result=0;
         if(!store)for(unsigned b=0;b<8;++b){
@@ -103,7 +117,7 @@ struct TensorEngine : sc_module {
             unsigned rows=descriptor.block[0],columns=descriptor.block[1];
             for(unsigned column=0;column<columns;column+=4){
                 std::vector<u64> source(rows);unsigned pending=0;sc_event done;
-                for(unsigned row=0;row<rows;++row){++pending;sc_spawn([&,row](){source[row]=unit(descriptor,coordinates,bytes,row*columns*2+column*2,false,0);--pending;done.notify(SC_ZERO_TIME);});}
+                for(unsigned row=0;row<rows;++row){++pending;unit_workers.submit([&,row](){source[row]=unit(descriptor,coordinates,bytes,row*columns*2+column*2,false,0);if(--pending==0)done.notify(SC_ZERO_TIME);});}
                 while(pending)wait(done);
                 for(unsigned col=0;col<4;++col)for(unsigned row=0;row<rows;row+=4){
                     u64 value=0;for(unsigned i=0;i<4;++i)value|=((source[row+i]>>(col*16))&65535)<<(i*16);
@@ -114,19 +128,19 @@ struct TensorEngine : sc_module {
         }
         Limit units(unsigned(x.c.get("dma_unit_slots")));unsigned pending=0;sc_event done;
         for(unsigned byte=0;byte<total_bytes;byte+=8){
-            units.acquire(x,key("units"));++pending;
-            sc_spawn([&,byte](){
+            units.acquire(x,units_key);++pending;
+            unit_workers.submit([&,byte](){
                 u64 value=store?rf_read(bank,base,byte,owner):0;
                 value=unit(descriptor,coordinates,bytes,byte,store,value);
                 if(!store)rf_write(bank,base,byte,value,owner);
-                units.release();--pending;done.notify(SC_ZERO_TIME);
+                units.release();if(--pending==0)done.notify(SC_ZERO_TIME);
             });
         }
         while(pending)wait(done);
         x.counts[key("peak_units")]=std::max<u64>(x.counts[key("peak_units")],units.peak);
     }
     void issue(unsigned descriptor_slot,unsigned window_slot,u64 token,
-               unsigned bytes,bool store,bool transpose,bool active,std::shared_ptr<PhysicalRegisters> bank,unsigned vbase,
+               unsigned bytes,bool store,bool transpose,bool active,std::shared_ptr<PhysicalRegisters> bank,unsigned vbase,unsigned role,
                const std::function<std::array<u64,5>(unsigned)>& coordinate_reader,
                const std::function<void(unsigned,unsigned)>& prepare){
         admission.acquire(x,key("admission"));
@@ -135,20 +149,21 @@ struct TensorEngine : sc_module {
         try{
             verify_token(token);
             if(active){
-                require(descriptor_slot<16 && descriptors[descriptor_slot].snapshot,"DESCRIPTOR_FAULT: unloaded descriptor");
-                require(window_slot<32 && windows[window_slot].valid,"DESCRIPTOR_FAULT: undefined window");
+                arch(descriptor_slot<16 && descriptors[descriptor_slot].snapshot,4,"DESCRIPTOR_FAULT: unloaded descriptor");
+                arch(window_slot<32 && windows[window_slot].valid,4,"DESCRIPTOR_FAULT: undefined window");
                 descriptor=descriptors[descriptor_slot].snapshot;window=windows[window_slot];
                 total=descriptor->elements(bytes,window.length)*bytes;
                 coordinates=coordinate_reader(descriptor->rank);
-                if(descriptor->padding==2)require(descriptor->inside(coordinates),"DESCRIPTOR_FAULT: out-of-bounds fault padding");
+                if(descriptor->padding==2)arch(descriptor->inside(coordinates),4,"DESCRIPTOR_FAULT: out-of-bounds fault padding");
                 if(transpose)descriptor->check_transpose(bytes,store,coordinates);
                 used_registers=(total+63)/64;base=vbase+window.base;prepare(window.base,used_registers);
                 owner=bank->new_owner();bank->acquire(base,used_registers,owner,!store,sc_time_stamp());
                 ++descriptors[descriptor_slot].references;++windows[window_slot].references;
             }
         }catch(...){admission.release();throw;}
-        ++x.counts[key("commands_issued")];
-        sc_spawn([=](){
+        ++x.counts[key("commands_issued")];require(role<4,"transfer issuer context");++outstanding[role];
+        // Admitted commands run in order on one persistent controller process.
+        command_worker.submit([=](){
             controller.lock();auto start=sc_time_stamp();
             try{
                 wait(x.cycles(active?x.c.get("dma_setup_cycles"):1));
@@ -159,8 +174,8 @@ struct TensorEngine : sc_module {
                 }
                 completion(token,false);++x.counts[key("commands_completed")];
                 x.span(store?"DMA store complete":"DMA load complete",400+core,start,token);
-            }catch(...){completion(token,true);controller.unlock();admission.release();throw;}
-            controller.unlock();admission.release();
+            }catch(...){completion(token,true);controller.unlock();admission.release();--outstanding[role];role_done.notify(SC_ZERO_TIME);throw;}
+            controller.unlock();admission.release();--outstanding[role];role_done.notify(SC_ZERO_TIME);
         });
     }
 };

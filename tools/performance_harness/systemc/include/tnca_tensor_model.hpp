@@ -19,28 +19,28 @@ struct TensorMapModel {
         rank=raw[108];dtype=raw[109];padding=raw[110];flags=raw[111];
     }
     unsigned elements(unsigned bytes,unsigned window_registers)const{
-        require(rank>=1 && rank<=5,"DESCRIPTOR_FAULT: tensor rank");
+        arch(rank>=1 && rank<=5,4,"DESCRIPTOR_FAULT: tensor rank");
         require(flags==0,"unimplemented TensorMap semantic flags");
-        require(dtype<=9,"DESCRIPTOR_FAULT: reserved dtype");
-        require(padding==0 || padding==2 || padding==3,"DESCRIPTOR_FAULT: reserved padding mode");
-        require(bytes==1 || bytes==2 || bytes==4 || bytes==8,"ILLEGAL_INSTRUCTION: transfer element size");
+        arch(dtype<=9,4,"DESCRIPTOR_FAULT: reserved dtype");
+        arch(padding==0 || padding==2 || padding==3,4,"DESCRIPTOR_FAULT: reserved padding mode");
+        arch(bytes==1 || bytes==2 || bytes==4 || bytes==8,1,"ILLEGAL_INSTRUCTION: transfer element size");
         u64 n=1;
         for(unsigned d=0;d<rank;++d){
-            require(block[d]>=1 && block[d]<=256,"DESCRIPTOR_FAULT: block dimension");
-            require(n<=u64(window_registers)*64/bytes/block[d],"DESCRIPTOR_FAULT: box exceeds window");n*=block[d];
+            arch(block[d]>=1 && block[d]<=256,4,"DESCRIPTOR_FAULT: block dimension");
+            arch(n<=u64(window_registers)*64/bytes/block[d],4,"DESCRIPTOR_FAULT: box exceeds window");n*=block[d];
         }
-        require((u64(block[rank-1])*bytes)%8==0 && stride[rank-1]==bytes,"DESCRIPTOR_FAULT: noncontiguous or partial-unit row");
+        arch((u64(block[rank-1])*bytes)%8==0 && stride[rank-1]==bytes,4,"DESCRIPTOR_FAULT: noncontiguous or partial-unit row");
         if(padding==3){fill(bytes);}
         return unsigned(n);
     }
     u64 fill(unsigned bytes)const{
         if(padding!=3)return 0;
-        switch(dtype){case 0:require(bytes==2,"DESCRIPTOR_FAULT: padding dtype/size");return 0x7e00;
-            case 1:require(bytes==2,"DESCRIPTOR_FAULT: padding dtype/size");return 0x7fc0;
-            case 2:require(bytes==4,"DESCRIPTOR_FAULT: padding dtype/size");return 0x7fc00000;
-            case 7:case 8:require(bytes==1,"DESCRIPTOR_FAULT: padding dtype/size");return 0x7f;
-            case 9:require(bytes==8,"DESCRIPTOR_FAULT: padding dtype/size");return 0x7ff8000000000000ULL;
-            default:throw std::runtime_error("DESCRIPTOR_FAULT: NaN padding for integer dtype");}
+        switch(dtype){case 0:arch(bytes==2,4,"DESCRIPTOR_FAULT: padding dtype/size");return 0x7e00;
+            case 1:arch(bytes==2,4,"DESCRIPTOR_FAULT: padding dtype/size");return 0x7fc0;
+            case 2:arch(bytes==4,4,"DESCRIPTOR_FAULT: padding dtype/size");return 0x7fc00000;
+            case 7:case 8:arch(bytes==1,4,"DESCRIPTOR_FAULT: padding dtype/size");return 0x7f;
+            case 9:arch(bytes==8,4,"DESCRIPTOR_FAULT: padding dtype/size");return 0x7ff8000000000000ULL;
+            default:throw ArchFault(4,"DESCRIPTOR_FAULT: NaN padding for integer dtype");}
     }
     bool inside(const std::array<u64,5>& origin)const{
         for(unsigned d=0;d<rank;++d)if((origin[d]>>63) || origin[d]+block[d]>extent[d])return false;
@@ -57,7 +57,7 @@ struct TensorMapModel {
         return {valid,address+byte,static_cast<unsigned char>(fill(bytes)>>(byte*8))};
     }
     void check_transpose(unsigned bytes,bool store,const std::array<u64,5>& origin)const{
-        require(!store && rank==2 && bytes==2,"DESCRIPTOR_FAULT: transposed transfer kind/rank/size");
+        arch(!store && rank==2 && bytes==2,4,"DESCRIPTOR_FAULT: transposed transfer kind/rank/size");
         require((block[0]==4 || block[0]==8 || block[0]==16) && base%8==0 && stride[0]%8==0 &&
                 !(origin[1]>>63) && (origin[1]*bytes)%8==0,"DESCRIPTOR_FAULT: transposed transfer geometry");
     }

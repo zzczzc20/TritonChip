@@ -1,0 +1,140 @@
+{
+ "schema": "tnca-systemc-m1-speed/1",
+ "backends": {
+  "rtl": "sim-file core-vrf-sync-v5 (iverilog, device.prepare)",
+  "model": "systemc-tlm per-program launches, same compiled graph"
+ },
+ "note": "steady_run_s: host seconds of the steady call's launches (RUNNING->SUCCEEDED); RTL: the one steady call, model: median of 5 steady calls run alone on the host (an earlier model run under 7 concurrent jobs, rtl_model_loaded, gave identical cycles and 3-6x longer host times); first call includes compilation and the native copies. The two cycle counts come from different machines (single-core local SRAM RTL device vs the three-core NUCA/HBM model with uncalibrated timing) and are not comparable.",
+ "points": [
+  {
+   "point": "op.add/tiny/fp32-n256",
+   "rtl": {
+    "status": "pass",
+    "steady_device_cycles": 777,
+    "steady_run_s": 2.248389,
+    "first_call_wall_s": 68.643,
+    "first_call_device_cycles": 10761,
+    "process_wall_s": 78.93,
+    "max_rel_err": 0.0
+   },
+   "model": {
+    "status": "pass",
+    "steady_device_cycles": 845,
+    "steady_run_s": 0.002247,
+    "first_call_wall_s": 1.603,
+    "first_call_device_cycles": 13781,
+    "process_wall_s": 6.22,
+    "max_rel_err": 0.0
+   },
+   "speedup_steady_call": 1000.6,
+   "rtl_cycles_per_s": 345.6,
+   "model_cycles_per_s": 376057.0,
+   "speedup_first_call": 42.8,
+   "speedup_process": 12.7
+  },
+  {
+   "point": "op.softmax/tiny/fp32-r3-c37",
+   "rtl": {
+    "status": "pass",
+    "steady_device_cycles": 1703,
+    "steady_run_s": 8.399577,
+    "first_call_wall_s": 78.376,
+    "first_call_device_cycles": 11687,
+    "process_wall_s": 93.55,
+    "max_rel_err": 5.960464477539063e-08
+   },
+   "model": {
+    "status": "pass",
+    "steady_device_cycles": 1404,
+    "steady_run_s": 0.002548,
+    "first_call_wall_s": 1.731,
+    "first_call_device_cycles": 12280,
+    "process_wall_s": 6.27,
+    "max_rel_err": 5.960464477539063e-08
+   },
+   "speedup_steady_call": 3296.5,
+   "rtl_cycles_per_s": 202.7,
+   "model_cycles_per_s": 551020.4,
+   "speedup_first_call": 45.3,
+   "speedup_process": 14.9
+  },
+  {
+   "point": "op.matmul/tiny/fp16-m16-k32-n16",
+   "rtl": {
+    "status": "pass",
+    "steady_device_cycles": 1492,
+    "steady_run_s": 2.671996,
+    "first_call_wall_s": 72.077,
+    "first_call_device_cycles": 11476,
+    "process_wall_s": 82.49,
+    "max_rel_err": 0.00040886770849252635
+   },
+   "model": {
+    "status": "pass",
+    "steady_device_cycles": 2866,
+    "steady_run_s": 0.002389,
+    "first_call_wall_s": 1.697,
+    "first_call_device_cycles": 15517,
+    "process_wall_s": 4.94,
+    "max_rel_err": 0.00040886770849252635
+   },
+   "speedup_steady_call": 1118.5,
+   "rtl_cycles_per_s": 558.4,
+   "model_cycles_per_s": 1199665.1,
+   "speedup_first_call": 42.5,
+   "speedup_process": 16.7
+  },
+  {
+   "point": "op.layernorm/tiny/fp16-r4-d64",
+   "rtl": {
+    "status": "pass",
+    "steady_device_cycles": 3418,
+    "steady_run_s": 13.578952,
+    "first_call_wall_s": 79.477,
+    "first_call_device_cycles": 13402,
+    "process_wall_s": 98.59,
+    "max_rel_err": 0.00033908726900512526
+   },
+   "model": {
+    "status": "pass",
+    "steady_device_cycles": 2455,
+    "steady_run_s": 0.002908,
+    "first_call_wall_s": 1.543,
+    "first_call_device_cycles": 13577,
+    "process_wall_s": 4.26,
+    "max_rel_err": 0.00033908726900512526
+   },
+   "speedup_steady_call": 4669.5,
+   "rtl_cycles_per_s": 251.7,
+   "model_cycles_per_s": 844222.8,
+   "speedup_first_call": 51.5,
+   "speedup_process": 23.1
+  },
+  {
+   "point": "op.attention_decode/tiny/fp16-b1-h2-l16-d16",
+   "rtl": {
+    "status": "pass",
+    "steady_device_cycles": 9920,
+    "steady_run_s": 30.991174,
+    "first_call_wall_s": 97.647,
+    "first_call_device_cycles": 19904,
+    "process_wall_s": 135.95,
+    "max_rel_err": 0.0002162456512451172
+   },
+   "model": {
+    "status": "pass",
+    "steady_device_cycles": 9227,
+    "steady_run_s": 0.009465,
+    "first_call_wall_s": 2.091,
+    "first_call_device_cycles": 21086,
+    "process_wall_s": 4.98,
+    "max_rel_err": 0.0002162456512451172
+   },
+   "speedup_steady_call": 3274.3,
+   "rtl_cycles_per_s": 320.1,
+   "model_cycles_per_s": 974854.7,
+   "speedup_first_call": 46.7,
+   "speedup_process": 27.3
+  }
+ ]
+}

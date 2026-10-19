@@ -14,8 +14,11 @@ interpreting a trace. Screening results and diagnostic traces do not establish
 acceptance compliance.
 
 The [native SystemC architectural model](systemc/README.md) is being developed
-for event-driven complete-chip exploration on the GB10. Its current ISA and
-architecture coverage are incomplete; consult its coverage table before use.
+for event-driven complete-chip exploration on the GB10. Since M1 it executes
+the frozen suites' compiled kernels end to end through the standard runtime
+path (`systemc/run_graphs.py`), with RTL-exact numerics; its timing is
+uncalibrated and its architecture coverage incomplete. Consult its coverage
+table before use.
 Its memory replay path is conditional on captured traffic and cannot substitute
 for native program execution or establish complete-chip prediction accuracy.
 RTL remains an independent offline validation source, outside the TLM execution

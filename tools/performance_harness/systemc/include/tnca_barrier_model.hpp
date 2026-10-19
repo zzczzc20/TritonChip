@@ -10,37 +10,40 @@ struct BarrierModel {
     bool armed=false,error=false;
     sc_event changed;
     void reset(){
-        require(waiters==0,"BARRIER_FAULT: init under a sleeping waiter");
+        arch(waiters==0,5,"BARRIER_FAULT: init under a sleeping waiter");
         changed.cancel();epoch=completed=0;arrivals=operations=0;armed=error=false;
     }
     void settle(){
         if(armed && arrivals==0 && operations==0){completed=epoch;armed=false;changed.notify(SC_ZERO_TIME);}
     }
     u64 arm(unsigned id,unsigned expected_arrivals,unsigned expected_operations){
-        require(!error,"BARRIER_FAULT: arm invalid barrier");
-        require(!armed,"BARRIER_FAULT: rearm with outstanding obligations");
-        require(epoch<((1ULL<<48)-1),"BARRIER_FAULT: generation wrap");
-        require(expected_arrivals<256 && expected_operations<256,"BARRIER_FAULT: count overflow");
+        arch(!error,5,"BARRIER_FAULT: arm invalid barrier");
+        arch(!armed,5,"BARRIER_FAULT: rearm with outstanding obligations");
+        arch(epoch<((1ULL<<48)-1),5,"BARRIER_FAULT: generation wrap");
+        arch(expected_arrivals<256 && expected_operations<256,5,"BARRIER_FAULT: count overflow");
         ++epoch;arrivals=expected_arrivals;operations=expected_operations;armed=true;settle();
         return (epoch<<16)|id;
     }
     void arrive(){
-        require(!error && armed && arrivals>0,"BARRIER_FAULT: arrival underflow");
+        arch(!error && armed && arrivals>0,5,"BARRIER_FAULT: arrival underflow");
         --arrivals;settle();
     }
     void complete(bool failed=false){
         if(failed){invalidate();return;}
-        require(!error && armed && operations>0,"BARRIER_FAULT: operation completion underflow");
+        // A command still in flight when its launch faulted completes against
+        // the invalidated barrier; the fault, not this completion, is reported.
+        if(error)return;
+        arch(!error && armed && operations>0,5,"BARRIER_FAULT: operation completion underflow");
         --operations;settle();
     }
     bool test(u64 token)const{
-        require(!error,"BARRIER_FAULT: invalidated generation");return completed>=(token>>16);
+        arch(!error,5,"BARRIER_FAULT: invalidated generation");return completed>=(token>>16);
     }
     void sleep(u64 token){
         if(test(token))return;
         ++waiters;
         while(!error && completed<(token>>16))wait(changed);
-        --waiters;require(!error,"BARRIER_FAULT: invalidation woke waiter");
+        --waiters;arch(!error,5,"BARRIER_FAULT: invalidation woke waiter");
     }
     void invalidate(){error=true;completed=epoch;armed=false;arrivals=operations=0;changed.notify(SC_ZERO_TIME);}
 };
@@ -55,7 +58,7 @@ struct PhysicalRegisters {
     u64 sequence=0;
     u64 owner_sequence=0;
     void commit(sc_time now){
-        std::stable_sort(pending.begin(),pending.end(),[](const Write& a,const Write& b){return a.due<b.due || (a.due==b.due && a.sequence<b.sequence);});
+        if(pending.empty() || pending.front().due>now)return; // kept sorted by (due, sequence) at insertion
         auto end=pending.begin();
         while(end!=pending.end() && end->due<=now){
             for(unsigned lane=0;lane<16;++lane)if(end->mask&(1<<lane))values[end->index][lane]=end->data[lane];
@@ -66,7 +69,10 @@ struct PhysicalRegisters {
     void write(unsigned index,unsigned mask,sc_time due,const Vector& data,u64 owner=0){
         require(index<256,"physical vector register overflow");
         require((writer[index]==0 || writer[index]==owner) && readers[index].empty(),"RF_LIFETIME: overwrite before asynchronous source release");
-        pending.push_back({index,mask,due,sequence++,data});
+        Write w{index,mask,due,sequence++,data};
+        auto at=pending.end();
+        while(at!=pending.begin() && (at-1)->due>due)--at;
+        pending.insert(at,w);
     }
     Vector read(unsigned index,sc_time now,u64 owner=0){
         require(index<256,"physical vector register overflow");

@@ -73,7 +73,11 @@ class _Reply:
 
 
 class SocketBackend(Backend):
-    """Reaches a device through a relay, over TCP."""
+    """Reaches a device through a relay, over TCP or a Unix socket.
+
+    `address` is (host, port) for TCP or a path for a Unix socket. Given, the
+    relay is someone else's and is connected to; absent, one is started here.
+    """
 
     name = 'sim-socket'
     state = REFERENCE_AVAILABLE
@@ -148,8 +152,7 @@ class SocketBackend(Backend):
         deadline = time.time() + 30
         while True:
             try:
-                self._sock = socket.create_connection(self._address,
-                                                      timeout=self.host_timeout)
+                self._sock = _connect(self._address, self.host_timeout)
                 break
             except OSError:
                 if time.time() > deadline:
@@ -270,7 +273,8 @@ class SocketBackend(Backend):
 
     def capabilities(self):
         out = super().capabilities()
-        out.update({'protocol': PROTOCOL_VERSION, 'medium': 'tcp',
+        out.update({'protocol': PROTOCOL_VERSION,
+                    'medium': 'unix' if isinstance(self._address, str) else 'tcp',
                     'reaches': 'the same RTL as sim-file, through a relay',
                     # A structured protocol, not an opcode field: there
                     # is no way to ask for an operation that does not
@@ -278,6 +282,20 @@ class SocketBackend(Backend):
                     # refuses by name.
                     'raw_request': False})
         return out
+
+
+def _connect(address, timeout):
+    """A TCP (host, port) or a Unix socket path, connected."""
+    if isinstance(address, str):
+        s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+        try:
+            s.settimeout(timeout)
+            s.connect(address)
+        except OSError:
+            s.close()
+            raise
+        return s
+    return socket.create_connection(tuple(address), timeout=timeout)
 
 
 def _child_env():

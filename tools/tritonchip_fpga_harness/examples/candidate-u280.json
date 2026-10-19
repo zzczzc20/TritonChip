@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "candidate_id": "example-u280",
+  "target": "u280",
+  "mode": "full",
+  "clock_mhz": 100,
+  "source_commit": "HEAD",
+  "board": {
+    "backend": "fpga-u280",
+    "profile": "core-vrf-sync-v2",
+    "program": true,
+    "conformance": true,
+    "archbench": {
+      "tiers": [
+        "tiny",
+        "small"
+      ],
+      "jobs": 1,
+      "counters": true,
+      "timeout_s": 21600
+    }
+  }
+}

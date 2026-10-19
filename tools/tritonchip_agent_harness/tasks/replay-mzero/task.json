@@ -1,0 +1,104 @@
+{
+  "schema": "tritonchip-agent-task/1",
+  "task_id": "replay-mzero",
+  "kind": "cross-layer",
+  "note": "A replay on main + the profile header (P1) + the leak cleanup (6f2bdee) + the image build (d1a00dd): the zero-accumulator m.zero lowering of 49da68a removed. reference.patch is the developers' change; a no-op agent scores 1.0. Cross-layer: the agent may change the compiler, the ISA and the hardware. ArchBench is hidden: archbench/ and every file the 2026-10-15 leak audit found revealing its points are removed from the workspace. Residual leaks the export cannot remove (comments in files the flow needs) are listed in the README, section 6.5.",
+  "base_commit": "083b57d7a90f951daec658074208c7c588a21a7b",
+  "design": [
+    "compiler/",
+    "python/tnca/",
+    "isa/",
+    "rtl/",
+    "spec/r1_profiles.json"
+  ],
+  "evaluator_owned": [
+    "python/tnca/device.py",
+    "python/tnca/runtime.py",
+    "python/tnca/transport.py",
+    "python/tnca/backend.py",
+    "python/tnca/backends/",
+    "python/tnca/triton_backend/driver.py",
+    "python/tnca/inductor.py",
+    "python/tnca/profiles.py",
+    "python/tnca/_data.py",
+    "rtl/board/",
+    "rtl/fpga/"
+  ],
+  "hide": [
+    "archbench/",
+    "compiler/README.md",
+    "doc/architecture_overview.md",
+    "doc/compiler_overview.md",
+    "doc/r38_board_bringup.md",
+    "doc/r38_pytorch_p1plus.md",
+    "doc/r38_stage1_status.md",
+    "doc/r39_report.md",
+    "doc/r39_tasks_and_acceptance.md",
+    "flow/fpga/README.md",
+    "spec/r35_workloads.json",
+    "spec/r38/design_changes/xpose-dma-001.json",
+    "spec/r38/evidence_registry.json",
+    "spec/r38/suites/dev.json",
+    "spec/r39/baseline_archbench.json",
+    "spec/r39/baseline_archbench.jsonl",
+    "spec/r39/baseline_archbench_medium.jsonl",
+    "spec/r3_workloads.json",
+    "spec/r3v2_inventory.json",
+    "tools/r37/aot_run.py",
+    "tools/r37/upstream_cases.py",
+    "tools/r38/archbench/",
+    "tools/r38/dev_cases.py",
+    "tools/r38/tdesc_tests.py",
+    "tools/r38/triton_native_run.py",
+    "tutorial/11_running_on_the_u280.md"
+  ],
+  "instruction": "instruction.md",
+  "reference": "reference.patch",
+  "budget": {
+    "wall_seconds": 2700
+  },
+  "evaluation": {
+    "profile": "core-vrf-sync-v5",
+    "validation": [
+      "op.matmul/tiny/fp16-m16-k32-n16",
+      "op.linear/tiny/fp16-m16-k64-n64",
+      "op.bmm/tiny/fp16-b2-m16-k16-n16"
+    ],
+    "final": [
+      "op.matmul/tiny/fp32-m16-k32-n16",
+      "op.gemv/tiny/fp16-k64-n64"
+    ],
+    "jobs": 5,
+    "timeout_seconds": 1800,
+    "platform": {
+      "commit": "55872ef523b494e04767299d1cdff638630d5080",
+      "paths": [
+        "tb/device/tnca_device.v",
+        "python/tnca/backends/relay.py",
+        "python/tnca/backends/socket_relay.py"
+      ]
+    },
+    "certify": {
+      "commit": "969201ba406ecc1c3fd740ecc68c247df8a1ef08",
+      "paths": [
+        "flow/fpga/",
+        "fpga/",
+        "rtl/board/",
+        "rtl/fpga/",
+        "tools/tritonchip_fpga_harness/"
+      ],
+      "target": "u280",
+      "clock_mhz": 100
+    }
+  },
+  "services": {
+    "score": {
+      "requests": 3
+    },
+    "fpga_quick": {
+      "minutes": 45,
+      "job_minutes": 20,
+      "period_ns": 10.0
+    }
+  }
+}

@@ -127,14 +127,14 @@ def cfg01(log):
                f"{'identical' if not diff else 'DIFFER ' + str(diff)}")
     ok &= not diff
 
-    # 2. The target and what the RTL was actually built with. The
-    #    device module holds the parameters it elaborates; a difference
-    #    here is a compiler describing a core that was not built.
+    # 2. The target and what the RTL was actually built with. The device
+    #    is compiled with the profile's own header; a difference here is a
+    #    compiler describing a core that was not built.
     from tnca import device
-    params = device.BENCH_PARAMS.get(PROFILE, [])
-    banked = any('USE_BANKED_VRF=1' in p for p in params)
+    header = device.uarch_header(PROFILE)
+    banked = '`define TNCA_UARCH_USE_BANKED_VRF 1' in header.splitlines()
     impl = prof.get('implementation', {})
-    log.append(f"    the device elaborates {params}")
+    log.append(f"    the device is compiled with {header.count('`define')} profile parameter(s)")
     log.append(f"    the profile says the register file is "
                f"{impl.get('vector_register_file')!r}, and the bench is "
                f"built banked: {banked}")
@@ -275,10 +275,10 @@ def cfg01(log):
                f"registers block")
 
     # LATENCY is published by the target and is NOT in the identity.
-    # That is safe only while nothing consumes it, so the invariant is
-    # checked rather than assumed: the moment the compiler or the
-    # runtime starts scheduling on a latency, this fails and the field
-    # has to enter config_hash.
+    # That is safe only while nothing consumes the target's latency field.
+    # R39's scheduler has an independent measured model in
+    # spec/r39_sched_model.json; its data['latency'] is not this field.
+    # Check the target's concrete keys and direct target latency accesses.
     lat_keys = sorted((tgt.get('latency') or {}))
     readers = []
     for sub in (('compiler', 'python'), ('python', 'tnca')):
@@ -289,13 +289,16 @@ def cfg01(log):
                 if not f.endswith('.py'):
                     continue
                 body = open(os.path.join(base, f)).read()
-                if any(k in body for k in lat_keys) or \
-                        "['latency']" in body or '["latency"]' in body:
+                if any(k in body for k in lat_keys) or any(
+                        access in body for access in (
+                            "target['latency']", 'target["latency"]',
+                            "tgt['latency']", 'tgt["latency"]',
+                            'target.latency', 'tgt.latency')):
                     readers.append(os.path.relpath(
                         os.path.join(base, f), ROOT))
-    log.append(f"    a LATENCY assumption {lat_keys} is published and "
+    log.append(f"    a target LATENCY assumption {lat_keys} is published and "
                f"outside the identity, which is safe only while nothing "
-               f"consumes it")
+               f"consumes that target field")
     log.append(f"      files in the compiler or runtime that read it: "
                f"{readers if readers else 'none'}")
     log.append(f"      if that ever changes this case fails first, and "

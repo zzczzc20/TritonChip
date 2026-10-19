@@ -181,6 +181,26 @@ proc tnca_busparam {busif name value {resolve ""}} {
 tnca_busparam $clk_if ASSOCIATED_BUSIF s_axi_tnca
 tnca_busparam $clk_if FREQ_HZ $AP_CLK_HZ user
 
+# A device profile other than the RTL defaults: TNCA_IMAGE_CONFIG names a Tcl
+# file that sets TNCA_IMAGE_PARAMS, a dict of the wrapper's parameters and
+# their values (written by the FPGA harness from spec/r1_profiles.json; the
+# same mechanism as R40's tools/r40/image_profile.py). Each name must be a
+# parameter the packaged top exposes, or packaging stops: a profile is never
+# built at a default it did not ask for. Without it the image is the defaults.
+if {[info exists ::env(TNCA_IMAGE_CONFIG)]} {
+    source $::env(TNCA_IMAGE_CONFIG)
+    dict for {name value} $TNCA_IMAGE_PARAMS {
+        set up [ipx::get_user_parameters $name -of_objects $core]
+        set mp [ipx::get_hdl_parameters $name -of_objects $core]
+        if {[llength $up] != 1 || [llength $mp] != 1} {
+            error "TNCA_IMAGE_CONFIG: parameter $name is not exposed by tnca_u50_xo"
+        }
+        set_property value $value $up
+        set_property value $value $mp
+        puts "TNCA_IMAGE_PARAM $name=$value"
+    }
+}
+
 ipx::create_xgui_files $core
 ipx::update_checksums $core
 ipx::save_core $core

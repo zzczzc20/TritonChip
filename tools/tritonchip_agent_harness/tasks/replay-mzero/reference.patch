@@ -1,0 +1,28 @@
+diff --git a/compiler/python/tnca_cc/frontend.py b/compiler/python/tnca_cc/frontend.py
+index 012e223..952c1c9 100644
+--- a/compiler/python/tnca_cc/frontend.py
++++ b/compiler/python/tnca_cc/frontend.py
+@@ -587,8 +587,21 @@ class TTIRImporter:
+                 mask_tiles.add(i)
+                 val = store
+             elif isinstance(shape, tuple):
+-                get = self._row_getter(src, shape[0], elem)
+-                val = self._materialise(get, shape[0], shape[1], elem)
++                if (self.index_opt and self._is_zero_tensor(src)
++                        and self._ELEM_BYTES.get(elem) == 4 and elem != 'i32'
++                        and len(self.kernel.accumulators) < 8):
++                    # A matmul's `acc = tl.zeros(...)`: one m.zero, where
++                    # _materialise wrote sixteen rows of zeros through the
++                    # matrix unit -- measured, 64 of the 80 commands a
++                    # linear layer's tiny point gave it, about 77 cycles
++                    # each, more of its time than the MMAs themselves.
++                    acc = self.b.accumulator(name=f"acc{len(self.kernel.accumulators)}")
++                    self.b.comment('a zero tile carried round the loop: one m.zero (ISA sec 9C)')
++                    self.b.acc_zero(acc)
++                    val = Tile('accumulator', acc, shape[0], shape[1], elem)
++                else:
++                    get = self._row_getter(src, shape[0], elem)
++                    val = self._materialise(get, shape[0], shape[1], elem)
+                 self._tiles[block.get_argument(i + 1).id()] = val
+                 self._tiles[op.get_result(i).id()] = val
+             else:

@@ -1078,36 +1078,40 @@ r2-artifact-tests: $(BUILD)/tnca_device.vvp
 # C04 and C05 are specified on a back-pressuring, reordering memory, so
 # both implementations need a device elaborated that way. Four devices, one
 # bench source: reference and candidate, fast and slow.
-$(BUILD)/tnca_device_slow.vvp: $(RTL_DEPS) $(TB)/device/tnca_device.v \
-                               $(TB)/common/tnca_mem_model.v | dirs
+$(BUILD)/params/%.vh: spec/r1_profiles.json tools/profile_header.py python/tnca/profiles.py | dirs
+	@mkdir -p $(dir $@)
+	python3 tools/profile_header.py $* > $@
+
+# Each device is compiled with its profile's header first (tools/profile_header.py):
+# the platform names only the memory model, never the microarchitecture.
+$(BUILD)/tnca_device_slow.vvp: $(RTL_DEPS) $(TB)/device/tnca_device.v $(RTL)/tnca_shell.v \
+                               $(BUILD)/params/core-sim.vh $(TB)/common/tnca_mem_model.v | dirs
 	$(IVERILOG) $(IVFLAGS) -y $(RTL)/core -y $(RTL)/common -y $(RTL)/gen -y $(TB)/common \
 	   -P tnca_device.MEM_LATENCY=7 -P tnca_device.RANDOM_STALL=1 \
 	   -P tnca_device.MEM_REORDER=1 \
-	   -o $@ $(TB)/device/tnca_device.v
+	   -o $@ $(BUILD)/params/core-sim.vh $(TB)/device/tnca_device.v $(RTL)/tnca_shell.v
 
-$(BUILD)/tnca_device_vrf_slow.vvp: $(RTL_DEPS) $(TB)/device/tnca_device.v \
-                                   $(TB)/common/tnca_mem_model.v | dirs
+$(BUILD)/tnca_device_vrf_slow.vvp: $(RTL_DEPS) $(TB)/device/tnca_device.v $(RTL)/tnca_shell.v \
+                                   $(BUILD)/params/core-vrf-sync-v1.vh $(TB)/common/tnca_mem_model.v | dirs
 	$(IVERILOG) $(IVFLAGS) -y $(RTL)/core -y $(RTL)/common -y $(RTL)/gen -y $(TB)/common \
-	   -P tnca_device.USE_BANKED_VRF=1 \
 	   -P tnca_device.MEM_LATENCY=7 -P tnca_device.RANDOM_STALL=1 \
 	   -P tnca_device.MEM_REORDER=1 \
-	   -o $@ $(TB)/device/tnca_device.v
+	   -o $@ $(BUILD)/params/core-vrf-sync-v1.vh $(TB)/device/tnca_device.v $(RTL)/tnca_shell.v
 
-$(BUILD)/tnca_device_vrf.vvp: $(RTL_DEPS) $(TB)/device/tnca_device.v \
-                              $(TB)/common/tnca_mem_model.v | dirs
+$(BUILD)/tnca_device_vrf.vvp: $(RTL_DEPS) $(TB)/device/tnca_device.v $(RTL)/tnca_shell.v \
+                              $(BUILD)/params/core-vrf-sync-v1.vh $(TB)/common/tnca_mem_model.v | dirs
 	$(IVERILOG) $(IVFLAGS) -y $(RTL)/core -y $(RTL)/common -y $(RTL)/gen -y $(TB)/common \
-	   -P tnca_device.USE_BANKED_VRF=1 \
-	   -o $@ $(TB)/device/tnca_device.v
+	   -o $@ $(BUILD)/params/core-vrf-sync-v1.vh $(TB)/device/tnca_device.v $(RTL)/tnca_shell.v
 
 # tnca_shell is named rather than found by library search: it lives in
 # $(RTL) itself, which is deliberately not on the -y path, because a bench
 # picking up a top level by accident is how two benches end up disagreeing
 # about which top they are testing.
 $(BUILD)/tnca_device.vvp: $(RTL_DEPS) $(TB)/device/tnca_device.v \
-                          $(RTL)/tnca_shell.v $(R2_DATA_STAMP) \
+                          $(RTL)/tnca_shell.v $(R2_DATA_STAMP) $(BUILD)/params/core-sim.vh \
                           $(TB)/common/tnca_mem_model.v | dirs
 	$(IVERILOG) $(IVFLAGS) -y $(RTL)/core -y $(RTL)/common -y $(RTL)/gen -y $(TB)/common \
-	   -o $@ $(TB)/device/tnca_device.v $(RTL)/tnca_shell.v
+	   -o $@ $(BUILD)/params/core-sim.vh $(TB)/device/tnca_device.v $(RTL)/tnca_shell.v
 
 .PHONY: device
 device: $(BUILD)/tnca_device.vvp
@@ -1206,7 +1210,12 @@ r3-mutation-tests:
 # answers against an oracle and exits non-zero when they disagree, so
 # there is nothing to assert here beyond the exit status.
 #------------------------------------------------------------------------------
-.PHONY: tutorial
+.PHONY: tutorial tutorial-core tutorial-torch
+TUTORIAL_EXAMPLES ?= $(wildcard tutorial/examples/*.py)
+tutorial-core: TUTORIAL_EXAMPLES := $(filter-out tutorial/examples/10_torch_compile.py,$(wildcard tutorial/examples/*.py))
+tutorial-core: tutorial
+tutorial-torch: TUTORIAL_EXAMPLES := tutorial/examples/10_torch_compile.py
+tutorial-torch: tutorial
 tutorial: device $(R2_DATA_STAMP)
 	@if [ ! -x "$(TRITON_PYTHON)" ]; then \
 	   if [ "$(R1_STRICT)" = "1" ]; then \
@@ -1218,7 +1227,7 @@ tutorial: device $(R2_DATA_STAMP)
 	   fi; \
 	 fi; \
 	 fail=0; n=0; \
-	 for f in tutorial/examples/*.py; do \
+	 for f in $(TUTORIAL_EXAMPLES); do \
 	   n=$$((n+1)); \
 	   if PYTHONPATH=python:compiler/python $(TRITON_PYTHON) $$f \
 	        > $(BUILD)/tutorial-$$(basename $$f .py).log 2>&1; then \

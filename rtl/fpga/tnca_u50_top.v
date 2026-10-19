@@ -99,7 +99,23 @@ module tnca_u50_top #(
 
     parameter NUM_RCTX       = 2,
     parameter RCTX_W         = 1,
-    parameter VREGS_PER_RCTX = 64
+    parameter VREGS_PER_RCTX = 64,
+
+    // The machine's switches, passed to tnca_fpga_top; defaults are its own.
+    parameter HAS_SFU          = 1,
+    parameter HAS_ATOMICS      = 1,
+    parameter HAS_SYS_ATOMICS  = 0,
+    parameter USE_BANKED_VRF   = 1,
+    parameter VRF_BYPASS       = 1,
+    parameter FE_NOBUBBLE      = 1,
+    parameter VRF_PREFETCH     = 1,
+    parameter RCTX_SWITCH      = 0,
+    parameter LSU_INFLIGHT     = 1,
+    parameter FPU_OVERLAP      = 0,
+    parameter RSLICE           = 0,
+    parameter RPAIR            = 0,
+    parameter MTX_ABUF         = 0,
+    parameter HAS_TENSOR_XPOSE = 0
 ) (
     //---- bus side, ap_clk domain -------------------------------------------
     input  wire                    ap_clk,
@@ -231,6 +247,20 @@ module tnca_u50_top #(
         .NUM_RCTX(NUM_RCTX),
         .RCTX_W(RCTX_W),
         .VREGS_PER_RCTX(VREGS_PER_RCTX),
+        .HAS_SFU(HAS_SFU),
+        .HAS_ATOMICS(HAS_ATOMICS),
+        .HAS_SYS_ATOMICS(HAS_SYS_ATOMICS),
+        .USE_BANKED_VRF(USE_BANKED_VRF),
+        .VRF_BYPASS(VRF_BYPASS),
+        .FE_NOBUBBLE(FE_NOBUBBLE),
+        .VRF_PREFETCH(VRF_PREFETCH),
+        .RCTX_SWITCH(RCTX_SWITCH),
+        .LSU_INFLIGHT(LSU_INFLIGHT),
+        .FPU_OVERLAP(FPU_OVERLAP),
+        .RSLICE(RSLICE),
+        .RPAIR(RPAIR),
+        .MTX_ABUF(MTX_ABUF),
+        .HAS_TENSOR_XPOSE(HAS_TENSOR_XPOSE),
         .WORDS(WORDS),
         .ADDR_W(ADDR_W),
         .ADDR_BITS(ADDR_BITS)

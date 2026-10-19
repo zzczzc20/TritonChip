@@ -57,6 +57,13 @@ same bound formulas and scoring library (`tools/r38/archbench`).
   launch's region of interest (`launch_accept_to_core_idle`) in device cycles.
   Programs of a grid execute one after another (`serial-grid`), so this is not
   the makespan of a concurrent device.
+- **Who counts.** A record carries the shell's own count (`done_cycles`). Where
+  the device under test may have been changed by whoever is being measured, as
+  in the agent harness, device time is instead the platform's count: from the
+  edge that accepts the launch to the first edge that sees its completion, kept
+  by the observer in `tb/device/tnca_device.v` (`+observe=`). The two differ by
+  the shell's handshake, a few cycles per launch, so scores compare only counts
+  of one kind.
 - **Host transfers** are reported separately and are not device time. In Stage 1
   every launch uploads and downloads its argument storages.
 - **Backend** is selected by `TNCA_BACKEND`. `sim-file` and `fpga-u50-sim`

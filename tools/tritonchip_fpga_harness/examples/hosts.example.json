@@ -1,0 +1,30 @@
+{
+  "schema_version": 1,
+  "description": "An example: the Vivado flow on a build server, the card on another. Copy it outside the repository, e.g. ~/.config/tritonchip-fpga-harness/hosts.json, and fill in your own servers. Every value is one shell-safe token.",
+  "hosts": {
+    "build": {
+      "description": "Vivado/Vitis and the U280 platform; no card. Python 3.9 or later.",
+      "ssh": "fpga-build",
+      "roles": ["build"],
+      "python": "/opt/python3.9/bin/python3",
+      "workspace": "/data/fpga/tritonchip",
+      "state_dir": "/data/fpga/tritonchip-harness",
+      "vitis_root": "/opt/Xilinx/Vitis/2022.2",
+      "platforms_root": "/opt/xilinx/platforms",
+      "environment": {
+        "PATH": "/opt/Xilinx/Vivado/2022.2/bin:/opt/Xilinx/Vitis/2022.2/bin:/usr/local/bin:/usr/bin:/bin"
+      }
+    },
+    "card": {
+      "description": "The card, XRT, and the ArchBench interpreter (PyTorch, Triton, tnca).",
+      "ssh": "fpga-card",
+      "roles": ["board"],
+      "python": "/usr/bin/python3",
+      "workspace": "/home/fpga/tritonchip",
+      "state_dir": "/home/fpga/tritonchip-harness",
+      "environment": {
+        "TORCH_PYTHON": "/home/fpga/venv/bin/python"
+      }
+    }
+  }
+}

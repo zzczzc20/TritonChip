@@ -125,6 +125,7 @@ def main(argv: list[str] | None = None) -> int:
     pl.add_argument("--poll", type=float, default=60.0, help="seconds between status polls")
     pl.add_argument("--skip-board", action="store_true", help="build only")
     pl.add_argument("--build-run", help="a build already started or finished on the build host: attach to it instead of submitting; a board stage is repeated or attached to")
+    pl.add_argument("--run-id", help="fixed ID for a new build, so an external controller can cancel or reconcile it")
     pl.add_argument("--no-sync", action="store_true", help="the checkouts are already on the servers")
     pl.add_argument("--ssh-binary", default="ssh")
     pl.add_argument("--output", type=Path, help="also write the record here")
@@ -219,7 +220,8 @@ def main(argv: list[str] | None = None) -> int:
                 local_repo=root, hosts=load_hosts(args.hosts), manifest=load_json(args.manifest),
                 build_host=args.build_host, board_host=args.board_host, adapter=args.adapter,
                 timeout=args.timeout, poll_s=args.poll, skip_board=args.skip_board,
-                build_run=args.build_run, do_sync=not args.no_sync, ssh_binary=args.ssh_binary,
+                build_run=args.build_run, run_id=args.run_id,
+                do_sync=not args.no_sync, ssh_binary=args.ssh_binary,
             )
             if args.output:
                 args.output.parent.mkdir(parents=True, exist_ok=True)

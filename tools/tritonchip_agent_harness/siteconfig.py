@@ -63,6 +63,8 @@ class Site:
     repository: Optional[Path] = None  # the TritonChip clone workspaces are exported from
     # The FPGA service's build worker: {"ssh", "workdir", "vivado_settings", "ro_binds", "threads", "part"}
     fpga_worker: Optional[dict] = None
+    # Optional split-host full FPGA pipeline for the in-run fpga-slow service.
+    fpga_pipeline: Optional[dict] = None
 
     def account(self, label: str) -> Account:
         if label not in self.accounts:
@@ -94,7 +96,7 @@ def load_site(path: Optional[Path] = None) -> Site:
     except (OSError, json.JSONDecodeError) as exc:
         raise SiteError(f"cannot read site configuration {path}: {exc}") from exc
     _keys(str(path), value, {"schema", "provider", "images", "resources", "state_dir", "network", "accounts"},
-          {"repository", "fpga_worker"})
+          {"repository", "fpga_worker", "fpga_pipeline"})
     if value["schema"] != SCHEMA:
         raise SiteError(f"{path}: schema must be {SCHEMA}")
     if value["provider"] != "docker":
@@ -169,6 +171,22 @@ def load_site(path: Optional[Path] = None) -> Site:
         if not isinstance(worker.get("ro_binds", []), list):
             raise SiteError("fpga_worker.ro_binds must be a list of paths")
 
+    pipeline = value.get("fpga_pipeline")
+    if pipeline is not None:
+        _keys("fpga_pipeline", pipeline, {"hosts", "build_host"},
+              {"board_host", "allow_candidate_host_code"})
+        hosts = _path(pipeline["hosts"], "fpga_pipeline.hosts")
+        if not all(isinstance(pipeline[k], str) and pipeline[k] for k in ("build_host",)):
+            raise SiteError("fpga_pipeline.build_host must be a non-empty name")
+        board_host = pipeline.get("board_host")
+        if board_host is not None and (not isinstance(board_host, str) or not board_host):
+            raise SiteError("fpga_pipeline.board_host must be a non-empty name")
+        allow_code = pipeline.get("allow_candidate_host_code", False)
+        if not isinstance(allow_code, bool):
+            raise SiteError("fpga_pipeline.allow_candidate_host_code must be boolean")
+        pipeline = {"hosts": hosts, "build_host": pipeline["build_host"],
+                    "board_host": board_host, "allow_candidate_host_code": allow_code}
+
     return Site(
         path=path, provider=value["provider"], images=dict(images),
         cpus=float(res["cpus"]), memory=res["memory"], pids=res["pids"],
@@ -177,6 +195,7 @@ def load_site(path: Optional[Path] = None) -> Site:
         routes=dict(routes), accounts=accounts,
         repository=_path(value["repository"], "repository") if value.get("repository") else None,
         fpga_worker=dict(worker) if worker else None,
+        fpga_pipeline=pipeline,
     )
 
 

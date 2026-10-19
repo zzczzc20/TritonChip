@@ -8,9 +8,9 @@ side. One JSON line in, one JSON line out.
     submit score         the hidden validation set, in simulation, measured the
                          way the final evaluator measures (P2.1 included); the
                          agent sees an aggregate only (README section 6.4)
-    submit fpga-quick    out-of-context synthesis and timing of the device on
-                         the build worker (fpga_quick.py); the agent sees its
-                         own design's timing and utilisation
+    submit fpga-quick    out-of-context synthesis and timing of the device
+    submit fpga-slow     full link, optionally followed by validation-set board
+                         measurement, if both task and site enable it
     status, result, budget
 
 A request is a snapshot: the same gate as the final evaluation, so only
@@ -25,6 +25,7 @@ results the agent does not see, go into the run record.
 from __future__ import annotations
 
 import json
+import secrets
 import shutil
 import socketserver
 import tempfile
@@ -33,12 +34,12 @@ import time
 from pathlib import Path
 from typing import Callable, Optional
 
-from . import evaluator, fpga_quick, provider
+from . import evaluator, fpga_quick, fpga_slow, provider
 from .siteconfig import Site
 from .task import Task
 from .workspace import apply_candidate, export, gate
 
-SERVICES = ("score", "fpga-quick")
+SERVICES = ("score", "fpga-quick", "fpga-slow")
 # What of an FPGA result the agent may see: all of it is its own design's.
 FPGA_VISIBLE = ("status", "profile", "period_ns", "part", "wns_ns", "tns_ns", "failing_endpoints",
                 "total_endpoints", "fmax_est_mhz", "utilization", "worst_paths", "errors", "seconds")
@@ -58,7 +59,12 @@ class Broker:
         self.fpga_left = float(fq.get("minutes", 0)) * 60.0
         self.fpga_job = float(fq.get("job_minutes", 30)) * 60.0
         self.period = float(fq.get("period_ns", 10.0))
-        self.runners: dict = runners or {"score": self._run_score, "fpga-quick": self._run_fpga}
+        fs = cfg.get("fpga_slow") or {}
+        self.slow_left = float(fs.get("minutes", 0)) * 60.0
+        self.slow_job = float(fs.get("job_minutes", 0)) * 60.0
+        self.slow_mode = fs.get("mode", "board")
+        self.runners: dict = runners or {"score": self._run_score, "fpga-quick": self._run_fpga,
+                                         "fpga-slow": self._run_slow}
         self.jobs: dict = {}
         self.busy: dict = {}
         self.lock = threading.Lock()
@@ -101,6 +107,8 @@ class Broker:
             job["note"] = "still running when the agent stopped; its result is not kept"
             if job["service"] == "fpga-quick" and self.site.fpga_worker:
                 fpga_quick.cancel(self.site.fpga_worker, job["remote_id"])
+            elif job["service"] == "fpga-slow" and getattr(self.site, "fpga_pipeline", None):
+                job["cleanup"] = fpga_slow.cancel(job, self.site.fpga_pipeline)
             else:
                 for name in provider.docker("ps", "-a", "--format", "{{.Names}}", check=False).stdout.split():
                     if name.startswith(job["containers"]):
@@ -131,6 +139,8 @@ class Broker:
         return {"score_requests_left": self.score_left,
                 "fpga_minutes_left": round(self.fpga_left / 60.0, 1),
                 "fpga_minutes_per_request": round(self.fpga_job / 60.0, 1),
+                "fpga_slow_minutes_left": round(self.slow_left / 60.0, 1),
+                "fpga_slow_minutes_per_request": round(self.slow_job / 60.0, 1),
                 "busy": sorted(self.busy)}
 
     def submit(self, service) -> dict:
@@ -141,7 +151,7 @@ class Broker:
             if refused:
                 return {"refused": refused, **self.budget()}
             n = len(self.jobs) + 1
-            job_id = f"{'s' if service == 'score' else 'f'}{n}"
+            job_id = f"{'s' if service == 'score' else 'f' if service == 'fpga-quick' else 'l'}{n}"
             job_dir = self.dir / job_id
             self.busy[service] = job_id
         g = gate(self.repo, self.task.base_commit, self.task.hide, self.task.design, self.workspace,
@@ -155,9 +165,17 @@ class Broker:
                 self.busy.pop(service, None)
             return {"refused": "the snapshot cannot be measured", "rejected": g["rejected"][:20] or problems,
                     "snapshot": snapshot, **self.budget()}
+        if (service == "fpga-slow" and self.slow_mode == "board" and fpga_slow.host_code_paths(candidate)
+                and not self.site.fpga_pipeline.get("allow_candidate_host_code", False)):
+            with self.lock:
+                self.busy.pop(service, None)
+            return {"refused": "the card host is not configured for candidate host code; "
+                    "use a hardware-only snapshot or an isolated card host", "snapshot": snapshot, **self.budget()}
         job = {"id": job_id, "service": service, "state": "queued", "submitted": time.time(),
                "snapshot": snapshot, "containers": f"tnca-svc-{self.run_id}-{job_id}",
-               "remote_id": f"tnca-fpga-{self.run_id}-{job_id}"}
+               "remote_id": f"tnca-{secrets.token_hex(8)}"}
+        if service == "fpga-slow":
+            job["mode"] = self.slow_mode
         with self.lock:
             if service == "score":
                 self.score_left -= 1
@@ -169,6 +187,8 @@ class Broker:
     def _refusal(self, service: str) -> Optional[str]:
         if service in self.busy:
             return f"a {service} request is already running ({self.busy[service]}); one at a time"
+        if service.startswith("fpga-") and any(s.startswith("fpga-") for s in self.busy):
+            return "another FPGA request is running; one at a time across both tiers"
         if service == "score" and self.score_left <= 0:
             return "no scoring requests left"
         if service == "fpga-quick":
@@ -177,6 +197,16 @@ class Broker:
             if self.fpga_left < self.fpga_job:
                 return (f"an FPGA request may take up to {self.fpga_job / 60:.0f} min and "
                         f"{self.fpga_left / 60:.1f} min of FPGA time is left")
+        if service == "fpga-slow":
+            if not (self.task.services or {}).get("fpga_slow"):
+                return "this task does not enable the FPGA slow service"
+            if not getattr(self.site, "fpga_pipeline", None):
+                return "this site has no FPGA pipeline"
+            if self.slow_mode == "board" and not self.site.fpga_pipeline.get("board_host"):
+                return "the FPGA pipeline has no board host"
+            if self.slow_left < self.slow_job:
+                return (f"an FPGA slow request may take up to {self.slow_job / 60:.0f} min and "
+                        f"{self.slow_left / 60:.1f} min is left")
         return None
 
     def _run(self, job: dict, candidate: Optional[Path], job_dir: Path) -> None:
@@ -229,6 +259,18 @@ class Broker:
         visible["note"] = FPGA_NOTE
         return visible, r
 
+    def _run_slow(self, job: dict, candidate: Optional[Path], job_dir: Path) -> tuple:
+        started = time.monotonic()
+        seconds = int(min(self.slow_job, self.slow_left))
+        try:
+            return fpga_slow.run(self.site, self.repo, self.task, candidate, job_dir,
+                                 job, seconds, board=self.slow_mode == "board")
+        finally:
+            charged = min(seconds, time.monotonic() - started)
+            with self.lock:
+                job["charged_seconds"] = round(charged, 1)
+                self.slow_left = max(0.0, self.slow_left - charged)
+
     # -- views ---------------------------------------------------------------------------
     def _summary(self, job: dict) -> dict:
         return {"id": job["id"], "service": job["service"], "state": job["state"],
@@ -247,7 +289,8 @@ class Broker:
     def record(self) -> dict:
         """For the run record: every request, what the agent saw, and what it did not."""
         with self.lock:
-            jobs = [{k: v for k, v in j.items() if k not in ("thread",)} for j in self.jobs.values()]
+            jobs = [{k: v for k, v in j.items() if k != "thread" and not k.startswith("_")}
+                    for j in self.jobs.values()]
         return {"config": self.task.services, "left": self.budget(), "requests": jobs}
 
 

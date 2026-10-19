@@ -321,6 +321,7 @@ def run_pipeline(
     poll_s: float = 60.0,
     skip_board: bool = False,
     build_run: str | None = None,
+    run_id: str | None = None,
     do_sync: bool = True,
     ssh_binary: str = "ssh",
     sleep: Callable[[float], None] = time.sleep,
@@ -379,6 +380,10 @@ def run_pipeline(
         return None if timeout is None else time.time() + commands * timeout + extra + 3600
 
     try:
+        if run_id and build_run:
+            raise PipelineError("run_id and build_run cannot both be set")
+        if run_id:
+            check_run_id(run_id)
         if build_run:
             check_run_id(build_run)
         same_state = bool(card and card.ssh == builder.ssh and card.state_dir == builder.state_dir)
@@ -413,7 +418,7 @@ def run_pipeline(
             # The controller names the run, so a submit repeated after a lost
             # answer attaches to the build the first one started.
             request = dict(base, operation="submit", detach=True, skip_board=True,
-                           run_id=time.strftime("%Y%m%dT%H%M%SZ", time.gmtime()) + "-" + uuid.uuid4().hex[:8])
+                           run_id=run_id or time.strftime("%Y%m%dT%H%M%SZ", time.gmtime()) + "-" + uuid.uuid4().hex[:8])
             if timeout:
                 request["timeout"] = timeout
             started = step("build:submit", lambda: _remote_value(

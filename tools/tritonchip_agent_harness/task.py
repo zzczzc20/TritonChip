@@ -63,11 +63,29 @@ def load_task(path: Path) -> Task:
     for k in ("profile", "validation", "final", "jobs", "timeout_seconds"):
         if k not in ev:
             raise TaskError(f"{path}: evaluation.{k} is missing")
+    services = dict(v.get("services") or {})
+    unknown_services = set(services) - {"score", "fpga_quick", "fpga_slow"}
+    if unknown_services:
+        raise TaskError(f"{path}: unknown services {sorted(unknown_services)}")
+    slow = services.get("fpga_slow")
+    if slow is not None:
+        if not isinstance(slow, dict) or set(slow) != {"minutes", "job_minutes", "mode"}:
+            raise TaskError(f"{path}: services.fpga_slow needs minutes, job_minutes and mode")
+        for key in ("minutes", "job_minutes"):
+            if (not isinstance(slow[key], (int, float)) or isinstance(slow[key], bool)
+                    or slow[key] <= 0):
+                raise TaskError(f"{path}: services.fpga_slow.{key} must be positive")
+        if slow["job_minutes"] > slow["minutes"]:
+            raise TaskError(f"{path}: fpga_slow.job_minutes exceeds its total budget")
+        if slow["mode"] not in ("build", "board"):
+            raise TaskError(f"{path}: services.fpga_slow.mode must be build or board")
+        if int(v["budget"]["wall_seconds"]) < slow["job_minutes"] * 60:
+            raise TaskError(f"{path}: agent wall budget is shorter than one FPGA slow request")
     ref = path.parent / v["reference"] if v.get("reference") else None
     return Task(task_id=v["task_id"], kind=v["kind"], base_commit=v["base_commit"], design=tuple(v["design"]),
                 evaluator_owned=tuple(v.get("evaluator_owned", ())), hide=tuple(v["hide"]), instruction=(path.parent / v["instruction"]).read_text(encoding="utf-8"),
                 reference=ref, wall_seconds=int(v["budget"]["wall_seconds"]), evaluation=dict(ev),
-                services=dict(v.get("services") or {}),
+                services=services,
                 path=path.resolve(), sha256=hashlib.sha256(raw).hexdigest())
 
 
@@ -99,7 +117,7 @@ def _services_text(cfg: dict) -> str:
     """How the agent may ask the evaluator for a measurement, and how much it may ask."""
     if not cfg:
         return ""
-    score, fpga = cfg.get("score") or {}, cfg.get("fpga_quick") or {}
+    score, fpga, slow = cfg.get("score") or {}, cfg.get("fpga_quick") or {}, cfg.get("fpga_slow") or {}
     lines = ["", "", "## Measurements you can ask for", "",
              "From your shell, `tnca-service` asks the evaluator to measure a snapshot of your working directory "
              "the way the final evaluation will (only changes under the paths it takes count). Whether and when "
@@ -118,6 +136,16 @@ def _services_text(cfg: dict) -> str:
                      f"{float(fpga.get('minutes', 0)):g} minutes of FPGA time in total, charged as used; one request "
                      f"at a time, and one that could run past what is left is refused. Post-synthesis timing is "
                      f"optimistic: routing adds delay.")
+    if slow:
+        action = ("full implementation and validation-set board measurement" if slow["mode"] == "board"
+                  else "full implementation and routed timing, without the board stage")
+        lines.append(f"- `tnca-service submit fpga-slow`: {action}, using the FPGA harness. "
+                     f"One request may take up to {float(slow['job_minutes']):g} minutes; the total slow-tier "
+                     f"budget is {float(slow['minutes']):g} minutes, charged as used. The request runs in the "
+                     f"background; it is cancelled if your agent run ends before it finishes. "
+                     f"If a board stage would execute candidate host code, the site must explicitly permit it. "
+                     f"You see build/timing information" +
+                     (" and only an aggregate for the hidden validation set." if slow["mode"] == "board" else "."))
     lines += ["- `tnca-service budget`, `tnca-service status [ID]`, `tnca-service result ID`, "
               "`tnca-service wait ID`: what is left, and the results."]
     return "\n".join(lines)

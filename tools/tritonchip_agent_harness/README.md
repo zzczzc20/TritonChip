@@ -113,7 +113,7 @@ learns in its sandbox.
                          │ toolchain + simulator: own test cases  │──── offline: model API only
                          │ tnca-service CLI ──┐                   │     (gateway, §8)
                          └────────────────────┼───────────────────┘
-                                              │ one socket, budgeted (planned)
+                                              │ one socket, budgeted (built)
                                               ▼
                                      ┌──── submission gate ────┐
                                      │ design paths only        │
@@ -237,7 +237,7 @@ The task and the evaluator already carry both sets.*
 | Set | Agent sees its points? | Agent gets results? | Measured by |
 |---|---|---|---|
 | The agent's own test cases | yes, it wrote them | yes, all of it | its own sandbox |
-| **Validation set** (hidden) | no | **aggregates only**, a budgeted number of times | the scoring service; the slow tier's board stage (both planned) |
+| **Validation set** (hidden) | no | **aggregates only**, a budgeted number of times | the scoring service; the optional slow tier's board stage |
 | **Final set** (hidden) | no | **never** | the final evaluator, after the agent has stopped |
 
 **Why two hidden sets.** A set whose score the agent can request repeatedly is
@@ -357,8 +357,9 @@ file per operator, outside the repository, for example
 resources, the state directory, network routes and an optional upstream proxy,
 the repository workspaces are exported from, and for each account a label, its
 CLI, its auth mode, the *path* to its credential, its hosts and its models. The
-repository ships only a template (`examples/site.json`). The build worker and
-the card host will be named here too (planned).
+repository ships only a template (`examples/site.json`). The optional
+`fpga_worker` names the quick-tier build worker; `fpga_pipeline` points to the
+separate FPGA harness `hosts.json` and names its build and card roles (§12.4).
 
 `doctor` parses each credential file but keeps and reports only its size, key
 names and value lengths; the file must belong to the operator, with no group or
@@ -748,7 +749,7 @@ It listens on a Unix socket in a short directory of its own (a socket's path is
 limited to about 100 bytes, and a run directory is longer), mounted read-only
 into the sandbox at `/run/tnca-service`. `tnca-service` (`service_cli.py`,
 mounted as one read-only file at `/usr/local/bin/tnca-service`) is the agent's
-side: `budget`, `submit score`, `submit fpga-quick`, `status [ID]`,
+side: `budget`, `submit score`, `submit fpga-quick`, `submit fpga-slow`, `status [ID]`,
 `result ID`, `wait ID`. One JSON line in, one out.
 
 - **A request is a snapshot, not files.** The broker passes the workspace through the same gate as the final evaluation, so only changes under the design paths count. A rejected snapshot, or RTL that fails the check of §11, is refused before anything is charged.
@@ -772,7 +773,7 @@ syllabus says by how much, and the limit is enforced** (decided 2026-10-15).
 | Tier | What runs | About | Returns | State |
 |---|---|---|---|---|
 | **Quick** | out-of-context synthesis and timing of the whole device (`fpga_quick.py`): the repository's own `flow/synth/vivado_ooc_timing.tcl` on the candidate's hardware, for the profile the run is scored on | 25 min | status; worst slack at the target period and the frequency it implies; the worst paths, as start and end points in the agent's own RTL; utilisation (LUT, FF, DSP, BRAM, URAM) | in progress |
-| **Slow** | implementation through the FPGA harness (package, link, judged timing and DRC), then a board stage on the validation set | hours | timing closure; utilisation; the board stage's aggregate | planned |
+| **Slow** | implementation through the FPGA harness (package, link, judged timing and DRC); optional board stage on the validation set | hours | routed timing verdict and clock; if enabled, the board stage's validation aggregate | built, opt-in per task and site |
 
 **The quick tier times the agent's configuration** of the scored profile
 (§10.3). The FPGA top's parameters are still written by hand, set to
@@ -791,6 +792,49 @@ profile's worth is longer than a file name may be.
 - On the worker the job runs under `timeout`, so it ends at its deadline whatever happens to the harness.
 - A job still running when the agent stops is stopped (`pkill` on the worker, with a pattern that cannot match its own command line) and charged.
 - Queue waits are not charged; the run's wall clock goes on.
+
+**Enable the slow tier.** `tasks/r39-v5-main-pilot/task.json` keeps its current
+45-minute agent budget and does not enable this hours-long service. For a task
+that can wait for full implementation, set its wall budget to at least one
+slow request and add, for example:
+
+```json
+"budget": {"wall_seconds": 14400},
+"services": {
+  "fpga_slow": {"mode": "build", "minutes": 180, "job_minutes": 180}
+}
+```
+
+`mode: "build"` returns the full-link result without touching the card.
+`mode: "board"` also runs conformance and hidden validation points on the
+card. Add this block to the operator's private `site.json` (the host names
+must exist in the FPGA harness's separate `hosts.json`):
+
+```json
+"fpga_pipeline": {
+  "hosts": "/absolute/path/to/hosts.json",
+  "build_host": "builder",
+  "board_host": "card",
+  "allow_candidate_host_code": false
+}
+```
+
+The agent sees `tnca-service submit fpga-slow` in its task instructions and
+chooses whether to call it. The broker gates a snapshot, runs one FPGA
+request across both tiers at a time, charges elapsed time against the slow
+budget, and cancels detached remote work if the agent stops or the request
+times out. A build failure and routed timing concern the candidate's own
+design. Board point names, cycles, records and logs remain in the private run
+record; the agent gets only a verdict and pass count. The final point set is
+never sent to the in-loop board stage.
+
+The card host currently lacks the planned isolation for candidate compiler
+code. A board request with candidate host-code changes is refused by default;
+an operator may set `allow_candidate_host_code: true` only on a host prepared
+to run that code. Hardware-only snapshots can use board mode with the pinned
+base compiler. The shared card still needs a scheduled slot and cleanup
+between owners (§12.5). This service has mock split-host tests; it has not
+yet completed an in-loop run on the actual FPGA hosts.
 
 **Synthesis estimates are optimistic.** Before routing, delays leave out most
 of the wire: on this design the routed worst path was about 1.6 times the
@@ -996,7 +1040,7 @@ Status: **done** (built and verified), **in progress** (being built now),
 | Services | Scoring service | done | §19: 48 s, the aggregate equal to the reference's validation numbers |
 | Services | FPGA quick tier: license and isolation feasibility | done | OOC synthesis with no license and no network, with a control (§12.5) |
 | Services | FPGA quick tier service: bubblewrap on the build worker, the agent's configuration, an enforced budget | done | §19: `ok` in 11.8 min, +2.313 ns at 10 ns |
-| Services | FPGA slow tier | planned | waits on O14; the FPGA harness can now build on the build worker and measure on the card host |
+| Services | FPGA slow tier | built, opt-in | `fpga_slow.py`, `services.py`, split-host tests; build-only or validation-board mode; actual in-loop FPGA run pending a configured site and card slot |
 | FPGA harness | The Vivado flow on the build worker, the board stage on the card host (`pipeline`, `sync`, `import`, host tool roots) | done | `tools/tritonchip_fpga_harness/tests/test_split_hosts.py`; between the two servers with a played build and no load; a 2022.2 build loaded on the card by hand (§12.5) |
 | FPGA harness | `pipeline` between the two servers, a real candidate | done | 2026-10-17: the base hardware (v2, 100 MHz) linked on the build worker in 105 min, ap_clk WNS +0.138 ns; loaded on the card, conformance 5/5, ArchBench tiny 27/27, every point's cycles equal to the 2023.2 build's (both compiled with the card host's installed tree) |
 | FPGA harness | The board stage compiles with the checkout's runtime and compiler, and refuses an interpreter that imports them from elsewhere | done | `969201b`; found by the v5 base certification (§19) |

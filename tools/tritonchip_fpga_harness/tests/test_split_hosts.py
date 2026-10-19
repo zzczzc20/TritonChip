@@ -511,6 +511,14 @@ class PipelineRecovery(unittest.TestCase):
         bad = self.pipe(self.manifest(), build_run="../../etc")
         self.assertEqual(bad["status"], "PIPELINE_FAIL")
 
+    def test_controller_can_name_a_new_run_for_budgeted_cancellation(self) -> None:
+        record = self.pipe(self.manifest(), run_id="agent-slow-1", skip_board=True)
+        self.assertEqual(record["status"], "PASS", record.get("error"))
+        self.assertEqual(record["run_id"], "agent-slow-1")
+        self.assertTrue((self.tmp / "builder-state" / "runs" / "agent-slow-1" / "run.json").is_file())
+        invalid = self.pipe(self.manifest(), run_id="../escape", skip_board=True)
+        self.assertEqual(invalid["status"], "PIPELINE_FAIL")
+
     def test_a_flaky_connection_is_retried(self) -> None:
         # Every third connection fails as a slow jump host does.
         flaky = self.tmp / "flaky-ssh"

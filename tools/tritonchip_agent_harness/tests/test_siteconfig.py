@@ -27,6 +27,8 @@ class SiteTest(unittest.TestCase):
     def test_example_loads_and_names_no_credential(self):
         site = load_site(EXAMPLE)
         self.assertEqual(set(site.accounts), {"claude", "codex", "glm"})
+        self.assertEqual(site.fpga_pipeline["build_host"], "build")
+        self.assertFalse(site.fpga_pipeline["allow_candidate_host_code"])
         text = EXAMPLE.read_text()
         for word in ("sk-ant", "token\":", "api_key\":", "password"):
             self.assertNotIn(word, text)
@@ -39,6 +41,7 @@ class SiteTest(unittest.TestCase):
             (lambda v: v["accounts"][0].update(label="Bad Label"), "label"),
             (lambda v: v["accounts"][0].update(hosts=["unrouted.example.com"]), "hosts"),
             (lambda v: v["network"].update(upstream_proxy="http://user:pw@127.0.0.1:1"), "credentials"),
+            (lambda v: v["fpga_pipeline"].update(allow_candidate_host_code="yes"), "must be boolean"),
         ]:
             v = json.loads(json.dumps(base))
             mutate(v)

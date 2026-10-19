@@ -72,5 +72,11 @@
     ],
     "threads": 6,
     "part": "xcu280-fsvh2892-2L-e"
+  },
+  "fpga_pipeline": {
+    "hosts": "~/.config/tritonchip-fpga-harness/hosts.json",
+    "build_host": "build",
+    "board_host": "card",
+    "allow_candidate_host_code": false
   }
 }

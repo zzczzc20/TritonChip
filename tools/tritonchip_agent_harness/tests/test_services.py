@@ -41,7 +41,8 @@ class Services(unittest.TestCase):
         self.task = Task(task_id="t", kind="cross-layer", base_commit=base, design=("compiler/", "rtl/"),
                          evaluator_owned=(), hide=(), instruction="", reference=None, wall_seconds=60,
                          evaluation={"profile": "core-sim", "validation": ["p"], "final": ["q"]},
-                         services={"score": {"requests": 2}, "fpga_quick": {"minutes": 50, "job_minutes": 20}},
+                         services={"score": {"requests": 2}, "fpga_quick": {"minutes": 50, "job_minutes": 20},
+                                   "fpga_slow": {"minutes": 360, "job_minutes": 180, "mode": "board"}},
                          path=self.repo, sha256="")
         self.gate_open = threading.Event()
         self.seen = []
@@ -53,9 +54,12 @@ class Services(unittest.TestCase):
                 return {"ok": kind}, {"full": kind}
             return run
 
-        site = types.SimpleNamespace(fpga_worker={"ssh": "worker", "workdir": "/w", "vivado_settings": "/s"})
+        site = types.SimpleNamespace(fpga_worker={"ssh": "worker", "workdir": "/w", "vivado_settings": "/s"},
+                                     fpga_pipeline={"hosts": Path("/nonexistent"), "build_host": "build",
+                                                    "board_host": "card", "allow_candidate_host_code": False})
         self.broker = Broker(site, self.repo, self.task, self.ws, Path(tempfile.mkdtemp()) / "run",
-                             runners={"score": slow("score"), "fpga-quick": slow("fpga")})
+                             runners={"score": slow("score"), "fpga-quick": slow("fpga"),
+                                      "fpga-slow": slow("slow")})
 
     def tearDown(self):
         self.gate_open.set()
@@ -85,6 +89,26 @@ class Services(unittest.TestCase):
     def test_fpga_time_must_cover_a_whole_request(self):
         self.broker.fpga_left = 15 * 60
         self.assertIn("may take up to 20 min", self.broker.submit("fpga-quick")["refused"])
+        self.broker.slow_left = 120 * 60
+        self.assertIn("may take up to 180 min", self.broker.submit("fpga-slow")["refused"])
+
+    def test_slow_request_is_agent_chosen_and_excludes_concurrent_fpga_work(self):
+        first = self.broker.submit("fpga-slow")
+        self.assertEqual((first["id"], first["fpga_slow_minutes_left"]), ("l1", 360.0))
+        self.assertIn("another FPGA request", self.broker.submit("fpga-quick")["refused"])
+        self.gate_open.set()
+        self.wait_done("l1")
+        self.assertEqual(self.broker.handle({"op": "result", "id": "l1"})["result"], {"ok": "slow"})
+
+    def test_board_request_refuses_candidate_host_code_without_site_opt_in(self):
+        (self.ws / "compiler/a.py").write_text("a = 2\n")
+        reply = self.broker.submit("fpga-slow")
+        self.assertIn("card host is not configured", reply["refused"])
+        self.assertEqual(reply["fpga_slow_minutes_left"], 360.0)
+        self.broker.site.fpga_pipeline["allow_candidate_host_code"] = True
+        self.assertEqual(self.broker.submit("fpga-slow")["id"], "l1")
+        self.gate_open.set()
+        self.wait_done("l1")
 
     def test_a_snapshot_with_forbidden_rtl_is_refused_and_not_charged(self):
         (self.ws / "rtl/core/x.v").write_text('module x; initial $system("id"); endmodule\n')

@@ -346,7 +346,7 @@ footer { font-size: 13px; color: var(--muted); border-top: 1px solid var(--line)
     <thead><tr><th>档</th><th>执行什么</th><th class="nowrap">大约</th><th>返回</th><th>状态</th></tr></thead>
     <tbody>
       <tr><td><strong>快档</strong></td><td>整器件 out-of-context 综合 + 时序（仓库自己的 <code>vivado_ooc_timing.tcl</code>），按 agent 选定的配置传参数</td><td class="nowrap">约 12 分钟（实测）</td><td>状态；目标周期下的最差 slack 和推出的频率；最差路径（agent 自己 RTL 里的起止点）；资源 LUT/FF/DSP/BRAM/URAM</td><td><span class="chip ok">done</span></td></tr>
-      <tr><td><strong>慢档</strong></td><td>经 FPGA harness 实现（package、link、判定时序与 DRC），再在验证集上做上板阶段</td><td class="nowrap">数小时</td><td>时序收敛（WNS、TNS、失败端点）；资源；上板阶段只给汇总，不给逐点记录和日志</td><td><span class="chip plan">planned</span></td></tr>
+      <tr><td><strong>慢档</strong></td><td>经 FPGA harness 实现（package、link、判定时序与 DRC）；按 task 配置选择是否在验证集上上板</td><td class="nowrap">数小时</td><td>布线后时序判定和时钟；上板阶段只给汇总，不给逐点记录和日志</td><td><span class="chip ok">built · opt-in</span></td></tr>
     </tbody>
   </table></div>
   <div class="cols">
@@ -360,7 +360,7 @@ footer { font-size: 13px; color: var(--muted); border-top: 1px solid var(--line)
     <div class="card"><div class="k">在哪里跑、怎么隔离</div><ul class="plain">
       <li><strong>build worker</strong>：所有构建，包括完整的 Vivado flow（package、link），用它自己的 Vitis 2022.2。快档每个任务一个 bubblewrap 沙盒：无网络，系统和 Vivado 只读，只有任务目录可写，没有 home（已实现）</li>
       <li><strong>两台之间怎么交接</strong>：FPGA harness 的 <code>pipeline</code>。两边各自从 git bundle 建出同一提交的干净 checkout；构建在 build worker 后台跑、轮询；轻量包（镜像、记录、布线报告）经协调机以 tar 流传到 card host，逐个文件核对 sha256 后才导入；再在 card host 上板。两台服务器之间不直连。上板失败可以用 <code>--build-run</code> 只重做上板，不重新 link（已实现；2026-10-17 真实候选跑通：base 硬件在 build worker 上 105 分钟 link 完，ap_clk WNS +0.138 ns；上卡后 conformance 5/5，ArchBench tiny 27/27，每个点的周期和 2023.2 构建的同一设计完全一致）</li>
-      <li><strong>card host</strong>：只做上板。候选的编译器在这里运行，所以放进沙盒：无网络、系统只读、只给卡的设备节点，看不到任何人的 home、harness 状态和编译缓存</li>
+      <li><strong>card host</strong>：只做上板。候选编译器可能在这里运行；预期的无网络、系统只读、设备节点最小化沙盒仍待实现。慢档默认拒绝含候选 host 代码的上板请求；仅在专用环境经 site 显式打开。</li>
       <li>卡是共享的：上板需要约定时间窗口（O14）；换人之前重新烧卡或清空显存，不让一个会话读到另一个会话留下的数据</li>
       <li>候选 RTL 先做检查：<code>`include</code>、<code>$readmem*</code>、<code>$fopen</code> 里不能有绝对路径或 <code>..</code></li>
     </ul></div>

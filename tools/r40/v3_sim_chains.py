@@ -74,6 +74,8 @@ def main():
     ap.add_argument('--python', default=sys.executable)
     ap.add_argument('--chain', action='append', choices=sorted(PLAN))
     ap.add_argument('--step', action='append', help='run only these steps of the selected chains')
+    ap.add_argument('--parallel', type=int, default=0,
+                    help='at most this many chains at once (each holds one simulator); default all')
     a = ap.parse_args()
     out = a.out.resolve()
     if out.exists():
@@ -81,7 +83,7 @@ def main():
     out.mkdir(parents=True)
     sys.path[:0] = [str(ROOT), str(ROOT / 'python'), str(ROOT / 'tools/r40')]
     from archbench.provenance import software_tree
-    chains = a.chain or sorted(PLAN)
+    chains = list(dict.fromkeys(a.chain)) if a.chain else sorted(PLAN)
     if a.step:
         known = {n for c in chains for n, _, _ in PLAN[c]}
         if set(a.step) - known:
@@ -157,7 +159,20 @@ def main():
                                ended_utc=datetime.datetime.now(datetime.timezone.utc).isoformat())
                     save()
 
-        workers = [threading.Thread(target=run_chain, args=(c,)) for c in chains]
+        # Chains start in the order given (longest first); --parallel bounds
+        # the simulators running at once on a shared host.
+        pending = list(chains)
+        state['parallel'] = a.parallel or len(chains)
+
+        def worker():
+            while True:
+                with lock:
+                    if not pending:
+                        return
+                    chain = pending.pop(0)
+                run_chain(chain)
+
+        workers = [threading.Thread(target=worker) for _ in range(state['parallel'])]
         for w in workers:
             w.start()
         for w in workers:

@@ -1,0 +1,10 @@
+{
+ "schema": "tnca-r40-v3-superseded-sim/1",
+ "software_tree": "files:bc5a778ebc5f4afebf6c1a9fbf3b2d8717cb02e118134ebbb73fb5a927fc8183",
+ "superseded_by": "files:fe1b5199db515440d2d3407aed61ef1eed5edb627e5baf9cda10be5a7198cf75 (doc/r40_v3/identity_amendment.json, commit f9da3d5)",
+ "runs": {
+  "bc5a_sim3": "all chains; passed: batch-1000 (fixed harness), online-sdpa-14 14/14, allocation-pressure, device-copy, frozen-attention-tiny, sdpa-configuration, lifetime, io-concurrency, child-exec, recovery, recovery-multicore-dma. residency-controls exit 1 = stale harness (first compiled call held Inductor's one-time _sfdp_init device copies), repaired in bc5a_sim4. replay-1000 and bucket-decode-64 exit -15 = stopped by the auditor operator at 08:02 UTC (5.5 h, unfinished) when the delivery tree moved to fe1b; not failures.",
+  "bc5a_sim4": "residency-controls with the repaired harness: PASS 6/6."
+ },
+ "use": "history only; tools/r40/v3_r40_0{2,8}_gates.py judge runs on the delivery tree, which these are not"
+}

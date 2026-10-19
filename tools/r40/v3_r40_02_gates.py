@@ -133,6 +133,8 @@ def sim_run(directories, steps):
         except Missing as exc:   # an unfinished run contributes nothing
             if 'still running' not in str(exc):
                 raise
+    if not states:
+        raise Missing(f'no finished delivery-tree simulation run among {[str(d) for d in directories]}')
     chosen, history = {}, {}
     for directory, state in states:
         for chain in state['chains'].values():

@@ -1,33 +1,54 @@
 # Current conditional delivery status — 2026-10-19
 
-Required gate delta on immutable product tree `44051ad9…d2436`:
-`R40-01.device`, `R40-01.mixed-device`, and `R40-05.multicore` pass their
-strict capability audits. This does not establish their performance gates.
-The original 24 chained graphs completed runtime transfer observation with
-positive staging/download controls; gate promotion still requires its auditor.
-The complete frozen generation model finished prefill512 plus 64 decode steps,
-with independent-reference agreement and zero steady tensor staging. Growing
-KV shapes still recompile, so the fixed-bucket decode gate remains open.
+Required gate delta: **no new final-candidate gate promotion**. Historical
+`R40-01.device`, `R40-01.mixed-device`, and `R40-05.multicore` pass on immutable
+product tree `44051ad9…d2436`. The complete original graphs3/model zero-transfer
+observations now pass the strict residency auditor on that same historical
+source. The repaired runtime has product identity `80dd1a82…b6e4ca` and requires
+fresh matching evidence. See `required_gate_ledger_reserved_1a7c643.json` for
+every required gate's blocker, direct evidence, next command and outcome branches.
 
-The qualified image is `a88ebdf5…c83083`, running at **90 MHz**, with routed
-setup WNS +0.016 ns and unchanged three-core/three-outlet hardware. 100 MHz
-failed and is not claimed. Both CUDA-host and no-CUDA-host full conformance
-reports are retained alongside the compressed complete model report and its
-manifest. CI run `39164382436` passed at `6bd07b7`.
+The qualified image remains `a88ebdf5…c83083`, at **90 MHz** with routed setup
+WNS +0.016 ns, three physical SLR cores and three outlets. 100 MHz failed and
+is not claimed. Both complete host conformance logs and the complete original
+prefill512/decode64 model report are retained with their original identities.
+CI run `39164382436` passed at `6bd07b7`; the current source needs its own CI.
 
-The immediate functional blocker is original large Llama: decode error 0.11417
-and prefill error 0.15730 exceed the unchanged 0.05 tolerance. The exact native
-input/state reference, computed on GB10, passes FP16-versus-FP32 (decode logits
-0.003801). Actual device allocation places `out.weight` across
-`[0x7fff0000, 0x7fff1000)`, which the RTL decodes as TMU MMIO. The allocator
-repair must exclude this page; original-graph replay must confirm causality.
-The expanded-output diagnostic remains diagnostic evidence only. Upstream
-failure stopped the formal performance queue before measurements began.
+## Original large-model failure and controlled allocator repair
 
-The user authorized a single justified v3 amendment on 2026-10-19. No v3
-contract has been frozen. The v2 lock, original shapes and tolerances remain
-unchanged; missing measurements remain `not-measured`. Any product repair
-requires new final-snapshot validation; earlier passes keep their old identity.
+Original large Llama decode error 0.11417 and prefill error 0.15730 exceeded
+the unchanged 0.05 tolerance. Exact native-host weights and inputs were checked
+against full FP32 references computed on GB10. Expanded-output diagnosis found
+all 16 layer outputs and KV correct; only logits failed. The actual output
+weight allocation crossed the TMU register page `[0x7fff0000, 0x7fff1000)`.
+Host BO writes bypass this decode, whereas core reads are intercepted as MMIO.
+
+Commit `1a7c643` excludes that page from code/heap allocation, free-space reuse,
+recovery and usable-capacity accounting. The original unmodified decode graph
+now passes both cold and steady calls: logits error **0.00271378**, new keys
+0.00221558 and new values 0.00232000. Original weights, inputs, shape, tolerance,
+image and operating clock were retained. All 363 original cold launches have
+the same order, grids and executable payloads. Eleven container hashes differ
+only in source-provenance fields; their payloads are byte-identical. Full
+container identities and verified comparisons are preserved rather than relabelled.
+
+Original prefill replay is running. Its success unlocks the serial repaired
+snapshot queue: actual-window probes, complete native77/HBM14/full frozen model,
+physical capability and host conformance, original large24, and all chained
+transfer observations. A failure stops the queue and preserves that stage.
+These functional runs do not establish a performance gate or fixed-bucket decode.
+The earlier formal performance queue stopped before measurements when large24
+failed; it did not produce performance evidence.
+
+## Contract decision
+
+The user authorized one workload-justified v3 amendment on 2026-10-19.
+`contract_review_20261019.json` records why **no additional relaxation is yet
+justified**: the numerical failure is repairable, fixed-bucket compilation remains
+useful, and missing implementations/measurements do not prove a performance
+threshold unreasonable. No v3 contract has been frozen. The v2 lock and all
+original shapes/tolerances remain unchanged. The existing user-authorized
+conditional 90 MHz qualification remains explicitly separate from 100 MHz.
 
 ## Archived implementation launch and prerequisite record
 

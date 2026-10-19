@@ -2,6 +2,25 @@
 
 合同见 `doc/r40_tasks_and_acceptance.md` 的 R40-04；本文记录实现与证据，不改合同。
 
+## Current NUCA address-map correction (2026-10-19)
+
+The NUCA TMU decoder intercepts device addresses `[0x7fff0000, 0x7fff1000)`
+before HBM translation. This is a **4 KiB reserved register page**, even when
+its address falls inside the allocated XRT BO window. Runtime allocation must
+never place or reuse a buffer across that page. The code and heap allocators
+exclude it, retain valid free prefixes, and preserve the exclusion after recovery.
+`Session.memory_stats.heap_capacity_bytes` subtracts intersecting reserved bytes;
+`heap_reserved_ranges` exposes the exact excluded intervals. Physical BO size
+and usable allocation capacity are distinct quantities.
+
+The original 16-layer large Llama output weight crossed this page. The allocator
+repair restores the original decode logits error from 0.11417 to 0.002714 on the
+same 90 MHz image, without changing executable payloads or the 0.05 tolerance.
+See `evidence/r40/v2/convergence/attempt03/reserved_original_decode_1a7c643_complete.json`
+and its artifact comparison. Original prefill and complete repaired-source
+regressions remain required. The sections below retain historical interface and
+validation records; their older image/capacity claims are not final signoff.
+
 ## 1. 接口：核心的数据口不变
 
 核心一直只有一个数据口（`tnca_shell` 的 mem_req / mem_rsp，见 `rtl/fpga/tnca_fpga_mem.v`）。它的语义是：

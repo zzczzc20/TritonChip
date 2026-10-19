@@ -60,6 +60,7 @@ def main():
     p.add_argument('--original-graph',action='store_true',help='Execute the original frozen model forward without extra boundary outputs')
     p.add_argument('--export-inputs',action='store_true',help='Export original native-host seed-0 inputs/state without device execution')
     p.add_argument('--data',type=Path,help='Exact native-host dataset for offloaded CPU reference')
+    p.add_argument('--inputs',type=Path,help='Byte-matched native input export; reuse an existing native weight dataset for another frozen point')
     p.add_argument('--xclbin',type=Path);p.add_argument('--image-sha256')
     p.add_argument('--software-tree',required=True)
     p.add_argument('--operating-clock-evidence',type=Path)
@@ -67,6 +68,7 @@ def main():
     a=p.parse_args()
     if a.prepare_cpu and a.export_inputs:p.error('CPU reference and export are separate modes')
     if a.data and not a.prepare_cpu:p.error('--data is only for the offloaded CPU reference')
+    if a.inputs and not (a.prepare_cpu and a.data):p.error('--inputs requires --prepare-cpu and --data')
     a.out.mkdir(parents=True,exist_ok=False)
     root=a.source_root.resolve();sys.path[:0]=[str(root),str(root/'python'),str(root/'compiler/python'),str(root/'tools/asm'),str(root/'tools/r40')]
     report=dict(status='incomplete',scope='Original full shape with extra observable boundaries; fusion may change; no gate promotion',required_gate_promotions=[],harness_sha256=hashlib.sha256(Path(__file__).read_bytes()).hexdigest())
@@ -90,11 +92,20 @@ def main():
         model,inputs=point.make(0);model.eval()
         if a.data:
             data=torch.load(a.data,map_location='cpu',weights_only=True)
-            assert data['identity']['point_sha256']==point.definition_sha256()
+            if not a.inputs:
+                assert data['identity']['point_sha256']==point.definition_sha256()
             assert data['identity']['software_tree']==a.software_tree
             model.load_state_dict(data['state'],strict=True);inputs=tuple(data['inputs'])
             report['native_dataset_sha256']=file_sha(a.data)
             del data
+        if a.inputs:
+            exported=torch.load(a.inputs,map_location='cpu',weights_only=True)
+            assert exported['identity']['point_sha256']==point.definition_sha256()
+            assert exported['identity']['software_tree']==a.software_tree
+            assert exported['identity']['model_state_sha256']==state_sha(model)
+            inputs=tuple(exported['inputs'])
+            assert exported['identity']['input_sha256']==[tensor_sha(t) for t in inputs]
+            report['native_input_export_sha256']=file_sha(a.inputs)
         weight_sha=state_sha(model)
         input_shas=[tensor_sha(t) for t in inputs]
         report['identity']=dict(point_id=name,point_sha256=point.definition_sha256(),software_tree=a.software_tree,

@@ -1,0 +1,7 @@
+{
+  "root": "/home/zhongchun/r40_large_prefill_exact_native_6bd07b7",
+  "pid": 2428984,
+  "controller_sha256": "6291bc02656e78db04a4018502ce7ae66a48cd9e0cbe8659834772081e279d8a",
+  "harness_sha256": "4a3f161d6785729f51146af80e4454922f579cb698178e6b92914ee53d3f4812",
+  "scope": "Reuse exact native weights; only 512 original token IDs transferred; full FP32 prefill reference on GB10; no board access"
+}

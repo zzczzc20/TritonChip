@@ -1,0 +1,613 @@
+{
+  "state": {
+    "status": "complete-review-required",
+    "software_tree": "files:80dd1a823e4be49e5e40d375d842c17e46c362d298e37f389c5e225621b6e4ca",
+    "completed": [
+      {
+        "name": "bucket-semantic-and-guard-tests",
+        "exit_code": 0
+      },
+      {
+        "name": "full-original-model-reference",
+        "exit_code": 0
+      }
+    ],
+    "required_gate_promotions": [],
+    "scope": "CPU graph-guard/alias semantics and full original-model independent reference on GB10; no native execution or performance claim",
+    "observed_utc": "2026-10-19T01:09:05.409371+00:00",
+    "current": "full-original-model-reference",
+    "child_pid": 2436619
+  },
+  "test_log": "...\n----------------------------------------------------------------------\nRan 3 tests in 1.209s\n\nOK\n",
+  "reference": {
+    "status": "reference-only",
+    "gate_status": "not-measured",
+    "performance": "not-measured",
+    "steps": [],
+    "cache_policy": "fixed-bucket",
+    "identity": {
+      "software_tree": "files:80dd1a823e4be49e5e40d375d842c17e46c362d298e37f389c5e225621b6e4ca",
+      "harness_sha256": "7920cbe3da38ece9e666a1cb74fbbc6f55ee7122aada5b8162f19728d2992e25",
+      "contract_sha256": "49fc0e02733139707ae2292eff2ef893e76e73f0723d0d002b2e7e1864af71c8",
+      "torch": "2.14.0+cu130",
+      "triton": "3.8.0",
+      "python": "3.12.3 (main, Nov  6 2025, 13:44:16) [GCC 13.3.0]",
+      "point": "model.llama_prefill/hbm/fp16-b1-s512",
+      "point_sha256": "c5c8826fb47090de07d2c4860b32d84da88aaf1b22ab0a206eb4139fef6813e1",
+      "weights_sha256": "fd5d2a3dda614c77243f6baba3de71f7eddb225382b9102af255a7e3fca60743",
+      "weight_bytes": 221267968,
+      "workload": {
+        "harness": "python -m archbench.generate --tier hbm --new 64",
+        "what": "a decoder used the way a model is used: one prefill, then greedy decode steps, each fed the device's own token and cache (R40-09: >= 4 layers, >= 64 MiB of weights, prefill >= 512, >= 64 decode steps)",
+        "model": {
+          "dim": 1024,
+          "n_layers": 4,
+          "n_heads": 16,
+          "n_kv_heads": 4,
+          "ffn": 2816,
+          "vocab": 32000,
+          "eps": 1e-05,
+          "dtype": "fp16",
+          "batch": 1,
+          "weights": "random: archbench.models.Llama(cfg, archbench.ops.gen(seed), \"fp16\")",
+          "seed": 0,
+          "weight_bytes": 221267968
+        },
+        "points": {
+          "prefill": {
+            "id": "model.llama_prefill/hbm/fp16-b1-s512",
+            "sha256": "c5c8826fb47090de07d2c4860b32d84da88aaf1b22ab0a206eb4139fef6813e1"
+          },
+          "decode": {
+            "id": "model.llama_decode/hbm/fp16-b1-p512",
+            "sha256": "23cc5a368f9c804105cace69fb9f772d116dbd510dc8bc3a5c5f4f9e8728de16"
+          }
+        },
+        "prefill": 512,
+        "decode_steps": 64,
+        "reference": "eager PyTorch in binary32 on the CPU: every step against the reference given the same inputs (the device's own tokens and cache) at tolerance 0.05, and the generated ids against a generation run wholly in the reference, a differing id accepted only where the reference's two logits nearly tie (archbench/generate.py)",
+        "report": [
+          "TTFT",
+          "decode median and p95 ms/token",
+          "tokens/s",
+          "peak HBM",
+          "input/output/weight/KV traffic"
+        ]
+      },
+      "generation_harness_sha256": "92bced6c6d64373a18b68b01f493e56bc3e8a792b0a8263429158c11918f97dd"
+    },
+    "requested_new_tokens": 64,
+    "expected_decode_calls": 64,
+    "reference_tokens": [
+      [
+        [
+          14590
+        ]
+      ],
+      [
+        [
+          9961
+        ]
+      ],
+      [
+        [
+          18393
+        ]
+      ],
+      [
+        [
+          1163
+        ]
+      ],
+      [
+        [
+          23922
+        ]
+      ],
+      [
+        [
+          3870
+        ]
+      ],
+      [
+        [
+          7447
+        ]
+      ],
+      [
+        [
+          13090
+        ]
+      ],
+      [
+        [
+          6476
+        ]
+      ],
+      [
+        [
+          11061
+        ]
+      ],
+      [
+        [
+          22732
+        ]
+      ],
+      [
+        [
+          5815
+        ]
+      ],
+      [
+        [
+          27755
+        ]
+      ],
+      [
+        [
+          24388
+        ]
+      ],
+      [
+        [
+          8702
+        ]
+      ],
+      [
+        [
+          17242
+        ]
+      ],
+      [
+        [
+          10046
+        ]
+      ],
+      [
+        [
+          16021
+        ]
+      ],
+      [
+        [
+          22220
+        ]
+      ],
+      [
+        [
+          24388
+        ]
+      ],
+      [
+        [
+          11061
+        ]
+      ],
+      [
+        [
+          22988
+        ]
+      ],
+      [
+        [
+          27531
+        ]
+      ],
+      [
+        [
+          20291
+        ]
+      ],
+      [
+        [
+          16422
+        ]
+      ],
+      [
+        [
+          20291
+        ]
+      ],
+      [
+        [
+          31168
+        ]
+      ],
+      [
+        [
+          4870
+        ]
+      ],
+      [
+        [
+          1226
+        ]
+      ],
+      [
+        [
+          15969
+        ]
+      ],
+      [
+        [
+          27755
+        ]
+      ],
+      [
+        [
+          29881
+        ]
+      ],
+      [
+        [
+          12389
+        ]
+      ],
+      [
+        [
+          17862
+        ]
+      ],
+      [
+        [
+          11061
+        ]
+      ],
+      [
+        [
+          22988
+        ]
+      ],
+      [
+        [
+          27531
+        ]
+      ],
+      [
+        [
+          6164
+        ]
+      ],
+      [
+        [
+          20432
+        ]
+      ],
+      [
+        [
+          4078
+        ]
+      ],
+      [
+        [
+          20432
+        ]
+      ],
+      [
+        [
+          11061
+        ]
+      ],
+      [
+        [
+          7220
+        ]
+      ],
+      [
+        [
+          8764
+        ]
+      ],
+      [
+        [
+          28553
+        ]
+      ],
+      [
+        [
+          18619
+        ]
+      ],
+      [
+        [
+          12507
+        ]
+      ],
+      [
+        [
+          11061
+        ]
+      ],
+      [
+        [
+          7220
+        ]
+      ],
+      [
+        [
+          8764
+        ]
+      ],
+      [
+        [
+          9897
+        ]
+      ],
+      [
+        [
+          5122
+        ]
+      ],
+      [
+        [
+          10046
+        ]
+      ],
+      [
+        [
+          16021
+        ]
+      ],
+      [
+        [
+          31238
+        ]
+      ],
+      [
+        [
+          27701
+        ]
+      ],
+      [
+        [
+          10810
+        ]
+      ],
+      [
+        [
+          25510
+        ]
+      ],
+      [
+        [
+          11113
+        ]
+      ],
+      [
+        [
+          7668
+        ]
+      ],
+      [
+        [
+          21211
+        ]
+      ],
+      [
+        [
+          30264
+        ]
+      ],
+      [
+        [
+          30356
+        ]
+      ],
+      [
+        [
+          10147
+        ]
+      ]
+    ],
+    "supplemental_reference_token": [
+      [
+        4437
+      ]
+    ],
+    "reference_top2_margins": [
+      [
+        0.0863196849822998
+      ],
+      [
+        0.07035970687866211
+      ],
+      [
+        0.7246792316436768
+      ],
+      [
+        0.08206987380981445
+      ],
+      [
+        0.07619667053222656
+      ],
+      [
+        0.09904146194458008
+      ],
+      [
+        0.1120295524597168
+      ],
+      [
+        0.007471799850463867
+      ],
+      [
+        0.056960344314575195
+      ],
+      [
+        0.22357821464538574
+      ],
+      [
+        0.0066835880279541016
+      ],
+      [
+        0.009028434753417969
+      ],
+      [
+        0.07733798027038574
+      ],
+      [
+        0.035841941833496094
+      ],
+      [
+        0.2272641658782959
+      ],
+      [
+        0.05969405174255371
+      ],
+      [
+        0.07821893692016602
+      ],
+      [
+        0.051612138748168945
+      ],
+      [
+        0.0499272346496582
+      ],
+      [
+        0.1028585433959961
+      ],
+      [
+        0.015038490295410156
+      ],
+      [
+        0.029178142547607422
+      ],
+      [
+        0.657416582107544
+      ],
+      [
+        0.07409310340881348
+      ],
+      [
+        0.020110130310058594
+      ],
+      [
+        0.2510683536529541
+      ],
+      [
+        0.13060522079467773
+      ],
+      [
+        0.10601806640625
+      ],
+      [
+        0.30462050437927246
+      ],
+      [
+        0.14596247673034668
+      ],
+      [
+        0.15562820434570312
+      ],
+      [
+        0.27164196968078613
+      ],
+      [
+        0.014086484909057617
+      ],
+      [
+        0.04933786392211914
+      ],
+      [
+        0.6186611652374268
+      ],
+      [
+        0.17590570449829102
+      ],
+      [
+        0.6957283020019531
+      ],
+      [
+        0.022314071655273438
+      ],
+      [
+        0.1481025218963623
+      ],
+      [
+        0.08913040161132812
+      ],
+      [
+        0.1747875213623047
+      ],
+      [
+        0.019074201583862305
+      ],
+      [
+        0.0480802059173584
+      ],
+      [
+        0.43283677101135254
+      ],
+      [
+        0.09800934791564941
+      ],
+      [
+        0.1622617244720459
+      ],
+      [
+        0.09128355979919434
+      ],
+      [
+        0.14156270027160645
+      ],
+      [
+        0.1995542049407959
+      ],
+      [
+        0.38439464569091797
+      ],
+      [
+        0.10238862037658691
+      ],
+      [
+        0.13747000694274902
+      ],
+      [
+        0.03296661376953125
+      ],
+      [
+        0.14114117622375488
+      ],
+      [
+        0.11652040481567383
+      ],
+      [
+        0.046689510345458984
+      ],
+      [
+        0.2046799659729004
+      ],
+      [
+        0.0013027191162109375
+      ],
+      [
+        0.028021812438964844
+      ],
+      [
+        0.008287668228149414
+      ],
+      [
+        0.19326114654541016
+      ],
+      [
+        0.26403212547302246
+      ],
+      [
+        0.16042685508728027
+      ],
+      [
+        0.03554391860961914
+      ]
+    ],
+    "supplemental_reference_top2_margin": [
+      0.04353022575378418
+    ]
+  },
+  "file_sha256": {
+    "tools/r40/native_model.py": "7920cbe3da38ece9e666a1cb74fbbc6f55ee7122aada5b8162f19728d2992e25",
+    "tools/r40/bucket_decode.py": "92bced6c6d64373a18b68b01f493e56bc3e8a792b0a8263429158c11918f97dd",
+    "tools/r40/bucket_decode_tests.py": "575c716f5afe15cd082790b9cca8c8835931a7a45cfa6c7862739106aca724b7",
+    "tools/r40/conditional_delivery.py": "9706a9b279afff587ceec0c9a59a61bb2669502dffa3870674e221a50bb2fce6"
+  },
+  "scope": "CPU semantic/alias/guard checks and independent reference on GB10; not a byte-matched FPGA numerical oracle or native/performance evidence"
+}

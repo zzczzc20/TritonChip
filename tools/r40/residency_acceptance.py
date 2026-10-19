@@ -83,8 +83,18 @@ def model(report, tree, image, graph_state):
     require(identity['software_tree'] == tree and identity['image_sha256'] == image,
             'model source/image mismatch')
     require(identity['contract_sha256'] == contract_v2.LOCK_SHA256, 'model contract mismatch')
-    require(identity['harness_sha256'] == sha((ROOT/'tools/r40/native_model.py').read_bytes()),
+    # Preserve the reviewed pre-bucket full-model harness as an explicitly
+    # historical producer. Its complete raw report remains bound to its old
+    # product tree; this does not promote historical evidence for a new tree.
+    historical_growing_harness = '57ac8dd246dafb3a412cd9f590ff0043a86f450a6cad92a45cf73332e6b460d8'
+    allowed_harnesses = {sha((ROOT/'tools/r40/native_model.py').read_bytes())}
+    if report.get('cache_policy', 'growing-shape') == 'growing-shape':
+        allowed_harnesses.add(historical_growing_harness)
+    require(identity['harness_sha256'] in allowed_harnesses,
             'model transfer assertions changed')
+    if identity['harness_sha256'] == sha((ROOT/'tools/r40/native_model.py').read_bytes()):
+        require(identity['generation_harness_sha256'] == sha((ROOT/'tools/r40/bucket_decode.py').read_bytes()),
+                'generation helper changed')
     workload = json.loads((ROOT/'spec/r40/v2/plan.json').read_text())['workloads']['llama_generate']
     require(identity['workload'] == workload, 'original full frozen model required')
     require(identity['backend'] == 'fpga-u280-multicore' and

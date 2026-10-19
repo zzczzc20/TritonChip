@@ -29,6 +29,8 @@ def fresh_software_tree():
 def main():
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument('--reference-only', action='store_true')
+    ap.add_argument('--bucket', action='store_true',
+                    help='fixed full KV bucket with resident tensor position; require exactly one decode compilation')
     ap.add_argument('--software-tree-sha256', required=True)
     ap.add_argument('--xclbin', type=Path)
     ap.add_argument('--image-sha256')
@@ -44,6 +46,7 @@ def main():
         ap.error('native execution requires --xclbin and --image-sha256')
     args.out.mkdir(parents=True, exist_ok=False)
     report = dict(status='incomplete', gate_status='not-measured', performance='not-measured',steps=[])
+    report['cache_policy'] = 'fixed-bucket' if args.bucket else 'growing-shape'
     try:
         import contract_v2
         contract_v2.verify()
@@ -88,21 +91,8 @@ def main():
         report['expected_decode_calls'] = new_tokens
         cos,sin = rope_tables(prefix+new_tokens,cfg.hd,'fp16')
 
-        class PrefillState(torch.nn.Module):
-            def __init__(self, model):
-                super().__init__()
-                self.model = model
-
-            def forward(self, tokens):
-                m = self.model
-                x = F.embedding(tokens,m.tok)
-                keys,values = [],[]
-                for layer in m.layers:
-                    x,k,v = layer(x,m.cos,m.sin)
-                    keys.append(k)
-                    values.append(v)
-                logits = m._head(x[:,-1:,:])
-                return logits,torch.stack(keys),torch.stack(values),logits.float().argmax(-1)
+        from bucket_decode import GenerationPrefillState as PrefillState
+        report['identity']['generation_harness_sha256'] = hashlib.sha256((ROOT/'tools/r40/bucket_decode.py').read_bytes()).hexdigest()
 
         class SharedDecode(LlamaDecode):
             def __init__(self, model, cosine, sine):
@@ -199,8 +189,29 @@ def main():
                                                     if e['direction']=='h2d' and e['name'] in weight_names)
         assert report['initial_weight_upload_bytes'] == weight_bytes, 'weights must be uploaded exactly once'
         torch._dynamo.config.recompile_limit = new_tokens+2
-        prefill = torch.compile(PrefillState(base).eval(),fullgraph=True,dynamic=False)
-        decode = torch.compile(GrowState(ddecode).eval(),fullgraph=True,dynamic=False)
+        capacity = prefix+new_tokens
+        prefill = torch.compile(PrefillState(base,capacity if args.bucket else None).eval(),fullgraph=True,dynamic=False)
+        if args.bucket:
+            from bucket_decode import BucketGenerateStep
+            with transfers(session) as bucket_initialization:
+                decode_module = BucketGenerateStep(base,dcos,dsin,capacity).eval()
+            initialization.extend(bucket_initialization)
+            report['identity']['bucket_harness_sha256'] = hashlib.sha256((ROOT/'tools/r40/bucket_decode.py').read_bytes()).hexdigest()
+            report['bucket_capacity'] = capacity
+        else:
+            decode_module = GrowState(ddecode).eval()
+        decode = torch.compile(decode_module,fullgraph=True,dynamic=False)
+        from torch._dynamo.utils import counters
+        decode_graphs_before = None
+        cache_addresses = None
+        decode_codes = None
+
+        def valid_state(state, length):
+            # The reference grows naturally; padded future cache entries are
+            # masked on device and are excluded only at explicit validation.
+            if args.bucket:
+                return state[0],state[1][...,:length,:],state[2][...,:length,:],state[3]
+            return state[:4]
         device_tokens = []
         cpu_state = None
         device_state = None
@@ -216,16 +227,28 @@ def main():
                     ddecode.cos,ddecode.sin = dcos[position:position+1],dsin[position:position+1]
                     reference_decode.cos,reference_decode.sin = cos[position:position+1].float(),sin[position:position+1].float()
                     fn,inputs = decode,(device_state[3],device_state[1],device_state[2])
+                    if args.bucket:
+                        inputs = (*inputs,device_state[4])
+                        if decode_graphs_before is None:
+                            decode_graphs_before = counters['stats']['unique_graphs']
                     want = reference_grow(cpu_state[3],cpu_state[1].float(),cpu_state[2].float())
-                with transfers(session) as cold_copies:
-                    warm,codes = run_and_get_code(fn,*inputs)
+                cold_copies = []
+                if args.bucket and index > 1:
+                    # The same guarded graph is reused. Do not execute another
+                    # warm call or depend on recompilation to recapture code.
+                    codes = decode_codes
+                else:
+                    with transfers(session) as cold_copies:
+                        warm,codes = run_and_get_code(fn,*inputs)
+                    assert compare(valid_state(warm,prefix+index)[:3],want[:3],tolerance)['ok'], 'warm model output differs'
+                    del warm
+                    if args.bucket and index == 1:
+                        decode_codes = codes
                 assert codes, 'generated wrapper source was not captured; fallback audit is unavailable'
                 fallbacks = host_fallbacks(codes)
                 assert not fallbacks, fallbacks
                 assert all(t.device.type=='tnca' for t in warm)
                 assert not any(e['direction']=='h2d' and e['name'] in weight_names for e in cold_copies)
-                assert compare(warm[:3],want[:3],tolerance)['ok'], 'warm model output differs'
-                del warm
                 events = []
                 original_wait = session.wait
 
@@ -249,6 +272,16 @@ def main():
                             completion_history=session.dev.history[history_start:],
                             wrapper_sha256=hashlib.sha256('\n'.join(codes).encode()).hexdigest())
                 report['steps'].append(step)
+                if args.bucket:
+                    addresses = (output[1].data_ptr(),output[2].data_ptr())
+                    cache_addresses = addresses if cache_addresses is None else cache_addresses
+                    assert addresses == cache_addresses, 'fixed bucket cache storage changed'
+                    step['cache_addresses'] = addresses
+                    step['cache_capacity'] = capacity
+                    if index:
+                        compiled_graphs = counters['stats']['unique_graphs']-decode_graphs_before
+                        assert compiled_graphs == 1, 'fixed bucket recompiled for another tensor position'
+                        step['decode_compilations'] = compiled_graphs
                 assert launches and all(e['upload_bytes']==e['download_bytes']==0 for e in launches)
                 assert all(e['backend']=='fpga-u280-multicore' and e['device_timing'] is not None for e in launches)
                 assert events and all(e['state']=='SUCCEEDED' and
@@ -262,7 +295,11 @@ def main():
                 # resident execution audit or converted to model throughput.
                 history_start = len(session.dev.history)
                 with transfers(session) as validation_copies:
-                    cpu_state = tuple(t.cpu() for t in output)
+                    downloaded = tuple(t.cpu() for t in output)
+                    cpu_state = valid_state(downloaded,prefix+index)
+                    if args.bucket:
+                        assert downloaded[4].item() == prefix+index
+                        step['tensor_position'] = int(downloaded[4].item())
                 step['validation_transfers'] = validation_copies
                 step['host_visibility_history'] = session.dev.history[history_start:]
                 handoffs = [r for r in step['host_visibility_history'] if r['op']==18]
@@ -281,6 +318,16 @@ def main():
         report['supplemental_token'] = device_tokens[-1]
         report['actual_decode_calls'] = sum(s['kind']=='decode' for s in report['steps'])
         assert report['actual_decode_calls'] == new_tokens
+        if args.bucket:
+            report['decode_compilations'] = counters['stats']['unique_graphs']-decode_graphs_before
+            report['cache_addresses'] = cache_addresses
+            assert report['decode_compilations'] == 1
+            report['bucket_guard'] = dict(capacity=capacity,
+                completed_position_range=[prefix,capacity-1],next_position=capacity,
+                position_dtype='int64',position_location='device',
+                guarded_metadata='cache capacity/shape, tensor position shape/dtype, resident RoPE table capacity',
+                boundary_policy='end at capacity; a larger bucket requires a new shape specialization and resident cache migration',
+                cross_bucket_transition='not-measured')
         report['tokens_match_independent_reference'] = device_tokens == reference_tokens
         report['first_token_difference'] = next((dict(index=i,device=a,reference=b,
                                                       reference_top2_margin=reference_margins[i],

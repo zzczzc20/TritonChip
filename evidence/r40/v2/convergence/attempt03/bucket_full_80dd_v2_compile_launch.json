@@ -1,0 +1,17 @@
+{
+  "root": "/home/zhongchun/r40_bucket_full_80dd_v2_compile",
+  "pid": 2437187,
+  "command": [
+    "/home/zhongchun/tc_env/torchenv/bin/python",
+    "-u",
+    "/home/zhongchun/r40_bucket_full_80dd_v2_compile/bucket_compile_coverage.py",
+    "--source-root",
+    "/home/zhongchun/r40_bucket_full_80dd_v2_source",
+    "--software-tree",
+    "files:80dd1a823e4be49e5e40d375d842c17e46c362d298e37f389c5e225621b6e4ca",
+    "--out",
+    "/home/zhongchun/r40_bucket_full_80dd_v2_compile/coverage"
+  ],
+  "harness_sha256": "48745af902bf8f7a2ad905a8083aba5c16d69666de1d345dc2d7b92113eef877",
+  "scope": "Full original 221267968-byte four-layer model, prefill512 and fixed capacity576 decode; actual TNCA lowering, every device open forbidden; compile-only, no numerical/performance claim"
+}

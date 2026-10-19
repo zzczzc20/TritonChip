@@ -20,7 +20,7 @@ def frozen(name):
     return json.loads((ROOT/'spec/r40/suites'/name).read_text())['points']
 
 
-def plan(python,image,image_sha,tree,clock,out,hbm_bytes=1<<30):
+def plan(python,image,image_sha,tree,clock,out,hbm_bytes=1<<30, *, bucket=False):
     config=dict(xclbin=str(image),image_profile='core-vrf-sync-v5',core_count=3,
                 memory_ports=3,hbm_dma=True,hbm_bytes=hbm_bytes,device_clock=True)
     common=['--xclbin',str(image),'--image-sha256',image_sha,
@@ -48,7 +48,7 @@ def plan(python,image,image_sha,tree,clock,out,hbm_bytes=1<<30):
                  '--bundle-dir',str(out/'bundles/hbm'),
                  '--out',str(out/'hbm14.jsonl')]))
     stages.append(dict(name='frozen-original-model',command=[python,'-u',str(ROOT/'tools/r40/native_model.py'),
-                  *common,'--out',str(out/'model')]))
+                  *common,*(['--bucket'] if bucket else []),'--out',str(out/'model')]))
     return stages
 
 
@@ -60,18 +60,20 @@ def main():
     p.add_argument('--operating-clock-evidence',type=Path,required=True)
     p.add_argument('--out',type=Path,required=True)
     p.add_argument('--hbm-bytes',type=int,default=1<<30)
+    p.add_argument('--bucket',action='store_true',help='run the complete frozen model with fixed KV capacity and one decode compilation')
     p.add_argument('--plan-only',action='store_true')
     a=p.parse_args()
     if a.hbm_bytes < 1<<30 or a.hbm_bytes % 64:
         p.error('--hbm-bytes must be line aligned and at least 1 GiB')
     out=a.out.resolve();out.mkdir(parents=True,exist_ok=False)
     stages=plan(sys.executable,a.xclbin.resolve(),a.image_sha256,a.software_tree_sha256,
-                a.operating_clock_evidence.resolve(),out,a.hbm_bytes)
+                a.operating_clock_evidence.resolve(),out,a.hbm_bytes,bucket=a.bucket)
     record=dict(schema='tnca-conditional-delivery/1',status='planned',stages=stages,
                 performance_gate='not-measured',original_100mhz_gate='not-passed',
                 inventory_sampling='functional only: one untimed warmup and one steady call; cold compiler copies retained separately; not the frozen performance sample plan',
                 harness_sha256=hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
                 acceptance_basis='conditional-r40v2-20261018',completed=[])
+    record['model_cache_policy']='fixed-bucket' if a.bucket else 'growing-shape'
     def save():
         temporary=out/'delivery.tmp';temporary.write_text(json.dumps(record,indent=2)+'\n');temporary.replace(out/'delivery.json')
     save()

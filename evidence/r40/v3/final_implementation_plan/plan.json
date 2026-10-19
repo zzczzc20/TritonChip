@@ -557,5 +557,28 @@
   "Accept M4 (FPU conversion fix) in the final image or keep as erratum?",
   "Pre-authorize C1 if census shows slice RAM families failing",
   "Keep A3 tool flow exactly, or add post-route phys_opt_design?"
- ]
+ ],
+ "implementation_status": {
+  "branch": "r40-final-image",
+  "base": "d3c215d",
+  "implemented": [
+   "M1",
+   "M2",
+   "M3",
+   "M4"
+  ],
+  "evidence": "evidence/r40/v3/final_image_candidate/README.md",
+  "owner_decisions_2026_10_19": {
+   "M4": "include",
+   "tool_flow": "keep attempt-3 flow exactly",
+   "C1": "by launch rule from census",
+   "census": "coordinator schedules when >=30 GB free and no host-latency experiment"
+  },
+  "pending": [
+   "unit OOC (final_image_ooc.sh units)",
+   "kernel synth (final_image_ooc.sh kernel)",
+   "cross-SLR audit before/after (final_image_ooc.sh audit)",
+   "census of A3 routed DCP"
+  ]
+ }
 }

@@ -5,6 +5,14 @@ nothing touched the card. The FPGA host was used read-only: reports and logs
 were copied, and `ps`/`free` were run. The machine-readable form is
 [`plan.json`](plan.json).
 
+**Implementation status (2026-10-19, branch `r40-final-image`).**
+- M1-M4 are implemented and simulation-verified. See
+  [`../final_image_candidate/README.md`](../final_image_candidate/README.md).
+- Pending: the Vivado runs (unit OOC, kernel synthesis, cross-SLR audit,
+  census). They wait for at least 30 GB free on the FPGA host and no running
+  board measurement.
+- C1 is still decided by the launch rule in §2.5.
+
 ## 0. Summary
 
 **What fails at 100 MHz.** Every reported failing path of attempt 3 (54249f7f,

@@ -63,27 +63,37 @@ try:
         ('final-native-inventory-evidence', [python, str(s/'tools/r40/native_inventory.py'), '--native', str(out/'native'), '--evidence']),
         ('complete-no-cuda-host-conformance', [python, '-u', str(s/'tools/r40/device_tests.py'), '--evidence']),
     ]
+    for i, point in enumerate(json.loads((s/'spec/r40/suites/R40-02.graphs3.json').read_text())['points']):
+        stages.append((f'graphs24-point{i:02d}', [python, '-u', str(s/'tools/r40/frozen_residency_tests.py'),
+                       '--point', point['id'], '--steps', '2', '--source-tree', tree]))
     points = json.loads((s/'spec/r40/suites/large.json').read_text())['points']
     stages.append(('original-large24', [python, '-u', '-m', 'archbench.run', '--platform', 'tnca',
         '--profile', 'core-vrf-sync-v5', '--backend', 'fpga-u280-multicore', '--backend-args', json.dumps(config),
         '--point', *[x['id'] for x in points], '--jobs', '1', '--warmup', '1', '--timed', '1',
         '--bundle-dir', str(p/'large24_bundles'), '--out', str(p/'large24.jsonl')]))
-    for i, point in enumerate(json.loads((s/'spec/r40/suites/R40-02.graphs3.json').read_text())['points']):
-        stages.append((f'graphs24-point{i:02d}', [python, '-u', str(s/'tools/r40/frozen_residency_tests.py'),
-                       '--point', point['id'], '--steps', '2', '--source-tree', tree]))
     (p/'commands.json').write_text(json.dumps(stages, indent=2)+'\n'); state['status'] = 'running'; save()
+    # Every stage runs; a failed stage is preserved and recorded, and the
+    # remaining stages still use the card. Audits that need a failed stage's
+    # output fail on their own.
+    failed = []
     for name, cmd in stages:
         assert software_tree(refresh=True) == tree
         state['current'] = name; save()
         with (p/(name+'.log')).open('x') as log:
             q = subprocess.Popen(cmd, cwd=s, env=env, stdout=log, stderr=subprocess.STDOUT)
             state['child_pid'] = q.pid; save(); code = q.wait()
-        state['completed'].append(dict(name=name, exit_code=code)); save()
-        assert code == 0, name+' failed; preserve stage'
-        if name == 'original-large24':
+        entry = dict(name=name, exit_code=code)
+        if name == 'original-large24' and code == 0:
             rows = [json.loads(l) for l in (p/'large24.jsonl').read_text().splitlines() if l.strip()]
-            assert len(rows) == 24 and {r['point_id'] for r in rows} == {x['id'] for x in points}
-            assert all(r['status'] == 'pass' and not r.get('fallbacks') and r['correctness']['max_rel_err'] <= r['correctness']['tol'] for r in rows), 'original large point failed'
-    state['status'] = 'complete-review-required'; save()
+            entry['complete'] = len(rows) == 24 and {r['point_id'] for r in rows} == {x['id'] for x in points}
+            entry['all_pass'] = all(r['status'] == 'pass' and not r.get('fallbacks') and
+                                    r['correctness']['max_rel_err'] <= r['correctness']['tol'] for r in rows)
+            if not (entry['complete'] and entry['all_pass']):
+                code = entry['exit_code'] = 1
+        state['completed'].append(entry); save()
+        if code:
+            failed.append(name)
+    state['failed_stages'] = failed
+    state['status'] = 'failed-preserved' if failed else 'complete-review-required'; save()
 except Exception:
     state.update(status='failed-preserved', error=traceback.format_exc()); save(); raise

@@ -517,8 +517,15 @@ class PipelineRecovery(unittest.TestCase):
         counter = self.tmp / "ssh-count"
         flaky.write_text(FAKE_SSH.format(python=PY).replace(
             'os.environ["COPYFILE_DISABLE"] = "1"',
-            f'import pathlib\nc = pathlib.Path({str(counter)!r})\nn = int(c.read_text()) + 1 if c.exists() else 1\n'
-            'c.write_text(str(n))\nif n % 3 == 0:\n    sys.stderr.write("Connection timed out during banner exchange\\n"); sys.exit(255)\n'
+            f'import fcntl, pathlib\nc = pathlib.Path({str(counter)!r})\n'
+            'with c.open("a+") as count:\n'
+            '    fcntl.flock(count, fcntl.LOCK_EX)\n'
+            '    count.seek(0)\n'
+            '    previous = count.read().strip()\n'
+            '    n = int(previous) + 1 if previous else 1\n'
+            '    count.seek(0); count.truncate(); count.write(str(n)); count.flush()\n'
+            '    fcntl.flock(count, fcntl.LOCK_UN)\n'
+            'if n % 3 == 0:\n    sys.stderr.write("Connection timed out during banner exchange\\n"); sys.exit(255)\n'
             'os.environ["COPYFILE_DISABLE"] = "1"'), encoding="utf-8")
         flaky.chmod(flaky.stat().st_mode | stat.S_IXUSR)
         with mock.patch("tritonchip_fpga_harness.pipeline.SSH_RETRY_WAITS", (0.0, 0.0, 0.0)):

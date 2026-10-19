@@ -66,7 +66,10 @@ module tb_memory_mode;
   end
   rs[0+:S]=8;rv=1;#1;if(sv)$fatal(1,"invalid source forwarded");
   @(posedge clk);@(negedge clk);rv=0;if(!fault)$fatal(1,"invalid source not faulted");
-  rst_n=0;@(negedge clk);rst_n=1;single=1;rs[2*S+:S]=5;rv=4;
+  // single_port is a registered copy: the controller changes it only while
+  // drained and waits for the copy (tnca_multicore_mmio SETTLE), so this
+  // response arrives one cycle after the change, never in the same cycle.
+  rst_n=0;@(negedge clk);rst_n=1;single=1;@(negedge clk);rs[2*S+:S]=5;rv=4;
   @(posedge clk);@(negedge clk);rv=0;if(!fault)$fatal(1,"disabled outlet response not faulted");
   $display("MEMORY MODE PASS original sources, tags, payloads, backpressure, 3/1/3 routing and faults");$finish;
  end

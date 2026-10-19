@@ -1,0 +1,252 @@
+{
+ "schema": "tnca-r40-census-frontier/1",
+ "checkpoint": "attempt 3 (54249f7f, image a88ebdf5) level0_wrapper_routed.dcp, 10 ns kernel clock",
+ "census": {
+  "failing_endpoints": 17332,
+  "tns_ns": -6679.016,
+  "residual_after_cone_whatif": {
+   "endpoints": 12799,
+   "tns_ns": -4110.801,
+   "worst_slack_ns": -0.919
+  }
+ },
+ "whole_census_structure": {
+  "SLR crossing (the M1-M3 cone and its neighbours)": {
+   "endpoints": 4717,
+   "tns_ns": -2640.3
+  },
+  "through DSP": {
+   "endpoints": 1805,
+   "tns_ns": -387.9
+  },
+  "other logic": {
+   "endpoints": 3200,
+   "tns_ns": -744.8
+  },
+  "to or from RAM": {
+   "endpoints": 2960,
+   "tns_ns": -738.5
+  },
+  "through a placer-inserted BUFG (operand-register clock enables)": {
+   "endpoints": 4650,
+   "tns_ns": -2167.5
+  }
+ },
+ "frontier": [
+  {
+   "target_mhz": 91,
+   "slack_at_100mhz_below": -0.989,
+   "families": 0,
+   "unit_pairs": 0,
+   "endpoints": 0
+  },
+  {
+   "target_mhz": 92,
+   "slack_at_100mhz_below": -0.87,
+   "families": 18,
+   "unit_pairs": 14,
+   "endpoints": 2707
+  },
+  {
+   "target_mhz": 93,
+   "slack_at_100mhz_below": -0.753,
+   "families": 86,
+   "unit_pairs": 58,
+   "endpoints": 4338
+  },
+  {
+   "target_mhz": 94,
+   "slack_at_100mhz_below": -0.638,
+   "families": 126,
+   "unit_pairs": 68,
+   "endpoints": 7893
+  },
+  {
+   "target_mhz": 95,
+   "slack_at_100mhz_below": -0.526,
+   "families": 170,
+   "unit_pairs": 83,
+   "endpoints": 8959
+  },
+  {
+   "target_mhz": 96,
+   "slack_at_100mhz_below": -0.417,
+   "families": 212,
+   "unit_pairs": 86,
+   "endpoints": 9616
+  },
+  {
+   "target_mhz": 98,
+   "slack_at_100mhz_below": -0.204,
+   "families": 439,
+   "unit_pairs": 91,
+   "endpoints": 12288
+  },
+  {
+   "target_mhz": 100,
+   "slack_at_100mhz_below": 0.0,
+   "families": 753,
+   "unit_pairs": 94,
+   "endpoints": 12799
+  }
+ ],
+ "frontier_rule": "a family blocks target F when its worst slack at 10 ns is below 10 - 1000/F ns; a fix must remove every blocking family",
+ "blocking_95mhz_by_source": {
+  "u_core/u_vfpu/red_busy": {
+   "endpoints": 1153,
+   "tns_ns": -242.2,
+   "families": 3,
+   "worst_slack_ns": -0.919
+  },
+  "u_core/w_rctx": {
+   "endpoints": 128,
+   "tns_ns": -32.5,
+   "families": 2,
+   "worst_slack_ns": -0.908
+  },
+  "g_dispatch.u_dispatch/total0__1/DSP_A_B_DATA_INST": {
+   "endpoints": 36,
+   "tns_ns": -23.7,
+   "families": 4,
+   "worst_slack_ns": -0.907
+  },
+  "u_core/sb_v": {
+   "endpoints": 264,
+   "tns_ns": -89.1,
+   "families": 6,
+   "worst_slack_ns": -0.904
+  },
+  "u_core/x_sb_idx": {
+   "endpoints": 189,
+   "tns_ns": -57.2,
+   "families": 1,
+   "worst_slack_ns": -0.902
+  },
+  "u_slice/cur_ms": {
+   "endpoints": 829,
+   "tns_ns": -194.4,
+   "families": 41,
+   "worst_slack_ns": -0.897
+  },
+  "u_core/u_vfpu/g_fma[*].u_fma/g_l2.u_xls/p0_sticky_al": {
+   "endpoints": 62,
+   "tns_ns": -26.9,
+   "families": 1,
+   "worst_slack_ns": -0.895
+  },
+  "u_core/g_lsu_pair.u_lsu/g_unit[*].u/pending": {
+   "endpoints": 183,
+   "tns_ns": -75.3,
+   "families": 1,
+   "worst_slack_ns": -0.881
+  },
+  "u_core/u_vfpu/g_fma[*].u_fma/g_l2.u_xls/p1_sh_mag": {
+   "endpoints": 92,
+   "tns_ns": -26.5,
+   "families": 1,
+   "worst_slack_ns": -0.878
+  },
+  "u_core/x_sa_idx": {
+   "endpoints": 2650,
+   "tns_ns": -1409.2,
+   "families": 73,
+   "worst_slack_ns": -0.876
+  },
+  "u_core/x_fpctl": {
+   "endpoints": 22,
+   "tns_ns": -9.3,
+   "families": 2,
+   "worst_slack_ns": -0.874
+  },
+  "u_core/u_mtx/g_mac[*].u_mac/u_fma/g_l2.u_xls/p1_sh_mag": {
+   "endpoints": 684,
+   "tns_ns": -223.9,
+   "families": 1,
+   "worst_slack_ns": -0.871
+  },
+  "u_core/x_pm_idx": {
+   "endpoints": 93,
+   "tns_ns": -35.2,
+   "families": 2,
+   "worst_slack_ns": -0.856
+  },
+  "u_core/g_vrf_banked.u_vrf/g_bank[*].u_bank/mem": {
+   "endpoints": 248,
+   "tns_ns": -72.2,
+   "families": 4,
+   "worst_slack_ns": -0.841
+  },
+  "u_core/g_vrf_banked.x_vb_q": {
+   "endpoints": 19,
+   "tns_ns": -6.9,
+   "families": 2,
+   "worst_slack_ns": -0.839
+  },
+  "u_core/g_lsu_pair.u_lsu/g_unit[*].u/FSM_sequential_state": {
+   "endpoints": 128,
+   "tns_ns": -66.7,
+   "families": 2,
+   "worst_slack_ns": -0.818
+  },
+  "u_core/g_vrf_banked.x_va_q": {
+   "endpoints": 105,
+   "tns_ns": -35.4,
+   "families": 3,
+   "worst_slack_ns": -0.813
+  },
+  "u_core/w_en": {
+   "endpoints": 1799,
+   "tns_ns": -780.0,
+   "families": 5,
+   "worst_slack_ns": -0.777
+  },
+  "u_core/u_vfpu/cvt_mod": {
+   "endpoints": 33,
+   "tns_ns": -9.6,
+   "families": 1,
+   "worst_slack_ns": -0.748
+  },
+  "u_core/u_mtx/g_mac[*].u_mac/g_in": {
+   "endpoints": 34,
+   "tns_ns": -10.5,
+   "families": 2,
+   "worst_slack_ns": -0.712
+  },
+  "u_core/x_imm": {
+   "endpoints": 31,
+   "tns_ns": -6.4,
+   "families": 1,
+   "worst_slack_ns": -0.688
+  },
+  "u_slice/ms_way": {
+   "endpoints": 120,
+   "tns_ns": -20.1,
+   "families": 8,
+   "worst_slack_ns": -0.68
+  },
+  "u_core/u_mtx/g_mac[*].u_mac/u_fma/g_l2.u_xls/p0_sub_671": {
+   "endpoints": 19,
+   "tns_ns": -7.0,
+   "families": 1,
+   "worst_slack_ns": -0.638
+  },
+  "u_core/u_vfpu/cvt_x": {
+   "endpoints": 11,
+   "tns_ns": -3.3,
+   "families": 1,
+   "worst_slack_ns": -0.617
+  },
+  "u_core/u_vfpu/g_fma[*].u_fma/g_l2.u_xls/p0_big__1_squeezed": {
+   "endpoints": 15,
+   "tns_ns": -3.8,
+   "families": 1,
+   "worst_slack_ns": -0.582
+  },
+  "u_core/u_srf/valid": {
+   "endpoints": 12,
+   "tns_ns": -2.3,
+   "families": 1,
+   "worst_slack_ns": -0.535
+  }
+ }
+}

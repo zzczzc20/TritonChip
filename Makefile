@@ -156,7 +156,7 @@ TDESC_FAULTS := t35_tdesc_frank t35_tdesc_fpad2 t35_tdesc_fnanint t35_tdesc_fsb 
 $(foreach p,$(TDESC_FAULTS),$(eval export ARGS_$(p) := +expectfault=04))
 
 CORE_PROGS := t00_scalar t01_vector t02_mem t03_fp t04_roles t05_fault t06_alu \
-              t11_matrix t12_tensor t13_share t14_caps t15_target t16_vecadd t17_descfault t18_squash t19_waitgen0 t20_sfu t21_cvt t22_atomic t23_amofault t25_mmasf t28_count t29_vrfbank \
+              t11_matrix t12_tensor t13_share t14_caps t15_target t16_vecadd t17_descfault t18_squash t19_waitgen0 t20_sfu t21_cvt t22_atomic t23_amofault t25_mmasf t28_count t29_vrfbank t40_f2i \
               t33_tdesc_load t34_tdesc_store t36_reduce t37_lsu_straddle t38_wbfreeze t39_freeze_drop t39_switch t39_isolate t39_slice $(TDESC_FAULTS)
 
 # Image size in 64-bit words; must match tb_tnca_core's WORDS parameter.
@@ -244,7 +244,8 @@ unit: $(BUILD)/tb_fp32_fma.vvp $(BUILD)/tb_fp32_fma_l3.vvp $(BUILD)/fma_vectors.
       $(TB)/core/progs/t11_matrix.s $(TB)/core/progs/t12_tensor.s \
       $(BUILD)/tb_cvt_xls.vvp $(BUILD)/cvt_xls_vectors.txt \
       $(BUILD)/tb_sfu_xls.vvp $(BUILD)/tb_sfu_core.vvp $(BUILD)/sfu_vectors.txt \
-      $(BUILD)/tb_fpu_multi.vvp $(BUILD)/fpu_multi_vectors.txt
+      $(BUILD)/tb_fpu_multi.vvp $(BUILD)/fpu_multi_vectors.txt \
+      $(BUILD)/tb_vector_fpu_f2i.vvp $(BUILD)/f2i_vectors.txt $(TB)/core/progs/t40_f2i.s
 	@$(TOOLS)/run_test.sh "bitops" "$(VVP) $(BUILD)/tb_bitops.vvp"
 	@$(TOOLS)/run_test.sh "mul64"  "$(VVP) $(BUILD)/tb_mul64.vvp"
 	@$(TOOLS)/run_test.sh "fp32_fma" \
@@ -255,6 +256,8 @@ unit: $(BUILD)/tb_fp32_fma.vvp $(BUILD)/tb_fp32_fma_l3.vvp $(BUILD)/fma_vectors.
 	   "$(VVP) $(BUILD)/tb_decoder.vvp +vec=$(BUILD)/dec_vectors.txt"
 	@$(TOOLS)/run_test.sh "cvt_xls" \
 	   "$(VVP) $(BUILD)/tb_cvt_xls.vvp +vec=$(BUILD)/cvt_xls_vectors.txt"
+	@$(TOOLS)/run_test.sh "vector_fpu_f2i" \
+	   "$(VVP) $(BUILD)/tb_vector_fpu_f2i.vvp +vec=$(BUILD)/f2i_vectors.txt"
 	@$(TOOLS)/run_test.sh "sfu_xls" \
 	   "$(VVP) $(BUILD)/tb_sfu_xls.vvp +vec=$(BUILD)/sfu_vectors.txt"
 	@$(TOOLS)/run_test.sh "sfu_core" \
@@ -339,6 +342,10 @@ $(TB)/core/progs/t20_sfu.s: $(TB)/core/progs/gen_t20_sfu.py \
                             $(TOOLS)/model/gen_sfu_vectors.py
 	$(PYTHON) $<
 
+$(TB)/core/progs/t40_f2i.s: $(TB)/core/progs/gen_t40_f2i.py \
+                            $(TOOLS)/model/f2i.py $(TOOLS)/model/fp32.py
+	$(PYTHON) $<
+
 $(TB)/core/progs/t21_cvt.s: $(TB)/core/progs/gen_t21_cvt.py \
                             $(TOOLS)/model/floatfmt.py
 	$(PYTHON) $<
@@ -381,6 +388,14 @@ xls-report:
 $(BUILD)/tb_cvt_xls.vvp: $(TB)/xls/tb_cvt_xls.v $(RTL)/gen/tnca_cvt_xls.v \
                          $(RTL)/gen/tnca_cvt_comb_xls.v | dirs
 	$(IVERILOG) -g2005 -o $@ $^
+
+# binary32 -> int32/uint32 through tnca_vector_fpu against the ISA text.
+$(BUILD)/tb_vector_fpu_f2i.vvp: $(TB)/core/tb_vector_fpu_f2i.v $(RTL)/core/tnca_vector_fpu.v | dirs
+	$(IVERILOG) $(IVFLAGS) -y $(RTL)/core -y $(RTL)/common -y $(RTL)/gen -o $@ $<
+
+$(BUILD)/f2i_vectors.txt: $(TOOLS)/model/gen_f2i_vectors.py $(TOOLS)/model/f2i.py \
+                          $(TOOLS)/model/fp32.py | dirs
+	$(PYTHON) $< -o $@
 
 $(BUILD)/cvt_xls_vectors.txt: $(TOOLS)/model/gen_cvt_vectors.py \
                               $(TOOLS)/model/floatfmt.py | dirs

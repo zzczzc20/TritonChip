@@ -270,12 +270,11 @@ module tnca_vector_fpu #(
     reg unord, eqv, ltv;
 
     // FP -> int, with the rounding mode in mod[2:0]
-    reg signed [63:0] fixv;
     reg [7:0]  cexp;
     reg [23:0] cman;
     reg [63:0] cmag;
     reg [7:0]  csh;
-    reg        cneg, rnd_inc;
+    reg        cneg, cuns, rnd_inc;
     reg [63:0] cfrac_mask;
     reg [63:0] cfrac;
     reg [63:0] chalf;
@@ -365,50 +364,50 @@ module tnca_vector_fpu #(
                     cvt[i] = {cneg, ie, iman[22:0]};
                 end
             end else begin
-                // binary32 -> integer, saturating; NaN -> 0
+                // binary32 -> integer (ISA sec 8.4): round by mod[2:0],
+                // saturate out-of-range values to the integer extremes,
+                // NaN -> 0. An unsigned result below zero saturates to 0.
                 cexp = a[i][30:23];
                 cman = {1'b1, a[i][22:0]};
                 cneg = a[i][31];
+                cuns = (func == `TNCA_CVT_F32_U32);
+                cfrac = 64'd0;
                 if (is_nan32(a[i])) begin
                     cvt[i] = 32'd0;
                 end else if (cexp < 8'd127) begin
-                    // |x| < 1 : only the rounding mode can make it +-1
-                    cfrac = 64'd0;
+                    // |x| < 1: only the rounding mode can make it +-1
                     case (mod[2:0])
-                    `TNCA_RND_RNE: cvt[i] = ((cexp == 8'd126) && (a[i][22:0] != 23'd0))
-                                            ? (cneg ? 32'hffffffff : 32'd1)
-                                            : ((cexp == 8'd126) ? 32'd0    // 0.5 -> 0 (even)
-                                                                : 32'd0);
-                    `TNCA_RND_RMI: cvt[i] = (cneg && (a[i][30:0] != 31'd0))
-                                            ? 32'hffffffff : 32'd0;
-                    `TNCA_RND_RPI: cvt[i] = (!cneg && (a[i][30:0] != 31'd0))
-                                            ? 32'd1 : 32'd0;
-                    default:       cvt[i] = 32'd0;         // toward zero
+                    `TNCA_RND_RNE: rnd_inc = (cexp == 8'd126) && (a[i][22:0] != 23'd0); // |x| > 0.5
+                    `TNCA_RND_RMI: rnd_inc = cneg  && (a[i][30:0] != 31'd0);
+                    `TNCA_RND_RPI: rnd_inc = !cneg && (a[i][30:0] != 31'd0);
+                    default:       rnd_inc = 1'b0;                          // toward zero
                     endcase
-                end else if (cexp >= 8'd158) begin
-                    // |x| >= 2^31 : saturate
-                    cvt[i] = (func == `TNCA_CVT_F32_S32)
-                             ? (cneg ? 32'h80000000 : 32'h7fffffff)
-                             : (cneg ? 32'd0        : 32'hffffffff);
+                    cvt[i] = !rnd_inc ? 32'd0 :
+                             (cneg ? (cuns ? 32'd0 : 32'hffffffff) : 32'd1);
+                end else if (cexp >= (cuns ? 8'd159 : 8'd158)) begin
+                    // |x| >= 2^31 (signed) or 2^32 (unsigned), and infinities
+                    cvt[i] = cuns ? (cneg ? 32'd0 : 32'hffffffff)
+                                  : (cneg ? 32'h80000000 : 32'h7fffffff);
                 end else begin
-                    csh   = 8'd150 - cexp;                 // right shift of the 24-bit mantissa
-                    cmag  = {40'd0, cman} >> csh;
-                    cfrac_mask = (64'd1 << csh) - 64'd1;
-                    cfrac = {40'd0, cman} & cfrac_mask;
-                    chalf = 64'd1 << (csh - 1);
+                    // 1 <= |x| < 2^32: |x| = {cman, 8'b0} / 2^csh with
+                    // csh = 158 - cexp in [0, 31], never negative or wrapped.
+                    csh   = 8'd158 - cexp;
+                    cmag  = {32'd0, cman, 8'd0} >> csh[4:0];
+                    cfrac_mask = (64'd1 << csh[4:0]) - 64'd1;
+                    cfrac = {32'd0, cman, 8'd0} & cfrac_mask;
+                    chalf = (csh[4:0] == 5'd0) ? 64'd0 : (64'd1 << (csh[4:0] - 5'd1));
                     case (mod[2:0])
-                    `TNCA_RND_RNE: rnd_inc = (cfrac > chalf) ||
-                                             ((cfrac == chalf) && cmag[0]);
+                    `TNCA_RND_RNE: rnd_inc = (csh[4:0] != 5'd0) &&
+                                             ((cfrac > chalf) || ((cfrac == chalf) && cmag[0]));
                     `TNCA_RND_RMI: rnd_inc = cneg  && (cfrac != 64'd0);
                     `TNCA_RND_RPI: rnd_inc = !cneg && (cfrac != 64'd0);
                     default:       rnd_inc = 1'b0;
                     endcase
                     cmag = cmag + {63'd0, rnd_inc};
-                    fixv = cneg ? -$signed(cmag) : $signed(cmag);
-                    if (func == `TNCA_CVT_F32_S32) begin
-                        cvt[i] = (fixv > 64'sd2147483647)  ? 32'h7fffffff :
-                                 (fixv < -64'sd2147483648) ? 32'h80000000 :
-                                 fixv[31:0];
+                    if (!cuns) begin
+                        // cmag <= 2^31: -2^31 is exact, +2^31 saturates
+                        cvt[i] = cneg ? (~cmag[31:0] + 32'd1) :
+                                 (cmag > 64'd2147483647) ? 32'h7fffffff : cmag[31:0];
                     end else begin
                         cvt[i] = cneg ? 32'd0 :
                                  (cmag > 64'd4294967295) ? 32'hffffffff : cmag[31:0];

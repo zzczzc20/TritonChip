@@ -1210,7 +1210,12 @@ r3-mutation-tests:
 # answers against an oracle and exits non-zero when they disagree, so
 # there is nothing to assert here beyond the exit status.
 #------------------------------------------------------------------------------
-.PHONY: tutorial
+.PHONY: tutorial tutorial-core tutorial-torch
+TUTORIAL_EXAMPLES ?= $(wildcard tutorial/examples/*.py)
+tutorial-core: TUTORIAL_EXAMPLES := $(filter-out tutorial/examples/10_torch_compile.py,$(wildcard tutorial/examples/*.py))
+tutorial-core: tutorial
+tutorial-torch: TUTORIAL_EXAMPLES := tutorial/examples/10_torch_compile.py
+tutorial-torch: tutorial
 tutorial: device $(R2_DATA_STAMP)
 	@if [ ! -x "$(TRITON_PYTHON)" ]; then \
 	   if [ "$(R1_STRICT)" = "1" ]; then \
@@ -1222,7 +1227,7 @@ tutorial: device $(R2_DATA_STAMP)
 	   fi; \
 	 fi; \
 	 fail=0; n=0; \
-	 for f in tutorial/examples/*.py; do \
+	 for f in $(TUTORIAL_EXAMPLES); do \
 	   n=$$((n+1)); \
 	   if PYTHONPATH=python:compiler/python $(TRITON_PYTHON) $$f \
 	        > $(BUILD)/tutorial-$$(basename $$f .py).log 2>&1; then \

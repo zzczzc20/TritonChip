@@ -129,11 +129,7 @@ jobs:
       # builds the same set). Only the benches are built: the programs that
       # run on them are other targets' business, not this job's.
       - name: R1 profile and capability checks
-        run: |
-          make core4
-          make sim/build/tb_core_vrf.vvp
-          make sim/build/tb_core_xpose.vvp
-          python3 tools/r1/profile_tests.py
+        run: make r1-profile-tests
 
       # R3's performance model: six graphs whose cycle counts are worked out
       # by hand in the test, and exact agreement required. No RTL, no
@@ -266,7 +262,7 @@ jobs:
       # documented result breaks this instead of quietly making the docs
       # wrong.
       - name: The tutorial's examples
-        run: make tutorial TRITON_PYTHON=$HOME/tritonenv/bin/python R1_STRICT=1
+        run: make tutorial-core TRITON_PYTHON=$HOME/tritonenv/bin/python R1_STRICT=1
 
       # R3.6's fast checkers. The backend registry and the configuration
       # rules cost seconds, and both watch things a routine change can
@@ -420,6 +416,9 @@ jobs:
         run: |
           make r38-torch TORCH_PYTHON=$HOME/torchenv/bin/python \
             TRITON_PYTHON=$HOME/torchenv/bin/python TILEBENCH_SOURCE=sim/build/Tilebench
+      - name: The PyTorch tutorial example
+        if: matrix.suite == 'plugin'
+        run: make tutorial-torch TRITON_PYTHON=$HOME/torchenv/bin/python R1_STRICT=1
       # Tensor descriptors of rank 1-5 through Triton's NVIDIA-style API, on
       # the RTL, element for element against PyTorch; then every ArchBench
       # tiny and small point compiled for TNCA (nothing simulated), and the

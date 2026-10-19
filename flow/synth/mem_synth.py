@@ -64,6 +64,13 @@ TOPS = {
 # 列账".
 SMALL_ARRAY_BITS = 1024
 
+
+def control_array(top, memory):
+    # The accumulator's per-row/lane valid bitmap is 4096 bits, larger than
+    # the generic small-array cutoff. It is reset and has 257 write ports;
+    # counting it as accumulator data overstates the declared 16 KiB capacity.
+    return memory['bits'] < SMALL_ARRAY_BITS or (top == 'tnca_acc_rf' and memory['name'] == 'valid')
+
 FF_CELLS = ('$dff', '$dffe', '$sdff', '$sdffe', '$sdffce', '$adff',
             '$adffe', '$dffsr', '$dffsre', '$aldff', '$aldffe')
 LATCH_CELLS = ('$dlatch', '$dlatchsr', '$adlatch')
@@ -145,8 +152,8 @@ def run_top(top, files, flatten=False):
                                  r'combinational loop|multiple drivers|'
                                  r'wire .* is used but has no driver',
                                  l)]
-        data = [m for m in mems if m['bits'] >= SMALL_ARRAY_BITS]
-        small = [m for m in mems if m['bits'] < SMALL_ARRAY_BITS]
+        data = [m for m in mems if not control_array(top, m)]
+        small = [m for m in mems if control_array(top, m)]
         out.update(problems=problems, explained_warnings=explained)
         out.update(ok=True, memories=mems, data_memories=data,
                    small_arrays=small, ff_bits=ff_bits,

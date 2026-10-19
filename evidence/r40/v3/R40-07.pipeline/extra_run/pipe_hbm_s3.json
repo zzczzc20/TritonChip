@@ -1,0 +1,15 @@
+{
+ "name": "pipe_hbm_s3",
+ "group": "extra",
+ "cmd": "/home/zhongchun/tc_env/torchenv/bin/python tools/r40/v3_pipeline_matrix.py --memory hbm --stages 3 --trace-dir /home/zhongchun/r40v3_tpb_runs/extra/trace_hbm_s3 --json /home/zhongchun/r40v3_tpb_runs/extra/pipe_hbm_s3.json",
+ "env": {},
+ "start": "2026-10-19T05:32:47+00:00",
+ "end": "2026-10-19T05:59:50+00:00",
+ "seconds": 1623.5,
+ "exit": 0,
+ "marker": "r40-v3-pipeline-matrix PASS",
+ "marker_found": true,
+ "ok": true,
+ "log": "pipe_hbm_s3.log",
+ "log_sha256": "71190a34585f64790d084712d352257bccd4c0f2339a8c1858b6cc5e82d8b15e"
+}

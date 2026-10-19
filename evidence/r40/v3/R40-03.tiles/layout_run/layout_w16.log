@@ -1,0 +1,97 @@
+W1019 02:46:11.128000 2548080 torch/utils/cpp_extension.py:183] No CUDA runtime is found, using CUDA_HOME='/usr/local/cuda'
+  building core-vrf-sync-v5 -> /home/zhongchun/r40v3_tpb_runs/extra/cache/layout_w16/devices/core-vrf-sync-v5-a8f9e2a0291d254a-2f12bdd465ea/tnca_device_vrf5.vvp
+  built 17676402 bytes
+PASS transpose_pointwise_f32, width 16, widths [], tiles []
+PASS transpose_pointwise_f16, width 16, widths [], tiles []
+PASS transpose_plus_contiguous, width 16, widths [], tiles []
+PASS column_strided_view, width 16, widths [], tiles []
+PASS int64_transposed, width 16, widths [], tiles []
+FAIL transpose_sum, width 16: InductorError: LoweringException: AssertionError: Expected buf.data.get_reduction_type() is not None
+  target: aten.sum.dim_IntList
+  args[0]: TensorBox(
+    ReinterpretView(
+      StorageBox(
+        InputBuffer(name='arg0_1', layout=FixedLayout('tnca:0', torch.float32, size=[127, 33], stride=[33, 1]))
+      ),
+      FixedLayout('tnca:0', torch.float32, size=[33, 127], stride=[1, 33]),
+      origins=OrderedSet([permute]),
+      stack_traces = {,
+        File "/home/zhongchun/r40v3_tpb/tools/r40/v3_layout_tests.py", line 62, in <lambda>,
+          ('transpose_sum', lambda x: x.t().sum(-1), (rnd(127, 33),), dict(rtol=1e-4, atol=1e-4)),,
+                                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^,
+      ,
+      }
+    )
+  )
+  args[1]: [-1]AssertionError: Expected buf.data.get_reduction_type() is not None
+  target: aten.sum.dim_IntList
+  args[0]: TensorBox(
+    ReinterpretView(
+      StorageBox(
+        InputBuffer(name='arg0_1', layout=FixedLayout('tnca:0', torch.float32, size=[127, 33], stride=[33, 1]))
+      ),
+      FixedLayout('tnca:0', torch.float32, size=[33, 127], stride=[1, 33]),
+      origins=OrderedSet([permute]),
+      stack_traces = {,
+        File "/home/zhongchun/r40v3_tpb/tools/r40/v3_layout_tests.py", line 62, in <lambda>,
+          ('transpose_sum', lambda x: x.t().sum(-1), (rnd(127, 33),), dict(rtol=1e-4, atol=1e-4)),,
+                                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^,
+      ,
+      }
+    )
+  )
+  args[1]: [-1]
+Found from : 
+   File "/home/zhongchun/r40v3_tpb/tools/r40/v3_layout_tests.py", line 62, in <lambda>
+    ('transpose_sum', lambda x: x.t().sum(-1), (rnd(127, 33),), dict(rtol=1e-4, atol=1e-4)),
+                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+Set TORCHDYNAMO_VERBOSE=1 for the internal stack trace (please do this especially if you're reporting a bug to PyTorch). For even more developer context, set TORCH_LOGS="+dyn
+FAIL transpose_amax, width 16: InductorError: LoweringException: AssertionError: Expected buf.data.get_reduction_type() is not None
+  target: aten.amax.default
+  args[0]: TensorBox(
+    ReinterpretView(
+      StorageBox(
+        InputBuffer(name='arg0_1', layout=FixedLayout('tnca:0', torch.float32, size=[65, 17], stride=[17, 1]))
+      ),
+      FixedLayout('tnca:0', torch.float32, size=[17, 65], stride=[1, 17]),
+      origins=OrderedSet([permute]),
+      stack_traces = {,
+        File "/home/zhongchun/r40v3_tpb/tools/r40/v3_layout_tests.py", line 63, in <lambda>,
+          ('transpose_amax', lambda x: x.t().amax(-1), (rnd(65, 17),), {}),,
+                                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^,
+      ,
+      }
+    )
+  )
+  args[1]: [-1]AssertionError: Expected buf.data.get_reduction_type() is not None
+  target: aten.amax.default
+  args[0]: TensorBox(
+    ReinterpretView(
+      StorageBox(
+        InputBuffer(name='arg0_1', layout=FixedLayout('tnca:0', torch.float32, size=[65, 17], stride=[17, 1]))
+      ),
+      FixedLayout('tnca:0', torch.float32, size=[17, 65], stride=[1, 17]),
+      origins=OrderedSet([permute]),
+      stack_traces = {,
+        File "/home/zhongchun/r40v3_tpb/tools/r40/v3_layout_tests.py", line 63, in <lambda>,
+          ('transpose_amax', lambda x: x.t().amax(-1), (rnd(65, 17),), {}),,
+                                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^,
+      ,
+      }
+    )
+  )
+  args[1]: [-1]
+Found from : 
+   File "/home/zhongchun/r40v3_tpb/tools/r40/v3_layout_tests.py", line 63, in <lambda>
+    ('transpose_amax', lambda x: x.t().amax(-1), (rnd(65, 17),), {}),
+                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+Set TORCHDYNAMO_VERBOSE=1 for the internal stack trace (please do this especially if you're reporting a bug to PyTorch). For even more developer context, set TORCH_LOGS="+dynamo"
+
+PASS cumsum_scan_retile, width 16, widths [], tiles []
+PASS linear_transposed_weight, width 16, widths [], tiles []
+PASS mm_transposed_a, width 16, widths [], tiles []
+r40-v3-layout FAIL (8/10) width 16

@@ -1,0 +1,9 @@
+W1019 04:37:05.033000 2743575 torch/utils/cpp_extension.py:183] No CUDA runtime is found, using CUDA_HOME='/usr/local/cuda'
+  building core-vrf-sync-v5 -> /home/zhongchun/r40v3_tpb_runs/main/cache/native_pipeline_s2/devices/core-vrf-sync-v5-a8f9e2a0291d254a-2f12bdd465ea/tnca_device_vrf5.vvp
+  built 17676402 bytes
+PASS mm 16x16x48, stages=2, rings=[{'consumer_ops': 310, 'direct': True, 'producer_ops': 202, 'ring_windows': 4, 'stages': 2}]
+PASS mm 17x31x65, stages=2, rings=[{'consumer_ops': 354, 'direct': False, 'producer_ops': 1467, 'ring_windows': 4, 'stages': 2}]
+PASS addmm 16x16x48, stages=2, rings=[{'consumer_ops': 425, 'direct': True, 'producer_ops': 203, 'ring_windows': 4, 'stages': 2}]
+PASS addmm 17x31x65, stages=2, rings=[{'consumer_ops': 469, 'direct': False, 'producer_ops': 1468, 'ring_windows': 4, 'stages': 2}]
+r40-native-pipeline PASS (4/4)
+AUDIT measured DMA/MMA overlap=1498 cycles

@@ -1,0 +1,59 @@
+test_delayed_completion (test_pipeline.TestPipelineOnRTL.test_delayed_completion)
+sec 15 C3's 延迟 completion. A seven-cycle memory with random ... ok
+test_error_propagation (test_pipeline.TestPipelineOnRTL.test_error_propagation)
+Rank zero faults, wakes the consumer and propagates barrier error. ... ok
+test_five_iterations (test_pipeline.TestPipelineOnRTL.test_five_iterations) ... ok
+test_one_iteration (test_pipeline.TestPipelineOnRTL.test_one_iteration)
+Fewer iterations than stages: the ring never fills. ... ok
+test_out_of_order_returns (test_pipeline.TestPipelineOnRTL.test_out_of_order_returns)
+sec 15 C3's 乱序返回. Memory responses come back in a different ... ok
+test_predicated_off_async_still_completes (test_pipeline.TestPipelineOnRTL.test_predicated_off_async_still_completes)
+sec 15 C3's predicated-off async. ... ok
+test_six_iterations (test_pipeline.TestPipelineOnRTL.test_six_iterations) ... ok
+test_three_iterations_odd (test_pipeline.TestPipelineOnRTL.test_three_iterations_odd)
+sec 15 C3's odd count: slot 0 is reused, slot 1 is not, so the ... ok
+test_three_stage_ring (test_pipeline.TestPipelineOnRTL.test_three_stage_ring)
+Three slots rather than two: the reuse distance changes, and with ... ok
+test_two_consumers_on_four_contexts (test_pipeline.TestPipelineOnRTL.test_two_consumers_on_four_contexts)
+sec 15 C4 defers P + M0 + M1 + E to 四 RCTX 硬件 profile 可用后. ... ok
+test_two_iterations (test_pipeline.TestPipelineOnRTL.test_two_iterations)
+Exactly the stage count: every slot used once, none reused. ... ok
+test_unaligned_row_stride (test_pipeline.TestPipelineOnRTL.test_unaligned_row_stride)
+A legal 26-byte row stride preserves packed data and tail padding. ... ok
+test_zero_iterations (test_pipeline.TestPipelineOnRTL.test_zero_iterations)
+sec 15 C3's 0 iterations: the program must still start, initialise ... ok
+test_generation_follows_the_iteration (test_pipeline.TestPipelinePlan.test_generation_follows_the_iteration) ... ok
+test_more_roles_than_contexts_refused (test_pipeline.TestPipelinePlan.test_more_roles_than_contexts_refused) ... ok
+test_ready_and_free_are_separate_barriers (test_pipeline.TestPipelinePlan.test_ready_and_free_are_separate_barriers)
+ISA sec 9A.1: a transfer completing is not the consumer having ... ok
+test_too_many_stages_refused (test_pipeline.TestPipelinePlan.test_too_many_stages_refused) ... ok
+test_arrivals_alone_do_not_satisfy_an_operation_count (test_protocol.TestBarrierCounting.test_arrivals_alone_do_not_satisfy_an_operation_count) ... ok
+test_both_counts_release_the_waiter (test_protocol.TestBarrierCounting.test_both_counts_release_the_waiter) ... ok
+test_operations_alone_do_not_satisfy_an_arrival_count (test_protocol.TestBarrierCounting.test_operations_alone_do_not_satisfy_an_arrival_count) ... ok
+test_all_false_still_completes (test_protocol.TestEnumeration.test_all_false_still_completes)
+sec 8.3: predication off must not change the completion count. ... ok
+test_short_loops (test_protocol.TestEnumeration.test_short_loops)
+Fewer iterations than stages: the ring never fills. ... ok
+test_stages_consumers_and_completion_orders (test_protocol.TestEnumeration.test_stages_consumers_and_completion_orders) ... ok
+test_first_of_two_consumers_does_not_free_the_buffer (test_protocol.TestFaults.test_first_of_two_consumers_does_not_free_the_buffer)
+sec 17's question: how two consumers jointly release. ... ok
+test_init_under_a_waiter_is_a_barrier_fault (test_protocol.TestFaults.test_init_under_a_waiter_is_a_barrier_fault)
+sec 13.3 / ISA sec 9A.6, the hardware rule t13 work introduced. ... ok
+test_operation_count_must_match_expansion (test_protocol.TestFaults.test_operation_count_must_match_expansion)
+sec 8.2: the count is taken after the command expands. ... ok
+test_publish_before_fill_completes (test_protocol.TestFaults.test_publish_before_fill_completes)
+sec 8.1: publish is not a mechanical translation of mb.arm. ... ok
+test_read_before_publish (test_protocol.TestFaults.test_read_before_publish) ... ok
+test_refill_while_a_consumer_still_reads (test_protocol.TestFaults.test_refill_while_a_consumer_still_reads) ... ok
+test_source_release_allowed_when_advertised (test_protocol.TestFaults.test_source_release_allowed_when_advertised) ... ok
+test_source_release_refused_without_hardware_support (test_protocol.TestFaults.test_source_release_refused_without_hardware_support)
+sec 10.2 wants an earlier source-reusable event; v0.1 has none, so ... ok
+test_uncounted_completion_is_refused (test_protocol.TestFaults.test_uncounted_completion_is_refused)
+A command issued against an unarmed barrier loses its completion. ... ok
+test_unfinished_command_at_exit (test_protocol.TestFaults.test_unfinished_command_at_exit) ... ok
+test_wait_on_unarmed_barrier_would_sleep_forever (test_protocol.TestFaults.test_wait_on_unarmed_barrier_would_sleep_forever) ... ok
+
+----------------------------------------------------------------------
+Ran 34 tests in 34.016s
+
+OK

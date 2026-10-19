@@ -1,0 +1,15 @@
+{
+ "name": "packed_window_options",
+ "group": "tiles",
+ "cmd": "python3 tools/r40/packed_window_options_tests.py",
+ "env": {},
+ "start": "2026-10-19T04:33:51+00:00",
+ "end": "2026-10-19T04:33:51+00:00",
+ "seconds": 0.1,
+ "exit": 0,
+ "marker": "\\nOK\\n",
+ "marker_found": true,
+ "ok": true,
+ "log": "packed_window_options.log",
+ "log_sha256": "b6a161abed43b9a0dba9259cd451b39b20b10425ac13cc14786554c0e6fac7f1"
+}

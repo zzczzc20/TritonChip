@@ -1,0 +1,17 @@
+{
+ "name": "gemm_n32_k16_longhost",
+ "group": "tiles-rerun",
+ "cmd": "/home/zhongchun/tc_env/torchenv/bin/python tools/r40/gemm_tiles_tests.py --columns 32",
+ "env": {
+  "TNCA_HOST_TIMEOUT": "172800"
+ },
+ "start": "2026-10-19T05:58:02+00:00",
+ "end": "2026-10-19T06:28:45+00:00",
+ "seconds": 1843.1,
+ "exit": 0,
+ "marker": "r40-gemm-tiles-tests PASS \\(4/4\\)",
+ "marker_found": true,
+ "ok": true,
+ "log": "gemm_n32_k16_longhost.log",
+ "log_sha256": "429580151bfacc5337f8828095611e6afc65b92a5337b1835940d9007615fb06"
+}

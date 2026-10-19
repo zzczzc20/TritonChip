@@ -1,0 +1,22 @@
+W1019 05:33:10.607000 2811428 torch/utils/cpp_extension.py:183] No CUDA runtime is found, using CUDA_HOME='/usr/local/cuda'
+  building core-vrf-sync-v5/hbm -> /home/zhongchun/r40v3_tpb_runs/extra/cache/pipe_hbm-adverse_s1/devices/core-vrf-sync-v5-hbm-a8f9e2a0291d254a-2f12bdd465ea/tnca_device_vrf5_hbm.vvp
+  built 17766833 bytes
+PASS mm 16x16x48 memory=hbm-adverse stages=1 err=0 rings=[{'consumer_ops': 292, 'direct': True, 'producer_ops': 183, 'ring_windows': 2, 'stages': 1}]
+PASS mm 16x16x256 memory=hbm-adverse stages=1 err=0 rings=[{'consumer_ops': 291, 'direct': True, 'producer_ops': 182, 'ring_windows': 2, 'stages': 1}]
+PASS mm 17x31x257 memory=hbm-adverse stages=1 err=0 rings=[{'consumer_ops': 333, 'direct': False, 'producer_ops': 838, 'ring_windows': 2, 'stages': 1}]
+PASS addmm 16x16x48 memory=hbm-adverse stages=1 err=0 rings=[{'consumer_ops': 407, 'direct': True, 'producer_ops': 184, 'ring_windows': 2, 'stages': 1}]
+PASS addmm 16x16x256 memory=hbm-adverse stages=1 err=0 rings=[{'consumer_ops': 406, 'direct': True, 'producer_ops': 183, 'ring_windows': 2, 'stages': 1}]
+PASS addmm 17x31x257 memory=hbm-adverse stages=1 err=3.81e-06 rings=[{'consumer_ops': 448, 'direct': False, 'producer_ops': 839, 'ring_windows': 2, 'stages': 1}]
+PASS linear 16x16x48 memory=hbm-adverse stages=1 err=0 rings=[{'consumer_ops': 407, 'direct': True, 'producer_ops': 184, 'ring_windows': 2, 'stages': 1}]
+PASS linear 16x16x256 memory=hbm-adverse stages=1 err=0 rings=[{'consumer_ops': 406, 'direct': True, 'producer_ops': 183, 'ring_windows': 2, 'stages': 1}]
+PASS linear 17x31x257 memory=hbm-adverse stages=1 err=1.91e-06 rings=[{'consumer_ops': 448, 'direct': False, 'producer_ops': 855, 'ring_windows': 2, 'stages': 1}]
+AUDIT mm 16x16x48 overlap=0 cycles over 1 launch(es)
+AUDIT mm 16x16x256 overlap=0 cycles over 1 launch(es)
+AUDIT mm 17x31x257 overlap=10263 cycles over 1 launch(es)
+AUDIT addmm 16x16x48 overlap=0 cycles over 1 launch(es)
+AUDIT addmm 16x16x256 overlap=0 cycles over 1 launch(es)
+AUDIT addmm 17x31x257 overlap=10263 cycles over 1 launch(es)
+AUDIT linear 16x16x48 overlap=0 cycles over 1 launch(es)
+AUDIT linear 16x16x256 overlap=0 cycles over 1 launch(es)
+AUDIT linear 17x31x257 overlap=10567 cycles over 1 launch(es)
+r40-v3-pipeline-matrix PASS (9/9) memory=hbm-adverse stages=1

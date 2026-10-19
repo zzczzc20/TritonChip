@@ -1,0 +1,15 @@
+{
+ "name": "stage_options",
+ "group": "pipeline",
+ "cmd": "/home/zhongchun/tc_env/torchenv/bin/python tools/r40/pipeline_stage_options_tests.py",
+ "env": {},
+ "start": "2026-10-19T04:36:25+00:00",
+ "end": "2026-10-19T04:36:26+00:00",
+ "seconds": 0.3,
+ "exit": 0,
+ "marker": "r40-pipeline-stage-options PASS \\(18/18\\)",
+ "marker_found": false,
+ "ok": false,
+ "log": "stage_options.log",
+ "log_sha256": "d7cc597385407adff97f17804a88e387c41173780c101c7cf674d926870715c4"
+}

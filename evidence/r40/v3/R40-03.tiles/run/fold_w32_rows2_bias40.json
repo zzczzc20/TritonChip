@@ -1,0 +1,15 @@
+{
+ "name": "fold_w32_rows2_bias40",
+ "group": "tiles",
+ "cmd": "/home/zhongchun/tc_env/torchenv/bin/python tools/r40/fold_tests.py --width 32 --rows 2 --index-bias 1099511627776",
+ "env": {},
+ "start": "2026-10-19T03:00:21+00:00",
+ "end": "2026-10-19T03:09:10+00:00",
+ "seconds": 529.1,
+ "exit": 0,
+ "marker": "r40-fold-tests PASS \\(4/4\\)",
+ "marker_found": true,
+ "ok": true,
+ "log": "fold_w32_rows2_bias40.log",
+ "log_sha256": "df3fe4a19ca9def2771540075aa5ec3ad46ff1f06bd80fcf0f90882514f335f5"
+}

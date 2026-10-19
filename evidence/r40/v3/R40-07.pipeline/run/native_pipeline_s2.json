@@ -1,0 +1,17 @@
+{
+ "name": "native_pipeline_s2",
+ "group": "pipeline",
+ "cmd": "/home/zhongchun/tc_env/torchenv/bin/python tools/r40/native_pipeline_tests.py --stages 2 --trace-dir /home/zhongchun/r40v3_tpb_runs/main/trace_native_s2 --require-overlap",
+ "env": {
+  "TNCA_RCTX_STAGES": "2"
+ },
+ "start": "2026-10-19T04:37:02+00:00",
+ "end": "2026-10-19T04:49:49+00:00",
+ "seconds": 767.6,
+ "exit": 0,
+ "marker": "r40-native-pipeline PASS \\(4/4\\)[\\s\\S]*AUDIT measured DMA/MMA overlap=[1-9]",
+ "marker_found": true,
+ "ok": true,
+ "log": "native_pipeline_s2.log",
+ "log_sha256": "cbad85188738107a662ecb33bc4a2a3ee20633fe20fc274efdb4d525368b7b4c"
+}

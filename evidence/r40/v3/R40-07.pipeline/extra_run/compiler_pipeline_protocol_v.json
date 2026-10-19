@@ -1,0 +1,15 @@
+{
+ "name": "compiler_pipeline_protocol_v",
+ "group": "extra",
+ "cmd": "cd compiler/test && python3 -m unittest -v test_pipeline test_protocol",
+ "env": {},
+ "start": "2026-10-19T02:46:01+00:00",
+ "end": "2026-10-19T02:46:35+00:00",
+ "seconds": 34.3,
+ "exit": 0,
+ "marker": "\\nOK\\n",
+ "marker_found": true,
+ "ok": true,
+ "log": "compiler_pipeline_protocol_v.log",
+ "log_sha256": "fa333db63455907be8b8d2a63ab4f6cfed347a3e7438d5be85f50a48ae80108a"
+}

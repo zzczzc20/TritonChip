@@ -1,0 +1,17 @@
+{
+ "name": "compiler_rtl",
+ "group": "extra",
+ "cmd": "make --no-print-directory sim/build/tb_core.vvp sim/build/tb_core4.vvp sim/build/tb_core_slow.vvp sim/build/tb_core_ooo.vvp sim/build/tb_core4_slow.vvp sim/build/tb_core4_ooo.vvp && python3 compiler/test/run_tests.py --rtl",
+ "env": {
+  "R1_STRICT": "1"
+ },
+ "start": "2026-10-19T02:46:01+00:00",
+ "end": "2026-10-19T02:55:41+00:00",
+ "seconds": 579.5,
+ "exit": 0,
+ "marker": "compiler-rtl\\s+PASS\\s+\\d+ tests\\n",
+ "marker_found": true,
+ "ok": true,
+ "log": "compiler_rtl.log",
+ "log_sha256": "d6ce532ed83bbedcc8ebedd6d3e8a12a0d2637d129cfcfa054d870f55115e1e5"
+}

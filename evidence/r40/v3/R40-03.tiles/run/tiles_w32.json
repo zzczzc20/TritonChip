@@ -1,0 +1,15 @@
+{
+ "name": "tiles_w32",
+ "group": "tiles",
+ "cmd": "/home/zhongchun/tc_env/torchenv/bin/python tools/r40/tiles_tests.py --width 32",
+ "env": {},
+ "start": "2026-10-19T02:33:01+00:00",
+ "end": "2026-10-19T02:35:53+00:00",
+ "seconds": 171.9,
+ "exit": 0,
+ "marker": "r40-tiles-tests PASS \\(12/12\\)",
+ "marker_found": true,
+ "ok": true,
+ "log": "tiles_w32.log",
+ "log_sha256": "1c777b43f97a5e648c56f8de547a287cdede5ccd2131d22bd26d07fb8e1d4a66"
+}

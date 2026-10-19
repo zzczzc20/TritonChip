@@ -1,0 +1,11 @@
+W1019 04:35:29.306000 2740728 torch/utils/cpp_extension.py:183] No CUDA runtime is found, using CUDA_HOME='/usr/local/cuda'
+  building core-vrf-sync-v5 -> /home/zhongchun/r40v3_tpb_runs/main/cache/bank_1/devices/core-vrf-sync-v5-a8f9e2a0291d254a-2f12bdd465ea/tnca_device_vrf5.vvp
+  built 17676402 bytes
+Traceback (most recent call last):
+  File "/home/zhongchun/r40v3_tpb/tools/r40/bank_tests.py", line 92, in <module>
+    sys.exit(main())
+             ^^^^^^
+  File "/home/zhongchun/r40v3_tpb/tools/r40/bank_tests.py", line 70, in main
+    assert hashlib.sha256(asm.encode()).hexdigest() == prov['assembly_sha256']
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError

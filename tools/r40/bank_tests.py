@@ -56,6 +56,14 @@ def main():
         for name, fn, inputs in cases:
             compiled = torch.compile(fn, fullgraph=True)
             native = tuple(t.to('tnca') for t in inputs)
+            # Compilation can launch native copy kernels (autotuner inputs, as
+            # gemm_tiles_tests.py notes), and two specializations of the same
+            # copy kernel share one dump directory. Ledger only the graph's own
+            # steady launches.
+            with torch.no_grad():
+                warm = compiled(*native)
+            torch.testing.assert_close(warm.cpu(), fn(*inputs), rtol=2e-4, atol=2e-4)
+            del warm
             with torch.no_grad(), launch_log() as log:
                 out = compiled(*native)
             torch.testing.assert_close(out.cpu(), fn(*inputs), rtol=2e-4, atol=2e-4)

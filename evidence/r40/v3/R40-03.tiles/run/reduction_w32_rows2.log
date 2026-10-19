@@ -1,0 +1,34 @@
+W1019 02:53:10.854000 2564906 torch/utils/cpp_extension.py:183] No CUDA runtime is found, using CUDA_HOME='/usr/local/cuda'
+  building core-vrf-sync-v5 -> /home/zhongchun/r40v3_tpb_runs/main/cache/reduction_w32_rows2/devices/core-vrf-sync-v5-a8f9e2a0291d254a-2f12bdd465ea/tnca_device_vrf5.vvp
+  built 17676402 bytes
+AUDIT actual row tiles: [[2, 16, 1]]
+AUDIT sum reductions: [{'external_spill_bytes': 0, 'gemm_tiles': [], 'mma_fragment_reuses': 0, 'predicate_rematerializations': 8, 'reductions': [], 'vlen': 16, 'widths': [128]}, {'external_spill_bytes': 0, 'gemm_tiles': [], 'mma_fragment_reuses': 0, 'predicate_rematerializations': 8, 'reductions': [], 'vlen': 16, 'widths': [128]}, {'external_spill_bytes': 0, 'gemm_tiles': [], 'mma_fragment_reuses': 0, 'predicate_rematerializations': 8, 'reductions': [], 'vlen': 16, 'widths': [128]}, {'external_spill_bytes': 0, 'gemm_tiles': [], 'mma_fragment_reuses': 0, 'predicate_rematerializations': 8, 'reductions': [], 'vlen': 16, 'widths': [128]}, {'external_spill_bytes': 0, 'gemm_tiles': [], 'mma_fragment_reuses': 0, 'predicate_rematerializations': 8, 'reductions': [], 'vlen': 16, 'widths': [128]}, {'external_spill_bytes': 0, 'gemm_tiles': [], 'mma_fragment_reuses': 0, 'predicate_rematerializations': 8, 'reductions': [], 'vlen': 16, 'widths': [128]}, {'external_spill_bytes': 0, 'gemm_tiles': [], 'mma_fragment_reuses': 0, 'predicate_rematerializations': 8, 'reductions': [], 'vlen': 16, 'widths': [128]}, {'external_spill_bytes': 0, 'gemm_tiles': [], 'mma_fragment_reuses': 0, 'predicate_rematerializations': 8, 'reductions': [], 'vlen': 16, 'widths': [128]}, {'external_spill_bytes': 0, 'gemm_tiles': [], 'mma_fragment_reuses': 0, 'predicate_rematerializations': 8, 'reductions': [], 'vlen': 16, 'widths': [128]}, {'external_spill_bytes': 0, 'gemm_tiles': [], 'mma_fragment_reuses': 0, 'predicate_rematerializations': 8, 'reductions': [], 'vlen': 16, 'widths': [128]}, {'external_spill_bytes': 0, 'gemm_tiles': [], 'mma_fragment_reuses': 0, 'predicate_rematerializations': 8, 'reductions': [], 'vlen': 16, 'widths': [128]}, {'external_spill_bytes': 0, 'gemm_tiles': [], 'mma_fragment_reuses': 0, 'predicate_rematerializations': 8, 'reductions': [], 'vlen': 16, 'widths': [128]}, {'external_spill_bytes': 0, 'gemm_tiles': [], 'mma_fragment_reuses': 0, 'predicate_rematerializations': 8, 'reductions': [], 'vlen': 16, 'widths': [128]}, {'external_spill_bytes': 0, 'gemm_tiles': [], 'mma_fragment_reuses': 0, 'predicate_rematerializations': 8, 'reductions': [], 'vlen': 16, 'widths': [128]}, {'external_spill_bytes': 0, 'gemm_tiles': [], 'mma_fragment_reuses': 0, 'predicate_rematerializations': 8, 'reductions': [], 'vlen': 16, 'widths': [128]}, {'external_spill_bytes': 0, 'gemm_tiles': [], 'mma_fragment_reuses': 0, 'predicate_rematerializations': 8, 'reductions': [], 'vlen': 16, 'widths': [128]}, {'external_spill_bytes': 0, 'gemm_tiles': [], 'mma_fragment_reuses': 0, 'predicate_rematerializations': 8, 'reductions': [], 'vlen': 16, 'widths': [128]}, {'external_spill_bytes': 0, 'gemm_tiles': [], 'mma_fragment_reuses': 0, 'predicate_rematerializations': 8, 'reductions': [], 'vlen': 16, 'widths': [128]}, {'external_spill_bytes': 0, 'gemm_tiles': [], 'mma_fragment_reuses': 0, 'predicate_rematerializations': 8, 'reductions': [], 'vlen': 16, 'widths': [128]}, {'external_spill_bytes': 0, 'gemm_tiles': [], 'mma_fragment_reuses': 0, 'predicate_rematerializations': 8, 'reductions': [], 'vlen': 16, 'widths': [128]}, {'external_spill_bytes': 0, 'gemm_tiles': [], 'mma_fragment_reuses': 0, 'predicate_rematerializations': 8, 'reductions': [], 'vlen': 16, 'widths': [128]}, {'external_spill_bytes': 0, 'gemm_tiles': [], 'mma_fragment_reuses': 0, 'predicate_rematerializations': 8, 'reductions': [], 'vlen': 16, 'widths': [128]}, {'external_spill_bytes': 0, 'gemm_tiles': [], 'mma_fragment_reuses': 0, 'predicate_rematerializations': 8, 'reductions': [], 'vlen': 16, 'widths': [128]}, {'external_spill_bytes': 0, 'gemm_tiles': [], 'mma_fragment_reuses': 0, 'predicate_rematerializations': 8, 'reductions': [], 'vlen': 16, 'widths': [128]}, {'external_spill_bytes': 0, 'gemm_tiles': [], 'mma_fragment_reuses': 0, 'predicate_rematerializations': 8, 'reductions': [], 'vlen': 16, 'widths': [128]}, {'external_spill_bytes': 0, 'gemm_tiles': [], 'mma_fragment_reuses': 0, 'predicate_rematerializations': 8, 'reductions': [], 'vlen': 16, 'widths': [128]}, {'external_spill_bytes': 0, 'gemm_tiles': [], 'mma_fragment_reuses': 0, 'predicate_rematerializations': 0, 'reductions': [[32, 'add', 1]], 'vlen': 16, 'widths': [32]}]
+PASS sum, width cap 32, shape (3, 127)
+PASS sum, width cap 32, shape (3, 17)
+PASS sum, width cap 32, shape (3, 33)
+PASS sum, width cap 32, shape (3, 65)
+AUDIT actual row tiles: [[2, 16, 1]]
+AUDIT amax reductions: [{'external_spill_bytes': 0, 'gemm_tiles': [], 'mma_fragment_reuses': 0, 'predicate_rematerializations': 0, 'reductions': [[32, 'max_prop', 1]], 'vlen': 16, 'widths': [32]}]
+PASS amax, width cap 32, shape (3, 127)
+PASS amax, width cap 32, shape (3, 17)
+PASS amax, width cap 32, shape (3, 33)
+PASS amax, width cap 32, shape (3, 65)
+AUDIT actual row tiles: [[2, 16, 1]]
+AUDIT rmsnorm reductions: [{'external_spill_bytes': 0, 'gemm_tiles': [], 'mma_fragment_reuses': 0, 'predicate_rematerializations': 0, 'reductions': [[32, 'add', 1]], 'vlen': 16, 'widths': [32]}]
+PASS rmsnorm, width cap 32, shape (3, 127)
+PASS rmsnorm, width cap 32, shape (3, 17)
+PASS rmsnorm, width cap 32, shape (3, 33)
+PASS rmsnorm, width cap 32, shape (3, 65)
+AUDIT actual row tiles: [[2, 16, 1]]
+AUDIT softmax reductions: [{'external_spill_bytes': 0, 'gemm_tiles': [], 'mma_fragment_reuses': 0, 'predicate_rematerializations': 0, 'reductions': [[32, 'add', 1], [32, 'max_prop', 1]], 'vlen': 16, 'widths': [32]}]
+PASS softmax, width cap 32, shape (3, 127)
+PASS softmax, width cap 32, shape (3, 17)
+PASS softmax, width cap 32, shape (3, 33)
+PASS softmax, width cap 32, shape (3, 65)
+AUDIT actual row tiles: [[2, 16, 1]]
+AUDIT layernorm reductions: [{'external_spill_bytes': 0, 'gemm_tiles': [], 'mma_fragment_reuses': 0, 'predicate_rematerializations': 0, 'reductions': [[32, 'add', 1]], 'vlen': 16, 'widths': [32]}]
+PASS layernorm, width cap 32, shape (3, 127)
+PASS layernorm, width cap 32, shape (3, 17)
+PASS layernorm, width cap 32, shape (3, 33)
+PASS layernorm, width cap 32, shape (3, 65)
+r40-reduction-tests PASS (20/20)

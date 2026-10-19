@@ -1,0 +1,15 @@
+{
+ "name": "reduction_w16_rows2",
+ "group": "tiles",
+ "cmd": "/home/zhongchun/tc_env/torchenv/bin/python tools/r40/reduction_tests.py --width 16 --rows 2",
+ "env": {},
+ "start": "2026-10-19T02:51:17+00:00",
+ "end": "2026-10-19T03:19:47+00:00",
+ "seconds": 1710.0,
+ "exit": 0,
+ "marker": "r40-reduction-tests PASS \\(20/20\\)",
+ "marker_found": true,
+ "ok": true,
+ "log": "reduction_w16_rows2.log",
+ "log_sha256": "44cf59d9ab9b9b62e19bd1033d9be881803ee4db1609d039f2f58ccf0c60533b"
+}

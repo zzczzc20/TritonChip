@@ -1,0 +1,8 @@
+W1019 02:35:58.640000 2515542 torch/utils/cpp_extension.py:183] No CUDA runtime is found, using CUDA_HOME='/usr/local/cuda'
+  building core-vrf-sync-v5 -> /home/zhongchun/r40v3_tpb_runs/main/cache/fold_w16/devices/core-vrf-sync-v5-a8f9e2a0291d254a-2f12bdd465ea/tnca_device_vrf5.vvp
+  built 17676402 bytes
+PASS values/index fold, width 16, tail 127, NaN and first tie
+PASS values/index fold, width 16, tail 17, NaN and first tie
+PASS values/index fold, width 16, tail 33, NaN and first tie
+PASS values/index fold, width 16, tail 65, NaN and first tie
+r40-fold-tests PASS (4/4)

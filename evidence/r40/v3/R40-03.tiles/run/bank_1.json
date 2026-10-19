@@ -1,0 +1,15 @@
+{
+ "name": "bank_1",
+ "group": "tiles",
+ "cmd": "/home/zhongchun/tc_env/torchenv/bin/python tools/r40/bank_tests.py --enabled 1 --out /home/zhongchun/r40v3_tpb_runs/main/bank_1.json",
+ "env": {},
+ "start": "2026-10-19T04:35:26+00:00",
+ "end": "2026-10-19T04:37:02+00:00",
+ "seconds": 95.7,
+ "exit": 1,
+ "marker": "r40-bank-tests PASS \\(3/3\\)",
+ "marker_found": false,
+ "ok": false,
+ "log": "bank_1.log",
+ "log_sha256": "6b62806a90d1ad9692271e27fd70d302f237e46a4df1d4bfd6a33f3d8ac61167"
+}

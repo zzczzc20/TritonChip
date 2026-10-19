@@ -21,11 +21,14 @@
 #         ~10-20 min, ~6-8 GB each.
 #==============================================================================
 set -euo pipefail
+# The host is shared: other users' Vivado jobs hold much of its memory. A
+# run starts only when at least OOC_MIN_AVAIL_GB is available (default 30;
+# a 3-10 min unit run of <= 6 GB may set 16, leaving 10 GB of headroom).
 need_memory() {
-    local avail
+    local avail min=${OOC_MIN_AVAIL_GB:-30}
     avail=$(free -g | awk '/^Mem:/{print $7}')
-    if [ "$avail" -lt 30 ]; then
-        echo "REFUSED: only ${avail} GB available (< 30 GB); not starting Vivado" >&2
+    if [ "$avail" -lt "$min" ]; then
+        echo "REFUSED: only ${avail} GB available (< ${min} GB); not starting Vivado" >&2
         exit 3
     fi
 }

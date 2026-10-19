@@ -22,6 +22,11 @@ class ResidencyTests(unittest.TestCase):
         state = audit.graphs(self.graphs, self.tree, self.image, self.launch)
         audit.model(self.model, self.tree, self.image, state)
 
+    def test_correct_growing_model_does_not_prove_bucket_compilation(self):
+        from bucket_model_acceptance import bucket_policy
+        with self.assertRaisesRegex(ValueError,'growing-shape'):
+            bucket_policy(self.model)
+
     def test_incomplete_duplicate_changed_source_and_lost_positive_control(self):
         mutations = [lambda r:r['state']['completed'].pop(),
                      lambda r:r['state'].update(status='running'),

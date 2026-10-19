@@ -1,0 +1,7 @@
+{
+  "root": "/home/zhongchun/r40_reserved_80dd_cuda",
+  "pid": 2441204,
+  "source": "/home/zhongchun/r40_bucket_full_80dd_v2_source",
+  "controller_sha256": "6f4176dcb66962f3f5841084e93bfc30bb8d348d6634a0e48f37d862eaa53abf",
+  "scope": "Complete original recovery and CUDA-host case inventory on the unchanged repaired product; no physical FPGA access"
+}

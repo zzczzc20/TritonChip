@@ -6,7 +6,7 @@
   "candidate_software_tree": "files:80dd1a823e4be49e5e40d375d842c17e46c362d298e37f389c5e225621b6e4ca",
   "image_sha256": "a88ebdf59cfbbb2001ebd5b1b2c739c5d8cd33931f1e9202f18cac07c4c83083",
   "actual_clock_hz": 90000000,
-  "scope": "Planning ledger, not a replacement acceptance result. Historical passing records retain their original identities; repaired-source measurements are pending. Commands require the declared board environment and serial ownership; they are not concurrently scheduled.",
+  "scope": "Planning ledger, not a replacement acceptance result. Historical passing records retain their original identities; repaired-source measurements are pending. Commands require the declared board environment and serial ownership; they are not concurrently scheduled. Original full large decode and prefill repair replays both passed. Fixed-bucket compiler preflight does not promote a native gate.",
   "gates": [
     {
       "id": "R40-00.protocol",
@@ -185,8 +185,8 @@
       "recorded_status": "not-measured",
       "recorded_source": "see bound raw inputs / historical scope",
       "candidate_status": "not-measured",
-      "blocker": "Repaired-source original full suites and peak/headroom audit remain incomplete.",
-      "evidence": "evidence/r40/v2/convergence/attempt03/reserved_original_decode_1a7c643_complete.json",
+      "blocker": "The HBM probe filler must be revalidated after splitting at the reserved TMU page; full-suite peak/headroom audit remains downstream.",
+      "evidence": "evidence/r40/v2/convergence/attempt03/bucket_05db000_probe_failure_preserved.json",
       "next_command": "cat ~/tnca_delivery_reserved_1a7c643_4gib/state.json",
       "success": "Collect the already queued original suite, then run its strict same-source auditor; do not infer other capability or performance gates.",
       "failure": "Preserve the failed original stage and diagnose it before any downstream board session."
@@ -393,8 +393,8 @@
       "recorded_status": "not-measured",
       "recorded_source": "see bound raw inputs / historical scope",
       "candidate_status": "not-measured",
-      "blocker": "Generation currently recompiles growing KV shapes rather than one compilation per fixed bucket.",
-      "evidence": "evidence/r40/v2/convergence/attempt03/model_report_6bd07b7_manifest.json",
+      "blocker": "Full frozen fixed-bucket generation is implemented and passes GB10 semantic/guard and actual compiler preflight, but the physical 64-step run and same-source audit are pending.",
+      "evidence": "evidence/r40/v2/convergence/attempt03/bucket_full_80dd_v2_compile_complete.json",
       "next_command": "R40_CONTRACT=v2 make r40-attention",
       "success": "Audit all gate-specific requirements and bind the complete raw result to the repaired source, actual image and clock; promote only this gate if every check passes.",
       "failure": "Preserve the raw failed experiment; fix its concrete cause and rerun the affected original scope. No tolerance, shape or sampling changes."

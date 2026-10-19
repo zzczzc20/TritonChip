@@ -32,11 +32,26 @@ the same order, grids and executable payloads. Eleven container hashes differ
 only in source-provenance fields; their payloads are byte-identical. Full
 container identities and verified comparisons are preserved rather than relabelled.
 
-Original prefill replay is running. Its success unlocks the serial repaired
-snapshot queue: actual-window probes, complete native77/HBM14/full frozen model,
+Original prefill replay also passed cold and steady calls, with logits error
+**0.00292627** and kernel-reported process exit status 0. Its full launch order,
+grids and executable payloads match the failed original run. The queue supervisor
+was handed over after that verified exit; the FPGA child was never interrupted.
+
+The following address probe exposed a harness assumption: one contiguous filler
+allocation crossed the now-reserved TMU page and moved the intended probe. The
+failed probe, original harness and production-allocator mutation are preserved.
+The corrected planner splits filler allocations at reserved intervals and keeps
+all original PC/BO-edge/high-address probes and launch-frame reserve.
+
+The complete queue continues with: actual-window probes, complete native77/HBM14/full frozen model,
 physical capability and host conformance, original large24, and all chained
 transfer observations. A failure stops the queue and preserves that stage.
-These functional runs do not establish a performance gate or fixed-bucket decode.
+The full model now has an explicit fixed-bucket mode (capacity576, prefill512,
+64 decode calls), stable resident cache addresses and device tensor position.
+GB10 semantic/guard checks and full-size actual TNCA compiler preflight passed;
+both phases retain sealed containers and generated IR. Native fixed-bucket
+correctness and its one-compilation assertion are still pending. These functional
+runs do not establish a performance gate.
 The earlier formal performance queue stopped before measurements when large24
 failed; it did not produce performance evidence.
 

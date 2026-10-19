@@ -2147,6 +2147,7 @@ r40-multicore-mmio-checks: | dirs
 	@$(PYTHON) tools/r40/autotune_policy_tests.py
 	@$(PYTHON) tools/r40/autotune_worker_tests.py
 	@$(TRITON_PYTHON) tools/r40/code_cache_epoch_tests.py
+	@$(TRITON_PYTHON) tools/r40/bucket_decode_tests.py
 	@$(PYTHON) tools/r40/code_link_tests.py
 	@$(PYTHON) tools/r40/mesh_pipeline_tests.py
 	@$(PYTHON) tools/r40/multicore_mmio_synth_tests.py

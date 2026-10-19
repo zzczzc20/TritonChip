@@ -4,6 +4,31 @@ PC_BYTES = 256 << 20
 PROBE_BYTES = 512
 
 
+def topology_probe_fill_sizes(start, stop, reserved=()):
+    """Advance probe allocations through ordinary memory, never across MMIO.
+
+    The production allocator skips a reserved page when the following buffer
+    starts there. A single large filler spanning that page would instead move
+    the entire filler and all later probes, invalidating physical coverage.
+    """
+    if start<0 or stop<start or start%64 or stop%64:
+        raise ValueError('probe filler endpoints must be ascending and line aligned')
+    chunks=[];cursor=start
+    for lo,hi in sorted(reserved):
+        if lo>=hi or lo%64 or hi%64:
+            raise ValueError('invalid reserved probe interval')
+        if lo<=stop<hi:
+            raise ValueError('probe storage starts inside reserved MMIO')
+        if hi<=cursor or lo>=stop:
+            continue
+        if cursor<lo:
+            chunks.append(lo-cursor)
+        cursor=hi
+    if cursor<stop:
+        chunks.append(stop-cursor)
+    return chunks
+
+
 def topology_probe_offsets(window):
     """Disjoint probes at real allocated PC boundaries, with no PC-size guess.
 

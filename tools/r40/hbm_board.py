@@ -44,7 +44,7 @@ for p in (ROOT, ROOT / 'python', ROOT / 'compiler' / 'python', ROOT / 'tools' / 
 os.environ.setdefault('TNCA_PROFILE', 'core-vrf-sync-v5')
 
 CASES = []
-from hbm_address import PC_BYTES, probe_offsets, topology_probe_offsets, topology_probe_storage
+from hbm_address import PC_BYTES, probe_offsets, topology_probe_offsets, topology_probe_storage, topology_probe_fill_sizes
 # --small: the same cases at sizes the RTL simulator runs in minutes, against
 # the simulated /hbm memory mode (TNCA_PROFILE=core-vrf-sync-v5/hbm) -- a dry
 # run of this tool, not evidence for the gate.
@@ -144,7 +144,9 @@ def window():
         assert len(w['allocation']['physical_banks'])>=2, 'v2 requires at least two allocated physical PCs'
     return dict(base=hex(w['base']), size=w['size'], local_limit=hex(w['local_limit']),
                 bank=bank.get('tag'), bank_bytes=bank.get('size'), bank_index=bank.get('index'),
-                heap_end=hex(s._heap.limit), dma=w['dma'], allocation=w.get('allocation'))
+                heap_end=hex(s._heap.limit), heap_capacity_bytes=s._heap.capacity,
+                reserved_virtual_ranges=list(s._heap.reserved),
+                dma=w['dma'], allocation=w.get('allocation'))
 
 
 @case
@@ -167,10 +169,11 @@ def samples():
         with s._lock:top=s._heap.next
         if v2 and i==n-1:
             s.free(control);control=None
-        gap = local + entry['storage_start'] - top
+        target = local + entry['storage_start']
+        gap = target - top
         assert gap >= 0, f'allocator passed probe {i}: {top:#x} > {local + offset:#x}'
-        if gap:
-            held.append(torch.empty(gap, dtype=torch.uint8, device='tnca'))
+        for fill_bytes in topology_probe_fill_sizes(top,target,s._heap.reserved):
+            held.append(torch.empty(fill_bytes, dtype=torch.uint8, device='tnca'))
         storage=torch.empty(entry['storage_bytes']//4,dtype=torch.int32,device='tnca')
         held.append(storage)
         x=storage[entry['view_offset']//4:]

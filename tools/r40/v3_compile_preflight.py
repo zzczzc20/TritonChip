@@ -429,6 +429,9 @@ def main():
     p.add_argument('--device', choices=sorted(DEVICE_ENV), default='cpu')
     p.add_argument('--torch-extensions-dir', type=Path,
                    help='native-stub: private build dir of the tnca device extension')
+    p.add_argument('--items', type=Path,
+                   help='JSON list replacing ITEMS: [{"item", "subset", "experiment", '
+                        '"configs": [{"label", "knobs": {overrides of BASE}}]}]; subsets are frozen v2 ones')
     p.add_argument('--child', action='store_true', help=argparse.SUPPRESS)
     p.add_argument('--point')
     p.add_argument('--point-sha256')
@@ -451,8 +454,12 @@ def main():
     contract_v2.verify(root)
     plan = json.loads((root / 'spec/r40/v2/plan.json').read_text())
 
+    global ITEMS
+    if a.items:
+        ITEMS = [dict(it, configs=[cfg(c['label'], **c.get('knobs', {})) for c in it['configs']])
+                 for it in json.loads(a.items.read_text())]
     subsets = {}
-    for name in SUBSETS:
+    for name in sorted({it['subset'] for it in ITEMS}):
         path = root / f'spec/r40/suites/{name}.json'
         raw = path.read_bytes()
         doc = json.loads(raw)

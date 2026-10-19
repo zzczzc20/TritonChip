@@ -90,14 +90,27 @@ def config_key(point_id, knobs, klass):
     return hashlib.sha256(raw).hexdigest()[:16]
 
 
+CORRECTIONS = ROOT/'doc/r40_v3/design_corrections.json'
+
+
+def corrections():
+    """User-approved design corrections of frozen experiments (baseline or
+    held prerequisites); the gate rule is unchanged."""
+    return json.loads(CORRECTIONS.read_text())['corrections'] if CORRECTIONS.exists() else {}
+
+
 def experiment_configs(plan, name, candidates):
-    exp = plan['experiments'][name]
+    exp = dict(plan['experiments'][name])
+    fix = corrections().get(name, {})
+    if 'baseline' in fix:
+        exp['baseline'] = fix['baseline']
     knob = exp['vary'][0]
     base = dict(plan['baseline_knobs'][exp['baseline']])
     if name == 'R40-01.device-time':
         base = dict(TNCA_TRANSFER_POLICY='per-kernel', TNCA_ACTIVE_CORES='3')
     base.update(exp.get('baseline_override') or {})
     base.update(PREREQUISITES.get(name, {}).get('knobs', {}))
+    base.update(fix.get('hold', {}))
     candidate = exp['candidate']
     if isinstance(candidate, list):
         if candidates.get(name) not in candidate:
@@ -129,11 +142,13 @@ def build(plan, candidates, preflight):
             order = ['control', 'candidate']
             rng.shuffle(order)
             rows.append(dict(point=point['id'], sha256=point['sha256'], keys=keys, order=order))
-        experiments[name] = dict(exp, name=name, klass=klass, points=rows, candidate_value=sides['candidate'][exp['vary'][0]])
+        experiments[name] = dict(exp, name=name, klass=klass, points=rows, candidate_value=sides['candidate'][exp['vary'][0]],
+                                 baseline=corrections().get(name, {}).get('baseline', exp['baseline']))
     return dict(schema='tnca-r40-v3-campaign/1', planned=utc(), contract_sha256=contract_v3.LOCK_SHA256,
                 plan_sha256=sha_file(PLAN), harness_sha256=sha_file(__file__),
                 latency_child_sha256=sha_file(ROOT/'tools/r40/v3_latency_child.py'),
                 candidates=candidates, compile_preflight=preflight, order=list(ORDER), prerequisites=PREREQUISITES,
+                design_corrections=corrections(),
                 transport=dict(deadline_cycles=int(DEADLINE), host_timeout_s=float(HOST_TIMEOUT)),
                 experiments=experiments, configs=configs)
 

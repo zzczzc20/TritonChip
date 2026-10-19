@@ -1,0 +1,15 @@
+{
+ "schema": "tnca-r40-v3-design-corrections/1",
+ "authorization": "User 2026-10-19 (answer to the design-correction question): \"采用修正版\" -- the corrected designs are the evidence for these gates; the gate rule (complete accepted comparison, 95% CI lower bound of S_geo > 1, v2 threshold reported as target) is unchanged.",
+ "corrections": {
+  "R40-06.ports": {
+   "baseline": "B40-N",
+   "frozen": "B40-S",
+   "reason": "B40-S has one active core and one outstanding request: a single requester with one request in flight cannot use a second memory outlet, so the frozen A/B cannot show the mechanism. v1 R40-06 asks for multiple outlets against a single outlet at the same core count and lists the single/multi core x single/multi outlet matrix. Evidence: the bc5a frozen run (S_geo 1.122, CI [0.993, 1.398]; five streaming ops 0.99-1.06)."
+  },
+  "R40-07.pipeline": {
+   "hold": {"TNCA_RCTX_ROLES": "2"},
+   "reason": "TNCA_PIPELINE takes effect only inside the role-context path (python/tnca/aot.py); with TNCA_RCTX_ROLES unset all 9 long-K points compile to byte-identical executables (evidence/r40/v3/R40-07.policy/inventory_longk). Roles are held at 2 on both sides, as fused SDPA's prerequisites are, so the comparison stays single-factor in TNCA_PIPELINE."
+  }
+ }
+}

@@ -54,6 +54,6 @@ test_unfinished_command_at_exit (test_protocol.TestFaults.test_unfinished_comman
 test_wait_on_unarmed_barrier_would_sleep_forever (test_protocol.TestFaults.test_wait_on_unarmed_barrier_would_sleep_forever) ... ok
 
 ----------------------------------------------------------------------
-Ran 34 tests in 34.016s
+Ran 34 tests in 13.822s
 
 OK

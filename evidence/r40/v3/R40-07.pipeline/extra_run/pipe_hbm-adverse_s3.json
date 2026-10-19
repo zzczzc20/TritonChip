@@ -1,15 +1,15 @@
 {
  "name": "pipe_hbm-adverse_s3",
  "group": "extra",
- "cmd": "/home/zhongchun/tc_env/torchenv/bin/python tools/r40/v3_pipeline_matrix.py --memory hbm-adverse --stages 3 --trace-dir /home/zhongchun/r40v3_tpb_runs/extra/trace_hbm-adverse_s3 --json /home/zhongchun/r40v3_tpb_runs/extra/pipe_hbm-adverse_s3.json",
+ "cmd": "/home/zhongchun/tc_env/torchenv/bin/python tools/r40/v3_pipeline_matrix.py --memory hbm-adverse --stages 3 --trace-dir /home/zhongchun/r40v3_tpc_runs/all/trace_hbm-adverse_s3 --json /home/zhongchun/r40v3_tpc_runs/all/pipe_hbm-adverse_s3.report.json",
  "env": {},
- "start": "2026-10-19T05:59:50+00:00",
- "end": "2026-10-19T06:53:36+00:00",
- "seconds": 3226.2,
+ "start": "2026-10-19T12:30:53+00:00",
+ "end": "2026-10-19T13:29:51+00:00",
+ "seconds": 3537.6,
  "exit": 0,
  "marker": "r40-v3-pipeline-matrix PASS",
  "marker_found": true,
  "ok": true,
  "log": "pipe_hbm-adverse_s3.log",
- "log_sha256": "440138d0cbe895999e0fb460555599cb8c70c9fcf3e8dd3d6b1697663910d84b"
+ "log_sha256": "9bc372e111d5fe098dc245bfcdb07c3ce7b0822cd27de56c508ed1d77cd955fa"
 }

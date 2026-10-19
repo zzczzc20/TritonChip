@@ -5,13 +5,13 @@
  "env": {
   "TNCA_RCTX_STAGES": "2"
  },
- "start": "2026-10-19T04:36:26+00:00",
- "end": "2026-10-19T04:51:19+00:00",
- "seconds": 893.7,
+ "start": "2026-10-19T10:12:36+00:00",
+ "end": "2026-10-19T10:23:15+00:00",
+ "seconds": 639.1,
  "exit": 0,
  "marker": "r39-rctx-roles-tests \\[core-vrf-sync-v5\\]  PASS",
  "marker_found": true,
  "ok": true,
  "log": "rctx_roles_s2.log",
- "log_sha256": "b276e5b9e73a64835b8bac1f7ff3c1fa7ea7c1dd340e5f266b1b8d9edcfc953b"
+ "log_sha256": "c5036abff75cd8b5a01026eb8f40d45b93d9fceb224d36b8419be03b871b6ae5"
 }

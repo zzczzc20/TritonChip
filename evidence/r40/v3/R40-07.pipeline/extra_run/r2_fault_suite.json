@@ -1,15 +1,15 @@
 {
  "name": "r2_fault_suite",
  "group": "extra",
- "cmd": "/home/zhongchun/tc_env/torchenv/bin/python tools/r2/fault_tests.py --json /home/zhongchun/r40v3_tpb_runs/extra/r2_fault.json",
+ "cmd": "/home/zhongchun/tc_env/torchenv/bin/python tools/r2/fault_tests.py --json /home/zhongchun/r40v3_tpc_runs/all/r2_fault.report.json",
  "env": {},
- "start": "2026-10-19T06:23:50+00:00",
- "end": "2026-10-19T06:24:05+00:00",
- "seconds": 14.8,
+ "start": "2026-10-19T12:33:46+00:00",
+ "end": "2026-10-19T12:34:11+00:00",
+ "seconds": 25.3,
  "exit": 0,
  "marker": "r2-fault-tests\\s+PASS",
  "marker_found": true,
  "ok": true,
  "log": "r2_fault_suite.log",
- "log_sha256": "28bb9b4bc4348e8d6dbdebb2d8af7d5a4fb59ae894a14ab97f7613518de9f7a8"
+ "log_sha256": "16a6e5ec502cfce8b84c29a73ab68f994bad846ac4b7fd79fa1fd76e12ab2f78"
 }

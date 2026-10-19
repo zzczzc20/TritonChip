@@ -1,17 +1,17 @@
 {
  "name": "native_pipeline_s3",
  "group": "pipeline",
- "cmd": "/home/zhongchun/tc_env/torchenv/bin/python tools/r40/native_pipeline_tests.py --stages 3 --trace-dir /home/zhongchun/r40v3_tpb_runs/main/trace_native_s3 --require-overlap",
+ "cmd": "/home/zhongchun/tc_env/torchenv/bin/python tools/r40/native_pipeline_tests.py --stages 3 --trace-dir /home/zhongchun/r40v3_tpc_runs/all/trace_native_s3 --require-overlap",
  "env": {
   "TNCA_RCTX_STAGES": "3"
  },
- "start": "2026-10-19T04:51:19+00:00",
- "end": "2026-10-19T05:01:29+00:00",
- "seconds": 609.7,
+ "start": "2026-10-19T10:30:38+00:00",
+ "end": "2026-10-19T10:37:38+00:00",
+ "seconds": 420.2,
  "exit": 0,
  "marker": "r40-native-pipeline PASS \\(4/4\\)[\\s\\S]*AUDIT measured DMA/MMA overlap=[1-9]",
  "marker_found": true,
  "ok": true,
  "log": "native_pipeline_s3.log",
- "log_sha256": "370bf57af52ee0574f0b98c363fdddddebbf7bb96a43f149a5f9c8ecdb6cbff6"
+ "log_sha256": "fe1a0e0f993f05347cb9612ac74345ab9e1ef3239f4464e932aa6b3e597a57de"
 }

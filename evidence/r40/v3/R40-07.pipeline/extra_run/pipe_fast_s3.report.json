@@ -1,0 +1,354 @@
+{
+ "schema": "tnca-r40-v3-pipeline-matrix/1",
+ "profile": "core-vrf-sync-v5",
+ "memory": "fast",
+ "plusargs": "+engtrace +trace",
+ "stages": 3,
+ "roles": "2 (forced legal split)",
+ "cases": [
+  {
+   "graph": "mm",
+   "shape": [
+    16,
+    16,
+    48
+   ],
+   "stages": 3,
+   "memory": "fast",
+   "ok": true,
+   "max_abs_err": 0.0,
+   "sequences": [
+    117
+   ],
+   "rings": [
+    {
+     "consumer_ops": 328,
+     "direct": true,
+     "producer_ops": 221,
+     "ring_windows": 6,
+     "stages": 3
+    }
+   ],
+   "refusals": [],
+   "artifacts": [
+    "cc47bc7a47275f126708198ded91f9b05590b9c32904aecf79e7bf8bfcfa5a1f"
+   ],
+   "launches": 1,
+   "trace": [
+    {
+     "seq": 117,
+     "mma_cycles": 933,
+     "dma_cycles": 444,
+     "overlap_cycles": 292
+    }
+   ],
+   "overlap_cycles": 292
+  },
+  {
+   "graph": "mm",
+   "shape": [
+    16,
+    16,
+    256
+   ],
+   "stages": 3,
+   "memory": "fast",
+   "ok": true,
+   "max_abs_err": 0.0,
+   "sequences": [
+    130
+   ],
+   "rings": [
+    {
+     "consumer_ops": 327,
+     "direct": true,
+     "producer_ops": 220,
+     "ring_windows": 6,
+     "stages": 3
+    }
+   ],
+   "refusals": [],
+   "artifacts": [
+    "988c07792ab7fc661f24d83f29512156be771a59816cb9f27f4cd20a8c7e03f4"
+   ],
+   "launches": 1,
+   "trace": [
+    {
+     "seq": 130,
+     "mma_cycles": 4976,
+     "dma_cycles": 2368,
+     "overlap_cycles": 2192
+    }
+   ],
+   "overlap_cycles": 2192
+  },
+  {
+   "graph": "mm",
+   "shape": [
+    17,
+    31,
+    257
+   ],
+   "stages": 3,
+   "memory": "fast",
+   "ok": true,
+   "max_abs_err": 0.0,
+   "sequences": [
+    143
+   ],
+   "rings": [
+    {
+     "consumer_ops": 373,
+     "direct": false,
+     "producer_ops": 2100,
+     "ring_windows": 6,
+     "stages": 3
+    }
+   ],
+   "refusals": [],
+   "artifacts": [
+    "77f1c047e7e22dc1a2232d8634483451d76069632d2256b5705c894f15391172"
+   ],
+   "launches": 1,
+   "trace": [
+    {
+     "seq": 143,
+     "mma_cycles": 21209,
+     "dma_cycles": 10064,
+     "overlap_cycles": 2176
+    }
+   ],
+   "overlap_cycles": 2176
+  },
+  {
+   "graph": "addmm",
+   "shape": [
+    16,
+    16,
+    48
+   ],
+   "stages": 3,
+   "memory": "fast",
+   "ok": true,
+   "max_abs_err": 0.0,
+   "sequences": [
+    156
+   ],
+   "rings": [
+    {
+     "consumer_ops": 443,
+     "direct": true,
+     "producer_ops": 222,
+     "ring_windows": 6,
+     "stages": 3
+    }
+   ],
+   "refusals": [],
+   "artifacts": [
+    "323af45546d3fa97d91b15f8b6030e4a072aa685be1a48d8e6b62cae85e7ccb7"
+   ],
+   "launches": 1,
+   "trace": [
+    {
+     "seq": 156,
+     "mma_cycles": 933,
+     "dma_cycles": 444,
+     "overlap_cycles": 292
+    }
+   ],
+   "overlap_cycles": 292
+  },
+  {
+   "graph": "addmm",
+   "shape": [
+    16,
+    16,
+    256
+   ],
+   "stages": 3,
+   "memory": "fast",
+   "ok": true,
+   "max_abs_err": 0.0,
+   "sequences": [
+    169
+   ],
+   "rings": [
+    {
+     "consumer_ops": 442,
+     "direct": true,
+     "producer_ops": 221,
+     "ring_windows": 6,
+     "stages": 3
+    }
+   ],
+   "refusals": [],
+   "artifacts": [
+    "8f0c0ef3924113df51244cd860cd97434320f41671848da38f8364adfa0b051a"
+   ],
+   "launches": 1,
+   "trace": [
+    {
+     "seq": 169,
+     "mma_cycles": 4976,
+     "dma_cycles": 2368,
+     "overlap_cycles": 2192
+    }
+   ],
+   "overlap_cycles": 2192
+  },
+  {
+   "graph": "addmm",
+   "shape": [
+    17,
+    31,
+    257
+   ],
+   "stages": 3,
+   "memory": "fast",
+   "ok": true,
+   "max_abs_err": 3.814697265625e-06,
+   "sequences": [
+    182
+   ],
+   "rings": [
+    {
+     "consumer_ops": 488,
+     "direct": false,
+     "producer_ops": 2101,
+     "ring_windows": 6,
+     "stages": 3
+    }
+   ],
+   "refusals": [],
+   "artifacts": [
+    "9194b72b6fcd37375bc97b1f914fcf7df5ba36ff20556cce08e0181d6e3e661f"
+   ],
+   "launches": 1,
+   "trace": [
+    {
+     "seq": 182,
+     "mma_cycles": 21210,
+     "dma_cycles": 10064,
+     "overlap_cycles": 2176
+    }
+   ],
+   "overlap_cycles": 2176
+  },
+  {
+   "graph": "linear",
+   "shape": [
+    16,
+    16,
+    48
+   ],
+   "stages": 3,
+   "memory": "fast",
+   "ok": true,
+   "max_abs_err": 0.0,
+   "sequences": [
+    195
+   ],
+   "rings": [
+    {
+     "consumer_ops": 443,
+     "direct": true,
+     "producer_ops": 222,
+     "ring_windows": 6,
+     "stages": 3
+    }
+   ],
+   "refusals": [],
+   "artifacts": [
+    "1186231c23b5cff5221306b0a6f39417fdc36bfe6dc48660dbb386b1d291b843"
+   ],
+   "launches": 1,
+   "trace": [
+    {
+     "seq": 195,
+     "mma_cycles": 933,
+     "dma_cycles": 516,
+     "overlap_cycles": 319
+    }
+   ],
+   "overlap_cycles": 319
+  },
+  {
+   "graph": "linear",
+   "shape": [
+    16,
+    16,
+    256
+   ],
+   "stages": 3,
+   "memory": "fast",
+   "ok": true,
+   "max_abs_err": 0.0,
+   "sequences": [
+    208
+   ],
+   "rings": [
+    {
+     "consumer_ops": 442,
+     "direct": true,
+     "producer_ops": 221,
+     "ring_windows": 6,
+     "stages": 3
+    }
+   ],
+   "refusals": [],
+   "artifacts": [
+    "585e9d3c8713c2ffca7c198b86cbd283e07fc3a8aeb9f3523876c666410473d2"
+   ],
+   "launches": 1,
+   "trace": [
+    {
+     "seq": 208,
+     "mma_cycles": 4976,
+     "dma_cycles": 2752,
+     "overlap_cycles": 2529
+    }
+   ],
+   "overlap_cycles": 2529
+  },
+  {
+   "graph": "linear",
+   "shape": [
+    17,
+    31,
+    257
+   ],
+   "stages": 3,
+   "memory": "fast",
+   "ok": true,
+   "max_abs_err": 1.9073486328125e-06,
+   "sequences": [
+    221
+   ],
+   "rings": [
+    {
+     "consumer_ops": 488,
+     "direct": false,
+     "producer_ops": 2149,
+     "ring_windows": 6,
+     "stages": 3
+    }
+   ],
+   "refusals": [],
+   "artifacts": [
+    "7f084d2019247ec972cc63b748b6340cb352c55b0cd9837cf7df2e2cfc56a81d"
+   ],
+   "launches": 1,
+   "trace": [
+    {
+     "seq": 221,
+     "mma_cycles": 21201,
+     "dma_cycles": 10064,
+     "overlap_cycles": 2176
+    }
+   ],
+   "overlap_cycles": 2176
+  }
+ ],
+ "engine_log_sha256": "f44b7b34a270d5be324822ec1dabd33072387d4ce5ca67abcd6a9cfa261b23ea",
+ "ok": true
+}

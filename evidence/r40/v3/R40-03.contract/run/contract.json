@@ -7,13 +7,13 @@
   "TNCA_WINDOW_REUSE": "0",
   "TNCA_PACKED_WINDOW_UNPACK": "0"
  },
- "start": "2026-10-19T04:36:22+00:00",
- "end": "2026-10-19T04:36:22+00:00",
- "seconds": 0.1,
- "exit": 1,
+ "start": "2026-10-19T10:10:34+00:00",
+ "end": "2026-10-19T10:12:32+00:00",
+ "seconds": 117.7,
+ "exit": 0,
  "marker": "r40-contract-tests PASS \\(447/447 byte-identical to B39\\)",
- "marker_found": false,
- "ok": false,
+ "marker_found": true,
+ "ok": true,
  "log": "contract.log",
- "log_sha256": "739a27420553f6c8f2b7a985cc3b3fd5736c86aa9cc36881d495e6853415e7a6"
+ "log_sha256": "d7b6a512b53ebf7784bef8580aad3f9c3e526e7303a94981047acc89aa5bd6b2"
 }

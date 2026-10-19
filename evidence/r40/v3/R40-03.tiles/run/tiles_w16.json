@@ -3,13 +3,13 @@
  "group": "tiles",
  "cmd": "/home/zhongchun/tc_env/torchenv/bin/python tools/r40/tiles_tests.py --width 16",
  "env": {},
- "start": "2026-10-19T02:33:01+00:00",
- "end": "2026-10-19T02:35:48+00:00",
- "seconds": 167.2,
+ "start": "2026-10-19T08:03:42+00:00",
+ "end": "2026-10-19T08:05:09+00:00",
+ "seconds": 87.3,
  "exit": 0,
  "marker": "r40-tiles-tests PASS \\(12/12\\)",
  "marker_found": true,
  "ok": true,
  "log": "tiles_w16.log",
- "log_sha256": "4ac6a4c3cab5f1de756435c0c48a76a579968f351f3e4fe71660ee84316de781"
+ "log_sha256": "0422510263f775f4106af8729ede2b8bc39f0569fd4004d2bfdae4d596ce3d80"
 }

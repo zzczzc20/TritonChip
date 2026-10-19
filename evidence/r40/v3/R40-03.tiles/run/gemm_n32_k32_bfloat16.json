@@ -5,13 +5,13 @@
  "env": {
   "TNCA_HOST_TIMEOUT": "172800"
  },
- "start": "2026-10-19T03:36:41+00:00",
- "end": "2026-10-19T04:36:22+00:00",
- "seconds": 3580.6,
+ "start": "2026-10-19T09:26:30+00:00",
+ "end": "2026-10-19T10:04:13+00:00",
+ "seconds": 2262.4,
  "exit": 0,
  "marker": "r40-gemm-tiles-tests PASS \\(4/4\\)",
  "marker_found": true,
  "ok": true,
  "log": "gemm_n32_k32_bfloat16.log",
- "log_sha256": "c9dcd296e54c2faac7e3bb859ee214bb599089b944dbdd13cc73692ec50abce2"
+ "log_sha256": "d25260de0f45e49a67be35a7d245c1a30483f5671a4cf3540ed481da8650d682"
 }

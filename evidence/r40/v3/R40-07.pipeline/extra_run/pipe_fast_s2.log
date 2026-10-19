@@ -1,5 +1,5 @@
-W1019 04:02:53.255000 2680377 torch/utils/cpp_extension.py:183] No CUDA runtime is found, using CUDA_HOME='/usr/local/cuda'
-  building core-vrf-sync-v5 -> /home/zhongchun/r40v3_tpb_runs/extra/cache/pipe_fast_s2/devices/core-vrf-sync-v5-a8f9e2a0291d254a-2f12bdd465ea/tnca_device_vrf5.vvp
+W1019 11:22:42.142000 3167923 torch/utils/cpp_extension.py:183] No CUDA runtime is found, using CUDA_HOME='/usr/local/cuda'
+  building core-vrf-sync-v5 -> /home/zhongchun/r40v3_tpc_runs/all/cache/pipe_fast_s2/devices/core-vrf-sync-v5-a8f9e2a0291d254a-2f12bdd465ea/tnca_device_vrf5.vvp
   built 17676402 bytes
 PASS mm 16x16x48 memory=fast stages=2 err=0 rings=[{'consumer_ops': 310, 'direct': True, 'producer_ops': 202, 'ring_windows': 4, 'stages': 2}]
 PASS mm 16x16x256 memory=fast stages=2 err=0 rings=[{'consumer_ops': 309, 'direct': True, 'producer_ops': 201, 'ring_windows': 4, 'stages': 2}]

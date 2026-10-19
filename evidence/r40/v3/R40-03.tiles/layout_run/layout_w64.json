@@ -1,15 +1,15 @@
 {
  "name": "layout_w64",
  "group": "extra",
- "cmd": "/home/zhongchun/tc_env/torchenv/bin/python tools/r40/v3_layout_tests.py --width 64 --json /home/zhongchun/r40v3_tpb_runs/extra/layout_w64.json",
+ "cmd": "/home/zhongchun/tc_env/torchenv/bin/python tools/r40/v3_layout_tests.py --width 64 --json /home/zhongchun/r40v3_tpc_runs/all/layout_w64.report.json",
  "env": {},
- "start": "2026-10-19T02:55:41+00:00",
- "end": "2026-10-19T04:02:50+00:00",
- "seconds": 4029.5,
- "exit": 1,
+ "start": "2026-10-19T10:38:04+00:00",
+ "end": "2026-10-19T11:24:46+00:00",
+ "seconds": 2802.1,
+ "exit": 0,
  "marker": "r40-v3-layout PASS",
- "marker_found": false,
- "ok": false,
+ "marker_found": true,
+ "ok": true,
  "log": "layout_w64.log",
- "log_sha256": "d9cf649e79725a67a71201a194b47db8dcc7f8de36e410a9a2f04152559c8aa9"
+ "log_sha256": "8e9e8cb247bbd8f4723a2625a6ae60288c0d5cee47b3c62836f861d331370ea0"
 }

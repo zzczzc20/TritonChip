@@ -3,13 +3,13 @@
  "group": "tiles",
  "cmd": "/home/zhongchun/tc_env/torchenv/bin/python tools/r40/reduction_tests.py --width 64 --rows 2",
  "env": {},
- "start": "2026-10-19T02:59:31+00:00",
- "end": "2026-10-19T03:36:41+00:00",
- "seconds": 2230.0,
+ "start": "2026-10-19T08:20:55+00:00",
+ "end": "2026-10-19T08:45:29+00:00",
+ "seconds": 1474.3,
  "exit": 0,
  "marker": "r40-reduction-tests PASS \\(20/20\\)",
  "marker_found": true,
  "ok": true,
  "log": "reduction_w64_rows2.log",
- "log_sha256": "57d27259322e47fbc55e93aadd64501a7f526dbda730d80379cc73e5c2625320"
+ "log_sha256": "4359dfb414c04959c8e5d38fa91490244eb074c6e38f489e0f02de4cb943aab1"
 }

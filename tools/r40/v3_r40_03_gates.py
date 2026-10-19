@@ -285,6 +285,7 @@ def main():
     tree = identity['software_tree']
     here = A.local_tree()
     common = [A.check('auditor runs on the delivery product tree', here == tree, local=here, delivery=tree)]
+    common += A.identity_checks(identity)
     records = {}
     for gate, fn, what in (('R40-03.tiles', tiles, 'tails/transpose/stride/mask/int64/alias/dtypes, '
                             'register-block reductions, logical GEMM tiles, bank allocation, '

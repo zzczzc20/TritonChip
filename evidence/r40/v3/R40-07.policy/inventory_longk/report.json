@@ -1,7 +1,7 @@
 {
  "schema": "tnca-r40-v3-policy-inventory/1",
- "software_tree": "files:bc5a778ebc5f4afebf6c1a9fbf3b2d8717cb02e118134ebbb73fb5a927fc8183",
- "source_root": "/home/zhongchun/r40v3_tpb",
+ "software_tree": "files:fe1b5199db515440d2d3407aed61ef1eed5edb627e5baf9cda10be5a7198cf75",
+ "source_root": "/home/zhongchun/r40v3_tpc",
  "host": "gx10-6646",
  "harness_sha256": "d584ea45798a5d7a867327f39ff01046ee63211f247afd9dc17a95eeca8301ed",
  "suite": "spec/r40/suites/R40-07.long-k.json",
@@ -54,7 +54,7 @@
   "OMP_NUM_THREADS": "1",
   "MKL_NUM_THREADS": "1"
  },
- "started": "2026-10-19T06:13:19+0000",
+ "started": "2026-10-19T13:30:21+0000",
  "runs": [
   {
    "point": "op.gemv/hbm/fp16-k4096-n11008",
@@ -83,7 +83,7 @@
      "kernel": "triton_tem_fused_mm_t_0",
      "text_sha256": "88011a77a9677bca2bd63961f7fa4e9ce962dd98c159c41015080a616818764a",
      "payload_sha256": "f9517ffee9e0eaf60a727dcb09ef0d03d5d42f48867a75199cd12543eeb2333a",
-     "artifact_sha256": "40a5f36938562a507e3bd559e71d25ad42b34e0864c26be647953ac8266d09a8",
+     "artifact_sha256": "5965f4c5d34263b788d18d968f66a87b48520c776fab634fd060825c20c19fb8",
      "roles_per_program": 1,
      "programs_per_launch": 2,
      "ring": null,
@@ -100,7 +100,7 @@
      ]
     }
    ],
-   "seconds": 3.5,
+   "seconds": 5.2,
    "exit": 0
   },
   {
@@ -130,7 +130,7 @@
      "kernel": "triton_tem_fused_mm_t_0",
      "text_sha256": "88011a77a9677bca2bd63961f7fa4e9ce962dd98c159c41015080a616818764a",
      "payload_sha256": "f9517ffee9e0eaf60a727dcb09ef0d03d5d42f48867a75199cd12543eeb2333a",
-     "artifact_sha256": "1bbce2615a849c0e13d55c9d466d228890c2b3ee0cc6ce83d832c0d6423fbee5",
+     "artifact_sha256": "20558695438be7248f0cfc9a4c94b971bcaf5f062b8d999ae251640012801927",
      "roles_per_program": 1,
      "programs_per_launch": 2,
      "ring": null,
@@ -147,7 +147,7 @@
      ]
     }
    ],
-   "seconds": 4.6,
+   "seconds": 3.4,
    "exit": 0
   },
   {
@@ -177,7 +177,7 @@
      "kernel": "triton_tem_fused_mm_t_0",
      "text_sha256": "ba910af85315fbe3a284c91becd72b536619ae2ec58d545cf7630caab4797e8b",
      "payload_sha256": "610934dc97e5aaf0217efc2ffd54e46633a8ddb94f738e351752a24ea58a036f",
-     "artifact_sha256": "76ffbb0ac868ef11b4d50dc2a99b32da98a34e944206c616348e21b9ca00d5d1",
+     "artifact_sha256": "775fd9b5098d7f600aa88f7046db95633228a3381642eb38df3da04cbc3dd165",
      "roles_per_program": 2,
      "programs_per_launch": 2,
      "ring": {
@@ -200,7 +200,7 @@
      ]
     }
    ],
-   "seconds": 4.7,
+   "seconds": 4.0,
    "exit": 0
   },
   {
@@ -230,7 +230,7 @@
      "kernel": "triton_tem_fused_mm_t_0",
      "text_sha256": "150bae5049cfd94fabbf44fb7b1e616d361a2c9eff2af5cb0ea5189ef07148d1",
      "payload_sha256": "d3ce9414fafed48182f529fff9eeb99dca0f8d4642289927eac7785de9c2b00a",
-     "artifact_sha256": "15f96940bd84ea274d9ebad5f284ab5383492e4529a75778337254ed1186b880",
+     "artifact_sha256": "e8a736d8c6b1a774523ff483a7a2b3baf2fdc52a89ea63acbdc670a2a83effc9",
      "roles_per_program": 2,
      "programs_per_launch": 2,
      "ring": {
@@ -253,7 +253,7 @@
      ]
     }
    ],
-   "seconds": 6.1,
+   "seconds": 3.4,
    "exit": 0
   },
   {
@@ -283,7 +283,7 @@
      "kernel": "triton_tem_fused_mm_t_0",
      "text_sha256": "ba910af85315fbe3a284c91becd72b536619ae2ec58d545cf7630caab4797e8b",
      "payload_sha256": "610934dc97e5aaf0217efc2ffd54e46633a8ddb94f738e351752a24ea58a036f",
-     "artifact_sha256": "c5cf7b21783edf174e2b28447bbeb80fa48af0b37e7790c30fa44fdc513d986e",
+     "artifact_sha256": "8dc0f86791d03fdd7e2fbfc619fcfc702a00b5e5cac2ceb4df3d8cffadb8075c",
      "roles_per_program": 2,
      "programs_per_launch": 2,
      "ring": {
@@ -306,7 +306,7 @@
      ]
     }
    ],
-   "seconds": 6.2,
+   "seconds": 3.6,
    "exit": 0
   },
   {
@@ -336,7 +336,7 @@
      "kernel": "triton_tem_fused_mm_t_0",
      "text_sha256": "3ecf6b5f6868939ea34f1e7bd8088a0832e6c13315a4f7a021e67a1d27a0a451",
      "payload_sha256": "d04c094b92b073826ebdcc747dc37df4034314f2315705c7d7bab484b52ff7f8",
-     "artifact_sha256": "2ad4c6619276e2e3154895e443ece59f13509fb658eda5bac91dd3ebca82dfc7",
+     "artifact_sha256": "9498df9304bf7f8f1b90865da3e08396b24f393dde8e2b0afe79c23f2ae7e65b",
      "roles_per_program": 1,
      "programs_per_launch": 2,
      "ring": null,
@@ -353,7 +353,7 @@
      ]
     }
    ],
-   "seconds": 5.5,
+   "seconds": 3.1,
    "exit": 0
   },
   {
@@ -383,7 +383,7 @@
      "kernel": "triton_tem_fused_mm_t_0",
      "text_sha256": "3ecf6b5f6868939ea34f1e7bd8088a0832e6c13315a4f7a021e67a1d27a0a451",
      "payload_sha256": "d04c094b92b073826ebdcc747dc37df4034314f2315705c7d7bab484b52ff7f8",
-     "artifact_sha256": "2b8fe986b5b38c538bbdfb25425b65c7e9f4674f8da5c88783d37ed4de67be6d",
+     "artifact_sha256": "1cc0dd0d5576c1540f2fa093e1d24284efae5797d7afe0572359025520c1e1e3",
      "roles_per_program": 1,
      "programs_per_launch": 2,
      "ring": null,
@@ -400,7 +400,7 @@
      ]
     }
    ],
-   "seconds": 5.5,
+   "seconds": 3.0,
    "exit": 0
   },
   {
@@ -430,7 +430,7 @@
      "kernel": "triton_tem_fused_mm_t_0",
      "text_sha256": "694e55c067798a98c2f07170e0e7f1aef5b83c4f4953d03596488b1c1c06f21c",
      "payload_sha256": "7050e4a810fd19f36caa16f6c2f31d3a392d38f8f180047c8f4efbeff7cfd938",
-     "artifact_sha256": "92fc5341a881e700de20a9930ec210ef874ce55e9844b526dc3fc3e592319021",
+     "artifact_sha256": "5d969ccc85c7b35b10cf5bd0d22a177707890dabe0ce6badc05ed1e00878ded5",
      "roles_per_program": 2,
      "programs_per_launch": 2,
      "ring": {
@@ -453,7 +453,7 @@
      ]
     }
    ],
-   "seconds": 5.5,
+   "seconds": 3.0,
    "exit": 0
   },
   {
@@ -483,7 +483,7 @@
      "kernel": "triton_tem_fused_mm_t_0",
      "text_sha256": "1156720d8f26380299a8fb50a2110ff48dd40fa1c97d5ffa64c07964f5032ba9",
      "payload_sha256": "c18d688c46ffd40a367ad6fe1183fa1c76ce4aa7b6793a0502ab7011ba4cb3e0",
-     "artifact_sha256": "ffe53974fc20aa0e5d03d2e899a98db80463ee99b3fe261fbdb749ec802e11dc",
+     "artifact_sha256": "cfc6f1878b86c58b3642773af8437df786aa79034b538e4092972d078f88c2c9",
      "roles_per_program": 2,
      "programs_per_launch": 2,
      "ring": {
@@ -506,7 +506,7 @@
      ]
     }
    ],
-   "seconds": 5.5,
+   "seconds": 3.0,
    "exit": 0
   },
   {
@@ -536,7 +536,7 @@
      "kernel": "triton_tem_fused_mm_t_0",
      "text_sha256": "694e55c067798a98c2f07170e0e7f1aef5b83c4f4953d03596488b1c1c06f21c",
      "payload_sha256": "7050e4a810fd19f36caa16f6c2f31d3a392d38f8f180047c8f4efbeff7cfd938",
-     "artifact_sha256": "9279963d800eb84aa3452e938d80b6416bb693be8c16707f8d8df3eaa43845af",
+     "artifact_sha256": "7017b59c595b2e453126816a40cd4ea5097e6506d11fb3f93123d17d8cd94770",
      "roles_per_program": 2,
      "programs_per_launch": 2,
      "ring": {
@@ -559,7 +559,7 @@
      ]
     }
    ],
-   "seconds": 5.5,
+   "seconds": 3.1,
    "exit": 0
   },
   {
@@ -589,7 +589,7 @@
      "kernel": "triton_tem_fused_mm_t_0",
      "text_sha256": "a1134c73ce2b79dee28bcedf83e08ea1abda1a919a4b5bf6b669451099ce536f",
      "payload_sha256": "101de943326e123e8b738daa4b83bd490b2be6f653348c06fe38e250e229b6f9",
-     "artifact_sha256": "3fd1565ffb7dcb13447ff7463196dd19a9c1389047165204c66c09bbc2924069",
+     "artifact_sha256": "cbcf8768461f643d5df620983765dff97198539be75f4da571ce6ea2db2e616a",
      "roles_per_program": 1,
      "programs_per_launch": 2,
      "ring": null,
@@ -606,7 +606,7 @@
      ]
     }
    ],
-   "seconds": 5.1,
+   "seconds": 2.8,
    "exit": 0
   },
   {
@@ -636,7 +636,7 @@
      "kernel": "triton_tem_fused_mm_t_0",
      "text_sha256": "a1134c73ce2b79dee28bcedf83e08ea1abda1a919a4b5bf6b669451099ce536f",
      "payload_sha256": "101de943326e123e8b738daa4b83bd490b2be6f653348c06fe38e250e229b6f9",
-     "artifact_sha256": "7d1ef7a4073f9c0bf5e69c882e5bfeb41dd05ec22b743585418a6c5385d1c24a",
+     "artifact_sha256": "bd5ffd36c4e9badb125893f7e557e0d84af7ea79885ab11ed67dbf21734f4189",
      "roles_per_program": 1,
      "programs_per_launch": 2,
      "ring": null,
@@ -653,7 +653,7 @@
      ]
     }
    ],
-   "seconds": 5.1,
+   "seconds": 2.8,
    "exit": 0
   },
   {
@@ -683,7 +683,7 @@
      "kernel": "triton_tem_fused_mm_t_0",
      "text_sha256": "bf5cfc608407246ce97eac518b60c57e83f73c4f189e8784c162f4d34005ac38",
      "payload_sha256": "065fc965236d8cf1cfca615094f6f0adafef114f3e2939e035f9a7f794045270",
-     "artifact_sha256": "1f4627d82322be23fd6886f78291f769fe0f032863bbe25fb019db40787088a4",
+     "artifact_sha256": "b905f5c386a774581f4461e6b94b9a2b28272f68bc7b5b31dda02cac189d7682",
      "roles_per_program": 2,
      "programs_per_launch": 2,
      "ring": {
@@ -706,7 +706,7 @@
      ]
     }
    ],
-   "seconds": 5.2,
+   "seconds": 2.9,
    "exit": 0
   },
   {
@@ -736,7 +736,7 @@
      "kernel": "triton_tem_fused_mm_t_0",
      "text_sha256": "6820b9d5d7bc3b3d892cd0135978faf5a74ce482459a81942f3cc4169c70826e",
      "payload_sha256": "bc9c57130a3477d7c3e20c9e5af1ab6c3bfda6319ed9498a5f964d4b635d2623",
-     "artifact_sha256": "b1d1a3af727d978d7d104aa8537e6f7356cac4fa6d52dd526f1771b52f24ffe3",
+     "artifact_sha256": "5ef0975fa9d236e7e26df01c649b35c9a80a82b33a7545489f830b4c5e09984d",
      "roles_per_program": 2,
      "programs_per_launch": 2,
      "ring": {
@@ -759,7 +759,7 @@
      ]
     }
    ],
-   "seconds": 5.2,
+   "seconds": 3.9,
    "exit": 0
   },
   {
@@ -789,7 +789,7 @@
      "kernel": "triton_tem_fused_mm_t_0",
      "text_sha256": "bf5cfc608407246ce97eac518b60c57e83f73c4f189e8784c162f4d34005ac38",
      "payload_sha256": "065fc965236d8cf1cfca615094f6f0adafef114f3e2939e035f9a7f794045270",
-     "artifact_sha256": "cf3cd194f418c6969ec6cd9e1bb5ad7f9193c3ad5a55906bb936cc345b83fe19",
+     "artifact_sha256": "a6e2f5db95e821d74e1879f66835b1fe08053f2fe869a94580ff8ca8257ad688",
      "roles_per_program": 2,
      "programs_per_launch": 2,
      "ring": {
@@ -812,7 +812,7 @@
      ]
     }
    ],
-   "seconds": 4.9,
+   "seconds": 3.6,
    "exit": 0
   },
   {
@@ -842,7 +842,7 @@
      "kernel": "triton_tem_fused_addmm_t_0",
      "text_sha256": "a550e221dee5dd07a7055fbe176897ec0d0bac801f47709c5684dcfe6831a80a",
      "payload_sha256": "2aaa6f28c5c870b5695a6107a599f4ae39328f6992e9b484ea5dd5e81f915463",
-     "artifact_sha256": "d79c8703ad4cfeede3254fc01edac42fa195a336322806ccc08223aa3fe93a18",
+     "artifact_sha256": "b1c33578bcfd6b7843b447dbdf96cb02c8877dad4536bd651adb0fe391a7878d",
      "roles_per_program": 1,
      "programs_per_launch": 2,
      "ring": null,
@@ -859,7 +859,7 @@
      ]
     }
    ],
-   "seconds": 6.2,
+   "seconds": 4.6,
    "exit": 0
   },
   {
@@ -889,7 +889,7 @@
      "kernel": "triton_tem_fused_addmm_t_0",
      "text_sha256": "a550e221dee5dd07a7055fbe176897ec0d0bac801f47709c5684dcfe6831a80a",
      "payload_sha256": "2aaa6f28c5c870b5695a6107a599f4ae39328f6992e9b484ea5dd5e81f915463",
-     "artifact_sha256": "06ddfb1e2b2e05cb802713195c17ac6d6336503a4fd0f64f2555d364f2d562a5",
+     "artifact_sha256": "258229082555ee8d0f3219e8894e2b225d3513f2f61b11df50a77f2be3107bcc",
      "roles_per_program": 1,
      "programs_per_launch": 2,
      "ring": null,
@@ -906,7 +906,7 @@
      ]
     }
    ],
-   "seconds": 6.3,
+   "seconds": 4.1,
    "exit": 0
   },
   {
@@ -936,7 +936,7 @@
      "kernel": "triton_tem_fused_addmm_t_0",
      "text_sha256": "a550e221dee5dd07a7055fbe176897ec0d0bac801f47709c5684dcfe6831a80a",
      "payload_sha256": "2aaa6f28c5c870b5695a6107a599f4ae39328f6992e9b484ea5dd5e81f915463",
-     "artifact_sha256": "11c66724b9b52820d08fcbca501ad304f16a1e378b7fed5a2eb881ef240fbe80",
+     "artifact_sha256": "52b81eba7f75939f1d69d9f00da37668645c4168f19ccac48852208c68ec4adc",
      "roles_per_program": 1,
      "programs_per_launch": 2,
      "ring": null,
@@ -953,7 +953,7 @@
      ]
     }
    ],
-   "seconds": 6.3,
+   "seconds": 3.4,
    "exit": 0
   },
   {
@@ -983,7 +983,7 @@
      "kernel": "triton_tem_fused_addmm_t_0",
      "text_sha256": "d444ff6dce0e22b0b32f337a8e284ee2b4d0dddb3ba0f9153f7c478457674dfa",
      "payload_sha256": "66ff51e50416a43dc159775f0dcf3305c734c612f2464469863343e246fcd735",
-     "artifact_sha256": "e782f1a5e7dee2f9d7a1c9455055d5f5f383ce997f388f1a3465c444237859f1",
+     "artifact_sha256": "829e21863211838136d669ebc44a3324e11d4556ee052ef79543038056aa601a",
      "roles_per_program": 2,
      "programs_per_launch": 2,
      "ring": {
@@ -1006,7 +1006,7 @@
      ]
     }
    ],
-   "seconds": 6.3,
+   "seconds": 3.5,
    "exit": 0
   },
   {
@@ -1036,7 +1036,7 @@
      "kernel": "triton_tem_fused_addmm_t_0",
      "text_sha256": "ce5ebe8e21a38a3b0a80df0f885f05709654874951d1e2a5041c22462f76c81f",
      "payload_sha256": "bc25e2528f368bdc32e2736481c575d4783fc8a0ec8bc851679afdd2fb170228",
-     "artifact_sha256": "a50727ef07e18b8d891679b0ea7c4c92d3beb9f7580fbf6e90edb042498df14b",
+     "artifact_sha256": "473ac5292a19d8af8324f2933767af85df4630ccd84d86ccdf3beeadb42c1f4f",
      "roles_per_program": 2,
      "programs_per_launch": 2,
      "ring": {
@@ -1059,7 +1059,7 @@
      ]
     }
    ],
-   "seconds": 6.3,
+   "seconds": 3.5,
    "exit": 0
   },
   {
@@ -1089,7 +1089,7 @@
      "kernel": "triton_tem_fused_addmm_t_0",
      "text_sha256": "2f86d54f055d6c67c3bb9012ecaee42ab24dbb76f84e5fe8b8e463661f4744e9",
      "payload_sha256": "14062705646241386330c05535c3779f45978ca0c9ef28e90178733e3ecfebc4",
-     "artifact_sha256": "57639a09a98a42bf1af84511f289cf876f81558f52b95aa3d357e2aae8f55a30",
+     "artifact_sha256": "e3fd2442a7815cd5b64ebc5af3034ca54ecc9df75cc0f4d06e9a44bbce1478a1",
      "roles_per_program": 1,
      "programs_per_launch": 2,
      "ring": null,
@@ -1106,7 +1106,7 @@
      ]
     }
    ],
-   "seconds": 5.6,
+   "seconds": 3.0,
    "exit": 0
   },
   {
@@ -1136,7 +1136,7 @@
      "kernel": "triton_tem_fused_addmm_t_0",
      "text_sha256": "2f86d54f055d6c67c3bb9012ecaee42ab24dbb76f84e5fe8b8e463661f4744e9",
      "payload_sha256": "14062705646241386330c05535c3779f45978ca0c9ef28e90178733e3ecfebc4",
-     "artifact_sha256": "5a698888fec0118894478f7443566a0a9b1414a7ec68b688213595187b966984",
+     "artifact_sha256": "d96401ad114aec2890d3c90c57215240af52cb732b0fdbdff356a029ffb5d99f",
      "roles_per_program": 1,
      "programs_per_launch": 2,
      "ring": null,
@@ -1153,7 +1153,7 @@
      ]
     }
    ],
-   "seconds": 5.6,
+   "seconds": 3.0,
    "exit": 0
   },
   {
@@ -1183,7 +1183,7 @@
      "kernel": "triton_tem_fused_addmm_t_0",
      "text_sha256": "2f86d54f055d6c67c3bb9012ecaee42ab24dbb76f84e5fe8b8e463661f4744e9",
      "payload_sha256": "14062705646241386330c05535c3779f45978ca0c9ef28e90178733e3ecfebc4",
-     "artifact_sha256": "2ec4b2af712fc5072956fd5e8fe1eb928b25d6828e8b2e1585a661238b1dc3cf",
+     "artifact_sha256": "8bae14765cbecb9eab91418783b7510a249a73fd7a91225bc5ae71308782c88d",
      "roles_per_program": 1,
      "programs_per_launch": 2,
      "ring": null,
@@ -1200,7 +1200,7 @@
      ]
     }
    ],
-   "seconds": 5.6,
+   "seconds": 4.6,
    "exit": 0
   },
   {
@@ -1230,7 +1230,7 @@
      "kernel": "triton_tem_fused_addmm_t_0",
      "text_sha256": "1f469a872e60243c5e0a48ed7492546e621fe2d5feb38ecd760b358e02743d5a",
      "payload_sha256": "ec811b4ba44c6ff3680dd56535b1e3fa86f91b4436d577cfdd9def218c522758",
-     "artifact_sha256": "5a7d4d1d2375c44ee368235770f4ced01c702d59f2b0c22fa980218fad13a309",
+     "artifact_sha256": "c6df9eab378f4cd05b89f67857aa1f5d23edf7fd18efc4f22da2ed475863ff2d",
      "roles_per_program": 2,
      "programs_per_launch": 2,
      "ring": {
@@ -1253,7 +1253,7 @@
      ]
     }
    ],
-   "seconds": 5.7,
+   "seconds": 3.0,
    "exit": 0
   },
   {
@@ -1283,7 +1283,7 @@
      "kernel": "triton_tem_fused_addmm_t_0",
      "text_sha256": "153c3381063a4d29bc7a1aa9f5a610d163bba579dfc3e8cb30e1b3ad5e8fff3e",
      "payload_sha256": "7851e58d9a15eeea6ada921cf320d4bc8b9623ef2588b8aa70e9b04ca55b7699",
-     "artifact_sha256": "c736fdb8607b3604f3fe4930f2f71db1afba7e386ebf2c2743a54b345ff76f46",
+     "artifact_sha256": "1c1d2c48f8f6228d798ce8bfb6b5deaa23ccbef6123a5e5e66d92071cd4329b4",
      "roles_per_program": 2,
      "programs_per_launch": 2,
      "ring": {
@@ -1306,7 +1306,7 @@
      ]
     }
    ],
-   "seconds": 5.7,
+   "seconds": 3.0,
    "exit": 0
   },
   {
@@ -1336,7 +1336,7 @@
      "kernel": "triton_tem_fused_addmm_t_0",
      "text_sha256": "67617980675b27df4e8fcdb7b7192d563a600216ff06e1db53cb1bbd62f966b6",
      "payload_sha256": "70701374b2d0efe22ef083e00f5bc82440a93fdd46ef5e24cc799199c2fab12e",
-     "artifact_sha256": "48fbd38950f65616ec36cf82448703e1cd4ae4527dcdb1c96220163308e4851a",
+     "artifact_sha256": "906ba3138948bbf4ece3d6c4712fa1da6af19f86bb8a3a854d20b9112dcacbe8",
      "roles_per_program": 1,
      "programs_per_launch": 2,
      "ring": null,
@@ -1353,7 +1353,7 @@
      ]
     }
    ],
-   "seconds": 5.2,
+   "seconds": 2.7,
    "exit": 0
   },
   {
@@ -1383,7 +1383,7 @@
      "kernel": "triton_tem_fused_addmm_t_0",
      "text_sha256": "67617980675b27df4e8fcdb7b7192d563a600216ff06e1db53cb1bbd62f966b6",
      "payload_sha256": "70701374b2d0efe22ef083e00f5bc82440a93fdd46ef5e24cc799199c2fab12e",
-     "artifact_sha256": "55e9c2505cc38bc9b2d5750c9ce282c5604ec4b10b36a5dc99fcfabbf65b3f97",
+     "artifact_sha256": "52ee0a5f1d1327f9451c752377700fced8e56260a1143591500a5aaa28f6f35a",
      "roles_per_program": 1,
      "programs_per_launch": 2,
      "ring": null,
@@ -1400,7 +1400,7 @@
      ]
     }
    ],
-   "seconds": 5.1,
+   "seconds": 2.6,
    "exit": 0
   },
   {
@@ -1430,7 +1430,7 @@
      "kernel": "triton_tem_fused_addmm_t_0",
      "text_sha256": "67617980675b27df4e8fcdb7b7192d563a600216ff06e1db53cb1bbd62f966b6",
      "payload_sha256": "70701374b2d0efe22ef083e00f5bc82440a93fdd46ef5e24cc799199c2fab12e",
-     "artifact_sha256": "d519d3511bf09e8ef6b37c67d56eb3d258a29e33e0e3d5161bc99548cd54f570",
+     "artifact_sha256": "0585753342d49724fb81c614f1af7748a644d14f6f1d3bb207b5dd6f4a6fd11c",
      "roles_per_program": 1,
      "programs_per_launch": 2,
      "ring": null,
@@ -1447,7 +1447,7 @@
      ]
     }
    ],
-   "seconds": 5.2,
+   "seconds": 2.7,
    "exit": 0
   },
   {
@@ -1477,7 +1477,7 @@
      "kernel": "triton_tem_fused_addmm_t_0",
      "text_sha256": "bd58b3cc4c479415c67fdfe6b5015e7939e8e3d82ac98bdd4d0a64823364c05e",
      "payload_sha256": "6e70beb9e00fdbd8b18c0cff2522ea66868ff250c11822b431d9eadbaddf6ee8",
-     "artifact_sha256": "47e225d0087e668a56dbb84a68e6acb02097592468c7d3f39606f8ef5483a0d8",
+     "artifact_sha256": "0a39dd6efc2c231def02b8610f148438d8c88c467291e938f0f7da09e3eb36ec",
      "roles_per_program": 2,
      "programs_per_launch": 2,
      "ring": {
@@ -1500,7 +1500,7 @@
      ]
     }
    ],
-   "seconds": 5.2,
+   "seconds": 2.7,
    "exit": 0
   },
   {
@@ -1530,7 +1530,7 @@
      "kernel": "triton_tem_fused_addmm_t_0",
      "text_sha256": "7a8a23911f928c9b3b13ed05b9452999632f57e3c337a2fe18ef4bf8b9f4078b",
      "payload_sha256": "18bd44b81b1b8ad9b78aca5814ad72b9f334dcd03245e1a668503c3d8fdff223",
-     "artifact_sha256": "38dbc9f7f9e59b8439399e417b304ec12b360ea09403a63640ef8624bbbfe017",
+     "artifact_sha256": "a5b6a6b17c3733e210d6649a3e2ec150c51f3a29282637d9d6b275c9c46519bb",
      "roles_per_program": 2,
      "programs_per_launch": 2,
      "ring": {
@@ -1553,7 +1553,7 @@
      ]
     }
    ],
-   "seconds": 5.2,
+   "seconds": 2.7,
    "exit": 0
   },
   {
@@ -1583,7 +1583,7 @@
      "kernel": "triton_tem_fused_mm_0",
      "text_sha256": "114c84ddb5f6a089fb6e2295658a8465fb5fe2b1ba2c471d869675d4cf80ed28",
      "payload_sha256": "6512f259420d6e9858032d9642926376835f15a89509884fe154e693b2fdc565",
-     "artifact_sha256": "846b026a9d7b158bfd2459eb8d13f3959b4b8e4db2ab963e1e9976b44ceb4f8e",
+     "artifact_sha256": "7d17ed149836383c01d2c6acd79ee76b40444c7f62e3e189f6f66e245182b8e8",
      "roles_per_program": 1,
      "programs_per_launch": 2,
      "ring": null,
@@ -1600,7 +1600,7 @@
      ]
     }
    ],
-   "seconds": 5.7,
+   "seconds": 2.9,
    "exit": 0
   },
   {
@@ -1630,7 +1630,7 @@
      "kernel": "triton_tem_fused_mm_0",
      "text_sha256": "114c84ddb5f6a089fb6e2295658a8465fb5fe2b1ba2c471d869675d4cf80ed28",
      "payload_sha256": "6512f259420d6e9858032d9642926376835f15a89509884fe154e693b2fdc565",
-     "artifact_sha256": "71a8bf27bf6efcecfe2dc1f95b61ab0d6773759c3546a7f7f092cb259231f78e",
+     "artifact_sha256": "54217eaa46909d5ccd08bcab961866940fe5c258549428cf5e8b8bf0b193710f",
      "roles_per_program": 1,
      "programs_per_launch": 2,
      "ring": null,
@@ -1647,7 +1647,7 @@
      ]
     }
    ],
-   "seconds": 4.9,
+   "seconds": 2.9,
    "exit": 0
   },
   {
@@ -1677,7 +1677,7 @@
      "kernel": "triton_tem_fused_mm_0",
      "text_sha256": "114c84ddb5f6a089fb6e2295658a8465fb5fe2b1ba2c471d869675d4cf80ed28",
      "payload_sha256": "6512f259420d6e9858032d9642926376835f15a89509884fe154e693b2fdc565",
-     "artifact_sha256": "080713ab17ec4488a94b822e62d8ab3c97c2d4339c950b62bfcc3e77224b2796",
+     "artifact_sha256": "3aef35d9031e377312b5319f8845dc643f7dbb925a87192f3e255de21bca401f",
      "roles_per_program": 1,
      "programs_per_launch": 2,
      "ring": null,
@@ -1694,7 +1694,7 @@
      ]
     }
    ],
-   "seconds": 5.5,
+   "seconds": 2.9,
    "exit": 0
   },
   {
@@ -1724,7 +1724,7 @@
      "kernel": "triton_tem_fused_mm_0",
      "text_sha256": "577be7c3add1efe5729186851e44ed9ac57622c9c21efe2db0aca391efd8c0a6",
      "payload_sha256": "e136fb345232306e11e05032168985ef17b1635d20e4ba768c9057419e24394f",
-     "artifact_sha256": "a7299243c41fc5e9d5290eaef3a02e563464c860f4d87f3fbacdac7b3693af1b",
+     "artifact_sha256": "398a6dfa8a4351116e2062c8dc68fca96e32dc849e2e6ac8992608f849c28ff6",
      "roles_per_program": 2,
      "programs_per_launch": 2,
      "ring": {
@@ -1747,7 +1747,7 @@
      ]
     }
    ],
-   "seconds": 5.7,
+   "seconds": 3.0,
    "exit": 0
   },
   {
@@ -1777,7 +1777,7 @@
      "kernel": "triton_tem_fused_mm_0",
      "text_sha256": "6938b4b403fcc1d01d8953f401dbf0e5c82ae8476eca718a01d3cc8eb4fa5e37",
      "payload_sha256": "71654cc1b2fc294ef6c703ee4638c832d45e4ff0f10da54aead94ed339f97054",
-     "artifact_sha256": "0ed5530f9df30a97d54249853cc08f1d0422f5e2d0c75756d71d9de174aae88b",
+     "artifact_sha256": "fb7465338d6b24993b574d75c22775631f8e0d116549046a33ccdbc4f0efc793",
      "roles_per_program": 2,
      "programs_per_launch": 2,
      "ring": {
@@ -1800,7 +1800,7 @@
      ]
     }
    ],
-   "seconds": 5.8,
+   "seconds": 3.4,
    "exit": 0
   },
   {
@@ -1830,7 +1830,7 @@
      "kernel": "triton_tem_fused_mm_0",
      "text_sha256": "9c9d7130baa1b2d9857d7dd30e781aa4c2169d43211f81a8ab525470ee008e87",
      "payload_sha256": "ae6c21eaba3afbb44229aba26c770a64aac4273ee7b6036a75ac8dbc187fee0e",
-     "artifact_sha256": "90ba67d13591d404dda121598ad9773b25d68feab37f1f60de24b4a8197aa410",
+     "artifact_sha256": "df96c343cf4fc21f555cab6340717c6b07c8d94ca7b8aa8af0bb706597698cf8",
      "roles_per_program": 1,
      "programs_per_launch": 2,
      "ring": null,
@@ -1847,7 +1847,7 @@
      ]
     }
    ],
-   "seconds": 5.1,
+   "seconds": 4.5,
    "exit": 0
   },
   {
@@ -1877,7 +1877,7 @@
      "kernel": "triton_tem_fused_mm_0",
      "text_sha256": "9c9d7130baa1b2d9857d7dd30e781aa4c2169d43211f81a8ab525470ee008e87",
      "payload_sha256": "ae6c21eaba3afbb44229aba26c770a64aac4273ee7b6036a75ac8dbc187fee0e",
-     "artifact_sha256": "7dfb7d549463a3983bae1c625244569f8446c82bd93ea197d133523408973389",
+     "artifact_sha256": "7d9284bccb1e2639abba69ccaf0d1373701107c982cf5bd0cfbd270c0f20dbd8",
      "roles_per_program": 1,
      "programs_per_launch": 2,
      "ring": null,
@@ -1894,7 +1894,7 @@
      ]
     }
    ],
-   "seconds": 5.2,
+   "seconds": 4.9,
    "exit": 0
   },
   {
@@ -1924,7 +1924,7 @@
      "kernel": "triton_tem_fused_mm_0",
      "text_sha256": "9c9d7130baa1b2d9857d7dd30e781aa4c2169d43211f81a8ab525470ee008e87",
      "payload_sha256": "ae6c21eaba3afbb44229aba26c770a64aac4273ee7b6036a75ac8dbc187fee0e",
-     "artifact_sha256": "802fee9889a40aaf9127b906b552b3175065835b7747104e478fe292770ad72e",
+     "artifact_sha256": "fe878576fbf08a8eca35d14d83d5f171ec8443e491ea290b4e515d765855b22e",
      "roles_per_program": 1,
      "programs_per_launch": 2,
      "ring": null,
@@ -1941,7 +1941,7 @@
      ]
     }
    ],
-   "seconds": 4.9,
+   "seconds": 4.3,
    "exit": 0
   },
   {
@@ -1971,7 +1971,7 @@
      "kernel": "triton_tem_fused_mm_0",
      "text_sha256": "4e859656fe38a9cda84da1f52dcc62a40ebb5faa1d50a135e881e36cc94cc6d2",
      "payload_sha256": "b2e6702c81504be231122357f52ea369106b36aa072402ee49b1f3443a01d6da",
-     "artifact_sha256": "89a0a0fef7869c057747d98b58a96cd8f097c73c1deed370b7d2e33f6e435118",
+     "artifact_sha256": "d05e6ca26c3f27b157fa0cc49e529f8b9779ea12ecfffa6c3c1ed823b2e4b389",
      "roles_per_program": 2,
      "programs_per_launch": 2,
      "ring": {
@@ -1994,7 +1994,7 @@
      ]
     }
    ],
-   "seconds": 5.3,
+   "seconds": 4.9,
    "exit": 0
   },
   {
@@ -2024,7 +2024,7 @@
      "kernel": "triton_tem_fused_mm_0",
      "text_sha256": "c7b1f994d8861977b0c05b012a2ea98f072da431d58dd97f1f7bdcfd7920dbfe",
      "payload_sha256": "1591ff46b8c66ddc2a8e7f574e1f25b6793be4bda23fa23600d802109bba7bb1",
-     "artifact_sha256": "fa880639e6299d726f63f296c679132e9c8e5ae86cf13fa61ee72a937b77c991",
+     "artifact_sha256": "51914db9bf2524c7dcdba5aaaff148a93b8474f93a676d9fdb7c8cfa9a3c9458",
      "roles_per_program": 2,
      "programs_per_launch": 2,
      "ring": {
@@ -2047,7 +2047,7 @@
      ]
     }
    ],
-   "seconds": 5.3,
+   "seconds": 4.9,
    "exit": 0
   },
   {
@@ -2077,7 +2077,7 @@
      "kernel": "triton_tem_fused_mm_0",
      "text_sha256": "cebca0cb864e89be5aa94ab62dd6c72f93dea5d47ffeebbfd0b728756ca72957",
      "payload_sha256": "d2f9184a8d35f53017eb95521550477d3ed77ca66851ed2b1de1ab76a3217bb3",
-     "artifact_sha256": "dc4e8b65e9329b86a42bdaf741885e6103473d64669cd3a5a961a75d131427b9",
+     "artifact_sha256": "37e9f1ad5565ed1dcb391f890c4fce870c47a5d12d206b97665c809b3244a282",
      "roles_per_program": 1,
      "programs_per_launch": 2,
      "ring": null,
@@ -2094,7 +2094,7 @@
      ]
     }
    ],
-   "seconds": 4.9,
+   "seconds": 5.3,
    "exit": 0
   },
   {
@@ -2124,7 +2124,7 @@
      "kernel": "triton_tem_fused_mm_0",
      "text_sha256": "cebca0cb864e89be5aa94ab62dd6c72f93dea5d47ffeebbfd0b728756ca72957",
      "payload_sha256": "d2f9184a8d35f53017eb95521550477d3ed77ca66851ed2b1de1ab76a3217bb3",
-     "artifact_sha256": "a08cf7786bbdcf6718147a8359f9bfb01619cd772f6cb4dc2df4accac90a0f45",
+     "artifact_sha256": "902f81015e6c1f1236970020575e670aac0a64c24734c578f95ab760d4f05d73",
      "roles_per_program": 1,
      "programs_per_launch": 2,
      "ring": null,
@@ -2141,7 +2141,7 @@
      ]
     }
    ],
-   "seconds": 5.6,
+   "seconds": 5.3,
    "exit": 0
   },
   {
@@ -2171,7 +2171,7 @@
      "kernel": "triton_tem_fused_mm_0",
      "text_sha256": "cebca0cb864e89be5aa94ab62dd6c72f93dea5d47ffeebbfd0b728756ca72957",
      "payload_sha256": "d2f9184a8d35f53017eb95521550477d3ed77ca66851ed2b1de1ab76a3217bb3",
-     "artifact_sha256": "2069a51cde1ca5c56b7587bc19ec4a661caf96438fd5d6b7728630948e787462",
+     "artifact_sha256": "5ba7b30abeb926e6aceed6e703189fc46ec11ffbda8d370ef2c3f264079b41f4",
      "roles_per_program": 1,
      "programs_per_launch": 2,
      "ring": null,
@@ -2188,7 +2188,7 @@
      ]
     }
    ],
-   "seconds": 5.6,
+   "seconds": 5.3,
    "exit": 0
   },
   {
@@ -2218,7 +2218,7 @@
      "kernel": "triton_tem_fused_mm_0",
      "text_sha256": "cebca0cb864e89be5aa94ab62dd6c72f93dea5d47ffeebbfd0b728756ca72957",
      "payload_sha256": "d2f9184a8d35f53017eb95521550477d3ed77ca66851ed2b1de1ab76a3217bb3",
-     "artifact_sha256": "9edd019cfd741bfa579faa10eedae97ba0f013c60f141cd771b213f7ea326aec",
+     "artifact_sha256": "a10f83989f6808cb4ead63b39eefdb66463108889a7edf3625597f85903d905c",
      "roles_per_program": 1,
      "programs_per_launch": 2,
      "ring": null,
@@ -2235,7 +2235,7 @@
      ]
     }
    ],
-   "seconds": 5.6,
+   "seconds": 5.4,
    "exit": 0
   },
   {
@@ -2265,7 +2265,7 @@
      "kernel": "triton_tem_fused_mm_0",
      "text_sha256": "cebca0cb864e89be5aa94ab62dd6c72f93dea5d47ffeebbfd0b728756ca72957",
      "payload_sha256": "d2f9184a8d35f53017eb95521550477d3ed77ca66851ed2b1de1ab76a3217bb3",
-     "artifact_sha256": "02e6c47b2df8863bddd4b87cc198fbc861a4389c4921c3f50085d0fd0f06135e",
+     "artifact_sha256": "a7a75e713c4ddd9d264518ddee93931609defd2097f2e8486a6037e0defda3af",
      "roles_per_program": 1,
      "programs_per_launch": 2,
      "ring": null,
@@ -2282,7 +2282,7 @@
      ]
     }
    ],
-   "seconds": 3.9,
+   "seconds": 5.2,
    "exit": 0
   }
  ],
@@ -2682,6 +2682,6 @@
    }
   }
  },
- "finished": "2026-10-19T06:18:10+0000",
+ "finished": "2026-10-19T13:33:43+0000",
  "status": "complete"
 }

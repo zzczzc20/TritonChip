@@ -1,5 +1,5 @@
-W1019 04:28:00.976000 2727862 torch/utils/cpp_extension.py:183] No CUDA runtime is found, using CUDA_HOME='/usr/local/cuda'
-  building core-vrf-sync-v5 -> /home/zhongchun/r40v3_tpb_runs/main/cache/gemm_n16_k64_window_bfloat16/devices/core-vrf-sync-v5-a8f9e2a0291d254a-2f12bdd465ea/tnca_device_vrf5.vvp
+W1019 10:04:15.720000 3105488 torch/utils/cpp_extension.py:183] No CUDA runtime is found, using CUDA_HOME='/usr/local/cuda'
+  building core-vrf-sync-v5 -> /home/zhongchun/r40v3_tpc_runs/all/cache/gemm_n16_k64_window_bfloat16/devices/core-vrf-sync-v5-a8f9e2a0291d254a-2f12bdd465ea/tnca_device_vrf5.vvp
   built 17676402 bytes
 AUDIT awaited window layout: {'layouts': [{'count': 16, 'start': 32, 'window': 0}, {'count': 16, 'start': 48, 'window': 1}, {'count': 16, 'start': 32, 'window': 2}, {'count': 16, 'start': 48, 'window': 3}], 'logical_registers': 64, 'reserved_registers': 32}
 AUDIT logical K=64, physical MMA K=32, retiles=[[64, 32]]: {'accumulators': 1, 'barriers': 6, 'commands_outstanding': 'unknown', 'descriptors': 4, 'rf_private_per_role': {'role0': 45, 'role1': 45}, 'scratch_bytes': 29696, 'shared_windows': []}

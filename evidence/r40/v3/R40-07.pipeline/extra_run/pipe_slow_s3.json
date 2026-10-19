@@ -1,15 +1,15 @@
 {
  "name": "pipe_slow_s3",
  "group": "extra",
- "cmd": "/home/zhongchun/tc_env/torchenv/bin/python tools/r40/v3_pipeline_matrix.py --memory slow --stages 3 --trace-dir /home/zhongchun/r40v3_tpb_runs/extra/trace_slow_s3 --json /home/zhongchun/r40v3_tpb_runs/extra/pipe_slow_s3.json",
+ "cmd": "/home/zhongchun/tc_env/torchenv/bin/python tools/r40/v3_pipeline_matrix.py --memory slow --stages 3 --trace-dir /home/zhongchun/r40v3_tpc_runs/all/trace_slow_s3 --json /home/zhongchun/r40v3_tpc_runs/all/pipe_slow_s3.report.json",
  "env": {},
- "start": "2026-10-19T04:57:43+00:00",
- "end": "2026-10-19T05:32:46+00:00",
- "seconds": 2103.6,
+ "start": "2026-10-19T11:50:18+00:00",
+ "end": "2026-10-19T12:24:38+00:00",
+ "seconds": 2059.7,
  "exit": 0,
  "marker": "r40-v3-pipeline-matrix PASS",
  "marker_found": true,
  "ok": true,
  "log": "pipe_slow_s3.log",
- "log_sha256": "61777e79065a3f6a7201755cb6f249da5d1fd4f6b9b7e026003ccfa193824392"
+ "log_sha256": "d3980953c9f328917c69bc5a3c58a39cd3533c7f5e920eaa6f96d45f5a8bdbea"
 }

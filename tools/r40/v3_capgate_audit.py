@@ -182,3 +182,21 @@ def harness_same_runs(runs, paths):
             diff[p] = dict(run=run_hash, repo=repo)
     return check('test harness files behind each accepted result equal the repository copies',
                  not diff, files=used, differ=diff)
+
+
+def identity_checks(identity):
+    """The delivery identity and its product diff from the frozen 80dd tree, as amended."""
+    path = ROOT / 'doc/r40_v3/identity_amendment.json'
+    if not path.exists():
+        return [check('delivery tree is the frozen plan tree (no identity amendment)',
+                      identity['software_tree'] == 'files:80dd1a823e4be49e5e40d375d842c17e46c362d298e37f389c5e225621b6e4ca')]
+    amendment = json.loads(path.read_text())
+    files = amendment.get('files', {})
+    now = {f: sha_file(ROOT / f) if (ROOT / f).exists() else None for f in files}
+    return [check('identity amendment: delivery tree and its complete product diff from 80dd '
+                  '(only these files differ; their delivered hashes are the ones audited)',
+                  amendment['from_software_tree'] == 'files:80dd1a823e4be49e5e40d375d842c17e46c362d298e37f389c5e225621b6e4ca'
+                  and amendment['changes']['software_tree'] == identity['software_tree']
+                  and all(now[f] == v['after_sha256'] for f, v in files.items()),
+                  delivery_tree=identity['software_tree'], diff_from_80dd=sorted(files),
+                  file_sha256=now, amendment_sha256=sha_file(path))]

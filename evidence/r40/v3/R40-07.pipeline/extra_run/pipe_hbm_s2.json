@@ -1,15 +1,15 @@
 {
  "name": "pipe_hbm_s2",
  "group": "extra",
- "cmd": "/home/zhongchun/tc_env/torchenv/bin/python tools/r40/v3_pipeline_matrix.py --memory hbm --stages 2 --trace-dir /home/zhongchun/r40v3_tpb_runs/extra/trace_hbm_s2 --json /home/zhongchun/r40v3_tpb_runs/extra/pipe_hbm_s2.json",
+ "cmd": "/home/zhongchun/tc_env/torchenv/bin/python tools/r40/v3_pipeline_matrix.py --memory hbm --stages 2 --trace-dir /home/zhongchun/r40v3_tpc_runs/all/trace_hbm_s2 --json /home/zhongchun/r40v3_tpc_runs/all/pipe_hbm_s2.report.json",
  "env": {},
- "start": "2026-10-19T05:14:20+00:00",
- "end": "2026-10-19T05:45:07+00:00",
- "seconds": 1846.6,
+ "start": "2026-10-19T12:00:09+00:00",
+ "end": "2026-10-19T12:30:53+00:00",
+ "seconds": 1844.3,
  "exit": 0,
  "marker": "r40-v3-pipeline-matrix PASS",
  "marker_found": true,
  "ok": true,
  "log": "pipe_hbm_s2.log",
- "log_sha256": "e2cbcbeeac9fc84801653233f35169880ce3cccdc54590ba6ab41842ed291820"
+ "log_sha256": "58a3618da2c5f40beb86ba3b06c49dc5f88d4c3e1b993d1a995844403c768c5c"
 }

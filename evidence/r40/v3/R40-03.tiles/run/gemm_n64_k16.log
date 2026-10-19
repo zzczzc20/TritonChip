@@ -1,45 +1,16 @@
-W1019 03:19:51.880000 2625643 torch/utils/cpp_extension.py:183] No CUDA runtime is found, using CUDA_HOME='/usr/local/cuda'
-  building core-vrf-sync-v5 -> /home/zhongchun/r40v3_tpb_runs/main/cache/gemm_n64_k16/devices/core-vrf-sync-v5-a8f9e2a0291d254a-2f12bdd465ea/tnca_device_vrf5.vvp
+W1019 08:44:26.938000 3040811 torch/utils/cpp_extension.py:183] No CUDA runtime is found, using CUDA_HOME='/usr/local/cuda'
+  building core-vrf-sync-v5 -> /home/zhongchun/r40v3_tpc_runs/all/cache/gemm_n64_k16/devices/core-vrf-sync-v5-a8f9e2a0291d254a-2f12bdd465ea/tnca_device_vrf5.vvp
   built 17676402 bytes
-Traceback (most recent call last):
-  File "/home/zhongchun/r40v3_tpb/tools/r40/gemm_tiles_tests.py", line 104, in <module>
-    sys.exit(main())
-             ^^^^^^
-  File "/home/zhongchun/r40v3_tpb/tools/r40/gemm_tiles_tests.py", line 55, in main
-    warm = compiled(da,db,dc)
-           ^^^^^^^^^^^^^^^^^^
-  File "/home/zhongchun/tc_env/torchenv/lib/python3.12/site-packages/torch/_dynamo/eval_frame.py", line 1261, in compile_wrapper
-    result = fn(*args, **kwargs)
-             ^^^^^^^^^^^^^^^^^^^
-  File "/home/zhongchun/r40v3_tpb/tools/r40/gemm_tiles_tests.py", line 45, in <lambda>
-    for name, fn in [('mm', lambda a,b,c: a @ b),
-  File "/home/zhongchun/tc_env/torchenv/lib/python3.12/site-packages/torch/_dynamo/eval_frame.py", line 1548, in _fn
-    return fn(*args, **kwargs)
-           ^^^^^^^^^^^^^^^^^^^
-  File "/home/zhongchun/tc_env/torchenv/lib/python3.12/site-packages/torch/_functorch/aot_autograd.py", line 1289, in forward
-    return compiled_fn(full_args)
-           ^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/zhongchun/tc_env/torchenv/lib/python3.12/site-packages/torch/_functorch/_aot_autograd/runtime_wrappers.py", line 1189, in runtime_wrapper
-    result = _codegen_runtime_wrapper(
-             ^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/zhongchun/tc_env/torchenv/lib/python3.12/site-packages/torch/_functorch/_aot_autograd/codegen.py:codegen(runtime_wrapper_orchestration)", line 8, in _runtime_wrapper
-  File "/home/zhongchun/tc_env/torchenv/lib/python3.12/site-packages/torch/_inductor/output_code.py", line 828, in __call__
-    return self.current_callable(inputs)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/zhongchun/r40v3_tpb_runs/main/cache/gemm_n64_k16/inductor/lu/cluhpdylmdkmpuy2wdfmh5ptckp3p3awvunz2yhol6zh4eltonbn.py", line 173, in call
-    triton_tem_fused_mm_0.run(arg0_1, arg1_1, buf0, 4, 1, 1, stream=raw_stream0)
-  File "/home/zhongchun/tc_env/torchenv/lib/python3.12/site-packages/torch/_inductor/runtime/triton_heuristics.py", line 2558, in run
-    result = launcher(*args, **kwargs, stream=stream)
-             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "<string>", line 5, in launcher
-  File "/home/zhongchun/r40v3_tpb/python/tnca/triton_backend/driver.py", line 249, in __call__
-    runs = [self._launch_once(session, module, values, grid, guard, poison,
-            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/zhongchun/r40v3_tpb/python/tnca/triton_backend/driver.py", line 424, in _launch_once
-    session.wait(event)
-  File "/home/zhongchun/r40v3_tpb/python/tnca/runtime.py", line 1147, in wait
-    raise Timeout(
-tnca.errors.Timeout: [WAIT_TIMEOUT] job 27 is still RUNNING after 600.0s
-  job: 27
-  state: RUNNING
-  try: the task has not been cancelled and has not succeeded; wait again, or let the device deadline decide
+AUDIT logical K=16, physical MMA K=16, retiles=[]: {'accumulators': 8, 'barriers': 9, 'commands_outstanding': 'unknown', 'descriptors': 5, 'rf_private_per_role': {'role0': 20, 'role1': 20}, 'scratch_bytes': 32512, 'shared_windows': []}
+AUDIT logical GEMM tiles: [{'external_spill_bytes': 0, 'gemm_tiles': [[16, 64, 16]], 'mma_fragment_reuses': 3, 'predicate_rematerializations': 0, 'reductions': [], 'vlen': 16, 'widths': [64]}]
+PASS mm, logical 16x64x16, shape 17x65x33
+AUDIT logical K=16, physical MMA K=16, retiles=[]: {'accumulators': 8, 'barriers': 9, 'commands_outstanding': 'unknown', 'descriptors': 5, 'rf_private_per_role': {'role0': 20, 'role1': 20}, 'scratch_bytes': 32512, 'shared_windows': []}
+AUDIT logical GEMM tiles: [{'external_spill_bytes': 0, 'gemm_tiles': [[16, 64, 16]], 'mma_fragment_reuses': 3, 'predicate_rematerializations': 0, 'reductions': [], 'vlen': 16, 'widths': [64]}]
+PASS mm, logical 16x64x16, shape 33x31x65
+AUDIT logical K=16, physical MMA K=16, retiles=[]: {'accumulators': 8, 'barriers': 9, 'commands_outstanding': 'unknown', 'descriptors': 5, 'rf_private_per_role': {'role0': 20, 'role1': 20}, 'scratch_bytes': 44800, 'shared_windows': []}
+AUDIT logical GEMM tiles: [{'external_spill_bytes': 0, 'gemm_tiles': [[16, 64, 16]], 'mma_fragment_reuses': 3, 'predicate_rematerializations': 0, 'reductions': [], 'vlen': 16, 'widths': [64]}]
+PASS addmm, logical 16x64x16, shape 17x65x33
+AUDIT logical K=16, physical MMA K=16, retiles=[]: {'accumulators': 8, 'barriers': 9, 'commands_outstanding': 'unknown', 'descriptors': 5, 'rf_private_per_role': {'role0': 20, 'role1': 20}, 'scratch_bytes': 44800, 'shared_windows': []}
+AUDIT logical GEMM tiles: [{'external_spill_bytes': 0, 'gemm_tiles': [[16, 64, 16]], 'mma_fragment_reuses': 3, 'predicate_rematerializations': 0, 'reductions': [], 'vlen': 16, 'widths': [64]}]
+PASS addmm, logical 16x64x16, shape 33x31x65
+r40-gemm-tiles-tests PASS (4/4)

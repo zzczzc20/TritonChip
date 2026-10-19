@@ -28,7 +28,7 @@ R2-11 faults, drain and recovery
     a reply ahead of the request -> [DEVICE_LOST] the device answered sequence 108 while 9 was out
     a buffer from the previous epoch -> [BUFFER_INVALID]
   ERR-06  PASS  a dead device is DEVICE_LOST, reaped, and recoverable
-    the device is pid 2902677
+    the device is pid 3241062
     a request to a dead device -> [DEVICE_LOST] the device process is not running
     it kept the log: device.log
     the device process is still running: False

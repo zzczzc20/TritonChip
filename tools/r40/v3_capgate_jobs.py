@@ -28,7 +28,17 @@ import time
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-DELIVERY_TREE = os.environ.get('R40_EXPECT_TREE', 'files:bc5a778ebc5f4afebf6c1a9fbf3b2d8717cb02e118134ebbb73fb5a927fc8183')
+def _delivery_tree():
+    """R40_EXPECT_TREE, else the v3 identity amendment's tree, else the frozen plan's."""
+    if os.environ.get('R40_EXPECT_TREE'):
+        return os.environ['R40_EXPECT_TREE']
+    amendment = ROOT / 'doc/r40_v3/identity_amendment.json'
+    if amendment.exists():
+        return json.loads(amendment.read_text())['changes']['software_tree']
+    return json.loads((ROOT / 'doc/r40_v3/plan.json').read_text())['delivery']['software_tree']
+
+
+DELIVERY_TREE = _delivery_tree()
 TORCH = os.environ.get('TORCH_PYTHON', str(Path.home() / 'tc_env/torchenv/bin/python'))
 # The GB10 tritonenv has no torch; rctx_roles_tests and the contract harness
 # import it. torchenv carries the locked torch 2.14.0 + Triton 3.8.0 pair.

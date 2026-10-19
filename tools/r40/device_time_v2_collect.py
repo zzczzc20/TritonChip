@@ -58,9 +58,14 @@ def main():
                                 backend='fpga-u280-multicore', backend_args=config,
                                 clock_policy='100MHz-undivided', clock_hz=100000000)
         report['identity'].update(operating_clock)
+        report['identity']['transport']=dict(
+            deadline_cycles=int(os.environ.get('TNCA_DEADLINE','24000000000')),
+            host_timeout_s=float(os.environ.get('TNCA_HOST_TIMEOUT','7200')))
         report['identity']['toolchain'] = dict(torch=version('torch'),triton=version('triton'),python=sys.version)
         (args.out/'identity.json').write_text(json.dumps(report['identity'], indent=2)+'\n')
         env = dict(os.environ, CUDA_VISIBLE_DEVICES='', R40_CONTRACT='v2', TNCA_ACTIVE_CORES='3')
+        env['TNCA_DEADLINE']=str(report['identity']['transport']['deadline_cycles'])
+        env['TNCA_HOST_TIMEOUT']=str(report['identity']['transport']['host_timeout_s'])
         env['PYTHONPATH'] = os.pathsep.join([str(ROOT),str(ROOT/'python'),
                                            str(ROOT/'compiler/python'),str(ROOT/'tools/asm')])
         paths = {side:[] for side in ('control','native')}
@@ -81,6 +86,7 @@ def main():
                                '--warmup','5','--timed','30','--timeout','7200',
                                '--set','TNCA_TORCH_DEVICE='+('cpu' if side=='control' else 'native'),
                                '--set','TNCA_TRANSFER_POLICY=per-kernel',
+                               '--bundle-dir',str((args.out/'bundles'/stem).resolve()),
                                '--out',str(raw.resolve())]
                     child_env = dict(env, ARCHBENCH_BLOCK_ID=str(block))
                     with (args.out/(stem+'.log')).open('w') as log:

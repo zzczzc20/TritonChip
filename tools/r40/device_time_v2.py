@@ -16,7 +16,22 @@ import tempfile
 
 import ablate
 import contract_v2
+import sys
+sys.path.insert(0,str(contract_v2.ROOT))
 import evidence
+
+
+def compiler_bundle(record, root):
+    """A timing control must retain the full compilation chain, not hashes alone."""
+    from archbench.provenance import check_bundle
+    bundle=record.get('provenance',{}).get('bundle') or {}
+    bad=check_bundle(bundle,root=root)
+    files=bundle.get('files') or {}
+    required=('graph.txt' in files and any(f.startswith('wrapper_') and f.endswith('.py') for f in files)
+              and any('ttir' in f.lower() for f in files))
+    artifacts=record.get('provenance',{}).get('artifacts') or []
+    if bad or not required or not artifacts or any(files.get(f'artifacts/{h}.tnca')!=h for h in artifacts):
+        raise ValueError(f"{record['point_id']}: compiler bundle missing, incomplete or changed: {bad[:1]}")
 
 
 def read_block(path, subset, exp, identity):
@@ -27,6 +42,7 @@ def read_block(path, subset, exp, identity):
     out = {}
     for r in records:
         pid = r['point_id']
+        compiler_bundle(r,Path(path).parent)
         p = r.get('platform', {})
         knobs = p.get('knobs', {})
         if (p.get('backend') not in ('fpga-u280', 'fpga-u280-multicore')
@@ -44,6 +60,8 @@ def read_block(path, subset, exp, identity):
             raise ValueError(f'{pid}: both controls must explicitly select per-kernel staging')
         _, timing = ablate.timing_entry(r, exp['timing'])
         _, samples = ablate.samples_of(r, exp['timing'])
+        if timing.get('unit')!='cycles' or any(type(value) is not int or value<=0 for value in samples):
+            raise ValueError(f'{pid}: requires positive integer device-cycle samples')
         # Long-task exception needs predeclared evidence; this runner deliberately
         # accepts the ordinary >=30-sample plan only until that path is supplied.
         if timing.get('warmup', 0) < 5 or len(samples) < 30 or timing.get('deterministic', True):
@@ -88,7 +106,7 @@ def judge(control_paths, native_paths):
             first, second = (ma,mb) if rng.randrange(2)==0 else (mb,ma)
             if first['ended_ns'] > second['started_ns']:
                 raise ValueError(f'{pid}: A/B does not follow the preregistered random order')
-        result = ablate.compare(ap,bp,subset,exp['vary'],timing=exp['timing'],threshold=exp['threshold'])
+        result = ablate.compare(ap,bp,subset,exp['vary'],timing=exp['timing'],threshold=exp['threshold'],audit_bundles=True)
         configurations.add((result['config_a'],result['config_b']))
         pairs.append((a,b))
     if len(configurations) != 1:

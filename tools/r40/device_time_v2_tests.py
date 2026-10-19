@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Exercise matched capability evidence and reject duplicates/reused sessions."""
 import json
+import hashlib
 from pathlib import Path
 import random
 import tempfile
@@ -44,13 +45,25 @@ class DeviceTimeTests(unittest.TestCase):
         pts=json.loads((contract_v2.ROOT/'spec/r40/suites/existing.json').read_text())['points']
         pts.sort(key=lambda p:p['id'])
         rng=random.Random(plan['sample_plan']['bootstrap']['seed'])
+        # Synthetic statistics fixture; files are deliberately non-executable.
+        # Their actual byte hashes still exercise the provenance admission rules.
+        bundle=root/'fixture-bundle';(bundle/'artifacts').mkdir(parents=True,exist_ok=True)
+        artifact=b'unit-test fixture bytes, not executable TNCA code'
+        artifact_sha=hashlib.sha256(artifact).hexdigest()
+        files={'graph.txt':b'unit fixture graph','wrapper_0.py':b'# unit fixture wrapper',
+               'kernel.ttir':b'// unit fixture TTIR',f'artifacts/{artifact_sha}.tnca':artifact}
+        for name,raw in files.items():(bundle/name).write_bytes(raw)
+        provenance_bundle=dict(dir=str(bundle),files={name:hashlib.sha256(raw).hexdigest() for name,raw in files.items()})
         paths=[[],[]]
         for block in range(3):
             records=[[],[]]
             for i,pt in enumerate(pts):
                 first=rng.randrange(2)
                 for side in (0,1):
-                    r=record(pt,.001*(slowdown if side else 1),kind='device-cycles-serial-grid')
+                    r=record(pt,100000*(slowdown if side else 1),kind='device-cycles-serial-grid')
+                    r['time'].update(unit='cycles',samples=[round(x) for x in r['time']['samples']],
+                                     device_cycles=round(r['time']['device']))
+                    r['provenance'].update(bundle=provenance_bundle,artifacts=[artifact_sha])
                     r['platform']['toolchain']=dict(torch='fixture-torch',triton='fixture-triton',python='fixture-python')
                     r['platform']['backend_args']=dict(core_count=3,memory_ports=3,hbm_bytes=1<<30)
                     r['platform']['image_sha256']='a'*64
@@ -95,6 +108,29 @@ class DeviceTimeTests(unittest.TestCase):
             path.write_text(''.join(json.dumps(row)+'\n' for row in rows))
             with self.assertRaisesRegex(ValueError,'actual U280'):
                 runner.judge(*paths)
+
+    def test_missing_or_modified_compiler_bundle_is_refused(self):
+        for mutation in ('missing','modified','no-wrapper','no-artifact'):
+            with self.subTest(mutation=mutation),tempfile.TemporaryDirectory() as d:
+                paths=self.fixture(Path(d));path=paths[0][0]
+                rows=[json.loads(x) for x in path.read_text().splitlines()]
+                if mutation=='missing':rows[0]['provenance'].pop('bundle')
+                if mutation=='modified':(Path(d)/'fixture-bundle/kernel.ttir').write_text('changed')
+                if mutation=='no-wrapper':rows[0]['provenance']['bundle']['files'].pop('wrapper_0.py')
+                if mutation=='no-artifact':rows[0]['provenance']['artifacts']=['0'*64]
+                path.write_text(''.join(json.dumps(r)+'\n' for r in rows))
+                with self.assertRaisesRegex(ValueError,'compiler bundle'):runner.judge(*paths)
+
+    def test_seconds_or_fractional_values_cannot_be_relabelled_device_cycles(self):
+        for mutation in ('seconds','fractional','boolean'):
+            with self.subTest(mutation=mutation),tempfile.TemporaryDirectory() as d:
+                paths=self.fixture(Path(d));path=paths[0][0]
+                rows=[json.loads(x) for x in path.read_text().splitlines()]
+                if mutation=='seconds':rows[0]['time']['unit']='s'
+                if mutation=='fractional':rows[0]['time']['samples'][0]=1.5
+                if mutation=='boolean':rows[0]['time']['samples'][0]=True
+                path.write_text(''.join(json.dumps(r)+'\n' for r in rows))
+                with self.assertRaisesRegex(ValueError,'integer device-cycle'):runner.judge(*paths)
 
     def test_bad_inventory_sessions_order_and_config_are_refused(self):
         for mutation,expected in [('duplicate','exactly once'),('session','reused'),('order','random order'),('compiler','mixed'),('toolchain','mixed'),('memory','mixed')]:

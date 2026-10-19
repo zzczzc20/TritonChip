@@ -1,0 +1,20 @@
+{
+  "root": "/home/zzhouch/tnca_large_layer_native_data_6bd07b7",
+  "pid": 2365479,
+  "harness_sha256": "05e0984e62be17e7af81a92f8b42a6265de2efdc8f264490a20e63e9593c7732",
+  "command": [
+    "/home/zzhouch/tc_env/torchenv/bin/python",
+    "-u",
+    "/home/zzhouch/tnca_large_layer_native_data_6bd07b7/large_layer_diagnostic.py",
+    "--source-root",
+    "/home/zzhouch/tnca_src_r40_conditional_6bd07b7_formal",
+    "--kind",
+    "decode",
+    "--export-inputs",
+    "--software-tree",
+    "files:44051ad9c76c544f59b57afb9f297608bb3f0362c9f4f4479f977690645d2436",
+    "--out",
+    "/home/zzhouch/tnca_large_layer_native_data_6bd07b7/data"
+  ],
+  "scope": "Export exact original native-host full-shape inputs/state only; no CPU model inference or board execution; reference inference offloaded to GB10"
+}

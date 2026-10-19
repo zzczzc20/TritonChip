@@ -1,4 +1,37 @@
-# Final authorized three-SLR implementation
+# Current conditional delivery status — 2026-10-19
+
+Required gate delta on immutable product tree `44051ad9…d2436`:
+`R40-01.device`, `R40-01.mixed-device`, and `R40-05.multicore` pass their
+strict capability audits. This does not establish their performance gates.
+The original 24 chained graphs completed runtime transfer observation with
+positive staging/download controls; gate promotion still requires its auditor.
+The complete frozen generation model finished prefill512 plus 64 decode steps,
+with independent-reference agreement and zero steady tensor staging. Growing
+KV shapes still recompile, so the fixed-bucket decode gate remains open.
+
+The qualified image is `a88ebdf5…c83083`, running at **90 MHz**, with routed
+setup WNS +0.016 ns and unchanged three-core/three-outlet hardware. 100 MHz
+failed and is not claimed. Both CUDA-host and no-CUDA-host full conformance
+reports are retained alongside the compressed complete model report and its
+manifest. CI run `39164382436` passed at `6bd07b7`.
+
+The immediate functional blocker is original large Llama: decode error 0.11417
+and prefill error 0.15730 exceed the unchanged 0.05 tolerance. The exact native
+input/state reference, computed on GB10, passes FP16-versus-FP32 (decode logits
+0.003801). Actual device allocation places `out.weight` across
+`[0x7fff0000, 0x7fff1000)`, which the RTL decodes as TMU MMIO. The allocator
+repair must exclude this page; original-graph replay must confirm causality.
+The expanded-output diagnostic remains diagnostic evidence only. Upstream
+failure stopped the formal performance queue before measurements began.
+
+The user authorized a single justified v3 amendment on 2026-10-19. No v3
+contract has been frozen. The v2 lock, original shapes and tolerances remain
+unchanged; missing measurements remain `not-measured`. Any product repair
+requires new final-snapshot validation; earlier passes keep their old identity.
+
+## Archived implementation launch and prerequisite record
+
+# Final authorized three-SLR implementation (historical launch)
 
 Required gate delta: none. The final authorized complete implementation started
 at 2026-10-17 21:20:13 UTC. The budget is maximum 3, used 3, remaining 0.

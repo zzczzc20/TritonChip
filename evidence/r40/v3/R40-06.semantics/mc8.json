@@ -4,7 +4,7 @@
  "backend_args": {
   "core_count": 8
  },
- "software_tree": "files:bc5a778ebc5f4afebf6c1a9fbf3b2d8717cb02e118134ebbb73fb5a927fc8183",
+ "software_tree": "files:fe1b5199db515440d2d3407aed61ef1eed5edb627e5baf9cda10be5a7198cf75",
  "harness_sha256": "76b259e5d286ef97809d5fee4798a9aa0add71d4f6a8ba15edf60a6b4a27772d",
  "torch": "2.14.0+cu130",
  "triton": "3.8.0",
@@ -31,7 +31,7 @@
    "output_sha256": "00261615c2f9ac8bc8955d2cfbd782d1a7c382b2cc01ab15d2ce5914b803aa06",
    "max_abs_err": 0.0,
    "artifacts": [
-    "d1f5d8982c712721636d3a105b475ea33cb66e00b261e5dd0195c4ad8c278b8c"
+    "bfca046a17e88d7fe4f9bd22bd9b0955f43fdae4650be6d9cec7a80b52e51a49"
    ],
    "kernels": [
     "triton_poi_fused_add_mul_0"
@@ -44,7 +44,7 @@
     ]
    ],
    "device_cycles": [
-    7484
+    7442
    ],
    "physical_grid": {
     "peak_active": 8,
@@ -53,60 +53,60 @@
       "core": 0,
       "issued": 32,
       "completed": 32,
-      "occupied_cycles": 7249
+      "occupied_cycles": 7170
      },
      {
       "core": 1,
       "issued": 32,
       "completed": 32,
-      "occupied_cycles": 7283
+      "occupied_cycles": 6836
      },
      {
       "core": 2,
       "issued": 32,
       "completed": 32,
-      "occupied_cycles": 7032
+      "occupied_cycles": 6769
      },
      {
       "core": 3,
-      "issued": 32,
-      "completed": 32,
-      "occupied_cycles": 6814
+      "issued": 33,
+      "completed": 33,
+      "occupied_cycles": 6958
      },
      {
       "core": 4,
       "issued": 32,
       "completed": 32,
-      "occupied_cycles": 7446
+      "occupied_cycles": 7320
      },
      {
       "core": 5,
       "issued": 32,
       "completed": 32,
-      "occupied_cycles": 7118
+      "occupied_cycles": 7421
      },
      {
       "core": 6,
       "issued": 32,
       "completed": 32,
-      "occupied_cycles": 7462
+      "occupied_cycles": 7229
      },
      {
       "core": 7,
-      "issued": 33,
-      "completed": 33,
-      "occupied_cycles": 6988
+      "issued": 32,
+      "completed": 32,
+      "occupied_cycles": 7114
      }
     ]
    },
    "outlet_traffic": [
     {
      "port": 0,
-     "read_lines": 1117,
+     "read_lines": 1115,
      "write_lines": 274
     }
    ],
-   "wall_s": 4586.5
+   "wall_s": 3001.4
   },
   "softmax": {
    "checks": {
@@ -123,7 +123,7 @@
    "output_sha256": "2f3cdcac5a2d63c71ec41abf22189dec8f66978ea508d692f60bb8f00fbdcc63",
    "max_abs_err": 1.4901161193847656e-08,
    "artifacts": [
-    "dac4de8c306db2a1f6c16624b0c9688d7ed0898ffc2b900645296edeb0efb195"
+    "88e4f515cdd61a7a27e156259e6ee565e3f3018b9b8c5731a075c283ea447c86"
    ],
    "kernels": [
     "triton_red_fused__softmax_0"
@@ -136,69 +136,69 @@
     ]
    ],
    "device_cycles": [
-    13122
+    13575
    ],
    "physical_grid": {
     "peak_active": 8,
     "cores": [
      {
       "core": 0,
-      "issued": 4,
-      "completed": 4,
-      "occupied_cycles": 10904
+      "issued": 5,
+      "completed": 5,
+      "occupied_cycles": 13569
      },
      {
       "core": 1,
       "issued": 4,
       "completed": 4,
-      "occupied_cycles": 11166
+      "occupied_cycles": 12436
      },
      {
       "core": 2,
       "issued": 4,
       "completed": 4,
-      "occupied_cycles": 11338
+      "occupied_cycles": 11723
      },
      {
       "core": 3,
       "issued": 4,
       "completed": 4,
-      "occupied_cycles": 11757
+      "occupied_cycles": 11531
      },
      {
       "core": 4,
       "issued": 4,
       "completed": 4,
-      "occupied_cycles": 11304
+      "occupied_cycles": 11793
      },
      {
       "core": 5,
       "issued": 4,
       "completed": 4,
-      "occupied_cycles": 11015
+      "occupied_cycles": 11445
      },
      {
       "core": 6,
-      "issued": 5,
-      "completed": 5,
-      "occupied_cycles": 13110
+      "issued": 4,
+      "completed": 4,
+      "occupied_cycles": 11399
      },
      {
       "core": 7,
       "issued": 4,
       "completed": 4,
-      "occupied_cycles": 11415
+      "occupied_cycles": 11548
      }
     ]
    },
    "outlet_traffic": [
     {
      "port": 0,
-     "read_lines": 1987,
-     "write_lines": 861
+     "read_lines": 2053,
+     "write_lines": 879
     }
    ],
-   "wall_s": 2421.2
+   "wall_s": 2755.7
   }
  },
  "journal_dir": null,

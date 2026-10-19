@@ -5,7 +5,7 @@
   "core_count": 3,
   "memory_ports": 1
  },
- "software_tree": "files:bc5a778ebc5f4afebf6c1a9fbf3b2d8717cb02e118134ebbb73fb5a927fc8183",
+ "software_tree": "files:fe1b5199db515440d2d3407aed61ef1eed5edb627e5baf9cda10be5a7198cf75",
  "harness_sha256": "76b259e5d286ef97809d5fee4798a9aa0add71d4f6a8ba15edf60a6b4a27772d",
  "torch": "2.14.0+cu130",
  "triton": "3.8.0",
@@ -32,7 +32,7 @@
    "output_sha256": "00261615c2f9ac8bc8955d2cfbd782d1a7c382b2cc01ab15d2ce5914b803aa06",
    "max_abs_err": 0.0,
    "artifacts": [
-    "d1f5d8982c712721636d3a105b475ea33cb66e00b261e5dd0195c4ad8c278b8c"
+    "bfca046a17e88d7fe4f9bd22bd9b0955f43fdae4650be6d9cec7a80b52e51a49"
    ],
    "kernels": [
     "triton_poi_fused_add_mul_0"
@@ -45,7 +45,7 @@
     ]
    ],
    "device_cycles": [
-    19837
+    19679
    ],
    "physical_grid": {
     "peak_active": 3,
@@ -54,30 +54,30 @@
       "core": 0,
       "issued": 85,
       "completed": 85,
-      "occupied_cycles": 19766
+      "occupied_cycles": 19210
      },
      {
       "core": 1,
       "issued": 84,
       "completed": 84,
-      "occupied_cycles": 19794
+      "occupied_cycles": 19101
      },
      {
       "core": 2,
       "issued": 88,
       "completed": 88,
-      "occupied_cycles": 19615
+      "occupied_cycles": 19633
      }
     ]
    },
    "outlet_traffic": [
     {
      "port": 0,
-     "read_lines": 907,
-     "write_lines": 259
+     "read_lines": 903,
+     "write_lines": 260
     }
    ],
-   "wall_s": 2563.3
+   "wall_s": 1635.5
   },
   "softmax": {
    "checks": {
@@ -94,7 +94,7 @@
    "output_sha256": "2f3cdcac5a2d63c71ec41abf22189dec8f66978ea508d692f60bb8f00fbdcc63",
    "max_abs_err": 1.4901161193847656e-08,
    "artifacts": [
-    "dac4de8c306db2a1f6c16624b0c9688d7ed0898ffc2b900645296edeb0efb195"
+    "88e4f515cdd61a7a27e156259e6ee565e3f3018b9b8c5731a075c283ea447c86"
    ],
    "kernels": [
     "triton_red_fused__softmax_0"
@@ -107,7 +107,7 @@
     ]
    ],
    "device_cycles": [
-    32867
+    32529
    ],
    "physical_grid": {
     "peak_active": 3,
@@ -116,34 +116,34 @@
       "core": 0,
       "issued": 11,
       "completed": 11,
-      "occupied_cycles": 32780
+      "occupied_cycles": 31370
      },
      {
       "core": 1,
       "issued": 10,
       "completed": 10,
-      "occupied_cycles": 29348
+      "occupied_cycles": 28381
      },
      {
       "core": 2,
       "issued": 12,
       "completed": 12,
-      "occupied_cycles": 32853
+      "occupied_cycles": 32515
      }
     ]
    },
    "outlet_traffic": [
     {
      "port": 0,
-     "read_lines": 1345,
-     "write_lines": 619
+     "read_lines": 1293,
+     "write_lines": 610
     }
    ],
-   "wall_s": 1554.6
+   "wall_s": 1471.2
   }
  },
  "journal_dir": null,
- "link_dir": "/home/zhongchun/r40v3_hbmnuca_bc5a/sim/build/u50-sim/link-ake1vu2z",
+ "link_dir": "/home/zhongchun/r40v3_hbmnuca_fe1b/sim/build/u50-sim/link-iv_fzd9a",
  "software_tree_unchanged": true,
  "ok": true
 }

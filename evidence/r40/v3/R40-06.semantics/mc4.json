@@ -4,7 +4,7 @@
  "backend_args": {
   "core_count": 4
  },
- "software_tree": "files:bc5a778ebc5f4afebf6c1a9fbf3b2d8717cb02e118134ebbb73fb5a927fc8183",
+ "software_tree": "files:fe1b5199db515440d2d3407aed61ef1eed5edb627e5baf9cda10be5a7198cf75",
  "harness_sha256": "76b259e5d286ef97809d5fee4798a9aa0add71d4f6a8ba15edf60a6b4a27772d",
  "torch": "2.14.0+cu130",
  "triton": "3.8.0",
@@ -31,7 +31,7 @@
    "output_sha256": "00261615c2f9ac8bc8955d2cfbd782d1a7c382b2cc01ab15d2ce5914b803aa06",
    "max_abs_err": 0.0,
    "artifacts": [
-    "d1f5d8982c712721636d3a105b475ea33cb66e00b261e5dd0195c4ad8c278b8c"
+    "bfca046a17e88d7fe4f9bd22bd9b0955f43fdae4650be6d9cec7a80b52e51a49"
    ],
    "kernels": [
     "triton_poi_fused_add_mul_0"
@@ -44,45 +44,45 @@
     ]
    ],
    "device_cycles": [
-    13953
+    14302
    ],
    "physical_grid": {
     "peak_active": 4,
     "cores": [
      {
       "core": 0,
-      "issued": 64,
-      "completed": 64,
-      "occupied_cycles": 13921
+      "issued": 61,
+      "completed": 61,
+      "occupied_cycles": 14241
      },
      {
       "core": 1,
-      "issued": 60,
-      "completed": 60,
-      "occupied_cycles": 13575
+      "issued": 64,
+      "completed": 64,
+      "occupied_cycles": 14269
      },
      {
       "core": 2,
-      "issued": 65,
-      "completed": 65,
-      "occupied_cycles": 13693
+      "issued": 64,
+      "completed": 64,
+      "occupied_cycles": 14048
      },
      {
       "core": 3,
       "issued": 68,
       "completed": 68,
-      "occupied_cycles": 13675
+      "occupied_cycles": 14119
      }
     ]
    },
    "outlet_traffic": [
     {
      "port": 0,
-     "read_lines": 1099,
+     "read_lines": 1135,
      "write_lines": 267
     }
    ],
-   "wall_s": 1486.8
+   "wall_s": 808.5
   },
   "softmax": {
    "checks": {
@@ -99,7 +99,7 @@
    "output_sha256": "2f3cdcac5a2d63c71ec41abf22189dec8f66978ea508d692f60bb8f00fbdcc63",
    "max_abs_err": 1.4901161193847656e-08,
    "artifacts": [
-    "dac4de8c306db2a1f6c16624b0c9688d7ed0898ffc2b900645296edeb0efb195"
+    "88e4f515cdd61a7a27e156259e6ee565e3f3018b9b8c5731a075c283ea447c86"
    ],
    "kernels": [
     "triton_red_fused__softmax_0"
@@ -112,45 +112,45 @@
     ]
    ],
    "device_cycles": [
-    23903
+    25037
    ],
    "physical_grid": {
     "peak_active": 4,
     "cores": [
      {
       "core": 0,
-      "issued": 9,
-      "completed": 9,
-      "occupied_cycles": 23893
+      "issued": 8,
+      "completed": 8,
+      "occupied_cycles": 22706
      },
      {
       "core": 1,
-      "issued": 8,
-      "completed": 8,
-      "occupied_cycles": 22519
+      "issued": 9,
+      "completed": 9,
+      "occupied_cycles": 25026
      },
      {
       "core": 2,
       "issued": 8,
       "completed": 8,
-      "occupied_cycles": 22738
+      "occupied_cycles": 22922
      },
      {
       "core": 3,
       "issued": 8,
       "completed": 8,
-      "occupied_cycles": 21902
+      "occupied_cycles": 22816
      }
     ]
    },
    "outlet_traffic": [
     {
      "port": 0,
-     "read_lines": 2185,
-     "write_lines": 864
+     "read_lines": 2313,
+     "write_lines": 875
     }
    ],
-   "wall_s": 1571.4
+   "wall_s": 807.7
   }
  },
  "journal_dir": null,

@@ -14,10 +14,14 @@ R41) are out of scope.
 Identity: contract_v3.delivery(plan) -- product tree (after the identity
 amendment), image a88ebdf5, measured 90 MHz. Board evidence must be bound to
 exactly that tree; records on an earlier tree are early signals only and leave
-the gate not-measured. Pure RTL/simulation evidence may come from an earlier
-tree when every differing product file is listed by the identity amendment and
-the executed harness does not enable the changed behaviour (TNCA_MAX_BLOCK);
-the auditor recomputes both trees and records the differing files.
+the gate not-measured. Everything that executes Torch or Triton (native graphs,
+the semantics matrix, `make r40-hbm`, Triton runtime/atomic, recovery, role
+chunks) is rerun on the delivery tree on GB10 (--gb10-dir, --semantics-dir).
+CI evidence from an earlier tree (--ci-dir) is used only for RTL/host-driver
+scripts; the auditor recomputes both product trees from git, requires every
+differing file to be an identity-amendment file, and checks in a fresh
+interpreter that none of those scripts imports or mentions the compiler,
+Inductor, Torch or Triton.
 
 Inputs (defaults are the preserved copies; arguments point at new runs):
 
@@ -29,7 +33,9 @@ Inputs (defaults are the preserved copies; arguments point at new runs):
   --ci-dir DIR          run.json (gh run view --json headSha,status,conclusion,jobs)
                         and <lane>.log job logs of one CI run
   --semantics-dir DIR   tools/r40/v3_semantics_matrix.py results and
-                        journal_replay/report.json
+                        journal_replay/report.json (delivery tree)
+  --gb10-dir DIR        delivery-tree GB10 step logs (<step>.log ending EXIT=<code>,
+                        steps GB10_STEPS) and sources.json (host, path, tree, file hashes)
   --preserve            copy the given board inputs into evidence/r40/v3/<gate>/
                         (large sets as tar.gz) before judging them
 
@@ -68,7 +74,7 @@ GIB = 1 << 30
 PC_BYTES = 256 << 20
 CLOCK_EVIDENCE_SHA = '8ad4b3bd30a3f5fe8819fe59ef8ad160fd0de1478aaa506dc33d82785fb9f487'
 V2_LOCK = '49fc0e02733139707ae2292eff2ef893e76e73f0723d0d002b2e7e1864af71c8'
-DELIVERY_GIT = '0958db2'   # last commit whose harness files the delivery runs use
+DELIVERY_GIT = 'f9da3d5'  # commit that froze the delivery tree fe1b; harness files are compared with it
 LANES = {
     'check': 'lint, unit, core, system, compiler',
     'transport': 'R40 grid and pipeline (transport)',
@@ -83,11 +89,23 @@ LANES = {
     'native-features': 'R40 multicore MMIO (native-features)',
     'native-pair': 'R40 multicore MMIO (native-pair)',
 }
-# Everything outside the hashed product tree that the CI lanes execute.
-# The delivery commit's Makefile only adds these two board-harness unit tests to
-# r40-multicore-mmio-checks; every other recipe is compared line for line.
-MAKEFILE_ADDED_OK = ('\t@$(PYTHON) tools/r40/conditional_delivery_tests.py',
-                     '\t@$(TRITON_PYTHON) tools/r40/bucket_decode_tests.py')
+# The delivery commit's Makefile only adds lines to the CI commit's: the R40 v3
+# contract/acceptance targets and two board-harness unit tests in
+# r40-multicore-mmio-checks; no recipe line a CI lane executes is changed or removed.
+MAKEFILE_ADDED_OK = (
+    '.PHONY: r40-v3-contract-check r40-v3-acceptance',
+    '# R40 v3: the one-time relaxation for delivery on the 90 MHz image',
+    '# (doc/r40_tasks_and_acceptance_v3.md). Gate evidence: sim/build/r40/v3, or',
+    '# unchanged capability evidence bound to v2 and the v3 delivery identity.',
+    'r40-v3-contract-check:',
+    '\t@cd tools/r40 && $(PYTHON) contract_v3.py',
+    'R40_EVIDENCE_ROOT ?= $(BUILD)/r40',
+    'r40-v3-acceptance: r40-v3-contract-check',
+    '\t@R40_CONTRACT=v3 $(PYTHON) tools/r40/acceptance.py --plan doc/r40_v3/plan.json \\',
+    '\t  --evidence-root $(R40_EVIDENCE_ROOT) --json $(BUILD)/r40/v3/acceptance.json',
+    '\t@$(PYTHON) tools/r40/conditional_delivery_tests.py',
+    '\t@$(TRITON_PYTHON) tools/r40/bucket_decode_tests.py',
+)
 HARNESS = ('.github/workflows/ci.yml', 'tb', 'tools/r1', 'tools/r36/conformance.py',
            'tools/run_test.sh') + tuple(f'tools/r40/{n}.py' for n in (
     'grid_dispatch_tests', 'coherent_host_tests', 'multicore_shell_tests', 'memory_control_tests',
@@ -100,6 +118,20 @@ HARNESS = ('.github/workflows/ci.yml', 'tb', 'tools/r1', 'tools/r36/conformance.
     'code_link_tests', 'reserved_memory_tests', 'storage_owner_tests', 'copy_range_tests',
     'multicore_mmio_synth_tests'))
 SEM_CONFIGS = ('mc1', 'mc2', 'mc3p3', 'mc4', 'mc8', 'bt3p3s2', 'regs3p1s0')
+# CI evidence from an earlier product tree is used only for these RTL/host-driver
+# scripts (iverilog benches, the assembler and the MMIO host binding). Torch and
+# Triton evidence (which executes the amended compiler/Inductor modules) comes
+# from the delivery-tree GB10 runs instead.
+RTL_SCRIPTS = tuple(f'tools/r40/{n}.py' for n in (
+    'grid_dispatch_tests', 'coherent_host_tests', 'multicore_shell_tests', 'memory_ports_tests',
+    'line_axi_tests', 'multicore_axi_tests', 'cache_maintenance_tests', 'dma_handoff_guard_tests',
+    'multicore_dma_tests', 'multicore_mmio_tests', 'mesh_pipeline_tests', 'code_link_tests',
+    'multicore_mmio_option_tests'))
+COMPILER_MODULES = ('tnca.inductor', 'tnca.triton_backend.compiler', 'tnca.aot', 'torch', 'triton')
+# GB10 delivery-tree steps (tools/r40 stream runner; one log per step, EXIT=<code>)
+GB10_STEPS = ('r40_core_parameters', 'r40_hbm', 'grid_transport_backend', 'native_ports_3p2',
+              'native_ports_3p3', 'native_ports_board_dma', 'recovery_multicore_dma',
+              'native_features_board', 'native_pair_board', 'physical_chunks')
 
 
 class Missing(Exception):
@@ -195,8 +227,8 @@ class Identity:
                      evidence_tree == self.amended.get('from_tree'),
                      evidence_tree=evidence_tree, delivery_tree=self.tree, differing_files=differ,
                      amendment_files=self.amended.get('files'),
-                     effect='scan/sort lane cap only when TNCA_MAX_BLOCK > 16; generated source at the '
-                            'default cap is unchanged by construction')
+                     scope='compiler/Inductor modules only; used for RTL/host-driver evidence that never '
+                           'imports them (checked below); Torch/Triton evidence is rerun on the delivery tree')
 
     def board(self, ident, what):
         args = ident.get('backend_args') or {}
@@ -331,12 +363,10 @@ class CI:
                                 'commit', not differ, differ=differ))
             diff = git('diff', '-U0', head, DELIVERY_GIT, '--', 'Makefile').splitlines()
             changed = [l for l in diff if l[:1] in '+-' and not l.startswith(('+++', '---'))]
-            checks.append(check('Makefile recipes equal the delivery commit except two added unrelated unit tests',
+            checks.append(check('Makefile: the delivery commit only adds the v3 contract targets and two unrelated unit tests',
                                 all(l[:1] == '+' and l[1:] in MAKEFILE_ADDED_OK for l in changed),
                                 changed_lines=changed))
-            text = git('show', f'{head}:.github/workflows/ci.yml') + git('show', f'{head}:Makefile')
-            checks.append(check('the CI lanes never enable the amended behaviour (TNCA_MAX_BLOCK unset)',
-                                'TNCA_MAX_BLOCK' not in text))
+            checks.append(rtl_scripts_check())
             self._identity = checks
         return self._identity
 
@@ -370,6 +400,50 @@ def harness_files(src, what):
                  f'({DELIVERY_GIT}) or this checkout', src.get('files') and not differ,
                  files=len(src.get('files') or {}), differ=differ, absent=absent,
                  host=src.get('host'), path=src.get('path'))
+
+
+def rtl_scripts_check():
+    """The CI scripts whose markers are used neither import nor mention the
+    compiler/Inductor/Torch/Triton modules (fresh interpreter per script)."""
+    probe = ('import importlib.util,sys;from pathlib import Path;r=Path(sys.argv[1]);'
+             "[sys.path.insert(0,str(r/d)) for d in ('','python','compiler/python','tools/asm','tools/r40')];"
+             "s=importlib.util.spec_from_file_location('probe',r/sys.argv[2]);m=importlib.util.module_from_spec(s);"
+             's.loader.exec_module(m);print(",".join(k for k in sys.argv[3:] if k in sys.modules))')
+    bad = {}
+    for script in RTL_SCRIPTS:
+        text = (ROOT / script).read_text()
+        words = [w for w in ('aot', 'triton', 'torch', 'inductor') if re.search(rf'\b{w}\b', text)]
+        r = subprocess.run([sys.executable, '-I', '-c', probe, str(ROOT), script, *COMPILER_MODULES],
+                           capture_output=True, text=True)
+        loaded = r.stdout.strip()
+        if words or r.returncode or loaded:
+            bad[script] = dict(mentions=words, loaded=loaded, error=r.stderr.strip()[-200:])
+    return check('CI markers used come only from RTL/host-driver scripts that neither import nor mention '
+                 'the compiler, Inductor, Torch or Triton', not bad, scripts=list(RTL_SCRIPTS), offending=bad)
+
+
+class GB10:
+    """Delivery-tree simulation steps run on GB10 (one log per step)."""
+
+    def __init__(self, directory, ident):
+        self.dir, self.ident = Path(directory), ident
+        self._checks = None
+
+    def identity(self):
+        if self._checks is None:
+            src = read_json(self.dir / 'sources.json')
+            self._checks = [self.ident.simulation_relation(src.get('software_tree'), src.get('commit')),
+                            harness_files(src, 'GB10 delivery-tree runs')]
+        return self._checks
+
+    def step(self, name):
+        path = need(self.dir / f'{name}.log')
+        text = path.read_text(errors='replace')
+        if 'EXIT=' not in text:
+            raise Missing(f'GB10 step {name} not finished')
+        return text, check(f'GB10 delivery-tree step {name} exited 0', re.search(r'^EXIT=0$', text, re.M),
+                           log=rel(path), log_sha256=file_sha(path),
+                           command=(text.splitlines() or [''])[0][:300])
 
 
 def markers(name, text, patterns):
@@ -505,7 +579,7 @@ def gate_suites(inp, ident):
     return ('capability-pass' if all(c['ok'] for c in checks) else 'fail'), checks
 
 
-def gate_hbm(inp, ident, ci, write_derived):
+def gate_hbm(inp, ident, ci, gb, write_derived):
     checks = []
     probe = inp.window_samples()
     checks.append(ident.board(probe['identity'], 'window/PC probe'))
@@ -602,8 +676,8 @@ def gate_hbm(inp, ident, ci, write_derived):
             heap_capacity_bytes=capacity, window_bytes=window, headroom_ratio=ratio), indent=1) + '\n')
         (d / 'capacity_plan.json').write_text(json.dumps(plan, indent=1) + '\n')
     mem, mem_ok = ci.lane('memory')
-    tr, tr_ok = ci.lane('transport')
-    checks += ci.identity() + [mem_ok, tr_ok]
+    tr, tr_ok = gb.step('grid_transport_backend')
+    checks += ci.identity() + gb.identity() + [mem_ok, tr_ok]
     checks.append(markers('out-of-window/unmapped line refused without AXI side effects (line adapter with a '
                           '64-bit 0x100000000 window base)', mem, [(r'LINE AXI PASS width=(64|256) slots=3 mode=3 ', 2)]))
     checks.append(markers('capacity safety: transfers past the end of device memory refused', tr,
@@ -612,9 +686,10 @@ def gate_hbm(inp, ident, ci, write_derived):
     return ('capability-pass' if all(c['ok'] for c in checks) else 'fail'), checks
 
 
-def gate_robustness(inp, ident, ci, sem_dir, gb10, fidelity):
+def gate_robustness(inp, ident, ci, gb, sem_dir, fidelity):
     d = EVIDENCE / 'R40-04.robustness'
-    checks = list(ci.identity())
+    gb10 = gb.dir
+    checks = list(ci.identity()) + gb.identity()
     mem, mem_ok = ci.lane('memory')
     chk, chk_ok = ci.lane('check')
     reg, reg_ok = ci.lane('mmio-checks')
@@ -638,20 +713,19 @@ def gate_robustness(inp, ident, ci, sem_dir, gb10, fidelity):
                            (r'LINE AXI PASS width=(64|256) slots=3 mode=4 ', 2),
                            (r'SINGLE MEMORY PROTOCOL FAULT PASS', 1),
                            (r'MULTICORE SHELL GRID PASS N=\d id=14 status=1 ', 4)]))
-    checks.append(markers('timeout (global deadline) and reset with transactions in flight', mem + chk,
+    rec, rec_ok = gb.step('recovery_multicore_dma')
+    checks.append(rec_ok)
+    checks.append(markers('timeout (global deadline) and reset with transactions in flight', mem + chk + rec,
                           [(r'GRID DEADLINE PASS', 1), (r'MULTICORE SHELL GRID PASS N=\d id=13 status=2 ', 6),
                            (r'LINE AXI PASS width=(64|256) slots=3 mode=5 ', 2),
                            (r'r40-recovery-tests PASS \(3/3\) multicore_dma=True', 1)]))
-    log = need(gb10 / 'r40_hbm.log')
-    judged = log.read_text(errors='replace')
-    src = read_json(gb10 / 'sources.json')
-    checks.append(ident.simulation_relation(src.get('software_tree'), src.get('commit')))
-    checks.append(harness_files(src, 'GB10 make r40-hbm / r40-core-parameters'))
+    judged, hbm_ok = gb.step('r40_hbm')
+    checks.append(hbm_ok)
     checks.append(markers('make r40-hbm: bridge cases (ooo, backpressure, sub-word, error, reset, DMA), every '
-                          'mutation caught, simulated-/hbm device tests', log.read_text(errors='replace'),
+                          'mutation caught, simulated-/hbm device tests', judged,
                           [(r'PASS  bridge:\S+:(ooo-bp|ooo-slow-bp) ', 20), (r'PASS  bridge:\S+:error ', 10),
                            (r'PASS  bridge:\S+:(reset|reset-error-slow) ', 20), (r'PASS  mutation:', 16),
-                           (r'r40-hbm-tests  PASS', 1), (r'^EXIT=0$', 1)]))
+                           (r'r40-hbm-tests  PASS', 1)]))
     # Every other preserved attempt stays visible: its failing cases are listed.
     others = {}
     for other in sorted(gb10.glob('r40_hbm_*.log')):
@@ -664,7 +738,12 @@ def gate_robustness(inp, ident, ci, sem_dir, gb10, fidelity):
                             all(re.search(rf'^\s*PASS\s+{re.escape(f)}\s', judged, re.M)
                                 for o in others.values() for f in o['failed']), attempts=others,
                             diagnostics=sorted(str(rel(p)) for p in (gb10 / 'diagnostics').glob('*'))
-                            if (gb10 / 'diagnostics').is_dir() else []))
+                            if (gb10 / 'diagnostics').is_dir() else [],
+                            observed=('intermittent: on the single-core /hbm line-bridge stand-ins (AXI_LINE=8 and '
+                                      'the local-pipe build) a capacity launch request stayed unanswered by the '
+                                      'simulated device (reply sequence one behind) until the 600 s host wait; the '
+                                      'child then exited 1 without a traceback. Not root-caused; not in the '
+                                      'delivered multicore image; see diagnostics.')))
     probe = inp.window_samples()
     checks.append(ident.board(probe['identity'], 'window/PC probe'))
     smp = {r['name']: r for r in probe['results']}.get('samples', {})
@@ -725,7 +804,7 @@ def semantics_identity(res, ident, commit):
     return ident.simulation_relation(trees.pop(), commit)
 
 
-def gate_semantics(ident, ci, sem_dir):
+def gate_semantics(ident, gb, sem_dir):
     res = semantics_results(sem_dir)
     src = read_json(sem_dir / 'sources.json')
     checks = [semantics_identity(res, ident, src.get('commit')),
@@ -759,30 +838,23 @@ def gate_semantics(ident, ci, sem_dir):
                         '(DRAM model 11+7p cycles with stalls/reordering; AXI line model 25+19p cycles behind '
                         '0- or 2-stage links)', {1, 2, 3, 4, 8} <= cores and len(ports) >= 2 and len(models) >= 2,
                         cores=sorted(cores), ports=sorted(ports), memory_models=sorted(models)))
-    checks += ci.identity()
-    nat, nat_ok = ci.lane('native')
-    mem, mem_ok = ci.lane('memory')
-    np_, np_ok = ci.lane('native-ports')
-    checks += [nat_ok, mem_ok, np_ok]
-    checks.append(markers('CI: the same 4097-element graph on 3/8 cores and 2/3 outlets, with DMA ownership',
-                          nat + mem + np_, [(r'NATIVE MULTICORE TORCH PASS cores=3 active=3', 1),
-                                            (r'NATIVE MULTICORE TORCH PASS cores=8 active=8', 1),
-                                            (r'NATIVE MEMORY PORTS PASS', 4)]))
-    ch, ch_ok = ci.lane('chunks')
-    checks.append(ch_ok)
-    checks.append(markers('CI: role-chunk SPMD variant of the same graph on 3/8 cores', ch,
-                          [(r'NATIVE MULTICORE TORCH PASS cores=3', 1), (r'NATIVE MULTICORE TORCH PASS cores=8', 1)]))
+    checks += gb.identity()
+    steps = [gb.step(n) for n in ('native_ports_3p2', 'native_ports_3p3', 'native_ports_board_dma')]
+    checks += [ok for _, ok in steps]
+    text = '\n'.join(t for t, _ in steps)
+    checks.append(markers('delivery tree: the 4097-element graph with 2 and 3 outlets and on the board top with '
+                          'DMA ownership', text, [(r'NATIVE MEMORY PORTS PASS', 3), (r'"dma_ownership": true', 1)]))
     return ('capability-pass' if all(c['ok'] for c in checks) else 'fail'), checks
 
 
-def gate_dispatch(inp, ident, ci, sem_dir, gb10):
-    checks = list(ci.identity())
+def gate_dispatch(inp, ident, ci, gb, sem_dir):
+    checks = list(ci.identity()) + gb.identity()
     chk, chk_ok = ci.lane('check')
-    tr, tr_ok = ci.lane('transport')
-    nat, nat_ok = ci.lane('native')
     mem, mem_ok = ci.lane('memory')
     regs = [ci.lane(n) for n in ('registers-1', 'registers-3', 'registers-board')]
-    checks += [chk_ok, tr_ok, nat_ok, mem_ok] + [ok for _, ok in regs]
+    tr, tr_ok = gb.step('grid_transport_backend')
+    rec, rec_ok = gb.step('recovery_multicore_dma')
+    checks += [chk_ok, mem_ok, tr_ok, rec_ok] + [ok for _, ok in regs]
     per_n = []
     for n in (1, 2, 3, 4, 8):
         per_n += [(rf'PASS N={n} invalid grid refused', 3),
@@ -809,37 +881,36 @@ def gate_dispatch(inp, ident, ci, sem_dir, gb10):
                           [(r'GRID DEADLINE PASS', 1), (r'r40-multicore-shell-tests PASS', 1)]))
     checks.append(markers('whole-grid mailbox, >4096 streaming admission, exactly-once atomics', tr,
                           [(r'MULTICORE TRANSPORT PASS programs=455 host_launches=1', 1),
-                           (r'PHYSICAL GRID RUNTIME PASS programs=455 exact_atomic_count=455 host_launches=1', 2),
+                           (r'PHYSICAL GRID RUNTIME PASS programs=455 exact_atomic_count=455 host_launches=1', 1),
                            (r'physical-grid-option-tests PASS', 1)]))
     checks.append(markers('core fault, then the same session runs again (backend conformance)', tr,
                           [(r'the session still works after a fault', 1)]))
-    checks.append(markers('recovery epochs with physical address reuse; protocol fault stops dispatch', mem,
+    checks.append(markers('recovery epochs with physical address reuse; protocol fault stops dispatch', mem + rec,
                           [(r'r40-recovery-tests PASS \(3/3\)', 1), (r'SINGLE MEMORY PROTOCOL FAULT PASS', 1)]))
     checks.append(markers('register path on 1 and 3 cores and the board top', '\n'.join(t for t, _ in regs),
                           [(r'MULTICORE MMIO PASS cores=1 ports=1 programs=455', 1),
                            (r'MULTICORE MMIO PASS cores=3 ports=3 programs=455', 2)]))
-    ch, ch_ok = ci.lane('chunks')
-    checks.append(ch_ok)
+    steps = [gb.step(n) for n in ('physical_chunks', 'native_features_board', 'native_pair_board')]
+    checks += [ok for _, ok in steps]
+    ch = '\n'.join(t for t, _ in steps)
     checks.append(markers('bounded role chunks: IR cases, 3-D chunked runtime grid, chunked native Torch on 3/8 '
-                          'cores, descriptor and producer/consumer pair kernels', ch,
+                          'cores, descriptor and producer/consumer pair kernels (incl. board top)', ch,
                           [(r'PHYSICAL CHUNK IR PASS 40 cases', 1),
                            (r'PHYSICAL CHUNK RUNTIME PASS cores=3 width=4 grid=13x7x5 count=455 host_launches=1', 1),
                            (r'NATIVE MULTICORE TORCH PASS cores=3 active=3', 1),
-                           (r'NATIVE MULTICORE TORCH PASS cores=8 active=8', 1), (r'NATIVE MULTICORE FEATURES PASS', 2)]))
-    checks.append(markers('8-core standard Torch smoke executes (not elaboration-only)', nat,
-                          [(r'NATIVE MULTICORE TORCH PASS cores=8 active=8 elements=4097', 1),
-                           (r'NATIVE MULTICORE TORCH PASS cores=3 active=3 elements=4097', 1)]))
+                           (r'NATIVE MULTICORE TORCH PASS cores=8 active=8', 1), (r'NATIVE MULTICORE FEATURES PASS', 4)]))
     res = semantics_results(sem_dir)
     src = read_json(sem_dir / 'sources.json')
     checks.append(semantics_identity(res, ident, src.get('commit')))
-    checks.append(check('standard Torch regression on 1/2/3/4/8 cores',
-                        all(res[c]['ok'] for c in ('mc1', 'mc2', 'mc3p3', 'mc4', 'mc8')),
+    checks.append(check('standard Torch regression on 1/2/3/4 cores and 8-core Torch smoke (executed, not '
+                        'elaboration-only)', all(res[c]['ok'] for c in ('mc1', 'mc2', 'mc3p3', 'mc4', 'mc8')) and
+                        all(res[c]['graphs'][g]['physical_grid']['peak_active'] == res[c]['backend_args']['core_count']
+                            for c in ('mc1', 'mc2', 'mc3p3', 'mc4', 'mc8') for g in res[c]['graphs']),
                         configs={c: res[c]['ok'] for c in ('mc1', 'mc2', 'mc3p3', 'mc4', 'mc8')}))
-    src = read_json(gb10 / 'sources.json')
-    checks.append(ident.simulation_relation(src.get('software_tree'), src.get('commit')))
-    checks.append(markers('make r40-core-parameters (1/2/3/4/8-core v5 parameter propagation)',
-                          need(gb10 / 'r40_core_parameters.log').read_text(),
-                          [(r'r40-core-parameter-tests PASS \(6/6\)', 1), (r'^EXIT=0$', 1)]))
+    cp_text, cp_ok = gb.step('r40_core_parameters')
+    checks.append(cp_ok)
+    checks.append(markers('make r40-core-parameters (1/2/3/4/8-core v5 parameter propagation)', cp_text,
+                          [(r'r40-core-parameter-tests PASS \(6/6\)', 1)]))
     recs = {n: inp.records(n) for n in ('native77', 'hbm14')}
     for n, rs in recs.items():
         if any((r.get('provenance') or {}).get('software_tree') != ident.tree for r in rs):
@@ -857,14 +928,16 @@ def gate_dispatch(inp, ident, ci, sem_dir, gb10):
     return ('capability-pass' if all(c['ok'] for c in checks) else 'fail'), checks
 
 
-def gate_nuca(inp, ident, ci):
-    checks = list(ci.identity())
+def gate_nuca(inp, ident, ci, gb):
+    checks = list(ci.identity()) + gb.identity()
     chk, chk_ok = ci.lane('check')
-    tr, tr_ok = ci.lane('transport')
     mem, mem_ok = ci.lane('memory')
     reg, reg_ok = ci.lane('mmio-checks')
-    np_, np_ok = ci.lane('native-ports')
-    checks += [chk_ok, tr_ok, mem_ok, reg_ok, np_ok]
+    tr, tr_ok = gb.step('grid_transport_backend')
+    torch_steps = [gb.step(n) for n in ('native_ports_3p2', 'native_ports_3p3', 'native_ports_board_dma',
+                                        'recovery_multicore_dma')]
+    np_ = '\n'.join(t for t, _ in torch_steps)
+    checks += [chk_ok, mem_ok, reg_ok, tr_ok] + [ok for _, ok in torch_steps]
     checks.append(markers('cross-core producer/consumer through shared lines (a second grid reads every word the '
                           'first wrote) on 1/2/3/4/8 cores and 1/2/3/4/8 outlets', mem,
                           [(rf'GRID REAL CORES PASS N={n} memory=1 ports={p} phase=1', 1)
@@ -872,13 +945,13 @@ def gate_nuca(inp, ident, ci):
     checks.append(markers('same-line masked stores from several cores and masked coherent host writes', mem,
                           [(r'GRID COHERENT HOST PASS N=(2|3|4|8) downloads=457 uploads=2', 5)]))
     checks.append(markers('atomic reduction across three physical cores, exactly once', tr,
-                          [(r'exact_atomic_count=455', 2)]))
+                          [(r'exact_atomic_count=455', 1)]))
     checks.append(markers('dirty eviction then coherent host copy; ownership handoff writes back all dirty results; '
                           'partial DMA range preserved', mem,
                           [(r'GLOBAL CACHE HANDOFF PASS N=3 dirty_results=455 partial_dma=1', 2),
                            (r'GRID COHERENT HOST PASS N=\d downloads=457', 7)]))
     checks.append(markers('DMA updates cache: range writeback/invalidate at every home; board-top DMA ownership with a '
-                          'resident Torch graph', mem,
+                          'resident Torch graph', mem + np_,
                           [(r'NUCA MAINTENANCE PASS', 6), (r'CACHE HANDOFF PASS homes=(1|3|8)', 3),
                            (r'r40-cache-maintenance PASS \(19/19\)', 1), (r'DMA HANDOFF GUARDS PASS \(8/8\)', 1),
                            (r'MMIO CACHE HANDOFF PASS snapshot drain range faults reset', 1),
@@ -891,15 +964,15 @@ def gate_nuca(inp, ident, ci):
                           [(r'MULTICORE AXI PERSISTENT PASS N=3 ports=3 stages=2 write_delay=300', 1),
                            (r'MEMORY PORTS PASS N=8 P=8 responses=128', 1), (r'LINE AXI PASS width=\d+ slots=8 mode=0 ', 4),
                            (r'PRESSURE PASS maintenance=\d policy=\d+ seed=\d+ requests=20000', 8)]))
-    checks.append(markers('fault drain: AXI faults latched, completion withheld until drain, recovery', mem,
+    checks.append(markers('fault drain: AXI faults latched, completion withheld until drain, recovery', mem + np_,
                           [(r'LINE AXI PASS width=(64|256) slots=3 mode=(1|2|4) ', 6),
                            (r'MULTICORE SHELL GRID PASS N=\d id=14 status=1 ', 4), (r'r40-recovery-tests PASS', 1)]))
     checks.append(markers('no deadlock, lost response or starvation: arbitration fairness, exact response counts, '
                           'packet conservation', mem + chk + reg,
                           [(r'MEMORY PORTS PASS N=\d P=\d responses=\d+', 15), (r'R40 MEMORY ARBITER PASS N=\d', 5),
                            (r'LINE AXI MATRIX PASS 35 configurations', 1), (r'sent=20000 received=20000', 4)]))
-    checks.append(markers('RTL: every outlet of a native Torch graph carries reads and writes', mem + np_,
-                          [(r'NATIVE MEMORY PORTS PASS \{"controller_traffic"', 4)]))
+    checks.append(markers('RTL: every outlet of a native Torch graph carries reads and writes (2 and 3 outlets, '
+                          'board top with DMA)', np_, [(r'NATIVE MEMORY PORTS PASS \{"controller_traffic"', 3)]))
     cp = inp.checkpoint()
     checks.append(ident.board(cp['identity'], 'board checkpoint'))
     outlets = cp.get('outlets') or []
@@ -930,8 +1003,8 @@ def main():
     ap.add_argument('--large24', type=Path)
     ap.add_argument('--ci-dir', type=Path, default=EVIDENCE / 'ci_39183153944')
     ap.add_argument('--semantics-dir', type=Path, default=EVIDENCE / 'R40-06.semantics')
-    ap.add_argument('--gb10-dir', type=Path, default=EVIDENCE / 'R40-04.robustness' / 'gb10',
-                    help='r40_hbm.log, r40_core_parameters.log and sources.json of the GB10 runs')
+    ap.add_argument('--gb10-dir', type=Path, default=EVIDENCE / 'memsys_gb10',
+                    help='delivery-tree GB10 step logs (<step>.log with EXIT=) and sources.json')
     ap.add_argument('--preserve', action='store_true')
     ap.add_argument('--dry-run', action='store_true', help='print the records instead of writing them')
     ap.add_argument('--only', nargs='*')
@@ -944,14 +1017,14 @@ def main():
     ident = Identity()
     inp = Inputs(args)
     ci = CI(args.ci_dir, ident)
+    gb = GB10(args.gb10_dir, ident)
     gates = {
         'R40-09.suites': (gate_suites, (inp, ident)),
-        'R40-04.hbm': (gate_hbm, (inp, ident, ci, not args.dry_run)),
-        'R40-04.robustness': (gate_robustness, (inp, ident, ci, args.semantics_dir, args.gb10_dir,
-                                                args.hbm_model_fidelity)),
-        'R40-05.dispatch': (gate_dispatch, (inp, ident, ci, args.semantics_dir, args.gb10_dir)),
-        'R40-06.nuca': (gate_nuca, (inp, ident, ci)),
-        'R40-06.semantics': (gate_semantics, (ident, ci, args.semantics_dir)),
+        'R40-04.hbm': (gate_hbm, (inp, ident, ci, gb, not args.dry_run)),
+        'R40-04.robustness': (gate_robustness, (inp, ident, ci, gb, args.semantics_dir, args.hbm_model_fidelity)),
+        'R40-05.dispatch': (gate_dispatch, (inp, ident, ci, gb, args.semantics_dir)),
+        'R40-06.nuca': (gate_nuca, (inp, ident, ci, gb)),
+        'R40-06.semantics': (gate_semantics, (ident, gb, args.semantics_dir)),
     }
     me = file_sha(Path(__file__))
     for gate, (fn, fargs) in gates.items():

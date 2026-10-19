@@ -1,0 +1,5 @@
+W1019 02:35:09.071000 2513278 torch/utils/cpp_extension.py:183] No CUDA runtime is found, using CUDA_HOME='/usr/local/cuda'
+  PASS  mc3p3 pointwise {"numerical": true, "device_output": true, "zero_tensor_staging": true, "whole_grid_launch": true, "no_per_program_launch": true, "physical_grid": true, "programs_exactly_once": true, "every_outlet_traffic": true} peak=3 outlets=[{'port': 0, 'read_lines': 368, 'write_lines': 90}, {'port': 1, 'read_lines': 293, 'write_lines': 88}, {'port': 2, 'read_lines': 259, 'write_lines': 84}]
+  PASS  mc3p3 softmax {"numerical": true, "device_output": true, "zero_tensor_staging": true, "whole_grid_launch": true, "no_per_program_launch": true, "physical_grid": true, "programs_exactly_once": true, "every_outlet_traffic": true} peak=3 outlets=[{'port': 0, 'read_lines': 403, 'write_lines': 193}, {'port': 1, 'read_lines': 450, 'write_lines': 213}, {'port': 2, 'read_lines': 466, 'write_lines': 211}]
+SEMANTICS PASS mc3p3
+EXIT=0

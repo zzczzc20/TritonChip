@@ -1,5 +1,8 @@
-W1019 02:35:07.482000 2513269 torch/utils/cpp_extension.py:183] No CUDA runtime is found, using CUDA_HOME='/usr/local/cuda'
+STEP sem_mc2: /home/zhongchun/tc_env/torchenv/bin/python -u tools/r40/v3_semantics_matrix.py --config mc2 --out /home/zhongchun/r40v3_hbmnuca_runs/fe1b/semantics
+START 2026-10-19T08:36:49Z
+W1019 08:36:51.562000 3029450 torch/utils/cpp_extension.py:183] No CUDA runtime is found, using CUDA_HOME='/usr/local/cuda'
   PASS  mc2 pointwise {"numerical": true, "device_output": true, "zero_tensor_staging": true, "whole_grid_launch": true, "no_per_program_launch": true, "physical_grid": true, "programs_exactly_once": true, "every_outlet_traffic": true} peak=2 outlets=[{'port': 0, 'read_lines': 904, 'write_lines': 263}]
-  PASS  mc2 softmax {"numerical": true, "device_output": true, "zero_tensor_staging": true, "whole_grid_launch": true, "no_per_program_launch": true, "physical_grid": true, "programs_exactly_once": true, "every_outlet_traffic": true} peak=2 outlets=[{'port': 0, 'read_lines': 1311, 'write_lines': 606}]
+  PASS  mc2 softmax {"numerical": true, "device_output": true, "zero_tensor_staging": true, "whole_grid_launch": true, "no_per_program_launch": true, "physical_grid": true, "programs_exactly_once": true, "every_outlet_traffic": true} peak=2 outlets=[{'port': 0, 'read_lines': 1485, 'write_lines': 625}]
 SEMANTICS PASS mc2
+END 2026-10-19T08:53:12Z
 EXIT=0

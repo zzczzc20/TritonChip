@@ -1,0 +1,11 @@
+STEP r40_core_parameters: make r40-core-parameters PYTHON=/home/zhongchun/tc_env/torchenv/bin/python
+START 2026-10-19T08:04:03Z
+PASS 4 elaborated cores: legacy parameters reach every core
+PASS 1 elaborated cores: v5 parameters reach every core
+PASS 2 elaborated cores: v5 parameters reach every core
+PASS 3 elaborated cores: v5 parameters reach every core
+PASS 4 elaborated cores: v5 parameters reach every core
+PASS 8 elaborated cores: v5 parameters reach every core
+r40-core-parameter-tests PASS (6/6)
+END 2026-10-19T08:04:19Z
+EXIT=0

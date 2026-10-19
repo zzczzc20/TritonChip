@@ -241,13 +241,13 @@ def main():
                     with transfers(session) as cold_copies:
                         warm,codes = run_and_get_code(fn,*inputs)
                     assert compare(valid_state(warm,prefix+index)[:3],want[:3],tolerance)['ok'], 'warm model output differs'
+                    assert all(t.device.type=='tnca' for t in warm)
                     del warm
                     if args.bucket and index == 1:
                         decode_codes = codes
                 assert codes, 'generated wrapper source was not captured; fallback audit is unavailable'
                 fallbacks = host_fallbacks(codes)
                 assert not fallbacks, fallbacks
-                assert all(t.device.type=='tnca' for t in warm)
                 assert not any(e['direction']=='h2d' and e['name'] in weight_names for e in cold_copies)
                 events = []
                 original_wait = session.wait

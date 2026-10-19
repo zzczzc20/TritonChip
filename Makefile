@@ -1431,6 +1431,16 @@ r40-v2-contract-check:
 	@$(PYTHON) tools/r40/contract_v2.py
 r40-v2-acceptance: r40-v2-contract-check
 	@$(PYTHON) tools/r40/acceptance.py --plan spec/r40/v2/plan.json --json $(BUILD)/r40/v2/acceptance.json
+.PHONY: r40-v3-contract-check r40-v3-acceptance
+# R40 v3: the one-time relaxation for delivery on the 90 MHz image
+# (doc/r40_tasks_and_acceptance_v3.md). Gate evidence: sim/build/r40/v3, or
+# unchanged capability evidence bound to v2 and the v3 delivery identity.
+r40-v3-contract-check:
+	@cd tools/r40 && $(PYTHON) contract_v3.py
+R40_EVIDENCE_ROOT ?= $(BUILD)/r40
+r40-v3-acceptance: r40-v3-contract-check
+	@R40_CONTRACT=v3 $(PYTHON) tools/r40/acceptance.py --plan doc/r40_v3/plan.json \
+	  --evidence-root $(R40_EVIDENCE_ROOT) --json $(BUILD)/r40/v3/acceptance.json
 .PHONY: r40-device-time-v2
 # Three complete interleaved board blocks per side; no legacy B39 evidence.
 R40_V2_CONTROL ?= $(BUILD)/r40/v2/device/control0.jsonl $(BUILD)/r40/v2/device/control1.jsonl $(BUILD)/r40/v2/device/control2.jsonl

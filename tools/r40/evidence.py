@@ -17,10 +17,10 @@ ROOT = Path(__file__).resolve().parents[2]
 def path_for(gate_id):
     root = ROOT / 'sim' / 'build' / 'r40'
     version = os.environ.get('R40_CONTRACT', 'v1')
-    if version not in ('v1', 'v2'):
-        raise ValueError('R40_CONTRACT must be v1 or v2')
-    if version == 'v2':
-        root = root / 'v2'
+    if version not in ('v1', 'v2', 'v3'):
+        raise ValueError('R40_CONTRACT must be v1, v2 or v3')
+    if version in ('v2', 'v3'):
+        root = root / version
     return root / f"{gate_id.split('.', 1)[0]}.json"
 
 
@@ -31,6 +31,10 @@ def record(gate_id, status, checks, *, detail='', path=None, **extra):
         from contract_v2 import verify, LOCK_SHA256
         verify()
         extra.update(contract_version=2, contract_sha256=LOCK_SHA256)
+    elif os.environ.get('R40_CONTRACT') == 'v3':
+        from contract_v3 import verify, LOCK_SHA256
+        verify()
+        extra.update(contract_version=3, contract_sha256=LOCK_SHA256)
     p.parent.mkdir(parents=True, exist_ok=True)
     try:
         doc = json.loads(p.read_text())

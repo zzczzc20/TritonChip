@@ -1,0 +1,16 @@
+{
+  "schema": 1,
+  "contract_version": 3,
+  "frozen_utc": "2026-10-19",
+  "authorization": "User 2026-10-19: one-time v3 relaxation; perf = significant gain + target report; DCO/locality and TNCA_TUNE to R41; new-bitstream items with the next frequency implementation",
+  "files": {
+    "doc/r40_tasks_and_acceptance_v3.md": "f882cbc9b62e83bd31afb48a1aa72466defceb98c2381648a1e5d624827edcd2",
+    "doc/r40_v3/plan.json": "b624ffbe7726868efc6509ea6fb670d4f1200538384bf8e760b062670078001b",
+    "doc/r40_v3/R40-09.model.json": "bb54686bdeb0e93866d8a586408da10648da62ff9987b0b4c64688504958f20d"
+  },
+  "inherited": {
+    "spec/r40/v2/lock.json": "49fc0e02733139707ae2292eff2ef893e76e73f0723d0d002b2e7e1864af71c8",
+    "doc/r40_tasks_and_acceptance_v2.md": "1ec7eb807d6e4cf472db1ada8aa171c92858835e1b83edad89b12e206d375c00",
+    "spec/r40/v2/plan.json": "4db1f6a083f02f55b113604a6edaa6a857557c255ce64b349c7ad09c9369afca"
+  }
+}

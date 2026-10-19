@@ -34,6 +34,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 STATUSES = ('capability-pass', 'perf-pass', 'no-significant-gain', 'fail', 'not-measured')
+# v3 only: a gate the frozen v3 contract moved out of R40 (never passing).
+DEFERRED = 'deferred'
 PASSING = ('capability-pass', 'perf-pass')
 
 
@@ -50,8 +52,58 @@ def make_targets():
     return out
 
 
-def judge(gate, *, ran=None):
+def _identity(entry):
+    ident = entry.get('identity') if isinstance(entry.get('identity'), dict) else {}
+    return (ident.get('software_tree') or entry.get('software_tree'),
+            ident.get('image_sha256') or entry.get('image_sha256'))
+
+
+def _v3_entry(gate, plan, evidence_root):
+    """(entry, path, why) for a v3 gate: v3-bound evidence, or for an unchanged
+    capability gate v2-bound evidence measured on the v3 delivery identity."""
+    import contract_v2
+    import contract_v3
+    wp = gate['id'].split('.', 1)[0]
+    delivery = plan['delivery']
+    tried = []
+    for version, lock in (('v3', contract_v3.LOCK_SHA256), ('v2', contract_v2.LOCK_SHA256)):
+        if version == 'v2' and not gate.get('accepts_v2_evidence'):
+            continue
+        path = Path(evidence_root) / version / f'{wp}.json'
+        if not path.exists():
+            tried.append(f'no evidence at {path}')
+            continue
+        try:
+            doc = json.loads(path.read_text())
+        except json.JSONDecodeError as e:
+            return None, path, f'{path}: {e}'
+        entry = (doc.get('gates') or {}).get(gate['id'])
+        if entry is None:
+            tried.append(f'{path} does not name gate {gate["id"]}')
+            continue
+        if entry.get('contract_sha256') != lock:
+            tried.append(f'{path}: evidence is not bound to the frozen R40 {version} contract')
+            continue
+        if version == 'v2' and wp != 'R40-00':
+            tree, image = _identity(entry)
+            if tree != delivery['software_tree'] or image != delivery['image_sha256']:
+                tried.append(f'{path}: v2 evidence measured on {tree}/{image}, not the v3 delivery identity')
+                continue
+        return entry, path, ''
+    return None, None, '; '.join(tried)
+
+
+def judge(gate, *, ran=None, plan=None, evidence_root=None):
     """One gate's status and why."""
+    if gate.get('contract_version') == 3:
+        if gate.get('deferred'):
+            return DEFERRED, gate['deferred']
+        entry, path, why = _v3_entry(gate, plan, evidence_root or ROOT / 'sim' / 'build' / 'r40')
+        if ran is not None and ran != 0:
+            return 'fail', f"{gate.get('command')} exited {ran}"
+        if entry is None:
+            return ('fail' if path else 'not-measured'), why
+        return _judge_entry(gate, entry, str(path))
     cmd = gate.get('command')
     if not cmd:
         return 'fail', 'the gate names no command'
@@ -80,6 +132,11 @@ def judge(gate, *, ran=None):
         from contract_v2 import LOCK_SHA256
         if entry.get('contract_sha256') != LOCK_SHA256:
             return 'not-measured', 'evidence is not bound to the frozen R40 v2 contract'
+    return _judge_entry(gate, entry, ev)
+
+
+def _judge_entry(gate, entry, ev):
+    status = entry.get('status')
     if status not in STATUSES:
         return 'fail', f'{ev}: status {status!r} is not one of {STATUSES}'
     if gate['kind'] == 'capability' and status == 'perf-pass':
@@ -97,10 +154,14 @@ def judge(gate, *, ran=None):
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
-    default_plan = ROOT / 'spec' / 'r40'
+    default_plan = ROOT / 'spec' / 'r40' / 'plan.json'
     if os.environ.get('R40_CONTRACT') == 'v2':
-        default_plan = default_plan / 'v2'
-    ap.add_argument('--plan', type=Path, default=default_plan / 'plan.json')
+        default_plan = ROOT / 'spec' / 'r40' / 'v2' / 'plan.json'
+    elif os.environ.get('R40_CONTRACT') == 'v3':
+        default_plan = ROOT / 'doc' / 'r40_v3' / 'plan.json'
+    ap.add_argument('--plan', type=Path, default=default_plan)
+    ap.add_argument('--evidence-root', type=Path, default=ROOT / 'sim' / 'build' / 'r40',
+                    help='v3: directory holding v3/<WP>.json and v2/<WP>.json gate evidence')
     ap.add_argument('--wp', nargs='*')
     ap.add_argument('--run', action='store_true')
     ap.add_argument('--json', type=Path)
@@ -113,6 +174,15 @@ def main(argv=None):
             import hashlib
             if hashlib.sha256(args.plan.read_bytes()).hexdigest() != lock['files']['spec/r40/v2/plan.json']:
                 raise ValueError('acceptance must use the exact frozen R40 v2 plan')
+        except (OSError, ValueError, KeyError) as error:
+            ap.error(str(error))
+    if plan.get('contract_version') == 3:
+        from contract_v3 import verify as verify_v3
+        import hashlib
+        try:
+            lock = verify_v3()
+            if hashlib.sha256(args.plan.read_bytes()).hexdigest() != lock['files']['doc/r40_v3/plan.json']:
+                raise ValueError('acceptance must use the exact frozen R40 v3 plan')
         except (OSError, ValueError, KeyError) as error:
             ap.error(str(error))
     known = {wp['id'] for wp in plan['work_packages']}
@@ -136,12 +206,12 @@ def main(argv=None):
                 command = gate['command']
                 if command not in command_results:
                     run_env = dict(os.environ)
-                    if plan.get('contract_version') == 2:
-                        run_env['R40_CONTRACT'] = 'v2'
+                    if plan.get('contract_version') in (2, 3):
+                        run_env['R40_CONTRACT'] = f"v{plan['contract_version']}"
                     command_results[command] = subprocess.run(
                         command, shell=True, cwd=ROOT, env=run_env).returncode
                 ran = command_results[command]
-            status, why = judge(gate, ran=ran)
+            status, why = judge(gate, ran=ran, plan=plan, evidence_root=args.evidence_root)
             rows.append(dict(id=gate['id'], kind=gate['kind'], required=gate.get('required', True),
                              status=status, why=why))
         ok = all(r['status'] in PASSING for r in rows if r['required'])

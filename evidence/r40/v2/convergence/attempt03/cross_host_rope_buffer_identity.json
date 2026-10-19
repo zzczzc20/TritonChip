@@ -1,0 +1,32 @@
+{
+  "native": {
+    "large-prefill": [
+      "df245935fc752e4369db64608b5deca56213dd36f56d8b5b99d9d42dea06430a",
+      "4c27fd4c30fe2df512608ae42b15008f82db6bf33516d5a3ebcd928dcc0b59b3"
+    ],
+    "large-decode": [
+      "3e5edd63267b1cb6490c5fca77e2bc3da3eb6b2a78e7061aa0ddeb90554a4ded",
+      "72f50d955f402592c16ae6674af4a1a192d0712127f87ceb0895ef7ab1b5b6bb"
+    ],
+    "full-bucket": [
+      "960e9fc1ab5eff37ddabb87d5f60dfb665f26a20471fd28cebddc95e11110a7f",
+      "1bcac42f86805995958e53f98c04b2fc36da76cf98368d615a346b8ad26262ba"
+    ]
+  },
+  "gb10": {
+    "large-prefill": [
+      "df245935fc752e4369db64608b5deca56213dd36f56d8b5b99d9d42dea06430a",
+      "4c27fd4c30fe2df512608ae42b15008f82db6bf33516d5a3ebcd928dcc0b59b3"
+    ],
+    "large-decode": [
+      "3e5edd63267b1cb6490c5fca77e2bc3da3eb6b2a78e7061aa0ddeb90554a4ded",
+      "72f50d955f402592c16ae6674af4a1a192d0712127f87ceb0895ef7ab1b5b6bb"
+    ],
+    "full-bucket": [
+      "960e9fc1ab5eff37ddabb87d5f60dfb665f26a20471fd28cebddc95e11110a7f",
+      "1bcac42f86805995958e53f98c04b2fc36da76cf98368d615a346b8ad26262ba"
+    ]
+  },
+  "all_identical": true,
+  "scope": "Pure frozen RoPE-table generation, including nonpersistent buffers, at actual large and full-bucket dimensions; no device operation or performance claim"
+}

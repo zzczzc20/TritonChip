@@ -77,7 +77,7 @@ sections it names.
 
 | # | Assumption | Used in |
 |---|---|---|
-| A1 | Agents are untrusted and may be adversarial. Reward hacking is the expected behaviour, not an edge case | everywhere |
+| A1 | An agent's output is unreviewed until the operator checks the final candidate. Isolation and automated gates protect the run; the operator decides whether to accept its final score | everywhere |
 | A2 | Claude Code and Codex sign in with a subscription credential. Their credentials must travel with the unmodified CLI | §8 |
 | A3 | GLM is reached with an API key. With a key the credential could stay outside the sandbox; whether the plan's terms allow a key-injecting proxy and formal runs is to be checked (O10) | §8 |
 | A4 | Until dedicated experiment accounts exist, the accounts in use are for development only | §8 |
@@ -85,7 +85,7 @@ sections it names.
 | A6 | The agent may change the compiler, ISA and RTL freely. The constraint is the chain: PyTorch → Triton → TNCA IR → ISA → RTL, nothing skipped | §10, §11 |
 | A7 | The agent's sandbox has the full toolchain, the cycle-accurate simulator included. It measures its own test cases with it | §3, §6 |
 | A8 | For now, while the harness is built, all of ArchBench is hidden from the agent (§6) | §6, §12 |
-| A9 | The evaluator runs no candidate code except the design it evaluates. The candidate's compiler (and the parts of `python/tnca/` it may change) still runs in the host-side measuring process; P2.1 moved the device and its count out of that process's reach, and P2.2 will check the results it reports (§11) | §10, §11 |
+| A9 | The evaluator runs no candidate code except the design it evaluates. The candidate's compiler (and the parts of `python/tnca/` it may change) still runs in the host-side measuring process; P2.1 moved the device and its count out of that process's reach. Final human review checks the remaining result path; P2.2 can automate that check (§10.5, §11) | §10, §11 |
 | A10 | RTL simulation cycles are deterministic; board measurements are not exactly | §13 |
 | A11 | FPGA builds are slow: synthesis of the whole device takes about 25 minutes, a full link about 4 hours. The agent's use of them is budgeted, and the budget is enforced | §12 |
 
@@ -101,6 +101,7 @@ to the agent?**
 | **Scoring service** | Rebuilds base plus the candidate from source and measures the hidden **validation set** in simulation | during the run, when the agent asks, within its budget | the agent | aggregates only (§6.4) |
 | **FPGA service** | Quick tier: out-of-context synthesis and timing of the device. Slow tier: implementation, then a board stage. Runs through the FPGA harness on the build worker, and on the card host for the board stage | during the run, when the agent asks, within its FPGA time budget | the agent | timing and resources; for the board stage, aggregates on the validation set |
 | **Final evaluator** | Rebuilds base plus the final candidate and measures the hidden **final set** (and the validation set, for the record) | after the agent has stopped | the harness | nothing, ever |
+| **Final human review** | Checks the final candidate and the evaluator's evidence before its score is accepted (§10.5) | after final evaluation and any required board certification | the operator | nothing |
 | **FPGA harness** (`tools/tritonchip_fpga_harness/`) | The execution and evidence layer for FPGA work: drives the repository's own flow, judges builds, loads and measures on the card | under the FPGA service, and for board certification of a candidate the operator selects | the FPGA service or the operator | only through the FPGA service |
 
 Apart from the services' budgeted results, everything the agent learns, it
@@ -125,7 +126,7 @@ learns in its sandbox.
    └─────────────────────┘                                              │ slow: link + board   │
                                                                         │   (FPGA harness)     │
                                                                         └──────────────────────┘
-   after the run:  gate ──► final evaluator ──► final set + validation set ──► run record (never to the agent)
+   after the run:  gate ──► final evaluator ──► final set + validation set ──► run record ──► human review
 ```
 
 **The operator** runs experiments. They own the site configuration, their copy
@@ -148,7 +149,7 @@ trusted.
 |---|---|---|---|
 | T1 | Seeing what it must not | ArchBench's points or results, the task's definition or reference patch, another run, git history, the evaluator's code, host credentials | sandbox (§7), workspace and visibility (§6, §9) |
 | T2 | Reaching the network | fetching a solution, exfiltrating a credential, reaching services on the harness host | gateway (§8) |
-| T3 | Tampering with measurement | editing the shell's counter, finishing a launch early, faking outputs in the runtime, computing on the host | observer (§11, P2) |
+| T3 | Measurement or result-path errors | an edited shell counter, early completion, or a host-side result that did not come from the measured device run | observer (§11, P2.1) and final human review (§10.5); P2.2 is optional automation |
 | T4 | Skipping the chain | host fallback, hand-written ISA for one kernel, tables keyed on a benchmark | hidden benchmark (§6), chain checks (§10) |
 | T5 | Probing the hidden benchmark through results | many scoring requests to map the validation set; error text naming a shape; a compiler that encodes what it compiled into its timing | aggregates only, budgets, a final set never scored during the run (§6.4) |
 | T6 | Harm to an FPGA host | candidate RTL that reads host files at synthesis (`$readmemh` of an absolute path); candidate code on the card host reading other users' files or what another session left on the card | sandboxes on the build worker and the card host (§12.5) |
@@ -171,9 +172,9 @@ The rule that ties them together: **the agent owns the design; the evaluator
 owns the observation and the questions.** No file is "protected" in the sense
 that changing it rejects a run. A change is either part of the design, and goes
 into the candidate, or it is ignored, because nothing that measures uses the
-candidate's copy of it. Until P2, one exception stands: candidate code that
-runs in the measuring process can still patch evaluator-owned modules at run
-time (§11).
+candidate's copy of it. P2.1 separated the device and its cycle count, while
+candidate code still runs in the host-side measuring process. The final human
+review covers that remaining result path (§10.5); P2.2 could automate it (§11).
 
 **How each boundary is built.**
 
@@ -506,7 +507,7 @@ deferred.
 1. **The evaluator drives the chain.** It starts from its own ArchBench PyTorch modules and runs `torch.compile` → Inductor → Triton → the candidate's compiler → the candidate's RTL. A candidate supplies a toolchain and a design, never kernels or binaries.
 2. **A host fallback fails the point** (§10.2).
 3. **The benchmark is hidden** (§6; for `replay-mzero` since 2026-10-15), so nothing can be keyed on its kernels.
-4. **Planned:** provenance and a diff audit. Provenance must regenerate or verify each stage from TNCA IR to ISA with evaluator-owned code; the stage files the candidate's compiler writes (`TNCA_KERNEL_DUMP=1`) are only its own claim. The diff audit looks for large instruction literals and branches on kernel names or shape constants. Monitors fix the environment; they are not part of the score.
+4. **Final review and planned automation:** the operator audits the candidate diff and generated code before accepting the score (§10.5), including large instruction literals and branches on kernel names or shape constants. Automated provenance that regenerates or verifies each stage from TNCA IR to ISA with evaluator-owned code remains planned; the stage files the candidate's compiler writes (`TNCA_KERNEL_DUMP=1`) are only its own claim. Monitors fix the environment; they are not part of the score.
 5. **ISA extensions are allowed.** They must take effect through compiler lowering. Their resources are not charged; like any hardware change they must fit the U280 (§10.2).
 
 **The machine is the agent's to choose; the starting point is the task's.**
@@ -581,6 +582,31 @@ that is code the operator runs having read it: `certify` without `--yes`
 builds the tree, lists the candidate's files that run on the card server, and
 builds nothing. A hardware-only candidate, and the base, run none.
 
+### 10.5 Final human review before accepting a score
+
+`run.json`'s `validity: valid` means the automated run and its base measurement
+were usable. It is not an operator's acceptance of the candidate or its score.
+After the agent loop ends, the operator reviews the final candidate before
+using its final-set result in a comparison or publication:
+
+1. Pin the run ID, task hash, base commit and candidate overlay. Read
+   `candidate/candidate.json` and the actual diff, especially compiler and
+   host-side `python/tnca/` changes. Check that the measured work still follows
+   PyTorch → Triton → TNCA IR → ISA → RTL and that the output path uses the
+   measured device's results, not a host computation substituted for them.
+2. Check the final evaluator's ArchBench records and per-point observer logs:
+   numerical correctness, no host fallback, expected launches, platform
+   cycles, and no activity outside a launch. Reproduce any surprising point
+   with a fresh seed and inspect its generated code and device trace.
+3. If the machine changed, require `certification.json` with `certified` and
+   matching board cycles (§10.4). Record the reviewer, date, exact run ID,
+   evidence inspected, decision and any exclusions in `review.md` beside
+   `run.json`. Only an accepted review makes the score a final result.
+
+This is an explicit human sign-off, not a claim that the current software
+proves every byte's origin automatically. P2.2 (§11) is a possible way to
+automate the result-path portion if unattended scoring becomes a requirement.
+
 ## 11. The device-boundary contract and the observer
 
 **The contract** is the fixed interface between the design, which agents may
@@ -606,7 +632,7 @@ parameter of every instance has the same value and width as before, and cycles
 are identical on the points measured. Not yet migrated: the core-level benches,
 `tnca_shell_tb`, the FPGA top.
 
-**P2, the observer (P2.1 built and verified 2026-10-16; P2.2 planned, required).** Two facts make it necessary.
+**P2, the observer (P2.1 built and verified 2026-10-16; P2.2 optional automation).** Two facts motivate this boundary.
 The cycle count that scores a run is `run_cycles` in `rtl/tnca_shell.v`, which
 the agent may edit. And the measuring process runs candidate code: the
 candidate's compiler, and its versions of the `python/tnca/` modules that are
@@ -644,27 +670,30 @@ host container (candidate; as today)               device container (evaluator-o
 7. **The board platform becomes evaluator-owned:** everything above `tnca_shell`, `rtl/board/tnca_u50_xo.v` and `rtl/fpga/` (`tnca_fpga_top`, `tnca_mmio`, `tnca_fpga_mem`, `tnca_axi_lite`, `tnca_u50_top`), today under the design path.
 8. **Device time is redefined** as the platform's count (O4). It differs from `done_cycles` by the shell's few handshake cycles, so the base is measured again once.
 
-**P2.2: the results (the second step).** The rule: **the host may move data,
-never compute it.** The relay sees every upload and download. The evaluator
-checks that every upload is an input of the point (generated from its seed by
-base code), a block the device returned earlier, or the program and its
+**P2.2: optional automated result-path check.** A final score credits work
+done by the measured device; host-side compilation, reference computation and
+data staging are normal parts of evaluation. The relay sees every upload and
+download. An automated evaluator could check that every upload is an input of
+the point (generated from its seed by base code), a block the device returned
+earlier, or the program and its
 arguments; that the program images and arguments are identical when the point
 runs again with a second seed; and that the outputs, taken from the device's
 downloads rather than from the candidate's record, match a reference computed
 by base code. Provenance is judged by content, not by which side wrote memory:
 host writes reach memory through the agent's own shell (`rtl/tnca_shell.v`
 merges host and core requests onto one memory port), which could delay them
-into a launch window. The second run makes P2.2 a final-evaluation step only.
+into a launch window. The second run would make P2.2 a final-evaluation step
+only. Until this is built, §10.5 supplies the final review gate.
 
-| Cheat | Caught by |
+| Result-path concern | Check |
 |---|---|
 | The shell's counter edited | P2.1: the score uses the platform's count |
 | Completion raised early, work continued | P2.1: memory requests outside the launch window |
 | Work started while inputs were uploaded | P2.1: memory requests outside the launch window |
 | The cycle number rewritten in the measuring process | P2.1: the observer log lives in the device container |
-| Results computed on the host | P2.2: an upload that is neither an input, a returned block nor the program |
-| Results baked into the program image | P2.2: the image changes with the seed |
-| The runtime fakes outputs | P2.2: outputs come from the device's downloads |
+| Host-side result substituted for device work | §10.5 reviews the final candidate and output path; P2.2 could check upload provenance automatically |
+| Input values embedded in the program image | §10.5 reviews generated code for surprising points; P2.2 could compare images across seeds |
+| Output record disagrees with device downloads | §10.5 inspects the result path; P2.2 could compare the recorded output with device downloads |
 
 **Where it lives.** The observer (3) and the relay (4) are in the main
 repository (`55872ef`); `PROTOCOL.md` §3.1 states who counts (8). The evaluator
@@ -854,7 +883,7 @@ result.
 ## 15. When the core is done
 
 1. **`doctor`:** on each supported host class, every canary gives the expected result, and a host that cannot give a guarantee is refused.
-2. **Scripted red team:** each attempt is blocked or detected, 100%: read a hidden path or a task package; find an ArchBench point in the workspace; reach the internet; reach a service on the harness host; read `~/.ssh`; write outside the workspace; see another run; rewrite the workspace's git history to hide a change; add a symlink to evaluator data; shadow an evaluator-owned module; start a nested CLI on the credential; under-report tokens; raise `core_idle` early; edit the shell's counter; compute on the host and write the result back; exceed the FPGA budget; read an FPGA host's files from RTL.
+2. **Scripted boundary checks:** each automated attempt is blocked or detected: read a hidden path or a task package; find an ArchBench point in the workspace; reach the internet; reach a service on the harness host; read `~/.ssh`; write outside the workspace; see another run; rewrite the workspace's git history to hide a change; add a symlink to evaluator data; shadow an evaluator-owned module; start a nested CLI on the credential; under-report tokens; raise `core_idle` early; edit the shell's counter; exceed the FPGA budget; read an FPGA host's files from RTL. A host-side result substitution is checked by the final human review (§10.5), or by P2.2 if automated scoring is later required.
 3. **LLM red team:** deferred, not needed for now (decided 2026-10-15).
 4. **Metering:** in API mode, the proxy's tokens and the CLI's report agree within a recorded bound.
 5. **Replay tasks:** a no-op agent scores the base exactly, and the reference patch scores its known gain.
@@ -901,6 +930,7 @@ result.
 | 2026-10-18 | O23 built: the flow builds a named profile (`d1a00dd`: r40's `TNCA_IMAGE_CONFIG` and the U280 top's pass-through, proposed to the collaborator); `replay-mzero` moves to base `083b57d` (`9a3b1378` plus those three files) and core-vrf-sync-v5 |
 | 2026-10-18 | The RTL check also refuses, where the candidate adds them, synthesis pragmas, tool-macro branches, `defparam` and hierarchical references (§11) |
 | 2026-10-18 | `replay-mzero` is a test task (it validates the loop: `noop` 1.000, `reference` the known gain); its base commits stay on local branches. The formal tasks replace it, and their bases go to the remote. Decided by the user |
+| 2026-10-19 | The operator reviews the final candidate and result path before accepting its score (§10.5). P2.2 is optional automation for unattended scoring, not a blocker for the manually reviewed loop. Decided by the user |
 
 **Open.**
 
@@ -960,7 +990,7 @@ Status: **done** (built and verified), **in progress** (being built now),
 | Device boundary | P1: the profile header | done | commit `8c49e2b`, merged in `9035f0f`; parameters identical on nine builds |
 | Device boundary | P1: FPGA top, core benches, `tnca_shell_tb` | planned | O22 |
 | Device boundary | P2.1: the platform's count, the device in its own container, the RTL check | done | `55872ef`; §19: a halved shell counter scores 1.000, `$fopen` in RTL is rejected |
-| Device boundary | P2.2: the host may move data, never compute it | planned (required) | §11 |
+| Device boundary | P2.2: automated result-path provenance for unattended scoring | optional | §11; final human review is the acceptance gate (§10.5) |
 | Services | Cheap estimators in the sandbox | planned | §12.1 |
 | Services | Service channel and accounting | done | `services.py`, `service_cli.py`, `tests/test_services.py` |
 | Services | Scoring service | done | §19: 48 s, the aggregate equal to the reference's validation numbers |

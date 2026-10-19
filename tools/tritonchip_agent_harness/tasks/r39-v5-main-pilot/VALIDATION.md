@@ -12,8 +12,10 @@ by the harness. It does not remove the `m.zero` lowering. The profile is
 
 The pilot retains the five matrix-related tiny points used to validate the
 observer, so changes in the starting code can be compared directly. The
-formal benchmark's task definition, hidden-set breadth and P2.2 result
-provenance remain separate acceptance work.
+formal benchmark's task definition and hidden-set breadth remain separate
+acceptance work. A final agent candidate needs the human review in the harness
+README §10.5 before its score is accepted; P2.2 would automate part of that
+review for unattended scoring.
 
 ## Checks on 2026-10-19
 

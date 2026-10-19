@@ -949,7 +949,8 @@ Status: **done** (built and verified), **in progress** (being built now),
 | Visibility | Syllabus for `replay-mzero`, with the services and their budgets | done | `tasks/replay-mzero/instruction.md`, `task.render` |
 | Visibility | Residual leaks reworded; tests and tutorial reshaped | done | `6f2bdee`; torch tests 24/24 pass; task base `9a3b1378` |
 | Visibility | Export-time leak check over the tree and the git objects | planned (required) | — |
-| Tasks | Formal tasks in place of the test task `replay-mzero`, with their base commits on the remote | planned | O6; `replay-mzero`'s bases (`agent-task/replay-mzero-base-p2` at `083b57d`) are local only, so the quick start's step 4 runs where they were bundled |
+| Tasks | Main-line v5 pilot with a remotely available base | done | `tasks/r39-v5-main-pilot/VALIDATION.md`: fresh export; observer-backed noop 3/3 validation and 2/2 final, each at 1.000 |
+| Tasks | Formal tasks and wider hidden sets | planned | O6/O17/O21; `replay-mzero` remains a local framework regression whose base `083b57d` was not published |
 | Visibility | TileBench in the image checked against ArchBench | planned | — |
 | Evaluator | CHIA-level evaluator: base plus overlay, own copies | done | noop 1.000; reference 1.016 / 1.010 |
 | Evaluator | The evaluator's platform from a pinned commit, laid over every tree | done | `task.json` `evaluation.platform` |
@@ -1027,15 +1028,11 @@ PYTHONPATH=tools python3 -m tritonchip_agent_harness smoke
 **4. Validate the loop with no model, then run an agent:**
 
 ```bash
-PYTHONPATH=tools python3 -m tritonchip_agent_harness run-task tools/tritonchip_agent_harness/tasks/replay-mzero --agent noop
+PYTHONPATH=tools python3 -m tritonchip_agent_harness run-task tools/tritonchip_agent_harness/tasks/r39-v5-main-pilot --agent noop
 ```
 
 ```bash
-PYTHONPATH=tools python3 -m tritonchip_agent_harness run-task tools/tritonchip_agent_harness/tasks/replay-mzero --agent reference
-```
-
-```bash
-PYTHONPATH=tools python3 -m tritonchip_agent_harness run-task tools/tritonchip_agent_harness/tasks/replay-mzero --agent <account label> --mode offline --budget-seconds 1200
+PYTHONPATH=tools python3 -m tritonchip_agent_harness run-task tools/tritonchip_agent_harness/tasks/r39-v5-main-pilot --agent <account label> --mode offline --budget-seconds 1200
 ```
 
 Each run leaves `<state_dir>/runs/<run_id>/`: `run.json`, `prompt.md`,
@@ -1059,14 +1056,14 @@ Build the tree and see what would run, the candidate's code on the card server
 included; nothing is built:
 
 ```bash
-PYTHONPATH=tools python3 -m tritonchip_agent_harness certify tools/tritonchip_agent_harness/tasks/replay-mzero --run runs/<run_id>
+PYTHONPATH=tools python3 -m tritonchip_agent_harness certify tools/tritonchip_agent_harness/tasks/r39-v5-main-pilot --run runs/<run_id>
 ```
 
 Then link it on the build server and run its points on the card (about two
 hours; `--build-run <id>` attaches to a build already started):
 
 ```bash
-PYTHONPATH=tools python3 -m tritonchip_agent_harness certify tools/tritonchip_agent_harness/tasks/replay-mzero --run runs/<run_id> --hosts ~/.config/tritonchip-fpga-harness/hosts.json --build-host <build host> --board-host <card host> --yes
+PYTHONPATH=tools python3 -m tritonchip_agent_harness certify tools/tritonchip_agent_harness/tasks/r39-v5-main-pilot --run runs/<run_id> --hosts ~/.config/tritonchip-fpga-harness/hosts.json --build-host <build host> --board-host <card host> --yes
 ```
 
 The verdict and the score after certification are in

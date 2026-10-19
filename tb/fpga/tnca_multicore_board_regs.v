@@ -3,6 +3,11 @@
 `default_nettype none
 module tnca_multicore_board_regs;
  parameter N=3,PORTS=3,MEMORY_BYTES=1048576,STAGES=2,NOC_PIPE=0,DISPATCH_PIPE=0,HOME_PIPE=0,CODE_PIPE=0,MAINTENANCE=0,MEMORY_CONTROLS=0;
+ // Cache geometry and convergence options; defaults keep the small, fast
+ // bench. tools/r40/image_geometry_tests.py sets them from an image.tcl.
+ parameter SETS=4,SET_W=2,WAYS=2,WAY_W=1,DCO_REGISTERED_RANGES=0,NUCA_REGISTER_VICTIM_SELECT=0,
+  NUCA_CACHE_DATA_PIPELINE=0,NUCA_REGISTER_VICTIM_RANK=0,DCO_TLW_PIPE_STAGES=0,
+  DCO_REGISTER_WRITES=0,DCO_LOCAL_REPLICAS=0;
  localparam NX=N>4?4:N,ADDR_BITS=9,WORDS=(131072+MEMORY_BYTES)/8;
  reg clk=0,rst_n_async=0;always #5 clk=~clk;
  reg [8:0] reg_addr;reg [63:0] reg_wdata;reg reg_we,reg_re;
@@ -39,7 +44,11 @@ module tnca_multicore_board_regs;
  reg awvalid=0,wvalid=0,bready=0,arvalid=0,rready=0;
  reg [11:0] awaddr=0,araddr=0;reg [31:0] wdata=0;reg [3:0] wstrb=15;
  wire awready,wready,bvalid,arready,rvalid;wire [31:0] rdata;wire [1:0] bresp,rresp;
- tnca_multicore_hbm_xo #(.MEMORY_CONTROLS(MEMORY_CONTROLS),.CACHE_MAINTENANCE(MAINTENANCE),.MEM_PORTS(PORTS),.LINK_STAGES(STAGES),.CODE_LINK_STAGES(CODE_PIPE),.NOC_LINK_STAGES(NOC_PIPE),.DISPATCH_STAGES(DISPATCH_PIPE),.MEM_HOME_STAGES(HOME_PIPE),.SETS(4),.SET_W(2),.WAYS(2),.WAY_W(1)) dut(
+ tnca_multicore_hbm_xo #(.MEMORY_CONTROLS(MEMORY_CONTROLS),.CACHE_MAINTENANCE(MAINTENANCE),.MEM_PORTS(PORTS),.LINK_STAGES(STAGES),.CODE_LINK_STAGES(CODE_PIPE),.NOC_LINK_STAGES(NOC_PIPE),.DISPATCH_STAGES(DISPATCH_PIPE),.MEM_HOME_STAGES(HOME_PIPE),.SETS(SETS),.SET_W(SET_W),.WAYS(WAYS),.WAY_W(WAY_W),
+  .DCO_REGISTERED_RANGES(DCO_REGISTERED_RANGES),.NUCA_REGISTER_VICTIM_SELECT(NUCA_REGISTER_VICTIM_SELECT),
+  .NUCA_CACHE_DATA_PIPELINE(NUCA_CACHE_DATA_PIPELINE),.NUCA_REGISTER_VICTIM_RANK(NUCA_REGISTER_VICTIM_RANK),
+  .DCO_TLW_PIPE_STAGES(DCO_TLW_PIPE_STAGES),.DCO_REGISTER_WRITES(DCO_REGISTER_WRITES),
+  .DCO_LOCAL_REPLICAS(DCO_LOCAL_REPLICAS)) dut(
  .ap_clk(clk),.ap_rst_n(rst_n_async),
  .s_axi_tnca_awvalid(awvalid),
  .s_axi_tnca_awready(awready),

@@ -65,6 +65,7 @@ module tb_vector_fpu_f2i;
             $display("FAIL f2i: %0d of %0d vectors differ from ISA sec 8.4", bad, vectors);
             $fatal(1, "f2i mismatch");
         end
+        $display("tb_vector_fpu_f2i: %0d vectors, 0 failures", vectors);
         $display("PASS f2i: %0d vectors in %0d vector operations, 0 differences from ISA sec 8.4", vectors, ops);
         $finish;
     end

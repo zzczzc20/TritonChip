@@ -27,6 +27,25 @@ def verify(root=ROOT, *, expected=None):
     return lock
 
 
+IDENTITY_AMENDMENT = 'doc/r40_v3/identity_amendment.json'
+
+
+def delivery(plan, root=ROOT):
+    """The delivery identity: the frozen plan's, or the product tree named by
+    the identity amendment that 变更二 allows (a product change before
+    delivery, with all board evidence re-collected on the new tree). Only the
+    software tree can change; image, clock and capacity stay frozen."""
+    d = dict(plan['delivery'])
+    path = root / IDENTITY_AMENDMENT
+    if path.exists():
+        amendment = json.loads(path.read_text())
+        if amendment['from_software_tree'] != d['software_tree'] or set(amendment['changes']) != {'software_tree'}:
+            raise ValueError('identity amendment must start from the frozen tree and change only it')
+        d['software_tree'] = amendment['changes']['software_tree']
+        d['identity_amendment'] = IDENTITY_AMENDMENT
+    return d
+
+
 if __name__ == '__main__':
     verify()
     print('R40 v3 immutable contract: PASS')

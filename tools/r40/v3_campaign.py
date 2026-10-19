@@ -57,6 +57,11 @@ HOST = ('request-latency', 'resident-call-latency')
 # ablate.config_of compares. Only the echo of the varied knob is exempted,
 # and judge() checks it equals the knob on every record.
 MIRRORS = {'TNCA_MAX_BLOCK': ('max_block', int), 'TNCA_GEMM_TILE': ('gemm_tile', lambda v: [int(x) for x in v.split(',')])}
+# A mechanism's documented prerequisite, held constant on both sides so the
+# comparison stays single-factor: python/tnca/online_attention.py refuses the
+# fused SDPA template without packed-window unpack for real DMA loads.
+PREREQUISITES = {'R40-08.prefill': dict(knobs={'TNCA_PACKED_WINDOW_UNPACK': '1'},
+                 reason='python/tnca/online_attention.py: online SDPA requires TNCA_PACKED_WINDOW_UNPACK=1 for real DMA loads')}
 SHORT_S = 1.0
 DEADLINE = '200000000000'       # cycles; a watchdog, declared identically for every configuration
 HOST_TIMEOUT = '28800'
@@ -87,6 +92,7 @@ def experiment_configs(plan, name, candidates):
     if name == 'R40-01.device-time':
         base = dict(TNCA_TRANSFER_POLICY='per-kernel', TNCA_ACTIVE_CORES='3')
     base.update(exp.get('baseline_override') or {})
+    base.update(PREREQUISITES.get(name, {}).get('knobs', {}))
     candidate = exp['candidate']
     if isinstance(candidate, list):
         if candidates.get(name) not in candidate:
@@ -122,7 +128,7 @@ def build(plan, candidates, preflight):
     return dict(schema='tnca-r40-v3-campaign/1', planned=utc(), contract_sha256=contract_v3.LOCK_SHA256,
                 plan_sha256=sha_file(PLAN), harness_sha256=sha_file(__file__),
                 latency_child_sha256=sha_file(ROOT/'tools/r40/v3_latency_child.py'),
-                candidates=candidates, compile_preflight=preflight, order=list(ORDER),
+                candidates=candidates, compile_preflight=preflight, order=list(ORDER), prerequisites=PREREQUISITES,
                 transport=dict(deadline_cycles=int(DEADLINE), host_timeout_s=float(HOST_TIMEOUT)),
                 experiments=experiments, configs=configs)
 
@@ -136,7 +142,7 @@ class Runner:
         self.state = (json.loads(self.state_path.read_text()) if self.state_path.exists()
                       else dict(status='planned', runs={}, experiments={}, log=[]))
         self.plan = load_plan()
-        d = self.plan['delivery']
+        d = contract_v3.delivery(self.plan)
         self.config = dict(xclbin=str(Path(args.xclbin).resolve()), image_profile='core-vrf-sync-v5',
                            core_count=3, memory_ports=3, hbm_dma=True, hbm_bytes=d['hbm_bytes'],
                            device_clock=True)
@@ -183,7 +189,7 @@ class Runner:
 
     def check(self, cfg, row, warmup, timed):
         plat, prov = row.get('platform', {}), row.get('provenance', {})
-        d = self.plan['delivery']
+        d = contract_v3.delivery(self.plan)
         problems = []
         if row.get('status') != 'pass' or row.get('fallbacks'):
             problems.append(f"status {row.get('status')} {row.get('problems')}")
@@ -239,7 +245,7 @@ class Runner:
             entry['raw_sha256'] = sha_file(raw)
             t = row['timings']
             if cfg['klass'] == 'device':
-                entry['seconds'] = t['device-cycles-serial-grid']['median']/self.plan['delivery']['clock_hz']
+                entry['seconds'] = t['device-cycles-serial-grid']['median']/contract_v3.delivery(self.plan)['clock_hz']
                 entry['graph_makespan_cycles'] = (t.get('device-graph-makespan') or {}).get('median')
         self.state['runs'][stem] = entry
         print(f"{utc()} {'OK  ' if entry['ok'] else 'FAIL'} {stem} {cfg['point']['id']} "
@@ -274,7 +280,7 @@ class Runner:
 
     def run(self, only=None):
         from archbench.provenance import software_tree
-        d = self.plan['delivery']
+        d = contract_v3.delivery(self.plan)
         if software_tree(refresh=True) != d['software_tree']:
             raise SystemExit('product tree is not the v3 delivery identity')
         if sha_file(self.a.xclbin) != d['image_sha256']:
@@ -383,7 +389,7 @@ def judge(out, campaign, state, write_evidence=False):
                              config_a=res['config_a'], config_b=res['config_b'],
                              inputs={side: dict(path=str(p), sha256=sha_file(p)) for side, p in paths.items()})
     report = dict(schema='tnca-r40-v3-campaign-judgement/1', judged=utc(), contract_sha256=contract_v3.LOCK_SHA256,
-                  harness_sha256=sha_file(__file__), identity=plan['delivery'], experiments=results)
+                  harness_sha256=sha_file(__file__), identity=contract_v3.delivery(plan), experiments=results)
     (out/'judgement.json').write_text(json.dumps(report, indent=1)+'\n')
     if write_evidence:
         record_gates(plan, results, out)
@@ -424,7 +430,7 @@ def record_gates(plan, results, out):
                                   if r.get('target') else '')
                                for n, r in rs.items() if 's_geo' in r)
             evidence.record(gate['id'], status, checks, detail=detail or 'see judgement.json',
-                            identity=plan['delivery'], experiments=rs,
+                            identity=contract_v3.delivery(plan), experiments=rs,
                             judgement=str(out/'judgement.json'))
 
 

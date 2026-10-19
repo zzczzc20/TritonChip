@@ -64,7 +64,7 @@ def _v3_entry(gate, plan, evidence_root):
     import contract_v2
     import contract_v3
     wp = gate['id'].split('.', 1)[0]
-    delivery = plan['delivery']
+    delivery = contract_v3.delivery(plan)
     tried = []
     for version, lock in (('v3', contract_v3.LOCK_SHA256), ('v2', contract_v2.LOCK_SHA256)):
         if version == 'v2' and not gate.get('accepts_v2_evidence'):

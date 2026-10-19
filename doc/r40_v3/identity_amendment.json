@@ -1,0 +1,23 @@
+{
+ "schema": "tnca-r40-v3-identity-amendment/1",
+ "contract": "doc/r40_tasks_and_acceptance_v3.md 变更二",
+ "from_software_tree": "files:80dd1a823e4be49e5e40d375d842c17e46c362d298e37f389c5e225621b6e4ca",
+ "changes": {
+  "software_tree": "files:bc5a778ebc5f4afebf6c1a9fbf3b2d8717cb02e118134ebbb73fb5a927fc8183"
+ },
+ "files": {
+  "python/tnca/inductor.py": {
+   "before_sha256": "61b33e3359470caf78110840fc6c223cf291d015fe1b35aca079d183b51b7457",
+   "after_sha256": "db9710f032d95fc3b545384dabb431ee16c09330d9ccca5a75e56728891590a3"
+  }
+ },
+ "reason": "Compile preflight (evidence/r40/v3/compile_preflight) found TNCA_MAX_BLOCK 32/64 refused for op.cumsum/medium (tnca_cc.register_blocks: no wide lowering of tt.scan) with no fallback, so R40-03.wide-blocks could not cover its frozen subset. Kernels that generate a scan or sort now keep the standard 16 lanes (the semantically equivalent retile v1 sec 2.2 requires). At the default cap of 16 the generated source is unchanged by construction.",
+ "authorization": "User 2026-10-19: chose \"修编译器后全量重采\" (fix the compiler, re-collect all evidence on the new identity).",
+ "rule": "All board evidence for v3 gates is collected on the new tree; records on the 80dd tree are history and early signals only.",
+ "unchanged": [
+  "image a88ebdf5",
+  "clock 90 MHz",
+  "hbm_bytes",
+  "every frozen point, subset, threshold, candidate and sampling rule"
+ ]
+}

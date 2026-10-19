@@ -107,7 +107,12 @@ def _register(cap, reduction_rows=1, gemm_tile=(16,16,16)):
         """Looped reductions with independently bounded row and lane blocks."""
 
         def get_configs(self, **kwargs):
-            return _clamp(super().get_configs(**kwargs), cap, rows=reduction_rows)
+            # A scan or sort has no wide register-block lowering
+            # (tnca_cc.register_blocks): it keeps the standard 16 lanes,
+            # the semantically equivalent retile, instead of failing.
+            narrow = (kwargs.get('inductor_meta') or {}).get('tnca_narrow_block')
+            lanes = min(cap, STAGE1_MAX_BLOCK) if narrow else cap
+            return _clamp(super().get_configs(**kwargs), lanes, rows=reduction_rows)
 
     import torch._inductor.heuristics.template.triton as tt
     from torch._inductor.heuristics.registry import register_template_heuristic
@@ -173,6 +178,43 @@ def _decompose_cpu_attention():
 
 
 _NO_X_DIM = [False]
+_BLOCK_CAP = [STAGE1_MAX_BLOCK]
+
+
+def _install_narrow_blocks():
+    """Mark kernels whose operations have no wide register-block lowering.
+
+    tnca_cc.register_blocks splits wide values only for its listed operations;
+    tt.scan and tt.sort are not among them. A kernel that generates one
+    carries `tnca_narrow_block` in its inductor_meta, and the reduction
+    heuristic gives it the standard 16 lanes. The key is emitted only when
+    the block cap exceeds 16, so the generated source at the default cap is
+    unchanged.
+    """
+    import torch._inductor.codegen.triton as T
+    if getattr(T.TritonKernel.inductor_meta_per_kernel, '_tnca', False):
+        return
+
+    def marking(name):
+        orig = getattr(T.TritonKernel, name)
+
+        def op(self, *args, **kwargs):
+            self.__dict__.setdefault('_tnca_narrow_ops', set()).add(name)
+            return orig(self, *args, **kwargs)
+        op._tnca = True
+        setattr(T.TritonKernel, name, op)
+    for name in ('scan', 'sort'):
+        marking(name)
+    orig_meta = T.TritonKernel.inductor_meta_per_kernel
+
+    def inductor_meta_per_kernel(self):
+        out = orig_meta(self)
+        ops = self.__dict__.get('_tnca_narrow_ops')
+        if ops and _BLOCK_CAP[0] > STAGE1_MAX_BLOCK:
+            out['tnca_narrow_block'] = sorted(ops)
+        return out
+    inductor_meta_per_kernel._tnca = True
+    T.TritonKernel.inductor_meta_per_kernel = inductor_meta_per_kernel
 
 
 def _install_no_x_dim():
@@ -264,6 +306,8 @@ def configure(max_block=None, tensor_descriptors=None, no_x_dim=None):
     no_x_dim = bool(no_x_dim) and reduction_rows == 1
     _NO_X_DIM[0] = bool(no_x_dim)
     _install_no_x_dim()
+    _BLOCK_CAP[0] = max_block
+    _install_narrow_blocks()
     import torch._inductor.config as config
     config.cpu_backend = 'triton'
     if tensor_descriptors:

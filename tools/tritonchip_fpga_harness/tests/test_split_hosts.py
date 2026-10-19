@@ -81,6 +81,9 @@ def candidate_repo(root: Path) -> tuple[Path, str]:
     repo = root / "source"
     shutil.copytree(HERE, repo / "tools" / "tritonchip_fpga_harness",
                     ignore=shutil.ignore_patterns("__pycache__", "*.pyc"))
+    # The real checkout ignores Python bytecode.  The worker imports from its
+    # synced checkout before checking source identity, so the fixture must too.
+    (repo / ".gitignore").write_text("__pycache__/\n*.py[cod]\n", encoding="utf-8")
     (repo / "rtl").mkdir(parents=True)
     (repo / "rtl" / "core.v").write_text("module core; endmodule\n", encoding="utf-8")
     git(repo, "init", "-q")

@@ -254,9 +254,29 @@ module tnca_top #(
     wire [N-1:0] host_readies, host_responses, host_busy_tiles;
     wire [N*64-1:0] host_response_data;
     wire dispatch_ready;
-    wire host_allow=GLOBAL_GRID && HOST_ACCESS && dispatch_ready && !grid_valid && all_idle && !maintenance_requested;
+    wire host_allow_live=GLOBAL_GRID && HOST_ACCESS && dispatch_ready && !grid_valid && all_idle && !maintenance_requested;
+    // Registered at the source; tile 0 registers it again in its own SLR.
+    // The tile's grant uses a two-cycle-old permission. That is exact for the
+    // grant: a host access is admitted only with the whole system idle and no
+    // command or maintenance pending (tnca_multicore_mmio serializes them and
+    // tnca_multicore_shell masks host_valid while a command is offered), so
+    // every input of host_allow_live is constant from admission until the
+    // access completes. A stale 1 after that has no h_valid to grant; a stale
+    // 0 only delays the grant.
+    reg host_allow;
+    always @(posedge clk) host_allow <= rst_n && host_allow_live;
     assign host_ready=host_readies[0];assign host_rsp_valid=host_responses[0];
     assign host_busy=host_busy_tiles[0];assign host_rsp_data=host_response_data[63:0];
+`ifndef SYNTHESIS
+    // A grant (host_busy rising) must never happen where the unregistered
+    // permission was false: the registered permission may only delay grants.
+    reg host_allow_live_d=1'b0,host_busy_d=1'b0;
+    always @(posedge clk) begin
+        if(rst_n && host_busy && !host_busy_d && !host_allow_live_d)
+            $fatal(1,"tnca_top: host grant without live quiescence permission");
+        host_allow_live_d<=host_allow_live;host_busy_d<=rst_n && host_busy;
+    end
+`endif
     wire [63:0] dispatch_pc;
     wire [N*64-1:0] dispatch_args;
     wire [N*32-1:0] dispatch_x, dispatch_y, dispatch_z;

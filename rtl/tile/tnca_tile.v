@@ -253,8 +253,14 @@ module tnca_tile #(
     wire [7:0] n_req_be;wire [3:0] n_req_aop;
     wire [LSU_TAG_W-1:0] n_req_tag,n_rsp_tag;
     generate if(HOST_ACCESS) begin: g_host_mux
+        // Second copy of the registered quiescence permission, inside this
+        // tile (and so inside its SLR pblock). tnca_top proves the global
+        // permission is constant while a host access is pending; the grant
+        // flop is the only consumer.
+        reg host_allow_q;
+        always @(posedge clk) host_allow_q <= rst_n && host_allow;
         tnca_idle_host_mux #(.TAG_W(LSU_TAG_W)) u_host (
-            .clk(clk),.rst_n(rst_n),.host_allow(host_allow),
+            .clk(clk),.rst_n(rst_n),.host_allow(host_allow_q),
             .c_valid(c_req_valid),.c_ready(c_req_ready),.c_addr(c_req_addr),.c_wdata(c_req_wdata),
             .c_cmp(c_req_cmp),.c_we(c_req_we),.c_amo(c_req_amo),.c_be(c_req_be),.c_aop(c_req_aop),.c_tag(c_req_tag),
             .c_rsp_valid(c_rsp_valid),.c_rsp_tag(c_rsp_tag),.c_rsp_data(c_rsp_rdata),

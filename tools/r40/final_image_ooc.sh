@@ -51,7 +51,7 @@ units)
             need_memory
             dir=$OUT/$side/$unit
             mkdir -p "$dir"
-            OOC_GENERICS="$generics" nice -n 10 vivado -mode batch -nojournal -nolog \
+            OOC_SV=1 OOC_GENERICS="$generics" nice -n 10 vivado -mode batch -nojournal -nolog \
                 -source "$NEW/flow/synth/vivado_ooc_timing.tcl" \
                 -tclargs "$unit" 10 xcu280-fsvh2892-2L-e "$dir" "$root/rtl" $files > "$dir/vivado.log" 2>&1
             printf '%s %s: ' "$side" "$unit"

@@ -85,6 +85,22 @@ def _clamp(configs, cap, rows=None):
     return [best] if best is not None else []
 
 
+def _with_fallback(configs, cap, rows=None):
+    """_clamp's one configuration, followed, when it is wider than the
+    standard 16 lanes, by the 16-lane configuration as a fallback.
+
+    Inductor compiles every configuration it is given; _install_block_fallback
+    keeps exactly one -- the first that compiles and whose code fits the
+    device code store -- so nothing is ever benchmarked. At the default cap
+    there is one configuration, as before."""
+    import copy
+    narrow = _clamp(copy.deepcopy(configs), STAGE1_MAX_BLOCK, rows=rows) if cap > STAGE1_MAX_BLOCK else []
+    wide = _clamp(configs, cap, rows=rows)
+    if narrow and wide and narrow[0].kwargs != wide[0].kwargs:
+        return wide + narrow
+    return wide
+
+
 def _register(cap, reduction_rows=1, gemm_tile=(16,16,16)):
     global _registered
     if _registered:
@@ -99,7 +115,7 @@ def _register(cap, reduction_rows=1, gemm_tile=(16,16,16)):
         """Inductor's default pointwise configs, block dimensions capped."""
 
         def get_configs(self, *args, **kwargs):
-            return _clamp(super().get_configs(*args, **kwargs), cap)
+            return _with_fallback(super().get_configs(*args, **kwargs), cap)
 
     @register_codegen_heuristic('reduction', 'tnca')
     @register_codegen_heuristic('reduction', 'cpu')
@@ -112,7 +128,7 @@ def _register(cap, reduction_rows=1, gemm_tile=(16,16,16)):
             # the semantically equivalent retile, instead of failing.
             narrow = (kwargs.get('inductor_meta') or {}).get('tnca_narrow_block')
             lanes = min(cap, STAGE1_MAX_BLOCK) if narrow else cap
-            return _clamp(super().get_configs(**kwargs), lanes, rows=reduction_rows)
+            return _with_fallback(super().get_configs(**kwargs), lanes, rows=reduction_rows)
 
     import torch._inductor.heuristics.template.triton as tt
     from torch._inductor.heuristics.registry import register_template_heuristic
@@ -205,6 +221,17 @@ def _install_narrow_blocks():
         setattr(T.TritonKernel, name, op)
     for name in ('scan', 'sort'):
         marking(name)
+    # Index-carrying reductions fold a value and its index together; their
+    # wide lowering is slower than 16 lanes (op.argmax/medium 0.61x on the
+    # U280 at TNCA_MAX_BLOCK=64), so they keep the standard width too.
+    orig_reduction = T.TritonKernel.reduction
+
+    def reduction(self, dtype, src_dtype, reduction_type, value):
+        if reduction_type in ('argmax', 'argmin'):
+            self.__dict__.setdefault('_tnca_narrow_ops', set()).add(reduction_type)
+        return orig_reduction(self, dtype, src_dtype, reduction_type, value)
+    reduction._tnca = True
+    T.TritonKernel.reduction = reduction
     orig_meta = T.TritonKernel.inductor_meta_per_kernel
 
     def inductor_meta_per_kernel(self):
@@ -215,6 +242,76 @@ def _install_narrow_blocks():
         return out
     inductor_meta_per_kernel._tnca = True
     T.TritonKernel.inductor_meta_per_kernel = inductor_meta_per_kernel
+
+
+# The code store of the device: 16,384 words (rtl/tnca_multicore_shell.v
+# CODE_WORDS; the runtime's region below heap_base). A wide kernel must leave
+# room for the runtime's own modules, so a fallback is taken above 112 KiB.
+CODE_STORE_BYTES = 0x20000
+WIDE_CODE_LIMIT = CODE_STORE_BYTES - 0x4000
+
+
+def _code_bytes(result):
+    """The text segment of a compiled TNCA kernel, or None."""
+    import os
+    import tempfile
+    blob = (getattr(getattr(result, 'kernel', None), 'asm', None) or {}).get('tnca')
+    if not blob:
+        return None
+    from . import artifact
+    fd, path = tempfile.mkstemp(suffix='.tnca')
+    try:
+        with os.fdopen(fd, 'wb') as fh:
+            fh.write(blob)
+        _, segments = artifact.load(path)
+    finally:
+        os.unlink(path)
+    return len(segments.get('text') or b'')
+
+
+def _install_block_fallback():
+    """Keep one configuration of a TNCA kernel that _with_fallback gave two.
+
+    The first is used if it compiles and its code fits WIDE_CODE_LIMIT;
+    otherwise the 16-lane one -- the attributable retile v1 sec 2.2 asks for
+    instead of a launch that cannot be loaded. Only TNCA kernels with more
+    than one configuration are touched; every other autotuner (CUDA in the
+    same process, TNCA at the default cap) runs Inductor's own code."""
+    from torch._inductor.runtime import triton_heuristics as H
+    if getattr(H.CachingAutotuner._precompile_worker, '_tnca', False):
+        return
+    orig = H.CachingAutotuner._precompile_worker
+
+    def _precompile_worker(self):
+        configs = self.configs
+        if (self.compile_results or not configs or len(configs) < 2
+                or getattr(self.device_props, 'type', None) not in TNCA_DEVICE_TYPES):
+            return orig(self)
+        reasons = []
+        for i, config in enumerate(configs):
+            last = i == len(configs) - 1
+            try:
+                result = self._precompile_config(config)
+            except Exception as e:                           # noqa: BLE001
+                if last:
+                    raise
+                reasons.append(f'{config.kwargs}: {type(e).__name__}: {str(e)[:200]}')
+                continue
+            size = _code_bytes(result)
+            if not last and size is not None and size > WIDE_CODE_LIMIT:
+                reasons.append(f'{config.kwargs}: code {size} B exceeds {WIDE_CODE_LIMIT} B')
+                continue
+            self.compile_results = [result]
+            self.configs = None
+            if reasons:
+                _BLOCK_FALLBACKS.append(dict(kernel=self.inductor_meta.get('kernel_name'),
+                                             used=dict(config.kwargs), reasons=reasons))
+            return
+    _precompile_worker._tnca = True
+    H.CachingAutotuner._precompile_worker = _precompile_worker
+
+
+_BLOCK_FALLBACKS = []
 
 
 def _install_no_x_dim():
@@ -308,11 +405,17 @@ def configure(max_block=None, tensor_descriptors=None, no_x_dim=None):
     _install_no_x_dim()
     _BLOCK_CAP[0] = max_block
     _install_narrow_blocks()
+    _install_block_fallback()
     import torch._inductor.config as config
     config.cpu_backend = 'triton'
     if tensor_descriptors:
         _enable_tensor_descriptors(config)
     config.triton.persistent_reductions = False
+    # Mix-order split reductions (a reduction over a non-innermost axis
+    # fused with its transpose) fail in Inductor's lowering for the tnca
+    # device -- x.sum(0), x.t().sum(-1) -- while the ordinary reduction
+    # lowering is correct for them (tools/r40/v3_repro_reduce_axis.py).
+    config.triton.mix_order_reduction = False
     config.compile_threads = 1
     config.max_autotune_gemm = True
     config.max_autotune_gemm_backends = 'TRITON'

@@ -342,6 +342,15 @@ class TNCABackend(BaseBackend):
         if dump_to:
             stages.write(dump_to, metadata={'entry_point': 'triton-backend', 'profile': options.profile,
                                             'opt_level': options.opt_level})
+        # The device's code store (rtl/tnca_multicore_shell.v CODE_WORDS,
+        # the runtime's region below heap_base) holds 128 KiB. A kernel
+        # larger than that can never be loaded; refuse it here, as a
+        # resource error, so a caller with a narrower configuration retiles
+        # instead of failing at launch.
+        from tnca.inductor import CODE_STORE_BYTES
+        if len(code) > CODE_STORE_BYTES:
+            from triton.runtime.errors import OutOfResources
+            raise OutOfResources(len(code), CODE_STORE_BYTES, 'TNCA code store bytes')
         # Aliasing. Triton lets pointer arguments overlap (PyTorch Inductor
         # passes one storage as input and output of an in-place op), and the
         # runtime refuses an overlap the manifest does not declare (ABI-05).

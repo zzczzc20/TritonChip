@@ -3,16 +3,31 @@
  "contract": "doc/r40_tasks_and_acceptance_v3.md 变更二",
  "from_software_tree": "files:80dd1a823e4be49e5e40d375d842c17e46c362d298e37f389c5e225621b6e4ca",
  "changes": {
-  "software_tree": "files:bc5a778ebc5f4afebf6c1a9fbf3b2d8717cb02e118134ebbb73fb5a927fc8183"
+  "software_tree": "files:fe1b5199db515440d2d3407aed61ef1eed5edb627e5baf9cda10be5a7198cf75"
  },
  "files": {
   "python/tnca/inductor.py": {
    "before_sha256": "61b33e3359470caf78110840fc6c223cf291d015fe1b35aca079d183b51b7457",
-   "after_sha256": "db9710f032d95fc3b545384dabb431ee16c09330d9ccca5a75e56728891590a3"
+   "after_sha256": "d1a28be248d5581dbcce60491c9f5a752fda9d77ffa209bf7e458cea152a6f0a"
+  },
+  "python/tnca/triton_backend/compiler.py": {
+   "before_sha256": "7e23e35253b62871756c16586f778927135c3c4073a533cb1ae3671d972d8701",
+   "after_sha256": "3818f5688b7d40c9f995de309738555c848e03e7f11977ce1220554e9e191f36"
   }
  },
- "reason": "Compile preflight (evidence/r40/v3/compile_preflight) found TNCA_MAX_BLOCK 32/64 refused for op.cumsum/medium (tnca_cc.register_blocks: no wide lowering of tt.scan) with no fallback, so R40-03.wide-blocks could not cover its frozen subset. Kernels that generate a scan or sort now keep the standard 16 lanes (the semantically equivalent retile v1 sec 2.2 requires). At the default cap of 16 the generated source is unchanged by construction.",
- "authorization": "User 2026-10-19: chose \"修编译器后全量重采\" (fix the compiler, re-collect all evidence on the new identity).",
+ "steps": [
+  {
+   "software_tree": "files:bc5a778ebc5f4afebf6c1a9fbf3b2d8717cb02e118134ebbb73fb5a927fc8183",
+   "reason": "Compile preflight (evidence/r40/v3/compile_preflight) found TNCA_MAX_BLOCK 32/64 refused for op.cumsum/medium (tnca_cc.register_blocks: no wide lowering of tt.scan) with no fallback, so R40-03.wide-blocks could not cover its frozen subset. Kernels that generate a scan or sort now keep the standard 16 lanes (the semantically equivalent retile v1 sec 2.2 requires). At the default cap of 16 the generated source is unchanged by construction.",
+   "authorization": "User 2026-10-19: chose \"修编译器后全量重采\" (fix the compiler, re-collect all evidence on the new identity).",
+   "superseded": "board evidence on this tree is history and early signal only"
+  },
+  {
+   "software_tree": "files:fe1b5199db515440d2d3407aed61ef1eed5edb627e5baf9cda10be5a7198cf75",
+   "reason": "Board and audit findings on bc5a, fixed in the product: (1) reductions over a non-innermost axis failed in Inductor's mix-order split-reduction lowering on the tnca device -> mix_order_reduction off; (2) a kernel larger than the 128 KiB device code store compiled and only failed at load -> the TNCA backend refuses it at compile time as OutOfResources, and wide pointwise/reduction configurations carry a 16-lane fallback that Inductor uses instead (one configuration kept, nothing benchmarked); (3) argmax/argmin reductions keep 16 lanes under wide caps (op.argmax/medium measured 0.61x at TNCA_MAX_BLOCK=64 on the board).",
+   "authorization": "User 2026-10-19: chose \"修复后全量重采\" (fix, then re-collect everything on the new identity)."
+  }
+ ],
  "rule": "All board evidence for v3 gates is collected on the new tree; records on the 80dd tree are history and early signals only.",
  "unchanged": [
   "image a88ebdf5",

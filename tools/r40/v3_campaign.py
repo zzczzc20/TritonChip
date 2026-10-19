@@ -60,8 +60,13 @@ MIRRORS = {'TNCA_MAX_BLOCK': ('max_block', int), 'TNCA_GEMM_TILE': ('gemm_tile',
 # A mechanism's documented prerequisite, held constant on both sides so the
 # comparison stays single-factor: python/tnca/online_attention.py refuses the
 # fused SDPA template without packed-window unpack for real DMA loads.
-PREREQUISITES = {'R40-08.prefill': dict(knobs={'TNCA_PACKED_WINDOW_UNPACK': '1'},
-                 reason='python/tnca/online_attention.py: online SDPA requires TNCA_PACKED_WINDOW_UNPACK=1 for real DMA loads')}
+# On the native device the fused template for the frozen D64 long-prefill
+# shapes also needs window reuse to fit the 64 vector registers per role
+# context (v3 compile preflight, native-stub path); the decomposed control
+# then gets the same window reuse, which can only make the control faster.
+PREREQUISITES = {'R40-08.prefill': dict(knobs={'TNCA_PACKED_WINDOW_UNPACK': '1', 'TNCA_WINDOW_REUSE': '1'},
+                 reason='python/tnca/online_attention.py: online SDPA requires TNCA_PACKED_WINDOW_UNPACK=1 for real DMA loads; '
+                        'native-path compile preflight: the fused D64 template exhausts the vector registers without TNCA_WINDOW_REUSE=1')}
 SHORT_S = 1.0
 DEADLINE = '200000000000'       # cycles; a watchdog, declared identically for every configuration
 HOST_TIMEOUT = '28800'

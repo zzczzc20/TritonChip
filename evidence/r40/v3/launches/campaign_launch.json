@@ -3,13 +3,18 @@
   "root": "/home/zzhouch/tnca_v3_campaign",
   "source": "/home/zzhouch/tnca_src_r40_v3x",
   "software_tree": "files:bc5a778ebc5f4afebf6c1a9fbf3b2d8717cb02e118134ebbb73fb5a927fc8183",
-  "campaign_sha256": "41a09a34622742ce9139ca492e0bf5fa7436f2083456eaa9aaf3438d853cb48d",
   "controller_sha256": "a93e35ccceb3cd7732037b5b00eac8e23300e8e68819d10534a4a1228c76bc49",
   "candidates": {
     "R40-03.wide-blocks": "64",
     "R40-03.gemm-tile": "16,64,16"
   },
   "compile_preflight": "evidence/r40/v3/identity_amendment/compile_preflight_bc5a_report.json.gz",
-  "armed_utc": "2026-10-19T02:4xZ",
-  "starts": "when ~/tnca_v3_functional is terminal"
+  "armed_utc": "2026-10-19T02:45Z (re-sealed ~03:10Z)",
+  "starts": "when ~/tnca_v3_functional is terminal",
+  "superseded_before_any_run": {
+    "campaign_sha256": "41a09a34622742ce9139ca492e0bf5fa7436f2083456eaa9aaf3438d853cb48d",
+    "moved_to": "/home/zzhouch/tnca_v3_campaign/superseded_41a09a34_before_any_run",
+    "reason": "native-path compile preflight: fused SDPA also needs TNCA_WINDOW_REUSE=1; R40-08.prefill now holds packed-window unpack and window reuse on both sides"
+  },
+  "campaign_sha256": "e08dc87f22e9ac14ea9566be80f18011f6daec629762d896f1ab8bb9ee923090"
 }

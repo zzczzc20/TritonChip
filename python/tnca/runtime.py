@@ -51,6 +51,10 @@ from .errors import (AdmissionError, ArgumentError, ArtifactError,
 WORD = 8
 MAX_UNFINISHED = 8          # the contract's floor; this is exactly it
 DEFAULT_ALIGN = 64
+# All shipped NUCA images decode this 4 KiB page before external memory.
+# A host DMA can write its backing BO, but a core load reads TMU registers.
+# Keep the hole even when the allocated HBM window extends beyond 2 GiB.
+DEVICE_RESERVED_RANGES = ((0x7fff0000, 0x7fff1000),)
 
 # States
 SUBMITTED, VALIDATED, QUEUED = 'SUBMITTED', 'VALIDATED', 'QUEUED'
@@ -195,16 +199,27 @@ class _Allocator:
     it split along earlier launches' storages.
     """
 
-    def __init__(self, base, limit):
+    def __init__(self, base, limit, *, reserved=()):
         self.base = base
         self.limit = limit
+        self.reserved = tuple((max(base, lo), min(limit, hi))
+                              for lo, hi in sorted(reserved)
+                              if lo < limit and hi > base)
+        if any(lo >= hi for lo, hi in self.reserved) or any(
+                a[1] > b[0] for a, b in zip(self.reserved, self.reserved[1:])):
+            raise ValueError('invalid or overlapping reserved address ranges')
         self.next = base
         self.free_list = []
         self.high_water = 0
 
     @property
     def used(self):
-        return self.next - self.base - sum(size for _addr, size in self.free_list)
+        excluded = sum(max(0, min(self.next, hi) - lo) for lo, hi in self.reserved)
+        return self.next - self.base - excluded - sum(size for _addr, size in self.free_list)
+
+    @property
+    def capacity(self):
+        return self.limit - self.base - sum(hi - lo for lo, hi in self.reserved)
 
     def alloc(self, size, align=DEFAULT_ALIGN):
         if size <= 0:
@@ -228,15 +243,30 @@ class _Allocator:
                 self.high_water = max(self.high_water, self.used)
                 return aligned, need
         addr = (self.next + align - 1) // align * align
+        # An allocation must fit wholly within one ordinary-memory interval.
+        # Preserve usable prefixes for smaller future allocations. Compute
+        # first so an out-of-memory request cannot change allocator state.
+        for lo, hi in self.reserved:
+            if addr < hi and addr + need > lo:
+                addr = (hi + align - 1) // align * align
         if addr + need > self.limit:
             raise BufferError(
                 f"out of device memory: {size} bytes needs {need} and "
                 f"{self.limit - addr} remain",
                 remedy='free a buffer, or use a profile with more memory')
-        if addr > self.next:
+        cursor = self.next
+        for lo, hi in self.reserved:
+            if hi <= cursor:
+                continue
+            if lo >= addr:
+                break
+            if cursor < lo:
+                self.free_list.append((cursor, lo - cursor))
+            cursor = min(addr, hi)
+        if addr > cursor:
             # The bytes skipped to align are free too. Left out, they would
             # sit between two blocks and stop them ever merging.
-            self.free_list.append((self.next, addr - self.next))
+            self.free_list.append((cursor, addr - cursor))
         self.next = addr + need
         self.high_water = max(self.high_water, self.used)
         return addr, need
@@ -248,8 +278,14 @@ class _Allocator:
                 merged[-1] = (merged[-1][0], merged[-1][1] + n)
             else:
                 merged.append((a, n))
-        if merged and merged[-1][0] + merged[-1][1] == self.next:
-            self.next = merged.pop()[0]
+        while True:
+            if merged and merged[-1][0] + merged[-1][1] == self.next:
+                self.next = merged.pop()[0]
+                continue
+            prior = next((lo for lo, hi in self.reserved if hi == self.next), None)
+            if prior is None:
+                break
+            self.next = prior
         self.free_list = merged
 
 
@@ -384,8 +420,8 @@ class Session:
             # The profile's memory: 512 KiB on chip, or an /hbm memory mode's
             # AXI window (R40-04).
             heap_limit = _device.memory_limit(profile)
-        self._code = _Allocator(code_base, heap_base)
-        self._heap = _Allocator(heap_base, heap_limit)
+        self._code = _Allocator(code_base, heap_base, reserved=DEVICE_RESERVED_RANGES)
+        self._heap = _Allocator(heap_base, heap_limit, reserved=DEVICE_RESERVED_RANGES)
         self._worker = None
         self._stop = threading.Event()
 
@@ -401,7 +437,7 @@ class Session:
         # size, is where the heap ends.
         mem = getattr(self.dev, 'memory_bytes', None)
         if mem and not explicit_limit:
-            self._heap = _Allocator(heap_base, mem)
+            self._heap = _Allocator(heap_base, mem, reserved=DEVICE_RESERVED_RANGES)
         self._start_worker()
 
     def _negotiate_physical_grid(self):
@@ -463,7 +499,8 @@ class Session:
     def memory_stats(self):
         """Actual reserved bytes, including retired leases and task scratch."""
         with self._lock:
-            return dict(epoch=self.epoch, heap_capacity_bytes=self._heap.limit - self._heap.base,
+            return dict(epoch=self.epoch, heap_capacity_bytes=self._heap.capacity,
+                        heap_reserved_ranges=list(self._heap.reserved),
                         heap_allocated_bytes=self._heap.used, heap_peak_bytes=self._heap.high_water,
                         code_allocated_bytes=self._code.used, code_peak_bytes=self._code.high_water)
 
@@ -1142,8 +1179,8 @@ class Session:
             self._buffers.clear()
             self._modules.clear()
             self._next_job = 0
-            self._code = _Allocator(self._code.base, self._code.limit)
-            self._heap = _Allocator(self._heap.base, self._heap.limit)
+            self._code = _Allocator(self._code.base, self._code.limit, reserved=self._code.reserved)
+            self._heap = _Allocator(self._heap.base, self._heap.limit, reserved=self._heap.reserved)
             self.poisoned = False
             self.dev = _open_device(self.backend_name, self.bench,
                                     workdir=self._workdir,

@@ -42,6 +42,8 @@ jobs:
     timeout-minutes: 120
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # the shipped agent task pins an ancestor commit
 
       - name: Toolchain
         run: |
@@ -130,6 +132,11 @@ jobs:
       # run on them are other targets' business, not this job's.
       - name: R1 profile and capability checks
         run: make r1-profile-tests
+
+      - name: Agent and FPGA harness control-plane tests
+        run: |
+          python3 -m unittest discover -s tools/tritonchip_agent_harness/tests -p 'test_*.py'
+          python3 -m unittest discover -s tools/tritonchip_fpga_harness/tests -p 'test_*.py'
 
       # R3's performance model: six graphs whose cycle counts are worked out
       # by hand in the test, and exact agreement required. No RTL, no

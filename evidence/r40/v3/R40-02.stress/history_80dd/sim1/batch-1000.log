@@ -1,0 +1,11 @@
+  already built: /home/zhongchun/.cache/tnca/devices/core-vrf-sync-v5-a8f9e2a0291d254a-2f12bdd465ea/tnca_device_vrf5.vvp
+W1019 02:16:02.159000 2463839 torch/utils/cpp_extension.py:183] No CUDA runtime is found, using CUDA_HOME='/usr/local/cuda'
+PASS queued multi-kernel graph, event visibility and deferred intermediate free
+Traceback (most recent call last):
+  File "/home/zhongchun/r40v3_capgate/tools/r40/batch_tests.py", line 130, in <module>
+    sys.exit(main())
+             ^^^^^^
+  File "/home/zhongchun/r40v3_capgate/tools/r40/batch_tests.py", line 67, in main
+    assert [e['artifact'] for e in batched] == [e['artifact'] for e in serial]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError

@@ -48,6 +48,13 @@ def main():
     x = h.to('tnca')
     graph = torch.compile(lambda t: (t * 2 + 1).softmax(-1), fullgraph=True)
     ref = (h * 2 + 1).softmax(-1)
+    # Compile first. Inductor's one-time SDPA pattern initialization
+    # (fuse_attention._sfdp_init) traces example tensors on the device and
+    # launches native copies inside the first call; the policies are compared
+    # on the steady graph, not on that one-time compilation work.
+    os.environ['TNCA_TRANSFER_POLICY'] = 'resident'
+    with torch.no_grad():
+        graph(x).cpu()
     artifacts = []
     for policy in ('resident', 'per-kernel'):
         for _ in range(2):

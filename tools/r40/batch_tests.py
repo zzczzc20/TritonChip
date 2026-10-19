@@ -35,8 +35,14 @@ def main():
         return torch.softmax(torch.nn.functional.layer_norm(t, (16,)) @ weight, -1)
     graph = torch.compile(fn, fullgraph=True)
     os.environ['TNCA_SUBMIT'] = 'single'
+    # Compile first. Inductor's one-time SDPA pattern initialization
+    # (fuse_attention._sfdp_init) traces example tensors on the device and
+    # launches native copies inside the first call; the single-submit
+    # reference is the steady graph, not that one-time compilation work.
+    y = graph(x, dw)
     with launch_log() as serial:
         y = graph(x, dw)
+    assert all(e['kernel'] != '_copy_kernel' for e in serial), 'steady graph launched device copies'
     torch.testing.assert_close(y.cpu(), fn(h, w), rtol=2e-3, atol=2e-3)
     assert len(serial) >= 3, f'chain fused to {len(serial)} kernels; no batched graph tested'
     s = D.MEMORY.session()

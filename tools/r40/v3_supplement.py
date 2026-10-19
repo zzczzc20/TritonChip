@@ -33,6 +33,8 @@ def main():
     p.add_argument('--control', required=True)
     p.add_argument('--candidate', required=True)
     p.add_argument('--timing', default='graph-makespan')
+    p.add_argument('--hold', action='append', default=[], metavar='KEY=VALUE',
+                   help='a prerequisite held at the same value on both sides')
     p.add_argument('--reason', required=True)
     r = sub.add_parser('run')
     r.add_argument('--out', type=Path, required=True)
@@ -44,6 +46,10 @@ def main():
     if a.cmd == 'plan':
         plan = C.load_plan()
         base = dict(plan['baseline_knobs'][a.baseline])
+        held = dict(kv.split('=', 1) for kv in a.hold)
+        if a.knob in held:
+            ap.error('the varied knob cannot also be held')
+        base.update(held)
         sides = {s: dict(base, **{a.knob: v}) for s, v in (('control', a.control), ('candidate', a.candidate))}
         rng = random.Random(plan['sample_plan']['bootstrap']['seed'])
         configs, rows = {}, []
@@ -59,7 +65,7 @@ def main():
             rows.append(dict(point=point['id'], sha256=point['sha256'], keys=keys, order=order))
         exp = dict(name=a.name, subset=a.subset, vary=[a.knob], control=a.control, candidate=a.candidate,
                    candidate_value=a.candidate, baseline=a.baseline, timing=a.timing, target=None,
-                   rule='significant-gain', klass='device', points=rows,
+                   rule='significant-gain', klass='device', points=rows, held=held,
                    note='SUPPLEMENTARY DIAGNOSTIC, not a frozen v3 experiment; never records a gate',
                    reason=a.reason)
         campaign = dict(schema='tnca-r40-v3-supplement/1', planned=C.utc(), contract_sha256=C.contract_v3.LOCK_SHA256,

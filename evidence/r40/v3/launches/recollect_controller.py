@@ -83,7 +83,7 @@ try:
         if name == 'original-large24':
             rows = [json.loads(l) for l in (p/'large24.jsonl').read_text().splitlines() if l.strip()]
             assert len(rows) == 24 and {r['point_id'] for r in rows} == {x['id'] for x in points}
-            assert all(r['status'] == 'pass' and r['correctness']['ok'] for r in rows), 'original large point failed'
+            assert all(r['status'] == 'pass' and not r.get('fallbacks') and r['correctness']['max_rel_err'] <= r['correctness']['tol'] for r in rows), 'original large point failed'
     state['status'] = 'complete-review-required'; save()
 except Exception:
     state.update(status='failed-preserved', error=traceback.format_exc()); save(); raise

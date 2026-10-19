@@ -1,0 +1,178 @@
+{
+ "config": "bt3p3s2",
+ "backend": "fpga-multicore-sim",
+ "backend_args": {
+  "core_count": 3,
+  "memory_ports": 3,
+  "noc_link_stages": 2,
+  "dispatch_stages": 2,
+  "home_stages": 2,
+  "code_stages": 2,
+  "board_top": true,
+  "maintenance": true,
+  "hbm_dma": true,
+  "memory_controls": true,
+  "journal": true
+ },
+ "software_tree": "files:bc5a778ebc5f4afebf6c1a9fbf3b2d8717cb02e118134ebbb73fb5a927fc8183",
+ "harness_sha256": "76b259e5d286ef97809d5fee4798a9aa0add71d4f6a8ba15edf60a6b4a27772d",
+ "torch": "2.14.0+cu130",
+ "triton": "3.8.0",
+ "env": {
+  "TNCA_PROFILE": "core-vrf-sync-v5",
+  "TNCA_BACKEND": "fpga-multicore-sim",
+  "TNCA_BACKEND_ARGS": "{\"core_count\": 3, \"memory_ports\": 3, \"noc_link_stages\": 2, \"dispatch_stages\": 2, \"home_stages\": 2, \"code_stages\": 2, \"board_top\": true, \"maintenance\": true, \"hbm_dma\": true, \"memory_controls\": true, \"journal\": true}",
+  "TNCA_HOST_TIMEOUT": "7200",
+  "TNCA_TRITON": "1"
+ },
+ "graphs": {
+  "pointwise": {
+   "checks": {
+    "numerical": true,
+    "device_output": true,
+    "zero_tensor_staging": true,
+    "whole_grid_launch": true,
+    "no_per_program_launch": true,
+    "physical_grid": true,
+    "programs_exactly_once": true,
+    "every_outlet_traffic": true
+   },
+   "ok": true,
+   "output_sha256": "00261615c2f9ac8bc8955d2cfbd782d1a7c382b2cc01ab15d2ce5914b803aa06",
+   "max_abs_err": 0.0,
+   "artifacts": [
+    "d1f5d8982c712721636d3a105b475ea33cb66e00b261e5dd0195c4ad8c278b8c"
+   ],
+   "kernels": [
+    "triton_poi_fused_add_mul_0"
+   ],
+   "grids": [
+    [
+     257,
+     1,
+     1
+    ]
+   ],
+   "device_cycles": [
+    22631
+   ],
+   "physical_grid": {
+    "peak_active": 3,
+    "cores": [
+     {
+      "core": 0,
+      "issued": 84,
+      "completed": 84,
+      "occupied_cycles": 21819
+     },
+     {
+      "core": 1,
+      "issued": 88,
+      "completed": 88,
+      "occupied_cycles": 22586
+     },
+     {
+      "core": 2,
+      "issued": 85,
+      "completed": 85,
+      "occupied_cycles": 22041
+     }
+    ]
+   },
+   "outlet_traffic": [
+    {
+     "port": 0,
+     "read_lines": 349,
+     "write_lines": 83
+    },
+    {
+     "port": 1,
+     "read_lines": 287,
+     "write_lines": 82
+    },
+    {
+     "port": 2,
+     "read_lines": 256,
+     "write_lines": 81
+    }
+   ],
+   "wall_s": 968.9
+  },
+  "softmax": {
+   "checks": {
+    "numerical": true,
+    "device_output": true,
+    "zero_tensor_staging": true,
+    "whole_grid_launch": true,
+    "no_per_program_launch": true,
+    "physical_grid": true,
+    "programs_exactly_once": true,
+    "every_outlet_traffic": true
+   },
+   "ok": true,
+   "output_sha256": "2f3cdcac5a2d63c71ec41abf22189dec8f66978ea508d692f60bb8f00fbdcc63",
+   "max_abs_err": 1.4901161193847656e-08,
+   "artifacts": [
+    "dac4de8c306db2a1f6c16624b0c9688d7ed0898ffc2b900645296edeb0efb195"
+   ],
+   "kernels": [
+    "triton_red_fused__softmax_0"
+   ],
+   "grids": [
+    [
+     33,
+     1,
+     1
+    ]
+   ],
+   "device_cycles": [
+    37544
+   ],
+   "physical_grid": {
+    "peak_active": 3,
+    "cores": [
+     {
+      "core": 0,
+      "issued": 10,
+      "completed": 10,
+      "occupied_cycles": 33076
+     },
+     {
+      "core": 1,
+      "issued": 12,
+      "completed": 12,
+      "occupied_cycles": 37531
+     },
+     {
+      "core": 2,
+      "issued": 11,
+      "completed": 11,
+      "occupied_cycles": 36284
+     }
+    ]
+   },
+   "outlet_traffic": [
+    {
+     "port": 0,
+     "read_lines": 382,
+     "write_lines": 178
+    },
+    {
+     "port": 1,
+     "read_lines": 402,
+     "write_lines": 189
+    },
+    {
+     "port": 2,
+     "read_lines": 434,
+     "write_lines": 194
+    }
+   ],
+   "wall_s": 1412.8
+  }
+ },
+ "journal_dir": "/home/zhongchun/r40v3_hbmnuca_bc5a/sim/build/u50-sim/link-toxt9tym/journal",
+ "link_dir": "/home/zhongchun/r40v3_hbmnuca_bc5a/sim/build/u50-sim/link-toxt9tym",
+ "software_tree_unchanged": true,
+ "ok": true
+}

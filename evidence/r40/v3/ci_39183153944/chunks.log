@@ -1,0 +1,520 @@
+﻿2026-10-19T00:58:19.1446716Z Current runner version: '2.337.0'
+2026-10-19T00:58:19.1471861Z ##[group]Runner Image Provisioner
+2026-10-19T00:58:19.1472913Z Hosted Compute Agent
+2026-10-19T00:58:19.1473567Z Version: 20261012.601
+2026-10-19T00:58:19.1474261Z Commit: f3dc54e1fb89da6852db922499a0233137369e1d
+2026-10-19T00:58:19.1474973Z Build Date: 2026-10-12T17:48:21Z
+2026-10-19T00:58:19.1475747Z Worker ID: {127a2c78-559f-4bda-b2e1-c61babd1f566}
+2026-10-19T00:58:19.1476454Z Region: westus3
+2026-10-19T00:58:19.1477404Z Cloud: Azure
+2026-10-19T00:58:19.1477990Z ##[endgroup]
+2026-10-19T00:58:19.1479633Z ##[group]Operating System
+2026-10-19T00:58:19.1480401Z Ubuntu
+2026-10-19T00:58:19.1480921Z 24.04.5
+2026-10-19T00:58:19.1481415Z LTS
+2026-10-19T00:58:19.1482069Z ##[endgroup]
+2026-10-19T00:58:19.1482629Z ##[group]Runner Image
+2026-10-19T00:58:19.1483310Z Image: ubuntu-24.04
+2026-10-19T00:58:19.1483883Z Version: 20261012.334.1
+2026-10-19T00:58:19.1485184Z Included Software: https://github.com/actions/runner-images/blob/ubuntu24/20261012.334/images/ubuntu/Ubuntu2404-Readme.md
+2026-10-19T00:58:19.1486720Z Image Release: https://github.com/actions/runner-images/releases/tag/ubuntu24%2F20261012.334
+2026-10-19T00:58:19.1488069Z ##[endgroup]
+2026-10-19T00:58:19.1489136Z ##[group]GITHUB_TOKEN Permissions
+2026-10-19T00:58:19.1491694Z Contents: read
+2026-10-19T00:58:19.1492309Z Metadata: read
+2026-10-19T00:58:19.1492847Z ##[endgroup]
+2026-10-19T00:58:19.1494982Z Secret source: Actions
+2026-10-19T00:58:19.1495911Z Cache mode: write
+2026-10-19T00:58:19.1497208Z Prepare workflow directory
+2026-10-19T00:58:19.1950929Z Prepare all required actions
+2026-10-19T00:58:19.1999057Z Getting action download info
+2026-10-19T00:58:19.5092222Z Download action repository 'actions/checkout@v4' (SHA:11d5960a326750d5838078e36cf38b85af677262)
+2026-10-19T00:58:19.6228271Z Download action repository 'actions/cache@v4' (SHA:0057852bfaa89a56745cba8c7296529d2fc39830)
+2026-10-19T00:58:19.7173542Z Download action repository 'actions/upload-artifact@v4' (SHA:ea165f8d65b6e75b540449e92b4886f43607fa02)
+2026-10-19T00:58:19.9314979Z Complete job name: R40 grid and pipeline (chunks)
+2026-10-19T00:58:20.0090121Z ##[group]Run actions/checkout@v4
+2026-10-19T00:58:20.0090983Z with:
+2026-10-19T00:58:20.0091429Z   repository: zzczzc20/TritonChip
+2026-10-19T00:58:20.0095230Z   token: ***
+2026-10-19T00:58:20.0095661Z   ssh-strict: true
+2026-10-19T00:58:20.0096080Z   ssh-user: git
+2026-10-19T00:58:20.0096513Z   persist-credentials: true
+2026-10-19T00:58:20.0097203Z   clean: true
+2026-10-19T00:58:20.0097648Z   sparse-checkout-cone-mode: true
+2026-10-19T00:58:20.0098161Z   fetch-depth: 1
+2026-10-19T00:58:20.0098579Z   fetch-tags: false
+2026-10-19T00:58:20.0099008Z   show-progress: true
+2026-10-19T00:58:20.0099435Z   lfs: false
+2026-10-19T00:58:20.0099840Z   submodules: false
+2026-10-19T00:58:20.0100279Z   set-safe-directory: true
+2026-10-19T00:58:20.0100774Z   allow-unsafe-pr-checkout: false
+2026-10-19T00:58:20.0101520Z env:
+2026-10-19T00:58:20.0101945Z   LLVM_PREFIX: /usr/lib/llvm-20
+2026-10-19T00:58:20.0102465Z   TNCA_LLVM: /usr/lib/llvm-20
+2026-10-19T00:58:20.0102979Z ##[endgroup]
+2026-10-19T00:58:20.1128285Z Syncing repository: zzczzc20/TritonChip
+2026-10-19T00:58:20.1130890Z ##[group]Getting Git version info
+2026-10-19T00:58:20.1132205Z Working directory is '/home/runner/work/TritonChip/TritonChip'
+2026-10-19T00:58:20.1134108Z [command]/usr/bin/git version
+2026-10-19T00:58:20.1195916Z git version 2.55.0
+2026-10-19T00:58:20.1238403Z ##[endgroup]
+2026-10-19T00:58:20.1249075Z Temporarily overriding HOME='/home/runner/work/_temp/40442086-efe3-4de9-abad-5908f2d01533' before making global git config changes
+2026-10-19T00:58:20.1251874Z Adding repository directory to the temporary git global config as a safe directory
+2026-10-19T00:58:20.1254423Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/TritonChip/TritonChip
+2026-10-19T00:58:20.1303713Z Deleting the contents of '/home/runner/work/TritonChip/TritonChip'
+2026-10-19T00:58:20.1309853Z ##[group]Initializing the repository
+2026-10-19T00:58:20.1315058Z [command]/usr/bin/git init /home/runner/work/TritonChip/TritonChip
+2026-10-19T00:58:20.1415319Z hint: Using 'master' as the name for the initial branch. This default branch name
+2026-10-19T00:58:20.1417415Z hint: will change to "main" in Git 3.0. To configure the initial branch name
+2026-10-19T00:58:20.1418407Z hint: to use in all of your new repositories, which will suppress this warning,
+2026-10-19T00:58:20.1419157Z hint: call:
+2026-10-19T00:58:20.1419559Z hint:
+2026-10-19T00:58:20.1420083Z hint: 	git config --global init.defaultBranch <name>
+2026-10-19T00:58:20.1420712Z hint:
+2026-10-19T00:58:20.1421416Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+2026-10-19T00:58:20.1422713Z hint: 'development'. The just-created branch can be renamed via this command:
+2026-10-19T00:58:20.1423559Z hint:
+2026-10-19T00:58:20.1424175Z hint: 	git branch -m <name>
+2026-10-19T00:58:20.1424659Z hint:
+2026-10-19T00:58:20.1425290Z hint: Disable this message with "git config set advice.defaultBranchName false"
+2026-10-19T00:58:20.1431466Z Initialized empty Git repository in /home/runner/work/TritonChip/TritonChip/.git/
+2026-10-19T00:58:20.1441956Z [command]/usr/bin/git remote add origin https://github.com/zzczzc20/TritonChip
+2026-10-19T00:58:20.1490950Z ##[endgroup]
+2026-10-19T00:58:20.1492264Z ##[group]Disabling automatic garbage collection
+2026-10-19T00:58:20.1495737Z [command]/usr/bin/git config --local gc.auto 0
+2026-10-19T00:58:20.1535645Z ##[endgroup]
+2026-10-19T00:58:20.1537562Z ##[group]Setting up auth
+2026-10-19T00:58:20.1543680Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+2026-10-19T00:58:20.1580827Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2026-10-19T00:58:20.1939734Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-10-19T00:58:20.1995219Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2026-10-19T00:58:20.2238504Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-10-19T00:58:20.2276791Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+2026-10-19T00:58:20.2533924Z [command]/usr/bin/git config --local http.https://github.com/.extraheader AUTHORIZATION: basic ***
+2026-10-19T00:58:20.2575335Z ##[endgroup]
+2026-10-19T00:58:20.2576170Z ##[group]Fetching the repository
+2026-10-19T00:58:20.2585937Z [command]/usr/bin/git -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +8820782a7a8ab2146ee61f2f0320f4708005e548:refs/remotes/origin/r40-convergence-evidence
+2026-10-19T00:58:24.2104942Z From https://github.com/zzczzc20/TritonChip
+2026-10-19T00:58:24.2106447Z  * [new ref]         8820782a7a8ab2146ee61f2f0320f4708005e548 -> origin/r40-convergence-evidence
+2026-10-19T00:58:24.2110665Z ##[endgroup]
+2026-10-19T00:58:24.2111522Z ##[group]Determining the checkout info
+2026-10-19T00:58:24.2114088Z ##[endgroup]
+2026-10-19T00:58:24.2125360Z [command]/usr/bin/git sparse-checkout disable
+2026-10-19T00:58:24.2183735Z [command]/usr/bin/git config --local --unset-all extensions.worktreeConfig
+2026-10-19T00:58:24.2224317Z ##[group]Checking out the ref
+2026-10-19T00:58:24.2230257Z [command]/usr/bin/git checkout --progress --force -B r40-convergence-evidence refs/remotes/origin/r40-convergence-evidence
+2026-10-19T00:58:24.8283878Z Switched to a new branch 'r40-convergence-evidence'
+2026-10-19T00:58:24.8287732Z branch 'r40-convergence-evidence' set up to track 'origin/r40-convergence-evidence'.
+2026-10-19T00:58:24.8327165Z ##[endgroup]
+2026-10-19T00:58:24.8374391Z [command]/usr/bin/git log -1 --format=%H
+2026-10-19T00:58:24.8401907Z 8820782a7a8ab2146ee61f2f0320f4708005e548
+2026-10-19T00:58:24.8609716Z ##[group]Run set -euo pipefail
+2026-10-19T00:58:24.8610197Z [36;1mset -euo pipefail[0m
+2026-10-19T00:58:24.8610514Z [36;1msudo apt-get update -qq[0m
+2026-10-19T00:58:24.8610918Z [36;1msudo apt-get install -y --no-install-recommends \[0m
+2026-10-19T00:58:24.8611465Z [36;1m  iverilog yosys build-essential cmake ninja-build python3 python3-venv \[0m
+2026-10-19T00:58:24.8611981Z [36;1m  libmlir-20-dev mlir-20-tools llvm-20-dev[0m
+2026-10-19T00:58:24.8848156Z shell: /usr/bin/bash -e {0}
+2026-10-19T00:58:24.8848545Z env:
+2026-10-19T00:58:24.8848844Z   LLVM_PREFIX: /usr/lib/llvm-20
+2026-10-19T00:58:24.8849220Z   TNCA_LLVM: /usr/lib/llvm-20
+2026-10-19T00:58:24.8849564Z ##[endgroup]
+2026-10-19T00:58:29.1728808Z Reading package lists...
+2026-10-19T00:58:29.3641615Z Building dependency tree...
+2026-10-19T00:58:29.3649011Z Reading state information...
+2026-10-19T00:58:29.5043037Z python3 is already the newest version (3.12.3-0ubuntu2.1).
+2026-10-19T00:58:29.5044267Z python3-venv is already the newest version (3.12.3-0ubuntu2.1).
+2026-10-19T00:58:29.5045225Z The following additional packages will be installed:
+2026-10-19T00:58:29.5047106Z   cmake-data libclang-cpp20 libjsoncpp25 libmlir-20 librhash0 llvm-20
+2026-10-19T00:58:29.5048983Z   llvm-20-linker-tools llvm-20-runtime llvm-20-tools yosys-abc
+2026-10-19T00:58:29.5054263Z Suggested packages:
+2026-10-19T00:58:29.5054927Z   cmake-doc cmake-format elpa-cmake-mode gtkwave llvm-20-doc
+2026-10-19T00:58:29.5055668Z Recommended packages:
+2026-10-19T00:58:29.5056114Z   xdot
+2026-10-19T00:58:29.6158654Z The following NEW packages will be installed:
+2026-10-19T00:58:29.6164633Z   build-essential cmake cmake-data iverilog libclang-cpp20 libjsoncpp25
+2026-10-19T00:58:29.6172418Z   libmlir-20 libmlir-20-dev librhash0 llvm-20 llvm-20-dev llvm-20-linker-tools
+2026-10-19T00:58:29.6177467Z   llvm-20-runtime llvm-20-tools mlir-20-tools ninja-build yosys yosys-abc
+2026-10-19T00:58:29.6375486Z 0 upgraded, 18 newly installed, 0 to remove and 44 not upgraded.
+2026-10-19T00:58:29.6376252Z Need to get 178 MB of archives.
+2026-10-19T00:58:29.6377312Z After this operation, 1284 MB of additional disk space will be used.
+2026-10-19T00:58:29.6378211Z Get:1 file:/etc/apt/apt-mirrors.txt Mirrorlist [144 B]
+2026-10-19T00:58:29.7225276Z Get:2 http://azure.archive.ubuntu.com/ubuntu noble/main amd64 build-essential amd64 12.10ubuntu1 [4928 B]
+2026-10-19T00:58:29.7872722Z Get:3 http://azure.archive.ubuntu.com/ubuntu noble/main amd64 libjsoncpp25 amd64 1.9.5-6build1 [82.8 kB]
+2026-10-19T00:58:29.8532074Z Get:4 http://azure.archive.ubuntu.com/ubuntu noble/main amd64 librhash0 amd64 1.4.3-3build1 [129 kB]
+2026-10-19T00:58:29.9227264Z Get:5 http://azure.archive.ubuntu.com/ubuntu noble/main amd64 cmake-data all 3.28.3-1build7 [2155 kB]
+2026-10-19T00:58:30.0272012Z Get:6 http://azure.archive.ubuntu.com/ubuntu noble/main amd64 cmake amd64 3.28.3-1build7 [11.2 MB]
+2026-10-19T00:58:30.3198521Z Get:7 http://azure.archive.ubuntu.com/ubuntu noble/universe amd64 iverilog amd64 12.0-2build2 [2126 kB]
+2026-10-19T00:58:30.4269314Z Get:8 http://azure.archive.ubuntu.com/ubuntu noble-updates/universe amd64 libclang-cpp20 amd64 1:20.1.2-0ubuntu1~24.04.3 [14.2 MB]
+2026-10-19T00:58:30.7824677Z Get:9 http://azure.archive.ubuntu.com/ubuntu noble-updates/universe amd64 libmlir-20 amd64 1:20.1.2-0ubuntu1~24.04.3 [13.0 MB]
+2026-10-19T00:58:31.1115754Z Get:10 http://azure.archive.ubuntu.com/ubuntu noble-updates/universe amd64 libmlir-20-dev amd64 1:20.1.2-0ubuntu1~24.04.3 [28.3 MB]
+2026-10-19T00:58:31.7576641Z Get:11 http://azure.archive.ubuntu.com/ubuntu noble-updates/universe amd64 llvm-20-runtime amd64 1:20.1.2-0ubuntu1~24.04.3 [558 kB]
+2026-10-19T00:58:31.8330791Z Get:12 http://azure.archive.ubuntu.com/ubuntu noble-updates/universe amd64 llvm-20-linker-tools amd64 1:20.1.2-0ubuntu1~24.04.3 [1338 kB]
+2026-10-19T00:58:31.9239530Z Get:13 http://azure.archive.ubuntu.com/ubuntu noble-updates/universe amd64 llvm-20 amd64 1:20.1.2-0ubuntu1~24.04.3 [19.8 MB]
+2026-10-19T00:58:32.3949770Z Get:14 http://azure.archive.ubuntu.com/ubuntu noble-updates/universe amd64 llvm-20-tools amd64 1:20.1.2-0ubuntu1~24.04.3 [515 kB]
+2026-10-19T00:58:32.4689886Z Get:15 http://azure.archive.ubuntu.com/ubuntu noble-updates/universe amd64 llvm-20-dev amd64 1:20.1.2-0ubuntu1~24.04.3 [50.7 MB]
+2026-10-19T00:58:33.5718784Z Get:16 http://azure.archive.ubuntu.com/ubuntu noble-updates/universe amd64 mlir-20-tools amd64 1:20.1.2-0ubuntu1~24.04.3 [24.8 MB]
+2026-10-19T00:58:34.1443731Z Get:17 http://azure.archive.ubuntu.com/ubuntu noble/universe amd64 ninja-build amd64 1.11.1-2 [129 kB]
+2026-10-19T00:58:34.2108443Z Get:18 http://azure.archive.ubuntu.com/ubuntu noble/universe amd64 yosys-abc amd64 0.33-5build2 [5829 kB]
+2026-10-19T00:58:34.3955171Z Get:19 http://azure.archive.ubuntu.com/ubuntu noble/universe amd64 yosys amd64 0.33-5build2 [3222 kB]
+2026-10-19T00:58:35.4111976Z Fetched 178 MB in 5s (36.9 MB/s)
+2026-10-19T00:58:35.4584287Z Selecting previously unselected package build-essential.
+2026-10-19T00:58:35.4859330Z (Reading database ... 
+2026-10-19T00:58:35.4861249Z (Reading database ... 5%
+2026-10-19T00:58:35.4862007Z (Reading database ... 10%
+2026-10-19T00:58:35.4862575Z (Reading database ... 15%
+2026-10-19T00:58:35.4863114Z (Reading database ... 20%
+2026-10-19T00:58:35.4863648Z (Reading database ... 25%
+2026-10-19T00:58:35.4864200Z (Reading database ... 30%
+2026-10-19T00:58:35.4864757Z (Reading database ... 35%
+2026-10-19T00:58:35.4865310Z (Reading database ... 40%
+2026-10-19T00:58:35.4865858Z (Reading database ... 45%
+2026-10-19T00:58:35.4866401Z (Reading database ... 50%
+2026-10-19T00:58:35.4921137Z (Reading database ... 55%
+2026-10-19T00:58:35.6087141Z (Reading database ... 60%
+2026-10-19T00:58:35.7975577Z (Reading database ... 65%
+2026-10-19T00:58:35.9990359Z (Reading database ... 70%
+2026-10-19T00:58:36.2045126Z (Reading database ... 75%
+2026-10-19T00:58:36.3060688Z (Reading database ... 80%
+2026-10-19T00:58:36.4479728Z (Reading database ... 85%
+2026-10-19T00:58:36.6198763Z (Reading database ... 90%
+2026-10-19T00:58:36.7690172Z (Reading database ... 95%
+2026-10-19T00:58:36.7690622Z (Reading database ... 100%
+2026-10-19T00:58:36.7691117Z (Reading database ... 203540 files and directories currently installed.)
+2026-10-19T00:58:36.7732273Z Preparing to unpack .../00-build-essential_12.10ubuntu1_amd64.deb ...
+2026-10-19T00:58:36.7760242Z Unpacking build-essential (12.10ubuntu1) ...
+2026-10-19T00:58:36.7968323Z Selecting previously unselected package libjsoncpp25:amd64.
+2026-10-19T00:58:36.8092525Z Preparing to unpack .../01-libjsoncpp25_1.9.5-6build1_amd64.deb ...
+2026-10-19T00:58:36.8112538Z Unpacking libjsoncpp25:amd64 (1.9.5-6build1) ...
+2026-10-19T00:58:36.8344281Z Selecting previously unselected package librhash0:amd64.
+2026-10-19T00:58:36.8471277Z Preparing to unpack .../02-librhash0_1.4.3-3build1_amd64.deb ...
+2026-10-19T00:58:36.8481184Z Unpacking librhash0:amd64 (1.4.3-3build1) ...
+2026-10-19T00:58:36.8708214Z Selecting previously unselected package cmake-data.
+2026-10-19T00:58:36.8831964Z Preparing to unpack .../03-cmake-data_3.28.3-1build7_all.deb ...
+2026-10-19T00:58:36.8900957Z Unpacking cmake-data (3.28.3-1build7) ...
+2026-10-19T00:58:37.4233231Z Selecting previously unselected package cmake.
+2026-10-19T00:58:37.4368891Z Preparing to unpack .../04-cmake_3.28.3-1build7_amd64.deb ...
+2026-10-19T00:58:37.4376904Z Unpacking cmake (3.28.3-1build7) ...
+2026-10-19T00:58:37.5904252Z Selecting previously unselected package iverilog.
+2026-10-19T00:58:37.6030235Z Preparing to unpack .../05-iverilog_12.0-2build2_amd64.deb ...
+2026-10-19T00:58:37.6038519Z Unpacking iverilog (12.0-2build2) ...
+2026-10-19T00:58:37.6606053Z Selecting previously unselected package libclang-cpp20.
+2026-10-19T00:58:37.6731652Z Preparing to unpack .../06-libclang-cpp20_1%3a20.1.2-0ubuntu1~24.04.3_amd64.deb ...
+2026-10-19T00:58:37.6740611Z Unpacking libclang-cpp20 (1:20.1.2-0ubuntu1~24.04.3) ...
+2026-10-19T00:58:37.8973512Z Selecting previously unselected package libmlir-20:amd64.
+2026-10-19T00:58:37.9098891Z Preparing to unpack .../07-libmlir-20_1%3a20.1.2-0ubuntu1~24.04.3_amd64.deb ...
+2026-10-19T00:58:37.9107264Z Unpacking libmlir-20:amd64 (1:20.1.2-0ubuntu1~24.04.3) ...
+2026-10-19T00:58:38.1447378Z Selecting previously unselected package libmlir-20-dev:amd64.
+2026-10-19T00:58:38.1574080Z Preparing to unpack .../08-libmlir-20-dev_1%3a20.1.2-0ubuntu1~24.04.3_amd64.deb ...
+2026-10-19T00:58:38.1581354Z Unpacking libmlir-20-dev:amd64 (1:20.1.2-0ubuntu1~24.04.3) ...
+2026-10-19T00:58:39.4930734Z Selecting previously unselected package llvm-20-runtime.
+2026-10-19T00:58:39.5067621Z Preparing to unpack .../09-llvm-20-runtime_1%3a20.1.2-0ubuntu1~24.04.3_amd64.deb ...
+2026-10-19T00:58:39.5077837Z Unpacking llvm-20-runtime (1:20.1.2-0ubuntu1~24.04.3) ...
+2026-10-19T00:58:39.5371221Z Selecting previously unselected package llvm-20-linker-tools.
+2026-10-19T00:58:39.5497884Z Preparing to unpack .../10-llvm-20-linker-tools_1%3a20.1.2-0ubuntu1~24.04.3_amd64.deb ...
+2026-10-19T00:58:39.5506547Z Unpacking llvm-20-linker-tools (1:20.1.2-0ubuntu1~24.04.3) ...
+2026-10-19T00:58:39.5885859Z Selecting previously unselected package llvm-20.
+2026-10-19T00:58:39.6012010Z Preparing to unpack .../11-llvm-20_1%3a20.1.2-0ubuntu1~24.04.3_amd64.deb ...
+2026-10-19T00:58:39.6020706Z Unpacking llvm-20 (1:20.1.2-0ubuntu1~24.04.3) ...
+2026-10-19T00:58:39.9310257Z Selecting previously unselected package llvm-20-tools.
+2026-10-19T00:58:39.9438678Z Preparing to unpack .../12-llvm-20-tools_1%3a20.1.2-0ubuntu1~24.04.3_amd64.deb ...
+2026-10-19T00:58:39.9446944Z Unpacking llvm-20-tools (1:20.1.2-0ubuntu1~24.04.3) ...
+2026-10-19T00:58:40.0700003Z Selecting previously unselected package llvm-20-dev.
+2026-10-19T00:58:40.0829563Z Preparing to unpack .../13-llvm-20-dev_1%3a20.1.2-0ubuntu1~24.04.3_amd64.deb ...
+2026-10-19T00:58:40.0839997Z Unpacking llvm-20-dev (1:20.1.2-0ubuntu1~24.04.3) ...
+2026-10-19T00:58:41.5587651Z Selecting previously unselected package mlir-20-tools.
+2026-10-19T00:58:41.5725247Z Preparing to unpack .../14-mlir-20-tools_1%3a20.1.2-0ubuntu1~24.04.3_amd64.deb ...
+2026-10-19T00:58:41.5733149Z Unpacking mlir-20-tools (1:20.1.2-0ubuntu1~24.04.3) ...
+2026-10-19T00:58:41.9956660Z Selecting previously unselected package ninja-build.
+2026-10-19T00:58:42.0085554Z Preparing to unpack .../15-ninja-build_1.11.1-2_amd64.deb ...
+2026-10-19T00:58:42.0093926Z Unpacking ninja-build (1.11.1-2) ...
+2026-10-19T00:58:42.0309407Z Selecting previously unselected package yosys-abc.
+2026-10-19T00:58:42.0437082Z Preparing to unpack .../16-yosys-abc_0.33-5build2_amd64.deb ...
+2026-10-19T00:58:42.0444392Z Unpacking yosys-abc (0.33-5build2) ...
+2026-10-19T00:58:42.1219064Z Selecting previously unselected package yosys.
+2026-10-19T00:58:42.1347961Z Preparing to unpack .../17-yosys_0.33-5build2_amd64.deb ...
+2026-10-19T00:58:42.1355501Z Unpacking yosys (0.33-5build2) ...
+2026-10-19T00:58:42.2479511Z Setting up yosys-abc (0.33-5build2) ...
+2026-10-19T00:58:42.2498253Z Setting up llvm-20-runtime (1:20.1.2-0ubuntu1~24.04.3) ...
+2026-10-19T00:58:42.2524904Z Setting up ninja-build (1.11.1-2) ...
+2026-10-19T00:58:42.2542057Z Setting up llvm-20-linker-tools (1:20.1.2-0ubuntu1~24.04.3) ...
+2026-10-19T00:58:42.2559169Z Setting up llvm-20-tools (1:20.1.2-0ubuntu1~24.04.3) ...
+2026-10-19T00:58:42.2575745Z Setting up iverilog (12.0-2build2) ...
+2026-10-19T00:58:42.2593064Z Setting up libclang-cpp20 (1:20.1.2-0ubuntu1~24.04.3) ...
+2026-10-19T00:58:42.2631329Z Setting up llvm-20 (1:20.1.2-0ubuntu1~24.04.3) ...
+2026-10-19T00:58:42.2649588Z Setting up llvm-20-dev (1:20.1.2-0ubuntu1~24.04.3) ...
+2026-10-19T00:58:42.2670326Z Setting up libjsoncpp25:amd64 (1.9.5-6build1) ...
+2026-10-19T00:58:42.2689584Z Setting up librhash0:amd64 (1.4.3-3build1) ...
+2026-10-19T00:58:42.2706648Z Setting up build-essential (12.10ubuntu1) ...
+2026-10-19T00:58:42.2724174Z Setting up cmake-data (3.28.3-1build7) ...
+2026-10-19T00:58:42.2784417Z Setting up libmlir-20:amd64 (1:20.1.2-0ubuntu1~24.04.3) ...
+2026-10-19T00:58:42.2804024Z Setting up libmlir-20-dev:amd64 (1:20.1.2-0ubuntu1~24.04.3) ...
+2026-10-19T00:58:42.2822287Z Setting up yosys (0.33-5build2) ...
+2026-10-19T00:58:42.3957977Z Setting up mlir-20-tools (1:20.1.2-0ubuntu1~24.04.3) ...
+2026-10-19T00:58:42.3975337Z Setting up cmake (3.28.3-1build7) ...
+2026-10-19T00:58:42.3999596Z Processing triggers for systemd (255.4-1ubuntu8.17) ...
+2026-10-19T00:58:42.4430703Z Processing triggers for man-db (2.12.0-4build2) ...
+2026-10-19T00:58:42.4452404Z Not building database; man-db/auto-update is not 'true'.
+2026-10-19T00:58:42.4462711Z Processing triggers for libc-bin (2.39-0ubuntu8.9) ...
+2026-10-19T00:58:43.1149907Z 
+2026-10-19T00:58:43.1150456Z Running kernel seems to be up-to-date.
+2026-10-19T00:58:43.1150847Z 
+2026-10-19T00:58:43.1151033Z No services need to be restarted.
+2026-10-19T00:58:43.1151330Z 
+2026-10-19T00:58:43.1151509Z No containers need to be restarted.
+2026-10-19T00:58:43.1151828Z 
+2026-10-19T00:58:43.1152049Z No user sessions are running outdated binaries.
+2026-10-19T00:58:43.1152421Z 
+2026-10-19T00:58:43.1152770Z No VM guests are running outdated hypervisor (qemu) binaries on this host.
+2026-10-19T00:58:44.0268203Z ##[group]Run actions/cache@v4
+2026-10-19T00:58:44.0268541Z with:
+2026-10-19T00:58:44.0268769Z   path: ~/.cache/pip
+2026-10-19T00:58:44.0269176Z   key: pip-173d707e845b4431106949175b8c828e217e244fd73f7383ebc194c89cb814a0
+2026-10-19T00:58:44.0269662Z   enableCrossOsArchive: false
+2026-10-19T00:58:44.0269967Z   fail-on-cache-miss: false
+2026-10-19T00:58:44.0270245Z   lookup-only: false
+2026-10-19T00:58:44.0270489Z   save-always: false
+2026-10-19T00:58:44.0270720Z env:
+2026-10-19T00:58:44.0270934Z   LLVM_PREFIX: /usr/lib/llvm-20
+2026-10-19T00:58:44.0271186Z   TNCA_LLVM: /usr/lib/llvm-20
+2026-10-19T00:58:44.0271419Z ##[endgroup]
+2026-10-19T00:58:44.1341753Z (node:2929) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+2026-10-19T00:58:44.1342792Z (Use `node --trace-deprecation ...` to show where the warning was created)
+2026-10-19T00:58:44.3421894Z Cache hit for: pip-173d707e845b4431106949175b8c828e217e244fd73f7383ebc194c89cb814a0
+2026-10-19T00:58:44.3524313Z (node:2929) [DEP0169] DeprecationWarning: `url.parse()` behavior is not standardized and prone to errors that have security implications. Use the WHATWG URL API instead. CVEs are not issued for `url.parse()` vulnerabilities.
+2026-10-19T00:58:45.5549946Z Received 37748736 of 242143880 (15.6%), 36.0 MBs/sec
+2026-10-19T00:58:46.5555367Z Received 188743680 of 242143880 (77.9%), 89.9 MBs/sec
+2026-10-19T00:58:46.9214919Z Received 242143880 of 242143880 (100.0%), 97.5 MBs/sec
+2026-10-19T00:58:46.9217496Z Cache Size: ~231 MB (242143880 B)
+2026-10-19T00:58:46.9260955Z [command]/usr/bin/tar -xf /home/runner/work/_temp/6416e0a1-9ae1-48de-8472-dd1e9d03d92e/cache.tzst -P -C /home/runner/work/TritonChip/TritonChip --use-compress-program unzstd
+2026-10-19T00:58:47.2424825Z Cache restored successfully
+2026-10-19T00:58:47.2608551Z Cache restored from key: pip-173d707e845b4431106949175b8c828e217e244fd73f7383ebc194c89cb814a0
+2026-10-19T00:58:47.2749550Z ##[group]Run set -euo pipefail
+2026-10-19T00:58:47.2749899Z [36;1mset -euo pipefail[0m
+2026-10-19T00:58:47.2750433Z [36;1mV=$(python3 -c "import json;print(json.load(open('spec/r1_toolchain.lock.json'))['triton']['version'])")[0m
+2026-10-19T00:58:47.2751135Z [36;1mPV=$(python3 -c "import json;print(json.load(open('spec/r38/torch.lock.json'))['version'])")[0m
+2026-10-19T00:58:47.2751617Z [36;1mpython3 -m venv ~/tritonenv[0m
+2026-10-19T00:58:47.2751991Z [36;1m~/tritonenv/bin/pip install -q "triton==$V" "torch==$PV" numpy[0m
+2026-10-19T00:58:47.2752376Z [36;1mmake python/tnca/data/.staged[0m
+2026-10-19T00:58:47.2752679Z [36;1m~/tritonenv/bin/pip install -q -e .[0m
+2026-10-19T00:58:47.2752975Z [36;1mmake tnca-opt[0m
+2026-10-19T00:58:47.2826362Z shell: /usr/bin/bash -e {0}
+2026-10-19T00:58:47.2826624Z env:
+2026-10-19T00:58:47.2827128Z   LLVM_PREFIX: /usr/lib/llvm-20
+2026-10-19T00:58:47.2827416Z   TNCA_LLVM: /usr/lib/llvm-20
+2026-10-19T00:58:47.2827665Z ##[endgroup]
+2026-10-19T00:59:54.6324888Z wrote isa/tnca-isa-v0.1.json: 169 instructions, 20 majors, 25 special registers
+2026-10-19T00:59:54.6326092Z   note: described but unused operand kinds: ['wa']
+2026-10-19T00:59:54.6642320Z wrote compiler/targets/tnca-sim-v0.1.json: 2 RCTX, 64 logical vregs each, 128 physical
+2026-10-19T00:59:54.6643455Z wrote compiler/targets/tnca-sim-4rctx.json: 4 RCTX, 32 logical vregs each, 128 physical
+2026-10-19T00:59:54.6644501Z wrote compiler/targets/tnca-sim-2x2.json: 2 RCTX, 64 logical vregs each, 128 physical
+2026-10-19T00:59:54.6645629Z wrote compiler/targets/tnca-sim-vrf-v1.json: 2 RCTX, 64 logical vregs each, 128 physical
+2026-10-19T00:59:54.6646771Z wrote compiler/targets/tnca-sim-vrf-v2.json: 2 RCTX, 64 logical vregs each, 128 physical
+2026-10-19T00:59:54.6648133Z wrote compiler/targets/tnca-sim-vrf-v3.json: 2 RCTX, 64 logical vregs each, 128 physical
+2026-10-19T00:59:54.6649171Z wrote compiler/targets/tnca-sim-vrf-v4.json: 4 RCTX, 64 logical vregs each, 256 physical
+2026-10-19T00:59:54.6650171Z wrote compiler/targets/tnca-sim-vrf-v5.json: 4 RCTX, 64 logical vregs each, 256 physical
+2026-10-19T00:59:54.6651281Z wrote compiler/targets/tnca-sim-xpose-v1.json: 2 RCTX, 64 logical vregs each, 128 physical
+2026-10-19T00:59:54.7389766Z   staged 138 data file(s) into python/tnca/data
+2026-10-19T01:00:00.3823176Z ninja: Entering directory `compiler/build'
+2026-10-19T01:00:00.4049350Z [1/16] Building TNCADialect.cpp.inc...
+2026-10-19T01:00:00.4057544Z [2/16] Building TNCAInterfaces.h.inc...
+2026-10-19T01:00:00.4130895Z [3/16] Building TNCAInterfaces.cpp.inc...
+2026-10-19T01:00:00.4134307Z [4/16] Building TNCAOps.h.inc...
+2026-10-19T01:00:00.4135494Z [5/16] Building TNCADialect.h.inc...
+2026-10-19T01:00:00.4184827Z [6/16] Building TNCAOps.cpp.inc...
+2026-10-19T01:00:00.4217555Z [7/16] Building TNCATypes.h.inc...
+2026-10-19T01:00:00.4231933Z [8/16] Building TNCATypes.cpp.inc...
+2026-10-19T01:00:01.1275381Z [9/16] Building CXX object lib/Dialect/TNCA/IR/CMakeFiles/obj.MLIRTNCA.dir/TNCASupport.cpp.o
+2026-10-19T01:00:03.6907575Z [10/16] Building CXX object lib/Dialect/TNCA/IR/CMakeFiles/obj.MLIRTNCA.dir/TNCAAsyncOps.cpp.o
+2026-10-19T01:00:05.1653541Z [11/16] Building CXX object lib/Dialect/TNCA/Transforms/CMakeFiles/obj.MLIRTNCATransforms.dir/VerifyAsyncOwnership.cpp.o
+2026-10-19T01:00:09.1800517Z [12/16] Building CXX object lib/Dialect/TNCA/IR/CMakeFiles/obj.MLIRTNCA.dir/TNCADialect.cpp.o
+2026-10-19T01:00:17.7444601Z [13/16] Linking CXX static library lib/Dialect/TNCA/IR/libMLIRTNCA.a
+2026-10-19T01:00:17.8508044Z [14/16] Linking CXX static library lib/Dialect/TNCA/Transforms/libMLIRTNCATransforms.a
+2026-10-19T01:00:32.8939964Z [15/16] Building CXX object tools/tnca-opt/CMakeFiles/tnca-opt.dir/tnca-opt.cpp.o
+2026-10-19T01:00:38.0653932Z [16/16] Linking CXX executable tools/tnca-opt/tnca-opt
+2026-10-19T01:00:38.0735478Z ##[group]Run make r40-physical-chunks TRITON_PYTHON=$HOME/tritonenv/bin/python
+2026-10-19T01:00:38.0736088Z [36;1mmake r40-physical-chunks TRITON_PYTHON=$HOME/tritonenv/bin/python[0m
+2026-10-19T01:00:38.0832032Z shell: /usr/bin/bash -e {0}
+2026-10-19T01:00:38.0832295Z env:
+2026-10-19T01:00:38.0832522Z   LLVM_PREFIX: /usr/lib/llvm-20
+2026-10-19T01:00:38.0832795Z   TNCA_LLVM: /usr/lib/llvm-20
+2026-10-19T01:00:38.0833052Z ##[endgroup]
+2026-10-19T01:00:38.2338902Z R40 MEMORY ARBITER PASS N=1
+2026-10-19T01:00:38.2339523Z tb/tb_mem_arbiter_r40.v:45: $finish called at 101000 (1ps)
+2026-10-19T01:00:38.2534192Z R40 MEMORY ARBITER PASS N=2
+2026-10-19T01:00:38.2534800Z tb/tb_mem_arbiter_r40.v:45: $finish called at 121000 (1ps)
+2026-10-19T01:00:38.2685673Z R40 MEMORY ARBITER PASS N=3
+2026-10-19T01:00:38.2686264Z tb/tb_mem_arbiter_r40.v:45: $finish called at 141000 (1ps)
+2026-10-19T01:00:38.2851703Z R40 MEMORY ARBITER PASS N=4
+2026-10-19T01:00:38.2852322Z tb/tb_mem_arbiter_r40.v:45: $finish called at 160000 (1ps)
+2026-10-19T01:00:38.2997903Z R40 MEMORY ARBITER PASS N=8
+2026-10-19T01:00:38.2998466Z tb/tb_mem_arbiter_r40.v:45: $finish called at 240000 (1ps)
+2026-10-19T01:00:40.4401253Z PASS N=1 invalid grid refused
+2026-10-19T01:00:40.4401775Z PASS N=1 invalid grid refused
+2026-10-19T01:00:40.4402637Z PASS N=1 invalid grid refused
+2026-10-19T01:00:40.4403080Z PASS N=1 grid=1x1x1 issued=1 fault=-1
+2026-10-19T01:00:40.4403567Z PASS N=1 grid=19x1x1 issued=19 fault=-1
+2026-10-19T01:00:40.4404053Z PASS N=1 grid=13x7x5 issued=455 fault=-1
+2026-10-19T01:00:40.4404549Z PASS N=1 grid=6145x1x1 issued=6145 fault=-1
+2026-10-19T01:00:40.4405024Z PASS N=1 grid=0x3x2 issued=0 fault=-1
+2026-10-19T01:00:40.4405395Z PASS N=1 grid=101x3x2 issued=1 fault=0
+2026-10-19T01:00:40.4405680Z PASS N=1 grid=47x2x1 issued=94 fault=-1
+2026-10-19T01:00:40.4405954Z PASS N=1 grid=101x3x2 issued=1 fault=-2
+2026-10-19T01:00:40.4406219Z PASS N=1 grid=23x2x1 issued=46 fault=-1
+2026-10-19T01:00:40.4406504Z PASS N=1 grid=5x2x3 issued=30 fault=-1
+2026-10-19T01:00:40.4407128Z PASS N=1 grid=6145x1x1 issued=6145 fault=-1
+2026-10-19T01:00:40.4407479Z PASS N=1 grid=17x3x2 issued=102 fault=-1
+2026-10-19T01:00:40.4407771Z PASS N=1 grid=1x1x1 issued=1 fault=-1
+2026-10-19T01:00:40.4426000Z GRID DISPATCH PASS
+2026-10-19T01:00:40.4426392Z tb/tb_grid_dispatch.v:124: $finish called at 1552680000 (1ps)
+2026-10-19T01:00:42.3030591Z PASS N=2 invalid grid refused
+2026-10-19T01:00:42.3031106Z PASS N=2 invalid grid refused
+2026-10-19T01:00:42.3031523Z PASS N=2 invalid grid refused
+2026-10-19T01:00:42.3031947Z PASS N=2 grid=1x1x1 issued=1 fault=-1
+2026-10-19T01:00:42.3032421Z PASS N=2 grid=19x1x1 issued=19 fault=-1
+2026-10-19T01:00:42.3032942Z PASS N=2 grid=13x7x5 issued=455 fault=-1
+2026-10-19T01:00:42.3033442Z PASS N=2 grid=6145x1x1 issued=6145 fault=-1
+2026-10-19T01:00:42.3033950Z PASS N=2 grid=0x3x2 issued=0 fault=-1
+2026-10-19T01:00:42.3034411Z PASS N=2 grid=101x3x2 issued=2 fault=0
+2026-10-19T01:00:42.3034860Z PASS N=2 grid=101x3x2 issued=2 fault=1
+2026-10-19T01:00:42.3035319Z PASS N=2 grid=47x2x1 issued=94 fault=-1
+2026-10-19T01:00:42.3035775Z PASS N=2 grid=101x3x2 issued=2 fault=-2
+2026-10-19T01:00:42.3036216Z PASS N=2 grid=23x2x1 issued=46 fault=-1
+2026-10-19T01:00:42.3036657Z PASS N=2 grid=5x2x3 issued=30 fault=-1
+2026-10-19T01:00:42.3037495Z PASS N=2 grid=6145x1x1 issued=6145 fault=-1
+2026-10-19T01:00:42.3037988Z PASS N=2 grid=17x3x2 issued=102 fault=-1
+2026-10-19T01:00:42.3038428Z PASS N=2 grid=1x1x1 issued=1 fault=-1
+2026-10-19T01:00:42.3038702Z GRID DISPATCH PASS
+2026-10-19T01:00:42.3039040Z tb/tb_grid_dispatch.v:124: $finish called at 773660000 (1ps)
+2026-10-19T01:00:44.0898154Z PASS N=3 invalid grid refused
+2026-10-19T01:00:44.0898672Z PASS N=3 invalid grid refused
+2026-10-19T01:00:44.0899016Z PASS N=3 invalid grid refused
+2026-10-19T01:00:44.0899357Z PASS N=3 grid=1x1x1 issued=1 fault=-1
+2026-10-19T01:00:44.0899727Z PASS N=3 grid=19x1x1 issued=19 fault=-1
+2026-10-19T01:00:44.0900095Z PASS N=3 grid=13x7x5 issued=455 fault=-1
+2026-10-19T01:00:44.0900944Z PASS N=3 grid=6145x1x1 issued=6145 fault=-1
+2026-10-19T01:00:44.0901336Z PASS N=3 grid=0x3x2 issued=0 fault=-1
+2026-10-19T01:00:44.0901696Z PASS N=3 grid=101x3x2 issued=3 fault=0
+2026-10-19T01:00:44.0902044Z PASS N=3 grid=101x3x2 issued=3 fault=1
+2026-10-19T01:00:44.0902385Z PASS N=3 grid=101x3x2 issued=3 fault=2
+2026-10-19T01:00:44.0902751Z PASS N=3 grid=47x2x1 issued=94 fault=-1
+2026-10-19T01:00:44.0903109Z PASS N=3 grid=101x3x2 issued=3 fault=-2
+2026-10-19T01:00:44.0903510Z PASS N=3 grid=23x2x1 issued=46 fault=-1
+2026-10-19T01:00:44.0903869Z PASS N=3 grid=5x2x3 issued=30 fault=-1
+2026-10-19T01:00:44.0904204Z PASS N=3 grid=6145x1x1 issued=6145 fault=-1
+2026-10-19T01:00:44.0904547Z PASS N=3 grid=17x3x2 issued=102 fault=-1
+2026-10-19T01:00:44.0904883Z PASS N=3 grid=1x1x1 issued=1 fault=-1
+2026-10-19T01:00:44.0905194Z GRID DISPATCH PASS
+2026-10-19T01:00:44.0905541Z tb/tb_grid_dispatch.v:124: $finish called at 515350000 (1ps)
+2026-10-19T01:00:45.9320433Z PASS N=4 invalid grid refused
+2026-10-19T01:00:45.9320997Z PASS N=4 invalid grid refused
+2026-10-19T01:00:45.9321422Z PASS N=4 invalid grid refused
+2026-10-19T01:00:45.9321850Z PASS N=4 grid=1x1x1 issued=1 fault=-1
+2026-10-19T01:00:45.9322369Z PASS N=4 grid=19x1x1 issued=19 fault=-1
+2026-10-19T01:00:45.9322838Z PASS N=4 grid=13x7x5 issued=455 fault=-1
+2026-10-19T01:00:45.9323720Z PASS N=4 grid=6145x1x1 issued=6145 fault=-1
+2026-10-19T01:00:45.9324214Z PASS N=4 grid=0x3x2 issued=0 fault=-1
+2026-10-19T01:00:45.9324679Z PASS N=4 grid=101x3x2 issued=2 fault=0
+2026-10-19T01:00:45.9325120Z PASS N=4 grid=101x3x2 issued=3 fault=1
+2026-10-19T01:00:45.9325393Z PASS N=4 grid=101x3x2 issued=4 fault=2
+2026-10-19T01:00:45.9325679Z PASS N=4 grid=101x3x2 issued=4 fault=3
+2026-10-19T01:00:45.9325947Z PASS N=4 grid=47x2x1 issued=94 fault=-1
+2026-10-19T01:00:45.9326221Z PASS N=4 grid=101x3x2 issued=4 fault=-2
+2026-10-19T01:00:45.9326490Z PASS N=4 grid=23x2x1 issued=46 fault=-1
+2026-10-19T01:00:45.9326757Z PASS N=4 grid=5x2x3 issued=30 fault=-1
+2026-10-19T01:00:45.9329164Z PASS N=4 grid=6145x1x1 issued=6145 fault=-1
+2026-10-19T01:00:45.9329481Z PASS N=4 grid=17x3x2 issued=102 fault=-1
+2026-10-19T01:00:45.9329769Z PASS N=4 grid=1x1x1 issued=1 fault=-1
+2026-10-19T01:00:45.9330035Z GRID DISPATCH PASS
+2026-10-19T01:00:45.9330324Z tb/tb_grid_dispatch.v:124: $finish called at 406520000 (1ps)
+2026-10-19T01:00:47.8734832Z PASS N=8 invalid grid refused
+2026-10-19T01:00:47.8735368Z PASS N=8 invalid grid refused
+2026-10-19T01:00:47.8735796Z PASS N=8 invalid grid refused
+2026-10-19T01:00:47.8736220Z PASS N=8 grid=1x1x1 issued=1 fault=-1
+2026-10-19T01:00:47.8736698Z PASS N=8 grid=19x1x1 issued=19 fault=-1
+2026-10-19T01:00:47.8737423Z PASS N=8 grid=13x7x5 issued=455 fault=-1
+2026-10-19T01:00:47.8737902Z PASS N=8 grid=6145x1x1 issued=6145 fault=-1
+2026-10-19T01:00:47.8738425Z PASS N=8 grid=0x3x2 issued=0 fault=-1
+2026-10-19T01:00:47.8738870Z PASS N=8 grid=101x3x2 issued=3 fault=0
+2026-10-19T01:00:47.8739342Z PASS N=8 grid=101x3x2 issued=5 fault=1
+2026-10-19T01:00:47.8739825Z PASS N=8 grid=101x3x2 issued=7 fault=2
+2026-10-19T01:00:47.8740192Z PASS N=8 grid=101x3x2 issued=8 fault=3
+2026-10-19T01:00:47.8740468Z PASS N=8 grid=101x3x2 issued=9 fault=4
+2026-10-19T01:00:47.8740742Z PASS N=8 grid=101x3x2 issued=9 fault=5
+2026-10-19T01:00:47.8741005Z PASS N=8 grid=101x3x2 issued=10 fault=6
+2026-10-19T01:00:47.8741283Z PASS N=8 grid=101x3x2 issued=11 fault=7
+2026-10-19T01:00:47.8741546Z PASS N=8 grid=47x2x1 issued=94 fault=-1
+2026-10-19T01:00:47.8741817Z PASS N=8 grid=101x3x2 issued=8 fault=-2
+2026-10-19T01:00:47.8742075Z PASS N=8 grid=23x2x1 issued=46 fault=-1
+2026-10-19T01:00:47.8742335Z PASS N=8 grid=5x2x3 issued=30 fault=-1
+2026-10-19T01:00:47.8742606Z PASS N=8 grid=6145x1x1 issued=6145 fault=-1
+2026-10-19T01:00:47.8742897Z PASS N=8 grid=17x3x2 issued=102 fault=-1
+2026-10-19T01:00:47.8743169Z PASS N=8 grid=1x1x1 issued=1 fault=-1
+2026-10-19T01:00:47.8743424Z GRID DISPATCH PASS
+2026-10-19T01:00:47.8743712Z tb/tb_grid_dispatch.v:124: $finish called at 212600000 (1ps)
+2026-10-19T01:00:51.1552555Z GRID REAL CORES PASS N=1 memory=0 ports=1 phase=0 programs=455 cycles=3646
+2026-10-19T01:00:51.1553425Z tb/top/tb_grid_cores.v:175: $finish called at 36470000 (1ps)
+2026-10-19T01:00:56.4541771Z GRID REAL CORES PASS N=2 memory=0 ports=1 phase=0 programs=455 cycles=1830
+2026-10-19T01:00:56.4542574Z tb/top/tb_grid_cores.v:175: $finish called at 18310000 (1ps)
+2026-10-19T01:01:03.9006649Z GRID REAL CORES PASS N=3 memory=0 ports=1 phase=0 programs=455 cycles=1223
+2026-10-19T01:01:03.9007896Z tb/top/tb_grid_cores.v:175: $finish called at 12240000 (1ps)
+2026-10-19T01:01:13.5664871Z GRID REAL CORES PASS N=4 memory=0 ports=1 phase=0 programs=455 cycles=920
+2026-10-19T01:01:13.5665674Z tb/top/tb_grid_cores.v:175: $finish called at 9210000 (1ps)
+2026-10-19T01:01:32.8760562Z GRID REAL CORES PASS N=8 memory=0 ports=1 phase=0 programs=455 cycles=468
+2026-10-19T01:01:32.8761120Z tb/top/tb_grid_cores.v:175: $finish called at 4690000 (1ps)
+2026-10-19T01:02:39.9941318Z GRID REAL CORES PASS N=1 memory=1 ports=1 phase=0 programs=455 cycles=42700
+2026-10-19T01:02:39.9942172Z GRID REAL CORES PASS N=1 memory=1 ports=1 phase=1 programs=455 cycles=78849
+2026-10-19T01:02:39.9942899Z tb/top/tb_grid_cores.v:175: $finish called at 788500000 (1ps)
+2026-10-19T01:03:56.3813937Z GRID REAL CORES PASS N=2 memory=1 ports=1 phase=0 programs=455 cycles=22569
+2026-10-19T01:03:56.3815199Z GRID REAL CORES PASS N=2 memory=1 ports=1 phase=1 programs=455 cycles=41478
+2026-10-19T01:03:56.3815901Z tb/top/tb_grid_cores.v:175: $finish called at 414790000 (1ps)
+2026-10-19T01:05:24.5325776Z GRID REAL CORES PASS N=3 memory=1 ports=1 phase=0 programs=455 cycles=14911
+2026-10-19T01:05:24.5326638Z GRID REAL CORES PASS N=3 memory=1 ports=1 phase=1 programs=455 cycles=27371
+2026-10-19T01:05:24.5327642Z tb/top/tb_grid_cores.v:175: $finish called at 273720000 (1ps)
+2026-10-19T01:07:13.3915933Z GRID REAL CORES PASS N=4 memory=1 ports=1 phase=0 programs=455 cycles=12162
+2026-10-19T01:07:13.3917044Z GRID REAL CORES PASS N=4 memory=1 ports=1 phase=1 programs=455 cycles=22396
+2026-10-19T01:07:13.3917797Z tb/top/tb_grid_cores.v:175: $finish called at 223970000 (1ps)
+2026-10-19T01:07:54.8615004Z GRID progress cycles=1000 accepted=72 busy=ff
+2026-10-19T01:08:19.7068255Z GRID progress cycles=2000 accepted=136 busy=ff
+2026-10-19T01:08:43.3271609Z GRID progress cycles=3000 accepted=200 busy=ff
+2026-10-19T01:09:07.3148419Z GRID progress cycles=4000 accepted=264 busy=ff
+2026-10-19T01:09:31.3211592Z GRID progress cycles=5000 accepted=328 busy=ff
+2026-10-19T01:09:55.2394695Z GRID progress cycles=6000 accepted=392 busy=ff
+2026-10-19T01:10:19.1496317Z GRID progress cycles=7000 accepted=455 busy=da
+2026-10-19T01:10:34.6325844Z GRID REAL CORES PASS N=8 memory=1 ports=1 phase=0 programs=455 cycles=7014
+2026-10-19T01:10:34.6326774Z GRID progress cycles=8000 accepted=80 busy=ff
+2026-10-19T01:10:51.2799543Z GRID progress cycles=9000 accepted=160 busy=ff
+2026-10-19T01:11:07.8160361Z GRID progress cycles=10000 accepted=240 busy=ff
+2026-10-19T01:11:24.3795583Z GRID progress cycles=11000 accepted=320 busy=ff
+2026-10-19T01:11:41.0443456Z GRID progress cycles=12000 accepted=400 busy=ff
+2026-10-19T01:11:53.8006026Z GRID REAL CORES PASS N=8 memory=1 ports=1 phase=1 programs=455 cycles=12761
+2026-10-19T01:11:53.8007103Z tb/top/tb_grid_cores.v:175: $finish called at 127620000 (1ps)
+2026-10-19T01:11:53.9112337Z r40-grid-dispatch-tests PASS (20 configurations, registered_ranges=0)
+2026-10-19T01:11:54.5405325Z PHYSICAL CHUNK IR PASS 40 cases; legacy row preserved; invalid width refused
+2026-10-19T01:13:21.1399491Z PHYSICAL CHUNK RUNTIME PASS cores=3 width=4 grid=13x7x5 count=455 host_launches=1
+2026-10-19T01:23:17.6361518Z HARDWARE MULTICORE METRICS {"cores": [{"completed": 88, "core": 0, "issued": 88, "occupied_cycles": 16218}, {"completed": 84, "core": 1, "issued": 84, "occupied_cycles": 15831}, {"completed": 85, "core": 2, "issued": 85, "occupied_cycles": 15949}], "peak_active": 3}
+2026-10-19T01:23:17.6363574Z NATIVE MULTICORE TORCH PASS cores=3 active=3 elements=4097 kernels=1 whole_grid_launches=1 tensor_staging=0
+2026-10-19T02:26:34.7913725Z HARDWARE MULTICORE METRICS {"cores": [{"completed": 32, "core": 0, "issued": 32, "occupied_cycles": 7416}, {"completed": 32, "core": 1, "issued": 32, "occupied_cycles": 7122}, {"completed": 32, "core": 2, "issued": 32, "occupied_cycles": 6890}, {"completed": 36, "core": 3, "issued": 36, "occupied_cycles": 7355}, {"completed": 32, "core": 4, "issued": 32, "occupied_cycles": 7262}, {"completed": 29, "core": 5, "issued": 29, "occupied_cycles": 6992}, {"completed": 32, "core": 6, "issued": 32, "occupied_cycles": 7308}, {"completed": 32, "core": 7, "issued": 32, "occupied_cycles": 6991}], "peak_active": 8}
+2026-10-19T02:26:34.7917782Z NATIVE MULTICORE TORCH PASS cores=8 active=8 elements=4097 kernels=1 whole_grid_launches=1 tensor_staging=0
+2026-10-19T02:36:24.8272890Z NATIVE MULTICORE FEATURES PASS {"artifacts": [{"descriptor_loads": 0, "kernel": "_copy_kernel", "resources": {"accumulators": 0, "barriers": 0, "commands_outstanding": "unknown", "descriptors": 0, "rf_private_per_role": {"role0": 44, "role1": 44, "role2": 44, "role3": 44}, "scratch_bytes": 0, "shared_windows": []}, "roles_per_program": 1, "width": 4}, {"descriptor_loads": 0, "kernel": "_copy_kernel", "resources": {"accumulators": 0, "barriers": 0, "commands_outstanding": "unknown", "descriptors": 0, "rf_private_per_role": {"role0": 44, "role1": 44, "role2": 44, "role3": 44}, "scratch_bytes": 0, "shared_windows": []}, "roles_per_program": 1, "width": 4}, {"descriptor_loads": 0, "kernel": "_copy_kernel", "resources": {"accumulators": 0, "barriers": 0, "commands_outstanding": "unknown", "descriptors": 0, "rf_private_per_role": {"role0": 44, "role1": 44, "role2": 44, "role3": 44}, "scratch_bytes": 0, "shared_windows": []}, "roles_per_program": 1, "width": 4}, {"descriptor_loads": 0, "kernel": "_copy_kernel", "resources": {"accumulators": 0, "barriers": 0, "commands_outstanding": "unknown", "descriptors": 0, "rf_private_per_role": {"role0": 44, "role1": 44, "role2": 44, "role3": 44}, "scratch_bytes": 0, "shared_windows": []}, "roles_per_program": 1, "width": 4}, {"descriptor_loads": 0, "kernel": "_copy_kernel", "resources": {"accumulators": 0, "barriers": 0, "commands_outstanding": "unknown", "descriptors": 0, "rf_private_per_role": {"role0": 44, "role1": 44, "role2": 44, "role3": 44}, "scratch_bytes": 0, "shared_windows": []}, "roles_per_program": 1, "width": 4}, {"descriptor_loads": 0, "kernel": "_copy_kernel", "resources": {"accumulators": 0, "barriers": 0, "commands_outstanding": "unknown", "descriptors": 0, "rf_private_per_role": {"role0": 44, "role1": 44, "role2": 44, "role3": 44}, "scratch_bytes": 0, "shared_windows": []}, "roles_per_program": 1, "width": 4}, {"descriptor_loads": 0, "kernel": "_copy_kernel", "resources": {"accumulators": 0, "barriers": 0, "commands_outstanding": "unknown", "descriptors": 0, "rf_private_per_role": {"role0": 44, "role1": 44, "role2": 44, "role3": 44}, "scratch_bytes": 0, "shared_windows": []}, "roles_per_program": 1, "width": 4}, {"descriptor_loads": 0, "kernel": "_copy_kernel", "resources": {"accumulators": 0, "barriers": 0, "commands_outstanding": "unknown", "descriptors": 0, "rf_private_per_role": {"role0": 44, "role1": 44, "role2": 44, "role3": 44}, "scratch_bytes": 0, "shared_windows": []}, "roles_per_program": 1, "width": 4}, {"descriptor_loads": 0, "kernel": "_copy_kernel", "resources": {"accumulators": 0, "barriers": 0, "commands_outstanding": "unknown", "descriptors": 0, "rf_private_per_role": {"role0": 44, "role1": 44, "role2": 44, "role3": 44}, "scratch_bytes": 0, "shared_windows": []}, "roles_per_program": 1, "width": 4}, {"descriptor_loads": 0, "kernel": "_copy_kernel", "resources": {"accumulators": 0, "barriers": 0, "commands_outstanding": "unknown", "descriptors": 0, "rf_private_per_role": {"role0": 44, "role1": 44, "role2": 44, "role3": 44}, "scratch_bytes": 0, "shared_windows": []}, "roles_per_program": 1, "width": 4}, {"descriptor_loads": 0, "kernel": "_copy_kernel", "resources": {"accumulators": 0, "barriers": 0, "commands_outstanding": "unknown", "descriptors": 0, "rf_private_per_role": {"role0": 44, "role1": 44, "role2": 44, "role3": 44}, "scratch_bytes": 0, "shared_windows": []}, "roles_per_program": 1, "width": 4}, {"descriptor_loads": 0, "kernel": "_copy_kernel", "resources": {"accumulators": 0, "barriers": 0, "commands_outstanding": "unknown", "descriptors": 0, "rf_private_per_role": {"role0": 44, "role1": 44, "role2": 44, "role3": 44}, "scratch_bytes": 0, "shared_windows": []}, "roles_per_program": 1, "width": 4}, {"descriptor_loads": 0, "kernel": "_copy_kernel", "resources": {"accumulators": 0, "barriers": 0, "commands_outstanding": "unknown", "descriptors": 0, "rf_private_per_role": {"role0": 44, "role1": 44, "role2": 44, "role3": 44}, "scratch_bytes": 0, "shared_windows": []}, "roles_per_program": 1, "width": 4}, {"descriptor_loads": 0, "kernel": "_copy_kernel", "resources": {"accumulators": 0, "barriers": 0, "commands_outstanding": "unknown", "descriptors": 0, "rf_private_per_role": {"role0": 44, "role1": 44, "role2": 44, "role3": 44}, "scratch_bytes": 0, "shared_windows": []}, "roles_per_program": 1, "width": 4}, {"descriptor_loads": 0, "kernel": "_copy_kernel", "resources": {"accumulators": 0, "barriers": 0, "commands_outstanding": "unknown", "descriptors": 0, "rf_private_per_role": {"role0": 44, "role1": 44, "role2": 44, "role3": 44}, "scratch_bytes": 0, "shared_windows": []}, "roles_per_program": 1, "width": 4}, {"descriptor_loads": 0, "kernel": "_copy_kernel", "resources": {"accumulators": 0, "barriers": 0, "commands_outstanding": "unknown", "descriptors": 0, "rf_private_per_role": {"role0": 44, "role1": 44, "role2": 44, "role3": 44}, "scratch_bytes": 0, "shared_windows": []}, "roles_per_program": 1, "width": 4}, {"descriptor_loads": 0, "kernel": "_copy_kernel", "resources": {"accumulators": 0, "barriers": 0, "commands_outstanding": "unknown", "descriptors": 0, "rf_private_per_role": {"role0": 44, "role1": 44, "role2": 44, "role3": 44}, "scratch_bytes": 0, "shared_windows": []}, "roles_per_program": 1, "width": 4}, {"descriptor_loads": 0, "kernel": "_copy_kernel", "resources": {"accumulators": 0, "barriers": 0, "commands_outstanding": "unknown", "descriptors": 0, "rf_private_per_role": {"role0": 44, "role1": 44, "role2": 44, "role3": 44}, "scratch_bytes": 0, "shared_windows": []}, "roles_per_program": 1, "width": 4}, {"descriptor_loads": 0, "kernel": "_copy_kernel", "resources": {"accumulators": 0, "barriers": 0, "commands_outstanding": "unknown", "descriptors": 0, "rf_private_per_role": {"role0": 44, "role1": 44, "role2": 44, "role3": 44}, "scratch_bytes": 0, "shared_windows": []}, "roles_per_program": 1, "width": 4}, {"descriptor_loads": 0, "kernel": "_copy_kernel", "resources": {"accumulators": 0, "barriers": 0, "commands_outstanding": "unknown", "descriptors": 0, "rf_private_per_role": {"role0": 44, "role1": 44, "role2": 44, "role3": 44}, "scratch_bytes": 0, "shared_windows": []}, "roles_per_program": 1, "width": 4}, {"descriptor_loads": 0, "kernel": "_copy_kernel", "resources": {"accumulators": 0, "barriers": 0, "commands_outstanding": "unknown", "descriptors": 0, "rf_private_per_role": {"role0": 44, "role1": 44, "role2": 44, "role3": 44}, "scratch_bytes": 0, "shared_windows": []}, "roles_per_program": 1, "width": 4}, {"descriptor_loads": 0, "kernel": "_copy_kernel", "resources": {"accumulators": 0, "barriers": 0, "commands_outstanding": "unknown", "descriptors": 0, "rf_private_per_role": {"role0": 44, "role1": 44, "role2": 44, "role3": 44}, "scratch_bytes": 0, "shared_windows": []}, "roles_per_program": 1, "width": 4}, {"descriptor_loads": 0, "kernel": "_copy_kernel", "resources": {"accumulators": 0, "barriers": 0, "commands_outstanding": "unknown", "descriptors": 0, "rf_private_per_role": {"role0": 44, "role1": 44, "role2": 44, "role3": 44}, "scratch_bytes": 0, "shared_windows": []}, "roles_per_program": 1, "width": 4}, {"descriptor_loads": 0, "kernel": "_copy_kernel", "resources": {"accumulators": 0, "barriers": 0, "commands_outstanding": "unknown", "descriptors": 0, "rf_private_per_role": {"role0": 44, "role1": 44, "role2": 44, "role3": 44}, "scratch_bytes": 0, "shared_windows": []}, "roles_per_program": 1, "width": 4}, {"descriptor_loads": 0, "kernel": "_copy_kernel", "resources": {"accumulators": 0, "barriers": 0, "commands_outstanding": "unknown", "descriptors": 0, "rf_private_per_role": {"role0": 44, "role1": 44, "role2": 44, "role3": 44}, "scratch_bytes": 0, "shared_windows": []}, "roles_per_program": 1, "width": 4}, {"descriptor_loads": 0, "kernel": "_copy_kernel", "resources": {"accumulators": 0, "barriers": 0, "commands_outstanding": "unknown", "descriptors": 0, "rf_private_per_role": {"role0": 44, "role1": 44, "role2": 44, "role3": 44}, "scratch_bytes": 0, "shared_windows": []}, "roles_per_program": 1, "width": 4}, {"descriptor_loads": 2, "kernel": "triton_tem_fused_mm_0", "resources": {"accumulators": 1, "barriers": 3, "commands_outstanding": "unknown", "descriptors": 2, "rf_private_per_role": {"role0": 9, "role1": 9}, "scratch_bytes": 512, "shared_windows": []}, "roles_per_program": 1, "width": 2}], "cores": 3, "metrics": {"cores": [{"completed": 3, "core": 0, "issued": 3, "occupied_cycles": 18903}, {"completed": 2, "core": 1, "issued": 2, "occupied_cycles": 12114}, {"completed": 4, "core": 2, "issued": 4, "occupied_cycles": 21731}], "peak_active": 3}, "pair": false}
+2026-10-19T02:46:32.1990944Z NATIVE MULTICORE FEATURES PASS {"artifacts": [{"descriptor_loads": 0, "kernel": "_copy_kernel", "resources": {"accumulators": 0, "barriers": 0, "commands_outstanding": "unknown", "descriptors": 0, "rf_private_per_role": {"role0": 44, "role1": 44, "role2": 44, "role3": 44}, "scratch_bytes": 0, "shared_windows": []}, "roles_per_program": 1, "width": 4}, {"descriptor_loads": 0, "kernel": "_copy_kernel", "resources": {"accumulators": 0, "barriers": 0, "commands_outstanding": "unknown", "descriptors": 0, "rf_private_per_role": {"role0": 44, "role1": 44, "role2": 44, "role3": 44}, "scratch_bytes": 0, "shared_windows": []}, "roles_per_program": 1, "width": 4}, {"descriptor_loads": 0, "kernel": "_copy_kernel", "resources": {"accumulators": 0, "barriers": 0, "commands_outstanding": "unknown", "descriptors": 0, "rf_private_per_role": {"role0": 44, "role1": 44, "role2": 44, "role3": 44}, "scratch_bytes": 0, "shared_windows": []}, "roles_per_program": 1, "width": 4}, {"descriptor_loads": 0, "kernel": "_copy_kernel", "resources": {"accumulators": 0, "barriers": 0, "commands_outstanding": "unknown", "descriptors": 0, "rf_private_per_role": {"role0": 44, "role1": 44, "role2": 44, "role3": 44}, "scratch_bytes": 0, "shared_windows": []}, "roles_per_program": 1, "width": 4}, {"descriptor_loads": 0, "kernel": "_copy_kernel", "resources": {"accumulators": 0, "barriers": 0, "commands_outstanding": "unknown", "descriptors": 0, "rf_private_per_role": {"role0": 44, "role1": 44, "role2": 44, "role3": 44}, "scratch_bytes": 0, "shared_windows": []}, "roles_per_program": 1, "width": 4}, {"descriptor_loads": 0, "kernel": "_copy_kernel", "resources": {"accumulators": 0, "barriers": 0, "commands_outstanding": "unknown", "descriptors": 0, "rf_private_per_role": {"role0": 44, "role1": 44, "role2": 44, "role3": 44}, "scratch_bytes": 0, "shared_windows": []}, "roles_per_program": 1, "width": 4}, {"descriptor_loads": 0, "kernel": "_copy_kernel", "resources": {"accumulators": 0, "barriers": 0, "commands_outstanding": "unknown", "descriptors": 0, "rf_private_per_role": {"role0": 44, "role1": 44, "role2": 44, "role3": 44}, "scratch_bytes": 0, "shared_windows": []}, "roles_per_program": 1, "width": 4}, {"descriptor_loads": 0, "kernel": "_copy_kernel", "resources": {"accumulators": 0, "barriers": 0, "commands_outstanding": "unknown", "descriptors": 0, "rf_private_per_role": {"role0": 44, "role1": 44, "role2": 44, "role3": 44}, "scratch_bytes": 0, "shared_windows": []}, "roles_per_program": 1, "width": 4}, {"descriptor_loads": 0, "kernel": "_copy_kernel", "resources": {"accumulators": 0, "barriers": 0, "commands_outstanding": "unknown", "descriptors": 0, "rf_private_per_role": {"role0": 44, "role1": 44, "role2": 44, "role3": 44}, "scratch_bytes": 0, "shared_windows": []}, "roles_per_program": 1, "width": 4}, {"descriptor_loads": 0, "kernel": "_copy_kernel", "resources": {"accumulators": 0, "barriers": 0, "commands_outstanding": "unknown", "descriptors": 0, "rf_private_per_role": {"role0": 44, "role1": 44, "role2": 44, "role3": 44}, "scratch_bytes": 0, "shared_windows": []}, "roles_per_program": 1, "width": 4}, {"descriptor_loads": 0, "kernel": "_copy_kernel", "resources": {"accumulators": 0, "barriers": 0, "commands_outstanding": "unknown", "descriptors": 0, "rf_private_per_role": {"role0": 44, "role1": 44, "role2": 44, "role3": 44}, "scratch_bytes": 0, "shared_windows": []}, "roles_per_program": 1, "width": 4}, {"descriptor_loads": 0, "kernel": "_copy_kernel", "resources": {"accumulators": 0, "barriers": 0, "commands_outstanding": "unknown", "descriptors": 0, "rf_private_per_role": {"role0": 44, "role1": 44, "role2": 44, "role3": 44}, "scratch_bytes": 0, "shared_windows": []}, "roles_per_program": 1, "width": 4}, {"descriptor_loads": 0, "kernel": "_copy_kernel", "resources": {"accumulators": 0, "barriers": 0, "commands_outstanding": "unknown", "descriptors": 0, "rf_private_per_role": {"role0": 44, "role1": 44, "role2": 44, "role3": 44}, "scratch_bytes": 0, "shared_windows": []}, "roles_per_program": 1, "width": 4}, {"descriptor_loads": 0, "kernel": "_copy_kernel", "resources": {"accumulators": 0, "barriers": 0, "commands_outstanding": "unknown", "descriptors": 0, "rf_private_per_role": {"role0": 44, "role1": 44, "role2": 44, "role3": 44}, "scratch_bytes": 0, "shared_windows": []}, "roles_per_program": 1, "width": 4}, {"descriptor_loads": 0, "kernel": "_copy_kernel", "resources": {"accumulators": 0, "barriers": 0, "commands_outstanding": "unknown", "descriptors": 0, "rf_private_per_role": {"role0": 44, "role1": 44, "role2": 44, "role3": 44}, "scratch_bytes": 0, "shared_windows": []}, "roles_per_program": 1, "width": 4}, {"descriptor_loads": 0, "kernel": "_copy_kernel", "resources": {"accumulators": 0, "barriers": 0, "commands_outstanding": "unknown", "descriptors": 0, "rf_private_per_role": {"role0": 44, "role1": 44, "role2": 44, "role3": 44}, "scratch_bytes": 0, "shared_windows": []}, "roles_per_program": 1, "width": 4}, {"descriptor_loads": 0, "kernel": "_copy_kernel", "resources": {"accumulators": 0, "barriers": 0, "commands_outstanding": "unknown", "descriptors": 0, "rf_private_per_role": {"role0": 44, "role1": 44, "role2": 44, "role3": 44}, "scratch_bytes": 0, "shared_windows": []}, "roles_per_program": 1, "width": 4}, {"descriptor_loads": 0, "kernel": "_copy_kernel", "resources": {"accumulators": 0, "barriers": 0, "commands_outstanding": "unknown", "descriptors": 0, "rf_private_per_role": {"role0": 44, "role1": 44, "role2": 44, "role3": 44}, "scratch_bytes": 0, "shared_windows": []}, "roles_per_program": 1, "width": 4}, {"descriptor_loads": 0, "kernel": "_copy_kernel", "resources": {"accumulators": 0, "barriers": 0, "commands_outstanding": "unknown", "descriptors": 0, "rf_private_per_role": {"role0": 44, "role1": 44, "role2": 44, "role3": 44}, "scratch_bytes": 0, "shared_windows": []}, "roles_per_program": 1, "width": 4}, {"descriptor_loads": 0, "kernel": "_copy_kernel", "resources": {"accumulators": 0, "barriers": 0, "commands_outstanding": "unknown", "descriptors": 0, "rf_private_per_role": {"role0": 44, "role1": 44, "role2": 44, "role3": 44}, "scratch_bytes": 0, "shared_windows": []}, "roles_per_program": 1, "width": 4}, {"descriptor_loads": 0, "kernel": "_copy_kernel", "resources": {"accumulators": 0, "barriers": 0, "commands_outstanding": "unknown", "descriptors": 0, "rf_private_per_role": {"role0": 44, "role1": 44, "role2": 44, "role3": 44}, "scratch_bytes": 0, "shared_windows": []}, "roles_per_program": 1, "width": 4}, {"descriptor_loads": 0, "kernel": "_copy_kernel", "resources": {"accumulators": 0, "barriers": 0, "commands_outstanding": "unknown", "descriptors": 0, "rf_private_per_role": {"role0": 44, "role1": 44, "role2": 44, "role3": 44}, "scratch_bytes": 0, "shared_windows": []}, "roles_per_program": 1, "width": 4}, {"descriptor_loads": 0, "kernel": "_copy_kernel", "resources": {"accumulators": 0, "barriers": 0, "commands_outstanding": "unknown", "descriptors": 0, "rf_private_per_role": {"role0": 44, "role1": 44, "role2": 44, "role3": 44}, "scratch_bytes": 0, "shared_windows": []}, "roles_per_program": 1, "width": 4}, {"descriptor_loads": 0, "kernel": "_copy_kernel", "resources": {"accumulators": 0, "barriers": 0, "commands_outstanding": "unknown", "descriptors": 0, "rf_private_per_role": {"role0": 44, "role1": 44, "role2": 44, "role3": 44}, "scratch_bytes": 0, "shared_windows": []}, "roles_per_program": 1, "width": 4}, {"descriptor_loads": 0, "kernel": "_copy_kernel", "resources": {"accumulators": 0, "barriers": 0, "commands_outstanding": "unknown", "descriptors": 0, "rf_private_per_role": {"role0": 44, "role1": 44, "role2": 44, "role3": 44}, "scratch_bytes": 0, "shared_windows": []}, "roles_per_program": 1, "width": 4}, {"descriptor_loads": 0, "kernel": "_copy_kernel", "resources": {"accumulators": 0, "barriers": 0, "commands_outstanding": "unknown", "descriptors": 0, "rf_private_per_role": {"role0": 44, "role1": 44, "role2": 44, "role3": 44}, "scratch_bytes": 0, "shared_windows": []}, "roles_per_program": 1, "width": 4}, {"descriptor_loads": 4, "kernel": "triton_tem_fused_mm_0", "resources": {"accumulators": 1, "barriers": 5, "commands_outstanding": "unknown", "descriptors": 2, "rf_private_per_role": {"role0": 10, "role1": 10, "role2": 10, "role3": 10}, "scratch_bytes": 512, "shared_windows": []}, "roles_per_program": 2, "width": 2}], "cores": 3, "metrics": {"cores": [{"completed": 3, "core": 0, "issued": 3, "occupied_cycles": 17477}, {"completed": 4, "core": 1, "issued": 4, "occupied_cycles": 21542}, {"completed": 2, "core": 2, "issued": 2, "occupied_cycles": 12252}], "peak_active": 3}, "pair": true}
+2026-10-19T02:46:33.0387402Z Post job cleanup.
+2026-10-19T02:46:33.1598549Z Cache hit occurred on the primary key pip-173d707e845b4431106949175b8c828e217e244fd73f7383ebc194c89cb814a0, not saving cache.
+2026-10-19T02:46:33.1602225Z (node:5123) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+2026-10-19T02:46:33.1603931Z (Use `node --trace-deprecation ...` to show where the warning was created)
+2026-10-19T02:46:33.1773396Z Post job cleanup.
+2026-10-19T02:46:33.2660007Z [command]/usr/bin/git version
+2026-10-19T02:46:33.2704531Z git version 2.55.0
+2026-10-19T02:46:33.2744623Z Temporarily overriding HOME='/home/runner/work/_temp/6bbe566d-4472-465c-95ce-8ad720aa7223' before making global git config changes
+2026-10-19T02:46:33.2746050Z Adding repository directory to the temporary git global config as a safe directory
+2026-10-19T02:46:33.2750233Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/TritonChip/TritonChip
+2026-10-19T02:46:33.2797828Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+2026-10-19T02:46:33.2844550Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2026-10-19T02:46:33.3193971Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-10-19T02:46:33.3228288Z http.https://github.com/.extraheader
+2026-10-19T02:46:33.3245220Z [command]/usr/bin/git config --local --unset-all http.https://github.com/.extraheader
+2026-10-19T02:46:33.3288885Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2026-10-19T02:46:33.3650270Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-10-19T02:46:33.3702253Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+2026-10-19T02:46:33.4143438Z Cleaning up orphan processes
+2026-10-19T02:46:33.4506568Z ##[warning]Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/cache@v4, actions/checkout@v4. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/

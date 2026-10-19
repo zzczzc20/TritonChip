@@ -1,0 +1,8 @@
+PASS 4 elaborated cores: legacy parameters reach every core
+PASS 1 elaborated cores: v5 parameters reach every core
+PASS 2 elaborated cores: v5 parameters reach every core
+PASS 3 elaborated cores: v5 parameters reach every core
+PASS 4 elaborated cores: v5 parameters reach every core
+PASS 8 elaborated cores: v5 parameters reach every core
+r40-core-parameter-tests PASS (6/6)
+EXIT=0

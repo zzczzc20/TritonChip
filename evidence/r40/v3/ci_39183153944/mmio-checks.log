@@ -1,0 +1,477 @@
+﻿2026-10-19T00:58:18.4769251Z Current runner version: '2.337.0'
+2026-10-19T00:58:18.4786418Z ##[group]Runner Image Provisioner
+2026-10-19T00:58:18.4787059Z Hosted Compute Agent
+2026-10-19T00:58:18.4787507Z Version: 20261012.601
+2026-10-19T00:58:18.4787937Z Commit: f3dc54e1fb89da6852db922499a0233137369e1d
+2026-10-19T00:58:18.4788445Z Build Date: 2026-10-12T17:48:21Z
+2026-10-19T00:58:18.4788940Z Worker ID: {87b46a1e-b1fa-4c3b-a508-5d756898bd71}
+2026-10-19T00:58:18.4789433Z Region: centralus
+2026-10-19T00:58:18.4789811Z Cloud: Azure
+2026-10-19T00:58:18.4790190Z ##[endgroup]
+2026-10-19T00:58:18.4791088Z ##[group]Operating System
+2026-10-19T00:58:18.4791547Z Ubuntu
+2026-10-19T00:58:18.4791904Z 24.04.5
+2026-10-19T00:58:18.4792256Z LTS
+2026-10-19T00:58:18.4792624Z ##[endgroup]
+2026-10-19T00:58:18.4793010Z ##[group]Runner Image
+2026-10-19T00:58:18.4793422Z Image: ubuntu-24.04
+2026-10-19T00:58:18.4793807Z Version: 20261012.334.1
+2026-10-19T00:58:18.4794713Z Included Software: https://github.com/actions/runner-images/blob/ubuntu24/20261012.334/images/ubuntu/Ubuntu2404-Readme.md
+2026-10-19T00:58:18.4796026Z Image Release: https://github.com/actions/runner-images/releases/tag/ubuntu24%2F20261012.334
+2026-10-19T00:58:18.4796690Z ##[endgroup]
+2026-10-19T00:58:18.4797451Z ##[group]GITHUB_TOKEN Permissions
+2026-10-19T00:58:18.4799144Z Contents: read
+2026-10-19T00:58:18.4799819Z Metadata: read
+2026-10-19T00:58:18.4800212Z ##[endgroup]
+2026-10-19T00:58:18.4801721Z Secret source: Actions
+2026-10-19T00:58:18.4802378Z Cache mode: write
+2026-10-19T00:58:18.4802998Z Prepare workflow directory
+2026-10-19T00:58:18.5738757Z Prepare all required actions
+2026-10-19T00:58:18.5774245Z Getting action download info
+2026-10-19T00:58:18.8071380Z Download action repository 'actions/checkout@v4' (SHA:11d5960a326750d5838078e36cf38b85af677262)
+2026-10-19T00:58:19.0153368Z Download action repository 'actions/cache@v4' (SHA:0057852bfaa89a56745cba8c7296529d2fc39830)
+2026-10-19T00:58:19.7086513Z Complete job name: R40 multicore MMIO (checks)
+2026-10-19T00:58:19.8024716Z ##[group]Run actions/checkout@v4
+2026-10-19T00:58:19.8025681Z with:
+2026-10-19T00:58:19.8026147Z   repository: zzczzc20/TritonChip
+2026-10-19T00:58:19.8029462Z   token: ***
+2026-10-19T00:58:19.8029886Z   ssh-strict: true
+2026-10-19T00:58:19.8030377Z   ssh-user: git
+2026-10-19T00:58:19.8030828Z   persist-credentials: true
+2026-10-19T00:58:19.8031324Z   clean: true
+2026-10-19T00:58:19.8031794Z   sparse-checkout-cone-mode: true
+2026-10-19T00:58:19.8032298Z   fetch-depth: 1
+2026-10-19T00:58:19.8032758Z   fetch-tags: false
+2026-10-19T00:58:19.8033190Z   show-progress: true
+2026-10-19T00:58:19.8033606Z   lfs: false
+2026-10-19T00:58:19.8034067Z   submodules: false
+2026-10-19T00:58:19.8034512Z   set-safe-directory: true
+2026-10-19T00:58:19.8035152Z   allow-unsafe-pr-checkout: false
+2026-10-19T00:58:19.8035805Z env:
+2026-10-19T00:58:19.8036205Z   LLVM_PREFIX: /usr/lib/llvm-20
+2026-10-19T00:58:19.8036734Z   TNCA_LLVM: /usr/lib/llvm-20
+2026-10-19T00:58:19.8037205Z ##[endgroup]
+2026-10-19T00:58:19.8770719Z Syncing repository: zzczzc20/TritonChip
+2026-10-19T00:58:19.8772316Z ##[group]Getting Git version info
+2026-10-19T00:58:19.8773006Z Working directory is '/home/runner/work/TritonChip/TritonChip'
+2026-10-19T00:58:19.8775263Z [command]/usr/bin/git version
+2026-10-19T00:58:19.8884779Z git version 2.55.0
+2026-10-19T00:58:19.8904655Z ##[endgroup]
+2026-10-19T00:58:19.8916096Z Temporarily overriding HOME='/home/runner/work/_temp/d3b53841-941f-454c-94fd-3d15ac579468' before making global git config changes
+2026-10-19T00:58:19.8917296Z Adding repository directory to the temporary git global config as a safe directory
+2026-10-19T00:58:19.8920796Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/TritonChip/TritonChip
+2026-10-19T00:58:19.9739493Z Deleting the contents of '/home/runner/work/TritonChip/TritonChip'
+2026-10-19T00:58:19.9742622Z ##[group]Initializing the repository
+2026-10-19T00:58:19.9746161Z [command]/usr/bin/git init /home/runner/work/TritonChip/TritonChip
+2026-10-19T00:58:20.0675797Z hint: Using 'master' as the name for the initial branch. This default branch name
+2026-10-19T00:58:20.0678021Z hint: will change to "main" in Git 3.0. To configure the initial branch name
+2026-10-19T00:58:20.0679408Z hint: to use in all of your new repositories, which will suppress this warning,
+2026-10-19T00:58:20.0680705Z hint: call:
+2026-10-19T00:58:20.0681343Z hint:
+2026-10-19T00:58:20.0682096Z hint: 	git config --global init.defaultBranch <name>
+2026-10-19T00:58:20.0683044Z hint:
+2026-10-19T00:58:20.0683812Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+2026-10-19T00:58:20.0685463Z hint: 'development'. The just-created branch can be renamed via this command:
+2026-10-19T00:58:20.0686595Z hint:
+2026-10-19T00:58:20.0687226Z hint: 	git branch -m <name>
+2026-10-19T00:58:20.0688031Z hint:
+2026-10-19T00:58:20.0689040Z hint: Disable this message with "git config set advice.defaultBranchName false"
+2026-10-19T00:58:20.0690663Z Initialized empty Git repository in /home/runner/work/TritonChip/TritonChip/.git/
+2026-10-19T00:58:20.0693204Z [command]/usr/bin/git remote add origin https://github.com/zzczzc20/TritonChip
+2026-10-19T00:58:20.1247128Z ##[endgroup]
+2026-10-19T00:58:20.1248489Z ##[group]Disabling automatic garbage collection
+2026-10-19T00:58:20.1249894Z [command]/usr/bin/git config --local gc.auto 0
+2026-10-19T00:58:20.1644064Z ##[endgroup]
+2026-10-19T00:58:20.1645639Z ##[group]Setting up auth
+2026-10-19T00:58:20.1649399Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+2026-10-19T00:58:20.1675407Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2026-10-19T00:58:20.1997255Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-10-19T00:58:20.2023937Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2026-10-19T00:58:20.2176805Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-10-19T00:58:20.2201360Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+2026-10-19T00:58:20.2346835Z [command]/usr/bin/git config --local http.https://github.com/.extraheader AUTHORIZATION: basic ***
+2026-10-19T00:58:20.3438643Z ##[endgroup]
+2026-10-19T00:58:20.3440017Z ##[group]Fetching the repository
+2026-10-19T00:58:20.3449916Z [command]/usr/bin/git -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +8820782a7a8ab2146ee61f2f0320f4708005e548:refs/remotes/origin/r40-convergence-evidence
+2026-10-19T00:58:23.4148504Z From https://github.com/zzczzc20/TritonChip
+2026-10-19T00:58:23.4150132Z  * [new ref]         8820782a7a8ab2146ee61f2f0320f4708005e548 -> origin/r40-convergence-evidence
+2026-10-19T00:58:23.4152704Z ##[endgroup]
+2026-10-19T00:58:23.4153383Z ##[group]Determining the checkout info
+2026-10-19T00:58:23.4154188Z ##[endgroup]
+2026-10-19T00:58:23.4160562Z [command]/usr/bin/git sparse-checkout disable
+2026-10-19T00:58:23.4211584Z [command]/usr/bin/git config --local --unset-all extensions.worktreeConfig
+2026-10-19T00:58:23.4236007Z ##[group]Checking out the ref
+2026-10-19T00:58:23.4239754Z [command]/usr/bin/git checkout --progress --force -B r40-convergence-evidence refs/remotes/origin/r40-convergence-evidence
+2026-10-19T00:58:23.9958821Z Switched to a new branch 'r40-convergence-evidence'
+2026-10-19T00:58:23.9987384Z branch 'r40-convergence-evidence' set up to track 'origin/r40-convergence-evidence'.
+2026-10-19T00:58:23.9989157Z ##[endgroup]
+2026-10-19T00:58:24.0013680Z [command]/usr/bin/git log -1 --format=%H
+2026-10-19T00:58:24.0031796Z 8820782a7a8ab2146ee61f2f0320f4708005e548
+2026-10-19T00:58:24.0190844Z ##[group]Run sudo apt-get update -qq
+2026-10-19T00:58:24.0191310Z [36;1msudo apt-get update -qq[0m
+2026-10-19T00:58:24.0191843Z [36;1msudo apt-get install -y --no-install-recommends \[0m
+2026-10-19T00:58:24.0192236Z [36;1m  iverilog yosys build-essential cmake ninja-build python3 python3-venv \[0m
+2026-10-19T00:58:24.0192680Z [36;1m  libmlir-20-dev mlir-20-tools llvm-20-dev[0m
+2026-10-19T00:58:24.0349484Z shell: /usr/bin/bash -e {0}
+2026-10-19T00:58:24.0349774Z env:
+2026-10-19T00:58:24.0350039Z   LLVM_PREFIX: /usr/lib/llvm-20
+2026-10-19T00:58:24.0350333Z   TNCA_LLVM: /usr/lib/llvm-20
+2026-10-19T00:58:24.0350587Z ##[endgroup]
+2026-10-19T00:58:30.1620543Z Reading package lists...
+2026-10-19T00:58:30.3130926Z Building dependency tree...
+2026-10-19T00:58:30.3138158Z Reading state information...
+2026-10-19T00:58:30.4483919Z python3 is already the newest version (3.12.3-0ubuntu2.1).
+2026-10-19T00:58:30.4484702Z python3-venv is already the newest version (3.12.3-0ubuntu2.1).
+2026-10-19T00:58:30.4485605Z The following additional packages will be installed:
+2026-10-19T00:58:30.4489495Z   cmake-data libclang-cpp20 libjsoncpp25 libmlir-20 librhash0 llvm-20
+2026-10-19T00:58:30.4493473Z   llvm-20-linker-tools llvm-20-runtime llvm-20-tools yosys-abc
+2026-10-19T00:58:30.4501941Z Suggested packages:
+2026-10-19T00:58:30.4502396Z   cmake-doc cmake-format elpa-cmake-mode gtkwave llvm-20-doc
+2026-10-19T00:58:30.4502725Z Recommended packages:
+2026-10-19T00:58:30.4502993Z   xdot
+2026-10-19T00:58:30.4681991Z The following NEW packages will be installed:
+2026-10-19T00:58:30.4684588Z   build-essential cmake cmake-data iverilog libclang-cpp20 libjsoncpp25
+2026-10-19T00:58:30.4688328Z   libmlir-20 libmlir-20-dev librhash0 llvm-20 llvm-20-dev llvm-20-linker-tools
+2026-10-19T00:58:30.4690370Z   llvm-20-runtime llvm-20-tools mlir-20-tools ninja-build yosys yosys-abc
+2026-10-19T00:58:30.4826847Z 0 upgraded, 18 newly installed, 0 to remove and 44 not upgraded.
+2026-10-19T00:58:30.4827397Z Need to get 178 MB of archives.
+2026-10-19T00:58:30.4827804Z After this operation, 1284 MB of additional disk space will be used.
+2026-10-19T00:58:30.4828308Z Get:1 file:/etc/apt/apt-mirrors.txt Mirrorlist [144 B]
+2026-10-19T00:58:30.5663289Z Get:2 http://azure.archive.ubuntu.com/ubuntu noble/main amd64 build-essential amd64 12.10ubuntu1 [4928 B]
+2026-10-19T00:58:30.6015083Z Get:3 http://azure.archive.ubuntu.com/ubuntu noble/main amd64 libjsoncpp25 amd64 1.9.5-6build1 [82.8 kB]
+2026-10-19T00:58:30.6360836Z Get:4 http://azure.archive.ubuntu.com/ubuntu noble/main amd64 librhash0 amd64 1.4.3-3build1 [129 kB]
+2026-10-19T00:58:30.6713963Z Get:5 http://azure.archive.ubuntu.com/ubuntu noble/main amd64 cmake-data all 3.28.3-1build7 [2155 kB]
+2026-10-19T00:58:30.7282706Z Get:6 http://azure.archive.ubuntu.com/ubuntu noble/main amd64 cmake amd64 3.28.3-1build7 [11.2 MB]
+2026-10-19T00:58:30.8854164Z Get:7 http://azure.archive.ubuntu.com/ubuntu noble/universe amd64 iverilog amd64 12.0-2build2 [2126 kB]
+2026-10-19T00:58:30.9421023Z Get:8 http://azure.archive.ubuntu.com/ubuntu noble-updates/universe amd64 libclang-cpp20 amd64 1:20.1.2-0ubuntu1~24.04.3 [14.2 MB]
+2026-10-19T00:58:31.1306165Z Get:9 http://azure.archive.ubuntu.com/ubuntu noble-updates/universe amd64 libmlir-20 amd64 1:20.1.2-0ubuntu1~24.04.3 [13.0 MB]
+2026-10-19T00:58:31.3055654Z Get:10 http://azure.archive.ubuntu.com/ubuntu noble-updates/universe amd64 libmlir-20-dev amd64 1:20.1.2-0ubuntu1~24.04.3 [28.3 MB]
+2026-10-19T00:58:31.7645959Z Get:11 http://azure.archive.ubuntu.com/ubuntu noble-updates/universe amd64 llvm-20-runtime amd64 1:20.1.2-0ubuntu1~24.04.3 [558 kB]
+2026-10-19T00:58:31.8034006Z Get:12 http://azure.archive.ubuntu.com/ubuntu noble-updates/universe amd64 llvm-20-linker-tools amd64 1:20.1.2-0ubuntu1~24.04.3 [1338 kB]
+2026-10-19T00:58:31.8606356Z Get:13 http://azure.archive.ubuntu.com/ubuntu noble-updates/universe amd64 llvm-20 amd64 1:20.1.2-0ubuntu1~24.04.3 [19.8 MB]
+2026-10-19T00:58:32.2613366Z Get:14 http://azure.archive.ubuntu.com/ubuntu noble-updates/universe amd64 llvm-20-tools amd64 1:20.1.2-0ubuntu1~24.04.3 [515 kB]
+2026-10-19T00:58:32.3792344Z Get:15 http://azure.archive.ubuntu.com/ubuntu noble-updates/universe amd64 llvm-20-dev amd64 1:20.1.2-0ubuntu1~24.04.3 [50.7 MB]
+2026-10-19T00:58:33.5117098Z Get:16 http://azure.archive.ubuntu.com/ubuntu noble-updates/universe amd64 mlir-20-tools amd64 1:20.1.2-0ubuntu1~24.04.3 [24.8 MB]
+2026-10-19T00:58:34.0477304Z Get:17 http://azure.archive.ubuntu.com/ubuntu noble/universe amd64 ninja-build amd64 1.11.1-2 [129 kB]
+2026-10-19T00:58:34.1450922Z Get:18 http://azure.archive.ubuntu.com/ubuntu noble/universe amd64 yosys-abc amd64 0.33-5build2 [5829 kB]
+2026-10-19T00:58:34.2665011Z Get:19 http://azure.archive.ubuntu.com/ubuntu noble/universe amd64 yosys amd64 0.33-5build2 [3222 kB]
+2026-10-19T00:58:34.6196840Z Fetched 178 MB in 4s (45.9 MB/s)
+2026-10-19T00:58:34.9573848Z Selecting previously unselected package build-essential.
+2026-10-19T00:58:34.9767396Z (Reading database ... 
+2026-10-19T00:58:34.9767740Z (Reading database ... 5%
+2026-10-19T00:58:34.9768157Z (Reading database ... 10%
+2026-10-19T00:58:34.9768396Z (Reading database ... 15%
+2026-10-19T00:58:34.9768679Z (Reading database ... 20%
+2026-10-19T00:58:34.9769013Z (Reading database ... 25%
+2026-10-19T00:58:34.9769317Z (Reading database ... 30%
+2026-10-19T00:58:34.9769628Z (Reading database ... 35%
+2026-10-19T00:58:34.9769870Z (Reading database ... 40%
+2026-10-19T00:58:34.9770103Z (Reading database ... 45%
+2026-10-19T00:58:34.9770386Z (Reading database ... 50%
+2026-10-19T00:58:34.9818007Z (Reading database ... 55%
+2026-10-19T00:58:35.0993089Z (Reading database ... 60%
+2026-10-19T00:58:35.3052936Z (Reading database ... 65%
+2026-10-19T00:58:35.5068588Z (Reading database ... 70%
+2026-10-19T00:58:35.6561025Z (Reading database ... 75%
+2026-10-19T00:58:35.8075292Z (Reading database ... 80%
+2026-10-19T00:58:35.9127156Z (Reading database ... 85%
+2026-10-19T00:58:36.0264442Z (Reading database ... 90%
+2026-10-19T00:58:36.1712035Z (Reading database ... 95%
+2026-10-19T00:58:36.1712500Z (Reading database ... 100%
+2026-10-19T00:58:36.1712803Z (Reading database ... 203540 files and directories currently installed.)
+2026-10-19T00:58:36.1753440Z Preparing to unpack .../00-build-essential_12.10ubuntu1_amd64.deb ...
+2026-10-19T00:58:36.1866047Z Unpacking build-essential (12.10ubuntu1) ...
+2026-10-19T00:58:36.2049538Z Selecting previously unselected package libjsoncpp25:amd64.
+2026-10-19T00:58:36.2143191Z Preparing to unpack .../01-libjsoncpp25_1.9.5-6build1_amd64.deb ...
+2026-10-19T00:58:36.2166215Z Unpacking libjsoncpp25:amd64 (1.9.5-6build1) ...
+2026-10-19T00:58:36.2334072Z Selecting previously unselected package librhash0:amd64.
+2026-10-19T00:58:36.2427216Z Preparing to unpack .../02-librhash0_1.4.3-3build1_amd64.deb ...
+2026-10-19T00:58:36.2436893Z Unpacking librhash0:amd64 (1.4.3-3build1) ...
+2026-10-19T00:58:36.2812944Z Selecting previously unselected package cmake-data.
+2026-10-19T00:58:36.2909857Z Preparing to unpack .../03-cmake-data_3.28.3-1build7_all.deb ...
+2026-10-19T00:58:36.2962857Z Unpacking cmake-data (3.28.3-1build7) ...
+2026-10-19T00:58:36.6824349Z Selecting previously unselected package cmake.
+2026-10-19T00:58:36.6949257Z Preparing to unpack .../04-cmake_3.28.3-1build7_amd64.deb ...
+2026-10-19T00:58:36.6958578Z Unpacking cmake (3.28.3-1build7) ...
+2026-10-19T00:58:37.0090311Z Selecting previously unselected package iverilog.
+2026-10-19T00:58:37.0191171Z Preparing to unpack .../05-iverilog_12.0-2build2_amd64.deb ...
+2026-10-19T00:58:37.0201020Z Unpacking iverilog (12.0-2build2) ...
+2026-10-19T00:58:37.0826247Z Selecting previously unselected package libclang-cpp20.
+2026-10-19T00:58:37.0931758Z Preparing to unpack .../06-libclang-cpp20_1%3a20.1.2-0ubuntu1~24.04.3_amd64.deb ...
+2026-10-19T00:58:37.0941355Z Unpacking libclang-cpp20 (1:20.1.2-0ubuntu1~24.04.3) ...
+2026-10-19T00:58:37.6334990Z Selecting previously unselected package libmlir-20:amd64.
+2026-10-19T00:58:37.6437008Z Preparing to unpack .../07-libmlir-20_1%3a20.1.2-0ubuntu1~24.04.3_amd64.deb ...
+2026-10-19T00:58:37.6446550Z Unpacking libmlir-20:amd64 (1:20.1.2-0ubuntu1~24.04.3) ...
+2026-10-19T00:58:38.3803215Z Selecting previously unselected package libmlir-20-dev:amd64.
+2026-10-19T00:58:38.3902683Z Preparing to unpack .../08-libmlir-20-dev_1%3a20.1.2-0ubuntu1~24.04.3_amd64.deb ...
+2026-10-19T00:58:38.3912944Z Unpacking libmlir-20-dev:amd64 (1:20.1.2-0ubuntu1~24.04.3) ...
+2026-10-19T00:58:40.8642216Z Selecting previously unselected package llvm-20-runtime.
+2026-10-19T00:58:40.8758982Z Preparing to unpack .../09-llvm-20-runtime_1%3a20.1.2-0ubuntu1~24.04.3_amd64.deb ...
+2026-10-19T00:58:40.8769513Z Unpacking llvm-20-runtime (1:20.1.2-0ubuntu1~24.04.3) ...
+2026-10-19T00:58:40.9002294Z Selecting previously unselected package llvm-20-linker-tools.
+2026-10-19T00:58:40.9101934Z Preparing to unpack .../10-llvm-20-linker-tools_1%3a20.1.2-0ubuntu1~24.04.3_amd64.deb ...
+2026-10-19T00:58:40.9110866Z Unpacking llvm-20-linker-tools (1:20.1.2-0ubuntu1~24.04.3) ...
+2026-10-19T00:58:40.9539730Z Selecting previously unselected package llvm-20.
+2026-10-19T00:58:40.9639321Z Preparing to unpack .../11-llvm-20_1%3a20.1.2-0ubuntu1~24.04.3_amd64.deb ...
+2026-10-19T00:58:40.9648466Z Unpacking llvm-20 (1:20.1.2-0ubuntu1~24.04.3) ...
+2026-10-19T00:58:41.6158350Z Selecting previously unselected package llvm-20-tools.
+2026-10-19T00:58:41.6264727Z Preparing to unpack .../12-llvm-20-tools_1%3a20.1.2-0ubuntu1~24.04.3_amd64.deb ...
+2026-10-19T00:58:41.6276242Z Unpacking llvm-20-tools (1:20.1.2-0ubuntu1~24.04.3) ...
+2026-10-19T00:58:41.6971405Z Selecting previously unselected package llvm-20-dev.
+2026-10-19T00:58:41.7079235Z Preparing to unpack .../13-llvm-20-dev_1%3a20.1.2-0ubuntu1~24.04.3_amd64.deb ...
+2026-10-19T00:58:41.7212155Z Unpacking llvm-20-dev (1:20.1.2-0ubuntu1~24.04.3) ...
+2026-10-19T00:58:44.0500907Z Selecting previously unselected package mlir-20-tools.
+2026-10-19T00:58:44.0620892Z Preparing to unpack .../14-mlir-20-tools_1%3a20.1.2-0ubuntu1~24.04.3_amd64.deb ...
+2026-10-19T00:58:44.0629755Z Unpacking mlir-20-tools (1:20.1.2-0ubuntu1~24.04.3) ...
+2026-10-19T00:58:44.9395864Z Selecting previously unselected package ninja-build.
+2026-10-19T00:58:44.9500043Z Preparing to unpack .../15-ninja-build_1.11.1-2_amd64.deb ...
+2026-10-19T00:58:44.9507014Z Unpacking ninja-build (1.11.1-2) ...
+2026-10-19T00:58:44.9669298Z Selecting previously unselected package yosys-abc.
+2026-10-19T00:58:44.9772472Z Preparing to unpack .../16-yosys-abc_0.33-5build2_amd64.deb ...
+2026-10-19T00:58:44.9780112Z Unpacking yosys-abc (0.33-5build2) ...
+2026-10-19T00:58:45.1354396Z Selecting previously unselected package yosys.
+2026-10-19T00:58:45.1458876Z Preparing to unpack .../17-yosys_0.33-5build2_amd64.deb ...
+2026-10-19T00:58:45.1467792Z Unpacking yosys (0.33-5build2) ...
+2026-10-19T00:58:45.2987853Z Setting up yosys-abc (0.33-5build2) ...
+2026-10-19T00:58:45.3012980Z Setting up llvm-20-runtime (1:20.1.2-0ubuntu1~24.04.3) ...
+2026-10-19T00:58:45.3216420Z Setting up ninja-build (1.11.1-2) ...
+2026-10-19T00:58:45.3239126Z Setting up llvm-20-linker-tools (1:20.1.2-0ubuntu1~24.04.3) ...
+2026-10-19T00:58:45.3262755Z Setting up llvm-20-tools (1:20.1.2-0ubuntu1~24.04.3) ...
+2026-10-19T00:58:45.3283392Z Setting up iverilog (12.0-2build2) ...
+2026-10-19T00:58:45.3305209Z Setting up libclang-cpp20 (1:20.1.2-0ubuntu1~24.04.3) ...
+2026-10-19T00:58:45.3328010Z Setting up llvm-20 (1:20.1.2-0ubuntu1~24.04.3) ...
+2026-10-19T00:58:45.3349602Z Setting up llvm-20-dev (1:20.1.2-0ubuntu1~24.04.3) ...
+2026-10-19T00:58:45.3372309Z Setting up libjsoncpp25:amd64 (1.9.5-6build1) ...
+2026-10-19T00:58:45.3392256Z Setting up librhash0:amd64 (1.4.3-3build1) ...
+2026-10-19T00:58:45.3413290Z Setting up build-essential (12.10ubuntu1) ...
+2026-10-19T00:58:45.3434289Z Setting up cmake-data (3.28.3-1build7) ...
+2026-10-19T00:58:45.3488276Z Setting up libmlir-20:amd64 (1:20.1.2-0ubuntu1~24.04.3) ...
+2026-10-19T00:58:45.3510613Z Setting up libmlir-20-dev:amd64 (1:20.1.2-0ubuntu1~24.04.3) ...
+2026-10-19T00:58:45.3530860Z Setting up yosys (0.33-5build2) ...
+2026-10-19T00:58:45.4527844Z Setting up mlir-20-tools (1:20.1.2-0ubuntu1~24.04.3) ...
+2026-10-19T00:58:45.4548233Z Setting up cmake (3.28.3-1build7) ...
+2026-10-19T00:58:45.4572913Z Processing triggers for systemd (255.4-1ubuntu8.17) ...
+2026-10-19T00:58:45.4795126Z Processing triggers for man-db (2.12.0-4build2) ...
+2026-10-19T00:58:45.4821413Z Not building database; man-db/auto-update is not 'true'.
+2026-10-19T00:58:45.4835268Z Processing triggers for libc-bin (2.39-0ubuntu8.9) ...
+2026-10-19T00:58:46.1098688Z 
+2026-10-19T00:58:46.1099607Z Running kernel seems to be up-to-date.
+2026-10-19T00:58:46.1100027Z 
+2026-10-19T00:58:46.1100187Z No services need to be restarted.
+2026-10-19T00:58:46.1100403Z 
+2026-10-19T00:58:46.1100524Z No containers need to be restarted.
+2026-10-19T00:58:46.1100729Z 
+2026-10-19T00:58:46.1100895Z No user sessions are running outdated binaries.
+2026-10-19T00:58:46.1101162Z 
+2026-10-19T00:58:46.1101370Z No VM guests are running outdated hypervisor (qemu) binaries on this host.
+2026-10-19T00:58:47.0361139Z ##[group]Run actions/cache@v4
+2026-10-19T00:58:47.0361433Z with:
+2026-10-19T00:58:47.0361664Z   path: ~/.cache/pip
+2026-10-19T00:58:47.0361983Z   key: pip-173d707e845b4431106949175b8c828e217e244fd73f7383ebc194c89cb814a0
+2026-10-19T00:58:47.0362370Z   enableCrossOsArchive: false
+2026-10-19T00:58:47.0362620Z   fail-on-cache-miss: false
+2026-10-19T00:58:47.0362900Z   lookup-only: false
+2026-10-19T00:58:47.0363124Z   save-always: false
+2026-10-19T00:58:47.0363341Z env:
+2026-10-19T00:58:47.0363578Z   LLVM_PREFIX: /usr/lib/llvm-20
+2026-10-19T00:58:47.0363823Z   TNCA_LLVM: /usr/lib/llvm-20
+2026-10-19T00:58:47.0364055Z ##[endgroup]
+2026-10-19T00:58:47.1117900Z (node:2707) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+2026-10-19T00:58:47.1118520Z (Use `node --trace-deprecation ...` to show where the warning was created)
+2026-10-19T00:58:47.2511063Z Cache hit for: pip-173d707e845b4431106949175b8c828e217e244fd73f7383ebc194c89cb814a0
+2026-10-19T00:58:47.2585302Z (node:2707) [DEP0169] DeprecationWarning: `url.parse()` behavior is not standardized and prone to errors that have security implications. Use the WHATWG URL API instead. CVEs are not issued for `url.parse()` vulnerabilities.
+2026-10-19T00:58:48.3872179Z Received 121634816 of 242143880 (50.2%), 116.1 MBs/sec
+2026-10-19T00:58:49.0536936Z Received 242143880 of 242143880 (100.0%), 138.6 MBs/sec
+2026-10-19T00:58:49.0540095Z Cache Size: ~231 MB (242143880 B)
+2026-10-19T00:58:49.0638351Z [command]/usr/bin/tar -xf /home/runner/work/_temp/cd6c62b6-ba73-40de-8b54-645add152a11/cache.tzst -P -C /home/runner/work/TritonChip/TritonChip --use-compress-program unzstd
+2026-10-19T00:58:49.2509564Z Cache restored successfully
+2026-10-19T00:58:49.2643333Z Cache restored from key: pip-173d707e845b4431106949175b8c828e217e244fd73f7383ebc194c89cb814a0
+2026-10-19T00:58:49.2740631Z ##[group]Run set -euo pipefail
+2026-10-19T00:58:49.2740966Z [36;1mset -euo pipefail[0m
+2026-10-19T00:58:49.2741404Z [36;1mV=$(python3 -c "import json;print(json.load(open('spec/r1_toolchain.lock.json'))['triton']['version'])")[0m
+2026-10-19T00:58:49.2741921Z [36;1mPV=$(python3 -c "import json;print(json.load(open('spec/r38/torch.lock.json'))['version'])")[0m
+2026-10-19T00:58:49.2742393Z [36;1mpython3 -m venv ~/tritonenv[0m
+2026-10-19T00:58:49.2742705Z [36;1m~/tritonenv/bin/pip install -q "triton==$V" "torch==$PV" numpy[0m
+2026-10-19T00:58:49.2743041Z [36;1mmake python/tnca/data/.staged[0m
+2026-10-19T00:58:49.2743340Z [36;1m~/tritonenv/bin/pip install -q -e .[0m
+2026-10-19T00:58:49.2743625Z [36;1mmake tnca-opt[0m
+2026-10-19T00:58:49.2781556Z shell: /usr/bin/bash -e {0}
+2026-10-19T00:58:49.2781912Z env:
+2026-10-19T00:58:49.2782148Z   LLVM_PREFIX: /usr/lib/llvm-20
+2026-10-19T00:58:49.2782440Z   TNCA_LLVM: /usr/lib/llvm-20
+2026-10-19T00:58:49.2782684Z ##[endgroup]
+2026-10-19T01:00:05.0129881Z wrote isa/tnca-isa-v0.1.json: 169 instructions, 20 majors, 25 special registers
+2026-10-19T01:00:05.0130540Z   note: described but unused operand kinds: ['wa']
+2026-10-19T01:00:05.5951947Z wrote compiler/targets/tnca-sim-v0.1.json: 2 RCTX, 64 logical vregs each, 128 physical
+2026-10-19T01:00:05.5952757Z wrote compiler/targets/tnca-sim-4rctx.json: 4 RCTX, 32 logical vregs each, 128 physical
+2026-10-19T01:00:05.5953514Z wrote compiler/targets/tnca-sim-2x2.json: 2 RCTX, 64 logical vregs each, 128 physical
+2026-10-19T01:00:05.5954013Z wrote compiler/targets/tnca-sim-vrf-v1.json: 2 RCTX, 64 logical vregs each, 128 physical
+2026-10-19T01:00:05.5954621Z wrote compiler/targets/tnca-sim-vrf-v2.json: 2 RCTX, 64 logical vregs each, 128 physical
+2026-10-19T01:00:05.5955223Z wrote compiler/targets/tnca-sim-vrf-v3.json: 2 RCTX, 64 logical vregs each, 128 physical
+2026-10-19T01:00:05.5955688Z wrote compiler/targets/tnca-sim-vrf-v4.json: 4 RCTX, 64 logical vregs each, 256 physical
+2026-10-19T01:00:05.5956188Z wrote compiler/targets/tnca-sim-vrf-v5.json: 4 RCTX, 64 logical vregs each, 256 physical
+2026-10-19T01:00:05.5956678Z wrote compiler/targets/tnca-sim-xpose-v1.json: 2 RCTX, 64 logical vregs each, 128 physical
+2026-10-19T01:00:05.6297905Z   staged 138 data file(s) into python/tnca/data
+2026-10-19T01:00:13.8668331Z ninja: Entering directory `compiler/build'
+2026-10-19T01:00:13.8808366Z [1/16] Building TNCADialect.h.inc...
+2026-10-19T01:00:13.8809697Z [2/16] Building TNCAInterfaces.h.inc...
+2026-10-19T01:00:13.8874617Z [3/16] Building TNCAInterfaces.cpp.inc...
+2026-10-19T01:00:13.8903325Z [4/16] Building TNCADialect.cpp.inc...
+2026-10-19T01:00:13.8923552Z [5/16] Building TNCATypes.cpp.inc...
+2026-10-19T01:00:13.8929558Z [6/16] Building TNCATypes.h.inc...
+2026-10-19T01:00:13.8937449Z [7/16] Building TNCAOps.h.inc...
+2026-10-19T01:00:13.8947068Z [8/16] Building TNCAOps.cpp.inc...
+2026-10-19T01:00:14.7996675Z [9/16] Building CXX object lib/Dialect/TNCA/IR/CMakeFiles/obj.MLIRTNCA.dir/TNCASupport.cpp.o
+2026-10-19T01:00:16.5336302Z [10/16] Building CXX object lib/Dialect/TNCA/IR/CMakeFiles/obj.MLIRTNCA.dir/TNCAAsyncOps.cpp.o
+2026-10-19T01:00:18.1839111Z [11/16] Building CXX object lib/Dialect/TNCA/Transforms/CMakeFiles/obj.MLIRTNCATransforms.dir/VerifyAsyncOwnership.cpp.o
+2026-10-19T01:00:20.2828477Z [12/16] Building CXX object lib/Dialect/TNCA/IR/CMakeFiles/obj.MLIRTNCA.dir/TNCADialect.cpp.o
+2026-10-19T01:00:29.8977305Z [13/16] Linking CXX static library lib/Dialect/TNCA/IR/libMLIRTNCA.a
+2026-10-19T01:00:29.9830051Z [14/16] Linking CXX static library lib/Dialect/TNCA/Transforms/libMLIRTNCATransforms.a
+2026-10-19T01:00:37.7848319Z [15/16] Building CXX object tools/tnca-opt/CMakeFiles/tnca-opt.dir/tnca-opt.cpp.o
+2026-10-19T01:00:41.5556215Z [16/16] Linking CXX executable tools/tnca-opt/tnca-opt
+2026-10-19T01:00:41.5600710Z ##[group]Run make r40-multicore-mmio-checks TRITON_PYTHON=$HOME/tritonenv/bin/python
+2026-10-19T01:00:41.5601256Z [36;1mmake r40-multicore-mmio-checks TRITON_PYTHON=$HOME/tritonenv/bin/python[0m
+2026-10-19T01:00:41.5638906Z shell: /usr/bin/bash -e {0}
+2026-10-19T01:00:41.5639184Z env:
+2026-10-19T01:00:41.5639403Z   LLVM_PREFIX: /usr/lib/llvm-20
+2026-10-19T01:00:41.5639717Z   TNCA_LLVM: /usr/lib/llvm-20
+2026-10-19T01:00:41.5639994Z ##[endgroup]
+2026-10-19T01:00:41.6664046Z PASS: isolated inventory child imports snapshot compiler and scheduler before stale installation
+2026-10-19T01:00:41.7588853Z ......
+2026-10-19T01:00:41.7589359Z ----------------------------------------------------------------------
+2026-10-19T01:00:41.7589696Z Ran 6 tests in 0.049s
+2026-10-19T01:00:41.7589860Z 
+2026-10-19T01:00:41.7589962Z OK
+2026-10-19T01:00:41.8447960Z ...
+2026-10-19T01:00:41.8448395Z ----------------------------------------------------------------------
+2026-10-19T01:00:41.8449078Z Ran 3 tests in 0.005s
+2026-10-19T01:00:41.8449241Z 
+2026-10-19T01:00:41.8449392Z OK
+2026-10-19T01:00:41.9002870Z ..
+2026-10-19T01:00:41.9003264Z ----------------------------------------------------------------------
+2026-10-19T01:00:41.9003679Z Ran 2 tests in 0.000s
+2026-10-19T01:00:41.9003808Z 
+2026-10-19T01:00:41.9003913Z OK
+2026-10-19T01:00:41.9656408Z ....
+2026-10-19T01:00:41.9656801Z ----------------------------------------------------------------------
+2026-10-19T01:00:41.9657411Z Ran 4 tests in 0.022s
+2026-10-19T01:00:41.9657601Z 
+2026-10-19T01:00:41.9657747Z OK
+2026-10-19T01:00:42.1910420Z .....
+2026-10-19T01:00:42.1910826Z ----------------------------------------------------------------------
+2026-10-19T01:00:42.1911285Z Ran 5 tests in 0.179s
+2026-10-19T01:00:42.1911462Z 
+2026-10-19T01:00:42.1911550Z OK
+2026-10-19T01:00:42.2485576Z ...
+2026-10-19T01:00:42.2486141Z ----------------------------------------------------------------------
+2026-10-19T01:00:42.2486634Z Ran 3 tests in 0.010s
+2026-10-19T01:00:42.2486828Z 
+2026-10-19T01:00:42.2486969Z OK
+2026-10-19T01:00:42.3053181Z ..
+2026-10-19T01:00:42.3053540Z ----------------------------------------------------------------------
+2026-10-19T01:00:42.3054012Z Ran 2 tests in 0.016s
+2026-10-19T01:00:42.3054196Z 
+2026-10-19T01:00:42.3054313Z OK
+2026-10-19T01:00:45.1774461Z ...
+2026-10-19T01:00:45.1774831Z ----------------------------------------------------------------------
+2026-10-19T01:00:45.1775521Z Ran 3 tests in 2.833s
+2026-10-19T01:00:45.1775655Z 
+2026-10-19T01:00:45.1775773Z OK
+2026-10-19T01:00:45.2661946Z ..
+2026-10-19T01:00:45.2662553Z ----------------------------------------------------------------------
+2026-10-19T01:00:45.2662961Z Ran 2 tests in 0.006s
+2026-10-19T01:00:45.2663105Z 
+2026-10-19T01:00:45.2663212Z OK
+2026-10-19T01:00:45.3109554Z ..
+2026-10-19T01:00:45.3110012Z ----------------------------------------------------------------------
+2026-10-19T01:00:45.3110415Z Ran 2 tests in 0.000s
+2026-10-19T01:00:45.3110590Z 
+2026-10-19T01:00:45.3110706Z OK
+2026-10-19T01:00:45.3747952Z .....
+2026-10-19T01:00:45.3748419Z ----------------------------------------------------------------------
+2026-10-19T01:00:45.3749031Z Ran 5 tests in 0.003s
+2026-10-19T01:00:45.3749316Z 
+2026-10-19T01:00:45.3749472Z OK
+2026-10-19T01:00:48.4410268Z ..............
+2026-10-19T01:00:48.4410693Z ----------------------------------------------------------------------
+2026-10-19T01:00:48.4411260Z Ran 14 tests in 2.989s
+2026-10-19T01:00:48.4411413Z 
+2026-10-19T01:00:48.4411581Z OK
+2026-10-19T01:00:48.8677608Z ......
+2026-10-19T01:00:48.8678293Z ----------------------------------------------------------------------
+2026-10-19T01:00:48.8678755Z Ran 6 tests in 0.374s
+2026-10-19T01:00:48.8678941Z 
+2026-10-19T01:00:48.8679037Z OK
+2026-10-19T01:00:50.9463034Z   building core-vrf-sync-v2 -> /home/runner/.cache/tnca/devices/core-vrf-sync-v2-d8ab4dc2ea14be49-2f12bdd465ea/tnca_device_vrf2.vvp
+2026-10-19T01:00:50.9463605Z   built 17577302 bytes
+2026-10-19T01:00:50.9464428Z CODE CACHE EPOCH PASS 6 RTL launches, one-module region, live buffer preserved
+2026-10-19T01:00:52.5243841Z MULTICORE CODE LINKS PASS cores=1 stages=0 snapshot/byte-masks/private-RAM/drain
+2026-10-19T01:00:52.5244681Z tb/fpga/tb_multicore_code_links.v:61: $finish called at 430000 (1ps)
+2026-10-19T01:00:57.3927530Z MULTICORE CODE LINKS PASS cores=3 stages=0 snapshot/byte-masks/private-RAM/drain
+2026-10-19T01:00:57.3928044Z tb/fpga/tb_multicore_code_links.v:61: $finish called at 430000 (1ps)
+2026-10-19T01:01:02.1470062Z MULTICORE CODE LINKS PASS cores=3 stages=1 snapshot/byte-masks/private-RAM/drain
+2026-10-19T01:01:02.1470650Z tb/fpga/tb_multicore_code_links.v:61: $finish called at 580000 (1ps)
+2026-10-19T01:01:06.9326917Z MULTICORE CODE LINKS PASS cores=3 stages=2 snapshot/byte-masks/private-RAM/drain
+2026-10-19T01:01:06.9327441Z tb/fpga/tb_multicore_code_links.v:61: $finish called at 680000 (1ps)
+2026-10-19T01:01:11.6652444Z MULTICORE CODE LINKS PASS cores=3 stages=4 snapshot/byte-masks/private-RAM/drain
+2026-10-19T01:01:11.6653023Z tb/fpga/tb_multicore_code_links.v:61: $finish called at 880000 (1ps)
+2026-10-19T01:01:26.2679911Z MULTICORE CODE LINKS PASS cores=8 stages=2 snapshot/byte-masks/private-RAM/drain
+2026-10-19T01:01:26.2680720Z tb/fpga/tb_multicore_code_links.v:61: $finish called at 680000 (1ps)
+2026-10-19T01:01:26.3302537Z CODE LINK MATRIX PASS 6 configurations
+2026-10-19T01:02:07.3524116Z LINK_STAGES=1
+2026-10-19T01:02:07.3524749Z ---- mesh 2x2, 2 VNs ----
+2026-10-19T01:02:07.3525342Z seed=40 trace_hash=41f0721587d8644a
+2026-10-19T01:02:07.3525787Z sent=20000 received=20000 pairs_covered=32/32 backpressure_cycles=6078
+2026-10-19T01:02:07.3526634Z PASS
+2026-10-19T01:02:07.3526911Z tb/noc/tb_mesh.v:256: $finish called at 37276000 (1ps)
+2026-10-19T01:02:48.5346820Z LINK_STAGES=2
+2026-10-19T01:02:48.5347802Z ---- mesh 2x2, 2 VNs ----
+2026-10-19T01:02:48.5348389Z seed=40 trace_hash=25630c120deb1df9
+2026-10-19T01:02:48.5349035Z sent=20000 received=20000 pairs_covered=32/32 backpressure_cycles=6198
+2026-10-19T01:02:48.5349441Z PASS
+2026-10-19T01:02:48.5349782Z tb/noc/tb_mesh.v:256: $finish called at 36456000 (1ps)
+2026-10-19T01:03:29.4530517Z LINK_STAGES=2
+2026-10-19T01:03:29.4530840Z ---- mesh 2x2, 2 VNs ----
+2026-10-19T01:03:29.4531117Z seed=41 trace_hash=281cee56fc8de209
+2026-10-19T01:03:29.4531467Z sent=20000 received=20000 pairs_covered=32/32 backpressure_cycles=6167
+2026-10-19T01:03:29.4531821Z PASS
+2026-10-19T01:03:29.4532092Z tb/noc/tb_mesh.v:256: $finish called at 37046000 (1ps)
+2026-10-19T01:04:12.0044532Z LINK_STAGES=4
+2026-10-19T01:04:12.0045226Z ---- mesh 2x2, 2 VNs ----
+2026-10-19T01:04:12.0045619Z seed=41 trace_hash=94dc13046b515d9f
+2026-10-19T01:04:12.0046062Z sent=20000 received=20000 pairs_covered=32/32 backpressure_cycles=6331
+2026-10-19T01:04:12.0046396Z PASS
+2026-10-19T01:04:12.0046690Z tb/noc/tb_mesh.v:256: $finish called at 35946000 (1ps)
+2026-10-19T01:04:12.0062230Z MESH PIPELINE PASS 4 randomized configurations
+2026-10-19T01:04:12.0471349Z SYNTHESIS PASS tnca_elastic_link
+2026-10-19T01:04:14.6574335Z SYNTHESIS PASS tnca_line_axi
+2026-10-19T01:04:14.7916501Z SYNTHESIS PASS tnca_line_link
+2026-10-19T01:04:15.0984819Z SYNTHESIS PASS tnca_multicore_mmio
+2026-10-19T01:04:15.1884440Z SYNTHESIS PASS tnca_mem_ports
+2026-10-19T01:04:15.2213221Z MULTICORE CONTROL SYNTHESIS PASS 5 modules and 9 rejected geometries
+2026-10-19T01:04:15.2882689Z .....
+2026-10-19T01:04:15.2883297Z ----------------------------------------------------------------------
+2026-10-19T01:04:15.2884099Z Ran 5 tests in 0.030s
+2026-10-19T01:04:15.2884382Z 
+2026-10-19T01:04:15.2884536Z OK
+2026-10-19T01:04:15.3474449Z MULTICORE MMIO OPTIONS PASS 13 boundaries
+2026-10-19T01:04:15.5206349Z Post job cleanup.
+2026-10-19T01:04:15.6828837Z Cache hit occurred on the primary key pip-173d707e845b4431106949175b8c828e217e244fd73f7383ebc194c89cb814a0, not saving cache.
+2026-10-19T01:04:15.6829968Z (node:4065) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+2026-10-19T01:04:15.6830616Z (Use `node --trace-deprecation ...` to show where the warning was created)
+2026-10-19T01:04:15.6949114Z Post job cleanup.
+2026-10-19T01:04:15.7620997Z [command]/usr/bin/git version
+2026-10-19T01:04:15.7651889Z git version 2.55.0
+2026-10-19T01:04:15.7676934Z Temporarily overriding HOME='/home/runner/work/_temp/0f0beba1-0e3f-408a-ae2a-cb4197e3c46d' before making global git config changes
+2026-10-19T01:04:15.7679324Z Adding repository directory to the temporary git global config as a safe directory
+2026-10-19T01:04:15.7681024Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/TritonChip/TritonChip
+2026-10-19T01:04:15.7724332Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+2026-10-19T01:04:15.7769560Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2026-10-19T01:04:15.7939522Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-10-19T01:04:15.7956978Z http.https://github.com/.extraheader
+2026-10-19T01:04:15.7964119Z [command]/usr/bin/git config --local --unset-all http.https://github.com/.extraheader
+2026-10-19T01:04:15.7990904Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2026-10-19T01:04:15.8149188Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-10-19T01:04:15.8175936Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+2026-10-19T01:04:15.8507988Z Cleaning up orphan processes
+2026-10-19T01:04:15.8733124Z ##[warning]Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/cache@v4, actions/checkout@v4. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/

@@ -1,0 +1,4 @@
+op.add/hbm/fp16-n67108864 pass cycles=243988610 err=0.00024740227610094015 reference=243956222 rel_diff=0.00013
+op.matmul/medium/fp16-m128-k192-n128 pass cycles=234635 err=0.00030617228042415754 reference=234859 rel_diff=0.00095
+model.llama_decode/hbm/fp16-b1-p512 pass cycles=170540745 err=0.0016481212249269185 reference=170630629 rel_diff=0.00053
+REPRODUCTION PASS

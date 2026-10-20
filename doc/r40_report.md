@@ -237,12 +237,26 @@ report.
 
 ## 7. Reproduction
 
-*Pending.* `tools/r40/v3_reproduce.sh` runs from a clean `git archive` of the
-delivery commit (f8a30e054b50, sha256 `e47002be…`) on the FPGA host, with
-fresh extension, Triton and Inductor caches. It checks the contract and
-protocol, then runs three frozen points on the loaded image. Each point's
-device cycles are compared with the fe1b re-collection (queued:
-`evidence/r40/v3/launches/reproduce_queue.sh`).
+**PASS** (`evidence/r40/v3/reproduction/`). The run, 2026-10-20 00:46–00:49
+UTC on the FPGA host:
+- **Source:** `tools/r40/v3_reproduce.sh` taken from a clean `git archive` of
+  commit f8a30e054b50 (archive sha256 `e47002be…`), not from any working tree.
+- **Caches:** fresh native-extension, Triton and Inductor caches.
+- **Identity:** the unpacked tree is the delivery identity
+  `files:fe1b5199…`.
+- **Checks:** the immutable contract passes, and the protocol tests pass
+  42/42.
+
+The three frozen points then ran on the loaded image a88ebdf5 at 90 MHz.
+Their device cycles are compared with the fe1b functional re-collection:
+
+| Point | Status | Device cycles | Reference | Difference |
+|---|---|---:|---:|---:|
+| `op.add/hbm/fp16-n67108864` | pass | 243,988,610 | 243,956,222 | 0.013 % |
+| `op.matmul/medium/fp16-m128-k192-n128` | pass | 234,635 | 234,859 | 0.095 % |
+| `model.llama_decode/hbm/fp16-b1-p512` | pass | 170,540,745 | 170,630,629 | 0.053 % |
+
+All three are within the 0.2 % determinism bound, with no host fallbacks.
 
 ## 8. Carried into R41
 

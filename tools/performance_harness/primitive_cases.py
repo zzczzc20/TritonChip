@@ -9,6 +9,7 @@ import resource
 import sys
 import time
 import traceback
+from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path[:0] = [str(ROOT), str(ROOT/'python'), str(ROOT/'compiler/python'),
@@ -37,6 +38,8 @@ def main():
         import triton
         import torch.nn.functional as F
         import tnca.inductor
+        import tnca.aot
+        import tnca.dump
         from tnca import artifact
         from tnca.triton_backend.driver import launch_log
         import tnca.torch_device as device
@@ -72,14 +75,35 @@ def main():
             row = dict(name=name, shapes=shapes, dtype=str(dtype), rtol=rtol, atol=atol, status='running')
             report['cases'].append(row)
             save()
+            ir_dir = out/name/'ir'
+            os.environ.update(TNCA_KERNEL_DUMP='1', TNCA_DUMP_DIR=str(ir_dir))
             cpu = tuple(torch.randn(shape).to(dtype)*.02 for shape in shapes)
             reference = fn(*(t.float() for t in cpu))
             dev = tuple(t.to('tnca') for t in cpu)
+            session = device.MEMORY.session()
+            row['memory_before_compile'] = session.memory_stats
             compiled = torch.compile(fn, backend='inductor', fullgraph=True, dynamic=False)
             start = time.monotonic()
             from torch._inductor.utils import run_and_get_code
-            cold, wrappers = run_and_get_code(compiled, *dev)
+            lower = tnca.aot._lower_ttir
+            write_dump = tnca.dump.Dump.write
+            compiler_calls = []
+            def distinct_dump(stages, directory, **keywords):
+                digest = hashlib.sha256(json.dumps(stages.stages, sort_keys=True).encode()).hexdigest()
+                return write_dump(stages, Path(directory)/digest, **keywords)
+            def timed_lower(*arguments, **keywords):
+                started = time.monotonic()
+                try:
+                    return lower(*arguments, **keywords)
+                finally:
+                    compiler_calls.append(time.monotonic()-started)
+            with patch('tnca.aot._lower_ttir', side_effect=timed_lower), \
+                    patch.object(tnca.dump.Dump, 'write', distinct_dump), \
+                    launch_log(isolated=True) as cold_launches:
+                cold, wrappers = run_and_get_code(compiled, *dev)
             row['cold_compile_and_execute_seconds'] = time.monotonic()-start
+            row['tnca_backend_lowering_seconds'] = compiler_calls
+            row['compiler_time_scope'] = 'TNCA lowering calls only; cold wall includes Dynamo/Inductor/Triton and execution'
             if tnca.inductor.host_fallbacks(wrappers):
                 raise ValueError('standard path emitted a numerical host fallback')
             for i, wrapper in enumerate(wrappers):
@@ -97,6 +121,37 @@ def main():
             with launch_log(isolated=True) as launches:
                 result = compiled(*dev)
             row['output_sha256'] = check(result)
+            kernels = {}
+            for entry in cold_launches+launches:
+                path = Path(entry['artifact_path'])
+                digest = hashlib.sha256(path.read_bytes()).hexdigest()
+                if digest in kernels:
+                    continue
+                manifest, segments = artifact.load(path)
+                destination = out/name/'artifacts'/f'{digest}.tnca'
+                destination.parent.mkdir(parents=True, exist_ok=True)
+                destination.write_bytes(path.read_bytes())
+                kernels[digest] = dict(kernel=entry['kernel'], artifact=str(destination.relative_to(out)),
+                    code_bytes=len(segments['text']), resources=manifest['resources'],
+                    execution_resources=manifest['optional_metadata']['provenance'].get('execution_resources', {}))
+            stages = []
+            for metadata_path in sorted(ir_dir.rglob('*.json')):
+                metadata = json.loads(metadata_path.read_text())
+                if not {'ttir', 'tnir', 'asm', 'hex'} <= set(metadata['stages']):
+                    raise ValueError('representative Triton compile lacks mandatory raw IR stages')
+                files = {}
+                for stage, filename in metadata['stages'].items():
+                    path = metadata_path.parent/filename
+                    data = path.read_bytes()
+                    files[stage] = dict(path=str(path.relative_to(out)), bytes=len(data),
+                                        lines=len(data.splitlines()), sha256=hashlib.sha256(data).hexdigest())
+                stages.append(dict(kernel=metadata['kernel_name'], stages=files))
+            if not stages or not compiler_calls:
+                raise ValueError('fresh representative compilation did not retain compiler-stage evidence')
+            row['compiled_kernel_inventory'] = kernels
+            row['ir_inventory'] = stages
+            row['memory_after_execution'] = session.memory_stats
+            row['memory_scope'] = 'actual Session heap/code peaks since process start, including native helper copies; not complete-model peak'
             if name == 'recurrence' and (result[0].dtype != torch.float32 or dev[0].dtype != torch.float32):
                 raise ValueError('FP32 recurrent state was narrowed')
             assert launches and all(e['upload_bytes'] == e['download_bytes'] == 0 for e in launches)

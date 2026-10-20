@@ -37,6 +37,10 @@ struct FastDram : DramPath {
 // same request of the previous pass even when timing reorders the stream.
 struct SlowDram : DramPath {
     static constexpr unsigned OCC_BITS=24;
+    static std::uint16_t latency_value(u64 cycles){
+        require(cycles<=UINT16_MAX,"slow DRAM path: replay latency outside the supported 16-bit core-cycle domain");
+        return std::uint16_t(cycles);
+    }
     static u64 base_key(unsigned port,u64 address,bool write){return ((address>>6)<<3)|(u64(port&3)<<1)|(write?1:0);}
     static u64 address_of(u64 key){return ((key>>OCC_BITS)>>3)<<6;}
     static unsigned port_of(u64 key){return unsigned((key>>OCC_BITS)>>1)&3;}
@@ -50,16 +54,24 @@ struct SlowDram : DramPath {
     std::uint32_t fallback[2]={0,0};                       // read, write: the last replay's mean
     std::unordered_map<u64,std::uint32_t> occurrence;
     FILE* log=nullptr;u64 beats_extra=0;
-    u64 requests=0,matched=0,saturated=0;
+    u64 requests=0,matched=0;
     static u64 mix(u64 k){k^=k>>33;k*=0xff51afd7ed558ccdULL;k^=k>>33;k*=0xc4ceb9fe1a85ec53ULL;k^=k>>33;return k;}
     void begin_command(){occurrence.clear();requests=matched=0;cursor=0;}
     void clear(){std::vector<u64>().swap(keys);std::vector<std::uint16_t>().swap(lat);std::vector<std::uint32_t>().swap(slots);mask=0;}
     void install(std::vector<u64>&& k,std::vector<std::uint16_t>&& l){
+        require(k.size()==l.size(),"slow DRAM path: inconsistent latency table");
         clear();keys=std::move(k);lat=std::move(l);
         require(keys.size()<0xffffffffULL,"slow DRAM path: more than 2^32 requests in one command");
         u64 cap=16;while(cap<2*keys.size())cap<<=1;
         slots.assign(cap,0);mask=cap-1;
-        for(size_t i=0;i<keys.size();++i){u64 h=mix(keys[i])&mask;while(slots[h])h=(h+1)&mask;slots[h]=std::uint32_t(i+1);}
+        for(size_t i=0;i<keys.size();++i){
+            u64 h=mix(keys[i])&mask;
+            while(slots[h]){
+                require(keys[slots[h]-1]!=keys[i],"slow DRAM path: duplicate request key");
+                h=(h+1)&mask;
+            }
+            slots[h]=std::uint32_t(i+1);
+        }
     }
     bool lookup(u64 key,size_t& pos)const{
         if(slots.empty())return false;
@@ -73,9 +85,11 @@ struct SlowDram : DramPath {
     }
     u64 complete(const DramRequest& r) override{
         require(r.address<(u64(1)<<36),"slow DRAM path: address beyond the key range");
+        require(r.port<4,"slow DRAM path: outlet beyond the key range");
         u64 b=base_key(r.port,r.address,r.write);
         std::uint32_t& n=occurrence[b];
-        u64 occ=n;if(occ>=(u64(1)<<OCC_BITS)-1){occ=(u64(1)<<OCC_BITS)-1;++saturated;}else ++n;
+        require(n<(u64(1)<<OCC_BITS),"slow DRAM path: request occurrence beyond the key range");
+        u64 occ=n++;
         u64 key=(b<<OCC_BITS)|occ;
         std::uint32_t l=fallback[r.write?1:0];
         if(find(key,l))++matched;

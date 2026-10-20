@@ -301,6 +301,12 @@ def _install_block_fallback():
         if (os.environ.get('TNCA_TUNE', '0') == '1' and configs and
                 getattr(self.device_props, 'type', None) == 'tnca'):
             self._tnca_tuning_configs = list(configs)
+            if all(c.kwargs and set(c.kwargs) <= {'XBLOCK', 'YBLOCK', 'ZBLOCK'} for c in configs):
+                # A maximum width is a search bound, not permission to use a
+                # wide baseline on budget expiry or an inconclusive result.
+                conservative = [c for c in configs if all(v <= STAGE1_MAX_BLOCK for v in c.kwargs.values())]
+                if conservative:
+                    configs = self.configs = conservative
         if (self.compile_results or not configs or len(configs) < 2
                 or getattr(self.device_props, 'type', None) not in TNCA_DEVICE_TYPES):
             try:

@@ -100,8 +100,16 @@
       "outputs": [
         "{out}/model-build/tnca-chip",
         "{out}/model-build/tnca-tlm",
-        "{out}/model-build/tnca-dram-bridge-test"
+        "{out}/model-build/tnca-dram-bridge-test",
+        "{out}/model-build/tnca-dram-path-test"
       ]
+    },
+    {
+      "id": "dram-path-boundaries",
+      "kind": "systemc",
+      "argv": ["{out}/model-build/tnca-dram-path-test", "{root}/tools/performance_harness/systemc/configs/r40-board-m2.cfg"],
+      "timeout_seconds": 30,
+      "inputs": ["{out}/model-build/tnca-dram-path-test"]
     },
     {
       "id": "ramulator-mechanisms",

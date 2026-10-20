@@ -174,6 +174,12 @@ class CandidateTimedOut(TimeoutError):
     """The graph deadline terminated an isolated candidate and its children."""
 
 
+class DeviceSamples:
+    """Independent whole-call endpoint lists; host gaps never join samples."""
+    def __init__(self, samples):
+        self.samples = list(samples)
+
+
 def run_measurement(command, *, budget, result_path, log_path, cwd=None, env=None,
                     read_result=None, worker_record=None):
     """Compile/run an external worker within the original graph deadline.
@@ -286,7 +292,8 @@ class SharedGraphBudget(GraphBudget):
             return True
 
 
-def select(identity, candidates, *, capacities, capabilities, budget, measure, cache=None):
+def select(identity, candidates, *, capacities, capabilities, budget, measure, cache=None,
+           conservative=None):
     """Measure only legal candidates; `measure` returns device endpoint records.
 
     Each candidate names knobs, required capabilities and estimated resources.
@@ -295,11 +302,16 @@ def select(identity, candidates, *, capacities, capabilities, budget, measure, c
     """
     key=identity_key(identity)
     candidates=list(candidates)
+    if conservative is not None and conservative not in candidates:
+        raise ValueError('conservative configuration must belong to the legal search')
     encoded=[json.dumps(c,sort_keys=True,allow_nan=False) for c in candidates]
     if len(set(encoded))!=len(encoded):
         raise ValueError('duplicate tuning candidates')
     available={k for k,v in capabilities.items() if v is True} if isinstance(capabilities,dict) else set(capabilities)
-    context=json.dumps(dict(capacities=capacities,capabilities=sorted(available)),sort_keys=True,allow_nan=False)
+    context=json.dumps(dict(capacities=capacities,capabilities=sorted(available),
+                            conservative=conservative,
+                            policy='independent-range/1' if conservative is not None else 'minimum/1'),
+                       sort_keys=True,allow_nan=False)
     search_key=hashlib.sha256((key+'\n'+context+'\n'+'\n'.join(encoded)).encode()).hexdigest()
     if cache is not None:
         try:
@@ -340,16 +352,44 @@ def select(identity, candidates, *, capacities, capabilities, budget, measure, c
             rows.append(dict(candidate=candidate,status='refused',reason=str(error)))
             continue
         # A measurement cannot supply a host elapsed time in place of endpoints.
-        seconds=event_seconds(records,identity['clock_hz'])
+        samples = records.samples if isinstance(records, DeviceSamples) else [records]
+        if not samples or len(samples) > 16:
+            raise ValueError('one to sixteen independent device samples required')
+        durations = [event_seconds(sample, identity['clock_hz']) for sample in samples]
+        # Validate shared Session/epoch across calls without using their
+        # combined span (which would include host gaps) as a duration.
+        event_seconds([r for sample in samples for r in sample], identity['clock_hz'])
+        # Retain an actual representative endpoint list; never fabricate
+        # endpoints or include idle host gaps between independent calls.
+        index = sorted(range(len(samples)), key=lambda i: durations[i])[len(samples)//2]
+        records, seconds = samples[index], durations[index]
         over=budget.check_elapsed()
         rows.append(dict(candidate=candidate,status='over-budget' if over else 'measured',
-                         seconds=seconds,device_records=records))
+                         seconds=seconds,device_records=records,
+                         device_samples=samples,
+                         sample_range_seconds=[min(durations), max(durations)]))
     measured=[row for row in rows if row['status']=='measured']
     if not measured:
         raise ValueError('no legal measured candidate within the tuning budget')
     winner=min(measured,key=lambda row:row['seconds'])
+    decision='minimum device median'
+    if conservative is not None:
+        baseline=next((r for r in measured if r['candidate']==conservative),None)
+        if baseline is None:
+            raise ValueError('conservative configuration lacks a valid measurement')
+        if winner is not baseline:
+            # A median advantage alone cannot establish a stable benefit.
+            # Require three independent samples on both sides and strictly
+            # disjoint observed ranges; equality retains the baseline.
+            if (len(winner['device_samples']) < 3 or len(baseline['device_samples']) < 3
+                    or winner['sample_range_seconds'][1] >= baseline['sample_range_seconds'][0]):
+                winner=baseline
+                decision='inconclusive device samples; conservative configuration retained'
+        else:
+            decision='conservative configuration has minimum device median'
     result=dict(identity=identity,identity_key=key,selected=winner['candidate'],
                 seconds=winner['seconds'],rows=rows,cache_hit=False,
+                decision=decision,
                 tuning_seconds=budget.clock()-budget.started,budget_exceeded=budget.exceeded)
     if cache is not None and not budget.exceeded:
         cache[search_key]=json.loads(json.dumps(result))

@@ -1,0 +1,4 @@
+  PASS  refusals         eager op refused; mixed host/device graph refused
+  PASS  mixed_devices    2 rounds of CUDA and tnca graphs in one process, then a CPU-tensor graph
+  PASS  policy           templates, variance, cat, bmm, realize installed; tnca is not a GPU type
+r40-device-tests  PASS  (3/3)

@@ -70,7 +70,7 @@ def choose(tuner, args, *, stream, kwargs):
     import uuid
     import torch
     import triton
-    from .autotune import GraphBudget, PersistentCache, select, measure_native
+    from .autotune import GraphBudget, PersistentCache, DeviceSamples, select, measure_native
     from .torch_device import MEMORY
     from .torch_device.graph import active_capture
     from .errors import DeviceLost, SessionPoisoned
@@ -163,12 +163,20 @@ def choose(tuner, args, *, stream, kwargs):
             raise CandidateTimedOut('graph budget exhausted before device measurement')
         launcher = results[index].make_launcher()
         session.drain(timeout=budget.time_left())
-        with session.measurement_scope(wall_seconds=budget.time_left(), clock_hz=identity['clock_hz']):
-            return measure_native(lambda: launcher(*args, stream=stream, **kwargs), warmup=1)
+        samples = []
+        for sample in range(3):
+            remaining = budget.time_left()
+            if remaining <= 0:
+                raise CandidateTimedOut('graph budget exhausted between independent samples')
+            with session.measurement_scope(wall_seconds=remaining, clock_hz=identity['clock_hz']):
+                samples.append(measure_native(lambda: launcher(*args, stream=stream, **kwargs),
+                                              warmup=1 if sample == 0 else 0))
+        return DeviceSamples(samples)
     try:
         selected = select(identity, candidates, capacities={'code_bytes': WIDE_CODE_LIMIT},
                           capabilities=hardware['capabilities'], budget=budget,
-                          measure=measure, cache=PersistentCache(root/'cache'))
+                          measure=measure, cache=PersistentCache(root/'cache'),
+                          conservative=candidates[0])
         if selected['budget_exceeded']:
             row['reason'] = 'graph tuning budget exhausted; baseline retained'
         else:

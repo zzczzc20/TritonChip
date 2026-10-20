@@ -4,6 +4,8 @@
 With the switch off, the first legal compiler configuration remains in use.
 Pointwise candidates are generic block retiles, including conservative 16-lane and smaller legal blocks;
 neither workload IDs nor model names participate in generation or selection.
+For tuning, a wider maximum block is a search bound. The first legal configuration at or below
+16 lanes remains the baseline, including when `TNCA_MAX_BLOCK=32`.
 
 The parent compiles the baseline before opening a graph tuning budget and records its compile cost separately.
 Alternative compilation runs in device-free processes from the generated Inductor source, with the parent's
@@ -17,6 +19,10 @@ from caller logs. A measurement scope requires idle device work and a backend th
 deadlines; it reserves time for drain, restores limits, and refuses concurrent submissions from another thread.
 A host wait expiry is never treated as cancellation. Undrainable work poisons the Session; its epoch and handles
 are not silently changed. Device loss propagates so the caller can explicitly recover and recreate invalid state.
+Each candidate supplies three independent samples. Ranking uses the median's actual endpoint list,
+never the combined span across host gaps. A replacement needs its observed maximum below the baseline's
+observed minimum; overlapping ranges or fewer than three samples retain the baseline. This is a conservative
+selection rule, not a statistical confidence interval or a calibrated model accuracy claim.
 
 Only qualified physical common-clock endpoints rank production candidates. The selector requires the actual
 loaded image file identity, reviewed image-bound operating clock, enabled device endpoints and actual memory map.
@@ -54,5 +60,19 @@ The fresh staged-source AOT regression in `aot-after-measurement-scope-fresh.log
 
 The complete source of the public campaign precedes the final extra metadata-refusal guards and the
 argument-compatible cache wrapper; the additional refusal and AOT checks cover those edits.
-An actual public-path persistent-cache hit, complete cross-device boundary regression and physical-image
-selection/drain/error qualification remain to be completed before S1-03 can close.
+`kickoff/public-tuning-v3-evidence.tgz` preserves the first actual public persistent-cache proof, before
+the conservative-wide-baseline and independent-sample policy changes. The later
+`kickoff/public-tuning-v4-evidence.tgz` completes all five steps on the changed policy:
+
+- XBLOCK16 samples span 237-238 cycles versus XBLOCK8's 322-325 cycles; retain 16.
+- With a maximum block of 32, the actual baseline is 16: its samples span 238-239 cycles,
+  versus XBLOCK32's 239-240 cycles. Retain 16.
+- Both RTL cases then hit the persistent cache using the exact public-hook bindings, with no new
+  device launches or candidate compilation. Formal execution remains one resident launch.
+
+`tuning-policy-v4.log` records 17 policy and six worker tests, including disjoint/overlapping/tied ranges,
+insufficient samples, cache decision preservation, host-gap exclusion and changed Session/epoch rejection.
+`tuning-boundary-v1.log` records three passing existing device tests with tuning enabled: actual CUDA/TNCA
+alternation followed by the CPU-tensor path, eager/mixed-device refusals, and device-specific policy registration.
+Physical-image selection/drain/error qualification and final acceptance regression remain outstanding;
+the injected RTL qualification is still only functional evidence.

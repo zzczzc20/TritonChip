@@ -38,7 +38,21 @@ with independent CPU references, no host numerical fallback, no steady tensor st
 The report records cold compile-plus-execute time, machine-code sizes, predicted cycles and cumulative host RSS.
 These graphs cover primitive semantics; the recurrence uses one representative head, not the full 18-layer state.
 The earlier failed combined report remains at `kickoff/primitives/report.json` and is not counted as a final PASS.
-Actual compiler-stage IR inventory and complete-model peak/code working-set estimates still need completion.
+`kickoff/primitive-ir-v2-evidence.tgz` adds a registered experiment with a fresh process per primitive.
+It retains every distinct cold/steady artifact, its resource plan, raw TTIR/TNIR/assembly/hex and stage hashes.
+Dump directories use compilation-content hashes so different specializations with the same kernel name
+cannot overwrite their evidence. Session counters include actual helper copies and allocator reservations.
+
+| Primitive | Distinct compiled artifacts / IR sets | Unique code bytes | TNCA lowering seconds | Session heap / code peak bytes |
+|---|---:|---:|---:|---:|
+| D256 attention | 11 / 11 | 100,544 | 4.440 | 183,872 / 100,928 |
+| Depthwise | 3 / 3 | 16,616 | 0.430 | 1,920 / 16,768 |
+| FP32 recurrence | 6 / 6 | 6,352 | 0.171 | 200,128 / 6,592 |
+
+Lowering time covers the actual TNCA backend calls, not Dynamo/Inductor's entire compilation.
+Cold compile-plus-execute walls are 6.915, 1.668 and 1.641 seconds respectively.
+These are representative graph sizes and actual process-local memory peaks, not a complete-model
+working-set bound. Complete-model peak/code working-set estimates remain outstanding.
 
 The analytical [capacity calculation](kickoff/qwen-core-capacity.json) for B=1, prefill128+decode16 gives:
 

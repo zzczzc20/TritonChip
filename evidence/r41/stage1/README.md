@@ -18,6 +18,12 @@
 | `kickoff/historical-ooc-audit.json` | 77 个 RTL 文件与历史 OOC 源码全部一致；changed/missing/extra mutation probes 均被拒绝 | 新综合、区域预检或新 route timing 通过 |
 | `kickoff/matched-native-speed-v1-evidence.tgz` | 相同 AOT artifact、输入、地址、单 program；RTL/SystemC 各 1 次 warmup、3 次完成执行；中位 host 执行 3.357 s / 0.001852 s | 全工作负载的统一加速倍数；单点周期预测 1397 对 RTL 1281 仍保留为误差证据 |
 | `kickoff/prospective-prediction.json`、`prospective-wide/` | 板测前保存候选预测及不可变源码身份 | 对应板测、残差或最终源码回归已经完成 |
+| `kickoff/public-tuning-v4-evidence.tgz`、`tuning-policy-v4.log`、`tuning-boundary-v1.log` | 最大块 32 仍以合法 16 块起步；三次独立设备样本与保守不确定性策略；真实公共路径 cache 命中且不重测；17 项策略、6 项 worker、CUDA/TNCA/CPU 边界回归通过 | 物理镜像上的 tuning/drain/error 资格已经完成 |
+| `kickoff/harness-smoke-v4-evidence.tgz`、`memory_paths.md` | 新慢路径域拒绝守卫后的干净构建、完整 smoke、快慢路径与监控一致性通过 | 实际 bank/row map、请求/延迟定点、控制器背压或板上模型资格已经完成 |
+| `kickoff/barrier-ordering-v2-evidence.tgz`、`synchronization.md` | store/reload 与 alias 的三类 RTL 响应模式；跨 role fence 替代 rendezvous 的负例；异步 lease 负例 | 可以删除其他图的同步或替代最终板测 |
+| `kickoff/frequency-preflight-v2-evidence.tgz`、`frequency_preflight.md` | 全 census 重建、93 MHz 历史差异保留、F01-F10 责任源码、原始 SLR packing 风险 | 新频率闭合或候选实现已经完成 |
+| `kickoff/primitive-ir-v2-evidence.tgz` | 三个独立进程的代表图保留真实 IR、artifact 资源、TNCA lowering 时间与 Session heap/code 峰值 | 完整模型运行时峰值或完整模型编译已经通过 |
+| `locality_design.md` | 通用消费者、storage/alias/lifetime、已有 TMU 控制、拒绝规则与 Stage 2 板测设计 | Stage 2 locality runtime 功能已经接入或已有收益 |
 
 谓词压力修复使用现有 `p.ballot`/`p.frombits` 保存精确 lane mask，不能增加架构容量。
 pointwise 超出资源时依次尝试较小 block，保留共同 TNCA 执行路径；已有合法配置仍优先使用。
@@ -28,8 +34,8 @@ column broadcast 修复 `[R,1]` 加载后的每行 lane 0 复制语义，不按�
 
 ## 尚未满足的签收条件
 
-公共 `TNCA_TUNE` 消费者的 cache 命中复验及物理验证、同步与 locality/DCO 审计、内存映射及计时边界资格、三个闭环案例、
-候选区域预检和完整模型 IR/运行时峰值估算仍须完成。当前模型算子/状态/cache 接口分析见 `model_feasibility.md`。
+公共 `TNCA_TUNE` 的物理验证、内存映射及计时边界资格、三个闭环案例的板上闭合、
+完整模型运行时峰值与 code working-set 估算仍须完成。当前模型算子/状态/cache 接口分析见 `model_feasibility.md`。
 最终 90 MHz 全套数值回归、正式非退化结果、prospective 板测残差、干净 git archive/fresh cache 重建及冻结板上锚点亦未完成。
 
 卡上观测镜像曾为 UUID `428c00e5-6996-92c7-1f8f-ec41f2d037b3`、245 MHz，且有使用者；

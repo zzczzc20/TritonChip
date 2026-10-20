@@ -6,13 +6,14 @@ this test does not certify a physical image, clock, timing or performance gate.
 Without that flag SystemC must retain the conservative native configuration.
 """
 import argparse
-from contextlib import nullcontext
+from contextlib import ExitStack, nullcontext
 import hashlib
 import json
 import os
 from pathlib import Path
 import sys
 import threading
+import time
 from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -24,10 +25,12 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument('--out', type=Path, required=True)
     ap.add_argument('--functional-rtl', action='store_true')
+    ap.add_argument('--max-block', type=int, choices=(16, 32), default=16)
     args = ap.parse_args()
     out = args.out.resolve()
     out.mkdir(parents=True, exist_ok=False)
     os.environ.update(TNCA_TUNE='1', TNCA_TUNE_CANDIDATES='2', TNCA_TUNE_SECONDS='300',
+                      TNCA_MAX_BLOCK=str(args.max_block),
                       TNCA_TUNE_DIR=str(out/'tune'), TRITON_CACHE_DIR=str(out/'triton-cache'),
                       TORCHINDUCTOR_CACHE_DIR=str(out/'inductor-cache'))
     import torch
@@ -37,7 +40,7 @@ def main():
         tlm_backend.register()
     import tnca.torch_device as device
     device.register()
-    from tnca.inductor_tuning import SELECTIONS
+    from tnca.inductor_tuning import SELECTIONS, choose as actual_choose
     from tnca.triton_backend.driver import launch_log
     from tnca.errors import SessionBusy
     torch.manual_seed(3108)
@@ -56,9 +59,18 @@ def main():
                     clock=dict(clock_hz=100000000, operating_clock_evidence_sha256='functional-test-nominal-normalizer'),
                     memory_map=s.dev.axi_window, capabilities=s.dev.capabilities())
     context = patch('tnca.inductor_tuning._hardware_identity', functional_identity) if args.functional_rtl else nullcontext()
-    with context:
+    calls = []
+    def observe(tuner, arguments, *, stream, kwargs):
+        calls.append((tuner, arguments, stream, dict(kwargs)))
+        return actual_choose(tuner, arguments, stream=stream, kwargs=kwargs)
+    cache_validation = None
+    with ExitStack() as stack:
+        stack.enter_context(context)
+        stack.enter_context(patch('tnca.inductor_tuning.choose', side_effect=observe))
+        started = time.monotonic()
         with launch_log(isolated=True) as cold:
             result = graph(da, db)
+        cold_seconds = time.monotonic()-started
         torch.testing.assert_close(result.cpu(), (a+b)*.5)
         assert SELECTIONS, 'TNCA_TUNE did not enter the public Inductor hook'
         if args.functional_rtl:
@@ -68,11 +80,29 @@ def main():
             assert len([r for r in first['rows'] if r['status'] == 'measured']) == 2, first
             assert not first['cache_hit']
             assert all(r['device_records'][0]['clock'] == 'mmio-device-clock/1' for r in first['rows'])
+            assert all(len(r['device_samples']) == 3 for r in first['rows'])
+            assert all(max(r['baseline_config'].values()) <= 16 for r in selected), selected
+            baseline = first['rows'][0]
+            winner = next(r for r in first['rows'] if r['candidate'] == first['selected'])
+            if winner is not baseline:
+                assert winner['sample_range_seconds'][1] < baseline['sample_range_seconds'][0], first
             # Cold compilation itself emits native helper copies. Isolate
             # the graph kernel by the actual selected tuner's identity:
             # its tuning warmups/candidates must not enter the caller log.
             kernels = {r['kernel'] for r in selected}
             assert len([e for e in cold if e['kernel'] in kernels]) == 1, cold
+            # Use the exact bindings observed at the real public hook. The
+            # per-kernel measurement admission count is already exhausted:
+            # only a genuine persistent-cache hit can select again here.
+            tuner, arguments, stream, kwargs = next(c for c in calls if c[0].fn.__name__ == selected[-1]['kernel'])
+            tuner._tnca_selected_signature = None
+            with launch_log(isolated=True) as cache_launches:
+                actual_choose(tuner, arguments, stream=stream, kwargs=kwargs)
+            hit = SELECTIONS[-1]
+            assert hit['status'] == 'selected' and hit['selection']['cache_hit'], hit
+            assert not cache_launches, 'persistent cache performed device measurements again'
+            assert not hit['compilation'], 'persistent cache recompiled an already available candidate'
+            cache_validation = dict(status='pass', cache_hit=True, new_device_launches=0)
             limits = (session.deadline_cycles, session.dev.deadline_cycles, session.dev.host_timeout)
             rejected = []
             with session.measurement_scope(wall_seconds=30, clock_hz=100000000):
@@ -94,9 +124,11 @@ def main():
         torch.testing.assert_close(result.cpu(), (a+b)*.5)
         assert len(formal) == 1 and all(e['upload_bytes'] == e['download_bytes'] == 0 for e in formal)
     report = dict(schema='tnca-public-inductor-tuning-test/1', status='functional-pass',
+                  max_block=args.max_block,
                   domain='functional-RTL-test-with-injected-image-qualification' if args.functional_rtl else 'uncalibrated-SystemC-conservative',
                   physical_qualification='not-measured', selections=SELECTIONS, cold_launches=cold,
-                  formal_launches=formal)
+                  formal_launches=formal, cold_compile_and_execute_seconds=cold_seconds,
+                  persistent_cache_validation=cache_validation)
     (out/'report.json').write_text(json.dumps(report, indent=2)+'\n')
     print(json.dumps(dict(status=report['status'], domain=report['domain'],
                           selections=[r['status'] for r in SELECTIONS]), indent=2))

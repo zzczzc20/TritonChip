@@ -1,0 +1,9 @@
+test_changed_slack_population_is_refused (__main__.FrequencyPreflightTests.test_changed_slack_population_is_refused) ... ok
+test_complete_authoritative_population (__main__.FrequencyPreflightTests.test_complete_authoritative_population) ... ok
+test_missing_endpoint_or_family_is_not_complete (__main__.FrequencyPreflightTests.test_missing_endpoint_or_family_is_not_complete) ... ok
+test_regions_match_the_real_a3_report (__main__.FrequencyPreflightTests.test_regions_match_the_real_a3_report) ... ok
+
+----------------------------------------------------------------------
+Ran 4 tests in 0.305s
+
+OK

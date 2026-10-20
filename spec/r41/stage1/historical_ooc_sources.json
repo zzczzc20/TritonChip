@@ -86,6 +86,7 @@
   "flow_reference": "c745ea1",
   "flow_comparison": "git diff --exit-code c745ea1 d1feb89 -- flow/synth/vivado_ooc_timing.tcl flow/fpga/synth_r40_multicore.tcl flow/fpga/place_r40_multicore.tcl tools/r40/final_image_ooc.sh tools/r40/audit_cross_slr_cones.tcl evidence/r40/v2/convergence/attempt03/image.tcl",
   "flow_comparison_exit_code": 0,
+  "a3_routed_slr_report_sha256": "7a34526dc6b469ba97f71b0336ae5b41e6085d51dce85432c43a3c965f4daf8d",
   "raw_archives": [
     "evidence/r40/v3/final_image_candidate/ooc_units/units_reports.tgz",
     "evidence/r40/v3/final_image_candidate/kernel_audit/kernel_audit.tgz"

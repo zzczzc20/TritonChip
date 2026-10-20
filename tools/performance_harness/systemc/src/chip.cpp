@@ -1146,8 +1146,8 @@ struct Model {
         out.lat.resize(latency.size());
         double sum[2]={0,0};u64 n[2]={0,0};
         for(size_t i=0;i<latency.size();++i){
-            u64 l=dram_fixed+(u64(latency[i])+dram_ratio-1)/dram_ratio;if(l>65535)l=65535;
-            out.lat[i]=std::uint16_t(l);
+            u64 l=dram_fixed+(u64(latency[i])+dram_ratio-1)/dram_ratio;
+            out.lat[i]=SlowDram::latency_value(l);
             unsigned w=SlowDram::write_of(out.keys[i])?1:0;sum[w]+=double(l);++n[w];
         }
         for(unsigned w=0;w<2;++w)out.mean[w]=n[w]?std::uint32_t(sum[w]/double(n[w])+0.5):slow->fallback[w];

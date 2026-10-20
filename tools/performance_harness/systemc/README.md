@@ -164,6 +164,56 @@ directional.py --dataset D --predictions predictions.jsonl --fidelity fidelity.j
 `--untimed-cold` runs that cold call untimed. `--env KEY=VALUE` sets a
 runtime knob for every run (e.g. `TNCA_RTL_MEM_PORTS=3`).
 
+## DRAM paths: fast and slow (M3)
+
+The memory model asks one interface for every line that reaches the HBM side
+(`include/tnca_dram.hpp`: `DramPath::complete(DramRequest{port, address,
+write, arrival})` returns the completion cycle):
+
+- **fast** (`dram_path=0`, the default): the M2 latency model,
+  `hbm_latency_cycles` (+ the second beat) for a read and
+  `tl_hbm_write_latency_cycles` for a write. Bit-identical to M2.
+- **slow** (`dram_path=1`, `configs/r40-board-m3.cfg`): Ramulator2 HBM2, one
+  FR-FCFS open-page controller with refresh per pseudo channel
+  (`ramulator/hbm2_u280_pc.py` lists every assumption). Each timed command
+  (launch or flush) is solved as a fixed point: a forked copy-on-write child
+  runs the command reading per-request latencies from a table and logs its
+  DRAM requests; the parent replays them through Ramulator2
+  (`ramulator/tnca_dram_bridge.cpp`) and rebuilds the table
+  (`dram_fixed_cycles` + the Ramulator2 latency); after at most
+  `dram_max_passes` children, or once two children agree within
+  `dram_tolerance_ppm`, the command runs for real. Untimed commands (`T 0`)
+  run once. Per command: `<model dir>/dram_fixed_point.jsonl` (passes,
+  residual, requests, row hits/misses/conflicts, refreshes, time); totals in
+  the `dram_*` counters; path, Ramulator2 commit and config sha256 in
+  `summary.json`.
+
+Switch with the config key or the environment (the environment wins):
+
+```sh
+TNCA_DRAM_PATH=slow tnca-chip --serve configs/r40-board-m2.cfg ...      # slow path on any config
+run_graphs.py ... --config configs/r40-board-m3.cfg                       # slow (dram_path=1)
+run_graphs.py ... --config configs/r40-board-m3.cfg --dram-path fast      # the M2 fast path
+```
+
+The slow path needs a binary configured with the pinned Ramulator2 checkout:
+
+```sh
+git clone https://github.com/CMU-SAFARI/ramulator2 && git -C ramulator2 checkout $(cat ramulator/PIN)
+cmake -S ramulator2 -B ramulator2/build_lib -DCMAKE_BUILD_TYPE=Release -DRAMULATOR_PYTHON_BINDINGS=OFF
+cmake --build ramulator2/build_lib --parallel 6      # libramulator.so in the checkout root
+cmake -S . -B build -DCMAKE_PREFIX_PATH=SYSTEMC -DRAMULATOR2_DIR=$PWD/ramulator2 && cmake --build build
+build/tnca-dram-bridge-test ramulator/hbm2_u280_pc.yaml   # bridge unit tests
+```
+
+Without `RAMULATOR2_DIR` the binary has only the fast path and refuses
+`dram_path=1`. Configure refuses a checkout that is not the pinned commit or
+has local changes. `ramulator/hbm2_u280_pc.yaml` (committed) is exported
+from `hbm2_u280_pc.py` by `python3 -m ramulator export`, which needs a build
+with Python bindings; that build runs Ramulator2's code generator, which
+rewrites (reformats) its generated DRAM sources, so do it in a separate
+checkout and build the library above from the pristine pin.
+
 ## Numeric authority: offline RTL oracles
 
 The RTL is the semantic authority, used offline only:

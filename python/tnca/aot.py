@@ -541,6 +541,18 @@ def _seal(output, kernel_name, params, asm_text, code, report, target, pinfo,
     if 'scratch_bytes' in report:
         measured['scratch_bytes'] = report['scratch_bytes']
     report['resources'] = measured
+    if 'execution_resources' in prov.entries:
+        plan = prov.entries['execution_resources']
+        plan['allocated_resources'] = measured
+        plan['logical_gemm_tiles'] = prov.entries.get('register_blocks', {}).get('gemm_tiles', [])
+        plan['mma_retiles'] = prov.entries.get('mma_retiles', [])
+        plan['window_lifetime'] = prov.entries.get('window_lifetime', {})
+        plan['bank_allocation'] = prov.entries.get('bank_allocation', {})
+        plan['layout'] = {k: prov.entries[k] for k in
+                          ('opt_views_renamed', 'opt_views_materialised', 'opt_layout_upstream')
+                          if k in prov.entries}
+        plan['selection_notes'] = {k: v for k, v in prov.entries.items()
+                                   if k.endswith(('_fallback', '_refused'))}
     man = _manifest(kernel_name, params, target, pinfo, constexprs, options,
                     prov, source_kind, report, measured=measured)
     return artifact.write(output, man, {'text': code}), measured

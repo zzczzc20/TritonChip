@@ -2364,6 +2364,20 @@ class TTIRImporter:
                 self._tiles[rid] = Tile('lazy', get, shape[0], shape[1],
                                         elem)
                 return
+            if tile.cols == 1 and shape[1] > 1:
+                # A loaded [R, 1] has data only in lane zero of each
+                # physical row. Changing its declared width would leave
+                # zeroes in every other lane, unlike a semantic broadcast.
+                get = self._tile_row_getter(tile, elem)
+                def row(r):
+                    value = get(0 if tile.rows == 1 else r)
+                    if elem == 'i1':
+                        value = self.b.vselect(value, self.b.vmovi(1), self.b.vmovi(0))
+                        lane = self.b.vextract(value, 0)
+                        return self.b.vcmp('ne', self.b.splat(lane), self.b.vmovi(0))
+                    return self.b.splat(self.b.vextract(value, 0, dtype=elem), dtype=elem)
+                self._tiles[rid] = Tile('lazy', row, shape[0], shape[1], elem)
+                return
             if tile.rows == shape[0]:
                 self._tiles[rid] = Tile(tile.kind, tile.handle, shape[0],
                                         shape[1], tile.dtype)
@@ -3306,7 +3320,9 @@ class TTIRImporter:
         """
         if not self._is_zero_tensor(op.get_operand(2)):
             return None
-        users = self._value_users.get(op.get_result(0).id(), [])
+        value_users = getattr(op, 'value_users', None)
+        users = (value_users(self, op.get_result(0)) if value_users else
+                 self._value_users.get(op.get_result(0).id(), []))
         if len(users) != 1 or users[0][0].get_name() != 'arith.addf':
             return None
         add, k = users[0]
@@ -3315,7 +3331,9 @@ class TTIRImporter:
         if x is None or x.kind != 'accumulator' or (x.rows, x.cols) != (a.rows, b.cols) \
                 or x.store != 'f32':
             return None
-        if len(self._value_users.get(other.id(), [])) != 1:
+        other_users = (value_users(self, other) if value_users else
+                       self._value_users.get(other.id(), []))
+        if len(other_users) != 1:
             return None
         bar = self.b.barrier(name=f"mma{len(self.kernel.barriers)}")
         tok = self.b.barrier_arm(bar, arrivals=0, ops=1)

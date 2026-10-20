@@ -34,6 +34,7 @@ import json
 import os
 from pathlib import Path
 import re
+import signal
 import subprocess
 import sys
 import time
@@ -48,6 +49,33 @@ RUNTIME = dict(TNCA_TRANSFER_POLICY='per-kernel', TNCA_ACTIVE_CORES='1', TNCA_RT
                TNCA_DEADLINE='200000000000', TNCA_HOST_TIMEOUT='28800')
 B40N = dict(TNCA_MAX_BLOCK='16', TNCA_GEMM_TILE='16,16,16', TNCA_REDUCTION_ROWS='1', TNCA_BANK_ALLOC='0',
             TNCA_WINDOW_REUSE='0', TNCA_SDPA='decomposed', TNCA_PIPELINE='2', TNCA_TUNE='0')
+
+
+def bounded_child(cmd, *, cwd, env, stderr, timeout):
+    """A graph timeout must also terminate its compiler/model descendants."""
+    process = subprocess.Popen(cmd, cwd=cwd, env=env, stdout=subprocess.PIPE,
+                               stderr=stderr, text=True, start_new_session=True)
+    try:
+        try:
+            stdout, _ = process.communicate(timeout=timeout)
+            return stdout, process.returncode
+        except subprocess.TimeoutExpired:
+            try:
+                os.killpg(process.pid, signal.SIGKILL)
+            except ProcessLookupError:
+                pass
+            stdout, _ = process.communicate()
+            return stdout, 'timeout'
+    finally:
+        try:
+            os.killpg(process.pid, signal.SIGKILL)
+        except ProcessLookupError:
+            pass
+        process.wait()
+
+
+def complete_run(row):
+    return row.get('status') == 'pass' and row.get('returncode') == 0 and not row.get('fallbacks')
 
 
 def child(a):
@@ -89,6 +117,10 @@ def child(a):
                 counters = inst.counters_snapshot()
                 (inst.dir/'counters.json').write_text(json.dumps(counters, indent=1, sort_keys=True) + '\n')
                 info['counters_file'] = str(inst.dir/'counters.json')
+                flat = counters.get('counters', counters) if isinstance(counters, dict) else {}
+                # Slow DRAM path: per-run totals of the per-command fixed point
+                # (per command: dram_fixed_point.jsonl in the model directory).
+                info['dram'] = {k: v for k, v in flat.items() if k.startswith('dram_')}
             except Exception as e:                           # noqa: BLE001
                 info['counters_error'] = repr(e)
         (inst.dir/'launches.json').write_text(json.dumps(inst.launches, indent=1) + '\n')
@@ -163,6 +195,8 @@ def summarize(rec, wall):
                 model_retired=sum(m['retired'] for m in model) if model else None,
                 model_dirs=[m['model_dir'] for m in model], evidence=rec.get('evidence_level'),
                 model_graph=rec.get('model_graph'),
+                dram={k: sum(m.get('dram', {}).get(k, 0) for m in model) for k in
+                      sorted({k for m in model for k in m.get('dram', {})})} if model else None,
                 # The only problem is the cold call's extra setup launches
                 # (outputs matched the reference: archbench lists a mismatch
                 # as a second problem).
@@ -206,7 +240,7 @@ def parent(a):
         for d in ('triton_cache', 'triton_home', 'inductor_cache', 'tmp', 'dump', 'model'):
             (run_dir/d).mkdir(parents=True, exist_ok=True)
         env = {k: v for k, v in os.environ.items() if not k.startswith(('TNCA_', 'TRITON_', 'TORCHINDUCTOR_'))
-               or k == 'TNCA_CACHE'}  # where `make device` / device.prepare put the RTL simulator
+               or k in ('TNCA_CACHE', 'TNCA_DRAM_PATH', 'TNCA_RAMULATOR2_CONFIG')}  # RTL simulator cache; DRAM path
         env.update(HARNESS)
         if a.dataset:   # the board record's knobs and nothing else
             env.update(TNCA_DEADLINE=RUNTIME['TNCA_DEADLINE'], TNCA_HOST_TIMEOUT=RUNTIME['TNCA_HOST_TIMEOUT'])
@@ -231,6 +265,8 @@ def parent(a):
             env['TNCA_TLM_CONFIG'] = str(Path(a.config).resolve())
         if a.memory_bytes:
             env['TNCA_TLM_MEMORY_BYTES'] = a.memory_bytes
+        if a.dram_path:
+            env['TNCA_DRAM_PATH'] = a.dram_path
         (run_dir/'env.json').write_text(json.dumps({k: v for k, v in env.items()
                                                     if k.startswith(('TNCA_', 'TRITON', 'TORCH'))}, indent=1))
         timed = a.timed
@@ -247,12 +283,7 @@ def parent(a):
             env['TNCA_TLM_UNTIMED_COLD'] = '1'
         t = time.monotonic()
         with (run_dir/'child.log').open('w') as log:
-            try:
-                proc = subprocess.run(cmd, cwd=run_dir, env=env, stdout=subprocess.PIPE, stderr=log,
-                                      text=True, timeout=a.timeout)
-                stdout, code = proc.stdout, proc.returncode
-            except subprocess.TimeoutExpired as e:
-                stdout, code = (e.stdout or b'').decode() if isinstance(e.stdout, bytes) else (e.stdout or ''), 'timeout'
+            stdout, code = bounded_child(cmd, cwd=run_dir, env=env, stderr=log, timeout=a.timeout)
         wall = time.monotonic() - t
         (run_dir/'stdout.log').write_text(stdout)
         rec = None
@@ -277,7 +308,9 @@ def parent(a):
 
     with cf.ThreadPoolExecutor(max_workers=a.jobs) as pool:
         list(pool.map(one, points))
-    print('DONE', sum(1 for r in results.values() if r.get('status') == 'pass'), '/', len(points), flush=True)
+    complete = sum(1 for r in results.values() if complete_run(r))
+    print('DONE', complete, '/', len(points), flush=True)
+    return 0 if complete == len(points) and points else 1
 
 
 def main():
@@ -307,6 +340,7 @@ def main():
     ap.add_argument('--untimed-cold', action='store_true',
                     help='run the cold call untimed when a steady call is measured (timeline memory only)')
     ap.add_argument('--env', action='append', help='KEY=VALUE set for every run after the knobs (e.g. TNCA_RTL_MEM_PORTS=3)')
+    ap.add_argument('--dram-path', choices=('fast', 'slow'), help='TNCA_DRAM_PATH for the model (overrides dram_path)')
     ap.add_argument('--jobs', type=int, default=4)
     ap.add_argument('--timeout', type=float, default=7200)
     ap.add_argument('--warmup', type=int, default=0)
@@ -315,9 +349,10 @@ def main():
     a = ap.parse_args()
     if a.child:
         child(a)
+        return 0
     else:
-        parent(a)
+        return parent(a)
 
 
 if __name__ == '__main__':
-    main()
+    raise SystemExit(main())

@@ -1,0 +1,7 @@
+/home/zhongchun/r41-stage1/src/python/tnca/device.py:472: RuntimeWarning: the staged copy under /home/zhongchun/r41-stage1/src/python/tnca/data differs from the working tree in ['rtl', 'rtl/core', 'rtl/common', 'tb/common', 'tb/device']. The runtime reads the staged copy, so it is about to build a device from sources that are not the ones you edited. Run `make r2-stage-data`.
+  warn_if_staged_copy_is_stale()
+.........
+----------------------------------------------------------------------
+Ran 9 tests in 5.423s
+
+OK

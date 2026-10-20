@@ -137,7 +137,8 @@ def make_backend_class():
                 self._lost('the runtime addresses device memory from 0; model memory_base must be 0')
             self.identity = dict(backend=self.name, binary=str(self.binary.resolve()), binary_sha256=_sha(self.binary),
                                  config=values, config_sha256=_sha(config), model_dir=str(self.dir),
-                                 calibration='not-measured', execution='native SystemC/TLM-2.0 model, no RTL')
+                                 calibration='not-measured', execution='native SystemC/TLM-2.0 model, no RTL',
+                                 dram_path=os.environ.get('TNCA_DRAM_PATH') or ('slow' if values.get('dram_path') == '1' else 'fast'))
             self.timed = True
             if os.environ.get('TNCA_TLM_UNTIMED_COLD') == '1':
                 # The cold call runs untimed (its cycles are not a measurement);

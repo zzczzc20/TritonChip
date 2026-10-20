@@ -1,0 +1,112 @@
+{
+  "schema": "tnca-experiment-spec/1",
+  "id": "r41-merged-boundaries",
+  "allowed_hosts": [
+    "gx10-6646"
+  ],
+  "hypothesis": "M1-M4 preserve host ownership, memory-control settlement and core behavior while correcting ISA float-to-int conversion.",
+  "competing_explanations": [
+    "a registered grant loses a response or accepts without live permission",
+    "memory controls change before outstanding traffic drains",
+    "conversion repair breaks another instruction or a core memory mode"
+  ],
+  "expected_observations": [
+    "all merged-source core programs pass in normal/VRF/slow-memory modes",
+    "host mux directed and random ownership checks pass",
+    "MMIO/AXI control tests pass",
+    "181632 independent ISA conversion vectors match"
+  ],
+  "sources": [
+    "Makefile",
+    "rtl",
+    "tb",
+    "tools/model",
+    "tools/asm",
+    "tools/r1",
+    "tools/run_test.sh",
+    "tools/r40/coherent_host_tests.py",
+    "tools/r40/memory_control_tests.py",
+    "tools/r40/memory_control_host_tests.py",
+    "tools/r40/multicore_mmio_option_tests.py",
+    "python"
+  ],
+  "env": {
+    "PATH": "{home}/tc_env/bin:/usr/local/bin:/usr/bin:/bin",
+    "PYTHONPATH": "{root}:{root}/python:{root}/compiler/python:{root}/tools/asm",
+    "OMP_NUM_THREADS": "2",
+    "MKL_NUM_THREADS": "2"
+  },
+  "steps": [
+    {
+      "id": "lint",
+      "kind": "compile",
+      "argv": [
+        "make",
+        "lint"
+      ],
+      "timeout_seconds": 600
+    },
+    {
+      "id": "core-modes",
+      "kind": "rtl",
+      "argv": [
+        "make",
+        "core",
+        "core-vrf",
+        "core-slowmem"
+      ],
+      "timeout_seconds": 7200
+    },
+    {
+      "id": "host-ownership",
+      "kind": "rtl",
+      "argv": [
+        "{python}",
+        "tools/r40/coherent_host_tests.py"
+      ],
+      "timeout_seconds": 1200
+    },
+    {
+      "id": "memory-controls",
+      "kind": "rtl",
+      "argv": [
+        "{python}",
+        "tools/r40/memory_control_tests.py",
+        "--out",
+        "{out}/memory-controls"
+      ],
+      "timeout_seconds": 600,
+      "outputs": [
+        "{out}/memory-controls/report.json"
+      ]
+    },
+    {
+      "id": "f2i-build",
+      "kind": "compile",
+      "argv": [
+        "make",
+        "sim/build/tb_vector_fpu_f2i.vvp",
+        "sim/build/f2i_vectors.txt"
+      ],
+      "timeout_seconds": 300,
+      "outputs": [
+        "sim/build/tb_vector_fpu_f2i.vvp",
+        "sim/build/f2i_vectors.txt"
+      ]
+    },
+    {
+      "id": "f2i-oracle",
+      "kind": "rtl",
+      "argv": [
+        "vvp",
+        "sim/build/tb_vector_fpu_f2i.vvp",
+        "+vec=sim/build/f2i_vectors.txt"
+      ],
+      "timeout_seconds": 600,
+      "inputs": [
+        "sim/build/tb_vector_fpu_f2i.vvp",
+        "sim/build/f2i_vectors.txt"
+      ]
+    }
+  ]
+}

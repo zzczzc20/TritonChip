@@ -1,0 +1,18 @@
+/home/zhongchun/tc_env/torchenv/bin/python tools/performance_harness/stage_contract.py --stage 1
+{
+  "schema": "tnca-r41-freeze-check/1",
+  "stage": 1,
+  "status": "frozen-inputs-verified",
+  "lock_sha256": "58962c7e92973ad3ea4a48e94b9f159541bc863006c5bae256372d97499b1ae9",
+  "registry_checked": true,
+  "original_unique_points": 113,
+  "required_packages": [
+    "S1-00",
+    "S1-01",
+    "S1-02",
+    "S1-03",
+    "S1-04",
+    "S1-05"
+  ],
+  "delivery_acceptance": "not-measured"
+}

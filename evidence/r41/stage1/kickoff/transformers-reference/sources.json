@@ -1,0 +1,18 @@
+{
+  "repository": "huggingface/transformers",
+  "revision": "4321355eeae7934bba83fce43269345c5f17feda",
+  "files": {
+    "src/transformers/models/qwen3_5/modeling_qwen3_5.py": {
+      "url": "https://raw.githubusercontent.com/huggingface/transformers/4321355eeae7934bba83fce43269345c5f17feda/src/transformers/models/qwen3_5/modeling_qwen3_5.py",
+      "sha256": "63b50baa3ad02a94ea04ebf5e24a9a2da09cc879f165123a82943dff1a2dc825"
+    },
+    "src/transformers/models/qwen3_5/configuration_qwen3_5.py": {
+      "url": "https://raw.githubusercontent.com/huggingface/transformers/4321355eeae7934bba83fce43269345c5f17feda/src/transformers/models/qwen3_5/configuration_qwen3_5.py",
+      "sha256": "e5316490555c2d3590682f1d84ca656bdf3d2aff7475b95b682c03afbb69e748"
+    },
+    "src/transformers/cache_utils.py": {
+      "url": "https://raw.githubusercontent.com/huggingface/transformers/4321355eeae7934bba83fce43269345c5f17feda/src/transformers/cache_utils.py",
+      "sha256": "fc1e7b991238868fc20e0652d29e3e7641c3af313f49f51253e546004ac596fb"
+    }
+  }
+}

@@ -1,0 +1,271 @@
+{
+  "schema": "tnca-experiment-spec/1",
+  "id": "r41-harness-smoke",
+  "allowed_hosts": [
+    "gx10-6646"
+  ],
+  "hypothesis": "The shared harness builds cleanly and executes real artifacts and standard Torch graphs with interchangeable DRAM paths.",
+  "competing_explanations": [
+    "the simulator or compiler uses a stale binary",
+    "a memory-path switch changes numerical results",
+    "monitoring changes architecture results",
+    "a worker timeout leaves descendants"
+  ],
+  "expected_observations": [
+    "all commands finish with declared outputs",
+    "native arithmetic and unsupported-op refusal pass",
+    "Ramulator row/bank/refresh mechanisms pass",
+    "off/aggregate/trace and slow path retain correct graph outputs"
+  ],
+  "sources": [
+    "tools/performance_harness",
+    "compiler/python",
+    "compiler/targets",
+    "python/tnca",
+    "tools/model",
+    "tools/asm",
+    "isa",
+    "spec/r41",
+    "spec/r40",
+    "archbench",
+    "doc/r41_tasks_and_acceptance.md",
+    "doc/r40_tasks_and_acceptance_v2.md"
+  ],
+  "env": {
+    "PATH": "{home}/tc_env/bin:/usr/local/bin:/usr/bin:/bin",
+    "PYTHONPATH": "{root}:{root}/python:{root}/compiler/python:{root}/tools/asm:{root}/tools/performance_harness/systemc",
+    "OMP_NUM_THREADS": "2",
+    "MKL_NUM_THREADS": "2",
+    "TNCA_BACKEND": "systemc-tlm-grid",
+    "TNCA_TLM_BINARY": "{out}/model-build/tnca-chip",
+    "TNCA_TLM_CONFIG": "{root}/tools/performance_harness/systemc/configs/r40-board-m2.cfg",
+    "TNCA_TLM_MEMORY_BYTES": "16777216",
+    "TNCA_HOST_TIMEOUT": "600",
+    "TNCA_DEADLINE": "200000000"
+  },
+  "steps": [
+    {
+      "id": "frozen-inputs",
+      "kind": "compile",
+      "argv": [
+        "{python}",
+        "tools/performance_harness/stage_contract.py"
+      ],
+      "timeout_seconds": 120
+    },
+    {
+      "id": "runner-integrity",
+      "kind": "compile",
+      "argv": [
+        "{python}",
+        "tools/performance_harness/test_experiment.py"
+      ],
+      "timeout_seconds": 120
+    },
+    {
+      "id": "graph-worker-lifecycle",
+      "kind": "compile",
+      "argv": [
+        "{python}",
+        "tools/performance_harness/systemc/test_run_graphs.py"
+      ],
+      "timeout_seconds": 120
+    },
+    {
+      "id": "configure-model",
+      "kind": "compile",
+      "argv": [
+        "cmake",
+        "-S",
+        "{root}/tools/performance_harness/systemc",
+        "-B",
+        "{out}/model-build",
+        "-DCMAKE_BUILD_TYPE=Release",
+        "-DCMAKE_PREFIX_PATH={home}/tc_env/systemc-3.0.2/install",
+        "-DRAMULATOR2_DIR={home}/tc_env/ramulator2"
+      ],
+      "timeout_seconds": 180
+    },
+    {
+      "id": "build-model",
+      "kind": "compile",
+      "argv": [
+        "cmake",
+        "--build",
+        "{out}/model-build",
+        "--parallel",
+        "4"
+      ],
+      "timeout_seconds": 1800,
+      "outputs": [
+        "{out}/model-build/tnca-chip",
+        "{out}/model-build/tnca-tlm",
+        "{out}/model-build/tnca-dram-bridge-test"
+      ]
+    },
+    {
+      "id": "ramulator-mechanisms",
+      "kind": "systemc",
+      "argv": [
+        "{out}/model-build/tnca-dram-bridge-test",
+        "{root}/tools/performance_harness/systemc/ramulator/hbm2_u280_pc.yaml"
+      ],
+      "timeout_seconds": 180,
+      "inputs": [
+        "{out}/model-build/tnca-dram-bridge-test"
+      ]
+    },
+    {
+      "id": "native-artifact-smoke",
+      "kind": "systemc",
+      "argv": [
+        "{python}",
+        "tools/performance_harness/systemc/validate_chip.py",
+        "--binary",
+        "{out}/model-build/tnca-chip",
+        "--out",
+        "{out}/chip-validation"
+      ],
+      "timeout_seconds": 300,
+      "inputs": [
+        "{out}/model-build/tnca-chip"
+      ],
+      "outputs": [
+        "{out}/chip-validation/validation.json"
+      ]
+    },
+    {
+      "id": "monitor-memory-invariance",
+      "kind": "systemc",
+      "argv": [
+        "{python}",
+        "tools/performance_harness/systemc/validate_monitor.py",
+        "--binary",
+        "{out}/model-build/tnca-tlm",
+        "--out",
+        "{out}/monitor-validation",
+        "--requests",
+        "500",
+        "--pairs",
+        "3"
+      ],
+      "timeout_seconds": 300,
+      "inputs": [
+        "{out}/model-build/tnca-tlm"
+      ],
+      "outputs": [
+        "{out}/monitor-validation/validation.json"
+      ]
+    },
+    {
+      "id": "native-monitor-off",
+      "kind": "systemc",
+      "argv": [
+        "{python}",
+        "tools/performance_harness/fragment_case.py",
+        "--out",
+        "{out}/native-off",
+        "--require-resident"
+      ],
+      "timeout_seconds": 600,
+      "env": {
+        "TNCA_TLM_MONITOR": "off",
+        "TNCA_TLM_OUT": "{out}/native-off-model"
+      },
+      "inputs": [
+        "{out}/model-build/tnca-chip"
+      ],
+      "outputs": [
+        "{out}/native-off/report.json"
+      ]
+    },
+    {
+      "id": "native-monitor-aggregate",
+      "kind": "systemc",
+      "argv": [
+        "{python}",
+        "tools/performance_harness/fragment_case.py",
+        "--out",
+        "{out}/native-aggregate",
+        "--require-resident"
+      ],
+      "timeout_seconds": 600,
+      "env": {
+        "TNCA_TLM_MONITOR": "aggregate",
+        "TNCA_TLM_OUT": "{out}/native-aggregate-model"
+      },
+      "inputs": [
+        "{out}/model-build/tnca-chip"
+      ],
+      "outputs": [
+        "{out}/native-aggregate/report.json"
+      ]
+    },
+    {
+      "id": "native-monitor-trace",
+      "kind": "systemc",
+      "argv": [
+        "{python}",
+        "tools/performance_harness/fragment_case.py",
+        "--out",
+        "{out}/native-trace",
+        "--require-resident"
+      ],
+      "timeout_seconds": 600,
+      "env": {
+        "TNCA_TLM_MONITOR": "trace",
+        "TNCA_TLM_OUT": "{out}/native-trace-model"
+      },
+      "inputs": [
+        "{out}/model-build/tnca-chip"
+      ],
+      "outputs": [
+        "{out}/native-trace/report.json"
+      ]
+    },
+    {
+      "id": "native-slow-path",
+      "kind": "systemc",
+      "argv": [
+        "{python}",
+        "tools/performance_harness/fragment_case.py",
+        "--out",
+        "{out}/native-slow",
+        "--require-resident"
+      ],
+      "timeout_seconds": 900,
+      "env": {
+        "TNCA_DRAM_PATH": "slow",
+        "TNCA_TLM_OUT": "{out}/native-slow-model"
+      },
+      "inputs": [
+        "{out}/model-build/tnca-chip"
+      ],
+      "outputs": [
+        "{out}/native-slow/report.json"
+      ]
+    },
+    {
+      "id": "native-monitor-audit",
+      "kind": "compare",
+      "argv": [
+        "{python}",
+        "tools/performance_harness/monitor_audit.py",
+        "{out}/native-off/report.json",
+        "{out}/native-aggregate/report.json",
+        "{out}/native-trace/report.json",
+        "--out",
+        "{out}/native-monitor-audit.json"
+      ],
+      "timeout_seconds": 120,
+      "inputs": [
+        "{out}/native-off/report.json",
+        "{out}/native-aggregate/report.json",
+        "{out}/native-trace/report.json"
+      ],
+      "outputs": [
+        "{out}/native-monitor-audit.json"
+      ]
+    }
+  ]
+}

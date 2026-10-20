@@ -688,6 +688,19 @@ class CodeGen:
         self._check_pred_operands(op, a)
         self._emit(_PUN[op.attrs['op']], f"p{p.reg}", f"p{a.reg}")
 
+    def _op_pred_to_scalar(self, op):
+        value, = op.operands
+        result, = op.results
+        self._check_pred_operands(op, value)
+        self._alloc(result)
+        self._emit('p.ballot', f's{result.reg}', f'p{value.reg}')
+
+    def _op_pred_from_scalar(self, op):
+        value, = op.operands
+        result, = op.results
+        self._alloc(result)
+        self._emit('p.frombits', f'p{result.reg}', f's{value.reg}')
+
     def _op_vselect(self, op):
         p, a, b = op.operands
         v = op.results[0]

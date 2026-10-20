@@ -150,6 +150,58 @@ def _cat():
         L.lowerings[key] = cat
 
 
+def _depthwise_convolution():
+    """Small 1-D depthwise kernels as generic Torch slices and pointwise ops.
+
+    The existing Triton conv templates do not cover this grouped 1-D case.
+    Bound the unrolled kernel width, retain the input dtype and strides, and
+    keep low-precision accumulation in FP32. Other convolution geometries
+    and other devices retain upstream lowering.
+    """
+    import torch
+    from torch._inductor.decomposition import decompositions
+    from torch.fx.experimental.symbolic_shapes import guard_or_false
+    op = torch.ops.aten.convolution.default
+    upstream = decompositions.get(op)
+    if getattr(upstream, '_tnca_depthwise', False):
+        return
+
+    def convolution(input, weight, bias, stride, padding, dilation,
+                    transposed, output_padding, groups):
+        supported = (input.device.type == NAME and input.ndim == weight.ndim == 3
+                     and not transposed and len(stride) == len(padding) == len(dilation) == 1
+                     and not any(output_padding) and input.dtype == weight.dtype
+                     and input.is_floating_point()
+                     and guard_or_false(groups == input.shape[1])
+                     and guard_or_false(weight.shape[0] == input.shape[1])
+                     and guard_or_false(weight.shape[1] == 1)
+                     and isinstance(weight.shape[2], int) and 1 <= weight.shape[2] <= 16
+                     and guard_or_false(stride[0] > 0) and guard_or_false(dilation[0] > 0)
+                     and guard_or_false(padding[0] >= 0))
+        if not supported:
+            return (upstream(input, weight, bias, stride, padding, dilation,
+                             transposed, output_padding, groups) if upstream else NotImplemented)
+        width = weight.shape[2]
+        step, pad, dil = stride[0], padding[0], dilation[0]
+        length = (input.shape[-1] + 2 * pad - dil * (width - 1) - 1) // step + 1
+        if not guard_or_false(length > 0):
+            return NotImplemented
+        dtype = torch.float32 if input.dtype in (torch.float16, torch.bfloat16) else input.dtype
+        padded = torch.nn.functional.pad(input.to(dtype), (pad, pad))
+        weights = weight.to(dtype)
+        result = None
+        for tap in range(width):
+            values = padded[:, :, tap * dil:tap * dil + length * step:step]
+            term = values * weights[:, 0, tap].view(1, -1, 1)
+            result = term if result is None else result + term
+        if bias is not None:
+            result = result + bias.to(dtype).view(1, -1, 1)
+        return result.to(input.dtype)
+
+    convolution._tnca_depthwise = True
+    decompositions[op] = convolution
+
+
 def _mm_decompositions():
     import torch
     from torch._decomp.decompositions import pw_cast_for_opmath
@@ -300,6 +352,8 @@ def install():
         _cat()
     if _on('TNCA_POLICY_MM_DECOMP'):
         _mm_decompositions()
+    if _on('TNCA_POLICY_DEPTHWISE'):
+        _depthwise_convolution()
     if _on('TNCA_POLICY_REALIZE'):
         _realize_and_fusion()
     if _on('TNCA_POLICY_LAYOUT'):

@@ -81,7 +81,9 @@ struct Config {
             "core_pipeline","branch_taken_cycles","park_refetch_cycles","vrf_banks","vrf_bank_conflict_cycles",
             "lsu_setup_cycles","lsu_vector_load_extra","lsu_complete_cycles","lsu_writeback_cycles",
             "fp_compare_latency","shuffle_scalar_latency","reduction_vector_extra","dma_store_register_cycles","dma_drain_cycles",
-            "vrf_prefetch","fp_reduction_vector_extra","time_quantum"};
+            "vrf_prefetch","fp_reduction_vector_extra","time_quantum",
+            // M3: DRAM path (include/tnca_dram.hpp)
+            "dram_path","dram_fixed_cycles","dram_clock_ratio","dram_max_passes","dram_tolerance_ppm"};
         require(v.size()==keys.size(),"configuration key count mismatch (unknown or missing key)");
         for(auto& k:keys)require(v.count(k),"missing configuration: "+k);
         cache_hot();
@@ -91,7 +93,8 @@ struct Config {
                             && k.rfind("tl_",0)!=0 && k!="core_pipeline" && k!="branch_taken_cycles" && k!="park_refetch_cycles"
                             && k!="vrf_bank_conflict_cycles" && k!="lsu_setup_cycles" && k!="lsu_vector_load_extra"
                             && k!="lsu_complete_cycles" && k!="lsu_writeback_cycles" && k!="reduction_vector_extra"
-                            && k!="dma_store_register_cycles" && k!="dma_drain_cycles" && k!="vrf_prefetch" && k!="fp_reduction_vector_extra" && k!="time_quantum")
+                            && k!="dma_store_register_cycles" && k!="dma_drain_cycles" && k!="vrf_prefetch" && k!="fp_reduction_vector_extra" && k!="time_quantum"
+                            && k!="dram_path" && k!="dram_fixed_cycles")
             require(v.at(k)>0,"zero configuration: "+k);
         require(get("mtx_abuf")<=1 && get("lsu_slots")<=64 && get("lsu_beat_slots")<=64,"invalid core engine configuration");
         require(get("memory_model")<=1,"memory_model is 0 (detailed TLM) or 1 (timeline)");

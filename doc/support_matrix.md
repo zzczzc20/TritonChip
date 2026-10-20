@@ -128,8 +128,8 @@ it is a statement about which column of evidence exists.
 | `p.andn` | PRED | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
 | `p.any` | PRED | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | no | no |
 | `p.all` | PRED | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | no | no |
-| `p.ballot` | PRED | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | no | no |
-| `p.frombits` | PRED | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | no | no |
+| `p.ballot` | PRED | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
+| `p.frombits` | PRED | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
 | `p.popc` | PRED | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | no | no |
 | `v.shuffle.xor` | SHUF | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | no | no |
 | `v.shuffle.up` | SHUF | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | no | no |
@@ -193,7 +193,7 @@ it is a statement about which column of evidence exists.
 | `mb.wait` | MBAR | mbarrier | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
 | `mb.inval` | MBAR | mbarrier | yes | yes | yes | yes | yes | yes | yes | yes | yes | no | no |
 
-169 instructions: 112 the compiler emits, 0 it has a lowering for and refuses on every R1 profile, 20 executed on the whole machine.
+169 instructions: 114 the compiler emits, 0 it has a lowering for and refuses on every R1 profile, 20 executed on the whole machine.
 
 `gated` in the emit column means the lowering exists and the capability
 is false everywhere, so asking for it is a compile error rather than a

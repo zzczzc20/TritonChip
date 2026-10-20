@@ -1,0 +1,178 @@
+{
+  "schema": "tnca-r41-stage-plan/1",
+  "stage": 1,
+  "signoff": "R41_S1_COMPILER_AND_PERFORMANCE_HARNESS",
+  "contract": "doc/r41_tasks_and_acceptance.md",
+  "contract_sha256": "2e0e598b9331dca5e922ce901ccd0d801792cefb41ca7fbf9b7bc4a41de3ddfd",
+  "baseline": "spec/r41/stage1/baseline.json",
+  "required": {
+    "S1-00": [
+      "baseline_identity",
+      "original_inventory_and_hashes",
+      "required_study_target_scope",
+      "diagnostic_development_holdout_split",
+      "budgets",
+      "carryover"
+    ],
+    "S1-01": [
+      "unified_experiment_resume_dedup_failures",
+      "native_systemc_real_artifacts_common_session",
+      "off_aggregate_trace_architecture_invariance",
+      "fast_and_ramulator2_paths",
+      "dependency_and_address_map_provenance",
+      "no_latency_double_counting",
+      "backpressure_completion_write_response",
+      "calibration_validation_holdout_separation",
+      "out_of_domain_refusal",
+      "clean_build_smoke",
+      "case_gemm_fragment",
+      "case_memory_service",
+      "case_pipeline_admission",
+      "negative_case",
+      "prospective_prediction_board_residual",
+      "matched_rtl_speed_measurement",
+      "retain_known_model_mismatches"
+    ],
+    "S1-02": [
+      "two_resident_16x16_accumulators_for_16x32",
+      "ordered_k_and_loop_residency",
+      "tails_masks_noncontiguous_and_resource_refusal",
+      "resource_plan_layout_lifetime_bank_allocation",
+      "two_standard_torch_graphs_execute",
+      "numeric_ownership_resource_checks",
+      "code_and_dynamic_counters",
+      "original_gemm_subset_retest",
+      "old_mapping_and_conservative_baseline_comparisons"
+    ],
+    "S1-03": [
+      "barrier_ordering_audit_and_negative_cases",
+      "public_inductor_tnca_tuning_consumer",
+      "semantic_resource_candidates_and_conservative_fallback",
+      "graph_budget_and_worker_termination",
+      "device_drain_recovery",
+      "isolated_tuning_samples",
+      "identity_complete_cache",
+      "device_endpoint_ranking",
+      "uncertainty_fallback",
+      "locality_consumer_safety_and_board_design"
+    ],
+    "S1-04": [
+      "M1_M4_regression",
+      "critical_path_owners_candidates_validation",
+      "unit_ooc_and_region_resource_preflight",
+      "fixed_next_implementation_candidate_list",
+      "official_language_distinct_storage_inventory",
+      "operator_state_dtype_inventory",
+      "D256_depthwise_FP32_recurrence_compile_function",
+      "compile_code_IR_memory_estimates",
+      "public_model_cache_adapter_difference_inventory"
+    ],
+    "S1-05": [
+      "all_stage1_required",
+      "original_full_suite_on_90mhz",
+      "fragment_path_actually_used",
+      "tuning_and_fallback_integrated",
+      "three_harness_cases",
+      "new_default_nonregression",
+      "clean_archive_fresh_cache_rebuild",
+      "frozen_board_anchor_reproduction",
+      "stage1_report",
+      "stage2_ready_blocker_list"
+    ]
+  },
+  "study": [
+    "bounded long-launch-chain diagnosis",
+    "locality/DCO consumer design",
+    "100 MHz structural candidates",
+    "Qwen language feasibility"
+  ],
+  "targets": {
+    "gemm_vs_conservative_speedup": 1.15,
+    "selector_holdout_speedup": 1.1,
+    "model_median_relative_error": 0.1,
+    "model_p95_relative_error": 0.2
+  },
+  "original_suites": [
+    {
+      "path": "spec/r40/suites/existing.json",
+      "sha256": "f3e4ba5f3a346d45d3289b4b58f380d0103f4a5edfe6c88abd6b136868154a0f",
+      "points": 77
+    },
+    {
+      "path": "spec/r40/suites/large.json",
+      "sha256": "9279cf341d9c631f103a15abdbff1d6d932329fbc0a0336352bbac8b22b223bf",
+      "points": 24
+    },
+    {
+      "path": "spec/r40/suites/hbm-tier.json",
+      "sha256": "a36483591c755273db172d11455301e8a9a164932340a5827fccd0f5703d5d6f",
+      "points": 12
+    },
+    {
+      "path": "spec/r40/suites/hbm.json",
+      "sha256": "7cebc8d2c6e6cab8a688418ce16e36785cd603385bff1e6028a0657c89120dfd",
+      "points": 113
+    }
+  ],
+  "diagnostic_subsets": [
+    "spec/r40/suites/R40-03.gemm-reuse.json",
+    "spec/r40/suites/R40-04.streaming.json",
+    "spec/r40/suites/R40-07.long-k.json"
+  ],
+  "selection_development": "spec/r40/suites/R40-09.tune.json",
+  "holdout": "spec/r41/holdout.json",
+  "reference_and_tolerances": "original point definitions and independent references in archbench/registry.py; unchanged hashes required",
+  "budgets": {
+    "remote_compile_parallel_jobs": 4,
+    "compiler_worker_timeout_seconds": 1800,
+    "model_worker_timeout_seconds": 7200,
+    "board_point_timeout_seconds": 28800,
+    "full_final_campaign_timeout_seconds": 259200,
+    "study_seconds_per_question": 3600,
+    "tuning_incremental_seconds_per_graph": 600,
+    "tuning_max_measured_candidates_per_kernel": 16,
+    "tuning_preferred_candidates_per_kernel": 4,
+    "stage1_full_implementation_runs": 0
+  },
+  "measurement": {
+    "long_device_tasks": {
+      "qualification_samples": 1,
+      "short_threshold_seconds": 1,
+      "short_timed_samples": 3,
+      "long_timed_samples": 1,
+      "anchor_stability_samples": 3
+    },
+    "host_latency": {
+      "warmup": 5,
+      "timed": 30,
+      "blocks": 3,
+      "order": "interleaved seeded A/B"
+    },
+    "borderline_device_recheck": {
+      "additional_samples_per_arm": 3,
+      "max_recheck_blocks": 2
+    },
+    "bootstrap": {
+      "resamples": 2000,
+      "seed": 20261020,
+      "alpha": 0.05
+    },
+    "overall_nonregression_budget": 0.05,
+    "report_point_regression_above": 0.05,
+    "confirmed_new_default_regression_block": 0.1
+  },
+  "execution": {
+    "source": "official Torch/model-independent Torch graphs",
+    "device": "tnca",
+    "compiler": "torch.compile backend=inductor fullgraph=True",
+    "descriptors": true,
+    "numerical_fallback": false,
+    "numeric_reference": "independent CPU reference only outside execution and measurement"
+  },
+  "not_stage1_blockers": [
+    "new bitstream",
+    "100 MHz hardware",
+    "full Qwen board execution"
+  ],
+  "stage2_signoff_clock_hz": 100000000
+}

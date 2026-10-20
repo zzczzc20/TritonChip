@@ -157,6 +157,10 @@ def emit(kernel, target, *, prov=None, check_protocol=True,
     """
     r1 = _r1()
     try:
+        from tnca_cc.predicate_spill import spill
+        predicate_plan = spill(kernel, target)
+        if prov is not None and predicate_plan['predicates']:
+            prov.record('predicate_spills', predicate_plan)
         cg = r1['CodeGen'](kernel, target, check_protocol=check_protocol,
                            opt_level=opt_level, bank_alloc=bank_alloc, window_reuse=window_reuse)
         if len(kernel.roles) > 1:
@@ -182,6 +186,8 @@ def emit(kernel, target, *, prov=None, check_protocol=True,
         prov.record('codegen', 'tnca_cc.codegen.CodeGen')
         prov.record('ownership_check', 'unconditional')
         prov.record('assembly_sha256', _sha(text))
+        from tnca_cc.execution_resources import describe
+        prov.record('execution_resources', describe(kernel))
         if bank_alloc:
             from tnca_cc.bankcost import conflicts
             cost = conflicts(text, cg.bank_banks)

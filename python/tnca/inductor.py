@@ -115,7 +115,17 @@ def _register(cap, reduction_rows=1, gemm_tile=(16,16,16)):
         """Inductor's default pointwise configs, block dimensions capped."""
 
         def get_configs(self, *args, **kwargs):
-            return _with_fallback(super().get_configs(*args, **kwargs), cap)
+            import copy
+            original = super().get_configs(*args, **kwargs)
+            configs = _with_fallback(copy.deepcopy(original), cap)
+            # Padding and multi-axis gathers can exhaust scalar/predicate
+            # registers even at VLEN. Retile the same pointwise program,
+            # keeping the first legal configuration without benchmarking.
+            for limit in (8, 4, 1):
+                smaller = _clamp(copy.deepcopy(original), min(cap, limit))
+                if smaller and not any(c.kwargs == smaller[0].kwargs for c in configs):
+                    configs.extend(smaller)
+            return configs
 
     @register_codegen_heuristic('reduction', 'tnca')
     @register_codegen_heuristic('reduction', 'cpu')
@@ -270,13 +280,13 @@ def _code_bytes(result):
 
 
 def _install_block_fallback():
-    """Keep one configuration of a TNCA kernel that _with_fallback gave two.
+    """Keep the first legal TNCA configuration, including resource retiles.
 
     The first is used if it compiles and its code fits WIDE_CODE_LIMIT;
     otherwise the 16-lane one -- the attributable retile v1 sec 2.2 asks for
     instead of a launch that cannot be loaded. Only TNCA kernels with more
     than one configuration are touched; every other autotuner (CUDA in the
-    same process, TNCA at the default cap) runs Inductor's own code."""
+    same process) runs Inductor's own code."""
     from torch._inductor.runtime import triton_heuristics as H
     if getattr(H.CachingAutotuner._precompile_worker, '_tnca', False):
         return

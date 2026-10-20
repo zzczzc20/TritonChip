@@ -13,6 +13,8 @@
 // once. Data are functional in the backing store at issue time, which race-
 // free programs cannot distinguish. Every constant is a configuration key.
 #include "tnca_model.hpp"
+#include "tnca_dram.hpp"
+#include <memory>
 #include <unordered_map>
 #include <cstdio>
 #include <cstdlib>
@@ -53,6 +55,7 @@ struct TimelineMemory {
     std::map<std::tuple<unsigned,unsigned,unsigned>,Timeline> links;std::map<std::tuple<unsigned,unsigned,unsigned>,u64*> link_bytes;
     unsigned nx,ways;u64 hop,inject,eject,hit_occ,hit_lat,miss_occ,mreq_occ,fill_occ,wake_occ,wb_occ,to_outlet,from_outlet,
         read_issue,write_issue,beats_extra,latency,write_latency,mshrs,active_outlets,noutlets,outstanding,base,pc_first,pc_size;
+    FastDram fast_dram{c};DramPath* dram=&fast_dram; // Model points it at the slow path when selected
     TimelineMemory(const Config& cfg,Context& ctx,Store& backing):c(cfg),x(ctx),store(backing){
         auto g=[&](const char* k){return c.get(k);};
         nx=unsigned(g("nx"));ways=unsigned(g("ways"));
@@ -110,7 +113,8 @@ struct TimelineMemory {
         *o.waited+=t-arrival;
         u64 issue=write?write_issue:read_issue;
         u64 b=o.issue.reserve(t,issue,now);
-        u64 done=write?b+issue+write_latency:b+issue+latency+beats_extra;
+        // The HBM side receives the line after the issue stage (dram_path).
+        u64 done=dram->complete(DramRequest{port,address,write,b+issue});
         unsigned pc=unsigned(pc_first+(address-base)/pc_size);
         if(pc<pc_bytes.size()){if(!pc_bytes[pc])pc_bytes[pc]=&x.counts["pc_"+std::to_string(pc)+"_bytes"];*pc_bytes[pc]+=64;}
         f.push_back(done);o.peak_n=std::max<unsigned>(o.peak_n,unsigned(f.size()));*o.peak=o.peak_n;

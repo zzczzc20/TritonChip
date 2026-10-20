@@ -1,0 +1,83 @@
+{
+  "schema": "tnca-r41-carryover/1",
+  "history_unchanged": true,
+  "sources": [
+    "doc/r40_report.md",
+    "doc/r40_tasks_and_acceptance_v3.md",
+    "doc/r41_tasks_and_acceptance.md"
+  ],
+  "items": [
+    {
+      "origin": "R40-01.device-time",
+      "stage1": "同步修复与地址敏感性诊断",
+      "stage2": "最终镜像复验",
+      "status": "open"
+    },
+    {
+      "origin": "R40-03.gemm-tile",
+      "stage1": "16x32 resident fragments、布局与资源合法性",
+      "stage2": "与选中的 MMA 联合验证",
+      "status": "open"
+    },
+    {
+      "origin": "R40-03.wide-blocks",
+      "stage1": "按合法性与预算选择，区分 host gap",
+      "stage2": "最终策略回归",
+      "status": "open"
+    },
+    {
+      "origin": "R40-02.batched",
+      "stage1": "有限长 launch 链诊断",
+      "stage2": "有明确修复才复验",
+      "status": "open"
+    },
+    {
+      "origin": "R40-04.bandwidth/R40-06.ports",
+      "stage1": "home-slice 与核侧服务账本",
+      "stage2": "服务流水化候选研究",
+      "status": "open"
+    },
+    {
+      "origin": "R40-06.locality",
+      "stage1": "通用消费者与安全边界设计",
+      "stage2": "真实接入与板测，收益不足默认关闭",
+      "status": "open"
+    },
+    {
+      "origin": "R40-07.long-k",
+      "stage1": "Mode B/单 role/Mode A 保守选择",
+      "stage2": "与 transfer engine 重测",
+      "status": "open"
+    },
+    {
+      "origin": "R40-07.matrix",
+      "stage1": "候选建模与资源、语义预检",
+      "stage2": "至少一个 RTL 候选评估",
+      "status": "open"
+    },
+    {
+      "origin": "R40-08.prefill",
+      "stage1": "寄存器、搬运、计算归因；D256 可行性",
+      "stage2": "通用 D256 与混合模型",
+      "status": "open"
+    },
+    {
+      "origin": "R40-09.autotune/holdout",
+      "stage1": "预算选择、cache 与新 holdout",
+      "stage2": "冻结 holdout 验证",
+      "status": "open"
+    },
+    {
+      "origin": "M1-M4/frequency",
+      "stage1": "合并、相关回归、census、OOC 与候选清单",
+      "stage2": "100 MHz 新镜像与板测",
+      "status": "open"
+    },
+    {
+      "origin": "SystemC M2/M3",
+      "stage1": "完整 harness、双内存路径、校准流程",
+      "stage2": "新 RTL profile 与适用域",
+      "status": "open"
+    }
+  ]
+}

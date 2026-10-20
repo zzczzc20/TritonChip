@@ -24,6 +24,12 @@
 #include <functional>
 #include <unordered_map>
 #include <unistd.h>
+#include <chrono>
+#include <fcntl.h>
+#include <sys/wait.h>
+#ifdef TNCA_HAVE_RAMULATOR2
+#include "tnca_dram_bridge.hpp"
+#endif
 
 namespace trapcode {constexpr unsigned illegal=1,descriptor=4,barrier=5,resource=6,user=0x40;}
 enum Status : unsigned {STATUS_OK=0,STATUS_FAULT=1,STATUS_TIMEOUT=2,STATUS_REFUSED=3};
@@ -1015,23 +1021,211 @@ struct Model {
             tmem.reset(new TimelineMemory(cfg,x,hbm.memory));chip->tm=tmem.get();
             for(auto& core:chip->cores){core->tm=tmem.get();core->tensor.tm=tmem.get();core->tensor.port=&core->port;core->tensor.rtl=cfg.get("core_pipeline")!=0;}
         }
+        select_dram_path();
     }
     std::unique_ptr<TimelineMemory> tmem;
+    // DRAM path (include/tnca_dram.hpp): fast, or slow = Ramulator2 by a
+    // per-command fixed point of forked child passes.
+    std::unique_ptr<SlowDram> slow;std::string dram_path_name="fast",dram_config,dram_config_sha256,dram_commit;
+    u64 dram_fixed=0,dram_ratio=10,dram_max_passes=3,dram_tol_ppm=5000,dram_commands=0;
+    void select_dram_path(){
+        u64 path=cfg.get("dram_path");
+        if(const char* e=std::getenv("TNCA_DRAM_PATH")){
+            std::string v=e;require(v=="fast" || v=="slow","TNCA_DRAM_PATH must be fast or slow");path=v=="slow";
+        }
+        require(path<=1,"dram_path is 0 (fast) or 1 (slow)");
+        if(!path)return;
+        require(cfg.get("memory_model")==1,"the slow DRAM path needs the timeline memory (memory_model=1)");
+#ifndef TNCA_HAVE_RAMULATOR2
+        throw std::runtime_error("MODEL_REFUSED slow DRAM path: this binary is built without Ramulator2 (-DRAMULATOR2_DIR)");
+#else
+        dram_path_name="slow";dram_commit=TNCA_RAMULATOR2_COMMIT;
+        const char* cfgenv=std::getenv("TNCA_RAMULATOR2_CONFIG");dram_config=cfgenv?cfgenv:TNCA_RAMULATOR2_CONFIG;
+        dram_config_sha256=tnca_dram::sha256_file(dram_config);require(!dram_config_sha256.empty(),"cannot read Ramulator2 config "+dram_config);
+        auto t=tnca_dram::timing(dram_config);require(t.error.empty(),"Ramulator2 config: "+t.error);
+        dram_fixed=cfg.get("dram_fixed_cycles");dram_ratio=cfg.get("dram_clock_ratio");
+        dram_max_passes=cfg.get("dram_max_passes");dram_tol_ppm=cfg.get("dram_tolerance_ppm");
+        require(dram_ratio>0 && dram_max_passes>=1,"slow DRAM path: dram_clock_ratio and dram_max_passes must be positive");
+        slow.reset(new SlowDram);slow->beats_extra=cfg.get("tl_outlet_beat_cycles");
+        // Until a replay exists: the idle row-miss read (tRCD + RL) and write (tRCD + WL + BL).
+        slow->fallback[0]=std::uint32_t(dram_fixed+(u64(t.nRCDRD+t.read_latency)+dram_ratio-1)/dram_ratio);
+        slow->fallback[1]=std::uint32_t(dram_fixed+(u64(t.nRCDWR+t.nCWL+t.nBL)+dram_ratio-1)/dram_ratio);
+        tmem->dram=slow.get();
+#endif
+    }
     // Run one command inside the simulation; false if the kernel starved.
-    bool execute(std::unique_ptr<Chip::Command> cmd,bool flush=false){
+    bool run_once(const Chip::Command* cmd,bool flush){
         chip->command_done=false;
-        if(flush)chip->flush_request=true;else chip->pending=std::move(cmd);
+        if(flush)chip->flush_request=true;else chip->pending.reset(new Chip::Command(*cmd));
         chip->wake.notify(SC_ZERO_TIME);
         sc_start();
         return chip->command_done;
     }
+    bool execute(std::unique_ptr<Chip::Command> cmd,bool flush=false){
+#ifdef TNCA_HAVE_RAMULATOR2
+        if(slow && !x.functional)return execute_slow(cmd.get(),flush);
+#endif
+        return run_once(cmd.get(),flush);
+    }
+#ifdef TNCA_HAVE_RAMULATOR2
+    // A child pass: the command runs on a copy-on-write snapshot of this
+    // process with the current latency table, logging every DRAM request;
+    // the trailer holds its makespan. It touches no descriptor of the parent
+    // (host channel, trace, logs) and leaves with _exit.
+    [[noreturn]] void child_pass(const Chip::Command* cmd,bool flush,const std::string& path){
+        int code=6;
+        try{
+            ::close_range(3,~0U,0);
+            int nul=::open("/dev/null",O_WRONLY);if(nul>=0){::dup2(nul,1);::dup2(nul,2);if(nul>2)::close(nul);}
+            x.monitor_mode="off";
+            FILE* f=std::fopen(path.c_str(),"wb");if(!f)::_exit(5);
+            slow->log=f;slow->begin_command();
+            u64 t0=x.now();bool ok=run_once(cmd,flush);
+            u64 makespan=flush?x.now()-t0:chip->end_cycle-chip->start_cycle;
+            SlowDram::Record trailer[2]={{UINT64_MAX,makespan},{UINT64_MAX-1,ok?1ULL:0ULL}};
+            if(std::fwrite(trailer,sizeof trailer[0],2,f)!=2 || std::fflush(f)!=0)::_exit(7);
+            code=ok?0:3;
+        }catch(...){code=6;}
+        ::_exit(code);
+    }
+    struct PassResult {bool ok=false,replayed=false;u64 makespan=0,requests=0;double child_s=0,replay_s=0;tnca_dram::Result replay;
+        std::vector<u64> keys,arrival;std::vector<std::uint16_t> lat;std::uint32_t mean[2]={0,0};double mean_all=0;};
+    PassResult pass(const Chip::Command* cmd,bool flush){
+        PassResult out;
+        std::string path=x.directory+"/dram_pass_"+std::to_string(::getpid())+".bin";
+        auto t0=std::chrono::steady_clock::now();
+        std::cout.flush();std::cerr.flush();
+        pid_t pid=::fork();require(pid>=0,"slow DRAM path: fork failed");
+        if(pid==0)child_pass(cmd,flush,path);
+        int status=0;while(::waitpid(pid,&status,0)<0 && errno==EINTR){}
+        auto t1=std::chrono::steady_clock::now();out.child_s=std::chrono::duration<double>(t1-t0).count();
+        // The log, read into two arrays (16 bytes per request).
+        u64 trailer[2][2]={{0,0},{0,0}};bool good=false;
+        if(FILE* f=std::fopen(path.c_str(),"rb")){
+            std::fseek(f,0,SEEK_END);long size=std::ftell(f);std::fseek(f,0,SEEK_SET);
+            size_t total=size>0?size_t(size)/sizeof(SlowDram::Record):0;
+            if(total>=2){
+                size_t n=total-2;out.keys.resize(n);out.arrival.resize(n);
+                std::vector<SlowDram::Record> chunk(1<<16);size_t at=0;good=true;
+                while(at<n && good){
+                    size_t k=std::min(chunk.size(),n-at);
+                    if(std::fread(chunk.data(),sizeof(SlowDram::Record),k,f)!=k){good=false;break;}
+                    for(size_t i=0;i<k;++i){out.keys[at+i]=chunk[i].key;out.arrival[at+i]=chunk[i].arrival;}
+                    at+=k;
+                }
+                if(good && std::fread(trailer,sizeof(SlowDram::Record),2,f)!=2)good=false;
+            }
+            std::fclose(f);
+        }
+        std::remove(path.c_str());
+        if(!good || !WIFEXITED(status) || trailer[0][0]!=UINT64_MAX || trailer[1][0]!=UINT64_MAX-1){
+            std::vector<u64>().swap(out.keys);std::vector<u64>().swap(out.arrival);return out;}
+        out.makespan=trailer[0][1];out.ok=WEXITSTATUS(status)==0 && trailer[1][1]==1;out.requests=out.keys.size();
+        return out;
+    }
+    // Replay a pass's request log through Ramulator2 and build its table.
+    struct DecodeContext {const u64* keys;u64 base,pcb;const std::vector<std::int32_t>* dense;};
+    static void decode_key(const void* c,size_t i,std::uint32_t& pc,std::uint64_t& offset,bool& write){
+        auto& d=*static_cast<const DecodeContext*>(c);u64 k=d.keys[i],a=SlowDram::address_of(k)-d.base;
+        pc=std::uint32_t((*d.dense)[size_t(a/d.pcb)]);offset=a%d.pcb;write=SlowDram::write_of(k);
+    }
+    void replay(PassResult& out){
+        auto t1=std::chrono::steady_clock::now();out.replayed=true;
+        // Dense pseudo channels, DRAM-clock arrivals.
+        u64 base=cfg.get("memory_base"),pcb=cfg.get("pc_bytes");
+        std::vector<std::int32_t> dense;std::int32_t n_pc=0;
+        for(u64 k:out.keys){size_t pc=size_t((SlowDram::address_of(k)-base)/pcb);if(pc>=dense.size())dense.resize(pc+1,-1);if(dense[pc]<0)dense[pc]=n_pc++;}
+        for(auto& a:out.arrival)a*=dram_ratio;
+        DecodeContext ctx{out.keys.data(),base,pcb,&dense};
+        tnca_dram::Batch b;b.n=out.keys.size();b.arrival=out.arrival.data();b.context=&ctx;b.decode=decode_key;
+        std::vector<std::uint32_t> latency;
+        out.replay=tnca_dram::replay(dram_config,unsigned(n_pc),b,latency);
+        require(out.replay.error.empty(),"Ramulator2 replay: "+out.replay.error);
+        std::vector<u64>().swap(out.arrival);
+        out.replay_s=std::chrono::duration<double>(std::chrono::steady_clock::now()-t1).count();
+        out.lat.resize(latency.size());
+        double sum[2]={0,0};u64 n[2]={0,0};
+        for(size_t i=0;i<latency.size();++i){
+            u64 l=dram_fixed+(u64(latency[i])+dram_ratio-1)/dram_ratio;if(l>65535)l=65535;
+            out.lat[i]=std::uint16_t(l);
+            unsigned w=SlowDram::write_of(out.keys[i])?1:0;sum[w]+=double(l);++n[w];
+        }
+        for(unsigned w=0;w<2;++w)out.mean[w]=n[w]?std::uint32_t(sum[w]/double(n[w])+0.5):slow->fallback[w];
+        out.mean_all=(n[0]+n[1])?(sum[0]+sum[1])/double(n[0]+n[1]):0;
+    }
+    std::ofstream fixed_point_log;
+    bool execute_slow(const Chip::Command* cmd,bool flush){
+        ++dram_commands;
+        std::vector<u64> makespans;double change=-1,child_total=0,replay_total=0;unsigned passes=0;bool damped=false,failed=false;PassResult last;
+        // Child k runs with the table of replay k-1. Once two children agree
+        // within the tolerance, the installed table reproduces the last child
+        // exactly, so the real run needs no further replay.
+        unsigned replays=0;std::vector<double> means{(double(slow->fallback[0])+double(slow->fallback[1]))/2}; // before replay 1: the fallback
+        for(unsigned k=1;k<=dram_max_passes;++k){
+            PassResult r=pass(cmd,flush);
+            if(!r.ok){failed=true;++x.counts["dram_child_failures"];break;}
+            ++passes;makespans.push_back(r.makespan);child_total+=r.child_s;
+            if(passes>=2)change=double(r.makespan>makespans[passes-2]?r.makespan-makespans[passes-2]:makespans[passes-2]-r.makespan)/double(std::max<u64>(r.makespan,1));
+            if(passes>=2 && change*1e6<double(dram_tol_ppm))break;
+            if(r.requests==0){change=0;break;} // no DRAM traffic: the table cannot matter, the real run repeats this child
+            if(k==dram_max_passes && k>1)break; // unconverged: the real run repeats this last child
+            replay(r);++replays;
+            // Damping: when the mean latency reverses direction between
+            // replays (an oscillating iteration), the new table is averaged
+            // with the previous one, key by key.
+            double mean=r.mean_all;
+            if(replays>=2 && (mean-means.back())*(means.back()-means[means.size()-2])<0){
+                damped=true;++x.counts["dram_slow_damped"];
+                for(size_t i=0;i<r.keys.size();++i){
+                    size_t pos;if(slow->lookup(r.keys[i],pos))r.lat[i]=std::uint16_t((u64(r.lat[i])+slow->lat[pos]+1)/2);
+                }
+            }
+            means.push_back(mean);
+            replay_total+=r.replay_s;
+            slow->install(std::move(r.keys),std::move(r.lat));slow->fallback[0]=r.mean[0];slow->fallback[1]=r.mean[1];
+            last=std::move(r);
+        }
+        bool converged=change>=0 && change*1e6<double(dram_tol_ppm) && (passes>=2 || replays==0);
+        slow->log=nullptr;slow->begin_command();
+        auto w0=std::chrono::steady_clock::now();
+        u64 t0=x.now();bool ok=run_once(cmd,flush);
+        u64 makespan=flush?x.now()-t0:chip->end_cycle-chip->start_cycle;
+        double real_s=std::chrono::duration<double>(std::chrono::steady_clock::now()-w0).count();
+        tnca_dram::PcStats tot;
+        for(auto& p:last.replay.pcs){tot.reads+=p.reads;tot.writes+=p.writes;tot.row_hits+=p.row_hits;tot.row_misses+=p.row_misses;
+            tot.row_conflicts+=p.row_conflicts;tot.read_row_hits+=p.read_row_hits;tot.read_row_misses+=p.read_row_misses;
+            tot.read_row_conflicts+=p.read_row_conflicts;tot.write_row_hits+=p.write_row_hits;tot.write_row_misses+=p.write_row_misses;
+            tot.write_row_conflicts+=p.write_row_conflicts;tot.refreshes+=p.refreshes;}
+        auto& c=x.counts;
+        ++c["dram_slow_commands"];c["dram_slow_child_passes"]+=passes;c["dram_slow_replays"]+=replays;if(!converged)++c["dram_slow_unconverged"];
+        c["dram_slow_requests"]+=slow->requests;c["dram_slow_unmatched"]+=slow->requests-slow->matched;
+        c["dram_replay_requests"]+=last.requests;c["dram_row_hits"]+=tot.row_hits;c["dram_row_misses"]+=tot.row_misses;
+        c["dram_row_conflicts"]+=tot.row_conflicts;c["dram_read_row_conflicts"]+=tot.read_row_conflicts;
+        c["dram_write_row_conflicts"]+=tot.write_row_conflicts;c["dram_refreshes"]+=tot.refreshes;
+        c["dram_replay_ticks"]+=last.replay.ticks;c["dram_replay_skipped"]+=last.replay.skipped;
+        c["dram_pseudo_channels_max"]=std::max<u64>(c["dram_pseudo_channels_max"],last.replay.pcs.size());
+        if(!fixed_point_log.is_open())fixed_point_log.open(x.directory+"/dram_fixed_point.jsonl",std::ios::app);
+        fixed_point_log<<"{\"command\":"<<dram_commands<<",\"kind\":\""<<(flush?"flush":cmd->grid?"grid":"program")
+            <<"\",\"passes\":"<<passes<<",\"replays\":"<<replays<<",\"child_failed\":"<<(failed?"true":"false")<<",\"converged\":"<<(converged?"true":"false")
+            <<",\"damped\":"<<(damped?"true":"false")<<",\"last_rel_change\":"<<change<<",\"pass_makespans\":[";
+        for(size_t i=0;i<makespans.size();++i)fixed_point_log<<(i?",":"")<<makespans[i];
+        fixed_point_log<<"],\"makespan\":"<<makespan<<",\"requests\":"<<slow->requests<<",\"unmatched\":"<<slow->requests-slow->matched
+            <<",\"pseudo_channels\":"<<last.replay.pcs.size()<<",\"row_hits\":"<<tot.row_hits<<",\"row_misses\":"<<tot.row_misses
+            <<",\"row_conflicts\":"<<tot.row_conflicts<<",\"refreshes\":"<<tot.refreshes<<",\"mean_read_latency\":"<<slow->fallback[0]
+            <<",\"mean_write_latency\":"<<slow->fallback[1]<<",\"replay_ticks\":"<<last.replay.ticks<<",\"replay_skipped\":"<<last.replay.skipped
+            <<",\"child_s\":"<<child_total<<",\"replay_s\":"<<replay_total<<",\"real_s\":"<<real_s<<"}\n";
+        fixed_point_log.flush();
+        return ok;
+    }
+#endif
     void counters_json(std::ostream& o){
         chip->report();
         o<<"{";bool first=true;for(auto& c:x.counts){if(!first)o<<',';first=false;o<<'"'<<c.first<<"\":"<<c.second;}o<<"}";
     }
     void summary(const std::string& path,const std::string& status,u64 checked){
         std::ofstream result(path);
-        result<<"{\"schema\":\"tnca-systemc-result/1\",\"status\":\""<<status<<"\",\"execution\":\"native-isa-event-driven\",\"coverage\":\"partial-ISA\",\"performance_gate\":\"not-measured\",\"calibration\":\"not-measured\",\"visible_cycles\":"<<x.now()<<",\"launches\":"<<chip->launches<<",\"checked_bytes\":"<<checked<<",\"counters\":";
+        result<<"{\"schema\":\"tnca-systemc-result/1\",\"status\":\""<<status<<"\",\"dram_path\":\""<<dram_path_name<<"\",\"ramulator2_commit\":\""<<dram_commit
+            <<"\",\"ramulator2_config\":\""<<dram_config<<"\",\"ramulator2_config_sha256\":\""<<dram_config_sha256<<"\",\"execution\":\"native-isa-event-driven\",\"coverage\":\"partial-ISA\",\"performance_gate\":\"not-measured\",\"calibration\":\"not-measured\",\"visible_cycles\":"<<x.now()<<",\"launches\":"<<chip->launches<<",\"checked_bytes\":"<<checked<<",\"counters\":";
         counters_json(result);result<<"}\n";
     }
 };

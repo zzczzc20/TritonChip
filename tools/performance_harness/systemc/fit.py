@@ -193,6 +193,65 @@ def latency(a):
     print(json.dumps({k: out[k] for k in ('parameters', 'grid', 'configurations', 'chosen', 'best_by_median', 'grid_scores')}, indent=1))
 
 
+def shift(a):
+    """One slow-path calibration pass at F0 plus per-configuration slopes:
+    T_i(F) = T_i(F0) + (F - F0) * S_i, with S_i = dT_i/dL taken from an
+    earlier fast-path latency grid (a uniform latency shift is what F is).
+    Calibration rows only, like `latency`."""
+    cal = calibration_ids(a.root)
+    ds = load_dataset(a.dataset)
+    rows = [r for r in ds['rows'] if r['split'] == 'calibration' and r['point'] in cal and r.get('graph_makespan_cycles')]
+
+    def board(point, knobs):
+        c = sorted(r['graph_makespan_cycles'] for r in rows if r['point'] == point
+                   and all(r['knobs'].get(k) == str(v) for k, v in knobs.items()))
+        return c[len(c) // 2] if c else None
+    f0 = int(a.base.split('=', 1)[0])
+    base = {(p['point'], json.dumps(p['knobs'], sort_keys=True)): p['graph_cycles']
+            for p in (json.loads(l) for l in Path(a.base.split('=', 1)[1]).read_text().splitlines() if l.strip())
+            if p['point'] in cal}
+    grid = json.loads(Path(a.slopes).read_text())
+    assert grid['fit_rows'] == 'calibration-only'
+    lo, hi = [int(x) for x in a.slope_between.split(':')]
+    d = a.slope_second
+    slope = {}
+    for c in grid['per_configuration']:
+        m = c['model']
+        def at(L):
+            # the earlier grid is (hbm_latency_cycles : tl_outlet_to_slice_cycles); linear in the second key
+            a5, a40 = m.get(f'{L}:5'), m.get(f'{L}:40')
+            if a5 is None or a40 is None:
+                return None
+            return a5 + (a40 - a5) * (d - 5) / 35
+        t_lo, t_hi = at(lo), at(hi)
+        if t_lo is not None and t_hi is not None:
+            slope[(c['point'], json.dumps(c['knobs'], sort_keys=True))] = (t_hi - t_lo) / (hi - lo)
+    keys = sorted(k for k in base if k in slope)
+    refs = {k: board(k[0], json.loads(k[1])) for k in keys}
+    keys = [k for k in keys if refs[k]]
+
+    def score(F):
+        errs = [abs(base[k] + (F - f0) * slope[k] - refs[k]) / refs[k] for k in keys]
+        med, p95 = quantile(errs, .5), quantile(errs, .95)
+        return dict(median_abs=med, p95_abs=p95, sec34=max(med / 0.10, p95 / 0.20))
+    scan = {F: score(F) for F in range(max(0, f0 - a.span), f0 + a.span + 1)}
+    best = min(scan, key=lambda F: (round(scan[F]['sec34'], 6), scan[F]['median_abs']))
+    out = dict(schema='tnca-systemc-latency-fit/2', fit_rows='calibration-only', parameters=[a.param],
+               method=(f'one slow-path calibration pass at {a.param}={f0}; per configuration T(F) = T({f0}) + (F - {f0}) * S, '
+                       f'S = dT/d(hbm_latency_cycles) between {lo} and {hi} of the earlier fast-path grid at '
+                       f'tl_outlet_to_slice_cycles={d} (calibration rows only)'),
+               grid=[[f0]], configurations=len(keys),
+               objective='max(median/0.10, p95/0.20) of calibration |graph makespan error|, then median',
+               chosen={a.param: best, **{f'interpolated_{k}': v for k, v in scan[best].items()}},
+               best_by_median={a.param: min(scan, key=lambda F: (round(scan[F]['median_abs'], 6), scan[F]['p95_abs']))},
+               grid_scores={str(f0): score(f0)},
+               per_configuration=[dict(point=k[0], knobs=json.loads(k[1]), board=refs[k], model={str(f0): base[k]},
+                                       slope_per_cycle=slope[k]) for k in keys],
+               scan={str(F): v for F, v in scan.items()})
+    Path(a.out).write_text(json.dumps(out, indent=1) + '\n')
+    print(json.dumps({k: out[k] for k in ('configurations', 'chosen', 'best_by_median', 'grid_scores')}, indent=1))
+
+
 def report(a):
     cfg = {}
     for line in Path(a.config).read_text().splitlines():
@@ -225,10 +284,13 @@ def report(a):
                    'matrix busy cycles set from the RTL oracle (2a+18K+6 with ABUF; m.zero 17; row ops 7)',
                    'host: median calibration inter-launch gap -> host_launch_cycles; median calibration '
                    'per-kernel staging rate -> host_transfer_cycles_per_kib',
-                   f"latency: calibration configurations simulated at the grid {lat['grid']} of "
-                   f"{', '.join(lat.get('parameters', ['hbm_latency_cycles']))}; per-configuration "
-                   f"(bi)linear interpolation; objective: {lat['objective']}",
-                   'tl_hbm_write_latency_cycles tied to hbm_latency_cycles',
+                   (f"latency: {lat['method']}; objective: {lat['objective']}" if lat.get('method') else
+                    f"latency: calibration configurations simulated at the grid {lat['grid']} of "
+                    f"{', '.join(lat.get('parameters', ['hbm_latency_cycles']))}; per-configuration "
+                    f"(bi)linear interpolation; objective: {lat['objective']}"),
+                   *(['tl_hbm_write_latency_cycles tied to hbm_latency_cycles']
+                     if 'hbm_latency_cycles' in (lat.get('parameters') or []) else []),
+                   *(a.note or []),
                    'holdout evaluated once with calibrate.py at the frozen configuration'],
                fitted=fitted, host_fit=dict(gaps=h['gaps'], staging_cycles_per_kib=h['staging_cycles_per_kib'],
                                             records=h['records']),
@@ -256,15 +318,26 @@ def main():
     lt.add_argument('--params', default='hbm_latency_cycles', help='the fitted keys, comma separated (one or two)')
     lt.add_argument('--objective', choices=('sec34', 'median_abs'), default='sec34')
     lt.add_argument('--out', required=True)
+    sh = sub.add_parser('shift')
+    sh.add_argument('--dataset', required=True)
+    sh.add_argument('--root', required=True)
+    sh.add_argument('--base', required=True, help='F0=predictions.jsonl (slow path, calibration)')
+    sh.add_argument('--slopes', required=True, help='an earlier latency_fit.json (fast-path grid, calibration-only)')
+    sh.add_argument('--slope-between', default='20:35', help='hbm_latency_cycles values the slope is taken between')
+    sh.add_argument('--slope-second', type=int, default=13, help='tl_outlet_to_slice_cycles at which the slope is taken')
+    sh.add_argument('--param', default='dram_fixed_cycles')
+    sh.add_argument('--span', type=int, default=15)
+    sh.add_argument('--out', required=True)
     r = sub.add_parser('report')
     r.add_argument('--config', required=True)
     r.add_argument('--host', required=True)
     r.add_argument('--latency', required=True)
     r.add_argument('--sources', help='JSON {key: provenance text} for the structural constants')
     r.add_argument('--excluded', action='append', help='calibration configurations not in the fitting grid (cost)')
+    r.add_argument('--note', action='append', help='a procedure line to record (e.g. values kept from an earlier fit)')
     r.add_argument('--out', required=True)
     a = ap.parse_args()
-    dict(host=host, latency=latency, report=report)[a.cmd](a)
+    dict(host=host, latency=latency, shift=shift, report=report)[a.cmd](a)
 
 
 if __name__ == '__main__':

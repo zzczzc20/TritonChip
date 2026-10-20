@@ -6,7 +6,8 @@ name `R40_NATIVE_DEVICE_SCALABLE_NUCA_HBM_V3`. Machine judgement:
 `make r40-v3-acceptance`.
 
 > **Status: closed with failures shown (user decision, 2026-10-20).**
-> `R40-10.acceptance` is **not passed**. Under v3, five performance gates show
+> `R40-10.acceptance` is **not passed** (recorded by `tools/r40/v3_r40_10_gate.py`
+> against PR #10, non-Draft, base `main`). Under v3, five performance gates show
 > no significant gain and `R40-01.device-time` fails its per-point rule.
 > Every gate is judged on its evidence and nothing was relaxed after the
 > contract freeze. Each failure has a bottleneck attribution (section 4) and

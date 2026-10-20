@@ -1,0 +1,8 @@
+checkpoint	/home/zzhouch/tnca_build/r40_attempt03_20261017/xo/tmp/link/vivado/vpl/prj/prj.runs/impl_1/level0_wrapper_routed.dcp
+kernel_period_ns	10.000
+failing_endpoints_enumerated	17332
+enumerated_tns_ns	-6679.015999999979
+complete	1
+scope	read-only routed checkpoint census; no implementation or board access
+residual_exclusion_from_cells	8
+residual_exclusion_through_nets	7

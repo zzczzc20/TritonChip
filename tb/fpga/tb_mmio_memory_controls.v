@@ -46,6 +46,14 @@ module tb_mmio_memory_controls;
   write(9'h70,0);write(9'h88,2);set_config(64'h301,64'h108);
   host_ready=1;repeat(2)@(negedge clk);host_ready=0;host_rsp=1;
   @(negedge clk);host_rsp=0;repeat(2)@(negedge clk);set_config(64'h301,64'h301);
+  // SETTLE: an accepted routing/aperture change holds admission until the
+  // registered copies in the memory mode and AXI adapters have it. Busy
+  // reads 1 meanwhile, and a window access in that interval is refused.
+  write(9'h110,64'h308);check(9'h48,1);
+  write(9'h88,2);check(9'h90,3'b100);check(9'h48,0);
+  write(9'h88,2);check(9'h90,3'b001);
+  host_ready=1;@(negedge clk);host_ready=0;host_rsp=1;@(negedge clk);host_rsp=0;@(negedge clk);
+  write(9'hb0,64'd8192);check(9'h48,1);repeat(2)@(negedge clk);check(9'h48,0);
   rst_n=0;repeat(2)@(negedge clk);rst_n=1;check(9'h110,64'h308);
   $display("MMIO MEMORY CONTROLS PASS quiescence invalid counts ownership host reset aliases");$finish;
  end

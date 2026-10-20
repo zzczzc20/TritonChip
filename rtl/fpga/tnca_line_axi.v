@@ -8,6 +8,11 @@
 // Reset MUST reset the attached AXI fabric too (including pending AW/W).
 // Fault stops admission and drains well-formed accepted responses. Malformed
 // or missing replies require platform recovery; no completion is fabricated.
+// The aperture (axi_base/axi_size) and admission_limit are quasi-static MMIO
+// registers in another SLR. This adapter uses registered local copies, with
+// the aperture bound precomputed, so the request-ready path starts at local
+// flops. The MMIO changes them only while idle and then holds admissions
+// longer than this copy takes (tnca_multicore_mmio SETTLE).
 `default_nettype none
 module tnca_line_axi #(
  parameter SRC_W=2,TAG_W=3,OUT_N=8,DATA_W=256,DYNAMIC_LIMIT=0,
@@ -58,11 +63,32 @@ module tnca_line_axi #(
   active_count=0;
   for(count_i=0;count_i<OUT_N;count_i=count_i+1)active_count=active_count+active[count_i];
  end
- wire admission_ok=!DYNAMIC_LIMIT ||
-   (admission_limit>=1 && admission_limit<=OUT_N && active_count<admission_limit);
- wire legal_address=req_addr>=MEM_BASE && req_addr[5:0]==0 &&
-   axi_base[5:0]==0 && axi_size>=64 && req_addr-MEM_BASE<=axi_size-64 &&
-   axi_base<=64'hffffffffffffffc0-(req_addr-MEM_BASE);
+ // Original aperture check, for an aligned base (so base <= 2^64-64) and
+ // size >= 64 (so offset <= size-64 < 2^64-64, no wrap):
+ //   off <= size-64 && base <= 2^64-64-off  <=>  off <= min(size-64, 2^64-64-base)
+ reg [63:0] base_q,bound_q;
+ reg window_ok_q,limit_ok_q;
+ reg [7:0] limit_q;
+ wire [63:0] size_bound=axi_size-64,base_bound=64'hffffffffffffffc0-axi_base;
+ always @(posedge clk)begin
+  base_q<=axi_base;
+  window_ok_q<=axi_base[5:0]==0 && axi_size>=64;
+  bound_q<=size_bound<base_bound ? size_bound : base_bound;
+  limit_q<=admission_limit;
+  limit_ok_q<=admission_limit>=1 && admission_limit<=OUT_N;
+ end
+ wire admission_ok=!DYNAMIC_LIMIT || (limit_ok_q && active_count<limit_q);
+ wire [63:0] offset=req_addr-MEM_BASE;
+ wire legal_address=req_addr>=MEM_BASE && req_addr[5:0]==0 && window_ok_q && offset<=bound_q;
+`ifndef SYNTHESIS
+ reg [63:0] size_shadow;
+ always @(posedge clk)begin
+  size_shadow<=axi_size;
+  if(rst_n && (req_valid || !idle) &&
+     (base_q!==axi_base || size_shadow!==axi_size || (DYNAMIC_LIMIT && limit_q!==admission_limit)))
+   $fatal(1,"tnca_line_axi: traffic while an aperture/limit copy differs from its control");
+ end
+`endif
  always @* begin
   free_slot=-1;hazard=0;
   for(integer k=OUT_N-1;k>=0;k=k-1)begin
@@ -113,7 +139,7 @@ module tnca_line_axi #(
    if(req_valid && !fault && !legal_address)fault<=1;
    if(req_valid && req_ready)begin
     active[free_slot]<=1;writing[free_slot]<=req_we;sent[free_slot]<=0;
-    address[free_slot]<=req_addr;bus_address[free_slot]<=axi_base+(req_addr-MEM_BASE);line[free_slot]<=req_wdata;
+    address[free_slot]<=req_addr;bus_address[free_slot]<=base_q+offset;line[free_slot]<=req_wdata;
     source[free_slot]<=req_src;tag[free_slot]<=req_tag;rbeat[free_slot]<=0;
     issue_slot<=free_slot;issue_valid<=1;aw_done<=0;w_done<=0;wbeat<=0;
    end

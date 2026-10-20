@@ -1,5 +1,11 @@
 // Host word accesses use the same coherent NI path as a core. The enclosing
 // command controller must prohibit launching while host_busy is asserted.
+// The grant is registered: host_allow (a global, SLR-crossing quiescence
+// permission) only reaches the host_busy flop. The core's ready and the NI
+// request mux depend on host_busy alone, so no combinational path runs from
+// the global idle tree into the core's memory handshake. A host request is
+// presented the cycle after its grant; the grant needs !c_valid, so no core
+// request can be accepted or lost in between.
 `default_nettype none
 module tnca_idle_host_mux #(parameter TAG_W=5, parameter HOST_TAG=0)(
  input wire clk,rst_n,host_allow,
@@ -18,19 +24,18 @@ module tnca_idle_host_mux #(parameter TAG_W=5, parameter HOST_TAG=0)(
  input wire n_rsp_valid,input wire [TAG_W-1:0] n_rsp_tag,input wire [63:0] n_rsp_data
 );
  reg host_issued;
- wire offer_host=host_allow && !c_valid && h_valid;
- wire use_host=host_busy || offer_host;
- assign n_valid=use_host ? (!host_issued && h_valid) : c_valid;
- assign c_ready=n_ready && !use_host;
- assign h_ready=n_ready && use_host && !host_issued;
- assign n_addr=use_host ? h_addr : c_addr;
- assign n_wdata=use_host ? h_wdata : c_wdata;
- assign n_be=use_host ? h_be : c_be;
- assign n_we=use_host ? h_we : c_we;
- assign n_tag=use_host ? HOST_TAG : c_tag;
- assign n_amo=use_host ? 1'b0 : c_amo;
- assign n_aop=use_host ? 4'd0 : c_aop;
- assign n_cmp=use_host ? 64'd0 : c_cmp;
+ wire grant_host=host_allow && !c_valid && h_valid && !host_busy;
+ assign n_valid=host_busy ? (!host_issued && h_valid) : c_valid;
+ assign c_ready=n_ready && !host_busy;
+ assign h_ready=n_ready && host_busy && !host_issued;
+ assign n_addr=host_busy ? h_addr : c_addr;
+ assign n_wdata=host_busy ? h_wdata : c_wdata;
+ assign n_be=host_busy ? h_be : c_be;
+ assign n_we=host_busy ? h_we : c_we;
+ assign n_tag=host_busy ? HOST_TAG : c_tag;
+ assign n_amo=host_busy ? 1'b0 : c_amo;
+ assign n_aop=host_busy ? 4'd0 : c_aop;
+ assign n_cmp=host_busy ? 64'd0 : c_cmp;
  // The enclosing idle gate ensures only a host response can be outstanding
  // when host_busy is set. Still match its tag rather than stealing a stray one.
  assign h_rsp_valid=n_rsp_valid && host_busy && n_rsp_tag==HOST_TAG;
@@ -40,8 +45,8 @@ module tnca_idle_host_mux #(parameter TAG_W=5, parameter HOST_TAG=0)(
  always @(posedge clk) begin
   if(!rst_n)begin host_busy<=0;host_issued<=0;end
   else begin
-   if(offer_host)host_busy<=1;
-   if(h_valid && h_ready)begin host_busy<=1;host_issued<=1;end
+   if(grant_host)host_busy<=1;
+   if(h_valid && h_ready)host_issued<=1;
    if(h_rsp_valid)begin host_busy<=0;host_issued<=0;end
   end
  end

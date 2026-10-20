@@ -5,6 +5,10 @@
 // DMA after cache writeback/invalidation and physical memory drain.
 // One serialized request at a time; a busy/stale doorbell is dropped and must
 // be explicitly rung again. Descriptor fields are snapshotted on admission.
+// Memory routing/admission controls and the HBM aperture are quasi-static:
+// they change only while fully idle, and consumers keep registered local
+// copies in their own SLR. After any such change, admissions are held for
+// SETTLE cycles (busy reads 1) so no request can meet a stale copy.
 `default_nettype none
 module tnca_multicore_mmio #(
  parameter N=3,PORTS=3,NUM_RCTX=4,PHYS_W=8,CODE_WORDS=16384,
@@ -44,6 +48,10 @@ module tnca_multicore_mmio #(
  localparam IDLE=0,ISSUE=1,WAIT=2;
  reg [63:0] device_clock,launch_start,launch_end,launch_sequence;
  reg maintenance_cmd,maintenance_complete;
+ // Longer than the one-cycle copies in tnca_memory_mode and tnca_line_axi.
+ localparam SETTLE=2;
+ reg [1:0] settle;
+ wire admit_idle=all_idle && settle==0;
  reg [63:0] maintenance_sequence;
  wire [63:0] memory_end=MEM_BASE+axi_size;
  wire memory_valid=memory_end>=MEM_BASE;
@@ -64,7 +72,7 @@ module tnca_multicore_mmio #(
    8'h10:reg_rdata=a0;8'h18:reg_rdata=a1;8'h20:reg_rdata=a2;
    8'h28:reg_rdata=a3;8'h30:reg_rdata=a4;8'h38:reg_rdata=a5;
    8'h40:reg_rdata=deadline;
-   8'h48:reg_rdata=(state!=IDLE || host_state!=IDLE || !all_idle);
+   8'h48:reg_rdata=(state!=IDLE || host_state!=IDLE || !admit_idle);
    8'h50:reg_rdata=rsp_seq;8'h58:reg_rdata=rsp_status;
    8'h60:reg_rdata=rsp_r0;8'h68:reg_rdata=rsp_r1;
    8'h70:reg_rdata=window_addr;8'h78:reg_rdata=window_data;
@@ -103,31 +111,32 @@ module tnca_multicore_mmio #(
    cmd_deadline<=0;cmd_gx<=0;cmd_gy<=0;cmd_gz<=0;cmd_group_log2<=0;
    cmd_cores<=0;cmd_roles<=0;cmd_slice<=0;
    memory_active_ports<=PORTS;memory_outstanding<=AXI_OUT_N;
-   axi_base<=0;axi_size<=0;device_clock<=0;launch_start<=0;launch_end<=0;launch_sequence<=0;
+   axi_base<=0;axi_size<=0;device_clock<=0;launch_start<=0;launch_end<=0;launch_sequence<=0;settle<=SETTLE;
    maintenance_cmd<=0;maintenance_complete<=0;maintenance_sequence<=0;cache_maint_base<=0;cache_maint_size<=0;
   end else begin
    device_clock<=device_clock+1;
+   if(settle!=0)settle<=settle-1;
    if(reg_we)case(reg_addr)
     9'h110:if(MEMORY_CONTROLS && state==IDLE && host_state==IDLE && all_idle &&
       reg_wdata[63:16]==0 && (reg_wdata[15:8]==1 || reg_wdata[15:8]==PORTS) &&
       reg_wdata[7:0]>=1 && reg_wdata[7:0]<=AXI_OUT_N)begin
-     memory_active_ports<=reg_wdata[15:8];memory_outstanding<=reg_wdata[7:0];
+     memory_active_ports<=reg_wdata[15:8];memory_outstanding<=reg_wdata[7:0];settle<=SETTLE;
     end
     8'h00:req_seq<=reg_wdata;8'h08:req_op<=reg_wdata;
     8'h10:a0<=reg_wdata;8'h18:a1<=reg_wdata;8'h20:a2<=reg_wdata;
     8'h28:a3<=reg_wdata;8'h30:a4<=reg_wdata;8'h38:a5<=reg_wdata;
     8'h40:deadline<=reg_wdata;
     8'h70:window_addr<=reg_wdata;8'h78:window_data<=reg_wdata;8'h80:window_be<=reg_wdata[7:0];
-    8'ha8,9'h100,9'h108:if(state==IDLE && host_state==IDLE && all_idle)axi_base<=reg_wdata;
-    8'hb0:if(state==IDLE && host_state==IDLE && all_idle)axi_size<=reg_wdata;
+    8'ha8,9'h100,9'h108:if(state==IDLE && host_state==IDLE && all_idle)begin axi_base<=reg_wdata;settle<=SETTLE;end
+    8'hb0:if(state==IDLE && host_state==IDLE && all_idle)begin axi_size<=reg_wdata;settle<=SETTLE;end
     8'h88:if(reg_wdata[1] && host_state==IDLE)begin
-     if(state!=IDLE || !all_idle || !host_address_ok)window_status<=3'b100;
+     if(state!=IDLE || !admit_idle || !host_address_ok)window_status<=3'b100;
      else begin
       host_state<=ISSUE;window_status<=3'b001;
       host_we<=reg_wdata[0];host_addr<=window_addr;host_wdata<=window_data;host_be<=window_be;
      end
     end
-    8'h48:if(reg_wdata[0] && state==IDLE && host_state==IDLE && all_idle && req_seq>served)begin
+    8'h48:if(reg_wdata[0] && state==IDLE && host_state==IDLE && admit_idle && req_seq>served)begin
      served<=req_seq;rsp_seq<=req_seq;rsp_status<=0;rsp_r0<=0;rsp_r1<=0;
      case(req_op)
       64'd1,64'd2:if(!range_ok)rsp_status<=3;

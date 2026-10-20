@@ -7,6 +7,12 @@ name. It adds no image parameter, so the final `image.tcl` keeps attempt 3's
 parameters and only the source commit changes. Nothing here has been
 implemented, loaded or timed on the board.
 
+**Status (2026-10-20): deferred to R41; no R40 link.** The routed census of
+attempt 3 ([`census/README.md`](census/README.md)) shows 12,799 endpoints
+failing at 100 MHz behind the M1–M3 cone (WNS -0.919 ns), so this candidate
+would link at about 91 MHz. The user chose to carry it into R41's image, built
+together with the frequency work.
+
 | ID | Change | Files |
 |---|---|---|
 | M1 | Registered host grant: core `c_ready` / NI mux depend on `host_busy` only; the host request goes out the cycle after the grant | `rtl/noc/tnca_idle_host_mux.v` |

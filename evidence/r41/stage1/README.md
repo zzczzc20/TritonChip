@@ -13,6 +13,10 @@
 | `kickoff/depthwise-regression-v2-evidence.tgz` | 3 项谓词检查含实际 RTL 逐 lane 校验；3 项 fragment 检查；4 项 depthwise/broadcast 检查；D256 attention、depthwise、FP32 recurrence 代表图全部功能通过 | 完整 Qwen 文本模型或长期 cache 生命周期已经通过 |
 | `kickoff/compiler-regression-after-depthwise-v2.log` | 生成文件一致性检查与 102 项 compiler unit 检查通过；MLIR `tnca-opt` 未安装，IR suite 明确 SKIP | 未执行的 MLIR suite 通过 |
 | `kickoff/qwen-storage/` | 固定官方 revision，632 个 tensor 的 header/index 覆盖；语言分支 320 个 storage、3,763,655,360 字节；独立 dtype/shape/区间/文件大小审计通过 | 4 GiB 内完整运行时容量足够；权重未下载，执行未测量 |
+| `kickoff/public-tuning-v2-evidence.tgz` | 公共 Inductor runtime hook；隔离候选编译及真实子进程超时终止；Session drain/poison；SystemC 保守拒绝；两个配置的 MMIO RTL 端点选择与样本隔离 | 物理镜像资格或板上收益；RTL 测试显式替换了物理资格检查 |
+| `kickoff/archive-d1feb89-harness-evidence.tgz` | 从 git archive 导出检查点，远端 fresh caches 重建与 harness smoke 完成 | 后续 tuning 修改的最终 archive 或冻结板上锚点已经完成 |
+| `kickoff/historical-ooc-audit.json` | 77 个 RTL 文件与历史 OOC 源码全部一致；changed/missing/extra mutation probes 均被拒绝 | 新综合、区域预检或新 route timing 通过 |
+| `kickoff/matched-native-speed-v1-evidence.tgz` | 相同 AOT artifact、输入、地址、单 program；RTL/SystemC 各 1 次 warmup、3 次完成执行；中位 host 执行 3.357 s / 0.001852 s | 全工作负载的统一加速倍数；单点周期预测 1397 对 RTL 1281 仍保留为误差证据 |
 | `kickoff/prospective-prediction.json`、`prospective-wide/` | 板测前保存候选预测及不可变源码身份 | 对应板测、残差或最终源码回归已经完成 |
 
 谓词压力修复使用现有 `p.ballot`/`p.frombits` 保存精确 lane mask，不能增加架构容量。
@@ -24,8 +28,8 @@ column broadcast 修复 `[R,1]` 加载后的每行 lane 0 复制语义，不按�
 
 ## 尚未满足的签收条件
 
-公共 `TNCA_TUNE` 消费者、同步与 locality/DCO 审计、内存映射及计时边界资格、三个闭环案例、
-匹配 RTL/SystemC 速度测量、候选 OOC/区域预检和完整模型接口差异分析仍须完成。
+公共 `TNCA_TUNE` 消费者的 cache 命中复验及物理验证、同步与 locality/DCO 审计、内存映射及计时边界资格、三个闭环案例、
+候选区域预检和完整模型 IR/运行时峰值估算仍须完成。当前模型算子/状态/cache 接口分析见 `model_feasibility.md`。
 最终 90 MHz 全套数值回归、正式非退化结果、prospective 板测残差、干净 git archive/fresh cache 重建及冻结板上锚点亦未完成。
 
 卡上观测镜像曾为 UUID `428c00e5-6996-92c7-1f8f-ec41f2d037b3`、245 MHz，且有使用者；

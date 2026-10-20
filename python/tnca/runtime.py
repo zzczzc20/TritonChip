@@ -38,6 +38,7 @@ import operator
 import struct
 import threading
 import time
+from contextlib import contextmanager
 from collections import OrderedDict
 
 from . import _data, abi, artifact, manifest as M
@@ -409,6 +410,7 @@ class Session:
         # done_cycles measures, so they add host time and no device cycles.
         self._counters = _counter_spec() if counters else None
         self._lock = threading.RLock()
+        self._measurement_owner = None
         self._buffers = OrderedDict()
         self._modules = []
         self._queue = []
@@ -698,6 +700,9 @@ class Session:
     def submit(self, module, args, *, grid=(1, 1, 1), depends_on=()):
         self._check_usable()
         with self._lock:
+            if (self._measurement_owner is not None and
+                    self._measurement_owner != threading.get_ident()):
+                raise SessionBusy('another thread owns the bounded measurement scope')
             if module.epoch != self.epoch:
                 raise AdmissionError(
                     'that module was loaded in a previous epoch')
@@ -1156,6 +1161,54 @@ class Session:
             if not ev.terminal:
                 self.wait(ev, timeout)
         return True
+
+    @contextmanager
+    def measurement_scope(self, *, wall_seconds, clock_hz):
+        """Bound tuning launches on an idle Session without changing epochs.
+
+        Host expiry never cancels a launch. Reserve time for a real device
+        drain, and poison the Session if it cannot drain by the scope limit.
+        The caller must then recover explicitly and recreate old handles.
+        Other threads cannot submit while this scope owns launch limits.
+        """
+        import math
+        if (type(wall_seconds) not in (int, float) or not math.isfinite(wall_seconds)
+                or wall_seconds <= 0 or type(clock_hz) is not int or clock_hz <= 0):
+            raise ArgumentError('bounded measurement needs positive finite time and clock')
+        deadline = time.monotonic()+wall_seconds
+        with self._lock:
+            self._check_usable()
+            if self._measurement_owner is not None or self.unfinished:
+                raise SessionBusy('bounded measurement requires an idle unowned Session')
+            if (getattr(self.dev, 'bounded_launch_limits', False) is not True or
+                    not all(hasattr(self.dev, key) for key in ('deadline_cycles', 'host_timeout'))):
+                raise CapabilityError('backend cannot apply bounded launch limits')
+            saved = (self._deadline, self._host_timeout,
+                     self.dev.deadline_cycles, self.dev.host_timeout)
+            self._measurement_owner = threading.get_ident()
+            self._deadline = self.dev.deadline_cycles = min(
+                saved[0], saved[2], max(1, int(clock_hz*wall_seconds/4)))
+            self._host_timeout = self.dev.host_timeout = min(
+                saved[1], saved[3], wall_seconds/2)
+        try:
+            yield self
+        finally:
+            try:
+                # There is no successful fallback while a candidate still
+                # owns device work. Device faults retain their poison flag.
+                remaining = deadline-time.monotonic()
+                if self.unfinished:
+                    if remaining <= 0:
+                        raise Timeout('bounded measurement exhausted its drain budget')
+                    self.drain(timeout=remaining)
+            except Timeout as error:
+                self.poisoned = True
+                raise DeviceLost('bounded measurement could not drain; recover and recreate handles') from error
+            finally:
+                with self._lock:
+                    self._deadline, self._host_timeout = saved[:2]
+                    self.dev.deadline_cycles, self.dev.host_timeout = saved[2:]
+                    self._measurement_owner = None
 
     # ---- recovery and shutdown --------------------------------------------
     def recover(self):

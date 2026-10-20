@@ -50,6 +50,9 @@ this module sets, each through an upstream extension point:
 `host_fallbacks(code)` and `triton_kernels(code)` read Inductor's generated
 wrapper: what stayed on the host, and which kernels were generated.
 """
+import os
+import time
+
 STAGE1_MAX_BLOCK = 16
 # The device types whose Triton kernels TNCA runs: `cpu` (CPU tensors, the
 # R39 migration path, B39) and `tnca` (the native device, R40-01). Both get
@@ -294,9 +297,16 @@ def _install_block_fallback():
 
     def _precompile_worker(self):
         configs = self.configs
+        started = time.monotonic()
+        if (os.environ.get('TNCA_TUNE', '0') == '1' and configs and
+                getattr(self.device_props, 'type', None) == 'tnca'):
+            self._tnca_tuning_configs = list(configs)
         if (self.compile_results or not configs or len(configs) < 2
                 or getattr(self.device_props, 'type', None) not in TNCA_DEVICE_TYPES):
-            return orig(self)
+            try:
+                return orig(self)
+            finally:
+                self._tnca_baseline_compile_seconds = time.monotonic()-started
         reasons = []
         for i, config in enumerate(configs):
             last = i == len(configs) - 1
@@ -313,12 +323,36 @@ def _install_block_fallback():
                 continue
             self.compile_results = [result]
             self.configs = None
+            self._tnca_baseline_compile_seconds = time.monotonic()-started
             if reasons:
                 _BLOCK_FALLBACKS.append(dict(kernel=self.inductor_meta.get('kernel_name'),
                                              used=dict(config.kwargs), reasons=reasons))
             return
     _precompile_worker._tnca = True
     H.CachingAutotuner._precompile_worker = _precompile_worker
+    upstream_cached_autotune = H.cached_autotune
+    def cached_autotune(*call_args, **call_kwargs):
+        triton_meta = call_args[2] if len(call_args) > 2 else call_kwargs.get('triton_meta', {})
+        if (os.environ.get('TNCA_TUNE', '0') == '1' and
+                getattr(triton_meta.get('device'), 'type', None) == 'tnca'):
+            # Upstream's winner cache lacks TNCA image/clock/memory-map
+            # identity. Keep the complete candidate set for our own cache.
+            if len(call_args) > 5:
+                call_args = list(call_args)
+                call_args[5] = dict(call_args[5] or {}, force_disable_caches=True)
+            else:
+                call_kwargs['inductor_meta'] = dict(call_kwargs.get('inductor_meta') or {}, force_disable_caches=True)
+        return upstream_cached_autotune(*call_args, **call_kwargs)
+    H.cached_autotune = cached_autotune
+    upstream_run = H.CachingAutotuner.run
+    def run(self, *args, stream, benchmark_run=False, **kwargs):
+        if (os.environ.get('TNCA_TUNE', '0') != '1' or benchmark_run or
+                getattr(self.device_props, 'type', None) != 'tnca'):
+            return upstream_run(self, *args, stream=stream, benchmark_run=benchmark_run, **kwargs)
+        from .inductor_tuning import choose
+        choose(self, args, stream=stream, kwargs=kwargs)
+        return upstream_run(self, *args, stream=stream, benchmark_run=benchmark_run, **kwargs)
+    H.CachingAutotuner.run = run
 
 
 _BLOCK_FALLBACKS = []

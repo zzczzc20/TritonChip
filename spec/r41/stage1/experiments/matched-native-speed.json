@@ -1,0 +1,22 @@
+{
+  "schema": "tnca-experiment-spec/1",
+  "id": "r41-matched-native-execution-speed",
+  "allowed_hosts": ["gx10-6646"],
+  "hypothesis": "Native SystemC reduces host execution cost for the same completed compiler artifact while retaining exact functional results.",
+  "competing_explanations": ["RTL and model execute different artifacts or buffer placements", "a timeout is treated as a precise speed ratio", "an empty/no-op model only copies oracle outputs", "startup or compilation is mixed into one execution boundary"],
+  "expected_observations": ["both backends complete one warmup and three measured launches", "all 16 FP32 results match the independent exact reference", "one artifact hash and identical buffer addresses are used", "build/startup and execution samples are recorded separately"],
+  "sources": ["python/tnca", "compiler/python", "compiler/targets", "rtl", "tb", "tools/asm", "isa", "spec/r1_profiles.json", "tools/performance_harness/matched_native_speed.py", "tools/performance_harness/systemc/tlm_backend.py", "spec/r41/stage1/experiments/matched-native-speed.json"],
+  "env": {
+    "PATH": "{home}/tc_env/bin:/usr/local/bin:/usr/bin:/bin",
+    "PYTHONPATH": "{root}:{root}/python:{root}/compiler/python:{root}/tools/asm:{root}/tools/performance_harness/systemc",
+    "OMP_NUM_THREADS": "2", "MKL_NUM_THREADS": "2",
+    "TNCA_TLM_BINARY": "{home}/r41-stage1/runs/harness-smoke-v3/model-build/tnca-chip",
+    "TNCA_TLM_CONFIG": "{root}/tools/performance_harness/systemc/configs/r40-board-m2.cfg",
+    "TNCA_TLM_MEMORY_BYTES": "16777216",
+    "TNCA_TENSOR_DESCRIPTORS": "1",
+    "TRITON_CACHE_DIR": "{out}/triton-cache"
+  },
+  "steps": [
+    {"id": "same-artifact-execution", "kind": "rtl", "argv": ["{python}", "tools/performance_harness/matched_native_speed.py", "--out", "{out}/matched", "--samples", "3", "--steps", "64"], "timeout_seconds": 600, "inputs": ["{home}/r41-stage1/runs/harness-smoke-v3/model-build/tnca-chip", "{root}/tools/performance_harness/systemc/configs/r40-board-m2.cfg"], "outputs": ["{out}/matched/report.json", "{out}/matched/matched.tnca"]}
+  ]
+}

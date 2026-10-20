@@ -254,6 +254,9 @@ class U50Backend(Transport):
     name = 'fpga-u50'
     state = _backend.REFERENCE_AVAILABLE
     launch_is_idempotent = False
+    # _put_request snapshots deadline_cycles into R_REQ_DEADLINE for each
+    # command, and response polling reads host_timeout for that command.
+    bounded_launch_limits = True
 
     def __init__(self, link, *, epoch=0, host_timeout=30.0,
                  deadline_cycles=2_000_000, poll_interval=0.001,

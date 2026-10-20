@@ -174,13 +174,15 @@ class CandidateTimedOut(TimeoutError):
     """The graph deadline terminated an isolated candidate and its children."""
 
 
-def run_measurement(command, *, budget, result_path, log_path, cwd=None, env=None):
+def run_measurement(command, *, budget, result_path, log_path, cwd=None, env=None,
+                    read_result=None, worker_record=None):
     """Compile/run an external worker within the original graph deadline.
 
     The worker publishes a JSON list of device endpoint records. Host elapsed
     time bounds the search; it never ranks candidates. Call from select's
-    measurement callback after admission. Every worker owns a process group,
-    so a deadline also terminates compiler/simulator descendants.
+    measurement callback after admission. A compiler-only caller may supply
+    its own result decoder; the default always validates device endpoints.
+    Every worker owns a process group, so a deadline also terminates children.
     """
     if not isinstance(command, (list, tuple)) or not command or any(not isinstance(a,str) for a in command):
         raise ValueError('candidate command must be a nonempty argument list')
@@ -200,6 +202,8 @@ def run_measurement(command, *, budget, result_path, log_path, cwd=None, env=Non
             proc=subprocess.Popen(child_argv(command),cwd=cwd,env=env,
                                   stdin=subprocess.DEVNULL,stdout=log,
                                   stderr=subprocess.STDOUT,start_new_session=True)
+            if worker_record is not None:
+                worker_record['pid'] = proc.pid
             try:
                 # Include process startup, compilation and publication in the
                 # same deadline, rather than granting each worker 600 seconds.
@@ -212,9 +216,12 @@ def run_measurement(command, *, budget, result_path, log_path, cwd=None, env=Non
         if budget.check_elapsed():
             raise CandidateTimedOut('candidate publication exceeded the graph deadline')
         try:
-            records=json.loads(result_path.read_text())
-            if not isinstance(records,list):raise ValueError('expected a JSON list')
-            event_seconds(records,1)
+            if read_result is None:
+                records=json.loads(result_path.read_text())
+                if not isinstance(records,list):raise ValueError('expected a JSON list')
+                event_seconds(records,1)
+            else:
+                records=read_result(result_path)
         except (OSError,ValueError,TypeError,KeyError) as error:
             raise CandidateFailed(f'invalid candidate device records: {error}') from error
         if budget.check_elapsed():

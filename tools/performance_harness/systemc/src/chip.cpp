@@ -27,6 +27,7 @@
 #include <chrono>
 #include <fcntl.h>
 #include <sys/wait.h>
+#include <sys/prctl.h>
 #ifdef TNCA_HAVE_RAMULATOR2
 #include "tnca_dram_bridge.hpp"
 #endif
@@ -1095,8 +1096,14 @@ struct Model {
         std::string path=x.directory+"/dram_pass_"+std::to_string(::getpid())+".bin";
         auto t0=std::chrono::steady_clock::now();
         std::cout.flush();std::cerr.flush();
+        const pid_t owner=::getpid();
         pid_t pid=::fork();require(pid>=0,"slow DRAM path: fork failed");
-        if(pid==0)child_pass(cmd,flush,path);
+        if(pid==0){
+            // fork clears the parent's death signal. Bind this pass to its
+            // actual owner again, including death before prctl is armed.
+            if(::prctl(PR_SET_PDEATHSIG,SIGKILL)!=0 || ::getppid()!=owner)::_exit(8);
+            child_pass(cmd,flush,path);
+        }
         int status=0;while(::waitpid(pid,&status,0)<0 && errno==EINTR){}
         auto t1=std::chrono::steady_clock::now();out.child_s=std::chrono::duration<double>(t1-t0).count();
         // The log, read into two arrays (16 bytes per request).

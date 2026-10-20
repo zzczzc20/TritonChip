@@ -105,6 +105,14 @@
       ]
     },
     {
+      "id": "native-slow-process-lifetime",
+      "kind": "systemc",
+      "argv": ["{python}", "tools/performance_harness/systemc/test_slow_process_lifetime.py", "--binary", "{out}/model-build/tnca-chip", "--config", "{root}/tools/performance_harness/systemc/configs/r40-board-m2.cfg", "--out", "{out}/slow-process-lifetime"],
+      "timeout_seconds": 60,
+      "inputs": ["{out}/model-build/tnca-chip"],
+      "outputs": ["{out}/slow-process-lifetime/report.json"]
+    },
+    {
       "id": "dram-path-boundaries",
       "kind": "systemc",
       "argv": ["{out}/model-build/tnca-dram-path-test", "{root}/tools/performance_harness/systemc/configs/r40-board-m2.cfg"],

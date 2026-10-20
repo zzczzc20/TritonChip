@@ -24,6 +24,7 @@
 | `kickoff/frequency-preflight-v2-evidence.tgz`、`frequency_preflight.md` | 全 census 重建、93 MHz 历史差异保留、F01-F10 责任源码、原始 SLR packing 风险 | 新频率闭合或候选实现已经完成 |
 | `kickoff/primitive-ir-v2-evidence.tgz` | 三个独立进程的代表图保留真实 IR、artifact 资源、TNCA lowering 时间与 Session heap/code 峰值 | 完整模型运行时峰值或完整模型编译已经通过 |
 | `locality_design.md` | 通用消费者、storage/alias/lifetime、已有 TMU 控制、拒绝规则与 Stage 2 板测设计 | Stage 2 locality runtime 功能已经接入或已有收益 |
+| `kickoff/slow-process-lifetime-v1-evidence.tgz`、旧二进制负例 tgz | 三种真实 owner 单独 SIGKILL 后活动模型/slow pass 均退出；旧版本遗留子进程的缺口复现并清理；新模型普通 artifact 与快慢路径回归通过 | 慢路径请求/延迟定点已经收敛或模型已经校准 |
 
 谓词压力修复使用现有 `p.ballot`/`p.frombits` 保存精确 lane mask，不能增加架构容量。
 pointwise 超出资源时依次尝试较小 block，保留共同 TNCA 执行路径；已有合法配置仍优先使用。

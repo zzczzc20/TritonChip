@@ -109,6 +109,7 @@ def make_backend_class():
             return path, values
 
         def start(self):
+            from tnca._child_exec import child_argv
             if self.proc is not None:
                 raise TncaError('this model backend already has a process', code='SESSION_BUSY')
             config, values = self._write_config()
@@ -118,8 +119,8 @@ def make_backend_class():
                        TNCA_TLM_MONITOR=os.environ.get('TNCA_TLM_MONITOR', 'aggregate'))
             self.stdout = (self.dir/'stdout.log').open('w')
             self.stderr = (self.dir/'stderr.log').open('w')
-            self.proc = subprocess.Popen([str(self.binary), '--serve', str(config), str(self.dir),
-                                          str(to_model_r), str(from_model_w)],
+            self.proc = subprocess.Popen(child_argv([str(self.binary), '--serve', str(config), str(self.dir),
+                                          str(to_model_r), str(from_model_w)]),
                                          pass_fds=(to_model_r, from_model_w), env=env,
                                          stdout=self.stdout, stderr=self.stderr, cwd=self.dir)
             os.close(to_model_r)
@@ -174,6 +175,7 @@ def make_backend_class():
                 self.proc.wait(timeout=60)
             except Exception:                                # noqa: BLE001
                 self.proc.kill()
+                self.proc.wait(timeout=10)
             finally:
                 (self.dir/'launches.json').write_text(json.dumps(dict(
                     launches=self.launches, host_seconds=self.host_seconds,

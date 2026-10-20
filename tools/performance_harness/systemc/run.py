@@ -10,6 +10,7 @@ import re
 import signal
 import shlex
 import subprocess
+import sys
 import threading
 import time
 
@@ -45,6 +46,8 @@ def systemc_library(binary):
 
 
 def run(binary, config, trace, out, timeout=1800, source_identity=None, mode='memory', monitor='aggregate'):
+    sys.path.insert(0, str(ROOT/'python'))
+    from tnca._child_exec import child_argv
     if monitor not in ('off', 'aggregate', 'trace'):
         raise ValueError('unknown socket monitor mode')
     binary, config, trace, out = (Path(p).resolve() for p in (binary, config, trace, out))
@@ -83,7 +86,7 @@ def run(binary, config, trace, out, timeout=1800, source_identity=None, mode='me
     start = time.monotonic()
     code, timeout_hit = None, False
     with (out/'stdout.log').open('x') as stdout, (out/'stderr.log').open('x') as stderr:
-        process = subprocess.Popen(command, stdout=stdout, stderr=stderr, start_new_session=True,
+        process = subprocess.Popen(child_argv(command), stdout=stdout, stderr=stderr, start_new_session=True,
                                    env=dict(os.environ, TNCA_TLM_MONITOR=monitor))
         def expire():
             nonlocal timeout_hit

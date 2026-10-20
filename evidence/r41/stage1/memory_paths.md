@@ -22,10 +22,25 @@ they do not prove a physical U280 controller's queue or mapping behavior.
 The separate `dram-guards-v1-evidence.tgz` retains the initial build/test
 logs and binary hashes; the smoke campaign supplies full source identity.
 
+`kickoff/slow-process-lifetime-v1-evidence.tgz` adds the next clean build and
+six-step experiment. The actual slow pass now rearms `PR_SET_PDEATHSIG`
+after fork and checks its expected parent to close the startup race. Both
+Python model launchers use the existing parent-death exec helper; backend
+failure cleanup also waits for the killed model. Three tests first observe
+live real model/pass processes running an infinite ISA loop, then SIGKILL
+only their owner. Direct model, backend and standalone runner ownership
+all terminate their active descendants without a process-group kill.
+Native artifact and fast/slow standard Torch regression also pass.
+`slow-process-old-binary-negative-v1-evidence.tgz` preserves the same test
+detecting a surviving pass with the preceding binary, followed by explicit
+test cleanup. This is a reproduced defect and its correction, not a dummy
+subprocess test. The full smoke manifest now includes this lifetime check
+for future clean-archive execution.
+
 Remaining Required work includes actual BO-to-PC and bank/row mapping proof,
 controller/AXI/NoC timing-boundary reconciliation, read/write switching and
 queue-backpressure qualification, fixed-point request/latency convergence,
-failure/timeout child ownership and calibration/validation residuals.
+fixed-point failure propagation and calibration/validation residuals.
 Current convergence uses makespan agreement and reports unmatched requests;
 that is insufficient to establish a stable request/latency fixed point.
 Per-command Ramulator state reset remains an explicit applicability limit.

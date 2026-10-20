@@ -1,0 +1,5 @@
+PASS op.attention_prefill/tiny/fp16-b1-h2-s16-d16 resident step=0: 7 kernels, actual tensor bytes={'h2d': 0, 'd2h': 0}
+PASS op.attention_prefill/tiny/fp16-b1-h2-s16-d16 resident step=1: 7 kernels, actual tensor bytes={'h2d': 0, 'd2h': 0}
+PASS op.attention_prefill/tiny/fp16-b1-h2-s16-d16 per-kernel step=0: 7 kernels, actual tensor bytes={'h2d': 57344, 'd2h': 57344}
+PASS op.attention_prefill/tiny/fp16-b1-h2-s16-d16 per-kernel step=1: 7 kernels, actual tensor bytes={'h2d': 57344, 'd2h': 57344}
+r40-frozen-residency-tests PASS (4/4)

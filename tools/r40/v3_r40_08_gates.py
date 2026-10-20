@@ -29,7 +29,8 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path[:0] = [str(ROOT), str(ROOT / 'python'), str(ROOT / 'tools/r40')]
 from v3_r40_02_gates import (BACKEND, CLOCK_HZ, EVIDENCE, IMAGE, TREE, Missing, backend_args_ok,
                              contract_v3, default_sims, emit, file_sha, functional_queue, has, judge,
-                             model_report, need, require, same_identity, sha, sim_identity, sim_run)
+                             model_report, model_stage, need, require, same_identity, sha, sim_identity,
+                             sim_run)
 
 FAMILIES = {'attention_decode', 'attention_prefill', 'llama_decode', 'llama_prefill', 'gpt2_block'}
 ONLINE_CASES = {
@@ -211,10 +212,12 @@ def decode_checks(report_path, queue, snapshot, bucket_audit, clock):
     import bucket_model_acceptance
     state, commands = functional_queue(queue, snapshot)
     done = {c['name']: c for c in state['completed']}
-    for stage in ('frozen-original-model', 'full-bucket-model-capability-audit'):
-        if stage not in done:
-            raise Missing(f'board stage {stage} not complete')
-        require(done[stage]['exit_code'] == 0, f'{stage} exited {done[stage]["exit_code"]}')
+    model, _argv = model_stage(queue, state, commands)
+    require(model['exit_code'] == 0, f'frozen-original-model exited {model["exit_code"]}')
+    stage = 'full-bucket-model-capability-audit'
+    if stage not in done:
+        raise Missing(f'board stage {stage} not complete')
+    require(done[stage]['exit_code'] == 0, f'{stage} exited {done[stage]["exit_code"]}')
     report, digest = model_report(report_path)
     ident = report['identity']
     same_identity(ident['software_tree'], 'model report')

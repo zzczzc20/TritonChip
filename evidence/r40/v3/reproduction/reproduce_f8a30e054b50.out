@@ -1,0 +1,13 @@
+archive_sha256 e47002be86e0b8380cf1ee84058576c8c3834ce26753497bb357063da0823c68
+software_tree files:fe1b5199db515440d2d3407aed61ef1eed5edb627e5baf9cda10be5a7198cf75
+delivery_tree files:fe1b5199db515440d2d3407aed61ef1eed5edb627e5baf9cda10be5a7198cf75
+R40 v3 immutable contract: PASS
+r40-protocol  PASS  (42/42)
+pass               op.add/hbm/fp16-n67108864                                  time=243988610cycles eta=0.2063 err=0.00024740227610094015 [93.8s]
+pass               op.matmul/medium/fp16-m128-k192-n128                       time=234635cycles eta=0.419 err=0.00030617228042415754 [12.7s]
+pass               model.llama_decode/hbm/fp16-b1-p512                        time=170540745cycles eta=0.1157 err=0.0016481212249269185 [60.2s]
+3/3 pass in 167s -> /home/zzhouch/tnca_v3_reproduce/run_f8a30e054b50/points.jsonl
+op.add/hbm/fp16-n67108864 pass cycles=243988610 err=0.00024740227610094015 reference=243956222 rel_diff=0.00013
+op.matmul/medium/fp16-m128-k192-n128 pass cycles=234635 err=0.00030617228042415754 reference=234859 rel_diff=0.00095
+model.llama_decode/hbm/fp16-b1-p512 pass cycles=170540745 err=0.0016481212249269185 reference=170630629 rel_diff=0.00053
+REPRODUCTION PASS

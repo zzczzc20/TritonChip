@@ -1,0 +1,14 @@
+PASS host report capability-pass with every check ok 
+PASS host auditor = repository tools/r40/multicore_board_acceptance.py 
+PASS host report identity = delivery tree/image, v2 lock, clock evidence 8ad4b3bd 
+PASS host gate entry = host report (status, checks, inputs, identity) under the v2 lock 
+PASS every host audit input equals the preserved fe1b copy 
+PASS queue stage physical-multicore-capability-audit exited 0, exact command 
+PASS stage log 
+PASS queue state complete on the delivery identity 
+PASS native77 compiler bundles intact on the host (sha256 listing vs record hashes) 
+PASS local re-run of checkpoint_checks 
+PASS local re-run of native_inventory.audit 
+PASS local checks equal the host report checks 
+PASS xclbin fetched from the host hashes to the delivery image 
+{"passed": 13, "total": 13}

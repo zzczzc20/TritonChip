@@ -37,21 +37,58 @@ def audit(paths):
     return checks
 
 
+def bound(paths, tree, image, clock_path):
+    """(identity, check): every record measured on exactly this product tree,
+    full image SHA and operating clock evidence. The v3 acceptance takes this
+    v2 gate only when its record names the delivery identity."""
+    raw=Path(clock_path).read_bytes();clock=json.loads(raw)
+    digest=hashlib.sha256(raw).hexdigest()
+    if clock.get('image_sha256')!=image or type(clock.get('clock_hz')) is not int:
+        raise ValueError('operating clock evidence belongs to another image')
+    bad=[]
+    for r in (r for path in paths for r in ablate.load(path)):
+        p=r.get('platform',{});prov=r.get('provenance',{})
+        if not (prov.get('software_tree')==p.get('software_tree')==tree
+                and p.get('image_sha256')==image and prov.get('image')=='xclbin:'+image[:16]
+                and prov.get('clock_hz')==p.get('clock_hz')==clock['clock_hz']
+                and p.get('operating_clock_evidence_sha256')==digest
+                and p.get('operating_clock_evidence')==clock):
+            bad.append(r.get('point_id'))
+    identity=dict(software_tree=tree,image_sha256=image,clock_hz=clock['clock_hz'],
+                  operating_clock_evidence_sha256=digest)
+    return identity,dict(name='every record on this product tree, full image SHA and operating clock evidence',
+                         ok=not bad,not_bound=bad,**identity)
+
+
 def main():
     ap=argparse.ArgumentParser(description=__doc__)
     ap.add_argument('--native',type=Path,required=True)
     ap.add_argument('--evidence',action='store_true')
+    ap.add_argument('--software-tree',help='with --image-sha256 and --operating-clock-evidence: require and record this identity')
+    ap.add_argument('--image-sha256')
+    ap.add_argument('--operating-clock-evidence',type=Path)
     args=ap.parse_args()
+    given=[args.software_tree,args.image_sha256,args.operating_clock_evidence]
+    if any(given) and not all(given):
+        ap.error('--software-tree, --image-sha256 and --operating-clock-evidence go together')
     paths=[args.native/f'u280_{tier}.jsonl' for tier in ('tiny','small','medium')]
-    try:checks=audit(paths)
+    identity=None
+    try:
+        checks=audit(paths)
+        if all(given):
+            identity,check=bound(paths,args.software_tree,args.image_sha256,args.operating_clock_evidence)
+            checks.append(check)
     except (ValueError,KeyError,OSError,ablate.Refused) as error:
         checks=[dict(name='complete resident native inventory',ok=False,why=str(error))]
     status='capability-pass' if all(c['ok'] for c in checks) else 'fail'
     if args.evidence:
         os.environ['R40_CONTRACT']='v2'
-        evidence.record('R40-01.device',status,checks,
-            inputs={str(p):hashlib.sha256(p.read_bytes()).hexdigest() for p in paths if p.exists()},
-            detail='full frozen resident inventory, independent from per-kernel staged timing controls')
+        extra=dict(identity=identity) if identity else {}
+        inputs={str(p):hashlib.sha256(p.read_bytes()).hexdigest() for p in paths if p.exists()}
+        if all(given) and args.operating_clock_evidence.exists():
+            inputs[str(args.operating_clock_evidence)]=hashlib.sha256(args.operating_clock_evidence.read_bytes()).hexdigest()
+        evidence.record('R40-01.device',status,checks,inputs=inputs,
+            detail='full frozen resident inventory, independent from per-kernel staged timing controls',**extra)
     print('R40-01.device v2:',status)
     return 0 if status=='capability-pass' else 1
 

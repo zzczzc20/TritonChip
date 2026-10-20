@@ -1,0 +1,5 @@
+PASS op.rope/small/fp16-b1-h4-s64-d32 resident step=0: 3 kernels, actual tensor bytes={'h2d': 0, 'd2h': 0}
+PASS op.rope/small/fp16-b1-h4-s64-d32 resident step=1: 3 kernels, actual tensor bytes={'h2d': 0, 'd2h': 0}
+PASS op.rope/small/fp16-b1-h4-s64-d32 per-kernel step=0: 3 kernels, actual tensor bytes={'h2d': 245760, 'd2h': 245760}
+PASS op.rope/small/fp16-b1-h4-s64-d32 per-kernel step=1: 3 kernels, actual tensor bytes={'h2d': 245760, 'd2h': 245760}
+r40-frozen-residency-tests PASS (4/4)

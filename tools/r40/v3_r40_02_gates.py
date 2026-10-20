@@ -285,6 +285,50 @@ def functional_queue(directory, snapshot):
     return state, dict(json.loads(need(directory / 'commands.json').read_text()))
 
 
+def model_stage(directory, state, commands):
+    """(completion record, argv) of the queue's board model stage.
+
+    Either a top-level queue stage `frozen-original-model`, or the same stage
+    run by the queue's tools/r40/conditional_delivery.py stage; that run's own
+    record is preserved as <queue>/<stage name>/delivery.json and must be the
+    complete, identity-bound, repository-harness run the queue command names.
+    """
+    done = {c['name']: c for c in state['completed']}
+    if 'frozen-original-model' in done or 'frozen-original-model' in commands:
+        if 'frozen-original-model' not in done:
+            raise Missing('board model stage not complete')
+        return done['frozen-original-model'], commands['frozen-original-model']
+    outer = [n for n, argv in commands.items()
+             if len(argv) > 2 and str(argv[2]).endswith('/tools/r40/conditional_delivery.py')]
+    if not outer:
+        raise Missing('board queue has no model stage')
+    require(len(outer) == 1, f'board queue has several delivery stages {outer}')
+    name = outer[0]
+    argv = commands[name]
+    if name not in done:
+        raise Missing(f'board stage {name} not complete')
+    require(done[name]['exit_code'] == 0, f'{name} exited {done[name]["exit_code"]}')
+    require('--bucket' in argv and argv[argv.index('--image-sha256') + 1] == IMAGE and
+            argv[argv.index('--software-tree-sha256') + 1] == TREE, f'{name}: delivery command changed')
+    record = json.loads(need(Path(directory) / name / 'delivery.json').read_text())
+    require(record['schema'] == 'tnca-conditional-delivery/1' and
+            record['status'] == 'functional-stages-complete-review-required' and
+            record['model_cache_policy'] == 'fixed-bucket', f'{name}: delivery run not complete')
+    require(record['harness_sha256'] == file_sha(ROOT / 'tools/r40/conditional_delivery.py'),
+            f'{name}: tools/r40/conditional_delivery.py differs from the repository harness')
+    ident = record['identity']
+    require(ident['software_tree'] == TREE and ident['image_sha256'] == IMAGE and ident['clock_hz'] == CLOCK_HZ,
+            f'{name}: delivery run identity is not the delivery')
+    stages = {s['name']: s['command'] for s in record['stages']}
+    require(len(stages) == len(record['stages']) == len(record['completed']) and
+            [c['name'] for c in record['completed']] == [s['name'] for s in record['stages']] and
+            all(c['exit_code'] == 0 for c in record['completed']), f'{name}: a delivery stage failed or did not run')
+    inner = stages.get('frozen-original-model')
+    require(inner is not None and inner[inner.index('--out') + 1] ==
+            argv[argv.index('--out') + 1].rstrip('/') + '/model', f'{name}: model stage absent or wrote elsewhere')
+    return next(c for c in record['completed'] if c['name'] == 'frozen-original-model'), inner
+
+
 def graph_checks(directory, snapshot):
     state, commands = functional_queue(directory, snapshot)
     frozen = json.loads((ROOT / 'spec/r40/suites/R40-02.graphs3.json').read_text())['points']
@@ -346,11 +390,8 @@ def model_report(path):
 def model_checks(report_path, queue, snapshot):
     import residency_acceptance
     state, commands = functional_queue(queue, snapshot)
-    done = {c['name']: c for c in state['completed']}
-    if 'frozen-original-model' not in done:
-        raise Missing('board model stage not complete')
-    require(done['frozen-original-model']['exit_code'] == 0, 'board model stage failed')
-    argv = commands['frozen-original-model']
+    stage, argv = model_stage(queue, state, commands)
+    require(stage['exit_code'] == 0, 'board model stage failed')
     require(argv[2].endswith('/tools/r40/native_model.py') and '--bucket' in argv and
             argv[argv.index('--image-sha256') + 1] == IMAGE and
             argv[argv.index('--software-tree-sha256') + 1] == TREE, 'model command changed')
@@ -419,7 +460,8 @@ def main():
     p.add_argument('--dry-run', action='store_true', help='print the records; write nothing')
     p.add_argument('--board', type=Path, default=EVIDENCE / 'R40-02.zero-transfer/board_queue',
                    help='functional board queue directory (state.json, controller.py, commands.json, '
-                        'graphs24-pointNN.log)')
+                        'graphs24-pointNN.log; a tools/r40/conditional_delivery.py stage keeps its own '
+                        'delivery.json under <stage name>/)')
     p.add_argument('--board-snapshot', type=Path, default=None,
                    help='source root (or harness copy) the queue ran; default <board>/snapshot_harness')
     p.add_argument('--model-report', type=Path, default=EVIDENCE / 'R40-08.decode/board_model/model_report.json.gz')

@@ -1,0 +1,5 @@
+PASS model.llama_decode/small/fp16-b1-p128 resident step=0: 84 kernels, actual tensor bytes={'h2d': 0, 'd2h': 0}
+PASS model.llama_decode/small/fp16-b1-p128 resident step=1: 84 kernels, actual tensor bytes={'h2d': 0, 'd2h': 0}
+PASS model.llama_decode/small/fp16-b1-p128 per-kernel step=0: 84 kernels, actual tensor bytes={'h2d': 6265280, 'd2h': 6265280}
+PASS model.llama_decode/small/fp16-b1-p128 per-kernel step=1: 84 kernels, actual tensor bytes={'h2d': 6265280, 'd2h': 6265280}
+r40-frozen-residency-tests PASS (4/4)

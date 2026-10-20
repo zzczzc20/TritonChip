@@ -1,0 +1,5 @@
+1ff00ac4dedf88891f6c3a8eb3c618b3a9112793bf41e3099d5dbe8233ec1602  ./bundles_sha256.txt.gz
+b352e784c480b2eb7c1c119c9a49a4a0de1b9edafcef92827058c65f01a0277d  ./command.json
+2b08d326c94a1c0b315a1b84da5e5c813650a787c5be9dee447f63be3c4582a2  ./host_gate_evidence/R40-05.json
+b86ee08f02ed4120fb8c869258ed4617d2762c3f726e7eb180b973a70af85ef0  ./multicore_capability.json
+d95ca49f42d2ba73376d90e1b2c3130347c772f9d1010b9aec60436edeb770e1  ./physical-multicore-capability-audit.log

@@ -1,0 +1,28 @@
+{
+  "status": "capability-pass",
+  "checks": [
+    {
+      "name": "full original prefill512 and 64 decode calls, independent numerics and tokens",
+      "ok": true
+    },
+    {
+      "name": "fixed resident cache addresses and device position; exactly one decode compilation",
+      "ok": true
+    },
+    {
+      "name": "zero steady tensor staging, unchanged weights, draining and host visibility",
+      "ok": true
+    },
+    {
+      "name": "same product, qualified physical image and actual operating clock",
+      "ok": true
+    }
+  ],
+  "software_tree": "files:fe1b5199db515440d2d3407aed61ef1eed5edb627e5baf9cda10be5a7198cf75",
+  "image_sha256": "a88ebdf59cfbbb2001ebd5b1b2c739c5d8cd33931f1e9202f18cac07c4c83083",
+  "contract_sha256": "49fc0e02733139707ae2292eff2ef893e76e73f0723d0d002b2e7e1864af71c8",
+  "auditor_sha256": "f72d5179e7552f92f9c7b2fc804fd16ba7a5c43e804bcdae4c57560735ff491f",
+  "source_root": "/home/zzhouch/tnca_src_r40_v3x2",
+  "input_sha256": "4658ef4b44be21e429442298947001c2a7995c7e7ebddcf109b963f5cdf5bfe8",
+  "scope": "R40-08.decode only; functional fixed-bucket generation, not performance or cross-bucket migration"
+}

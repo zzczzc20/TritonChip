@@ -1,0 +1,73 @@
+{
+ "schema": "tnca-r40-v3-capacity-plan/1",
+ "basis_peak_point": "model.llama_prefill/large/fp16-b1-s512",
+ "basis": "measured complete-suite/model peak on the delivery image; per-core non-tensor heap scaled linearly; 25 % headroom; 256 MiB per HBM PC",
+ "window_bytes": 4294967296,
+ "connected_bytes": 8589934592,
+ "per_core_bytes": 1280.0,
+ "cores": [
+  {
+   "cores": 1,
+   "peak_bytes": 3098946560,
+   "required_window_bytes": 3873683200,
+   "required_pcs": 15,
+   "fits_exposed_window_with_25pct": true,
+   "fits_full_connected_hbm_with_25pct": true,
+   "status": "functional RTL (8 cores)"
+  },
+  {
+   "cores": 2,
+   "peak_bytes": 3098947840,
+   "required_window_bytes": 3873684800,
+   "required_pcs": 15,
+   "fits_exposed_window_with_25pct": true,
+   "fits_full_connected_hbm_with_25pct": true,
+   "status": "functional RTL (8 cores)"
+  },
+  {
+   "cores": 3,
+   "peak_bytes": 3098949120,
+   "required_window_bytes": 3873686400,
+   "required_pcs": 15,
+   "fits_exposed_window_with_25pct": true,
+   "fits_full_connected_hbm_with_25pct": true,
+   "status": "measured image"
+  },
+  {
+   "cores": 4,
+   "peak_bytes": 3098950400,
+   "required_window_bytes": 3873688000,
+   "required_pcs": 15,
+   "fits_exposed_window_with_25pct": true,
+   "fits_full_connected_hbm_with_25pct": true,
+   "status": "functional RTL (8 cores)"
+  },
+  {
+   "cores": 8,
+   "peak_bytes": 3098955520,
+   "required_window_bytes": 3873694400,
+   "required_pcs": 15,
+   "fits_exposed_window_with_25pct": true,
+   "fits_full_connected_hbm_with_25pct": true,
+   "status": "functional RTL (8 cores)"
+  },
+  {
+   "cores": 16,
+   "peak_bytes": 3098965760,
+   "required_window_bytes": 3873707200,
+   "required_pcs": 15,
+   "fits_exposed_window_with_25pct": true,
+   "fits_full_connected_hbm_with_25pct": true,
+   "status": "analysis"
+  },
+  {
+   "cores": 32,
+   "peak_bytes": 3098986240,
+   "required_window_bytes": 3873732800,
+   "required_pcs": 15,
+   "fits_exposed_window_with_25pct": true,
+   "fits_full_connected_hbm_with_25pct": true,
+   "status": "analysis"
+  }
+ ]
+}

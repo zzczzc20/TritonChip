@@ -1,0 +1,5 @@
+PASS op.attention_decode/tiny/fp16-b1-h2-l16-d16 resident step=0: 3 kernels, actual tensor bytes={'h2d': 0, 'd2h': 0}
+PASS op.attention_decode/tiny/fp16-b1-h2-l16-d16 resident step=1: 3 kernels, actual tensor bytes={'h2d': 0, 'd2h': 0}
+PASS op.attention_decode/tiny/fp16-b1-h2-l16-d16 per-kernel step=0: 3 kernels, actual tensor bytes={'h2d': 5440, 'd2h': 5440}
+PASS op.attention_decode/tiny/fp16-b1-h2-l16-d16 per-kernel step=1: 3 kernels, actual tensor bytes={'h2d': 5440, 'd2h': 5440}
+r40-frozen-residency-tests PASS (4/4)

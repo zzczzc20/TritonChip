@@ -14,8 +14,15 @@
       "result": "failed-preserved: native-recovery could not build the RTL harness, iverilog was not on PATH in the non-interactive shell; storage-owner-unit and signed-copy-range passed"
     },
     {
-      "root": "/home/zhongchun/r40v3_cuda_fe1b",
+      "root": "/home/zhongchun/r40v3_cuda_fe1b_attempt2_cudaoom (renamed from ~/r40v3_cuda_fe1b)",
       "launched_utc": "2026-10-20T00:36Z",
+      "result": "failed-preserved (2026-10-20T01:25Z): storage-owner-unit, signed-copy-range, native-recovery exit 0; cuda-device-conformance exit 1, 15/16 cases: mixed_devices failed at its first CUDA allocation (torch.randn(256, device=\"cuda\") -> CUDA_ERROR_OUT_OF_MEMORY from cuDevicePrimaryCtxRetain). Raw copy: evidence/r40/v3/R40-01.mixed-device/cuda_host_fe1b_failed/"
+    },
+    {
+      "root": "/home/zhongchun/r40v3_cuda_fe1b",
+      "launched_utc": "2026-10-20T01:29Z",
+      "guard": "the same controller.py (sha256 unchanged), started only once `free -g` reports >= 16 GB free (gate_passed_utc in the run directory)",
+      "reason": "attempt 2 failed before the mixed_devices case could run (CUDA context creation out of memory on the shared unified-memory GB10); no functional result was observed",
       "result": "running"
     }
   ]

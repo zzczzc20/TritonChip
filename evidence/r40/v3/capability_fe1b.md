@@ -46,7 +46,7 @@ its dry-run form (`--dry-run`, or without `--evidence` for the v2-era tools), th
 | Gate | Verdict | Checks | Auditor |
 |---|---|---|---|
 | R40-01.device | capability-pass | 79/79 | (4) |
-| R40-01.mixed-device | not-measured (CUDA half failed; no record written) | no-CUDA half 16/16; CUDA half 15/16 | (6) |
+| R40-01.mixed-device | capability-pass | 32/32 (no-CUDA half 16/16; CUDA half 16/16 on attempt 4) | (6) |
 | R40-02.zero-transfer | capability-pass | 4/4 | (1) |
 | R40-04.hbm | capability-pass | 25/25 | (3) |
 | R40-04.robustness | capability-pass | 30/30 | (3) |
@@ -265,3 +265,17 @@ Work packages passing: R40-00, R40-02, R40-04, R40-05, R40-09.
 `R40_NATIVE_DEVICE_SCALABLE_NUCA_HBM_V3: NOT PASSED`.
 
 Of the eleven gates this page covers, ten are capability-pass; R40-01.mixed-device is not-measured.
+
+## Update 2026-10-20: R40-01.mixed-device completed
+
+The two failed GB10 CUDA-host attempts (`cuda_host_fe1b_failed/`, `cuda_host_fe1b_attempt3_failed/`) both stopped at CUDA context creation (CUDA_ERROR_OUT_OF_MEMORY in cuDevicePrimaryCtxRetain) before any test statement ran. The host was memory-exhausted by this session's own SystemC model runs (about 13 `tnca-chip` processes on HBM-size points), not by another user. Those runs were stopped and capped. Attempt 4 is the same controller (sha256 `35c32b3b…`, unchanged), started behind a `free >= 40 GB` guard (`cuda_host_fe1b_run/gate_passed_utc`). It completed with every stage exit 0 and the device tests 16/16, including `mixed_devices` (2 rounds of CUDA and tnca graphs in one process).
+
+```
+python3 tools/r40/v3_conformance_docs.py --run-dir $E/R40-01.mixed-device/cuda_host_fe1b_run --stage cuda-device-conformance \
+  --host-class cuda-host --backend fpga-multicore-sim \
+  --launch-controller-sha256 35c32b3bc0bd9d5c188478fd86c7a86dca5f9882c9e6bbb506047cd837dd0d4b \
+  --live-source-tree $D --out $E/R40-01.mixed-device/cuda_host_fe1b.json
+python3 tools/r40/device_conformance_acceptance.py --cuda $E/R40-01.mixed-device/cuda_host_fe1b.json \
+  --no-cuda $E/R40-01.mixed-device/no_cuda_host_fe1b.json --software-tree $D --image-sha256 $I \
+  --out $E/R40-01.mixed-device/audit_fe1b.json --evidence      # capability-pass, 32/32
+```

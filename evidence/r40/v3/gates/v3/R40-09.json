@@ -1,0 +1,322 @@
+{
+ "gates": {
+  "R40-09.suites": {
+   "status": "capability-pass",
+   "checks": [
+    {
+     "name": "native77: complete frozen tiny/small/medium inventory, every point pass, resident, native, no fallback, one configuration",
+     "ok": true,
+     "points": 77,
+     "failed": []
+    },
+    {
+     "name": "native77: every record on the delivery tree, image and clock",
+     "ok": true
+    },
+    {
+     "name": "hbm14: complete frozen subset hbm-core.json (14 points) on the board",
+     "ok": true,
+     "points": 14,
+     "missing": [],
+     "extra": []
+    },
+    {
+     "name": "hbm14: every point numerically correct (frozen tolerance), native resident, zero staging, measured device time",
+     "ok": true,
+     "failed": [],
+     "max_rel_err": {
+      "model.llama_decode/hbm/fp16-b1-p512": 0.0016481212249269185,
+      "model.llama_prefill/hbm/fp16-b1-s512": 0.0010289982982210901,
+      "op.add/hbm/fp16-n67108864": 0.00024740227610094015,
+      "op.attention_decode/large/fp16-b1-h32-l2048-d64": 5.698204040527344e-05,
+      "op.attention_prefill/large/fp16-b1-h32-s512-d64": 0.00026275715286939316,
+      "op.copy/hbm/fp16-n67108864": 0.0,
+      "op.embedding/hbm/fp16-v65536-d2048-t8192": 0.0,
+      "op.gemv/hbm/fp16-k4096-n11008": 0.000475022277763774,
+      "op.linear/hbm/fp16-m512-k4096-n11008": 0.0003698561713576051,
+      "op.matmul/hbm/fp16-m4096-k4096-n4096": 0.0003316393028542561,
+      "op.rmsnorm/hbm/fp16-r8192-d4096": 0.00030675956228945386,
+      "op.silu/hbm/fp16-n67108864": 0.00035549073593246696,
+      "op.softmax/hbm/fp16-r4096-c8192": 0.00014901161193847656,
+      "op.transpose/hbm/fp32-r8192-c8192": 0.0
+     }
+    },
+    {
+     "name": "hbm14: every record bound to the delivery identity, one configuration",
+     "ok": true,
+     "unbound": [],
+     "configurations": 1
+    },
+    {
+     "name": "large24: complete frozen subset large.json (24 points) on the board",
+     "ok": true,
+     "points": 24,
+     "missing": [],
+     "extra": []
+    },
+    {
+     "name": "large24: every point numerically correct (frozen tolerance), native resident, zero staging, measured device time",
+     "ok": true,
+     "failed": [],
+     "max_rel_err": {
+      "model.gpt2_block/large/fp16-d1024-h16-b1-s512": 0.0004063205495073621,
+      "model.llama_decode/large/fp16-b1-p512": 0.0027097886606101042,
+      "model.llama_prefill/large/fp16-b1-s512": 0.0029271055472658344,
+      "model.mlp/large/fp16-t512-d2048": 0.0004648632294055799,
+      "model.resnet_block/large/fp32-n8-c64-hw56": 5.069480347847463e-07,
+      "op.add/large/fp16-n16777216": 0.00024789291026276647,
+      "op.argmax/large/fp16-r64-v128256": 0.0,
+      "op.attention_decode/large/fp16-b1-h32-l2048-d64": 5.698204040527344e-05,
+      "op.attention_prefill/large/fp16-b1-h32-s512-d64": 0.00026275715286939316,
+      "op.bmm/large/fp16-b32-m512-k64-n512": 0.0003217243165402465,
+      "op.conv2d/large/fp32-n8-cin64-h56-w56-cout64": 9.510632974125372e-07,
+      "op.embedding/large/fp16-v128256-d2048-t512": 0.0,
+      "op.gelu_tanh/large/fp16-n16777216": 0.00018373562523045723,
+      "op.gemv/large/fp16-k2048-n8192": 0.000226138038155413,
+      "op.layernorm/large/fp16-r512-d2048": 0.00037669086824610603,
+      "op.linear/large/fp16-m512-k2048-n8192": 0.0003740616578299323,
+      "op.matmul/large/fp16-m2048-k2048-n2048": 0.00026457071229888263,
+      "op.matmul/large/fp32-m2048-k2048-n2048": 6.757080261757706e-07,
+      "op.rmsnorm/large/fp16-r512-d2048": 0.00036914207651064855,
+      "op.rope/large/fp16-b1-h32-s512-d64": 0.00040238481261403643,
+      "op.silu/large/fp16-n16777216": 0.0003660542330245516,
+      "op.softmax/large/fp16-r4096-c4096": 0.0002270340919494629,
+      "op.swiglu/large/fp16-n16777216": 0.0002708473035146374,
+      "op.transpose/large/fp32-r4096-c4096": 0.0
+     }
+    },
+    {
+     "name": "large24: every record bound to the delivery identity, one configuration",
+     "ok": true,
+     "unbound": [],
+     "configurations": 1
+    },
+    {
+     "name": "HBM core suite covers streaming, GEMM, transpose, gather, norm, SDPA, decoder",
+     "ok": true,
+     "coverage": {
+      "streaming": [
+       "add",
+       "copy",
+       "silu"
+      ],
+      "gemm": [
+       "gemv",
+       "linear",
+       "matmul"
+      ],
+      "transpose": [
+       "transpose"
+      ],
+      "gather": [
+       "embedding"
+      ],
+      "norm": [
+       "rmsnorm",
+       "softmax"
+      ],
+      "sdpa": [
+       "attention_decode",
+       "attention_prefill"
+      ],
+      "decoder": [
+       "llama_decode",
+       "llama_prefill"
+      ]
+     }
+    }
+   ],
+   "detail": "v3 memory-system capability audit: 9/9 checks pass",
+   "written": "2026-10-20T00:50:13+00:00",
+   "auditor": "tools/r40/v3_memsys_gates.py",
+   "auditor_sha256": "9bbfee46288753506fd2bc3f130e49f8573c7dac62e6c72311c01b9b1ecc6764",
+   "delivery_tree": "files:fe1b5199db515440d2d3407aed61ef1eed5edb627e5baf9cda10be5a7198cf75",
+   "image_sha256": "a88ebdf59cfbbb2001ebd5b1b2c739c5d8cd33931f1e9202f18cac07c4c83083",
+   "clock_hz": 90000000,
+   "inputs": {
+    "evidence/r40/v3/ci_39281384427/check.log": "56640b584d8b429940cb968b864cb1e694f3e1895cfa1c3247a906e6f226d70b",
+    "evidence/r40/v3/ci_39281384427/chunks.log": "4561c7a6db8de7eee239157b066996e69fc36f928e596ae958f9fbb9931d9d93",
+    "evidence/r40/v3/ci_39281384427/memory.log": "94349cde5decbb8b794bc769dc157b891d7513054b1291d82ed7e295d7c24848",
+    "evidence/r40/v3/ci_39281384427/mmio-checks.log": "bf9da75ca83b81a2888269a5627666b8a12732d52445aa5ba1c2ef9987a846b2",
+    "evidence/r40/v3/ci_39281384427/native-features.log": "a1e3bf748e84ac30638ffd41f2d25b6020dc4631ffff7b6f9c6fe0bfde097d40",
+    "evidence/r40/v3/ci_39281384427/native-pair.log": "1bf2be6cb074a9d75d2402b8f1aecf25a04a1169f0d75c4c10741e0c729265e1",
+    "evidence/r40/v3/ci_39281384427/native-ports.log": "9c48ba9a507fa9d1e48ed22f326425926820681e579109537c6d10628907dbd7",
+    "evidence/r40/v3/ci_39281384427/native.log": "c3309bc425a07efb23f978c3dd76ffa26abd440a9c34233f7707c13cea4cc109",
+    "evidence/r40/v3/ci_39281384427/registers-1.log": "acb8af5f8a20ec12232dba8e81da48310351d66a296ba5f3d18cb755f3391ab4",
+    "evidence/r40/v3/ci_39281384427/registers-3.log": "d06575a23fb4e913a2dbba0a4b25a692b064d430c4c140736ff3652febf85c8b",
+    "evidence/r40/v3/ci_39281384427/registers-board.log": "9acc64db767838a5842365173eb7eda1f2e07043a2f79f18fa658fc6b291bc58",
+    "evidence/r40/v3/ci_39281384427/run.json": "8afbc34dd8b437715c41148e844004293a61e1198a0a054a54b581e25fa17450",
+    "evidence/r40/v3/ci_39281384427/transport.log": "c768e7007eefbe1e1747e13dba30123d219d9efbcc81a9635bb5528cfa7e0aa3",
+    "evidence/r40/v3/R40-06.semantics/bt3p3s2.json": "6933fb71822c91497f60327aff50507a1df29251e72d17090c8e56dd5d644ddf",
+    "evidence/r40/v3/R40-06.semantics/history_bc5a/bt3p3s2.json": "c4b40d083b8ad634a75a97e2211b09aee6f54963255c71c782394f0d0eb0b188",
+    "evidence/r40/v3/R40-06.semantics/history_bc5a/journal_replay/journal.tar.gz": "0cda30b2810b537244489f76e910f203ad8bb0caf67d1e911843450e106bb130",
+    "evidence/r40/v3/R40-06.semantics/history_bc5a/journal_replay/replay.log": "26fc751b68455a07620620a96e9aec2d24a68c53ba3c4d37b3f0b31403b1f401",
+    "evidence/r40/v3/R40-06.semantics/history_bc5a/journal_replay/replay.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "evidence/r40/v3/R40-06.semantics/history_bc5a/journal_replay/replay.stdout": "245a174678d30338ce12dba2868d081cfd827c93cd3a29e7841a15626a9f7251",
+    "evidence/r40/v3/R40-06.semantics/history_bc5a/journal_replay/report.json": "28a288a3e0e4fd18a7a8f5ad8d8fd4739f87141caff8c446bc9b952d141d349e",
+    "evidence/r40/v3/R40-06.semantics/history_bc5a/journal_replay/sources.json": "a72ecabbf6b55ea15f9ea5ad896719513f69cab68efadddbf67826f6071940a3",
+    "evidence/r40/v3/R40-06.semantics/history_bc5a/logs/sem_bt3p3s2.log": "428fcaffe70df4ce9442c95c5a3cc30f4e570825e04cf6fa6fcf2f18a70f42a9",
+    "evidence/r40/v3/R40-06.semantics/history_bc5a/logs/sem_mc1.log": "075c0e6004254627843b52c4262b57e1ef3e5031cacf2ae63c7ce0f4db8c8bce",
+    "evidence/r40/v3/R40-06.semantics/history_bc5a/logs/sem_mc2.log": "733ddc32fcdb359eb5e761fa6e2f6db21ac61abbd8cbc86e9e68c0dd213510ce",
+    "evidence/r40/v3/R40-06.semantics/history_bc5a/logs/sem_mc3p3.log": "c6826209cbd8f564391ae95f2505f18fc0870760d6688816ec8922aae0ab14e8",
+    "evidence/r40/v3/R40-06.semantics/history_bc5a/logs/sem_mc4.log": "e12adc9efd5a17e834cf86c6cc9d0f576633d57ce899d49b9b1f7c67b1ade989",
+    "evidence/r40/v3/R40-06.semantics/history_bc5a/logs/sem_mc8.log": "009af24095070bbc0c060c351c5841eb55bc41831f1369bf4d6033909974a797",
+    "evidence/r40/v3/R40-06.semantics/history_bc5a/logs/sem_regs3p1s0.log": "da3b05b1aeaf4ff059953f437f79ef1ba8531f1adfcdc9494df7563359aa85c5",
+    "evidence/r40/v3/R40-06.semantics/history_bc5a/mc1.json": "1a7a07f7b8fb8c3e0038ce3d56397ea0d3de1cb41d40831238a70efec63b962b",
+    "evidence/r40/v3/R40-06.semantics/history_bc5a/mc2.json": "f6cd4a9c8fd0b65f658cb676fe432cfec53a28e0d9d5da3539a615f135983867",
+    "evidence/r40/v3/R40-06.semantics/history_bc5a/mc3p3.json": "a7b231aaaa37a63e231089a19d7aa4e4fde335503e180b679e5b2aab28b929ae",
+    "evidence/r40/v3/R40-06.semantics/history_bc5a/mc4.json": "afcd52df6bb2f953dc4438358480ea34698137ae13009f9f142c6c92b0a27a74",
+    "evidence/r40/v3/R40-06.semantics/history_bc5a/mc8.json": "f1ea8c99b63f9861e29ecd5c7b8408c4e02a4edcf6aefc4427fc38ebf8b2f619",
+    "evidence/r40/v3/R40-06.semantics/history_bc5a/regs3p1s0.json": "c1a5994a7514c0734388ab433e5bccb2105e903f2e32f6e30278706acf286e05",
+    "evidence/r40/v3/R40-06.semantics/history_bc5a/sources.json": "a72ecabbf6b55ea15f9ea5ad896719513f69cab68efadddbf67826f6071940a3",
+    "evidence/r40/v3/R40-06.semantics/journal_replay/journal.tar.gz": "a50434200964c9d18136403760fe3a45c79c77cf0d71966da2060a152425f42c",
+    "evidence/r40/v3/R40-06.semantics/journal_replay/replay.log": "98c34f98549418dff3b03988defcbc7f9b46be3a6672034a2e38420270e84b83",
+    "evidence/r40/v3/R40-06.semantics/journal_replay/replay.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "evidence/r40/v3/R40-06.semantics/journal_replay/replay.stdout": "72883a8feece4c84a8a06ccf1bf9f69dea0ed18dea28d705777f9df3252de831",
+    "evidence/r40/v3/R40-06.semantics/journal_replay/report.json": "76ae94f702f70373d03dfe38f76fca7bc9a805ddf303a80d6eb5004e34de378c",
+    "evidence/r40/v3/R40-06.semantics/journal_replay/sources.json": "39493ca236b3e3f29809a8b06d7e4daaf41d4af4c4298730ef0f140fc5a83ada",
+    "evidence/r40/v3/R40-06.semantics/logs/sem_bt3p3s2.log": "7898e135fe4c41150b734a0b253e2a678f2cec85ce4c96439ae56f4bd41dcda0",
+    "evidence/r40/v3/R40-06.semantics/logs/sem_mc1.log": "35102bbca94a308db09df509aca356e28648c0e34b3f321e2f61849414b09b21",
+    "evidence/r40/v3/R40-06.semantics/logs/sem_mc2.log": "5b4b0583d4cfaa4a67a0317c46ff41fa64cf3e46b8354ef15c8fcaabffdadff0",
+    "evidence/r40/v3/R40-06.semantics/logs/sem_mc3p3.log": "4663f6bbfb3672c985e5af48fb331526238336a2afa8c9417fb49b67918bd823",
+    "evidence/r40/v3/R40-06.semantics/logs/sem_mc4.log": "2d5a548628a59caf0ba3a2c7253e021f81f791a3e427ad2b1d7268b1db396518",
+    "evidence/r40/v3/R40-06.semantics/logs/sem_mc8.log": "dc50ecd44812b62359ddf51b4d6b4b8fb014532b07f82078c151ed4b0e58b143",
+    "evidence/r40/v3/R40-06.semantics/logs/sem_regs3p1s0.log": "b339a0b3eff50ee6aae4bf1baa87ab987934d1844ef634c943ab2136f107a43d",
+    "evidence/r40/v3/R40-06.semantics/mc1.json": "cd7565697f0ef68b46b8897a1b6a05b779c827d2fe71fac6893cfd2939c7489a",
+    "evidence/r40/v3/R40-06.semantics/mc2.json": "5ec238de42f7c88a21f489e0d21a16fc64e56fc625a43ca20eed8fdd99be2c45",
+    "evidence/r40/v3/R40-06.semantics/mc3p3.json": "2a6f011e0172bdd3273fcaac35a695430e3fb3a0cddd98cd848dd0cbeb6876f0",
+    "evidence/r40/v3/R40-06.semantics/mc4.json": "459ea522ec44c233dc6ad65466506d11ec8a31cdd659ee8a5019b4326f5b7056",
+    "evidence/r40/v3/R40-06.semantics/mc8.json": "60142d92fc345c842c83d31558f540affe5774d08f9e51794a23d35136f93ef3",
+    "evidence/r40/v3/R40-06.semantics/regs3p1s0.json": "dbb44d6a54f7b977c038df6bb862ea517722729217b084970311305c1b4c0cba",
+    "evidence/r40/v3/R40-06.semantics/sources.json": "39493ca236b3e3f29809a8b06d7e4daaf41d4af4c4298730ef0f140fc5a83ada",
+    "evidence/r40/v3/memsys_gb10/diagnostics/capacity_fe1b_t600.tar.gz": "7203532347853c699db47df7794e3ba4148b77a2c3b1528c0c2f20127f0a5b99",
+    "evidence/r40/v3/memsys_gb10/diagnostics/line8_capacity_80dd.tar.gz": "4007044d409cd13b68114e1bfa9dc6d09c7c9ff51aab651698495ae9d1c1412c",
+    "evidence/r40/v3/memsys_gb10/grid_transport_backend.log": "304f17d4e6d895416b050759d70de82abc69e966825361d11c1fe5490d15a442",
+    "evidence/r40/v3/memsys_gb10/history_80dd/r40_core_parameters_80dd.log": "af0c7297becad93322ec65bc9a95f0d0b2b9461cc1691bf009237188f39d1c83",
+    "evidence/r40/v3/memsys_gb10/history_80dd/sources_80dd.json": "b95b058ac78195b46f9467723727af1957e3d29e5c8dd33e8ff73944476ad2e7",
+    "evidence/r40/v3/memsys_gb10/history_bc5a/r40_core_parameters.log": "af0c7297becad93322ec65bc9a95f0d0b2b9461cc1691bf009237188f39d1c83",
+    "evidence/r40/v3/memsys_gb10/history_bc5a/r40_hbm.log": "3a08c6c8a09f8c2272bf5c3be7aace8d5b5654ad8d10bdc555506eea7ada0ca9",
+    "evidence/r40/v3/memsys_gb10/history_bc5a/sources.json": "5c21c951f0c0b2ebfa4db760b8734497b5ad6f93b965fdc29ab423463a307724",
+    "evidence/r40/v3/memsys_gb10/native_features_board.log": "05487fcadd79d95317eed0c410fa823765450e1ae15ba15a60b5d7b49f56ac72",
+    "evidence/r40/v3/memsys_gb10/native_pair_board.log": "d1417010483ee306f10c486064c2becf2fbf7e60ba116963e0c7fadd825f94c3",
+    "evidence/r40/v3/memsys_gb10/native_ports_3p2.log": "97298a289f5e7f2d36d59ec3edf69cef20bab8d465dff06b26bc7776fa160be9",
+    "evidence/r40/v3/memsys_gb10/native_ports_3p3.log": "33ef1b54da1f363315cd9c91e209c8c7fc8a8afad37814bff9cf4768d69edf8c",
+    "evidence/r40/v3/memsys_gb10/native_ports_board_dma.log": "5cb844ee7c23aaf1740e131aa90f0a3897faee1e997ec5a7cb8732bd2aa4ecf7",
+    "evidence/r40/v3/memsys_gb10/physical_chunks.log": "16b61cf3715f4e878ff734506a15a213fd8796128ed558e198e1816046fcc941",
+    "evidence/r40/v3/memsys_gb10/r40_core_parameters.log": "b862c16f0735cd1202f499b5274fabfc7fe31c064edf15cbd22e25366c946770",
+    "evidence/r40/v3/memsys_gb10/r40_hbm.log": "daf884033a4b77329ee86544562c414c6e5f625749852e0375c11e86896065f0",
+    "evidence/r40/v3/memsys_gb10/r40_hbm_80dd.log": "ae334e32a036ee6a42793bd98c480b9f7c18b5d8f040f43853aaf1d9d9ab8c73",
+    "evidence/r40/v3/memsys_gb10/r40_hbm_bc5a.log": "3a08c6c8a09f8c2272bf5c3be7aace8d5b5654ad8d10bdc555506eea7ada0ca9",
+    "evidence/r40/v3/memsys_gb10/r40_hbm_fe1b_t600.log": "898dde0a62be843a7dd267bccfe5661af2c7201001ed1dda46b49275157fa479",
+    "evidence/r40/v3/memsys_gb10/recovery_multicore_dma.log": "19f224de74d23159ed4767283379321033259a275f1f7ac4bbfb42c1aa8607bb",
+    "evidence/r40/v3/memsys_gb10/sources.json": "39493ca236b3e3f29809a8b06d7e4daaf41d4af4c4298730ef0f140fc5a83ada",
+    "evidence/r40/v3/R40-04.hbm/board_run_fe1b/window_samples.json": "fa36cf03ec9f9424bb73a855c0692abb92959878aa808cff4018cecb4637b5a0",
+    "evidence/r40/v3/R40-08.decode/board_model_fe1b/model_report.json.gz": "76a7a9438c2f5626f36664ecf785a43ffdcbadc0d638da435ac153c4885a93f6",
+    "evidence/r40/v3/R40-04.hbm/board_run_fe1b/large24.jsonl": "977de705160fde2ee99e23cfcca30b92dce889d457371afbcab0863fde9b9131"
+   },
+   "board_run": "evidence/r40/v3/R40-04.hbm/board_run_fe1b",
+   "contract_version": 3,
+   "contract_sha256": "0963f50e5ba7b569d87ac636f7d31df748ef967609e981d0fff884f759abe211"
+  },
+  "R40-09.model": {
+   "status": "perf-pass",
+   "checks": [
+    {
+     "name": "R40-09.model: complete accepted comparison",
+     "ok": true,
+     "detail": ""
+    },
+    {
+     "name": "R40-09.model: 95% CI lower bound of S_geo > 1",
+     "ok": true,
+     "ci95": [
+      2.298899300120628,
+      2.315461038484711
+     ],
+     "s_geo": 2.307165308518027
+    }
+   ],
+   "detail": "R40-09.model: S_geo 2.3072 CI [2.2989, 2.3155], v2 target 1.5 met",
+   "written": "2026-10-20T00:27:51+00:00",
+   "identity": {
+    "image_sha256": "a88ebdf59cfbbb2001ebd5b1b2c739c5d8cd33931f1e9202f18cac07c4c83083",
+    "clock_hz": 90000000,
+    "software_tree": "files:fe1b5199db515440d2d3407aed61ef1eed5edb627e5baf9cda10be5a7198cf75",
+    "backend": "fpga-u280-multicore",
+    "hbm_bytes": 4294967296,
+    "backend_args_shape": {
+     "image_profile": "core-vrf-sync-v5",
+     "core_count": 3,
+     "memory_ports": 3,
+     "hbm_dma": true,
+     "hbm_bytes": 4294967296,
+     "device_clock": true
+    },
+    "identity_amendment": "doc/r40_v3/identity_amendment.json"
+   },
+   "experiments": {
+    "R40-09.model": {
+     "status": "perf-pass",
+     "s_geo": 2.307165308518027,
+     "ci95": [
+      2.298899300120628,
+      2.315461038484711
+     ],
+     "s_geo_balanced_weighted": 2.307165308518027,
+     "target": 1.5,
+     "target_met": true,
+     "worst": {
+      "point": "model.llama_prefill/hbm/fp16-b1-s512",
+      "speedup": 2.298899300120628
+     },
+     "regress_2pct": [],
+     "regress_5pct": [],
+     "points": [
+      {
+       "point": "model.llama_decode/hbm/fp16-b1-p512",
+       "a": 475721406,
+       "b": 205454291,
+       "speedup": 2.315461038484711,
+       "n_a": 1,
+       "n_b": 1
+      },
+      {
+       "point": "model.llama_prefill/hbm/fp16-b1-s512",
+       "a": 10337406707,
+       "b": 4496676608,
+       "speedup": 2.298899300120628,
+       "n_a": 1,
+       "n_b": 1
+      }
+     ],
+     "timing": "graph-makespan",
+     "vary": [
+      "TNCA_ACTIVE_CORES"
+     ],
+     "compared_vary": [
+      "TNCA_ACTIVE_CORES"
+     ],
+     "control": "1",
+     "candidate": "3",
+     "baseline": "B40-N",
+     "config_a": "2a611b636bbd6739",
+     "config_b": "2a611b636bbd6739",
+     "inputs": {
+      "control": {
+       "path": "/home/zzhouch/tnca_v3_judge_final/judge/R40-09.model.control.jsonl",
+       "sha256": "41689a5d435514a1e66c2d410260a5a2c99b6a92c68a1ce075a6497eeac20446"
+      },
+      "candidate": {
+       "path": "/home/zzhouch/tnca_v3_judge_final/judge/R40-09.model.candidate.jsonl",
+       "sha256": "3e29a12c418a710b1ab598c06f3b1822a57563de5241809d460d94a3b0a26d42"
+      }
+     }
+    }
+   },
+   "judgement": "/home/zzhouch/tnca_v3_judge_final/judgement.json",
+   "contract_version": 3,
+   "contract_sha256": "0963f50e5ba7b569d87ac636f7d31df748ef967609e981d0fff884f759abe211",
+   "judgement_copy": "evidence/r40/v3/campaign_fe1b/judgement.json"
+  }
+ }
+}

@@ -1,0 +1,28 @@
+{
+  "status": "failed-preserved",
+  "software_tree": "files:fe1b5199db515440d2d3407aed61ef1eed5edb627e5baf9cda10be5a7198cf75",
+  "completed": [
+    {
+      "name": "storage-owner-unit",
+      "exit_code": 0
+    },
+    {
+      "name": "signed-copy-range",
+      "exit_code": 0
+    },
+    {
+      "name": "native-recovery",
+      "exit_code": 0
+    },
+    {
+      "name": "cuda-device-conformance",
+      "exit_code": 1
+    }
+  ],
+  "required_gate_promotions": [],
+  "scope": "Complete repaired-source CUDA-host conformance and recovery on GB10; actual CUDA/TNCA coexistence, TNCA functional RTL only; no FPGA-host simulation or physical card",
+  "observed_utc": "2026-10-20T02:19:51.466461+00:00",
+  "current": "cuda-device-conformance",
+  "child_pid": 3625862,
+  "error": "Traceback (most recent call last):\n  File \"/home/zhongchun/r40v3_cuda_fe1b/controller.py\", line 22, in <module>\n    state['completed'].append(dict(name=name,exit_code=code));save();assert code==0,name+' failed'\n                                                                            ^^^^^^^\nAssertionError: cuda-device-conformance failed\n"
+}

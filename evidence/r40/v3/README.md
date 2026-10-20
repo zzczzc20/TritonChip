@@ -22,7 +22,7 @@ Delivery identity:
 | `launches/recollect_launch.json` | `~/tnca_v3_recollect`, `~/tnca_runs_r40_v3x` | bc5a | Complete functional re-collection: window/PC probes, checkpoint, native77, HBM14, fixed-bucket model, audits, no-CUDA conformance, large24, graphs24 |
 | `launches/cuda_bc5a_launch.json` | GB10 `~/r40v3_cuda_bc5a` | bc5a | CUDA-host conformance and recovery for `R40-01.mixed-device` |
 | `launches/x2_launch.json` (`recollect_x2_controller.py`) | `~/tnca_v3_recollect_x2`, `~/tnca_runs_r40_v3x2` (source `~/tnca_src_r40_v3x2`) | fe1b | Complete functional re-collection on the delivery tree (same stages as bc5a); all 30 stages exit 0, `complete-review-required`. Judged in `capability_fe1b.md` |
-| `launches/cuda_fe1b_launch.json` | GB10 `~/r40v3_cuda_fe1b` (source `~/r40v3_capgate_fe1b`) | fe1b | CUDA-host conformance and recovery for `R40-01.mixed-device`; `attempt 2 `failed-preserved`: cuda-device-conformance 15/16 (`mixed_devices` hit CUDA_ERROR_OUT_OF_MEMORY in cuDevicePrimaryCtxRetain on the shared unified-memory host, before any test statement ran); raw copy `R40-01.mixed-device/cuda_host_fe1b_failed/`, kept on GB10 as `~/r40v3_cuda_fe1b_attempt2_cudaoom`. Attempt 3: the same controller (sha256 unchanged) relaunched 2026-10-20 01:29 UTC behind a free-memory guard (>= 16 GB free) |
+| `launches/cuda_fe1b_launch.json` | GB10 `~/r40v3_cuda_fe1b` (source `~/r40v3_capgate_fe1b`) | fe1b | CUDA-host conformance and recovery for `R40-01.mixed-device`. Attempts 1-3 failed-preserved: no iverilog on PATH; then twice CUDA_ERROR_OUT_OF_MEMORY at CUDA context creation while this session's own SystemC model runs exhausted the shared host (raw copies `R40-01.mixed-device/cuda_host_fe1b_failed/`, `cuda_host_fe1b_attempt3_failed/`). Attempt 4, the same controller behind a `free >= 40 GB` guard: complete, device tests 16/16 (`R40-01.mixed-device/cuda_host_fe1b_run/`) |
 
 ## Compiler evidence
 
@@ -33,3 +33,15 @@ Delivery identity:
 
 Gate status is the output of `make r40-v3-acceptance`; this page is updated as
 evidence lands.
+
+## Gate records
+
+`gates/v3/<WP>.json` and `gates/v2/<WP>.json` are copies of the records the auditors wrote under `sim/build/r40/`.
+They are the inputs of the machine judgement, which can be rerun from the repository alone:
+
+```
+R40_CONTRACT=v3 python3 tools/r40/acceptance.py --evidence-root evidence/r40/v3/gates
+```
+
+`R40-10.acceptance` is recorded by `tools/r40/v3_r40_10_gate.py --pr-url URL`. It is derived from every other gate,
+from the report sections, from the GPU comparison and the reproduction on the delivery tree, and from the PR's state.

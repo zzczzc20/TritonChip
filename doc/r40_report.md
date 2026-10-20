@@ -113,18 +113,20 @@ Amendments made after the freeze, each authorized by the user:
 
 ## 3. Gate results
 
-From `make r40-v3-acceptance` on the delivery identity. *Capability rows
-marked "awaiting audit" are filled from the fe1b board re-collection audit.*
+From `make r40-v3-acceptance` on the delivery identity. The capability
+auditors' command lines and evidence directories are in
+`evidence/r40/v3/capability_fe1b.md`. The gate records themselves are copied
+to `evidence/r40/v3/gates/`.
 
 | Gate | Kind | Status | Evidence |
 |---|---|---|---|
 | R40-00.protocol | capability | pass | 42/42 cases |
 | R40-00.b39-reproducible | capability | pass | B39 rerun 77/77, cycle-identical |
 | R40-00.frozen | capability | pass | 33/33 as frozen |
-| R40-01.device | capability | awaiting audit | fe1b re-collection, CUDA-host conformance |
-| R40-01.mixed-device | capability | awaiting audit | fe1b re-collection, CUDA-host conformance |
+| R40-01.device | capability | pass | 79/79: native77 resident inventory on fe1b, image and clock bound |
+| R40-01.mixed-device | capability | pass | 32/32; no-CUDA host (board) 16/16 and CUDA host (GB10) 16/16 incl. mixed CUDA+tnca graphs; two earlier GB10 attempts hit CUDA out-of-memory at context creation and are preserved |
 | R40-01.device-time | capability (non-regression) | **fail** | S_geo 1.0015 [0.9947, 1.0080]; 4 points > 5 % slower |
-| R40-02.zero-transfer | capability | awaiting audit | fe1b board queue |
+| R40-02.zero-transfer | capability | pass | 4/4, fe1b board queue |
 | R40-02.resident | perf | pass | S_geo 2.641 [2.365, 2.948] |
 | R40-02.batched | perf | pass | S_geo 1.101 [1.009, 1.199] |
 | R40-02.stress | capability | pass | fe1b RTL simulation chain incl. replay-1000 |
@@ -132,26 +134,26 @@ marked "awaiting audit" are filled from the fe1b board re-collection audit.*
 | R40-03.wide-blocks | perf | **no significant gain** | S_geo 1.157 [0.970, 1.266] |
 | R40-03.gemm-tile | perf | **no significant gain** | S_geo 0.303 [0.202, 0.444] |
 | R40-03.contract | capability | pass | 14/14 |
-| R40-04.hbm | capability | awaiting audit | fe1b re-collection |
+| R40-04.hbm | capability | pass | 25/25; peak 3,098,945,024 B in the 4 GiB window, headroom 1.39 |
 | R40-04.bandwidth | perf | pass | memory-service S_geo 1.229 [1.038, 1.665] |
-| R40-04.robustness | capability | awaiting audit | fe1b re-collection |
-| R40-05.multicore | capability | awaiting audit | fe1b re-collection |
+| R40-04.robustness | capability | pass | 30/30; HBM model fidelity declared uncalibrated (sec 3.4) |
+| R40-05.multicore | capability | pass | 94/94 (physical multicore audit on the FPGA host; cross-checked 13/13) |
 | R40-05.scaling | perf | pass | three cores 2.392 [2.184, 2.602]; two cores 1.805 [1.689, 1.907] |
-| R40-05.dispatch | capability | awaiting audit | fe1b re-collection |
-| R40-06.nuca | capability | awaiting audit | fe1b re-collection |
+| R40-05.dispatch | capability | pass | 31/31 |
+| R40-06.nuca | capability | pass | 27/27 |
 | R40-06.streaming-scaling | perf | **no significant gain** | streaming-cores 2.559 [2.153, 2.854] passes; ports 1.007 [0.998, 1.025] does not |
 | R40-06.locality | perf | deferred (R41) | |
 | R40-06.semantics | capability | pass | 21/21 |
 | R40-07.pipeline | capability | pass | 47/47 |
 | R40-07.long-k | perf | **no significant gain** | S_geo 1.023 [0.955, 1.092] |
 | R40-07.matrix | perf | deferred (new MMA RTL) | |
-| R40-07.policy | capability | awaiting audit | board A/B of changed points |
-| R40-08.attention | capability | awaiting audit | fe1b re-collection |
+| R40-07.policy | capability | pass | 9/9; the 9 points the frozen policy changes, board A/B at 90 MHz, none > 5 % slower |
+| R40-08.attention | capability | pass | 7/7 |
 | R40-08.prefill | perf | **no significant gain** | S_geo 0.990 [0.964, 1.026] |
-| R40-08.decode | capability | awaiting audit | fe1b re-collection |
+| R40-08.decode | capability | pass | 5/5, fixed-bucket model on the board |
 | R40-09.autotune | capability | deferred (R41) | |
 | R40-09.holdout | perf | deferred (R41) | |
-| R40-09.suites | capability | awaiting audit | fe1b re-collection |
+| R40-09.suites | capability | pass | 9/9: native77, HBM14 and large24 all pass on fe1b |
 | R40-09.model | perf | pass | S_geo 2.307 [2.299, 2.315] |
 | R40-10.acceptance | capability | **not passed** | this report; the failures above |
 

@@ -138,8 +138,21 @@ def make_backend_class():
             self.identity = dict(backend=self.name, binary=str(self.binary.resolve()), binary_sha256=_sha(self.binary),
                                  config=values, config_sha256=_sha(config), model_dir=str(self.dir),
                                  calibration='not-measured', execution='native SystemC/TLM-2.0 model, no RTL')
+            self.timed = True
+            if os.environ.get('TNCA_TLM_UNTIMED_COLD') == '1':
+                # The cold call runs untimed (its cycles are not a measurement);
+                # run_graphs.py turns timing on before the steady calls.
+                self.set_timing(False)
+            self.identity['untimed_cold_call'] = not self.timed
             (self.dir/'identity.json').write_text(json.dumps(self.identity, indent=2) + '\n')
             return self
+
+        def set_timing(self, on):
+            with self._io:
+                self.wfile.write(f'T {1 if on else 0}\n'.encode())
+                if self._line() != 'OK':
+                    self._lost('timing switch not acknowledged')
+            self.timed = bool(on)
 
         def alive(self):
             return self.proc is not None and self.proc.poll() is None

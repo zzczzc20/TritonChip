@@ -417,8 +417,40 @@
     "TNCA_WINDOW_REUSE": "0"
    },
    "returncode": 0
+  },
+  {
+   "key": "model.llama_prefill/hbm/fp16-b1-s512",
+   "point": "model.llama_prefill/hbm/fp16-b1-s512",
+   "status": "pass",
+   "problems": [],
+   "fallbacks": [],
+   "launches": 78,
+   "device_cycles": 13098983214,
+   "first_call_device_cycles": 13098994913,
+   "max_rel_err": 0.0009693818416693673,
+   "tol": 0.05,
+   "timing": "serial-grid",
+   "process_wall_s": 6495.56,
+   "child_wall_s": 6493.582,
+   "first_call_wall_s": 3861.91,
+   "model_launch_host_s": 6459.63451,
+   "model_transfer_host_s": 8.815487999999998,
+   "model_retired": 4873878348,
+   "steady_request_s": 2624.315081,
+   "evidence": "model-prediction-uncalibrated",
+   "knobs": {
+    "TNCA_BANK_ALLOC": "0",
+    "TNCA_GEMM_TILE": "16,16,16",
+    "TNCA_MAX_BLOCK": "16",
+    "TNCA_PIPELINE": "2",
+    "TNCA_REDUCTION_ROWS": "1",
+    "TNCA_SDPA": "decomposed",
+    "TNCA_TUNE": "0",
+    "TNCA_WINDOW_REUSE": "0"
+   },
+   "returncode": 0
   }
  ],
- "passed": 13,
- "total": 13
+ "passed": 14,
+ "total": 14
 }

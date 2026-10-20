@@ -1,3 +1,4 @@
+#include <cstdio>
 // Native event-driven execution of compiled TNCA machine words. No RTL runtime.
 //
 // Every instruction word is decoded once into an `Inst` (the classifier mode
@@ -13,6 +14,7 @@
 #include "../include/tnca_matrix_ops.hpp"
 #include "../include/tnca_barrier_model.hpp"
 #include "../include/tnca_tensor_engine.hpp"
+#include "../include/tnca_timeline_memory.hpp"
 #include "tnca_isa_generated.hpp"
 #include <cerrno>
 #include <cmath>
@@ -233,6 +235,8 @@ struct Frame {
     std::array<sc_time,64> sr{};std::array<sc_time,64> vr{};std::array<sc_time,16> pr{};
     u64 pc=0,arg=0,retired=0;unsigned px=0,py=0,pz=0,nx=1,ny=1,nz=1,role=0,role_count=1;
     bool sliced=false;unsigned slice_id=0,slice_k=2;
+    sc_time fetch_ready=SC_ZERO_TIME; // core_pipeline: refetch after a taken branch
+    sc_time ahead=SC_ZERO_TIME;       // time_quantum: this context's local time - simulation time
     Frame(std::shared_ptr<PhysicalRegisters> bank,unsigned base):physical(std::move(bank)),vbase(base){require(base<=192,"vector mapping overflow");p[0]=65535;}
 };
 // One program's launch on one core: the role mask's context bits, RPAIR
@@ -258,6 +262,10 @@ struct Core : sc_module {
     using Row=std::array<std::uint32_t,16>;
     std::array<std::array<Row,16>,16> acc{};
     sc_time mtx_free=SC_ZERO_TIME;unsigned mtx_role=0;
+    // Timeline path (memory_model=1): the core's single memory port (LSU and
+    // transfer engine share it, tnca_mem_mux.v), LSU instructions in flight
+    // (LSU_INFLIGHT) and each context's outstanding accesses.
+    TimelineMemory* tm=nullptr;Timeline port;std::vector<u64> lsu_inflight;std::array<u64,4> role_lsu_done{};
     // Program-scope fault and deadline state.
     bool aborting=false;Outcome fault;sc_time deadline=SC_ZERO_TIME;
     // Timing constants (configuration, uncalibrated).
@@ -268,7 +276,25 @@ struct Core : sc_module {
         *c_fence_wait,*c_programs_issued,*c_programs_completed;
     std::array<u64,unsigned(K::Count)> class_counts{};
     std::array<u64*,4> c_role_issued{},c_role_completed{};
-    bool tracing=false;sc_time issue_time;std::string lsu_key;
+    bool tracing=false;sc_time issue_time;std::string lsu_key;u64 t_lsu_slots=2,t_beat_slots=8;
+    // core_pipeline=1: the RTL's single in-order pipeline (tnca_core.v).
+    bool pipe=false;u64 t_branch,t_park,n_banks,t_bank,t_lsu_setup,t_vload_extra,t_lsu_complete,t_lsu_wb,t_fcmp,t_shuf_s,t_red_vec,t_fred_vec;
+    bool vrf_pf=false,r_reads=false;u64 last_issue=0;
+    // The two load/store units of tnca_lsu_pair: a unit is free once its
+    // last response is back (+lsu_complete_cycles); the second unit takes
+    // an access only after the first has sent all of its beats.
+    struct LsuUnit {u64 free=0,drained=0;};std::array<LsuUnit,2> units{};
+    std::vector<u64> steals; // LSU completions taking the one writeback port
+    unsigned holds=0;sc_event unhold; // a fence/arrive held in R freezes every context
+    // time_quantum > 0: conservative lookahead. A context whose next wait
+    // ends before any other pending activity of the simulation (and within
+    // the quantum) skips it and runs on at a local time ahead of the
+    // simulation time: nothing else can happen in between, so the order of
+    // every action is unchanged. It waits for real when another process is
+    // due first, and synchronises before it touches state that other
+    // processes wait on (engines, barriers, transfer commands, exit).
+    u64 quantum=0;sc_time quantum_t;unsigned untimed_burst=0;
+    u64 *c_freeze,*c_park,*c_bank,*c_branch;
     std::string key(const std::string& s)const{return "core_"+std::to_string(id)+"_"+s;}
     Core(sc_module_name n,Context& ctx,unsigned i,CodeCache& cc):sc_module(n),memory("memory"),x(ctx),id(i),code(cc),
         cycle(ctx.cycles(1)),lsu(unsigned(ctx.c.get("lsu_slots"))),
@@ -281,7 +307,15 @@ struct Core : sc_module {
         t_sfu=g("sfu_latency");t_load=g("load_latency");t_bar=g("barrier_latency");t_acc=g("acc_read_latency");
         t_rf=g("mtx_rf_read_cycles");t_mac=g("mtx_mac_cycles");t_mac_unbuf=g("mtx_mac_unbuffered_cycles");t_pipe=g("mtx_pipe_cycles");
         t_done=g("mtx_complete_cycles");t_zero=g("mtx_zero_cycles");t_row=g("mtx_row_cycles");t_launch=g("launch_cycles");abuf=g("mtx_abuf")!=0;
-        issue_time=x.cycles(t_issue);lsu_key=key("lsu");
+        issue_time=x.cycles(t_issue);lsu_key=key("lsu");t_lsu_slots=g("lsu_slots");t_beat_slots=g("lsu_beat_slots");
+        pipe=g("core_pipeline")!=0;t_branch=g("branch_taken_cycles");t_park=g("park_refetch_cycles");n_banks=g("vrf_banks");
+        t_bank=g("vrf_bank_conflict_cycles");t_lsu_setup=g("lsu_setup_cycles");t_vload_extra=g("lsu_vector_load_extra");
+        t_lsu_complete=g("lsu_complete_cycles");t_lsu_wb=g("lsu_writeback_cycles");t_fcmp=g("fp_compare_latency");
+        t_shuf_s=g("shuffle_scalar_latency");t_red_vec=g("reduction_vector_extra");t_fred_vec=g("fp_reduction_vector_extra");
+        vrf_pf=g("vrf_prefetch")!=0;quantum=g("time_quantum");quantum_t=x.cycles(quantum);
+        c_freeze=&x.counts[key("pipeline_freeze_cycles")];c_park=&x.counts[key("context_park_cycles")];
+        c_bank=&x.counts[key("vrf_bank_conflict_cycles")];c_branch=&x.counts[key("branch_refetch_cycles")];
+        port.service=&x.counts[key("memory_port_service_cycles")];port.queue=&x.counts[key("memory_port_queue_cycles")];
         issue.bind(x,key("issue"));
         c_instr=&x.counts[key("instructions")];c_sfu_queue=&x.counts[key("sfu_queue_cycles")];c_sleep=&x.counts[key("barrier_sleep_cycles")];
         c_dep_wait=&x.counts[key("dependency_wait_cycles")];c_mtx_wait=&x.counts[key("matrix_engine_wait_cycles")];
@@ -306,7 +340,51 @@ struct Core : sc_module {
         require(barriers[index].epoch==(token>>16),"BARRIER_FAULT: command completed in a different generation");
         barriers[index].complete();
     }
-    void ready(sc_time t){auto now=sc_time_stamp();if(t>now){*c_dep_wait+=cycles_of(t-now);wait(t-now);}}
+    void ready(sc_time t){if(x.functional)return;auto now=sc_time_stamp();if(t>now){*c_dep_wait+=cycles_of(t-now);wait(t-now);}}
+    sc_time lt(const Frame& f)const{return sc_time_stamp()+f.ahead;}
+    u64 lnow(const Frame& f)const{return x.to_cycles(lt(f));}
+    void sync(Frame& f){if(f.ahead!=SC_ZERO_TIME){sc_time d=f.ahead;f.ahead=SC_ZERO_TIME;wait(d);}}
+    // Advance this context to time t.
+    void go(Frame& f,sc_time t){
+        if(x.functional)return;
+        sc_time now=sc_time_stamp();
+        if(!quantum){if(t>now)wait(t-now);return;}
+        if(t<=now+f.ahead)return;
+        if(t-now<quantum_t && t-now<sc_time_to_pending_activity()){f.ahead=t-now;return;}
+        f.ahead=SC_ZERO_TIME;wait(t-now);
+    }
+    void ready(Frame& f,sc_time t){auto now=lt(f);if(t>now){*c_dep_wait+=cycles_of(t-now);go(f,t);}}
+    // A register hazard parks the context while others run; it refetches
+    // park_refetch_cycles after the wake (tnca_core.v rp_go/rctx_wake).
+    void hazard(Frame& f,sc_time t){
+        auto now=lt(f);if(t<=now)return;
+        if(pipe && role_remaining>1){*c_park+=t_park;t+=x.cycles(t_park);}
+        *c_dep_wait+=cycles_of(t-now);go(f,t);
+    }
+    // A stall that does not switch contexts freezes the shared pipeline.
+    void freeze(Frame& f,sc_time t){
+        auto now=lt(f);if(t<=now)return;
+        if(x.functional)return;
+        if(pipe){issue.available=std::max(issue.available,t);*c_freeze+=cycles_of(t-now);}
+        go(f,t);
+    }
+    void issue_slot(Frame& f){
+        if(x.functional){if(++untimed_burst>=4096){untimed_burst=0;wait(SC_ZERO_TIME);}return;} // let spinning peers run
+        if(!quantum){issue.use(x,issue_time,t_issue);return;}
+        sc_time t=lt(f),begin=std::max(issue.available,t);
+        *issue.service+=t_issue;*issue.queue+=cycles_of(begin-t);
+        issue.available=begin+issue_time;go(f,issue.available);
+    }
+    // A stall of unknown length that does not switch (fence, arrive): the
+    // other contexts cannot issue until it ends.
+    template<class F> void hold(F&& body){
+        if(!pipe){body();return;}
+        auto t=sc_time_stamp();++holds;
+        try{body();}catch(...){if(--holds==0)unhold.notify(SC_ZERO_TIME);throw;}
+        if(--holds==0)unhold.notify(SC_ZERO_TIME);
+        *c_freeze+=cycles_of(sc_time_stamp()-t);
+    }
+    u64 lsu_idle()const{u64 m=0;for(auto v:lsu_inflight)m=std::max(m,v);for(auto& u:units)m=std::max(m,u.free);return m;}
     // RSLICE (tnca_core.v): an index the instruction names gets the slice
     // number ORed into its top bits -- accumulators (ACC_W 4), barriers
     // (BAR_W 5), descriptors and windows (DESC_W 4).
@@ -317,7 +395,7 @@ struct Core : sc_module {
     }
     void publish(Frame& f,unsigned index,unsigned mask,u64 latency){
         require(index<64,"logical vector register exceeds role allocation");
-        f.vr[index]=sc_time_stamp()+x.cycles(latency);
+        f.vr[index]=lt(f)+x.cycles(x.functional?0:latency);
         f.physical->write(f.vbase+index,mask,f.vr[index],f.v[index]);
     }
     u64 word(u64 address,bool store,u64 data,unsigned be,u64 instruction){
@@ -335,20 +413,27 @@ struct Core : sc_module {
     u64 special(unsigned spec,const Frame& f){
         switch(spec){case 0:return f.px;case 1:return f.py;case 2:return f.pz;case 4:return f.nx;case 5:return f.ny;case 6:return f.nz;
             case 8:return f.role;case 9:return f.role_count;case 10:return id;case 11:return x.c.cores();case 12:return 16;case 13:return 64;
-            case 14:return 5;case 15:return 16;case 16:return x.now();case 17:return f.retired;case 18:return 32;case 19:return 32;
+            case 14:return 5;case 15:return 16;case 16:return lnow(f);case 17:return f.retired;case 18:return 32;case 19:return 32;
             case 20:return 16;case 21:return 256;case 32:return f.arg;case 48:return 1;
             case 49:return 0x9efULL; // VECTOR_FP32|SFU|GATHER|ATOM_DEV|MATRIX_F16|MATRIX_BF16|TENSOR_DMA|MBARRIER|MATRIX_FP8
             case 64:case 65:return 0; // the faulting context stops; no surviving reader in this model
             default:return 0;}        // ISA sec 5.1: unimplemented ids read 0
     }
-    void drain_own(Frame& f){for(auto& t:f.sr)ready(t);for(auto& t:f.vr)ready(t);for(auto& t:f.pr)ready(t);f.physical->commit(sc_time_stamp());}
+    void drain_own(Frame& f){
+        for(auto& t:f.sr)ready(f,t);
+        for(auto& t:f.vr)ready(f,t);
+        for(auto& t:f.pr)ready(f,t);
+        if(tm && role_lsu_done[f.role]>lnow(f))ready(f,x.cycles(role_lsu_done[f.role]));
+        f.physical->commit(lt(f));
+    }
     //--------------------------------------------------------------------------
     // Matrix engine: one command at a time, core-wide (tnca_matrix.v). Every
     // matrix-FU instruction, a.vread included, waits for it to be free.
     //--------------------------------------------------------------------------
-    void engine_wait(){auto now=sc_time_stamp();if(mtx_free>now){*c_mtx_wait+=cycles_of(mtx_free-now);wait(mtx_free-now);}}
-    void engine_start(const Frame& f,u64 busy){mtx_free=sc_time_stamp()+x.cycles(busy);mtx_role=f.role;*c_mtx_busy+=busy;++*c_mtx_cmds;}
+    void engine_wait(){if(x.functional)return;auto now=sc_time_stamp();if(mtx_free>now){*c_mtx_wait+=cycles_of(mtx_free-now);wait(mtx_free-now);}}
+    void engine_start(const Frame& f,u64 busy){if(x.functional)busy=0;mtx_free=sc_time_stamp()+x.cycles(busy);mtx_role=f.role;*c_mtx_busy+=busy;++*c_mtx_cmds;}
     void mma(Frame& f,const Inst& in){
+        sync(f);
         unsigned slot=sliced(f,in.d,4),K=16U<<(in.mod&3),dt=(in.mod>>2)&3,bytes=tnca_matrix_ops::element_bytes(dt);
         bool source_free=in.mod&16;
         u64 token=token_of(f,f.s[in.c]),sf_token=source_free?token_of(f,f.s[(in.c+1)&63]):0;
@@ -364,12 +449,17 @@ struct Core : sc_module {
         std::vector<PhysicalRegisters::Vector> A(a_regs),B(b_regs);
         for(unsigned r=0;r<a_regs;++r){unsigned p=f.vbase+in.a+r;require(p<256,"MMA A fragment beyond the physical file");A[r]=f.physical->read(p,sc_time_stamp());}
         for(unsigned r=0;r<b_regs;++r){unsigned p=f.vbase+in.b+r;require(p<256,"MMA B fragment beyond the physical file");B[r]=f.physical->read(p,sc_time_stamp());}
+        {static const bool mlog=std::getenv("TLM_DEBUG_MMA_LOG")!=nullptr;
+         if(mlog){u64 ha=1469598103934665603ULL,hb=ha;for(auto& v:A)for(auto w:v)ha=(ha^w)*1099511628211ULL;for(auto& v:B)for(auto w:v)hb=(hb^w)*1099511628211ULL;
+            std::fprintf(stderr,"MMA core %u role %u t %llu a %u b %u ha %016llx hb %016llx\n",id,f.role,(unsigned long long)x.now(),in.a,in.b,(unsigned long long)ha,(unsigned long long)hb);
+            for(unsigned r=0;r<b_regs;++r){std::fprintf(stderr,"MMAB %u:",r);for(auto w:B[r])std::fprintf(stderr," %08x",w);std::fprintf(stderr,"\n");}
+            std::fprintf(stderr,"MMAPENDING %zu\n",f.physical->pending.size());for(auto& w:f.physical->pending)std::fprintf(stderr,"  pend idx %u mask %x due %llu\n",w.index,w.mask,(unsigned long long)x.to_cycles(w.due));}}
         tnca_matrix_ops::mma(acc[slot],A,B,K,dt);
         bool buffered=abuf && (bytes==1?K!=64:K==16);
         u64 sweep=(buffered?a_regs*t_rf:0)+K*(t_rf+16*(buffered?t_mac:t_mac_unbuf));
         u64 busy=sweep+t_pipe+1+t_done;
         engine_start(f,busy);++*c_mma;
-        sc_time free_at=sc_time_stamp()+x.cycles(sweep),done_at=mtx_free;
+        sc_time free_at=sc_time_stamp()+x.cycles(x.functional?0:sweep),done_at=mtx_free;
         if(source_free)completions.push_back({free_at,sf_token});
         completions.push_back({done_at,token});
         completion_added.notify(SC_ZERO_TIME);
@@ -387,25 +477,63 @@ struct Core : sc_module {
         }});
     }
     //--------------------------------------------------------------------------
+    // Vector sources read from the same VRF bank (bank = register mod
+    // vrf_banks with 64-aligned context bases) are read one per cycle.
+    void bank_conflicts(Frame& f,const Inst& in){
+        // Vector sources per tnca_decoder.v (o_va/vb/vc_en); a masked write
+        // does not read its destination.
+        unsigned srcs[3];unsigned n=0;auto add=[&](unsigned r){if(n<3)srcs[n++]=r;};
+        const unsigned fn=in.func;
+        switch(in.kind){
+            case K::Vint:if(!(fn>=32 && fn<=63) && fn!=0 && fn!=20 && fn!=21 && fn!=26 && fn!=27 && fn!=64){add(in.a);add(in.b);}break;
+            case K::Vfp:if(fn!=20 && fn!=21){add(in.a);add(in.b);if(fn==6 || fn==7)add(in.c);}break;
+            case K::Shuffle:if(fn==3){add(in.a);add(in.b);}break;
+            case K::Lsu:if(fn==40){add(in.b);add(in.d);}break;
+            default:break;
+        }
+        u64 now=lnow(f);bool slot=vrf_pf && (!r_reads || now>last_issue+1);
+        r_reads=false;
+        if(n<2)return;
+        unsigned count[8]={};unsigned worst=0;
+        for(unsigned i=0;i<n;++i){unsigned bk=unsigned((f.vbase+srcs[i])%n_banks)&7;worst=std::max(worst,++count[bk]);}
+        if(worst<2)return;
+        // VRF_PREFETCH: D reads one cycle early when R is not using the
+        // ports, so a second read of one bank costs nothing then.
+        r_reads=true;u64 rounds=worst-1;if(slot)--rounds;
+        if(rounds){u64 extra=rounds*t_bank;*c_bank+=extra;freeze(f,lt(f)+x.cycles(extra));}
+    }
     void execute(Frame& f){
         const std::string role_key=key("role_"+std::to_string(f.role));
         for(;;){
-            if(deadline!=SC_ZERO_TIME && sc_time_stamp()>deadline)throw DeadlineExpired{};
+            if(deadline!=SC_ZERO_TIME && lt(f)>deadline)throw DeadlineExpired{};
             const Inst& in=code.at(f.pc);
             if(in.kind==K::Illegal)throw ArchFault(trapcode::illegal,in.why+" at pc "+std::to_string(f.pc));
             if(in.kind==K::Refused)throw std::runtime_error("MODEL_REFUSED "+in.why+" (word "+std::to_string(in.word)+" at pc "+std::to_string(f.pc)+")");
-            const unsigned d=in.d,a=in.a,b=in.b,c=in.c,func=in.func,mod=in.mod;u64 next=f.pc+8;auto begin=sc_time_stamp();
-            auto rs=[&](unsigned r)->u64{ready(f.sr[r]);return r?f.s[r]:0ULL;};
-            auto ws=[&](unsigned r,u64 value,u64 latency){if(r){ready(f.sr[r]);f.s[r]=value;f.sr[r]=sc_time_stamp()+x.cycles(latency);}};
-            auto rv=[&](unsigned r){ready(f.vr[r]);f.v[r]=f.physical->read(f.vbase+r,sc_time_stamp());};
-            auto wp=[&](unsigned r,unsigned value,u64 latency){if(r){ready(f.pr[r]);f.p[r]=value&65535;f.pr[r]=sc_time_stamp()+x.cycles(latency);}};
+            const unsigned d=in.d,a=in.a,b=in.b,c=in.c,func=in.func,mod=in.mod;u64 next=f.pc+8;auto begin=lt(f);
+            auto rs=[&](unsigned r)->u64{hazard(f,f.sr[r]);return r?f.s[r]:0ULL;};
+            auto ws=[&](unsigned r,u64 value,u64 latency){if(r){hazard(f,f.sr[r]);f.s[r]=value;f.sr[r]=lt(f)+x.cycles(latency);}};
+            auto rv=[&](unsigned r){hazard(f,f.vr[r]);f.v[r]=f.physical->read(f.vbase+r,lt(f));};
+            auto wp=[&](unsigned r,unsigned value,u64 latency){if(r){hazard(f,f.pr[r]);f.p[r]=value&65535;f.pr[r]=lt(f)+x.cycles(latency);}};
             unsigned mask=65535;
-            if(in.major>=16){ready(f.pr[in.pred]);mask=f.p[in.pred];if(in.invert)mask^=65535;}
+            if(pipe && f.fetch_ready>lt(f)){*c_branch+=cycles_of(f.fetch_ready-lt(f));go(f,f.fetch_ready);}
+            if(in.major>=16){hazard(f,f.pr[in.pred]);mask=f.p[in.pred];if(in.invert)mask^=65535;}
+            if(pipe){
+                if(holds){sync(f);while(holds)wait(unhold);}
+                if(t_bank)bank_conflicts(f,in);
+                // An LSU completion uses the writeback port in place of an
+                // issued instruction (tnca_core.v wb_steal).
+                if(!steals.empty()){u64 now=lnow(f);
+                    for(auto it=steals.begin();it!=steals.end();){
+                        if(*it<=now){if(*it+1>=last_issue)issue.available=std::max(issue.available,lt(f))+x.cycles(t_lsu_wb);it=steals.erase(it);}
+                        else ++it;
+                    }}
+            }
             // No cycle polling: issue and dependencies reserve their next event.
-            issue.use(x,issue_time,t_issue);
+            issue_slot(f);
+            if(pipe)last_issue=lnow(f);
             ++class_counts[unsigned(in.kind)];
             switch(in.kind){
-            case K::Exit:drain_own(f);++f.retired;++*c_instr;return;
+            case K::Exit:drain_own(f);sync(f);++f.retired;++*c_instr;return;
             case K::Nop:case K::Yield:case K::Prefetch:break; // t.prefetch: a hint, dropped (ISA sec 9E.3)
             case K::Trap:throw ArchFault(trapcode::user,"TRAP_USER: code "+std::to_string((a<<16)|(b<<8)|c));
             case K::Special:ws(d,special(mod,f),t_scalar);break;
@@ -427,6 +555,7 @@ struct Core : sc_module {
                 else if(func==4 || func==9)next=rs(a)&~7ULL;
                 else if(func==8){ws(d,f.pc+8,1);next=f.pc+u64(std::int64_t(off24)*8);}
                 else throw std::runtime_error("uncovered control operation");
+                if(pipe && next!=f.pc+8 && !x.functional)f.fetch_ready=lt(f)+x.cycles(1+t_branch);
                 break;}
             case K::Lsu:{
                 bool store=func==8 || func==24 || func==40,vector=func>=16,gather=func>=32;
@@ -436,8 +565,89 @@ struct Core : sc_module {
                 // A scalar access is lane 0 of the mask (tnca_lsu.v).
                 unsigned active=vector?mask:(mask&1);
                 if(!active)break;
-                auto wait_start=sc_time_stamp();lsu.acquire(x,lsu_key);*c_lsu_wait+=cycles_of(sc_time_stamp()-wait_start);
                 struct Part {unsigned lane,offset,bytes,shift;};
+                if(tm && x.functional){
+                    std::array<u64,16> values{};
+                    for(unsigned lane=0;lane<(vector?16U:1U);++lane){
+                        if(!(active&(1<<lane)))continue;
+                        u64 address=base+(vector?(gather?u64(std::int64_t(std::int32_t(f.v[b][lane])))*size:lane*size):0);
+                        x.c.address(address,size);u64 value=vector?f.v[d][lane]:f.s[d];unsigned done=0;
+                        while(done<size){
+                            u64 ap=address+done;unsigned off=unsigned(ap&7),n=std::min(size-done,8-off);
+                            u64 data=0;unsigned be=0;
+                            for(unsigned byte=0;byte<n;++byte){be|=1U<<(off+byte);data|=((value>>((done+byte)*8))&255)<<((off+byte)*8);}
+                            u64 got=tm->access(ap&~7ULL,store,data,store?be:255);
+                            if(!store){u64 pm=n==8?UINT64_MAX:((1ULL<<(n*8))-1);values[lane]|=((got>>(off*8))&pm)<<(done*8);}
+                            done+=n;
+                        }
+                    }
+                    if(!store){
+                        for(unsigned lane=0;lane<(vector?16U:1U);++lane)if(active&(1<<lane)){
+                            u64 value=values[lane];if((mod&8) && size<8 && (value&(1ULL<<(size*8-1))))value|=UINT64_MAX<<(size*8);
+                            if(vector)f.v[d][lane]=std::uint32_t(value);else ws(d,value,0);
+                        }
+                        if(vector)publish(f,d,active,0);
+                    }
+                    break;
+                }
+                if(tm){
+                    // Non-blocking LSU: at most lsu_slots instructions in flight
+                    // core-wide; beats leave the core port one per cycle with at
+                    // most lsu_beat_slots words outstanding; a load's
+                    // destination is scoreboarded until its last word returns.
+                    u64 now=lnow(f),gnow=x.now();unsigned unit_index=0;
+                    if(pipe){
+                        // A busy unit holds the access in R: every context stalls.
+                        u64 best=UINT64_MAX;
+                        for(unsigned i=0;i<2;++i){u64 at=std::max({now,units[i].free,units[1-i].drained});if(at<best){best=at;unit_index=i;}}
+                        if(best>now){*c_lsu_wait+=best-now;freeze(f,x.cycles(best));now=lnow(f);}
+                    }else{
+                    auto prune=[&](){lsu_inflight.erase(std::remove_if(lsu_inflight.begin(),lsu_inflight.end(),[&](u64 v){return v<=now;}),lsu_inflight.end());};
+                    prune();
+                    if(lsu_inflight.size()>=t_lsu_slots){u64 m=*std::min_element(lsu_inflight.begin(),lsu_inflight.end());
+                        *c_lsu_wait+=m-now;ready(f,x.cycles(m));now=lnow(f);prune();}
+                    }
+                    gnow=x.now();
+                    std::array<u64,16> values{};std::vector<u64> window;u64 t=pipe?now+1+t_lsu_setup:now,complete=now;
+                    std::map<u64,std::pair<std::pair<u64,unsigned>,std::vector<Part>>> plan2;
+                    for(unsigned lane=0;lane<(vector?16U:1U);++lane){
+                        if(!(active&(1<<lane)))continue;
+                        u64 address=base+(vector?(gather?u64(std::int64_t(std::int32_t(f.v[b][lane])))*size:lane*size):0);
+                        x.c.address(address,size);u64 value=vector?f.v[d][lane]:f.s[d];unsigned done=0;
+                        while(done<size){
+                            u64 address_part=address+done;unsigned off=unsigned(address_part&7),n=std::min(size-done,8-off);
+                            auto& beat=plan2[address_part&~7ULL];beat.second.push_back({lane,off,n,done*8});
+                            for(unsigned byte=0;byte<n;++byte){
+                                unsigned at=off+byte;beat.first.second|=1<<at;
+                                beat.first.first=(beat.first.first&~(255ULL<<(at*8)))|(((value>>((done+byte)*8))&255)<<(at*8));
+                            }done+=n;
+                        }
+                    }
+                    for(auto& beat:plan2){
+                        while(window.size()>=t_beat_slots){auto m=std::min_element(window.begin(),window.end());t=std::max(t,*m);window.erase(m);}
+                        u64 at=port.reserve(t,1,gnow);t=at+1;u64 got=0;
+                        u64 when=tm->word(id,beat.first,store,beat.second.first.first,store?beat.second.first.second:255,at,got);
+                        window.push_back(when);complete=std::max(complete,when);
+                        if(!store)for(auto& part:beat.second.second){
+                            u64 part_mask=part.bytes==8?UINT64_MAX:((1ULL<<(part.bytes*8))-1);
+                            values[part.lane]|=((got>>(part.offset*8))&part_mask)<<part.shift;
+                        }
+                    }
+                    if(pipe){units[unit_index].drained=t;units[unit_index].free=complete+t_lsu_complete;
+                        if(t_lsu_wb && !store)steals.push_back(complete+t_load-1);}
+                    else lsu_inflight.push_back(complete);
+                    role_lsu_done[f.role]=std::max(role_lsu_done[f.role],complete);
+                    if(!store){
+                        u64 latency=complete-now+t_load+(pipe && vector?t_vload_extra:0);
+                        for(unsigned lane=0;lane<(vector?16U:1U);++lane)if(active&(1<<lane)){
+                            u64 value=values[lane];if((mod&8) && size<8 && (value&(1ULL<<(size*8-1))))value|=UINT64_MAX<<(size*8);
+                            if(vector)f.v[d][lane]=std::uint32_t(value);else ws(d,value,latency);
+                        }
+                        if(vector)publish(f,d,active,latency);
+                    }
+                    break;
+                }
+                auto wait_start=sc_time_stamp();lsu.acquire(x,lsu_key);*c_lsu_wait+=cycles_of(sc_time_stamp()-wait_start);
                 struct Beat {u64 data=0,value=0;unsigned enables=0;std::vector<Part> parts;};
                 std::map<u64,Beat> plan;
                 for(unsigned lane=0;lane<(vector?16U:1U);++lane){
@@ -472,7 +682,9 @@ struct Core : sc_module {
                 }
                 if(vector && !store)publish(f,d,active,t_load);
                 lsu.release();break;}
-            case K::Fence:{auto t=sc_time_stamp();drain_own(f);*c_fence_wait+=cycles_of(sc_time_stamp()-t);break;}
+            case K::Fence:{sync(f);auto t=sc_time_stamp();
+                hold([&]{drain_own(f);if(pipe)ready(f,x.cycles(lsu_idle()));sync(f);});
+                *c_fence_wait+=cycles_of(sc_time_stamp()-t);break;}
             case K::Vint:{
                 bool cmp=func==24 || func==56,immediate=func>=32 && func<=63;
                 if(!cmp)rv(d);
@@ -499,7 +711,7 @@ struct Core : sc_module {
                     if(func==24){if(tnca_vector_ops::vfp_compare(mod,f.v[a][lane],f.v[b][lane]))comparison|=1<<lane;}
                     else f.v[d][lane]=tnca_vector_ops::vfp(func,mod,f.v[a][lane],f.v[b][lane],(func==6 || func==7)?f.v[c][lane]:0);
                 }
-                if(func==24)wp(d,comparison,t_cmp);
+                if(func==24)wp(d,comparison,pipe?t_fcmp:t_cmp);
                 else publish(f,d,mask,t_vfp);
                 break;}
             case K::Cvt:{
@@ -507,8 +719,8 @@ struct Core : sc_module {
                 for(unsigned lane=0;lane<16;++lane)if(mask&(1<<lane))f.v[d][lane]=tnca_vector_ops::cvt(func,mod,f.v[a][lane]);
                 publish(f,d,mask,t_cvt);break;}
             case K::Pred:{
-                unsigned pa=0,pb=0;if(func!=19){ready(f.pr[a]);pa=f.p[a];}
-                if(func==1 || func==2 || func==3 || func==5){ready(f.pr[b]);pb=f.p[b];}
+                unsigned pa=0,pb=0;if(func!=19){ready(f,f.pr[a]);pa=f.p[a];}
+                if(func==1 || func==2 || func==3 || func==5){ready(f,f.pr[b]);pb=f.p[b];}
                 if(func>=16){
                     if(func==16)ws(d,pa!=0,t_pred);else if(func==17)ws(d,pa==65535,t_pred);
                     else if(func==18)ws(d,pa,t_pred);else if(func==19)wp(d,unsigned(rs(a)&65535),t_pred);
@@ -529,31 +741,32 @@ struct Core : sc_module {
                     else from=(lane+shift)&15;
                     f.v[d][lane]=source[from];
                 }publish(f,d,mask,t_shuf);break;}
-            case K::Extract:rv(a);ws(d,f.v[a][mod&15],t_shuf);break;
+            case K::Extract:rv(a);ws(d,f.v[a][mod&15],pipe?t_shuf_s:t_shuf);break;
             case K::Insert:{rv(d);auto value=std::uint32_t(rs(a));if(mask&(1<<(mod&15)))f.v[d][mod&15]=value;publish(f,d,mask&(1<<(mod&15)),t_shuf);break;}
             case K::Reduce:{
                 rv(a);
                 std::uint32_t reduced=tnca_vector_ops::reduce(func,f.v[a],mask);
                 u64 latency=func>=8?t_fred:t_red;
-                if(mod&1){rv(d);f.v[d].fill(reduced);publish(f,d,65535,latency);}
+                if(mod&1){if(pipe)latency+=func>=8?t_fred_vec:t_red_vec;rv(d);f.v[d].fill(reduced);publish(f,d,65535,latency);}
                 else ws(d,reduced,latency);
                 break;}
             case K::Sfu:{
                 rv(a);rv(d);
-                auto waiting=sc_time_stamp();ready(sfu_available);
-                *c_sfu_queue+=cycles_of(sc_time_stamp()-waiting);
-                sfu_available=sc_time_stamp()+x.cycles(t_sfu_occ);
+                if(!x.functional){
+                auto waiting=lt(f);if(pipe)freeze(f,sfu_available);else ready(f,sfu_available);
+                *c_sfu_queue+=cycles_of(lt(f)-waiting);
+                sfu_available=lt(f)+x.cycles(t_sfu_occ);}
                 for(unsigned lane=0;lane<16;++lane)if(mask&(1<<lane))f.v[d][lane]=tnca_sfu::evaluate(func,f.v[a][lane]);
                 publish(f,d,mask,t_sfu);break;}
             case K::Desc:{
-                unsigned slot=sliced(f,d,4);
-                tensor.configure(func,slot,func==0?rs(a):0,in.imm);break;}
+                unsigned slot=sliced(f,d,4);u64 address=func==0?rs(a):0;sync(f);
+                tensor.configure(func,slot,address,in.imm);break;}
             case K::Xfer:{
-                u64 token=token_of(f,rs(c));
+                u64 token=token_of(f,rs(c));sync(f);
                 tensor.issue(sliced(f,a,4),sliced(f,d,4),token,1U<<(mod&7),func==8,mod&32,mask!=0,f.physical,f.vbase,f.role,
                     [&](unsigned rank){
                         arch(b+rank<=64,trapcode::descriptor,"DESCRIPTOR_FAULT: coordinates exceed scalar file");
-                        std::array<u64,5> coordinates{};for(unsigned dim=0;dim<rank;++dim)coordinates[dim]=rs(b+dim);return coordinates;
+                        std::array<u64,5> coordinates{};for(unsigned dim=0;dim<rank;++dim)coordinates[dim]=rs(b+dim);sync(f);return coordinates;
                     },[&](unsigned base,unsigned length){
                         arch(base<64 && length<=64-base,trapcode::descriptor,"DESCRIPTOR_FAULT: transfer exceeds role mapping");
                         for(unsigned r=base;r<base+length;++r){ready(f.vr[r]);}
@@ -561,18 +774,20 @@ struct Core : sc_module {
                     });
                 break;}
             case K::Barrier:{
+                if(func!=3 && func!=4)sync(f);
                 if(func==0)barriers[sliced(f,d,5)].reset();
                 else if(func==1){unsigned index=sliced(f,a,5);ws(d,barriers[index].arm(index,b,c),t_bar);}
                 else if(func==2){
                     // ISA sec 9A.5 with RPAIR's precision (tnca_core.v stall_arrive):
                     // own register writes landed, own engine commands finished.
-                    auto t=sc_time_stamp();drain_own(f);
-                    while(tensor.outstanding[f.role])wait(tensor.role_done);
-                    if(mtx_role==f.role)engine_wait();
+                    auto t=sc_time_stamp();
+                    hold([&]{drain_own(f);if(pipe)ready(f,x.cycles(lsu_idle()));sync(f);
+                        while(tensor.outstanding[f.role])wait(tensor.role_done);
+                        if(mtx_role==f.role)engine_wait();});
                     *c_arrive_wait+=cycles_of(sc_time_stamp()-t);
                     barriers[sliced(f,a,5)].arrive();
                 }else if(func==3 || func==4){
-                    u64 token=token_of(f,rs(a));unsigned index=unsigned(token&65535);
+                    u64 token=token_of(f,rs(a));unsigned index=unsigned(token&65535);sync(f);
                     if(func==3)ws(d,barriers[index].test(token),t_bar);
                     else {auto sleep=sc_time_stamp();barriers[index].sleep(token);*c_sleep+=cycles_of(sc_time_stamp()-sleep);}
                 }else if(func==5)barriers[sliced(f,a,5)].invalidate();
@@ -581,17 +796,17 @@ struct Core : sc_module {
             case K::MZero:case K::AZero:{
                 // m.zero and a.zero are both the engine's zero sweep (cmd_op 0):
                 // whole rows, no lane mask (tnca_core.v mtx_cmd_op).
-                engine_wait();acc[sliced(f,d,4)]={};engine_start(f,t_zero+t_done);break;}
+                sync(f);engine_wait();acc[sliced(f,d,4)]={};engine_start(f,t_zero+t_done);break;}
             case K::Mma:mma(f,in);break;
             case K::ARow:{
                 // a.vwrite (direct), a.mul.row / a.fma.row (one rounding, ftz=0).
                 u64 row=rs(a)&15;std::uint32_t scale=0;
                 if(func==2)scale=std::uint32_t(rs(b));else{rv(b);if(func==3)scale=std::uint32_t(rs(c));}
-                engine_wait();
+                sync(f);engine_wait();
                 tnca_matrix_ops::row_op(acc[sliced(f,d,4)][row],func,scale,func==2?PhysicalRegisters::Vector{}:f.v[b],mask);
                 engine_start(f,func==1?t_row+t_done:t_row+t_pipe+1+t_done);break;}
             case K::AVread:{
-                u64 row=rs(b)&15;engine_wait();rv(d);
+                u64 row=rs(b)&15;sync(f);engine_wait();rv(d);
 #ifdef TNCA_MUTATION_AVREAD_ROW
                 row=(row+1)&15; // test-only mutant (separate build): proves end-to-end checks see wrong results
 #endif
@@ -662,7 +877,7 @@ struct Chip : sc_module {
     struct Command {bool grid=false;Launch launch;u64 stride=0,core_mask=1,deadline=0;unsigned gx=1,gy=1,gz=1,group=1;};
     std::unique_ptr<Command> pending;bool command_done=false,flush_request=false,shutdown=false;
     Outcome result;u64 start_cycle=0,end_cycle=0,launches=0;sc_event wake;
-    u64 *c_grid_launches,*c_single_launches;
+    u64 *c_grid_launches,*c_single_launches,*c_host_cycles;
     Chip(sc_module_name n,Context& ctx,HBM& mem,Network& net,std::vector<std::unique_ptr<Slice>>& s):
         sc_module(n),x(ctx),hbm(mem),caches(s){
         code.read_word=[this](u64 pc){u64 v=0;unsigned char bytes[8];host_read(pc,bytes,8);for(unsigned b=0;b<8;++b)v|=u64(bytes[b])<<(8*b);return v;};
@@ -671,6 +886,7 @@ struct Chip : sc_module {
             cores.back()->memory.bind(net.target);cores.back()->tensor.memory.bind(net.target);
         }
         c_grid_launches=&x.counts["chip_grid_launches"];c_single_launches=&x.counts["chip_single_launches"];
+        c_host_cycles=&x.counts["chip_host_gap_cycles"];
         SC_THREAD(run);
     }
     // Functionally coherent host access in zero modeled time: the device is
@@ -678,6 +894,8 @@ struct Chip : sc_module {
     // HBM. Writes update both copies. Nothing is flushed or perturbed.
     void host_access(u64 address,unsigned char* data,u64 n,bool write){
         if(!n)return;
+        if(const char* w=std::getenv("TLM_DEBUG_WATCH")){u64 lo=std::strtoull(w,nullptr,0);const char* c=std::strchr(w,',');u64 hi=lo+(c?std::strtoull(c+1,nullptr,0):0);
+            if(address+n>lo && address<hi)std::fprintf(stderr,"WATCH host t %llu %s a %llx n %llu\n",(unsigned long long)x.now(),write?"W":"R",(unsigned long long)address,(unsigned long long)n);}
         u64 base=x.c.get("memory_base"),bytes=x.c.get("memory_bytes");
         require(address>=base && n<=bytes && address-base<=bytes-n,"host access outside model memory window");
         require(!(address<0x7fff1000ULL && address+n>0x7fff0000ULL),"TMU MMIO is not ordinary model memory");
@@ -697,7 +915,11 @@ struct Chip : sc_module {
     }
     void host_write(u64 a,const unsigned char* p,u64 n){host_access(a,const_cast<unsigned char*>(p),n,true);}
     void host_read(u64 a,unsigned char* p,u64 n){host_access(a,p,n,false);}
-    void flush(){unsigned remaining=unsigned(caches.size());sc_event done;
+    TimelineMemory* tm=nullptr;
+    void flush(){
+        if(tm && x.functional)return; // untimed: nothing is cached on the timeline path
+        if(tm){u64 now=x.now(),done=tm->flush(now);if(done>now)wait(x.cycles(done-now));return;}
+        unsigned remaining=unsigned(caches.size());sc_event done;
         for(auto& c:caches){auto* ptr=c.get();sc_spawn([&,ptr](){ptr->flush();--remaining;done.notify(SC_ZERO_TIME);});}
         while(remaining)wait(done);
         for(auto& slot:hbm.slots)require(slot->used==0,"completion visibility still has outstanding writes");
@@ -717,7 +939,7 @@ struct Chip : sc_module {
                     Launch l=cmd.launch;l.px=x0;l.py=y0;l.pz=z0;l.nx=cmd.gx;l.ny=cmd.gy;l.nz=cmd.gz;l.arg=cmd.launch.arg+ptr->id*cmd.stride;
                     ++issued;
                     if(x0+cmd.group>=cmd.gx){x0=0;if(y0+1==cmd.gy){y0=0;++z0;}else ++y0;}else x0+=cmd.group;
-                    wait(x.cycles(x.c.get("dispatch_cycles")+ptr->t_launch));
+                    if(!x.functional)wait(x.cycles(x.c.get("dispatch_cycles")+ptr->t_launch));
                     Outcome o=ptr->program(l);retired+=o.retired;
                     if(o.status!=STATUS_OK && !faulted){faulted=true;first=o;}
                 }
@@ -728,12 +950,21 @@ struct Chip : sc_module {
         while(live)wait(done);
         first.retired=retired;return first;
     }
+    // Server mode: host transfers since the previous launch and the fixed
+    // per-launch host overhead elapse (device idle) before the next launch.
+    bool serving=false;u64 host_debt=0;
+    void host_charge(u64 bytes){
+        if(!serving || x.functional)return;
+        host_debt+=x.c.get("host_transfer_cycles")+(bytes*x.c.get("host_transfer_cycles_per_kib")+1023)/1024;
+    }
     Outcome run_command(const Command& cmd){
+        if(serving && x.functional)host_debt=0;
+        else if(serving){u64 d=host_debt+x.c.get("host_launch_cycles");host_debt=0;if(d)wait(x.cycles(d));*c_host_cycles+=d;}
         for(auto& core:cores)core->deadline=cmd.deadline?sc_time_stamp()+x.cycles(cmd.deadline):SC_ZERO_TIME;
         start_cycle=x.now();Outcome out;
         if(cmd.grid){++*c_grid_launches;out=dispatch(cmd);}
         else{
-            ++*c_single_launches;wait(x.cycles(cores[0]->t_launch));
+            ++*c_single_launches;if(!x.functional)wait(x.cycles(cores[0]->t_launch));
             Launch l=cmd.launch;out=cores[0]->program(l);
         }
         end_cycle=x.now();++launches;
@@ -780,7 +1011,12 @@ struct Model {
             caches.back()->memory.bind(probes.back()->target);probes.back()->downstream.bind(hbm.target);
         }
         chip.reset(new Chip("chip",x,hbm,net,caches));
+        if(cfg.get("memory_model")==1){
+            tmem.reset(new TimelineMemory(cfg,x,hbm.memory));chip->tm=tmem.get();
+            for(auto& core:chip->cores){core->tm=tmem.get();core->tensor.tm=tmem.get();core->tensor.port=&core->port;core->tensor.rtl=cfg.get("core_pipeline")!=0;}
+        }
     }
+    std::unique_ptr<TimelineMemory> tmem;
     // Run one command inside the simulation; false if the kernel starved.
     bool execute(std::unique_ptr<Chip::Command> cmd,bool flush=false){
         chip->command_done=false;
@@ -881,7 +1117,7 @@ struct Channel {
     void send(const std::string& s){send(s.data(),s.size());}
 };
 static int serve(const char* config,const std::string& out,int fd_in,int fd_out){
-    Model m(config,out);Channel ch{fd_in,fd_out,{},0};
+    Model m(config,out);Channel ch{fd_in,fd_out,{},0};m.chip->serving=true;
     ch.send("READY "+std::to_string(m.cfg.cores())+" "+std::to_string(m.cfg.get("memory_base"))+" "+std::to_string(m.cfg.get("memory_bytes"))+"\n");
     std::string line;
     try{
@@ -892,6 +1128,7 @@ static int serve(const char* config,const std::string& out,int fd_in,int fd_out)
                 std::vector<unsigned char> data(n);
                 if(op=="W"){ch.bytes(data.data(),n);m.chip->host_write(address,data.data(),n);ch.send("OK\n");}
                 else{m.chip->host_read(address,data.data(),n);ch.send("OK "+std::to_string(n)+"\n");ch.send(data.data(),n);}
+                m.chip->host_charge(n);
             }else if(op=="L" || op=="G"){
                 std::unique_ptr<Chip::Command> c(new Chip::Command);
                 u64 pc,arg,mask,deadline;
@@ -913,6 +1150,9 @@ static int serve(const char* config,const std::string& out,int fd_in,int fd_out)
                 if(r.status!=STATUS_OK)std::cerr<<"launch status "<<r.status<<": "<<r.why<<'\n';
             }else if(op=="C"){std::ostringstream o;m.counters_json(o);auto t=o.str();ch.send("OK "+std::to_string(t.size())+"\n");ch.send(t);}
             else if(op=="F"){require(m.execute(nullptr,true),"maintenance deadlocked");ch.send("OK\n");}
+            else if(op=="T"){unsigned on;require(bool(s>>on) && on<=1,"T needs 0 or 1");
+                require(m.cfg.get("memory_model")==1 || on,"untimed execution needs the timeline memory (memory_model=1)");
+                m.x.functional=!on;++m.x.counts[on?"host_timing_on":"host_timing_off"];ch.send("OK\n");}
             else if(op=="X"){m.summary(out+"/summary.json","completed",0);m.x.close();ch.send("BYE\n");return 0;}
             else throw std::runtime_error("unknown host command: "+op);
         }

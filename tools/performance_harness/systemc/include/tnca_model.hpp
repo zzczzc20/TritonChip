@@ -29,6 +29,10 @@ using Line = std::array<unsigned char,64>;
 static void require(bool b, const std::string& why) {
     if (!b) throw std::runtime_error(why);
 }
+// The hot paths pass literals: no std::string is built unless the check fails.
+static inline void require(bool b, const char* why) {
+    if (__builtin_expect(!b, 0)) throw std::runtime_error(why);
+}
 // An architectural fault (ISA sec 10): the device would stop the raising
 // context and report FAULT for the launch. Distinct from a model refusal
 // (std::runtime_error), which means the model cannot answer at all.
@@ -37,6 +41,7 @@ struct ArchFault : std::runtime_error {
     ArchFault(unsigned c,const std::string& why):std::runtime_error(why),code(c){}
 };
 inline void arch(bool ok,unsigned code,const std::string& why){if(!ok)throw ArchFault(code,why);}
+inline void arch(bool ok,unsigned code,const char* why){if(__builtin_expect(!ok,0))throw ArchFault(code,why);}
 static u64 integer(const std::string& s) {
     require(!s.empty() && s[0]!='-', "negative or empty integer");
     size_t n=0; auto v=std::stoull(s,&n,0);
@@ -64,14 +69,33 @@ struct Config {
             "fp_reduction_latency","sfu_occupancy","sfu_latency","load_latency","lsu_slots","lsu_beat_slots",
             "barrier_latency","acc_read_latency","mtx_abuf","mtx_rf_read_cycles","mtx_mac_cycles",
             "mtx_mac_unbuffered_cycles","mtx_pipe_cycles","mtx_complete_cycles","mtx_zero_cycles",
-            "mtx_row_cycles","launch_cycles","dispatch_cycles"};
+            "mtx_row_cycles","launch_cycles","dispatch_cycles",
+            // M2: host time between launches (server mode only) and the timing paths.
+            "host_launch_cycles","host_transfer_cycles","host_transfer_cycles_per_kib","memory_model",
+            // Timeline memory structure (include/tnca_timeline_memory.hpp)
+            "tl_noc_inject_cycles","tl_noc_eject_cycles","tl_slice_hit_occupancy","tl_slice_hit_latency",
+            "tl_slice_miss_occupancy","tl_slice_mreq_occupancy","tl_slice_fill_occupancy","tl_slice_wake_occupancy",
+            "tl_slice_writeback_occupancy","tl_slice_to_outlet_cycles","tl_outlet_to_slice_cycles",
+            "tl_outlet_read_issue_cycles","tl_outlet_write_issue_cycles","tl_outlet_beat_cycles","tl_hbm_write_latency_cycles",
+            // Core pipeline structure (core_pipeline=1), from tnca_core.v / tnca_lsu_pair.v / tnca_tensor.v
+            "core_pipeline","branch_taken_cycles","park_refetch_cycles","vrf_banks","vrf_bank_conflict_cycles",
+            "lsu_setup_cycles","lsu_vector_load_extra","lsu_complete_cycles","lsu_writeback_cycles",
+            "fp_compare_latency","shuffle_scalar_latency","reduction_vector_extra","dma_store_register_cycles","dma_drain_cycles",
+            "vrf_prefetch","fp_reduction_vector_extra","time_quantum"};
         require(v.size()==keys.size(),"configuration key count mismatch (unknown or missing key)");
         for(auto& k:keys)require(v.count(k),"missing configuration: "+k);
         cache_hot();
         for(auto& k:keys)if(k!="memory_base" && k!="pc_first" && k!="trace_events" && k!="noc_stages" && k!="full_line_tag"
-                            && k!="mtx_abuf" && k!="launch_cycles" && k!="dispatch_cycles" && k!="load_latency")
+                            && k!="mtx_abuf" && k!="launch_cycles" && k!="dispatch_cycles" && k!="load_latency"
+                            && k!="host_launch_cycles" && k!="host_transfer_cycles" && k!="host_transfer_cycles_per_kib" && k!="memory_model"
+                            && k.rfind("tl_",0)!=0 && k!="core_pipeline" && k!="branch_taken_cycles" && k!="park_refetch_cycles"
+                            && k!="vrf_bank_conflict_cycles" && k!="lsu_setup_cycles" && k!="lsu_vector_load_extra"
+                            && k!="lsu_complete_cycles" && k!="lsu_writeback_cycles" && k!="reduction_vector_extra"
+                            && k!="dma_store_register_cycles" && k!="dma_drain_cycles" && k!="vrf_prefetch" && k!="fp_reduction_vector_extra" && k!="time_quantum")
             require(v.at(k)>0,"zero configuration: "+k);
         require(get("mtx_abuf")<=1 && get("lsu_slots")<=64 && get("lsu_beat_slots")<=64,"invalid core engine configuration");
+        require(get("memory_model")<=1,"memory_model is 0 (detailed TLM) or 1 (timeline)");
+        require(get("time_quantum")==0 || get("memory_model")==1,"time_quantum needs the timeline memory (memory_model=1)");
         require(get("nx")*get("ny")<=16,"at most 16 homes");
         require(get("sets")<=65536 && (get("sets")&(get("sets")-1))==0,"sets must be power of two <=65536");
         require(get("ways")<=32 && get("mshrs")<=256 && get("targets")<=4096,"unreasonable cache geometry");
@@ -112,6 +136,11 @@ struct Config {
 };
 struct Context {
     const Config& c;
+    // Untimed execution (serve command "T 0"): every instruction, transfer
+    // and launch has its architectural effect and takes no modeled time.
+    // Used for a graph's cold call, whose timing is not a measurement;
+    // timing state is not touched, so the timed call starts unperturbed.
+    bool functional=false;
     std::map<std::string,u64> counts;
     std::ofstream trace;
     std::string directory;
@@ -124,10 +153,16 @@ struct Context {
         void integrate(u64 now){if(active)busy_cycles+=now-last_cycle;last_cycle=now;}
     };
     std::map<std::string,SocketStats> sockets;
-    u64 unit=0; // time-resolution units per reference cycle, when exact
+    u64 unit=0; // time-resolution units per reference cycle
     explicit Context(const Config& cfg,const std::string& dir):c(cfg),trace(dir+"/trace.json"),directory(dir){
         double units=1.0/double(c.get("clock_hz"))/sc_get_time_resolution().to_seconds();
-        if(units>=1 && std::fabs(units-std::round(units))<1e-9)unit=u64(std::llround(units));
+        // Every model time is an integral number of reference cycles. A clock
+        // whose period is not a whole number of resolution units (90 MHz at
+        // 1 ps) would otherwise round each wait differently, and two events of
+        // the same cycle could compare unequal; the period is rounded once
+        // instead (11111 ps at 90 MHz: 1e-5 relative in reported seconds only).
+        require(units>=1,"clock period below the time resolution");
+        unit=u64(std::llround(units));
         if(const char* mode=std::getenv("TNCA_TLM_MONITOR"))monitor_mode=mode;
         require(monitor_mode=="off" || monitor_mode=="aggregate" || monitor_mode=="trace","unknown monitor mode");
         require(bool(trace),"cannot create trace");trace<<"{\"displayTimeUnit\":\"ns\",\"traceEvents\":[";

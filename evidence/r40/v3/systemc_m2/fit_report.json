@@ -1,0 +1,585 @@
+{
+ "schema": "tnca-systemc-fit-report/1",
+ "fit_rows": "calibration-only",
+ "rule": "parameters were fitted on rows of spec/r40/suites/R40-04.calibration.json only; no holdout (R40-04.model-holdout.json) or unlabelled row was read by any fitting step",
+ "config": "cfgs/final.cfg",
+ "config_sha256": "dc2c1763eafb7d022304ee820651465c4df04135a68381c0d3833ea7195eb796",
+ "procedure": [
+  "structural constants set from the RTL of the attempt03 board image (no fitting)",
+  "matrix busy cycles set from the RTL oracle (2a+18K+6 with ABUF; m.zero 17; row ops 7)",
+  "host: median calibration inter-launch gap -> host_launch_cycles; median calibration per-kernel staging rate -> host_transfer_cycles_per_kib",
+  "latency: calibration configurations simulated at the grid [[20, 5], [20, 40], [35, 5], [35, 40], [55, 5]] of hbm_latency_cycles, tl_outlet_to_slice_cycles; per-configuration (bi)linear interpolation; objective: max(median/0.10, p95/0.20) of calibration |graph makespan error|, then median",
+  "tl_hbm_write_latency_cycles tied to hbm_latency_cycles",
+  "holdout evaluated once with calibrate.py at the frozen configuration"
+ ],
+ "fitted": {
+  "host_launch_cycles": 405467,
+  "host_transfer_cycles": 0,
+  "host_transfer_cycles_per_kib": 4448,
+  "hbm_latency_cycles": 23,
+  "tl_outlet_to_slice_cycles": 13,
+  "tl_hbm_write_latency_cycles": 23
+ },
+ "host_fit": {
+  "gaps": {
+   "n": 18,
+   "median": 405467.0,
+   "p05": 365753.75,
+   "p95": 968706.0499999999,
+   "min": 364942,
+   "max": 985168
+  },
+  "staging_cycles_per_kib": {
+   "n": 35,
+   "median": 4447.547556673365,
+   "p05": 4361.829524083889,
+   "p95": 4568.968288828402
+  },
+  "records": 61
+ },
+ "latency_fit": {
+  "parameters": [
+   "hbm_latency_cycles",
+   "tl_outlet_to_slice_cycles"
+  ],
+  "grid": [
+   [
+    20,
+    5
+   ],
+   [
+    20,
+    40
+   ],
+   [
+    35,
+    5
+   ],
+   [
+    35,
+    40
+   ],
+   [
+    55,
+    5
+   ]
+  ],
+  "configurations": 49,
+  "objective": "max(median/0.10, p95/0.20) of calibration |graph makespan error|, then median",
+  "chosen": {
+   "hbm_latency_cycles": 23,
+   "tl_outlet_to_slice_cycles": 13,
+   "tl_hbm_write_latency_cycles": 23,
+   "interpolated_median_abs": 0.08578496947014755,
+   "interpolated_p95_abs": 0.2317158698527107,
+   "interpolated_sec34": 1.1585793492635534
+  },
+  "best_by_median": {
+   "hbm_latency_cycles": 22,
+   "tl_outlet_to_slice_cycles": 36
+  },
+  "grid_scores": {
+   "20:5": {
+    "median_abs": 0.10841809086337943,
+    "p95_abs": 0.28168087976554057,
+    "sec34": 1.4084043988277029
+   },
+   "20:40": {
+    "median_abs": 0.06426922251694427,
+    "p95_abs": 0.2606682796364015,
+    "sec34": 1.3033413981820074
+   },
+   "35:5": {
+    "median_abs": 0.0963922057566996,
+    "p95_abs": 0.3707804230889263,
+    "sec34": 1.8539021154446313
+   },
+   "35:40": {
+    "median_abs": 0.11212692245798678,
+    "p95_abs": 0.6190206558562595,
+    "sec34": 3.0951032792812976
+   },
+   "55:5": {
+    "median_abs": 0.09552241977315741,
+    "p95_abs": 0.9792714423022,
+    "sec34": 4.896357211511
+   }
+  }
+ },
+ "excluded_from_fitting_grid": [
+  "op.linear/hbm/fp16-m512-k4096-n11008@56dc9373e2 (fe1b, 53.5 G board cycles)",
+  "op.matmul/hbm/fp16-m4096-k4096-n4096@56dc9373e2 (fe1b, 43.7 G board cycles)"
+ ],
+ "parameters": [
+  {
+   "key": "nx",
+   "value": 3,
+   "source": "image: 3x1 mesh (rtl/board/tnca_multicore_hbm_xo.v, 3 cores)"
+  },
+  {
+   "key": "ny",
+   "value": 1,
+   "source": "image: 3x1 mesh"
+  },
+  {
+   "key": "sets",
+   "value": 32,
+   "source": "image: SETS 32"
+  },
+  {
+   "key": "ways",
+   "value": 8,
+   "source": "image: WAYS 8"
+  },
+  {
+   "key": "full_line_tag",
+   "value": 1,
+   "source": "model: full line tags (any topology)"
+  },
+  {
+   "key": "mshrs",
+   "value": 8,
+   "source": "rtl/nuca/tnca_nuca_slice.v MSHR_N 8"
+  },
+  {
+   "key": "targets",
+   "value": 16,
+   "source": "rtl/nuca/tnca_nuca_slice.v TARGET_N 16"
+  },
+  {
+   "key": "outlets",
+   "value": 3,
+   "source": "image: MEM_PORTS 3 (slice s -> outlet s mod 3)"
+  },
+  {
+   "key": "active_outlets",
+   "value": 3,
+   "source": "image default 3; TNCA_RTL_MEM_PORTS of a record overrides (1 = every slice on outlet 0)"
+  },
+  {
+   "key": "outstanding",
+   "value": 8,
+   "source": "image: AXI_OUT_N 8 lines per outlet; TNCA_RTL_OUTSTANDING of a record overrides"
+  },
+  {
+   "key": "core_window",
+   "value": 32,
+   "source": "detailed path only"
+  },
+  {
+   "key": "clock_hz",
+   "value": 90000000,
+   "source": "qualified operating clock of the attempt03 image, 90 MHz (every board record's clock_hz)"
+  },
+  {
+   "key": "memory_base",
+   "value": 0,
+   "source": "model: the runtime addresses device memory from 0"
+  },
+  {
+   "key": "memory_bytes",
+   "value": 1073741824,
+   "source": "model window (runs pass 8 GiB)"
+  },
+  {
+   "key": "pc_bytes",
+   "value": 268435456,
+   "source": "model: HBM pseudo-channel byte counters only"
+  },
+  {
+   "key": "pc_count",
+   "value": 32,
+   "source": "model: HBM pseudo-channel byte counters only"
+  },
+  {
+   "key": "pc_first",
+   "value": 0,
+   "source": "model: HBM pseudo-channel byte counters only"
+  },
+  {
+   "key": "lookup_cycles",
+   "value": 3,
+   "source": "detailed path only"
+  },
+  {
+   "key": "service_cycles",
+   "value": 1,
+   "source": "detailed path only"
+  },
+  {
+   "key": "noc_stages",
+   "value": 3,
+   "source": "derived: 3 cycles per hop (NOC_LINK_STAGES 2 elastic stages + router, rtl/noc/tnca_mesh.v, tnca_router.v)"
+  },
+  {
+   "key": "noc_bytes_per_cycle",
+   "value": 16,
+   "source": "detailed path only"
+  },
+  {
+   "key": "hbm_latency_cycles",
+   "value": 23,
+   "source": "FIT (calibration split only): latency_fit"
+  },
+  {
+   "key": "hbm_bytes_per_cycle",
+   "value": 32,
+   "source": "detailed path only"
+  },
+  {
+   "key": "outlet_issue_cycles",
+   "value": 1,
+   "source": "detailed path only"
+  },
+  {
+   "key": "trace_events",
+   "value": 100000,
+   "source": "model: trace buffer bound"
+  },
+  {
+   "key": "dma_queue",
+   "value": 1,
+   "source": "rtl/core/tnca_core.v stall_txf: one command in the transfer engine, the next waits in R"
+  },
+  {
+   "key": "dma_unit_slots",
+   "value": 8,
+   "source": "rtl/core/tnca_tensor.v NSLOT = NTAG/2 = 8 load slots"
+  },
+  {
+   "key": "dma_outstanding",
+   "value": 16,
+   "source": "rtl/core/tnca_tensor.v NTAG 16 memory tags"
+  },
+  {
+   "key": "dma_setup_cycles",
+   "value": 2,
+   "source": "derived: rtl/core/tnca_tensor.v S_TSETUP/S_TCHK then S_TMUL one multiply per dimension (2 + rank)"
+  },
+  {
+   "key": "dma_rf_cycles",
+   "value": 1,
+   "source": "derived: one window unit written per cycle"
+  },
+  {
+   "key": "issue_cycles",
+   "value": 1,
+   "source": "derived: one instruction leaves R per cycle (tnca_core.v)"
+  },
+  {
+   "key": "scalar_latency",
+   "value": 1,
+   "source": "derived: scalar ALU result usable at c+1"
+  },
+  {
+   "key": "scalar_mul_latency",
+   "value": 5,
+   "source": "derived: MUL_LAT 5 (tnca_core.v r_wb_delay)"
+  },
+  {
+   "key": "vector_int_latency",
+   "value": 3,
+   "source": "derived: vector integer c+3"
+  },
+  {
+   "key": "vector_fp_latency",
+   "value": 5,
+   "source": "derived: FP_LAT 5 (vector FP and convert)"
+  },
+  {
+   "key": "convert_latency",
+   "value": 5,
+   "source": "derived: FP_LAT 5"
+  },
+  {
+   "key": "compare_latency",
+   "value": 1,
+   "source": "derived: v.cmp -> predicate c+1"
+  },
+  {
+   "key": "predicate_latency",
+   "value": 2,
+   "source": "M1 value (predicate ops; not separately derived)"
+  },
+  {
+   "key": "shuffle_latency",
+   "value": 3,
+   "source": "derived: shuffle to vector c+3"
+  },
+  {
+   "key": "reduction_latency",
+   "value": 1,
+   "source": "derived: integer reduction to scalar c+1"
+  },
+  {
+   "key": "fp_reduction_latency",
+   "value": 16,
+   "source": "derived: FP reduction (fold through the FMA array) c+16"
+  },
+  {
+   "key": "sfu_occupancy",
+   "value": 27,
+   "source": "derived: next SFU pass c+27 (tnca_sfu.v)"
+  },
+  {
+   "key": "sfu_latency",
+   "value": 28,
+   "source": "derived: SFU result c+28"
+  },
+  {
+   "key": "load_latency",
+   "value": 5,
+   "source": "derived: load-use = last response + 5 (tnca_lsu.v writeback path)"
+  },
+  {
+   "key": "lsu_slots",
+   "value": 2,
+   "source": "detailed/non-pipeline path only (core_pipeline=1 uses the two LSU_INFLIGHT units)"
+  },
+  {
+   "key": "lsu_beat_slots",
+   "value": 8,
+   "source": "derived: 8 beats per LSU unit (tnca_lsu_pair.v)"
+  },
+  {
+   "key": "barrier_latency",
+   "value": 2,
+   "source": "M1 value (mb.arm/test result)"
+  },
+  {
+   "key": "acc_read_latency",
+   "value": 3,
+   "source": "derived: a.vread c+3"
+  },
+  {
+   "key": "mtx_abuf",
+   "value": 1,
+   "source": "image: MTX_ABUF 1"
+  },
+  {
+   "key": "mtx_rf_read_cycles",
+   "value": 2,
+   "source": "RTL matrix oracle: busy 2a+18K+6 with ABUF (rtl_oracle/matrix_oracle.py)"
+  },
+  {
+   "key": "mtx_mac_cycles",
+   "value": 1,
+   "source": "RTL matrix oracle (16 MACs per K step, 1 cycle each)"
+  },
+  {
+   "key": "mtx_mac_unbuffered_cycles",
+   "value": 2,
+   "source": "RTL matrix oracle: 34K+6 unbuffered"
+  },
+  {
+   "key": "mtx_pipe_cycles",
+   "value": 4,
+   "source": "RTL matrix oracle: +6 = pipe 4 + 1 + complete 1"
+  },
+  {
+   "key": "mtx_complete_cycles",
+   "value": 1,
+   "source": "RTL matrix oracle"
+  },
+  {
+   "key": "mtx_zero_cycles",
+   "value": 16,
+   "source": "RTL matrix oracle: m.zero busy 17 = 16 + complete"
+  },
+  {
+   "key": "mtx_row_cycles",
+   "value": 1,
+   "source": "RTL matrix oracle: a.vwrite 2, a.mul/fma.row 7"
+  },
+  {
+   "key": "launch_cycles",
+   "value": 5,
+   "source": "derived: rtl grid dispatch, first instruction ~5 cycles after launch_valid"
+  },
+  {
+   "key": "dispatch_cycles",
+   "value": 6,
+   "source": "derived: next program 6 cycles after core idle (tnca_grid_dispatch.v)"
+  },
+  {
+   "key": "host_launch_cycles",
+   "value": 405467,
+   "source": "FIT (calibration split only): host_fit"
+  },
+  {
+   "key": "host_transfer_cycles",
+   "value": 0,
+   "source": "FIT (calibration split only): host_fit"
+  },
+  {
+   "key": "host_transfer_cycles_per_kib",
+   "value": 4448,
+   "source": "FIT (calibration split only): host_fit"
+  },
+  {
+   "key": "memory_model",
+   "value": 1,
+   "source": "model: 1 = timeline memory (include/tnca_timeline_memory.hpp)"
+  },
+  {
+   "key": "tl_noc_inject_cycles",
+   "value": 1,
+   "source": "derived: core NI injects in the request cycle (tnca_core_ni.v)"
+  },
+  {
+   "key": "tl_noc_eject_cycles",
+   "value": 2,
+   "source": "derived: slice/core NI ejection (tnca_slice_ni.v)"
+  },
+  {
+   "key": "tl_slice_hit_occupancy",
+   "value": 3,
+   "source": "derived: tnca_nuca_slice.v SEL/LOOK/HIT engine states"
+  },
+  {
+   "key": "tl_slice_hit_latency",
+   "value": 4,
+   "source": "derived: hit response leaves at accept+4"
+  },
+  {
+   "key": "tl_slice_miss_occupancy",
+   "value": 4,
+   "source": "derived: SEL/LOOK/MISS/ALLOC"
+  },
+  {
+   "key": "tl_slice_mreq_occupancy",
+   "value": 2,
+   "source": "derived: MREQ, memory request at S+6"
+  },
+  {
+   "key": "tl_slice_fill_occupancy",
+   "value": 2,
+   "source": "derived: FILL"
+  },
+  {
+   "key": "tl_slice_wake_occupancy",
+   "value": 2,
+   "source": "derived: WAKE per target"
+  },
+  {
+   "key": "tl_slice_writeback_occupancy",
+   "value": 2,
+   "source": "derived: dirty victim E_WBRD/E_WBSND"
+  },
+  {
+   "key": "tl_slice_to_outlet_cycles",
+   "value": 4,
+   "source": "derived: MEM_HOME_STAGES/LINK_STAGES links to the outlet adapter (+4)"
+  },
+  {
+   "key": "tl_outlet_to_slice_cycles",
+   "value": 13,
+   "source": "FIT (calibration split only): latency_fit"
+  },
+  {
+   "key": "tl_outlet_read_issue_cycles",
+   "value": 2,
+   "source": "derived: rtl line AXI adapter issue stage, 2 cycles per read line"
+  },
+  {
+   "key": "tl_outlet_write_issue_cycles",
+   "value": 3,
+   "source": "derived: 3 cycles per write line"
+  },
+  {
+   "key": "tl_outlet_beat_cycles",
+   "value": 1,
+   "source": "derived: 64-byte line = 2 beats of AXI_DATA_W 256"
+  },
+  {
+   "key": "tl_hbm_write_latency_cycles",
+   "value": 23,
+   "source": "FIT (calibration split only): latency_fit"
+  },
+  {
+   "key": "core_pipeline",
+   "value": 1,
+   "source": "model: 1 = the RTL pipeline structure (parking, freezes, LSU units)"
+  },
+  {
+   "key": "branch_taken_cycles",
+   "value": 4,
+   "source": "derived: a taken branch costs its context 4 fetch slots"
+  },
+  {
+   "key": "park_refetch_cycles",
+   "value": 5,
+   "source": "derived: RCTX_SWITCH 2 parked context refetches 5 cycles after its wake"
+  },
+  {
+   "key": "vrf_banks",
+   "value": 4,
+   "source": "image: USE_BANKED_VRF 1, NUM_BANKS 4 (tnca_vrf_banked.v)"
+  },
+  {
+   "key": "vrf_bank_conflict_cycles",
+   "value": 1,
+   "source": "derived: one read per bank per cycle (tnca_operand_collector.v)"
+  },
+  {
+   "key": "lsu_setup_cycles",
+   "value": 1,
+   "source": "derived: first beat at c+2 (tnca_lsu.v)"
+  },
+  {
+   "key": "lsu_vector_load_extra",
+   "value": 1,
+   "source": "derived: vector load one cycle after a scalar load"
+  },
+  {
+   "key": "lsu_complete_cycles",
+   "value": 3,
+   "source": "derived: unit free after the last response"
+  },
+  {
+   "key": "lsu_writeback_cycles",
+   "value": 1,
+   "source": "derived: an LSU completion takes the writeback port (wb_steal)"
+  },
+  {
+   "key": "fp_compare_latency",
+   "value": 4,
+   "source": "derived: vf.cmp -> predicate c+4"
+  },
+  {
+   "key": "shuffle_scalar_latency",
+   "value": 1,
+   "source": "derived: extract to scalar c+1"
+  },
+  {
+   "key": "reduction_vector_extra",
+   "value": 2,
+   "source": "derived: integer reduction broadcast c+3"
+  },
+  {
+   "key": "dma_store_register_cycles",
+   "value": 3,
+   "source": "derived: S_SREAD per 64-byte window register (tnca_tensor.v)"
+  },
+  {
+   "key": "dma_drain_cycles",
+   "value": 2,
+   "source": "derived: S_TDRAIN/S_SDRAIN then S_DONE"
+  },
+  {
+   "key": "vrf_prefetch",
+   "value": 1,
+   "source": "image: VRF_PREFETCH 1"
+  },
+  {
+   "key": "fp_reduction_vector_extra",
+   "value": 1,
+   "source": "derived: FP reduction broadcast c+17"
+  },
+  {
+   "key": "time_quantum",
+   "value": 1000,
+   "source": "model: conservative lookahead cap (simulation speed; exact up to same-time ordering)"
+  }
+ ]
+}

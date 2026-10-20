@@ -17,9 +17,19 @@ wall-time comparison only.
 
 The delivered default configuration (B40-N) is reproduced from the compile
 preflight's result.json knobs for each point when --knobs-from is given.
+
+--dataset BOARD_DATASET.json[.gz] --split calibration --tree fe1b runs every
+distinct (point, knobs) configuration of that software tree's board records
+in the named split(s), with exactly the knobs the board record states and
+nothing else set (a knob the board left unset keeps its default, e.g. the
+image's three memory ports and eight outstanding lines). The source root must
+be a checkout of that tree. predictions.py turns the results into
+calibrate.py prediction rows.
 """
 import argparse
 import concurrent.futures as cf
+import gzip
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -50,6 +60,17 @@ def child(a):
     for name in tlm_backend.NAMES:
         tnca.EVIDENCE[name] = tlm_backend.EVIDENCE
     point = registry.get(a.point[0])
+    if os.environ.get('TNCA_TLM_UNTIMED_COLD') == '1':
+        # The cold call (compile, cold setup, first run) runs untimed; the
+        # model is timed from the first steady call, the measured one.
+        original = tnca._steady
+
+        def timed_steady(*args, **kwargs):
+            for inst in tlm_backend.backend_class().instances:
+                if inst.alive():
+                    inst.set_timing(True)
+            return original(*args, **kwargs)
+        tnca._steady = timed_steady
     t = time.monotonic()
     # Native storage: the cold call may clone device literals (archbench's
     # cold_setup), so the graph is measured on the steady call(s) after it,
@@ -73,6 +94,26 @@ def child(a):
         (inst.dir/'launches.json').write_text(json.dumps(inst.launches, indent=1) + '\n')
         instances.append(info)
     rec['systemc_model'] = instances
+    # Model graph makespan of the measured call: first launch start to last
+    # launch end on the model clock, host gaps included (server host-time
+    # model). The measured call is the last `launches` launches of the session.
+    t = rec.get('time') or {}
+    insts = tlm_backend.backend_class().instances
+    n = t.get('launches')
+    measured = 'steady' if a.timed else 'cold'
+    if not a.timed and a.graph_launches:
+        # No steady call: the graph is the cold call's last N launches (the
+        # ones the generated wrapper makes); what precedes them is the native
+        # path's cold setup (device-literal copies made while compiling).
+        n = a.graph_launches
+    if insts and n:
+        ls = insts[-1].launches[-n:]
+        per = (t.get('per_launch') or [])[-n:]
+        if ls and all(l.get('status') == 0 for l in ls):
+            rec['model_graph'] = dict(graph_cycles=ls[-1]['end_cycle'] - ls[0]['start_cycle'],
+                                      device_cycles=sum(l['cycles'] for l in ls), measured_call=measured,
+                                      launches=[dict(kernel=p.get('kernel'), cycles=l['cycles'])
+                                                for p, l in zip(per or [{}] * len(ls), ls)])
     print('ARCHBENCH-RECORD ' + json.dumps(rec, default=str), flush=True)
 
 
@@ -84,6 +125,25 @@ def knobs_for(point, knobs_from):
         return dict(B40N)
     knobs = json.loads((run/'result.json').read_text())['knobs']
     return {k: v for k, v in knobs.items() if v is not None}
+
+
+def dataset_items(path, splits, tree, only_points):
+    raw = Path(path).read_bytes()
+    doc = json.loads(gzip.decompress(raw) if str(path).endswith('.gz') else raw)
+    seen = {}
+    for r in doc['rows']:
+        if r['split'] not in splits or not (r.get('software_tree') or '').startswith(tree):
+            continue
+        if only_points and r['point'] not in only_points:
+            continue
+        knobs = {k: v for k, v in sorted((r.get('knobs') or {}).items()) if k != 'TNCA_OPERATING_CLOCK_EVIDENCE'}
+        tag = hashlib.sha256(json.dumps(knobs, sort_keys=True).encode()).hexdigest()[:10]
+        cost = sum(l.get('cycles') or 0 for l in r.get('launches') or [])
+        key = f"{r['point']}@{tag}"
+        seen[key] = (r['point'], knobs, max(cost, seen.get(key, (0, 0, 0))[2]), len(r.get('launches') or []))
+    # Longest first, so a parallel campaign is not left waiting on one point.
+    order = sorted(seen.items(), key=lambda kv: -kv[1][2])
+    return [(key, point, knobs) for key, (point, knobs, _c, _n) in order], {k: v[3] for k, v in order}
 
 
 def summarize(rec, wall):
@@ -101,7 +161,13 @@ def summarize(rec, wall):
                 model_transfer_host_s=sum(m['host_seconds'].get('upload', 0) + m['host_seconds'].get('download', 0)
                                           for m in model) if model else None,
                 model_retired=sum(m['retired'] for m in model) if model else None,
-                model_dirs=[m['model_dir'] for m in model], evidence=rec.get('evidence_level'))
+                model_dirs=[m['model_dir'] for m in model], evidence=rec.get('evidence_level'),
+                model_graph=rec.get('model_graph'),
+                # The only problem is the cold call's extra setup launches
+                # (outputs matched the reference: archbench lists a mismatch
+                # as a second problem).
+                cold_setup_only=(rec.get('status') == 'not-measured' and len(rec.get('problems') or []) == 1
+                                 and 'the generated wrapper makes' in rec['problems'][0]))
 
 
 def parent(a):
@@ -111,7 +177,11 @@ def parent(a):
     # Work items: (key, point, knobs). A suite or --point names the delivered
     # configuration; --preflight-runs takes every (point, configuration) of a
     # compile preflight with that run's own knobs (e.g. the A/B experiments).
-    items = [(p, p, knobs_for(p, a.knobs_from)) for p in (a.point or [])]
+    items = [] if a.dataset else [(p, p, knobs_for(p, a.knobs_from)) for p in (a.point or [])]
+    board_launches = {}
+    if a.dataset:
+        found, board_launches = dataset_items(a.dataset, set(a.split or ['calibration']), a.tree or '', set(a.point or []))
+        items += [i for i in found if not a.key or i[0] in a.key]
     if a.suite:
         suite = json.loads(Path(a.suite).read_text())
         items += [(p['id'], p['id'], knobs_for(p['id'], a.knobs_from)) for p in suite['points']
@@ -138,8 +208,12 @@ def parent(a):
         env = {k: v for k, v in os.environ.items() if not k.startswith(('TNCA_', 'TRITON_', 'TORCHINDUCTOR_'))
                or k == 'TNCA_CACHE'}  # where `make device` / device.prepare put the RTL simulator
         env.update(HARNESS)
-        env.update(RUNTIME)
+        if a.dataset:   # the board record's knobs and nothing else
+            env.update(TNCA_DEADLINE=RUNTIME['TNCA_DEADLINE'], TNCA_HOST_TIMEOUT=RUNTIME['TNCA_HOST_TIMEOUT'])
+        else:
+            env.update(RUNTIME)
         env.update(knobs)
+        env.update(dict(kv.split('=', 1) for kv in a.env or []))
         env.update(TNCA_BACKEND=a.backend, TNCA_TORCH_DEVICE=a.torch_device,
                    PYTHONPATH=os.pathsep.join(str(x) for x in (root, root/'python', root/'compiler/python',
                                                               root/'tools/asm', HERE)),
@@ -149,7 +223,7 @@ def parent(a):
                    TNCA_TLM_OUT=str(run_dir/'model'), TNCA_TLM_MONITOR=a.monitor)
         if a.backend in ('sim-file', 'systemc-tlm'):
             env.pop('TNCA_ACTIVE_CORES', None)   # per-program backends have no physical grid
-        elif a.active_cores:
+        elif a.active_cores and not a.dataset:
             env['TNCA_ACTIVE_CORES'] = a.active_cores
         if a.torch_extensions_dir:
             env['TORCH_EXTENSIONS_DIR'] = a.torch_extensions_dir
@@ -159,8 +233,18 @@ def parent(a):
             env['TNCA_TLM_MEMORY_BYTES'] = a.memory_bytes
         (run_dir/'env.json').write_text(json.dumps({k: v for k, v in env.items()
                                                     if k.startswith(('TNCA_', 'TRITON', 'TORCH'))}, indent=1))
+        timed = a.timed
+        if a.timed_auto and key in board_launches:
+            # One launch: its graph makespan is the launch, and the cold call
+            # (archbench's deterministic sample) measures it; a multi-launch
+            # graph is measured on a steady call, as on the board.
+            timed = 0 if board_launches[key] == 1 else 1
         cmd = [sys.executable, '-u', str(Path(__file__).resolve()), '--child', '--source-root', str(root),
-               '--point', point, '--warmup', str(a.warmup), '--timed', str(a.timed)]
+               '--point', point, '--warmup', str(a.warmup), '--timed', str(timed)]
+        if a.timed_auto and key in board_launches and timed == 0:
+            cmd += ['--graph-launches', str(board_launches[key])]
+        if a.untimed_cold and timed > 0:
+            env['TNCA_TLM_UNTIMED_COLD'] = '1'
         t = time.monotonic()
         with (run_dir/'child.log').open('w') as log:
             try:
@@ -214,10 +298,20 @@ def main():
     ap.add_argument('--monitor', default='aggregate')
     ap.add_argument('--memory-bytes')
     ap.add_argument('--active-cores', help='override the delivered TNCA_ACTIVE_CORES=1 core count (physical-grid backends)')
+    ap.add_argument('--dataset', help='board timing dataset: run its configurations (see above)')
+    ap.add_argument('--split', action='append', help='dataset split(s) to run (default calibration)')
+    ap.add_argument('--key', action='append', help='with --dataset: only these POINT@KNOBHASH configurations')
+    ap.add_argument('--tree', help='software tree prefix of the dataset records to run (the source root\'s tree)')
+    ap.add_argument('--timed-auto', action='store_true',
+                    help='with --dataset: no steady call for a one-launch board record, one otherwise')
+    ap.add_argument('--untimed-cold', action='store_true',
+                    help='run the cold call untimed when a steady call is measured (timeline memory only)')
+    ap.add_argument('--env', action='append', help='KEY=VALUE set for every run after the knobs (e.g. TNCA_RTL_MEM_PORTS=3)')
     ap.add_argument('--jobs', type=int, default=4)
     ap.add_argument('--timeout', type=float, default=7200)
     ap.add_argument('--warmup', type=int, default=0)
     ap.add_argument('--timed', type=int, default=1)
+    ap.add_argument('--graph-launches', type=int, help=argparse.SUPPRESS)
     a = ap.parse_args()
     if a.child:
         child(a)

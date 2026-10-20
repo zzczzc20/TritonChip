@@ -18,6 +18,14 @@ is an R40 performance result, and the model is not qualified as a
 complete-chip timing reference. Do not bypass refusals or substitute a memory
 replay for a complete-chip experiment.
 
+**M2 (board calibration): uncalibrated by doc/r40_tasks_and_acceptance.md
+sec 3.4.** With the RTL-structured board configuration
+(`configs/r40-board-m2.cfg`) fitted on the R40-04 calibration split only, the
+frozen holdout gives a median absolute graph-makespan error of 21.5 % and a
+p95 of 34.7 % (limits 10 % / 20 %): load/store streaming kernels are 10-36 %
+too fast, transfer/matrix-engine kernels and the llama graphs are within about
+6 %. Evidence and the per-family breakdown: `evidence/r40/v3/systemc_m2/`.
+
 ## Execution host and dependency identity
 
 Build and run on the GB10 jump host. The FPGA implementation server is reserved
@@ -109,6 +117,52 @@ DESCRIPTOR_FAULT, ...) is status 1, a deadline overrun status 2, and a model
 refusal or deadlock terminates the process with `ERR`, which the backend
 raises as a lost device. Host reads and writes are coherent with the NUCA
 homes and cost no modeled time.
+
+## Board timing structure, calibration and judgement (M2)
+
+`configs/r40-board-m2.cfg` is the 3-core U280 board (attempt03 image, 90 MHz)
+with the RTL's structure switched on; `configs/r40-board-m2.sources.json`
+gives the RTL source (or FIT) of every key. `configs/r40-three-core.cfg`
+keeps the M1 behaviour exactly.
+
+- `memory_model=1`: the analytic timeline memory
+  (`include/tnca_timeline_memory.hpp`): home-slice engine states, MSHRs,
+  round-robin victims, one-flit NoC packets, outlet issue stages and
+  outstanding lines; `tl_*` keys.
+- `core_pipeline=1`: the core's single in-order pipeline: two LSU units
+  (`LSU_INFLIGHT=2`), freezes for non-switching stalls, context parking and
+  refetch (`RCTX_SWITCH=2`), taken-branch refetch, banked-VRF read conflicts
+  with `VRF_PREFETCH`, the writeback-port steal, RTL latencies; and the
+  transfer engine's RTL sequencing (setup 2+rank, 8 load slots, store
+  register reads, transposed column blocks).
+- Host time (server mode only): `host_launch_cycles` before every launch,
+  `host_transfer_cycles` + `host_transfer_cycles_per_kib` per host transfer.
+- `time_quantum`: conservative lookahead; a context skips a wait that ends
+  before any other pending activity (only same-cycle event order changes).
+- Serve command `T 0|1` turns timing off/on: untimed execution has every
+  architectural effect and no modeled time (used for a graph's cold call).
+
+Runner and judges:
+
+```sh
+# every distinct (point, knobs) of a software tree's board records, with exactly those knobs
+run_graphs.py --source-root SRC_TREE --binary BUILD/tnca-chip --config configs/r40-board-m2.cfg \
+    --dataset board_timing_dataset.json[.gz] --split calibration --tree files:fe1b \
+    --memory-bytes 8589934592 --monitor off --timed-auto --untimed-cold --out FRESH_DIR
+predictions.py --results FRESH_DIR/results.json --config CFG --binary BIN --out predictions.jsonl
+fit.py host --records 'RECORDS/*.jsonl' --root SRC --out host_fit.json            # calibration rows only
+fit.py latency --dataset D --root SRC --params hbm_latency_cycles,tl_outlet_to_slice_cycles \
+    --grid 20:5=p1.jsonl --grid 35:5=p2.jsonl ... --out latency_fit.json         # calibration rows only
+fit.py report --config CFG --host host_fit.json --latency latency_fit.json \
+    --sources configs/r40-board-m2.sources.json --out fit_report.json
+calibrate.py evaluate --dataset D --predictions predictions.jsonl --fit-report fit_report.json --out fidelity.json
+directional.py --dataset D --predictions predictions.jsonl --fidelity fidelity.json --out directional.json
+```
+
+`--timed-auto` measures a one-launch graph on the cold call's graph launch
+(no steady call) and a multi-launch graph on one steady call;
+`--untimed-cold` runs that cold call untimed. `--env KEY=VALUE` sets a
+runtime knob for every run (e.g. `TNCA_RTL_MEM_PORTS=3`).
 
 ## Numeric authority: offline RTL oracles
 

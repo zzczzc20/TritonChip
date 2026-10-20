@@ -181,7 +181,7 @@ Same suite, tiny and small tiers with all three model cores active (`TNCA_ACTIVE
 
 A/B experiment configurations of the compile preflight (B_fix2) at tiny/small/medium tiers: **64 / 64 compiled configurations pass**; 1 configuration failed compilation in the preflight itself (code store overflow) and fails identically here. All runs use the v3 campaign's watchdog (`TNCA_DEADLINE=2e11`); under the runtime default of 5e6 cycles five gemm_tile launches would be aborted (`bconfig_tiny_small_medium.json`).
 
-HBM-core suite (14 points; 8 GiB model window, campaign watchdog, 4 h per point): 13 pass of 13 completed; `model.llama_prefill/hbm/fp16-b1-s512` was still running when this bundle was collected (no result is claimed for it) (`hbm_core.json`):
+HBM-core suite (14 points; 8 GiB model window, campaign watchdog, 4 h per point): 14 pass of 14 completed (`hbm_core.json`):
 
 | point | status | launches | device_cycles | max_rel_err | tol | process_wall_s | model_launch_host_s |
 |---|---|---:|---:|---:|---:|---:|---:|
@@ -198,6 +198,7 @@ HBM-core suite (14 points; 8 GiB model window, campaign watchdog, 4 h per point)
 | `op.attention_prefill/large/fp16-b1-h32-s512-d64` | pass | 7 | 2255871064 | 0.000263 | 0.02 | 1619.76 | 1606.21 |
 | `model.llama_decode/hbm/fp16-b1-p512` | pass | 84 | 566228643 | 0.00149 | 0.05 | 383.83 | 356.80 |
 | `op.matmul/hbm/fp16-m4096-k4096-n4096` | pass | 1 | 12602408317 | 0.000332 | 0.02 | 5784.42 | 5774.65 |
+| `model.llama_prefill/hbm/fp16-b1-s512` | pass | 78 | 13098983214 | 0.000969 | 0.05 | 6495.56 | 6459.63 |
 
 ## 6. Speed: model vs RTL simulator on the same graphs
 
@@ -211,7 +212,7 @@ Same tiny graphs, per-program launches in both (`systemc-tlm` vs `sim-file` core
 | `op.layernorm/tiny/fp16-r4-d64` | 3418 | 13.58 | 252 | 2455 | 0.0029 | 844223 | 4670x | 99 / 4.3 |
 | `op.attention_decode/tiny/fp16-b1-h2-l16-d16` | 9920 | 30.99 | 320 | 9227 | 0.0095 | 974855 | 3274x | 136 / 5.0 |
 
-For these tiny graphs the model time is dominated by fixed host-side launch overhead (about 2 ms per launch on this path, versus well under a millisecond of simulation). On the 20 native77 graphs with more than 1 s of model time it sustains 1.1-3.2 million modeled cycles per host second (median 1.9 M; cold plus steady call cycles over `model_launch_host_s`), and 1.7-8.2 M (median 3.8 M) on the HBM-core points, i.e. roughly 3-4 orders of magnitude above the RTL simulator's 200-560 cycles per second.
+For these tiny graphs the model time is dominated by fixed host-side launch overhead (about 2 ms per launch on this path, versus well under a millisecond of simulation). On the 20 native77 graphs with more than 1 s of model time it sustains 1.1-3.2 million modeled cycles per host second (median 1.9 M; cold plus steady call cycles over `model_launch_host_s`), and 1.7-8.2 M (median 4.1 M) on the HBM-core points, i.e. roughly 3-4 orders of magnitude above the RTL simulator's 200-560 cycles per second.
 
 ## 7. RTL finding
 
@@ -241,7 +242,7 @@ Following the RTL bit-exactly exposed 17015 of 172912 float-to-integer test vect
 - `hbm_core.json`: HBM-core points
 - `rtl_vs_model_speed.json`: model vs RTL wall time on the same graphs
 - `mutation_avread_row.json`: mutant sensitivity check
-- Raw records, per-launch logs, counters, kernel assembly and oracle captures: GB10 `/home/zhongchun/tlm_m1/m1_raw_evidence.tar.gz` (46361311 bytes, sha256 `768297aa6b0f205fe88c6a339e4fba663ff0d203c9ff4f44d479412ce125fb9c`).
+- Raw records, per-launch logs, counters, kernel assembly and oracle captures: GB10 `/home/zhongchun/tlm_m1/m1_raw_evidence.tar.gz` (46378607 bytes, sha256 `eceefc676b439bee02307ed8035977e1984dab8d7db0205b789f1c43499c4574`).
 
 Reproduce on the GB10 (paths as used here):
 

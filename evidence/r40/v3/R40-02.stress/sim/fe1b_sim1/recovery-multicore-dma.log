@@ -1,0 +1,5 @@
+W1019 08:52:27.577000 3057173 torch/utils/cpp_extension.py:183] No CUDA runtime is found, using CUDA_HOME='/usr/local/cuda'
+PASS 3 recovery epochs with forced physical address reuse
+PASS stale event, copy, view, launch and growing resize rejected
+PASS old storage destruction preserves the new allocation at the same address
+r40-recovery-tests PASS (3/3) multicore_dma=True

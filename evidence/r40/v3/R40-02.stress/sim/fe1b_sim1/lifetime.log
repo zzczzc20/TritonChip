@@ -1,0 +1,4 @@
+  already built: /home/zhongchun/.cache/tnca/devices/core-sim-b8fb71a90255e476-2f12bdd465ea/tnca_device.vvp
+PASS retiring a buffer preserves two queued RTL tasks and delays address reuse
+PASS new use of retired storage is refused, final lease recycles its address
+r40-lifetime-tests PASS (2/2)

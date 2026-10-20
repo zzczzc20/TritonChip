@@ -1,0 +1,22 @@
+{
+  "host": "gx10-6646 (GB10)",
+  "root": "/home/zhongchun/r40v3_cuda_fe1b",
+  "source": "/home/zhongchun/r40v3_capgate_fe1b",
+  "software_tree": "files:fe1b5199db515440d2d3407aed61ef1eed5edb627e5baf9cda10be5a7198cf75",
+  "controller_sha256": "35c32b3bc0bd9d5c188478fd86c7a86dca5f9882c9e6bbb506047cd837dd0d4b",
+  "derived_from": "cuda_bc5a_controller.py (source path, tree and extension cache replaced)",
+  "launched_utc": "2026-10-20T00:31Z",
+  "environment": "launched after `source ~/tc_env/env.sh` (iverilog 12.0 / vvp / yosys / verilator wrappers on PATH)",
+  "attempts": [
+    {
+      "root": "/home/zhongchun/r40v3_cuda_fe1b_attempt1_nopath",
+      "launched_utc": "2026-10-20T00:31Z",
+      "result": "failed-preserved: native-recovery could not build the RTL harness, iverilog was not on PATH in the non-interactive shell; storage-owner-unit and signed-copy-range passed"
+    },
+    {
+      "root": "/home/zhongchun/r40v3_cuda_fe1b",
+      "launched_utc": "2026-10-20T00:36Z",
+      "result": "running"
+    }
+  ]
+}

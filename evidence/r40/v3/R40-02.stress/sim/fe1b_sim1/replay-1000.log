@@ -1,0 +1,9 @@
+  already built: /home/zhongchun/.cache/tnca/devices/core-vrf-sync-v5-a8f9e2a0291d254a-2f12bdd465ea/tnca_device_vrf5.vvp
+W1019 08:04:12.016000 2975120 torch/utils/cpp_extension.py:183] No CUDA runtime is found, using CUDA_HOME='/usr/local/cuda'
+PASS 1000 retained graph replays, bounded submission and storage/lease audit
+AUDIT {'epoch': 0, 'heap_capacity_bytes': 393216, 'heap_reserved_ranges': [], 'heap_allocated_bytes': 3072, 'heap_peak_bytes': 11264, 'code_allocated_bytes': 10176, 'code_peak_bytes': 10176}
+PASS retained multi-kernel Torch graph replay, updated input, artifact and byte audit
+PASS shape/stride guard and permanent invalidation before admission
+PASS changed storage alias rejected before admission
+PASS recovery epoch rejects whole graph without submission
+r40-replay-tests PASS (5/5)

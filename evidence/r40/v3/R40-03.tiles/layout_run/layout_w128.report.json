@@ -1,0 +1,528 @@
+{
+ "schema": "tnca-r40-v3-layout/1",
+ "width": 128,
+ "profile": "core-vrf-sync-v5",
+ "cases": [
+  {
+   "name": "transpose_pointwise_f32",
+   "width": 128,
+   "gemm_tile": null,
+   "shapes": [
+    [
+     33,
+     127
+    ]
+   ],
+   "dtypes": [
+    "torch.float32"
+   ],
+   "ok": true,
+   "kernels": [
+    {
+     "artifact": "477a4eeee4042289da7fea31ee1f9ff54f8464ea6546da380bd3c422e22189e7",
+     "widths": [
+      16,
+      32
+     ],
+     "gemm_tiles": [],
+     "reductions": [],
+     "spill": {
+      "estimated_peak": 6,
+      "scratch_bytes": 0,
+      "slots": 0
+     },
+     "resources": {
+      "accumulators": 8,
+      "barriers": 0,
+      "commands_outstanding": "unknown",
+      "descriptors": 0,
+      "rf_private_per_role": {
+       "role0": 5,
+       "role1": 5
+      },
+      "scratch_bytes": 4096,
+      "shared_windows": []
+     }
+    }
+   ],
+   "launches": 1
+  },
+  {
+   "name": "transpose_pointwise_f16",
+   "width": 128,
+   "gemm_tile": null,
+   "shapes": [
+    [
+     17,
+     65
+    ]
+   ],
+   "dtypes": [
+    "torch.float16"
+   ],
+   "ok": true,
+   "kernels": [
+    {
+     "artifact": "3200ca02fcfa3c538b5adfa91d722b57b43beba25418ce8283637b21b108b112",
+     "widths": [
+      16,
+      32
+     ],
+     "gemm_tiles": [],
+     "reductions": [],
+     "spill": {
+      "estimated_peak": 6,
+      "scratch_bytes": 0,
+      "slots": 0
+     },
+     "resources": {
+      "accumulators": 8,
+      "barriers": 0,
+      "commands_outstanding": "unknown",
+      "descriptors": 0,
+      "rf_private_per_role": {
+       "role0": 9,
+       "role1": 9
+      },
+      "scratch_bytes": 12288,
+      "shared_windows": []
+     }
+    }
+   ],
+   "launches": 1
+  },
+  {
+   "name": "transpose_plus_contiguous",
+   "width": 128,
+   "gemm_tile": null,
+   "shapes": [
+    [
+     65,
+     33
+    ],
+    [
+     33,
+     65
+    ]
+   ],
+   "dtypes": [
+    "torch.float32",
+    "torch.float32"
+   ],
+   "ok": true,
+   "kernels": [
+    {
+     "artifact": "396201981bac6dff6427a6ab127b74cfbbb19cb12702b358b2feb8b88e00b70c",
+     "widths": [
+      16,
+      64
+     ],
+     "gemm_tiles": [],
+     "reductions": [],
+     "spill": {
+      "estimated_peak": 7,
+      "scratch_bytes": 0,
+      "slots": 0
+     },
+     "resources": {
+      "accumulators": 8,
+      "barriers": 0,
+      "commands_outstanding": "unknown",
+      "descriptors": 0,
+      "rf_private_per_role": {
+       "role0": 3,
+       "role1": 3
+      },
+      "scratch_bytes": 40960,
+      "shared_windows": []
+     }
+    }
+   ],
+   "launches": 1
+  },
+  {
+   "name": "column_strided_view",
+   "width": 128,
+   "gemm_tile": null,
+   "shapes": [
+    [
+     31,
+     130
+    ]
+   ],
+   "dtypes": [
+    "torch.float32"
+   ],
+   "ok": true,
+   "kernels": [
+    {
+     "artifact": "211920c5a20ce03a428d327489b1b6f5433803dee0bed0af4c2d545b0ee08b17",
+     "widths": [
+      128
+     ],
+     "gemm_tiles": [],
+     "reductions": [],
+     "spill": {
+      "estimated_peak": 34,
+      "scratch_bytes": 0,
+      "slots": 0
+     },
+     "resources": {
+      "accumulators": 0,
+      "barriers": 0,
+      "commands_outstanding": "unknown",
+      "descriptors": 0,
+      "rf_private_per_role": {
+       "role0": 38,
+       "role1": 38,
+       "role2": 38,
+       "role3": 38
+      },
+      "scratch_bytes": 0,
+      "shared_windows": []
+     }
+    }
+   ],
+   "launches": 1
+  },
+  {
+   "name": "int64_transposed",
+   "width": 128,
+   "gemm_tile": null,
+   "shapes": [
+    [
+     65,
+     33
+    ]
+   ],
+   "dtypes": [
+    "torch.int64"
+   ],
+   "ok": true,
+   "kernels": [
+    {
+     "artifact": "8e352c175c627799cba1f95ecb45eeec4e38e3c30158cdcf25f5447a0d15c367",
+     "widths": [],
+     "gemm_tiles": [],
+     "reductions": [],
+     "spill": {},
+     "resources": {
+      "accumulators": 0,
+      "barriers": 0,
+      "commands_outstanding": "unknown",
+      "descriptors": 0,
+      "rf_private_per_role": {
+       "role0": 40,
+       "role1": 40,
+       "role2": 40,
+       "role3": 40
+      },
+      "scratch_bytes": 0,
+      "shared_windows": []
+     }
+    }
+   ],
+   "launches": 1
+  },
+  {
+   "name": "transpose_sum",
+   "width": 128,
+   "gemm_tile": null,
+   "shapes": [
+    [
+     127,
+     33
+    ]
+   ],
+   "dtypes": [
+    "torch.float32"
+   ],
+   "ok": true,
+   "kernels": [
+    {
+     "artifact": "652e54f31c3f41dd4d3b5b0345435b4afd32272f119b8900c71b3ffaf29874cc",
+     "widths": [],
+     "gemm_tiles": [],
+     "reductions": [],
+     "spill": {},
+     "resources": {
+      "accumulators": 0,
+      "barriers": 0,
+      "commands_outstanding": "unknown",
+      "descriptors": 0,
+      "rf_private_per_role": {
+       "role0": 12,
+       "role1": 12,
+       "role2": 12,
+       "role3": 12
+      },
+      "scratch_bytes": 0,
+      "shared_windows": []
+     }
+    },
+    {
+     "artifact": "326c128bfa3cc6b5867d7a5286ce58b73b7549f5911d22f2cbe9a5bfdde86cf1",
+     "widths": [
+      32
+     ],
+     "gemm_tiles": [],
+     "reductions": [
+      [
+       32,
+       "add",
+       0
+      ]
+     ],
+     "spill": {
+      "estimated_peak": 9,
+      "scratch_bytes": 0,
+      "slots": 0
+     },
+     "resources": {
+      "accumulators": 0,
+      "barriers": 0,
+      "commands_outstanding": "unknown",
+      "descriptors": 0,
+      "rf_private_per_role": {
+       "role0": 9,
+       "role1": 9,
+       "role2": 9,
+       "role3": 9
+      },
+      "scratch_bytes": 0,
+      "shared_windows": []
+     }
+    }
+   ],
+   "launches": 2
+  },
+  {
+   "name": "transpose_amax",
+   "width": 128,
+   "gemm_tile": null,
+   "shapes": [
+    [
+     65,
+     17
+    ]
+   ],
+   "dtypes": [
+    "torch.float32"
+   ],
+   "ok": true,
+   "kernels": [
+    {
+     "artifact": "4145f97dc0207bd121fbc53bffeeed3bc67a5a5e119a1fee15f093711e94f998",
+     "widths": [],
+     "gemm_tiles": [],
+     "reductions": [],
+     "spill": {},
+     "resources": {
+      "accumulators": 0,
+      "barriers": 0,
+      "commands_outstanding": "unknown",
+      "descriptors": 0,
+      "rf_private_per_role": {
+       "role0": 12,
+       "role1": 12,
+       "role2": 12,
+       "role3": 12
+      },
+      "scratch_bytes": 0,
+      "shared_windows": []
+     }
+    },
+    {
+     "artifact": "a8aa4d75e5c8e64fd70cdb26368e2ed5c66260848293cb79ac31a979b293fb8d",
+     "widths": [
+      32
+     ],
+     "gemm_tiles": [],
+     "reductions": [
+      [
+       32,
+       "max_prop",
+       0
+      ]
+     ],
+     "spill": {
+      "estimated_peak": 9,
+      "scratch_bytes": 0,
+      "slots": 0
+     },
+     "resources": {
+      "accumulators": 0,
+      "barriers": 0,
+      "commands_outstanding": "unknown",
+      "descriptors": 0,
+      "rf_private_per_role": {
+       "role0": 13,
+       "role1": 13,
+       "role2": 13,
+       "role3": 13
+      },
+      "scratch_bytes": 0,
+      "shared_windows": []
+     }
+    }
+   ],
+   "launches": 2
+  },
+  {
+   "name": "cumsum_scan_retile",
+   "width": 128,
+   "gemm_tile": null,
+   "shapes": [
+    [
+     3,
+     127
+    ]
+   ],
+   "dtypes": [
+    "torch.float32"
+   ],
+   "ok": true,
+   "kernels": [
+    {
+     "artifact": "f41482b3b561f6c0add810c29a43ea4c8cf487bcbdb2b8c53008f7f5c31a5b84",
+     "widths": [],
+     "gemm_tiles": [],
+     "reductions": [],
+     "spill": {},
+     "resources": {
+      "accumulators": 0,
+      "barriers": 0,
+      "commands_outstanding": "unknown",
+      "descriptors": 0,
+      "rf_private_per_role": {
+       "role0": 12,
+       "role1": 12,
+       "role2": 12,
+       "role3": 12
+      },
+      "scratch_bytes": 0,
+      "shared_windows": []
+     }
+    }
+   ],
+   "launches": 1
+  },
+  {
+   "name": "linear_transposed_weight",
+   "width": 128,
+   "gemm_tile": [
+    16,
+    64,
+    16
+   ],
+   "shapes": [
+    [
+     17,
+     33
+    ],
+    [
+     65,
+     33
+    ],
+    [
+     65
+    ]
+   ],
+   "dtypes": [
+    "torch.float16",
+    "torch.float16",
+    "torch.float16"
+   ],
+   "ok": true,
+   "kernels": [
+    {
+     "artifact": "327d46606963c51afdb0c9ec1e15bcf2c9f961dad0497a35d825fb31106e11a0",
+     "widths": [
+      64
+     ],
+     "gemm_tiles": [
+      [
+       16,
+       64,
+       16
+      ]
+     ],
+     "reductions": [],
+     "spill": {
+      "refused": "control flow requires spill dominance analysis"
+     },
+     "resources": {
+      "accumulators": 8,
+      "barriers": 9,
+      "commands_outstanding": "unknown",
+      "descriptors": 5,
+      "rf_private_per_role": {
+       "role0": 20,
+       "role1": 20
+      },
+      "scratch_bytes": 45056,
+      "shared_windows": []
+     }
+    }
+   ],
+   "launches": 1
+  },
+  {
+   "name": "mm_transposed_a",
+   "width": 128,
+   "gemm_tile": [
+    16,
+    64,
+    16
+   ],
+   "shapes": [
+    [
+     33,
+     17
+    ],
+    [
+     33,
+     65
+    ]
+   ],
+   "dtypes": [
+    "torch.float16",
+    "torch.float16"
+   ],
+   "ok": true,
+   "kernels": [
+    {
+     "artifact": "812c7b7cff54e83ad6f41f3319c502b13c9836b0de9e8953b14cad4ae9e4c112",
+     "widths": [
+      64
+     ],
+     "gemm_tiles": [
+      [
+       16,
+       64,
+       16
+      ]
+     ],
+     "reductions": [],
+     "spill": {
+      "refused": "control flow requires spill dominance analysis"
+     },
+     "resources": {
+      "accumulators": 8,
+      "barriers": 9,
+      "commands_outstanding": "unknown",
+      "descriptors": 5,
+      "rf_private_per_role": {
+       "role0": 20,
+       "role1": 20
+      },
+      "scratch_bytes": 31488,
+      "shared_windows": []
+     }
+    }
+   ],
+   "launches": 1
+  }
+ ],
+ "ok": true
+}

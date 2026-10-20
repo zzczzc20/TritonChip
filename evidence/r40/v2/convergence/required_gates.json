@@ -1,0 +1,315 @@
+{
+  "schema": "tnca-r40-acceptance/1",
+  "plan": "spec/r40/v2/plan.json",
+  "work_packages": {
+    "R40-00": {
+      "passed": true,
+      "gates": [
+        {
+          "id": "R40-00.protocol",
+          "kind": "capability",
+          "required": true,
+          "status": "capability-pass",
+          "why": "34/34 cases"
+        },
+        {
+          "id": "R40-00.b39-reproducible",
+          "kind": "capability",
+          "required": true,
+          "status": "capability-pass",
+          "why": "B39 rerun: 77/77 pass, 77 cycle-identical; protocol 2: 77/77 consistent, 77 with B39's cycles"
+        },
+        {
+          "id": "R40-00.frozen",
+          "kind": "capability",
+          "required": true,
+          "status": "capability-pass",
+          "why": "33/33 as frozen"
+        }
+      ]
+    },
+    "R40-01": {
+      "passed": false,
+      "gates": [
+        {
+          "id": "R40-01.device",
+          "kind": "capability",
+          "required": true,
+          "status": "capability-pass",
+          "why": "full frozen resident inventory, independent from per-kernel staged timing controls"
+        },
+        {
+          "id": "R40-01.mixed-device",
+          "kind": "capability",
+          "required": true,
+          "status": "not-measured",
+          "why": "sim/build/r40/v2/R40-01.json does not name gate R40-01.mixed-device"
+        },
+        {
+          "id": "R40-01.device-time",
+          "kind": "capability",
+          "required": true,
+          "status": "not-measured",
+          "why": "sim/build/r40/v2/R40-01.json does not name gate R40-01.device-time"
+        }
+      ]
+    },
+    "R40-02": {
+      "passed": false,
+      "gates": [
+        {
+          "id": "R40-02.zero-transfer",
+          "kind": "capability",
+          "required": true,
+          "status": "not-measured",
+          "why": "no evidence at sim/build/r40/v2/R40-02.json"
+        },
+        {
+          "id": "R40-02.resident",
+          "kind": "perf",
+          "required": true,
+          "status": "not-measured",
+          "why": "no evidence at sim/build/r40/v2/R40-02.json"
+        },
+        {
+          "id": "R40-02.batched",
+          "kind": "perf",
+          "required": true,
+          "status": "not-measured",
+          "why": "no evidence at sim/build/r40/v2/R40-02.json"
+        },
+        {
+          "id": "R40-02.stress",
+          "kind": "capability",
+          "required": true,
+          "status": "not-measured",
+          "why": "no evidence at sim/build/r40/v2/R40-02.json"
+        }
+      ]
+    },
+    "R40-03": {
+      "passed": false,
+      "gates": [
+        {
+          "id": "R40-03.tiles",
+          "kind": "capability",
+          "required": true,
+          "status": "not-measured",
+          "why": "sim/build/r40/v2/R40-03.json does not name gate R40-03.tiles"
+        },
+        {
+          "id": "R40-03.wide-blocks",
+          "kind": "perf",
+          "required": true,
+          "status": "not-measured",
+          "why": "sim/build/r40/v2/R40-03.json does not name gate R40-03.wide-blocks"
+        },
+        {
+          "id": "R40-03.gemm-tile",
+          "kind": "perf",
+          "required": true,
+          "status": "not-measured",
+          "why": "sim/build/r40/v2/R40-03.json does not name gate R40-03.gemm-tile"
+        },
+        {
+          "id": "R40-03.contract",
+          "kind": "capability",
+          "required": true,
+          "status": "capability-pass",
+          "why": "disabled-option legacy profile contract; no physical image, tile functional, or performance signoff"
+        }
+      ]
+    },
+    "R40-04": {
+      "passed": false,
+      "gates": [
+        {
+          "id": "R40-04.hbm",
+          "kind": "capability",
+          "required": true,
+          "status": "not-measured",
+          "why": "no evidence at sim/build/r40/v2/R40-04.json"
+        },
+        {
+          "id": "R40-04.bandwidth",
+          "kind": "perf",
+          "required": true,
+          "status": "not-measured",
+          "why": "no evidence at sim/build/r40/v2/R40-04.json"
+        },
+        {
+          "id": "R40-04.robustness",
+          "kind": "capability",
+          "required": true,
+          "status": "not-measured",
+          "why": "no evidence at sim/build/r40/v2/R40-04.json"
+        }
+      ]
+    },
+    "R40-05": {
+      "passed": false,
+      "gates": [
+        {
+          "id": "R40-05.multicore",
+          "kind": "capability",
+          "required": true,
+          "status": "not-measured",
+          "why": "no evidence at sim/build/r40/v2/R40-05.json"
+        },
+        {
+          "id": "R40-05.scaling",
+          "kind": "perf",
+          "required": true,
+          "status": "not-measured",
+          "why": "no evidence at sim/build/r40/v2/R40-05.json"
+        },
+        {
+          "id": "R40-05.dispatch",
+          "kind": "capability",
+          "required": true,
+          "status": "not-measured",
+          "why": "no evidence at sim/build/r40/v2/R40-05.json"
+        }
+      ]
+    },
+    "R40-06": {
+      "passed": false,
+      "gates": [
+        {
+          "id": "R40-06.nuca",
+          "kind": "capability",
+          "required": true,
+          "status": "not-measured",
+          "why": "no evidence at sim/build/r40/v2/R40-06.json"
+        },
+        {
+          "id": "R40-06.streaming-scaling",
+          "kind": "perf",
+          "required": true,
+          "status": "not-measured",
+          "why": "no evidence at sim/build/r40/v2/R40-06.json"
+        },
+        {
+          "id": "R40-06.locality",
+          "kind": "perf",
+          "required": true,
+          "status": "not-measured",
+          "why": "no evidence at sim/build/r40/v2/R40-06.json"
+        },
+        {
+          "id": "R40-06.semantics",
+          "kind": "capability",
+          "required": true,
+          "status": "not-measured",
+          "why": "no evidence at sim/build/r40/v2/R40-06.json"
+        }
+      ]
+    },
+    "R40-07": {
+      "passed": false,
+      "gates": [
+        {
+          "id": "R40-07.pipeline",
+          "kind": "capability",
+          "required": true,
+          "status": "not-measured",
+          "why": "no evidence at sim/build/r40/v2/R40-07.json"
+        },
+        {
+          "id": "R40-07.long-k",
+          "kind": "perf",
+          "required": true,
+          "status": "not-measured",
+          "why": "no evidence at sim/build/r40/v2/R40-07.json"
+        },
+        {
+          "id": "R40-07.matrix",
+          "kind": "perf",
+          "required": true,
+          "status": "not-measured",
+          "why": "no evidence at sim/build/r40/v2/R40-07.json"
+        },
+        {
+          "id": "R40-07.policy",
+          "kind": "capability",
+          "required": true,
+          "status": "not-measured",
+          "why": "no evidence at sim/build/r40/v2/R40-07.json"
+        }
+      ]
+    },
+    "R40-08": {
+      "passed": false,
+      "gates": [
+        {
+          "id": "R40-08.attention",
+          "kind": "capability",
+          "required": true,
+          "status": "not-measured",
+          "why": "no evidence at sim/build/r40/v2/R40-08.json"
+        },
+        {
+          "id": "R40-08.prefill",
+          "kind": "perf",
+          "required": true,
+          "status": "not-measured",
+          "why": "no evidence at sim/build/r40/v2/R40-08.json"
+        },
+        {
+          "id": "R40-08.decode",
+          "kind": "capability",
+          "required": true,
+          "status": "not-measured",
+          "why": "no evidence at sim/build/r40/v2/R40-08.json"
+        }
+      ]
+    },
+    "R40-09": {
+      "passed": false,
+      "gates": [
+        {
+          "id": "R40-09.autotune",
+          "kind": "capability",
+          "required": true,
+          "status": "not-measured",
+          "why": "no evidence at sim/build/r40/v2/R40-09.json"
+        },
+        {
+          "id": "R40-09.holdout",
+          "kind": "perf",
+          "required": true,
+          "status": "not-measured",
+          "why": "no evidence at sim/build/r40/v2/R40-09.json"
+        },
+        {
+          "id": "R40-09.suites",
+          "kind": "capability",
+          "required": true,
+          "status": "not-measured",
+          "why": "no evidence at sim/build/r40/v2/R40-09.json"
+        },
+        {
+          "id": "R40-09.model",
+          "kind": "perf",
+          "required": true,
+          "status": "not-measured",
+          "why": "no evidence at sim/build/r40/v2/R40-09.json"
+        }
+      ]
+    },
+    "R40-10": {
+      "passed": false,
+      "gates": [
+        {
+          "id": "R40-10.acceptance",
+          "kind": "capability",
+          "required": true,
+          "status": "not-measured",
+          "why": "no evidence at sim/build/r40/v2/R40-10.json"
+        }
+      ]
+    }
+  },
+  "passed": false,
+  "scope": "all work packages"
+}

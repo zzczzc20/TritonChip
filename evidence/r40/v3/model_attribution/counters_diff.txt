@@ -1,0 +1,114 @@
+== R40-07.pipeline op.gemv/large/fp16-k2048-n8192
+  core_0_barrier_sleep_cycles                        241019935     203861681  x0.85
+  core_0_dma_admission_wait_cycles                    40219599      52381269  x1.30
+  outlet_0_wait_cycles                               207747148     199784190  x0.96
+  home_0_resolution_cycles                           105018134     102943008  x0.98
+  core_0_context_park_cycles                          56286010      55620225  x0.99
+  core_0_branch_refetch_cycles                          673280        345600  x0.51
+  core_0_instructions                                 14396492      14136396  x0.98
+  core_0_dependency_wait_cycles                       76838936      77054047  x1.00
+  core_0_issue_queue_cycles                            2481686       2679830  x1.08
+  core_0_class_branch                                   534632        403560  x0.75
+  core_0_matrix_engine_wait_cycles                     4828160       4698112  x0.97
+  core_0_issue_service_cycles                          7194112       7064064  x0.98
+  core_0_class_salu                                    7690474       7561450  x0.98
+  core_0_memory_port_queue_cycles                       560858        625882  x1.12
+  home_0_engine_queue_cycles                          23537760      23592826  x1.00
+  core_0_pipeline_freeze_cycles                       19867720      19835208  x1.00
+== R40-07.pipeline op.matmul/large/fp16-m2048-k2048-n2048
+  core_0_barrier_sleep_cycles                       4009021978    2605732739  x0.65
+  core_0_dma_admission_wait_cycles                  1222064542    2555672543  x2.09
+  core_0_context_park_cycles                         687187690     665564790  x0.97
+  core_0_dependency_wait_cycles                      928722650     909854790  x0.98
+  core_0_branch_refetch_cycles                        21544960      11059200  x0.51
+  core_0_instructions                                169189452     160866380  x0.95
+  core_0_class_branch                                 17105000      12910696  x0.75
+  core_0_issue_service_cycles                         84590592      80429056  x0.95
+  core_0_class_salu                                   97026282      92897514  x0.96
+  core_0_issue_queue_cycles                           39131717      41042686  x1.05
+  core_0_matrix_engine_wait_cycles                     7613667       7465990  x0.98
+  core_0_pipeline_freeze_cycles                       10770975      10773752  x1.00
+  core_0_arrive_drain_cycles                           2009511       2012288  x1.00
+  outlet_0_writes                                       197150        197150  x1.00
+  outlet_0_wait_cycles                                64042297      64042297  x1.00
+  outlet_0_service_cycles                             54086290      54086290  x1.00
+== R40-03.wide-blocks op.add/medium/fp16-n49152
+  core_0_dependency_wait_cycles                         869146        397261  x0.46
+  core_0_context_park_cycles                            354070        218735  x0.62
+  outlet_0_wait_cycles                                   69368        165059  x2.38
+  core_0_issue_queue_cycles                             476226        409935  x0.86
+  home_0_resolution_cycles                              617010        669690  x1.09
+  core_0_lsu_wait_cycles                                363726        313214  x0.86
+  core_0_pipeline_freeze_cycles                         363726        313892  x0.86
+  core_0_instructions                                   168012        131148  x0.78
+  core_0_issue_service_cycles                            79872         61440  x0.77
+  core_0_class_special                                   24914          6482  x0.26
+  core_0_class_lsu                                       37332         23508  x0.63
+  core_0_class_vint                                      25452         34668  x1.36
+  core_0_memory_port_service_cycles                      46080         39168  x0.85
+  core_0_class_salu                                      43242         38634  x0.89
+  core_0_class_exit                                       6248          1640  x0.26
+  core_0_class_branch                                     6248          1640  x0.26
+== R40-03.wide-blocks op.layernorm/medium/fp16-r128-d512
+  core_0_dependency_wait_cycles                        3932459       2195276  x0.56
+  core_0_context_park_cycles                           2571390       1700160  x0.66
+  core_0_issue_queue_cycles                             928554       1590739  x1.71
+  core_0_instructions                                  1013068        750668  x0.74
+  core_0_lsu_wait_cycles                                 89609        288478  x3.22
+  home_0_resolution_cycles                              405393        601110  x1.48
+  core_0_pipeline_freeze_cycles                         141925        292596  x2.06
+  core_0_class_salu                                     332778        186090  x0.56
+  core_0_issue_service_cycles                           502400        371200  x0.74
+  home_0_engine_queue_cycles                            150496        221729  x1.47
+  core_0_class_vfp                                      157440         91392  x0.58
+  core_0_sfu_queue_cycles                                51799          2004  x0.04
+  core_0_branch_refetch_cycles                           63360         17280  x0.27
+  core_0_class_branch                                    50280         13416  x0.27
+  outlet_0_wait_cycles                                   65885         81757  x1.24
+  core_0_class_sfu                                       16640          4352  x0.26
+== R40-03.wide-blocks op.rope/medium/fp16-b1-h8-s128-d32
+  core_0_dependency_wait_cycles                        1444111        585058  x0.41
+  outlet_0_wait_cycles                                  231362        734776  x3.18
+  core_0_pipeline_freeze_cycles                         455526        697028  x1.53
+  core_0_lsu_wait_cycles                                452710        693527  x1.53
+  home_0_resolution_cycles                             1246366       1476166  x1.18
+  core_0_context_park_cycles                            491525        307080  x0.62
+  core_0_issue_queue_cycles                             779023        839226  x1.08
+  core_0_instructions                                   378956        320588  x0.85
+  core_0_issue_service_cycles                           185344        156160  x0.84
+  home_0_engine_queue_cycles                            258663        231028  x0.89
+  core_0_class_special                                   33106          8530  x0.26
+  core_0_class_lsu                                       57812         36308  x0.63
+  core_0_class_vint                                     191340        203628  x1.06
+  core_0_class_salu                                      41194         28906  x0.70
+  core_0_memory_port_service_cycles                      71680         60928  x0.85
+  home_0_engine_service_cycles                          120527        110305  x0.92
+== R40-06.ports op.copy/hbm/fp16-n67108864
+  outlet_0_service_cycles                             14712832       4942592  x0.34
+  outlet_1_service_cycles                                    0       4896000  xinf
+  outlet_2_service_cycles                                    0       4874240  xinf
+  outlet_0_queue_cycles                                3856440        693274  x0.18
+  outlet_0_reads                                       4210688       1414528  x0.34
+  home_0_resolution_cycles                           639793974     637767140  x1.00
+  outlet_1_reads                                             0       1403520  xinf
+  outlet_2_reads                                             0       1392640  xinf
+  outlet_0_writes                                      2097152        704512  x0.34
+  outlet_2_writes                                            0        696320  xinf
+  outlet_1_writes                                            0        696320  xinf
+  outlet_2_queue_cycles                                      0        686511  xinf
+  outlet_1_queue_cycles                                      0        685989  xinf
+  home_0_engine_queue_cycles                         359073269     359670322  x1.00
+  core_1_dependency_wait_cycles                      354331020     353837398  x1.00
+  core_0_dependency_wait_cycles                      356317172     356026635  x1.00
+{"key": "op.add/medium/fp16-n49152@2d458dd482", "status": "pass", "launches": 1, "device_cycles": 255170, "max_rel_err": 0.0003259452411994785, "process_wall_s": 5.23, "model_launch_host_s": 0.060454}
+{"key": "op.add/medium/fp16-n49152@c9af45d482", "status": "pass", "launches": 1, "device_cycles": 392976, "max_rel_err": 0.0003259452411994785, "process_wall_s": 5.3, "model_launch_host_s": 0.074105}
+{"key": "op.copy/hbm/fp16-n67108864@1b75633faf", "status": "pass", "launches": 1, "device_cycles": 119230183, "max_rel_err": 0.0, "process_wall_s": 39.66, "model_launch_host_s": 32.160012}
+{"key": "op.copy/hbm/fp16-n67108864@d5eb8c7520", "status": "pass", "launches": 1, "device_cycles": 119376863, "max_rel_err": 0.0, "process_wall_s": 52.06, "model_launch_host_s": 44.198647}
+{"key": "op.gemv/large/fp16-k2048-n8192@7d583672fd", "status": "pass", "launches": 1, "device_cycles": 80616871, "max_rel_err": 0.00022586120790042807, "process_wall_s": 12.75, "model_launch_host_s": 6.85921}
+{"key": "op.gemv/large/fp16-k2048-n8192@ba230f7112", "status": "pass", "launches": 1, "device_cycles": 86955297, "max_rel_err": 0.00022586120790042807, "process_wall_s": 12.95, "model_launch_host_s": 7.040462}
+{"key": "op.layernorm/medium/fp16-r128-d512@2d458dd482", "status": "pass", "launches": 1, "device_cycles": 606190, "max_rel_err": 0.00037694138174931727, "process_wall_s": 5.7, "model_launch_host_s": 0.224409}
+{"key": "op.layernorm/medium/fp16-r128-d512@c9af45d482", "status": "pass", "launches": 1, "device_cycles": 698365, "max_rel_err": 0.00037694138174931727, "process_wall_s": 6.02, "model_launch_host_s": 0.266457}
+{"key": "op.matmul/large/fp16-m2048-k2048-n2048@7d583672fd", "status": "pass", "launches": 1, "device_cycles": 1340266729, "max_rel_err": 0.00026469932364270803, "process_wall_s": 180.0, "model_launch_host_s": 174.102006}
+{"key": "op.matmul/large/fp16-m2048-k2048-n2048@ba230f7112", "status": "pass", "launches": 1, "device_cycles": 1360744319, "max_rel_err": 0.00026469932364270803, "process_wall_s": 166.78, "model_launch_host_s": 161.358922}
+{"key": "op.rope/medium/fp16-b1-h8-s128-d32@2d458dd482", "status": "pass", "launches": 3, "device_cycles": 509366, "max_rel_err": 0.00037142977112627004, "process_wall_s": 6.29, "model_launch_host_s": 0.12208}
+{"key": "op.rope/medium/fp16-b1-h8-s128-d32@c9af45d482", "status": "pass", "launches": 3, "device_cycles": 645391, "max_rel_err": 0.00037142977112627004, "process_wall_s": 5.36, "model_launch_host_s": 0.128454}

@@ -1,0 +1,19 @@
+{
+ "name": "contract",
+ "group": "tiles",
+ "cmd": "/home/zhongchun/tc_env/torchenv/bin/python tools/r40/contract_tests.py",
+ "env": {
+  "TNCA_BANK_ALLOC": "0",
+  "TNCA_WINDOW_REUSE": "0",
+  "TNCA_PACKED_WINDOW_UNPACK": "0"
+ },
+ "start": "2026-10-19T10:10:34+00:00",
+ "end": "2026-10-19T10:12:32+00:00",
+ "seconds": 117.7,
+ "exit": 0,
+ "marker": "r40-contract-tests PASS \\(447/447 byte-identical to B39\\)",
+ "marker_found": true,
+ "ok": true,
+ "log": "contract.log",
+ "log_sha256": "d7b6a512b53ebf7784bef8580aad3f9c3e526e7303a94981047acc89aa5bd6b2"
+}

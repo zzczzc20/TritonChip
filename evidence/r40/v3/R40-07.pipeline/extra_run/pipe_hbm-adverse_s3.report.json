@@ -1,0 +1,354 @@
+{
+ "schema": "tnca-r40-v3-pipeline-matrix/1",
+ "profile": "core-vrf-sync-v5/hbm",
+ "memory": "hbm-adverse",
+ "plusargs": "+axi_seed=7 +axi_lat_min=16 +axi_lat_max=96 +axi_reorder +axi_bp=30 +engtrace +trace",
+ "stages": 3,
+ "roles": "2 (forced legal split)",
+ "cases": [
+  {
+   "graph": "mm",
+   "shape": [
+    16,
+    16,
+    48
+   ],
+   "stages": 3,
+   "memory": "hbm-adverse",
+   "ok": true,
+   "max_abs_err": 0.0,
+   "sequences": [
+    117
+   ],
+   "rings": [
+    {
+     "consumer_ops": 328,
+     "direct": true,
+     "producer_ops": 221,
+     "ring_windows": 6,
+     "stages": 3
+    }
+   ],
+   "refusals": [],
+   "artifacts": [
+    "9061da5d3df10e94ff4996bca7627f2ab98a804fef8694eb73e0bd68b0092f11"
+   ],
+   "launches": 1,
+   "trace": [
+    {
+     "seq": 117,
+     "mma_cycles": 933,
+     "dma_cycles": 3106,
+     "overlap_cycles": 622
+    }
+   ],
+   "overlap_cycles": 622
+  },
+  {
+   "graph": "mm",
+   "shape": [
+    16,
+    16,
+    256
+   ],
+   "stages": 3,
+   "memory": "hbm-adverse",
+   "ok": true,
+   "max_abs_err": 0.0,
+   "sequences": [
+    130
+   ],
+   "rings": [
+    {
+     "consumer_ops": 327,
+     "direct": true,
+     "producer_ops": 220,
+     "ring_windows": 6,
+     "stages": 3
+    }
+   ],
+   "refusals": [],
+   "artifacts": [
+    "dd3faada36b91b716ee24cbebbc630a3498570bce9c91b3550920a52c21de828"
+   ],
+   "launches": 1,
+   "trace": [
+    {
+     "seq": 130,
+     "mma_cycles": 4976,
+     "dma_cycles": 17140,
+     "overlap_cycles": 4665
+    }
+   ],
+   "overlap_cycles": 4665
+  },
+  {
+   "graph": "mm",
+   "shape": [
+    17,
+    31,
+    257
+   ],
+   "stages": 3,
+   "memory": "hbm-adverse",
+   "ok": true,
+   "max_abs_err": 0.0,
+   "sequences": [
+    143
+   ],
+   "rings": [
+    {
+     "consumer_ops": 373,
+     "direct": false,
+     "producer_ops": 2100,
+     "ring_windows": 6,
+     "stages": 3
+    }
+   ],
+   "refusals": [],
+   "artifacts": [
+    "a41baef46cf248e1de167c2cefd772f9018088211816e0be96b22ee378b6d1a2"
+   ],
+   "launches": 1,
+   "trace": [
+    {
+     "seq": 143,
+     "mma_cycles": 21191,
+     "dma_cycles": 75425,
+     "overlap_cycles": 10578
+    }
+   ],
+   "overlap_cycles": 10578
+  },
+  {
+   "graph": "addmm",
+   "shape": [
+    16,
+    16,
+    48
+   ],
+   "stages": 3,
+   "memory": "hbm-adverse",
+   "ok": true,
+   "max_abs_err": 0.0,
+   "sequences": [
+    156
+   ],
+   "rings": [
+    {
+     "consumer_ops": 443,
+     "direct": true,
+     "producer_ops": 222,
+     "ring_windows": 6,
+     "stages": 3
+    }
+   ],
+   "refusals": [],
+   "artifacts": [
+    "92deca89e18c5a9523ed6c1172f35f235c7bee359b99c4ac8ba16a65e77fd0f0"
+   ],
+   "launches": 1,
+   "trace": [
+    {
+     "seq": 156,
+     "mma_cycles": 933,
+     "dma_cycles": 3224,
+     "overlap_cycles": 622
+    }
+   ],
+   "overlap_cycles": 622
+  },
+  {
+   "graph": "addmm",
+   "shape": [
+    16,
+    16,
+    256
+   ],
+   "stages": 3,
+   "memory": "hbm-adverse",
+   "ok": true,
+   "max_abs_err": 0.0,
+   "sequences": [
+    169
+   ],
+   "rings": [
+    {
+     "consumer_ops": 442,
+     "direct": true,
+     "producer_ops": 221,
+     "ring_windows": 6,
+     "stages": 3
+    }
+   ],
+   "refusals": [],
+   "artifacts": [
+    "0031db7fc4e701b4c63ede4d243a4cff4139207a6511f848b0ec6e228baaab11"
+   ],
+   "launches": 1,
+   "trace": [
+    {
+     "seq": 169,
+     "mma_cycles": 4976,
+     "dma_cycles": 17111,
+     "overlap_cycles": 4665
+    }
+   ],
+   "overlap_cycles": 4665
+  },
+  {
+   "graph": "addmm",
+   "shape": [
+    17,
+    31,
+    257
+   ],
+   "stages": 3,
+   "memory": "hbm-adverse",
+   "ok": true,
+   "max_abs_err": 3.814697265625e-06,
+   "sequences": [
+    182
+   ],
+   "rings": [
+    {
+     "consumer_ops": 488,
+     "direct": false,
+     "producer_ops": 2101,
+     "ring_windows": 6,
+     "stages": 3
+    }
+   ],
+   "refusals": [],
+   "artifacts": [
+    "bcd5a43601070014ba135fe533837845c6ff5f59a840a3018a8dab4b62646906"
+   ],
+   "launches": 1,
+   "trace": [
+    {
+     "seq": 182,
+     "mma_cycles": 21187,
+     "dma_cycles": 75602,
+     "overlap_cycles": 10576
+    }
+   ],
+   "overlap_cycles": 10576
+  },
+  {
+   "graph": "linear",
+   "shape": [
+    16,
+    16,
+    48
+   ],
+   "stages": 3,
+   "memory": "hbm-adverse",
+   "ok": true,
+   "max_abs_err": 0.0,
+   "sequences": [
+    195
+   ],
+   "rings": [
+    {
+     "consumer_ops": 443,
+     "direct": true,
+     "producer_ops": 222,
+     "ring_windows": 6,
+     "stages": 3
+    }
+   ],
+   "refusals": [],
+   "artifacts": [
+    "8101ab4d4536c4c9e45819b44c6709108d4e3e4538c1edc4cf55497920e8893e"
+   ],
+   "launches": 1,
+   "trace": [
+    {
+     "seq": 195,
+     "mma_cycles": 933,
+     "dma_cycles": 3744,
+     "overlap_cycles": 622
+    }
+   ],
+   "overlap_cycles": 622
+  },
+  {
+   "graph": "linear",
+   "shape": [
+    16,
+    16,
+    256
+   ],
+   "stages": 3,
+   "memory": "hbm-adverse",
+   "ok": true,
+   "max_abs_err": 0.0,
+   "sequences": [
+    208
+   ],
+   "rings": [
+    {
+     "consumer_ops": 442,
+     "direct": true,
+     "producer_ops": 221,
+     "ring_windows": 6,
+     "stages": 3
+    }
+   ],
+   "refusals": [],
+   "artifacts": [
+    "6b2c3bb87e848613cf045834acc74292b1a12e8c38cebdae8fe9ec430d027c56"
+   ],
+   "launches": 1,
+   "trace": [
+    {
+     "seq": 208,
+     "mma_cycles": 4976,
+     "dma_cycles": 19303,
+     "overlap_cycles": 4665
+    }
+   ],
+   "overlap_cycles": 4665
+  },
+  {
+   "graph": "linear",
+   "shape": [
+    17,
+    31,
+    257
+   ],
+   "stages": 3,
+   "memory": "hbm-adverse",
+   "ok": true,
+   "max_abs_err": 1.9073486328125e-06,
+   "sequences": [
+    221
+   ],
+   "rings": [
+    {
+     "consumer_ops": 488,
+     "direct": false,
+     "producer_ops": 2149,
+     "ring_windows": 6,
+     "stages": 3
+    }
+   ],
+   "refusals": [],
+   "artifacts": [
+    "973e59dac03e78955ac2383b087b754190e287f99d0c139f1462b1bfbe121d95"
+   ],
+   "launches": 1,
+   "trace": [
+    {
+     "seq": 221,
+     "mma_cycles": 21198,
+     "dma_cycles": 74910,
+     "overlap_cycles": 10578
+    }
+   ],
+   "overlap_cycles": 10578
+  }
+ ],
+ "engine_log_sha256": "e8d4adb3c0c1df01616747ae6398a5a02c289eb72d6965d8f28d05d24bad6869",
+ "ok": true
+}

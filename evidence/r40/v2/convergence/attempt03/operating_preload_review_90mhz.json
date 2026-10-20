@@ -1,0 +1,808 @@
+{
+  "schema": "tnca-operating-preload-review/1",
+  "observed_utc": "2026-10-18T14:47:56.128898+00:00",
+  "image_sha256": "a88ebdf59cfbbb2001ebd5b1b2c739c5d8cd33931f1e9202f18cac07c4c83083",
+  "nominal_clock_hz": 90000000,
+  "measured_clock_hz": null,
+  "wns_ns": 0.016,
+  "tns_ns": 0.0,
+  "whs_ns": 0.0,
+  "ths_ns": 0.0,
+  "timing_failing_endpoints": {
+    "setup": 0,
+    "hold": 0,
+    "pulse_width": 0
+  },
+  "route_legal": true,
+  "placement_report": "schema tnca-r40-actual-core-placement/1\ncheckpoint /home/zzhouch/tnca_build/r40_attempt03_20261017/xo/tmp/link/vivado/vpl/prj/prj.runs/impl_1/level0_wrapper_routed.dcp\ncore 0 primitive_count 380583 placed 380340 unplaced 0 excluded_constants 243 actual_slrs {SLR0} expected SLR0 pass 1\ncore 1 primitive_count 382093 placed 381851 unplaced 0 excluded_constants 242 actual_slrs {SLR1} expected SLR1 pass 1\ncore 2 primitive_count 382102 placed 381811 unplaced 0 excluded_constants 291 actual_slrs {SLR2} expected SLR2 pass 1\nlocal_tmu 0 primitive_count 10649 placed 10646 unplaced 0 actual_slrs {SLR0} expected SLR0 pass 1\nlocal_tmu 1 primitive_count 10649 placed 10646 unplaced 0 actual_slrs {SLR1} expected SLR1 pass 1\nlocal_tmu 2 primitive_count 10649 placed 10646 unplaced 0 actual_slrs {SLR2} expected SLR2 pass 1\nlocal_tmu_replica_count 3\nfailing_cores {}\n",
+  "physical_core_slrs": {
+    "0": 0,
+    "1": 1,
+    "2": 2
+  },
+  "local_tmu_slrs": {
+    "0": 0,
+    "1": 1,
+    "2": 2
+  },
+  "cdc_review": {
+    "status": "accepted-for-conditional-operation-with-scoped-platform-findings",
+    "total_records": 4212,
+    "raw_rule_counts": {
+      "CDC-13": 4,
+      "CDC-3": 423,
+      "CDC-9": 32,
+      "CDC-15": 3689,
+      "CDC-6": 12,
+      "CDC-10": 7,
+      "CDC-7": 13,
+      "CDC-11": 32
+    },
+    "custom_endpoint_records": 0,
+    "raw_critical": 56,
+    "unreviewed_critical": 0,
+    "reviewed_critical": [
+      {
+        "rule": "CDC-13",
+        "severity": "Critical",
+        "source": "level0_i/ulp/ulp_ucs/inst/ucs_control_status/gpio_ucs_control_status/U0/gpio_core_1/Dual.gpio2_Data_Out_reg[31]/C",
+        "destination": "level0_i/ulp/ulp_ucs/inst/aclk_kernel_00_hierarchy/clock_throttling_aclk_kernel_00/U0/ECCLK/CE",
+        "exception": "False Path",
+        "source_clock": "clk_out2_bd_39ab_clkwiz_level0_periph_0_1",
+        "destination_clock": "clk_kernel_00_unbuffered_net",
+        "review": "vendor UCS clock-enable primitive; programmed while application quiescent",
+        "disposition": "accepted-platform-scoped; original Critical severity retained"
+      },
+      {
+        "rule": "CDC-13",
+        "severity": "Critical",
+        "source": "level0_i/ulp/ulp_ucs/inst/ucs_control_status/gpio_ucs_control_status/U0/gpio_core_1/Dual.gpio2_Data_Out_reg[31]/C",
+        "destination": "level0_i/ulp/ulp_ucs/inst/aclk_kernel_01_hierarchy/clock_throttling_aclk_kernel_01/U0/ECCLK/CE",
+        "exception": "False Path",
+        "source_clock": "clk_out2_bd_39ab_clkwiz_level0_periph_0_1",
+        "destination_clock": "clk_kernel_01_unbuffered_net",
+        "review": "vendor UCS clock-enable primitive; programmed while application quiescent",
+        "disposition": "accepted-platform-scoped; original Critical severity retained"
+      },
+      {
+        "rule": "CDC-10",
+        "severity": "Critical",
+        "source": "level0_i/blp/blp_i/PLP/ss_fic/inst/data_firewalls_and_regslices/axi_firewall_data_c2h/inst/gen_si.si_r_error_i_reg/C",
+        "destination": "level0_i/blp/blp_i/PLP/ss_dma/inst/axi_intc_aggregated_mgmt/U0/INTC_CORE_I/INTR_DETECT_GEN[0].ASYNC_GEN.intr_ff_reg[0]/D",
+        "exception": "False Path",
+        "source_clock": "dma_ip_axi_aclk_1",
+        "destination_clock": "clk_out2_bd_39ab_clkwiz_level0_periph_0_1",
+        "review": "vendor sticky firewall-error level into management IRQ synchronizer",
+        "disposition": "accepted-platform-scoped; original Critical severity retained"
+      },
+      {
+        "rule": "CDC-10",
+        "severity": "Critical",
+        "source": "level0_i/blp/blp_i/ss_cmp/inst/psreset_mdm/U0/ACTIVE_LOW_PR_OUT_DFF[0].FDRE_PER_N/C",
+        "destination": "level0_i/blp/blp_i/PLP/ss_ert/inst/reset_hierarchy/psreset_scheduler/U0/EXT_LPF/ACTIVE_LOW_EXT.ACT_LO_EXT/GENERATE_LEVEL_P_S_CDC.SINGLE_BIT.CROSS_PLEVEL_IN2SCNDRY_IN_cdc_to/D",
+        "exception": "False Path",
+        "source_clock": "clk_out2_bd_39ab_clkwiz_level0_periph_0_1",
+        "destination_clock": "dma_ip_axi_aclk_1",
+        "review": "vendor processor-reset low-pass/synchronizer circuitry",
+        "disposition": "accepted-platform-scoped; original Critical severity retained"
+      },
+      {
+        "rule": "CDC-7",
+        "severity": "Critical",
+        "source": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/sys_reset_in_async_rst_inst/arststages_ff_reg[1]/C",
+        "destination": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/debug_wrapper_U/debug_probes_inst/cur_ltssm_st_reg[0]/CLR",
+        "exception": "None",
+        "source_clock": "io_clk_pcie_00_clk_p",
+        "destination_clock": "dma_ip_axi_aclk_1",
+        "review": "vendor PCIe reset/link-state and debug sampling",
+        "disposition": "accepted-platform-scoped; original Critical severity retained"
+      },
+      {
+        "rule": "CDC-7",
+        "severity": "Critical",
+        "source": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/sys_reset_in_async_rst_inst/arststages_ff_reg[1]/C",
+        "destination": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/debug_wrapper_U/debug_probes_inst/cur_ltssm_st_reg[1]/CLR",
+        "exception": "None",
+        "source_clock": "io_clk_pcie_00_clk_p",
+        "destination_clock": "dma_ip_axi_aclk_1",
+        "review": "vendor PCIe reset/link-state and debug sampling",
+        "disposition": "accepted-platform-scoped; original Critical severity retained"
+      },
+      {
+        "rule": "CDC-7",
+        "severity": "Critical",
+        "source": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/sys_reset_in_async_rst_inst/arststages_ff_reg[1]/C",
+        "destination": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/debug_wrapper_U/debug_probes_inst/cur_ltssm_st_reg[2]/CLR",
+        "exception": "None",
+        "source_clock": "io_clk_pcie_00_clk_p",
+        "destination_clock": "dma_ip_axi_aclk_1",
+        "review": "vendor PCIe reset/link-state and debug sampling",
+        "disposition": "accepted-platform-scoped; original Critical severity retained"
+      },
+      {
+        "rule": "CDC-7",
+        "severity": "Critical",
+        "source": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/sys_reset_in_async_rst_inst/arststages_ff_reg[1]/C",
+        "destination": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/debug_wrapper_U/debug_probes_inst/cur_ltssm_st_reg[3]/CLR",
+        "exception": "None",
+        "source_clock": "io_clk_pcie_00_clk_p",
+        "destination_clock": "dma_ip_axi_aclk_1",
+        "review": "vendor PCIe reset/link-state and debug sampling",
+        "disposition": "accepted-platform-scoped; original Critical severity retained"
+      },
+      {
+        "rule": "CDC-7",
+        "severity": "Critical",
+        "source": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/sys_reset_in_async_rst_inst/arststages_ff_reg[1]/C",
+        "destination": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/debug_wrapper_U/debug_probes_inst/cur_ltssm_st_reg[4]/CLR",
+        "exception": "None",
+        "source_clock": "io_clk_pcie_00_clk_p",
+        "destination_clock": "dma_ip_axi_aclk_1",
+        "review": "vendor PCIe reset/link-state and debug sampling",
+        "disposition": "accepted-platform-scoped; original Critical severity retained"
+      },
+      {
+        "rule": "CDC-7",
+        "severity": "Critical",
+        "source": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/sys_reset_in_async_rst_inst/arststages_ff_reg[1]/C",
+        "destination": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/debug_wrapper_U/debug_probes_inst/cur_ltssm_st_reg[5]/CLR",
+        "exception": "None",
+        "source_clock": "io_clk_pcie_00_clk_p",
+        "destination_clock": "dma_ip_axi_aclk_1",
+        "review": "vendor PCIe reset/link-state and debug sampling",
+        "disposition": "accepted-platform-scoped; original Critical severity retained"
+      },
+      {
+        "rule": "CDC-7",
+        "severity": "Critical",
+        "source": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/sys_reset_in_async_rst_inst/arststages_ff_reg[1]/C",
+        "destination": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/debug_wrapper_U/debug_probes_inst/pre_ltssm_st_reg[0]/CLR",
+        "exception": "None",
+        "source_clock": "io_clk_pcie_00_clk_p",
+        "destination_clock": "dma_ip_axi_aclk_1",
+        "review": "vendor PCIe reset/link-state and debug sampling",
+        "disposition": "accepted-platform-scoped; original Critical severity retained"
+      },
+      {
+        "rule": "CDC-7",
+        "severity": "Critical",
+        "source": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/sys_reset_in_async_rst_inst/arststages_ff_reg[1]/C",
+        "destination": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/debug_wrapper_U/debug_probes_inst/pre_ltssm_st_reg[1]/CLR",
+        "exception": "None",
+        "source_clock": "io_clk_pcie_00_clk_p",
+        "destination_clock": "dma_ip_axi_aclk_1",
+        "review": "vendor PCIe reset/link-state and debug sampling",
+        "disposition": "accepted-platform-scoped; original Critical severity retained"
+      },
+      {
+        "rule": "CDC-7",
+        "severity": "Critical",
+        "source": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/sys_reset_in_async_rst_inst/arststages_ff_reg[1]/C",
+        "destination": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/debug_wrapper_U/debug_probes_inst/pre_ltssm_st_reg[2]/CLR",
+        "exception": "None",
+        "source_clock": "io_clk_pcie_00_clk_p",
+        "destination_clock": "dma_ip_axi_aclk_1",
+        "review": "vendor PCIe reset/link-state and debug sampling",
+        "disposition": "accepted-platform-scoped; original Critical severity retained"
+      },
+      {
+        "rule": "CDC-7",
+        "severity": "Critical",
+        "source": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/sys_reset_in_async_rst_inst/arststages_ff_reg[1]/C",
+        "destination": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/debug_wrapper_U/debug_probes_inst/pre_ltssm_st_reg[3]/CLR",
+        "exception": "None",
+        "source_clock": "io_clk_pcie_00_clk_p",
+        "destination_clock": "dma_ip_axi_aclk_1",
+        "review": "vendor PCIe reset/link-state and debug sampling",
+        "disposition": "accepted-platform-scoped; original Critical severity retained"
+      },
+      {
+        "rule": "CDC-7",
+        "severity": "Critical",
+        "source": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/sys_reset_in_async_rst_inst/arststages_ff_reg[1]/C",
+        "destination": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/debug_wrapper_U/debug_probes_inst/pre_ltssm_st_reg[4]/CLR",
+        "exception": "None",
+        "source_clock": "io_clk_pcie_00_clk_p",
+        "destination_clock": "dma_ip_axi_aclk_1",
+        "review": "vendor PCIe reset/link-state and debug sampling",
+        "disposition": "accepted-platform-scoped; original Critical severity retained"
+      },
+      {
+        "rule": "CDC-7",
+        "severity": "Critical",
+        "source": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/sys_reset_in_async_rst_inst/arststages_ff_reg[1]/C",
+        "destination": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/debug_wrapper_U/debug_probes_inst/pre_ltssm_st_reg[5]/CLR",
+        "exception": "None",
+        "source_clock": "io_clk_pcie_00_clk_p",
+        "destination_clock": "dma_ip_axi_aclk_1",
+        "review": "vendor PCIe reset/link-state and debug sampling",
+        "disposition": "accepted-platform-scoped; original Critical severity retained"
+      },
+      {
+        "rule": "CDC-10",
+        "severity": "Critical",
+        "source": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/sys_reset_in_async_rst_inst/arststages_ff_reg[1]/C",
+        "destination": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/sys_or_hot_rst_uclk_inst/arststages_ff_reg[0]/PRE",
+        "exception": "False Path",
+        "source_clock": "io_clk_pcie_00_clk_p",
+        "destination_clock": "dma_ip_axi_aclk_1",
+        "review": "vendor PCIe system/hot-reset assertion and local reset synchronization",
+        "disposition": "accepted-platform-scoped; original Critical severity retained"
+      },
+      {
+        "rule": "CDC-10",
+        "severity": "Critical",
+        "source": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/sys_reset_in_async_rst_inst/arststages_ff_reg[1]/C",
+        "destination": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/user_lnk_up_cdc/arststages_ff_reg[0]/CLR",
+        "exception": "False Path",
+        "source_clock": "io_clk_pcie_00_clk_p",
+        "destination_clock": "dma_ip_axi_aclk_1",
+        "review": "vendor PCIe system/hot-reset assertion and local reset synchronization",
+        "disposition": "accepted-platform-scoped; original Critical severity retained"
+      },
+      {
+        "rule": "CDC-7",
+        "severity": "Critical",
+        "source": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/sys_rst_n_sbr_reg/C",
+        "destination": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/user_lnk_up_reg/CLR",
+        "exception": "False Path",
+        "source_clock": "io_clk_pcie_00_clk_p",
+        "destination_clock": "dma_ip_axi_aclk_1",
+        "review": "vendor PCIe reset/link-state and debug sampling",
+        "disposition": "accepted-platform-scoped; original Critical severity retained"
+      },
+      {
+        "rule": "CDC-10",
+        "severity": "Critical",
+        "source": "level0_i/ulp/hmss_0/inst/hbm_inst/inst/TWO_STACK.u_hbm_top/TWO_STACK_HBM.hbm_two_stack_intf/HBM_ONE_STACK_INTF<1>_INST/HBM_SNGLBLI_INTF_APB_INST/PCLK",
+        "destination": "level0_i/ulp/hmss_0/inst/hbm_reset_sync_SLR0/U0/EXT_LPF/ACTIVE_HIGH_AUX.ACT_HI_AUX/GENERATE_LEVEL_P_S_CDC.SINGLE_BIT.CROSS_PLEVEL_IN2SCNDRY_IN_cdc_to/D",
+        "exception": "False Path",
+        "source_clock": "clk_out2_bd_39ab_clkwiz_level0_periph_0_1",
+        "destination_clock": "hbm_aclk",
+        "review": "vendor HBM initialization/reset synchronizer",
+        "disposition": "accepted-platform-scoped; original Critical severity retained"
+      },
+      {
+        "rule": "CDC-10",
+        "severity": "Critical",
+        "source": "level0_i/ulp/hmss_0/inst/hbm_inst/inst/TWO_STACK.u_hbm_top/TWO_STACK_HBM.hbm_two_stack_intf/HBM_ONE_STACK_INTF<1>_INST/HBM_SNGLBLI_INTF_APB_INST/PCLK",
+        "destination": "level0_i/ulp/hmss_0/inst/hbm_reset_sync_SLR2/U0/EXT_LPF/ACTIVE_HIGH_AUX.ACT_HI_AUX/GENERATE_LEVEL_P_S_CDC.SINGLE_BIT.CROSS_PLEVEL_IN2SCNDRY_IN_cdc_to/D",
+        "exception": "False Path",
+        "source_clock": "clk_out2_bd_39ab_clkwiz_level0_periph_0_1",
+        "destination_clock": "hbm_aclk",
+        "review": "vendor HBM initialization/reset synchronizer",
+        "disposition": "accepted-platform-scoped; original Critical severity retained"
+      },
+      {
+        "rule": "CDC-13",
+        "severity": "Critical",
+        "source": "level0_i/ulp/ulp_ucs/inst/ucs_control_status/gpio_ucs_control_status/U0/gpio_core_1/Dual.gpio2_Data_Out_reg[31]/C",
+        "destination": "level0_i/ulp/ulp_ucs/inst/aclk_hbm_hierarchy/clkwiz_hbm/inst/CLK_CORE_DRP_I/clk_inst/clkout1_buf/CE",
+        "exception": "False Path",
+        "source_clock": "clk_out2_bd_39ab_clkwiz_level0_periph_0_1",
+        "destination_clock": "hbm_aclk",
+        "review": "vendor UCS clock-enable primitive; programmed while application quiescent",
+        "disposition": "accepted-platform-scoped; original Critical severity retained"
+      },
+      {
+        "rule": "CDC-11",
+        "severity": "Critical",
+        "source": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/phy_pipeline/phy_rate_chain/with_ff_chain.ff_chain_gen[0].sync_rst.ff_chain_reg[1][1]/C",
+        "destination": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/phy_lane[0].cdr_ctrl_on_eidle_i/sync_gen34/sync_vec[0].sync_cell_i/sync_reg[0]/D",
+        "exception": "Asynch Clock Groups",
+        "source_clock": "pipe_clk_1",
+        "destination_clock": "io_clk_pcie_00_clk_p",
+        "review": "vendor PCIe GT lane reset/rate-control synchronizers",
+        "disposition": "accepted-platform-scoped; original Critical severity retained"
+      },
+      {
+        "rule": "CDC-11",
+        "severity": "Critical",
+        "source": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/phy_pipeline/as_mac_in_detect_chain/with_ff_chain.ff_chain_gen[0].sync_rst.ff_chain_reg[1][0]/C",
+        "destination": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/phy_lane[0].receiver_detect_termination_i/sync_mac_in_detect/sync_vec[0].sync_cell_i/sync_reg[0]/D",
+        "exception": "Asynch Clock Groups",
+        "source_clock": "pipe_clk_1",
+        "destination_clock": "io_clk_pcie_00_clk_p",
+        "review": "vendor PCIe GT lane reset/rate-control synchronizers",
+        "disposition": "accepted-platform-scoped; original Critical severity retained"
+      },
+      {
+        "rule": "CDC-11",
+        "severity": "Critical",
+        "source": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/phy_pipeline/phy_rate_chain/with_ff_chain.ff_chain_gen[0].sync_rst.ff_chain_reg[1][1]/C",
+        "destination": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/phy_lane[10].cdr_ctrl_on_eidle_i/sync_gen34/sync_vec[0].sync_cell_i/sync_reg[0]/D",
+        "exception": "Asynch Clock Groups",
+        "source_clock": "pipe_clk_1",
+        "destination_clock": "io_clk_pcie_00_clk_p",
+        "review": "vendor PCIe GT lane reset/rate-control synchronizers",
+        "disposition": "accepted-platform-scoped; original Critical severity retained"
+      },
+      {
+        "rule": "CDC-11",
+        "severity": "Critical",
+        "source": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/phy_pipeline/as_mac_in_detect_chain/with_ff_chain.ff_chain_gen[0].sync_rst.ff_chain_reg[1][0]/C",
+        "destination": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/phy_lane[10].receiver_detect_termination_i/sync_mac_in_detect/sync_vec[0].sync_cell_i/sync_reg[0]/D",
+        "exception": "Asynch Clock Groups",
+        "source_clock": "pipe_clk_1",
+        "destination_clock": "io_clk_pcie_00_clk_p",
+        "review": "vendor PCIe GT lane reset/rate-control synchronizers",
+        "disposition": "accepted-platform-scoped; original Critical severity retained"
+      },
+      {
+        "rule": "CDC-11",
+        "severity": "Critical",
+        "source": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/phy_pipeline/phy_rate_chain/with_ff_chain.ff_chain_gen[0].sync_rst.ff_chain_reg[1][1]/C",
+        "destination": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/phy_lane[11].cdr_ctrl_on_eidle_i/sync_gen34/sync_vec[0].sync_cell_i/sync_reg[0]/D",
+        "exception": "Asynch Clock Groups",
+        "source_clock": "pipe_clk_1",
+        "destination_clock": "io_clk_pcie_00_clk_p",
+        "review": "vendor PCIe GT lane reset/rate-control synchronizers",
+        "disposition": "accepted-platform-scoped; original Critical severity retained"
+      },
+      {
+        "rule": "CDC-11",
+        "severity": "Critical",
+        "source": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/phy_pipeline/as_mac_in_detect_chain/with_ff_chain.ff_chain_gen[0].sync_rst.ff_chain_reg[1][0]/C",
+        "destination": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/phy_lane[11].receiver_detect_termination_i/sync_mac_in_detect/sync_vec[0].sync_cell_i/sync_reg[0]/D",
+        "exception": "Asynch Clock Groups",
+        "source_clock": "pipe_clk_1",
+        "destination_clock": "io_clk_pcie_00_clk_p",
+        "review": "vendor PCIe GT lane reset/rate-control synchronizers",
+        "disposition": "accepted-platform-scoped; original Critical severity retained"
+      },
+      {
+        "rule": "CDC-11",
+        "severity": "Critical",
+        "source": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/phy_pipeline/phy_rate_chain/with_ff_chain.ff_chain_gen[0].sync_rst.ff_chain_reg[1][1]/C",
+        "destination": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/phy_lane[12].cdr_ctrl_on_eidle_i/sync_gen34/sync_vec[0].sync_cell_i/sync_reg[0]/D",
+        "exception": "Asynch Clock Groups",
+        "source_clock": "pipe_clk_1",
+        "destination_clock": "io_clk_pcie_00_clk_p",
+        "review": "vendor PCIe GT lane reset/rate-control synchronizers",
+        "disposition": "accepted-platform-scoped; original Critical severity retained"
+      },
+      {
+        "rule": "CDC-11",
+        "severity": "Critical",
+        "source": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/phy_pipeline/as_mac_in_detect_chain/with_ff_chain.ff_chain_gen[0].sync_rst.ff_chain_reg[1][0]/C",
+        "destination": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/phy_lane[12].receiver_detect_termination_i/sync_mac_in_detect/sync_vec[0].sync_cell_i/sync_reg[0]/D",
+        "exception": "Asynch Clock Groups",
+        "source_clock": "pipe_clk_1",
+        "destination_clock": "io_clk_pcie_00_clk_p",
+        "review": "vendor PCIe GT lane reset/rate-control synchronizers",
+        "disposition": "accepted-platform-scoped; original Critical severity retained"
+      },
+      {
+        "rule": "CDC-11",
+        "severity": "Critical",
+        "source": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/phy_pipeline/phy_rate_chain/with_ff_chain.ff_chain_gen[0].sync_rst.ff_chain_reg[1][1]/C",
+        "destination": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/phy_lane[13].cdr_ctrl_on_eidle_i/sync_gen34/sync_vec[0].sync_cell_i/sync_reg[0]/D",
+        "exception": "Asynch Clock Groups",
+        "source_clock": "pipe_clk_1",
+        "destination_clock": "io_clk_pcie_00_clk_p",
+        "review": "vendor PCIe GT lane reset/rate-control synchronizers",
+        "disposition": "accepted-platform-scoped; original Critical severity retained"
+      },
+      {
+        "rule": "CDC-11",
+        "severity": "Critical",
+        "source": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/phy_pipeline/as_mac_in_detect_chain/with_ff_chain.ff_chain_gen[0].sync_rst.ff_chain_reg[1][0]/C",
+        "destination": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/phy_lane[13].receiver_detect_termination_i/sync_mac_in_detect/sync_vec[0].sync_cell_i/sync_reg[0]/D",
+        "exception": "Asynch Clock Groups",
+        "source_clock": "pipe_clk_1",
+        "destination_clock": "io_clk_pcie_00_clk_p",
+        "review": "vendor PCIe GT lane reset/rate-control synchronizers",
+        "disposition": "accepted-platform-scoped; original Critical severity retained"
+      },
+      {
+        "rule": "CDC-11",
+        "severity": "Critical",
+        "source": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/phy_pipeline/phy_rate_chain/with_ff_chain.ff_chain_gen[0].sync_rst.ff_chain_reg[1][1]/C",
+        "destination": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/phy_lane[14].cdr_ctrl_on_eidle_i/sync_gen34/sync_vec[0].sync_cell_i/sync_reg[0]/D",
+        "exception": "Asynch Clock Groups",
+        "source_clock": "pipe_clk_1",
+        "destination_clock": "io_clk_pcie_00_clk_p",
+        "review": "vendor PCIe GT lane reset/rate-control synchronizers",
+        "disposition": "accepted-platform-scoped; original Critical severity retained"
+      },
+      {
+        "rule": "CDC-11",
+        "severity": "Critical",
+        "source": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/phy_pipeline/as_mac_in_detect_chain/with_ff_chain.ff_chain_gen[0].sync_rst.ff_chain_reg[1][0]/C",
+        "destination": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/phy_lane[14].receiver_detect_termination_i/sync_mac_in_detect/sync_vec[0].sync_cell_i/sync_reg[0]/D",
+        "exception": "Asynch Clock Groups",
+        "source_clock": "pipe_clk_1",
+        "destination_clock": "io_clk_pcie_00_clk_p",
+        "review": "vendor PCIe GT lane reset/rate-control synchronizers",
+        "disposition": "accepted-platform-scoped; original Critical severity retained"
+      },
+      {
+        "rule": "CDC-11",
+        "severity": "Critical",
+        "source": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/phy_pipeline/phy_rate_chain/with_ff_chain.ff_chain_gen[0].sync_rst.ff_chain_reg[1][1]/C",
+        "destination": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/phy_lane[15].cdr_ctrl_on_eidle_i/sync_gen34/sync_vec[0].sync_cell_i/sync_reg[0]/D",
+        "exception": "Asynch Clock Groups",
+        "source_clock": "pipe_clk_1",
+        "destination_clock": "io_clk_pcie_00_clk_p",
+        "review": "vendor PCIe GT lane reset/rate-control synchronizers",
+        "disposition": "accepted-platform-scoped; original Critical severity retained"
+      },
+      {
+        "rule": "CDC-11",
+        "severity": "Critical",
+        "source": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/phy_pipeline/as_mac_in_detect_chain/with_ff_chain.ff_chain_gen[0].sync_rst.ff_chain_reg[1][0]/C",
+        "destination": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/phy_lane[15].receiver_detect_termination_i/sync_mac_in_detect/sync_vec[0].sync_cell_i/sync_reg[0]/D",
+        "exception": "Asynch Clock Groups",
+        "source_clock": "pipe_clk_1",
+        "destination_clock": "io_clk_pcie_00_clk_p",
+        "review": "vendor PCIe GT lane reset/rate-control synchronizers",
+        "disposition": "accepted-platform-scoped; original Critical severity retained"
+      },
+      {
+        "rule": "CDC-11",
+        "severity": "Critical",
+        "source": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/phy_pipeline/phy_rate_chain/with_ff_chain.ff_chain_gen[0].sync_rst.ff_chain_reg[1][1]/C",
+        "destination": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/phy_lane[1].cdr_ctrl_on_eidle_i/sync_gen34/sync_vec[0].sync_cell_i/sync_reg[0]/D",
+        "exception": "Asynch Clock Groups",
+        "source_clock": "pipe_clk_1",
+        "destination_clock": "io_clk_pcie_00_clk_p",
+        "review": "vendor PCIe GT lane reset/rate-control synchronizers",
+        "disposition": "accepted-platform-scoped; original Critical severity retained"
+      },
+      {
+        "rule": "CDC-11",
+        "severity": "Critical",
+        "source": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/phy_pipeline/as_mac_in_detect_chain/with_ff_chain.ff_chain_gen[0].sync_rst.ff_chain_reg[1][0]/C",
+        "destination": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/phy_lane[1].receiver_detect_termination_i/sync_mac_in_detect/sync_vec[0].sync_cell_i/sync_reg[0]/D",
+        "exception": "Asynch Clock Groups",
+        "source_clock": "pipe_clk_1",
+        "destination_clock": "io_clk_pcie_00_clk_p",
+        "review": "vendor PCIe GT lane reset/rate-control synchronizers",
+        "disposition": "accepted-platform-scoped; original Critical severity retained"
+      },
+      {
+        "rule": "CDC-11",
+        "severity": "Critical",
+        "source": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/phy_pipeline/phy_rate_chain/with_ff_chain.ff_chain_gen[0].sync_rst.ff_chain_reg[1][1]/C",
+        "destination": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/phy_lane[2].cdr_ctrl_on_eidle_i/sync_gen34/sync_vec[0].sync_cell_i/sync_reg[0]/D",
+        "exception": "Asynch Clock Groups",
+        "source_clock": "pipe_clk_1",
+        "destination_clock": "io_clk_pcie_00_clk_p",
+        "review": "vendor PCIe GT lane reset/rate-control synchronizers",
+        "disposition": "accepted-platform-scoped; original Critical severity retained"
+      },
+      {
+        "rule": "CDC-11",
+        "severity": "Critical",
+        "source": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/phy_pipeline/as_mac_in_detect_chain/with_ff_chain.ff_chain_gen[0].sync_rst.ff_chain_reg[1][0]/C",
+        "destination": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/phy_lane[2].receiver_detect_termination_i/sync_mac_in_detect/sync_vec[0].sync_cell_i/sync_reg[0]/D",
+        "exception": "Asynch Clock Groups",
+        "source_clock": "pipe_clk_1",
+        "destination_clock": "io_clk_pcie_00_clk_p",
+        "review": "vendor PCIe GT lane reset/rate-control synchronizers",
+        "disposition": "accepted-platform-scoped; original Critical severity retained"
+      },
+      {
+        "rule": "CDC-11",
+        "severity": "Critical",
+        "source": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/phy_pipeline/phy_rate_chain/with_ff_chain.ff_chain_gen[0].sync_rst.ff_chain_reg[1][1]/C",
+        "destination": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/phy_lane[3].cdr_ctrl_on_eidle_i/sync_gen34/sync_vec[0].sync_cell_i/sync_reg[0]/D",
+        "exception": "Asynch Clock Groups",
+        "source_clock": "pipe_clk_1",
+        "destination_clock": "io_clk_pcie_00_clk_p",
+        "review": "vendor PCIe GT lane reset/rate-control synchronizers",
+        "disposition": "accepted-platform-scoped; original Critical severity retained"
+      },
+      {
+        "rule": "CDC-11",
+        "severity": "Critical",
+        "source": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/phy_pipeline/as_mac_in_detect_chain/with_ff_chain.ff_chain_gen[0].sync_rst.ff_chain_reg[1][0]/C",
+        "destination": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/phy_lane[3].receiver_detect_termination_i/sync_mac_in_detect/sync_vec[0].sync_cell_i/sync_reg[0]/D",
+        "exception": "Asynch Clock Groups",
+        "source_clock": "pipe_clk_1",
+        "destination_clock": "io_clk_pcie_00_clk_p",
+        "review": "vendor PCIe GT lane reset/rate-control synchronizers",
+        "disposition": "accepted-platform-scoped; original Critical severity retained"
+      },
+      {
+        "rule": "CDC-11",
+        "severity": "Critical",
+        "source": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/phy_pipeline/phy_rate_chain/with_ff_chain.ff_chain_gen[0].sync_rst.ff_chain_reg[1][1]/C",
+        "destination": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/phy_lane[4].cdr_ctrl_on_eidle_i/sync_gen34/sync_vec[0].sync_cell_i/sync_reg[0]/D",
+        "exception": "Asynch Clock Groups",
+        "source_clock": "pipe_clk_1",
+        "destination_clock": "io_clk_pcie_00_clk_p",
+        "review": "vendor PCIe GT lane reset/rate-control synchronizers",
+        "disposition": "accepted-platform-scoped; original Critical severity retained"
+      },
+      {
+        "rule": "CDC-11",
+        "severity": "Critical",
+        "source": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/phy_pipeline/as_mac_in_detect_chain/with_ff_chain.ff_chain_gen[0].sync_rst.ff_chain_reg[1][0]/C",
+        "destination": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/phy_lane[4].receiver_detect_termination_i/sync_mac_in_detect/sync_vec[0].sync_cell_i/sync_reg[0]/D",
+        "exception": "Asynch Clock Groups",
+        "source_clock": "pipe_clk_1",
+        "destination_clock": "io_clk_pcie_00_clk_p",
+        "review": "vendor PCIe GT lane reset/rate-control synchronizers",
+        "disposition": "accepted-platform-scoped; original Critical severity retained"
+      },
+      {
+        "rule": "CDC-11",
+        "severity": "Critical",
+        "source": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/phy_pipeline/phy_rate_chain/with_ff_chain.ff_chain_gen[0].sync_rst.ff_chain_reg[1][1]/C",
+        "destination": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/phy_lane[5].cdr_ctrl_on_eidle_i/sync_gen34/sync_vec[0].sync_cell_i/sync_reg[0]/D",
+        "exception": "Asynch Clock Groups",
+        "source_clock": "pipe_clk_1",
+        "destination_clock": "io_clk_pcie_00_clk_p",
+        "review": "vendor PCIe GT lane reset/rate-control synchronizers",
+        "disposition": "accepted-platform-scoped; original Critical severity retained"
+      },
+      {
+        "rule": "CDC-11",
+        "severity": "Critical",
+        "source": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/phy_pipeline/as_mac_in_detect_chain/with_ff_chain.ff_chain_gen[0].sync_rst.ff_chain_reg[1][0]/C",
+        "destination": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/phy_lane[5].receiver_detect_termination_i/sync_mac_in_detect/sync_vec[0].sync_cell_i/sync_reg[0]/D",
+        "exception": "Asynch Clock Groups",
+        "source_clock": "pipe_clk_1",
+        "destination_clock": "io_clk_pcie_00_clk_p",
+        "review": "vendor PCIe GT lane reset/rate-control synchronizers",
+        "disposition": "accepted-platform-scoped; original Critical severity retained"
+      },
+      {
+        "rule": "CDC-11",
+        "severity": "Critical",
+        "source": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/phy_pipeline/phy_rate_chain/with_ff_chain.ff_chain_gen[0].sync_rst.ff_chain_reg[1][1]/C",
+        "destination": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/phy_lane[6].cdr_ctrl_on_eidle_i/sync_gen34/sync_vec[0].sync_cell_i/sync_reg[0]/D",
+        "exception": "Asynch Clock Groups",
+        "source_clock": "pipe_clk_1",
+        "destination_clock": "io_clk_pcie_00_clk_p",
+        "review": "vendor PCIe GT lane reset/rate-control synchronizers",
+        "disposition": "accepted-platform-scoped; original Critical severity retained"
+      },
+      {
+        "rule": "CDC-11",
+        "severity": "Critical",
+        "source": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/phy_pipeline/as_mac_in_detect_chain/with_ff_chain.ff_chain_gen[0].sync_rst.ff_chain_reg[1][0]/C",
+        "destination": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/phy_lane[6].receiver_detect_termination_i/sync_mac_in_detect/sync_vec[0].sync_cell_i/sync_reg[0]/D",
+        "exception": "Asynch Clock Groups",
+        "source_clock": "pipe_clk_1",
+        "destination_clock": "io_clk_pcie_00_clk_p",
+        "review": "vendor PCIe GT lane reset/rate-control synchronizers",
+        "disposition": "accepted-platform-scoped; original Critical severity retained"
+      },
+      {
+        "rule": "CDC-11",
+        "severity": "Critical",
+        "source": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/phy_pipeline/phy_rate_chain/with_ff_chain.ff_chain_gen[0].sync_rst.ff_chain_reg[1][1]/C",
+        "destination": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/phy_lane[7].cdr_ctrl_on_eidle_i/sync_gen34/sync_vec[0].sync_cell_i/sync_reg[0]/D",
+        "exception": "Asynch Clock Groups",
+        "source_clock": "pipe_clk_1",
+        "destination_clock": "io_clk_pcie_00_clk_p",
+        "review": "vendor PCIe GT lane reset/rate-control synchronizers",
+        "disposition": "accepted-platform-scoped; original Critical severity retained"
+      },
+      {
+        "rule": "CDC-11",
+        "severity": "Critical",
+        "source": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/phy_pipeline/as_mac_in_detect_chain/with_ff_chain.ff_chain_gen[0].sync_rst.ff_chain_reg[1][0]/C",
+        "destination": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/phy_lane[7].receiver_detect_termination_i/sync_mac_in_detect/sync_vec[0].sync_cell_i/sync_reg[0]/D",
+        "exception": "Asynch Clock Groups",
+        "source_clock": "pipe_clk_1",
+        "destination_clock": "io_clk_pcie_00_clk_p",
+        "review": "vendor PCIe GT lane reset/rate-control synchronizers",
+        "disposition": "accepted-platform-scoped; original Critical severity retained"
+      },
+      {
+        "rule": "CDC-11",
+        "severity": "Critical",
+        "source": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/phy_pipeline/phy_rate_chain/with_ff_chain.ff_chain_gen[0].sync_rst.ff_chain_reg[1][1]/C",
+        "destination": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/phy_lane[8].cdr_ctrl_on_eidle_i/sync_gen34/sync_vec[0].sync_cell_i/sync_reg[0]/D",
+        "exception": "Asynch Clock Groups",
+        "source_clock": "pipe_clk_1",
+        "destination_clock": "io_clk_pcie_00_clk_p",
+        "review": "vendor PCIe GT lane reset/rate-control synchronizers",
+        "disposition": "accepted-platform-scoped; original Critical severity retained"
+      },
+      {
+        "rule": "CDC-11",
+        "severity": "Critical",
+        "source": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/phy_pipeline/as_mac_in_detect_chain/with_ff_chain.ff_chain_gen[0].sync_rst.ff_chain_reg[1][0]/C",
+        "destination": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/phy_lane[8].receiver_detect_termination_i/sync_mac_in_detect/sync_vec[0].sync_cell_i/sync_reg[0]/D",
+        "exception": "Asynch Clock Groups",
+        "source_clock": "pipe_clk_1",
+        "destination_clock": "io_clk_pcie_00_clk_p",
+        "review": "vendor PCIe GT lane reset/rate-control synchronizers",
+        "disposition": "accepted-platform-scoped; original Critical severity retained"
+      },
+      {
+        "rule": "CDC-11",
+        "severity": "Critical",
+        "source": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/phy_pipeline/phy_rate_chain/with_ff_chain.ff_chain_gen[0].sync_rst.ff_chain_reg[1][1]/C",
+        "destination": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/phy_lane[9].cdr_ctrl_on_eidle_i/sync_gen34/sync_vec[0].sync_cell_i/sync_reg[0]/D",
+        "exception": "Asynch Clock Groups",
+        "source_clock": "pipe_clk_1",
+        "destination_clock": "io_clk_pcie_00_clk_p",
+        "review": "vendor PCIe GT lane reset/rate-control synchronizers",
+        "disposition": "accepted-platform-scoped; original Critical severity retained"
+      },
+      {
+        "rule": "CDC-11",
+        "severity": "Critical",
+        "source": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/phy_pipeline/as_mac_in_detect_chain/with_ff_chain.ff_chain_gen[0].sync_rst.ff_chain_reg[1][0]/C",
+        "destination": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/phy_lane[9].receiver_detect_termination_i/sync_mac_in_detect/sync_vec[0].sync_cell_i/sync_reg[0]/D",
+        "exception": "Asynch Clock Groups",
+        "source_clock": "pipe_clk_1",
+        "destination_clock": "io_clk_pcie_00_clk_p",
+        "review": "vendor PCIe GT lane reset/rate-control synchronizers",
+        "disposition": "accepted-platform-scoped; original Critical severity retained"
+      },
+      {
+        "rule": "CDC-13",
+        "severity": "Critical",
+        "source": "level0_i/blp/blp_i/ss_cmp/inst/mdm_board_control/U0/MDM_Core_I1/Use_BSCAN.Config_Reg_reg[0]/C",
+        "destination": "level0_i/blp/blp_i/ss_cmp/inst/jtag_fallback/inst/bs_switch/inst/BSCAN_SWITCH.N_EXT_BSCAN.bscan_inst/SERIES7_BSCAN.bscan_inst/TDO",
+        "exception": "Asynch Clock Groups",
+        "source_clock": "level0_i/blp/blp_i/ss_cmp/inst/mdm_board_control/U0/No_Dbg_Reg_Access.BUFG_DRCK/Using_FPGA.Native/O",
+        "destination_clock": "level0_i/blp/blp_i/ss_cmp/inst/jtag_fallback/inst/bs_switch/inst/BSCAN_SWITCH.N_EXT_BSCAN.bscan_inst/SERIES7_BSCAN.bscan_inst/INTERNAL_TCK",
+        "review": "vendor JTAG debug primitive",
+        "disposition": "accepted-platform-scoped; original Critical severity retained"
+      },
+      {
+        "rule": "CDC-10",
+        "severity": "Critical",
+        "source": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/sys_reset_in_async_rst_inst/arststages_ff_reg[1]/C",
+        "destination": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/sys_or_hot_rst_pclk_inst/arststages_ff_reg[0]/PRE",
+        "exception": "Asynch Clock Groups",
+        "source_clock": "io_clk_pcie_00_clk_p",
+        "destination_clock": "pipe_clk_1",
+        "review": "vendor PCIe system/hot-reset assertion and local reset synchronization",
+        "disposition": "accepted-platform-scoped; original Critical severity retained"
+      }
+    ],
+    "scope": "TNCA custom hierarchy has no reported crossings; vendor platform reset/clock/JTAG/IRQ structures reviewed by exact endpoints, retaining raw severity; no broad waiver or timing exception added",
+    "warning_review": {
+      "CDC-6": "12 vendor control/status snapshots, frequency-counter captures, and PCIe debug arrays; relies on their stable-capture/handshake IP contracts, not arbitrary binary-bus synchronization",
+      "CDC-15": "3689 vendor HBM/AXI FIFO clock-enable data paths and UCS controls; generated IP handshakes and constraints retained; no TNCA endpoint"
+    },
+    "vendor_assumptions": "verified xilinx_u280_gen3x16_xdma_1_202211_1 platform/interface; application idle/reset during XRT clock programming; no change to vendor IP logic or constraints"
+  },
+  "external_io_scope": {
+    "no_input_delay": 7,
+    "no_output_delay": 3,
+    "review": "unchanged vendor satellite-control/UART/perst inputs and UART/HBM-cattrip outputs; asynchronous management/alarm interfaces, not TNCA synchronous data I/O; all internal register endpoints constrained"
+  },
+  "drc_review": {
+    "errors": 0,
+    "critical": 0,
+    "total_findings": 2018,
+    "raw_summary": [
+      {
+        "rule": "DPIP-2",
+        "severity": "Warning",
+        "description": "Input pipelining",
+        "count": 760
+      },
+      {
+        "rule": "DPOP-3",
+        "severity": "Warning",
+        "description": "PREG Output pipelining",
+        "count": 465
+      },
+      {
+        "rule": "DPOP-4",
+        "severity": "Warning",
+        "description": "MREG Output pipelining",
+        "count": 507
+      },
+      {
+        "rule": "FLBO-1",
+        "severity": "Warning",
+        "description": "Pblock overlap",
+        "count": 8
+      },
+      {
+        "rule": "LOCE-1",
+        "severity": "Warning",
+        "description": "Pblock ranges contradict LOC constraints on logic assigned to the Pblock",
+        "count": 3
+      },
+      {
+        "rule": "PDCN-1569",
+        "severity": "Warning",
+        "description": "LUT equation term check",
+        "count": 27
+      },
+      {
+        "rule": "REQP-1774",
+        "severity": "Warning",
+        "description": "RAMB36E2_WRITE_WIDTH_A_18_doesnt_use_WEA32",
+        "count": 2
+      },
+      {
+        "rule": "REQP-1776",
+        "severity": "Warning",
+        "description": "RAMB36E2_WRITE_WIDTH_B_18_doesnt_use_WEB72",
+        "count": 2
+      },
+      {
+        "rule": "REQP-1858",
+        "severity": "Warning",
+        "description": "RAMB36E2_writefirst_collision_advisory",
+        "count": 22
+      },
+      {
+        "rule": "RPBF-3",
+        "severity": "Warning",
+        "description": "IO port buffering is incomplete",
+        "count": 216
+      },
+      {
+        "rule": "RTSTAT-10",
+        "severity": "Warning",
+        "description": "No routable loads",
+        "count": 1
+      },
+      {
+        "rule": "HDPRA-51",
+        "severity": "Advisory",
+        "description": "Narrow Edge with Location Constraints",
+        "count": 1
+      },
+      {
+        "rule": "HDPRA-53",
+        "severity": "Advisory",
+        "description": "Edge with Location Constraints",
+        "count": 1
+      },
+      {
+        "rule": "HDPRA-55",
+        "severity": "Advisory",
+        "description": "Narrow Gap with Location Constraints",
+        "count": 1
+      },
+      {
+        "rule": "HDPRA-57",
+        "severity": "Advisory",
+        "description": "Gap with Location Constraints",
+        "count": 2
+      }
+    ],
+    "review": "DSP pipeline recommendations are performance findings covered by passing actual timing; pblock range overlaps are nested/soft placement guidance with actual core/TMU SLR witnesses; LOCE findings belong to static BLP LOCs; LUT term, RAM width/collision and IO-buffer advisories retained under existing vendor/IP and queue-access protocols; no routing errors or HDPR failures"
+  },
+  "evidence_files": {
+    "timing.rpt": {
+      "path": "/home/zzhouch/tnca_build/r40_attempt03_conditional_90mhz/operating-clock-audit-v2/timing.rpt",
+      "sha256": "44f9d0b37543264e0310d2df90ad8aed26450bc39745bc26bd593a2bd6cacbe2"
+    },
+    "route_status.rpt": {
+      "path": "/home/zzhouch/tnca_build/r40_attempt03_conditional_90mhz/operating-clock-audit-v2/route_status.rpt",
+      "sha256": "3bec995e393d8eb6906ba31cbdc228f3b7888065a78aeb596776b2f2802ef201"
+    },
+    "cdc.rpt": {
+      "path": "/home/zzhouch/tnca_build/r40_attempt03_conditional_90mhz/operating-clock-audit-v2/cdc.rpt",
+      "sha256": "cfaa8f3bce6e87c821bcc507613ef33f2b37db5264567fc756b98bbedf6225fb"
+    },
+    "checks.rpt": {
+      "path": "/home/zzhouch/tnca_build/r40_attempt03_conditional_90mhz/operating-clock-audit-v2/checks.rpt",
+      "sha256": "46ba9a205bafae2a786e10c30a6a507cf1a14b7675bd107278502aea34b77552"
+    },
+    "drc.rpt": {
+      "path": "/home/zzhouch/tnca_build/r40_attempt03_conditional_90mhz/operating-clock-audit-v2/drc.rpt",
+      "sha256": "c76f0581673dfcd4994e21b35c1bc8da0d1407d10a98d19e062ef6f544f87bb6"
+    },
+    "actual_cores.rpt": {
+      "path": "/home/zzhouch/tnca_build/r40_attempt03_conditional_90mhz/operating-clock-audit-v2/actual_cores.rpt",
+      "sha256": "393e7dd52a54ee245880d2c1ed6888e56915afee3b3c368ee5e04766bf5e9fee"
+    },
+    "clocks_operating.rpt": {
+      "path": "/home/zzhouch/tnca_build/r40_attempt03_conditional_90mhz/operating-clock-audit-v2/clocks_operating.rpt",
+      "sha256": "b237a9b765b67936c890a53ac52e908012c113b1e6d5f33371fc8df9db04bf6e"
+    },
+    "analysis.tsv": {
+      "path": "/home/zzhouch/tnca_build/r40_attempt03_conditional_90mhz/operating-clock-audit-v2/analysis.tsv",
+      "sha256": "f0aed58e59a4c9113a82b257de0d9b8e32753e803cde228a17241889c2792399"
+    }
+  },
+  "decision": "approved for explicit load and actual-clock verification; not yet a qualified measured board result",
+  "required_gate_promotions": []
+}

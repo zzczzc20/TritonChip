@@ -1,0 +1,9 @@
+{
+  "checkpoint": {
+    "path": "/home/zzhouch/tnca_build/u280_r40ownership_preserved09/xo/tmp/link/vivado/vpl/prj/prj.runs/impl_1/level0_wrapper_routed_error.dcp",
+    "bytes": 595473030,
+    "sha256": "8d82bd375ce489ca433aba15f83692b53b409bc045381a7a8f44ed44811a50d9"
+  },
+  "observed_utc": "2026-10-16T01:15:49Z",
+  "processes": "    PID     ELAPSED %CPU   RSS COMMAND\n 891833       00:02  8.5 10100 /lib/systemd/systemd --user\n 891834       00:02  0.0  4612 (sd-pam)\n 891840       00:02  0.0  6924 /usr/bin/pipewire\n 891841       00:02  0.5  7316 /usr/bin/pipewire-media-session\n 891842       00:02  2.5 22460 /usr/bin/pulseaudio --daemonize=no --log-target=journal\n 891893       00:02  1.0  9072 sshd: zzhouch@notty\n 891894       00:02  0.0  4220 /usr/bin/dbus-daemon --session --address=systemd: --nofork --nopidfile --systemd-activation --syslog-only\n 891896       00:02  100 31116 python3 -c from pathlib import Path import json,hashlib,gzip,base64,subprocess root=Path.home()/\"tnca_build/u280_r40ownership_preserved09\" r=root/\"xo/tmp/link/vivado/vpl/prj/prj.runs/impl_1\" files={} for key,p in [(\"runme.log.gz\",r/\"runme.log\"),(\"link.exit\",root/\"build/link.exit\")]:  data=p.read_bytes(); data=gzip.compress(data,mtime=0) if key.endswith(\".gz\") else data  files[key]=base64.b64encode(data).decode() dcp=r/\"level0_wrapper_routed_error.dcp\" h=hashlib.sha256() with dcp.open(\"rb\") as f:  for b in iter(lambda:f.read(8<<20),b\"\"):h.update(b) print(json.dumps(dict(files=files,checkpoint=dict(path=str(dcp),bytes=dcp.stat().st_size,sha256=h.hexdigest()),observed_utc=subprocess.check_output([\"date\",\"-u\",\"+%Y-%m-%dT%H:%M:%SZ\"],text=True).strip(),processes=subprocess.check_output([\"ps\",\"-u\",\"zzhouch\",\"-o\",\"pid,etime,pcpu,rss,args\"],text=True)))) \n 891900       00:00  0.0  3548 ps -u zzhouch -o pid,etime,pcpu,rss,args\n"
+}

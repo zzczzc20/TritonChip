@@ -1,0 +1,13 @@
+{
+  "schema": "tnca-diagnostic-priority-release/1",
+  "observed_utc": "2026-10-18T08:41:10.156636+00:00",
+  "owned_report_pid": 2191463,
+  "owned_group": 2191423,
+  "controller_pid": 2192159,
+  "status": "historical-extra-report-interrupted-preserved-for90-qualification",
+  "scope": "original 100MHz routed timing already retained; additional historical diagnostic cannot qualify 90MHz and was delaying the mandatory operating-clock audit",
+  "partial_reports": "/home/zzhouch/tnca_build/r40_attempt03_followup_cachecuts/failed_checkpoint_reports",
+  "existing_routed_checkpoint_untouched": true,
+  "complete_bitstream_untouched": true,
+  "required_90mhz_checks_unchanged": true
+}

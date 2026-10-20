@@ -1,0 +1,39 @@
+{
+ "u280_tiny.jsonl.gz": {
+  "source": "acf3019:/home/zzhouch/tnca_runs_r40_v3x2/native/u280_tiny.jsonl",
+  "raw_sha256": "99e15d77ed1c4996f2dc715001532138b57ba6669abd77cb70592e99ed6469f8",
+  "raw_bytes": 1890339,
+  "sha256": "fa3e53abbea69adb70232173a24fd5552739c46545172977ef2df4016baa3069"
+ },
+ "u280_small.jsonl.gz": {
+  "source": "acf3019:/home/zzhouch/tnca_runs_r40_v3x2/native/u280_small.jsonl",
+  "raw_sha256": "566b8701936d2b66d167d38315c1f6f8a1a243c79b3772b758b8c1ac3e492b61",
+  "raw_bytes": 1881943,
+  "sha256": "7abab420b9c67a48912108982e27456fc7c2f1251c5fee30e58aa8114017e5d5"
+ },
+ "u280_medium.jsonl.gz": {
+  "source": "acf3019:/home/zzhouch/tnca_runs_r40_v3x2/native/u280_medium.jsonl",
+  "raw_sha256": "d4fcc17648081bf3da4c0fca6e1888a4509aeeab082bb2d74cd7ec1245f7d4eb",
+  "raw_bytes": 1881468,
+  "sha256": "8d7692deb5c65a96777b885954689924b40a58ed3b29263161e6521e614ff50d"
+ },
+ "hbm14.jsonl.gz": {
+  "source": "acf3019:/home/zzhouch/tnca_runs_r40_v3x2/hbm14.jsonl",
+  "raw_sha256": "8b27b796715092c533e3992c7cafd276fcec6a9a0d36f988b1537905a006857a",
+  "raw_bytes": 1160544,
+  "sha256": "5513ced9912c87b7ee9bb661994bdbd7266ae9abea0ed27412e84b4b964a6af1"
+ },
+ "large24.jsonl.gz": {
+  "source": "acf3019:/home/zzhouch/tnca_v3_recollect_x2/large24.jsonl",
+  "raw_sha256": "977de705160fde2ee99e23cfcca30b92dce889d457371afbcab0863fde9b9131",
+  "raw_bytes": 2203076,
+  "sha256": "5ecf2791b1b3b663bab4a8feec0d7501738ddf4ebbfe4a9cf5380d4f6ae1f4e1"
+ },
+ "delivery.json.gz": {
+  "source": "acf3019:/home/zzhouch/tnca_runs_r40_v3x2/delivery.json",
+  "raw_sha256": "012238cad0d520ef4d5fd4e7d3874e9230e245c2b5cb0dc279e05ebd14a0b521",
+  "raw_bytes": 62347,
+  "sha256": "c37c2c4287b35eea7a7a33214d3cf69534cfd057c564f0eebbdb9bc40d409130"
+ },
+ "_scope": "Complete functional re-collection on the v3 delivery identity (tree fe1b, image a88ebdf5, 90 MHz): native77 tiny/small/medium and original HBM14 from tools/r40/conditional_delivery.py (one untimed warmup + one steady functional call), original large24 from the queue stage original-large24; raw hashes verified against the FPGA host copies on 2026-10-20"
+}

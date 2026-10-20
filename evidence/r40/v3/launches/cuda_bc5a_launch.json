@@ -1,0 +1,8 @@
+{
+  "host": "gx10-6646 (GB10)",
+  "root": "/home/zhongchun/r40v3_cuda_bc5a",
+  "source": "/home/zhongchun/r40v3_fixsrc",
+  "software_tree": "files:bc5a778ebc5f4afebf6c1a9fbf3b2d8717cb02e118134ebbb73fb5a927fc8183",
+  "controller_sha256": "8b43453a26926320faecda7a919ffd1beff75a6803ee2df111500c1e595a0b41",
+  "derived_from": "evidence/r40/v2/convergence/attempt03/reserved_80dd_cuda_launch.json (source path and tree replaced)"
+}

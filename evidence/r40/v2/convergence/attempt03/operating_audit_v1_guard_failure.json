@@ -1,0 +1,132 @@
+{
+  "schema": "tnca-operating-audit-guard-failure/1",
+  "observed_utc": "2026-10-18T13:51:15.240623+00:00",
+  "state": {
+    "schema": "tnca-preserved-operating-image/1",
+    "scope": "Preserve a terminal implementation and serially audit an operating clock.\n\nNo implementation, bitstream regeneration, programming, clock programming or\nacceptance promotion. Wait for the existing report observer before opening DCP.\n",
+    "build": "/home/zzhouch/tnca_build/r40_attempt03_20261017",
+    "requested_mhz": 90,
+    "original_contract_gate": "not-passed",
+    "conditional_gate": "not-measured",
+    "tool_sha256": "4c1a1fe9d4bafd368dca52a1205d485ccb4edae351cb2d38020bbdc15974f971",
+    "artifacts": [
+      {
+        "source": "/home/zzhouch/tnca_build/r40_attempt03_20261017/xo/tmp/link/vivado/vpl/prj/prj.runs/impl_1/level0_i_ulp_my_rm_partial.bit",
+        "preserved": "/home/zzhouch/tnca_build/r40_attempt03_conditional_90mhz/preserved-level0_i_ulp_my_rm_partial.bit",
+        "bytes": 79094414,
+        "sha256": "1c2dfd57a4e215574b4f6d017526c1c5415a9b49b8bff37148b5f9ba1b418857"
+      },
+      {
+        "source": "/home/zzhouch/tnca_build/r40_attempt03_20261017/xo/tnca_u280.xclbin",
+        "preserved": "/home/zzhouch/tnca_build/r40_attempt03_conditional_90mhz/preserved-tnca_u280.xclbin",
+        "bytes": 79202018,
+        "sha256": "a88ebdf59cfbbb2001ebd5b1b2c739c5d8cd33931f1e9202f18cac07c4c83083"
+      }
+    ],
+    "steps": [
+      {
+        "label": "xclbin-info",
+        "command": [
+          "/opt/xilinx/xrt/bin/xclbinutil",
+          "--input",
+          "/home/zzhouch/tnca_build/r40_attempt03_conditional_90mhz/preserved-tnca_u280.xclbin",
+          "--info"
+        ],
+        "exit_code": 0
+      },
+      {
+        "label": "clock-topology",
+        "command": [
+          "/opt/xilinx/xrt/bin/xclbinutil",
+          "--input",
+          "/home/zzhouch/tnca_build/r40_attempt03_conditional_90mhz/preserved-tnca_u280.xclbin",
+          "--dump-section",
+          "CLOCK_FREQ_TOPOLOGY:JSON:/home/zzhouch/tnca_build/r40_attempt03_conditional_90mhz/clock_topology.json"
+        ],
+        "exit_code": 0
+      },
+      {
+        "label": "operating-clock",
+        "command": [
+          "vivado",
+          "-mode",
+          "batch",
+          "-log",
+          "/home/zzhouch/tnca_build/r40_attempt03_conditional_90mhz/operating.vivado.log",
+          "-journal",
+          "/home/zzhouch/tnca_build/r40_attempt03_conditional_90mhz/operating.vivado.jou",
+          "-source",
+          "/home/zzhouch/tnca_reports_r40_conditional90_18466e2/flow/fpga/audit_r40_operating_clock.tcl",
+          "-tclargs",
+          "/home/zzhouch/tnca_build/r40_attempt03_20261017/xo/tmp/link/vivado/vpl/prj/prj.runs/impl_1/level0_wrapper_routed.dcp",
+          "/home/zzhouch/tnca_build/r40_attempt03_conditional_90mhz/operating-clock-audit",
+          "90",
+          "placement"
+        ],
+        "exit_code": 1
+      }
+    ],
+    "status": "preserved-report-failure-review-required",
+    "observed_utc": "2026-10-18T08:53:48.396582+00:00",
+    "implementation_exit_code": 3,
+    "original_observer_state": {
+      "scope": "report extraction only; no synthesis/place/route/load/retry",
+      "gate_status": "not-measured",
+      "build": "/home/zzhouch/tnca_build/r40_attempt03_20261017",
+      "runner_pid": 1917223,
+      "image_sha256": null,
+      "steps": [],
+      "watcher_sha256": "3d0d1d093e116eac2c6ace87ea6dc59b347edcf23adf3df66ca29e73ad566fa4",
+      "final_cache_cuts": true,
+      "status": "historical-extra-report-interrupted-preserved-for90-qualification",
+      "observed_utc": "2026-10-18T08:41:10.156636+00:00",
+      "priority_change": "allow current original report to finish; defer not-yet-started cache-cut report until after 90 MHz functional baseline",
+      "original_observer_stopped_pid": 1926388,
+      "owned_report_continues_pid": 2191463,
+      "interrupted_owned_report_pid": 2191463,
+      "interrupted_owned_process_group": 2191423,
+      "reason": "original 100MHz routed timing already retained; additional historical diagnostic cannot qualify 90MHz and was delaying the mandatory operating-clock audit",
+      "deferred": "historical detailed cones/cache-cut reports after conditional functional baseline",
+      "historical_report_exit_code": null
+    },
+    "checkpoint": {
+      "path": "/home/zzhouch/tnca_build/r40_attempt03_20261017/xo/tmp/link/vivado/vpl/prj/prj.runs/impl_1/level0_wrapper_routed.dcp",
+      "sha256": "f6fc4da97b7febb20466ec80645fc03cd242cdd8ff9143bd910f1329df5356f9"
+    },
+    "clock_audit_script_sha256": "82a11420de15bcc83802436ac7fe907ba5a4d55fb9b43850e6c3666c29660852"
+  },
+  "log_sha256": "8dd36ac8f7eb8e058939ccdf48adca9e1ecb9d0fae069d43d794b58a0b11bedd",
+  "log_tail": [
+    "",
+    "INFO: [Project 1-604] Checkpoint was created with Vivado v2023.2 (64-bit) build 4029153",
+    "WARNING: [Constraints 18-5685] Specifying child pblock pblock_dynamic_SLR0 before parent pblock r40_slr0 may result in the contents of the child being reassigned to parent after a \"add_cells_to_pblock -pblock <parent>\". If this is not intended, please read the parent pblock constraints first followed by its children pblock constraints. If using link_design flow, please use the PROCESSING_ORDER property for XDC files to make sure parent pblocks are processed before children pblocks. Refer UG912 to know more about PROCESSING_ORDER property of XDC files.",
+    "WARNING: [Constraints 18-5685] Specifying child pblock pblock_dynamic_SLR2 before parent pblock r40_slr2 may result in the contents of the child being reassigned to parent after a \"add_cells_to_pblock -pblock <parent>\". If this is not intended, please read the parent pblock constraints first followed by its children pblock constraints. If using link_design flow, please use the PROCESSING_ORDER property for XDC files to make sure parent pblocks are processed before children pblocks. Refer UG912 to know more about PROCESSING_ORDER property of XDC files.",
+    "WARNING: [Constraints 18-5685] Specifying child pblock pblock_dynamic_SLR1 before parent pblock r40_slr1 may result in the contents of the child being reassigned to parent after a \"add_cells_to_pblock -pblock <parent>\". If this is not intended, please read the parent pblock constraints first followed by its children pblock constraints. If using link_design flow, please use the PROCESSING_ORDER property for XDC files to make sure parent pblocks are processed before children pblocks. Refer UG912 to know more about PROCESSING_ORDER property of XDC files.",
+    "open_checkpoint: Time (s): cpu = 00:15:03 ; elapsed = 00:11:57 . Memory (MB): peak = 13559.492 ; gain = 12259.105 ; free physical = 19751 ; free virtual = 31880",
+    "# set name clk_kernel_00_unbuffered_net",
+    "# set old [get_clocks -quiet $name]",
+    "# if {[llength $old] != 1} {error \"expected one final-candidate kernel generated clock\"}",
+    "# set before [get_property PERIOD $old]",
+    "# if {abs($before-10.0)>0.00001} {error \"expected original 100 MHz routed checkpoint, got period $before\"}",
+    "# set mmcm level0_i/ulp/ulp_ucs/inst/aclk_kernel_00_hierarchy/clkwiz_aclk_kernel_00/inst/CLK_CORE_DRP_I/clk_inst/mmcme4_adv_inst",
+    "# set source [get_pins -quiet $mmcm/CLKIN1]",
+    "# set target [get_pins -quiet $mmcm/CLKOUT0]",
+    "# if {[llength $source] != 1 || [llength $target] != 1} {error \"kernel MMCM endpoint ambiguity\"}",
+    "# report_clocks -file [file join $out clocks_original.rpt]",
+    "# create_generated_clock -name $name -divide_by 100 -multiply_by $mhz -source $source $target",
+    "WARNING: [Constraints 18-619] A clock with name 'clk_kernel_00_unbuffered_net' already exists, overwriting the previous clock with the same name.",
+    "WARNING: [Timing 38-3] User defined clock exists on pin level0_i/ulp/ulp_ucs/inst/aclk_kernel_00_hierarchy/clkwiz_aclk_kernel_00/inst/CLK_CORE_DRP_I/clk_inst/mmcme4_adv_inst/CLKOUT0 and will prevent any subsequent automatic derivation of generated clocks on that pin. If the user defined clock specifies '-add', any existing auto-derived clocks on that pin are retained.",
+    "# set after [get_property PERIOD [get_clocks $name]]",
+    "# if {abs($after-1000.0/$mhz)>0.0001} {error \"requested operating period was not applied\"}",
+    "requested operating period was not applied",
+    "    while executing",
+    "\"error \"requested operating period was not applied\"\"",
+    "    invoked from within",
+    "\"if {abs($after-1000.0/$mhz)>0.0001} {error \"requested operating period was not applied\"}\"",
+    "    (file \"/home/zzhouch/tnca_reports_r40_conditional90_18466e2/flow/fpga/audit_r40_operating_clock.tcl\" line 28)",
+    "INFO: [Common 17-206] Exiting Vivado at Sun Oct 18 16:53:34 2026..."
+  ],
+  "clock_original_report_sha256": "79e8ed1df3f8c2817c8137db6fb3b9c514db53642074c72f7d969dcb86818da1",
+  "diagnosis": "period identity guard stopped before operating timing/CDC reports; setup/hold remain not-measured",
+  "next_hypothesis": "Vivado PERIOD property rounded to 0.001ns: 11.111 versus expected 11.111111 exceeds old 0.0001ns guard; retest with logged actual value and half-quantum identity tolerance; never relax timing slack"
+}

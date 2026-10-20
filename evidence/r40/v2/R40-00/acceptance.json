@@ -1,0 +1,36 @@
+{
+ "schema": "tnca-r40-acceptance/1",
+ "plan": "spec/r40/v2/plan.json",
+ "work_packages": {
+  "R40-00": {
+   "passed": true,
+   "gates": [
+    {
+     "id": "R40-00.protocol",
+     "kind": "capability",
+     "required": true,
+     "status": "capability-pass",
+     "why": "34/34 cases"
+    },
+    {
+     "id": "R40-00.b39-reproducible",
+     "kind": "capability",
+     "required": true,
+     "status": "capability-pass",
+     "why": "B39 rerun: 77/77 pass, 77 cycle-identical; protocol 2: 77/77 consistent, 77 with B39's cycles"
+    },
+    {
+     "id": "R40-00.frozen",
+     "kind": "capability",
+     "required": true,
+     "status": "capability-pass",
+     "why": "33/33 as frozen"
+    }
+   ]
+  }
+ },
+ "passed": true,
+ "scope": [
+  "R40-00"
+ ]
+}

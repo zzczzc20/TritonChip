@@ -1,0 +1,20 @@
+W1019 09:42:43.852000 3097817 torch/utils/cpp_extension.py:183] No CUDA runtime is found, using CUDA_HOME='/usr/local/cuda'
+  building core-vrf-sync-v5 -> /home/zhongchun/r40v3_tpc_runs/all/cache/gemm_n16_k64_window_float16/devices/core-vrf-sync-v5-a8f9e2a0291d254a-2f12bdd465ea/tnca_device_vrf5.vvp
+  built 17676402 bytes
+AUDIT awaited window layout: {'layouts': [{'count': 16, 'start': 32, 'window': 0}, {'count': 16, 'start': 48, 'window': 1}, {'count': 16, 'start': 32, 'window': 2}, {'count': 16, 'start': 48, 'window': 3}], 'logical_registers': 64, 'reserved_registers': 32}
+AUDIT logical K=64, physical MMA K=32, retiles=[[64, 32]]: {'accumulators': 1, 'barriers': 6, 'commands_outstanding': 'unknown', 'descriptors': 4, 'rf_private_per_role': {'role0': 45, 'role1': 45}, 'scratch_bytes': 29696, 'shared_windows': []}
+AUDIT logical GEMM tiles: [{'external_spill_bytes': 0, 'gemm_tiles': [[16, 16, 64]], 'mma_fragment_reuses': 0, 'predicate_rematerializations': 0, 'reductions': [], 'vlen': 16, 'widths': [16, 64]}]
+PASS mm, logical 16x16x64, shape 17x65x33
+AUDIT awaited window layout: {'layouts': [{'count': 16, 'start': 32, 'window': 0}, {'count': 16, 'start': 48, 'window': 1}, {'count': 16, 'start': 32, 'window': 2}, {'count': 16, 'start': 48, 'window': 3}], 'logical_registers': 64, 'reserved_registers': 32}
+AUDIT logical K=64, physical MMA K=32, retiles=[[64, 32]]: {'accumulators': 1, 'barriers': 6, 'commands_outstanding': 'unknown', 'descriptors': 4, 'rf_private_per_role': {'role0': 44, 'role1': 44}, 'scratch_bytes': 29696, 'shared_windows': []}
+AUDIT logical GEMM tiles: [{'external_spill_bytes': 0, 'gemm_tiles': [[16, 16, 64]], 'mma_fragment_reuses': 0, 'predicate_rematerializations': 0, 'reductions': [], 'vlen': 16, 'widths': [16, 64]}]
+PASS mm, logical 16x16x64, shape 33x31x65
+AUDIT awaited window layout: {'layouts': [{'count': 16, 'start': 32, 'window': 0}, {'count': 16, 'start': 48, 'window': 1}, {'count': 16, 'start': 32, 'window': 2}, {'count': 16, 'start': 48, 'window': 3}], 'logical_registers': 64, 'reserved_registers': 32}
+AUDIT logical K=64, physical MMA K=32, retiles=[[64, 32]]: {'accumulators': 1, 'barriers': 6, 'commands_outstanding': 'unknown', 'descriptors': 4, 'rf_private_per_role': {'role0': 45, 'role1': 45}, 'scratch_bytes': 29696, 'shared_windows': []}
+AUDIT logical GEMM tiles: [{'external_spill_bytes': 0, 'gemm_tiles': [[16, 16, 64]], 'mma_fragment_reuses': 0, 'predicate_rematerializations': 0, 'reductions': [], 'vlen': 16, 'widths': [16, 64]}]
+PASS addmm, logical 16x16x64, shape 17x65x33
+AUDIT awaited window layout: {'layouts': [{'count': 16, 'start': 32, 'window': 0}, {'count': 16, 'start': 48, 'window': 1}, {'count': 16, 'start': 32, 'window': 2}, {'count': 16, 'start': 48, 'window': 3}], 'logical_registers': 64, 'reserved_registers': 32}
+AUDIT logical K=64, physical MMA K=32, retiles=[[64, 32]]: {'accumulators': 1, 'barriers': 6, 'commands_outstanding': 'unknown', 'descriptors': 4, 'rf_private_per_role': {'role0': 44, 'role1': 44}, 'scratch_bytes': 29696, 'shared_windows': []}
+AUDIT logical GEMM tiles: [{'external_spill_bytes': 0, 'gemm_tiles': [[16, 16, 64]], 'mma_fragment_reuses': 0, 'predicate_rematerializations': 0, 'reductions': [], 'vlen': 16, 'widths': [16, 64]}]
+PASS addmm, logical 16x16x64, shape 33x31x65
+r40-gemm-tiles-tests PASS (4/4)

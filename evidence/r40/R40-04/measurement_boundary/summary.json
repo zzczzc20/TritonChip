@@ -1,0 +1,108 @@
+{
+  "identity": {
+    "software_tree": "files:2126d33f1aadafec79a19ab7cb15aff7309561c4ac29e2da3faa6309c5d221ae",
+    "sources": {
+      "python/tnca/backends/multicore_mmio.py": "8897a9621f6a0642228811e2758360ebf2bf344b9b187ce92bef5991c4ce74da",
+      "tools/r40/hbm_board.py": "556ff3b88fcfbe0cd2cb2d54592e551d04e70b42645bef61d3532779bd8c3a69",
+      "tools/r40/hbm_measurement_tests.py": "01c7236d2fb18035050d91e5bee49fa3eb0038f09389e9045e9171577a59e420",
+      "tools/r40/multicore_mmio_option_tests.py": "7bcd7efcfb7b4bfc772ee06aa1913adc980592dbf12d88796795ebc217afd57a",
+      "tools/r40/native_memory_ports_tests.py": "2d38fe957b007de6128846a160b9797d538ca96210b1689a370735f8a7f530b2",
+      "rtl/fpga/tnca_multicore_mmio.v": "ffb534343872753c14bc98a6c125fb61b71854478843dc0cc56defcee6e3506d",
+      "rtl/fpga/tnca_line_axi.v": "7d923cf6db84b57f19ba987d4779bcdebb2ebf32b2ef98109f7a54873b6bf2b3"
+    },
+    "image_sha256": "3f249f2af25ab84afed2ef1df376995db32eb197ef64600bb28eb64b032039aa",
+    "backend": "fpga-multicore-sim",
+    "backend_args": {
+      "core_count": 3,
+      "memory_ports": 3,
+      "noc_link_stages": 2,
+      "dispatch_stages": 2,
+      "home_stages": 2,
+      "code_stages": 2,
+      "board_top": true,
+      "maintenance": true,
+      "hbm_dma": true
+    },
+    "clock_qualification": "RTL diagnostic; not a qualified FPGA frequency",
+    "contract_sha256": "49fc0e02733139707ae2292eff2ef893e76e73f0723d0d002b2e7e1864af71c8",
+    "gate_status": "not-measured",
+    "performance": "not-measured"
+  },
+  "reproduction": {
+    "actual_outlet_delta": [
+      {
+        "port": 0,
+        "read_lines": 350,
+        "write_lines": 83
+      },
+      {
+        "port": 1,
+        "read_lines": 284,
+        "write_lines": 82
+      },
+      {
+        "port": 2,
+        "read_lines": 256,
+        "write_lines": 81
+      }
+    ],
+    "corrected_legacy_api": "unavailable",
+    "legacy_register_defaults": {
+      "read_beats": 0,
+      "read_cycles": 0,
+      "reads": 0,
+      "writes": 0
+    }
+  },
+  "result": {
+    "controller_traffic": [
+      {
+        "port": 0,
+        "read_lines": 350,
+        "write_lines": 83
+      },
+      {
+        "port": 1,
+        "read_lines": 284,
+        "write_lines": 82
+      },
+      {
+        "port": 2,
+        "read_lines": 256,
+        "write_lines": 81
+      }
+    ],
+    "cores": 3,
+    "dma_ownership": true,
+    "physical_activity": {
+      "cores": [
+        {
+          "completed": 88,
+          "core": 0,
+          "issued": 88,
+          "occupied_cycles": 22768
+        },
+        {
+          "completed": 84,
+          "core": 1,
+          "issued": 84,
+          "occupied_cycles": 21996
+        },
+        {
+          "completed": 85,
+          "core": 2,
+          "issued": 85,
+          "occupied_cycles": 22212
+        }
+      ],
+      "peak_active": 3
+    },
+    "ports": 3,
+    "zero_tensor_staging": true
+  },
+  "gate_status": "not-measured",
+  "performance": "not-measured",
+  "raw_archive_sha256": "79b55c413d824cb4a01b0e46d690a7460696b6630a24c3895d15aaf1fd04975a",
+  "setup_failure": "dev01 collector unit imported TNCA driver during incomplete plugin discovery; fixed by importing pinned Triton first",
+  "base_commit": "4fcfcb9199c2bff5dbe77d45aedf890b4e4b797b"
+}

@@ -1,0 +1,226 @@
+{
+  "state": {
+    "status": "complete-review-required",
+    "software_tree": "files:44051ad9c76c544f59b57afb9f297608bb3f0362c9f4f4479f977690645d2436",
+    "image_sha256": "a88ebdf59cfbbb2001ebd5b1b2c739c5d8cd33931f1e9202f18cac07c4c83083",
+    "clock_hz": 90000000,
+    "backend_args": {
+      "xclbin": "/home/zzhouch/tnca_images/r40_attempt03_90mhz_a88ebdf5/tnca_u280.xclbin",
+      "image_profile": "core-vrf-sync-v5",
+      "core_count": 3,
+      "memory_ports": 3,
+      "hbm_dma": true,
+      "hbm_bytes": 4294967296,
+      "device_clock": true
+    },
+    "contract_sha256": "49fc0e02733139707ae2292eff2ef893e76e73f0723d0d002b2e7e1864af71c8",
+    "harness_sha256": "74b762d74210e8912ad5e753985ea069761189e5a210d9f7ca9b8a5b52c85070",
+    "completed": [
+      {
+        "point_id": "model.gpt2_block/medium/fp16-d160-h5-b1-s64",
+        "point_sha256": "2746d763693c5849cb5f3ce10030c23f3244c69df5c622c00bdd4c06e255f0a1",
+        "exit_code": 0,
+        "log": "point00.log"
+      },
+      {
+        "point_id": "model.gpt2_block/small/fp16-d128-h4-b1-s64",
+        "point_sha256": "75533c2b96d185e7fd2bdf0a168ef57d4d53f0ed019e0aaba37aa43c7757c7f6",
+        "exit_code": 0,
+        "log": "point01.log"
+      },
+      {
+        "point_id": "model.gpt2_block/tiny/fp16-d64-h4-b1-s16",
+        "point_sha256": "c6ac63596b04acf91cdb6fd7da6cf742d3da62e6f02951df35f1b6a538b5bdc4",
+        "exit_code": 0,
+        "log": "point02.log"
+      },
+      {
+        "point_id": "model.llama_decode/medium/fp16-b1-p256",
+        "point_sha256": "dafdc2dd0f86b5b55e3922d2a91c44987ee1df0311ee6e3b57369fc3fb0fe0d5",
+        "exit_code": 0,
+        "log": "point03.log"
+      },
+      {
+        "point_id": "model.llama_decode/small/fp16-b1-p128",
+        "point_sha256": "a83153ccb5eccc8f9b328aeed2fd648df5e7e9deecfd940d986ebc5129ee53c1",
+        "exit_code": 0,
+        "log": "point04.log"
+      },
+      {
+        "point_id": "model.llama_decode/tiny/fp16-b1-p16",
+        "point_sha256": "9889060c587f03f485fbc2e16e4c3b6788cf830c616747040259517c3e81b63a",
+        "exit_code": 0,
+        "log": "point05.log"
+      },
+      {
+        "point_id": "model.llama_prefill/medium/fp16-b1-s64",
+        "point_sha256": "01c5f5834948841ad9674e61a49aeb0a90670833fbc3596c4fefc05a56790b55",
+        "exit_code": 0,
+        "log": "point06.log"
+      },
+      {
+        "point_id": "model.llama_prefill/small/fp16-b1-s64",
+        "point_sha256": "a4aa11b171f8875f87051a5ebfbd9fbeecfc53ac8f48f5c67e1902ffbf490ae0",
+        "exit_code": 0,
+        "log": "point07.log"
+      },
+      {
+        "point_id": "model.llama_prefill/tiny/fp16-b1-s16",
+        "point_sha256": "6d14a4a6373ba814884be0e62ed485960e3da63c6fe51b6e2de35492dbde69bc",
+        "exit_code": 0,
+        "log": "point08.log"
+      },
+      {
+        "point_id": "model.resnet_block/medium/fp32-n1-c24-hw16",
+        "point_sha256": "9777dfb0edb415ee3dbce5eb80025fd81bcce573c2d24eee0a569131069cde43",
+        "exit_code": 0,
+        "log": "point09.log"
+      },
+      {
+        "point_id": "model.resnet_block/small/fp32-n1-c16-hw16",
+        "point_sha256": "5238ddb9e794f37c05c358ecddf18e348afc1e556e3fc76adb42eef4bd958413",
+        "exit_code": 0,
+        "log": "point10.log"
+      },
+      {
+        "point_id": "model.resnet_block/tiny/fp32-n1-c8-hw8",
+        "point_sha256": "080606dc05ff1b13636f93504e4c71cf8bd2c40d09a0430998669ed262d26dfd",
+        "exit_code": 0,
+        "log": "point11.log"
+      },
+      {
+        "point_id": "op.attention_decode/medium/fp16-b1-h8-l256-d32",
+        "point_sha256": "e21f75129e697caa502bc53bf34be531aacca011304c594f6bdd90145499daea",
+        "exit_code": 0,
+        "log": "point12.log"
+      },
+      {
+        "point_id": "op.attention_decode/small/fp16-b1-h4-l256-d32",
+        "point_sha256": "df633231c46b52878fd433bafca00947f171dc7c7c4e74ab1f28b7d8babc101f",
+        "exit_code": 0,
+        "log": "point13.log"
+      },
+      {
+        "point_id": "op.attention_decode/tiny/fp16-b1-h2-l16-d16",
+        "point_sha256": "5b80febf2036b8a8b337cf9f5d28d3dd5df2b1c0370263c33c5cf6a0dfcb4c91",
+        "exit_code": 0,
+        "log": "point14.log"
+      },
+      {
+        "point_id": "op.attention_prefill/medium/fp16-b1-h4-s96-d32",
+        "point_sha256": "8126b8242b0e6524a5f4844ac470b2d4048ffd10874c89760b10b3630ad76c01",
+        "exit_code": 0,
+        "log": "point15.log"
+      },
+      {
+        "point_id": "op.attention_prefill/small/fp16-b1-h4-s64-d32",
+        "point_sha256": "d4034b40444b352ce5541f585017b84ede0aa83e6bcac78c70af743db82c1dc1",
+        "exit_code": 0,
+        "log": "point16.log"
+      },
+      {
+        "point_id": "op.attention_prefill/tiny/fp16-b1-h2-s16-d16",
+        "point_sha256": "eb5c0145c4c95f225ddedb70032fa797303883b0498ec54a1b9bd9065ff48a52",
+        "exit_code": 0,
+        "log": "point17.log"
+      },
+      {
+        "point_id": "op.conv2d/medium/fp32-n1-cin24-h16-w16-cout24",
+        "point_sha256": "8f2118258e8f12907d7aa621ab87c7195d2495a68422174a4f83f47a3c9b215a",
+        "exit_code": 0,
+        "log": "point18.log"
+      },
+      {
+        "point_id": "op.conv2d/small/fp32-n1-cin16-h16-w16-cout16",
+        "point_sha256": "d5181555b6f724fa531e2d80074df12585f537f9221326da80d58bce175a8bc7",
+        "exit_code": 0,
+        "log": "point19.log"
+      },
+      {
+        "point_id": "op.conv2d/tiny/fp32-n1-cin4-h8-w8-cout8",
+        "point_sha256": "86bb96a8692f4c67bad0ad607ff461e13ffd21db588893f619f8b0f787c09e62",
+        "exit_code": 0,
+        "log": "point20.log"
+      },
+      {
+        "point_id": "op.rope/medium/fp16-b1-h8-s128-d32",
+        "point_sha256": "68efb08c431333d93590c4004b4ff31a19ae4b76b78d112fd9a7cb30693a3194",
+        "exit_code": 0,
+        "log": "point21.log"
+      },
+      {
+        "point_id": "op.rope/small/fp16-b1-h4-s64-d32",
+        "point_sha256": "63dc112adfc11a22ec7bd0a0a383c064e6f9ff52c95efc6e3a02a027392558e4",
+        "exit_code": 0,
+        "log": "point22.log"
+      },
+      {
+        "point_id": "op.rope/tiny/fp16-b1-h2-s16-d16",
+        "point_sha256": "e5e6096b39bf6df53c6f90eef2aac7a3714f5c590ab1c5d5e6d91fd1703fa7e9",
+        "exit_code": 0,
+        "log": "point23.log"
+      }
+    ],
+    "required_gate_promotions": [],
+    "scope": "Complete frozen graphs3 original 24 points, actual transfer observation with nonzero staging and explicit download positive controls; functional only, no latency measurement",
+    "observed_utc": "2026-10-19T00:36:56.035887+00:00",
+    "current": "op.rope/tiny/fp16-b1-h2-s16-d16",
+    "child_pid": 2366490
+  },
+  "files": {
+    "controller.py": "from pathlib import Path\nimport subprocess,json,os,sys,datetime,hashlib,traceback\np=Path(__file__).parent;h=Path.home();s=h/'tnca_src_r40_conditional_6bd07b7_formal'\nsys.path[:0]=[str(s),str(s/'python'),str(s/'compiler/python'),str(s/'tools/asm'),str(s/'tools/r40')]\nfrom archbench.provenance import software_tree\nimport contract_v2\ncontract_v2.verify();tree='files:44051ad9c76c544f59b57afb9f297608bb3f0362c9f4f4479f977690645d2436';assert software_tree(refresh=True)==tree\nimage=h/'tnca_images/r40_attempt03_90mhz_a88ebdf5/tnca_u280.xclbin';sha='a88ebdf59cfbbb2001ebd5b1b2c739c5d8cd33931f1e9202f18cac07c4c83083';clock=h/'tnca_build/r40_attempt03_conditional_90mhz/qualified_clock.json'\nassert hashlib.sha256(image.read_bytes()).hexdigest()==sha\nfrom tnca.operating_clock import qualified_clock\nclock_info=qualified_clock(clock,sha)\npoints=json.loads((s/'spec/r40/suites/R40-02.graphs3.json').read_text())['points'];assert len(points)==24\nconfig=dict(xclbin=str(image),image_profile='core-vrf-sync-v5',core_count=3,memory_ports=3,hbm_dma=True,hbm_bytes=4<<30,device_clock=True)\nenv={k:v for k,v in os.environ.items() if not k.startswith('TNCA_')}\nenv.update(MAX_JOBS='1',OMP_NUM_THREADS='1',MKL_NUM_THREADS='1',CUDA_VISIBLE_DEVICES='',PYTHONFAULTHANDLER='1',R40_CONTRACT='v2',PYTHONPATH=os.pathsep.join(str(s/d) for d in ('','python','compiler/python','tools/asm','tools/r40')),TORCH_EXTENSIONS_DIR=str(h/'.cache/tnca/r40_conditional_6bd07b7_extensions'),TNCA_PROFILE='core-vrf-sync-v5',TNCA_BACKEND='fpga-u280-multicore',TNCA_BACKEND_ARGS=json.dumps(config),TNCA_ACTIVE_CORES='3',TNCA_TORCH_DEVICE='native',TNCA_TRANSFER_POLICY='resident',TNCA_DEADLINE='24000000000',TNCA_HOST_TIMEOUT='7200',TNCA_OPERATING_CLOCK_EVIDENCE=str(clock))\ncommands=[dict(point=point,command=[str(h/'tc_env/torchenv/bin/python'),'-u',str(s/'tools/r40/frozen_residency_tests.py'),'--point',point['id'],'--steps','2','--source-tree',tree]) for point in points]\n(p/'commands.json').write_text(json.dumps(commands,indent=2)+'\\n')\nstate=dict(status='running',software_tree=tree,image_sha256=sha,clock_hz=clock_info['clock_hz'],backend_args=config,contract_sha256=contract_v2.LOCK_SHA256,harness_sha256=hashlib.sha256((s/'tools/r40/frozen_residency_tests.py').read_bytes()).hexdigest(),completed=[],required_gate_promotions=[],scope='Complete frozen graphs3 original 24 points, actual transfer observation with nonzero staging and explicit download positive controls; functional only, no latency measurement')\ndef save():\n state['observed_utc']=datetime.datetime.now(datetime.timezone.utc).isoformat();q=p/'state.tmp';q.write_text(json.dumps(state,indent=2)+'\\n');q.replace(p/'state.json')\nsave()\ntry:\n for i,entry in enumerate(commands):\n  state['current']=entry['point']['id'];save()\n  with (p/f'point{i:02d}.log').open('x') as log:\n   q=subprocess.Popen(entry['command'],cwd=s,env=env,stdout=log,stderr=subprocess.STDOUT);state['child_pid']=q.pid;save();code=q.wait()\n  state['completed'].append(dict(point_id=entry['point']['id'],point_sha256=entry['point']['sha256'],exit_code=code,log=f'point{i:02d}.log'));save()\n  assert code==0,'first original graph failed; preserve it'\n  assert software_tree(refresh=True)==tree\n state['status']='complete-review-required';save()\nexcept Exception:\n state.update(status='failed-preserved',error=traceback.format_exc());save();raise\n",
+    "commands.json": "[\n  {\n    \"point\": {\n      \"id\": \"model.gpt2_block/medium/fp16-d160-h5-b1-s64\",\n      \"sha256\": \"2746d763693c5849cb5f3ce10030c23f3244c69df5c622c00bdd4c06e255f0a1\",\n      \"family\": \"gpt2_block\",\n      \"tier\": \"medium\",\n      \"dtype\": \"fp16\"\n    },\n    \"command\": [\n      \"/home/zzhouch/tc_env/torchenv/bin/python\",\n      \"-u\",\n      \"/home/zzhouch/tnca_src_r40_conditional_6bd07b7_formal/tools/r40/frozen_residency_tests.py\",\n      \"--point\",\n      \"model.gpt2_block/medium/fp16-d160-h5-b1-s64\",\n      \"--steps\",\n      \"2\",\n      \"--source-tree\",\n      \"files:44051ad9c76c544f59b57afb9f297608bb3f0362c9f4f4479f977690645d2436\"\n    ]\n  },\n  {\n    \"point\": {\n      \"id\": \"model.gpt2_block/small/fp16-d128-h4-b1-s64\",\n      \"sha256\": \"75533c2b96d185e7fd2bdf0a168ef57d4d53f0ed019e0aaba37aa43c7757c7f6\",\n      \"family\": \"gpt2_block\",\n      \"tier\": \"small\",\n      \"dtype\": \"fp16\"\n    },\n    \"command\": [\n      \"/home/zzhouch/tc_env/torchenv/bin/python\",\n      \"-u\",\n      \"/home/zzhouch/tnca_src_r40_conditional_6bd07b7_formal/tools/r40/frozen_residency_tests.py\",\n      \"--point\",\n      \"model.gpt2_block/small/fp16-d128-h4-b1-s64\",\n      \"--steps\",\n      \"2\",\n      \"--source-tree\",\n      \"files:44051ad9c76c544f59b57afb9f297608bb3f0362c9f4f4479f977690645d2436\"\n    ]\n  },\n  {\n    \"point\": {\n      \"id\": \"model.gpt2_block/tiny/fp16-d64-h4-b1-s16\",\n      \"sha256\": \"c6ac63596b04acf91cdb6fd7da6cf742d3da62e6f02951df35f1b6a538b5bdc4\",\n      \"family\": \"gpt2_block\",\n      \"tier\": \"tiny\",\n      \"dtype\": \"fp16\"\n    },\n    \"command\": [\n      \"/home/zzhouch/tc_env/torchenv/bin/python\",\n      \"-u\",\n      \"/home/zzhouch/tnca_src_r40_conditional_6bd07b7_formal/tools/r40/frozen_residency_tests.py\",\n      \"--point\",\n      \"model.gpt2_block/tiny/fp16-d64-h4-b1-s16\",\n      \"--steps\",\n      \"2\",\n      \"--source-tree\",\n      \"files:44051ad9c76c544f59b57afb9f297608bb3f0362c9f4f4479f977690645d2436\"\n    ]\n  },\n  {\n    \"point\": {\n      \"id\": \"model.llama_decode/medium/fp16-b1-p256\",\n      \"sha256\": \"dafdc2dd0f86b5b55e3922d2a91c44987ee1df0311ee6e3b57369fc3fb0fe0d5\",\n      \"family\": \"llama_decode\",\n      \"tier\": \"medium\",\n      \"dtype\": \"fp16\"\n    },\n    \"command\": [\n      \"/home/zzhouch/tc_env/torchenv/bin/python\",\n      \"-u\",\n      \"/home/zzhouch/tnca_src_r40_conditional_6bd07b7_formal/tools/r40/frozen_residency_tests.py\",\n      \"--point\",\n      \"model.llama_decode/medium/fp16-b1-p256\",\n      \"--steps\",\n      \"2\",\n      \"--source-tree\",\n      \"files:44051ad9c76c544f59b57afb9f297608bb3f0362c9f4f4479f977690645d2436\"\n    ]\n  },\n  {\n    \"point\": {\n      \"id\": \"model.llama_decode/small/fp16-b1-p128\",\n      \"sha256\": \"a83153ccb5eccc8f9b328aeed2fd648df5e7e9deecfd940d986ebc5129ee53c1\",\n      \"family\": \"llama_decode\",\n      \"tier\": \"small\",\n      \"dtype\": \"fp16\"\n    },\n    \"command\": [\n      \"/home/zzhouch/tc_env/torchenv/bin/python\",\n      \"-u\",\n      \"/home/zzhouch/tnca_src_r40_conditional_6bd07b7_formal/tools/r40/frozen_residency_tests.py\",\n      \"--point\",\n      \"model.llama_decode/small/fp16-b1-p128\",\n      \"--steps\",\n      \"2\",\n      \"--source-tree\",\n      \"files:44051ad9c76c544f59b57afb9f297608bb3f0362c9f4f4479f977690645d2436\"\n    ]\n  },\n  {\n    \"point\": {\n      \"id\": \"model.llama_decode/tiny/fp16-b1-p16\",\n      \"sha256\": \"9889060c587f03f485fbc2e16e4c3b6788cf830c616747040259517c3e81b63a\",\n      \"family\": \"llama_decode\",\n      \"tier\": \"tiny\",\n      \"dtype\": \"fp16\"\n    },\n    \"command\": [\n      \"/home/zzhouch/tc_env/torchenv/bin/python\",\n      \"-u\",\n      \"/home/zzhouch/tnca_src_r40_conditional_6bd07b7_formal/tools/r40/frozen_residency_tests.py\",\n      \"--point\",\n      \"model.llama_decode/tiny/fp16-b1-p16\",\n      \"--steps\",\n      \"2\",\n      \"--source-tree\",\n      \"files:44051ad9c76c544f59b57afb9f297608bb3f0362c9f4f4479f977690645d2436\"\n    ]\n  },\n  {\n    \"point\": {\n      \"id\": \"model.llama_prefill/medium/fp16-b1-s64\",\n      \"sha256\": \"01c5f5834948841ad9674e61a49aeb0a90670833fbc3596c4fefc05a56790b55\",\n      \"family\": \"llama_prefill\",\n      \"tier\": \"medium\",\n      \"dtype\": \"fp16\"\n    },\n    \"command\": [\n      \"/home/zzhouch/tc_env/torchenv/bin/python\",\n      \"-u\",\n      \"/home/zzhouch/tnca_src_r40_conditional_6bd07b7_formal/tools/r40/frozen_residency_tests.py\",\n      \"--point\",\n      \"model.llama_prefill/medium/fp16-b1-s64\",\n      \"--steps\",\n      \"2\",\n      \"--source-tree\",\n      \"files:44051ad9c76c544f59b57afb9f297608bb3f0362c9f4f4479f977690645d2436\"\n    ]\n  },\n  {\n    \"point\": {\n      \"id\": \"model.llama_prefill/small/fp16-b1-s64\",\n      \"sha256\": \"a4aa11b171f8875f87051a5ebfbd9fbeecfc53ac8f48f5c67e1902ffbf490ae0\",\n      \"family\": \"llama_prefill\",\n      \"tier\": \"small\",\n      \"dtype\": \"fp16\"\n    },\n    \"command\": [\n      \"/home/zzhouch/tc_env/torchenv/bin/python\",\n      \"-u\",\n      \"/home/zzhouch/tnca_src_r40_conditional_6bd07b7_formal/tools/r40/frozen_residency_tests.py\",\n      \"--point\",\n      \"model.llama_prefill/small/fp16-b1-s64\",\n      \"--steps\",\n      \"2\",\n      \"--source-tree\",\n      \"files:44051ad9c76c544f59b57afb9f297608bb3f0362c9f4f4479f977690645d2436\"\n    ]\n  },\n  {\n    \"point\": {\n      \"id\": \"model.llama_prefill/tiny/fp16-b1-s16\",\n      \"sha256\": \"6d14a4a6373ba814884be0e62ed485960e3da63c6fe51b6e2de35492dbde69bc\",\n      \"family\": \"llama_prefill\",\n      \"tier\": \"tiny\",\n      \"dtype\": \"fp16\"\n    },\n    \"command\": [\n      \"/home/zzhouch/tc_env/torchenv/bin/python\",\n      \"-u\",\n      \"/home/zzhouch/tnca_src_r40_conditional_6bd07b7_formal/tools/r40/frozen_residency_tests.py\",\n      \"--point\",\n      \"model.llama_prefill/tiny/fp16-b1-s16\",\n      \"--steps\",\n      \"2\",\n      \"--source-tree\",\n      \"files:44051ad9c76c544f59b57afb9f297608bb3f0362c9f4f4479f977690645d2436\"\n    ]\n  },\n  {\n    \"point\": {\n      \"id\": \"model.resnet_block/medium/fp32-n1-c24-hw16\",\n      \"sha256\": \"9777dfb0edb415ee3dbce5eb80025fd81bcce573c2d24eee0a569131069cde43\",\n      \"family\": \"resnet_block\",\n      \"tier\": \"medium\",\n      \"dtype\": \"fp32\"\n    },\n    \"command\": [\n      \"/home/zzhouch/tc_env/torchenv/bin/python\",\n      \"-u\",\n      \"/home/zzhouch/tnca_src_r40_conditional_6bd07b7_formal/tools/r40/frozen_residency_tests.py\",\n      \"--point\",\n      \"model.resnet_block/medium/fp32-n1-c24-hw16\",\n      \"--steps\",\n      \"2\",\n      \"--source-tree\",\n      \"files:44051ad9c76c544f59b57afb9f297608bb3f0362c9f4f4479f977690645d2436\"\n    ]\n  },\n  {\n    \"point\": {\n      \"id\": \"model.resnet_block/small/fp32-n1-c16-hw16\",\n      \"sha256\": \"5238ddb9e794f37c05c358ecddf18e348afc1e556e3fc76adb42eef4bd958413\",\n      \"family\": \"resnet_block\",\n      \"tier\": \"small\",\n      \"dtype\": \"fp32\"\n    },\n    \"command\": [\n      \"/home/zzhouch/tc_env/torchenv/bin/python\",\n      \"-u\",\n      \"/home/zzhouch/tnca_src_r40_conditional_6bd07b7_formal/tools/r40/frozen_residency_tests.py\",\n      \"--point\",\n      \"model.resnet_block/small/fp32-n1-c16-hw16\",\n      \"--steps\",\n      \"2\",\n      \"--source-tree\",\n      \"files:44051ad9c76c544f59b57afb9f297608bb3f0362c9f4f4479f977690645d2436\"\n    ]\n  },\n  {\n    \"point\": {\n      \"id\": \"model.resnet_block/tiny/fp32-n1-c8-hw8\",\n      \"sha256\": \"080606dc05ff1b13636f93504e4c71cf8bd2c40d09a0430998669ed262d26dfd\",\n      \"family\": \"resnet_block\",\n      \"tier\": \"tiny\",\n      \"dtype\": \"fp32\"\n    },\n    \"command\": [\n      \"/home/zzhouch/tc_env/torchenv/bin/python\",\n      \"-u\",\n      \"/home/zzhouch/tnca_src_r40_conditional_6bd07b7_formal/tools/r40/frozen_residency_tests.py\",\n      \"--point\",\n      \"model.resnet_block/tiny/fp32-n1-c8-hw8\",\n      \"--steps\",\n      \"2\",\n      \"--source-tree\",\n      \"files:44051ad9c76c544f59b57afb9f297608bb3f0362c9f4f4479f977690645d2436\"\n    ]\n  },\n  {\n    \"point\": {\n      \"id\": \"op.attention_decode/medium/fp16-b1-h8-l256-d32\",\n      \"sha256\": \"e21f75129e697caa502bc53bf34be531aacca011304c594f6bdd90145499daea\",\n      \"family\": \"attention_decode\",\n      \"tier\": \"medium\",\n      \"dtype\": \"fp16\"\n    },\n    \"command\": [\n      \"/home/zzhouch/tc_env/torchenv/bin/python\",\n      \"-u\",\n      \"/home/zzhouch/tnca_src_r40_conditional_6bd07b7_formal/tools/r40/frozen_residency_tests.py\",\n      \"--point\",\n      \"op.attention_decode/medium/fp16-b1-h8-l256-d32\",\n      \"--steps\",\n      \"2\",\n      \"--source-tree\",\n      \"files:44051ad9c76c544f59b57afb9f297608bb3f0362c9f4f4479f977690645d2436\"\n    ]\n  },\n  {\n    \"point\": {\n      \"id\": \"op.attention_decode/small/fp16-b1-h4-l256-d32\",\n      \"sha256\": \"df633231c46b52878fd433bafca00947f171dc7c7c4e74ab1f28b7d8babc101f\",\n      \"family\": \"attention_decode\",\n      \"tier\": \"small\",\n      \"dtype\": \"fp16\"\n    },\n    \"command\": [\n      \"/home/zzhouch/tc_env/torchenv/bin/python\",\n      \"-u\",\n      \"/home/zzhouch/tnca_src_r40_conditional_6bd07b7_formal/tools/r40/frozen_residency_tests.py\",\n      \"--point\",\n      \"op.attention_decode/small/fp16-b1-h4-l256-d32\",\n      \"--steps\",\n      \"2\",\n      \"--source-tree\",\n      \"files:44051ad9c76c544f59b57afb9f297608bb3f0362c9f4f4479f977690645d2436\"\n    ]\n  },\n  {\n    \"point\": {\n      \"id\": \"op.attention_decode/tiny/fp16-b1-h2-l16-d16\",\n      \"sha256\": \"5b80febf2036b8a8b337cf9f5d28d3dd5df2b1c0370263c33c5cf6a0dfcb4c91\",\n      \"family\": \"attention_decode\",\n      \"tier\": \"tiny\",\n      \"dtype\": \"fp16\"\n    },\n    \"command\": [\n      \"/home/zzhouch/tc_env/torchenv/bin/python\",\n      \"-u\",\n      \"/home/zzhouch/tnca_src_r40_conditional_6bd07b7_formal/tools/r40/frozen_residency_tests.py\",\n      \"--point\",\n      \"op.attention_decode/tiny/fp16-b1-h2-l16-d16\",\n      \"--steps\",\n      \"2\",\n      \"--source-tree\",\n      \"files:44051ad9c76c544f59b57afb9f297608bb3f0362c9f4f4479f977690645d2436\"\n    ]\n  },\n  {\n    \"point\": {\n      \"id\": \"op.attention_prefill/medium/fp16-b1-h4-s96-d32\",\n      \"sha256\": \"8126b8242b0e6524a5f4844ac470b2d4048ffd10874c89760b10b3630ad76c01\",\n      \"family\": \"attention_prefill\",\n      \"tier\": \"medium\",\n      \"dtype\": \"fp16\"\n    },\n    \"command\": [\n      \"/home/zzhouch/tc_env/torchenv/bin/python\",\n      \"-u\",\n      \"/home/zzhouch/tnca_src_r40_conditional_6bd07b7_formal/tools/r40/frozen_residency_tests.py\",\n      \"--point\",\n      \"op.attention_prefill/medium/fp16-b1-h4-s96-d32\",\n      \"--steps\",\n      \"2\",\n      \"--source-tree\",\n      \"files:44051ad9c76c544f59b57afb9f297608bb3f0362c9f4f4479f977690645d2436\"\n    ]\n  },\n  {\n    \"point\": {\n      \"id\": \"op.attention_prefill/small/fp16-b1-h4-s64-d32\",\n      \"sha256\": \"d4034b40444b352ce5541f585017b84ede0aa83e6bcac78c70af743db82c1dc1\",\n      \"family\": \"attention_prefill\",\n      \"tier\": \"small\",\n      \"dtype\": \"fp16\"\n    },\n    \"command\": [\n      \"/home/zzhouch/tc_env/torchenv/bin/python\",\n      \"-u\",\n      \"/home/zzhouch/tnca_src_r40_conditional_6bd07b7_formal/tools/r40/frozen_residency_tests.py\",\n      \"--point\",\n      \"op.attention_prefill/small/fp16-b1-h4-s64-d32\",\n      \"--steps\",\n      \"2\",\n      \"--source-tree\",\n      \"files:44051ad9c76c544f59b57afb9f297608bb3f0362c9f4f4479f977690645d2436\"\n    ]\n  },\n  {\n    \"point\": {\n      \"id\": \"op.attention_prefill/tiny/fp16-b1-h2-s16-d16\",\n      \"sha256\": \"eb5c0145c4c95f225ddedb70032fa797303883b0498ec54a1b9bd9065ff48a52\",\n      \"family\": \"attention_prefill\",\n      \"tier\": \"tiny\",\n      \"dtype\": \"fp16\"\n    },\n    \"command\": [\n      \"/home/zzhouch/tc_env/torchenv/bin/python\",\n      \"-u\",\n      \"/home/zzhouch/tnca_src_r40_conditional_6bd07b7_formal/tools/r40/frozen_residency_tests.py\",\n      \"--point\",\n      \"op.attention_prefill/tiny/fp16-b1-h2-s16-d16\",\n      \"--steps\",\n      \"2\",\n      \"--source-tree\",\n      \"files:44051ad9c76c544f59b57afb9f297608bb3f0362c9f4f4479f977690645d2436\"\n    ]\n  },\n  {\n    \"point\": {\n      \"id\": \"op.conv2d/medium/fp32-n1-cin24-h16-w16-cout24\",\n      \"sha256\": \"8f2118258e8f12907d7aa621ab87c7195d2495a68422174a4f83f47a3c9b215a\",\n      \"family\": \"conv2d\",\n      \"tier\": \"medium\",\n      \"dtype\": \"fp32\"\n    },\n    \"command\": [\n      \"/home/zzhouch/tc_env/torchenv/bin/python\",\n      \"-u\",\n      \"/home/zzhouch/tnca_src_r40_conditional_6bd07b7_formal/tools/r40/frozen_residency_tests.py\",\n      \"--point\",\n      \"op.conv2d/medium/fp32-n1-cin24-h16-w16-cout24\",\n      \"--steps\",\n      \"2\",\n      \"--source-tree\",\n      \"files:44051ad9c76c544f59b57afb9f297608bb3f0362c9f4f4479f977690645d2436\"\n    ]\n  },\n  {\n    \"point\": {\n      \"id\": \"op.conv2d/small/fp32-n1-cin16-h16-w16-cout16\",\n      \"sha256\": \"d5181555b6f724fa531e2d80074df12585f537f9221326da80d58bce175a8bc7\",\n      \"family\": \"conv2d\",\n      \"tier\": \"small\",\n      \"dtype\": \"fp32\"\n    },\n    \"command\": [\n      \"/home/zzhouch/tc_env/torchenv/bin/python\",\n      \"-u\",\n      \"/home/zzhouch/tnca_src_r40_conditional_6bd07b7_formal/tools/r40/frozen_residency_tests.py\",\n      \"--point\",\n      \"op.conv2d/small/fp32-n1-cin16-h16-w16-cout16\",\n      \"--steps\",\n      \"2\",\n      \"--source-tree\",\n      \"files:44051ad9c76c544f59b57afb9f297608bb3f0362c9f4f4479f977690645d2436\"\n    ]\n  },\n  {\n    \"point\": {\n      \"id\": \"op.conv2d/tiny/fp32-n1-cin4-h8-w8-cout8\",\n      \"sha256\": \"86bb96a8692f4c67bad0ad607ff461e13ffd21db588893f619f8b0f787c09e62\",\n      \"family\": \"conv2d\",\n      \"tier\": \"tiny\",\n      \"dtype\": \"fp32\"\n    },\n    \"command\": [\n      \"/home/zzhouch/tc_env/torchenv/bin/python\",\n      \"-u\",\n      \"/home/zzhouch/tnca_src_r40_conditional_6bd07b7_formal/tools/r40/frozen_residency_tests.py\",\n      \"--point\",\n      \"op.conv2d/tiny/fp32-n1-cin4-h8-w8-cout8\",\n      \"--steps\",\n      \"2\",\n      \"--source-tree\",\n      \"files:44051ad9c76c544f59b57afb9f297608bb3f0362c9f4f4479f977690645d2436\"\n    ]\n  },\n  {\n    \"point\": {\n      \"id\": \"op.rope/medium/fp16-b1-h8-s128-d32\",\n      \"sha256\": \"68efb08c431333d93590c4004b4ff31a19ae4b76b78d112fd9a7cb30693a3194\",\n      \"family\": \"rope\",\n      \"tier\": \"medium\",\n      \"dtype\": \"fp16\"\n    },\n    \"command\": [\n      \"/home/zzhouch/tc_env/torchenv/bin/python\",\n      \"-u\",\n      \"/home/zzhouch/tnca_src_r40_conditional_6bd07b7_formal/tools/r40/frozen_residency_tests.py\",\n      \"--point\",\n      \"op.rope/medium/fp16-b1-h8-s128-d32\",\n      \"--steps\",\n      \"2\",\n      \"--source-tree\",\n      \"files:44051ad9c76c544f59b57afb9f297608bb3f0362c9f4f4479f977690645d2436\"\n    ]\n  },\n  {\n    \"point\": {\n      \"id\": \"op.rope/small/fp16-b1-h4-s64-d32\",\n      \"sha256\": \"63dc112adfc11a22ec7bd0a0a383c064e6f9ff52c95efc6e3a02a027392558e4\",\n      \"family\": \"rope\",\n      \"tier\": \"small\",\n      \"dtype\": \"fp16\"\n    },\n    \"command\": [\n      \"/home/zzhouch/tc_env/torchenv/bin/python\",\n      \"-u\",\n      \"/home/zzhouch/tnca_src_r40_conditional_6bd07b7_formal/tools/r40/frozen_residency_tests.py\",\n      \"--point\",\n      \"op.rope/small/fp16-b1-h4-s64-d32\",\n      \"--steps\",\n      \"2\",\n      \"--source-tree\",\n      \"files:44051ad9c76c544f59b57afb9f297608bb3f0362c9f4f4479f977690645d2436\"\n    ]\n  },\n  {\n    \"point\": {\n      \"id\": \"op.rope/tiny/fp16-b1-h2-s16-d16\",\n      \"sha256\": \"e5e6096b39bf6df53c6f90eef2aac7a3714f5c590ab1c5d5e6d91fd1703fa7e9\",\n      \"family\": \"rope\",\n      \"tier\": \"tiny\",\n      \"dtype\": \"fp16\"\n    },\n    \"command\": [\n      \"/home/zzhouch/tc_env/torchenv/bin/python\",\n      \"-u\",\n      \"/home/zzhouch/tnca_src_r40_conditional_6bd07b7_formal/tools/r40/frozen_residency_tests.py\",\n      \"--point\",\n      \"op.rope/tiny/fp16-b1-h2-s16-d16\",\n      \"--steps\",\n      \"2\",\n      \"--source-tree\",\n      \"files:44051ad9c76c544f59b57afb9f297608bb3f0362c9f4f4479f977690645d2436\"\n    ]\n  }\n]\n",
+    "point00.log": "PASS model.gpt2_block/medium/fp16-d160-h5-b1-s64 resident step=0: 13 kernels, actual tensor bytes={'h2d': 0, 'd2h': 0}\nPASS model.gpt2_block/medium/fp16-d160-h5-b1-s64 resident step=1: 13 kernels, actual tensor bytes={'h2d': 0, 'd2h': 0}\nPASS model.gpt2_block/medium/fp16-d160-h5-b1-s64 per-kernel step=0: 13 kernels, actual tensor bytes={'h2d': 3899520, 'd2h': 3899520}\nPASS model.gpt2_block/medium/fp16-d160-h5-b1-s64 per-kernel step=1: 13 kernels, actual tensor bytes={'h2d': 3899520, 'd2h': 3899520}\nr40-frozen-residency-tests PASS (4/4)\n",
+    "point01.log": "PASS model.gpt2_block/small/fp16-d128-h4-b1-s64 resident step=0: 13 kernels, actual tensor bytes={'h2d': 0, 'd2h': 0}\nPASS model.gpt2_block/small/fp16-d128-h4-b1-s64 resident step=1: 13 kernels, actual tensor bytes={'h2d': 0, 'd2h': 0}\nPASS model.gpt2_block/small/fp16-d128-h4-b1-s64 per-kernel step=0: 13 kernels, actual tensor bytes={'h2d': 2923008, 'd2h': 2923008}\nPASS model.gpt2_block/small/fp16-d128-h4-b1-s64 per-kernel step=1: 13 kernels, actual tensor bytes={'h2d': 2923008, 'd2h': 2923008}\nr40-frozen-residency-tests PASS (4/4)\n",
+    "point02.log": "PASS model.gpt2_block/tiny/fp16-d64-h4-b1-s16 resident step=0: 13 kernels, actual tensor bytes={'h2d': 0, 'd2h': 0}\nPASS model.gpt2_block/tiny/fp16-d64-h4-b1-s16 resident step=1: 13 kernels, actual tensor bytes={'h2d': 0, 'd2h': 0}\nPASS model.gpt2_block/tiny/fp16-d64-h4-b1-s16 per-kernel step=0: 13 kernels, actual tensor bytes={'h2d': 433408, 'd2h': 433408}\nPASS model.gpt2_block/tiny/fp16-d64-h4-b1-s16 per-kernel step=1: 13 kernels, actual tensor bytes={'h2d': 433408, 'd2h': 433408}\nr40-frozen-residency-tests PASS (4/4)\n",
+    "point03.log": "PASS model.llama_decode/medium/fp16-b1-p256 resident step=0: 84 kernels, actual tensor bytes={'h2d': 0, 'd2h': 0}\nPASS model.llama_decode/medium/fp16-b1-p256 resident step=1: 84 kernels, actual tensor bytes={'h2d': 0, 'd2h': 0}\nPASS model.llama_decode/medium/fp16-b1-p256 per-kernel step=0: 84 kernels, actual tensor bytes={'h2d': 12758336, 'd2h': 12758336}\nPASS model.llama_decode/medium/fp16-b1-p256 per-kernel step=1: 84 kernels, actual tensor bytes={'h2d': 12758336, 'd2h': 12758336}\nr40-frozen-residency-tests PASS (4/4)\n",
+    "point04.log": "PASS model.llama_decode/small/fp16-b1-p128 resident step=0: 84 kernels, actual tensor bytes={'h2d': 0, 'd2h': 0}\nPASS model.llama_decode/small/fp16-b1-p128 resident step=1: 84 kernels, actual tensor bytes={'h2d': 0, 'd2h': 0}\nPASS model.llama_decode/small/fp16-b1-p128 per-kernel step=0: 84 kernels, actual tensor bytes={'h2d': 6265280, 'd2h': 6265280}\nPASS model.llama_decode/small/fp16-b1-p128 per-kernel step=1: 84 kernels, actual tensor bytes={'h2d': 6265280, 'd2h': 6265280}\nr40-frozen-residency-tests PASS (4/4)\n",
+    "point05.log": "PASS model.llama_decode/tiny/fp16-b1-p16 resident step=0: 42 kernels, actual tensor bytes={'h2d': 0, 'd2h': 0}\nPASS model.llama_decode/tiny/fp16-b1-p16 resident step=1: 42 kernels, actual tensor bytes={'h2d': 0, 'd2h': 0}\nPASS model.llama_decode/tiny/fp16-b1-p16 per-kernel step=0: 42 kernels, actual tensor bytes={'h2d': 691456, 'd2h': 691456}\nPASS model.llama_decode/tiny/fp16-b1-p16 per-kernel step=1: 42 kernels, actual tensor bytes={'h2d': 691456, 'd2h': 691456}\nr40-frozen-residency-tests PASS (4/4)\n",
+    "point06.log": "PASS model.llama_prefill/medium/fp16-b1-s64 resident step=0: 78 kernels, actual tensor bytes={'h2d': 0, 'd2h': 0}\nPASS model.llama_prefill/medium/fp16-b1-s64 resident step=1: 78 kernels, actual tensor bytes={'h2d': 0, 'd2h': 0}\nPASS model.llama_prefill/medium/fp16-b1-s64 per-kernel step=0: 78 kernels, actual tensor bytes={'h2d': 22428416, 'd2h': 22428416}\nPASS model.llama_prefill/medium/fp16-b1-s64 per-kernel step=1: 78 kernels, actual tensor bytes={'h2d': 22428416, 'd2h': 22428416}\nr40-frozen-residency-tests PASS (4/4)\n",
+    "point07.log": "PASS model.llama_prefill/small/fp16-b1-s64 resident step=0: 78 kernels, actual tensor bytes={'h2d': 0, 'd2h': 0}\nPASS model.llama_prefill/small/fp16-b1-s64 resident step=1: 78 kernels, actual tensor bytes={'h2d': 0, 'd2h': 0}\nPASS model.llama_prefill/small/fp16-b1-s64 per-kernel step=0: 78 kernels, actual tensor bytes={'h2d': 13643264, 'd2h': 13643264}\nPASS model.llama_prefill/small/fp16-b1-s64 per-kernel step=1: 78 kernels, actual tensor bytes={'h2d': 13643264, 'd2h': 13643264}\nr40-frozen-residency-tests PASS (4/4)\n",
+    "point08.log": "PASS model.llama_prefill/tiny/fp16-b1-s16 resident step=0: 40 kernels, actual tensor bytes={'h2d': 0, 'd2h': 0}\nPASS model.llama_prefill/tiny/fp16-b1-s16 resident step=1: 40 kernels, actual tensor bytes={'h2d': 0, 'd2h': 0}\nPASS model.llama_prefill/tiny/fp16-b1-s16 per-kernel step=0: 40 kernels, actual tensor bytes={'h2d': 1109760, 'd2h': 1109760}\nPASS model.llama_prefill/tiny/fp16-b1-s16 per-kernel step=1: 40 kernels, actual tensor bytes={'h2d': 1109760, 'd2h': 1109760}\nr40-frozen-residency-tests PASS (4/4)\n",
+    "point09.log": "PASS model.resnet_block/medium/fp32-n1-c24-hw16 resident step=0: 5 kernels, actual tensor bytes={'h2d': 0, 'd2h': 0}\nPASS model.resnet_block/medium/fp32-n1-c24-hw16 resident step=1: 5 kernels, actual tensor bytes={'h2d': 0, 'd2h': 0}\nPASS model.resnet_block/medium/fp32-n1-c24-hw16 per-kernel step=0: 5 kernels, actual tensor bytes={'h2d': 594432, 'd2h': 594432}\nPASS model.resnet_block/medium/fp32-n1-c24-hw16 per-kernel step=1: 5 kernels, actual tensor bytes={'h2d': 594432, 'd2h': 594432}\nr40-frozen-residency-tests PASS (4/4)\n",
+    "point10.log": "PASS model.resnet_block/small/fp32-n1-c16-hw16 resident step=0: 5 kernels, actual tensor bytes={'h2d': 0, 'd2h': 0}\nPASS model.resnet_block/small/fp32-n1-c16-hw16 resident step=1: 5 kernels, actual tensor bytes={'h2d': 0, 'd2h': 0}\nPASS model.resnet_block/small/fp32-n1-c16-hw16 per-kernel step=0: 5 kernels, actual tensor bytes={'h2d': 340992, 'd2h': 340992}\nPASS model.resnet_block/small/fp32-n1-c16-hw16 per-kernel step=1: 5 kernels, actual tensor bytes={'h2d': 340992, 'd2h': 340992}\nr40-frozen-residency-tests PASS (4/4)\n",
+    "point11.log": "PASS model.resnet_block/tiny/fp32-n1-c8-hw8 resident step=0: 5 kernels, actual tensor bytes={'h2d': 0, 'd2h': 0}\nPASS model.resnet_block/tiny/fp32-n1-c8-hw8 resident step=1: 5 kernels, actual tensor bytes={'h2d': 0, 'd2h': 0}\nPASS model.resnet_block/tiny/fp32-n1-c8-hw8 per-kernel step=0: 5 kernels, actual tensor bytes={'h2d': 56832, 'd2h': 56832}\nPASS model.resnet_block/tiny/fp32-n1-c8-hw8 per-kernel step=1: 5 kernels, actual tensor bytes={'h2d': 56832, 'd2h': 56832}\nr40-frozen-residency-tests PASS (4/4)\n",
+    "point12.log": "PASS op.attention_decode/medium/fp16-b1-h8-l256-d32 resident step=0: 3 kernels, actual tensor bytes={'h2d': 0, 'd2h': 0}\nPASS op.attention_decode/medium/fp16-b1-h8-l256-d32 resident step=1: 3 kernels, actual tensor bytes={'h2d': 0, 'd2h': 0}\nPASS op.attention_decode/medium/fp16-b1-h8-l256-d32 per-kernel step=0: 3 kernels, actual tensor bytes={'h2d': 592032, 'd2h': 592032}\nPASS op.attention_decode/medium/fp16-b1-h8-l256-d32 per-kernel step=1: 3 kernels, actual tensor bytes={'h2d': 592032, 'd2h': 592032}\nr40-frozen-residency-tests PASS (4/4)\n",
+    "point13.log": "PASS op.attention_decode/small/fp16-b1-h4-l256-d32 resident step=0: 3 kernels, actual tensor bytes={'h2d': 0, 'd2h': 0}\nPASS op.attention_decode/small/fp16-b1-h4-l256-d32 resident step=1: 3 kernels, actual tensor bytes={'h2d': 0, 'd2h': 0}\nPASS op.attention_decode/small/fp16-b1-h4-l256-d32 per-kernel step=0: 3 kernels, actual tensor bytes={'h2d': 296032, 'd2h': 296032}\nPASS op.attention_decode/small/fp16-b1-h4-l256-d32 per-kernel step=1: 3 kernels, actual tensor bytes={'h2d': 296032, 'd2h': 296032}\nr40-frozen-residency-tests PASS (4/4)\n",
+    "point14.log": "PASS op.attention_decode/tiny/fp16-b1-h2-l16-d16 resident step=0: 3 kernels, actual tensor bytes={'h2d': 0, 'd2h': 0}\nPASS op.attention_decode/tiny/fp16-b1-h2-l16-d16 resident step=1: 3 kernels, actual tensor bytes={'h2d': 0, 'd2h': 0}\nPASS op.attention_decode/tiny/fp16-b1-h2-l16-d16 per-kernel step=0: 3 kernels, actual tensor bytes={'h2d': 5440, 'd2h': 5440}\nPASS op.attention_decode/tiny/fp16-b1-h2-l16-d16 per-kernel step=1: 3 kernels, actual tensor bytes={'h2d': 5440, 'd2h': 5440}\nr40-frozen-residency-tests PASS (4/4)\n",
+    "point15.log": "PASS op.attention_prefill/medium/fp16-b1-h4-s96-d32 resident step=0: 7 kernels, actual tensor bytes={'h2d': 0, 'd2h': 0}\nPASS op.attention_prefill/medium/fp16-b1-h4-s96-d32 resident step=1: 7 kernels, actual tensor bytes={'h2d': 0, 'd2h': 0}\nPASS op.attention_prefill/medium/fp16-b1-h4-s96-d32 per-kernel step=0: 7 kernels, actual tensor bytes={'h2d': 2162688, 'd2h': 2162688}\nPASS op.attention_prefill/medium/fp16-b1-h4-s96-d32 per-kernel step=1: 7 kernels, actual tensor bytes={'h2d': 2162688, 'd2h': 2162688}\nr40-frozen-residency-tests PASS (4/4)\n",
+    "point16.log": "PASS op.attention_prefill/small/fp16-b1-h4-s64-d32 resident step=0: 7 kernels, actual tensor bytes={'h2d': 0, 'd2h': 0}\nPASS op.attention_prefill/small/fp16-b1-h4-s64-d32 resident step=1: 7 kernels, actual tensor bytes={'h2d': 0, 'd2h': 0}\nPASS op.attention_prefill/small/fp16-b1-h4-s64-d32 per-kernel step=0: 7 kernels, actual tensor bytes={'h2d': 1179648, 'd2h': 1179648}\nPASS op.attention_prefill/small/fp16-b1-h4-s64-d32 per-kernel step=1: 7 kernels, actual tensor bytes={'h2d': 1179648, 'd2h': 1179648}\nr40-frozen-residency-tests PASS (4/4)\n",
+    "point17.log": "PASS op.attention_prefill/tiny/fp16-b1-h2-s16-d16 resident step=0: 7 kernels, actual tensor bytes={'h2d': 0, 'd2h': 0}\nPASS op.attention_prefill/tiny/fp16-b1-h2-s16-d16 resident step=1: 7 kernels, actual tensor bytes={'h2d': 0, 'd2h': 0}\nPASS op.attention_prefill/tiny/fp16-b1-h2-s16-d16 per-kernel step=0: 7 kernels, actual tensor bytes={'h2d': 57344, 'd2h': 57344}\nPASS op.attention_prefill/tiny/fp16-b1-h2-s16-d16 per-kernel step=1: 7 kernels, actual tensor bytes={'h2d': 57344, 'd2h': 57344}\nr40-frozen-residency-tests PASS (4/4)\n",
+    "point18.log": "PASS op.conv2d/medium/fp32-n1-cin24-h16-w16-cout24 resident step=0: 3 kernels, actual tensor bytes={'h2d': 0, 'd2h': 0}\nPASS op.conv2d/medium/fp32-n1-cin24-h16-w16-cout24 resident step=1: 3 kernels, actual tensor bytes={'h2d': 0, 'd2h': 0}\nPASS op.conv2d/medium/fp32-n1-cin24-h16-w16-cout24 per-kernel step=0: 3 kernels, actual tensor bytes={'h2d': 321024, 'd2h': 321024}\nPASS op.conv2d/medium/fp32-n1-cin24-h16-w16-cout24 per-kernel step=1: 3 kernels, actual tensor bytes={'h2d': 321024, 'd2h': 321024}\nr40-frozen-residency-tests PASS (4/4)\n",
+    "point19.log": "PASS op.conv2d/small/fp32-n1-cin16-h16-w16-cout16 resident step=0: 3 kernels, actual tensor bytes={'h2d': 0, 'd2h': 0}\nPASS op.conv2d/small/fp32-n1-cin16-h16-w16-cout16 resident step=1: 3 kernels, actual tensor bytes={'h2d': 0, 'd2h': 0}\nPASS op.conv2d/small/fp32-n1-cin16-h16-w16-cout16 per-kernel step=0: 3 kernels, actual tensor bytes={'h2d': 186368, 'd2h': 186368}\nPASS op.conv2d/small/fp32-n1-cin16-h16-w16-cout16 per-kernel step=1: 3 kernels, actual tensor bytes={'h2d': 186368, 'd2h': 186368}\nr40-frozen-residency-tests PASS (4/4)\n",
+    "point20.log": "PASS op.conv2d/tiny/fp32-n1-cin4-h8-w8-cout8 resident step=0: 3 kernels, actual tensor bytes={'h2d': 0, 'd2h': 0}\nPASS op.conv2d/tiny/fp32-n1-cin4-h8-w8-cout8 resident step=1: 3 kernels, actual tensor bytes={'h2d': 0, 'd2h': 0}\nPASS op.conv2d/tiny/fp32-n1-cin4-h8-w8-cout8 per-kernel step=0: 3 kernels, actual tensor bytes={'h2d': 17152, 'd2h': 17152}\nPASS op.conv2d/tiny/fp32-n1-cin4-h8-w8-cout8 per-kernel step=1: 3 kernels, actual tensor bytes={'h2d': 17152, 'd2h': 17152}\nr40-frozen-residency-tests PASS (4/4)\n",
+    "point21.log": "PASS op.rope/medium/fp16-b1-h8-s128-d32 resident step=0: 3 kernels, actual tensor bytes={'h2d': 0, 'd2h': 0}\nPASS op.rope/medium/fp16-b1-h8-s128-d32 resident step=1: 3 kernels, actual tensor bytes={'h2d': 0, 'd2h': 0}\nPASS op.rope/medium/fp16-b1-h8-s128-d32 per-kernel step=0: 3 kernels, actual tensor bytes={'h2d': 950272, 'd2h': 950272}\nPASS op.rope/medium/fp16-b1-h8-s128-d32 per-kernel step=1: 3 kernels, actual tensor bytes={'h2d': 950272, 'd2h': 950272}\nr40-frozen-residency-tests PASS (4/4)\n",
+    "point22.log": "PASS op.rope/small/fp16-b1-h4-s64-d32 resident step=0: 3 kernels, actual tensor bytes={'h2d': 0, 'd2h': 0}\nPASS op.rope/small/fp16-b1-h4-s64-d32 resident step=1: 3 kernels, actual tensor bytes={'h2d': 0, 'd2h': 0}\nPASS op.rope/small/fp16-b1-h4-s64-d32 per-kernel step=0: 3 kernels, actual tensor bytes={'h2d': 245760, 'd2h': 245760}\nPASS op.rope/small/fp16-b1-h4-s64-d32 per-kernel step=1: 3 kernels, actual tensor bytes={'h2d': 245760, 'd2h': 245760}\nr40-frozen-residency-tests PASS (4/4)\n",
+    "point23.log": "PASS op.rope/tiny/fp16-b1-h2-s16-d16 resident step=0: 3 kernels, actual tensor bytes={'h2d': 0, 'd2h': 0}\nPASS op.rope/tiny/fp16-b1-h2-s16-d16 resident step=1: 3 kernels, actual tensor bytes={'h2d': 0, 'd2h': 0}\nPASS op.rope/tiny/fp16-b1-h2-s16-d16 per-kernel step=0: 3 kernels, actual tensor bytes={'h2d': 16384, 'd2h': 16384}\nPASS op.rope/tiny/fp16-b1-h2-s16-d16 per-kernel step=1: 3 kernels, actual tensor bytes={'h2d': 16384, 'd2h': 16384}\nr40-frozen-residency-tests PASS (4/4)\n"
+  },
+  "file_sha256": {
+    "controller.py": "1b710bb2325602547234153aa1b25e99919b3b369f9b3daf3749eb05bdfc69f0",
+    "commands.json": "856d53dfed58ac6bc42985c34144231d168f9ef93a47291b2f46887ebf17c9ed",
+    "point00.log": "1aef19931e6c13c03b276d32cdc8c598d9a7bdf6a36fce5e7d84a7919d36dc13",
+    "point01.log": "2ddbd5d41c569a141fd1f2924eba1484b7a0e4d6cf2e08da0388ec7688f72df0",
+    "point02.log": "9d911755b511f7d664f54befa04610dcd9e19e48d0ae709c2dfbe78c88022a21",
+    "point03.log": "0068fe3238b393466f556eca6a1e45855e79a82b4f5347949138580c66eff5a4",
+    "point04.log": "020108941391479c7b5dac0413cb78648376a0fae841b468da7e4644b53a5b84",
+    "point05.log": "b8b9162277041684df06edbde07a99b428a04501341f39b0d1f52fa9e4e48d15",
+    "point06.log": "917d7c15521ddf6339f398f88600306e53d896bcdc54f2db45a1f2fd64ab769d",
+    "point07.log": "3bfe79bb92e19e46b5b48c5c5cc5fc5b283426f72c923ecc5e5b1d111d90523f",
+    "point08.log": "90bb80a8b73034332e4bf5c7d95601221bf47686d106bb9e5f6bb5758bbc35da",
+    "point09.log": "f3f05efd8d50f4feed263ea15dcca29be2c60cc80607acb944957e8448c101ce",
+    "point10.log": "1216a7b32a6be95ea1eeb758475717a72b838bf71460830e5b366f07b1eaa9ff",
+    "point11.log": "21733733289c4a2aaf5126d94f53ab56de6595b889a5c699678d9f8021bf6b3e",
+    "point12.log": "9a496069aa4c88942b221f737064114319aecbb839404321e2aeaf369dca3d81",
+    "point13.log": "4b8db01be11dd6232352f7c1bca34e8531c5f214a2447cc2e3abeb1aa1e2ec8c",
+    "point14.log": "b328b98dbea9292f50300f439cb9eb04162a7548018119d9f3010edb7da6658b",
+    "point15.log": "a42ab6d38e0584fba095a56a8c005a6a5840b77c0cef8d0e8617f72bbdb023a2",
+    "point16.log": "c7522cb68fcba56e55ea3b340574d41346702c6e434375dcfa4c590ff232e82c",
+    "point17.log": "25143a562d5aecd6d5647f5ff5eca41971a8cdf08070820a74e1d90e772870da",
+    "point18.log": "bf54ec8761b19232fec0b79dfba6b1308745bc170d1f2711050d6a4a94e8b158",
+    "point19.log": "93f2517ac6e69b893a8e3204bb3301566ed3692c15a925091abc32f81718c6c8",
+    "point20.log": "30614f70ba80c83b0accbf9afb23f8f8cab23100ebeb36bd18aa4b8560d3dc65",
+    "point21.log": "84828027e193db839c07cee0187161f9af4f8f3d51e1029c2007d7e4e097a2aa",
+    "point22.log": "bfce90188375434a602be7fefd5515150cba80735499fff310e67130a7b0c18c",
+    "point23.log": "96acf424226fc92e89a371037b822a91fa50cfeb470818ba47c368cb1d6c9b47"
+  }
+}

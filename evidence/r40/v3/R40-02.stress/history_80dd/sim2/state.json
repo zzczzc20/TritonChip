@@ -1,0 +1,80 @@
+{
+  "schema": "tnca-r40-v3-sim-chains/1",
+  "status": "running",
+  "source": "/home/zhongchun/r40v3_capgate",
+  "expect_tree": "files:80dd1a823e4be49e5e40d375d842c17e46c362d298e37f389c5e225621b6e4ca",
+  "python": "/home/zhongchun/tc_env/torchenv/bin/python",
+  "chains": {
+    "batch": [
+      {
+        "name": "batch-1000",
+        "argv": [
+          "/home/zhongchun/tc_env/torchenv/bin/python",
+          "-u",
+          "tools/r40/batch_tests.py",
+          "--calls",
+          "1000"
+        ],
+        "env": {},
+        "started_utc": "2026-10-19T02:25:17.527535+00:00"
+      }
+    ]
+  },
+  "plan": {
+    "batch": [
+      {
+        "name": "batch-1000",
+        "argv": [
+          "tools/r40/batch_tests.py",
+          "--calls",
+          "1000"
+        ],
+        "env": {}
+      }
+    ]
+  },
+  "runner_sha256": "4e30491a8a5809d0d13b8b237e8a0213bcb2d768b2901fcbed44af75c9e25857",
+  "host": "gx10-6646",
+  "started_utc": "2026-10-19T02:25:17.410173+00:00",
+  "software_tree": "files:80dd1a823e4be49e5e40d375d842c17e46c362d298e37f389c5e225621b6e4ca",
+  "staged_identity": {
+    "rtl": {
+      "source": "0c0d6300ad1579e0e131eb7656df1082845af738a381b7d8d915956970768570",
+      "staged": "0c0d6300ad1579e0e131eb7656df1082845af738a381b7d8d915956970768570"
+    },
+    "tb/device": {
+      "source": "ff180b361bfa23f3cb13627da37f8144eeeab06d2b577cb2cb28aacfaf9868b2",
+      "staged": "ff180b361bfa23f3cb13627da37f8144eeeab06d2b577cb2cb28aacfaf9868b2"
+    },
+    "tb/common": {
+      "source": "229fdc2c380a1e05c18d8472143d372e0a1c2000a342c11663ebfdc602b6f338",
+      "staged": "229fdc2c380a1e05c18d8472143d372e0a1c2000a342c11663ebfdc602b6f338"
+    }
+  },
+  "harness_sha256": {
+    "tools/r40/batch_tests.py": "d36c9369dd91ff29de7041a919e6eb997e4a82b3f0ac877fc56db02a6d305c3a",
+    "tools/r40/bucket_decode.py": "92bced6c6d64373a18b68b01f493e56bc3e8a792b0a8263429158c11918f97dd",
+    "tools/r40/frozen_residency_tests.py": "74b762d74210e8912ad5e753985ea069761189e5a210d9f7ca9b8a5b52c85070",
+    "tools/r40/v3_sim_chains.py": "4e30491a8a5809d0d13b8b237e8a0213bcb2d768b2901fcbed44af75c9e25857"
+  },
+  "base_env": {
+    "CUDA_VISIBLE_DEVICES": "",
+    "OMP_NUM_THREADS": "1",
+    "MKL_NUM_THREADS": "1",
+    "MAX_JOBS": "1",
+    "TNCA_HOST_TIMEOUT": "172800",
+    "PYTHONPATH": "/home/zhongchun/r40v3_capgate:/home/zhongchun/r40v3_capgate/python:/home/zhongchun/r40v3_capgate/compiler/python:/home/zhongchun/r40v3_capgate/tools/asm"
+  },
+  "observed_utc": "2026-10-19T02:25:17.527541+00:00",
+  "prepare": {
+    "argv": [
+      "/home/zhongchun/tc_env/torchenv/bin/python",
+      "-c",
+      "import sys; from tnca import device\nfor p in sys.argv[1:]: device.prepare(p)",
+      "core-vrf-sync-v5",
+      "core-vrf-sync-v5/hbm",
+      "core-sim"
+    ],
+    "exit_code": 0
+  }
+}

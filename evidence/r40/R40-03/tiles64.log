@@ -1,0 +1,16 @@
+  already built: /home/zhongchun/.cache/tnca/devices/core-vrf-sync-v5-a8f9e2a0291d254a-f30a9b914657/tnca_device_vrf5.vvp
+AUDIT {"resources": {"accumulators": 0, "barriers": 0, "commands_outstanding": "unknown", "descriptors": 0, "rf_private_per_role": {"role0": 15, "role1": 15, "role2": 15, "role3": 15}, "scratch_bytes": 0, "shared_windows": []}, "spill": {"estimated_peak": 17, "scratch_bytes": 0, "slots": 0}, "width": 64}
+PASS block 64, tail 127, masked select/load/store
+PASS block 64, tail 17, masked select/load/store
+PASS block 64, tail 31, masked select/load/store
+PASS block 64, tail 33, masked select/load/store
+PASS block 64, tail 65, masked select/load/store
+PASS block 64, signed int64 values beyond 32 bits
+PASS block 64, torch.float16
+PASS block 64, torch.bfloat16
+PASS block 64, torch.int8
+PASS block 64, torch.int16
+PASS block 64, torch.int32
+PASS block 64, strided offset alias and in-place stores
+r40-tiles-tests PASS (12/12)
+EXIT:0

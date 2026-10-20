@@ -1,0 +1,1802 @@
+{
+  "status": "original-graph-replay-pass",
+  "state": {
+    "status": "complete-review-required",
+    "software_tree": "files:80dd1a823e4be49e5e40d375d842c17e46c362d298e37f389c5e225621b6e4ca",
+    "required_gate_promotions": [],
+    "image_sha256": "a88ebdf59cfbbb2001ebd5b1b2c739c5d8cd33931f1e9202f18cac07c4c83083",
+    "reference_software_tree": "files:44051ad9c76c544f59b57afb9f297608bb3f0362c9f4f4479f977690645d2436",
+    "clock_hz": 90000000,
+    "observed_utc": "2026-10-19T00:53:39.898950+00:00",
+    "child_pid": 2366903,
+    "exit_code": 0
+  },
+  "identity": {
+    "point_id": "model.llama_decode/large/fp16-b1-p512",
+    "point_sha256": "ca2a458450b5f19010b5207c158946500e055f2874dfd3344dca6f89dd4df111",
+    "software_tree": "files:80dd1a823e4be49e5e40d375d842c17e46c362d298e37f389c5e225621b6e4ca",
+    "contract_sha256": "49fc0e02733139707ae2292eff2ef893e76e73f0723d0d002b2e7e1864af71c8",
+    "model_state_sha256": "6d545866e825c912e14ca21341056c3724b82b571b8c573946757b81b45bfb51",
+    "input_sha256": [
+      "57437a93df9e6826514c8a716e9ba41378a46d139a79cc6af66b2f5be2c8619b",
+      "48847071b63b29b8108c98eb0f425317ea861330a0a3164db794f039d280111b",
+      "87ed7c470efe77519a5feed699bd8a0ce9795fc53b43e07ba95beb879d6d7e5f"
+    ],
+    "weight_bytes": 2996965376,
+    "input_shapes": [
+      [
+        1,
+        1
+      ],
+      [
+        16,
+        1,
+        8,
+        512,
+        64
+      ],
+      [
+        16,
+        1,
+        8,
+        512,
+        64
+      ]
+    ],
+    "torch": "2.14.0+cpu",
+    "triton": "3.8.0",
+    "image_sha256": "a88ebdf59cfbbb2001ebd5b1b2c739c5d8cd33931f1e9202f18cac07c4c83083",
+    "backend_args": {
+      "xclbin": "/home/zzhouch/tnca_images/r40_attempt03_90mhz_a88ebdf5/tnca_u280.xclbin",
+      "image_profile": "core-vrf-sync-v5",
+      "core_count": 3,
+      "memory_ports": 3,
+      "hbm_dma": true,
+      "hbm_bytes": 4294967296,
+      "device_clock": true
+    },
+    "clock_hz": 90000000,
+    "clock_policy": "90000000Hz-undivided-conditional",
+    "clock_qualification": "conditional-r40v2-20261018",
+    "operating_clock_evidence_sha256": "8ad4b3bd30a3f5fe8819fe59ef8ad160fd0de1478aaa506dc33d82785fb9f487",
+    "operating_clock_evidence": {
+      "schema": "tnca-qualified-operating-clock/1",
+      "image_sha256": "a88ebdf59cfbbb2001ebd5b1b2c739c5d8cd33931f1e9202f18cac07c4c83083",
+      "qualification": "conditional-r40v2-20261018",
+      "clock_hz": 90000000,
+      "setup_wns_ns": 0.016,
+      "hold_whs_ns": 0.0,
+      "route_legal": true,
+      "cdc_review": "passed",
+      "clock_source": "measured-board-counter",
+      "physical_core_slrs": {
+        "0": 0,
+        "1": 1,
+        "2": 2
+      },
+      "clock_capture": {
+        "schema": "tnca-loaded-clock-capture/1",
+        "observed_utc": "2026-10-18T14:51:50.205064+00:00",
+        "image_sha256": "a88ebdf59cfbbb2001ebd5b1b2c739c5d8cd33931f1e9202f18cac07c4c83083",
+        "loaded_xclbin_uuid": "1bada9db-78f3-5bc8-7ba6-cce062e7ade8",
+        "device": "0000:04:00.1",
+        "counter_path": "/sys/bus/pci/devices/0000:04:00.0/clock_freq_counter.m.28311552/clock_counter_freqs",
+        "counter_samples": [
+          {
+            "raw": "90\n500\n450\n0\n",
+            "frequencies_mhz": [
+              90,
+              500,
+              450,
+              0
+            ]
+          },
+          {
+            "raw": "90\n500\n450\n0\n",
+            "frequencies_mhz": [
+              90,
+              500,
+              450,
+              0
+            ]
+          },
+          {
+            "raw": "90\n500\n450\n0\n",
+            "frequencies_mhz": [
+              90,
+              500,
+              450,
+              0
+            ]
+          }
+        ],
+        "icap_readback": {
+          "/sys/bus/pci/devices/0000:04:00.0/icap.m.22020096/clock_freqs": "90\n500\n450\n0\n",
+          "/sys/bus/pci/devices/0000:04:00.1/icap.u.22020096/clock_freqs": "90\n500\n450\n0\n"
+        },
+        "clock_hz": 90000000,
+        "physical_core_clock_divider": 1,
+        "clock_source": "measured-board-counter",
+        "measurement_resolution_hz": 1000000,
+        "scope": "DATA clock counter index 0 matches v++ clock-ID mapping; undivided core clock from immutable DEV_DIV=1 hardware configuration; integer MHz readout, not sub-MHz precision; no workload run yet"
+      },
+      "preload_review_sha256": "5f38e23e1055cff6ad9b2e756d92c84121c942850e525df7b5963f35e79b431c",
+      "cdc_review_scope": {
+        "status": "accepted-for-conditional-operation-with-scoped-platform-findings",
+        "total_records": 4212,
+        "raw_rule_counts": {
+          "CDC-13": 4,
+          "CDC-3": 423,
+          "CDC-9": 32,
+          "CDC-15": 3689,
+          "CDC-6": 12,
+          "CDC-10": 7,
+          "CDC-7": 13,
+          "CDC-11": 32
+        },
+        "custom_endpoint_records": 0,
+        "raw_critical": 56,
+        "unreviewed_critical": 0,
+        "reviewed_critical": [
+          {
+            "rule": "CDC-13",
+            "severity": "Critical",
+            "source": "level0_i/ulp/ulp_ucs/inst/ucs_control_status/gpio_ucs_control_status/U0/gpio_core_1/Dual.gpio2_Data_Out_reg[31]/C",
+            "destination": "level0_i/ulp/ulp_ucs/inst/aclk_kernel_00_hierarchy/clock_throttling_aclk_kernel_00/U0/ECCLK/CE",
+            "exception": "False Path",
+            "source_clock": "clk_out2_bd_39ab_clkwiz_level0_periph_0_1",
+            "destination_clock": "clk_kernel_00_unbuffered_net",
+            "review": "vendor UCS clock-enable primitive; programmed while application quiescent",
+            "disposition": "accepted-platform-scoped; original Critical severity retained"
+          },
+          {
+            "rule": "CDC-13",
+            "severity": "Critical",
+            "source": "level0_i/ulp/ulp_ucs/inst/ucs_control_status/gpio_ucs_control_status/U0/gpio_core_1/Dual.gpio2_Data_Out_reg[31]/C",
+            "destination": "level0_i/ulp/ulp_ucs/inst/aclk_kernel_01_hierarchy/clock_throttling_aclk_kernel_01/U0/ECCLK/CE",
+            "exception": "False Path",
+            "source_clock": "clk_out2_bd_39ab_clkwiz_level0_periph_0_1",
+            "destination_clock": "clk_kernel_01_unbuffered_net",
+            "review": "vendor UCS clock-enable primitive; programmed while application quiescent",
+            "disposition": "accepted-platform-scoped; original Critical severity retained"
+          },
+          {
+            "rule": "CDC-10",
+            "severity": "Critical",
+            "source": "level0_i/blp/blp_i/PLP/ss_fic/inst/data_firewalls_and_regslices/axi_firewall_data_c2h/inst/gen_si.si_r_error_i_reg/C",
+            "destination": "level0_i/blp/blp_i/PLP/ss_dma/inst/axi_intc_aggregated_mgmt/U0/INTC_CORE_I/INTR_DETECT_GEN[0].ASYNC_GEN.intr_ff_reg[0]/D",
+            "exception": "False Path",
+            "source_clock": "dma_ip_axi_aclk_1",
+            "destination_clock": "clk_out2_bd_39ab_clkwiz_level0_periph_0_1",
+            "review": "vendor sticky firewall-error level into management IRQ synchronizer",
+            "disposition": "accepted-platform-scoped; original Critical severity retained"
+          },
+          {
+            "rule": "CDC-10",
+            "severity": "Critical",
+            "source": "level0_i/blp/blp_i/ss_cmp/inst/psreset_mdm/U0/ACTIVE_LOW_PR_OUT_DFF[0].FDRE_PER_N/C",
+            "destination": "level0_i/blp/blp_i/PLP/ss_ert/inst/reset_hierarchy/psreset_scheduler/U0/EXT_LPF/ACTIVE_LOW_EXT.ACT_LO_EXT/GENERATE_LEVEL_P_S_CDC.SINGLE_BIT.CROSS_PLEVEL_IN2SCNDRY_IN_cdc_to/D",
+            "exception": "False Path",
+            "source_clock": "clk_out2_bd_39ab_clkwiz_level0_periph_0_1",
+            "destination_clock": "dma_ip_axi_aclk_1",
+            "review": "vendor processor-reset low-pass/synchronizer circuitry",
+            "disposition": "accepted-platform-scoped; original Critical severity retained"
+          },
+          {
+            "rule": "CDC-7",
+            "severity": "Critical",
+            "source": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/sys_reset_in_async_rst_inst/arststages_ff_reg[1]/C",
+            "destination": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/debug_wrapper_U/debug_probes_inst/cur_ltssm_st_reg[0]/CLR",
+            "exception": "None",
+            "source_clock": "io_clk_pcie_00_clk_p",
+            "destination_clock": "dma_ip_axi_aclk_1",
+            "review": "vendor PCIe reset/link-state and debug sampling",
+            "disposition": "accepted-platform-scoped; original Critical severity retained"
+          },
+          {
+            "rule": "CDC-7",
+            "severity": "Critical",
+            "source": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/sys_reset_in_async_rst_inst/arststages_ff_reg[1]/C",
+            "destination": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/debug_wrapper_U/debug_probes_inst/cur_ltssm_st_reg[1]/CLR",
+            "exception": "None",
+            "source_clock": "io_clk_pcie_00_clk_p",
+            "destination_clock": "dma_ip_axi_aclk_1",
+            "review": "vendor PCIe reset/link-state and debug sampling",
+            "disposition": "accepted-platform-scoped; original Critical severity retained"
+          },
+          {
+            "rule": "CDC-7",
+            "severity": "Critical",
+            "source": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/sys_reset_in_async_rst_inst/arststages_ff_reg[1]/C",
+            "destination": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/debug_wrapper_U/debug_probes_inst/cur_ltssm_st_reg[2]/CLR",
+            "exception": "None",
+            "source_clock": "io_clk_pcie_00_clk_p",
+            "destination_clock": "dma_ip_axi_aclk_1",
+            "review": "vendor PCIe reset/link-state and debug sampling",
+            "disposition": "accepted-platform-scoped; original Critical severity retained"
+          },
+          {
+            "rule": "CDC-7",
+            "severity": "Critical",
+            "source": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/sys_reset_in_async_rst_inst/arststages_ff_reg[1]/C",
+            "destination": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/debug_wrapper_U/debug_probes_inst/cur_ltssm_st_reg[3]/CLR",
+            "exception": "None",
+            "source_clock": "io_clk_pcie_00_clk_p",
+            "destination_clock": "dma_ip_axi_aclk_1",
+            "review": "vendor PCIe reset/link-state and debug sampling",
+            "disposition": "accepted-platform-scoped; original Critical severity retained"
+          },
+          {
+            "rule": "CDC-7",
+            "severity": "Critical",
+            "source": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/sys_reset_in_async_rst_inst/arststages_ff_reg[1]/C",
+            "destination": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/debug_wrapper_U/debug_probes_inst/cur_ltssm_st_reg[4]/CLR",
+            "exception": "None",
+            "source_clock": "io_clk_pcie_00_clk_p",
+            "destination_clock": "dma_ip_axi_aclk_1",
+            "review": "vendor PCIe reset/link-state and debug sampling",
+            "disposition": "accepted-platform-scoped; original Critical severity retained"
+          },
+          {
+            "rule": "CDC-7",
+            "severity": "Critical",
+            "source": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/sys_reset_in_async_rst_inst/arststages_ff_reg[1]/C",
+            "destination": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/debug_wrapper_U/debug_probes_inst/cur_ltssm_st_reg[5]/CLR",
+            "exception": "None",
+            "source_clock": "io_clk_pcie_00_clk_p",
+            "destination_clock": "dma_ip_axi_aclk_1",
+            "review": "vendor PCIe reset/link-state and debug sampling",
+            "disposition": "accepted-platform-scoped; original Critical severity retained"
+          },
+          {
+            "rule": "CDC-7",
+            "severity": "Critical",
+            "source": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/sys_reset_in_async_rst_inst/arststages_ff_reg[1]/C",
+            "destination": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/debug_wrapper_U/debug_probes_inst/pre_ltssm_st_reg[0]/CLR",
+            "exception": "None",
+            "source_clock": "io_clk_pcie_00_clk_p",
+            "destination_clock": "dma_ip_axi_aclk_1",
+            "review": "vendor PCIe reset/link-state and debug sampling",
+            "disposition": "accepted-platform-scoped; original Critical severity retained"
+          },
+          {
+            "rule": "CDC-7",
+            "severity": "Critical",
+            "source": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/sys_reset_in_async_rst_inst/arststages_ff_reg[1]/C",
+            "destination": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/debug_wrapper_U/debug_probes_inst/pre_ltssm_st_reg[1]/CLR",
+            "exception": "None",
+            "source_clock": "io_clk_pcie_00_clk_p",
+            "destination_clock": "dma_ip_axi_aclk_1",
+            "review": "vendor PCIe reset/link-state and debug sampling",
+            "disposition": "accepted-platform-scoped; original Critical severity retained"
+          },
+          {
+            "rule": "CDC-7",
+            "severity": "Critical",
+            "source": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/sys_reset_in_async_rst_inst/arststages_ff_reg[1]/C",
+            "destination": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/debug_wrapper_U/debug_probes_inst/pre_ltssm_st_reg[2]/CLR",
+            "exception": "None",
+            "source_clock": "io_clk_pcie_00_clk_p",
+            "destination_clock": "dma_ip_axi_aclk_1",
+            "review": "vendor PCIe reset/link-state and debug sampling",
+            "disposition": "accepted-platform-scoped; original Critical severity retained"
+          },
+          {
+            "rule": "CDC-7",
+            "severity": "Critical",
+            "source": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/sys_reset_in_async_rst_inst/arststages_ff_reg[1]/C",
+            "destination": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/debug_wrapper_U/debug_probes_inst/pre_ltssm_st_reg[3]/CLR",
+            "exception": "None",
+            "source_clock": "io_clk_pcie_00_clk_p",
+            "destination_clock": "dma_ip_axi_aclk_1",
+            "review": "vendor PCIe reset/link-state and debug sampling",
+            "disposition": "accepted-platform-scoped; original Critical severity retained"
+          },
+          {
+            "rule": "CDC-7",
+            "severity": "Critical",
+            "source": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/sys_reset_in_async_rst_inst/arststages_ff_reg[1]/C",
+            "destination": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/debug_wrapper_U/debug_probes_inst/pre_ltssm_st_reg[4]/CLR",
+            "exception": "None",
+            "source_clock": "io_clk_pcie_00_clk_p",
+            "destination_clock": "dma_ip_axi_aclk_1",
+            "review": "vendor PCIe reset/link-state and debug sampling",
+            "disposition": "accepted-platform-scoped; original Critical severity retained"
+          },
+          {
+            "rule": "CDC-7",
+            "severity": "Critical",
+            "source": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/sys_reset_in_async_rst_inst/arststages_ff_reg[1]/C",
+            "destination": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/debug_wrapper_U/debug_probes_inst/pre_ltssm_st_reg[5]/CLR",
+            "exception": "None",
+            "source_clock": "io_clk_pcie_00_clk_p",
+            "destination_clock": "dma_ip_axi_aclk_1",
+            "review": "vendor PCIe reset/link-state and debug sampling",
+            "disposition": "accepted-platform-scoped; original Critical severity retained"
+          },
+          {
+            "rule": "CDC-10",
+            "severity": "Critical",
+            "source": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/sys_reset_in_async_rst_inst/arststages_ff_reg[1]/C",
+            "destination": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/sys_or_hot_rst_uclk_inst/arststages_ff_reg[0]/PRE",
+            "exception": "False Path",
+            "source_clock": "io_clk_pcie_00_clk_p",
+            "destination_clock": "dma_ip_axi_aclk_1",
+            "review": "vendor PCIe system/hot-reset assertion and local reset synchronization",
+            "disposition": "accepted-platform-scoped; original Critical severity retained"
+          },
+          {
+            "rule": "CDC-10",
+            "severity": "Critical",
+            "source": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/sys_reset_in_async_rst_inst/arststages_ff_reg[1]/C",
+            "destination": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/user_lnk_up_cdc/arststages_ff_reg[0]/CLR",
+            "exception": "False Path",
+            "source_clock": "io_clk_pcie_00_clk_p",
+            "destination_clock": "dma_ip_axi_aclk_1",
+            "review": "vendor PCIe system/hot-reset assertion and local reset synchronization",
+            "disposition": "accepted-platform-scoped; original Critical severity retained"
+          },
+          {
+            "rule": "CDC-7",
+            "severity": "Critical",
+            "source": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/sys_rst_n_sbr_reg/C",
+            "destination": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/user_lnk_up_reg/CLR",
+            "exception": "False Path",
+            "source_clock": "io_clk_pcie_00_clk_p",
+            "destination_clock": "dma_ip_axi_aclk_1",
+            "review": "vendor PCIe reset/link-state and debug sampling",
+            "disposition": "accepted-platform-scoped; original Critical severity retained"
+          },
+          {
+            "rule": "CDC-10",
+            "severity": "Critical",
+            "source": "level0_i/ulp/hmss_0/inst/hbm_inst/inst/TWO_STACK.u_hbm_top/TWO_STACK_HBM.hbm_two_stack_intf/HBM_ONE_STACK_INTF<1>_INST/HBM_SNGLBLI_INTF_APB_INST/PCLK",
+            "destination": "level0_i/ulp/hmss_0/inst/hbm_reset_sync_SLR0/U0/EXT_LPF/ACTIVE_HIGH_AUX.ACT_HI_AUX/GENERATE_LEVEL_P_S_CDC.SINGLE_BIT.CROSS_PLEVEL_IN2SCNDRY_IN_cdc_to/D",
+            "exception": "False Path",
+            "source_clock": "clk_out2_bd_39ab_clkwiz_level0_periph_0_1",
+            "destination_clock": "hbm_aclk",
+            "review": "vendor HBM initialization/reset synchronizer",
+            "disposition": "accepted-platform-scoped; original Critical severity retained"
+          },
+          {
+            "rule": "CDC-10",
+            "severity": "Critical",
+            "source": "level0_i/ulp/hmss_0/inst/hbm_inst/inst/TWO_STACK.u_hbm_top/TWO_STACK_HBM.hbm_two_stack_intf/HBM_ONE_STACK_INTF<1>_INST/HBM_SNGLBLI_INTF_APB_INST/PCLK",
+            "destination": "level0_i/ulp/hmss_0/inst/hbm_reset_sync_SLR2/U0/EXT_LPF/ACTIVE_HIGH_AUX.ACT_HI_AUX/GENERATE_LEVEL_P_S_CDC.SINGLE_BIT.CROSS_PLEVEL_IN2SCNDRY_IN_cdc_to/D",
+            "exception": "False Path",
+            "source_clock": "clk_out2_bd_39ab_clkwiz_level0_periph_0_1",
+            "destination_clock": "hbm_aclk",
+            "review": "vendor HBM initialization/reset synchronizer",
+            "disposition": "accepted-platform-scoped; original Critical severity retained"
+          },
+          {
+            "rule": "CDC-13",
+            "severity": "Critical",
+            "source": "level0_i/ulp/ulp_ucs/inst/ucs_control_status/gpio_ucs_control_status/U0/gpio_core_1/Dual.gpio2_Data_Out_reg[31]/C",
+            "destination": "level0_i/ulp/ulp_ucs/inst/aclk_hbm_hierarchy/clkwiz_hbm/inst/CLK_CORE_DRP_I/clk_inst/clkout1_buf/CE",
+            "exception": "False Path",
+            "source_clock": "clk_out2_bd_39ab_clkwiz_level0_periph_0_1",
+            "destination_clock": "hbm_aclk",
+            "review": "vendor UCS clock-enable primitive; programmed while application quiescent",
+            "disposition": "accepted-platform-scoped; original Critical severity retained"
+          },
+          {
+            "rule": "CDC-11",
+            "severity": "Critical",
+            "source": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/phy_pipeline/phy_rate_chain/with_ff_chain.ff_chain_gen[0].sync_rst.ff_chain_reg[1][1]/C",
+            "destination": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/phy_lane[0].cdr_ctrl_on_eidle_i/sync_gen34/sync_vec[0].sync_cell_i/sync_reg[0]/D",
+            "exception": "Asynch Clock Groups",
+            "source_clock": "pipe_clk_1",
+            "destination_clock": "io_clk_pcie_00_clk_p",
+            "review": "vendor PCIe GT lane reset/rate-control synchronizers",
+            "disposition": "accepted-platform-scoped; original Critical severity retained"
+          },
+          {
+            "rule": "CDC-11",
+            "severity": "Critical",
+            "source": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/phy_pipeline/as_mac_in_detect_chain/with_ff_chain.ff_chain_gen[0].sync_rst.ff_chain_reg[1][0]/C",
+            "destination": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/phy_lane[0].receiver_detect_termination_i/sync_mac_in_detect/sync_vec[0].sync_cell_i/sync_reg[0]/D",
+            "exception": "Asynch Clock Groups",
+            "source_clock": "pipe_clk_1",
+            "destination_clock": "io_clk_pcie_00_clk_p",
+            "review": "vendor PCIe GT lane reset/rate-control synchronizers",
+            "disposition": "accepted-platform-scoped; original Critical severity retained"
+          },
+          {
+            "rule": "CDC-11",
+            "severity": "Critical",
+            "source": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/phy_pipeline/phy_rate_chain/with_ff_chain.ff_chain_gen[0].sync_rst.ff_chain_reg[1][1]/C",
+            "destination": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/phy_lane[10].cdr_ctrl_on_eidle_i/sync_gen34/sync_vec[0].sync_cell_i/sync_reg[0]/D",
+            "exception": "Asynch Clock Groups",
+            "source_clock": "pipe_clk_1",
+            "destination_clock": "io_clk_pcie_00_clk_p",
+            "review": "vendor PCIe GT lane reset/rate-control synchronizers",
+            "disposition": "accepted-platform-scoped; original Critical severity retained"
+          },
+          {
+            "rule": "CDC-11",
+            "severity": "Critical",
+            "source": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/phy_pipeline/as_mac_in_detect_chain/with_ff_chain.ff_chain_gen[0].sync_rst.ff_chain_reg[1][0]/C",
+            "destination": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/phy_lane[10].receiver_detect_termination_i/sync_mac_in_detect/sync_vec[0].sync_cell_i/sync_reg[0]/D",
+            "exception": "Asynch Clock Groups",
+            "source_clock": "pipe_clk_1",
+            "destination_clock": "io_clk_pcie_00_clk_p",
+            "review": "vendor PCIe GT lane reset/rate-control synchronizers",
+            "disposition": "accepted-platform-scoped; original Critical severity retained"
+          },
+          {
+            "rule": "CDC-11",
+            "severity": "Critical",
+            "source": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/phy_pipeline/phy_rate_chain/with_ff_chain.ff_chain_gen[0].sync_rst.ff_chain_reg[1][1]/C",
+            "destination": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/phy_lane[11].cdr_ctrl_on_eidle_i/sync_gen34/sync_vec[0].sync_cell_i/sync_reg[0]/D",
+            "exception": "Asynch Clock Groups",
+            "source_clock": "pipe_clk_1",
+            "destination_clock": "io_clk_pcie_00_clk_p",
+            "review": "vendor PCIe GT lane reset/rate-control synchronizers",
+            "disposition": "accepted-platform-scoped; original Critical severity retained"
+          },
+          {
+            "rule": "CDC-11",
+            "severity": "Critical",
+            "source": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/phy_pipeline/as_mac_in_detect_chain/with_ff_chain.ff_chain_gen[0].sync_rst.ff_chain_reg[1][0]/C",
+            "destination": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/phy_lane[11].receiver_detect_termination_i/sync_mac_in_detect/sync_vec[0].sync_cell_i/sync_reg[0]/D",
+            "exception": "Asynch Clock Groups",
+            "source_clock": "pipe_clk_1",
+            "destination_clock": "io_clk_pcie_00_clk_p",
+            "review": "vendor PCIe GT lane reset/rate-control synchronizers",
+            "disposition": "accepted-platform-scoped; original Critical severity retained"
+          },
+          {
+            "rule": "CDC-11",
+            "severity": "Critical",
+            "source": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/phy_pipeline/phy_rate_chain/with_ff_chain.ff_chain_gen[0].sync_rst.ff_chain_reg[1][1]/C",
+            "destination": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/phy_lane[12].cdr_ctrl_on_eidle_i/sync_gen34/sync_vec[0].sync_cell_i/sync_reg[0]/D",
+            "exception": "Asynch Clock Groups",
+            "source_clock": "pipe_clk_1",
+            "destination_clock": "io_clk_pcie_00_clk_p",
+            "review": "vendor PCIe GT lane reset/rate-control synchronizers",
+            "disposition": "accepted-platform-scoped; original Critical severity retained"
+          },
+          {
+            "rule": "CDC-11",
+            "severity": "Critical",
+            "source": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/phy_pipeline/as_mac_in_detect_chain/with_ff_chain.ff_chain_gen[0].sync_rst.ff_chain_reg[1][0]/C",
+            "destination": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/phy_lane[12].receiver_detect_termination_i/sync_mac_in_detect/sync_vec[0].sync_cell_i/sync_reg[0]/D",
+            "exception": "Asynch Clock Groups",
+            "source_clock": "pipe_clk_1",
+            "destination_clock": "io_clk_pcie_00_clk_p",
+            "review": "vendor PCIe GT lane reset/rate-control synchronizers",
+            "disposition": "accepted-platform-scoped; original Critical severity retained"
+          },
+          {
+            "rule": "CDC-11",
+            "severity": "Critical",
+            "source": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/phy_pipeline/phy_rate_chain/with_ff_chain.ff_chain_gen[0].sync_rst.ff_chain_reg[1][1]/C",
+            "destination": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/phy_lane[13].cdr_ctrl_on_eidle_i/sync_gen34/sync_vec[0].sync_cell_i/sync_reg[0]/D",
+            "exception": "Asynch Clock Groups",
+            "source_clock": "pipe_clk_1",
+            "destination_clock": "io_clk_pcie_00_clk_p",
+            "review": "vendor PCIe GT lane reset/rate-control synchronizers",
+            "disposition": "accepted-platform-scoped; original Critical severity retained"
+          },
+          {
+            "rule": "CDC-11",
+            "severity": "Critical",
+            "source": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/phy_pipeline/as_mac_in_detect_chain/with_ff_chain.ff_chain_gen[0].sync_rst.ff_chain_reg[1][0]/C",
+            "destination": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/phy_lane[13].receiver_detect_termination_i/sync_mac_in_detect/sync_vec[0].sync_cell_i/sync_reg[0]/D",
+            "exception": "Asynch Clock Groups",
+            "source_clock": "pipe_clk_1",
+            "destination_clock": "io_clk_pcie_00_clk_p",
+            "review": "vendor PCIe GT lane reset/rate-control synchronizers",
+            "disposition": "accepted-platform-scoped; original Critical severity retained"
+          },
+          {
+            "rule": "CDC-11",
+            "severity": "Critical",
+            "source": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/phy_pipeline/phy_rate_chain/with_ff_chain.ff_chain_gen[0].sync_rst.ff_chain_reg[1][1]/C",
+            "destination": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/phy_lane[14].cdr_ctrl_on_eidle_i/sync_gen34/sync_vec[0].sync_cell_i/sync_reg[0]/D",
+            "exception": "Asynch Clock Groups",
+            "source_clock": "pipe_clk_1",
+            "destination_clock": "io_clk_pcie_00_clk_p",
+            "review": "vendor PCIe GT lane reset/rate-control synchronizers",
+            "disposition": "accepted-platform-scoped; original Critical severity retained"
+          },
+          {
+            "rule": "CDC-11",
+            "severity": "Critical",
+            "source": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/phy_pipeline/as_mac_in_detect_chain/with_ff_chain.ff_chain_gen[0].sync_rst.ff_chain_reg[1][0]/C",
+            "destination": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/phy_lane[14].receiver_detect_termination_i/sync_mac_in_detect/sync_vec[0].sync_cell_i/sync_reg[0]/D",
+            "exception": "Asynch Clock Groups",
+            "source_clock": "pipe_clk_1",
+            "destination_clock": "io_clk_pcie_00_clk_p",
+            "review": "vendor PCIe GT lane reset/rate-control synchronizers",
+            "disposition": "accepted-platform-scoped; original Critical severity retained"
+          },
+          {
+            "rule": "CDC-11",
+            "severity": "Critical",
+            "source": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/phy_pipeline/phy_rate_chain/with_ff_chain.ff_chain_gen[0].sync_rst.ff_chain_reg[1][1]/C",
+            "destination": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/phy_lane[15].cdr_ctrl_on_eidle_i/sync_gen34/sync_vec[0].sync_cell_i/sync_reg[0]/D",
+            "exception": "Asynch Clock Groups",
+            "source_clock": "pipe_clk_1",
+            "destination_clock": "io_clk_pcie_00_clk_p",
+            "review": "vendor PCIe GT lane reset/rate-control synchronizers",
+            "disposition": "accepted-platform-scoped; original Critical severity retained"
+          },
+          {
+            "rule": "CDC-11",
+            "severity": "Critical",
+            "source": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/phy_pipeline/as_mac_in_detect_chain/with_ff_chain.ff_chain_gen[0].sync_rst.ff_chain_reg[1][0]/C",
+            "destination": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/phy_lane[15].receiver_detect_termination_i/sync_mac_in_detect/sync_vec[0].sync_cell_i/sync_reg[0]/D",
+            "exception": "Asynch Clock Groups",
+            "source_clock": "pipe_clk_1",
+            "destination_clock": "io_clk_pcie_00_clk_p",
+            "review": "vendor PCIe GT lane reset/rate-control synchronizers",
+            "disposition": "accepted-platform-scoped; original Critical severity retained"
+          },
+          {
+            "rule": "CDC-11",
+            "severity": "Critical",
+            "source": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/phy_pipeline/phy_rate_chain/with_ff_chain.ff_chain_gen[0].sync_rst.ff_chain_reg[1][1]/C",
+            "destination": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/phy_lane[1].cdr_ctrl_on_eidle_i/sync_gen34/sync_vec[0].sync_cell_i/sync_reg[0]/D",
+            "exception": "Asynch Clock Groups",
+            "source_clock": "pipe_clk_1",
+            "destination_clock": "io_clk_pcie_00_clk_p",
+            "review": "vendor PCIe GT lane reset/rate-control synchronizers",
+            "disposition": "accepted-platform-scoped; original Critical severity retained"
+          },
+          {
+            "rule": "CDC-11",
+            "severity": "Critical",
+            "source": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/phy_pipeline/as_mac_in_detect_chain/with_ff_chain.ff_chain_gen[0].sync_rst.ff_chain_reg[1][0]/C",
+            "destination": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/phy_lane[1].receiver_detect_termination_i/sync_mac_in_detect/sync_vec[0].sync_cell_i/sync_reg[0]/D",
+            "exception": "Asynch Clock Groups",
+            "source_clock": "pipe_clk_1",
+            "destination_clock": "io_clk_pcie_00_clk_p",
+            "review": "vendor PCIe GT lane reset/rate-control synchronizers",
+            "disposition": "accepted-platform-scoped; original Critical severity retained"
+          },
+          {
+            "rule": "CDC-11",
+            "severity": "Critical",
+            "source": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/phy_pipeline/phy_rate_chain/with_ff_chain.ff_chain_gen[0].sync_rst.ff_chain_reg[1][1]/C",
+            "destination": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/phy_lane[2].cdr_ctrl_on_eidle_i/sync_gen34/sync_vec[0].sync_cell_i/sync_reg[0]/D",
+            "exception": "Asynch Clock Groups",
+            "source_clock": "pipe_clk_1",
+            "destination_clock": "io_clk_pcie_00_clk_p",
+            "review": "vendor PCIe GT lane reset/rate-control synchronizers",
+            "disposition": "accepted-platform-scoped; original Critical severity retained"
+          },
+          {
+            "rule": "CDC-11",
+            "severity": "Critical",
+            "source": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/phy_pipeline/as_mac_in_detect_chain/with_ff_chain.ff_chain_gen[0].sync_rst.ff_chain_reg[1][0]/C",
+            "destination": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/phy_lane[2].receiver_detect_termination_i/sync_mac_in_detect/sync_vec[0].sync_cell_i/sync_reg[0]/D",
+            "exception": "Asynch Clock Groups",
+            "source_clock": "pipe_clk_1",
+            "destination_clock": "io_clk_pcie_00_clk_p",
+            "review": "vendor PCIe GT lane reset/rate-control synchronizers",
+            "disposition": "accepted-platform-scoped; original Critical severity retained"
+          },
+          {
+            "rule": "CDC-11",
+            "severity": "Critical",
+            "source": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/phy_pipeline/phy_rate_chain/with_ff_chain.ff_chain_gen[0].sync_rst.ff_chain_reg[1][1]/C",
+            "destination": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/phy_lane[3].cdr_ctrl_on_eidle_i/sync_gen34/sync_vec[0].sync_cell_i/sync_reg[0]/D",
+            "exception": "Asynch Clock Groups",
+            "source_clock": "pipe_clk_1",
+            "destination_clock": "io_clk_pcie_00_clk_p",
+            "review": "vendor PCIe GT lane reset/rate-control synchronizers",
+            "disposition": "accepted-platform-scoped; original Critical severity retained"
+          },
+          {
+            "rule": "CDC-11",
+            "severity": "Critical",
+            "source": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/phy_pipeline/as_mac_in_detect_chain/with_ff_chain.ff_chain_gen[0].sync_rst.ff_chain_reg[1][0]/C",
+            "destination": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/phy_lane[3].receiver_detect_termination_i/sync_mac_in_detect/sync_vec[0].sync_cell_i/sync_reg[0]/D",
+            "exception": "Asynch Clock Groups",
+            "source_clock": "pipe_clk_1",
+            "destination_clock": "io_clk_pcie_00_clk_p",
+            "review": "vendor PCIe GT lane reset/rate-control synchronizers",
+            "disposition": "accepted-platform-scoped; original Critical severity retained"
+          },
+          {
+            "rule": "CDC-11",
+            "severity": "Critical",
+            "source": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/phy_pipeline/phy_rate_chain/with_ff_chain.ff_chain_gen[0].sync_rst.ff_chain_reg[1][1]/C",
+            "destination": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/phy_lane[4].cdr_ctrl_on_eidle_i/sync_gen34/sync_vec[0].sync_cell_i/sync_reg[0]/D",
+            "exception": "Asynch Clock Groups",
+            "source_clock": "pipe_clk_1",
+            "destination_clock": "io_clk_pcie_00_clk_p",
+            "review": "vendor PCIe GT lane reset/rate-control synchronizers",
+            "disposition": "accepted-platform-scoped; original Critical severity retained"
+          },
+          {
+            "rule": "CDC-11",
+            "severity": "Critical",
+            "source": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/phy_pipeline/as_mac_in_detect_chain/with_ff_chain.ff_chain_gen[0].sync_rst.ff_chain_reg[1][0]/C",
+            "destination": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/phy_lane[4].receiver_detect_termination_i/sync_mac_in_detect/sync_vec[0].sync_cell_i/sync_reg[0]/D",
+            "exception": "Asynch Clock Groups",
+            "source_clock": "pipe_clk_1",
+            "destination_clock": "io_clk_pcie_00_clk_p",
+            "review": "vendor PCIe GT lane reset/rate-control synchronizers",
+            "disposition": "accepted-platform-scoped; original Critical severity retained"
+          },
+          {
+            "rule": "CDC-11",
+            "severity": "Critical",
+            "source": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/phy_pipeline/phy_rate_chain/with_ff_chain.ff_chain_gen[0].sync_rst.ff_chain_reg[1][1]/C",
+            "destination": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/phy_lane[5].cdr_ctrl_on_eidle_i/sync_gen34/sync_vec[0].sync_cell_i/sync_reg[0]/D",
+            "exception": "Asynch Clock Groups",
+            "source_clock": "pipe_clk_1",
+            "destination_clock": "io_clk_pcie_00_clk_p",
+            "review": "vendor PCIe GT lane reset/rate-control synchronizers",
+            "disposition": "accepted-platform-scoped; original Critical severity retained"
+          },
+          {
+            "rule": "CDC-11",
+            "severity": "Critical",
+            "source": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/phy_pipeline/as_mac_in_detect_chain/with_ff_chain.ff_chain_gen[0].sync_rst.ff_chain_reg[1][0]/C",
+            "destination": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/phy_lane[5].receiver_detect_termination_i/sync_mac_in_detect/sync_vec[0].sync_cell_i/sync_reg[0]/D",
+            "exception": "Asynch Clock Groups",
+            "source_clock": "pipe_clk_1",
+            "destination_clock": "io_clk_pcie_00_clk_p",
+            "review": "vendor PCIe GT lane reset/rate-control synchronizers",
+            "disposition": "accepted-platform-scoped; original Critical severity retained"
+          },
+          {
+            "rule": "CDC-11",
+            "severity": "Critical",
+            "source": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/phy_pipeline/phy_rate_chain/with_ff_chain.ff_chain_gen[0].sync_rst.ff_chain_reg[1][1]/C",
+            "destination": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/phy_lane[6].cdr_ctrl_on_eidle_i/sync_gen34/sync_vec[0].sync_cell_i/sync_reg[0]/D",
+            "exception": "Asynch Clock Groups",
+            "source_clock": "pipe_clk_1",
+            "destination_clock": "io_clk_pcie_00_clk_p",
+            "review": "vendor PCIe GT lane reset/rate-control synchronizers",
+            "disposition": "accepted-platform-scoped; original Critical severity retained"
+          },
+          {
+            "rule": "CDC-11",
+            "severity": "Critical",
+            "source": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/phy_pipeline/as_mac_in_detect_chain/with_ff_chain.ff_chain_gen[0].sync_rst.ff_chain_reg[1][0]/C",
+            "destination": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/phy_lane[6].receiver_detect_termination_i/sync_mac_in_detect/sync_vec[0].sync_cell_i/sync_reg[0]/D",
+            "exception": "Asynch Clock Groups",
+            "source_clock": "pipe_clk_1",
+            "destination_clock": "io_clk_pcie_00_clk_p",
+            "review": "vendor PCIe GT lane reset/rate-control synchronizers",
+            "disposition": "accepted-platform-scoped; original Critical severity retained"
+          },
+          {
+            "rule": "CDC-11",
+            "severity": "Critical",
+            "source": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/phy_pipeline/phy_rate_chain/with_ff_chain.ff_chain_gen[0].sync_rst.ff_chain_reg[1][1]/C",
+            "destination": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/phy_lane[7].cdr_ctrl_on_eidle_i/sync_gen34/sync_vec[0].sync_cell_i/sync_reg[0]/D",
+            "exception": "Asynch Clock Groups",
+            "source_clock": "pipe_clk_1",
+            "destination_clock": "io_clk_pcie_00_clk_p",
+            "review": "vendor PCIe GT lane reset/rate-control synchronizers",
+            "disposition": "accepted-platform-scoped; original Critical severity retained"
+          },
+          {
+            "rule": "CDC-11",
+            "severity": "Critical",
+            "source": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/phy_pipeline/as_mac_in_detect_chain/with_ff_chain.ff_chain_gen[0].sync_rst.ff_chain_reg[1][0]/C",
+            "destination": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/phy_lane[7].receiver_detect_termination_i/sync_mac_in_detect/sync_vec[0].sync_cell_i/sync_reg[0]/D",
+            "exception": "Asynch Clock Groups",
+            "source_clock": "pipe_clk_1",
+            "destination_clock": "io_clk_pcie_00_clk_p",
+            "review": "vendor PCIe GT lane reset/rate-control synchronizers",
+            "disposition": "accepted-platform-scoped; original Critical severity retained"
+          },
+          {
+            "rule": "CDC-11",
+            "severity": "Critical",
+            "source": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/phy_pipeline/phy_rate_chain/with_ff_chain.ff_chain_gen[0].sync_rst.ff_chain_reg[1][1]/C",
+            "destination": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/phy_lane[8].cdr_ctrl_on_eidle_i/sync_gen34/sync_vec[0].sync_cell_i/sync_reg[0]/D",
+            "exception": "Asynch Clock Groups",
+            "source_clock": "pipe_clk_1",
+            "destination_clock": "io_clk_pcie_00_clk_p",
+            "review": "vendor PCIe GT lane reset/rate-control synchronizers",
+            "disposition": "accepted-platform-scoped; original Critical severity retained"
+          },
+          {
+            "rule": "CDC-11",
+            "severity": "Critical",
+            "source": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/phy_pipeline/as_mac_in_detect_chain/with_ff_chain.ff_chain_gen[0].sync_rst.ff_chain_reg[1][0]/C",
+            "destination": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/phy_lane[8].receiver_detect_termination_i/sync_mac_in_detect/sync_vec[0].sync_cell_i/sync_reg[0]/D",
+            "exception": "Asynch Clock Groups",
+            "source_clock": "pipe_clk_1",
+            "destination_clock": "io_clk_pcie_00_clk_p",
+            "review": "vendor PCIe GT lane reset/rate-control synchronizers",
+            "disposition": "accepted-platform-scoped; original Critical severity retained"
+          },
+          {
+            "rule": "CDC-11",
+            "severity": "Critical",
+            "source": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/phy_pipeline/phy_rate_chain/with_ff_chain.ff_chain_gen[0].sync_rst.ff_chain_reg[1][1]/C",
+            "destination": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/phy_lane[9].cdr_ctrl_on_eidle_i/sync_gen34/sync_vec[0].sync_cell_i/sync_reg[0]/D",
+            "exception": "Asynch Clock Groups",
+            "source_clock": "pipe_clk_1",
+            "destination_clock": "io_clk_pcie_00_clk_p",
+            "review": "vendor PCIe GT lane reset/rate-control synchronizers",
+            "disposition": "accepted-platform-scoped; original Critical severity retained"
+          },
+          {
+            "rule": "CDC-11",
+            "severity": "Critical",
+            "source": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/phy_pipeline/as_mac_in_detect_chain/with_ff_chain.ff_chain_gen[0].sync_rst.ff_chain_reg[1][0]/C",
+            "destination": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/bd_39ab_pcie_0_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/phy_lane[9].receiver_detect_termination_i/sync_mac_in_detect/sync_vec[0].sync_cell_i/sync_reg[0]/D",
+            "exception": "Asynch Clock Groups",
+            "source_clock": "pipe_clk_1",
+            "destination_clock": "io_clk_pcie_00_clk_p",
+            "review": "vendor PCIe GT lane reset/rate-control synchronizers",
+            "disposition": "accepted-platform-scoped; original Critical severity retained"
+          },
+          {
+            "rule": "CDC-13",
+            "severity": "Critical",
+            "source": "level0_i/blp/blp_i/ss_cmp/inst/mdm_board_control/U0/MDM_Core_I1/Use_BSCAN.Config_Reg_reg[0]/C",
+            "destination": "level0_i/blp/blp_i/ss_cmp/inst/jtag_fallback/inst/bs_switch/inst/BSCAN_SWITCH.N_EXT_BSCAN.bscan_inst/SERIES7_BSCAN.bscan_inst/TDO",
+            "exception": "Asynch Clock Groups",
+            "source_clock": "level0_i/blp/blp_i/ss_cmp/inst/mdm_board_control/U0/No_Dbg_Reg_Access.BUFG_DRCK/Using_FPGA.Native/O",
+            "destination_clock": "level0_i/blp/blp_i/ss_cmp/inst/jtag_fallback/inst/bs_switch/inst/BSCAN_SWITCH.N_EXT_BSCAN.bscan_inst/SERIES7_BSCAN.bscan_inst/INTERNAL_TCK",
+            "review": "vendor JTAG debug primitive",
+            "disposition": "accepted-platform-scoped; original Critical severity retained"
+          },
+          {
+            "rule": "CDC-10",
+            "severity": "Critical",
+            "source": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/sys_reset_in_async_rst_inst/arststages_ff_reg[1]/C",
+            "destination": "level0_i/blp/blp_i/ss_hif/inst/pcie/inst/sys_or_hot_rst_pclk_inst/arststages_ff_reg[0]/PRE",
+            "exception": "Asynch Clock Groups",
+            "source_clock": "io_clk_pcie_00_clk_p",
+            "destination_clock": "pipe_clk_1",
+            "review": "vendor PCIe system/hot-reset assertion and local reset synchronization",
+            "disposition": "accepted-platform-scoped; original Critical severity retained"
+          }
+        ],
+        "scope": "TNCA custom hierarchy has no reported crossings; vendor platform reset/clock/JTAG/IRQ structures reviewed by exact endpoints, retaining raw severity; no broad waiver or timing exception added",
+        "warning_review": {
+          "CDC-6": "12 vendor control/status snapshots, frequency-counter captures, and PCIe debug arrays; relies on their stable-capture/handshake IP contracts, not arbitrary binary-bus synchronization",
+          "CDC-15": "3689 vendor HBM/AXI FIFO clock-enable data paths and UCS controls; generated IP handshakes and constraints retained; no TNCA endpoint"
+        },
+        "vendor_assumptions": "verified xilinx_u280_gen3x16_xdma_1_202211_1 platform/interface; application idle/reset during XRT clock programming; no change to vendor IP logic or constraints"
+      },
+      "original_100mhz_gate": "not-passed",
+      "scope": "conditional actual 90MHz qualification under user authorized <=91MHz operating path; vendor CDC findings retained with scoped review, not claimed zero",
+      "evidence_files": {
+        "timing": {
+          "path": "/home/zzhouch/tnca_build/r40_attempt03_conditional_90mhz/operating-clock-audit-v2/timing.rpt",
+          "sha256": "44f9d0b37543264e0310d2df90ad8aed26450bc39745bc26bd593a2bd6cacbe2"
+        },
+        "route": {
+          "path": "/home/zzhouch/tnca_build/r40_attempt03_conditional_90mhz/operating-clock-audit-v2/route_status.rpt",
+          "sha256": "3bec995e393d8eb6906ba31cbdc228f3b7888065a78aeb596776b2f2802ef201"
+        },
+        "cdc": {
+          "path": "/home/zzhouch/tnca_build/r40_attempt03_conditional_90mhz/operating-clock-audit-v2/cdc.rpt",
+          "sha256": "cfaa8f3bce6e87c821bcc507613ef33f2b37db5264567fc756b98bbedf6225fb"
+        },
+        "placement": {
+          "path": "/home/zzhouch/tnca_build/r40_attempt03_conditional_90mhz/operating-clock-audit-v2/actual_cores.rpt",
+          "sha256": "393e7dd52a54ee245880d2c1ed6888e56915afee3b3c368ee5e04766bf5e9fee"
+        },
+        "board_clock": {
+          "path": "/home/zzhouch/tnca_build/r40_attempt03_conditional_90mhz/board_clock_after_load.json",
+          "sha256": "f48f563b8220dd2ef351b5b7b04ef93c20c88fba82aa87a143283970a2b260d9"
+        }
+      }
+    }
+  },
+  "reference_identity": {
+    "point_id": "model.llama_decode/large/fp16-b1-p512",
+    "point_sha256": "ca2a458450b5f19010b5207c158946500e055f2874dfd3344dca6f89dd4df111",
+    "software_tree": "files:44051ad9c76c544f59b57afb9f297608bb3f0362c9f4f4479f977690645d2436",
+    "contract_sha256": "49fc0e02733139707ae2292eff2ef893e76e73f0723d0d002b2e7e1864af71c8",
+    "model_state_sha256": "6d545866e825c912e14ca21341056c3724b82b571b8c573946757b81b45bfb51",
+    "input_sha256": [
+      "57437a93df9e6826514c8a716e9ba41378a46d139a79cc6af66b2f5be2c8619b",
+      "48847071b63b29b8108c98eb0f425317ea861330a0a3164db794f039d280111b",
+      "87ed7c470efe77519a5feed699bd8a0ce9795fc53b43e07ba95beb879d6d7e5f"
+    ],
+    "weight_bytes": 2996965376,
+    "input_shapes": [
+      [
+        1,
+        1
+      ],
+      [
+        16,
+        1,
+        8,
+        512,
+        64
+      ],
+      [
+        16,
+        1,
+        8,
+        512,
+        64
+      ]
+    ],
+    "torch": "2.14.0+cu130",
+    "triton": "3.8.0"
+  },
+  "parameter_buffers": [
+    {
+      "name": "tok",
+      "address": 2672758784,
+      "bytes": 525336576
+    },
+    {
+      "name": "norm",
+      "address": 1946419200,
+      "bytes": 4096
+    },
+    {
+      "name": "layers.0.attn_norm",
+      "address": 121765888,
+      "bytes": 4096
+    },
+    {
+      "name": "layers.0.mlp_norm",
+      "address": 121769984,
+      "bytes": 4096
+    },
+    {
+      "name": "layers.0.attn.wq.weight",
+      "address": 131072,
+      "bytes": 8388608
+    },
+    {
+      "name": "layers.0.attn.wk.weight",
+      "address": 8519680,
+      "bytes": 2097152
+    },
+    {
+      "name": "layers.0.attn.wv.weight",
+      "address": 10616832,
+      "bytes": 2097152
+    },
+    {
+      "name": "layers.0.attn.wo.weight",
+      "address": 12713984,
+      "bytes": 8388608
+    },
+    {
+      "name": "layers.0.w1.weight",
+      "address": 21102592,
+      "bytes": 33554432
+    },
+    {
+      "name": "layers.0.w3.weight",
+      "address": 54657024,
+      "bytes": 33554432
+    },
+    {
+      "name": "layers.0.w2.weight",
+      "address": 88211456,
+      "bytes": 33554432
+    },
+    {
+      "name": "layers.1.attn_norm",
+      "address": 243408896,
+      "bytes": 4096
+    },
+    {
+      "name": "layers.1.mlp_norm",
+      "address": 243412992,
+      "bytes": 4096
+    },
+    {
+      "name": "layers.1.attn.wq.weight",
+      "address": 121774080,
+      "bytes": 8388608
+    },
+    {
+      "name": "layers.1.attn.wk.weight",
+      "address": 130162688,
+      "bytes": 2097152
+    },
+    {
+      "name": "layers.1.attn.wv.weight",
+      "address": 132259840,
+      "bytes": 2097152
+    },
+    {
+      "name": "layers.1.attn.wo.weight",
+      "address": 134356992,
+      "bytes": 8388608
+    },
+    {
+      "name": "layers.1.w1.weight",
+      "address": 142745600,
+      "bytes": 33554432
+    },
+    {
+      "name": "layers.1.w3.weight",
+      "address": 176300032,
+      "bytes": 33554432
+    },
+    {
+      "name": "layers.1.w2.weight",
+      "address": 209854464,
+      "bytes": 33554432
+    },
+    {
+      "name": "layers.2.attn_norm",
+      "address": 365051904,
+      "bytes": 4096
+    },
+    {
+      "name": "layers.2.mlp_norm",
+      "address": 365056000,
+      "bytes": 4096
+    },
+    {
+      "name": "layers.2.attn.wq.weight",
+      "address": 243417088,
+      "bytes": 8388608
+    },
+    {
+      "name": "layers.2.attn.wk.weight",
+      "address": 251805696,
+      "bytes": 2097152
+    },
+    {
+      "name": "layers.2.attn.wv.weight",
+      "address": 253902848,
+      "bytes": 2097152
+    },
+    {
+      "name": "layers.2.attn.wo.weight",
+      "address": 256000000,
+      "bytes": 8388608
+    },
+    {
+      "name": "layers.2.w1.weight",
+      "address": 264388608,
+      "bytes": 33554432
+    },
+    {
+      "name": "layers.2.w3.weight",
+      "address": 297943040,
+      "bytes": 33554432
+    },
+    {
+      "name": "layers.2.w2.weight",
+      "address": 331497472,
+      "bytes": 33554432
+    },
+    {
+      "name": "layers.3.attn_norm",
+      "address": 486694912,
+      "bytes": 4096
+    },
+    {
+      "name": "layers.3.mlp_norm",
+      "address": 486699008,
+      "bytes": 4096
+    },
+    {
+      "name": "layers.3.attn.wq.weight",
+      "address": 365060096,
+      "bytes": 8388608
+    },
+    {
+      "name": "layers.3.attn.wk.weight",
+      "address": 373448704,
+      "bytes": 2097152
+    },
+    {
+      "name": "layers.3.attn.wv.weight",
+      "address": 375545856,
+      "bytes": 2097152
+    },
+    {
+      "name": "layers.3.attn.wo.weight",
+      "address": 377643008,
+      "bytes": 8388608
+    },
+    {
+      "name": "layers.3.w1.weight",
+      "address": 386031616,
+      "bytes": 33554432
+    },
+    {
+      "name": "layers.3.w3.weight",
+      "address": 419586048,
+      "bytes": 33554432
+    },
+    {
+      "name": "layers.3.w2.weight",
+      "address": 453140480,
+      "bytes": 33554432
+    },
+    {
+      "name": "layers.4.attn_norm",
+      "address": 608337920,
+      "bytes": 4096
+    },
+    {
+      "name": "layers.4.mlp_norm",
+      "address": 608342016,
+      "bytes": 4096
+    },
+    {
+      "name": "layers.4.attn.wq.weight",
+      "address": 486703104,
+      "bytes": 8388608
+    },
+    {
+      "name": "layers.4.attn.wk.weight",
+      "address": 495091712,
+      "bytes": 2097152
+    },
+    {
+      "name": "layers.4.attn.wv.weight",
+      "address": 497188864,
+      "bytes": 2097152
+    },
+    {
+      "name": "layers.4.attn.wo.weight",
+      "address": 499286016,
+      "bytes": 8388608
+    },
+    {
+      "name": "layers.4.w1.weight",
+      "address": 507674624,
+      "bytes": 33554432
+    },
+    {
+      "name": "layers.4.w3.weight",
+      "address": 541229056,
+      "bytes": 33554432
+    },
+    {
+      "name": "layers.4.w2.weight",
+      "address": 574783488,
+      "bytes": 33554432
+    },
+    {
+      "name": "layers.5.attn_norm",
+      "address": 729980928,
+      "bytes": 4096
+    },
+    {
+      "name": "layers.5.mlp_norm",
+      "address": 729985024,
+      "bytes": 4096
+    },
+    {
+      "name": "layers.5.attn.wq.weight",
+      "address": 608346112,
+      "bytes": 8388608
+    },
+    {
+      "name": "layers.5.attn.wk.weight",
+      "address": 616734720,
+      "bytes": 2097152
+    },
+    {
+      "name": "layers.5.attn.wv.weight",
+      "address": 618831872,
+      "bytes": 2097152
+    },
+    {
+      "name": "layers.5.attn.wo.weight",
+      "address": 620929024,
+      "bytes": 8388608
+    },
+    {
+      "name": "layers.5.w1.weight",
+      "address": 629317632,
+      "bytes": 33554432
+    },
+    {
+      "name": "layers.5.w3.weight",
+      "address": 662872064,
+      "bytes": 33554432
+    },
+    {
+      "name": "layers.5.w2.weight",
+      "address": 696426496,
+      "bytes": 33554432
+    },
+    {
+      "name": "layers.6.attn_norm",
+      "address": 851623936,
+      "bytes": 4096
+    },
+    {
+      "name": "layers.6.mlp_norm",
+      "address": 851628032,
+      "bytes": 4096
+    },
+    {
+      "name": "layers.6.attn.wq.weight",
+      "address": 729989120,
+      "bytes": 8388608
+    },
+    {
+      "name": "layers.6.attn.wk.weight",
+      "address": 738377728,
+      "bytes": 2097152
+    },
+    {
+      "name": "layers.6.attn.wv.weight",
+      "address": 740474880,
+      "bytes": 2097152
+    },
+    {
+      "name": "layers.6.attn.wo.weight",
+      "address": 742572032,
+      "bytes": 8388608
+    },
+    {
+      "name": "layers.6.w1.weight",
+      "address": 750960640,
+      "bytes": 33554432
+    },
+    {
+      "name": "layers.6.w3.weight",
+      "address": 784515072,
+      "bytes": 33554432
+    },
+    {
+      "name": "layers.6.w2.weight",
+      "address": 818069504,
+      "bytes": 33554432
+    },
+    {
+      "name": "layers.7.attn_norm",
+      "address": 973266944,
+      "bytes": 4096
+    },
+    {
+      "name": "layers.7.mlp_norm",
+      "address": 973271040,
+      "bytes": 4096
+    },
+    {
+      "name": "layers.7.attn.wq.weight",
+      "address": 851632128,
+      "bytes": 8388608
+    },
+    {
+      "name": "layers.7.attn.wk.weight",
+      "address": 860020736,
+      "bytes": 2097152
+    },
+    {
+      "name": "layers.7.attn.wv.weight",
+      "address": 862117888,
+      "bytes": 2097152
+    },
+    {
+      "name": "layers.7.attn.wo.weight",
+      "address": 864215040,
+      "bytes": 8388608
+    },
+    {
+      "name": "layers.7.w1.weight",
+      "address": 872603648,
+      "bytes": 33554432
+    },
+    {
+      "name": "layers.7.w3.weight",
+      "address": 906158080,
+      "bytes": 33554432
+    },
+    {
+      "name": "layers.7.w2.weight",
+      "address": 939712512,
+      "bytes": 33554432
+    },
+    {
+      "name": "layers.8.attn_norm",
+      "address": 1094909952,
+      "bytes": 4096
+    },
+    {
+      "name": "layers.8.mlp_norm",
+      "address": 1094914048,
+      "bytes": 4096
+    },
+    {
+      "name": "layers.8.attn.wq.weight",
+      "address": 973275136,
+      "bytes": 8388608
+    },
+    {
+      "name": "layers.8.attn.wk.weight",
+      "address": 981663744,
+      "bytes": 2097152
+    },
+    {
+      "name": "layers.8.attn.wv.weight",
+      "address": 983760896,
+      "bytes": 2097152
+    },
+    {
+      "name": "layers.8.attn.wo.weight",
+      "address": 985858048,
+      "bytes": 8388608
+    },
+    {
+      "name": "layers.8.w1.weight",
+      "address": 994246656,
+      "bytes": 33554432
+    },
+    {
+      "name": "layers.8.w3.weight",
+      "address": 1027801088,
+      "bytes": 33554432
+    },
+    {
+      "name": "layers.8.w2.weight",
+      "address": 1061355520,
+      "bytes": 33554432
+    },
+    {
+      "name": "layers.9.attn_norm",
+      "address": 1216552960,
+      "bytes": 4096
+    },
+    {
+      "name": "layers.9.mlp_norm",
+      "address": 1216557056,
+      "bytes": 4096
+    },
+    {
+      "name": "layers.9.attn.wq.weight",
+      "address": 1094918144,
+      "bytes": 8388608
+    },
+    {
+      "name": "layers.9.attn.wk.weight",
+      "address": 1103306752,
+      "bytes": 2097152
+    },
+    {
+      "name": "layers.9.attn.wv.weight",
+      "address": 1105403904,
+      "bytes": 2097152
+    },
+    {
+      "name": "layers.9.attn.wo.weight",
+      "address": 1107501056,
+      "bytes": 8388608
+    },
+    {
+      "name": "layers.9.w1.weight",
+      "address": 1115889664,
+      "bytes": 33554432
+    },
+    {
+      "name": "layers.9.w3.weight",
+      "address": 1149444096,
+      "bytes": 33554432
+    },
+    {
+      "name": "layers.9.w2.weight",
+      "address": 1182998528,
+      "bytes": 33554432
+    },
+    {
+      "name": "layers.10.attn_norm",
+      "address": 1338195968,
+      "bytes": 4096
+    },
+    {
+      "name": "layers.10.mlp_norm",
+      "address": 1338200064,
+      "bytes": 4096
+    },
+    {
+      "name": "layers.10.attn.wq.weight",
+      "address": 1216561152,
+      "bytes": 8388608
+    },
+    {
+      "name": "layers.10.attn.wk.weight",
+      "address": 1224949760,
+      "bytes": 2097152
+    },
+    {
+      "name": "layers.10.attn.wv.weight",
+      "address": 1227046912,
+      "bytes": 2097152
+    },
+    {
+      "name": "layers.10.attn.wo.weight",
+      "address": 1229144064,
+      "bytes": 8388608
+    },
+    {
+      "name": "layers.10.w1.weight",
+      "address": 1237532672,
+      "bytes": 33554432
+    },
+    {
+      "name": "layers.10.w3.weight",
+      "address": 1271087104,
+      "bytes": 33554432
+    },
+    {
+      "name": "layers.10.w2.weight",
+      "address": 1304641536,
+      "bytes": 33554432
+    },
+    {
+      "name": "layers.11.attn_norm",
+      "address": 1459838976,
+      "bytes": 4096
+    },
+    {
+      "name": "layers.11.mlp_norm",
+      "address": 1459843072,
+      "bytes": 4096
+    },
+    {
+      "name": "layers.11.attn.wq.weight",
+      "address": 1338204160,
+      "bytes": 8388608
+    },
+    {
+      "name": "layers.11.attn.wk.weight",
+      "address": 1346592768,
+      "bytes": 2097152
+    },
+    {
+      "name": "layers.11.attn.wv.weight",
+      "address": 1348689920,
+      "bytes": 2097152
+    },
+    {
+      "name": "layers.11.attn.wo.weight",
+      "address": 1350787072,
+      "bytes": 8388608
+    },
+    {
+      "name": "layers.11.w1.weight",
+      "address": 1359175680,
+      "bytes": 33554432
+    },
+    {
+      "name": "layers.11.w3.weight",
+      "address": 1392730112,
+      "bytes": 33554432
+    },
+    {
+      "name": "layers.11.w2.weight",
+      "address": 1426284544,
+      "bytes": 33554432
+    },
+    {
+      "name": "layers.12.attn_norm",
+      "address": 1581481984,
+      "bytes": 4096
+    },
+    {
+      "name": "layers.12.mlp_norm",
+      "address": 1581486080,
+      "bytes": 4096
+    },
+    {
+      "name": "layers.12.attn.wq.weight",
+      "address": 1459847168,
+      "bytes": 8388608
+    },
+    {
+      "name": "layers.12.attn.wk.weight",
+      "address": 1468235776,
+      "bytes": 2097152
+    },
+    {
+      "name": "layers.12.attn.wv.weight",
+      "address": 1470332928,
+      "bytes": 2097152
+    },
+    {
+      "name": "layers.12.attn.wo.weight",
+      "address": 1472430080,
+      "bytes": 8388608
+    },
+    {
+      "name": "layers.12.w1.weight",
+      "address": 1480818688,
+      "bytes": 33554432
+    },
+    {
+      "name": "layers.12.w3.weight",
+      "address": 1514373120,
+      "bytes": 33554432
+    },
+    {
+      "name": "layers.12.w2.weight",
+      "address": 1547927552,
+      "bytes": 33554432
+    },
+    {
+      "name": "layers.13.attn_norm",
+      "address": 1703124992,
+      "bytes": 4096
+    },
+    {
+      "name": "layers.13.mlp_norm",
+      "address": 1703129088,
+      "bytes": 4096
+    },
+    {
+      "name": "layers.13.attn.wq.weight",
+      "address": 1581490176,
+      "bytes": 8388608
+    },
+    {
+      "name": "layers.13.attn.wk.weight",
+      "address": 1589878784,
+      "bytes": 2097152
+    },
+    {
+      "name": "layers.13.attn.wv.weight",
+      "address": 1591975936,
+      "bytes": 2097152
+    },
+    {
+      "name": "layers.13.attn.wo.weight",
+      "address": 1594073088,
+      "bytes": 8388608
+    },
+    {
+      "name": "layers.13.w1.weight",
+      "address": 1602461696,
+      "bytes": 33554432
+    },
+    {
+      "name": "layers.13.w3.weight",
+      "address": 1636016128,
+      "bytes": 33554432
+    },
+    {
+      "name": "layers.13.w2.weight",
+      "address": 1669570560,
+      "bytes": 33554432
+    },
+    {
+      "name": "layers.14.attn_norm",
+      "address": 1824768000,
+      "bytes": 4096
+    },
+    {
+      "name": "layers.14.mlp_norm",
+      "address": 1824772096,
+      "bytes": 4096
+    },
+    {
+      "name": "layers.14.attn.wq.weight",
+      "address": 1703133184,
+      "bytes": 8388608
+    },
+    {
+      "name": "layers.14.attn.wk.weight",
+      "address": 1711521792,
+      "bytes": 2097152
+    },
+    {
+      "name": "layers.14.attn.wv.weight",
+      "address": 1713618944,
+      "bytes": 2097152
+    },
+    {
+      "name": "layers.14.attn.wo.weight",
+      "address": 1715716096,
+      "bytes": 8388608
+    },
+    {
+      "name": "layers.14.w1.weight",
+      "address": 1724104704,
+      "bytes": 33554432
+    },
+    {
+      "name": "layers.14.w3.weight",
+      "address": 1757659136,
+      "bytes": 33554432
+    },
+    {
+      "name": "layers.14.w2.weight",
+      "address": 1791213568,
+      "bytes": 33554432
+    },
+    {
+      "name": "layers.15.attn_norm",
+      "address": 1946411008,
+      "bytes": 4096
+    },
+    {
+      "name": "layers.15.mlp_norm",
+      "address": 1946415104,
+      "bytes": 4096
+    },
+    {
+      "name": "layers.15.attn.wq.weight",
+      "address": 1824776192,
+      "bytes": 8388608
+    },
+    {
+      "name": "layers.15.attn.wk.weight",
+      "address": 1833164800,
+      "bytes": 2097152
+    },
+    {
+      "name": "layers.15.attn.wv.weight",
+      "address": 1835261952,
+      "bytes": 2097152
+    },
+    {
+      "name": "layers.15.attn.wo.weight",
+      "address": 1837359104,
+      "bytes": 8388608
+    },
+    {
+      "name": "layers.15.w1.weight",
+      "address": 1845747712,
+      "bytes": 33554432
+    },
+    {
+      "name": "layers.15.w3.weight",
+      "address": 1879302144,
+      "bytes": 33554432
+    },
+    {
+      "name": "layers.15.w2.weight",
+      "address": 1912856576,
+      "bytes": 33554432
+    },
+    {
+      "name": "out.weight",
+      "address": 2147422208,
+      "bytes": 525336576
+    }
+  ],
+  "calls": [
+    {
+      "label": "cold",
+      "boundaries": [
+        {
+          "name": "logits",
+          "ok": true,
+          "detail": "",
+          "max_rel_err": 0.0027137827853247975
+        },
+        {
+          "name": "new_keys",
+          "ok": true,
+          "detail": "",
+          "max_rel_err": 0.0022155795705693627
+        },
+        {
+          "name": "new_values",
+          "ok": true,
+          "detail": "",
+          "max_rel_err": 0.0023199980707619508
+        }
+      ],
+      "launch_count": 363,
+      "artifacts": [
+        "00787a7bb9928e010cfc73a460e217f8d4baa80f2fb92b8afce0bbcb6a0ee2bd",
+        "047b1053cac8fb7de65d45bb8dce4dfa1a774c992c46d26daccb3e7e347f3536",
+        "0885ea460066179e38f02477c9065b76e424cc2540e18fe3fdef0018e304f1c4",
+        "0ba0aebbfb41701b9460d77787dc06fb8743688fb4826b786ec78b8ac4646cfb",
+        "1746e2f16bb95c5bd856551c737792769f1d9e2f89e2a7a9a3fd809573a3d233",
+        "199764d6193b2d6881c303896ff876f78df85dee1512804f62f2aa763998e124",
+        "1da1edc17225f39d5f436b31febf0fd3ffbfc09a846363d12e55e8e5428ce003",
+        "1db51e11bc9f0b3eaecf6fa0454c1a3ee22d8c71c67a737a07b4bb3f745848d5",
+        "233e72870158661df430d3fb2e575b8d13b968c2bc5db54bcebc03c6be718035",
+        "24e7fca853c8ef4c7d470f4f7c41e43bf28c6ad50cebe673a17dfb9714e88bea",
+        "2f0b3a9a759430d6bbb9e9b7ba45d993c694bd3e636a26490dd11167f116e1ef",
+        "30aa400555c0406928533631be96fc6eeceb8c8282537d4cb2af3250e4fb2667",
+        "43d5a8e657d3386732e8aacddddcdf0fe487e9d96a774adfafba184b715b7e5e",
+        "51b038eaabcd16068886d149c193c3106c20ce26dc8978391e91fece31b429f3",
+        "6047ad2e151c85fe3567a8a72695cef49d1bab5ab590c7c095769aa16d65dfe1",
+        "6db7cfc9e15d6f53c393e56f386754e85d81a93e5b4d0e6cd8be88b86a50614a",
+        "7be0f435805e17c2a73d75213630c07feae2417027b94484cfbcd30bb5533de3",
+        "81f1910b413ef7a781bcb9e96fa9ab88b047ef67ee4203d21fe1b4149fba59c9",
+        "82b0528e4b93ac763c76255f528501bcc807bdb935aa2fa2d8a7b60983429053",
+        "84b7644eeb7c8c8559fcb11810439bae5c7bac22ebf3ed622cc1cc8382ab05d1",
+        "86201804368849a8bb11fb4e00396064df01cd2cc953887e713dc4ab1f043a96",
+        "86b7278f17e2ae3f24d03c90a4bceec06fa74dcb1fb3ceb5bb3756eff30cc10b",
+        "871f71f61e1dad70e4d27303888913332aa93a3daa2d7d29681002ecff67ec76",
+        "8a1cd6d29d1cfadc7cc09497787d2274942489121124f2062e20c5c676325e61",
+        "8f54cfc42632710397d9e07fd3e85b6701a34a233520cec1e31d22510e818d4c",
+        "966f11a8082d60a8c3abfcac0fb1856e2680e182f7d38d9e6816f92e7a793d55",
+        "ae5d7085d4d3be6d0eaaee94f91be84cb4ca87bf04c31b84aadfbb90f3e60676",
+        "af5a23fe7b41f64add1241e020d340da5e7bdefd8437abe614cd3c9ebf94982d",
+        "b81174e24497a43c1cab0e85e904e087f7ea905d466bc70d2ce0f1f9fe853000",
+        "bab719cef7552d6bce5137b020dd87a0e39fe1ab1b19a6df5df1afc91b569e30",
+        "bacdc903230c1f17b90115a2e254a2178ccc830be4ca69fa8a8cbd464ba0872f",
+        "bbd4a3424df6fd4eb85eba0f6fbafa681332b456ecb4d8d6339eeaf8bf545311",
+        "c43d97e153657252cf0d6dd0b25a154383e41db43d329302de865832cadd3d5c",
+        "cdbceaefe13eb9e5515de8ebb0199877be4c14039e6ac3bc119872864c700285",
+        "cdfd41309794e51503d6cb2cf77036238bec8023a5001f5e501fc88114313529",
+        "d0ea75ccf8f34e6897fa4652c0cc47959e80d2855fdef56541dc8152cbdac4e9",
+        "d79171cbaea3eca15e46d0e9a4b7745171835f5ac9a1b1a96f78924ce7cc085a",
+        "df442cd494ab95590e9e1c0ca8be2837bce18c6c0d7cd9af137d5a63102e2e1f",
+        "e028bbbf753f73b359b0d4137a55ec05c47d021aaeaa1a7e745822ffb38fdaf2",
+        "e525d25504a5dfe161d91a928a6c6fef321237ad6d5eae7d6a9f9d447e712c65",
+        "e905af9d760dd7996135b7e73b81c8e473b2327814b55dd5aa0299a861084f4e",
+        "edcf7065e97ed9f7177fe5acb4fa2632c85e9b9aee22c3ecf65b4d567983bc88",
+        "eeb04a7c68c89b46de5460984d80a7e9ee9babb3c51bfde9bfd49f22dbaff2b8",
+        "f091688f2a0c25e517118fc0bb3ab691d0b44829732bd9b854b570af0de5fbb3",
+        "f27b2d8b46a7186b33c30f3bf436dde5ab9a4e6a38df3903ac54cc2761c90a9f",
+        "f59cef683808f197980d7ad46d73daea0fea63734716fdcc358b79472d79f321"
+      ]
+    },
+    {
+      "label": "steady",
+      "boundaries": [
+        {
+          "name": "logits",
+          "ok": true,
+          "detail": "",
+          "max_rel_err": 0.0027137827853247975
+        },
+        {
+          "name": "new_keys",
+          "ok": true,
+          "detail": "",
+          "max_rel_err": 0.0022155795705693627
+        },
+        {
+          "name": "new_values",
+          "ok": true,
+          "detail": "",
+          "max_rel_err": 0.0023199980707619508
+        }
+      ],
+      "launch_count": 337,
+      "artifacts": [
+        "00787a7bb9928e010cfc73a460e217f8d4baa80f2fb92b8afce0bbcb6a0ee2bd",
+        "047b1053cac8fb7de65d45bb8dce4dfa1a774c992c46d26daccb3e7e347f3536",
+        "0885ea460066179e38f02477c9065b76e424cc2540e18fe3fdef0018e304f1c4",
+        "0ba0aebbfb41701b9460d77787dc06fb8743688fb4826b786ec78b8ac4646cfb",
+        "1746e2f16bb95c5bd856551c737792769f1d9e2f89e2a7a9a3fd809573a3d233",
+        "199764d6193b2d6881c303896ff876f78df85dee1512804f62f2aa763998e124",
+        "1da1edc17225f39d5f436b31febf0fd3ffbfc09a846363d12e55e8e5428ce003",
+        "1db51e11bc9f0b3eaecf6fa0454c1a3ee22d8c71c67a737a07b4bb3f745848d5",
+        "233e72870158661df430d3fb2e575b8d13b968c2bc5db54bcebc03c6be718035",
+        "24e7fca853c8ef4c7d470f4f7c41e43bf28c6ad50cebe673a17dfb9714e88bea",
+        "2f0b3a9a759430d6bbb9e9b7ba45d993c694bd3e636a26490dd11167f116e1ef",
+        "30aa400555c0406928533631be96fc6eeceb8c8282537d4cb2af3250e4fb2667",
+        "43d5a8e657d3386732e8aacddddcdf0fe487e9d96a774adfafba184b715b7e5e",
+        "51b038eaabcd16068886d149c193c3106c20ce26dc8978391e91fece31b429f3",
+        "6047ad2e151c85fe3567a8a72695cef49d1bab5ab590c7c095769aa16d65dfe1",
+        "6db7cfc9e15d6f53c393e56f386754e85d81a93e5b4d0e6cd8be88b86a50614a",
+        "81f1910b413ef7a781bcb9e96fa9ab88b047ef67ee4203d21fe1b4149fba59c9",
+        "82b0528e4b93ac763c76255f528501bcc807bdb935aa2fa2d8a7b60983429053",
+        "84b7644eeb7c8c8559fcb11810439bae5c7bac22ebf3ed622cc1cc8382ab05d1",
+        "86201804368849a8bb11fb4e00396064df01cd2cc953887e713dc4ab1f043a96",
+        "86b7278f17e2ae3f24d03c90a4bceec06fa74dcb1fb3ceb5bb3756eff30cc10b",
+        "871f71f61e1dad70e4d27303888913332aa93a3daa2d7d29681002ecff67ec76",
+        "8a1cd6d29d1cfadc7cc09497787d2274942489121124f2062e20c5c676325e61",
+        "8f54cfc42632710397d9e07fd3e85b6701a34a233520cec1e31d22510e818d4c",
+        "966f11a8082d60a8c3abfcac0fb1856e2680e182f7d38d9e6816f92e7a793d55",
+        "ae5d7085d4d3be6d0eaaee94f91be84cb4ca87bf04c31b84aadfbb90f3e60676",
+        "af5a23fe7b41f64add1241e020d340da5e7bdefd8437abe614cd3c9ebf94982d",
+        "b81174e24497a43c1cab0e85e904e087f7ea905d466bc70d2ce0f1f9fe853000",
+        "bab719cef7552d6bce5137b020dd87a0e39fe1ab1b19a6df5df1afc91b569e30",
+        "bacdc903230c1f17b90115a2e254a2178ccc830be4ca69fa8a8cbd464ba0872f",
+        "bbd4a3424df6fd4eb85eba0f6fbafa681332b456ecb4d8d6339eeaf8bf545311",
+        "c43d97e153657252cf0d6dd0b25a154383e41db43d329302de865832cadd3d5c",
+        "cdbceaefe13eb9e5515de8ebb0199877be4c14039e6ac3bc119872864c700285",
+        "cdfd41309794e51503d6cb2cf77036238bec8023a5001f5e501fc88114313529",
+        "d0ea75ccf8f34e6897fa4652c0cc47959e80d2855fdef56541dc8152cbdac4e9",
+        "d79171cbaea3eca15e46d0e9a4b7745171835f5ac9a1b1a96f78924ce7cc085a",
+        "df442cd494ab95590e9e1c0ca8be2837bce18c6c0d7cd9af137d5a63102e2e1f",
+        "e028bbbf753f73b359b0d4137a55ec05c47d021aaeaa1a7e745822ffb38fdaf2",
+        "e525d25504a5dfe161d91a928a6c6fef321237ad6d5eae7d6a9f9d447e712c65",
+        "e905af9d760dd7996135b7e73b81c8e473b2327814b55dd5aa0299a861084f4e",
+        "edcf7065e97ed9f7177fe5acb4fa2632c85e9b9aee22c3ecf65b4d567983bc88",
+        "eeb04a7c68c89b46de5460984d80a7e9ee9babb3c51bfde9bfd49f22dbaff2b8",
+        "f27b2d8b46a7186b33c30f3bf436dde5ab9a4e6a38df3903ac54cc2761c90a9f",
+        "f59cef683808f197980d7ad46d73daea0fea63734716fdcc358b79472d79f321"
+      ]
+    }
+  ],
+  "original_failure": {
+    "point_id": "model.llama_decode/large/fp16-b1-p512",
+    "point_sha256": "ca2a458450b5f19010b5207c158946500e055f2874dfd3344dca6f89dd4df111",
+    "correctness": {
+      "max_rel_err": 0.11417277954146436,
+      "tol": 0.05,
+      "detail": "max relative error 0.114 > 0.05"
+    },
+    "status": "not-measured",
+    "problems": [
+      "363 launches, but the generated wrapper makes 337: launches that are not the graph (autotuning?) would be counted as its time",
+      "max relative error 0.114 > 0.05"
+    ],
+    "software_tree": "files:44051ad9c76c544f59b57afb9f297608bb3f0362c9f4f4479f977690645d2436",
+    "artifacts": [
+      "00787a7bb9928e010cfc73a460e217f8d4baa80f2fb92b8afce0bbcb6a0ee2bd",
+      "047b1053cac8fb7de65d45bb8dce4dfa1a774c992c46d26daccb3e7e347f3536",
+      "05162f5136be2887f8e9fea321e0b71e0126733b2d027de8c851589e8cc1964c",
+      "0885ea460066179e38f02477c9065b76e424cc2540e18fe3fdef0018e304f1c4",
+      "0ba0aebbfb41701b9460d77787dc06fb8743688fb4826b786ec78b8ac4646cfb",
+      "199764d6193b2d6881c303896ff876f78df85dee1512804f62f2aa763998e124",
+      "1da1edc17225f39d5f436b31febf0fd3ffbfc09a846363d12e55e8e5428ce003",
+      "233e72870158661df430d3fb2e575b8d13b968c2bc5db54bcebc03c6be718035",
+      "24e7fca853c8ef4c7d470f4f7c41e43bf28c6ad50cebe673a17dfb9714e88bea",
+      "2f0b3a9a759430d6bbb9e9b7ba45d993c694bd3e636a26490dd11167f116e1ef",
+      "30aa400555c0406928533631be96fc6eeceb8c8282537d4cb2af3250e4fb2667",
+      "3c0559733cf5e4ef3f84b80e0c59ca471cf3be860834a84e6acca8696ec48dae",
+      "45adde0ffc8f4158aab4866755ef45cc4060d2572f0aed56ff4fb2ba9ee62089",
+      "51b038eaabcd16068886d149c193c3106c20ce26dc8978391e91fece31b429f3",
+      "5f6e7d9c84f2dcf3d2766c1b80eff156d97a622025aaafc01d806186027424dd",
+      "6047ad2e151c85fe3567a8a72695cef49d1bab5ab590c7c095769aa16d65dfe1",
+      "66358ea5eb50eb252e5cc0f7fa3af773ea078f4a21826962b0da258378a7a75c",
+      "6db7cfc9e15d6f53c393e56f386754e85d81a93e5b4d0e6cd8be88b86a50614a",
+      "81f1910b413ef7a781bcb9e96fa9ab88b047ef67ee4203d21fe1b4149fba59c9",
+      "82b0528e4b93ac763c76255f528501bcc807bdb935aa2fa2d8a7b60983429053",
+      "84b7644eeb7c8c8559fcb11810439bae5c7bac22ebf3ed622cc1cc8382ab05d1",
+      "86201804368849a8bb11fb4e00396064df01cd2cc953887e713dc4ab1f043a96",
+      "869c7cd5b39b1c03569ed6fe6dbf4b507195d3b7a54d7132bcf0b9ecee666485",
+      "86b7278f17e2ae3f24d03c90a4bceec06fa74dcb1fb3ceb5bb3756eff30cc10b",
+      "871f71f61e1dad70e4d27303888913332aa93a3daa2d7d29681002ecff67ec76",
+      "8f54cfc42632710397d9e07fd3e85b6701a34a233520cec1e31d22510e818d4c",
+      "a3a1eb0de93da6fda0f1fed3f71e5bed1b09632b8c56ef20b456bcbcf2587359",
+      "ac145f7798c9b9f23a8479a021f6314b5cf86806c14bb5165035979b6031ed0a",
+      "af5a23fe7b41f64add1241e020d340da5e7bdefd8437abe614cd3c9ebf94982d",
+      "b81174e24497a43c1cab0e85e904e087f7ea905d466bc70d2ce0f1f9fe853000",
+      "bab719cef7552d6bce5137b020dd87a0e39fe1ab1b19a6df5df1afc91b569e30",
+      "bacdc903230c1f17b90115a2e254a2178ccc830be4ca69fa8a8cbd464ba0872f",
+      "bbd4a3424df6fd4eb85eba0f6fbafa681332b456ecb4d8d6339eeaf8bf545311",
+      "c43d97e153657252cf0d6dd0b25a154383e41db43d329302de865832cadd3d5c",
+      "cb1113ef5c7ac424e7ca28134a62aeb5d88d1593a0ddea20d1568039bae2963c",
+      "cdbceaefe13eb9e5515de8ebb0199877be4c14039e6ac3bc119872864c700285",
+      "cdfd41309794e51503d6cb2cf77036238bec8023a5001f5e501fc88114313529",
+      "d0ea75ccf8f34e6897fa4652c0cc47959e80d2855fdef56541dc8152cbdac4e9",
+      "d6ec2e2f79624f10c5ef29eae694ea64ed5e1da6e96e9554a32faac02b1f2a63",
+      "e028bbbf753f73b359b0d4137a55ec05c47d021aaeaa1a7e745822ffb38fdaf2",
+      "e525d25504a5dfe161d91a928a6c6fef321237ad6d5eae7d6a9f9d447e712c65",
+      "e905af9d760dd7996135b7e73b81c8e473b2327814b55dd5aa0299a861084f4e",
+      "edcf7065e97ed9f7177fe5acb4fa2632c85e9b9aee22c3ecf65b4d567983bc88",
+      "f15cd6ab85d2d080b02d7aef69342f4dcf9aa599a2c184125d806f9e1fc44b06",
+      "f27b2d8b46a7186b33c30f3bf436dde5ab9a4e6a38df3903ac54cc2761c90a9f",
+      "f59cef683808f197980d7ad46d73daea0fea63734716fdcc358b79472d79f321"
+    ]
+  },
+  "artifact_identity_unchanged": false,
+  "artifact_count_before": 46,
+  "artifact_count_after": 46,
+  "controller": "from pathlib import Path\nimport json,os,subprocess,datetime,hashlib,traceback\np=Path(__file__).parent;h=Path.home();s=h/'tnca_src_r40_reserved_1a7c643';tree='files:80dd1a823e4be49e5e40d375d842c17e46c362d298e37f389c5e225621b6e4ca'\nstate=dict(status='preflight',software_tree=tree,required_gate_promotions=[],image_sha256='a88ebdf59cfbbb2001ebd5b1b2c739c5d8cd33931f1e9202f18cac07c4c83083',reference_software_tree='files:44051ad9c76c544f59b57afb9f297608bb3f0362c9f4f4479f977690645d2436',clock_hz=90000000)\ndef save():\n state['observed_utc']=datetime.datetime.now(datetime.timezone.utc).isoformat();q=p/'state.tmp';q.write_text(json.dumps(state,indent=2)+'\\n');q.replace(p/'state.json')\nsave()\ntry:\n upstream=json.loads((h/'tnca_large_layer_exact_decode_6bd07b7/state.json').read_text());assert upstream['status']=='complete-review-required';assert not Path('/proc/'+str(upstream['child_pid'])).exists()\n assert Path('/sys/bus/pci/devices/0000:04:00.1/xclbinuuid').read_text().strip()=='1bada9db-78f3-5bc8-7ba6-cce062e7ade8'\n assert Path('/sys/bus/pci/devices/0000:04:00.0/clock_freq_counter.m.28311552/clock_counter_freqs').read_text().split()[0]=='90'\n cmd=[str(h/'tc_env/torchenv/bin/python'),'-u',str(p/'large_layer_diagnostic.py'),'--source-root',str(s),'--kind','decode','--original-graph','--reference', '/tmp/r40_layer_exact_reference_6bd07b7.pt','--reference-software-tree',state['reference_software_tree'],'--software-tree',tree,'--xclbin',str(h/'tnca_images/r40_attempt03_90mhz_a88ebdf5/tnca_u280.xclbin'),'--image-sha256',state['image_sha256'],'--operating-clock-evidence',str(h/'tnca_build/r40_attempt03_conditional_90mhz/qualified_clock.json'),'--out',str(p/'original_decode')]\n (p/'command.json').write_text(json.dumps(cmd,indent=2)+'\\n')\n env={k:v for k,v in os.environ.items() if not k.startswith('TNCA_')};env.update(CUDA_VISIBLE_DEVICES='',OMP_NUM_THREADS='1',MKL_NUM_THREADS='1',MAX_JOBS='1',PYTHONFAULTHANDLER='1',TORCH_EXTENSIONS_DIR=str(h/'.cache/tnca/r40_conditional_6bd07b7_extensions'))\n with (p/'original_decode.log').open('x') as log:\n  q=subprocess.Popen(cmd,env=env,stdout=log,stderr=subprocess.STDOUT);state.update(status='running-original-decode',child_pid=q.pid);save();code=q.wait()\n state.update(status='complete-review-required' if code==0 else 'failed-preserved',exit_code=code);save()\nexcept Exception:\n state.update(status='failed-preserved',error=traceback.format_exc());save();raise\n",
+  "controller_sha256": "84e29577fee40f28af28f9daacafe87831a680bc7323651fe2a3fa8be72e952f",
+  "harness": "#!/usr/bin/env python3\n\"\"\"Compare original full-size large Llama boundaries through standard Torch.\n\nExtra returned boundaries can change fusion, so this is diagnostic evidence,\nnever replacement acceptance data. CPU reference work runs on GB10; matching\nmodel/input byte hashes are mandatory before physical execution.\n\"\"\"\nimport argparse\nimport hashlib\nimport json\nimport os\nfrom pathlib import Path\nimport sys\nimport time\nimport traceback\n\n\ndef file_sha(path):\n    h=hashlib.sha256()\n    with Path(path).open('rb') as stream:\n        for chunk in iter(lambda:stream.read(1<<20),b''):h.update(chunk)\n    return h.hexdigest()\n\n\ndef tensor_sha(tensor):\n    array=tensor.detach().cpu().contiguous().numpy()\n    return hashlib.sha256(memoryview(array).cast('B')).hexdigest()\n\n\ndef state_sha(model):\n    h=hashlib.sha256()\n    for name,value in model.state_dict().items():\n        h.update(name.encode()+b'\\0');h.update(tensor_sha(value).encode()+b'\\n')\n    return h.hexdigest()\n\n\ndef observer(torch,model,kind):\n    class Boundaries(torch.nn.Module):\n        def __init__(self):super().__init__();self.model=model\n        def forward(self,token,keys=None,values=None):\n            m=self.model;x=torch.nn.functional.embedding(token,m.tok)\n            taps=[x];ks=[];vs=[]\n            for i,layer in enumerate(m.layers):\n                x,k,v=layer(x,m.cos,m.sin,keys[i] if kind=='decode' else None,\n                            values[i] if kind=='decode' else None)\n                taps.append(x);ks.append(k);vs.append(v)\n            logits=m._head(x[:,-1:,:])\n            return (*taps,logits,torch.stack(ks),torch.stack(vs))\n    return Boundaries()\n\n\ndef main():\n    p=argparse.ArgumentParser(description=__doc__)\n    p.add_argument('--source-root',type=Path,default=Path(__file__).resolve().parents[2])\n    p.add_argument('--kind',choices=('decode','prefill'),default='decode')\n    p.add_argument('--prepare-cpu',action='store_true')\n    p.add_argument('--check-cpu-half',action='store_true')\n    p.add_argument('--reference',type=Path)\n    p.add_argument('--reference-software-tree',help='Explicit baseline snapshot for a controlled software repair; model/input bytes must still match')\n    p.add_argument('--original-graph',action='store_true',help='Execute the original frozen model forward without extra boundary outputs')\n    p.add_argument('--export-inputs',action='store_true',help='Export original native-host seed-0 inputs/state without device execution')\n    p.add_argument('--data',type=Path,help='Exact native-host dataset for offloaded CPU reference')\n    p.add_argument('--xclbin',type=Path);p.add_argument('--image-sha256')\n    p.add_argument('--software-tree',required=True)\n    p.add_argument('--operating-clock-evidence',type=Path)\n    p.add_argument('--out',type=Path,required=True)\n    a=p.parse_args()\n    if a.prepare_cpu and a.export_inputs:p.error('CPU reference and export are separate modes')\n    if a.data and not a.prepare_cpu:p.error('--data is only for the offloaded CPU reference')\n    a.out.mkdir(parents=True,exist_ok=False)\n    root=a.source_root.resolve();sys.path[:0]=[str(root),str(root/'python'),str(root/'compiler/python'),str(root/'tools/asm'),str(root/'tools/r40')]\n    report=dict(status='incomplete',scope='Original full shape with extra observable boundaries; fusion may change; no gate promotion',required_gate_promotions=[],harness_sha256=hashlib.sha256(Path(__file__).read_bytes()).hexdigest())\n    if a.original_graph:\n        report['scope']='Original frozen model forward and full shape, independent byte-matched FP32 reference; functional replay only, not performance acceptance'\n    def save():\n        q=a.out/'report.tmp';q.write_text(json.dumps(report,indent=2)+'\\n');q.replace(a.out/'report.json')\n    save()\n    try:\n        import torch\n        import triton\n        from archbench import registry\n        from archbench.platforms.common import compare,ieee_fp32\n        from archbench.provenance import software_tree\n        import contract_v2\n        contract_v2.verify();assert software_tree(refresh=True)==a.software_tree\n        name=f'model.llama_{a.kind}/large/fp16-b1-'+('p512' if a.kind=='decode' else 's512')\n        point=registry.get(name)\n        expected=next(x for x in json.loads((root/'spec/r40/suites/large.json').read_text())['points'] if x['id']==name)\n        assert point.definition_sha256()==expected['sha256']\n        model,inputs=point.make(0);model.eval()\n        if a.data:\n            data=torch.load(a.data,map_location='cpu',weights_only=True)\n            assert data['identity']['point_sha256']==point.definition_sha256()\n            assert data['identity']['software_tree']==a.software_tree\n            model.load_state_dict(data['state'],strict=True);inputs=tuple(data['inputs'])\n            report['native_dataset_sha256']=file_sha(a.data)\n            del data\n        weight_sha=state_sha(model)\n        input_shas=[tensor_sha(t) for t in inputs]\n        report['identity']=dict(point_id=name,point_sha256=point.definition_sha256(),software_tree=a.software_tree,\n            contract_sha256=contract_v2.LOCK_SHA256,model_state_sha256=weight_sha,input_sha256=input_shas,\n            weight_bytes=sum(t.numel()*t.element_size() for t in model.parameters()),\n            input_shapes=[list(t.shape) for t in inputs],torch=str(torch.__version__),triton=str(triton.__version__))\n        names=['embedding']+[f'layer{i}' for i in range(model.c.n_layers)]+['logits','new_keys','new_values']\n        report['boundary_names']=names;save()\n        if a.export_inputs:\n            path=a.out/'original_data.pt'\n            torch.save(dict(identity=report['identity'],state=model.state_dict(),inputs=inputs),path)\n            report.update(status='original-native-inputs-exported',data_file=str(path),data_sha256=file_sha(path),data_bytes=path.stat().st_size)\n        elif a.prepare_cpu:\n            half=None\n            if a.check_cpu_half:\n                with torch.no_grad(),ieee_fp32():half=observer(torch,model,a.kind).eval()(*inputs)\n            wrapped=observer(torch,model.float(),a.kind).eval()\n            args=tuple(t.float() if t.is_floating_point() else t for t in inputs)\n            start=time.monotonic()\n            with torch.no_grad(),ieee_fp32():reference=wrapped(*args)\n            path=a.out/'reference.pt';torch.save(dict(identity=report['identity'],names=names,values=reference),path)\n            if half is not None:\n                report['cpu_half_boundaries']=[dict(name=n,**compare([g],[r],point.tolerance)) for n,g,r in zip(names,half,reference)]\n            report.update(status='cpu-reference-ready',reference_file=str(path),reference_sha256=hashlib.sha256(path.read_bytes()).hexdigest(),reference_seconds=time.monotonic()-start)\n        else:\n            assert a.reference and a.xclbin and a.image_sha256 and a.operating_clock_evidence\n            ref=torch.load(a.reference,map_location='cpu',weights_only=True)\n            for key in ('point_id','point_sha256','contract_sha256','model_state_sha256','input_sha256'):\n                assert ref['identity'][key]==report['identity'][key],f'CPU/native original data identity mismatch: {key}'\n            assert ref['identity']['software_tree']==(a.reference_software_tree or a.software_tree)\n            report['reference_identity']=ref['identity']\n            assert ref['names']==names\n            if a.original_graph:\n                names=['logits','new_keys','new_values'] if a.kind=='decode' else ['logits']\n                ref=dict(ref,values=[ref['values'][ref['names'].index(n)] for n in names])\n                report['boundary_names']=names\n            assert hashlib.sha256(a.xclbin.read_bytes()).hexdigest()==a.image_sha256\n            from tnca.operating_clock import qualified_clock\n            clock=qualified_clock(a.operating_clock_evidence,a.image_sha256)\n            config=dict(xclbin=str(a.xclbin.resolve()),image_profile='core-vrf-sync-v5',core_count=3,memory_ports=3,hbm_dma=True,hbm_bytes=4<<30,device_clock=True)\n            os.environ.update(TNCA_BACKEND='fpga-u280-multicore',TNCA_BACKEND_ARGS=json.dumps(config),TNCA_PROFILE='core-vrf-sync-v5',TNCA_ACTIVE_CORES='3',TNCA_TRANSFER_POLICY='resident',TNCA_TORCH_DEVICE='native',TNCA_DEADLINE='24000000000',TNCA_HOST_TIMEOUT='7200',TNCA_OPERATING_CLOCK_EVIDENCE=str(a.operating_clock_evidence),TNCA_KERNEL_DUMP='1',TNCA_DUMP_DIR=str(a.out/'compiler'))\n            import tnca.inductor\n            import tnca.torch_device as D\n            from tnca.triton_backend.driver import launch_log\n            from torch._inductor.utils import run_and_get_code\n            tnca.inductor.configure();D.register()\n            model=model.to('tnca')\n            report['parameter_buffers']=[dict(name=n,address=t.data_ptr(),bytes=t.numel()*t.element_size()) for n,t in model.named_parameters()]\n            wrapped=model if a.original_graph else observer(torch,model,a.kind).eval()\n            args=tuple(t.to('tnca') for t in inputs);compiled=torch.compile(wrapped,fullgraph=True,dynamic=False)\n            report['identity'].update(image_sha256=a.image_sha256,backend_args=config,**clock)\n            report['calls']=[];save()\n            for label in ('cold','steady'):\n                with torch.no_grad(),launch_log() as log:\n                    if label=='cold':got,codes=run_and_get_code(compiled,*args)\n                    else:got=compiled(*args)\n                if label=='cold':\n                    for i,code in enumerate(codes):(a.out/f'wrapper_{i}.py').write_text(code)\n                    assert not tnca.inductor.host_fallbacks(codes)\n                actual=[t.cpu() for t in (got if isinstance(got,(tuple,list)) else (got,))]\n                rows=[dict(name=n,**compare([g],[r],point.tolerance)) for n,g,r in zip(names,actual,ref['values'])]\n                assert len(actual)==len(ref['values'])==len(names)\n                report['calls'].append(dict(label=label,boundaries=rows,launches=log))\n                print(label,[(r['name'],r['max_rel_err']) for r in rows],flush=True)\n                save();torch.save(dict(names=names,values=actual),a.out/(label+'_outputs.pt'));del actual,got\n            assert software_tree(refresh=True)==a.software_tree\n            report['status']='original-graph-replay-pass' if a.original_graph else 'layer-diagnostic-complete'\n            if a.original_graph:\n                assert all(row['ok'] for call in report['calls'] for row in call['boundaries']), 'original frozen numerical tolerance failed'\n    except Exception:\n        report.update(status='failed-preserved',error=traceback.format_exc());save();raise\n    save();return 0\n\n\nif __name__=='__main__':raise SystemExit(main())\n",
+  "harness_sha256": "c3c1346c279434fcdee43d629e7aa95520a72a85fd1a3a083aad53edfd31f21d",
+  "command": [
+    "/home/zzhouch/tc_env/torchenv/bin/python",
+    "-u",
+    "/home/zzhouch/tnca_reserved_original_replay_1a7c643/large_layer_diagnostic.py",
+    "--source-root",
+    "/home/zzhouch/tnca_src_r40_reserved_1a7c643",
+    "--kind",
+    "decode",
+    "--original-graph",
+    "--reference",
+    "/tmp/r40_layer_exact_reference_6bd07b7.pt",
+    "--reference-software-tree",
+    "files:44051ad9c76c544f59b57afb9f297608bb3f0362c9f4f4479f977690645d2436",
+    "--software-tree",
+    "files:80dd1a823e4be49e5e40d375d842c17e46c362d298e37f389c5e225621b6e4ca",
+    "--xclbin",
+    "/home/zzhouch/tnca_images/r40_attempt03_90mhz_a88ebdf5/tnca_u280.xclbin",
+    "--image-sha256",
+    "a88ebdf59cfbbb2001ebd5b1b2c739c5d8cd33931f1e9202f18cac07c4c83083",
+    "--operating-clock-evidence",
+    "/home/zzhouch/tnca_build/r40_attempt03_conditional_90mhz/qualified_clock.json",
+    "--out",
+    "/home/zzhouch/tnca_reserved_original_replay_1a7c643/original_decode"
+  ],
+  "scope": "Original unmodified forward, exact original weights/inputs, same qualified image/clock; runtime allocator is the sole product change; no performance gate promotion"
+}

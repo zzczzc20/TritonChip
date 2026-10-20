@@ -1,0 +1,39 @@
+{
+  "schema": "tnca-contract-review/1",
+  "authorization": "User 2026-10-19 permits one workload-justified v3 relaxation; not an excuse for an unimplemented mechanism or failed numerics.",
+  "decision": "No new v3 contract frozen yet. Keep v2 unchanged until a workload-grounded inconsistency is demonstrated.",
+  "findings": [
+    {
+      "requirement": "original large-model numerical correctness",
+      "evidence": "evidence/r40/v2/convergence/attempt03/reserved_original_decode_1a7c643_complete.json",
+      "decision": "retain",
+      "reason": "The original failure is a concrete allocator/MMIO address conflict. Repair restores original decode accuracy with unchanged executable payloads, shape, weights and tolerance."
+    },
+    {
+      "requirement": "100 MHz",
+      "evidence": "evidence/r40/v2/convergence/attempt03/final_capabilities_6bd07b7_4gib.json",
+      "decision": "retain explicit existing user-authorized conditional 90 MHz qualification; do not claim 100 MHz",
+      "reason": "Measured operating clock is 90 MHz, with routed timing/CDC review. This exception was already authorized; a failed implementation is not by itself proof that a workload-scale performance threshold is unreasonable."
+    },
+    {
+      "requirement": "independent mechanism and holdout performance thresholds",
+      "evidence": "evidence/r40/v2/convergence/pending_switch_consumers.json",
+      "decision": "insufficient evidence for amendment",
+      "reason": "Missing standard-path consumers and absent completed matched measurements do not establish that a required gain has no value at the frozen workload scale."
+    },
+    {
+      "requirement": "fixed-bucket decode compilation",
+      "evidence": "evidence/r40/v2/convergence/attempt03/model_report_6bd07b7_manifest.json",
+      "decision": "retain",
+      "reason": "The current growing-cache harness recompiles 64 shapes. Eliminating this repeated compilation remains materially useful; functional generation alone does not satisfy this requirement."
+    }
+  ],
+  "next_action": "Complete original prefill repair replay and the already queued full frozen functional scope. Assess actual matched performance and bottleneck evidence before exercising the single v3 authorization.",
+  "unchanged": [
+    "all original workload definitions",
+    "all frozen numerical tolerances",
+    "three physical cores and actual outlets",
+    "HBM ownership and completion visibility",
+    "raw timing/provenance and not-measured semantics"
+  ]
+}

@@ -1,0 +1,75 @@
+{
+  "schema": "tnca-packaged-hbm-preflight/1",
+  "observed_utc": "2026-10-18T08:38:14.746096+00:00",
+  "image_sha256": "a88ebdf59cfbbb2001ebd5b1b2c739c5d8cd33931f1e9202f18cac07c4c83083",
+  "backend_group_banks": [
+    {
+      "index": 41,
+      "used": 1,
+      "size": 8589934592,
+      "base": 0,
+      "tag": "MBG[0:31]"
+    },
+    {
+      "index": 41,
+      "used": 1,
+      "size": 8589934592,
+      "base": 0,
+      "tag": "MBG[0:31]"
+    },
+    {
+      "index": 41,
+      "used": 1,
+      "size": 8589934592,
+      "base": 0,
+      "tag": "MBG[0:31]"
+    }
+  ],
+  "metadata_hypothetical_1gib_range": {
+    "physical_banks": [
+      {
+        "pc": 0,
+        "memory_index": 0,
+        "tag": "HBM[0]",
+        "base": 0,
+        "size": 268435456,
+        "used": true,
+        "allocated_base": 0,
+        "allocated_size": 268435456
+      },
+      {
+        "pc": 1,
+        "memory_index": 1,
+        "tag": "HBM[1]",
+        "base": 268435456,
+        "size": 268435456,
+        "used": true,
+        "allocated_base": 268435456,
+        "allocated_size": 268435456
+      },
+      {
+        "pc": 2,
+        "memory_index": 2,
+        "tag": "HBM[2]",
+        "base": 536870912,
+        "size": 268435456,
+        "used": true,
+        "allocated_base": 536870912,
+        "allocated_size": 268435456
+      },
+      {
+        "pc": 3,
+        "memory_index": 3,
+        "tag": "HBM[3]",
+        "base": 805306368,
+        "size": 268435456,
+        "used": true,
+        "allocated_base": 805306368,
+        "allocated_size": 268435456
+      }
+    ],
+    "topology_sha256": "e3cf166dc3fbef5859e5c38fb183525932eae24f2f99101e24a022213a694f10"
+  },
+  "scope": "same runtime metadata parser on actual packaged image; no XRT library loaded, no device opened, no BO allocated; actual multi-PC allocation and traffic remain not-measured",
+  "hbm_gate": "not-measured"
+}

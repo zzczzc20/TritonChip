@@ -1,0 +1,15 @@
+{
+  "root": "/home/zhongchun/r40_bucket_full_80dd_v2_cpu",
+  "source": "/home/zhongchun/r40_bucket_full_80dd_v2_source",
+  "pid": 2436593,
+  "controller_sha256": "8c7d0c2c92401a324eaf8dc25c33008ac2fcf899af3d71a2486bf9e41d6deebb",
+  "file_sha256": {
+    "python/tnca/runtime.py": "107a91f65890207437ea67572873b28e41877c601ef52a085ac4a7c4b09e299f",
+    "tools/r40/native_model.py": "7920cbe3da38ece9e666a1cb74fbbc6f55ee7122aada5b8162f19728d2992e25",
+    "tools/r40/bucket_decode.py": "92bced6c6d64373a18b68b01f493e56bc3e8a792b0a8263429158c11918f97dd",
+    "tools/r40/bucket_decode_tests.py": "575c716f5afe15cd082790b9cca8c8835931a7a45cfa6c7862739106aca724b7",
+    "tools/r40/residency_acceptance.py": "dd9a90a632e79a8b452e22efccf220e0c6ace0971b11b4bebe1b10d85daf690f",
+    "tools/r40/conditional_delivery.py": "9706a9b279afff587ceec0c9a59a61bb2669502dffa3870674e221a50bb2fce6"
+  },
+  "scope": "Full original-model reference and standard Torch fixed-bucket guard/alias checks only; no hardware or performance claim"
+}

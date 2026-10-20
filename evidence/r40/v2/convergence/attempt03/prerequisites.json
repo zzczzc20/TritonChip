@@ -1,0 +1,208 @@
+{
+  "r40_tlw_predicate_module_20261017": {
+    "archive": "r40_tlw_predicate_module_20261017.tar.gz",
+    "archive_sha256": "a10975c2c686f21fc2c027ab868962e4d1b74a84bb9b95b7d3bfd86a1f563ef3",
+    "checkpoints": {
+      "placed.dcp": {
+        "sha256": "f9e3ad87038376017608018de60e90d5ed02a61da629c90cdcaad163c01fb8a5",
+        "bytes": 44283779,
+        "path": "/home/zzhouch/tnca_build/r40_tlw_predicate_module_20261017/reports/placed.dcp"
+      },
+      "routed.dcp": {
+        "sha256": "a46427a518b26ab3664cf2b80ef6fe280648baaa338122cbe8f875bc00dbf44c",
+        "bytes": 60692950,
+        "path": "/home/zzhouch/tnca_build/r40_tlw_predicate_module_20261017/reports/routed.dcp"
+      }
+    },
+    "paths": {
+      "critical_paths.rpt": [
+        {
+          "slack_ns": 0.768,
+          "source": "g_tile[0].u_slice/cur_ms_reg[0]/C",
+          "destination": "g_tile[0].u_slice/data_mem_reg_r3_128_191_469_475/RAMD/I",
+          "path_type": "Setup (Max at Slow Process Corner)",
+          "requirement_ns": 10.0,
+          "data_delay_ns": 9.229,
+          "logic_delay_ns": 1.673,
+          "route_delay_ns": 7.556,
+          "logic_levels": 19,
+          "clock_period_ns": 10.0
+        }
+      ],
+      "owner_to_pair.rpt": [
+        {
+          "slack_ns": 2.424,
+          "source": "g_tile[1].u_slice/victim_owner_q_reg[7][2]/C",
+          "destination": "g_tile[1].u_slice/victim_pair_q_reg[3][12]/D",
+          "path_type": "Setup (Max at Slow Process Corner)",
+          "requirement_ns": 10.0,
+          "data_delay_ns": 7.455,
+          "logic_delay_ns": 1.314,
+          "route_delay_ns": 6.141,
+          "logic_levels": 14,
+          "clock_period_ns": 10.0
+        }
+      ],
+      "pair_to_selected.rpt": [
+        {
+          "slack_ns": 6.491,
+          "source": "g_tile[2].u_slice/victim_pair_q_reg[2][5]/C",
+          "destination": "g_tile[2].u_slice/selected_way_q_reg[2]/D",
+          "path_type": "Setup (Max at Slow Process Corner)",
+          "requirement_ns": 10.0,
+          "data_delay_ns": 3.423,
+          "logic_delay_ns": 1.102,
+          "route_delay_ns": 2.321,
+          "logic_levels": 7,
+          "clock_period_ns": 10.0
+        }
+      ],
+      "selected_output.rpt": [
+        {
+          "slack_ns": 4.414,
+          "source": "g_tile[2].u_slice/selected_way_q_reg[1]/C",
+          "destination": "g_tile[2].u_slice/ms_wbadr_reg_0_7_56_63/RAMA/WE",
+          "path_type": "Setup (Max at Slow Process Corner)",
+          "requirement_ns": 10.0,
+          "data_delay_ns": 5.321,
+          "logic_delay_ns": 0.756,
+          "route_delay_ns": 4.565,
+          "logic_levels": 8,
+          "clock_period_ns": 10.0
+        }
+      ]
+    },
+    "tag_roots_RAM32M16": 96,
+    "actual_local_state_rows": {
+      "0": 2571,
+      "1": 2571,
+      "2": 2571
+    }
+  },
+  "r40_hit_owner_module_20261017": {
+    "archive": "r40_hit_owner_module_20261017.tar.gz",
+    "archive_sha256": "ddf62e5843544afbe9c7473bd6d79e9991f1ee3e1ed94cd97f5eac8f9e40eeb3",
+    "checkpoints": {
+      "placed.dcp": {
+        "sha256": "d388722a4b1889d5f4d4ab4231f4b8684611cd6dff78a45ffa17805052e8a818",
+        "bytes": 44568191,
+        "path": "/home/zzhouch/tnca_build/r40_hit_owner_module_20261017/reports/placed.dcp"
+      },
+      "routed.dcp": {
+        "sha256": "fb15eb29967a99135d8fe4728494177a1267c505b857625bac6224866158ff18",
+        "bytes": 61222583,
+        "path": "/home/zzhouch/tnca_build/r40_hit_owner_module_20261017/reports/routed.dcp"
+      }
+    },
+    "paths": {
+      "critical_paths.rpt": [
+        {
+          "slack_ns": 0.361,
+          "source": "g_tile[1].u_slice/cur_ms_reg[1]_rep/C",
+          "destination": "g_tile[1].u_slice/data_mem_reg_r2_0_63_392_398/RAMC/I",
+          "path_type": "Setup (Max at Slow Process Corner)",
+          "requirement_ns": 10.0,
+          "data_delay_ns": 9.203,
+          "logic_delay_ns": 1.446,
+          "route_delay_ns": 7.757,
+          "logic_levels": 18,
+          "clock_period_ns": 10.0
+        }
+      ],
+      "owner_to_pair.rpt": [
+        {
+          "slack_ns": 2.156,
+          "source": "g_tile[0].u_slice/victim_owner_q_reg[0][3]/C",
+          "destination": "g_tile[0].u_slice/victim_pair_q_reg[0][6]/D",
+          "path_type": "Setup (Max at Slow Process Corner)",
+          "requirement_ns": 10.0,
+          "data_delay_ns": 7.654,
+          "logic_delay_ns": 1.449,
+          "route_delay_ns": 6.205,
+          "logic_levels": 16,
+          "clock_period_ns": 10.0
+        }
+      ],
+      "pair_to_selected.rpt": [
+        {
+          "slack_ns": 6.478,
+          "source": "g_tile[1].u_slice/victim_pair_q_reg[3][5]/C",
+          "destination": "g_tile[1].u_slice/selected_way_q_reg[0]_rep__0/D",
+          "path_type": "Setup (Max at Slow Process Corner)",
+          "requirement_ns": 10.0,
+          "data_delay_ns": 3.471,
+          "logic_delay_ns": 1.069,
+          "route_delay_ns": 2.402,
+          "logic_levels": 7,
+          "clock_period_ns": 10.0
+        }
+      ],
+      "selected_output.rpt": [
+        {
+          "slack_ns": 3.739,
+          "source": "g_tile[1].u_slice/selected_way_q_reg[1]_rep__0/C",
+          "destination": "g_tile[1].u_slice/ms_wbadr_reg_0_7_28_41/RAMA/WE",
+          "path_type": "Setup (Max at Slow Process Corner)",
+          "requirement_ns": 10.0,
+          "data_delay_ns": 5.832,
+          "logic_delay_ns": 0.776,
+          "route_delay_ns": 5.056,
+          "logic_levels": 9,
+          "clock_period_ns": 10.0
+        }
+      ]
+    },
+    "tag_roots_RAM32M16": 96,
+    "actual_local_state_rows": {
+      "0": 2571,
+      "1": 2571,
+      "2": 2571
+    }
+  },
+  "r40_owner_boundary_synth_v2_20261017": {
+    "archive": "r40_owner_boundary_synth_v2_20261017.tar.gz",
+    "archive_sha256": "776df2ace0fafeede21412a34914e3f74d5a19e997646fba6880c716268de5da",
+    "checkpoints": {
+      "optimized.dcp": {
+        "sha256": "fbf6a0f46fea970f900f40ca32e80da21f5ad6e1844f39fd075a07de9359bcb7",
+        "bytes": 28108900,
+        "path": "/home/zzhouch/tnca_build/r40_owner_boundary_synth_v2_20261017/reports/optimized.dcp"
+      }
+    },
+    "paths": {
+      "owner_snapshot_to_notice.rpt": [
+        {
+          "slack_ns": 6.726,
+          "source": "g_tile[0].u_slice/request_owner_q_reg[2]/C",
+          "destination": "g_tile[0].u_slice/tl_a_reg[0]/CE",
+          "path_type": "Setup (Max at Slow Process Corner)",
+          "requirement_ns": 10.0,
+          "data_delay_ns": 3.033,
+          "logic_delay_ns": 0.844,
+          "route_delay_ns": 2.189,
+          "logic_levels": 11,
+          "clock_period_ns": 10.0
+        }
+      ]
+    }
+  },
+  "schema": "tnca-r40-attempt03-prerequisites/1",
+  "source_commit": "54249f7f7ac0cf8f5d1b82d8e63a3046d27522d3",
+  "clock_hz": 100000000,
+  "contract_sha256": "49fc0e02733139707ae2292eff2ef893e76e73f0723d0d002b2e7e1864af71c8",
+  "required_gate_promotions": [],
+  "scope": "Routed predecessor module plus exact final mapped cut and cycle-equivalence evidence. Sparse modules exclude full cores/NoC/HBM/timed I/O; no final-image qualification.",
+  "accurate_predecessor_timing": {
+    "setup_wns_ns": 0.361,
+    "hold_whs_ns": 0.01,
+    "setup_tns_ns": 0.0,
+    "hold_ths_ns": 0.0
+  },
+  "final_mapped_cut": {
+    "metadata_ff": 3288,
+    "notice_ff": 195,
+    "owner_snapshot_ff": 24,
+    "direct_metadata_to_notice_paths": 0
+  },
+  "functional_evidence": "../p0_selected_victim_tlw/owner_boundary_complete.json"
+}

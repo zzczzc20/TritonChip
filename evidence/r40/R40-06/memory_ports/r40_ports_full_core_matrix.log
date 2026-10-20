@@ -1,0 +1,102 @@
+MEMORY PORTS PASS N=1 P=1 responses=16 parallel=0
+tb/tb_mem_ports_r40.v:88: $finish called at 1206000 (1ps)
+MEMORY PORTS PASS N=2 P=1 responses=32 parallel=0
+tb/tb_mem_ports_r40.v:88: $finish called at 1896000 (1ps)
+MEMORY PORTS PASS N=2 P=2 responses=32 parallel=7
+tb/tb_mem_ports_r40.v:88: $finish called at 1216000 (1ps)
+MEMORY PORTS PASS N=3 P=1 responses=48 parallel=0
+tb/tb_mem_ports_r40.v:88: $finish called at 2746000 (1ps)
+MEMORY PORTS PASS N=3 P=2 responses=48 parallel=3
+tb/tb_mem_ports_r40.v:88: $finish called at 1906000 (1ps)
+MEMORY PORTS PASS N=3 P=3 responses=48 parallel=13
+tb/tb_mem_ports_r40.v:88: $finish called at 1216000 (1ps)
+MEMORY PORTS PASS N=4 P=1 responses=64 parallel=0
+tb/tb_mem_ports_r40.v:88: $finish called at 3686000 (1ps)
+MEMORY PORTS PASS N=4 P=2 responses=64 parallel=2
+tb/tb_mem_ports_r40.v:88: $finish called at 1906000 (1ps)
+MEMORY PORTS PASS N=4 P=3 responses=64 parallel=12
+tb/tb_mem_ports_r40.v:88: $finish called at 1906000 (1ps)
+MEMORY PORTS PASS N=4 P=4 responses=64 parallel=17
+tb/tb_mem_ports_r40.v:88: $finish called at 1216000 (1ps)
+MEMORY PORTS PASS N=8 P=1 responses=128 parallel=0
+tb/tb_mem_ports_r40.v:88: $finish called at 7096000 (1ps)
+MEMORY PORTS PASS N=8 P=2 responses=128 parallel=2
+tb/tb_mem_ports_r40.v:88: $finish called at 3696000 (1ps)
+MEMORY PORTS PASS N=8 P=3 responses=128 parallel=6
+tb/tb_mem_ports_r40.v:88: $finish called at 2756000 (1ps)
+MEMORY PORTS PASS N=8 P=4 responses=128 parallel=12
+tb/tb_mem_ports_r40.v:88: $finish called at 1906000 (1ps)
+MEMORY PORTS PASS N=8 P=8 responses=128 parallel=50
+tb/tb_mem_ports_r40.v:88: $finish called at 1216000 (1ps)
+GRID REAL CORES PASS N=1 memory=1 ports=1 phase=0 programs=455 cycles=42700
+GRID REAL CORES PASS N=1 memory=1 ports=1 phase=1 programs=455 cycles=78849
+GRID COHERENT HOST PASS N=1 downloads=457 uploads=2
+tb/top/tb_grid_cores.v:138: $finish called at 841010000 (1ps)
+GRID REAL CORES PASS N=2 memory=1 ports=2 phase=0 programs=455 cycles=22761
+GRID REAL CORES PASS N=2 memory=1 ports=2 phase=1 programs=455 cycles=41856
+GRID COHERENT HOST PASS N=2 downloads=457 uploads=2
+tb/top/tb_grid_cores.v:138: $finish called at 477470000 (1ps)
+GRID REAL CORES PASS N=3 memory=1 ports=2 phase=0 programs=455 cycles=14972
+GRID REAL CORES PASS N=3 memory=1 ports=2 phase=1 programs=455 cycles=27473
+GRID COHERENT HOST PASS N=3 downloads=457 uploads=2
+tb/top/tb_grid_cores.v:138: $finish called at 337420000 (1ps)
+GRID REAL CORES PASS N=3 memory=1 ports=3 phase=0 programs=455 cycles=15020
+GRID REAL CORES PASS N=3 memory=1 ports=3 phase=1 programs=455 cycles=27624
+GRID COHERENT HOST PASS N=3 downloads=457 uploads=2
+tb/top/tb_grid_cores.v:138: $finish called at 341500000 (1ps)
+GRID REAL CORES PASS N=4 memory=1 ports=4 phase=0 programs=455 cycles=12732
+GRID REAL CORES PASS N=4 memory=1 ports=4 phase=1 programs=455 cycles=23554
+GRID COHERENT HOST PASS N=4 downloads=457 uploads=2
+tb/top/tb_grid_cores.v:138: $finish called at 307240000 (1ps)
+GRID progress cycles=1000 accepted=64 busy=ff
+GRID progress cycles=2000 accepted=128 busy=ff
+GRID progress cycles=3000 accepted=192 busy=ff
+GRID progress cycles=4000 accepted=256 busy=ff
+GRID progress cycles=5000 accepted=319 busy=7f
+GRID progress cycles=6000 accepted=376 busy=ff
+GRID progress cycles=7000 accepted=440 busy=ff
+GRID REAL CORES PASS N=8 memory=1 ports=3 phase=0 programs=455 cycles=7309
+GRID progress cycles=8000 accepted=56 busy=ff
+GRID progress cycles=9000 accepted=128 busy=ff
+GRID progress cycles=10000 accepted=200 busy=ff
+GRID progress cycles=11000 accepted=272 busy=ff
+GRID progress cycles=12000 accepted=352 busy=ff
+GRID progress cycles=13000 accepted=424 busy=ff
+GRID REAL CORES PASS N=8 memory=1 ports=3 phase=1 programs=455 cycles=13472
+GRID progress cycles=14000 accepted=455 busy=00
+GRID progress cycles=15000 accepted=455 busy=00
+GRID progress cycles=16000 accepted=455 busy=00
+GRID progress cycles=17000 accepted=455 busy=00
+GRID progress cycles=18000 accepted=455 busy=00
+GRID progress cycles=19000 accepted=455 busy=00
+GRID progress cycles=20000 accepted=455 busy=00
+GRID COHERENT HOST PASS N=8 downloads=457 uploads=2
+tb/top/tb_grid_cores.v:138: $finish called at 208540000 (1ps)
+GRID progress cycles=1000 accepted=56 busy=ff
+GRID progress cycles=2000 accepted=112 busy=ff
+GRID progress cycles=3000 accepted=168 busy=ff
+GRID progress cycles=4000 accepted=224 busy=ff
+GRID progress cycles=5000 accepted=280 busy=ff
+GRID progress cycles=6000 accepted=336 busy=ff
+GRID progress cycles=7000 accepted=392 busy=ff
+GRID progress cycles=8000 accepted=444 busy=ff
+GRID REAL CORES PASS N=8 memory=1 ports=8 phase=0 programs=455 cycles=8295
+GRID progress cycles=9000 accepted=48 busy=ff
+GRID progress cycles=10000 accepted=104 busy=ff
+GRID progress cycles=11000 accepted=168 busy=ff
+GRID progress cycles=12000 accepted=234 busy=fb
+GRID progress cycles=13000 accepted=296 busy=ff
+GRID progress cycles=14000 accepted=362 busy=fb
+GRID progress cycles=15000 accepted=429 busy=7f
+GRID REAL CORES PASS N=8 memory=1 ports=8 phase=1 programs=455 cycles=15468
+GRID progress cycles=16000 accepted=455 busy=00
+GRID progress cycles=17000 accepted=455 busy=00
+GRID progress cycles=18000 accepted=455 busy=00
+GRID progress cycles=19000 accepted=455 busy=00
+GRID progress cycles=20000 accepted=455 busy=00
+GRID progress cycles=21000 accepted=455 busy=00
+GRID progress cycles=22000 accepted=455 busy=00
+GRID progress cycles=23000 accepted=455 busy=00
+GRID COHERENT HOST PASS N=8 downloads=457 uploads=2
+tb/top/tb_grid_cores.v:138: $finish called at 239470000 (1ps)
+MEMORY PORTS MATRIX PASS 15 protocol and 7 real-core configurations

@@ -1,0 +1,5 @@
+PASS model.resnet_block/tiny/fp32-n1-c8-hw8 resident step=0: 5 kernels, actual tensor bytes={'h2d': 0, 'd2h': 0}
+PASS model.resnet_block/tiny/fp32-n1-c8-hw8 resident step=1: 5 kernels, actual tensor bytes={'h2d': 0, 'd2h': 0}
+PASS model.resnet_block/tiny/fp32-n1-c8-hw8 per-kernel step=0: 5 kernels, actual tensor bytes={'h2d': 56832, 'd2h': 56832}
+PASS model.resnet_block/tiny/fp32-n1-c8-hw8 per-kernel step=1: 5 kernels, actual tensor bytes={'h2d': 56832, 'd2h': 56832}
+r40-frozen-residency-tests PASS (4/4)

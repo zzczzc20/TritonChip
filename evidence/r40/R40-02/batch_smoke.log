@@ -1,0 +1,8 @@
+  already built: /home/zhongchun/.cache/tnca/devices/core-vrf-sync-v5-a8f9e2a0291d254a-f30a9b914657/tnca_device_vrf5.vvp
+PASS queued multi-kernel graph, event visibility and deferred intermediate free
+PASS completed launch log, unchanged artifacts and zero kernel transfers
+PASS stream contexts, recorded dependency, runtime stream identity and restoration
+PASS concurrent graph execution and thread-local launch audit
+PASS 10 graph calls, bounded queue, final storage/lease audit
+r40-batch-tests PASS (5/5)
+EXIT:0

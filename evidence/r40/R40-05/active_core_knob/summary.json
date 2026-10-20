@@ -1,0 +1,93 @@
+{
+  "status": "functional-RTL-pass",
+  "gate_status": "not-measured",
+  "performance": "not-measured",
+  "software_commit": "85fa7d82377d2f28efa19a042f88b6c23ab9e35d",
+  "software_tree": "files:2e1c5342c0eeb24b99d6fc82eb6f82499c8f7b91f4742a6604459222a0c896ee",
+  "source_archive_sha256": "b84fb53bc4eeb28d4228ef11cc166586b5f36095e08d1a3d28e92cba570253a3",
+  "image": "three-core mailbox RTL simulation; not routed board",
+  "clock_hz": null,
+  "rows": [
+    {
+      "active_count": 1,
+      "mask": 1,
+      "metrics": {
+        "cores": [
+          {
+            "completed": 257,
+            "core": 0,
+            "issued": 257,
+            "occupied_cycles": 47293
+          },
+          {
+            "completed": 0,
+            "core": 1,
+            "issued": 0,
+            "occupied_cycles": 0
+          },
+          {
+            "completed": 0,
+            "core": 2,
+            "issued": 0,
+            "occupied_cycles": 0
+          }
+        ],
+        "peak_active": 1
+      }
+    },
+    {
+      "active_count": 2,
+      "mask": 3,
+      "metrics": {
+        "cores": [
+          {
+            "completed": 129,
+            "core": 0,
+            "issued": 129,
+            "occupied_cycles": 27120
+          },
+          {
+            "completed": 128,
+            "core": 1,
+            "issued": 128,
+            "occupied_cycles": 27030
+          },
+          {
+            "completed": 0,
+            "core": 2,
+            "issued": 0,
+            "occupied_cycles": 0
+          }
+        ],
+        "peak_active": 2
+      }
+    },
+    {
+      "active_count": 3,
+      "mask": 7,
+      "metrics": {
+        "cores": [
+          {
+            "completed": 86,
+            "core": 0,
+            "issued": 86,
+            "occupied_cycles": 20185
+          },
+          {
+            "completed": 84,
+            "core": 1,
+            "issued": 84,
+            "occupied_cycles": 20110
+          },
+          {
+            "completed": 87,
+            "core": 2,
+            "issued": 87,
+            "occupied_cycles": 20164
+          }
+        ],
+        "peak_active": 3
+      }
+    }
+  ]
+}

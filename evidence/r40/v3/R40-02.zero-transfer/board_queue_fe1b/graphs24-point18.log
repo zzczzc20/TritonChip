@@ -1,0 +1,5 @@
+PASS op.conv2d/medium/fp32-n1-cin24-h16-w16-cout24 resident step=0: 3 kernels, actual tensor bytes={'h2d': 0, 'd2h': 0}
+PASS op.conv2d/medium/fp32-n1-cin24-h16-w16-cout24 resident step=1: 3 kernels, actual tensor bytes={'h2d': 0, 'd2h': 0}
+PASS op.conv2d/medium/fp32-n1-cin24-h16-w16-cout24 per-kernel step=0: 3 kernels, actual tensor bytes={'h2d': 321024, 'd2h': 321024}
+PASS op.conv2d/medium/fp32-n1-cin24-h16-w16-cout24 per-kernel step=1: 3 kernels, actual tensor bytes={'h2d': 321024, 'd2h': 321024}
+r40-frozen-residency-tests PASS (4/4)

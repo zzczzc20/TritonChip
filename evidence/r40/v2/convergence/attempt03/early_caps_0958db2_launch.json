@@ -1,0 +1,6 @@
+{
+  "root": "/home/zzhouch/tnca_early_caps_0958db2",
+  "pid": 2370498,
+  "controller_sha256": "ac7333c504de5b5f78d6ef21c99a2662e23654af1a358d07eb84e32ea7816e54",
+  "scope": "Only inspect complete original native77 and original physical checkpoint; no hardware session or extra test; do not wait for unrelated later model/large stages to audit these capabilities"
+}

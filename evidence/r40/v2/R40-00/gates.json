@@ -1,0 +1,1457 @@
+{
+ "gates": {
+  "R40-00.protocol": {
+   "status": "capability-pass",
+   "checks": [
+    {
+     "name": "a clean comparison",
+     "ok": true,
+     "expect": "accepted",
+     "got": "accepted"
+    },
+    {
+     "name": "identical inputs",
+     "ok": true,
+     "expect": "identity",
+     "got": "accepted"
+    },
+    {
+     "name": "slow point deleted",
+     "ok": true,
+     "expect": "missing",
+     "got": "refused:missing"
+    },
+    {
+     "name": "unmeasured point zero-filled",
+     "ok": true,
+     "expect": "zero-fill",
+     "got": "refused:zero-fill"
+    },
+    {
+     "name": "unmeasured point left in as not-measured",
+     "ok": true,
+     "expect": "missing",
+     "got": "refused:missing"
+    },
+    {
+     "name": "mixed images on one side",
+     "ok": true,
+     "expect": "mixed",
+     "got": "refused:mixed"
+    },
+    {
+     "name": "tolerance changed",
+     "ok": true,
+     "expect": "config",
+     "got": "refused:config"
+    },
+    {
+     "name": "weights changed",
+     "ok": true,
+     "expect": "config",
+     "got": "refused:config"
+    },
+    {
+     "name": "provenance missing",
+     "ok": true,
+     "expect": "provenance",
+     "got": "refused:provenance"
+    },
+    {
+     "name": "empty launch map",
+     "ok": true,
+     "expect": "provenance",
+     "got": "refused:provenance"
+    },
+    {
+     "name": "core cycles summed as makespan",
+     "ok": true,
+     "expect": "timing",
+     "got": "refused:timing"
+    },
+    {
+     "name": "kernel times summed as makespan",
+     "ok": true,
+     "expect": "timing",
+     "got": "refused:timing"
+    },
+    {
+     "name": "only the clock changed",
+     "ok": true,
+     "expect": "clock-only",
+     "got": "refused:clock-only"
+    },
+    {
+     "name": "autotune inside the timed samples",
+     "ok": true,
+     "expect": "warmup",
+     "got": "refused:warmup"
+    },
+    {
+     "name": "replay warm-up inside the timed region",
+     "ok": true,
+     "expect": "warmup",
+     "got": "refused:warmup"
+    },
+    {
+     "name": "different timing kinds",
+     "ok": true,
+     "expect": "timing",
+     "got": "refused:timing"
+    },
+    {
+     "name": "an undeclared knob changed",
+     "ok": true,
+     "expect": "config",
+     "got": "refused:config"
+    },
+    {
+     "name": "protocol-1 record on the B side",
+     "ok": true,
+     "expect": "provenance",
+     "got": "refused:provenance"
+    },
+    {
+     "name": "another image, not declared",
+     "ok": true,
+     "expect": "config",
+     "got": "refused:config"
+    },
+    {
+     "name": "another image, declared (platform.image, platform.device_id)",
+     "ok": true,
+     "expect": "accepted",
+     "got": "accepted"
+    },
+    {
+     "name": "request latency chosen from timings",
+     "ok": true,
+     "expect": "accepted",
+     "got": "accepted"
+    },
+    {
+     "name": "a timing kind neither side measured",
+     "ok": true,
+     "expect": "timing",
+     "got": "refused:timing"
+    },
+    {
+     "name": "bundles intact",
+     "ok": true,
+     "expect": "accepted",
+     "got": "accepted"
+    },
+    {
+     "name": "a bundle file edited after the run",
+     "ok": true,
+     "expect": "provenance",
+     "got": "refused:provenance"
+    },
+    {
+     "name": "an artifact that ran is missing from the bundle",
+     "ok": true,
+     "expect": "provenance",
+     "got": "refused:provenance"
+    },
+    {
+     "name": "acceptance: a gate with evidence and checks",
+     "ok": true,
+     "expect": "fail",
+     "got": "fail"
+    },
+    {
+     "name": "acceptance: no command",
+     "ok": true,
+     "expect": "fail",
+     "got": "fail"
+    },
+    {
+     "name": "acceptance: evidence missing",
+     "ok": true,
+     "expect": "not-measured",
+     "got": "not-measured"
+    },
+    {
+     "name": "acceptance: evidence does not name the gate",
+     "ok": true,
+     "expect": "fail",
+     "got": "fail"
+    },
+    {
+     "name": "acceptance: a pass without checks",
+     "ok": true,
+     "expect": "fail",
+     "got": "fail"
+    },
+    {
+     "name": "acceptance: a pass with a failing check",
+     "ok": true,
+     "expect": "fail",
+     "got": "fail"
+    },
+    {
+     "name": "acceptance: a capability gate claiming perf-pass",
+     "ok": true,
+     "expect": "fail",
+     "got": "fail"
+    },
+    {
+     "name": "acceptance: the command failed",
+     "ok": true,
+     "expect": "fail",
+     "got": "fail"
+    },
+    {
+     "name": "acceptance: all present",
+     "ok": true,
+     "expect": "capability-pass",
+     "got": "capability-pass"
+    }
+   ],
+   "detail": "34/34 cases",
+   "written": "2026-10-15T02:26:06+00:00",
+   "contract_version": 2,
+   "contract_sha256": "49fc0e02733139707ae2292eff2ef893e76e73f0723d0d002b2e7e1864af71c8"
+  },
+  "R40-00.b39-reproducible": {
+   "status": "capability-pass",
+   "checks": [
+    {
+     "name": "b39:model.gpt2_block/medium/fp16-d160-h5-b1-s64",
+     "ok": true,
+     "why": "",
+     "cycles_equal": true
+    },
+    {
+     "name": "b39:model.gpt2_block/small/fp16-d128-h4-b1-s64",
+     "ok": true,
+     "why": "",
+     "cycles_equal": true
+    },
+    {
+     "name": "b39:model.gpt2_block/tiny/fp16-d64-h4-b1-s16",
+     "ok": true,
+     "why": "",
+     "cycles_equal": true
+    },
+    {
+     "name": "b39:model.llama_decode/medium/fp16-b1-p256",
+     "ok": true,
+     "why": "",
+     "cycles_equal": true
+    },
+    {
+     "name": "b39:model.llama_decode/small/fp16-b1-p128",
+     "ok": true,
+     "why": "",
+     "cycles_equal": true
+    },
+    {
+     "name": "b39:model.llama_decode/tiny/fp16-b1-p16",
+     "ok": true,
+     "why": "",
+     "cycles_equal": true
+    },
+    {
+     "name": "b39:model.llama_prefill/medium/fp16-b1-s64",
+     "ok": true,
+     "why": "",
+     "cycles_equal": true
+    },
+    {
+     "name": "b39:model.llama_prefill/small/fp16-b1-s64",
+     "ok": true,
+     "why": "",
+     "cycles_equal": true
+    },
+    {
+     "name": "b39:model.llama_prefill/tiny/fp16-b1-s16",
+     "ok": true,
+     "why": "",
+     "cycles_equal": true
+    },
+    {
+     "name": "b39:model.mlp/medium/fp16-t128-d128",
+     "ok": true,
+     "why": "",
+     "cycles_equal": true
+    },
+    {
+     "name": "b39:model.mlp/small/fp16-t64-d128",
+     "ok": true,
+     "why": "",
+     "cycles_equal": true
+    },
+    {
+     "name": "b39:model.mlp/tiny/fp16-t16-d64",
+     "ok": true,
+     "why": "",
+     "cycles_equal": true
+    },
+    {
+     "name": "b39:model.resnet_block/medium/fp32-n1-c24-hw16",
+     "ok": true,
+     "why": "",
+     "cycles_equal": true
+    },
+    {
+     "name": "b39:model.resnet_block/small/fp32-n1-c16-hw16",
+     "ok": true,
+     "why": "",
+     "cycles_equal": true
+    },
+    {
+     "name": "b39:model.resnet_block/tiny/fp32-n1-c8-hw8",
+     "ok": true,
+     "why": "",
+     "cycles_equal": true
+    },
+    {
+     "name": "b39:op.add/medium/fp16-n49152",
+     "ok": true,
+     "why": "",
+     "cycles_equal": true
+    },
+    {
+     "name": "b39:op.add/small/fp16-n16384",
+     "ok": true,
+     "why": "",
+     "cycles_equal": true
+    },
+    {
+     "name": "b39:op.add/tiny/fp16-n1000",
+     "ok": true,
+     "why": "",
+     "cycles_equal": true
+    },
+    {
+     "name": "b39:op.add/tiny/fp32-n256",
+     "ok": true,
+     "why": "",
+     "cycles_equal": true
+    },
+    {
+     "name": "b39:op.argmax/medium/fp16-r32-v4096",
+     "ok": true,
+     "why": "",
+     "cycles_equal": true
+    },
+    {
+     "name": "b39:op.argmax/small/fp16-r8-v2048",
+     "ok": true,
+     "why": "",
+     "cycles_equal": true
+    },
+    {
+     "name": "b39:op.argmax/tiny/fp16-r2-v256",
+     "ok": true,
+     "why": "",
+     "cycles_equal": true
+    },
+    {
+     "name": "b39:op.attention_decode/medium/fp16-b1-h8-l256-d32",
+     "ok": true,
+     "why": "",
+     "cycles_equal": true
+    },
+    {
+     "name": "b39:op.attention_decode/small/fp16-b1-h4-l256-d32",
+     "ok": true,
+     "why": "",
+     "cycles_equal": true
+    },
+    {
+     "name": "b39:op.attention_decode/tiny/fp16-b1-h2-l16-d16",
+     "ok": true,
+     "why": "",
+     "cycles_equal": true
+    },
+    {
+     "name": "b39:op.attention_prefill/medium/fp16-b1-h4-s96-d32",
+     "ok": true,
+     "why": "",
+     "cycles_equal": true
+    },
+    {
+     "name": "b39:op.attention_prefill/small/fp16-b1-h4-s64-d32",
+     "ok": true,
+     "why": "",
+     "cycles_equal": true
+    },
+    {
+     "name": "b39:op.attention_prefill/tiny/fp16-b1-h2-s16-d16",
+     "ok": true,
+     "why": "",
+     "cycles_equal": true
+    },
+    {
+     "name": "b39:op.bmm/medium/fp16-b16-m64-k32-n64",
+     "ok": true,
+     "why": "",
+     "cycles_equal": true
+    },
+    {
+     "name": "b39:op.bmm/small/fp16-b8-m64-k32-n64",
+     "ok": true,
+     "why": "",
+     "cycles_equal": true
+    },
+    {
+     "name": "b39:op.bmm/tiny/fp16-b2-m16-k16-n16",
+     "ok": true,
+     "why": "",
+     "cycles_equal": true
+    },
+    {
+     "name": "b39:op.conv2d/medium/fp32-n1-cin24-h16-w16-cout24",
+     "ok": true,
+     "why": "",
+     "cycles_equal": true
+    },
+    {
+     "name": "b39:op.conv2d/small/fp32-n1-cin16-h16-w16-cout16",
+     "ok": true,
+     "why": "",
+     "cycles_equal": true
+    },
+    {
+     "name": "b39:op.conv2d/tiny/fp32-n1-cin4-h8-w8-cout8",
+     "ok": true,
+     "why": "",
+     "cycles_equal": true
+    },
+    {
+     "name": "b39:op.cumsum/medium/fp32-r128-c256",
+     "ok": true,
+     "why": "",
+     "cycles_equal": true
+    },
+    {
+     "name": "b39:op.cumsum/small/fp32-r64-c256",
+     "ok": true,
+     "why": "",
+     "cycles_equal": true
+    },
+    {
+     "name": "b39:op.cumsum/tiny/fp32-r4-c64",
+     "ok": true,
+     "why": "",
+     "cycles_equal": true
+    },
+    {
+     "name": "b39:op.embedding/medium/fp16-v1024-d128-t256",
+     "ok": true,
+     "why": "",
+     "cycles_equal": true
+    },
+    {
+     "name": "b39:op.embedding/small/fp16-v1024-d128-t64",
+     "ok": true,
+     "why": "",
+     "cycles_equal": true
+    },
+    {
+     "name": "b39:op.embedding/tiny/fp16-v256-d64-t16",
+     "ok": true,
+     "why": "",
+     "cycles_equal": true
+    },
+    {
+     "name": "b39:op.gelu_tanh/medium/fp16-n65536",
+     "ok": true,
+     "why": "",
+     "cycles_equal": true
+    },
+    {
+     "name": "b39:op.gelu_tanh/small/fp16-n16384",
+     "ok": true,
+     "why": "",
+     "cycles_equal": true
+    },
+    {
+     "name": "b39:op.gelu_tanh/tiny/fp16-n256",
+     "ok": true,
+     "why": "",
+     "cycles_equal": true
+    },
+    {
+     "name": "b39:op.gemv/medium/fp16-k320-n448",
+     "ok": true,
+     "why": "",
+     "cycles_equal": true
+    },
+    {
+     "name": "b39:op.gemv/small/fp16-k256-n512",
+     "ok": true,
+     "why": "",
+     "cycles_equal": true
+    },
+    {
+     "name": "b39:op.gemv/tiny/fp16-k64-n64",
+     "ok": true,
+     "why": "",
+     "cycles_equal": true
+    },
+    {
+     "name": "b39:op.layernorm/medium/fp16-r128-d512",
+     "ok": true,
+     "why": "",
+     "cycles_equal": true
+    },
+    {
+     "name": "b39:op.layernorm/small/fp16-r64-d256",
+     "ok": true,
+     "why": "",
+     "cycles_equal": true
+    },
+    {
+     "name": "b39:op.layernorm/tiny/fp16-r4-d64",
+     "ok": true,
+     "why": "",
+     "cycles_equal": true
+    },
+    {
+     "name": "b39:op.linear/medium/fp16-m128-k320-n256",
+     "ok": true,
+     "why": "",
+     "cycles_equal": true
+    },
+    {
+     "name": "b39:op.linear/small/fp16-m64-k256-n256",
+     "ok": true,
+     "why": "",
+     "cycles_equal": true
+    },
+    {
+     "name": "b39:op.linear/tiny/fp16-m16-k64-n64",
+     "ok": true,
+     "why": "",
+     "cycles_equal": true
+    },
+    {
+     "name": "b39:op.matmul/medium/fp16-m128-k192-n128",
+     "ok": true,
+     "why": "",
+     "cycles_equal": true
+    },
+    {
+     "name": "b39:op.matmul/medium/fp32-m128-k192-n128",
+     "ok": true,
+     "why": "",
+     "cycles_equal": true
+    },
+    {
+     "name": "b39:op.matmul/small/fp16-m64-k128-n128",
+     "ok": true,
+     "why": "",
+     "cycles_equal": true
+    },
+    {
+     "name": "b39:op.matmul/small/fp32-m64-k128-n128",
+     "ok": true,
+     "why": "",
+     "cycles_equal": true
+    },
+    {
+     "name": "b39:op.matmul/tiny/fp16-m16-k32-n16",
+     "ok": true,
+     "why": "",
+     "cycles_equal": true
+    },
+    {
+     "name": "b39:op.matmul/tiny/fp32-m16-k32-n16",
+     "ok": true,
+     "why": "",
+     "cycles_equal": true
+    },
+    {
+     "name": "b39:op.rmsnorm/medium/fp16-r128-d512",
+     "ok": true,
+     "why": "",
+     "cycles_equal": true
+    },
+    {
+     "name": "b39:op.rmsnorm/small/fp16-r64-d256",
+     "ok": true,
+     "why": "",
+     "cycles_equal": true
+    },
+    {
+     "name": "b39:op.rmsnorm/tiny/fp16-r4-d64",
+     "ok": true,
+     "why": "",
+     "cycles_equal": true
+    },
+    {
+     "name": "b39:op.rope/medium/fp16-b1-h8-s128-d32",
+     "ok": true,
+     "why": "",
+     "cycles_equal": true
+    },
+    {
+     "name": "b39:op.rope/small/fp16-b1-h4-s64-d32",
+     "ok": true,
+     "why": "",
+     "cycles_equal": true
+    },
+    {
+     "name": "b39:op.rope/tiny/fp16-b1-h2-s16-d16",
+     "ok": true,
+     "why": "",
+     "cycles_equal": true
+    },
+    {
+     "name": "b39:op.silu/medium/fp16-n65536",
+     "ok": true,
+     "why": "",
+     "cycles_equal": true
+    },
+    {
+     "name": "b39:op.silu/small/fp16-n16384",
+     "ok": true,
+     "why": "",
+     "cycles_equal": true
+    },
+    {
+     "name": "b39:op.silu/tiny/fp16-n256",
+     "ok": true,
+     "why": "",
+     "cycles_equal": true
+    },
+    {
+     "name": "b39:op.softmax/medium/fp16-r80-c512",
+     "ok": true,
+     "why": "",
+     "cycles_equal": true
+    },
+    {
+     "name": "b39:op.softmax/small/fp16-r64-c512",
+     "ok": true,
+     "why": "",
+     "cycles_equal": true
+    },
+    {
+     "name": "b39:op.softmax/tiny/fp16-r4-c64",
+     "ok": true,
+     "why": "",
+     "cycles_equal": true
+    },
+    {
+     "name": "b39:op.softmax/tiny/fp32-r3-c37",
+     "ok": true,
+     "why": "",
+     "cycles_equal": true
+    },
+    {
+     "name": "b39:op.swiglu/medium/fp16-n49152",
+     "ok": true,
+     "why": "",
+     "cycles_equal": true
+    },
+    {
+     "name": "b39:op.swiglu/small/fp16-n16384",
+     "ok": true,
+     "why": "",
+     "cycles_equal": true
+    },
+    {
+     "name": "b39:op.swiglu/tiny/fp16-n256",
+     "ok": true,
+     "why": "",
+     "cycles_equal": true
+    },
+    {
+     "name": "b39:op.transpose/medium/fp32-r160-c256",
+     "ok": true,
+     "why": "",
+     "cycles_equal": true
+    },
+    {
+     "name": "b39:op.transpose/small/fp32-r128-c256",
+     "ok": true,
+     "why": "",
+     "cycles_equal": true
+    },
+    {
+     "name": "b39:op.transpose/tiny/fp32-r32-c32",
+     "ok": true,
+     "why": "",
+     "cycles_equal": true
+    },
+    {
+     "name": "p2:model.gpt2_block/medium/fp16-d160-h5-b1-s64",
+     "ok": true,
+     "why": "",
+     "cycles_equal": true,
+     "compile_s": 13.613,
+     "device_cycle_spread": 0
+    },
+    {
+     "name": "p2:model.gpt2_block/small/fp16-d128-h4-b1-s64",
+     "ok": true,
+     "why": "",
+     "cycles_equal": true,
+     "compile_s": 13.515,
+     "device_cycle_spread": 0
+    },
+    {
+     "name": "p2:model.gpt2_block/tiny/fp16-d64-h4-b1-s16",
+     "ok": true,
+     "why": "",
+     "cycles_equal": true,
+     "compile_s": 10.274,
+     "device_cycle_spread": 0
+    },
+    {
+     "name": "p2:model.llama_decode/medium/fp16-b1-p256",
+     "ok": true,
+     "why": "",
+     "cycles_equal": true,
+     "compile_s": 18.24,
+     "device_cycle_spread": 0
+    },
+    {
+     "name": "p2:model.llama_decode/small/fp16-b1-p128",
+     "ok": true,
+     "why": "",
+     "cycles_equal": true,
+     "compile_s": 17.979,
+     "device_cycle_spread": 0
+    },
+    {
+     "name": "p2:model.llama_decode/tiny/fp16-b1-p16",
+     "ok": true,
+     "why": "",
+     "cycles_equal": true,
+     "compile_s": 14.405,
+     "device_cycle_spread": 0
+    },
+    {
+     "name": "p2:model.llama_prefill/medium/fp16-b1-s64",
+     "ok": true,
+     "why": "",
+     "cycles_equal": true,
+     "compile_s": 27.584,
+     "device_cycle_spread": 0
+    },
+    {
+     "name": "p2:model.llama_prefill/small/fp16-b1-s64",
+     "ok": true,
+     "why": "",
+     "cycles_equal": true,
+     "compile_s": 27.7,
+     "device_cycle_spread": 0
+    },
+    {
+     "name": "p2:model.llama_prefill/tiny/fp16-b1-s16",
+     "ok": true,
+     "why": "",
+     "cycles_equal": true,
+     "compile_s": 20.336,
+     "device_cycle_spread": 0
+    },
+    {
+     "name": "p2:model.mlp/medium/fp16-t128-d128",
+     "ok": true,
+     "why": "",
+     "cycles_equal": true,
+     "compile_s": 5.011,
+     "device_cycle_spread": 0
+    },
+    {
+     "name": "p2:model.mlp/small/fp16-t64-d128",
+     "ok": true,
+     "why": "",
+     "cycles_equal": true,
+     "compile_s": 4.872,
+     "device_cycle_spread": 0
+    },
+    {
+     "name": "p2:model.mlp/tiny/fp16-t16-d64",
+     "ok": true,
+     "why": "",
+     "cycles_equal": true,
+     "compile_s": 4.833,
+     "device_cycle_spread": 0
+    },
+    {
+     "name": "p2:model.resnet_block/medium/fp32-n1-c24-hw16",
+     "ok": true,
+     "why": "",
+     "cycles_equal": true,
+     "compile_s": 14.587,
+     "device_cycle_spread": 0
+    },
+    {
+     "name": "p2:model.resnet_block/small/fp32-n1-c16-hw16",
+     "ok": true,
+     "why": "",
+     "cycles_equal": true,
+     "compile_s": 14.767,
+     "device_cycle_spread": 0
+    },
+    {
+     "name": "p2:model.resnet_block/tiny/fp32-n1-c8-hw8",
+     "ok": true,
+     "why": "",
+     "cycles_equal": true,
+     "compile_s": 14.46,
+     "device_cycle_spread": 0
+    },
+    {
+     "name": "p2:op.add/medium/fp16-n49152",
+     "ok": true,
+     "why": "",
+     "cycles_equal": true,
+     "compile_s": 3.053,
+     "device_cycle_spread": 0
+    },
+    {
+     "name": "p2:op.add/small/fp16-n16384",
+     "ok": true,
+     "why": "",
+     "cycles_equal": true,
+     "compile_s": 3.0,
+     "device_cycle_spread": 0
+    },
+    {
+     "name": "p2:op.add/tiny/fp16-n1000",
+     "ok": true,
+     "why": "",
+     "cycles_equal": true,
+     "compile_s": 3.25,
+     "device_cycle_spread": 0
+    },
+    {
+     "name": "p2:op.add/tiny/fp32-n256",
+     "ok": true,
+     "why": "",
+     "cycles_equal": true,
+     "compile_s": 3.061,
+     "device_cycle_spread": 0
+    },
+    {
+     "name": "p2:op.argmax/medium/fp16-r32-v4096",
+     "ok": true,
+     "why": "",
+     "cycles_equal": true,
+     "compile_s": 3.433,
+     "device_cycle_spread": 0
+    },
+    {
+     "name": "p2:op.argmax/small/fp16-r8-v2048",
+     "ok": true,
+     "why": "",
+     "cycles_equal": true,
+     "compile_s": 3.408,
+     "device_cycle_spread": 0
+    },
+    {
+     "name": "p2:op.argmax/tiny/fp16-r2-v256",
+     "ok": true,
+     "why": "",
+     "cycles_equal": true,
+     "compile_s": 3.358,
+     "device_cycle_spread": 0
+    },
+    {
+     "name": "p2:op.attention_decode/medium/fp16-b1-h8-l256-d32",
+     "ok": true,
+     "why": "",
+     "cycles_equal": true,
+     "compile_s": 4.618,
+     "device_cycle_spread": 0
+    },
+    {
+     "name": "p2:op.attention_decode/small/fp16-b1-h4-l256-d32",
+     "ok": true,
+     "why": "",
+     "cycles_equal": true,
+     "compile_s": 4.319,
+     "device_cycle_spread": 0
+    },
+    {
+     "name": "p2:op.attention_decode/tiny/fp16-b1-h2-l16-d16",
+     "ok": true,
+     "why": "",
+     "cycles_equal": true,
+     "compile_s": 3.87,
+     "device_cycle_spread": 0
+    },
+    {
+     "name": "p2:op.attention_prefill/medium/fp16-b1-h4-s96-d32",
+     "ok": true,
+     "why": "",
+     "cycles_equal": true,
+     "compile_s": 10.381,
+     "device_cycle_spread": 0
+    },
+    {
+     "name": "p2:op.attention_prefill/small/fp16-b1-h4-s64-d32",
+     "ok": true,
+     "why": "",
+     "cycles_equal": true,
+     "compile_s": 10.448,
+     "device_cycle_spread": 0
+    },
+    {
+     "name": "p2:op.attention_prefill/tiny/fp16-b1-h2-s16-d16",
+     "ok": true,
+     "why": "",
+     "cycles_equal": true,
+     "compile_s": 6.246,
+     "device_cycle_spread": 0
+    },
+    {
+     "name": "p2:op.bmm/medium/fp16-b16-m64-k32-n64",
+     "ok": true,
+     "why": "",
+     "cycles_equal": true,
+     "compile_s": 4.211,
+     "device_cycle_spread": 0
+    },
+    {
+     "name": "p2:op.bmm/small/fp16-b8-m64-k32-n64",
+     "ok": true,
+     "why": "",
+     "cycles_equal": true,
+     "compile_s": 4.178,
+     "device_cycle_spread": 0
+    },
+    {
+     "name": "p2:op.bmm/tiny/fp16-b2-m16-k16-n16",
+     "ok": true,
+     "why": "",
+     "cycles_equal": true,
+     "compile_s": 3.183,
+     "device_cycle_spread": 0
+    },
+    {
+     "name": "p2:op.conv2d/medium/fp32-n1-cin24-h16-w16-cout24",
+     "ok": true,
+     "why": "",
+     "cycles_equal": true,
+     "compile_s": 8.222,
+     "device_cycle_spread": 0
+    },
+    {
+     "name": "p2:op.conv2d/small/fp32-n1-cin16-h16-w16-cout16",
+     "ok": true,
+     "why": "",
+     "cycles_equal": true,
+     "compile_s": 7.953,
+     "device_cycle_spread": 0
+    },
+    {
+     "name": "p2:op.conv2d/tiny/fp32-n1-cin4-h8-w8-cout8",
+     "ok": true,
+     "why": "",
+     "cycles_equal": true,
+     "compile_s": 7.803,
+     "device_cycle_spread": 0
+    },
+    {
+     "name": "p2:op.cumsum/medium/fp32-r128-c256",
+     "ok": true,
+     "why": "",
+     "cycles_equal": true,
+     "compile_s": 3.331,
+     "device_cycle_spread": 0
+    },
+    {
+     "name": "p2:op.cumsum/small/fp32-r64-c256",
+     "ok": true,
+     "why": "",
+     "cycles_equal": true,
+     "compile_s": 3.469,
+     "device_cycle_spread": 0
+    },
+    {
+     "name": "p2:op.cumsum/tiny/fp32-r4-c64",
+     "ok": true,
+     "why": "",
+     "cycles_equal": true,
+     "compile_s": 3.199,
+     "device_cycle_spread": 0
+    },
+    {
+     "name": "p2:op.embedding/medium/fp16-v1024-d128-t256",
+     "ok": true,
+     "why": "",
+     "cycles_equal": true,
+     "compile_s": 3.771,
+     "device_cycle_spread": 0
+    },
+    {
+     "name": "p2:op.embedding/small/fp16-v1024-d128-t64",
+     "ok": true,
+     "why": "",
+     "cycles_equal": true,
+     "compile_s": 3.533,
+     "device_cycle_spread": 0
+    },
+    {
+     "name": "p2:op.embedding/tiny/fp16-v256-d64-t16",
+     "ok": true,
+     "why": "",
+     "cycles_equal": true,
+     "compile_s": 3.527,
+     "device_cycle_spread": 0
+    },
+    {
+     "name": "p2:op.gelu_tanh/medium/fp16-n65536",
+     "ok": true,
+     "why": "",
+     "cycles_equal": true,
+     "compile_s": 3.492,
+     "device_cycle_spread": 0
+    },
+    {
+     "name": "p2:op.gelu_tanh/small/fp16-n16384",
+     "ok": true,
+     "why": "",
+     "cycles_equal": true,
+     "compile_s": 3.208,
+     "device_cycle_spread": 0
+    },
+    {
+     "name": "p2:op.gelu_tanh/tiny/fp16-n256",
+     "ok": true,
+     "why": "",
+     "cycles_equal": true,
+     "compile_s": 3.308,
+     "device_cycle_spread": 0
+    },
+    {
+     "name": "p2:op.gemv/medium/fp16-k320-n448",
+     "ok": true,
+     "why": "",
+     "cycles_equal": true,
+     "compile_s": 3.39,
+     "device_cycle_spread": 0
+    },
+    {
+     "name": "p2:op.gemv/small/fp16-k256-n512",
+     "ok": true,
+     "why": "",
+     "cycles_equal": true,
+     "compile_s": 3.335,
+     "device_cycle_spread": 0
+    },
+    {
+     "name": "p2:op.gemv/tiny/fp16-k64-n64",
+     "ok": true,
+     "why": "",
+     "cycles_equal": true,
+     "compile_s": 3.611,
+     "device_cycle_spread": 0
+    },
+    {
+     "name": "p2:op.layernorm/medium/fp16-r128-d512",
+     "ok": true,
+     "why": "",
+     "cycles_equal": true,
+     "compile_s": 3.474,
+     "device_cycle_spread": 0
+    },
+    {
+     "name": "p2:op.layernorm/small/fp16-r64-d256",
+     "ok": true,
+     "why": "",
+     "cycles_equal": true,
+     "compile_s": 3.422,
+     "device_cycle_spread": 0
+    },
+    {
+     "name": "p2:op.layernorm/tiny/fp16-r4-d64",
+     "ok": true,
+     "why": "",
+     "cycles_equal": true,
+     "compile_s": 3.327,
+     "device_cycle_spread": 0
+    },
+    {
+     "name": "p2:op.linear/medium/fp16-m128-k320-n256",
+     "ok": true,
+     "why": "",
+     "cycles_equal": true,
+     "compile_s": 3.582,
+     "device_cycle_spread": 0
+    },
+    {
+     "name": "p2:op.linear/small/fp16-m64-k256-n256",
+     "ok": true,
+     "why": "",
+     "cycles_equal": true,
+     "compile_s": 3.579,
+     "device_cycle_spread": 0
+    },
+    {
+     "name": "p2:op.linear/tiny/fp16-m16-k64-n64",
+     "ok": true,
+     "why": "",
+     "cycles_equal": true,
+     "compile_s": 3.498,
+     "device_cycle_spread": 0
+    },
+    {
+     "name": "p2:op.matmul/medium/fp16-m128-k192-n128",
+     "ok": true,
+     "why": "",
+     "cycles_equal": true,
+     "compile_s": 3.218,
+     "device_cycle_spread": 0
+    },
+    {
+     "name": "p2:op.matmul/medium/fp32-m128-k192-n128",
+     "ok": true,
+     "why": "",
+     "cycles_equal": true,
+     "compile_s": 4.223,
+     "device_cycle_spread": 0
+    },
+    {
+     "name": "p2:op.matmul/small/fp16-m64-k128-n128",
+     "ok": true,
+     "why": "",
+     "cycles_equal": true,
+     "compile_s": 3.21,
+     "device_cycle_spread": 0
+    },
+    {
+     "name": "p2:op.matmul/small/fp32-m64-k128-n128",
+     "ok": true,
+     "why": "",
+     "cycles_equal": true,
+     "compile_s": 4.315,
+     "device_cycle_spread": 0
+    },
+    {
+     "name": "p2:op.matmul/tiny/fp16-m16-k32-n16",
+     "ok": true,
+     "why": "",
+     "cycles_equal": true,
+     "compile_s": 3.275,
+     "device_cycle_spread": 0
+    },
+    {
+     "name": "p2:op.matmul/tiny/fp32-m16-k32-n16",
+     "ok": true,
+     "why": "",
+     "cycles_equal": true,
+     "compile_s": 4.242,
+     "device_cycle_spread": 0
+    },
+    {
+     "name": "p2:op.rmsnorm/medium/fp16-r128-d512",
+     "ok": true,
+     "why": "",
+     "cycles_equal": true,
+     "compile_s": 3.308,
+     "device_cycle_spread": 0
+    },
+    {
+     "name": "p2:op.rmsnorm/small/fp16-r64-d256",
+     "ok": true,
+     "why": "",
+     "cycles_equal": true,
+     "compile_s": 3.45,
+     "device_cycle_spread": 0
+    },
+    {
+     "name": "p2:op.rmsnorm/tiny/fp16-r4-d64",
+     "ok": true,
+     "why": "",
+     "cycles_equal": true,
+     "compile_s": 3.352,
+     "device_cycle_spread": 0
+    },
+    {
+     "name": "p2:op.rope/medium/fp16-b1-h8-s128-d32",
+     "ok": true,
+     "why": "",
+     "cycles_equal": true,
+     "compile_s": 3.478,
+     "device_cycle_spread": 0
+    },
+    {
+     "name": "p2:op.rope/small/fp16-b1-h4-s64-d32",
+     "ok": true,
+     "why": "",
+     "cycles_equal": true,
+     "compile_s": 3.663,
+     "device_cycle_spread": 0
+    },
+    {
+     "name": "p2:op.rope/tiny/fp16-b1-h2-s16-d16",
+     "ok": true,
+     "why": "",
+     "cycles_equal": true,
+     "compile_s": 3.544,
+     "device_cycle_spread": 0
+    },
+    {
+     "name": "p2:op.silu/medium/fp16-n65536",
+     "ok": true,
+     "why": "",
+     "cycles_equal": true,
+     "compile_s": 3.094,
+     "device_cycle_spread": 0
+    },
+    {
+     "name": "p2:op.silu/small/fp16-n16384",
+     "ok": true,
+     "why": "",
+     "cycles_equal": true,
+     "compile_s": 3.304,
+     "device_cycle_spread": 0
+    },
+    {
+     "name": "p2:op.silu/tiny/fp16-n256",
+     "ok": true,
+     "why": "",
+     "cycles_equal": true,
+     "compile_s": 3.136,
+     "device_cycle_spread": 0
+    },
+    {
+     "name": "p2:op.softmax/medium/fp16-r80-c512",
+     "ok": true,
+     "why": "",
+     "cycles_equal": true,
+     "compile_s": 3.3,
+     "device_cycle_spread": 0
+    },
+    {
+     "name": "p2:op.softmax/small/fp16-r64-c512",
+     "ok": true,
+     "why": "",
+     "cycles_equal": true,
+     "compile_s": 3.387,
+     "device_cycle_spread": 0
+    },
+    {
+     "name": "p2:op.softmax/tiny/fp16-r4-c64",
+     "ok": true,
+     "why": "",
+     "cycles_equal": true,
+     "compile_s": 3.28,
+     "device_cycle_spread": 0
+    },
+    {
+     "name": "p2:op.softmax/tiny/fp32-r3-c37",
+     "ok": true,
+     "why": "",
+     "cycles_equal": true,
+     "compile_s": 3.421,
+     "device_cycle_spread": 0
+    },
+    {
+     "name": "p2:op.swiglu/medium/fp16-n49152",
+     "ok": true,
+     "why": "",
+     "cycles_equal": true,
+     "compile_s": 3.133,
+     "device_cycle_spread": 0
+    },
+    {
+     "name": "p2:op.swiglu/small/fp16-n16384",
+     "ok": true,
+     "why": "",
+     "cycles_equal": true,
+     "compile_s": 3.255,
+     "device_cycle_spread": 0
+    },
+    {
+     "name": "p2:op.swiglu/tiny/fp16-n256",
+     "ok": true,
+     "why": "",
+     "cycles_equal": true,
+     "compile_s": 3.2,
+     "device_cycle_spread": 0
+    },
+    {
+     "name": "p2:op.transpose/medium/fp32-r160-c256",
+     "ok": true,
+     "why": "",
+     "cycles_equal": true,
+     "compile_s": 3.549,
+     "device_cycle_spread": 0
+    },
+    {
+     "name": "p2:op.transpose/small/fp32-r128-c256",
+     "ok": true,
+     "why": "",
+     "cycles_equal": true,
+     "compile_s": 3.441,
+     "device_cycle_spread": 0
+    },
+    {
+     "name": "p2:op.transpose/tiny/fp32-r32-c32",
+     "ok": true,
+     "why": "",
+     "cycles_equal": true,
+     "compile_s": 3.441,
+     "device_cycle_spread": 0
+    },
+    {
+     "name": "identity: B39 vs the R40-00 tree on the B39 image",
+     "ok": true,
+     "why": "S_geo 1.000000, CI [1.0, 1.0], no-significant-gain, worst model.gpt2_block/medium/fp16-d160-h5-b1-s64 1.000000"
+    },
+    {
+     "name": "b39-gates",
+     "ok": true,
+     "why": ""
+    }
+   ],
+   "detail": "B39 rerun: 77/77 pass, 77 cycle-identical; protocol 2: 77/77 consistent, 77 with B39's cycles",
+   "written": "2026-10-15T02:26:07+00:00",
+   "contract_version": 2,
+   "contract_sha256": "49fc0e02733139707ae2292eff2ef893e76e73f0723d0d002b2e7e1864af71c8"
+  },
+  "R40-00.frozen": {
+   "status": "capability-pass",
+   "checks": [
+    {
+     "name": "spec/r40/suites/existing.json",
+     "ok": true
+    },
+    {
+     "name": "spec/r40/suites/large.json",
+     "ok": true
+    },
+    {
+     "name": "spec/r40/suites/hbm-tier.json",
+     "ok": true
+    },
+    {
+     "name": "spec/r40/suites/hbm.json",
+     "ok": true
+    },
+    {
+     "name": "spec/r40/suites/hbm-core.json",
+     "ok": true
+    },
+    {
+     "name": "spec/r40/suites/R40-01.representatives.json",
+     "ok": true
+    },
+    {
+     "name": "spec/r40/suites/R40-04.ge64mib.json",
+     "ok": true
+    },
+    {
+     "name": "spec/r40/suites/R40-04.calibration.json",
+     "ok": true
+    },
+    {
+     "name": "spec/r40/suites/R40-04.model-holdout.json",
+     "ok": true
+    },
+    {
+     "name": "spec/r40/suites/R40-02.graphs3.json",
+     "ok": true
+    },
+    {
+     "name": "spec/r40/suites/R40-02.small-kernel-graphs.json",
+     "ok": true
+    },
+    {
+     "name": "spec/r40/suites/R40-03.pointwise-reduction.json",
+     "ok": true
+    },
+    {
+     "name": "spec/r40/suites/R40-03.gemm-reuse.json",
+     "ok": true
+    },
+    {
+     "name": "spec/r40/suites/R40-04.streaming.json",
+     "ok": true
+    },
+    {
+     "name": "spec/r40/suites/R40-05.compute.json",
+     "ok": true
+    },
+    {
+     "name": "spec/r40/suites/R40-06.reuse.json",
+     "ok": true
+    },
+    {
+     "name": "spec/r40/suites/R40-07.long-k.json",
+     "ok": true
+    },
+    {
+     "name": "spec/r40/suites/R40-07.compute-bound.json",
+     "ok": true
+    },
+    {
+     "name": "spec/r40/suites/R40-08.long-prefill.json",
+     "ok": true
+    },
+    {
+     "name": "spec/r40/suites/R40-09.holdout.json",
+     "ok": true
+    },
+    {
+     "name": "spec/r40/suites/R40-09.tune.json",
+     "ok": true
+    },
+    {
+     "name": "spec/r40/plan.json",
+     "ok": true
+    },
+    {
+     "name": "spec/r40/ablation_matrix.json",
+     "ok": true
+    },
+    {
+     "name": "archbench suite tiny",
+     "ok": true
+    },
+    {
+     "name": "archbench suite small",
+     "ok": true
+    },
+    {
+     "name": "archbench suite medium",
+     "ok": true
+    },
+    {
+     "name": "archbench suite large",
+     "ok": true
+    },
+    {
+     "name": "archbench suite hbm",
+     "ok": true
+    },
+    {
+     "name": "api lock (torch 2.14.0, Triton 3.8.0, extension APIs)",
+     "ok": true,
+     "why": ""
+    },
+    {
+     "name": "B39 records medium",
+     "ok": true
+    },
+    {
+     "name": "B39 records small",
+     "ok": true
+    },
+    {
+     "name": "B39 records tiny",
+     "ok": true
+    },
+    {
+     "name": "HBM suite coverage recorded for every large and hbm point",
+     "ok": true,
+     "why": ""
+    }
+   ],
+   "detail": "33/33 as frozen",
+   "written": "2026-10-15T02:26:41+00:00",
+   "contract_version": 2,
+   "contract_sha256": "49fc0e02733139707ae2292eff2ef893e76e73f0723d0d002b2e7e1864af71c8"
+  }
+ }
+}

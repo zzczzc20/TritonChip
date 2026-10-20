@@ -1,0 +1,21 @@
+{
+  "host": "acf3019",
+  "root": "/home/zzhouch/tnca_v3_recollect",
+  "source": "/home/zzhouch/tnca_src_r40_v3x",
+  "out": "/home/zzhouch/tnca_runs_r40_v3x",
+  "software_tree": "files:bc5a778ebc5f4afebf6c1a9fbf3b2d8717cb02e118134ebbb73fb5a927fc8183",
+  "controller_sha256": "51358b1d3d1071c617a8344a917b2e4f16ab2f67561cbc2e78f9ce231998e7b5",
+  "starts": "when the v3 campaign state is complete",
+  "superseded_while_waiting": {
+    "controller_sha256": "b5d7895e2ed22c27a54df057877fc75c530456145c172cef27e4481ed918fb7e",
+    "moved_to": "/home/zzhouch/tnca_v3_recollect_superseded_keyerror",
+    "reason": "post-large24 check read r['correctness']['ok'], which ArchBench records do not have (the 80dd functional queue stopped on it after large24 passed 24/24); now status pass, no fallbacks and max_rel_err <= tol"
+  },
+  "history": [
+    {
+      "controller_sha256": "ce55f57efb0ec3eb4520eeea5ecbbe181774c20f8d9db74bdcf118fdb64bcea7",
+      "moved_to": "/home/zzhouch/tnca_v3_recollect_superseded_order",
+      "reason": "graphs24 now runs before large24 and every stage runs; failed stages are preserved and listed instead of stopping the queue"
+    }
+  ]
+}

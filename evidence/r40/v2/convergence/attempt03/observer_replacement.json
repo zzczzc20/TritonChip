@@ -1,0 +1,51 @@
+{
+  "scope": "Replace only the waiting read-only observer; no implementation restart, source edit, checkpoint write or board load",
+  "recorded_utc": "2026-10-17T21:44:06Z",
+  "hardware_source_commit": "54249f7f7ac0cf8f5d1b82d8e63a3046d27522d3",
+  "implementation_runner_pid": 1917223,
+  "previous_observer_pid": 1917224,
+  "previous_out": "/home/zzhouch/tnca_build/r40_attempt03_followup",
+  "previous_state": {
+    "scope": "report extraction only; no synthesis/place/route/load/retry",
+    "gate_status": "not-measured",
+    "build": "/home/zzhouch/tnca_build/r40_attempt03_20261017",
+    "runner_pid": 1917223,
+    "image_sha256": null,
+    "steps": [],
+    "watcher_sha256": "dc44a21b105fba2abe1f6f2f9a3f8cf89f2c493e92c84e3ead40c08ce293fb85",
+    "status": "watching-existing-build",
+    "observed_utc": "2026-10-17T21:20:13.805477+00:00"
+  },
+  "replacement_observer_pid": 1926388,
+  "out": "/home/zzhouch/tnca_build/r40_attempt03_followup_cachecuts",
+  "collector_bundle": "/home/zzhouch/tnca_reports_r40_attempt03_c2427cf",
+  "tooling_source_commit": "c2427cf5924901bf300e351ed3bd6628426aa6a6",
+  "files_sha256": {
+    "tools/r40/watch_implementation.py": "3d0d1d093e116eac2c6ace87ea6dc59b347edcf23adf3df66ca29e73ad566fa4",
+    "flow/fpga/diagnose_r40_checkpoint.tcl": "1925e19752cec21d028ccf98644cf30b528aa1ffb58188f05ebc5403beddd2ee",
+    "flow/fpga/audit_r40_image.tcl": "04971f246a75e391dbe16f812c17557edfa529839957f86c6d577097063321b9",
+    "flow/fpga/audit_r40_placed_cores.tcl": "c9e1e87119bab5dd4a7599af7b656956118e8ef18a3ec5e4d365f2fef2a4b9f2"
+  },
+  "command": [
+    "bash",
+    "-c",
+    "source /tools/Xilinx/Vivado/2023.2/settings64.sh >/dev/null 2>&1; exec python3 \"$1\" --build \"$2\" --runner-pid \"$3\" --out \"$4\" --final-cache-cuts",
+    "r40-reports",
+    "/home/zzhouch/tnca_reports_r40_attempt03_c2427cf/tools/r40/watch_implementation.py",
+    "/home/zzhouch/tnca_build/r40_attempt03_20261017",
+    "1917223",
+    "/home/zzhouch/tnca_build/r40_attempt03_followup_cachecuts"
+  ],
+  "probe_evidence": "final_cut_query_probe.json",
+  "remaining_full_implementations": 0,
+  "required_gate_promotions": [],
+  "post_replacement_verification": {
+    "checked_utc": "2026-10-17T21:45:24.074239+00:00",
+    "immutable_source_inputs_reverified": 105,
+    "implementation_runner_alive": true,
+    "replacement_observer_alive": true,
+    "previous_observer_exited": true,
+    "observer_status": "watching-existing-build",
+    "image_qualification": "not-measured"
+  }
+}

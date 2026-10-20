@@ -1,0 +1,38 @@
+R2-08 runtime session, buffers, queue and events
+  RT-01  PASS  the lifecycle, and a zero-byte allocation refused
+    allocate/upload/load/submit/wait/download: SUCCEEDED, correct=True
+    the states it passed through: SUBMITTED -> VALIDATED -> QUEUED -> RUNNING -> DRAINING -> SUCCEEDED
+    a 0-byte allocation      -> [BUFFER_INVALID] allocation of 0 bytes
+  RT-02  PASS  32 launches, one device, and a device-memory chain
+    32 launches, alternating alpha: 32 correct
+    device processes started: 1 (the transport has served 131 requests in one)
+    A->B->C with no host download in between: SUCCEEDED/SUCCEEDED, correct=True
+  RT-03  PASS  eight held, the ninth refused, FIFO, and the slot reused
+    8 tasks accepted while the device is held: states ['QUEUED']
+    the ninth submit         -> [QUEUE_FULL] 8 tasks are already unfinished
+    drained in FIFO order: True
+    after the slots freed, another submit: SUCCEEDED
+  RT-04  PASS  idempotent, and a timeout that decides nothing
+    a 0.2s host wait         -> [WAIT_TIMEOUT] after 0.20s
+    the task after the timeout: QUEUED (not cancelled, not succeeded)
+    waiting three more times: state stays SUCCEEDED, history unchanged=True
+    and it ran exactly once: True
+  RT-05  PASS  leases block, and a freed handle stays freed
+    free      while leased    -> [BUFFER_BUSY] free: o is named by 1 unfinished task(s)
+    upload    while leased    -> [BUFFER_BUSY] upload: o is named by 1 unfinished task(
+    download  while leased    -> [BUFFER_BUSY] download: o is named by 1 unfinished tas
+    after it drained, download works: 64 bytes
+    a double free            -> [BUFFER_INVALID] free: o has been freed
+    upload to a freed buffer -> [BUFFER_INVALID] upload: o has been freed
+  RT-06  PASS  two sessions, no leakage, and a close that refuses
+    session 6 sees 1.0, session 7 sees 7.0 -- same kernel, same addresses, different data
+    their device directories differ: True
+    another session's handle -> [BUFFER_INVALID] upload: that handle belongs to session 6, th
+    close while busy         -> [SESSION_BUSY] 1 task(s) are unfinished
+    close after draining: True, again: True
+  RT-07  PASS  a chain runs in order; foreign dependencies are refused
+    A succeeds, B runs after it: SUCCEEDED/SUCCEEDED, correct=True
+    a cross-session dependency -> [ADMISSION_REFUSED] a dependency must be an event this sessi
+    a dependency that is not an event -> [ADMISSION_REFUSED]
+
+  r2-runtime-tests       PASS   7 check(s)

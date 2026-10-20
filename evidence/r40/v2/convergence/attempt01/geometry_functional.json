@@ -1,0 +1,29 @@
+{
+  "scope": "functional randomized actual slice; not board/frozen inventory acceptance",
+  "source_commit": "cf330dc64b6e1df535c31c9bb1a5d735e6bc0fb7",
+  "parameters": {
+    "SETS": 32,
+    "SET_W": 5,
+    "WAYS": 8,
+    "WAY_W": 3,
+    "DCO_REGISTERED_RANGES": 1
+  },
+  "policies": [
+    0,
+    1
+  ],
+  "status": "functional-pass",
+  "raw_archive": "geometry_functional.tar.gz",
+  "raw_sha256": "45405fa9825d2181e6eddcf549f4fb62ded099cf9c7bb3dcd96fdf9eb3cd9f7b",
+  "files": {
+    "tb/nuca/tb_nuca_slice.v": "9d53c0e967d2edcb295a59f41a8414c586ccb66911913dc419e9a9eb53bd50ed",
+    "tb/common/tnca_dram_model.v": "37401a0a88d48d8226e1a4e94dd818b2d37dfaab12829c767603a3982f9bd5ac",
+    "rtl/nuca/tnca_nuca_slice.v": "892085210a6c85b39554130ae1bee473f48c406a4fed29f01a4299d1e97418f9",
+    "rtl/nuca/tnca_tmu.v": "29c326b4cc7da6c928ed41119416880362704b8d0b544889b6ad99daeb144ea3",
+    "rtl/common/tnca_dco_owner_registered.vh": "a8d06b7cb702d9b54e14a7a0ec50eaeca1b4c34700a71adf46e12f3b2b4c340b"
+  },
+  "limitations": [
+    "Slice differential bench retains default FULL_LINE_TAG=0; full-line-tag=1 resource/timing uses the actual OOC boundary",
+    "Native four-configuration tests use smaller simulator geometry and do not certify the final board configuration"
+  ]
+}

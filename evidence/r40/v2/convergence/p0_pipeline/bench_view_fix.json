@@ -1,0 +1,24 @@
+{
+  "scope": "CI elaboration and existing full four-core system regression; no physical gate promotion",
+  "ci_run": 38905167445,
+  "ci_job": 116986802953,
+  "failed_source": "5743357227bdcc0d0655136e754e3f12690d69da",
+  "failure": [
+    "2026-10-16T13:07:57.8624953Z tb/top/tb_tnca_top.v:334: error: Unable to bind wire/reg/memory `dut.g_tile['sd0].u_tile.u_slice.tag_mem[didx]' in `tb_tnca_top'",
+    "2026-10-16T13:07:57.8625740Z tb/top/tb_tnca_top.v:332: error: Unable to elaborate condition expression.",
+    "2026-10-16T13:07:57.8626533Z tb/top/tb_tnca_top.v:342: error: Unable to bind wire/reg/memory `dut.g_tile['sd1].u_tile.u_slice.tag_mem[didx]' in `tb_tnca_top'",
+    "2026-10-16T13:07:57.8627998Z tb/top/tb_tnca_top.v:340: error: Unable to elaborate condition expression.",
+    "2026-10-16T13:07:57.8628781Z tb/top/tb_tnca_top.v:350: error: Unable to bind wire/reg/memory `dut.g_tile['sd2].u_tile.u_slice.tag_mem[didx]' in `tb_tnca_top'",
+    "2026-10-16T13:07:57.8629528Z tb/top/tb_tnca_top.v:348: error: Unable to elaborate condition expression.",
+    "2026-10-16T13:07:57.8630270Z tb/top/tb_tnca_top.v:358: error: Unable to bind wire/reg/memory `dut.g_tile['sd3].u_tile.u_slice.tag_mem[didx]' in `tb_tnca_top'",
+    "2026-10-16T13:07:57.8630970Z tb/top/tb_tnca_top.v:356: error: Unable to elaborate condition expression.",
+    "2026-10-16T13:07:57.8951844Z make: *** [Makefile:726: sim/build/tb_top.vvp] Error 8"
+  ],
+  "fix": "testbench-only flattened view of per-way bank tags; coherent cache/DRAM dump retains original checks; no extra read port in synthesized RTL",
+  "bench_sha256": "8680053ce214f174772f39a2b62054ebf0e59be356dd9a4ff4c75c1f990f6563",
+  "validation_source_basis": "5743357227bdcc0d0655136e754e3f12690d69da plus bench-only fix",
+  "command": "make top",
+  "exit_code": 0,
+  "raw_log": "bench_view_fix.log",
+  "gate_status": "not-measured"
+}

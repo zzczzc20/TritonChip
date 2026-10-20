@@ -1,0 +1,9 @@
+test_disabled_keeps_the_original_k64_fragment (test_mma_retile.TestMMARetile.test_disabled_keeps_the_original_k64_fragment) ... ok
+test_k64_uses_two_ordered_k32_commands (test_mma_retile.TestMMARetile.test_k64_uses_two_ordered_k32_commands) ... ok
+test_packed_source_is_refused_instead_of_reread (test_mma_retile.TestMMARetile.test_packed_source_is_refused_instead_of_reread) ... ok
+test_same_left_parent_reuses_both_slices (test_mma_retile.TestMMARetile.test_same_left_parent_reuses_both_slices) ... ok
+
+----------------------------------------------------------------------
+Ran 4 tests in 0.054s
+
+OK

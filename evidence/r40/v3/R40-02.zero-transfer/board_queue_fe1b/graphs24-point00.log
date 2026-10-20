@@ -1,0 +1,5 @@
+PASS model.gpt2_block/medium/fp16-d160-h5-b1-s64 resident step=0: 13 kernels, actual tensor bytes={'h2d': 0, 'd2h': 0}
+PASS model.gpt2_block/medium/fp16-d160-h5-b1-s64 resident step=1: 13 kernels, actual tensor bytes={'h2d': 0, 'd2h': 0}
+PASS model.gpt2_block/medium/fp16-d160-h5-b1-s64 per-kernel step=0: 13 kernels, actual tensor bytes={'h2d': 3899520, 'd2h': 3899520}
+PASS model.gpt2_block/medium/fp16-d160-h5-b1-s64 per-kernel step=1: 13 kernels, actual tensor bytes={'h2d': 3899520, 'd2h': 3899520}
+r40-frozen-residency-tests PASS (4/4)

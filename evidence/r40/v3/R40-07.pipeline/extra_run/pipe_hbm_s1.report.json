@@ -1,0 +1,354 @@
+{
+ "schema": "tnca-r40-v3-pipeline-matrix/1",
+ "profile": "core-vrf-sync-v5/hbm",
+ "memory": "hbm",
+ "plusargs": "+engtrace +trace",
+ "stages": 1,
+ "roles": "2 (forced legal split)",
+ "cases": [
+  {
+   "graph": "mm",
+   "shape": [
+    16,
+    16,
+    48
+   ],
+   "stages": 1,
+   "memory": "hbm",
+   "ok": true,
+   "max_abs_err": 0.0,
+   "sequences": [
+    117
+   ],
+   "rings": [
+    {
+     "consumer_ops": 292,
+     "direct": true,
+     "producer_ops": 183,
+     "ring_windows": 2,
+     "stages": 1
+    }
+   ],
+   "refusals": [],
+   "artifacts": [
+    "d3bc82986fda9a53c9676059c9e92b9987850f5ed5b5ec05e4be68999ca5b8a4"
+   ],
+   "launches": 1,
+   "trace": [
+    {
+     "seq": 117,
+     "mma_cycles": 933,
+     "dma_cycles": 822,
+     "overlap_cycles": 0
+    }
+   ],
+   "overlap_cycles": 0
+  },
+  {
+   "graph": "mm",
+   "shape": [
+    16,
+    16,
+    256
+   ],
+   "stages": 1,
+   "memory": "hbm",
+   "ok": true,
+   "max_abs_err": 0.0,
+   "sequences": [
+    130
+   ],
+   "rings": [
+    {
+     "consumer_ops": 291,
+     "direct": true,
+     "producer_ops": 182,
+     "ring_windows": 2,
+     "stages": 1
+    }
+   ],
+   "refusals": [],
+   "artifacts": [
+    "27002cd0bdb4664fefcae4b8e5443e5abe05b2021df0f8c99e4538e9ae887b34"
+   ],
+   "launches": 1,
+   "trace": [
+    {
+     "seq": 130,
+     "mma_cycles": 4976,
+     "dma_cycles": 4384,
+     "overlap_cycles": 0
+    }
+   ],
+   "overlap_cycles": 0
+  },
+  {
+   "graph": "mm",
+   "shape": [
+    17,
+    31,
+    257
+   ],
+   "stages": 1,
+   "memory": "hbm",
+   "ok": true,
+   "max_abs_err": 0.0,
+   "sequences": [
+    143
+   ],
+   "rings": [
+    {
+     "consumer_ops": 333,
+     "direct": false,
+     "producer_ops": 838,
+     "ring_windows": 2,
+     "stages": 1
+    }
+   ],
+   "refusals": [],
+   "artifacts": [
+    "eaefaddaddc792701dbd8ac66c0eb8289d11aac78fb220b02fe4cb18d45b404b"
+   ],
+   "launches": 1,
+   "trace": [
+    {
+     "seq": 143,
+     "mma_cycles": 21153,
+     "dma_cycles": 18665,
+     "overlap_cycles": 2132
+    }
+   ],
+   "overlap_cycles": 2132
+  },
+  {
+   "graph": "addmm",
+   "shape": [
+    16,
+    16,
+    48
+   ],
+   "stages": 1,
+   "memory": "hbm",
+   "ok": true,
+   "max_abs_err": 0.0,
+   "sequences": [
+    156
+   ],
+   "rings": [
+    {
+     "consumer_ops": 407,
+     "direct": true,
+     "producer_ops": 184,
+     "ring_windows": 2,
+     "stages": 1
+    }
+   ],
+   "refusals": [],
+   "artifacts": [
+    "fdb6e6a095b1df3b7eb6ef21e08da6b58d13c0ed2a96266c9cc5066aae99a862"
+   ],
+   "launches": 1,
+   "trace": [
+    {
+     "seq": 156,
+     "mma_cycles": 933,
+     "dma_cycles": 822,
+     "overlap_cycles": 0
+    }
+   ],
+   "overlap_cycles": 0
+  },
+  {
+   "graph": "addmm",
+   "shape": [
+    16,
+    16,
+    256
+   ],
+   "stages": 1,
+   "memory": "hbm",
+   "ok": true,
+   "max_abs_err": 0.0,
+   "sequences": [
+    169
+   ],
+   "rings": [
+    {
+     "consumer_ops": 406,
+     "direct": true,
+     "producer_ops": 183,
+     "ring_windows": 2,
+     "stages": 1
+    }
+   ],
+   "refusals": [],
+   "artifacts": [
+    "1980ebecd195ba6d8cddc2d9256e3d2e88c3ef2984a1f38d6ca2028a2eef1aaa"
+   ],
+   "launches": 1,
+   "trace": [
+    {
+     "seq": 169,
+     "mma_cycles": 4976,
+     "dma_cycles": 4384,
+     "overlap_cycles": 0
+    }
+   ],
+   "overlap_cycles": 0
+  },
+  {
+   "graph": "addmm",
+   "shape": [
+    17,
+    31,
+    257
+   ],
+   "stages": 1,
+   "memory": "hbm",
+   "ok": true,
+   "max_abs_err": 3.814697265625e-06,
+   "sequences": [
+    182
+   ],
+   "rings": [
+    {
+     "consumer_ops": 448,
+     "direct": false,
+     "producer_ops": 839,
+     "ring_windows": 2,
+     "stages": 1
+    }
+   ],
+   "refusals": [],
+   "artifacts": [
+    "e0438ca0145e3a69c36eedbbd83774ebabd6c1a5215b5bbda3b70eb9aa7f1ca7"
+   ],
+   "launches": 1,
+   "trace": [
+    {
+     "seq": 182,
+     "mma_cycles": 21155,
+     "dma_cycles": 18665,
+     "overlap_cycles": 2132
+    }
+   ],
+   "overlap_cycles": 2132
+  },
+  {
+   "graph": "linear",
+   "shape": [
+    16,
+    16,
+    48
+   ],
+   "stages": 1,
+   "memory": "hbm",
+   "ok": true,
+   "max_abs_err": 0.0,
+   "sequences": [
+    195
+   ],
+   "rings": [
+    {
+     "consumer_ops": 407,
+     "direct": true,
+     "producer_ops": 184,
+     "ring_windows": 2,
+     "stages": 1
+    }
+   ],
+   "refusals": [],
+   "artifacts": [
+    "b705924ad1e9257bfa79670d81e5ccb2c305e39a83cdb968d08e11fa76efafbd"
+   ],
+   "launches": 1,
+   "trace": [
+    {
+     "seq": 195,
+     "mma_cycles": 933,
+     "dma_cycles": 885,
+     "overlap_cycles": 0
+    }
+   ],
+   "overlap_cycles": 0
+  },
+  {
+   "graph": "linear",
+   "shape": [
+    16,
+    16,
+    256
+   ],
+   "stages": 1,
+   "memory": "hbm",
+   "ok": true,
+   "max_abs_err": 0.0,
+   "sequences": [
+    208
+   ],
+   "rings": [
+    {
+     "consumer_ops": 406,
+     "direct": true,
+     "producer_ops": 183,
+     "ring_windows": 2,
+     "stages": 1
+    }
+   ],
+   "refusals": [],
+   "artifacts": [
+    "76cb1b8aee219e8b7f77e91720ca8c2076e02bfed1aa50ae66a5249ebce9a49e"
+   ],
+   "launches": 1,
+   "trace": [
+    {
+     "seq": 208,
+     "mma_cycles": 4976,
+     "dma_cycles": 4720,
+     "overlap_cycles": 0
+    }
+   ],
+   "overlap_cycles": 0
+  },
+  {
+   "graph": "linear",
+   "shape": [
+    17,
+    31,
+    257
+   ],
+   "stages": 1,
+   "memory": "hbm",
+   "ok": true,
+   "max_abs_err": 1.9073486328125e-06,
+   "sequences": [
+    221
+   ],
+   "rings": [
+    {
+     "consumer_ops": 448,
+     "direct": false,
+     "producer_ops": 855,
+     "ring_windows": 2,
+     "stages": 1
+    }
+   ],
+   "refusals": [],
+   "artifacts": [
+    "5ecd4f456bc12c6574f8a44232e652e606e61029b9166cf7d20bc8ddadac01e3"
+   ],
+   "launches": 1,
+   "trace": [
+    {
+     "seq": 221,
+     "mma_cycles": 21183,
+     "dma_cycles": 18666,
+     "overlap_cycles": 203
+    }
+   ],
+   "overlap_cycles": 203
+  }
+ ],
+ "engine_log_sha256": "2989395efd9690f9e22267cf27954b2a20a4c795c82855ae941b552b8fa185f1",
+ "ok": true
+}

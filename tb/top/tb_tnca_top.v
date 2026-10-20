@@ -101,6 +101,19 @@ module tb_tnca_top;
                     perf_mshr_full, perf_hit_past_block,
                     perf_bypass, perf_evict, perf_dead_evict;
 
+    // Simulation-only dump oracle: expose the banked tags in the original
+    // line-index order without adding asynchronous read ports to DUT RTL.
+    wire [63:0] dump_tags [0:N*SETS*WAYS-1];
+    genvar dump_tile, dump_set, dump_way;
+    generate for(dump_tile=0;dump_tile<N;dump_tile=dump_tile+1)begin : g_dump_tile
+        for(dump_way=0;dump_way<WAYS;dump_way=dump_way+1)begin : g_dump_way
+            for(dump_set=0;dump_set<SETS;dump_set=dump_set+1)begin : g_dump_set
+                assign dump_tags[dump_tile*SETS*WAYS+dump_set*WAYS+dump_way] =
+                    dut.g_tile[dump_tile].u_tile.u_slice.g_sync_tags.g_way[dump_way].bank[dump_set];
+            end
+        end
+    end endgenerate
+
     tnca_top #(
         .NX(NX), .NY(NY), .NUM_RCTX(NUM_RCTX), .LINE_BITS(LINE_BITS),
         .MSHR_W(MSHR_W),
@@ -259,13 +272,13 @@ module tb_tnca_top;
         repeat (2) @(posedge clk);
         #1;
         // The host's DCO configuration, before launch.
-        if ($value$plusargs("dco_policy=%d", dval)) dut.u_tmu.policy      = dval;
-        if ($value$plusargs("dco_bbits=%d", dval))  dut.u_tmu.b_bits      = dval;
-        if ($value$plusargs("dco_gear=%d", dval))   dut.u_tmu.gear_init   = dval;
-        if ($value$plusargs("dco_window=%d", dval)) dut.u_tmu.gear_window = dval;
-        if ($value$plusargs("dco_ub=%d", dval))     dut.u_tmu.gear_ub     = dval;
-        if ($value$plusargs("dco_lb=%d", dval))     dut.u_tmu.gear_lb     = dval;
-        if ($value$plusargs("dco_dlsb=%d", dval))   dut.u_tmu.d_lsb       = dval;
+        if ($value$plusargs("dco_policy=%d", dval)) dut.g_shared_tmu.u_tmu.policy      = dval;
+        if ($value$plusargs("dco_bbits=%d", dval))  dut.g_shared_tmu.u_tmu.b_bits      = dval;
+        if ($value$plusargs("dco_gear=%d", dval))   dut.g_shared_tmu.u_tmu.gear_init   = dval;
+        if ($value$plusargs("dco_window=%d", dval)) dut.g_shared_tmu.u_tmu.gear_window = dval;
+        if ($value$plusargs("dco_ub=%d", dval))     dut.g_shared_tmu.u_tmu.gear_ub     = dval;
+        if ($value$plusargs("dco_lb=%d", dval))     dut.g_shared_tmu.u_tmu.gear_lb     = dval;
+        if ($value$plusargs("dco_dlsb=%d", dval))   dut.g_shared_tmu.u_tmu.d_lsb       = dval;
         launch_pc    = 64'd0;
         launch_valid = 1'b1;
         @(posedge clk);
@@ -310,8 +323,8 @@ module tb_tnca_top;
             tot_dead = tot_dead + perf_dead_evict[k*32 +: 32];
         end
         $display("dco: policy=%0d bypass=%0d evict=%0d dead_evict=%0d registered=%0d tlw=%0d dead=%0d dropped=%0d",
-                 dut.u_tmu.policy, tot_byp, tot_ev, tot_dead, dut.u_tmu.stat_reg,
-                 dut.u_tmu.stat_tlw, dut.u_tmu.stat_dead, dut.u_tmu.stat_drop);
+                 dut.g_shared_tmu.u_tmu.policy, tot_byp, tot_ev, tot_dead, dut.g_shared_tmu.u_tmu.stat_reg,
+                 dut.g_shared_tmu.u_tmu.stat_tlw, dut.g_shared_tmu.u_tmu.stat_dead, dut.g_shared_tmu.u_tmu.stat_drop);
         $display("dram: reads=%0d writes=%0d", u_dram.n_rd, u_dram.n_wr);
 
         if ($value$plusargs("dump=%s", dumpfile)) begin
@@ -331,7 +344,7 @@ module tb_tnca_top;
                     didx = dset*WAYS + dway;
                     if (!dfound && dhome == 0 &&
                         dut.g_tile[0].u_tile.u_slice.v_bits[didx] &&
-                        (dut.g_tile[0].u_tile.u_slice.tag_mem[didx] ==
+                        (dump_tags[0*SETS*WAYS+didx] ==
                          dtag)) begin
                         dfound = 1'b1;
                         dword  = dut.g_tile[0].u_tile.u_slice.data_mem[didx]
@@ -339,7 +352,7 @@ module tb_tnca_top;
                     end
                     if (!dfound && dhome == 1 &&
                         dut.g_tile[1].u_tile.u_slice.v_bits[didx] &&
-                        (dut.g_tile[1].u_tile.u_slice.tag_mem[didx] ==
+                        (dump_tags[1*SETS*WAYS+didx] ==
                          dtag)) begin
                         dfound = 1'b1;
                         dword  = dut.g_tile[1].u_tile.u_slice.data_mem[didx]
@@ -347,7 +360,7 @@ module tb_tnca_top;
                     end
                     if (!dfound && dhome == 2 &&
                         dut.g_tile[2].u_tile.u_slice.v_bits[didx] &&
-                        (dut.g_tile[2].u_tile.u_slice.tag_mem[didx] ==
+                        (dump_tags[2*SETS*WAYS+didx] ==
                          dtag)) begin
                         dfound = 1'b1;
                         dword  = dut.g_tile[2].u_tile.u_slice.data_mem[didx]
@@ -355,7 +368,7 @@ module tb_tnca_top;
                     end
                     if (!dfound && dhome == 3 &&
                         dut.g_tile[3].u_tile.u_slice.v_bits[didx] &&
-                        (dut.g_tile[3].u_tile.u_slice.tag_mem[didx] ==
+                        (dump_tags[3*SETS*WAYS+didx] ==
                          dtag)) begin
                         dfound = 1'b1;
                         dword  = dut.g_tile[3].u_tile.u_slice.data_mem[didx]

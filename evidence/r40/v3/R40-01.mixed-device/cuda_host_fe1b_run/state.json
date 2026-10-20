@@ -1,0 +1,28 @@
+{
+  "status": "complete-review-required",
+  "software_tree": "files:fe1b5199db515440d2d3407aed61ef1eed5edb627e5baf9cda10be5a7198cf75",
+  "completed": [
+    {
+      "name": "storage-owner-unit",
+      "exit_code": 0
+    },
+    {
+      "name": "signed-copy-range",
+      "exit_code": 0
+    },
+    {
+      "name": "native-recovery",
+      "exit_code": 0
+    },
+    {
+      "name": "cuda-device-conformance",
+      "exit_code": 0
+    }
+  ],
+  "required_gate_promotions": [],
+  "scope": "Complete repaired-source CUDA-host conformance and recovery on GB10; actual CUDA/TNCA coexistence, TNCA functional RTL only; no FPGA-host simulation or physical card",
+  "observed_utc": "2026-10-20T03:22:31.438499+00:00",
+  "current": "cuda-device-conformance",
+  "child_pid": 3645893,
+  "exit_code": 0
+}

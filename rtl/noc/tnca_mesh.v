@@ -17,7 +17,8 @@ module tnca_mesh #(
     parameter PAYLOAD_W = 144,
     parameter NV        = 2,
     parameter DEPTH     = 4,
-    parameter AW        = 2
+    parameter AW        = 2,
+    parameter LINK_STAGES = 0
 ) (
     input  wire                                  clk,
     input  wire                                  rst_n,
@@ -84,9 +85,10 @@ module tnca_mesh #(
                     if (x + 1 < NX) begin : g_e
                         localparam integer PEER = y*NX + (x+1);
                         localparam integer PW_ = PEER*NC + P_WEST*NV + v;
-                        assign r_in_valid[PW_]          = r_out_valid[EC];
-                        assign r_in_flit[PW_*FW +: FW]  = r_out_flit[EC*FW +: FW];
-                        assign r_out_ready[EC]          = r_in_ready[PW_];
+                        tnca_elastic_link #(.W(FW),.STAGES(LINK_STAGES)) link(
+                            .clk(clk),.rst_n(rst_n),
+                            .in_valid(r_out_valid[EC]),.in_ready(r_out_ready[EC]),.in_data(r_out_flit[EC*FW+:FW]),
+                            .out_valid(r_in_valid[PW_]),.out_ready(r_in_ready[PW_]),.out_data(r_in_flit[PW_*FW+:FW]),.empty());
                     end else begin : g_e_edge
                         assign r_out_ready[EC] = 1'b1;
                     end
@@ -98,18 +100,20 @@ module tnca_mesh #(
                     end else begin : g_w
                         localparam integer PEER = y*NX + (x-1);
                         localparam integer PE_ = PEER*NC + P_EAST*NV + v;
-                        assign r_in_valid[PE_]         = r_out_valid[WC];
-                        assign r_in_flit[PE_*FW +: FW] = r_out_flit[WC*FW +: FW];
-                        assign r_out_ready[WC]         = r_in_ready[PE_];
+                        tnca_elastic_link #(.W(FW),.STAGES(LINK_STAGES)) link(
+                            .clk(clk),.rst_n(rst_n),
+                            .in_valid(r_out_valid[WC]),.in_ready(r_out_ready[WC]),.in_data(r_out_flit[WC*FW+:FW]),
+                            .out_valid(r_in_valid[PE_]),.out_ready(r_in_ready[PE_]),.out_data(r_in_flit[PE_*FW+:FW]),.empty());
                     end
 
                     // ---- north / south ------------------------------------
                     if (y + 1 < NY) begin : g_n
                         localparam integer PEER = (y+1)*NX + x;
                         localparam integer PS_ = PEER*NC + P_SOUTH*NV + v;
-                        assign r_in_valid[PS_]         = r_out_valid[NC_];
-                        assign r_in_flit[PS_*FW +: FW] = r_out_flit[NC_*FW +: FW];
-                        assign r_out_ready[NC_]        = r_in_ready[PS_];
+                        tnca_elastic_link #(.W(FW),.STAGES(LINK_STAGES)) link(
+                            .clk(clk),.rst_n(rst_n),
+                            .in_valid(r_out_valid[NC_]),.in_ready(r_out_ready[NC_]),.in_data(r_out_flit[NC_*FW+:FW]),
+                            .out_valid(r_in_valid[PS_]),.out_ready(r_in_ready[PS_]),.out_data(r_in_flit[PS_*FW+:FW]),.empty());
                     end else begin : g_n_edge
                         assign r_out_ready[NC_] = 1'b1;
                     end
@@ -121,9 +125,10 @@ module tnca_mesh #(
                     end else begin : g_s
                         localparam integer PEER = (y-1)*NX + x;
                         localparam integer PN_ = PEER*NC + P_NORTH*NV + v;
-                        assign r_in_valid[PN_]         = r_out_valid[SC];
-                        assign r_in_flit[PN_*FW +: FW] = r_out_flit[SC*FW +: FW];
-                        assign r_out_ready[SC]         = r_in_ready[PN_];
+                        tnca_elastic_link #(.W(FW),.STAGES(LINK_STAGES)) link(
+                            .clk(clk),.rst_n(rst_n),
+                            .in_valid(r_out_valid[SC]),.in_ready(r_out_ready[SC]),.in_data(r_out_flit[SC*FW+:FW]),
+                            .out_valid(r_in_valid[PN_]),.out_ready(r_in_ready[PN_]),.out_data(r_in_flit[PN_*FW+:FW]),.empty());
                     end
                 end
             end

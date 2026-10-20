@@ -1,0 +1,14 @@
+{
+  "root": "/home/zhongchun/r40_bucket_full_80dd_cpu",
+  "source": "/home/zhongchun/r40_bucket_full_80dd_source",
+  "pid": 2434623,
+  "controller_sha256": "ea31c245276891a0078d01f3f2dcb687f5246b27488cab59b2e9fae02daa5f31",
+  "file_sha256": {
+    "python/tnca/runtime.py": "107a91f65890207437ea67572873b28e41877c601ef52a085ac4a7c4b09e299f",
+    "tools/r40/native_model.py": "d89fdccff35691d48837d18cd5eb605e02af001fdadaf6bfa7d8e336dce99481",
+    "tools/r40/bucket_decode.py": "6fe4e414e0b83700eaa4b5463a6455b28cfc7c625924818c4580ff44ced68001",
+    "tools/r40/bucket_decode_tests.py": "a8a33b1ad6c064b77185fdc646d8a7c16a28269b14e854dcb0dba7c79a406944",
+    "tools/r40/residency_acceptance.py": "ae05acee826d364b0b4275ac8537ce777765212bbc2db38d2ceccddef5dc744e"
+  },
+  "scope": "Full original-model reference and standard Torch fixed-bucket guard/alias checks only; no hardware or performance claim"
+}

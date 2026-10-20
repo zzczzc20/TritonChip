@@ -1,0 +1,1370 @@
+{
+ "summary": "Final campaign: 195 runs, 256 G modelled cycles in 9.6 process-hours; per run 5.9 M cycles per second of model time (median; 1.3-51.7 M), 11.5 M median on the 23 runs above 1 G cycles. M1 ran 1-8 M cycles/s per run.",
+ "runs": [
+  {
+   "key": "model.llama_prefill/large/fp16-b1-s512@3a87f5510e",
+   "timed_cycles": 59133714964,
+   "model_launch_host_s": 15149.852086,
+   "process_wall_s": 15206.12,
+   "cycles_per_s": 3903253.617812252
+  },
+  {
+   "key": "op.linear/hbm/fp16-m512-k4096-n11008@56dc9373e2",
+   "timed_cycles": 51890757018,
+   "model_launch_host_s": 1981.286106,
+   "process_wall_s": 1988.67,
+   "cycles_per_s": 26190441.07807416
+  },
+  {
+   "key": "op.matmul/hbm/fp16-m4096-k4096-n4096@56dc9373e2",
+   "timed_cycles": 38212131430,
+   "model_launch_host_s": 3314.777913,
+   "process_wall_s": 3321.87,
+   "cycles_per_s": 11527810.439468196
+  },
+  {
+   "key": "op.matmul/hbm/fp16-m4096-k4096-n4096@3e8d22ab91",
+   "timed_cycles": 10796766535,
+   "model_launch_host_s": 1031.733056,
+   "process_wall_s": 1038.34,
+   "cycles_per_s": 10464689.943015648
+  },
+  {
+   "key": "op.matmul/hbm/fp16-m4096-k4096-n4096@c9af45d482",
+   "timed_cycles": 10796766535,
+   "model_launch_host_s": 933.566059,
+   "process_wall_s": 940.18,
+   "cycles_per_s": 11565080.40423522
+  },
+  {
+   "key": "op.matmul/hbm/fp16-m4096-k4096-n4096@c9af45d482",
+   "timed_cycles": 10796766535,
+   "model_launch_host_s": 938.185208,
+   "process_wall_s": 944.59,
+   "cycles_per_s": 11508139.803244479
+  },
+  {
+   "key": "op.linear/hbm/fp16-m512-k4096-n11008@3e8d22ab91",
+   "timed_cycles": 6436797609,
+   "model_launch_host_s": 305.770372,
+   "process_wall_s": 310.74,
+   "cycles_per_s": 21051083.42217015
+  },
+  {
+   "key": "op.linear/hbm/fp16-m512-k4096-n11008@c9af45d482",
+   "timed_cycles": 6436797609,
+   "model_launch_host_s": 305.638785,
+   "process_wall_s": 310.66,
+   "cycles_per_s": 21060146.568113077
+  },
+  {
+   "key": "op.linear/hbm/fp16-m512-k4096-n11008@c9af45d482",
+   "timed_cycles": 6436797609,
+   "model_launch_host_s": 310.819304,
+   "process_wall_s": 315.96,
+   "cycles_per_s": 20709130.75913715
+  },
+  {
+   "key": "model.llama_prefill/hbm/fp16-b1-s512@3a87f5510e",
+   "timed_cycles": 4273063494,
+   "model_launch_host_s": 1195.210865,
+   "process_wall_s": 1209.67,
+   "cycles_per_s": 3575154.4929270702
+  },
+  {
+   "key": "op.matmul/hbm/fp16-m4096-k4096-n4096@3a87f5510e",
+   "timed_cycles": 4241705681,
+   "model_launch_host_s": 1095.509842,
+   "process_wall_s": 1100.24,
+   "cycles_per_s": 3871901.025787407
+  },
+  {
+   "key": "model.llama_decode/large/fp16-b1-p512@3a87f5510e",
+   "timed_cycles": 2484631459,
+   "model_launch_host_s": 714.535179,
+   "process_wall_s": 759.25,
+   "cycles_per_s": 3477269.604104405
+  },
+  {
+   "key": "op.linear/large/fp16-m512-k2048-n8192@c9af45d482",
+   "timed_cycles": 2426128365,
+   "model_launch_host_s": 113.191335,
+   "process_wall_s": 117.4,
+   "cycles_per_s": 21433870.048444964
+  },
+  {
+   "key": "op.linear/large/fp16-m512-k2048-n8192@3e8d22ab91",
+   "timed_cycles": 2426128365,
+   "model_launch_host_s": 112.021612,
+   "process_wall_s": 116.18,
+   "cycles_per_s": 21657681.24279447
+  },
+  {
+   "key": "op.transpose/hbm/fp32-r8192-c8192@c9af45d482",
+   "timed_cycles": 1986335713,
+   "model_launch_host_s": 38.411297,
+   "process_wall_s": 46.27,
+   "cycles_per_s": 51712279.15058427
+  },
+  {
+   "key": "op.matmul/large/fp32-m2048-k2048-n2048@3a87f5510e",
+   "timed_cycles": 1666948771,
+   "model_launch_host_s": 675.910964,
+   "process_wall_s": 680.38,
+   "cycles_per_s": 2466225.3755067065
+  },
+  {
+   "key": "op.gemv/hbm/fp16-k4096-n11008@56dc9373e2",
+   "timed_cycles": 1660201974,
+   "model_launch_host_s": 63.724575,
+   "process_wall_s": 68.93,
+   "cycles_per_s": 26052774.365305692
+  },
+  {
+   "key": "model.mlp/large/fp16-t512-d2048@3a87f5510e",
+   "timed_cycles": 1384423040,
+   "model_launch_host_s": 343.848766,
+   "process_wall_s": 349.07,
+   "cycles_per_s": 4026255.659152198
+  },
+  {
+   "key": "op.matmul/large/fp16-m2048-k2048-n2048@3e8d22ab91",
+   "timed_cycles": 1366557866,
+   "model_launch_host_s": 114.79814,
+   "process_wall_s": 118.64,
+   "cycles_per_s": 11904007.033563435
+  },
+  {
+   "key": "op.matmul/large/fp16-m2048-k2048-n2048@c9af45d482",
+   "timed_cycles": 1366557866,
+   "model_launch_host_s": 118.269375,
+   "process_wall_s": 122.07,
+   "cycles_per_s": 11554621.52395749
+  },
+  {
+   "key": "op.linear/hbm/fp16-m512-k4096-n11008@3a87f5510e",
+   "timed_cycles": 1208464313,
+   "model_launch_host_s": 333.259824,
+   "process_wall_s": 338.38,
+   "cycles_per_s": 3626192.616005223
+  },
+  {
+   "key": "op.attention_prefill/large/fp16-b1-h32-s512-d64@3a87f5510e",
+   "timed_cycles": 1148550136,
+   "model_launch_host_s": 322.821528,
+   "process_wall_s": 328.95,
+   "cycles_per_s": 3557848.645087883
+  },
+  {
+   "key": "model.gpt2_block/large/fp16-d1024-h16-b1-s512@3a87f5510e",
+   "timed_cycles": 1101283551,
+   "model_launch_host_s": 298.162724,
+   "process_wall_s": 305.81,
+   "cycles_per_s": 3693565.500830345
+  },
+  {
+   "key": "model.resnet_block/large/fp32-n8-c64-hw56@3a87f5510e",
+   "timed_cycles": 964058305,
+   "model_launch_host_s": 403.954335,
+   "process_wall_s": 413.82,
+   "cycles_per_s": 2386552.690417346
+  },
+  {
+   "key": "op.transpose/hbm/fp32-r8192-c8192@28116d0523",
+   "timed_cycles": 810966321,
+   "model_launch_host_s": 39.528841,
+   "process_wall_s": 47.24,
+   "cycles_per_s": 20515813.27669081
+  },
+  {
+   "key": "op.bmm/large/fp16-b32-m512-k64-n512@3a87f5510e",
+   "timed_cycles": 771676726,
+   "model_launch_host_s": 109.286863,
+   "process_wall_s": 113.22,
+   "cycles_per_s": 7061020.0056707645
+  },
+  {
+   "key": "op.silu/hbm/fp16-n67108864@c9af45d482",
+   "timed_cycles": 701747820,
+   "model_launch_host_s": 47.999855,
+   "process_wall_s": 54.35,
+   "cycles_per_s": 14619790.41395021
+  },
+  {
+   "key": "op.silu/hbm/fp16-n67108864@c9af45d482",
+   "timed_cycles": 701747820,
+   "model_launch_host_s": 48.192152,
+   "process_wall_s": 54.3,
+   "cycles_per_s": 14561454.321442213
+  },
+  {
+   "key": "op.linear/large/fp16-m512-k2048-n8192@3a87f5510e",
+   "timed_cycles": 679782392,
+   "model_launch_host_s": 138.353408,
+   "process_wall_s": 142.68,
+   "cycles_per_s": 4913376.56098793
+  },
+  {
+   "key": "op.silu/hbm/fp16-n67108864@28116d0523",
+   "timed_cycles": 673612703,
+   "model_launch_host_s": 48.27263,
+   "process_wall_s": 54.54,
+   "cycles_per_s": 13954340.233792938
+  },
+  {
+   "key": "op.softmax/hbm/fp16-r4096-c8192@2d458dd482",
+   "timed_cycles": 657303065,
+   "model_launch_host_s": 44.864071,
+   "process_wall_s": 50.74,
+   "cycles_per_s": 14650990.209961105
+  },
+  {
+   "key": "op.softmax/hbm/fp16-r4096-c8192@2d458dd482",
+   "timed_cycles": 657303065,
+   "model_launch_host_s": 44.66624,
+   "process_wall_s": 50.51,
+   "cycles_per_s": 14715880.830801966
+  },
+  {
+   "key": "op.silu/hbm/fp16-n67108864@12d4e067cd",
+   "timed_cycles": 632133012,
+   "model_launch_host_s": 48.796469,
+   "process_wall_s": 55.11,
+   "cycles_per_s": 12954482.669637427
+  },
+  {
+   "key": "op.silu/hbm/fp16-n67108864@f7bad7ebed",
+   "timed_cycles": 619871191,
+   "model_launch_host_s": 47.550746,
+   "process_wall_s": 53.29,
+   "cycles_per_s": 13035992.978953475
+  },
+  {
+   "key": "op.softmax/hbm/fp16-r4096-c8192@c9af45d482",
+   "timed_cycles": 617831538,
+   "model_launch_host_s": 42.909821,
+   "process_wall_s": 48.47,
+   "cycles_per_s": 14398371.365846528
+  },
+  {
+   "key": "op.softmax/hbm/fp16-r4096-c8192@c9af45d482",
+   "timed_cycles": 617831538,
+   "model_launch_host_s": 42.580964,
+   "process_wall_s": 48.24,
+   "cycles_per_s": 14509571.413178902
+  },
+  {
+   "key": "op.softmax/hbm/fp16-r4096-c8192@28116d0523",
+   "timed_cycles": 604916926,
+   "model_launch_host_s": 42.33102,
+   "process_wall_s": 48.12,
+   "cycles_per_s": 14290157.099923413
+  },
+  {
+   "key": "op.softmax/hbm/fp16-r4096-c8192@12d4e067cd",
+   "timed_cycles": 569833157,
+   "model_launch_host_s": 42.481026,
+   "process_wall_s": 48.22,
+   "cycles_per_s": 13413827.552093493
+  },
+  {
+   "key": "op.softmax/hbm/fp16-r4096-c8192@f7bad7ebed",
+   "timed_cycles": 569494389,
+   "model_launch_host_s": 43.046933,
+   "process_wall_s": 47.72,
+   "cycles_per_s": 13229615.893889582
+  },
+  {
+   "key": "op.transpose/hbm/fp32-r8192-c8192@12d4e067cd",
+   "timed_cycles": 537740671,
+   "model_launch_host_s": 38.13282,
+   "process_wall_s": 46.14,
+   "cycles_per_s": 14101780.85439262
+  },
+  {
+   "key": "op.add/hbm/fp16-n67108864@c9af45d482",
+   "timed_cycles": 535464529,
+   "model_launch_host_s": 34.351589,
+   "process_wall_s": 42.05,
+   "cycles_per_s": 15587765.940026822
+  },
+  {
+   "key": "op.add/hbm/fp16-n67108864@c9af45d482",
+   "timed_cycles": 535464529,
+   "model_launch_host_s": 34.100182,
+   "process_wall_s": 41.85,
+   "cycles_per_s": 15702688.30236742
+  },
+  {
+   "key": "op.matmul/large/fp16-m2048-k2048-n2048@3a87f5510e",
+   "timed_cycles": 524818310,
+   "model_launch_host_s": 135.380249,
+   "process_wall_s": 139.24,
+   "cycles_per_s": 3876623.908410746
+  },
+  {
+   "key": "op.add/hbm/fp16-n67108864@28116d0523",
+   "timed_cycles": 521506535,
+   "model_launch_host_s": 34.386328,
+   "process_wall_s": 42.41,
+   "cycles_per_s": 15166101.335391207
+  },
+  {
+   "key": "op.transpose/hbm/fp32-r8192-c8192@f7bad7ebed",
+   "timed_cycles": 511508384,
+   "model_launch_host_s": 36.627983,
+   "process_wall_s": 41.91,
+   "cycles_per_s": 13964961.816215761
+  },
+  {
+   "key": "op.add/hbm/fp16-n67108864@12d4e067cd",
+   "timed_cycles": 478211219,
+   "model_launch_host_s": 34.784312,
+   "process_wall_s": 42.67,
+   "cycles_per_s": 13747899.31162071
+  },
+  {
+   "key": "op.add/hbm/fp16-n67108864@f7bad7ebed",
+   "timed_cycles": 475300911,
+   "model_launch_host_s": 34.479548,
+   "process_wall_s": 40.38,
+   "cycles_per_s": 13785009.913703045
+  },
+  {
+   "key": "op.silu/hbm/fp16-n67108864@2d458dd482",
+   "timed_cycles": 474117935,
+   "model_launch_host_s": 44.605421,
+   "process_wall_s": 50.88,
+   "cycles_per_s": 10629155.030282082
+  },
+  {
+   "key": "op.silu/hbm/fp16-n67108864@2d458dd482",
+   "timed_cycles": 474117935,
+   "model_launch_host_s": 37.370213,
+   "process_wall_s": 43.77,
+   "cycles_per_s": 12687054.660352083
+  },
+  {
+   "key": "op.conv2d/large/fp32-n8-cin64-h56-w56-cout64@3a87f5510e",
+   "timed_cycles": 455820057,
+   "model_launch_host_s": 185.657393,
+   "process_wall_s": 192.24,
+   "cycles_per_s": 2455167.820868841
+  },
+  {
+   "key": "op.add/hbm/fp16-n67108864@2d458dd482",
+   "timed_cycles": 352128524,
+   "model_launch_host_s": 28.502288,
+   "process_wall_s": 36.33,
+   "cycles_per_s": 12354394.987518195
+  },
+  {
+   "key": "op.add/hbm/fp16-n67108864@2d458dd482",
+   "timed_cycles": 352128524,
+   "model_launch_host_s": 27.566755,
+   "process_wall_s": 35.37,
+   "cycles_per_s": 12773666.106148511
+  },
+  {
+   "key": "op.copy/hbm/fp16-n67108864@c9af45d482",
+   "timed_cycles": 348125411,
+   "model_launch_host_s": 21.786546,
+   "process_wall_s": 28.05,
+   "cycles_per_s": 15978917.03439361
+  },
+  {
+   "key": "op.copy/hbm/fp16-n67108864@c9af45d482",
+   "timed_cycles": 348125411,
+   "model_launch_host_s": 22.413003,
+   "process_wall_s": 28.65,
+   "cycles_per_s": 15532296.631558029
+  },
+  {
+   "key": "op.transpose/hbm/fp32-r8192-c8192@3a87f5510e",
+   "timed_cycles": 345833455,
+   "model_launch_host_s": 49.445731,
+   "process_wall_s": 54.82,
+   "cycles_per_s": 6994202.492425484
+  },
+  {
+   "key": "op.transpose/hbm/fp32-r8192-c8192@1b75633faf",
+   "timed_cycles": 345833455,
+   "model_launch_host_s": 50.289259,
+   "process_wall_s": 55.68,
+   "cycles_per_s": 6876885.081961538
+  },
+  {
+   "key": "op.copy/hbm/fp16-n67108864@28116d0523",
+   "timed_cycles": 320112373,
+   "model_launch_host_s": 21.619016,
+   "process_wall_s": 27.99,
+   "cycles_per_s": 14806981.64060751
+  },
+  {
+   "key": "op.embedding/hbm/fp16-v65536-d2048-t8192@3a87f5510e",
+   "timed_cycles": 297703488,
+   "model_launch_host_s": 97.771741,
+   "process_wall_s": 104.44,
+   "cycles_per_s": 3044882.754005577
+  },
+  {
+   "key": "op.copy/hbm/fp16-n67108864@12d4e067cd",
+   "timed_cycles": 291473017,
+   "model_launch_host_s": 21.54498,
+   "process_wall_s": 27.86,
+   "cycles_per_s": 13528581.460739346
+  },
+  {
+   "key": "op.copy/hbm/fp16-n67108864@f7bad7ebed",
+   "timed_cycles": 288847706,
+   "model_launch_host_s": 21.752649,
+   "process_wall_s": 27.64,
+   "cycles_per_s": 13278737.040256567
+  },
+  {
+   "key": "op.rmsnorm/hbm/fp16-r8192-d4096@c9af45d482",
+   "timed_cycles": 287220999,
+   "model_launch_host_s": 39.571724,
+   "process_wall_s": 44.5,
+   "cycles_per_s": 7258238.20564401
+  },
+  {
+   "key": "op.rmsnorm/hbm/fp16-r8192-d4096@c9af45d482",
+   "timed_cycles": 287220999,
+   "model_launch_host_s": 40.297813,
+   "process_wall_s": 45.43,
+   "cycles_per_s": 7127458.728343397
+  },
+  {
+   "key": "op.rmsnorm/hbm/fp16-r8192-d4096@28116d0523",
+   "timed_cycles": 285787748,
+   "model_launch_host_s": 40.626802,
+   "process_wall_s": 45.74,
+   "cycles_per_s": 7034463.308236765
+  },
+  {
+   "key": "op.rmsnorm/hbm/fp16-r8192-d4096@12d4e067cd",
+   "timed_cycles": 276143450,
+   "model_launch_host_s": 40.475755,
+   "process_wall_s": 45.69,
+   "cycles_per_s": 6822440.989673942
+  },
+  {
+   "key": "op.rmsnorm/hbm/fp16-r8192-d4096@f7bad7ebed",
+   "timed_cycles": 275346286,
+   "model_launch_host_s": 40.959531,
+   "process_wall_s": 45.16,
+   "cycles_per_s": 6722398.408321619
+  },
+  {
+   "key": "op.copy/hbm/fp16-n67108864@2d458dd482",
+   "timed_cycles": 251685343,
+   "model_launch_host_s": 17.802456,
+   "process_wall_s": 24.26,
+   "cycles_per_s": 14137675.32974102
+  },
+  {
+   "key": "op.copy/hbm/fp16-n67108864@2d458dd482",
+   "timed_cycles": 251685343,
+   "model_launch_host_s": 17.865385,
+   "process_wall_s": 24.28,
+   "cycles_per_s": 14087876.807580693
+  },
+  {
+   "key": "op.gemv/hbm/fp16-k4096-n11008@3e8d22ab91",
+   "timed_cycles": 233362969,
+   "model_launch_host_s": 13.856675,
+   "process_wall_s": 18.84,
+   "cycles_per_s": 16841195.236230914
+  },
+  {
+   "key": "op.gemv/hbm/fp16-k4096-n11008@c9af45d482",
+   "timed_cycles": 233362969,
+   "model_launch_host_s": 13.759595,
+   "process_wall_s": 18.7,
+   "cycles_per_s": 16960017.28248542
+  },
+  {
+   "key": "op.gemv/hbm/fp16-k4096-n11008@c9af45d482",
+   "timed_cycles": 233362969,
+   "model_launch_host_s": 13.945339,
+   "process_wall_s": 19.01,
+   "cycles_per_s": 16734119.478916934
+  },
+  {
+   "key": "op.rmsnorm/hbm/fp16-r8192-d4096@2d458dd482",
+   "timed_cycles": 229794509,
+   "model_launch_host_s": 28.603278,
+   "process_wall_s": 33.63,
+   "cycles_per_s": 8033852.238893738
+  },
+  {
+   "key": "op.rmsnorm/hbm/fp16-r8192-d4096@2d458dd482",
+   "timed_cycles": 229794509,
+   "model_launch_host_s": 28.785471,
+   "process_wall_s": 33.91,
+   "cycles_per_s": 7983003.265779462
+  },
+  {
+   "key": "op.softmax/hbm/fp16-r4096-c8192@3a87f5510e",
+   "timed_cycles": 215618780,
+   "model_launch_host_s": 54.765015,
+   "process_wall_s": 60.34,
+   "cycles_per_s": 3937162.8036621558
+  },
+  {
+   "key": "op.softmax/hbm/fp16-r4096-c8192@1b75633faf",
+   "timed_cycles": 215618780,
+   "model_launch_host_s": 55.703339,
+   "process_wall_s": 59.97,
+   "cycles_per_s": 3870841.2075620815
+  },
+  {
+   "key": "op.silu/hbm/fp16-n67108864@3a87f5510e",
+   "timed_cycles": 212329688,
+   "model_launch_host_s": 56.069536,
+   "process_wall_s": 60.94,
+   "cycles_per_s": 3786899.324438854
+  },
+  {
+   "key": "op.silu/hbm/fp16-n67108864@1b75633faf",
+   "timed_cycles": 212329688,
+   "model_launch_host_s": 55.483857,
+   "process_wall_s": 60.59,
+   "cycles_per_s": 3826873.247114021
+  },
+  {
+   "key": "op.add/hbm/fp16-n67108864@3a87f5510e",
+   "timed_cycles": 178426926,
+   "model_launch_host_s": 40.008355,
+   "process_wall_s": 45.92,
+   "cycles_per_s": 4459741.621468816
+  },
+  {
+   "key": "op.add/hbm/fp16-n67108864@1b75633faf",
+   "timed_cycles": 178426926,
+   "model_launch_host_s": 39.700836,
+   "process_wall_s": 45.67,
+   "cycles_per_s": 4494286.367168691
+  },
+  {
+   "key": "model.llama_decode/hbm/fp16-b1-p512@3a87f5510e",
+   "timed_cycles": 169790093,
+   "model_launch_host_s": 53.219497,
+   "process_wall_s": 65.09,
+   "cycles_per_s": 3190373.87745322
+  },
+  {
+   "key": "op.copy/hbm/fp16-n67108864@3a87f5510e",
+   "timed_cycles": 119243470,
+   "model_launch_host_s": 24.835101,
+   "process_wall_s": 29.73,
+   "cycles_per_s": 4801408.699727051
+  },
+  {
+   "key": "op.copy/hbm/fp16-n67108864@1b75633faf",
+   "timed_cycles": 119243470,
+   "model_launch_host_s": 25.315347,
+   "process_wall_s": 30.11,
+   "cycles_per_s": 4710323.346545477
+  },
+  {
+   "key": "op.softmax/large/fp16-r4096-c4096@3a87f5510e",
+   "timed_cycles": 108492054,
+   "model_launch_host_s": 27.519681,
+   "process_wall_s": 31.6,
+   "cycles_per_s": 3942344.171794724
+  },
+  {
+   "key": "op.rmsnorm/hbm/fp16-r8192-d4096@3a87f5510e",
+   "timed_cycles": 100878671,
+   "model_launch_host_s": 46.304331,
+   "process_wall_s": 51.81,
+   "cycles_per_s": 2178601.198233487
+  },
+  {
+   "key": "op.rmsnorm/hbm/fp16-r8192-d4096@1b75633faf",
+   "timed_cycles": 100878671,
+   "model_launch_host_s": 44.135756,
+   "process_wall_s": 48.54,
+   "cycles_per_s": 2285645.022144857
+  },
+  {
+   "key": "op.gemv/large/fp16-k2048-n8192@c9af45d482",
+   "timed_cycles": 87221320,
+   "model_launch_host_s": 5.012846,
+   "process_wall_s": 10.07,
+   "cycles_per_s": 17399561.047756106
+  },
+  {
+   "key": "op.gemv/large/fp16-k2048-n8192@3e8d22ab91",
+   "timed_cycles": 87221320,
+   "model_launch_host_s": 5.026859,
+   "process_wall_s": 9.14,
+   "cycles_per_s": 17351057.588844247
+  },
+  {
+   "key": "op.transpose/large/fp32-r4096-c4096@3a87f5510e",
+   "timed_cycles": 86959101,
+   "model_launch_host_s": 12.506305,
+   "process_wall_s": 16.56,
+   "cycles_per_s": 6953220.875390453
+  },
+  {
+   "key": "op.gemv/hbm/fp16-k4096-n11008@3a87f5510e",
+   "timed_cycles": 81596269,
+   "model_launch_host_s": 16.20968,
+   "process_wall_s": 20.79,
+   "cycles_per_s": 5033798.878201174
+  },
+  {
+   "key": "op.gelu_tanh/large/fp16-n16777216@3a87f5510e",
+   "timed_cycles": 69142347,
+   "model_launch_host_s": 20.181562,
+   "process_wall_s": 24.32,
+   "cycles_per_s": 3426015.6374417404
+  },
+  {
+   "key": "op.swiglu/large/fp16-n16777216@3a87f5510e",
+   "timed_cycles": 65993105,
+   "model_launch_host_s": 17.267593,
+   "process_wall_s": 21.7,
+   "cycles_per_s": 3821789.464229322
+  },
+  {
+   "key": "model.llama_prefill/medium/fp16-b1-s64@c9af45d482",
+   "timed_cycles": 58880283,
+   "model_launch_host_s": 7.751673,
+   "process_wall_s": 22.01,
+   "cycles_per_s": 7595816.154783619
+  },
+  {
+   "key": "model.llama_prefill/medium/fp16-b1-s64@c9af45d482",
+   "timed_cycles": 58880283,
+   "model_launch_host_s": 7.335725,
+   "process_wall_s": 20.19,
+   "cycles_per_s": 8026511.762641048
+  },
+  {
+   "key": "model.llama_prefill/medium/fp16-b1-s64@4e42742f59",
+   "timed_cycles": 58139948,
+   "model_launch_host_s": 7.436004,
+   "process_wall_s": 20.11,
+   "cycles_per_s": 7818708.54292171
+  },
+  {
+   "key": "model.llama_prefill/medium/fp16-b1-s64@4e42742f59",
+   "timed_cycles": 58139948,
+   "model_launch_host_s": 8.465829,
+   "process_wall_s": 22.77,
+   "cycles_per_s": 6867602.45216387
+  },
+  {
+   "key": "op.silu/large/fp16-n16777216@3a87f5510e",
+   "timed_cycles": 53081160,
+   "model_launch_host_s": 15.436698,
+   "process_wall_s": 19.66,
+   "cycles_per_s": 3438634.350429088
+  },
+  {
+   "key": "op.add/large/fp16-n16777216@3a87f5510e",
+   "timed_cycles": 44012300,
+   "model_launch_host_s": 9.871658,
+   "process_wall_s": 14.06,
+   "cycles_per_s": 4458450.647297546
+  },
+  {
+   "key": "model.llama_decode/medium/fp16-b1-p256@4e42742f59",
+   "timed_cycles": 36997980,
+   "model_launch_host_s": 8.063566,
+   "process_wall_s": 17.54,
+   "cycles_per_s": 4588290.093985713
+  },
+  {
+   "key": "model.llama_decode/medium/fp16-b1-p256@4e42742f59",
+   "timed_cycles": 36997980,
+   "model_launch_host_s": 7.003713,
+   "process_wall_s": 15.97,
+   "cycles_per_s": 5282623.6597644705
+  },
+  {
+   "key": "model.llama_decode/medium/fp16-b1-p256@c9af45d482",
+   "timed_cycles": 36989921,
+   "model_launch_host_s": 10.609393,
+   "process_wall_s": 20.69,
+   "cycles_per_s": 3486525.6664542444
+  },
+  {
+   "key": "model.llama_decode/medium/fp16-b1-p256@c9af45d482",
+   "timed_cycles": 36989921,
+   "model_launch_host_s": 7.711695,
+   "process_wall_s": 17.91,
+   "cycles_per_s": 4796600.617633348
+  },
+  {
+   "key": "op.gemv/large/fp16-k2048-n8192@3a87f5510e",
+   "timed_cycles": 30429443,
+   "model_launch_host_s": 6.076865,
+   "process_wall_s": 10.23,
+   "cycles_per_s": 5007424.551968819
+  },
+  {
+   "key": "model.llama_prefill/small/fp16-b1-s64@4e42742f59",
+   "timed_cycles": 30205840,
+   "model_launch_host_s": 3.465746,
+   "process_wall_s": 15.86,
+   "cycles_per_s": 8715537.72261441
+  },
+  {
+   "key": "model.llama_prefill/small/fp16-b1-s64@4e42742f59",
+   "timed_cycles": 30205840,
+   "model_launch_host_s": 3.460147,
+   "process_wall_s": 15.91,
+   "cycles_per_s": 8729640.67711574
+  },
+  {
+   "key": "model.llama_prefill/small/fp16-b1-s64@c9af45d482",
+   "timed_cycles": 30079374,
+   "model_launch_host_s": 3.458912,
+   "process_wall_s": 15.98,
+   "cycles_per_s": 8696195.219768528
+  },
+  {
+   "key": "model.llama_prefill/small/fp16-b1-s64@c9af45d482",
+   "timed_cycles": 30079374,
+   "model_launch_host_s": 3.481331,
+   "process_wall_s": 16.24,
+   "cycles_per_s": 8640193.650072344
+  },
+  {
+   "key": "op.attention_decode/large/fp16-b1-h32-l2048-d64@3a87f5510e",
+   "timed_cycles": 26361746,
+   "model_launch_host_s": 11.31999,
+   "process_wall_s": 15.48,
+   "cycles_per_s": 2328778.205634457
+  },
+  {
+   "key": "op.embedding/large/fp16-v128256-d2048-t512@3a87f5510e",
+   "timed_cycles": 18620736,
+   "model_launch_host_s": 6.9764,
+   "process_wall_s": 14.58,
+   "cycles_per_s": 2669103.8357892325
+  },
+  {
+   "key": "model.gpt2_block/medium/fp16-d160-h5-b1-s64@4e42742f59",
+   "timed_cycles": 9906970,
+   "model_launch_host_s": 1.245373,
+   "process_wall_s": 8.83,
+   "cycles_per_s": 7955022.310584861
+  },
+  {
+   "key": "model.gpt2_block/medium/fp16-d160-h5-b1-s64@4e42742f59",
+   "timed_cycles": 9906970,
+   "model_launch_host_s": 1.264759,
+   "process_wall_s": 8.62,
+   "cycles_per_s": 7833089.1497905925
+  },
+  {
+   "key": "model.gpt2_block/medium/fp16-d160-h5-b1-s64@c9af45d482",
+   "timed_cycles": 9832229,
+   "model_launch_host_s": 1.268964,
+   "process_wall_s": 9.44,
+   "cycles_per_s": 7748233.204409266
+  },
+  {
+   "key": "model.gpt2_block/medium/fp16-d160-h5-b1-s64@c9af45d482",
+   "timed_cycles": 9832229,
+   "model_launch_host_s": 1.259283,
+   "process_wall_s": 8.45,
+   "cycles_per_s": 7807799.3588415
+  },
+  {
+   "key": "op.argmax/large/fp16-r64-v128256@3a87f5510e",
+   "timed_cycles": 9563298,
+   "model_launch_host_s": 4.251468,
+   "process_wall_s": 8.12,
+   "cycles_per_s": 2249410.791754754
+  },
+  {
+   "key": "model.llama_decode/small/fp16-b1-p128@4e42742f59",
+   "timed_cycles": 8443400,
+   "model_launch_host_s": 1.334464,
+   "process_wall_s": 10.29,
+   "cycles_per_s": 6327184.547503716
+  },
+  {
+   "key": "model.llama_decode/small/fp16-b1-p128@4e42742f59",
+   "timed_cycles": 8443400,
+   "model_launch_host_s": 1.653379,
+   "process_wall_s": 10.52,
+   "cycles_per_s": 5106754.107799845
+  },
+  {
+   "key": "model.llama_decode/small/fp16-b1-p128@c9af45d482",
+   "timed_cycles": 8277121,
+   "model_launch_host_s": 1.914146,
+   "process_wall_s": 10.9,
+   "cycles_per_s": 4324184.78005335
+  },
+  {
+   "key": "model.llama_decode/small/fp16-b1-p128@c9af45d482",
+   "timed_cycles": 8277121,
+   "model_launch_host_s": 2.010705,
+   "process_wall_s": 11.26,
+   "cycles_per_s": 4116526.7903546263
+  },
+  {
+   "key": "model.resnet_block/medium/fp32-n1-c24-hw16@c9af45d482",
+   "timed_cycles": 8019689,
+   "model_launch_host_s": 1.132486,
+   "process_wall_s": 10.0,
+   "cycles_per_s": 7081490.632113773
+  },
+  {
+   "key": "model.resnet_block/medium/fp32-n1-c24-hw16@c9af45d482",
+   "timed_cycles": 8019689,
+   "model_launch_host_s": 1.227753,
+   "process_wall_s": 10.91,
+   "cycles_per_s": 6532005.216032866
+  },
+  {
+   "key": "op.attention_prefill/medium/fp16-b1-h4-s96-d32@4e42742f59",
+   "timed_cycles": 7982901,
+   "model_launch_host_s": 0.994437,
+   "process_wall_s": 7.13,
+   "cycles_per_s": 8027558.306861068
+  },
+  {
+   "key": "op.attention_prefill/medium/fp16-b1-h4-s96-d32@4e42742f59",
+   "timed_cycles": 7982901,
+   "model_launch_host_s": 1.015817,
+   "process_wall_s": 7.47,
+   "cycles_per_s": 7858601.50007334
+  },
+  {
+   "key": "op.attention_prefill/medium/fp16-b1-h4-s96-d32@c9af45d482",
+   "timed_cycles": 7945135,
+   "model_launch_host_s": 0.996722,
+   "process_wall_s": 7.42,
+   "cycles_per_s": 7971264.80603418
+  },
+  {
+   "key": "op.attention_prefill/medium/fp16-b1-h4-s96-d32@c9af45d482",
+   "timed_cycles": 7945135,
+   "model_launch_host_s": 1.002904,
+   "process_wall_s": 7.18,
+   "cycles_per_s": 7922129.136986192
+  },
+  {
+   "key": "model.resnet_block/medium/fp32-n1-c24-hw16@4e42742f59",
+   "timed_cycles": 7840080,
+   "model_launch_host_s": 1.13125,
+   "process_wall_s": 9.97,
+   "cycles_per_s": 6930457.4585635355
+  },
+  {
+   "key": "model.resnet_block/medium/fp32-n1-c24-hw16@4e42742f59",
+   "timed_cycles": 7840080,
+   "model_launch_host_s": 1.084255,
+   "process_wall_s": 9.75,
+   "cycles_per_s": 7230845.142517213
+  },
+  {
+   "key": "op.rope/large/fp16-b1-h32-s512-d64@3a87f5510e",
+   "timed_cycles": 6969981,
+   "model_launch_host_s": 2.31502,
+   "process_wall_s": 6.43,
+   "cycles_per_s": 3010764.9177976865
+  },
+  {
+   "key": "model.gpt2_block/small/fp16-d128-h4-b1-s64@c9af45d482",
+   "timed_cycles": 6793602,
+   "model_launch_host_s": 0.960464,
+   "process_wall_s": 8.16,
+   "cycles_per_s": 7073250.0124939615
+  },
+  {
+   "key": "model.gpt2_block/small/fp16-d128-h4-b1-s64@c9af45d482",
+   "timed_cycles": 6793602,
+   "model_launch_host_s": 0.758867,
+   "process_wall_s": 7.86,
+   "cycles_per_s": 8952295.988625148
+  },
+  {
+   "key": "model.gpt2_block/small/fp16-d128-h4-b1-s64@4e42742f59",
+   "timed_cycles": 6672648,
+   "model_launch_host_s": 0.802419,
+   "process_wall_s": 7.93,
+   "cycles_per_s": 8315665.506424948
+  },
+  {
+   "key": "model.gpt2_block/small/fp16-d128-h4-b1-s64@4e42742f59",
+   "timed_cycles": 6672648,
+   "model_launch_host_s": 0.794159,
+   "process_wall_s": 8.83,
+   "cycles_per_s": 8402156.243271185
+  },
+  {
+   "key": "op.layernorm/large/fp16-r512-d2048@3a87f5510e",
+   "timed_cycles": 4196477,
+   "model_launch_host_s": 1.939177,
+   "process_wall_s": 6.03,
+   "cycles_per_s": 2164050.522463911
+  },
+  {
+   "key": "op.conv2d/medium/fp32-n1-cin24-h16-w16-cout24@c9af45d482",
+   "timed_cycles": 3920659,
+   "model_launch_host_s": 0.577605,
+   "process_wall_s": 5.74,
+   "cycles_per_s": 6787785.77055254
+  },
+  {
+   "key": "op.conv2d/medium/fp32-n1-cin24-h16-w16-cout24@c9af45d482",
+   "timed_cycles": 3920659,
+   "model_launch_host_s": 0.579594,
+   "process_wall_s": 5.81,
+   "cycles_per_s": 6764492.04098041
+  },
+  {
+   "key": "op.conv2d/medium/fp32-n1-cin24-h16-w16-cout24@4e42742f59",
+   "timed_cycles": 3856707,
+   "model_launch_host_s": 0.553186,
+   "process_wall_s": 5.7,
+   "cycles_per_s": 6971808.758717683
+  },
+  {
+   "key": "op.conv2d/medium/fp32-n1-cin24-h16-w16-cout24@4e42742f59",
+   "timed_cycles": 3856707,
+   "model_launch_host_s": 0.576842,
+   "process_wall_s": 6.66,
+   "cycles_per_s": 6685898.391587298
+  },
+  {
+   "key": "op.attention_prefill/small/fp16-b1-h4-s64-d32@4e42742f59",
+   "timed_cycles": 3608374,
+   "model_launch_host_s": 0.476835,
+   "process_wall_s": 6.42,
+   "cycles_per_s": 7567343.001247811
+  },
+  {
+   "key": "op.attention_prefill/small/fp16-b1-h4-s64-d32@4e42742f59",
+   "timed_cycles": 3608374,
+   "model_launch_host_s": 0.464716,
+   "process_wall_s": 6.55,
+   "cycles_per_s": 7764686.389106465
+  },
+  {
+   "key": "op.attention_prefill/small/fp16-b1-h4-s64-d32@c9af45d482",
+   "timed_cycles": 3574882,
+   "model_launch_host_s": 0.512396,
+   "process_wall_s": 6.41,
+   "cycles_per_s": 6976795.291142008
+  },
+  {
+   "key": "op.attention_prefill/small/fp16-b1-h4-s64-d32@c9af45d482",
+   "timed_cycles": 3574882,
+   "model_launch_host_s": 0.63224,
+   "process_wall_s": 7.47,
+   "cycles_per_s": 5654311.653802353
+  },
+  {
+   "key": "op.rmsnorm/large/fp16-r512-d2048@3a87f5510e",
+   "timed_cycles": 3160606,
+   "model_launch_host_s": 1.399034,
+   "process_wall_s": 5.12,
+   "cycles_per_s": 2259134.517102515
+  },
+  {
+   "key": "model.resnet_block/small/fp32-n1-c16-hw16@c9af45d482",
+   "timed_cycles": 1638888,
+   "model_launch_host_s": 0.28744,
+   "process_wall_s": 10.21,
+   "cycles_per_s": 5701669.913721125
+  },
+  {
+   "key": "model.resnet_block/small/fp32-n1-c16-hw16@c9af45d482",
+   "timed_cycles": 1638888,
+   "model_launch_host_s": 0.288225,
+   "process_wall_s": 9.27,
+   "cycles_per_s": 5686141.035649233
+  },
+  {
+   "key": "model.resnet_block/small/fp32-n1-c16-hw16@4e42742f59",
+   "timed_cycles": 1635300,
+   "model_launch_host_s": 0.371423,
+   "process_wall_s": 9.16,
+   "cycles_per_s": 4402796.811182937
+  },
+  {
+   "key": "model.resnet_block/small/fp32-n1-c16-hw16@4e42742f59",
+   "timed_cycles": 1635300,
+   "model_launch_host_s": 0.290097,
+   "process_wall_s": 10.22,
+   "cycles_per_s": 5637080.011168678
+  },
+  {
+   "key": "model.llama_prefill/tiny/fp16-b1-s16@4e42742f59",
+   "timed_cycles": 1211862,
+   "model_launch_host_s": 0.249817,
+   "process_wall_s": 9.39,
+   "cycles_per_s": 4850998.931217651
+  },
+  {
+   "key": "model.llama_prefill/tiny/fp16-b1-s16@4e42742f59",
+   "timed_cycles": 1211862,
+   "model_launch_host_s": 0.229725,
+   "process_wall_s": 9.39,
+   "cycles_per_s": 5275272.608553705
+  },
+  {
+   "key": "op.attention_decode/medium/fp16-b1-h8-l256-d32@c9af45d482",
+   "timed_cycles": 1210225,
+   "model_launch_host_s": 0.317091,
+   "process_wall_s": 4.04,
+   "cycles_per_s": 3816648.84843783
+  },
+  {
+   "key": "op.attention_decode/medium/fp16-b1-h8-l256-d32@c9af45d482",
+   "timed_cycles": 1210225,
+   "model_launch_host_s": 0.20152,
+   "process_wall_s": 3.94,
+   "cycles_per_s": 6005483.326716951
+  },
+  {
+   "key": "op.attention_decode/medium/fp16-b1-h8-l256-d32@4e42742f59",
+   "timed_cycles": 1193560,
+   "model_launch_host_s": 0.200466,
+   "process_wall_s": 3.9,
+   "cycles_per_s": 5953927.349276186
+  },
+  {
+   "key": "op.attention_decode/medium/fp16-b1-h8-l256-d32@4e42742f59",
+   "timed_cycles": 1193560,
+   "model_launch_host_s": 0.198582,
+   "process_wall_s": 3.91,
+   "cycles_per_s": 6010413.834083653
+  },
+  {
+   "key": "model.llama_prefill/tiny/fp16-b1-s16@c9af45d482",
+   "timed_cycles": 1108664,
+   "model_launch_host_s": 0.25093,
+   "process_wall_s": 9.74,
+   "cycles_per_s": 4418220.220778704
+  },
+  {
+   "key": "model.llama_prefill/tiny/fp16-b1-s16@c9af45d482",
+   "timed_cycles": 1108664,
+   "model_launch_host_s": 0.240297,
+   "process_wall_s": 9.36,
+   "cycles_per_s": 4613723.850068873
+  },
+  {
+   "key": "model.llama_decode/tiny/fp16-b1-p16@4e42742f59",
+   "timed_cycles": 803617,
+   "model_launch_host_s": 0.206593,
+   "process_wall_s": 7.66,
+   "cycles_per_s": 3889855.9002483143
+  },
+  {
+   "key": "model.llama_decode/tiny/fp16-b1-p16@4e42742f59",
+   "timed_cycles": 803617,
+   "model_launch_host_s": 0.207876,
+   "process_wall_s": 7.96,
+   "cycles_per_s": 3865847.909330562
+  },
+  {
+   "key": "op.conv2d/small/fp32-n1-cin16-h16-w16-cout16@c9af45d482",
+   "timed_cycles": 793047,
+   "model_launch_host_s": 0.223874,
+   "process_wall_s": 6.39,
+   "cycles_per_s": 3542380.9821596076
+  },
+  {
+   "key": "op.conv2d/small/fp32-n1-cin16-h16-w16-cout16@c9af45d482",
+   "timed_cycles": 793047,
+   "model_launch_host_s": 0.16688,
+   "process_wall_s": 5.41,
+   "cycles_per_s": 4752199.185043145
+  },
+  {
+   "key": "op.conv2d/small/fp32-n1-cin16-h16-w16-cout16@4e42742f59",
+   "timed_cycles": 789054,
+   "model_launch_host_s": 0.225057,
+   "process_wall_s": 5.4,
+   "cycles_per_s": 3506018.4753195858
+  },
+  {
+   "key": "op.conv2d/small/fp32-n1-cin16-h16-w16-cout16@4e42742f59",
+   "timed_cycles": 789054,
+   "model_launch_host_s": 0.223945,
+   "process_wall_s": 5.34,
+   "cycles_per_s": 3523427.627319208
+  },
+  {
+   "key": "model.llama_decode/tiny/fp16-b1-p16@c9af45d482",
+   "timed_cycles": 734581,
+   "model_launch_host_s": 0.208376,
+   "process_wall_s": 7.67,
+   "cycles_per_s": 3525266.8253541673
+  },
+  {
+   "key": "model.llama_decode/tiny/fp16-b1-p16@c9af45d482",
+   "timed_cycles": 734581,
+   "model_launch_host_s": 0.206542,
+   "process_wall_s": 7.65,
+   "cycles_per_s": 3556569.6081184456
+  },
+  {
+   "key": "op.rope/medium/fp16-b1-h8-s128-d32@c9af45d482",
+   "timed_cycles": 645391,
+   "model_launch_host_s": 0.114524,
+   "process_wall_s": 4.01,
+   "cycles_per_s": 5635421.39638853
+  },
+  {
+   "key": "op.rope/medium/fp16-b1-h8-s128-d32@c9af45d482",
+   "timed_cycles": 645391,
+   "model_launch_host_s": 0.137562,
+   "process_wall_s": 3.8,
+   "cycles_per_s": 4691637.225396548
+  },
+  {
+   "key": "op.rope/medium/fp16-b1-h8-s128-d32@4e42742f59",
+   "timed_cycles": 639667,
+   "model_launch_host_s": 0.11381,
+   "process_wall_s": 3.98,
+   "cycles_per_s": 5620481.504261489
+  },
+  {
+   "key": "op.rope/medium/fp16-b1-h8-s128-d32@4e42742f59",
+   "timed_cycles": 639667,
+   "model_launch_host_s": 0.122463,
+   "process_wall_s": 3.83,
+   "cycles_per_s": 5223349.093195496
+  },
+  {
+   "key": "op.attention_decode/small/fp16-b1-h4-l256-d32@c9af45d482",
+   "timed_cycles": 614416,
+   "model_launch_host_s": 0.164894,
+   "process_wall_s": 4.86,
+   "cycles_per_s": 3726127.0877048285
+  },
+  {
+   "key": "op.attention_decode/small/fp16-b1-h4-l256-d32@c9af45d482",
+   "timed_cycles": 614416,
+   "model_launch_host_s": 0.163403,
+   "process_wall_s": 3.86,
+   "cycles_per_s": 3760126.8030574718
+  },
+  {
+   "key": "op.attention_decode/small/fp16-b1-h4-l256-d32@4e42742f59",
+   "timed_cycles": 598449,
+   "model_launch_host_s": 0.127843,
+   "process_wall_s": 3.96,
+   "cycles_per_s": 4681124.504274774
+  },
+  {
+   "key": "op.attention_decode/small/fp16-b1-h4-l256-d32@4e42742f59",
+   "timed_cycles": 598449,
+   "model_launch_host_s": 0.161306,
+   "process_wall_s": 3.93,
+   "cycles_per_s": 3710023.185746345
+  },
+  {
+   "key": "model.gpt2_block/tiny/fp16-d64-h4-b1-s16@4e42742f59",
+   "timed_cycles": 433065,
+   "model_launch_host_s": 0.092524,
+   "process_wall_s": 5.86,
+   "cycles_per_s": 4680569.365786174
+  },
+  {
+   "key": "model.gpt2_block/tiny/fp16-d64-h4-b1-s16@4e42742f59",
+   "timed_cycles": 433065,
+   "model_launch_host_s": 0.09411,
+   "process_wall_s": 6.27,
+   "cycles_per_s": 4601689.512272872
+  },
+  {
+   "key": "model.gpt2_block/tiny/fp16-d64-h4-b1-s16@c9af45d482",
+   "timed_cycles": 401945,
+   "model_launch_host_s": 0.092372,
+   "process_wall_s": 5.88,
+   "cycles_per_s": 4351372.710345127
+  },
+  {
+   "key": "model.gpt2_block/tiny/fp16-d64-h4-b1-s16@c9af45d482",
+   "timed_cycles": 401945,
+   "model_launch_host_s": 0.089951,
+   "process_wall_s": 6.12,
+   "cycles_per_s": 4468488.399239586
+  },
+  {
+   "key": "model.resnet_block/tiny/fp32-n1-c8-hw8@c9af45d482",
+   "timed_cycles": 365106,
+   "model_launch_host_s": 0.109097,
+   "process_wall_s": 8.97,
+   "cycles_per_s": 3346618.1471534506
+  },
+  {
+   "key": "model.resnet_block/tiny/fp32-n1-c8-hw8@c9af45d482",
+   "timed_cycles": 365106,
+   "model_launch_host_s": 0.103635,
+   "process_wall_s": 8.83,
+   "cycles_per_s": 3522998.9868287737
+  },
+  {
+   "key": "model.resnet_block/tiny/fp32-n1-c8-hw8@4e42742f59",
+   "timed_cycles": 358277,
+   "model_launch_host_s": 0.093521,
+   "process_wall_s": 8.97,
+   "cycles_per_s": 3830979.1383753377
+  },
+  {
+   "key": "model.resnet_block/tiny/fp32-n1-c8-hw8@4e42742f59",
+   "timed_cycles": 358277,
+   "model_launch_host_s": 0.061101,
+   "process_wall_s": 8.97,
+   "cycles_per_s": 5863684.718744374
+  },
+  {
+   "key": "op.conv2d/tiny/fp32-n1-cin4-h8-w8-cout8@c9af45d482",
+   "timed_cycles": 165229,
+   "model_launch_host_s": 0.05477,
+   "process_wall_s": 5.25,
+   "cycles_per_s": 3016779.2587182764
+  },
+  {
+   "key": "op.conv2d/tiny/fp32-n1-cin4-h8-w8-cout8@c9af45d482",
+   "timed_cycles": 165229,
+   "model_launch_host_s": 0.053301,
+   "process_wall_s": 5.16,
+   "cycles_per_s": 3099923.0783662596
+  },
+  {
+   "key": "op.conv2d/tiny/fp32-n1-cin4-h8-w8-cout8@4e42742f59",
+   "timed_cycles": 164619,
+   "model_launch_host_s": 0.05244,
+   "process_wall_s": 5.33,
+   "cycles_per_s": 3139187.643020595
+  },
+  {
+   "key": "op.conv2d/tiny/fp32-n1-cin4-h8-w8-cout8@4e42742f59",
+   "timed_cycles": 164619,
+   "model_launch_host_s": 0.053503,
+   "process_wall_s": 4.98,
+   "cycles_per_s": 3076818.122348279
+  },
+  {
+   "key": "op.rope/small/fp16-b1-h4-s64-d32@c9af45d482",
+   "timed_cycles": 134867,
+   "model_launch_host_s": 0.037231,
+   "process_wall_s": 3.51,
+   "cycles_per_s": 3622438.290671752
+  },
+  {
+   "key": "op.rope/small/fp16-b1-h4-s64-d32@c9af45d482",
+   "timed_cycles": 134867,
+   "model_launch_host_s": 0.037999,
+   "process_wall_s": 3.56,
+   "cycles_per_s": 3549224.9796047267
+  },
+  {
+   "key": "op.rope/small/fp16-b1-h4-s64-d32@4e42742f59",
+   "timed_cycles": 125039,
+   "model_launch_host_s": 0.037462,
+   "process_wall_s": 3.45,
+   "cycles_per_s": 3337755.5923335645
+  },
+  {
+   "key": "op.rope/small/fp16-b1-h4-s64-d32@4e42742f59",
+   "timed_cycles": 125039,
+   "model_launch_host_s": 0.019595,
+   "process_wall_s": 3.82,
+   "cycles_per_s": 6381168.665475886
+  },
+  {
+   "key": "op.attention_prefill/tiny/fp16-b1-h2-s16-d16@4e42742f59",
+   "timed_cycles": 75149,
+   "model_launch_host_s": 0.020121,
+   "process_wall_s": 4.38,
+   "cycles_per_s": 3734854.132498385
+  },
+  {
+   "key": "op.attention_prefill/tiny/fp16-b1-h2-s16-d16@4e42742f59",
+   "timed_cycles": 75149,
+   "model_launch_host_s": 0.021312,
+   "process_wall_s": 4.4,
+   "cycles_per_s": 3526135.5105105103
+  },
+  {
+   "key": "op.attention_prefill/tiny/fp16-b1-h2-s16-d16@c9af45d482",
+   "timed_cycles": 72357,
+   "model_launch_host_s": 0.020828,
+   "process_wall_s": 4.48,
+   "cycles_per_s": 3474025.3504897254
+  },
+  {
+   "key": "op.attention_prefill/tiny/fp16-b1-h2-s16-d16@c9af45d482",
+   "timed_cycles": 72357,
+   "model_launch_host_s": 0.02041,
+   "process_wall_s": 4.5,
+   "cycles_per_s": 3545173.9343459085
+  },
+  {
+   "key": "op.attention_decode/tiny/fp16-b1-h2-l16-d16@4e42742f59",
+   "timed_cycles": 29871,
+   "model_launch_host_s": 0.009694,
+   "process_wall_s": 3.64,
+   "cycles_per_s": 3081390.5508562
+  },
+  {
+   "key": "op.attention_decode/tiny/fp16-b1-h2-l16-d16@4e42742f59",
+   "timed_cycles": 29871,
+   "model_launch_host_s": 0.0096,
+   "process_wall_s": 3.65,
+   "cycles_per_s": 3111562.5000000005
+  },
+  {
+   "key": "op.attention_decode/tiny/fp16-b1-h2-l16-d16@c9af45d482",
+   "timed_cycles": 28408,
+   "model_launch_host_s": 0.008682,
+   "process_wall_s": 3.66,
+   "cycles_per_s": 3272057.129693619
+  },
+  {
+   "key": "op.attention_decode/tiny/fp16-b1-h2-l16-d16@c9af45d482",
+   "timed_cycles": 28408,
+   "model_launch_host_s": 0.008871,
+   "process_wall_s": 3.67,
+   "cycles_per_s": 3202344.7187464773
+  },
+  {
+   "key": "op.rope/tiny/fp16-b1-h2-s16-d16@c9af45d482",
+   "timed_cycles": 6274,
+   "model_launch_host_s": 0.004171,
+   "process_wall_s": 3.44,
+   "cycles_per_s": 1504195.6365380003
+  },
+  {
+   "key": "op.rope/tiny/fp16-b1-h2-s16-d16@c9af45d482",
+   "timed_cycles": 6274,
+   "model_launch_host_s": 0.003704,
+   "process_wall_s": 3.42,
+   "cycles_per_s": 1693844.4924406048
+  },
+  {
+   "key": "op.rope/tiny/fp16-b1-h2-s16-d16@4e42742f59",
+   "timed_cycles": 6030,
+   "model_launch_host_s": 0.004503,
+   "process_wall_s": 4.49,
+   "cycles_per_s": 1339107.2618254498
+  },
+  {
+   "key": "op.rope/tiny/fp16-b1-h2-s16-d16@4e42742f59",
+   "timed_cycles": 6030,
+   "model_launch_host_s": 0.004544,
+   "process_wall_s": 3.45,
+   "cycles_per_s": 1327024.6478873238
+  }
+ ]
+}

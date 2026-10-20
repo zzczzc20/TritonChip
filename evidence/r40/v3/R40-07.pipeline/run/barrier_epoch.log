@@ -1,0 +1,4 @@
+PASS barrier generations 0..65537: no early release at 16-bit boundary
+tb/core/tb_barrier_epoch.v:63: $finish called at 2621502000 (1ps)
+PASS barrier exhaustion faults before wrap; init recovers
+tb/core/tb_barrier_epoch.v:63: $finish called at 651000 (1ps)

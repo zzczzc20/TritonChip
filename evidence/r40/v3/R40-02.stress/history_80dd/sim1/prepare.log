@@ -1,0 +1,8 @@
+  building core-vrf-sync-v5 -> /home/zhongchun/.cache/tnca/devices/core-vrf-sync-v5-a8f9e2a0291d254a-2f12bdd465ea/tnca_device_vrf5.vvp
+  pruned 1 older build(s) of core-vrf-sync-v5
+  built 17676538 bytes
+  building core-vrf-sync-v5/hbm -> /home/zhongchun/.cache/tnca/devices/core-vrf-sync-v5-hbm-a8f9e2a0291d254a-2f12bdd465ea/tnca_device_vrf5_hbm.vvp
+  built 17766977 bytes
+  building core-sim -> /home/zhongchun/.cache/tnca/devices/core-sim-b8fb71a90255e476-2f12bdd465ea/tnca_device.vvp
+  pruned 1 older build(s) of core-sim
+  built 17479934 bytes

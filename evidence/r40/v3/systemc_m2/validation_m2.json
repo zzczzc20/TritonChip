@@ -1,0 +1,246 @@
+{
+ "schema": "tnca-systemc-m2-validation/1",
+ "default_config_validations": {
+  "note": "configs/r40-three-core.cfg (memory_model=0, core_pipeline=0, time_quantum=0): the M1 behaviour, unchanged",
+  "results": {
+   "validate_numeric": {
+    "returncode": 0,
+    "wall_s": 13.45
+   },
+   "validate_chip": {
+    "returncode": 0,
+    "wall_s": 0.46
+   },
+   "validate_roles": {
+    "returncode": 0,
+    "wall_s": 0.44
+   },
+   "validate_dma": {
+    "returncode": 0,
+    "wall_s": 0.76
+   },
+   "validate_matrix": {
+    "returncode": 0,
+    "wall_s": 3.46
+   },
+   "validate": {
+    "returncode": 0,
+    "wall_s": 12.74
+   },
+   "validate_monitor": {
+    "returncode": 0,
+    "wall_s": 14.65
+   }
+  }
+ },
+ "dma_oracle_timeline_pipeline": {
+  "note": "validate_dma.py (independent rank/stride/byte oracle, transposed included) on the timeline memory with core_pipeline=1",
+  "returncode": 0
+ },
+ "board_config_tiny_suite": {
+  "run": "t_tiny2",
+  "points": 27,
+  "passed": 27,
+  "failed": []
+ },
+ "board_config_tiny_small_suite": {
+  "run": "vq1000",
+  "points": 52,
+  "passed": 52,
+  "failed": []
+ },
+ "lookahead_vs_exact": {
+  "what": "time_quantum 0 (every wait taken) vs 1000 (conservative lookahead), board config, tiny+small, 3 ports/8 outstanding",
+  "a": "vq0",
+  "b": "vq1000",
+  "points": 52,
+  "pass_a": 52,
+  "pass_b": 52,
+  "identical": 15,
+  "median_abs_rel": 0.0012674523898550394,
+  "max_abs_rel": 0.04124618894744281,
+  "mean_rel": 0.000690860118199669,
+  "largest": [
+   {
+    "point": "op.gemv/small/fp16-k256-n512",
+    "a": 247635,
+    "b": 257849,
+    "rel": 0.04124618894744281
+   },
+   {
+    "point": "op.layernorm/small/fp16-r64-d256",
+    "a": 67581,
+    "b": 66447,
+    "rel": -0.016779864163004393
+   },
+   {
+    "point": "op.add/small/fp16-n16384",
+    "a": 45403,
+    "b": 46137,
+    "rel": 0.016166332621192433
+   },
+   {
+    "point": "op.silu/small/fp16-n16384",
+    "a": 54845,
+    "b": 54237,
+    "rel": -0.011085787218524934
+   },
+   {
+    "point": "op.softmax/tiny/fp16-r4-c64",
+    "a": 2794,
+    "b": 2764,
+    "rel": -0.010737294201861132
+   },
+   {
+    "point": "model.resnet_block/small/fp32-n1-c16-hw16",
+    "a": 721319,
+    "b": 729027,
+    "rel": 0.01068597943489635
+   }
+  ]
+ },
+ "untimed_cold_vs_timed_cold": {
+  "what": "steady-call cycles with the cold call timed vs untimed",
+  "a": "vtimed",
+  "b": "vq1000",
+  "points": 52,
+  "pass_a": 52,
+  "pass_b": 52,
+  "identical": 28,
+  "median_abs_rel": 0.0,
+  "max_abs_rel": 0.0589368290499306,
+  "mean_rel": 0.0009394443616347336,
+  "largest": [
+   {
+    "point": "op.gemv/small/fp16-k256-n512",
+    "a": 243498,
+    "b": 257849,
+    "rel": 0.0589368290499306
+   },
+   {
+    "point": "op.linear/small/fp16-m64-k256-n256",
+    "a": 257391,
+    "b": 262628,
+    "rel": 0.02034647676103671
+   },
+   {
+    "point": "op.cumsum/small/fp32-r64-c256",
+    "a": 55733,
+    "b": 55057,
+    "rel": -0.01212925914628676
+   },
+   {
+    "point": "op.matmul/small/fp16-m64-k128-n128",
+    "a": 68846,
+    "b": 69548,
+    "rel": 0.010196670830549343
+   },
+   {
+    "point": "op.layernorm/small/fp16-r64-d256",
+    "a": 67078,
+    "b": 66447,
+    "rel": -0.009406959062583858
+   },
+   {
+    "point": "op.matmul/small/fp32-m64-k128-n128",
+    "a": 270538,
+    "b": 268477,
+    "rel": -0.007618153457185312
+   }
+  ]
+ },
+ "timeline_vs_detailed_memory": {
+  "note": "memory_model 0 (M1 detailed TLM path, validated against RTL captures for isolated accesses) vs 1 (timeline), core_pipeline=0, time_quantum=0. The timeline charges the home-slice engine the RTL engine states (3 cycles a hit, 4+2+2+2 a miss) where the detailed path charges service_cycles=1; under load the slice engine becomes the bottleneck on conflict-heavy patterns (transpose).",
+  "ports1_outstanding1": {
+   "what": "tiny+small suite, TNCA_RTL_MEM_PORTS=1, TNCA_RTL_OUTSTANDING=1",
+   "a": "cmp_det",
+   "b": "cmp_tl",
+   "points": 52,
+   "pass_a": 52,
+   "pass_b": 52,
+   "identical": 0,
+   "median_abs_rel": 0.03168898697697939,
+   "max_abs_rel": 1.4289992854431368,
+   "mean_rel": 0.012866897707355761,
+   "largest": [
+    {
+     "point": "op.transpose/small/fp32-r128-c256",
+     "a": 358264,
+     "b": 870223,
+     "rel": 1.4289992854431368
+    },
+    {
+     "point": "op.matmul/tiny/fp16-m16-k32-n16",
+     "a": 3147,
+     "b": 2492,
+     "rel": -0.20813473149030823
+    },
+    {
+     "point": "op.linear/small/fp16-m64-k256-n256",
+     "a": 581773,
+     "b": 696013,
+     "rel": 0.1963652489888668
+    },
+    {
+     "point": "op.bmm/tiny/fp16-b2-m16-k16-n16",
+     "a": 2271,
+     "b": 1865,
+     "rel": -0.1787758696609423
+    },
+    {
+     "point": "op.softmax/tiny/fp32-r3-c37",
+     "a": 1453,
+     "b": 1247,
+     "rel": -0.14177563661390227
+    },
+    {
+     "point": "model.mlp/tiny/fp16-t16-d64",
+     "a": 48056,
+     "b": 42417,
+     "rel": -0.11734226735475278
+    }
+   ]
+  },
+  "ports3_outstanding8": {
+   "what": "4 points, 3 ports, 8 outstanding",
+   "a": "cmp3_det",
+   "b": "cmp3_tl",
+   "points": 4,
+   "pass_a": 4,
+   "pass_b": 4,
+   "identical": 0,
+   "median_abs_rel": 0.12983702032070094,
+   "max_abs_rel": 0.28790197669272755,
+   "mean_rel": 0.0392905859916924,
+   "largest": [
+    {
+     "point": "op.transpose/small/fp32-r128-c256",
+     "a": 108464,
+     "b": 139691,
+     "rel": 0.28790197669272755
+    },
+    {
+     "point": "op.matmul/tiny/fp16-m16-k32-n16",
+     "a": 3147,
+     "b": 2492,
+     "rel": -0.20813473149030823
+    },
+    {
+     "point": "op.linear/small/fp16-m64-k256-n256",
+     "a": 224159,
+     "b": 235712,
+     "rel": 0.05153930915109364
+    },
+    {
+     "point": "model.mlp/small/fp16-t64-d128",
+     "a": 580721,
+     "b": 595736,
+     "rel": 0.025855789613256623
+    }
+   ]
+  }
+ },
+ "fixed_bug_90mhz": {
+  "note": "At 90 MHz the cycle period (11111.1 ps) is not a whole number of 1 ps units, so each wait rounded differently and two events of the same cycle could compare unequal: a transfer engine register write due at cycle N was not yet committed when an MMA read the register at cycle N (llama_prefill/tiny gave NaN outputs with the timeline memory). Fixed in include/tnca_model.hpp Context: the period is rounded once to whole resolution units (11111 ps); every model time is an integral number of cycles. Configs at 100 MHz (exact) are unaffected."
+ }
+}

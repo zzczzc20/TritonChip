@@ -1,0 +1,99 @@
+{
+  "status": "started",
+  "root": "/home/zhongchun/r40_final_llama_progress_20261018",
+  "identity": {
+    "scope": "original frozen numerical graph; diagnostic-only instrumentation and journal, excluded from performance acceptance",
+    "source_commit": "a1fed2254f5c1c5302a2cb20a2a4159ddba8e9ea",
+    "rtl_source_commit": "54249f7f7ac0cf8f5d1b82d8e63a3046d27522d3",
+    "source_archive_sha256": "9722be47fed7aaac4337926591b2abf43e73f7a218c08463c32a3462b36ad7aa",
+    "point": {
+      "id": "model.llama_decode/medium/fp16-b1-p256",
+      "sha256": "dafdc2dd0f86b5b55e3922d2a91c44987ee1df0311ee6e3b57369fc3fb0fe0d5",
+      "family": "llama_decode",
+      "tier": "medium",
+      "dtype": "fp16"
+    },
+    "testbench_overrides": {
+      "tb/fpga/tnca_multicore_board_regs.v": {
+        "baseline_sha256": "b064bbb0892e407f78a3fdccf8b61f38186d04eadb8961b8aefd7262c04e3c26",
+        "diagnostic_sha256": "05cec83cd20c214d6ecac434b13d88f3055fd656f53fc665b7643069fa34a2da",
+        "only_change": "Read-only launch log and progress snapshot every65536clocks; no DUT-driven signals; deleting exact monitor recovers original bytes"
+      },
+      "tb/fpga/tnca_multicore_regs.v": {
+        "baseline_sha256": "65a2d8453fd144d2447b9b1c653d7ab39ac5e83d53717e53b07b21783c63ab2a"
+      }
+    },
+    "backend_args": {
+      "core_count": 3,
+      "memory_ports": 3,
+      "memory_bytes": 8388608,
+      "link_stages": 2,
+      "noc_link_stages": 2,
+      "dispatch_stages": 2,
+      "home_stages": 2,
+      "code_stages": 2,
+      "board_top": true,
+      "maintenance": true,
+      "memory_controls": true,
+      "hbm_dma": true,
+      "journal": true
+    },
+    "command": [
+      "/home/zhongchun/tc_env/torchenv/bin/python",
+      "-u",
+      "-m",
+      "archbench.run",
+      "--platform",
+      "tnca",
+      "--profile",
+      "core-vrf-sync-v5",
+      "--backend",
+      "fpga-multicore-sim",
+      "--backend-args",
+      "{\"core_count\": 3, \"memory_ports\": 3, \"memory_bytes\": 8388608, \"link_stages\": 2, \"noc_link_stages\": 2, \"dispatch_stages\": 2, \"home_stages\": 2, \"code_stages\": 2, \"board_top\": true, \"maintenance\": true, \"memory_controls\": true, \"hbm_dma\": true, \"journal\": true}",
+      "--point",
+      "model.llama_decode/medium/fp16-b1-p256",
+      "--jobs",
+      "1",
+      "--seed",
+      "0",
+      "--warmup",
+      "0",
+      "--timed",
+      "1",
+      "--timeout",
+      "21600",
+      "--bundle-dir",
+      "/home/zhongchun/r40_final_llama_progress_20261018/results/bundles",
+      "--set",
+      "TNCA_TORCH_DEVICE=native",
+      "--set",
+      "TNCA_TRANSFER_POLICY=resident",
+      "--set",
+      "TNCA_ACTIVE_CORES=3",
+      "--out",
+      "/home/zhongchun/r40_final_llama_progress_20261018/results/raw.jsonl"
+    ],
+    "hypothesis": "The original job36 timeout may be simulator throughput or a stalled final-geometry kernel. Journal boundaries plus issued/completed/instruction counters distinguish simulated application progress from CPU activity. No cause is assumed.",
+    "host_wait_seconds": 14400,
+    "outer_timeout_seconds": 21600,
+    "device_deadline_cycles": 200000000,
+    "instrumentation_overhead": {
+      "device_cycle_change": 0,
+      "host_wall_time": "not-measured; cannot use this run for speed comparison",
+      "sampling_period_cycles": 65536,
+      "target_instructions_added": 0
+    },
+    "contract_sha256": "49fc0e02733139707ae2292eff2ef893e76e73f0723d0d002b2e7e1864af71c8",
+    "image_sha256": null,
+    "clock_hz": null,
+    "required_gate_promotions": [],
+    "resource_observation": {
+      "affinity_cpus": 20,
+      "existing_vvp": 15
+    },
+    "started_utc": "2026-10-18T01:55:45.242558+00:00",
+    "runner_pid": 2086743
+  },
+  "archive_sha256": "fdeac1697ed5f6e2364a4f927829c460b46bed323f7659267292b73b95215d1d"
+}

@@ -1,0 +1,73 @@
+
+Traceback (most recent call last):
+  File "/tmp/tmplsl09qxy/child.py", line 1, in <module>
+    import torch, triton, tnca.inductor; tnca.inductor.configure(); torch.compile(lambda a: a + 1)(torch.ones(4)); import tnca.torch_device as D; D.register()
+                                                                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/zhongchun/tc_env/torchenv/lib/python3.12/site-packages/torch/_dynamo/eval_frame.py", line 1261, in compile_wrapper
+    result = fn(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^
+  File "/home/zhongchun/tc_env/torchenv/lib/python3.12/site-packages/torch/_dynamo/convert_frame.py", line 2649, in __call__
+    result = self._torchdynamo_orig_backend(
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/zhongchun/tc_env/torchenv/lib/python3.12/site-packages/torch/_dynamo/convert_frame.py", line 2333, in __call__
+    result = self._inner_convert(
+             ^^^^^^^^^^^^^^^^^^^^
+  File "/home/zhongchun/tc_env/torchenv/lib/python3.12/site-packages/torch/_dynamo/convert_frame.py", line 778, in __call__
+    result = _compile(
+             ^^^^^^^^^
+  File "/home/zhongchun/tc_env/torchenv/lib/python3.12/site-packages/torch/_dynamo/convert_frame.py", line 2182, in _compile
+    raise InternalTorchDynamoError(
+  File "/home/zhongchun/tc_env/torchenv/lib/python3.12/site-packages/torch/_dynamo/convert_frame.py", line 2116, in _compile
+    guarded_code, tracer_output = compile_inner(code, one_graph, hooks)
+                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/zhongchun/tc_env/torchenv/lib/python3.12/site-packages/torch/_utils_internal.py", line 114, in wrapper_function
+    return function(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/zhongchun/tc_env/torchenv/lib/python3.12/site-packages/torch/_dynamo/convert_frame.py", line 1701, in compile_inner
+    result = _compile_inner(code, one_graph, hooks)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/zhongchun/tc_env/torchenv/lib/python3.12/site-packages/torch/_dynamo/convert_frame.py", line 1761, in _compile_inner
+    dynamo_output = compile_frame(
+                    ^^^^^^^^^^^^^^
+  File "/home/zhongchun/tc_env/torchenv/lib/python3.12/site-packages/torch/_dynamo/convert_frame.py", line 1598, in compile_frame
+    bytecode, tracer_output = transform_code_object(code, transform)
+                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/zhongchun/tc_env/torchenv/lib/python3.12/site-packages/torch/_dynamo/bytecode_transformation.py", line 1843, in transform_code_object
+    tracer_output = transformations(instructions, code_options)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/zhongchun/tc_env/torchenv/lib/python3.12/site-packages/torch/_dynamo/convert_frame.py", line 1569, in transform
+    tracer_output = trace_frame(
+                    ^^^^^^^^^^^^
+  File "/home/zhongchun/tc_env/torchenv/lib/python3.12/site-packages/torch/_dynamo/convert_frame.py", line 369, in _fn
+    return fn(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^
+  File "/home/zhongchun/tc_env/torchenv/lib/python3.12/site-packages/torch/_dynamo/convert_frame.py", line 925, in trace_frame
+    tracer = InstructionTranslator(
+             ^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/zhongchun/tc_env/torchenv/lib/python3.12/site-packages/torch/_dynamo/symbolic_convert.py", line 5762, in __init__
+    self.symbolic_stream_state = SymbolicStreamState()
+                                 ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/zhongchun/tc_env/torchenv/lib/python3.12/site-packages/torch/_dynamo/variables/streams.py", line 275, in __init__
+    stream = torch.accelerator.current_stream()
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/zhongchun/tc_env/torchenv/lib/python3.12/site-packages/torch/accelerator/__init__.py", line 233, in current_stream
+    return torch._C._accelerator_getStream(device_index)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+torch._dynamo.exc.InternalTorchDynamoError: AcceleratorError: CUDA error: out of memory
+Search for `cudaErrorMemoryAllocation' in https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__TYPES.html for more information.
+The CUDA driver logged these messages, which may provide useful details:
+Returning 2 (CUDA_ERROR_OUT_OF_MEMORY) from cuDevicePrimaryCtxRetain
+
+
+
+Set TORCHDYNAMO_VERBOSE=1 for the internal stack trace (please do this especially if you're reporting a bug to PyTorch). For even more developer context, set TORCH_LOGS="+dynamo"
+
+
+Traceback (most recent call last):
+  File "<stdin>", line 10, in <module>
+  File "tools/r40/device_tests.py", line 258, in import_orders
+    _child(pre + '\n' + _GRAPH + '\nprint("OK")')
+  File "tools/r40/device_tests.py", line 236, in _child
+    assert r.returncode == 0 and ok, \
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: child exited 1: Set TORCHDYNAMO_VERBOSE=1 for the internal stack trace (please do this especially if you're reporting a bug to PyTorch). For even more developer context, set TORCH_LOGS="+dynamo"

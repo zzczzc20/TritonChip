@@ -1,0 +1,3 @@
+make: 'sim/build/tb_core4_slow.vvp' is up to date.
+make: 'sim/build/tb_core4_ooo.vvp' is up to date.
+  compiler-rtl           PASS   68 tests

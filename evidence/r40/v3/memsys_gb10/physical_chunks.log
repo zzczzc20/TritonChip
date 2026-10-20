@@ -1,0 +1,167 @@
+STEP physical_chunks: make r40-physical-chunks TRITON_PYTHON=/home/zhongchun/tc_env/torchenv/bin/python PYTHON=/home/zhongchun/tc_env/torchenv/bin/python
+START 2026-10-19T09:40:59Z
+R40 MEMORY ARBITER PASS N=1
+tb/tb_mem_arbiter_r40.v:45: $finish called at 101000 (1ps)
+R40 MEMORY ARBITER PASS N=2
+tb/tb_mem_arbiter_r40.v:45: $finish called at 121000 (1ps)
+R40 MEMORY ARBITER PASS N=3
+tb/tb_mem_arbiter_r40.v:45: $finish called at 141000 (1ps)
+R40 MEMORY ARBITER PASS N=4
+tb/tb_mem_arbiter_r40.v:45: $finish called at 160000 (1ps)
+R40 MEMORY ARBITER PASS N=8
+tb/tb_mem_arbiter_r40.v:45: $finish called at 240000 (1ps)
+PASS N=1 invalid grid refused
+PASS N=1 invalid grid refused
+PASS N=1 invalid grid refused
+PASS N=1 grid=1x1x1 issued=1 fault=-1
+PASS N=1 grid=19x1x1 issued=19 fault=-1
+PASS N=1 grid=13x7x5 issued=455 fault=-1
+PASS N=1 grid=6145x1x1 issued=6145 fault=-1
+PASS N=1 grid=0x3x2 issued=0 fault=-1
+PASS N=1 grid=101x3x2 issued=1 fault=0
+PASS N=1 grid=47x2x1 issued=94 fault=-1
+PASS N=1 grid=101x3x2 issued=1 fault=-2
+PASS N=1 grid=23x2x1 issued=46 fault=-1
+PASS N=1 grid=5x2x3 issued=30 fault=-1
+PASS N=1 grid=6145x1x1 issued=6145 fault=-1
+PASS N=1 grid=17x3x2 issued=102 fault=-1
+PASS N=1 grid=1x1x1 issued=1 fault=-1
+GRID DISPATCH PASS
+tb/tb_grid_dispatch.v:124: $finish called at 1552680000 (1ps)
+PASS N=2 invalid grid refused
+PASS N=2 invalid grid refused
+PASS N=2 invalid grid refused
+PASS N=2 grid=1x1x1 issued=1 fault=-1
+PASS N=2 grid=19x1x1 issued=19 fault=-1
+PASS N=2 grid=13x7x5 issued=455 fault=-1
+PASS N=2 grid=6145x1x1 issued=6145 fault=-1
+PASS N=2 grid=0x3x2 issued=0 fault=-1
+PASS N=2 grid=101x3x2 issued=2 fault=0
+PASS N=2 grid=101x3x2 issued=2 fault=1
+PASS N=2 grid=47x2x1 issued=94 fault=-1
+PASS N=2 grid=101x3x2 issued=2 fault=-2
+PASS N=2 grid=23x2x1 issued=46 fault=-1
+PASS N=2 grid=5x2x3 issued=30 fault=-1
+PASS N=2 grid=6145x1x1 issued=6145 fault=-1
+PASS N=2 grid=17x3x2 issued=102 fault=-1
+PASS N=2 grid=1x1x1 issued=1 fault=-1
+GRID DISPATCH PASS
+tb/tb_grid_dispatch.v:124: $finish called at 773660000 (1ps)
+PASS N=3 invalid grid refused
+PASS N=3 invalid grid refused
+PASS N=3 invalid grid refused
+PASS N=3 grid=1x1x1 issued=1 fault=-1
+PASS N=3 grid=19x1x1 issued=19 fault=-1
+PASS N=3 grid=13x7x5 issued=455 fault=-1
+PASS N=3 grid=6145x1x1 issued=6145 fault=-1
+PASS N=3 grid=0x3x2 issued=0 fault=-1
+PASS N=3 grid=101x3x2 issued=3 fault=0
+PASS N=3 grid=101x3x2 issued=3 fault=1
+PASS N=3 grid=101x3x2 issued=3 fault=2
+PASS N=3 grid=47x2x1 issued=94 fault=-1
+PASS N=3 grid=101x3x2 issued=3 fault=-2
+PASS N=3 grid=23x2x1 issued=46 fault=-1
+PASS N=3 grid=5x2x3 issued=30 fault=-1
+PASS N=3 grid=6145x1x1 issued=6145 fault=-1
+PASS N=3 grid=17x3x2 issued=102 fault=-1
+PASS N=3 grid=1x1x1 issued=1 fault=-1
+GRID DISPATCH PASS
+tb/tb_grid_dispatch.v:124: $finish called at 515350000 (1ps)
+PASS N=4 invalid grid refused
+PASS N=4 invalid grid refused
+PASS N=4 invalid grid refused
+PASS N=4 grid=1x1x1 issued=1 fault=-1
+PASS N=4 grid=19x1x1 issued=19 fault=-1
+PASS N=4 grid=13x7x5 issued=455 fault=-1
+PASS N=4 grid=6145x1x1 issued=6145 fault=-1
+PASS N=4 grid=0x3x2 issued=0 fault=-1
+PASS N=4 grid=101x3x2 issued=2 fault=0
+PASS N=4 grid=101x3x2 issued=3 fault=1
+PASS N=4 grid=101x3x2 issued=4 fault=2
+PASS N=4 grid=101x3x2 issued=4 fault=3
+PASS N=4 grid=47x2x1 issued=94 fault=-1
+PASS N=4 grid=101x3x2 issued=4 fault=-2
+PASS N=4 grid=23x2x1 issued=46 fault=-1
+PASS N=4 grid=5x2x3 issued=30 fault=-1
+PASS N=4 grid=6145x1x1 issued=6145 fault=-1
+PASS N=4 grid=17x3x2 issued=102 fault=-1
+PASS N=4 grid=1x1x1 issued=1 fault=-1
+GRID DISPATCH PASS
+tb/tb_grid_dispatch.v:124: $finish called at 406520000 (1ps)
+PASS N=8 invalid grid refused
+PASS N=8 invalid grid refused
+PASS N=8 invalid grid refused
+PASS N=8 grid=1x1x1 issued=1 fault=-1
+PASS N=8 grid=19x1x1 issued=19 fault=-1
+PASS N=8 grid=13x7x5 issued=455 fault=-1
+PASS N=8 grid=6145x1x1 issued=6145 fault=-1
+PASS N=8 grid=0x3x2 issued=0 fault=-1
+PASS N=8 grid=101x3x2 issued=3 fault=0
+PASS N=8 grid=101x3x2 issued=5 fault=1
+PASS N=8 grid=101x3x2 issued=7 fault=2
+PASS N=8 grid=101x3x2 issued=8 fault=3
+PASS N=8 grid=101x3x2 issued=9 fault=4
+PASS N=8 grid=101x3x2 issued=9 fault=5
+PASS N=8 grid=101x3x2 issued=10 fault=6
+PASS N=8 grid=101x3x2 issued=11 fault=7
+PASS N=8 grid=47x2x1 issued=94 fault=-1
+PASS N=8 grid=101x3x2 issued=8 fault=-2
+PASS N=8 grid=23x2x1 issued=46 fault=-1
+PASS N=8 grid=5x2x3 issued=30 fault=-1
+PASS N=8 grid=6145x1x1 issued=6145 fault=-1
+PASS N=8 grid=17x3x2 issued=102 fault=-1
+PASS N=8 grid=1x1x1 issued=1 fault=-1
+GRID DISPATCH PASS
+tb/tb_grid_dispatch.v:124: $finish called at 212600000 (1ps)
+GRID REAL CORES PASS N=1 memory=0 ports=1 phase=0 programs=455 cycles=3646
+tb/top/tb_grid_cores.v:175: $finish called at 36470000 (1ps)
+GRID REAL CORES PASS N=2 memory=0 ports=1 phase=0 programs=455 cycles=1830
+tb/top/tb_grid_cores.v:175: $finish called at 18310000 (1ps)
+GRID REAL CORES PASS N=3 memory=0 ports=1 phase=0 programs=455 cycles=1223
+tb/top/tb_grid_cores.v:175: $finish called at 12240000 (1ps)
+GRID REAL CORES PASS N=4 memory=0 ports=1 phase=0 programs=455 cycles=920
+tb/top/tb_grid_cores.v:175: $finish called at 9210000 (1ps)
+GRID REAL CORES PASS N=8 memory=0 ports=1 phase=0 programs=455 cycles=468
+tb/top/tb_grid_cores.v:175: $finish called at 4690000 (1ps)
+GRID REAL CORES PASS N=1 memory=1 ports=1 phase=0 programs=455 cycles=42700
+GRID REAL CORES PASS N=1 memory=1 ports=1 phase=1 programs=455 cycles=78849
+tb/top/tb_grid_cores.v:175: $finish called at 788500000 (1ps)
+GRID REAL CORES PASS N=2 memory=1 ports=1 phase=0 programs=455 cycles=22569
+GRID REAL CORES PASS N=2 memory=1 ports=1 phase=1 programs=455 cycles=41478
+tb/top/tb_grid_cores.v:175: $finish called at 414790000 (1ps)
+GRID REAL CORES PASS N=3 memory=1 ports=1 phase=0 programs=455 cycles=14911
+GRID REAL CORES PASS N=3 memory=1 ports=1 phase=1 programs=455 cycles=27371
+tb/top/tb_grid_cores.v:175: $finish called at 273720000 (1ps)
+GRID REAL CORES PASS N=4 memory=1 ports=1 phase=0 programs=455 cycles=12162
+GRID REAL CORES PASS N=4 memory=1 ports=1 phase=1 programs=455 cycles=22396
+tb/top/tb_grid_cores.v:175: $finish called at 223970000 (1ps)
+GRID progress cycles=1000 accepted=72 busy=ff
+GRID progress cycles=2000 accepted=136 busy=ff
+GRID progress cycles=3000 accepted=200 busy=ff
+GRID progress cycles=4000 accepted=264 busy=ff
+GRID progress cycles=5000 accepted=328 busy=ff
+GRID progress cycles=6000 accepted=392 busy=ff
+GRID progress cycles=7000 accepted=455 busy=da
+GRID REAL CORES PASS N=8 memory=1 ports=1 phase=0 programs=455 cycles=7014
+GRID progress cycles=8000 accepted=80 busy=ff
+GRID progress cycles=9000 accepted=160 busy=ff
+GRID progress cycles=10000 accepted=240 busy=ff
+GRID progress cycles=11000 accepted=320 busy=ff
+GRID progress cycles=12000 accepted=400 busy=ff
+GRID REAL CORES PASS N=8 memory=1 ports=1 phase=1 programs=455 cycles=12761
+tb/top/tb_grid_cores.v:175: $finish called at 127620000 (1ps)
+r40-grid-dispatch-tests PASS (20 configurations, registered_ranges=0)
+PHYSICAL CHUNK IR PASS 40 cases; legacy row preserved; invalid width refused
+PHYSICAL CHUNK RUNTIME PASS cores=3 width=4 grid=13x7x5 count=455 host_launches=1
+W1019 09:52:17.018000 3101375 torch/utils/cpp_extension.py:183] No CUDA runtime is found, using CUDA_HOME='/usr/local/cuda'
+HARDWARE MULTICORE METRICS {"cores": [{"completed": 85, "core": 0, "issued": 85, "occupied_cycles": 15908}, {"completed": 84, "core": 1, "issued": 84, "occupied_cycles": 16234}, {"completed": 88, "core": 2, "issued": 88, "occupied_cycles": 16124}], "peak_active": 3}
+NATIVE MULTICORE TORCH PASS cores=3 active=3 elements=4097 kernels=1 whole_grid_launches=1 tensor_staging=0
+W1019 10:01:02.240000 3104511 torch/utils/cpp_extension.py:183] No CUDA runtime is found, using CUDA_HOME='/usr/local/cuda'
+HARDWARE MULTICORE METRICS {"cores": [{"completed": 32, "core": 0, "issued": 32, "occupied_cycles": 7436}, {"completed": 32, "core": 1, "issued": 32, "occupied_cycles": 7054}, {"completed": 32, "core": 2, "issued": 32, "occupied_cycles": 6855}, {"completed": 33, "core": 3, "issued": 33, "occupied_cycles": 6917}, {"completed": 32, "core": 4, "issued": 32, "occupied_cycles": 7313}, {"completed": 32, "core": 5, "issued": 32, "occupied_cycles": 7328}, {"completed": 32, "core": 6, "issued": 32, "occupied_cycles": 7271}, {"completed": 32, "core": 7, "issued": 32, "occupied_cycles": 6887}], "peak_active": 8}
+NATIVE MULTICORE TORCH PASS cores=8 active=8 elements=4097 kernels=1 whole_grid_launches=1 tensor_staging=0
+W1019 10:43:25.470000 3120347 torch/utils/cpp_extension.py:183] No CUDA runtime is found, using CUDA_HOME='/usr/local/cuda'
+NATIVE MULTICORE FEATURES PASS {"artifacts": [{"descriptor_loads": 0, "kernel": "_copy_kernel", "resources": {"accumulators": 0, "barriers": 0, "commands_outstanding": "unknown", "descriptors": 0, "rf_private_per_role": {"role0": 44, "role1": 44, "role2": 44, "role3": 44}, "scratch_bytes": 0, "shared_windows": []}, "roles_per_program": 1, "width": 4}, {"descriptor_loads": 0, "kernel": "_copy_kernel", "resources": {"accumulators": 0, "barriers": 0, "commands_outstanding": "unknown", "descriptors": 0, "rf_private_per_role": {"role0": 44, "role1": 44, "role2": 44, "role3": 44}, "scratch_bytes": 0, "shared_windows": []}, "roles_per_program": 1, "width": 4}, {"descriptor_loads": 0, "kernel": "_copy_kernel", "resources": {"accumulators": 0, "barriers": 0, "commands_outstanding": "unknown", "descriptors": 0, "rf_private_per_role": {"role0": 44, "role1": 44, "role2": 44, "role3": 44}, "scratch_bytes": 0, "shared_windows": []}, "roles_per_program": 1, "width": 4}, {"descriptor_loads": 0, "kernel": "_copy_kernel", "resources": {"accumulators": 0, "barriers": 0, "commands_outstanding": "unknown", "descriptors": 0, "rf_private_per_role": {"role0": 44, "role1": 44, "role2": 44, "role3": 44}, "scratch_bytes": 0, "shared_windows": []}, "roles_per_program": 1, "width": 4}, {"descriptor_loads": 0, "kernel": "_copy_kernel", "resources": {"accumulators": 0, "barriers": 0, "commands_outstanding": "unknown", "descriptors": 0, "rf_private_per_role": {"role0": 44, "role1": 44, "role2": 44, "role3": 44}, "scratch_bytes": 0, "shared_windows": []}, "roles_per_program": 1, "width": 4}, {"descriptor_loads": 0, "kernel": "_copy_kernel", "resources": {"accumulators": 0, "barriers": 0, "commands_outstanding": "unknown", "descriptors": 0, "rf_private_per_role": {"role0": 44, "role1": 44, "role2": 44, "role3": 44}, "scratch_bytes": 0, "shared_windows": []}, "roles_per_program": 1, "width": 4}, {"descriptor_loads": 0, "kernel": "_copy_kernel", "resources": {"accumulators": 0, "barriers": 0, "commands_outstanding": "unknown", "descriptors": 0, "rf_private_per_role": {"role0": 44, "role1": 44, "role2": 44, "role3": 44}, "scratch_bytes": 0, "shared_windows": []}, "roles_per_program": 1, "width": 4}, {"descriptor_loads": 0, "kernel": "_copy_kernel", "resources": {"accumulators": 0, "barriers": 0, "commands_outstanding": "unknown", "descriptors": 0, "rf_private_per_role": {"role0": 44, "role1": 44, "role2": 44, "role3": 44}, "scratch_bytes": 0, "shared_windows": []}, "roles_per_program": 1, "width": 4}, {"descriptor_loads": 0, "kernel": "_copy_kernel", "resources": {"accumulators": 0, "barriers": 0, "commands_outstanding": "unknown", "descriptors": 0, "rf_private_per_role": {"role0": 44, "role1": 44, "role2": 44, "role3": 44}, "scratch_bytes": 0, "shared_windows": []}, "roles_per_program": 1, "width": 4}, {"descriptor_loads": 0, "kernel": "_copy_kernel", "resources": {"accumulators": 0, "barriers": 0, "commands_outstanding": "unknown", "descriptors": 0, "rf_private_per_role": {"role0": 44, "role1": 44, "role2": 44, "role3": 44}, "scratch_bytes": 0, "shared_windows": []}, "roles_per_program": 1, "width": 4}, {"descriptor_loads": 0, "kernel": "_copy_kernel", "resources": {"accumulators": 0, "barriers": 0, "commands_outstanding": "unknown", "descriptors": 0, "rf_private_per_role": {"role0": 44, "role1": 44, "role2": 44, "role3": 44}, "scratch_bytes": 0, "shared_windows": []}, "roles_per_program": 1, "width": 4}, {"descriptor_loads": 0, "kernel": "_copy_kernel", "resources": {"accumulators": 0, "barriers": 0, "commands_outstanding": "unknown", "descriptors": 0, "rf_private_per_role": {"role0": 44, "role1": 44, "role2": 44, "role3": 44}, "scratch_bytes": 0, "shared_windows": []}, "roles_per_program": 1, "width": 4}, {"descriptor_loads": 0, "kernel": "_copy_kernel", "resources": {"accumulators": 0, "barriers": 0, "commands_outstanding": "unknown", "descriptors": 0, "rf_private_per_role": {"role0": 44, "role1": 44, "role2": 44, "role3": 44}, "scratch_bytes": 0, "shared_windows": []}, "roles_per_program": 1, "width": 4}, {"descriptor_loads": 0, "kernel": "_copy_kernel", "resources": {"accumulators": 0, "barriers": 0, "commands_outstanding": "unknown", "descriptors": 0, "rf_private_per_role": {"role0": 44, "role1": 44, "role2": 44, "role3": 44}, "scratch_bytes": 0, "shared_windows": []}, "roles_per_program": 1, "width": 4}, {"descriptor_loads": 0, "kernel": "_copy_kernel", "resources": {"accumulators": 0, "barriers": 0, "commands_outstanding": "unknown", "descriptors": 0, "rf_private_per_role": {"role0": 44, "role1": 44, "role2": 44, "role3": 44}, "scratch_bytes": 0, "shared_windows": []}, "roles_per_program": 1, "width": 4}, {"descriptor_loads": 0, "kernel": "_copy_kernel", "resources": {"accumulators": 0, "barriers": 0, "commands_outstanding": "unknown", "descriptors": 0, "rf_private_per_role": {"role0": 44, "role1": 44, "role2": 44, "role3": 44}, "scratch_bytes": 0, "shared_windows": []}, "roles_per_program": 1, "width": 4}, {"descriptor_loads": 0, "kernel": "_copy_kernel", "resources": {"accumulators": 0, "barriers": 0, "commands_outstanding": "unknown", "descriptors": 0, "rf_private_per_role": {"role0": 44, "role1": 44, "role2": 44, "role3": 44}, "scratch_bytes": 0, "shared_windows": []}, "roles_per_program": 1, "width": 4}, {"descriptor_loads": 0, "kernel": "_copy_kernel", "resources": {"accumulators": 0, "barriers": 0, "commands_outstanding": "unknown", "descriptors": 0, "rf_private_per_role": {"role0": 44, "role1": 44, "role2": 44, "role3": 44}, "scratch_bytes": 0, "shared_windows": []}, "roles_per_program": 1, "width": 4}, {"descriptor_loads": 0, "kernel": "_copy_kernel", "resources": {"accumulators": 0, "barriers": 0, "commands_outstanding": "unknown", "descriptors": 0, "rf_private_per_role": {"role0": 44, "role1": 44, "role2": 44, "role3": 44}, "scratch_bytes": 0, "shared_windows": []}, "roles_per_program": 1, "width": 4}, {"descriptor_loads": 0, "kernel": "_copy_kernel", "resources": {"accumulators": 0, "barriers": 0, "commands_outstanding": "unknown", "descriptors": 0, "rf_private_per_role": {"role0": 44, "role1": 44, "role2": 44, "role3": 44}, "scratch_bytes": 0, "shared_windows": []}, "roles_per_program": 1, "width": 4}, {"descriptor_loads": 0, "kernel": "_copy_kernel", "resources": {"accumulators": 0, "barriers": 0, "commands_outstanding": "unknown", "descriptors": 0, "rf_private_per_role": {"role0": 44, "role1": 44, "role2": 44, "role3": 44}, "scratch_bytes": 0, "shared_windows": []}, "roles_per_program": 1, "width": 4}, {"descriptor_loads": 0, "kernel": "_copy_kernel", "resources": {"accumulators": 0, "barriers": 0, "commands_outstanding": "unknown", "descriptors": 0, "rf_private_per_role": {"role0": 44, "role1": 44, "role2": 44, "role3": 44}, "scratch_bytes": 0, "shared_windows": []}, "roles_per_program": 1, "width": 4}, {"descriptor_loads": 0, "kernel": "_copy_kernel", "resources": {"accumulators": 0, "barriers": 0, "commands_outstanding": "unknown", "descriptors": 0, "rf_private_per_role": {"role0": 44, "role1": 44, "role2": 44, "role3": 44}, "scratch_bytes": 0, "shared_windows": []}, "roles_per_program": 1, "width": 4}, {"descriptor_loads": 0, "kernel": "_copy_kernel", "resources": {"accumulators": 0, "barriers": 0, "commands_outstanding": "unknown", "descriptors": 0, "rf_private_per_role": {"role0": 44, "role1": 44, "role2": 44, "role3": 44}, "scratch_bytes": 0, "shared_windows": []}, "roles_per_program": 1, "width": 4}, {"descriptor_loads": 0, "kernel": "_copy_kernel", "resources": {"accumulators": 0, "barriers": 0, "commands_outstanding": "unknown", "descriptors": 0, "rf_private_per_role": {"role0": 44, "role1": 44, "role2": 44, "role3": 44}, "scratch_bytes": 0, "shared_windows": []}, "roles_per_program": 1, "width": 4}, {"descriptor_loads": 0, "kernel": "_copy_kernel", "resources": {"accumulators": 0, "barriers": 0, "commands_outstanding": "unknown", "descriptors": 0, "rf_private_per_role": {"role0": 44, "role1": 44, "role2": 44, "role3": 44}, "scratch_bytes": 0, "shared_windows": []}, "roles_per_program": 1, "width": 4}, {"descriptor_loads": 2, "kernel": "triton_tem_fused_mm_0", "resources": {"accumulators": 1, "barriers": 3, "commands_outstanding": "unknown", "descriptors": 2, "rf_private_per_role": {"role0": 9, "role1": 9}, "scratch_bytes": 512, "shared_windows": []}, "roles_per_program": 1, "width": 2}], "cores": 3, "metrics": {"cores": [{"completed": 3, "core": 0, "issued": 3, "occupied_cycles": 19233}, {"completed": 2, "core": 1, "issued": 2, "occupied_cycles": 12395}, {"completed": 4, "core": 2, "issued": 4, "occupied_cycles": 21924}], "peak_active": 3}, "pair": false}
+W1019 10:49:44.545000 3122669 torch/utils/cpp_extension.py:183] No CUDA runtime is found, using CUDA_HOME='/usr/local/cuda'
+NATIVE MULTICORE FEATURES PASS {"artifacts": [{"descriptor_loads": 0, "kernel": "_copy_kernel", "resources": {"accumulators": 0, "barriers": 0, "commands_outstanding": "unknown", "descriptors": 0, "rf_private_per_role": {"role0": 44, "role1": 44, "role2": 44, "role3": 44}, "scratch_bytes": 0, "shared_windows": []}, "roles_per_program": 1, "width": 4}, {"descriptor_loads": 0, "kernel": "_copy_kernel", "resources": {"accumulators": 0, "barriers": 0, "commands_outstanding": "unknown", "descriptors": 0, "rf_private_per_role": {"role0": 44, "role1": 44, "role2": 44, "role3": 44}, "scratch_bytes": 0, "shared_windows": []}, "roles_per_program": 1, "width": 4}, {"descriptor_loads": 0, "kernel": "_copy_kernel", "resources": {"accumulators": 0, "barriers": 0, "commands_outstanding": "unknown", "descriptors": 0, "rf_private_per_role": {"role0": 44, "role1": 44, "role2": 44, "role3": 44}, "scratch_bytes": 0, "shared_windows": []}, "roles_per_program": 1, "width": 4}, {"descriptor_loads": 0, "kernel": "_copy_kernel", "resources": {"accumulators": 0, "barriers": 0, "commands_outstanding": "unknown", "descriptors": 0, "rf_private_per_role": {"role0": 44, "role1": 44, "role2": 44, "role3": 44}, "scratch_bytes": 0, "shared_windows": []}, "roles_per_program": 1, "width": 4}, {"descriptor_loads": 0, "kernel": "_copy_kernel", "resources": {"accumulators": 0, "barriers": 0, "commands_outstanding": "unknown", "descriptors": 0, "rf_private_per_role": {"role0": 44, "role1": 44, "role2": 44, "role3": 44}, "scratch_bytes": 0, "shared_windows": []}, "roles_per_program": 1, "width": 4}, {"descriptor_loads": 0, "kernel": "_copy_kernel", "resources": {"accumulators": 0, "barriers": 0, "commands_outstanding": "unknown", "descriptors": 0, "rf_private_per_role": {"role0": 44, "role1": 44, "role2": 44, "role3": 44}, "scratch_bytes": 0, "shared_windows": []}, "roles_per_program": 1, "width": 4}, {"descriptor_loads": 0, "kernel": "_copy_kernel", "resources": {"accumulators": 0, "barriers": 0, "commands_outstanding": "unknown", "descriptors": 0, "rf_private_per_role": {"role0": 44, "role1": 44, "role2": 44, "role3": 44}, "scratch_bytes": 0, "shared_windows": []}, "roles_per_program": 1, "width": 4}, {"descriptor_loads": 0, "kernel": "_copy_kernel", "resources": {"accumulators": 0, "barriers": 0, "commands_outstanding": "unknown", "descriptors": 0, "rf_private_per_role": {"role0": 44, "role1": 44, "role2": 44, "role3": 44}, "scratch_bytes": 0, "shared_windows": []}, "roles_per_program": 1, "width": 4}, {"descriptor_loads": 0, "kernel": "_copy_kernel", "resources": {"accumulators": 0, "barriers": 0, "commands_outstanding": "unknown", "descriptors": 0, "rf_private_per_role": {"role0": 44, "role1": 44, "role2": 44, "role3": 44}, "scratch_bytes": 0, "shared_windows": []}, "roles_per_program": 1, "width": 4}, {"descriptor_loads": 0, "kernel": "_copy_kernel", "resources": {"accumulators": 0, "barriers": 0, "commands_outstanding": "unknown", "descriptors": 0, "rf_private_per_role": {"role0": 44, "role1": 44, "role2": 44, "role3": 44}, "scratch_bytes": 0, "shared_windows": []}, "roles_per_program": 1, "width": 4}, {"descriptor_loads": 0, "kernel": "_copy_kernel", "resources": {"accumulators": 0, "barriers": 0, "commands_outstanding": "unknown", "descriptors": 0, "rf_private_per_role": {"role0": 44, "role1": 44, "role2": 44, "role3": 44}, "scratch_bytes": 0, "shared_windows": []}, "roles_per_program": 1, "width": 4}, {"descriptor_loads": 0, "kernel": "_copy_kernel", "resources": {"accumulators": 0, "barriers": 0, "commands_outstanding": "unknown", "descriptors": 0, "rf_private_per_role": {"role0": 44, "role1": 44, "role2": 44, "role3": 44}, "scratch_bytes": 0, "shared_windows": []}, "roles_per_program": 1, "width": 4}, {"descriptor_loads": 0, "kernel": "_copy_kernel", "resources": {"accumulators": 0, "barriers": 0, "commands_outstanding": "unknown", "descriptors": 0, "rf_private_per_role": {"role0": 44, "role1": 44, "role2": 44, "role3": 44}, "scratch_bytes": 0, "shared_windows": []}, "roles_per_program": 1, "width": 4}, {"descriptor_loads": 0, "kernel": "_copy_kernel", "resources": {"accumulators": 0, "barriers": 0, "commands_outstanding": "unknown", "descriptors": 0, "rf_private_per_role": {"role0": 44, "role1": 44, "role2": 44, "role3": 44}, "scratch_bytes": 0, "shared_windows": []}, "roles_per_program": 1, "width": 4}, {"descriptor_loads": 0, "kernel": "_copy_kernel", "resources": {"accumulators": 0, "barriers": 0, "commands_outstanding": "unknown", "descriptors": 0, "rf_private_per_role": {"role0": 44, "role1": 44, "role2": 44, "role3": 44}, "scratch_bytes": 0, "shared_windows": []}, "roles_per_program": 1, "width": 4}, {"descriptor_loads": 0, "kernel": "_copy_kernel", "resources": {"accumulators": 0, "barriers": 0, "commands_outstanding": "unknown", "descriptors": 0, "rf_private_per_role": {"role0": 44, "role1": 44, "role2": 44, "role3": 44}, "scratch_bytes": 0, "shared_windows": []}, "roles_per_program": 1, "width": 4}, {"descriptor_loads": 0, "kernel": "_copy_kernel", "resources": {"accumulators": 0, "barriers": 0, "commands_outstanding": "unknown", "descriptors": 0, "rf_private_per_role": {"role0": 44, "role1": 44, "role2": 44, "role3": 44}, "scratch_bytes": 0, "shared_windows": []}, "roles_per_program": 1, "width": 4}, {"descriptor_loads": 0, "kernel": "_copy_kernel", "resources": {"accumulators": 0, "barriers": 0, "commands_outstanding": "unknown", "descriptors": 0, "rf_private_per_role": {"role0": 44, "role1": 44, "role2": 44, "role3": 44}, "scratch_bytes": 0, "shared_windows": []}, "roles_per_program": 1, "width": 4}, {"descriptor_loads": 0, "kernel": "_copy_kernel", "resources": {"accumulators": 0, "barriers": 0, "commands_outstanding": "unknown", "descriptors": 0, "rf_private_per_role": {"role0": 44, "role1": 44, "role2": 44, "role3": 44}, "scratch_bytes": 0, "shared_windows": []}, "roles_per_program": 1, "width": 4}, {"descriptor_loads": 0, "kernel": "_copy_kernel", "resources": {"accumulators": 0, "barriers": 0, "commands_outstanding": "unknown", "descriptors": 0, "rf_private_per_role": {"role0": 44, "role1": 44, "role2": 44, "role3": 44}, "scratch_bytes": 0, "shared_windows": []}, "roles_per_program": 1, "width": 4}, {"descriptor_loads": 0, "kernel": "_copy_kernel", "resources": {"accumulators": 0, "barriers": 0, "commands_outstanding": "unknown", "descriptors": 0, "rf_private_per_role": {"role0": 44, "role1": 44, "role2": 44, "role3": 44}, "scratch_bytes": 0, "shared_windows": []}, "roles_per_program": 1, "width": 4}, {"descriptor_loads": 0, "kernel": "_copy_kernel", "resources": {"accumulators": 0, "barriers": 0, "commands_outstanding": "unknown", "descriptors": 0, "rf_private_per_role": {"role0": 44, "role1": 44, "role2": 44, "role3": 44}, "scratch_bytes": 0, "shared_windows": []}, "roles_per_program": 1, "width": 4}, {"descriptor_loads": 0, "kernel": "_copy_kernel", "resources": {"accumulators": 0, "barriers": 0, "commands_outstanding": "unknown", "descriptors": 0, "rf_private_per_role": {"role0": 44, "role1": 44, "role2": 44, "role3": 44}, "scratch_bytes": 0, "shared_windows": []}, "roles_per_program": 1, "width": 4}, {"descriptor_loads": 0, "kernel": "_copy_kernel", "resources": {"accumulators": 0, "barriers": 0, "commands_outstanding": "unknown", "descriptors": 0, "rf_private_per_role": {"role0": 44, "role1": 44, "role2": 44, "role3": 44}, "scratch_bytes": 0, "shared_windows": []}, "roles_per_program": 1, "width": 4}, {"descriptor_loads": 0, "kernel": "_copy_kernel", "resources": {"accumulators": 0, "barriers": 0, "commands_outstanding": "unknown", "descriptors": 0, "rf_private_per_role": {"role0": 44, "role1": 44, "role2": 44, "role3": 44}, "scratch_bytes": 0, "shared_windows": []}, "roles_per_program": 1, "width": 4}, {"descriptor_loads": 0, "kernel": "_copy_kernel", "resources": {"accumulators": 0, "barriers": 0, "commands_outstanding": "unknown", "descriptors": 0, "rf_private_per_role": {"role0": 44, "role1": 44, "role2": 44, "role3": 44}, "scratch_bytes": 0, "shared_windows": []}, "roles_per_program": 1, "width": 4}, {"descriptor_loads": 4, "kernel": "triton_tem_fused_mm_0", "resources": {"accumulators": 1, "barriers": 5, "commands_outstanding": "unknown", "descriptors": 2, "rf_private_per_role": {"role0": 10, "role1": 10, "role2": 10, "role3": 10}, "scratch_bytes": 512, "shared_windows": []}, "roles_per_program": 2, "width": 2}], "cores": 3, "metrics": {"cores": [{"completed": 4, "core": 0, "issued": 4, "occupied_cycles": 21944}, {"completed": 3, "core": 1, "issued": 3, "occupied_cycles": 17914}, {"completed": 2, "core": 2, "issued": 2, "occupied_cycles": 12408}], "peak_active": 3}, "pair": true}
+END 2026-10-19T10:56:06Z
+EXIT=0

@@ -1,0 +1,18 @@
+{
+  "schema": "tnca-conditional-software-snapshot/1",
+  "commit": "12a0340",
+  "software_tree": "files:3cd958b8e17ad47b21e195cbae768630af6a6c49e31797e12daa3ca4ec81093b",
+  "archive_sha256": "af17b4e0c03ed8a611341486473b4110ad8a672ab562f6997ec079cc0b085cf1",
+  "archive_bytes": 1644954,
+  "source": "/home/zzhouch/tnca_src_r40_conditional_12a0340",
+  "contract_sha256": "49fc0e02733139707ae2292eff2ef893e76e73f0723d0d002b2e7e1864af71c8",
+  "image_sha256": null,
+  "clock_hz": null,
+  "status": "staged-not-executed",
+  "scope": "immutable source for original checkpoint/native77/HBM14/model; no device opened, no Torch import or native extension build",
+  "harness_sha256": {
+    "tools/r40/conditional_delivery.py": "0871c717801ba0e93f447251bc13ebfaf0e6dbc7340f93d5075b0b9123dba913",
+    "tools/r40/board_checkpoint.py": "86a8e254c5bf3ad775ed223ba4ff9b633d4dcb746b025722b4121125ad2fecf4",
+    "python/tnca/operating_clock.py": "d412eb9bf5faffa20afc16215cdaa726861f7e9b09d2b0e3341b404af8dd2d41"
+  }
+}

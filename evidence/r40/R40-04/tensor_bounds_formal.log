@@ -1,0 +1,238 @@
+RTL sha256: d2c3ac49bd4cc5ef5f9c7c21284dd92178de9ef709809e49e3eac50b68738b53
+
+ /----------------------------------------------------------------------------\
+ |                                                                            |
+ |  yosys -- Yosys Open SYnthesis Suite                                       |
+ |                                                                            |
+ |  Copyright (C) 2012 - 2020  Claire Xenia Wolf <claire@yosyshq.com>         |
+ |                                                                            |
+ |  Permission to use, copy, modify, and/or distribute this software for any  |
+ |  purpose with or without fee is hereby granted, provided that the above    |
+ |  copyright notice and this permission notice appear in all copies.         |
+ |                                                                            |
+ |  THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES  |
+ |  WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF          |
+ |  MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR   |
+ |  ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES    |
+ |  WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN     |
+ |  ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF   |
+ |  OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.            |
+ |                                                                            |
+ \----------------------------------------------------------------------------/
+
+ Yosys 0.33 (git sha1 2584903a060)
+
+
+-- Executing script file `proof.ys' --
+
+1. Executing Verilog-2005 frontend: miter.v
+Parsing Verilog input from `miter.v' to AST representation.
+Generating RTLIL representation for module `\bounds_miter'.
+Successfully finished Verilog frontend.
+
+2. Executing PREP pass.
+
+2.1. Executing HIERARCHY pass (managing design hierarchy).
+
+2.1.1. Analyzing design hierarchy..
+Top module:  \bounds_miter
+
+2.1.2. Analyzing design hierarchy..
+Top module:  \bounds_miter
+Removed 0 unused modules.
+
+2.2. Executing PROC pass (convert processes to netlists).
+
+2.2.1. Executing PROC_CLEAN pass (remove empty switches from decision trees).
+Cleaned up 0 empty switches.
+
+2.2.2. Executing PROC_RMDEAD pass (remove dead branches from decision trees).
+Removed a total of 0 dead cases.
+
+2.2.3. Executing PROC_PRUNE pass (remove redundant assignments in processes).
+Removed 0 redundant assignments.
+Promoted 10 assignments to connections.
+
+2.2.4. Executing PROC_INIT pass (extract init attributes).
+
+2.2.5. Executing PROC_ARST pass (detect async resets in processes).
+
+2.2.6. Executing PROC_ROM pass (convert switches to ROMs).
+Converted 0 switches.
+
+2.2.7. Executing PROC_MUX pass (convert decision trees to multiplexers).
+Creating decoders for process `\bounds_miter.$proc$miter.v:0$8'.
+
+2.2.8. Executing PROC_DLATCH pass (convert process syncs to latches).
+No latch inferred for signal `\bounds_miter.\in_dim$func$miter.v:28$1.$result' from process `\bounds_miter.$proc$miter.v:0$8'.
+No latch inferred for signal `\bounds_miter.\in_dim$func$miter.v:28$2.$result' from process `\bounds_miter.$proc$miter.v:0$8'.
+No latch inferred for signal `\bounds_miter.\in_dim$func$miter.v:28$2.c' from process `\bounds_miter.$proc$miter.v:0$8'.
+No latch inferred for signal `\bounds_miter.\in_dim$func$miter.v:28$2.i' from process `\bounds_miter.$proc$miter.v:0$8'.
+No latch inferred for signal `\bounds_miter.\in_dim$func$miter.v:28$2.e' from process `\bounds_miter.$proc$miter.v:0$8'.
+No latch inferred for signal `\bounds_miter.\in_dim$func$miter.v:28$2.lo' from process `\bounds_miter.$proc$miter.v:0$8'.
+No latch inferred for signal `\bounds_miter.\in_dim$func$miter.v:28$2.hi0' from process `\bounds_miter.$proc$miter.v:0$8'.
+No latch inferred for signal `\bounds_miter.\in_dim$func$miter.v:28$2.hi1' from process `\bounds_miter.$proc$miter.v:0$8'.
+No latch inferred for signal `\bounds_miter.\in_dim$func$miter.v:28$2.valid0' from process `\bounds_miter.$proc$miter.v:0$8'.
+No latch inferred for signal `\bounds_miter.\in_dim$func$miter.v:28$2.valid1' from process `\bounds_miter.$proc$miter.v:0$8'.
+
+2.2.9. Executing PROC_DFF pass (convert process syncs to FFs).
+
+2.2.10. Executing PROC_MEMWR pass (convert process memory writes to cells).
+
+2.2.11. Executing PROC_CLEAN pass (remove empty switches from decision trees).
+Removing empty process `bounds_miter.$proc$miter.v:0$8'.
+Cleaned up 0 empty switches.
+
+2.2.12. Executing OPT_EXPR pass (perform const folding).
+Optimizing module bounds_miter.
+
+2.3. Executing FLATTEN pass (flatten design).
+
+2.4. Executing OPT_EXPR pass (perform const folding).
+Optimizing module bounds_miter.
+
+2.5. Executing OPT_CLEAN pass (remove unused cells and wires).
+Finding unused cells or wires in module \bounds_miter..
+Removed 0 unused cells and 15 unused wires.
+<suppressed ~1 debug messages>
+
+2.6. Executing CHECK pass (checking for obvious problems).
+Checking module bounds_miter...
+Found and reported 0 problems.
+
+2.7. Executing OPT pass (performing simple optimizations).
+
+2.7.1. Executing OPT_EXPR pass (perform const folding).
+Optimizing module bounds_miter.
+
+2.7.2. Executing OPT_MERGE pass (detect identical cells).
+Finding identical cells in module `\bounds_miter'.
+<suppressed ~3 debug messages>
+Removed a total of 1 cells.
+
+2.7.3. Executing OPT_MUXTREE pass (detect dead branches in mux trees).
+Running muxtree optimizer on module \bounds_miter..
+  Creating internal representation of mux trees.
+  Evaluating internal representation of mux trees.
+  Analyzing evaluation results.
+Removed 0 multiplexer ports.
+<suppressed ~1 debug messages>
+
+2.7.4. Executing OPT_REDUCE pass (consolidate $*mux and $reduce_* inputs).
+  Optimizing cells in module \bounds_miter.
+Performed a total of 0 changes.
+
+2.7.5. Executing OPT_MERGE pass (detect identical cells).
+Finding identical cells in module `\bounds_miter'.
+Removed a total of 0 cells.
+
+2.7.6. Executing OPT_CLEAN pass (remove unused cells and wires).
+Finding unused cells or wires in module \bounds_miter..
+Removed 0 unused cells and 1 unused wires.
+<suppressed ~1 debug messages>
+
+2.7.7. Executing OPT_EXPR pass (perform const folding).
+Optimizing module bounds_miter.
+
+2.7.8. Rerunning OPT passes. (Maybe there is more to do..)
+
+2.7.9. Executing OPT_MUXTREE pass (detect dead branches in mux trees).
+Running muxtree optimizer on module \bounds_miter..
+  Creating internal representation of mux trees.
+  Evaluating internal representation of mux trees.
+  Analyzing evaluation results.
+Removed 0 multiplexer ports.
+<suppressed ~1 debug messages>
+
+2.7.10. Executing OPT_REDUCE pass (consolidate $*mux and $reduce_* inputs).
+  Optimizing cells in module \bounds_miter.
+Performed a total of 0 changes.
+
+2.7.11. Executing OPT_MERGE pass (detect identical cells).
+Finding identical cells in module `\bounds_miter'.
+Removed a total of 0 cells.
+
+2.7.12. Executing OPT_CLEAN pass (remove unused cells and wires).
+Finding unused cells or wires in module \bounds_miter..
+
+2.7.13. Executing OPT_EXPR pass (perform const folding).
+Optimizing module bounds_miter.
+
+2.7.14. Finished OPT passes. (There is nothing left to do.)
+
+2.8. Executing WREDUCE pass (reducing word size of cells).
+Removed top 32 bits (of 64) from port B of cell bounds_miter.$add$miter.v:26$3 ($add).
+Removed top 1 bits (of 33) from port A of cell bounds_miter.$add$miter.v:16$19 ($add).
+Removed top 1 bits (of 33) from port B of cell bounds_miter.$add$miter.v:16$19 ($add).
+Removed top 31 bits (of 32) from port B of cell bounds_miter.$add$miter.v:18$20 ($add).
+
+2.9. Executing OPT_CLEAN pass (remove unused cells and wires).
+Finding unused cells or wires in module \bounds_miter..
+
+2.10. Executing MEMORY_COLLECT pass (generating $mem cells).
+
+2.11. Executing OPT pass (performing simple optimizations).
+
+2.11.1. Executing OPT_EXPR pass (perform const folding).
+Optimizing module bounds_miter.
+
+2.11.2. Executing OPT_MERGE pass (detect identical cells).
+Finding identical cells in module `\bounds_miter'.
+Removed a total of 0 cells.
+
+2.11.3. Executing OPT_CLEAN pass (remove unused cells and wires).
+Finding unused cells or wires in module \bounds_miter..
+
+2.11.4. Finished fast OPT passes.
+
+2.12. Printing statistics.
+
+=== bounds_miter ===
+
+   Number of wires:                 32
+   Number of wire bits:            566
+   Number of public wires:          15
+   Number of public wire bits:     486
+   Number of memories:               0
+   Number of memory bits:            0
+   Number of processes:              0
+   Number of cells:                 21
+     $add                            3
+     $eq                             3
+     $logic_and                      5
+     $logic_not                      3
+     $logic_or                       2
+     $lt                             4
+     $mux                            1
+
+2.13. Executing CHECK pass (checking for obvious problems).
+Checking module bounds_miter...
+Found and reported 0 problems.
+
+3. Executing SAT pass (solving SAT problems in the circuit).
+
+Setting up SAT problem:
+Final constraint equation: { } = { }
+Imported 21 cells to SAT database.
+Import proof-constraint: \equal = 1'1
+Final proof equation: \equal = 1'1
+Import show expression: \c
+Import show expression: \e
+Import show expression: \i
+
+Solving problem with 2480 variables and 6724 clauses..
+SAT proof finished - no model found: SUCCESS!
+
+                  /$$$$$$      /$$$$$$$$     /$$$$$$$    
+                 /$$__  $$    | $$_____/    | $$__  $$   
+                | $$  \ $$    | $$          | $$  \ $$   
+                | $$  | $$    | $$$$$       | $$  | $$   
+                | $$  | $$    | $$__/       | $$  | $$   
+                | $$/$$ $$    | $$          | $$  | $$   
+                |  $$$$$$/ /$$| $$$$$$$$ /$$| $$$$$$$//$$
+                 \____ $$$|__/|________/|__/|_______/|__/
+                       \__/                              
+
+End of script. Logfile hash: e5273a862a, CPU: user 0.07s system 0.01s, MEM: 15.95 MB peak
+Yosys 0.33 (git sha1 2584903a060)
+Time spent: 65% 1x sat (0 sec), 10% 5x opt_clean (0 sec), ...

@@ -1,0 +1,2 @@
+{"block_ram_cells": 2, "cells": {"LUT2": 8, "RAMB36E2": 2}, "flip_flops": 0, "geometry_words": 128, "measured_performance": false, "source_sha256": "6b86b32286b039565a07c02f9431996a68470b6135382bc7330f521556897ba4", "word_bits": 64}
+r40-ram-cache-inference-tests PASS: block RAM inferred; no timing claim

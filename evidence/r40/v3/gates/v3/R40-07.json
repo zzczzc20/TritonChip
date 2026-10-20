@@ -1,0 +1,1825 @@
+{
+ "gates": {
+  "R40-07.pipeline": {
+   "status": "capability-pass",
+   "checks": [
+    {
+     "name": "auditor runs on the delivery product tree",
+     "ok": true,
+     "local": "files:fe1b5199db515440d2d3407aed61ef1eed5edb627e5baf9cda10be5a7198cf75",
+     "delivery": "files:fe1b5199db515440d2d3407aed61ef1eed5edb627e5baf9cda10be5a7198cf75"
+    },
+    {
+     "name": "identity amendment: delivery tree and its complete product diff from 80dd (only these files differ; their delivered hashes are the ones audited)",
+     "ok": true,
+     "delivery_tree": "files:fe1b5199db515440d2d3407aed61ef1eed5edb627e5baf9cda10be5a7198cf75",
+     "diff_from_80dd": [
+      "python/tnca/inductor.py",
+      "python/tnca/triton_backend/compiler.py"
+     ],
+     "file_sha256": {
+      "python/tnca/inductor.py": "d1a28be248d5581dbcce60491c9f5a752fda9d77ffa209bf7e458cea152a6f0a",
+      "python/tnca/triton_backend/compiler.py": "3818f5688b7d40c9f995de309738555c848e03e7f11977ce1220554e9e191f36"
+     },
+     "amendment_sha256": "97686070f1b352bdc519e900e3fb6ef27853bf6a596f73950d638dbd77e730cb"
+    },
+    {
+     "name": "runner manifest schema",
+     "ok": true,
+     "manifest": "evidence/r40/v3/R40-07.pipeline/run/manifest_tiles_pipeline_extra.json",
+     "sha256": "1f1db869fc5d3cd0abc232ed787c468bd3a12af3a1932a78a6a9bc40c85ba4c6",
+     "runner_sha256": "053be41d8cf0f1363eec7b35a3140a18a07f2c8bbb873b345688e519401532fc"
+    },
+    {
+     "name": "run closed by the runner (complete) or finalized after a deliberate stop (partial)",
+     "ok": true,
+     "status": "complete",
+     "jobs_not_run": []
+    },
+    {
+     "name": "run bound to the delivery product tree before and after",
+     "ok": true,
+     "before": "files:fe1b5199db515440d2d3407aed61ef1eed5edb627e5baf9cda10be5a7198cf75",
+     "after": "files:fe1b5199db515440d2d3407aed61ef1eed5edb627e5baf9cda10be5a7198cf75",
+     "expected": "files:fe1b5199db515440d2d3407aed61ef1eed5edb627e5baf9cda10be5a7198cf75",
+     "host": "gx10-6646",
+     "root": "/home/zhongchun/r40v3_tpc"
+    },
+    {
+     "name": "product imports resolved inside the immutable run copy",
+     "ok": true,
+     "origins": {
+      "tnca": "/home/zhongchun/r40v3_tpc/python/tnca/__init__.py",
+      "tnca_cc": "/home/zhongchun/r40v3_tpc/compiler/python/tnca_cc/__init__.py",
+      "triton": "3.8.0",
+      "torch": "2.14.0+cu130",
+      "backends": [
+       "triton.backends.amd",
+       "triton.backends.nvidia",
+       "tnca.triton_backend"
+      ],
+      "ok": true
+     }
+    },
+    {
+     "name": "locked toolchain (torch 2.14.0, Triton 3.8.0)",
+     "ok": true
+    },
+    {
+     "name": "every recipe line of make r40-pipeline-checks is in the run (make -n text)",
+     "ok": true
+    },
+    {
+     "name": "test harness files that ran equal the repository copies",
+     "ok": true,
+     "files": {
+      "tools/r40/engine_overlap.py": "c1db0ac97ea8cd4ebff56b81c5d6f293ae985208e917deff3df81c0078c79f04",
+      "tools/r40/engine_overlap_tests.py": "a5bd604dc8e150388b62585805f6270d2cbb0b7992a8846565ff68d27aaadd65",
+      "tools/r40/pipeline_stage_options_tests.py": "f01c866a21642d562c233cc42db7a9a832a0852d2e04136fc699e915d588ad2b",
+      "tools/r39/rctx_roles_tests.py": "ae097cc9124ea780a75244179e3e0bc695074162379853caccf1a66e7d69f23a",
+      "tools/r40/native_pipeline_tests.py": "50bbed4b7008871959b3f9558729f43f735f5dfb613945a15280d1b06a876de3",
+      "tb/core/tb_barrier_epoch.v": "988afb8f8be30619316253b0f4f85014281abafa5df85d6f3e758abc461e8a04"
+     },
+     "differ": {}
+    },
+    {
+     "name": "make r40-pipeline-checks: barrier_epoch",
+     "ok": true,
+     "exit": 0,
+     "seconds": 3.9,
+     "log": "barrier_epoch.log",
+     "log_sha256": "a5b77a5cf3e6795549ff111da5a70b4189dafed754fc0c9bed4fa9104b6c2721",
+     "marker": "PASS barrier generations 0\\.\\.65537[\\s\\S]*PASS barrier exhaustion faults",
+     "marker_found": true,
+     "log_unmodified": true,
+     "cmd": "mkdir -p /home/zhongchun/r40v3_tpc_runs/all/barrier && iverilog -g2005 -I rtl/common -s tb_barrier_epoch -o /home/zhongchun/r40v3_tpc_runs/all/barrier/epoch.vvp rtl/core/tnca_barrier.v tb/core/tb_barrier_epoch.v && vvp /home/zhongchun/r40v3_tpc_runs/all/barrier/epoch.vvp && iverilog -g2005 -I rtl/common -DEPOCH_EXHAUST -s tb_barrier_epoch -o /home/zhongchun/r40v3_tpc_runs/all/barrier/exhaust.vvp rtl/core/tnca_barrier.v tb/core/tb_barrier_epoch.v && vvp /home/zhongchun/r40v3_tpc_runs/all/barrier/exhaust.vvp",
+     "env": {}
+    },
+    {
+     "name": "make r40-pipeline-checks: engine_overlap_parser",
+     "ok": true,
+     "exit": 0,
+     "seconds": 0.1,
+     "log": "engine_overlap_parser.log",
+     "log_sha256": "e6ec182765cd965f2837d8eeaef5a64af48a104f245cd1a0b7281559194c57c1",
+     "marker": "\\nOK\\n",
+     "marker_found": true,
+     "log_unmodified": true,
+     "cmd": "python3 tools/r40/engine_overlap_tests.py",
+     "env": {}
+    },
+    {
+     "name": "make r40-pipeline-checks: stage_options",
+     "ok": true,
+     "exit": 0,
+     "seconds": 0.3,
+     "log": "stage_options.log",
+     "log_sha256": "d7cc597385407adff97f17804a88e387c41173780c101c7cf674d926870715c4",
+     "marker": "r40-pipeline-stage-options PASS \\((\\d+)/\\1\\)",
+     "marker_found": true,
+     "log_unmodified": true,
+     "cmd": "/home/zhongchun/tc_env/torchenv/bin/python tools/r40/pipeline_stage_options_tests.py",
+     "env": {}
+    },
+    {
+     "name": "make r40-pipeline-checks: rctx_roles_s2",
+     "ok": true,
+     "exit": 0,
+     "seconds": 639.1,
+     "log": "rctx_roles_s2.log",
+     "log_sha256": "c5036abff75cd8b5a01026eb8f40d45b93d9fceb224d36b8419be03b871b6ae5",
+     "marker": "r39-rctx-roles-tests \\[core-vrf-sync-v5\\]  PASS",
+     "marker_found": true,
+     "log_unmodified": true,
+     "cmd": "/home/zhongchun/tc_env/torchenv/bin/python -c \"from tnca import device; device.prepare('core-vrf-sync-v5')\" && /home/zhongchun/tc_env/torchenv/bin/python tools/r39/rctx_roles_tests.py",
+     "env": {
+      "TNCA_RCTX_STAGES": "2"
+     }
+    },
+    {
+     "name": "make r40-pipeline-checks: native_pipeline_s2",
+     "ok": true,
+     "exit": 0,
+     "seconds": 442.8,
+     "log": "native_pipeline_s2.log",
+     "log_sha256": "bcf0af601924987c2209b51e4f89f32606799efbb456c48320794f55b3c758ae",
+     "marker": "r40-native-pipeline PASS \\(4/4\\)[\\s\\S]*AUDIT measured DMA/MMA overlap=[1-9]",
+     "marker_found": true,
+     "log_unmodified": true,
+     "cmd": "/home/zhongchun/tc_env/torchenv/bin/python tools/r40/native_pipeline_tests.py --stages 2 --trace-dir /home/zhongchun/r40v3_tpc_runs/all/trace_native_s2 --require-overlap",
+     "env": {
+      "TNCA_RCTX_STAGES": "2"
+     }
+    },
+    {
+     "name": "make r40-pipeline-checks: rctx_roles_s3",
+     "ok": true,
+     "exit": 0,
+     "seconds": 597.9,
+     "log": "rctx_roles_s3.log",
+     "log_sha256": "523c2cd28ce71ac1be5981c644004003cb5ed0564ccb250e30c0e46f2cc9471c",
+     "marker": "r39-rctx-roles-tests \\[core-vrf-sync-v5\\]  PASS",
+     "marker_found": true,
+     "log_unmodified": true,
+     "cmd": "/home/zhongchun/tc_env/torchenv/bin/python -c \"from tnca import device; device.prepare('core-vrf-sync-v5')\" && /home/zhongchun/tc_env/torchenv/bin/python tools/r39/rctx_roles_tests.py",
+     "env": {
+      "TNCA_RCTX_STAGES": "3"
+     }
+    },
+    {
+     "name": "make r40-pipeline-checks: native_pipeline_s3",
+     "ok": true,
+     "exit": 0,
+     "seconds": 420.2,
+     "log": "native_pipeline_s3.log",
+     "log_sha256": "fe1a0e0f993f05347cb9612ac74345ab9e1ef3239f4464e932aa6b3e597a57de",
+     "marker": "r40-native-pipeline PASS \\(4/4\\)[\\s\\S]*AUDIT measured DMA/MMA overlap=[1-9]",
+     "marker_found": true,
+     "log_unmodified": true,
+     "cmd": "/home/zhongchun/tc_env/torchenv/bin/python tools/r40/native_pipeline_tests.py --stages 3 --trace-dir /home/zhongchun/r40v3_tpc_runs/all/trace_native_s3 --require-overlap",
+     "env": {
+      "TNCA_RCTX_STAGES": "3"
+     }
+    },
+    {
+     "name": "barrier epoch wrap: generations 0..65537 with no early release at the 16-bit boundary; a 4-bit epoch faults before wrap and init recovers",
+     "ok": true
+    },
+    {
+     "name": "ring diagnostics at 2 and 3 stages: odd K steps, epochs carried across programs (grid 3x2, five programs, odd-step grid), transposed linear and bias epilogue split and correct; one-step and carried-pointer loops refused and correct",
+     "ok": true,
+     "observed": {
+      "2": {
+       "gemm_one_step": "1->1",
+       "gemm_odd_steps": "1->2",
+       "gemm_grid_3x2": "1->2",
+       "gemm_five_programs": "1->2",
+       "linear_one_program": "1->2",
+       "linear_four_programs": "1->2",
+       "linear_odd_steps_grid": "1->2",
+       "gemm_carried_pointers": "1->1"
+      },
+      "3": {
+       "gemm_one_step": "1->1",
+       "gemm_odd_steps": "1->2",
+       "gemm_grid_3x2": "1->2",
+       "gemm_five_programs": "1->2",
+       "linear_one_program": "1->2",
+       "linear_four_programs": "1->2",
+       "linear_odd_steps_grid": "1->2",
+       "gemm_carried_pointers": "1->1"
+      }
+     }
+    },
+    {
+     "name": "standard native Torch mm/addmm (16x16x48, 17x31x65 tail) with actual 2- and 3-stage rings: every measured launch shows DMA/MMA service overlap, recomputed from the raw engine trace",
+     "ok": true,
+     "native": {
+      "2": {
+       "cases": [
+        [
+         "mm",
+         [
+          16,
+          16,
+          48
+         ],
+         [
+          2
+         ]
+        ],
+        [
+         "mm",
+         [
+          17,
+          31,
+          65
+         ],
+         [
+          2
+         ]
+        ],
+        [
+         "addmm",
+         [
+          16,
+          16,
+          48
+         ],
+         [
+          2
+         ]
+        ],
+        [
+         "addmm",
+         [
+          17,
+          31,
+          65
+         ],
+         [
+          2
+         ]
+        ]
+       ],
+       "recomputed": {
+        "116": 294,
+        "128": 455,
+        "140": 294,
+        "152": 455
+       },
+       "recorded": {
+        "116": 294,
+        "128": 455,
+        "140": 294,
+        "152": 455
+       },
+       "ok": true
+      },
+      "3": {
+       "cases": [
+        [
+         "mm",
+         [
+          16,
+          16,
+          48
+         ],
+         [
+          3
+         ]
+        ],
+        [
+         "mm",
+         [
+          17,
+          31,
+          65
+         ],
+         [
+          3
+         ]
+        ],
+        [
+         "addmm",
+         [
+          16,
+          16,
+          48
+         ],
+         [
+          3
+         ]
+        ],
+        [
+         "addmm",
+         [
+          17,
+          31,
+          65
+         ],
+         [
+          3
+         ]
+        ]
+       ],
+       "recomputed": {
+        "116": 292,
+        "128": 540,
+        "140": 292,
+        "152": 540
+       },
+       "recorded": {
+        "116": 292,
+        "128": 540,
+        "140": 292,
+        "152": 540
+       },
+       "ok": true
+      }
+     }
+    },
+    {
+     "name": "extra run extra_run: runner manifest schema",
+     "ok": true,
+     "manifest": "evidence/r40/v3/R40-07.pipeline/extra_run/manifest_tiles_pipeline_extra.json",
+     "sha256": "1f1db869fc5d3cd0abc232ed787c468bd3a12af3a1932a78a6a9bc40c85ba4c6",
+     "runner_sha256": "053be41d8cf0f1363eec7b35a3140a18a07f2c8bbb873b345688e519401532fc"
+    },
+    {
+     "name": "extra run extra_run: run closed by the runner (complete) or finalized after a deliberate stop (partial)",
+     "ok": true,
+     "status": "complete",
+     "jobs_not_run": []
+    },
+    {
+     "name": "extra run extra_run: run bound to the delivery product tree before and after",
+     "ok": true,
+     "before": "files:fe1b5199db515440d2d3407aed61ef1eed5edb627e5baf9cda10be5a7198cf75",
+     "after": "files:fe1b5199db515440d2d3407aed61ef1eed5edb627e5baf9cda10be5a7198cf75",
+     "expected": "files:fe1b5199db515440d2d3407aed61ef1eed5edb627e5baf9cda10be5a7198cf75",
+     "host": "gx10-6646",
+     "root": "/home/zhongchun/r40v3_tpc"
+    },
+    {
+     "name": "extra run extra_run: product imports resolved inside the immutable run copy",
+     "ok": true,
+     "origins": {
+      "tnca": "/home/zhongchun/r40v3_tpc/python/tnca/__init__.py",
+      "tnca_cc": "/home/zhongchun/r40v3_tpc/compiler/python/tnca_cc/__init__.py",
+      "triton": "3.8.0",
+      "torch": "2.14.0+cu130",
+      "backends": [
+       "triton.backends.amd",
+       "triton.backends.nvidia",
+       "tnca.triton_backend"
+      ],
+      "ok": true
+     }
+    },
+    {
+     "name": "extra run extra_run: locked toolchain (torch 2.14.0, Triton 3.8.0)",
+     "ok": true
+    },
+    {
+     "name": "test harness files that ran equal the repository copies",
+     "ok": true,
+     "files": {
+      "tools/r40/v3_pipeline_matrix.py": "7053184b6c89205c89abc5076367051aeaeba2cd04445357b919b3aafeb5788d",
+      "tools/r40/engine_overlap.py": "c1db0ac97ea8cd4ebff56b81c5d6f293ae985208e917deff3df81c0078c79f04",
+      "tools/r2/fault_tests.py": "c252cda1a2340a791ae93837ab1c317ca8f4b9139fbd892d2ed7c20749e97493",
+      "compiler/test/test_pipeline.py": "d670dfa23793c81b5c1c6d51b5bca0f537af8eb887c208ab881cfaa9d73c0253",
+      "compiler/test/test_protocol.py": "2455f19ccce29f8fcd34fa21400cb075eb0e52bc883fcff9d15e9e8d76f9e994",
+      "compiler/test/rtl_harness.py": "9c9e68964b5679f302a04ec178c9b56e68486b8de66690cc0731ab44d4876fde",
+      "compiler/test/run_tests.py": "b7f85ae3d8ac4b38d3ab42b463938abcb435b00e733804e4d659e1e32a720141"
+     },
+     "differ": {},
+     "run": "/home/ubuntu/TritonChip/evidence/r40/v3/R40-07.pipeline/extra_run"
+    },
+    {
+     "name": "directed pipeline evidence: pipe_fast_s1",
+     "ok": true,
+     "exit": 0,
+     "seconds": 1533.0,
+     "log": "pipe_fast_s1.log",
+     "log_sha256": "1db36ebf0fd40f64d9ac7f37047210797c9a74d4aa2fc7b5af160cee1be4b0c4",
+     "marker": "r40-v3-pipeline-matrix PASS",
+     "marker_found": true,
+     "log_unmodified": true,
+     "cmd": "/home/zhongchun/tc_env/torchenv/bin/python tools/r40/v3_pipeline_matrix.py --memory fast --stages 1 --trace-dir /home/zhongchun/r40v3_tpc_runs/all/trace_fast_s1 --json /home/zhongchun/r40v3_tpc_runs/all/pipe_fast_s1.report.json",
+     "env": {}
+    },
+    {
+     "name": "directed pipeline evidence: pipe_fast_s2",
+     "ok": true,
+     "exit": 0,
+     "seconds": 1658.3,
+     "log": "pipe_fast_s2.log",
+     "log_sha256": "85c96e22350e3de6302776c1735c46b023407424b3e71e67c3b78d86ad398cf3",
+     "marker": "r40-v3-pipeline-matrix PASS",
+     "marker_found": true,
+     "log_unmodified": true,
+     "cmd": "/home/zhongchun/tc_env/torchenv/bin/python tools/r40/v3_pipeline_matrix.py --memory fast --stages 2 --trace-dir /home/zhongchun/r40v3_tpc_runs/all/trace_fast_s2 --json /home/zhongchun/r40v3_tpc_runs/all/pipe_fast_s2.report.json",
+     "env": {}
+    },
+    {
+     "name": "directed pipeline evidence: pipe_fast_s3",
+     "ok": true,
+     "exit": 0,
+     "seconds": 1775.2,
+     "log": "pipe_fast_s3.log",
+     "log_sha256": "5e53970787b177fc2e05c3e5e516edb9bfdcec99778522b75ebef8bf4ba3d240",
+     "marker": "r40-v3-pipeline-matrix PASS",
+     "marker_found": true,
+     "log_unmodified": true,
+     "cmd": "/home/zhongchun/tc_env/torchenv/bin/python tools/r40/v3_pipeline_matrix.py --memory fast --stages 3 --trace-dir /home/zhongchun/r40v3_tpc_runs/all/trace_fast_s3 --json /home/zhongchun/r40v3_tpc_runs/all/pipe_fast_s3.report.json",
+     "env": {}
+    },
+    {
+     "name": "directed pipeline evidence: pipe_slow_s1",
+     "ok": true,
+     "exit": 0,
+     "seconds": 1746.0,
+     "log": "pipe_slow_s1.log",
+     "log_sha256": "451cc53f001606b0b152264d3d0def249d4c194e5e97acd9760a8ef04e82ceed",
+     "marker": "r40-v3-pipeline-matrix PASS",
+     "marker_found": true,
+     "log_unmodified": true,
+     "cmd": "/home/zhongchun/tc_env/torchenv/bin/python tools/r40/v3_pipeline_matrix.py --memory slow --stages 1 --trace-dir /home/zhongchun/r40v3_tpc_runs/all/trace_slow_s1 --json /home/zhongchun/r40v3_tpc_runs/all/pipe_slow_s1.report.json",
+     "env": {}
+    },
+    {
+     "name": "directed pipeline evidence: pipe_slow_s2",
+     "ok": true,
+     "exit": 0,
+     "seconds": 1758.8,
+     "log": "pipe_slow_s2.log",
+     "log_sha256": "31e7e8b2859dd6b3a6e35733342e27232c2be0fd88d26b3272e001356969a474",
+     "marker": "r40-v3-pipeline-matrix PASS",
+     "marker_found": true,
+     "log_unmodified": true,
+     "cmd": "/home/zhongchun/tc_env/torchenv/bin/python tools/r40/v3_pipeline_matrix.py --memory slow --stages 2 --trace-dir /home/zhongchun/r40v3_tpc_runs/all/trace_slow_s2 --json /home/zhongchun/r40v3_tpc_runs/all/pipe_slow_s2.report.json",
+     "env": {}
+    },
+    {
+     "name": "directed pipeline evidence: pipe_slow_s3",
+     "ok": true,
+     "exit": 0,
+     "seconds": 2059.7,
+     "log": "pipe_slow_s3.log",
+     "log_sha256": "d3980953c9f328917c69bc5a3c58a39cd3533c7f5e920eaa6f96d45f5a8bdbea",
+     "marker": "r40-v3-pipeline-matrix PASS",
+     "marker_found": true,
+     "log_unmodified": true,
+     "cmd": "/home/zhongchun/tc_env/torchenv/bin/python tools/r40/v3_pipeline_matrix.py --memory slow --stages 3 --trace-dir /home/zhongchun/r40v3_tpc_runs/all/trace_slow_s3 --json /home/zhongchun/r40v3_tpc_runs/all/pipe_slow_s3.report.json",
+     "env": {}
+    },
+    {
+     "name": "directed pipeline evidence: pipe_hbm_s1",
+     "ok": true,
+     "exit": 0,
+     "seconds": 1722.9,
+     "log": "pipe_hbm_s1.log",
+     "log_sha256": "f06e4259922de78bdeaa296381128a28e8bdd4ce229a0a716164882d2fbc4897",
+     "marker": "r40-v3-pipeline-matrix PASS",
+     "marker_found": true,
+     "log_unmodified": true,
+     "cmd": "/home/zhongchun/tc_env/torchenv/bin/python tools/r40/v3_pipeline_matrix.py --memory hbm --stages 1 --trace-dir /home/zhongchun/r40v3_tpc_runs/all/trace_hbm_s1 --json /home/zhongchun/r40v3_tpc_runs/all/pipe_hbm_s1.report.json",
+     "env": {}
+    },
+    {
+     "name": "directed pipeline evidence: pipe_hbm_s2",
+     "ok": true,
+     "exit": 0,
+     "seconds": 1844.3,
+     "log": "pipe_hbm_s2.log",
+     "log_sha256": "58a3618da2c5f40beb86ba3b06c49dc5f88d4c3e1b993d1a995844403c768c5c",
+     "marker": "r40-v3-pipeline-matrix PASS",
+     "marker_found": true,
+     "log_unmodified": true,
+     "cmd": "/home/zhongchun/tc_env/torchenv/bin/python tools/r40/v3_pipeline_matrix.py --memory hbm --stages 2 --trace-dir /home/zhongchun/r40v3_tpc_runs/all/trace_hbm_s2 --json /home/zhongchun/r40v3_tpc_runs/all/pipe_hbm_s2.report.json",
+     "env": {}
+    },
+    {
+     "name": "directed pipeline evidence: pipe_hbm_s3",
+     "ok": true,
+     "exit": 0,
+     "seconds": 1912.9,
+     "log": "pipe_hbm_s3.log",
+     "log_sha256": "dffe45bbcbf82bdd0f603931dd59239d2fb8471985d91c2ee9a42bd9933d4d4c",
+     "marker": "r40-v3-pipeline-matrix PASS",
+     "marker_found": true,
+     "log_unmodified": true,
+     "cmd": "/home/zhongchun/tc_env/torchenv/bin/python tools/r40/v3_pipeline_matrix.py --memory hbm --stages 3 --trace-dir /home/zhongchun/r40v3_tpc_runs/all/trace_hbm_s3 --json /home/zhongchun/r40v3_tpc_runs/all/pipe_hbm_s3.report.json",
+     "env": {}
+    },
+    {
+     "name": "directed pipeline evidence: pipe_hbm-adverse_s1",
+     "ok": true,
+     "exit": 0,
+     "seconds": 3042.5,
+     "log": "pipe_hbm-adverse_s1.log",
+     "log_sha256": "ac5c4d6953823f8a173242d23c8a22d2248841d58f90edf68f24a5f9e0481d92",
+     "marker": "r40-v3-pipeline-matrix PASS",
+     "marker_found": true,
+     "log_unmodified": true,
+     "cmd": "/home/zhongchun/tc_env/torchenv/bin/python tools/r40/v3_pipeline_matrix.py --memory hbm-adverse --stages 1 --trace-dir /home/zhongchun/r40v3_tpc_runs/all/trace_hbm-adverse_s1 --json /home/zhongchun/r40v3_tpc_runs/all/pipe_hbm-adverse_s1.report.json",
+     "env": {}
+    },
+    {
+     "name": "directed pipeline evidence: pipe_hbm-adverse_s2",
+     "ok": true,
+     "exit": 0,
+     "seconds": 3345.3,
+     "log": "pipe_hbm-adverse_s2.log",
+     "log_sha256": "161232e809538113223aefe03c95ae6ada3f5b9049e4075e45a1065b1d2905bb",
+     "marker": "r40-v3-pipeline-matrix PASS",
+     "marker_found": true,
+     "log_unmodified": true,
+     "cmd": "/home/zhongchun/tc_env/torchenv/bin/python tools/r40/v3_pipeline_matrix.py --memory hbm-adverse --stages 2 --trace-dir /home/zhongchun/r40v3_tpc_runs/all/trace_hbm-adverse_s2 --json /home/zhongchun/r40v3_tpc_runs/all/pipe_hbm-adverse_s2.report.json",
+     "env": {}
+    },
+    {
+     "name": "directed pipeline evidence: pipe_hbm-adverse_s3",
+     "ok": true,
+     "exit": 0,
+     "seconds": 3537.6,
+     "log": "pipe_hbm-adverse_s3.log",
+     "log_sha256": "9bc372e111d5fe098dc245bfcdb07c3ce7b0822cd27de56c508ed1d77cd955fa",
+     "marker": "r40-v3-pipeline-matrix PASS",
+     "marker_found": true,
+     "log_unmodified": true,
+     "cmd": "/home/zhongchun/tc_env/torchenv/bin/python tools/r40/v3_pipeline_matrix.py --memory hbm-adverse --stages 3 --trace-dir /home/zhongchun/r40v3_tpc_runs/all/trace_hbm-adverse_s3 --json /home/zhongchun/r40v3_tpc_runs/all/pipe_hbm-adverse_s3.report.json",
+     "env": {}
+    },
+    {
+     "name": "directed pipeline evidence: compiler_rtl",
+     "ok": true,
+     "exit": 0,
+     "seconds": 236.9,
+     "log": "compiler_rtl.log",
+     "log_sha256": "d6ce532ed83bbedcc8ebedd6d3e8a12a0d2637d129cfcfa054d870f55115e1e5",
+     "marker": "compiler-rtl\\s+PASS\\s+\\d+ tests\\n",
+     "marker_found": true,
+     "log_unmodified": true,
+     "cmd": "make --no-print-directory sim/build/tb_core.vvp sim/build/tb_core4.vvp sim/build/tb_core_slow.vvp sim/build/tb_core_ooo.vvp sim/build/tb_core4_slow.vvp sim/build/tb_core4_ooo.vvp && python3 compiler/test/run_tests.py --rtl",
+     "env": {
+      "R1_STRICT": "1"
+     }
+    },
+    {
+     "name": "directed pipeline evidence: compiler_pipeline_protocol_v",
+     "ok": true,
+     "exit": 0,
+     "seconds": 13.9,
+     "log": "compiler_pipeline_protocol_v.log",
+     "log_sha256": "6e6cd0a0ce9c8ff4c0f0220499e2e09dc31f3508b4f0c48e8f6f9130a562e4a1",
+     "marker": "\\nOK\\n",
+     "marker_found": true,
+     "log_unmodified": true,
+     "cmd": "cd compiler/test && python3 -m unittest -v test_pipeline test_protocol",
+     "env": {}
+    },
+    {
+     "name": "directed pipeline evidence: r2_fault_suite",
+     "ok": true,
+     "exit": 0,
+     "seconds": 25.3,
+     "log": "r2_fault_suite.log",
+     "log_sha256": "16a6e5ec502cfce8b84c29a73ab68f994bad846ac4b7fd79fa1fd76e12ab2f78",
+     "marker": "r2-fault-tests\\s+PASS",
+     "marker_found": true,
+     "log_unmodified": true,
+     "cmd": "/home/zhongchun/tc_env/torchenv/bin/python tools/r2/fault_tests.py --json /home/zhongchun/r40v3_tpc_runs/all/r2_fault.report.json",
+     "env": {}
+    },
+    {
+     "name": "long K (256) and long K with M/N/K tails / masked edge tiles (17x31x257) plus odd short-ring K (48): mm, addmm and linear (transposed weight) correct with zero steady transfers at stages 1, 2 and 3",
+     "ok": true,
+     "matrix": {
+      "pipe_fast_s1": {
+       "ok": true,
+       "source": "report",
+       "overlap_cycles": {
+        "mm 16x16x48": 0,
+        "mm 16x16x256": 0,
+        "mm 17x31x257": 556,
+        "addmm 16x16x48": 0,
+        "addmm 16x16x256": 0,
+        "addmm 17x31x257": 556,
+        "linear 16x16x48": 0,
+        "linear 16x16x256": 0,
+        "linear 17x31x257": 566
+       },
+       "max_abs_err": 3.814697265625e-06,
+       "cmd": "/home/zhongchun/tc_env/torchenv/bin/python tools/r40/v3_pipeline_matrix.py --memory fast --stages 1 --trace-dir /home/zhongchun/r40v3_tpc_runs/all/trace_fast_s1 --json /home/zhongchun/r40v3_tpc_runs/all/pipe_fast_s1.report.json",
+       "profile": "core-vrf-sync-v5",
+       "axi_plusargs": null
+      },
+      "pipe_fast_s2": {
+       "ok": true,
+       "source": "report",
+       "overlap_cycles": {
+        "mm 16x16x48": 294,
+        "mm 16x16x256": 2177,
+        "mm 17x31x257": 1221,
+        "addmm 16x16x48": 294,
+        "addmm 16x16x256": 2177,
+        "addmm 17x31x257": 1215,
+        "linear 16x16x48": 342,
+        "linear 16x16x256": 2537,
+        "linear 17x31x257": 1183
+       },
+       "max_abs_err": 3.814697265625e-06,
+       "cmd": "/home/zhongchun/tc_env/torchenv/bin/python tools/r40/v3_pipeline_matrix.py --memory fast --stages 2 --trace-dir /home/zhongchun/r40v3_tpc_runs/all/trace_fast_s2 --json /home/zhongchun/r40v3_tpc_runs/all/pipe_fast_s2.report.json",
+       "profile": "core-vrf-sync-v5",
+       "axi_plusargs": null
+      },
+      "pipe_fast_s3": {
+       "ok": true,
+       "source": "report",
+       "overlap_cycles": {
+        "mm 16x16x48": 292,
+        "mm 16x16x256": 2192,
+        "mm 17x31x257": 2176,
+        "addmm 16x16x48": 292,
+        "addmm 16x16x256": 2192,
+        "addmm 17x31x257": 2176,
+        "linear 16x16x48": 319,
+        "linear 16x16x256": 2529,
+        "linear 17x31x257": 2176
+       },
+       "max_abs_err": 3.814697265625e-06,
+       "cmd": "/home/zhongchun/tc_env/torchenv/bin/python tools/r40/v3_pipeline_matrix.py --memory fast --stages 3 --trace-dir /home/zhongchun/r40v3_tpc_runs/all/trace_fast_s3 --json /home/zhongchun/r40v3_tpc_runs/all/pipe_fast_s3.report.json",
+       "profile": "core-vrf-sync-v5",
+       "axi_plusargs": null
+      },
+      "pipe_slow_s1": {
+       "ok": true,
+       "source": "report",
+       "overlap_cycles": {
+        "mm 16x16x48": 0,
+        "mm 16x16x256": 0,
+        "mm 17x31x257": 4648,
+        "addmm 16x16x48": 0,
+        "addmm 16x16x256": 0,
+        "addmm 17x31x257": 4643,
+        "linear 16x16x48": 0,
+        "linear 16x16x256": 0,
+        "linear 17x31x257": 4663
+       },
+       "max_abs_err": 3.814697265625e-06,
+       "cmd": "/home/zhongchun/tc_env/torchenv/bin/python tools/r40/v3_pipeline_matrix.py --memory slow --stages 1 --trace-dir /home/zhongchun/r40v3_tpc_runs/all/trace_slow_s1 --json /home/zhongchun/r40v3_tpc_runs/all/pipe_slow_s1.report.json",
+       "profile": "core-vrf-sync-v5/slow",
+       "axi_plusargs": null
+      },
+      "pipe_slow_s2": {
+       "ok": true,
+       "source": "report",
+       "overlap_cycles": {
+        "mm 16x16x48": 602,
+        "mm 16x16x256": 4525,
+        "mm 17x31x257": 2104,
+        "addmm 16x16x48": 606,
+        "addmm 16x16x256": 4514,
+        "addmm 17x31x257": 4829,
+        "linear 16x16x48": 605,
+        "linear 16x16x256": 4517,
+        "linear 17x31x257": 2223
+       },
+       "max_abs_err": 3.814697265625e-06,
+       "cmd": "/home/zhongchun/tc_env/torchenv/bin/python tools/r40/v3_pipeline_matrix.py --memory slow --stages 2 --trace-dir /home/zhongchun/r40v3_tpc_runs/all/trace_slow_s2 --json /home/zhongchun/r40v3_tpc_runs/all/pipe_slow_s2.report.json",
+       "profile": "core-vrf-sync-v5/slow",
+       "axi_plusargs": null
+      },
+      "pipe_slow_s3": {
+       "ok": true,
+       "source": "report",
+       "overlap_cycles": {
+        "mm 16x16x48": 600,
+        "mm 16x16x256": 4204,
+        "mm 17x31x257": 4834,
+        "addmm 16x16x48": 434,
+        "addmm 16x16x256": 4278,
+        "addmm 17x31x257": 4733,
+        "linear 16x16x48": 606,
+        "linear 16x16x256": 4545,
+        "linear 17x31x257": 4726
+       },
+       "max_abs_err": 3.814697265625e-06,
+       "cmd": "/home/zhongchun/tc_env/torchenv/bin/python tools/r40/v3_pipeline_matrix.py --memory slow --stages 3 --trace-dir /home/zhongchun/r40v3_tpc_runs/all/trace_slow_s3 --json /home/zhongchun/r40v3_tpc_runs/all/pipe_slow_s3.report.json",
+       "profile": "core-vrf-sync-v5/slow",
+       "axi_plusargs": null
+      },
+      "pipe_hbm_s1": {
+       "ok": true,
+       "source": "report",
+       "overlap_cycles": {
+        "mm 16x16x48": 0,
+        "mm 16x16x256": 0,
+        "mm 17x31x257": 2132,
+        "addmm 16x16x48": 0,
+        "addmm 16x16x256": 0,
+        "addmm 17x31x257": 2132,
+        "linear 16x16x48": 0,
+        "linear 16x16x256": 0,
+        "linear 17x31x257": 203
+       },
+       "max_abs_err": 3.814697265625e-06,
+       "cmd": "/home/zhongchun/tc_env/torchenv/bin/python tools/r40/v3_pipeline_matrix.py --memory hbm --stages 1 --trace-dir /home/zhongchun/r40v3_tpc_runs/all/trace_hbm_s1 --json /home/zhongchun/r40v3_tpc_runs/all/pipe_hbm_s1.report.json",
+       "profile": "core-vrf-sync-v5/hbm",
+       "axi_plusargs": null
+      },
+      "pipe_hbm_s2": {
+       "ok": true,
+       "source": "report",
+       "overlap_cycles": {
+        "mm 16x16x48": 546,
+        "mm 16x16x256": 4067,
+        "mm 17x31x257": 1218,
+        "addmm 16x16x48": 546,
+        "addmm 16x16x256": 4067,
+        "addmm 17x31x257": 1218,
+        "linear 16x16x48": 588,
+        "linear 16x16x256": 4382,
+        "linear 17x31x257": 234
+       },
+       "max_abs_err": 3.814697265625e-06,
+       "cmd": "/home/zhongchun/tc_env/torchenv/bin/python tools/r40/v3_pipeline_matrix.py --memory hbm --stages 2 --trace-dir /home/zhongchun/r40v3_tpc_runs/all/trace_hbm_s2 --json /home/zhongchun/r40v3_tpc_runs/all/pipe_hbm_s2.report.json",
+       "profile": "core-vrf-sync-v5/hbm",
+       "axi_plusargs": null
+      },
+      "pipe_hbm_s3": {
+       "ok": true,
+       "source": "report",
+       "overlap_cycles": {
+        "mm 16x16x48": 407,
+        "mm 16x16x256": 3895,
+        "mm 17x31x257": 4265,
+        "addmm 16x16x48": 407,
+        "addmm 16x16x256": 3895,
+        "addmm 17x31x257": 4318,
+        "linear 16x16x48": 428,
+        "linear 16x16x256": 4123,
+        "linear 17x31x257": 4318
+       },
+       "max_abs_err": 3.814697265625e-06,
+       "cmd": "/home/zhongchun/tc_env/torchenv/bin/python tools/r40/v3_pipeline_matrix.py --memory hbm --stages 3 --trace-dir /home/zhongchun/r40v3_tpc_runs/all/trace_hbm_s3 --json /home/zhongchun/r40v3_tpc_runs/all/pipe_hbm_s3.report.json",
+       "profile": "core-vrf-sync-v5/hbm",
+       "axi_plusargs": null
+      },
+      "pipe_hbm-adverse_s1": {
+       "ok": true,
+       "source": "report",
+       "overlap_cycles": {
+        "mm 16x16x48": 0,
+        "mm 16x16x256": 0,
+        "mm 17x31x257": 10263,
+        "addmm 16x16x48": 0,
+        "addmm 16x16x256": 0,
+        "addmm 17x31x257": 10263,
+        "linear 16x16x48": 0,
+        "linear 16x16x256": 0,
+        "linear 17x31x257": 10574
+       },
+       "max_abs_err": 3.814697265625e-06,
+       "cmd": "/home/zhongchun/tc_env/torchenv/bin/python tools/r40/v3_pipeline_matrix.py --memory hbm-adverse --stages 1 --trace-dir /home/zhongchun/r40v3_tpc_runs/all/trace_hbm-adverse_s1 --json /home/zhongchun/r40v3_tpc_runs/all/pipe_hbm-adverse_s1.report.json",
+       "profile": "core-vrf-sync-v5/hbm",
+       "axi_plusargs": "+axi_seed=7 +axi_lat_min=16 +axi_lat_max=96 +axi_reorder +axi_bp=30"
+      },
+      "pipe_hbm-adverse_s2": {
+       "ok": true,
+       "source": "report",
+       "overlap_cycles": {
+        "mm 16x16x48": 622,
+        "mm 16x16x256": 4665,
+        "mm 17x31x257": 10580,
+        "addmm 16x16x48": 622,
+        "addmm 16x16x256": 4665,
+        "addmm 17x31x257": 10579,
+        "linear 16x16x48": 622,
+        "linear 16x16x256": 4665,
+        "linear 17x31x257": 10591
+       },
+       "max_abs_err": 3.814697265625e-06,
+       "cmd": "/home/zhongchun/tc_env/torchenv/bin/python tools/r40/v3_pipeline_matrix.py --memory hbm-adverse --stages 2 --trace-dir /home/zhongchun/r40v3_tpc_runs/all/trace_hbm-adverse_s2 --json /home/zhongchun/r40v3_tpc_runs/all/pipe_hbm-adverse_s2.report.json",
+       "profile": "core-vrf-sync-v5/hbm",
+       "axi_plusargs": "+axi_seed=7 +axi_lat_min=16 +axi_lat_max=96 +axi_reorder +axi_bp=30"
+      },
+      "pipe_hbm-adverse_s3": {
+       "ok": true,
+       "source": "report",
+       "overlap_cycles": {
+        "mm 16x16x48": 622,
+        "mm 16x16x256": 4665,
+        "mm 17x31x257": 10578,
+        "addmm 16x16x48": 622,
+        "addmm 16x16x256": 4665,
+        "addmm 17x31x257": 10576,
+        "linear 16x16x48": 622,
+        "linear 16x16x256": 4665,
+        "linear 17x31x257": 10578
+       },
+       "max_abs_err": 3.814697265625e-06,
+       "cmd": "/home/zhongchun/tc_env/torchenv/bin/python tools/r40/v3_pipeline_matrix.py --memory hbm-adverse --stages 3 --trace-dir /home/zhongchun/r40v3_tpc_runs/all/trace_hbm-adverse_s3 --json /home/zhongchun/r40v3_tpc_runs/all/pipe_hbm-adverse_s3.report.json",
+       "profile": "core-vrf-sync-v5/hbm",
+       "axi_plusargs": "+axi_seed=7 +axi_lat_min=16 +axi_lat_max=96 +axi_reorder +axi_bp=30"
+      }
+     }
+    },
+    {
+     "name": "the matrix harness that ran sets the adverse AXI timing it is credited with",
+     "ok": true
+    },
+    {
+     "name": "memory timing: v5 fast memory, slow random-stall out-of-order memory, AXI HBM default and late/out-of-order/backpressured (lat 16-96, reorder, 30% READY drop)",
+     "ok": true
+    },
+    {
+     "name": "engine trace of every 2/3-stage ring case in every memory mode shows DMA/MMA service overlap (recomputed from the raw trace)",
+     "ok": true
+    },
+    {
+     "name": "C3 two-role pipeline on the core RTL benches: 0/1/2/odd/5/6 trips, delayed and out-of-order completion, predicated-off async, three stages, two consumers, and a faulting transfer that wakes the consumer with the barrier error (no hang); protocol model: completion orders, short loops, faults",
+     "ok": true,
+     "missing": [],
+     "passed": [
+      "test_all_false_still_completes",
+      "test_arrivals_alone_do_not_satisfy_an_operation_count",
+      "test_both_counts_release_the_waiter",
+      "test_delayed_completion",
+      "test_error_propagation",
+      "test_first_of_two_consumers_does_not_free_the_buffer",
+      "test_five_iterations",
+      "test_generation_follows_the_iteration",
+      "test_init_under_a_waiter_is_a_barrier_fault",
+      "test_more_roles_than_contexts_refused",
+      "test_one_iteration",
+      "test_operation_count_must_match_expansion",
+      "test_operations_alone_do_not_satisfy_an_arrival_count",
+      "test_out_of_order_returns",
+      "test_predicated_off_async_still_completes",
+      "test_publish_before_fill_completes",
+      "test_read_before_publish",
+      "test_ready_and_free_are_separate_barriers",
+      "test_refill_while_a_consumer_still_reads",
+      "test_short_loops",
+      "test_six_iterations",
+      "test_source_release_allowed_when_advertised",
+      "test_source_release_refused_without_hardware_support",
+      "test_stages_consumers_and_completion_orders",
+      "test_three_iterations_odd",
+      "test_three_stage_ring",
+      "test_too_many_stages_refused",
+      "test_two_consumers_on_four_contexts",
+      "test_two_iterations",
+      "test_unaligned_row_stride",
+      "test_uncounted_completion_is_refused",
+      "test_unfinished_command_at_exit",
+      "test_wait_on_unarmed_barrier_would_sleep_forever",
+      "test_zero_iterations"
+     ],
+     "ran": 34
+    },
+    {
+     "name": "compiler RTL suites (R1_STRICT: no skips)",
+     "ok": true,
+     "tests": 68
+    },
+    {
+     "name": "fault drain: a faulting kernel goes FAILING -> DRAINING -> FAILED with its trap and PC, and the session stays usable for an independent task (R2-11)",
+     "ok": true,
+     "suite": {
+      "ERR-01": "PASS",
+      "ERR-02": "PASS",
+      "ERR-03": "PASS",
+      "ERR-04": "PASS",
+      "ERR-05": "PASS",
+      "ERR-06": "PASS",
+      "ERR-07": "PASS"
+     }
+    }
+   ],
+   "detail": "make r40-pipeline-checks + directed long-K/tail/stage/memory-timing matrix, C3 ring RTL suites and R2-11 fault drain on an immutable copy of the delivery tree; DMA/MMA overlap from the RTL engine trace of the delivered core (no engine trace on the board); fault drain shown by RTL ring fault propagation plus runtime drain, not by a fault injected into a standard-Torch ring kernel; no performance claim",
+   "written": "2026-10-20T01:30:40+00:00",
+   "software_tree": "files:fe1b5199db515440d2d3407aed61ef1eed5edb627e5baf9cda10be5a7198cf75",
+   "image": "not-applicable: RTL simulation",
+   "clock": "not-applicable",
+   "measured_performance": false,
+   "run_host": "gx10-6646",
+   "run_root": "/home/zhongchun/r40v3_tpc",
+   "contract_version": 3,
+   "contract_sha256": "0963f50e5ba7b569d87ac636f7d31df748ef967609e981d0fff884f759abe211"
+  },
+  "R40-07.policy": {
+   "status": "capability-pass",
+   "checks": [
+    {
+     "name": "auditor runs on the delivery product tree",
+     "ok": true,
+     "local": "files:fe1b5199db515440d2d3407aed61ef1eed5edb627e5baf9cda10be5a7198cf75",
+     "delivery": "files:fe1b5199db515440d2d3407aed61ef1eed5edb627e5baf9cda10be5a7198cf75"
+    },
+    {
+     "name": "identity amendment: delivery tree and its complete product diff from 80dd (only these files differ; their delivered hashes are the ones audited)",
+     "ok": true,
+     "delivery_tree": "files:fe1b5199db515440d2d3407aed61ef1eed5edb627e5baf9cda10be5a7198cf75",
+     "diff_from_80dd": [
+      "python/tnca/inductor.py",
+      "python/tnca/triton_backend/compiler.py"
+     ],
+     "file_sha256": {
+      "python/tnca/inductor.py": "d1a28be248d5581dbcce60491c9f5a752fda9d77ffa209bf7e458cea152a6f0a",
+      "python/tnca/triton_backend/compiler.py": "3818f5688b7d40c9f995de309738555c848e03e7f11977ce1220554e9e191f36"
+     },
+     "amendment_sha256": "97686070f1b352bdc519e900e3fb6ef27853bf6a596f73950d638dbd77e730cb"
+    },
+    {
+     "name": "inventory bound to the delivery tree and the complete tiny+small+medium suite",
+     "ok": true,
+     "report": "evidence/r40/v3/R40-07.policy/inventory_existing/report.json",
+     "sha256": "7435ea06566e841b15ab5faef7b1d6b3ab391571203d9f993b246c528de89bdf",
+     "harness_sha256": "d584ea45798a5d7a867327f39ff01046ee63211f247afd9dc17a95eeca8301ed",
+     "status": "complete",
+     "configs": {
+      "off": {
+       "TNCA_PIPELINE": "1"
+      },
+      "pipe2": {
+       "TNCA_PIPELINE": "2"
+      },
+      "gated2": {
+       "TNCA_PIPELINE": "2",
+       "TNCA_RCTX_ROLES": "1"
+      },
+      "gated3": {
+       "TNCA_PIPELINE": "3",
+       "TNCA_RCTX_ROLES": "1"
+      },
+      "forced2": {
+       "TNCA_PIPELINE": "2",
+       "TNCA_RCTX_ROLES": "2"
+      }
+     }
+    },
+    {
+     "name": "inventory harness equals the repository copy",
+     "ok": true
+    },
+    {
+     "name": "every point compiled (native tnca path, compile-only) under every configuration",
+     "ok": true,
+     "failures": {}
+    },
+    {
+     "name": "frozen automatic policy in the delivered tree: TNCA_RCTX_ROLES=1 asks tnca_cc.partition.ring_estimate, which refuses a ring whose producer only issues transfers (Mode B already overlaps them; R39 board: small/medium GEMMs 2-5 % slower); one-step loops, carried pointers and resource misfits are refused too",
+     "ok": true,
+     "partition_sha256": "7fe668f77b8262e63ce953301f627f90e2d7dec1790c3fe06c838f34c7ccaa54",
+     "aot_sha256": "f6fc417becc32a08d37912523c375f704e1680d8364c15bf756391291ae8ffaa"
+    },
+    {
+     "name": "delivered default (TNCA_RCTX_ROLES unset): TNCA_PIPELINE 1 -> 2 leaves every tiny/small/medium executable payload unchanged",
+     "ok": true,
+     "differ": []
+    },
+    {
+     "name": "automatic policy (TNCA_RCTX_ROLES=1, 2 and 3 stages): every short-K / low-parallelism decision is recorded with its reason; where it declines, the payload equals the pipeline-off one; the points it changes are listed for the board A/B",
+     "ok": true,
+     "changed": {
+      "gated2": [
+       "model.llama_decode/medium/fp16-b1-p256",
+       "model.llama_decode/small/fp16-b1-p128",
+       "model.llama_decode/tiny/fp16-b1-p16",
+       "model.llama_prefill/medium/fp16-b1-s64",
+       "model.llama_prefill/small/fp16-b1-s64",
+       "model.llama_prefill/tiny/fp16-b1-s16",
+       "op.gemv/medium/fp16-k320-n448",
+       "op.gemv/small/fp16-k256-n512",
+       "op.gemv/tiny/fp16-k64-n64"
+      ],
+      "gated3": [
+       "model.llama_decode/medium/fp16-b1-p256",
+       "model.llama_decode/small/fp16-b1-p128",
+       "model.llama_decode/tiny/fp16-b1-p16",
+       "model.llama_prefill/medium/fp16-b1-s64",
+       "model.llama_prefill/small/fp16-b1-s64",
+       "model.llama_prefill/tiny/fp16-b1-s16",
+       "op.gemv/medium/fp16-k320-n448",
+       "op.gemv/small/fp16-k256-n512",
+       "op.gemv/tiny/fp16-k64-n64"
+      ]
+     },
+     "refusal_reasons": {
+      "no loop fills a window that an MMA in it reads": 63,
+      "the producer would only issue transfers, which Mode B already overlaps with the MMAs of another program": 15,
+      "memory crosses roles: load may read what a store of the other role wrote": 2
+     },
+     "decisions": {
+      "model.gpt2_block/medium/fp16-d160-h5-b1-s64": {
+       "kernels": 13,
+       "rings": 0,
+       "refused": [
+        "no loop fills a window that an MMA in it reads",
+        "the producer would only issue transfers, which Mode B already overlaps with the MMAs of another program"
+       ],
+       "fallback": []
+      },
+      "model.gpt2_block/small/fp16-d128-h4-b1-s64": {
+       "kernels": 13,
+       "rings": 0,
+       "refused": [
+        "no loop fills a window that an MMA in it reads",
+        "the producer would only issue transfers, which Mode B already overlaps with the MMAs of another program"
+       ],
+       "fallback": []
+      },
+      "model.gpt2_block/tiny/fp16-d64-h4-b1-s16": {
+       "kernels": 12,
+       "rings": 0,
+       "refused": [
+        "no loop fills a window that an MMA in it reads",
+        "the producer would only issue transfers, which Mode B already overlaps with the MMAs of another program"
+       ],
+       "fallback": []
+      },
+      "model.llama_decode/medium/fp16-b1-p256": {
+       "kernels": 32,
+       "rings": 8,
+       "refused": [
+        "no loop fills a window that an MMA in it reads"
+       ],
+       "fallback": []
+      },
+      "model.llama_decode/small/fp16-b1-p128": {
+       "kernels": 32,
+       "rings": 8,
+       "refused": [
+        "no loop fills a window that an MMA in it reads"
+       ],
+       "fallback": []
+      },
+      "model.llama_decode/tiny/fp16-b1-p16": {
+       "kernels": 24,
+       "rings": 8,
+       "refused": [
+        "no loop fills a window that an MMA in it reads"
+       ],
+       "fallback": []
+      },
+      "model.llama_prefill/medium/fp16-b1-s64": {
+       "kernels": 25,
+       "rings": 1,
+       "refused": [
+        "no loop fills a window that an MMA in it reads",
+        "the producer would only issue transfers, which Mode B already overlaps with the MMAs of another program"
+       ],
+       "fallback": []
+      },
+      "model.llama_prefill/small/fp16-b1-s64": {
+       "kernels": 25,
+       "rings": 1,
+       "refused": [
+        "no loop fills a window that an MMA in it reads",
+        "the producer would only issue transfers, which Mode B already overlaps with the MMAs of another program"
+       ],
+       "fallback": []
+      },
+      "model.llama_prefill/tiny/fp16-b1-s16": {
+       "kernels": 20,
+       "rings": 1,
+       "refused": [
+        "no loop fills a window that an MMA in it reads",
+        "the producer would only issue transfers, which Mode B already overlaps with the MMAs of another program"
+       ],
+       "fallback": []
+      },
+      "model.mlp/medium/fp16-t128-d128": {
+       "kernels": 2,
+       "rings": 0,
+       "refused": [
+        "the producer would only issue transfers, which Mode B already overlaps with the MMAs of another program"
+       ],
+       "fallback": []
+      },
+      "model.mlp/small/fp16-t64-d128": {
+       "kernels": 2,
+       "rings": 0,
+       "refused": [
+        "the producer would only issue transfers, which Mode B already overlaps with the MMAs of another program"
+       ],
+       "fallback": []
+      },
+      "model.mlp/tiny/fp16-t16-d64": {
+       "kernels": 2,
+       "rings": 0,
+       "refused": [
+        "the producer would only issue transfers, which Mode B already overlaps with the MMAs of another program"
+       ],
+       "fallback": []
+      },
+      "model.resnet_block/medium/fp32-n1-c24-hw16": {
+       "kernels": 4,
+       "rings": 0,
+       "refused": [
+        "no loop fills a window that an MMA in it reads"
+       ],
+       "fallback": []
+      },
+      "model.resnet_block/small/fp32-n1-c16-hw16": {
+       "kernels": 4,
+       "rings": 0,
+       "refused": [
+        "no loop fills a window that an MMA in it reads"
+       ],
+       "fallback": []
+      },
+      "model.resnet_block/tiny/fp32-n1-c8-hw8": {
+       "kernels": 4,
+       "rings": 0,
+       "refused": [
+        "no loop fills a window that an MMA in it reads"
+       ],
+       "fallback": []
+      },
+      "op.add/medium/fp16-n49152": {
+       "kernels": 1,
+       "rings": 0,
+       "refused": [
+        "no loop fills a window that an MMA in it reads"
+       ],
+       "fallback": []
+      },
+      "op.add/small/fp16-n16384": {
+       "kernels": 1,
+       "rings": 0,
+       "refused": [
+        "no loop fills a window that an MMA in it reads"
+       ],
+       "fallback": []
+      },
+      "op.add/tiny/fp16-n1000": {
+       "kernels": 1,
+       "rings": 0,
+       "refused": [
+        "no loop fills a window that an MMA in it reads"
+       ],
+       "fallback": []
+      },
+      "op.add/tiny/fp32-n256": {
+       "kernels": 1,
+       "rings": 0,
+       "refused": [
+        "no loop fills a window that an MMA in it reads"
+       ],
+       "fallback": []
+      },
+      "op.argmax/medium/fp16-r32-v4096": {
+       "kernels": 1,
+       "rings": 0,
+       "refused": [
+        "no loop fills a window that an MMA in it reads"
+       ],
+       "fallback": []
+      },
+      "op.argmax/small/fp16-r8-v2048": {
+       "kernels": 1,
+       "rings": 0,
+       "refused": [
+        "no loop fills a window that an MMA in it reads"
+       ],
+       "fallback": []
+      },
+      "op.argmax/tiny/fp16-r2-v256": {
+       "kernels": 1,
+       "rings": 0,
+       "refused": [
+        "no loop fills a window that an MMA in it reads"
+       ],
+       "fallback": []
+      },
+      "op.attention_decode/medium/fp16-b1-h8-l256-d32": {
+       "kernels": 3,
+       "rings": 0,
+       "refused": [
+        "no loop fills a window that an MMA in it reads"
+       ],
+       "fallback": []
+      },
+      "op.attention_decode/small/fp16-b1-h4-l256-d32": {
+       "kernels": 3,
+       "rings": 0,
+       "refused": [
+        "no loop fills a window that an MMA in it reads"
+       ],
+       "fallback": []
+      },
+      "op.attention_decode/tiny/fp16-b1-h2-l16-d16": {
+       "kernels": 3,
+       "rings": 0,
+       "refused": [
+        "no loop fills a window that an MMA in it reads"
+       ],
+       "fallback": []
+      },
+      "op.attention_prefill/medium/fp16-b1-h4-s96-d32": {
+       "kernels": 7,
+       "rings": 0,
+       "refused": [
+        "no loop fills a window that an MMA in it reads"
+       ],
+       "fallback": []
+      },
+      "op.attention_prefill/small/fp16-b1-h4-s64-d32": {
+       "kernels": 7,
+       "rings": 0,
+       "refused": [
+        "no loop fills a window that an MMA in it reads"
+       ],
+       "fallback": []
+      },
+      "op.attention_prefill/tiny/fp16-b1-h2-s16-d16": {
+       "kernels": 6,
+       "rings": 0,
+       "refused": [
+        "no loop fills a window that an MMA in it reads"
+       ],
+       "fallback": []
+      },
+      "op.bmm/medium/fp16-b16-m64-k32-n64": {
+       "kernels": 1,
+       "rings": 0,
+       "refused": [
+        "memory crosses roles: load may read what a store of the other role wrote"
+       ],
+       "fallback": []
+      },
+      "op.bmm/small/fp16-b8-m64-k32-n64": {
+       "kernels": 1,
+       "rings": 0,
+       "refused": [
+        "memory crosses roles: load may read what a store of the other role wrote"
+       ],
+       "fallback": []
+      },
+      "op.bmm/tiny/fp16-b2-m16-k16-n16": {
+       "kernels": 1,
+       "rings": 0,
+       "refused": [
+        "no loop fills a window that an MMA in it reads"
+       ],
+       "fallback": []
+      },
+      "op.conv2d/medium/fp32-n1-cin24-h16-w16-cout24": {
+       "kernels": 3,
+       "rings": 0,
+       "refused": [
+        "no loop fills a window that an MMA in it reads"
+       ],
+       "fallback": []
+      },
+      "op.conv2d/small/fp32-n1-cin16-h16-w16-cout16": {
+       "kernels": 3,
+       "rings": 0,
+       "refused": [
+        "no loop fills a window that an MMA in it reads"
+       ],
+       "fallback": []
+      },
+      "op.conv2d/tiny/fp32-n1-cin4-h8-w8-cout8": {
+       "kernels": 3,
+       "rings": 0,
+       "refused": [
+        "no loop fills a window that an MMA in it reads"
+       ],
+       "fallback": []
+      },
+      "op.cumsum/medium/fp32-r128-c256": {
+       "kernels": 1,
+       "rings": 0,
+       "refused": [
+        "no loop fills a window that an MMA in it reads"
+       ],
+       "fallback": []
+      },
+      "op.cumsum/small/fp32-r64-c256": {
+       "kernels": 1,
+       "rings": 0,
+       "refused": [
+        "no loop fills a window that an MMA in it reads"
+       ],
+       "fallback": []
+      },
+      "op.cumsum/tiny/fp32-r4-c64": {
+       "kernels": 1,
+       "rings": 0,
+       "refused": [
+        "no loop fills a window that an MMA in it reads"
+       ],
+       "fallback": []
+      },
+      "op.embedding/medium/fp16-v1024-d128-t256": {
+       "kernels": 1,
+       "rings": 0,
+       "refused": [
+        "no loop fills a window that an MMA in it reads"
+       ],
+       "fallback": []
+      },
+      "op.embedding/small/fp16-v1024-d128-t64": {
+       "kernels": 1,
+       "rings": 0,
+       "refused": [
+        "no loop fills a window that an MMA in it reads"
+       ],
+       "fallback": []
+      },
+      "op.embedding/tiny/fp16-v256-d64-t16": {
+       "kernels": 1,
+       "rings": 0,
+       "refused": [
+        "no loop fills a window that an MMA in it reads"
+       ],
+       "fallback": []
+      },
+      "op.gelu_tanh/medium/fp16-n65536": {
+       "kernels": 1,
+       "rings": 0,
+       "refused": [
+        "no loop fills a window that an MMA in it reads"
+       ],
+       "fallback": []
+      },
+      "op.gelu_tanh/small/fp16-n16384": {
+       "kernels": 1,
+       "rings": 0,
+       "refused": [
+        "no loop fills a window that an MMA in it reads"
+       ],
+       "fallback": []
+      },
+      "op.gelu_tanh/tiny/fp16-n256": {
+       "kernels": 1,
+       "rings": 0,
+       "refused": [
+        "no loop fills a window that an MMA in it reads"
+       ],
+       "fallback": []
+      },
+      "op.gemv/medium/fp16-k320-n448": {
+       "kernels": 1,
+       "rings": 1,
+       "refused": [],
+       "fallback": []
+      },
+      "op.gemv/small/fp16-k256-n512": {
+       "kernels": 1,
+       "rings": 1,
+       "refused": [],
+       "fallback": []
+      },
+      "op.gemv/tiny/fp16-k64-n64": {
+       "kernels": 1,
+       "rings": 1,
+       "refused": [],
+       "fallback": []
+      },
+      "op.layernorm/medium/fp16-r128-d512": {
+       "kernels": 1,
+       "rings": 0,
+       "refused": [
+        "no loop fills a window that an MMA in it reads"
+       ],
+       "fallback": []
+      },
+      "op.layernorm/small/fp16-r64-d256": {
+       "kernels": 1,
+       "rings": 0,
+       "refused": [
+        "no loop fills a window that an MMA in it reads"
+       ],
+       "fallback": []
+      },
+      "op.layernorm/tiny/fp16-r4-d64": {
+       "kernels": 1,
+       "rings": 0,
+       "refused": [
+        "no loop fills a window that an MMA in it reads"
+       ],
+       "fallback": []
+      },
+      "op.linear/medium/fp16-m128-k320-n256": {
+       "kernels": 1,
+       "rings": 0,
+       "refused": [
+        "the producer would only issue transfers, which Mode B already overlaps with the MMAs of another program"
+       ],
+       "fallback": []
+      },
+      "op.linear/small/fp16-m64-k256-n256": {
+       "kernels": 1,
+       "rings": 0,
+       "refused": [
+        "the producer would only issue transfers, which Mode B already overlaps with the MMAs of another program"
+       ],
+       "fallback": []
+      },
+      "op.linear/tiny/fp16-m16-k64-n64": {
+       "kernels": 1,
+       "rings": 0,
+       "refused": [
+        "the producer would only issue transfers, which Mode B already overlaps with the MMAs of another program"
+       ],
+       "fallback": []
+      },
+      "op.matmul/medium/fp16-m128-k192-n128": {
+       "kernels": 1,
+       "rings": 0,
+       "refused": [
+        "the producer would only issue transfers, which Mode B already overlaps with the MMAs of another program"
+       ],
+       "fallback": []
+      },
+      "op.matmul/medium/fp32-m128-k192-n128": {
+       "kernels": 1,
+       "rings": 0,
+       "refused": [
+        "no loop fills a window that an MMA in it reads"
+       ],
+       "fallback": []
+      },
+      "op.matmul/small/fp16-m64-k128-n128": {
+       "kernels": 1,
+       "rings": 0,
+       "refused": [
+        "the producer would only issue transfers, which Mode B already overlaps with the MMAs of another program"
+       ],
+       "fallback": []
+      },
+      "op.matmul/small/fp32-m64-k128-n128": {
+       "kernels": 1,
+       "rings": 0,
+       "refused": [
+        "no loop fills a window that an MMA in it reads"
+       ],
+       "fallback": []
+      },
+      "op.matmul/tiny/fp16-m16-k32-n16": {
+       "kernels": 1,
+       "rings": 0,
+       "refused": [
+        "the producer would only issue transfers, which Mode B already overlaps with the MMAs of another program"
+       ],
+       "fallback": []
+      },
+      "op.matmul/tiny/fp32-m16-k32-n16": {
+       "kernels": 1,
+       "rings": 0,
+       "refused": [
+        "no loop fills a window that an MMA in it reads"
+       ],
+       "fallback": []
+      },
+      "op.rmsnorm/medium/fp16-r128-d512": {
+       "kernels": 1,
+       "rings": 0,
+       "refused": [
+        "no loop fills a window that an MMA in it reads"
+       ],
+       "fallback": []
+      },
+      "op.rmsnorm/small/fp16-r64-d256": {
+       "kernels": 1,
+       "rings": 0,
+       "refused": [
+        "no loop fills a window that an MMA in it reads"
+       ],
+       "fallback": []
+      },
+      "op.rmsnorm/tiny/fp16-r4-d64": {
+       "kernels": 1,
+       "rings": 0,
+       "refused": [
+        "no loop fills a window that an MMA in it reads"
+       ],
+       "fallback": []
+      },
+      "op.rope/medium/fp16-b1-h8-s128-d32": {
+       "kernels": 3,
+       "rings": 0,
+       "refused": [
+        "no loop fills a window that an MMA in it reads"
+       ],
+       "fallback": []
+      },
+      "op.rope/small/fp16-b1-h4-s64-d32": {
+       "kernels": 3,
+       "rings": 0,
+       "refused": [
+        "no loop fills a window that an MMA in it reads"
+       ],
+       "fallback": []
+      },
+      "op.rope/tiny/fp16-b1-h2-s16-d16": {
+       "kernels": 3,
+       "rings": 0,
+       "refused": [
+        "no loop fills a window that an MMA in it reads"
+       ],
+       "fallback": []
+      },
+      "op.silu/medium/fp16-n65536": {
+       "kernels": 1,
+       "rings": 0,
+       "refused": [
+        "no loop fills a window that an MMA in it reads"
+       ],
+       "fallback": []
+      },
+      "op.silu/small/fp16-n16384": {
+       "kernels": 1,
+       "rings": 0,
+       "refused": [
+        "no loop fills a window that an MMA in it reads"
+       ],
+       "fallback": []
+      },
+      "op.silu/tiny/fp16-n256": {
+       "kernels": 1,
+       "rings": 0,
+       "refused": [
+        "no loop fills a window that an MMA in it reads"
+       ],
+       "fallback": []
+      },
+      "op.softmax/medium/fp16-r80-c512": {
+       "kernels": 1,
+       "rings": 0,
+       "refused": [
+        "no loop fills a window that an MMA in it reads"
+       ],
+       "fallback": []
+      },
+      "op.softmax/small/fp16-r64-c512": {
+       "kernels": 1,
+       "rings": 0,
+       "refused": [
+        "no loop fills a window that an MMA in it reads"
+       ],
+       "fallback": []
+      },
+      "op.softmax/tiny/fp16-r4-c64": {
+       "kernels": 1,
+       "rings": 0,
+       "refused": [
+        "no loop fills a window that an MMA in it reads"
+       ],
+       "fallback": []
+      },
+      "op.softmax/tiny/fp32-r3-c37": {
+       "kernels": 1,
+       "rings": 0,
+       "refused": [
+        "no loop fills a window that an MMA in it reads"
+       ],
+       "fallback": []
+      },
+      "op.swiglu/medium/fp16-n49152": {
+       "kernels": 1,
+       "rings": 0,
+       "refused": [
+        "no loop fills a window that an MMA in it reads"
+       ],
+       "fallback": []
+      },
+      "op.swiglu/small/fp16-n16384": {
+       "kernels": 1,
+       "rings": 0,
+       "refused": [
+        "no loop fills a window that an MMA in it reads"
+       ],
+       "fallback": []
+      },
+      "op.swiglu/tiny/fp16-n256": {
+       "kernels": 1,
+       "rings": 0,
+       "refused": [
+        "no loop fills a window that an MMA in it reads"
+       ],
+       "fallback": []
+      },
+      "op.transpose/medium/fp32-r160-c256": {
+       "kernels": 1,
+       "rings": 0,
+       "refused": [
+        "no loop fills a window that an MMA in it reads"
+       ],
+       "fallback": []
+      },
+      "op.transpose/small/fp32-r128-c256": {
+       "kernels": 1,
+       "rings": 0,
+       "refused": [
+        "no loop fills a window that an MMA in it reads"
+       ],
+       "fallback": []
+      },
+      "op.transpose/tiny/fp32-r32-c32": {
+       "kernels": 1,
+       "rings": 0,
+       "refused": [
+        "no loop fills a window that an MMA in it reads"
+       ],
+       "fallback": []
+      }
+     }
+    },
+    {
+     "name": "no unresolved >5 % regression at the measured 90 MHz clock: unchanged payloads by construction; any changed point needs a board A/B",
+     "ok": true,
+     "points_needing_board": [
+      "model.llama_decode/medium/fp16-b1-p256",
+      "model.llama_decode/small/fp16-b1-p128",
+      "model.llama_decode/tiny/fp16-b1-p16",
+      "model.llama_prefill/medium/fp16-b1-s64",
+      "model.llama_prefill/small/fp16-b1-s64",
+      "model.llama_prefill/tiny/fp16-b1-s16",
+      "op.gemv/medium/fp16-k320-n448",
+      "op.gemv/small/fp16-k256-n512",
+      "op.gemv/tiny/fp16-k64-n64"
+     ],
+     "board": "evidence/r40/v3/R40-07.policy/board_ab_fe1b/result.json"
+    }
+   ],
+   "detail": "frozen automatic policy = R39-12 ring_estimate gate (TNCA_RCTX_ROLES=1) at TNCA_PIPELINE 2/3, and the delivered default (roles unset); compile-only inventory of all 77 tiny/small/medium points on the native path compares executable payloads with pipeline off; unchanged payloads cannot change device time on the same image and 90 MHz clock; changed points need a board A/B",
+   "written": "2026-10-20T01:30:40+00:00",
+   "software_tree": "files:fe1b5199db515440d2d3407aed61ef1eed5edb627e5baf9cda10be5a7198cf75",
+   "image": "a88ebdf5 (only if a payload changes)",
+   "clock_hz": 90000000,
+   "measured_performance": false,
+   "contract_version": 3,
+   "contract_sha256": "0963f50e5ba7b569d87ac636f7d31df748ef967609e981d0fff884f759abe211"
+  },
+  "R40-07.long-k": {
+   "status": "no-significant-gain",
+   "checks": [
+    {
+     "name": "R40-07.pipeline: complete accepted comparison",
+     "ok": true,
+     "detail": ""
+    },
+    {
+     "name": "R40-07.pipeline: 95% CI lower bound of S_geo > 1",
+     "ok": false,
+     "ci95": [
+      0.9547093591992003,
+      1.0922952141691606
+     ],
+     "s_geo": 1.0228999093889368
+    }
+   ],
+   "detail": "R40-07.pipeline: S_geo 1.0229 CI [0.9547, 1.0923], v2 target 1.2 missed",
+   "written": "2026-10-20T00:27:51+00:00",
+   "identity": {
+    "image_sha256": "a88ebdf59cfbbb2001ebd5b1b2c739c5d8cd33931f1e9202f18cac07c4c83083",
+    "clock_hz": 90000000,
+    "software_tree": "files:fe1b5199db515440d2d3407aed61ef1eed5edb627e5baf9cda10be5a7198cf75",
+    "backend": "fpga-u280-multicore",
+    "hbm_bytes": 4294967296,
+    "backend_args_shape": {
+     "image_profile": "core-vrf-sync-v5",
+     "core_count": 3,
+     "memory_ports": 3,
+     "hbm_dma": true,
+     "hbm_bytes": 4294967296,
+     "device_clock": true
+    },
+    "identity_amendment": "doc/r40_v3/identity_amendment.json"
+   },
+   "experiments": {
+    "R40-07.pipeline": {
+     "status": "no-significant-gain",
+     "s_geo": 1.0228999093889368,
+     "ci95": [
+      0.9547093591992003,
+      1.0922952141691606
+     ],
+     "s_geo_balanced_weighted": 1.0228999093889368,
+     "target": 1.2,
+     "target_met": false,
+     "worst": {
+      "point": "op.matmul/hbm/fp16-m4096-k4096-n4096",
+      "speedup": 0.8529651727354441
+     },
+     "regress_2pct": [
+      "op.matmul/hbm/fp16-m4096-k4096-n4096",
+      "op.matmul/large/fp16-m2048-k2048-n2048"
+     ],
+     "regress_5pct": [
+      "op.matmul/hbm/fp16-m4096-k4096-n4096",
+      "op.matmul/large/fp16-m2048-k2048-n2048"
+     ],
+     "points": [
+      {
+       "point": "op.gemv/hbm/fp16-k4096-n11008",
+       "a": 249870135,
+       "b": 214591920,
+       "speedup": 1.1643967536149544,
+       "n_a": 1,
+       "n_b": 1
+      },
+      {
+       "point": "op.gemv/large/fp16-k2048-n8192",
+       "a": 93296498,
+       "b": 79387257,
+       "speedup": 1.1752074769380179,
+       "n_a": 1,
+       "n_b": 1
+      },
+      {
+       "point": "op.gemv/medium/fp16-k320-n448",
+       "a": 723358,
+       "b": 696838,
+       "speedup": 1.038057626019247,
+       "n_a": 3,
+       "n_b": 3
+      },
+      {
+       "point": "op.linear/hbm/fp16-m512-k4096-n11008",
+       "a": 6942623751,
+       "b": 6433228043,
+       "speedup": 1.0791819759217574,
+       "n_a": 1,
+       "n_b": 1
+      },
+      {
+       "point": "op.linear/large/fp16-m512-k2048-n8192",
+       "a": 2603663502,
+       "b": 2405453682,
+       "speedup": 1.0824001815055526,
+       "n_a": 1,
+       "n_b": 1
+      },
+      {
+       "point": "op.linear/medium/fp16-m128-k320-n256",
+       "a": 1950475,
+       "b": 1929385,
+       "speedup": 1.0109309443164531,
+       "n_a": 3,
+       "n_b": 3
+      },
+      {
+       "point": "op.matmul/hbm/fp16-m4096-k4096-n4096",
+       "a": 11104035713,
+       "b": 13018158382,
+       "speedup": 0.8529651727354441,
+       "n_a": 1,
+       "n_b": 1
+      },
+      {
+       "point": "op.matmul/large/fp16-m2048-k2048-n2048",
+       "a": 1402886765,
+       "b": 1637209377,
+       "speedup": 0.8568768202211439,
+       "n_a": 1,
+       "n_b": 1
+      },
+      {
+       "point": "op.matmul/large/fp32-m2048-k2048-n2048",
+       "a": 4766949678,
+       "b": 4766866891,
+       "speedup": 1.000017367172588,
+       "n_a": 1,
+       "n_b": 1
+      }
+     ],
+     "timing": "graph-makespan",
+     "vary": [
+      "TNCA_PIPELINE"
+     ],
+     "compared_vary": [
+      "TNCA_PIPELINE"
+     ],
+     "control": "1",
+     "candidate": "2",
+     "baseline": "B40-S",
+     "config_a": "60c9c063e6193484",
+     "config_b": "60c9c063e6193484",
+     "inputs": {
+      "control": {
+       "path": "/home/zzhouch/tnca_v3_judge_final/judge/R40-07.pipeline.control.jsonl",
+       "sha256": "bf4f699acc04d2f92e20a4cde02b4191f764be5503c4ed0e470829e6664317b2"
+      },
+      "candidate": {
+       "path": "/home/zzhouch/tnca_v3_judge_final/judge/R40-07.pipeline.candidate.jsonl",
+       "sha256": "3777ecbdf4bdeb21465d7e4cbe23ec0efca50c06ef65b2a6f5bbb754eab4c9bd"
+      }
+     }
+    }
+   },
+   "judgement": "/home/zzhouch/tnca_v3_judge_final/judgement.json",
+   "contract_version": 3,
+   "contract_sha256": "0963f50e5ba7b569d87ac636f7d31df748ef967609e981d0fff884f759abe211",
+   "judgement_copy": "evidence/r40/v3/campaign_fe1b/judgement.json"
+  }
+ }
+}

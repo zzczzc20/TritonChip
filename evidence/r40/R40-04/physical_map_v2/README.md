@@ -1,0 +1,9 @@
+# R40 v2 physical HBM allocation mapping
+
+PC identities and ranges now come from the xclbin physical MEM_TOPOLOGY and the actual XRT BO address/size. They are not inferred by dividing logical tensor addresses by 256 MiB. Runtime window metadata includes both requested and actually exposed bytes, the connected memory group, and the allocated physical PC portions (or an explicit mapping_error). A clamped request cannot masquerade as the requested capacity.
+
+The read-only hbm_topology.py audit binds an actual passing native ArchBench record to the supplied image hash and physical topology. On the currently loaded hybrid image it confirms BO base 0, exposed 256 MiB and one physical PC. Both v2 minimum checks are false. This is retained as an honest negative capacity checkpoint, not R40-04 acceptance. The pending multicore image connects its three aliases to the shared HBM[0:31] group; no successful placement, board exposure or multi-PC functional coverage is claimed here.
+
+The v2 branch of hbm_board.py requires >=1 GiB actual exposure and at least two allocated physical PCs, samples actual BO edges and physical PC crossings using standard Torch operations, and reserves argument space independently of the sampled data window. Even if those checks pass, it records not-measured until the inherited complete suites/model peak plus 25% headroom, all active ports, range/alias and other gate evidence are supplied. v1 behavior is retained. Workload shapes, tolerances and the frozen v2 contract are unchanged.
+
+Synthetic unit cases validate opaque PC IDs, nonuniform/partial ranges, holes/overlaps/duplicate tags, missing/truncated topology, invalid physical ranges, clamped capacities, and real-boundary probe placement. They do not certify a board or a performance result. The current board benchmark runs from a separate immutable source archive; this read-only audit does not alter its loaded image or allocator.

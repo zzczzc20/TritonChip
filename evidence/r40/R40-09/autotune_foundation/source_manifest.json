@@ -1,0 +1,14 @@
+{
+  "schema": "tnca-r40-functional-source/1",
+  "base_head": "1675b13fbb5ca229ba54899de3af0e5619dd26cb",
+  "scope": "functional foundation; not R40-09 acceptance",
+  "files": {
+    "python/tnca/autotune.py": "4e629e47d1426593676fd6a15b3a0c653c4394a8d0235c6ba46909f753abfdea",
+    "python/tnca/runtime.py": "426848c25a72a0019730025b36d2338c95c53af5fe12a64c2946b9acc8bf1169",
+    "python/tnca/triton_backend/driver.py": "2e0acac909aa7a709f653c6bc2d19883af9d24197676dcc962bfb3e2527ecbec",
+    "tools/r40/autotune_policy_tests.py": "10bbf7bf4c1292c91428cdb34f82d36249a2d86bda180f1a3661a147be201b5e",
+    "tools/r40/autotune_native_tests.py": "a5d96c006f57b46fcc10ef0e88dbed113d8f5344939eb2bcd49da99583881fad",
+    "tools/r40/physical_grid_clock_tests.py": "347a9d8ddc4d62f9d2c8611d74751cbebc7af490ce746a849156447809f060f2",
+    "Makefile": "4e5d640a54bfad787efd0981650ba53c3f5d6184fdda7e9d6c7ab2f7be7a6abb"
+  }
+}

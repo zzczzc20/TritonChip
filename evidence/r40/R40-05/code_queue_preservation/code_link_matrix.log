@@ -1,0 +1,13 @@
+MULTICORE CODE LINKS PASS cores=1 stages=0 snapshot/byte-masks/private-RAM/drain
+tb/fpga/tb_multicore_code_links.v:61: $finish called at 430000 (1ps)
+MULTICORE CODE LINKS PASS cores=3 stages=0 snapshot/byte-masks/private-RAM/drain
+tb/fpga/tb_multicore_code_links.v:61: $finish called at 430000 (1ps)
+MULTICORE CODE LINKS PASS cores=3 stages=1 snapshot/byte-masks/private-RAM/drain
+tb/fpga/tb_multicore_code_links.v:61: $finish called at 580000 (1ps)
+MULTICORE CODE LINKS PASS cores=3 stages=2 snapshot/byte-masks/private-RAM/drain
+tb/fpga/tb_multicore_code_links.v:61: $finish called at 680000 (1ps)
+MULTICORE CODE LINKS PASS cores=3 stages=4 snapshot/byte-masks/private-RAM/drain
+tb/fpga/tb_multicore_code_links.v:61: $finish called at 880000 (1ps)
+MULTICORE CODE LINKS PASS cores=8 stages=2 snapshot/byte-masks/private-RAM/drain
+tb/fpga/tb_multicore_code_links.v:61: $finish called at 680000 (1ps)
+CODE LINK MATRIX PASS 6 configurations

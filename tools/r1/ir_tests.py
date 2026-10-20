@@ -311,18 +311,20 @@ def ir05(log):
 
     t = TargetInfo.default()
 
-    # BLOCK wider than one vector register. sec 12: a diagnostic, not a
-    # lowering of the first register only.
-    mod, _c = TB.make_ttir(K.add_kernel, SIG, {'BLOCK': t.vlen * 4})
+    # R40 splits supported blocks into register chunks. Blocks beyond the
+    # current 128-element limit still require an explicit diagnostic.
+    block = 256
+    mod, _c = TB.make_ttir(K.add_kernel, SIG, {'BLOCK': block})
     try:
         TTIRImporter(t, 'add_kernel').run(
             mod, 'add_kernel', ADDRS,
             param_names=TB.param_names(K.add_kernel))
-        log.append(f"    BLOCK={t.vlen * 4} != VLEN={t.vlen}: ACCEPTED (bad)")
+        log.append(f"    BLOCK={block} > 128: ACCEPTED (bad)")
         ok = False
     except Unsupported as d:
-        log.append(f"    BLOCK={t.vlen * 4} != VLEN={t.vlen} -> "
+        log.append(f"    BLOCK={block} > 128 -> "
                    f"{str(d).splitlines()[0][:100]}")
+        ok &= ('register block width 256' in str(d) and 'up to 128' in str(d))
 
     # An operation with no lowering -- here `tt.call`, which the two-function
     # module produces for real rather than by construction.
@@ -341,16 +343,21 @@ def ir05(log):
 
     # And the positive twin: the supported kernel still compiles, so none of
     # the above is a blanket refusal.
-    mod3, _c3 = TB.make_ttir(K.add_kernel, SIG, {'BLOCK': t.vlen})
-    try:
-        TTIRImporter(t, 'add_kernel').run(
-            mod3, 'add_kernel', ADDRS,
-            param_names=TB.param_names(K.add_kernel))
-        log.append("    the supported kernel still compiles")
-    except Diagnostic as d:
-        log.append(f"    the supported kernel was REFUSED: "
-                   f"{str(d).splitlines()[0][:100]}")
-        ok = False
+    for block in (16, 32, 64, 128):
+        mod3, _c3 = TB.make_ttir(K.add_kernel, SIG, {'BLOCK': block})
+        try:
+            imp = TTIRImporter(t, 'add_kernel')
+            imp.run(mod3, 'add_kernel', ADDRS,
+                    param_names=TB.param_names(K.add_kernel))
+            if block > t.vlen and block not in getattr(imp, '_register_block_widths', ()):
+                log.append(f"    BLOCK={block}: register chunks missing (bad)")
+                ok = False
+            else:
+                log.append(f"    BLOCK={block}: supported kernel compiles")
+        except Diagnostic as d:
+            log.append(f"    BLOCK={block} was REFUSED: "
+                       f"{str(d).splitlines()[0][:100]}")
+            ok = False
     return ok, 'refused at or before lowering, with no successful artefact'
 
 

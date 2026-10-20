@@ -1,0 +1,10 @@
+  already built: /home/zhongchun/.cache/tnca/devices/core-vrf-sync-v5-a8f9e2a0291d254a-f30a9b914657/tnca_device_vrf5.vvp
+PASS queued multi-kernel graph, event visibility and deferred intermediate free
+PASS completed launch log, unchanged artifacts and zero kernel transfers
+PASS stream contexts, recorded dependency, runtime stream identity and restoration
+PASS concurrent graph execution and thread-local launch audit
+PASS 1000 graph calls, bounded queue, final storage/lease audit
+AUDIT storage_live_bytes=2560 storage_peak_bytes=4608 live_buffers=4 leases=0 unfinished=0
+AUDIT {'epoch': 0, 'heap_capacity_bytes': 393216, 'heap_allocated_bytes': 2560, 'heap_peak_bytes': 9216, 'code_allocated_bytes': 5632, 'code_peak_bytes': 5632}
+r40-batch-tests PASS (5/5)
+EXIT:0

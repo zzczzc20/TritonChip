@@ -1,0 +1,7 @@
+[
+  "/home/zhongchun/tc_env/torchenv/bin/python",
+  "-u",
+  "/home/zhongchun/r40_bucket_full_80dd_v2_source/tools/r40/contract_tests.py",
+  "--reference",
+  "/home/zhongchun/r40_reserved_80dd_contract_attempt2/reference.json"
+]

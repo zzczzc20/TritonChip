@@ -1,0 +1,12 @@
+{
+  "root": "/home/zzhouch/tnca_v3_functional",
+  "source": "/home/zzhouch/tnca_src_r40_v3",
+  "software_tree": "files:80dd1a823e4be49e5e40d375d842c17e46c362d298e37f389c5e225621b6e4ca",
+  "image_sha256": "a88ebdf59cfbbb2001ebd5b1b2c739c5d8cd33931f1e9202f18cac07c4c83083",
+  "clock_hz": 90000000,
+  "started_utc": "2026-10-19T02:14:01Z",
+  "controller_sha256": "467d57616ab2982d6cf79000a99bb83f2722b87e3d5d28364764d3d51a6738c1",
+  "source_delta": "~/tnca_src_r40_probe_0958db2 with tools/r40/native_model.py replaced by commit 8f8126e (sha256 180c4f21...); product tree unchanged",
+  "preserved_failure": "/home/zzhouch/tnca_delivery_probe_0958db2_4gib/state.json and ~/tnca_runs_r40_probe90_0958db2_4gib/model/report.json: UnboundLocalError (assert after del warm) before step 0",
+  "reused": "checkpoint, native77 (tiny/small/medium + audit) and HBM14 14/14 in ~/tnca_runs_r40_probe90_0958db2_4gib from the same tree/image/clock"
+}

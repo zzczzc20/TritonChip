@@ -1,0 +1,5 @@
+PASS model.llama_prefill/medium/fp16-b1-s64 resident step=0: 78 kernels, actual tensor bytes={'h2d': 0, 'd2h': 0}
+PASS model.llama_prefill/medium/fp16-b1-s64 resident step=1: 78 kernels, actual tensor bytes={'h2d': 0, 'd2h': 0}
+PASS model.llama_prefill/medium/fp16-b1-s64 per-kernel step=0: 78 kernels, actual tensor bytes={'h2d': 22428416, 'd2h': 22428416}
+PASS model.llama_prefill/medium/fp16-b1-s64 per-kernel step=1: 78 kernels, actual tensor bytes={'h2d': 22428416, 'd2h': 22428416}
+r40-frozen-residency-tests PASS (4/4)

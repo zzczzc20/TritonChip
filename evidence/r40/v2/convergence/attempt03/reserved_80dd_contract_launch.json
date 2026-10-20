@@ -1,0 +1,8 @@
+{
+  "root": "/home/zhongchun/r40_reserved_80dd_contract",
+  "pid": 2445402,
+  "source": "/home/zhongchun/r40_bucket_full_80dd_v2_source",
+  "reference_sha256": "bfc911d430df80c3b80c83ee7dcde6706babed11f4d44b01a48503bba5bc8616",
+  "controller_sha256": "84376420ad8af52a786b2a14c2bb7eb61093c7da1cae195ba65db482fa4181c1",
+  "scope": "Current repaired source, frozen reference, all 447 actual compilations; no device opens or performance claim"
+}

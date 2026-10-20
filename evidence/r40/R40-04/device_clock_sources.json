@@ -1,0 +1,22 @@
+{
+  "schema": "tnca-r40-clock-source-checkpoint/1",
+  "kind": "functional-rtl-not-performance",
+  "base_tree": "tritonchip-r40-k64 with clock patch",
+  "sources": {
+    "python/tnca/backends/u50.py": "41d7fa97e80204c0f33ae50be3af723945737dbc18a6115a31a4a10a9dbaddd5",
+    "python/tnca/backends/u50_sim.py": "d74576ecd57c3f93209f9d68985d19f803a3299824b642ecbcbae1e00982afea",
+    "python/tnca/device_timing.py": "4b4a11a097100940e8c01ffd8cf1289e025d4d2673f99fc991497bb7d69cb919",
+    "python/tnca/runtime.py": "15112aa5f7edd05630a0e038401a32577a779f45af191aafaaa5ea2863168456",
+    "python/tnca/torch_device/__init__.py": "a368adb60717e48af1d6291835b54d15f2cfbd4af436387eff1ed9c2c4d1421d",
+    "python/tnca/triton_backend/driver.py": "9685f42bc31ae4f29762133d8898fb7d60fb51598587f78f09391f3bc306ffb9",
+    "archbench/platforms/tnca.py": "994539d166aa874a66e762241e3c2687069c8b71e02cf291a3c323589417940c",
+    "rtl/fpga/tnca_mmio.v": "7cb13b92f0b6dfc4f271b155dcdde4afe97b990eb3ece57b7cc732f6082af20c",
+    "tools/r40/device_clock_tests.py": "7ddc4a9997153b8637836c69402a7d40f5c4f8cabb63dba885202f89e83b601b",
+    "tools/r40/device_clock_native_tests.py": "6435e30bf6dc26821a1bf23cb8d5db521ee9f172a9c701c12424b314d309a0b7",
+    "tools/r40/host_copy_tests.py": "0d6bca3cec9d0b90526e2705ab7f5b1d925a11bfb4c735941d456ae433fa8795"
+  },
+  "failed_attempts": {
+    "device_clock_native_retry.log": "6a198407873789d89fa26ffe73fe74fd3e314334010efefa086aa58c6dae2044",
+    "device_clock_native_denseinit.log": "ec0a962bb790cc520af889ff9b209b5dfc3410a00904ea2a9f9ffffb26931cf8"
+  }
+}

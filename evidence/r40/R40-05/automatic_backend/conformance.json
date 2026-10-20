@@ -1,0 +1,603 @@
+[
+  {
+    "backends": {
+      "sim-file": {
+        "cases": {
+          "CONF-COMPAT": {
+            "group": "compatibility",
+            "passed": true,
+            "steps": [
+              {
+                "backed_by": [
+                  "declaration"
+                ],
+                "detail": "medium 'a shared directory', reaches 'the RTL directly, in a child process'",
+                "ok": true,
+                "step": "the backend says what it is"
+              },
+              {
+                "backed_by": [
+                  "registry"
+                ],
+                "detail": "states ['interface-defined', 'reference-available']",
+                "ok": true,
+                "step": "no backend claims platform-verified"
+              }
+            ]
+          },
+          "CONF-DONE": {
+            "group": "completion",
+            "passed": true,
+            "steps": [
+              {
+                "backed_by": [
+                  "protocol"
+                ],
+                "detail": "seq 10, status 0, 23 cycle(s)",
+                "ok": true,
+                "step": "LAUNCH"
+              },
+              {
+                "backed_by": [
+                  "protocol"
+                ],
+                "detail": "23 cycles and 10 retired",
+                "ok": true,
+                "step": "the declared completion counters are nonzero"
+              },
+              {
+                "backed_by": [
+                  "oracle"
+                ],
+                "detail": "oracle: 0xdefaced, got 0xdefaced",
+                "ok": true,
+                "step": "the kernel wrote what the oracle says"
+              },
+              {
+                "backed_by": [
+                  "protocol",
+                  "oracle"
+                ],
+                "detail": "no restart in between; the oracle 0xdefaced again",
+                "ok": true,
+                "step": "a second launch in the same session"
+              }
+            ]
+          },
+          "CONF-FAULT": {
+            "group": "faults",
+            "passed": true,
+            "steps": [
+              {
+                "backed_by": [
+                  "protocol"
+                ],
+                "detail": "status 1, seq 16",
+                "ok": true,
+                "step": "a trapping kernel is a FAULT"
+              },
+              {
+                "backed_by": [
+                  "protocol"
+                ],
+                "detail": "code 0x40 at pc 0x6050, from seq 16",
+                "ok": true,
+                "step": "the fault carries a code and a pc"
+              },
+              {
+                "backed_by": [
+                  "protocol"
+                ],
+                "detail": "status 0",
+                "ok": true,
+                "step": "the session still works after a fault"
+              }
+            ]
+          },
+          "CONF-LIFE": {
+            "group": "lifecycle",
+            "passed": true,
+            "steps": [
+              {
+                "backed_by": [
+                  "liveness"
+                ],
+                "detail": "the process exists",
+                "ok": true,
+                "step": "alive after open"
+              },
+              {
+                "backed_by": [
+                  "declaration"
+                ],
+                "detail": "['bench', 'concurrent_requests', 'launch_is_idempotent', 'medium', 'name', 'raw_request']",
+                "ok": true,
+                "step": "capabilities"
+              },
+              {
+                "backed_by": [
+                  "protocol"
+                ],
+                "detail": "seq 1, status 0, served 1",
+                "ok": true,
+                "step": "PING"
+              },
+              {
+                "backed_by": [
+                  "protocol"
+                ],
+                "detail": "seq 2, status 0, 0 cycle(s)",
+                "ok": true,
+                "step": "QUIESCE on an idle device"
+              },
+              {
+                "backed_by": [
+                  "protocol"
+                ],
+                "detail": "status 3",
+                "ok": true,
+                "step": "an operation the device does not have"
+              }
+            ]
+          },
+          "CONF-XFER": {
+            "group": "transfer",
+            "passed": true,
+            "steps": [
+              {
+                "backed_by": [
+                  "protocol"
+                ],
+                "detail": "seq 4, status 0, 4 word(s)",
+                "ok": true,
+                "step": "UPLOAD"
+              },
+              {
+                "backed_by": [
+                  "protocol",
+                  "oracle"
+                ],
+                "detail": "oracle: the four words the host wrote; seq 5",
+                "ok": true,
+                "step": "DOWNLOAD returns what went in"
+              },
+              {
+                "backed_by": [
+                  "oracle"
+                ],
+                "detail": "oracle: 0xfedcba9876543210",
+                "ok": true,
+                "step": "a single word at an offset"
+              },
+              {
+                "backed_by": [
+                  "protocol"
+                ],
+                "detail": "[ARGUMENT_INVALID] refused",
+                "ok": true,
+                "step": "an unaligned upload"
+              },
+              {
+                "backed_by": [
+                  "protocol"
+                ],
+                "detail": "[ARGUMENT_INVALID] refused",
+                "ok": true,
+                "step": "an unaligned download"
+              },
+              {
+                "backed_by": [
+                  "protocol"
+                ],
+                "detail": "status 3",
+                "ok": true,
+                "step": "a transfer past the end of memory"
+              }
+            ]
+          }
+        },
+        "passed": true,
+        "state": "reference-available"
+      },
+      "sim-multicore": {
+        "cases": {
+          "CONF-COMPAT": {
+            "group": "compatibility",
+            "passed": true,
+            "steps": [
+              {
+                "backed_by": [
+                  "declaration"
+                ],
+                "detail": "medium 'a shared directory', reaches 'the RTL directly, in a child process'",
+                "ok": true,
+                "step": "the backend says what it is"
+              },
+              {
+                "backed_by": [
+                  "registry"
+                ],
+                "detail": "states ['interface-defined', 'reference-available']",
+                "ok": true,
+                "step": "no backend claims platform-verified"
+              }
+            ]
+          },
+          "CONF-DONE": {
+            "group": "completion",
+            "passed": true,
+            "steps": [
+              {
+                "backed_by": [
+                  "protocol"
+                ],
+                "detail": "seq 11, status 0, 34 cycle(s)",
+                "ok": true,
+                "step": "LAUNCH"
+              },
+              {
+                "backed_by": [
+                  "protocol"
+                ],
+                "detail": "global makespan 34",
+                "ok": true,
+                "step": "the declared completion counters are nonzero"
+              },
+              {
+                "backed_by": [
+                  "oracle"
+                ],
+                "detail": "oracle: 0xdefaced, got 0xdefaced",
+                "ok": true,
+                "step": "the kernel wrote what the oracle says"
+              },
+              {
+                "backed_by": [
+                  "protocol",
+                  "oracle"
+                ],
+                "detail": "no restart in between; the oracle 0xdefaced again",
+                "ok": true,
+                "step": "a second launch in the same session"
+              }
+            ]
+          },
+          "CONF-FAULT": {
+            "group": "faults",
+            "passed": true,
+            "steps": [
+              {
+                "backed_by": [
+                  "protocol"
+                ],
+                "detail": "status 1, seq 17",
+                "ok": true,
+                "step": "a trapping kernel is a FAULT"
+              },
+              {
+                "backed_by": [
+                  "declaration"
+                ],
+                "detail": "physical-grid completion reports status and makespan; code/PC are not exported",
+                "ok": true,
+                "step": "fault detail is explicitly unavailable"
+              },
+              {
+                "backed_by": [
+                  "protocol"
+                ],
+                "detail": "status 0",
+                "ok": true,
+                "step": "the session still works after a fault"
+              }
+            ]
+          },
+          "CONF-LIFE": {
+            "group": "lifecycle",
+            "passed": true,
+            "steps": [
+              {
+                "backed_by": [
+                  "liveness"
+                ],
+                "detail": "the process exists",
+                "ok": true,
+                "step": "alive after open"
+              },
+              {
+                "backed_by": [
+                  "declaration"
+                ],
+                "detail": "['bench', 'completion_counters', 'concurrent_requests', 'fault_detail', 'launch_is_idempotent', 'medium']",
+                "ok": true,
+                "step": "capabilities"
+              },
+              {
+                "backed_by": [
+                  "protocol"
+                ],
+                "detail": "seq 2, status 0, served 2",
+                "ok": true,
+                "step": "PING"
+              },
+              {
+                "backed_by": [
+                  "protocol"
+                ],
+                "detail": "seq 3, status 0, 0 cycle(s)",
+                "ok": true,
+                "step": "QUIESCE on an idle device"
+              },
+              {
+                "backed_by": [
+                  "protocol"
+                ],
+                "detail": "status 3",
+                "ok": true,
+                "step": "an operation the device does not have"
+              }
+            ]
+          },
+          "CONF-XFER": {
+            "group": "transfer",
+            "passed": true,
+            "steps": [
+              {
+                "backed_by": [
+                  "protocol"
+                ],
+                "detail": "seq 5, status 0, 4 word(s)",
+                "ok": true,
+                "step": "UPLOAD"
+              },
+              {
+                "backed_by": [
+                  "protocol",
+                  "oracle"
+                ],
+                "detail": "oracle: the four words the host wrote; seq 6",
+                "ok": true,
+                "step": "DOWNLOAD returns what went in"
+              },
+              {
+                "backed_by": [
+                  "oracle"
+                ],
+                "detail": "oracle: 0xfedcba9876543210",
+                "ok": true,
+                "step": "a single word at an offset"
+              },
+              {
+                "backed_by": [
+                  "protocol"
+                ],
+                "detail": "[ARGUMENT_INVALID] refused",
+                "ok": true,
+                "step": "an unaligned upload"
+              },
+              {
+                "backed_by": [
+                  "protocol"
+                ],
+                "detail": "[ARGUMENT_INVALID] refused",
+                "ok": true,
+                "step": "an unaligned download"
+              },
+              {
+                "backed_by": [
+                  "protocol"
+                ],
+                "detail": "status 3",
+                "ok": true,
+                "step": "a transfer past the end of memory"
+              }
+            ]
+          }
+        },
+        "passed": true,
+        "state": "reference-available"
+      },
+      "sim-socket": {
+        "cases": {
+          "CONF-COMPAT": {
+            "group": "compatibility",
+            "passed": true,
+            "steps": [
+              {
+                "backed_by": [
+                  "declaration"
+                ],
+                "detail": "medium 'tcp', reaches 'the same RTL as sim-file, through a relay'",
+                "ok": true,
+                "step": "the backend says what it is"
+              },
+              {
+                "backed_by": [
+                  "registry"
+                ],
+                "detail": "states ['interface-defined', 'reference-available']",
+                "ok": true,
+                "step": "no backend claims platform-verified"
+              }
+            ]
+          },
+          "CONF-DONE": {
+            "group": "completion",
+            "passed": true,
+            "steps": [
+              {
+                "backed_by": [
+                  "protocol"
+                ],
+                "detail": "seq 9, status 0, 23 cycle(s)",
+                "ok": true,
+                "step": "LAUNCH"
+              },
+              {
+                "backed_by": [
+                  "protocol"
+                ],
+                "detail": "23 cycles and 10 retired",
+                "ok": true,
+                "step": "the declared completion counters are nonzero"
+              },
+              {
+                "backed_by": [
+                  "oracle"
+                ],
+                "detail": "oracle: 0xdefaced, got 0xdefaced",
+                "ok": true,
+                "step": "the kernel wrote what the oracle says"
+              },
+              {
+                "backed_by": [
+                  "protocol",
+                  "oracle"
+                ],
+                "detail": "no restart in between; the oracle 0xdefaced again",
+                "ok": true,
+                "step": "a second launch in the same session"
+              }
+            ]
+          },
+          "CONF-FAULT": {
+            "group": "faults",
+            "passed": true,
+            "steps": [
+              {
+                "backed_by": [
+                  "protocol"
+                ],
+                "detail": "status 1, seq 15",
+                "ok": true,
+                "step": "a trapping kernel is a FAULT"
+              },
+              {
+                "backed_by": [
+                  "protocol"
+                ],
+                "detail": "code 0x40 at pc 0x6050, from seq 15",
+                "ok": true,
+                "step": "the fault carries a code and a pc"
+              },
+              {
+                "backed_by": [
+                  "protocol"
+                ],
+                "detail": "status 0",
+                "ok": true,
+                "step": "the session still works after a fault"
+              }
+            ]
+          },
+          "CONF-LIFE": {
+            "group": "lifecycle",
+            "passed": true,
+            "steps": [
+              {
+                "backed_by": [
+                  "liveness"
+                ],
+                "detail": "the process exists",
+                "ok": true,
+                "step": "alive after open"
+              },
+              {
+                "backed_by": [
+                  "declaration"
+                ],
+                "detail": "['concurrent_requests', 'launch_is_idempotent', 'medium', 'name', 'protocol', 'raw_request']",
+                "ok": true,
+                "step": "capabilities"
+              },
+              {
+                "backed_by": [
+                  "protocol"
+                ],
+                "detail": "seq 1, status 0, served 1",
+                "ok": true,
+                "step": "PING"
+              },
+              {
+                "backed_by": [
+                  "protocol"
+                ],
+                "detail": "seq 2, status 0, 0 cycle(s)",
+                "ok": true,
+                "step": "QUIESCE on an idle device"
+              },
+              {
+                "backed_by": [
+                  "declaration"
+                ],
+                "detail": "not offered: this binding has no opcode field, so an unknown operation cannot be put on the wire",
+                "ok": true,
+                "step": "an operation the device does not have"
+              }
+            ]
+          },
+          "CONF-XFER": {
+            "group": "transfer",
+            "passed": true,
+            "steps": [
+              {
+                "backed_by": [
+                  "protocol"
+                ],
+                "detail": "seq 3, status 0, 4 word(s)",
+                "ok": true,
+                "step": "UPLOAD"
+              },
+              {
+                "backed_by": [
+                  "protocol",
+                  "oracle"
+                ],
+                "detail": "oracle: the four words the host wrote; seq 4",
+                "ok": true,
+                "step": "DOWNLOAD returns what went in"
+              },
+              {
+                "backed_by": [
+                  "oracle"
+                ],
+                "detail": "oracle: 0xfedcba9876543210",
+                "ok": true,
+                "step": "a single word at an offset"
+              },
+              {
+                "backed_by": [
+                  "protocol"
+                ],
+                "detail": "[ARGUMENT_INVALID] refused",
+                "ok": true,
+                "step": "an unaligned upload"
+              },
+              {
+                "backed_by": [
+                  "protocol"
+                ],
+                "detail": "[ARGUMENT_INVALID] refused",
+                "ok": true,
+                "step": "an unaligned download"
+              },
+              {
+                "backed_by": [
+                  "protocol"
+                ],
+                "detail": "status 3",
+                "ok": true,
+                "step": "a transfer past the end of memory"
+              }
+            ]
+          }
+        },
+        "passed": true,
+        "state": "reference-available"
+      }
+    },
+    "detail": "3 backend(s), 5 case(s) in 5 group(s), measurement was required",
+    "id": "R36-TEST-01",
+    "passed": true
+  }
+]

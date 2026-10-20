@@ -1,0 +1,99 @@
+R3.6 Gate B: the board wrapper, which the export walk cannot reach
+  R36-FPGA-01  PASS  no simulator in the board wrapper
+    files: ['rtl/fpga/tnca_axi_bridge.v', 'rtl/fpga/tnca_axi_bridge_lb.v', 'rtl/fpga/tnca_axi_line_ram.v', 'rtl/fpga/tnca_axi_lite.v', 'rtl/fpga/tnca_fpga_mem.v', 'rtl/fpga/tnca_fpga_top.v', 'rtl/fpga/tnca_line_axi.v', 'rtl/fpga/tnca_mmio.v', 'rtl/fpga/tnca_multicore_axi.v', 'rtl/fpga/tnca_multicore_fpga.v', 'rtl/fpga/tnca_multicore_mmio.v', 'rtl/fpga/tnca_u50_top.v']
+    simulator-only constructs: 0
+
+  R36-FPGA-02  PASS  the board wrapper elaborates and connects
+    hierarchy -top tnca_fpga_top -check then check -noinit: 0 problem(s) reported by check
+    modules in the final stat: ['tnca_fpga_top']
+    processes left after proc: 1
+
+  R36-FPGA-03  PASS  no latch, no combinational loop, no multiple driver, no width problem in the board wrapper, with and without the AXI bridge
+    proc; check -assert on tnca_fpga_top: 0 problem(s) reported by check
+    modules in the final stat: ['tnca_fpga_top']
+    processes left after proc: 0
+    proc; check -assert on tnca_fpga_top DATA_AXI=1: 0 problem(s) reported by check
+    modules in the final stat: ['tnca_fpga_top']
+    processes left after proc: 0
+    proc; check -assert on tnca_fpga_top DATA_AXI=1 AXI_LINE=8: 0 problem(s) reported by check
+    modules in the final stat: ['tnca_fpga_top']
+    processes left after proc: 0
+    proc; check -assert on tnca_fpga_top DATA_AXI=1 AXI_LINE=8 AXI_RAM_CACHE=1: 0 problem(s) reported by check
+    modules in the final stat: ['tnca_fpga_top']
+    processes left after proc: 0
+
+  R36-FPGA-04  PASS  the wrapper's modules hold at the root, and the memory infers as a memory
+    proc; check -assert on tnca_mmio: 0 problem(s) reported by check
+    modules in the final stat: ['tnca_mmio']
+    processes left after proc: 0
+    proc; check -assert on tnca_fpga_mem: 0 problem(s) reported by check
+    modules in the final stat: ['tnca_fpga_mem']
+    processes left after proc: 0
+    memory cells inferred: 1
+    proc; check -assert on tnca_axi_lite: 0 problem(s) reported by check
+    modules in the final stat: ['tnca_axi_lite']
+    processes left after proc: 0
+    proc; check -assert on tnca_axi_bridge: 0 problem(s) reported by check
+    modules in the final stat: ['tnca_axi_bridge']
+    processes left after proc: 0
+    proc; check -assert on tnca_axi_bridge_lb: 0 problem(s) reported by check
+    modules in the final stat: ['tnca_axi_bridge_lb']
+    processes left after proc: 0
+    proc; check -assert on tnca_axi_line_ram: 0 problem(s) reported by check
+    modules in the final stat: ['tnca_axi_line_ram']
+    processes left after proc: 0
+
+  R36-FPGA-05  PASS  the adapter holds at 12 clock ratios, including the board's 1:4
+    bus/device   bus clock      device clock   verdict
+      1:1      500.000 MHz    500.000 MHz   PASS
+      1:2      500.000 MHz    250.000 MHz   PASS
+      1:3      500.000 MHz    166.667 MHz   PASS
+      1:4      500.000 MHz    125.000 MHz   PASS  <- the board's ratio
+      1:8      500.000 MHz     62.500 MHz   PASS
+      3:24     166.667 MHz     20.833 MHz   PASS
+      5:8      100.000 MHz     62.500 MHz   PASS
+      2:3      250.000 MHz    166.667 MHz   PASS
+      1:13     500.000 MHz     38.462 MHz   PASS
+      1:25     500.000 MHz     20.000 MHz   PASS
+      4:5      125.000 MHz    100.000 MHz   PASS
+      1:40     500.000 MHz     12.500 MHz   PASS
+    ratios passed: 12 of 12
+    these are ratios and not frequencies: the bench runs at nanosecond half-periods, so the absolute rate differs from the board's by the same factor on both sides
+
+  R36-FPGA-06  PASS  all 6 mutations of the adapter are caught
+    unmutated rtl/fpga/tnca_axi_lite.v at 1:4: PASS  PASS tb_tnca_axi_lite: 1 ns/4 ns
+    [the read and the write are not arbitrated] caught: FAIL tb_tnca_axi_lite: 3 error(s)
+    [reg_we is held rather than pulsed] caught: FAIL tb_tnca_axi_lite: watchdog at 4000000 ns
+    [every bus write completes a register write] caught: FAIL tb_tnca_axi_lite: 57 error(s)
+    [the low half is not carried into the high one] caught: FAIL tb_tnca_axi_lite: 4 error(s)
+    [the read address never crosses] caught: FAIL tb_tnca_axi_lite: 51 error(s)
+    [the read data never crosses] caught: FAIL tb_tnca_axi_lite: 50 error(s)
+
+  R36-FPGA-07  PASS  the whole top holds at 3 ratios and all 4 of its breakages are caught
+    unmutated at 1:4: PASS  <- the board's ratio
+      PASS tb_tnca_u50_top: 1 ns/4 ns
+    unmutated at 1:8: PASS
+      PASS tb_tnca_u50_top: 1 ns/8 ns
+    unmutated at 1:1: PASS
+      PASS tb_tnca_u50_top: 1 ns/1 ns
+    [the bus side is released straight from the asynchronous reset] caught: FAIL the bus side never came out of reset first: got 1 want 0 -- and the bench then ended with "FAIL tb_tnca_u50_top: 2 error(s)" (2 check(s) failed)
+    [the device side leads by one clk_dev edge instead of four] caught: FAIL the bus side never came out before the device core was running: got 1 want 0 -- and the bench then ended with "FAIL tb_tnca_u50_top: 1 error(s)" (1 check(s) failed)
+    [the write data crosses the join with its halves swapped] caught: FAIL a word written through the window reads back: got 1234abcd5a5a0f0f want 5a5a0f0f1234abcd -- and the bench then ended with "FAIL tb_tnca_u50_top: watchdog at 200000 ns" (6 check(s) failed)
+    [the device is addressed at a shifted address] caught: FAIL MAGIC through the whole top: got 0000000000000000 want 00010000544e4341 -- and the bench then ended with "FAIL tb_tnca_u50_top: watchdog at 200000 ns" (7 check(s) failed)
+
+  R36-FPGA-08  PASS  the register protocol holds through tnca_mmio, PERF_READ included
+    common-clock version ok (0000000000000001)
+    timestamp sequence, first launch ok (0000000000000003)
+    launch endpoints advance ok (0000000000000001)
+    PERF_READ perf_cycles ok (status 0)
+    PERF_READ answers in 32-bit halves ok (0000000000000000)
+    perf_cycles is past zero after a launch ok (0000000000000001)
+    PERF_READ perf_issued ok (status 0)
+    perf_issued is past zero after a launch ok (0000000000000001)
+    perf_cycles does not go backwards between reads ok (0000000000000001)
+    PERF_READ past the last counter ok (status 3)
+    timestamp sequence, second launch ok (000000000000000d)
+    common clock includes intervening host work ok (0000000000000001)
+    graph span exceeds sum of launch spans ok (0000000000000001)
+
+  r36-fpga-tests         PASS   8 check(s)

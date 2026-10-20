@@ -1,0 +1,11 @@
+R3.6 Gate B: the board wrapper, which the export walk cannot reach
+  R36-FPGA-01  PASS  no simulator in the board wrapper
+    files: ['rtl/fpga/tnca_axi_bridge.v', 'rtl/fpga/tnca_axi_bridge_lb.v', 'rtl/fpga/tnca_axi_line_ram.v', 'rtl/fpga/tnca_axi_lite.v', 'rtl/fpga/tnca_fpga_mem.v', 'rtl/fpga/tnca_fpga_top.v', 'rtl/fpga/tnca_line_axi.v', 'rtl/fpga/tnca_mmio.v', 'rtl/fpga/tnca_multicore_axi.v', 'rtl/fpga/tnca_multicore_fpga.v', 'rtl/fpga/tnca_multicore_mmio.v', 'rtl/fpga/tnca_u50_top.v']
+    simulator-only constructs: 0
+
+  R36-FPGA-02  PASS  the board wrapper elaborates and connects
+    hierarchy -top tnca_fpga_top -check then check -noinit: 0 problem(s) reported by check
+    modules in the final stat: ['tnca_fpga_top']
+    processes left after proc: 1
+
+  r36-fpga-tests         PASS   2 check(s)

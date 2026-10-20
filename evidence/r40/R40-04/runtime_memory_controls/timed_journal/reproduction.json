@@ -1,0 +1,12 @@
+{
+  "scope": "exact-harness functional failure reproduction; no root-cause or repair claim",
+  "gate_status": "not-measured",
+  "same_first_assertion": true,
+  "original_assertion": "FAIL tnca_core assert tnca_multicore_board_regs.dut.device.system.shell.u_system.g_tile[1].u_tile.u_core @3324375000: reservation disagrees with reality (sched=0 rsv0=x alu=0 fp=0 mul=0) cycle=332427 running=1000 rsv=xxxxxxxx pc=0000000000001408 ctx=2 major=11 func=01 dst=2 delay=X issue(valid,stall,kill,book)=xx0x hazard=0 lsu=0 fpu=0 mtx=0 arrive=0 rsv_stall=x steal=0 vrf=x",
+  "replay_assertion": "FAIL tnca_core assert tnca_multicore_board_regs.dut.device.system.shell.u_system.g_tile[1].u_tile.u_core @3324375000: reservation disagrees with reality (sched=0 rsv0=x alu=0 fp=0 mul=0) cycle=332427 running=1000 rsv=xxxxxxxx pc=0000000000001408 ctx=2 major=11 func=01 dst=2 delay=X issue(valid,stall,kill,book)=xx0x hazard=0 lsu=0 fpu=0 mtx=0 arrive=0 rsv_stall=x steal=0 vrf=x",
+  "diagnostic_override": false,
+  "host_exit": 1,
+  "replay_exit": 1,
+  "capture_archive_sha256": "f82846e6b27676e79ea207772d509540c035bdbeebdc2856b6afc788a1d8a7ed",
+  "replay_record_sha256": "2e2af429e2efd6597873e5b1b3cc9bd5fbfcbc93bd14603fbb0cc272cb829da9"
+}

@@ -1,0 +1,41 @@
+{
+  "schema": "tnca-route-observation/1",
+  "observed_utc": "2026-10-18T08:06:08.984033+00:00",
+  "build": "/home/zzhouch/tnca_build/r40_attempt03_20261017",
+  "hardware_source": "54249f7f7ac0cf8f5d1b82d8e63a3046d27522d3",
+  "contract_sha256": "49fc0e02733139707ae2292eff2ef893e76e73f0723d0d002b2e7e1864af71c8",
+  "route_completed": true,
+  "routed_checkpoint_exists": true,
+  "timing_report": "/home/zzhouch/tnca_build/r40_attempt03_20261017/xo/tmp/link/vivado/vpl/prj/prj.runs/impl_1/hw_bb_locked_timing_summary_routed.rpt",
+  "timing_report_sha256": "be756df0aae8ccbbf39c5e390f0808fac27e7e6e9056b33189604ca5f4e228b3",
+  "timing_summary_lines": [
+    "    WNS(ns)      TNS(ns)  TNS Failing Endpoints  TNS Total Endpoints      WHS(ns)      THS(ns)  THS Failing Endpoints  THS Total Endpoints     WPWS(ns)     TPWS(ns)  TPWS Failing Endpoints  TPWS Total Endpoints  ",
+    "    -------      -------  ---------------------  -------------------      -------      -------  ---------------------  -------------------     --------     --------  ----------------------  --------------------  ",
+    "     -1.002    -6679.026                  17332              1494088        0.000        0.000                      0              1492237        0.000        0.000                       0                503322  ",
+    "",
+    "",
+    "Timing constraints are not met.",
+    ""
+  ],
+  "wns_ns": -1.002,
+  "tns_ns": -6679.026,
+  "whs_ns": 0.0,
+  "ths_ns": 0.0,
+  "setup_failing_endpoints": 17332,
+  "bitstream_stage": "write_bitstream in progress",
+  "attempt_exit": null,
+  "log_tail": [
+    "Partition \"pblock_dynamic_region\" Reconfigurable Module \"level0_i/ulp\"",
+    "INFO: [Vivado 12-4077] No full design bitstream will be created with the use of the -cell option.",
+    "Process Partition \"pblock_dynamic_region\"",
+    "INFO: [Designutils 20-2272] Running write_bitstream with 8 threads.",
+    "Loading data files...",
+    "Loading site data...",
+    "Loading route data...",
+    "Processing options..."
+  ],
+  "image_sha256": null,
+  "cdc": "not-measured",
+  "physical_gate": "not-passed",
+  "required_gate_promotions": []
+}

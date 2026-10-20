@@ -1,0 +1,7 @@
+{
+  "root": "/home/zzhouch/tnca_delivery_reserved_1a7c643_4gib",
+  "pid": 2368012,
+  "controller_sha256": "124ea0e08ddb954ee275299abe406db5d1c691ac129175068a1e550039933d66",
+  "harness_sha256": "4a3f161d6785729f51146af80e4454922f579cb698178e6b92914ee53d3f4812",
+  "scope": "Single queued board owner; waits for actual original decode success before original prefill and complete unchanged functional regressions; no gate promotion by controller"
+}

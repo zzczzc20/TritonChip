@@ -37,7 +37,9 @@ module tnca_barrier #(
     parameter RCTX_W   = 1,
     parameter BAR_N    = 32,
     parameter BAR_W    = 5,
-    parameter EPOCH_W  = 16,
+    // ISA 9A.2 carries a 48-bit generation. Long role-SPMD launches can
+    // exceed 65535 arms; truncation made a fresh token appear completed.
+    parameter EPOCH_W  = 48,
     parameter CNT_W    = 8
 ) (
     input  wire                     clk,
@@ -264,10 +266,18 @@ module tnca_barrier #(
             // arm: both counts fixed for this generation in one instruction
             //------------------------------------------------------------------
             if (arm_en) begin
-                cur_epoch[arm_bar] <= cur_epoch[arm_bar] + 1'b1;
-                n_arrive[arm_bar]  <= arm_arrivals;
-                n_ops[arm_bar]     <= arm_operations;
-                armed[arm_bar]     <= 1'b1;
+                if (&cur_epoch[arm_bar]) begin
+                    // Generations are monotonic until init/launch. Never
+                    // wrap to the quiescent token and release work early.
+                    err[arm_bar]   <= 1'b1;
+                    fault          <= 1'b1;
+                    fault_bar      <= arm_bar;
+                end else begin
+                    cur_epoch[arm_bar] <= cur_epoch[arm_bar] + 1'b1;
+                    n_arrive[arm_bar]  <= arm_arrivals;
+                    n_ops[arm_bar]     <= arm_operations;
+                    armed[arm_bar]     <= 1'b1;
+                end
             end
 
             //------------------------------------------------------------------

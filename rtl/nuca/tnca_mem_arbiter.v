@@ -51,7 +51,8 @@ module tnca_mem_arbiter #(
     input  wire [LINE_BITS-1:0]     m_rsp_rdata
 );
 
-    reg [N_W-1:0] rr;
+    reg [N_W-1:0] rr, held_pick;
+    reg held;
     integer ai;
 
     reg [N_W-1:0] pick;
@@ -65,6 +66,9 @@ module tnca_mem_arbiter #(
                 pick_ok = 1'b1;
             end
         end
+        // Once visible under backpressure, the selected requester owns the
+        // output until its handshake. Its own request obeys ready/valid.
+        if(held) begin pick=held_pick;pick_ok=s_req_valid[held_pick];end
     end
 
     assign m_req_valid = pick_ok;
@@ -85,9 +89,14 @@ module tnca_mem_arbiter #(
     endgenerate
 
     always @(posedge clk) begin
-        if (!rst_n) rr <= {N_W{1'b0}};
-        else if (m_req_valid && m_req_ready)
-            rr <= (pick == N-1) ? {N_W{1'b0}} : (pick + 1'b1);
+        if (!rst_n) begin rr <= 0;held<=0;held_pick<=0;end
+        else begin
+            if(m_req_valid && !m_req_ready && !held) begin held<=1;held_pick<=pick;end
+            if(m_req_valid && m_req_ready) begin
+                held<=0;
+                rr <= (pick == N-1) ? {N_W{1'b0}} : (pick + 1'b1);
+            end
+        end
     end
 
 endmodule

@@ -1,0 +1,6 @@
+{
+  "root": "/home/zzhouch/tnca_large_prefill_inputs_6bd07b7",
+  "pid": 2367057,
+  "exporter_sha256": "9288b318a1e6012e59a6dcb994417811643637b672a812357ac1ea3edca6a54f",
+  "scope": "Only native-host input initialization and hashing; no CPU model inference or board access"
+}

@@ -1,0 +1,8 @@
+25fd800dbb267a03a6c0b14aff1cd38c415c64625fec4e66dce679db078ee3e2  ./commands.json
+c4a89ae2b6858cf7492fe7e3460c2b00a64f393c4d2c49e1c7ff46ee3530c544  ./controller.out
+35c32b3bc0bd9d5c188478fd86c7a86dca5f9882c9e6bbb506047cd837dd0d4b  ./controller.py
+4b9c13f52b5ff4e635b0edbfa2d82af79af6aa989b3d33f0e8f756569d4f10c7  ./cuda-device-conformance.log
+a71d827bf8e1ed46e9b433e51054816d89f6480ee06c5eb638e08c16f27f0e3a  ./native-recovery.log
+a6707d4eff38012da33ddc34bc6dc076a3b17151cfc9aef223c8790cbe64c3da  ./signed-copy-range.log
+3223a0149ee76ab1e21e4c2cbc694f2fb2a61e84399f524c6bb0c22580dab8d2  ./state.json
+2c37d50a88147ca2ebd5197d74ee37d462dab650d793512e849814c28d5a38f0  ./storage-owner-unit.log

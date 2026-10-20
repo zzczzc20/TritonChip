@@ -1,0 +1,71 @@
+{
+ "schema": "tnca-r40-subset/1",
+ "name": "R40-07.long-k",
+ "rule": "medium, large and hbm GEMM-family points with K >= 256",
+ "points": [
+  {
+   "id": "op.gemv/hbm/fp16-k4096-n11008",
+   "sha256": "a65683795c4c05baf3c758fe40b6d0d6bc5994a11c2340fd17fbbc04d576baa9",
+   "family": "gemv",
+   "tier": "hbm",
+   "dtype": "fp16"
+  },
+  {
+   "id": "op.gemv/large/fp16-k2048-n8192",
+   "sha256": "64a0e23adfc8fbb0c372c9f03887c28c06f2218b81f7516290a22ae9aaf03a89",
+   "family": "gemv",
+   "tier": "large",
+   "dtype": "fp16"
+  },
+  {
+   "id": "op.gemv/medium/fp16-k320-n448",
+   "sha256": "fd15161f24b0d9305fdc83fde76124d2a8fa398f2db5eb98a6b3448b36d0f3ea",
+   "family": "gemv",
+   "tier": "medium",
+   "dtype": "fp16"
+  },
+  {
+   "id": "op.linear/hbm/fp16-m512-k4096-n11008",
+   "sha256": "1a898be55b59c02cbbc4e6b2a988ecfcd4793e472f6dae3aa3aca612f43d23bc",
+   "family": "linear",
+   "tier": "hbm",
+   "dtype": "fp16"
+  },
+  {
+   "id": "op.linear/large/fp16-m512-k2048-n8192",
+   "sha256": "b3df7442af7433483b3e6b20a5003785ed305bab9953d33f74162e7464869867",
+   "family": "linear",
+   "tier": "large",
+   "dtype": "fp16"
+  },
+  {
+   "id": "op.linear/medium/fp16-m128-k320-n256",
+   "sha256": "af00fd1e34ac660423c1cc3d8cc4d10443a9c2f9e69080514274b96db068693d",
+   "family": "linear",
+   "tier": "medium",
+   "dtype": "fp16"
+  },
+  {
+   "id": "op.matmul/hbm/fp16-m4096-k4096-n4096",
+   "sha256": "c9873996038a73864d846e6d6496b954b71588b99a6f4c7fa69725d0563ade81",
+   "family": "matmul",
+   "tier": "hbm",
+   "dtype": "fp16"
+  },
+  {
+   "id": "op.matmul/large/fp16-m2048-k2048-n2048",
+   "sha256": "ae48d791bb5e7b11c5016645c80f5c3e2bb701e6939467a2f072bffa17a60ba1",
+   "family": "matmul",
+   "tier": "large",
+   "dtype": "fp16"
+  },
+  {
+   "id": "op.matmul/large/fp32-m2048-k2048-n2048",
+   "sha256": "b80814817436064b26635364fd6ec185caf99fada72664c34465f28a666e83fb",
+   "family": "matmul",
+   "tier": "large",
+   "dtype": "fp32"
+  }
+ ],
+ "sha256": "590ba5bc721dcbf8126452865e99380eb887f62e181eb748ec2355044b2235b1"
+}

@@ -1,0 +1,141 @@
+{
+ "schema": "tnca-r40-subset/1",
+ "name": "R40-04.model-holdout",
+ "rule": "the other half: the HBM model is judged on these and never fitted to them (doc sec 3.4: median error <= 10 %, p95 <= 20 %)",
+ "points": [
+  {
+   "id": "model.llama_decode/hbm/fp16-b1-p512",
+   "sha256": "23cc5a368f9c804105cace69fb9f772d116dbd510dc8bc3a5c5f4f9e8728de16",
+   "family": "llama_decode",
+   "tier": "hbm",
+   "dtype": "fp16"
+  },
+  {
+   "id": "model.llama_decode/large/fp16-b1-p512",
+   "sha256": "ca2a458450b5f19010b5207c158946500e055f2874dfd3344dca6f89dd4df111",
+   "family": "llama_decode",
+   "tier": "large",
+   "dtype": "fp16"
+  },
+  {
+   "id": "model.llama_prefill/hbm/fp16-b1-s512",
+   "sha256": "c5c8826fb47090de07d2c4860b32d84da88aaf1b22ab0a206eb4139fef6813e1",
+   "family": "llama_prefill",
+   "tier": "hbm",
+   "dtype": "fp16"
+  },
+  {
+   "id": "model.llama_prefill/large/fp16-b1-s512",
+   "sha256": "94d49ce2811ec2c20c73bb69401d68770f044dbc7e2437d98e2a06eaf78ff5fc",
+   "family": "llama_prefill",
+   "tier": "large",
+   "dtype": "fp16"
+  },
+  {
+   "id": "model.mlp/large/fp16-t512-d2048",
+   "sha256": "172c6551c70bc50f6afcf659b68118e46f984905727f7e9e5dff7b307faf8c80",
+   "family": "mlp",
+   "tier": "large",
+   "dtype": "fp16"
+  },
+  {
+   "id": "model.resnet_block/large/fp32-n8-c64-hw56",
+   "sha256": "61e0f8e38220a848d7c71e8b8d449c3d3bfe82a178b780c464b0a3ebcc5b4227",
+   "family": "resnet_block",
+   "tier": "large",
+   "dtype": "fp32"
+  },
+  {
+   "id": "op.add/hbm/fp16-n67108864",
+   "sha256": "4c8c739081452e9ef3c1c8870031ae89ae86a9cc09e262fea5a7ccfc202bc85e",
+   "family": "add",
+   "tier": "hbm",
+   "dtype": "fp16"
+  },
+  {
+   "id": "op.add/large/fp16-n16777216",
+   "sha256": "d7c9131ab9a798ffa7ae4730d4634aa55452bf3135aab65821640d13037c31dc",
+   "family": "add",
+   "tier": "large",
+   "dtype": "fp16"
+  },
+  {
+   "id": "op.argmax/large/fp16-r64-v128256",
+   "sha256": "aa3f01579d30258c54a5a8fb9aff820c7b0f61261008f96e8af7e88e3cc8e319",
+   "family": "argmax",
+   "tier": "large",
+   "dtype": "fp16"
+  },
+  {
+   "id": "op.attention_prefill/large/fp16-b1-h32-s512-d64",
+   "sha256": "db38a0023846910da67c8f869dfe922dfa0eaeaa1cea70ff09aec2629711e3a1",
+   "family": "attention_prefill",
+   "tier": "large",
+   "dtype": "fp16"
+  },
+  {
+   "id": "op.copy/hbm/fp16-n67108864",
+   "sha256": "985db43ad808d2f7bf11454bab05e082416c27d6284be0707cefe0d3db071027",
+   "family": "copy",
+   "tier": "hbm",
+   "dtype": "fp16"
+  },
+  {
+   "id": "op.embedding/hbm/fp16-v65536-d2048-t8192",
+   "sha256": "998ca4722412f6fa8c35b160c96e92e34582656b7cb917ff0f47157b69ced5a6",
+   "family": "embedding",
+   "tier": "hbm",
+   "dtype": "fp16"
+  },
+  {
+   "id": "op.embedding/large/fp16-v128256-d2048-t512",
+   "sha256": "b3c5aa89bf7e8c4f9c75193eeef3b26330c9e11982e7a12a7f9f683c8d4cacd8",
+   "family": "embedding",
+   "tier": "large",
+   "dtype": "fp16"
+  },
+  {
+   "id": "op.gemv/large/fp16-k2048-n8192",
+   "sha256": "64a0e23adfc8fbb0c372c9f03887c28c06f2218b81f7516290a22ae9aaf03a89",
+   "family": "gemv",
+   "tier": "large",
+   "dtype": "fp16"
+  },
+  {
+   "id": "op.layernorm/large/fp16-r512-d2048",
+   "sha256": "5c9f5381dae062887b93bebe407bc77fc49c13f1d785ee1633cd8315ff0e5e38",
+   "family": "layernorm",
+   "tier": "large",
+   "dtype": "fp16"
+  },
+  {
+   "id": "op.matmul/large/fp16-m2048-k2048-n2048",
+   "sha256": "ae48d791bb5e7b11c5016645c80f5c3e2bb701e6939467a2f072bffa17a60ba1",
+   "family": "matmul",
+   "tier": "large",
+   "dtype": "fp16"
+  },
+  {
+   "id": "op.rmsnorm/large/fp16-r512-d2048",
+   "sha256": "dd487cb1794ad197ab5eff4a4c9e0d8996f9d9cc431f3ab3f432070f9bb6b609",
+   "family": "rmsnorm",
+   "tier": "large",
+   "dtype": "fp16"
+  },
+  {
+   "id": "op.rope/large/fp16-b1-h32-s512-d64",
+   "sha256": "5e6f381bf38baf7df55a8a0f63870f72cf9ef6d5a09be02da78ce55442cb58af",
+   "family": "rope",
+   "tier": "large",
+   "dtype": "fp16"
+  },
+  {
+   "id": "op.silu/large/fp16-n16777216",
+   "sha256": "23f3153bf547121552015ea1a6b3af5282113962775f09d32fb0c6dc3e305b57",
+   "family": "silu",
+   "tier": "large",
+   "dtype": "fp16"
+  }
+ ],
+ "sha256": "847838d205c979f2339075b4677d4bff3e8b45485130d51118199c9f2100e837"
+}

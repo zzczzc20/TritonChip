@@ -1,0 +1,10 @@
+{
+  "schema": "tnca-qualification-priority/1",
+  "observed_utc": "2026-10-18T08:33:18.354739+00:00",
+  "stopped_observer_pid": 1926388,
+  "preserved_running_report_pid": 2191463,
+  "controller_pid": 2192159,
+  "controller_sha256": "986692ba3128195598c88327780d8bf510596129f475966041a487cc096c7ace",
+  "scope": "original report allowed to finish; only not-yet-started cache-cut DCP load deferred; operating qualification checks unchanged",
+  "required_gate_promotions": []
+}

@@ -1,0 +1,12 @@
+{
+  "schema": "tnca-complete-conditional-snapshot/1",
+  "commit": "b59119d",
+  "software_tree": "files:3520df32c20aefcc593c0da6ff80ab2e9aa03556ecb1a942ac709a916903bec7",
+  "archive_sha256": "f7414500f7b91e34a86d7167cebcfddd2a6c7e6b4948b0e5776df460191d6ebe",
+  "archive_bytes": 2244889,
+  "source": "/home/zzhouch/tnca_src_r40_conditional_b59119d_full",
+  "contract_sha256": "49fc0e02733139707ae2292eff2ef893e76e73f0723d0d002b2e7e1864af71c8",
+  "reason": "Repaired allocator ownership, declared BO capacity and validated exact-edge address probes; original frozen suites unchanged",
+  "scope": "same committed compiler/runtime and unchanged workload definitions; fresh complete package; failed first run preserved; no device/programming operation",
+  "historical_bounds_sha256": "42f224030264f93cf79a209d0082bae6b955ccd521ef8a2a4cfaf9e75807c40a"
+}

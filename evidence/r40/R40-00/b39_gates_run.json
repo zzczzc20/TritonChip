@@ -1,0 +1,296 @@
+{
+ "schema": "tnca-r40-b39-gates/1",
+ "software_tree": "files:52fbda7cc642fcd1e2cc10eaa4f2ec5dd12e09759b47f21870c361b1e7f6b01f",
+ "git": {
+  "commit": "7240fe66c794e7a31dac823ebc665ade6a196d8d",
+  "dirty": true
+ },
+ "host": "gx10-6646",
+ "gates": [
+  {
+   "name": "r37",
+   "command": "make r37",
+   "what": "AOT + Session (R3.7 cases at O0/O1/O2)",
+   "exit": 0,
+   "seconds": 2631.0,
+   "pass_lines": 894,
+   "fail_lines": 0,
+   "summary": [
+    "447/447",
+    "135/135"
+   ]
+  },
+  {
+   "name": "core",
+   "command": "make core",
+   "what": "core ISA tests, fast memory",
+   "exit": 0,
+   "seconds": 134.7,
+   "pass_lines": 38,
+   "fail_lines": 0,
+   "summary": null
+  },
+  {
+   "name": "core-vrf",
+   "command": "make core-vrf",
+   "what": "core tests on the banked VRF",
+   "exit": 0,
+   "seconds": 151.3,
+   "pass_lines": 38,
+   "fail_lines": 0,
+   "summary": null
+  },
+  {
+   "name": "core-slowmem",
+   "command": "make core-slowmem",
+   "what": "core tests, slow memory",
+   "exit": 0,
+   "seconds": 136.4,
+   "pass_lines": 38,
+   "fail_lines": 0,
+   "summary": null
+  },
+  {
+   "name": "core-ooo",
+   "command": "make core-ooo",
+   "what": "core tests, out-of-order memory",
+   "exit": 0,
+   "seconds": 154.3,
+   "pass_lines": 38,
+   "fail_lines": 0,
+   "summary": null
+  },
+  {
+   "name": "top",
+   "command": "make top",
+   "what": "the 2x2 mesh system",
+   "exit": 0,
+   "seconds": 206.3,
+   "pass_lines": 4,
+   "fail_lines": 0,
+   "summary": null
+  },
+  {
+   "name": "nuca",
+   "command": "make nuca",
+   "what": "the NUCA slice and DCO",
+   "exit": 0,
+   "seconds": 8.0,
+   "pass_lines": 9,
+   "fail_lines": 0,
+   "summary": null
+  },
+  {
+   "name": "core-r39hw",
+   "command": "make core-r39hw",
+   "what": "R39 v2 hardware switches, fast and out-of-order memory",
+   "exit": 0,
+   "seconds": 321.8,
+   "pass_lines": 76,
+   "fail_lines": 0,
+   "summary": null
+  },
+  {
+   "name": "core-r39sw",
+   "command": "make core-r39sw",
+   "what": "R39 v3 (RCTX_SWITCH, RSLICE, LSU_INFLIGHT, FPU_OVERLAP)",
+   "exit": 0,
+   "seconds": 319.0,
+   "pass_lines": 76,
+   "fail_lines": 0,
+   "summary": null
+  },
+  {
+   "name": "core-r39sw4",
+   "command": "make core-r39sw4",
+   "what": "R39 v4, four Role Contexts",
+   "exit": 0,
+   "seconds": 378.2,
+   "pass_lines": 76,
+   "fail_lines": 0,
+   "summary": null
+  },
+  {
+   "name": "core-r39sw5",
+   "command": "make core-r39sw5",
+   "what": "R39 v5 (RPAIR, MTX_ABUF, RCTX_SWITCH=2, transposed transfer)",
+   "exit": 0,
+   "seconds": 400.3,
+   "pass_lines": 82,
+   "fail_lines": 0,
+   "summary": null
+  },
+  {
+   "name": "r38-xpose-rtl",
+   "command": "make r38-xpose-rtl",
+   "what": "the transposed transfer at the ISA level",
+   "exit": 0,
+   "seconds": 7.6,
+   "pass_lines": 3,
+   "fail_lines": 0,
+   "summary": null
+  },
+  {
+   "name": "r1-profile-tests",
+   "command": "make r1-profile-tests",
+   "what": "every profile reads its capabilities back",
+   "exit": 0,
+   "seconds": 13.6,
+   "pass_lines": 17,
+   "fail_lines": 0,
+   "summary": null
+  },
+  {
+   "name": "r38-l0",
+   "command": "make r38-l0",
+   "what": "counters, evidence and ArchBench self-checks",
+   "exit": 2,
+   "seconds": 0.1,
+   "pass_lines": 17,
+   "fail_lines": 0,
+   "summary": [
+    "6/6"
+   ]
+  },
+  {
+   "name": "r38-baseline-check",
+   "command": "make r38-baseline-check",
+   "what": "TileBench at O2 against the R38 baseline",
+   "exit": 2,
+   "seconds": 1645.0,
+   "pass_lines": 298,
+   "fail_lines": 1,
+   "summary": [
+    "149/149",
+    "45/45"
+   ]
+  },
+  {
+   "name": "r38-profiler",
+   "command": "make r38-profiler",
+   "what": "the profiler",
+   "exit": 0,
+   "seconds": 1945.5,
+   "pass_lines": 11,
+   "fail_lines": 0,
+   "summary": null
+  },
+  {
+   "name": "r38-identity",
+   "command": "make r38-identity",
+   "what": "artifacts byte-identical across compile-path changes",
+   "exit": 2,
+   "seconds": 0.3,
+   "pass_lines": 0,
+   "fail_lines": 0,
+   "summary": null
+  },
+  {
+   "name": "r38-tdesc",
+   "command": "make r38-tdesc",
+   "what": "tensor descriptors rank 1-5 through the Triton front end",
+   "exit": 0,
+   "seconds": 7.9,
+   "pass_lines": 12,
+   "fail_lines": 0,
+   "summary": [
+    "12/12"
+   ]
+  },
+  {
+   "name": "r38-torch",
+   "command": "make r38-torch",
+   "what": "plugin identity O0-O2, native Triton launch, torch tests with and without descriptors",
+   "exit": 0,
+   "seconds": 1186.3,
+   "pass_lines": 200,
+   "fail_lines": 0,
+   "summary": [
+    "24/24",
+    "24/24"
+   ]
+  },
+  {
+   "name": "archbench-selftest",
+   "command": "make archbench-selftest",
+   "what": "ArchBench registry, suites and scoring",
+   "exit": 0,
+   "seconds": 1.9,
+   "pass_lines": 54,
+   "fail_lines": 0,
+   "summary": null
+  },
+  {
+   "name": "rctx-roles-v5",
+   "command": "$(TORCH_PYTHON) tools/r39/rctx_roles_tests.py --profile core-vrf-sync-v5",
+   "what": "R39-12 Mode A on v5",
+   "exit": 0,
+   "seconds": 502.1,
+   "pass_lines": 9,
+   "fail_lines": 0,
+   "summary": null
+  },
+  {
+   "name": "rctx-roles-v4",
+   "command": "$(TORCH_PYTHON) tools/r39/rctx_roles_tests.py --profile core-vrf-sync-v4",
+   "what": "R39-12 Mode A refused on v4",
+   "exit": 0,
+   "seconds": 586.6,
+   "pass_lines": 9,
+   "fail_lines": 0,
+   "summary": null
+  },
+  {
+   "name": "rctx-spmd-v4",
+   "command": "$(TORCH_PYTHON) tools/r39/rctx_spmd_tests.py --profile core-vrf-sync-v4",
+   "what": "R39-05 Mode B",
+   "exit": 0,
+   "seconds": 81.2,
+   "pass_lines": 11,
+   "fail_lines": 0,
+   "summary": null
+  },
+  {
+   "name": "rctx-spmd-v5",
+   "command": "$(TORCH_PYTHON) tools/r39/rctx_spmd_tests.py --profile core-vrf-sync-v5",
+   "what": "R39-05 Mode B",
+   "exit": 0,
+   "seconds": 75.8,
+   "pass_lines": 11,
+   "fail_lines": 0,
+   "summary": null
+  },
+  {
+   "name": "r39-schedule",
+   "command": "$(TORCH_PYTHON) tools/r39/schedule_tests.py",
+   "what": "R39-01 list scheduling",
+   "exit": 0,
+   "seconds": 247.8,
+   "pass_lines": 2,
+   "fail_lines": 0,
+   "summary": [
+    "894/894"
+   ]
+  },
+  {
+   "name": "r39-ablate",
+   "command": "$(TORCH_PYTHON) tools/r39/ablate_tests.py",
+   "what": "the R39 A/B tool",
+   "exit": 0,
+   "seconds": 0.8,
+   "pass_lines": 14,
+   "fail_lines": 0,
+   "summary": null
+  },
+  {
+   "name": "r39-vrf-fairness",
+   "command": "$(TORCH_PYTHON) tools/r39/vrf_fairness_test.py",
+   "what": "B5: VRF read arbitration",
+   "exit": 0,
+   "seconds": 0.2,
+   "pass_lines": 5,
+   "fail_lines": 0,
+   "summary": null
+  }
+ ]
+}

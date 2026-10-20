@@ -1,0 +1,14 @@
+{
+  "rtl/nuca/tnca_mem_ports.v": "bc5360057566e2cbcacc6c3411241f5e11b940f014b1ee74be0dfff75aef7939",
+  "rtl/tnca_top.v": "526e39174873bdbaabb79cce992a525362a71a07adfcee19c822a0a7441f85c4",
+  "rtl/tnca_multicore_shell.v": "ee26454f728e074d05850bb72b29f9d0152d9b8106b05de3f072e997585095f8",
+  "tb/device/tnca_multicore_device.v": "29f2a9b682010c6b9b5068a0cad1b4c8daf240750a312deb80a5baf4024e3abe",
+  "python/tnca/backends/multicore_file.py": "e274b0a835b40d3c5f04f0301f3d48ac2c085c73119c1677ea6683748486ecdc",
+  "python/tnca/transport.py": "870df62ffbbcdf063cf0a45b7c5aa4f222f5d4d2c7f5c9d81d0613d50bfd1b42",
+  "tb/top/tb_grid_cores.v": "3061545ba166d2fc80b90372d67efd6ee4c9ea6fbb968172acc87c45dde5156a",
+  "tb/tb_mem_ports_r40.v": "51cf0b119b7b71f361bf3941cd18e8379fca92bac8e11c9e447e59c1fc286912",
+  "tools/r40/memory_ports_tests.py": "998df64b6729f5fc2e896e4b7c66384b595ec5d28cd3fa9fff1e458cdb1f9995",
+  "tools/r40/native_memory_ports_tests.py": "552868c2790eb0476790b756eef72ccc75ee3e0b3e4a9c5db0ed02402d81650b",
+  "tools/r40/memory_port_option_tests.py": "d0db770eb558b1b1c2770ac2f04e3acf4a1bb70748f1a35c9a7c8f439a8feb3e",
+  "spec/r40/physical_grid_transport_extension.json": "7b379487ca8a8ba063d1518e5e548088c0de74c95889ccf8d7aa2fb5500fd6b7"
+}

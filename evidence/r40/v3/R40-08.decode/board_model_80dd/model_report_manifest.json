@@ -1,0 +1,7 @@
+{
+ "source": "acf3019:/home/zzhouch/tnca_runs_r40_probe90_0958db2_4gib/model_v3fix/report.json",
+ "producer": "tnca_v3_functional stage frozen-original-model (tools/r40/native_model.py --bucket)",
+ "sha256": "54c53b526d9022a201e922448eddea5f0035e0dfe811001633a39cd7b6d85777",
+ "raw_sha256": "8d8b6e2b226fcca32de2d9fb666768bac9d388ae02c3ee43e5e5a9af0ec85d35",
+ "raw_bytes": 16203888
+}

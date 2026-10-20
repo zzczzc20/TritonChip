@@ -1,0 +1,12 @@
+{
+  "software_commit": "ccede7af4f3cfc751d4f3baa403217dc4ec7a17c",
+  "build": "u280_r40localpipe",
+  "requested_mhz": 100,
+  "accepted": false,
+  "programmed": false,
+  "reason": "routing congestion: partially-conflicted nets",
+  "unrouted_signals": 2270,
+  "node_overlaps": 2225,
+  "source": "impl_1/runme.log",
+  "affected_hierarchy": "g_axi_lb.u_bridge/lb_data_reg"
+}

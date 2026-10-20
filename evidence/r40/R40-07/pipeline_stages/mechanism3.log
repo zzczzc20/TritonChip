@@ -1,0 +1,6 @@
+r40-pipeline-stage-options PASS (18/18)
+  PASS  gemm_one_step            off    3883 cyc  on    3883 cyc   1.000x  roles 1->1
+  PASS  gemm_odd_steps           off    8793 cyc  on    8236 cyc   1.068x  roles 1->2
+  PASS  gemm_grid_3x2            off   56776 cyc  on   56168 cyc   1.011x  roles 1->2
+  PASS  gemm_carried_pointers    off   65950 cyc  on   65950 cyc   1.000x  roles 1->1
+r39-rctx-roles-tests [core-vrf-sync-v5]  PASS

@@ -1,0 +1,37 @@
+{
+  "software_tree": "files:fe1b5199db515440d2d3407aed61ef1eed5edb627e5baf9cda10be5a7198cf75",
+  "source": "/home/zzhouch/tnca_src_r40_v3x2",
+  "campaign": {
+    "root": "/home/zzhouch/tnca_v3_campaign_x2/run",
+    "campaign_sha256": "196ab6872045fc590c1c34123d95b52c3ef2e83fea8d42ceb1c32f64416076e1",
+    "candidates": {
+      "R40-03.wide-blocks": "64",
+      "R40-03.gemm-tile": "16,32,16"
+    },
+    "candidate_rule": "pre-declared compile-coverage rule on evidence/r40/v3/compile_preflight/report_fe1b_native.json: 16,64,16 compiles 8/9 (model.mlp/medium exceeds the 128 KiB code store), 16,32,16 compiles 9/9",
+    "design_corrections": "doc/r40_v3/design_corrections.json",
+    "started_utc": "2026-10-19T07:59:09Z"
+  },
+  "queue": {
+    "path": "queue_x2.sh",
+    "sha256": "cc01cc1fcb0158a58b2d73bbb434e66e26814594342d72aab9ce6ec88efbaaa9"
+  },
+  "recollect": {
+    "root": "/home/zzhouch/tnca_v3_recollect_x2",
+    "out": "/home/zzhouch/tnca_runs_r40_v3x2",
+    "controller_sha256": "309b1e9d0d33b36d7db80eb988280933e21ecf603e2395a7e654844890df013c"
+  },
+  "policy": {
+    "root": "/home/zzhouch/tnca_v3_policy_x2",
+    "points": 9,
+    "base": "B40-N"
+  },
+  "superseded": {
+    "bc5a_campaign": "/home/zzhouch/tnca_v3_campaign/run (stopped-for-dryrun)",
+    "bc5a_dryrun": "/home/zzhouch/tnca_v3_dryrun (stopped; first record killed)"
+  },
+  "roles_probe": {
+    "script": "roles_probe.sh",
+    "result": "op.gemv tiny/medium with TNCA_RCTX_ROLES=2 on B40-S pass at pipeline 1 and 2 (2-4% faster at 2); op.gemv/hbm roles 2 pipeline 1 passes in 64 s (2.50e8 cycles)"
+  }
+}

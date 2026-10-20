@@ -1,0 +1,189 @@
+{
+  "status": "cpu-reference-ready",
+  "scope": "Original full shape with extra observable boundaries; fusion may change; no gate promotion",
+  "required_gate_promotions": [],
+  "harness_sha256": "42bd911c9c77ef3221ba3d7577f8609d3ee82438da938f876433fdb7e5670d68",
+  "native_dataset_sha256": "8d14efc457567a7efbe28392bcebc7e71d2a900fea19b95a60cccf63d9df895d",
+  "identity": {
+    "point_id": "model.llama_decode/large/fp16-b1-p512",
+    "point_sha256": "ca2a458450b5f19010b5207c158946500e055f2874dfd3344dca6f89dd4df111",
+    "software_tree": "files:44051ad9c76c544f59b57afb9f297608bb3f0362c9f4f4479f977690645d2436",
+    "contract_sha256": "49fc0e02733139707ae2292eff2ef893e76e73f0723d0d002b2e7e1864af71c8",
+    "model_state_sha256": "6d545866e825c912e14ca21341056c3724b82b571b8c573946757b81b45bfb51",
+    "input_sha256": [
+      "57437a93df9e6826514c8a716e9ba41378a46d139a79cc6af66b2f5be2c8619b",
+      "48847071b63b29b8108c98eb0f425317ea861330a0a3164db794f039d280111b",
+      "87ed7c470efe77519a5feed699bd8a0ce9795fc53b43e07ba95beb879d6d7e5f"
+    ],
+    "weight_bytes": 2996965376,
+    "input_shapes": [
+      [
+        1,
+        1
+      ],
+      [
+        16,
+        1,
+        8,
+        512,
+        64
+      ],
+      [
+        16,
+        1,
+        8,
+        512,
+        64
+      ]
+    ],
+    "torch": "2.14.0+cu130",
+    "triton": "3.8.0"
+  },
+  "boundary_names": [
+    "embedding",
+    "layer0",
+    "layer1",
+    "layer2",
+    "layer3",
+    "layer4",
+    "layer5",
+    "layer6",
+    "layer7",
+    "layer8",
+    "layer9",
+    "layer10",
+    "layer11",
+    "layer12",
+    "layer13",
+    "layer14",
+    "layer15",
+    "logits",
+    "new_keys",
+    "new_values"
+  ],
+  "cpu_half_boundaries": [
+    {
+      "name": "embedding",
+      "ok": true,
+      "detail": "",
+      "max_rel_err": 0.0
+    },
+    {
+      "name": "layer0",
+      "ok": true,
+      "detail": "",
+      "max_rel_err": 0.000998049556923955
+    },
+    {
+      "name": "layer1",
+      "ok": true,
+      "detail": "",
+      "max_rel_err": 0.0016570386135603527
+    },
+    {
+      "name": "layer2",
+      "ok": true,
+      "detail": "",
+      "max_rel_err": 0.00172953335289056
+    },
+    {
+      "name": "layer3",
+      "ok": true,
+      "detail": "",
+      "max_rel_err": 0.0020504743802595106
+    },
+    {
+      "name": "layer4",
+      "ok": true,
+      "detail": "",
+      "max_rel_err": 0.0020631369076336173
+    },
+    {
+      "name": "layer5",
+      "ok": true,
+      "detail": "",
+      "max_rel_err": 0.002381018903130029
+    },
+    {
+      "name": "layer6",
+      "ok": true,
+      "detail": "",
+      "max_rel_err": 0.002701238080540067
+    },
+    {
+      "name": "layer7",
+      "ok": true,
+      "detail": "",
+      "max_rel_err": 0.0028374655874495113
+    },
+    {
+      "name": "layer8",
+      "ok": true,
+      "detail": "",
+      "max_rel_err": 0.0030041718175086683
+    },
+    {
+      "name": "layer9",
+      "ok": true,
+      "detail": "",
+      "max_rel_err": 0.0031228227918430568
+    },
+    {
+      "name": "layer10",
+      "ok": true,
+      "detail": "",
+      "max_rel_err": 0.0035970534887908366
+    },
+    {
+      "name": "layer11",
+      "ok": true,
+      "detail": "",
+      "max_rel_err": 0.003678499109975856
+    },
+    {
+      "name": "layer12",
+      "ok": true,
+      "detail": "",
+      "max_rel_err": 0.003610167057707129
+    },
+    {
+      "name": "layer13",
+      "ok": true,
+      "detail": "",
+      "max_rel_err": 0.003639321456461994
+    },
+    {
+      "name": "layer14",
+      "ok": true,
+      "detail": "",
+      "max_rel_err": 0.003560431246282047
+    },
+    {
+      "name": "layer15",
+      "ok": true,
+      "detail": "",
+      "max_rel_err": 0.0037827117200845348
+    },
+    {
+      "name": "logits",
+      "ok": true,
+      "detail": "",
+      "max_rel_err": 0.0038010624394717073
+    },
+    {
+      "name": "new_keys",
+      "ok": true,
+      "detail": "",
+      "max_rel_err": 0.0032637088543044975
+    },
+    {
+      "name": "new_values",
+      "ok": true,
+      "detail": "",
+      "max_rel_err": 0.003391212993995384
+    }
+  ],
+  "reference_file": "/home/zhongchun/r40_large_layer_exact_native_6bd07b7/cpu/reference.pt",
+  "reference_sha256": "77f6b2b90a34b2a4042106d63d370955a500e0378cc12d663867c5e9eb83e015",
+  "reference_seconds": 0.6941709211096168
+}

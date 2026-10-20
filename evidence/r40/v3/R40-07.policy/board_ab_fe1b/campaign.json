@@ -1,0 +1,672 @@
+{
+ "schema": "tnca-r40-v3-policy-board/1",
+ "planned": "2026-10-19T07:54:44+00:00",
+ "contract_sha256": "0963f50e5ba7b569d87ac636f7d31df748ef967609e981d0fff884f759abe211",
+ "harness_sha256": "a5489ed99ea739f1f87c68bbfcd6f557a1068f97a525ee0eec2cbbe35ec44814",
+ "campaign_harness_sha256": "cd295a548c046d102a42d8e2459aa9be7db5df62d4b04cb52d6773db57c5e281",
+ "inventory": "evidence/r40/v3/R40-07.policy/inventory_existing/report.json",
+ "inventory_sha256": "ea8e9a6f674a0069ffe16e47b6dbb8980e694d79adf3fbb796e5828ab9d9813b",
+ "base": "B40-N",
+ "sides": {
+  "control": {
+   "TNCA_TORCH_DEVICE": "native",
+   "TNCA_TUNE": "0",
+   "TNCA_MAX_BLOCK": "16",
+   "TNCA_GEMM_TILE": "16,16,16",
+   "TNCA_REDUCTION_ROWS": "1",
+   "TNCA_BANK_ALLOC": "0",
+   "TNCA_WINDOW_REUSE": "0",
+   "TNCA_SDPA": "decomposed",
+   "TNCA_SUBMIT": "single",
+   "TNCA_TRANSFER_POLICY": "resident",
+   "TNCA_ACTIVE_CORES": "3",
+   "TNCA_RTL_MEM_PORTS": "3",
+   "TNCA_RTL_OUTSTANDING": "8",
+   "TNCA_PIPELINE": "2",
+   "TNCA_RCTX_ROLES": "0"
+  },
+  "candidate": {
+   "TNCA_TORCH_DEVICE": "native",
+   "TNCA_TUNE": "0",
+   "TNCA_MAX_BLOCK": "16",
+   "TNCA_GEMM_TILE": "16,16,16",
+   "TNCA_REDUCTION_ROWS": "1",
+   "TNCA_BANK_ALLOC": "0",
+   "TNCA_WINDOW_REUSE": "0",
+   "TNCA_SDPA": "decomposed",
+   "TNCA_SUBMIT": "single",
+   "TNCA_TRANSFER_POLICY": "resident",
+   "TNCA_ACTIVE_CORES": "3",
+   "TNCA_RTL_MEM_PORTS": "3",
+   "TNCA_RTL_OUTSTANDING": "8",
+   "TNCA_PIPELINE": "2",
+   "TNCA_RCTX_ROLES": "1"
+  }
+ },
+ "order": [
+  "R40-07.policy"
+ ],
+ "experiments": {
+  "R40-07.policy": {
+   "name": "R40-07.policy",
+   "klass": "device",
+   "timing": "device-cycles-serial-grid",
+   "points": [
+    {
+     "point": "model.llama_decode/medium/fp16-b1-p256",
+     "sha256": "dafdc2dd0f86b5b55e3922d2a91c44987ee1df0311ee6e3b57369fc3fb0fe0d5",
+     "keys": {
+      "control": "cb46b0677b882b12",
+      "candidate": "25ef2bd1e61e1950"
+     },
+     "order": [
+      "control",
+      "candidate"
+     ]
+    },
+    {
+     "point": "model.llama_decode/small/fp16-b1-p128",
+     "sha256": "a83153ccb5eccc8f9b328aeed2fd648df5e7e9deecfd940d986ebc5129ee53c1",
+     "keys": {
+      "control": "af5dc2cabeff4310",
+      "candidate": "55db5b124ab0099c"
+     },
+     "order": [
+      "candidate",
+      "control"
+     ]
+    },
+    {
+     "point": "model.llama_decode/tiny/fp16-b1-p16",
+     "sha256": "9889060c587f03f485fbc2e16e4c3b6788cf830c616747040259517c3e81b63a",
+     "keys": {
+      "control": "ba10ec8fd529f9e2",
+      "candidate": "6baab02c83845460"
+     },
+     "order": [
+      "candidate",
+      "control"
+     ]
+    },
+    {
+     "point": "model.llama_prefill/medium/fp16-b1-s64",
+     "sha256": "01c5f5834948841ad9674e61a49aeb0a90670833fbc3596c4fefc05a56790b55",
+     "keys": {
+      "control": "94c04b0607111e92",
+      "candidate": "f81b00749b5b960b"
+     },
+     "order": [
+      "control",
+      "candidate"
+     ]
+    },
+    {
+     "point": "model.llama_prefill/small/fp16-b1-s64",
+     "sha256": "a4aa11b171f8875f87051a5ebfbd9fbeecfc53ac8f48f5c67e1902ffbf490ae0",
+     "keys": {
+      "control": "9f2080bed88e3cd7",
+      "candidate": "16a02abe3d0a5ba4"
+     },
+     "order": [
+      "control",
+      "candidate"
+     ]
+    },
+    {
+     "point": "model.llama_prefill/tiny/fp16-b1-s16",
+     "sha256": "6d14a4a6373ba814884be0e62ed485960e3da63c6fe51b6e2de35492dbde69bc",
+     "keys": {
+      "control": "ac710a212b9ebbe0",
+      "candidate": "078fe399d7667dd1"
+     },
+     "order": [
+      "control",
+      "candidate"
+     ]
+    },
+    {
+     "point": "op.gemv/medium/fp16-k320-n448",
+     "sha256": "fd15161f24b0d9305fdc83fde76124d2a8fa398f2db5eb98a6b3448b36d0f3ea",
+     "keys": {
+      "control": "a5e535d01980b1fc",
+      "candidate": "9e0a535598b69ca7"
+     },
+     "order": [
+      "control",
+      "candidate"
+     ]
+    },
+    {
+     "point": "op.gemv/small/fp16-k256-n512",
+     "sha256": "53659f5393236b19a85019305821818b76babff48951aea232e335969b4adce2",
+     "keys": {
+      "control": "06be77732f3b02ae",
+      "candidate": "011e697335528954"
+     },
+     "order": [
+      "control",
+      "candidate"
+     ]
+    },
+    {
+     "point": "op.gemv/tiny/fp16-k64-n64",
+     "sha256": "c03b40a0ee32d5743b0b51310f10486cbbbc18ed9467a5cecb856296f3bd86a4",
+     "keys": {
+      "control": "ec71fbb0183abf7a",
+      "candidate": "d65d9cc55183fa98"
+     },
+     "order": [
+      "control",
+      "candidate"
+     ]
+    }
+   ]
+  }
+ },
+ "configs": {
+  "cb46b0677b882b12": {
+   "key": "cb46b0677b882b12",
+   "point": {
+    "id": "model.llama_decode/medium/fp16-b1-p256",
+    "sha256": "dafdc2dd0f86b5b55e3922d2a91c44987ee1df0311ee6e3b57369fc3fb0fe0d5"
+   },
+   "knobs": {
+    "TNCA_TORCH_DEVICE": "native",
+    "TNCA_TUNE": "0",
+    "TNCA_MAX_BLOCK": "16",
+    "TNCA_GEMM_TILE": "16,16,16",
+    "TNCA_REDUCTION_ROWS": "1",
+    "TNCA_BANK_ALLOC": "0",
+    "TNCA_WINDOW_REUSE": "0",
+    "TNCA_SDPA": "decomposed",
+    "TNCA_SUBMIT": "single",
+    "TNCA_TRANSFER_POLICY": "resident",
+    "TNCA_ACTIVE_CORES": "3",
+    "TNCA_RTL_MEM_PORTS": "3",
+    "TNCA_RTL_OUTSTANDING": "8",
+    "TNCA_PIPELINE": "2",
+    "TNCA_RCTX_ROLES": "0"
+   },
+   "klass": "device",
+   "experiments": [
+    "R40-07.policy"
+   ]
+  },
+  "25ef2bd1e61e1950": {
+   "key": "25ef2bd1e61e1950",
+   "point": {
+    "id": "model.llama_decode/medium/fp16-b1-p256",
+    "sha256": "dafdc2dd0f86b5b55e3922d2a91c44987ee1df0311ee6e3b57369fc3fb0fe0d5"
+   },
+   "knobs": {
+    "TNCA_TORCH_DEVICE": "native",
+    "TNCA_TUNE": "0",
+    "TNCA_MAX_BLOCK": "16",
+    "TNCA_GEMM_TILE": "16,16,16",
+    "TNCA_REDUCTION_ROWS": "1",
+    "TNCA_BANK_ALLOC": "0",
+    "TNCA_WINDOW_REUSE": "0",
+    "TNCA_SDPA": "decomposed",
+    "TNCA_SUBMIT": "single",
+    "TNCA_TRANSFER_POLICY": "resident",
+    "TNCA_ACTIVE_CORES": "3",
+    "TNCA_RTL_MEM_PORTS": "3",
+    "TNCA_RTL_OUTSTANDING": "8",
+    "TNCA_PIPELINE": "2",
+    "TNCA_RCTX_ROLES": "1"
+   },
+   "klass": "device",
+   "experiments": [
+    "R40-07.policy"
+   ]
+  },
+  "af5dc2cabeff4310": {
+   "key": "af5dc2cabeff4310",
+   "point": {
+    "id": "model.llama_decode/small/fp16-b1-p128",
+    "sha256": "a83153ccb5eccc8f9b328aeed2fd648df5e7e9deecfd940d986ebc5129ee53c1"
+   },
+   "knobs": {
+    "TNCA_TORCH_DEVICE": "native",
+    "TNCA_TUNE": "0",
+    "TNCA_MAX_BLOCK": "16",
+    "TNCA_GEMM_TILE": "16,16,16",
+    "TNCA_REDUCTION_ROWS": "1",
+    "TNCA_BANK_ALLOC": "0",
+    "TNCA_WINDOW_REUSE": "0",
+    "TNCA_SDPA": "decomposed",
+    "TNCA_SUBMIT": "single",
+    "TNCA_TRANSFER_POLICY": "resident",
+    "TNCA_ACTIVE_CORES": "3",
+    "TNCA_RTL_MEM_PORTS": "3",
+    "TNCA_RTL_OUTSTANDING": "8",
+    "TNCA_PIPELINE": "2",
+    "TNCA_RCTX_ROLES": "0"
+   },
+   "klass": "device",
+   "experiments": [
+    "R40-07.policy"
+   ]
+  },
+  "55db5b124ab0099c": {
+   "key": "55db5b124ab0099c",
+   "point": {
+    "id": "model.llama_decode/small/fp16-b1-p128",
+    "sha256": "a83153ccb5eccc8f9b328aeed2fd648df5e7e9deecfd940d986ebc5129ee53c1"
+   },
+   "knobs": {
+    "TNCA_TORCH_DEVICE": "native",
+    "TNCA_TUNE": "0",
+    "TNCA_MAX_BLOCK": "16",
+    "TNCA_GEMM_TILE": "16,16,16",
+    "TNCA_REDUCTION_ROWS": "1",
+    "TNCA_BANK_ALLOC": "0",
+    "TNCA_WINDOW_REUSE": "0",
+    "TNCA_SDPA": "decomposed",
+    "TNCA_SUBMIT": "single",
+    "TNCA_TRANSFER_POLICY": "resident",
+    "TNCA_ACTIVE_CORES": "3",
+    "TNCA_RTL_MEM_PORTS": "3",
+    "TNCA_RTL_OUTSTANDING": "8",
+    "TNCA_PIPELINE": "2",
+    "TNCA_RCTX_ROLES": "1"
+   },
+   "klass": "device",
+   "experiments": [
+    "R40-07.policy"
+   ]
+  },
+  "ba10ec8fd529f9e2": {
+   "key": "ba10ec8fd529f9e2",
+   "point": {
+    "id": "model.llama_decode/tiny/fp16-b1-p16",
+    "sha256": "9889060c587f03f485fbc2e16e4c3b6788cf830c616747040259517c3e81b63a"
+   },
+   "knobs": {
+    "TNCA_TORCH_DEVICE": "native",
+    "TNCA_TUNE": "0",
+    "TNCA_MAX_BLOCK": "16",
+    "TNCA_GEMM_TILE": "16,16,16",
+    "TNCA_REDUCTION_ROWS": "1",
+    "TNCA_BANK_ALLOC": "0",
+    "TNCA_WINDOW_REUSE": "0",
+    "TNCA_SDPA": "decomposed",
+    "TNCA_SUBMIT": "single",
+    "TNCA_TRANSFER_POLICY": "resident",
+    "TNCA_ACTIVE_CORES": "3",
+    "TNCA_RTL_MEM_PORTS": "3",
+    "TNCA_RTL_OUTSTANDING": "8",
+    "TNCA_PIPELINE": "2",
+    "TNCA_RCTX_ROLES": "0"
+   },
+   "klass": "device",
+   "experiments": [
+    "R40-07.policy"
+   ]
+  },
+  "6baab02c83845460": {
+   "key": "6baab02c83845460",
+   "point": {
+    "id": "model.llama_decode/tiny/fp16-b1-p16",
+    "sha256": "9889060c587f03f485fbc2e16e4c3b6788cf830c616747040259517c3e81b63a"
+   },
+   "knobs": {
+    "TNCA_TORCH_DEVICE": "native",
+    "TNCA_TUNE": "0",
+    "TNCA_MAX_BLOCK": "16",
+    "TNCA_GEMM_TILE": "16,16,16",
+    "TNCA_REDUCTION_ROWS": "1",
+    "TNCA_BANK_ALLOC": "0",
+    "TNCA_WINDOW_REUSE": "0",
+    "TNCA_SDPA": "decomposed",
+    "TNCA_SUBMIT": "single",
+    "TNCA_TRANSFER_POLICY": "resident",
+    "TNCA_ACTIVE_CORES": "3",
+    "TNCA_RTL_MEM_PORTS": "3",
+    "TNCA_RTL_OUTSTANDING": "8",
+    "TNCA_PIPELINE": "2",
+    "TNCA_RCTX_ROLES": "1"
+   },
+   "klass": "device",
+   "experiments": [
+    "R40-07.policy"
+   ]
+  },
+  "94c04b0607111e92": {
+   "key": "94c04b0607111e92",
+   "point": {
+    "id": "model.llama_prefill/medium/fp16-b1-s64",
+    "sha256": "01c5f5834948841ad9674e61a49aeb0a90670833fbc3596c4fefc05a56790b55"
+   },
+   "knobs": {
+    "TNCA_TORCH_DEVICE": "native",
+    "TNCA_TUNE": "0",
+    "TNCA_MAX_BLOCK": "16",
+    "TNCA_GEMM_TILE": "16,16,16",
+    "TNCA_REDUCTION_ROWS": "1",
+    "TNCA_BANK_ALLOC": "0",
+    "TNCA_WINDOW_REUSE": "0",
+    "TNCA_SDPA": "decomposed",
+    "TNCA_SUBMIT": "single",
+    "TNCA_TRANSFER_POLICY": "resident",
+    "TNCA_ACTIVE_CORES": "3",
+    "TNCA_RTL_MEM_PORTS": "3",
+    "TNCA_RTL_OUTSTANDING": "8",
+    "TNCA_PIPELINE": "2",
+    "TNCA_RCTX_ROLES": "0"
+   },
+   "klass": "device",
+   "experiments": [
+    "R40-07.policy"
+   ]
+  },
+  "f81b00749b5b960b": {
+   "key": "f81b00749b5b960b",
+   "point": {
+    "id": "model.llama_prefill/medium/fp16-b1-s64",
+    "sha256": "01c5f5834948841ad9674e61a49aeb0a90670833fbc3596c4fefc05a56790b55"
+   },
+   "knobs": {
+    "TNCA_TORCH_DEVICE": "native",
+    "TNCA_TUNE": "0",
+    "TNCA_MAX_BLOCK": "16",
+    "TNCA_GEMM_TILE": "16,16,16",
+    "TNCA_REDUCTION_ROWS": "1",
+    "TNCA_BANK_ALLOC": "0",
+    "TNCA_WINDOW_REUSE": "0",
+    "TNCA_SDPA": "decomposed",
+    "TNCA_SUBMIT": "single",
+    "TNCA_TRANSFER_POLICY": "resident",
+    "TNCA_ACTIVE_CORES": "3",
+    "TNCA_RTL_MEM_PORTS": "3",
+    "TNCA_RTL_OUTSTANDING": "8",
+    "TNCA_PIPELINE": "2",
+    "TNCA_RCTX_ROLES": "1"
+   },
+   "klass": "device",
+   "experiments": [
+    "R40-07.policy"
+   ]
+  },
+  "9f2080bed88e3cd7": {
+   "key": "9f2080bed88e3cd7",
+   "point": {
+    "id": "model.llama_prefill/small/fp16-b1-s64",
+    "sha256": "a4aa11b171f8875f87051a5ebfbd9fbeecfc53ac8f48f5c67e1902ffbf490ae0"
+   },
+   "knobs": {
+    "TNCA_TORCH_DEVICE": "native",
+    "TNCA_TUNE": "0",
+    "TNCA_MAX_BLOCK": "16",
+    "TNCA_GEMM_TILE": "16,16,16",
+    "TNCA_REDUCTION_ROWS": "1",
+    "TNCA_BANK_ALLOC": "0",
+    "TNCA_WINDOW_REUSE": "0",
+    "TNCA_SDPA": "decomposed",
+    "TNCA_SUBMIT": "single",
+    "TNCA_TRANSFER_POLICY": "resident",
+    "TNCA_ACTIVE_CORES": "3",
+    "TNCA_RTL_MEM_PORTS": "3",
+    "TNCA_RTL_OUTSTANDING": "8",
+    "TNCA_PIPELINE": "2",
+    "TNCA_RCTX_ROLES": "0"
+   },
+   "klass": "device",
+   "experiments": [
+    "R40-07.policy"
+   ]
+  },
+  "16a02abe3d0a5ba4": {
+   "key": "16a02abe3d0a5ba4",
+   "point": {
+    "id": "model.llama_prefill/small/fp16-b1-s64",
+    "sha256": "a4aa11b171f8875f87051a5ebfbd9fbeecfc53ac8f48f5c67e1902ffbf490ae0"
+   },
+   "knobs": {
+    "TNCA_TORCH_DEVICE": "native",
+    "TNCA_TUNE": "0",
+    "TNCA_MAX_BLOCK": "16",
+    "TNCA_GEMM_TILE": "16,16,16",
+    "TNCA_REDUCTION_ROWS": "1",
+    "TNCA_BANK_ALLOC": "0",
+    "TNCA_WINDOW_REUSE": "0",
+    "TNCA_SDPA": "decomposed",
+    "TNCA_SUBMIT": "single",
+    "TNCA_TRANSFER_POLICY": "resident",
+    "TNCA_ACTIVE_CORES": "3",
+    "TNCA_RTL_MEM_PORTS": "3",
+    "TNCA_RTL_OUTSTANDING": "8",
+    "TNCA_PIPELINE": "2",
+    "TNCA_RCTX_ROLES": "1"
+   },
+   "klass": "device",
+   "experiments": [
+    "R40-07.policy"
+   ]
+  },
+  "ac710a212b9ebbe0": {
+   "key": "ac710a212b9ebbe0",
+   "point": {
+    "id": "model.llama_prefill/tiny/fp16-b1-s16",
+    "sha256": "6d14a4a6373ba814884be0e62ed485960e3da63c6fe51b6e2de35492dbde69bc"
+   },
+   "knobs": {
+    "TNCA_TORCH_DEVICE": "native",
+    "TNCA_TUNE": "0",
+    "TNCA_MAX_BLOCK": "16",
+    "TNCA_GEMM_TILE": "16,16,16",
+    "TNCA_REDUCTION_ROWS": "1",
+    "TNCA_BANK_ALLOC": "0",
+    "TNCA_WINDOW_REUSE": "0",
+    "TNCA_SDPA": "decomposed",
+    "TNCA_SUBMIT": "single",
+    "TNCA_TRANSFER_POLICY": "resident",
+    "TNCA_ACTIVE_CORES": "3",
+    "TNCA_RTL_MEM_PORTS": "3",
+    "TNCA_RTL_OUTSTANDING": "8",
+    "TNCA_PIPELINE": "2",
+    "TNCA_RCTX_ROLES": "0"
+   },
+   "klass": "device",
+   "experiments": [
+    "R40-07.policy"
+   ]
+  },
+  "078fe399d7667dd1": {
+   "key": "078fe399d7667dd1",
+   "point": {
+    "id": "model.llama_prefill/tiny/fp16-b1-s16",
+    "sha256": "6d14a4a6373ba814884be0e62ed485960e3da63c6fe51b6e2de35492dbde69bc"
+   },
+   "knobs": {
+    "TNCA_TORCH_DEVICE": "native",
+    "TNCA_TUNE": "0",
+    "TNCA_MAX_BLOCK": "16",
+    "TNCA_GEMM_TILE": "16,16,16",
+    "TNCA_REDUCTION_ROWS": "1",
+    "TNCA_BANK_ALLOC": "0",
+    "TNCA_WINDOW_REUSE": "0",
+    "TNCA_SDPA": "decomposed",
+    "TNCA_SUBMIT": "single",
+    "TNCA_TRANSFER_POLICY": "resident",
+    "TNCA_ACTIVE_CORES": "3",
+    "TNCA_RTL_MEM_PORTS": "3",
+    "TNCA_RTL_OUTSTANDING": "8",
+    "TNCA_PIPELINE": "2",
+    "TNCA_RCTX_ROLES": "1"
+   },
+   "klass": "device",
+   "experiments": [
+    "R40-07.policy"
+   ]
+  },
+  "a5e535d01980b1fc": {
+   "key": "a5e535d01980b1fc",
+   "point": {
+    "id": "op.gemv/medium/fp16-k320-n448",
+    "sha256": "fd15161f24b0d9305fdc83fde76124d2a8fa398f2db5eb98a6b3448b36d0f3ea"
+   },
+   "knobs": {
+    "TNCA_TORCH_DEVICE": "native",
+    "TNCA_TUNE": "0",
+    "TNCA_MAX_BLOCK": "16",
+    "TNCA_GEMM_TILE": "16,16,16",
+    "TNCA_REDUCTION_ROWS": "1",
+    "TNCA_BANK_ALLOC": "0",
+    "TNCA_WINDOW_REUSE": "0",
+    "TNCA_SDPA": "decomposed",
+    "TNCA_SUBMIT": "single",
+    "TNCA_TRANSFER_POLICY": "resident",
+    "TNCA_ACTIVE_CORES": "3",
+    "TNCA_RTL_MEM_PORTS": "3",
+    "TNCA_RTL_OUTSTANDING": "8",
+    "TNCA_PIPELINE": "2",
+    "TNCA_RCTX_ROLES": "0"
+   },
+   "klass": "device",
+   "experiments": [
+    "R40-07.policy"
+   ]
+  },
+  "9e0a535598b69ca7": {
+   "key": "9e0a535598b69ca7",
+   "point": {
+    "id": "op.gemv/medium/fp16-k320-n448",
+    "sha256": "fd15161f24b0d9305fdc83fde76124d2a8fa398f2db5eb98a6b3448b36d0f3ea"
+   },
+   "knobs": {
+    "TNCA_TORCH_DEVICE": "native",
+    "TNCA_TUNE": "0",
+    "TNCA_MAX_BLOCK": "16",
+    "TNCA_GEMM_TILE": "16,16,16",
+    "TNCA_REDUCTION_ROWS": "1",
+    "TNCA_BANK_ALLOC": "0",
+    "TNCA_WINDOW_REUSE": "0",
+    "TNCA_SDPA": "decomposed",
+    "TNCA_SUBMIT": "single",
+    "TNCA_TRANSFER_POLICY": "resident",
+    "TNCA_ACTIVE_CORES": "3",
+    "TNCA_RTL_MEM_PORTS": "3",
+    "TNCA_RTL_OUTSTANDING": "8",
+    "TNCA_PIPELINE": "2",
+    "TNCA_RCTX_ROLES": "1"
+   },
+   "klass": "device",
+   "experiments": [
+    "R40-07.policy"
+   ]
+  },
+  "06be77732f3b02ae": {
+   "key": "06be77732f3b02ae",
+   "point": {
+    "id": "op.gemv/small/fp16-k256-n512",
+    "sha256": "53659f5393236b19a85019305821818b76babff48951aea232e335969b4adce2"
+   },
+   "knobs": {
+    "TNCA_TORCH_DEVICE": "native",
+    "TNCA_TUNE": "0",
+    "TNCA_MAX_BLOCK": "16",
+    "TNCA_GEMM_TILE": "16,16,16",
+    "TNCA_REDUCTION_ROWS": "1",
+    "TNCA_BANK_ALLOC": "0",
+    "TNCA_WINDOW_REUSE": "0",
+    "TNCA_SDPA": "decomposed",
+    "TNCA_SUBMIT": "single",
+    "TNCA_TRANSFER_POLICY": "resident",
+    "TNCA_ACTIVE_CORES": "3",
+    "TNCA_RTL_MEM_PORTS": "3",
+    "TNCA_RTL_OUTSTANDING": "8",
+    "TNCA_PIPELINE": "2",
+    "TNCA_RCTX_ROLES": "0"
+   },
+   "klass": "device",
+   "experiments": [
+    "R40-07.policy"
+   ]
+  },
+  "011e697335528954": {
+   "key": "011e697335528954",
+   "point": {
+    "id": "op.gemv/small/fp16-k256-n512",
+    "sha256": "53659f5393236b19a85019305821818b76babff48951aea232e335969b4adce2"
+   },
+   "knobs": {
+    "TNCA_TORCH_DEVICE": "native",
+    "TNCA_TUNE": "0",
+    "TNCA_MAX_BLOCK": "16",
+    "TNCA_GEMM_TILE": "16,16,16",
+    "TNCA_REDUCTION_ROWS": "1",
+    "TNCA_BANK_ALLOC": "0",
+    "TNCA_WINDOW_REUSE": "0",
+    "TNCA_SDPA": "decomposed",
+    "TNCA_SUBMIT": "single",
+    "TNCA_TRANSFER_POLICY": "resident",
+    "TNCA_ACTIVE_CORES": "3",
+    "TNCA_RTL_MEM_PORTS": "3",
+    "TNCA_RTL_OUTSTANDING": "8",
+    "TNCA_PIPELINE": "2",
+    "TNCA_RCTX_ROLES": "1"
+   },
+   "klass": "device",
+   "experiments": [
+    "R40-07.policy"
+   ]
+  },
+  "ec71fbb0183abf7a": {
+   "key": "ec71fbb0183abf7a",
+   "point": {
+    "id": "op.gemv/tiny/fp16-k64-n64",
+    "sha256": "c03b40a0ee32d5743b0b51310f10486cbbbc18ed9467a5cecb856296f3bd86a4"
+   },
+   "knobs": {
+    "TNCA_TORCH_DEVICE": "native",
+    "TNCA_TUNE": "0",
+    "TNCA_MAX_BLOCK": "16",
+    "TNCA_GEMM_TILE": "16,16,16",
+    "TNCA_REDUCTION_ROWS": "1",
+    "TNCA_BANK_ALLOC": "0",
+    "TNCA_WINDOW_REUSE": "0",
+    "TNCA_SDPA": "decomposed",
+    "TNCA_SUBMIT": "single",
+    "TNCA_TRANSFER_POLICY": "resident",
+    "TNCA_ACTIVE_CORES": "3",
+    "TNCA_RTL_MEM_PORTS": "3",
+    "TNCA_RTL_OUTSTANDING": "8",
+    "TNCA_PIPELINE": "2",
+    "TNCA_RCTX_ROLES": "0"
+   },
+   "klass": "device",
+   "experiments": [
+    "R40-07.policy"
+   ]
+  },
+  "d65d9cc55183fa98": {
+   "key": "d65d9cc55183fa98",
+   "point": {
+    "id": "op.gemv/tiny/fp16-k64-n64",
+    "sha256": "c03b40a0ee32d5743b0b51310f10486cbbbc18ed9467a5cecb856296f3bd86a4"
+   },
+   "knobs": {
+    "TNCA_TORCH_DEVICE": "native",
+    "TNCA_TUNE": "0",
+    "TNCA_MAX_BLOCK": "16",
+    "TNCA_GEMM_TILE": "16,16,16",
+    "TNCA_REDUCTION_ROWS": "1",
+    "TNCA_BANK_ALLOC": "0",
+    "TNCA_WINDOW_REUSE": "0",
+    "TNCA_SDPA": "decomposed",
+    "TNCA_SUBMIT": "single",
+    "TNCA_TRANSFER_POLICY": "resident",
+    "TNCA_ACTIVE_CORES": "3",
+    "TNCA_RTL_MEM_PORTS": "3",
+    "TNCA_RTL_OUTSTANDING": "8",
+    "TNCA_PIPELINE": "2",
+    "TNCA_RCTX_ROLES": "1"
+   },
+   "klass": "device",
+   "experiments": [
+    "R40-07.policy"
+   ]
+  }
+ }
+}

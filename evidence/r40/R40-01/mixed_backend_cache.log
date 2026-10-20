@@ -1,0 +1,5 @@
+  PASS  compile_graphs   pointwise: 1 launch(es), 6000 B resident; reduction: 1 launch(es), 6400 B resident; norm: 1 launch(es), 1152 B resident; gemm: 1 launch(es), 9472 B resident; sdpa: 7 launch(es), 28672 B resident
+  PASS  mixed_devices    2 rounds of CUDA and tnca graphs in one process, then a CPU-tensor graph
+  PASS  properties       TNCA core-vrf-sync-v5: 1 core(s), 4 contexts, 16 lanes
+r40-device-tests  PASS  (3/3)
+EXIT:0

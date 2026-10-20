@@ -1,0 +1,840 @@
+{
+  "files": {
+    "r40_raw_graph_endpoints_20261017/endpoint_native.exit": {
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
+      "bytes": 2
+    },
+    "r40_raw_graph_endpoints_20261017/endpoint_native.log": {
+      "sha256": "0e405a67f914a2b6cbe7fcc510f1a6601dff55c27b93a2477f1675cdba0fe0a4",
+      "bytes": 233
+    },
+    "r40_raw_graph_endpoints_20261017/endpoint_run.sh": {
+      "sha256": "1ee2317cbc3d20c3abaa101801d947c27118ce48b635b17e4d883ac2d0c072ea",
+      "bytes": 1039
+    },
+    "r40_raw_graph_endpoints_20261017/endpoint_unit.exit": {
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
+      "bytes": 2
+    },
+    "r40_raw_graph_endpoints_20261017/endpoint_result.jsonl": {
+      "sha256": "56e4bba78b782a87c49bec2b0951e6b25910346de68b6fb3fa7e5f9b88f98916",
+      "bytes": 10429
+    },
+    "r40_raw_graph_endpoints_20261017/endpoint_identity.json": {
+      "sha256": "323673b769afc635561ea320415acb790c820256d0dd1d6c6ebc4c425d67cd60",
+      "bytes": 1482
+    },
+    "r40_raw_graph_endpoints_20261017/endpoint_unit.log": {
+      "sha256": "9b9a874848b49868222944ca0fc455910f1c7f7d547e2be0762b1b0d39418ae0",
+      "bytes": 117
+    },
+    "r40_raw_graph_endpoints_20261017/archbench/platforms/tnca.py": {
+      "sha256": "d21d86fdcbcc0f6fb6f04a61a1f8fa56c7ba8c023f9202f38433e340bdea9b27",
+      "bytes": 26832
+    },
+    "r40_raw_graph_endpoints_20261017/python/tnca/device_timing.py": {
+      "sha256": "c58b22b31bedb7e5fd52e46ea547cf9f606c0b663577fd7ee0f22c2704dc98b1",
+      "bytes": 3095
+    },
+    "r40_raw_graph_endpoints_20261017/tools/r40/ablate.py": {
+      "sha256": "41adaa5862bab613e7332b7990f0f00f579ae1ee8569551eee8d4a8450c53ed2",
+      "bytes": 21199
+    },
+    "r40_raw_graph_endpoints_20261017/tools/r40/device_clock_tests.py": {
+      "sha256": "0db1c32d15e689416fdb2cf9242b9d3be26862539d349469424ac8d735d1111d",
+      "bytes": 9018
+    },
+    "r40_raw_graph_endpoints_20261017/tb/fpga/tnca_multicore_board_regs.v": {
+      "sha256": "b064bbb0892e407f78a3fdccf8b61f38186d04eadb8961b8aefd7262c04e3c26",
+      "bytes": 16097
+    },
+    "r40_raw_graph_endpoints_20261017/tb/fpga/tnca_multicore_regs.v": {
+      "sha256": "65a2d8453fd144d2447b9b1c653d7ab39ac5e83d53717e53b07b21783c63ab2a",
+      "bytes": 11847
+    },
+    "r40_raw_graph_endpoints_20261017/endpoint_result_logs/op.add__tiny__fp16-n1000.log": {
+      "sha256": "093ba92d942904223cbb9a8f5c88d688e96ebfbbe4ccdb44e1d72d4fd583e5c0",
+      "bytes": 124
+    },
+    "r40_raw_graph_endpoint_audit_v2_20261017/endpoint_reaudit.log": {
+      "sha256": "f027a3603ff3d85d98a4e10154dcff3d354b3b21170cc7cc4c6618bb0796a726",
+      "bytes": 1238
+    },
+    "r40_raw_graph_endpoint_audit_v2_20261017/endpoint_reaudit.json": {
+      "sha256": "af40be24a29e248938314269b32116ca2252ae3a6a66c3a4114f1c3d60676a12",
+      "bytes": 1460
+    },
+    "r40_raw_graph_endpoint_audit_v2_20261017/endpoint_unit.exit": {
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
+      "bytes": 2
+    },
+    "r40_raw_graph_endpoint_audit_v2_20261017/endpoint_reaudit.exit": {
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
+      "bytes": 2
+    },
+    "r40_raw_graph_endpoint_audit_v2_20261017/endpoint_audit_run.sh": {
+      "sha256": "a4fd6c009ec798a7062f6624f4227e96fe55b6fcf784720cc30cc5f375c0642f",
+      "bytes": 466
+    },
+    "r40_raw_graph_endpoint_audit_v2_20261017/endpoint_audit_identity.json": {
+      "sha256": "af4d8dea57d7e41fdab268fc27000a0fd30c0ecd7f0639557bf90543f5e67728",
+      "bytes": 699
+    },
+    "r40_raw_graph_endpoint_audit_v2_20261017/endpoint_reaudit.py": {
+      "sha256": "3b2234f0873ba0a8ef4a4edc6d6949dd76ed2f3720f9a8c2a5221009bf7e0fa4",
+      "bytes": 2394
+    },
+    "r40_raw_graph_endpoint_audit_v2_20261017/endpoint_unit.log": {
+      "sha256": "5827db762ebd6bd704119f845962225f252ad7a28f1d4f2e69b2b9f7941efddc",
+      "bytes": 117
+    },
+    "r40_raw_graph_endpoint_audit_v2_20261017/archbench/platforms/tnca.py": {
+      "sha256": "78d003e091a4d73f69a18611765f207687598c93a14f8f790899327f0fba1f5e",
+      "bytes": 26915
+    },
+    "r40_raw_graph_endpoint_audit_v2_20261017/python/tnca/device_timing.py": {
+      "sha256": "1363e5cd20b3739f5c2926ebfc329c301a1b7d869c3eb16fcf7adada08ca33b1",
+      "bytes": 3394
+    },
+    "r40_raw_graph_endpoint_audit_v2_20261017/tools/r40/ablate.py": {
+      "sha256": "fd3623b7b3c89189154d85b92975f08bb77ffa565f9bcd62cb056a046e12c075",
+      "bytes": 21298
+    },
+    "r40_raw_graph_endpoint_audit_v2_20261017/tools/r40/device_clock_tests.py": {
+      "sha256": "f598bbdda4f4b29efd68717647b68e4b736531ab3c631c7150b9d550f88a359e",
+      "bytes": 9533
+    }
+  },
+  "results": {
+    "native": {
+      "schema": "archbench-torch-record/2",
+      "point_id": "op.add/tiny/fp16-n1000",
+      "point_sha256": "f5f7f2ddaf105584a49a973c66f605ac8c77b0647a64fcb875af80803953064d",
+      "kind": "op",
+      "family": "add",
+      "tier": "tiny",
+      "dtype": "fp16",
+      "track": [
+        "llm"
+      ],
+      "platform": {
+        "kind": "tnca",
+        "name": "tnca:core-vrf-sync-v5@fpga-multicore-sim",
+        "profile": "core-vrf-sync-v5",
+        "backend": "fpga-multicore-sim",
+        "backend_args": {
+          "core_count": 3,
+          "memory_ports": 3,
+          "memory_bytes": 1048576,
+          "link_stages": 2,
+          "noc_link_stages": 2,
+          "dispatch_stages": 2,
+          "home_stages": 2,
+          "code_stages": 2,
+          "board_top": true,
+          "maintenance": true,
+          "memory_controls": true,
+          "hbm_dma": true
+        },
+        "opt_level": 2,
+        "inductor": {
+          "cpu_backend": "triton",
+          "max_block": 16,
+          "persistent_reductions": false,
+          "compile_threads": 1,
+          "max_autotune_gemm_backends": "TRITON",
+          "tensor_descriptors": true,
+          "no_x_dim": true,
+          "reduction_rows": 1,
+          "gemm_tile": [
+            16,
+            16,
+            16
+          ],
+          "device": "tnca"
+        },
+        "knobs": {
+          "TNCA_TORCH_DEVICE": "native",
+          "TNCA_TRANSFER_POLICY": "resident"
+        },
+        "device_id": "sim:core-vrf-sync-v5-a8f9e2a0291d254a-2f12bdd465ea",
+        "image": "sim:core-vrf-sync-v5-a8f9e2a0291d254a-2f12bdd465ea",
+        "clock_policy": null,
+        "image_sha256": null,
+        "software_tree": "files:1579bc665b18461d12451edf97c0e65a40592bdf3acada47c2596b893ef3302a",
+        "toolchain": {
+          "torch": "2.14.0+cu130",
+          "triton": "3.8.0",
+          "python": "3.12.3 (main, Nov  6 2025, 13:44:16) [GCC 13.3.0]"
+        }
+      },
+      "evidence_level": "measured-rtl",
+      "status": "pass",
+      "problems": [],
+      "fallbacks": [],
+      "kernels": [
+        "triton_poi_fused_add_0"
+      ],
+      "correctness": {
+        "max_rel_err": 0.0003009328919650918,
+        "tol": 0.02,
+        "detail": ""
+      },
+      "time": {
+        "unit": "cycles",
+        "device": 2315.5,
+        "timing": "serial-grid",
+        "roi": "launch_accept_to_core_idle",
+        "launches": 1,
+        "per_launch": [
+          {
+            "kernel": "triton_poi_fused_add_0",
+            "grid": [
+              63,
+              1,
+              1
+            ],
+            "cycles": 2316,
+            "programs": 0
+          }
+        ],
+        "clock_hz": null,
+        "device_seconds": null,
+        "kind": "device-cycles-serial-grid",
+        "samples": [
+          2316,
+          2315
+        ],
+        "deterministic": false,
+        "warmup": 1,
+        "timed": 2,
+        "first_call": {
+          "wall_s": 242.983,
+          "device_cycles": 16123
+        }
+      },
+      "demand": {
+        "macs": 0.0,
+        "fp_ops": 1000,
+        "sfu_ops": 0,
+        "read_bytes": 4000,
+        "write_bytes": 2000
+      },
+      "bound": {
+        "version": "archbench-torch-bounds/2",
+        "unit": "cycles",
+        "value": 750.0,
+        "binding": "mem_bytes",
+        "terms": {
+          "fp_lane": 31.25,
+          "mem_bytes": 750.0
+        },
+        "peak": {
+          "fp_lane": 32,
+          "mma_mac": 16,
+          "int_lane": 16,
+          "sfu_lane": 1,
+          "mem_bytes": 8,
+          "issue": 1
+        }
+      },
+      "eta": 0.32390412437918376,
+      "host": {
+        "wall_s": 242.98,
+        "upload_bytes": 0,
+        "download_bytes": 0,
+        "transfer_s": 0.005,
+        "first_call_s": 242.983,
+        "steady": {
+          "request_s": 17.642697,
+          "upload_s": 0.00012,
+          "run_s": 17.642025,
+          "download_s": 4.3e-05
+        },
+        "calls": [
+          {
+            "request_s": 17.559476,
+            "upload_s": 0.000113,
+            "run_s": 17.55887,
+            "download_s": 4.6e-05
+          },
+          {
+            "request_s": 17.725919,
+            "upload_s": 0.000126,
+            "run_s": 17.72518,
+            "download_s": 4e-05
+          }
+        ],
+        "process_s": 329.0,
+        "log": "/home/zhongchun/r40_raw_graph_endpoints_20261017/endpoint_result_logs/op.add__tiny__fp16-n1000.log"
+      },
+      "counters": null,
+      "env": {
+        "torch": "2.14.0+cu130",
+        "triton": "3.8.0",
+        "python": "3.12.3",
+        "machine": "aarch64",
+        "host": "gx10-6646"
+      },
+      "timestamp": "2026-10-17T21:52:57+00:00",
+      "cold_call": {
+        "first_call": {
+          "wall_s": 242.983,
+          "device_cycles": 16123
+        },
+        "problem": "27 launches, but the generated wrapper makes 1: launches that are not the graph (autotuning?) would be counted as its time",
+        "provenance": {
+          "software_tree": "files:1579bc665b18461d12451edf97c0e65a40592bdf3acada47c2596b893ef3302a",
+          "git": null,
+          "artifacts": [
+            "43363b82762a9a9a5879301782c72829028babe3c2cab4907e1642e172043315",
+            "4387179c562da9a7f4063fe9b0e5803280c24c9b456e4097558474e51e47bcb2",
+            "ce41fad1af7bedf328c1e5781d76846cf9da5805730ea91d7e7b59980f2e7642"
+          ],
+          "profile": "core-vrf-sync-v5",
+          "capabilities": [
+            "atomics_device",
+            "fence",
+            "gather_scatter",
+            "matrix_bf16",
+            "matrix_f16",
+            "matrix_fp8",
+            "mbarrier",
+            "rctx_pair",
+            "rctx_slice",
+            "sfu",
+            "tensor_dma",
+            "tensor_store",
+            "tensor_transpose",
+            "vector_fp32"
+          ],
+          "image": "sim:core-vrf-sync-v5-a8f9e2a0291d254a-2f12bdd465ea",
+          "clock_hz": null,
+          "backend": "fpga-multicore-sim",
+          "launch_map": {
+            "timing": "serial-grid",
+            "cores": [
+              0
+            ],
+            "launches": [
+              {
+                "kernel": "_copy_kernel",
+                "grid": [
+                  1,
+                  1,
+                  1
+                ],
+                "programs": 0,
+                "artifact": "4387179c562da9a7f4063fe9b0e5803280c24c9b456e4097558474e51e47bcb2"
+              },
+              {
+                "kernel": "_copy_kernel",
+                "grid": [
+                  1,
+                  1,
+                  1
+                ],
+                "programs": 0,
+                "artifact": "4387179c562da9a7f4063fe9b0e5803280c24c9b456e4097558474e51e47bcb2"
+              },
+              {
+                "kernel": "_copy_kernel",
+                "grid": [
+                  1,
+                  1,
+                  1
+                ],
+                "programs": 0,
+                "artifact": "4387179c562da9a7f4063fe9b0e5803280c24c9b456e4097558474e51e47bcb2"
+              },
+              {
+                "kernel": "_copy_kernel",
+                "grid": [
+                  1,
+                  1,
+                  1
+                ],
+                "programs": 0,
+                "artifact": "4387179c562da9a7f4063fe9b0e5803280c24c9b456e4097558474e51e47bcb2"
+              },
+              {
+                "kernel": "_copy_kernel",
+                "grid": [
+                  1,
+                  1,
+                  1
+                ],
+                "programs": 0,
+                "artifact": "4387179c562da9a7f4063fe9b0e5803280c24c9b456e4097558474e51e47bcb2"
+              },
+              {
+                "kernel": "_copy_kernel",
+                "grid": [
+                  1,
+                  1,
+                  1
+                ],
+                "programs": 0,
+                "artifact": "4387179c562da9a7f4063fe9b0e5803280c24c9b456e4097558474e51e47bcb2"
+              },
+              {
+                "kernel": "_copy_kernel",
+                "grid": [
+                  1,
+                  1,
+                  1
+                ],
+                "programs": 0,
+                "artifact": "4387179c562da9a7f4063fe9b0e5803280c24c9b456e4097558474e51e47bcb2"
+              },
+              {
+                "kernel": "_copy_kernel",
+                "grid": [
+                  1,
+                  1,
+                  1
+                ],
+                "programs": 0,
+                "artifact": "4387179c562da9a7f4063fe9b0e5803280c24c9b456e4097558474e51e47bcb2"
+              },
+              {
+                "kernel": "_copy_kernel",
+                "grid": [
+                  1,
+                  1,
+                  1
+                ],
+                "programs": 0,
+                "artifact": "4387179c562da9a7f4063fe9b0e5803280c24c9b456e4097558474e51e47bcb2"
+              },
+              {
+                "kernel": "_copy_kernel",
+                "grid": [
+                  1,
+                  1,
+                  1
+                ],
+                "programs": 0,
+                "artifact": "4387179c562da9a7f4063fe9b0e5803280c24c9b456e4097558474e51e47bcb2"
+              },
+              {
+                "kernel": "_copy_kernel",
+                "grid": [
+                  1,
+                  1,
+                  1
+                ],
+                "programs": 0,
+                "artifact": "4387179c562da9a7f4063fe9b0e5803280c24c9b456e4097558474e51e47bcb2"
+              },
+              {
+                "kernel": "_copy_kernel",
+                "grid": [
+                  1,
+                  1,
+                  1
+                ],
+                "programs": 0,
+                "artifact": "4387179c562da9a7f4063fe9b0e5803280c24c9b456e4097558474e51e47bcb2"
+              },
+              {
+                "kernel": "_copy_kernel",
+                "grid": [
+                  1,
+                  1,
+                  1
+                ],
+                "programs": 0,
+                "artifact": "43363b82762a9a9a5879301782c72829028babe3c2cab4907e1642e172043315"
+              },
+              {
+                "kernel": "_copy_kernel",
+                "grid": [
+                  1,
+                  1,
+                  1
+                ],
+                "programs": 0,
+                "artifact": "43363b82762a9a9a5879301782c72829028babe3c2cab4907e1642e172043315"
+              },
+              {
+                "kernel": "_copy_kernel",
+                "grid": [
+                  1,
+                  1,
+                  1
+                ],
+                "programs": 0,
+                "artifact": "43363b82762a9a9a5879301782c72829028babe3c2cab4907e1642e172043315"
+              },
+              {
+                "kernel": "_copy_kernel",
+                "grid": [
+                  1,
+                  1,
+                  1
+                ],
+                "programs": 0,
+                "artifact": "43363b82762a9a9a5879301782c72829028babe3c2cab4907e1642e172043315"
+              },
+              {
+                "kernel": "_copy_kernel",
+                "grid": [
+                  1,
+                  1,
+                  1
+                ],
+                "programs": 0,
+                "artifact": "43363b82762a9a9a5879301782c72829028babe3c2cab4907e1642e172043315"
+              },
+              {
+                "kernel": "_copy_kernel",
+                "grid": [
+                  1,
+                  1,
+                  1
+                ],
+                "programs": 0,
+                "artifact": "43363b82762a9a9a5879301782c72829028babe3c2cab4907e1642e172043315"
+              },
+              {
+                "kernel": "_copy_kernel",
+                "grid": [
+                  1,
+                  1,
+                  1
+                ],
+                "programs": 0,
+                "artifact": "43363b82762a9a9a5879301782c72829028babe3c2cab4907e1642e172043315"
+              },
+              {
+                "kernel": "_copy_kernel",
+                "grid": [
+                  1,
+                  1,
+                  1
+                ],
+                "programs": 0,
+                "artifact": "43363b82762a9a9a5879301782c72829028babe3c2cab4907e1642e172043315"
+              },
+              {
+                "kernel": "_copy_kernel",
+                "grid": [
+                  1,
+                  1,
+                  1
+                ],
+                "programs": 0,
+                "artifact": "43363b82762a9a9a5879301782c72829028babe3c2cab4907e1642e172043315"
+              },
+              {
+                "kernel": "_copy_kernel",
+                "grid": [
+                  1,
+                  1,
+                  1
+                ],
+                "programs": 0,
+                "artifact": "43363b82762a9a9a5879301782c72829028babe3c2cab4907e1642e172043315"
+              },
+              {
+                "kernel": "_copy_kernel",
+                "grid": [
+                  1,
+                  1,
+                  1
+                ],
+                "programs": 0,
+                "artifact": "43363b82762a9a9a5879301782c72829028babe3c2cab4907e1642e172043315"
+              },
+              {
+                "kernel": "_copy_kernel",
+                "grid": [
+                  1,
+                  1,
+                  1
+                ],
+                "programs": 0,
+                "artifact": "43363b82762a9a9a5879301782c72829028babe3c2cab4907e1642e172043315"
+              },
+              {
+                "kernel": "_copy_kernel",
+                "grid": [
+                  1,
+                  1,
+                  1
+                ],
+                "programs": 0,
+                "artifact": "43363b82762a9a9a5879301782c72829028babe3c2cab4907e1642e172043315"
+              },
+              {
+                "kernel": "_copy_kernel",
+                "grid": [
+                  1,
+                  1,
+                  1
+                ],
+                "programs": 0,
+                "artifact": "43363b82762a9a9a5879301782c72829028babe3c2cab4907e1642e172043315"
+              },
+              {
+                "kernel": "triton_poi_fused_add_0",
+                "grid": [
+                  63,
+                  1,
+                  1
+                ],
+                "programs": 0,
+                "artifact": "ce41fad1af7bedf328c1e5781d76846cf9da5805730ea91d7e7b59980f2e7642"
+              }
+            ]
+          }
+        }
+      },
+      "timings": {
+        "device-cycles-serial-grid": {
+          "unit": "cycles",
+          "samples": [
+            2316,
+            2315
+          ],
+          "median": 2315.5,
+          "p95": 2316,
+          "warmup": 1,
+          "deterministic": false,
+          "clock_hz": null
+        },
+        "device-graph-makespan": {
+          "unit": "cycles",
+          "samples": [
+            2318,
+            2317
+          ],
+          "median": 2317.5,
+          "p95": 2318,
+          "warmup": 1,
+          "clock_hz": null,
+          "deterministic": false,
+          "boundaries": "first accepted launch to last device completion",
+          "includes": [
+            "device execution",
+            "submission gaps",
+            "backpressure"
+          ],
+          "instrumentation": "sequence-checked MMIO endpoints after each program",
+          "endpoint_schema": "tnca-launch-endpoints/1",
+          "endpoint_records": [
+            [
+              {
+                "clock": "mmio-device-clock/1",
+                "epoch": 0,
+                "session_id": 1,
+                "start": 212345,
+                "end": 214663,
+                "cycles": 2318
+              }
+            ],
+            [
+              {
+                "clock": "mmio-device-clock/1",
+                "epoch": 0,
+                "session_id": 1,
+                "start": 217322,
+                "end": 219639,
+                "cycles": 2317
+              }
+            ]
+          ]
+        },
+        "request-latency": {
+          "unit": "s",
+          "samples": [
+            17.559476,
+            17.725919
+          ],
+          "median": 17.6426975,
+          "p95": 17.725919,
+          "warmup": 1,
+          "includes": [
+            "per-launch upload",
+            "device",
+            "per-launch download",
+            "host dispatch"
+          ]
+        }
+      },
+      "provenance": {
+        "software_tree": "files:1579bc665b18461d12451edf97c0e65a40592bdf3acada47c2596b893ef3302a",
+        "git": null,
+        "artifacts": [
+          "ce41fad1af7bedf328c1e5781d76846cf9da5805730ea91d7e7b59980f2e7642"
+        ],
+        "profile": "core-vrf-sync-v5",
+        "capabilities": [
+          "atomics_device",
+          "fence",
+          "gather_scatter",
+          "matrix_bf16",
+          "matrix_f16",
+          "matrix_fp8",
+          "mbarrier",
+          "rctx_pair",
+          "rctx_slice",
+          "sfu",
+          "tensor_dma",
+          "tensor_store",
+          "tensor_transpose",
+          "vector_fp32"
+        ],
+        "image": "sim:core-vrf-sync-v5-a8f9e2a0291d254a-2f12bdd465ea",
+        "clock_hz": null,
+        "backend": "fpga-multicore-sim",
+        "launch_map": {
+          "timing": "serial-grid",
+          "cores": [
+            0
+          ],
+          "launches": [
+            {
+              "kernel": "triton_poi_fused_add_0",
+              "grid": [
+                63,
+                1,
+                1
+              ],
+              "programs": 0,
+              "artifact": "ce41fad1af7bedf328c1e5781d76846cf9da5805730ea91d7e7b59980f2e7642"
+            }
+          ]
+        }
+      },
+      "native_memory": {
+        "tensor_live_bytes": 4000,
+        "tensor_peak_bytes": 6000,
+        "session": {
+          "epoch": 0,
+          "heap_capacity_bytes": 1048576,
+          "heap_allocated_bytes": 4096,
+          "heap_peak_bytes": 6912,
+          "code_allocated_bytes": 5120,
+          "code_peak_bytes": 5120
+        },
+        "window": {
+          "base": 4294967296,
+          "size": 1048576,
+          "local_limit": 131072,
+          "dma": true
+        },
+        "live_buffers": [
+          {
+            "address": 131072,
+            "bytes": 2000,
+            "reserved": 2048
+          },
+          {
+            "address": 133120,
+            "bytes": 2000,
+            "reserved": 2048
+          }
+        ]
+      },
+      "measurement": {
+        "block_id": null,
+        "process_session": "73c1238cb41c45dcb925e314405a1455",
+        "boot_id": "36d2d71c-e46a-424b-be60-39380cec9651",
+        "started_ns": 4178427983326973,
+        "ended_ns": 4178754577058309
+      }
+    },
+    "native_identity": {
+      "scope": "Original tiny add numerical and raw graph endpoint serialization validation only; not native77/HBM14, performance or board gate",
+      "source_archive_sha256": "6b254137501f4a3802c11f9e084e961c60724093a4da5654ce721b70a0d8db84",
+      "overrides": {
+        "archbench/platforms/tnca.py": "d21d86fdcbcc0f6fb6f04a61a1f8fa56c7ba8c023f9202f38433e340bdea9b27",
+        "python/tnca/device_timing.py": "c58b22b31bedb7e5fd52e46ea547cf9f606c0b663577fd7ee0f22c2704dc98b1",
+        "tools/r40/ablate.py": "41adaa5862bab613e7332b7990f0f00f579ae1ee8569551eee8d4a8450c53ed2",
+        "tools/r40/device_clock_tests.py": "0db1c32d15e689416fdb2cf9242b9d3be26862539d349469424ac8d735d1111d"
+      },
+      "testbench_overrides": {
+        "tb/fpga/tnca_multicore_board_regs.v": "b064bbb0892e407f78a3fdccf8b61f38186d04eadb8961b8aefd7262c04e3c26",
+        "tb/fpga/tnca_multicore_regs.v": "65a2d8453fd144d2447b9b1c653d7ab39ac5e83d53717e53b07b21783c63ab2a"
+      },
+      "configuration": {
+        "core_count": 3,
+        "memory_ports": 3,
+        "memory_bytes": 1048576,
+        "link_stages": 2,
+        "noc_link_stages": 2,
+        "dispatch_stages": 2,
+        "home_stages": 2,
+        "code_stages": 2,
+        "board_top": true,
+        "maintenance": true,
+        "memory_controls": true,
+        "hbm_dma": true
+      },
+      "clock_kind": "virtual-simulation-only",
+      "measured_clock_hz": null,
+      "image_sha256": null,
+      "contract_sha256": "49fc0e02733139707ae2292eff2ef893e76e73f0723d0d002b2e7e1864af71c8",
+      "started_utc": "2026-10-17T21:52:36Z",
+      "runner_pid": 2035366
+    },
+    "reaudit": {
+      "status": "diagnostic-pass",
+      "gate_status": "not-measured",
+      "scope": "Exact final raw endpoint writer/auditor and launch completeness against an unchanged original numeric RTL capture; no second device run, no board/performance gate",
+      "original_capture": "/home/zhongchun/r40_raw_graph_endpoints_20261017/endpoint_result.jsonl",
+      "original_capture_sha256": "56e4bba78b782a87c49bec2b0951e6b25910346de68b6fb3fa7e5f9b88f98916",
+      "original_software_tree": "files:1579bc665b18461d12451edf97c0e65a40592bdf3acada47c2596b893ef3302a",
+      "audit_software_tree": "files:5ef02b7b336a36c8508cd608e9bb148399fd6da69e6594e004ddde700f0f89fb",
+      "samples": [
+        2318,
+        2317
+      ],
+      "launch_counts": [
+        1,
+        1
+      ],
+      "endpoint_records": [
+        [
+          {
+            "clock": "mmio-device-clock/1",
+            "epoch": 0,
+            "session_id": 1,
+            "start": 212345,
+            "end": 214663,
+            "cycles": 2318
+          }
+        ],
+        [
+          {
+            "clock": "mmio-device-clock/1",
+            "epoch": 0,
+            "session_id": 1,
+            "start": 217322,
+            "end": 219639,
+            "cycles": 2317
+          }
+        ]
+      ],
+      "checks": [
+        "original frozen tiny add numeric status pass",
+        "all original raw graph spans reproduce exactly",
+        "launch completeness checked independently of outer interval",
+        "current writer regenerates the exact original serialized timing entry"
+      ],
+      "image_sha256": null,
+      "clock_hz": null,
+      "required_gate_promotions": []
+    }
+  },
+  "scope": "Raw per-graph launch endpoints and exact current writer/auditor validation; functional RTL only, no board/holdout/performance gate",
+  "archive": "raw.tar.gz",
+  "archive_sha256": "a782b9850455c534f807e67599099fb015c1ca1b143d222b1fcd36ac335f3638",
+  "required_gate_promotions": [],
+  "clock_hz": null,
+  "image_sha256": null,
+  "contract_sha256": "49fc0e02733139707ae2292eff2ef893e76e73f0723d0d002b2e7e1864af71c8",
+  "local_test_environment": "Default local Python lacks Torch; both Torch-dependent suites passed using the pinned ARM environment. Local pure protocol suite passed separately."
+}

@@ -1,0 +1,15 @@
+{
+ "name": "pipe_hbm-adverse_s1",
+ "group": "extra",
+ "cmd": "/home/zhongchun/tc_env/torchenv/bin/python tools/r40/v3_pipeline_matrix.py --memory hbm-adverse --stages 1 --trace-dir /home/zhongchun/r40v3_tpc_runs/all/trace_hbm-adverse_s1 --json /home/zhongchun/r40v3_tpc_runs/all/pipe_hbm-adverse_s1.report.json",
+ "env": {},
+ "start": "2026-10-19T12:23:04+00:00",
+ "end": "2026-10-19T13:13:47+00:00",
+ "seconds": 3042.5,
+ "exit": 0,
+ "marker": "r40-v3-pipeline-matrix PASS",
+ "marker_found": true,
+ "ok": true,
+ "log": "pipe_hbm-adverse_s1.log",
+ "log_sha256": "ac5c4d6953823f8a173242d23c8a22d2248841d58f90edf68f24a5f9e0481d92"
+}

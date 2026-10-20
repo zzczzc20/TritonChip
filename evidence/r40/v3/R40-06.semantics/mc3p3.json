@@ -1,0 +1,169 @@
+{
+ "config": "mc3p3",
+ "backend": "sim-multicore",
+ "backend_args": {
+  "core_count": 3,
+  "memory_ports": 3
+ },
+ "software_tree": "files:fe1b5199db515440d2d3407aed61ef1eed5edb627e5baf9cda10be5a7198cf75",
+ "harness_sha256": "76b259e5d286ef97809d5fee4798a9aa0add71d4f6a8ba15edf60a6b4a27772d",
+ "torch": "2.14.0+cu130",
+ "triton": "3.8.0",
+ "env": {
+  "TNCA_PROFILE": "core-vrf-sync-v5",
+  "TNCA_BACKEND": "sim-multicore",
+  "TNCA_BACKEND_ARGS": "{\"core_count\": 3, \"memory_ports\": 3}",
+  "TNCA_HOST_TIMEOUT": "7200",
+  "TNCA_TRITON": "1"
+ },
+ "graphs": {
+  "pointwise": {
+   "checks": {
+    "numerical": true,
+    "device_output": true,
+    "zero_tensor_staging": true,
+    "whole_grid_launch": true,
+    "no_per_program_launch": true,
+    "physical_grid": true,
+    "programs_exactly_once": true,
+    "every_outlet_traffic": true
+   },
+   "ok": true,
+   "output_sha256": "00261615c2f9ac8bc8955d2cfbd782d1a7c382b2cc01ab15d2ce5914b803aa06",
+   "max_abs_err": 0.0,
+   "artifacts": [
+    "bfca046a17e88d7fe4f9bd22bd9b0955f43fdae4650be6d9cec7a80b52e51a49"
+   ],
+   "kernels": [
+    "triton_poi_fused_add_mul_0"
+   ],
+   "grids": [
+    [
+     257,
+     1,
+     1
+    ]
+   ],
+   "device_cycles": [
+    17023
+   ],
+   "physical_grid": {
+    "peak_active": 3,
+    "cores": [
+     {
+      "core": 0,
+      "issued": 85,
+      "completed": 85,
+      "occupied_cycles": 16615
+     },
+     {
+      "core": 1,
+      "issued": 84,
+      "completed": 84,
+      "occupied_cycles": 16495
+     },
+     {
+      "core": 2,
+      "issued": 88,
+      "completed": 88,
+      "occupied_cycles": 16977
+     }
+    ]
+   },
+   "outlet_traffic": [
+    {
+     "port": 0,
+     "read_lines": 356,
+     "write_lines": 89
+    },
+    {
+     "port": 1,
+     "read_lines": 299,
+     "write_lines": 89
+    },
+    {
+     "port": 2,
+     "read_lines": 262,
+     "write_lines": 86
+    }
+   ],
+   "wall_s": 591.8
+  },
+  "softmax": {
+   "checks": {
+    "numerical": true,
+    "device_output": true,
+    "zero_tensor_staging": true,
+    "whole_grid_launch": true,
+    "no_per_program_launch": true,
+    "physical_grid": true,
+    "programs_exactly_once": true,
+    "every_outlet_traffic": true
+   },
+   "ok": true,
+   "output_sha256": "2f3cdcac5a2d63c71ec41abf22189dec8f66978ea508d692f60bb8f00fbdcc63",
+   "max_abs_err": 1.4901161193847656e-08,
+   "artifacts": [
+    "88e4f515cdd61a7a27e156259e6ee565e3f3018b9b8c5731a075c283ea447c86"
+   ],
+   "kernels": [
+    "triton_red_fused__softmax_0"
+   ],
+   "grids": [
+    [
+     33,
+     1,
+     1
+    ]
+   ],
+   "device_cycles": [
+    28492
+   ],
+   "physical_grid": {
+    "peak_active": 3,
+    "cores": [
+     {
+      "core": 0,
+      "issued": 12,
+      "completed": 12,
+      "occupied_cycles": 28480
+     },
+     {
+      "core": 1,
+      "issued": 10,
+      "completed": 10,
+      "occupied_cycles": 25384
+     },
+     {
+      "core": 2,
+      "issued": 11,
+      "completed": 11,
+      "occupied_cycles": 27527
+     }
+    ]
+   },
+   "outlet_traffic": [
+    {
+     "port": 0,
+     "read_lines": 426,
+     "write_lines": 190
+    },
+    {
+     "port": 1,
+     "read_lines": 451,
+     "write_lines": 214
+    },
+    {
+     "port": 2,
+     "read_lines": 439,
+     "write_lines": 202
+    }
+   ],
+   "wall_s": 672.7
+  }
+ },
+ "journal_dir": null,
+ "link_dir": null,
+ "software_tree_unchanged": true,
+ "ok": true
+}

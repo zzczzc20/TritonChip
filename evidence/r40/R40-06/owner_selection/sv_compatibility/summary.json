@@ -1,0 +1,78 @@
+{
+  "schema": "tnca-owner-sv-compatibility/1",
+  "failed_ci_run": 38730337676,
+  "failed_ci_commit": "3d3267e9e0de8cb6f8289d37eefee6b229f6e5cc",
+  "cause": "SystemVerilog reserved keyword matches used as a local variable; Verilog-2005 and Yosys checks did not detect it.",
+  "fix": "Rename local variable to eligible_mask; preserve owner selection logic.",
+  "candidate_source_sha256": "ed94c083be90a45873d0d3adc4e81242331e4688ff113c8c1caa64ab3961d159",
+  "screen_harness_sha256": "9d548049f6dbfacaa64493863f7b85f1d548fefa4934808d43bf31e1abaa0ad9",
+  "compositional_proof": {
+    "status": "compositional-proof-pass",
+    "entries": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16
+    ],
+    "report": "r40_owner_sv_order16/report.json"
+  },
+  "full_width_proof": {
+    "status": "full-width-proof-pass",
+    "entries": [
+      8
+    ],
+    "report": "r40_owner_sv_fullwidth16/report.json"
+  },
+  "frontend_negative_control": {
+    "status": "frontend-refused",
+    "verilog_2005": "pass",
+    "systemverilog_2012": "refused",
+    "expensive_proof_or_mapping_started": false
+  },
+  "functional_regressions": {
+    "policy_matrix_verilog_2005": "pass",
+    "policy_matrix_systemverilog_2012": "pass",
+    "system_grid_20_configurations": "pass"
+  },
+  "mapping": [
+    {
+      "name": "depth_8_owner_gold",
+      "lut_path_length": 55,
+      "generic_lut6_cells": 2628
+    },
+    {
+      "name": "depth_8_owner_gate",
+      "lut_path_length": 30,
+      "generic_lut6_cells": 3300
+    },
+    {
+      "name": "shared9_owner_gold",
+      "lut_path_length": 61,
+      "generic_lut6_cells": 24030
+    },
+    {
+      "name": "shared9_owner_gate",
+      "lut_path_length": 30,
+      "generic_lut6_cells": 18675
+    }
+  ],
+  "gate_status": "not-measured",
+  "graph_speedup": null,
+  "routed_fmax_hz": null,
+  "artifacts": {
+    "ci_failure.log.gz": "69b57f31e4be32e2e719744725b94e2f457c6eccd45f61adbe6e64bef98798ba",
+    "raw.tar.gz": "f14472ed25138075f9444a5c3fe941329f8454b4e810f2f704d2d41bedbc9dc5"
+  }
+}

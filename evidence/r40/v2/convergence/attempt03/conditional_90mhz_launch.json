@@ -1,0 +1,21 @@
+{
+  "schema": "tnca-conditional-clock-audit-launch/1",
+  "observed_utc": "2026-10-18T08:29:13.311733+00:00",
+  "runner_pid": 2191814,
+  "command": [
+    "python3",
+    "/home/zzhouch/tnca_reports_r40_conditional90_18466e2/tools/r40/preserve_operating_image.py",
+    "--build",
+    "/home/zzhouch/tnca_build/r40_attempt03_20261017",
+    "--observer-state",
+    "/home/zzhouch/tnca_build/r40_attempt03_followup_cachecuts/state.json",
+    "--out",
+    "/home/zzhouch/tnca_build/r40_attempt03_conditional_90mhz",
+    "--mhz",
+    "90"
+  ],
+  "tool_snapshot": "/home/zzhouch/tnca_reports_r40_conditional90_18466e2",
+  "output": "/home/zzhouch/tnca_build/r40_attempt03_conditional_90mhz",
+  "scope": "preserve original terminal image; wait for existing serial observer; report-only 90 MHz analysis; no implementation or programming",
+  "conditional_gate": "not-measured"
+}

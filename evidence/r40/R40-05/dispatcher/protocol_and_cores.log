@@ -1,0 +1,89 @@
+PASS N=1 invalid grid refused
+PASS N=1 invalid grid refused
+PASS N=1 invalid grid refused
+PASS N=1 grid=1x1x1 issued=1 fault=-1
+PASS N=1 grid=19x1x1 issued=19 fault=-1
+PASS N=1 grid=13x7x5 issued=455 fault=-1
+PASS N=1 grid=6145x1x1 issued=6145 fault=-1
+PASS N=1 grid=0x3x2 issued=0 fault=-1
+PASS N=1 grid=101x3x2 issued=1 fault=0
+PASS N=1 grid=47x2x1 issued=94 fault=-1
+PASS N=1 grid=23x2x1 issued=46 fault=-1
+GRID DISPATCH PASS
+tb/tb_grid_dispatch.v:91: $finish called at 1075450000 (1ps)
+PASS N=2 invalid grid refused
+PASS N=2 invalid grid refused
+PASS N=2 invalid grid refused
+PASS N=2 grid=1x1x1 issued=1 fault=-1
+PASS N=2 grid=19x1x1 issued=19 fault=-1
+PASS N=2 grid=13x7x5 issued=455 fault=-1
+PASS N=2 grid=6145x1x1 issued=6145 fault=-1
+PASS N=2 grid=0x3x2 issued=0 fault=-1
+PASS N=2 grid=101x3x2 issued=2 fault=0
+PASS N=2 grid=101x3x2 issued=2 fault=1
+PASS N=2 grid=47x2x1 issued=94 fault=-1
+PASS N=2 grid=23x2x1 issued=46 fault=-1
+GRID DISPATCH PASS
+tb/tb_grid_dispatch.v:91: $finish called at 524880000 (1ps)
+PASS N=3 invalid grid refused
+PASS N=3 invalid grid refused
+PASS N=3 invalid grid refused
+PASS N=3 grid=1x1x1 issued=1 fault=-1
+PASS N=3 grid=19x1x1 issued=19 fault=-1
+PASS N=3 grid=13x7x5 issued=455 fault=-1
+PASS N=3 grid=6145x1x1 issued=6145 fault=-1
+PASS N=3 grid=0x3x2 issued=0 fault=-1
+PASS N=3 grid=101x3x2 issued=3 fault=0
+PASS N=3 grid=101x3x2 issued=3 fault=1
+PASS N=3 grid=101x3x2 issued=3 fault=2
+PASS N=3 grid=47x2x1 issued=94 fault=-1
+PASS N=3 grid=23x2x1 issued=46 fault=-1
+GRID DISPATCH PASS
+tb/tb_grid_dispatch.v:91: $finish called at 355560000 (1ps)
+PASS N=4 invalid grid refused
+PASS N=4 invalid grid refused
+PASS N=4 invalid grid refused
+PASS N=4 grid=1x1x1 issued=1 fault=-1
+PASS N=4 grid=19x1x1 issued=19 fault=-1
+PASS N=4 grid=13x7x5 issued=455 fault=-1
+PASS N=4 grid=6145x1x1 issued=6145 fault=-1
+PASS N=4 grid=0x3x2 issued=0 fault=-1
+PASS N=4 grid=101x3x2 issued=2 fault=0
+PASS N=4 grid=101x3x2 issued=3 fault=1
+PASS N=4 grid=101x3x2 issued=4 fault=2
+PASS N=4 grid=101x3x2 issued=4 fault=3
+PASS N=4 grid=47x2x1 issued=94 fault=-1
+PASS N=4 grid=23x2x1 issued=46 fault=-1
+GRID DISPATCH PASS
+tb/tb_grid_dispatch.v:91: $finish called at 281630000 (1ps)
+PASS N=8 invalid grid refused
+PASS N=8 invalid grid refused
+PASS N=8 invalid grid refused
+PASS N=8 grid=1x1x1 issued=1 fault=-1
+PASS N=8 grid=19x1x1 issued=19 fault=-1
+PASS N=8 grid=13x7x5 issued=455 fault=-1
+PASS N=8 grid=6145x1x1 issued=6145 fault=-1
+PASS N=8 grid=0x3x2 issued=0 fault=-1
+PASS N=8 grid=101x3x2 issued=3 fault=0
+PASS N=8 grid=101x3x2 issued=5 fault=1
+PASS N=8 grid=101x3x2 issued=7 fault=2
+PASS N=8 grid=101x3x2 issued=8 fault=3
+PASS N=8 grid=101x3x2 issued=9 fault=4
+PASS N=8 grid=101x3x2 issued=9 fault=5
+PASS N=8 grid=101x3x2 issued=10 fault=6
+PASS N=8 grid=101x3x2 issued=11 fault=7
+PASS N=8 grid=47x2x1 issued=94 fault=-1
+PASS N=8 grid=23x2x1 issued=46 fault=-1
+GRID DISPATCH PASS
+tb/tb_grid_dispatch.v:91: $finish called at 150220000 (1ps)
+GRID REAL CORES PASS N=1 programs=455 cycles=3646
+tb/top/tb_grid_cores.v:46: $finish called at 36460000 (1ps)
+GRID REAL CORES PASS N=2 programs=455 cycles=1830
+tb/top/tb_grid_cores.v:46: $finish called at 18300000 (1ps)
+GRID REAL CORES PASS N=3 programs=455 cycles=1223
+tb/top/tb_grid_cores.v:46: $finish called at 12230000 (1ps)
+GRID REAL CORES PASS N=4 programs=455 cycles=920
+tb/top/tb_grid_cores.v:46: $finish called at 9200000 (1ps)
+GRID REAL CORES PASS N=8 programs=455 cycles=468
+tb/top/tb_grid_cores.v:46: $finish called at 4680000 (1ps)
+r40-grid-dispatch-tests PASS (10 configurations)

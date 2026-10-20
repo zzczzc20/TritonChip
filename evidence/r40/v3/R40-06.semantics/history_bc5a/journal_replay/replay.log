@@ -1,0 +1,5 @@
+tnca_fpga_regs: up (words=147456)
+MMIO_JOURNAL_REPLAY_PASS batches=5121 time=3573817000
+./tb/fpga/tnca_mmio_journal.vh:114: $finish called at 3573817000 (1ps)
+MMIO journal replay PASS
+EXIT=0

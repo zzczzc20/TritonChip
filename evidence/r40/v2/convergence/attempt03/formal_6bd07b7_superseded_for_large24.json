@@ -1,0 +1,15 @@
+{
+  "status": "superseded-before-measurement",
+  "software_tree": "files:44051ad9c76c544f59b57afb9f297608bb3f0362c9f4f4479f977690645d2436",
+  "image_sha256": "a88ebdf59cfbbb2001ebd5b1b2c739c5d8cd33931f1e9202f18cac07c4c83083",
+  "clock_hz": 90000000,
+  "hbm_bytes": 4294967296,
+  "deadline_cycles": 24000000000,
+  "completed": [],
+  "required_gate_promotions": [],
+  "scope": "Serial original runtime experiments and full three-block audits; same image/product; no synthesis, programming or workload shrink",
+  "observed_utc": "2026-10-18T20:43:15.869303+00:00",
+  "upstream_status": "queued-behind-prior-functional",
+  "upstream_current": null,
+  "reason": "Enforce full inherited original large24 correctness before formal runtime measurements"
+}

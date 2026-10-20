@@ -1,0 +1,8 @@
+STEP sem_mc8: /home/zhongchun/tc_env/torchenv/bin/python -u tools/r40/v3_semantics_matrix.py --config mc8 --out /home/zhongchun/r40v3_hbmnuca_runs/fe1b/semantics
+START 2026-10-19T08:04:03Z
+W1019 08:04:04.425000 2974303 torch/utils/cpp_extension.py:183] No CUDA runtime is found, using CUDA_HOME='/usr/local/cuda'
+  PASS  mc8 pointwise {"numerical": true, "device_output": true, "zero_tensor_staging": true, "whole_grid_launch": true, "no_per_program_launch": true, "physical_grid": true, "programs_exactly_once": true, "every_outlet_traffic": true} peak=8 outlets=[{'port': 0, 'read_lines': 1115, 'write_lines': 274}]
+  PASS  mc8 softmax {"numerical": true, "device_output": true, "zero_tensor_staging": true, "whole_grid_launch": true, "no_per_program_launch": true, "physical_grid": true, "programs_exactly_once": true, "every_outlet_traffic": true} peak=8 outlets=[{'port': 0, 'read_lines': 2053, 'write_lines': 879}]
+SEMANTICS PASS mc8
+END 2026-10-19T09:40:42Z
+EXIT=0

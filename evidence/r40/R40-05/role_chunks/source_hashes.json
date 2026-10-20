@@ -1,0 +1,21 @@
+{
+  ".github/workflows/ci.yml": "0f7d4ebe59a9b12ef48a1a5eb4afd238f6c08ab8c6854256a59884720b874d64",
+  "Makefile": "3bc20dc3be19cdee728326f1ba66c8d9a3a2d2ff668b730064587b3034fd3f5c",
+  "compiler/python/tnca_cc/rctx_spmd.py": "023d8044bc52ea90c3039e4686efd1c5c6e8ab4c4dbeb6889269819c6c1f8c86",
+  "python/tnca/aot.py": "3f17f251c46f72f20c0daaea3129c2c9e263f79ffc86d28bb96c63d2f06d53a6",
+  "python/tnca/runtime.py": "21c2baef8066bd0d9b2e537d66e4120a55c631786d2df7fcba98867a24ae4862",
+  "python/tnca/transport.py": "12d18c3e84f8ae9feccd940683ac9ad31e666ab607d5df5fb1fb0e8845d37d49",
+  "python/tnca/triton_backend/compiler.py": "e8020ccbaa70d2584b96dd35331efde79fb473af2fc82f239b5dacf360a9f13b",
+  "rtl/tnca_grid_dispatch.v": "cc2408199bc01ce6cdaa77b83bc4ed274751afd19b9f6e392d96cbca1d3024ab",
+  "rtl/tnca_multicore_shell.v": "c8f93ff4387a00747c1a8f29b3ec23ba7977736a89bee6cf69317ed7be92adb3",
+  "rtl/tnca_top.v": "a6b949520e437df349db6229eb392ff83e50f0f902febab65c879741237feabe",
+  "spec/r40/physical_grid_transport_extension.json": "09eee13e9992e9355496a6d5482ad7997d983c8099e9b652566ce6b17e36c4f8",
+  "tb/device/tnca_multicore_device.v": "53957608e30a8cdc327fcf71baa75c0f44782d8a42c5e54e5ba0a4025c3cf697",
+  "tb/tb_grid_dispatch.v": "6a50032e5beafde96bf57f8419c393412c296b9b6c1b7b689ec4e827a09cd043",
+  "tools/r40/multicore_transport_tests.py": "d58c6e34a046c46e0c5566496d5c5670994d1ff811754a80d880bbe31bdc20cc",
+  "tools/r40/physical_grid_option_tests.py": "641d8d77d444913b50c9b6f23dfb28908873ef977b3351abf72afa904f4fa7e4",
+  "tools/r40/physical_grid_runtime_tests.py": "77ac50a2a923b0512a3748a9ffedf6a140963568fd851a8ba91a4c867a09b446",
+  "tools/r40/physical_chunk_tests.py": "2e06a02ecbe55523014b0dfc347f887db675b29e6dec21dedb427b665222e4de",
+  "tools/r40/native_multicore_features.py": "9a684a696f8348a971d127810c6512627374173109b4edd27e846d147d32f5a0",
+  "tools/r40/physical_chunk_runtime_tests.py": "06c9f907be7540c9f67035721247efe6d0f4cd6dc91b6a00b7b199d19842c6d5"
+}

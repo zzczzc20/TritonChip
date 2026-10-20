@@ -1,0 +1,29 @@
+{
+  "root": "/home/zzhouch/tnca_delivery_bucket_05db000_4gib",
+  "pid": 2369356,
+  "source": "/home/zzhouch/tnca_src_r40_bucket_05db000",
+  "snapshot": {
+    "commit": "05db000",
+    "software_tree": "files:80dd1a823e4be49e5e40d375d842c17e46c362d298e37f389c5e225621b6e4ca",
+    "parent_source": "/home/zzhouch/tnca_src_r40_reserved_1a7c643",
+    "file_sha256": {
+      "tools/r40/native_model.py": "7920cbe3da38ece9e666a1cb74fbbc6f55ee7122aada5b8162f19728d2992e25",
+      "tools/r40/bucket_decode.py": "92bced6c6d64373a18b68b01f493e56bc3e8a792b0a8263429158c11918f97dd",
+      "tools/r40/bucket_decode_tests.py": "575c716f5afe15cd082790b9cca8c8835931a7a45cfa6c7862739106aca724b7",
+      "tools/r40/conditional_delivery.py": "9706a9b279afff587ceec0c9a59a61bb2669502dffa3870674e221a50bb2fce6",
+      "tools/r40/residency_acceptance.py": "dd9a90a632e79a8b452e22efccf220e0c6ace0971b11b4bebe1b10d85daf690f",
+      "tools/r40/bucket_compile_coverage.py": "fc3c08f93a372fd88a4a22bea5620abbd38b03ffec6f331650880c1f769dca0e",
+      "tools/r40/conditional_delivery_tests.py": "97d74303a6d2d8d550f901ddd0d745d9c7e7daf660b1ed1c2d982d3581fd6d91"
+    },
+    "scope": "Unchanged product, image, clock and frozen workloads; committed full-model bucket tooling overlay; current original prefill is adopted with actual kernel exit status"
+  },
+  "handoff": {
+    "old_supervisor_pid": 2368012,
+    "active_child_pid": 2368082,
+    "new_controller": "/home/zzhouch/tnca_delivery_bucket_05db000_4gib/controller.py",
+    "reason": "Avoid old growing-KV model recompilation; preserve active original prefill, then use preflighted full fixed-bucket generation",
+    "active_child_interrupted": false
+  },
+  "controller_sha256": "0ddcab0fbdbdac709c49ea33999a87c0394b447b12eba70a4961ecd1b269f9da",
+  "scope": "Only the old coordinator pauses; actual prefill child runs to completion. Handoff requires /proc zombie wait status zero and original numerical proof before retiring the old coordinator. Native77/HBM14/full fixed-bucket model, large24 and transfer24 remain unchanged in scope. No synthesis/load."
+}

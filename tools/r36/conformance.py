@@ -118,8 +118,22 @@ TRAPPING_PROGRAM = [
 ]
 
 
-def _program():
-    return MINIMAL_PROGRAM
+def _program(dev=None):
+    words = list(MINIMAL_PROGRAM)
+    if dev is not None and dev.capabilities().get('physical_grid'):
+        # Relocate the mark above the physical shell's 128 KiB code window.
+        words[5] += 2 << 16
+    return words
+
+
+def _mark_addr(dev):
+    return MARK_ADDR + (0x20000 if dev.capabilities().get('physical_grid') else 0)
+
+
+def _launch(dev, pc):
+    if dev.capabilities().get('physical_grid'):
+        return dev.launch_grid(pc, 0, (1, 1, 1))
+    return dev.launch(pc, 0)
 
 
 def _trapping():
@@ -244,7 +258,7 @@ def c_transfer(dev, rec):
     # than a raw opcode, so every binding answers the same question.
     from tnca.errors import TncaError as _T
     try:
-        r = dev.upload(0x10_0000, _words([0]))
+        r = dev.upload(dev.capabilities().get('memory_bytes', 0x10_0000), _words([0]))
         good, how = (not r.ok), f"status {r.status}"
     except _T as e:
         # Backed the same way the branch above it is, and it has to be
@@ -288,26 +302,27 @@ def c_compatibility(dev, rec):
 
 def c_completion(dev, rec):
     ok = True
-    dev.upload(0, _words(_program()))
-    dev.upload(MARK_ADDR, _words([0]))
-    r = dev.launch(0, 0)
-    rec('LAUNCH', r.ok,
-        f"seq {r.seq}, status {r.status}, {r.r0} cycle(s), "
-        f"{r.r1} instruction(s) retired")
+    dev.upload(0, _words(_program(dev)))
+    dev.upload(_mark_addr(dev), _words([0]))
+    r = _launch(dev, 0)
+    physical = dev.capabilities().get('physical_grid')
+    cycles = r.r0 | (r.r1 << 32) if physical else r.r0
+    rec('LAUNCH', r.ok, f"seq {r.seq}, status {r.status}, {cycles} cycle(s)")
     ok &= r.ok
-    rec('it reports a cycle count and a retired count',
-        r.r0 > 0 and r.r1 > 0, f"{r.r0} and {r.r1} from seq {r.seq}",
+    counters_ok = cycles > 0 if physical else r.r0 > 0 and r.r1 > 0
+    rec('the declared completion counters are nonzero', counters_ok,
+        f"global makespan {cycles}" if physical else f"{r.r0} cycles and {r.r1} retired",
         'protocol')
-    ok &= r.r0 > 0 and r.r1 > 0
-    _q, blob = dev.download(MARK_ADDR, 8)
+    ok &= counters_ok
+    _q, blob = dev.download(_mark_addr(dev), 8)
     got = struct.unpack('<Q', blob)[0]
     rec('the kernel wrote what the oracle says', got == MARK,
         f"oracle: {MARK:#x}, got {got:#x}")
     ok &= got == MARK
     # Twice, sharing memory.
-    dev.upload(MARK_ADDR, _words([0]))
-    dev.launch(0, 0)
-    _q, blob = dev.download(MARK_ADDR, 8)
+    dev.upload(_mark_addr(dev), _words([0]))
+    _launch(dev, 0)
+    _q, blob = dev.download(_mark_addr(dev), 8)
     ok &= struct.unpack('<Q', blob)[0] == MARK
     rec('a second launch in the same session', ok,
         f"no restart in between; the oracle {MARK:#x} again",
@@ -318,19 +333,24 @@ def c_completion(dev, rec):
 def c_faults(dev, rec):
     ok = True
     dev.upload(0x6000, _words(_trapping()))
-    r = dev.launch(0x6000, 0)
+    r = _launch(dev, 0x6000)
     trapped = (not r.ok) and r.status == 1
     rec('a trapping kernel is a FAULT', trapped,
-        f"status {r.status}, code {r.r0:#x}, pc {r.r1:#x}")
+        f"status {r.status}, seq {r.seq}")
     ok &= trapped
-    rec('the fault carries a code and a pc', r.r0 != 0,
-        f"code {r.r0:#x} at pc {r.r1:#x}, from seq {r.seq}", 'protocol')
-    ok &= r.r0 != 0
+    if dev.capabilities().get('fault_detail', True):
+        rec('the fault carries a code and a pc', r.r0 != 0,
+            f"code {r.r0:#x} at pc {r.r1:#x}, from seq {r.seq}", 'protocol')
+        ok &= r.r0 != 0
+    else:
+        rec('fault detail is explicitly unavailable', True,
+            'physical-grid completion reports status and makespan; code/PC are not exported',
+            'declaration')
     # And the session survives it.
-    dev.upload(0, _words(_program()))
-    dev.upload(MARK_ADDR, _words([0]))
-    r2 = dev.launch(0, 0)
-    _q, blob = dev.download(MARK_ADDR, 8)
+    dev.upload(0, _words(_program(dev)))
+    dev.upload(_mark_addr(dev), _words([0]))
+    r2 = _launch(dev, 0)
+    _q, blob = dev.download(_mark_addr(dev), 8)
     alive = r2.ok and struct.unpack('<Q', blob)[0] == MARK
     rec('the session still works after a fault', alive,
         f"status {r2.status}")
@@ -391,8 +411,8 @@ def run_backend(name, info, log, xclbin=None):
         # machine the board binding is measured on and need not have it.
         kw = {}
         if backend.needs_elaborator(name):
-            device.prepare(PROFILE, verbose=False)
-            kw['bench'] = device.expected_path(PROFILE)
+            profile = 'core-vrf-sync-v5' if backend.physical_grid(name) else PROFILE
+            kw['bench'] = backend.prepare_bench(name, profile)
         # A board has to be told which image it is running, and that fact is
         # in no profile and no artifact. Handed only to a binding that
         # declares `needs_hardware`, because that declaration is the

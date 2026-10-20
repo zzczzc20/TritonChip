@@ -1,0 +1,177 @@
+{
+ "schema": "tnca-r40-failing-path-groups/1",
+ "input": "/tmp/claude-1000/-home-ubuntu-TritonChip/3dd1d4a8-6f0c-47d5-bf28-f88428fc463d/scratchpad/fip/a3/hw_bb_locked_timing_summary_routed.rpt",
+ "input_kind": "printed-report-paths",
+ "path_group": "clk_kernel_00_unbuffered_net",
+ "failing_paths_parsed": 10,
+ "design_failing_endpoints": 17332,
+ "design_tns_ns": -6679.026,
+ "parsed_tns_ns": -9.786,
+ "endpoint_coverage": 0.0005769674590353104,
+ "tns_coverage": 0.0014651836959460856,
+ "complete": false,
+ "unit_groups": [
+  {
+   "source_unit": "control",
+   "destination_unit": "system/shell/u_system/g_tile[*].u_tile/u_core/u_txf",
+   "endpoints": 7,
+   "tns_ns": -6.806,
+   "worst_slack_ns": -0.974,
+   "families": 1
+  },
+  {
+   "source_unit": "control",
+   "destination_unit": "system/shell/u_system/g_tile[*].u_tile/u_core/g_lsu_pair.u_lsu/g_unit[*].u",
+   "endpoints": 3,
+   "tns_ns": -2.98,
+   "worst_slack_ns": -1.002,
+   "families": 2
+  }
+ ],
+ "family_groups": [
+  {
+   "source_family": "control/memory_active_ports_reg[*]",
+   "destination_family": "system/shell/u_system/g_tile[*].u_tile/u_core/g_lsu_pair.u_lsu/g_unit[*].u/pending_reg[*]",
+   "source_unit": "control",
+   "destination_unit": "system/shell/u_system/g_tile[*].u_tile/u_core/g_lsu_pair.u_lsu/g_unit[*].u",
+   "endpoints": 2,
+   "tns_ns": -1.986,
+   "worst_slack_ns": -1.002,
+   "worst_levels": 14,
+   "worst_delay_ns": 11.183,
+   "worst_logic_ns": 0.872,
+   "worst_net_ns": 10.311,
+   "worst_source": "level0_i/ulp/tnca_u50_1/inst/device/control/memory_active_ports_reg[1]/C",
+   "worst_destination": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_tile[0].u_tile/u_core/g_lsu_pair.u_lsu/g_unit[1].u/pending_reg[12]/D",
+   "worst_slr_crossings": [
+    "1->2",
+    "2->1",
+    "1->0"
+   ],
+   "worst_high_fanout": [
+    {
+     "fanout": 517,
+     "net_ns": 0.77,
+     "net": "system/shell/u_system/g_home_link[2].g_pipeline.link/g_stage[1].request/outlet_rsp_valid[0]"
+    },
+    {
+     "fanout": 233,
+     "net_ns": 0.282,
+     "net": "system/shell/u_system/g_tile[0].u_tile/u_core/g_lsu_pair.u_lsu/g_unit[0].u/host_busy_reg"
+    },
+    {
+     "fanout": 86,
+     "net_ns": 0.18,
+     "net": "system/g_outlet[0].link/g_stage[1].rd_reg[105]_0"
+    }
+   ],
+   "levels_range": [
+    14,
+    14
+   ],
+   "mean_logic_fraction": 0.08,
+   "destination_tiles": {
+    "0": 2
+   },
+   "slr_paths": {
+    "1->2->2->1->1->0": 2
+   }
+  },
+  {
+   "source_family": "control/memory_active_ports_reg[*]",
+   "destination_family": "system/shell/u_system/g_tile[*].u_tile/u_core/g_lsu_pair.u_lsu/g_unit[*].u/partial_reg[*]",
+   "source_unit": "control",
+   "destination_unit": "system/shell/u_system/g_tile[*].u_tile/u_core/g_lsu_pair.u_lsu/g_unit[*].u",
+   "endpoints": 1,
+   "tns_ns": -0.994,
+   "worst_slack_ns": -0.994,
+   "worst_levels": 14,
+   "worst_delay_ns": 11.175,
+   "worst_logic_ns": 0.955,
+   "worst_net_ns": 10.22,
+   "worst_source": "level0_i/ulp/tnca_u50_1/inst/device/control/memory_active_ports_reg[1]/C",
+   "worst_destination": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_tile[0].u_tile/u_core/g_lsu_pair.u_lsu/g_unit[1].u/partial_reg[11]/D",
+   "worst_slr_crossings": [
+    "1->2",
+    "2->1",
+    "1->0"
+   ],
+   "worst_high_fanout": [
+    {
+     "fanout": 517,
+     "net_ns": 0.77,
+     "net": "system/shell/u_system/g_home_link[2].g_pipeline.link/g_stage[1].request/outlet_rsp_valid[0]"
+    },
+    {
+     "fanout": 233,
+     "net_ns": 0.282,
+     "net": "system/shell/u_system/g_tile[0].u_tile/u_core/g_lsu_pair.u_lsu/g_unit[0].u/host_busy_reg"
+    },
+    {
+     "fanout": 86,
+     "net_ns": 0.18,
+     "net": "system/g_outlet[0].link/g_stage[1].rd_reg[105]_0"
+    }
+   ],
+   "levels_range": [
+    14,
+    14
+   ],
+   "mean_logic_fraction": 0.085,
+   "destination_tiles": {
+    "0": 1
+   },
+   "slr_paths": {
+    "1->2->2->1->1->0": 1
+   }
+  },
+  {
+   "source_family": "control/memory_active_ports_reg[*]",
+   "destination_family": "system/shell/u_system/g_tile[*].u_tile/u_core/u_txf/xbuf_reg[*]",
+   "source_unit": "control",
+   "destination_unit": "system/shell/u_system/g_tile[*].u_tile/u_core/u_txf",
+   "endpoints": 7,
+   "tns_ns": -6.806,
+   "worst_slack_ns": -0.974,
+   "worst_levels": 16,
+   "worst_delay_ns": 10.784,
+   "worst_logic_ns": 0.869,
+   "worst_net_ns": 9.915,
+   "worst_source": "level0_i/ulp/tnca_u50_1/inst/device/control/memory_active_ports_reg[1]/C",
+   "worst_destination": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_tile[0].u_tile/u_core/u_txf/xbuf_reg[114]/R",
+   "worst_slr_crossings": [
+    "1->2",
+    "2->1",
+    "1->0"
+   ],
+   "worst_high_fanout": [
+    {
+     "fanout": 517,
+     "net_ns": 0.77,
+     "net": "system/shell/u_system/g_home_link[2].g_pipeline.link/g_stage[1].request/outlet_rsp_valid[0]"
+    },
+    {
+     "fanout": 233,
+     "net_ns": 0.104,
+     "net": "system/shell/u_system/g_tile[0].u_tile/u_core/u_txf/mem_reg_0_3_0_13"
+    },
+    {
+     "fanout": 86,
+     "net_ns": 0.18,
+     "net": "system/g_outlet[0].link/g_stage[1].rd_reg[105]_0"
+    }
+   ],
+   "levels_range": [
+    16,
+    16
+   ],
+   "mean_logic_fraction": 0.079,
+   "destination_tiles": {
+    "0": 7
+   },
+   "slr_paths": {
+    "1->2->2->1->1->0": 7
+   }
+  }
+ ]
+}

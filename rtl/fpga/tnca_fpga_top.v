@@ -133,7 +133,25 @@ module tnca_fpga_top #(
     parameter ADDR_W          = 16,
 
     // ---- host register port ------------------------------------------------
-    parameter ADDR_BITS       = 8
+    parameter ADDR_BITS       = 8,
+
+    // ---- R40-04: external memory ----------------------------------------------
+    // An AXI4 memory (HBM on the U280) for every address at or above
+    // LOCAL_LIMIT, through rtl/fpga/tnca_axi_bridge.v; the on-chip RAM keeps
+    // the code and everything below. 0 builds exactly what was built before.
+    parameter DATA_AXI        = 0,
+    parameter LOCAL_LIMIT     = 64'h20000,
+    parameter AXI_OUT_N       = 8,
+    // The `burst` mechanism (R40-04): 0 builds tnca_axi_bridge, one 8-byte
+    // beat per access; LINE_BEATS > 0 builds tnca_axi_bridge_lb, which reads
+    // the window in lines of that many beats into AXI_LB_N buffered lines,
+    // AXI_PF lines ahead, with up to AXI_WAIT_N reads waiting on them.
+    parameter AXI_LINE        = 0,
+    parameter AXI_LB_N        = 8,
+    parameter AXI_PF          = 1,
+    parameter AXI_LOCAL_PIPE  = 0,
+    parameter AXI_RAM_CACHE   = 0,
+    parameter AXI_WAIT_N      = 8
 ) (
     input  wire                    clk,
     input  wire                    rst_n_async,
@@ -142,7 +160,38 @@ module tnca_fpga_top #(
     input  wire [63:0]             reg_wdata,
     input  wire                    reg_we,
     input  wire                    reg_re,
-    output wire [63:0]             reg_rdata
+    output wire [63:0]             reg_rdata,
+
+    // R40-04 AXI4 master (DATA_AXI images; driven idle otherwise)
+    output wire                    m_axi_awvalid,
+    input  wire                    m_axi_awready,
+    output wire [63:0]             m_axi_awaddr,
+    output wire [LSU_TAG_W-1:0]    m_axi_awid,
+    output wire [7:0]              m_axi_awlen,
+    output wire [2:0]              m_axi_awsize,
+    output wire [1:0]              m_axi_awburst,
+    output wire                    m_axi_wvalid,
+    input  wire                    m_axi_wready,
+    output wire [63:0]             m_axi_wdata,
+    output wire [7:0]              m_axi_wstrb,
+    output wire                    m_axi_wlast,
+    input  wire                    m_axi_bvalid,
+    output wire                    m_axi_bready,
+    input  wire [LSU_TAG_W-1:0]    m_axi_bid,
+    input  wire [1:0]              m_axi_bresp,
+    output wire                    m_axi_arvalid,
+    input  wire                    m_axi_arready,
+    output wire [63:0]             m_axi_araddr,
+    output wire [LSU_TAG_W-1:0]    m_axi_arid,
+    output wire [7:0]              m_axi_arlen,
+    output wire [2:0]              m_axi_arsize,
+    output wire [1:0]              m_axi_arburst,
+    input  wire                    m_axi_rvalid,
+    output wire                    m_axi_rready,
+    input  wire [63:0]             m_axi_rdata,
+    input  wire [LSU_TAG_W-1:0]    m_axi_rid,
+    input  wire [1:0]              m_axi_rresp,
+    input  wire                    m_axi_rlast
 );
 
     //==========================================================================
@@ -210,11 +259,17 @@ module tnca_fpga_top #(
     wire [4:0]  perf_sel;
     wire [63:0] perf_rdata;
 
+    wire [63:0] axi_base, axi_size;
+    wire [1:0]  axi_err;     // {stray, error}, the bridge's sticky flags
+    wire [63:0] axi_cnt_rd, axi_cnt_wr, axi_cnt_lat, axi_cnt_rbeat;
+    wire        axi_inv;     // tnca_mmio served a command: the line buffer drops what it holds
     tnca_mmio #(
         .ADDR_W(ADDR_BITS),
         .WORDS(WORDS),
         .NUM_RCTX(NUM_RCTX),
-        .RCTX_W(RCTX_W)
+        .RCTX_W(RCTX_W),
+        .DATA_AXI(DATA_AXI),
+        .LOCAL_LIMIT(LOCAL_LIMIT)
     ) u_mmio (
         .clk(clk), .rst_n(rst_n),
         .reg_addr(reg_addr), .reg_wdata(reg_wdata),
@@ -234,7 +289,10 @@ module tnca_fpga_top #(
         .host_req_we(host_req_we), .host_req_addr(host_req_addr),
         .host_req_be(host_req_be), .host_req_wdata(host_req_wdata),
         .host_rsp_valid(host_rsp_valid), .host_rsp_rdata(host_rsp_rdata),
-        .perf_sel(perf_sel), .perf_rdata(perf_rdata)
+        .perf_sel(perf_sel), .perf_rdata(perf_rdata),
+        .axi_base(axi_base), .axi_size(axi_size), .axi_err(axi_err),
+        .axi_cnt_rd(axi_cnt_rd), .axi_cnt_wr(axi_cnt_wr), .axi_cnt_lat(axi_cnt_lat),
+        .axi_cnt_rbeat(axi_cnt_rbeat), .axi_inv(axi_inv)
     );
 
     //==========================================================================
@@ -317,19 +375,124 @@ module tnca_fpga_top #(
     //==========================================================================
     // The memory
     //==========================================================================
+    // The on-chip RAM's data port: the shell's own, or the bridge's local side.
+    wire        l_req_valid, l_req_ready, l_req_we, l_req_amo;
+    wire [63:0] l_req_addr, l_req_wdata, l_req_cmp;
+    wire [7:0]  l_req_be;
+    wire [LSU_TAG_W-1:0] l_req_tag;
+    wire [3:0]  l_req_aop;
+    wire        l_rsp_valid;
+    wire [LSU_TAG_W-1:0] l_rsp_tag;
+    wire [63:0] l_rsp_rdata;
+
+    generate if (DATA_AXI && AXI_LINE == 0) begin : g_axi
+        tnca_axi_bridge #(
+            .TAG_W(LSU_TAG_W), .OUT_N(AXI_OUT_N), .LOCAL_LIMIT(LOCAL_LIMIT),
+            .AXI_ID_W(LSU_TAG_W)
+        ) u_bridge (
+            .clk(clk), .rst_n(rst_n),
+            .req_valid(mem_req_valid), .req_ready(mem_req_ready), .req_addr(mem_req_addr),
+            .req_we(mem_req_we), .req_be(mem_req_be), .req_wdata(mem_req_wdata),
+            .req_tag(mem_req_tag), .req_amo(mem_req_amo), .req_aop(mem_req_aop),
+            .req_cmp(mem_req_cmp),
+            .rsp_valid(mem_rsp_valid), .rsp_tag(mem_rsp_tag), .rsp_rdata(mem_rsp_rdata),
+            .l_req_valid(l_req_valid), .l_req_ready(l_req_ready), .l_req_addr(l_req_addr),
+            .l_req_we(l_req_we), .l_req_be(l_req_be), .l_req_wdata(l_req_wdata),
+            .l_req_tag(l_req_tag), .l_req_amo(l_req_amo), .l_req_aop(l_req_aop),
+            .l_req_cmp(l_req_cmp),
+            .l_rsp_valid(l_rsp_valid), .l_rsp_tag(l_rsp_tag), .l_rsp_rdata(l_rsp_rdata),
+            .axi_base(axi_base), .axi_size(axi_size), .inv(axi_inv), .axi_err(axi_err[0]),
+            .axi_stray(axi_err[1]),
+            .cnt_rd(axi_cnt_rd), .cnt_wr(axi_cnt_wr), .cnt_rd_lat(axi_cnt_lat),
+            .cnt_rbeat(axi_cnt_rbeat),
+            .m_awvalid(m_axi_awvalid), .m_awready(m_axi_awready), .m_awaddr(m_axi_awaddr),
+            .m_awid(m_axi_awid), .m_awlen(m_axi_awlen), .m_awsize(m_axi_awsize),
+            .m_awburst(m_axi_awburst),
+            .m_wvalid(m_axi_wvalid), .m_wready(m_axi_wready), .m_wdata(m_axi_wdata),
+            .m_wstrb(m_axi_wstrb), .m_wlast(m_axi_wlast),
+            .m_bvalid(m_axi_bvalid), .m_bready(m_axi_bready), .m_bid(m_axi_bid),
+            .m_bresp(m_axi_bresp),
+            .m_arvalid(m_axi_arvalid), .m_arready(m_axi_arready), .m_araddr(m_axi_araddr),
+            .m_arid(m_axi_arid), .m_arlen(m_axi_arlen), .m_arsize(m_axi_arsize),
+            .m_arburst(m_axi_arburst),
+            .m_rvalid(m_axi_rvalid), .m_rready(m_axi_rready), .m_rdata(m_axi_rdata),
+            .m_rid(m_axi_rid), .m_rresp(m_axi_rresp), .m_rlast(m_axi_rlast)
+        );
+    end else if (DATA_AXI) begin : g_axi_lb
+        tnca_axi_bridge_lb #(
+            .TAG_W(LSU_TAG_W), .OUT_N(AXI_OUT_N), .LOCAL_LIMIT(LOCAL_LIMIT),
+            .AXI_ID_W(LSU_TAG_W), .LINE_BEATS(AXI_LINE), .LB_N(AXI_LB_N),
+            .WAIT_N(AXI_WAIT_N), .PF(AXI_PF), .LOCAL_PIPE(AXI_LOCAL_PIPE), .RAM_CACHE(AXI_RAM_CACHE)
+        ) u_bridge (
+            .clk(clk), .rst_n(rst_n),
+            .req_valid(mem_req_valid), .req_ready(mem_req_ready), .req_addr(mem_req_addr),
+            .req_we(mem_req_we), .req_be(mem_req_be), .req_wdata(mem_req_wdata),
+            .req_tag(mem_req_tag), .req_amo(mem_req_amo), .req_aop(mem_req_aop),
+            .req_cmp(mem_req_cmp),
+            .rsp_valid(mem_rsp_valid), .rsp_tag(mem_rsp_tag), .rsp_rdata(mem_rsp_rdata),
+            .l_req_valid(l_req_valid), .l_req_ready(l_req_ready), .l_req_addr(l_req_addr),
+            .l_req_we(l_req_we), .l_req_be(l_req_be), .l_req_wdata(l_req_wdata),
+            .l_req_tag(l_req_tag), .l_req_amo(l_req_amo), .l_req_aop(l_req_aop),
+            .l_req_cmp(l_req_cmp),
+            .l_rsp_valid(l_rsp_valid), .l_rsp_tag(l_rsp_tag), .l_rsp_rdata(l_rsp_rdata),
+            .axi_base(axi_base), .axi_size(axi_size), .inv(axi_inv), .axi_err(axi_err[0]),
+            .axi_stray(axi_err[1]),
+            .cnt_rd(axi_cnt_rd), .cnt_wr(axi_cnt_wr), .cnt_rd_lat(axi_cnt_lat),
+            .cnt_rbeat(axi_cnt_rbeat),
+            .m_awvalid(m_axi_awvalid), .m_awready(m_axi_awready), .m_awaddr(m_axi_awaddr),
+            .m_awid(m_axi_awid), .m_awlen(m_axi_awlen), .m_awsize(m_axi_awsize),
+            .m_awburst(m_axi_awburst),
+            .m_wvalid(m_axi_wvalid), .m_wready(m_axi_wready), .m_wdata(m_axi_wdata),
+            .m_wstrb(m_axi_wstrb), .m_wlast(m_axi_wlast),
+            .m_bvalid(m_axi_bvalid), .m_bready(m_axi_bready), .m_bid(m_axi_bid),
+            .m_bresp(m_axi_bresp),
+            .m_arvalid(m_axi_arvalid), .m_arready(m_axi_arready), .m_araddr(m_axi_araddr),
+            .m_arid(m_axi_arid), .m_arlen(m_axi_arlen), .m_arsize(m_axi_arsize),
+            .m_arburst(m_axi_arburst),
+            .m_rvalid(m_axi_rvalid), .m_rready(m_axi_rready), .m_rdata(m_axi_rdata),
+            .m_rid(m_axi_rid), .m_rresp(m_axi_rresp), .m_rlast(m_axi_rlast)
+        );
+    end else begin : g_ram
+        assign l_req_valid   = mem_req_valid;
+        assign mem_req_ready = l_req_ready;
+        assign l_req_addr    = mem_req_addr;
+        assign l_req_we      = mem_req_we;
+        assign l_req_be      = mem_req_be;
+        assign l_req_wdata   = mem_req_wdata;
+        assign l_req_tag     = mem_req_tag;
+        assign l_req_amo     = mem_req_amo;
+        assign l_req_aop     = mem_req_aop;
+        assign l_req_cmp     = mem_req_cmp;
+        assign mem_rsp_valid = l_rsp_valid;
+        assign mem_rsp_tag   = l_rsp_tag;
+        assign mem_rsp_rdata = l_rsp_rdata;
+        assign axi_err       = 2'b00;
+        assign axi_cnt_rd = 64'd0; assign axi_cnt_wr = 64'd0; assign axi_cnt_lat = 64'd0;
+        assign axi_cnt_rbeat = 64'd0;
+        assign m_axi_awvalid = 1'b0; assign m_axi_awaddr = 64'd0;
+        assign m_axi_awid = {LSU_TAG_W{1'b0}};
+        assign m_axi_awlen = 8'd0; assign m_axi_awsize = 3'd0; assign m_axi_awburst = 2'd0;
+        assign m_axi_wvalid = 1'b0; assign m_axi_wdata = 64'd0; assign m_axi_wstrb = 8'd0;
+        assign m_axi_wlast = 1'b0; assign m_axi_bready = 1'b0;
+        assign m_axi_arvalid = 1'b0; assign m_axi_araddr = 64'd0;
+        assign m_axi_arid = {LSU_TAG_W{1'b0}};
+        assign m_axi_arlen = 8'd0; assign m_axi_arsize = 3'd0; assign m_axi_arburst = 2'd0;
+        assign m_axi_rready = 1'b0;
+    end endgenerate
+
     tnca_fpga_mem #(
         .WORDS(WORDS), .ADDR_W(ADDR_W), .MEM_DW(64), .MEM_BYTES(8),
         .TAG_W(LSU_TAG_W)
     ) u_mem (
         .clk(clk), .rst_n(rst_n),
         .imem_addr(imem_addr), .imem_data(imem_data),
-        .req_valid(mem_req_valid), .req_ready(mem_req_ready),
-        .req_addr(mem_req_addr), .req_we(mem_req_we),
-        .req_be(mem_req_be), .req_wdata(mem_req_wdata),
-        .req_tag(mem_req_tag),
-        .req_amo(mem_req_amo), .req_aop(mem_req_aop), .req_cmp(mem_req_cmp),
-        .rsp_valid(mem_rsp_valid), .rsp_tag(mem_rsp_tag),
-        .rsp_rdata(mem_rsp_rdata)
+        .req_valid(l_req_valid), .req_ready(l_req_ready),
+        .req_addr(l_req_addr), .req_we(l_req_we),
+        .req_be(l_req_be), .req_wdata(l_req_wdata),
+        .req_tag(l_req_tag),
+        .req_amo(l_req_amo), .req_aop(l_req_aop), .req_cmp(l_req_cmp),
+        .rsp_valid(l_rsp_valid), .rsp_tag(l_rsp_tag),
+        .rsp_rdata(l_rsp_rdata)
     );
 
     // `mem_req_hint` is named above and read by nothing. It is a property of

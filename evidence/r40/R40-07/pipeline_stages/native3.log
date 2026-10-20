@@ -1,0 +1,7 @@
+W1014 08:37:11.821000 475456 torch/utils/cpp_extension.py:183] No CUDA runtime is found, using CUDA_HOME='/usr/local/cuda'
+  already built: /home/zhongchun/.cache/tnca/devices/core-vrf-sync-v5-a8f9e2a0291d254a-ddd87cad0ade/tnca_device_vrf5.vvp
+PASS mm 16x16x48, stages=3, rings=[{'consumer_ops': 326, 'direct': True, 'producer_ops': 219, 'ring_windows': 6, 'stages': 3}]
+PASS mm 17x31x65, stages=3, rings=[{'consumer_ops': 374, 'direct': False, 'producer_ops': 2091, 'ring_windows': 6, 'stages': 3}]
+PASS addmm 16x16x48, stages=3, rings=[{'consumer_ops': 441, 'direct': True, 'producer_ops': 220, 'ring_windows': 6, 'stages': 3}]
+PASS addmm 17x31x65, stages=3, rings=[{'consumer_ops': 489, 'direct': False, 'producer_ops': 2092, 'ring_windows': 6, 'stages': 3}]
+r40-native-pipeline PASS (4/4)

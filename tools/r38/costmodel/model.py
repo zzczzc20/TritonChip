@@ -113,16 +113,22 @@ class Model:
 
     def calibrate(self, rows, coverage=0.9):
         """Split conformal on relative error, from the validation split."""
+        if not 0 < coverage < 1:
+            raise ValueError('coverage must be strictly between zero and one')
         errs = sorted(abs(self.predict(r['operator'], r['shape']) - r['cycles']) / r['cycles']
                       for r in rows if r['operator'] in self.coef)
         if not errs:
             self.interval = None
             return self
-        q = min(len(errs) - 1, math.ceil((len(errs) + 1) * coverage) - 1)
-        self.interval = errs[q]
+        rank = math.ceil((len(errs) + 1) * coverage)
+        # Do not clip an unavailable conformal order statistic to the last
+        # sample and advertise finite 90% coverage from too little data.
+        self.interval = errs[rank - 1] if rank <= len(errs) else math.inf
         return self
 
     def predict_interval(self, operator, shape):
         p = self.predict(operator, shape)
         w = self.interval if self.interval is not None else math.inf
-        return p, p * (1 - w), p * (1 + w)
+        # Residuals divide by actual, not prediction: |p-y| <= w*y.
+        # Multiplying p by (1 +/- w) is not the inverse of this inequality.
+        return p, p / (1 + w), (p / (1 - w) if w < 1 else math.inf)

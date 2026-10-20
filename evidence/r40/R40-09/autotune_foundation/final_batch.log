@@ -1,0 +1,12 @@
+.........
+----------------------------------------------------------------------
+Ran 9 tests in 0.003s
+
+OK
+...
+----------------------------------------------------------------------
+Ran 3 tests in 0.000s
+
+OK
+W1014 18:21:42.434000 655135 torch/utils/cpp_extension.py:183] No CUDA runtime is found, using CUDA_HOME='/usr/local/cuda'
+AUTOTUNE NATIVE DEVICE EVENTS PASS {"cache_hit": true, "device_records": [[{"clock": "mmio-device-clock/1", "cycles": 3249, "end": 187415, "epoch": 0, "session_id": 1, "start": 184166}], [{"clock": "mmio-device-clock/1", "cycles": 1807, "end": 197609, "epoch": 0, "session_id": 1, "start": 195802}], null], "formal_launches": 1, "identity": {"capabilities": {"cache_ownership_handoff": true, "coherent_host_window": true, "completion_counters": "global-makespan-u64", "concurrent_requests": 1, "fault_detail": false, "hbm_dma": true, "launch_is_idempotent": false, "medium": "RTL MMIO v2: 3 cores, 3 AXI outlets", "memory_bytes": 1179648, "memory_ports": 3, "name": "fpga-u280-multicore", "physical_grid": true, "profile": "core-vrf-sync-v5", "protocol": "r2_transport_v1 + r40 physical-grid extension, MMIO v2", "raw_request": true, "reaches": "rtl/fpga/tnca_multicore_fpga.v", "state": "reference-available", "supports_cancel": false}, "clock_hz": 100000000, "compiler": {"torch": "2.14.0+cu130", "triton": "3.8.0"}, "dtype": "torch.float32", "image": {"harness_sha": "0b8552336e40b291577bbe4756fd050cfc4dd40ed56e9e3da68d21873df11041", "kind": "functional-RTL-model"}, "kernel_source": "16fa4f72820335b887b1d32c8bcb839813584ec1b410e357de1234f2fcf4141b", "memory_map": {"base": 4294967296, "dma": true, "local_limit": 131072, "size": 1048576}, "profile": "core-vrf-sync-v5", "rtl": {"cores": 3, "pipeline": 2, "ports": 3, "source_sha": "e4fb0973a2847e1a9002fea3cee2f491ea5d86fc4b79cdb11c144b28ae6bcf5c"}, "shape": [[256], [256]], "software_tree": "517abcc2559f85c426b9c6e1462cf4786f131920f10ded5cf77738a9ef0f69fd", "stride": [[1], [1]]}, "identity_key": "22b57e8374e0bcd2020053fec6b51f58d0b23643a8912fa4fa9c539836ffa3df", "measured_candidates": 2, "seconds": [3.249e-05, 1.807e-05, null], "selected": {"knobs": {"cores": 3}, "requires": ["physical_grid"], "resources": {"cores": 3}}}

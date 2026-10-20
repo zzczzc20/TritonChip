@@ -1,0 +1,744 @@
+{
+  "status": "not-measured",
+  "performance": "not-measured",
+  "gate_status": "not-measured",
+  "software_commit": "bbb93210f5df8598acd9b4a1b632d8965cd84a55",
+  "software_tree": "files:b618b58f337359d77d81b6d2e940b0e19fd164a89a526aaa7f05926d5dc243f5",
+  "raw_sha256": "685c7563c3403c8849c84539c28faf08f433d9e67af87a2ef5808c485b8304cd",
+  "scope": "union of frozen HBM14 and holdout14, deduplicated; fixed 16/32 candidates; no selection or ranking",
+  "rows": [
+    {
+      "point": "op.silu/hbm/fp16-n67108864",
+      "point_sha256": "ac289d78c2b64352cffab211799e71984b2403633d6fbeee25bd6aa538bd27fd",
+      "width": 32,
+      "compiled": true,
+      "status": [
+        "capacity-exceeded"
+      ],
+      "problems": [
+        "compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched",
+        "the largest launch needs 268435456 bytes of arguments; the device heap is 393216"
+      ],
+      "elapsed_graph_s": 14.17609301675111,
+      "raw": "r40_frozen_candidate_preflight_bbb9321_cpu_skip/11_block32.json"
+    },
+    {
+      "point": "op.gemv/hbm/fp16-k4096-n11008",
+      "point_sha256": "a65683795c4c05baf3c758fe40b6d0d6bc5994a11c2340fd17fbbc04d576baa9",
+      "width": 16,
+      "compiled": true,
+      "status": [
+        "capacity-exceeded"
+      ],
+      "problems": [
+        "compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched",
+        "the largest launch needs 90207744 bytes of arguments; the device heap is 393216"
+      ],
+      "elapsed_graph_s": 6.130714274011552,
+      "raw": "r40_frozen_candidate_preflight_bbb9321_cpu_skip/07_block16.json"
+    },
+    {
+      "point": "model.llama_decode/hbm/fp16-b1-p512",
+      "point_sha256": "23cc5a368f9c804105cace69fb9f772d116dbd510dc8bc3a5c5f4f9e8728de16",
+      "width": 16,
+      "compiled": true,
+      "status": [
+        "capacity-exceeded"
+      ],
+      "problems": [
+        "compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched",
+        "the largest launch needs 65602048 bytes of arguments; the device heap is 393216"
+      ],
+      "elapsed_graph_s": 10.248733609449118,
+      "raw": "r40_frozen_candidate_preflight_bbb9321_cpu_skip/00_block16.json"
+    },
+    {
+      "point": "model.llama_prefill/hbm/fp16-b1-s512",
+      "point_sha256": "c5c8826fb47090de07d2c4860b32d84da88aaf1b22ab0a206eb4139fef6813e1",
+      "width": 32,
+      "compiled": false,
+      "status": [
+        "compile-failure"
+      ],
+      "problems": [
+        "torch._inductor.exc.InductorError: UnsupportedError: [UNSUPPORTED] wide register block operation tt.trans\n  at: TTIR function 'triton_red_fused__to_copy__unsafe_view_add_mean_mul_pow_rsqrt_slice_23'\n  diagnostic: wide register block operation tt.trans\n\nSet TORCHDYNAMO_VERBOSE=1 for the internal stack trace (please do this especially if you're reporting a bug to PyTorch). For even more developer context, set TORCH_LOGS=\"+dynamo\"\n\n\n caused by UnsupportedError: [UNSUPPORTED] wide register block operation tt.trans\n  at: TTIR function 'triton_red_fused__to_copy__unsafe_view_add_mean_mul_pow_rsqrt_slice_23'\n  diagnostic: wide register block operation tt.trans\n caused by Unsupported: wide register block operation tt.trans"
+      ],
+      "elapsed_graph_s": 63.9659423250705,
+      "raw": "r40_frozen_candidate_preflight_bbb9321_cpu_skip/01_block32.json"
+    },
+    {
+      "point": "op.linear/hbm/fp16-m512-k4096-n11008",
+      "point_sha256": "1a898be55b59c02cbbc4e6b2a988ecfcd4793e472f6dae3aa3aca612f43d23bc",
+      "width": 32,
+      "compiled": true,
+      "status": [
+        "capacity-exceeded"
+      ],
+      "problems": [
+        "compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched",
+        "the largest launch needs 105666048 bytes of arguments; the device heap is 393216"
+      ],
+      "elapsed_graph_s": 11.96496669203043,
+      "raw": "r40_frozen_candidate_preflight_bbb9321_cpu_skip/08_block32.json"
+    },
+    {
+      "point": "op.add/hbm/fp16-n67108864",
+      "point_sha256": "4c8c739081452e9ef3c1c8870031ae89ae86a9cc09e262fea5a7ccfc202bc85e",
+      "width": 32,
+      "compiled": true,
+      "status": [
+        "capacity-exceeded"
+      ],
+      "problems": [
+        "compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched",
+        "the largest launch needs 402653184 bytes of arguments; the device heap is 393216"
+      ],
+      "elapsed_graph_s": 14.382890672422945,
+      "raw": "r40_frozen_candidate_preflight_bbb9321_cpu_skip/02_block32.json"
+    },
+    {
+      "point": "model.llama_decode/hbm/fp16-b1-p512",
+      "point_sha256": "23cc5a368f9c804105cace69fb9f772d116dbd510dc8bc3a5c5f4f9e8728de16",
+      "width": 32,
+      "compiled": false,
+      "status": [
+        "compile-failure"
+      ],
+      "problems": [
+        "torch._inductor.exc.InductorError: UnsupportedError: [UNSUPPORTED] wide register block operation tt.assert\n  at: TTIR function 'triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_0'\n  diagnostic: wide register block operation tt.assert\n\nSet TORCHDYNAMO_VERBOSE=1 for the internal stack trace (please do this especially if you're reporting a bug to PyTorch). For even more developer context, set TORCH_LOGS=\"+dynamo\"\n\n\n caused by UnsupportedError: [UNSUPPORTED] wide register block operation tt.assert\n  at: TTIR function 'triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_0'\n  diagnostic: wide register block operation tt.assert\n caused by Unsupported: wide register block operation tt.assert"
+      ],
+      "elapsed_graph_s": 22.850478462409228,
+      "raw": "r40_frozen_candidate_preflight_bbb9321_cpu_skip/00_block32.json"
+    },
+    {
+      "point": "op.attention_prefill/large/fp16-b1-h32-s512-d64",
+      "point_sha256": "db38a0023846910da67c8f869dfe922dfa0eaeaa1cea70ff09aec2629711e3a1",
+      "width": 16,
+      "compiled": true,
+      "status": [
+        "capacity-exceeded"
+      ],
+      "problems": [
+        "compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched",
+        "the largest launch needs 67108864 bytes of arguments; the device heap is 393216"
+      ],
+      "elapsed_graph_s": 7.885899188928306,
+      "raw": "r40_frozen_candidate_preflight_bbb9321_cpu_skip/04_block16.json"
+    },
+    {
+      "point": "op.rmsnorm/hbm/fp16-r8192-d4096",
+      "point_sha256": "cf35f8341664c0affaf6d5401ac648fa1782fc02e09715b23b1498639d2579d5",
+      "width": 32,
+      "compiled": true,
+      "status": [
+        "capacity-exceeded"
+      ],
+      "problems": [
+        "compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched",
+        "the largest launch needs 134225920 bytes of arguments; the device heap is 393216"
+      ],
+      "elapsed_graph_s": 14.071968114003539,
+      "raw": "r40_frozen_candidate_preflight_bbb9321_cpu_skip/10_block32.json"
+    },
+    {
+      "point": "op.copy/hbm/fp16-n67108864",
+      "point_sha256": "985db43ad808d2f7bf11454bab05e082416c27d6284be0707cefe0d3db071027",
+      "width": 32,
+      "compiled": true,
+      "status": [
+        "capacity-exceeded"
+      ],
+      "problems": [
+        "compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched",
+        "the largest launch needs 268435456 bytes of arguments; the device heap is 393216"
+      ],
+      "elapsed_graph_s": 12.57587509509176,
+      "raw": "r40_frozen_candidate_preflight_bbb9321_cpu_skip/05_block32.json"
+    },
+    {
+      "point": "op.attention_decode/large/fp16-b1-h32-l2048-d64",
+      "point_sha256": "30a25aa8093be0e8ee638f450538233458f46c6eb78b7fb5e8c249964deed8de",
+      "width": 16,
+      "compiled": true,
+      "status": [
+        "capacity-exceeded"
+      ],
+      "problems": [
+        "compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched",
+        "the largest launch needs 8655008 bytes of arguments; the device heap is 393216"
+      ],
+      "elapsed_graph_s": 5.879902379121631,
+      "raw": "r40_frozen_candidate_preflight_bbb9321_cpu_skip/03_block16.json"
+    },
+    {
+      "point": "op.linear/hbm/fp16-m512-k4096-n11008",
+      "point_sha256": "1a898be55b59c02cbbc4e6b2a988ecfcd4793e472f6dae3aa3aca612f43d23bc",
+      "width": 16,
+      "compiled": true,
+      "status": [
+        "capacity-exceeded"
+      ],
+      "problems": [
+        "compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched",
+        "the largest launch needs 105666048 bytes of arguments; the device heap is 393216"
+      ],
+      "elapsed_graph_s": 6.432055655866861,
+      "raw": "r40_frozen_candidate_preflight_bbb9321_cpu_skip/08_block16.json"
+    },
+    {
+      "point": "op.attention_prefill/large/fp16-b1-h32-s512-d64",
+      "point_sha256": "db38a0023846910da67c8f869dfe922dfa0eaeaa1cea70ff09aec2629711e3a1",
+      "width": 32,
+      "compiled": true,
+      "status": [
+        "capacity-exceeded"
+      ],
+      "problems": [
+        "compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched",
+        "the largest launch needs 67108864 bytes of arguments; the device heap is 393216"
+      ],
+      "elapsed_graph_s": 16.824136653915048,
+      "raw": "r40_frozen_candidate_preflight_bbb9321_cpu_skip/04_block32.json"
+    },
+    {
+      "point": "op.embedding/hbm/fp16-v65536-d2048-t8192",
+      "point_sha256": "998ca4722412f6fa8c35b160c96e92e34582656b7cb917ff0f47157b69ced5a6",
+      "width": 32,
+      "compiled": false,
+      "status": [
+        "compile-failure"
+      ],
+      "problems": [
+        "torch._inductor.exc.InductorError: UnsupportedError: [UNSUPPORTED] wide register block operation tt.assert\n  at: TTIR function 'triton_poi_fused_embedding_0'\n  diagnostic: wide register block operation tt.assert\n\nSet TORCHDYNAMO_VERBOSE=1 for the internal stack trace (please do this especially if you're reporting a bug to PyTorch). For even more developer context, set TORCH_LOGS=\"+dynamo\"\n\n\n caused by UnsupportedError: [UNSUPPORTED] wide register block operation tt.assert\n  at: TTIR function 'triton_poi_fused_embedding_0'\n  diagnostic: wide register block operation tt.assert\n caused by Unsupported: wide register block operation tt.assert"
+      ],
+      "elapsed_graph_s": 13.523075386881828,
+      "raw": "r40_frozen_candidate_preflight_bbb9321_cpu_skip/06_block32.json"
+    },
+    {
+      "point": "op.attention_decode/large/fp16-b1-h32-l2048-d64",
+      "point_sha256": "30a25aa8093be0e8ee638f450538233458f46c6eb78b7fb5e8c249964deed8de",
+      "width": 32,
+      "compiled": false,
+      "status": [
+        "compile-failure"
+      ],
+      "problems": [
+        "torch._inductor.exc.InductorError: UnsupportedError: [UNSUPPORTED] register block requires at most VLEN rows and rank <= 2\n  at: TTIR function 'triton_red_fused__scaled_dot_product_flash_attention_for_cpu_2'\n  diagnostic: register block requires at most VLEN rows and rank <= 2\n\nSet TORCHDYNAMO_VERBOSE=1 for the internal stack trace (please do this especially if you're reporting a bug to PyTorch). For even more developer context, set TORCH_LOGS=\"+dynamo\"\n\n\n caused by UnsupportedError: [UNSUPPORTED] register block requires at most VLEN rows and rank <= 2\n  at: TTIR function 'triton_red_fused__scaled_dot_product_flash_attention_for_cpu_2'\n  diagnostic: register block requires at most VLEN rows and rank <= 2\n caused by Unsupported: register block requires at most VLEN rows and rank <= 2"
+      ],
+      "elapsed_graph_s": 11.916591458022594,
+      "raw": "r40_frozen_candidate_preflight_bbb9321_cpu_skip/03_block32.json"
+    },
+    {
+      "point": "op.transpose/hbm/fp32-r8192-c8192",
+      "point_sha256": "178a8b5508f1155d44907970a91aa0a030aeec79618fa7b124df3a320579eb56",
+      "width": 16,
+      "compiled": true,
+      "status": [
+        "capacity-exceeded"
+      ],
+      "problems": [
+        "compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched",
+        "the largest launch needs 536870912 bytes of arguments; the device heap is 393216"
+      ],
+      "elapsed_graph_s": 7.096637690905482,
+      "raw": "r40_frozen_candidate_preflight_bbb9321_cpu_skip/13_block16.json"
+    },
+    {
+      "point": "op.copy/hbm/fp16-n67108864",
+      "point_sha256": "985db43ad808d2f7bf11454bab05e082416c27d6284be0707cefe0d3db071027",
+      "width": 16,
+      "compiled": true,
+      "status": [
+        "capacity-exceeded"
+      ],
+      "problems": [
+        "compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched",
+        "the largest launch needs 268435456 bytes of arguments; the device heap is 393216"
+      ],
+      "elapsed_graph_s": 5.434234009124339,
+      "raw": "r40_frozen_candidate_preflight_bbb9321_cpu_skip/05_block16.json"
+    },
+    {
+      "point": "op.softmax/hbm/fp16-r4096-c8192",
+      "point_sha256": "a97f2905a204dcf4d0108822bd6a1ca1bc94dfc04e226ba243efe81ee160443b",
+      "width": 32,
+      "compiled": true,
+      "status": [
+        "capacity-exceeded"
+      ],
+      "problems": [
+        "compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched",
+        "the largest launch needs 268435456 bytes of arguments; the device heap is 393216"
+      ],
+      "elapsed_graph_s": 13.314862878993154,
+      "raw": "r40_frozen_candidate_preflight_bbb9321_cpu_skip/12_block32.json"
+    },
+    {
+      "point": "op.add/hbm/fp16-n67108864",
+      "point_sha256": "4c8c739081452e9ef3c1c8870031ae89ae86a9cc09e262fea5a7ccfc202bc85e",
+      "width": 16,
+      "compiled": true,
+      "status": [
+        "capacity-exceeded"
+      ],
+      "problems": [
+        "compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched",
+        "the largest launch needs 402653184 bytes of arguments; the device heap is 393216"
+      ],
+      "elapsed_graph_s": 7.192531644366682,
+      "raw": "r40_frozen_candidate_preflight_bbb9321_cpu_skip/02_block16.json"
+    },
+    {
+      "point": "op.gemv/hbm/fp16-k4096-n11008",
+      "point_sha256": "a65683795c4c05baf3c758fe40b6d0d6bc5994a11c2340fd17fbbc04d576baa9",
+      "width": 32,
+      "compiled": true,
+      "status": [
+        "capacity-exceeded"
+      ],
+      "problems": [
+        "compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched",
+        "the largest launch needs 90207744 bytes of arguments; the device heap is 393216"
+      ],
+      "elapsed_graph_s": 12.612045948393643,
+      "raw": "r40_frozen_candidate_preflight_bbb9321_cpu_skip/07_block32.json"
+    },
+    {
+      "point": "op.embedding/hbm/fp16-v65536-d2048-t8192",
+      "point_sha256": "998ca4722412f6fa8c35b160c96e92e34582656b7cb917ff0f47157b69ced5a6",
+      "width": 16,
+      "compiled": true,
+      "status": [
+        "capacity-exceeded"
+      ],
+      "problems": [
+        "compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched",
+        "the largest launch needs 302514176 bytes of arguments; the device heap is 393216"
+      ],
+      "elapsed_graph_s": 7.539548521861434,
+      "raw": "r40_frozen_candidate_preflight_bbb9321_cpu_skip/06_block16.json"
+    },
+    {
+      "point": "op.softmax/hbm/fp16-r4096-c8192",
+      "point_sha256": "a97f2905a204dcf4d0108822bd6a1ca1bc94dfc04e226ba243efe81ee160443b",
+      "width": 16,
+      "compiled": true,
+      "status": [
+        "capacity-exceeded"
+      ],
+      "problems": [
+        "compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched",
+        "the largest launch needs 268435456 bytes of arguments; the device heap is 393216"
+      ],
+      "elapsed_graph_s": 7.284808355849236,
+      "raw": "r40_frozen_candidate_preflight_bbb9321_cpu_skip/12_block16.json"
+    },
+    {
+      "point": "op.rmsnorm/hbm/fp16-r8192-d4096",
+      "point_sha256": "cf35f8341664c0affaf6d5401ac648fa1782fc02e09715b23b1498639d2579d5",
+      "width": 16,
+      "compiled": true,
+      "status": [
+        "capacity-exceeded"
+      ],
+      "problems": [
+        "compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched",
+        "the largest launch needs 134225920 bytes of arguments; the device heap is 393216"
+      ],
+      "elapsed_graph_s": 7.085221418645233,
+      "raw": "r40_frozen_candidate_preflight_bbb9321_cpu_skip/10_block16.json"
+    },
+    {
+      "point": "op.silu/hbm/fp16-n67108864",
+      "point_sha256": "ac289d78c2b64352cffab211799e71984b2403633d6fbeee25bd6aa538bd27fd",
+      "width": 16,
+      "compiled": true,
+      "status": [
+        "capacity-exceeded"
+      ],
+      "problems": [
+        "compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched",
+        "the largest launch needs 268435456 bytes of arguments; the device heap is 393216"
+      ],
+      "elapsed_graph_s": 6.837031872943044,
+      "raw": "r40_frozen_candidate_preflight_bbb9321_cpu_skip/11_block16.json"
+    },
+    {
+      "point": "model.llama_prefill/hbm/fp16-b1-s512",
+      "point_sha256": "c5c8826fb47090de07d2c4860b32d84da88aaf1b22ab0a206eb4139fef6813e1",
+      "width": 16,
+      "compiled": true,
+      "status": [
+        "capacity-exceeded"
+      ],
+      "problems": [
+        "compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched",
+        "the largest launch needs 69736448 bytes of arguments; the device heap is 393216"
+      ],
+      "elapsed_graph_s": 9.293761152308434,
+      "raw": "r40_frozen_candidate_preflight_bbb9321_cpu_skip/01_block16.json"
+    },
+    {
+      "point": "op.matmul/hbm/fp16-m4096-k4096-n4096",
+      "point_sha256": "c9873996038a73864d846e6d6496b954b71588b99a6f4c7fa69725d0563ade81",
+      "width": 32,
+      "compiled": true,
+      "status": [
+        "capacity-exceeded"
+      ],
+      "problems": [
+        "compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched",
+        "the largest launch needs 100663296 bytes of arguments; the device heap is 393216"
+      ],
+      "elapsed_graph_s": 12.720778161194175,
+      "raw": "r40_frozen_candidate_preflight_bbb9321_cpu_skip/09_block32.json"
+    },
+    {
+      "point": "op.transpose/hbm/fp32-r8192-c8192",
+      "point_sha256": "178a8b5508f1155d44907970a91aa0a030aeec79618fa7b124df3a320579eb56",
+      "width": 32,
+      "compiled": true,
+      "status": [
+        "capacity-exceeded"
+      ],
+      "problems": [
+        "compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched",
+        "the largest launch needs 536870912 bytes of arguments; the device heap is 393216"
+      ],
+      "elapsed_graph_s": 13.631774732843041,
+      "raw": "r40_frozen_candidate_preflight_bbb9321_cpu_skip/13_block32.json"
+    },
+    {
+      "point": "op.matmul/hbm/fp16-m4096-k4096-n4096",
+      "point_sha256": "c9873996038a73864d846e6d6496b954b71588b99a6f4c7fa69725d0563ade81",
+      "width": 16,
+      "compiled": true,
+      "status": [
+        "capacity-exceeded"
+      ],
+      "problems": [
+        "compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched",
+        "the largest launch needs 100663296 bytes of arguments; the device heap is 393216"
+      ],
+      "elapsed_graph_s": 6.030196567066014,
+      "raw": "r40_frozen_candidate_preflight_bbb9321_cpu_skip/09_block16.json"
+    },
+    {
+      "point": "op.matmul/medium/fp32-m128-k192-n128",
+      "point_sha256": "6b6b368b24dfedbd7c53df61c1f1d6359500ce485dc4bd6c126abcb626626505",
+      "width": 16,
+      "compiled": true,
+      "status": [
+        "not-measured"
+      ],
+      "problems": [
+        "compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched"
+      ],
+      "elapsed_graph_s": 5.277595179155469,
+      "raw": "r40_frozen_holdout_preflight_bbb9321_cpu_skip/07_block16.json"
+    },
+    {
+      "point": "model.gpt2_block/large/fp16-d1024-h16-b1-s512",
+      "point_sha256": "00aa4913f2bc61ce6dd9506d093c08b17a70150f56e0f50dfbc763120b914262",
+      "width": 16,
+      "compiled": true,
+      "status": [
+        "capacity-exceeded"
+      ],
+      "problems": [
+        "compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched",
+        "the largest launch needs 33554432 bytes of arguments; the device heap is 393216"
+      ],
+      "elapsed_graph_s": 12.059446403756738,
+      "raw": "r40_frozen_holdout_preflight_bbb9321_cpu_skip/00_block16.json"
+    },
+    {
+      "point": "model.gpt2_block/medium/fp16-d160-h5-b1-s64",
+      "point_sha256": "2746d763693c5849cb5f3ce10030c23f3244c69df5c622c00bdd4c06e255f0a1",
+      "width": 32,
+      "compiled": false,
+      "status": [
+        "compile-failure"
+      ],
+      "problems": [
+        "torch._inductor.exc.InductorError: UnsupportedError: [UNSUPPORTED] wide descriptor rows require matrix consumers\n  at: TTIR function 'triton_poi_fused__scaled_dot_product_flash_attention_for_cpu_split_transpose_view_3'\n  diagnostic: wide descriptor rows require matrix consumers\n\nSet TORCHDYNAMO_VERBOSE=1 for the internal stack trace (please do this especially if you're reporting a bug to PyTorch). For even more developer context, set TORCH_LOGS=\"+dynamo\"\n\n\n caused by UnsupportedError: [UNSUPPORTED] wide descriptor rows require matrix consumers\n  at: TTIR function 'triton_poi_fused__scaled_dot_product_flash_attention_for_cpu_split_transpose_view_3'\n  diagnostic: wide descriptor rows require matrix consumers\n caused by Unsupported: wide descriptor rows require matrix consumers"
+      ],
+      "elapsed_graph_s": 18.884661013726145,
+      "raw": "r40_frozen_holdout_preflight_bbb9321_cpu_skip/01_block32.json"
+    },
+    {
+      "point": "op.silu/large/fp16-n16777216",
+      "point_sha256": "23f3153bf547121552015ea1a6b3af5282113962775f09d32fb0c6dc3e305b57",
+      "width": 32,
+      "compiled": true,
+      "status": [
+        "capacity-exceeded"
+      ],
+      "problems": [
+        "compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched",
+        "the largest launch needs 67108864 bytes of arguments; the device heap is 393216"
+      ],
+      "elapsed_graph_s": 11.257467431016266,
+      "raw": "r40_frozen_holdout_preflight_bbb9321_cpu_skip/08_block32.json"
+    },
+    {
+      "point": "model.llama_prefill/medium/fp16-b1-s64",
+      "point_sha256": "01c5f5834948841ad9674e61a49aeb0a90670833fbc3596c4fefc05a56790b55",
+      "width": 32,
+      "compiled": false,
+      "status": [
+        "compile-failure"
+      ],
+      "problems": [
+        "torch._inductor.exc.InductorError: UnsupportedError: [UNSUPPORTED] wide register block operation tt.trans\n  at: TTIR function 'triton_red_fused__to_copy__unsafe_view_add_mean_mul_pow_rsqrt_slice_23'\n  diagnostic: wide register block operation tt.trans\n\nSet TORCHDYNAMO_VERBOSE=1 for the internal stack trace (please do this especially if you're reporting a bug to PyTorch). For even more developer context, set TORCH_LOGS=\"+dynamo\"\n\n\n caused by UnsupportedError: [UNSUPPORTED] wide register block operation tt.trans\n  at: TTIR function 'triton_red_fused__to_copy__unsafe_view_add_mean_mul_pow_rsqrt_slice_23'\n  diagnostic: wide register block operation tt.trans\n caused by Unsupported: wide register block operation tt.trans"
+      ],
+      "elapsed_graph_s": 71.68720733374357,
+      "raw": "r40_frozen_holdout_preflight_bbb9321_cpu_skip/02_block32.json"
+    },
+    {
+      "point": "model.gpt2_block/large/fp16-d1024-h16-b1-s512",
+      "point_sha256": "00aa4913f2bc61ce6dd9506d093c08b17a70150f56e0f50dfbc763120b914262",
+      "width": 32,
+      "compiled": false,
+      "status": [
+        "compile-failure"
+      ],
+      "problems": [
+        "torch._inductor.exc.InductorError: UnsupportedError: [UNSUPPORTED] wide descriptor rows require matrix consumers\n  at: TTIR function 'triton_poi_fused__scaled_dot_product_flash_attention_for_cpu_split_transpose_view_3'\n  diagnostic: wide descriptor rows require matrix consumers\n\nSet TORCHDYNAMO_VERBOSE=1 for the internal stack trace (please do this especially if you're reporting a bug to PyTorch). For even more developer context, set TORCH_LOGS=\"+dynamo\"\n\n\n caused by UnsupportedError: [UNSUPPORTED] wide descriptor rows require matrix consumers\n  at: TTIR function 'triton_poi_fused__scaled_dot_product_flash_attention_for_cpu_split_transpose_view_3'\n  diagnostic: wide descriptor rows require matrix consumers\n caused by Unsupported: wide descriptor rows require matrix consumers"
+      ],
+      "elapsed_graph_s": 19.743638205807656,
+      "raw": "r40_frozen_holdout_preflight_bbb9321_cpu_skip/00_block32.json"
+    },
+    {
+      "point": "op.gemv/medium/fp16-k320-n448",
+      "point_sha256": "fd15161f24b0d9305fdc83fde76124d2a8fa398f2db5eb98a6b3448b36d0f3ea",
+      "width": 16,
+      "compiled": true,
+      "status": [
+        "not-measured"
+      ],
+      "problems": [
+        "compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched"
+      ],
+      "elapsed_graph_s": 6.730802399106324,
+      "raw": "r40_frozen_holdout_preflight_bbb9321_cpu_skip/04_block16.json"
+    },
+    {
+      "point": "op.softmax/large/fp16-r4096-c4096",
+      "point_sha256": "978edb42f8926f1330546ebfcd4360d0e168fb4271f955a17e2ef2acc5afca5d",
+      "width": 32,
+      "compiled": true,
+      "status": [
+        "capacity-exceeded"
+      ],
+      "problems": [
+        "compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched",
+        "the largest launch needs 134217728 bytes of arguments; the device heap is 393216"
+      ],
+      "elapsed_graph_s": 11.807592163793743,
+      "raw": "r40_frozen_holdout_preflight_bbb9321_cpu_skip/10_block32.json"
+    },
+    {
+      "point": "op.linear/large/fp16-m512-k2048-n8192",
+      "point_sha256": "b3df7442af7433483b3e6b20a5003785ed305bab9953d33f74162e7464869867",
+      "width": 32,
+      "compiled": true,
+      "status": [
+        "capacity-exceeded"
+      ],
+      "problems": [
+        "compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched",
+        "the largest launch needs 44056576 bytes of arguments; the device heap is 393216"
+      ],
+      "elapsed_graph_s": 12.974778096657246,
+      "raw": "r40_frozen_holdout_preflight_bbb9321_cpu_skip/05_block32.json"
+    },
+    {
+      "point": "op.bmm/medium/fp16-b16-m64-k32-n64",
+      "point_sha256": "b377b0e53eab312336e85287a3ed0ab7c463c58977085140b2a8466dbb5fe595",
+      "width": 16,
+      "compiled": true,
+      "status": [
+        "not-measured"
+      ],
+      "problems": [
+        "compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched"
+      ],
+      "elapsed_graph_s": 6.785111444070935,
+      "raw": "r40_frozen_holdout_preflight_bbb9321_cpu_skip/03_block16.json"
+    },
+    {
+      "point": "op.silu/large/fp16-n16777216",
+      "point_sha256": "23f3153bf547121552015ea1a6b3af5282113962775f09d32fb0c6dc3e305b57",
+      "width": 16,
+      "compiled": true,
+      "status": [
+        "capacity-exceeded"
+      ],
+      "problems": [
+        "compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched",
+        "the largest launch needs 67108864 bytes of arguments; the device heap is 393216"
+      ],
+      "elapsed_graph_s": 5.578923307359219,
+      "raw": "r40_frozen_holdout_preflight_bbb9321_cpu_skip/08_block16.json"
+    },
+    {
+      "point": "op.gemv/medium/fp16-k320-n448",
+      "point_sha256": "fd15161f24b0d9305fdc83fde76124d2a8fa398f2db5eb98a6b3448b36d0f3ea",
+      "width": 32,
+      "compiled": true,
+      "status": [
+        "not-measured"
+      ],
+      "problems": [
+        "compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched"
+      ],
+      "elapsed_graph_s": 12.21303737303242,
+      "raw": "r40_frozen_holdout_preflight_bbb9321_cpu_skip/04_block32.json"
+    },
+    {
+      "point": "op.matmul/large/fp32-m2048-k2048-n2048",
+      "point_sha256": "b80814817436064b26635364fd6ec185caf99fada72664c34465f28a666e83fb",
+      "width": 32,
+      "compiled": true,
+      "status": [
+        "capacity-exceeded"
+      ],
+      "problems": [
+        "compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched",
+        "the largest launch needs 50331648 bytes of arguments; the device heap is 393216"
+      ],
+      "elapsed_graph_s": 12.518859447911382,
+      "raw": "r40_frozen_holdout_preflight_bbb9321_cpu_skip/06_block32.json"
+    },
+    {
+      "point": "op.bmm/medium/fp16-b16-m64-k32-n64",
+      "point_sha256": "b377b0e53eab312336e85287a3ed0ab7c463c58977085140b2a8466dbb5fe595",
+      "width": 32,
+      "compiled": true,
+      "status": [
+        "not-measured"
+      ],
+      "problems": [
+        "compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched"
+      ],
+      "elapsed_graph_s": 12.816307845059782,
+      "raw": "r40_frozen_holdout_preflight_bbb9321_cpu_skip/03_block32.json"
+    },
+    {
+      "point": "op.linear/large/fp16-m512-k2048-n8192",
+      "point_sha256": "b3df7442af7433483b3e6b20a5003785ed305bab9953d33f74162e7464869867",
+      "width": 16,
+      "compiled": true,
+      "status": [
+        "capacity-exceeded"
+      ],
+      "problems": [
+        "compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched",
+        "the largest launch needs 44056576 bytes of arguments; the device heap is 393216"
+      ],
+      "elapsed_graph_s": 5.885969781782478,
+      "raw": "r40_frozen_holdout_preflight_bbb9321_cpu_skip/05_block16.json"
+    },
+    {
+      "point": "model.llama_prefill/medium/fp16-b1-s64",
+      "point_sha256": "01c5f5834948841ad9674e61a49aeb0a90670833fbc3596c4fefc05a56790b55",
+      "width": 16,
+      "compiled": true,
+      "status": [
+        "not-measured"
+      ],
+      "problems": [
+        "compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched"
+      ],
+      "elapsed_graph_s": 17.264348342549056,
+      "raw": "r40_frozen_holdout_preflight_bbb9321_cpu_skip/02_block16.json"
+    },
+    {
+      "point": "op.matmul/medium/fp32-m128-k192-n128",
+      "point_sha256": "6b6b368b24dfedbd7c53df61c1f1d6359500ce485dc4bd6c126abcb626626505",
+      "width": 32,
+      "compiled": true,
+      "status": [
+        "not-measured"
+      ],
+      "problems": [
+        "compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched"
+      ],
+      "elapsed_graph_s": 10.060112881008536,
+      "raw": "r40_frozen_holdout_preflight_bbb9321_cpu_skip/07_block32.json"
+    },
+    {
+      "point": "op.matmul/large/fp32-m2048-k2048-n2048",
+      "point_sha256": "b80814817436064b26635364fd6ec185caf99fada72664c34465f28a666e83fb",
+      "width": 16,
+      "compiled": true,
+      "status": [
+        "capacity-exceeded"
+      ],
+      "problems": [
+        "compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched",
+        "the largest launch needs 50331648 bytes of arguments; the device heap is 393216"
+      ],
+      "elapsed_graph_s": 7.136855090036988,
+      "raw": "r40_frozen_holdout_preflight_bbb9321_cpu_skip/06_block16.json"
+    },
+    {
+      "point": "op.softmax/large/fp16-r4096-c4096",
+      "point_sha256": "978edb42f8926f1330546ebfcd4360d0e168fb4271f955a17e2ef2acc5afca5d",
+      "width": 16,
+      "compiled": true,
+      "status": [
+        "capacity-exceeded"
+      ],
+      "problems": [
+        "compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched",
+        "the largest launch needs 134217728 bytes of arguments; the device heap is 393216"
+      ],
+      "elapsed_graph_s": 5.830573062878102,
+      "raw": "r40_frozen_holdout_preflight_bbb9321_cpu_skip/10_block16.json"
+    },
+    {
+      "point": "model.gpt2_block/medium/fp16-d160-h5-b1-s64",
+      "point_sha256": "2746d763693c5849cb5f3ce10030c23f3244c69df5c622c00bdd4c06e255f0a1",
+      "width": 16,
+      "compiled": true,
+      "status": [
+        "not-measured"
+      ],
+      "problems": [
+        "compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched"
+      ],
+      "elapsed_graph_s": 10.998435170855373,
+      "raw": "r40_frozen_holdout_preflight_bbb9321_cpu_skip/01_block16.json"
+    },
+    {
+      "point": "op.silu/medium/fp16-n65536",
+      "point_sha256": "5f681ae194441bdea0d48b41cede0e168229ee92d0ea499b75f6828a8089ac0e",
+      "width": 32,
+      "compiled": true,
+      "status": [
+        "not-measured"
+      ],
+      "problems": [
+        "compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched"
+      ],
+      "elapsed_graph_s": 9.212590369861573,
+      "raw": "r40_frozen_holdout_preflight_bbb9321_cpu_skip/09_block32.json"
+    },
+    {
+      "point": "op.silu/medium/fp16-n65536",
+      "point_sha256": "5f681ae194441bdea0d48b41cede0e168229ee92d0ea499b75f6828a8089ac0e",
+      "width": 16,
+      "compiled": true,
+      "status": [
+        "not-measured"
+      ],
+      "problems": [
+        "compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched"
+      ],
+      "elapsed_graph_s": 4.331164889037609,
+      "raw": "r40_frozen_holdout_preflight_bbb9321_cpu_skip/09_block16.json"
+    }
+  ]
+}

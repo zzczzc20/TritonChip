@@ -1,0 +1,376 @@
+﻿2026-10-19T15:55:41.1169990Z Current runner version: '2.337.0'
+2026-10-19T15:55:41.1190948Z ##[group]Runner Image Provisioner
+2026-10-19T15:55:41.1191609Z Hosted Compute Agent
+2026-10-19T15:55:41.1192009Z Version: 20261015.610
+2026-10-19T15:55:41.1192430Z Commit: 267fdb4e8bbec4ab5ea31367f3a00d5c480c7656
+2026-10-19T15:55:41.1192892Z Build Date: 2026-10-14T17:06:54Z
+2026-10-19T15:55:41.1193309Z Worker ID: {31e83c6a-8449-4ba1-9f7e-b0f9c5edbac8}
+2026-10-19T15:55:41.1193780Z Region: westus2
+2026-10-19T15:55:41.1194156Z Cloud: Azure
+2026-10-19T15:55:41.1194486Z ##[endgroup]
+2026-10-19T15:55:41.1195680Z ##[group]Operating System
+2026-10-19T15:55:41.1196061Z Ubuntu
+2026-10-19T15:55:41.1196464Z 24.04.5
+2026-10-19T15:55:41.1196784Z LTS
+2026-10-19T15:55:41.1197101Z ##[endgroup]
+2026-10-19T15:55:41.1197489Z ##[group]Runner Image
+2026-10-19T15:55:41.1197872Z Image: ubuntu-24.04
+2026-10-19T15:55:41.1198243Z Version: 20261018.339.1
+2026-10-19T15:55:41.1199101Z Included Software: https://github.com/actions/runner-images/blob/ubuntu24/20261018.339/images/ubuntu/Ubuntu2404-Readme.md
+2026-10-19T15:55:41.1200161Z Image Release: https://github.com/actions/runner-images/releases/tag/ubuntu24%2F20261018.339
+2026-10-19T15:55:41.1200741Z ##[endgroup]
+2026-10-19T15:55:41.1201505Z ##[group]GITHUB_TOKEN Permissions
+2026-10-19T15:55:41.1202887Z Contents: read
+2026-10-19T15:55:41.1203282Z Metadata: read
+2026-10-19T15:55:41.1203738Z ##[endgroup]
+2026-10-19T15:55:41.1205788Z Secret source: Actions
+2026-10-19T15:55:41.1206503Z Cache mode: write
+2026-10-19T15:55:41.1207273Z Prepare workflow directory
+2026-10-19T15:55:41.1468309Z Prepare all required actions
+2026-10-19T15:55:41.1501688Z Getting action download info
+2026-10-19T15:55:41.5253773Z Download action repository 'actions/checkout@v4' (SHA:11d5960a326750d5838078e36cf38b85af677262)
+2026-10-19T15:55:41.6066264Z Download action repository 'actions/cache@v4' (SHA:0057852bfaa89a56745cba8c7296529d2fc39830)
+2026-10-19T15:55:41.8602386Z Complete job name: R40 multicore MMIO (native-pair)
+2026-10-19T15:55:41.9083984Z ##[group]Run actions/checkout@v4
+2026-10-19T15:55:41.9084431Z with:
+2026-10-19T15:55:41.9084686Z   repository: zzczzc20/TritonChip
+2026-10-19T15:55:41.9086856Z   token: ***
+2026-10-19T15:55:41.9087100Z   ssh-strict: true
+2026-10-19T15:55:41.9087348Z   ssh-user: git
+2026-10-19T15:55:41.9087600Z   persist-credentials: true
+2026-10-19T15:55:41.9087871Z   clean: true
+2026-10-19T15:55:41.9088123Z   sparse-checkout-cone-mode: true
+2026-10-19T15:55:41.9088415Z   fetch-depth: 1
+2026-10-19T15:55:41.9088657Z   fetch-tags: false
+2026-10-19T15:55:41.9088909Z   show-progress: true
+2026-10-19T15:55:41.9089160Z   lfs: false
+2026-10-19T15:55:41.9089394Z   submodules: false
+2026-10-19T15:55:41.9089959Z   set-safe-directory: true
+2026-10-19T15:55:41.9090241Z   allow-unsafe-pr-checkout: false
+2026-10-19T15:55:41.9090617Z env:
+2026-10-19T15:55:41.9090852Z   LLVM_PREFIX: /usr/lib/llvm-20
+2026-10-19T15:55:41.9091134Z   TNCA_LLVM: /usr/lib/llvm-20
+2026-10-19T15:55:41.9091406Z ##[endgroup]
+2026-10-19T15:55:41.9816628Z Syncing repository: zzczzc20/TritonChip
+2026-10-19T15:55:41.9818013Z ##[group]Getting Git version info
+2026-10-19T15:55:41.9818629Z Working directory is '/home/runner/work/TritonChip/TritonChip'
+2026-10-19T15:55:41.9819773Z [command]/usr/bin/git version
+2026-10-19T15:55:41.9894667Z git version 2.55.0
+2026-10-19T15:55:41.9909706Z ##[endgroup]
+2026-10-19T15:55:41.9932826Z Temporarily overriding HOME='/home/runner/work/_temp/ef880b1d-3d07-441c-b542-f372c7c7f3d9' before making global git config changes
+2026-10-19T15:55:41.9934107Z Adding repository directory to the temporary git global config as a safe directory
+2026-10-19T15:55:41.9937015Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/TritonChip/TritonChip
+2026-10-19T15:55:41.9987705Z Deleting the contents of '/home/runner/work/TritonChip/TritonChip'
+2026-10-19T15:55:41.9996156Z ##[group]Initializing the repository
+2026-10-19T15:55:41.9996997Z [command]/usr/bin/git init /home/runner/work/TritonChip/TritonChip
+2026-10-19T15:55:42.0098529Z hint: Using 'master' as the name for the initial branch. This default branch name
+2026-10-19T15:55:42.0099838Z hint: will change to "main" in Git 3.0. To configure the initial branch name
+2026-10-19T15:55:42.0100667Z hint: to use in all of your new repositories, which will suppress this warning,
+2026-10-19T15:55:42.0101315Z hint: call:
+2026-10-19T15:55:42.0101668Z hint:
+2026-10-19T15:55:42.0102111Z hint: 	git config --global init.defaultBranch <name>
+2026-10-19T15:55:42.0102545Z hint:
+2026-10-19T15:55:42.0103032Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+2026-10-19T15:55:42.0103766Z hint: 'development'. The just-created branch can be renamed via this command:
+2026-10-19T15:55:42.0104330Z hint:
+2026-10-19T15:55:42.0104702Z hint: 	git branch -m <name>
+2026-10-19T15:55:42.0105101Z hint:
+2026-10-19T15:55:42.0105465Z hint: Disable this message with "git config set advice.defaultBranchName false"
+2026-10-19T15:55:42.0106519Z Initialized empty Git repository in /home/runner/work/TritonChip/TritonChip/.git/
+2026-10-19T15:55:42.0111681Z [command]/usr/bin/git remote add origin https://github.com/zzczzc20/TritonChip
+2026-10-19T15:55:42.0162502Z ##[endgroup]
+2026-10-19T15:55:42.0163165Z ##[group]Disabling automatic garbage collection
+2026-10-19T15:55:42.0165979Z [command]/usr/bin/git config --local gc.auto 0
+2026-10-19T15:55:42.0217789Z ##[endgroup]
+2026-10-19T15:55:42.0218425Z ##[group]Setting up auth
+2026-10-19T15:55:42.0219079Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+2026-10-19T15:55:42.0245894Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2026-10-19T15:55:42.0567273Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-10-19T15:55:42.0606508Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2026-10-19T15:55:42.0805533Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-10-19T15:55:42.0843872Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+2026-10-19T15:55:42.1055764Z [command]/usr/bin/git config --local http.https://github.com/.extraheader AUTHORIZATION: basic ***
+2026-10-19T15:55:42.1097805Z ##[endgroup]
+2026-10-19T15:55:42.1098249Z ##[group]Fetching the repository
+2026-10-19T15:55:42.1105806Z [command]/usr/bin/git -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +108b707db03cc95ab9e084d00ff7f3d4075df396:refs/remotes/pull/7/merge
+2026-10-19T15:55:45.6801673Z From https://github.com/zzczzc20/TritonChip
+2026-10-19T15:55:45.6802838Z  * [new ref]         108b707db03cc95ab9e084d00ff7f3d4075df396 -> pull/7/merge
+2026-10-19T15:55:45.6805375Z ##[endgroup]
+2026-10-19T15:55:45.6806210Z ##[group]Determining the checkout info
+2026-10-19T15:55:45.6807764Z ##[endgroup]
+2026-10-19T15:55:45.6819157Z [command]/usr/bin/git sparse-checkout disable
+2026-10-19T15:55:45.6880406Z [command]/usr/bin/git config --local --unset-all extensions.worktreeConfig
+2026-10-19T15:55:45.6922700Z ##[group]Checking out the ref
+2026-10-19T15:55:45.6926439Z [command]/usr/bin/git checkout --progress --force refs/remotes/pull/7/merge
+2026-10-19T15:55:46.2398793Z Note: switching to 'refs/remotes/pull/7/merge'.
+2026-10-19T15:55:46.2399183Z 
+2026-10-19T15:55:46.2399419Z You are in 'detached HEAD' state. You can look around, make experimental
+2026-10-19T15:55:46.2400181Z changes and commit them, and you can discard any commits you make in this
+2026-10-19T15:55:46.2400822Z state without impacting any branches by switching back to a branch.
+2026-10-19T15:55:46.2401189Z 
+2026-10-19T15:55:46.2401562Z If you want to create a new branch to retain commits you create, you may
+2026-10-19T15:55:46.2402167Z do so (now or later) by using -c with the switch command. Example:
+2026-10-19T15:55:46.2402751Z 
+2026-10-19T15:55:46.2402927Z   git switch -c <new-branch-name>
+2026-10-19T15:55:46.2403156Z 
+2026-10-19T15:55:46.2403360Z Or undo this operation with:
+2026-10-19T15:55:46.2403575Z 
+2026-10-19T15:55:46.2403735Z   git switch -
+2026-10-19T15:55:46.2403946Z 
+2026-10-19T15:55:46.2404318Z Turn off this advice by setting config variable advice.detachedHead to false
+2026-10-19T15:55:46.2404717Z 
+2026-10-19T15:55:46.2405126Z HEAD is now at 108b707 Merge 3b73efb10088435b5fa8b403adaaa4e4c95defac into b5c606d54384f6febb8949936537c49cafb75c5c
+2026-10-19T15:55:46.2447859Z ##[endgroup]
+2026-10-19T15:55:46.2498060Z [command]/usr/bin/git log -1 --format=%H
+2026-10-19T15:55:46.2532298Z 108b707db03cc95ab9e084d00ff7f3d4075df396
+2026-10-19T15:55:46.2755935Z ##[group]Run sudo apt-get update -qq
+2026-10-19T15:55:46.2756399Z [36;1msudo apt-get update -qq[0m
+2026-10-19T15:55:46.2756769Z [36;1msudo apt-get install -y --no-install-recommends \[0m
+2026-10-19T15:55:46.2757267Z [36;1m  iverilog yosys build-essential cmake ninja-build python3 python3-venv \[0m
+2026-10-19T15:55:46.2757703Z [36;1m  libmlir-20-dev mlir-20-tools llvm-20-dev[0m
+2026-10-19T15:55:46.2896997Z shell: /usr/bin/bash -e {0}
+2026-10-19T15:55:46.2897431Z env:
+2026-10-19T15:55:46.2897772Z   LLVM_PREFIX: /usr/lib/llvm-20
+2026-10-19T15:55:46.2898087Z   TNCA_LLVM: /usr/lib/llvm-20
+2026-10-19T15:55:46.2898390Z ##[endgroup]
+2026-10-19T15:56:02.0306998Z Reading package lists...
+2026-10-19T15:56:02.2283642Z Building dependency tree...
+2026-10-19T15:56:02.2289573Z Reading state information...
+2026-10-19T15:56:02.3683890Z python3 is already the newest version (3.12.3-0ubuntu2.1).
+2026-10-19T15:56:02.3684625Z python3-venv is already the newest version (3.12.3-0ubuntu2.1).
+2026-10-19T15:56:02.3685358Z The following additional packages will be installed:
+2026-10-19T15:56:02.3690117Z   cmake-data libclang-cpp20 libjsoncpp25 libmlir-20 librhash0 llvm-20
+2026-10-19T15:56:02.3753620Z   llvm-20-linker-tools llvm-20-runtime llvm-20-tools yosys-abc
+2026-10-19T15:56:02.3754335Z Suggested packages:
+2026-10-19T15:56:02.3760612Z   cmake-doc cmake-format elpa-cmake-mode gtkwave llvm-20-doc
+2026-10-19T15:56:02.3760975Z Recommended packages:
+2026-10-19T15:56:02.3761175Z   xdot
+2026-10-19T15:56:02.3975151Z The following NEW packages will be installed:
+2026-10-19T15:56:02.3976063Z   build-essential cmake cmake-data iverilog libclang-cpp20 libjsoncpp25
+2026-10-19T15:56:02.3978904Z   libmlir-20 libmlir-20-dev librhash0 llvm-20 llvm-20-dev llvm-20-linker-tools
+2026-10-19T15:56:02.3980719Z   llvm-20-runtime llvm-20-tools mlir-20-tools ninja-build yosys yosys-abc
+2026-10-19T15:56:02.4151666Z 0 upgraded, 18 newly installed, 0 to remove and 35 not upgraded.
+2026-10-19T15:56:02.4152195Z Need to get 178 MB of archives.
+2026-10-19T15:56:02.4152515Z After this operation, 1284 MB of additional disk space will be used.
+2026-10-19T15:56:02.4152937Z Get:1 file:/etc/apt/apt-mirrors.txt Mirrorlist [144 B]
+2026-10-19T15:56:02.6474427Z Get:2 http://azure.archive.ubuntu.com/ubuntu noble/main amd64 build-essential amd64 12.10ubuntu1 [4928 B]
+2026-10-19T15:56:02.7185166Z Get:3 http://azure.archive.ubuntu.com/ubuntu noble/main amd64 libjsoncpp25 amd64 1.9.5-6build1 [82.8 kB]
+2026-10-19T15:56:02.7921550Z Get:4 http://azure.archive.ubuntu.com/ubuntu noble/main amd64 librhash0 amd64 1.4.3-3build1 [129 kB]
+2026-10-19T15:56:02.8639259Z Get:5 http://azure.archive.ubuntu.com/ubuntu noble/main amd64 cmake-data all 3.28.3-1build7 [2155 kB]
+2026-10-19T15:56:02.9501433Z Get:6 http://azure.archive.ubuntu.com/ubuntu noble/main amd64 cmake amd64 3.28.3-1build7 [11.2 MB]
+2026-10-19T15:56:03.2537673Z Get:7 http://azure.archive.ubuntu.com/ubuntu noble/universe amd64 iverilog amd64 12.0-2build2 [2126 kB]
+2026-10-19T15:56:03.3413470Z Get:8 http://azure.archive.ubuntu.com/ubuntu noble-updates/universe amd64 libclang-cpp20 amd64 1:20.1.2-0ubuntu1~24.04.3 [14.2 MB]
+2026-10-19T15:56:03.7253556Z Get:9 http://azure.archive.ubuntu.com/ubuntu noble-updates/universe amd64 libmlir-20 amd64 1:20.1.2-0ubuntu1~24.04.3 [13.0 MB]
+2026-10-19T15:56:04.0854349Z Get:10 http://azure.archive.ubuntu.com/ubuntu noble-updates/universe amd64 libmlir-20-dev amd64 1:20.1.2-0ubuntu1~24.04.3 [28.3 MB]
+2026-10-19T15:56:04.9075053Z Get:11 http://azure.archive.ubuntu.com/ubuntu noble-updates/universe amd64 llvm-20-runtime amd64 1:20.1.2-0ubuntu1~24.04.3 [558 kB]
+2026-10-19T15:56:04.9816303Z Get:12 http://azure.archive.ubuntu.com/ubuntu noble-updates/universe amd64 llvm-20-linker-tools amd64 1:20.1.2-0ubuntu1~24.04.3 [1338 kB]
+2026-10-19T15:56:05.0619321Z Get:13 http://azure.archive.ubuntu.com/ubuntu noble-updates/universe amd64 llvm-20 amd64 1:20.1.2-0ubuntu1~24.04.3 [19.8 MB]
+2026-10-19T15:56:05.5743754Z Get:14 http://azure.archive.ubuntu.com/ubuntu noble-updates/universe amd64 llvm-20-tools amd64 1:20.1.2-0ubuntu1~24.04.3 [515 kB]
+2026-10-19T15:56:05.6557722Z Get:15 http://azure.archive.ubuntu.com/ubuntu noble-updates/universe amd64 llvm-20-dev amd64 1:20.1.2-0ubuntu1~24.04.3 [50.7 MB]
+2026-10-19T15:56:07.0820349Z Get:16 http://azure.archive.ubuntu.com/ubuntu noble-updates/universe amd64 mlir-20-tools amd64 1:20.1.2-0ubuntu1~24.04.3 [24.8 MB]
+2026-10-19T15:56:07.8231124Z Get:17 http://azure.archive.ubuntu.com/ubuntu noble/universe amd64 ninja-build amd64 1.11.1-2 [129 kB]
+2026-10-19T15:56:07.8984299Z Get:18 http://azure.archive.ubuntu.com/ubuntu noble/universe amd64 yosys-abc amd64 0.33-5build2 [5829 kB]
+2026-10-19T15:56:08.2286501Z Get:19 http://azure.archive.ubuntu.com/ubuntu noble/universe amd64 yosys amd64 0.33-5build2 [3222 kB]
+2026-10-19T15:56:08.5461385Z Fetched 178 MB in 6s (30.2 MB/s)
+2026-10-19T15:56:08.6203978Z Selecting previously unselected package build-essential.
+2026-10-19T15:56:08.7161940Z (Reading database ... 
+2026-10-19T15:56:08.7162192Z (Reading database ... 5%
+2026-10-19T15:56:08.7162336Z (Reading database ... 10%
+2026-10-19T15:56:08.7162474Z (Reading database ... 15%
+2026-10-19T15:56:08.7162611Z (Reading database ... 20%
+2026-10-19T15:56:08.7162739Z (Reading database ... 25%
+2026-10-19T15:56:08.7162878Z (Reading database ... 30%
+2026-10-19T15:56:08.7163006Z (Reading database ... 35%
+2026-10-19T15:56:08.7163131Z (Reading database ... 40%
+2026-10-19T15:56:08.7163450Z (Reading database ... 45%
+2026-10-19T15:56:08.7163758Z (Reading database ... 50%
+2026-10-19T15:56:08.8546608Z (Reading database ... 55%
+2026-10-19T15:56:09.3947733Z (Reading database ... 60%
+2026-10-19T15:56:09.6693701Z (Reading database ... 65%
+2026-10-19T15:56:09.9238814Z (Reading database ... 70%
+2026-10-19T15:56:10.7942447Z (Reading database ... 75%
+2026-10-19T15:56:13.7466281Z (Reading database ... 80%
+2026-10-19T15:56:18.2260046Z (Reading database ... 85%
+2026-10-19T15:56:22.4538385Z (Reading database ... 90%
+2026-10-19T15:56:26.6417861Z (Reading database ... 95%
+2026-10-19T15:56:26.6419315Z (Reading database ... 100%
+2026-10-19T15:56:26.6419745Z (Reading database ... 214410 files and directories currently installed.)
+2026-10-19T15:56:26.6460835Z Preparing to unpack .../00-build-essential_12.10ubuntu1_amd64.deb ...
+2026-10-19T15:56:26.6531686Z Unpacking build-essential (12.10ubuntu1) ...
+2026-10-19T15:56:26.7162608Z Selecting previously unselected package libjsoncpp25:amd64.
+2026-10-19T15:56:26.7277717Z Preparing to unpack .../01-libjsoncpp25_1.9.5-6build1_amd64.deb ...
+2026-10-19T15:56:26.7532577Z Unpacking libjsoncpp25:amd64 (1.9.5-6build1) ...
+2026-10-19T15:56:26.7760274Z Selecting previously unselected package librhash0:amd64.
+2026-10-19T15:56:26.7874690Z Preparing to unpack .../02-librhash0_1.4.3-3build1_amd64.deb ...
+2026-10-19T15:56:26.7883210Z Unpacking librhash0:amd64 (1.4.3-3build1) ...
+2026-10-19T15:56:26.8128221Z Selecting previously unselected package cmake-data.
+2026-10-19T15:56:26.8244325Z Preparing to unpack .../03-cmake-data_3.28.3-1build7_all.deb ...
+2026-10-19T15:56:26.8317168Z Unpacking cmake-data (3.28.3-1build7) ...
+2026-10-19T15:56:27.3415477Z Selecting previously unselected package cmake.
+2026-10-19T15:56:27.3546472Z Preparing to unpack .../04-cmake_3.28.3-1build7_amd64.deb ...
+2026-10-19T15:56:27.3728869Z Unpacking cmake (3.28.3-1build7) ...
+2026-10-19T15:56:27.6983666Z Selecting previously unselected package iverilog.
+2026-10-19T15:56:27.7098866Z Preparing to unpack .../05-iverilog_12.0-2build2_amd64.deb ...
+2026-10-19T15:56:27.7106460Z Unpacking iverilog (12.0-2build2) ...
+2026-10-19T15:56:27.7852991Z Selecting previously unselected package libclang-cpp20.
+2026-10-19T15:56:27.7967807Z Preparing to unpack .../06-libclang-cpp20_1%3a20.1.2-0ubuntu1~24.04.3_amd64.deb ...
+2026-10-19T15:56:27.7975661Z Unpacking libclang-cpp20 (1:20.1.2-0ubuntu1~24.04.3) ...
+2026-10-19T15:56:28.3145045Z Selecting previously unselected package libmlir-20:amd64.
+2026-10-19T15:56:28.3263762Z Preparing to unpack .../07-libmlir-20_1%3a20.1.2-0ubuntu1~24.04.3_amd64.deb ...
+2026-10-19T15:56:28.3272804Z Unpacking libmlir-20:amd64 (1:20.1.2-0ubuntu1~24.04.3) ...
+2026-10-19T15:56:28.9099977Z Selecting previously unselected package libmlir-20-dev:amd64.
+2026-10-19T15:56:28.9213063Z Preparing to unpack .../08-libmlir-20-dev_1%3a20.1.2-0ubuntu1~24.04.3_amd64.deb ...
+2026-10-19T15:56:28.9221382Z Unpacking libmlir-20-dev:amd64 (1:20.1.2-0ubuntu1~24.04.3) ...
+2026-10-19T15:56:31.5329637Z Selecting previously unselected package llvm-20-runtime.
+2026-10-19T15:56:31.5457764Z Preparing to unpack .../09-llvm-20-runtime_1%3a20.1.2-0ubuntu1~24.04.3_amd64.deb ...
+2026-10-19T15:56:31.5467530Z Unpacking llvm-20-runtime (1:20.1.2-0ubuntu1~24.04.3) ...
+2026-10-19T15:56:31.6031131Z Selecting previously unselected package llvm-20-linker-tools.
+2026-10-19T15:56:31.6158781Z Preparing to unpack .../10-llvm-20-linker-tools_1%3a20.1.2-0ubuntu1~24.04.3_amd64.deb ...
+2026-10-19T15:56:31.6166592Z Unpacking llvm-20-linker-tools (1:20.1.2-0ubuntu1~24.04.3) ...
+2026-10-19T15:56:31.6783017Z Selecting previously unselected package llvm-20.
+2026-10-19T15:56:31.6900370Z Preparing to unpack .../11-llvm-20_1%3a20.1.2-0ubuntu1~24.04.3_amd64.deb ...
+2026-10-19T15:56:31.6907843Z Unpacking llvm-20 (1:20.1.2-0ubuntu1~24.04.3) ...
+2026-10-19T15:56:32.3811795Z Selecting previously unselected package llvm-20-tools.
+2026-10-19T15:56:32.3924998Z Preparing to unpack .../12-llvm-20-tools_1%3a20.1.2-0ubuntu1~24.04.3_amd64.deb ...
+2026-10-19T15:56:32.3932288Z Unpacking llvm-20-tools (1:20.1.2-0ubuntu1~24.04.3) ...
+2026-10-19T15:56:32.4797506Z Selecting previously unselected package llvm-20-dev.
+2026-10-19T15:56:32.4913637Z Preparing to unpack .../13-llvm-20-dev_1%3a20.1.2-0ubuntu1~24.04.3_amd64.deb ...
+2026-10-19T15:56:32.4921402Z Unpacking llvm-20-dev (1:20.1.2-0ubuntu1~24.04.3) ...
+2026-10-19T15:56:35.0745051Z Selecting previously unselected package mlir-20-tools.
+2026-10-19T15:56:35.0873436Z Preparing to unpack .../14-mlir-20-tools_1%3a20.1.2-0ubuntu1~24.04.3_amd64.deb ...
+2026-10-19T15:56:35.0880807Z Unpacking mlir-20-tools (1:20.1.2-0ubuntu1~24.04.3) ...
+2026-10-19T15:56:36.6312919Z Selecting previously unselected package ninja-build.
+2026-10-19T15:56:36.6435520Z Preparing to unpack .../15-ninja-build_1.11.1-2_amd64.deb ...
+2026-10-19T15:56:36.6444025Z Unpacking ninja-build (1.11.1-2) ...
+2026-10-19T15:56:36.6702743Z Selecting previously unselected package yosys-abc.
+2026-10-19T15:56:36.6824962Z Preparing to unpack .../16-yosys-abc_0.33-5build2_amd64.deb ...
+2026-10-19T15:56:36.6833037Z Unpacking yosys-abc (0.33-5build2) ...
+2026-10-19T15:56:36.8831721Z Selecting previously unselected package yosys.
+2026-10-19T15:56:36.8955990Z Preparing to unpack .../17-yosys_0.33-5build2_amd64.deb ...
+2026-10-19T15:56:36.8964196Z Unpacking yosys (0.33-5build2) ...
+2026-10-19T15:56:37.1499869Z Setting up yosys-abc (0.33-5build2) ...
+2026-10-19T15:56:37.1520577Z Setting up llvm-20-runtime (1:20.1.2-0ubuntu1~24.04.3) ...
+2026-10-19T15:56:37.1550362Z Setting up ninja-build (1.11.1-2) ...
+2026-10-19T15:56:37.1569542Z Setting up llvm-20-linker-tools (1:20.1.2-0ubuntu1~24.04.3) ...
+2026-10-19T15:56:37.1587527Z Setting up llvm-20-tools (1:20.1.2-0ubuntu1~24.04.3) ...
+2026-10-19T15:56:37.1604149Z Setting up iverilog (12.0-2build2) ...
+2026-10-19T15:56:37.1621223Z Setting up libclang-cpp20 (1:20.1.2-0ubuntu1~24.04.3) ...
+2026-10-19T15:56:37.1637877Z Setting up llvm-20 (1:20.1.2-0ubuntu1~24.04.3) ...
+2026-10-19T15:56:37.1655885Z Setting up llvm-20-dev (1:20.1.2-0ubuntu1~24.04.3) ...
+2026-10-19T15:56:37.1673429Z Setting up libjsoncpp25:amd64 (1.9.5-6build1) ...
+2026-10-19T15:56:37.1691859Z Setting up librhash0:amd64 (1.4.3-3build1) ...
+2026-10-19T15:56:37.1707341Z Setting up build-essential (12.10ubuntu1) ...
+2026-10-19T15:56:37.1724406Z Setting up cmake-data (3.28.3-1build7) ...
+2026-10-19T15:56:37.1782824Z Setting up libmlir-20:amd64 (1:20.1.2-0ubuntu1~24.04.3) ...
+2026-10-19T15:56:37.1800100Z Setting up libmlir-20-dev:amd64 (1:20.1.2-0ubuntu1~24.04.3) ...
+2026-10-19T15:56:37.1817060Z Setting up yosys (0.33-5build2) ...
+2026-10-19T15:56:37.4140997Z Setting up mlir-20-tools (1:20.1.2-0ubuntu1~24.04.3) ...
+2026-10-19T15:56:37.4157009Z Setting up cmake (3.28.3-1build7) ...
+2026-10-19T15:56:37.4178633Z Processing triggers for systemd (255.4-1ubuntu8.18) ...
+2026-10-19T15:56:37.4968574Z Processing triggers for man-db (2.12.0-4build2) ...
+2026-10-19T15:56:37.5050768Z Not building database; man-db/auto-update is not 'true'.
+2026-10-19T15:56:37.5065136Z Processing triggers for libc-bin (2.39-0ubuntu8.9) ...
+2026-10-19T15:56:49.4022349Z 
+2026-10-19T15:56:49.4023164Z Running kernel seems to be up-to-date.
+2026-10-19T15:56:49.4023408Z 
+2026-10-19T15:56:49.4023501Z No services need to be restarted.
+2026-10-19T15:56:49.4023656Z 
+2026-10-19T15:56:49.4023746Z No containers need to be restarted.
+2026-10-19T15:56:49.4023895Z 
+2026-10-19T15:56:49.4024002Z No user sessions are running outdated binaries.
+2026-10-19T15:56:49.4024181Z 
+2026-10-19T15:56:49.4024347Z No VM guests are running outdated hypervisor (qemu) binaries on this host.
+2026-10-19T15:56:50.4866705Z ##[group]Run actions/cache@v4
+2026-10-19T15:56:50.4866869Z with:
+2026-10-19T15:56:50.4866980Z   path: ~/.cache/pip
+2026-10-19T15:56:50.4867167Z   key: pip-173d707e845b4431106949175b8c828e217e244fd73f7383ebc194c89cb814a0
+2026-10-19T15:56:50.4867386Z   enableCrossOsArchive: false
+2026-10-19T15:56:50.4867539Z   fail-on-cache-miss: false
+2026-10-19T15:56:50.4867669Z   lookup-only: false
+2026-10-19T15:56:50.4867786Z   save-always: false
+2026-10-19T15:56:50.4867899Z env:
+2026-10-19T15:56:50.4868021Z   LLVM_PREFIX: /usr/lib/llvm-20
+2026-10-19T15:56:50.4868155Z   TNCA_LLVM: /usr/lib/llvm-20
+2026-10-19T15:56:50.4868282Z ##[endgroup]
+2026-10-19T15:56:50.5673417Z (node:2733) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+2026-10-19T15:56:50.5674071Z (Use `node --trace-deprecation ...` to show where the warning was created)
+2026-10-19T15:56:50.8780125Z Cache hit for: pip-173d707e845b4431106949175b8c828e217e244fd73f7383ebc194c89cb814a0
+2026-10-19T15:56:50.8850882Z (node:2733) [DEP0169] DeprecationWarning: `url.parse()` behavior is not standardized and prone to errors that have security implications. Use the WHATWG URL API instead. CVEs are not issued for `url.parse()` vulnerabilities.
+2026-10-19T15:56:52.1718242Z Received 20971520 of 242143880 (8.7%), 20.0 MBs/sec
+2026-10-19T15:56:53.1710681Z Received 138412032 of 242143880 (57.2%), 66.0 MBs/sec
+2026-10-19T15:56:53.7257773Z Received 242143880 of 242143880 (100.0%), 90.4 MBs/sec
+2026-10-19T15:56:53.7258600Z Cache Size: ~231 MB (242143880 B)
+2026-10-19T15:56:53.7284548Z [command]/usr/bin/tar -xf /home/runner/work/_temp/a558c860-ea33-4d85-a6b1-b9e0373bf65f/cache.tzst -P -C /home/runner/work/TritonChip/TritonChip --use-compress-program unzstd
+2026-10-19T15:56:54.0400818Z Cache restored successfully
+2026-10-19T15:56:54.0564785Z Cache restored from key: pip-173d707e845b4431106949175b8c828e217e244fd73f7383ebc194c89cb814a0
+2026-10-19T15:56:54.0859636Z ##[group]Run set -euo pipefail
+2026-10-19T15:56:54.0859873Z [36;1mset -euo pipefail[0m
+2026-10-19T15:56:54.0860177Z [36;1mV=$(python3 -c "import json;print(json.load(open('spec/r1_toolchain.lock.json'))['triton']['version'])")[0m
+2026-10-19T15:56:54.0860563Z [36;1mPV=$(python3 -c "import json;print(json.load(open('spec/r38/torch.lock.json'))['version'])")[0m
+2026-10-19T15:56:54.0860963Z [36;1mpython3 -m venv ~/tritonenv[0m
+2026-10-19T15:56:54.0861174Z [36;1m~/tritonenv/bin/pip install -q "triton==$V" "torch==$PV" numpy[0m
+2026-10-19T15:56:54.0861389Z [36;1mmake python/tnca/data/.staged[0m
+2026-10-19T15:56:54.0861557Z [36;1m~/tritonenv/bin/pip install -q -e .[0m
+2026-10-19T15:56:54.0861728Z [36;1mmake tnca-opt[0m
+2026-10-19T15:56:54.0913737Z shell: /usr/bin/bash -e {0}
+2026-10-19T15:56:54.0913899Z env:
+2026-10-19T15:56:54.0914050Z   LLVM_PREFIX: /usr/lib/llvm-20
+2026-10-19T15:56:54.0914235Z   TNCA_LLVM: /usr/lib/llvm-20
+2026-10-19T15:56:54.0914394Z ##[endgroup]
+2026-10-19T15:58:08.9857968Z wrote isa/tnca-isa-v0.1.json: 169 instructions, 20 majors, 25 special registers
+2026-10-19T15:58:08.9858408Z   note: described but unused operand kinds: ['wa']
+2026-10-19T15:58:09.0982103Z wrote compiler/targets/tnca-sim-v0.1.json: 2 RCTX, 64 logical vregs each, 128 physical
+2026-10-19T15:58:09.0982631Z wrote compiler/targets/tnca-sim-4rctx.json: 4 RCTX, 32 logical vregs each, 128 physical
+2026-10-19T15:58:09.0983144Z wrote compiler/targets/tnca-sim-2x2.json: 2 RCTX, 64 logical vregs each, 128 physical
+2026-10-19T15:58:09.0983657Z wrote compiler/targets/tnca-sim-vrf-v1.json: 2 RCTX, 64 logical vregs each, 128 physical
+2026-10-19T15:58:09.0984146Z wrote compiler/targets/tnca-sim-vrf-v2.json: 2 RCTX, 64 logical vregs each, 128 physical
+2026-10-19T15:58:09.0984576Z wrote compiler/targets/tnca-sim-vrf-v3.json: 2 RCTX, 64 logical vregs each, 128 physical
+2026-10-19T15:58:09.0984877Z wrote compiler/targets/tnca-sim-vrf-v4.json: 4 RCTX, 64 logical vregs each, 256 physical
+2026-10-19T15:58:09.0985193Z wrote compiler/targets/tnca-sim-vrf-v5.json: 4 RCTX, 64 logical vregs each, 256 physical
+2026-10-19T15:58:09.0985507Z wrote compiler/targets/tnca-sim-xpose-v1.json: 2 RCTX, 64 logical vregs each, 128 physical
+2026-10-19T15:58:09.6644667Z   staged 138 data file(s) into python/tnca/data
+2026-10-19T15:58:35.3633137Z ninja: Entering directory `compiler/build'
+2026-10-19T15:58:35.3822197Z [1/16] Building TNCAInterfaces.cpp.inc...
+2026-10-19T15:58:35.3850113Z [2/16] Building TNCADialect.cpp.inc...
+2026-10-19T15:58:35.3871993Z [3/16] Building TNCAInterfaces.h.inc...
+2026-10-19T15:58:35.3893400Z [4/16] Building TNCAOps.h.inc...
+2026-10-19T15:58:35.3895162Z [5/16] Building TNCAOps.cpp.inc...
+2026-10-19T15:58:35.3915394Z [6/16] Building TNCADialect.h.inc...
+2026-10-19T15:58:35.3940665Z [7/16] Building TNCATypes.cpp.inc...
+2026-10-19T15:58:35.3957859Z [8/16] Building TNCATypes.h.inc...
+2026-10-19T15:58:39.8770816Z [9/16] Building CXX object lib/Dialect/TNCA/IR/CMakeFiles/obj.MLIRTNCA.dir/TNCASupport.cpp.o
+2026-10-19T15:58:42.0294869Z [10/16] Building CXX object lib/Dialect/TNCA/IR/CMakeFiles/obj.MLIRTNCA.dir/TNCAAsyncOps.cpp.o
+2026-10-19T15:58:43.5523627Z [11/16] Building CXX object lib/Dialect/TNCA/Transforms/CMakeFiles/obj.MLIRTNCATransforms.dir/VerifyAsyncOwnership.cpp.o
+2026-10-19T15:58:46.3234309Z [12/16] Building CXX object lib/Dialect/TNCA/IR/CMakeFiles/obj.MLIRTNCA.dir/TNCADialect.cpp.o
+2026-10-19T15:59:04.8081335Z [13/16] Building CXX object tools/tnca-opt/CMakeFiles/tnca-opt.dir/tnca-opt.cpp.o
+2026-10-19T15:59:52.6297387Z [14/16] Linking CXX static library lib/Dialect/TNCA/IR/libMLIRTNCA.a
+2026-10-19T15:59:52.7423013Z [15/16] Linking CXX static library lib/Dialect/TNCA/Transforms/libMLIRTNCATransforms.a
+2026-10-19T15:59:57.5040409Z [16/16] Linking CXX executable tools/tnca-opt/tnca-opt
+2026-10-19T15:59:57.5083197Z ##[group]Run $HOME/tritonenv/bin/python tools/r40/native_multicore_features.py --backend fpga-multicore-sim --cores 3 --pair --pipeline 2 --board-top
+2026-10-19T15:59:57.5083904Z [36;1m$HOME/tritonenv/bin/python tools/r40/native_multicore_features.py --backend fpga-multicore-sim --cores 3 --pair --pipeline 2 --board-top[0m
+2026-10-19T15:59:57.5141701Z shell: /usr/bin/bash -e {0}
+2026-10-19T15:59:57.5141887Z env:
+2026-10-19T15:59:57.5142024Z   LLVM_PREFIX: /usr/lib/llvm-20
+2026-10-19T15:59:57.5142186Z   TNCA_LLVM: /usr/lib/llvm-20
+2026-10-19T15:59:57.5142540Z ##[endgroup]
+2026-10-19T16:18:13.0165521Z NATIVE MULTICORE FEATURES PASS {"artifacts": [{"descriptor_loads": 0, "kernel": "_copy_kernel", "resources": {"accumulators": 0, "barriers": 0, "commands_outstanding": "unknown", "descriptors": 0, "rf_private_per_role": {"role0": 44, "role1": 44, "role2": 44, "role3": 44}, "scratch_bytes": 0, "shared_windows": []}, "roles_per_program": 1, "width": 4}, {"descriptor_loads": 0, "kernel": "_copy_kernel", "resources": {"accumulators": 0, "barriers": 0, "commands_outstanding": "unknown", "descriptors": 0, "rf_private_per_role": {"role0": 44, "role1": 44, "role2": 44, "role3": 44}, "scratch_bytes": 0, "shared_windows": []}, "roles_per_program": 1, "width": 4}, {"descriptor_loads": 0, "kernel": "_copy_kernel", "resources": {"accumulators": 0, "barriers": 0, "commands_outstanding": "unknown", "descriptors": 0, "rf_private_per_role": {"role0": 44, "role1": 44, "role2": 44, "role3": 44}, "scratch_bytes": 0, "shared_windows": []}, "roles_per_program": 1, "width": 4}, {"descriptor_loads": 0, "kernel": "_copy_kernel", "resources": {"accumulators": 0, "barriers": 0, "commands_outstanding": "unknown", "descriptors": 0, "rf_private_per_role": {"role0": 44, "role1": 44, "role2": 44, "role3": 44}, "scratch_bytes": 0, "shared_windows": []}, "roles_per_program": 1, "width": 4}, {"descriptor_loads": 0, "kernel": "_copy_kernel", "resources": {"accumulators": 0, "barriers": 0, "commands_outstanding": "unknown", "descriptors": 0, "rf_private_per_role": {"role0": 44, "role1": 44, "role2": 44, "role3": 44}, "scratch_bytes": 0, "shared_windows": []}, "roles_per_program": 1, "width": 4}, {"descriptor_loads": 0, "kernel": "_copy_kernel", "resources": {"accumulators": 0, "barriers": 0, "commands_outstanding": "unknown", "descriptors": 0, "rf_private_per_role": {"role0": 44, "role1": 44, "role2": 44, "role3": 44}, "scratch_bytes": 0, "shared_windows": []}, "roles_per_program": 1, "width": 4}, {"descriptor_loads": 0, "kernel": "_copy_kernel", "resources": {"accumulators": 0, "barriers": 0, "commands_outstanding": "unknown", "descriptors": 0, "rf_private_per_role": {"role0": 44, "role1": 44, "role2": 44, "role3": 44}, "scratch_bytes": 0, "shared_windows": []}, "roles_per_program": 1, "width": 4}, {"descriptor_loads": 0, "kernel": "_copy_kernel", "resources": {"accumulators": 0, "barriers": 0, "commands_outstanding": "unknown", "descriptors": 0, "rf_private_per_role": {"role0": 44, "role1": 44, "role2": 44, "role3": 44}, "scratch_bytes": 0, "shared_windows": []}, "roles_per_program": 1, "width": 4}, {"descriptor_loads": 0, "kernel": "_copy_kernel", "resources": {"accumulators": 0, "barriers": 0, "commands_outstanding": "unknown", "descriptors": 0, "rf_private_per_role": {"role0": 44, "role1": 44, "role2": 44, "role3": 44}, "scratch_bytes": 0, "shared_windows": []}, "roles_per_program": 1, "width": 4}, {"descriptor_loads": 0, "kernel": "_copy_kernel", "resources": {"accumulators": 0, "barriers": 0, "commands_outstanding": "unknown", "descriptors": 0, "rf_private_per_role": {"role0": 44, "role1": 44, "role2": 44, "role3": 44}, "scratch_bytes": 0, "shared_windows": []}, "roles_per_program": 1, "width": 4}, {"descriptor_loads": 0, "kernel": "_copy_kernel", "resources": {"accumulators": 0, "barriers": 0, "commands_outstanding": "unknown", "descriptors": 0, "rf_private_per_role": {"role0": 44, "role1": 44, "role2": 44, "role3": 44}, "scratch_bytes": 0, "shared_windows": []}, "roles_per_program": 1, "width": 4}, {"descriptor_loads": 0, "kernel": "_copy_kernel", "resources": {"accumulators": 0, "barriers": 0, "commands_outstanding": "unknown", "descriptors": 0, "rf_private_per_role": {"role0": 44, "role1": 44, "role2": 44, "role3": 44}, "scratch_bytes": 0, "shared_windows": []}, "roles_per_program": 1, "width": 4}, {"descriptor_loads": 0, "kernel": "_copy_kernel", "resources": {"accumulators": 0, "barriers": 0, "commands_outstanding": "unknown", "descriptors": 0, "rf_private_per_role": {"role0": 44, "role1": 44, "role2": 44, "role3": 44}, "scratch_bytes": 0, "shared_windows": []}, "roles_per_program": 1, "width": 4}, {"descriptor_loads": 0, "kernel": "_copy_kernel", "resources": {"accumulators": 0, "barriers": 0, "commands_outstanding": "unknown", "descriptors": 0, "rf_private_per_role": {"role0": 44, "role1": 44, "role2": 44, "role3": 44}, "scratch_bytes": 0, "shared_windows": []}, "roles_per_program": 1, "width": 4}, {"descriptor_loads": 0, "kernel": "_copy_kernel", "resources": {"accumulators": 0, "barriers": 0, "commands_outstanding": "unknown", "descriptors": 0, "rf_private_per_role": {"role0": 44, "role1": 44, "role2": 44, "role3": 44}, "scratch_bytes": 0, "shared_windows": []}, "roles_per_program": 1, "width": 4}, {"descriptor_loads": 0, "kernel": "_copy_kernel", "resources": {"accumulators": 0, "barriers": 0, "commands_outstanding": "unknown", "descriptors": 0, "rf_private_per_role": {"role0": 44, "role1": 44, "role2": 44, "role3": 44}, "scratch_bytes": 0, "shared_windows": []}, "roles_per_program": 1, "width": 4}, {"descriptor_loads": 0, "kernel": "_copy_kernel", "resources": {"accumulators": 0, "barriers": 0, "commands_outstanding": "unknown", "descriptors": 0, "rf_private_per_role": {"role0": 44, "role1": 44, "role2": 44, "role3": 44}, "scratch_bytes": 0, "shared_windows": []}, "roles_per_program": 1, "width": 4}, {"descriptor_loads": 0, "kernel": "_copy_kernel", "resources": {"accumulators": 0, "barriers": 0, "commands_outstanding": "unknown", "descriptors": 0, "rf_private_per_role": {"role0": 44, "role1": 44, "role2": 44, "role3": 44}, "scratch_bytes": 0, "shared_windows": []}, "roles_per_program": 1, "width": 4}, {"descriptor_loads": 0, "kernel": "_copy_kernel", "resources": {"accumulators": 0, "barriers": 0, "commands_outstanding": "unknown", "descriptors": 0, "rf_private_per_role": {"role0": 44, "role1": 44, "role2": 44, "role3": 44}, "scratch_bytes": 0, "shared_windows": []}, "roles_per_program": 1, "width": 4}, {"descriptor_loads": 0, "kernel": "_copy_kernel", "resources": {"accumulators": 0, "barriers": 0, "commands_outstanding": "unknown", "descriptors": 0, "rf_private_per_role": {"role0": 44, "role1": 44, "role2": 44, "role3": 44}, "scratch_bytes": 0, "shared_windows": []}, "roles_per_program": 1, "width": 4}, {"descriptor_loads": 0, "kernel": "_copy_kernel", "resources": {"accumulators": 0, "barriers": 0, "commands_outstanding": "unknown", "descriptors": 0, "rf_private_per_role": {"role0": 44, "role1": 44, "role2": 44, "role3": 44}, "scratch_bytes": 0, "shared_windows": []}, "roles_per_program": 1, "width": 4}, {"descriptor_loads": 0, "kernel": "_copy_kernel", "resources": {"accumulators": 0, "barriers": 0, "commands_outstanding": "unknown", "descriptors": 0, "rf_private_per_role": {"role0": 44, "role1": 44, "role2": 44, "role3": 44}, "scratch_bytes": 0, "shared_windows": []}, "roles_per_program": 1, "width": 4}, {"descriptor_loads": 0, "kernel": "_copy_kernel", "resources": {"accumulators": 0, "barriers": 0, "commands_outstanding": "unknown", "descriptors": 0, "rf_private_per_role": {"role0": 44, "role1": 44, "role2": 44, "role3": 44}, "scratch_bytes": 0, "shared_windows": []}, "roles_per_program": 1, "width": 4}, {"descriptor_loads": 0, "kernel": "_copy_kernel", "resources": {"accumulators": 0, "barriers": 0, "commands_outstanding": "unknown", "descriptors": 0, "rf_private_per_role": {"role0": 44, "role1": 44, "role2": 44, "role3": 44}, "scratch_bytes": 0, "shared_windows": []}, "roles_per_program": 1, "width": 4}, {"descriptor_loads": 0, "kernel": "_copy_kernel", "resources": {"accumulators": 0, "barriers": 0, "commands_outstanding": "unknown", "descriptors": 0, "rf_private_per_role": {"role0": 44, "role1": 44, "role2": 44, "role3": 44}, "scratch_bytes": 0, "shared_windows": []}, "roles_per_program": 1, "width": 4}, {"descriptor_loads": 0, "kernel": "_copy_kernel", "resources": {"accumulators": 0, "barriers": 0, "commands_outstanding": "unknown", "descriptors": 0, "rf_private_per_role": {"role0": 44, "role1": 44, "role2": 44, "role3": 44}, "scratch_bytes": 0, "shared_windows": []}, "roles_per_program": 1, "width": 4}, {"descriptor_loads": 4, "kernel": "triton_tem_fused_mm_0", "resources": {"accumulators": 1, "barriers": 5, "commands_outstanding": "unknown", "descriptors": 2, "rf_private_per_role": {"role0": 10, "role1": 10, "role2": 10, "role3": 10}, "scratch_bytes": 512, "shared_windows": []}, "roles_per_program": 2, "width": 2}], "cores": 3, "metrics": {"cores": [{"completed": 2, "core": 0, "issued": 2, "occupied_cycles": 19027}, {"completed": 4, "core": 1, "issued": 4, "occupied_cycles": 35589}, {"completed": 3, "core": 2, "issued": 3, "occupied_cycles": 28742}], "peak_active": 3}, "pair": true}
+2026-10-19T16:18:14.1700865Z Post job cleanup.
+2026-10-19T16:18:14.2472608Z Cache hit occurred on the primary key pip-173d707e845b4431106949175b8c828e217e244fd73f7383ebc194c89cb814a0, not saving cache.
+2026-10-19T16:18:14.2473390Z (node:3583) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+2026-10-19T16:18:14.2473736Z (Use `node --trace-deprecation ...` to show where the warning was created)
+2026-10-19T16:18:14.2588105Z Post job cleanup.
+2026-10-19T16:18:14.3149877Z [command]/usr/bin/git version
+2026-10-19T16:18:14.3181892Z git version 2.55.0
+2026-10-19T16:18:14.3203134Z Temporarily overriding HOME='/home/runner/work/_temp/e7041ce0-e388-47d6-b00e-4527f2ea05a6' before making global git config changes
+2026-10-19T16:18:14.3203804Z Adding repository directory to the temporary git global config as a safe directory
+2026-10-19T16:18:14.3206367Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/TritonChip/TritonChip
+2026-10-19T16:18:14.3237087Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+2026-10-19T16:18:14.3289666Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2026-10-19T16:18:14.3511768Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-10-19T16:18:14.3538164Z http.https://github.com/.extraheader
+2026-10-19T16:18:14.3551329Z [command]/usr/bin/git config --local --unset-all http.https://github.com/.extraheader
+2026-10-19T16:18:14.3584299Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2026-10-19T16:18:14.3781914Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-10-19T16:18:14.3821190Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+2026-10-19T16:18:14.4190515Z Cleaning up orphan processes
+2026-10-19T16:18:14.4475643Z ##[warning]Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/cache@v4, actions/checkout@v4. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/

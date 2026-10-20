@@ -1,0 +1,235 @@
+{
+  "schema": "tnca-r40-balanced-victim-screen/1",
+  "gate_status": "not-measured",
+  "clock_target_hz": 100000000,
+  "image_sha256": null,
+  "contract_sha256": "49fc0e02733139707ae2292eff2ef893e76e73f0723d0d002b2e7e1864af71c8",
+  "source_sha256": {
+    "rtl/nuca/tnca_nuca_slice.v": "f509b36e86785d376846013e0da122e697632bc088f925ae019a46b15ef21d02",
+    "rtl/nuca/tnca_tmu.v": "c09a71109e6cc7a5ecf330cce01d5c02d38446892b198b0c4e396fcb40e0dccc",
+    "rtl/tile/tnca_tile.v": "ccadd8603b542395d14bcf555e9cb85a6bd1273eb2d60c168f20e5e6808cdf0a",
+    "rtl/tnca_top.v": "28da3a9a4938a8bee8d40345afb7814674907d0c6fe109db420a48206fef5f94",
+    "rtl/core/tnca_decoder.v": "fad46133110797293a9086f5c486cfaeb2dae30f6df3ebc393afe4f96f0499ce",
+    "flow/fpga/tnca_range_slice_ooc.v": "4aa55e36ec96950d77cf6ada556cccc0b7b460bf9cdb18dfd754b113d5b12e95",
+    "flow/fpga/synth_r40_range_slice.tcl": "a5f961e959485a3dd2edac07f748d723e794b737732dab5c60b44afc8ed338ac"
+  },
+  "hypothesis": "Replace seven serial victim-key comparisons with a balanced argmin; preserve eligibility, invalid-first/RR semantics, low-way ties and dead payload without another pipeline cycle",
+  "functional": {
+    "paired_outputs_and_cycles_identical": true,
+    "configurations": [
+      {
+        "sets": 16,
+        "ways": 2,
+        "policy": 0,
+        "seed": 7,
+        "requests": 5000,
+        "output_and_cycles_identical": true
+      },
+      {
+        "sets": 16,
+        "ways": 2,
+        "policy": 1,
+        "seed": 7,
+        "requests": 5000,
+        "output_and_cycles_identical": true
+      },
+      {
+        "sets": 16,
+        "ways": 2,
+        "policy": 2,
+        "seed": 7,
+        "requests": 5000,
+        "output_and_cycles_identical": true
+      },
+      {
+        "sets": 16,
+        "ways": 2,
+        "policy": 46,
+        "seed": 7,
+        "requests": 5000,
+        "output_and_cycles_identical": true
+      },
+      {
+        "sets": 16,
+        "ways": 2,
+        "policy": 74,
+        "seed": 7,
+        "requests": 5000,
+        "output_and_cycles_identical": true
+      },
+      {
+        "sets": 16,
+        "ways": 4,
+        "policy": 0,
+        "seed": 7,
+        "requests": 5000,
+        "output_and_cycles_identical": true
+      },
+      {
+        "sets": 16,
+        "ways": 4,
+        "policy": 1,
+        "seed": 7,
+        "requests": 5000,
+        "output_and_cycles_identical": true
+      },
+      {
+        "sets": 16,
+        "ways": 4,
+        "policy": 2,
+        "seed": 7,
+        "requests": 5000,
+        "output_and_cycles_identical": true
+      },
+      {
+        "sets": 16,
+        "ways": 4,
+        "policy": 46,
+        "seed": 7,
+        "requests": 5000,
+        "output_and_cycles_identical": true
+      },
+      {
+        "sets": 16,
+        "ways": 4,
+        "policy": 74,
+        "seed": 7,
+        "requests": 5000,
+        "output_and_cycles_identical": true
+      },
+      {
+        "sets": 32,
+        "ways": 8,
+        "policy": 0,
+        "seed": 7,
+        "requests": 5000,
+        "output_and_cycles_identical": true
+      },
+      {
+        "sets": 32,
+        "ways": 8,
+        "policy": 1,
+        "seed": 7,
+        "requests": 5000,
+        "output_and_cycles_identical": true
+      },
+      {
+        "sets": 32,
+        "ways": 8,
+        "policy": 2,
+        "seed": 7,
+        "requests": 5000,
+        "output_and_cycles_identical": true
+      },
+      {
+        "sets": 32,
+        "ways": 8,
+        "policy": 46,
+        "seed": 7,
+        "requests": 5000,
+        "output_and_cycles_identical": true
+      },
+      {
+        "sets": 32,
+        "ways": 8,
+        "policy": 74,
+        "seed": 7,
+        "requests": 5000,
+        "output_and_cycles_identical": true
+      }
+    ],
+    "proof_scope": "actual RTL leaf records and comparator tree vs strict serial argmin for arbitrary rank keys, payload dead bits and claimed masks; rank-key classification covered separately",
+    "proof_results": [
+      {
+        "ways": 1,
+        "tie_mutation": false,
+        "accepted": true
+      },
+      {
+        "ways": 2,
+        "tie_mutation": false,
+        "accepted": true
+      },
+      {
+        "ways": 3,
+        "tie_mutation": false,
+        "accepted": true
+      },
+      {
+        "ways": 4,
+        "tie_mutation": false,
+        "accepted": true
+      },
+      {
+        "ways": 5,
+        "tie_mutation": false,
+        "accepted": true
+      },
+      {
+        "ways": 8,
+        "tie_mutation": false,
+        "accepted": true
+      },
+      {
+        "ways": 8,
+        "tie_mutation": true,
+        "accepted": true
+      }
+    ],
+    "mutation": "invert encoded way index: alters tie ordering and selected-way payload; rejected, not a pure tie-only mutation",
+    "integrated_system": {
+      "command": "make sim/build/tb_top.vvp sim/build/t24_amo_mesh.hex; vvp sim/build/tb_top.vvp +hex=sim/build/t24_amo_mesh.hex +allroles +needmesh +maxcycles=200000",
+      "exit_code": 0,
+      "cycles": 2829,
+      "scope": "actual four-core system elaboration under Makefile Verilog-2005 flags and atomic mesh program; not a final inventory substitute",
+      "bench_sha256": "8680053ce214f174772f39a2b62054ebf0e59be356dd9a4ff4c75c1f990f6563",
+      "raw_log": "balanced_system.log"
+    }
+  },
+  "ooc": {
+    "scope": "actual TMU plus slice, identical new source and ideal 10 ns; 32 sets, 8 ways, full tags, maintenance, registered ranges and owners; unplaced synthesis estimates",
+    "variants": {
+      "0": {
+        "source": "slice/victim_owner_q_reg[0][2]/C",
+        "destination": "slice/ms_wbadr_reg_0_7_0_13/RAMA/WE",
+        "levels": 49,
+        "data_ns": 12.476,
+        "logic_ns": 3.438,
+        "estimated_net_ns": 9.038,
+        "estimated_slack_ns": -2.719,
+        "lut": 35768,
+        "ff": 6330,
+        "tag_macro_counts": {
+          "RAM32M16": 32,
+          "FDRE": 424
+        }
+      },
+      "1": {
+        "source": "slice/victim_owner_q_reg[7][2]/C",
+        "destination": "slice/ms_wbadr_reg_0_7_0_13/RAMA/WE",
+        "levels": 34,
+        "data_ns": 8.579,
+        "logic_ns": 2.522,
+        "estimated_net_ns": 6.057,
+        "estimated_slack_ns": 1.178,
+        "lut": 36096,
+        "ff": 6328,
+        "tag_macro_counts": {
+          "RAM32M16": 32,
+          "FDRE": 424
+        }
+      }
+    },
+    "qualification": "screening passes only; final three-core placement/route/setup/hold/CDC/image remain unmeasured",
+    "route_status": "not-measured",
+    "fmax_hz": null,
+    "limitations": [
+      "The historical single-slice wrapper in this archive omitted maint_base. The controlled serial/balanced comparison remains recorded, but it does not establish complete maintenance timing. Corrected three-slice rebuilt-hierarchy comparison is running separately."
+    ]
+  },
+  "archives": {
+    "balanced_functional.tar.gz": "9ce5be5e8baadbebf3fcc11e5afdb43670b4fcf805f30c1cc29780aa29c131ed",
+    "balanced_ooc.tar.gz": "6d009e185c9e12b6b6377d2bad193ac0d79ca3fdd82604913794637d74d0db4a"
+  },
+  "remaining_full_implementations": 1
+}

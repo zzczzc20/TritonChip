@@ -23,6 +23,8 @@
 # This file governs out-of-context synthesis and nothing else. At link time the
 # platform supplies the real period, and the answer this number produces is an
 # estimate -- see flow/fpga/README.md for the measured one.
+# package_xo.tcl marks USED_IN as synthesis/out_of_context so this primary
+# clock never overrides the propagated platform clock during implementation.
 #
 # WHY THERE IS NO SECOND create_clock FOR clk_dev
 #

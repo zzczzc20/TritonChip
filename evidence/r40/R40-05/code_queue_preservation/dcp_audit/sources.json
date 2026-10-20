@@ -1,0 +1,7 @@
+{
+  "source_commit": "09ebe06",
+  "remote_directory": "~/tnca_build/u280_r40ownership_preserved09",
+  "checkpoint_sha256": "3402a97b6cc2899c027491a560bcaedca6f7bb48164cef7cafc5e4dd09099931",
+  "scope": "actual synthesized DCP hierarchy and assignment contract; no placement or route",
+  "audit_tcl_sha256": "911951857b81cbc677c2255a349a04c3d668d3dafe3d56cf82b2adeb2cf7931a"
+}

@@ -1,0 +1,10 @@
+  already built: /home/zhongchun/.cache/tnca/devices/core-vrf-sync-v5-a8f9e2a0291d254a-2f12bdd465ea/tnca_device_vrf5.vvp
+W1019 08:04:11.914000 2975122 torch/utils/cpp_extension.py:183] No CUDA runtime is found, using CUDA_HOME='/usr/local/cuda'
+PASS queued multi-kernel graph, event visibility and deferred intermediate free
+PASS completed launch log, unchanged artifacts and zero kernel transfers
+PASS stream contexts, recorded dependency, runtime stream identity and restoration
+PASS concurrent graph execution and thread-local launch audit
+PASS 1000 graph calls, bounded queue, final storage/lease audit
+AUDIT storage_live_bytes=2560 storage_peak_bytes=4608 live_buffers=4 leases=0 unfinished=0
+AUDIT {'epoch': 0, 'heap_capacity_bytes': 393216, 'heap_reserved_ranges': [], 'heap_allocated_bytes': 2560, 'heap_peak_bytes': 9216, 'code_allocated_bytes': 10496, 'code_peak_bytes': 10496}
+r40-batch-tests PASS (5/5)

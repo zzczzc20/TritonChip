@@ -13,6 +13,8 @@ that happen to agree today are not one configuration; what makes them
 one is a check that fails when they stop agreeing.
 """
 import argparse
+import ast
+import copy
 import json
 import os
 import struct
@@ -30,6 +32,44 @@ import r1lib as R                                          # noqa: E402
 PROFILE = 'core-vrf-sync-v1'
 SIG = {'x_ptr': '*fp32', 'y_ptr': '*fp32', 'o_ptr': '*fp32', 'n': 'i32',
        'alpha': 'fp32', 'BLOCK': 'constexpr'}
+
+
+def _latency_sites(body, path, keys):
+    """Find target latency reads; distinguish the scheduler's own JSON field.
+
+    The one exception is Model.__init__'s data['latency']. CFG-01 also
+    perturbs the target fields and verifies Model.for_target's actual result,
+    so this exception cannot hide a target-dependent scheduling model.
+    """
+    sites, scope = [], []
+
+    class Scan(ast.NodeVisitor):
+        def visit_ClassDef(self, node):
+            scope.append(node.name)
+            self.generic_visit(node)
+            scope.pop()
+
+        visit_FunctionDef = visit_ClassDef
+
+        def visit_Subscript(self, node):
+            key = node.slice.value if isinstance(node.slice, ast.Constant) else None
+            separate_model = (path == 'compiler/python/tnca_cc/schedule.py' and
+                              scope == ['Model', '__init__'] and
+                              isinstance(node.value, ast.Name) and node.value.id == 'data' and
+                              key == 'latency')
+            if key in ['latency', *keys] and not separate_model:
+                sites.append(node.lineno)
+            self.generic_visit(node)
+
+        def visit_Call(self, node):
+            if (isinstance(node.func, ast.Attribute) and node.func.attr == 'get' and
+                    node.args and isinstance(node.args[0], ast.Constant) and
+                    node.args[0].value in ['latency', *keys]):
+                sites.append(node.lineno)
+            self.generic_visit(node)
+
+    Scan().visit(ast.parse(body))
+    return sites
 
 
 def axpy(**opts):
@@ -289,10 +329,29 @@ def cfg01(log):
                 if not f.endswith('.py'):
                     continue
                 body = open(os.path.join(base, f)).read()
-                if any(k in body for k in lat_keys) or \
-                        "['latency']" in body or '["latency"]' in body:
-                    readers.append(os.path.relpath(
-                        os.path.join(base, f), ROOT))
+                path = os.path.relpath(os.path.join(base, f), ROOT)
+                if _latency_sites(body, path, lat_keys):
+                    readers.append(path)
+    # The measured scheduler model is a distinct configuration source.
+    # Exercise its real target selection, not just the spelling of its field.
+    from tnca_cc.target import TargetInfo
+    from tnca_cc.schedule import Model
+    perturbed = copy.deepcopy(tgt)
+    perturbed['latency'] = {k: v + 17 for k, v in tgt['latency'].items()}
+    original_model = Model.for_target(TargetInfo(tgt))
+    changed_model = Model.for_target(TargetInfo(perturbed))
+    independent = all(getattr(original_model, k) == getattr(changed_model, k)
+                      for k in ('name', 'lat', 'issue', 'lsu'))
+    genuine_reads = all(_latency_sites(text, 'compiler/python/tnca_cc/schedule.py', lat_keys)
+                        for text in ("x = target['latency']", "x = target.get('latency')",
+                                     "x = target['fp_result_cycles']"))
+    model_only = not _latency_sites(
+        "class Model:\n def __init__(self, data):\n  self.lat = data['latency']\n",
+        'compiler/python/tnca_cc/schedule.py', lat_keys)
+    ok &= independent and genuine_reads and model_only
+    log.append(f"      scheduler model unchanged after target-latency perturbation: {independent}")
+    log.append(f"      genuine target reads caught, separate model field distinguished: "
+               f"{genuine_reads and model_only}")
     log.append(f"    a LATENCY assumption {lat_keys} is published and "
                f"outside the identity, which is safe only while nothing "
                f"consumes it")

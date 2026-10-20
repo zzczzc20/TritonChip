@@ -1,0 +1,17 @@
+W1011 12:24:26.753000 4003720 torch/utils/cpp_extension.py:183] No CUDA runtime is found, using CUDA_HOME='/usr/local/cuda'
+  already built: /home/zhongchun/.cache/tnca/devices/core-vrf-sync-v5-a8f9e2a0291d254a-f13f42fcd493/tnca_device_vrf5.vvp
+AUDIT {"resources": {"accumulators": 0, "barriers": 0, "commands_outstanding": "unknown", "descriptors": 0, "rf_private_per_role": {"role0": 45, "role1": 45, "role2": 45, "role3": 45}, "scratch_bytes": 0, "shared_windows": []}, "spill": {"estimated_peak": 42, "scratch_bytes": 0, "slots": 0}, "width": 128}
+PASS block 128, tail 127, masked select/load/store
+PASS block 128, tail 17, masked select/load/store
+PASS block 128, tail 31, masked select/load/store
+PASS block 128, tail 33, masked select/load/store
+PASS block 128, tail 65, masked select/load/store
+AUDIT {"dtype": "int64", "resources": {"accumulators": 0, "barriers": 0, "commands_outstanding": "unknown", "descriptors": 0, "rf_private_per_role": {"role0": 52, "role1": 52}, "scratch_bytes": 896, "shared_windows": []}, "spill": {"estimated_peak_before": 66, "estimated_unspilled_peak": 52, "loads": 42, "scratch_bytes": 896, "slots": 14, "stores": 14, "tier": "per-program scratch"}, "width": 128}
+PASS block 128, signed int64 values beyond 32 bits
+PASS block 128, torch.float16
+PASS block 128, torch.bfloat16
+PASS block 128, torch.int8
+PASS block 128, torch.int16
+PASS block 128, torch.int32
+PASS block 128, strided offset alias and in-place stores
+r40-tiles-tests PASS (12/12)

@@ -1,0 +1,746 @@
+﻿2026-10-19T15:55:41.7086092Z Current runner version: '2.337.0'
+2026-10-19T15:55:41.7110254Z ##[group]Runner Image Provisioner
+2026-10-19T15:55:41.7111142Z Hosted Compute Agent
+2026-10-19T15:55:41.7111740Z Version: 20261012.601
+2026-10-19T15:55:41.7112472Z Commit: f3dc54e1fb89da6852db922499a0233137369e1d
+2026-10-19T15:55:41.7113237Z Build Date: 2026-10-12T17:48:21Z
+2026-10-19T15:55:41.7113955Z Worker ID: {42e8ab7d-e48a-4a84-97ed-e81fd4f9a59f}
+2026-10-19T15:55:41.7114696Z Region: westus2
+2026-10-19T15:55:41.7115249Z Cloud: Azure
+2026-10-19T15:55:41.7115866Z ##[endgroup]
+2026-10-19T15:55:41.7117247Z ##[group]Operating System
+2026-10-19T15:55:41.7117873Z Ubuntu
+2026-10-19T15:55:41.7118859Z 24.04.5
+2026-10-19T15:55:41.7119541Z LTS
+2026-10-19T15:55:41.7120154Z ##[endgroup]
+2026-10-19T15:55:41.7120736Z ##[group]Runner Image
+2026-10-19T15:55:41.7121366Z Image: ubuntu-24.04
+2026-10-19T15:55:41.7121997Z Version: 20261012.334.1
+2026-10-19T15:55:41.7123240Z Included Software: https://github.com/actions/runner-images/blob/ubuntu24/20261012.334/images/ubuntu/Ubuntu2404-Readme.md
+2026-10-19T15:55:41.7124909Z Image Release: https://github.com/actions/runner-images/releases/tag/ubuntu24%2F20261012.334
+2026-10-19T15:55:41.7125890Z ##[endgroup]
+2026-10-19T15:55:41.7127032Z ##[group]GITHUB_TOKEN Permissions
+2026-10-19T15:55:41.7129187Z Contents: read
+2026-10-19T15:55:41.7129917Z Metadata: read
+2026-10-19T15:55:41.7130494Z ##[endgroup]
+2026-10-19T15:55:41.7132593Z Secret source: Actions
+2026-10-19T15:55:41.7133601Z Cache mode: write
+2026-10-19T15:55:41.7134370Z Prepare workflow directory
+2026-10-19T15:55:41.7579179Z Prepare all required actions
+2026-10-19T15:55:41.7630879Z Getting action download info
+2026-10-19T15:55:42.1634019Z Download action repository 'actions/checkout@v4' (SHA:11d5960a326750d5838078e36cf38b85af677262)
+2026-10-19T15:55:42.2463426Z Download action repository 'actions/cache@v4' (SHA:0057852bfaa89a56745cba8c7296529d2fc39830)
+2026-10-19T15:55:42.3479821Z Download action repository 'actions/upload-artifact@v4' (SHA:ea165f8d65b6e75b540449e92b4886f43607fa02)
+2026-10-19T15:55:42.5903505Z Complete job name: R40 grid and pipeline (memory)
+2026-10-19T15:55:42.6702738Z ##[group]Run actions/checkout@v4
+2026-10-19T15:55:42.6703609Z with:
+2026-10-19T15:55:42.6704058Z   repository: zzczzc20/TritonChip
+2026-10-19T15:55:42.6707751Z   token: ***
+2026-10-19T15:55:42.6708228Z   ssh-strict: true
+2026-10-19T15:55:42.6708893Z   ssh-user: git
+2026-10-19T15:55:42.6709345Z   persist-credentials: true
+2026-10-19T15:55:42.6709840Z   clean: true
+2026-10-19T15:55:42.6710284Z   sparse-checkout-cone-mode: true
+2026-10-19T15:55:42.6710802Z   fetch-depth: 1
+2026-10-19T15:55:42.6711225Z   fetch-tags: false
+2026-10-19T15:55:42.6711659Z   show-progress: true
+2026-10-19T15:55:42.6712112Z   lfs: false
+2026-10-19T15:55:42.6712519Z   submodules: false
+2026-10-19T15:55:42.6712963Z   set-safe-directory: true
+2026-10-19T15:55:42.6713466Z   allow-unsafe-pr-checkout: false
+2026-10-19T15:55:42.6714227Z env:
+2026-10-19T15:55:42.6714652Z   LLVM_PREFIX: /usr/lib/llvm-20
+2026-10-19T15:55:42.6715192Z   TNCA_LLVM: /usr/lib/llvm-20
+2026-10-19T15:55:42.6715685Z ##[endgroup]
+2026-10-19T15:55:42.7752334Z Syncing repository: zzczzc20/TritonChip
+2026-10-19T15:55:42.7755147Z ##[group]Getting Git version info
+2026-10-19T15:55:42.7756484Z Working directory is '/home/runner/work/TritonChip/TritonChip'
+2026-10-19T15:55:42.7758863Z [command]/usr/bin/git version
+2026-10-19T15:55:42.7837737Z git version 2.55.0
+2026-10-19T15:55:42.7884381Z ##[endgroup]
+2026-10-19T15:55:42.7907035Z Temporarily overriding HOME='/home/runner/work/_temp/ee824a79-19e5-4aea-ac86-d2c3b4224421' before making global git config changes
+2026-10-19T15:55:42.7910132Z Adding repository directory to the temporary git global config as a safe directory
+2026-10-19T15:55:42.7914440Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/TritonChip/TritonChip
+2026-10-19T15:55:42.7984990Z Deleting the contents of '/home/runner/work/TritonChip/TritonChip'
+2026-10-19T15:55:42.7991179Z ##[group]Initializing the repository
+2026-10-19T15:55:42.7996815Z [command]/usr/bin/git init /home/runner/work/TritonChip/TritonChip
+2026-10-19T15:55:42.8108760Z hint: Using 'master' as the name for the initial branch. This default branch name
+2026-10-19T15:55:42.8110687Z hint: will change to "main" in Git 3.0. To configure the initial branch name
+2026-10-19T15:55:42.8112392Z hint: to use in all of your new repositories, which will suppress this warning,
+2026-10-19T15:55:42.8113698Z hint: call:
+2026-10-19T15:55:42.8114445Z hint:
+2026-10-19T15:55:42.8115397Z hint: 	git config --global init.defaultBranch <name>
+2026-10-19T15:55:42.8116805Z hint:
+2026-10-19T15:55:42.8117941Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+2026-10-19T15:55:42.8119892Z hint: 'development'. The just-created branch can be renamed via this command:
+2026-10-19T15:55:42.8121346Z hint:
+2026-10-19T15:55:42.8122214Z hint: 	git branch -m <name>
+2026-10-19T15:55:42.8123100Z hint:
+2026-10-19T15:55:42.8124248Z hint: Disable this message with "git config set advice.defaultBranchName false"
+2026-10-19T15:55:42.8126309Z Initialized empty Git repository in /home/runner/work/TritonChip/TritonChip/.git/
+2026-10-19T15:55:42.8140953Z [command]/usr/bin/git remote add origin https://github.com/zzczzc20/TritonChip
+2026-10-19T15:55:42.8201872Z ##[endgroup]
+2026-10-19T15:55:42.8203222Z ##[group]Disabling automatic garbage collection
+2026-10-19T15:55:42.8207336Z [command]/usr/bin/git config --local gc.auto 0
+2026-10-19T15:55:42.8251148Z ##[endgroup]
+2026-10-19T15:55:42.8252469Z ##[group]Setting up auth
+2026-10-19T15:55:42.8263528Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+2026-10-19T15:55:42.8319687Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2026-10-19T15:55:42.8723007Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-10-19T15:55:42.8761750Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2026-10-19T15:55:42.8984986Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-10-19T15:55:42.9019952Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+2026-10-19T15:55:42.9243790Z [command]/usr/bin/git config --local http.https://github.com/.extraheader AUTHORIZATION: basic ***
+2026-10-19T15:55:42.9283893Z ##[endgroup]
+2026-10-19T15:55:42.9284705Z ##[group]Fetching the repository
+2026-10-19T15:55:42.9294023Z [command]/usr/bin/git -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +108b707db03cc95ab9e084d00ff7f3d4075df396:refs/remotes/pull/7/merge
+2026-10-19T15:55:46.9042778Z From https://github.com/zzczzc20/TritonChip
+2026-10-19T15:55:46.9045532Z  * [new ref]         108b707db03cc95ab9e084d00ff7f3d4075df396 -> pull/7/merge
+2026-10-19T15:55:46.9052080Z ##[endgroup]
+2026-10-19T15:55:46.9053298Z ##[group]Determining the checkout info
+2026-10-19T15:55:46.9054593Z ##[endgroup]
+2026-10-19T15:55:46.9093796Z [command]/usr/bin/git sparse-checkout disable
+2026-10-19T15:55:46.9147295Z [command]/usr/bin/git config --local --unset-all extensions.worktreeConfig
+2026-10-19T15:55:46.9178725Z ##[group]Checking out the ref
+2026-10-19T15:55:46.9247839Z [command]/usr/bin/git checkout --progress --force refs/remotes/pull/7/merge
+2026-10-19T15:55:47.6110914Z Note: switching to 'refs/remotes/pull/7/merge'.
+2026-10-19T15:55:47.6111851Z 
+2026-10-19T15:55:47.6112457Z You are in 'detached HEAD' state. You can look around, make experimental
+2026-10-19T15:55:47.6113949Z changes and commit them, and you can discard any commits you make in this
+2026-10-19T15:55:47.6115389Z state without impacting any branches by switching back to a branch.
+2026-10-19T15:55:47.6116296Z 
+2026-10-19T15:55:47.6117227Z If you want to create a new branch to retain commits you create, you may
+2026-10-19T15:55:47.6118885Z do so (now or later) by using -c with the switch command. Example:
+2026-10-19T15:55:47.6119768Z 
+2026-10-19T15:55:47.6120137Z   git switch -c <new-branch-name>
+2026-10-19T15:55:47.6120734Z 
+2026-10-19T15:55:47.6121110Z Or undo this operation with:
+2026-10-19T15:55:47.6121658Z 
+2026-10-19T15:55:47.6121975Z   git switch -
+2026-10-19T15:55:47.6122406Z 
+2026-10-19T15:55:47.6123093Z Turn off this advice by setting config variable advice.detachedHead to false
+2026-10-19T15:55:47.6124179Z 
+2026-10-19T15:55:47.6125372Z HEAD is now at 108b707 Merge 3b73efb10088435b5fa8b403adaaa4e4c95defac into b5c606d54384f6febb8949936537c49cafb75c5c
+2026-10-19T15:55:47.6145017Z ##[endgroup]
+2026-10-19T15:55:47.6190611Z [command]/usr/bin/git log -1 --format=%H
+2026-10-19T15:55:47.6224517Z 108b707db03cc95ab9e084d00ff7f3d4075df396
+2026-10-19T15:55:47.6538109Z ##[group]Run set -euo pipefail
+2026-10-19T15:55:47.6539801Z [36;1mset -euo pipefail[0m
+2026-10-19T15:55:47.6541027Z [36;1msudo apt-get update -qq[0m
+2026-10-19T15:55:47.6542569Z [36;1msudo apt-get install -y --no-install-recommends \[0m
+2026-10-19T15:55:47.6544752Z [36;1m  iverilog yosys build-essential cmake ninja-build python3 python3-venv \[0m
+2026-10-19T15:55:47.6546831Z [36;1m  libmlir-20-dev mlir-20-tools llvm-20-dev[0m
+2026-10-19T15:55:47.6793474Z shell: /usr/bin/bash -e {0}
+2026-10-19T15:55:47.6794704Z env:
+2026-10-19T15:55:47.6795776Z   LLVM_PREFIX: /usr/lib/llvm-20
+2026-10-19T15:55:47.6797775Z   TNCA_LLVM: /usr/lib/llvm-20
+2026-10-19T15:55:47.6799828Z ##[endgroup]
+2026-10-19T15:55:51.9101398Z Reading package lists...
+2026-10-19T15:55:52.0934157Z Building dependency tree...
+2026-10-19T15:55:52.0942131Z Reading state information...
+2026-10-19T15:55:52.2298947Z python3 is already the newest version (3.12.3-0ubuntu2.1).
+2026-10-19T15:55:52.2300437Z python3-venv is already the newest version (3.12.3-0ubuntu2.1).
+2026-10-19T15:55:52.2301666Z The following additional packages will be installed:
+2026-10-19T15:55:52.2303195Z   cmake-data libclang-cpp20 libjsoncpp25 libmlir-20 librhash0 llvm-20
+2026-10-19T15:55:52.2304669Z   llvm-20-linker-tools llvm-20-runtime llvm-20-tools yosys-abc
+2026-10-19T15:55:52.2310288Z Suggested packages:
+2026-10-19T15:55:52.2311367Z   cmake-doc cmake-format elpa-cmake-mode gtkwave llvm-20-doc
+2026-10-19T15:55:52.2312444Z Recommended packages:
+2026-10-19T15:55:52.2313231Z   xdot
+2026-10-19T15:55:52.2595887Z The following NEW packages will be installed:
+2026-10-19T15:55:52.2597716Z   build-essential cmake cmake-data iverilog libclang-cpp20 libjsoncpp25
+2026-10-19T15:55:52.2601989Z   libmlir-20 libmlir-20-dev librhash0 llvm-20 llvm-20-dev llvm-20-linker-tools
+2026-10-19T15:55:52.2603947Z   llvm-20-runtime llvm-20-tools mlir-20-tools ninja-build yosys yosys-abc
+2026-10-19T15:55:52.2779511Z 0 upgraded, 18 newly installed, 0 to remove and 78 not upgraded.
+2026-10-19T15:55:52.2779998Z Need to get 178 MB of archives.
+2026-10-19T15:55:52.2780372Z After this operation, 1284 MB of additional disk space will be used.
+2026-10-19T15:55:52.2780806Z Get:1 file:/etc/apt/apt-mirrors.txt Mirrorlist [144 B]
+2026-10-19T15:55:52.3610050Z Get:2 http://azure.archive.ubuntu.com/ubuntu noble/main amd64 build-essential amd64 12.10ubuntu1 [4928 B]
+2026-10-19T15:55:52.4316274Z Get:3 http://azure.archive.ubuntu.com/ubuntu noble/main amd64 libjsoncpp25 amd64 1.9.5-6build1 [82.8 kB]
+2026-10-19T15:55:52.5010407Z Get:4 http://azure.archive.ubuntu.com/ubuntu noble/main amd64 librhash0 amd64 1.4.3-3build1 [129 kB]
+2026-10-19T15:55:52.5710283Z Get:5 http://azure.archive.ubuntu.com/ubuntu noble/main amd64 cmake-data all 3.28.3-1build7 [2155 kB]
+2026-10-19T15:55:52.6557500Z Get:6 http://azure.archive.ubuntu.com/ubuntu noble/main amd64 cmake amd64 3.28.3-1build7 [11.2 MB]
+2026-10-19T15:55:52.9689483Z Get:7 http://azure.archive.ubuntu.com/ubuntu noble/universe amd64 iverilog amd64 12.0-2build2 [2126 kB]
+2026-10-19T15:55:53.1043235Z Get:8 http://azure.archive.ubuntu.com/ubuntu noble-updates/universe amd64 libclang-cpp20 amd64 1:20.1.2-0ubuntu1~24.04.3 [14.2 MB]
+2026-10-19T15:55:53.6114415Z Get:9 http://azure.archive.ubuntu.com/ubuntu noble-updates/universe amd64 libmlir-20 amd64 1:20.1.2-0ubuntu1~24.04.3 [13.0 MB]
+2026-10-19T15:55:54.0572173Z Get:10 http://azure.archive.ubuntu.com/ubuntu noble-updates/universe amd64 libmlir-20-dev amd64 1:20.1.2-0ubuntu1~24.04.3 [28.3 MB]
+2026-10-19T15:55:54.8022425Z Get:11 http://azure.archive.ubuntu.com/ubuntu noble-updates/universe amd64 llvm-20-runtime amd64 1:20.1.2-0ubuntu1~24.04.3 [558 kB]
+2026-10-19T15:55:54.8881214Z Get:12 http://azure.archive.ubuntu.com/ubuntu noble-updates/universe amd64 llvm-20-linker-tools amd64 1:20.1.2-0ubuntu1~24.04.3 [1338 kB]
+2026-10-19T15:55:54.9924282Z Get:13 http://azure.archive.ubuntu.com/ubuntu noble-updates/universe amd64 llvm-20 amd64 1:20.1.2-0ubuntu1~24.04.3 [19.8 MB]
+2026-10-19T15:55:55.5424314Z Get:14 http://azure.archive.ubuntu.com/ubuntu noble-updates/universe amd64 llvm-20-tools amd64 1:20.1.2-0ubuntu1~24.04.3 [515 kB]
+2026-10-19T15:55:55.6211764Z Get:15 http://azure.archive.ubuntu.com/ubuntu noble-updates/universe amd64 llvm-20-dev amd64 1:20.1.2-0ubuntu1~24.04.3 [50.7 MB]
+2026-10-19T15:55:56.8964568Z Get:16 http://azure.archive.ubuntu.com/ubuntu noble-updates/universe amd64 mlir-20-tools amd64 1:20.1.2-0ubuntu1~24.04.3 [24.8 MB]
+2026-10-19T15:55:57.5548358Z Get:17 http://azure.archive.ubuntu.com/ubuntu noble/universe amd64 ninja-build amd64 1.11.1-2 [129 kB]
+2026-10-19T15:55:57.6334136Z Get:18 http://azure.archive.ubuntu.com/ubuntu noble/universe amd64 yosys-abc amd64 0.33-5build2 [5829 kB]
+2026-10-19T15:55:57.9778910Z Get:19 http://azure.archive.ubuntu.com/ubuntu noble/universe amd64 yosys amd64 0.33-5build2 [3222 kB]
+2026-10-19T15:55:58.2955322Z Fetched 178 MB in 6s (30.8 MB/s)
+2026-10-19T15:55:58.3224476Z Selecting previously unselected package build-essential.
+2026-10-19T15:55:58.3495563Z (Reading database ... 
+2026-10-19T15:55:58.3496109Z (Reading database ... 5%
+2026-10-19T15:55:58.3496377Z (Reading database ... 10%
+2026-10-19T15:55:58.3496624Z (Reading database ... 15%
+2026-10-19T15:55:58.3496838Z (Reading database ... 20%
+2026-10-19T15:55:58.3497052Z (Reading database ... 25%
+2026-10-19T15:55:58.3497267Z (Reading database ... 30%
+2026-10-19T15:55:58.3498026Z (Reading database ... 35%
+2026-10-19T15:55:58.3498362Z (Reading database ... 40%
+2026-10-19T15:55:58.3499160Z (Reading database ... 45%
+2026-10-19T15:55:58.3499664Z (Reading database ... 50%
+2026-10-19T15:55:58.3550357Z (Reading database ... 55%
+2026-10-19T15:55:58.4774080Z (Reading database ... 60%
+2026-10-19T15:55:58.6855843Z (Reading database ... 65%
+2026-10-19T15:55:58.8898039Z (Reading database ... 70%
+2026-10-19T15:55:59.0796215Z (Reading database ... 75%
+2026-10-19T15:55:59.2351647Z (Reading database ... 80%
+2026-10-19T15:55:59.4446018Z (Reading database ... 85%
+2026-10-19T15:55:59.6062448Z (Reading database ... 90%
+2026-10-19T15:55:59.7975887Z (Reading database ... 95%
+2026-10-19T15:55:59.7976368Z (Reading database ... 100%
+2026-10-19T15:55:59.7976940Z (Reading database ... 203540 files and directories currently installed.)
+2026-10-19T15:55:59.8019464Z Preparing to unpack .../00-build-essential_12.10ubuntu1_amd64.deb ...
+2026-10-19T15:55:59.8048122Z Unpacking build-essential (12.10ubuntu1) ...
+2026-10-19T15:55:59.8259652Z Selecting previously unselected package libjsoncpp25:amd64.
+2026-10-19T15:55:59.8383680Z Preparing to unpack .../01-libjsoncpp25_1.9.5-6build1_amd64.deb ...
+2026-10-19T15:55:59.8401058Z Unpacking libjsoncpp25:amd64 (1.9.5-6build1) ...
+2026-10-19T15:55:59.8620917Z Selecting previously unselected package librhash0:amd64.
+2026-10-19T15:55:59.8747264Z Preparing to unpack .../02-librhash0_1.4.3-3build1_amd64.deb ...
+2026-10-19T15:55:59.8757316Z Unpacking librhash0:amd64 (1.4.3-3build1) ...
+2026-10-19T15:55:59.8986074Z Selecting previously unselected package cmake-data.
+2026-10-19T15:55:59.9110182Z Preparing to unpack .../03-cmake-data_3.28.3-1build7_all.deb ...
+2026-10-19T15:55:59.9181431Z Unpacking cmake-data (3.28.3-1build7) ...
+2026-10-19T15:56:00.4423397Z Selecting previously unselected package cmake.
+2026-10-19T15:56:00.4560833Z Preparing to unpack .../04-cmake_3.28.3-1build7_amd64.deb ...
+2026-10-19T15:56:00.4571187Z Unpacking cmake (3.28.3-1build7) ...
+2026-10-19T15:56:00.6095518Z Selecting previously unselected package iverilog.
+2026-10-19T15:56:00.6221361Z Preparing to unpack .../05-iverilog_12.0-2build2_amd64.deb ...
+2026-10-19T15:56:00.6230556Z Unpacking iverilog (12.0-2build2) ...
+2026-10-19T15:56:00.6802906Z Selecting previously unselected package libclang-cpp20.
+2026-10-19T15:56:00.6930984Z Preparing to unpack .../06-libclang-cpp20_1%3a20.1.2-0ubuntu1~24.04.3_amd64.deb ...
+2026-10-19T15:56:00.6939972Z Unpacking libclang-cpp20 (1:20.1.2-0ubuntu1~24.04.3) ...
+2026-10-19T15:56:00.9265251Z Selecting previously unselected package libmlir-20:amd64.
+2026-10-19T15:56:00.9389883Z Preparing to unpack .../07-libmlir-20_1%3a20.1.2-0ubuntu1~24.04.3_amd64.deb ...
+2026-10-19T15:56:00.9398816Z Unpacking libmlir-20:amd64 (1:20.1.2-0ubuntu1~24.04.3) ...
+2026-10-19T15:56:01.1785213Z Selecting previously unselected package libmlir-20-dev:amd64.
+2026-10-19T15:56:01.1911103Z Preparing to unpack .../08-libmlir-20-dev_1%3a20.1.2-0ubuntu1~24.04.3_amd64.deb ...
+2026-10-19T15:56:01.1918683Z Unpacking libmlir-20-dev:amd64 (1:20.1.2-0ubuntu1~24.04.3) ...
+2026-10-19T15:56:02.5037352Z Selecting previously unselected package llvm-20-runtime.
+2026-10-19T15:56:02.5172704Z Preparing to unpack .../09-llvm-20-runtime_1%3a20.1.2-0ubuntu1~24.04.3_amd64.deb ...
+2026-10-19T15:56:02.5180506Z Unpacking llvm-20-runtime (1:20.1.2-0ubuntu1~24.04.3) ...
+2026-10-19T15:56:02.5460437Z Selecting previously unselected package llvm-20-linker-tools.
+2026-10-19T15:56:02.5586902Z Preparing to unpack .../10-llvm-20-linker-tools_1%3a20.1.2-0ubuntu1~24.04.3_amd64.deb ...
+2026-10-19T15:56:02.5594495Z Unpacking llvm-20-linker-tools (1:20.1.2-0ubuntu1~24.04.3) ...
+2026-10-19T15:56:02.5947850Z Selecting previously unselected package llvm-20.
+2026-10-19T15:56:02.6076101Z Preparing to unpack .../11-llvm-20_1%3a20.1.2-0ubuntu1~24.04.3_amd64.deb ...
+2026-10-19T15:56:02.6085234Z Unpacking llvm-20 (1:20.1.2-0ubuntu1~24.04.3) ...
+2026-10-19T15:56:02.9314939Z Selecting previously unselected package llvm-20-tools.
+2026-10-19T15:56:02.9444433Z Preparing to unpack .../12-llvm-20-tools_1%3a20.1.2-0ubuntu1~24.04.3_amd64.deb ...
+2026-10-19T15:56:02.9452660Z Unpacking llvm-20-tools (1:20.1.2-0ubuntu1~24.04.3) ...
+2026-10-19T15:56:03.0581305Z Selecting previously unselected package llvm-20-dev.
+2026-10-19T15:56:03.0714173Z Preparing to unpack .../13-llvm-20-dev_1%3a20.1.2-0ubuntu1~24.04.3_amd64.deb ...
+2026-10-19T15:56:03.0725586Z Unpacking llvm-20-dev (1:20.1.2-0ubuntu1~24.04.3) ...
+2026-10-19T15:56:04.5060507Z Selecting previously unselected package mlir-20-tools.
+2026-10-19T15:56:04.5196002Z Preparing to unpack .../14-mlir-20-tools_1%3a20.1.2-0ubuntu1~24.04.3_amd64.deb ...
+2026-10-19T15:56:04.5202368Z Unpacking mlir-20-tools (1:20.1.2-0ubuntu1~24.04.3) ...
+2026-10-19T15:56:04.9296099Z Selecting previously unselected package ninja-build.
+2026-10-19T15:56:04.9424663Z Preparing to unpack .../15-ninja-build_1.11.1-2_amd64.deb ...
+2026-10-19T15:56:04.9432289Z Unpacking ninja-build (1.11.1-2) ...
+2026-10-19T15:56:04.9646244Z Selecting previously unselected package yosys-abc.
+2026-10-19T15:56:04.9774482Z Preparing to unpack .../16-yosys-abc_0.33-5build2_amd64.deb ...
+2026-10-19T15:56:04.9781742Z Unpacking yosys-abc (0.33-5build2) ...
+2026-10-19T15:56:05.0531849Z Selecting previously unselected package yosys.
+2026-10-19T15:56:05.0661934Z Preparing to unpack .../17-yosys_0.33-5build2_amd64.deb ...
+2026-10-19T15:56:05.0669822Z Unpacking yosys (0.33-5build2) ...
+2026-10-19T15:56:05.1739734Z Setting up yosys-abc (0.33-5build2) ...
+2026-10-19T15:56:05.1759074Z Setting up llvm-20-runtime (1:20.1.2-0ubuntu1~24.04.3) ...
+2026-10-19T15:56:05.1784677Z Setting up ninja-build (1.11.1-2) ...
+2026-10-19T15:56:05.1802355Z Setting up llvm-20-linker-tools (1:20.1.2-0ubuntu1~24.04.3) ...
+2026-10-19T15:56:05.1818825Z Setting up llvm-20-tools (1:20.1.2-0ubuntu1~24.04.3) ...
+2026-10-19T15:56:05.1835539Z Setting up iverilog (12.0-2build2) ...
+2026-10-19T15:56:05.1851014Z Setting up libclang-cpp20 (1:20.1.2-0ubuntu1~24.04.3) ...
+2026-10-19T15:56:05.1866342Z Setting up llvm-20 (1:20.1.2-0ubuntu1~24.04.3) ...
+2026-10-19T15:56:05.1882396Z Setting up llvm-20-dev (1:20.1.2-0ubuntu1~24.04.3) ...
+2026-10-19T15:56:05.1899221Z Setting up libjsoncpp25:amd64 (1.9.5-6build1) ...
+2026-10-19T15:56:05.1916077Z Setting up librhash0:amd64 (1.4.3-3build1) ...
+2026-10-19T15:56:05.1935097Z Setting up build-essential (12.10ubuntu1) ...
+2026-10-19T15:56:05.1952246Z Setting up cmake-data (3.28.3-1build7) ...
+2026-10-19T15:56:05.2011537Z Setting up libmlir-20:amd64 (1:20.1.2-0ubuntu1~24.04.3) ...
+2026-10-19T15:56:05.2029216Z Setting up libmlir-20-dev:amd64 (1:20.1.2-0ubuntu1~24.04.3) ...
+2026-10-19T15:56:05.2045931Z Setting up yosys (0.33-5build2) ...
+2026-10-19T15:56:05.3361032Z Setting up mlir-20-tools (1:20.1.2-0ubuntu1~24.04.3) ...
+2026-10-19T15:56:05.3377960Z Setting up cmake (3.28.3-1build7) ...
+2026-10-19T15:56:05.3401116Z Processing triggers for systemd (255.4-1ubuntu8.17) ...
+2026-10-19T15:56:05.3694847Z Processing triggers for man-db (2.12.0-4build2) ...
+2026-10-19T15:56:05.3713802Z Not building database; man-db/auto-update is not 'true'.
+2026-10-19T15:56:05.3724269Z Processing triggers for libc-bin (2.39-0ubuntu8.9) ...
+2026-10-19T15:56:06.0496788Z 
+2026-10-19T15:56:06.0497526Z Running kernel seems to be up-to-date.
+2026-10-19T15:56:06.0498210Z 
+2026-10-19T15:56:06.0498674Z No services need to be restarted.
+2026-10-19T15:56:06.0499089Z 
+2026-10-19T15:56:06.0499302Z No containers need to be restarted.
+2026-10-19T15:56:06.0499671Z 
+2026-10-19T15:56:06.0499943Z No user sessions are running outdated binaries.
+2026-10-19T15:56:06.0500245Z 
+2026-10-19T15:56:06.0500512Z No VM guests are running outdated hypervisor (qemu) binaries on this host.
+2026-10-19T15:56:06.9274096Z ##[group]Run actions/cache@v4
+2026-10-19T15:56:06.9274377Z with:
+2026-10-19T15:56:06.9274587Z   path: ~/.cache/pip
+2026-10-19T15:56:06.9274922Z   key: pip-173d707e845b4431106949175b8c828e217e244fd73f7383ebc194c89cb814a0
+2026-10-19T15:56:06.9275329Z   enableCrossOsArchive: false
+2026-10-19T15:56:06.9275587Z   fail-on-cache-miss: false
+2026-10-19T15:56:06.9275815Z   lookup-only: false
+2026-10-19T15:56:06.9276029Z   save-always: false
+2026-10-19T15:56:06.9276227Z env:
+2026-10-19T15:56:06.9276430Z   LLVM_PREFIX: /usr/lib/llvm-20
+2026-10-19T15:56:06.9276681Z   TNCA_LLVM: /usr/lib/llvm-20
+2026-10-19T15:56:06.9276905Z ##[endgroup]
+2026-10-19T15:56:07.0316863Z (node:2930) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+2026-10-19T15:56:07.0318106Z (Use `node --trace-deprecation ...` to show where the warning was created)
+2026-10-19T15:56:07.2916951Z Cache hit for: pip-173d707e845b4431106949175b8c828e217e244fd73f7383ebc194c89cb814a0
+2026-10-19T15:56:07.3023160Z (node:2930) [DEP0169] DeprecationWarning: `url.parse()` behavior is not standardized and prone to errors that have security implications. Use the WHATWG URL API instead. CVEs are not issued for `url.parse()` vulnerabilities.
+2026-10-19T15:56:08.5856548Z Received 4194304 of 242143880 (1.7%), 4.0 MBs/sec
+2026-10-19T15:56:09.5860404Z Received 113246208 of 242143880 (46.8%), 54.0 MBs/sec
+2026-10-19T15:56:10.5859688Z Received 234881024 of 242143880 (97.0%), 74.7 MBs/sec
+2026-10-19T15:56:10.8155629Z Received 242143880 of 242143880 (100.0%), 71.5 MBs/sec
+2026-10-19T15:56:10.8157712Z Cache Size: ~231 MB (242143880 B)
+2026-10-19T15:56:10.8272105Z [command]/usr/bin/tar -xf /home/runner/work/_temp/e1ac5650-e101-46f9-8b66-ca665d86f571/cache.tzst -P -C /home/runner/work/TritonChip/TritonChip --use-compress-program unzstd
+2026-10-19T15:56:11.1644341Z Cache restored successfully
+2026-10-19T15:56:11.1827204Z Cache restored from key: pip-173d707e845b4431106949175b8c828e217e244fd73f7383ebc194c89cb814a0
+2026-10-19T15:56:11.1958187Z ##[group]Run set -euo pipefail
+2026-10-19T15:56:11.1959035Z [36;1mset -euo pipefail[0m
+2026-10-19T15:56:11.1959799Z [36;1mV=$(python3 -c "import json;print(json.load(open('spec/r1_toolchain.lock.json'))['triton']['version'])")[0m
+2026-10-19T15:56:11.1960527Z [36;1mPV=$(python3 -c "import json;print(json.load(open('spec/r38/torch.lock.json'))['version'])")[0m
+2026-10-19T15:56:11.1961019Z [36;1mpython3 -m venv ~/tritonenv[0m
+2026-10-19T15:56:11.1961408Z [36;1m~/tritonenv/bin/pip install -q "triton==$V" "torch==$PV" numpy[0m
+2026-10-19T15:56:11.1961810Z [36;1mmake python/tnca/data/.staged[0m
+2026-10-19T15:56:11.1962115Z [36;1m~/tritonenv/bin/pip install -q -e .[0m
+2026-10-19T15:56:11.1962406Z [36;1mmake tnca-opt[0m
+2026-10-19T15:56:11.2035378Z shell: /usr/bin/bash -e {0}
+2026-10-19T15:56:11.2035637Z env:
+2026-10-19T15:56:11.2035852Z   LLVM_PREFIX: /usr/lib/llvm-20
+2026-10-19T15:56:11.2036118Z   TNCA_LLVM: /usr/lib/llvm-20
+2026-10-19T15:56:11.2036358Z ##[endgroup]
+2026-10-19T15:57:17.1379132Z wrote isa/tnca-isa-v0.1.json: 169 instructions, 20 majors, 25 special registers
+2026-10-19T15:57:17.1380018Z   note: described but unused operand kinds: ['wa']
+2026-10-19T15:57:17.1694844Z wrote compiler/targets/tnca-sim-v0.1.json: 2 RCTX, 64 logical vregs each, 128 physical
+2026-10-19T15:57:17.1695990Z wrote compiler/targets/tnca-sim-4rctx.json: 4 RCTX, 32 logical vregs each, 128 physical
+2026-10-19T15:57:17.1697087Z wrote compiler/targets/tnca-sim-2x2.json: 2 RCTX, 64 logical vregs each, 128 physical
+2026-10-19T15:57:17.1698280Z wrote compiler/targets/tnca-sim-vrf-v1.json: 2 RCTX, 64 logical vregs each, 128 physical
+2026-10-19T15:57:17.1699599Z wrote compiler/targets/tnca-sim-vrf-v2.json: 2 RCTX, 64 logical vregs each, 128 physical
+2026-10-19T15:57:17.1700664Z wrote compiler/targets/tnca-sim-vrf-v3.json: 2 RCTX, 64 logical vregs each, 128 physical
+2026-10-19T15:57:17.1701607Z wrote compiler/targets/tnca-sim-vrf-v4.json: 4 RCTX, 64 logical vregs each, 256 physical
+2026-10-19T15:57:17.1702685Z wrote compiler/targets/tnca-sim-vrf-v5.json: 4 RCTX, 64 logical vregs each, 256 physical
+2026-10-19T15:57:17.1703809Z wrote compiler/targets/tnca-sim-xpose-v1.json: 2 RCTX, 64 logical vregs each, 128 physical
+2026-10-19T15:57:17.2437906Z   staged 138 data file(s) into python/tnca/data
+2026-10-19T15:57:23.1227096Z ninja: Entering directory `compiler/build'
+2026-10-19T15:57:23.1468019Z [1/16] Building TNCAInterfaces.h.inc...
+2026-10-19T15:57:23.1519131Z [2/16] Building TNCAInterfaces.cpp.inc...
+2026-10-19T15:57:23.1549085Z [3/16] Building TNCADialect.cpp.inc...
+2026-10-19T15:57:23.1549869Z [4/16] Building TNCADialect.h.inc...
+2026-10-19T15:57:23.1574469Z [5/16] Building TNCAOps.h.inc...
+2026-10-19T15:57:23.1600943Z [6/16] Building TNCAOps.cpp.inc...
+2026-10-19T15:57:23.1607274Z [7/16] Building TNCATypes.h.inc...
+2026-10-19T15:57:23.1625221Z [8/16] Building TNCATypes.cpp.inc...
+2026-10-19T15:57:24.1970350Z [9/16] Building CXX object lib/Dialect/TNCA/IR/CMakeFiles/obj.MLIRTNCA.dir/TNCASupport.cpp.o
+2026-10-19T15:57:26.6010237Z [10/16] Building CXX object lib/Dialect/TNCA/IR/CMakeFiles/obj.MLIRTNCA.dir/TNCAAsyncOps.cpp.o
+2026-10-19T15:57:28.6459675Z [11/16] Building CXX object lib/Dialect/TNCA/Transforms/CMakeFiles/obj.MLIRTNCATransforms.dir/VerifyAsyncOwnership.cpp.o
+2026-10-19T15:57:32.1874444Z [12/16] Building CXX object lib/Dialect/TNCA/IR/CMakeFiles/obj.MLIRTNCA.dir/TNCADialect.cpp.o
+2026-10-19T15:57:41.7646080Z [13/16] Linking CXX static library lib/Dialect/TNCA/IR/libMLIRTNCA.a
+2026-10-19T15:57:41.8707368Z [14/16] Linking CXX static library lib/Dialect/TNCA/Transforms/libMLIRTNCATransforms.a
+2026-10-19T15:57:55.2977514Z [15/16] Building CXX object tools/tnca-opt/CMakeFiles/tnca-opt.dir/tnca-opt.cpp.o
+2026-10-19T15:58:00.1907020Z [16/16] Linking CXX executable tools/tnca-opt/tnca-opt
+2026-10-19T15:58:00.2011364Z ##[group]Run make r40-memory-ports r40-line-axi r40-cache-maintenance r40-multicore-dma \
+2026-10-19T15:58:00.2012041Z [36;1mmake r40-memory-ports r40-line-axi r40-cache-maintenance r40-multicore-dma \[0m
+2026-10-19T15:58:00.2012642Z [36;1m  TRITON_PYTHON=$HOME/tritonenv/bin/python TORCH_PYTHON=$HOME/tritonenv/bin/python[0m
+2026-10-19T15:58:00.2099188Z shell: /usr/bin/bash -e {0}
+2026-10-19T15:58:00.2099444Z env:
+2026-10-19T15:58:00.2099658Z   LLVM_PREFIX: /usr/lib/llvm-20
+2026-10-19T15:58:00.2099927Z   TNCA_LLVM: /usr/lib/llvm-20
+2026-10-19T15:58:00.2100178Z ##[endgroup]
+2026-10-19T15:58:00.4263854Z MEMORY PORT OPTIONS PASS 12 cases
+2026-10-19T15:58:00.4983792Z MEMORY PORTS PASS N=1 P=1 responses=16 parallel=0
+2026-10-19T15:58:00.4984524Z tb/tb_mem_ports_r40.v:88: $finish called at 1206000 (1ps)
+2026-10-19T15:58:00.5252692Z MEMORY PORTS PASS N=2 P=1 responses=32 parallel=0
+2026-10-19T15:58:00.5253561Z tb/tb_mem_ports_r40.v:88: $finish called at 1896000 (1ps)
+2026-10-19T15:58:00.5555423Z MEMORY PORTS PASS N=2 P=2 responses=32 parallel=7
+2026-10-19T15:58:00.5555959Z tb/tb_mem_ports_r40.v:88: $finish called at 1216000 (1ps)
+2026-10-19T15:58:00.5908755Z MEMORY PORTS PASS N=3 P=1 responses=48 parallel=0
+2026-10-19T15:58:00.5909459Z tb/tb_mem_ports_r40.v:88: $finish called at 2746000 (1ps)
+2026-10-19T15:58:00.6218360Z MEMORY PORTS PASS N=3 P=2 responses=48 parallel=3
+2026-10-19T15:58:00.6219283Z tb/tb_mem_ports_r40.v:88: $finish called at 1906000 (1ps)
+2026-10-19T15:58:00.6525493Z MEMORY PORTS PASS N=3 P=3 responses=48 parallel=13
+2026-10-19T15:58:00.6526201Z tb/tb_mem_ports_r40.v:88: $finish called at 1216000 (1ps)
+2026-10-19T15:58:00.6904196Z MEMORY PORTS PASS N=4 P=1 responses=64 parallel=0
+2026-10-19T15:58:00.6904895Z tb/tb_mem_ports_r40.v:88: $finish called at 3686000 (1ps)
+2026-10-19T15:58:00.7400996Z MEMORY PORTS PASS N=4 P=2 responses=64 parallel=2
+2026-10-19T15:58:00.7401675Z tb/tb_mem_ports_r40.v:88: $finish called at 1906000 (1ps)
+2026-10-19T15:58:00.7831870Z MEMORY PORTS PASS N=4 P=3 responses=64 parallel=12
+2026-10-19T15:58:00.7832652Z tb/tb_mem_ports_r40.v:88: $finish called at 1906000 (1ps)
+2026-10-19T15:58:00.8293451Z MEMORY PORTS PASS N=4 P=4 responses=64 parallel=17
+2026-10-19T15:58:00.8294151Z tb/tb_mem_ports_r40.v:88: $finish called at 1216000 (1ps)
+2026-10-19T15:58:00.9121915Z MEMORY PORTS PASS N=8 P=1 responses=128 parallel=0
+2026-10-19T15:58:00.9122763Z tb/tb_mem_ports_r40.v:88: $finish called at 7096000 (1ps)
+2026-10-19T15:58:01.0228715Z MEMORY PORTS PASS N=8 P=2 responses=128 parallel=2
+2026-10-19T15:58:01.0229799Z tb/tb_mem_ports_r40.v:88: $finish called at 3696000 (1ps)
+2026-10-19T15:58:01.0980954Z MEMORY PORTS PASS N=8 P=3 responses=128 parallel=6
+2026-10-19T15:58:01.0981871Z tb/tb_mem_ports_r40.v:88: $finish called at 2756000 (1ps)
+2026-10-19T15:58:01.1730910Z MEMORY PORTS PASS N=8 P=4 responses=128 parallel=12
+2026-10-19T15:58:01.1731612Z tb/tb_mem_ports_r40.v:88: $finish called at 1906000 (1ps)
+2026-10-19T15:58:01.2696016Z MEMORY PORTS PASS N=8 P=8 responses=128 parallel=50
+2026-10-19T15:58:01.2696900Z tb/tb_mem_ports_r40.v:88: $finish called at 1216000 (1ps)
+2026-10-19T15:59:11.3513024Z GRID REAL CORES PASS N=1 memory=1 ports=1 phase=0 programs=455 cycles=42700
+2026-10-19T15:59:11.3513878Z GRID REAL CORES PASS N=1 memory=1 ports=1 phase=1 programs=455 cycles=78849
+2026-10-19T15:59:11.3514585Z GRID COHERENT HOST PASS N=1 downloads=457 uploads=2
+2026-10-19T15:59:11.3515094Z SINGLE MEMORY PROTOCOL FAULT PASS
+2026-10-19T15:59:11.3515592Z tb/top/tb_grid_cores.v:175: $finish called at 841040000 (1ps)
+2026-10-19T16:00:35.5146194Z GRID REAL CORES PASS N=2 memory=1 ports=2 phase=0 programs=455 cycles=22761
+2026-10-19T16:00:35.5147079Z GRID REAL CORES PASS N=2 memory=1 ports=2 phase=1 programs=455 cycles=41856
+2026-10-19T16:00:35.5147785Z GRID COHERENT HOST PASS N=2 downloads=457 uploads=2
+2026-10-19T16:00:35.5148373Z tb/top/tb_grid_cores.v:175: $finish called at 477470000 (1ps)
+2026-10-19T16:02:15.2836712Z GRID REAL CORES PASS N=3 memory=1 ports=2 phase=0 programs=455 cycles=14972
+2026-10-19T16:02:15.2838034Z GRID REAL CORES PASS N=3 memory=1 ports=2 phase=1 programs=455 cycles=27473
+2026-10-19T16:02:15.2839377Z GRID COHERENT HOST PASS N=3 downloads=457 uploads=2
+2026-10-19T16:02:15.2840002Z tb/top/tb_grid_cores.v:175: $finish called at 337420000 (1ps)
+2026-10-19T16:03:57.3812273Z GRID REAL CORES PASS N=3 memory=1 ports=3 phase=0 programs=455 cycles=15020
+2026-10-19T16:03:57.3813627Z GRID REAL CORES PASS N=3 memory=1 ports=3 phase=1 programs=455 cycles=27624
+2026-10-19T16:03:57.3814320Z GRID COHERENT HOST PASS N=3 downloads=457 uploads=2
+2026-10-19T16:03:57.3814925Z tb/top/tb_grid_cores.v:175: $finish called at 341500000 (1ps)
+2026-10-19T16:06:07.3740495Z GRID REAL CORES PASS N=4 memory=1 ports=4 phase=0 programs=455 cycles=12732
+2026-10-19T16:06:07.3741394Z GRID REAL CORES PASS N=4 memory=1 ports=4 phase=1 programs=455 cycles=23554
+2026-10-19T16:06:07.3742123Z GRID COHERENT HOST PASS N=4 downloads=457 uploads=2
+2026-10-19T16:06:07.3742774Z tb/top/tb_grid_cores.v:175: $finish called at 307240000 (1ps)
+2026-10-19T16:06:46.2894286Z GRID progress cycles=1000 accepted=64 busy=ff
+2026-10-19T16:07:09.4838326Z GRID progress cycles=2000 accepted=128 busy=ff
+2026-10-19T16:07:31.6005302Z GRID progress cycles=3000 accepted=192 busy=ff
+2026-10-19T16:07:54.0325778Z GRID progress cycles=4000 accepted=256 busy=ff
+2026-10-19T16:08:17.0876605Z GRID progress cycles=5000 accepted=319 busy=7f
+2026-10-19T16:08:39.8051330Z GRID progress cycles=6000 accepted=376 busy=ff
+2026-10-19T16:09:02.1406252Z GRID progress cycles=7000 accepted=440 busy=ff
+2026-10-19T16:09:20.1975701Z GRID REAL CORES PASS N=8 memory=1 ports=3 phase=0 programs=455 cycles=7309
+2026-10-19T16:09:20.1976469Z GRID progress cycles=8000 accepted=56 busy=ff
+2026-10-19T16:09:35.5792043Z GRID progress cycles=9000 accepted=128 busy=ff
+2026-10-19T16:09:51.2993485Z GRID progress cycles=10000 accepted=200 busy=ff
+2026-10-19T16:10:07.2863223Z GRID progress cycles=11000 accepted=272 busy=ff
+2026-10-19T16:10:22.7821765Z GRID progress cycles=12000 accepted=352 busy=ff
+2026-10-19T16:10:38.7497136Z GRID progress cycles=13000 accepted=424 busy=ff
+2026-10-19T16:10:51.5263162Z GRID REAL CORES PASS N=8 memory=1 ports=3 phase=1 programs=455 cycles=13472
+2026-10-19T16:10:51.5263914Z GRID progress cycles=14000 accepted=455 busy=00
+2026-10-19T16:11:01.7117120Z GRID progress cycles=15000 accepted=455 busy=00
+2026-10-19T16:11:11.7650278Z GRID progress cycles=16000 accepted=455 busy=00
+2026-10-19T16:11:21.7175638Z GRID progress cycles=17000 accepted=455 busy=00
+2026-10-19T16:11:31.8686462Z GRID progress cycles=18000 accepted=455 busy=00
+2026-10-19T16:11:41.9764901Z GRID progress cycles=19000 accepted=455 busy=00
+2026-10-19T16:11:52.1344528Z GRID progress cycles=20000 accepted=455 busy=00
+2026-10-19T16:12:00.6393153Z GRID COHERENT HOST PASS N=8 downloads=457 uploads=2
+2026-10-19T16:12:00.6393825Z tb/top/tb_grid_cores.v:175: $finish called at 208540000 (1ps)
+2026-10-19T16:12:37.9164218Z GRID progress cycles=1000 accepted=56 busy=ff
+2026-10-19T16:12:57.8685591Z GRID progress cycles=2000 accepted=112 busy=ff
+2026-10-19T16:13:17.7576524Z GRID progress cycles=3000 accepted=168 busy=ff
+2026-10-19T16:13:38.6558993Z GRID progress cycles=4000 accepted=224 busy=ff
+2026-10-19T16:13:59.6264695Z GRID progress cycles=5000 accepted=280 busy=ff
+2026-10-19T16:14:20.2992168Z GRID progress cycles=6000 accepted=336 busy=ff
+2026-10-19T16:14:40.9004913Z GRID progress cycles=7000 accepted=392 busy=ff
+2026-10-19T16:15:01.2239718Z GRID progress cycles=8000 accepted=444 busy=ff
+2026-10-19T16:15:16.2471161Z GRID REAL CORES PASS N=8 memory=1 ports=8 phase=0 programs=455 cycles=8295
+2026-10-19T16:15:16.2471924Z GRID progress cycles=9000 accepted=48 busy=ff
+2026-10-19T16:15:29.7644507Z GRID progress cycles=10000 accepted=104 busy=ff
+2026-10-19T16:15:43.5376463Z GRID progress cycles=11000 accepted=168 busy=ff
+2026-10-19T16:15:57.7964075Z GRID progress cycles=12000 accepted=234 busy=fb
+2026-10-19T16:16:11.4167383Z GRID progress cycles=13000 accepted=296 busy=ff
+2026-10-19T16:16:25.2376336Z GRID progress cycles=14000 accepted=362 busy=fb
+2026-10-19T16:16:39.1254502Z GRID progress cycles=15000 accepted=429 busy=7f
+2026-10-19T16:16:50.3015484Z GRID REAL CORES PASS N=8 memory=1 ports=8 phase=1 programs=455 cycles=15468
+2026-10-19T16:16:50.3016118Z GRID progress cycles=16000 accepted=455 busy=00
+2026-10-19T16:16:59.8455237Z GRID progress cycles=17000 accepted=455 busy=00
+2026-10-19T16:17:09.5029613Z GRID progress cycles=18000 accepted=455 busy=00
+2026-10-19T16:17:19.1830874Z GRID progress cycles=19000 accepted=455 busy=00
+2026-10-19T16:17:28.4240798Z GRID progress cycles=20000 accepted=455 busy=00
+2026-10-19T16:17:37.9283791Z GRID progress cycles=21000 accepted=455 busy=00
+2026-10-19T16:17:47.3027163Z GRID progress cycles=22000 accepted=455 busy=00
+2026-10-19T16:17:56.8695676Z GRID progress cycles=23000 accepted=455 busy=00
+2026-10-19T16:18:05.7683459Z GRID COHERENT HOST PASS N=8 downloads=457 uploads=2
+2026-10-19T16:18:05.7684166Z tb/top/tb_grid_cores.v:175: $finish called at 239470000 (1ps)
+2026-10-19T16:18:05.9145613Z MEMORY PORTS MATRIX PASS 15 protocol and 7 real-core configurations
+2026-10-19T16:28:27.3675527Z NATIVE MEMORY PORTS PASS {"controller_traffic": [{"port": 0, "read_lines": 611, "write_lines": 173}, {"port": 1, "read_lines": 292, "write_lines": 87}], "cores": 3, "dma_ownership": false, "physical_activity": {"cores": [{"completed": 88, "core": 0, "issued": 88, "occupied_cycles": 16550}, {"completed": 85, "core": 1, "issued": 85, "occupied_cycles": 16259}, {"completed": 84, "core": 2, "issued": 84, "occupied_cycles": 16111}], "peak_active": 3}, "ports": 2, "zero_tensor_staging": true}
+2026-10-19T16:38:41.1377621Z NATIVE MEMORY PORTS PASS {"controller_traffic": [{"port": 0, "read_lines": 360, "write_lines": 90}, {"port": 1, "read_lines": 289, "write_lines": 84}, {"port": 2, "read_lines": 259, "write_lines": 85}], "cores": 3, "dma_ownership": false, "physical_activity": {"cores": [{"completed": 88, "core": 0, "issued": 88, "occupied_cycles": 17276}, {"completed": 84, "core": 1, "issued": 84, "occupied_cycles": 17228}, {"completed": 85, "core": 2, "issued": 85, "occupied_cycles": 17323}], "peak_active": 3}, "ports": 3, "zero_tensor_staging": true}
+2026-10-19T16:38:42.0560715Z RUNTIME LIMIT limit=0 peak_slots=1
+2026-10-19T16:38:42.0563281Z LINE AXI PASS width=64 slots=1 mode=0 stages=0 write_ack=1 completed=192 peak=1 collisions=0 reads=141 writes=51
+2026-10-19T16:38:42.0564438Z tb/fpga/tb_line_axi.v:178: $finish called at 78440000 (1ps)
+2026-10-19T16:38:42.1986813Z RUNTIME LIMIT limit=0 peak_slots=3
+2026-10-19T16:38:42.1987723Z LINE AXI PASS width=64 slots=3 mode=0 stages=0 write_ack=1 completed=192 peak=3 collisions=6 reads=141 writes=51
+2026-10-19T16:38:42.1988941Z tb/fpga/tb_line_axi.v:178: $finish called at 33890000 (1ps)
+2026-10-19T16:38:42.3211154Z RUNTIME LIMIT limit=0 peak_slots=8
+2026-10-19T16:38:42.3212320Z LINE AXI PASS width=64 slots=8 mode=0 stages=0 write_ack=1 completed=192 peak=8 collisions=31 reads=141 writes=51
+2026-10-19T16:38:42.3213582Z tb/fpga/tb_line_axi.v:178: $finish called at 16350000 (1ps)
+2026-10-19T16:38:42.4827007Z RUNTIME LIMIT limit=0 peak_slots=1
+2026-10-19T16:38:42.4827888Z LINE AXI PASS width=128 slots=1 mode=0 stages=0 write_ack=1 completed=192 peak=1 collisions=0 reads=141 writes=51
+2026-10-19T16:38:42.4829105Z tb/fpga/tb_line_axi.v:178: $finish called at 68960000 (1ps)
+2026-10-19T16:38:42.5777543Z RUNTIME LIMIT limit=0 peak_slots=3
+2026-10-19T16:38:42.5779183Z LINE AXI PASS width=128 slots=3 mode=0 stages=0 write_ack=1 completed=192 peak=3 collisions=4 reads=141 writes=51
+2026-10-19T16:38:42.5780238Z tb/fpga/tb_line_axi.v:178: $finish called at 29620000 (1ps)
+2026-10-19T16:38:42.6971299Z RUNTIME LIMIT limit=0 peak_slots=8
+2026-10-19T16:38:42.6972190Z LINE AXI PASS width=128 slots=8 mode=0 stages=0 write_ack=1 completed=192 peak=8 collisions=18 reads=141 writes=51
+2026-10-19T16:38:42.6973151Z tb/fpga/tb_line_axi.v:178: $finish called at 12660000 (1ps)
+2026-10-19T16:38:42.8134066Z RUNTIME LIMIT limit=0 peak_slots=1
+2026-10-19T16:38:42.8136853Z LINE AXI PASS width=256 slots=1 mode=0 stages=0 write_ack=1 completed=192 peak=1 collisions=0 reads=141 writes=51
+2026-10-19T16:38:42.8137642Z tb/fpga/tb_line_axi.v:178: $finish called at 64630000 (1ps)
+2026-10-19T16:38:42.9131855Z RUNTIME LIMIT limit=0 peak_slots=3
+2026-10-19T16:38:42.9132728Z LINE AXI PASS width=256 slots=3 mode=0 stages=0 write_ack=1 completed=192 peak=3 collisions=6 reads=141 writes=51
+2026-10-19T16:38:42.9134126Z tb/fpga/tb_line_axi.v:178: $finish called at 28100000 (1ps)
+2026-10-19T16:38:43.0313150Z RUNTIME LIMIT limit=0 peak_slots=8
+2026-10-19T16:38:43.0314288Z LINE AXI PASS width=256 slots=8 mode=0 stages=0 write_ack=1 completed=192 peak=8 collisions=11 reads=141 writes=51
+2026-10-19T16:38:43.0315213Z tb/fpga/tb_line_axi.v:178: $finish called at 11600000 (1ps)
+2026-10-19T16:38:43.1497633Z RUNTIME LIMIT limit=0 peak_slots=1
+2026-10-19T16:38:43.1498737Z LINE AXI PASS width=512 slots=1 mode=0 stages=0 write_ack=1 completed=192 peak=1 collisions=0 reads=141 writes=51
+2026-10-19T16:38:43.1499768Z tb/fpga/tb_line_axi.v:178: $finish called at 63050000 (1ps)
+2026-10-19T16:38:43.2500484Z RUNTIME LIMIT limit=0 peak_slots=3
+2026-10-19T16:38:43.2501377Z LINE AXI PASS width=512 slots=3 mode=0 stages=0 write_ack=1 completed=192 peak=3 collisions=0 reads=141 writes=51
+2026-10-19T16:38:43.2502088Z tb/fpga/tb_line_axi.v:178: $finish called at 27340000 (1ps)
+2026-10-19T16:38:43.3689113Z RUNTIME LIMIT limit=0 peak_slots=8
+2026-10-19T16:38:43.3689987Z LINE AXI PASS width=512 slots=8 mode=0 stages=0 write_ack=1 completed=192 peak=8 collisions=0 reads=141 writes=51
+2026-10-19T16:38:43.3690936Z tb/fpga/tb_line_axi.v:178: $finish called at 11220000 (1ps)
+2026-10-19T16:38:43.4005560Z RUNTIME LIMIT limit=0 peak_slots=1
+2026-10-19T16:38:43.4006327Z LINE AXI PASS width=64 slots=3 mode=1 stages=0 write_ack=1 completed=1 peak=1 collisions=0 reads=1 writes=0
+2026-10-19T16:38:43.4007133Z tb/fpga/tb_line_axi.v:178: $finish called at 410000 (1ps)
+2026-10-19T16:38:43.4238819Z RUNTIME LIMIT limit=0 peak_slots=1
+2026-10-19T16:38:43.4239528Z LINE AXI PASS width=64 slots=3 mode=2 stages=0 write_ack=1 completed=1 peak=1 collisions=0 reads=0 writes=1
+2026-10-19T16:38:43.4240261Z tb/fpga/tb_line_axi.v:178: $finish called at 610000 (1ps)
+2026-10-19T16:38:43.5200628Z RUNTIME LIMIT limit=0 peak_slots=3
+2026-10-19T16:38:43.5201406Z LINE AXI PASS width=64 slots=3 mode=3 stages=0 write_ack=1 completed=192 peak=3 collisions=6 reads=141 writes=51
+2026-10-19T16:38:43.5202252Z tb/fpga/tb_line_axi.v:178: $finish called at 33900000 (1ps)
+2026-10-19T16:38:43.5767955Z RUNTIME LIMIT limit=0 peak_slots=1
+2026-10-19T16:38:43.5768895Z LINE AXI PASS width=64 slots=3 mode=4 stages=0 write_ack=1 completed=0 peak=1 collisions=0 reads=1 writes=0
+2026-10-19T16:38:43.5769731Z tb/fpga/tb_line_axi.v:178: $finish called at 370000 (1ps)
+2026-10-19T16:38:43.6732888Z RUNTIME LIMIT limit=0 peak_slots=3
+2026-10-19T16:38:43.6733613Z LINE AXI PASS width=64 slots=3 mode=5 stages=0 write_ack=1 completed=192 peak=3 collisions=6 reads=0 writes=0
+2026-10-19T16:38:43.6734381Z tb/fpga/tb_line_axi.v:178: $finish called at 33920000 (1ps)
+2026-10-19T16:38:43.7296356Z RUNTIME LIMIT limit=0 peak_slots=1
+2026-10-19T16:38:43.7297018Z LINE AXI PASS width=256 slots=3 mode=1 stages=0 write_ack=1 completed=1 peak=1 collisions=0 reads=1 writes=0
+2026-10-19T16:38:43.7297698Z tb/fpga/tb_line_axi.v:178: $finish called at 350000 (1ps)
+2026-10-19T16:38:43.7530824Z RUNTIME LIMIT limit=0 peak_slots=1
+2026-10-19T16:38:43.7531512Z LINE AXI PASS width=256 slots=3 mode=2 stages=0 write_ack=1 completed=1 peak=1 collisions=0 reads=0 writes=1
+2026-10-19T16:38:43.7532266Z tb/fpga/tb_line_axi.v:178: $finish called at 600000 (1ps)
+2026-10-19T16:38:43.8363491Z RUNTIME LIMIT limit=0 peak_slots=3
+2026-10-19T16:38:43.8364287Z LINE AXI PASS width=256 slots=3 mode=3 stages=0 write_ack=1 completed=192 peak=3 collisions=6 reads=141 writes=51
+2026-10-19T16:38:43.8365096Z tb/fpga/tb_line_axi.v:178: $finish called at 28110000 (1ps)
+2026-10-19T16:38:43.9061307Z RUNTIME LIMIT limit=0 peak_slots=1
+2026-10-19T16:38:43.9062198Z LINE AXI PASS width=256 slots=3 mode=4 stages=0 write_ack=1 completed=0 peak=1 collisions=0 reads=1 writes=0
+2026-10-19T16:38:43.9062876Z tb/fpga/tb_line_axi.v:178: $finish called at 370000 (1ps)
+2026-10-19T16:38:43.9897877Z RUNTIME LIMIT limit=0 peak_slots=3
+2026-10-19T16:38:43.9898983Z LINE AXI PASS width=256 slots=3 mode=5 stages=0 write_ack=1 completed=192 peak=3 collisions=6 reads=0 writes=0
+2026-10-19T16:38:43.9900209Z tb/fpga/tb_line_axi.v:178: $finish called at 28130000 (1ps)
+2026-10-19T16:38:44.1802005Z RUNTIME LIMIT limit=0 peak_slots=3
+2026-10-19T16:38:44.1802983Z LINE AXI PASS width=64 slots=3 mode=0 stages=1 write_ack=1 completed=192 peak=5 collisions=8 reads=141 writes=51
+2026-10-19T16:38:44.1804013Z tb/fpga/tb_line_axi.v:178: $finish called at 33720000 (1ps)
+2026-10-19T16:38:44.4085252Z RUNTIME LIMIT limit=0 peak_slots=3
+2026-10-19T16:38:44.4086007Z LINE AXI PASS width=64 slots=3 mode=0 stages=2 write_ack=1 completed=192 peak=7 collisions=8 reads=141 writes=51
+2026-10-19T16:38:44.4086873Z tb/fpga/tb_line_axi.v:178: $finish called at 33730000 (1ps)
+2026-10-19T16:38:44.8271530Z RUNTIME LIMIT limit=0 peak_slots=3
+2026-10-19T16:38:44.8272346Z LINE AXI PASS width=64 slots=3 mode=0 stages=4 write_ack=1 completed=192 peak=11 collisions=8 reads=141 writes=51
+2026-10-19T16:38:44.8273303Z tb/fpga/tb_line_axi.v:178: $finish called at 33750000 (1ps)
+2026-10-19T16:38:45.0076872Z RUNTIME LIMIT limit=0 peak_slots=3
+2026-10-19T16:38:45.0077668Z LINE AXI PASS width=256 slots=3 mode=0 stages=1 write_ack=1 completed=192 peak=5 collisions=6 reads=141 writes=51
+2026-10-19T16:38:45.0078848Z tb/fpga/tb_line_axi.v:178: $finish called at 28100000 (1ps)
+2026-10-19T16:38:45.2335556Z RUNTIME LIMIT limit=0 peak_slots=3
+2026-10-19T16:38:45.2336390Z LINE AXI PASS width=256 slots=3 mode=0 stages=2 write_ack=1 completed=192 peak=7 collisions=4 reads=141 writes=51
+2026-10-19T16:38:45.2337264Z tb/fpga/tb_line_axi.v:178: $finish called at 27920000 (1ps)
+2026-10-19T16:38:45.5910751Z RUNTIME LIMIT limit=0 peak_slots=3
+2026-10-19T16:38:45.5912116Z LINE AXI PASS width=256 slots=3 mode=0 stages=4 write_ack=1 completed=192 peak=11 collisions=4 reads=141 writes=51
+2026-10-19T16:38:45.5913095Z tb/fpga/tb_line_axi.v:178: $finish called at 27940000 (1ps)
+2026-10-19T16:38:45.7455295Z RUNTIME LIMIT limit=0 peak_slots=3
+2026-10-19T16:38:45.7456514Z LINE AXI PASS width=512 slots=3 mode=0 stages=1 write_ack=1 completed=192 peak=5 collisions=1 reads=141 writes=51
+2026-10-19T16:38:45.7457524Z tb/fpga/tb_line_axi.v:178: $finish called at 27210000 (1ps)
+2026-10-19T16:38:45.9132343Z RUNTIME LIMIT limit=0 peak_slots=3
+2026-10-19T16:38:45.9133229Z LINE AXI PASS width=512 slots=3 mode=0 stages=2 write_ack=1 completed=192 peak=7 collisions=1 reads=141 writes=51
+2026-10-19T16:38:45.9134173Z tb/fpga/tb_line_axi.v:178: $finish called at 27270000 (1ps)
+2026-10-19T16:38:46.2728410Z RUNTIME LIMIT limit=0 peak_slots=3
+2026-10-19T16:38:46.2729729Z LINE AXI PASS width=512 slots=3 mode=0 stages=4 write_ack=1 completed=192 peak=11 collisions=1 reads=141 writes=51
+2026-10-19T16:38:46.2730721Z tb/fpga/tb_line_axi.v:178: $finish called at 27610000 (1ps)
+2026-10-19T16:38:46.4041451Z RUNTIME LIMIT limit=0 peak_slots=3
+2026-10-19T16:38:46.4042422Z LINE AXI PASS width=64 slots=3 mode=0 stages=0 write_ack=0 completed=141 peak=3 collisions=6 reads=141 writes=51
+2026-10-19T16:38:46.4043253Z tb/fpga/tb_line_axi.v:178: $finish called at 33700000 (1ps)
+2026-10-19T16:38:46.6313865Z RUNTIME LIMIT limit=0 peak_slots=3
+2026-10-19T16:38:46.6314646Z LINE AXI PASS width=64 slots=3 mode=0 stages=2 write_ack=0 completed=141 peak=6 collisions=6 reads=141 writes=51
+2026-10-19T16:38:46.6315448Z tb/fpga/tb_line_axi.v:178: $finish called at 33870000 (1ps)
+2026-10-19T16:38:46.7496835Z RUNTIME LIMIT limit=0 peak_slots=3
+2026-10-19T16:38:46.7497687Z LINE AXI PASS width=256 slots=3 mode=0 stages=0 write_ack=0 completed=141 peak=3 collisions=5 reads=141 writes=51
+2026-10-19T16:38:46.7499001Z tb/fpga/tb_line_axi.v:178: $finish called at 27920000 (1ps)
+2026-10-19T16:38:46.9717091Z RUNTIME LIMIT limit=0 peak_slots=3
+2026-10-19T16:38:46.9719069Z LINE AXI PASS width=256 slots=3 mode=0 stages=2 write_ack=0 completed=141 peak=6 collisions=6 reads=141 writes=51
+2026-10-19T16:38:46.9720082Z tb/fpga/tb_line_axi.v:178: $finish called at 28110000 (1ps)
+2026-10-19T16:38:46.9782755Z LINE AXI MATRIX PASS 35 configurations
+2026-10-19T16:40:22.2262639Z MULTICORE SHELL GRID PASS N=1 id=9 status=3 cycles=1552
+2026-10-19T16:40:22.2264333Z MULTICORE SHELL GRID PASS N=1 id=10 status=3 cycles=1560
+2026-10-19T16:40:22.2265449Z MULTICORE SHELL GRID PASS N=1 id=13 status=2 cycles=1679
+2026-10-19T16:40:22.2266348Z MULTICORE SHELL GRID PASS N=1 id=11 status=0 cycles=40712
+2026-10-19T16:40:22.2267123Z MULTICORE SHELL GRID PASS N=1 id=12 status=0 cycles=76990
+2026-10-19T16:40:22.2267623Z AXI OUTLET TRAFFIC port=0 reads=171 writes=57
+2026-10-19T16:40:22.2268130Z MULTICORE SHELL GRID PASS N=1 id=14 status=1 cycles=83166
+2026-10-19T16:40:22.2269179Z MULTICORE AXI PERSISTENT PASS N=1 ports=1 stages=0 write_delay=15 drain_wait=0
+2026-10-19T16:40:22.2269923Z tb/fpga/tb_multicore_axi.v:193: $finish called at 831660000 (1ps)
+2026-10-19T16:42:17.0273313Z MULTICORE SHELL GRID PASS N=2 id=9 status=3 cycles=1552
+2026-10-19T16:42:17.0274263Z MULTICORE SHELL GRID PASS N=2 id=10 status=3 cycles=1560
+2026-10-19T16:42:17.0275151Z MULTICORE SHELL GRID PASS N=2 id=13 status=2 cycles=1686
+2026-10-19T16:42:17.0276069Z MULTICORE SHELL GRID PASS N=2 id=11 status=0 cycles=23851
+2026-10-19T16:42:17.0276954Z MULTICORE SHELL GRID PASS N=2 id=12 status=0 cycles=43964
+2026-10-19T16:42:17.0277689Z AXI OUTLET TRAFFIC port=0 reads=87 writes=29
+2026-10-19T16:42:17.0278170Z AXI OUTLET TRAFFIC port=1 reads=84 writes=28
+2026-10-19T16:42:17.0279110Z MULTICORE SHELL GRID PASS N=2 id=14 status=1 cycles=51229
+2026-10-19T16:42:17.0279804Z MULTICORE AXI PERSISTENT PASS N=2 ports=2 stages=1 write_delay=15 drain_wait=0
+2026-10-19T16:42:17.0280542Z tb/fpga/tb_multicore_axi.v:193: $finish called at 512290000 (1ps)
+2026-10-19T16:44:31.9442139Z MULTICORE SHELL GRID PASS N=3 id=9 status=3 cycles=1552
+2026-10-19T16:44:31.9443247Z MULTICORE SHELL GRID PASS N=3 id=10 status=3 cycles=1560
+2026-10-19T16:44:31.9444228Z MULTICORE SHELL GRID PASS N=3 id=13 status=2 cycles=1712
+2026-10-19T16:44:31.9445203Z MULTICORE SHELL GRID PASS N=3 id=11 status=0 cycles=15371
+2026-10-19T16:44:31.9446200Z MULTICORE SHELL GRID PASS N=3 id=12 status=0 cycles=28253
+2026-10-19T16:44:31.9446928Z AXI OUTLET TRAFFIC port=0 reads=114 writes=38
+2026-10-19T16:44:31.9447439Z AXI OUTLET TRAFFIC port=1 reads=57 writes=19
+2026-10-19T16:44:31.9447996Z MULTICORE SHELL GRID PASS N=3 id=14 status=1 cycles=35899
+2026-10-19T16:44:31.9449108Z MULTICORE AXI PERSISTENT PASS N=3 ports=2 stages=2 write_delay=15 drain_wait=0
+2026-10-19T16:44:31.9449925Z tb/fpga/tb_multicore_axi.v:193: $finish called at 358990000 (1ps)
+2026-10-19T16:46:45.8131695Z MULTICORE SHELL GRID PASS N=3 id=9 status=3 cycles=1552
+2026-10-19T16:46:45.8133882Z MULTICORE SHELL GRID PASS N=3 id=10 status=3 cycles=1560
+2026-10-19T16:46:45.8134714Z MULTICORE SHELL GRID PASS N=3 id=13 status=2 cycles=1712
+2026-10-19T16:46:45.8135218Z MULTICORE SHELL GRID PASS N=3 id=11 status=0 cycles=15902
+2026-10-19T16:46:45.8135749Z MULTICORE SHELL GRID PASS N=3 id=12 status=0 cycles=29261
+2026-10-19T16:46:45.8136208Z AXI OUTLET TRAFFIC port=0 reads=60 writes=20
+2026-10-19T16:46:45.8136586Z AXI OUTLET TRAFFIC port=1 reads=57 writes=19
+2026-10-19T16:46:45.8136935Z AXI OUTLET TRAFFIC port=2 reads=54 writes=18
+2026-10-19T16:46:45.8137316Z MULTICORE SHELL GRID PASS N=3 id=14 status=1 cycles=37584
+2026-10-19T16:46:45.8137825Z MULTICORE AXI PERSISTENT PASS N=3 ports=3 stages=2 write_delay=15 drain_wait=0
+2026-10-19T16:46:45.8138381Z tb/fpga/tb_multicore_axi.v:193: $finish called at 375840000 (1ps)
+2026-10-19T16:49:42.1647365Z MULTICORE SHELL GRID PASS N=4 id=9 status=3 cycles=1552
+2026-10-19T16:49:42.1649738Z MULTICORE SHELL GRID PASS N=4 id=10 status=3 cycles=1560
+2026-10-19T16:49:42.1650388Z MULTICORE SHELL GRID PASS N=4 id=13 status=2 cycles=1699
+2026-10-19T16:49:42.1651394Z MULTICORE SHELL GRID PASS N=4 id=11 status=0 cycles=15699
+2026-10-19T16:49:42.1652017Z MULTICORE SHELL GRID PASS N=4 id=12 status=0 cycles=28567
+2026-10-19T16:49:42.1652551Z AXI OUTLET TRAFFIC port=0 reads=45 writes=15
+2026-10-19T16:49:42.1653033Z AXI OUTLET TRAFFIC port=1 reads=42 writes=14
+2026-10-19T16:49:42.1653499Z AXI OUTLET TRAFFIC port=2 reads=42 writes=14
+2026-10-19T16:49:42.1654172Z AXI OUTLET TRAFFIC port=3 reads=42 writes=14
+2026-10-19T16:49:42.1654697Z MULTICORE SHELL GRID PASS N=4 id=14 status=1 cycles=37911
+2026-10-19T16:49:42.1655411Z MULTICORE AXI PERSISTENT PASS N=4 ports=4 stages=2 write_delay=15 drain_wait=0
+2026-10-19T16:49:42.1656179Z tb/fpga/tb_multicore_axi.v:193: $finish called at 379110000 (1ps)
+2026-10-19T16:56:46.8699848Z MULTICORE SHELL GRID PASS N=8 id=9 status=3 cycles=1552
+2026-10-19T16:56:46.8700648Z MULTICORE SHELL GRID PASS N=8 id=10 status=3 cycles=1560
+2026-10-19T16:56:46.8701480Z MULTICORE SHELL GRID PASS N=8 id=13 status=2 cycles=1734
+2026-10-19T16:56:46.8702278Z MULTICORE SHELL GRID PASS N=8 id=11 status=0 cycles=10334
+2026-10-19T16:56:46.8703067Z MULTICORE SHELL GRID PASS N=8 id=12 status=0 cycles=18295
+2026-10-19T16:56:46.8703519Z AXI OUTLET TRAFFIC port=0 reads=63 writes=21
+2026-10-19T16:56:46.8703929Z AXI OUTLET TRAFFIC port=1 reads=66 writes=22
+2026-10-19T16:56:46.8704379Z AXI OUTLET TRAFFIC port=2 reads=42 writes=14
+2026-10-19T16:56:46.8704886Z MULTICORE SHELL GRID PASS N=8 id=14 status=1 cycles=27465
+2026-10-19T16:56:46.8705481Z MULTICORE AXI PERSISTENT PASS N=8 ports=3 stages=2 write_delay=15 drain_wait=0
+2026-10-19T16:56:46.8706130Z tb/fpga/tb_multicore_axi.v:193: $finish called at 274650000 (1ps)
+2026-10-19T17:04:14.5142653Z MULTICORE SHELL GRID PASS N=8 id=9 status=3 cycles=1552
+2026-10-19T17:04:14.5143375Z MULTICORE SHELL GRID PASS N=8 id=10 status=3 cycles=1560
+2026-10-19T17:04:14.5144016Z MULTICORE SHELL GRID PASS N=8 id=13 status=2 cycles=1796
+2026-10-19T17:04:14.5144638Z MULTICORE SHELL GRID PASS N=8 id=11 status=0 cycles=13352
+2026-10-19T17:04:14.5145295Z MULTICORE SHELL GRID PASS N=8 id=12 status=0 cycles=24403
+2026-10-19T17:04:14.5145866Z AXI OUTLET TRAFFIC port=0 reads=21 writes=7
+2026-10-19T17:04:14.5146350Z AXI OUTLET TRAFFIC port=1 reads=21 writes=7
+2026-10-19T17:04:14.5146847Z AXI OUTLET TRAFFIC port=2 reads=21 writes=7
+2026-10-19T17:04:14.5147313Z AXI OUTLET TRAFFIC port=3 reads=21 writes=7
+2026-10-19T17:04:14.5147786Z AXI OUTLET TRAFFIC port=4 reads=24 writes=8
+2026-10-19T17:04:14.5148279Z AXI OUTLET TRAFFIC port=5 reads=21 writes=7
+2026-10-19T17:04:14.5149096Z AXI OUTLET TRAFFIC port=6 reads=21 writes=7
+2026-10-19T17:04:14.5149598Z AXI OUTLET TRAFFIC port=7 reads=21 writes=7
+2026-10-19T17:04:14.5150177Z MULTICORE SHELL GRID PASS N=8 id=14 status=1 cycles=36720
+2026-10-19T17:04:14.5150914Z MULTICORE AXI PERSISTENT PASS N=8 ports=8 stages=4 write_delay=15 drain_wait=0
+2026-10-19T17:04:14.5151694Z tb/fpga/tb_multicore_axi.v:193: $finish called at 367200000 (1ps)
+2026-10-19T17:04:14.6303383Z MULTICORE AXI MATRIX PASS 7 configurations
+2026-10-19T17:06:28.5679134Z MULTICORE SHELL GRID PASS N=3 id=9 status=3 cycles=1552
+2026-10-19T17:06:28.5679883Z MULTICORE SHELL GRID PASS N=3 id=10 status=3 cycles=1560
+2026-10-19T17:06:28.5680454Z MULTICORE SHELL GRID PASS N=3 id=13 status=2 cycles=1712
+2026-10-19T17:06:28.5681019Z MULTICORE SHELL GRID PASS N=3 id=11 status=0 cycles=15529
+2026-10-19T17:06:28.5681590Z MULTICORE SHELL GRID PASS N=3 id=12 status=0 cycles=28470
+2026-10-19T17:06:28.5682123Z AXI OUTLET TRAFFIC port=0 reads=114 writes=38
+2026-10-19T17:06:28.5682587Z AXI OUTLET TRAFFIC port=1 reads=57 writes=19
+2026-10-19T17:06:28.5683096Z MULTICORE SHELL GRID PASS N=3 id=14 status=1 cycles=36112
+2026-10-19T17:06:28.5683788Z MULTICORE AXI PERSISTENT PASS N=3 ports=2 stages=2 write_delay=300 drain_wait=84
+2026-10-19T17:06:28.5684570Z tb/fpga/tb_multicore_axi.v:193: $finish called at 361120000 (1ps)
+2026-10-19T17:08:51.0626545Z MULTICORE SHELL GRID PASS N=3 id=9 status=3 cycles=1552
+2026-10-19T17:08:51.0627274Z MULTICORE SHELL GRID PASS N=3 id=10 status=3 cycles=1560
+2026-10-19T17:08:51.0628348Z MULTICORE SHELL GRID PASS N=3 id=13 status=2 cycles=1712
+2026-10-19T17:08:51.0629236Z MULTICORE SHELL GRID PASS N=3 id=11 status=0 cycles=16034
+2026-10-19T17:08:51.0629848Z MULTICORE SHELL GRID PASS N=3 id=12 status=0 cycles=29425
+2026-10-19T17:08:51.0630388Z AXI OUTLET TRAFFIC port=0 reads=60 writes=20
+2026-10-19T17:08:51.0630864Z AXI OUTLET TRAFFIC port=1 reads=57 writes=19
+2026-10-19T17:08:51.0631557Z AXI OUTLET TRAFFIC port=2 reads=54 writes=18
+2026-10-19T17:08:51.0632079Z MULTICORE SHELL GRID PASS N=3 id=14 status=1 cycles=37744
+2026-10-19T17:08:51.0632798Z MULTICORE AXI PERSISTENT PASS N=3 ports=3 stages=2 write_delay=300 drain_wait=93
+2026-10-19T17:08:51.0633559Z tb/fpga/tb_multicore_axi.v:193: $finish called at 377440000 (1ps)
+2026-10-19T17:08:51.1191478Z MULTICORE AXI MATRIX PASS 2 configurations
+2026-10-19T17:08:51.2154783Z NUCA MAINTENANCE PASS full_tag=0 latency=1 stall=1 reorder=1 writes=4
+2026-10-19T17:08:51.2156041Z tb/nuca/tb_nuca_maintenance.v:148: $finish called at 2930000 (1ps)
+2026-10-19T17:08:51.2746839Z NUCA MAINTENANCE PASS full_tag=0 latency=8 stall=1 reorder=1 writes=4
+2026-10-19T17:08:51.2747706Z tb/nuca/tb_nuca_maintenance.v:148: $finish called at 3480000 (1ps)
+2026-10-19T17:08:51.3428348Z NUCA MAINTENANCE PASS full_tag=0 latency=31 stall=1 reorder=1 writes=4
+2026-10-19T17:08:51.3429398Z tb/nuca/tb_nuca_maintenance.v:148: $finish called at 5660000 (1ps)
+2026-10-19T17:08:51.3998723Z NUCA MAINTENANCE PASS full_tag=1 latency=1 stall=1 reorder=1 writes=4
+2026-10-19T17:08:51.3999764Z tb/nuca/tb_nuca_maintenance.v:148: $finish called at 2930000 (1ps)
+2026-10-19T17:08:51.4589857Z NUCA MAINTENANCE PASS full_tag=1 latency=8 stall=1 reorder=1 writes=4
+2026-10-19T17:08:51.4590595Z tb/nuca/tb_nuca_maintenance.v:148: $finish called at 3480000 (1ps)
+2026-10-19T17:08:51.5265552Z NUCA MAINTENANCE PASS full_tag=1 latency=31 stall=1 reorder=1 writes=4
+2026-10-19T17:08:51.5266430Z tb/nuca/tb_nuca_maintenance.v:148: $finish called at 5660000 (1ps)
+2026-10-19T17:08:51.5357912Z CACHE HANDOFF PASS homes=1
+2026-10-19T17:08:51.5358784Z tb/nuca/tb_cache_handoff.v:47: $finish called at 230000 (1ps)
+2026-10-19T17:08:51.5451548Z CACHE HANDOFF PASS homes=3
+2026-10-19T17:08:51.5452183Z tb/nuca/tb_cache_handoff.v:47: $finish called at 310000 (1ps)
+2026-10-19T17:08:51.5546946Z CACHE HANDOFF PASS homes=8
+2026-10-19T17:08:51.5547567Z tb/nuca/tb_cache_handoff.v:47: $finish called at 510000 (1ps)
+2026-10-19T17:09:14.2795323Z PRESSURE PASS maintenance=0 policy=0 seed=1 requests=20000
+2026-10-19T17:09:37.0217771Z PRESSURE PASS maintenance=0 policy=0 seed=7 requests=20000
+2026-10-19T17:10:04.1511887Z PRESSURE PASS maintenance=0 policy=74 seed=1 requests=20000
+2026-10-19T17:10:31.3677357Z PRESSURE PASS maintenance=0 policy=74 seed=7 requests=20000
+2026-10-19T17:10:54.0562047Z PRESSURE PASS maintenance=1 policy=0 seed=1 requests=20000
+2026-10-19T17:11:17.0579635Z PRESSURE PASS maintenance=1 policy=0 seed=7 requests=20000
+2026-10-19T17:11:43.9832843Z PRESSURE PASS maintenance=1 policy=74 seed=1 requests=20000
+2026-10-19T17:12:11.3516173Z PRESSURE PASS maintenance=1 policy=74 seed=7 requests=20000
+2026-10-19T17:13:51.2780819Z GRID REAL CORES PASS N=3 memory=1 ports=1 phase=0 programs=455 cycles=14911
+2026-10-19T17:13:51.2782220Z GRID REAL CORES PASS N=3 memory=1 ports=1 phase=1 programs=455 cycles=27371
+2026-10-19T17:13:51.2783507Z GRID COHERENT HOST PASS N=3 downloads=457 uploads=2
+2026-10-19T17:13:51.2784833Z GLOBAL CACHE HANDOFF PASS N=3 dirty_results=455 partial_dma=1
+2026-10-19T17:13:51.2786085Z tb/top/tb_grid_cores.v:175: $finish called at 345370000 (1ps)
+2026-10-19T17:15:36.7069709Z GRID REAL CORES PASS N=3 memory=1 ports=1 phase=0 programs=455 cycles=16626
+2026-10-19T17:15:36.7070410Z GRID REAL CORES PASS N=3 memory=1 ports=1 phase=1 programs=455 cycles=30305
+2026-10-19T17:15:36.7071008Z GRID COHERENT HOST PASS N=3 downloads=457 uploads=2
+2026-10-19T17:15:36.7071468Z GLOBAL CACHE HANDOFF PASS N=3 dirty_results=455 partial_dma=1
+2026-10-19T17:15:36.7071928Z tb/top/tb_grid_cores.v:175: $finish called at 394580000 (1ps)
+2026-10-19T17:15:36.7164015Z r40-cache-maintenance PASS (19/19)
+2026-10-19T17:15:36.8047455Z MULTICORE MMIO OPTIONS PASS 13 boundaries
+2026-10-19T17:15:36.8876595Z DMA HANDOFF GUARDS PASS (8/8)
+2026-10-19T17:15:36.9159892Z MMIO CACHE HANDOFF PASS disabled
+2026-10-19T17:15:36.9160578Z tb/fpga/tb_mmio_cache_handoff.v:37: $finish called at 142000 (1ps)
+2026-10-19T17:15:36.9302059Z MMIO CACHE HANDOFF PASS snapshot drain range faults reset
+2026-10-19T17:15:36.9302856Z tb/fpga/tb_mmio_cache_handoff.v:63: $finish called at 981000 (1ps)
+2026-10-19T17:15:43.9513531Z MULTICORE DMA OWNERSHIP PASS cores=1 ports=1 pipeline=0 board=False
+2026-10-19T17:15:43.9515001Z dirty download, clean invalidation, partial-line preservation, zero/range guards PASS
+2026-10-19T17:16:19.7144056Z MULTICORE DMA OWNERSHIP PASS cores=3 ports=3 pipeline=2 board=True
+2026-10-19T17:16:19.7145193Z dirty download, clean invalidation, partial-line preservation, zero/range guards PASS
+2026-10-19T17:25:24.7299240Z LEGACY COUNTER FAILURE REPRO {"actual_outlet_delta": [{"port": 0, "read_lines": 351, "write_lines": 83}, {"port": 1, "read_lines": 286, "write_lines": 81}, {"port": 2, "read_lines": 256, "write_lines": 82}], "corrected_legacy_api": "unavailable", "legacy_register_defaults": {"read_beats": 0, "read_cycles": 0, "reads": 0, "writes": 0}}
+2026-10-19T17:25:24.7303852Z NATIVE MEMORY PORTS PASS {"controller_traffic": [{"port": 0, "read_lines": 351, "write_lines": 83}, {"port": 1, "read_lines": 286, "write_lines": 81}, {"port": 2, "read_lines": 256, "write_lines": 82}], "cores": 3, "dma_ownership": true, "physical_activity": {"cores": [{"completed": 85, "core": 0, "issued": 85, "occupied_cycles": 22216}, {"completed": 84, "core": 1, "issued": 84, "occupied_cycles": 22217}, {"completed": 88, "core": 2, "issued": 88, "occupied_cycles": 22686}], "peak_active": 3}, "ports": 3, "zero_tensor_staging": true}
+2026-10-19T17:30:50.0633863Z PASS 3 recovery epochs with forced physical address reuse
+2026-10-19T17:30:50.0635099Z PASS stale event, copy, view, launch and growing resize rejected
+2026-10-19T17:30:50.0636562Z PASS old storage destruction preserves the new allocation at the same address
+2026-10-19T17:30:50.0637777Z r40-recovery-tests PASS (3/3) multicore_dma=True
+2026-10-19T17:30:51.4176734Z Post job cleanup.
+2026-10-19T17:30:51.5330730Z Cache hit occurred on the primary key pip-173d707e845b4431106949175b8c828e217e244fd73f7383ebc194c89cb814a0, not saving cache.
+2026-10-19T17:30:51.5332462Z (node:6819) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+2026-10-19T17:30:51.5333701Z (Use `node --trace-deprecation ...` to show where the warning was created)
+2026-10-19T17:30:51.5493551Z Post job cleanup.
+2026-10-19T17:30:51.6375583Z [command]/usr/bin/git version
+2026-10-19T17:30:51.6422277Z git version 2.55.0
+2026-10-19T17:30:51.6461202Z Temporarily overriding HOME='/home/runner/work/_temp/2a9fbc6c-7ca2-4eae-a43d-708634a45361' before making global git config changes
+2026-10-19T17:30:51.6462601Z Adding repository directory to the temporary git global config as a safe directory
+2026-10-19T17:30:51.6466707Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/TritonChip/TritonChip
+2026-10-19T17:30:51.6511429Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+2026-10-19T17:30:51.6549412Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2026-10-19T17:30:51.6837328Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-10-19T17:30:51.6883431Z http.https://github.com/.extraheader
+2026-10-19T17:30:51.6894541Z [command]/usr/bin/git config --local --unset-all http.https://github.com/.extraheader
+2026-10-19T17:30:51.6951820Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2026-10-19T17:30:51.7309729Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-10-19T17:30:51.7368422Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+2026-10-19T17:30:51.7892522Z Cleaning up orphan processes
+2026-10-19T17:30:51.8245030Z ##[warning]Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/cache@v4, actions/checkout@v4. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/

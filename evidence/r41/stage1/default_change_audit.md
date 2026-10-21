@@ -1,5 +1,41 @@
 # Default-on compiler changes since R40: compile-only code audit
 
+## Current state: broadcast fix narrowed (`default_change_audit_narrowed.json`)
+
+The `[R,1]` column-broadcast fix now copies lane 0 only when the column is
+not proven row-replicated (`Tile.replicated`, set from how the importer
+materialises a tile: affine index columns with no column stride, dense
+constants, splats of scalar registers, `_vector_to_col` rows, and lane-wise
+operations, comparisons and conversions whose operands are all replicated;
+loads and everything else stay unknown and keep the copy). Rerun on the same
+harness, knobs and points, tree `files:8c713902…` (bf6fd2b + the narrowing):
+
+| | points |
+|---|---:|
+| code text and launch structure identical to R40 | **113** |
+| changed | 0 |
+
+All 56 points the fix had changed return to R40's exact code text and launch
+structure; none is left (no original point broadcasts a lane-0-only
+column). Every one of the 183 previously changed kernels now records
+`column_broadcasts: {lane0: 0, replicated: n}` in its provenance.
+
+The fix still fires where it is needed. The depthwise graphs of
+`tools/performance_harness/test_depthwise.py` record 1-3 lane-0 copies per
+convolution kernel (`kickoff/narrowed-broadcast-v1-evidence.tgz`,
+`probe/column-broadcast-decisions.json`), and with the copies forcibly
+skipped the FP16 stride-1 dilation-2 case fails on SystemC (24/27 elements;
+`control/control.log`); with the narrowing all depthwise cases pass on SystemC
+and on the RTL. That file's `x + bias` column test is flattened by Inductor
+to a 1-D kernel and reaches no `[R,1]` broadcast at all; the compiler test
+`compiler/test/test_column_broadcast.py` covers both kinds directly on the
+RTL, including the control that removing the copy from a loaded column
+breaks lanes 1-15.
+
+The analysis below is the record of the tree before narrowing.
+
+## Before narrowing (`default_change_audit.json`, bf6fd2b product code)
+
 `default_change_audit.json` compares, for all 113 original points
 (`spec/r40/suites/hbm.json`, the union of the frozen suites), the code the
 delivered default knobs compile on two software trees:
@@ -25,7 +61,7 @@ options, constexprs, manifest resources), plus each graph's steady-call
 launch sequence (kernel, grid). Artifact hashes are not compared: manifests
 gained R41 provenance. Not measured: numerics, execution, performance.
 
-## Result
+### Result
 
 All 113 points compile on both trees, with no host fallback and the
 wrapper's launch count.
@@ -53,7 +89,7 @@ semantic options are identical; the only manifest launch-structure difference
 is the declared private vector registers per role (`rf_private_per_role`:
 +1 to +4 in 122 kernels, -2 and -4 in two).
 
-## Why
+### Why
 
 Attribution by ablation: the r41s1 HEAD tree with one change reverted, the
 same harness and knobs.
@@ -98,7 +134,7 @@ fix is the only cause. Whether to measure them as a semantic-fix cost or to
 narrow the fix to tiles not known to be lane-uniform is a separate decision;
 this audit changes no code.
 
-## Bookkeeping change set
+### Bookkeeping change set
 
 The r41s1 HEAD tree (`files:d35b4197…`) and the final tree (`files:a40bc877…`)
 emit identical code text and launch structure for all 113 points

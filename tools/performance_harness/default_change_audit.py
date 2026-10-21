@@ -49,7 +49,7 @@ SUITE_SHA256 = '7cebc8d2c6e6cab8a688418ce16e36785cd603385bff1e6028a0657c89120dfd
 THREADS = dict(OMP_NUM_THREADS='1', MKL_NUM_THREADS='1', OPENBLAS_NUM_THREADS='1')
 # Provenance entries that name a selection, retile or fallback decision.
 DECISIONS = ('predicate_spills', 'mma_retiles', 'register_blocks', 'rctx_spmd', 'rctx_roles',
-             'schedule_slack', 'vector_spill')
+             'schedule_slack', 'vector_spill', 'column_broadcasts')
 
 
 def _sha(data):
@@ -205,6 +205,7 @@ def child(a):
 # ----------------------------------------------------------------- run ----
 def run(a):
     root = a.source_root.resolve()
+    a.out = a.out.resolve()        # children run with their run directory as cwd
     a.out.mkdir(parents=True, exist_ok=False)
     sys.path[:0] = [str(root)]
     from archbench.provenance import software_tree

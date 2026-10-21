@@ -657,11 +657,55 @@ module tnca_core #(
     reg [VLEN-1:0]       w_lane_en;
     reg [VLEN-1:0]       w_pdata;
 
+    //--------------------------------------------------------------------------
+    // R41 F02: scalar operands A-C are read in R and travel into X in a
+    // register, with the one write that can still land on them forwarded.
+    //
+    // X used to read the file itself: x_sa_idx -> distributed-RAM read ->
+    // write-first bypass -> barrier test / branch compare / matrix and
+    // accumulator addresses -> redirect -> squash and scoreboard claim, all
+    // in one cycle (census: down to -0.90 ns, 18-20 levels). Now the read
+    // is in R and ends at x_s*_q, and X starts from a register.
+    //
+    // What X reads is unchanged, bit for bit. For the instruction that
+    // leaves R at the end of cycle t:
+    //   old: X reads the file at t+1, write-first with W's write at t+1;
+    //   new: R reads the file at t, write-first with W's write at t -- which
+    //        is the file as X would see it at t+1 -- and W's write at t+1 is
+    //        what nw_* latches into w_* at the end of t, so whether it hits
+    //        this source is known in R and travels with the value as x_s*_fw.
+    // A frozen writeback (vrf_wb_freeze) keeps w_* and is a vector write, so
+    // it cannot be a scalar one; it also holds the front end, so R does not
+    // leave then. S0 is never forwarded: it reads as zero.
+    //
+    // Ports D-G (a transfer's coordinates, m.mma's second token) stay in X:
+    // they are not on the stall, redirect or matrix-operand paths.
+    //--------------------------------------------------------------------------
+    wire [63:0] r_sa_rd, r_sb_rd, r_sc_rd;
+    reg  [63:0] x_sa_q, x_sb_q, x_sc_q;
+    reg         x_sa_fw, x_sb_fw, x_sc_fw;
+    wire nw_s_hit = !vrf_wb_freeze && nw_en && (nw_class == `TNCA_DST_S)
+                 && (nw_rctx == r_rctx);
+    // Loaded every cycle, like x_va_q (F01): a stalled front end sends a
+    // bubble into X, and nothing uses X's operands unless x_valid. So these
+    // add no load to stall_front.
+    always @(posedge clk) begin
+        x_sa_q  <= r_sa_rd;
+        x_sb_q  <= r_sb_rd;
+        x_sc_q  <= r_sc_rd;
+        x_sa_fw <= nw_s_hit && (nw_idx[5:0] == r_sa_idx) && (r_sa_idx != 6'd0);
+        x_sb_fw <= nw_s_hit && (nw_idx[5:0] == r_sb_idx) && (r_sb_idx != 6'd0);
+        x_sc_fw <= nw_s_hit && (nw_idx[5:0] == r_sc_idx) && (r_sc_idx != 6'd0);
+    end
+    assign sa_data = x_sa_fw ? w_sdata : x_sa_q;
+    assign sb_data = x_sb_fw ? w_sdata : x_sb_q;
+    assign sc_data = x_sc_fw ? w_sdata : x_sc_q;
+
     tnca_scalar_rf #(.NUM_RCTX(NUM_RCTX), .RCTX_W(RCTX_W)) u_srf (
         .clk(clk), .rst_n(rst_n),
-        .ra_rctx(x_rctx), .ra_idx(x_sa_idx), .ra_data(sa_data),
-        .rb_rctx(x_rctx), .rb_idx(x_sb_idx), .rb_data(sb_data),
-        .rc_rctx(x_rctx), .rc_idx(x_sc_idx), .rc_data(sc_data),
+        .ra_rctx(r_rctx), .ra_idx(r_sa_idx), .ra_data(r_sa_rd),
+        .rb_rctx(r_rctx), .rb_idx(r_sb_idx), .rb_data(r_sb_rd),
+        .rc_rctx(r_rctx), .rc_idx(r_sc_idx), .rc_data(r_sc_rd),
         // One extra scalar read port, shared by the two instructions that read
         // a consecutive pair: a transfer's coordinates start at Sb (sec 9E)
         // and m.mma.async's second barrier token is at Sc+1 (sec 9C). They are
@@ -2700,6 +2744,13 @@ module tnca_core #(
     //==========================================================================
 `ifndef SYNTHESIS
     // synthesis translate_off
+    // R41 F02: the scalar file as X would read it -- asynchronously,
+    // write-first, with X's own indices -- for the operand check below.
+    `define CHK_SREAD(idx) \
+        (((idx) == 6'd0) ? 64'd0 : \
+         (w_en && (w_class == `TNCA_DST_S) && (w_rctx == x_rctx) && \
+          (w_idx[5:0] == (idx))) ? w_sdata : \
+         (u_srf.valid[{x_rctx, (idx)}] ? u_srf.mem[{x_rctx, (idx)}] : 64'd0))
     // R41: how often each new boundary's corner case occurred, so a run can
     // show it exercised them (tb_tnca_core prints these on +r41cov).
     //   sw_inhibit  R would have given way, but X held a branch, exit, trap,
@@ -2708,15 +2759,19 @@ module tnca_core #(
     //   hold_ops    R stalled holding collected vector operands (F01)
     //   pf_drop     a D prefetch response dropped while R held (F01)
     //   mem_claim   R's access waited on a faulting access in X (F01)
+    //   fwd_s       a valid X used a scalar operand forwarded from W (F02)
     wire cov_sw_cand = (RCTX_SWITCH != 0) && r_valid && r_of_idle
                      && (hazard || ((RCTX_SWITCH >= 2) && (stall_mtx || stall_txf)))
                      && d_valid && (d_rctx != r_rctx) && !vrf_wb_freeze;
     reg [31:0] cov_sw_inhibit, cov_sw_redir, cov_hold_ops, cov_pf_drop, cov_mem_claim;
+    reg [31:0] cov_fwd_s;
     always @(posedge clk) begin
         if (!rst_n) begin
             cov_sw_inhibit <= 0; cov_sw_redir <= 0; cov_hold_ops <= 0;
             cov_pf_drop <= 0; cov_mem_claim <= 0;
+            cov_fwd_s <= 0;
         end else if (!launch_valid) begin
+            if (x_valid && (x_sa_fw || x_sb_fw || x_sc_fw)) cov_fwd_s <= cov_fwd_s + 1;
             if (cov_sw_cand && x_may_redirect && !x_redirect) cov_sw_inhibit <= cov_sw_inhibit + 1;
             if (cov_sw_cand && x_redirect)                    cov_sw_redir   <= cov_sw_redir + 1;
             if (cov_ev_hold_ops) cov_hold_ops <= cov_hold_ops + 1;
@@ -2791,6 +2846,18 @@ module tnca_core #(
             if (f1_valid && fb_valid)
                 $display("FAIL tnca_core assert @%0t: a fetch arrived with the buffer already full (pc=%0h and %0h)",
                          $time, f1_pc, fb_pc);
+            // R41 F02: the scalar operands X uses, read in R and forwarded,
+            // are exactly what X would have read from the file itself (an
+            // asynchronous, write-first read with X's own indices).
+            if (x_valid && (sa_data !== `CHK_SREAD(x_sa_idx)))
+                $display("FAIL tnca_core assert @%0t: scalar operand A of pc=%0h reads %h, the file holds %h (s%0d)",
+                         $time, x_pc, sa_data, `CHK_SREAD(x_sa_idx), x_sa_idx);
+            if (x_valid && (sb_data !== `CHK_SREAD(x_sb_idx)))
+                $display("FAIL tnca_core assert @%0t: scalar operand B of pc=%0h reads %h, the file holds %h (s%0d)",
+                         $time, x_pc, sb_data, `CHK_SREAD(x_sb_idx), x_sb_idx);
+            if (x_valid && (sc_data !== `CHK_SREAD(x_sc_idx)))
+                $display("FAIL tnca_core assert @%0t: scalar operand C of pc=%0h reads %h, the file holds %h (s%0d)",
+                         $time, x_pc, sc_data, `CHK_SREAD(x_sc_idx), x_sc_idx);
         end
     end
     // synthesis translate_on

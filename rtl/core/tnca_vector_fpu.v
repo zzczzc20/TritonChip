@@ -67,7 +67,7 @@ module tnca_vector_fpu #(
     //   [1] func is vf.mul               (operands a, b, +0)
     //   [2] vf.sub or vf.fms             (negate the addend)
     //   [3] vf.mul                       (ignore the addend)
-    //   [4] an FP reduction (is_red_mc)
+    //   [4] an FP reduction (is_red_mc); not read since R41 (red_active)
     input  wire [4:0]               fpctl,
 
     // multi-cycle control (reductions only)
@@ -134,13 +134,20 @@ module tnca_vector_fpu #(
 
     // Keyed on the reduction alone: an SFU pass must not hijack the FMA
     // operands, and `is_multicycle` now covers both families.
-    // Not `start & is_red_mc`: `start` is the core's whole issue decision,
-    // and in front of the operand select it put that logic in series with
-    // the FMA's first stage (8.2 ns post-synthesis). Whenever an FP reduction
-    // sits in X nothing else can be issuing to the FMA array, so selecting the
-    // tree operands on is_red_mc alone changes no result; the capture below
-    // still waits for `start`. fpctl[4] is is_red_mc, registered from R.
-    wire red_active = red_busy | fpctl[4];
+    //
+    // And on red_busy alone, a flop (R41 Stage 2, F03). The fold presents its
+    // first tree level the cycle after `start` -- red_busy is set together
+    // with the capture of `acc` -- and whatever the array computes in the
+    // cycle the reduction itself sits in X is never used: the FMA result of
+    // that slot is not retired (out_from_fma is false for major 0x15), and the
+    // sequencer reads fma_y only at rwait == FP_LAT, FP_LAT cycles after
+    // operands it presented itself. Selecting the tree in that cycle or not
+    // therefore changes no result and no cycle. R40 keyed the select on
+    // red_busy | fpctl[4] (is_red_mc, registered from R; R39 on `start`):
+    // the OR and its ~900-load net stood in front of every lane's operand
+    // select, the head of the census's worst path (red_busy -> FMA stage 0).
+    // fpctl[4] is still driven and is no longer read here.
+    wire red_active = red_busy;
 
     // During a fold the instruction inputs belong to a later instruction, so
     // the rounding mode has to come from the latched copy.

@@ -13,25 +13,48 @@
 //
 // THE ARITHMETIC IS GENERATED
 //
-// It is written once, in DSLX (xls/tnca_fma.x), and XLS places the pipeline
-// registers (tools/xls/config.json). This module only picks the generated
-// instance whose latency the core was elaborated for:
+// It is written once, in DSLX (xls/tnca_fma.x), as three stage functions --
+// align, normalise, round -- and fma32, the three composed. This module picks
+// the instance for the latency the core was elaborated for:
 //
-//     LAT = 2   rtl/gen/tnca_fma_xls.v      three stages, two registers
-//     LAT = 3   rtl/gen/tnca_fma_l3_xls.v   four stages, three registers
+//     LAT = 2   rtl/gen/tnca_fma_{align,norm,round}_xls.v, combinational,
+//               with the two registers placed here, between them
+//     LAT = 3   rtl/gen/tnca_fma_l3_xls.v, fma32 scheduled by XLS into
+//               four stages, three registers
 //
 // In both, `y` is combinational from the last stage -- the consumers (the
 // vector FP writeback, the accumulator file) register it -- so `y` is valid
 // LAT cycles after a/b/c are presented and a new operation may be presented
-// every cycle. LAT is the core's FP_LAT. A clock that needs more stages is a
-// new entry in config.json and a line here, not a redesign.
+// every cycle. LAT is the core's FP_LAT.
+//
+// WHY THE LATENCY-2 CUTS ARE PLACED HERE (R41 Stage 2, F03/F08/F09)
+//
+// Until R41 the latency-2 instance was fma32 scheduled by XLS against asap7
+// into three stages (tools/xls/config.json, `clock_period_ps: null`). On the
+// U280 at 100 MHz each of its three stages was a census family of its own, all
+// three within 0.05 ns of the design's -0.92 ns WNS: VFPU red_busy into the
+// first stage (F03), the first stage's sticky bit into the second's shift
+// amount (F08), and the second stage's shift amount into the accumulator file
+// (F09). asap7 prices the 24x24 multiplier, which the FPGA maps to two cascaded
+// DSP48E2 slices, at several times its FPGA cost, so the balance it finds is
+// not the FPGA's; and once the arithmetic was shortened for the FPGA, XLS moved
+// the alignment shifter into the middle stage, which made that the long one.
+// So for this instance the two cuts are placed where the unit OOC measures the
+// stages as balanced: after the alignment shift and its sticky bit
+// (FmaAligned), and after the leading-zero count and what follows from it
+// (FmaNormalised). What crosses each cut is a DSLX struct, so a stage's ports
+// are whatever the DSLX says; the widths below are those structs' bit counts.
+// The registers have the generated pipeline's synchronous reset.
+//
+// The function is unchanged, bit for bit: tb_fp32_fma and fma-deep check both
+// instances against the exact Fraction oracle (tools/model/fp32.py), and
+// evidence/r41/stage2/candidates/F03/miter runs both against the previous
+// generated RTL.
 //
 // Until R38 this file was the arithmetic itself, with two hand-placed register
 // stages. Its U280 worst path was 60 logic levels through its normalise/round
 // stage, and the reason it was hand-written was XLS's apfloat flushing
-// subnormals; xls/tnca_fma.x does not use apfloat and keeps them. The
-// generated version computes the same function bit for bit: tb_fp32_fma and
-// fma-deep check it against the exact Fraction oracle (tools/model/fp32.py).
+// subnormals; xls/tnca_fma.x does not use apfloat and keeps them.
 //==============================================================================
 
 module tnca_fp32_fma #(
@@ -51,12 +74,29 @@ module tnca_fp32_fma #(
 
     generate
         if (LAT == 2) begin : g_l2
-            tnca_fma_xls u_xls (
-                .clk(clk), .rst(!rst_n),
+            // xls/tnca_fma.x: FmaAligned and FmaNormalised, flattened by XLS
+            localparam W_ALIGN = 150;
+            localparam W_NORM  = 113;
+            wire [W_ALIGN-1:0] s0_d;
+            reg  [W_ALIGN-1:0] s0_q;
+            wire [W_NORM-1:0]  s1_d;
+            reg  [W_NORM-1:0]  s1_q;
+
+            tnca_fma_align_xls u_s0 (
                 .a(a), .b(b), .c(c),
                 .sub_c(sub_c), .mul_only(mul_only), .ftz(ftz),
-                .out(y)
+                .out(s0_d)
             );
+            always @(posedge clk)
+                if (!rst_n) s0_q <= {W_ALIGN{1'b0}};
+                else        s0_q <= s0_d;
+
+            tnca_fma_norm_xls u_s1 (.s(s0_q), .out(s1_d));
+            always @(posedge clk)
+                if (!rst_n) s1_q <= {W_NORM{1'b0}};
+                else        s1_q <= s1_d;
+
+            tnca_fma_round_xls u_s2 (.s(s1_q), .out(y));
         end else if (LAT == 3) begin : g_l3
             tnca_fma_l3_xls u_xls (
                 .clk(clk), .rst(!rst_n),
@@ -70,7 +110,7 @@ module tnca_fp32_fma #(
             // The refusal is a port no instance has -- an error in every
             // elaborator -- and not an undefined module, which the hardware
             // export would have to list as a blackbox (tools/r36/export.py).
-            tnca_fma_xls u_missing (.LAT_must_be_2_or_3(1'b1));
+            tnca_fma_l3_xls u_missing (.LAT_must_be_2_or_3(1'b1));
         end
     endgenerate
 

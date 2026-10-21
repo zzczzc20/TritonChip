@@ -259,9 +259,11 @@ module tb_tnca_core;
         // R41 Stage 2: how often the core's new register boundaries met
         // their corner cases (tnca_core cov_*), on request.
         if ($test$plusargs("r41cov"))
-            $display("r41cov sw_inhibit=%0d sw_redir=%0d hold_ops=%0d pf_drop=%0d mem_claim=%0d fwd_s=%0d fwd_p=%0d",
+            $display("r41cov sw_inhibit=%0d sw_redir=%0d hold_ops=%0d pf_drop=%0d mem_claim=%0d fwd_s=%0d fwd_p=%0d dsb_clm=%0d dsb_rel=%0d rsb_clm=%0d rsb_rel=%0d hold_rel=%0d",
                      dut.cov_sw_inhibit, dut.cov_sw_redir, dut.cov_hold_ops,
-                     dut.cov_pf_drop, dut.cov_mem_claim, dut.cov_fwd_s, dut.cov_fwd_p);
+                     dut.cov_pf_drop, dut.cov_mem_claim, dut.cov_fwd_s, dut.cov_fwd_p,
+                     dut.cov_dsb_clm, dut.cov_dsb_rel, dut.cov_rsb_clm,
+                     dut.cov_rsb_rel, dut.cov_hold_rel);
         if (perf_issued + perf_stall_total + perf_x_frontend != perf_cycles)
             $display("FAIL: cycle partition: issued %0d + stalled %0d + frontend %0d != cycles %0d",
                      perf_issued, perf_stall_total, perf_x_frontend, perf_cycles);

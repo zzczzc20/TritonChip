@@ -1005,6 +1005,11 @@ module tnca_core #(
         wire [5*8-1:0] rq_idx = pf_go
             ? {txf_vr_idx, mtx_vrf_addr, d_pf_vc_idx, d_pf_vb_idx, d_pf_va_idx}
             : {txf_vr_idx, mtx_vrf_addr, r_vc_idx, r_vb_idx, r_va_idx};
+        // R41 F05: ports 0-2 present the physical register computed a stage
+        // earlier (PHYS_IN below); rq_rctx/rq_idx stay for ports 3 and 4.
+        wire [5*PHYS_W-1:0] rq_phys = pf_go
+            ? {{(2*PHYS_W){1'b0}}, d_pf_vc_phys, d_pf_vb_phys, d_pf_va_phys}
+            : {{(2*PHYS_W){1'b0}}, r_vc_phys, r_vb_phys, r_va_phys};
 
         always @(posedge clk) begin
             if (!rst_n) begin
@@ -1049,10 +1054,12 @@ module tnca_core #(
             .NUM_RCTX(NUM_RCTX), .VLEN(VLEN), .ELEN(ELEN),
             .RCTX_W(RCTX_W), .PHYS_W(PHYS_W),
             .NUM_BANKS(4), .BANK_W(2), .READ_LATENCY(1),
-            .NUM_PORTS(5), .ZERO_INVALID(1), .NUM_WRITERS(2)
+            .NUM_PORTS(5), .ZERO_INVALID(1), .NUM_WRITERS(2),
+            .PHYS_IN(5'b00111)
         ) u_vrf (
             .clk(clk), .rst_n(rst_n), .clear(launch_valid), .vbase(vbase_q),
             .req_valid(rq_v), .req_rctx(rq_rctx), .req_idx(rq_idx),
+            .req_phys(rq_phys),
             .req_accept(vrf_req_accept),
             .rsp_ready(5'b11111),
             .rsp_valid(vrf_rsp_valid), .rsp_data(vrf_rsp_data),
@@ -1118,6 +1125,13 @@ module tnca_core #(
     reg [NUM_RCTX*16-1:0]             sb_p;
     reg [ACC_N-1:0]                   sb_acc;
 
+    // R41 F05: local busy bits of the six vector sources the operand fetch
+    // looks at -- D's three (VRF_PREFETCH) and R's three -- kept as
+    // registers equal, every cycle, to the scoreboard bit their 256:1
+    // lookups used to select. Maintained below, after the squash logic.
+    reg [2:0] dsb_v;     // `SB_V_BUSY(d_rctx, d_pf_v{c,b,a}_idx)
+    reg [2:0] rsb_v;     // `SB_V_BUSY(r_rctx, r_v{c,b,a}_idx)
+
     // NOTE: these are macros, not Verilog functions. A continuous assignment
     // that calls a function is only re-evaluated when the function's arguments
     // change -- signals the function body reads from module scope (here sb_*
@@ -1178,20 +1192,22 @@ module tnca_core #(
     // has still to write -- in the scoreboard (unless written back this
     // cycle, with VRF_BYPASS), or the destination of the instruction in R,
     // the one older writer the scoreboard does not hold yet.
-    `define PF_HAZ(idx) ((`SB_V_BUSY(d_rctx, idx) && \
+    // R41 F05: the scoreboard bit is dsb_v (a register), not a lookup.
+    `define PF_HAZ(busy, idx) (((busy) && \
                           !(VRF_BYPASS != 0 && `WB_HIT_V(d_rctx, idx))) || \
                          (r_valid && r_dstc == `TNCA_DST_V && r_rctx == d_rctx && \
                           r_dsti == (idx)))
-    assign pf_haz_w = (d_pf_va_en && `PF_HAZ(d_pf_va_idx))
-                    | (d_pf_vb_en && `PF_HAZ(d_pf_vb_idx))
-                    | (d_pf_vc_en && `PF_HAZ(d_pf_vc_idx));
+    assign pf_haz_w = (d_pf_va_en && `PF_HAZ(dsb_v[0], d_pf_va_idx))
+                    | (d_pf_vb_en && `PF_HAZ(dsb_v[1], d_pf_vb_idx))
+                    | (d_pf_vc_en && `PF_HAZ(dsb_v[2], d_pf_vc_idx));
 
     wire hz_sa = r_sa_en && `SB_S_BUSY(r_rctx, r_sa_idx) && !`AVAIL_S(r_rctx, r_sa_idx);
     wire hz_sb = r_sb_en && `SB_S_BUSY(r_rctx, r_sb_idx) && !`AVAIL_S(r_rctx, r_sb_idx);
     wire hz_sc = r_sc_en && `SB_S_BUSY(r_rctx, r_sc_idx) && !`AVAIL_S(r_rctx, r_sc_idx);
-    wire hz_va = r_va_en && `SB_V_BUSY(r_rctx, r_va_idx) && !`AVAIL_V(r_rctx, r_va_idx);
-    wire hz_vb = r_vb_en && `SB_V_BUSY(r_rctx, r_vb_idx) && !`AVAIL_V(r_rctx, r_vb_idx);
-    wire hz_vc = r_vc_en && `SB_V_BUSY(r_rctx, r_vc_idx) && !`AVAIL_V(r_rctx, r_vc_idx);
+    // R41 F05: rsb_v is `SB_V_BUSY(r_rctx, r_v*_idx), held in a register.
+    wire hz_va = r_va_en && rsb_v[0] && !`AVAIL_V(r_rctx, r_va_idx);
+    wire hz_vb = r_vb_en && rsb_v[1] && !`AVAIL_V(r_rctx, r_vb_idx);
+    wire hz_vc = r_vc_en && rsb_v[2] && !`AVAIL_V(r_rctx, r_vc_idx);
     wire hz_pa = r_pa_en && `SB_P_BUSY(r_rctx, r_pa_idx) && !`AVAIL_P(r_rctx, r_pa_idx);
     wire hz_pb = r_pb_en && `SB_P_BUSY(r_rctx, r_pb_idx) && !`AVAIL_P(r_rctx, r_pb_idx);
     wire hz_pm = r_pm_en && `SB_P_BUSY(r_rctx, r_pm_idx) && !`AVAIL_P(r_rctx, r_pm_idx);
@@ -2217,6 +2233,80 @@ module tnca_core #(
     wire x_kill = 1'b0;
 
     //==========================================================================
+    // R41 F05: local busy bits and physical addresses of the vector sources
+    //
+    // The operand fetch used to decide whether to read from two 256:1
+    // scoreboard lookups (sb_v by R's and by D's context and index), add each
+    // source's index to its context's vbase, and only then present the
+    // request to the bank arbiters -- sb_v -> lookup -> hazard -> pf_go ->
+    // rctx/idx mux -> vbase add -> arbitration -> bank raddr -> s1_vld
+    // (census: -0.90 ns, 24 levels). Both lookups and the add now happen a
+    // stage earlier, into registers that travel with the instruction:
+    //   dsb_v / rsb_v  the scoreboard bit of each source of D and of R;
+    //   d_pf_v*_phys / r_v*_phys  each source's physical register.
+    //
+    // The busy bits equal the lookup EXACTLY, every cycle D or R holds an
+    // instruction. They are written with the scoreboard's own next state:
+    // sb_v' = claim | (sb_v & ~release), with the claim and release of this
+    // edge exactly as the scoreboard block below applies them (release
+    // first, claim wins; neither on a launch, which clears everything).
+    //   F->D (front end moves): the word entering D is looked up now, from
+    //     its predecoded fields (pf_*_n, the same ones d_pf_* take).
+    //   D->R: R's sources are D's (d_pf_v*_idx is the decode of d_insn), so
+    //     R takes D's bits with this edge's claim and release applied.
+    //   holding: nothing is claimed while the front end is stalled (a claim
+    //     needs !stall_front), so a held bit can only be released.
+    // A squashed or empty stage holds don't-care bits; it is refilled only
+    // through an advance, which recomputes them. Bench assertions at the end
+    // of the file compare every bit with the lookup it replaces.
+    //
+    // Physical addresses depend on vbase_q, which changes only at a launch,
+    // and a launch empties D and R. The banked file is told (PHYS_IN) that
+    // ports 0-2 arrive as physical registers.
+    //==========================================================================
+    `define V_FLAT(rc, idx) ((rc)*VREGS_PER_RCTX + (idx))
+    wire v_rel = w_en && (w_class == `TNCA_DST_V) && !vrf_wb_freeze;
+    wire v_clm = !stall_front && r_valid && !kill_r && (r_dstc == `TNCA_DST_V);
+    `define V_REL(rc, idx) (v_rel && (`V_FLAT(w_rctx, w_idx) == `V_FLAT(rc, idx)))
+    `define V_CLM(rc, idx) (v_clm && (`V_FLAT(r_rctx, r_dsti) == `V_FLAT(rc, idx)))
+    `define V_NEXT(rc, idx) (`V_CLM(rc, idx) || (`SB_V_BUSY(rc, idx) && !`V_REL(rc, idx)))
+
+    reg [PHYS_W-1:0] d_pf_va_phys, d_pf_vb_phys, d_pf_vc_phys;
+    reg [PHYS_W-1:0] r_va_phys, r_vb_phys, r_vc_phys;
+    wire [PHYS_W-1:0] avail_vbase = vbase_q[avail_rctx*PHYS_W +: PHYS_W];
+    wire [7:0] pf_va_i8 = pf_va_idx_n, pf_vb_i8 = pf_vb_idx_n, pf_vc_i8 = pf_vc_idx_n;
+
+    always @(posedge clk) begin
+        if (!rst_n || launch_valid) begin
+            dsb_v <= 3'b000;
+            rsb_v <= 3'b000;
+        end else if (!stall_front) begin
+            dsb_v <= {`V_NEXT(avail_rctx, pf_vc_idx_n),
+                      `V_NEXT(avail_rctx, pf_vb_idx_n),
+                      `V_NEXT(avail_rctx, pf_va_idx_n)};
+            rsb_v <= {`V_CLM(d_rctx, d_pf_vc_idx) || (dsb_v[2] && !`V_REL(d_rctx, d_pf_vc_idx)),
+                      `V_CLM(d_rctx, d_pf_vb_idx) || (dsb_v[1] && !`V_REL(d_rctx, d_pf_vb_idx)),
+                      `V_CLM(d_rctx, d_pf_va_idx) || (dsb_v[0] && !`V_REL(d_rctx, d_pf_va_idx))};
+        end else begin
+            dsb_v <= dsb_v & ~{`V_REL(d_rctx, d_pf_vc_idx), `V_REL(d_rctx, d_pf_vb_idx),
+                               `V_REL(d_rctx, d_pf_va_idx)};
+            rsb_v <= rsb_v & ~{`V_REL(r_rctx, r_vc_idx), `V_REL(r_rctx, r_vb_idx),
+                               `V_REL(r_rctx, r_va_idx)};
+        end
+    end
+
+    always @(posedge clk) begin
+        if (!stall_front) begin
+            d_pf_va_phys <= avail_vbase + pf_va_i8[PHYS_W-1:0];
+            d_pf_vb_phys <= avail_vbase + pf_vb_i8[PHYS_W-1:0];
+            d_pf_vc_phys <= avail_vbase + pf_vc_i8[PHYS_W-1:0];
+            r_va_phys    <= d_pf_va_phys;
+            r_vb_phys    <= d_pf_vb_phys;
+            r_vc_phys    <= d_pf_vc_phys;
+        end
+    end
+
+    //==========================================================================
     // Sequential
     //==========================================================================
     always @(posedge clk) begin
@@ -2779,6 +2869,9 @@ module tnca_core #(
     //==========================================================================
 `ifndef SYNTHESIS
     // synthesis translate_off
+    integer          chk_k;
+    reg [7:0]        chk_di, chk_ri;
+    reg [PHYS_W-1:0] chk_dp, chk_rp;
     // R41 F02: the scalar file as X would read it -- asynchronously,
     // write-first, with X's own indices -- for the operand check below.
     `define CHK_SREAD(idx) \
@@ -2801,19 +2894,48 @@ module tnca_core #(
     //   mem_claim   R's access waited on a faulting access in X (F01)
     //   fwd_s       a valid X used a scalar operand forwarded from W (F02)
     //   fwd_p       ... a predicate operand or lane mask forwarded (F04)
+    //   dsb_clm/rel the word entering D had a source claimed / released at
+    //               that edge, so its busy bit is not the lookup's (F05)
+    //   rsb_clm/rel the same for the instruction entering R (F05)
+    //   hold_rel    a held D or R source was released while it waited (F05)
     wire cov_sw_cand = (RCTX_SWITCH != 0) && r_valid && r_of_idle
                      && (hazard || ((RCTX_SWITCH >= 2) && (stall_mtx || stall_txf)))
                      && d_valid && (d_rctx != r_rctx) && !vrf_wb_freeze;
     reg [31:0] cov_sw_inhibit, cov_sw_redir, cov_hold_ops, cov_pf_drop, cov_mem_claim;
     reg [31:0] cov_fwd_s, cov_fwd_p;
+    reg [31:0] cov_dsb_clm, cov_dsb_rel, cov_rsb_clm, cov_rsb_rel, cov_hold_rel;
     always @(posedge clk) begin
         if (!rst_n) begin
             cov_sw_inhibit <= 0; cov_sw_redir <= 0; cov_hold_ops <= 0;
             cov_pf_drop <= 0; cov_mem_claim <= 0;
             cov_fwd_s <= 0; cov_fwd_p <= 0;
+            cov_dsb_clm <= 0; cov_dsb_rel <= 0; cov_rsb_clm <= 0; cov_rsb_rel <= 0;
+            cov_hold_rel <= 0;
         end else if (!launch_valid) begin
             if (x_valid && (x_sa_fw || x_sb_fw || x_sc_fw)) cov_fwd_s <= cov_fwd_s + 1;
             if (x_valid && (x_pa_fw || x_pb_fw || x_lm_fw)) cov_fwd_p <= cov_fwd_p + 1;
+            if (!stall_front && avail &&
+                (`V_CLM(avail_rctx, pf_va_idx_n) || `V_CLM(avail_rctx, pf_vb_idx_n) ||
+                 `V_CLM(avail_rctx, pf_vc_idx_n)))
+                cov_dsb_clm <= cov_dsb_clm + 1;
+            if (!stall_front && avail &&
+                (`V_REL(avail_rctx, pf_va_idx_n) || `V_REL(avail_rctx, pf_vb_idx_n) ||
+                 `V_REL(avail_rctx, pf_vc_idx_n)))
+                cov_dsb_rel <= cov_dsb_rel + 1;
+            if (!stall_front && d_valid &&
+                (`V_CLM(d_rctx, d_pf_va_idx) || `V_CLM(d_rctx, d_pf_vb_idx) ||
+                 `V_CLM(d_rctx, d_pf_vc_idx)))
+                cov_rsb_clm <= cov_rsb_clm + 1;
+            if (!stall_front && d_valid &&
+                (`V_REL(d_rctx, d_pf_va_idx) || `V_REL(d_rctx, d_pf_vb_idx) ||
+                 `V_REL(d_rctx, d_pf_vc_idx)))
+                cov_rsb_rel <= cov_rsb_rel + 1;
+            if (stall_front &&
+                ((d_valid && (`V_REL(d_rctx, d_pf_va_idx) || `V_REL(d_rctx, d_pf_vb_idx) ||
+                              `V_REL(d_rctx, d_pf_vc_idx))) ||
+                 (r_valid && (`V_REL(r_rctx, r_va_idx) || `V_REL(r_rctx, r_vb_idx) ||
+                              `V_REL(r_rctx, r_vc_idx)))))
+                cov_hold_rel <= cov_hold_rel + 1;
             if (cov_sw_cand && x_may_redirect && !x_redirect) cov_sw_inhibit <= cov_sw_inhibit + 1;
             if (cov_sw_cand && x_redirect)                    cov_sw_redir   <= cov_sw_redir + 1;
             if (cov_ev_hold_ops) cov_hold_ops <= cov_hold_ops + 1;
@@ -2900,6 +3022,26 @@ module tnca_core #(
             if (x_valid && (sc_data !== `CHK_SREAD(x_sc_idx)))
                 $display("FAIL tnca_core assert @%0t: scalar operand C of pc=%0h reads %h, the file holds %h (s%0d)",
                          $time, x_pc, sc_data, `CHK_SREAD(x_sc_idx), x_sc_idx);
+            // R41 F05: the local busy bits and physical registers of the
+            // vector sources equal the scoreboard lookups and the vbase adds
+            // they replace, whenever D or R holds an instruction (and the
+            // index names a register of the context).
+            for (chk_k = 0; chk_k < 3; chk_k = chk_k + 1) begin
+                chk_di = (chk_k == 0) ? d_pf_va_idx : (chk_k == 1) ? d_pf_vb_idx : d_pf_vc_idx;
+                chk_ri = (chk_k == 0) ? r_va_idx    : (chk_k == 1) ? r_vb_idx    : r_vc_idx;
+                chk_dp = (chk_k == 0) ? d_pf_va_phys : (chk_k == 1) ? d_pf_vb_phys : d_pf_vc_phys;
+                chk_rp = (chk_k == 0) ? r_va_phys    : (chk_k == 1) ? r_vb_phys    : r_vc_phys;
+                if (d_valid && chk_di < VREGS_PER_RCTX && dsb_v[chk_k] !== `SB_V_BUSY(d_rctx, chk_di))
+                    $display("FAIL tnca_core assert @%0t: D source %0d busy bit %b, scoreboard says %b (rctx %0d v%0d)",
+                             $time, chk_k, dsb_v[chk_k], `SB_V_BUSY(d_rctx, chk_di), d_rctx, chk_di);
+                if (r_valid && chk_ri < VREGS_PER_RCTX && rsb_v[chk_k] !== `SB_V_BUSY(r_rctx, chk_ri))
+                    $display("FAIL tnca_core assert @%0t: R source %0d busy bit %b, scoreboard says %b (rctx %0d v%0d)",
+                             $time, chk_k, rsb_v[chk_k], `SB_V_BUSY(r_rctx, chk_ri), r_rctx, chk_ri);
+                if (d_valid && chk_dp !== (vbase_q[d_rctx*PHYS_W +: PHYS_W] + chk_di[PHYS_W-1:0]))
+                    $display("FAIL tnca_core assert @%0t: D source %0d physical register %0d is wrong", $time, chk_k, chk_dp);
+                if (r_valid && chk_rp !== (vbase_q[r_rctx*PHYS_W +: PHYS_W] + chk_ri[PHYS_W-1:0]))
+                    $display("FAIL tnca_core assert @%0t: R source %0d physical register %0d is wrong", $time, chk_k, chk_rp);
+            end
             // R41 F04: and so are the predicate operands and the lane mask.
             if (x_valid && (pa_data !== `CHK_PREAD(x_pa_idx)))
                 $display("FAIL tnca_core assert @%0t: predicate operand A of pc=%0h reads %h, the file holds %h (p%0d)",

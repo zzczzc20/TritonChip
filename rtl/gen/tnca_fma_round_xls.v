@@ -4,37 +4,42 @@
 //
 // XLS version: v0.0.0-10704-g0a7c502cc
 // Pipeline:    combinational
-// DSLX sha256: 2a72a48dc67a0a10
+// DSLX sha256: 6aa1a52d409a13d7
 //==============================================================================
 module tnca_fma_round_xls(
-  input wire [112:0] s,
+  input wire [121:0] s,
   output wire [31:0] out
 );
+  wire [6:0] s_shn_mag;
+  wire s_subnormal_res;
+  wire [11:0] s_shs_mag;
   wire [11:0] sh_mag;
   wire [80:0] s_mag;
-  wire [89:0] shll_394;
+  wire [89:0] shll_404;
   wire [81:0] mag_x_shift_bits;
+  wire s_shn_left;
+  wire s_shs_left;
   wire [81:0] t_narrowed;
-  wire s_sh_left;
+  wire sh_left;
   wire [23:0] sig;
   wire rest;
   wire s_sticky_al;
   wire guard;
   wire sig_ones;
-  wire [23:0] add_417;
-  wire [11:0] s_e_sel;
+  wire [23:0] add_429;
   wire ftz;
   wire round_up;
   wire [23:0] sig_f;
   wire [11:0] eb0;
-  wire s_any;
   wire carry_out;
+  wire s_any;
+  wire [7:0] e_biased__2;
   wire exact_zero;
   wire [7:0] e_biased__1;
   wire result_zero;
   wire res_is_norm;
   wire overflow;
-  wire [30:0] and_457;
+  wire [30:0] and_465;
   wire res_sign;
   wire [30:0] normal_result_squeezed_portion_0_width_31;
   wire inf_sign;
@@ -42,33 +47,38 @@ module tnca_fma_round_xls(
   wire [31:0] normal_result;
   wire s_nan_res;
   wire [31:0] QNAN;
-  assign sh_mag = s[29:18];
-  assign s_mag = s[112:32];
-  assign shll_394 = sh_mag >= 12'h05a ? 90'h000_0000_0000_0000_0000_0000 : 90'h3ff_ffff_ffff_ffff_ffff_ffff << sh_mag;
+  assign s_shn_mag = s[37:31];
+  assign s_subnormal_res = s[39:39];
+  assign s_shs_mag = s[29:18];
+  assign sh_mag = s_subnormal_res ? s_shs_mag : {5'h00, s_shn_mag};
+  assign s_mag = s[121:41];
+  assign shll_404 = sh_mag >= 12'h05a ? 90'h000_0000_0000_0000_0000_0000 : 90'h3ff_ffff_ffff_ffff_ffff_ffff << sh_mag;
   assign mag_x_shift_bits = {s_mag, 1'h0};
+  assign s_shn_left = s[38:38];
+  assign s_shs_left = s[30:30];
   assign t_narrowed = sh_mag >= 12'h052 ? 82'h0_0000_0000_0000_0000_0000 : mag_x_shift_bits >> sh_mag;
-  assign s_sh_left = s[30:30];
-  assign sig = s_sh_left ? (sh_mag >= 12'h018 ? 24'h00_0000 : s_mag[23:0] << sh_mag) : t_narrowed[24:1];
-  assign rest = ~(s_sh_left | ~(~s_mag | shll_394[81:1]) == 81'h0_0000_0000_0000_0000_0000);
+  assign sh_left = s_subnormal_res ? s_shs_left : s_shn_left;
+  assign sig = sh_left ? (sh_mag >= 12'h018 ? 24'h00_0000 : s_mag[23:0] << sh_mag) : t_narrowed[24:1];
+  assign rest = ~(sh_left | ~(~s_mag | shll_404[81:1]) == 81'h0_0000_0000_0000_0000_0000);
   assign s_sticky_al = s[5:5];
-  assign guard = ~(s_sh_left | ~t_narrowed[0]);
+  assign guard = ~(sh_left | ~t_narrowed[0]);
   assign sig_ones = sig == 24'hff_ffff;
-  assign add_417 = t_narrowed[24:1] + 24'h00_0001;
-  assign s_e_sel = s[17:6];
+  assign add_429 = t_narrowed[24:1] + 24'h00_0001;
   assign ftz = s[0:0];
   assign round_up = guard & (rest | s_sticky_al | sig[0]);
-  assign sig_f = round_up ? (sig_ones ? 24'h80_0000 : add_417) : sig;
-  assign eb0 = s_e_sel + 12'h07f;
-  assign s_any = s[31:31];
+  assign sig_f = round_up ? (sig_ones ? 24'h80_0000 : add_429) : sig;
+  assign eb0 = s[17:6];
   assign carry_out = round_up & sig_ones;
+  assign s_any = s[40:40];
+  assign e_biased__2 = {7'h00, carry_out};
   assign exact_zero = ~s_any;
-  assign e_biased__1 = carry_out ? {~s_e_sel[7], s_e_sel[6:0]} : eb0[7:0];
+  assign e_biased__1 = eb0[7:0] + e_biased__2;
   assign result_zero = exact_zero | sig == 24'h00_0000 & ~round_up;
   assign res_is_norm = sig_f[23];
   assign overflow = s_any & (carry_out ? $signed(eb0) >= $signed(12'h0fe) : $signed(eb0) >= $signed(12'h0ff));
-  assign and_457 = (res_is_norm ? {e_biased__1, sig_f[22:0]} : {8'h00, {23{~ftz}} & sig_f[22:0]}) & {31{~result_zero}};
+  assign and_465 = (res_is_norm ? {e_biased__1, sig_f[22:0]} : {8'h00, {23{~ftz}} & sig_f[22:0]}) & {31{~result_zero}};
   assign res_sign = s[4:4];
-  assign normal_result_squeezed_portion_0_width_31 = overflow ? 31'h7f80_0000 : and_457;
+  assign normal_result_squeezed_portion_0_width_31 = overflow ? 31'h7f80_0000 : and_465;
   assign inf_sign = s[1:1];
   assign s_inf_res = s[2:2];
   assign normal_result = {res_sign, normal_result_squeezed_portion_0_width_31};

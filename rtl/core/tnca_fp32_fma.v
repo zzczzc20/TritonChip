@@ -76,7 +76,7 @@ module tnca_fp32_fma #(
         if (LAT == 2) begin : g_l2
             // xls/tnca_fma.x: FmaAligned and FmaNormalised, flattened by XLS
             localparam W_ALIGN = 150;
-            localparam W_NORM  = 113;
+            localparam W_NORM  = 122;
             wire [W_ALIGN-1:0] s0_d;
             reg  [W_ALIGN-1:0] s0_q;
             wire [W_NORM-1:0]  s1_d;

@@ -1,0 +1,178 @@
+[
+ {
+  "candidate": "F03",
+  "family": "red_busy -> VFPU stage 0 (p0_small_wins)",
+  "census_endpoints": 142,
+  "census_tns_ns": -54.732,
+  "census_worst_slack_ns": -0.919,
+  "census_routed_ns": 10.879,
+  "baseline_synth_ns": 6.76,
+  "ratio": 1.609,
+  "after": [
+   {
+    "state": "v4",
+    "synth_ns": 5.371,
+    "upper_bound": false,
+    "levels": 19,
+    "start": "red_busy_reg",
+    "end": "g_fma[0].u_fma/g_l2.s0_q_reg[136]",
+    "projected_routed_ns": 8.64,
+    "meets_9ns": true
+   }
+  ]
+ },
+ {
+  "candidate": "F03",
+  "family": "red_busy -> p0_res_sign_mag",
+  "census_endpoints": 27,
+  "census_tns_ns": -12.68,
+  "census_worst_slack_ns": -0.912,
+  "census_routed_ns": 10.904,
+  "baseline_synth_ns": 6.798,
+  "ratio": 1.604,
+  "after": [
+   {
+    "state": "v4",
+    "synth_ns": 5.371,
+    "upper_bound": false,
+    "levels": 19,
+    "start": "red_busy_reg",
+    "end": "g_fma[0].u_fma/g_l2.s0_q_reg[136]",
+    "projected_routed_ns": 8.62,
+    "meets_9ns": true
+   }
+  ]
+ },
+ {
+  "candidate": "F03",
+  "family": "red_busy -> p0_sub_671",
+  "census_endpoints": 1001,
+  "census_tns_ns": -177.361,
+  "census_worst_slack_ns": -0.691,
+  "census_routed_ns": 10.764,
+  "baseline_synth_ns": 6.556,
+  "ratio": 1.642,
+  "after": [
+   {
+    "state": "v4",
+    "synth_ns": 5.371,
+    "upper_bound": false,
+    "levels": 19,
+    "start": "red_busy_reg",
+    "end": "g_fma[0].u_fma/g_l2.s0_q_reg[136]",
+    "projected_routed_ns": 8.82,
+    "meets_9ns": true
+   }
+  ]
+ },
+ {
+  "candidate": "F08",
+  "family": "VFPU p0_sticky_al -> p1_sh_mag (stage 1)",
+  "census_endpoints": 62,
+  "census_tns_ns": -26.943,
+  "census_worst_slack_ns": -0.895,
+  "census_routed_ns": 11.132,
+  "baseline_synth_ns": 6.076,
+  "ratio": 1.832,
+  "after": [
+   {
+    "state": "v4",
+    "synth_ns": 4.747,
+    "upper_bound": false,
+    "levels": 28,
+    "start": "g_l2.s0_q_reg[72]",
+    "end": "g_l2.s1_q_reg[15]",
+    "projected_routed_ns": 8.7,
+    "meets_9ns": true
+   }
+  ]
+ },
+ {
+  "candidate": "F08",
+  "family": "MTX stage 1 (p0 -> p1)",
+  "census_endpoints": 45,
+  "census_tns_ns": -10.004,
+  "census_worst_slack_ns": -0.638,
+  "census_routed_ns": 10.526,
+  "baseline_synth_ns": 6.076,
+  "ratio": 1.732,
+  "after": [
+   {
+    "state": "v4",
+    "synth_ns": 4.747,
+    "upper_bound": false,
+    "levels": 28,
+    "start": "g_l2.s0_q_reg[72]",
+    "end": "g_l2.s1_q_reg[15]",
+    "projected_routed_ns": 8.22,
+    "meets_9ns": true
+   }
+  ]
+ },
+ {
+  "candidate": "F09",
+  "family": "MTX p1_sh_mag -> accumulator lane_mem",
+  "census_endpoints": 684,
+  "census_tns_ns": -223.921,
+  "census_worst_slack_ns": -0.871,
+  "census_routed_ns": 10.394,
+  "baseline_synth_ns": 5.795,
+  "ratio": 1.794,
+  "after": [
+   {
+    "state": "v4",
+    "synth_ns": 3.366,
+    "upper_bound": false,
+    "levels": 15,
+    "start": "g_mac[0].u_mac/u_fma/g_l2.s1_q_reg[39]",
+    "end": "u_acc/g_rd[0].lane_mem_reg_0_63_7_13/RAMD",
+    "projected_routed_ns": 6.04,
+    "meets_9ns": true
+   }
+  ]
+ },
+ {
+  "candidate": "F09",
+  "family": "VFPU p1 -> reduction acc (neighbour)",
+  "census_endpoints": 19,
+  "census_tns_ns": -3.047,
+  "census_worst_slack_ns": -0.455,
+  "census_routed_ns": 10.218,
+  "baseline_synth_ns": 6.084,
+  "ratio": 1.679,
+  "after": [
+   {
+    "state": "v4",
+    "synth_ns": 5.0,
+    "upper_bound": true,
+    "levels": null,
+    "start": "s1_q_reg",
+    "end": "acc_reg",
+    "projected_routed_ns": 8.4,
+    "meets_9ns": true
+   }
+  ]
+ },
+ {
+  "candidate": "-",
+  "family": "MTX operand regs -> stage 0 (neighbour)",
+  "census_endpoints": 99,
+  "census_tns_ns": -16.707,
+  "census_worst_slack_ns": -0.712,
+  "census_routed_ns": 10.767,
+  "baseline_synth_ns": 5.514,
+  "ratio": 1.953,
+  "after": [
+   {
+    "state": "v4",
+    "synth_ns": 4.856,
+    "upper_bound": false,
+    "levels": 17,
+    "start": "g_mac[0].u_mac/g_in_reg.b_q_reg[24]/C",
+    "end": "g_mac[0].u_mac/u_fma/g_l2.s0_q_reg[137]/D",
+    "projected_routed_ns": 9.48,
+    "meets_9ns": false
+   }
+  ]
+ }
+]

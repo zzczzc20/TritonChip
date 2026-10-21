@@ -13,7 +13,8 @@ with census routed the worst endpoint's data-path delay in the attempt-3 routed
 census (census_families.json) and baseline synth the same path's delay in the
 baseline unit OOC. A path that is absent from a run's family report is taken
 from its paths.csv (every endpoint whose worst slack is under GROUP_SLACK);
-absent from both, it is reported as an upper bound (period - GROUP_SLACK).
+or from the 60 paths of its paths.rpt; absent from all, it is reported as an
+upper bound (period - GROUP_SLACK).
 """
 import csv
 import json
@@ -62,6 +63,25 @@ def csv_worst(d, unit, start, end):
     return best
 
 
+def rpt_worst(d, unit, start, end):
+    """The worst of the (up to 60) paths listed in <unit>_paths.rpt matching start/end."""
+    import re
+    p = d / unit / f'{unit}_paths.rpt'
+    best = None
+    if p.exists():
+        for blk in p.read_text().split('Slack (')[1:]:
+            src = re.search(r'Source:\s+(\S+)', blk)
+            dst = re.search(r'Destination:\s+(\S+)', blk)
+            dp = re.search(r'Data Path Delay:\s+([0-9.]+)ns', blk)
+            lv = re.search(r'Logic Levels:\s+(\d+)', blk)
+            if src and dst and dp and start in src.group(1) and end in dst.group(1):
+                r = dict(delay=float(dp.group(1)), levels=int(lv.group(1)) if lv else None,
+                         start=src.group(1), end=dst.group(1), bound=False)
+                if best is None or r['delay'] > best['delay']:
+                    best = r
+    return best
+
+
 def lookup(d, unit, spec):
     kind, key = spec.split(':', 1)
     if kind == 'fam':
@@ -79,6 +99,9 @@ def lookup(d, unit, spec):
     r = csv_worst(d, unit, start, end)
     if r:
         return dict(delay=float(r['delay']), levels=int(r['levels']), start=r['start'], end=r['end'], bound=False)
+    r = rpt_worst(d, unit, start, end)
+    if r:
+        return r
     return dict(delay=PERIOD - GROUP_SLACK, levels=None, start=start, end=end, bound=True)
 
 

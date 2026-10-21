@@ -90,12 +90,14 @@ which prices the 24×24 multiplier -- two cascaded DSP48E2 slices on the U280
 short on the FPGA, XLS's three-stage schedule moved the alignment shifter
 into the middle stage, which then became the long one. So `xls/tnca_fma.x`
 is written as three stage functions whose results (`FmaAligned`,
-`FmaNormalised`) are the two cuts, and the arithmetic is re-expressed for the
-FPGA without changing a result bit, beginning with the first stage: raw
-exponent fields with subnormal fractions doubled, so no zero test stands in
-front of the exponent adders or the DSP. `evidence/r41/stage2/candidates/F03`
-has the OOC before/after, the verification and a Verilator miter of the new
-instances against the previous generated RTL.
+`FmaNormalised`) are the two cuts, and the arithmetic of each is re-expressed
+for the FPGA without changing a result bit: raw exponent fields with
+subnormal fractions doubled (no zero test in front of the exponent adders or
+the DSP), carry-select borrow and rounding, every quantity after the
+leading-zero count one step from it, one shifter for significand and guard.
+`evidence/r41/stage2/candidates/F03`, `F09` and `F08` have the OOC
+before/after, the verification and a Verilator miter of the new instances
+against the previous generated RTL.
 
 ## What is not generated, and why
 

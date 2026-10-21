@@ -67,6 +67,13 @@
 //     mask is taken from the shift amount itself, with no decrement in front;
 //     rounding is carry-select (sig + 1 and the all-ones test are formed beside
 //     the decision), and so are the biased exponent and the overflow test.
+//   F08, the middle stage. The borrow of the shifted-out sticky bit selects
+//     between big - small and big - small - 1, formed side by side, instead of
+//     a second 89-bit carry chain behind the latest bit of the first stage.
+//     Everything after the leading-zero count is one compare or one
+//     subtraction from it: the subnormal test, the biased exponent and both
+//     normalising shifts are rewritten in terms of lz and exp_common, and the
+//     subnormal shift does not depend on lz at all.
 
 const QNAN = u32:0x7fc00000;
 const E_MIN = s12:-126;
@@ -98,9 +105,12 @@ pub struct FmaAligned {
 pub struct FmaNormalised {
     mag: uN[81],         // the sum's magnitude, below 2^81; the shifted-out eps is sticky_al
     any: u1,             // mag != 0
-    sh_left: u1,         // the normalising shift: left, and by how much
-    sh_mag: u12,
-    e_sel: s12,          // the unbiased exponent before rounding: E_MIN if subnormal
+    subnormal_res: u1,
+    shn_left: u1,        // the normalising shift if the result is normal ...
+    shn_mag: u7,
+    shs_left: u1,        // ... and if it is subnormal
+    shs_mag: u12,
+    eb0: s12,            // the biased exponent before rounding
     sticky_al: u1,
     res_sign: u1,
     nan_res: u1,
@@ -223,8 +233,8 @@ pub fn fma32_align(a: u32, b: u32, c: u32, sub_c: u1, mul_only: u1, ftz: u1) -> 
     }
 }
 
-// Second stage: add or subtract, count leading zeros, and the normalising
-// shift.
+// Second stage: add or subtract, count leading zeros, and everything that
+// follows the count.
 pub fn fma32_normalise(s: FmaAligned) -> FmaNormalised {
     let small_sh = s.small_sh as uN[88];
     let big = (s.big_hi as uN[88]) << u32:32;
@@ -237,10 +247,16 @@ pub fn fma32_normalise(s: FmaAligned) -> FmaNormalised {
     let mul_only = s.mul_only;
 
     let same_sign = s_big == s_small;
-    let small_wins = small_sh > big;
     let sum_add = (big as uN[89]) + (small_sh as uN[89]);
-    // big - (small_sh + eps): the borrow accounts for the shifted-out eps
-    let sub_bs = (big as uN[89]) - (small_sh as uN[89]) - (sticky_al as uN[89]);
+    // big - (small_sh + eps): the borrow accounts for the shifted-out eps.
+    // Carry-select: big - small_sh and big - small_sh - 1 (= big + !small_sh)
+    // are formed side by side and the late sticky bit only selects, instead
+    // of a second carry chain behind it. The sign of the first is
+    // small_sh > big.
+    let dif = (big as uN[89]) - (small_sh as uN[89]);
+    let dif_m1 = (big as uN[89]) + !(small_sh as uN[89]);
+    let small_wins = dif[88+:u1] == u1:1;
+    let sub_bs = if sticky_al { dif_m1 } else { dif };
     // (small_sh + eps) - big: eps stays below bit 0 and is the new sticky
     let sub_sb = (small_sh as uN[89]) - (big as uN[89]);
     let mag = if same_sign { sum_add } else if small_wins { sub_sb } else { sub_bs };
@@ -248,15 +264,23 @@ pub fn fma32_normalise(s: FmaAligned) -> FmaNormalised {
 
     //------------------------------------------------------------ normalise
     let any = mag != uN[89]:0;
-    let msb = if any { u8:88 - (clz(mag) as u8) } else { u8:0 };
-    // value(mag) = mag * 2^(exp_common - 78); normalised = 1.f * 2^e_norm
-    let e_norm = (msb as s12) + exp_common - s12:78;
-    let sh_norm = (msb as s12) - s12:23;
-    let subnormal_res = e_norm < E_MIN && any;
-    let sh_extra = if subnormal_res { E_MIN - e_norm } else { s12:0 };
-    let sh_tot = sh_norm + sh_extra;
-    let sh_left = sh_tot < s12:0;
-    let sh_mag = if sh_left { (-sh_tot) as u12 } else { sh_tot as u12 };
+    // mag's leading one is at 88 - lz and value(mag) = mag * 2^(exp_common - 78),
+    // so normalised it is 1.f * 2^e_norm, e_norm = exp_common + 10 - lz. Every
+    // quantity that follows the leading-zero count is one compare or one
+    // subtraction from it, the rest is formed from exp_common beside the count:
+    let lz = clz(mag) as s12;
+    //   e_norm < E_MIN, against a bound that does not wait for lz
+    let subnormal_res = any && lz > exp_common + s12:136;
+    //   the biased exponent before rounding: E_MIN + 127 if subnormal
+    let eb0 = if subnormal_res { E_MIN + s12:127 } else { (exp_common + s12:137) - lz };
+    //   the normalising shift (right if positive). Normal: msb - 23 = 65 - lz.
+    //   Subnormal: that plus E_MIN - e_norm = -71 - exp_common, which does not
+    //   depend on lz at all. Each magnitude is formed beside its sign.
+    let shn_left = lz > s12:65;
+    let shn_mag = if shn_left { lz - s12:65 } else { s12:65 - lz };
+    let shs = s12:-71 - exp_common;
+    let shs_left = shs < s12:0;
+    let shs_mag = if shs_left { -shs } else { shs };
 
     // exact zero (operands annihilated, or both zero): +0 unless both addends
     // shared a sign
@@ -267,9 +291,12 @@ pub fn fma32_normalise(s: FmaAligned) -> FmaNormalised {
     FmaNormalised {
         mag: mag as uN[81],
         any: any as u1,
-        sh_left: sh_left as u1,
-        sh_mag: sh_mag,
-        e_sel: if subnormal_res { E_MIN } else { e_norm },
+        subnormal_res: subnormal_res as u1,
+        shn_left: shn_left as u1,
+        shn_mag: shn_mag as u7,
+        shs_left: shs_left as u1,
+        shs_mag: shs_mag as u12,
+        eb0: eb0,
         sticky_al: s.sticky_al,
         res_sign: res_sign,
         nan_res: s.nan_res,
@@ -284,9 +311,10 @@ pub fn fma32_normalise(s: FmaAligned) -> FmaNormalised {
 pub fn fma32_round(s: FmaNormalised) -> u32 {
     let mag = s.mag as uN[89];
     let any = s.any == u1:1;
-    let sh_left = s.sh_left == u1:1;
-    let sh_mag = s.sh_mag;
-    let eb0 = s.e_sel + s12:127;
+    let subnormal_res = s.subnormal_res == u1:1;
+    let sh_left = if subnormal_res { s.shs_left == u1:1 } else { s.shn_left == u1:1 };
+    let sh_mag = if subnormal_res { s.shs_mag } else { s.shn_mag as u12 };
+    let eb0 = s.eb0;
     let sticky_al = s.sticky_al == u1:1;
     let res_sign = s.res_sign;
     let ftz = s.ftz;

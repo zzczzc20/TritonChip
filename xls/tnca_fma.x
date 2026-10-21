@@ -61,12 +61,18 @@
 //     to the product after the DSP, where they fold into the alignment select.
 //     Before, five LUT levels of zero detection and ftz decode sat between the
 //     operand registers and the DSP, and a zero test fed the exponent adders.
+//   F09, the last stage (combinational into the consumer's register: the
+//     vector writeback, the accumulator file). One right shift of mag with a
+//     zero appended yields both the significand and the guard bit; the sticky
+//     mask is taken from the shift amount itself, with no decrement in front;
+//     rounding is carry-select (sig + 1 and the all-ones test are formed beside
+//     the decision), and so are the biased exponent and the overflow test.
 
 const QNAN = u32:0x7fc00000;
 const E_MIN = s12:-126;
 
 fn lsb_mask88(n: u8) -> uN[88] { !(all_ones!<uN[88]>() << n) }
-fn lsb_mask89(n: u8) -> uN[89] { !(all_ones!<uN[89]>() << n) }
+fn lsb_mask90(n: u12) -> uN[90] { !(all_ones!<uN[90]>() << n) }
 
 // The two cuts of the latency-2 instance (rtl/core/tnca_fp32_fma.v registers
 // them; see "WHERE THE CUTS FALL"): what the alignment stage hands the
@@ -280,7 +286,7 @@ pub fn fma32_round(s: FmaNormalised) -> u32 {
     let any = s.any == u1:1;
     let sh_left = s.sh_left == u1:1;
     let sh_mag = s.sh_mag;
-    let e_sel = s.e_sel;
+    let eb0 = s.e_sel + s12:127;
     let sticky_al = s.sticky_al == u1:1;
     let res_sign = s.res_sign;
     let ftz = s.ftz;
@@ -289,31 +295,38 @@ pub fn fma32_round(s: FmaNormalised) -> u32 {
     let inf_sign = s.inf_sign;
 
     //---------------------------------------------------- round, assemble
-    let sh_r = if sh_mag > u12:100 { u8:100 } else { sh_mag as u8 };
-
-    let shifted = if sh_left { mag << sh_r } else { mag >> sh_r };
-    let sh_r1 = if sh_r == u8:0 { u8:0 } else { sh_r - u8:1 };
-    let mag_g = mag >> sh_r1;
-
-    let sig = shifted[0+:u24];
-    let guard = if sh_left || sh_r == u8:0 { u1:0 } else { mag_g[0+:u1] };
-    let rest = if sh_left || sh_r < u8:2 { false } else { (mag & lsb_mask89(sh_r1)) != uN[89]:0 };
+    // One shifter gives both the significand and the guard: mag with a zero
+    // appended below it, shifted right, puts mag[sh-1] at bit 0 (and 0 there
+    // for sh = 0). A left shift is at most 23 whenever mag != 0, so 24 bits of
+    // it are the significand and there is no guard. Amounts past the field
+    // give 0, as the clamp to 100 did.
+    let mag_x = (mag as uN[90]) << u32:1;
+    let t = mag_x >> sh_mag;
+    let sig = if sh_left { (mag << sh_mag)[0+:u24] } else { t[1+:u24] };
+    let guard = if sh_left { u1:0 } else { t[0+:u1] };
+    // the bits below the guard, mag[sh-2:0] = mag_x[sh-1:1], masked straight
+    // from the shift amount: no decrement in front of the mask
+    let rest = if sh_left { false } else { (mag_x & lsb_mask90(sh_mag)) != uN[90]:0 };
     let sticky = rest || sticky_al;
 
+    // Round to nearest even, carry-select: the incremented significand and
+    // the all-ones test are formed beside the decision, which only selects.
     let round_up = guard == u1:1 && (sticky || sig[0+:u1] == u1:1);
-    let sig_r = (sig as u25) + (round_up as u25);
-    let carry_out = sig_r[24+:u1] == u1:1;
-    let sig_f = if carry_out { sig_r[1+:u24] } else { sig_r[0+:u24] };
-    let e_f = e_sel + (if carry_out { s12:1 } else { s12:0 });
+    let sig_ones = sig == all_ones!<u24>();
+    let carry_out = round_up && sig_ones;
+    let sig_f = if !round_up { sig } else if sig_ones { u24:0x800000 } else { sig + u24:1 };
     let res_is_norm = sig_f[23+:u1] == u1:1;
 
-    let e_biased = e_f + s12:127;
-    let overflow = any && e_biased >= s12:255;
+    // the biased exponent and the overflow test, both candidates beside the
+    // carry: e_biased = eb0 + carry_out
+    let e_biased = if carry_out { eb0 + s12:1 } else { eb0 };
+    let overflow = any && (if carry_out { eb0 >= s12:254 } else { eb0 >= s12:255 });
 
     // exact zero (operands annihilated, or both zero): its sign was settled
     // in the second stage. Rounded-to-zero keeps the magnitude's sign.
     let exact_zero = !any;
-    let result_zero = exact_zero || sig_f == u24:0;
+    // sig_f == 0 exactly when sig is 0 and nothing rounded up
+    let result_zero = exact_zero || (sig == u24:0 && !round_up);
 
     let normal_result =
         if overflow { res_sign ++ u8:0xff ++ u23:0 }

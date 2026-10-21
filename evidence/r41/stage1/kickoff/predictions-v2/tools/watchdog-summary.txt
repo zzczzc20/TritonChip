@@ -1,0 +1,1 @@
+{'samples': 421, 'peak_rss_gib': 11.55, 'min_available_gib': 94.5, 'kills': 0, 'first': '2026-10-21T10:45:35Z', 'last': '2026-10-21T13:05:38Z'}

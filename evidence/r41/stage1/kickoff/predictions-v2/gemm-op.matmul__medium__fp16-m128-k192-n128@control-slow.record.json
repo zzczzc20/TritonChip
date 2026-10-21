@@ -1,0 +1,777 @@
+{
+ "schema": "archbench-torch-record/2",
+ "point_id": "op.matmul/medium/fp16-m128-k192-n128",
+ "point_sha256": "5fcd1986d57a317c831dfb5bb8b3334475169939d8e9c957ba15f7f06e8cef5a",
+ "kind": "op",
+ "family": "matmul",
+ "tier": "medium",
+ "dtype": "fp16",
+ "track": [
+  "llm",
+  "general"
+ ],
+ "platform": {
+  "kind": "tnca",
+  "name": "tnca:core-vrf-sync-v5@systemc-tlm-grid",
+  "profile": "core-vrf-sync-v5",
+  "backend": "systemc-tlm-grid",
+  "backend_args": {},
+  "opt_level": 2,
+  "inductor": {
+   "cpu_backend": "triton",
+   "max_block": 16,
+   "persistent_reductions": false,
+   "compile_threads": 1,
+   "max_autotune_gemm_backends": "TRITON",
+   "tensor_descriptors": true,
+   "no_x_dim": true,
+   "reduction_rows": 1,
+   "gemm_tile": [
+    16,
+    16,
+    16
+   ],
+   "device": "tnca"
+  },
+  "knobs": {
+   "TNCA_ACTIVE_CORES": "1",
+   "TNCA_BANK_ALLOC": "0",
+   "TNCA_DRAM_MAP": "/home/zhongchun/r41s1-c2c96d3/map.txt",
+   "TNCA_GEMM_TILE": "16,16,16",
+   "TNCA_MAX_BLOCK": "16",
+   "TNCA_PIPELINE": "1",
+   "TNCA_REDUCTION_ROWS": "1",
+   "TNCA_RTL_MEM_PORTS": "1",
+   "TNCA_RTL_OUTSTANDING": "1",
+   "TNCA_SDPA": "decomposed",
+   "TNCA_SUBMIT": "single",
+   "TNCA_TLM_BINARY": "/home/zhongchun/r41s1-c2c96d3/model-build/tnca-chip",
+   "TNCA_TLM_CONFIG": "/home/zhongchun/r41s1-c2c96d3/src/tools/performance_harness/systemc/configs/r40-board-m3.cfg",
+   "TNCA_TLM_MONITOR": "aggregate",
+   "TNCA_TLM_OUT": "/home/zhongchun/r41s1-c2c96d3/runs/gemm-medium-control-slow/runs/op.matmul__medium__fp16-m128-k192-n128/model",
+   "TNCA_TORCH_DEVICE": "native",
+   "TNCA_TRANSFER_POLICY": "per-kernel",
+   "TNCA_TUNE": "0",
+   "TNCA_WINDOW_REUSE": "0"
+  },
+  "device_id": "sim:core-vrf-sync-v5-a8f9e2a0291d254a-e2dae021ce40",
+  "image": "sim:core-vrf-sync-v5-a8f9e2a0291d254a-e2dae021ce40",
+  "clock_policy": null,
+  "image_sha256": null,
+  "software_tree": "files:8c7139023d76d8572a82faef65312ce03bb439def8475792de826f44acb956ee",
+  "toolchain": {
+   "torch": "2.14.0+cu130",
+   "triton": "3.8.0",
+   "python": "3.12.3 (main, Nov  6 2025, 13:44:16) [GCC 13.3.0]"
+  }
+ },
+ "evidence_level": "model-prediction-uncalibrated",
+ "status": "pass",
+ "problems": [],
+ "fallbacks": [],
+ "kernels": [
+  "triton_tem_fused_mm_0"
+ ],
+ "correctness": {
+  "max_rel_err": 0.00030617475637429787,
+  "tol": 0.02,
+  "detail": ""
+ },
+ "time": {
+  "unit": "cycles",
+  "device": 550681,
+  "timing": "serial-grid",
+  "roi": "launch_accept_to_core_idle",
+  "launches": 1,
+  "per_launch": [
+   {
+    "kernel": "triton_tem_fused_mm_0",
+    "grid": [
+     64,
+     1,
+     1
+    ],
+    "cycles": 550681,
+    "programs": 0
+   }
+  ],
+  "clock_hz": null,
+  "device_seconds": null,
+  "kind": "device-cycles-serial-grid",
+  "samples": [
+   550681
+  ],
+  "deterministic": false,
+  "warmup": 0,
+  "timed": 1,
+  "first_call": {
+   "wall_s": 2.884,
+   "device_cycles": 559660
+  }
+ },
+ "demand": {
+  "macs": 3145728,
+  "fp_ops": 0.0,
+  "sfu_ops": 0.0,
+  "read_bytes": 98304,
+  "write_bytes": 32768
+ },
+ "bound": {
+  "version": "archbench-torch-bounds/2",
+  "unit": "cycles",
+  "value": 98304.0,
+  "binding": "fp_lane",
+  "terms": {
+   "fp_lane": 98304.0,
+   "mem_bytes": 16384.0
+  },
+  "peak": {
+   "fp_lane": 32,
+   "mma_mac": 16,
+   "int_lane": 16,
+   "sfu_lane": 1,
+   "mem_bytes": 8,
+   "issue": 1
+  }
+ },
+ "eta": 0.17851351326811712,
+ "host": {
+  "wall_s": 2.88,
+  "upload_bytes": 262976,
+  "download_bytes": 262976,
+  "transfer_s": 0.059,
+  "first_call_s": 2.884,
+  "steady": {
+   "request_s": 0.567035,
+   "upload_s": 0.000415,
+   "run_s": 0.557572,
+   "download_s": 0.004479
+  },
+  "calls": [
+   {
+    "request_s": 0.567035,
+    "upload_s": 0.000415,
+    "run_s": 0.557572,
+    "download_s": 0.004479
+   }
+  ]
+ },
+ "counters": null,
+ "env": {
+  "torch": "2.14.0+cu130",
+  "triton": "3.8.0",
+  "python": "3.12.3",
+  "machine": "aarch64",
+  "host": "gx10-6646"
+ },
+ "timestamp": "2026-10-21T10:47:53+00:00",
+ "cold_call": {
+  "first_call": {
+   "wall_s": 2.884,
+   "device_cycles": 559660
+  },
+  "problem": "27 launches, but the generated wrapper makes 1: launches that are not the graph (autotuning?) would be counted as its time",
+  "provenance": {
+   "software_tree": "files:8c7139023d76d8572a82faef65312ce03bb439def8475792de826f44acb956ee",
+   "git": null,
+   "artifacts": [
+    "34b7ff190d3570fbb955b492993af4dfa9a8ffde75997d766f61e1dbb846c8cb",
+    "6af98833b1853f3b7ccdc2e6fd7783e62ba465f1529120bddf3699ca121ef05f",
+    "70f7f190c84ead2fc643461c1149ba19e6457f458300be95301403979d04f353"
+   ],
+   "profile": "core-vrf-sync-v5",
+   "capabilities": [
+    "atomics_device",
+    "fence",
+    "gather_scatter",
+    "matrix_bf16",
+    "matrix_f16",
+    "matrix_fp8",
+    "mbarrier",
+    "rctx_pair",
+    "rctx_slice",
+    "sfu",
+    "tensor_dma",
+    "tensor_store",
+    "tensor_transpose",
+    "vector_fp32"
+   ],
+   "image": "sim:core-vrf-sync-v5-a8f9e2a0291d254a-e2dae021ce40",
+   "clock_hz": null,
+   "backend": "systemc-tlm-grid",
+   "launch_map": {
+    "timing": "serial-grid",
+    "cores": [
+     0
+    ],
+    "launches": [
+     {
+      "kernel": "_copy_kernel",
+      "grid": [
+       1,
+       1,
+       1
+      ],
+      "programs": 0,
+      "artifact": "34b7ff190d3570fbb955b492993af4dfa9a8ffde75997d766f61e1dbb846c8cb"
+     },
+     {
+      "kernel": "_copy_kernel",
+      "grid": [
+       1,
+       1,
+       1
+      ],
+      "programs": 0,
+      "artifact": "34b7ff190d3570fbb955b492993af4dfa9a8ffde75997d766f61e1dbb846c8cb"
+     },
+     {
+      "kernel": "_copy_kernel",
+      "grid": [
+       1,
+       1,
+       1
+      ],
+      "programs": 0,
+      "artifact": "34b7ff190d3570fbb955b492993af4dfa9a8ffde75997d766f61e1dbb846c8cb"
+     },
+     {
+      "kernel": "_copy_kernel",
+      "grid": [
+       1,
+       1,
+       1
+      ],
+      "programs": 0,
+      "artifact": "34b7ff190d3570fbb955b492993af4dfa9a8ffde75997d766f61e1dbb846c8cb"
+     },
+     {
+      "kernel": "_copy_kernel",
+      "grid": [
+       1,
+       1,
+       1
+      ],
+      "programs": 0,
+      "artifact": "34b7ff190d3570fbb955b492993af4dfa9a8ffde75997d766f61e1dbb846c8cb"
+     },
+     {
+      "kernel": "_copy_kernel",
+      "grid": [
+       1,
+       1,
+       1
+      ],
+      "programs": 0,
+      "artifact": "34b7ff190d3570fbb955b492993af4dfa9a8ffde75997d766f61e1dbb846c8cb"
+     },
+     {
+      "kernel": "_copy_kernel",
+      "grid": [
+       1,
+       1,
+       1
+      ],
+      "programs": 0,
+      "artifact": "34b7ff190d3570fbb955b492993af4dfa9a8ffde75997d766f61e1dbb846c8cb"
+     },
+     {
+      "kernel": "_copy_kernel",
+      "grid": [
+       1,
+       1,
+       1
+      ],
+      "programs": 0,
+      "artifact": "34b7ff190d3570fbb955b492993af4dfa9a8ffde75997d766f61e1dbb846c8cb"
+     },
+     {
+      "kernel": "_copy_kernel",
+      "grid": [
+       1,
+       1,
+       1
+      ],
+      "programs": 0,
+      "artifact": "34b7ff190d3570fbb955b492993af4dfa9a8ffde75997d766f61e1dbb846c8cb"
+     },
+     {
+      "kernel": "_copy_kernel",
+      "grid": [
+       1,
+       1,
+       1
+      ],
+      "programs": 0,
+      "artifact": "34b7ff190d3570fbb955b492993af4dfa9a8ffde75997d766f61e1dbb846c8cb"
+     },
+     {
+      "kernel": "_copy_kernel",
+      "grid": [
+       1,
+       1,
+       1
+      ],
+      "programs": 0,
+      "artifact": "34b7ff190d3570fbb955b492993af4dfa9a8ffde75997d766f61e1dbb846c8cb"
+     },
+     {
+      "kernel": "_copy_kernel",
+      "grid": [
+       1,
+       1,
+       1
+      ],
+      "programs": 0,
+      "artifact": "34b7ff190d3570fbb955b492993af4dfa9a8ffde75997d766f61e1dbb846c8cb"
+     },
+     {
+      "kernel": "_copy_kernel",
+      "grid": [
+       1,
+       1,
+       1
+      ],
+      "programs": 0,
+      "artifact": "6af98833b1853f3b7ccdc2e6fd7783e62ba465f1529120bddf3699ca121ef05f"
+     },
+     {
+      "kernel": "_copy_kernel",
+      "grid": [
+       1,
+       1,
+       1
+      ],
+      "programs": 0,
+      "artifact": "6af98833b1853f3b7ccdc2e6fd7783e62ba465f1529120bddf3699ca121ef05f"
+     },
+     {
+      "kernel": "_copy_kernel",
+      "grid": [
+       1,
+       1,
+       1
+      ],
+      "programs": 0,
+      "artifact": "6af98833b1853f3b7ccdc2e6fd7783e62ba465f1529120bddf3699ca121ef05f"
+     },
+     {
+      "kernel": "_copy_kernel",
+      "grid": [
+       1,
+       1,
+       1
+      ],
+      "programs": 0,
+      "artifact": "6af98833b1853f3b7ccdc2e6fd7783e62ba465f1529120bddf3699ca121ef05f"
+     },
+     {
+      "kernel": "_copy_kernel",
+      "grid": [
+       1,
+       1,
+       1
+      ],
+      "programs": 0,
+      "artifact": "6af98833b1853f3b7ccdc2e6fd7783e62ba465f1529120bddf3699ca121ef05f"
+     },
+     {
+      "kernel": "_copy_kernel",
+      "grid": [
+       1,
+       1,
+       1
+      ],
+      "programs": 0,
+      "artifact": "6af98833b1853f3b7ccdc2e6fd7783e62ba465f1529120bddf3699ca121ef05f"
+     },
+     {
+      "kernel": "_copy_kernel",
+      "grid": [
+       1,
+       1,
+       1
+      ],
+      "programs": 0,
+      "artifact": "6af98833b1853f3b7ccdc2e6fd7783e62ba465f1529120bddf3699ca121ef05f"
+     },
+     {
+      "kernel": "_copy_kernel",
+      "grid": [
+       1,
+       1,
+       1
+      ],
+      "programs": 0,
+      "artifact": "6af98833b1853f3b7ccdc2e6fd7783e62ba465f1529120bddf3699ca121ef05f"
+     },
+     {
+      "kernel": "_copy_kernel",
+      "grid": [
+       1,
+       1,
+       1
+      ],
+      "programs": 0,
+      "artifact": "6af98833b1853f3b7ccdc2e6fd7783e62ba465f1529120bddf3699ca121ef05f"
+     },
+     {
+      "kernel": "_copy_kernel",
+      "grid": [
+       1,
+       1,
+       1
+      ],
+      "programs": 0,
+      "artifact": "6af98833b1853f3b7ccdc2e6fd7783e62ba465f1529120bddf3699ca121ef05f"
+     },
+     {
+      "kernel": "_copy_kernel",
+      "grid": [
+       1,
+       1,
+       1
+      ],
+      "programs": 0,
+      "artifact": "6af98833b1853f3b7ccdc2e6fd7783e62ba465f1529120bddf3699ca121ef05f"
+     },
+     {
+      "kernel": "_copy_kernel",
+      "grid": [
+       1,
+       1,
+       1
+      ],
+      "programs": 0,
+      "artifact": "6af98833b1853f3b7ccdc2e6fd7783e62ba465f1529120bddf3699ca121ef05f"
+     },
+     {
+      "kernel": "_copy_kernel",
+      "grid": [
+       1,
+       1,
+       1
+      ],
+      "programs": 0,
+      "artifact": "6af98833b1853f3b7ccdc2e6fd7783e62ba465f1529120bddf3699ca121ef05f"
+     },
+     {
+      "kernel": "_copy_kernel",
+      "grid": [
+       1,
+       1,
+       1
+      ],
+      "programs": 0,
+      "artifact": "6af98833b1853f3b7ccdc2e6fd7783e62ba465f1529120bddf3699ca121ef05f"
+     },
+     {
+      "kernel": "triton_tem_fused_mm_0",
+      "grid": [
+       64,
+       1,
+       1
+      ],
+      "programs": 0,
+      "artifact": "70f7f190c84ead2fc643461c1149ba19e6457f458300be95301403979d04f353"
+     }
+    ]
+   }
+  }
+ },
+ "timings": {
+  "device-cycles-serial-grid": {
+   "unit": "cycles",
+   "samples": [
+    550681
+   ],
+   "median": 550681,
+   "p95": 550681,
+   "warmup": 0,
+   "deterministic": false,
+   "clock_hz": null
+  },
+  "request-latency": {
+   "unit": "s",
+   "samples": [
+    0.567035
+   ],
+   "median": 0.567035,
+   "p95": 0.567035,
+   "warmup": 0,
+   "includes": [
+    "per-launch upload",
+    "device",
+    "per-launch download",
+    "host dispatch"
+   ]
+  }
+ },
+ "provenance": {
+  "software_tree": "files:8c7139023d76d8572a82faef65312ce03bb439def8475792de826f44acb956ee",
+  "git": null,
+  "artifacts": [
+   "70f7f190c84ead2fc643461c1149ba19e6457f458300be95301403979d04f353"
+  ],
+  "profile": "core-vrf-sync-v5",
+  "capabilities": [
+   "atomics_device",
+   "fence",
+   "gather_scatter",
+   "matrix_bf16",
+   "matrix_f16",
+   "matrix_fp8",
+   "mbarrier",
+   "rctx_pair",
+   "rctx_slice",
+   "sfu",
+   "tensor_dma",
+   "tensor_store",
+   "tensor_transpose",
+   "vector_fp32"
+  ],
+  "image": "sim:core-vrf-sync-v5-a8f9e2a0291d254a-e2dae021ce40",
+  "clock_hz": null,
+  "backend": "systemc-tlm-grid",
+  "launch_map": {
+   "timing": "serial-grid",
+   "cores": [
+    0
+   ],
+   "launches": [
+    {
+     "kernel": "triton_tem_fused_mm_0",
+     "grid": [
+      64,
+      1,
+      1
+     ],
+     "programs": 0,
+     "artifact": "70f7f190c84ead2fc643461c1149ba19e6457f458300be95301403979d04f353"
+    }
+   ]
+  }
+ },
+ "native_memory": {
+  "tensor_live_bytes": 98304,
+  "tensor_peak_bytes": 131072,
+  "session": {
+   "epoch": 0,
+   "heap_capacity_bytes": 1073610752,
+   "heap_reserved_ranges": [],
+   "heap_allocated_bytes": 98304,
+   "heap_peak_bytes": 265984,
+   "code_allocated_bytes": 8256,
+   "code_peak_bytes": 8256
+  },
+  "window": null,
+  "live_buffers": [
+   {
+    "address": 131072,
+    "bytes": 49152,
+    "reserved": 49152
+   },
+   {
+    "address": 180224,
+    "bytes": 49152,
+    "reserved": 49152
+   }
+  ]
+ },
+ "measurement": {
+  "block_id": null,
+  "process_session": "f9273d0954ff4151b94758ee6405536a",
+  "boot_id": "36d2d71c-e46a-424b-be60-39380cec9651",
+  "started_ns": 4484139409323519,
+  "ended_ns": 4484145106394455
+ },
+ "child_wall_s": 5.697,
+ "harness_not_knobs": [
+  "TNCA_BACKEND",
+  "TNCA_BACKEND_ARGS",
+  "TNCA_COUNTERS",
+  "TNCA_DEADLINE",
+  "TNCA_DEVICE",
+  "TNCA_DUMP_DIR",
+  "TNCA_HOST_TIMEOUT",
+  "TNCA_KERNEL_DUMP",
+  "TNCA_LAUNCH",
+  "TNCA_OPT_LEVEL",
+  "TNCA_PROFILE",
+  "TNCA_TRITON"
+ ],
+ "systemc_model": [
+  {
+   "identity": {
+    "backend": "systemc-tlm-grid",
+    "binary": "/home/zhongchun/r41s1-c2c96d3/model-build/tnca-chip",
+    "binary_sha256": "72b6c58c21ae59b63a9b0139bfe887972eafd9ca8c396e8b602864f67026943e",
+    "config": {
+     "nx": "3",
+     "ny": "1",
+     "sets": "32",
+     "ways": "8",
+     "full_line_tag": "1",
+     "mshrs": "8",
+     "targets": "16",
+     "outlets": "3",
+     "active_outlets": "1",
+     "outstanding": "1",
+     "core_window": "32",
+     "clock_hz": "90000000",
+     "memory_base": "0",
+     "memory_bytes": "1073741824",
+     "pc_bytes": "268435456",
+     "pc_count": "32",
+     "pc_first": "0",
+     "lookup_cycles": "3",
+     "service_cycles": "1",
+     "noc_stages": "3",
+     "noc_bytes_per_cycle": "16",
+     "hbm_latency_cycles": "23",
+     "hbm_bytes_per_cycle": "32",
+     "outlet_issue_cycles": "1",
+     "trace_events": "100000",
+     "dma_queue": "1",
+     "dma_unit_slots": "8",
+     "dma_outstanding": "16",
+     "dma_setup_cycles": "2",
+     "dma_rf_cycles": "1",
+     "issue_cycles": "1",
+     "scalar_latency": "1",
+     "scalar_mul_latency": "5",
+     "vector_int_latency": "3",
+     "vector_fp_latency": "5",
+     "convert_latency": "5",
+     "compare_latency": "1",
+     "predicate_latency": "2",
+     "shuffle_latency": "3",
+     "reduction_latency": "1",
+     "fp_reduction_latency": "16",
+     "sfu_occupancy": "27",
+     "sfu_latency": "28",
+     "load_latency": "5",
+     "lsu_slots": "2",
+     "lsu_beat_slots": "8",
+     "barrier_latency": "2",
+     "acc_read_latency": "3",
+     "mtx_abuf": "1",
+     "mtx_rf_read_cycles": "2",
+     "mtx_mac_cycles": "1",
+     "mtx_mac_unbuffered_cycles": "2",
+     "mtx_pipe_cycles": "4",
+     "mtx_complete_cycles": "1",
+     "mtx_zero_cycles": "16",
+     "mtx_row_cycles": "1",
+     "launch_cycles": "5",
+     "dispatch_cycles": "6",
+     "host_launch_cycles": "405467",
+     "host_transfer_cycles": "0",
+     "host_transfer_cycles_per_kib": "4448",
+     "memory_model": "1",
+     "tl_noc_inject_cycles": "1",
+     "tl_noc_eject_cycles": "2",
+     "tl_slice_hit_occupancy": "3",
+     "tl_slice_hit_latency": "4",
+     "tl_slice_miss_occupancy": "4",
+     "tl_slice_mreq_occupancy": "2",
+     "tl_slice_fill_occupancy": "2",
+     "tl_slice_wake_occupancy": "2",
+     "tl_slice_writeback_occupancy": "2",
+     "tl_slice_to_outlet_cycles": "4",
+     "tl_outlet_to_slice_cycles": "13",
+     "tl_outlet_read_issue_cycles": "2",
+     "tl_outlet_write_issue_cycles": "3",
+     "tl_outlet_beat_cycles": "1",
+     "tl_hbm_write_latency_cycles": "23",
+     "core_pipeline": "1",
+     "branch_taken_cycles": "4",
+     "park_refetch_cycles": "5",
+     "vrf_banks": "4",
+     "vrf_bank_conflict_cycles": "1",
+     "lsu_setup_cycles": "1",
+     "lsu_vector_load_extra": "1",
+     "lsu_complete_cycles": "3",
+     "lsu_writeback_cycles": "1",
+     "fp_compare_latency": "4",
+     "shuffle_scalar_latency": "1",
+     "reduction_vector_extra": "2",
+     "dma_store_register_cycles": "3",
+     "dma_drain_cycles": "2",
+     "vrf_prefetch": "1",
+     "fp_reduction_vector_extra": "1",
+     "time_quantum": "1000",
+     "dram_path": "1",
+     "dram_fixed_cycles": "20",
+     "dram_clock_ratio": "10",
+     "dram_max_passes": "3",
+     "dram_tolerance_ppm": "5000"
+    },
+    "config_sha256": "34925125ea059eb1f2be32f4c45ba39438ee0f98dcaad7beb04e92be5b766fe5",
+    "model_dir": "/home/zhongchun/r41s1-c2c96d3/runs/gemm-medium-control-slow/runs/op.matmul__medium__fp16-m128-k192-n128/model/model-86818-nm4tk699",
+    "calibration": "not-measured",
+    "execution": "native SystemC/TLM-2.0 model, no RTL",
+    "dram_path": "slow",
+    "address_map": {
+     "domain": "axi-bo-physical-pc",
+     "path": "/home/zhongchun/r41s1-c2c96d3/map.txt",
+     "sha256": "a1019970fe9548fda5e9b7e44442a14f1a886decd397f472c498dd15f5970bc2"
+    },
+    "bank_row_mapping": "unverified",
+    "host_handoff_policy": "coherent-direct",
+    "host_handoff_scope": "zero-time coherent host access; no cache maintenance",
+    "untimed_cold_call": false
+   },
+   "model_dir": "/home/zhongchun/r41s1-c2c96d3/runs/gemm-medium-control-slow/runs/op.matmul__medium__fp16-m128-k192-n128/model/model-86818-nm4tk699",
+   "launches": 28,
+   "model_cycles": 1110341,
+   "retired": 86988,
+   "host_seconds": {
+    "upload": 0.039571,
+    "download": 0.057928,
+    "launch": 1.299023
+   },
+   "statuses": [
+    0
+   ],
+   "counters_file": "/home/zhongchun/r41s1-c2c96d3/runs/gemm-medium-control-slow/runs/op.matmul__medium__fp16-m128-k192-n128/model/model-86818-nm4tk699/counters.json",
+   "dram": {
+    "dram_pseudo_channels_max": 1,
+    "dram_read_row_conflicts": 258,
+    "dram_refreshes": 252988,
+    "dram_replay_accepted_bursts": 33006,
+    "dram_replay_completed_bursts": 33006,
+    "dram_replay_peak_rw_queued_bursts_per_pc": 4,
+    "dram_replay_queue_refusals": 0,
+    "dram_replay_requests": 16503,
+    "dram_replay_skipped": 887673056,
+    "dram_replay_ticks": 345796,
+    "dram_row_conflicts": 500,
+    "dram_row_hits": 23652,
+    "dram_row_misses": 8854,
+    "dram_slow_child_passes": 46,
+    "dram_slow_commands": 28,
+    "dram_slow_damped": 1,
+    "dram_slow_fixed_point_checked": 28,
+    "dram_slow_replays": 34,
+    "dram_slow_requests": 16503,
+    "dram_slow_unconverged": 2,
+    "dram_slow_unmatched": 0,
+    "dram_write_row_conflicts": 242
+   },
+   "timing_status": "inconclusive-fixed-point"
+  }
+ ],
+ "model_timing_status": "inconclusive-fixed-point",
+ "model_graph": {
+  "graph_cycles": 550681,
+  "device_cycles": 550681,
+  "measured_call": "steady",
+  "launches": [
+   {
+    "kernel": "triton_tem_fused_mm_0",
+    "cycles": 550681
+   }
+  ]
+ }
+}

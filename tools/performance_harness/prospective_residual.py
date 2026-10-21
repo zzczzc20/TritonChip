@@ -18,6 +18,13 @@ the next board run. Nothing here fits or adjusts the model.
 
 The output carries result, residual, conclusion and next_step for the
 experiment report (experiment.py conclusion_source).
+
+Retired for v2 predictions: its comparability test is artifact-file equality,
+and an artifact file also hashes its run directory's source paths, so even
+byte-identical machine code compiled in two directories differs. The v2 sets
+(prospective-prediction-v2.json, gemm-subset-predictions-v2.json) are compared
+with prediction_residuals.py, which matches per-launch executable identity.
+This tool remains only for the v1 history.
 """
 import argparse
 import datetime

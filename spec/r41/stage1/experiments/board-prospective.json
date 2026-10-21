@@ -4,7 +4,7 @@
   "allowed_hosts": [
     "acf3019"
   ],
-  "hypothesis": "The SystemC prediction sealed before any board run (911,645 graph cycles for the medium fp16 matmul at 16,32,16, three resident cores, one port, one outstanding line) is within its uncalibrated error band of the board graph makespan of the same configuration.",
+  "hypothesis": "The SystemC predictions sealed before any board run (v2, tree c2c96d3, B40 DRAM map; fast and slow DRAM paths) of the medium fp16 matmul at 16,32,16 and 16,16,16 (three resident cores, one port, one outstanding line) are within their uncalibrated error band of the board graph makespan of the same configurations.",
   "competing_explanations": [
     "the board compiles a different artifact than the sealed model run (software tree changed)",
     "the model memory profile (one active outlet, depth one) differs from the image controls",
@@ -13,7 +13,7 @@
   ],
   "expected_counter_changes": [
     "board graph makespan within the model residual band; serial-grid and makespan agree for one launch",
-    "control 16,16,16 provides board A/B context only (no sealed control prediction)"
+    "the board candidate/control ratio follows the sealed model ratio (both arms have sealed predictions)"
   ],
   "expected_observations": [
     "candidate and control pass numerically; residual = (model - board)/board recorded or not-comparable"
@@ -158,10 +158,15 @@
   "registration": {
     "status": "registered-not-run",
     "registered_utc": "2026-10-21",
-    "prediction": "evidence/r41/stage1/kickoff/prospective-prediction.json",
-    "prediction_sha256": "b5c543b220266a8a7f8597a8eacc80f14b3cfd621d086fd789e43a2b7e740afb",
-    "model_record": "evidence/r41/stage1/kickoff/prospective-wide/runs/op.matmul__medium__fp16-m128-k192-n128/record.json",
-    "model_record_sha256": "ecbb579d63e2eda54ddfb08c51c3b00626b7ea3a1c893b5405c9eb81b20f01e2",
+    "prediction": "evidence/r41/stage1/kickoff/prospective-prediction-v2.json",
+    "prediction_sha256": "eff75a74abb9e7d5a49e2375313343ade18d3a922b9651e7622f4c5eeccd7766",
+    "superseded_prediction": {
+      "path": "evidence/r41/stage1/kickoff/prospective-prediction.json",
+      "sha256": "b5c543b220266a8a7f8597a8eacc80f14b3cfd621d086fd789e43a2b7e740afb",
+      "model_record": "evidence/r41/stage1/kickoff/prospective-wide/runs/op.matmul__medium__fp16-m128-k192-n128/record.json",
+      "model_record_sha256": "ecbb579d63e2eda54ddfb08c51c3b00626b7ea3a1c893b5405c9eb81b20f01e2",
+      "reason": "bound to tree files:b3f03a89 and artifact b7cf71e0: not comparable with c2c96d3"
+    },
     "knobs_source": "evidence/r41/stage1/kickoff/prospective-wide-erratum.json true_configuration_knobs (record.json platform.knobs)",
     "order": [
       "op.matmul/medium/fp16-m128-k192-n128@candidate",
@@ -265,17 +270,11 @@
       "timeout_seconds": 120,
       "argv": [
         "{python}",
-        "tools/performance_harness/prospective_residual.py",
-        "--prediction",
-        "evidence/r41/stage1/kickoff/prospective-prediction.json",
-        "--model-record",
-        "evidence/r41/stage1/kickoff/prospective-wide/runs/op.matmul__medium__fp16-m128-k192-n128/record.json",
+        "tools/performance_harness/prediction_residuals.py",
+        "--predictions",
+        "evidence/r41/stage1/kickoff/prospective-prediction-v2.json",
         "--board",
         "{out}/prospective/formal.jsonl",
-        "--control-board",
-        "{out}/prospective/formal.jsonl",
-        "--control-set",
-        "TNCA_GEMM_TILE=16,16,16",
         "--image-sha256",
         "a88ebdf59cfbbb2001ebd5b1b2c739c5d8cd33931f1e9202f18cac07c4c83083",
         "--clock-hz",
@@ -285,8 +284,7 @@
       ],
       "inputs": [
         "{out}/prospective/formal.jsonl",
-        "evidence/r41/stage1/kickoff/prospective-prediction.json",
-        "evidence/r41/stage1/kickoff/prospective-wide/runs/op.matmul__medium__fp16-m128-k192-n128/record.json"
+        "evidence/r41/stage1/kickoff/prospective-prediction-v2.json"
       ],
       "outputs": [
         "{out}/residual.json"

@@ -615,9 +615,29 @@
       "software_tree": "files:3a465e02a9f67f0f8d08bd12df5fae953b1270b8ed37eabe38cd25368bb1de0d"
      },
      "note": "run_graphs.py records verified platform.knobs (16,32,16 override end to end on the model)"
+    },
+    {
+     "path": "evidence/r41/stage1/kickoff/prospective-prediction-v2.json",
+     "sha256": "eff75a74abb9e7d5a49e2375313343ade18d3a922b9651e7622f4c5eeccd7766",
+     "kind": "systemc",
+     "binds": {
+      "git_commit": "uncommitted",
+      "software_tree": "files:8c7139023d76d8572a82faef65312ce03bb439def8475792de826f44acb956ee"
+     },
+     "note": "v2 sealed before any board run: candidate/control x fast/slow on c2c96d3 with the B40 DRAM map"
+    },
+    {
+     "path": "evidence/r41/stage1/kickoff/gemm-subset-predictions-v2.json",
+     "sha256": "49f4171d8c5815a99f88fb1f6077a260082faf7137ada5860830d183fa675e0a",
+     "kind": "systemc",
+     "binds": {
+      "git_commit": "uncommitted",
+      "software_tree": "files:8c7139023d76d8572a82faef65312ce03bb439def8475792de826f44acb956ee"
+     },
+     "note": "v2 sealed: 9 R40-03 GEMM points x {16,16,16; 16,32,16} x fast/slow"
     }
    ],
-   "note": "prediction sealed before the board (knob erratum recorded); board work registered, not run: the shared U280 holds another image (kickoff/restore90-check-*.log) (spec/r41/stage1/experiments/board-prospective.json)"
+   "note": "v2 predictions sealed before the board on tree c2c96d3 (v1 kept as history, not comparable); board runs registered (board-prospective.json, board-gemm-tile.json), not run"
   },
   "S1-01.matched_rtl_speed_measurement": {
    "claim": "pass",

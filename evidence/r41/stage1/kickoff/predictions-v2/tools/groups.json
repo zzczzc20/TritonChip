@@ -1,0 +1,142 @@
+{
+ "gemm-hbm-candidate": {
+  "knobs": {
+   "TNCA_ACTIVE_CORES": "1",
+   "TNCA_BANK_ALLOC": "0",
+   "TNCA_GEMM_TILE": "16,32,16",
+   "TNCA_MAX_BLOCK": "16",
+   "TNCA_PIPELINE": "1",
+   "TNCA_REDUCTION_ROWS": "1",
+   "TNCA_RTL_MEM_PORTS": "1",
+   "TNCA_RTL_OUTSTANDING": "1",
+   "TNCA_SDPA": "decomposed",
+   "TNCA_SUBMIT": "single",
+   "TNCA_TORCH_DEVICE": "native",
+   "TNCA_TRANSFER_POLICY": "per-kernel",
+   "TNCA_TUNE": "0",
+   "TNCA_WINDOW_REUSE": "0"
+  },
+  "points": [
+   "op.gemv/hbm/fp16-k4096-n11008",
+   "op.linear/hbm/fp16-m512-k4096-n11008",
+   "op.matmul/hbm/fp16-m4096-k4096-n4096"
+  ]
+ },
+ "gemm-hbm-control": {
+  "knobs": {
+   "TNCA_ACTIVE_CORES": "1",
+   "TNCA_BANK_ALLOC": "0",
+   "TNCA_GEMM_TILE": "16,16,16",
+   "TNCA_MAX_BLOCK": "16",
+   "TNCA_PIPELINE": "1",
+   "TNCA_REDUCTION_ROWS": "1",
+   "TNCA_RTL_MEM_PORTS": "1",
+   "TNCA_RTL_OUTSTANDING": "1",
+   "TNCA_SDPA": "decomposed",
+   "TNCA_SUBMIT": "single",
+   "TNCA_TORCH_DEVICE": "native",
+   "TNCA_TRANSFER_POLICY": "per-kernel",
+   "TNCA_TUNE": "0",
+   "TNCA_WINDOW_REUSE": "0"
+  },
+  "points": [
+   "op.gemv/hbm/fp16-k4096-n11008",
+   "op.linear/hbm/fp16-m512-k4096-n11008",
+   "op.matmul/hbm/fp16-m4096-k4096-n4096"
+  ]
+ },
+ "gemm-medium-candidate": {
+  "knobs": {
+   "TNCA_ACTIVE_CORES": "1",
+   "TNCA_BANK_ALLOC": "0",
+   "TNCA_GEMM_TILE": "16,32,16",
+   "TNCA_MAX_BLOCK": "16",
+   "TNCA_PIPELINE": "1",
+   "TNCA_REDUCTION_ROWS": "1",
+   "TNCA_RTL_MEM_PORTS": "1",
+   "TNCA_RTL_OUTSTANDING": "1",
+   "TNCA_SDPA": "decomposed",
+   "TNCA_SUBMIT": "single",
+   "TNCA_TORCH_DEVICE": "native",
+   "TNCA_TRANSFER_POLICY": "per-kernel",
+   "TNCA_TUNE": "0",
+   "TNCA_WINDOW_REUSE": "0"
+  },
+  "points": [
+   "model.mlp/medium/fp16-t128-d128",
+   "op.bmm/medium/fp16-b16-m64-k32-n64",
+   "op.gemv/medium/fp16-k320-n448",
+   "op.linear/medium/fp16-m128-k320-n256",
+   "op.matmul/medium/fp16-m128-k192-n128",
+   "op.matmul/medium/fp32-m128-k192-n128"
+  ]
+ },
+ "gemm-medium-control": {
+  "knobs": {
+   "TNCA_ACTIVE_CORES": "1",
+   "TNCA_BANK_ALLOC": "0",
+   "TNCA_GEMM_TILE": "16,16,16",
+   "TNCA_MAX_BLOCK": "16",
+   "TNCA_PIPELINE": "1",
+   "TNCA_REDUCTION_ROWS": "1",
+   "TNCA_RTL_MEM_PORTS": "1",
+   "TNCA_RTL_OUTSTANDING": "1",
+   "TNCA_SDPA": "decomposed",
+   "TNCA_SUBMIT": "single",
+   "TNCA_TORCH_DEVICE": "native",
+   "TNCA_TRANSFER_POLICY": "per-kernel",
+   "TNCA_TUNE": "0",
+   "TNCA_WINDOW_REUSE": "0"
+  },
+  "points": [
+   "model.mlp/medium/fp16-t128-d128",
+   "op.bmm/medium/fp16-b16-m64-k32-n64",
+   "op.gemv/medium/fp16-k320-n448",
+   "op.linear/medium/fp16-m128-k320-n256",
+   "op.matmul/medium/fp16-m128-k192-n128",
+   "op.matmul/medium/fp32-m128-k192-n128"
+  ]
+ },
+ "prospective-candidate": {
+  "knobs": {
+   "TNCA_ACTIVE_CORES": "3",
+   "TNCA_BANK_ALLOC": "0",
+   "TNCA_GEMM_TILE": "16,32,16",
+   "TNCA_MAX_BLOCK": "16",
+   "TNCA_PIPELINE": "2",
+   "TNCA_REDUCTION_ROWS": "1",
+   "TNCA_RTL_MEM_PORTS": "1",
+   "TNCA_RTL_OUTSTANDING": "1",
+   "TNCA_SDPA": "decomposed",
+   "TNCA_SUBMIT": "single",
+   "TNCA_TORCH_DEVICE": "native",
+   "TNCA_TRANSFER_POLICY": "resident",
+   "TNCA_TUNE": "0",
+   "TNCA_WINDOW_REUSE": "0"
+  },
+  "points": [
+   "op.matmul/medium/fp16-m128-k192-n128"
+  ]
+ },
+ "prospective-control": {
+  "knobs": {
+   "TNCA_ACTIVE_CORES": "3",
+   "TNCA_BANK_ALLOC": "0",
+   "TNCA_GEMM_TILE": "16,16,16",
+   "TNCA_MAX_BLOCK": "16",
+   "TNCA_PIPELINE": "2",
+   "TNCA_REDUCTION_ROWS": "1",
+   "TNCA_RTL_MEM_PORTS": "1",
+   "TNCA_RTL_OUTSTANDING": "1",
+   "TNCA_SDPA": "decomposed",
+   "TNCA_SUBMIT": "single",
+   "TNCA_TORCH_DEVICE": "native",
+   "TNCA_TRANSFER_POLICY": "resident",
+   "TNCA_TUNE": "0",
+   "TNCA_WINDOW_REUSE": "0"
+  },
+  "points": [
+   "op.matmul/medium/fp16-m128-k192-n128"
+  ]
+ }
+}

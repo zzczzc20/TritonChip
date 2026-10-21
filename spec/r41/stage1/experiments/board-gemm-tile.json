@@ -187,12 +187,16 @@
     },
     "order": "per point as the fe1b campaign seeded it",
     "sampling_rule": "plan.json measurement.long_device_tasks: qualification record (0 warm-up, 1 timed call); when every configuration of a group qualifies at <= 1 s, a formal record with 3 timed calls, else the qualification record is formal (1 timed call); anchors: 3 independent interleaved processes; borderline rechecks (3 more samples per arm, at most 2 blocks) only by a later registered judgement, never by repeating until significant",
+    "predictions": "evidence/r41/stage1/kickoff/gemm-subset-predictions-v2.json",
+    "predictions_sha256": "49f4171d8c5815a99f88fb1f6077a260082faf7137ada5860830d183fa675e0a",
+    "predictions_scope": "36 sealed fast/slow model predictions (tree c2c96d3, B40 DRAM map) for every configuration",
     "expected_board_hours": 0.952,
     "expected_board_hours_by_batch": {
       "gemm": 0.952
     },
     "estimate_method": "board_batch.py --dry-run: per-process wall seconds of the nearest R40 fe1b board record (same point and knobs where available); short configurations add one formal process; references are the R40 old-mapping 16,32,16 runs (linear/matmul hbm 1262 s/1041 s), an upper bound"
   },
+  "conclusion_source": "{out}/residual.json",
   "board_batches": {
     "gemm": {
       "sampling": "device-rule",
@@ -676,6 +680,32 @@
       "outputs": [
         "{out}/gemm/batch.json",
         "{out}/gemm/formal.jsonl"
+      ]
+    },
+    {
+      "id": "residual",
+      "kind": "compare",
+      "timeout_seconds": 300,
+      "argv": [
+        "{python}",
+        "tools/performance_harness/prediction_residuals.py",
+        "--predictions",
+        "evidence/r41/stage1/kickoff/gemm-subset-predictions-v2.json",
+        "--board",
+        "{out}/gemm/formal.jsonl",
+        "--image-sha256",
+        "a88ebdf59cfbbb2001ebd5b1b2c739c5d8cd33931f1e9202f18cac07c4c83083",
+        "--clock-hz",
+        "90000000",
+        "--out",
+        "{out}/residual.json"
+      ],
+      "inputs": [
+        "{out}/gemm/formal.jsonl",
+        "evidence/r41/stage1/kickoff/gemm-subset-predictions-v2.json"
+      ],
+      "outputs": [
+        "{out}/residual.json"
       ]
     }
   ]

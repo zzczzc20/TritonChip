@@ -18,6 +18,7 @@ REPO = HERE.parents[1]
 sys.path.insert(0, str(HERE))
 import board_batch  # noqa: E402
 import experiment  # noqa: E402
+import prediction_residuals  # noqa: E402
 import prospective_residual  # noqa: E402
 import tune_board_qualification as tune  # noqa: E402
 
@@ -283,6 +284,85 @@ class ProspectiveResidualTests(unittest.TestCase):
         self.prediction.write_text(json.dumps(dict(json.loads(self.prediction.read_text()), record_sha256='0'*64)))
         with self.assertRaisesRegex(ValueError, 'does not bind'):
             self.compare([self.row()])
+
+
+class PredictionSetResidualTests(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        self.dir = Path(self.tmp.name)
+        self.knobs = dict(TNCA_GEMM_TILE='16,32,16', TNCA_ACTIVE_CORES='1')
+
+    def entry(self, path, cycles, status='sealed', timing='uncalibrated', program='x'*64, knobs=None):
+        return dict(point='op.matmul/medium/fp16-m128-k192-n128', point_sha256='p'*64, arm='candidate', path=path,
+                    configuration=knobs or self.knobs, status=status, graph_cycles=cycles,
+                    model_timing_status=timing, record_sha256='r'*64,
+                    launches=[dict(kernel='triton_tem_fused_mm_0', artifact_sha256='a'*64, executable_sha256=program)])
+
+    def write(self, name, value, lines=False):
+        path = self.dir/name
+        path.write_text(''.join(json.dumps(v)+'\n' for v in value) if lines else json.dumps(value))
+        return path
+
+    def board(self, **changes):
+        rec = dict(point_id='op.matmul/medium/fp16-m128-k192-n128', point_sha256='p'*64, status='pass', fallbacks=[],
+                   evidence_level='measured-board', timestamp='2026-10-22T00:00:00+00:00',
+                   platform=dict(backend='fpga-u280-multicore', image_sha256='i'*64, clock_hz=CLOCK_HZ,
+                                 knobs=dict(self.knobs, TNCA_OPERATING_CLOCK_EVIDENCE='/q.json')),
+                   provenance=dict(artifacts=['b'*64], program=[['triton_tem_fused_mm_0', 'x'*64]]),
+                   timings={'device-graph-makespan': dict(samples=[1000, 1010, 990],
+                                                          boundaries='first accepted launch to last device completion'),
+                            'device-cycles-serial-grid': dict(samples=[1000, 1010, 990])})
+        rec.update(changes)
+        return rec
+
+    def compare(self, predictions, boards):
+        sealed = self.write('set.json', dict(sealed_before_board_utc='2026-10-21T12:00:00+00:00',
+                                             predictions=predictions))
+        return prediction_residuals.compare([sealed], [self.write('b.jsonl', boards, lines=True)],
+                                            image='i'*64, clock_hz=CLOCK_HZ,
+                                            executables=lambda r: r['provenance'].get('program'))
+
+    def test_fast_and_slow_residuals_per_configuration(self):
+        report = self.compare([self.entry('fast', 1100), self.entry('slow', 900, timing='inconclusive-fixed-point')],
+                              [self.board()])
+        row = report['rows'][0]
+        self.assertAlmostEqual(row['fast']['residual'], .1)
+        self.assertEqual(row['fast']['status'], 'residual-recorded')
+        self.assertEqual(row['slow']['status'], 'residual-recorded-inconclusive-prediction')
+        self.assertFalse(row['slow']['qualified'])
+        self.assertEqual(report['summary']['fast']['qualified_residuals'], 1)
+        self.assertEqual(report['summary']['slow']['inconclusive'], 1)
+        report = self.compare([self.entry('fast', 1100, program='y'*64),
+                               dict(self.entry('slow', 0), status='not-run', reason='over 3 h')], [self.board()])
+        self.assertEqual(report['rows'][0]['fast']['status'], 'not-comparable')
+        self.assertEqual(report['rows'][0]['slow'], dict(status='prediction-not-run', reason='over 3 h'))
+        other = dict(self.knobs, TNCA_GEMM_TILE='16,16,16')
+        report = self.compare([self.entry('fast', 1100, knobs=other)], [self.board()])
+        self.assertEqual(report['rows'][0]['status'], 'no-board-record')
+        unbundled = self.board()
+        del unbundled['provenance']['program']
+        report = self.compare([self.entry('fast', 1100)], [unbundled])
+        self.assertIn('unavailable', report['rows'][0]['fast']['reason'])
+        for bad, message in ((self.board(evidence_level='model-prediction-uncalibrated'), 'cannot stand'),
+                             (self.board(timestamp='2026-10-21T11:00:00+00:00'), 'precedes'),
+                             (self.board(point_sha256='q'*64), 'another point definition')):
+            with self.assertRaisesRegex(ValueError, message):
+                self.compare([self.entry('fast', 1100)], [bad])
+        with self.assertRaisesRegex(ValueError, 'duplicate'):
+            self.compare([self.entry('fast', 1100), self.entry('fast', 1200)], [self.board()])
+
+
+    def test_executable_identity_ignores_path_metadata(self):
+        artifacts = sorted((REPO/'evidence/r41/stage1/kickoff/predictions-v2/artifacts').glob('*.tnca'))
+        if not artifacts:
+            self.skipTest('no sealed artifacts')
+        identities = {}
+        for path in artifacts:
+            identity = prediction_residuals.executable_identity(path)
+            identities.setdefault(identity['executable_sha256'], set()).add(experiment.digest(path))
+        # Byte-different files of one program (different run directories) share one identity.
+        self.assertTrue(any(len(files) > 1 for files in identities.values()))
 
 
 class TuneJudgementTests(unittest.TestCase):

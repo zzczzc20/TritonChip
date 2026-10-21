@@ -120,6 +120,10 @@ One in-call ownership handoff changes these to 17,800 cycles, 776 reads and
 explanation, not full reconciliation or physical calibration. Remaining
 per-core/NoC/controller differences must still be investigated. The historical
 default and its results are preserved; the diagnostic does not retune the R40 fit.
+The quoted cycles are sums of completed launch windows, so prelaunch ABI
+maintenance changes cache state but its own elapsed cycles lie outside that
+metric. Counter snapshots surround the native call and include its maintenance
+traffic. These boundaries are distinct; neither result is whole-call latency.
 
 Remaining Required work includes actual bank/row mapping proof,
 controller/AXI/NoC timing-boundary reconciliation, and calibration/validation

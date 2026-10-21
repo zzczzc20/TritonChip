@@ -1,5 +1,6 @@
 // Independent boundary tests for fast timing and slow request identities.
 #include "../include/tnca_dram.hpp"
+#include "../include/tnca_dram_map.hpp"
 #include <limits>
 
 template<class F> static void refuses(F f,const char* fragment){
@@ -60,6 +61,18 @@ int sc_main(int argc,char** argv){
         refuses([&]{slow.install({1,1},{2,3});},"duplicate");
         require(SlowDram::latency_value(65535)==65535,"maximum supported latency");
         refuses([]{SlowDram::latency_value(65536);},"latency outside");
+        std::istringstream mapping("TNCA_DRAM_MAP_V1\nwindow 128 320 384\npc 7 256 256 320 192\npc 2 512 256 512 192\n");
+        DramAddressMap physical(mapping,32,256);
+        auto first=physical.translate(128),next=physical.translate(320),last=physical.translate(448);
+        require(first.pc==7 && first.offset==64 && first.physical==320,"offset BO and topology PC tag");
+        require(next.pc==2 && next.offset==0 && next.physical==512,"physical PC boundary");
+        require(last.pc==2 && last.offset==128 && last.physical==640,"last complete line");
+        refuses([&]{physical.translate(64);},"SRAM");
+        refuses([&]{physical.translate(449);},"outside AXI");
+        std::istringstream gap("TNCA_DRAM_MAP_V1\nwindow 128 320 384\npc 7 256 256 320 128\npc 2 512 256 512 192\n");
+        refuses([&]{DramAddressMap invalid(gap,32,256);},"gaps");
+        std::istringstream repeated("TNCA_DRAM_MAP_V1\nwindow 128 320 384\npc 7 256 256 320 192\npc 7 512 256 512 192\n");
+        refuses([&]{DramAddressMap invalid(repeated,32,256);},"repeated PC");
         std::cout<<"{\"status\":\"pass\",\"checks\":[\"fast-boundaries\",\"slow-fallback\",\"key-roundtrip\",\"reordered-repeats\",\"domain-refusals\"]}\n";
         return 0;
     }catch(const std::exception& error){std::cerr<<error.what()<<'\n';return 1;}

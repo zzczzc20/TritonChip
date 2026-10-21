@@ -140,6 +140,10 @@ def make_backend_class():
                                  config=values, config_sha256=_sha(config), model_dir=str(self.dir),
                                  calibration='not-measured', execution='native SystemC/TLM-2.0 model, no RTL',
                                  dram_path=os.environ.get('TNCA_DRAM_PATH') or ('slow' if values.get('dram_path') == '1' else 'fast'))
+            mapping=os.environ.get('TNCA_DRAM_MAP')
+            self.identity['address_map']=(dict(domain='axi-bo-physical-pc',path=str(Path(mapping).resolve()),sha256=_sha(mapping))
+                                          if mapping else dict(domain='synthetic-logical'))
+            self.identity['bank_row_mapping']='unverified'
             self.timed = True
             if os.environ.get('TNCA_TLM_UNTIMED_COLD') == '1':
                 # The cold call runs untimed (its cycles are not a measurement);

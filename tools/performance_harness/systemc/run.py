@@ -75,12 +75,19 @@ def run(binary, config, trace, out, timeout=1800, source_identity=None, mode='me
                 dependencies[str(path)] = sha(path)
     elif mode != 'memory':
         raise ValueError('unknown model mode')
+    model_environment={k:os.environ[k] for k in ('TNCA_DRAM_PATH','TNCA_DRAM_MAP','TNCA_RAMULATOR2_CONFIG')
+                       if k in os.environ}
+    for key in ('TNCA_DRAM_MAP','TNCA_RAMULATOR2_CONFIG'):
+        if key in model_environment:
+            path=Path(model_environment[key]).resolve()
+            dependencies[str(path)]=sha(path)
     identity = dict(monitor=monitor, schema='tnca-systemc-experiment/1', backend='systemc-tlm-prediction', mode=mode,
                     binary_sha256=sha(binary), config_sha256=sha(config), trace_sha256=sha(trace),
                     sources=sources(), host=dict(machine=platform.machine(), node=platform.node()),
                     image_sha256=None, measured_clock_hz=None, calibration='not-measured',
                     contract_sha256=CONTRACT_LOCK_SHA256, contract_document_sha256=sha(CONTRACT), source_identity=source_identity,
-                    systemc_library=systemc_library(binary), dependencies_sha256=dependencies)
+                    systemc_library=systemc_library(binary), dependencies_sha256=dependencies,
+                    model_environment=model_environment)
     out.mkdir(parents=True, exist_ok=False)
     (out/'identity.json').write_text(json.dumps(identity, indent=2)+'\n')
     command = [str(binary), str(config), str(trace), str(out)]

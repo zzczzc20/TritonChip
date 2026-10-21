@@ -1028,6 +1028,7 @@ struct Model {
     // DRAM path (include/tnca_dram.hpp): fast, or slow = Ramulator2 by a
     // per-command fixed point of forked child passes.
     std::unique_ptr<SlowDram> slow;std::string dram_path_name="fast",dram_config,dram_config_sha256,dram_commit;
+    std::unique_ptr<DramAddressMap> physical_map;std::string dram_map_path,dram_map_sha256;
     u64 dram_fixed=0,dram_ratio=10,dram_max_passes=3,dram_tol_ppm=5000,dram_commands=0;
     void select_dram_path(){
         u64 path=cfg.get("dram_path");
@@ -1035,12 +1036,21 @@ struct Model {
             std::string v=e;require(v=="fast" || v=="slow","TNCA_DRAM_PATH must be fast or slow");path=v=="slow";
         }
         require(path<=1,"dram_path is 0 (fast) or 1 (slow)");
+        if(const char* map=std::getenv("TNCA_DRAM_MAP")){
+            require(bool(tmem),"DRAM address map requires timeline memory");dram_map_path=map;
+            physical_map.reset(new DramAddressMap(map,unsigned(cfg.get("pc_count")),cfg.get("pc_bytes")));
+            tmem->physical_map=physical_map.get();
+#ifdef TNCA_HAVE_RAMULATOR2
+            dram_map_sha256=tnca_dram::sha256_file(map);
+#endif
+        }
         if(!path)return;
         require(cfg.get("memory_model")==1,"the slow DRAM path needs the timeline memory (memory_model=1)");
 #ifndef TNCA_HAVE_RAMULATOR2
         throw std::runtime_error("MODEL_REFUSED slow DRAM path: this binary is built without Ramulator2 (-DRAMULATOR2_DIR)");
 #else
         dram_path_name="slow";dram_commit=TNCA_RAMULATOR2_COMMIT;
+        require(cfg.get("pc_bytes")==268435456,"slow DRAM path: HBM2 bridge requires 256 MiB physical pseudo channels");
         const char* cfgenv=std::getenv("TNCA_RAMULATOR2_CONFIG");dram_config=cfgenv?cfgenv:TNCA_RAMULATOR2_CONFIG;
         dram_config_sha256=tnca_dram::sha256_file(dram_config);require(!dram_config_sha256.empty(),"cannot read Ramulator2 config "+dram_config);
         auto t=tnca_dram::timing(dram_config);require(t.error.empty(),"Ramulator2 config: "+t.error);
@@ -1132,19 +1142,23 @@ struct Model {
         return out;
     }
     // Replay a pass's request log through Ramulator2 and build its table.
-    struct DecodeContext {const u64* keys;u64 base,pcb;const std::vector<std::int32_t>* dense;};
+    struct DecodeContext {const u64* keys;u64 base,pcb;const std::vector<std::int32_t>* dense;const DramAddressMap* map;};
     static void decode_key(const void* c,size_t i,std::uint32_t& pc,std::uint64_t& offset,bool& write){
-        auto& d=*static_cast<const DecodeContext*>(c);u64 k=d.keys[i],a=SlowDram::address_of(k)-d.base;
-        pc=std::uint32_t((*d.dense)[size_t(a/d.pcb)]);offset=a%d.pcb;write=SlowDram::write_of(k);
+        auto& d=*static_cast<const DecodeContext*>(c);u64 k=d.keys[i],address=SlowDram::address_of(k);
+        if(d.map){auto a=d.map->translate(address);pc=std::uint32_t((*d.dense)[a.pc]);offset=a.offset;}
+        else{u64 a=address-d.base;pc=std::uint32_t((*d.dense)[size_t(a/d.pcb)]);offset=a%d.pcb;}
+        write=SlowDram::write_of(k);
     }
     void replay(PassResult& out){
         auto t1=std::chrono::steady_clock::now();out.replayed=true;
         // Dense pseudo channels, DRAM-clock arrivals.
         u64 base=cfg.get("memory_base"),pcb=cfg.get("pc_bytes");
         std::vector<std::int32_t> dense;std::int32_t n_pc=0;
-        for(u64 k:out.keys){size_t pc=size_t((SlowDram::address_of(k)-base)/pcb);if(pc>=dense.size())dense.resize(pc+1,-1);if(dense[pc]<0)dense[pc]=n_pc++;}
+        for(u64 k:out.keys){u64 a=SlowDram::address_of(k);size_t pc=physical_map?physical_map->translate(a).pc:size_t((a-base)/pcb);
+            if(pc>=dense.size())dense.resize(pc+1,-1);
+            if(dense[pc]<0)dense[pc]=n_pc++;}
         for(auto& a:out.arrival)a*=dram_ratio;
-        DecodeContext ctx{out.keys.data(),base,pcb,&dense};
+        DecodeContext ctx{out.keys.data(),base,pcb,&dense,physical_map.get()};
         tnca_dram::Batch b;b.n=out.keys.size();b.arrival=out.arrival.data();b.context=&ctx;b.decode=decode_key;
         std::vector<std::uint32_t> latency;
         out.replay=tnca_dram::replay(dram_config,unsigned(n_pc),b,latency);
@@ -1256,7 +1270,9 @@ struct Model {
             "uncalibrated-fixed-point-checked":"inconclusive-fixed-point";
         result<<"{\"schema\":\"tnca-systemc-result/1\",\"status\":\""<<status<<"\",\"dram_path\":\""<<dram_path_name<<"\",\"ramulator2_commit\":\""<<dram_commit
             <<"\",\"ramulator2_config\":\""<<dram_config<<"\",\"ramulator2_config_sha256\":\""<<dram_config_sha256<<"\",\"execution\":\"native-isa-event-driven\",\"coverage\":\"partial-ISA\",\"performance_gate\":\"not-measured\",\"calibration\":\"not-measured\",\"visible_cycles\":"<<x.now()<<",\"launches\":"<<chip->launches<<",\"checked_bytes\":"<<checked<<",\"counters\":";
-        counters_json(result);result<<",\"prediction_status\":\""<<prediction_status<<"\"}\n";
+        counters_json(result);result<<",\"prediction_status\":\""<<prediction_status
+            <<"\",\"address_map_domain\":\""<<(physical_map?"axi-bo-physical-pc":"synthetic-logical")
+            <<"\",\"address_map_sha256\":\""<<dram_map_sha256<<"\",\"bank_row_mapping\":\"unverified\"}\n";
     }
 };
 static Chip::Command grid_command(u64 pc,u64 arg,unsigned gx,unsigned gy,unsigned gz,u64 mask,u64 cores){

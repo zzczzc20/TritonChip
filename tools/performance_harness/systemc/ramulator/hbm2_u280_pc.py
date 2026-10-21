@@ -24,12 +24,13 @@ the M3 README:
   (interpolated between 2.0 and 1.6 Gb/s).
 - Controller: Ramulator2's HBM12 controller, FR-FCFS, open-page row policy,
   all-bank refresh every tREFI on (no per-bank refresh), 32-entry read and
-  write queues with the default write watermarks (0.8 / 0.2). The Xilinx
-  controller's reordering depth and page policy are not public in detail; this
-  is the generic choice the M3 design asked for.
+  write queues with the default write watermarks (0.8 / 0.2). This generic
+  controller is not established as equivalent to the installed platform.
+  PG276 publicly describes a 12-entry controller queue and optional 64-entry
+  AXI reordering queue; these are not the model's separate 32-entry queues.
 - Addresses are mapped by the bridge (pass-through mapper): see
-  tnca_dram_bridge.cpp map_address() for the assumed PG276 ROW_COLUMN_BANK
-  layout.
+  tnca_dram_bridge.cpp map_address() for its synthetic ROW_COLUMN_BANK-style
+  layout. The installed platform's bank/row mapping remains unverified.
 """
 import ramulator
 from ramulator.dram.hbm2 import HBM2

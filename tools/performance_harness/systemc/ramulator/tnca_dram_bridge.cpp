@@ -212,8 +212,9 @@ struct Instance {
 
 }  // namespace
 
-// Assumed Xilinx HBM controller mapping inside one pseudo channel (PG276
-// "ROW_COLUMN_BANK", the default address-map option): the 32-byte burst
+// Synthetic ROW_COLUMN_BANK-style mapping inside one pseudo channel; this
+// is not established as the installed platform's mapping. PG276 documents
+// a different default (Row Bank Column with BG0 interleave). The 32-byte burst
 // offset in bits [4:0], then bank group [6:5], bank [8:7], the column (32
 // bursts of a 1 KiB row) [13:9] and the row [27:14]. Consecutive bursts walk
 // the bank groups first, so a 64-byte line spans two bank groups.

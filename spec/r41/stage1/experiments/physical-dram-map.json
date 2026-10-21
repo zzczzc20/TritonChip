@@ -1,0 +1,30 @@
+{
+  "schema": "tnca-experiment-spec/1",
+  "id": "r41-explicit-axi-bo-to-physical-pc-map",
+  "allowed_hosts": ["gx10-6646"],
+  "hypothesis": "The model translates logical data addresses through the recorded AXI BO base/local limit and actual physical PC ranges, with identical numerical execution on fast and slow paths.",
+  "competing_explanations": ["logical address division silently replaces the physical map", "PC IDs are assumed arithmetic", "SRAM or unmapped ranges alias HBM", "the last logical line is assigned to nonexistent PC16", "bank/row mapping is claimed without platform evidence"],
+  "expected_observations": ["offset and partial BO maps use their actual tagged PC IDs", "gaps, overlap, wrong tags and invalid ranges refuse", "the same native artifact checks boundary values and PC0/1/15 byte counts", "native Torch graphs preserve references and map identities", "bank/row remains explicitly unverified"],
+  "sources": ["tools/performance_harness/systemc", "tools/performance_harness/fragment_case.py", "tools/performance_harness/primitive_cases.py", "tools/performance_harness/experiment.py", "python/tnca", "compiler/python", "compiler/targets", "tools/asm", "isa", "xls/tnca_sfu_tables.x", "evidence/r40/v3/R40-04.hbm/board_run_fe1b/window_samples.json", "spec/r41/stage1/baseline.json", "spec/r41/stage1/experiments/physical-dram-map.json"],
+  "env": {
+    "PATH": "{home}/tc_env/bin:/usr/local/bin:/usr/bin:/bin",
+    "PYTHONPATH": "{root}:{root}/python:{root}/compiler/python:{root}/tools/asm:{root}/tools/performance_harness/systemc",
+    "OMP_NUM_THREADS": "2", "MKL_NUM_THREADS": "2",
+    "TNCA_BACKEND": "systemc-tlm-grid", "TNCA_TLM_BINARY": "{out}/build/tnca-chip",
+    "TNCA_TLM_CONFIG": "{root}/tools/performance_harness/systemc/configs/r40-board-m2.cfg",
+    "TNCA_TLM_MEMORY_BYTES": "16777216", "TNCA_HOST_TIMEOUT": "300", "TNCA_DEADLINE": "200000000",
+    "TNCA_TENSOR_DESCRIPTORS": "1", "TNCA_TORCH_DEVICE": "native", "TNCA_PROFILE": "core-vrf-sync-v5"
+  },
+  "steps": [
+    {"id": "map-negatives", "kind": "compile", "argv": ["{python}", "tools/performance_harness/systemc/test_dram_address_map.py", "-v"], "timeout_seconds": 30},
+    {"id": "actual-map-audit", "kind": "analytical", "argv": ["{python}", "tools/performance_harness/systemc/dram_address_map.py", "--source", "evidence/r40/v3/R40-04.hbm/board_run_fe1b/window_samples.json", "--window-pointer", "/results/0/detail", "--image-pointer", "/identity/image_sha256", "--image-sha256", "a88ebdf59cfbbb2001ebd5b1b2c739c5d8cd33931f1e9202f18cac07c4c83083", "--out", "{out}/map"], "timeout_seconds": 30, "outputs": ["{out}/map/report.json", "{out}/map/map.txt"]},
+    {"id": "configure", "kind": "compile", "argv": ["cmake", "-S", "tools/performance_harness/systemc", "-B", "{out}/build", "-DCMAKE_BUILD_TYPE=Release", "-DCMAKE_PREFIX_PATH={home}/tc_env/systemc-3.0.2/install", "-DRAMULATOR2_DIR={home}/tc_env/ramulator2"], "timeout_seconds": 120},
+    {"id": "build", "kind": "compile", "argv": ["cmake", "--build", "{out}/build", "-j", "4"], "timeout_seconds": 600, "outputs": ["{out}/build/tnca-chip", "{out}/build/tnca-dram-path-test"]},
+    {"id": "native-mapper-boundaries", "kind": "systemc", "argv": ["{out}/build/tnca-dram-path-test", "{root}/tools/performance_harness/systemc/configs/r40-board-m2.cfg"], "timeout_seconds": 30, "inputs": ["{out}/build/tnca-dram-path-test"]},
+    {"id": "physical-boundaries", "kind": "systemc", "argv": ["{python}", "tools/performance_harness/systemc/test_physical_dram_map.py", "--binary", "{out}/build/tnca-chip", "--config", "{root}/tools/performance_harness/systemc/configs/r40-board-m2.cfg", "--map", "{out}/map/map.txt", "--audit", "{out}/map/report.json", "--out", "{out}/boundaries"], "timeout_seconds": 180, "inputs": ["{out}/build/tnca-chip", "{out}/map/map.txt", "{out}/map/report.json"], "outputs": ["{out}/boundaries/report.json"]},
+    {"id": "mapped-fixed-point", "kind": "systemc", "argv": ["{python}", "tools/performance_harness/systemc/test_fixed_point.py", "--binary", "{out}/build/tnca-chip", "--config", "{root}/tools/performance_harness/systemc/configs/r40-board-m2.cfg", "--out", "{out}/fixed-point"], "timeout_seconds": 120, "env": {"TNCA_DRAM_PATH": "slow", "TNCA_DRAM_MAP": "{out}/map/map.txt"}, "inputs": ["{out}/build/tnca-chip", "{out}/map/map.txt"], "outputs": ["{out}/fixed-point/report.json"]},
+    {"id": "mapped-native-fast", "kind": "systemc", "argv": ["{python}", "tools/performance_harness/fragment_case.py", "--out", "{out}/fast", "--require-resident"], "timeout_seconds": 600, "env": {"TNCA_DRAM_MAP": "{out}/map/map.txt"}, "inputs": ["{out}/build/tnca-chip", "{out}/map/map.txt"], "outputs": ["{out}/fast/report.json"]},
+    {"id": "mapped-native-slow", "kind": "systemc", "argv": ["{python}", "tools/performance_harness/fragment_case.py", "--out", "{out}/slow", "--require-resident"], "timeout_seconds": 900, "env": {"TNCA_DRAM_MAP": "{out}/map/map.txt", "TNCA_DRAM_PATH": "slow"}, "inputs": ["{out}/build/tnca-chip", "{out}/map/map.txt"], "outputs": ["{out}/slow/report.json"]},
+    {"id": "mapped-primitive-domain", "kind": "systemc", "argv": ["{python}", "tools/performance_harness/primitive_cases.py", "--only", "depthwise", "--out", "{out}/primitive"], "timeout_seconds": 600, "env": {"TNCA_DRAM_MAP": "{out}/map/map.txt", "TNCA_DRAM_PATH": "slow"}, "inputs": ["{out}/build/tnca-chip", "{out}/map/map.txt"], "outputs": ["{out}/primitive/report.json"]}
+  ]
+}

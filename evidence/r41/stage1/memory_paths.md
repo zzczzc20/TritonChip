@@ -62,7 +62,14 @@ cases pass. The ArchBench add graph also passes numerically and retains an
 inconclusive timing status. These failures are not dropped or promoted to
 calibrated predictions. Small traffic-bearing commands do converge.
 
-Remaining Required work includes actual BO-to-PC and bank/row mapping proof,
+`address_map.md` and `kickoff/physical-dram-map-v1-evidence.tgz` add the
+recorded B40 BO-to-PC translation, native fast/slow hookup and ten-step
+boundary/standard-graph campaign. Logical addresses now subtract the actual
+local address limit and add BO base before looking up topology-tagged PC
+ranges. The native PC counters use that same map. Map hashes and domains
+are explicit; a different allocation requires its own evidence.
+
+Remaining Required work includes actual bank/row mapping proof,
 controller/AXI/NoC timing-boundary reconciliation, read/write switching and
 queue-backpressure qualification, and calibration/validation residuals.
 Per-command Ramulator state reset remains an explicit applicability limit.

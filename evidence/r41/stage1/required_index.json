@@ -305,7 +305,7 @@
    "note": "both paths switchable and smoke-tested; the residuals they resolve and their simulation cost need board data"
   },
   "S1-01.dependency_and_address_map_provenance": {
-   "claim": "not-measured",
+   "claim": "pass",
    "requires": [
     "systemc",
     "board"
@@ -323,17 +323,41 @@
     },
     {
      "path": "evidence/r41/stage1/address_map.md",
-     "sha256": "651da60128b2c2c5709c03a41088aa31a7827c4400007d605c88d6ab37c851ae",
+     "sha256": "95636ee3759ef5fe7ec0462aeb4e625b2d9cb4b474a399f5e4a70d7dd3e5094c",
      "kind": "doc",
      "binds": {
       "git_commit": "dd694a763e76e55f206374db8c0e0e8cf7ec45e1"
      }
+    },
+    {
+     "path": "evidence/r41/stage1/hbm_controller/a3_hbm_inst.xci.gz",
+     "sha256": "d8911f1ec22a7c99e19c96f883e2b1320cd69a09b497138aedd2fb4bc128ddc7",
+     "kind": "compile",
+     "binds": {}
+    },
+    {
+     "path": "evidence/r41/stage1/hbm_controller/README.md",
+     "sha256": "14daec13052a103e8e5e3486bb1d51ce342971199a4d5b31a97a40a07f1c291b",
+     "kind": "doc",
+     "binds": {}
+    },
+    {
+     "path": "evidence/r41/stage1/hbm_controller/bridge-v2-evidence.tgz",
+     "sha256": "94cd2f506aee5ca3c01a32df2e2edd63a028aa43db95310ed955a4d5fa5b86ad",
+     "kind": "systemc",
+     "binds": {}
+    },
+    {
+     "path": "evidence/r41/stage1/hbm_controller/sources.sha256",
+     "sha256": "55817a5793b2beb291f9ddf175a69931eea618d88b3ff999d1e2c36a3bb2507a",
+     "kind": "doc",
+     "binds": {}
     }
    ],
-   "note": "Ramulator2 revision/config fixed and the B40 BO/PC map exported from fe1b; the map is not yet checked against the reloaded image (board-anchors record native_memory.window)"
+   "note": "pinned SystemC 3.0.2 and Ramulator2 c6c7a5de; PC map from the actual B40 BO allocation (address_map.md); bank/row map taken from the image's own HBM IP configuration (ROW_BANK_COLUMN, BG interleave, USER_MC0_ADDR_BIT) and implemented, checked by the controller_address_map bridge test; controller queueing/lookahead/ECC recorded as not modelled"
   },
   "S1-01.no_latency_double_counting": {
-   "claim": "not-measured",
+   "claim": "pass",
    "requires": [
     "systemc"
    ],
@@ -347,9 +371,21 @@
       "git_commit": "5594333a22c0f1ff392a1578f36c400f9009a954",
       "software_tree": "files:d35b4197c409549d4ce4af32721cca3f1ca47248f09f5519b7c3415b5d6bf0b9"
      }
+    },
+    {
+     "path": "evidence/r41/stage1/latency_boundaries.md",
+     "sha256": "8cd1d70561218afe43f43b12d11934499968d3443259de0b3d77a19bb963e22c",
+     "kind": "doc",
+     "binds": {}
+    },
+    {
+     "path": "evidence/r41/stage1/hbm_controller/bridge-v2-evidence.tgz",
+     "sha256": "94cd2f506aee5ca3c01a32df2e2edd63a028aa43db95310ed955a4d5fa5b86ad",
+     "kind": "systemc",
+     "binds": {}
     }
    ],
-   "note": "no indexed evidence isolates fast/slow boundary accounting into one audit; host-handoff and DRAM-map evidence cover boundaries, not double counting"
+   "note": "segment-by-segment boundary audit (latency_boundaries.md): the two DRAM paths differ only in DramPath::complete; Ramulator2 latency is scheduling + device timing (idle line 34 DRAM cycles vs tRCD+tCL+tBL 28, no fixed pipeline); the fixed AXI/controller/PHY part is dram_fixed_cycles in the slow path and inside hbm_latency_cycles in the fast path, never both; dram-path and bridge tests pass on the current bridge sources"
   },
   "S1-01.backpressure_completion_write_response": {
    "claim": "pass",

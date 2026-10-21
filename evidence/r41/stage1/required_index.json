@@ -454,7 +454,7 @@
    "note": "slow-path domain and fixed-point refusals return explicit statuses"
   },
   "S1-01.clean_build_smoke": {
-   "claim": "not-measured",
+   "claim": "pass",
    "requires": [
     "compile",
     "systemc"
@@ -469,9 +469,27 @@
       "git_commit": "f5ff452187894441619ba3c0a3c168fc16197029",
       "software_tree": "files:0108a361c9bfe12d9c05e5bac0bea1ff752c7a94952045d8c993f3e6884419dd"
      }
+    },
+    {
+     "path": "evidence/r41/stage1/kickoff/archive-25094197f6e6-harness-evidence.tgz",
+     "sha256": "3239d2760df30349df92d5c1796b5cea4eacc22b19f7bdc284ef55399138de35",
+     "kind": "systemc",
+     "binds": {
+      "git_commit": "25094197f6e6",
+      "software_tree": "files:6da4bd71b87e435e878a2b17bc83169912294ca197528b0b5cbdc4ff66154b5a"
+     }
+    },
+    {
+     "path": "evidence/r41/stage1/kickoff/archive-25094197f6e6-report.json",
+     "sha256": "e0aa638563cbc04befa5ddb6db133a057fcdf03d200cbb3e6ea1dbc49c43d655",
+     "kind": "compile",
+     "binds": {
+      "git_commit": "25094197f6e6",
+      "software_tree": "files:6da4bd71b87e435e878a2b17bc83169912294ca197528b0b5cbdc4ff66154b5a"
+     }
     }
    ],
-   "note": "clean archive rebuild and smoke exist for an earlier tree; must be repeated on the final tree"
+   "note": "git archive of 25094197f6e6 (sha256 6361cd4e...) unpacked on GB10 with fresh Torch extension, Triton and Inductor caches; the 19-step harness-smoke manifest completed (model configure/build, slow fixed-point qualification, process lifetime, DRAM boundaries, Ramulator mechanisms, native artifacts, monitor invariance, slow path, timing status, representative IR)"
   },
   "S1-01.case_gemm_fragment": {
    "claim": "not-measured",

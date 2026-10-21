@@ -25,6 +25,11 @@ struct PcStats {
     std::uint64_t read_row_hits = 0, read_row_misses = 0, read_row_conflicts = 0;
     std::uint64_t write_row_hits = 0, write_row_misses = 0, write_row_conflicts = 0;
     std::uint64_t refreshes = 0, ticks = 0, skipped = 0;
+    // Burst units are 32 bytes; reads/writes above count 64-byte lines.
+    std::uint64_t accepted_bursts = 0, completed_bursts = 0, queue_refusals = 0, peak_rw_queued_bursts = 0;
+    std::uint64_t read_callbacks = 0, write_callbacks = 0;
+    std::uint64_t first_read_complete = 0, last_read_complete = 0;
+    std::uint64_t first_write_issue = 0, last_write_issue = 0, last_write_complete = 0;
 };
 
 struct Result {
@@ -38,6 +43,7 @@ struct Result {
 struct Timing {
     int nBL = 0, nCL = 0, nCWL = 0, nRCDRD = 0, nRCDWR = 0, nRP = 0, nRAS = 0;
     int nREFI = 0, nRFC = 0, read_latency = 0, tCK_ps = 0;
+    int nRTW = 0, nWTRS = 0;
     std::string error;
 };
 

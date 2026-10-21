@@ -1227,6 +1227,8 @@ struct Model {
         double real_s=std::chrono::duration<double>(std::chrono::steady_clock::now()-w0).count();
         tnca_dram::PcStats tot;
         for(auto& p:last.replay.pcs){tot.reads+=p.reads;tot.writes+=p.writes;tot.row_hits+=p.row_hits;tot.row_misses+=p.row_misses;
+            tot.accepted_bursts+=p.accepted_bursts;tot.completed_bursts+=p.completed_bursts;tot.queue_refusals+=p.queue_refusals;
+            tot.peak_rw_queued_bursts=std::max(tot.peak_rw_queued_bursts,p.peak_rw_queued_bursts);
             tot.row_conflicts+=p.row_conflicts;tot.read_row_hits+=p.read_row_hits;tot.read_row_misses+=p.read_row_misses;
             tot.read_row_conflicts+=p.read_row_conflicts;tot.write_row_hits+=p.write_row_hits;tot.write_row_misses+=p.write_row_misses;
             tot.write_row_conflicts+=p.write_row_conflicts;tot.refreshes+=p.refreshes;}
@@ -1235,6 +1237,9 @@ struct Model {
         c["dram_slow_child_passes"]+=passes;c["dram_slow_replays"]+=replays;if(!converged)++c["dram_slow_unconverged"];
         c["dram_slow_requests"]+=slow->requests;c["dram_slow_unmatched"]+=slow->requests-slow->matched;
         c["dram_replay_requests"]+=last.requests;c["dram_row_hits"]+=tot.row_hits;c["dram_row_misses"]+=tot.row_misses;
+        c["dram_replay_accepted_bursts"]+=tot.accepted_bursts;c["dram_replay_completed_bursts"]+=tot.completed_bursts;
+        c["dram_replay_queue_refusals"]+=tot.queue_refusals;
+        c["dram_replay_peak_rw_queued_bursts_per_pc"]=std::max(c["dram_replay_peak_rw_queued_bursts_per_pc"],tot.peak_rw_queued_bursts);
         c["dram_row_conflicts"]+=tot.row_conflicts;c["dram_read_row_conflicts"]+=tot.read_row_conflicts;
         c["dram_write_row_conflicts"]+=tot.write_row_conflicts;c["dram_refreshes"]+=tot.refreshes;
         c["dram_replay_ticks"]+=last.replay.ticks;c["dram_replay_skipped"]+=last.replay.skipped;
@@ -1251,6 +1256,8 @@ struct Model {
             <<",\"pseudo_channels\":"<<last.replay.pcs.size()<<",\"row_hits\":"<<tot.row_hits<<",\"row_misses\":"<<tot.row_misses
             <<",\"row_conflicts\":"<<tot.row_conflicts<<",\"refreshes\":"<<tot.refreshes<<",\"mean_read_latency\":"<<slow->fallback[0]
             <<",\"mean_write_latency\":"<<slow->fallback[1]<<",\"replay_ticks\":"<<last.replay.ticks<<",\"replay_skipped\":"<<last.replay.skipped
+            <<",\"replay_accepted_bursts\":"<<tot.accepted_bursts<<",\"replay_completed_bursts\":"<<tot.completed_bursts
+            <<",\"replay_queue_refusals\":"<<tot.queue_refusals<<",\"replay_peak_rw_queued_bursts_per_pc\":"<<tot.peak_rw_queued_bursts
             <<",\"child_s\":"<<child_total<<",\"replay_s\":"<<replay_total<<",\"real_s\":"<<real_s<<"}\n";
         fixed_point_log.flush();
         return ok;

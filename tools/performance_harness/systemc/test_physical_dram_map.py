@@ -49,6 +49,9 @@ def main():
         summary=result['summary'];c=summary['counters']
         assert summary['address_map_domain']=='axi-bo-physical-pc' and summary['address_map_sha256']==audit['map_sha256'],summary
         assert summary['bank_row_mapping']=='unverified',summary
+        if path=='slow':
+            assert c['dram_replay_accepted_bursts']==c['dram_replay_completed_bursts']==2*c['dram_replay_requests'],c
+            assert 'dram_replay_queue_refusals' in c and 'dram_replay_peak_rw_queued_bursts_per_pc' in c,c
         assert {k:v for k,v in c.items() if k.startswith('pc_') and k.endswith('_bytes')}=={
             'pc_0_bytes':640,'pc_1_bytes':64,'pc_15_bytes':64},c
         results.append(dict(path=path,status='numeric-and-physical-pc-map-pass',

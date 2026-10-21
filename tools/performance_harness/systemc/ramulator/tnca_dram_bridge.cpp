@@ -83,6 +83,7 @@ class TncaHBM12 final : public HBMControllerBase {
     return m_read_buffer.size() || m_write_buffer.size() || m_priority_buffer.size() || m_active_buffer.size() ||
            !m_pending.empty();
   }
+  std::uint64_t queued_rw() const { return m_read_buffer.size() + m_write_buffer.size(); }
   void skip_to(Clk_t c) {
     if (c > m_clk) m_clk = c;
   }
@@ -281,6 +282,7 @@ Timing timing(const std::string& yaml_path) {
     t.nRCDRD = s.get_timing_value("nRCDRD"); t.nRCDWR = s.get_timing_value("nRCDWR"); t.nRP = s.get_timing_value("nRP");
     t.nRAS = s.get_timing_value("nRAS"); t.nREFI = s.get_timing_value("nREFI"); t.nRFC = s.get_timing_value("nRFC");
     t.read_latency = s.read_latency; t.tCK_ps = s.get_timing_value("tCK_ps");
+    t.nRTW = s.get_timing_value("nRTW"); t.nWTRS = s.get_timing_value("nWTRS");
   } catch (const std::exception& e) {
     t.error = e.what();
   }
@@ -344,8 +346,19 @@ Result replay(const std::string& yaml_path, unsigned pcs, const Batch& batch, st
         req.callback = [&, k](Ramulator::Request& c) {
           Clk_t at = c.type_id == Ramulator::Request::Type::Read ? c.depart : ctrl->m_clk + write_done;
           std::uint64_t lat = static_cast<std::uint64_t>(at) - arrival_of(k);
+          if (lat > 0xffffffffu) throw std::runtime_error("Ramulator2 replay latency exceeds 32-bit DRAM-cycle domain");
+          ++st.completed_bursts;
+          if (c.type_id == Ramulator::Request::Type::Write) {
+            if (!st.write_callbacks++) st.first_write_issue = static_cast<std::uint64_t>(ctrl->m_clk);
+            st.last_write_issue = std::max(st.last_write_issue, static_cast<std::uint64_t>(ctrl->m_clk));
+            st.last_write_complete = std::max(st.last_write_complete, static_cast<std::uint64_t>(at));
+          } else {
+            if (!st.read_callbacks++) st.first_read_complete = static_cast<std::uint64_t>(at);
+            st.first_read_complete = std::min(st.first_read_complete, static_cast<std::uint64_t>(at));
+            st.last_read_complete = std::max(st.last_read_complete, static_cast<std::uint64_t>(at));
+          }
           auto& l = latency[order[k]];
-          l = static_cast<std::uint32_t>(std::max<std::uint64_t>(l, std::min<std::uint64_t>(lat, 0xffffffffu)));
+          l = static_cast<std::uint32_t>(std::max<std::uint64_t>(l, lat));
           --outstanding;
           state[k] += 4;
           if ((state[k] >> 2) == 2) ++done;
@@ -362,9 +375,12 @@ Result replay(const std::string& yaml_path, unsigned pcs, const Batch& batch, st
             ++outstanding;
             if (!ctrl->send(req)) {
               --outstanding;
+              ++st.queue_refusals;
               all = false;
               break;
             }
+            ++st.accepted_bursts;
+            st.peak_rw_queued_bursts = std::max(st.peak_rw_queued_bursts, ctrl->queued_rw());
             state[next] |= static_cast<std::uint8_t>(1u << half);
           }
           if (!all) break;

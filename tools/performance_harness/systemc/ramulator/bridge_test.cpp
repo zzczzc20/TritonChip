@@ -126,13 +126,57 @@ int main(int argc, char** argv) {
                   (unsigned long long)r.pcs[0].refreshes);
     check("idle_skip_with_refresh", r.pcs[0].skipped > 4ull * t.nREFI && r.pcs[0].row_hits == 0, buf);
   }
-  // (6) Writes complete after the WR command + WL + burst; a read of a buffered write is forwarded.
+  // (6) Both bursts must complete after WR + WL + burst.
   {
     std::vector<Request> q{{0, line(2, 1, 4, 0), true, 1000}};
     auto r = run(q);
     long long l = lat(r, q, 0);
     std::snprintf(buf, sizeof buf, "\"write_latency\": %lld, \"tRCDWR+tCWL+tBL\": %d", l, t.nRCDWR + t.nCWL + t.nBL);
-    check("write", l >= t.nRCDWR + t.nCWL + t.nBL && l <= t.nRCDWR + t.nCWL + t.nBL + 10, buf);
+    const auto& stats = r.pcs[0];
+    check("write", l >= t.nRCDWR + t.nCWL + t.nBL && l <= t.nRCDWR + t.nCWL + t.nBL + 10 &&
+          stats.accepted_bursts == 2 && stats.completed_bursts == 2 && stats.write_callbacks == 2 &&
+          r.completion[0] == stats.last_write_complete &&
+          stats.last_write_complete - stats.last_write_issue == std::uint64_t(t.nCWL + t.nBL), buf);
+  }
+  // Queue pressure includes refusal between the two halves of a line.
+  // Every accepted 32-byte burst must complete exactly once; none is lost
+  // or duplicated by retries. This profile has a 32-entry write queue.
+  {
+    std::vector<Request> q;
+    for (int i=0;i<96;++i) q.push_back({0,line(0,0,100+i,0),true,1000});
+    auto r=run(q);const auto& stats=r.pcs[0];
+    bool complete=true;
+    for (std::size_t i=0;i<q.size();++i) complete &= r.completion[i]>=q[i].arrival+t.nRCDWR+t.nCWL+t.nBL;
+    std::snprintf(buf,sizeof buf,"\"lines\": %zu, \"accepted_bursts\": %llu, \"completed_bursts\": %llu, \"queue_refusals\": %llu, \"peak_rw_queued_bursts\": %llu",
+        q.size(),(unsigned long long)stats.accepted_bursts,(unsigned long long)stats.completed_bursts,
+        (unsigned long long)stats.queue_refusals,(unsigned long long)stats.peak_rw_queued_bursts);
+    check("write_queue_backpressure",complete && stats.writes==q.size() && stats.accepted_bursts==2*q.size() &&
+          stats.completed_bursts==2*q.size() && stats.queue_refusals>0 && stats.peak_rw_queued_bursts==32,buf);
+  }
+  // Distinct columns avoid forwarding. A physical read's command time is
+  // its recorded depart minus the configured read latency. Compare the
+  // real callback clocks with independent HBM2 turnaround constraints.
+  {
+    std::vector<Request> read{{0,line(0,1,7,0),false,1000}};
+    auto read_first=run(read);
+    // Simultaneous arrivals may legally reorder. Establish the first
+    // direction's actual command times before injecting the other one.
+    auto read_issued=read_first.pcs[0].last_read_complete-std::uint64_t(t.read_latency);
+    std::vector<Request> rw{read[0],{0,line(0,1,7,1),true,read_issued+1}};
+    auto a=run(rw);const auto& ra=a.pcs[0];
+    std::vector<Request> write{{0,line(0,1,7,0),true,1000}};
+    auto first=run(write);
+    std::vector<Request> wr{write[0],{0,line(0,1,7,1),false,first.pcs[0].last_write_issue+1}};
+    auto b=run(wr);const auto& rb=b.pcs[0];
+    auto last_read_issue=ra.last_read_complete-std::uint64_t(t.read_latency);
+    auto first_read_issue=rb.first_read_complete-std::uint64_t(t.read_latency);
+    auto read_to_write=std::int64_t(ra.first_write_issue)-std::int64_t(last_read_issue);
+    auto write_to_read=std::int64_t(first_read_issue)-std::int64_t(rb.last_write_issue);
+    std::snprintf(buf,sizeof buf,"\"read_to_write_command_gap\": %lld, \"nRTW\": %d, \"write_to_read_command_gap\": %lld, \"nCWL+nBL+nWTRS\": %d",
+        (long long)read_to_write,t.nRTW,(long long)write_to_read,t.nCWL+t.nBL+t.nWTRS);
+    check("read_write_turnaround",ra.read_callbacks==2 && ra.write_callbacks==2 && rb.read_callbacks==2 && rb.write_callbacks==2 &&
+          ra.first_write_issue>=last_read_issue+std::uint64_t(t.nRTW) &&
+          first_read_issue>=rb.last_write_issue+std::uint64_t(t.nCWL+t.nBL+t.nWTRS),buf);
   }
   // (7) Skipping the ticks of a busy controller changes nothing: a mixed
   // trace (streams that conflict in one bank, random lines, writes, bursts of

@@ -1,9 +1,19 @@
 #!/usr/bin/env python3
-"""Verify the frozen R41 stage inputs without promoting any delivery gate."""
+"""Verify the frozen R41 stage inputs without promoting any delivery gate.
+
+    stage_contract.py --stage 1 [--out RECORD.json] [--no-registry]
+
+Prints, and with --out writes, one JSON record: the verification result,
+the command that produced it, the product software tree
+(archbench.provenance.software_tree), the git commit and dirty state, host,
+interpreter and time. Nothing else is written to the record file.
+"""
 import argparse
+import datetime
 import hashlib
 import json
 from pathlib import Path
+import socket
 import sys
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -73,11 +83,39 @@ def verify(root=ROOT, *, stage=1, registry_check=True):
                 delivery_acceptance='not-measured')
 
 
+def record(root=ROOT, *, stage=1, registry_check=True, command=None):
+    """The verification result bound to the identity of the checked tree."""
+    result = verify(root, stage=stage, registry_check=registry_check)
+    if str(root) not in sys.path:
+        sys.path.insert(0, str(root))
+    from archbench.provenance import git_commit, software_tree
+    lock = root/f'spec/r41/stage{stage}/lock.json'
+    plan = json.loads((root/f'spec/r41/stage{stage}/plan.json').read_text())
+    result.update(schema='tnca-r41-freeze-check/2', command=list(command or []),
+                  software_tree=software_tree(root, refresh=True), git=git_commit(root),
+                  plan_sha256=sha(root/f'spec/r41/stage{stage}/plan.json'),
+                  contract_sha256=plan['contract_sha256'], lock_files=len(json.loads(lock.read_text())['files']),
+                  host=socket.gethostname(), python=sys.executable, python_version=sys.version.split()[0],
+                  checked_utc=datetime.datetime.now(datetime.timezone.utc).isoformat())
+    return result
+
+
 def main():
-    ap = argparse.ArgumentParser(description=__doc__)
+    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument('--stage', type=int, default=1)
+    ap.add_argument('--out', type=Path, help='write the JSON record here (parents created)')
+    ap.add_argument('--no-registry', action='store_true',
+                    help='skip the point-definition registry check (needs torch); recorded as registry_checked=false')
     args = ap.parse_args()
-    print(json.dumps(verify(stage=args.stage), indent=2))
+    result = record(stage=args.stage, registry_check=not args.no_registry,
+                    command=[sys.executable, *sys.argv])
+    text = json.dumps(result, indent=2)+'\n'
+    if args.out:
+        args.out.parent.mkdir(parents=True, exist_ok=True)
+        temporary = args.out.with_suffix('.tmp')
+        temporary.write_text(text)
+        temporary.replace(args.out)
+    print(text, end='')
 
 
 if __name__ == '__main__':

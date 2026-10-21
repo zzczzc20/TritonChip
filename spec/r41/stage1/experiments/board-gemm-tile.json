@@ -1,0 +1,682 @@
+{
+  "schema": "tnca-experiment-spec/1",
+  "id": "board-gemm-tile",
+  "allowed_hosts": [
+    "acf3019"
+  ],
+  "hypothesis": "With the Stage 1 multi-fragment lowering, TNCA_GEMM_TILE=16,32,16 keeps two resident 16x16 accumulators across K and is no slower than the conservative 16,16,16 product path on the R40-03 GEMM subset, unlike R40 where the old lowering made it up to ~4.7x slower.",
+  "competing_explanations": [
+    "16,32,16 silently falls back to 16,16,16 (identical artifacts)",
+    "gains come from changed placement or launch count rather than accumulator residency",
+    "HBM-bound GEMV/linear points are limited by memory service, not accumulator traffic",
+    "the R40 B40-S configuration (one core, per-kernel transfers) hides multi-core effects"
+  ],
+  "expected_counter_changes": [
+    "ACC row read/write/zero commands per K step drop to epilogue-only for 16,32,16",
+    "MMA commands per K step double per fragment pair; instruction count no longer ~12x the 16x16 path",
+    "device cycles of 16,32,16 <= 16,16,16 on compute-bound points; neutral on memory-bound points"
+  ],
+  "expected_observations": [
+    "9 points x {16,16,16; 16,32,16} pass numerically; formal samples per the registered rule",
+    "old-mapping comparison uses the fe1b campaign records of the same keys; conservative baseline is the 16,16,16 arm"
+  ],
+  "plan": "spec/r41/stage1/plan.json",
+  "plan_sha256": "6eb1a3d3d0a629ecf1db637689248177cbb1ea4382e3c5d62838ea5df90f8030",
+  "measurement": {
+    "long_device_tasks": {
+      "qualification_samples": 1,
+      "short_threshold_seconds": 1,
+      "short_timed_samples": 3,
+      "long_timed_samples": 1,
+      "anchor_stability_samples": 3
+    },
+    "host_latency": {
+      "warmup": 5,
+      "timed": 30,
+      "blocks": 3,
+      "order": "interleaved seeded A/B"
+    },
+    "borderline_device_recheck": {
+      "additional_samples_per_arm": 3,
+      "max_recheck_blocks": 2
+    },
+    "bootstrap": {
+      "resamples": 2000,
+      "seed": 20261020,
+      "alpha": 0.05
+    },
+    "overall_nonregression_budget": 0.05,
+    "report_point_regression_above": 0.05,
+    "confirmed_new_default_regression_block": 0.1
+  },
+  "suites": [
+    {
+      "path": "spec/r40/suites/existing.json",
+      "sha256": "f3e4ba5f3a346d45d3289b4b58f380d0103f4a5edfe6c88abd6b136868154a0f"
+    },
+    {
+      "path": "spec/r40/suites/large.json",
+      "sha256": "9279cf341d9c631f103a15abdbff1d6d932329fbc0a0336352bbac8b22b223bf"
+    },
+    {
+      "path": "spec/r40/suites/hbm-tier.json",
+      "sha256": "a36483591c755273db172d11455301e8a9a164932340a5827fccd0f5703d5d6f"
+    },
+    {
+      "path": "spec/r40/suites/hbm.json",
+      "sha256": "7cebc8d2c6e6cab8a688418ce16e36785cd603385bff1e6028a0657c89120dfd"
+    },
+    {
+      "path": "spec/r40/suites/R40-03.gemm-reuse.json",
+      "sha256": "2ae243782413f4970616dfef3e02aca60e8f8f34907d18cf2ea4a6ac48807c3f"
+    },
+    {
+      "path": "spec/r40/suites/R40-09.tune.json",
+      "sha256": "2e5a0c346123f6cd2fe896baa176be3dc2138d6bd4e189b62564ae67f1347484"
+    }
+  ],
+  "board": {
+    "image": "{home}/tnca_images/r40_attempt03_90mhz_a88ebdf5/tnca_u280.xclbin",
+    "image_sha256": "a88ebdf59cfbbb2001ebd5b1b2c739c5d8cd33931f1e9202f18cac07c4c83083",
+    "image_uuid": "1bada9db-78f3-5bc8-7ba6-cce062e7ade8",
+    "clock_evidence": "{home}/tnca_build/r40_attempt03_conditional_90mhz/qualified_clock.json",
+    "clock_evidence_sha256": "8ad4b3bd30a3f5fe8819fe59ef8ad160fd0de1478aaa506dc33d82785fb9f487",
+    "clock_hz": 90000000,
+    "device": "0000:04:00.1",
+    "mgmt_device": "0000:04:00.0",
+    "backend": "fpga-u280-multicore",
+    "backend_args": {
+      "xclbin": "{home}/tnca_images/r40_attempt03_90mhz_a88ebdf5/tnca_u280.xclbin",
+      "image_profile": "core-vrf-sync-v5",
+      "core_count": 3,
+      "memory_ports": 3,
+      "hbm_dma": true,
+      "hbm_bytes": 4294967296,
+      "device_clock": true
+    },
+    "profile": "core-vrf-sync-v5",
+    "transport": {
+      "deadline_cycles": 200000000000,
+      "host_timeout_seconds": 28800,
+      "source": "evidence/r40/v3/campaign_fe1b/campaign.json transport"
+    },
+    "memory_map": {
+      "window_base": 0,
+      "window_bytes": 4294967296,
+      "local_limit": 131072,
+      "bank": "MBG[0:31]",
+      "physical_pcs": "PC0-PC15",
+      "exported_map_sha256": "a1019970fe9548fda5e9b7e44442a14f1a886decd397f472c498dd15f5970bc2",
+      "source": "evidence/r40/v3/R40-04.hbm/board_run_fe1b/window_samples.json",
+      "source_sha256": "fa36cf03ec9f9424bb73a855c0692abb92959878aa808cff4018cecb4637b5a0"
+    },
+    "load_policy": "the user authorized loading B40 image a88ebdf5 only while the shared card is idle; every fpga step probes the loaded UUID, the clock counter and kdsstat first and refuses otherwise"
+  },
+  "estimates": [
+    {
+      "records": "evidence/r40/v3/R40-04.hbm/board_run_fe1b/native/u280_tiny.jsonl"
+    },
+    {
+      "records": "evidence/r40/v3/R40-04.hbm/board_run_fe1b/native/u280_small.jsonl"
+    },
+    {
+      "records": "evidence/r40/v3/R40-04.hbm/board_run_fe1b/native/u280_medium.jsonl"
+    },
+    {
+      "records": "evidence/r40/v3/R40-04.hbm/board_run_fe1b/large24.jsonl"
+    },
+    {
+      "records": "evidence/r40/v3/R40-04.hbm/board_run_fe1b/hbm14.jsonl"
+    },
+    {
+      "campaign": "evidence/r40/v3/campaign_fe1b/campaign.json",
+      "state": "evidence/r40/v3/campaign_fe1b/state.json"
+    }
+  ],
+  "sources": [
+    "tools/performance_harness",
+    "archbench",
+    "python/tnca",
+    "compiler/python",
+    "compiler/targets",
+    "tools/asm",
+    "isa",
+    "spec/r40/suites",
+    "spec/r41",
+    "doc/r41_tasks_and_acceptance.md",
+    "spec/r41/stage1/experiments/board-gemm-tile.json"
+  ],
+  "env": {
+    "MAX_JOBS": "1",
+    "OMP_NUM_THREADS": "1",
+    "MKL_NUM_THREADS": "1",
+    "CUDA_VISIBLE_DEVICES": "",
+    "PYTHONFAULTHANDLER": "1",
+    "PYTHONPATH": "{root}:{root}/python:{root}/compiler/python:{root}/tools/asm",
+    "TRITON_CACHE_DIR": "{out}/caches/triton",
+    "TORCHINDUCTOR_CACHE_DIR": "{out}/caches/inductor",
+    "TORCH_EXTENSIONS_DIR": "{out}/caches/torch-extensions"
+  },
+  "registration": {
+    "status": "registered-not-run",
+    "registered_utc": "2026-10-21",
+    "subset": "spec/r40/suites/R40-03.gemm-reuse.json",
+    "subset_sha256": "2ae243782413f4970616dfef3e02aca60e8f8f34907d18cf2ea4a6ac48807c3f",
+    "control": "16,16,16",
+    "candidate": "16,32,16",
+    "knobs_source": "evidence/r40/v3/campaign_fe1b/campaign.json experiments.R40-03.gemm-tile and its configs (B40-S)",
+    "r40_reference_keys": {
+      "model.mlp/medium/fp16-t128-d128@control": "05e56461645c3a83",
+      "model.mlp/medium/fp16-t128-d128@candidate": "6963f6c556aaabf8",
+      "op.bmm/medium/fp16-b16-m64-k32-n64@candidate": "96ff4f39139fa882",
+      "op.bmm/medium/fp16-b16-m64-k32-n64@control": "321ae316c2a78450",
+      "op.gemv/hbm/fp16-k4096-n11008@control": "04b9ae9282740a38",
+      "op.gemv/hbm/fp16-k4096-n11008@candidate": "40925309f040812f",
+      "op.gemv/medium/fp16-k320-n448@candidate": "24244321ede58e59",
+      "op.gemv/medium/fp16-k320-n448@control": "2df31953cb22c9d9",
+      "op.linear/hbm/fp16-m512-k4096-n11008@control": "bc164f3419af6c9d",
+      "op.linear/hbm/fp16-m512-k4096-n11008@candidate": "c4a694f030948c42",
+      "op.linear/medium/fp16-m128-k320-n256@control": "1d998cfd078decea",
+      "op.linear/medium/fp16-m128-k320-n256@candidate": "60c220d6e176af60",
+      "op.matmul/hbm/fp16-m4096-k4096-n4096@control": "ad834c2fe05d97bf",
+      "op.matmul/hbm/fp16-m4096-k4096-n4096@candidate": "60ac696cf3af09fe",
+      "op.matmul/medium/fp16-m128-k192-n128@candidate": "2e67c8f219307a8b",
+      "op.matmul/medium/fp16-m128-k192-n128@control": "684a70af01ab31d1",
+      "op.matmul/medium/fp32-m128-k192-n128@candidate": "4ad272fddf706946",
+      "op.matmul/medium/fp32-m128-k192-n128@control": "b67f4253ebf025d4"
+    },
+    "order": "per point as the fe1b campaign seeded it",
+    "sampling_rule": "plan.json measurement.long_device_tasks: qualification record (0 warm-up, 1 timed call); when every configuration of a group qualifies at <= 1 s, a formal record with 3 timed calls, else the qualification record is formal (1 timed call); anchors: 3 independent interleaved processes; borderline rechecks (3 more samples per arm, at most 2 blocks) only by a later registered judgement, never by repeating until significant",
+    "expected_board_hours": 0.952,
+    "expected_board_hours_by_batch": {
+      "gemm": 0.952
+    },
+    "estimate_method": "board_batch.py --dry-run: per-process wall seconds of the nearest R40 fe1b board record (same point and knobs where available); short configurations add one formal process; references are the R40 old-mapping 16,32,16 runs (linear/matmul hbm 1262 s/1041 s), an upper bound"
+  },
+  "board_batches": {
+    "gemm": {
+      "sampling": "device-rule",
+      "configurations": [
+        {
+          "id": "model.mlp/medium/fp16-t128-d128@control",
+          "point": "model.mlp/medium/fp16-t128-d128",
+          "point_sha256": "e902898ba8ac399b55fbd6fb1f451a8c1e0f3aed4a37d03c72be9d26518ab1cf",
+          "knobs": {
+            "TNCA_TORCH_DEVICE": "native",
+            "TNCA_TUNE": "0",
+            "TNCA_MAX_BLOCK": "16",
+            "TNCA_GEMM_TILE": "16,16,16",
+            "TNCA_REDUCTION_ROWS": "1",
+            "TNCA_BANK_ALLOC": "0",
+            "TNCA_WINDOW_REUSE": "0",
+            "TNCA_SDPA": "decomposed",
+            "TNCA_SUBMIT": "single",
+            "TNCA_TRANSFER_POLICY": "per-kernel",
+            "TNCA_ACTIVE_CORES": "1",
+            "TNCA_RTL_MEM_PORTS": "1",
+            "TNCA_RTL_OUTSTANDING": "1",
+            "TNCA_PIPELINE": "1"
+          },
+          "arm": "control",
+          "r40_config_key": "05e56461645c3a83"
+        },
+        {
+          "id": "model.mlp/medium/fp16-t128-d128@candidate",
+          "point": "model.mlp/medium/fp16-t128-d128",
+          "point_sha256": "e902898ba8ac399b55fbd6fb1f451a8c1e0f3aed4a37d03c72be9d26518ab1cf",
+          "knobs": {
+            "TNCA_TORCH_DEVICE": "native",
+            "TNCA_TUNE": "0",
+            "TNCA_MAX_BLOCK": "16",
+            "TNCA_GEMM_TILE": "16,32,16",
+            "TNCA_REDUCTION_ROWS": "1",
+            "TNCA_BANK_ALLOC": "0",
+            "TNCA_WINDOW_REUSE": "0",
+            "TNCA_SDPA": "decomposed",
+            "TNCA_SUBMIT": "single",
+            "TNCA_TRANSFER_POLICY": "per-kernel",
+            "TNCA_ACTIVE_CORES": "1",
+            "TNCA_RTL_MEM_PORTS": "1",
+            "TNCA_RTL_OUTSTANDING": "1",
+            "TNCA_PIPELINE": "1"
+          },
+          "arm": "candidate",
+          "r40_config_key": "6963f6c556aaabf8"
+        },
+        {
+          "id": "op.bmm/medium/fp16-b16-m64-k32-n64@candidate",
+          "point": "op.bmm/medium/fp16-b16-m64-k32-n64",
+          "point_sha256": "b377b0e53eab312336e85287a3ed0ab7c463c58977085140b2a8466dbb5fe595",
+          "knobs": {
+            "TNCA_TORCH_DEVICE": "native",
+            "TNCA_TUNE": "0",
+            "TNCA_MAX_BLOCK": "16",
+            "TNCA_GEMM_TILE": "16,32,16",
+            "TNCA_REDUCTION_ROWS": "1",
+            "TNCA_BANK_ALLOC": "0",
+            "TNCA_WINDOW_REUSE": "0",
+            "TNCA_SDPA": "decomposed",
+            "TNCA_SUBMIT": "single",
+            "TNCA_TRANSFER_POLICY": "per-kernel",
+            "TNCA_ACTIVE_CORES": "1",
+            "TNCA_RTL_MEM_PORTS": "1",
+            "TNCA_RTL_OUTSTANDING": "1",
+            "TNCA_PIPELINE": "1"
+          },
+          "arm": "candidate",
+          "r40_config_key": "96ff4f39139fa882"
+        },
+        {
+          "id": "op.bmm/medium/fp16-b16-m64-k32-n64@control",
+          "point": "op.bmm/medium/fp16-b16-m64-k32-n64",
+          "point_sha256": "b377b0e53eab312336e85287a3ed0ab7c463c58977085140b2a8466dbb5fe595",
+          "knobs": {
+            "TNCA_TORCH_DEVICE": "native",
+            "TNCA_TUNE": "0",
+            "TNCA_MAX_BLOCK": "16",
+            "TNCA_GEMM_TILE": "16,16,16",
+            "TNCA_REDUCTION_ROWS": "1",
+            "TNCA_BANK_ALLOC": "0",
+            "TNCA_WINDOW_REUSE": "0",
+            "TNCA_SDPA": "decomposed",
+            "TNCA_SUBMIT": "single",
+            "TNCA_TRANSFER_POLICY": "per-kernel",
+            "TNCA_ACTIVE_CORES": "1",
+            "TNCA_RTL_MEM_PORTS": "1",
+            "TNCA_RTL_OUTSTANDING": "1",
+            "TNCA_PIPELINE": "1"
+          },
+          "arm": "control",
+          "r40_config_key": "321ae316c2a78450"
+        },
+        {
+          "id": "op.gemv/hbm/fp16-k4096-n11008@control",
+          "point": "op.gemv/hbm/fp16-k4096-n11008",
+          "point_sha256": "a65683795c4c05baf3c758fe40b6d0d6bc5994a11c2340fd17fbbc04d576baa9",
+          "knobs": {
+            "TNCA_TORCH_DEVICE": "native",
+            "TNCA_TUNE": "0",
+            "TNCA_MAX_BLOCK": "16",
+            "TNCA_GEMM_TILE": "16,16,16",
+            "TNCA_REDUCTION_ROWS": "1",
+            "TNCA_BANK_ALLOC": "0",
+            "TNCA_WINDOW_REUSE": "0",
+            "TNCA_SDPA": "decomposed",
+            "TNCA_SUBMIT": "single",
+            "TNCA_TRANSFER_POLICY": "per-kernel",
+            "TNCA_ACTIVE_CORES": "1",
+            "TNCA_RTL_MEM_PORTS": "1",
+            "TNCA_RTL_OUTSTANDING": "1",
+            "TNCA_PIPELINE": "1"
+          },
+          "arm": "control",
+          "r40_config_key": "04b9ae9282740a38"
+        },
+        {
+          "id": "op.gemv/hbm/fp16-k4096-n11008@candidate",
+          "point": "op.gemv/hbm/fp16-k4096-n11008",
+          "point_sha256": "a65683795c4c05baf3c758fe40b6d0d6bc5994a11c2340fd17fbbc04d576baa9",
+          "knobs": {
+            "TNCA_TORCH_DEVICE": "native",
+            "TNCA_TUNE": "0",
+            "TNCA_MAX_BLOCK": "16",
+            "TNCA_GEMM_TILE": "16,32,16",
+            "TNCA_REDUCTION_ROWS": "1",
+            "TNCA_BANK_ALLOC": "0",
+            "TNCA_WINDOW_REUSE": "0",
+            "TNCA_SDPA": "decomposed",
+            "TNCA_SUBMIT": "single",
+            "TNCA_TRANSFER_POLICY": "per-kernel",
+            "TNCA_ACTIVE_CORES": "1",
+            "TNCA_RTL_MEM_PORTS": "1",
+            "TNCA_RTL_OUTSTANDING": "1",
+            "TNCA_PIPELINE": "1"
+          },
+          "arm": "candidate",
+          "r40_config_key": "40925309f040812f"
+        },
+        {
+          "id": "op.gemv/medium/fp16-k320-n448@candidate",
+          "point": "op.gemv/medium/fp16-k320-n448",
+          "point_sha256": "fd15161f24b0d9305fdc83fde76124d2a8fa398f2db5eb98a6b3448b36d0f3ea",
+          "knobs": {
+            "TNCA_TORCH_DEVICE": "native",
+            "TNCA_TUNE": "0",
+            "TNCA_MAX_BLOCK": "16",
+            "TNCA_GEMM_TILE": "16,32,16",
+            "TNCA_REDUCTION_ROWS": "1",
+            "TNCA_BANK_ALLOC": "0",
+            "TNCA_WINDOW_REUSE": "0",
+            "TNCA_SDPA": "decomposed",
+            "TNCA_SUBMIT": "single",
+            "TNCA_TRANSFER_POLICY": "per-kernel",
+            "TNCA_ACTIVE_CORES": "1",
+            "TNCA_RTL_MEM_PORTS": "1",
+            "TNCA_RTL_OUTSTANDING": "1",
+            "TNCA_PIPELINE": "1"
+          },
+          "arm": "candidate",
+          "r40_config_key": "24244321ede58e59"
+        },
+        {
+          "id": "op.gemv/medium/fp16-k320-n448@control",
+          "point": "op.gemv/medium/fp16-k320-n448",
+          "point_sha256": "fd15161f24b0d9305fdc83fde76124d2a8fa398f2db5eb98a6b3448b36d0f3ea",
+          "knobs": {
+            "TNCA_TORCH_DEVICE": "native",
+            "TNCA_TUNE": "0",
+            "TNCA_MAX_BLOCK": "16",
+            "TNCA_GEMM_TILE": "16,16,16",
+            "TNCA_REDUCTION_ROWS": "1",
+            "TNCA_BANK_ALLOC": "0",
+            "TNCA_WINDOW_REUSE": "0",
+            "TNCA_SDPA": "decomposed",
+            "TNCA_SUBMIT": "single",
+            "TNCA_TRANSFER_POLICY": "per-kernel",
+            "TNCA_ACTIVE_CORES": "1",
+            "TNCA_RTL_MEM_PORTS": "1",
+            "TNCA_RTL_OUTSTANDING": "1",
+            "TNCA_PIPELINE": "1"
+          },
+          "arm": "control",
+          "r40_config_key": "2df31953cb22c9d9"
+        },
+        {
+          "id": "op.linear/hbm/fp16-m512-k4096-n11008@control",
+          "point": "op.linear/hbm/fp16-m512-k4096-n11008",
+          "point_sha256": "1a898be55b59c02cbbc4e6b2a988ecfcd4793e472f6dae3aa3aca612f43d23bc",
+          "knobs": {
+            "TNCA_TORCH_DEVICE": "native",
+            "TNCA_TUNE": "0",
+            "TNCA_MAX_BLOCK": "16",
+            "TNCA_GEMM_TILE": "16,16,16",
+            "TNCA_REDUCTION_ROWS": "1",
+            "TNCA_BANK_ALLOC": "0",
+            "TNCA_WINDOW_REUSE": "0",
+            "TNCA_SDPA": "decomposed",
+            "TNCA_SUBMIT": "single",
+            "TNCA_TRANSFER_POLICY": "per-kernel",
+            "TNCA_ACTIVE_CORES": "1",
+            "TNCA_RTL_MEM_PORTS": "1",
+            "TNCA_RTL_OUTSTANDING": "1",
+            "TNCA_PIPELINE": "1"
+          },
+          "arm": "control",
+          "r40_config_key": "bc164f3419af6c9d"
+        },
+        {
+          "id": "op.linear/hbm/fp16-m512-k4096-n11008@candidate",
+          "point": "op.linear/hbm/fp16-m512-k4096-n11008",
+          "point_sha256": "1a898be55b59c02cbbc4e6b2a988ecfcd4793e472f6dae3aa3aca612f43d23bc",
+          "knobs": {
+            "TNCA_TORCH_DEVICE": "native",
+            "TNCA_TUNE": "0",
+            "TNCA_MAX_BLOCK": "16",
+            "TNCA_GEMM_TILE": "16,32,16",
+            "TNCA_REDUCTION_ROWS": "1",
+            "TNCA_BANK_ALLOC": "0",
+            "TNCA_WINDOW_REUSE": "0",
+            "TNCA_SDPA": "decomposed",
+            "TNCA_SUBMIT": "single",
+            "TNCA_TRANSFER_POLICY": "per-kernel",
+            "TNCA_ACTIVE_CORES": "1",
+            "TNCA_RTL_MEM_PORTS": "1",
+            "TNCA_RTL_OUTSTANDING": "1",
+            "TNCA_PIPELINE": "1"
+          },
+          "arm": "candidate",
+          "r40_config_key": "c4a694f030948c42"
+        },
+        {
+          "id": "op.linear/medium/fp16-m128-k320-n256@control",
+          "point": "op.linear/medium/fp16-m128-k320-n256",
+          "point_sha256": "af00fd1e34ac660423c1cc3d8cc4d10443a9c2f9e69080514274b96db068693d",
+          "knobs": {
+            "TNCA_TORCH_DEVICE": "native",
+            "TNCA_TUNE": "0",
+            "TNCA_MAX_BLOCK": "16",
+            "TNCA_GEMM_TILE": "16,16,16",
+            "TNCA_REDUCTION_ROWS": "1",
+            "TNCA_BANK_ALLOC": "0",
+            "TNCA_WINDOW_REUSE": "0",
+            "TNCA_SDPA": "decomposed",
+            "TNCA_SUBMIT": "single",
+            "TNCA_TRANSFER_POLICY": "per-kernel",
+            "TNCA_ACTIVE_CORES": "1",
+            "TNCA_RTL_MEM_PORTS": "1",
+            "TNCA_RTL_OUTSTANDING": "1",
+            "TNCA_PIPELINE": "1"
+          },
+          "arm": "control",
+          "r40_config_key": "1d998cfd078decea"
+        },
+        {
+          "id": "op.linear/medium/fp16-m128-k320-n256@candidate",
+          "point": "op.linear/medium/fp16-m128-k320-n256",
+          "point_sha256": "af00fd1e34ac660423c1cc3d8cc4d10443a9c2f9e69080514274b96db068693d",
+          "knobs": {
+            "TNCA_TORCH_DEVICE": "native",
+            "TNCA_TUNE": "0",
+            "TNCA_MAX_BLOCK": "16",
+            "TNCA_GEMM_TILE": "16,32,16",
+            "TNCA_REDUCTION_ROWS": "1",
+            "TNCA_BANK_ALLOC": "0",
+            "TNCA_WINDOW_REUSE": "0",
+            "TNCA_SDPA": "decomposed",
+            "TNCA_SUBMIT": "single",
+            "TNCA_TRANSFER_POLICY": "per-kernel",
+            "TNCA_ACTIVE_CORES": "1",
+            "TNCA_RTL_MEM_PORTS": "1",
+            "TNCA_RTL_OUTSTANDING": "1",
+            "TNCA_PIPELINE": "1"
+          },
+          "arm": "candidate",
+          "r40_config_key": "60c220d6e176af60"
+        },
+        {
+          "id": "op.matmul/hbm/fp16-m4096-k4096-n4096@control",
+          "point": "op.matmul/hbm/fp16-m4096-k4096-n4096",
+          "point_sha256": "c9873996038a73864d846e6d6496b954b71588b99a6f4c7fa69725d0563ade81",
+          "knobs": {
+            "TNCA_TORCH_DEVICE": "native",
+            "TNCA_TUNE": "0",
+            "TNCA_MAX_BLOCK": "16",
+            "TNCA_GEMM_TILE": "16,16,16",
+            "TNCA_REDUCTION_ROWS": "1",
+            "TNCA_BANK_ALLOC": "0",
+            "TNCA_WINDOW_REUSE": "0",
+            "TNCA_SDPA": "decomposed",
+            "TNCA_SUBMIT": "single",
+            "TNCA_TRANSFER_POLICY": "per-kernel",
+            "TNCA_ACTIVE_CORES": "1",
+            "TNCA_RTL_MEM_PORTS": "1",
+            "TNCA_RTL_OUTSTANDING": "1",
+            "TNCA_PIPELINE": "1"
+          },
+          "arm": "control",
+          "r40_config_key": "ad834c2fe05d97bf"
+        },
+        {
+          "id": "op.matmul/hbm/fp16-m4096-k4096-n4096@candidate",
+          "point": "op.matmul/hbm/fp16-m4096-k4096-n4096",
+          "point_sha256": "c9873996038a73864d846e6d6496b954b71588b99a6f4c7fa69725d0563ade81",
+          "knobs": {
+            "TNCA_TORCH_DEVICE": "native",
+            "TNCA_TUNE": "0",
+            "TNCA_MAX_BLOCK": "16",
+            "TNCA_GEMM_TILE": "16,32,16",
+            "TNCA_REDUCTION_ROWS": "1",
+            "TNCA_BANK_ALLOC": "0",
+            "TNCA_WINDOW_REUSE": "0",
+            "TNCA_SDPA": "decomposed",
+            "TNCA_SUBMIT": "single",
+            "TNCA_TRANSFER_POLICY": "per-kernel",
+            "TNCA_ACTIVE_CORES": "1",
+            "TNCA_RTL_MEM_PORTS": "1",
+            "TNCA_RTL_OUTSTANDING": "1",
+            "TNCA_PIPELINE": "1"
+          },
+          "arm": "candidate",
+          "r40_config_key": "60ac696cf3af09fe"
+        },
+        {
+          "id": "op.matmul/medium/fp16-m128-k192-n128@candidate",
+          "point": "op.matmul/medium/fp16-m128-k192-n128",
+          "point_sha256": "5fcd1986d57a317c831dfb5bb8b3334475169939d8e9c957ba15f7f06e8cef5a",
+          "knobs": {
+            "TNCA_TORCH_DEVICE": "native",
+            "TNCA_TUNE": "0",
+            "TNCA_MAX_BLOCK": "16",
+            "TNCA_GEMM_TILE": "16,32,16",
+            "TNCA_REDUCTION_ROWS": "1",
+            "TNCA_BANK_ALLOC": "0",
+            "TNCA_WINDOW_REUSE": "0",
+            "TNCA_SDPA": "decomposed",
+            "TNCA_SUBMIT": "single",
+            "TNCA_TRANSFER_POLICY": "per-kernel",
+            "TNCA_ACTIVE_CORES": "1",
+            "TNCA_RTL_MEM_PORTS": "1",
+            "TNCA_RTL_OUTSTANDING": "1",
+            "TNCA_PIPELINE": "1"
+          },
+          "arm": "candidate",
+          "r40_config_key": "2e67c8f219307a8b"
+        },
+        {
+          "id": "op.matmul/medium/fp16-m128-k192-n128@control",
+          "point": "op.matmul/medium/fp16-m128-k192-n128",
+          "point_sha256": "5fcd1986d57a317c831dfb5bb8b3334475169939d8e9c957ba15f7f06e8cef5a",
+          "knobs": {
+            "TNCA_TORCH_DEVICE": "native",
+            "TNCA_TUNE": "0",
+            "TNCA_MAX_BLOCK": "16",
+            "TNCA_GEMM_TILE": "16,16,16",
+            "TNCA_REDUCTION_ROWS": "1",
+            "TNCA_BANK_ALLOC": "0",
+            "TNCA_WINDOW_REUSE": "0",
+            "TNCA_SDPA": "decomposed",
+            "TNCA_SUBMIT": "single",
+            "TNCA_TRANSFER_POLICY": "per-kernel",
+            "TNCA_ACTIVE_CORES": "1",
+            "TNCA_RTL_MEM_PORTS": "1",
+            "TNCA_RTL_OUTSTANDING": "1",
+            "TNCA_PIPELINE": "1"
+          },
+          "arm": "control",
+          "r40_config_key": "684a70af01ab31d1"
+        },
+        {
+          "id": "op.matmul/medium/fp32-m128-k192-n128@candidate",
+          "point": "op.matmul/medium/fp32-m128-k192-n128",
+          "point_sha256": "6b6b368b24dfedbd7c53df61c1f1d6359500ce485dc4bd6c126abcb626626505",
+          "knobs": {
+            "TNCA_TORCH_DEVICE": "native",
+            "TNCA_TUNE": "0",
+            "TNCA_MAX_BLOCK": "16",
+            "TNCA_GEMM_TILE": "16,32,16",
+            "TNCA_REDUCTION_ROWS": "1",
+            "TNCA_BANK_ALLOC": "0",
+            "TNCA_WINDOW_REUSE": "0",
+            "TNCA_SDPA": "decomposed",
+            "TNCA_SUBMIT": "single",
+            "TNCA_TRANSFER_POLICY": "per-kernel",
+            "TNCA_ACTIVE_CORES": "1",
+            "TNCA_RTL_MEM_PORTS": "1",
+            "TNCA_RTL_OUTSTANDING": "1",
+            "TNCA_PIPELINE": "1"
+          },
+          "arm": "candidate",
+          "r40_config_key": "4ad272fddf706946"
+        },
+        {
+          "id": "op.matmul/medium/fp32-m128-k192-n128@control",
+          "point": "op.matmul/medium/fp32-m128-k192-n128",
+          "point_sha256": "6b6b368b24dfedbd7c53df61c1f1d6359500ce485dc4bd6c126abcb626626505",
+          "knobs": {
+            "TNCA_TORCH_DEVICE": "native",
+            "TNCA_TUNE": "0",
+            "TNCA_MAX_BLOCK": "16",
+            "TNCA_GEMM_TILE": "16,16,16",
+            "TNCA_REDUCTION_ROWS": "1",
+            "TNCA_BANK_ALLOC": "0",
+            "TNCA_WINDOW_REUSE": "0",
+            "TNCA_SDPA": "decomposed",
+            "TNCA_SUBMIT": "single",
+            "TNCA_TRANSFER_POLICY": "per-kernel",
+            "TNCA_ACTIVE_CORES": "1",
+            "TNCA_RTL_MEM_PORTS": "1",
+            "TNCA_RTL_OUTSTANDING": "1",
+            "TNCA_PIPELINE": "1"
+          },
+          "arm": "control",
+          "r40_config_key": "b67f4253ebf025d4"
+        }
+      ],
+      "groups": [
+        [
+          "model.mlp/medium/fp16-t128-d128@control",
+          "model.mlp/medium/fp16-t128-d128@candidate"
+        ],
+        [
+          "op.bmm/medium/fp16-b16-m64-k32-n64@candidate",
+          "op.bmm/medium/fp16-b16-m64-k32-n64@control"
+        ],
+        [
+          "op.gemv/hbm/fp16-k4096-n11008@control",
+          "op.gemv/hbm/fp16-k4096-n11008@candidate"
+        ],
+        [
+          "op.gemv/medium/fp16-k320-n448@candidate",
+          "op.gemv/medium/fp16-k320-n448@control"
+        ],
+        [
+          "op.linear/hbm/fp16-m512-k4096-n11008@control",
+          "op.linear/hbm/fp16-m512-k4096-n11008@candidate"
+        ],
+        [
+          "op.linear/medium/fp16-m128-k320-n256@control",
+          "op.linear/medium/fp16-m128-k320-n256@candidate"
+        ],
+        [
+          "op.matmul/hbm/fp16-m4096-k4096-n4096@control",
+          "op.matmul/hbm/fp16-m4096-k4096-n4096@candidate"
+        ],
+        [
+          "op.matmul/medium/fp16-m128-k192-n128@candidate",
+          "op.matmul/medium/fp16-m128-k192-n128@control"
+        ],
+        [
+          "op.matmul/medium/fp32-m128-k192-n128@candidate",
+          "op.matmul/medium/fp32-m128-k192-n128@control"
+        ]
+      ]
+    }
+  },
+  "steps": [
+    {
+      "id": "gemm",
+      "kind": "fpga",
+      "argv": [
+        "{python}",
+        "tools/performance_harness/board_batch.py",
+        "--manifest",
+        "spec/r41/stage1/experiments/board-gemm-tile.json",
+        "--batch",
+        "gemm",
+        "--root",
+        "{root}",
+        "--out",
+        "{out}/gemm",
+        "--python",
+        "{python}"
+      ],
+      "timeout_seconds": 43200,
+      "timing_boundary": "ArchBench protocol 2: cold call untimed; registered warm-up/timed steady calls; device-cycles-serial-grid and device-graph-makespan from first accepted launch to last device completion (MMIO common-clock endpoints); request-latency recorded, not ranked",
+      "cache_state": "fresh experiment-local Triton/Inductor/extension caches under {out}/caches; one ArchBench process per run",
+      "outputs": [
+        "{out}/gemm/batch.json",
+        "{out}/gemm/formal.jsonl"
+      ]
+    }
+  ]
+}

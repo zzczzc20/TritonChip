@@ -10,6 +10,13 @@ run used (exactly the board record's, see run_graphs.py --dataset), the model
 graph cycles of the measured call (first launch start to last launch end,
 host gaps included), its launches, and the model identity. A run that did not
 pass is listed on stderr and produces no row: nothing is approximated.
+
+Knobs come from run_graphs.py's verified `knobs` (the record's own
+platform.knobs, model-harness keys excluded). A results file written before
+that verification existed is checked against the record.json beside it
+(RUN/runs/<key>/record.json): a row whose stated knobs differ from what the
+record ran is refused (knob-mismatch); without a record the prediction is
+kept but marked knobs_source=unverified-legacy-row.
 """
 import argparse
 import hashlib
@@ -21,6 +28,23 @@ from prediction_domain import prediction_status, VALID_STATUSES
 
 def sha(path):
     return hashlib.sha256(Path(path).read_bytes()).hexdigest()
+
+
+def row_knobs(row, results):
+    """(knobs, source) or (None, refusal) for one run_graphs.py results row."""
+    if row.get('knobs_verified') is True and isinstance(row.get('knobs'), dict):
+        return row['knobs'], 'record-platform-knobs'
+    if row.get('knobs_verified') is False:
+        return None, 'knob-mismatch'
+    key = str(row.get('key') or '')
+    record = Path(results).parent/'runs'/key.replace('/', '__').replace('@', '__')/'record.json'
+    claimed = row.get('knobs') or {}
+    if key and record.is_file():
+        ran = (json.loads(record.read_text()).get('platform') or {}).get('knobs') or {}
+        if any(ran.get(k) != str(v) for k, v in claimed.items()):
+            return None, 'knob-mismatch'
+        return claimed, 'legacy-row-checked-against-record'
+    return claimed, 'unverified-legacy-row'
 
 
 def main():
@@ -43,7 +67,11 @@ def main():
             if qualification not in VALID_STATUSES:
                 missing.append((r.get('key'), qualification))
                 continue
-            rows.append(dict(point=r['point'], knobs=r['knobs'], graph_cycles=g['graph_cycles'],
+            knobs, source = row_knobs(r, path)
+            if knobs is None:
+                missing.append((r.get('key'), source))
+                continue
+            rows.append(dict(point=r['point'], knobs=knobs, knobs_source=source, graph_cycles=g['graph_cycles'],
                              launches=g['launches'], device_cycles=g['device_cycles'], model=model,
                              model_timing_status=qualification,
                              run=dict(results=str(path), key=r['key'], process_wall_s=r.get('process_wall_s'))))

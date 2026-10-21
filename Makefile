@@ -33,13 +33,25 @@
 SHELL      := /bin/bash
 
 # R41 stage inputs are checked with the Torch environment on a remote host.
-.PHONY: r41-freeze-check r41-harness-check
+# r41-freeze-check writes one JSON record (verification, command, software
+# tree, git identity) to R41_FREEZE_OUT; copy it into evidence deliberately.
+# r41-stage1-acceptance judges the frozen plan's 61 required items from
+# evidence/r41/stage1/required_index.json; it fails until every item passes.
+.PHONY: r41-freeze-check r41-harness-check r41-stage1-acceptance r41-harness-tests
 STAGE ?= 1
 R41_HARNESS_OUT ?= $(CURDIR)/sim/build/r41/harness-check
+R41_FREEZE_OUT ?= $(CURDIR)/sim/build/r41/freeze-check-stage$(STAGE).json
+R41_ACCEPTANCE_OUT ?= $(CURDIR)/sim/build/r41/stage1-acceptance.json
 r41-freeze-check:
-	$(TORCH_PYTHON) tools/performance_harness/stage_contract.py --stage $(STAGE)
+	$(TORCH_PYTHON) tools/performance_harness/stage_contract.py --stage $(STAGE) --out $(R41_FREEZE_OUT)
 r41-harness-check:
 	$(TORCH_PYTHON) tools/performance_harness/experiment.py spec/r41/stage1/experiments/harness-smoke.json --root $(CURDIR) --out $(R41_HARNESS_OUT) --python $(TORCH_PYTHON)
+r41-stage1-acceptance:
+	$(PYTHON) tools/performance_harness/stage1_acceptance.py --root $(CURDIR) --json $(R41_ACCEPTANCE_OUT)
+# Torch-free unit tests of the runner, board batches, residuals and acceptance.
+r41-harness-tests:
+	cd tools/performance_harness && $(PYTHON) test_experiment.py && $(PYTHON) test_board_tools.py && $(PYTHON) test_stage1_acceptance.py && $(PYTHON) test_stage_contract.py
+	cd tools/performance_harness/systemc && $(PYTHON) test_run_graphs.py
 # NOTE ON PIPELINES IN RECIPES
 #
 # `python ... | tail -4` reports tail's status, so a failing interpreter, a

@@ -1,0 +1,38 @@
+Autocomplete enabled for the xbutil command
+Autocomplete enabled for the xbmgmt command
+XILINX_XRT        : /opt/xilinx/xrt
+PATH              : /opt/xilinx/xrt/bin:/tools/Xilinx/Vitis_HLS/2023.2/bin:/tools/Xilinx/Model_Composer/2023.2/bin:/tools/Xilinx/Vitis/2023.2/bin:/tools/Xilinx/Vitis/2023.2/gnu/microblaze/lin/bin:/tools/Xilinx/Vitis/2023.2/gnu/microblaze/linux_toolchain/lin64_le/bin:/tools/Xilinx/Vitis/2023.2/gnu/aarch32/lin/gcc-arm-linux-gnueabi/bin:/tools/Xilinx/Vitis/2023.2/gnu/aarch32/lin/gcc-arm-none-eabi/bin:/tools/Xilinx/Vitis/2023.2/gnu/aarch64/lin/aarch64-linux/bin:/tools/Xilinx/Vitis/2023.2/gnu/aarch64/lin/aarch64-none/bin:/tools/Xilinx/Vitis/2023.2/gnu/armr5/lin/gcc-arm-none-eabi/bin:/tools/Xilinx/Vitis/2023.2/tps/lnx64/cmake-3.3.2/bin:/tools/Xilinx/Vitis/2023.2/aietools/bin:/tools/Xilinx/Vitis/2023.2/gnu/riscv/lin/riscv64-unknown-elf/bin:/tools/Xilinx/Vivado/2023.2/bin:/tools/Xilinx/DocNav:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin
+LD_LIBRARY_PATH   : /opt/xilinx/xrt/lib
+PYTHONPATH        : /opt/xilinx/xrt/python
+the .xclbin
+  file   /home/zzhouch/tnca_images/r40_attempt03_90mhz_a88ebdf5/tnca_u280.xclbin
+  size   79202018 bytes
+  sha256 a88ebdf59cfbbb2001ebd5b1b2c739c5d8cd33931f1e9202f18cac07c4c83083
+  [ ok ] parses as an .xclbin
+  [ ok ] platform VBNV xilinx_u280_gen3x16_xdma_1_202211_1
+  [ ok ] interface UUID matches the shell contract
+  xclbin UUID 1bada9db-78f3-5bc8-7ba6-cce062e7ade8
+
+the device
+  [ ok ] present at 0000:04:00.1
+  [ ok ] live shell interface UUID matches
+  [FAIL] in use: contexts=1 outstanding=0 client=<unreadable>
+  loaded now 428c00e5-6996-92c7-1f8f-ec41f2d037b3
+
+other loaders
+  [ ok ] no other program/load running
+
+thermal
+  Thermals
+    Temperature    Celcius  
+    ------------------------
+    PCB Top Front  25       
+    PCB Top Rear   24       
+    FPGA           31       
+    FPGA HBM       26       
+  
+  
+  [ ok ] FPGA 31 C, under 85
+  [ ok ] HBM 26 C, under 80
+
+program.sh: gates failed. Nothing was loaded.

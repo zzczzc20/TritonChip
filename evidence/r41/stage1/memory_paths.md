@@ -37,11 +37,33 @@ test cleanup. This is a reproduced defect and its correction, not a dummy
 subprocess test. The full smoke manifest now includes this lifetime check
 for future clean-archive execution.
 
+`kickoff/harness-smoke-v5-evidence.tgz` contains 18 completed steps after
+the fixed-point checks changed. Every traffic-bearing pass now goes through
+Ramulator replay, including the final pass. Acceptance requires the same
+request keys, per-key latency stability and makespan stability, followed by
+reproduction using the installed table. A failed fork pass explicitly
+refuses the prediction instead of retrying numerical execution silently.
+The native summary, standalone runner, graph runner, fragment and primitive
+reports carry timing qualification separately from numerical status.
+`predictions.py` rejects inconclusive and historical unchecked slow results.
+
+Actual tests retain a converged memory copy, a numerically correct one-pass
+copy whose timing is explicitly inconclusive, downstream residual exclusion,
+and a real unsupported instruction causing a fork-pass refusal. The extended
+DRAM-path test covers request reordering, changed/missing keys and unstable
+per-request latency. The complete smoke reruns actual parent-death cleanup,
+native artifacts, monitors and standard Torch graphs.
+
+The unchanged three-pass default reveals a preserved mismatch: eight larger
+GEMM commands change request sets (2-41 unmatched keys). Several makespan
+changes are below 0.5%, which the old test could have called converged.
+They now remain `inconclusive-fixed-point`; all four numerical fragment
+cases pass. The ArchBench add graph also passes numerically and retains an
+inconclusive timing status. These failures are not dropped or promoted to
+calibrated predictions. Small traffic-bearing commands do converge.
+
 Remaining Required work includes actual BO-to-PC and bank/row mapping proof,
 controller/AXI/NoC timing-boundary reconciliation, read/write switching and
-queue-backpressure qualification, fixed-point request/latency convergence,
-fixed-point failure propagation and calibration/validation residuals.
-Current convergence uses makespan agreement and reports unmatched requests;
-that is insufficient to establish a stable request/latency fixed point.
+queue-backpressure qualification, and calibration/validation residuals.
 Per-command Ramulator state reset remains an explicit applicability limit.
 No physical-board memory prediction is qualified by this checkpoint.

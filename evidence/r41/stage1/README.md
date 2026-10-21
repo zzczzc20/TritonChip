@@ -25,6 +25,7 @@
 | `kickoff/primitive-ir-v2-evidence.tgz` | 三个独立进程的代表图保留真实 IR、artifact 资源、TNCA lowering 时间与 Session heap/code 峰值 | 完整模型运行时峰值或完整模型编译已经通过 |
 | `locality_design.md` | 通用消费者、storage/alias/lifetime、已有 TMU 控制、拒绝规则与 Stage 2 板测设计 | Stage 2 locality runtime 功能已经接入或已有收益 |
 | `kickoff/slow-process-lifetime-v1-evidence.tgz`、旧二进制负例 tgz | 三种真实 owner 单独 SIGKILL 后活动模型/slow pass 均退出；旧版本遗留子进程的缺口复现并清理；新模型普通 artifact 与快慢路径回归通过 | 慢路径请求/延迟定点已经收敛或模型已经校准 |
+| `kickoff/harness-smoke-v5-evidence.tgz` | 18 步完整 smoke；请求集合、逐请求延迟、makespan 与最终执行重现的定点判定；实际不收敛及子进程失败负例；残差工具明确拒绝不合格慢路径 | 所有图均收敛；较大 GEMM 的请求集合变化仍保留为不收敛，数值通过不等于周期预测通过 |
 
 谓词压力修复使用现有 `p.ballot`/`p.frombits` 保存精确 lane mask，不能增加架构容量。
 pointwise 超出资源时依次尝试较小 block，保留共同 TNCA 执行路径；已有合法配置仍优先使用。

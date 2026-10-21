@@ -92,6 +92,16 @@ or represent physical FPGA counters. Actual mapped execution verifies
 accepted = completed = 2 × replayed 64-byte lines. Latencies outside the
 bridge's 32-bit DRAM-cycle representation now refuse instead of clipping.
 
+`kickoff/timeline-drain-negative-v1-evidence.tgz` reproduces a maintenance
+completion defect: an actual admitted outlet write completes at cycle 26,
+but a flush with no dirty cache lines previously returned cycle zero.
+Maintenance now includes already accepted outlet transactions in its
+completion maximum. `kickoff/harness-smoke-v6-evidence.tgz` passes the
+additional accepted-write/read drain case and the full 19-step model smoke,
+including all nine bridge mechanisms and native fast/slow graphs.
+This corrects that maintenance boundary; it does not certify every physical
+controller or host-handoff timing boundary.
+
 Remaining Required work includes actual bank/row mapping proof,
 controller/AXI/NoC timing-boundary reconciliation, and calibration/validation
 residuals. The generic controller's mechanisms do not establish physical

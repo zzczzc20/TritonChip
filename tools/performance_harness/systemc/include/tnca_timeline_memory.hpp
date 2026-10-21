@@ -213,6 +213,10 @@ struct TimelineMemory {
             }
             ++hc(h,10);homes[h].fills.clear();
         }
+        // An evicted dirty line can already have left the cache while its
+        // accepted outlet write still awaits completion. Maintenance must
+        // drain those older transactions as well as the writes above.
+        for(const auto& outlet:outlets)for(u64 completion:outlet.inflight)done=std::max(done,completion);
         return done;
     }
 };

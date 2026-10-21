@@ -28,6 +28,7 @@
 | `kickoff/harness-smoke-v5-evidence.tgz` | 18 步完整 smoke；请求集合、逐请求延迟、makespan 与最终执行重现的定点判定；实际不收敛及子进程失败负例；残差工具明确拒绝不合格慢路径 | 所有图均收敛；较大 GEMM 的请求集合变化仍保留为不收敛，数值通过不等于周期预测通过 |
 | `kickoff/physical-dram-map-v1-evidence.tgz`、`address_map.md` | B40 实际 BO/local limit/PC0-PC15 范围导出与原生模型接入；快慢路径同 artifact 的 PC 边界、数值和字节计数一致；映射后的标准 Torch 图通过 | bank/row 定制、控制器等价或新 Session 的 BO 映射已经验证 |
 | `kickoff/physical-dram-map-v2-evidence.tgz`、队列夹具首轮负例 tgz | 11 步映射/原生图实验；9 项 Ramulator 机制；192 个半行完整接受/完成、拒收重试、写完成与双向切换约束；实际模型的 burst/line 计数一致 | 通用控制器队列与物理 FPGA 控制器等价或模型已校准 |
+| `kickoff/harness-smoke-v6-evidence.tgz`、maintenance 原缺陷 tgz | 维护等待已接受的出口读写；原“写第 26 周期完成、维护第 0 周期完成”已复现并修复；19 步完整模型 smoke 通过 | 所有物理 host-handoff/控制器计时边界已经合格 |
 
 谓词压力修复使用现有 `p.ballot`/`p.frombits` 保存精确 lane mask，不能增加架构容量。
 pointwise 超出资源时依次尝试较小 block，保留共同 TNCA 执行路径；已有合法配置仍优先使用。

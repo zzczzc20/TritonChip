@@ -101,8 +101,16 @@
         "{out}/model-build/tnca-chip",
         "{out}/model-build/tnca-tlm",
         "{out}/model-build/tnca-dram-bridge-test",
-        "{out}/model-build/tnca-dram-path-test"
+        "{out}/model-build/tnca-dram-path-test",
+        "{out}/model-build/tnca-timeline-drain-test"
       ]
+    },
+    {
+      "id": "accepted-memory-maintenance-drain",
+      "kind": "systemc",
+      "argv": ["{out}/model-build/tnca-timeline-drain-test", "{root}/tools/performance_harness/systemc/configs/r40-board-m2.cfg", "{out}/timeline-drain"],
+      "timeout_seconds": 30,
+      "inputs": ["{out}/model-build/tnca-timeline-drain-test"]
     },
     {
       "id": "slow-fixed-point-qualification",

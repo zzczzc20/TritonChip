@@ -1259,7 +1259,7 @@
     },
     {
      "path": "evidence/r41/stage1/model_feasibility.md",
-     "sha256": "663d1cfb37f61176779b5336dc4100b29d2c74d17d1e7b714d91c514b9a05b10",
+     "sha256": "3d03bb904583127d7391a8aa346579d4c145d5a5073104fcae9a80dcbf9bd2ba",
      "kind": "doc",
      "binds": {
       "git_commit": "a0c9e7252160dc237ef81d96114f3e617616cde5"
@@ -1298,7 +1298,7 @@
    "note": "D256 attention, depthwise conv and FP32 recurrence representatives compile and pass"
   },
   "S1-04.compile_code_IR_memory_estimates": {
-   "claim": "not-measured",
+   "claim": "pass",
    "requires": [
     "compile"
    ],
@@ -1312,9 +1312,31 @@
       "git_commit": "841d66afdee037144b1fadb9fd1f6e048aab63ff",
       "software_tree": "files:8f41b1b5240b45145d330e81581e809ff4a41d51be90561004526c2bd1cfc834"
      }
+    },
+    {
+     "path": "evidence/r41/stage1/model_estimates.json",
+     "sha256": "d31612ef1ea0c4a21e99714f5ec55fd8dd8f24e0e9cce100820146b6867d8c2f",
+     "kind": "compile",
+     "binds": {
+      "software_tree": "files:d35b4197c409549d4ce4af32721cca3f1ca47248f09f5519b7c3415b5d6bf0b9"
+     }
+    },
+    {
+     "path": "evidence/r41/stage1/model_estimates.md",
+     "sha256": "d654530d55a1e4da63926a55e38baea3667ade6e3b31f2d9b86d9bd6675dca88",
+     "kind": "doc",
+     "binds": {}
+    },
+    {
+     "path": "evidence/r41/stage1/kickoff/model-estimates-v1-evidence.tgz",
+     "sha256": "0e2f78bf0c6e917f37d7966d3ca9f10b8923db398a894e0171996f2d3502ebd3",
+     "kind": "compile",
+     "binds": {
+      "software_tree": "files:d35b4197c409549d4ce4af32721cca3f1ca47248f09f5519b7c3415b5d6bf0b9"
+     }
     }
    ],
-   "note": "representative IR/resource/heap peaks exist; full-model runtime peak and code working-set estimates remain"
+   "note": "full 24-layer Qwen3.5-2B language branch compiled offline for prefill 128 and a fixed-bucket decode step, with four named harness shims for standard-path blockers B1-B4 (B5/B6 recorded): per-kernel code bytes, unique code working set (603,680 B, 4.63x the code store), compile time per stage, compiler RSS, IR sizes and an allocator-trace device peak (3.558 GiB; the 4 GiB window misses the 1.25x margin by 481 MB). Estimates, not a Stage 2 capacity pass."
   },
   "S1-04.public_model_cache_adapter_difference_inventory": {
    "claim": "pass",
@@ -1325,7 +1347,7 @@
    "evidence": [
     {
      "path": "evidence/r41/stage1/model_feasibility.md",
-     "sha256": "663d1cfb37f61176779b5336dc4100b29d2c74d17d1e7b714d91c514b9a05b10",
+     "sha256": "3d03bb904583127d7391a8aa346579d4c145d5a5073104fcae9a80dcbf9bd2ba",
      "kind": "doc",
      "binds": {
       "git_commit": "a0c9e7252160dc237ef81d96114f3e617616cde5"

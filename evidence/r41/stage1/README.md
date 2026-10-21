@@ -33,6 +33,10 @@
 | `kickoff/host-handoff-v1-evidence.tgz` | 原生快慢路径均通过显式维护/local split/跨边界传输与三项拒绝；ABI 维护使模型流量更接近 RTL，残差仍保留 | 物理控制器等价、完整周期校准或 host latency 已预测准确 |
 | `kickoff/language-meta-v1-evidence.tgz`、`model_feasibility.md` | 官方 24 层、320 个参数 storage 的精确形状/dtype/tied alias 核对；128/129 prefill 全分支 ATen 图和别名存储分析 | TNCA 完整模型编译、机器码工作集、设备 allocator 峰值或数值执行通过 |
 | `kickoff/memory-service-v1-evidence.tgz`、`memory_service.md` | 三组 outlet/depth 的实际三核 MMIO RTL 全部数值通过；三套模型域与原始残差保留；维护/缓存几何解释、严格比较与拒绝检查完成 | 合成 AXI slave 等价于物理 HBM；更多出口必然获益；板上闭合或全局周期资格已经完成 |
+| `fragments/bitwise-k-order/`（`systemc-bitwise.json`、`rtl-bitwise.json` 与原始 tgz） | 标准 Torch mm/addmm，FP16/BF16、连续与非连续、M/N tail、K=7/33/48/65/113：16x32 双 fragment 输出与 16x16 输出逐位相同，且都与独立逐 K FP32 FMA 参考逐位相同；SystemC 80 行、单核 iverilog RTL 16 行，无容差。含精确抵消的输入下，16 块归约或逆序会改变 SystemC 37/47 行、RTL 2/5 行的输出（每图最多 1452 个元素），实际输出仍逐位等于逐 K 参考 | 宽 tile 更快；未测 shape/dtype；FP32 输入路径 |
+| `fragments/execution-plan-tests.log`、`kickoff/tuning-plan-v1-evidence.tgz` | execution resource plan v2：物理 fragment、有效/padding MAC（常量 TTIR 形状，按 launch）、K 循环 ACC 往返、VRF/window/ACC/barrier/code、descriptor/pointer 传输、transfer/MMA 命令与依赖、选择/拒绝原因；16x16、16x32、tail、mask 形状与手算值一致；Inductor retile/拒绝、code store 拒绝与 TNCA_TUNE 候选资源读取计划；公共 tuning 7 步（含两项 MMIO RTL）通过 | 计划是数值 oracle 或周期预测；运行时 mask 下的 MAC |
+| `default_change_audit.json`、`default_change_audit.md` | 113 个原始点 compile-only 对比 B40-OBS：57 点代码与启动结构完全相同；56 点代码变化，全部由 `[R,1]` 列广播修复引起（消融还原）；predicate spill 与 pointwise retile 在默认参数下零影响；资源计划改动前后 113 点代码完全相同 | 56 个变化点的性能非退化已测量 |
+| `kickoff/compiler-regression-plan-v1.log` | 生成文件检查与 110 项 compiler unit（Triton 环境无 skip）通过；`tnca-opt` 以 Ubuntu LLVM/MLIR 20.1.2（CI 所用发行版本）构建，IR suite 6/6 通过 | RTL compiler suite 或 e2e 通过 |
 
 谓词压力修复使用现有 `p.ballot`/`p.frombits` 保存精确 lane mask，不能增加架构容量。
 pointwise 超出资源时依次尝试较小 block，保留共同 TNCA 执行路径；已有合法配置仍优先使用。

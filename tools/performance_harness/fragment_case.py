@@ -20,6 +20,69 @@ sys.path[:0] = [str(ROOT), str(ROOT/'python'), str(ROOT/'compiler/python'),
                str(ROOT/'tools/asm'), str(ROOT/'tools/performance_harness/systemc')]
 
 
+def per_k_fma_reference(a, b, bias=None):
+    """Independent CPU reference with the MMA's rounding (ISA sec 9C.1).
+
+    acc starts at +0.0 and takes one binary32 FMA per K index in ascending
+    order. FP16/BF16 inputs widen exactly and their products are exact in
+    binary32 (checked here, per K), so a binary32 add of the product rounds
+    exactly as a fused multiply-add does. The addmm bias is added once in
+    binary32 after the K loop; the result rounds to the input dtype.
+    """
+    import torch
+    A, B = a.float(), b.float()
+    A64, B64 = A.double(), B.double()
+    acc = torch.zeros(A.shape[0], B.shape[1], dtype=torch.float32)
+    for k in range(A.shape[1]):
+        product = A[:, k:k+1] * B[k:k+1, :]
+        if not torch.equal(product.double(), A64[:, k:k+1] * B64[k:k+1, :]):
+            raise ValueError(f'binary32 product at k={k} is not exact; the reference would not be an FMA')
+        acc = acc + product
+    if bias is not None:
+        acc = acc + bias.float()
+    return acc.to(a.dtype)
+
+
+def order_sensitivity(a, b, bias, exact):
+    """How many output elements other K orders would change, for these inputs.
+
+    `blocked16` sums each 16-wide K block from zero and then adds the blocks
+    (an accumulator round trip per block); `reversed` runs K backwards. A
+    bitwise match is evidence of the per-K order only where these differ.
+    """
+    import torch
+    A, B = a.float(), b.float()
+    K = A.shape[1]
+    def finish(acc):
+        return (acc + bias.float() if bias is not None else acc).to(a.dtype)
+    acc = torch.zeros(A.shape[0], B.shape[1], dtype=torch.float32)
+    for start in range(0, K, 16):
+        block = torch.zeros_like(acc)
+        for k in range(start, min(K, start + 16)):
+            block = block + A[:, k:k+1] * B[k:k+1, :]
+        acc = acc + block
+    blocked = finish(acc)
+    acc = torch.zeros_like(acc)
+    for k in reversed(range(K)):
+        acc = acc + A[:, k:k+1] * B[k:k+1, :]
+    backwards = finish(acc)
+    view = lambda t: t.contiguous().view(torch.int16)
+    return dict(blocked16_mismatches=int((view(blocked) != view(exact)).sum()),
+                reversed_mismatches=int((view(backwards) != view(exact)).sum()))
+
+
+def bit_compare(got, ref):
+    """Elementwise comparison of the raw output bits."""
+    import torch
+    width = {torch.float16: torch.int16, torch.bfloat16: torch.int16, torch.float32: torch.int32}[ref.dtype]
+    g, r = got.contiguous().view(width), ref.contiguous().view(width)
+    differ = (g != r).nonzero().tolist()
+    return dict(equal=not differ, mismatches=len(differ), elements=ref.numel(),
+                examples=[dict(index=i, got=float(got[tuple(i)]), reference=float(ref[tuple(i)]),
+                               got_bits=hex(int(g[tuple(i)]) & 0xffff), reference_bits=hex(int(r[tuple(i)]) & 0xffff))
+                          for i in differ[:8]])
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument('--out', type=Path, required=True)
@@ -30,6 +93,10 @@ def main():
     ap.add_argument('--shapes', default='17x65x33,33x31x65', help='M x N x K list; input/reference semantics stay unchanged')
     ap.add_argument('--ring-stages', type=int, choices=(1,2,3), help='force the existing two-role ring and audit its actual artifact')
     ap.add_argument('--rtl-engine-trace',action='store_true',help='retain actual single-core RTL DMA/MMA intervals')
+    ap.add_argument('--cancel', action='store_true',
+                    help='inputs with an exactly cancelling large product pair, so K order shows in the output')
+    ap.add_argument('--bitwise', action='store_true',
+                    help='also compare raw output bits with the per-K FP32 FMA reference and keep them')
     args = ap.parse_args()
     try:
         shapes=[tuple(int(v) for v in item.split('x')) for item in args.shapes.split(',')]
@@ -54,7 +121,7 @@ def main():
     report = dict(schema='tnca-fragment-case/1', status='running',
                   execution='torch.compile(backend=inductor,fullgraph=True) on tnca',
                   evidence='development-only', columns=args.columns, dtype=args.dtype,
-                  strided=args.strided, rows=[])
+                  strided=args.strided, bitwise=args.bitwise, cancel=args.cancel, rows=[])
     def save():
         (out/'report.json').write_text(json.dumps(report, indent=2)+'\n')
     save()
@@ -92,6 +159,12 @@ def main():
                     a = torch.randn(m, k).to(dtype) * .1
                     b = torch.randn(k, n).to(dtype) * .1
                 c = torch.randn(n).to(dtype) * .1
+                if args.cancel and k >= 4:
+                    # +128*128 at K index 1 and -128*128 at K-2 cancel exactly;
+                    # the small products between them are absorbed differently
+                    # by every summation order, so the output exposes K order.
+                    a[:, 1], a[:, k - 2] = 128., -128.
+                    b[1, :], b[k - 2, :] = 128., 128.
                 inputs=[]
                 for label,tensor in zip(('a','b','c'),(a,b,c)):
                     data=tensor.contiguous().view(torch.uint8).numpy().tobytes()
@@ -108,6 +181,11 @@ def main():
                 dc = c.to('tnca')
                 assert da.stride() == a.stride() and db.stride() == b.stride()
                 reference = fn(a.float(), b.float(), c.float())
+                if args.cancel:
+                    # Cancellation makes any other summation order (CPU mm
+                    # included) differ by more than the tolerance; the
+                    # tolerance check then uses the per-K FMA order itself.
+                    reference = per_k_fma_reference(a, b, c if name == 'addmm' else None).float()
                 cold = compiled(da, db, dc)
                 torch.testing.assert_close(cold.cpu().float(), reference, rtol=2e-3, atol=2e-3)
                 snapshots = ({str(i): model.counters_snapshot()
@@ -138,11 +216,15 @@ def main():
                         if args.ring_stages is not None:
                             assert ring['stages']==args.ring_stages and ring['ring_windows']>=args.ring_stages,ring
                             assert len(manifest['execution']['program_to_role']['0'])==2,manifest['execution']
-                    if args.require_resident:
+                    if args.require_resident and any(site.get('enclosing_loops')
+                                                     for site in plan.get('gemm', {}).get('sites', [])):
+                        # A K loop exists (K > 16): its accumulators stay resident.
                         loops = [loop for role in plan.get('roles', []) for loop in role['loops']
                                  if loop['static_mma_commands'] == args.columns // 16]
                         assert any(loop['static_acc_reads'] == loop['static_acc_writes'] ==
                                    loop['static_acc_zeros'] == 0 for loop in loops), plan
+                        trips = plan['accumulator_round_trips']
+                        assert trips['k_loop_reads'] == trips['k_loop_writes'] == trips['k_loop_zeros'] == 0, trips
                     digest = hashlib.sha256(segments['text']).hexdigest()
                     shutil.copyfile(entry['artifact_path'], out/'artifacts'/f'{digest}.tnca')
                     resources.append(dict(code_sha256=digest, code_bytes=len(segments['text']),
@@ -158,6 +240,23 @@ def main():
                            rtol=2e-3, atol=2e-3, resident_host_wall_seconds=wall,
                            device_cycles=sum(e['device_cycles'] for e in launches),
                            launches=launches, artifacts=resources, model_counter_deltas=deltas)
+                if args.bitwise:
+                    # Graph identity: the MMA template ran (not a decomposition).
+                    assert any('tem_fused' in e['kernel'] for e in launches), [e['kernel'] for e in launches]
+                    exact = per_k_fma_reference(a, b, c if name == 'addmm' else None)
+                    raw = result.cpu()
+                    bits = raw.contiguous().view(torch.uint8).numpy().tobytes()
+                    (out/'artifacts'/f'{name}-{m}-{n}-{k}-out.bin').write_bytes(bits)
+                    row.update(output_bits_sha256=hashlib.sha256(bits).hexdigest(),
+                               reference_bits_sha256=hashlib.sha256(
+                                   exact.contiguous().view(torch.uint8).numpy().tobytes()).hexdigest(),
+                               bitwise_reference=dict(reference='independent per-K FP32 FMA (CPU)',
+                                                      **bit_compare(raw, exact)),
+                               order_sensitivity=order_sensitivity(a, b, c if name == 'addmm' else None, exact),
+                               cold_bitwise_same=torch.equal(cold.cpu().view(torch.int16), raw.view(torch.int16)),
+                               logical_tiles=sorted({tuple(s['logical_tile']) for x in resources
+                                                     for s in x['plan'].get('gemm', {}).get('sites', [])
+                                                     if 'logical_tile' in s}))
                 row.update(inputs=inputs,ring_plans=rings,ring_stages=args.ring_stages,
                            model_counters_before=snapshots,model_counters_after=after,rtl_sequences=sequences,
                            input_placements=[dict(base=t.untyped_storage().data_ptr(),offset=t.storage_offset(),

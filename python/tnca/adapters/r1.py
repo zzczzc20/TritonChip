@@ -256,6 +256,10 @@ def import_ttir(module, func_name, arg_values, *, param_names, target,
                            where=f"TTIR function {func_name!r}",
                            detail={'diagnostic': str(d)})
     if prov is not None:
+        # The logical dot sites and their constant extents, for the
+        # execution resource plan. Inspection only; the kernel is lowered.
+        from tnca_cc.execution_resources import gemm_sites_or_error
+        prov.record('gemm_sites', gemm_sites_or_error(imp))
         prov.record('frontend', 'tnca_cc.frontend.TTIRImporter')
         prov.record('bound_parameters', list(imp.arg_names))
         prov.record('argument_binding',

@@ -722,13 +722,46 @@
    "note": "two 16x16 accumulators stay resident across K for the 16x32 logical tile"
   },
   "S1-02.ordered_k_and_loop_residency": {
-   "claim": "not-measured",
+   "claim": "pass",
    "requires": [
     "compile"
    ],
    "final_identity": false,
-   "evidence": [],
-   "note": "loop residency evidenced; an explicit K-order equality check is not indexed"
+   "evidence": [
+    {
+     "path": "evidence/r41/stage1/fragments/bitwise-k-order/systemc-bitwise.json",
+     "sha256": "ac01a5fef3228dc6f0318c1f455870d8b92fcacc184d12ef7441b7bb8f8cdaae",
+     "kind": "compile",
+     "binds": {
+      "software_tree": "files:a40bc8771387845613c352055327d8de85b2e7c86c0bcc0bb41fe92dfa8248e2"
+     }
+    },
+    {
+     "path": "evidence/r41/stage1/fragments/bitwise-k-order/systemc-bitwise-v1-evidence.tgz",
+     "sha256": "a484659d8af9898a11d38d93205bc78363e309558d6e5d6cded920d13cf7fd4f",
+     "kind": "systemc",
+     "binds": {
+      "software_tree": "files:a40bc8771387845613c352055327d8de85b2e7c86c0bcc0bb41fe92dfa8248e2"
+     }
+    },
+    {
+     "path": "evidence/r41/stage1/fragments/bitwise-k-order/rtl-bitwise.json",
+     "sha256": "4a8b14172e7940240e207a36741d41fd9031e2f0e15be45753630cd64acc003d",
+     "kind": "compile",
+     "binds": {
+      "software_tree": "files:a40bc8771387845613c352055327d8de85b2e7c86c0bcc0bb41fe92dfa8248e2"
+     }
+    },
+    {
+     "path": "evidence/r41/stage1/fragments/bitwise-k-order/rtl-bitwise-v1-evidence.tgz",
+     "sha256": "6d1f3ad8f33342125755a33c1edd0980ce033c2d16df1a37d73068ee42ff4bf6",
+     "kind": "rtl",
+     "binds": {
+      "software_tree": "files:a40bc8771387845613c352055327d8de85b2e7c86c0bcc0bb41fe92dfa8248e2"
+     }
+    }
+   ],
+   "note": "16x32 two-fragment output bitwise equal to the 16x16 path and to an independent per-K FP32 FMA reference for standard Torch mm/addmm, FP16/BF16, non-contiguous, M/N tails, K 7/33/48/65/113, on SystemC (80 rows) and RTL (16 rows); cancellation inputs make a wrong K order change up to 1452 elements per graph"
   },
   "S1-02.tails_masks_noncontiguous_and_resource_refusal": {
    "claim": "pass",
@@ -760,13 +793,32 @@
    "note": "tail shapes, masks, BF16 strided inputs and resource refusal"
   },
   "S1-02.resource_plan_layout_lifetime_bank_allocation": {
-   "claim": "not-measured",
+   "claim": "pass",
    "requires": [
     "compile"
    ],
    "final_identity": false,
-   "evidence": [],
-   "note": "execution resource plan sidecar exists; its connection to layout, lifetime and bank allocation decisions is not yet evidenced"
+   "evidence": [
+    {
+     "path": "evidence/r41/stage1/fragments/execution-plan-tests.log",
+     "sha256": "34fbaf7a21a872429ef9a9c2688be9d5e9df000b9dd5676ab91506ecbad76a2f",
+     "kind": "compile",
+     "binds": {}
+    },
+    {
+     "path": "evidence/r41/stage1/kickoff/compiler-regression-plan-v1.log",
+     "sha256": "b9aa51af989e506d4bc6354440ce4ffe71a95f3ccb47884b389803bf9a7db447",
+     "kind": "compile",
+     "binds": {}
+    },
+    {
+     "path": "evidence/r41/stage1/kickoff/tuning-plan-v1-evidence.tgz",
+     "sha256": "b498c89569afaad0765d9d3dedd8887f8cb989616239d2c9538d884eed32b68a",
+     "kind": "rtl",
+     "binds": {}
+    }
+   ],
+   "note": "execution_resources records per kernel physical fragments, valid/padding MACs (static TTIR shapes), K-loop accumulator round trips, VRF peak/window/ACC/barrier/code bytes, descriptor vs pointer transfers, transfer/MMA command counts and dependencies, and select/refuse reasons; the Inductor retile/fallback, the code-store refusal and TNCA_TUNE admission read it (falsified-plan test); hand-computed count tests for 16x16, 16x32, 17x65x33 tail, masked 20x24x40; default compiled code byte-identical on 113 points"
   },
   "S1-02.two_standard_torch_graphs_execute": {
    "claim": "pass",

@@ -256,6 +256,12 @@ module tb_tnca_core;
         // R39-05: cycles in which an instruction held in R gave way to
         // another context's (RCTX_SWITCH; always 0 without it).
         $display("rctx_switch=%0d", dut.perf_rctx_switch);
+        // R41 Stage 2: how often the core's new register boundaries met
+        // their corner cases (tnca_core cov_*), on request.
+        if ($test$plusargs("r41cov"))
+            $display("r41cov sw_inhibit=%0d sw_redir=%0d hold_ops=%0d pf_drop=%0d mem_claim=%0d",
+                     dut.cov_sw_inhibit, dut.cov_sw_redir, dut.cov_hold_ops,
+                     dut.cov_pf_drop, dut.cov_mem_claim);
         if (perf_issued + perf_stall_total + perf_x_frontend != perf_cycles)
             $display("FAIL: cycle partition: issued %0d + stalled %0d + frontend %0d != cycles %0d",
                      perf_issued, perf_stall_total, perf_x_frontend, perf_cycles);

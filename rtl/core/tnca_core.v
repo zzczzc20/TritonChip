@@ -612,6 +612,9 @@ module tnca_core #(
     wire                 stall_other;     // everything but the VRF
     wire                 r_vsrc_haz;      // a vector source's producer is in flight
     wire                 r_of_idle;       // R has no vector read asked for, arriving or held
+    // R41 coverage (bench only): R stalled holding collected operands, and a
+    // D prefetch response dropped because D did not move up.
+    wire                 cov_ev_hold_ops, cov_ev_pf_drop;
     // Zero on the reference, which has no ports to contend for.
     reg [31:0] vrf_n_req, vrf_n_accept, vrf_n_conflict, vrf_n_stall,
                vrf_n_serial, vrf_n_parallel, vrf_n_mtx_req,
@@ -709,6 +712,8 @@ module tnca_core #(
         assign txf_vw_ready  = 1'b1;   // separate write ports: never refused
         assign mtx_vrf_valid_w = 1'b1;
         assign txf_vr_valid = 1'b1;
+        assign cov_ev_hold_ops = 1'b0;
+        assign cov_ev_pf_drop  = 1'b0;
         always @(posedge clk) begin
             vrf_n_req      <= 32'd0; vrf_n_accept   <= 32'd0;
             vrf_n_conflict <= 32'd0; vrf_n_stall    <= 32'd0;
@@ -775,20 +780,39 @@ module tnca_core #(
                 of_got <= 3'b000;      // the instruction left R
             end else begin
                 of_got <= of_have;
-                if (of_arrive[0]) of_d0 <= vrf_rsp_data[0*VW +: VW];
-                if (of_arrive[1]) of_d1 <= vrf_rsp_data[1*VW +: VW];
-                if (of_arrive[2]) of_d2 <= vrf_rsp_data[2*VW +: VW];
             end
         end
 
+        // R41 F01: the 3 x 512-bit holding registers are enabled by the
+        // response alone, not by the stall decision. A response is only
+        // ever this instruction's (of_arrive already drops a stale
+        // prefetch), and in the cycle the instruction leaves R the same
+        // response goes straight into X through of_v*, so latching it here
+        // as well is harmless: the next occupant of R starts with of_got
+        // clear and reads of_d* only after its own response lands.
+        always @(posedge clk) begin
+            if (of_arrive[0]) of_d0 <= vrf_rsp_data[0*VW +: VW];
+            if (of_arrive[1]) of_d1 <= vrf_rsp_data[1*VW +: VW];
+            if (of_arrive[2]) of_d2 <= vrf_rsp_data[2*VW +: VW];
+        end
+
         // The operands travel into X with their instruction.
+        //
+        // R41 F01: loaded every cycle, without stall_front as a clock
+        // enable. A stalled front end puts a bubble into X (x_valid <= 0,
+        // below), and every consumer of va/vb/vc_data acts only for a valid
+        // X: the ALU and FPU results reach the writeback through
+        // x_has_dest and the fp_v pipe, the FPU reduction and SFU latch
+        // their source on `start`, and the matrix, transfer and memory
+        // units latch on their command valids, all of which include
+        // x_valid. So what these hold in a bubble cycle is never used, and
+        // the 1,536 enables (plus the VALU DSP input registers Vivado folds
+        // them into) no longer hang off the core's stall decision.
         reg [VW-1:0] x_va_q, x_vb_q, x_vc_q;
         always @(posedge clk) begin
-            if (!stall_front) begin
-                x_va_q <= of_v0;
-                x_vb_q <= of_v1;
-                x_vc_q <= of_v2;
-            end
+            x_va_q <= of_v0;
+            x_vb_q <= of_v1;
+            x_vc_q <= of_v2;
         end
         assign va_data = x_va_q;
         assign vb_data = x_vb_q;
@@ -807,6 +831,8 @@ module tnca_core #(
         // RCTX_SWITCH drops the instruction in R only when none of its
         // vector reads is in flight or held: a response arriving after it
         // has gone would be taken as an operand of whatever replaced it.
+        assign cov_ev_hold_ops = stall_front && r_valid && (of_got != 3'b000);
+        assign cov_ev_pf_drop  = |(vrf_rsp_valid[2:0] & pf_tag & {3{~adv_q}});
         assign r_of_idle = (of_got == 3'b000) && (of_arrive == 3'b000)
                         && (of_want == 3'b000);
 
@@ -1861,7 +1887,14 @@ module tnca_core #(
     // A load or store needs only lsu_ready_load (LSU_INFLIGHT); an atomic
     // needs the unit idle.
     wire r_plain_load  = r_mem_en && !r_amo;
-    wire lsu_free_next = (r_plain_load ? lsu_ready_load : lsu_req_ready) && !x_mem_go;
+    // R41 F01: "X is taking the unit" is asked of X's opcode, not of
+    // x_mem_go. The two differ only for an access that faults on its
+    // address (a misaligned atomic), and that one stops its context; the
+    // address comes from the X-stage scalar read, which must not be in
+    // front of the stall decision. Treating it as a claim costs at most one
+    // cycle, only when a context is faulting.
+    wire x_mem_claim   = x_valid && x_mem_en;
+    wire lsu_free_next = (r_plain_load ? lsu_ready_load : lsu_req_ready) && !x_mem_claim;
 
     // The reduction sequencer hijacks the FMA array's operands, so it may only
     // start when the array is empty -- otherwise it corrupts a normal FP
@@ -2019,13 +2052,29 @@ module tnca_core #(
     // cycle. Not while X redirects (one squash a cycle) nor while the
     // writeback is frozen (the front end must hold then whatever R holds).
     //
+    // R41 F01: "not while X redirects" is now asked of X's opcode, not of
+    // x_redirect. x_redirect is the end of X's scalar read, the barrier
+    // test and the branch compare, and through this term it reached
+    // stall_front -- the clock enable of every pipeline register (census:
+    // -0.88 ns, 20 levels, through a placer-inserted BUFG). x_may_redirect
+    // is the same set of instructions without the data: a branch, exit,
+    // trap, illegal instruction, atomic (whose address may fault) or
+    // mb.wait in X. It contains every cycle x_redirect does, so a give-way
+    // and a redirect still never share a cycle and the PC and park updates
+    // keep their one-squash-a-cycle order; the cost is that a give-way
+    // waits one cycle behind a branch that falls through (measured on the
+    // R39 v5 suite: no program slower, t39_switch 52-88 cycles faster).
+    //
     // Not for a busy load/store unit: measured on t39_switch, giving way
     // there cost 8 % -- the unit is the bottleneck, and the dropped access
     // reached it three cycles after it was free instead of at once.
+    wire x_may_redirect = x_valid && (x_is_branch || x_is_exit || x_is_trap
+                                      || x_illegal || x_amo
+                                      || ((x_fu == `TNCA_FU_BAR) && (x_func == `TNCA_MB_WAIT)));
     wire rp_go = (RCTX_SWITCH != 0) && r_valid && r_of_idle
                && (hazard || ((RCTX_SWITCH >= 2) && (stall_mtx || stall_txf)))
                && d_valid && (d_rctx != r_rctx)
-               && !x_redirect && !vrf_wb_freeze;
+               && !x_may_redirect && !vrf_wb_freeze;
     assign stall_front = stall_raw && !rp_go;
 
     // Exclusive attribution. The order is the order of the OR above, which
@@ -2651,6 +2700,30 @@ module tnca_core #(
     //==========================================================================
 `ifndef SYNTHESIS
     // synthesis translate_off
+    // R41: how often each new boundary's corner case occurred, so a run can
+    // show it exercised them (tb_tnca_core prints these on +r41cov).
+    //   sw_inhibit  R would have given way, but X held a branch, exit, trap,
+    //               illegal, atomic or mb.wait that did not redirect (F01)
+    //   sw_redir    ... and X did redirect (the old rule held R here too)
+    //   hold_ops    R stalled holding collected vector operands (F01)
+    //   pf_drop     a D prefetch response dropped while R held (F01)
+    //   mem_claim   R's access waited on a faulting access in X (F01)
+    wire cov_sw_cand = (RCTX_SWITCH != 0) && r_valid && r_of_idle
+                     && (hazard || ((RCTX_SWITCH >= 2) && (stall_mtx || stall_txf)))
+                     && d_valid && (d_rctx != r_rctx) && !vrf_wb_freeze;
+    reg [31:0] cov_sw_inhibit, cov_sw_redir, cov_hold_ops, cov_pf_drop, cov_mem_claim;
+    always @(posedge clk) begin
+        if (!rst_n) begin
+            cov_sw_inhibit <= 0; cov_sw_redir <= 0; cov_hold_ops <= 0;
+            cov_pf_drop <= 0; cov_mem_claim <= 0;
+        end else if (!launch_valid) begin
+            if (cov_sw_cand && x_may_redirect && !x_redirect) cov_sw_inhibit <= cov_sw_inhibit + 1;
+            if (cov_sw_cand && x_redirect)                    cov_sw_redir   <= cov_sw_redir + 1;
+            if (cov_ev_hold_ops) cov_hold_ops <= cov_hold_ops + 1;
+            if (cov_ev_pf_drop)  cov_pf_drop  <= cov_pf_drop + 1;
+            if (r_needs_lsu && x_mem_claim && !x_mem_go) cov_mem_claim <= cov_mem_claim + 1;
+        end
+    end
     // +engtrace: every matrix and transfer command as it issues and as it
     // completes, with its context and cycle -- the engines' occupancy and the
     // gaps between commands, which the stall counters do not show.

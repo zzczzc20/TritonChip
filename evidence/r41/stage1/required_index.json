@@ -462,15 +462,6 @@
    "final_identity": true,
    "evidence": [
     {
-     "path": "evidence/r41/stage1/kickoff/archive-d1feb89-harness-evidence.tgz",
-     "sha256": "3f30429b2e2623b0165e382287d627344cd791f227b2bc80d5d595ef52ca2cc8",
-     "kind": "systemc",
-     "binds": {
-      "git_commit": "f5ff452187894441619ba3c0a3c168fc16197029",
-      "software_tree": "files:0108a361c9bfe12d9c05e5bac0bea1ff752c7a94952045d8c993f3e6884419dd"
-     }
-    },
-    {
      "path": "evidence/r41/stage1/kickoff/archive-25094197f6e6-harness-evidence.tgz",
      "sha256": "3239d2760df30349df92d5c1796b5cea4eacc22b19f7bdc284ef55399138de35",
      "kind": "systemc",
@@ -489,7 +480,7 @@
      }
     }
    ],
-   "note": "git archive of 25094197f6e6 (sha256 6361cd4e...) unpacked on GB10 with fresh Torch extension, Triton and Inductor caches; the 19-step harness-smoke manifest completed (model configure/build, slow fixed-point qualification, process lifetime, DRAM boundaries, Ramulator mechanisms, native artifacts, monitor invariance, slow path, timing status, representative IR)"
+   "note": "git archive of 25094197f6e6 (sha256 6361cd4e...) unpacked on GB10 with fresh Torch extension, Triton and Inductor caches; the 19-step harness-smoke manifest completed (model configure/build, slow fixed-point qualification, process lifetime, DRAM boundaries, Ramulator mechanisms, native artifacts, monitor invariance, slow path, timing status, representative IR); history: the earlier d1feb89 archive run (kickoff/archive-d1feb89-harness-evidence.tgz) is on an older tree and is not counted"
   },
   "S1-01.case_gemm_fragment": {
    "claim": "not-measured",

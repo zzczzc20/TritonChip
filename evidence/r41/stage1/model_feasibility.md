@@ -52,7 +52,27 @@ cannot overwrite their evidence. Session counters include actual helper copies a
 Lowering time covers the actual TNCA backend calls, not Dynamo/Inductor's entire compilation.
 Cold compile-plus-execute walls are 6.915, 1.668 and 1.641 seconds respectively.
 These are representative graph sizes and actual process-local memory peaks, not a complete-model
-working-set bound. Complete-model peak/code working-set estimates remain outstanding.
+working-set bound. Complete-model TNCA peak/code working-set estimates remain outstanding.
+
+The additional `kickoff/language-meta-v1-evidence.tgz` analyzes all 24 official
+language layers using the pinned Transformers source and meta tensors. Every
+parameter shape and dtype matches the audited 320-storage checkpoint inventory;
+the output head retains the official tied embedding. It traces unpadded causal
+prefill without cache and keeps all logits, using the public mask-mapping input.
+
+| Prefill | ATen nodes | Generated ATen Python bytes | Straight-line activation storage peak bytes | Analysis wall seconds / process peak RSS KiB |
+|---|---:|---:|---:|---:|
+| 128 | 5,685 | 500,172 | 64,094,208 | 6.467 / 839,348 |
+| 129 | 6,351 | 559,394 | 64,594,944 | 7.270 / 852,528 |
+
+These are full-branch ATen IR and analysis-host measurements, not TNCA machine
+code, TNCA compile time, or device allocator bounds. Storage liveness groups
+aliases using ATen schemas, `get_attr`/`getitem` provenance and `_unsafe_view`
+semantics. The first metadata-only implementation incorrectly counted weight
+views as allocations; its diagnostic result is retained, not used as a capacity
+prediction. The first direct mask-discovery trace refusal is retained too.
+Operator-internal workspaces, Inductor transformations, packing, code and
+persistent decode caches still require separate estimates or measurements.
 
 The analytical [capacity calculation](kickoff/qwen-core-capacity.json) for B=1, prefill128+decode16 gives:
 

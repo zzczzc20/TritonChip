@@ -29,6 +29,9 @@
 | `kickoff/physical-dram-map-v1-evidence.tgz`、`address_map.md` | B40 实际 BO/local limit/PC0-PC15 范围导出与原生模型接入；快慢路径同 artifact 的 PC 边界、数值和字节计数一致；映射后的标准 Torch 图通过 | bank/row 定制、控制器等价或新 Session 的 BO 映射已经验证 |
 | `kickoff/physical-dram-map-v2-evidence.tgz`、队列夹具首轮负例 tgz | 11 步映射/原生图实验；9 项 Ramulator 机制；192 个半行完整接受/完成、拒收重试、写完成与双向切换约束；实际模型的 burst/line 计数一致 | 通用控制器队列与物理 FPGA 控制器等价或模型已校准 |
 | `kickoff/harness-smoke-v6-evidence.tgz`、maintenance 原缺陷 tgz | 维护等待已接受的出口读写；原“写第 26 周期完成、维护第 0 周期完成”已复现并修复；19 步完整模型 smoke 通过 | 所有物理 host-handoff/控制器计时边界已经合格 |
+| `kickoff/pipeline-admission-v2-evidence.tgz`、strict 比较补充 tgz、`pipeline_admission.md` | 4 组模型、3 组 RTL 与比较全部完成；实际 ring/transfer/MMA 轨迹；第三层增加 overlap 但尾块更慢；缺项/重复项比较拒绝 | artifact/内存域不同，不能宣称匹配的跨域预测准确率；板上闭合未完成 |
+| `kickoff/host-handoff-v1-evidence.tgz` | 原生快慢路径均通过显式维护/local split/跨边界传输与三项拒绝；ABI 维护使模型流量更接近 RTL，残差仍保留 | 物理控制器等价、完整周期校准或 host latency 已预测准确 |
+| `kickoff/language-meta-v1-evidence.tgz`、`model_feasibility.md` | 官方 24 层、320 个参数 storage 的精确形状/dtype/tied alias 核对；128/129 prefill 全分支 ATen 图和别名存储分析 | TNCA 完整模型编译、机器码工作集、设备 allocator 峰值或数值执行通过 |
 
 谓词压力修复使用现有 `p.ballot`/`p.frombits` 保存精确 lane mask，不能增加架构容量。
 pointwise 超出资源时依次尝试较小 block，保留共同 TNCA 执行路径；已有合法配置仍优先使用。

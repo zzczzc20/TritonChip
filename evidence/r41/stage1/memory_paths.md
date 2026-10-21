@@ -102,6 +102,25 @@ including all nine bridge mechanisms and native fast/slow graphs.
 This corrects that maintenance boundary; it does not certify every physical
 controller or host-handoff timing boundary.
 
+`kickoff/host-handoff-v1-evidence.tgz` adds an explicit diagnostic host policy.
+The historical coherent host window does not invalidate cache tags, whereas
+MMIO DMA hands ownership off before AXI transfers, including ABI uploads
+inside native graph calls. No explicit inter-call CPU download therefore does
+not imply a matched warm-cache boundary. `dma-maintenance` now uses native
+maintenance at that split, with an explicit BO map and zero fitted host costs.
+Native fast and slow tests each pass the actual copied output, local-only and
+straddling transfer checks, all-slice maintenance completion, and three policy
+refusals (unknown policy, missing map, opaque fitted host costs).
+
+On the same standard Torch 4097-element graph and artifact, zero-host-fit
+coherent mode retains 13,699 cycles, 335 read lines and 104 write lines.
+One in-call ownership handoff changes these to 17,800 cycles, 776 reads and
+258 writes. The independent three-outlet MMIO RTL diagnostic observes
+21,623 cycles, 860 reads and 257 writes. This establishes a partial cache-boundary
+explanation, not full reconciliation or physical calibration. Remaining
+per-core/NoC/controller differences must still be investigated. The historical
+default and its results are preserved; the diagnostic does not retune the R40 fit.
+
 Remaining Required work includes actual bank/row mapping proof,
 controller/AXI/NoC timing-boundary reconciliation, and calibration/validation
 residuals. The generic controller's mechanisms do not establish physical

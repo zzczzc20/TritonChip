@@ -18,6 +18,16 @@ is an R40 performance result, and the model is not qualified as a
 complete-chip timing reference. Do not bypass refusals or substitute a memory
 replay for a complete-chip experiment.
 
+The native Session backend defaults to `TNCA_TLM_HOST_HANDOFF=coherent-direct`,
+the historical zero-time coherent host window. For structural DMA-boundary
+diagnostics, `dma-maintenance` issues native maintenance before every host
+transfer containing an AXI portion; local/register-only transfers skip it.
+This mode requires `TNCA_DRAM_MAP` and zero `host_launch_cycles`,
+`host_transfer_cycles` and `host_transfer_cycles_per_kib` in the chosen profile,
+so opaque fitted host costs cannot double-count the explicit maintenance.
+Identity records the policy; counter snapshots include `host_dma_handoffs`.
+It is a device-service-only diagnostic, not a calibrated host-latency model.
+
 **M2 (board calibration): uncalibrated by doc/r40_tasks_and_acceptance.md
 sec 3.4.** With the RTL-structured board configuration
 (`configs/r40-board-m2.cfg`) fitted on the R40-04 calibration split only, the
@@ -172,7 +182,9 @@ write, arrival})` returns the completion cycle):
 
 - **fast** (`dram_path=0`, the default): the M2 latency model,
   `hbm_latency_cycles` (+ the second beat) for a read and
-  `tl_hbm_write_latency_cycles` for a write. Bit-identical to M2.
+  `tl_hbm_write_latency_cycles` for a write. This DRAM latency rule is
+  unchanged from M2; the separately documented maintenance-drain correction
+  can change completion cycles when older outlet transactions remain active.
 - **slow** (`dram_path=1`, `configs/r40-board-m3.cfg`): Ramulator2 HBM2, one
   FR-FCFS open-page controller with refresh per pseudo channel
   (`ramulator/hbm2_u280_pc.py` lists every assumption). Each timed command

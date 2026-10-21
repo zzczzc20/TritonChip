@@ -626,7 +626,7 @@ module tnca_core #(
     wire [4:0]           vrf_req_accept;
     wire [4:0]           vrf_rsp_valid;
     wire [5*VLEN*ELEN-1:0] vrf_rsp_data;
-    wire [VLEN-1:0]      pa_data, pb_data, pm_raw;
+    wire [VLEN-1:0]      pa_data, pb_data;
 
     // Writeback stage.
     //
@@ -1063,17 +1063,52 @@ module tnca_core #(
     end
     endgenerate
 
+    //--------------------------------------------------------------------------
+    // R41 F04: the predicate operands and the lane mask are read in R, the
+    // same way as the scalar ones (F02), and the writeback's context and
+    // index decide the forward one cycle ahead, together with the value
+    // they select.
+    //
+    // X used to read the mask port itself: w_rctx/w_idx -> write-first
+    // compare against x_rctx/x_pm_idx -> 64:1 read -> lane_mask (fanout
+    // 128) -> the vector ALU's masked reduction -> w_sdata/w_vdata (census:
+    // -0.91 ns, 17 levels). Now the compare is made in R against nw_*, the
+    // write that will be in W while this instruction is in X, and X's mask
+    // is one LUT from three registers: the mask R computed, the forward bit
+    // and w_pdata. Equivalence is the F02 argument with the predicate
+    // file's rules: P0 reads all ones, is never written, never forwarded.
+    //--------------------------------------------------------------------------
+    wire [VLEN-1:0] r_pa_rd, r_pb_rd, r_pm_rd;
+    reg  [VLEN-1:0] x_pa_q, x_pb_q, x_lm_q;
+    reg             x_pa_fw, x_pb_fw, x_lm_fw;
+    wire nw_p_hit = !vrf_wb_freeze && nw_en && (nw_class == `TNCA_DST_P)
+                 && (nw_rctx == r_rctx);
+    wire [VLEN-1:0] r_lane_mask = r_pm_en ? (r_pm_neg ? ~r_pm_rd : r_pm_rd)
+                                          : {VLEN{1'b1}};
+    // Loaded every cycle, as the scalar ones are (F02).
+    always @(posedge clk) begin
+        x_pa_q  <= r_pa_rd;
+        x_pb_q  <= r_pb_rd;
+        x_lm_q  <= r_lane_mask;
+        x_pa_fw <= nw_p_hit && (nw_idx[3:0] == r_pa_idx) && (r_pa_idx != 4'd0);
+        x_pb_fw <= nw_p_hit && (nw_idx[3:0] == r_pb_idx) && (r_pb_idx != 4'd0);
+        x_lm_fw <= r_pm_en && nw_p_hit && (nw_idx[3:0] == r_pm_idx)
+                                       && (r_pm_idx != 4'd0);
+    end
+    assign pa_data = x_pa_fw ? w_pdata : x_pa_q;
+    assign pb_data = x_pb_fw ? w_pdata : x_pb_q;
+
     tnca_pred_rf #(.NUM_RCTX(NUM_RCTX), .RCTX_W(RCTX_W), .VLEN(VLEN)) u_prf (
         .clk(clk), .rst_n(rst_n),
-        .ra_rctx(x_rctx), .ra_idx(x_pa_idx), .ra_data(pa_data),
-        .rb_rctx(x_rctx), .rb_idx(x_pb_idx), .rb_data(pb_data),
-        .rm_rctx(x_rctx), .rm_idx(x_pm_idx), .rm_data(pm_raw),
+        .ra_rctx(r_rctx), .ra_idx(r_pa_idx), .ra_data(r_pa_rd),
+        .rb_rctx(r_rctx), .rb_idx(r_pb_idx), .rb_data(r_pb_rd),
+        .rm_rctx(r_rctx), .rm_idx(r_pm_idx), .rm_data(r_pm_rd),
         .w_en(w_en && (w_class == `TNCA_DST_P)),
         .w_rctx(w_rctx), .w_idx(w_idx[3:0]), .w_data(w_pdata)
     );
 
-    wire [VLEN-1:0] lane_mask = x_pm_en ? (x_pm_neg ? ~pm_raw : pm_raw)
-                                        : {VLEN{1'b1}};
+    wire [VLEN-1:0] lane_mask = x_lm_fw ? (x_pm_neg ? ~w_pdata : w_pdata)
+                                        : x_lm_q;
 
     //==========================================================================
     // Scoreboard
@@ -2751,6 +2786,11 @@ module tnca_core #(
          (w_en && (w_class == `TNCA_DST_S) && (w_rctx == x_rctx) && \
           (w_idx[5:0] == (idx))) ? w_sdata : \
          (u_srf.valid[{x_rctx, (idx)}] ? u_srf.mem[{x_rctx, (idx)}] : 64'd0))
+    // R41 F04: the predicate file as X would read it.
+    `define CHK_PREAD(idx) \
+        (((idx) == 4'd0) ? {VLEN{1'b1}} : \
+         (w_en && (w_class == `TNCA_DST_P) && (w_rctx == x_rctx) && \
+          (w_idx[3:0] == (idx))) ? w_pdata : u_prf.mem[{x_rctx, (idx)}])
     // R41: how often each new boundary's corner case occurred, so a run can
     // show it exercised them (tb_tnca_core prints these on +r41cov).
     //   sw_inhibit  R would have given way, but X held a branch, exit, trap,
@@ -2760,18 +2800,20 @@ module tnca_core #(
     //   pf_drop     a D prefetch response dropped while R held (F01)
     //   mem_claim   R's access waited on a faulting access in X (F01)
     //   fwd_s       a valid X used a scalar operand forwarded from W (F02)
+    //   fwd_p       ... a predicate operand or lane mask forwarded (F04)
     wire cov_sw_cand = (RCTX_SWITCH != 0) && r_valid && r_of_idle
                      && (hazard || ((RCTX_SWITCH >= 2) && (stall_mtx || stall_txf)))
                      && d_valid && (d_rctx != r_rctx) && !vrf_wb_freeze;
     reg [31:0] cov_sw_inhibit, cov_sw_redir, cov_hold_ops, cov_pf_drop, cov_mem_claim;
-    reg [31:0] cov_fwd_s;
+    reg [31:0] cov_fwd_s, cov_fwd_p;
     always @(posedge clk) begin
         if (!rst_n) begin
             cov_sw_inhibit <= 0; cov_sw_redir <= 0; cov_hold_ops <= 0;
             cov_pf_drop <= 0; cov_mem_claim <= 0;
-            cov_fwd_s <= 0;
+            cov_fwd_s <= 0; cov_fwd_p <= 0;
         end else if (!launch_valid) begin
             if (x_valid && (x_sa_fw || x_sb_fw || x_sc_fw)) cov_fwd_s <= cov_fwd_s + 1;
+            if (x_valid && (x_pa_fw || x_pb_fw || x_lm_fw)) cov_fwd_p <= cov_fwd_p + 1;
             if (cov_sw_cand && x_may_redirect && !x_redirect) cov_sw_inhibit <= cov_sw_inhibit + 1;
             if (cov_sw_cand && x_redirect)                    cov_sw_redir   <= cov_sw_redir + 1;
             if (cov_ev_hold_ops) cov_hold_ops <= cov_hold_ops + 1;
@@ -2858,6 +2900,18 @@ module tnca_core #(
             if (x_valid && (sc_data !== `CHK_SREAD(x_sc_idx)))
                 $display("FAIL tnca_core assert @%0t: scalar operand C of pc=%0h reads %h, the file holds %h (s%0d)",
                          $time, x_pc, sc_data, `CHK_SREAD(x_sc_idx), x_sc_idx);
+            // R41 F04: and so are the predicate operands and the lane mask.
+            if (x_valid && (pa_data !== `CHK_PREAD(x_pa_idx)))
+                $display("FAIL tnca_core assert @%0t: predicate operand A of pc=%0h reads %h, the file holds %h (p%0d)",
+                         $time, x_pc, pa_data, `CHK_PREAD(x_pa_idx), x_pa_idx);
+            if (x_valid && (pb_data !== `CHK_PREAD(x_pb_idx)))
+                $display("FAIL tnca_core assert @%0t: predicate operand B of pc=%0h reads %h, the file holds %h (p%0d)",
+                         $time, x_pc, pb_data, `CHK_PREAD(x_pb_idx), x_pb_idx);
+            if (x_valid && (lane_mask !== (x_pm_en ? (x_pm_neg ? ~`CHK_PREAD(x_pm_idx)
+                                                               :  `CHK_PREAD(x_pm_idx))
+                                                   : {VLEN{1'b1}})))
+                $display("FAIL tnca_core assert @%0t: lane mask of pc=%0h is %h, the file gives %h (p%0d neg=%b en=%b)",
+                         $time, x_pc, lane_mask, `CHK_PREAD(x_pm_idx), x_pm_idx, x_pm_neg, x_pm_en);
         end
     end
     // synthesis translate_on

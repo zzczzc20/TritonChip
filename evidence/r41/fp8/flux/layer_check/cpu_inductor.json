@@ -1,0 +1,1214 @@
+{
+ "device": "cpu",
+ "compiled": true,
+ "step": 0,
+ "layers": 100,
+ "all_bitwise_equal_cpu": true,
+ "max_rel_l2_vs_cpu": 0.0,
+ "max_rel_l2_vs_exact": 0.0016874361351238757,
+ "max_cpu_rel_l2_vs_exact": 0.0016874361351238757,
+ "max_bf16_rounding_of_exact": 0.001687436103943675,
+ "criterion": "rel_l2_vs_exact of every layer within ~2x bf16_rounding_of_exact",
+ "rows": {
+  "transformer_blocks.0.attn.to_q": {
+   "shape": [
+    256,
+    3072,
+    3072
+   ],
+   "bitwise_equal_cpu": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016586066149840706,
+   "cpu_rel_l2_vs_exact": 0.0016586066149840706,
+   "bf16_rounding_of_exact": 0.001658606603372696
+  },
+  "transformer_blocks.0.attn.to_k": {
+   "shape": [
+    256,
+    3072,
+    3072
+   ],
+   "bitwise_equal_cpu": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.001660353258548204,
+   "cpu_rel_l2_vs_exact": 0.001660353258548204,
+   "bf16_rounding_of_exact": 0.001660353243296374
+  },
+  "transformer_blocks.0.attn.to_v": {
+   "shape": [
+    256,
+    3072,
+    3072
+   ],
+   "bitwise_equal_cpu": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016591892525304932,
+   "cpu_rel_l2_vs_exact": 0.0016591892525304932,
+   "bf16_rounding_of_exact": 0.0016591892342052955
+  },
+  "transformer_blocks.0.attn.to_out.0": {
+   "shape": [
+    256,
+    3072,
+    3072
+   ],
+   "bitwise_equal_cpu": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016628387633946882,
+   "cpu_rel_l2_vs_exact": 0.0016628387633946882,
+   "bf16_rounding_of_exact": 0.0016628386390185896
+  },
+  "transformer_blocks.0.attn.add_q_proj": {
+   "shape": [
+    512,
+    3072,
+    3072
+   ],
+   "bitwise_equal_cpu": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016565462907016733,
+   "cpu_rel_l2_vs_exact": 0.0016565462907016733,
+   "bf16_rounding_of_exact": 0.001656546280059867
+  },
+  "transformer_blocks.0.attn.add_k_proj": {
+   "shape": [
+    512,
+    3072,
+    3072
+   ],
+   "bitwise_equal_cpu": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.001669540809612247,
+   "cpu_rel_l2_vs_exact": 0.001669540809612247,
+   "bf16_rounding_of_exact": 0.0016695408003374358
+  },
+  "transformer_blocks.0.attn.add_v_proj": {
+   "shape": [
+    512,
+    3072,
+    3072
+   ],
+   "bitwise_equal_cpu": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.001651714985804726,
+   "cpu_rel_l2_vs_exact": 0.001651714985804726,
+   "bf16_rounding_of_exact": 0.001651714974587796
+  },
+  "transformer_blocks.0.attn.to_add_out": {
+   "shape": [
+    512,
+    3072,
+    3072
+   ],
+   "bitwise_equal_cpu": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016537963907677475,
+   "cpu_rel_l2_vs_exact": 0.0016537963907677475,
+   "bf16_rounding_of_exact": 0.0016537963542340348
+  },
+  "transformer_blocks.0.ff.linear_in": {
+   "shape": [
+    256,
+    3072,
+    18432
+   ],
+   "bitwise_equal_cpu": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016611162163271205,
+   "cpu_rel_l2_vs_exact": 0.0016611162163271205,
+   "bf16_rounding_of_exact": 0.001661116195919428
+  },
+  "transformer_blocks.0.ff.linear_out": {
+   "shape": [
+    256,
+    9216,
+    3072
+   ],
+   "bitwise_equal_cpu": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016576497797365223,
+   "cpu_rel_l2_vs_exact": 0.0016576497797365223,
+   "bf16_rounding_of_exact": 0.001657649755475213
+  },
+  "transformer_blocks.0.ff_context.linear_in": {
+   "shape": [
+    512,
+    3072,
+    18432
+   ],
+   "bitwise_equal_cpu": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016591256298208949,
+   "cpu_rel_l2_vs_exact": 0.0016591256298208949,
+   "bf16_rounding_of_exact": 0.001659125603500483
+  },
+  "transformer_blocks.0.ff_context.linear_out": {
+   "shape": [
+    512,
+    9216,
+    3072
+   ],
+   "bitwise_equal_cpu": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016601520701362848,
+   "cpu_rel_l2_vs_exact": 0.0016601520701362848,
+   "bf16_rounding_of_exact": 0.0016601520529578536
+  },
+  "transformer_blocks.1.attn.to_q": {
+   "shape": [
+    256,
+    3072,
+    3072
+   ],
+   "bitwise_equal_cpu": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016714889786427652,
+   "cpu_rel_l2_vs_exact": 0.0016714889786427652,
+   "bf16_rounding_of_exact": 0.0016714889565116432
+  },
+  "transformer_blocks.1.attn.to_k": {
+   "shape": [
+    256,
+    3072,
+    3072
+   ],
+   "bitwise_equal_cpu": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016671237284632428,
+   "cpu_rel_l2_vs_exact": 0.0016671237284632428,
+   "bf16_rounding_of_exact": 0.0016671237040488663
+  },
+  "transformer_blocks.1.attn.to_v": {
+   "shape": [
+    256,
+    3072,
+    3072
+   ],
+   "bitwise_equal_cpu": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016579829315201172,
+   "cpu_rel_l2_vs_exact": 0.0016579829315201172,
+   "bf16_rounding_of_exact": 0.0016579828943874425
+  },
+  "transformer_blocks.1.attn.to_out.0": {
+   "shape": [
+    256,
+    3072,
+    3072
+   ],
+   "bitwise_equal_cpu": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016579272680317832,
+   "cpu_rel_l2_vs_exact": 0.0016579272680317832,
+   "bf16_rounding_of_exact": 0.0016579272364056433
+  },
+  "transformer_blocks.1.attn.add_q_proj": {
+   "shape": [
+    512,
+    3072,
+    3072
+   ],
+   "bitwise_equal_cpu": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016607977653361728,
+   "cpu_rel_l2_vs_exact": 0.0016607977653361728,
+   "bf16_rounding_of_exact": 0.0016607977528197229
+  },
+  "transformer_blocks.1.attn.add_k_proj": {
+   "shape": [
+    512,
+    3072,
+    3072
+   ],
+   "bitwise_equal_cpu": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016682880412008563,
+   "cpu_rel_l2_vs_exact": 0.0016682880412008563,
+   "bf16_rounding_of_exact": 0.0016682880275462478
+  },
+  "transformer_blocks.1.attn.add_v_proj": {
+   "shape": [
+    512,
+    3072,
+    3072
+   ],
+   "bitwise_equal_cpu": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016588652483449132,
+   "cpu_rel_l2_vs_exact": 0.0016588652483449132,
+   "bf16_rounding_of_exact": 0.0016588652320514141
+  },
+  "transformer_blocks.1.attn.to_add_out": {
+   "shape": [
+    512,
+    3072,
+    3072
+   ],
+   "bitwise_equal_cpu": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016592555062320859,
+   "cpu_rel_l2_vs_exact": 0.0016592555062320859,
+   "bf16_rounding_of_exact": 0.0016592554668675224
+  },
+  "transformer_blocks.1.ff.linear_in": {
+   "shape": [
+    256,
+    3072,
+    18432
+   ],
+   "bitwise_equal_cpu": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.001656860799288639,
+   "cpu_rel_l2_vs_exact": 0.001656860799288639,
+   "bf16_rounding_of_exact": 0.0016568607706124701
+  },
+  "transformer_blocks.1.ff.linear_out": {
+   "shape": [
+    256,
+    9216,
+    3072
+   ],
+   "bitwise_equal_cpu": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016571236662297308,
+   "cpu_rel_l2_vs_exact": 0.0016571236662297308,
+   "bf16_rounding_of_exact": 0.0016571236226761825
+  },
+  "transformer_blocks.1.ff_context.linear_in": {
+   "shape": [
+    512,
+    3072,
+    18432
+   ],
+   "bitwise_equal_cpu": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016586426661081859,
+   "cpu_rel_l2_vs_exact": 0.0016586426661081859,
+   "bf16_rounding_of_exact": 0.001658642644519085
+  },
+  "transformer_blocks.1.ff_context.linear_out": {
+   "shape": [
+    512,
+    9216,
+    3072
+   ],
+   "bitwise_equal_cpu": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016506983245318527,
+   "cpu_rel_l2_vs_exact": 0.0016506983245318527,
+   "bf16_rounding_of_exact": 0.00165069824002335
+  },
+  "transformer_blocks.2.attn.to_q": {
+   "shape": [
+    256,
+    3072,
+    3072
+   ],
+   "bitwise_equal_cpu": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016563909765963157,
+   "cpu_rel_l2_vs_exact": 0.0016563909765963157,
+   "bf16_rounding_of_exact": 0.0016563909674639265
+  },
+  "transformer_blocks.2.attn.to_k": {
+   "shape": [
+    256,
+    3072,
+    3072
+   ],
+   "bitwise_equal_cpu": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016517164309161538,
+   "cpu_rel_l2_vs_exact": 0.0016517164309161538,
+   "bf16_rounding_of_exact": 0.001651716405055515
+  },
+  "transformer_blocks.2.attn.to_v": {
+   "shape": [
+    256,
+    3072,
+    3072
+   ],
+   "bitwise_equal_cpu": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016616034939477573,
+   "cpu_rel_l2_vs_exact": 0.0016616034939477573,
+   "bf16_rounding_of_exact": 0.0016616034503868504
+  },
+  "transformer_blocks.2.attn.to_out.0": {
+   "shape": [
+    256,
+    3072,
+    3072
+   ],
+   "bitwise_equal_cpu": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016639159793556846,
+   "cpu_rel_l2_vs_exact": 0.0016639159793556846,
+   "bf16_rounding_of_exact": 0.0016639159269632433
+  },
+  "transformer_blocks.2.attn.add_q_proj": {
+   "shape": [
+    512,
+    3072,
+    3072
+   ],
+   "bitwise_equal_cpu": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016594545102376914,
+   "cpu_rel_l2_vs_exact": 0.0016594545102376914,
+   "bf16_rounding_of_exact": 0.0016594544957150047
+  },
+  "transformer_blocks.2.attn.add_k_proj": {
+   "shape": [
+    512,
+    3072,
+    3072
+   ],
+   "bitwise_equal_cpu": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016566655989954094,
+   "cpu_rel_l2_vs_exact": 0.0016566655989954094,
+   "bf16_rounding_of_exact": 0.0016566655821052467
+  },
+  "transformer_blocks.2.attn.add_v_proj": {
+   "shape": [
+    512,
+    3072,
+    3072
+   ],
+   "bitwise_equal_cpu": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016580508498286115,
+   "cpu_rel_l2_vs_exact": 0.0016580508498286115,
+   "bf16_rounding_of_exact": 0.00165805081571752
+  },
+  "transformer_blocks.2.attn.to_add_out": {
+   "shape": [
+    512,
+    3072,
+    3072
+   ],
+   "bitwise_equal_cpu": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016632145865451398,
+   "cpu_rel_l2_vs_exact": 0.0016632145865451398,
+   "bf16_rounding_of_exact": 0.0016632145136906043
+  },
+  "transformer_blocks.2.ff.linear_in": {
+   "shape": [
+    256,
+    3072,
+    18432
+   ],
+   "bitwise_equal_cpu": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016612907316785283,
+   "cpu_rel_l2_vs_exact": 0.0016612907316785283,
+   "bf16_rounding_of_exact": 0.0016612906978263357
+  },
+  "transformer_blocks.2.ff.linear_out": {
+   "shape": [
+    256,
+    9216,
+    3072
+   ],
+   "bitwise_equal_cpu": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016574698788482856,
+   "cpu_rel_l2_vs_exact": 0.0016574698788482856,
+   "bf16_rounding_of_exact": 0.0016574698392623785
+  },
+  "transformer_blocks.2.ff_context.linear_in": {
+   "shape": [
+    512,
+    3072,
+    18432
+   ],
+   "bitwise_equal_cpu": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016587466349727781,
+   "cpu_rel_l2_vs_exact": 0.0016587466349727781,
+   "bf16_rounding_of_exact": 0.001658746611628771
+  },
+  "transformer_blocks.2.ff_context.linear_out": {
+   "shape": [
+    512,
+    9216,
+    3072
+   ],
+   "bitwise_equal_cpu": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016641951242530421,
+   "cpu_rel_l2_vs_exact": 0.0016641951242530421,
+   "bf16_rounding_of_exact": 0.0016641949748998418
+  },
+  "transformer_blocks.3.attn.to_q": {
+   "shape": [
+    256,
+    3072,
+    3072
+   ],
+   "bitwise_equal_cpu": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016563049587527863,
+   "cpu_rel_l2_vs_exact": 0.0016563049587527863,
+   "bf16_rounding_of_exact": 0.0016563049468481732
+  },
+  "transformer_blocks.3.attn.to_k": {
+   "shape": [
+    256,
+    3072,
+    3072
+   ],
+   "bitwise_equal_cpu": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.00164144296887275,
+   "cpu_rel_l2_vs_exact": 0.00164144296887275,
+   "bf16_rounding_of_exact": 0.0016414429643076755
+  },
+  "transformer_blocks.3.attn.to_v": {
+   "shape": [
+    256,
+    3072,
+    3072
+   ],
+   "bitwise_equal_cpu": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.001656670663889074,
+   "cpu_rel_l2_vs_exact": 0.001656670663889074,
+   "bf16_rounding_of_exact": 0.001656670604691131
+  },
+  "transformer_blocks.3.attn.to_out.0": {
+   "shape": [
+    256,
+    3072,
+    3072
+   ],
+   "bitwise_equal_cpu": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016571581432622859,
+   "cpu_rel_l2_vs_exact": 0.0016571581432622859,
+   "bf16_rounding_of_exact": 0.00165715808400728
+  },
+  "transformer_blocks.3.attn.add_q_proj": {
+   "shape": [
+    512,
+    3072,
+    3072
+   ],
+   "bitwise_equal_cpu": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016624823986543206,
+   "cpu_rel_l2_vs_exact": 0.0016624823986543206,
+   "bf16_rounding_of_exact": 0.0016624823727943497
+  },
+  "transformer_blocks.3.attn.add_k_proj": {
+   "shape": [
+    512,
+    3072,
+    3072
+   ],
+   "bitwise_equal_cpu": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016589213728782869,
+   "cpu_rel_l2_vs_exact": 0.0016589213728782869,
+   "bf16_rounding_of_exact": 0.0016589213489271832
+  },
+  "transformer_blocks.3.attn.add_v_proj": {
+   "shape": [
+    512,
+    3072,
+    3072
+   ],
+   "bitwise_equal_cpu": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.001658001647949222,
+   "cpu_rel_l2_vs_exact": 0.001658001647949222,
+   "bf16_rounding_of_exact": 0.001658001622455847
+  },
+  "transformer_blocks.3.attn.to_add_out": {
+   "shape": [
+    512,
+    3072,
+    3072
+   ],
+   "bitwise_equal_cpu": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016619346371879098,
+   "cpu_rel_l2_vs_exact": 0.0016619346371879098,
+   "bf16_rounding_of_exact": 0.0016619346033861404
+  },
+  "transformer_blocks.3.ff.linear_in": {
+   "shape": [
+    256,
+    3072,
+    18432
+   ],
+   "bitwise_equal_cpu": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016599792679892632,
+   "cpu_rel_l2_vs_exact": 0.0016599792679892632,
+   "bf16_rounding_of_exact": 0.0016599792377569845
+  },
+  "transformer_blocks.3.ff.linear_out": {
+   "shape": [
+    256,
+    9216,
+    3072
+   ],
+   "bitwise_equal_cpu": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016569024523323836,
+   "cpu_rel_l2_vs_exact": 0.0016569024523323836,
+   "bf16_rounding_of_exact": 0.0016569024248453414
+  },
+  "transformer_blocks.3.ff_context.linear_in": {
+   "shape": [
+    512,
+    3072,
+    18432
+   ],
+   "bitwise_equal_cpu": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016612985518466318,
+   "cpu_rel_l2_vs_exact": 0.0016612985518466318,
+   "bf16_rounding_of_exact": 0.0016612985277574767
+  },
+  "transformer_blocks.3.ff_context.linear_out": {
+   "shape": [
+    512,
+    9216,
+    3072
+   ],
+   "bitwise_equal_cpu": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016648172228719167,
+   "cpu_rel_l2_vs_exact": 0.0016648172228719167,
+   "bf16_rounding_of_exact": 0.0016648172199468202
+  },
+  "transformer_blocks.4.attn.to_q": {
+   "shape": [
+    256,
+    3072,
+    3072
+   ],
+   "bitwise_equal_cpu": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016584842611001092,
+   "cpu_rel_l2_vs_exact": 0.0016584842611001092,
+   "bf16_rounding_of_exact": 0.0016584842386360152
+  },
+  "transformer_blocks.4.attn.to_k": {
+   "shape": [
+    256,
+    3072,
+    3072
+   ],
+   "bitwise_equal_cpu": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016408702094489387,
+   "cpu_rel_l2_vs_exact": 0.0016408702094489387,
+   "bf16_rounding_of_exact": 0.001640870201053255
+  },
+  "transformer_blocks.4.attn.to_v": {
+   "shape": [
+    256,
+    3072,
+    3072
+   ],
+   "bitwise_equal_cpu": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016600919020703735,
+   "cpu_rel_l2_vs_exact": 0.0016600919020703735,
+   "bf16_rounding_of_exact": 0.0016600918439592725
+  },
+  "transformer_blocks.4.attn.to_out.0": {
+   "shape": [
+    256,
+    3072,
+    3072
+   ],
+   "bitwise_equal_cpu": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016590078433742254,
+   "cpu_rel_l2_vs_exact": 0.0016590078433742254,
+   "bf16_rounding_of_exact": 0.001659007794097016
+  },
+  "transformer_blocks.4.attn.add_q_proj": {
+   "shape": [
+    512,
+    3072,
+    3072
+   ],
+   "bitwise_equal_cpu": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.001658822872433951,
+   "cpu_rel_l2_vs_exact": 0.001658822872433951,
+   "bf16_rounding_of_exact": 0.00165882285564397
+  },
+  "transformer_blocks.4.attn.add_k_proj": {
+   "shape": [
+    512,
+    3072,
+    3072
+   ],
+   "bitwise_equal_cpu": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016533531214882628,
+   "cpu_rel_l2_vs_exact": 0.0016533531214882628,
+   "bf16_rounding_of_exact": 0.001653353099989213
+  },
+  "transformer_blocks.4.attn.add_v_proj": {
+   "shape": [
+    512,
+    3072,
+    3072
+   ],
+   "bitwise_equal_cpu": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016640219461060974,
+   "cpu_rel_l2_vs_exact": 0.0016640219461060974,
+   "bf16_rounding_of_exact": 0.0016640219214487122
+  },
+  "transformer_blocks.4.attn.to_add_out": {
+   "shape": [
+    512,
+    3072,
+    3072
+   ],
+   "bitwise_equal_cpu": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016649918380878391,
+   "cpu_rel_l2_vs_exact": 0.0016649918380878391,
+   "bf16_rounding_of_exact": 0.0016649917850598127
+  },
+  "transformer_blocks.4.ff.linear_in": {
+   "shape": [
+    256,
+    3072,
+    18432
+   ],
+   "bitwise_equal_cpu": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016634370538865326,
+   "cpu_rel_l2_vs_exact": 0.0016634370538865326,
+   "bf16_rounding_of_exact": 0.0016634370229968638
+  },
+  "transformer_blocks.4.ff.linear_out": {
+   "shape": [
+    256,
+    9216,
+    3072
+   ],
+   "bitwise_equal_cpu": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.00166395157446493,
+   "cpu_rel_l2_vs_exact": 0.00166395157446493,
+   "bf16_rounding_of_exact": 0.001663951556071629
+  },
+  "transformer_blocks.4.ff_context.linear_in": {
+   "shape": [
+    512,
+    3072,
+    18432
+   ],
+   "bitwise_equal_cpu": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.001660938067806628,
+   "cpu_rel_l2_vs_exact": 0.001660938067806628,
+   "bf16_rounding_of_exact": 0.0016609380378600444
+  },
+  "transformer_blocks.4.ff_context.linear_out": {
+   "shape": [
+    512,
+    9216,
+    3072
+   ],
+   "bitwise_equal_cpu": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.001654226381939149,
+   "cpu_rel_l2_vs_exact": 0.001654226381939149,
+   "bf16_rounding_of_exact": 0.0016542263541328437
+  },
+  "single_transformer_blocks.0.attn.to_qkv_mlp_proj": {
+   "shape": [
+    768,
+    3072,
+    27648
+   ],
+   "bitwise_equal_cpu": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016539958989399432,
+   "cpu_rel_l2_vs_exact": 0.0016539958989399432,
+   "bf16_rounding_of_exact": 0.0016539958719238945
+  },
+  "single_transformer_blocks.0.attn.to_out": {
+   "shape": [
+    768,
+    12288,
+    3072
+   ],
+   "bitwise_equal_cpu": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.001656650450075418,
+   "cpu_rel_l2_vs_exact": 0.001656650450075418,
+   "bf16_rounding_of_exact": 0.0016566504199192235
+  },
+  "single_transformer_blocks.1.attn.to_qkv_mlp_proj": {
+   "shape": [
+    768,
+    3072,
+    27648
+   ],
+   "bitwise_equal_cpu": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016572409566126805,
+   "cpu_rel_l2_vs_exact": 0.0016572409566126805,
+   "bf16_rounding_of_exact": 0.0016572409329714268
+  },
+  "single_transformer_blocks.1.attn.to_out": {
+   "shape": [
+    768,
+    12288,
+    3072
+   ],
+   "bitwise_equal_cpu": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016629342259160426,
+   "cpu_rel_l2_vs_exact": 0.0016629342259160426,
+   "bf16_rounding_of_exact": 0.001662934159933563
+  },
+  "single_transformer_blocks.2.attn.to_qkv_mlp_proj": {
+   "shape": [
+    768,
+    3072,
+    27648
+   ],
+   "bitwise_equal_cpu": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.001657127864249758,
+   "cpu_rel_l2_vs_exact": 0.001657127864249758,
+   "bf16_rounding_of_exact": 0.0016571278443739364
+  },
+  "single_transformer_blocks.2.attn.to_out": {
+   "shape": [
+    768,
+    12288,
+    3072
+   ],
+   "bitwise_equal_cpu": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016598835349361722,
+   "cpu_rel_l2_vs_exact": 0.0016598835349361722,
+   "bf16_rounding_of_exact": 0.0016598834877468622
+  },
+  "single_transformer_blocks.3.attn.to_qkv_mlp_proj": {
+   "shape": [
+    768,
+    3072,
+    27648
+   ],
+   "bitwise_equal_cpu": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016626636091341403,
+   "cpu_rel_l2_vs_exact": 0.0016626636091341403,
+   "bf16_rounding_of_exact": 0.0016626635882339455
+  },
+  "single_transformer_blocks.3.attn.to_out": {
+   "shape": [
+    768,
+    12288,
+    3072
+   ],
+   "bitwise_equal_cpu": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016592128973444305,
+   "cpu_rel_l2_vs_exact": 0.0016592128973444305,
+   "bf16_rounding_of_exact": 0.0016592128930705318
+  },
+  "single_transformer_blocks.4.attn.to_qkv_mlp_proj": {
+   "shape": [
+    768,
+    3072,
+    27648
+   ],
+   "bitwise_equal_cpu": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016682430108085368,
+   "cpu_rel_l2_vs_exact": 0.0016682430108085368,
+   "bf16_rounding_of_exact": 0.001668242999882042
+  },
+  "single_transformer_blocks.4.attn.to_out": {
+   "shape": [
+    768,
+    12288,
+    3072
+   ],
+   "bitwise_equal_cpu": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016584428048227872,
+   "cpu_rel_l2_vs_exact": 0.0016584428048227872,
+   "bf16_rounding_of_exact": 0.001658442745012825
+  },
+  "single_transformer_blocks.5.attn.to_qkv_mlp_proj": {
+   "shape": [
+    768,
+    3072,
+    27648
+   ],
+   "bitwise_equal_cpu": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016694342167025448,
+   "cpu_rel_l2_vs_exact": 0.0016694342167025448,
+   "bf16_rounding_of_exact": 0.0016694341895577818
+  },
+  "single_transformer_blocks.5.attn.to_out": {
+   "shape": [
+    768,
+    12288,
+    3072
+   ],
+   "bitwise_equal_cpu": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016874361351238757,
+   "cpu_rel_l2_vs_exact": 0.0016874361351238757,
+   "bf16_rounding_of_exact": 0.001687436103943675
+  },
+  "single_transformer_blocks.6.attn.to_qkv_mlp_proj": {
+   "shape": [
+    768,
+    3072,
+    27648
+   ],
+   "bitwise_equal_cpu": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016599174497829035,
+   "cpu_rel_l2_vs_exact": 0.0016599174497829035,
+   "bf16_rounding_of_exact": 0.0016599174242693294
+  },
+  "single_transformer_blocks.6.attn.to_out": {
+   "shape": [
+    768,
+    12288,
+    3072
+   ],
+   "bitwise_equal_cpu": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.001661466710992215,
+   "cpu_rel_l2_vs_exact": 0.001661466710992215,
+   "bf16_rounding_of_exact": 0.0016614666474361825
+  },
+  "single_transformer_blocks.7.attn.to_qkv_mlp_proj": {
+   "shape": [
+    768,
+    3072,
+    27648
+   ],
+   "bitwise_equal_cpu": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016617291676916265,
+   "cpu_rel_l2_vs_exact": 0.0016617291676916265,
+   "bf16_rounding_of_exact": 0.0016617291497872339
+  },
+  "single_transformer_blocks.7.attn.to_out": {
+   "shape": [
+    768,
+    12288,
+    3072
+   ],
+   "bitwise_equal_cpu": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016494498139804149,
+   "cpu_rel_l2_vs_exact": 0.0016494498139804149,
+   "bf16_rounding_of_exact": 0.0016494497512422892
+  },
+  "single_transformer_blocks.8.attn.to_qkv_mlp_proj": {
+   "shape": [
+    768,
+    3072,
+    27648
+   ],
+   "bitwise_equal_cpu": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.001661655129460635,
+   "cpu_rel_l2_vs_exact": 0.001661655129460635,
+   "bf16_rounding_of_exact": 0.0016616551042963063
+  },
+  "single_transformer_blocks.8.attn.to_out": {
+   "shape": [
+    768,
+    12288,
+    3072
+   ],
+   "bitwise_equal_cpu": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016586656084082373,
+   "cpu_rel_l2_vs_exact": 0.0016586656084082373,
+   "bf16_rounding_of_exact": 0.0016586655365232717
+  },
+  "single_transformer_blocks.9.attn.to_qkv_mlp_proj": {
+   "shape": [
+    768,
+    3072,
+    27648
+   ],
+   "bitwise_equal_cpu": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016624192380247638,
+   "cpu_rel_l2_vs_exact": 0.0016624192380247638,
+   "bf16_rounding_of_exact": 0.0016624192062689822
+  },
+  "single_transformer_blocks.9.attn.to_out": {
+   "shape": [
+    768,
+    12288,
+    3072
+   ],
+   "bitwise_equal_cpu": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.001660346425896177,
+   "cpu_rel_l2_vs_exact": 0.001660346425896177,
+   "bf16_rounding_of_exact": 0.0016603463802449443
+  },
+  "single_transformer_blocks.10.attn.to_qkv_mlp_proj": {
+   "shape": [
+    768,
+    3072,
+    27648
+   ],
+   "bitwise_equal_cpu": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016616749826811378,
+   "cpu_rel_l2_vs_exact": 0.0016616749826811378,
+   "bf16_rounding_of_exact": 0.0016616749763783214
+  },
+  "single_transformer_blocks.10.attn.to_out": {
+   "shape": [
+    768,
+    12288,
+    3072
+   ],
+   "bitwise_equal_cpu": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.001655808068764094,
+   "cpu_rel_l2_vs_exact": 0.001655808068764094,
+   "bf16_rounding_of_exact": 0.0016558080042932072
+  },
+  "single_transformer_blocks.11.attn.to_qkv_mlp_proj": {
+   "shape": [
+    768,
+    3072,
+    27648
+   ],
+   "bitwise_equal_cpu": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016621193270054111,
+   "cpu_rel_l2_vs_exact": 0.0016621193270054111,
+   "bf16_rounding_of_exact": 0.0016621193035334166
+  },
+  "single_transformer_blocks.11.attn.to_out": {
+   "shape": [
+    768,
+    12288,
+    3072
+   ],
+   "bitwise_equal_cpu": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016567583378540695,
+   "cpu_rel_l2_vs_exact": 0.0016567583378540695,
+   "bf16_rounding_of_exact": 0.0016567582830870878
+  },
+  "single_transformer_blocks.12.attn.to_qkv_mlp_proj": {
+   "shape": [
+    768,
+    3072,
+    27648
+   ],
+   "bitwise_equal_cpu": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016594700197287884,
+   "cpu_rel_l2_vs_exact": 0.0016594700197287884,
+   "bf16_rounding_of_exact": 0.0016594699919584325
+  },
+  "single_transformer_blocks.12.attn.to_out": {
+   "shape": [
+    768,
+    12288,
+    3072
+   ],
+   "bitwise_equal_cpu": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016597307672671848,
+   "cpu_rel_l2_vs_exact": 0.0016597307672671848,
+   "bf16_rounding_of_exact": 0.0016597307075675097
+  },
+  "single_transformer_blocks.13.attn.to_qkv_mlp_proj": {
+   "shape": [
+    768,
+    3072,
+    27648
+   ],
+   "bitwise_equal_cpu": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016542105522445653,
+   "cpu_rel_l2_vs_exact": 0.0016542105522445653,
+   "bf16_rounding_of_exact": 0.0016542105207513304
+  },
+  "single_transformer_blocks.13.attn.to_out": {
+   "shape": [
+    768,
+    12288,
+    3072
+   ],
+   "bitwise_equal_cpu": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.00165840065774489,
+   "cpu_rel_l2_vs_exact": 0.00165840065774489,
+   "bf16_rounding_of_exact": 0.0016584005879224392
+  },
+  "single_transformer_blocks.14.attn.to_qkv_mlp_proj": {
+   "shape": [
+    768,
+    3072,
+    27648
+   ],
+   "bitwise_equal_cpu": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.001648704623219436,
+   "cpu_rel_l2_vs_exact": 0.001648704623219436,
+   "bf16_rounding_of_exact": 0.0016487046007648068
+  },
+  "single_transformer_blocks.14.attn.to_out": {
+   "shape": [
+    768,
+    12288,
+    3072
+   ],
+   "bitwise_equal_cpu": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016589147337134284,
+   "cpu_rel_l2_vs_exact": 0.0016589147337134284,
+   "bf16_rounding_of_exact": 0.0016589146624150948
+  },
+  "single_transformer_blocks.15.attn.to_qkv_mlp_proj": {
+   "shape": [
+    768,
+    3072,
+    27648
+   ],
+   "bitwise_equal_cpu": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016453886589605576,
+   "cpu_rel_l2_vs_exact": 0.0016453886589605576,
+   "bf16_rounding_of_exact": 0.0016453886329788516
+  },
+  "single_transformer_blocks.15.attn.to_out": {
+   "shape": [
+    768,
+    12288,
+    3072
+   ],
+   "bitwise_equal_cpu": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.001660744948768528,
+   "cpu_rel_l2_vs_exact": 0.001660744948768528,
+   "bf16_rounding_of_exact": 0.0016607449138958828
+  },
+  "single_transformer_blocks.16.attn.to_qkv_mlp_proj": {
+   "shape": [
+    768,
+    3072,
+    27648
+   ],
+   "bitwise_equal_cpu": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016567929555585486,
+   "cpu_rel_l2_vs_exact": 0.0016567929555585486,
+   "bf16_rounding_of_exact": 0.0016567929265514077
+  },
+  "single_transformer_blocks.16.attn.to_out": {
+   "shape": [
+    768,
+    12288,
+    3072
+   ],
+   "bitwise_equal_cpu": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016591594917271081,
+   "cpu_rel_l2_vs_exact": 0.0016591594917271081,
+   "bf16_rounding_of_exact": 0.001659159442237844
+  },
+  "single_transformer_blocks.17.attn.to_qkv_mlp_proj": {
+   "shape": [
+    768,
+    3072,
+    27648
+   ],
+   "bitwise_equal_cpu": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016627346206416942,
+   "cpu_rel_l2_vs_exact": 0.0016627346206416942,
+   "bf16_rounding_of_exact": 0.001662734587856787
+  },
+  "single_transformer_blocks.17.attn.to_out": {
+   "shape": [
+    768,
+    12288,
+    3072
+   ],
+   "bitwise_equal_cpu": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016575228480017106,
+   "cpu_rel_l2_vs_exact": 0.0016575228480017106,
+   "bf16_rounding_of_exact": 0.0016575227833139994
+  },
+  "single_transformer_blocks.18.attn.to_qkv_mlp_proj": {
+   "shape": [
+    768,
+    3072,
+    27648
+   ],
+   "bitwise_equal_cpu": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016584150881350822,
+   "cpu_rel_l2_vs_exact": 0.0016584150881350822,
+   "bf16_rounding_of_exact": 0.0016584150505397706
+  },
+  "single_transformer_blocks.18.attn.to_out": {
+   "shape": [
+    768,
+    12288,
+    3072
+   ],
+   "bitwise_equal_cpu": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.001661320572723057,
+   "cpu_rel_l2_vs_exact": 0.001661320572723057,
+   "bf16_rounding_of_exact": 0.0016613205291833918
+  },
+  "single_transformer_blocks.19.attn.to_qkv_mlp_proj": {
+   "shape": [
+    768,
+    3072,
+    27648
+   ],
+   "bitwise_equal_cpu": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016596711202004548,
+   "cpu_rel_l2_vs_exact": 0.0016596711202004548,
+   "bf16_rounding_of_exact": 0.0016596710857339101
+  },
+  "single_transformer_blocks.19.attn.to_out": {
+   "shape": [
+    768,
+    12288,
+    3072
+   ],
+   "bitwise_equal_cpu": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016515342918368688,
+   "cpu_rel_l2_vs_exact": 0.0016515342918368688,
+   "bf16_rounding_of_exact": 0.0016515342698971342
+  }
+ }
+}

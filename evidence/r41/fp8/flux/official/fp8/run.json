@@ -1,0 +1,97 @@
+{
+ "schema": "tnca-flux2-klein-run/1",
+ "mode": "official",
+ "versions": {
+  "python": "3.12.3",
+  "torch": "2.14.0+cu130",
+  "diffusers": "0.41.0",
+  "transformers": "5.20.2",
+  "accelerate": "1.15.0",
+  "safetensors": "0.8.0",
+  "huggingface_hub": "1.33.0",
+  "numpy": "2.5.3",
+  "machine": "aarch64",
+  "cpu_capability": "SVE128",
+  "threads": 8
+ },
+ "settings": {
+  "prompt": "A cat holding a sign that says hello world",
+  "height": 256,
+  "width": 256,
+  "steps": 4,
+  "seed": 0,
+  "transformer": "fp8",
+  "fp8_mode": "scaled_mm"
+ },
+ "pipeline_transformer_dtype": "torch.bfloat16",
+ "load_seconds": 1.705,
+ "call_seconds": 63.387,
+ "tensors": {
+  "step0_latents": {
+   "shape": [
+    1,
+    256,
+    128
+   ],
+   "dtype": "bfloat16",
+   "sha256": "7ff7fe25f197f888a724e2bfd1bdcea30a890da2caed4e763efd7c2a44838ae2",
+   "mean": -0.012605941854417324,
+   "std": 0.9672276973724365,
+   "absmax": 4.1875,
+   "finite": true
+  },
+  "step1_latents": {
+   "shape": [
+    1,
+    256,
+    128
+   ],
+   "dtype": "bfloat16",
+   "sha256": "d1c6c301dd748c83daf667654e4f1d299067279abfa6f778fb08eeac307887a1",
+   "mean": -0.01386634074151516,
+   "std": 0.9100489020347595,
+   "absmax": 3.875,
+   "finite": true
+  },
+  "step2_latents": {
+   "shape": [
+    1,
+    256,
+    128
+   ],
+   "dtype": "bfloat16",
+   "sha256": "ea04a390982c7bee8ff46168077e0e8578edc6880be7c9f9f62ca1b4e7814d8e",
+   "mean": -0.015581512823700905,
+   "std": 0.8042356967926025,
+   "absmax": 3.34375,
+   "finite": true
+  },
+  "step3_latents": {
+   "shape": [
+    1,
+    256,
+    128
+   ],
+   "dtype": "bfloat16",
+   "sha256": "265ed8b7a631f993b50b15d1afd49e9b9b24986255e4291211fb3a47c8ddb925",
+   "mean": -0.02629811130464077,
+   "std": 1.0071768760681152,
+   "absmax": 5.34375,
+   "finite": true
+  },
+  "image_pt": {
+   "shape": [
+    1,
+    3,
+    256,
+    256
+   ],
+   "dtype": "bfloat16",
+   "sha256": "c2b83524c3b67d73782ecc79f4243b3df1733521c7a8818b0ab3ca06488e35ca",
+   "mean": 0.7149488925933838,
+   "std": 0.23378342390060425,
+   "absmax": 1.0,
+   "finite": true
+  }
+ }
+}

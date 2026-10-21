@@ -46,7 +46,9 @@ def main():
         from archbench.provenance import software_tree
         if os.environ.get('TNCA_BACKEND', '').startswith('systemc-tlm'):
             import tlm_backend
-            tlm_backend.register()
+            model_class = tlm_backend.register()
+        else:
+            model_class = None
         device.register()
         report.update(software_tree=software_tree(ROOT, refresh=True),
                       toolchain=dict(torch=str(torch.__version__), triton=str(triton.__version__)),
@@ -152,6 +154,14 @@ def main():
             row['ir_inventory'] = stages
             row['memory_after_execution'] = session.memory_stats
             row['memory_scope'] = 'actual Session heap/code peaks since process start, including native helper copies; not complete-model peak'
+            if model_class:
+                from prediction_domain import timing_status, VALID_STATUSES
+                qualifications = [timing_status(model.counters_snapshot(), slow=model.identity['dram_path']=='slow')
+                                  for model in model_class.instances if model.proc is not None]
+                row['model_timing_status'] = ('inconclusive-fixed-point' if not qualifications or
+                    any(q not in VALID_STATUSES for q in qualifications) else
+                    'uncalibrated-fixed-point-checked' if 'uncalibrated-fixed-point-checked' in qualifications
+                    else 'uncalibrated')
             if name == 'recurrence' and (result[0].dtype != torch.float32 or dev[0].dtype != torch.float32):
                 raise ValueError('FP32 recurrent state was narrowed')
             assert launches and all(e['upload_bytes'] == e['download_bytes'] == 0 for e in launches)

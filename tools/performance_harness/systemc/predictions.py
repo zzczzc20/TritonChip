@@ -16,6 +16,7 @@ import hashlib
 import json
 from pathlib import Path
 import sys
+from prediction_domain import prediction_status, VALID_STATUSES
 
 
 def sha(path):
@@ -30,6 +31,7 @@ def main():
     ap.add_argument('--out', required=True)
     a = ap.parse_args()
     model = dict(binary_sha256=sha(a.binary), config_sha256=sha(a.config), config=str(a.config))
+    configured_slow = any(line.split('#')[0].strip() == 'dram_path=1' for line in Path(a.config).read_text().splitlines())
     rows, missing = [], []
     for path in a.results:
         for r in json.loads(Path(path).read_text())['points']:
@@ -37,8 +39,13 @@ def main():
             if not g or not (r.get('status') == 'pass' or (r.get('cold_setup_only') and g.get('measured_call') == 'cold')):
                 missing.append((r.get('key'), r.get('status')))
                 continue
+            qualification = prediction_status(r, configured_slow=configured_slow)
+            if qualification not in VALID_STATUSES:
+                missing.append((r.get('key'), qualification))
+                continue
             rows.append(dict(point=r['point'], knobs=r['knobs'], graph_cycles=g['graph_cycles'],
                              launches=g['launches'], device_cycles=g['device_cycles'], model=model,
+                             model_timing_status=qualification,
                              run=dict(results=str(path), key=r['key'], process_wall_s=r.get('process_wall_s'))))
     Path(a.out).write_text(''.join(json.dumps(r) + '\n' for r in rows))
     print(f'{len(rows)} predictions', file=sys.stderr)

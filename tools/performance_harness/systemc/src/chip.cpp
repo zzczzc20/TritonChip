@@ -1047,6 +1047,7 @@ struct Model {
         dram_fixed=cfg.get("dram_fixed_cycles");dram_ratio=cfg.get("dram_clock_ratio");
         dram_max_passes=cfg.get("dram_max_passes");dram_tol_ppm=cfg.get("dram_tolerance_ppm");
         require(dram_ratio>0 && dram_max_passes>=1,"slow DRAM path: dram_clock_ratio and dram_max_passes must be positive");
+        require(dram_tol_ppm>0 && dram_tol_ppm<=1000000,"slow DRAM path: fixed-point tolerance must be in (0, 1000000] ppm");
         slow.reset(new SlowDram);slow->beats_extra=cfg.get("tl_outlet_beat_cycles");
         // Until a replay exists: the idle row-miss read (tRCD + RL) and write (tRCD + WL + BL).
         slow->fallback[0]=std::uint32_t(dram_fixed+(u64(t.nRCDRD+t.read_latency)+dram_ratio-1)/dram_ratio);
@@ -1163,20 +1164,25 @@ struct Model {
     std::ofstream fixed_point_log;
     bool execute_slow(const Chip::Command* cmd,bool flush){
         ++dram_commands;
-        std::vector<u64> makespans;double change=-1,child_total=0,replay_total=0;unsigned passes=0;bool damped=false,failed=false;PassResult last;
-        // Child k runs with the table of replay k-1. Once two children agree
-        // within the tolerance, the installed table reproduces the last child
-        // exactly, so the real run needs no further replay.
+        std::vector<u64> makespans;double change=-1,child_total=0,replay_total=0;unsigned passes=0;
+        bool damped=false,failed=false,converged=false;PassResult last;SlowDram::Stability stability;
+        // Makespan agreement alone can hide changed streams or latencies.
+        // Replay every traffic-bearing pass, including the last one, and
+        // compare its request/latency vector with the table actually used.
         unsigned replays=0;std::vector<double> means{(double(slow->fallback[0])+double(slow->fallback[1]))/2}; // before replay 1: the fallback
         for(unsigned k=1;k<=dram_max_passes;++k){
             PassResult r=pass(cmd,flush);
             if(!r.ok){failed=true;++x.counts["dram_child_failures"];break;}
             ++passes;makespans.push_back(r.makespan);child_total+=r.child_s;
             if(passes>=2)change=double(r.makespan>makespans[passes-2]?r.makespan-makespans[passes-2]:makespans[passes-2]-r.makespan)/double(std::max<u64>(r.makespan,1));
-            if(passes>=2 && change*1e6<double(dram_tol_ppm))break;
-            if(r.requests==0){change=0;break;} // no DRAM traffic: the table cannot matter, the real run repeats this child
-            if(k==dram_max_passes && k>1)break; // unconverged: the real run repeats this last child
+            if(r.requests==0){change=0;converged=true;last=std::move(r);break;}
             replay(r);++replays;
+            replay_total+=r.replay_s;
+            stability=slow->stability(r.keys,r.lat,dram_tol_ppm);
+            converged=passes>=2 && change*1e6<double(dram_tol_ppm) && stability.within_tolerance;
+            // Retain the installed table, so the real run repeats this
+            // observed child, whether validated or explicitly inconclusive.
+            if(converged || k==dram_max_passes){last=std::move(r);break;}
             // Damping: when the mean latency reverses direction between
             // replays (an oscillating iteration), the new table is averaged
             // with the previous one, key by key.
@@ -1188,15 +1194,22 @@ struct Model {
                 }
             }
             means.push_back(mean);
-            replay_total+=r.replay_s;
             slow->install(std::move(r.keys),std::move(r.lat));slow->fallback[0]=r.mean[0];slow->fallback[1]=r.mean[1];
             last=std::move(r);
         }
-        bool converged=change>=0 && change*1e6<double(dram_tol_ppm) && (passes>=2 || replays==0);
+        if(failed){
+            if(!fixed_point_log.is_open())fixed_point_log.open(x.directory+"/dram_fixed_point.jsonl",std::ios::app);
+            fixed_point_log<<"{\"command\":"<<dram_commands<<",\"child_failed\":true,\"converged\":false,\"prediction_status\":\"refused-child-pass\"}\n";
+            fixed_point_log.flush();
+            throw std::runtime_error("slow DRAM path: child pass failed; prediction unavailable");
+        }
         slow->log=nullptr;slow->begin_command();
         auto w0=std::chrono::steady_clock::now();
         u64 t0=x.now();bool ok=run_once(cmd,flush);
         u64 makespan=flush?x.now()-t0:chip->end_cycle-chip->start_cycle;
+        bool reproduced=ok && !makespans.empty() && makespan==makespans.back() && slow->requests==last.requests
+            && (slow->requests==0 || slow->matched==slow->requests);
+        converged=converged && reproduced;
         double real_s=std::chrono::duration<double>(std::chrono::steady_clock::now()-w0).count();
         tnca_dram::PcStats tot;
         for(auto& p:last.replay.pcs){tot.reads+=p.reads;tot.writes+=p.writes;tot.row_hits+=p.row_hits;tot.row_misses+=p.row_misses;
@@ -1204,7 +1217,8 @@ struct Model {
             tot.read_row_conflicts+=p.read_row_conflicts;tot.write_row_hits+=p.write_row_hits;tot.write_row_misses+=p.write_row_misses;
             tot.write_row_conflicts+=p.write_row_conflicts;tot.refreshes+=p.refreshes;}
         auto& c=x.counts;
-        ++c["dram_slow_commands"];c["dram_slow_child_passes"]+=passes;c["dram_slow_replays"]+=replays;if(!converged)++c["dram_slow_unconverged"];
+        ++c["dram_slow_commands"];++c["dram_slow_fixed_point_checked"];
+        c["dram_slow_child_passes"]+=passes;c["dram_slow_replays"]+=replays;if(!converged)++c["dram_slow_unconverged"];
         c["dram_slow_requests"]+=slow->requests;c["dram_slow_unmatched"]+=slow->requests-slow->matched;
         c["dram_replay_requests"]+=last.requests;c["dram_row_hits"]+=tot.row_hits;c["dram_row_misses"]+=tot.row_misses;
         c["dram_row_conflicts"]+=tot.row_conflicts;c["dram_read_row_conflicts"]+=tot.read_row_conflicts;
@@ -1214,6 +1228,9 @@ struct Model {
         if(!fixed_point_log.is_open())fixed_point_log.open(x.directory+"/dram_fixed_point.jsonl",std::ios::app);
         fixed_point_log<<"{\"command\":"<<dram_commands<<",\"kind\":\""<<(flush?"flush":cmd->grid?"grid":"program")
             <<"\",\"passes\":"<<passes<<",\"replays\":"<<replays<<",\"child_failed\":"<<(failed?"true":"false")<<",\"converged\":"<<(converged?"true":"false")
+            <<",\"prediction_status\":\""<<(converged?"uncalibrated-fixed-point-checked":"inconclusive-fixed-point")
+            <<"\",\"same_requests\":"<<(stability.same_requests?"true":"false")<<",\"latencies_stable\":"<<(stability.within_tolerance?"true":"false")
+            <<",\"latency_max_delta\":"<<stability.max_delta<<",\"unmatched_replay_keys\":"<<stability.missing<<",\"reproduced_last_pass\":"<<(reproduced?"true":"false")
             <<",\"damped\":"<<(damped?"true":"false")<<",\"last_rel_change\":"<<change<<",\"pass_makespans\":[";
         for(size_t i=0;i<makespans.size();++i)fixed_point_log<<(i?",":"")<<makespans[i];
         fixed_point_log<<"],\"makespan\":"<<makespan<<",\"requests\":"<<slow->requests<<",\"unmatched\":"<<slow->requests-slow->matched
@@ -1231,9 +1248,15 @@ struct Model {
     }
     void summary(const std::string& path,const std::string& status,u64 checked){
         std::ofstream result(path);
+        auto count=[&](const char* key){auto it=x.counts.find(key);return it==x.counts.end()?u64(0):it->second;};
+        const char* prediction_status="uncalibrated";
+        if(dram_path_name=="slow")prediction_status=(count("dram_slow_commands")>0 &&
+            count("dram_slow_fixed_point_checked")==count("dram_slow_commands") &&
+            !count("dram_slow_unconverged") && !count("dram_slow_unmatched") && !count("dram_child_failures"))?
+            "uncalibrated-fixed-point-checked":"inconclusive-fixed-point";
         result<<"{\"schema\":\"tnca-systemc-result/1\",\"status\":\""<<status<<"\",\"dram_path\":\""<<dram_path_name<<"\",\"ramulator2_commit\":\""<<dram_commit
             <<"\",\"ramulator2_config\":\""<<dram_config<<"\",\"ramulator2_config_sha256\":\""<<dram_config_sha256<<"\",\"execution\":\"native-isa-event-driven\",\"coverage\":\"partial-ISA\",\"performance_gate\":\"not-measured\",\"calibration\":\"not-measured\",\"visible_cycles\":"<<x.now()<<",\"launches\":"<<chip->launches<<",\"checked_bytes\":"<<checked<<",\"counters\":";
-        counters_json(result);result<<"}\n";
+        counters_json(result);result<<",\"prediction_status\":\""<<prediction_status<<"\"}\n";
     }
 };
 static Chip::Command grid_command(u64 pc,u64 arg,unsigned gx,unsigned gy,unsigned gz,u64 mask,u64 cores){

@@ -40,6 +40,7 @@ import sys
 import time
 
 HERE = Path(__file__).resolve().parent
+from prediction_domain import timing_status, VALID_STATUSES
 
 HARNESS = dict(CUDA_VISIBLE_DEVICES='', TNCA_PROFILE='core-vrf-sync-v5', TNCA_OPT_LEVEL='2', TNCA_TRITON='1',
                TNCA_KERNEL_DUMP='1', PYTHONDONTWRITEBYTECODE='1')
@@ -121,11 +122,17 @@ def child(a):
                 # Slow DRAM path: per-run totals of the per-command fixed point
                 # (per command: dram_fixed_point.jsonl in the model directory).
                 info['dram'] = {k: v for k, v in flat.items() if k.startswith('dram_')}
+                info['timing_status'] = timing_status(flat, slow=inst.identity['dram_path'] == 'slow')
             except Exception as e:                           # noqa: BLE001
                 info['counters_error'] = repr(e)
+                info['timing_status'] = 'inconclusive-counter-read'
         (inst.dir/'launches.json').write_text(json.dumps(inst.launches, indent=1) + '\n')
         instances.append(info)
     rec['systemc_model'] = instances
+    statuses = {i.get('timing_status', 'inconclusive-counter-read') for i in instances}
+    rec['model_timing_status'] = ('inconclusive-fixed-point' if not statuses or statuses-VALID_STATUSES
+                                  else 'uncalibrated-fixed-point-checked' if 'uncalibrated-fixed-point-checked' in statuses
+                                  else 'uncalibrated')
     # Model graph makespan of the measured call: first launch start to last
     # launch end on the model clock, host gaps included (server host-time
     # model). The measured call is the last `launches` launches of the session.
@@ -195,6 +202,7 @@ def summarize(rec, wall):
                 model_retired=sum(m['retired'] for m in model) if model else None,
                 model_dirs=[m['model_dir'] for m in model], evidence=rec.get('evidence_level'),
                 model_graph=rec.get('model_graph'),
+                model_timing_status=rec.get('model_timing_status'),
                 dram={k: sum(m.get('dram', {}).get(k, 0) for m in model) for k in
                       sorted({k for m in model for k in m.get('dram', {})})} if model else None,
                 # The only problem is the cold call's extra setup launches

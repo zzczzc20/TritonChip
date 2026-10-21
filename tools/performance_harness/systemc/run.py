@@ -13,6 +13,7 @@ import subprocess
 import sys
 import threading
 import time
+from prediction_domain import timing_status
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[2]
@@ -118,7 +119,11 @@ def run(binary, config, trace, out, timeout=1800, source_identity=None, mode='me
         except (ValueError, OSError) as e:
             summary_error = str(e)
     passed = code == 0 and unchanged and summary is not None and summary['status'] == 'completed'
-    report = dict(schema='tnca-systemc-run/1', status='completed-prediction' if passed else 'failed',
+    qualification = (timing_status(summary.get('counters', {}), slow=summary.get('dram_path')=='slow')
+                     if summary else 'inconclusive-execution')
+    report = dict(schema='tnca-systemc-run/1', status=('completed-prediction' if qualification.startswith('uncalibrated')
+                      else 'completed-execution-inconclusive-timing') if passed else 'failed',
+                  model_timing_status=qualification,
                   command=command, identity=identity, returncode=code, timeout=timeout_hit,
                   inputs_unchanged=unchanged, summary=summary, summary_error=summary_error, host_elapsed_seconds=elapsed,
                   host_clock_resolution_seconds=time.get_clock_info('monotonic').resolution,

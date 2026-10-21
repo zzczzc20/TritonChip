@@ -105,6 +105,15 @@
       ]
     },
     {
+      "id": "slow-fixed-point-qualification",
+      "kind": "systemc",
+      "argv": ["{python}", "tools/performance_harness/systemc/test_fixed_point.py", "--binary", "{out}/model-build/tnca-chip", "--config", "{root}/tools/performance_harness/systemc/configs/r40-board-m2.cfg", "--out", "{out}/fixed-point"],
+      "timeout_seconds": 120,
+      "env": {"TNCA_DRAM_PATH": "slow"},
+      "inputs": ["{out}/model-build/tnca-chip"],
+      "outputs": ["{out}/fixed-point/report.json"]
+    },
+    {
       "id": "native-slow-process-lifetime",
       "kind": "systemc",
       "argv": ["{python}", "tools/performance_harness/systemc/test_slow_process_lifetime.py", "--binary", "{out}/model-build/tnca-chip", "--config", "{root}/tools/performance_harness/systemc/configs/r40-board-m2.cfg", "--out", "{out}/slow-process-lifetime"],
@@ -260,6 +269,22 @@
       "outputs": [
         "{out}/native-slow/report.json"
       ]
+    },
+    {
+      "id": "graph-timing-status",
+      "kind": "systemc",
+      "argv": ["{python}", "tools/performance_harness/systemc/run_graphs.py", "--source-root", "{root}", "--binary", "{out}/model-build/tnca-chip", "--config", "{root}/tools/performance_harness/systemc/configs/r40-board-m2.cfg", "--out", "{out}/graph-status", "--point", "op.add/tiny/fp32-n256", "--dram-path", "slow", "--memory-bytes", "16777216", "--jobs", "1", "--timeout", "120"],
+      "timeout_seconds": 180,
+      "inputs": ["{out}/model-build/tnca-chip"],
+      "outputs": ["{out}/graph-status/results.json"]
+    },
+    {
+      "id": "representative-ir-and-domain",
+      "kind": "systemc",
+      "argv": ["{python}", "tools/performance_harness/primitive_cases.py", "--out", "{out}/primitives"],
+      "timeout_seconds": 600,
+      "inputs": ["{out}/model-build/tnca-chip"],
+      "outputs": ["{out}/primitives/report.json"]
     },
     {
       "id": "native-monitor-audit",

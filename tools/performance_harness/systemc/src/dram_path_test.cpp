@@ -38,6 +38,18 @@ int sc_main(int argc,char** argv){
         require(slow.complete({3,0xfffffffc0ULL,true,1000})==1114,"matched first occurrence");
         require(slow.complete({3,0xfffffffc0ULL,true,1000})==1115,"matched repeated occurrence");
         require(slow.requests==2 && slow.matched==2,"request accounting");
+        std::vector<std::uint16_t> replay_lat(installed.size());
+        for(size_t i=0;i<replay_lat.size();++i)replay_lat[i]=std::uint16_t(100+i);
+        require(slow.stability(installed,replay_lat,0).within_tolerance,"exact fixed point");
+        std::reverse(installed.begin(),installed.end());std::reverse(replay_lat.begin(),replay_lat.end());
+        require(slow.stability(installed,replay_lat,0).within_tolerance,"reordered fixed point");
+        ++replay_lat[0];
+        require(!slow.stability(installed,replay_lat,5000).within_tolerance,"unstable latency at equal request count");
+        require(slow.stability(installed,replay_lat,10000).within_tolerance,"explicit latency tolerance");
+        installed[0]^=(1ULL<<(SlowDram::OCC_BITS+20));
+        require(!slow.stability(installed,replay_lat,1000000).same_requests,"changed request at equal count");
+        installed.pop_back();replay_lat.pop_back();
+        require(!slow.stability(installed,replay_lat,1000000).same_requests,"missing request");
         refuses([&]{slow.complete({4,0,false,0});},"outlet");
         refuses([&]{slow.complete({0,1ULL<<36,false,0});},"address");
         auto base=SlowDram::base_key(0,0x400000,false);

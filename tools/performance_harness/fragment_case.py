@@ -124,6 +124,14 @@ def main():
                            rtol=2e-3, atol=2e-3, resident_host_wall_seconds=wall,
                            device_cycles=sum(e['device_cycles'] for e in launches),
                            launches=launches, artifacts=resources, model_counter_deltas=deltas)
+                if model_class:
+                    from prediction_domain import timing_status, VALID_STATUSES
+                    qualifications = [timing_status(after[str(i)], slow=model.identity['dram_path']=='slow')
+                                      for i, model in enumerate(model_class.instances) if str(i) in after]
+                    row['model_timing_status'] = ('inconclusive-fixed-point' if not qualifications or
+                        any(q not in VALID_STATUSES for q in qualifications) else
+                        'uncalibrated-fixed-point-checked' if 'uncalibrated-fixed-point-checked' in qualifications
+                        else 'uncalibrated')
                 report['rows'].append(row)
                 save()
         if software_tree(ROOT, refresh=True) != report['software_tree']:

@@ -83,6 +83,22 @@ struct SlowDram : DramPath {
         size_t pos;if(!lookup(key,pos))return false;
         l=lat[pos];cursor=pos+1;return true;
     }
+    struct Stability {bool same_requests=false,within_tolerance=false;u64 missing=0,max_delta=0;};
+    Stability stability(const std::vector<u64>& k,const std::vector<std::uint16_t>& l,u64 ppm)const{
+        require(k.size()==l.size(),"slow DRAM path: inconsistent replay comparison");
+        require(ppm<=1000000,"slow DRAM path: invalid fixed-point tolerance");
+        Stability result;bool close=true;
+        for(size_t i=0;i<k.size();++i){
+            size_t pos;
+            if(!lookup(k[i],pos)){++result.missing;continue;}
+            u64 a=l[i],b=lat[pos],delta=a>b?a-b:b-a;
+            result.max_delta=std::max(result.max_delta,delta);
+            if(delta*1000000>ppm*std::max<u64>({a,b,1}))close=false;
+        }
+        result.same_requests=k.size()==keys.size() && result.missing==0;
+        result.within_tolerance=result.same_requests && close;
+        return result;
+    }
     u64 complete(const DramRequest& r) override{
         require(r.address<(u64(1)<<36),"slow DRAM path: address beyond the key range");
         require(r.port<4,"slow DRAM path: outlet beyond the key range");

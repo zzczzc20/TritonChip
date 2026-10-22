@@ -4,7 +4,7 @@
 //
 // XLS version: v0.0.0-10704-g0a7c502cc
 // Pipeline:    combinational
-// DSLX sha256: 6aa1a52d409a13d7
+// DSLX sha256: e5dae730f55059b6
 //==============================================================================
 module tnca_fma_norm_xls(
   input wire [149:0] s,

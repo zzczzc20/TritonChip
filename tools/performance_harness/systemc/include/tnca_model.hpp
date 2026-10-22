@@ -84,8 +84,20 @@ struct Config {
             "vrf_prefetch","fp_reduction_vector_extra","time_quantum",
             // M3: DRAM path (include/tnca_dram.hpp)
             "dram_path","dram_fixed_cycles","dram_clock_ratio","dram_max_passes","dram_tolerance_ppm"};
-        require(v.size()==keys.size(),"configuration key count mismatch (unknown or missing key)");
+        // Optional what-if keys, absent from every shipped configuration; an
+        // absent key takes its default and leaves the model unchanged.
+        //   mtx_dp_group_16 / mtx_dp_group_8 (default 1): a hypothetical packed
+        //     MMA (m.mma.dp, not built) sweeping G consecutive k per lane per
+        //     step for 16-bit (G<=2) / FP8 (G<=4) fragments; timing only.
+        //   mtx_dp_b_prefetch (default 0): the per-step B register read is
+        //     hidden behind the previous step's sweep after the first.
+        std::size_t optional=0;
+        for(auto& k:optional_keys())if(v.count(k))++optional;
+        require(v.size()-optional==keys.size(),"configuration key count mismatch (unknown or missing key)");
         for(auto& k:keys)require(v.count(k),"missing configuration: "+k);
+        {u64 g16=get_or("mtx_dp_group_16",1),g8=get_or("mtx_dp_group_8",1);
+         require((g16==1 || g16==2) && (g8==1 || g8==2 || g8==4) && get_or("mtx_dp_b_prefetch",0)<=1,
+                 "mtx_dp_group_16 is 1|2, mtx_dp_group_8 1|2|4 (one 64-byte B register per group), mtx_dp_b_prefetch 0|1");}
         cache_hot();
         for(auto& k:keys)if(k!="memory_base" && k!="pc_first" && k!="trace_events" && k!="noc_stages" && k!="full_line_tag"
                             && k!="mtx_abuf" && k!="launch_cycles" && k!="dispatch_cycles" && k!="load_latency"
@@ -114,6 +126,9 @@ struct Config {
         require((get("memory_bytes")-1)/get("pc_bytes")<get("pc_count")-get("pc_first"),"window exceeds PC map");
     }
     u64 get(const std::string& k)const{return v.at(k);}
+    static const std::vector<std::string>& optional_keys(){
+        static const std::vector<std::string> k={"mtx_dp_group_16","mtx_dp_group_8","mtx_dp_b_prefetch"};return k;}
+    u64 get_or(const std::string& k,u64 fallback)const{auto i=v.find(k);return i==v.end()?fallback:i->second;}
     // Hot-path copies of fixed geometry (set once by cache_hot()).
     u64 nx_=0,ny_=0,sets_=1,full_line_=1,base_=0,bytes_=0;unsigned cores_=1;
     void cache_hot(){nx_=get("nx");ny_=get("ny");sets_=get("sets");full_line_=get("full_line_tag");

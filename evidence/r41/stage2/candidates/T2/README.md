@@ -84,3 +84,72 @@ Across the four placements, F04 alone predicts −0.05 … −1.0 ns. The famili
 **No-go as a 100 MHz attempt.** F04 is predicted to fail by 0.3–1.0 ns. **Go only as a measurement run**, if the lead wants a routed census of this tree: it is functionally clean, and the costs are +0.01–0.06 % on core benches and +0.05–0.2 % on pipeline kernels.
 
 **Recommended next fix: F04.** Take the vector integer multiply/MULH and the reduce broadcast out of the single-cycle X stage. They would go to the scheduled-writeback path that the scalar multiply already uses (`MUL_LAT`, `wb_rsv`). That is an extra cycle of latency for those operations only.
+
+## Round 4: F04 and the NI response captures (`2549feb`)
+
+The coordinator asked for both fixes after `c9f2578`.
+
+**F04.** `tnca_vector_alu` has a new parameter, `LATE = 1`. With it, the multiply family (`v.mul`, `v.muli`, `v.mulh.s`, `v.mulh.u`) and the integer reductions are taken off `vres`/`sres` and get their own outputs, `late_v`/`late_s`.
+- **Write-back.** The core registers them in `vl_*` and writes them back one cycle after X. They are booked like the scalar multiply (`r_wb_delay` 1, `wb_rsv`), so the scoreboard, forwarding and writeback arbitration (`ws_vl`) handle them like any delayed result. These operations gain +1 cycle of result latency; no other operation changes.
+- **Equivalence.** A bench copy of the unit with `LATE = 0` (`u_valu_ref`) runs on X's operands. Its result, registered, must equal every late write-back: `FAIL tnca_core assert`. It held in every run.
+
+**NI response captures.** `dl_buf` and `xbuf` are now written one cycle after the response, from a registered copy (`rq_*`). Nothing reads them that early:
+- `S_DPARSE` and the `dl_boxel` fold read only words 0–13;
+- `S_XWRITE` starts two cycles after the last response.
+
+There is no cycle change.
+
+### Regression on `2549feb`
+
+`regression-t4-2549feb.tgz`. Everything passes, and no assertion fired.
+
+| Target | Result | Cycles vs r41s2-int |
+|---|---|---|
+| `core` / `core-slowmem` / `core-ooo` / `core-vrf` | 40 PASS each | +0.52 / +0.40 / +0.47 / +0.51 % |
+| `core-r39hw` / `core-r39sw` / `core-r39sw4` / `core-r39sw5` | 80 / 80 / 80 / 86 PASS | +0.49 / +0.51 / +0.50 / +0.49 % |
+| `core-r39sw5` with `HAS_TENSOR_XPOSE=2` | 86 PASS | +0.49 % |
+| `r41-core-boundary` | 45 PASS | +0.05 % |
+| `r41-xpose8-rtl`, `r38-xpose-rtl`, `top`, `lsu-reqreg`, `unit`, `fma-deep`, `lint`, `compiler-rtl`, `triton-e2e` | PASS | — |
+| `r40-multicore-shell` (20), `r40-grid-dispatch` (359), `r40-line-axi` (101) | PASS | simulated end times identical |
+| The other r40 suites and `multicore_mmio_tests` | PASS | — |
+| `r40-pipeline-checks` (16 kernels) | PASS | +0.34 % with overlap off, +0.65 % with overlap on; per kernel +0.01 to +2.2 % |
+| FMA miter | 210 M × 2, 0 mismatches | — |
+
+Most of the core-bench cost is in two tests:
+- `t36_reduce`: 8,323 → 8,811 cycles, +5.9 %, back-to-back dependent reductions;
+- `t01_vector`: 943 → 962 cycles, +2.0 %.
+
+### Screens (round 4)
+
+**Kernel synthesis.** WNS is +4.008 ns, unchanged. LUTs go from 810,980 to 814,188, about +1,070 per tile. Routed tile LUTs: 246,637 → 247,714 (tile 0).
+
+| Family (worst ns / endpoints < +1.4) | Tile 1, r3 | **Tile 1, r4** | Tile 0, r3 | **Tile 0, r4** |
+|---|---|---|---|---|
+| F04 writeback (→ `w_vdata`/`w_sdata`/`w_pdata`) | +0.507 / 180 | **≥ +1.5** | +0.159 / 220 | **+1.431 / 0** |
+| The moved logic, now ending at `vl_vdata` | — | +1.124 / 12 | — | **+0.885 / 130** (`w_pdata` → predicate mask → reduction tree) |
+| NI response → `u_txf` | +0.977 / 26 | ≥ +1.5 | +0.285 / 18 | ≥ +1.5 |
+| Transfer engine, walk → `xbuf` | ≥ +1.5 | ≥ +1.5 | ≥ +1.5 | ≥ +1.5 |
+| Transfer engine, other internal | ≥ +1.5 | +1.193 / 33 (load-slot completion → `vw_data`) | ≥ +1.5 | ≥ +1.5 |
+| W forward | ≥ +1.5 | +1.320 / 1 | ≥ +1.5 | ≥ +1.5 |
+| VRF bank read side | +1.186 | +1.500 / 0 | +1.100 | ≥ +1.5 |
+| **Tile worst** | +0.507 | **+1.054** (F09 MTX) | +0.159 | **+0.690** (F03/F08 VFPU `of_d0` → `dly_v`) |
+
+In round 4 two of the families closed earlier came back at +1.19 to +1.32 ns in tile 1, with 1–33 endpoints:
+- the transfer engine's load-slot completion path into `vw_data`;
+- one W-forward endpoint.
+
+These logic cones did not change in round 4, so the movement is placement.
+
+Families below +1.4 ns in round 4 that this work does not own:
+- **F03/F08 VFPU:** +0.69 ns (tile 0), +1.16 ns (tile 1);
+- **F09 MTX operand capture** (`u_mtx/st` → `g_mac` input registers): +0.81 ns (tile 0), +1.05 ns (tile 1);
+- **`x_rctx` → `sb_s`:** +1.09 ns (tile 0);
+- **F07 slice LUTRAM addresses:** +1.04 ns (tile 0).
+
+**Projection** (image = screen −0.8 … −1.15 ns):
+- tile 1: about +0.25 … −0.1 ns;
+- tile 0: about −0.1 … −0.46 ns. This is set by the VFPU, and by the new `vl_vdata` stage at +0.885 ns.
+
+The families outside the tiles are measured by full run #1 (`c9f2578`).
+
+**Next step to make F04 robust**, if it is wanted: split the late stage. Register the reduction's masked inputs and the DSP products in X, then finish the tree, the MULH correction and the broadcast in the `vl` stage. That moves about 0.5 ns off `vl_vdata` without adding latency.

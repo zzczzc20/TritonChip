@@ -77,6 +77,11 @@ jobs:
           make r40-coherent-host
           make r40-multicore-shell
 
+      # R41 F10: the LSU pair's registered request boundary against the R40
+      # combinational port, as a miter under back-pressure and reordering.
+      - name: R41 LSU registered request boundary
+        run: make lsu-reqreg
+
       - name: R40 registered tensor ranges and complete requester identity
         run: |
           for ports in 3 8; do

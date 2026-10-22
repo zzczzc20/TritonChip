@@ -14,7 +14,7 @@
     "TORCHINDUCTOR_COMPILE_THREADS": "1",
     "TNCA_BACKEND": "systemc-tlm-grid",
     "TNCA_TLM_BINARY": "{out}/build/tnca-chip",
-    "TNCA_TLM_CONFIG": "{root}/tools/performance_harness/systemc/configs/r40-board-m2.cfg",
+    "TNCA_TLM_CONFIG": "{root}/tools/performance_harness/systemc/configs/r41-hbm8-device-service.cfg",
     "TNCA_TLM_MEMORY_BYTES": "0x200000000",
     "TNCA_DRAM_MAP": "{out}/map8/map.txt",
     "TNCA_HOST_TIMEOUT": "86400",

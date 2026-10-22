@@ -15,6 +15,7 @@ def torch_case(path):
     assert all(c['status'] == 'pass' for c in d['checks']), path
     assert int(d['knobs']['TNCA_TLM_MEMORY_BYTES'], 0) == 0x200000000, path
     assert d['window']['model_memory_bytes'] == 0x200000000, path
+    assert d['knobs']['TNCA_TLM_CONFIG'].endswith('r41-hbm8-device-service.cfg'), path
     assert d['map']['status'] == 'planned-allocation-not-measured', path
     assert all(g['launches'] > 0 for g in d['graphs']), path
     pc = {}
@@ -71,8 +72,8 @@ def main():
     for path in ('fast', 'slow'):
         for case in ('placement', 'crossing', 'gemm', 'refusal'):
             name = f'{case}-{path}'
-            out['torch'][name] = torch_case(a.raw/'final'/f'current-{name}'/'report.json')
-        out['torch'][f'stream-{path}'] = torch_case(a.raw/'final'/f'stream-2112mib-v2-{path}'/'report.json')
+            out['torch'][name] = torch_case(a.raw/'final'/f'service-{name}'/'report.json')
+        out['torch'][f'stream-{path}'] = torch_case(a.raw/'final'/f'service-stream-2112mib-{path}'/'report.json')
     for p in sorted((a.raw/'prior').glob('*/report.json')):
         d = read(p)
         if d.get('case') == 'stream':

@@ -77,17 +77,19 @@ there, valid access to the exact window's final eight bytes, and refusal of
 a raw upload crossing its top. Refusal terminates that model session.
 
 Slow Torch numerical passes do **not** establish timing convergence. The
-three-pass configuration leaves some commands unconverged; GEMM also records
-unmatched timing requests. These cases retain `inconclusive-fixed-point`
-timing status. Native boundary campaigns use eight passes and report
+retained legacy-profile logs include unconverged commands and GEMM unmatched
+timing requests. These retain `inconclusive-fixed-point` timing status; the
+final summary independently classifies each final case. Native boundary campaigns use eight passes and report
 `uncalibrated-fixed-point-checked`. No numerical pass is promoted to a timing
 qualification.
 
 ## Resources and limits
 
-The 5.5 GiB fast stream passed in **727.059 seconds**, with **5.53 GiB**
-peak model RSS. The matching slow run is pending; the final capacity verdict
-will include that measurement. The resource runner restricts affinity to six CPUs,
+The earlier legacy-profile 5.5 GiB fast stream passed in **727.059 seconds**,
+with **5.53 GiB** peak model RSS. Its slow counterpart was interrupted before
+its first full graph completed: legacy host-gap charges made each tiny replay
+process approximately 45 million refreshes. Final paired measurements use the
+explicit device-service profile described below and are pending. The resource runner restricts affinity to six CPUs,
 requires at least 40 GiB initially available, and stops only its owned PIDs
 at 16 GiB summed process-tree RSS. Shared pages are counted in each process's
 RSS; PSS additionally reports their physical sharing. Model parent RSS, slow
@@ -103,7 +105,8 @@ an entire Qwen inference or establish its end-to-end execution time.
 The interim [boundary and fast-path logs](boundary-and-fast-logs.tgz) retain
 the completed exact-window boundary cases, both native campaigns, the large
 fast run, map/unit/build logs, earlier scale diagnostics, and the interrupted
-attempt. The in-progress large slow run is excluded from this interim archive.
+attempt. The interrupted legacy large slow run is excluded from this interim archive
+and will be retained in the complete final archive.
 
 ## Reproduction and evidence
 
@@ -130,13 +133,21 @@ knobs, source identity, binary/configuration/library hashes and tool versions):
 ```sh
 export PYTHONPATH="$PWD:$PWD/python:$PWD/compiler/python:$PWD/tools/asm:$PWD/tools/performance_harness/systemc"
 export TNCA_BACKEND=systemc-tlm-grid TNCA_TLM_BINARY="$BUILD/tnca-chip"
-export TNCA_TLM_CONFIG="$PWD/tools/performance_harness/systemc/configs/r40-board-m2.cfg"
+export TNCA_TLM_CONFIG="$PWD/tools/performance_harness/systemc/configs/r41-hbm8-device-service.cfg"
 export TNCA_TLM_MEMORY_BYTES=0x200000000 TNCA_DRAM_MAP="$MAP/map.txt"
 export TNCA_TORCH_DEVICE=native TNCA_TENSOR_DESCRIPTORS=1
 export TNCA_PROFILE=core-vrf-sync-v5 TNCA_ACTIVE_CORES=3
 export TNCA_DEADLINE=1000000000000 TNCA_HOST_TIMEOUT=86400
 export OMP_NUM_THREADS=2 MKL_NUM_THREADS=2 TORCHINDUCTOR_COMPILE_THREADS=1
 ```
+
+The final Torch profile copies the M2 configuration and changes only
+`host_launch_cycles` and `host_transfer_cycles_per_kib` to zero
+(`host_transfer_cycles` was already zero). Host OS wall measurements still
+include actual transfers and launches. This removes the opaque fitted host
+gaps from the device-service simulation; device/DRAM settings and the model
+binary are identical on both paths. The original M2 default is unchanged.
+`configuration-diff.json` in the raw archive records this exact difference.
 
 For each `TNCA_DRAM_PATH=fast` and `slow`, run placement, crossing, gemm,
 refusal, then stream, each in a fresh output directory. For the large stream:
@@ -159,7 +170,8 @@ runs are retained under `prior/` in the raw archive and are labelled as that
 larger logical window; they do not substitute for the final exact-window
 runs. The first large attempt was interrupted after review found that its
 copy placement would skip PC21–PC22. Its raw `running` report, nonzero process
-exit and interruption note are retained; it is excluded from passing results.
+exit and interruption note are retained; it is excluded from passing results. The later legacy-profile slow attempt
+is likewise retained as interrupted for excessive host-gap replay overhead.
 
 Compiler/runtime/assembler and original-point sources are byte-identical to
 `c2c96d3`, whose retained `default_change_audit.py` result has **113 unchanged,

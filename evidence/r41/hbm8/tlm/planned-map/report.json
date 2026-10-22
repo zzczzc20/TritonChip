@@ -1,0 +1,758 @@
+{
+  "schema": "tnca-dram-address-map/1",
+  "status": "planned-allocation-not-measured",
+  "source": "evidence/r40/v3/R40-04.hbm/board_run_fe1b/window_samples.json",
+  "source_sha256": "fa36cf03ec9f9424bb73a855c0692abb92959878aa808cff4018cecb4637b5a0",
+  "image_sha256": "a88ebdf59cfbbb2001ebd5b1b2c739c5d8cd33931f1e9202f18cac07c4c83083",
+  "window_pointer": "/results/0/detail",
+  "image_pointer": "/identity/image_sha256",
+  "mapping": {
+    "local_limit": 131072,
+    "bo_base": 0,
+    "bo_size": 8589934592,
+    "banks": [
+      {
+        "pc": 0,
+        "base": 0,
+        "size": 268435456,
+        "allocated_base": 0,
+        "allocated_size": 268435456
+      },
+      {
+        "pc": 1,
+        "base": 268435456,
+        "size": 268435456,
+        "allocated_base": 268435456,
+        "allocated_size": 268435456
+      },
+      {
+        "pc": 2,
+        "base": 536870912,
+        "size": 268435456,
+        "allocated_base": 536870912,
+        "allocated_size": 268435456
+      },
+      {
+        "pc": 3,
+        "base": 805306368,
+        "size": 268435456,
+        "allocated_base": 805306368,
+        "allocated_size": 268435456
+      },
+      {
+        "pc": 4,
+        "base": 1073741824,
+        "size": 268435456,
+        "allocated_base": 1073741824,
+        "allocated_size": 268435456
+      },
+      {
+        "pc": 5,
+        "base": 1342177280,
+        "size": 268435456,
+        "allocated_base": 1342177280,
+        "allocated_size": 268435456
+      },
+      {
+        "pc": 6,
+        "base": 1610612736,
+        "size": 268435456,
+        "allocated_base": 1610612736,
+        "allocated_size": 268435456
+      },
+      {
+        "pc": 7,
+        "base": 1879048192,
+        "size": 268435456,
+        "allocated_base": 1879048192,
+        "allocated_size": 268435456
+      },
+      {
+        "pc": 8,
+        "base": 2147483648,
+        "size": 268435456,
+        "allocated_base": 2147483648,
+        "allocated_size": 268435456
+      },
+      {
+        "pc": 9,
+        "base": 2415919104,
+        "size": 268435456,
+        "allocated_base": 2415919104,
+        "allocated_size": 268435456
+      },
+      {
+        "pc": 10,
+        "base": 2684354560,
+        "size": 268435456,
+        "allocated_base": 2684354560,
+        "allocated_size": 268435456
+      },
+      {
+        "pc": 11,
+        "base": 2952790016,
+        "size": 268435456,
+        "allocated_base": 2952790016,
+        "allocated_size": 268435456
+      },
+      {
+        "pc": 12,
+        "base": 3221225472,
+        "size": 268435456,
+        "allocated_base": 3221225472,
+        "allocated_size": 268435456
+      },
+      {
+        "pc": 13,
+        "base": 3489660928,
+        "size": 268435456,
+        "allocated_base": 3489660928,
+        "allocated_size": 268435456
+      },
+      {
+        "pc": 14,
+        "base": 3758096384,
+        "size": 268435456,
+        "allocated_base": 3758096384,
+        "allocated_size": 268435456
+      },
+      {
+        "pc": 15,
+        "base": 4026531840,
+        "size": 268435456,
+        "allocated_base": 4026531840,
+        "allocated_size": 268435456
+      },
+      {
+        "pc": 16,
+        "base": 4294967296,
+        "size": 268435456,
+        "allocated_base": 4294967296,
+        "allocated_size": 268435456
+      },
+      {
+        "pc": 17,
+        "base": 4563402752,
+        "size": 268435456,
+        "allocated_base": 4563402752,
+        "allocated_size": 268435456
+      },
+      {
+        "pc": 18,
+        "base": 4831838208,
+        "size": 268435456,
+        "allocated_base": 4831838208,
+        "allocated_size": 268435456
+      },
+      {
+        "pc": 19,
+        "base": 5100273664,
+        "size": 268435456,
+        "allocated_base": 5100273664,
+        "allocated_size": 268435456
+      },
+      {
+        "pc": 20,
+        "base": 5368709120,
+        "size": 268435456,
+        "allocated_base": 5368709120,
+        "allocated_size": 268435456
+      },
+      {
+        "pc": 21,
+        "base": 5637144576,
+        "size": 268435456,
+        "allocated_base": 5637144576,
+        "allocated_size": 268435456
+      },
+      {
+        "pc": 22,
+        "base": 5905580032,
+        "size": 268435456,
+        "allocated_base": 5905580032,
+        "allocated_size": 268435456
+      },
+      {
+        "pc": 23,
+        "base": 6174015488,
+        "size": 268435456,
+        "allocated_base": 6174015488,
+        "allocated_size": 268435456
+      },
+      {
+        "pc": 24,
+        "base": 6442450944,
+        "size": 268435456,
+        "allocated_base": 6442450944,
+        "allocated_size": 268435456
+      },
+      {
+        "pc": 25,
+        "base": 6710886400,
+        "size": 268435456,
+        "allocated_base": 6710886400,
+        "allocated_size": 268435456
+      },
+      {
+        "pc": 26,
+        "base": 6979321856,
+        "size": 268435456,
+        "allocated_base": 6979321856,
+        "allocated_size": 268435456
+      },
+      {
+        "pc": 27,
+        "base": 7247757312,
+        "size": 268435456,
+        "allocated_base": 7247757312,
+        "allocated_size": 268435456
+      },
+      {
+        "pc": 28,
+        "base": 7516192768,
+        "size": 268435456,
+        "allocated_base": 7516192768,
+        "allocated_size": 268435456
+      },
+      {
+        "pc": 29,
+        "base": 7784628224,
+        "size": 268435456,
+        "allocated_base": 7784628224,
+        "allocated_size": 268435456
+      },
+      {
+        "pc": 30,
+        "base": 8053063680,
+        "size": 268435456,
+        "allocated_base": 8053063680,
+        "allocated_size": 268435456
+      },
+      {
+        "pc": 31,
+        "base": 8321499136,
+        "size": 268435456,
+        "allocated_base": 8321499136,
+        "allocated_size": 268435456
+      }
+    ],
+    "topology_sha256": null
+  },
+  "map_sha256": "d8b8f31de63937643e13002912d4a4d7dbbc528d787445bea325fbcd83c50180",
+  "boundary_probes": [
+    {
+      "logical_address": 131072,
+      "pc": 0,
+      "offset": 0,
+      "physical_address": 0
+    },
+    {
+      "logical_address": 268566464,
+      "pc": 0,
+      "offset": 268435392,
+      "physical_address": 268435392
+    },
+    {
+      "logical_address": 268566528,
+      "pc": 1,
+      "offset": 0,
+      "physical_address": 268435456
+    },
+    {
+      "logical_address": 537001920,
+      "pc": 1,
+      "offset": 268435392,
+      "physical_address": 536870848
+    },
+    {
+      "logical_address": 537001984,
+      "pc": 2,
+      "offset": 0,
+      "physical_address": 536870912
+    },
+    {
+      "logical_address": 805437376,
+      "pc": 2,
+      "offset": 268435392,
+      "physical_address": 805306304
+    },
+    {
+      "logical_address": 805437440,
+      "pc": 3,
+      "offset": 0,
+      "physical_address": 805306368
+    },
+    {
+      "logical_address": 1073872832,
+      "pc": 3,
+      "offset": 268435392,
+      "physical_address": 1073741760
+    },
+    {
+      "logical_address": 1073872896,
+      "pc": 4,
+      "offset": 0,
+      "physical_address": 1073741824
+    },
+    {
+      "logical_address": 1342308288,
+      "pc": 4,
+      "offset": 268435392,
+      "physical_address": 1342177216
+    },
+    {
+      "logical_address": 1342308352,
+      "pc": 5,
+      "offset": 0,
+      "physical_address": 1342177280
+    },
+    {
+      "logical_address": 1610743744,
+      "pc": 5,
+      "offset": 268435392,
+      "physical_address": 1610612672
+    },
+    {
+      "logical_address": 1610743808,
+      "pc": 6,
+      "offset": 0,
+      "physical_address": 1610612736
+    },
+    {
+      "logical_address": 1879179200,
+      "pc": 6,
+      "offset": 268435392,
+      "physical_address": 1879048128
+    },
+    {
+      "logical_address": 1879179264,
+      "pc": 7,
+      "offset": 0,
+      "physical_address": 1879048192
+    },
+    {
+      "logical_address": 2147614656,
+      "pc": 7,
+      "offset": 268435392,
+      "physical_address": 2147483584
+    },
+    {
+      "logical_address": 2147614720,
+      "pc": 8,
+      "offset": 0,
+      "physical_address": 2147483648
+    },
+    {
+      "logical_address": 2416050112,
+      "pc": 8,
+      "offset": 268435392,
+      "physical_address": 2415919040
+    },
+    {
+      "logical_address": 2416050176,
+      "pc": 9,
+      "offset": 0,
+      "physical_address": 2415919104
+    },
+    {
+      "logical_address": 2684485568,
+      "pc": 9,
+      "offset": 268435392,
+      "physical_address": 2684354496
+    },
+    {
+      "logical_address": 2684485632,
+      "pc": 10,
+      "offset": 0,
+      "physical_address": 2684354560
+    },
+    {
+      "logical_address": 2952921024,
+      "pc": 10,
+      "offset": 268435392,
+      "physical_address": 2952789952
+    },
+    {
+      "logical_address": 2952921088,
+      "pc": 11,
+      "offset": 0,
+      "physical_address": 2952790016
+    },
+    {
+      "logical_address": 3221356480,
+      "pc": 11,
+      "offset": 268435392,
+      "physical_address": 3221225408
+    },
+    {
+      "logical_address": 3221356544,
+      "pc": 12,
+      "offset": 0,
+      "physical_address": 3221225472
+    },
+    {
+      "logical_address": 3489791936,
+      "pc": 12,
+      "offset": 268435392,
+      "physical_address": 3489660864
+    },
+    {
+      "logical_address": 3489792000,
+      "pc": 13,
+      "offset": 0,
+      "physical_address": 3489660928
+    },
+    {
+      "logical_address": 3758227392,
+      "pc": 13,
+      "offset": 268435392,
+      "physical_address": 3758096320
+    },
+    {
+      "logical_address": 3758227456,
+      "pc": 14,
+      "offset": 0,
+      "physical_address": 3758096384
+    },
+    {
+      "logical_address": 4026662848,
+      "pc": 14,
+      "offset": 268435392,
+      "physical_address": 4026531776
+    },
+    {
+      "logical_address": 4026662912,
+      "pc": 15,
+      "offset": 0,
+      "physical_address": 4026531840
+    },
+    {
+      "logical_address": 4295098304,
+      "pc": 15,
+      "offset": 268435392,
+      "physical_address": 4294967232
+    },
+    {
+      "logical_address": 4295098368,
+      "pc": 16,
+      "offset": 0,
+      "physical_address": 4294967296
+    },
+    {
+      "logical_address": 4563533760,
+      "pc": 16,
+      "offset": 268435392,
+      "physical_address": 4563402688
+    },
+    {
+      "logical_address": 4563533824,
+      "pc": 17,
+      "offset": 0,
+      "physical_address": 4563402752
+    },
+    {
+      "logical_address": 4831969216,
+      "pc": 17,
+      "offset": 268435392,
+      "physical_address": 4831838144
+    },
+    {
+      "logical_address": 4831969280,
+      "pc": 18,
+      "offset": 0,
+      "physical_address": 4831838208
+    },
+    {
+      "logical_address": 5100404672,
+      "pc": 18,
+      "offset": 268435392,
+      "physical_address": 5100273600
+    },
+    {
+      "logical_address": 5100404736,
+      "pc": 19,
+      "offset": 0,
+      "physical_address": 5100273664
+    },
+    {
+      "logical_address": 5368840128,
+      "pc": 19,
+      "offset": 268435392,
+      "physical_address": 5368709056
+    },
+    {
+      "logical_address": 5368840192,
+      "pc": 20,
+      "offset": 0,
+      "physical_address": 5368709120
+    },
+    {
+      "logical_address": 5637275584,
+      "pc": 20,
+      "offset": 268435392,
+      "physical_address": 5637144512
+    },
+    {
+      "logical_address": 5637275648,
+      "pc": 21,
+      "offset": 0,
+      "physical_address": 5637144576
+    },
+    {
+      "logical_address": 5905711040,
+      "pc": 21,
+      "offset": 268435392,
+      "physical_address": 5905579968
+    },
+    {
+      "logical_address": 5905711104,
+      "pc": 22,
+      "offset": 0,
+      "physical_address": 5905580032
+    },
+    {
+      "logical_address": 6174146496,
+      "pc": 22,
+      "offset": 268435392,
+      "physical_address": 6174015424
+    },
+    {
+      "logical_address": 6174146560,
+      "pc": 23,
+      "offset": 0,
+      "physical_address": 6174015488
+    },
+    {
+      "logical_address": 6442581952,
+      "pc": 23,
+      "offset": 268435392,
+      "physical_address": 6442450880
+    },
+    {
+      "logical_address": 6442582016,
+      "pc": 24,
+      "offset": 0,
+      "physical_address": 6442450944
+    },
+    {
+      "logical_address": 6711017408,
+      "pc": 24,
+      "offset": 268435392,
+      "physical_address": 6710886336
+    },
+    {
+      "logical_address": 6711017472,
+      "pc": 25,
+      "offset": 0,
+      "physical_address": 6710886400
+    },
+    {
+      "logical_address": 6979452864,
+      "pc": 25,
+      "offset": 268435392,
+      "physical_address": 6979321792
+    },
+    {
+      "logical_address": 6979452928,
+      "pc": 26,
+      "offset": 0,
+      "physical_address": 6979321856
+    },
+    {
+      "logical_address": 7247888320,
+      "pc": 26,
+      "offset": 268435392,
+      "physical_address": 7247757248
+    },
+    {
+      "logical_address": 7247888384,
+      "pc": 27,
+      "offset": 0,
+      "physical_address": 7247757312
+    },
+    {
+      "logical_address": 7516323776,
+      "pc": 27,
+      "offset": 268435392,
+      "physical_address": 7516192704
+    },
+    {
+      "logical_address": 7516323840,
+      "pc": 28,
+      "offset": 0,
+      "physical_address": 7516192768
+    },
+    {
+      "logical_address": 7784759232,
+      "pc": 28,
+      "offset": 268435392,
+      "physical_address": 7784628160
+    },
+    {
+      "logical_address": 7784759296,
+      "pc": 29,
+      "offset": 0,
+      "physical_address": 7784628224
+    },
+    {
+      "logical_address": 8053194688,
+      "pc": 29,
+      "offset": 268435392,
+      "physical_address": 8053063616
+    },
+    {
+      "logical_address": 8053194752,
+      "pc": 30,
+      "offset": 0,
+      "physical_address": 8053063680
+    },
+    {
+      "logical_address": 8321630144,
+      "pc": 30,
+      "offset": 268435392,
+      "physical_address": 8321499072
+    },
+    {
+      "logical_address": 8321630208,
+      "pc": 31,
+      "offset": 0,
+      "physical_address": 8321499136
+    },
+    {
+      "logical_address": 8590065600,
+      "pc": 31,
+      "offset": 268435392,
+      "physical_address": 8589934528
+    }
+  ],
+  "bank_row_mapping": "unverified",
+  "calibration": "not-measured",
+  "scope": "planned BO allocation for model development; not a recorded allocation, not board evidence; the board run must record and audit the actual map",
+  "measured": false,
+  "planned": {
+    "recorded_mapping": {
+      "local_limit": 131072,
+      "bo_base": 0,
+      "bo_size": 4294967296,
+      "banks": [
+        {
+          "pc": 0,
+          "base": 0,
+          "size": 268435456,
+          "allocated_base": 0,
+          "allocated_size": 268435456
+        },
+        {
+          "pc": 1,
+          "base": 268435456,
+          "size": 268435456,
+          "allocated_base": 268435456,
+          "allocated_size": 268435456
+        },
+        {
+          "pc": 2,
+          "base": 536870912,
+          "size": 268435456,
+          "allocated_base": 536870912,
+          "allocated_size": 268435456
+        },
+        {
+          "pc": 3,
+          "base": 805306368,
+          "size": 268435456,
+          "allocated_base": 805306368,
+          "allocated_size": 268435456
+        },
+        {
+          "pc": 4,
+          "base": 1073741824,
+          "size": 268435456,
+          "allocated_base": 1073741824,
+          "allocated_size": 268435456
+        },
+        {
+          "pc": 5,
+          "base": 1342177280,
+          "size": 268435456,
+          "allocated_base": 1342177280,
+          "allocated_size": 268435456
+        },
+        {
+          "pc": 6,
+          "base": 1610612736,
+          "size": 268435456,
+          "allocated_base": 1610612736,
+          "allocated_size": 268435456
+        },
+        {
+          "pc": 7,
+          "base": 1879048192,
+          "size": 268435456,
+          "allocated_base": 1879048192,
+          "allocated_size": 268435456
+        },
+        {
+          "pc": 8,
+          "base": 2147483648,
+          "size": 268435456,
+          "allocated_base": 2147483648,
+          "allocated_size": 268435456
+        },
+        {
+          "pc": 9,
+          "base": 2415919104,
+          "size": 268435456,
+          "allocated_base": 2415919104,
+          "allocated_size": 268435456
+        },
+        {
+          "pc": 10,
+          "base": 2684354560,
+          "size": 268435456,
+          "allocated_base": 2684354560,
+          "allocated_size": 268435456
+        },
+        {
+          "pc": 11,
+          "base": 2952790016,
+          "size": 268435456,
+          "allocated_base": 2952790016,
+          "allocated_size": 268435456
+        },
+        {
+          "pc": 12,
+          "base": 3221225472,
+          "size": 268435456,
+          "allocated_base": 3221225472,
+          "allocated_size": 268435456
+        },
+        {
+          "pc": 13,
+          "base": 3489660928,
+          "size": 268435456,
+          "allocated_base": 3489660928,
+          "allocated_size": 268435456
+        },
+        {
+          "pc": 14,
+          "base": 3758096384,
+          "size": 268435456,
+          "allocated_base": 3758096384,
+          "allocated_size": 268435456
+        },
+        {
+          "pc": 15,
+          "base": 4026531840,
+          "size": 268435456,
+          "allocated_base": 4026531840,
+          "allocated_size": 268435456
+        }
+      ],
+      "topology_sha256": "e3cf166dc3fbef5859e5c38fb183525932eae24f2f99101e24a022213a694f10"
+    },
+    "recorded_map_sha256": "a1019970fe9548fda5e9b7e44442a14f1a886decd397f472c498dd15f5970bc2",
+    "recorded_topology_sha256": "e3cf166dc3fbef5859e5c38fb183525932eae24f2f99101e24a022213a694f10",
+    "rule": "recorded local limit and BO base; PC p at connected group base + (p - first) * PC size",
+    "replace_with": "dram_address_map.py audit (no --plan-bo-bytes) of the board run that allocates this BO"
+  }
+}

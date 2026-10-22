@@ -184,7 +184,7 @@ def main():
             (y,), rec = run.compile_run(f'blockwise/{name}', fn, cargs, dump=True)
             cmp = fc.compare(y, ref)
             code = (out/'code'/(re.sub(r'[^A-Za-z0-9_.-]+', '_', f'blockwise/{name}') + '.py')).read_text()
-            rec['template'] = 'acc += tl.dot(a, b) * a_s[:, None] * b_s[None, :]' in code
+            rec['template'] = '* a_s[:, None] * b_s[None, :]' in code
             ok = (fc.judge(cmp) == 'pass' and not rec['host_fallbacks'] and rec['template']
                   and any('e4m3' in k or 'e5m2' in k or 'f16' in k for k in rec.get('mma', {})))
             run.add('blockwise', name, 'pass' if ok else 'fail', summary=fc.summary_of(cmp),

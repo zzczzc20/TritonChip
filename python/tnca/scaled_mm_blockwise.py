@@ -16,7 +16,8 @@ This lowering is the K-block form of the same op, as a Triton template:
         acc += tl.dot(a[:, kb], b[kb, :]) * sa[row, kb][:, None] * sb[kb, col][None, :]
 
 The FP8 operands reach `tl.dot` as stored (the FP8 MMA, one binary32 rounding
-per product-add from +0.0 in ascending K); then `* sa`, `* sb`, `+ acc`, each
+per product-add from +0.0 in ascending K; an E4M3 x E5M2 pair in 16-deep
+steps into the same partial, the compiler's exact FP16 MMA); then `* sa`, `* sb`, `+ acc`, each
 rounded once. A bias, an FP8 output's `scale_result` and the conversion to the
 output dtype are pointwise nodes Inductor fuses into the template's store, as
 the epilogue of upstream's scaled-mm template does (`acc * s + bias` in
@@ -79,7 +80,7 @@ TEMPLATE_SOURCE = r'''
     rn = pid_n * BLOCK_N + tl.arange(0, BLOCK_N)
     offs_m = rm % M
     offs_n = rn % N
-    offs_k = tl.arange(0, BLOCK_K)
+    offs_k = tl.arange(0, KSUB)
     a_ptrs = A + (offs_m[:, None] * stride_am + offs_k[None, :] * stride_ak)
     b_ptrs = B + (offs_k[:, None] * stride_bk + offs_n[None, :] * stride_bn)
     sa_ptrs = SA + (offs_m // TILE_A) * sa_r
@@ -88,13 +89,27 @@ TEMPLATE_SOURCE = r'''
     acc = tl.zeros((BLOCK_M, BLOCK_N), dtype=tl.float32)
     for kb in range(0, tl.cdiv(K, BLOCK_K)):
         k_remaining = K - kb * BLOCK_K
-        a = tl.load(a_ptrs, mask=offs_k[None, :] < k_remaining, other=0.0)
-        b = tl.load(b_ptrs, mask=offs_k[:, None] < k_remaining, other=0.0)
         a_s = tl.load(sa_ptrs + kb * sa_k)
         b_s = tl.load(sb_ptrs + kb * sb_k)
+{%- if KSUB == BLOCK_K %}
+        a = tl.load(a_ptrs, mask=offs_k[None, :] < k_remaining, other=0.0)
+        b = tl.load(b_ptrs, mask=offs_k[:, None] < k_remaining, other=0.0)
         acc += tl.dot(a, b) * a_s[:, None] * b_s[None, :]
         a_ptrs += BLOCK_K * stride_ak
         b_ptrs += BLOCK_K * stride_bk
+{%- else %}
+        # Two FP8 encodings: the dot in KSUB-deep steps into one binary32
+        # partial, the same product-adds in the same order.
+        part = tl.zeros((BLOCK_M, BLOCK_N), dtype=tl.float32)
+        for kk in range(0, BLOCK_K // KSUB):
+            k_left = k_remaining - kk * KSUB
+            a = tl.load(a_ptrs, mask=offs_k[None, :] < k_left, other=0.0)
+            b = tl.load(b_ptrs, mask=offs_k[:, None] < k_left, other=0.0)
+            part = tl.dot(a, b, part)
+            a_ptrs += KSUB * stride_ak
+            b_ptrs += KSUB * stride_bk
+        acc += part * a_s[:, None] * b_s[None, :]
+{%- endif %}
 
     idx_m = rm[:, None]
     idx_n = rn[None, :]
@@ -174,11 +189,14 @@ def lower(mat_a, mat_b, scale_a, scale_b, tile_a, tile_b, kb_first_a, kb_first_b
     # a 128-deep K does not compile (16: out of vector registers; 32 and 64:
     # mismatched register-block widths), and BLOCK_K is the scale's K block.
     bm, bn = int(os.environ.get('TNCA_GEMM_TILE', '16,16,16').split(',')[0]), TILE
+    # E4M3 x E5M2: ISA sec 9C names one input format per MMA, and the
+    # compiler builds the exact FP16 substitute for 16-deep K steps only.
+    ksub = TILE if mat_a.get_dtype() == mat_b.get_dtype() else 16
     choices = []
     err = template().maybe_append_choice(
         choices, input_nodes=(mat_a, mat_b, sa, sb), layout=layout,
         num_stages=1, num_warps=1,
-        BLOCK_M=bm, BLOCK_N=bn, BLOCK_K=TILE, TILE_A=tile_a, TILE_B=tile_b,
+        BLOCK_M=bm, BLOCK_N=bn, BLOCK_K=TILE, TILE_A=tile_a, TILE_B=tile_b, KSUB=ksub,
         SA_KB_FIRST=bool(kb_first_a), SB_KB_FIRST=bool(kb_first_b))
     if not choices:
         raise RuntimeError(f'tnca blockwise scaled_mm template: {err}')

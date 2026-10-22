@@ -183,20 +183,10 @@ Other changes:
 
 ## Not done
 
-**Blockwise `torch._scaled_mm`, the second route, does not work.**
-PyTorch 2.14 does expose BlockWise1x128 and BlockWise128x128, through
-`F.scaled_mm` and `aten._scaled_mm_v2`. Three things block it:
-
-- CPU eager refuses blockwise scales with a `ValueError`, so there is no host
-  reference.
-- Inductor's only Triton lowering for it, `tuned_scaled_mm_v2`, is the
-  device-TMA main-loop scaling template, which `use_triton_tma_template` (CUDA
-  TMA) gates.
-- On tnca there is therefore no choice, and the call fails with
-  `NoValidChoicesError` (`runs/scaled_mm_v2_blockwise_probe.log`).
-
-Making it work means enabling the TMA templates for tnca's tensor descriptors.
-That was not attempted.
+**Blockwise `torch._scaled_mm`, the second route,** did not work when this was written: CPU eager refuses
+blockwise scales, and Inductor's only lowering is a CUDA-TMA template (`NoValidChoicesError` on tnca,
+`runs/scaled_mm_v2_blockwise_probe.log`). **It has since been done:** see `evidence/r41/fp8/blockwise/README.md`,
+a tnca K-block template, bitwise against plain-torch math in device order.
 
 ## No regression (final tree `files:31db6d37…`, commit 0b285e6)
 

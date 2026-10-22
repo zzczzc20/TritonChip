@@ -78,8 +78,9 @@ a raw upload crossing its top. Refusal terminates that model session.
 
 Slow Torch numerical passes do **not** establish timing convergence. The
 retained legacy-profile logs include unconverged commands and GEMM unmatched
-timing requests. These retain `inconclusive-fixed-point` timing status; the
-final summary independently classifies each final case. Native boundary campaigns use eight passes and report
+timing requests. The device-service smoke also records an inconclusive
+fixed point. The final summary independently classifies each case; numerical
+passes retain `inconclusive-fixed-point` whenever these exceptions occur. Native boundary campaigns use eight passes and report
 `uncalibrated-fixed-point-checked`. No numerical pass is promoted to a timing
 qualification.
 

@@ -1,6 +1,6 @@
 {
   "audited_compile_commit": "c2c96d3",
-  "candidate_commit": "d3de693570a175234fc223de4292a9f8c0a3750b",
+  "candidate_commit": "dca67755f6c0753d477a3dd613d81be66816e7df",
   "compile_source_paths": [
     "compiler",
     "python",

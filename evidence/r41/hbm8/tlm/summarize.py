@@ -30,11 +30,16 @@ def torch_case(path):
     slow = d['knobs']['TNCA_DRAM_PATH'] == 'slow'
     bad = {k: counters.get(k, 0) for k in
            ('dram_slow_unconverged', 'dram_slow_unmatched', 'dram_child_failures')}
-    timing = ('inconclusive-fixed-point' if any(bad.values()) else
+    checked = counters.get('dram_slow_commands', 0) > 0 and counters.get('dram_slow_fixed_point_checked', 0) == counters.get('dram_slow_commands', 0)
+    timing = ('inconclusive-fixed-point' if any(bad.values()) or not checked else
               'uncalibrated-fixed-point-checked') if slow else 'uncalibrated'
+    identity = read(next(path.parent.glob('model/*/identity.json')))
+    assert identity['binary_sha256'] == 'f2da72a2a9b3d0d89c5a2a28f1c555ae85c40c8cb6ec8ee7b1cb2d0880826d02', path
+    assert all(int(identity['config'][k]) == 0 for k in ('host_launch_cycles', 'host_transfer_cycles', 'host_transfer_cycles_per_kib')), path
     host = d['host']
     r = dict(status=d['status'], checks=len(d['checks']), graphs=len(d['graphs']),
-             window_bytes=d['window']['model_memory_bytes'], placements=d['placements'],
+             window_bytes=d['window']['model_memory_bytes'], placements=d['placements'], numerical_checks=d['checks'],
+             binary_sha256=identity['binary_sha256'],
              pc_bytes=pc, host=host, model_vmhwm_kib=d.get('model_vmhwm_kib'),
              model_timing_status=timing, timing_exceptions=bad,
              map_sha256=d['map']['sha256'], software_tree=d['software_tree'])
@@ -79,6 +84,8 @@ def main():
         if d.get('case') == 'stream':
             out['prior_scale'].append(dict(case=p.parent.name, status=d['status'], window=d['window'],
                                            tensor_bytes=2*d['placements']['x']['bytes'], host=d['host']))
+    out['source_manifest'] = read(a.raw/'source-manifest.json')
+    assert all(v['software_tree'] == out['source_manifest']['software_tree'] for v in out['torch'].values())
     a.out.write_text(json.dumps(out, indent=2) + '\n')
     print('All 10 final Torch cases, 4 native positives and 40 negative rows verified.')
 

@@ -279,8 +279,16 @@ def lower(imp, op):
     if name == 'tt.dot' and not matrix:
         # Split elementwise, a dot pairs A's K chunk c with B's chunk c --
         # right only when K is one chunk and the rows are not split.
-        from .frontend import _parse_type
-        a, _ = _parse_type(str(op.get_operand(0).get_type()))
+        from .frontend import _parse_type, _FP8_FORMATS
+        a, ae = _parse_type(str(op.get_operand(0).get_type()))
+        _b, be = _parse_type(str(op.get_operand(1).get_type()))
+        if (a[1] > imp.target.vlen or row_sizes) and ae != be and \
+                ae in _FP8_FORMATS and be in _FP8_FORMATS:
+            raise Unsupported(f'an E4M3 x E5M2 tl.dot with K={a[1]}',
+                              because="ISA sec 9C's mod[3:2] names one input format for both "
+                                      'operands, and the exact FP16 substitute is built for one '
+                                      f'K block of {imp.target.vlen}',
+                              remedy='one FP8 encoding for both operands, or a 16-deep K block')
         if a[1] > imp.target.vlen or row_sizes:
             raise Unsupported(f'a tl.dot of {a[0]}x{a[1]} by {a[1]}x{_width(op.get_result(0))} '
                               'that is not one matrix operation per column chunk',

@@ -42,6 +42,20 @@ this module sets, each through an upstream extension point:
   * `scaled_dot_product_attention` on a CPU tensor is decomposed (upstream's
     own math decomposition of `_scaled_dot_product_flash_attention_for_cpu`)
     instead of being kept as a host call.
+  * No decompose-K GEMM on TNCA device types (`TNCAChoices`, through
+    upstream's `inductor_choices_class`): for a skinny GEMM (K >= 64 *
+    max(M, N), e.g. a 1 x 2048 x 16 decode projection) Inductor offers only
+    its decompose-K subgraph, which splits K into a batched GEMM plus a sum.
+    TNCA has no configuration for it, so the graph had no choice at all
+    (NoValidChoicesError), and a split K would change the per-K FP32 FMA
+    order every TNCA GEMM keeps (R41 sec 2.2). The mm template, whose own
+    conditions admitted the shape, is offered instead.
+  * No split scans on TNCA device types (`_install_unsplit_scan`): Inductor's
+    split scan is a decoupled look-back across programs (cross-program
+    atomics and spin waits) whose R0_BLOCK is raised to
+    `min_split_scan_rblock` = 256 after the device heuristic, which TNCA
+    refuses; it also combines block partials in another order. A scan stays
+    one looped scan per row, the conservative schedule.
   * No compiled-graph cache (`fx_graph_cache`, AOTAutograd cache): their keys
     do not cover the registrations above. No autotuning benchmarks
     (`benchmark_epilogue_fusion`): the compiled graph never depends on host
@@ -233,6 +247,86 @@ def _decompose_cpu_attention():
     op = torch.ops.aten._scaled_dot_product_flash_attention_for_cpu.default
     if op not in decompositions and op in decomposition_table:
         decompositions[op] = decomposition_table[op]
+
+
+def _choices_class():
+    """InductorChoices for TNCA device types: no decompose-K GEMM.
+
+    `tuned_mm` offers decompose-K (a K-split batched GEMM and a sum) when
+    K >= 32 * max(M, N), and from 64 * max(M, N) it offers decompose-K
+    INSTEAD of the mm template. No TNCA heuristic serves decompose-K, so
+    above that ratio the GEMM had no choice, and in between it was offered
+    and dropped. Here the decompose-K subgraph is removed for TNCA device
+    types and the mm template takes its place when it was left out. The mm
+    template was inside the same `use_triton_template` condition, so this
+    only undoes the "Triton is slow for large K" preference -- a CUDA
+    performance rule -- and keeps the per-K FP32 FMA accumulation of every
+    other TNCA GEMM. Other devices get upstream's choices unchanged.
+    """
+    from torch._inductor.choices import InductorChoices
+
+    class TNCAChoices(InductorChoices):
+        def uuid(self):
+            return 'tnca-choices-1'
+
+        def get_template_configs(self, kernel_inputs, templates, op_name, kwarg_overrides=None):
+            if getattr(kernel_inputs, 'device_type', None) in TNCA_DEVICE_TYPES:
+                templates = _without_decompose_k(templates)
+            return super().get_template_configs(kernel_inputs, templates, op_name, kwarg_overrides)
+
+    return TNCAChoices
+
+
+def _without_decompose_k(templates):
+    from torch._inductor.kernel.mm import decompose_k_subgraph_template, mm_template
+    uids = [getattr(t, 'uid', None) for t in templates]
+    if decompose_k_subgraph_template.uid not in uids:
+        return templates
+    at = uids.index(decompose_k_subgraph_template.uid)
+    rest = [t for t in templates if getattr(t, 'uid', None) != decompose_k_subgraph_template.uid]
+    if mm_template.uid not in uids:
+        rest.insert(at, mm_template)
+    return rest
+
+
+def _install_choices(config):
+    """Install TNCAChoices through upstream's `inductor_choices_class`."""
+    current = config.inductor_choices_class
+    if current is not None and getattr(current, '_tnca', False):
+        return
+    if current is not None:
+        raise RuntimeError(f'inductor_choices_class is already set ({current!r}); '
+                           'TNCA needs its own to keep decompose-K off its devices')
+    cls = _choices_class()
+    cls._tnca = True
+    config.inductor_choices_class = cls
+
+
+def _install_unsplit_scan():
+    """One looped scan per row on TNCA device types: never a split scan.
+
+    Inductor's TritonSplitScanKernel splits a long scan across programs that
+    publish block sums and wait on their predecessors (decoupled look-back:
+    cross-program atomics and spin loops), and raises its R0_BLOCK to
+    `min_split_scan_rblock` (256) after the device heuristic, wider than any
+    TNCA register block. It also adds the block partials in a different
+    order from the sequential scan. With one split the scan is Inductor's
+    ordinary looped scan, which the reduction heuristic sizes like any other
+    row. Only the split count of TNCA devices changes.
+    """
+    import torch._inductor.ir as ir
+    upstream = ir.Scan.num_splits.__func__
+    if getattr(upstream, '_tnca', False):
+        return
+
+    def num_splits(cls, *args, **kwargs):
+        hint, splits = upstream(cls, *args, **kwargs)
+        device = kwargs.get('device', args[0] if args else None)
+        if getattr(device, 'type', None) in TNCA_DEVICE_TYPES:
+            return hint, 1
+        return hint, splits
+    num_splits._tnca = True
+    ir.Scan.num_splits = classmethod(num_splits)
 
 
 _NO_X_DIM = [False]
@@ -531,8 +625,12 @@ def configure(max_block=None, tensor_descriptors=None, no_x_dim=None):
     config.fx_graph_remote_cache = False
     import torch._functorch.config as functorch_config
     functorch_config.enable_autograd_cache = False
+    _install_choices(config)
+    _install_unsplit_scan()
     _register(max_block, reduction_rows, gemm_tile)
     _decompose_cpu_attention()
+    from . import linalg_decomp
+    linalg_decomp.register()
     from . import online_attention
     if sdpa_mode == 'fused':
         online_attention.enable()

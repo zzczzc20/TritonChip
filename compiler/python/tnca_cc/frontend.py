@@ -3272,13 +3272,20 @@ class TTIRImporter:
         if aff.col_stride != 1 or aff.row_stride <= 1 or not aff.dynamic:
             return None
         origin = (name, 0)
-        if name not in self._entry_args:
+        if name not in getattr(self, '_entry_args', ()):
             # A base formed after the prologue: rebuilt there from its
             # argument when it is one plus a constant, else not hoisted (the
             # caller builds the map where the base is defined).
-            origin = self._origin_const.get(name)
+            origin = getattr(self, '_origin_const', {}).get(name)
             if origin is None:
                 return None
+        elif not any(self._arg_value(name) is result
+                     for op in self.b.region.ops[:self._prologue_pos]
+                     for result in op.results):
+            # A sliced or loop-carried pointer is computed in the body. Its
+            # map must stay after that definition, rather than reading an
+            # undefined base at kernel entry (r41-fp8-ops B4).
+            return None
         rows, cols = [], []
         for v, c in aff.dynamic:
             if c % aff.row_stride == 0:
@@ -4709,7 +4716,14 @@ class TTIRImporter:
         'math.log': 'log', 'math.log2': 'log2',
         'math.sqrt': 'sqrt', 'math.rsqrt': 'rsqrt',
         'math.absf': 'absf',
+        'math.sin': 'sin', 'math.cos': 'cos',
     }
+    # Functions with no TTIR operation of their own, which TNCA's libdevice
+    # (python/tnca/triton_backend/libdevice.py) reaches through
+    # `tt.extern_elementwise` under these symbols. Each is a mathlib
+    # function built without the SFU.
+    _EXTERN = {'tnca_log1pf': 'log1p'}
+    _NO_SFU = ('log1p', 'sin', 'cos')
 
     def _fconst(self, value, elem='f32'):
         """A whole-vector float constant, emitted once per value.
@@ -4727,8 +4741,11 @@ class TTIRImporter:
         return v
 
     def _math(self, op, fname):
-        self.target.require('sfu', f"emit {fname}")
+        if fname not in self._NO_SFU:
+            self.target.require('sfu', f"emit {fname}")
         fn = getattr(mathlib, fname)
+        if fname in ('sin', 'cos'):
+            fn = self._sincos_of(fname)
         if self._is_2d(op):
             self._tile_binary(op, lambda xs, e: fn(
                 self.b, lambda c: self._fconst(c, e), xs[0], dtype=e))
@@ -4755,6 +4772,44 @@ class TTIRImporter:
 
     def _op_math_rsqrt(self, op):
         self._math(op, 'rsqrt')
+
+    def _sincos_of(self, fname):
+        """mathlib.sincos, once per input value: math.sin and math.cos of
+        the same value share the reduction and both polynomials. The pair
+        lives in `_fconst_cache` under its own key, so it is dropped at
+        every region boundary exactly as cached constants are."""
+        which = 0 if fname == 'sin' else 1
+
+        def fn(b, k, x, dtype='f32'):
+            key = ('sincos', id(x), dtype)
+            pair = self._fconst_cache.get(key)
+            if pair is None or pair[2] is not x:
+                s, c = mathlib.sincos(b, k, x, dtype=dtype)
+                pair = (s, c, x)
+                self._fconst_cache[key] = pair
+            return pair[which]
+        return fn
+
+    def _op_math_sin(self, op):
+        self._math(op, 'sin')
+
+    def _op_math_cos(self, op):
+        self._math(op, 'cos')
+
+    def _op_tt_extern_elementwise(self, op):
+        """A libdevice function with no TTIR operation (TNCA libdevice).
+
+        Only the symbols TNCA's own libdevice emits are known; any other
+        extern call -- a CUDA `__nv_*` symbol, say -- is refused by name.
+        """
+        symbol = op.get_str_attr('symbol')
+        fname = self._EXTERN.get(symbol)
+        if fname is None or op.get_num_operands() != 1:
+            raise Unsupported(f'no TNCA lowering for extern function {symbol!r}',
+                              because='only TNCA libdevice symbols have a lowering',
+                              remedy='use a function TNCA libdevice provides',
+                              source='python/tnca/triton_backend/libdevice.py')
+        self._math(op, fname)
 
     def _op_arith_divf(self, op):
         """IEEE division, which the ISA does not have (sec 8.2).

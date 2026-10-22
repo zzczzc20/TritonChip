@@ -134,7 +134,15 @@ FP8 B operand out of gathers: 37–58 LSU instructions per MMA. This candidate e
 
 ## Timing and area (unit OOC, x86 Vivado 2023.2, U280 part, 10 ns, `RCTX_W=2`)
 
-OOC_RESULT
+Post-synthesis, `flow/synth/vivado_ooc.sh tnca_tensor 10 RCTX_W=2 HAS_XPOSE=…`, reading only `core/tnca_tensor.v`; the stock script reads every file under `rtl/`, and `rtl/fpga/tnca_line_axi.v` does not parse in Verilog-2001 mode. Run with 6 threads, one job, inside the r41s2-int agent's slot lock. Reports are in `ooc_reports.tgz`.
+
+| build | WNS @ 10 ns | failing | CLB LUTs | registers | F7/F8 muxes | DSP | worst path |
+|---|---:|---:|---:|---:|---:|---:|---|
+| base cf28fe3, HAS_XPOSE=1 | +4.133 ns | 0 / 19,901 | 13,898 | 8,202 | 139 / 9 | 13 | `t_c3 → t_acc` (S_TMUL multiply), 20 levels |
+| X8 tree, HAS_XPOSE=1 | +4.133 ns | 0 / 19,901 | 13,898 | 8,202 | 139 / 9 | 13 | identical to base: the 16-bit image's netlist is unchanged |
+| **X8, HAS_XPOSE=2** | **+4.016 ns** | 0 / 19,872 | **14,330 (+432, +3.1 %)** | 8,201 | 268 / 32 | 13 | `t_mp → t_acc` (S_TMUL), 21 levels |
+
+The added cost is the 1-byte select of `x_data`/`vw_data`: +432 LUTs, plus muxes. No new register or DSP is needed. The worst path is still the start-address multiply, so the X8 logic is not on it; the 0.12 ns change is synthesis noise in that path. The census (routed) margin for tnca_tensor is untouched in a HAS=1 image. A HAS=2 image needs the routed screen.
 
 ## Files
 

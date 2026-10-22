@@ -714,6 +714,7 @@ class TTIRImporter:
         carried = []
         carried_lanes = {}      # result index -> (address kind, _LaneTerm)
         sep_carries = {}        # result index -> (carried scalar, Sep2D of the carry)
+        scalar_shares, shared_scalars = {}, {}
         pointer_tiles = set()
         mask_tiles = set()
         for i in range(op.get_num_results()):
@@ -790,7 +791,18 @@ class TTIRImporter:
                     # A mask is carried in a predicate register whatever its
                     # initial value arrived as (`dense<false>` is a vector).
                     init = self._as_pred(init)
-                val = self._copy_value(init)
+                share = None
+                if self.large_tiles and pointer and hasattr(op, 'op'):
+                    # Register chunks of one pointer with one scalar address
+                    # carry it once (their lane offsets differ, not it).
+                    result = op.get_result(i)
+                    share = ('ptr', id(op.op), getattr(result, 'value', result).id(), id(init))
+                    val = scalar_shares.get(share)
+                    if val is None:
+                        val = scalar_shares[share] = self._copy_value(init)
+                    shared_scalars[i] = share
+                else:
+                    val = self._copy_value(init)
                 self._v[block.get_argument(i + 1).id()] = val
                 self._v[op.get_result(i).id()] = val
                 if pointer:
@@ -805,7 +817,9 @@ class TTIRImporter:
                             self._offsets[term.id()] = ('arange', None)
                             self._v[term.id()] = self.b.arange()
                         else:
-                            self._v[term.id()] = self._copy_value(index)
+                            # Loop-invariant unless the loop adds per-lane
+                            # offsets, which the yield refuses.
+                            self._v[term.id()] = index
                         for dest in (block.get_argument(i + 1), op.get_result(i)):
                             self._ptr_chain[dest.id()] = [term]
                         carried_lanes[i] = (akind, term)
@@ -824,25 +838,29 @@ class TTIRImporter:
             if name == 'scf.yield':
                 # Snapshot every yielded value before assigning any carry;
                 # parallel SSA updates include swaps and cross-dependencies.
-                values = []
+                values = [None] * len(carried)
                 lane_updates = []
                 yielded_shares = set()
-                for i, dst in enumerate(carried):
+                order = range(len(carried))
+                if self.large_tiles:
+                    # Tiles first: the scalar snapshots then live for a few
+                    # instructions instead of across every tile's rows.
+                    order = sorted(order, key=lambda i: not isinstance(carried[i], Tile))
+                for i in order:
+                    dst = carried[i]
                     src = inner.get_operand(i)
                     if i in sep_carries:
                         delta, carried_sep, share = sep_carries[i]
                         if share in yielded_shares:
-                            values.append(None)     # the same scalar, already advanced
-                            continue
+                            continue     # the same scalar, already advanced
                         yielded_shares.add(share)
-                        values.append(self._copy_value(
-                            self._sep_advance(self._ptr2d[src.id()][2], delta, carried_sep)))
+                        values[i] = self._copy_value(
+                            self._sep_advance(self._ptr2d[src.id()][2], delta, carried_sep))
                         continue
                     held = self._tiles.get(src.id())
                     if self.index_opt and isinstance(dst, Tile) and held is not None \
                             and held.kind == dst.kind == 'accumulator' and held.handle is dst.handle:
                         # Already where the carry lives (_fuse_dot_add).
-                        values.append(None)
                         continue
                     if isinstance(dst, Tile):
                         if i in pointer_tiles:
@@ -853,7 +871,7 @@ class TTIRImporter:
                                 self._as_pred(mget(r)), self.b.vmovi(1), self.b.vmovi(0)))
                         else:
                             get = self._tile_row_getter(self._tile_of(src))
-                        values.append(self._materialise(get, dst.rows, dst.cols, dst.dtype))
+                        values[i] = self._materialise(get, dst.rows, dst.cols, dst.dtype)
                     else:
                         _, elem = _parse_type(str(src.get_type()))
                         if _pointee(elem):
@@ -871,12 +889,18 @@ class TTIRImporter:
                                         remedy='advance it by a lane-uniform amount')
                                 held = self._v[lane[1].id()]
                                 if akind == 'indexed' and index is not held:
-                                    lane_updates.append((held, self._copy_value(index)))
+                                    raise Unsupported(
+                                        'a loop-carried pointer advanced by per-lane offsets',
+                                        remedy='advance it by a lane-uniform amount')
                         else:
                             v = self._value(src)
                         if elem == 'i1':
                             v = self._as_pred(v)
-                        values.append(self._copy_value(v))
+                        if i in shared_scalars:
+                            if shared_scalars[i] in yielded_shares:
+                                continue
+                            yielded_shares.add(shared_scalars[i])
+                        values[i] = self._copy_value(v)
                 for held, index in lane_updates:
                     self.b._emit('assign', [], [held, index])
                 for dst, src in zip(carried, values):
@@ -2636,6 +2660,11 @@ class TTIRImporter:
         other = self._const.get(op.get_operand(2).id(), 0) if op.get_num_operands() > 2 else 0
         size = _load_suffix(_SIZE_SUFFIX[esize], elem)
 
+        loads = getattr(self, '_sep_loads', None)
+        if loads is None:
+            loads = self._sep_loads = {}
+        loads[op.get_result(0).id()] = (name, elem, sep)
+
         def row(r):
             at = self._sep_address(em, base, sep, r, esize)
             mask = self._shape_mask(cols, get_mask(r))
@@ -2667,6 +2696,245 @@ class TTIRImporter:
                 self.b.store(at, v, mask=mask, size=_SIZE_SUFFIX[esize])
             else:
                 self.b.scatter(at, lanes, v, mask=mask, size=_SIZE_SUFFIX[esize])
+
+    # ---- the swapped FP8 dot (extended lowering) ---------------------------
+    def _ttir_def(self, value):
+        return self._value_def.get(value.id())
+
+    def _row_index(self, v):
+        """(c, [scalar TTIR values]) with v[r] = r + c + sum(scalars) down the
+        rows of a [R, 1]/[R, C] or 1-D index, or None."""
+        d = self._ttir_def(v)
+        if d is None:
+            return None
+        name = d.get_name()
+        if name == 'tt.make_range':
+            return (d.get_int_attr('start') or 0, [])
+        if name == 'tt.broadcast' or (name == 'tt.expand_dims' and d.get_int_attr('axis') == 1):
+            return self._row_index(d.get_operand(0))
+        if name == 'arith.addi':
+            for x, y in ((d.get_operand(0), d.get_operand(1)), (d.get_operand(1), d.get_operand(0))):
+                ri, u = self._row_index(x), self._uniform_index(y)
+                if ri is not None and u is not None:
+                    return (ri[0] + u[0], ri[1] + u[1])
+        return None
+
+    def _uniform_index(self, v):
+        """(c, [scalar TTIR values]) for an integer tensor equal everywhere."""
+        k = self._scalar_const(v.id())
+        if k is not None:
+            return (k, [])
+        pending = self._pending_const.get(v.id())
+        if pending is not None and pending[0] in ('tile', 'vector') and str(pending[2]).startswith('i'):
+            return (int(pending[1]), [])
+        d = self._ttir_def(v)
+        if d is None:
+            return None
+        name = d.get_name()
+        if name == 'tt.splat':
+            src = d.get_operand(0)
+            k = self._scalar_const(src.id())
+            return (k, []) if k is not None else (0, [src])
+        if name in ('tt.broadcast', 'tt.expand_dims'):
+            return self._uniform_index(d.get_operand(0))
+        if name == 'arith.addi':
+            x, y = (self._uniform_index(d.get_operand(i)) for i in (0, 1))
+            if x is not None and y is not None:
+                return (x[0] + y[0], x[1] + y[1])
+        return None
+
+    def _row_limit(self, load):
+        """For a load masked by `row < bound` (any broadcast of it), the
+        scalar L with row r valid iff r < L; 'all' when unmasked; None when
+        the mask is anything else or `other` is not zero."""
+        if load.get_num_operands() < 2:
+            return 'all'
+        if load.get_num_operands() > 2:
+            other = load.get_operand(2)
+            val = self._const.get(other.id())
+            if val is None:
+                oid = other.id()
+                pend = (self._pending_const.get(oid) or
+                        self._pending_const.get(('register-chunk', oid, 0)) or
+                        self._pending_const.get(('register-row-chunk', oid, 0, 0)))
+                val = pend[1] if pend is not None else self._constant_value(self._ttir_def(other))
+            try:
+                if float(val) != 0.0:
+                    self._swap_no(('limit', 11)); return None
+            except (TypeError, ValueError):
+                self._swap_no(('limit', 12, repr(val), other.id() in self._pending_const)); return None
+        m = load.get_operand(1)
+        d = self._ttir_def(m)
+        while d is not None and d.get_name() == 'tt.broadcast':
+            m = d.get_operand(0)
+            d = self._ttir_def(m)
+        if d is None or d.get_name() != 'arith.cmpi':
+            self._swap_no(('limit', 2)); return None
+        pred = d.get_int_attr('predicate')
+        if pred not in (2, 3):                    # slt, sle
+            self._swap_no(('limit', 3)); return None
+        ri, bound = self._row_index(d.get_operand(0)), self._uniform_index(d.get_operand(1))
+        if ri is None or bound is None:
+            self._swap_no(('limit', 4)); return None
+        limit = self._const_scalar(bound[0] - ri[0] + (1 if pred == 3 else 0))
+        for x in bound[1]:
+            limit = self.b.sbin('add', limit, self._value(x))
+        for x in ri[1]:
+            limit = self.b.sbin('sub', limit, self._value(x))
+        return limit
+
+    def _swapped_dot(self, op):
+        """`tl.dot(a, b)` with FP8 operands, b a K-contiguous tile in memory
+        (a weight W[n, k] read as b[k, n]) and a computed: as C^T = B^T A^T.
+
+        A column-major FP8 B has no transposed transfer (the engine's
+        transposed write is 16-bit only), so as an MMA B operand it is one
+        gather and one byte store per K row. As the A operand of the
+        transposed product, each of its sixteen rows is one contiguous
+        64-byte vector load -- a fragment row is one register. A, computed
+        in the vector unit anyway, is scattered into the B-operand layout.
+        Every product is exact and each column of C^T accumulates in
+        ascending K, so C^T is C transposed bit for bit (sec 9C.1); it is
+        written back transposed into scratch rows. Returns False to leave
+        the dot to the ordinary lowering.
+        """
+        a_val, b_val, c_val = (op.get_operand(i) for i in range(3))
+        (m, k), ae = _parse_type(str(a_val.get_type()))
+        (k2, n), be = _parse_type(str(b_val.get_type()))
+        vlen = self.target.vlen
+        if (ae != be or ae not in _FP8_FORMATS or m != vlen or k != k2 or k <= vlen
+                or n % vlen):
+            return self._swap_no(1)
+        cz = self._pending_const.get(c_val.id()) or \
+            self._pending_const.get(('register-chunk', c_val.id(), 0))
+        if cz is None or float(cz[1]) != 0.0:
+            return self._swap_no('c')
+        # K32 steps: an A^T and a B^T fragment of eight registers each, so the
+        # two windows leave 48 vector registers to everything else.
+        steps = [int(x[1:]) for x in self.target.mma['k_steps']
+                 if k % int(x[1:]) == 0 and int(x[1:]) <= 32]
+        if not steps:
+            return self._swap_no(2)
+        step = max(steps)
+        load = self._ttir_def(b_val)
+        if load is None or load.get_name() != 'tt.load' or \
+                len(self._value_users.get(b_val.id(), [])) != 1:
+            return self._swap_no(3)
+        nchunks, kchunks = n // vlen, k // vlen
+        loads = getattr(self, '_sep_loads', {})
+
+        def b_sep(rc, j):
+            vid = ('register-row-chunk', b_val.id(), rc, j) if n > vlen else \
+                ('register-row-chunk', b_val.id(), rc, 0)
+            return loads.get(vid)
+        seps = {(rc, j): b_sep(rc, j) for rc in range(kchunks) for j in range(nchunks)}
+        if any(v is None for v in seps.values()):
+            return self._swap_no(4)
+        for (_rc, _j), (_name, _elem, sep) in seps.items():
+            if any(t[0] == 'rowvec' or (t[0] == 'row' and (t[2] != 1 or t[3])) for t in sep.row_terms()):
+                return self._swap_no(5)
+            if not any(t[0] == 'row' for t in sep.row_terms()):
+                return self._swap_no(6)
+        a_parts = [self._tiles.get(('register-chunk', a_val.id(), c)) for c in range(kchunks)]
+        if any(p is None for p in a_parts):
+            return self._swap_no(7)
+        limit = self._row_limit(load)
+        if limit is None:
+            return self._swap_no(8)
+        b = self.b
+        em = _SepEmitter(self)
+        name = seps[(0, 0)][0]
+        base = self._arg_value(name)
+        self.b.comment(f"tl.dot {m}x{k} by {k}x{n} FP8 as (B^T A^T)^T: B^T rows are "
+                       "contiguous loads, A is scattered into the MMA B operand")
+        lane_vecs = [em.lanes(seps[(0, j)][2]) for j in range(nchunks)]
+        lane16 = b.vbin('mul', b.arange(), b.splat(b.const(16), dtype='i32'), dtype='i32')
+        # A B^T fragment row is `step` bytes: W words, R rows a register.
+        words = step // 4
+        per_reg = vlen // words
+        lane4 = b.vbin('shl', b.vbin('and', b.arange(), b.vmovi(words - 1), dtype='i32'),
+                       b.vmovi(2), dtype='i32')
+        sub_rows = [None] if per_reg == 1 else [
+            b.vcmp('eq', b.vbin('lshr', b.arange(), b.vmovi(words.bit_length() - 1), dtype='i32'),
+                   b.vmovi(q)) for q in range(per_reg)]
+        accs = []
+        for j in range(nchunks):
+            acc = b.accumulator(name=f"acc{len(self.kernel.accumulators)}")
+            b.acc_zero(acc)
+            accs.append(acc)
+        col_addr = {}
+        for s0 in range(0, k, step):
+            # A^T for this K step: element (k, m) at k*16 + m.
+            at_addr = self._spill_region(step * vlen)
+            for c in range(step // vlen):
+                part = a_parts[s0 // vlen + c]
+                get = self._tile_row_getter(part)
+                for r in range(vlen):
+                    v = get(r)
+                    if part.store != ae:
+                        v = b.vcvt(part.store, ae, v)
+                    b.scatter(b.sbini('add', at_addr, c * vlen * vlen + r), lane16, v, size='b')
+            b.fence()
+            at_win = self._window_for(step, vlen, ae)
+            for i in range(at_win.length):
+                b.window_put(at_win, i, b.load(at_addr if i == 0 else b.sbini('add', at_addr, i * 64),
+                                               dtype='i32', size='w'))
+            at_tile = Tile('window', at_win, step, vlen, ae)
+            # Rows s0 .. s0+step of the block that the mask keeps: whole words
+            # load, a partial last word is masked to its bytes.
+            if limit == 'all':
+                wmask = keep = None
+            else:
+                valid = b.sbini('add', limit, -s0)
+                d = b.vbin('sub', b.splat(valid, dtype='i32'), lane4, dtype='i32')
+                wmask = b.vcmp('gt', d, b.vmovi(0))
+                t = b.vbin('min', b.vbin('max', d, b.vmovi(0), dtype='i32'), b.vmovi(4), dtype='i32')
+                part_bits = b.vbin('sub', b.vbin('shl', b.vmovi(1),
+                                                 b.vbin('shl', t, b.vmovi(3), dtype='i32'), dtype='i32'),
+                                   b.vmovi(1), dtype='i32')
+                keep = b.vselect(b.vcmp('ge', t, b.vmovi(4)), b.vmovi(-1), part_bits)
+            for j in range(nchunks):
+                _name, _elem, sep = seps[(s0 // vlen, j)]
+                row0 = em.scalar(Sep2D(sep.row_terms()), 0, scale=1)
+                start = base if row0 == 0 else (b.sbini('add', base, row0) if isinstance(row0, int)
+                                               else b.sbin('add', base, row0))
+                bt_win = self._window_for(vlen, step, ae)
+                lv = lane_vecs[j]
+                for i in range(bt_win.length):
+                    v = None
+                    for q in range(per_reg):
+                        row = i * per_reg + q
+                        at = b.sbin('add', start, b.vextract(lv, row)) if lv is not None else \
+                            (start if row == 0 else b.sbini('add', start, row))
+                        if q:
+                            # lane l of this register reads word l - q*W of the row
+                            at = b.sbini('add', at, -4 * words * q)
+                        mask = sub_rows[q]
+                        if wmask is not None:
+                            mask = wmask if mask is None else b.pbin('and', mask, wmask)
+                        part = b.load(at, mask=mask, other=0, dtype='i32', size='w')
+                        v = part if v is None else b.vbin('or', v, part, dtype='i32')
+                    if keep is not None:
+                        v = b.vbin('and', v, keep, dtype='i32')
+                    b.window_put(bt_win, i, v)
+                self._mma_into(accs[j], Tile('window', bt_win, vlen, step, ae), at_tile)
+        for j, acc in enumerate(accs):
+            off = self._take_scratch(vlen * vlen * 4)
+            addr = b.sbini('add', self._scratch_base(), off)
+            for i in range(vlen):
+                b.scatter(addr if i == 0 else b.sbini('add', addr, 4 * i), lane16,
+                          b.acc_read(acc, b.const(i)), size='w')
+            b.fence()
+            rid = ('register-chunk', op.get_result(0).id(), j) if n > vlen else op.get_result(0).id()
+            self._tiles[rid] = Tile('spilled', off, vlen, vlen, 'f32')
+        self._swapped_dots = getattr(self, '_swapped_dots', 0) + 1
+        return True
+
+    def _swap_no(self, why):
+        import os
+        if os.environ.get('TNCA_DEBUG_SWAP'):
+            print('swapped dot refused at', why)
+        return False
 
     def _sep_carry(self, offset, share):
         """A carried 2-D pointer's offset at loop entry: the initial index and
@@ -4884,6 +5152,12 @@ class TTIRImporter:
             off = value.id()
             okind, ouni = self._offsets.get(off, (None, None))
             known = self._scalar_const(off)
+            if known is None and self.large_tiles:
+                # A dense integer splat is one offset for every lane.
+                pend = self._pending_const.get(off)
+                if pend is not None and pend[0] == 'vector' and str(pend[2]).startswith('i') \
+                        and pend[2] != 'i1':
+                    known = int(pend[1])
             if known is not None and okind is None:
                 # A constant number of elements. `p + k * N + offs` with a
                 # constexpr k arrives here once Triton has folded `k * N`,

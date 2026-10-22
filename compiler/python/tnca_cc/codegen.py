@@ -115,6 +115,7 @@ class CodeGen:
         self._armed_ops = {}    # barrier index -> operations promised
         self._issued_ops = {}   # barrier index -> operations emitted
         self._mma_pending = {}  # barrier index -> fragment holds to release
+        self._dead_tokens = []  # scalar registers of tokens past their last use
 
     # ---- whole-program resources (sec 10.1) -------------------------------
     def assign_shared(self):
@@ -234,6 +235,20 @@ class CodeGen:
     def _alloc(self, v):
         if v.reg is not None:
             return v.reg
+        if v.kind in (SCALAR, EVENT, TOKEN):
+            try:
+                v.reg = self.alloc.scalar()
+            except ResourceError:
+                if not self._dead_tokens:
+                    raise
+                for reg in self._dead_tokens:
+                    try:
+                        self.alloc.free('s', reg)
+                    except Diagnostic:
+                        pass
+                self._dead_tokens = []
+                v.reg = self.alloc.scalar()
+            return v.reg
         if v.kind == SCALAR:
             v.reg = self.alloc.scalar()
         elif v.kind == VECTOR:
@@ -327,6 +342,12 @@ class CodeGen:
             if op.kind == 'window_reg':
                 continue    # an alias, not an allocation
             for v in op.results:
+                if v.kind in (EVENT, TOKEN) and v.reg is not None \
+                        and self._last_use.get(id(v)) == position:
+                    # A token past its last wait. Its register is returned only
+                    # if the scalars run out (_alloc), so a kernel that fits
+                    # keeps exactly the assignment it always had.
+                    self._dead_tokens.append(v.reg)
                 if v.kind in (VECTOR, SCALAR, PRED) and v.reg is not None \
                         and self._last_use.get(id(v)) == position:
                     kindc = {VECTOR: 'v', SCALAR: 's', PRED: 'p'}[v.kind]
@@ -365,7 +386,27 @@ class CodeGen:
                             neighbors[other_key] = (other, old[1] + 1)
             self._bank_reads = {key: tuple(values.values()) for key, values in edges.items()}
         for i, op in enumerate(ops):
-            getattr(self, f"_op_{op.kind}", self._unhandled)(op)
+            try:
+                getattr(self, f"_op_{op.kind}", self._unhandled)(op)
+            except ResourceError:
+                import os as _os
+                if _os.environ.get('TNCA_DEBUG_ALLOC'):
+                    held = {}
+                    for o in ops[:i + 1]:
+                        for v in list(o.results) + list(o.operands):
+                            if getattr(v, 'reg', None) is not None and getattr(v, 'kind', None) in (SCALAR, TOKEN, EVENT):
+                                held[id(v)] = v
+                    live = [v for v in held.values() if self._last_use.get(id(v), -1) >= i]
+                    print('free list', self.alloc._s_free, 'live set', sorted(self.alloc._live['s']))
+                    regs = {}
+                    for v in held.values():
+                        regs.setdefault(v.reg, []).append((v, self._last_use.get(id(v))))
+                    for r in sorted(self.alloc._live['s']):
+                        print('   s%d' % r, regs.get(r, [])[-2:])
+                    print('ALLOC FAIL at op', i, op.kind, 'live scalars', len(live))
+                    for v in live:
+                        print('  ', v, 'last', self._last_use.get(id(v)))
+                raise
             self._free_dead(i, ops)
         self._finish()
         return self.b

@@ -228,6 +228,9 @@ def lower(imp, op):
         widths_seen.add(a[1])
         imp._register_block_widths = widths_seen
         widths = {b[1]} if b[1] > imp.target.vlen else set()
+    if (matrix and op.get_name() == 'tt.dot' and getattr(imp, 'large_tiles', False)
+            and imp._swapped_dot(op)):
+        return True
     if not widths and not row_sizes:
         return False
     for value in values:
@@ -346,23 +349,57 @@ def _reduce(imp, op, width):
     seen.add((width, kind, op.get_int_attr('axis')))
     imp._register_reductions = seen
     rid = op.get_result(0).id()
+    if (getattr(imp, 'large_tiles', False) and kind in ('max', 'min') and isinstance(shape, tuple)
+            and elem.startswith('f')):
+        # Extended lowering: fold the chunks lane by lane first (max and min
+        # are order-free), then one lane reduction a row -- one vector live a
+        # row instead of every chunk's partials.
+        vlen = imp.target.vlen
+        getters = [imp._row_getter(_OpView(op, c, vlen).get_operand(0), shape[0], elem)
+                   for c in range(width // vlen)]
+        out_rows = []
+        for r in range(shape[0]):
+            acc = getters[0](r)
+            for g in getters[1:]:
+                acc = imp.b.vbin(kind, acc, g(r), dtype=elem, fmm='ieee')
+            out_rows.append(imp._reduce_vec(kind, acc, dtype=elem, mask=None, broadcast=True))
+        imp._tiles[rid] = Tile('col', tuple(out_rows), shape[0], 1, elem)
+        imp._v.pop(rid, None)
+        return True
     partials = []
+    # The extended lowering folds each chunk's partials into a running
+    # result as it goes, for the order-free folds (max, min): holding every
+    # chunk's partial for every row ran the vector registers out on a
+    # 16x128 tile. Sums keep the tree below, whose order is the result.
+    running = getattr(imp, 'large_tiles', False) and kind in ('max', 'min', 'max_prop', 'min_prop',
+                                                             'maxu', 'minu')
     imp._in_register_chunk = True
     try:
         for chunk in range(width // imp.target.vlen):
             imp._dispatch(_OpView(op, chunk, imp.target.vlen))
             if rid in imp._tiles:
                 tile = imp._tiles[rid]
-                partials.append([imp._tile_row_getter(tile, elem)(r) for r in range(tile.rows)])
+                part = [imp._tile_row_getter(tile, elem)(r) for r in range(tile.rows)]
             else:
-                partials.append([imp._v[rid]])
+                part = [imp._v[rid]]
+            if not partials:
+                scalar_rows = [x.kind == SCALAR for x in part]
+            if running and partials:
+                part = [imp.b.vbin(kind[:3] if kind.endswith('_prop') else kind,
+                                   imp.b.splat(x, dtype=elem) if x.kind == SCALAR else x,
+                                   imp.b.splat(y, dtype=elem) if y.kind == SCALAR else y,
+                                   dtype=elem, fmm='prop' if kind.endswith('_prop') else None)
+                        for x, y in zip(partials[0], part)]
+                partials = [part]
+            else:
+                partials.append(part)
     finally:
         imp._in_register_chunk = False
     rows = len(partials[0])
     combined_rows = []
     for row in range(rows):
         values = [p[row] for p in partials]
-        scalar = values[0].kind == SCALAR
+        scalar = scalar_rows[row]
         vectors = [imp.b.splat(v, dtype=elem) if v.kind == SCALAR else v for v in values]
         while len(vectors) > 1:
             vectors = [imp.b.vbin(kind[:3] if kind.endswith('_prop') else kind,

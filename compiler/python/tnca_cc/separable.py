@@ -126,41 +126,43 @@ class Emitter:
             nonlocal total
             total = v if total is None else b.sbin('add', total, v)
 
-        terms = []
+        rowvecs, ones = [], []
         for kind, value, k, scalars in sep.row_terms():
             f = self._factor(k * scale, scalars)
-            if isinstance(f, int):
-                if kind == 'one':
-                    const += f
-                elif kind == 'row':
-                    const += f * r
-                else:
-                    terms.append((kind, id(value), f, None))
-            else:
-                terms.append((kind, id(value) if value is not None else None, None, f))
-        # The runtime part of S(r), computed once per distinct set of terms and
-        # row; the compile-time part is one immediate add at each use.
-        key = ('sep-row', r, tuple(sorted((t[0], t[1], t[2], id(t[3]) if t[3] is not None else None)
-                                          for t in terms)))
-        total = self._cache.get(key) if terms else None
-        if terms and total is None:
-            values = {id(v): v for kind, v, _k, _s in sep.row_terms() if v is not None}
-            for kind, vid, kconst, f in terms:
-                if kind == 'one':
-                    add(f)
-                elif kind == 'row':
-                    if r:
-                        add(b.sbini('mul', f, r))
-                else:
-                    lane = self._cache.get(('sep-lane', vid, r))
-                    if lane is None:
-                        lane = self._cache[('sep-lane', vid, r)] = b.vextract(values[vid], r)
-                    if f is not None:
-                        add(b.sbin('mul', lane, f))
+            if kind == 'rowvec':
+                rowvecs.append((value, f))
+            elif isinstance(f, int):
+                const += f * (r if kind == 'row' else 1)
+            elif kind == 'one':
+                ones.append(f)
+            elif r:
+                ones.append(b.sbini('mul', f, r))
+        # The lane-indexed part as one vector, built once; row r is one
+        # extract of it. (Holding a scalar per row ran the 64 scalar
+        # registers out on a 16-row tile split eight ways.)
+        if rowvecs:
+            key = ('sep-rowvec', tuple((id(v), f if isinstance(f, int) else ('s', id(f)))
+                                       for v, f in rowvecs))
+            vec = self._cache.get(key)
+            if vec is None:
+                for v, f in rowvecs:
+                    if isinstance(f, int):
+                        term = v if f == 1 else b.vbin('mul', v, b.splat(b.const(f), dtype='i32'),
+                                                       dtype='i32')
                     else:
-                        add(lane if kconst == 1 else b.sbini('mul', lane, kconst))
-            if total is not None:
-                self._cache[key] = total
+                        term = b.vbin('mul', v, b.splat(f, dtype='i32'), dtype='i32')
+                    vec = term if vec is None else b.vbin('add', vec, term, dtype='i32')
+                self._cache[key] = vec
+            add(b.vextract(vec, r))
+        if ones:
+            key = ('sep-ones', tuple(sorted(id(f) for f in ones)))
+            total_ones = self._cache.get(key)
+            if total_ones is None:
+                total_ones = ones[0]
+                for f in ones[1:]:
+                    total_ones = b.sbin('add', total_ones, f)
+                self._cache[key] = total_ones
+            add(total_ones)
         if total is None:
             return const
         return total if not const else b.sbini('add', total, const)

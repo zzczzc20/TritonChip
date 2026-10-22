@@ -29,6 +29,11 @@
 // first has issued its last), so the memory port is the issuing unit's. The
 // unit's beat tag gets the unit number as its top bit, and a response goes
 // back by it. Two completions waiting together leave oldest first.
+//
+// REQ_REG (default 1, R41 F10) gives each unit a registered request boundary
+// (tnca_lsu): the port's valid is a queue register and issue spends a local
+// credit. "Issued its last beat" then means "its queue is empty", which a
+// unit reaches before it reports draining, so the rules above are unchanged.
 //==============================================================================
 `include "tnca_defs.vh"
 `default_nettype none
@@ -41,7 +46,8 @@ module tnca_lsu_pair #(
     parameter MEM_BYTES = 8,
     parameter MEM_SHIFT = 3,
     parameter NUM_BEATS = 8,          // outstanding beats per unit
-    parameter BEAT_W    = 4           // the port's tag width: unit bit + beat tag
+    parameter BEAT_W    = 4,          // the port's tag width: unit bit + beat tag
+    parameter REQ_REG   = 1           // registered request boundary per unit
 ) (
     input  wire                     clk,
     input  wire                     rst_n,
@@ -163,7 +169,7 @@ module tnca_lsu_pair #(
             tnca_lsu #(
                 .VLEN(VLEN), .ELEN(ELEN), .RCTX_W(RCTX_W),
                 .MEM_DW(MEM_DW), .MEM_BYTES(MEM_BYTES), .MEM_SHIFT(MEM_SHIFT),
-                .NUM_BEATS(NUM_BEATS), .BEAT_W(UB)
+                .NUM_BEATS(NUM_BEATS), .BEAT_W(UB), .REQ_REG(REQ_REG)
             ) u (
                 .clk(clk), .rst_n(rst_n),
                 .req_ready(u_ready[g]), .req_valid(u_take[g]),

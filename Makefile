@@ -695,6 +695,24 @@ r41-core-boundary: $(patsubst %,$(BUILD)/%.vvp,$(R41_BENCHES)) $(BUILD)/t41_boun
 	     | grep '^r41cov' | sed 's/^/      /'; \
 	 done; done
 
+# R41 F10: the LSU pair's registered request boundary (REQ_REG=1) against the
+# R40 combinational port, as a miter (tb/core/tb_lsu_reqreg.v): random
+# programs under back-pressure, long stalls and reordered responses, one with
+# an always-ready in-order memory, one with long latency, and the directed
+# program that checks one beat per cycle and the one-cycle request latency.
+LSU_REQREG_RUNS := "-Ptb_lsu_reqreg.SEED=1" \
+  "-Ptb_lsu_reqreg.SEED=2 -Ptb_lsu_reqreg.STALL_PCT=60" \
+  "-Ptb_lsu_reqreg.SEED=3 -Ptb_lsu_reqreg.STALL_PCT=0 -Ptb_lsu_reqreg.HOLD_PCT=0 -Ptb_lsu_reqreg.REORDER=0" \
+  "-Ptb_lsu_reqreg.SEED=4 -Ptb_lsu_reqreg.MAXLAT=200" \
+  "-Ptb_lsu_reqreg.DIRECTED=1"
+.PHONY: lsu-reqreg
+lsu-reqreg: | dirs
+	@for args in $(LSU_REQREG_RUNS); do \
+	   $(IVERILOG) -g2012 -I $(INC) -s tb_lsu_reqreg $$args -o $(BUILD)/tb_lsu_reqreg.vvp \
+	     $(TB)/core/tb_lsu_reqreg.v $(RTL)/core/tnca_lsu_pair.v $(RTL)/core/tnca_lsu.v || exit $$?; \
+	   $(VVP) $(BUILD)/tb_lsu_reqreg.vvp || exit $$?; \
+	 done
+
 #------------------------------------------------------------------------------
 # NUCA slice
 #------------------------------------------------------------------------------

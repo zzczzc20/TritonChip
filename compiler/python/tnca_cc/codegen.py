@@ -1088,6 +1088,11 @@ class CodeGen:
             # runtime trap.
             self.target.require('tensor_transpose',
                                 'emit a transposed t.ld.async')
+            if suffix == 'b':
+                # R41 X8 (HAS_TENSOR_XPOSE=2). An engine without it raises
+                # DESCRIPTOR_FAULT for a 1-byte transposed write.
+                self.target.require('tensor_transpose_8bit',
+                                    'emit a transposed 1-byte t.ld.async')
             suffix += '.t'
         self._emit(f"{mnem}.{suffix}", f"w{widx}", f"d{desc.reg}",
                     f"s{run[0]}", f"s{token.reg}",

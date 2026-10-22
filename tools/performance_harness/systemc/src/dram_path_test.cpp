@@ -73,7 +73,22 @@ int sc_main(int argc,char** argv){
         refuses([&]{DramAddressMap invalid(gap,32,256);},"gaps");
         std::istringstream repeated("TNCA_DRAM_MAP_V1\nwindow 128 320 384\npc 7 256 256 320 192\npc 7 512 256 512 192\n");
         refuses([&]{DramAddressMap invalid(repeated,32,256);},"repeated PC");
-        std::cout<<"{\"status\":\"pass\",\"checks\":[\"fast-boundaries\",\"slow-fallback\",\"key-roundtrip\",\"reordered-repeats\",\"domain-refusals\"]}\n";
+        // One 8 GiB BO over PC0-PC31 (the R41 planned map's geometry): the
+        // PC15/PC16 boundary, the last line and one byte past the BO top.
+        std::ostringstream eight;eight<<"TNCA_DRAM_MAP_V1\n# planned geometry\nwindow 131072 0 8589934592\n";
+        for(u64 pc=0;pc<32;++pc)eight<<"pc "<<pc<<' '<<(pc<<28)<<' '<<(1ULL<<28)<<' '<<(pc<<28)<<' '<<(1ULL<<28)<<'\n';
+        std::istringstream eight_in(eight.str());DramAddressMap wide(eight_in,32,1ULL<<28);
+        const u64 top=131072+(1ULL<<33);
+        auto pc15=wide.translate(131072+(1ULL<<32)-64),pc16=wide.translate(131072+(1ULL<<32)),pc31=wide.translate(top-64);
+        require(pc15.pc==15 && pc15.offset==(1ULL<<28)-64 && pc16.pc==16 && pc16.offset==0 && pc16.physical==(1ULL<<32),"8 GiB map: PC15/PC16 boundary");
+        require(pc31.pc==31 && pc31.offset==(1ULL<<28)-64 && pc31.physical==(1ULL<<33)-64,"8 GiB map: last BO line");
+        require(wide.translate(top-1,1).pc==31,"8 GiB map: last BO byte");
+        refuses([&]{wide.translate(top,1);},"outside AXI");
+        refuses([&]{wide.translate(top-63,64);},"outside AXI");
+        refuses([&]{wide.translate(131072+(1ULL<<32)-32,64);},"crosses");
+        std::istringstream short_pc(std::string("TNCA_DRAM_MAP_V1\nwindow 131072 0 8589934592\npc 0 0 268435456 0 268435456\n"));
+        refuses([&]{DramAddressMap invalid(short_pc,32,1ULL<<28);},"incomplete");
+        std::cout<<"{\"status\":\"pass\",\"checks\":[\"fast-boundaries\",\"slow-fallback\",\"key-roundtrip\",\"reordered-repeats\",\"domain-refusals\",\"8gib-map-boundaries\"]}\n";
         return 0;
     }catch(const std::exception& error){std::cerr<<error.what()<<'\n';return 1;}
 }

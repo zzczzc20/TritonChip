@@ -5353,6 +5353,12 @@ class TTIRImporter:
         # elements (`tensor_transpose_8bit`; absent on older images, which
         # keep the gather). Its K rows may be any whole number of vlen.
         byte = elem in _FP8_FORMATS and self.target.has('tensor_transpose_8bit')
+        if byte and any(_parse_type(str(u.get_operand(0).get_type()))[1] !=
+                        _parse_type(str(u.get_operand(1).get_type()))[1] for u, _ in users):
+            # A mixed-format FP8 dot converts its operands in registers first
+            # (one MMA input format per command, ISA sec 9C), which a window
+            # tile cannot be; it keeps the row-per-vector form.
+            return None
         if (not self.target.has('tensor_transpose') or op.get_num_operands() > 1
                 or not isinstance(aff, Affine2D)
                 or (elem not in ('f16', 'bf16') and not byte)

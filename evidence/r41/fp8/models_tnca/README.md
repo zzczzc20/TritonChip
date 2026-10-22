@@ -19,13 +19,13 @@ Gate (`gate/reg.sh`, `gate/rtl.sh` in the archive), on a copy of the tree with t
 
 | check | `x8` (`aba8e5f`) | `final` (`39edb5e`) | `x8dot` (`13ebed7`) |
 |---|---|---|---|
-| `make compiler` | compiler-unit 1/136 FAIL: the pre-existing control test above | **PASS**: compiler-unit 141, none skipped; compiler-ir 6/6 | pending |
-| `default_change_audit.py` against r41s1 (`r41-fp8-audit/run-ctrl`) | **113 unchanged, 0 changed** | **113 unchanged, 0 changed** | pending |
-| `fp8_cases.py` (full) | **100/100** | **100/100** | pending |
-| `fp8_kernels_cases.py` (full, profile v5) | **35/35** bitwise | **35/35** | pending |
-| addr64: `test_addr64.py` with RTL execution, plus `addr64_case.py` (15 case groups, 2.25/4.25 GiB, placements above 4 GiB, negatives) | **10/10**, all 15 groups pass | **10/10**, all 15 pass | pending |
+| `make compiler` | compiler-unit 1/136 FAIL: the pre-existing control test above | **PASS**: compiler-unit 141, none skipped; compiler-ir 6/6 | **PASS**: 141 / 6 |
+| `default_change_audit.py` against r41s1 (`r41-fp8-audit/run-ctrl`) | **113 unchanged, 0 changed** | **113 unchanged, 0 changed** | **113 unchanged, 0 changed** |
+| `fp8_cases.py` (full) | **100/100** | **100/100** | **100/100** |
+| `fp8_kernels_cases.py` (full, profile v5) | **35/35** bitwise | **35/35** | **35/35** |
+| addr64: `test_addr64.py` with RTL execution, plus `addr64_case.py` (15 case groups, 2.25/4.25 GiB, placements above 4 GiB, negatives) | **10/10**, all 15 groups pass | **10/10**, all 15 pass | **10/10**, all 15 pass |
 | X8 RTL (`make r41-xpose8-rtl`), `make core` | pass | (RTL unchanged) | (RTL unchanged) |
-| fp8-ops suites: `std_ops_cases.py`, `triangular_solve_cases.py` | – | **27 pass + 2 refused; 12/12** (identical to the fp8-ops README) | pending |
+| fp8-ops suites: `std_ops_cases.py`, `triangular_solve_cases.py` | – | **27 pass + 2 refused; 12/12** (identical to the fp8-ops README) | **27 + 2 refused; 12/12** |
 
 ## 2. Setup for the model runs
 
@@ -146,7 +146,7 @@ bit for bit. Targets without the capability keep the existing code.
 The two shapes with ragged N and wrapping chunks (7×136, 129×200) are about 2–3 % slower, because of the run-time
 check and the scratch gather. Real layer shapes gain 9–15 %.
 
-Model layers under the X8 dot: pending.
+Model layers under the X8 dot (`val/vl-lin-x8dot`, `val/vl-layer13-x8dot`): the 14 Qwen3-VL linears of section 3 again pass 14/14. They are bitwise equal to the TNCA-order re-derivation, with the same 16 prefill elements off the exact-dot CPU reference. The kernel now has 32 `t.ld.async.b.t`. Decoder layer 13 again gives rel-L2 9.27e-4 against the CPU layer, the same mismatch count as before. Wall times are not comparable: the gate shared the cores.
 
 ## 6. Remaining FP8 gaps
 
@@ -169,10 +169,11 @@ Model layers under the X8 dot: pending.
 
 | path | contents |
 |---|---|
-| `val/<run>/result.json`, `log`, `asm/` | per run: every comparison, knobs, timing; the `.s` and `.json` of each compiled kernel. Runs: `vl-lin`, `q35-lin`, `vl-layer13`, `q35-layer15`, `q35-layer14`, `vl-vision0` |
+| `val/<run>/result.json`, `log`, `asm/` | per run: every comparison, knobs, timing; the `.s` and `.json` of each compiled kernel. Runs: `vl-lin`, `q35-lin`, `vl-layer13`, `q35-layer15`, `q35-layer14`, `vl-vision0`, `vl-lin-x8dot`, `vl-layer13-x8dot` |
 | `val/val.sh` | the launcher (environment above) |
-| `gate/{x8,final}/` | status, logs, the default-audit comparison, fp8 / kernels / addr64 reports |
+| `gate/{x8,final,x8dot}/` | status, logs, the default-audit comparison, fp8 / kernels / addr64 reports |
 | `gate/reg.sh`, `gate/rtl.sh` | the gate scripts |
+| `x8dot-kernels/` | fp8_kernels_cases reports: base and X8 dot under x8 (`base-x8`, `c7-x8`) and under v5 (`base-v5`, `cand-v5`); `cmp.py` makes the cycle table |
 
 Reproduce on GB10: `val.sh NAME CORES linears|layer|vision --model vl|q35 --teacher-force ~/qwen-work/out/{vl,q35}/ref_fp8 …`
 (see `tools/models/qwen_tnca_layers.py --help`).

@@ -25,7 +25,7 @@
 #
 # Test overrides (defaults are the real host): HBM8_SYSFS, HBM8_STAGE1_LOG,
 # HBM8_STAGE1_PATTERN, HBM8_IDLE_MINUTES, HBM8_POLL_SECONDS, HBM8_MEMINFO,
-# HBM8_MIN_MEM_KB, HBM8_PYTHON, HBM8_HOME.
+# HBM8_MIN_MEM_KB, HBM8_MEM_WAIT_SECONDS, HBM8_PYTHON, HBM8_HOME.
 #==============================================================================
 set -u
 C=${1:?commit}
@@ -84,11 +84,11 @@ done
 wait_idle
 log "card idle for $IDLE_MIN consecutive minutes; loaded $(uuid), clock $(mhz) MHz"
 identity_ok || { log "loaded image/clock is not B40 at 90 MHz ($(uuid), $(mhz) MHz); stopping without loading anything"; exit 5; }
-waited=0
+memory_deadline=$((SECONDS + ${HBM8_MEM_WAIT_SECONDS:-21600}))
 while [ "$(mem_kb)" -lt $MIN_MEM_KB ]; do
-    [ $waited -ge 360 ] && { log "MemAvailable $(mem_kb) kB < $MIN_MEM_KB kB for 6 h; stopping"; exit 7; }
+    [ $SECONDS -ge $memory_deadline ] && { log "MemAvailable $(mem_kb) kB < $MIN_MEM_KB kB; memory wait budget exhausted; stopping"; exit 7; }
     log "MemAvailable $(mem_kb) kB < $MIN_MEM_KB kB; waiting"
-    sleep $((POLL * 5)); waited=$((waited + 5))
+    sleep $((POLL * 5))
     wait_idle
     identity_ok || { log "card changed while waiting for memory ($(uuid), $(mhz) MHz); stopping"; exit 5; }
 done

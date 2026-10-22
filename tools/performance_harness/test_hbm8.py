@@ -336,7 +336,8 @@ class QueueScriptTests(unittest.TestCase):
             t.add(tmp / 'archive/tools', arcname='tools')
         env = dict(HBM8_HOME=str(tmp), HBM8_SYSFS=str(tmp / 'sys'), HBM8_STAGE1_LOG=str(tmp / 'stage1.log'),
                    HBM8_STAGE1_PATTERN='^bash [^ ]*' + __import__('uuid').uuid4().hex, HBM8_IDLE_MINUTES='2', HBM8_POLL_SECONDS='0',
-                   HBM8_MEMINFO=str(tmp / 'meminfo'), HBM8_PYTHON=sys.executable, PATH='/usr/bin:/bin')
+                   HBM8_MEMINFO=str(tmp / 'meminfo'), HBM8_MEM_WAIT_SECONDS='0',
+                   HBM8_PYTHON=sys.executable, PATH='/usr/bin:/bin')
         r = subprocess.run(['bash', str(self.SCRIPT), 'abc'], env=env, capture_output=True, text=True, timeout=120)
         d = tmp / 'r41hbm8_board_abc'
         ran = (d / 'ran.txt').read_text().split() if (d / 'ran.txt').exists() else []

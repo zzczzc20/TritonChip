@@ -92,14 +92,25 @@
       "delay_model": "asap7"
     },
     {
-      "module": "tnca_fma_xls",
+      "module": "tnca_fma_align_xls",
       "source": "tnca_fma.x",
-      "top": "fma32",
-      "pipeline_stages": 3,
-      "clock_period_ps": null,
-      "delay_model": "asap7",
-      "why": "The binary32 FMA every FP result goes through, with subnormals (apfloat's flush is why it used to be hand-written; see xls/tnca_fma.x). Three stages, two registers, the result combinational from the last stage: latency 2, exactly the hand-written module's shape, so it is a drop-in: same FP_LAT, same cycles. No clock period: XLS finds the shortest period three stages allow, which is what balances them.",
-      "flop_outputs": false
+      "top": "fma32_align",
+      "pipeline_stages": 0,
+      "why": "First stage of the latency-2 binary32 FMA (FP_LAT = 2, the image's): unpack, classify, the 24x24 product, the exponent difference and the alignment shift with its sticky bit. Combinational: rtl/core/tnca_fp32_fma.v registers its FmaAligned result. R41 Stage 2 (F03/F08/F09) places the two cuts of this instance by hand, at the points the U280 measures as balanced -- after the alignment shift and after the leading-zero count -- because asap7, which the XLS schedule balances against, prices the 24x24 multiplier that the FPGA maps to two DSP48E2 slices at several times its FPGA cost and so moved the alignment shifter into the middle stage. The arithmetic of each stage is still generated from the one DSLX function, xls/tnca_fma.x, and fma32 is the three stages composed."
+    },
+    {
+      "module": "tnca_fma_norm_xls",
+      "source": "tnca_fma.x",
+      "top": "fma32_normalise",
+      "pipeline_stages": 0,
+      "why": "Second stage of the latency-2 FMA: add or subtract the aligned operands (the sticky borrow carry-selected), count leading zeros, and every quantity that follows the count. Combinational; registered by rtl/core/tnca_fp32_fma.v."
+    },
+    {
+      "module": "tnca_fma_round_xls",
+      "source": "tnca_fma.x",
+      "top": "fma32_round",
+      "pipeline_stages": 0,
+      "why": "Third stage of the latency-2 FMA: the normalising shift, round to nearest even (carry-select) and assembly. Combinational into the consumer's register (the vector writeback, the accumulator file), as the generated three-stage instance's last stage was: latency 2, a result every cycle, the same FP_LAT and the same cycles."
     },
     {
       "module": "tnca_fma_l3_xls",
@@ -108,7 +119,7 @@
       "pipeline_stages": 4,
       "clock_period_ps": null,
       "delay_model": "asap7",
-      "why": "The same FMA one stage deeper (four stages, three registers: latency 3), for a faster clock: selected by FP_LAT=3 through tnca_fp32_fma. The matrix unit's accumulate interleave (16 rows) and the vector FPU's reduction sequencer both take any FP_LAT up to 15.",
+      "why": "The same FMA one stage deeper (four stages, three registers: latency 3), for a faster clock: selected by FP_LAT=3 through tnca_fp32_fma. Scheduled by XLS from fma32, the three stage functions composed. The matrix unit's accumulate interleave (16 rows) and the vector FPU's reduction sequencer both take any FP_LAT up to 15.",
       "flop_outputs": false
     }
   ]

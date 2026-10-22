@@ -234,7 +234,8 @@ lint: dirs
 #------------------------------------------------------------------------------
 # The FMA is generated (xls/tnca_fma.x); tnca_fp32_fma picks the instance for
 # its latency. Both latencies are tested against the same oracle.
-FMA_GEN := $(RTL)/gen/tnca_fma_xls.v $(RTL)/gen/tnca_fma_l3_xls.v
+FMA_GEN := $(RTL)/gen/tnca_fma_align_xls.v $(RTL)/gen/tnca_fma_norm_xls.v \
+           $(RTL)/gen/tnca_fma_round_xls.v $(RTL)/gen/tnca_fma_l3_xls.v
 $(BUILD)/tb_fp32_fma.vvp: $(TB)/core/tb_fp32_fma.v $(RTL)/core/tnca_fp32_fma.v \
                           $(FMA_GEN) $(RTL_COMMON) | dirs
 	$(IVERILOG) $(IVFLAGS) -o $@ $^

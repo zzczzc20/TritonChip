@@ -3660,9 +3660,14 @@ class TTIRImporter:
 
     def _xpose_geometry_ok(self, d):
         """The engine's transposed-write rule (rtl/core/tnca_tensor.v S_TSETUP):
-        a 2-D tile of 16-bit elements with 4, 8 or 16 source rows."""
-        return (len(d.block) == 2 and d.elem in ('f16', 'bf16')
-                and d.block[0] in (4, 8, 16))
+        a 2-D tile of 16-bit elements with 4, 8 or 16 source rows -- or, on a
+        target with `tensor_transpose_8bit` (R41 X8), of FP8 elements whose
+        source row is whole 8-byte units."""
+        if len(d.block) != 2 or d.block[0] not in (4, 8, 16):
+            return False
+        if d.elem in _FP8_FORMATS:
+            return self.target.has('tensor_transpose_8bit') and d.block[1] % 8 == 0
+        return d.elem in ('f16', 'bf16')
 
     def _op_tt_descriptor_load(self, op):
         d = self._descs[op.get_operand(0).id()]
@@ -5344,10 +5349,17 @@ class TTIRImporter:
         users = self._value_users.get(op.get_result(0).id(), [])
         if not users or any(u.get_name() != 'tt.dot' or k > 1 for u, k in users):
             return None
+        # R41 X8: an FP8 tile too, on a target whose engine transposes 1-byte
+        # elements (`tensor_transpose_8bit`; absent on older images, which
+        # keep the gather). Its K rows may be any whole number of vlen.
+        byte = elem in _FP8_FORMATS and self.target.has('tensor_transpose_8bit')
         if (not self.target.has('tensor_transpose') or op.get_num_operands() > 1
-                or not isinstance(aff, Affine2D) or elem not in ('f16', 'bf16')
+                or not isinstance(aff, Affine2D)
+                or (elem not in ('f16', 'bf16') and not byte)
                 or aff.row_stride != 1 or aff.col_stride <= 1
-                or shape[0] != self.target.vlen or shape[1] not in (4, 8, 16)):
+                or (shape[0] % self.target.vlen or shape[0] > 256 if byte
+                    else shape[0] != self.target.vlen)
+                or shape[1] not in (4, 8, 16)):
             return None
         u = Affine2D(row_stride=aff.col_stride, col_stride=1, const=aff.const,
                      dynamic=aff.dynamic)

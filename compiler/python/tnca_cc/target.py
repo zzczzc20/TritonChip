@@ -26,6 +26,7 @@ TARGET_DIR = find('compiler', 'targets')
 _CAPABILITY_USE = {
     'sfu': 'emit v.*.approx for a transcendental',
     'tensor_transpose': "ask the transfer engine for a transposed write",
+    'tensor_transpose_8bit': "ask the transfer engine for a transposed write of 1-byte elements",
     'atomics_device': 'emit a device-scope atomic',
     'atomics_system': 'emit a system-scope atomic',
     'fence': 'emit a memory fence',
@@ -52,6 +53,8 @@ _CAPABILITY_FALLBACK = {
     'tensor_transpose': ('read the source down its columns with '
                          'v.ld.gather, which is what the compiler does '
                          'for tl.trans'),
+    'tensor_transpose_8bit': ('gather the 1-byte tile down its columns, as '
+                              'every image before R41 X8 does'),
     'atomics_device': None,
     'atomics_system': None,
     'fence': None,
@@ -250,7 +253,15 @@ class TargetInfo:
         return bool(self._d['memory']['addressable_scratchpad'])
 
     # ---- capability gate (sec 12) -----------------------------------------
+    # Capabilities a target file names only where they are true (R41 X8,
+    # tools/isa/gen_target.py): absent is False, so the files of every image
+    # built before them stay byte-identical and keep the old lowering.
+    _OPTIONAL_CAPABILITIES = frozenset({'tensor_transpose_8bit'})
+
     def has(self, capability):
+        if (capability in self._OPTIONAL_CAPABILITIES
+                and capability not in self._d['capabilities']):
+            return False
         if capability not in self._d['capabilities']:
             raise KeyError(
                 f"unknown capability {capability!r}; target describes "

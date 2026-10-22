@@ -640,6 +640,11 @@ $(BUILD)/tb_core_r39sw5.vvp: $(RTL_DEPS) $(TB)/core/tb_tnca_core.v \
                              $(TB)/common/tnca_mem_model.v | dirs
 	$(IVERILOG) $(IVFLAGS) -y $(RTL)/core -y $(RTL)/common -y $(RTL)/gen -y $(TB)/common \
 	   $(R39_SW5) -o $@ $(TB)/core/tb_tnca_core.v
+# R41 X8: core-vrf-sync-v5-x8's bench (the 1-byte transposed write).
+$(BUILD)/tb_core_r39sw5x8.vvp: $(RTL_DEPS) $(TB)/core/tb_tnca_core.v \
+                               $(TB)/common/tnca_mem_model.v | dirs
+	$(IVERILOG) $(IVFLAGS) -y $(RTL)/core -y $(RTL)/common -y $(RTL)/gen -y $(TB)/common \
+	   $(subst HAS_TENSOR_XPOSE=1,HAS_TENSOR_XPOSE=2,$(R39_SW5)) -o $@ $(TB)/core/tb_tnca_core.v
 $(BUILD)/tb_core_r39sw5_ooo.vvp: $(RTL_DEPS) $(TB)/core/tb_tnca_core.v \
                                  $(TB)/common/tnca_mem_model.v | dirs
 	$(IVERILOG) $(IVFLAGS) -y $(RTL)/core -y $(RTL)/common -y $(RTL)/gen -y $(TB)/common \

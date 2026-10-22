@@ -26,6 +26,7 @@ from tnca.runtime import _Allocator, DEVICE_RESERVED_RANGES          # noqa: E40
 import experiment                                                    # noqa: E402
 import hbm8_case                                                     # noqa: E402
 import hbm8_manifest                                                 # noqa: E402
+import hbm8_summary                                                  # noqa: E402
 
 GIB = 1 << 30
 MAP = json.loads((ROOT / 'evidence/r41/hbm8/xclbin_hbm_map.json').read_text())
@@ -305,6 +306,58 @@ class ManifestTests(unittest.TestCase):
         for change in (dict(loaded_uuid='428c00e5-6996-92c7-1f8f-ec41f2d037b3'), dict(clock_counter_mhz=[100]),
                        dict(contexts=1), dict(client_pid='3887377'), dict(contexts=None)):
             self.assertIsNotNone(experiment.board_refusal(identity, dict(good, **change)), change)
+
+
+class SummaryTests(unittest.TestCase):
+    def summarize(self, mode='board', fault=None):
+        import io
+        import tempfile
+        tmp = Path(tempfile.mkdtemp(prefix='hbm8-summary-'))
+        self.addCleanup(__import__('shutil').rmtree, tmp, True)
+        argv = ['--group', 'board-hbm8', '--out', str(tmp / 'summary.json')]
+        for i, name in enumerate(hbm8_manifest.GROUPS['board-hbm8']):
+            row = dict(status='functional-pass', mode=mode, software_tree='files:one',
+                       checks=[dict(name='values', ok=True)],
+                       axi_status_at_end=dict(error=False, stray=False))
+            if i == 0:
+                if fault == 'omit':
+                    continue
+                if fault == 'tree':
+                    row['software_tree'] = 'files:two'
+                if fault == 'mode':
+                    row['mode'] = 'sim'
+                if fault == 'check':
+                    row['checks'][0]['ok'] = False
+                if fault == 'axi':
+                    row['axi_status_at_end']['error'] = True
+                if fault == 'status':
+                    row['status'] = 'failed-preserved'
+            path = tmp / f'{name}.json'
+            path.write_text(json.dumps(row))
+            argv.append(f'{name}={path}')
+        with contextlib.redirect_stdout(io.StringIO()):
+            rc = hbm8_summary.main(argv)
+        return rc, json.loads((tmp / 'summary.json').read_text())
+
+    def test_complete_board_reports_qualify(self):
+        rc, record = self.summarize()
+        self.assertEqual(rc, 0)
+        self.assertTrue(record['qualified'])
+        self.assertEqual(record['mode'], 'board')
+
+    def test_simulation_does_not_claim_board_qualification(self):
+        rc, record = self.summarize(mode='sim')
+        self.assertEqual(rc, 0)
+        self.assertEqual(record['mode'], 'sim')
+        self.assertIn('run the waiting board experiment', record['next_step'])
+
+    def test_incomplete_mixed_or_failed_evidence_cannot_qualify(self):
+        for fault in ('omit', 'tree', 'mode', 'check', 'axi', 'status'):
+            with self.subTest(fault=fault):
+                rc, record = self.summarize(fault=fault)
+                self.assertEqual(rc, 1)
+                self.assertFalse(record['qualified'])
+                self.assertTrue(record['qualification_problems'])
 
 
 class QueueScriptTests(unittest.TestCase):

@@ -138,6 +138,14 @@ def lower(imp, op):
             b.vinsert(flags, i, b.scmp(cc, lane(operands[0], i, True), lane(operands[1], i, True)))
         _publish(imp, dst, b.vcmp('ne', flags, b.vmovi(0)), shape, 'i1')
         return True
+    if name in ('arith.sitofp', 'arith.uitofp') and has_wide:
+        if elem != 'f32':
+            raise Unsupported(f'a 64-bit integer converted to {elem}: only binary32 is exact here')
+        if count is None:
+            raise Unsupported(f'a 64-bit conversion over a {shape} block')
+        lo, hi = imp._wide[operands[0].id()]
+        _publish(imp, dst, to_f32(b, lo, hi, signed=name == 'arith.sitofp'), shape, 'f32')
+        return True
     if name == 'arith.select' and wide_result:
         dims, _ = _parse_type(str(operands[0].get_type()))
         cond = imp._value(operands[0]) if dims is None else _vector(imp, operands[0], 'i1')
@@ -201,6 +209,48 @@ def lower(imp, op):
             raise Unsupported(f'64-bit tensor operation {name}')
         output(lambda i: b.sbin(kinds[name], lane(operands[0],i), lane(operands[1],i)), count)
     return True
+
+
+def to_f32(b, lo, hi, signed=True):
+    """The 64-bit integers (hi:lo) per lane, rounded once to binary32 (RNE).
+
+    Branch-free over 32-bit lanes; exact for every input, which is what
+    `arith.sitofp`/`arith.uitofp` mean (an int64 position id, an index
+    converted to a float). The magnitude is H*2**32 + L. With H = 0 the
+    answer is the u32 conversion of L, which rounds once. Otherwise the
+    value has 32 + n significant bits, n = bitlength(H): its top 32 bits,
+    with every bit below them OR-ed into the lowest (a sticky bit, below
+    the guard bit of a 24-bit rounding), round exactly as the whole value
+    does; the result is that u32 conversion times 2**n, which is exact.
+    """
+    def v(c):
+        return b.vmovi(c)
+
+    def ibin(op, x, y):
+        return b.vbin(op, x, y, dtype='i32')
+
+    if signed:
+        s = ibin('ashr', hi, v(31))                   # 0 or -1 per lane
+        mag_lo = ibin('sub', ibin('xor', lo, s), s)   # two's complement magnitude
+        carry = ibin('and', s, b.vselect(b.vcmp('eq', mag_lo, v(0)), v(1), v(0)))
+        mag_hi = ibin('add', ibin('xor', hi, s), carry)
+    else:
+        mag_lo, mag_hi = lo, hi
+    small = b.vcvt('u32', 'f32', mag_lo, comment='|x| < 2**32: one rounding')
+    lz = b.vun('clz', mag_hi, dtype='i32')
+    n = ibin('sub', v(32), lz)                        # bitlength(H), 1..32 where H != 0
+    top = ibin('or', ibin('shl', mag_hi, lz),
+               ibin('lshr', ibin('lshr', mag_lo, ibin('sub', n, v(1))), v(1)))
+    below = ibin('and', mag_lo, ibin('lshr', v(-1), lz))
+    sticky = b.vselect(b.vcmp('ne', below, v(0)), v(1), v(0))
+    rounded = b.vcvt('u32', 'f32', ibin('or', top, sticky),
+                     comment='top 32 bits + sticky: one rounding')
+    scale = ibin('shl', ibin('add', n, v(127)), v(23))   # 2**n as a binary32 pattern
+    large = b.vbin('mul', rounded, scale, dtype='f32', comment='* 2**n, exact')
+    out = b.vselect(b.vcmp('eq', mag_hi, v(0)), small, large)
+    if signed:
+        out = b.vselect(b.vcmp('lt', hi, v(0)), b.vun('neg', out, dtype='f32'), out)
+    return out
 
 
 def _check_narrow(imp, lo, hi, count):

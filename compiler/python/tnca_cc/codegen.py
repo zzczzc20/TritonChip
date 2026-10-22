@@ -38,10 +38,13 @@ _SBINI = {'add': 's.addi', 'sub': 's.subi', 'mul': 's.muli',
           'and': 's.andi', 'or': 's.ori', 'xor': 's.xori',
           'shl': 's.shli', 'lshr': 's.lshri', 'ashr': 's.ashri'}
 _VBIN_INT = {'add': 'v.add', 'sub': 'v.sub', 'mul': 'v.mul',
+             'mulhu': 'v.mulh.u',
              'and': 'v.and', 'or': 'v.or', 'xor': 'v.xor',
              'andn': 'v.andn', 'shl': 'v.shl', 'lshr': 'v.lshr',
              'ashr': 'v.ashr', 'min': 'v.min.s', 'max': 'v.max.s',
              'minu': 'v.min.u', 'maxu': 'v.max.u'}
+# Integer lane unaries (ISA VINT): leading-zero count, 32 for a zero lane.
+_VUN_INT = {'clz': 'v.clz'}
 _VBIN_FP = {'add': 'vf.add', 'sub': 'vf.sub', 'mul': 'vf.mul',
             'min': 'vf.min', 'max': 'vf.max'}
 # Lane-local unaries. Float only: the ISA spells integer negation as a
@@ -578,6 +581,11 @@ class CodeGen:
         if sfu is not None:
             self.target.require('sfu', f"emit {op.attrs['op']}")
             self._emit(sfu, f"v{v.reg}", f"v{a.reg}",
+                        comment=op.attrs.get('comment'))
+            return
+        integer = _VUN_INT.get(op.attrs['op'])
+        if integer is not None and not _is_fp(v.dtype):
+            self._emit(integer, f"v{v.reg}", f"v{a.reg}",
                         comment=op.attrs.get('comment'))
             return
         if not _is_fp(v.dtype):

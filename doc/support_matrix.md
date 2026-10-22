@@ -76,7 +76,7 @@ it is a statement about which column of evidence exists.
 | `v.sub` | VINT | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
 | `v.mul` | VINT | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
 | `v.mulh.s` | VINT | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | no | no |
-| `v.mulh.u` | VINT | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | no | no |
+| `v.mulh.u` | VINT | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
 | `v.and` | VINT | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
 | `v.or` | VINT | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
 | `v.xor` | VINT | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
@@ -88,7 +88,7 @@ it is a statement about which column of evidence exists.
 | `v.max.s` | VINT | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
 | `v.min.u` | VINT | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
 | `v.max.u` | VINT | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
-| `v.clz` | VINT | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | no | no |
+| `v.clz` | VINT | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
 | `v.popc` | VINT | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | no | no |
 | `v.cmp` | VINT | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
 | `v.sel` | VINT | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
@@ -193,7 +193,7 @@ it is a statement about which column of evidence exists.
 | `mb.wait` | MBAR | mbarrier | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
 | `mb.inval` | MBAR | mbarrier | yes | yes | yes | yes | yes | yes | yes | yes | yes | no | no |
 
-169 instructions: 114 the compiler emits, 0 it has a lowering for and refuses on every R1 profile, 20 executed on the whole machine.
+169 instructions: 116 the compiler emits, 0 it has a lowering for and refuses on every R1 profile, 20 executed on the whole machine.
 
 `gated` in the emit column means the lowering exists and the capability
 is false everywhere, so asking for it is a compile error rather than a

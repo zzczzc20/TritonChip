@@ -181,7 +181,7 @@ def _matrix_descriptor(imp, op):
 # operations fail rather than accidentally executing a region once per chunk.
 _ALLOWED = {'tt.make_range', 'tt.splat', 'tt.addptr', 'tt.load', 'tt.store',
             'tt.broadcast', 'tt.bitcast', 'tt.fp_to_fp', 'tt.clamp', 'tt.reduce',
-            'tt.expand_dims', 'tt.reshape', 'tt.dot'}
+            'tt.expand_dims', 'tt.reshape', 'tt.dot', 'tt.extern_elementwise'}
 
 
 def lower(imp, op):

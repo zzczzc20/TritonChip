@@ -145,7 +145,14 @@ The E4M3 exactness claim holds: every product is a multiple of 2⁻¹⁸, and |�
 
 ## 8. End-to-end effect
 
-*From `model/README.md`, pending.* The R40 attribution already bounds the answer: in the single-core 2048³ FP16 matmul the matrix engine was busy for about 48 % of the device cycles (2,097,152 K16 commands × 310 cycles against 1.36×10⁹ cycles), and the rest was transfer admission and barrier sleep. Packing shortens only the busy part. It pays fully only where the transfer engine and memory keep up. FP8 also halves the bytes per MAC.
+**Measured in the model** (`model/README.md`; uncalibrated, so only the ratios count). V3 at G=4 cuts the engine's busy time per FP8 MMA from 302 to 87 cycles, yet FP8 W8A8 linears at M=1/128, 2048×6144 and 2560×9216 run only **0.99×–1.04×** faster. For BF16 at G=2 the result is 1.00×–1.04×.
+
+Reasons:
+- **Engine stall is a small share.** MMAs are asynchronous and overlap loads, so only 0.1–4.1 % of the time is a context stalled on the engine.
+- **FP8 waits on the weight transpose.** There is no 8-bit transposed write, so `W.t()` costs 37–58 LSU instructions per MMA. That makes FP8 1.2–3.6× slower than BF16 at the same shape.
+- **BF16 at M=128 waits on transfer-engine admission.** Barrier wait moves into admission wait, and the total does not change.
+
+Earlier context: the R40 attribution already bounds the answer: in the single-core 2048³ FP16 matmul the matrix engine was busy for about 48 % of the device cycles (2,097,152 K16 commands × 310 cycles against 1.36×10⁹ cycles), and the rest was transfer admission and barrier sleep. Packing shortens only the busy part. It pays fully only where the transfer engine and memory keep up. FP8 also halves the bytes per MAC.
 
 ## 9. Software
 
@@ -168,4 +175,10 @@ The E4M3 exactness claim holds: every product is a multiple of 2⁻¹⁸, and |�
 
 ## 11. Recommendation and implementation plan
 
-*Filled in from §7 and §8.*
+1. **Feasibility answer.** Packed MACs that share the FP32 lane are feasible only for E4M3×E4M3 at 4× (V3: +18 % per lane, +21.6k LUTs for the three cores, SLR0 at about 97.4 %, latency +1). FP16/BF16 at 2× and all FP8 pairs do not fit SLR0 or 10 ns in this floorplan.
+2. **Do not integrate V3 into the Stage 2 image yet.** It buys at most 4 % end to end today, at real SLR0 and timing risk, and that image has a budget of 5 full runs.
+3. **First, the FP8 hardware change that pays.**
+   - Add an 8-bit transposed write to the transfer engine (`tnca_tensor.v`, today 16-bit only), so an FP8 `W.t()` operand is one transfer, as it is for FP16.
+   - The alternative is the `m.mma.dp` n-major B layout (§6.2), but it only exists together with V3.
+   - The transposed write also serves the existing `m.mma.async.e4m3`.
+4. **Then re-run the model what-if with that fix applied** (V3 on and off, plus the transfer-engine and home-slice sensitivity configs in `model/configs`). Integrate V3 only if the gain is then material. The ISA encoding (§3), the oracle (`tools/model/fdp.py`) and the verified lane (`lane/`) stay ready for it.

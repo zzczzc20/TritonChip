@@ -1,0 +1,9 @@
+miter class 0: 5000000 vectors, 0 mismatches
+miter class 1: 5000000 vectors, 0 mismatches
+miter class 2: 5000000 vectors, 0 mismatches
+miter class 3: 5000000 vectors, 0 mismatches
+miter class 4: 5000000 vectors, 0 mismatches
+miter class 5: 5000000 vectors, 0 mismatches
+miter class 6: 5000000 vectors, 0 mismatches
+miter class 7: 5000000 vectors, 0 mismatches
+miter: 5000000 per class x 8 classes, checked V1 40000000 V2L 40000000 V2D 40000000 V3 40000000, 0 mismatches: PASS

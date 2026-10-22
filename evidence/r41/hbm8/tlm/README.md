@@ -84,13 +84,61 @@ passes retain `inconclusive-fixed-point` whenever these exceptions occur. Native
 `uncalibrated-fixed-point-checked`. No numerical pass is promoted to a timing
 qualification.
 
+## Final results (device-service profile, exact 8 GiB window)
+
+[summary.json](summary.json) is produced by `summarize.py --raw <extracted
+tlm8-logs.tgz>/hbm8-tlm`; it re-asserts every check below from the raw reports.
+
+| Case | Fast | Slow (Ramulator2) | Slow timing status |
+|---|---|---|---|
+| placement (PC16, PC31, top 8 MiB) | pass, 4 checks | pass, 4 checks | inconclusive (2 unconverged, 1 unmatched) |
+| crossing (store/load across 4 GiB) | pass, 5 checks | pass, 5 checks | inconclusive (4 unconverged, 48 unmatched) |
+| gemm (BF16 mm, FP16 addmm, upper half) | pass, 4 checks | pass, 4 checks | inconclusive (2 unconverged, 3 unmatched) |
+| refusal (Torch negatives) | pass, 7 checks | pass, 7 checks | inconclusive (1 unconverged) |
+| stream 5.5 GiB touched, 67 graphs | pass, 6 checks | pass, 6 checks | inconclusive (165 unconverged, 12,221 unmatched; 293 slow commands) |
+
+Both streams have per-PC traffic on every PC16-PC31, a bitwise-equal
+2,214,592,512-byte copy, and extrema plus sum checks against CPU. Native
+campaigns: 2 positives and 20 refused negatives each for the exact window and
+the full BO top. Together these cover one byte past the BO top, the window
+top, and the TMU hole. All slow cases are **numerically** correct.
+None is timing-qualified: the replay fixed point was checked but
+did not converge everywhere. No device-cycle result is claimed.
+
 ## Resources and limits
 
-The earlier legacy-profile 5.5 GiB fast stream passed in **727.059 seconds**,
-with **5.53 GiB** peak model RSS. Its slow counterpart was interrupted before
-its first full graph completed: legacy host-gap charges made each tiny replay
-process approximately 45 million refreshes. Final paired measurements use the
-explicit device-service profile described below and are pending. The resource runner restricts affinity to six CPUs,
+Measured on GB10 with six CPUs. KiB values from the reports, shown in GiB:
+
+| Run | Touched | Path | Parent RSS | Slow child RSS | Peak summed RSS / PSS | Wall |
+|---|---|---|---|---|---|---|
+| prior scale-256 † | 0.5 GiB | fast | 0.76 | - | - | 73 s |
+| prior scale-256 † | 0.5 GiB | slow | 1.59 | 1.38 | - | 472 s |
+| prior scale-1024 † | 2 GiB | fast | 3.02 | - | - | 283 s |
+| prior scale-1024 † | 2 GiB | slow | 6.33 | 5.59 | - | 2,271 s |
+| final stream | 5.5 GiB | fast | 5.53 | - | 6.31 / 6.11 | 1,036 s |
+| final stream | 5.5 GiB | slow | 5.74 | 5.71 | 12.15 / 6.43 | 5,059 s |
+
+† Earlier diagnostics. They use the legacy host-gap profile, a 0x200020000
+window and unchunked storages. They show the scaling trend only.
+
+With bounded chunks, model parent RSS tracks the touched footprint at about
+1.0-1.05 GiB per touched GiB. The earlier unchunked runs needed about 1.5x. The slow path adds a forked Ramulator2 replay child of similar
+RSS. Most of its pages are shared, so summed RSS is about 2.2x touched, but
+PSS is only about 1.2x. **A Qwen-sized run (5-6 GiB touched) fits GB10's
+limits on both paths.** Measured at 5.5 GiB, peak summed RSS is 6.3 GiB on the
+fast path and 12.2 GiB on the slow path. Both are under the 16 GiB shared-host
+budget and far below GB10's 119 GiB physical memory. Linear extrapolation
+to 6 GiB on the slow path gives about 13.3 GiB summed RSS. That figure is a
+prediction, not a measurement. The practical limit is wall time. Streaming the
+5.5 GiB footprint once took 17 minutes on the fast path and 84 minutes on the
+slow path. A full Qwen inference re-reads its weights for every token, so it
+would take correspondingly longer. That time was not measured.
+
+The earlier legacy-profile 5.5 GiB fast stream passed in 727.059 seconds
+with 5.53 GiB peak model RSS. Its slow counterpart was interrupted before
+its first full graph completed. Under the legacy host-gap charges, each tiny
+replay processed about 45 million refreshes. This is why the final runs use
+the device-service profile. The resource runner restricts affinity to six CPUs,
 requires at least 40 GiB initially available, and stops only its owned PIDs
 at 16 GiB summed process-tree RSS. Shared pages are counted in each process's
 RSS; PSS additionally reports their physical sharing. Model parent RSS, slow
@@ -103,11 +151,15 @@ and verification. Graph wall times include compilation on first use. Neither
 is a device performance measurement. A residency/stream test does not measure
 an entire Qwen inference or establish its end-to-end execution time.
 
-The interim [boundary and fast-path logs](boundary-and-fast-logs.tgz) retain
-the completed exact-window boundary cases, both native campaigns, the large
-fast run, map/unit/build logs, earlier scale diagnostics, and the interrupted
-attempt. The interrupted legacy large slow run is excluded from this interim archive
-and will be retained in the complete final archive.
+[tlm8-logs.tgz](tlm8-logs.tgz) is the complete raw archive. It holds every
+`final/` run, including all service-profile cases with model counters,
+fixed-point logs and resource samples. It also holds the interrupted legacy
+slow and fast attempts, both native campaigns, the build and unit logs, the
+4 and 8 GiB maps, the prior diagnostics,
+`configuration-diff.json` and `source-manifest.json`. Compiler caches and
+build trees are excluded. The earlier interim
+[boundary-and-fast-logs.tgz](boundary-and-fast-logs.tgz) is kept unchanged;
+it additionally holds the map exporter logs.
 
 ## Reproduction and evidence
 

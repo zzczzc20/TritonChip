@@ -1,0 +1,4 @@
+iverilog -g2005 -I rtl/common -o sim/build/tb_mul64.vvp tb/core/tb_mul64.v rtl/core/tnca_mul64.v
+tb_mul64: 60000 checks, 0 failures
+PASS
+tb/core/tb_mul64.v:43: $finish called at 600066000 (1ps)

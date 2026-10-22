@@ -1,0 +1,2 @@
+NUCA MAINTENANCE PASS full_tag=1 latency=8 stall=1 reorder=1 writes=4
+tb/nuca/tb_nuca_maintenance.v:148: $finish called at 3480000 (1ps)

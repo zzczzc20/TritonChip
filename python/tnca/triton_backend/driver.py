@@ -108,6 +108,7 @@ _atexit.register(_Sessions.close_all)
 
 
 _log_local = threading.local()
+_bench_local = threading.local()       # set while triton.autotune benchmarks a config
 
 
 def _active_logs():
@@ -195,7 +196,7 @@ class TNCALauncher:
         torch = _torch()
         if launch_enter_hook is not None:
             launch_enter_hook(launch_metadata)
-        if os.environ.get('TNCA_LAUNCH') == 'skip':
+        if os.environ.get('TNCA_LAUNCH') == 'skip' or getattr(_bench_local, 'compile_only', False):
             # Compile-only sweeps (TNCA_LAUNCH=skip): every kernel of a graph
             # is compiled, none is run, and the outputs are whatever the host
             # buffers held. The log says so, so no caller can take the
@@ -609,10 +610,19 @@ class TNCADriver(DriverBase):
 
     def get_benchmarker(self):
         def bench(fn, *a, **k):
-            import time
-            t = time.perf_counter()
-            fn()
-            return (time.perf_counter() - t) * 1e3
+            # triton.autotune on TNCA: every config is compiled, none is run
+            # (TNCA_LAUNCH=skip for the call). The host's wall time of a
+            # simulator or board round trip is not the device's time, and
+            # the configs Triton offers differ here only in what the backend
+            # can hold: one that does not fit raises OutOfResources at
+            # compile time and the tuner drops it. The rest tie, and the
+            # tuner keeps the first -- the kernel author's first choice.
+            _bench_local.compile_only = True
+            try:
+                fn()
+            finally:
+                _bench_local.compile_only = False
+            return 1.0
         return bench
 
     def get_empty_cache_for_benchmark(self):

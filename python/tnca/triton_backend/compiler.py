@@ -269,6 +269,10 @@ class TNCABackend(BaseBackend):
         for k, v in list(args.items()):
             if isinstance(v, list):
                 args[k] = tuple(v)
+        # Warps and pipeline stages are GPU launch shapes; TNCA's lowering
+        # reads neither, so configs that differ only there are one compile.
+        args['num_warps'] = 1
+        args['num_stages'] = 1
         resolved = TNCAOptions(**args)
         if not isinstance(resolved.physical_chunks, int) or resolved.physical_chunks not in (0, 1):
             raise ValueError('physical_chunks must be 0 or 1')

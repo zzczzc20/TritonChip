@@ -389,6 +389,17 @@ class TTIRImporter:
         current_block = None
         entry_caches = {n: dict(getattr(self, n)) for n in
                         ('_scalar_cache', '_fconst_cache', '_byte_offsets')}
+        self.row_split = None
+        if self.large_tiles and not cfg_blocks:
+            # Extended lowering: a program whose rows are independent runs as
+            # a loop over 16-row chunks (row_split), emitted once.
+            from .row_split import plan as _rs_plan, run as _rs_run
+            rs = _rs_plan(self, self._all_ops, self._bodies)
+            if rs is not None:
+                _rs_run(self, rs, [o for o in ops if o.get_name() not in
+                                   ('tt.func', 'builtin.module', 'tt.return')], self._dispatch)
+                ops = [o for o in ops if o.get_name() == 'tt.return']
+                self.row_split = rs.size
 
         for op in ops:
             name = op.get_name()

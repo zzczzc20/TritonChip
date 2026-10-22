@@ -234,6 +234,18 @@ def make_backend_class():
                 self._lost(text[4:])
             return text
 
+        def _send(self, payload):
+            # Caller holds _io. An unbuffered pipe write is one write(2), which
+            # Linux caps at 0x7ffff000 bytes and FileIO reports as a short
+            # count: a single >2 GiB upload would otherwise lose its tail and
+            # leave the model waiting for payload. Write until all of it is sent.
+            view = memoryview(payload).cast('B')
+            while view:
+                sent = self.wfile.write(view)
+                if not sent:
+                    self._lost('host channel accepted no payload bytes')
+                view = view[sent:]
+
         def _reply(self, status, r0=0, r1=0):
             self.seq += 1
             return T.Reply(self.seq, status, r0, r1)
@@ -255,7 +267,7 @@ def make_backend_class():
             with self._io:
                 self._host_handoff(addr, len(data))
                 self.wfile.write(f'W {int(addr)} {len(data)}\n'.encode())
-                self.wfile.write(bytes(data))
+                self._send(data)
                 if self._line() != 'OK':
                     self._lost('upload not acknowledged')
             self.host_seconds['upload'] += time.perf_counter() - t

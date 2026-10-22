@@ -244,7 +244,33 @@ it. Cache contents are read for the comparison after the meter closes.
 
 ## 7. Qwen3-VL vision tower on tnca
 
-Run in progress (`val/vl-tower`); results follow in the next commit.
+`qwen_tnca_layers.py tower` (`val/vl-tower`). The whole tower runs as **one** `torch.compile(fullgraph=True)`
+graph: the patch embedding, the interpolated position embedding, all 24 blocks, the merger and the 3 deepstack
+mergers. `grid_thw` and `cu_seqlens` stay on the CPU as host metadata (V4). Rotary positions and interpolation indices
+are precomputed with `transformers.vision_utils`, as in `cmd_run`.
+
+- **Input.** The CPU runner's fixed 256×256 image: grid 1×16×16, 256 patches, 64 merged tokens.
+- **Graph.** 28 kernels and 399 launches. That matches the compile-only V1–V5 probe.
+- **CPU reference.** The CPU bf16 tower reproduces the reference run's `vision_embeds` and the three deepstack
+  features **bit for bit**.
+- **Floor.** There is no FP8 in the tower, so the floor is the CPU reference's own bf16 rounding: the same tower in
+  fp32 on CPU, compared with the bf16 one.
+
+| output | shape | device vs CPU bf16, rel-L2 (cosine) | floor (CPU bf16 vs CPU fp32) | ratio | device vs CPU fp32 | result |
+|---|---|---|---|---|---|---|
+| `vision_embeds` (merger) | 64 × 2048 | **4.40e-2** (0.99903) | 3.78e-2 | 1.16 | 2.20e-2 | pass |
+| deepstack 0 (block 5) | 64 × 2048 | **1.07e-2** (0.99994) | 9.03e-3 | 1.18 | 6.91e-3 | pass |
+| deepstack 1 (block 11) | 64 × 2048 | **1.28e-2** (0.99992) | 1.01e-2 | 1.27 | 8.54e-3 | pass |
+| deepstack 2 (block 17) | 64 × 2048 | **1.80e-2** (0.99984) | 1.43e-2 | 1.26 | 1.00e-2 | pass |
+
+- The criterion is: finite, and rel-L2 ≤ max(2 × floor, 1e-2). All 4 outputs pass, at 1.16–1.27× the floor.
+- On every output, **the device is closer to the fp32 tower than the CPU bf16 reference is**, at 0.58–0.85× of the
+  CPU reference's own distance. Inductor computes fused pointwise ops in fp32 and rounds once.
+- Peak RSS: 4.7 GiB.
+- **Wall time was 3 h 04 min, above the 2 h budget.** The estimate before the run was about 75 min: 24 × block 0's
+  3.1 min (section 4), plus the merger. The real cost was about 7.7 min per block, counting the mergers. That is about 2.5× block 0
+  alone, whose kernels compiled in seconds. The cause was not investigated. The run was allowed to finish, because no
+  other work was waiting on those cores.
 
 ## 8. Remaining FP8 gaps
 
@@ -258,8 +284,9 @@ Run in progress (`val/vl-tower`); results follow in the next commit.
    GPU W8A8 outputs are not bitwise comparable.
 4. **`torch._scaled_mm` blockwise (v2)** still raises `NoValidChoicesError` on tnca: the TMA templates are not enabled
    for tnca descriptors (kernels README).
-5. **Vision dynamic shapes.** The vision block needs `capture_scalar_outputs=True` for `cu_seqlens.tolist()`. The
-   full-tower graph's unbacked symbols (B4 of the Qwen README) were not exercised beyond one block.
+5. **Vision dynamic shapes.** The full tower ran with one image (section 7: `capture_scalar_outputs=True`, and
+   `cu_seqlens` as host metadata). Two or more images or video frames remain refused (fp8-ops V4: symbolic segment
+   sizes).
 6. **X8 is a Stage 2 hardware feature.** Its RTL was cherry-picked onto the r41s1 RTL and passes the X8 RTL tests and
    `make core`. Only the 8 GiB SystemC model runs it; no board image has it.
 7. The packed FP8 MAC (r41-pmac) is not used. `_mma_into` and the X8 dot issue one MMA command per K32 step.

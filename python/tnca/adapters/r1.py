@@ -251,6 +251,9 @@ def import_ttir(module, func_name, arg_values, *, param_names, target,
                                   param_names=param_names,
                                   dynamic_args=dynamic_args)
     except r1['Unsupported'] as d:
+        if os.environ.get('TNCA_DEBUG_IMPORT'):
+            import traceback
+            traceback.print_exc()
         raise UnsupportedError(str(d).splitlines()[0],
                                where=f"TTIR function {func_name!r}",
                                detail={'diagnostic': str(d)})

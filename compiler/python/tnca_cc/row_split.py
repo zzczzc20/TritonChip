@@ -282,8 +282,22 @@ def run(imp, p, top_ops, dispatch):
             wrapped[key] = _MOp(op, p, chunk)
         return wrapped[key]
 
+    def chunk_poly(op):
+        return (op.get_num_results() and op.get_result(0).id() in p.poly_dims
+                and op.get_name() != 'tt.make_range')
+
+    def sequence(ops):
+        out = []
+        for o in ops:
+            if chunk_poly(o):
+                out.append(wrap(o, True))
+            out.append(wrap(o))
+        return out
+
     saved_bodies = dict(imp._bodies)
-    imp._bodies = {rid: [wrap(o) for o in body] for rid, body in saved_bodies.items()}
+    imp._bodies = {rid: sequence(body) for rid, body in saved_bodies.items()}
+    ranges = [o for o in imp._all_ops if o.get_name() == 'tt.make_range'
+              and o.get_result(0).id() in p.poly_dims]
     p.row0 = imp._copy_value(b.const(0))
     caches = ('_scalar_cache', '_fconst_cache', '_byte_offsets', '_aff_cache')
     saved = {n: dict(getattr(imp, n)) for n in caches}
@@ -291,22 +305,23 @@ def run(imp, p, top_ops, dispatch):
     b.label(start)
     b.comment(f'rows [r0, r0 + {vlen}) of a {p.size}-row program (row_split)')
     try:
-        for op in top_ops:
-            vid = op.get_result(0).id() if op.get_num_results() else None
-            if vid is not None and vid in p.poly_dims:
-                if op.get_name() == 'tt.make_range':
-                    first = op.get_int_attr('start') or 0
-                    rid = ('row-split', vid)
-                    row = p.row0 if not first else b.sbini('add', p.row0, first)
-                    imp._v[rid] = b.vbin('add', b.arange(), b.splat(row), dtype='i32')
-                    imp._uscalar[rid] = row
-                    imp._offsets[rid] = ('contiguous', rid)
-                else:
-                    printed = getattr(imp, '_printed_consts', None)
-                    if printed and vid in printed:
-                        printed[('row-split', vid)] = printed[vid]
-                    dispatch(wrap(op, True))
-            dispatch(wrap(op))
+        # The chunk's own row index, wherever a split arange is used: at the
+        # top of the iteration, where it dominates every use.
+        for op in ranges:
+            vid = op.get_result(0).id()
+            first = op.get_int_attr('start') or 0
+            rid = ('row-split', vid)
+            row = p.row0 if not first else b.sbini('add', p.row0, first)
+            imp._v[rid] = b.vbin('add', b.arange(), b.splat(row), dtype='i32')
+            imp._uscalar[rid] = row
+            imp._offsets[rid] = ('contiguous', rid)
+        printed = getattr(imp, '_printed_consts', None)
+        if printed:
+            for vid in list(p.poly_dims):
+                if vid in printed:
+                    printed[('row-split', vid)] = printed[vid]
+        for op in sequence(top_ops):
+            dispatch(op)
         nxt = b.sbini('add', p.row0, vlen)
         b._emit('assign', [], [p.row0, nxt])
         b.branch_nz(b.scmp('lt', p.row0, b.const(p.size)), start)

@@ -1912,7 +1912,14 @@ class TTIRImporter:
                 # `sm_scale` over the whole tile. Broadcast once; every
                 # row names the same register.
                 held = self._value(src)
-                v = self._broadcast_scalar(held, elem)
+                if self.large_tiles and held.kind == SCALAR:
+                    # One broadcast register for every register chunk.
+                    key = ('splat', id(held), elem)
+                    v = self._aff_cache.get(key)
+                    if v is None:
+                        v = self._aff_cache[key] = self._broadcast_scalar(held, elem)
+                else:
+                    v = self._broadcast_scalar(held, elem)
                 # A scalar register is splatted; a vector one is used as held.
                 self._tiles[rid] = Tile('lazy', lambda r: v, shape[0],
                                         shape[1], elem, replicated=held.kind == SCALAR)

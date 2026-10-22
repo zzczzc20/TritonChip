@@ -20,8 +20,17 @@ module tnca_vector_alu #(
     // them their own outputs, late_v/late_s, which the core registers and
     // writes back a cycle later (its scheduled-writeback path). LATE = 0 is
     // the unit as it was: late_* are zero and vres/sres carry everything.
+    //
+    // LATE = 2 (R41 T2 round 5) splits those operations across the two
+    // cycles instead: X registers the products and the MULH correction, the
+    // reductions' masked partial sums/bitwise partials of each group of four
+    // lanes, and the min/max keys with their pairwise compares; the cycle
+    // after X finishes them from those registers, and late_v/late_s are that
+    // cycle's result (the core uses them without a register of its own).
+    // Same values: integer add, and/or/xor are associative and commutative.
     parameter LATE = 0
 ) (
+    input  wire                    clk,     // LATE = 2 only
     input  wire [7:0]              major,
     input  wire [7:0]              func,
     input  wire [9:0]              mod,
@@ -77,6 +86,10 @@ module tnca_vector_alu #(
     // --------------------------------------------------------------------------
     reg  [ELEN-1:0] lane_res [0:VLEN-1];
     reg  [ELEN-1:0] lane_mul [0:VLEN-1];   // the multiply family's lane result
+    reg  [2*ELEN-1:0] lane_pu [0:VLEN-1];  // LATE = 2: the unsigned product
+    reg  [VLEN*ELEN-1:0] q_late_v;          // LATE = 2: the finished results
+    reg  [63:0]          q_late_s;
+    reg  [ELEN-1:0] lane_cxy [0:VLEN-1];   // LATE = 2: the MULH.S correction
     reg             lane_cmp [0:VLEN-1];
 
     // Per-lane clz/popc as O(log W) structures rather than the loops they were.
@@ -136,6 +149,8 @@ module tnca_vector_alu #(
                   - ((x[ELEN-1] ? y : {ELEN{1'b0}})
                    + (y[ELEN-1] ? x : {ELEN{1'b0}}));
 
+            lane_pu[i]  = pu;
+            lane_cxy[i] = (x[ELEN-1] ? y : {ELEN{1'b0}}) + (y[ELEN-1] ? x : {ELEN{1'b0}});
             case (func)
             `TNCA_V_MUL,  `TNCA_V_MULI:      lane_mul[i] = pu[ELEN-1:0];
             `TNCA_V_MULH_S:                  lane_mul[i] = ps_hi;
@@ -368,7 +383,7 @@ module tnca_vector_alu #(
         `TNCA_MAJ_VINT: begin
             for (i = 0; i < VLEN; i = i + 1)
                 vres[i*ELEN +: ELEN] = lane_res[i];
-            if (LATE)
+            if (LATE == 1)
                 for (i = 0; i < VLEN; i = i + 1)
                     late_v[i*ELEN +: ELEN] = lane_mul[i];
             for (i = 0; i < VLEN; i = i + 1)
@@ -385,11 +400,11 @@ module tnca_vector_alu #(
             sres = {{(64-ELEN){1'b0}}, a[mod[LW-1:0]]};
         end
         `TNCA_MAJ_RED: begin
-            if (LATE) begin
+            if (LATE == 1) begin
                 late_s = {{(64-ELEN){1'b0}}, red_result};
                 for (i = 0; i < VLEN; i = i + 1)
                     late_v[i*ELEN +: ELEN] = red_result;
-            end else begin
+            end else if (LATE == 0) begin
                 sres = {{(64-ELEN){1'b0}}, red_result};
                 for (i = 0; i < VLEN; i = i + 1)
                     vres[i*ELEN +: ELEN] = red_result;    // broadcast form
@@ -397,6 +412,101 @@ module tnca_vector_alu #(
         end
         default: ;
         endcase
+        if (LATE == 2) begin
+            late_v = q_late_v;
+            late_s = q_late_s;
+        end
+    end
+
+    // --------------------------------------------------------------------------
+    // LATE = 2: the split. Registered every cycle in X; finished the next.
+    // --------------------------------------------------------------------------
+    localparam NG = (VLEN >= 4) ? VLEN / 4 : 1;      // groups of four lanes
+    reg [2*ELEN-1:0] q_pu  [0:VLEN-1];
+    reg [ELEN-1:0]   q_cxy [0:VLEN-1];
+    reg [ELEN-1:0]   q_key [0:VLEN-1];
+    reg [ELEN-1:0]   q_add [0:NG-1];
+    reg [ELEN-1:0]   q_bit [0:NG-1];
+    reg [VLEN*VLEN-1:0] q_gt;
+    reg [7:0]        q_major, q_func;
+    reg [ELEN-1:0]   q_mmx;
+    reg [1:0]        q_bitop;
+    reg              q_redadd, q_redmm;
+    reg [ELEN-1:0]   g_add, g_bit;
+    integer qi, qk;
+    always @(posedge clk) if (LATE == 2) begin
+        for (qi = 0; qi < VLEN; qi = qi + 1) begin
+            q_pu[qi]  <= lane_pu[qi];
+            q_cxy[qi] <= lane_cxy[qi];
+            q_key[qi] <= mask[qi] ? (a[qi] ^ mm_x) : {ELEN{1'b0}};
+        end
+        for (qi = 0; qi < NG; qi = qi + 1) begin
+            g_add = {ELEN{1'b0}};
+            g_bit = bit_ident;
+            for (qk = 0; qk < 4 && qi*4 + qk < VLEN; qk = qk + 1) begin
+                g_add = g_add + (mask[qi*4+qk] ? a[qi*4+qk] : {ELEN{1'b0}});
+                case (bit_op)
+                2'd0:    g_bit = g_bit & (mask[qi*4+qk] ? a[qi*4+qk] : bit_ident);
+                2'd1:    g_bit = g_bit | (mask[qi*4+qk] ? a[qi*4+qk] : bit_ident);
+                default: g_bit = g_bit ^ (mask[qi*4+qk] ? a[qi*4+qk] : bit_ident);
+                endcase
+            end
+            q_add[qi] <= g_add;
+            q_bit[qi] <= g_bit;
+        end
+        q_gt     <= mm_gt;
+        q_major  <= major;
+        q_func   <= func;
+        q_mmx    <= mm_x;
+        q_bitop  <= bit_op;
+        q_redadd <= red_add;
+        q_redmm  <= red_mm;
+    end
+
+    reg [ELEN-1:0]      f_add, f_bit, f_best, f_red, f_mul;
+    reg [VLEN-1:0]      f_win;
+    integer fi, fj;
+    always @(*) begin
+        f_add = {ELEN{1'b0}};
+        f_bit = q_bit[0];
+        for (fi = 0; fi < NG; fi = fi + 1) begin
+            f_add = f_add + q_add[fi];
+            if (fi > 0)
+                case (q_bitop)
+                2'd0:    f_bit = f_bit & q_bit[fi];
+                2'd1:    f_bit = f_bit | q_bit[fi];
+                default: f_bit = f_bit ^ q_bit[fi];
+                endcase
+        end
+        for (fi = 0; fi < VLEN; fi = fi + 1) begin
+            f_win[fi] = 1'b1;
+            for (fj = 0; fj < VLEN; fj = fj + 1) begin
+                if (fj < fi)      f_win[fi] = f_win[fi] & q_gt[fi*VLEN + fj];
+                else if (fj > fi) f_win[fi] = f_win[fi] & ~q_gt[fj*VLEN + fi];
+            end
+        end
+        f_best = {ELEN{1'b0}};
+        for (fi = 0; fi < VLEN; fi = fi + 1)
+            f_best = f_best | ({ELEN{f_win[fi]}} & q_key[fi]);
+        f_red = q_redadd ? f_add : q_redmm ? (f_best ^ q_mmx) : f_bit;
+
+        q_late_v = {(VLEN*ELEN){1'b0}};
+        q_late_s = 64'd0;
+        if (q_major == `TNCA_MAJ_VINT) begin
+            for (fi = 0; fi < VLEN; fi = fi + 1) begin
+                case (q_func)
+                `TNCA_V_MUL, `TNCA_V_MULI: f_mul = q_pu[fi][ELEN-1:0];
+                `TNCA_V_MULH_S:            f_mul = q_pu[fi][2*ELEN-1:ELEN] - q_cxy[fi];
+                `TNCA_V_MULH_U:            f_mul = q_pu[fi][2*ELEN-1:ELEN];
+                default:                   f_mul = {ELEN{1'b0}};
+                endcase
+                q_late_v[fi*ELEN +: ELEN] = f_mul;
+            end
+        end else if (q_major == `TNCA_MAJ_RED) begin
+            q_late_s = {{(64-ELEN){1'b0}}, f_red};
+            for (fi = 0; fi < VLEN; fi = fi + 1)
+                q_late_v[fi*ELEN +: ELEN] = f_red;
+        end
     end
 
 endmodule

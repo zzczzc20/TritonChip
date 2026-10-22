@@ -225,7 +225,16 @@ module tnca_vector_fpu #(
             cvt_x[i] <= a[i];
         cvt_mod <= mod[5:0];
         cvt_fmt <= rst_n && (major == `TNCA_MAJ_CVT) && (func == `TNCA_CVT_FMT);
+        cvt_fn  <= func;
+        cvt_int <= rst_n && (major == `TNCA_MAJ_CVT) && (func != `TNCA_CVT_FMT);
     end
+    // R41 T2 round 5: the int <-> binary32 conversions join the delay line at
+    // stage 1 too, computed from the registered inputs, like vf.cvt.fmt
+    // (tile-0 screen: operand -> cvt -> dly_v[0], +0.690 ns). Same result,
+    // same cycle; the bench check compares it with the stage-0 value.
+    reg  [7:0]     cvt_fn;
+    reg            cvt_int;       // delay stage 0 holds an int <-> f32 vf.cvt
+    reg  [ELEN-1:0] cvt_l [0:VLEN-1];   // computed below, after cvt_int_f
     generate
         for (g = 0; g < VLEN; g = g + 1) begin : g_fcvt
             tnca_cvt_comb_xls u_cvt (
@@ -269,6 +278,109 @@ module tnca_vector_fpu #(
 
     reg [ELEN-1:0] mm  [0:VLEN-1];
     reg            cmpr[0:VLEN-1];
+    // R41 T2 round 5: the int <-> binary32 conversion as a function, so the
+    // same logic runs one stage later from the registered inputs (cvt_l).
+    function [31:0] cvt_int_f;
+        input [31:0] x;
+        input [7:0]  fn;
+        input [2:0]  rm;
+        reg [7:0]  cexp;
+        reg [23:0] cman;
+        reg [63:0] cmag;
+        reg [7:0]  csh;
+        reg        cneg, cuns, rnd_inc;
+        reg [63:0] cfrac_mask, cfrac, chalf;
+        reg [31:0] iv, imag, inorm;
+        reg [7:0]  ish, ie;
+        reg [24:0] iman;
+        reg        ig, ir, isk;
+        integer    kk;
+        begin
+            cvt_int_f = 32'd0;
+            if (fn == `TNCA_CVT_S32_F32 || fn == `TNCA_CVT_U32_F32) begin
+                // integer -> binary32
+                iv   = x;
+                cneg = (fn == `TNCA_CVT_S32_F32) && iv[31];
+                imag = cneg ? (~iv + 32'd1) : iv;
+                if (imag == 32'd0) begin
+                    cvt_int_f = 32'd0;
+                end else begin
+                    ish = 0;
+                    for (kk = 0; kk < 32; kk = kk + 1)
+                        if (imag[kk]) ish = kk[7:0];       // index of the MSB
+                    ie = 127 + ish;
+                    // left-align the magnitude so bit 31 is the MSB
+                    inorm = imag << (31 - ish);
+                    iman  = {1'b0, inorm[31:8]};           // 24 significant bits
+                    ig    = inorm[7];
+                    isk   = |inorm[6:0];
+                    ir    = ig & (isk | iman[0]);
+                    iman  = iman + {24'd0, ir};
+                    if (iman[24]) begin
+                        iman = iman >> 1;
+                        ie   = ie + 1;
+                    end
+                    cvt_int_f = {cneg, ie, iman[22:0]};
+                end
+            end else begin
+                // binary32 -> integer (ISA sec 8.4): round by rm,
+                // saturate out-of-range values to the integer extremes,
+                // NaN -> 0. An unsigned result below zero saturates to 0.
+                cexp = x[30:23];
+                cman = {1'b1, x[22:0]};
+                cneg = x[31];
+                cuns = (fn == `TNCA_CVT_F32_U32);
+                cfrac = 64'd0;
+                if (is_nan32(x)) begin
+                    cvt_int_f = 32'd0;
+                end else if (cexp < 8'd127) begin
+                    // |x| < 1: only the rounding mode can make it +-1
+                    case (rm)
+                    `TNCA_RND_RNE: rnd_inc = (cexp == 8'd126) && (x[22:0] != 23'd0); // |x| > 0.5
+                    `TNCA_RND_RMI: rnd_inc = cneg  && (x[30:0] != 31'd0);
+                    `TNCA_RND_RPI: rnd_inc = !cneg && (x[30:0] != 31'd0);
+                    default:       rnd_inc = 1'b0;                          // toward zero
+                    endcase
+                    cvt_int_f = !rnd_inc ? 32'd0 :
+                             (cneg ? (cuns ? 32'd0 : 32'hffffffff) : 32'd1);
+                end else if (cexp >= (cuns ? 8'd159 : 8'd158)) begin
+                    // |x| >= 2^31 (signed) or 2^32 (unsigned), and infinities
+                    cvt_int_f = cuns ? (cneg ? 32'd0 : 32'hffffffff)
+                                  : (cneg ? 32'h80000000 : 32'h7fffffff);
+                end else begin
+                    // 1 <= |x| < 2^32: |x| = {cman, 8'b0} / 2^csh with
+                    // csh = 158 - cexp in [0, 31], never negative or wrapped.
+                    csh   = 8'd158 - cexp;
+                    cmag  = {32'd0, cman, 8'd0} >> csh[4:0];
+                    cfrac_mask = (64'd1 << csh[4:0]) - 64'd1;
+                    cfrac = {32'd0, cman, 8'd0} & cfrac_mask;
+                    chalf = (csh[4:0] == 5'd0) ? 64'd0 : (64'd1 << (csh[4:0] - 5'd1));
+                    case (rm)
+                    `TNCA_RND_RNE: rnd_inc = (csh[4:0] != 5'd0) &&
+                                             ((cfrac > chalf) || ((cfrac == chalf) && cmag[0]));
+                    `TNCA_RND_RMI: rnd_inc = cneg  && (cfrac != 64'd0);
+                    `TNCA_RND_RPI: rnd_inc = !cneg && (cfrac != 64'd0);
+                    default:       rnd_inc = 1'b0;
+                    endcase
+                    cmag = cmag + {63'd0, rnd_inc};
+                    if (!cuns) begin
+                        // cmag <= 2^31: -2^31 is exact, +2^31 saturates
+                        cvt_int_f = cneg ? (~cmag[31:0] + 32'd1) :
+                                 (cmag > 64'd2147483647) ? 32'h7fffffff : cmag[31:0];
+                    end else begin
+                        cvt_int_f = cneg ? 32'd0 :
+                                 (cmag > 64'd4294967295) ? 32'hffffffff : cmag[31:0];
+                    end
+                end
+            end
+        end
+    endfunction
+
+    integer cl;
+    always @(*)
+        for (cl = 0; cl < VLEN; cl = cl + 1)
+            cvt_l[cl] = cvt_int_f(cvt_x[cl], cvt_fn, cvt_mod[2:0]);
+
     reg [ELEN-1:0] cvt [0:VLEN-1];
     wire [ELEN-1:0] fcvt[0:VLEN-1];
     reg [ELEN-1:0] na  [0:VLEN-1];
@@ -345,82 +457,7 @@ module tnca_vector_fpu #(
             endcase
 
             // ---- convert ---------------------------------------------------
-            if (func == `TNCA_CVT_S32_F32 || func == `TNCA_CVT_U32_F32) begin
-                // integer -> binary32
-                iv   = a[i];
-                cneg = (func == `TNCA_CVT_S32_F32) && iv[31];
-                imag = cneg ? (~iv + 32'd1) : iv;
-                if (imag == 32'd0) begin
-                    cvt[i] = 32'd0;
-                end else begin
-                    ish = 0;
-                    for (kk = 0; kk < 32; kk = kk + 1)
-                        if (imag[kk]) ish = kk[7:0];       // index of the MSB
-                    ie = 127 + ish;
-                    // left-align the magnitude so bit 31 is the MSB
-                    inorm = imag << (31 - ish);
-                    iman  = {1'b0, inorm[31:8]};           // 24 significant bits
-                    ig    = inorm[7];
-                    isk   = |inorm[6:0];
-                    ir    = ig & (isk | iman[0]);
-                    iman  = iman + {24'd0, ir};
-                    if (iman[24]) begin
-                        iman = iman >> 1;
-                        ie   = ie + 1;
-                    end
-                    cvt[i] = {cneg, ie, iman[22:0]};
-                end
-            end else begin
-                // binary32 -> integer (ISA sec 8.4): round by mod[2:0],
-                // saturate out-of-range values to the integer extremes,
-                // NaN -> 0. An unsigned result below zero saturates to 0.
-                cexp = a[i][30:23];
-                cman = {1'b1, a[i][22:0]};
-                cneg = a[i][31];
-                cuns = (func == `TNCA_CVT_F32_U32);
-                cfrac = 64'd0;
-                if (is_nan32(a[i])) begin
-                    cvt[i] = 32'd0;
-                end else if (cexp < 8'd127) begin
-                    // |x| < 1: only the rounding mode can make it +-1
-                    case (mod[2:0])
-                    `TNCA_RND_RNE: rnd_inc = (cexp == 8'd126) && (a[i][22:0] != 23'd0); // |x| > 0.5
-                    `TNCA_RND_RMI: rnd_inc = cneg  && (a[i][30:0] != 31'd0);
-                    `TNCA_RND_RPI: rnd_inc = !cneg && (a[i][30:0] != 31'd0);
-                    default:       rnd_inc = 1'b0;                          // toward zero
-                    endcase
-                    cvt[i] = !rnd_inc ? 32'd0 :
-                             (cneg ? (cuns ? 32'd0 : 32'hffffffff) : 32'd1);
-                end else if (cexp >= (cuns ? 8'd159 : 8'd158)) begin
-                    // |x| >= 2^31 (signed) or 2^32 (unsigned), and infinities
-                    cvt[i] = cuns ? (cneg ? 32'd0 : 32'hffffffff)
-                                  : (cneg ? 32'h80000000 : 32'h7fffffff);
-                end else begin
-                    // 1 <= |x| < 2^32: |x| = {cman, 8'b0} / 2^csh with
-                    // csh = 158 - cexp in [0, 31], never negative or wrapped.
-                    csh   = 8'd158 - cexp;
-                    cmag  = {32'd0, cman, 8'd0} >> csh[4:0];
-                    cfrac_mask = (64'd1 << csh[4:0]) - 64'd1;
-                    cfrac = {32'd0, cman, 8'd0} & cfrac_mask;
-                    chalf = (csh[4:0] == 5'd0) ? 64'd0 : (64'd1 << (csh[4:0] - 5'd1));
-                    case (mod[2:0])
-                    `TNCA_RND_RNE: rnd_inc = (csh[4:0] != 5'd0) &&
-                                             ((cfrac > chalf) || ((cfrac == chalf) && cmag[0]));
-                    `TNCA_RND_RMI: rnd_inc = cneg  && (cfrac != 64'd0);
-                    `TNCA_RND_RPI: rnd_inc = !cneg && (cfrac != 64'd0);
-                    default:       rnd_inc = 1'b0;
-                    endcase
-                    cmag = cmag + {63'd0, rnd_inc};
-                    if (!cuns) begin
-                        // cmag <= 2^31: -2^31 is exact, +2^31 saturates
-                        cvt[i] = cneg ? (~cmag[31:0] + 32'd1) :
-                                 (cmag > 64'd2147483647) ? 32'h7fffffff : cmag[31:0];
-                    end else begin
-                        cvt[i] = cneg ? 32'd0 :
-                                 (cmag > 64'd4294967295) ? 32'hffffffff : cmag[31:0];
-                    end
-                end
-            end
+            cvt[i] = cvt_int_f(a[i], func, mod[2:0]);
         end
     end
 
@@ -539,8 +576,7 @@ module tnca_vector_fpu #(
         `TNCA_MAJ_CVT: begin
             // vf.cvt.fmt's result joins at stage 1 (cvt_fmt, below).
             for (i = 0; i < VLEN; i = i + 1)
-                nf_v[i*ELEN +: ELEN] = (func == `TNCA_CVT_FMT) ? {ELEN{1'b0}}
-                                                               : cvt[i];
+                nf_v[i*ELEN +: ELEN] = {ELEN{1'b0}};   // joins at stage 1
         end
         default: ;
         endcase
@@ -574,9 +610,25 @@ module tnca_vector_fpu #(
             if (cvt_fmt)
                 for (i = 0; i < VLEN; i = i + 1)
                     dly_v[1][i*ELEN +: ELEN] <= fcvt[i];
+            if (cvt_int)
+                for (i = 0; i < VLEN; i = i + 1)
+                    dly_v[1][i*ELEN +: ELEN] <= cvt_l[i];
         end
     end
 
+`ifndef SYNTHESIS
+    // R41 T2 round 5: the stage-1 conversion equals the one stage 0 had.
+    reg [VLEN*ELEN-1:0] cvt_ref_q;
+    integer ci;
+    always @(posedge clk) begin
+        for (ci = 0; ci < VLEN; ci = ci + 1)
+            cvt_ref_q[ci*ELEN +: ELEN] <= cvt[ci];
+        for (ci = 0; ci < VLEN; ci = ci + 1)
+            if (rst_n && cvt_int && (cvt_l[ci] !== cvt_ref_q[ci*ELEN +: ELEN]))
+                $display("FAIL tnca_vector_fpu assert @%0t: stage-1 conversion lane %0d %h, stage 0 had %h",
+                         $time, ci, cvt_l[ci], cvt_ref_q[ci*ELEN +: ELEN]);
+    end
+`endif
     wire [7:0] out_maj = dly_maj[FP_LAT-1];
     wire [7:0] out_fn  = dly_fn[FP_LAT-1];
 

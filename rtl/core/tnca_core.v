@@ -1394,8 +1394,11 @@ module tnca_core #(
 
     wire [VLEN*ELEN-1:0] valu_late_v;
     wire [63:0]          valu_late_s;
-    tnca_vector_alu #(.VLEN(VLEN), .ELEN(ELEN), .LATE(1)) u_valu (
-        .major(x_major), .func(x_func), .mod(x_mod), .mask(lane_mask),
+    // R41 T2 round 5: LATE = 2 -- the unit registers its own split and
+    // valu_late_* is already the cycle-after-X result (vl_* carries only the
+    // destination and the predicate result).
+    tnca_vector_alu #(.VLEN(VLEN), .ELEN(ELEN), .LATE(2)) u_valu (
+        .clk(clk), .major(x_major), .func(x_func), .mod(x_mod), .mask(lane_mask),
         .va(va_data), .vb(vb_data), .sa(v_sop), .imm(x_imm),
         .use_imm(x_valu_imm),
         .pa(pa_data), .pb(pb_data),
@@ -1787,8 +1790,6 @@ module tnca_core #(
     reg [2:0]          vl_dstc;
     reg [7:0]          vl_dsti;
     reg [VLEN-1:0]     vl_len;
-    reg [VLEN*ELEN-1:0] vl_vdata;
-    reg [63:0]         vl_sdata;
     reg [VLEN-1:0]     vl_pdata;
     wire vl_wb = vl_v;
 
@@ -2044,7 +2045,7 @@ module tnca_core #(
           ({64{ws_lsu}}                    & lsu_cpl_sdata)
         | ({64{ws_red}}                    & red_sdata)
         | ({64{ws_mul}}                    & mul_sel)
-        | ({64{ws_vl}}                     & vl_sdata)
+        | ({64{ws_vl}}                     & valu_late_s)
         | ({64{ws_x && xs_arm}}            & bar_arm_token)
         | ({64{ws_x && xs_test}}           & {63'd0, bar_test_done})
         | ({64{ws_x && xs_link}}           & (x_pc + 64'd8))
@@ -2054,7 +2055,7 @@ module tnca_core #(
         | ({64{ws_x && xs_unit && !use_fpu}} & valu_s);
     wire [VLEN*ELEN-1:0] wb_vdata =
           ({(VLEN*ELEN){ws_lsu}}                             & lsu_cpl_vdata)
-        | ({(VLEN*ELEN){ws_vl}}                              & vl_vdata)
+        | ({(VLEN*ELEN){ws_vl}}                              & valu_late_v)
         | ({(VLEN*ELEN){ws_red}}                             & red_vdata)
         | ({(VLEN*ELEN){ws_fp || (ws_x && !x_is_avread && use_fpu)}} & fpu_v)
         | ({(VLEN*ELEN){ws_x && x_is_avread}}                & acc_rd_data)
@@ -2621,8 +2622,6 @@ module tnca_core #(
             vl_dstc    <= x_dstc;
             vl_dsti    <= x_dsti;
             vl_len     <= x_mask_dst ? lane_mask : {VLEN{1'b1}};
-            vl_vdata   <= valu_late_v;
-            vl_sdata   <= valu_late_s;
             vl_pdata   <= valu_p;
             mu_rctx[0] <= x_rctx;
             mu_dsti[0] <= x_dsti;
@@ -3083,7 +3082,7 @@ module tnca_core #(
     wire [63:0]          chk_valu_s;
     wire [VLEN-1:0]      chk_valu_p;
     tnca_vector_alu #(.VLEN(VLEN), .ELEN(ELEN), .LATE(0)) u_valu_ref (
-        .major(x_major), .func(x_func), .mod(x_mod), .mask(lane_mask),
+        .clk(clk), .major(x_major), .func(x_func), .mod(x_mod), .mask(lane_mask),
         .va(va_data), .vb(vb_data), .sa(v_sop), .imm(x_imm),
         .use_imm(x_valu_imm), .pa(pa_data), .pb(pb_data),
         .vres(chk_valu_v), .sres(chk_valu_s), .pres(chk_valu_p),
@@ -3241,7 +3240,7 @@ module tnca_core #(
                 $display("FAIL tnca_core assert @%0t: two scheduled writebacks in one cycle (alu=%b fp=%b mul=%b vl=%b)",
                          $time, x_has_dest, fp_wb, mul_wb, vl_wb);
             // R41 T2 (F04): the late result is the unit's original result.
-            if (vl_wb && ({vl_vdata, vl_sdata} !== {vl_ref_v, vl_ref_s}))
+            if (vl_wb && ({valu_late_v, valu_late_s} !== {vl_ref_v, vl_ref_s}))
                 $display("FAIL tnca_core assert @%0t: late vector-ALU result differs from the single-cycle unit's", $time);
             if (sched_wb !== wb_rsv[0])begin
                 // Failure-only diagnostics preserve the healthy execution

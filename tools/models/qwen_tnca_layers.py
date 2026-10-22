@@ -205,10 +205,10 @@ def cmd_layer(a):
     kind = (getattr(cfg, "layer_types", None) or ["full_attention"] * cfg.num_hidden_layers)[idx]
     layer, got = capture_layer(model, rt, idx, a)
     key = lambda i: f"prefill_hidden_{i:02d}"  # noqa: E731
-    h_in = rt[key(idx)]
     hs = got["kwargs"].get("hidden_states", got["args"][0] if got["args"] else None)
+    h_in = rt[key(idx)].reshape(hs.shape)       # the reference stores [tokens, hidden]
     res = dict(model=spec.name, layer=idx, layer_type=kind, device=a.device, knobs=knobs(),
-               tokens=int(h_in.shape[1]), kwargs={k: (list(v.shape), str(v.dtype)) if isinstance(v, torch.Tensor)
+               tokens=int(h_in.shape[-2]), kwargs={k: (list(v.shape), str(v.dtype)) if isinstance(v, torch.Tensor)
                                                     else (type(v).__name__ if not isinstance(v, (int, float, bool, str))
                                                           else v) for k, v in got["kwargs"].items()},
                cache_free_input_vs_reference_input=cmp(hs, h_in))
@@ -218,7 +218,7 @@ def cmd_layer(a):
         got["args"] = (h_in, *got["args"][1:])
     # CPU reference layer (dot exact, IEEE scale) and its rounding floor (dot fp32 / CUDA's reciprocal scale)
     y_ref = run_layer(layer, got["args"], got["kwargs"], torch.device("cpu"), False)
-    res["cpu_reference_vs_next_reference_hidden"] = cmp(y_ref, rt[key(idx + 1)]) if key(idx + 1) in rt else None
+    res["cpu_reference_vs_next_reference_hidden"] = cmp(y_ref, rt[key(idx + 1)].reshape(y_ref.shape)) if key(idx + 1) in rt else None
     floor = {}
     for tag, kw in (("dot_fp32", dict(dot="fp32")), ("scale_recip", dict(scale_div="recip"))):
         L.install_fp8_route("reference", **kw)

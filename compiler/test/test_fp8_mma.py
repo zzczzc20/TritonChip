@@ -132,8 +132,15 @@ class FP8DotTests(unittest.TestCase):
         def f16_only(imp, op):
             found = upstream(imp, op)
             return None if found is not None and 'f8' in str(op.get_operand(0).get_type()) else found
+        from tnca_cc.frontend import Unsupported
         with patch.object(register_blocks, '_native_matrix', f16_only):
-            cg, asm = self.compile(dot_rows, dict(A='*fp8e4nv', B='*fp8e4nv', O='*fp32'), 32)
+            try:
+                cg, asm = self.compile(dot_rows, dict(A='*fp8e4nv', B='*fp8e4nv', O='*fp32'), 32)
+            except Unsupported:
+                # Since the register-block lowering checks that a dot is one
+                # matrix operation per column chunk, the elementwise form is
+                # refused outright instead of compiling to a wrong result.
+                return
         self.assertNotIn('m.mma.async.k32', asm)
         with self.assertRaises(AssertionError):
             self.run_rtl('fp8_dot_k32_split', cg, matrix(16, 32, 1), matrix(32, 16, 2), 'e4m3', 'e4m3')

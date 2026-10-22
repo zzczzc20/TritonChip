@@ -606,6 +606,11 @@ module tnca_core #(
     // to the module-level wire -- which for a 1-bit signal produces no
     // warning at all. That is how mtx_rctx, mtx_vrf_req and this one were
     // each silently disconnected.
+    // R41 F01: stall_front stays the clock enable of the D/R/X pipeline
+    // registers and the fetch, about a thousand loads after F01. Its driver
+    // is replicated (MAX_FANOUT) so that each copy sits with its loads,
+    // rather than one net the placer would again route through a BUFG.
+    (* max_fanout = 200 *)
     wire                 stall_front;
     wire                 kill_d;          // forward: the D-stage squash (below)
     wire                 pf_haz_w;        // forward: VRF_PREFETCH's hazard (below)
@@ -1216,20 +1221,41 @@ module tnca_core #(
     // needs the same dependency check as any other source. Leaving it out would
     // let a transfer read a coordinate its producer had not written yet -- and
     // the wrong address is a wrong answer, not a slow one.
-    wire r_mma_sf = r_valid && (r_major == `TNCA_MAJ_MATRIX)
-                            && (r_func == `TNCA_M_MMA) && r_mod[4];
-    wire [5:0] r_sb2_idx = r_mma_sf ? (r_sc_idx + 6'd1) : (r_sb_idx + 6'd1);
-    wire r_reads_sb2 = (r_valid && (r_major == `TNCA_MAJ_TXFER)) | r_mma_sf;
+    //
+    // R41 F02: the extra indices and the two opcode tests are decoded in D
+    // and registered with the instruction (r_sb*_q, r_mma_sf_q, r_txfer_q)
+    // instead of being added and compared in R: they were the head of the
+    // core's worst remaining stall and scoreboard paths (r_major/r_func ->
+    // r_mma_sf -> the +1 adder and its mux -> the 256:1 sb_s lookup ->
+    // hazard). Same values: R's fields come from the same decode at the same
+    // edge. Without r_valid they may differ, and are then unused.
+    reg [5:0] r_sb2_q, r_sb3_q, r_sb4_q, r_sb5_q;
+    reg       r_mma_sf_q, r_txfer_q;
+    wire d_mma_sf = (dec_major == `TNCA_MAJ_MATRIX) && (dec_func == `TNCA_M_MMA)
+                 && dec_mod[4];
+    always @(posedge clk) begin
+        if (!stall_front) begin
+            r_sb2_q    <= d_mma_sf ? (dec_sc_idx + 6'd1) : (dec_sb_idx + 6'd1);
+            r_sb3_q    <= dec_sb_idx + 6'd2;
+            r_sb4_q    <= dec_sb_idx + 6'd3;
+            r_sb5_q    <= dec_sb_idx + 6'd4;
+            r_mma_sf_q <= d_mma_sf;
+            r_txfer_q  <= (dec_major == `TNCA_MAJ_TXFER);
+        end
+    end
+    wire r_mma_sf = r_valid && r_mma_sf_q;
+    wire [5:0] r_sb2_idx = r_sb2_q;
+    wire r_reads_sb2 = (r_valid && r_txfer_q) | r_mma_sf;
     wire hz_sb2 = r_reads_sb2 && `SB_S_BUSY(r_rctx, r_sb2_idx)
                               && !`AVAIL_S(r_rctx, r_sb2_idx);
     // And Sb+2..Sb+4 for a rank-3..5 transfer. The rank is in the descriptor
     // snapshot, which the issue stage cannot see, so every transfer checks
     // all five: a busy register it does not need costs a stall, a busy one it
     // does need and was not checked costs a wrong address.
-    wire r_is_txfer = r_valid && (r_major == `TNCA_MAJ_TXFER);
-    wire [5:0] r_sb3_idx = r_sb_idx + 6'd2;
-    wire [5:0] r_sb4_idx = r_sb_idx + 6'd3;
-    wire [5:0] r_sb5_idx = r_sb_idx + 6'd4;
+    wire r_is_txfer = r_valid && r_txfer_q;
+    wire [5:0] r_sb3_idx = r_sb3_q;
+    wire [5:0] r_sb4_idx = r_sb4_q;
+    wire [5:0] r_sb5_idx = r_sb5_q;
     wire hz_sbx = r_is_txfer &&
           ((`SB_S_BUSY(r_rctx, r_sb3_idx) && !`AVAIL_S(r_rctx, r_sb3_idx)) ||
            (`SB_S_BUSY(r_rctx, r_sb4_idx) && !`AVAIL_S(r_rctx, r_sb4_idx)) ||
@@ -1873,6 +1899,10 @@ module tnca_core #(
 
     //==========================================================================
     // X result mux
+    //
+    // R41 F04: this is the X result's definition, as a priority. The
+    // writeback below builds the same selection as one AND-OR (wb_*) and
+    // uses these only in the bench check.
     //==========================================================================
     reg [63:0]          x_sres;
     reg [VLEN*ELEN-1:0] x_vres;
@@ -1910,58 +1940,96 @@ module tnca_core #(
     wire cpl_grant = cpl_req && !sched_wb;
     wire wb_steal  = cpl_req &&  sched_wb;   // drain the schedule, then retry
 
+    //--------------------------------------------------------------------------
+    // R41 F04: the writeback DATA is one AND-OR over one-hot selects.
+    //
+    // The selects are the priority order below (which writer takes W) and
+    // the X result's source (x_sres's priority above), all from registered
+    // decode and the W arbitration, so they settle early. The data were
+    // nested in the two priority chains, with the X result -- and the vector
+    // ALU's, the slowest of its sources -- at the bottom of both: after the
+    // VALU's masked reduction, seven LUT levels of x_sres and nw_* muxing
+    // stood between it and w_sdata (census w_rctx -> w_sdata -0.908 ns; the
+    // F04 read change removes the front of that path, this the back). Each
+    // source now passes one AND and the OR tree. The same values, one-hot by
+    // construction; a bench assertion compares them with the chains.
+    //--------------------------------------------------------------------------
+    wire ws_lsu = cpl_grant && lsu_cpl_valid;
+    wire ws_red = cpl_grant && !lsu_cpl_valid;          // cpl_grant implies red_pend
+    wire ws_fp  = !cpl_grant && fp_wb;
+    wire ws_mul = !cpl_grant && !fp_wb && mul_wb;
+    wire ws_x   = !cpl_grant && !fp_wb && !mul_wb && x_has_dest;
+    wire xs_arm  = x_is_bar && (x_func == `TNCA_MB_ARM);
+    wire xs_test = x_is_bar && (x_func == `TNCA_MB_TEST);
+    wire xs_rest = !xs_arm && !xs_test;
+    wire xs_link = xs_rest && x_br_link;
+    wire xs_sys  = xs_rest && !x_br_link && (x_major == `TNCA_MAJ_SYS);
+    wire xs_salu = xs_rest && !x_br_link && (x_major == `TNCA_MAJ_SALU);
+    wire xs_unit = xs_rest && !x_br_link && (x_major != `TNCA_MAJ_SYS)
+                                         && (x_major != `TNCA_MAJ_SALU);
+    wire [63:0] wb_sdata =
+          ({64{ws_lsu}}                    & lsu_cpl_sdata)
+        | ({64{ws_red}}                    & red_sdata)
+        | ({64{ws_mul}}                    & mul_sel)
+        | ({64{ws_x && xs_arm}}            & bar_arm_token)
+        | ({64{ws_x && xs_test}}           & {63'd0, bar_test_done})
+        | ({64{ws_x && xs_link}}           & (x_pc + 64'd8))
+        | ({64{ws_x && xs_sys}}            & spec_rd)
+        | ({64{ws_x && xs_salu}}           & alu_result)
+        | ({64{ws_x && xs_unit && use_fpu}}  & fpu_s)
+        | ({64{ws_x && xs_unit && !use_fpu}} & valu_s);
+    wire [VLEN*ELEN-1:0] wb_vdata =
+          ({(VLEN*ELEN){ws_lsu}}                             & lsu_cpl_vdata)
+        | ({(VLEN*ELEN){ws_red}}                             & red_vdata)
+        | ({(VLEN*ELEN){ws_fp || (ws_x && !x_is_avread && use_fpu)}} & fpu_v)
+        | ({(VLEN*ELEN){ws_x && x_is_avread}}                & acc_rd_data)
+        | ({(VLEN*ELEN){ws_x && !x_is_avread && !use_fpu}}   & valu_v);
+    wire [VLEN-1:0] wb_pdata =
+          ({VLEN{ws_fp || (ws_x && use_fpu)}} & fpu_p)
+        | ({VLEN{ws_x && !use_fpu}}           & valu_p);
+
     always @(*) begin
         nw_en      = 1'b0;
         nw_rctx    = x_rctx;
         nw_class   = `TNCA_DST_NONE;
         nw_idx     = 8'd0;
-        nw_sdata   = 64'd0;
-        nw_vdata   = {(VLEN*ELEN){1'b0}};
-        nw_pdata   = {VLEN{1'b0}};
         nw_lane_en = {VLEN{1'b1}};
         lsu_cpl_ack = 1'b0;
 
-        if (cpl_grant && lsu_cpl_valid) begin
+        if (ws_lsu) begin
             lsu_cpl_ack = 1'b1;
             nw_en       = (lsu_cpl_dstc != `TNCA_DST_NONE);
             nw_rctx     = lsu_cpl_rctx;
             nw_class    = lsu_cpl_dstc;
             nw_idx      = lsu_cpl_dsti;
-            nw_sdata    = lsu_cpl_sdata;
-            nw_vdata    = lsu_cpl_vdata;
             nw_lane_en  = lsu_cpl_lane_en;
-        end else if (cpl_grant && red_pend) begin
+        end else if (ws_red) begin
             nw_en      = 1'b1;
             nw_rctx    = red_rctx;
             nw_class   = red_dstc;
             nw_idx     = red_dsti;
-            nw_sdata   = red_sdata;
-            nw_vdata   = red_vdata;
             nw_lane_en = red_len;
-        end else if (fp_wb) begin
+        end else if (ws_fp) begin
             nw_en      = 1'b1;
             nw_rctx    = fp_rctx[FP_LAT-1];
             nw_class   = fp_dstc[FP_LAT-1];
             nw_idx     = fp_dsti[FP_LAT-1];
-            nw_vdata   = fpu_v;
-            nw_pdata   = fpu_p;
             nw_lane_en = fp_len[FP_LAT-1];
-        end else if (mul_wb) begin
+        end else if (ws_mul) begin
             nw_en      = 1'b1;
             nw_rctx    = mu_rctx[MUL_LAT-1];
             nw_class   = `TNCA_DST_S;
             nw_idx     = mu_dsti[MUL_LAT-1];
-            nw_sdata   = mul_sel;
-        end else if (x_has_dest) begin
+        end else if (ws_x) begin
             nw_en      = 1'b1;
             nw_rctx    = x_rctx;
             nw_class   = x_dstc;
             nw_idx     = x_dsti;
-            nw_sdata   = x_sres;
-            nw_vdata   = x_vres;
-            nw_pdata   = x_pres;
             nw_lane_en = x_mask_dst ? lane_mask : {VLEN{1'b1}};
         end
+        nw_sdata = wb_sdata;
+        nw_vdata = wb_vdata;
+        nw_pdata = wb_pdata;
     end
 
     //==========================================================================
@@ -2869,6 +2937,25 @@ module tnca_core #(
     //==========================================================================
 `ifndef SYNTHESIS
     // synthesis translate_off
+    // R41 F04: the writeback data as the original priority chains chose
+    // them, for the assertion below.
+    reg [63:0]          ref_sdata;
+    reg [VLEN*ELEN-1:0] ref_vdata;
+    reg [VLEN-1:0]      ref_pdata;
+    always @(*) begin
+        ref_sdata = 64'd0; ref_vdata = {(VLEN*ELEN){1'b0}}; ref_pdata = {VLEN{1'b0}};
+        if (cpl_grant && lsu_cpl_valid) begin
+            ref_sdata = lsu_cpl_sdata; ref_vdata = lsu_cpl_vdata;
+        end else if (cpl_grant && red_pend) begin
+            ref_sdata = red_sdata; ref_vdata = red_vdata;
+        end else if (fp_wb) begin
+            ref_vdata = fpu_v; ref_pdata = fpu_p;
+        end else if (mul_wb) begin
+            ref_sdata = mul_sel;
+        end else if (x_has_dest) begin
+            ref_sdata = x_sres; ref_vdata = x_vres; ref_pdata = x_pres;
+        end
+    end
     integer          chk_k;
     reg [7:0]        chk_di, chk_ri;
     reg [PHYS_W-1:0] chk_dp, chk_rp;
@@ -3042,6 +3129,19 @@ module tnca_core #(
                 if (r_valid && chk_rp !== (vbase_q[r_rctx*PHYS_W +: PHYS_W] + chk_ri[PHYS_W-1:0]))
                     $display("FAIL tnca_core assert @%0t: R source %0d physical register %0d is wrong", $time, chk_k, chk_rp);
             end
+            // R41 F02: the registered indices and opcode tests equal what R
+            // would compute from its own fields.
+            if (r_valid && ((r_mma_sf !== ((r_major == `TNCA_MAJ_MATRIX) && (r_func == `TNCA_M_MMA) && r_mod[4]))
+                            || (r_txfer_q !== (r_major == `TNCA_MAJ_TXFER))
+                            || (r_sb2_idx !== (r_mma_sf ? (r_sc_idx + 6'd1) : (r_sb_idx + 6'd1)))
+                            || (r_sb3_idx !== r_sb_idx + 6'd2) || (r_sb4_idx !== r_sb_idx + 6'd3)
+                            || (r_sb5_idx !== r_sb_idx + 6'd4)))
+                $display("FAIL tnca_core assert @%0t: R's registered transfer/MMA indices disagree with R (pc=%0h)",
+                         $time, r_pc);
+            // R41 F04: the AND-OR writeback data equal the priority chains.
+            if ((nw_sdata !== ref_sdata) || (nw_vdata !== ref_vdata) || (nw_pdata !== ref_pdata))
+                $display("FAIL tnca_core assert @%0t: writeback data differ from the priority chains (s %h/%h p %h/%h)",
+                         $time, nw_sdata, ref_sdata, nw_pdata, ref_pdata);
             // R41 F04: and so are the predicate operands and the lane mask.
             if (x_valid && (pa_data !== `CHK_PREAD(x_pa_idx)))
                 $display("FAIL tnca_core assert @%0t: predicate operand A of pc=%0h reads %h, the file holds %h (p%0d)",

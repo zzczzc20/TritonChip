@@ -1,0 +1,198 @@
+{
+ "scope": "functional RTL simulation, not a board measurement",
+ "case_code_commit": "27dfbf3b806f9861fb3323e2d98c7929c1d6115e",
+ "software_tree": "files:e9948a967c92cfd0a45dfdc831c19a59bfe66ff585404d287d59880f989d2346",
+ "passed_runs": 14,
+ "checks_passed": 393,
+ "board_run": "registered-not-started",
+ "runs": [
+  {
+   "run": "window-img54-b0",
+   "status": "functional-pass",
+   "checks": 10,
+   "wall_seconds": 71.2,
+   "software_tree": "files:e9948a967c92cfd0a45dfdc831c19a59bfe66ff585404d287d59880f989d2346",
+   "axi_status_at_end": {
+    "error": false,
+    "stray": false
+   },
+   "report": "rtl-final/window-img54-b0/report.json",
+   "report_sha256": "44faf02ae1a66ee2fe9d79c7bbc319a15cc49ce192685914d3a1ad4c343617f0"
+  },
+  {
+   "run": "negatives-img54-b0",
+   "status": "functional-pass",
+   "checks": 10,
+   "wall_seconds": 95.7,
+   "software_tree": "files:e9948a967c92cfd0a45dfdc831c19a59bfe66ff585404d287d59880f989d2346",
+   "axi_status_at_end": {
+    "error": false,
+    "stray": false
+   },
+   "report": "rtl-final/negatives-img54-b0/report.json",
+   "report_sha256": "af0e38364805a2b80a97b2a0f5cd4b27d01369e7c1fc69a7069c17ab9d1c2e0f"
+  },
+  {
+   "run": "clamp-img54-b0",
+   "status": "functional-pass",
+   "checks": 3,
+   "wall_seconds": 70.8,
+   "software_tree": "files:e9948a967c92cfd0a45dfdc831c19a59bfe66ff585404d287d59880f989d2346",
+   "axi_status_at_end": {
+    "error": false,
+    "stray": false
+   },
+   "report": "rtl-final/clamp-img54-b0/report.json",
+   "report_sha256": "9ec1f21d4bec30bb9f873beaf493e6b0b2b7de7709926830fe4826c233507941"
+  },
+  {
+   "run": "samples-img54-b0",
+   "status": "functional-pass",
+   "checks": 76,
+   "wall_seconds": 1446.5,
+   "software_tree": "files:e9948a967c92cfd0a45dfdc831c19a59bfe66ff585404d287d59880f989d2346",
+   "axi_status_at_end": {
+    "error": false,
+    "stray": false
+   },
+   "report": "rtl-final/samples-img54-b0/report.json",
+   "report_sha256": "f88b142034e38785a6d2930e08c73739671db54e8e42643983fb1e70cd2b86f6"
+  },
+  {
+   "run": "crossing-img54-b0",
+   "status": "functional-pass",
+   "checks": 17,
+   "wall_seconds": 1246.4,
+   "software_tree": "files:e9948a967c92cfd0a45dfdc831c19a59bfe66ff585404d287d59880f989d2346",
+   "axi_status_at_end": {
+    "error": false,
+    "stray": false
+   },
+   "report": "rtl-final/crossing-img54-b0/report.json",
+   "report_sha256": "1d20d7ad6799ee6c1531294efc91fb33a6eab2c3f0fdaa366ba12aaa56449e9a"
+  },
+  {
+   "run": "alias-img54-b0",
+   "status": "functional-pass",
+   "checks": 36,
+   "wall_seconds": 1259.1,
+   "software_tree": "files:e9948a967c92cfd0a45dfdc831c19a59bfe66ff585404d287d59880f989d2346",
+   "axi_status_at_end": {
+    "error": false,
+    "stray": false
+   },
+   "report": "rtl-final/alias-img54-b0/report.json",
+   "report_sha256": "2faf861e1b92cfa578fdddbef7101cb895dacd40df38cb1726504a59b07c6d7e"
+  },
+  {
+   "run": "bigoffset-img54-b0",
+   "status": "functional-pass",
+   "checks": 6,
+   "wall_seconds": 1133.8,
+   "software_tree": "files:e9948a967c92cfd0a45dfdc831c19a59bfe66ff585404d287d59880f989d2346",
+   "axi_status_at_end": {
+    "error": false,
+    "stray": false
+   },
+   "report": "rtl-final/bigoffset-img54-b0/report.json",
+   "report_sha256": "bdc3484fefeec01f7cba8c65b042a6ccfdeebca5a216228d5ff228162b00bae9"
+  },
+  {
+   "run": "dma-img54-b0",
+   "status": "functional-pass",
+   "checks": 6,
+   "wall_seconds": 1022.0,
+   "software_tree": "files:e9948a967c92cfd0a45dfdc831c19a59bfe66ff585404d287d59880f989d2346",
+   "axi_status_at_end": {
+    "error": false,
+    "stray": false
+   },
+   "report": "rtl-final/dma-img54-b0/report.json",
+   "report_sha256": "fb5fc7ea50fd277b3977c6576659a0af4365a97e7ddba11e5da6fcd1692ec652"
+  },
+  {
+   "run": "stream-img54-b0",
+   "status": "functional-pass",
+   "checks": 7,
+   "wall_seconds": 269.9,
+   "software_tree": "files:e9948a967c92cfd0a45dfdc831c19a59bfe66ff585404d287d59880f989d2346",
+   "axi_status_at_end": {
+    "error": false,
+    "stray": false
+   },
+   "report": "rtl-final/stream-img54-b0/report.json",
+   "report_sha256": "f73b20909c79aee5cb9616dd76ac543d17995c4907d063b6976cffe171da8e7c"
+  },
+  {
+   "run": "samples-img54-b4g",
+   "status": "functional-pass",
+   "checks": 76,
+   "wall_seconds": 533.5,
+   "software_tree": "files:e9948a967c92cfd0a45dfdc831c19a59bfe66ff585404d287d59880f989d2346",
+   "axi_status_at_end": {
+    "error": false,
+    "stray": false
+   },
+   "report": "rtl-final/samples-img54-b4g/report.json",
+   "report_sha256": "78f086ac090ee9330e258502a0e47a7642d24cdf459e010c53dfcf3960e185ee"
+  },
+  {
+   "run": "alias-img54-b4g",
+   "status": "functional-pass",
+   "checks": 36,
+   "wall_seconds": 402.8,
+   "software_tree": "files:e9948a967c92cfd0a45dfdc831c19a59bfe66ff585404d287d59880f989d2346",
+   "axi_status_at_end": {
+    "error": false,
+    "stray": false
+   },
+   "report": "rtl-final/alias-img54-b4g/report.json",
+   "report_sha256": "a82a60e75396d8dbf7dece5f4a5c0d1eb888c76f093084a0bd5f948dfbf9c33b"
+  },
+  {
+   "run": "crossing-img54-b4g",
+   "status": "functional-pass",
+   "checks": 17,
+   "wall_seconds": 316.9,
+   "software_tree": "files:e9948a967c92cfd0a45dfdc831c19a59bfe66ff585404d287d59880f989d2346",
+   "axi_status_at_end": {
+    "error": false,
+    "stray": false
+   },
+   "report": "rtl-final/crossing-img54-b4g/report.json",
+   "report_sha256": "52ed2e2520a253eac77139ec63d3b23094d7ec87573c0509b1e4d1d2339372cb"
+  },
+  {
+   "run": "samples-frozen-b0",
+   "status": "functional-pass",
+   "checks": 76,
+   "wall_seconds": 502.1,
+   "software_tree": "files:e9948a967c92cfd0a45dfdc831c19a59bfe66ff585404d287d59880f989d2346",
+   "axi_status_at_end": {
+    "error": false,
+    "stray": false
+   },
+   "report": "rtl-final/samples-frozen-b0/report.json",
+   "report_sha256": "f0ebe8f62980202ef712c849d50f0308f1ce980bb28a6ff81d0e52748c53e804"
+  },
+  {
+   "run": "crossing-frozen-b0",
+   "status": "functional-pass",
+   "checks": 17,
+   "wall_seconds": 301.1,
+   "software_tree": "files:e9948a967c92cfd0a45dfdc831c19a59bfe66ff585404d287d59880f989d2346",
+   "axi_status_at_end": {
+    "error": false,
+    "stray": false
+   },
+   "report": "rtl-final/crossing-frozen-b0/report.json",
+   "report_sha256": "cda7e90a0a20fd3ab76f2bbeee2fb2a9a2ad54926f7d87f0dde42355080d9a2a"
+  }
+ ],
+ "archive_sha256": "f906b7c23873f9f6242f01b02ee454764ac11ba2bc2b73116f6b26b9a55d1a8e",
+ "software_tree_matches_delivered_worktree": true,
+ "summaries": [
+  "rtl-final/board-hbm8-sim-summary.json",
+  "rtl-final/board-hbm8-big-sim-summary.json"
+ ]
+}

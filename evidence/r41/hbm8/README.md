@@ -1,301 +1,245 @@
-# R41 hbm8: an 8 GiB device window on the current three-core image
+# R41: qualify an 8 GiB window on the three-core B40 image
 
-Scope: whether R41 FP8 model work (Qwen3-VL-2B-FP8, Qwen3.5-4B-FP8) can plan
-on a ≥6 GiB, target 8 GiB, device memory window on the delivered B40 image
-`a88ebdf5…` (three cores, 90 MHz, UUID `1bada9db-78f3-5bc8-7ba6-cce062e7ade8`).
-Covered here: the RTL, RTL simulation, the runtime and backend, and the
-registered board experiment. The TLM-model run and the compiler
-address-arithmetic audit are separate agents (§6).
+**Conclusion: the current B40 image supports an 8 GiB window, subject to the
+follow-on board run. No new image is indicated by the RTL audit or simulation.**
+The remaining qualification is whether XRT can allocate the full group BO on
+this host and whether the platform routes PC16–PC31 for all three masters.
+That board experiment is registered below and **has not been started**.
 
-## Conclusion
+Image: `a88ebdf59cfbbb2001ebd5b1b2c739c5d8cd33931f1e9202f18cac07c4c83083`,
+UUID `1bada9db-78f3-5bc8-7ba6-cce062e7ade8`, 90 MHz, three cores.
+Its link configuration connects hbm0/1/2 to HBM[0:31]. The static xclbin parse
+in [xclbin_hbm_map.json](xclbin_hbm_map.json) records all 96 connectivity rows
+and a shared 8 GiB group (`MBG[0:31]`, memory index 41, base 0). These are
+connectivity declarations, not measurements of the upper PCs on B40.
 
-**8 GiB is available on the current image, subject to the board run. No new
-image is needed.**
+R40 exposed 4 GiB and certified PC0–PC15. The convergence record
+(`evidence/r40/v2/convergence/README.md`, “Repaired original GEMM and declared
+capacity”) documents a 4 GiB preflight and a workload needing about 3 GiB.
+It records no hardware reason for stopping at 4 GiB. The evidence supports
+an allocation/certification choice; it does not establish the original
+operator's motive. The single-core `u280_r40ram` already passed an 8 GiB BO,
+PC0–PC31 and accesses above 4 GiB (`evidence/r40/R40-04/ram_image/`). That is
+precedent, not a substitute for the three-core board experiment.
 
-* **The 4 GiB window was an allocation choice, not a limit.** R40 raised the
-  runtime's 1 GiB default to 4 GiB because the frozen suite's large Llama
-  needs 2,996,965,376 bytes of parameters. A 4 GiB XRT preflight passed and
-  reported PC0..15, and the higher PCs were then labelled "outside this
-  proposed exposed window"
-  (`evidence/r40/v2/convergence/README.md`, "Repaired original GEMM and
-  declared capacity", 2026-10-18). No size above 4 GiB was attempted on this
-  image.
-* **The image connects every outlet to all 32 PCs.** A static, read-only
-  parse of the xclbin (`xclbin_hbm_map.json`) shows the following:
-  * all three m_axi arguments resolve to the same group bank, `MBG[0:31]`
-    (memory index 41, 8 GiB, base 0);
-  * there are 96 plain connectivity rows (3 × HBM[0..31]);
-  * an 8 GiB BO at base 0 maps contiguously onto PC0..PC31 (topology
-    `e3cf166d…`).
-* **The RTL address path is 64-bit end to end.** This was audited on the
-  image's exact source, git 54249f7 (`audit_54249f7.md`). The path covers the
-  LSU and TXF engine, the NoC flit, the home hash, the 53-bit full cache tags,
-  MSHR and victim addresses, the outlets, `tnca_line_axi`, the MMIO window
-  registers and range checks, the DMA handoff and the 64-bit m_axi ports.
-  * Nothing narrower than 64 bits limits 8 GiB or can make two window
-    addresses share data.
-  * The TMU decode compares address bits [63:12], so only the single page
-    0x7FFF0000 is MMIO, and the runtime already reserves it.
-* **RTL simulation passes.** The image RTL ran in simulation with an 8 GiB
-  window and the B40 cache geometry, on the board top with all three cores
-  and outlets. Every standard-Torch case passes, both at BO base 0 (as on the
-  board) and at BO base 4 GiB (§2).
-* **The runtime needs no change.** Passing `hbm_bytes=8589934592` in the
-  backend args is enough (§3).
-* **A precedent exists on the same platform.** The single-core image
-  `e576c850` already passed an 8 GiB BO at base 0 over PC0..PC31 on this
-  host, with addresses above 4 GiB, DMA and in-place device updates
-  (`evidence/r40/R40-04/ram_image/`).
+## RTL address audit
 
-What only the board can settle (registered, §4):
+The full [audit](audit_54249f7.md) gives source file:line references for each
+carrier, including every narrower field and its effect. References are to
+image-source commit `54249f7f7ac0cf8f5d1b82d8e63a3046d27522d3`, with the
+attempt03 image parameters: three cores/outlets, 32 sets, eight ways, full
+line tags and two-stage links. The current frozen RTL has seven changed
+files, covering FPU corrections and registered control paths; the address
+widths remain intact. No product RTL changes are made by this branch.
 
-* XRT really allocates the 8 GiB group BO for this xclbin, with enough host
-  memory.
-* The platform interconnect really routes PC16..PC31 for all three masters.
-* The >2 GiB single-storage kernels behave on the device as they do in
-  simulation.
+The LSU/TXF bases and effective addresses, request flit, MSHRs, victims,
+outlets, aperture translation, MMIO range controls, handoff and m_axi ports
+carry 64-bit addresses. The narrower fields do not discard an address bit:
 
-If the board run passes, the Stage 1 statement "a ≥6 GiB window means a new
-image exposing more PCs, plus >4 GiB addressing"
-(`evidence/r41/stage1/stage2_readiness.md`, S2-04) no longer holds for B40.
-
-Planning facts for the FP8 models:
-
-* **Usable heap.** The 8 GiB window gives 8,589,930,496 usable heap bytes.
-* **Largest single storage.** The reserved TMU page splits the heap into
-  0x20000–0x7FFF0000 (~2 GiB) and 0x7FFF1000–0x2_0002_0000 (~6 GiB). The
-  largest single storage is therefore ~6 GiB. In the R40 4 GiB window it was
-  ~2 GiB (a 2.25 GiB tensor is refused there).
-* **Same-device eager copies stop at 2 GiB.** `torch_device/copy.py` refuses
-  spans of 2^31 bytes or more, with the error "64-bit copy indexing is not
-  implemented". `copy_storage` (allocator resize) also needs fewer than 2^31
-  bytes. Larger storages are filled by host DMA (chunked) or by compiled
-  kernels. The compiler agent's worktree is changing `copy.py` (§6).
-* **Host transfers cost several times their size in host memory.** Transfers
-  go through Python lists of 8-byte words (`Transport.upload`), so transient
-  host memory is several times the transfer. The board cases stage in 64 MiB
-  pieces.
-* **The BO pins host RAM.** Each process that opens the 8 GiB window pins an
-  8 GiB host-backed XRT BO. The FPGA host has 62 GB, of which 21–24 GB was
-  available on 2026-10-22, so the queue requires at least 16 GiB
-  MemAvailable.
-
-## Why R40 used 4 GiB
-
-`doc/r40_report.md`: "4 GiB exposed HBM window over PC0..15; PC16..31 not
-exposed and not certified". The reason is in the convergence record above:
-
-* The collectors' `--hbm-bytes` was raised from 1 GiB to the smallest window
-  that held the frozen subset (measured peak 3,098,945,024 B, headroom 1.39).
-* The 4 GiB BO is an XRT allocation of the first 4 GiB of the same 8 GiB
-  group. Its base is 0, so it covers PC0–15.
-* Nothing in the RTL, XRT or runtime refused a larger size. 8 GiB was simply
-  never requested on this image.
-
-## 1. RTL audit (image source 54249f7)
-
-`audit_54249f7.md` has the full table, with file:line for every address
-carrier.
-
-**Same RTL as the image.** The 81 link-source files on the FPGA host
-(`~/tnca_src_r40_attempt03_54249f7`) hash-equal `git archive 54249f7`.
-
-**Frozen tree.** The frozen Stage 1 tree differs in 7 RTL files:
-
-* `tnca_vector_fpu.v` (FPU only);
-* six SLR-timing edits that register control copies.
-
-None of them narrows an address. In the frozen `tnca_line_axi.v`,
-`base_q`, `bound_q` and `offset` are all 64-bit.
-
-Every field narrower than 64 bits, and whether it limits 8 GiB:
-
-| Narrower field | Where (54249f7) | Limits 8 GiB? |
+| Narrow field | Reference at image source | Effect on 8 GiB |
 |---|---|---|
-| per-lane gather/scatter index, 32-bit signed, added to a 64-bit base | `rtl/core/tnca_lsu.v:67, :404-406` | no — one indexed instruction spans ±2^31 elements around a 64-bit base |
-| cache tag 53 bits = addr[63:11] (SET_W 5, FULL_LINE_TAG 1) | `rtl/nuca/tnca_nuca_slice.v:191, :212-213`; `rtl/tile/tnca_tile.v:336-337` | no — full tag |
-| TMU MMIO page compare addr[63:12] == 0x7FFF0 | `tnca_nuca_slice.v:861`; `rtl/tnca_top.v:84` | no — one page; runtime reserves it (`python/tnca/runtime.py:58`) |
-| DCO tile hint: 3-bit tensor index + 13 bits of addr>>lsb | `tnca_nuca_slice.v:320-330`; `rtl/nuca/tnca_tmu.v:273-275` | no — replacement/dead-block hint only |
-| home hash 8 bits = XOR of all 8 bytes of the 64-bit line index, mod 3 | `rtl/noc/tnca_core_ni.v:83-91` | no — every bit enters |
-| R_AXI_STAT local limit, 4 KiB pages in [63:32] | `rtl/fpga/tnca_multicore_mmio.v:74` | no |
-| AXI-Lite 32-bit halves, assembled 64-bit write | `rtl/fpga/tnca_axi_lite.v:28-45, :145` | no |
-| TXF box counters, register-file window offsets (not memory addresses) | `rtl/core/tnca_tensor.v:275, :285, :288, :429` | no |
+| signed 32-bit gather/scatter index | `rtl/core/tnca_lsu.v:67,404–406` | added to a 64-bit base; limits one instruction's relative index, not the window |
+| 53-bit cache tag, addr[63:11] | `rtl/nuca/tnca_nuca_slice.v:191,212–213`; `rtl/tile/tnca_tile.v:336–337` | full tag with set/line offset; no alias |
+| 52-bit TMU page comparison | `rtl/nuca/tnca_nuca_slice.v:861`; `rtl/tnca_top.v:84` | only 0x7fff0000–0x7fff1000 is MMIO |
+| 16-bit DCO tile hint | `rtl/nuca/tnca_nuca_slice.v:320–330`; `rtl/nuca/tnca_tmu.v:273–275` | replacement hint; not a data tag |
+| 8-bit home hash | `rtl/noc/tnca_core_ni.v:83–91` | XOR of all bytes of the 64-bit line index, mod 3; routing only |
+| 32-bit local-limit page count | `rtl/fpga/tnca_multicore_mmio.v:74` | describes the small local region, not the HBM bound |
+| AXI-Lite 32-bit halves | `rtl/fpga/tnca_axi_lite.v:28–45,145` | assembled into a 64-bit register |
+| TXF 32-bit iterators and 8-bit VRF offsets | `rtl/core/tnca_tensor.v:275,285,288,429` | local counts/VRF windows, not truncated device bases |
 
-Unit RTL check: `tb/fpga/tb_line_axi_hbm8.v` passes 35/35 on both the image
-and the frozen `tnca_line_axi.v`. It checks:
+`tb/fpga/tb_line_axi_hbm8.v` passes 35 checks on image-source and frozen
+`tnca_line_axi`. It checks legal read/write AXI addresses at 0/2/4/6 GiB
+and 8 GiB−64; rejects 8/12/16 GiB offsets, below-local, unaligned and
+64-bit-wrapping requests without an AXI transaction. BO bases are 0,
+4 GiB and 2^64−8 GiB. The 33-bit AXI-address mutant is caught at BO base
+4 GiB (base 0 alone cannot expose loss of physical bit 33). Removing
+bounds or alignment checks is also caught. Raw logs: `unit/` and the archives.
 
-* that legal lines at 0, 2, 4, 6 and 8 GiB−64 issue exactly `base + offset`;
-* refusals at 8 GiB, 12 GiB and 16 GiB, below MEM_BASE, on unaligned
-  addresses and on a 2^64 wrap.
+## Standard Torch RTL simulation
 
-It does this at BO bases 0, 4 GiB and 2^64−8 GiB. Three mutants are each
-caught:
+`hbm8_case.py --sim` runs standard tnca Torch tensors and
+`torch.compile(fullgraph=True)` through Inductor, Triton, the production
+multicore MMIO backend and the three-core board top
+`tnca_multicore_hbm_xo`. This is RTL simulation, not the TLM model.
+`hbm8_sim.py` supplies a sparse AXI BO with a selectable physical base.
+Only touched ranges are backed; an unmapped access is fatal. Alias probes
+use distinct values so a lost bit mapping into another backed range also
+fails. Physical PC labels in simulation are synthetic; PC routing is a
+board question.
 
-* the bus address cut to 33 bits (caught at base 4 GiB; it is invisible at
-  base 0, where 8 GiB needs only bits 0–32);
-* the limit check removed;
-* the alignment check removed.
+The placement helper uses the production allocator, untouched `torch.empty`
+fillers, and a real launch-frame hole. Exact-end samples have a 64 KiB
+prefix larger than that hole. The hole is released before advancing to the
+final storage, preserving the runtime's 32 KiB launch reserve. Other cases
+leave 1 MiB free at the top. No allocator or device fallback is used.
 
-Logs: `unit/`.
+All **14 runs / 393 checks pass**, with one software-tree fingerprint
+`files:e9948a967c92cfd0a45dfdc831c19a59bfe66ff585404d287d59880f989d2346`,
+which also matches the delivered worktree. [rtl-results.json](rtl-results.json)
+indexes the reports in [rtl-final-raw-logs.tgz](rtl-final-raw-logs.tgz).
+The archive includes command lines, raw logs, generated kernels, source
+hashes, resource-affinity records and both simulator summary reports.
 
-## 2. RTL simulation above 4 GiB
-
-**Stand-in.** `fpga-multicore-sparse-sim` (`tools/performance_harness/hbm8_sim.py`)
-is the board top `tnca_multicore_hbm_xo` with three cores, three outlets,
-DMA handoff and memory controls, run through the production
-`MulticoreMMIOBackend`. It adds two things:
-
-* a stand-in BO base: 0 as on the board, or 4 GiB;
-* a sparse AXI memory (`tb/common/tnca_sparse_map.vh`). Only the ranges a
-  case touches are backed; any access to another line of the 8 GiB stops the
-  simulator with its address. A dropped or extra high bit therefore fails
-  loudly instead of reading zero.
-
-**Configuration.** The RTL is git 54249f7 (the image) unless marked. The
-B40 cache geometry (32 sets × 8 ways), registered victim/rank/TMU options and
-2-stage links come from `image.tcl`. Every case is standard Torch: tnca
-tensors, `torch.compile(fullgraph=True)`, Inductor, Triton and the TNCA
-device. The same tool, `hbm8_case.py`, is what the board runs.
-
-| Case | What it executes | image RTL, base 0 | image RTL, base 4 GiB | frozen RTL, base 0 |
+| Case | What it checks | Image RTL, BO 0 | Image RTL, BO 4 GiB | Frozen RTL, BO 0 |
 |---|---|---|---|---|
-| window | 8 GiB window, registers 0xA8/0x100/0x108/0xB0/0xB8 readback, heap 0x20000–0x2_0002_0000, reserved page, PC0–31 map | pass 9/9 | — | — |
-| samples | 34 fp16 probes: every PC boundary (31 crossings), both BO edges (device 0x20000 and the last 512 B before 0x2_0002_0000), virtual 4 GiB; DMA in, compiled `add_` on 3 cores, DMA out | pass 75/75 | WAVE3 | WAVE3 |
-| alias | pairs differing in bit 30/31/32/32+31 and TMU page +2/+4/+6 GiB (0xFFFF0000, 0x1_7FFF_0000, 0x1_FFFF_0000): distinct values, device load first, then device store | pass 35/35 | WAVE3 | — |
-| crossing | device store then device load across virtual 4 GiB, physical 4 GiB and the window end; DMA out of the stored lines, DMA in and device load again | pass 16/16 | WAVE3 | WAVE3 |
-| bigoffset | one 2.25 GiB storage after the TMU page; Inductor kernels `in_ptr0 + (x0 + 16777216*x1)`, int32 element offsets up to 587 M, i.e. byte offsets up to 2.35 GB, read and write | pass 5/5 | — | — |
-| dma | DMA in at the window top, device copy to 6 GiB, DMA out of both | pass 5/5 | — | — |
-| stream | (sim size: 8 KiB, across physical 4 GiB) DMA in, device row reduction, DMA out | pass 6/6 | — | — |
-| negatives | refusals at the 8 GiB end (allocator, host, MMIO range: past end / at end / bit 33 / 2^64 wrap / handoff); host-window write+read of the last word and DMA read of it | pass 9/9 | — | — |
-| clamp | request 16 GiB: exposed 8 GiB, heap = 8 GiB | pass 2/2 | — | — |
+| window | 8 GiB aperture, register readback, heap and reserved page | 10/10 | — | — |
+| samples | 34 fp16 DMA/device-add/DMA probes; every PC boundary, both BO edges and virtual 4 GiB | 76/76 | 76/76 | 76/76 |
+| crossing | device store-load, DMA out/in, load again across virtual/physical boundaries and near the top | 17/17 | 17/17 | 17/17 |
+| alias | distinct bit-30/31/32/32+31 pairs and displaced TMU pages; device loads then stores | 36/36 | 36/36 | — |
+| bigoffset | one 2.25 GiB storage, strided reads/writes beyond 2^31 byte offsets | 6/6 | — | — |
+| dma | 16 KiB DMA at the top, device copy to 6 GiB, both results read back | 6/6 | — | — |
+| stream | 8 KiB across physical 4 GiB, DMA in, device row reduction, DMA out | 7/7 | — | — |
+| negatives | allocator/host/MMIO bounds and wrap refusals; last word coherence | 10/10 | — | — |
+| clamp | 16 GiB request exposes the 8 GiB group | 3/3 | — | — |
 
-**What every launch showed:**
+The final case/bench sources match the delivered worktree (hashes in the
+archive); the image RTL hashes also match the FPGA-host source check.
+The GB10 batch required at least 40 GiB available RAM before starting,
+ran five cases concurrently, and used at most six CPU cores through
+process-tree affinity. Observed aggregate RSS was about 4.4 GiB. Functional
+checks have no wall-time or throughput gate.
 
-* each launch ran programs on all three cores (e.g. 8/4/4 programs for a
-  probe);
-* the three outlets all carried lines;
-* `R_AXI_STAT` stayed clear at the end of every case.
+Every final case checks that `R_AXI_STAT` has neither error nor stray status.
+The sample and alias kernels verify all three cores; samples also verify
+traffic on all three outlets. The crossing case performs a compiled device
+store followed by a separate compiled device load across virtual 4 GiB,
+physical 4 GiB and near the 8 GiB end, then checks DMA out, DMA replacement
+and another device load. Samples reach the exact final 512 bytes of the BO.
 
-Reports are in `sim/` (one `report.json` per case, with its sparse map).
+### Review of WIP ca0cf45
 
-## 3. Runtime and backend readiness
+The checkpoint was not accepted as a completed qualification. Its raw
+records are preserved in [wip-raw-logs.tgz](wip-raw-logs.tgz), with
+[wip-results.json](wip-results.json) as the index. Nine image-source/base-0
+cases had `functional-pass`. Five supplemental runs completed their value
+checks but ended `failed-preserved` because the software fingerprint changed
+during execution. They remain failures. Earlier preserved failures include
+allocator launch-reserve exhaustion, a fullgraph recompilation limit and a
+probe grid using only two cores. The revised placement/grid in the WIP had
+already repaired those base-0 cases; this follow-up shares placement with
+the exact-end probes and asserts final AXI status. Final reruns use a stable
+source snapshot; no failed record is overwritten or relabelled.
 
-No runtime or RTL change is needed. Checks are in
-`tools/performance_harness/test_hbm8.py` (21 tests; no card, no torch). They
-drive the production link and backend code with the B40 xclbin's real
-topology:
+## Runtime and backend readiness
 
-* **u50 backend `hbm_bytes`.** `hbm_bytes=8589934592` allocates 8 GiB in
-  memory index 41. `R_AXI_BASE` = 0 and `R_AXI_SIZE` = 0x2_0000_0000 are
-  written and read back. The heap and `link.words` then end at
-  0x2_0002_0000.
-* **XRT BO in HBM[0:31].** `MulticoreXDMALink` requires all three arguments
-  to resolve to one group (mismatched groups are refused). The allocation
-  records PC0..PC31 contiguous, with PC16 at 4 GiB.
-  * A 16 GiB request is clamped to the 8 GiB group and records requested
-    vs exposed.
-  * The R40 4 GiB request maps PC0..PC15.
-* **Allocator.** In an 8 GiB heap the reserved page 0x7FFF0000–0x7FFF1000 is
-  kept (capacity 8 GiB − 4 KiB) and a straddling allocation is moved past it.
-  * A 2.25 GiB storage lands at 0x7FFF1000.
-  * The largest single storage is window end − 0x7FFF1000 (~6 GiB).
-  * A refusal leaves the allocator unchanged.
-* **No high-bit truncation.** DMA offsets for device addresses
-  0x1_0000_0000 − 8, 0x1_0000_0000, 0x1_0002_0000, 0x1_7FFF_0000 and the
-  last line reach `bo_write`/`bo_read` as exactly `addr − 0x20000`. The
-  ownership handoff covers the same range.
-* **Out-of-bounds refusals.** Host transfers past the window are refused
-  before any handoff or bus access. The XRT accessor's own BO bounds refuse
-  an overrun, an end read and negative lengths or offsets.
-* **Device-side out-of-bounds stays in RTL.** An access past the window
-  latches a sticky AXI fault that only an image reset clears. It is tested in
-  RTL (§1), never on the shared card.
+The production runtime/backend needs no change to expose this window:
+pass `hbm_bytes=8589934592` with `hbm_dma=True` to
+`fpga-u280-multicore`. `test_hbm8.py` uses the real xclbin topology with a
+recording XRT accessor and register stand-in; it allocates no real BO.
 
-## 4. Board experiment (registered, not run)
+* All three arguments must resolve to the same memory group. An 8 GiB
+  request selects group 41 and maps PC0–PC31; 4 GiB maps PC0–PC15.
+  A 16 GiB request is clamped to the 8 GiB group, with requested/exposed
+  sizes recorded separately.
+* `R_AXI_SIZE=0x200000000`, base and aliases read back at 64 bits. Device
+  addresses span `0x20000` through `0x200020000` exclusive. DMA BO offsets
+  equal `device_address−0x20000`, including above 4 GiB and the last line.
+* The allocator reserves `0x7fff0000–0x7fff1000`. Usable heap capacity is
+  8,589,930,496 bytes (8 GiB−4 KiB), with ordinary intervals
+  `0x20000–0x7fff0000` and `0x7fff1000–0x200020000`. A 2.25 GiB storage
+  fits after the hole; the largest contiguous storage is 6,442,643,456
+  bytes. Rejected allocations leave state unchanged.
+* Host transfer overruns are rejected before handoff or BO access. XRT's
+  own offset/length guards reject negative spans and overruns. MMIO
+  upload/download, host window and handoff negatives are checked in RTL.
+  Device-side illegal accesses latch a sticky fault; only the RTL unit
+  test sends them, never the shared card.
+* Distinct bit-30/31/32/32+31 address pairs and the TMU page displaced by
+  2/4/6 GiB check high-bit aliasing through device loads and stores.
 
-**Manifests.** There are two manifests (`spec/r41/hbm8/experiments/`),
-generated by `tools/performance_harness/hbm8_manifest.py`; `--check` passes.
-Splitting them means a failure in the >2 GiB compiler path cannot stop the
-window qualification. Each fpga step runs `hbm8_case.py` once, in a fresh
-process with its own session. `experiment.py` probes the loaded UUID, the
-90 MHz clock counter and kdsstat before and after every step.
+Limits outside window capacity: same-device eager copies in this baseline
+reject spans ≥2^31 bytes (`python/tnca/torch_device/copy.py`); allocator
+`copy_storage` also has a <2^31-byte limit. Large storages here are filled by
+chunked host DMA and compiled kernels. Host DMA stages through Python
+objects and can require several times the transfer size in host RAM; board
+cases use 64 MiB chunks. An 8 GiB XRT BO itself pins about 8 GiB of host RAM.
+Compiler address-arithmetic work and TLM 8 GiB runs belong to the separate
+`TritonChip-addr64` and `TritonChip-tlm8` worktrees. This branch does not
+incorporate or claim their results.
 
-| Manifest | Steps | Est. |
+## Follow-on board experiment: registered, not started
+
+Generated manifests in `spec/r41/hbm8/experiments/`:
+
+| Manifest | Cases | Estimated time, not measured |
 |---|---|---|
-| `board-hbm8` | window, negatives, samples, alias, crossing, dma (256 MiB in, device copy top→6 GiB, 2×256 MiB out), clamp, summary | 0.42 h |
-| `board-hbm8-big` | bigoffset (2.25 GiB storage, strided read/write past 2^31 bytes); stream (2.25 GiB single storage at 0x7FFF1000–0x1_0FFF1000: 36×64 MiB DMA in, device row reduction over all of it, 36×64 MiB DMA out, exact checks), summary | 0.27 h |
+| `board-hbm8.json` | window, negatives, samples, alias, crossing, dma, clamp, summary | 25 min |
+| `board-hbm8-big.json` | bigoffset, stream, summary | 16 min |
 
-**Board identity.** The board block is the Stage 1 B40 identity with
-`hbm_bytes` 8 GiB (16 GiB for `clamp`) and memory map `PC0-PC31`, sourced
-from `xclbin_hbm_map.json`.
+Each case is a fresh process/session. Board DMA uses 256 MiB at the top
+and 6 GiB. The big cases use one 2.25 GiB storage; stream transfers all
+bytes in 64 MiB chunks and runs a device row reduction. Their failure is
+kept separate from basic window qualification. `experiment.py` checks the
+UUID, 90 MHz clock and idle state before and after each FPGA step.
 
-**Twin manifests.** `hbm8_manifest.py --sim DIR` writes simulator twins of
-both manifests: the same steps as kind `rtl` on the sparse stand-in. Their
-runs are in `sim/twin/`.
+[launches/hbm8_queue.sh](launches/hbm8_queue.sh) never programs, resets or
+loads an image. Its gates are:
 
-**Launch script.** `launches/hbm8_queue.sh` is modelled on the Stage 1
-`board_queue.sh`, but never loads anything. Its gates run in this order:
+1. Wait until `~/r41s1_board_25094197f6e6/queue.log` contains
+   `BOARD-QUEUE-DONE`, or that specific queue process has exited.
+2. Require 15 consecutive idle minutes using the Stage 1 kdsstat rule:
+   no contexts, outstanding executions or client PID.
+3. Require UUID `1bada9db-78f3-5bc8-7ba6-cce062e7ade8` and 90 MHz;
+   stop on mismatch without loading anything.
+4. Require at least 16 GiB MemAvailable, using a six-hour memory-wait budget and
+   rechecking idle/identity while waiting (idle qualification itself can
+   continue longer if the card stays busy).
+5. Run the two manifests from an archived source tree. Changed identity or
+   a busy card stops the queue. Logs preserve per-manifest exit status;
+   `HBM8-QUEUE-DONE` means queue completion, not qualification success.
 
-1. The Stage 1 queue has logged BOARD-QUEUE-DONE, or its process has exited.
-2. The Stage 1 idle rule: 15 consecutive idle minutes in kdsstat.
-3. The loaded UUID is B40 and the clock counter reads 90 MHz; otherwise the
-   script stops.
-4. MemAvailable is at least 16 GiB; the script waits up to 6 h for this,
-   re-checking idle.
-5. It unpacks the archive and runs both manifests.
-
-The script was tested against a fake sysfs (`QueueScriptTests`):
-
-* both manifests run after Stage 1;
-* a Stage 1 exit without BOARD-QUEUE-DONE still needs B40;
-* another image (`428c00e5…`) or a 245 MHz clock stops it with nothing run;
-* low host memory stops it.
-
-**Launch command.** See the final report, or run it as below with `C` set to
-the 12-hex commit to run. It copies the archive and the script through GB10
-and detaches the queue. It does not touch the card until the gates pass.
+Fake-sysfs tests cover successful execution, waiting for a live Stage 1
+queue to exit, exit without its done marker, restarting the idle period
+after activity, wrong UUID, wrong clock, and insufficient host memory. The real
+queue has not been launched. These are the exact commands for a future
+operator to launch it from this worktree (they are **not executed here**):
 
 ```sh
 S=/tmp/claude-1000/-home-ubuntu-TritonChip/3dd1d4a8-6f0c-47d5-bf28-f88428fc463d/scratchpad
-C=<commit>
-git -C /home/ubuntu/TritonChip-hbm8 archive --format=tar.gz -o $S/r41hbm8_$C.tar.gz $C
-rsync -e $S/gb_rsh $S/r41hbm8_$C.tar.gz /home/ubuntu/TritonChip-hbm8/evidence/r41/hbm8/launches/hbm8_queue.sh gb10:
-$S/gb "scp -o BatchMode=yes r41hbm8_$C.tar.gz hbm8_queue.sh zzhouch@acf3019.ece.ust.hk: && ssh -o BatchMode=yes zzhouch@acf3019.ece.ust.hk 'setsid -f bash ~/hbm8_queue.sh $C > ~/r41hbm8_queue_$C.out 2>&1 < /dev/null'"
-# progress: $S/fp "tail ~/r41hbm8_board_$C/queue.log"
+C=$(git -C /home/ubuntu/TritonChip-hbm8 rev-parse HEAD)
+git -C /home/ubuntu/TritonChip-hbm8 archive --format=tar.gz -o "$S/r41hbm8_$C.tar.gz" "$C"
+rsync -e "$S/gb_rsh" "$S/r41hbm8_$C.tar.gz" /home/ubuntu/TritonChip-hbm8/evidence/r41/hbm8/launches/hbm8_queue.sh gb10:
+"$S/gb" "scp -o BatchMode=yes r41hbm8_$C.tar.gz hbm8_queue.sh zzhouch@acf3019.ece.ust.hk: && ssh -o BatchMode=yes zzhouch@acf3019.ece.ust.hk 'setsid -f bash ~/hbm8_queue.sh $C > ~/r41hbm8_queue_$C.out 2>&1 < /dev/null'"
+# Progress after an operator launches it:
+"$S/fp" "tail ~/r41hbm8_board_$C/queue.log"
 ```
 
-## 5. Changes in this branch
+## Validation and reproduction
 
-* **No change to `python/tnca`, `rtl/`, `compiler/` or `xls/`.** No new
-  image is required, so there is nothing for Stage 2 to add for 8 GiB. A
-  Stage 2 image must keep `fpga/u280_multicore_hbm.cfg`
-  (`hbm{0,1,2}:HBM[0:31]`).
-* **Test benches (not in the product tree):**
-  * `tb/common/tnca_axi_line_model.v` gains `WIN_BASE` and `SPARSE`; the
-    defaults keep the dense 0x1_0000_0000 model;
-  * `tb/fpga/tnca_multicore_board_regs.v` passes them through;
-  * `tb/fpga/tnca_multicore_dma.vh` locates DMA lines through the same map;
-  * `tb/fpga/tnca_multicore_regs.v` declares dense-only;
-  * new: `tb/common/tnca_sparse_map.vh` and `tb/fpga/tb_line_axi_hbm8.v`.
-  * Existing benches that use these files: REGRESSION.
-* **Tools:** `tools/performance_harness/hbm8_{case,sim,manifest,summary}.py`
-  and `test_hbm8.py`.
-* **Spec:** `spec/r41/hbm8/experiments/board-hbm8{,-big}.json`. Adding them
-  changes the `software_tree` digest, which covers `spec/`. The board record
-  carries its own tree.
+[validation-results.json](validation-results.json) indexes
+[validation-raw-logs.tgz](validation-raw-logs.tgz):
 
-## 6. Parallel agents
+* 26 runtime/backend/allocator, manifest, queue and summary tests: pass.
+  Summary tests reject missing cases, mixed trees/modes, failed checks and
+  AXI faults; simulator summaries explicitly require the board experiment.
+* Registered manifests match their generator; queue shell syntax: pass.
+* AXI adapter regression matrix: 35 configurations pass.
+* Three-core dense AXI regression: two- and three-outlet configurations pass.
+* Dense DMA ownership regressions: board top and shell top both pass,
+  including dirty writeback, invalidation, partial-line preservation and
+  range guards.
+* Image-source 8 GiB adapter unit: 35 checks pass; inherited frozen-source
+  unit also passes 35. All three address-path mutants are caught.
+* [rtl-source-check.json](rtl-source-check.json): all 77 FPGA-host image
+  RTL files match the git source. [default-code-invariance.json](default-code-invariance.json)
+  records unchanged default code and the frozen 113-point suite digest.
 
-PARALLEL
-
-## Reproduce
+No files in `python/tnca`, `compiler`, `rtl`, `xls`, `archbench`, `isa` or
+`tools/asm` changed relative to the pre-WIP base `21d09f3`. Thus default
+compiler/runtime code for the original 113 points is unchanged; a fresh
+113-point compile campaign is not claimed. Added experiment specs change
+the software-tree fingerprint. The bench defaults retain dense memory and
+the existing BO base; regression checks cover the shared bench edits.
 
 ```sh
-# unit RTL (GB10, iverilog 12): image and frozen tnca_line_axi
-iverilog -g2012 -o t.vvp tb/fpga/tb_line_axi_hbm8.v <rtl>/fpga/tnca_line_axi.v && vvp t.vvp
-# sparse 8 GiB system simulation, one case (image RTL = git archive 54249f7 rtl)
-python tools/performance_harness/hbm8_case.py --sim --case samples --rtl-root <54249f7 tree> [--hbm-base 0x100000000] --out DIR
-# runtime/backend/manifest/queue checks (no card, no torch)
 python3 tools/performance_harness/test_hbm8.py
 python3 tools/performance_harness/hbm8_manifest.py --check
+iverilog -g2012 -o /tmp/hbm8.vvp tb/fpga/tb_line_axi_hbm8.v rtl/fpga/tnca_line_axi.v
+vvp /tmp/hbm8.vvp
+python3 tools/r40/line_axi_tests.py
+python3 tools/r40/multicore_axi_tests.py --cores 3
+# GB10: source ~/tc_env/env.sh; use ~/tc_env/torchenv/bin/python.
+# Extract git archive 54249f7 rtl into a separate directory for image RTL.
+python tools/performance_harness/hbm8_case.py --sim --case samples \
+  --rtl-root /path/to/image-source --hbm-base 0x100000000 --out /path/to/new-run
 ```

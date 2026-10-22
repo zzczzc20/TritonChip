@@ -4,9 +4,9 @@
   {
    "name": "runtime-backend-queue",
    "result": "pass",
-   "checks_or_configurations": 23,
-   "log": "validation/readiness.log",
-   "log_sha256": "2e10c07dc9af80fbc4291162fb52cef8b5822a78904e3bb482e80a431025c7ae"
+   "checks_or_configurations": 26,
+   "log": "validation/readiness-final.log",
+   "log_sha256": "d89b15db5687f184697e72d3a5c052125abdff629b57aba669558df341a75b3a"
   },
   {
    "name": "registered-manifests",

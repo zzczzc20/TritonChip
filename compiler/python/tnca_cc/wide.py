@@ -284,6 +284,37 @@ def _divide(b, n, d, signed, remainder):
     return b.sbin('sub', n, b.sbini('mul', q, d)) if remainder else q
 
 
+def _divide_dynamic(imp, n, divisor, signed, remainder):
+    """Exact scalar restoring division, including unsigned bit-63 divisors."""
+    b = imp.b
+    if signed:
+        ns, ds = b.sbini('ashr', n, 63), b.sbini('ashr', divisor, 63)
+        n = b.sbin('sub', b.sbin('xor', n, ns), ns)
+        divisor = b.sbin('sub', b.sbin('xor', divisor, ds), ds)
+    q, r, bit = (imp._copy_value(b.const(v)) for v in (0, 0, 63))
+    loop, done = imp._control_label('div64'), imp._control_label('div64_done')
+    # Grid divisors of one are frequent; avoid walking 64 bits for them.
+    b._emit('assign', [], [q, n])
+    b.branch_nz(b.scmp('eq', divisor, b.const(1)), done)
+    b._emit('assign', [], [q, b.const(0)])
+    b.label(loop)
+    digit = b.sbini('and', b.sbin('lshr', n, bit), 1)
+    carry = b.sbini('lshr', r, 63)
+    shifted = b.sbin('or', b.sbini('shl', r, 1), digit)
+    take = b.sbin('or', carry, b.scmp('geu', shifted, divisor))
+    mask = b.sbin('sub', b.const(0), take)
+    b._emit('assign', [], [r, b.sbin('sub', shifted, b.sbin('and', divisor, mask))])
+    b._emit('assign', [], [q, b.sbin('or', q, b.sbin('shl', take, bit))])
+    b._emit('assign', [], [bit, b.sbini('sub', bit, 1)])
+    b.branch_nz(b.scmp('ge', bit, b.const(0)), loop)
+    b.label(done)
+    if not signed:
+        return r if remainder else q
+    sign = ns if remainder else b.sbin('xor', ns, ds)
+    result = r if remainder else q
+    return b.sbin('sub', b.sbin('xor', result, sign), sign)
+
+
 # ---------------------------------------------------------------------------
 # 64-bit indexing
 # ---------------------------------------------------------------------------

@@ -90,6 +90,26 @@ if triton_bridge.available():
         tl.store(Q + x, n // D)
         tl.store(R + x, n % D)
 
+    @triton.jit
+    def scalar64_divmod(Q, R, N, D: tl.constexpr):
+        x = tl.arange(0, 1)
+        tl.store(Q + x, tl.full((1,), N // D, tl.int64))
+        tl.store(R + x, tl.full((1,), N % D, tl.int64))
+
+    @triton.jit
+    def small_descriptor_box(X, O, ROW, STRIDE: tl.constexpr):
+        src = tl.make_tensor_descriptor(X, shape=[1 << 30, 4], strides=[STRIDE, 1],
+                                        block_shape=[2, 4])
+        dst = tl.make_tensor_descriptor(O, shape=[1 << 30, 4], strides=[STRIDE, 1],
+                                        block_shape=[2, 4])
+        dst.store([5, 0], src.load([ROW, 2]) + 1.0)
+
+    @triton.jit
+    def scalar64_runtime_divmod(Q, R, N, D):
+        x = tl.arange(0, 1)
+        tl.store(Q + x, tl.full((1,), N // D, tl.int64))
+        tl.store(R + x, tl.full((1,), N % D, tl.int64))
+
 
 def f2b(v):
     return struct.unpack('<I', struct.pack('<f', v))[0]
@@ -100,7 +120,7 @@ def h2b(v):
 
 
 def trunc_divmod(n, d):
-    q = abs(n) // d * (1 if n >= 0 else -1)
+    q = abs(n) // abs(d) * (1 if (n < 0) == (d < 0) else -1)
     return q, n - q * d
 
 
@@ -227,6 +247,48 @@ class Addr64Tests(unittest.TestCase):
                 self.run_rtl(f'addr64_divmod_{d}', cg, [(X, H.pack32(words), 'ns'),
                                                         (Y, H.pack32([0] * 32), 'qs'),
                                                         (O, H.pack32([0] * 32), 'rs')], checks)
+
+    def test_scalar64_grid_division(self):
+        for n in ((1 << 40) + 12345, -(1 << 40) - 12345):
+            for d in (16, 7):
+                with self.subTest(n=n, divisor=d):
+                    _, cg, _ = self.compile(scalar64_divmod,
+                        dict(Q='*i64', R='*i64', N='i64'), dict(Q=Y, R=O, N=n),
+                        constexprs={'D': d})
+                    q, r = trunc_divmod(n, d)
+                    checks = [(base, off, (v >> (off * 8)) & 0xffffffff)
+                              for base, v in ((Y, q), (O, r)) for off in (0, 4)]
+                    self.run_rtl(f'addr64_scalar_divmod_{n}_{d}', cg,
+                        [(Y, H.pack32([0, 0]), 'qs'), (O, H.pack32([0, 0]), 'rs')], checks)
+
+    def test_small_descriptor_box_keeps_absolute_offsets_in_64_bits(self):
+        # Eight lanes can still name rows farther than 2**31 elements apart.
+        sig = dict(X='*fp32', O='*fp32', ROW='i32')
+        _, _, text = self.compile(small_descriptor_box, sig,
+                                  dict(X=X, O=O, ROW=3), constexprs={'STRIDE': (1 << 31) + 8})
+        self.assertNotIn('v.mul', text)
+        xs = [float(i) for i in range(48)]
+        for row in (3, -1):
+            _, cg, _ = self.compile(small_descriptor_box, sig,
+                                   dict(X=X, O=O, ROW=row), constexprs={'STRIDE': 8})
+            checks = [(O, 4 * ((5 + r) * 8 + c), f2b(xs[(row + r) * 8 + 2 + c] + 1
+                       if c < 2 and row + r >= 0 else 1.0)) for r in range(2) for c in range(4)]
+            self.run_rtl(f'addr64_small_descriptor_{row}', cg,
+                [(X, H.pack32([f2b(v) for v in xs]), 'xs'),
+                 (O, H.pack32([0] * 64), 'os')], checks)
+
+    def test_scalar64_runtime_grid_division(self):
+        for unsigned, n, d in ((False, (1 << 40) + 12345, 7),
+                               (False, -(1 << 40) - 12345, -7),
+                               (True, (1 << 64) - 1, (1 << 63) + 9)):
+            typ = 'u64' if unsigned else 'i64'
+            _, cg, _ = self.compile(scalar64_runtime_divmod,
+                dict(Q='*i64', R='*i64', N=typ, D=typ), dict(Q=Y, R=O, N=n, D=d))
+            q, r = divmod(n, d) if unsigned else trunc_divmod(n, d)
+            checks = [(base, off, (v >> (off * 8)) & 0xffffffff)
+                      for base, v in ((Y, q), (O, r)) for off in (0, 4)]
+            self.run_rtl(f'addr64_runtime_divmod_{typ}_{n}', cg,
+                [(Y, H.pack32([0, 0]), 'qs'), (O, H.pack32([0, 0]), 'rs')], checks)
 
 
 if __name__ == '__main__':

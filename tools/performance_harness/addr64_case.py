@@ -23,6 +23,7 @@ Cases:
                  graph input that is itself such a view, an in-place update
                  and eager copies
   clone          an eager device clone of a whole 2.25 GiB storage
+  resize         grow a 2.25 GiB storage with resize_, preserving device bytes
   stream         a full 2.25 GiB bf16 storage: uploaded, read entirely by a
                  compiled reduction, written entirely by a compiled
                  pointwise op, copied entirely by an eager clone; every
@@ -94,12 +95,10 @@ def _compare(got, ref, tol):
     if tuple(got.shape) != tuple(ref.shape) or got.dtype != ref.dtype:
         return dict(match=False, why=f'{tuple(got.shape)} {got.dtype} != {tuple(ref.shape)} {ref.dtype}')
     if tol is None:
-        bad = (got.view(torch.uint8) != ref.view(torch.uint8)).sum().item() if got.dtype.itemsize == 1 \
-            else (got != ref).sum().item()
+        bad = (got.contiguous().view(torch.uint8) != ref.contiguous().view(torch.uint8)).sum().item()
         return dict(match=bad == 0, mismatches=int(bad), rule='bitwise equal')
     err = (got.double() - ref.double()).abs()
-    bound = tol[0] + tol[1] * ref.double().abs()
-    bad = int((err > bound).sum().item())
+    bad = int((~torch.isclose(got.double(), ref.double(), atol=tol[0], rtol=tol[1], equal_nan=True)).sum().item())
     return dict(match=bad == 0, mismatches=bad, max_abs_error=float(err.max().item()) if err.numel() else 0.0,
                 rule=f'|got-ref| <= {tol[0]} + {tol[1]}*|ref|')
 
@@ -346,6 +345,25 @@ def case_clone(case):
                          error=f'{type(e).__name__}: {" ".join(str(e).split())}'[:600]))
 
 
+def case_resize(case):
+    torch, D = _device()
+    n = 9 * GIB // 4
+    x = torch.empty(n, dtype=torch.uint8, device='tnca')
+    bands = {lo: torch.arange(4096, dtype=torch.int64).add(lo // 4096).to(torch.uint8)
+             for lo in (0, n // 2, n - 4096)}
+    for lo, ref in bands.items():
+        x[lo:lo + ref.numel()] = ref.to('tnca')
+    old = _addr(D, x)
+    t = time.monotonic()
+    x.resize_(n + 4096)
+    D.MEMORY.synchronize()
+    bad = sum(_compare(x[lo:lo + ref.numel()].cpu(), ref, None)['mismatches']
+              for lo, ref in bands.items())
+    case.record(dict(test='resize_preserves_2_25_gib', old_base=hex(old), new_base=hex(_addr(D, x)),
+                     bytes_before=n, bytes_after=x.untyped_storage().nbytes(), mismatches=bad,
+                     resize_seconds=round(time.monotonic() - t, 1), status='PASS' if bad == 0 else 'WRONG'))
+
+
 # ------------------------------------------------------------- negatives ----
 def _expect_refusal(case, label, fn, pattern):
     try:
@@ -501,6 +519,8 @@ def child(args):
             case_stream(case)
         elif kind == 'clone':
             case_clone(case)
+        elif kind == 'resize':
+            case_resize(case)
         elif kind == 'neg':
             case_neg(case, arg)
         else:

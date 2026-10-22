@@ -1900,6 +1900,16 @@ class TTIRImporter:
         if self.index_opt and self._contiguous_div(op, remainder, divisor_const):
             return
         rshape, relem = _parse_type(str(op.get_result(0).get_type()))
+        if rshape is None and relem == 'i64':
+            # GEMM's INDEX_DTYPE also widens scalar grid arithmetic. Keep
+            # it in scalar registers; the vector divider is only 32 bits.
+            from .wide import _divide, _divide_dynamic
+            n = self._value(op.get_operand(0))
+            self._v[op.get_result(0).id()] = (
+                _divide(self.b, n, divisor_const, signed, remainder)
+                if divisor_const is not None and 0 < divisor_const < (1 << 63) else
+                _divide_dynamic(self, n, self._value(op.get_operand(1)), signed, remainder))
+            return
         if self.index_opt and rshape is None and relem in ('i32', 'i16', 'i8'):
             self._v[op.get_result(0).id()] = self._scalar_divide(
                 self._value(op.get_operand(0)), self._value(op.get_operand(1)),

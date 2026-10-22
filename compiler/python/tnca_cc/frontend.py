@@ -2987,12 +2987,13 @@ class TTIRImporter:
         column accumulates in ascending K, exactly as in the swapped form,
         so the result is bit for bit the same.
 
-        The tile is one descriptor only when W's row addresses are affine:
-        the column index is data (`offs_bn % N` wraps in the last block), so
-        that is checked at run time, once per call, and a K step whose rows
-        are not falls back to one byte gather per K row (a loop), which also
-        keeps the masked-row semantics of the load. Returns False, having
-        emitted nothing, when the index is not of that form.
+        A chunk is one transfer only when its 16 column indices are c..c+15:
+        the index is data (`offs_bn % N` wraps in the last block), so that is
+        checked at run time, once per call and per chunk; a chunk that wraps
+        gathers its K rows into scratch instead (a guarded loop) and moves
+        that tile plainly. Masked K rows read as zero either way (extent /
+        masked gather). Returns False -- before emitting anything the
+        swapped form would not -- when the index is not of that form.
         """
         b, vlen = self.b, self.target.vlen
         if step % vlen or k % step:

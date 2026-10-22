@@ -2669,6 +2669,14 @@ class TTIRImporter:
                 cols.append((v, 1))
             else:
                 return None
+        base_value = self._arg_value(name)
+        if not any(base_value is result
+                   for op in self.b.region.ops[:self._prologue_pos]
+                   for result in op.results):
+            # A sliced or loop-carried pointer is computed in the body.
+            # Its map must stay after that definition, rather than reading
+            # an undefined base at kernel entry.
+            return None
         key = (name, elem, aff.row_stride, aff.const, tuple(block))
         desc = self._hoisted.get(key)
         if desc is None:

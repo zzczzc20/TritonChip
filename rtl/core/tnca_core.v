@@ -808,7 +808,22 @@ module tnca_core #(
         // again. R's own requests never share a cycle with D's.
         reg  [2:0] pf_tag;
         reg        adv_q;
-        wire [2:0] of_arrive = vrf_rsp_valid[2:0] & ~(pf_tag & {3{~adv_q}});
+        // R41 T2: which source ports get a response this cycle, as the
+        // registered accept of the last cycle, not decoded from the banks'
+        // response registers (s1_valid/s1_dst -> routing -> of_want ->
+        // arbitration). Equal here: READ_LATENCY 1 and every rsp_ready tied
+        // high, so each accepted read answers exactly one cycle later
+        // (asserted below).
+        reg  [2:0] of_acc_q;
+        always @(posedge clk)
+            of_acc_q <= rst_n ? vrf_req_accept[2:0] : 3'b000;
+`ifndef SYNTHESIS
+        always @(posedge clk)
+            if (rst_n && (of_acc_q !== vrf_rsp_valid[2:0]))
+                $display("FAIL tnca_core assert @%0t: registered accept %b differs from the VRF response valids %b",
+                         $time, of_acc_q, vrf_rsp_valid[2:0]);
+`endif
+        wire [2:0] of_arrive = of_acc_q & ~(pf_tag & {3{~adv_q}});
         wire [2:0] of_have   = of_got | of_arrive;
         wire of_ready = ((of_need & ~of_have) == 3'b000);
 
@@ -1136,6 +1151,10 @@ module tnca_core #(
     // lookups used to select. Maintained below, after the squash logic.
     reg [2:0] dsb_v;     // `SB_V_BUSY(d_rctx, d_pf_v{c,b,a}_idx)
     reg [2:0] rsb_v;     // `SB_V_BUSY(r_rctx, r_v{c,b,a}_idx)
+    // R41 T2: `WB_HIT_V of the same six sources, also as registers (see
+    // "R41 T2" below the F05 block).
+    reg [2:0] d_whit;    // `WB_HIT_V(d_rctx, d_pf_v{c,b,a}_idx)
+    reg [2:0] r_whit;    // `WB_HIT_V(r_rctx, r_v{c,b,a}_idx)
 
     // NOTE: these are macros, not Verilog functions. A continuous assignment
     // that calls a function is only re-evaluated when the function's arguments
@@ -1198,21 +1217,25 @@ module tnca_core #(
     // cycle, with VRF_BYPASS), or the destination of the instruction in R,
     // the one older writer the scoreboard does not hold yet.
     // R41 F05: the scoreboard bit is dsb_v (a register), not a lookup.
-    `define PF_HAZ(busy, idx) (((busy) && \
-                          !(VRF_BYPASS != 0 && `WB_HIT_V(d_rctx, idx))) || \
+    `define PF_HAZ(busy, whit, idx) (((busy) && \
+                          !(VRF_BYPASS != 0 && (whit))) || \
                          (r_valid && r_dstc == `TNCA_DST_V && r_rctx == d_rctx && \
                           r_dsti == (idx)))
-    assign pf_haz_w = (d_pf_va_en && `PF_HAZ(dsb_v[0], d_pf_va_idx))
-                    | (d_pf_vb_en && `PF_HAZ(dsb_v[1], d_pf_vb_idx))
-                    | (d_pf_vc_en && `PF_HAZ(dsb_v[2], d_pf_vc_idx));
+    assign pf_haz_w = (d_pf_va_en && `PF_HAZ(dsb_v[0], d_whit[0], d_pf_va_idx))
+                    | (d_pf_vb_en && `PF_HAZ(dsb_v[1], d_whit[1], d_pf_vb_idx))
+                    | (d_pf_vc_en && `PF_HAZ(dsb_v[2], d_whit[2], d_pf_vc_idx));
 
     wire hz_sa = r_sa_en && `SB_S_BUSY(r_rctx, r_sa_idx) && !`AVAIL_S(r_rctx, r_sa_idx);
     wire hz_sb = r_sb_en && `SB_S_BUSY(r_rctx, r_sb_idx) && !`AVAIL_S(r_rctx, r_sb_idx);
     wire hz_sc = r_sc_en && `SB_S_BUSY(r_rctx, r_sc_idx) && !`AVAIL_S(r_rctx, r_sc_idx);
     // R41 F05: rsb_v is `SB_V_BUSY(r_rctx, r_v*_idx), held in a register.
-    wire hz_va = r_va_en && rsb_v[0] && !`AVAIL_V(r_rctx, r_va_idx);
-    wire hz_vb = r_vb_en && rsb_v[1] && !`AVAIL_V(r_rctx, r_vb_idx);
-    wire hz_vc = r_vc_en && rsb_v[2] && !`AVAIL_V(r_rctx, r_vc_idx);
+    // R41 T2: on the banked file, `AVAIL_V is VRF_BYPASS && `WB_HIT_V, and
+    // the hit is the registered r_whit.
+    `define AVAIL_VR(k, rc, idx) (!USE_BANKED_VRF ? `AVAIL_V(rc, idx) : \
+                                  (VRF_BYPASS != 0 && r_whit[k]))
+    wire hz_va = r_va_en && rsb_v[0] && !`AVAIL_VR(0, r_rctx, r_va_idx);
+    wire hz_vb = r_vb_en && rsb_v[1] && !`AVAIL_VR(1, r_rctx, r_vb_idx);
+    wire hz_vc = r_vc_en && rsb_v[2] && !`AVAIL_VR(2, r_rctx, r_vc_idx);
     wire hz_pa = r_pa_en && `SB_P_BUSY(r_rctx, r_pa_idx) && !`AVAIL_P(r_rctx, r_pa_idx);
     wire hz_pb = r_pb_en && `SB_P_BUSY(r_rctx, r_pb_idx) && !`AVAIL_P(r_rctx, r_pb_idx);
     wire hz_pm = r_pm_en && `SB_P_BUSY(r_rctx, r_pm_idx) && !`AVAIL_P(r_rctx, r_pm_idx);
@@ -2375,6 +2398,45 @@ module tnca_core #(
     end
 
     //==========================================================================
+    // R41 T2: the writeback hit of the vector sources, a cycle early
+    //
+    // `WB_HIT_V(rctx, idx) compares W's registers with D's and R's -- all
+    // registers, but it gated R's operand fetch and D's prefetch, and from
+    // there the bank arbiters' valids: w_class -> hit -> r_vsrc_haz ->
+    // of_want/pf_go -> arbitration -> bank raddr -> s1_vld (x8 tile-1
+    // screen +0.261 ns, 19 levels, the tile's worst). The hit is now
+    // computed from what W, D and R will hold after this edge, into
+    // d_whit / r_whit, equal to the comparison it replaces every cycle:
+    //   W: nw_* unless the writeback is frozen (w_* holds), nothing on a
+    //      launch or reset (w_en clears);
+    //   D: the word entering D (avail_rctx, pf_*_idx_n) unless the front end
+    //      is stalled (D holds; a kill only clears d_valid);
+    //   R: D's context and decoded indices unless stalled (R holds).
+    // A bench assertion at the end of the file compares both every cycle.
+    //==========================================================================
+    wire             wn_v    = vrf_wb_freeze ? (w_en && (w_class == `TNCA_DST_V))
+                                             : (nw_en && (nw_class == `TNCA_DST_V));
+    wire [RCTX_W-1:0] wn_rctx = vrf_wb_freeze ? w_rctx : nw_rctx;
+    wire [7:0]       wn_idx  = vrf_wb_freeze ? w_idx  : nw_idx;
+    wire [2:0] whit_dh = {3{wn_v && (wn_rctx == d_rctx)}} &
+                         {wn_idx == d_pf_vc_idx, wn_idx == d_pf_vb_idx, wn_idx == d_pf_va_idx};
+    wire [2:0] whit_da = {3{wn_v && (wn_rctx == avail_rctx)}} &
+                         {wn_idx == pf_vc_idx_n, wn_idx == pf_vb_idx_n, wn_idx == pf_va_idx_n};
+    wire [2:0] whit_rh = {3{wn_v && (wn_rctx == r_rctx)}} &
+                         {wn_idx == r_vc_idx, wn_idx == r_vb_idx, wn_idx == r_va_idx};
+    wire [2:0] whit_ra = {3{wn_v && (wn_rctx == d_rctx)}} &
+                         {wn_idx == dec_vc_idx, wn_idx == dec_vb_idx, wn_idx == dec_va_idx};
+    always @(posedge clk) begin
+        if (!rst_n || launch_valid) begin
+            d_whit <= 3'b000;
+            r_whit <= 3'b000;
+        end else begin
+            d_whit <= stall_front ? whit_dh : whit_da;
+            r_whit <= stall_front ? whit_rh : whit_ra;
+        end
+    end
+
+    //==========================================================================
     // Sequential
     //==========================================================================
     always @(posedge clk) begin
@@ -3129,6 +3191,12 @@ module tnca_core #(
                 if (r_valid && chk_rp !== (vbase_q[r_rctx*PHYS_W +: PHYS_W] + chk_ri[PHYS_W-1:0]))
                     $display("FAIL tnca_core assert @%0t: R source %0d physical register %0d is wrong", $time, chk_k, chk_rp);
             end
+            // R41 T2: the registered writeback hits equal the comparisons.
+            if ({d_whit, r_whit} !== {`WB_HIT_V(d_rctx, d_pf_vc_idx), `WB_HIT_V(d_rctx, d_pf_vb_idx),
+                                      `WB_HIT_V(d_rctx, d_pf_va_idx), `WB_HIT_V(r_rctx, r_vc_idx),
+                                      `WB_HIT_V(r_rctx, r_vb_idx), `WB_HIT_V(r_rctx, r_va_idx)})
+                $display("FAIL tnca_core assert @%0t: registered writeback hits d %b r %b differ from W's",
+                         $time, d_whit, r_whit);
             // R41 F02: the registered indices and opcode tests equal what R
             // would compute from its own fields.
             if (r_valid && ((r_mma_sf !== ((r_major == `TNCA_MAJ_MATRIX) && (r_func == `TNCA_M_MMA) && r_mod[4]))

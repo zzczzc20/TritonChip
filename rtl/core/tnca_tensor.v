@@ -644,7 +644,16 @@ module tnca_tensor #(
                          : (st == S_TRUN) ? {ld_slot, ld_issue_hi}
                          :                  free_tag;
 
-    wire mem_fire = mem_req_valid && mem_req_ready;
+    // R41 T2: one handshake per state. Each request is valid only in its own
+    // state (dl_issue S_DLOAD, ld_req S_TRUN, st_req S_SRUN, x_req S_XRUN),
+    // so in each state its own fire equals mem_req_valid && mem_req_ready --
+    // without the other states' request logic (the load/store row bounds,
+    // t_rowv and st_be) in front of the transposed walk and its xbuf writes.
+    // mem_req_ready does not depend on mem_req_valid (tnca_mem_mux).
+    wire dl_fire = dl_issue && mem_req_ready;
+    wire ld_fire = ld_req   && mem_req_ready;
+    wire st_fire = st_req   && mem_req_ready;
+    wire x_fire  = x_req    && mem_req_ready;
 
     //==========================================================================
     // Descriptor parsing, once the 256 bytes are in (ISA sec 9D.3)
@@ -753,6 +762,13 @@ module tnca_tensor #(
         endcase
     end
     wire [63:0] mul_p = mul_c * mul_s;
+    // R41 T2: the product is registered before it is added (t_mp -> t_acc
+    // was the engine's deepest path after the xbuf family: mux, 64x64
+    // multiply and 64-bit add in one cycle). One more S_TMUL cycle per
+    // transfer of rank >= 2; the sum is the same.
+    reg  [63:0] mul_q;
+    reg         t_pv;            // mul_q holds a product still to be added
+    always @(posedge clk) mul_q <= mul_p;
 
     //==========================================================================
     // A window write the register file refused this cycle (vw_ready).
@@ -899,7 +915,7 @@ module tnca_tensor #(
             //---------------------------------------------------------------
             // A 256-byte TensorMap is 32 words; the snapshot is taken once.
             S_DLOAD: begin
-                if (mem_fire) st <= S_DWAIT;
+                if (dl_fire) st <= S_DWAIT;
             end
 
             S_DWAIT: begin
@@ -1006,6 +1022,7 @@ module tnca_tensor #(
                 // Positions below 5 - rank are the identity; skip them.
                 t_mp        <= 3'd5 - t_rank[2:0];
                 t_acc       <= t_base;
+                t_pv        <= 1'b0;
                 if (g_bad)
                     st <= S_FAULT;
                 else
@@ -1016,9 +1033,12 @@ module tnca_tensor #(
             // base + sum over the outer positions of coordinate * stride,
             // one multiply a cycle. The walk after this is adds only.
             S_TMUL: begin
+                if (t_pv) t_acc <= t_acc + mul_q;
                 if (t_mp < 3'd4) begin
-                    t_acc <= t_acc + mul_p;
                     t_mp  <= t_mp + 3'd1;
+                    t_pv  <= 1'b1;
+                end else if (t_pv) begin
+                    t_pv  <= 1'b0;            // the last product lands now
                 end else begin
                     t_P0 <= t_acc; t_P1 <= t_acc; t_P2 <= t_acc; t_P3 <= t_acc;
                     t_i0 <= 32'd0; t_i1 <= 32'd0; t_i2 <= 32'd0; t_i3 <= 32'd0;
@@ -1058,7 +1078,7 @@ module tnca_tensor #(
                         vw_data[ld_lane*32 +: 64] <= t_fill;
                         adv = 1'b1;
                     end
-                end else if (mem_fire) begin
+                end else if (ld_fire) begin
                     if (!t_half) begin
                         sl_v[free_slot]    <= 1'b1;
                         sl_nlo[free_slot]  <= ld_nlo;
@@ -1125,8 +1145,8 @@ module tnca_tensor #(
                     row_end = 1'b1;
                 end else if (st_need_reg) begin
                     st <= S_SREAD;
-                end else if (st_be == 8'd0 || mem_fire) begin
-                    if (mem_fire) tg_v[free_tag] <= 1'b1;
+                end else if (st_be == 8'd0 || st_fire) begin
+                    if (st_fire) tg_v[free_tag] <= 1'b1;
                     adv = 1'b1;
                 end
                 if (adv) begin
@@ -1176,10 +1196,13 @@ module tnca_tensor #(
             // into xbuf[row]. Out-of-bounds units are zeros without an
             // access.
             S_XRUN: begin
-                if (x_unit_oob || mem_fire) begin
-                    if (x_unit_oob)
-                        xbuf[x_row[3:0]*64 +: 64] <= 64'd0;
-                    else begin
+                // The zero of an out-of-bounds unit is its own write, on
+                // x_unit_oob alone (it implies the step below), not under
+                // the handshake.
+                if (x_unit_oob)
+                    xbuf[x_row[3:0]*64 +: 64] <= 64'd0;
+                if (x_unit_oob || x_fire) begin
+                    if (!x_unit_oob) begin
                         tg_v[free_tag]    <= 1'b1;
                         xt_row[free_tag]  <= x_row[3:0];
                         xt_keep[free_tag] <= x_keep_mask;

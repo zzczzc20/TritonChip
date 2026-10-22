@@ -627,6 +627,9 @@ module tnca_core #(
     wire                 vrf_stall;       // operands not yet collected
     wire                 vrf_wb_freeze;   // a vector writeback was refused
     wire                 txf_vw_ready;    // the engine's window write was taken
+    // R41 T2: W's vector write and its bank, registered with w_* (below).
+    reg                  w_vec_q;
+    reg  [1:0]           w_bank_q;
     wire                 mtx_vrf_valid_w;
     wire [4:0]           vrf_req_accept;
     wire [4:0]           vrf_rsp_valid;
@@ -688,6 +691,7 @@ module tnca_core #(
     //--------------------------------------------------------------------------
     wire [63:0] r_sa_rd, r_sb_rd, r_sc_rd;
     reg  [63:0] x_sa_q, x_sb_q, x_sc_q;
+    reg  [5:0]  x_sd_q, x_se_q, x_sf_q, x_sg_q;   // R41 T2: X's extra scalar read indices
     reg         x_sa_fw, x_sb_fw, x_sc_fw;
     wire nw_s_hit = !vrf_wb_freeze && nw_en && (nw_class == `TNCA_DST_S)
                  && (nw_rctx == r_rctx);
@@ -717,14 +721,14 @@ module tnca_core #(
         // different functional units and never issue in the same cycle, so one
         // port serves both and the index is chosen by the opcode.
         .rd_rctx(x_rctx),
-        .rd_idx((x_major == `TNCA_MAJ_MATRIX) ? (x_sc_idx + 6'd1)
-                                              : (x_sb_idx + 6'd1)),
+        // R41 T2: indices registered with X (x_sd_q..x_sg_q), not added in X.
+        .rd_idx(x_sd_q),
         .rd_data(sb2_raw),
         // Sb+2..Sb+4: a rank-3..5 transfer's remaining coordinates.
         .re_rctx(x_rctx),
-        .re_idx(x_sb_idx + 6'd2), .re_data(sb3_raw),
-        .rf_idx(x_sb_idx + 6'd3), .rf_data(sb4_raw),
-        .rg_idx(x_sb_idx + 6'd4), .rg_data(sb5_raw),
+        .re_idx(x_se_q), .re_data(sb3_raw),
+        .rf_idx(x_sf_q), .rf_data(sb4_raw),
+        .rg_idx(x_sg_q), .rg_data(sb5_raw),
         .w_en(w_en && (w_class == `TNCA_DST_S)),
         .w_rctx(w_rctx), .w_idx(w_idx[5:0]), .w_data(w_sdata)
     );
@@ -1015,19 +1019,26 @@ module tnca_core #(
         // the scoreboard does not hold yet.
         // (pf_haz_w is assigned after the scoreboard macros, below.)
         wire [2:0] pf_need = {d_pf_vc_en, d_pf_vb_en, d_pf_va_en};
-        wire pf_go = (VRF_PREFETCH != 0) && d_valid && (|pf_need)
-                   && (of_want == 3'b000) && !(r_valid && r_vsrc_haz) && !pf_haz_w;
+        // R41 T2: which instruction's addresses the ports carry (pf_sel) is
+        // decided without either hazard; the hazards only gate the valids.
+        // pf_go is unchanged: (of_want == 0 && !(r_valid && r_vsrc_haz)) is
+        // (!r_valid || (no source of R still to fetch && !r_vsrc_haz)). A
+        // port's address differs from before only when it requests nothing.
+        wire [2:0] r_left = {r_vc_en, r_vb_en, r_va_en} & ~of_have;
+        wire pf_sel = (VRF_PREFETCH != 0) && d_valid && (|pf_need)
+                    && (!r_valid || (r_left == 3'b000));
+        wire pf_go = pf_sel && !(r_valid && r_vsrc_haz) && !pf_haz_w;
         wire [2:0] rq_src = pf_go ? pf_need : of_want;
         wire [4:0] rq_v = {txf_vr_req && !txf_vr_valid,
                            mtx_vrf_req && !mtx_vrf_valid_w, rq_src};
-        wire [RCTX_W-1:0] rq_src_rctx = pf_go ? d_rctx : r_rctx;
+        wire [RCTX_W-1:0] rq_src_rctx = pf_sel ? d_rctx : r_rctx;
         wire [5*RCTX_W-1:0] rq_rctx = {txf_vr_rctx, mtx_rctx, {3{rq_src_rctx}}};
-        wire [5*8-1:0] rq_idx = pf_go
+        wire [5*8-1:0] rq_idx = pf_sel
             ? {txf_vr_idx, mtx_vrf_addr, d_pf_vc_idx, d_pf_vb_idx, d_pf_va_idx}
             : {txf_vr_idx, mtx_vrf_addr, r_vc_idx, r_vb_idx, r_va_idx};
         // R41 F05: ports 0-2 present the physical register computed a stage
         // earlier (PHYS_IN below); rq_rctx/rq_idx stay for ports 3 and 4.
-        wire [5*PHYS_W-1:0] rq_phys = pf_go
+        wire [5*PHYS_W-1:0] rq_phys = pf_sel
             ? {{(2*PHYS_W){1'b0}}, d_pf_vc_phys, d_pf_vb_phys, d_pf_va_phys}
             : {{(2*PHYS_W){1'b0}}, r_vc_phys, r_vb_phys, r_va_phys};
 
@@ -1066,7 +1077,20 @@ module tnca_core #(
         // Structurally never set now (the writeback is never refused); kept
         // so the counters and the B1 assertion keep their meaning.
         assign vrf_wb_freeze = w_is_vec && !wr_ok[0];
-        assign txf_vw_ready  = !txf_vw_en || wr_ok[1];
+        // R41 T2: the engine's write is refused exactly when W writes a
+        // vector register in the same bank (writer 0 first). Decided from
+        // registers -- W's bank kept with w_* (w_vec_q, w_bank_q), the
+        // engine's from its own vw_* -- not from the file's arbitration,
+        // which put w_en -> we -> bank compare -> wr_ok across the core in
+        // front of the engine's write enables (x8 screens).
+        wire [PHYS_W-1:0] txf_vw_phys = vbase_q[txf_vw_rctx*PHYS_W +: PHYS_W] + txf_vw_idx[PHYS_W-1:0];
+        assign txf_vw_ready  = !txf_vw_en || !(w_vec_q && (w_bank_q == txf_vw_phys[1:0]));
+`ifndef SYNTHESIS
+        always @(posedge clk)
+            if (rst_n && (txf_vw_ready !== (!txf_vw_en || wr_ok[1])))
+                $display("FAIL tnca_core assert @%0t: engine write ready %b, the file says %b",
+                         $time, txf_vw_ready, !txf_vw_en || wr_ok[1]);
+`endif
         assign mtx_vrf_valid_w = vrf_rsp_valid[3];
 
         tnca_vrf_banked #(
@@ -2426,6 +2450,11 @@ module tnca_core #(
                          {wn_idx == r_vc_idx, wn_idx == r_vb_idx, wn_idx == r_va_idx};
     wire [2:0] whit_ra = {3{wn_v && (wn_rctx == d_rctx)}} &
                          {wn_idx == dec_vc_idx, wn_idx == dec_vb_idx, wn_idx == dec_va_idx};
+    wire [PHYS_W-1:0] wn_phys = vbase_q[wn_rctx*PHYS_W +: PHYS_W] + wn_idx[PHYS_W-1:0];
+    always @(posedge clk) begin
+        w_vec_q  <= rst_n && !launch_valid && wn_v;
+        w_bank_q <= wn_phys[1:0];
+    end
     always @(posedge clk) begin
         if (!rst_n || launch_valid) begin
             d_whit <= 3'b000;
@@ -2766,6 +2795,8 @@ module tnca_core #(
                 x_mask_dst   <= r_mask_dst;
                 x_sa_en      <= r_sa_en;  x_sa_idx <= r_sa_idx;
                 x_sb_en      <= r_sb_en;  x_sb_idx <= r_sb_idx;
+                x_sd_q       <= (r_major == `TNCA_MAJ_MATRIX) ? (r_sc_idx + 6'd1) : (r_sb_idx + 6'd1);
+                x_se_q       <= r_sb3_q;  x_sf_q <= r_sb4_q;  x_sg_q <= r_sb5_q;
                 x_sc_en      <= r_sc_en;  x_sc_idx <= r_sc_idx;
                 x_va_en      <= r_va_en;  x_va_idx <= r_va_idx;
                 x_vb_en      <= r_vb_en;  x_vb_idx <= r_vb_idx;
@@ -3191,6 +3222,11 @@ module tnca_core #(
                 if (r_valid && chk_rp !== (vbase_q[r_rctx*PHYS_W +: PHYS_W] + chk_ri[PHYS_W-1:0]))
                     $display("FAIL tnca_core assert @%0t: R source %0d physical register %0d is wrong", $time, chk_k, chk_rp);
             end
+            // R41 T2: X's registered extra read indices equal the adds.
+            if (x_valid && ({x_sd_q, x_se_q, x_sf_q, x_sg_q} !==
+                            {((x_major == `TNCA_MAJ_MATRIX) ? (x_sc_idx + 6'd1) : (x_sb_idx + 6'd1)),
+                             x_sb_idx + 6'd2, x_sb_idx + 6'd3, x_sb_idx + 6'd4}))
+                $display("FAIL tnca_core assert @%0t: X's extra scalar read indices differ", $time);
             // R41 T2: the registered writeback hits equal the comparisons.
             if ({d_whit, r_whit} !== {`WB_HIT_V(d_rctx, d_pf_vc_idx), `WB_HIT_V(d_rctx, d_pf_vb_idx),
                                       `WB_HIT_V(d_rctx, d_pf_va_idx), `WB_HIT_V(r_rctx, r_vc_idx),

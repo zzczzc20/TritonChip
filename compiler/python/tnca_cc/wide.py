@@ -565,6 +565,14 @@ def _rebase(imp, dst, base, offs, oshape):
     return True
 
 
+def _column_row(b, row, cols):
+    """One row of an offset tile. A one-column row holds its value in lane
+    zero; the importer keeps every [R, 1] row lane-uniform (as
+    `_vector_to_col` does), so a broadcast of the pointer reaches every
+    column of the row with that row's offset."""
+    return b.splat(b.vextract(row, 0), dtype='i32') if cols == 1 else row
+
+
 def _rebase_tile(imp, dst, base, pairs, cols):
     """A 2-D pointer plus a tile of 64-bit offsets (one (lo, hi) pair per
     row) in an index64 kernel. The offset of element [0, 0] joins the base
@@ -590,7 +598,7 @@ def _rebase_tile(imp, dst, base, pairs, cols):
         borrow = b.vselect(b.vcmp('ltu', lo, first_lo), b.vmovi(1), b.vmovi(0))
         dhi = b.vbin('sub', b.vbin('sub', hi, first_hi, dtype='i32'), borrow, dtype='i32')
         _check_narrow(imp, dlo, dhi, cols)
-        rows.append(dlo)
+        rows.append(_column_row(b, dlo, cols))
     if esize > 1:
         anchor = b.sbini('shl', anchor, esize.bit_length() - 1)
     at = b.sbin('add', imp._arg_value(name), anchor, comment='a 64-bit tile origin')
@@ -841,7 +849,7 @@ def _lower_rows(imp, op):
         lows = []
         for lo, hi in wide_tiles[offs.id()]:
             _check_narrow(imp, lo, hi, shape[1])
-            lows.append(lo)
+            lows.append(_column_row(imp.b, lo, shape[1]))
         imp._tiles[offs.id()] = Tile('rows', tuple(lows), rows, shape[1], 'i32')
         return False
     outputs = [[] for _ in range(op.get_num_results())]

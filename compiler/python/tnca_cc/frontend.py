@@ -2433,19 +2433,7 @@ class TTIRImporter:
             self._affine[rid] = aff
             return
         if src.id() in self._ptr2d:
-            name, elem, offset = self._ptr2d[src.id()]
-            shape, _ = _parse_type(str(op.get_result(0).get_type()))
-            if (isinstance(offset, Tile) and offset.cols == 1 and shape[1] > 1
-                    and not offset.replicated):
-                # An [R, 1] offset tile (a 64-bit offset narrowed or rebased
-                # by wide.py) holds each row's offset in lane 0 only. The
-                # broadcast pointer addresses every column of the row from
-                # it, so the row's offset goes to every lane, as a data
-                # broadcast of an unproven [R, 1] column does.
-                get = self._tile_row_getter(offset)
-                offset = Tile('lazy', lambda r: self.b.splat(self.b.vextract(get(r), 0), dtype='i32'),
-                              offset.rows, shape[1], 'i32', replicated=True)
-            self._ptr2d[rid] = (name, elem, offset)
+            self._ptr2d[rid] = self._ptr2d[src.id()]
             return
         raise Unsupported(
             'tt.broadcast of a value that is neither an index nor a pointer',

@@ -77,7 +77,7 @@ class Model:
     def klass(self, op):
         k = op.kind
         if k in ('sbin', 'sbini'):
-            return 'smul' if op.attrs.get('op') == 'mul' else 'salu'
+            return 'smul' if op.attrs.get('op') in ('mul', 'mulhu') else 'salu'
         if k in ('const', 'program_id', 'num_programs', 'special', 'scmp', 'assign'):
             return 'salu'
         if k == 'sload':

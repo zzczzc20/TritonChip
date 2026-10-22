@@ -1,0 +1,3 @@
+RUNTIME LIMIT limit=0 peak_slots=8
+LINE AXI PASS width=256 slots=8 mode=0 stages=0 write_ack=1 completed=192 peak=8 collisions=11 reads=141 writes=51
+tb/fpga/tb_line_axi.v:178: $finish called at 11600000 (1ps)

@@ -31,7 +31,7 @@ it is a statement about which column of evidence exists.
 | `s.sub` | SALU | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
 | `s.mul` | SALU | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes |
 | `s.mulh.s` | SALU | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | no | no |
-| `s.mulh.u` | SALU | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | no | no |
+| `s.mulh.u` | SALU | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
 | `s.and` | SALU | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
 | `s.or` | SALU | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
 | `s.xor` | SALU | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
@@ -193,7 +193,7 @@ it is a statement about which column of evidence exists.
 | `mb.wait` | MBAR | mbarrier | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
 | `mb.inval` | MBAR | mbarrier | yes | yes | yes | yes | yes | yes | yes | yes | yes | no | no |
 
-169 instructions: 114 the compiler emits, 0 it has a lowering for and refuses on every R1 profile, 20 executed on the whole machine.
+169 instructions: 115 the compiler emits, 0 it has a lowering for and refuses on every R1 profile, 20 executed on the whole machine.
 
 `gated` in the emit column means the lowering exists and the capability
 is false everywhere, so asking for it is a compile error rather than a

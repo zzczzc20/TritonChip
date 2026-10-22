@@ -33,7 +33,8 @@ from .protocol import ProtocolModel
 # IR op -> mnemonic, for the plain arithmetic cases.
 _SBIN = {'add': 's.add', 'sub': 's.sub', 'mul': 's.mul', 'and': 's.and',
          'or': 's.or', 'xor': 's.xor', 'shl': 's.shl', 'lshr': 's.lshr',
-         'ashr': 's.ashr', 'min': 's.min.s', 'max': 's.max.s'}
+         'ashr': 's.ashr', 'min': 's.min.s', 'max': 's.max.s',
+         'mulhu': 's.mulh.u'}
 _SBINI = {'add': 's.addi', 'sub': 's.subi', 'mul': 's.muli',
           'and': 's.andi', 'or': 's.ori', 'xor': 's.xori',
           'shl': 's.shli', 'lshr': 's.lshri', 'ashr': 's.ashri'}

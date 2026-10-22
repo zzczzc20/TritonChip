@@ -1,6 +1,7 @@
 # R41 FP8: Qwen3-VL-2B-FP8 and Qwen3.5-4B-FP8 on `tnca`, layer by layer
 
-Branch `r41-sw`, 2026-10-22. All runs used the SystemC/TLM model (`systemc-tlm-grid`) on GB10. No board or FPGA host
+Branch `r41-sw`, 2026-10-22. Sections 6 and 7 (decode with the cache on the device, the vision tower) were added after
+the merge of r41-fp8-ops V1–V5. All runs used the SystemC/TLM model (`systemc-tlm-grid`) on GB10. No board or FPGA host
 was used. Cycle counts are uncalibrated model predictions; this README makes numeric claims only.
 
 ## 1. Integration (r41-sw)
@@ -14,18 +15,19 @@ was used. Cycle counts are uncalibrated model predictions; this README makes num
 | `origin/r41-fp8-ops` `0cb5862` (B1–B6) | `86ba323` | merge. Conflict in `wide.py`: keep addr64's 64-bit division/affine code and add fp8-ops' int64→f32 conversion. Conflict in `frontend._hoisted_tile_descriptor`: keep addr64's constant-origin rebuild and add fp8-ops' guard that an entry base must be defined in the prologue (B4) | **gate `final`** |
 | test fix | `39edb5e` | `test_fp8_mma.test_deep_k_split_as_elementwise_is_wrong_on_rtl`, a negative control, failed already on r41-fp8 `5adbd51` wherever the RTL bench exists (it was skipped elsewhere): the patched-out elementwise form is now refused with `Unsupported` instead of compiling wrong code. The test accepts the refusal. | `final` |
 | X8 in the extended lowering | `13ebed7` (merges `r41-sw-x8dot` `14ef197`, `f7d4f1c`) | `_swapped_dot` switches to the transposed write when the target has `tensor_transpose_8bit` (section 5) | **gate `x8dot`** |
+| `origin/r41-fp8-ops` `63dd9e6` (V1–V5: int64 loop-carried values, erf, host metadata for `cu_seqlens`, the `mask_index` device path, the V1 descriptor rule) | `d271d60` | merge. Conflict in `wide.py`: fp8-ops' `divide64` duplicates addr64's exact 64-bit division. Kept addr64's `_divide` (constant divisor) and `_divide_dynamic` (any divisor), and routed a 64-bit **tensor** division by a non-constant divisor (fp8-ops' new case) to `_divide_dynamic`; added fp8-ops' `carried_pair`. Conflict in `frontend` `scf.yield`: kept addr64's indexed `values[i]` (separable carries, shared scalars) and added fp8-ops' wide (int64) carries in that form. `doc/support_matrix.md` regenerated (`--check` clean) | **gate `v15`** |
 
 Gate (`gate/reg.sh`, `gate/rtl.sh` in the archive), on a copy of the tree with the RTL bench built:
 
-| check | `x8` (`aba8e5f`) | `final` (`39edb5e`) | `x8dot` (`13ebed7`) |
-|---|---|---|---|
-| `make compiler` | compiler-unit 1/136 FAIL: the pre-existing control test above | **PASS**: compiler-unit 141, none skipped; compiler-ir 6/6 | **PASS**: 141 / 6 |
-| `default_change_audit.py` against r41s1 (`r41-fp8-audit/run-ctrl`) | **113 unchanged, 0 changed** | **113 unchanged, 0 changed** | **113 unchanged, 0 changed** |
-| `fp8_cases.py` (full) | **100/100** | **100/100** | **100/100** |
-| `fp8_kernels_cases.py` (full, profile v5) | **35/35** bitwise | **35/35** | **35/35** |
-| addr64: `test_addr64.py` with RTL execution, plus `addr64_case.py` (15 case groups, 2.25/4.25 GiB, placements above 4 GiB, negatives) | **10/10**, all 15 groups pass | **10/10**, all 15 pass | **10/10**, all 15 pass |
-| X8 RTL (`make r41-xpose8-rtl`), `make core` | pass | (RTL unchanged) | (RTL unchanged) |
-| fp8-ops suites: `std_ops_cases.py`, `triangular_solve_cases.py` | – | **27 pass + 2 refused; 12/12** (identical to the fp8-ops README) | **27 + 2 refused; 12/12** |
+| check | `x8` (`aba8e5f`) | `final` (`39edb5e`) | `x8dot` (`13ebed7`) | `v15` (`d271d60`) |
+|---|---|---|---|---|
+| `make compiler` | compiler-unit 1/136 FAIL: the pre-existing control test above | **PASS**: compiler-unit 141, none skipped; compiler-ir 6/6 | **PASS**: 141 / 6 | **PASS**: 143 / 6 |
+| `default_change_audit.py` against r41s1 (`r41-fp8-audit/run-ctrl`) | **113 unchanged, 0 changed** | **113 unchanged, 0 changed** | **113 unchanged, 0 changed** | **113 unchanged, 0 changed** |
+| `fp8_cases.py` (full) | **100/100** | **100/100** | **100/100** | **100/100** |
+| `fp8_kernels_cases.py` (full, profile v5) | **35/35** bitwise | **35/35** | **35/35** | **35/35** |
+| addr64: `test_addr64.py` with RTL execution, plus `addr64_case.py` (15 case groups, 2.25/4.25 GiB, placements above 4 GiB, negatives) | **10/10**, all 15 groups pass | **10/10**, all 15 pass | **10/10**, all 15 pass | **10/10** (TLM and RTL), all 15 pass |
+| X8 RTL (`make r41-xpose8-rtl`), `make core` | pass | (RTL unchanged) | (RTL unchanged) | pass (rerun) |
+| fp8-ops suites: `std_ops_cases.py`, `triangular_solve_cases.py` | – | **27 pass + 2 refused; 12/12** (identical to the fp8-ops README) | **27 + 2 refused; 12/12** | **48 pass + 1 refused; 12/12** (identical to the fp8-ops V1–V5 README) |
 
 ## 2. Setup for the model runs
 
@@ -148,12 +150,109 @@ check and the scratch gather. Real layer shapes gain 9–15 %.
 
 Model layers under the X8 dot (`val/vl-lin-x8dot`, `val/vl-layer13-x8dot`): the 14 Qwen3-VL linears of section 3 again pass 14/14. They are bitwise equal to the TNCA-order re-derivation, with the same 16 prefill elements off the exact-dot CPU reference. The kernel now has 32 `t.ld.async.b.t`. Decoder layer 13 again gives rel-L2 9.27e-4 against the CPU layer, the same mismatch count as before. Wall times are not comparable: the gate shared the cores.
 
-## 6. Remaining FP8 gaps
+## 6. Decode with the KV cache / linear-attention state on tnca
+
+`qwen_tnca_layers.py decode` (runs `val/vl-decode`, `val/q35-decode`, same environment as section 2, branch tree
+`d271d60` + `eb6709a`). Two consecutive decoder layers run as one module under `torch.compile(fullgraph=True)`.
+Their weights and transformers' own `StaticCache` live on tnca:
+
+- **Qwen3-VL-2B-FP8, layers 13 + 14** (both full attention): a static KV cache of 32 slots.
+- **Qwen3.5-4B-FP8, layers 14 + 15**: layer 14 is linear attention (gated DeltaNet). Its conv state is bf16
+  `[1, 8192, 4]` and its recurrent state is **fp32** `[1, 32, 128, 128]`. Layer 15 is full attention with a static
+  KV cache of 32 slots.
+
+How the run works:
+
+- **Prompt.** A short text prompt, "Name three primary colors.", through the official chat template: 13 tokens
+  (VL) and 17 tokens (Q3.5). The run is the prefill plus **4 decode steps**, with a fixed bucket of 32.
+- **Graphs.** One prefill graph and one decode graph. The decode graph is compiled at decode step 1. Before steps 2–4,
+  `torch._dynamo.config.error_on_recompile` is set, so any recompile would fail the step. There were none:
+  `unique_graphs` grew by 0 at steps 2–4.
+- **Teacher forcing.** The CPU W8A8 reference is the whole model with a static cache: prefill plus greedy decode,
+  route `dot=exact`, IEEE scale. At every call, hooks capture the first layer's input hidden state and both layers'
+  kwargs (position embeddings, mask, position ids), outputs and cache contents. The device pair gets the CPU input
+  of the first layer at every step. The second layer gets the device output of the first. **Each cache is only ever
+  written by its own device run.**
+- **Harness check.** The same pair, run eagerly on CPU with its own cache, reproduces the whole-model run's outputs
+  and cache contents **bit for bit** at every step, for both models.
+- **Linear-attention states.** They are allocated on the device before the prefill (zeros, through the cache
+  layer's own `lazy_initialization`, with the CPU state's dtype). The prefill graph then writes them. The recurrent
+  state is fp32 on the device after every step (`state_dtypes`), so it was not downcast.
+- **Floors.** These are the CPU reference's own rounding floor, as in section 4, now three runs of the same pair:
+  - `scale=recip`;
+  - `dot=fp32`, which is bitwise equal to the reference here: 0 for every tensor;
+  - **CPU Inductor**: the same pair compiled for the host. Fused pointwise ops are computed in fp32 and rounded once,
+    as on any Inductor backend, instead of eager's bf16 rounding after every op.
+
+  The pass criterion, per step and per tensor: finite, same dtype, and rel-L2 ≤ max(2 × the largest floor, 1e-2).
+
+Results: rel-L2 of the device against the CPU W8A8 run. Floors are given in parentheses as `scale=recip` / CPU
+Inductor. "decode, worst" is the largest rel-L2 over steps 1–4.
+
+| model | tensor | prefill | decode, worst | min cosine | 5/5 steps |
+|---|---|---|---|---|---|
+| VL | layer 13 output | 3.34e-4 (2.59e-4 / 3.27e-4) | 1.42e-2 (1.05e-2 / 1.29e-2) | 0.99990 | pass |
+| VL | layer 14 output | 5.42e-4 (4.93e-4 / 5.38e-4) | 2.18e-2 (2.02e-2 / 2.06e-2) | 0.99976 | pass |
+| VL | layer 13 K cache | 7.68e-3 (2.30e-3 / 7.90e-3) | 7.74e-3 (2.22e-3 / 7.92e-3) | 0.99997 | pass |
+| VL | layer 13 V cache | 5.03e-3 (1.39e-3 / 5.15e-3) | 5.37e-3 (1.43e-3 / 5.51e-3) | 0.99999 | pass |
+| VL | layer 14 K cache | 1.64e-2 (1.47e-2 / 1.71e-2) | 1.63e-2 (1.46e-2 / 1.69e-2) | 0.99987 | pass |
+| VL | layer 14 V cache | 1.33e-2 (1.18e-2 / 1.33e-2) | 1.51e-2 (1.36e-2 / 1.52e-2) | 0.99989 | pass |
+| Q3.5 | layer 14 output (linear attn) | 9.51e-3 (8.48e-3 / 9.96e-3) | 1.46e-2 (1.21e-2 / 1.33e-2) | 0.99990 | pass |
+| Q3.5 | layer 15 output | 1.78e-2 (1.67e-2 / 1.85e-2) | 2.46e-2 (2.42e-2 / 2.47e-2) | 0.99970 | pass |
+| Q3.5 | layer 14 conv state (bf16) | **0, bitwise** (1.54e-3 / 7.18e-3) | **0, bitwise** (1.55e-3 / 7.78e-3) | 1.0 | pass |
+| Q3.5 | layer 14 recurrent state (**fp32**) | 4.16e-3 (2.84e-3 / 8.44e-3) | 4.70e-3 (1.83e-3 / 1.01e-2) | 0.99999 | pass |
+| Q3.5 | layer 15 K cache | 1.82e-2 (1.80e-2 / 2.08e-2) | 1.84e-2 (1.77e-2 / 2.06e-2) | 0.99983 | pass |
+| Q3.5 | layer 15 V cache | 2.24e-2 (2.09e-2 / 2.37e-2) | 2.25e-2 (2.10e-2 / 2.37e-2) | 0.99975 | pass |
+
+**Result: both pairs pass all 5 steps.**
+
+- Every tensor's ratio to the largest floor is 0.0–1.10.
+- No error grows over the steps. The layer 13 K cache, for example, is 7.68e-3 after the prefill and 7.67e-3 after
+  step 4.
+- Against the `scale=recip` floor alone, two tensors are well above it:
+  - The first-layer VL KV cache is 3.3–3.8× that floor. The CPU Inductor floor, 7.9e-3, is where it sits: these are
+    the k/v projections after the rotary and k-norm pointwise ops, which Inductor rounds once and eager rounds per
+    op.
+  - The Q3.5 recurrent state is 1.5–2.6× the `scale=recip` floor. It is at 0.3–0.5× the CPU Inductor floor.
+- The conv state is bitwise equal to the CPU reference at every step.
+- A second, identical run of each model (`val/*-decode-1`, criterion of an earlier harness revision) gave the same
+  device rel-L2 to every digit.
+
+The state stays on the device. A meter wraps every host read and write of tnca memory (`tnca.torch_device.MEMORY`:
+`to_host`, `from_host`, `fill_`, `.item()`) and the runtime launch log (per-launch staging bytes). It is open from the
+call into the compiled pair until the device is drained. Inputs are moved before the call and outputs read back after
+it. Cache contents are read for the comparison after the meter closes.
+
+| model | step | wall s | launches | staging up / down | host reads / writes inside the step | resident bytes | model device cycles |
+|---|---|---|---|---|---|---|---|
+| VL | prefill (compiles) | 90.8 | 75 | 0 / 0 | 8 / 34 calls, 26 / 272 B | 108,380,184 | 259,448,092 |
+| VL | decode 1 (compiles) | 78.4 | 41 | 0 / 0 | 6 / 6 calls, 16 / 48 B | 101,659,648 | 225,878,719 |
+| VL | decode 2, 3, 4 | 61.6–61.7 | 41 each | 0 / 0 | **0 / 0** | 101,659,648 | 225.55–225.71 M |
+| Q3.5 | prefill (compiles) | 413.2 | 124 | 0 / 0 | 14 / 36 calls, 50 / 288 B | 318,419,320 | 1,211,280,402 |
+| Q3.5 | decode 1 (compiles) | 166.3 | 47 | 0 / 0 | 4 / 4 calls, 12 / 32 B | 232,718,240 | 479,007,077 |
+| Q3.5 | decode 2, 3, 4 | 134.8–134.9 | 47 each | 0 / 0 | **0 / 0** | 232,718,240 | 478.61–478.95 M |
+
+- **Every launch ran on resident tensors**, with no launch staging in any step.
+- **The steady decode steps make no host access at all.** The only host accesses happen in the two calls that
+  compile, and each is attributed to its call site (`host_sites` in `result.json`):
+  - Inductor's pattern-matcher initialisation (`fuse_attention._get_sfdp_patterns`, example tensors of 8–16 B);
+  - constant folding (`joint_graph._deduce_value`).
+
+  Neither touches the cache.
+- Peak RSS was 4.0 GiB for VL and 6.9 GiB for Q3.5. Total wall time was 6.6 min and 17.7 min.
+
+
+## 7. Qwen3-VL vision tower on tnca
+
+Run in progress (`val/vl-tower`); results follow in the next commit.
+
+## 8. Remaining FP8 gaps
 
 1. **No full-model run on tnca.** One 5.5 GiB read takes about 17 min on the model. Prefill and decode of the whole
    model (28 / 32 layers plus the embedding and lm_head) were not run. Layer-level evidence stands in for it.
-2. **Teacher-forced decode with the KV/state cache on device** was not run as a layer. Decode-shape FP8 GEMMs (M=1)
-   were run.
+2. **Decode with the cache on the device ran on two layers per model, not on the whole model** (section 6). The
+   cache bucket was 32 slots and the prompt was short text. A long-context bucket and an image prompt in decode were
+   not run.
 3. **Activation-scale rounding.** `TNCA_IEEE_DIV=1` reproduces the literal `amax/448`. CUDA's Hub kernel computes
    `amax*fl(1/448)`, which moves a layer by about 1e-2. That is the floor above, not an error, but it means TNCA and
    GPU W8A8 outputs are not bitwise comparable.
@@ -173,7 +272,9 @@ Model layers under the X8 dot (`val/vl-lin-x8dot`, `val/vl-layer13-x8dot`): the 
 | `val/val.sh` | the launcher (environment above) |
 | `gate/{x8,final,x8dot}/` | status, logs, the default-audit comparison, fp8 / kernels / addr64 reports |
 | `gate/reg.sh`, `gate/rtl.sh` | the gate scripts |
+| `models-tnca-decode-evidence.tgz` (second archive) | `gate/v15/` (status, logs, audit comparison, fp8 / kernels / std-ops / solve reports, addr64 case JSON; `make-core`, `test_addr64_rtl`, `xpose8-rtl` logs), `gate/{reg,rtl}.sh`, `val/val.sh` (tree `tree-val2`), `val/{vl-decode,q35-decode,vl-tower}/` (`result.json` with per-step tensors' comparisons, floors, transfer meters and call sites; `log`; `asm/`), `val/{vl,q35}-decode-1/` (the repeat runs) |
 | `x8dot-kernels/` | fp8_kernels_cases reports: base and X8 dot under x8 (`base-x8`, `c7-x8`) and under v5 (`base-v5`, `cand-v5`); `cmp.py` makes the cycle table |
 
-Reproduce on GB10: `val.sh NAME CORES linears|layer|vision --model vl|q35 --teacher-force ~/qwen-work/out/{vl,q35}/ref_fp8 …`
+Reproduce on GB10: `val.sh NAME CORES linears|layer|vision|tower --model vl|q35 --teacher-force ~/qwen-work/out/{vl,q35}/ref_fp8 …`
+and `val.sh NAME CORES decode --model vl --index 13 --bucket 32 --steps 4` (`--model q35 --index 14` for Qwen3.5).
 (see `tools/models/qwen_tnca_layers.py --help`).

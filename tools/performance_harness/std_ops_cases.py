@@ -29,6 +29,11 @@ groups
   gemm    skinny F.linear (M <= 3, K >= 64*max(M, N)): no decompose-K in the
           generated code, and bit for bit against a per-K binary32 FMA in
           ascending K (ISA sec 9C.1)
+  rope    RMS norm then rotary embedding of one decode token, the angle
+          table built in the graph (int64 positions x inv_freq as a K = 1
+          bmm, cat((f, f))) and fused with the norm's reduction: int64 ->
+          float, sin and cos together. Against float64 from the binary32
+          angles, normwise, and torch CPU binary32
 """
 import argparse
 import json
@@ -46,7 +51,7 @@ sys.path[:0] = [str(ROOT), str(ROOT/'python'), str(ROOT/'compiler/python'), str(
 
 from fp8_cases import Run, bits, compare, per_k_fma  # noqa: E402
 
-GROUPS = ('trig', 'log1p', 'int64', 'scan', 'gemm')
+GROUPS = ('trig', 'log1p', 'int64', 'scan', 'gemm', 'rope')
 
 
 def _torch():
@@ -367,6 +372,62 @@ def group_gemm(run):
                                 f'decompose-K {decomposed}')
             except Exception as e:                               # noqa: BLE001
                 _fail(run, 'gemm', case, e)
+
+
+def group_rope(run):
+    """RMS norm + rotary embedding of a decode token (any RoPE model's q/k path).
+
+    Inductor fuses the norm's reduction over D with the rotary epilogue, which
+    reads the angle table at `r % (D/2)` (the cat of two copies). Pass:
+    compiles, no host fallback, and the normwise error against float64 (from
+    the same binary32 angles) is within 64 binary32 ulps (2**-18: rsqrt on
+    the SFU, sin/cos <= 1 ulp, a mean over D, two products and a sum).
+    Not a reproducer of the Qwen3-VL decode descriptor failure (that kernel
+    also selects mrope sections); this fused form compiles with or without
+    tnca.descriptor_broadcast.
+    """
+    torch = _torch()
+    g = torch.Generator().manual_seed(37)
+    shapes = ((1, 16, 128), (2, 4, 64)) if not run.quick else ((1, 2, 64),)
+
+    def angles(pos, inv_freq):
+        # inv_freq @ positions as a (K = 1) batched matmul, as HF rotary
+        # embeddings compute it: one binary32 product per element.
+        B = pos.shape[0]
+        f = inv_freq[None, :, None].expand(B, -1, 1) @ pos[:, None, :].float()
+        return f.transpose(1, 2)                                          # [B, 1, D/2]
+
+    def fn(x, w, freqs):
+        emb = torch.cat((freqs, freqs), dim=-1)[:, None]                  # [B, 1, 1, D]
+        xf = x.to(freqs.dtype)
+        xn = xf * torch.rsqrt(xf.pow(2).mean(-1, keepdim=True) + 1e-6) * w
+        half = x.shape[-1] // 2
+        rot = torch.cat((-xn[..., half:], xn[..., :half]), dim=-1)
+        return (xn * emb.cos() + rot * emb.sin(),)
+
+    for B, H, D in shapes:
+        case = f'rms norm + rotary, decode, B={B} H={H} D={D}'
+        try:
+            x = torch.randn(B, H, 1, D, generator=g).to(torch.bfloat16)
+            w = 1 + 0.1 * torch.randn(D, generator=g)
+            pos = torch.randint(0, 32768, (B, 1), generator=g, dtype=torch.int64)
+            inv_freq = 1.0 / (1e6 ** (torch.arange(0, D, 2, dtype=torch.float32) / D))
+            (y,), rec = run.compile_run(f'rope/{B}x{H}x{D}', lambda a, b, c, d: fn(a, b, angles(c, d)),
+                                        (x, w, pos, inv_freq), dump=False)
+            # Reference: the binary32 angles (exact product, one rounding --
+            # what any binary32 rotary computes), the rest in float64.
+            f32 = angles(pos, inv_freq)
+            ref = fn(x, w.double(), f32.double())[0]
+            cpu = fn(x, w, f32)[0]
+            den = ref.abs().max().item()
+            err = (y.double() - ref).abs().max().item() / den
+            err_cpu = (cpu.double() - ref).abs().max().item() / den
+            ok = err <= 2.0 ** -18 and not rec['host_fallbacks']
+            run.add('rope', case, 'pass' if ok else 'fail', graph=rec, err=err, err_cpu=err_cpu,
+                    summary=f'normwise err vs float64 {err:.3g} (bound 2**-18 = {2.0 ** -18:.3g}; '
+                            f'torch CPU fp32 {err_cpu:.3g}), host fallbacks {len(rec["host_fallbacks"])}')
+        except Exception as e:                                   # noqa: BLE001
+            _fail(run, 'rope', case, e)
 
 
 def main():

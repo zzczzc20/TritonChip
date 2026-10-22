@@ -749,11 +749,53 @@ def _lower_ttir(module, ctx, kernel_name, params, target, prov, options, stages,
         packed_unpack = int(os.environ.get('TNCA_PACKED_WINDOW_UNPACK', '0'))
     if packed_unpack not in (0, 1):
         raise ValueError('packed_window_unpack must be 0 or 1')
+    # The extended lowering (large tiles): a kernel the default lowering
+    # refuses, or whose code the code store cannot hold, is imported once
+    # more with the importer's `large_tiles` set -- separable indices, wide
+    # K steps, a loop over row chunks. A kernel that compiles by default
+    # never reaches it, so its code is exactly what it was.
+    saved_prov, saved_stages = dict(prov.entries), dict(stages.stages)
+    first = None
+    for large_tiles in (False, True):
+        if large_tiles:
+            prov.entries.clear()
+            prov.entries.update(saved_prov)
+            stages.stages.clear()
+            stages.stages.update(saved_stages)
+            prov.record('extended_lowering', first)
+        try:
+            result = _lower_imported(
+                module, kernel_name, params, target, prov, options, stages, opt_level,
+                index_opt=index_opt, sparse=sparse, window_reuse=window_reuse,
+                packed_unpack=packed_unpack, large_tiles=large_tiles)
+        except (UnsupportedError, CompileError) as e:
+            if large_tiles:
+                if first and first not in str(e):
+                    e.args = (f'{e.args[0] if e.args else e} (the default lowering: {first})',) \
+                        + tuple(e.args[1:])
+                raise
+            first = str(e).splitlines()[0][:300]
+            continue
+        code_bytes = result[5]['code_bytes']
+        if large_tiles or code_bytes <= _CODE_STORE_BYTES:
+            return result
+        first = f'{code_bytes} code bytes exceed the {_CODE_STORE_BYTES}-byte code store'
+    raise AssertionError('unreachable')
+
+
+# The device's code store (tnca.inductor.CODE_STORE_BYTES, without importing
+# torch here): a kernel larger than this cannot be loaded.
+_CODE_STORE_BYTES = 0x20000
+
+
+def _lower_imported(module, kernel_name, params, target, prov, options, stages, opt_level, *,
+                    index_opt, sparse, window_reuse, packed_unpack, large_tiles):
     kernel, _builder, imp = adapter.import_ttir(
         module, kernel_name, _placeholders(params),
         param_names=[n for n, _t in params], target=target, prov=prov,
         dynamic_args=True, index_opt=bool(index_opt), sparse_maps=bool(sparse),
-        window_reuse=bool(window_reuse), packed_window_unpack=bool(packed_unpack))
+        window_reuse=bool(window_reuse), packed_window_unpack=bool(packed_unpack),
+        large_tiles=large_tiles)
     if getattr(imp, '_packed_unpack_rows', 0):
         prov.record('packed_window_unpack_rows', imp._packed_unpack_rows)
     if getattr(imp, '_mma_retiles', None):
@@ -1015,6 +1057,36 @@ def _rctx_spmd(kernel, target, prov, options, stages, scratch_bytes, scratch_slo
 
 
 def _emit(kernel, target, prov, opt_level, options, stages):
+    """`_emit_once`, and once more with window lifetime reuse when the fixed
+    layout cannot hold the kernel's windows or accumulators.
+
+    The fixed layout gives every window its own vector registers for the
+    whole kernel. A kernel whose windows fit that way is compiled exactly
+    as before; one whose windows do not -- a dot over a K-deep or N-wide
+    tile issues a fragment per K step and column -- is colored by awaited
+    lifetime (tnca_cc.window_lifetime), which is what the capacity allows,
+    instead of being refused. The provenance records the retry.
+    """
+    options = options or {}
+    reuse = options.get('window_reuse')
+    if reuse is None:
+        reuse = int(os.environ.get('TNCA_WINDOW_REUSE', '0'))
+    if reuse:
+        return _emit_once(kernel, target, prov, opt_level, options, stages)
+    import copy
+    original = copy.deepcopy(kernel)
+    try:
+        return _emit_once(kernel, target, prov, opt_level, options, stages)
+    except CompileError as e:
+        text = str(e)
+        if e.detail.get('kind') != 'ResourceError' or not (
+                'windows need more than' in text or 'accumulators' in text):
+            raise
+        prov.record('window_reuse_fallback', text[:200])
+    return _emit_once(original, target, prov, opt_level, dict(options, window_reuse=1), stages)
+
+
+def _emit_once(kernel, target, prov, opt_level, options, stages):
     """adapter.emit, after the R39-01 scheduler when `schedule` asks for it.
 
     The allocator has no spill, so a schedule that needs more registers than

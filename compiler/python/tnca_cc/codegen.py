@@ -125,17 +125,45 @@ class CodeGen:
         would let one role's scratch sit inside another's window.
         """
         k, t = self.kernel, self.target
-        t.check_budget(barriers=len(k.barriers),
-                       accumulators=len(k.accumulators),
-                       windows=len(k.windows),
-                       descriptors=len(k.descriptors),
+        counts = dict(barriers=len(k.barriers), accumulators=len(k.accumulators),
+                      descriptors=len(k.descriptors))
+        limits = dict(barriers=t.num_barriers, accumulators=t.num_accumulators,
+                      descriptors=t.num_descriptors)
+        # A class that does not fit one slot per value is numbered by live
+        # range instead (resource_lifetime); one that fits keeps the fixed
+        # numbering below, as it always had.
+        renumbered = set()
+        if any(counts[c] > limits[c] for c in counts):
+            from .resource_lifetime import color
+            for cls, kind in (('barriers', 'barrier'), ('accumulators', 'accumulator'),
+                              ('descriptors', 'descriptor')):
+                if counts[cls] > limits[cls]:
+                    used = color(k, kind, limits[cls])
+                    if used is not None:
+                        counts[cls] = used
+                        renumbered.add(cls)
+        windows = len(k.windows)
+        if windows > t.num_windows:
+            from .resource_lifetime import color
+            used = color(k, 'window', t.num_windows)
+            if used is not None:
+                windows = used
+                renumbered.add('windows')
+        t.check_budget(barriers=counts['barriers'],
+                       accumulators=counts['accumulators'],
+                       windows=windows,
+                       descriptors=counts['descriptors'],
                        rctx=len(k.roles))
-        for i, b in enumerate(k.barriers):
-            b.reg = i
-        for i, a in enumerate(k.accumulators):
-            a.reg = i
-        for i, d in enumerate(k.descriptors):
-            d.reg = i
+        if 'barriers' not in renumbered:
+            for i, b in enumerate(k.barriers):
+                b.reg = i
+        if 'accumulators' not in renumbered:
+            for i, a in enumerate(k.accumulators):
+                a.reg = i
+        if 'descriptors' not in renumbered:
+            for i, d in enumerate(k.descriptors):
+                d.reg = i
+        self.renumbered = renumbered
 
         if self.window_reuse:
             from .window_lifetime import assign
@@ -910,6 +938,12 @@ class CodeGen:
                          f"#{op.attrs['expect']:#x}, #{op.attrs['ident']}")
 
     # ---- resources --------------------------------------------------------
+    def _window_id(self, w):
+        """The window's id: its index, or the slot resource_lifetime gave it
+        when the program names more windows than the target has."""
+        wid = getattr(w, 'wid', None)
+        return self.kernel.windows.index(w) if wid is None else wid
+
     def _op_window_def(self, op):
         w = op.results[0]
         if w.reg is None:
@@ -917,7 +951,7 @@ class CodeGen:
                 f"window {w.name} has no register range",
                 because='whole-program resources are fixed before the walk '
                         '(sec 10.1); call assign_shared() first')
-        self._emit('w.def', f"w{self.kernel.windows.index(w)}",
+        self._emit('w.def', f"w{self._window_id(w)}",
                     f"#{w.reg}", f"#{w.length}",
                     comment=f"v{w.reg}..v{w.reg + w.length - 1}")
 
@@ -1074,7 +1108,7 @@ class CodeGen:
         self._count_operation(bar)
         suffix = {'f16': 'h', 'bf16': 'h', 'i16': 'h', 'f32': 'w', 'i32': 'w',
                   'i8': 'b', 'f8E4M3FN': 'b', 'f8E5M2': 'b'}[op.attrs['dtype']]
-        widx = self.kernel.windows.index(window)
+        widx = self._window_id(window)
         # ISA sec 9A.3: a fully predicated-off asynchronous command still
         # completes once, so the static operation count stays correct under
         # predication. The count above is therefore unconditional.

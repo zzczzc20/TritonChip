@@ -29,6 +29,7 @@ from .diagnostics import Diagnostic
 from .ir import Builder, VECTOR, SCALAR, PRED, make_kernel
 from .tiles import (Affine2D, Tile, TileError, TENSORMAP_BYTES,
                     check_geometry, tensormap_words)
+from .separable import Sep2D, Emitter as _SepEmitter
 
 # TTIR arithmetic -> our binary op names.
 _INT_BIN = {'arith.addi': 'add', 'arith.subi': 'sub', 'arith.muli': 'mul',
@@ -142,6 +143,32 @@ class Unsupported(Diagnostic):
     """A TTIR construct with no TNCA lowering yet."""
 
 
+class _LaneTerm:
+    """The per-lane part of a loop-carried 1-D pointer, as a chain link.
+
+    A carried pointer is a scalar address in a register (`ptr_carry`).
+    What every lane adds to it -- the lane index of `p + arange`, or the
+    general offsets of `p + idx` -- does not fit in that register, and it
+    is loop-invariant unless the loop adds per-lane offsets. It stands in
+    the carried pointer's `_ptr_chain` as this value, which `_address`
+    reads like any other offset: an 'arange' entry for a contiguous
+    pointer, a held index vector for an indexed one.
+    """
+
+    _seq = 0
+
+    def __init__(self, width):
+        _LaneTerm._seq += 1
+        self._id = ('ptr-lane', _LaneTerm._seq)
+        self._type = f'tensor<{width}xi32>'
+
+    def id(self):
+        return self._id
+
+    def get_type(self):
+        return self._type
+
+
 # Integer operations a lane-uniform value keeps through (_uniform_scalar).
 _UNIFORM_SBIN = frozenset({'add', 'sub', 'mul', 'and', 'or', 'xor'})
 
@@ -205,6 +232,11 @@ class TTIRImporter:
         self._byte_offsets = {}   # (offset value, shift) -> byte offset Value
         self._fconst_cache = {}   # (f32 bit pattern, type) -> our Value
         self._affine = {}   # TTIR value id -> Affine2D, for a 2-D index
+        # The extended lowering (aot: a kernel the default lowering cannot
+        # compile is lowered again with this set). Separable indices
+        # (tnca_cc.separable) live here; the default path never makes one.
+        self.large_tiles = False
+        self._sep = {}      # TTIR value id -> Sep2D
         self._ptr2d = {}    # TTIR value id -> (arg name, elem, Affine2D)
         self._tiles = {}    # TTIR value id -> Tile
         # Descriptor loads whose only use is tl.trans, lowered at the trans
@@ -680,6 +712,8 @@ class TTIRImporter:
         iv = self._copy_value(lo)
         self._v[block.get_argument(0).id()] = iv
         carried = []
+        carried_lanes = {}      # result index -> (address kind, _LaneTerm)
+        sep_carries = {}        # result index -> (carried scalar, Sep2D of the carry)
         pointer_tiles = set()
         mask_tiles = set()
         for i in range(op.get_num_results()):
@@ -687,6 +721,19 @@ class TTIRImporter:
             shape, elem = _parse_type(str(src.get_type()))
             if isinstance(shape, tuple) and _pointee(elem):
                 name, pelem, offset = self._ptr2d[src.id()]
+                if self.large_tiles and isinstance(offset, (Affine2D, Sep2D)):
+                    # The lane and row parts are loop-invariant registers;
+                    # only what the loop adds is carried, one scalar shared by
+                    # every register chunk of the pointer (separable.py).
+                    result = op.get_result(i)
+                    share = (id(op if not hasattr(op, 'op') else op.op),
+                             getattr(result, 'value', result).id())
+                    sep, delta = self._sep_carry(offset, share)
+                    for dest in (block.get_argument(i + 1), result):
+                        self._ptr2d[dest.id()] = (name, pelem, sep)
+                    sep_carries[i] = (delta, sep, share)
+                    carried.append(delta)
+                    continue
                 val = self._materialise(self._offset_row(offset), shape[0], shape[1], 'i32')
                 for dest in (block.get_argument(i + 1), op.get_result(i)):
                     self._ptr2d[dest.id()] = (name, pelem, val)
@@ -728,7 +775,17 @@ class TTIRImporter:
                 self._tiles[op.get_result(i).id()] = val
             else:
                 pointer = _pointee(elem)
-                init = self._address(src)[0] if pointer else self._value(src)
+                lane = None
+                if pointer:
+                    init, _size, _pelem, akind, index = self._address(src)
+                    if akind in ('contiguous', 'indexed'):
+                        # A pointer tensor whose lanes differ: the scalar
+                        # carries the common address, and the lane offsets
+                        # ride along in the chain (_LaneTerm). Carrying the
+                        # scalar alone made every lane load lane 0's address.
+                        lane = (akind, index)
+                else:
+                    init = self._value(src)
                 if elem == 'i1':
                     # A mask is carried in a predicate register whatever its
                     # initial value arrived as (`dense<false>` is a vector).
@@ -741,6 +798,17 @@ class TTIRImporter:
                     self._args[len(self._args)] = (name, val)
                     for dest in (block.get_argument(i + 1), op.get_result(i)):
                         self._ptr_base[dest.id()] = (name, pointer)
+                    if lane is not None:
+                        akind, index = lane
+                        term = _LaneTerm(shape if isinstance(shape, int) else self.target.vlen)
+                        if akind == 'contiguous':
+                            self._offsets[term.id()] = ('arange', None)
+                            self._v[term.id()] = self.b.arange()
+                        else:
+                            self._v[term.id()] = self._copy_value(index)
+                        for dest in (block.get_argument(i + 1), op.get_result(i)):
+                            self._ptr_chain[dest.id()] = [term]
+                        carried_lanes[i] = (akind, term)
             carried.append(val)
         start, end = self._control_label('for'), self._control_label('endfor')
         # A loop may execute zero times. Constants cached inside its body
@@ -757,8 +825,19 @@ class TTIRImporter:
                 # Snapshot every yielded value before assigning any carry;
                 # parallel SSA updates include swaps and cross-dependencies.
                 values = []
+                lane_updates = []
+                yielded_shares = set()
                 for i, dst in enumerate(carried):
                     src = inner.get_operand(i)
+                    if i in sep_carries:
+                        delta, carried_sep, share = sep_carries[i]
+                        if share in yielded_shares:
+                            values.append(None)     # the same scalar, already advanced
+                            continue
+                        yielded_shares.add(share)
+                        values.append(self._copy_value(
+                            self._sep_advance(self._ptr2d[src.id()][2], delta, carried_sep)))
+                        continue
                     held = self._tiles.get(src.id())
                     if self.index_opt and isinstance(dst, Tile) and held is not None \
                             and held.kind == dst.kind == 'accumulator' and held.handle is dst.handle:
@@ -777,10 +856,29 @@ class TTIRImporter:
                         values.append(self._materialise(get, dst.rows, dst.cols, dst.dtype))
                     else:
                         _, elem = _parse_type(str(src.get_type()))
-                        v = self._address(src)[0] if _pointee(elem) else self._value(src)
+                        if _pointee(elem):
+                            v, _size, _pelem, akind, index = self._address(src)
+                            lane = carried_lanes.get(i)
+                            if lane is None and akind != 'broadcast':
+                                raise Unsupported(
+                                    'a loop-carried pointer that becomes lane-varying in the loop',
+                                    because='its initial value has the same address in every lane',
+                                    remedy='add the per-lane offsets before the loop')
+                            if lane is not None:
+                                if lane[0] == 'contiguous' and akind != 'contiguous':
+                                    raise Unsupported(
+                                        'a loop-carried contiguous pointer advanced by per-lane offsets',
+                                        remedy='advance it by a lane-uniform amount')
+                                held = self._v[lane[1].id()]
+                                if akind == 'indexed' and index is not held:
+                                    lane_updates.append((held, self._copy_value(index)))
+                        else:
+                            v = self._value(src)
                         if elem == 'i1':
                             v = self._as_pred(v)
                         values.append(self._copy_value(v))
+                for held, index in lane_updates:
+                    self.b._emit('assign', [], [held, index])
                 for dst, src in zip(carried, values):
                     if src is None:
                         continue
@@ -2290,6 +2388,11 @@ class TTIRImporter:
             self._tiles[op.get_result(0).id()] = tile
             return
         kind, key = self._offsets.get(src.id(), (None, None))
+        if self.large_tiles and kind not in ('arange', 'contiguous'):
+            sep = self._sep_expand(src, op.get_int_attr('axis'))
+            if sep is not None:
+                self._sep[op.get_result(0).id()] = sep
+                return
         if self.index_opt and kind == 'contiguous':
             # `u + arange` along the new axis: an index, not data. Taking it
             # apart lane by lane (below) turned a matmul template's rows into
@@ -2363,6 +2466,9 @@ class TTIRImporter:
             else:
                 self._v[rid] = self.b.splat(self.b.vextract(v, 0, dtype=selem), dtype=selem)
             return
+        if self.large_tiles and src.id() in self._sep:
+            self._sep[rid] = self._sep[src.id()]
+            return
         tile = self._tiles.get(src.id())
         if tile is not None:
             shape, elem = _parse_type(str(op.get_result(0).get_type()))
@@ -2423,6 +2529,183 @@ class TTIRImporter:
                     'register across a tile, which is a real data movement '
                     'and not the index bookkeeping this recognises')
 
+    # ---- separable 2-D indices (extended lowering) -------------------------
+    def _sep_of(self, value):
+        """The Sep2D a 2-D integer value denotes, or None."""
+        sep = self._sep.get(value.id())
+        if sep is not None:
+            return sep
+        aff = self._affine_of(value)
+        return Sep2D.from_affine(aff) if aff is not None else None
+
+    def _sep_expand(self, src, axis):
+        """`v[:, None]` / `v[None, :]` of a 1-D integer value that is data
+        (a remainder, a gathered index): its lanes become the rows or the
+        columns of a separable index."""
+        _shape, elem = _parse_type(str(src.get_type()))
+        if not elem.startswith('i') or elem in ('i1', 'i64'):
+            return None
+        sc = self._uniform_scalar(src)
+        if sc is not None:
+            return Sep2D([('one', None, 1, (sc,))])
+        try:
+            v = self._value(src)
+        except Unsupported:
+            return None
+        if getattr(v, 'kind', None) != VECTOR:
+            return None
+        return Sep2D([('rowvec' if axis == 1 else 'colvec', v, 1, ())])
+
+    def _sep_factor(self, q):
+        """A scalar-only Sep2D as (int, runtime factors)."""
+        if len(q.terms) == 1:
+            _kind, _v, k, scalars = q.terms[0]
+            return k, scalars
+        total = _SepEmitter(self).scalar(q, 0)
+        return (total, ()) if isinstance(total, int) else (1, (total,))
+
+    def _try_sep(self, op, kind):
+        shape, _elem = _parse_type(str(op.get_result(0).get_type()))
+        if not isinstance(shape, tuple) or kind not in ('add', 'sub', 'mul'):
+            return False
+        x, y = op.get_operand(0), op.get_operand(1)
+        involved = x.id() in self._sep or y.id() in self._sep
+        if not involved and kind != 'mul':
+            return False
+        a, b = self._sep_of(x), self._sep_of(y)
+        if a is None or b is None:
+            return False
+        rid = op.get_result(0).id()
+        if kind == 'add':
+            self._sep[rid] = a.plus(b)
+            return True
+        if kind == 'sub':
+            self._sep[rid] = a.plus(b.scaled(-1))
+            return True
+        for p, q in ((a, b), (b, a)):
+            if q.scalar_only() and q.terms:
+                if not involved and not any(t[3] for t in q.terms):
+                    return False        # an affine index times a constant: Affine2D's
+                k, scalars = self._sep_factor(q)
+                self._sep[rid] = p.scaled(k, scalars)
+                return True
+        return False
+
+    def _try_sep_addptr(self, rid, base, offs):
+        add = self._sep.get(offs.id())
+        prev = self._ptr2d.get(base.id())
+        if add is None and not (prev is not None and isinstance(prev[2], Sep2D)):
+            return False
+        if prev is None:
+            spec = self._ptr_base.get(base.id())
+            if spec is None:
+                return False
+            name, elem = spec
+            acc = Sep2D()
+        else:
+            name, elem, acc = prev
+            if isinstance(acc, Affine2D):
+                acc = Sep2D.from_affine(acc)
+            elif not isinstance(acc, Sep2D):
+                return False
+        if add is None:
+            add = self._sep_of(offs)
+            if add is None:
+                return False
+        self._ptr2d[rid] = (name, elem, acc.plus(add))
+        return True
+
+    def _sep_address(self, em, base, sep, r, esize):
+        off = em.scalar(sep, r, scale=esize)
+        if isinstance(off, int):
+            return base if off == 0 else self.b.sbini('add', base, off)
+        return self.b.sbin('add', base, off)
+
+    def _sep_load(self, op, name, elem, sep, shape):
+        """A 2-D load through a separable index: per row, one scalar address,
+        then a predicated vector load (contiguous lanes) or a gather."""
+        rows, cols = shape
+        esize = self._ELEM_BYTES[elem]
+        em = _SepEmitter(self)
+        base = self._arg_value(name)
+        lanes = em.lanes(sep)
+        if lanes is not None:
+            self.target.require('gather_scatter', 'emit v.ld.gather')
+        get_mask = (self._row_getter(op.get_operand(1), rows, 'i1')
+                    if op.get_num_operands() > 1 else (lambda r: None))
+        other = self._const.get(op.get_operand(2).id(), 0) if op.get_num_operands() > 2 else 0
+        size = _load_suffix(_SIZE_SUFFIX[esize], elem)
+
+        def row(r):
+            at = self._sep_address(em, base, sep, r, esize)
+            mask = self._shape_mask(cols, get_mask(r))
+            if lanes is None:
+                return self.b.load(at, mask=mask, other=other, dtype=elem, size=size)
+            return self.b.gather(at, lanes, mask=mask, other=other, dtype=elem, size=size)
+        if self._deferrable(op):
+            return Tile('lazy', row, rows, cols, elem)
+        return self._materialise(row, rows, cols, elem)
+
+    def _sep_store(self, op, name, elem, sep, shape, tile):
+        rows, cols = shape
+        esize = self._ELEM_BYTES[elem]
+        em = _SepEmitter(self)
+        base = self._arg_value(name)
+        lanes = em.lanes(sep)
+        if lanes is not None:
+            self.target.require('gather_scatter', 'emit v.st.scatter')
+        get = self._tile_row_getter(tile)
+        get_mask = (self._row_getter(op.get_operand(2), rows, 'i1')
+                    if op.get_num_operands() > 2 else (lambda r: None))
+        for r in range(rows):
+            v = get(r)
+            if elem != tile.store:
+                v = self.b.vcvt(tile.store, elem, v)
+            at = self._sep_address(em, base, sep, r, esize)
+            mask = self._shape_mask(cols, get_mask(r))
+            if lanes is None:
+                self.b.store(at, v, mask=mask, size=_SIZE_SUFFIX[esize])
+            else:
+                self.b.scatter(at, lanes, v, mask=mask, size=_SIZE_SUFFIX[esize])
+
+    def _sep_carry(self, offset, share):
+        """A carried 2-D pointer's offset at loop entry: the initial index and
+        one shared scalar for what the loop has added since (zero)."""
+        sep = Sep2D.from_affine(offset) if isinstance(offset, Affine2D) else offset
+        shared = getattr(self, '_sep_shared', None)
+        if shared is None:
+            shared = self._sep_shared = {}
+        delta = shared.get(share)
+        if delta is None:
+            delta = shared[share] = self._copy_value(self.b.const(0))
+        return sep.plus(Sep2D([('one', None, 1, (delta,))])), delta
+
+    def _sep_advance(self, yielded, delta, carried_sep):
+        """The carried scalar after one iteration: what the yielded pointer
+        adds to the carried one, which must be lane- and row-uniform."""
+        ysep = Sep2D.from_affine(yielded) if isinstance(yielded, Affine2D) else yielded
+        if not isinstance(ysep, Sep2D):
+            raise Unsupported('a carried 2-D pointer whose advance is not an index')
+        def key(t):
+            return (t[0], id(t[1]), t[2], tuple(id(x) for x in t[3]))
+        remaining = {}
+        for t in carried_sep.terms:
+            remaining[key(t)] = remaining.get(key(t), 0) + 1
+        added = []
+        for t in ysep.terms:
+            k = key(t)
+            if remaining.get(k):
+                remaining[k] -= 1
+            else:
+                added.append(t)
+        if any(remaining.values()) or any(t[0] != 'one' for t in added):
+            raise Unsupported('a carried 2-D pointer advanced by a per-row or per-lane amount',
+                              remedy='advance it by a scalar')
+        step = _SepEmitter(self).scalar(Sep2D(added), 0)
+        if isinstance(step, int):
+            return delta if step == 0 else self.b.sbini('add', delta, step)
+        return self.b.sbin('add', delta, step)
+
     def _try_affine(self, op, kind):
         """Track an integer operation on a 2-D index. True if handled."""
         shape, elem = _parse_type(str(op.get_result(0).get_type()))
@@ -2436,6 +2719,8 @@ class TTIRImporter:
                            tuple)
                        for i in range(op.get_num_operands())):
                 return False
+        if self.large_tiles and self._try_sep(op, kind):
+            return True
         a = self._affine_of(op.get_operand(0))
         b = self._affine_of(op.get_operand(1))
         if a is None or b is None:
@@ -2465,6 +2750,8 @@ class TTIRImporter:
         emitted: what the chain adds up to becomes a descriptor when the
         load at the end of it asks.
         """
+        if self.large_tiles and self._try_sep_addptr(rid, base, offs):
+            return True
         aff = self._affine_of(offs)
         offset_tile = self._tiles.get(offs.id())
         if aff is None and offset_tile is None:
@@ -3481,6 +3768,11 @@ class TTIRImporter:
         from .footprints import fragment_registers
         logical = a.cols
         step = logical
+        if self.large_tiles and f'k{logical}' not in self.target.mma['k_steps']:
+            # K deeper than one command: the widest step that divides it, in
+            # ascending K into the same accumulator (register_blocks).
+            step = max(int(k[1:]) for k in self.target.mma['k_steps']
+                       if logical % int(k[1:]) == 0)
         if (getattr(self, '_window_reuse', False) and
                 a.dtype == b.dtype and a.dtype in ('f16', 'bf16') and
                 2 * fragment_registers(16, logical, 16) >= self.target.vregs_per_rctx):
@@ -3692,6 +3984,10 @@ class TTIRImporter:
         tile = self._tiles.get(value.id())
         if tile is not None:
             return self._tile_row_getter(tile, elem)
+        sep = self._sep.get(value.id())
+        if sep is not None:
+            em = _SepEmitter(self)
+            return lambda r: em.row_value(sep, r)
         aff = self._affine_of(value)
         if aff is not None:
             return lambda r: self._affine_row(aff, r)
@@ -3954,6 +4250,11 @@ class TTIRImporter:
         accumulator, loading the bias row and storing take 48."""
         if not self.index_opt:
             return False
+        if self.large_tiles:
+            # A register chunk (register_blocks) or row-chunk view of an
+            # operation: the TTIR operation's users and position decide.
+            while hasattr(op, 'op'):
+                op = op.op
         users = self._value_users.get(op.get_result(0).id(), [])
         if len(users) != 1:
             return False
@@ -4761,6 +5062,9 @@ class TTIRImporter:
                             'describable as a TensorMap',
                     source='doc/isa/TNCA-ISA-v0.1.md sec 9E.2')
             name, elem, aff = spec
+            if isinstance(aff, Sep2D):
+                self._tiles[op.get_result(0).id()] = self._sep_load(op, name, elem, aff, shape2d)
+                return
             xt = self._transposed_tile_load(op, name, elem, aff, shape2d)
             if xt is not None:
                 self._tiles[op.get_result(0).id()] = xt
@@ -4898,6 +5202,9 @@ class TTIRImporter:
                     source='doc/isa/TNCA-ISA-v0.1.md sec 9E.2')
             name, elem, aff = spec
             tile = self._tile_of(value)
+            if isinstance(aff, Sep2D):
+                self._sep_store(op, name, elem, aff, shape2d, tile)
+                return
             if self._contiguous_rows(op, aff, shape2d, 2):
                 self._masked_rows_store(op, name, elem, aff, shape2d, tile)
                 return

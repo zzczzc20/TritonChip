@@ -291,7 +291,11 @@ def main():
                     extra[start:start + cpu.numel()].copy_(cpu)
                 del cpu
                 where('resident_extra', extra)
-            hold_at = boundary - nbytes // 2 // MiB * MiB
+            # Place the copy immediately below the source. For a >2 GiB
+            # storage the pair spans PC16-PC31 without a multi-PC gap.
+            hold_at = top - 2 * nbytes - 6 * MiB
+            if nbytes <= 2 * GiB:
+                hold_at = boundary - nbytes // 2 // MiB * MiB
             pad_to(hold_at)
             hold = torch.empty(nbytes + 4 * MiB, dtype=torch.uint8, device='tnca')
             pad_to(top - nbytes - 2 * MiB)

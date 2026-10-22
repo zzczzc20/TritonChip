@@ -178,7 +178,8 @@ $(foreach p,$(TDESC_FAULTS),$(eval export ARGS_$(p) := +expectfault=04))
 
 CORE_PROGS := t00_scalar t01_vector t02_mem t03_fp t04_roles t05_fault t06_alu \
               t11_matrix t12_tensor t13_share t14_caps t15_target t16_vecadd t17_descfault t18_squash t19_waitgen0 t20_sfu t21_cvt t22_atomic t23_amofault t25_mmasf t28_count t29_vrfbank t40_f2i \
-              t33_tdesc_load t34_tdesc_store t36_reduce t37_lsu_straddle t38_wbfreeze t39_freeze_drop t39_switch t39_isolate t39_slice $(TDESC_FAULTS)
+              t33_tdesc_load t34_tdesc_store t36_reduce t37_lsu_straddle t38_wbfreeze t39_freeze_drop t39_switch t39_isolate t39_slice $(TDESC_FAULTS) \
+              t41_boundary
 
 # Image size in 64-bit words; must match tb_tnca_core's WORDS parameter.
 IMAGE_WORDS := 16384
@@ -203,6 +204,8 @@ export ARGS_t39_isolate := +allroles
 # its own slice, where the core has RSLICE (core-r39sw, core-r39sw4); one
 # context elsewhere, where the names would really be shared.
 export ARGS_t39_slice := +roles=1
+# R41 Stage 2: the core's new timing boundaries, on every context at once.
+export ARGS_t41_boundary := +allroles
 
 .PHONY: all test unit core synth lint clean dirs help isa target compiler
 
@@ -670,6 +673,27 @@ core-r39sw5: $(patsubst %,$(BUILD)/%.hex,$(R39SW5_PROGS)) $(BUILD)/tb_core_r39sw
 	     "$(VVP) $(BUILD)/tb_core_r39sw5_ooo.vvp +hex=$(BUILD)/$$p.hex +maxcycles=400000 $$extra" \
 	     || exit 1; \
 	 done
+
+# R41 Stage 2 (F01/F02/F04/F05): t41_boundary on every core bench, with one
+# context (every instruction directly behind its producer, so operands
+# forward), two and all of them (contexts interleave, give way and wait on
+# each other's barriers), printing how often each new boundary's corner case
+# occurred (+r41cov). The core's own assertions check, every cycle, that the
+# registered operands, busy bits and physical registers equal what the old
+# combinational reads returned.
+R41_BENCHES := tb_core tb_core_vrf tb_core_slow tb_core_ooo tb_core4 tb_core4_slow \
+               tb_core4_ooo tb_core_r39hw tb_core_r39hw_ooo tb_core_r39sw \
+               tb_core_r39sw_ooo tb_core_r39sw4 tb_core_r39sw4_ooo tb_core_r39sw5 \
+               tb_core_r39sw5_ooo
+.PHONY: r41-core-boundary
+r41-core-boundary: $(patsubst %,$(BUILD)/%.vvp,$(R41_BENCHES)) $(BUILD)/t41_boundary.hex | dirs
+	@for b in $(R41_BENCHES); do for r in +roles=1 +roles=2 +allroles; do \
+	   $(TOOLS)/run_test.sh "t41_boundary $$b $$r" \
+	     "$(VVP) $(BUILD)/$$b.vvp +hex=$(BUILD)/t41_boundary.hex +maxcycles=400000 $$r +r41cov" \
+	     || exit 1; \
+	   $(VVP) $(BUILD)/$$b.vvp +hex=$(BUILD)/t41_boundary.hex +maxcycles=400000 $$r +r41cov \
+	     | grep '^r41cov' | sed 's/^/      /'; \
+	 done; done
 
 #------------------------------------------------------------------------------
 # NUCA slice

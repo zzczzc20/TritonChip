@@ -16,6 +16,15 @@ control block in SLR1) and added to A3's routed per-SLR counts. Unit
 synthesis deltas are not placed results; CLB packing is nonlinear and is
 estimated only by scaling with the LUT increase. F01-F06 and F08-F10 are
 not implemented, so their cost is unknown and is listed, not estimated.
+
+    regional_preflight.py --out OUT --kernel-synth BASE_UTIL NEW_UTIL [--label NAME]
+
+adds, per SLR, the difference between two hierarchical kernel synthesis
+utilization reports (flow/fpga/synth_r40_multicore.tcl, `report_utilization
+-hierarchical`) of the r41s2 base and a Stage 2 tree: each g_tile[i].u_tile
+delta goes to SLR i (one tile per SLR), and the rest of the kernel's delta
+(outlets, dispatch, host mux, control) is charged to SLR0, the densest region,
+which over-charges SLR0 for the control block's share.
 """
 import argparse
 import hashlib
@@ -77,9 +86,39 @@ def slr_counts(text):
     return out
 
 
+def hier_rows(text):
+    """Instance -> (Total LUTs, FFs) from a report_utilization -hierarchical table."""
+    rows = {}
+    for line in text.splitlines():
+        c = [x.strip() for x in line.split('|')]
+        if len(c) > 8 and c[3].isdigit() and c[7].isdigit():
+            rows.setdefault(c[1], dict(luts=int(c[3]), registers=int(c[7])))
+    return rows
+
+
+def kernel_delta(base_path, new_path):
+    base, new = hier_rows(base_path.read_text()), hier_rows(new_path.read_text())
+    top = 'tnca_multicore_hbm_xo'
+    out = dict(per_tile={}, per_slr={s: dict(luts=0, registers=0) for s in SLRS})
+    for i, s in enumerate(SLRS):
+        name = f'g_tile[{i}].u_tile'
+        d = {k: new[name][k] - base[name][k] for k in ('luts', 'registers')}
+        out['per_tile'][name] = dict(base=base[name], new=new[name], delta=d, slr=s)
+        for k in d:
+            out['per_slr'][s][k] += d[k]
+    total = {k: new[top][k] - base[top][k] for k in ('luts', 'registers')}
+    rest = {k: total[k] - sum(t['delta'][k] for t in out['per_tile'].values()) for k in total}
+    for k in rest:
+        out['per_slr']['SLR0'][k] += rest[k]
+    out.update(kernel_total=dict(base=base[top], new=new[top], delta=total), rest_charged_to_SLR0=rest)
+    return out
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument('--out', type=Path, required=True)
+    ap.add_argument('--kernel-synth', nargs=2, type=Path, metavar=('BASE_UTIL', 'NEW_UTIL'))
+    ap.add_argument('--label', default='kernel_synth_delta')
     a = ap.parse_args()
     base = slr_counts(member(A3, 'a3-slr-util-routed.rpt'))
     deltas = {}
@@ -94,9 +133,13 @@ def main():
             src = 'm1_m4_units'
         deltas[unit] = dict(source=src, old=old, new=new,
                             delta={k: new[k] - old[k] for k in old}, instances=PLACEMENT[unit])
+    kernel = kernel_delta(*a.kernel_synth) if a.kernel_synth else None
     slr = {}
     for s in SLRS:
         d = {k: sum(u['delta'][k] * u['instances'][s] for u in deltas.values()) for k in ('luts', 'registers')}
+        if kernel:
+            for k in d:
+                d[k] += kernel['per_slr'][s][k]
         lut, reg = base['luts'][s], base['registers'][s]
         slr[s] = dict(
             a3_routed=dict(luts=lut['used'], lut_percent=lut['percent'], registers=reg['used'],
@@ -107,12 +150,21 @@ def main():
                           registers=reg['used'] + d['registers'],
                           register_percent=round((reg['used'] + d['registers']) / reg['capacity'] * 100, 3),
                           clb_packing_percent_scaled=round(A3_CLB_PACKING[s] * (lut['used'] + d['luts']) / lut['used'], 3)))
+    inputs = {str(p.relative_to(ROOT)): sha(p) for p in (A3, UNITS, F07)}
+    if kernel:
+        inputs.update({str(p): sha(p) for p in a.kernel_synth})
     doc = dict(schema='tnca-r41-regional-preflight/1',
-               inputs={str(p.relative_to(ROOT)): sha(p) for p in (A3, UNITS, F07)},
-               placement=PLACEMENT, units=deltas, slr=slr, not_implemented_candidates=NOT_IMPLEMENTED,
+               inputs=inputs,
+               placement=PLACEMENT, units=deltas, slr=slr,
+               not_implemented_candidates=[] if kernel else NOT_IMPLEMENTED,
                boundary='unit synthesis deltas added to A3 routed counts; not a placed, packed or routed result; '
                         'CLB packing scaled linearly with LUTs, which understates packing nonlinearity; '
                         'F01-F06 and F08-F10 have no implementation and no estimate')
+    if kernel:
+        doc[a.label] = kernel
+        doc['boundary'] = ('unit synthesis deltas plus the kernel synthesis delta (base -> new, per tile to its '
+                           'SLR, the rest to SLR0) added to A3 routed counts; not a placed, packed or routed '
+                           'result; CLB packing scaled linearly with LUTs, which understates packing nonlinearity')
     a.out.parent.mkdir(parents=True, exist_ok=True)
     a.out.write_text(json.dumps(doc, indent=1) + '\n')
     for s in SLRS:

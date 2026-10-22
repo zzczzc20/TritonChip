@@ -29,21 +29,21 @@ Scope: the native tnca Torch -> Inductor/Triton -> compiler -> runtime -> LSU/de
 | Host TensorMap base/extents/byte strides/block sizes | u64/u64/i64/u32, 256 bytes | Correct; struct Q/q/I, no base truncation | `python/tnca/tensor.py:67` |
 | Compiler scalar SSA address and immediate arithmetic | physical 64 bits (IR dtype may be i32) | Correct; s.add/mul/shl operate on all 64 bits | `compiler/python/tnca_cc/ir.py:176` |
 | Compiler pointer argument and descriptor ABI loads | 64-bit scalar load | Correct; ARG_BASE and pointer fields read with .d | `compiler/python/tnca_cc/frontend.py:1483` |
-| Uniform pointer chains: constants, scalar offsets, byte scaling | Python constants; runtime scalar u64 | Correct; combines whole addptr chain in scalar registers | `compiler/python/tnca_cc/frontend.py:4441` |
-| Vector local/gather element indices | signed i32, sign-extended by LSU | Bounded path; does not carry the full tensor byte address | `compiler/python/tnca_cc/frontend.py:4542` |
+| Uniform pointer chains: constants, scalar offsets, byte scaling | Python constants; runtime scalar u64 | Correct; combines whole addptr chain in scalar registers | `compiler/python/tnca_cc/frontend.py:4429` |
+| Vector local/gather element indices | signed i32, sign-extended by LSU | Bounded path; does not carry the full tensor byte address | `compiler/python/tnca_cc/frontend.py:4494` |
 | Wide tensor values and index arithmetic | lo/hi pair of 32-bit lanes; scalar reconstruction 64 | Correct within supported block forms; unsupported operations refused | `compiler/python/tnca_cc/wide.py:82` |
 | Selection of Inductor index64 addressing | PID sign-extension to i64 detected in TTIR | Conservative pattern gate, not a general pointer-range proof; other wide forms retain checked narrowing | `compiler/python/tnca_cc/wide.py:424` |
 | Contiguous index64 pointer invariant and lane residual | u64 scalar invariant + signed i32 lane | Fixed: invariant joins scalar base before byte scaling | `compiler/python/tnca_cc/wide.py:536` |
-| Independent 64-bit gather/scatter lane offsets | lo/hi -> scalar u64 -> byte address | Fixed: one masked access per lane; no high-bit loss | `compiler/python/tnca_cc/wide.py:630` |
-| 2D wide tile anchor and relative gather indices | u64 scalar anchor; checked signed i32 residuals | Fixed: rebase first element; tile span outside signed i32 traps | `compiler/python/tnca_cc/wide.py:568` |
-| Narrowing from wide offsets to bounded gather offsets | hi must equal sign(lo) | Correct; TRAP_USER 0xa5564 rather than wrap | `compiler/python/tnca_cc/wide.py:695` |
-| Vector i64 division/remainder by positive constants | scalar 64-bit reciprocal multiply-high | Fixed: exact truncating division/remainder; no float conversion | `compiler/python/tnca_cc/wide.py:270` |
+| Independent 64-bit gather/scatter lane offsets | lo/hi -> scalar u64 -> byte address | Fixed: one masked access per lane; no high-bit loss | `compiler/python/tnca_cc/wide.py:638` |
+| 2D wide tile anchor and relative gather indices | u64 scalar anchor; checked signed i32 residuals | Fixed: rebase first element; tile span outside signed i32 traps | `compiler/python/tnca_cc/wide.py:576` |
+| Narrowing from wide offsets to bounded gather offsets | hi must equal sign(lo) | Correct; TRAP_USER 0xa5564 rather than wrap | `compiler/python/tnca_cc/wide.py:703` |
+| Vector i64 division/remainder by positive constants | scalar 64-bit reciprocal multiply-high | Fixed: exact truncating division/remainder; no float conversion | `compiler/python/tnca_cc/wide.py:283` |
 | Scalar i64 GEMM grid division/remainder | 64-bit scalar | Fixed during review: reciprocal constant divider or full 64-step runtime divider | `compiler/python/tnca_cc/frontend.py:1903` |
-| Row-pointer broadcast of narrowed/rebased [R,1] offsets | i32 residual, broadcast lane 0 per row | Fixed: every column receives that row offset | `compiler/python/tnca_cc/frontend.py:2446` |
-| Hoisted DMA map origin for sliced pointers | u64 base + Python constant bytes | Fixed: reconstruct from entry argument; do not use a later pointer definition | `compiler/python/tnca_cc/frontend.py:2679` |
-| Tile descriptor base/stride and dynamic descriptor coordinates | u64 scalar; Python static affine coefficients | Correct for supported geometry; map origin calculated in scalar arithmetic | `compiler/python/tnca_cc/frontend.py:2638` |
+| Row-pointer broadcast of narrowed/rebased [R,1] offsets | i32 residual, splat of lane 0 per row | Fixed: wide.py keeps one-column offset rows lane-uniform (the importer's column convention); the first review put this in tt.broadcast, which changed 8 default conv points, and was moved | `compiler/python/tnca_cc/wide.py:568` |
+| Hoisted DMA map origin for sliced pointers | u64 base + Python constant bytes | Fixed: reconstruct from entry argument; do not use a later pointer definition | `compiler/python/tnca_cc/frontend.py:2667` |
+| Tile descriptor base/stride and dynamic descriptor coordinates | u64 scalar; Python static affine coefficients | Correct for supported geometry; map origin calculated in scalar arithmetic | `compiler/python/tnca_cc/frontend.py:2681` |
 | TensorMap compile-time packing | u64 base/extents/i64 strides; u32 box | Correct; geometry checks bound box/window sizes | `compiler/python/tnca_cc/tiles.py:60` |
-| Runtime descriptor field loads and origin=sum(coord*stride) | 64-bit scalar | Correct; loads .d and scalar multiplications | `compiler/python/tnca_cc/frontend.py:3118` |
+| Runtime descriptor field loads and origin=sum(coord*stride) | 64-bit scalar | Correct; loads .d and scalar multiplications | `compiler/python/tnca_cc/frontend.py:3106` |
 | Small explicit descriptor-box absolute offsets | i32 only when whole descriptor span proven bounded; otherwise scalar64 | Fixed during review; unknown/large strides use per-lane scalar addresses | `compiler/python/tnca_cc/descriptors.py:266` |
 | Descriptor row transfers and descriptor gather/scatter row selection | scalar u64 base + row*byte_stride | Correct; no full address in vector index | `compiler/python/tnca_cc/descriptors.py:149` |
 | Role-context scratch displacement | 64-bit scalar role_id * byte size | Correct; per-role scratch offset in scalar registers | `compiler/python/tnca_cc/rctx_spmd.py:282` |

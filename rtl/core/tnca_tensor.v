@@ -83,9 +83,10 @@ module tnca_tensor #(
     parameter MEM_BYTES = 8,
     parameter TAG_W     = 4,        // engine-local tag
     parameter NTAG      = 16,
-    // The transposed window write (ISA sec 9E mod[5], capability
-    // `tensor_transpose`). Off, the corner-turn buffer and its states are
-    // not built.
+    // The transposed window write (ISA sec 9E mod[5]). 0: not built (the
+    // corner-turn buffer and its states are removed); 1: 16-bit elements
+    // (capability `tensor_transpose`); 2: 16-bit and 1-byte elements
+    // (adds `tensor_transpose_8bit`, R41 Stage 2 X8).
     parameter HAS_XPOSE = 0
 ) (
     input  wire                     clk,
@@ -516,7 +517,9 @@ module tnca_tensor #(
     assign vr_idx  = st_vreg;
 
     //==========================================================================
-    // TRANSPOSED WRITE (ISA sec 9E mod[5]) -- rank 2, 16-bit, unchanged.
+    // TRANSPOSED WRITE (ISA sec 9E mod[5]) -- rank 2, 16-bit elements, and
+    // 1-byte elements when HAS_XPOSE >= 2 (R41 X8: e4m3, e5m2, int8 -- the
+    // engine moves bytes and never interprets them).
     //
     // A source tile of R rows x C columns lands as C rows x R columns, flat
     // row-major: window element (c, r) = source element (r, c). Memory
@@ -561,15 +564,21 @@ module tnca_tensor #(
             x_rsp_keep[xk*8 +: 8] = {8{x_rsp_kbits[xk]}};
     reg  [63:0] r_base0;
     reg  [3:0]  x_q;
-    // 16-bit elements only (the MMA operand types): a unit is four
-    // elements, so one column block is four destination rows, and a
-    // destination row of R elements is 2R bytes with R in {4, 8, 16}.
-    wire [3:0]  x_per_unit   = 4'd4;
-    wire [31:0] x_drow_bytes = t_b3 << 1;
-    wire [31:0] x_ddst  = ((t_unit << 2) + {28'd0, x_q}) * x_drow_bytes;
+    // 16-bit elements: a unit is four elements, so one column block is four
+    // destination rows, and a destination row of R elements is 2R bytes
+    // with R in {4, 8, 16}. 1-byte elements (HAS_XPOSE >= 2, x_b): a unit
+    // is eight elements -- eight destination rows a block -- and a row is R
+    // bytes, still whole 32-bit lanes inside one register. x_b is a
+    // constant 0 on an engine built without it, so the 16-bit engine's
+    // logic is what it was.
+    localparam  X8 = (HAS_XPOSE >= 2);
+    wire        x_b = X8 && (t_esz == 3'd0);
+    wire [3:0]  x_per_unit   = x_b ? 4'd8 : 4'd4;
+    wire [31:0] x_drow_bytes = x_b ? t_b3 : (t_b3 << 1);
+    wire [31:0] x_ddst  = ((x_b ? (t_unit << 3) : (t_unit << 2)) + {28'd0, x_q}) * x_drow_bytes;
     wire [7:0]  x_vreg  = t_wbase + x_ddst[13:6];
     wire [3:0]  x_lane0 = x_ddst[5:2];
-    wire        xrow_ok = (t_esz == 3'd1) &&
+    wire        xrow_ok = ((t_esz == 3'd1) || x_b) &&
                           ((t_b3 == 32'd4) || (t_b3 == 32'd8) || (t_b3 == 32'd16));
     reg  [VLEN-1:0]      x_lanes;
     reg  [VLEN*ELEN-1:0] x_data;
@@ -580,13 +589,23 @@ module tnca_tensor #(
             if ((xl >= x_lane0) && (xl < x_lane0 + (x_drow_bytes >> 2)))
                 x_lanes[xl] = 1'b1;
         x_data = {(VLEN*ELEN){1'b0}};
-        if (HAS_XPOSE != 0)
-            for (xh = 0; xh < 2*VLEN; xh = xh + 1)
-                case (t_b3[4:0])
-                5'd4:  x_data[xh*16 +: 16] = xbuf[((xh & 3)  * 64 + x_q * 16) +: 16];
-                5'd8:  x_data[xh*16 +: 16] = xbuf[((xh & 7)  * 64 + x_q * 16) +: 16];
-                default: x_data[xh*16 +: 16] = xbuf[((xh & 15) * 64 + x_q * 16) +: 16];
-                endcase
+        if (HAS_XPOSE != 0) begin
+            if (x_b)
+                // Byte (c, r) of the destination row: byte x_q of unit r.
+                for (xh = 0; xh < 4*VLEN; xh = xh + 1)
+                    case (t_b3[4:0])
+                    5'd4:  x_data[xh*8 +: 8] = xbuf[((xh & 3)  * 64 + x_q * 8) +: 8];
+                    5'd8:  x_data[xh*8 +: 8] = xbuf[((xh & 7)  * 64 + x_q * 8) +: 8];
+                    default: x_data[xh*8 +: 8] = xbuf[((xh & 15) * 64 + x_q * 8) +: 8];
+                    endcase
+            else
+                for (xh = 0; xh < 2*VLEN; xh = xh + 1)
+                    case (t_b3[4:0])
+                    5'd4:  x_data[xh*16 +: 16] = xbuf[((xh & 3)  * 64 + x_q * 16) +: 16];
+                    5'd8:  x_data[xh*16 +: 16] = xbuf[((xh & 7)  * 64 + x_q * 16) +: 16];
+                    default: x_data[xh*16 +: 16] = xbuf[((xh & 15) * 64 + x_q * 16) +: 16];
+                    endcase
+        end
     end
 
     //==========================================================================
@@ -714,8 +733,8 @@ module tnca_tensor #(
         (t_s4 != (64'd1 << t_esz)) ||
         // ISA sec 9D.2: the window is the bounds check.
         (g_box > g_win) ||
-        // TRANSPOSED WRITE: a 2-D tile of 16-bit elements with 4, 8 or 16
-        // source rows, so every destination row is whole lanes inside ONE
+        // TRANSPOSED WRITE: a 2-D tile of 16-bit (or, with HAS_XPOSE >= 2,
+        // 1-byte) elements with 4, 8 or 16 source rows, so every destination row is whole lanes inside ONE
         // register, and every source row starting on an 8-byte boundary with
         // a non-negative contiguous coordinate (the corner turn copies whole
         // source units).
@@ -1180,7 +1199,7 @@ module tnca_tensor #(
                 end
             end
 
-            // Destination row c = t_unit*(8/esz) + x_q holds element x_q of
+            // Destination row c = t_unit*(8/esize) + x_q holds element x_q of
             // every buffered unit, in source-row order: window element
             // (c, r) = source element (r, c). One whole-lane write per row.
             S_XWRITE: if (!vw_hold) begin

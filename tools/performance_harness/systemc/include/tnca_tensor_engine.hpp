@@ -69,11 +69,24 @@ struct TensorEngine : sc_module {
         return done;
     }
     static bool xlog(){static const bool on=std::getenv("TLM_DEBUG_XPOSE_LOG")!=nullptr;return on;}
-    void fast_rf_write(const std::shared_ptr<PhysicalRegisters>& bank,unsigned base,unsigned byte,u64 value,u64 owner,u64 due){
+    void fast_rf_write(const std::shared_ptr<PhysicalRegisters>& bank,unsigned base,unsigned byte,u64 value,u64 owner,u64 due,unsigned size=8){
         if(x.functional)due=x.now();
         unsigned index=base+byte/64,lane=(byte%64)/4;PhysicalRegisters::Vector data{};
-        data[lane]=std::uint32_t(value);data[lane+1]=std::uint32_t(value>>32);
-        bank->write(index,3U<<lane,x.cycles(due),data,owner);
+        data[lane]=std::uint32_t(value);if(size>4)data[lane+1]=std::uint32_t(value>>32);
+        bank->write(index,(size>4?3U:1U)<<lane,x.cycles(due),data,owner);
+    }
+    // The transposed write's corner turn (tnca_tensor.v S_XWRITE), for 16-bit
+    // and (R41 X8) 1-byte elements. A column block is 8/bytes source columns;
+    // destination row `column+col` takes element `col` of every buffered
+    // source unit, in source-row order, and is written as pieces of at most
+    // 8 bytes (a 1-byte row of 4 elements is one 4-byte lane).
+    template<class F> static void corner_turn(const std::vector<u64>& source,unsigned column,unsigned col,unsigned rows,unsigned bytes,F&& emit){
+        unsigned bits=8*bytes,group=8/bytes;u64 mask=(bytes==8)?~0ULL:((1ULL<<bits)-1);
+        for(unsigned row=0;row<rows;row+=group){
+            unsigned n=std::min(group,rows-row);u64 value=0;
+            for(unsigned i=0;i<n;++i)value|=((source[row+i]>>(col*bits))&mask)<<(i*bits);
+            emit(((column+col)*rows+row)*bytes,value,n*bytes);
+        }
     }
     // The whole command analytically; one wait for its completion.
     void fast_transfer(const TensorMapModel& d,const std::array<u64,5>& coords,unsigned bytes,unsigned total,bool store,
@@ -81,14 +94,12 @@ struct TensorEngine : sc_module {
         u64 now=x.now(),t=now,end=now;std::vector<u64> window;
         if(x.functional){ // untimed: the data movement alone, no timing state touched
             if(transpose){
-                unsigned rows=d.block[0],columns=d.block[1];
-                for(unsigned column=0;column<columns;column+=4){
+                unsigned rows=d.block[0],columns=d.block[1],per=8/bytes;
+                for(unsigned column=0;column<columns;column+=per){
                     std::vector<u64> source(rows);
-                    for(unsigned row=0;row<rows;++row){u64 r=0;fast_unit(d,coords,bytes,row*columns*2+column*2,false,0,r,t,window,now);source[row]=r;}
-                    for(unsigned col=0;col<4;++col)for(unsigned row=0;row<rows;row+=4){
-                        u64 value=0;for(unsigned i=0;i<4;++i)value|=((source[row+i]>>(col*16))&65535)<<(i*16);
-                        fast_rf_write(bank,base,((column+col)*rows+row)*2,value,owner,now);
-                    }
+                    for(unsigned row=0;row<rows;++row){u64 r=0;fast_unit(d,coords,bytes,(row*columns+column)*bytes,false,0,r,t,window,now);source[row]=r;}
+                    for(unsigned col=0;col<per;++col)corner_turn(source,column,col,rows,bytes,[&](unsigned byte,u64 value,unsigned size){
+                        fast_rf_write(bank,base,byte,value,owner,now,size);});
                 }
             }else for(unsigned byte=0;byte<total;byte+=8){
                 u64 value=0,result=0;
@@ -105,32 +116,29 @@ struct TensorEngine : sc_module {
             // while a tag is free, drain every response, then write the
             // 8/esz destination rows one a cycle -- and only then the next
             // block (no overlap between blocks).
-            unsigned rows=d.block[0],columns=d.block[1];u64 cap=x.c.get("dma_outstanding");
-            for(unsigned column=0;column<columns;column+=4){
+            // A 1-byte block is eight destination rows, so eight write cycles.
+            unsigned rows=d.block[0],columns=d.block[1],per=8/bytes;u64 cap=x.c.get("dma_outstanding");
+            for(unsigned column=0;column<columns;column+=per){
                 std::vector<u64> source(rows);u64 drained=t;window.clear();
                 for(unsigned row=0;row<rows;++row){
                     while(window.size()>=cap){auto m=std::min_element(window.begin(),window.end());t=std::max(t,*m);window.erase(m);}
-                    u64 r=0;drained=std::max(drained,fast_unit(d,coords,bytes,row*columns*2+column*2,false,0,r,t,window,now));source[row]=r;
+                    u64 r=0;drained=std::max(drained,fast_unit(d,coords,bytes,(row*columns+column)*bytes,false,0,r,t,window,now));source[row]=r;
                 }
                 u64 w=std::max(t,drained)+1;
-                for(unsigned col=0;col<4;++col)for(unsigned row=0;row<rows;row+=4){
-                    u64 value=0;for(unsigned i=0;i<4;++i)value|=((source[row+i]>>(col*16))&65535)<<(i*16);
-                    fast_rf_write(bank,base,((column+col)*rows+row)*2,value,owner,w+col);end=std::max(end,w+col+1);
-                }
-                t=w+4;
+                for(unsigned col=0;col<per;++col)corner_turn(source,column,col,rows,bytes,[&](unsigned byte,u64 value,unsigned size){
+                    fast_rf_write(bank,base,byte,value,owner,w+col,size);end=std::max(end,w+col+1);});
+                t=w+per;
             }
             end=std::max(end,t)+x.c.get("dma_drain_cycles");
         }else if(transpose){
-            unsigned rows=d.block[0],columns=d.block[1];
-            for(unsigned column=0;column<columns;column+=4){
+            unsigned rows=d.block[0],columns=d.block[1],per=8/bytes;
+            for(unsigned column=0;column<columns;column+=per){
                 std::vector<u64> source(rows);u64 ready=t;
-                for(unsigned row=0;row<rows;++row){u64 r=0;ready=std::max(ready,fast_unit(d,coords,bytes,row*columns*2+column*2,false,0,r,t,window,now));source[row]=r;}
-                for(unsigned col=0;col<4;++col)for(unsigned row=0;row<rows;row+=4){
-                    u64 value=0;for(unsigned i=0;i<4;++i)value|=((source[row+i]>>(col*16))&65535)<<(i*16);
+                for(unsigned row=0;row<rows;++row){u64 r=0;ready=std::max(ready,fast_unit(d,coords,bytes,(row*columns+column)*bytes,false,0,r,t,window,now));source[row]=r;}
+                for(unsigned col=0;col<per;++col)corner_turn(source,column,col,rows,bytes,[&](unsigned byte,u64 value,unsigned size){
                     u64 w=rf_tl.reserve(ready,rf_cycles,now)+rf_cycles;
-                    if(xlog())std::fprintf(stderr,"XPOSE fast core %u base %u byte %u value %llx now %llu due %llu\n",core,base,((column+col)*rows+row)*2,(unsigned long long)value,(unsigned long long)now,(unsigned long long)w);
-                    fast_rf_write(bank,base,((column+col)*rows+row)*2,value,owner,w);end=std::max(end,w);
-                }
+                    if(xlog())std::fprintf(stderr,"XPOSE fast core %u base %u byte %u value %llx now %llu due %llu\n",core,base,byte,(unsigned long long)value,(unsigned long long)now,(unsigned long long)w);
+                    fast_rf_write(bank,base,byte,value,owner,w,size);end=std::max(end,w);});
             }
         }else if(rtl){
             u64 cap=x.c.get("dma_unit_slots"),reg_cycles=x.c.get("dma_store_register_cycles");
@@ -226,11 +234,11 @@ struct TensorEngine : sc_module {
         auto data=bank->read(base+byte/64,sc_time_stamp(),owner);unsigned lane=(byte%64)/4;
         return u64(data[lane])|(u64(data[lane+1])<<32);
     }
-    void rf_write(const std::shared_ptr<PhysicalRegisters>& bank,unsigned base,unsigned byte,u64 value,u64 owner){
+    void rf_write(const std::shared_ptr<PhysicalRegisters>& bank,unsigned base,unsigned byte,u64 value,u64 owner,unsigned size=8){
         rf_port.use(x,rf_cycles,rf_key);
         unsigned index=base+byte/64,lane=(byte%64)/4;auto data=bank->read(index,sc_time_stamp(),owner);
-        data[lane]=std::uint32_t(value);data[lane+1]=std::uint32_t(value>>32);
-        bank->write(index,3U<<lane,sc_time_stamp(),data,owner);bank->commit(sc_time_stamp());
+        data[lane]=std::uint32_t(value);if(size>4)data[lane+1]=std::uint32_t(value>>32);
+        bank->write(index,(size>4?3U:1U)<<lane,sc_time_stamp(),data,owner);bank->commit(sc_time_stamp());
     }
     u64 unit(const TensorMapModel& descriptor,const std::array<u64,5>& coordinates,unsigned bytes,
              unsigned flat_byte,bool store,u64 data){
@@ -268,16 +276,14 @@ struct TensorEngine : sc_module {
         if(transpose){
             // The hardware corner-turn buffer collects one four-column group
             // across all source rows before writing the destination rows.
-            unsigned rows=descriptor.block[0],columns=descriptor.block[1];
-            for(unsigned column=0;column<columns;column+=4){
+            unsigned rows=descriptor.block[0],columns=descriptor.block[1],per=8/bytes;
+            for(unsigned column=0;column<columns;column+=per){
                 std::vector<u64> source(rows);unsigned pending=0;sc_event done;
-                for(unsigned row=0;row<rows;++row){++pending;unit_workers.submit([&,row](){source[row]=unit(descriptor,coordinates,bytes,row*columns*2+column*2,false,0);if(--pending==0)done.notify(SC_ZERO_TIME);});}
+                for(unsigned row=0;row<rows;++row){++pending;unit_workers.submit([&,row](){source[row]=unit(descriptor,coordinates,bytes,(row*columns+column)*bytes,false,0);if(--pending==0)done.notify(SC_ZERO_TIME);});}
                 while(pending)wait(done);
-                for(unsigned col=0;col<4;++col)for(unsigned row=0;row<rows;row+=4){
-                    u64 value=0;for(unsigned i=0;i<4;++i)value|=((source[row+i]>>(col*16))&65535)<<(i*16);
-                    if(xlog())std::fprintf(stderr,"XPOSE slow core %u base %u byte %u value %llx now %llu\n",core,base,((column+col)*rows+row)*2,(unsigned long long)value,(unsigned long long)x.now());
-                    rf_write(bank,base,((column+col)*rows+row)*2,value,owner);
-                }
+                for(unsigned col=0;col<per;++col)corner_turn(source,column,col,rows,bytes,[&](unsigned byte,u64 value,unsigned size){
+                    if(xlog())std::fprintf(stderr,"XPOSE slow core %u base %u byte %u value %llx now %llu\n",core,base,byte,(unsigned long long)value,(unsigned long long)x.now());
+                    rf_write(bank,base,byte,value,owner,size);});
             }
             return;
         }

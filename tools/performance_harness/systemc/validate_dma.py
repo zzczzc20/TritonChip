@@ -137,6 +137,23 @@ def validate(binary,out,mutant=None,mutant_source=None):
         r=execute(binary,cfg,out,name,copy_assembly(2,[-1,0],transpose=True),images,bytes(expected))
         assert r['status']=='completed-prediction',out/name/'stderr.log'
         results[name]=r['summary']
+    # R41 X8: 1-byte transposed writes, every 1-byte dtype code. Two or three
+    # column blocks of eight; the extent ends inside the last (a tail unit),
+    # and the first source row is before the tensor. (The 1-D store that reads
+    # the window back is at most 256 elements.)
+    for rows,dtype,columns,width in ((4,3,24,20),(8,7,24,20),(16,8,16,12)):
+        source=bytearray((rows+2)*32)
+        for row in range(rows+2):
+            for column in range(width):source[row*32+column]=(row*29+column*7+1)&255
+        values=[0 if row==0 or column>=width else source[(row-1)*32+column] for column in range(columns) for row in range(rows)]
+        expected=bytearray([0xa5]*(len(values)+4));expected[2:-2]=bytes(values)
+        images=[(0x40000,bytes(source)),(0x60005,bytes([0xa5]*len(expected))),
+            (0x30000,descriptor(0x40000,[rows+2,width],[32,1],[rows,columns],dtype)),
+            (0x30100,descriptor(0x60005,[len(values)+4],[1],[len(values)],dtype))]
+        name=f'transpose8-{rows}-dtype{dtype}'
+        r=execute(binary,cfg,out,name,copy_assembly(1,[-1,0],transpose=True),images,bytes(expected))
+        assert r['status']=='completed-prediction',out/name/'stderr.log'
+        results[name]=r['summary']
     # A fully predicated-off command must not inspect an undefined descriptor or
     # window, but still completes exactly one armed operation.
     assembly='''

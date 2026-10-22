@@ -110,9 +110,38 @@ What FP8 support still lacks (from `evidence/r41/fp8/README.md` §"Hardware/ISA 
    - A whole-tile accumulator op `a.fma.acc Ad, As, Vrow_scale, Sscale` (Ad[m][n] = fma(As[m][n], Vrow_scale[m]·Sscale, Ad[m][n]), one RNE) would cost about 32 cycles per tile per K block, reading two accumulators per row over two cycles. It is optional, costed separately.
 4. **NaN canonicalisation and saturation.** These already match torch 2.14 for every non-NaN input. NaN payloads are an ISA property, handled in the compiler. No change.
 
-## 7. Area and timing
+## 7. Area and timing (measured: `lane/README.md`, `lane/ooc/projection.json`)
 
-*From `lane/README.md`, pending.*
+**Verification.** The lane is bit-exact against the Fraction oracle (`tools/model/fdp.py`), with zero mismatches in every check:
+
+| Check | Count |
+|---|---|
+| FP32-mode miter against the current lane | 40 M vectors per variant per register placement |
+| Every FP8 single product | 1,048,576 per variant |
+| Random 16-bit single products | 40 M |
+| Multi-product groups | 13 M. In 548,182 of them round-to-odd differs from exact rounding, so the check is not vacuous |
+| Regenerated FMA, latency 2 and 3, against 0b0a3cc | 210 M × 2 |
+
+The E4M3 exactness claim holds: every product is a multiple of 2⁻¹⁸, and |Σ|·2¹⁸ < 2³⁸.
+
+**Cost.** U280, routed out of context, per lane (V0 = 2,492 LUTs):
+
+| Variant | Registers needed at 10 ns | Lane LUTs | ΔLUT per core / ×3 | SLR0 CLB packing (now 95.3 %) |
+|---|---|---|---|---|
+| **V3: E4M3×E4M3 at 4×** | 3 (latency 4) | 2,929 (+18 %) | +7.2k / +21.6k | ~97.4 % |
+| V1: all FP8 pairs at 4× | 4 (latency 5) | 3,433 (+38 %) | +15.3k / +45.8k | ~99.8 % |
+| V2: + FP16/BF16 at 2× | 5 or more | ~4,140 (+66 %) | +26.6k / +79.8k | ~103 % |
+
+"Needed" means no stage slower than V0's worst stage, which is about 6.4 ns OOC routed.
+- V3 at today's latency misses that bar by 0.6 ns.
+- V2's worst path is the 11×11 product, the alignment shift and the 67-bit sum: 7.8–8.3 ns even with four registers.
+
+**What changed from §4.**
+- RO_48 needs no normaliser: an 18-bit leading-zero count and a 0–18 shift are enough, and V3 has no rounding logic at all.
+- The DP2 field is 64 bits.
+- Vivado maps "LUT" 11×11 multipliers to DSPs by default. DSP sharing saves DSPs, not LUTs, and it is slower.
+
+**Conclusion.** SLR0 area, not the arithmetic, rules out V1 and V2 in the current floorplan.
 
 ## 8. End-to-end effect
 

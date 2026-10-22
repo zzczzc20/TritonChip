@@ -15,13 +15,12 @@ Cases:
              32-bit logical boundary and the physical PC15/PC16 boundary
   gemm       mm/addmm with operands and outputs in the upper 4 GiB
   stream     one storage over 2 GiB at the window top: read+reduce, and a copy
-             whose output crosses 4 GiB; one host transfer each way over 2 GiB
+             whose output crosses 4 GiB; bounded host chunks with independent CPU references
   refusal    allocation past the window, the TMU page, an upload past the window
 
 Development evidence on an uncalibrated model; never a board record.
 """
 import argparse
-import hashlib
 import json
 import os
 from pathlib import Path
@@ -57,7 +56,7 @@ class Sampler(threading.Thread):
         self.period, self.stop_flag = period, threading.Event()
         self.pid = None
         self.peak = dict(model_rss_kib=0, child_rss_kib=0, model_plus_children_pss_kib=0,
-                         host_available_min_kib=None, samples=0)
+                         host_available_min_kib=None, samples=0, python_rss_kib=0, total_pss_kib=0)
 
     def run(self):
         while not self.stop_flag.wait(self.period):
@@ -73,6 +72,7 @@ class Sampler(threading.Thread):
         rss = kib(f'/proc/{self.pid}/status', 'VmRSS')
         if rss is None:
             return
+        p['python_rss_kib'] = max(p['python_rss_kib'], kib(f'/proc/{os.getpid()}/status', 'VmRSS') or 0)
         p['samples'] += 1
         p['model_rss_kib'] = max(p['model_rss_kib'], rss)
         try:
@@ -84,6 +84,7 @@ class Sampler(threading.Thread):
             p['child_rss_kib'] = max(p['child_rss_kib'], kib(f'/proc/{child}/status', 'VmRSS') or 0)
             pss += kib(f'/proc/{child}/smaps_rollup', 'Pss') or 0
         p['model_plus_children_pss_kib'] = max(p['model_plus_children_pss_kib'], pss)
+        p['total_pss_kib'] = max(p['total_pss_kib'], pss + (kib(f'/proc/{os.getpid()}/smaps_rollup', 'Pss') or 0))
 
 
 def main():
@@ -92,7 +93,11 @@ def main():
     ap.add_argument('--out', type=Path, required=True)
     ap.add_argument('--map-audit', type=Path, required=True, help='report.json of the map in TNCA_DRAM_MAP')
     ap.add_argument('--stream-bytes', type=int, default=(1 << 31) + (1 << 26))
+    ap.add_argument('--stream-chunk-bytes', type=int, default=64 * MiB)
+    ap.add_argument('--resident-extra-bytes', type=int, default=0, help='additional uploaded device residency, separate from graph footprint')
     args = ap.parse_args()
+    if args.stream_bytes <= 0 or args.stream_bytes % 64 or args.stream_chunk_bytes <= 0 or args.stream_chunk_bytes % 64 or args.resident_extra_bytes < 0 or args.resident_extra_bytes % 64:
+        ap.error('stream/chunk sizes must be positive multiples of 64; extra residency a nonnegative multiple')
     out = args.out.resolve()
     out.mkdir(parents=True, exist_ok=False)
     os.environ.setdefault('TNCA_TLM_OUT', str(out/'model'))
@@ -140,11 +145,12 @@ def main():
         model = model_class.instances[-1]
         sampler.pid = model.proc.pid
         window = model.memory_bytes
-        local, top = mapping['local_limit'], mapping['local_limit'] + mapping['bo_size']
-        report['window'] = dict(model_memory_bytes=window, local_limit=local, bo_top=top,
+        local, bo_top = mapping['local_limit'], mapping['local_limit'] + mapping['bo_size']
+        top = min(window, bo_top)
+        report['window'] = dict(model_memory_bytes=window, local_limit=local, bo_top=bo_top, effective_top=top,
                                 heap=[s._heap.base, s._heap.limit], heap_reserved=[list(r) for r in s._heap.reserved])
-        if window != top:
-            raise ValueError(f'model window {window} is not the mapped BO top {top}')
+        if window != 0x200000000 or window > bo_top:
+            raise ValueError(f'exact 8 GiB model window required, got {window}; BO top {bo_top}')
         phase('session_start', t0)
         pads = []
 
@@ -277,42 +283,80 @@ def main():
         elif args.case == 'stream':
             nbytes = args.stream_bytes
             n = nbytes // 4
-            t0 = time.monotonic()
-            x_cpu = torch.rand(n)
-            phase('cpu_input', t0)
+            extra = None
+            if args.resident_extra_bytes:
+                extra = torch.empty(args.resident_extra_bytes // 4, dtype=torch.float32, device='tnca')
+                for start in range(0, extra.numel(), 4 * MiB):
+                    cpu = torch.ones(min(4 * MiB, extra.numel() - start))
+                    extra[start:start + cpu.numel()].copy_(cpu)
+                del cpu
+                where('resident_extra', extra)
             hold_at = boundary - nbytes // 2 // MiB * MiB
             pad_to(hold_at)
             hold = torch.empty(nbytes + 4 * MiB, dtype=torch.uint8, device='tnca')
             pad_to(top - nbytes - 2 * MiB)
             t0 = time.monotonic()
-            x = x_cpu.to('tnca')                       # one host transfer of nbytes
-            phase('upload_one_transfer', t0)
-            report['upload'] = dict(bytes=nbytes, single_transfer=True)
-            del hold                                   # its range is the only free block that fits the copy
+            x = torch.empty(n, dtype=torch.float32, device='tnca')
+            # Bounded CPU staging: one large device storage, no host numerical
+            # fallback and no simultaneous multi-GiB CPU input/output copies.
+            chunk = 16 * MiB // 4
+            rng = torch.Generator().manual_seed(41)
+            ref_sum, ref_max, ref_min = 0.0, -float('inf'), float('inf')
+            for start in range(0, n, chunk):
+                cpu = torch.rand(min(chunk, n - start), generator=rng)
+                ref_sum += float(cpu.numpy().sum(dtype='float64'))
+                ref_max, ref_min = max(ref_max, float(cpu.max())), min(ref_min, float(cpu.min()))
+                x[start:start + cpu.numel()].copy_(cpu)
+            del cpu
+            phase('streamed_upload_and_cpu_reference', t0)
+            report['upload'] = dict(bytes=nbytes, chunk_bytes=chunk * 4, single_storage=True)
+            del hold
             x0, x1 = where('x', x)
             report['development_size'] = nbytes <= 1 << 31
             check('x is one storage ending in the window top 4 MiB',
                   x1 <= top and top - x1 <= 4 * MiB and report['placements']['x']['last_pc'] == 31)
             if not report['development_size']:
                 check('x is over 2 GiB (byte offsets beyond 2^31)', nbytes > 1 << 31, bytes=nbytes)
-            t0 = time.monotonic()
-            ref_max, ref_min = float(x_cpu.max()), float(x_cpu.min())
-            ref_sum = float(x_cpu.numpy().sum(dtype='float64'))
-            phase('cpu_reference', t0)
+            # The device storages exceed 2 GiB; bound each model command's
+            # demand log and Ramulator replay table by streaming views.
+            block = args.stream_chunk_bytes // 4
+            blocks = (n + block - 1) // block
+            sums = torch.empty(blocks, device='tnca')
+            maxima = torch.empty(blocks, device='tnca')
+            minima = torch.empty(blocks, device='tnca')
             g1 = compile_(lambda t: (t.sum(), t.amax(), t.amin()))
-            total, high, low = graph('read+reduce x', g1, x)
+            for i, start in enumerate(range(0, n, block)):
+                total, high, low = graph(f'read+reduce x chunk {i}', g1, x[start:min(start + block, n)])
+                sums[i:i + 1].copy_(total.reshape(1))
+                maxima[i:i + 1].copy_(high.reshape(1))
+                minima[i:i + 1].copy_(low.reshape(1))
+            total, high, low = graph('combine reduction chunks',
+                                    compile_(lambda a, b, c: (a.sum(), b.amax(), c.amin())), sums, maxima, minima)
             check('amax/amin exact; sum within 1e-4 of float64',
                   float(high.cpu()) == ref_max and float(low.cpu()) == ref_min and
                   abs(float(total.cpu()) - ref_sum) <= 1e-4 * abs(ref_sum), sum=float(total.cpu()), reference=ref_sum)
-            g2 = compile_(lambda t: t.clone())
-            y = graph('copy y=x.clone()', g2, x)
+            y = torch.empty_like(x)
+            g2 = compile_(lambda src, dst: dst.copy_(src))
+            for i, start in enumerate(range(0, n, block)):
+                end = min(start + block, n)
+                graph(f'copy x to y chunk {i}', g2, x[start:end], y[start:end])
             y0, y1 = where('y', y)
             check('copy output crosses physical 4 GiB', y0 < boundary < y1)
             t0 = time.monotonic()
-            y_cpu = y.cpu()                            # one host transfer of nbytes
-            phase('download_one_transfer', t0)
-            check('copy equals the input bitwise', torch.equal(y_cpu, x_cpu))
-            del y_cpu
+            rng = torch.Generator().manual_seed(41)
+            mismatched_chunks = 0
+            for start in range(0, n, chunk):
+                cpu = torch.rand(min(chunk, n - start), generator=rng)
+                got = y[start:start + cpu.numel()].cpu()
+                mismatched_chunks += int(not torch.equal(got, cpu))
+            del cpu, got
+            phase('streamed_download_and_cpu_comparison', t0)
+            check('copy equals independently regenerated CPU input bitwise', mismatched_chunks == 0,
+                  compared_bytes=nbytes, mismatched_chunks=mismatched_chunks)
+            report['touched_tensor_bytes'] = 2 * nbytes + args.resident_extra_bytes
+            report['graph_tensor_bytes'] = 2 * nbytes
+            report['stream_chunk_bytes'] = block * 4
+            report['resident_extra_bytes'] = args.resident_extra_bytes
             pcs = {}
             for g in report['graphs']:
                 for key, value in g['pc_bytes'].items():
@@ -340,11 +384,12 @@ def main():
             check('t*2 equals the CPU reference bitwise', torch.equal(o.cpu(), t_cpu * 2.0))
             for lo, n in s._heap.free_list:
                 check('no free block overlaps the TMU page', lo + n <= hole_lo or lo >= hole_hi, block=[lo, n])
-            # Control: the window's last 8 bytes (the BO's last bytes) transfer.
+            # Control: the exact model window's last 8 bytes transfer; BO top
+            # is 128 KiB higher and is checked by test_hbm8_native.py.
             pattern = bytes(range(0xf8, 0x100))
             reply = s.dev.upload(window - 8, pattern)
             _, back = s.dev.download(window - 8, 8)
-            check('the last 8 bytes below the BO top transfer both ways', reply.ok and back == pattern)
+            check('the last 8 bytes below the model window top transfer both ways', reply.ok and back == pattern)
             # Last: a raw transfer past the window end. The model must refuse and
             # the backend report a lost device; nothing is substituted.
             try:

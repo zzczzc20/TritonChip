@@ -54,6 +54,7 @@ def main():
     ap.add_argument('--map', type=Path, required=True)
     ap.add_argument('--audit', type=Path, required=True)
     ap.add_argument('--out', type=Path, required=True)
+    ap.add_argument('--memory-bytes', type=lambda v: int(v, 0), default=0x200000000)
     args = ap.parse_args()
     out = args.out.resolve()
     out.mkdir(parents=True, exist_ok=False)
@@ -61,13 +62,15 @@ def main():
     mapping = audit['mapping']
     assert sha(args.map) == audit['map_sha256']
     local, size = mapping['local_limit'], mapping['bo_size']
-    top = local + size
+    bo_top = local + size
+    top = args.memory_bytes
+    assert local < top <= bo_top
     assert mapping['bo_base'] == 0 and size == 1 << 33 and [b['pc'] for b in mapping['banks']] == list(range(32)), mapping
     boundary = local + (1 << 32)                      # physical 4 GiB: PC15 | PC16
     loads = [local, (1 << 32) - 64, 1 << 32, HOLE[0] - 64, HOLE[1]]
     loads += [local + pc * PC_BYTES + 4096 for pc in range(16, 32)]
     loads += [top - 128]
-    scalar_load = top - 8                             # the BO's last 8 bytes
+    scalar_load = top - 8                             # the model window's last 8 bytes
     n = len(loads)
     region1 = [boundary - 64 * (n // 2) + 64 * i for i in range(n)]
     scalar1 = region1[-1] + 64
@@ -108,7 +111,7 @@ def main():
         expected[f'pc_{pc}_bytes'] = expected.get(f'pc_{pc}_bytes', 0) + nbytes
     config = config_file(args.config, out/'model.cfg', memory_bytes=top, dram_max_passes=8)
     report = dict(status='running', map_sha256=audit['map_sha256'], map_status=audit['status'],
-                  window=dict(local_limit=local, bo_size=size, model_memory_bytes=top),
+                  window=dict(local_limit=local, bo_size=size, bo_top=bo_top, model_memory_bytes=top),
                   logical_loads=loads, scalar_load=scalar_load, region1=region1, region2=region2,
                   expected_pc_bytes=expected, positives=[], negatives=[])
     save = lambda: (out/'report.json').write_text(json.dumps(report, indent=2) + '\n')
@@ -163,19 +166,19 @@ def main():
         # the parent only as a failed child (the child's stderr is closed);
         # the identical artifact's specific reason is the fast-path row.
         device = (lambda m: m) if path == 'fast' else (lambda m: 'slow DRAM path: child pass failed')
-        refused('device-load-at-bo-top', f'.li s1, #{top}\nv.ld.w v0, [s1, #0]', device('address outside model memory window'), path=path)
-        refused('device-byte-one-past-bo-top', f'.li s1, #{top}\ns.ld.b s3, [s1, #0]', device('address outside model memory window'), path=path)
-        refused('device-word-crossing-bo-top', f'.li s1, #{top - 4}\ns.ld.d s3, [s1, #0]', device('address outside model memory window'), path=path)
-        refused('host-byte-one-past-bo-top', '.li s1, #0', 'host access outside model memory window', path=path, data=(top, b'\x01'))
+        refused('device-load-at-window-top', f'.li s1, #{top}\nv.ld.w v0, [s1, #0]', device('address outside model memory window'), path=path)
+        refused('device-byte-one-past-bo-top', f'.li s1, #{bo_top}\ns.ld.b s3, [s1, #0]', device('address outside model memory window'), path=path, memory_bytes=bo_top)
+        refused('device-word-crossing-bo-top', f'.li s1, #{bo_top - 4}\ns.ld.d s3, [s1, #0]', device('address outside model memory window'), path=path, memory_bytes=bo_top)
+        refused('host-byte-one-past-bo-top', '.li s1, #0', 'host access outside model memory window', path=path, data=(bo_top, b'\x01'), memory_bytes=bo_top)
         refused('device-load-tmu-page', f'.li s1, #{HOLE[0]}\nv.ld.w v0, [s1, #0]', device('TMU MMIO is not ordinary model memory'), path=path)
         refused('device-byte-tmu-page-last', f'.li s1, #{HOLE[1] - 1}\ns.ld.b s3, [s1, #0]', device('TMU MMIO is not ordinary model memory'), path=path)
         refused('host-write-tmu-page', '.li s1, #0', 'TMU MMIO is not ordinary model memory', path=path, data=(HOLE[1] - 8, bytes(8)))
         refused('device-load-sram-below-local-limit', f'.li s1, #{local - 64}\nv.ld.w v0, [s1, #0]',
                 device('DRAM address map: SRAM or address outside AXI BO'), path=path)
-        refused('window-one-line-past-bo', '.li s1, #0', 'model window exceeds the mapped AXI BO', path=path, memory_bytes=top + 64)
-    refused('unmapped-legacy-logical-window', '.li s1, #0', 'window exceeds PC map', map_=False)
+        refused('window-one-line-past-bo', '.li s1, #0', 'model window exceeds the mapped AXI BO', path=path, memory_bytes=bo_top + 64)
+    refused('unmapped-legacy-logical-window', '.li s1, #0', 'window exceeds PC map', map_=False, memory_bytes=bo_top)
     if args.baseline_binary:
-        refused('baseline-binary-mapped-8gib-window', '.li s1, #0', 'window exceeds PC map', binary=args.baseline_binary.resolve())
+        refused('baseline-binary-mapped-8gib-window', '.li s1, #0', 'window exceeds PC map', binary=args.baseline_binary.resolve(), memory_bytes=bo_top)
     report['status'] = 'pass'
     report['scope'] = ('native model execution on a mapped window; the map is ' + audit['status'] +
                        '; bank/row mapping and timing are not calibrated; no board evidence')

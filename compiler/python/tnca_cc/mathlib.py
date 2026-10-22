@@ -32,6 +32,7 @@ each function is doing.
 # doc/support_matrix.md; a change here is a change to a published number.
 ACCURACY = {
     'div': '<= 1 ulp (faithful); one Newton step over ISA sec 8.8 rcp',
+    'div_ieee': 'correctly rounded (IEEE); a faithful quotient and one residual correction',
     'rcp': '<= 1 ulp (faithful); one Newton step over ISA sec 8.8 rcp',
     'sqrt': '<= 1 ulp (faithful); one Newton step over ISA sec 8.8 rsqrt',
     'rsqrt': '<= 1 ulp (faithful); one Newton step over ISA sec 8.8 rsqrt',
@@ -81,6 +82,24 @@ def div(b, k, a, y, dtype='f32'):
     """
     return b.vbin('mul', a, rcp(b, k, y, dtype=dtype), dtype=dtype,
                   comment='a/y as a refined reciprocal (ISA has no divide)')
+
+
+def div_ieee(b, k, a, y, dtype='f32'):
+    """a/y correctly rounded (IEEE 754 division, round to nearest even).
+
+    The faithful quotient q0 = a * rcp(y) and one correction: the residual
+    t = q0*y - a is exact in one FMA, and q1 = q0 - t*rcp(y) rounds once to
+    the nearest binary32 (Markstein's correction). Checked against exact
+    rational division in tools/performance_harness/fp8_block_reference.py.
+    Where the correction is NaN -- a zero, infinite or NaN operand, where
+    q0 is already the IEEE answer -- q0 is kept.
+    """
+    r = rcp(b, k, y, dtype=dtype)
+    q0 = b.vbin('mul', a, r, dtype=dtype, comment='a/y: faithful quotient')
+    t = b.vfms(q0, y, a, dtype=dtype)
+    q1 = b.vun('neg', b.vfms(t, r, q0, dtype=dtype), dtype=dtype,
+               comment='a/y: one correction to the IEEE quotient')
+    return _keep_unrefined(b, q1, q0)
 
 
 def rsqrt(b, k, x, dtype='f32'):

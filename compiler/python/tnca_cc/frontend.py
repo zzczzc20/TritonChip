@@ -236,6 +236,7 @@ class TTIRImporter:
         # compile is lowered again with this set). Separable indices
         # (tnca_cc.separable) live here; the default path never makes one.
         self.large_tiles = False
+        self.ieee_div = False   # option `ieee_div`: IEEE-exact arith.divf everywhere
         self._sep = {}      # TTIR value id -> Sep2D
         self._ptr2d = {}    # TTIR value id -> (arg name, elem, Affine2D)
         self._tiles = {}    # TTIR value id -> Tile
@@ -4693,13 +4694,17 @@ class TTIRImporter:
         the four-ulp approximation the SFU returns.
         """
         self.target.require('sfu', 'emit a float division')
+        # IEEE division (mathlib.div_ieee) in the extended lowering and where
+        # the `ieee_div` option asks for it; the default keeps the faithful
+        # quotient the frozen kernels were compiled with.
+        div = mathlib.div_ieee if (self.large_tiles or self.ieee_div) else mathlib.div
         if self._is_2d(op):
-            self._tile_binary(op, lambda xs, e: mathlib.div(
+            self._tile_binary(op, lambda xs, e: div(
                 self.b, lambda c: self._fconst(c, e), xs[0], xs[1],
                 dtype=e))
             return
         _, elem, _bcast = self._float_shape(op)
-        self._v[op.get_result(0).id()] = mathlib.div(
+        self._v[op.get_result(0).id()] = div(
             self.b, lambda c: self._fconst(c, elem),
             self._vec(op.get_operand(0), elem),
             self._vec(op.get_operand(1), elem), dtype=elem)

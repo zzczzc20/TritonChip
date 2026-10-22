@@ -48,6 +48,7 @@ KNOWN_OPTIONS = {
     'bank_alloc': 'int, 0 or 1; use the target bank-aware vector allocator',
     'packed_window_unpack': 'int, 0 or 1; software lane unpack of packed FP16/BF16 DMA windows',
     'window_reuse': 'int, 0 or 1; reuse disjoint awaited single-role window lifetimes',
+    'ieee_div': 'int, 0 or 1; arith.divf correctly rounded (the extended lowering always is)',
     'no_ll': 'bool; at opt_level 2, switch the layout algebra off and use a legal plan instead. The ablation of phase 3.5 section 4.3, not a fallback: O2 without it never silently stops using LinearLayout',
     'opt_level': 'int, 0..2. 0 is the frozen baseline and emits what this driver has always emitted. 1 runs the pinned upstream canonicalizer and CSE over the kernel and lowers a constant to its narrowest correct form. 2 adds the layout and allocation work (phase 3.5 section 4.3)',
     'debug': 'bool; adds a compile report, never changes the code',
@@ -783,6 +784,15 @@ def _lower_ttir(module, ctx, kernel_name, params, target, prov, options, stages,
     raise AssertionError('unreachable')
 
 
+def _ieee_div(options):
+    value = (options or {}).get('ieee_div')
+    if value is None:
+        value = int(os.environ.get('TNCA_IEEE_DIV', '0'))
+    if value not in (0, 1):
+        raise ValueError('ieee_div must be 0 or 1')
+    return value
+
+
 # The device's code store (tnca.inductor.CODE_STORE_BYTES, without importing
 # torch here): a kernel larger than this cannot be loaded.
 _CODE_STORE_BYTES = 0x20000
@@ -795,7 +805,9 @@ def _lower_imported(module, kernel_name, params, target, prov, options, stages, 
         param_names=[n for n, _t in params], target=target, prov=prov,
         dynamic_args=True, index_opt=bool(index_opt), sparse_maps=bool(sparse),
         window_reuse=bool(window_reuse), packed_window_unpack=bool(packed_unpack),
-        large_tiles=large_tiles)
+        large_tiles=large_tiles, ieee_div=bool(_ieee_div(options)))
+    if imp.large_tiles or imp.ieee_div:
+        prov.record('division', 'ieee')
     if getattr(imp, '_packed_unpack_rows', 0):
         prov.record('packed_window_unpack_rows', imp._packed_unpack_rows)
     if getattr(imp, '_mma_retiles', None):

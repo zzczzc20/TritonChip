@@ -93,6 +93,13 @@ def _window_reuse():
     return value
 
 
+def _ieee_div():
+    value = int(os.environ.get('TNCA_IEEE_DIV', '0'))
+    if value not in (0, 1):
+        raise ValueError('TNCA_IEEE_DIV must be 0 or 1')
+    return value
+
+
 def _packed_window_unpack():
     value = int(os.environ.get('TNCA_PACKED_WINDOW_UNPACK', '0'))
     if value not in (0, 1):
@@ -136,6 +143,7 @@ class TNCAOptions:
     bank_alloc: int = field(default_factory=_bank_alloc)
     window_reuse: int = field(default_factory=_window_reuse)
     packed_window_unpack: int = field(default_factory=_packed_window_unpack)
+    ieee_div: int = field(default_factory=_ieee_div)
 
     def __post_init__(self):
         if type(self.rctx_stages) is not int or self.rctx_stages not in (1, 2, 3):
@@ -319,7 +327,8 @@ class TNCABackend(BaseBackend):
                           ('sparse_tensormaps', 'TNCA_SPARSE_TENSORMAPS'),
                           ('rctx_roles', 'TNCA_RCTX_ROLES'), ('bank_alloc', 'TNCA_BANK_ALLOC'),
                           ('window_reuse', 'TNCA_WINDOW_REUSE'),
-                          ('packed_window_unpack', 'TNCA_PACKED_WINDOW_UNPACK')):
+                          ('packed_window_unpack', 'TNCA_PACKED_WINDOW_UNPACK'),
+                          ('ieee_div', 'TNCA_IEEE_DIV')):
             value = getattr(options, name)
             if value or int(os.environ.get(env, '0')) != value:
                 compile_options[name] = value

@@ -153,3 +153,61 @@ Families below +1.4 ns in round 4 that this work does not own:
 The families outside the tiles are measured by full run #1 (`c9f2578`).
 
 **Next step to make F04 robust**, if it is wanted: split the late stage. Register the reduction's masked inputs and the DSP products in X, then finish the tree, the MULH correction and the broadcast in the `vl` stage. That moves about 0.5 ns off `vl_vdata` without adding latency.
+
+## Rounds 5 and 6 (`9f22689`, `3643bfb`)
+
+**Round 5, `9f22689`.**
+- **The late stage is split.** `tnca_vector_alu` `LATE = 2`: in X the unit registers the products, the MULH correction, the reductions' four-lane partial sums and bitwise partials, and the min/max keys with their pairwise compares. The cycle after X finishes them, so latency is unchanged from round 4.
+- **VFPU.** The worst path was `of_d0` → the int↔f32 `vf.cvt` (lane 15, 21 levels) → `dly_v[0]`. That conversion now joins the delay line at stage 1, from the registered stage-0 inputs. The `vf.cvt.fmt` conversion already did this. The cycle and the result are the same, and a bench assertion compares every lane with the stage-0 value.
+- **Matrix.** `S_ROW` and its row op become flags registered together with the command (before: `st` → `fmt` → MAC input registers). The `a.vwrite` payload is copied every cycle; before, the `r_rowop` decode drove the enable of every payload bit.
+
+**Round 6, `3643bfb`.** The vector FPU gets its own copy of X's operands (`keep`), so the copy can be placed next to the FMA lanes. Its value equals `x_v*_q` every cycle, which is asserted.
+
+### Regression (logs in `regression-t5-t6.tgz`)
+
+Both trees pass everything in the list, and no assertion fired. The FMA miter ran 210 M vectors × 2 latencies with 0 mismatches.
+- **VFPU and matrix oracles.** The `rtl_oracle.py` (400 per op) and `matrix_oracle.py` (ABUF 0 and 1) outputs are byte-identical to r41s2-int's. The checksums are in `oracle_md5.txt`.
+- **Cycles.** Both rounds are identical to round 4 on every core suite, `r41-core-boundary`, the multicore suites and the 16 pipeline kernels. Against r41s2-int the total is therefore still +0.4–0.52 % on the core benches and +0.34 / +0.65 % on the pipeline kernels.
+- **Killed simulator.** In round 6 another agent killed one `r40-pipeline-checks` simulator, which showed up as `DEVICE_LOST` in `gemm_odd_steps`. I reran the target: it passed, with cycles identical to round 5.
+
+### Screens
+
+Cells give the worst slack (ns) / endpoints below +1.4 ns.
+
+| Tile 1 | r4 `2549feb` | r5 `9f22689` | r6 `3643bfb` |
+|---|---|---|---|
+| Transfer engine (internal) | +1.193 / 33 | +1.322 / 2 | ≥ +1.5 |
+| W forward | +1.320 / 1 | ≥ +1.5 | ≥ +1.5 |
+| F04 writeback | ≥ +1.5 | +1.384 / 1 | +0.679 / 61 † |
+| Late VALU stage | +1.124 / 9 | ≥ +1.5 | +1.289 / 22 |
+| VFPU | +1.161 / 25 | +0.896 / 145 (FMA stage 0) | +1.076 / 15 |
+| MTX | +1.054 / 20 | +1.259 / 7 | +1.136 / 16 |
+| VRF bank read | +1.500 / 0 | ≥ +1.5 | +0.641 / 72 † |
+| **Tile worst** | +1.054 | **+0.896** | +0.398 † |
+
+| Tile 0 | r4 | r5 | r6 |
+|---|---|---|---|
+| Transfer engine, W forward | ≥ +1.5 | ≥ +1.5 | ≥ +1.5 |
+| F04 writeback | +1.431 / 0 | +1.099 / 3 | +1.236 / 7 |
+| Late VALU stage | +0.885 / 99 | ≥ +1.5 | ≥ +1.5 |
+| VFPU | +0.690 / 260 | +1.006 / 323 (FMA stage 0) | +1.259 / 9 |
+| MTX | +0.810 / 222 | +0.973 / 38 (bank → `a_q`) | +1.388 / 1 |
+| NUCA slice (F07) | +1.042 / 39 | +1.453 / 0 | +0.798 / 366 † |
+| **Tile worst** | +0.690 | **+0.973** | +0.798 † |
+
+**Kernel synthesis.** WNS +3.914 ns in both rounds (`cvt_x` → `dly_v[1]`). LUTs: 812,043 in r5, 815,245 in r6.
+
+† These paths are 87–92 % routing, and their logic did not change in round 6:
+- `x_sa_fw` → `adv_q`, 12 levels, 8.4 ns of routing;
+- `x_lm_fw` → VALU mask → `w_vdata`, 6 levels, 8.6 ns of routing;
+- `pf_tag` → bank `s1_vld`;
+- slice LUTRAM address.
+
+Round 6's 1,536 extra registers moved placement. Between rounds that change only a few hundred registers, the same unchanged families move by ±0.5 ns. One routed screen per round cannot show a family at ≥ +1.4 ns with any confidence.
+
+**Assessment.**
+- **Logic.** Every family targeted in rounds 1–6 is now logic-shallow. The paths below +1.4 in the latest two runs are either:
+  - route-dominated, and they move between runs;
+  - or in the FMA stage-0 input, which round 6 fixed and which is otherwise generated XLS logic.
+- **Best measured tree.** Round 5 (`9f22689`) is the best balanced: tile worst +0.896 / +0.973 ns, with no family below +0.89. Round 6 removes the FMA operand-routing family but measured worse on unrelated routing paths.
+- **Recommendation.** Use `9f22689` for the next image, unless the full-run calibration shows FMA stage 0 as an image limiter. In that case use `3643bfb`.

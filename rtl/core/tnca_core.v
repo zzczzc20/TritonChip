@@ -577,6 +577,7 @@ module tnca_core #(
     wire [63:0]          sa_data, sb_data, sc_data, sb2_raw;
     wire [63:0]          sb3_raw, sb4_raw, sb5_raw;
     wire [VLEN*ELEN-1:0] va_data, vb_data, vc_data;
+    wire [VLEN*ELEN-1:0] fpu_va, fpu_vb, fpu_vc;   // R41 T2: the FPU's copy (banked file)
 
     // Declared here rather than beside the units that drive them. A
     // forward-referenced net inside a generate block becomes an implicit
@@ -775,6 +776,9 @@ module tnca_core #(
             vrf_n_wb_retry <= 32'd0;
         end
 
+        assign fpu_va = va_data;   // R41 T2: no separate copy here
+        assign fpu_vb = vb_data;
+        assign fpu_vc = vc_data;
     end else begin : g_vrf_banked
 
         //----------------------------------------------------------------
@@ -885,6 +889,26 @@ module tnca_core #(
         assign va_data = x_va_q;
         assign vb_data = x_vb_q;
         assign vc_data = x_vc_q;
+
+        // R41 T2 round 6: the vector FPU's own copy of X's operands, kept
+        // apart from x_v*_q (which synthesis merges with of_d*, the VALU's
+        // and the matrix's source) so it can sit by the sixteen FMA lanes:
+        // of_d1 -> FMA stage 0 was 2.8-3.1 ns of operand routing before the
+        // FMA's own logic (+0.896 ns tile-1 screen). Same value, same cycle.
+        (* keep = "true" *) reg [VW-1:0] x_va_f, x_vb_f, x_vc_f;
+        always @(posedge clk) begin
+            x_va_f <= of_v0;
+            x_vb_f <= of_v1;
+            x_vc_f <= of_v2;
+        end
+        assign fpu_va = x_va_f;
+        assign fpu_vb = x_vb_f;
+        assign fpu_vc = x_vc_f;
+`ifndef SYNTHESIS
+        always @(posedge clk)
+            if (rst_n && ({fpu_va, fpu_vb, fpu_vc} !== {va_data, vb_data, vc_data}))
+                $display("FAIL tnca_core assert @%0t: the FPU's operand copy differs", $time);
+`endif
 
         // The matrix consumes its data in the cycle its response is valid,
         // so it comes straight off port 3. Leaving this undriven left the
@@ -1434,7 +1458,7 @@ module tnca_core #(
                       .SFU_LAT(SFU_LAT), .HAS_SFU(HAS_SFU)) u_vfpu (
         .clk(clk), .rst_n(rst_n),
         .major(x_major), .func(x_func), .mod(x_mod), .mask(lane_mask),
-        .va(va_data), .vb(vb_data), .vc(vc_data), .fpctl(x_fpctl),
+        .va(fpu_va), .vb(fpu_vb), .vc(fpu_vc), .fpctl(x_fpctl),
         .is_multicycle(fpu_multicycle),
         .start(x_is_fp && fpu_multicycle && !x_kill),
         .busy(fpu_busy), .red_busy_o(fpu_red_busy), .done(fpu_done),

@@ -300,6 +300,8 @@ class TTIRImporter:
                 source='compiler_overview.md sec 11.1')
         self._float_constants(module, ops)
         self._value_users = self._users(ops)
+        self._value_def = {op.get_result(i).id(): op for op in ops
+                           for i in range(op.get_num_results())}
         self._all_ops = ops
         self._op_pos = {id(o): i for i, o in enumerate(ops)}
         records = [o for o in ops if o.get_name() == 'proton.record']
@@ -3376,6 +3378,27 @@ class TTIRImporter:
         if a.dtype == b.dtype == 'f32':
             self._dot_f32(op, a, b)
             return
+        if a.dtype != b.dtype and a.dtype in _FP8_FORMATS and b.dtype in _FP8_FORMATS:
+            # E4M3 x E5M2. ISA sec 9C's mod[3:2] names one input format for
+            # both operands. FP16 holds every value of both encodings
+            # exactly, and sec 9C.1 forms every product exactly and rounds
+            # once per K step whatever the input format, so an FP16 MMA of
+            # the converted operands is the same sum in the same order --
+            # for one 16-deep K block; a deeper dot of two encodings is not
+            # a native matrix operation (register_blocks._native_matrix).
+            k = _parse_type(str(getattr(op, 'op', op).get_operand(0).get_type()))[0][-1]
+            if k != a.cols or a.cols > self.target.vlen:
+                raise Unsupported(
+                    f'an E4M3 x E5M2 tl.dot with K={k}',
+                    because="ISA sec 9C's mod[3:2] names one input format for both operands, "
+                            'and the exact FP16 substitute is built for one K block of '
+                            f'{self.target.vlen}',
+                    remedy='one FP8 encoding for both operands, or a 16-deep K block '
+                           '(TNCA_GEMM_TILE with K16)')
+            self.b.comment('E4M3 x E5M2: both operands as FP16 fragments, exactly '
+                           '(ISA sec 9C.1)')
+            a, b = (self._rows_to_window(self._tile_row_getter(t), t.store, 'f16', t.cols,
+                                         nrows=t.rows) for t in (a, b))
         # ISA sec 9C reads A and B from vector registers in the fragment
         # layout. A value computed in the vector unit is not in it, and
         # sec 8.4 reserves the pack that would put it there -- so it
@@ -4152,37 +4175,174 @@ class TTIRImporter:
 
         Narrow values occupy the low bits of wide lanes in spill storage;
         widening must convert those bits before floating-point arithmetic.
+        A conversion with an FP8 end also gets PyTorch's NaN encoding
+        (_fp8_nan_rule): every other value is the instruction's own.
         """
         src, res = op.get_operand(0), op.get_result(0)
         tile = self._tiles.get(src.id())
         _, rtype = _parse_type(str(res.get_type()))
+        _, stype = _parse_type(str(src.get_type()))
+        rule = self._fp8_nan_rule(op, src, stype, rtype)
         if tile is not None:
             if rtype == tile.store:
                 self._tiles[res.id()] = tile
                 return
+            get = self._tile_row_getter(tile)
+            convert = lambda r, get=get: self.b.vcvt(tile.store, rtype, get(r))
+            if rule is not None:
+                root_get = (None if rule[1] is src else
+                            self._row_getter(rule[1], tile.rows, rule[2]))
+
+                def convert(r, get=get, root_get=root_get):
+                    x = get(r)
+                    y = self.b.vcvt(tile.store, rtype, x)
+                    return self._fp8_nan_fix(rule, y, tile.store, x,
+                                             x if root_get is None else root_get(r), rtype)
             users = self._value_users.get(res.id(), [])
             if (self.index_opt and tile.kind == 'accumulator' and len(users) == 1
                     and users[0][0].get_name() == 'tt.store') or self._deferrable(op):
                 # A matmul's epilogue (`acc.to(f16)` then a store): each row is
                 # converted on its way out, where materialising the tile first
                 # put sixteen rows through scratch and read them back.
-                get = self._tile_row_getter(tile)
                 self._tiles[res.id()] = Tile(
-                    'lazy', lambda r, get=get: self.b.vcvt(tile.store, rtype, get(r)),
+                    'lazy', convert,
                     tile.rows, tile.cols, rtype, replicated=self._rows_replicated(src))
                 return
             else:
-                get = self._tile_row_getter(tile)
-                converted = self._materialise(
-                    lambda r: self.b.vcvt(tile.store, rtype, get(r)),
-                    tile.rows, tile.cols, rtype)
+                converted = self._materialise(convert, tile.rows, tile.cols, rtype)
                 converted.replicated = self._rows_replicated(src)
                 self._tiles[res.id()] = converted
             return
         _, elem, _bcast = self._float_shape(op)
-        _, stype = _parse_type(str(src.get_type()))
-        self._v[res.id()] = self.b.vcvt(stype, rtype,
-                                        self._vec(src, stype))
+        x = self._vec(src, stype)
+        y = self.b.vcvt(stype, rtype, x)
+        if rule is not None:
+            root = x if rule[1] is src else self._vec(rule[1], rule[2])
+            y = self._fp8_nan_fix(rule, y, stype, x, root, rtype)
+        self._v[res.id()] = y
+
+    # ---- FP8 conversions: PyTorch's NaN encodings -------------------------
+    #
+    # ISA sec 8.4 converts every NUMBER the way PyTorch's CPU conversion
+    # does (c10 Float8_e4m3fn / Float8_e5m2 / Half / BFloat16, torch 2.14):
+    # round to nearest even, subnormals kept, E4M3 overflow and infinity
+    # saturating to +-448, E5M2 overflow to +-inf. It differs only in NaN.
+    # The instruction writes one positive NaN in every format (E4M3/E5M2
+    # S.1111111 with S = 0, binary32 0x7FC00000, FP16/BF16 0x7FFF); PyTorch
+    # keeps the sign when it narrows to FP8, keeps sign and payload when it
+    # widens FP8 to binary32 or FP16, and writes 0x7FC0 for a BF16 NaN. A
+    # tensor cast is a copy of bits, so those NaNs are results like any
+    # other, and the importer rewrites them here -- for conversions with an
+    # FP8 end only. A conversion between the wide formats keeps the
+    # instruction's NaN, as every arithmetic result does (an arithmetic
+    # NaN is canonical, ISA sec 8.2): rewriting those would change every
+    # FP16/BF16 kernel for a NaN payload.
+    #
+    # Inductor widens a 16-bit load to binary32 before it converts to FP8,
+    # and converts FP8 to binary32 before it stores BF16 or FP16. A
+    # widening is exact for every number, so the pair IS the one
+    # conversion PyTorch performs; the rule looks through it to the value
+    # it widened (`root`), whose bits still hold the NaN the instruction
+    # dropped.
+    _NAN_CANONICAL_USERS = ('arith.addf', 'arith.subf', 'arith.mulf', 'arith.divf',
+                            'math.fma', 'arith.cmpf', 'arith.maximumf', 'arith.minimumf',
+                            'arith.maxnumf', 'arith.minnumf')
+
+    def _defining_op(self, value):
+        """The operation that defines `value`, in `value`'s register chunk."""
+        original = getattr(value, 'value', value)
+        op = self._value_def.get(original.id()) if hasattr(self, '_value_def') else None
+        if op is None or original is value:
+            return op
+        from .register_blocks import view_like
+        return view_like(op, value)
+
+    def _fp8_nan_rule(self, op, src, stype, rtype):
+        """(kind, root, root type) for a conversion with an FP8 end, or None.
+
+        `narrow`: to FP8, NaN signed as `root` is. `widen`: from the FP8
+        `root` to binary32, FP16 or BF16, NaN encoded from it as PyTorch
+        does. A widening whose every user is arithmetic that makes its own
+        canonical NaN (ISA sec 8.2), or a conversion that looks through it,
+        needs no rule: nothing can read the NaN it wrote.
+        """
+        if stype == rtype:
+            return None
+        floats = ('f32', 'f16', 'bf16') + tuple(_FP8_FORMATS)
+        if stype not in floats or rtype not in floats:
+            return None
+        root, root_type = src, stype
+        defining = self._defining_op(src)
+        if (stype == 'f32' and defining is not None and
+                defining.get_name() in ('arith.extf', 'tt.fp_to_fp')):
+            inner = defining.get_operand(0)
+            _, itype = _parse_type(str(inner.get_type()))
+            if itype in ('f16', 'bf16') or itype in _FP8_FORMATS:
+                root, root_type = inner, itype
+        if rtype in _FP8_FORMATS:
+            return ('narrow', root, root_type)
+        if root_type not in _FP8_FORMATS:
+            return None
+        if rtype == 'f32':
+            result = op.get_result(0)
+            users = self._value_users.get(getattr(result, 'value', result).id(), [])
+            through = all(u.get_name() in self._NAN_CANONICAL_USERS or (
+                u.get_name() in ('arith.truncf', 'tt.fp_to_fp') and
+                _parse_type(str(u.get_result(0).get_type()))[1] in floats)
+                for u, _k in users)
+            if users and through:
+                return None
+        return ('widen', root, root_type)
+
+    def _iconst(self, value):
+        """A whole-vector integer constant, emitted once per value."""
+        key = (value, 'int')
+        v = self._fconst_cache.get(key)
+        if v is None:
+            v = self.b.vmovi(value, dtype='i32')
+            self._fconst_cache[key] = v
+        return v
+
+    def _fp8_nan_fix(self, rule, y, stype, x, root, rtype):
+        """`y`, the instruction's conversion of `x` (a `stype` value), with
+        PyTorch's encoding in its NaN lanes; `root` is the value the rule
+        looked through to (or `x`)."""
+        kind, _root_value, root_type = rule
+        b, k = self.b, self._iconst
+        if kind == 'narrow':
+            # Every non-NaN result already carries the sign of its source,
+            # and a NaN is S.1111111 in both FP8 formats, so ORing in the
+            # source's sign is exact everywhere and needs no comparison.
+            width = {'f32': 32, 'f16': 16, 'bf16': 16}.get(root_type, 8)
+            sign = root if width == 8 else b.vbin('lshr', root, k(width - 8), dtype='i32')
+            sign = b.vbin('and', sign, k(0x80), dtype='i32')
+            return b.vbin('or', y, sign, dtype=rtype,
+                          comment=f'{root_type} -> {rtype}: a NaN keeps its sign')
+        # Widening an FP8 NaN. The comparison needs a binary32 view of the
+        # value: the conversion's own operand or result when it is one.
+        if rtype == 'f32':
+            wide = y
+        elif stype == 'f32' and getattr(x, 'dtype', None) == 'f32':
+            wide = x
+        else:
+            wide = b.vcvt(root_type, 'f32', root)
+        ordered = b.vcmp('o', wide, wide)
+        e4m3 = root_type == 'f8E4M3FN'
+        if rtype == 'f32':
+            # sign | 0x7FC00000 | mantissa << (23 - M): the payload moved
+            # to the top of the fraction, as a quiet NaN.
+            top = b.vbin('shl', root, k(24), dtype='i32')
+            if e4m3:
+                nan = b.vbin('or', top, k(0x7FF00000), dtype='i32')
+            else:
+                nan = b.vbin('or', b.vbin('ashr', top, k(3), dtype='i32'),
+                             k(0x7FC00000), dtype='i32')
+        elif rtype == 'f16':
+            nan = b.vbin('or', b.vbin('shl', root, k(8), dtype='i32'),
+                         k(0x7F80 if e4m3 else 0x7E00), dtype='i32')
+        else:
+            nan = k(0x7FC0)
+        return b.vselect(ordered, y, nan)
 
     def _op_arith_sitofp(self, op):
         self._convert(op, 's32', 'f32')
@@ -4562,6 +4722,26 @@ class TTIRImporter:
             return int(pending[1])
         return None
 
+    def _fp8_mma_operand(self, op, elem):
+        """An FP8 tile load whose only readers are `tl.dot`s of one encoding.
+
+        Such a tile is an MMA operand and nothing else, so it takes the
+        transfer engine like an FP16 one -- the engine moves bits, and ISA
+        sec 9D.3 gives both FP8 encodings a TensorMap code -- where an FP8
+        tile anything else reads keeps the row-per-vector-load form that
+        arithmetic wants (_load_tile_rows). The engine's transposed write
+        is 16-bit only (tnca_tensor.v S_TSETUP), so a column-major FP8 tile
+        is still gathered.
+        """
+        if elem not in _FP8_FORMATS:
+            return False
+        users = self._value_users.get(op.get_result(0).id(), [])
+        return bool(users) and all(
+            u.get_name() == 'tt.dot' and k in (0, 1) and
+            _parse_type(str(u.get_operand(0).get_type()))[1] ==
+            _parse_type(str(u.get_operand(1).get_type()))[1] == elem
+            for u, k in users)
+
     def _arg_value(self, name):
         for _, (n, v) in self._args.items():
             if n == name:
@@ -4615,10 +4795,17 @@ class TTIRImporter:
                         # are, and changing them changed its artifacts.)
                         v = self.b.splat(self.b.vextract(v, 0, dtype=elem), dtype=elem)
                     return v
+                if self._fp8_mma_operand(op, elem) and self._deferrable(op):
+                    # Gathered straight into the MMA repack (_rows_to_window):
+                    # materialising an 8-bit tile first stores and reloads
+                    # every row through scratch on the way to the same pack.
+                    self._tiles[op.get_result(0).id()] = Tile(
+                        'lazy', row, shape2d[0], shape2d[1], elem)
+                    return
                 self._tiles[op.get_result(0).id()] = self._materialise(
                     row, shape2d[0], shape2d[1], elem)
                 return
-            if elem not in self._TRANSFERABLE:
+            if elem not in self._TRANSFERABLE and not self._fp8_mma_operand(op, elem):
                 self._tiles[op.get_result(0).id()] = self._load_tile_rows(
                     name, elem, aff, shape2d)
                 return

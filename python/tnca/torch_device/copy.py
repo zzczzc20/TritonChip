@@ -56,7 +56,7 @@ def copy_storage(memory, dst, src, nbytes):
 def _copy_kernel(SRC, DST, COUNT: tl.constexpr, SHAPE: tl.constexpr,
                  SRC_STRIDES: tl.constexpr, DST_STRIDES: tl.constexpr,
                  BYTES: tl.constexpr, RAW: tl.constexpr, CONTIGUOUS: tl.constexpr,
-                 BLOCK: tl.constexpr, PROGRAMS: tl.constexpr):
+                 BLOCK: tl.constexpr, PROGRAMS: tl.constexpr, FP8_SOURCE: tl.constexpr = False):
     pid = tl.program_id(0)
     for block in range(tl.cdiv(COUNT, BLOCK * PROGRAMS)):
         index = (block * PROGRAMS + pid) * BLOCK + tl.arange(0, BLOCK)
@@ -83,6 +83,11 @@ def _copy_kernel(SRC, DST, COUNT: tl.constexpr, SHAPE: tl.constexpr,
             dst_bytes = DST.to(tl.pointer_type(tl.uint8))
             value = tl.load(src_bytes + src_offset * BYTES + byte, mask, other=0)
             tl.store(dst_bytes + dst_offset * BYTES + byte, value, mask)
+        elif FP8_SOURCE:
+            # Triton has no integer -> FP8 cast for `other=0`. A masked-off
+            # lane is never stored, so the load needs no `other` at all.
+            value = tl.load(SRC + src_offset, mask)
+            tl.store(DST + dst_offset, value.to(DST.dtype.element_ty), mask)
         else:
             value = tl.load(SRC + src_offset, mask, other=0)
             tl.store(DST + dst_offset, value.to(DST.dtype.element_ty), mask)
@@ -136,7 +141,9 @@ def copy_tensor(src, dst):
             _copy_kernel[(programs,)](
                 src, dst, count, shape, source_strides, tuple(dst.stride()),
                 dst.element_size(), raw,
-                contiguous, block, programs, num_warps=1)
+                contiguous, block, programs, num_warps=1,
+                **({'FP8_SOURCE': True} if not raw and src.dtype in
+                   (torch.float8_e4m3fn, torch.float8_e5m2) else {}))
         finally:
             triton.runtime.driver.set_active(previous)
     return dst

@@ -130,6 +130,19 @@ class _RowOpView(_OpView):
         return _RowValueView(self.op.get_result(i), self.row, self.chunk, self.vlen)
 
 
+def view_like(op, value):
+    """`op` presented in the register chunk (and row chunk) `value` is in.
+
+    The importer reaches a value's defining operation through the module
+    walk, which holds real operations; when `value` is a chunk view, the
+    operation's operands must be read as the same chunk."""
+    if isinstance(value, _RowValueView):
+        return _RowOpView(op, value.row, value.chunk, value.vlen)
+    if isinstance(value, _ValueView):
+        return _OpView(op, value.chunk, value.vlen)
+    return op
+
+
 def _native_matrix(imp, op):
     if op.get_name() != 'tt.dot':
         return None
@@ -138,7 +151,10 @@ def _native_matrix(imp, op):
     b, be = _parse_type(str(op.get_operand(1).get_type()))
     if not isinstance(a, tuple) or not isinstance(b, tuple) or len(a) != 2 or len(b) != 2:
         return None
-    if (ae != be or ae not in ('f16', 'bf16') or a[0] > imp.target.vlen or
+    # FP8 fragments are the same flat row-major arrays (ISA sec 9C.2), so a
+    # K32/K64 FP8 dot is one MMA per K step like an FP16 one. Splitting it
+    # as an elementwise operation paired A's second K chunk with B's first.
+    if (ae != be or ae not in ('f16', 'bf16', 'f8E4M3FN', 'f8E5M2') or a[0] > imp.target.vlen or
             a[1] != b[0] or a[1] not in (32, 64) or
             f'k{a[1]}' not in imp.target.mma['k_steps']):
         return None

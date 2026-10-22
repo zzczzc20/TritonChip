@@ -178,6 +178,35 @@ def _register(cap, reduction_rows=1, gemm_tile=(16,16,16)):
             super().__init__()
             one_fragment(self)
 
+    @register_template_heuristic(mm_template.uid, 'tnca', op_name='scaled_mm')
+    @register_template_heuristic(mm_template.uid, 'cpu', op_name='scaled_mm')
+    class TNCAScaledMMTemplateConfigHeuristic(tt.CPUScaledMMTemplateConfigHeuristic):
+        """`aten._scaled_mm` through Inductor's own lowering (tuned_scaled_mm).
+
+        Upstream's scaled-mm mixin, unchanged: the same mm template with
+        its epilogue scaling (`acc * (scale_a * scale_b)`, then the bias)
+        and the scales and bias as suffix arguments, for tensorwise and
+        rowwise scales. Without this registration the device's plain mm
+        heuristic answered for op `scaled_mm`, so the template was
+        rendered without the suffix arguments and failed. Its tile is the
+        same single legal configuration as mm's; the FP8 operands reach
+        `tl.dot` as they are stored, which the compiler lowers onto the
+        FP8 MMA (ISA sec 9C, CAPABILITY0.MATRIX_FP8).
+        """
+
+        def __init__(self):
+            super().__init__()
+            one_fragment(self)
+
+        def _valid(self, kernel_inputs):
+            # Upstream offers no configuration when K <= 16 ("Triton
+            # crashes"), and B200's tcgen05 needs K >= 32: both are CUDA
+            # code-generation limits. A K of 16 or less is one masked
+            # 16-deep MMA fragment here, which the compiler lowers like
+            # any other K tail; refusing it would leave the graph with no
+            # choice at all (there is no ATen fallback on this device).
+            return True
+
     # Convolution through Inductor's Triton conv template, with the one
     # configuration a 16-lane machine can build (the template's own list
     # starts at 64x256 blocks). Through the device's config heuristic, the

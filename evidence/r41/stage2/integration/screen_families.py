@@ -18,7 +18,11 @@ import argparse, json, re
 from collections import defaultdict
 
 TILE = 'system/shell/u_system/g_tile[*].u_tile/'
+SOURCE_OWNER = [  # checked on the source first: W's forward/write fan-out into operand capture
+    (r'u_core/w_(idx|en|class|rctx)_reg', 'F01/F02/F05 (W forward, operands)'),
+]
 OWNER = [  # first match wins; patterns on the destination, then the source
+    (r'u_txf/', 'transfer engine (u_txf; X8 edits it)'),
     (r'u_vfpu|u_fma/', 'F03/F08 (VFPU, FMA)'),
     (r'u_mtx|u_acc', 'F09 (MTX, accumulator)'),
     (r'g_lsu_pair|u_mesh|core_ni|cache_handoff', 'F10 (LSU, NoC)'),
@@ -27,7 +31,7 @@ OWNER = [  # first match wins; patterns on the destination, then the source
     (r'w_sdata|w_vdata|w_pdata|w_rctx|x_pm_idx', 'F04 (writeback)'),
     (r'g_vrf_banked|sb_v_reg|sb_s_reg|u_bank', 'F02/F05 (scoreboard, VRF)'),
     (r'x_s[abc]_idx|u_srf|scalar_rf|u_bar', 'F02 (scalar operands)'),
-    (r'w_en_reg|stall|pc_reg|f_|d_valid|r_valid', 'F01 (stall, front end)'),
+    (r'w_en_reg|stall|pc_reg|/f_|d_valid|r_valid', 'F01 (stall, front end)'),
     (r'u_core', 'other core'),
 ]
 
@@ -40,6 +44,9 @@ def family(pin):
 
 
 def owner(src, dst):
+    for pat, name in SOURCE_OWNER:
+        if re.search(pat, src):
+            return name
     for text in (dst, src):
         for pat, name in OWNER:
             if re.search(pat, text):

@@ -1,7 +1,12 @@
 # F10: registered LSU request boundary and decoupled ownership-range enables
 
-Status: **implemented on `r41s2-io`; functional regression passes; unit OOC screen
-passes the 9.0 ns projected target for both census families.** It is not a routed
+Status: **implemented on `r41s2-io` (WIP checkpoint 46b72a8, kept by the Stage 2
+integration); `make lsu-reqreg` and the full integrated regression pass
+(`../../integration/README.md`).** The archives `f10-regression-logs.tgz` and
+`f10-ooc-evidence.tgz` named below were never committed: the per-candidate logs and the
+unit OOC reports behind the tables here are not preserved, so those numbers are the
+F10 author's record only. The integration regression re-measured the cycle impact in
+the merged tree. It is not a routed
 result. The kernel synthesis, the routed census and board runs are still to be done.
 
 **Responsible sources** (the base hashes match the preflight's F10 entry):
@@ -147,8 +152,8 @@ restaged. The base comparisons use the unchanged `r41s2` tree. Logs are in
 | `make r40-line-axi` (multicore AXI, N = 1–8, deadline and physical-fault drain, write delay 300) | PASS |
 | `multicore_mmio_tests.py --cores 3 --ports 3 --pipeline 2 --board-top` | PASS |
 | `make r40-cache-maintenance` (`tb_cache_handoff` homes 1/3/8, slice maintenance, global handoff on real cores) | PASS |
-| `make r40-multicore-dma`, `make r40-grid-dispatch`, `make r40-coherent-host` | RESULT_DMA |
-| Native Torch on the board-top multicore RTL (`native_multicore_features.py --backend fpga-multicore-sim --cores 3 --pipeline 2 --board-top`, with and without `--pair`) | RESULT_NATIVE |
+| `make r40-multicore-dma`, `make r40-grid-dispatch`, `make r40-coherent-host` | PASS in the integrated tree (r41s2-int cf28fe3, `../../integration/regression-cf28fe3.tgz`); not recorded on the F10-only tree |
+| Native Torch on the board-top multicore RTL (`native_multicore_features.py --backend fpga-multicore-sim --cores 3 --pipeline 2 --board-top`, with and without `--pair`) | not run: the F10 work stopped before this row, and the integration regression did not run it either |
 
 ## Cycle impact
 
@@ -167,7 +172,7 @@ unchanged at one per cycle.
 | `core-r39sw`, all runs, total | 225,666 | 227,453 | +0.79 % (worst `t18_squash` +8.7 %) |
 | `tb_multicore_axi` (`r40-line-axi`), 455-program grid on real cores and AXI outlets, grid span (F06 + F10) | N = 1: 39,033; N = 3: 13,659; N = 8: 8,600 | 39,492; 13,809; 8,675 | +1.2 %, +1.1 %, +0.9 % |
 | `tb_multicore_shell` (`r40-multicore-shell`), same grid, N = 3 | 12,990 | 13,143 | +1.2 % |
-| NATIVE_ROW | | | |
+| Native Torch rows | | | not run |
 
 ## Unit OOC timing at 10 ns
 

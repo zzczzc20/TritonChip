@@ -226,7 +226,7 @@ def load_model(spec, weights="fp8", dtype=torch.bfloat16):
     with pinned_fp8_quantizer(record):
         model, info = getattr(transformers, spec.cls).from_pretrained(snap, config=cfg, dtype=dtype,
                                                                        output_loading_info=True)
-    model.eval()
+    model.eval().requires_grad_(False)          # inference only (FlopCounterMode's module tracker hooks grads)
     report = dict(format=fmt, weights=weights, quantizer=record, load_seconds=round(time.perf_counter() - t0, 3),
                   snapshot_view=view_note,
                   loading_info={k: sorted(map(str, v)) if isinstance(v, (list, set, tuple)) else str(v) for k, v in info.items()},

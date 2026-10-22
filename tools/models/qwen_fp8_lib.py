@@ -1143,8 +1143,8 @@ def cmd_probe_quantizer(spec, a):
         finally:
             lg.removeHandler(grab)
         lin = [n for n, x in m.named_modules() if type(x).__name__ == "FP8Linear"]
-        qc = m.config.quantization_config
-        deq = qc.dequantize if hasattr(qc, "dequantize") else dict(qc).get("dequantize")
+        qc = getattr(m.config, "quantization_config", None)     # removed from the config after dequantization
+        deq = None if qc is None else (qc.dequantize if hasattr(qc, "dequantize") else dict(qc).get("dequantize"))
         sample = next(n for n, x in m.named_modules() if n.endswith("mlp.down_proj"))
         w = dict(m.named_parameters())[sample + ".weight"]
         return m, dict(fp8_linear_modules=len(lin), config_dequantize=deq, warnings=grab.msgs,

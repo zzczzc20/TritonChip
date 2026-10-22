@@ -1392,12 +1392,15 @@ module tnca_core #(
     // `use_imm`).
     reg x_valu_imm;
 
-    tnca_vector_alu #(.VLEN(VLEN), .ELEN(ELEN)) u_valu (
+    wire [VLEN*ELEN-1:0] valu_late_v;
+    wire [63:0]          valu_late_s;
+    tnca_vector_alu #(.VLEN(VLEN), .ELEN(ELEN), .LATE(1)) u_valu (
         .major(x_major), .func(x_func), .mod(x_mod), .mask(lane_mask),
         .va(va_data), .vb(vb_data), .sa(v_sop), .imm(x_imm),
         .use_imm(x_valu_imm),
         .pa(pa_data), .pb(pb_data),
-        .vres(valu_v), .sres(valu_s), .pres(valu_p)
+        .vres(valu_v), .sres(valu_s), .pres(valu_p),
+        .late_v(valu_late_v), .late_s(valu_late_s)
     );
 
     wire                 fpu_multicycle;
@@ -1458,6 +1461,17 @@ module tnca_core #(
                                    || ((maj) == `TNCA_MAJ_SFU))
 
     wire x_is_mul    = x_valid && `TNCA_IS_MUL(x_major, x_func);
+    // R41 T2 (F04): the vector multiply family and the integer reductions
+    // write back one cycle after X, through vl_* below -- scheduled like the
+    // scalar multiply (r_wb_delay 1), so the reservation, the scoreboard and
+    // the forwarding treat them as they treat any delayed result.
+    `define TNCA_IS_VLATE(maj, fn) \
+        ((((maj) == `TNCA_MAJ_VINT) && (((fn) == `TNCA_V_MUL)    || \
+                                       ((fn) == `TNCA_V_MULI)   || \
+                                       ((fn) == `TNCA_V_MULH_S) || \
+                                       ((fn) == `TNCA_V_MULH_U))) || \
+         (((maj) == `TNCA_MAJ_RED) && ((fn) < `TNCA_RD_FADD)))
+    wire x_is_vl     = x_valid && `TNCA_IS_VLATE(x_major, x_func);
     wire x_is_fpnorm = x_valid && `TNCA_IS_FPNORM(x_major);
     wire x_is_fpmc   = x_valid && `TNCA_IS_FPMC(x_major, x_func);
 
@@ -1767,6 +1781,17 @@ module tnca_core #(
     wire fp_wb  = fp_v[FP_LAT-1];
     wire mul_wb = mu_v[MUL_LAT-1];
 
+    // R41 T2 (F04): the late vector-ALU result, one stage.
+    reg                vl_v;
+    reg [RCTX_W-1:0]   vl_rctx;
+    reg [2:0]          vl_dstc;
+    reg [7:0]          vl_dsti;
+    reg [VLEN-1:0]     vl_len;
+    reg [VLEN*ELEN-1:0] vl_vdata;
+    reg [63:0]         vl_sdata;
+    reg [VLEN-1:0]     vl_pdata;
+    wire vl_wb = vl_v;
+
     reg fp_inflight;
     integer fi;
     always @(*) begin
@@ -1973,7 +1998,7 @@ module tnca_core #(
     // units and never contend for it.
     wire x_wb_reg = (x_dstc == `TNCA_DST_S) || (x_dstc == `TNCA_DST_V)
                                             || (x_dstc == `TNCA_DST_P);
-    wire x_defers_wb = x_mem_en || x_is_fpmc || x_is_fpnorm || x_is_mul;
+    wire x_defers_wb = x_mem_en || x_is_fpmc || x_is_fpnorm || x_is_mul || x_is_vl;
     wire x_has_dest  = x_valid && !x_kill && x_wb_reg && !x_defers_wb;
 
     //==========================================================================
@@ -1981,7 +2006,7 @@ module tnca_core #(
     //==========================================================================
     // Exactly one scheduled result can land per cycle -- the reservation
     // register guarantees it -- so these three are mutually exclusive.
-    wire sched_wb  = x_has_dest | fp_wb | mul_wb;
+    wire sched_wb  = x_has_dest | fp_wb | mul_wb | vl_wb;
 
     wire cpl_req   = lsu_cpl_valid | red_pend;
     wire cpl_grant = cpl_req && !sched_wb;
@@ -2005,7 +2030,8 @@ module tnca_core #(
     wire ws_red = cpl_grant && !lsu_cpl_valid;          // cpl_grant implies red_pend
     wire ws_fp  = !cpl_grant && fp_wb;
     wire ws_mul = !cpl_grant && !fp_wb && mul_wb;
-    wire ws_x   = !cpl_grant && !fp_wb && !mul_wb && x_has_dest;
+    wire ws_vl  = !cpl_grant && !fp_wb && !mul_wb && vl_wb;
+    wire ws_x   = !cpl_grant && !fp_wb && !mul_wb && !vl_wb && x_has_dest;
     wire xs_arm  = x_is_bar && (x_func == `TNCA_MB_ARM);
     wire xs_test = x_is_bar && (x_func == `TNCA_MB_TEST);
     wire xs_rest = !xs_arm && !xs_test;
@@ -2018,6 +2044,7 @@ module tnca_core #(
           ({64{ws_lsu}}                    & lsu_cpl_sdata)
         | ({64{ws_red}}                    & red_sdata)
         | ({64{ws_mul}}                    & mul_sel)
+        | ({64{ws_vl}}                     & vl_sdata)
         | ({64{ws_x && xs_arm}}            & bar_arm_token)
         | ({64{ws_x && xs_test}}           & {63'd0, bar_test_done})
         | ({64{ws_x && xs_link}}           & (x_pc + 64'd8))
@@ -2027,12 +2054,14 @@ module tnca_core #(
         | ({64{ws_x && xs_unit && !use_fpu}} & valu_s);
     wire [VLEN*ELEN-1:0] wb_vdata =
           ({(VLEN*ELEN){ws_lsu}}                             & lsu_cpl_vdata)
+        | ({(VLEN*ELEN){ws_vl}}                              & vl_vdata)
         | ({(VLEN*ELEN){ws_red}}                             & red_vdata)
         | ({(VLEN*ELEN){ws_fp || (ws_x && !x_is_avread && use_fpu)}} & fpu_v)
         | ({(VLEN*ELEN){ws_x && x_is_avread}}                & acc_rd_data)
         | ({(VLEN*ELEN){ws_x && !x_is_avread && !use_fpu}}   & valu_v);
     wire [VLEN-1:0] wb_pdata =
           ({VLEN{ws_fp || (ws_x && use_fpu)}} & fpu_p)
+        | ({VLEN{ws_vl}}                      & vl_pdata)
         | ({VLEN{ws_x && !use_fpu}}           & valu_p);
 
     always @(*) begin
@@ -2067,6 +2096,12 @@ module tnca_core #(
             nw_rctx    = mu_rctx[MUL_LAT-1];
             nw_class   = `TNCA_DST_S;
             nw_idx     = mu_dsti[MUL_LAT-1];
+        end else if (ws_vl) begin
+            nw_en      = 1'b1;
+            nw_rctx    = vl_rctx;
+            nw_class   = vl_dstc;
+            nw_idx     = vl_dsti;
+            nw_lane_en = vl_len;
         end else if (ws_x) begin
             nw_en      = 1'b1;
             nw_rctx    = x_rctx;
@@ -2085,6 +2120,7 @@ module tnca_core #(
     wire r_needs_lsu = r_valid && r_mem_en;
 
     wire r_is_mul    = r_valid && `TNCA_IS_MUL(r_major, r_func);
+    wire r_is_vl     = r_valid && `TNCA_IS_VLATE(r_major, r_func);
     wire r_is_fpnorm = r_valid && `TNCA_IS_FPNORM(r_major);
     wire r_is_fpmc   = r_valid && `TNCA_IS_FPMC(r_major, r_func);
 
@@ -2206,6 +2242,7 @@ module tnca_core #(
     // ---- writeback reservation ------------------------------------------------
     // Delay from "in X" to "result available", per unit.
     wire [3:0] r_wb_delay = r_is_mul    ? MUL_LAT[3:0] :
+                            r_is_vl     ? 4'd1         :
                             r_is_fpnorm ? FP_LAT[3:0]  : 4'd0;
 
     // Memory ops and FP reductions complete out of band and book nothing.
@@ -2510,6 +2547,7 @@ module tnca_core #(
             wb_rsv     <= {WB_DEPTH{1'b0}};
             for (i = 0; i < FP_LAT; i = i + 1)  fp_v[i] <= 1'b0;
             for (i = 0; i < MUL_LAT; i = i + 1) mu_v[i] <= 1'b0;
+            vl_v       <= 1'b0;
             clock_ctr  <= 64'd0;
             fault_valid<= 1'b0;
             fault_code <= 8'd0;
@@ -2578,6 +2616,14 @@ module tnca_core #(
                 mu_func[i] <= mu_func[i-1];
             end
             mu_v[0]    <= x_is_mul && !x_kill && (x_dstc != `TNCA_DST_NONE);
+            vl_v       <= x_is_vl && !x_kill && (x_dstc != `TNCA_DST_NONE);
+            vl_rctx    <= x_rctx;
+            vl_dstc    <= x_dstc;
+            vl_dsti    <= x_dsti;
+            vl_len     <= x_mask_dst ? lane_mask : {VLEN{1'b1}};
+            vl_vdata   <= valu_late_v;
+            vl_sdata   <= valu_late_s;
+            vl_pdata   <= valu_p;
             mu_rctx[0] <= x_rctx;
             mu_dsti[0] <= x_dsti;
             mu_func[0] <= x_func;
@@ -2660,6 +2706,7 @@ module tnca_core #(
                 wb_rsv   <= {WB_DEPTH{1'b0}};
                 for (i = 0; i < FP_LAT; i = i + 1)  fp_v[i] <= 1'b0;
                 for (i = 0; i < MUL_LAT; i = i + 1) mu_v[i] <= 1'b0;
+                vl_v     <= 1'b0;
                 f1_valid <= 1'b0;
                 fb_valid <= 1'b0;
                 sb_s     <= {(NUM_RCTX*64){1'b0}};
@@ -3030,6 +3077,23 @@ module tnca_core #(
     //==========================================================================
 `ifndef SYNTHESIS
     // synthesis translate_off
+    // R41 T2 (F04): the unit as it was (LATE = 0) on X's operands; its
+    // result, registered alongside vl_*, is what the late path must write.
+    wire [VLEN*ELEN-1:0] chk_valu_v;
+    wire [63:0]          chk_valu_s;
+    wire [VLEN-1:0]      chk_valu_p;
+    tnca_vector_alu #(.VLEN(VLEN), .ELEN(ELEN), .LATE(0)) u_valu_ref (
+        .major(x_major), .func(x_func), .mod(x_mod), .mask(lane_mask),
+        .va(va_data), .vb(vb_data), .sa(v_sop), .imm(x_imm),
+        .use_imm(x_valu_imm), .pa(pa_data), .pb(pb_data),
+        .vres(chk_valu_v), .sres(chk_valu_s), .pres(chk_valu_p),
+        .late_v(), .late_s());
+    reg [VLEN*ELEN-1:0] vl_ref_v;
+    reg [63:0]          vl_ref_s;
+    always @(posedge clk) begin
+        vl_ref_v <= chk_valu_v;
+        vl_ref_s <= chk_valu_s;
+    end
     // R41 F04: the writeback data as the original priority chains chose
     // them, for the assertion below.
     reg [63:0]          ref_sdata;
@@ -3045,6 +3109,8 @@ module tnca_core #(
             ref_vdata = fpu_v; ref_pdata = fpu_p;
         end else if (mul_wb) begin
             ref_sdata = mul_sel;
+        end else if (vl_wb) begin
+            ref_sdata = vl_ref_s; ref_vdata = vl_ref_v; ref_pdata = vl_pdata;
         end else if (x_has_dest) begin
             ref_sdata = x_sres; ref_vdata = x_vres; ref_pdata = x_pres;
         end
@@ -3171,9 +3237,12 @@ module tnca_core #(
         if (rst_n && !launch_valid) begin
             // The message starts with FAIL so tools/run_test.sh treats it as a
             // failure: an assertion nobody acts on is decoration.
-            if (({2'd0, x_has_dest} + {2'd0, fp_wb} + {2'd0, mul_wb}) > 3'd1)
-                $display("FAIL tnca_core assert @%0t: two scheduled writebacks in one cycle (alu=%b fp=%b mul=%b)",
-                         $time, x_has_dest, fp_wb, mul_wb);
+            if (({2'd0, x_has_dest} + {2'd0, fp_wb} + {2'd0, mul_wb} + {2'd0, vl_wb}) > 3'd1)
+                $display("FAIL tnca_core assert @%0t: two scheduled writebacks in one cycle (alu=%b fp=%b mul=%b vl=%b)",
+                         $time, x_has_dest, fp_wb, mul_wb, vl_wb);
+            // R41 T2 (F04): the late result is the unit's original result.
+            if (vl_wb && ({vl_vdata, vl_sdata} !== {vl_ref_v, vl_ref_s}))
+                $display("FAIL tnca_core assert @%0t: late vector-ALU result differs from the single-cycle unit's", $time);
             if (sched_wb !== wb_rsv[0])begin
                 // Failure-only diagnostics preserve the healthy execution
                 // path: no extra clocked monitor state or MMIO probes.

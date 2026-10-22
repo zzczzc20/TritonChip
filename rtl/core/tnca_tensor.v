@@ -809,7 +809,32 @@ module tnca_tensor #(
     // A window write the register file refused this cycle (vw_ready).
     wire vw_hold = vw_en && !vw_ready;
 
+    // R41 T2: the descriptor words and the corner-turn units are written a
+    // cycle after their response arrives, from a copy registered here
+    // (rq_*), so the network interface's response register is not in front
+    // of dl_buf's and xbuf's write enables and data (0-2 levels, routing:
+    // u_cni/rsp_* -> dl_buf/xbuf, +0.29 ... +1.42 ns across placements).
+    // Nothing reads them that early: S_DPARSE and the dl_boxel fold read
+    // words 0-13 only, at least a cycle after word 13 lands; S_XWRITE
+    // starts two cycles after the last unit's response (S_XDRAIN between).
+    // Written ahead of the flush branch, as the original write would have
+    // been in the response's own cycle.
+    reg         rq_dl, rq_x;
+    reg  [4:0]  rq_word;
+    reg  [3:0]  rq_row;
+    reg  [63:0] rq_keep, rq_data;
     always @(posedge clk) begin
+        rq_dl   <= rst_n && !flush && mem_rsp_valid && (st == S_DLOAD || st == S_DWAIT);
+        rq_x    <= rst_n && !flush && mem_rsp_valid && !(st == S_DLOAD || st == S_DWAIT) && t_xpose;
+        rq_word <= dl_word;
+        rq_row  <= x_rsp_row;
+        rq_keep <= x_rsp_keep;
+        rq_data <= mem_rsp_rdata;
+    end
+
+    always @(posedge clk) begin
+        if (rq_dl) dl_buf[rq_word] <= rq_data;
+        if (rq_x)  xbuf[rq_row*64 +: 64] <= rq_data & rq_keep;
         if (!rst_n || flush) begin
             st        <= S_IDLE;
             win_v     <= {WIN_N{1'b0}};
@@ -869,7 +894,6 @@ module tnca_tensor #(
                     // Into the corner-turn buffer, not the window: a unit
                     // holds one source row's slice of 8/esz columns, which
                     // is a slice of 8/esz DIFFERENT destination rows.
-                    xbuf[x_rsp_row*64 +: 64] <= mem_rsp_rdata & x_rsp_keep;
                     tg_v[mem_rsp_tag] <= 1'b0;
                 end else if (t_store) begin
                     // A write's response says it has been performed.
@@ -960,7 +984,6 @@ module tnca_tensor #(
                     if (dl_word >= 5'd14 && dl_word <= 5'd18)
                         dl_boxel <= (dl_word == 5'd14) ? box_factor(3'd0)
                                                        : box_mul(dl_boxel, box_factor(dl_word[2:0] - 3'd6));
-                    dl_buf[dl_word] <= mem_rsp_rdata;
                     if (dl_word == 5'd31) st <= S_DPARSE;
                     else begin
                         dl_word <= dl_word + 1'b1;

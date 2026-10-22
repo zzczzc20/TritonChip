@@ -14,7 +14,13 @@
 
 module tnca_vector_alu #(
     parameter VLEN = 16,
-    parameter ELEN = 32
+    parameter ELEN = 32,
+    // R41 T2 (F04): LATE = 1 takes the multiply family (v.mul, v.muli,
+    // v.mulh.s, v.mulh.u) and the integer reductions off vres/sres and gives
+    // them their own outputs, late_v/late_s, which the core registers and
+    // writes back a cycle later (its scheduled-writeback path). LATE = 0 is
+    // the unit as it was: late_* are zero and vres/sres carry everything.
+    parameter LATE = 0
 ) (
     input  wire [7:0]              major,
     input  wire [7:0]              func,
@@ -32,7 +38,9 @@ module tnca_vector_alu #(
 
     output reg  [VLEN*ELEN-1:0]    vres,    // vector result
     output reg  [63:0]             sres,    // scalar result (p.any, v.extract, reductions)
-    output reg  [VLEN-1:0]         pres     // predicate result (compares, predicate ops)
+    output reg  [VLEN-1:0]         pres,    // predicate result (compares, predicate ops)
+    output reg  [VLEN*ELEN-1:0]    late_v,  // LATE: the multiply family's / a reduction's vres
+    output reg  [63:0]             late_s   // LATE: an integer reduction's sres
 );
 
     localparam LW = (VLEN <= 2)  ? 1 :
@@ -68,6 +76,7 @@ module tnca_vector_alu #(
     // Per-lane integer datapath
     // --------------------------------------------------------------------------
     reg  [ELEN-1:0] lane_res [0:VLEN-1];
+    reg  [ELEN-1:0] lane_mul [0:VLEN-1];   // the multiply family's lane result
     reg             lane_cmp [0:VLEN-1];
 
     // Per-lane clz/popc as O(log W) structures rather than the loops they were.
@@ -128,13 +137,19 @@ module tnca_vector_alu #(
                    + (y[ELEN-1] ? x : {ELEN{1'b0}}));
 
             case (func)
+            `TNCA_V_MUL,  `TNCA_V_MULI:      lane_mul[i] = pu[ELEN-1:0];
+            `TNCA_V_MULH_S:                  lane_mul[i] = ps_hi;
+            `TNCA_V_MULH_U:                  lane_mul[i] = pu[2*ELEN-1:ELEN];
+            default:                         lane_mul[i] = {ELEN{1'b0}};
+            endcase
+
+            case (func)
             `TNCA_V_MOV:                     lane_res[i] = x;
             `TNCA_V_MOVI:                    lane_res[i] = immv;
             `TNCA_V_ADD,  `TNCA_V_ADDI:      lane_res[i] = x + y;
             `TNCA_V_SUB,  `TNCA_V_SUBI:      lane_res[i] = diff[ELEN-1:0];
-            `TNCA_V_MUL,  `TNCA_V_MULI:      lane_res[i] = pu[ELEN-1:0];
-            `TNCA_V_MULH_S:                  lane_res[i] = ps_hi;
-            `TNCA_V_MULH_U:                  lane_res[i] = pu[2*ELEN-1:ELEN];
+            `TNCA_V_MUL,  `TNCA_V_MULI,
+            `TNCA_V_MULH_S, `TNCA_V_MULH_U:  lane_res[i] = LATE ? {ELEN{1'b0}} : lane_mul[i];
             `TNCA_V_AND,  `TNCA_V_ANDI:      lane_res[i] = x & y;
             `TNCA_V_OR,   `TNCA_V_ORI:       lane_res[i] = x | y;
             `TNCA_V_XOR,  `TNCA_V_XORI:      lane_res[i] = x ^ y;
@@ -346,11 +361,16 @@ module tnca_vector_alu #(
         vres = {(VLEN*ELEN){1'b0}};
         sres = 64'd0;
         pres = {VLEN{1'b0}};
+        late_v = {(VLEN*ELEN){1'b0}};
+        late_s = 64'd0;
 
         case (major)
         `TNCA_MAJ_VINT: begin
             for (i = 0; i < VLEN; i = i + 1)
                 vres[i*ELEN +: ELEN] = lane_res[i];
+            if (LATE)
+                for (i = 0; i < VLEN; i = i + 1)
+                    late_v[i*ELEN +: ELEN] = lane_mul[i];
             for (i = 0; i < VLEN; i = i + 1)
                 pres[i] = mask[i] & lane_cmp[i];      // inactive lanes yield 0
         end
@@ -365,9 +385,15 @@ module tnca_vector_alu #(
             sres = {{(64-ELEN){1'b0}}, a[mod[LW-1:0]]};
         end
         `TNCA_MAJ_RED: begin
-            sres = {{(64-ELEN){1'b0}}, red_result};
-            for (i = 0; i < VLEN; i = i + 1)
-                vres[i*ELEN +: ELEN] = red_result;    // broadcast form
+            if (LATE) begin
+                late_s = {{(64-ELEN){1'b0}}, red_result};
+                for (i = 0; i < VLEN; i = i + 1)
+                    late_v[i*ELEN +: ELEN] = red_result;
+            end else begin
+                sres = {{(64-ELEN){1'b0}}, red_result};
+                for (i = 0; i < VLEN; i = i + 1)
+                    vres[i*ELEN +: ELEN] = red_result;    // broadcast form
+            end
         end
         default: ;
         endcase

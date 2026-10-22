@@ -72,7 +72,7 @@ def _torch():
 
 def bits(t):
     torch = _torch()
-    width = {1: torch.uint8, 2: torch.int16, 4: torch.int32}[t.element_size()]
+    width = {1: torch.uint8, 2: torch.int16, 4: torch.int32, 8: torch.int64}[t.element_size()]
     return t.contiguous().view(width)
 
 
@@ -205,7 +205,7 @@ class Run:
                 snap[str(i)] = model.counters_snapshot()
         return snap
 
-    def compile_run(self, name, fn, args, *, dump=False):
+    def compile_run(self, name, fn, args, *, dump=False, keep_on_host=()):
         """Compile `fn` on tnca copies of `args`, run it twice (cold, then
         steady under the launch log), and return the steady outputs on the
         host with the graph's record."""
@@ -219,7 +219,9 @@ class Run:
             os.environ['TNCA_KERNEL_DUMP'] = '1'
             os.environ['TNCA_DUMP_DIR'] = str(dump_dir)
         try:
-            dargs = [to_device(a) for a in args]
+            # keep_on_host: argument positions the caller places on the CPU
+            # (host metadata), passed as they are.
+            dargs = [a if i in keep_on_host else to_device(a) for i, a in enumerate(args)]
             compiled = torch.compile(fn, backend='inductor', fullgraph=True, dynamic=False)
             t0 = time.monotonic()
             cold, code = run_and_get_code(compiled, *dargs)

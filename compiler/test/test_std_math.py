@@ -1,6 +1,6 @@
-"""log1p, sin, cos and int64 -> binary32 conversion, on the RTL.
+"""log1p, sin, cos, erf and int64 -> binary32 conversion, on the RTL.
 
-tnca_cc.mathlib.log1p/sin/cos are built from integer and fma instructions
+tnca_cc.mathlib.log1p/sin/cos/erf are built from integer and fma instructions
 only (no SFU), and tnca_cc.wide.to_f32 converts a 64-bit integer held as two
 32-bit lanes. Each kernel here maps sixteen chosen inputs; the RTL's output
 words are checked bit for bit against the same functions executed on numpy
@@ -60,6 +60,25 @@ if triton_bridge.available():
         tl.store(O + i, tnca_libdevice.log1p(tl.load(X + i)))
 
     @triton.jit
+    def k_erf(X, O):
+        i = tl.arange(0, 16)
+        tl.store(O + i, tnca_libdevice.erf(tl.load(X + i)))
+
+    @triton.jit
+    def k_i64_divmod(X, O):
+        # Truncating int64 division and remainder by constants (a power of
+        # two, others: a reciprocal multiply) and by a runtime divisor.
+        i = tl.arange(0, 16)
+        x = tl.load(X + i)
+        y = tl.load(X + 16 + i)
+        tl.store(O + i, x // 7)
+        tl.store(O + 16 + i, x % 640)
+        tl.store(O + 32 + i, x // 32)
+        tl.store(O + 48 + i, x % -3)
+        tl.store(O + 64 + i, x // y)
+        tl.store(O + 80 + i, x % y)
+
+    @triton.jit
     def k_i64_to_f32(X, O):
         i = tl.arange(0, 16)
         tl.store(O + i, tl.load(X + i).to(tl.float32))
@@ -93,9 +112,31 @@ LOG1P_SETS = {
               0xbe95f619, 0xbe95f61b, 0x3ed413cc, 0x3ed413ce, 0x4b800000, 0x4c000001,
               0x33800000, 0xb3800000, 0x3e800000, 0xbe800000],
 }
+ERF_SETS = {
+    # 0, -0, subnormal, tiny, the split at 1 and its neighbours, the range
+    # of 1 - exp(Q), where erf rounds to 1, beyond it, inf, NaN
+    'special': [0x00000000, 0x80000000, 0x000116c2, 0x1e3ce508, 0xbe800000, 0x3f000000, 0x3f7ffffe, 0x3f800000, 0xbf800000, 0x3fc00000, 0x40000000, 0xc0200000, 0x40400000, 0x4079999a, 0x407b0000, 0xc1200000],
+    'edges': [0x7f800000, 0xff800000, 0x7fc00000, 0x3f7fffff, 0x3f800001, 0x3f6c6425, 0x3f9090f1,
+              0x40750000, 0x407affff, 0x407b0000, 0xc07b0001, 0x3e800000, 0x80000001, 0x7f7fffff,
+              0x3f3504f3, 0xbf3504f3],
+}
 I64_SET = [0, 1, -1, (1 << 24) + 1, (1 << 24) + 3, -((1 << 25) + 1), (1 << 53) + 1,
            -(1 << 63), (1 << 63) - 1, 123456789012345, -987654321098765, (1 << 32) - 1,
            1 << 32, (1 << 40) + (1 << 16), (1 << 62) + (1 << 38), -((1 << 31) + 1)]
+
+
+DIV_X = [0, 1, -1, 6, 7, -7, 1 << 40, -(1 << 40) - 5, (1 << 63) - 1, -(1 << 63), 123456789012345,
+         -987654321098765, (1 << 62) + 3, 639, -641, 31]
+DIV_Y = [1, -1, 3, 7, -7, 1 << 33, 5, -9, 1, -1, 1 << 62, (1 << 63) - 1, -(1 << 63), 2, 640, 32]
+
+
+def c_div(a, b):
+    """C (truncating) division and remainder of Python ints, wrapped to int64."""
+    q = abs(a) // abs(b)
+    q = q if (a < 0) == (b < 0) else -q
+    r = a - b * q
+    wrap = lambda v: ((v + (1 << 63)) % (1 << 64)) - (1 << 63)
+    return wrap(q), wrap(r)
 
 
 def emulate(fn_name, inputs):
@@ -184,6 +225,34 @@ class StdMathTests(unittest.TestCase):
                 for x, y in zip(xs, expect):
                     self.assertTrue(within_one_ulp(safe(math.log1p), x, y), (hex(x), hex(y)))
                 self.run_rtl(f'log1p_{label}', cg, H.pack32(xs), expect)
+
+    def test_erf(self):
+        cg, asm = self.compile(k_erf, dict(X='*fp32', O='*fp32'))
+        self.assertNotIn('approx', asm)                  # no SFU
+        for label, xs in ERF_SETS.items():
+            with self.subTest(inputs=label):
+                expect = emulate('erf', xs)
+                for x, y in zip(xs, expect):
+                    self.assertTrue(within_one_ulp(safe(math.erf), x, y), (hex(x), hex(y)))
+                self.run_rtl(f'erf_{label}', cg, H.pack32(xs), expect)
+
+    def test_int64_divmod(self):
+        cg, asm = self.compile(k_i64_divmod, dict(X='*i64', O='*i64'))
+        self.assertIn('s.mulh.u', asm)
+        expect = []
+        for k, d in ((0, 7), (1, 640), (0, 32), (1, -3)):
+            expect += [c_div(x, d)[k] for x in DIV_X]
+        expect += [c_div(x, y)[0] for x, y in zip(DIV_X, DIV_Y)]
+        expect += [c_div(x, y)[1] for x, y in zip(DIV_X, DIV_Y)]
+        words = []
+        for v in expect:
+            v &= 0xFFFFFFFFFFFFFFFF
+            words += [v & 0xFFFFFFFF, v >> 32]
+        data = []
+        for v in DIV_X + DIV_Y:
+            v &= 0xFFFFFFFFFFFFFFFF
+            data += [v & 0xFFFFFFFF, v >> 32]
+        self.run_rtl('i64_divmod', cg, H.pack32(data), words)
 
     def test_int64_to_f32(self):
         import numpy as np

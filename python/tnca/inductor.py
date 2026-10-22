@@ -10,7 +10,9 @@ this module sets, each through an upstream extension point:
 
   * `cpu_backend = "triton"`: Inductor generates Triton, not C++, for CPU
     tensors. The tnca Triton backend (tnca.triton_backend) serves that target
-    and offloads the host tensors to the device.
+    and offloads the host tensors to the device. On the native `tnca` device
+    (TNCA_TORCH_DEVICE=native) CPU tensors are host data instead and keep
+    Inductor's C++ backend (see configure()).
   * Codegen heuristics registered for device type "cpu" through
     `torch._inductor.heuristics.registry.register_codegen_heuristic` -- the
     mechanism ROCm and XPU use for their own configs. They are Inductor's
@@ -594,7 +596,16 @@ def configure(max_block=None, tensor_descriptors=None, no_x_dim=None):
     _install_narrow_blocks()
     _install_block_fallback()
     import torch._inductor.config as config
-    config.cpu_backend = 'triton'
+    # The B39 path (CPU tensors, every launch staging its arguments) runs
+    # CPU-tensor kernels on TNCA. On the native device (R40-01) TNCA's
+    # tensors are `tnca` tensors and a CPU tensor is host data the caller
+    # placed there -- integer metadata such as packed-sequence offsets --
+    # so Inductor compiles its kernels for the host, as it does for CPU
+    # tensors anywhere, and never stages them to the device implicitly.
+    # host_fallbacks() tells such host integer-metadata kernels from a
+    # numerical one.
+    native = os.environ.get('TNCA_TORCH_DEVICE', 'cpu') == 'native'
+    config.cpu_backend = 'cpp' if native else 'triton'
     if tensor_descriptors:
         _enable_tensor_descriptors(config)
     config.triton.persistent_reductions = False
@@ -631,6 +642,8 @@ def configure(max_block=None, tensor_descriptors=None, no_x_dim=None):
     _decompose_cpu_attention()
     from . import linalg_decomp
     linalg_decomp.register()
+    from . import mask_index
+    mask_index.register()
     from . import online_attention
     if sdpa_mode == 'fused':
         online_attention.enable()
@@ -766,6 +779,27 @@ def _apply_tma_rules():
                 if names & seen:
                     return False
                 seen |= names
+            # The same rule for the REDUCTION tree, judged on the block shape
+            # before its stride-0 dimensions were removed
+            # (_record_full_block_shape): a periodic access -- a 64-value
+            # table read at `r % 64` over a 128-wide reduction, as a rotary
+            # table read inside a fused attention-score reduction is --
+            # splits the reduction tree into a stride-1 dimension and a
+            # stride-0 one, and once the stride-0 one is dropped (to be
+            # restored by tl.broadcast_to, a rank-raising expand the importer
+            # has no lowering for) the split is invisible above. A split of
+            # the x tree there is degenerate on TNCA -- a reduction program
+            # has one row (XBLOCK = 1), so both pieces have extent 1 -- and
+            # lowers: it keeps its descriptor.
+            full = getattr(block_params, '_tnca_full_block_shape', None)
+            if full is not None:
+                seen = set()
+                for dim in full:
+                    names = {x.name for x in getattr(dim, 'free_symbols', ())
+                             if x.name.upper().startswith(('R0_', 'R1_', 'RBLOCK'))}
+                    if names & seen:
+                        return False
+                    seen |= names
             # TNCA runs a reduction one row per program (XBLOCK = 1, see
             # _register): Inductor's no_x_dim in all but name. A descriptor
             # whose innermost block is XBLOCK can then never span 16 bytes,
@@ -785,6 +819,33 @@ def _apply_tma_rules():
 
     # TritonKernel's hook for exactly this (a class attribute subclasses set).
     T.TritonKernel.tma_compatibility_checker_cls = TNCATMACompatibilityChecker
+    _record_full_block_shape()
+
+
+def _record_full_block_shape():
+    """Keep, on a descriptor's block parameters, its block shape before
+    BlockDescriptorOptions.create removed the stride-0 dimensions.
+
+    The TNCA checker above refuses a descriptor whose range tree is split over
+    two of its dimensions; that rule must see the stride-0 ones too. Only
+    adds an attribute: what Inductor generates is unchanged unless the TNCA
+    checker refuses on it, and other devices never read it.
+    """
+    from torch._inductor.codegen import triton as T
+    options = T.TensorDescriptorOptions
+    if getattr(options.create, '_tnca_full_shape', False):
+        return
+    upstream = options.create.__func__
+
+    def create(cls, **kwargs):
+        out = upstream(cls, **kwargs)
+        try:
+            out.params._tnca_full_block_shape = list(out.broadcast_shape)
+        except AttributeError:
+            pass
+        return out
+    create._tnca_full_shape = True
+    options.create = classmethod(create)
 
 
 # ---------------------------------------------------------------------------
@@ -813,12 +874,60 @@ def _executed(src):
     return '\n'.join(l for l in src.splitlines() if not l.lstrip().startswith('#'))
 
 
+# A C++ kernel's argument types, from `name = async_compile.cpp_pybinding([...]`.
+_CPP_SIGNATURE = _re.compile(r"\b(cpp_fused\w*)\s*=\s*async_compile\.cpp_pybinding\(\s*\[([^\]]*)\]")
+_INTEGER_C_TYPES = _re.compile(r"^(const\s+)?(bool|u?int(8|16|32|64)_t)\s*\*?$")
+
+
+def host_metadata_kernels(code):
+    """C++ kernels whose every argument is an integer or bool (pointer or
+    scalar): computation on host integer metadata the caller placed on the
+    CPU (configure(): on the native device CPU tensors are host data), e.g.
+    `cu_seqlens[1:] - cu_seqlens[:-1]` before a split. No floating-point
+    value is computed on the host by these. Sorted names."""
+    names = set()
+    for src in code:
+        for m in _CPP_SIGNATURE.finditer(src):
+            types = [t.strip().strip("'\"") for t in m.group(2).split(',') if t.strip()]
+            if types and all(_INTEGER_C_TYPES.match(t) for t in types):
+                names.add(m.group(1))
+    return sorted(names)
+
+
+_ITEM = _re.compile(r'\b(buf\d+|arg\d+_\d+)\b[^\n]*\.item\(\)')
+
+
+def scalar_reads(code):
+    """`.item()` reads in the wrapper (a data-dependent size or a check's
+    value), as dict(host=, device=): one of a buffer allocated on `tnca` is a
+    device readback of one element; one of host memory (empty_strided_cpu,
+    or a buffer a host C++ kernel reads or writes) is a host read. A graph input is counted as a
+    device read (its device is not in the wrapper)."""
+    host = device = 0
+    for src in map(_executed, code):
+        cpu = set(_re.findall(r'\b(buf\d+) = empty_strided_cpu\(', src))
+        # A C++ kernel reads and writes host memory only: its buffers are
+        # CPU ones, whatever reuse named them.
+        for call in _re.findall(r'\bcpp_fused\w*\(([^()]*)\)', src):
+            cpu.update(_re.findall(r'\b(buf\d+|arg\d+_\d+)\b', call))
+        for m in _ITEM.finditer(src):
+            if m.group(1) in cpu:
+                host += 1
+            else:
+                device += 1
+    return dict(host=host, device=device)
+
+
 def host_fallbacks(code):
-    """Host-side computation in the generated wrapper source(s), sorted."""
+    """Host-side computation in the generated wrapper source(s), sorted.
+    Host integer-metadata kernels (host_metadata_kernels) are not listed."""
     found = []
+    metadata = set(host_metadata_kernels(code))
     for src in map(_executed, code):
         for pat, what in FALLBACK_PATTERNS:
             for m in pat.finditer(src):
+                if m.group(0) in metadata:
+                    continue
                 found.append(f'{what}: {m.group(0)}')
     return sorted(set(found))
 

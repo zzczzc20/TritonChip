@@ -10,12 +10,13 @@ SFU's published bound (ISA sec 8.8), are provided. A function left out is not
 approximated: a kernel that calls it fails to compile, which is the loud
 failure, instead of running something close. Deliberately absent: pow (the
 exp/log form is wrong for a negative base), expm1 (the obvious form loses
-the precision the function exists for), erf/erfinv/lgamma.
+the precision the function exists for), erfinv/lgamma.
 
-`log1p` has no Triton primitive, so it is the one function here that is a
-call: `tt.extern_elementwise` under the symbol `tnca_log1pf`, which the TNCA
-lowering implements itself (tnca_cc.mathlib.log1p, built without the SFU;
-accuracy in mathlib.ACCURACY). The obvious `log(1 + x)` is not used: it
+`log1p` and `erf` have no Triton primitive, so they are the functions here
+that are calls: `tt.extern_elementwise` under the symbols `tnca_log1pf` and
+`tnca_erff`, which the TNCA lowering implements itself (tnca_cc.mathlib.log1p
+and .erf, built without the SFU; accuracy in mathlib.ACCURACY). erf is what
+Inductor's exact GELU calls. The obvious `log(1 + x)` is not used: it
 loses the precision log1p exists for. sin and cos are Triton primitives
 (`math.sin`/`math.cos`) with their own lowerings and need no entry here.
 """
@@ -28,6 +29,13 @@ from triton.language import core
 def log1p(arg0, _semantic=None):
     return core.extern_elementwise('', '', [arg0], {
         (core.dtype('fp32'),): ('tnca_log1pf', core.dtype('fp32')),
+    }, is_pure=True, _semantic=_semantic)
+
+
+@core.extern
+def erf(arg0, _semantic=None):
+    return core.extern_elementwise('', '', [arg0], {
+        (core.dtype('fp32'),): ('tnca_erff', core.dtype('fp32')),
     }, is_pure=True, _semantic=_semantic)
 
 

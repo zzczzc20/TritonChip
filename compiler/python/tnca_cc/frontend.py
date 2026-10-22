@@ -682,9 +682,22 @@ class TTIRImporter:
         carried = []
         pointer_tiles = set()
         mask_tiles = set()
+        wide_carry = set()
         for i in range(op.get_num_results()):
             src = op.get_operand(3 + i)
             shape, elem = _parse_type(str(src.get_type()))
+            if elem == 'i64' and shape is not None:
+                # A 64-bit block carried round the loop (a looped int64 scan's
+                # running total, an int64 sum): its low and high words in two
+                # vector registers of their own, assigned by the yield exactly
+                # as any other carry (tnca_cc.wide holds 64-bit blocks so).
+                from .wide import carried_pair
+                pair = tuple(self._copy_value(x) for x in carried_pair(self, src))
+                for dest in (block.get_argument(i + 1), op.get_result(i)):
+                    self._wide[dest.id()] = pair
+                wide_carry.add(i)
+                carried.append(pair)
+                continue
             if isinstance(shape, tuple) and _pointee(elem):
                 name, pelem, offset = self._ptr2d[src.id()]
                 val = self._materialise(self._offset_row(offset), shape[0], shape[1], 'i32')
@@ -759,6 +772,10 @@ class TTIRImporter:
                 values = []
                 for i, dst in enumerate(carried):
                     src = inner.get_operand(i)
+                    if i in wide_carry:
+                        from .wide import carried_pair
+                        values.append(tuple(self._copy_value(x) for x in carried_pair(self, src)))
+                        continue
                     held = self._tiles.get(src.id())
                     if self.index_opt and isinstance(dst, Tile) and held is not None \
                             and held.kind == dst.kind == 'accumulator' and held.handle is dst.handle:
@@ -781,10 +798,13 @@ class TTIRImporter:
                         if elem == 'i1':
                             v = self._as_pred(v)
                         values.append(self._copy_value(v))
-                for dst, src in zip(carried, values):
+                for i, (dst, src) in enumerate(zip(carried, values)):
                     if src is None:
                         continue
-                    if isinstance(dst, Tile):
+                    if i in wide_carry:
+                        for d, v in zip(dst, src):
+                            self.b._emit('assign', [], [d, v])
+                    elif isinstance(dst, Tile):
                         get = self._tile_row_getter(src)
                         for r in range(dst.rows):
                             if dst.kind == 'spilled':
@@ -4083,8 +4103,8 @@ class TTIRImporter:
     # (python/tnca/triton_backend/libdevice.py) reaches through
     # `tt.extern_elementwise` under these symbols. Each is a mathlib
     # function built without the SFU.
-    _EXTERN = {'tnca_log1pf': 'log1p'}
-    _NO_SFU = ('log1p', 'sin', 'cos')
+    _EXTERN = {'tnca_log1pf': 'log1p', 'tnca_erff': 'erf'}
+    _NO_SFU = ('log1p', 'sin', 'cos', 'erf')
 
     def _fconst(self, value, elem='f32'):
         """A whole-vector float constant, emitted once per value.

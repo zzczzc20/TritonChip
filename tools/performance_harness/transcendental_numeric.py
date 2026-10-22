@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""Accuracy of the compiler's log1p, sin and cos over every binary32 input.
+"""Accuracy of the compiler's log1p, sin, cos and erf over every binary32 input.
 
-    transcendental_numeric.py --out report.json [--functions log1p sin cos]
+    transcendental_numeric.py --out report.json [--functions log1p sin cos erf]
         [--sample N] [--jobs 4]
 
 tnca_cc.mathlib builds these functions from builder calls (vbin, vfma,
@@ -18,7 +18,7 @@ integer arithmetic. The device run of the same kernels
 this emulation on its sample, which is what ties the two together.
 
 The reference is float64 numpy (log1p, sin, cos of the exactly widened
-input; glibc's float64 sin/cos reduce huge arguments exactly). The error of
+input; erf from torch's float64 erf; glibc's float64 sin/cos reduce huge arguments exactly). The error of
 a result y against the reference v is |y - v| in units of the binary32 ulp
 at |v| (2**-149 at and below the subnormal range); "correctly rounded"
 means y equals float32(v). NaN results must match NaN references.
@@ -195,7 +195,18 @@ def evaluate(name, bits):
     return out.bits
 
 
-REFERENCE = {'log1p': np.log1p, 'sin': np.sin, 'cos': np.cos}
+def _erf64(x):
+    """float64 erf: torch's (SLEEF, 1 ulp of binary64) when torch is there,
+    else math.erf per element."""
+    try:
+        import torch
+        return torch.special.erf(torch.from_numpy(np.ascontiguousarray(x, dtype=F64))).numpy()
+    except ImportError:
+        import math
+        return np.vectorize(math.erf, otypes=[F64])(x)
+
+
+REFERENCE = {'log1p': np.log1p, 'sin': np.sin, 'cos': np.cos, 'erf': _erf64}
 
 
 def ulp32(v):

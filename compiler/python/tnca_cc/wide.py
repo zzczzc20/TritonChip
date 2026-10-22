@@ -82,7 +82,9 @@ def lower(imp, op):
             _store(imp, operands)
             return True
         return False
-    if not op.get_num_results():
+    if not op.get_num_results() or name == 'scf.for':
+        # scf.for carries its 64-bit blocks itself (frontend._op_scf_for,
+        # carried_pair); its body's operations come back here one by one.
         return False
     dst = op.get_result(0)
     shape, elem = _parse_type(str(dst.get_type()))
@@ -201,6 +203,12 @@ def lower(imp, op):
             output(lambda i: accum, count)
         else:
             imp._v[dst.id()] = accum
+    elif name in _DIVISION and wide_result:
+        signed, remainder = _DIVISION[name]
+        pending = imp._pending_const.get(operands[1].id())
+        divisor = int(pending[1]) if pending else None
+        output(lambda i: divide64(imp, lane(operands[0], i), None if divisor else lane(operands[1], i),
+                                  signed, remainder, divisor), count)
     else:
         kinds={'arith.addi':'add','arith.subi':'sub','arith.muli':'mul',
                'arith.andi':'and','arith.ori':'or','arith.xori':'xor',
@@ -209,6 +217,89 @@ def lower(imp, op):
             raise Unsupported(f'64-bit tensor operation {name}')
         output(lambda i: b.sbin(kinds[name], lane(operands[0],i), lane(operands[1],i)), count)
     return True
+
+
+_DIVISION = {'arith.divsi': (True, False), 'arith.divui': (False, False),
+             'arith.remsi': (True, True), 'arith.remui': (False, True)}
+
+
+def divide64(imp, a, b, signed, remainder, divisor=None):
+    """Truncating 64-bit integer division (arith.divsi/divui/remsi/remui)
+    of scalar registers, exact for every operand.
+
+    Signed operands are divided as magnitudes (INT64_MIN's is 2**63, an
+    unsigned value) and the signs put back: the quotient's is the XOR of
+    both, the remainder's the dividend's. A positive constant divisor -- an
+    index stride, what Inductor's int64 index arithmetic divides by -- is a
+    shift for a power of two, otherwise Granlund and Montgomery's
+    multiply by a 64-bit reciprocal (s.mulh.u, the high half of the
+    128-bit product) and two shifts. Any other divisor: a 64-step
+    restoring loop.
+    """
+    bb = imp.b
+    if divisor is not None and divisor <= 0:
+        divisor, b = None, bb.const(divisor)
+    if signed:
+        ma = bb.sbin('sub', bb.const(0), bb.scmp('lt', a, bb.const(0)))   # all ones if a < 0
+        ua = bb.sbin('sub', bb.sbin('xor', a, ma), ma)
+        if divisor is None:
+            mb = bb.sbin('sub', bb.const(0), bb.scmp('lt', b, bb.const(0)))
+            ub = bb.sbin('sub', bb.sbin('xor', b, mb), mb)
+        else:
+            mb = bb.const(0)
+    else:
+        ua, ub = a, b
+    if divisor is not None:
+        d = divisor
+        ub = bb.const(d)
+        if d & (d - 1) == 0:
+            uq = bb.sbini('lshr', ua, d.bit_length() - 1)
+        else:
+            l = (d - 1).bit_length()
+            m = ((1 << 64) * ((1 << l) - d)) // d + 1               # < 2**64
+            t1 = bb.sbin('mulhu', ua, bb.const(m - (1 << 64) if m >= 1 << 63 else m))
+            t = bb.sbin('add', t1, bb.sbini('lshr', bb.sbin('sub', ua, t1), 1))
+            uq = bb.sbini('lshr', t, l - 1) if l > 1 else t
+        ur = bb.sbin('sub', ua, bb.sbin('mul', uq, ub))
+    else:
+        uq, ur = imp._copy_value(bb.const(0)), imp._copy_value(bb.const(0))
+        bit = imp._copy_value(bb.const(63))
+        loop = imp._control_label('div64')
+        bb.label(loop)
+        digit = bb.sbini('and', bb.sbin('lshr', ua, bit), 1)
+        top = bb.sbini('lshr', ur, 63)                                 # the bit shifted out
+        r1 = bb.sbin('or', bb.sbini('shl', ur, 1), digit)
+        # r1 >= ub, unsigned, counting the bit above 64
+        ge = bb.sbin('or', top, bb.scmp('geu', r1, ub))
+        take = bb.sbin('sub', bb.const(0), ge)
+        bb._emit('assign', [], [ur, bb.sbin('sub', r1, bb.sbin('and', ub, take))])
+        bb._emit('assign', [], [uq, bb.sbin('or', uq, bb.sbin('and', bb.sbin('shl', bb.const(1), bit), take))])
+        bb._emit('assign', [], [bit, bb.sbini('sub', bit, 1)])
+        bb.branch_nz(bb.scmp('ge', bit, bb.const(0)), loop)
+    if not signed:
+        return ur if remainder else uq
+    if remainder:
+        return bb.sbin('sub', bb.sbin('xor', ur, ma), ma)
+    mq = bb.sbin('xor', ma, mb)
+    return bb.sbin('sub', bb.sbin('xor', uq, mq), mq)
+
+
+def carried_pair(imp, src):
+    """The (low, high) word vectors of a 64-bit block entering or leaving a
+    loop carry: held wide, or a constant still pending (`tl.full(.., 0,
+    tl.int64)`, Inductor's scan and sum accumulators)."""
+    from .frontend import _parse_type, Unsupported
+    b = imp.b
+    shape, _ = _parse_type(str(src.get_type()))
+    if _count(shape, imp.target.vlen) is None:
+        raise Unsupported(f'a loop-carried 64-bit {shape} block (one row of at most VLEN lanes is held)')
+    if src.id() in imp._wide:
+        return imp._wide[src.id()]
+    pending = imp._pending_const.get(src.id())
+    if pending:
+        c = int(pending[1])
+        return b.vmovi(c & 0xFFFFFFFF), b.vmovi((c >> 32) & 0xFFFFFFFF)
+    raise Unsupported(f'no 64-bit value for a loop carry of {src.get_type()}')
 
 
 def to_f32(b, lo, hi, signed=True):

@@ -82,7 +82,23 @@ Each case is `torch.compile(backend="inductor", fullgraph=True)` of plain Torch 
 - `compiler/test/test_std_math.py`: **4/4 OK**. log1p, sin, cos and int64→f32
   kernels on the RTL bench match the emulation bit for bit, and the emulation
   is checked against float64.
-- Torch-level `--quick` runs on `sim-file`: per-group reruns with `TNCA_HOST_TIMEOUT=14400`, in progress (`v2/rtl/`)
+- Torch-level `--quick` runs on `sim-file`: per-group reruns with
+  `TNCA_HOST_TIMEOUT=14400` (`v2/rtl/`): **17 pass, 0 fail, 2 refused**.
+  - sin over 10,758 values: 0 emulation mismatches, max 0.654 ulp.
+  - log1p over 10,758 values: 0 emulation mismatches, max 0.538 ulp.
+  - softplus: fp32 ≤ 1 ulp, bf16 0 ulp.
+  - int64 → f32 over 2,140 values: 0 bit mismatches.
+  - float cumsum (64, 300): passes. int64 cumsum: refused, as on TLM.
+  - skinny GEMM bf16 and fp32 (1×1024×16): 0 bit mismatches.
+  - rope: 8.7e-8.
+  - Triangular solve, 3 cases (37×37 upper, 48×48 right-side, 5×5): all
+    within bound.
+  - **Not run on RTL at torch level:**
+    - cos and the rotary tables. The trig process was stopped by PID after
+      sin, which alone took 2 h 20 m. cos is still covered at kernel level
+      by `test_std_math.py`.
+    - The 64×64 gram solve case: it needs more heap than the single-core
+      bench has.
 - Failed first attempts are kept in the archive:
   - `v2/std-rtl.log`: one process for all groups. The first sin launch
     exceeded the default 600 s host wait and the session hung, giving 18

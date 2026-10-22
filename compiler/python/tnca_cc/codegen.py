@@ -31,7 +31,7 @@ from .ir import EVENT, PRED, SCALAR, TOKEN, VECTOR
 from .protocol import ProtocolModel
 
 # IR op -> mnemonic, for the plain arithmetic cases.
-_SBIN = {'add': 's.add', 'sub': 's.sub', 'mul': 's.mul', 'and': 's.and',
+_SBIN = {'add': 's.add', 'sub': 's.sub', 'mul': 's.mul', 'mulhu': 's.mulh.u', 'and': 's.and',
          'or': 's.or', 'xor': 's.xor', 'shl': 's.shl', 'lshr': 's.lshr',
          'ashr': 's.ashr', 'min': 's.min.s', 'max': 's.max.s',
          'mulhu': 's.mulh.u'}

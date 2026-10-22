@@ -108,8 +108,6 @@ def erf(x):
 # tnca.inductor.configure() so a probe can show what they change before they
 # are hooked into configure().
 CANDIDATE_FIXES = {
-    'descriptor-broadcast': 'tnca.descriptor_broadcast',
-    'is-all-true': 'tnca.check_decomp',
 }
 
 
@@ -408,7 +406,12 @@ def child(a):
             in_dim = vc.in_channels * vc.temporal_patch_size * vc.patch_size ** 2
             pixel_values = dev(torch.zeros((patches, in_dim), dtype=torch.float32))
             grid_cpu = torch.tensor([[gt, gh, gw]], dtype=torch.int64)
-            grid_thw = dev(grid_cpu)
+            # The grid is host integer metadata (the processor's), and so are
+            # the packed-attention offsets derived from it: they stay on the
+            # CPU, where the official attention's `lengths.tolist()` reads them
+            # without a device readback (tnca.inductor.configure: CPU tensors
+            # on the native device are host data, compiled for the host).
+            grid_thw = grid_cpu if a.graph == 'vision' else dev(grid_cpu)
             if a.graph == 'vision':
                 kw = {}
                 ii, iw = vision_utils.get_vision_interpolation_indices_and_weights(
@@ -416,7 +419,7 @@ def child(a):
                     align_corners=visual.interpolation_align_corners, spatial_merge_size=merge)
                 vpos = vision_utils.get_vision_position_ids(grid_cpu, merge).to(pos_dtype)
                 cu = vision_utils.get_vision_cu_seqlens(grid_cpu)
-                pre = [dev(cu), dev(vpos), dev(ii), dev(iw)]
+                pre = [cu, dev(vpos), dev(ii), dev(iw)]
                 res['precomputed'] = {k: dict(shape=list(v.shape), dtype=str(v.dtype)) for k, v in
                                       zip(('cu_seqlens', 'position_ids', 'interp_indices', 'interp_weights'), pre)}
 
@@ -427,7 +430,9 @@ def child(a):
                 args = [pixel_values, grid_thw] + pre
                 res['adapter'] = ('vision tower with cu_seqlens, rotary position ids and interpolation '
                                   'indices/weights precomputed by transformers.vision_utils (the public '
-                                  'precompute API) and passed as kwargs')
+                                  'precompute API) and passed as kwargs; grid_thw and cu_seqlens (integer '
+                                  'host metadata) on the CPU, the rest on tnca')
+                res['host_metadata_inputs'] = ['grid_thw', 'cu_seqlens']
             else:
                 def step(pixel_values, grid_thw):
                     o = visual(pixel_values, grid_thw)
@@ -589,6 +594,8 @@ def child(a):
             failed_kernel_launches=dict(Counter(x['kernel'] for x in launches if x.get('failed'))),
             kernels_compiled=len(kernels), distinct_kernels_launched=len({x['kernel'] for x in ok_launches}),
             launches=len(ok_launches), host_fallbacks=fallbacks,
+            host_metadata_kernels=tnca.inductor.host_metadata_kernels(wrappers),
+            scalar_reads=tnca.inductor.scalar_reads(wrappers),
             triton_kernels_in_wrappers=len(tnca.inductor.triton_kernels(wrappers)),
             block_fallbacks=list(tnca.inductor._BLOCK_FALLBACKS),
             unique_compiled_code_bytes=sum(k['code_bytes'] for k in kernels.values()),
@@ -679,7 +686,8 @@ def run_child(a, graph, run_dir):
 
 
 def summary_line(res):
-    keys = ('status', 'stage', 'kernels_compiled', 'launches', 'host_fallbacks', 'shape_only_stand_ins')
+    keys = ('status', 'stage', 'kernels_compiled', 'launches', 'host_fallbacks', 'scalar_reads',
+            'shape_only_stand_ins')
     row = {k: res.get(k) for k in keys if res.get(k) not in (None, [], {})}
     row['failed'] = [(f['kernel'], f.get('diagnostic') or f['error'][:160]) for f in res.get('failed_kernels', [])]
     if res.get('cold_call_error'):

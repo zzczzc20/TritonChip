@@ -1,9 +1,13 @@
-# R41 FP8 ops: generic standard-path blockers B1–B6 (Qwen3.5, Qwen3-VL)
+# R41 FP8 ops: generic standard-path blockers B1–B6 and V1–V5 (Qwen3.5, Qwen3-VL)
 
 Branch `r41-fp8-ops`, based on `cb4b0d3` (FP8 T3). The six blockers come from
 `evidence/r41/stage1/model_estimates.md`. Each fix is generic: it is keyed on
 the TNCA device type or on a TTIR operation, and it names no model. Nothing
 falls back to the host on the tnca device.
+
+V1–V5 (the Qwen3-VL blockers that remained after B1–B6) are fixed in
+`16a19f6`; see "Qwen3-VL blockers V1–V5" below. Their evidence is in
+`ops-evidence-v3.tgz`. The B1–B6 evidence is in `ops-evidence.tgz`.
 
 Raw logs and reports are in `ops-evidence.tgz` (layout below). Every run is on
 GB10, with torch 2.14.0 and triton 3.8.0. SystemC/TLM results are model
@@ -82,7 +86,23 @@ Each case is `torch.compile(backend="inductor", fullgraph=True)` of plain Torch 
 - `compiler/test/test_std_math.py`: **4/4 OK**. log1p, sin, cos and int64→f32
   kernels on the RTL bench match the emulation bit for bit, and the emulation
   is checked against float64.
-- Torch-level `--quick` runs on `sim-file`: per-group reruns with `TNCA_HOST_TIMEOUT=14400`, in progress (`v2/rtl/`)
+- Torch-level `--quick` runs on `sim-file`: per-group reruns with
+  `TNCA_HOST_TIMEOUT=14400` (`v2/rtl/`): **17 pass, 0 fail, 2 refused**.
+  - sin over 10,758 values: 0 emulation mismatches, max 0.654 ulp.
+  - log1p over 10,758 values: 0 emulation mismatches, max 0.538 ulp.
+  - softplus: fp32 ≤ 1 ulp, bf16 0 ulp.
+  - int64 → f32 over 2,140 values: 0 bit mismatches.
+  - float cumsum (64, 300): passes. int64 cumsum: refused, as on TLM.
+  - skinny GEMM bf16 and fp32 (1×1024×16): 0 bit mismatches.
+  - rope: 8.7e-8.
+  - Triangular solve, 3 cases (37×37 upper, 48×48 right-side, 5×5): all
+    within bound.
+  - **Not run on RTL at torch level:**
+    - cos and the rotary tables. The trig process was stopped by PID after
+      sin, which alone took 2 h 20 m. cos is still covered at kernel level
+      by `test_std_math.py`.
+    - The 64×64 gram solve case: it needs more heap than the single-core
+      bench has.
 - Failed first attempts are kept in the archive:
   - `v2/std-rtl.log`: one process for all groups. The first sin launch
     exceeded the default 600 s host wait and the session hung, giving 18
@@ -122,34 +142,89 @@ Stage 1 inputs `model-estimates-v1`, transformers `4321355`, **no shims**):
 - A code working set above the code store is a performance item (LRU
   reloads), not a compile blocker.
 
-**Qwen3-VL** (`vl_compile_probe.py`, full text and vision depth, grid
-1×16×16, eager attention, no shims, no candidate fixes):
+**Qwen3-VL**: the state after B1–B6 had four findings. They are V1–V5, and
+the next section closes them.
 
-| graph | status | kernels | finding |
-|---|---|---|---|
-| text-prefill | **compiled** | 26 | — |
-| text-decode | compiled-with-findings | 27 | 1 kernel (norm + mrope, `select`/`slice` of mrope sections): "tt.expand_dims of something that is not a range". This is a tensor descriptor on a periodic access |
-| mm-prefill | compiled-with-findings | 32 | `masked_scatter`/`eq·sum` over int64: 64-bit `scf.for` (2 kernels); host fallbacks `aten.index`, `index_put_` (bool mask, deepstack), `_is_all_true` |
-| vision | compiled-with-findings | 27 | `libdevice.erf` missing (exact GELU in the patch merger); `u0 >= 256`, a data-dependent `cu_seqlens` |
+## Qwen3-VL blockers V1–V5
 
-- **mrope:** text-prefill compiles.
-- **mrope in decode:** fails on one descriptor kernel (blocker V1).
-- **Vision patch embedding:** the Conv3d does not appear as a fallback or a
-  failed kernel.
-- **Vision attention:** blocked by the `cu_seqlens` host readback (V4).
+Commit `16a19f6`. Every fix is keyed on the TNCA device type or on a TTIR
+operation, and none names a model or a checkpoint. There is no CPU numerical
+fallback. Tests are `std_ops_cases.py` on `systemc-tlm-grid`
+(`TNCA_TLM_MEMORY_BYTES=0x200000000`), each against an independent CPU
+reference. Final run (`v3/std.log`, tree `files:4556ea11…`): **48 pass,
+0 fail, 1 refused** across all nine groups (the B1–B6 groups included).
 
-## Remaining blockers
+| | blocker | fix (generic) | where | test | status |
+|---|---|---|---|---|---|
+| V1 | fused norm + mrope + q·kᵀ decode kernel: "tt.expand_dims of something that is not a range" | The existing TNCA descriptor rule ("one range tree split over two descriptor dimensions → pointer access") is now also applied to the block shape **before** Inductor removes stride-0 dimensions, for the reduction tree only. A periodic read (a 64-value rotary table at `r % 64` over a 128-wide reduction) splits R0 through a stride-0 dimension. The rule now sees that split, and the access takes the pointer lowering. A split of the x tree is degenerate on TNCA (XBLOCK = 1) and keeps its descriptor; widening the rule to it changed 4 attention-decode audit points, so it was narrowed. The unvalidated `descriptor_broadcast.py` is replaced and removed | `python/tnca/inductor.py` (`_record_full_block_shape`, TMA checker) | `rope` group: RMS norm, interleaved 3-row mrope (sections 24/20/20), then q·kᵀ/√D over S slots. f32 and bf16, B=1 H=16 D=128 S=144 and B=2 H=4 D=128 S=40, against float64. **Reproducer:** the same group on a tree with the rule off (`v3/rope-nofix.log`) fails the two S=144 cases with exactly the Qwen3-VL diagnostic | **fixed** |
+| V2 | 64-bit loop-carried values refused (`scf.for` over int64) | `scf.for` carries a 64-bit block as its low and high word vectors (`wide.carried_pair`), assigned by the yield like any other carry. 64-bit `arith.divsi/divui/remsi/remui` lanes are exact: power-of-two shift, a reciprocal multiply through `s.mulh.u` (now emitted; `doc/support_matrix.md` regenerated) for other constants, and a 64-step restoring loop for a runtime divisor. Inductor's masked_scatter and bool-index kernels divide int64 indices by constants | `compiler/python/tnca_cc/{frontend,wide,codegen}.py` | `scan`: int64 cumsum over 64, 300 and 4096 (\|x\| < 2⁴⁰, running total past 2⁶²); int64 sum over 4096; a token count `(ids == k).sum()`; `masked_scatter` f32/bf16. **All exact** against torch CPU int64. RTL: `test_std_math.test_int64_divmod` (INT64_MIN/MAX, negative divisors, runtime divisors) bit for bit | **fixed** (exact, no narrowing) |
+| V3 | `libdevice.erf` missing (exact GELU) | `mathlib.erf`, no SFU. It is fma(x, P(x²), x) below 1, and 1 − exp(Q(\|x\| − 1)) above, up to 3.92; beyond that ±1. The exponential is built from fma and integer operations (exact reduction, fma(−p, 2ⁿ, 1)). Coefficients come from a Lawson fit, rounded to binary32 one at a time. It is reached through TNCA libdevice as `tnca_erff` | `tnca_cc/mathlib.py`, `tnca_cc/frontend.py`, `triton_backend/libdevice.py` | **Exhaustive, all 2³² inputs** against float64 (`v3/exhaustive/erf.json`, `transcendental_numeric.py`): **max 0.991 ulp, 0 over 1 ulp**, 0 NaN/inf/signed-zero mismatches. Device, 1.05 M values: 0 mismatches against the emulation, max 0.836 ulp. Exact GELU, 65,546 values, against float64 GELU within the bound set by the formula's own roundings: f32 0.575 of the bound, bf16 0.975. RTL `test_erf` bit for bit | **fixed** |
+| V4 | host readback of `cu_seqlens` (vision attention `lengths.tolist()`, 72 `_local_scalar_dense` + 216 `_assert_scalar` per image) | See "What V4/V5 compute from what" below. `grid_thw` and `cu_seqlens` are the processor's integer metadata. On the native device (`TNCA_TORCH_DEVICE=native`), `configure()` now compiles kernels over **CPU** tensors for the host (Inductor's C++ backend). Before, they were staged to TNCA implicitly (`cpu_backend="triton"`, which is kept for the B39 CPU-tensor path). `host_fallbacks()` no longer lists a C++ kernel whose every argument is an integer or bool. Those are reported as `host_metadata_kernels`. Any float C++ kernel is still a fallback. `scalar_reads()` counts `.item()` reads as host or device. The vision graph keeps `grid_thw` and `cu_seqlens` on the CPU. The one-image split's own check makes u0 = L, so every TNCA kernel is static | `python/tnca/inductor.py`, `vl_compile_probe.py` | `meta`: packed attention split at CPU `cu_seqlens` [0, 256], H=4 L=256 D=64. 5.7e-7 normwise against float64 (torch CPU 1.1e-6). Host metadata kernel `cpp_fused_slice_sub_0` (int32 `cu[1:] - cu[:-1]`); 3 host `.item()` reads, **0 device reads** | **fixed for one segment per graph** (one image). **REFUSED, documented:** two or more segments (several images, video frames). Their lengths are host values but not compile-time constants (u0, L − u0), so the per-segment kernels are compiled for symbolic sizes, which the TNCA lowering refuses (`scf.if whose branch contains arith.remsi`) |
+| V5 | mm-prefill: bool-mask `aten.index` / `index_put_` (DeepStack), `_is_all_true` (`torch._check`) as ATen fallbacks; masked_scatter in int64 | `python/tnca/mask_index.py` (replaces the `check_decomp.py` candidate), registered by `configure()` for TNCA device types only. `x[m] = rows` becomes `masked_scatter`, which is on-device and reads no count back. `x[m] = row` becomes `where`. `x[m]` reads the count back once (`.item()`), the same sync any PyTorch device makes for a boolean index; the rows are gathered on the device (rank = cumsum − 1, scattered, then gathered). `_is_all_true` becomes `all()`, followed by the check's own read of one bool | `python/tnca/mask_index.py`, `inductor.py` | `mask`: the DeepStack form (mask from token ids, `torch._check_tensor_all`, masked_scatter, `h[m] = h[m] + v`) in f32 and bf16; `x[m]`, `x[m] = rows`, `x[m] = row` over a 2-D mask. **0 mismatches** against torch CPU, 0 host fallbacks, device reads exactly as expected (2, 1, 0, 0). A mismatched feature count raises at run time | **fixed**, with the reads below |
 
-| | blocker | where | state |
-|---|---|---|---|
-| V1 | Tensor descriptor on a periodic access, after Inductor strips its stride-0 dimension | Qwen3-VL text-decode, 1 kernel | candidate fix `python/tnca/descriptor_broadcast.py`. An earlier run with it (`--candidate-fixes descriptor-broadcast`) compiled text-decode. **Not default-on**: no standalone reproducer yet (the new `rope` case compiles without it), so it is not validated |
-| V2 | 64-bit loop-carried values (`scf.for` over int64): an int64 cumsum, or an int64 `eq·sum` reduction | Qwen3-VL mm-prefill (`masked_scatter`, placeholder count), `std_ops_cases` int64 cumsum (REFUSED) | open: `tnca_cc/wide.py` holds 64-bit values only as straight-line pairs |
-| V3 | `libdevice.erf` (exact GELU) | Qwen3-VL vision patch merger | open: needs a mathlib erf with an exhaustive ulp check like log1p/sin/cos |
-| V4 | **Host readback of `cu_seqlens` in vision attention**: `cu_seqlens.tolist()`, 72 `_local_scalar_dense` + `split_with_sizes` + 216 `_assert_scalar` per image (r41-fp8 `qwen/README.md` B4); here "u0 >= 256" | Qwen3-VL vision | **out of scope, open**: it needs unbacked-symint support or a fixed-shape variant. It is not a lowering gap |
-| V5 | Data-dependent bool-mask `index` / `index_put_` (deepstack) and `torch._check` → `_is_all_true` | Qwen3-VL mm-prefill | candidate `python/tnca/check_decomp.py` moves `_is_all_true` onto the device, where it then hits V2. Not default-on. `index`/`index_put_` with a bool mask is data-dependent (same class as V4) |
+### What V4/V5 compute from what (transformers 5.x `modeling_qwen3_vl.py`, `vision_utils.py`)
 
-Neither candidate fix is installed by `tnca.inductor.configure()`. Both are
-used only through `vl_compile_probe.py --candidate-fixes`.
+- **Vision.** `get_vision_attention_seqlens(grid_thw)` gives `cu_seqlens`,
+  the cumsum of h·w per frame. Each of the 24 blocks computes
+  `lengths = cu_seqlens[1:] - cu_seqlens[:-1]`, then `torch.split(q|k|v,
+  lengths.tolist())` (3 × 24 = 72 reads), and attends per segment.
+  `vision_utils` exists so that callers precompute these from `grid_thw`
+  outside the graph (its docstring says so); they are passed as kwargs.
+  These are integer metadata of the input, known on the host before upload.
+  They now stay there: one host C++ kernel and 72 host reads, **no device
+  readback**. The precomputed rotary position ids and the interpolation
+  indices and weights stay on tnca, as before. They are derived from
+  `grid_thw` by the official precompute API, are not computed from device
+  data, and are not new in this change.
+- **mm-prefill.** `get_placeholder_mask` computes the mask from `input_ids
+  == image_token_id` **on the device**: `input_ids` must be on tnca for the
+  embedding gather, and the API refuses `input_ids` together with
+  `inputs_embeds`. So the mask and its count are device data in the
+  official module.
+  - masked_scatter: on device, no read.
+  - `torch_compilable_check(n·hidden == numel)`: device `all()`, then one
+    bool read for the check.
+  - DeepStack `h[m, :] + v` (×3 layers): one count read each. The add
+    makes Dynamo assert count = N, so all shapes after it are static.
+  - That is **4 device scalar reads per prefill** (`scalar_reads`), and no
+    numerical work on the host.
+  - Removing them would need the mask from host `input_ids`, which the
+    official forward does not accept. Alternatively,
+    `TRANSFORMERS_DISABLE_TORCH_CHECK=1` (transformers' production switch)
+    drops the check's read; it was not used here.
+  - Text-decode has none.
+
+### Qwen3-VL recompile (`vl_compile_probe.py`, full depth, grid 1×16×16, eager attention, 8 GiB stand-in, no shims, no candidate fixes; `v3/vl/report.json`)
+
+| graph | status | kernels | failed | host fallbacks | scalar reads (host / device) | code bytes |
+|---|---|---|---|---|---|---|
+| text-prefill (128) | **compiled** | 26 | 0 | 0 | 0 / 0 | 137,200 |
+| text-decode (16 slots) | **compiled** (was: 1 failed kernel) | 28 | 0 | 0 | 0 / 0 | 158,712 |
+| mm-prefill (128, 64 image tokens) | compiled-with-findings | 33 | 0 | 0 | 0 / 4 | 299,720 |
+| vision (256 patches) | **compiled** (was: erf missing, `u0 >= 256`) | 27 | 0 | 0 (1 host metadata kernel) | 72 / 0 | 179,392 |
+
+- **mm-prefill.** All 33 kernels compile, and there is no fallback and no
+  refused operator. The remaining finding is the compile-only harness: with
+  `TNCA_LAUNCH=skip` the stand-in device holds no data. The first device
+  read (the placeholder check) returns garbage, and its assert stops the
+  call ("u0 >= 1", 1 launch). That is not a lowering gap, but the steady
+  launch count is not measured. On a device that executes, the 4 reads
+  return real values.
+- **Vision** completes its steady call, 399 launches.
+
+### No regression (final tree)
+
+- **`make compiler`** (`v3/compiler.log`, LLVM 20 `tnca-opt` rebuilt):
+  `compiler-unit` **133 tests pass** (new: `test_erf`, `test_int64_divmod`),
+  `compiler-ir` **6/6 pass**.
+- **RTL:** `test_std_math.py` **6/6 OK** on the Icarus bench
+  (`v3/rtl-math.log`).
+- **`default_change_audit.py`**, compared with the r41s1 control: **113
+  unchanged, 0 changed** (`v3/default_change_audit_ops3.json`, tree
+  `files:4556ea11…`).
+  - The first audit with the wider V1 rule changed 4
+    `op.attention_decode` points: a descriptor split on XBLOCK was refused.
+  - The rule was narrowed to the reduction tree, and the audit was rerun.
 
 ## Files
 
@@ -158,8 +233,23 @@ used only through `vl_compile_probe.py --candidate-fixes`.
   `doc/support_matrix.md` (`v.mulh.u` and `v.clz` are now emitted).
 - Tests: `compiler/test/test_std_math.py`, `compiler/test/test_descriptor_publication.py`,
   `tools/performance_harness/{std_ops_cases,triangular_solve_cases,transcendental_numeric}.py`.
-- Probes and candidates: `tools/performance_harness/vl_compile_probe.py`,
-  `python/tnca/{descriptor_broadcast,check_decomp}.py`.
+- Probe: `tools/performance_harness/vl_compile_probe.py` (its candidate-fix
+  list is now empty: both candidates were replaced by default-on fixes).
+- V1–V5: `python/tnca/{inductor,mask_index}.py`,
+  `python/tnca/triton_backend/libdevice.py`,
+  `compiler/python/tnca_cc/{frontend,wide,codegen,mathlib}.py`,
+  `compiler/test/test_std_math.py`,
+  `tools/performance_harness/{std_ops_cases,transcendental_numeric,fp8_cases}.py`.
+
+## `ops-evidence-v3.tgz` (V1–V5)
+
+`v3/`:
+- `std.log`, `std/report.json`, `std/code/`: all groups, final tree.
+- `rope-nofix.*`: V1 reproducer on a tree with the rule off.
+- `exhaustive/`: erf over 2³², with source hashes.
+- `vl.log`, `vl/report.json`: the Qwen3-VL recompile.
+- `compiler.log`, `tnca-opt.log`, `rtl-math.log`.
+- `audit.log`, `default_change_audit_ops3.json`, `tree.txt`.
 
 ## `ops-evidence.tgz`
 
@@ -179,6 +269,8 @@ $P -m unittest discover -s compiler/test -p test_std_math.py
 $P tools/performance_harness/std_ops_cases.py --out OUT          # TNCA_BACKEND=sim-file ... --quick for RTL
 $P tools/performance_harness/triangular_solve_cases.py --out OUT
 $P tools/performance_harness/transcendental_numeric.py ...       # exhaustive, see exhaustive/run.log
+$P tools/performance_harness/transcendental_numeric.py --functions erf --jobs 4 --out erf.json
+$P tools/performance_harness/std_ops_cases.py --out OUT --group erf --group scan --group rope --group meta --group mask
 $TP tools/performance_harness/model_compile_estimate.py --config I/config.json --inventory I/inventory.json \
     --sources I/sources.json --out OUT --graphs prefill decode --stand-in-heap-bytes 8589934592
 $TP tools/performance_harness/vl_compile_probe.py --config V/config.json --header V/safetensors_header.json \

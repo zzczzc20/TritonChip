@@ -117,7 +117,9 @@ def lower(imp, op):
             _store(imp, operands)
             return True
         return False
-    if not op.get_num_results():
+    if not op.get_num_results() or name == 'scf.for':
+        # scf.for carries its 64-bit blocks itself (frontend._op_scf_for,
+        # carried_pair); its body's operations come back here one by one.
         return False
     dst = op.get_result(0)
     shape, elem = _parse_type(str(dst.get_type()))
@@ -244,8 +246,10 @@ def lower(imp, op):
         signed, remainder = _DIVISION[name]
         d = _positive_constant(imp, operands[1])
         if d is None:
-            raise Unsupported(f'64-bit {name} by a divisor that is not a positive constant')
-        output(lambda i: _divide(b, lane(operands[0], i), d, signed, remainder), count)
+            output(lambda i: _divide_dynamic(imp, lane(operands[0], i), lane(operands[1], i), signed, remainder),
+                   count)
+        else:
+            output(lambda i: _divide(b, lane(operands[0], i), d, signed, remainder), count)
     else:
         kinds={'arith.addi':'add','arith.subi':'sub','arith.muli':'mul',
                'arith.andi':'and','arith.ori':'or','arith.xori':'xor',
@@ -706,6 +710,24 @@ def _lane64_access(imp, op, operands):
             imp._wide[rid] = (acc[0], acc[1])
         else:
             imp._v[rid] = acc[0]
+
+
+def carried_pair(imp, src):
+    """The (low, high) word vectors of a 64-bit block entering or leaving a
+    loop carry: held wide, or a constant still pending (`tl.full(.., 0,
+    tl.int64)`, Inductor's scan and sum accumulators)."""
+    from .frontend import _parse_type, Unsupported
+    b = imp.b
+    shape, _ = _parse_type(str(src.get_type()))
+    if _count(shape, imp.target.vlen) is None:
+        raise Unsupported(f'a loop-carried 64-bit {shape} block (one row of at most VLEN lanes is held)')
+    if src.id() in imp._wide:
+        return imp._wide[src.id()]
+    pending = imp._pending_const.get(src.id())
+    if pending:
+        c = int(pending[1])
+        return b.vmovi(c & 0xFFFFFFFF), b.vmovi((c >> 32) & 0xFFFFFFFF)
+    raise Unsupported(f'no 64-bit value for a loop carry of {src.get_type()}')
 
 
 def to_f32(b, lo, hi, signed=True):

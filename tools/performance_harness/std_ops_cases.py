@@ -21,14 +21,30 @@ groups
   log1p   torch.log1p the same way; F.softplus (threshold 20, Inductor's
           log1p(exp(x))) on binary32 and bf16 against float64, with the SFU
           exp's 2**-22 bound in the tolerance
+  erf     torch.erf of binary32 over every exponent, bit for bit against
+          the emulation and within one ulp of float64; exact GELU
+          (F.gelu, approximate='none': Inductor's 0.5*x*(1 + erf(x/sqrt 2)))
+          in binary32 and bf16 against float64 GELU, within the bound the
+          formula's own roundings allow, and against torch CPU
   int64   int64 / uint-range values converted to binary32, bit for bit
           against torch CPU's conversion (one rounding)
   scan    torch.cumsum over 64..4096 elements, last and inner dims, binary32
-          and int64, against float64 / exact int64, and no split scan in the
+          and int64 (also int64 sums, a token count and masked_scatter: 64-bit
+          values carried round a loop), against float64 / exact int64, and no split scan in the
           generated code
   gemm    skinny F.linear (M <= 3, K >= 64*max(M, N)): no decompose-K in the
           generated code, and bit for bit against a per-K binary32 FMA in
           ascending K (ISA sec 9C.1)
+  meta    host integer metadata: packed variable-length attention split by
+          cu_seqlens held on the CPU (`lengths.tolist()`, as packed vision
+          attention does), every value tensor on tnca: the offsets are read
+          on the host from host memory (a host C++ integer kernel, no
+          device readback), the attention runs on TNCA; against float64
+  mask    boolean masks computed on the device: x[m] = x[m] + v (DeepStack's
+          form), masked_scatter, x[m] alone, x[m] = row / = rows, and
+          torch._check_tensor_all; exact against torch CPU, no host
+          fallback, and the device readbacks counted (one count per x[m],
+          one boolean per check)
   rope    RMS norm then rotary embedding of one decode token, the angle
           table built in the graph (int64 positions x inv_freq as a K = 1
           bmm, cat((f, f))) and fused with the norm's reduction: int64 ->
@@ -40,6 +56,7 @@ import json
 import math
 import os
 from pathlib import Path
+import re
 import sys
 import time
 import traceback
@@ -51,7 +68,7 @@ sys.path[:0] = [str(ROOT), str(ROOT/'python'), str(ROOT/'compiler/python'), str(
 
 from fp8_cases import Run, bits, compare, per_k_fma  # noqa: E402
 
-GROUPS = ('trig', 'log1p', 'int64', 'scan', 'gemm', 'rope')
+GROUPS = ('trig', 'log1p', 'erf', 'int64', 'scan', 'gemm', 'rope', 'meta', 'mask')
 
 
 def _torch():
@@ -253,6 +270,60 @@ def group_log1p(run):
             _fail(run, 'log1p', case, e)
 
 
+def group_erf(run):
+    torch = _torch()
+    import numpy as np
+    from transcendental_numeric import _erf64
+    F = torch.nn.functional
+    xb = f32_full_range(run.quick)
+    x = torch.from_numpy(xb.view(np.int32).copy()).view(torch.float32)
+    case = f'erf binary32 full range ({x.numel()} values)'
+    try:
+        (y,), rec = run.compile_run('erf/erf', lambda t: (torch.erf(t),), (x,), dump=False)
+        emu = bitwise_vs_emulation(y, xb, 'erf')
+        acc = ulp_report(y, x, _erf64)
+        ok = emu['mismatches'] == 0 and acc['nan_mismatch'] == 0 and acc['over_1_ulp'] == 0 and \
+            not rec['host_fallbacks']
+        run.add('erf', case, 'pass' if ok else 'fail', emulation=emu, accuracy=acc, graph=rec,
+                summary=f"emulation mismatches {emu['mismatches']}, max {acc['max_ulp']:.3f} ulp vs float64")
+    except Exception as e:                                       # noqa: BLE001
+        _fail(run, 'erf', case, e)
+    g = torch.Generator().manual_seed(13)
+    n = 4096 if run.quick else 1 << 16
+    xs = torch.cat([torch.linspace(-12, 12, n // 2), torch.randn(n // 2, generator=g) * 3,
+                    torch.tensor([0.0, -0.0, 1e-30, -1e-30, 1e-40, 100.0, -100.0, float('inf'),
+                                  -float('inf'), float('nan')])])
+    for dtype in (torch.float32, torch.bfloat16):
+        case = f'exact GELU {dtype} ({xs.numel()} values)'
+        try:
+            xin = xs.to(dtype)
+            (yd,), rec = run.compile_run(f'erf/gelu-{dtype}', lambda t: (F.gelu(t),), (xin,), dump=False)
+            x64 = xin.double()
+            c = x64 / math.sqrt(2.0)
+            e64 = torch.from_numpy(_erf64(c.numpy()))
+            ref = 0.5 * x64 * (1 + e64)
+            u = 2.0 ** -24
+            # binary32 roundings of x*c (through erf's slope), erf (1 ulp),
+            # 1 + erf, and the two products; then the cast to dtype.
+            arg = (2 / math.sqrt(math.pi)) * torch.exp(-c * c) * u * c.abs()
+            bound = (0.5 * x64.abs() * (arg + 2 * u * e64.abs() + u * (1 + e64).abs())
+                     + 2 * u * ref.abs()) * 1.01 + 2.0 ** -149
+            if dtype == torch.bfloat16:
+                bound = bound + 2.0 ** -8 * ref.abs() + 2.0 ** -133
+            yv = yd.double()
+            fin = torch.isfinite(ref)
+            err = (yv - ref).abs()
+            within = bool((err[fin] <= bound[fin]).all())
+            special = bool(((torch.isnan(yv) == torch.isnan(ref)) & (~torch.isinf(ref) | (yv == ref))).all())
+            ok = within and special and not rec['host_fallbacks']
+            ratio = float((err[fin] / bound[fin]).max())
+            run.add('erf', case, 'pass' if ok else 'fail', graph=rec, max_err_over_bound=ratio,
+                    nan_inf_ok=special, versus_eager_cpu=compare(yd, F.gelu(xin)),
+                    summary=f'max err/bound {ratio:.3f} vs float64 GELU; nan/inf {special}')
+        except Exception as e:                                   # noqa: BLE001
+            _fail(run, 'erf', case, e)
+
+
 def group_int64(run):
     torch = _torch()
     g = torch.Generator().manual_seed(17)
@@ -303,24 +374,43 @@ def group_scan(run):
                         summary=f'max err/bound {float((err / (bound + 1e-30)).max()):.3f}, split scan {split}')
             except Exception as e:                               # noqa: BLE001
                 _fail(run, 'scan', case, e)
-    for n in (64, 300):
-        case = f'cumsum int64 over {n} (positions from a mask)'
+    # 64-bit values carried round a looped scan or reduction (one row
+    # longer than a register block): exact, against torch CPU's int64.
+    def int64_case(case, name, fn, args, ref):
         try:
-            mask = (torch.rand(2, n, generator=g) > 0.2).to(torch.int64)
-            (y,), rec = run.compile_run(f'scan/int64-{n}', lambda m: (m.cumsum(-1) - 1,), (mask,), dump=False)
-            cmp = compare(y, mask.cumsum(-1) - 1)
+            (y,), rec = run.compile_run(name, fn, args, dump=False)
+            cmp = compare(y, ref)
             run.add('scan', case, 'pass' if cmp['equal'] and not rec['host_fallbacks'] else 'fail',
                     comparison=cmp, graph=rec, summary=f"{cmp['bit_mismatches']} mismatches (exact)")
         except Exception as e:                                   # noqa: BLE001
-            if '64-bit tensor operation scf.for' in str(e):
-                # A 64-bit scan longer than one register block is a looped
-                # scan carrying an int64 across iterations, which the 64-bit
-                # lowering (tnca_cc.wide) does not carry: refused at compile
-                # time with that diagnostic. Not one of the gaps fixed here.
-                run.add('scan', case, 'refused', summary='known gap: 64-bit looped scan '
-                        '(64-bit tensor operation scf.for), refused at compile time')
-            else:
-                _fail(run, 'scan', case, e)
+            _fail(run, 'scan', case, e)
+    for n in (64, 300):
+        mask = (torch.rand(2, n, generator=g) > 0.2).to(torch.int64)
+        int64_case(f'cumsum int64 over {n} (positions from a mask)', f'scan/int64-{n}',
+                   lambda m: (m.cumsum(-1) - 1,), (mask,), mask.cumsum(-1) - 1)
+    n = 300 if run.quick else 4096
+    big = torch.randint(-2 ** 40, 2 ** 40, (2, n), generator=g, dtype=torch.int64)
+    big[0, :8] = 2 ** 62 // 8                       # running total crosses 2**62
+    int64_case(f'cumsum int64 over {n}, |x| < 2**40 and a 2**62 total', f'scan/int64-big-{n}',
+               lambda x: (x.cumsum(-1),), (big,), big.cumsum(-1))
+    int64_case(f'sum int64 over {n}, |x| < 2**40', f'scan/int64-sum-{n}',
+               lambda x: (x.sum(-1),), (big,), big.sum(-1))
+    ids = torch.randint(0, 9, (1, n), generator=g, dtype=torch.int64)
+    int64_case(f'count of a token id over {n} ((ids == k).sum())', f'scan/int64-count-{n}',
+               lambda t: ((t == 7).sum(),), (ids,), (ids == 7).sum())
+    # masked_scatter: Inductor lowers it to an int64 cumsum of the mask (the
+    # source row of each selected position) and a gather; no host count.
+    L, D = (40, 16) if run.quick else (300, 64)
+    tok = torch.randint(0, 4, (1, L), generator=g, dtype=torch.int64)
+    tok[0, 5:5 + L // 4] = 3
+    k = int((tok == 3).sum())
+    emb = torch.randn(1, L, D, generator=g)
+    src = torch.randn(k, D, generator=g)
+    for dt in (torch.float32, torch.bfloat16):
+        int64_case(f'masked_scatter of {k} rows into {L}x{D} {dt} (mask from token ids)',
+                   f'scan/masked-scatter-{dt}',
+                   lambda t, e, s: (e.masked_scatter((t == 3)[..., None], s),),
+                   (tok, emb.to(dt), src.to(dt)), emb.to(dt).masked_scatter((tok == 3)[..., None], src.to(dt)))
 
 
 def group_gemm(run):
@@ -382,9 +472,18 @@ def group_rope(run):
     compiles, no host fallback, and the normwise error against float64 (from
     the same binary32 angles) is within 64 binary32 ulps (2**-18: rsqrt on
     the SFU, sin/cos <= 1 ulp, a mean over D, two products and a sum).
-    Not a reproducer of the Qwen3-VL decode descriptor failure (that kernel
-    also selects mrope sections); this fused form compiles with or without
-    tnca.descriptor_broadcast.
+
+    The `mrope` cases add what an interleaved multi-axis rotary (three
+    position rows, every third frequency taken from another row) and the
+    decode attention score do: Inductor then fuses the norm, the rotary
+    and q . k^T (a bmm with one query row) into one reduction over D that
+    reads each 64-value angle table at `r % 64` through a tensor
+    descriptor. Without the full-shape descriptor rule
+    (tnca.inductor._record_full_block_shape) that kernel fails to lower
+    ("tt.expand_dims of something that is not a range"). Pass: compiles,
+    no host fallback, normwise error against float64 within 2**-18
+    (binary32 data) or 2**-7 (bf16 data: bf16 cos/sin tables and output),
+    and torch CPU's error is reported next to it.
     """
     torch = _torch()
     g = torch.Generator().manual_seed(37)
@@ -428,6 +527,197 @@ def group_rope(run):
                             f'torch CPU fp32 {err_cpu:.3g}), host fallbacks {len(rec["host_fallbacks"])}')
         except Exception as e:                                   # noqa: BLE001
             _fail(run, 'rope', case, e)
+
+    sections = (24, 20, 20)
+
+    def mrope_scores(xq, w, pos3, inv_freq, kc):
+        # q norm, interleaved 3-row rotary, then q . k^T / sqrt(D) over a
+        # cache of S slots: one decode step of one attention layer's q path.
+        D = xq.shape[-1]
+        xf = xq.to(w.dtype)
+        xn = w * (xf * torch.rsqrt(xf.pow(2).mean(-1, keepdim=True) + 1e-6))
+        q = xn.to(xq.dtype).transpose(1, 2)                               # [B, H, 1, D]
+        freqs = pos3[..., None].to(w.dtype) * inv_freq.to(w.dtype)        # [3, B, 1, D/2]
+        tables = []
+        for f in (freqs.cos(), freqs.sin()):
+            ft = f[0]
+            for dim, offset in ((1, 1), (2, 2)):
+                idx = slice(offset, sections[dim] * 3, 3)
+                ft[..., idx] = f[dim, ..., idx]
+            tables.append(torch.cat((ft, ft), dim=-1).to(xq.dtype)[:, None])  # [B, 1, 1, D]
+        cos, sin = tables
+        rot = torch.cat((-q[..., D // 2:], q[..., :D // 2]), dim=-1)
+        qe = q * cos + rot * sin
+        return (torch.matmul(qe, kc.transpose(2, 3)) * D ** -0.5,)
+
+    mshapes = ((1, 16, 128, 144), (2, 4, 128, 40)) if not run.quick else ((1, 2, 128, 16),)
+    for dtype in (torch.float32, torch.bfloat16):
+        for B, H, D, S in mshapes:
+            case = f'rms norm + mrope + q.k^T, decode, {dtype}, B={B} H={H} D={D} S={S}'
+            try:
+                xq = torch.randn(B, 1, H, D, generator=g).to(dtype)
+                w = 1 + 0.1 * torch.randn(D, generator=g)
+                pos3 = torch.randint(0, 32768, (3, B, 1), generator=g, dtype=torch.int64)
+                inv_freq = 1.0 / (5e6 ** (torch.arange(0, D, 2, dtype=torch.float32) / D))
+                kc = torch.randn(B, H, S, D, generator=g).to(dtype)
+                (y,), rec = run.compile_run(f'rope/mrope-{dtype}-{B}x{H}x{D}x{S}', mrope_scores,
+                                            (xq, w, pos3, inv_freq, kc), dump=False)
+                # float64 from the same binary32 angles (one rounding of the
+                # product, as any binary32 rotary computes them).
+                f32 = (pos3[..., None].float() * inv_freq).double()
+
+                def ref64(xq, kc):
+                    xf = xq.double()
+                    xn = w.double() * (xf * torch.rsqrt(xf.pow(2).mean(-1, keepdim=True) + 1e-6))
+                    q = xn.transpose(1, 2)
+                    tabs = []
+                    for f in (f32.cos(), f32.sin()):
+                        ft = f[0].clone()
+                        for dim, offset in ((1, 1), (2, 2)):
+                            idx = slice(offset, sections[dim] * 3, 3)
+                            ft[..., idx] = f[dim, ..., idx]
+                        tabs.append(torch.cat((ft, ft), dim=-1)[:, None])
+                    rot = torch.cat((-q[..., D // 2:], q[..., :D // 2]), dim=-1)
+                    return torch.matmul(q * tabs[0] + rot * tabs[1], kc.double().transpose(2, 3)) * D ** -0.5
+                ref = ref64(xq, kc)
+                cpu = mrope_scores(xq, w, pos3.clone(), inv_freq, kc)[0]
+                den = ref.abs().max().item()
+                err = (y.double() - ref).abs().max().item() / den
+                err_cpu = (cpu.double() - ref).abs().max().item() / den
+                bound = 2.0 ** -18 if dtype == torch.float32 else 2.0 ** -7
+                ok = err <= bound and not rec['host_fallbacks']
+                run.add('rope', case, 'pass' if ok else 'fail', graph=rec, err=err, err_cpu=err_cpu,
+                        fused_kernels=[k for k in rec['kernels'] if 'bmm' in k],
+                        summary=f'normwise err vs float64 {err:.3g} (bound {bound:.3g}; torch CPU {err_cpu:.3g}), '
+                                f'host fallbacks {len(rec["host_fallbacks"])}')
+            except Exception as e:                               # noqa: BLE001
+                _fail(run, 'rope', case, e)
+
+
+def group_meta(run):
+    torch = _torch()
+    from tnca.inductor import host_metadata_kernels, scalar_reads
+    g = torch.Generator().manual_seed(41)
+    torch._dynamo.config.capture_scalar_outputs = True
+
+    def packed_attention(q, k, v, cu_seqlens):
+        # Qwen2/2.5/3-VL vision attention, non-flash branch: split the packed
+        # sequence at the host offsets, attend within each segment, concat.
+        lengths = cu_seqlens[1:] - cu_seqlens[:-1]
+        splits = [torch.split(t, lengths.tolist(), dim=2) for t in (q, k, v)]
+        outs = []
+        for a, b, c in zip(*splits):
+            w = torch.softmax(torch.matmul(a, b.transpose(2, 3)) * a.shape[-1] ** -0.5, dim=-1)
+            outs.append(torch.matmul(w, c))
+        return (torch.cat(outs, dim=2),)
+
+    H, L, D = (2, 64, 16) if run.quick else (4, 256, 64)
+    for cuts in ((0, L), (0, L * 3 // 8, L)):
+        case = f'packed attention, cu_seqlens {list(cuts)} on the CPU, H={H} L={L} D={D}'
+        try:
+            q, k, v = (torch.randn(1, H, L, D, generator=g) for _ in range(3))
+            cu = torch.tensor(cuts, dtype=torch.int32)
+            (y,), rec = run.compile_run(f'meta/packed-{len(cuts)}', packed_attention, (q, k, v, cu),
+                                        dump=False, keep_on_host=(3,))
+            ref = packed_attention(q.double(), k.double(), v.double(), cu)[0]
+            cpu = packed_attention(q, k, v, cu)[0]
+            den = ref.abs().max().item()
+            err = (y.double() - ref).abs().max().item() / den
+            err_cpu = (cpu.double() - ref).abs().max().item() / den
+            code = (run.out/'code'/f'meta_packed-{len(cuts)}.py').read_text()
+            meta = host_metadata_kernels([code])
+            reads = scalar_reads([code])
+            host_reads, device_reads = reads['host'], reads['device']
+            ok = (err <= 2.0 ** -16 and not rec['host_fallbacks'] and meta and device_reads == 0
+                  and host_reads >= 1)
+            run.add('meta', case, 'pass' if ok else 'fail', graph=rec, err=err, err_cpu=err_cpu,
+                    host_metadata_kernels=meta, item_reads=dict(host=host_reads, device=device_reads),
+                    summary=f'normwise err vs float64 {err:.3g} (torch CPU {err_cpu:.3g}); host metadata '
+                            f'kernels {meta}; .item() reads host {host_reads} device {device_reads}')
+        except Exception as e:                                   # noqa: BLE001
+            if len(cuts) > 2 and 'UNSUPPORTED' in str(e):
+                # Two segments: their lengths are host values but not
+                # compile-time ones (u0 and L - u0), so each segment's
+                # kernels are compiled for a symbolic size, which the TNCA
+                # lowering refuses. One segment per graph (one image) is
+                # static: the split's own check makes u0 == L.
+                run.add('meta', case, 'refused', summary='known limit: segment lengths that are not '
+                        'compile-time constants give symbolic-size kernels; ' + str(e).splitlines()[0][:200])
+            else:
+                _fail(run, 'meta', case, e)
+
+
+def group_mask(run):
+    torch = _torch()
+    from tnca.inductor import scalar_reads
+    g = torch.Generator().manual_seed(43)
+    torch._dynamo.config.capture_scalar_outputs = True
+    torch._dynamo.config.capture_dynamic_output_shape_ops = True
+    L, D, N = (24, 16, 9) if run.quick else (128, 64, 40)
+
+    def deepstack(h, ids, feats, ve):
+        # Placeholder mask from token ids, the count check, the features
+        # scattered in, then the DeepStack residual on the same rows.
+        m = ids == 7
+        torch._check_tensor_all(m.sum() * h.shape[-1] == feats.numel())
+        h = h.masked_scatter(m[..., None].expand_as(h), feats)
+        h = h.clone()
+        h[m, :] = h[m, :] + ve
+        return (h,)
+
+    def gather_rows(x, ids):
+        return (x[ids == 7] * 2,)
+
+    def put_rows(x, ids, v):
+        x = x.clone()
+        x[ids == 7] = v
+        return (x,)
+
+    def put_row(x, ids, v):
+        x = x.clone()
+        x[ids == 7] = v[0]
+        return (x,)
+
+    ids = torch.randint(0, 5, (1, L), generator=g, dtype=torch.int64)
+    ids[0, 3:3 + N] = 7
+    ids2 = torch.randint(5, 9, (2, L), generator=g, dtype=torch.int64)          # 2-D mask, scattered
+    n2 = int((ids2 == 7).sum())
+    cases = []
+    for dt in (torch.float32, torch.bfloat16):
+        h = torch.randn(1, L, D, generator=g).to(dt)
+        cases.append((f'DeepStack form {dt}: masked_scatter, check, x[m] = x[m] + v', deepstack,
+                      (h, ids, torch.randn(N, D, generator=g).to(dt), torch.randn(N, D, generator=g).to(dt)), 2))
+    x2 = torch.randn(2, L, D, generator=g)
+    cases += [('x[m] over a 2-D mask', gather_rows, (x2, ids2), 1),
+              ('x[m] = rows over a 2-D mask', put_rows, (x2, ids2, torch.randn(n2, D, generator=g)), 0),
+              ('x[m] = one row (broadcast)', put_row, (x2, ids2, torch.randn(1, D, generator=g)), 0)]
+    for name, fn, args, readbacks in cases:
+        try:
+            (y,), rec = run.compile_run(f'mask/{name}', fn, args, dump=False)
+            cmp = compare(y, fn(*args)[0])
+            code = (run.out/'code'/(re.sub(r'[^A-Za-z0-9_.-]+', '_', f'mask/{name}') + '.py')).read_text()
+            device = scalar_reads([code])['device']
+            ok = cmp['equal'] and not rec['host_fallbacks'] and device == readbacks
+            run.add('mask', name, 'pass' if ok else 'fail', comparison=cmp, graph=rec, device_item_reads=device,
+                    summary=f"{cmp['bit_mismatches']} mismatches vs torch CPU; device .item() reads {device} "
+                            f"(expected {readbacks}); host fallbacks {len(rec['host_fallbacks'])}")
+        except Exception as e:                                   # noqa: BLE001
+            _fail(run, 'mask', name, e)
+    # The check is a check: a feature count that does not match the
+    # placeholder count fails at run time on the device's answer.
+    name = 'torch._check_tensor_all on a mismatched count raises'
+    try:
+        args0 = cases[0][2]
+        bad = args0[:2] + (torch.randn(N + 1, D).to(args0[0].dtype), torch.randn(N, D).to(args0[0].dtype))
+        try:
+            run.compile_run('mask/check-false', deepstack, bad, dump=False)
+            run.add('mask', name, 'fail', summary='no error raised')
+        except Exception as e:                                   # noqa: BLE001
+            raised = type(e).__name__
+            run.add('mask', name, 'pass' if 'RuntimeError' in raised or 'Error' in raised else 'fail',
+                    summary=f'raised {raised}: {str(e)[:160]}')
+    except Exception as e:                                       # noqa: BLE001
+        _fail(run, 'mask', name, e)
 
 
 def main():

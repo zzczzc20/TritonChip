@@ -47,6 +47,7 @@ ACCURACY = {
     'log1p': '<= 1 ulp over every binary32 input (measured: all 2**32)',
     'sin': '<= 1 ulp over every binary32 input, full range (measured: all 2**32)',
     'cos': '<= 1 ulp over every binary32 input, full range (measured: all 2**32)',
+    'erf': '<= 1 ulp over every binary32 input (measured: all 2**32)',
 }
 
 LOG2E = 1.4426950408889634    # log2(e)
@@ -207,7 +208,7 @@ def sigmoid(b, k, x, dtype='f32'):
 
 
 # ---- functions built without the SFU ---------------------------------------
-# log1p, sin and cos use only the vector integer unit and IEEE fma/add/mul,
+# log1p, sin, cos and erf use only the vector integer unit and IEEE fma/add/mul,
 # each a correctly rounded operation, so what they return is a fixed
 # function of the input -- no "<= 2**-22" approximation enters. They are
 # written against the same builder calls as everything above, which is also
@@ -454,3 +455,63 @@ def sin(b, k, x, dtype='f32'):
 def cos(b, k, x, dtype='f32'):
     """cos(x) for every binary32 x; see sincos."""
     return sincos(b, k, x, dtype)[1]
+
+
+# erf(x) = x + x*P(x**2) for |x| < _ERF_SPLIT: P is a degree-7 near-minimax
+# fit (Lawson) of erf(x)/x - 1, weighted for the relative error of the
+# result. Above the split erf(x) = 1 - exp(Q(|x| - 1)), Q a degree-9 fit of
+# ln(erfc(t)) on [_ERF_SPLIT, 3.92] weighted by erfc(t)/erf(t), which is how
+# an error in Q reaches the result. Fitted in float64; the coefficients were
+# rounded to binary32 one at a time from degree 0, refitting the rest after
+# each (tools/performance_harness/transcendental_numeric.py measures the
+# result over all 2**32 inputs).
+_ERF_SPLIT = 1.0
+_ERF_QC = 1.0              # t - 1 is exact for t in [0.5, 4]
+_ERF_ONE = 3.921875        # erfc(t) < 2**-25 from about 3.83: erf rounds to 1
+_ERF_P = (0.12837916612625122, -0.3761262893676758, 0.1128363162279129, -0.026856491342186928,
+          0.005195774137973785, -0.000811715261079371, 8.6190142610576e-05, -2.1569151158473687e-06)
+_ERF_Q = (-1.8496055603027344, -2.6389598846435547, -0.8432850241661072, -0.04006755352020264,
+          0.0041088806465268135, 0.010535445995628834, -0.014541524462401867, 0.009744501672685146,
+          -0.0033258746843785048, 0.00045386183774098754)
+# e**f = 1 + f + f**2 * R(f) on |f| <= ln(2)/2: R a degree-5 fit, relative
+# error 5e-11 before rounding.
+_EXP_R = (0.5, 0.1666666567325592, 0.04166629537940025, 0.008333496749401093,
+          0.0013944660313427448, 0.00019790341320913285)
+_LOG2E_F = 1.4426950216293335     # binary32(log2(e))
+_RINT_MAGIC = 12582912.0          # 1.5 * 2**23: adding it rounds to an integer
+
+
+def erf(b, k, x, dtype='f32'):
+    """The error function, what Inductor's exact GELU (0.5*x*(1 + erf(x/sqrt 2))) calls.
+
+    No SFU: two polynomials and an exponential built from fma and integer
+    arithmetic. Below _ERF_SPLIT the result is fma(x, P(x*x), x), which keeps
+    -0, subnormals and tiny x (2/sqrt(pi)*x) exact in sign and rounding.
+    Above it, 1 - exp(Q(|x|)) with the exponential reduced exactly
+    (n = rint(Q*log2 e), f = Q - n*ln2 in two fmas with a 16-bit ln2_hi) and
+    the last product folded into the subtraction, fma(-poly, 2**n, 1), so
+    only one rounding follows exp's polynomial. |x| >= _ERF_ONE gives +-1,
+    +-inf gives +-1, NaN itself.
+    """
+    _require_f32('erf', dtype)
+    i = lambda c: _int(b, c)
+    ax = b.vun('abs', x, dtype='f32')
+    s = b.vbin('mul', x, x, dtype='f32')
+    small = b.vfma(x, _horner(b, s, _ERF_P, k), x, dtype='f32', comment='x + x*P(x*x)')
+    t = b.vselect(b.vcmp('lt', ax, k(_ERF_ONE)), ax, k(_ERF_ONE))
+    u = b.vbin('sub', t, k(_ERF_QC), dtype='f32', comment='t - 1, exact on [0.5, 4]')
+    q = _horner(b, u, _ERF_Q, k)                                   # ln(erfc(t)), in [-18, -1.6]
+    j = b.vfma(q, k(_LOG2E_F), k(_RINT_MAGIC), dtype='f32')
+    n = _ibin(b, 'sub', j, i(0x4B400000))                          # rint(q*log2 e), as an integer
+    jf = b.vbin('sub', j, k(_RINT_MAGIC), dtype='f32')
+    f = b.vfma(b.vun('neg', jf, dtype='f32'), k(_LN2_HI), q, dtype='f32', comment='q - n*ln2_hi, exact')
+    f = b.vfma(b.vun('neg', jf, dtype='f32'), k(_LN2_LO), f, dtype='f32')
+    r = _horner(b, f, _EXP_R, k)
+    p = b.vfma(b.vbin('mul', f, f, dtype='f32'), r, f, dtype='f32')
+    p = b.vbin('add', p, k(1.0), dtype='f32', comment='e**f')
+    scale = _ibin(b, 'shl', _ibin(b, 'add', n, i(127)), i(23))     # 2**n, n in [-26, -2]
+    big = b.vfma(b.vun('neg', p, dtype='f32'), scale, k(1.0), dtype='f32', comment='1 - e**f * 2**n')
+    big = b.vselect(b.vcmp('lt', ax, k(_ERF_ONE)), big, k(1.0))
+    big = _ibin(b, 'or', big, _ibin(b, 'and', x, i(0x80000000)))  # the sign of x
+    out = b.vselect(b.vcmp('lt', ax, k(_ERF_SPLIT)), small, big)
+    return b.vselect(b.vcmp('uo', x, x), x, out)

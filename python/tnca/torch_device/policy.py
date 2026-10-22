@@ -31,7 +31,10 @@ registering a device:
                           binary32 (exact), where Inductor's Triton codegen
                           refuses a direct FP8 -> FP8 cast on every device;
                           and `_scaled_mm`'s `scale_result` applied to an FP8
-                          output, which Inductor's lowering drops
+                          output, which Inductor's lowering drops; and
+                          blockwise (1x128 / 128x128) `_scaled_mm` and
+                          `_scaled_mm_v2`, whose only upstream lowering is
+                          a CUDA-TMA template (tnca/scaled_mm_blockwise.py)
   TNCA_POLICY_REALIZE     the CPU's realization and fusion heuristics: a
                           reused result of a heavy op (exp, log, ...) is
                           stored rather than recomputed, the CPU's opcount and
@@ -348,6 +351,15 @@ def _scaled_mm_result_scale():
     L.lowerings[key] = scaled_mm
 
 
+def _scaled_mm_blockwise():
+    """Blockwise (1x128 / 128x128) `_scaled_mm` and `_scaled_mm_v2` on tnca:
+    upstream's only lowering is a CUDA-TMA template, so the call had no
+    choice. A K-block Triton template instead (tnca/scaled_mm_blockwise.py);
+    every other `_scaled_mm` keeps its lowering."""
+    from .. import scaled_mm_blockwise
+    scaled_mm_blockwise.install(_device_of, NAME)
+
+
 def _realize_and_fusion():
     import torch._inductor.ir as ir
     import torch._inductor.scheduler as sch
@@ -425,6 +437,7 @@ def install():
     if _on('TNCA_POLICY_FP8_CONVERT'):
         _fp8_cross_convert()
         _scaled_mm_result_scale()
+        _scaled_mm_blockwise()
     if _on('TNCA_POLICY_REALIZE'):
         _realize_and_fusion()
     if _on('TNCA_POLICY_LAYOUT'):

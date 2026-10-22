@@ -2882,6 +2882,9 @@ class TTIRImporter:
         limit = self._row_limit(load)
         if limit is None:
             return self._swap_no(8)
+        if (self.target.has('tensor_transpose_8bit')
+                and self._x8_dot(op, seps, a_parts, limit, ae, m, k, n, step)):
+            return True
         b = self.b
         em = _SepEmitter(self)
         name = seps[(0, 0)][0]
@@ -2969,6 +2972,170 @@ class TTIRImporter:
             rid = ('register-chunk', op.get_result(0).id(), j) if n > vlen else op.get_result(0).id()
             self._tiles[rid] = Tile('spilled', off, vlen, vlen, 'f32')
         self._swapped_dots = getattr(self, '_swapped_dots', 0) + 1
+        return True
+
+    def _x8_dot(self, op, seps, a_parts, limit, ae, m, k, n, step):
+        """The same FP8 dot as `_swapped_dot` -- a computed A, a K-contiguous
+        B (W[n, k] read as b[k, n]) -- on an engine with the 1-byte
+        transposed write (R41 X8, `tensor_transpose_8bit`), as C = A B.
+
+        W's rows are a plain tile U[n, k] (row stride S, contiguous); the
+        engine writes it transposed, which is the MMA B fragment, one
+        `t.ld.async.b.t` per K step and column chunk. A goes into the A
+        window row by row (contiguous byte stores, no scatter), and C comes
+        out of the accumulators row by row. Every product is exact and each
+        column accumulates in ascending K, exactly as in the swapped form,
+        so the result is bit for bit the same.
+
+        A chunk is one transfer only when its 16 column indices are c..c+15:
+        the index is data (`offs_bn % N` wraps in the last block), so that is
+        checked at run time, once per call and per chunk; a chunk that wraps
+        gathers its K rows into scratch instead (a guarded loop) and moves
+        that tile plainly. Masked K rows read as zero either way (extent /
+        masked gather). Returns False -- before emitting anything the
+        swapped form would not -- when the index is not of that form.
+        """
+        b, vlen = self.b, self.target.vlen
+        if step % vlen or k % step:
+            return False
+        nchunks = n // vlen
+        em = _SepEmitter(self)
+        # W[n, k] with n a column index vector times one row stride S.
+        lane = seps[(0, 0)][2].lane_terms()
+        if len(lane) != 1 or lane[0][0] != 'colvec':
+            return self._swap_no('x8 lanes')
+        cols = []
+        for j in range(nchunks):
+            t = seps[(0, j)][2].lane_terms()
+            if (len(t) != 1 or t[0][0] != 'colvec'
+                    or em._fold(t[0][2], t[0][3]) != em._fold(lane[0][2], lane[0][3])):
+                return self._swap_no('x8 lanes')
+            cols.append(t[0][1])
+        name = seps[(0, 0)][0]
+        base = self._arg_value(name)
+        stride = em._factor(lane[0][2], lane[0][3])         # W's row stride, bytes
+        # Everything a branch arm uses is computed here, before any branch:
+        # the importer's index caches must not hand an arm a value the other
+        # arm defined.
+        # Row 0 of chunk (rc, j) must be row 0 of chunk (0, 0) plus rc*vlen,
+        # symbolically (the swapped form assumes the same of its rows).
+        def terms(sep):
+            out = {}
+            for kind, v, c, sc in sep.row_terms():
+                c, sc = em._fold(c, sc)                      # known scalars are numbers
+                key = (kind, id(v), tuple(sorted(id(x) for x in sc)))
+                out[key] = out.get(key, 0) + c
+            return out
+        t00 = terms(seps[(0, 0)][2])
+        for rc in sorted({s0 // vlen for s0 in range(0, k, step)}):
+            for j in range(nchunks):
+                t = terms(seps[(rc, j)][2])
+                diff = {key: t.get(key, 0) - t00.get(key, 0) for key in set(t) | set(t00)}
+                one = ('one', id(None), ())
+                if any(c for key, c in diff.items() if key != one) or diff.get(one, 0) != rc * vlen:
+                    return self._swap_no(f'x8 rows {rc},{j}: {diff}')
+        lane_vecs = [em.lanes(seps[(0, j)][2]) for j in range(nchunks)]
+        if any(lv is None for lv in lane_vecs):
+            return False
+        self.b.comment(f"tl.dot {m}x{k} by {k}x{n} FP8, B as W's rows written transposed "
+                       "by the engine (ISA sec 9E, tensor_transpose_8bit)")
+        r00 = em.scalar(Sep2D(seps[(0, 0)][2].row_terms()), 0, scale=1)
+
+        def at(off):
+            return base if off == 0 else (b.sbini('add', base, off) if isinstance(off, int)
+                                          else b.sbin('add', base, off))
+        scratch = self._scratch_base()
+        # Run-time check, once per call: chunk j's lanes are column indices
+        # c_j + lane (W rows c_j .. c_j+15, so one transfer at row c_j) --
+        # false where `offs_bn % N` wraps inside the chunk. Lane j of `oks`
+        # says so, lane j of `rows` is c_j.
+        oks, rows = b.vmovi(0), b.vmovi(0)
+        ramp = b.arange()
+        ok_lim = None if limit == 'all' else b.scmp('ge', limit, b.const(0))
+        for j, v in enumerate(cols):
+            c0 = b.vextract(v, 0)
+            d = b.vbin('sub', v, b.vbin('add', b.splat(c0, dtype='i32'), ramp, dtype='i32'), dtype='i32')
+            ok = b.sbin('and', b.scmp('eq', b.reduce('or', d, dtype='i32'), b.const(0)),
+                        b.scmp('ge', c0, b.const(0)))
+            if ok_lim is not None:
+                ok = b.sbin('and', ok, ok_lim)
+            b.vinsert(oks, j, ok)
+            b.vinsert(rows, j, c0)
+        desc = self._build_descriptor(
+            base=at(r00), elem=ae, extents=[self._OPEN_EXTENT, k if limit == 'all' else limit],
+            byte_strides=[stride, 1], block_shape=[vlen, step],
+            what="W's rows for a transposed FP8 B", check=isinstance(stride, int))
+        fill_off = self._take_scratch(step * vlen)
+        fill_desc = self._build_descriptor(
+            base=b.sbini('add', scratch, fill_off), elem=ae, extents=[step, vlen], byte_strides=[vlen, 1],
+            block_shape=[step, vlen], what='the gathered fallback B tile')
+        accs = []
+        for j in range(nchunks):
+            acc = b.accumulator(name=f"acc{len(self.kernel.accumulators)}")
+            b.acc_zero(acc)
+            accs.append(acc)
+        for s0 in range(0, k, step):
+            rc = s0 // vlen
+            # A for this K step, row-major: element (m, k) at m*step + k.
+            a_addr = self._spill_region(step * vlen)
+            for c in range(step // vlen):
+                part = a_parts[rc + c]
+                get = self._tile_row_getter(part)
+                for r in range(vlen):
+                    v = get(r)
+                    if part.store != ae:
+                        v = b.vcvt(part.store, ae, v)
+                    b.store(b.sbini('add', a_addr, r * step + c * vlen), v, size='b')
+            b.fence()
+            a_win = self._window_for(vlen, step, ae)
+            for i in range(a_win.length):
+                b.window_put(a_win, i, b.load(a_addr if i == 0 else b.sbini('add', a_addr, i * 64),
+                                              dtype='i32', size='w'))
+            a_tile = Tile('window', a_win, vlen, step, ae)
+            for j in range(nchunks):
+                b_win = self._window_for(step, vlen, ae)
+                # Fallback, skipped when the rows are affine: B[kk, :] is one
+                # byte gather of W's column kk into scratch, then a plain
+                # tile transfer. Both transfers are issued, each predicated
+                # (a predicated-off command completes, ISA sec 9A.3).
+                ok = b.vextract(oks, j)
+                done = self._control_label('x8dot_done')
+                b.branch_nz(ok, done)
+                kk = self._copy_value(b.const(0))
+                # The arm's scalars are formed inside it, so none is live
+                # across the whole dot.
+                row = at(r00) if s0 == 0 else b.sbini('add', at(r00), s0)
+                fill = b.sbini('add', scratch, fill_off)
+                with b.loop(kk, step, self._control_label('x8dot_row')):
+                    src = b.sbin('add', row, kk)
+                    mask = None
+                    if limit != 'all':
+                        left = b.sbin('sub', b.sbini('add', limit, -s0), kk)
+                        mask = b.vcmp('gt', b.splat(left, dtype='i32'), b.vmovi(0))
+                    g = b.gather(src, lane_vecs[j], mask=mask, other=0, dtype='i32', size='b')
+                    b.store(b.sbin('add', fill, b.sbini('shl', kk, (vlen - 1).bit_length())), g, size='b')
+                    b.fence()
+                b.label(done)
+                bar = b.barrier(name=f"fill{len(self.kernel.barriers)}")
+                tok = b.barrier_arm(bar, arrivals=0, ops=2)
+                fast_p = b.vcmp('ne', b.splat(ok, dtype='i32'), b.vmovi(0))
+                slow_p = b.vcmp('eq', b.splat(ok, dtype='i32'), b.vmovi(0))
+                b.dma_load(b_win, fill_desc.value, [b.const(0), b.const(0)], tok, dtype=ae, mask=slow_p)
+                b.dma_load(b_win, desc.value, [b.vextract(rows, j), b.const(s0)], tok,
+                           dtype=ae, transpose=True, mask=fast_p)
+                b.barrier_wait(tok)
+                self._mma_into(accs[j], a_tile, Tile('window', b_win, step, vlen, ae))
+        for j, acc in enumerate(accs):
+            off = self._take_scratch(vlen * vlen * 4)
+            addr = b.sbini('add', scratch, off)
+            for i in range(vlen):
+                b.store(addr if i == 0 else b.sbini('add', addr, 4 * vlen * i),
+                        b.acc_read(acc, b.const(i)), size='w')
+            b.fence()
+            rid = ('register-chunk', op.get_result(0).id(), j) if n > vlen else op.get_result(0).id()
+            self._tiles[rid] = Tile('spilled', off, vlen, vlen, 'f32')
+        self._swapped_dots = getattr(self, '_swapped_dots', 0) + 1
+        self._x8_dots = getattr(self, '_x8_dots', 0) + 1
         return True
 
     def _swap_no(self, why):

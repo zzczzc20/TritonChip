@@ -1,0 +1,24 @@
+{
+  "audited_compile_commit": "c2c96d3",
+  "candidate_commit": "d3de693570a175234fc223de4292a9f8c0a3750b",
+  "compile_source_paths": [
+    "compiler",
+    "python",
+    "archbench",
+    "tools/asm",
+    "spec/r40",
+    "isa",
+    "xls",
+    "tools/r40",
+    "tools/performance_harness/default_change_audit.py"
+  ],
+  "changed_compile_source_files": [],
+  "prior_audit_summary": {
+    "points": 113,
+    "unchanged": 113,
+    "changed": 0,
+    "not_compared": 0
+  },
+  "prior_audit_sha256": "cd4de72cb632b5200c668d17ce6cf2a1dc1710c1bd30e131a5245cb078dc380c",
+  "scope": "Source identity continuation of the retained default_change_audit.py 113-point audit; no fresh compile claimed. Only harness tests, experimental spec and evidence changed in this task."
+}

@@ -276,6 +276,13 @@ class TTIRImporter:
         # anything that could be inside a loop.
         self._prologue_pos = len(self.b.region.ops)
         self._hoisted = {}
+        # The bases a hoisted map may name: values bound before the prologue.
+        # A pointer formed later (a 2-D splat of `p + k`, a loop-carried or
+        # selected pointer) is defined after it, so a map built at entry
+        # cannot read it; `_origin_const` says which of those are an argument
+        # plus a constant and can be rebuilt there.
+        self._entry_args = {n for n, _v in self._args.values()}
+        self._origin_const = {}
         # Where DCO's registrations go: after the arguments, before anything
         # the kernel loads.
         dco_mark = len(self.b.region.ops)
@@ -1768,8 +1775,11 @@ class TTIRImporter:
                     address, _, _, kind, _ = self._address(src)
                     if kind != 'broadcast':
                         raise Unsupported('2-D splat of a lane-varying pointer')
+                    origin = self._constant_origin(src.id(), name, pelem)
                     name = self._control_label('ptr_origin')
                     self._args[len(self._args)] = (name, address)
+                    if origin is not None:
+                        self._origin_const[name] = origin
                 self._ptr2d[rid] = (name, pelem, Affine2D())
                 return
             if elem.startswith('f'):
@@ -2413,7 +2423,19 @@ class TTIRImporter:
             self._affine[rid] = aff
             return
         if src.id() in self._ptr2d:
-            self._ptr2d[rid] = self._ptr2d[src.id()]
+            name, elem, offset = self._ptr2d[src.id()]
+            shape, _ = _parse_type(str(op.get_result(0).get_type()))
+            if (isinstance(offset, Tile) and offset.cols == 1 and shape[1] > 1
+                    and not offset.replicated):
+                # An [R, 1] offset tile (a 64-bit offset narrowed or rebased
+                # by wide.py) holds each row's offset in lane 0 only. The
+                # broadcast pointer addresses every column of the row from
+                # it, so the row's offset goes to every lane, as a data
+                # broadcast of an unproven [R, 1] column does.
+                get = self._tile_row_getter(offset)
+                offset = Tile('lazy', lambda r: self.b.splat(self.b.vextract(get(r), 0), dtype='i32'),
+                              offset.rows, shape[1], 'i32', replicated=True)
+            self._ptr2d[rid] = (name, elem, offset)
             return
         raise Unsupported(
             'tt.broadcast of a value that is neither an index nor a pointer',
@@ -2644,6 +2666,20 @@ class TTIRImporter:
     # an unmasked pointer load never is.
     _OPEN_EXTENT = (1 << 31) - 1
 
+    def _constant_origin(self, pid, name, elem):
+        """(argument, byte offset) when every link of pointer `pid`'s chain is
+        a compile-time element count -- `p + k`, Inductor's slice of an
+        argument -- else None."""
+        total = 0
+        for value in self._ptr_chain.get(pid, []):
+            known = self._scalar_const(value.id())
+            if known is None or self._offsets.get(value.id()) is not None:
+                return None
+            total += known
+        if name not in self._entry_args:
+            return None
+        return name, total * _DTYPE_BYTES[elem]
+
     def _hoisted_tile_descriptor(self, name, elem, aff, block, what):
         """A TensorMap built ONCE, at the kernel's entry, and the coordinates
         of this tile in it -- or None (index_opt).
@@ -2659,6 +2695,14 @@ class TTIRImporter:
         """
         if aff.col_stride != 1 or aff.row_stride <= 1 or not aff.dynamic:
             return None
+        origin = (name, 0)
+        if name not in self._entry_args:
+            # A base formed after the prologue: rebuilt there from its
+            # argument when it is one plus a constant, else not hoisted (the
+            # caller builds the map where the base is defined).
+            origin = self._origin_const.get(name)
+            if origin is None:
+                return None
         rows, cols = [], []
         for v, c in aff.dynamic:
             if c % aff.row_stride == 0:
@@ -2667,7 +2711,7 @@ class TTIRImporter:
                 cols.append((v, 1))
             else:
                 return None
-        key = (name, elem, aff.row_stride, aff.const, tuple(block))
+        key = (origin, elem, aff.row_stride, aff.const, tuple(block))
         desc = self._hoisted.get(key)
         if desc is None:
             ops = self.b.region.ops
@@ -2679,7 +2723,10 @@ class TTIRImporter:
                 setattr(self, c, {})
             self._scratch = None
             esize = self._ELEM_BYTES[elem]
-            base = self._arg_value(name)
+            base = self._arg_value(origin[0])
+            if origin[1]:
+                base = self.b.sbini('add', base, origin[1],
+                                    comment=f"the pointer's constant offset ({origin[1]} bytes)")
             if aff.const:
                 base = self.b.sbini('add', base, aff.const * esize,
                                     comment=f"the constant part of the index ({aff.const} elements)")

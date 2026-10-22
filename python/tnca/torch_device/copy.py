@@ -20,12 +20,18 @@ def _copy_storage_kernel(SRC, DST, N, BLOCK: tl.constexpr):
         tl.store(DST + index, value, index < N)
 
 
+# Largest span one copy launch covers. The kernels index in i32 (the count,
+# and offsets from each argument's own address); a longer copy is a sequence
+# of launches whose arguments are 64-bit buffer offsets.
+MAX_SPAN = (1 << 31) - (1 << 20)
+
+
 def copy_storage(memory, dst, src, nbytes):
     """Allocator resize copy: opaque bytes stay on the device."""
     if not nbytes or dst == src:
         return
-    if not 0 < nbytes < (1 << 31):
-        raise RuntimeError('tnca resize copy requires a positive 32-bit byte count')
+    if nbytes < 0:
+        raise RuntimeError('tnca resize copy requires a positive byte count')
     from tnca import aot, device
     memory.synchronize()
     session = memory.session()
@@ -44,12 +50,14 @@ def copy_storage(memory, dst, src, nbytes):
             _storage_modules[session] = (session.epoch, module)
         else:
             module = cached[1]
-        event = session.submit(module, {'SRC': (source, source_offset),
-            'DST': (destination, destination_offset), 'N': nbytes},
-            grid=(min(triton.cdiv(nbytes, 128), 1024), 1, 1))
-        session.wait(event)
-        if not event.ok:
-            raise event.error
+        for done in range(0, nbytes, MAX_SPAN):
+            n = min(MAX_SPAN, nbytes - done)
+            event = session.submit(module, {'SRC': (source, source_offset + done),
+                'DST': (destination, destination_offset + done), 'N': n},
+                grid=(min(triton.cdiv(n, 128), 1024), 1, 1))
+            session.wait(event)
+            if not event.ok:
+                raise event.error
 
 
 @triton.jit
@@ -124,8 +132,18 @@ def copy_tensor(src, dst):
                                                   for s, n in zip(source_strides, shape)))
     destination_extent = dst.element_size() * (1 + sum((n - 1) * s
                                                        for s, n in zip(dst.stride(), shape)))
-    if max(count, source_extent, destination_extent) >= (1 << 31):
-        raise RuntimeError('tnca copy: 64-bit copy indexing is not implemented')
+    if max(count, source_extent, destination_extent) > MAX_SPAN:
+        # Halve the dimension spanning the most bytes until each launch's
+        # count and spans fit its i32 indexing; each part is a view whose
+        # 64-bit storage offset the launcher passes as its buffer offset.
+        source = src.expand(shape) if tuple(src.shape) != shape else src
+        dim = max((d for d, n in enumerate(shape) if n > 1),
+                  key=lambda d: (shape[d] - 1) * max(source.stride(d), dst.stride(d)))
+        half = shape[dim] // 2
+        for part in (slice(0, half), slice(half, shape[dim])):
+            index = (slice(None),) * dim + (part,)
+            copy_tensor(source[index], dst[index])
+        return dst
     contiguous = src.is_contiguous() and dst.is_contiguous() and tuple(src.shape) == shape
     block = 128 if contiguous else 16
     programs = min(triton.cdiv(count, block), 1024)

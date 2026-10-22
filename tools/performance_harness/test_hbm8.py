@@ -312,7 +312,7 @@ class QueueScriptTests(unittest.TestCase):
     SCRIPT = ROOT / 'evidence/r41/hbm8/launches/hbm8_queue.sh'
 
     def run_queue(self, *, uuid='1bada9db-78f3-5bc8-7ba6-cce062e7ade8', mhz='90', mem_kb=32 << 20,
-                  stage1='BOARD-QUEUE-DONE'):
+                  stage1='BOARD-QUEUE-DONE', stage1_wait_polls=0, busy_once=False):
         import subprocess
         import tarfile
         import tempfile
@@ -338,7 +338,36 @@ class QueueScriptTests(unittest.TestCase):
                    HBM8_STAGE1_PATTERN='^bash [^ ]*' + __import__('uuid').uuid4().hex, HBM8_IDLE_MINUTES='2', HBM8_POLL_SECONDS='0',
                    HBM8_MEMINFO=str(tmp / 'meminfo'), HBM8_MEM_WAIT_SECONDS='0',
                    HBM8_PYTHON=sys.executable, PATH='/usr/bin:/bin')
+        fakebin = tmp / 'bin'
+        fakebin.mkdir()
+        if stage1_wait_polls:
+            # Keep the predecessor alive for N polls. No real process is
+            # created or killed, and neither manifest may run during them.
+            fake = fakebin / 'pgrep'
+            fake.write_text(
+                '#!/bin/bash\n'
+                f'n=$(cat "{tmp}/queue-polls" 2>/dev/null || echo 0)\n'
+                f'n=$((n+1)); echo "$n" > "{tmp}/queue-polls"\n'
+                f'test ! -e "{tmp}/r41hbm8_board_abc/ran.txt" || exit 99\n'
+                f'test "$n" -le {stage1_wait_polls}\n')
+            fake.chmod(0o755)
+        if busy_once:
+            fake = fakebin / 'sleep'
+            fake.write_text(
+                '#!/bin/bash\n'
+                f'n=$(cat "{tmp}/idle-polls" 2>/dev/null || echo 0)\n'
+                f'n=$((n+1)); echo "$n" > "{tmp}/idle-polls"\n'
+                f'if [ "$n" = 1 ]; then sed -i "s/contexts:.*/contexts: 1/" "{dev}/kdsstat"; fi\n'
+                f'if [ "$n" = 2 ]; then sed -i "s/contexts:.*/contexts: 0/" "{dev}/kdsstat"; fi\n')
+            fake.chmod(0o755)
+        env['PATH'] = str(fakebin) + ':' + env['PATH']
         r = subprocess.run(['bash', str(self.SCRIPT), 'abc'], env=env, capture_output=True, text=True, timeout=120)
+        if stage1_wait_polls:
+            self.assertEqual(int((tmp / 'queue-polls').read_text()), stage1_wait_polls + 1)
+        if busy_once:
+            # Two idle observations, interrupted by busy, require a fresh
+            # pair. Counting nonconsecutive idle observations would take 3.
+            self.assertEqual(int((tmp / 'idle-polls').read_text()), 4)
         d = tmp / 'r41hbm8_board_abc'
         ran = (d / 'ran.txt').read_text().split() if (d / 'ran.txt').exists() else []
         return r.returncode, (d / 'queue.log').read_text(), ran
@@ -354,6 +383,14 @@ class QueueScriptTests(unittest.TestCase):
         rc, log, ran = self.run_queue(stage1='')
         self.assertEqual(rc, 0, log)
         self.assertIn('did not log BOARD-QUEUE-DONE', log)
+
+    def test_waits_for_the_live_stage1_queue_to_exit(self):
+        rc, log, ran = self.run_queue(stage1='', stage1_wait_polls=3)
+        self.assertEqual((rc, len(ran)), (0, 2), log)
+
+    def test_busy_card_restarts_the_consecutive_idle_period(self):
+        rc, log, ran = self.run_queue(busy_once=True)
+        self.assertEqual((rc, len(ran)), (0, 2), log)
 
     def test_other_image_or_clock_is_never_loaded_over(self):
         for kw in (dict(uuid='428c00e5-6996-92c7-1f8f-ec41f2d037b3'), dict(mhz='245')):

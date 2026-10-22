@@ -211,6 +211,15 @@ class Addr64Tests(unittest.TestCase):
                                          (O, H.pack32([0] * 64), 'os')],
                      [(O, 4 * (c * 8 + r), f2b(xs[r * 8 + c])) for r in range(8) for c in range(8)])
 
+    def test_affine64_tile_with_i64_elements(self):
+        _, cg, _ = self.compile(index64_tile, dict(X='*i64', O='*i64'), dict(X=X, O=O))
+        xs = [((-1) ** r) * ((1 << 40) + r * 10 + c) for r in range(8) for c in range(8)]
+        words = [part for n in xs for part in (n & 0xffffffff, (n >> 32) & 0xffffffff)]
+        checks = [(O, 8 * (c * 8 + r) + off, (xs[r * 8 + c] >> (off * 8)) & 0xffffffff)
+                  for r in range(8) for c in range(8) for off in (0, 4)]
+        self.run_rtl('addr64_affine_i64', cg,
+            [(X, H.pack32(words), 'xs'), (O, H.pack32([0] * 128), 'os')], checks)
+
     def test_row_pointer_broadcast_gives_every_lane_its_row(self):
         # Broadcasting an [R, 1] pointer whose offsets are a tile (not an
         # affine index) used to keep the offset in lane 0 only: columns 1-7

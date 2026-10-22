@@ -24,6 +24,7 @@ Cases:
                  and eager copies
   clone          an eager device clone of a whole 2.25 GiB storage
   resize         grow a 2.25 GiB storage with resize_, preserving device bytes
+  rows           embedding reduction with eight rows per program
   stream         a full 2.25 GiB bf16 storage: uploaded, read entirely by a
                  compiled reduction, written entirely by a compiled
                  pointwise op, copied entirely by an eager clone; every
@@ -239,7 +240,7 @@ def case_large(case, which):
             torch.nn.functional.linear(x.float(), tail[-48:, :64].float()).to(dtype), x.to('tnca'),
             tol=(5e-2, 2e-2))
     # A graph input that is itself a view whose storage offset passes 2 GiB.
-    view = big[-16:]
+    view = torch.as_strided(big, (16, C), (C, 1), (R - 16) * C)
     _compiled(case, D, f'{which}.view_input', lambda a: up(a) + 3, [view], up(tail[-16:]) + 3, tol)
     # In-place through a view past 2 GiB: the neighbours must not change.
     sl = big[R - 40:R - 24]
@@ -362,6 +363,17 @@ def case_resize(case):
     case.record(dict(test='resize_preserves_2_25_gib', old_base=hex(old), new_base=hex(_addr(D, x)),
                      bytes_before=n, bytes_after=x.untyped_storage().nbytes(), mismatches=bad,
                      resize_seconds=round(time.monotonic() - t, 1), status='PASS' if bad == 0 else 'WRONG'))
+
+
+def case_rows(case):
+    # Exercise [R,1] int64 row pointers broadcast across a reduction row.
+    os.environ['TNCA_REDUCTION_ROWS'] = '8'
+    torch, D = _device()
+    w = (torch.arange(64 * 8).reshape(64, 8).float() * 0.25).bfloat16()
+    ids = torch.tensor([3, 0, 7, 5, 1, 6, 2, 4] * 4, dtype=torch.int64)
+    fn = lambda w, i: torch.nn.functional.embedding(i, w).float().sum(-1)
+    _compiled(case, D, 'embedding_eight_row_reduction', fn, [w.to('tnca'), ids.to('tnca')],
+              fn(w, ids), None)
 
 
 # ------------------------------------------------------------- negatives ----
@@ -497,6 +509,10 @@ def case_neg(case, what):
         stride = struct.unpack_from('<q', data, 48)[0]
         case.record(dict(test='descriptor_base_above_4g_packed_64bit', base=hex(base), stride=stride,
                          status='PASS' if base == (1 << 33) + 0x40 and stride == 16 else 'FAIL'))
+        small = torch.empty(16, device='tnca')
+        _expect_refusal(case, 'as_strided_offset_not_truncated',
+                        lambda: torch.as_strided(small, (2,), (1,), (1 << 32) + 5),
+                        r'out of bounds|requiring a storage size|storage size')
     else:
         raise SystemExit(f'unknown negative case {what}')
 
@@ -521,6 +537,8 @@ def child(args):
             case_clone(case)
         elif kind == 'resize':
             case_resize(case)
+        elif kind == 'rows':
+            case_rows(case)
         elif kind == 'neg':
             case_neg(case, arg)
         else:

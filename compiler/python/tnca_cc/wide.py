@@ -80,6 +80,8 @@ def _publish(imp, dst, value, shape, elem):
 
 
 def lower(imp, op):
+    if not getattr(imp, '_in_wide_row', False) and _affine_tile64(imp, op):
+        return True
     if _lower_rows(imp, op):
         return True
     from .frontend import _parse_type, Unsupported
@@ -87,6 +89,11 @@ def lower(imp, op):
     vlen = imp.target.vlen
     name = op.get_name()
     operands = [op.get_operand(i) for i in range(op.get_num_operands())]
+    for v in operands:
+        if v.id() in getattr(imp, '_affine64', {}):
+            dims, _ = _parse_type(str(v.get_type()))
+            if isinstance(dims, tuple) and dims[0] == 1:
+                imp._wide[v.id()] = _affine64_row(imp, imp._affine64[v.id()], 0, dims[1])
     lane64 = getattr(imp, '_lane64', None)
     if lane64 and operands and operands[0].id() in lane64:
         if name == 'tt.addptr':
@@ -313,6 +320,101 @@ def _divide_dynamic(imp, n, divisor, signed, remainder):
     sign = ns if remainder else b.sbin('xor', ns, ds)
     result = r if remainder else q
     return b.sbin('sub', b.sbin('xor', result, sign), sign)
+
+
+def _affine64_row(imp, aff, row, cols):
+    """Materialize only the row a data consumer needs, in exact scalar bits."""
+    b = imp.b
+    base = imp._add_dynamic(b.const(aff.const + row * aff.row_stride), aff, 1)
+    lo, hi = b.vmovi(0), b.vmovi(0)
+    for col in range(cols):
+        v = base if col * aff.col_stride == 0 else b.sbini('add', base, col * aff.col_stride)
+        b.vinsert(lo, col, v)
+        b.vinsert(hi, col, b.sbini('lshr', v, 32))
+    return lo, hi
+
+
+def _affine_tile64(imp, op):
+    """Keep affine i64 tile indices symbolic until an address/data consumer.
+
+    Eager low/high pairs for every intermediate row exhaust the VRF in
+    INDEX_DTYPE=int64 GEMMs. A symbolic index retains scalar 64-bit origins
+    and bounded local row/column strides; data consumers materialize one row.
+    """
+    from .frontend import _parse_type, Unsupported, _DTYPE_BYTES
+    from .tiles import Affine2D
+    if not index64(imp) or not op.get_num_results():
+        return False
+    name, dst = op.get_name(), op.get_result(0)
+    dims, elem = _parse_type(str(dst.get_type()))
+    forms = getattr(imp, '_affine64', {})
+
+    def form(v):
+        if v.id() in forms:
+            return forms[v.id()]
+        pending = imp._pending_const.get(v.id())
+        if pending and pending[0] in ('scalar', 'vector', 'tile') and isinstance(pending[1], int):
+            return Affine2D(const=pending[1])
+        shape, typ = _parse_type(str(v.get_type()))
+        if shape is None and typ == 'i64':
+            return Affine2D(dynamic=[(imp._value(v), 1)])
+        return None
+
+    if name == 'tt.addptr' and op.get_operand(1).id() in forms:
+        base, offs = op.get_operand(0), forms[op.get_operand(1).id()]
+        spec = imp._ptr2d.get(base.id())
+        if spec is None or not isinstance(spec[2], Affine2D):
+            return False
+        label, typ, old = spec
+        aff = old.plus(offs)
+        # The scalar origin is unbounded; only the local tile must fit the
+        # ISA's signed i32 gather index. No unchecked vector wrap is allowed.
+        span = abs(aff.row_stride) * (dims[0] - 1) + abs(aff.col_stride) * (dims[1] - 1)
+        if span >= (1 << 31):
+            raise Unsupported('64-bit affine tile spans more than signed i32 local offsets')
+        if aff.const or aff.dynamic:
+            es = _DTYPE_BYTES.get(typ)
+            if es is None:
+                return False
+            at = imp._add_dynamic(imp.b.const(aff.const * es), aff, es)
+            at = imp.b.sbin('add', imp._arg_value(label), at, comment='a 64-bit tile origin')
+            label = imp._control_label('ptr_affine64')
+            imp._args[len(imp._args)] = (label, at)
+        imp._ptr2d[dst.id()] = (label, typ, Affine2D(aff.row_stride, aff.col_stride))
+        return True
+    if not isinstance(dims, tuple) or len(dims) != 2 or elem != 'i64':
+        return False
+    aff = None
+    if name == 'tt.splat':
+        aff = form(op.get_operand(0))
+    elif name in ('tt.broadcast', 'tt.expand_dims'):
+        src = op.get_operand(0)
+        aff = forms.get(src.id())
+        if aff is None and name == 'tt.expand_dims':
+            f = getattr(imp, '_wide_form', {}).get(src.id())
+            if f is not None and f[1] is not None and imp._offsets.get(f[1].id(), (None,))[0] == 'arange':
+                invariant, _ = f
+                aff = (Affine2D(const=invariant) if isinstance(invariant, int) else
+                       Affine2D(dynamic=[(invariant, 1)]))
+                if op.get_int_attr('axis') == 1:
+                    aff.row_stride = 1
+                else:
+                    aff.col_stride = 1
+    elif name in ('arith.addi', 'arith.subi', 'arith.muli'):
+        a, c = form(op.get_operand(0)), form(op.get_operand(1))
+        if a is not None and c is not None:
+            if name != 'arith.muli':
+                aff = a.plus(c if name == 'arith.addi' else c.scaled(-1))
+            else:
+                for x, y in ((a, c), (c, a)):
+                    if not (y.row_stride or y.col_stride or y.dynamic):
+                        aff = x.scaled(y.const)
+                        break
+    if aff is None:
+        return False
+    forms[dst.id()] = aff
+    imp._affine64 = forms
+    return True
 
 
 # ---------------------------------------------------------------------------
@@ -763,6 +865,8 @@ def _lower_rows(imp, op):
                     imp._ptr_base[view.id()] = imp._ptr_base[v.id()]
                 if v.id() in wide_tiles:
                     imp._wide[view.id()] = wide_tiles[v.id()][use_row]
+                elif v.id() in getattr(imp, '_affine64', {}):
+                    imp._wide[view.id()] = _affine64_row(imp, imp._affine64[v.id()], use_row, shape[1])
                 elif v.id() in imp._wide:
                     imp._wide[view.id()] = imp._wide[v.id()]
                 elif v.id() in imp._pending_const:

@@ -347,6 +347,13 @@ class TNCABackend(BaseBackend):
              _stages) = aot._lower_ttir(module, ctx, kernel_name, params, target, prov,
                                         compile_options, stages, options.opt_level)
         except Exception as e:
+            from .driver import _bench_local
+            if getattr(_bench_local, 'compile_only', False):
+                # triton.autotune is trying a config (driver.bench): one TNCA
+                # cannot lower is a config this device cannot run, which the
+                # tuner drops -- as it drops one out of GPU resources.
+                from triton.runtime.errors import OutOfResources
+                raise OutOfResources(0, 0, f'TNCA: {str(e).splitlines()[0][:200]}') from e
             if dump_to:
                 stages.write(dump_to, metadata={'entry_point': 'triton-backend', 'profile': options.profile,
                                                 'opt_level': options.opt_level,

@@ -12,6 +12,9 @@ import re
 # operation within the code store, and 128 is the tile Triton's own block
 # kernels choose (BLOCK_SIZE_M/N/K up to 128).
 MAX_ROWS = 128
+# The extended lowering takes 1-D blocks this wide (a whole row reduced in one
+# program); vector_spill keeps what does not fit in registers in scratch.
+MAX_WIDE_1D = 16384
 
 
 def _width(value):
@@ -248,8 +251,10 @@ def lower(imp, op):
     rows = next(iter(row_sizes), imp.target.vlen)
     if rows % imp.target.vlen or rows > MAX_ROWS:
         raise Unsupported(f'register block rows must be a VLEN multiple up to {MAX_ROWS}')
-    if width % imp.target.vlen or width > 128:
-        raise Unsupported(f'register block width {width}; expected a VLEN multiple up to 128')
+    max_width = MAX_WIDE_1D if getattr(imp, 'large_tiles', False) and not row_sizes and \
+        all(len(re.findall(r'\d+x', str(v.get_type()))) <= 1 for v in values) else 128
+    if width % imp.target.vlen or width > max_width:
+        raise Unsupported(f'register block width {width}; expected a VLEN multiple up to {max_width}')
     widths_seen = getattr(imp, '_register_block_widths', set())
     widths_seen.add(width)
     imp._register_block_widths = widths_seen

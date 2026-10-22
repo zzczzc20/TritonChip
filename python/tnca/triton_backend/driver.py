@@ -622,7 +622,8 @@ class TNCADriver(DriverBase):
                 fn()
             finally:
                 _bench_local.compile_only = False
-            return 1.0
+            quantiles = k.get('quantiles')
+            return [1.0] * len(quantiles) if quantiles else 1.0
         return bench
 
     def get_empty_cache_for_benchmark(self):

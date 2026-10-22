@@ -215,14 +215,28 @@ class Ctx:
         return t
 
     def place_all(self, placements, dtype=None, frame=1 << 20):
-        """Place ascending storages above a launch-frame hole kept at the heap
-        bottom and released afterwards, so first fit puts launch frames and
-        compiler outputs there. Placements end at least TOP_FREE below the
-        window top (the launch reserve stays free); only `samples` reaches the
-        exact last byte, with the R40 frame-prefix layout."""
+        """Keep a real launch hole while placing ascending storages.
+
+        An exact-end storage needs a prefix larger than the hole, so first
+        fit cannot reuse it. Release the hole before advancing to that final
+        storage: the device allocator must still keep LAUNCH_RESERVE free.
+        A probe at the heap bottom is placed before reserving the hole.
+        """
         torch = self.torch
-        hole = torch.empty(frame, dtype=torch.uint8, device='tnca')
-        out = [self.place(name, addr, nbytes, dtype) for name, addr, nbytes in placements]
+        out, hole = [], None
+        end = LOCAL + self.window['size']
+        for i, (name, addr, nbytes) in enumerate(placements):
+            bottom_probe = i == 0 and addr == self.session._heap.next
+            if i == 0 and not bottom_probe:
+                hole = torch.empty(frame, dtype=torch.uint8, device='tnca')
+            if addr + nbytes == end:
+                if nbytes <= frame:
+                    raise ValueError('exact-end storage must exceed the launch hole')
+                del hole
+                hole = None
+            out.append(self.place(name, addr, nbytes, dtype))
+            if bottom_probe:
+                hole = torch.empty(frame, dtype=torch.uint8, device='tnca')
         del hole
         return out
 
@@ -322,21 +336,16 @@ def case_samples(c, report):
     layout = sample_layout(c.window)
     placements, _ = plan('samples', c.mode, c.window)
     bump = torch.compile(lambda t: t.add_(1), fullgraph=True, dynamic=False)
-    probes, control = [], None
+    probes = []
+    storages = c.place_all(placements, torch.float16, frame=FRAME)
     for i, (e, (name, addr, nbytes)) in enumerate(zip(layout, placements)):
-        if i == len(layout) - 1 and control is not None:
-            del control
-            control = None
-        storage = c.place(name, addr, nbytes, torch.float16)
+        storage = storages[i]
         x = storage[e['view_offset'] // 2:]
         va = x.data_ptr()
         c.check(f'view:{name}', va == LOCAL + e['offset'] and x.numel() == PROBE // 2, va=hex(va))
         h = pattern_f16(torch, PROBE // 2, i)
         x.copy_(h)                                     # host DMA write
         probes.append(dict(name=name, storage=storage, x=x, h=h, va=va))
-        if i == 0:
-            control = torch.empty(FRAME, dtype=torch.uint8, device='tnca')
-    del control
     rows = []
     for p in probes:
         _, row = c.run(p['name'], bump, p['x'])
@@ -676,6 +685,8 @@ def main(argv=None):
             c.check('window-geometry', c.window['size'] == WINDOW and c.window['local_limit'] == LOCAL,
                     window=report['window'])
         globals()['case_' + args.case](c, report)
+        status = c.dev.axi_status()
+        c.check('final-axi-status-clear', not status['error'] and not status['stray'], status=status)
         if software_tree(ROOT, refresh=True) != tree:
             raise ValueError('software changed during the case')
         report['status'] = 'functional-pass'

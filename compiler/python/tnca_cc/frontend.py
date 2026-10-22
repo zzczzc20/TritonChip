@@ -1884,7 +1884,9 @@ class TTIRImporter:
         rid = op.get_result(0).id()
         self._offsets[rid] = ('arange' if not start else 'indexed', None)
         if start and self.index_opt and getattr(op, '_register_chunk', False):
-            self._uscalar[rid] = self._const_scalar(start)
+            # The extended lowering keeps the start as a number until an
+            # address or an index needs it (frontend._address folds it).
+            self._uscalar[rid] = start if self.large_tiles else self._const_scalar(start)
             self._offsets[rid] = ('contiguous', rid)
 
     def _op_tt_splat(self, op):
@@ -5076,6 +5078,13 @@ class TTIRImporter:
             # (uniform + arange) + uniform: still the lane index plus one
             # lane-invariant amount, the sum of the two.
             con, uni = (a, b) if ka == 'contiguous' else (b, a)
+            start = self._uscalar.get(self._offsets[con.id()][1])
+            if isinstance(start, int):
+                # Extended lowering: a register chunk's start stays a number
+                # beside the shared uniform part (_address folds it).
+                self._uscalar[rid] = ('plus', self._offsets[uni.id()][1], start)
+                self._offsets[rid] = ('contiguous', rid)
+                return
             total = self.b.sbin('add', self._key_scalar(self._offsets[con.id()][1]),
                                 self._key_scalar(self._offsets[uni.id()][1]))
             self._uscalar[rid] = total
@@ -5196,7 +5205,16 @@ class TTIRImporter:
                 # scalar address and let the arange be the lane term.
                 pure_arange += 1
                 lane_terms.append(value)
-                scalar_terms.append(self._key_scalar(ouni))
+                held = self._uscalar.get(ouni)
+                if isinstance(held, int):
+                    # A register chunk's compile-time start (extended
+                    # lowering) folds into the address.
+                    const_elems += held
+                elif isinstance(held, tuple):
+                    const_elems += held[2]
+                    scalar_terms.append(self._key_scalar(held[1]))
+                else:
+                    scalar_terms.append(self._key_scalar(ouni))
             elif okind == 'uniform':
                 scalar_terms.append(self._key_scalar(ouni))
             elif off in self._v and getattr(self._v[off], 'kind',
@@ -5596,6 +5614,11 @@ class TTIRImporter:
     def _key_scalar(self, key):
         """The scalar an `_offsets` 'uniform' or 'contiguous' entry names."""
         s = self._uscalar.get(key)
+        if isinstance(s, int):
+            return self._const_scalar(s)     # a register chunk's start, made on use
+        if isinstance(s, tuple):
+            _plus, uni, k = s
+            return self.b.sbini('add', self._key_scalar(uni), k)
         if s is not None:
             return s
         k = self._scalar_const(key)

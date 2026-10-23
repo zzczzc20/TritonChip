@@ -97,6 +97,13 @@
    "doc_sha256": "d634a05b740fd892baa0a23239fbf840bbe94f18da2101cfa073fca4d095c5a7",
    "fingerprint": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
    "time": "20261023T051142"
+  },
+  "doc/r40_hbm.md": {
+   "backend": "agy",
+   "commit": "791a241549d2c849c9130fb76cb78406fdab253c",
+   "doc_sha256": "8e87579a626e36e99bdf7e399f81ff6c17dee2363b59872e7993edba87855f75",
+   "fingerprint": "97659bb83e4470fa424e4a44529af8b71be2eb97f98d193ca154e4d6b62b8130",
+   "time": "20261023T051433"
   }
  }
 }

@@ -1,0 +1,50 @@
+{
+ "versions": {
+  "python": "3.12.3",
+  "torch": "2.14.0+cu130",
+  "diffusers": "0.41.0",
+  "transformers": "5.20.2",
+  "accelerate": "1.15.0",
+  "safetensors": "0.8.0",
+  "huggingface_hub": "1.33.0",
+  "numpy": "2.5.3",
+  "machine": "aarch64",
+  "cpu_capability": "SVE128",
+  "threads": 8
+ },
+ "checkpoint": "/home/zhongchun/flux-hf/hub/models--black-forest-labs--FLUX.2-klein-4b-fp8/snapshots/5b4408e59397a4a37ccb46afe426d8ed86379441/flux-2-klein-4b-fp8.safetensors",
+ "from_single_file": {
+  "outcome": "raised",
+  "error": "RuntimeError: chunk expects at least a 1-dimensional tensor",
+  "frames": [
+   "single_file_model.py:516 from_single_file: diffusers_format_checkpoint = checkpoint_mapping_fn(",
+   "single_file_utils.py:3998 convert_flux2_transformer_checkpoint_to_diffusers: handler_fn_inplace(key, converted_state_dict)",
+   "single_file_utils.py:3946 convert_flux2_double_stream_blocks: to_q_weight, to_k_weight, to_v_weight = torch.chunk(fused_qkv_weight, 3, dim=0)"
+  ]
+ },
+ "files_mentioning__quantization_metadata": {
+  "diffusers": [],
+  "transformers": []
+ },
+ "diffusers_quantizers": [
+  "auto-round",
+  "bitsandbytes_4bit",
+  "bitsandbytes_8bit",
+  "gguf",
+  "modelopt",
+  "nunchaku_lite",
+  "quanto",
+  "sdnq",
+  "torchao"
+ ],
+ "load_model_dict_into_meta_keeps_float8_only_with_quantizer": true,
+ "scales_dropped_from_single_file": {
+  "param": "transformer_blocks.0.attn.to_out.0.weight",
+  "loaded_dtype": "torch.bfloat16",
+  "loaded_absmax": 448.0,
+  "bf16_reference_absmax": 0.265625,
+  "checkpoint_weight_scale": 0.000591278076171875,
+  "loaded_over_reference_rms": 1690.9266357421875,
+  "meaning": "float8 codes cast to bf16 with no weight_scale applied: every quantized weight off by 1/weight_scale"
+ }
+}

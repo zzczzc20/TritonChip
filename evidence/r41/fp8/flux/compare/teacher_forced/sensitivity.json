@@ -1,0 +1,26 @@
+{
+ "layer": "single_transformer_blocks.10.attn.to_out",
+ "reference": "out/ref_fp8",
+ "results": {
+  "none": {
+   "rel_l2": 0.0,
+   "cosine": 0.9999999999999998,
+   "bitwise_equal": true
+  },
+  "1% multiplicative noise": {
+   "rel_l2": 0.023103891358295364,
+   "cosine": 0.9997331762761715,
+   "bitwise_equal": false
+  },
+  "10% multiplicative noise": {
+   "rel_l2": 0.029448197817663217,
+   "cosine": 0.999566387381102,
+   "bitwise_equal": false
+  },
+  "output zeroed": {
+   "rel_l2": 0.2019780989130531,
+   "cosine": 0.9794686443951542,
+   "bitwise_equal": false
+  }
+ }
+}

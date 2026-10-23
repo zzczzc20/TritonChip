@@ -7,6 +7,15 @@ compiler transformation; the incoming standard-path TTIR stays unchanged.
 """
 import re
 
+# The largest row count a register block is split into VLEN-row chunks for.
+# A chunk is an independent 16-row tile; the bound keeps a fully unrolled
+# operation within the code store, and 128 is the tile Triton's own block
+# kernels choose (BLOCK_SIZE_M/N/K up to 128).
+MAX_ROWS = 128
+# The extended lowering takes 1-D blocks this wide (a whole row reduced in one
+# program); vector_spill keeps what does not fit in registers in scratch.
+MAX_WIDE_1D = 16384
+
 
 def _width(value):
     match = re.fullmatch(r'tensor<(?:\d+x)?(\d+)x([^\d].*)>', str(value.get_type()))
@@ -130,6 +139,19 @@ class _RowOpView(_OpView):
         return _RowValueView(self.op.get_result(i), self.row, self.chunk, self.vlen)
 
 
+def view_like(op, value):
+    """`op` presented in the register chunk (and row chunk) `value` is in.
+
+    The importer reaches a value's defining operation through the module
+    walk, which holds real operations; when `value` is a chunk view, the
+    operation's operands must be read as the same chunk."""
+    if isinstance(value, _RowValueView):
+        return _RowOpView(op, value.row, value.chunk, value.vlen)
+    if isinstance(value, _ValueView):
+        return _OpView(op, value.chunk, value.vlen)
+    return op
+
+
 def _native_matrix(imp, op):
     if op.get_name() != 'tt.dot':
         return None
@@ -138,11 +160,22 @@ def _native_matrix(imp, op):
     b, be = _parse_type(str(op.get_operand(1).get_type()))
     if not isinstance(a, tuple) or not isinstance(b, tuple) or len(a) != 2 or len(b) != 2:
         return None
-    if (ae != be or ae not in ('f16', 'bf16') or a[0] > imp.target.vlen or
-            a[1] != b[0] or a[1] not in (32, 64) or
-            f'k{a[1]}' not in imp.target.mma['k_steps']):
+    # FP8 fragments are the same flat row-major arrays (ISA sec 9C.2), so a
+    # K32/K64 FP8 dot is one MMA per K step like an FP16 one. Splitting it
+    # as an elementwise operation paired A's second K chunk with B's first.
+    if (ae != be or ae not in ('f16', 'bf16', 'f8E4M3FN', 'f8E5M2') or a[0] > imp.target.vlen or
+            a[1] != b[0]):
         return None
-    return a, b
+    if a[1] in (32, 64) and f'k{a[1]}' in imp.target.mma['k_steps']:
+        return a, b
+    # Deeper K (the extended lowering): one MMA per K step of the widest
+    # step that divides K, accumulated in ascending K into one accumulator
+    # (frontend._mma_fragments) -- the order sec 9C.1 gives a single command.
+    steps = [int(k[1:]) for k in imp.target.mma['k_steps']]
+    if (getattr(imp, 'large_tiles', False) and a[1] > max(steps) and
+            any(a[1] % k == 0 for k in steps if k > imp.target.vlen)):
+        return a, b
+    return None
 
 
 def _matrix_descriptor(imp, op):
@@ -165,7 +198,7 @@ def _matrix_descriptor(imp, op):
 # operations fail rather than accidentally executing a region once per chunk.
 _ALLOWED = {'tt.make_range', 'tt.splat', 'tt.addptr', 'tt.load', 'tt.store',
             'tt.broadcast', 'tt.bitcast', 'tt.fp_to_fp', 'tt.clamp', 'tt.reduce',
-            'tt.expand_dims', 'tt.reshape', 'tt.dot'}
+            'tt.expand_dims', 'tt.reshape', 'tt.dot', 'tt.extern_elementwise'}
 
 
 def lower(imp, op):
@@ -198,6 +231,9 @@ def lower(imp, op):
         widths_seen.add(a[1])
         imp._register_block_widths = widths_seen
         widths = {b[1]} if b[1] > imp.target.vlen else set()
+    if (matrix and op.get_name() == 'tt.dot' and getattr(imp, 'large_tiles', False)
+            and imp._swapped_dot(op)):
+        return True
     if not widths and not row_sizes:
         return False
     for value in values:
@@ -213,17 +249,17 @@ def lower(imp, op):
         raise Unsupported('register-block operation with mismatched widths')
     width = next(iter(widths), imp.target.vlen)
     rows = next(iter(row_sizes), imp.target.vlen)
-    if rows % imp.target.vlen or rows > 64:
-        raise Unsupported('register block rows must be a VLEN multiple up to 64')
-    if width % imp.target.vlen or width > 128:
-        raise Unsupported(f'register block width {width}; expected a VLEN multiple up to 128')
+    if rows % imp.target.vlen or rows > MAX_ROWS:
+        raise Unsupported(f'register block rows must be a VLEN multiple up to {MAX_ROWS}')
+    max_width = MAX_WIDE_1D if getattr(imp, 'large_tiles', False) and not row_sizes and \
+        all(len(re.findall(r'\d+x', str(v.get_type()))) <= 1 for v in values) else 128
+    if width % imp.target.vlen or width > max_width:
+        raise Unsupported(f'register block width {width}; expected a VLEN multiple up to {max_width}')
     widths_seen = getattr(imp, '_register_block_widths', set())
     widths_seen.add(width)
     imp._register_block_widths = widths_seen
     name = op.get_name()
     if name == 'scf.for':
-        if row_sizes:
-            raise Unsupported('register block loop with wide row-carried state')
         return _loop(imp, op, width)
     if name == 'scf.if':
         return _if(imp, op, width)
@@ -240,6 +276,23 @@ def lower(imp, op):
         imp._logical_gemm_tiles = tiles
     if name not in _ALLOWED and not name.startswith(('arith.', 'math.')):
         raise Unsupported(f'wide register block operation {name}')
+    if name == 'tt.dot' and not matrix:
+        # Split elementwise, a dot pairs A's K chunk c with B's chunk c --
+        # right only when K is one chunk and the rows are not split.
+        from .frontend import _parse_type, _FP8_FORMATS
+        a, ae = _parse_type(str(op.get_operand(0).get_type()))
+        _b, be = _parse_type(str(op.get_operand(1).get_type()))
+        if (a[1] > imp.target.vlen or row_sizes) and ae != be and \
+                ae in _FP8_FORMATS and be in _FP8_FORMATS:
+            raise Unsupported(f'an E4M3 x E5M2 tl.dot with K={a[1]}',
+                              because="ISA sec 9C's mod[3:2] names one input format for both "
+                                      'operands, and the exact FP16 substitute is built for one '
+                                      f'K block of {imp.target.vlen}',
+                              remedy='one FP8 encoding for both operands, or a 16-deep K block')
+        if a[1] > imp.target.vlen or row_sizes:
+            raise Unsupported(f'a tl.dot of {a[0]}x{a[1]} by {a[1]}x{_width(op.get_result(0))} '
+                              'that is not one matrix operation per column chunk',
+                              remedy='M of at most VLEN and a K the MMA steps divide')
     if name == 'tt.reduce':
         return _reduce(imp, op, width)
     fragment_cache = getattr(imp, '_register_mma_fragment_cache', None)
@@ -309,23 +362,57 @@ def _reduce(imp, op, width):
     seen.add((width, kind, op.get_int_attr('axis')))
     imp._register_reductions = seen
     rid = op.get_result(0).id()
+    if (getattr(imp, 'large_tiles', False) and kind in ('max', 'min') and isinstance(shape, tuple)
+            and elem.startswith('f')):
+        # Extended lowering: fold the chunks lane by lane first (max and min
+        # are order-free), then one lane reduction a row -- one vector live a
+        # row instead of every chunk's partials.
+        vlen = imp.target.vlen
+        getters = [imp._row_getter(_OpView(op, c, vlen).get_operand(0), shape[0], elem)
+                   for c in range(width // vlen)]
+        out_rows = []
+        for r in range(shape[0]):
+            acc = getters[0](r)
+            for g in getters[1:]:
+                acc = imp.b.vbin(kind, acc, g(r), dtype=elem, fmm='ieee')
+            out_rows.append(imp._reduce_vec(kind, acc, dtype=elem, mask=None, broadcast=True))
+        imp._tiles[rid] = Tile('col', tuple(out_rows), shape[0], 1, elem)
+        imp._v.pop(rid, None)
+        return True
     partials = []
+    # The extended lowering folds each chunk's partials into a running
+    # result as it goes, for the order-free folds (max, min): holding every
+    # chunk's partial for every row ran the vector registers out on a
+    # 16x128 tile. Sums keep the tree below, whose order is the result.
+    running = getattr(imp, 'large_tiles', False) and kind in ('max', 'min', 'max_prop', 'min_prop',
+                                                             'maxu', 'minu')
     imp._in_register_chunk = True
     try:
         for chunk in range(width // imp.target.vlen):
             imp._dispatch(_OpView(op, chunk, imp.target.vlen))
             if rid in imp._tiles:
                 tile = imp._tiles[rid]
-                partials.append([imp._tile_row_getter(tile, elem)(r) for r in range(tile.rows)])
+                part = [imp._tile_row_getter(tile, elem)(r) for r in range(tile.rows)]
             else:
-                partials.append([imp._v[rid]])
+                part = [imp._v[rid]]
+            if not partials:
+                scalar_rows = [x.kind == SCALAR for x in part]
+            if running and partials:
+                part = [imp.b.vbin(kind[:3] if kind.endswith('_prop') else kind,
+                                   imp.b.splat(x, dtype=elem) if x.kind == SCALAR else x,
+                                   imp.b.splat(y, dtype=elem) if y.kind == SCALAR else y,
+                                   dtype=elem, fmm='prop' if kind.endswith('_prop') else None)
+                        for x, y in zip(partials[0], part)]
+                partials = [part]
+            else:
+                partials.append(part)
     finally:
         imp._in_register_chunk = False
     rows = len(partials[0])
     combined_rows = []
     for row in range(rows):
         values = [p[row] for p in partials]
-        scalar = values[0].kind == SCALAR
+        scalar = scalar_rows[row]
         vectors = [imp.b.splat(v, dtype=elem) if v.kind == SCALAR else v for v in values]
         while len(vectors) > 1:
             vectors = [imp.b.vbin(kind[:3] if kind.endswith('_prop') else kind,
@@ -341,6 +428,14 @@ def _reduce(imp, op, width):
     return True
 
 
+def _carried_view(value, row, chunk, vlen):
+    """One register chunk of a loop-carried value: a column chunk, or a
+    (row chunk, column chunk) pair when the value has more than VLEN rows."""
+    if row is None:
+        return _ValueView(value, chunk, vlen)
+    return _RowValueView(value, row, chunk, vlen)
+
+
 class _ExpandedBlock:
     def __init__(self, block, layout, vlen):
         self.block, self.layout, self.vlen = block, layout, vlen
@@ -348,8 +443,8 @@ class _ExpandedBlock:
     def get_argument(self, i):
         if i == 0:
             return self.block.get_argument(0)
-        original, chunk = self.layout[i - 1]
-        return _ValueView(self.block.get_argument(original + 1), chunk, self.vlen)
+        original, row, chunk = self.layout[i - 1]
+        return _carried_view(self.block.get_argument(original + 1), row, chunk, self.vlen)
 
     def get_num_arguments(self):
         return 1 + len(self.layout)
@@ -370,8 +465,8 @@ class _LoopBodyView:
 
     def get_operand(self, i):
         if self.op.get_name() == 'scf.yield':
-            original, chunk = self.layout[i]
-            return _ValueView(self.op.get_operand(original), chunk, self.vlen)
+            original, row, chunk = self.layout[i]
+            return _carried_view(self.op.get_operand(original), row, chunk, self.vlen)
         return self.op.get_operand(i)
 
     def __getattr__(self, name):
@@ -389,14 +484,14 @@ class _ExpandedLoop:
         return 3 + len(self.layout)
 
     def get_result(self, i):
-        original, chunk = self.layout[i]
-        return _ValueView(self.op.get_result(original), chunk, self.vlen)
+        original, row, chunk = self.layout[i]
+        return _carried_view(self.op.get_result(original), row, chunk, self.vlen)
 
     def get_operand(self, i):
         if i < 3:
             return self.op.get_operand(i)
-        original, chunk = self.layout[i - 3]
-        return _ValueView(self.op.get_operand(original + 3), chunk, self.vlen)
+        original, row, chunk = self.layout[i - 3]
+        return _carried_view(self.op.get_operand(original + 3), row, chunk, self.vlen)
 
     def __getattr__(self, name):
         return getattr(self.op, name)
@@ -407,11 +502,17 @@ def _loop(imp, op, width):
     # still runs in original order across its register chunks. This retains
     # load/store and alias ordering between iterations, including softmax's
     # writes of the realised exp intermediate.
+    vlen = imp.target.vlen
     layout = []
     for i in range(op.get_num_results()):
-        count = (_width(op.get_result(i)) or 0) // imp.target.vlen
+        result = op.get_result(i)
+        count = (_width(result) or 0) // vlen
         count = count if count > 1 else 1
-        layout.extend((i, chunk) for chunk in range(count))
+        # A carried tile of more than VLEN rows is carried as its row chunks,
+        # each an independent tile, exactly as the body computes it.
+        rows = _rows(result) // vlen if _rows(result) > vlen else None
+        layout.extend((i, row, chunk) for row in (range(rows) if rows else (None,))
+                      for chunk in range(count))
     rid = op.get_region(0).id()
     body = imp._bodies.get(rid, [])
     imp._bodies[rid] = [_LoopBodyView(inner, layout, imp.target.vlen) for inner in body]

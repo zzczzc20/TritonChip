@@ -1,0 +1,103 @@
+{
+ "a": "out/ref_fp8_rope32",
+ "b": "out/ref_fp8",
+ "tensors": {
+  "attention_mask": {
+   "equal": true
+  },
+  "final_latents_packed": {
+   "bitwise_equal": false,
+   "max_abs": 3.7265625,
+   "rel_l2": 0.2197043147426569,
+   "cosine": 0.9758278781310652
+  },
+  "final_latents_vae": {
+   "bitwise_equal": false,
+   "max_abs": 6.921875,
+   "rel_l2": 0.21935576033432988,
+   "cosine": 0.9759040939594992
+  },
+  "image_decoded": {
+   "bitwise_equal": false,
+   "max_abs": 2.06640625,
+   "rel_l2": 0.39563293812523803,
+   "cosine": 0.921997795574135
+  },
+  "image_pt": {
+   "bitwise_equal": false,
+   "max_abs": 1.0,
+   "rel_l2": 0.1665547425070446,
+   "cosine": 0.9861449571098605,
+   "psnr_db": 18.04218189949266
+  },
+  "input_ids": {
+   "equal": true
+  },
+  "latent_ids": {
+   "equal": true
+  },
+  "latents_init": {
+   "bitwise_equal": true,
+   "max_abs": 0.0,
+   "rel_l2": 0.0,
+   "cosine": 1.0
+  },
+  "prompt_embeds": {
+   "bitwise_equal": true,
+   "max_abs": 0.0,
+   "rel_l2": 0.0,
+   "cosine": 1.0000000000007045
+  },
+  "step0_latents": {
+   "bitwise_equal": false,
+   "max_abs": 0.0390625,
+   "rel_l2": 0.004159962880953081,
+   "cosine": 0.9999913476057779
+  },
+  "step0_noise_pred": {
+   "bitwise_equal": false,
+   "max_abs": 0.71875,
+   "rel_l2": 0.04946141514292924,
+   "cosine": 0.9987769465337637
+  },
+  "step1_latents": {
+   "bitwise_equal": false,
+   "max_abs": 0.53125,
+   "rel_l2": 0.028927024548562597,
+   "cosine": 0.9995818993939276
+  },
+  "step1_noise_pred": {
+   "bitwise_equal": false,
+   "max_abs": 6.890625,
+   "rel_l2": 0.26186198633406277,
+   "cosine": 0.9656450352583136
+  },
+  "step2_latents": {
+   "bitwise_equal": false,
+   "max_abs": 1.03515625,
+   "rel_l2": 0.06327072470164907,
+   "cosine": 0.9980004250675933
+  },
+  "step2_noise_pred": {
+   "bitwise_equal": false,
+   "max_abs": 5.13671875,
+   "rel_l2": 0.1910418331274017,
+   "cosine": 0.9818091942385437
+  },
+  "step3_latents": {
+   "bitwise_equal": false,
+   "max_abs": 3.7265625,
+   "rel_l2": 0.2197043147426569,
+   "cosine": 0.9758278781310652
+  },
+  "step3_noise_pred": {
+   "bitwise_equal": false,
+   "max_abs": 4.5234375,
+   "rel_l2": 0.2104062129818487,
+   "cosine": 0.9778613863532637
+  },
+  "text_ids": {
+   "equal": true
+  }
+ }
+}

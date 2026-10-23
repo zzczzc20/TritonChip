@@ -1008,7 +1008,7 @@ static void classify(){
 struct Model {
     Config cfg;Context x;HBM hbm;Network net;std::vector<std::unique_ptr<Slice>> caches;
     std::vector<std::unique_ptr<SocketMonitor>> probes;std::unique_ptr<Chip> chip;
-    Model(const char* config,const std::string& out):cfg(config),x(cfg,out),hbm("hbm",x),net("noc",x){
+    Model(const char* config,const std::string& out):cfg(config,std::getenv("TNCA_DRAM_MAP")!=nullptr),x(cfg,out),hbm("hbm",x),net("noc",x){
         for(unsigned i=0;i<cfg.cores();++i){
             caches.emplace_back(new Slice(("home"+std::to_string(i)).c_str(),x,i));
             auto home="home_"+std::to_string(i),mem="hbm_"+std::to_string(i);
@@ -1039,6 +1039,10 @@ struct Model {
         if(const char* map=std::getenv("TNCA_DRAM_MAP")){
             require(bool(tmem),"DRAM address map requires timeline memory");dram_map_path=map;
             physical_map.reset(new DramAddressMap(map,unsigned(cfg.get("pc_count")),cfg.get("pc_bytes")));
+            // Replaces Config's logical PC check: the model window (local
+            // region plus AXI addresses) must end at or below the mapped BO top.
+            require(cfg.get("memory_base")+cfg.get("memory_bytes")<=physical_map->local_limit+physical_map->bo_size,
+                "DRAM address map: model window exceeds the mapped AXI BO");
             tmem->physical_map=physical_map.get();
 #ifdef TNCA_HAVE_RAMULATOR2
             dram_map_sha256=tnca_dram::sha256_file(map);

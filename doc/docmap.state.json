@@ -413,6 +413,13 @@
    "fingerprint": "4b67602cd1ea91e2e2e996ff60ba965813671f893517bddf5b8de1f68639a948",
    "time": "20261023T092253"
   },
+  "tutorial/10_torch_compile.md": {
+   "backend": "agy",
+   "commit": "09b5596590813c40d8533e066234e3d4c96a41bf",
+   "doc_sha256": "25aafd21f8a56107eda646453ef86c934fe62933fe9120b3657e0332759b7bf2",
+   "fingerprint": "09d71e21129b331ae1c2818380a319db3b6e58480b17b0a5a6676509b7693b06",
+   "time": "20261023T093047"
+  },
   "tutorial/11_running_on_the_u280.md": {
    "backend": "agy",
    "commit": "4f5d7670a236918dff8813d9c9a028f5611a36b7",

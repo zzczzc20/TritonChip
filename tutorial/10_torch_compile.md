@@ -9,7 +9,7 @@ code knows about TNCA.
 
 ## Set up
 
-This needs PyTorch at the locked version (`spec/r38/torch.lock.json`) in its
+This needs PyTorch at the locked version ([`spec/r38/torch.lock.json`](../spec/r38/torch.lock.json)) in its
 own environment, with this package installed into it:
 
 ```sh
@@ -91,22 +91,26 @@ two `tnca.inductor` functions read that source:
 - `host_fallbacks(code)` lists anything computed on the host: an extern
   kernel, an ATen call, a C++ kernel.
 
-The repository runs 24 graphs this way (`tools/r38/torch_tests.py`, `make
-r38-torch`), from elementwise and softmax through `bmm`, an embedding,
-`argmax`, `cumsum` and causal and decode attention. Every one must run with no fallback,
-except the sort control, which must report one. With
-`TNCA_TENSOR_DESCRIPTORS=1`, Inductor also loads and stores through tensor
-descriptors where its rules allow; the same 24 graphs pass that way too.
+The repository runs 24 tests this way ([`tools/r38/torch_tests.py`](../tools/r38/torch_tests.py), `make
+r38-torch`), covering 23 graphs from elementwise and softmax through `bmm`, an
+embedding, `argmax`, `cumsum`, and causal and decode attention, plus a
+device-assert trap check. Every one must run with no fallback, except the sort
+control, which must report one. Inductor loads and stores through tensor
+descriptors where its rules allow; with `TNCA_TENSOR_DESCRIPTORS=0`, it falls
+back to pointer arithmetic. All 24 tests pass both ways (`make r38-torch` runs
+both).
 
 ## Tensor descriptors from PyTorch
 
-```sh
-TNCA_TENSOR_DESCRIPTORS=1 ~/torchenv/bin/python your_program.py
-```
+Tensor descriptors are on by default (the standard path since R39). Inductor
+generates tensor-descriptor code (the path that targets TMA on NVIDIA GPUs) for
+CPU tensors, and kernels load and store via `tl.make_tensor_descriptor` (rank
+1–5), which [09](09_tensor_descriptors.md) covers from the host side.
 
-That turns on Inductor's tensor-descriptor code generation (the path that
-targets TMA on NVIDIA GPUs) for CPU tensors. The kernels then use
-`tl.make_tensor_descriptor`, which [09](09_tensor_descriptors.md) covers from
-the host side.
+To disable tensor descriptors and fall back to pointer arithmetic:
+
+```sh
+TNCA_TENSOR_DESCRIPTORS=0 ~/torchenv/bin/python your_program.py
+```
 
 Next: [11 — running on the U280](11_running_on_the_u280.md).

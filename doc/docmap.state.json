@@ -182,6 +182,13 @@
    "fingerprint": "c29c6c905a8ea70814ddb7aa1af85fc29c4945ceec285d3828416450cc1811d5",
    "time": "20261023T064514"
   },
+  "doc/r38_stage1_tasks_and_acceptance.md": {
+   "backend": "agy",
+   "commit": "a95435e690c4cdcd25d357bcc635d79c988fd84f",
+   "doc_sha256": "7dc50f16938f97c4a76511cb3e9b822456f779a5f0a88eb8eb6665c25b5422ce",
+   "fingerprint": "7076c2c6108d19f12cac12459e887584fb40f147cd36e4edd700d4f44a31971e",
+   "time": "20261023T065229"
+  },
   "doc/r3_replan_review_2026-09-20.md": {
    "backend": "agy",
    "commit": "0a04dc55a78ec1e8f76d5e34992e587e985cb84a",

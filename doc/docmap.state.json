@@ -28,6 +28,13 @@
    "fingerprint": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
    "time": "20261023T031331"
   },
+  "doc/compiler_overview.md": {
+   "backend": "agy",
+   "commit": "9258d214e8d0b3d4cd8e784b5a78fd15b04b0c87",
+   "doc_sha256": "e701069ab652bf732a03494516e09e8c69ecc0696be89f80bcdc5d2db50eb2e5",
+   "fingerprint": "9aa50ce808dd637cac42856041df4a3facd49c0770a82400515e811f76e24900",
+   "time": "20261023T080752"
+  },
   "doc/conformance.md": {
    "backend": "agy",
    "commit": "66ced62511a111fcf6246d24296dbd64200355ef",

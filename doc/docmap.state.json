@@ -398,6 +398,13 @@
    "doc_sha256": "7d222dd0ecd7e37694271aac7ea90e8871bfc46a27833575585b70f8ea886bd9",
    "fingerprint": "e00e517f2fb3940c7cba859886928656ccb4fa7a3d06057f72b18bb1e8b66590",
    "time": "20261023T090433"
+  },
+  "tools/r36/downstream/README.md": {
+   "backend": "agy",
+   "commit": "864a9c5eaf31f612fb3f8c8bbc833b0f4187a762",
+   "doc_sha256": "f8922984f2beb9de6d3541a4e7c0d8c81f679eb0649ca6bdad4486728a5a4122",
+   "fingerprint": "9757b14daae776872089833016ddc79b06de3ec7db31d29dc48196d3f25557ba",
+   "time": "20261023T091857"
   }
  }
 }

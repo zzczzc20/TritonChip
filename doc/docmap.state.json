@@ -34,6 +34,13 @@
    "doc_sha256": "9a3ef78ca4805ec3fcd3b5cdc3f78108a2564d2d397cc86745b8c7b7633aabd0",
    "fingerprint": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
    "time": "20261023T032226"
+  },
+  "doc/design/tnca_v1_compiler_draft.md": {
+   "backend": "agy",
+   "commit": "7a5f4fe9e7c74b70e095103774e48409b720a928",
+   "doc_sha256": "48eb8c9e9b5586541cfd5627698ccdbaf4b20c6cb91deddaf120bf2f88fe7219",
+   "fingerprint": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "time": "20261023T033254"
   }
  }
 }

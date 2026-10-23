@@ -62,11 +62,11 @@ Every agent call is instructed to:
 
 | Backend | Status | Invocation |
 |---|---|---|
-| `agy` | supported | `agy --print <prompt> --dangerously-skip-permissions --mode accept-edits`, run in the scratch copy |
+| `agy` | supported | `agy --print <prompt> --dangerously-skip-permissions --mode accept-edits --disable-slash-commands --print-timeout <timeout>s`, run in the scratch copy |
 | `codex` | planned | stub in `backends.py` |
 | `claude` | planned | stub in `backends.py` |
 
-To add a backend, subclass `Backend` in `backends.py`, implement `command(prompt, workdir, timeout)` and register it in `BACKENDS`. Isolation, the file guard and the copy-back checks are in the runner, so they apply to every backend unchanged.
+To add a backend, subclass `Backend` in `backends.py`, implement `command(prompt, workdir, timeout)` (and optionally `available()`), and register it in `BACKENDS`. Isolation, the file guard and the copy-back checks are in the runner, so they apply to every backend unchanged.
 
 ## Options
 

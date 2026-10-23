@@ -370,6 +370,13 @@
    "doc_sha256": "bf884ee5efe40c887bc0e35c0b6292758d8fd3533979ec8085cf74d1d744135f",
    "fingerprint": "e0e7ae5901040c2928b199a4a39ad88979c2cbe1988b7fa2d6adc5e48234acfa",
    "time": "20261023T074811"
+  },
+  "tools/docmaint/README.md": {
+   "backend": "agy",
+   "commit": "e5059f7d63982600836556042a71cb80073fd7e4",
+   "doc_sha256": "84492a765c52725fbaf1f495029e40dfe707c3ad46695ad6e089b709b23684fb",
+   "fingerprint": "7851245f049c236ff4b0466cf536f13c943265e4ce7fb14796c8c364a199c2bd",
+   "time": "20261023T085948"
   }
  }
 }

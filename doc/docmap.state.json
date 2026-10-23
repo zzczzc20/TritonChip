@@ -413,6 +413,13 @@
    "fingerprint": "4b67602cd1ea91e2e2e996ff60ba965813671f893517bddf5b8de1f68639a948",
    "time": "20261023T092253"
   },
+  "tutorial/06_errors_and_faults.md": {
+   "backend": "agy",
+   "commit": "103355c6881cb66f1e524140b6ce46786a4e69bd",
+   "doc_sha256": "d3b4317b103ed81e941ea702ea178e2b2ac92fcb4d8b7689c8ac6d7d74e35a01",
+   "fingerprint": "e5946ae14824f2a73f0f086e5800b630f1e210fc08acf036ec0a67135ffdc460",
+   "time": "20261023T094956"
+  },
   "tutorial/07_backends_and_cache.md": {
    "backend": "agy",
    "commit": "aea2b9bd8fcef0122b18717998f46578543a8d58",

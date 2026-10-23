@@ -300,6 +300,13 @@
    "doc_sha256": "d4c3e8e4af6c88ca0f1c8cba636bde81e843adfc86beb60bf3bd0c38f167a50e",
    "fingerprint": "cba359393b8c31b6aeb83d597487ca4148c4872970c7d2185c0e596c5c0e46ba",
    "time": "20261023T074102"
+  },
+  "flow/fpga/README.md": {
+   "backend": "agy",
+   "commit": "a4435dc6c5152ed6c77ab8ad0635f58053898769",
+   "doc_sha256": "bf884ee5efe40c887bc0e35c0b6292758d8fd3533979ec8085cf74d1d744135f",
+   "fingerprint": "e0e7ae5901040c2928b199a4a39ad88979c2cbe1988b7fa2d6adc5e48234acfa",
+   "time": "20261023T074811"
   }
  }
 }

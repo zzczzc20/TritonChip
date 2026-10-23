@@ -83,6 +83,13 @@
    "doc_sha256": "277a8cb8ef2942d348f95d32cbd8c5ab5859cf7f9915888446ec401c47f7ee64",
    "fingerprint": "82aa46db8ff14d207063dd638863db6dad13ec288854afaddc890674f2806005",
    "time": "20261023T045820"
+  },
+  "doc/r37_validation.md": {
+   "backend": "agy",
+   "commit": "464519f0c1682198be59c9754c35d302ff1c7e0b",
+   "doc_sha256": "ca3305378d4dc92592ded405efc3bb0e088bb9c9bff915d0f3b6c2f3f82e9895",
+   "fingerprint": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "time": "20261023T050739"
   }
  }
 }

@@ -8,7 +8,7 @@ This document is the single source of truth for instruction encoding. RTL
 architectural model (`tools/model/tnca_model.py`) are all derived from it. If
 they disagree, this document wins and the others are bugs.
 
-Derived from the TNCA-v1 design draft, `doc/design/tnca_v1_architecture_draft.md`
+Derived from the TNCA-v1 design draft, [`doc/design/tnca_v1_architecture_draft.md`](../design/tnca_v1_architecture_draft.md)
 (until 2026-10-08 `doc/architecture_overview.md`) §11–§12. Section references
 below point at that document.
 
@@ -90,11 +90,12 @@ The register *class* of `d`/`a`/`b`/`c` is determined entirely by
 
 ### 2.2 Predication rule (normative)
 
-* **Scalar (`0x01`), control (`0x02`) and system (`0x00`) instructions are
-  unpredicated.** They must encode `pred = 0` and `PN = 0`. Any other encoding
-  raises `ILLEGAL_INSTRUCTION`. This keeps uniform control flow explicitly
-  scalar, per §12.1 ("不建议实现通用 SIMT divergence stack").
-* **Vector, predicate, memory and tensor instructions** use `pred`/`PN` as a
+* **Scalar (`0x01`), control (`0x02`), predicate (`0x13`) and system (`0x00`)
+  instructions are unpredicated.** They must encode `pred = 0` and `PN = 0`.
+  Any other encoding raises `ILLEGAL_INSTRUCTION`. This keeps uniform control
+  flow explicitly scalar, per §12.1 ("omits hardware SIMT divergence stacks"),
+  and avoids recursive masking on predicate operations (§8.5).
+* **Vector, memory and tensor transfer instructions** use `pred`/`PN` as a
   16-bit lane mask. `P0` is architecturally all-ones, so `pred = 0, PN = 0` is
   the unpredicated form and `pred = 0, PN = 1` is the never-execute form.
 * **Masked write semantics:** inactive lanes *preserve the previous value* of
@@ -680,27 +681,18 @@ transactions they expand into; one `m.mma.async` is `operations=1`.
 a static operation count stays correct under predication. The compiler still
 has to get the consumer's control flow right.
 
-### 9A.7 Barriers are quiescent at kernel entry
+### 9A.4 Completion
 
-Every barrier starts at epoch 0, with both counts zero, no error and no
-waiter. A kernel does not have to run `mb.init` to reach that state, and a
-role must not be made to wait until another role has.
+A generation completes when `pending_arrivals == 0 && pending_operations == 0`.
+Required properties, all of them safety rather than performance:
 
-This is not a convenience. There is no race-free way to express "wait until
-role 0 has initialised the barriers" using barriers, because waiting means
-sleeping on one and §9A.6 makes an `mb.init` under a sleeping waiter a
-`BARRIER_FAULT`. Any handshake built around that has to leave the barrier
-mechanism entirely — in practice, polling a memory flag — and a polling
-consumer competes with its own producer for the memory port. A compiled
-two-role GEMM deadlocked exactly this way: the consumer's poll starved the
-transfer engine, so the flag it was waiting for was never written.
-
-Guaranteeing the state at entry removes the problem rather than working
-around it. A consumer may sleep on generation 1 of a barrier before the
-producer has executed a single instruction.
-
-`mb.init` remains, for re-initialising a barrier *within* a kernel, where the
-program already knows nothing is waiting on it.
+- completion happens **exactly once** per generation;
+- neither count may underflow — an extra arrival or completion is a
+  `BARRIER_FAULT`, not a wrap;
+- an error wakes every waiter and is reported, so a faulting command can never
+  turn into an unbounded wait;
+- `mb.wait` **sleeps** the RCTX. It does not spin (§13.4): a blocked RCTX stops
+  fetching entirely and is woken by the completion.
 
 ### 9A.5 What `release` covers
 
@@ -729,18 +721,27 @@ could never see its generation complete. Doing it is a program bug, and the
 hardware raises `BARRIER_FAULT` rather than inventing an ordering: no choice the
 hardware could make would be the one the program meant.
 
-### 9A.4 Completion
+### 9A.7 Barriers are quiescent at kernel entry
 
-A generation completes when `pending_arrivals == 0 && pending_operations == 0`.
-Required properties, all of them safety rather than performance:
+Every barrier starts at epoch 0, with both counts zero, no error and no
+waiter. A kernel does not have to run `mb.init` to reach that state, and a
+role must not be made to wait until another role has.
 
-- completion happens **exactly once** per generation;
-- neither count may underflow — an extra arrival or completion is a
-  `BARRIER_FAULT`, not a wrap;
-- an error wakes every waiter and is reported, so a faulting command can never
-  turn into an unbounded wait;
-- `mb.wait` **sleeps** the RCTX. It does not spin (§13.4): a blocked RCTX stops
-  fetching entirely and is woken by the completion.
+This is not a convenience. There is no race-free way to express "wait until
+role 0 has initialised the barriers" using barriers, because waiting means
+sleeping on one and §9A.6 makes an `mb.init` under a sleeping waiter a
+`BARRIER_FAULT`. Any handshake built around that has to leave the barrier
+mechanism entirely — in practice, polling a memory flag — and a polling
+consumer competes with its own producer for the memory port. A compiled
+two-role GEMM deadlocked exactly this way: the consumer's poll starved the
+transfer engine, so the flag it was waiting for was never written.
+
+Guaranteeing the state at entry removes the problem rather than working
+around it. A consumer may sleep on generation 1 of a barrier before the
+producer has executed a single instruction.
+
+`mb.init` remains, for re-initialising a barrier *within* a kernel, where the
+program already knows nothing is waiting on it.
 
 ---
 
@@ -811,7 +812,7 @@ all and the command would signal a barrier the program never armed.
 **Why this is in the ISA and not left to the compiler.** A double-buffered
 producer wants to refill the fragment registers as early as it legally can.
 Without a source-free event its only safe choice is to wait for the *result*,
-which is later — architecture overview §13.1 names confusing "the data
+which is later — design draft §13.1 names confusing "the data
 arrived", "the computation finished" and "the source may be reused" as a known
 hazard, and permits the conservative proxy only for a first version. This is
 the version that stops needing it. An implementation may signal source-free at

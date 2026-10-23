@@ -41,6 +41,13 @@
    "doc_sha256": "48eb8c9e9b5586541cfd5627698ccdbaf4b20c6cb91deddaf120bf2f88fe7219",
    "fingerprint": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
    "time": "20261023T033254"
+  },
+  "doc/isa/TNCA-ISA-v0.1.md": {
+   "backend": "agy",
+   "commit": "527107cc6a13c764ca7533f1988217be49739f19",
+   "doc_sha256": "63bcb59b9611e346f68eae3eac5b34cc77e314480323577cbb400488f634cda7",
+   "fingerprint": "3b84d9e65c73583ca1132a2a1387e0b79cb3aef75af75c283e9698397336dde1",
+   "time": "20261023T033900"
   }
  }
 }

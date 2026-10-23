@@ -293,6 +293,13 @@
    "doc_sha256": "594f3bb30d380dae5987c5679d28eb0dc4d54970d74e3e750877cd1dda787e4d",
    "fingerprint": "3cc86f74c1f48f190558b3f321615d1a8812f480f8cd76872e373b272b184665",
    "time": "20261023T053621"
+  },
+  "doc/xls.md": {
+   "backend": "agy",
+   "commit": "e5cde6688e40345524410d735fb3426e257846cb",
+   "doc_sha256": "d4c3e8e4af6c88ca0f1c8cba636bde81e843adfc86beb60bf3bd0c38f167a50e",
+   "fingerprint": "cba359393b8c31b6aeb83d597487ca4148c4872970c7d2185c0e596c5c0e46ba",
+   "time": "20261023T074102"
   }
  }
 }

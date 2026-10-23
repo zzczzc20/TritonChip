@@ -73,14 +73,36 @@ instances against the same exact Fraction oracle (`tools/model/fp32.py`;
 composition with the five formats. The DSLX file also carries its own tests
 for the cases `apfloat` gets wrong.
 
-## What is not generated, and why
+## The SFU: generated where flush-to-zero is required
 
-**The SFU is the opposite case.** ISA §8.8 specifies those operations as
+**The SFU is the opposite case from the FMA.** ISA §8.8 specifies those operations as
 approximate, with a published error bound, and *requires* subnormal flushing.
 There XLS's behaviour is the required behaviour, and the four functions are the
 first implementation the design has had. `CAPABILITY0.SFU` read 0 precisely
 because Stage 1a shipped without them; it reads 1 now, and the measurement
 below is what earned that.
+
+## What is not generated, and why
+
+While the pure arithmetic pipelines and format conversions are generated with XLS,
+the surrounding control, multi-lane sequencing, and structural integration
+remain hand-written Verilog:
+
+- **The SFU multi-lane sequencer (`rtl/core/tnca_sfu.v`)**: Generating sixteen
+  parallel SFU pipelines would cost around 60 k gates × 16 ≈ 960 k gates,
+  dwarfing the rest of the vector datapath for operations off the GEMM inner loop
+  (ISA §6.2). Instead, XLS generates a single pipelined four-function slice, and a
+  hand-written sequencer streams VLEN lanes through it at one lane per cycle.
+- **The FMA latency selector (`rtl/core/tnca_fp32_fma.v`)**: Selects between the
+  generated latency-2 (`tnca_fma_xls`) and latency-3 (`tnca_fma_l3_xls`) instances
+  according to the core's `FP_LAT` parameter.
+- **The multi-precision MAC wrapper (`rtl/core/tnca_fpu_multi.v`)**: Composes
+  combinational widening (`tnca_widen_xls`) directly with `tnca_fp32_fma`,
+  with optional operand registers (`IN_REG`).
+- **Core vector and matrix integration**: Vector pipeline sequencing, reduction
+  state machines, accumulator storage, and register file access in
+  `rtl/core/tnca_vector_fpu.v` and `rtl/core/tnca_matrix.v` are tightly coupled
+  to core control and remain in hand-written RTL.
 
 ## Scheduling: one clock target, and what it cost
 
@@ -139,7 +161,7 @@ The wide version was correct and unshippable.
 `make synth` maps the same modules to generic gates with no PDK, so its numbers
 are a different proxy from the asap7 periods above and should disagree with
 them in detail — it has no carry-lookahead cells, so every addition is ripple
-carry (see doc/synthesis.md for the calibration). It agrees on the direction,
+carry (see [synthesis.md](synthesis.md) for the calibration). It agrees on the direction,
 which is the point of measuring twice:
 
 | Module | Combinational | | | Scheduled | | |
@@ -154,7 +176,7 @@ which is the point of measuring twice:
 | `tnca_sfu_exp2_xls` | *not measured* | | | 14,946 | 529 | 69 |
 | `tnca_sfu_log2_xls` | *not measured* | | | 13,246 | 447 | 72 |
 
-For scale, the calibration block in doc/synthesis.md puts a bare 32×32
+For scale, the calibration block in [synthesis.md](synthesis.md) puts a bare 32×32
 multiplier at 5,377 gates and 65 levels in this library, and `tnca_fp32_fma` at
 7,120 gates and 115 levels.
 
@@ -202,20 +224,20 @@ discovered.
 
 ## Where they end up in the core
 
-`rtl/core/tnca_fpu_multi.v` puts `tnca_widen_xls` in front of the hand-written
-binary32 FMA, so FP8 and FP16 operands reach one verified multiplier. Because
-widening is combinational, that costs no extra cycle. **It is the matrix
-unit's MAC**: sixteen of them, with the format code from ISA §9C's `mod[3:2]`,
-which is how `m.mma.async` came to take E5M2 and E4M3 fragments as well as
-FP16 and BF16. An accumulator row op passes `f32`, and `widen(f32, x)` is `x`,
-so one MAC serves both without a bypass.
+`rtl/core/tnca_fpu_multi.v` puts `tnca_widen_xls` in front of the binary32 FMA
+(`rtl/core/tnca_fp32_fma.v`, which instantiates the generated FMA), so FP8 and
+FP16 operands reach one verified multiplier. Because widening is combinational,
+that costs no extra cycle. **It is the matrix unit's MAC**: sixteen of them, with
+the format code from ISA §9C's `mod[3:2]`, which is how `m.mma.async` came to take
+E5M2 and E4M3 fragments as well as FP16 and BF16. An accumulator row op passes
+`f32`, and `widen(f32, x)` is `x`, so one MAC serves both without a bypass.
 
 That replaced the hand-written `tnca_cvt16_f32`, which did FP16 and BF16 to
 binary32 only. It was deleted rather than kept: two conversion implementations
 to keep in agreement is precisely what this document argues against, and the
 generated one is checked exhaustively where the hand-written one was checked
 over 131,072 vectors of two formats. Its last measurement — 140 gates and 14
-levels — stays in doc/synthesis.md as the comparison point.
+levels — stays in [synthesis.md](synthesis.md) as the comparison point.
 
 `tnca_cvt_comb_xls` is one per lane in `tnca_vector_fpu`, implementing
 `vf.cvt.<src>.<dst>` (ISA §8.4 `func = 0x04`): all twenty-five pairs among the
@@ -242,11 +264,6 @@ one FP reductions already used, carrying its own lane enable so a predicated
 `v.rcp.approx` leaves the inactive lanes alone. `CAPABILITY0.SFU` reads 1 as a
 result; a build with `HAS_SFU = 0` neither instantiates the slice nor sets the
 bit, which is what ISA §11 means by a capability bit.
-
-What is *not* wired up yet: the five-format converter has no ISA encoding — §8.4
-covers int↔FP32 and reserves the pack/unpack space — and `tnca_fpu_multi` is
-not yet the matrix unit's front end. Both are ISA additions rather than fixes,
-and the units are verified and waiting.
 
 ## Verification
 
@@ -318,7 +335,7 @@ and this is developed on macOS arm64, so `config.json`'s `remote` section
 names a host to run them on.
 
 `R1_STRICT=1` refuses the remote runner outright. The acceptance contract
-(`doc/phase1_tasks_and_acceptance.md` R1-09) rules out depending on a personal
+([phase1_tasks_and_acceptance.md](phase1_tasks_and_acceptance.md) R1-09) rules out depending on a personal
 SSH host, a private key or a remote `cur` directory, and a generation step that
 quietly fell back to one would make `make r1-check-generated` a check against
 somebody's home directory. An acceptance environment is Linux x86_64 by

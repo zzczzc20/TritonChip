@@ -91,6 +91,13 @@
    "fingerprint": "4c5081a229c3c235c586fa39a0a833de15b3be9d18dfb79d52445cd155c45a83",
    "time": "20261023T054539"
   },
+  "doc/r2_interfaces.md": {
+   "backend": "agy",
+   "commit": "0f6017cc40dfe010b593a43eba35cb5aaaac1213",
+   "doc_sha256": "f39f6bcfb864a2c731d6e02f55e3ff327c5d4901f28343b166d77b82481a5f75",
+   "fingerprint": "18743b8d4bec2fb6574092e651ffa9bffd053420b6eb2d337d72af9e68c52384",
+   "time": "20261023T060652"
+  },
   "doc/r35_status.md": {
    "backend": "agy",
    "commit": "e2f5f50104079c160ad04601480dea8f292abf13",

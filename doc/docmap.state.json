@@ -90,6 +90,13 @@
    "doc_sha256": "ca3305378d4dc92592ded405efc3bb0e088bb9c9bff915d0f3b6c2f3f82e9895",
    "fingerprint": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
    "time": "20261023T050739"
+  },
+  "doc/r40_cold_call_audit.md": {
+   "backend": "agy",
+   "commit": "86bce2edc0580b9558b665a170e39532256d0236",
+   "doc_sha256": "d634a05b740fd892baa0a23239fbf840bbe94f18da2101cfa073fca4d095c5a7",
+   "fingerprint": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "time": "20261023T051142"
   }
  }
 }

@@ -301,6 +301,13 @@
    "fingerprint": "32d92eca913181ec09ca7f756ba7e68e105110065441a13f24d4c98b2beee7a9",
    "time": "20261023T082734"
   },
+  "doc/r40_tasks_and_acceptance_v2.md": {
+   "backend": "agy",
+   "commit": "4499825a980041eb111b12c0b5ed0da6c179bacb",
+   "doc_sha256": "a59636bae13c1aa3056dfe516d641e8498f6b4e1ab610f69d052b87502e55d92",
+   "fingerprint": "ecb6ca8fa0a04b7375066ff713acf4fd20ee6a59a3384c7208097b208835cd67",
+   "time": "20261023T084126"
+  },
   "doc/r40_tnca_device.md": {
    "backend": "agy",
    "commit": "9ce1cdfdf05d660d0b365e8b367929c2b9c5d05b",

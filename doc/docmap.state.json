@@ -413,6 +413,13 @@
    "fingerprint": "4b67602cd1ea91e2e2e996ff60ba965813671f893517bddf5b8de1f68639a948",
    "time": "20261023T092253"
   },
+  "tutorial/09_tensor_descriptors.md": {
+   "backend": "agy",
+   "commit": "2ffea07309745d24e689166629769c1c49572a9f",
+   "doc_sha256": "024d339335aad559cad5b9436cb96de0fac1f352e7a93f95f1847c6ba9792da5",
+   "fingerprint": "acbd7ef34f798f8d726e26c2592c2d56095e8d5cc2ce6532a31a3c690cad4131",
+   "time": "20261023T093540"
+  },
   "tutorial/10_torch_compile.md": {
    "backend": "agy",
    "commit": "09b5596590813c40d8533e066234e3d4c96a41bf",

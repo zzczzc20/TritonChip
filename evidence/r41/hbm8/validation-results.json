@@ -1,0 +1,75 @@
+{
+ "scope": "local tests and read-only FPGA-host source hashes; no board experiment run",
+ "tests": [
+  {
+   "name": "runtime-backend-queue",
+   "result": "pass",
+   "checks_or_configurations": 26,
+   "log": "validation/readiness-final.log",
+   "log_sha256": "d89b15db5687f184697e72d3a5c052125abdff629b57aba669558df341a75b3a"
+  },
+  {
+   "name": "registered-manifests",
+   "result": "pass",
+   "checks_or_configurations": 2,
+   "log": "validation/manifests.log",
+   "log_sha256": "056702317438b5d353acc700b23e57d4873e454104814c6e2e3115ffcc95bdd3"
+  },
+  {
+   "name": "line-axi-matrix",
+   "result": "pass",
+   "checks_or_configurations": 35,
+   "log": "validation/line_axi.log",
+   "log_sha256": "3c8a3b243a6e6a22c5f2a5e211678b78d181a5ed8f75b5309c834c06573e803a"
+  },
+  {
+   "name": "three-core-axi-matrix",
+   "result": "pass",
+   "checks_or_configurations": 2,
+   "log": "validation/multicore_axi.log",
+   "log_sha256": "8cc3f2dc1aaa6eafa902074e65b8580f42e29cc53bf4b7db6632060b75b0706f"
+  },
+  {
+   "name": "dense-board-dma",
+   "result": "pass",
+   "checks_or_configurations": 1,
+   "log": "validation/dma_board_dense.log",
+   "log_sha256": "7f55365e9a2b78d429997d46f5bd3c8039eb38b11b3a243eb37389d994ee2e76"
+  },
+  {
+   "name": "dense-shell-dma",
+   "result": "pass",
+   "checks_or_configurations": 1,
+   "log": "validation/dma_shell_dense.log",
+   "log_sha256": "1fc9b78d3ddd52f1b14888023ce1067d3d80845f52f43a2bfee8cf4255e68f67"
+  },
+  {
+   "name": "image-source-8gib-unit",
+   "result": "pass",
+   "checks_or_configurations": 35,
+   "log": "validation/image54_unit.log",
+   "log_sha256": "260e946f8e29ebafa697504a534a9e1f60ef0b90d44543ecd6e31ad1240b7063"
+  },
+  {
+   "name": "truncated-33-bit-mutant",
+   "result": "caught-as-expected",
+   "checks_or_configurations": 1,
+   "log": "validation/trunc33.log",
+   "log_sha256": "713207990c9835724e444e1b7b7dbd7793d6775f352750638750bbd3ad500135"
+  },
+  {
+   "name": "missing-bounds-mutant",
+   "result": "caught-as-expected",
+   "checks_or_configurations": 1,
+   "log": "validation/nolimit.log",
+   "log_sha256": "2fd427ec1e31d99025035f4d77a92008dbf4f9dc9479ad2d51030345179cbfcb"
+  },
+  {
+   "name": "missing-alignment-mutant",
+   "result": "caught-as-expected",
+   "checks_or_configurations": 1,
+   "log": "validation/noalign.log",
+   "log_sha256": "507eb60c26014bcac3057e3d5cc4892d842000604f7612b6e03cac6a5791b553"
+  }
+ ]
+}

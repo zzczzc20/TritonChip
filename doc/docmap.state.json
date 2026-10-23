@@ -413,6 +413,13 @@
    "fingerprint": "4b67602cd1ea91e2e2e996ff60ba965813671f893517bddf5b8de1f68639a948",
    "time": "20261023T092253"
   },
+  "tutorial/08_triton_gemm.md": {
+   "backend": "agy",
+   "commit": "e1ac87e6bd4bc418af91efec368c596f770765ee",
+   "doc_sha256": "b32130c3600928a00693bf743247b42cf66a26c7ae1491321c428f4c290d5582",
+   "fingerprint": "1e2fdd5f0c9f4c8c341fd0cbc3deb47fed7dbae030bcce34c1d37dac24b9c988",
+   "time": "20261023T094153"
+  },
   "tutorial/09_tensor_descriptors.md": {
    "backend": "agy",
    "commit": "2ffea07309745d24e689166629769c1c49572a9f",

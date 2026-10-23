@@ -413,6 +413,13 @@
    "fingerprint": "4b67602cd1ea91e2e2e996ff60ba965813671f893517bddf5b8de1f68639a948",
    "time": "20261023T092253"
   },
+  "tutorial/04_reading_the_compile.md": {
+   "backend": "agy",
+   "commit": "edba11e01148d47235ed6602fb483e1e0c3eeea2",
+   "doc_sha256": "e5c20d13e39beeb381691d9ea16da0c02eb9f519e699dccc2edcdba40d91323d",
+   "fingerprint": "ce25b56640e9fae270dde4f40695704d7ccba449b889bea563cdea3861ce368d",
+   "time": "20261023T095740"
+  },
   "tutorial/05_matrix_multiply.md": {
    "backend": "agy",
    "commit": "1322feb41ace574998a9c348434e010e79e4989e",

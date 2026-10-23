@@ -27,6 +27,13 @@
    "doc_sha256": "7684d3d52aa8136c0972d98d5db770c00c522b365462853c6c786935d4f22aa1",
    "fingerprint": "5fe641015134c4820805219056401e034538090b2f1dd1095525c8a3b5b19fb7",
    "time": "20261023T031551"
+  },
+  "doc/design/tnca_v1_architecture_draft.md": {
+   "backend": "agy",
+   "commit": "6de9d0ac3e5b3ffdc32de7c97abe629574a01d41",
+   "doc_sha256": "9a3ef78ca4805ec3fcd3b5cdc3f78108a2564d2d397cc86745b8c7b7633aabd0",
+   "fingerprint": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "time": "20261023T032226"
   }
  }
 }

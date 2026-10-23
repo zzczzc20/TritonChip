@@ -294,6 +294,13 @@
    "fingerprint": "97659bb83e4470fa424e4a44529af8b71be2eb97f98d193ca154e4d6b62b8130",
    "time": "20261023T051433"
   },
+  "doc/r40_report.md": {
+   "backend": "agy",
+   "commit": "0e74ddb3a55b7b7f9b24af941bf2fac3600d4c47",
+   "doc_sha256": "a1bacb1b599015aba1389fce8de5f15ce0f2ac6f84049ac9b0d1bd929f9c8de4",
+   "fingerprint": "a96a35a692cc42b9824f05116bf62ce581c77e6a1ffc01654930ce79adfcc0b1",
+   "time": "20261023T085317"
+  },
   "doc/r40_tasks_and_acceptance.md": {
    "backend": "agy",
    "commit": "85acde164d8d3c7a836edf54ff88c0324d1a6a82",

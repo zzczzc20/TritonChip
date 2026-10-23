@@ -413,6 +413,13 @@
    "fingerprint": "4b67602cd1ea91e2e2e996ff60ba965813671f893517bddf5b8de1f68639a948",
    "time": "20261023T092253"
   },
+  "tutorial/07_backends_and_cache.md": {
+   "backend": "agy",
+   "commit": "aea2b9bd8fcef0122b18717998f46578543a8d58",
+   "doc_sha256": "55b55e8c2f34c0711afd89a22d8d9df02ac77dd42b42da1297c2575d359116f4",
+   "fingerprint": "6331a0e2ffbae893d050b43db8fc3cca1817188d6cda5d7bf19157f2b0cc3c96",
+   "time": "20261023T094402"
+  },
   "tutorial/08_triton_gemm.md": {
    "backend": "agy",
    "commit": "e1ac87e6bd4bc418af91efec368c596f770765ee",

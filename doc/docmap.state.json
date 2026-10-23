@@ -378,6 +378,13 @@
    "fingerprint": "7851245f049c236ff4b0466cf536f13c943265e4ce7fb14796c8c364a199c2bd",
    "time": "20261023T085948"
   },
+  "tools/performance_harness/README.md": {
+   "backend": "agy",
+   "commit": "61e484eb8788e51ac7f1978232ac52861ebe4f60",
+   "doc_sha256": "0ddb309b617b55a2abcce2e7663db750455a9d678404459819a5651b6d485346",
+   "fingerprint": "4cf072e7ead2727d2527219bf3c69e339908a6c5aa0d293e4edfb6e9fb240825",
+   "time": "20261023T091304"
+  },
   "tools/performance_harness/mmio_journal.md": {
    "backend": "agy",
    "commit": "e6eee06601a3fb53c2510d158ce9dc7dc7adc2fb",

@@ -64,7 +64,7 @@ C=$(git rev-parse --short=12 HEAD); git archive --format=tar.gz -o /tmp/r41s2_bo
 scp /tmp/r41s2_board_$C.tar.gz zhongchun@143.89.78.224:
 
 # 2. GB10: stage archive, queue script and FP8 inputs on acf3019 (files only)
-tar xzf ~/r41s2_board_$C.tar.gz -O ./evidence/r41/stage2/board/launches/stage_inputs.sh > ~/r41s2_stage_inputs.sh
+tar xzf ~/r41s2_board_$C.tar.gz -O evidence/r41/stage2/board/launches/stage_inputs.sh > ~/r41s2_stage_inputs.sh
 bash ~/r41s2_stage_inputs.sh $C ~/r41s2_board_$C.tar.gz
 
 # 3. acf3019: start the waiting queue

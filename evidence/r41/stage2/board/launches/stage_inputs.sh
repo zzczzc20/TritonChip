@@ -27,7 +27,7 @@ RS="rsync -a --partial -e"
 
 tmp=$(mktemp -d)
 trap 'rm -rf $tmp' EXIT
-tar xzf $ARCHIVE -C $tmp ./evidence/r41/stage2/board/launches/board_queue.sh
+tar xzf $ARCHIVE -C $tmp evidence/r41/stage2/board/launches/board_queue.sh
 $RS "$SSH" $ARCHIVE $FP:r41s2_board_$C.tar.gz
 $RS "$SSH" $tmp/evidence/r41/stage2/board/launches/board_queue.sh $FP:r41s2_board_queue.sh
 $SSH $FP "mkdir -p r41s2_fp8_inputs/hf/hub r41s2_fp8_inputs/qwen/vl && rm -f r41s2_fp8_inputs/STAGED"

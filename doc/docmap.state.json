@@ -69,6 +69,13 @@
    "doc_sha256": "70eafd592be28fe5e778f430a8c84aa9f0a516805d19ee0a2f2b590be81c4d6e",
    "fingerprint": "180312b92b4c571d6ffd60b1fa0ea6f0879b78972c2cc17888ae0296422a10b9",
    "time": "20261023T044858"
+  },
+  "doc/r36_open_questions.md": {
+   "backend": "agy",
+   "commit": "87fe8905a055aa1894401f7c151d65cd31a9f6f3",
+   "doc_sha256": "a5c068e5f0c36f5164f0bf1228a276faf07afea5dfc149b4f480c31abc69275b",
+   "fingerprint": "ab7af7556a901961c43f4a5b34d62494a78e862307bab19ce5e8cee2e5ad7d3b",
+   "time": "20261023T045417"
   }
  }
 }

@@ -4,6 +4,11 @@ Scope: the two checks omitted from the integration regression. All compilation
 and RTL simulation ran on GB10. No Vivado, v++, FPGA host or card was used.
 Only evidence is changed by this branch.
 
+**Results:** default-profile preservation PASS (113/113 identical); native
+Torch PASS (all 3 requested rows on both trees). The X8 declared-profile
+capability-only criterion FAILS because of the scheduler-model fallback
+explained below.
+
 Sources:
 
 - Integrated: `e843bc4cd18649c1f162fb74911ca2b25d6c4e57`, copied with the common
@@ -110,7 +115,8 @@ for both trees, SHA-256
 `run_audit.py` sets the imported preflight harness's profile before invoking
 that unchanged script; children receive the selected profile in their environment.
 The ordinary runs select `core-vrf-sync-v5`; the second integrated run selects
-`core-vrf-sync-v5-x8`. All other harness settings and compile knobs remain
+`core-vrf-sync-v5-x8` (recorded in `int-x8/report.json`; the comparison
+JSON retains the control run's harness environment). All other harness settings and compile knobs remain
 those of the Stage 1 audit. Each point has a fresh process and private caches;
 all launches are skipped, device sessions are forbidden, and host fallback
 is checked. This measures compiled text and launch structure, not numerics or
@@ -118,12 +124,72 @@ execution performance.
 
 ## Native Torch on board-top multicore RTL
 
-Pending. `run_native.py` imports Torch and Triton, opens an outer launch log,
+All six native commands exited **0 / PASS**, including warm and steady
+numerical comparisons against Torch.
+
+| Case | Grid | Base | Integrated | Peak active cores (both) |
+|---|---|---|---|---:|
+| Features, no pair | `(9, 1, 1)` | PASS | PASS | 3 |
+| Features, `--pair` | `(9, 1, 1)` | PASS | PASS | 3 |
+| Memory ports | `(257, 1, 1)` | PASS | PASS | 3 |
+
+Application launches (base → integrated; positive delta means more cycles):
+
+| Case | Phase | Base running cycles | Integrated running cycles | Delta | Base MMIO span | Integrated MMIO span | Span delta |
+|---|---|---:|---:|---:|---:|---:|---:|
+| Features, no pair | warm | 34,410 | 33,760 | -650 (-1.89%) | 34,412 | 33,766 | -646 (-1.88%) |
+| Features, no pair | steady | 34,950 | 34,790 | -160 (-0.46%) | 34,952 | 34,796 | -156 (-0.45%) |
+| Features, `--pair` | warm | 36,466 | 35,542 | -924 (-2.53%) | 36,468 | 35,548 | -920 (-2.52%) |
+| Features, `--pair` | steady | 36,286 | 35,431 | -855 (-2.36%) | 36,288 | 35,437 | -851 (-2.35%) |
+| Memory ports | warm | 22,769 | 23,054 | +285 (+1.25%) | 22,771 | 23,060 | +289 (+1.27%) |
+| Memory ports | steady | 22,841 | 22,866 | +25 (+0.11%) | 22,843 | 22,872 | +29 (+0.13%) |
+
+All 84 captured launch pairs match in kernel name and grid: each case has
+26 initialization copy launches and the two application launches above.
+`native-compare.json` retains every launch's cycle delta and host timing,
+plus the per-core activity and memory-port counters. Raw output, exit
+statuses, simulator logs, the initial wrapper errors, resource records and
+the previous F10 miter log are in `native-logs.tgz`.
+
+Steady memory-port traffic (actual outlet counters):
+
+| Port | Base reads | Integrated reads | Base writes | Integrated writes |
+|---|---:|---:|---:|---:|
+| 0 | 356 | 358 | 88 | 88 |
+| 1 | 288 | 289 | 86 | 86 |
+| 2 | 259 | 259 | 84 | 84 |
+
+Every outlet reads and writes; all three cores are active and complete
+all 257 programs. The steady graph has zero tensor upload/download staging.
+The ports log's `LEGACY COUNTER FAILURE REPRO` is an expected diagnostic:
+the test proves old register aliases read zeros while actual outlet counters
+have traffic, and checks that the corrected legacy API reports unavailable.
+It is followed by the test's PASS, not a test failure.
+
+`run_native.py` imports Torch and Triton, opens an outer launch log,
 then runs each unmodified test script with its original assertions. It records
 warm and steady launches, including cycles, kernel names, grids, and host times.
 Each test gets private compiler caches. The three requested recipe rows run
 on both trees with 3 cores and pipeline 2; the ports row uses 3 memory ports.
 These scripts select `core-vrf-sync-v5`, as the Makefile recipes do.
+
+`device_cycles` is the dispatcher running interval: admission is excluded
+(`tnca_grid_dispatch.v` increments `done_cycles` only while `running`). The
+separate MMIO `device_timing` span covers acceptance through completion.
+For all 84 captured launch pairs, span minus running cycles is 2 on base
+and 6 on integration, directly exposing F06's **+4 cycles per grid**.
+
+F10's isolated expectation remains **+1 cycle per LSU access**, as the
+existing integration miter log demonstrates (read-only comparison with
+`~/r41s2-int-logs/D.01_make_lsu-reqreg_.log`). These native runs measure a
+parallel global makespan, not the sum of per-access latencies. In addition,
+`tnca_axi_line_model.v` advances seeded random AR/AW/W stalls every clock
+and arbitrates ready read IDs with random choices. Host-mailbox timing and
+F06/F10 retiming change which PRNG states and traffic interleavings a
+transaction sees; a fixed initial seed does not give identical per-access
+stall traces. Consequently the measured deltas can be negative and do not
+isolate F10's cost or establish a performance improvement. No predicted
+cycle count replaces a measured sample.
 
 `--board-top` elaborates the actual coherent FPGA wrapper through
 `tnca_multicore_board_regs`, with AXI line models. Its default cache is
@@ -139,12 +205,29 @@ order was corrected; the startup failure logs are retained separately.
 `free -g` was checked before each run and required at least 40 GiB available.
 All lanes inherit CPUs 0–5. Their systemd memory limits total at most 15 GiB
 (first one combined lane with MemoryMax=15G; subsequently compiler lane 12G,
-native lane 3G; subsequently compiler 9G and two native lanes 3G each); swap is disabled within the run cgroups. Thread counts are 1,
-including Inductor compile threads; the audit uses `--jobs 2`.
+native lane 3G; subsequently compiler 9G and two native lanes 3G each).
+Swap is disabled within the run cgroups.
+OMP/MKL/OpenBLAS thread counts are 1; native cases also set Inductor compile
+threads to 1. The unchanged audit uses `--jobs 2` and clears
+`TORCHINDUCTOR_*` environment variables in its children.
 After the compiler lane finished, the remaining pair/ports cases were run as
 four independent 2G services, alongside the integrated features service
 (3G). The original native shell schedulers were stopped by PID to prevent
 duplicate scheduling; their active simulations were allowed to finish.
+The two stopped features schedulers were killed by PID only after their
+native processes had printed PASS and `/usr/bin/time` had recorded exit 0.
+Their `.exit` files were reconstructed from that recorded exit status; the
+other rows' scripts wrote their exit files normally.
 
 `run_gb10.sh` records the original launch sequence; `run_native_gb10.sh` is
-the native-only rerun after the wrapper import correction.
+the native-only rerun after the wrapper import correction. Its optional tree
+argument and `R41_NATIVE_ROWS` select independent rows.
+
+`resource-summary.json` records the cgroup peaks from the snapshots: the
+compiler lane reached 7.19 GiB and each native lane about 1.05 GiB. Even the
+conservative sum of all recorded lane peaks (which did not occur together)
+is 14.47 GB / 13.47 GiB; cgroup memory includes more than process RSS.
+Final source hashes still match the original audit hashes. All run units
+and their simulations have finished.
+
+Archive checksums are in `SHA256SUMS`; the three raw-log archives total about 4.7 MiB.

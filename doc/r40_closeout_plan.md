@@ -1,161 +1,99 @@
-# R40 交付关键路径与集中验证计划
+# R40 Critical Delivery Path and Consolidated Verification Plan
 
-更新：2026-10-14；本轮盘点源码：`3ee636e`（另有未提交的 autotune 基础实现）。验收合同仍是
-`doc/r40_tasks_and_acceptance.md` 和 `spec/r40/plan.json`，本计划不修改门限。
+Updated: 2026-10-15; reviewed code baseline: `3ee636e` (with uncommitted autotune foundation and 2026-10-15 checkpoints). The acceptance contracts remain [r40_tasks_and_acceptance.md](r40_tasks_and_acceptance.md) and [`spec/r40/plan.json`](../spec/r40/plan.json); this plan does not alter any frozen thresholds.
 
-## 当前阻塞
+## Current Blockers
 
-只读运行 `tools/r40/acceptance.py`：36 个必需 gate，5 个通过。
-R40-00 已关闭；R40-01 device/mixed-device 通过，device-time 失败。
-其余工作包均未关闭。已有 RTL/板上 checkpoint 不自动等于完整 gate。
-R40-05～09 已有正式 Make target；08/09 的功能 runner 与现有证据判断
-接通，但完整实现、板测与性能证据仍缺失，不能据此签收。
+Executing [`tools/r40/acceptance.py`](../tools/r40/acceptance.py) in read-only mode evaluates 36 required gates, with 5 passing:
+- R40-00 is closed (`R40-00.protocol`, `R40-00.b39-reproducible`, `R40-00.frozen`).
+- R40-01 passes `device` and `mixed-device`, but `device-time` fails.
+- All remaining work packages remain open; existing RTL or on-board checkpoints do not automatically equate to complete gate sign-off.
+- R40-05 through R40-09 have formal Make targets; functional runners for 08 and 09 are connected to evidence evaluation, but full implementations, board tests, and performance evidence remain missing, preventing package sign-off.
 
-R40-01 原生全量 77/77 正确，但相对 B39 的 S_geo=0.5872。
-同一 HBM 镜像的 CPU/native 对照在 75 个成功共同点上约为 0.999，
-优先定位存储路径代价；两点 code-cache epoch 修复后的复测另存证据，
-不能拼接成同源码的正式 77 点实验。512 KiB local/HBM hybrid 镜像正在
-构建，仅为候选，尚未证明能消除回退。
+For R40-01, full native execution achieves 77/77 numerical correctness, but yields $S_{\text{geo}} = 0.5872$ relative to B39. A CPU vs. native control on the same HBM image yields ~0.999 across 75 successful common points, isolating the primary cost to the memory path. Retests for two points following code-cache epoch fixes are archived separately and cannot be spliced into a formal 77-point run of the same source. The 512 KiB local/HBM hybrid image remains a candidate undergoing evaluation and has not yet demonstrated elimination of the regression.
 
-## 四批实施及退出条件
+## Four Implementation Batches and Exit Criteria
 
-### 执行排程：下一批先做什么
+### Execution Schedule: What to Do Next
 
-按硬件依赖排程，而不是按工作包编号逐项串行。板卡实验串行；跳板机
-软件/RTL 验证与 FPGA server 构建并行。以下是执行优先级，不是通过预测。
+Scheduling follows hardware dependencies rather than serializing by work package number. Board experiments run serially, while jump-host software/RTL verification runs in parallel with FPGA server builds. The following sequence defines execution priority, not a pass prediction:
 
-| 顺序 | 一次实施的边界 | 批次结束的验证 | 决定下一步的结果 |
+| Order | Single Implementation Boundary | Batch-Ending Verification | Outcome Deciding Next Steps |
 |---|---|---|---|
-| A：立即 | 收齐现有 hybrid / 三核构建；审查 ownership/code2 OOC 和 placement；修复 autotune 设备记录接口，补齐 08/09 runner 与 manifest | gate 入口与失败传播；计时/缓存/预算检查；native 候选数值、零 staging、日志隔离 | 入口完整；候选硬件身份可追溯；明确性能回退与硬件风险 |
-| B：最终 RTL 前 | 从标准图计数确认瓶颈，集中完成宽入口/并发、矩阵服务时间、ownership/fault、atomic/fence 与 locality/DCO；同步完善编译资源与 spill | 受影响合同、资源边界、随机背压/故障、核数/端口矩阵和真实 overlap；随后 OOC/placement | RTL 功能闭环、资源/时序可行，冻结最终配置并启动完整 link |
-| C：link 期间 | 完成标准 attention、KV/bucket、replay/1000-call stress、预算共享与持久缓存、自动选择接入和大模型；准备所有 A/B/LOO 运行清单 | 对应功能与生命周期矩阵；标准 Torch 全图/零 fallback；样本/配置身份审计 | 软件功能及正式实验脚本就绪，避免镜像完成后再等待软件 |
-| D：最终板测 | 同一冻结镜像按机制分组跑全量正确性、性能、消融、交互和 GPU 对照 | 冻结 5 warmup/30 timed/3 blocks（长任务用已登记例外）；独立 session；最终 CI 与全部 36 gate | 所有必需 gate 通过才关闭 R40；失败回到具体机制，不降低门限 |
+| A: Immediate | Collect existing hybrid and 3-core builds; review ownership/code2 OOC and placement; fix autotune device logging interface, complete 08/09 runners and manifests | Gate entry points and failure propagation; timing/cache/budget checks; native candidate numerics, zero staging, log isolation | Complete entry points; traceable candidate hardware identities; clear performance regressions and hardware risks |
+| B: Pre-Final RTL | Confirm bottlenecks from standard graph counters; consolidate wide ingress/concurrency, matrix service time, ownership/fault, atomic/fence, and locality/DCO; refine compiler resources and spilling | Affected contracts, resource boundaries, random backpressure/faults, core/port matrices, and genuine overlap; followed by OOC/placement | Closed RTL functionality, viable resources/timing; freeze final configuration and launch full link |
+| C: During Link | Complete standard attention, KV/bucket, replay/1000-call stress, budget sharing and persistent cache, autotuning integration, and large model; prepare all A/B/LOO run manifests | Corresponding functionality and lifetime matrices; standard Torch fullgraph / zero fallback; sample and configuration identity audits | Software functionality and formal experiment scripts ready, avoiding waiting on software after bitstream completion |
+| D: Final Board Test | Run full correctness, performance, ablations, interactions, and GPU controls on the same frozen image grouped by mechanism | Frozen 5 warmup / 30 timed / 3 blocks (with registered exceptions for long tasks); isolated sessions; final CI and all 36 gates | All required gates PASS to close R40; failure loops back to specific mechanism without lowering thresholds |
 
-2026-10-14 本轮检查：hybrid 已完成 timing/CDC 审计并加载；三点诊断
-数值通过，add 对 B39 仍退化超过 5%，transpose 初测与重复结果不一致，
-原始负结果保留。旧三核 link 仍在 routing。ownership/code2 OOC 完成，
-实际 DCP 暴露广播 code queue 被合并、缺少 tile 1 的物理寄存级；
-`09ebe06` 保留独立队列，6 配置 RTL 回归通过，新 OOC 正在运行。
-没有启动重复 route。诊断收益不能替代冻结全量验收。autotune 的计时
-缺失已在 `9fdbc84` 修复，策略 9/9、grid clock 3/3 和原生测量通过；
-完整自动选择、holdout、worker/持久缓存与模型性能仍未关闭。
+Checkpoints through 2026-10-15:
+- **Hybrid image**: Completed timing/CDC audits and board loading. Three diagnostic points pass numerics; `add` still regresses >5% against B39, while `transpose` initial measurements diverge from repeated runs (152,418 vs. 90,176 cycles), retaining raw negative results.
+- **Three-core link & placement**: Ownership/code2 OOC completed; actual DCP exposed that the broadcast code queue was merged and lacked tile 1 physical register stages. Candidate `09ebe06` preserves independent queues, passed 6-configuration RTL regression, completed synthesis, and passed the full hierarchy/SLR assignment contract check with all 60 packaged RTL sources matched byte-for-byte. A 100 MHz `SSI_SpreadSLLs` link was started following a previous routing failure at congestion level 7.
+- **Attention (R40-08)**: Functional runner `make r40-attention-checks` is in place. Online SDPA templates were extended to 16/32/64-dimension FP16/BF16 heads; native decode/mask/GQA/MQA functional batches passed 6/6 with zero staging. Long-sequence performance and full model validation remain open.
+- **Autotune (R40-09)**: Autotune device event timing fixes verified policy (9/9), grid clocks (3/3), and native measurement. Persistent candidate cache with atomic publication and corruption recovery passed 14/14 policy checks. Holdout evaluation, worker timeout enforcement, and large model benchmarks remain open.
 
-### 测试预算与影响范围
+### Test Budget and Impact Scope
 
-- 每批开始写清修改文件、受影响接口、必须回归的目标与退出条件；
-  批内仅做必要的语法/构建或阻断性诊断，相关功能集中完成后再测。
-- runtime/计时/缓存修改集中跑事件、epoch/recovery、replay、预算与
-  native 图审计；compiler/layout 修改集中跑资源/unsupported 边界、
-  descriptor/barrier/tail、旧合同和对应标准 Torch 图。
-- RTL 修改集中跑 ownership/atomic/fence、随机背压/乱序/fault/reset、
-  实际 DMA/MMA overlap，再跑受影响核数/端口矩阵；RTL 冻结后才做
-  完整 route。软件改动不重跑与其无关的完整 FPGA build。
-- 长测试每个任务只保留一个实例，记录 PID、源码、配置与输出位置。
-  失败保留原始日志；只有相关修复后才重跑受影响组。CI 一批 push
-  一次，已有 CI 仍运行时避免纯文档 push 触发整轮取消。
-- 正式性能按同镜像、同配置和相同计时边界复用匹配的基线样本；只在
-  采样协议允许且所有相关身份相同时复用，不拼接不同源码/镜像结果。
-  一次冻结全量验收仍必须执行，局部回归不能代替最终测试。
+- At the start of each batch, define modified files, affected interfaces, mandatory regression targets, and exit criteria. Within a batch, run only necessary syntax/build checks or blocking diagnostics; test related functionality collectively upon completion.
+- Runtime/timing/cache modifications focus on events, epoch/recovery, replay, budgets, and native graph audits. Compiler/layout modifications focus on resource/unsupported boundaries, descriptor/barrier/tail handling, legacy contracts, and corresponding standard Torch graphs.
+- RTL modifications focus on ownership/atomic/fence, random backpressure/out-of-order/fault/reset, and actual DMA/MMA overlap, followed by affected core/port matrices. Perform full routing only after RTL freeze. Software changes do not rerun unrelated full FPGA builds.
+- For long tests, maintain only one instance per task, recording PID, source, configuration, and output directory. Retain raw logs upon failure; rerun only affected groups after relevant fixes. Push CI once per batch, avoiding pure documentation pushes while CI is running to prevent cancelling runs in progress.
+- Formal performance reuses matched baseline samples from the same image, configuration, and timing boundary; reuse only when sampling protocols permit and all identities match, without splicing results across different sources or images. A frozen full-suite acceptance run must still execute; local regressions cannot substitute for final tests.
 
-进度以“gate 有执行入口 → 功能证据完整 → 板上性能达标 → 独立复现”
-四步记录。每个 gate 对应原始日志、样本和身份清单；工作包全部通过
-后单独提交关闭记录，中间实现批次也及时 commit。当前关键瓶颈仍是
-设备回退和最终硬件能力/实现收敛，不给缺少证据的固定完工日期。
+Progress is tracked across four stages: "executable gate entry point → complete functional evidence → compliant on-board performance → independent reproduction". Each gate maps to raw logs, samples, and an identity manifest. Work packages submit sign-off records separately once all gates pass, and intermediate implementation batches are committed promptly. The key bottlenecks remain device regressions and final hardware capability/timing closure; no fixed delivery date is promised without supporting evidence.
 
-### 第一批：验收入口、计时与硬件可行性
+### Batch 1: Acceptance Entry Points, Timing, and Hardware Feasibility
 
-1. 接齐 R40-05～09 的真实 gate runner、证据验证与失败传播；复用已有
-   功能测试，不建立仅打印 PASS 的目标。板测缺失应明确 not-measured。
-   同一工作包命令在一次执行中只跑一次，再判断它提供的各 gate。
-2. 统一实验 manifest：源码、制品、镜像 SHA、时钟、资源、原始样本与
-   workload 定义关联；修正证据描述中把 HBM 驻留误写成片上驻留的问题。
-3. 保持已启动的 hybrid 单核与三核 link；code-upload 两级流水 XO 完成
-   后先核验源文件与新增 command/reply placement。旧 code0 三核镜像
-   用于布线可行性与诊断，最终 code2 配置另需完整 route/板上验证。
-4. 修复 HBM capacity 原始 host SIGSEGV 的根因并保留失败记录；长等待
-   子点成功不能代替原全量用例。收齐真实 placement、timing、CDC 与
-   connectivity，确认三个出口共享 BO 的地址合同成立。
+1. Connect genuine gate runners, evidence validation, and failure propagation for R40-05 through R40-09; reuse existing functional tests without creating targets that merely print PASS. Explicitly mark missing board measurements as `not-measured`. Run a work package command once per execution, judging all gates it provides.
+2. Unify experiment manifests: correlate source, artifacts, image SHA, clocks, resources, raw samples, and workload definitions. Correct evidence descriptions that mistakenly describe HBM residency as on-chip residency.
+3. Maintain active hybrid single-core and 3-core links; verify source files and new command/reply placement after code-upload 2-stage pipelined XO completes. The legacy code0 3-core image serves for routing feasibility and diagnostics; the final code2 configuration requires full routing and board-level verification.
+4. Fix the root cause of the original HBM capacity host SIGSEGV while preserving failure logs; long-waiting subtests passing cannot replace the original full suite test. Collect actual placement, timing, CDC, and connectivity to confirm the address contract for three memory outlets sharing BOs.
 
-退出条件：所有 gate 有可执行入口；镜像/实验身份可追溯；三 SLR 实现
-可行性明确；回退的主要成本有实际计数与最差点诊断支持。此批不签收
-尚未测量的性能。
+Exit criteria: All gates have executable entry points; image/experiment identities are traceable; 3-SLR implementation feasibility is clarified; primary regression costs are supported by actual counters and worst-point diagnostics. This batch does not sign off unmeasured performance.
 
-### 第二批：一次集中补齐存储、编译与执行语义
+### Batch 2: Consolidated Closure of Storage, Compilation, and Execution Semantics
 
-按依赖合并实施 R40-02～07 的缺口：DMA/cache ownership、atomic/fence、
-alias/lifetime/dead-hint、locality/DCO；descriptor/barrier 资源生命周期、
-retile/spill；通用异步 pipeline、layout/pack 与矩阵策略。先从标准 Torch
-制品及设备计数判定瓶颈，再实施矩阵吞吐改造，避免只优化微基准。
+Implement gaps across R40-02 through R40-07 according to dependencies: DMA/cache ownership, atomic/fence, alias/lifetime/dead-hint, locality/DCO; descriptor/barrier resource lifetimes, retile/spill; generic asynchronous pipelines, layout/pack, and matrix policies. First identify bottlenecks from standard Torch artifacts and device counters before implementing matrix throughput changes, avoiding optimizing microbenchmarks in isolation.
 
-集中验证用同一源码的：资源/合同、ownership 故障矩阵、1/2/3/4/8 核、
-不同端口/延迟/背压；检查 DMA/MMA 实际重叠。已通过且依赖未改变的
-八核、>4096 grid、code-link 等证据保留，不每次重复完整长仿真。
-修改对应边界时再跑关联回归。每个完成的工作包单独 commit。
+Consolidated verification on the same source covers: resources/contracts, ownership fault matrices, 1/2/3/4/8 cores, and varying ports/latencies/backpressure; verify actual DMA/MMA overlap. Evidence already passing with unchanged dependencies (8-core, >4096 grid, code-link, etc.) is preserved without repeating lengthy simulations each time. Rerun related regressions when modifying corresponding boundaries. Commit each completed work package separately.
 
-退出条件：功能缺口关闭、统一能力/成本模型及开关完备，候选 RTL
-通过集中回归；冻结最终 RTL 配置后启动完整 route。后续软件与实验
-工作可在 route 期间进行；硬件缺陷需要修改时明确废弃旧候选证据。
+Exit criteria: Functional gaps closed, unified capability/cost models and toggles complete, candidate RTL passes consolidated regressions; freeze final RTL configuration and launch full route. Subsequent software and experimental work can proceed during routing; explicitly deprecate old candidate evidence when hardware defects require fixes.
 
-### 第三批：标准路径性能、attention 与应用
+### Batch 3: Standard Path Performance, Attention, and Applications
 
-1. 板上先跑最差 transpose、streaming、compute scaling、长 K 和长序列
-   attention 诊断点，确认优化方向。诊断不代替冻结全子集。
-2. 同一最终镜像先运行 active_cores=1/2/3、单/多出口的冻结对照；
-   保持 PC/cache 总预算一致，再测扩容对照。记录每核负载、每出口
-   流量、频率与完整 graph makespan。
-3. 分开测 A（冻结 CPU 迁移）、B（native per-kernel staging）、C（native
-   resident），按各机制要求控制其余变量；补齐 replay、物理 copy
-   overlap 和 1000-call stress。CPU/native 身份与驻留收益分开计账。
-4. 完成在线 attention、GQA/MQA/mask/长序列及 64-step KV；证明没有
-   L×L 中间张量并测实际中间 HBM bytes。随后实现预算内 autotune，
-   冻结 holdout 与 ≥4 层、≥64 MiB 权重、prefill≥512、decode≥64 模型。
-5. 正式 A/B 按冻结采样执行：warmup 5，timed 30，3 blocks，随机交错；
-   长任务按冻结例外 timed 10。报告 median/p95、配对 bootstrap 95% CI。
-   全量样本不提前缩减；计时与性能通过由现有协议判定。
+1. Run worst-case transpose, streaming, compute scaling, long-K, and long-sequence attention diagnostic points on board first to confirm optimization direction. Diagnostics do not substitute for the frozen full subset.
+2. On the same final image, run frozen controls with `active_cores=1/2/3` and single/multiple outlets; keep total PC/cache budget constant before measuring capacity expansion controls. Record per-core load, per-outlet traffic, frequency, and full graph makespan.
+3. Separately measure A (frozen CPU migration), B (native per-kernel staging), and C (native resident), controlling remaining variables per mechanism requirements; complete replay, physical copy overlap, and 1000-call stress. Account for CPU/native identity and residency gains separately.
+4. Complete online attention, GQA/MQA/mask/long-sequence, and 64-step KV; verify absence of $L \times L$ intermediate tensors and measure actual intermediate HBM bytes. Implement budgeted autotuning; freeze holdout and $\ge 4$-layer, $\ge 64$ MiB weight, $\text{prefill} \ge 512$, $\text{decode} \ge 64$ models.
+5. Execute formal A/B per frozen sampling: 5 warmup, 30 timed, 3 blocks, randomly interleaved; long tasks use frozen exception of 10 timed calls. Report median/p95 and paired bootstrap 95% CI. Full suites are not reduced in advance; timing and performance passes are judged by existing protocols.
 
-退出条件：下表各必需性能门限、功能及文档子要求全部通过；无收益
-机制关闭或移除，并保留负结果。不能用优化一项抵偿另一项失败。
+Exit criteria: All required performance thresholds, functionality, and documentation sub-requirements in the table below pass; non-contributing mechanisms are disabled or removed, preserving negative results. Passing one optimization cannot compensate for failure in another.
 
-### 第四批：一次最终全量回归与独立复现
+### Batch 4: Final Full Regression and Independent Reproduction
 
-冻结最终软件/镜像后，集中跑 conformance、tiny/small/medium、原 large
-全量、冻结 HBM 核心套件、模型、全部独立 A/B、LOO≥3% 与规定交互。
-GPU 对照保持同 Torch point/精度/计时边界。准备报告、原始样本索引、
-资源/时序、HBM 模型校准、8 核实证和 16/32 核扩展预算；独立干净
-session 重建及上板复现。最后由 `make r40-acceptance` 判定全部 36 gate。
+After freezing final software and image, collectively run conformance, tiny/small/medium, full original large, frozen HBM core suite, models, all independent A/B, LOO $\ge 3\%$, and required interactions. GPU comparisons maintain identical Torch points, precision, and timing boundaries. Prepare final report, raw sample index, resource/timing data, HBM model calibration, 8-core empirical results, and 16/32-core scaling budgets; verify clean-environment rebuild and on-board reproduction in an independent session. Finally, `make r40-acceptance` judges all 36 gates.
 
-## 工作包与必须关闭的门限
+## Work Packages and Mandatory Closeout Thresholds
 
-| 包 / gate 后缀 | 关闭所需证据与性能门限 |
+| Package / Gate Suffix | Required Evidence and Performance Thresholds for Closeout |
 |---|---|
-| 00 protocol / b39-reproducible / frozen | 已通过；协议、77/77 重现和冻结检查持续有效 |
-| 01 device / mixed-device / device-time | 原生 77/77、混合设备/worker、S_geo≥1.0，未解决 >5% 回退为零 |
-| 02 zero-transfer / resident / batched / stress | 冻结驻留正确、S_geo≥1.5；batch/replay≥1.2；1000 次与异步生命期/恢复；物理 DMA overlap |
-| 03 tiles / wide-blocks / gemm-tile / contract | 16/32/64/128、tail/layout/alias、retile/spill/生命周期；wide≥1.3、GEMM tile≥1.15；旧合同 |
-| 04 hbm / bandwidth / robustness | ≥64 MiB 标准图、全 32 PC 地址/容量；read/write/copy 各≥冻结瓶颈峰值50%；宽入口/并发≥1.5；错误/复位、模型校准、板上 timing/CDC |
-| 05 multicore / scaling / dispatch | 真实 SLR0/1/2 同时工作；三核≥2.1、两核≥1.5；完整 grid/fault、1/2/3/4/8 核语义 |
-| 06 nuca / streaming-scaling / locality / semantics | ownership/atomic/fence/DMA/alias/dead-hint；三核 streaming≥1.8、多出口≥1.3；locality/DCO≥1.1且实际 bytes 至少一项降20%；独立消融/公平性 |
-| 07 pipeline / long-k / matrix / policy | 实际 overlap、stage/epoch/fault；long-K≥1.2、matrix≥1.2；自动选择与全量无未解决 >5% 回退；资源、秒数、LOO |
-| 08 attention / prefill / decode | 全 attention/模型与长序列/mask/GQA/MQA/64-step；prefill≥1.5、中间 HBM bytes 降≥50%；零权重/KV 重传、bucket 内一次编译 |
-| 09 autotune / holdout / suites / model | ≤16 候选/kernel、≤10分钟/graph；holdout≥1.1、regret p90≤15%；完整套件；规定大模型三核≥1.5且decode退化≤5%；8核实证/扩展预算 |
-| 10 acceptance | 最终同源码/镜像、完整 A/B/LOO/交互、GPU对照、复现包与独立session；全部必需 gate PASS |
+| 00 protocol / b39-reproducible / frozen | Already passed; protocol, 77/77 reproduction, and freeze checks remain valid |
+| 01 device / mixed-device / device-time | Native 77/77, mixed-device/worker, $S_{\text{geo}} \ge 1.0$, zero unresolved >5% regressions |
+| 02 zero-transfer / resident / batched / stress | Frozen residency correct, $S_{\text{geo}} \ge 1.5$; batch/replay $\ge 1.2$; 1000 calls with async lifetime/recovery; physical DMA overlap |
+| 03 tiles / wide-blocks / gemm-tile / contract | 16/32/64/128, tail/layout/alias, retile/spill/lifetime; wide $\ge 1.3$, GEMM tile $\ge 1.15$; legacy contract |
+| 04 hbm / bandwidth / robustness | $\ge 64$ MiB standard graph, full 32 PC address/capacity; read/write/copy each $\ge 50\%$ of frozen bottleneck peak; wide ingress/concurrency $\ge 1.5$; error/reset, model calibration, on-board timing/CDC |
+| 05 multicore / scaling / dispatch | Real SLR0/1/2 active concurrently; 3 cores $\ge 2.1$, 2 cores $\ge 1.5$; full grid/fault, 1/2/3/4/8-core semantics |
+| 06 nuca / streaming-scaling / locality / semantics | ownership/atomic/fence/DMA/alias/dead-hint; 3-core streaming $\ge 1.8$, multi-outlet $\ge 1.3$; locality/DCO $\ge 1.1$ with at least one metric of actual bytes reduced by $\ge 20\%$; independent ablation/fairness |
+| 07 pipeline / long-k / matrix / policy | Actual overlap, stage/epoch/fault; long-K $\ge 1.2$, matrix $\ge 1.2$; automatic policy with zero unresolved >5% regressions across full suite; resources, seconds, LOO |
+| 08 attention / prefill / decode | Full attention/model with long-sequence/mask/GQA/MQA/64-step; prefill $\ge 1.5$, intermediate HBM bytes reduced by $\ge 50\%$; zero weight/KV retransmission, single compilation within bucket |
+| 09 autotune / holdout / suites / model | $\le 16$ candidates/kernel, $\le 10$ minutes/graph; holdout $\ge 1.1$, regret p90 $\le 15\%$; complete suite; specified large model 3 cores $\ge 1.5$ with decode regression $\le 5\%$; 8-core empirical proof / scaling budget |
+| 10 acceptance | Final identical source/image, complete A/B/LOO/interactions, GPU comparison, reproduction package with independent session; all required gates PASS |
 
-## 资源、测试与提交纪律
+## Resource, Testing, and Commit Discipline
 
-- 跳板机跑重型 RTL/编译矩阵；FPGA server 跑 Vivado/Vitis、板上功能与
-  性能。板卡实验串行，独立编译/软件准备可并行。启动前按实际内存
-  和现存作业定并发，不同时堆积多个完整 route。
-- 已运行的长仿真保留 PID、源码与输出目录，读取增量状态；活着且
-  没有失败依据时不重启。新增相同目的的板测可提前给诊断证据，
-  不能冒充旧仿真的完成状态。
-- 一批修改后跑相关集中验证；一次最终冻结全量回归。前一轮已有
-  完整证据且相关依赖未变时不为形式重复测试。
-- 工作包或可审查里程碑 commit；push 合并成批，让 CI 完成，避免
-  连续 push 触发 cancel-in-progress。修复 CI 后重跑受影响测试；最终
-  HEAD 必须 CI 通过。文档提交也不得把未关闭的包改成 accepted。
-- 执行检查点保存各作业状态、下一动作及 gate 缺口；每批更新本表与
-  evidence registry。性能结果失败时返回对应实现批，不修改冻结标准。
+- Jump host runs heavy RTL/compilation matrices; FPGA server runs Vivado/Vitis, on-board functionality, and performance. Board experiments run serially; independent compilation/software preparation can run in parallel. Check real memory and existing jobs before starting to avoid stacking multiple full routes concurrently.
+- Retain PID, source, and output directories for running long simulations, reading incremental state; do not restart jobs that are alive and have no basis for failure. New board tests for identical purposes provide early diagnostic evidence but cannot impersonate the completion of long simulations.
+- Run consolidated verification following a batch of changes; perform a single final frozen full-suite regression. Do not repeat testing purely for form when a prior round has complete evidence and dependencies are unchanged.
+- Commit per work package or reviewable milestone; batch pushes so CI can complete, preventing sequential pushes from triggering cancel-in-progress. Rerun affected tests after fixing CI; the final HEAD must pass CI. Documentation commits must not mark unclosed packages as accepted.
+- Execution checkpoints record job status, next actions, and gate gaps; update this document and evidence registry per batch. When performance results fail, return to the corresponding implementation batch without modifying frozen standards.
 
-最短路径是先解决三 SLR 资源/时序与单核存储回退，同时补齐验收入口；
-route 等待期间推进编译和模型；最后在同一个冻结候选上集中取得
-全部性能及消融证据。当前性能和 route 尚未收敛，不能承诺固定交付时长。
+The shortest path is to first resolve 3-SLR resources/timing and single-core memory regressions while completing acceptance entry points; advance compiler and model work while awaiting route completion; and finally obtain all performance and ablation evidence collectively on a single frozen candidate. Current performance and routing have not yet converged, so no fixed delivery timeframe can be promised.

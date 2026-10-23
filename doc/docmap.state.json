@@ -273,6 +273,13 @@
    "fingerprint": "6a85a185de67b6eb671c3c4d6618b9cd92f167d36212e8b284459e9d7ff1c1c1",
    "time": "20261023T073458"
   },
+  "doc/r40_closeout_plan.md": {
+   "backend": "agy",
+   "commit": "5143a6f1a0223fbbb1380b30ac0937a247a329c3",
+   "doc_sha256": "4e3e2b07429ac94c1632bfd2ba62e18ae1b8fab40cb704cbbf58b07665728206",
+   "fingerprint": "a9f96ccc02bbc712c48bae316007ff4d5ac66fdffa9d89ae0ea3ee1f12803815",
+   "time": "20261023T083803"
+  },
   "doc/r40_cold_call_audit.md": {
    "backend": "agy",
    "commit": "86bce2edc0580b9558b665a170e39532256d0236",

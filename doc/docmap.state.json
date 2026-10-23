@@ -189,6 +189,13 @@
    "fingerprint": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
    "time": "20261023T050739"
   },
+  "doc/r38_board_bringup.md": {
+   "backend": "agy",
+   "commit": "a2c8f3fdfe05062e7b26094029f8e39045839212",
+   "doc_sha256": "7478657879b5f1f0104bc22d0119d2eb9df96ccf2bc50f2b2d8756550975c623",
+   "fingerprint": "01bcf28549b3540dafe0f58a111b5c5d92691e9bdaa3a12deb91280cbdcbd147",
+   "time": "20261023T075347"
+  },
   "doc/r38_isca_roadmap.md": {
    "backend": "agy",
    "commit": "540780718f865edb28f7cdd9f4e2be8457e32a16",

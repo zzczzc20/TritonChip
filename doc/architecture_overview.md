@@ -1,6 +1,6 @@
 # TNCA Architecture Overview
 
-Status as of 2026-10-08 (branch `r38`). This document describes the TNCA hardware as it is built and measured today, how it relates to the original design, and what comes next. Its companion, [`compiler_overview.md`](compiler_overview.md), covers the compiler, the runtime and the PyTorch path.
+Status as of 2026-10-09 (branch `r38`). This document describes the TNCA hardware as it is built and measured today, how it relates to the original design, and what comes next. Its companion, [`compiler_overview.md`](compiler_overview.md), covers the compiler, the runtime and the PyTorch path.
 
 > **Supersedes the September 2026 design draft.** The previous `architecture_overview.md` was a design study for a 16-tile TNCA-v1 (in Chinese). It is preserved unchanged at [`design/tnca_v1_architecture_draft.md`](design/tnca_v1_architecture_draft.md). Section citations such as "`architecture_overview.md` §11.3" or "the twelve frozen decisions" in code comments and in documents written before 2026-10-08 refer to that draft, whose section numbers are unchanged.
 
@@ -33,12 +33,12 @@ What exists today is a verified single-core implementation of that core, plus th
 
 | | State |
 |---|---|
-| Core RTL | One in-order core: 16-lane × 32-bit vector unit, 16×16 FP32-accumulating matrix unit, tensor transfer engine, mbarriers, atomics, SFU, 2 role contexts. Verilog-2005, simulated with Icarus Verilog. |
+| Core RTL | One in-order core: 16-lane × 32-bit vector unit, 16×16 FP32-accumulating matrix unit, tensor transfer engine, mbarriers, atomics, SFU, 2 role contexts (parameterised up to 4). Verilog-2005, simulated with Icarus Verilog. |
 | Multi-tile RTL | A 2×2 mesh with NUCA slices and a NoC (`rtl/tnca_top.v`). It is exercised by RTL tests only; the runtime does not use it. |
-| ISA | TNCA-ISA v0.1: fixed 64-bit instructions, 20 major groups, 169 instructions, one machine-readable source. |
-| FPGA | The single core (`core-vrf-sync-v1`) runs on an Alveo U50 and, since 2026-10-08, an Alveo U280. The kernel clock is 150 MHz. The loaded images divide it by 4, for a 37.5 MHz device clock. Builds from the R38 timing work divide by 3, for 50 MHz ([`r38_board_bringup.md`](r38_board_bringup.md) §6). 512 KiB of on-chip memory. |
-| Software | Triton → TNCA compiler; PyTorch `torch.compile` → Inductor → Triton → TNCA, with no host fallback on any tiny- or small-tier ArchBench point. |
-| Measured | ArchBench tiny (27 points) and small (25 points) pass on the U280. The board's cycle counts equal the RTL simulator's, launch by launch, on every tiny-tier point. The GB10 GPU passes all 76 points under the same protocol. |
+| ISA | TNCA-ISA v0.1: fixed 64-bit instructions, 20 major groups, 169 instructions, one machine-readable source. The compiler emits 114 of them ([`support_matrix.md`](support_matrix.md)). |
+| FPGA | The single core (`core-vrf-sync-v1`) runs on an Alveo U50 (37.5 MHz) and an Alveo U280. On the U280, it was brought up at 37.5 MHz (150 MHz / 4), verified at 75 MHz (150 MHz / 2), and runs at **100 MHz undivided** (`DEV_DIV = 1`), which is now the flow default ([`flow/fpga/README.md`](../flow/fpga/README.md), [`r38_board_bringup.md`](r38_board_bringup.md) §6, `evidence/r38/u280_100mhz/`). 512 KiB of on-chip memory. |
+| Software | Triton → TNCA compiler; PyTorch `torch.compile` → Inductor → Triton → TNCA, with no host fallback on any tiny- or small-tier ArchBench point. Rank 1–5 tensor descriptors executed by the transfer engine (`t.ld.async` / `t.st.async`) or the LSU. |
+| Measured | ArchBench tiny (27 points) and small (25 points) pass on the U280. At both 37.5 MHz and 100 MHz, the board's device cycle counts equal the RTL simulator's, launch by launch, on every tiny-tier point. The GB10 GPU passes all 76 points under the same protocol. |
 
 TNCA is correctness-first today. Strict-bound efficiency η is about 0.001–0.2 per point. Section 10 shows where the time goes; most of it is register hazards and a single 8-byte memory port, not arithmetic.
 
@@ -59,9 +59,9 @@ The design draft ([`design/tnca_v1_architecture_draft.md`](design/tnca_v1_archit
 | NUCA cache (§8) | 512 KiB/slice, 8 MiB, 96 MSHRs; TensorMap-aware replacement and bypass | 2×2 system only: 32 KiB/slice (64 sets × 8 ways × 64 B), 8 MSHRs. DCO ([`dco.md`](dco.md)): a Tensor Management Unit with compiler-registered nAcc, dead-block prediction, anti-thrashing and LRU replacement, dynamic, tensor and gqa bypass. Each is selected per run; the default stays round-robin. No admission control or MSHR-aware arbitration. |
 | Transaction control (§9) | Credits, MSHR-aware arbitration, admission | Not implemented. |
 | Async protocol (§13) | mbarrier with ready/free events | **Implemented:** 32 mbarriers per core, counting arrivals and operations separately; the matrix unit signals result-ready and source-free separately. |
-| Clock (§3.1) | 1 GHz modelling assumption | Not a physical design: 37.5 MHz on the loaded FPGA image, 50 MHz for new builds. Synthesis numbers are structural proxies, not PPA (roadmap §1.2). |
+| Clock (§3.1) | 1 GHz modelling assumption | Not a physical design: 100 MHz undivided on the loaded U280 image (`DEV_DIV = 1`), 75 MHz / 2 fallback, 37.5 MHz on U50. Synthesis numbers are structural proxies, not PPA (roadmap §1.2). |
 
-The draft's own staging (§21) placed "prove function on one core" first and "Tensor DMA, RF windows, matrix" second. Both are done on a single core. Stage 3, a 2×2 mesh with reliable NUCA, exists in RTL but not in the runtime. Stages 4–5 (the cache-policy ideas and the 4×4 scale-up) have not started.
+The draft's own staging (§21) placed "prove function on one core" first and "Tensor DMA, RF windows, matrix" second. Both are done on a single core. Stage 3, a 2×2 mesh with reliable NUCA, exists in RTL but not in the runtime. DCO ([`dco.md`](dco.md)) explores Stage 4 cache orchestration ideas on the 2×2 RTL, while runtime multi-core integration and 4×4 scaling remain future work.
 
 ## 3. System organisation
 
@@ -112,8 +112,8 @@ A launch names a PC, an argument block, a role mask and the program id/count. A 
 |---|---|---|
 | Scalar RF | 64 × 64 bit per RCTX | `S0` reads as zero; 3 read / 1 write ports |
 | Predicate RF | 16 × 16 bit per RCTX | `P0` is all-ones; one bit per lane |
-| Vector RF | 128 physical × 16 lanes × 32 bit = 8 KiB per core | 64 logical registers per RCTX through a programmable base; encoding room for 256 |
-| Accumulator RF | 16 × (16 × 16 × FP32) = 16 KiB | Read and written by the vector unit and the matrix unit |
+| Vector RF | 128 physical × 16 lanes × 32 bit = 8 KiB per core (256 physical = 16 KiB in `core-vrf-sync-v4`/`v5`) | 64 logical registers per RCTX through a programmable base; encoding room for 256 |
+| Accumulator RF | 16 × (16 × 16 × FP32) = 16 KiB | Read and written by the vector unit and the matrix unit; distributed RAM per lane with valid bits |
 | Tensor descriptors | 16 | Snapshots of 256-byte TensorMaps |
 | RF windows | 32 | Destinations of tensor transfers |
 | mbarriers | 32 per core | Shared by all role contexts |
@@ -133,8 +133,8 @@ A launch names a PC, an argument block, a role mask and the program id/count. A 
 | Vector ALU | 16 lanes, 1 cycle |
 | Vector FPU | 16 lanes, 2-cycle latency; lane reductions take log2(16) = 4 steps on the FMA array |
 | SFU | One shared slice computing exp2, log2, reciprocal and rsqrt; one lane per cycle, 6-cycle latency, ≤ 2⁻²² relative error, subnormals flushed. A 16-lane op occupies it for VLEN + 8 cycles. Generated from XLS (`rtl/gen/`). |
-| Matrix | `C16×16 += A·B`, K = 16/32/64, 16 MACs per cycle (one k step per 16 cycles); separate result-ready and source-free completion events |
-| Tensor transfer engine | `t.ld.async` / `t.st.async` of a rank-1–5 box between memory and an RF window, asynchronously, one completion per command on an mbarrier. Coordinates are five consecutive scalar registers, signed and of any alignment; base and strides need no alignment either. A misaligned row is assembled from two memory words per 8-byte unit. Out-of-bounds elements are filled on a load (zero, or the dtype's NaN) and not written by a store (byte enables). The store reads the window through its own VRF port. Box rows must be whole 8-byte units, block dimensions 1–256. `core-xpose-v1` adds a transposed window write for 16-bit elements (§7). |
+| Matrix | `C16×16 += A·B`, K = 16/32/64, 16 MACs per cycle (one k step per 16 cycles); separate result-ready and source-free completion events; accumulator loop bypass removed and operands registered; distributed-RAM accumulator file (timing-011) |
+| Tensor transfer engine | `t.ld.async` / `t.st.async` of a rank-1–5 box between memory and an RF window, asynchronously, one completion per command on an mbarrier. Coordinates are five consecutive scalar registers, signed and of any alignment; base and strides need no alignment either. A misaligned row is assembled from two memory words per 8-byte unit. Out-of-bounds elements are filled on a load (zero, or the dtype's NaN) and not written by a store (byte enables). The store reads the window through its own VRF port. Box rows must be whole 8-byte units, block dimensions 1–256. Box geometry is precomputed on `td.load`. `core-xpose-v1` and `core-vrf-sync-v5` add a transposed window write for 16-bit elements (§7). |
 | LSU | Ordinary loads, stores, gathers and scatters, coalesced onto 64-bit words; up to 8 beats outstanding, completed out of order by tag; one instruction in flight |
 | Memory mux | Merges the LSU and the transfer engine onto the core's single 64-bit data port; the transfer engine wins |
 | Banked VRF (option) | 4 banks, each 1R1W with synchronous read; an operand collector with 4 entries × 3 sources (`core-vrf-sync-v1`, the board profile) |
@@ -193,7 +193,7 @@ Reference: [`isa/TNCA-ISA-v0.1.md`](isa/TNCA-ISA-v0.1.md), machine-readable at `
   | SYS, TXFER | 3 each |
   | MATRIX | 2 |
 
-  The compiler emits 111 of them ([`support_matrix.md`](support_matrix.md)).
+  The compiler emits 114 of them ([`support_matrix.md`](support_matrix.md)).
 - **One source, many consumers:** the authoring tables are `tools/asm/tnca_isa.py`; everything else is derived from them, and `make compiler` fails if any copy is stale.
   - `tools/isa/export_schema.py` writes the JSON.
   - `tools/isa/gen.py` writes the LLVM-style opcode tables and [`isa/opcode-map.md`](isa/opcode-map.md).
@@ -213,10 +213,14 @@ A profile is a named RTL configuration plus its capability record. Profiles are 
 | Profile | What differs | Used by |
 |---|---|---|
 | `core-sim` | Reference: 1 core, 2 RCTX, 64 vector registers per RCTX, behavioural VRF, SFU | Default simulator profile, R3.7 TileBench, tiny ArchBench on RTL |
-| `core-vrf-sync-v1` | Same ISA; synchronous 4-bank VRF with operand collector (R3 v2) | **The FPGA board.** ArchBench board runs; the simulator bench of the same profile is the board's cycle reference. |
-| `core-xpose-v1` | Adds `tensor_transpose`: the transfer engine writes a transposed window (16-bit elements) | R38 three-layer case S1-07: GEMM with a transposed operand runs 1.46× faster for a +11.2 % structural gate proxy |
 | `core-4r` | 4 RCTX, 32 vector registers each | RTL tests of four-role elaboration |
-| `system-2x2` | 4 tiles, mesh, 4 NUCA slices, DRAM model, no SFU | RTL tests only |
+| `system-2x2` | 4 tiles in 2×2 mesh, 4 NUCA slices, DRAM model, TMU, no SFU | RTL tests only |
+| `core-vrf-sync-v1` | Same ISA; synchronous 4-bank VRF with operand collector (R3 v2) | **The FPGA board.** U50 and U280 bring-up; simulator reference for board cycles |
+| `core-vrf-sync-v2` | `core-vrf-sync-v1` with VRF bypass (`VRF_BYPASS`), no fetch bubble (`FE_NOBUBBLE`), VRF prefetch (`VRF_PREFETCH`) | Timing-optimised single-core execution |
+| `core-vrf-sync-v3` | `core-vrf-sync-v2` with role-context hazard switching (`RCTX_SWITCH`), dual LSU in-flight (`LSU_INFLIGHT=2`), FPU overlap, per-role resource slicing (`RSLICE`) | Simulation; multi-role microarchitectural switches |
+| `core-vrf-sync-v4` | `core-vrf-sync-v3` with 4 RCTX, 64 vector registers each (256 physical VREGS = 16 KiB), `RSLICE` | Simulation; 4-role SPMD execution |
+| `core-vrf-sync-v5` | `core-vrf-sync-v4` with transposed tensor transfer (`HAS_TENSOR_XPOSE`), role-context pairing (`RPAIR`), matrix A-buffer (`MTX_ABUF`), `RCTX_SWITCH=2` | Simulation; producer/consumer context pairs with transposed DMA |
+| `core-xpose-v1` | Adds `tensor_transpose`: the transfer engine writes a transposed window (16-bit elements) | R38 three-layer case S1-07: GEMM with a transposed operand runs 1.46× faster for a +11.2 % structural gate proxy |
 
 Each runtime profile also has a `/slow` simulator variant (memory latency 7, random stalls and reordering) for robustness testing. The compiler reads the capability record (for example `tensor_transpose`, SFU present, atomics) and refuses to emit what a profile lacks, rather than emitting it and failing at run time.
 
@@ -224,7 +228,7 @@ Each runtime profile also has a `/slow` simulator variant (memory latency 7, ran
 
 ### 8.1 Hardware counters
 
-Twenty 64-bit counters (`spec/r38/counters.json`). They are cleared only by reset and wrap. The selection logic is generated by `tools/r38/gen_counters.py` into `rtl/common/tnca_perf_sel.vh` and `tnca_perf_count.vh`.
+Twenty-one 64-bit counters (`spec/r38/counters.json`). They are cleared only by reset and wrap. The selection logic is generated by `tools/r38/gen_counters.py` into `rtl/common/tnca_perf_sel.vh` and `tnca_perf_count.vh`.
 
 | Index | Counter | Meaning |
 |---|---|---|
@@ -235,6 +239,9 @@ Twenty 64-bit counters (`spec/r38/counters.json`). They are cleared only by rese
 | 14–16 | `perf_stall_hazard`, `_lsu`, `_wb` | Overlapping view of the same stalls |
 | 17 | `perf_squash` | Redirects |
 | 18–19 | `perf_mem_rd_beats`, `perf_mem_wr_beats` | 8-byte beats on the data port |
+| 20 | `perf_x_frontend` | Running cycles with nothing stalled and nothing issued: R holds no instruction (fetch bubble, squash, redirect) |
+
+The architectural cycle partition identity holds over any window: `perf_issued + perf_stall_total + perf_x_frontend == perf_cycles`.
 
 Reading a counter:
 - **Simulator and board:** transport operation 7, `PERF_READ`, with the counter index in, low/high 32 bits out. It is served only while the device is idle, and a device without the operation answers `REFUSED`.
@@ -271,17 +278,20 @@ All backends speak one request/response protocol (`python/tnca/transport.py`, `s
 | 6 | PING | Liveness |
 | 7 | PERF_READ | Read one hardware counter (added in R38; the JSON spec still says v1.0 and lists ops 1–6, see §13) |
 
-Status codes: OK 0, FAULT 1, TIMEOUT 2, REFUSED 3. Sequence numbers increase monotonically. Late responses, and responses from an earlier epoch, are discarded.
+Status codes: OK 0, FAULT 1, TIMEOUT 2, REFUSED 3. Sequence numbers increase monotonically. Late responses, and responses from an earlier epoch, are discarded. (Ops 8 `GRID_CAP` and 9 `LAUNCH32` are additive extensions in `python/tnca/transport.py` for physical grid capability queries and 32-bit launch parameters.)
 
 ### 9.2 Backends
 
 | Backend | Device | Evidence level of its measurements |
 |---|---|---|
 | `sim-file` | RTL simulator (Icarus, about 500 cycles/s) behind a file mailbox | `measured-rtl` |
+| `sim-multicore` | Coherent mesh simulator over persistent mailbox | `measured-rtl` |
 | `sim-socket` | The same RTL behind a TCP relay | `measured-rtl` |
 | `fpga-u50-sim` | The board's register protocol and FPGA top, simulated on RTL | `measured-rtl` |
+| `fpga-multicore-sim` | Multicore MMIO v2 board binding, simulated on RTL | `measured-rtl` |
 | `fpga-u50` | Alveo U50 over XRT (PCIe register window) | `measured-board` |
 | `fpga-u280` | Alveo U280; same kernel and backend code as the U50 | `measured-board` |
+| `fpga-u280-multicore` | Alveo U280 multicore MMIO v2 binding | `measured-board` |
 | `fpga-prototype` | Interface only; opening it is an error | — |
 
 No backend claims `platform-verified`; the registry reserves that state. A backend that needs hardware the machine lacks refuses to open. It never substitutes the simulator.
@@ -291,7 +301,8 @@ No backend claims `platform-verified`; the registry reserves that state. A backe
 - **Tops:**
   - `rtl/fpga/tnca_fpga_top.v`: shell + MMIO mailbox + BRAM memory + reset synchroniser. Defaults to the banked VRF, i.e. `core-vrf-sync-v1`.
   - `rtl/fpga/tnca_axi_lite.v`: a 32-bit AXI4-Lite slave, crossing from the shell clock to the device clock.
-  - `rtl/board/tnca_u50_xo.v`: the Vitis kernel top. It is the only file with a Xilinx primitive: a BUFGCE_DIV ÷4, plus a 64-cycle power-on reset.
+  - `rtl/fpga/tnca_u50_top.v`: the top-level integration wrapper between AXI-Lite and `tnca_fpga_top`, keeping `clk_dev` as a port so it remains lintable without Xilinx primitives.
+  - `rtl/board/tnca_u50_xo.v`: the Vitis kernel top. It is the only file with a Xilinx primitive: a BUFGCE_DIV, plus a 64-cycle power-on reset.
 - **Mailbox registers** (`rtl/fpga/tnca_mmio.v`):
 
   | Offset | Contents |
@@ -303,10 +314,11 @@ No backend claims `platform-verified`; the registry reserves that state. A backe
   | 0xA0 | Served-request count |
 
   A doorbell is acted on only when its sequence number is greater than the served count.
-- **Clocking:** the kernel clock is requested at 150 MHz and divided by 4 inside the kernel, giving 37.5 MHz. The first U50 link at the platform default of 300 MHz failed on 173 setup endpoints, 131 of them outside the design's control. The device domain had already closed with +6.494 ns at 37.5 MHz. The measured kernel clock is 150 MHz on both cards: 150,000 kHz on the U50, and 150 MHz from the U280 shell's frequency counter.
+- **Clocking:**
+  The flow defaults to **100 MHz undivided** (`DEV_DIV = 1`, requested kernel clock 100 MHz, DATA_CLK = 100 MHz in `.xclbin`). The fallback is 150 MHz kernel clock divided by 2 inside the kernel (`DEV_DIV = 2`), giving 75 MHz. Both have been linked, timed, and verified on the U280. The earlier U50 bring-up ran at 150 MHz / 4 = 37.5 MHz. The measured device clock on the U280 is 100.01–100.07 MHz (and 74.97–75.02 MHz on the /2 image), verified with host-timed spin kernels.
 - **Flow** ([`flow/fpga/README.md`](../flow/fpga/README.md)):
   - `package_xo.tcl` builds the `.xo`.
-  - `link.sh` runs `v++ -l` and reads the frequency back from the `.xclbin`. It fails on any clock-moving `AUTO-FREQ-SCALING` rule, and `LINK_RECHECK=1` re-checks a finished link.
+  - `link.sh` runs `v++ -l` and reads the frequency back from the `.xclbin`. It fails on any clock-moving `AUTO-FREQ-SCALING` rule (except advisory `08`), and `LINK_RECHECK=1` re-checks a finished link.
   - `program.sh --check/--go/--status` gates loading on the shell UUID, an idle device, no concurrent loader and temperature.
   - `boards.sh` holds the per-card values (`TNCA_BOARD=u50|u280`).
 - **Runbook:** [`r38_board_bringup.md`](r38_board_bringup.md).
@@ -314,17 +326,17 @@ No backend claims `platform-verified`; the registry reserves that state. A backe
 | | Alveo U50 | Alveo U280 |
 |---|---|---|
 | Part / platform | xcu50-fsvh2104-2-e / `xilinx_u50_gen3x16_xdma_5_202210_1` | xcu280-fsvh2892-2L-e / `xilinx_u280_gen3x16_xdma_1_202211_1` |
-| Timing at 150 MHz | WNS +0.055 ns, WHS +0.009 ns | Link 1 (placer's choice): WNS −1.919 ns on one AXI-Lite path crossing SLR0→SLR1. Link 2 (kernel pinned to SLR1): **WNS +0.016 ns**, kernel clock domain +4.229 ns, 0 failing endpoints |
-| Utilisation | Not recorded | Whole device including the XRT shell: 24.1 % LUT, 12.8 % FF, 18.2 % BRAM tiles. Not broken down by kernel. |
-| Loaded | 2026-09-26: an image that predates R38 and lacks `PERF_READ` | 2026-10-08: `tnca_u280.xclbin`, sha256 `f8717adc…a77a52bec` |
-| Board evidence | read/ping/run (243 cycles, 72 instructions) | Conformance 5/5, profiler (full run), ArchBench tiny + small, multi-step generation (§10) |
-| Temperature | FPGA 91–95 °C during runs | FPGA 32 °C, HBM 26–27 °C at load |
+| Timing | 150 MHz link: WNS +0.055 ns, WHS +0.009 ns (device at 37.5 MHz) | 100 MHz undivided: **full-design WNS +0.016 ns**, device domain **WNS +0.127 ns** (10 ns period, 0 failing endpoints). Fallback 75 MHz (/2): clk_dev WNS +0.471 ns; initial /4: clk_dev WNS +4.229 ns |
+| Utilisation | Not recorded | At 100 MHz (after accumulator LUT-RAM migration): SLR1 CLB utilization 85.41 % (LUTs 62.36 %, registers 15.92 %), saving ~35k LUTs and 127k FFs and eliminating routing congestion |
+| Loaded | 2026-09-26: an image that predates R38 and lacks `PERF_READ` | 2026-10-09: `tnca_u280.xclbin` (100 MHz undivided, `8d8e4e9`, sha256 `09cbd3d4…`, uuid `a446256a-…`), with rank 1–5 descriptor engine and `t.st.async` |
+| Board evidence | read/ping/run (243 cycles, 72 instructions) | Conformance 5/5, profiler (full and quick), ArchBench tiny (27/27) & small (25/25), multi-step generation, tdesc_tests 10/10, torch_tests 24/24 |
+| Temperature | FPGA 91–95 °C during runs | FPGA 31–32 °C, HBM 26–27 °C at load |
 
 ## 10. Measured behaviour
 
-### 10.1 Board correctness and cycle fidelity (U280, 2026-10-08)
+### 10.1 Board correctness and cycle fidelity (U280)
 
-The acceptance ladder of [`r38_board_bringup.md`](r38_board_bringup.md) §2C was run on the U280:
+The acceptance ladder of [`r38_board_bringup.md`](r38_board_bringup.md) §2C was run on the U280 (initially at 37.5 MHz on 2026-10-08):
 
 | Step | Result |
 |---|---|
@@ -337,6 +349,8 @@ The acceptance ladder of [`r38_board_bringup.md`](r38_board_bringup.md) §2C was
 | B6 multi-step LLaMA generation | `python -m archbench.generate --tier small --new 8`: a 64-token prefill, then 7 decode steps, each on the KV cache the device produced. All 8 steps are within tolerance of an FP32 reference given the same inputs. The generated token ids equal those of a generation run wholly in FP32 (weights are random, so the tokens carry no meaning). Device time at 37.5 MHz: prefill 4.16 s (15.4 tokens/s); decode 0.80–1.04 s per token (1.01 tokens/s). Host wall time was 327 s: compiling each step's new shapes, plus 194 s in launches (transfers and waiting). |
 
 Small LLaMA generation first needed one runtime fix: the device heap allocator did not merge freed blocks, so a long graph fragmented the heap. See [`compiler_overview.md`](compiler_overview.md) §8.3. Tiny-tier cycles stayed identical to the simulator after the fix.
+
+On 2026-10-09, following timing closure, the 100 MHz undivided image was loaded and verified on the U280 (`evidence/r38/u280_100mhz/`): B1 conformance, B2 profiler, and B3 tiny 27/27 all pass, and B4 cycle comparison confirms that all 27 tiny points have device cycle counts identical to the `fpga-u50-sim` RTL reference point-by-point (`b4_compare.txt`). Spin-kernel measurements confirm 100.01–100.07 MHz device clock.
 
 ### 10.2 Where the cycles go
 
@@ -376,10 +390,12 @@ ArchBench compares platforms on the same PyTorch programs, each compiled by its 
 - **Backends:** `tools/r36/conformance.py`. Hardware backends count as not-applicable unless given `--xclbin`, and `--require-measured` turns that into a failure.
 - **Evidence registry:** [`spec/r38/evidence_registry.json`](../spec/r38/evidence_registry.json) holds 21 claims, each with its evidence level (documented → implemented → functionally-validated → cycle-validated → synthesized → board-measured). Stage 1 forbids `board-measured`. Promoting the board claims is a Stage 2 entry item (§13).
 - **CI** (`.github/workflows/ci.yml`):
-  - `check`: lint, unit, core, the 2×2 system, the compiler, profiles, R3 models and synthesis.
-  - `triton`: the real Triton frontend, ABI and runtime tests, package install.
-  - `tilebench`: O0/O1/O2.
-  - Neither the R38 PyTorch tests nor ArchBench nor the board run in CI. They need PyTorch, long RTL runs, or hardware.
+  - `check`: lint, unit, core, the 2×2 system (`make top`), the compiler, profiles, R3 models, synthesis, and R40 structural checks.
+  - `triton`: the real Triton frontend, IR, DCO compiler, runtime and fault tests.
+  - `tilebench`: O0/O1/O2 on TileBench operators.
+  - `torch`: PyTorch plugin identity and Inductor / ArchBench compile coverage (`archbench-coverage`).
+  - `r40-grid` and `r40-mmio`: multicore grid dispatch and MMIO tests.
+  - Full ArchBench execution on RTL (due to simulation duration) and hardware board runs run outside CI on dedicated hosts.
 
 ## 12. Known limitations
 
@@ -390,7 +406,7 @@ ArchBench compares platforms on the same PyTorch programs, each compiled by its 
 5. **Narrow tiles.** At most 16 elements per block dimension (compiler limit, [`compiler_overview.md`](compiler_overview.md) §14). This caps matrix-unit use.
 6. **Transfer engine.** A box row must be a whole number of 8-byte units (the compiler reads other boxes through the LSU), and a misaligned row costs two memory reads per unit. There is no transposed store, no TMA-style gather4/multicast, and no reduce-in-memory (descriptor atomics are per-element LSU atomics).
 7. **Not a physical design.**
-   - FPGA timing: the loaded image runs at 37.5 MHz. The R38 timing work makes 50 MHz the default for new builds; this is estimated out of context and not yet linked.
+   - FPGA timing: the loaded image runs at 100 MHz undivided on the U280 (`DEV_DIV = 1`), with 75 MHz (/2) as verified fallback, and 37.5 MHz on U50.
    - Otherwise there are only yosys structural proxies: no ASIC PPA, and no power measurement yet.
 8. **Documentation drift.**
    - ISA text: atomics and register classes marked reserved; vector-register base.
@@ -416,13 +432,14 @@ Ordered by what the R38 plan needs first. Each item names the decision or eviden
 
 ### 13.1a The board clock
 
-The first timing pass is done ([`r38_board_bringup.md`](r38_board_bringup.md) §6).
+Timing optimization is complete through 100 MHz ([`r38_board_bringup.md`](r38_board_bringup.md) §6, [`flow/fpga/README.md`](../flow/fpga/README.md)).
 
-- **What changed:** the matrix unit's accumulate loop is cut. The FMA is generated by XLS, and the latency-2 instance is a drop-in. The tensor engine's window check is precomputed when the descriptor loads.
-- **Result:** with cycle counts unchanged, new builds default to 50 MHz.
-- **Next:**
-  - Link once at /3 to confirm.
-  - Then decide on `FP_LAT=3`, which is what 75 MHz needs. It is a cycle change, so it means a re-frozen baseline and a design-change record.
+- **Progression:**
+  - Round 1 (50 MHz /3 estimate): matrix accumulate bypass removed, XLS latency-2 FMA adopted, tensor engine window check precomputed on `td.load`.
+  - Round 2 (75 MHz /2, verified): matrix operand registering (timing-002) and integer reduction trees (timing-003) brought post-synthesis delay to 7.76 ns. Linked and verified on U280 at 75 MHz (`DEV_DIV = 2`, clk_dev slack +0.471 ns, [`evidence/r38/u280_75mhz/`](../evidence/r38/u280_75mhz/README.md)).
+  - Round 3 & LUT-RAM (100 MHz undivided, verified): timing-004..010 reached 6.84 ns post-synthesis. Accumulator file migration to distributed RAM (timing-011) broke SLR1 CLB congestion (97.71 % down to 85.41 %), allowing an undivided 100 MHz link to route with +0.127 ns slack in the device domain. Verified on U280 at 100 MHz (`DEV_DIV = 1`, [`evidence/r38/u280_100mhz/`](../evidence/r38/u280_100mhz/README.md)).
+- **Result:** Builds and the flow default to **100 MHz undivided** (`DEV_DIV = 1`), with 75 MHz (`DEV_DIV = 2`) as verified fallback.
+- **`FP_LAT = 3` trial:** A 4-stage XLS FMA reached +0.274 ns slack post-synthesis at 150 MHz target, but incurs a cycle cost (+0.91 % total cycles across 59 of 149 baseline cases). The repository default stays at `FP_LAT = 2`.
 
 ### 13.2 Memory: the next hardware decision
 

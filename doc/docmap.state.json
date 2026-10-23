@@ -77,6 +77,13 @@
    "fingerprint": "dee99be0ad89628ec63e03040ef5c4378cf5504daf3ffffc6707db22ac8cab4b",
    "time": "20261023T055501"
   },
+  "doc/phase3_tasks_and_acceptance.md": {
+   "backend": "agy",
+   "commit": "3fdba9a867d84983e1107d9e67ddd963dea2c366",
+   "doc_sha256": "a317b59e8b121f6bed9c82a9f18db71752f05651d1ac666d37b59c9790d1e527",
+   "fingerprint": "04eb16b665f8d88a5e142747a93d4333e98c8e07cb0e5e6380cb78b34846e7a2",
+   "time": "20261023T061439"
+  },
   "doc/phase3_tasks_and_acceptance_v1.md": {
    "backend": "agy",
    "commit": "dce9e0386e49f6abbced5b710dfbbc10d3b302c5",

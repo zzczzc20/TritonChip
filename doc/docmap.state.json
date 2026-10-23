@@ -175,6 +175,13 @@
    "fingerprint": "5f4b420288686de79b68229da026b82b8ceab28052204cef101d24af6e53fe9b",
    "time": "20261023T064004"
   },
+  "doc/r38_stage1_status.md": {
+   "backend": "agy",
+   "commit": "907d8314c88baba10866b57e5cd30d2309d71a06",
+   "doc_sha256": "ee67455bc852304cc6069550c16238f91941423014a93497ec8094a0c0440b0e",
+   "fingerprint": "c29c6c905a8ea70814ddb7aa1af85fc29c4945ceec285d3828416450cc1811d5",
+   "time": "20261023T064514"
+  },
   "doc/r3_replan_review_2026-09-20.md": {
    "backend": "agy",
    "commit": "0a04dc55a78ec1e8f76d5e34992e587e985cb84a",

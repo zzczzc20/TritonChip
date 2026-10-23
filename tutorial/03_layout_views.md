@@ -79,4 +79,4 @@ position rather than a silently invented instruction.
 
 ---
 
-Next: [04 · Reading the compile](04_reading_the_compile.md)
+Next: [04 · Reading what the compiler did](04_reading_the_compile.md)

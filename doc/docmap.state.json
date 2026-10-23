@@ -413,6 +413,13 @@
    "fingerprint": "4b67602cd1ea91e2e2e996ff60ba965813671f893517bddf5b8de1f68639a948",
    "time": "20261023T092253"
   },
+  "tutorial/03_layout_views.md": {
+   "backend": "agy",
+   "commit": "68ec1be9971ce33e8c84e0821e4e50833533c8bc",
+   "doc_sha256": "1dc5f7c661109379841c2ecfefe6a46a113f28f751ce5b1d1ace2a30da531aa8",
+   "fingerprint": "75d50d7b95b139bbf2bbf862534cf3cc59af3d969f1089ff720d1e8ba35e117b",
+   "time": "20261023T100004"
+  },
   "tutorial/04_reading_the_compile.md": {
    "backend": "agy",
    "commit": "edba11e01148d47235ed6602fb483e1e0c3eeea2",

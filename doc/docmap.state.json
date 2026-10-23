@@ -217,6 +217,13 @@
    "fingerprint": "7076c2c6108d19f12cac12459e887584fb40f147cd36e4edd700d4f44a31971e",
    "time": "20261023T065229"
   },
+  "doc/r39_tasks_and_acceptance.md": {
+   "backend": "agy",
+   "commit": "2910e4b3ea7e57600eed5d22d1f7b114725c7eff",
+   "doc_sha256": "fb522ae97c84dd0de18d615c2d5c7133309c010e99c9225a169137740a16a8b4",
+   "fingerprint": "55dc81ae9612ad7838ed9146399d4a1d2ccb3528fc7b3a0305109cef52c3c11d",
+   "time": "20261023T072120"
+  },
   "doc/r3_replan_review_2026-09-20.md": {
    "backend": "agy",
    "commit": "0a04dc55a78ec1e8f76d5e34992e587e985cb84a",

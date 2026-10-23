@@ -42,6 +42,13 @@
    "fingerprint": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
    "time": "20261023T033254"
   },
+  "doc/dumping_ir.md": {
+   "backend": "agy",
+   "commit": "2abc25b81cb7b4eb2f6b917ad938ea79023a9bca",
+   "doc_sha256": "1c31a397052b35c36077b6ee8596d8bdfcc623bd2dc1beaf8ccedebba799187d",
+   "fingerprint": "d3bfffcd67f6dfb8f4cfa7a74c20bf86ad7165eea3e28ada23ad1114d6697700",
+   "time": "20261023T060007"
+  },
   "doc/isa/TNCA-ISA-v0.1.md": {
    "backend": "agy",
    "commit": "527107cc6a13c764ca7533f1988217be49739f19",

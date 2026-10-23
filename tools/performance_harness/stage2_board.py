@@ -459,7 +459,7 @@ def source_check(root, out):
 
 # ------------------------------------------------------------- fp8 summary ----
 def count_cases(report):
-    cases = report.get('cases') or []
+    cases = report.get('cases') or report.get('rows') or []     # fp8_kernels_cases: cases; fp8_cases: rows
     if isinstance(cases, dict):
         cases = list(cases.values())
     status = [c.get('status') for c in cases if isinstance(c, dict)]

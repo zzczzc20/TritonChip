@@ -111,6 +111,13 @@
    "doc_sha256": "c65b5d90666880191cf3b176239af4320c16be447e0530bd92ed7ada40fa1c8a",
    "fingerprint": "4139ba055494420a9e541db9d95e6719c99f92374c7a8ccb0db9a2748f8e6d3c",
    "time": "20261023T052204"
+  },
+  "doc/r41_tasks_and_acceptance.md": {
+   "backend": "agy",
+   "commit": "ebfb3508cae116fffe127393307010a58c221fd4",
+   "doc_sha256": "eaefbe86b0a136709a0dd57680ccc02914bc172bc123d12585b09fba5defba4f",
+   "fingerprint": "b6a929db323aae2590d8a39f34bbe50be9a3c1beaa4ca7673911c9f5db530f3e",
+   "time": "20261023T052647"
   }
  }
 }

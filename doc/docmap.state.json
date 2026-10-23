@@ -1,0 +1,11 @@
+{
+ "docs": {
+  "archbench/PROTOCOL.md": {
+   "backend": "agy",
+   "commit": "0817c01c922caa176ee96b53e481df00a2b4dc73",
+   "doc_sha256": "f4d5b4df22887b91f8e7b6d9f1ebcaf2e63fdde28f7cc29db6daa6209d7bee87",
+   "fingerprint": "b8ca7512c710a1779a5f90bba47ac980be7d49f32bf307b0d0f4b8b10d0e0b72",
+   "time": "20261023T025959"
+  }
+ }
+}

@@ -74,9 +74,9 @@ same bound formulas and scoring library (`tools/r38/archbench`).
 - **Host transfers** are reported separately and are not device time. On the
   CPU-tensor path (B39) every launch uploads and downloads its argument
   storages.
-- **Backend** is selected by `TNCA_BACKEND`. `sim-file` and `fpga-u50-sim`
-  produce `measured-rtl` records; `fpga-u50` and `fpga-u280` produce
-  `measured-board` records.
+- **Backend** is selected by `TNCA_BACKEND`. `sim-file`, `sim-socket` and
+  `fpga-u50-sim` produce `measured-rtl` records; `fpga-u50`, `fpga-u280` and
+  `fpga-u280-multicore` produce `measured-board` records.
 - **Seconds.** Cycles are converted to seconds only with a measured board
   clock: the U280 images since 2026-10-09 run the device at 100 MHz,
   undivided (measured 99.99–100.02 MHz); the U50 image ran it at 37.5 MHz. A
@@ -88,6 +88,10 @@ same bound formulas and scoring library (`tools/r38/archbench`).
   recorded on its own (`time.first_call`, `host.first_call_s`) and is never a
   sample. `W` untimed calls follow, then `N` timed calls, each one sample:
   - `timings["device-cycles-serial-grid"]`: the call's device cycles;
+  - `timings["device-graph-makespan"]`: on an image with MMIO clock endpoints
+    (`backend_args.device_clock=true`), the device cycles from first accepted
+    launch to last completion, recorded with raw sequence-checked endpoints
+    (`tnca-launch-endpoints/1`);
   - `timings["request-latency"]`: host monotonic time around the call. On the
     CPU-tensor path it contains every launch's upload and download, since
     the call cannot run without them (§3.3).
@@ -148,6 +152,7 @@ pair measured in different kinds, or in a kind the experiment did not freeze.
 | `device-cycles-serial-grid` | §3.1: the sum of the call's launches, programs of a grid one after another. B39's kind |
 | `kernel-makespan` | one grid, from the device accepting it until every core is done and its writes are visible in the stated domain |
 | `graph-makespan` | from the graph's first submission until its last dependency completes, device waits and scheduling gaps included |
+| `device-graph-makespan` | from first accepted launch to last device completion via sequence-checked MMIO clock endpoints (`tnca-launch-endpoints/1`), including execution, submission gaps and backpressure; accepted as evidence for `graph-makespan` |
 | `resident-call-latency` | weights and inputs already resident; host monotonic time from the call until it is complete |
 | `request-latency` | as above, plus the explicit input copies to the device and output copies back |
 
@@ -223,17 +228,19 @@ can only lower `L` and make η conservative.
   of the points, and of each point's samples). A mechanism is a performance
   gain only when the lower bound is above 1 and the frozen threshold is met;
   otherwise it is "no significant contribution".
-- **Regressions.** A point more than 2 % slower needs a recorded cause; more
-  than 5 % slower under the final default fails.
+- **Regressions.** A point more than 2 % slower needs a recorded cause; an
+  unexplained regression over 2 %, or any regression over 5 % under the final
+  default, fails.
 - **Refused, not flagged:** a frozen point missing or not passing on either
   side; a passing point with zero or no time; more than one configuration on
   a side; A and B differing in anything but the declared knobs or declared
   platform fields (`--vary TNCA_X`, `--vary platform.image`); a changed point
   definition (tolerance, shape, demand); changed weights; a record without
   provenance (software tree, artifacts, profile, capabilities, image, clock,
-  launch map); a makespan assembled from per-core or per-kernel times; equal
-  device cycles at a different clock; warm-up, autotuning or compilation
-  inside a timed sample; a protocol-1 record other than the frozen B39.
+  launch map); a makespan assembled from per-core or per-kernel times, or
+  lacking raw launch endpoints (`tnca-launch-endpoints/1`); equal device
+  cycles at a different clock; warm-up, autotuning or compilation inside a
+  timed sample; a protocol-1 record other than the frozen B39.
 - **Provenance** (`archbench/provenance.py`). Every protocol-2 record names
   its software by content (`files:` digest of the sources, the same in a git
   checkout and an rsync'd copy), every artifact by sha256, the profile and its
@@ -243,8 +250,8 @@ can only lower `L` and make η conservative.
   (`TNCA_KERNEL_DUMP`), Triton's cache entries and the artifacts, each file
   hashed in the record; `ablate.py --audit-bundles` checks them.
 - **Cost.** `ablate.py --resources A.json B.json` reports the two images'
-  LUT, FF, BRAM, URAM and DSP, per chip and per SLR, and their setup and hold
-  slack (`tools/r40/resources.py`) beside the speed.
+  LUT, FF, BRAM, URAM and DSP, per chip and per SLR, their SLR crossings, and
+  their setup and hold slack (`tools/r40/resources.py`) beside the speed.
 
 ## 6. Outcomes
 

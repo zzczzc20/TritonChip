@@ -48,6 +48,13 @@
    "doc_sha256": "63bcb59b9611e346f68eae3eac5b34cc77e314480323577cbb400488f634cda7",
    "fingerprint": "3b84d9e65c73583ca1132a2a1387e0b79cb3aef75af75c283e9698397336dde1",
    "time": "20261023T033900"
+  },
+  "doc/isa/opcode-map.md": {
+   "backend": "agy",
+   "commit": "52eaf28233935b5401828c9fdf9069676d87092d",
+   "doc_sha256": "08e184f1f9c99873566623554c48a9ba6950ccc4afe3771a253b49893df26a7c",
+   "fingerprint": "5ede54e6d935efbece534fb6af799e9448c00004dbd5524ab2d9945d13e2f0ac",
+   "time": "20261023T034410"
   }
  }
 }

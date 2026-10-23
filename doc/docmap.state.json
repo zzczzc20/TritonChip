@@ -161,6 +161,13 @@
    "fingerprint": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
    "time": "20261023T050739"
   },
+  "doc/r38_isca_roadmap.md": {
+   "backend": "agy",
+   "commit": "540780718f865edb28f7cdd9f4e2be8457e32a16",
+   "doc_sha256": "bce78bb84b07ad2cdc217842a52a79172fef8cc9e80934f323e79cd1e1f3f82a",
+   "fingerprint": "df59b461fcdbf72de9ff40130bff20bb942386e34f4f302a2ff7221fcbd29a12",
+   "time": "20261023T063338"
+  },
   "doc/r3_replan_review_2026-09-20.md": {
    "backend": "agy",
    "commit": "0a04dc55a78ec1e8f76d5e34992e587e985cb84a",

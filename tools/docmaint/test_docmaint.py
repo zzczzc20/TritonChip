@@ -166,6 +166,19 @@ class RunTests(unittest.TestCase):
         self.assertIn("src/core.v", prompt)
         self.assertIn("professional technical English", prompt)
 
+    def test_folder_source_does_not_bypass_order(self):
+        rp = Repo()
+        (rp.root / "doc/docmap.toml").write_text(MANIFEST + '\n[[doc]]\npath = "doc/c.md"\nsources = ["doc/"]\n')
+        (rp.root / "doc/c.md").write_text("# C\n")
+        rp.commit("c")
+        maintain.baseline(rp.root, rp.manifest())
+        rp.commit("baseline")
+        (rp.root / "doc/a.md").write_text("# A\nedited by hand\n")
+        rp.commit("doc edit")
+        plan = {r.path: r.status for r in maintain.run(rp.root, rp.manifest(), None, rp.opts(dry_run=True))}
+        self.assertEqual(plan["doc/c.md"], "fresh")      # a.md is not one of c.md's inputs
+        self.assertEqual(plan["doc/b.md"], "planned")    # b.md depends_on a.md
+
     def test_local_edits_never_overwritten(self):
         rp = Repo()
         (rp.root / "doc/a.md").write_text("# A\nmine\n")

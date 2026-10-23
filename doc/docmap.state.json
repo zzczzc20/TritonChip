@@ -1,508 +1,508 @@
 {
  "docs": {
   "Readme.md": {
-   "backend": "agy",
-   "commit": "7646423f82dacb8c480900eed8b2e118b0e38795",
+   "backend": "baseline",
+   "commit": "b02b789b2f4794f23dc56d5564725e666b0058f6",
    "doc_sha256": "64173883d6170adc5fa871356459eb5b365e0604c23dfa3f59903ab0f0a01f48",
-   "fingerprint": "f0c0f85fa7fe7508da5525a0fb0909442175882346106ff404200af527501cb4",
-   "time": "20261023T101453"
+   "fingerprint": "2b6a73dcf92a7487a1e7025283fd9009d252b95489580da901a0d6ace29c85c6",
+   "time": "20261023T102541"
   },
   "archbench/PROTOCOL.md": {
-   "backend": "agy",
-   "commit": "0817c01c922caa176ee96b53e481df00a2b4dc73",
+   "backend": "baseline",
+   "commit": "b02b789b2f4794f23dc56d5564725e666b0058f6",
    "doc_sha256": "f4d5b4df22887b91f8e7b6d9f1ebcaf2e63fdde28f7cc29db6daa6209d7bee87",
    "fingerprint": "b8ca7512c710a1779a5f90bba47ac980be7d49f32bf307b0d0f4b8b10d0e0b72",
-   "time": "20261023T025959"
+   "time": "20261023T102540"
   },
   "archbench/README.md": {
-   "backend": "agy",
-   "commit": "21056871eb49e080ef88b4eb51c10138e02056bd",
+   "backend": "baseline",
+   "commit": "b02b789b2f4794f23dc56d5564725e666b0058f6",
    "doc_sha256": "4e4c367b102593bce2e491082dd8b9bc710b2dc7b42095a13824086ae90cc8cd",
    "fingerprint": "233a83a718af2b42c333228f8b1d1675566df05997624d37ff90758a6f7e0b44",
-   "time": "20261023T030751"
+   "time": "20261023T102540"
   },
   "compiler/README.md": {
-   "backend": "agy",
-   "commit": "3d31bddc012ff5405db3e29bfbb25a4a1bc335d5",
+   "backend": "baseline",
+   "commit": "b02b789b2f4794f23dc56d5564725e666b0058f6",
    "doc_sha256": "6c1e5beebc6f94dbcdb1c072323526421efa93165f0051a837974e85c5aa079a",
-   "fingerprint": "fd50398cf1730d1ba2e704dd5476e372a4875fba49b3ab37804acefe3137ad2d",
-   "time": "20261023T080051"
+   "fingerprint": "8c2f452958c55d8784c8617f9b39e9a1ee7f56739dbcaf4739f318b3089ddc4d",
+   "time": "20261023T102540"
   },
   "doc/P0_P1_physical_convergence.md": {
-   "backend": "agy",
-   "commit": "d4d878fd227010881f098867003ac35c1c9bafb4",
+   "backend": "baseline",
+   "commit": "b02b789b2f4794f23dc56d5564725e666b0058f6",
    "doc_sha256": "5c13ccaaa2309f00a480f2092a091f5aa58478d3cbfdc0b4fdf8780d8c8f6a39",
    "fingerprint": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-   "time": "20261023T031331"
+   "time": "20261023T102540"
   },
   "doc/architecture_overview.md": {
-   "backend": "agy",
-   "commit": "9ce2fa32d8514b293f59b20262262712816ec7d7",
+   "backend": "baseline",
+   "commit": "b02b789b2f4794f23dc56d5564725e666b0058f6",
    "doc_sha256": "398c18c5add6596a91aed7f798f16628ef147d1fdd538cebf8fd9d0dd93090f4",
-   "fingerprint": "7594bdd2356ec86600accd0fff6ef73d96bf260972c5013a92d1d52fbe6c2351",
-   "time": "20261023T081737"
+   "fingerprint": "a368501227deebdb727897438826609413e17e6011cbdd53f9534c779be5aec3",
+   "time": "20261023T102540"
   },
   "doc/compiler_overview.md": {
-   "backend": "agy",
-   "commit": "9258d214e8d0b3d4cd8e784b5a78fd15b04b0c87",
+   "backend": "baseline",
+   "commit": "b02b789b2f4794f23dc56d5564725e666b0058f6",
    "doc_sha256": "e701069ab652bf732a03494516e09e8c69ecc0696be89f80bcdc5d2db50eb2e5",
    "fingerprint": "9aa50ce808dd637cac42856041df4a3facd49c0770a82400515e811f76e24900",
-   "time": "20261023T080752"
+   "time": "20261023T102540"
   },
   "doc/conformance.md": {
-   "backend": "agy",
-   "commit": "66ced62511a111fcf6246d24296dbd64200355ef",
+   "backend": "baseline",
+   "commit": "b02b789b2f4794f23dc56d5564725e666b0058f6",
    "doc_sha256": "c1e6e2228c6372f1a3f102369259ad49c8442d084aabc2a22256cd04aa54e0a4",
    "fingerprint": "45a3664feef5cf0ff7ca6c52ebf60f78ab6201dd67bd3af864272c281a87c969",
-   "time": "20261023T071011"
+   "time": "20261023T102540"
   },
   "doc/dco.md": {
-   "backend": "agy",
-   "commit": "369d634f838bb8540a7b355253f489e8511ce110",
+   "backend": "baseline",
+   "commit": "b02b789b2f4794f23dc56d5564725e666b0058f6",
    "doc_sha256": "7684d3d52aa8136c0972d98d5db770c00c522b365462853c6c786935d4f22aa1",
    "fingerprint": "5fe641015134c4820805219056401e034538090b2f1dd1095525c8a3b5b19fb7",
-   "time": "20261023T031551"
+   "time": "20261023T102540"
   },
   "doc/design/tnca_v1_architecture_draft.md": {
-   "backend": "agy",
-   "commit": "6de9d0ac3e5b3ffdc32de7c97abe629574a01d41",
+   "backend": "baseline",
+   "commit": "b02b789b2f4794f23dc56d5564725e666b0058f6",
    "doc_sha256": "9a3ef78ca4805ec3fcd3b5cdc3f78108a2564d2d397cc86745b8c7b7633aabd0",
    "fingerprint": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-   "time": "20261023T032226"
+   "time": "20261023T102540"
   },
   "doc/design/tnca_v1_compiler_draft.md": {
-   "backend": "agy",
-   "commit": "7a5f4fe9e7c74b70e095103774e48409b720a928",
+   "backend": "baseline",
+   "commit": "b02b789b2f4794f23dc56d5564725e666b0058f6",
    "doc_sha256": "48eb8c9e9b5586541cfd5627698ccdbaf4b20c6cb91deddaf120bf2f88fe7219",
    "fingerprint": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-   "time": "20261023T033254"
+   "time": "20261023T102540"
   },
   "doc/dumping_ir.md": {
-   "backend": "agy",
-   "commit": "2abc25b81cb7b4eb2f6b917ad938ea79023a9bca",
+   "backend": "baseline",
+   "commit": "b02b789b2f4794f23dc56d5564725e666b0058f6",
    "doc_sha256": "1c31a397052b35c36077b6ee8596d8bdfcc623bd2dc1beaf8ccedebba799187d",
    "fingerprint": "d3bfffcd67f6dfb8f4cfa7a74c20bf86ad7165eea3e28ada23ad1114d6697700",
-   "time": "20261023T060007"
+   "time": "20261023T102540"
   },
   "doc/isa/TNCA-ISA-v0.1.md": {
-   "backend": "agy",
-   "commit": "527107cc6a13c764ca7533f1988217be49739f19",
+   "backend": "baseline",
+   "commit": "b02b789b2f4794f23dc56d5564725e666b0058f6",
    "doc_sha256": "63bcb59b9611e346f68eae3eac5b34cc77e314480323577cbb400488f634cda7",
    "fingerprint": "3b84d9e65c73583ca1132a2a1387e0b79cb3aef75af75c283e9698397336dde1",
-   "time": "20261023T033900"
+   "time": "20261023T102540"
   },
   "doc/isa/opcode-map.md": {
-   "backend": "agy",
-   "commit": "52eaf28233935b5401828c9fdf9069676d87092d",
+   "backend": "baseline",
+   "commit": "b02b789b2f4794f23dc56d5564725e666b0058f6",
    "doc_sha256": "08e184f1f9c99873566623554c48a9ba6950ccc4afe3771a253b49893df26a7c",
    "fingerprint": "5ede54e6d935efbece534fb6af799e9448c00004dbd5524ab2d9945d13e2f0ac",
-   "time": "20261023T034410"
+   "time": "20261023T102540"
   },
   "doc/phase1_tasks_and_acceptance.md": {
-   "backend": "agy",
-   "commit": "3115c2e91069557118c83fe012e1a62073f45c08",
+   "backend": "baseline",
+   "commit": "b02b789b2f4794f23dc56d5564725e666b0058f6",
    "doc_sha256": "a35a0b58c1052e57ec2003a1ffcfadffdf45aaf32add720f7d405584ede1df29",
    "fingerprint": "b107eba10b7a2c858c6d3576e7ace0cb332d6a44bc8bfd94ca41ba75efa02601",
-   "time": "20261023T055150"
+   "time": "20261023T102540"
   },
   "doc/phase2_tasks_and_acceptance.md": {
-   "backend": "agy",
-   "commit": "4fe376b77a41e9cbd743a64614fe78c6dc6776e9",
+   "backend": "baseline",
+   "commit": "b02b789b2f4794f23dc56d5564725e666b0058f6",
    "doc_sha256": "6f87306a29d9eb864fcded5a7605b92f02310aa4874e9440558d6ac1603cc5ac",
    "fingerprint": "dee99be0ad89628ec63e03040ef5c4378cf5504daf3ffffc6707db22ac8cab4b",
-   "time": "20261023T055501"
+   "time": "20261023T102540"
   },
   "doc/phase3_5_tasks_and_acceptance.md": {
-   "backend": "agy",
-   "commit": "c1e411ccdd3a85d5f7790d2e2908bdbc5c1bb1a3",
+   "backend": "baseline",
+   "commit": "b02b789b2f4794f23dc56d5564725e666b0058f6",
    "doc_sha256": "0c71907a353d99cef299831b28b8904d45b55c9ea3c86b18ca21f68eee1878c2",
    "fingerprint": "1b2713548504fb0d907acc7b84ea092a5212596a2c521aec86a3b7a91743038e",
-   "time": "20261023T061833"
+   "time": "20261023T102540"
   },
   "doc/phase3_6_tasks_and_acceptance.md": {
-   "backend": "agy",
-   "commit": "136b934ac8bb4e5e9038ad69ac87bb474f235714",
+   "backend": "baseline",
+   "commit": "b02b789b2f4794f23dc56d5564725e666b0058f6",
    "doc_sha256": "59f899749ab5e457db25f2de3a160d19d9d5430b2beab7ca6c6e34be5d3ea053",
    "fingerprint": "67c8f8951090aaad3c7582e5b610efe42f45004ce3af18417b190c4e8f6a089e",
-   "time": "20261023T062532"
+   "time": "20261023T102540"
   },
   "doc/phase3_tasks_and_acceptance.md": {
-   "backend": "agy",
-   "commit": "3fdba9a867d84983e1107d9e67ddd963dea2c366",
+   "backend": "baseline",
+   "commit": "b02b789b2f4794f23dc56d5564725e666b0058f6",
    "doc_sha256": "a317b59e8b121f6bed9c82a9f18db71752f05651d1ac666d37b59c9790d1e527",
    "fingerprint": "04eb16b665f8d88a5e142747a93d4333e98c8e07cb0e5e6380cb78b34846e7a2",
-   "time": "20261023T061439"
+   "time": "20261023T102540"
   },
   "doc/phase3_tasks_and_acceptance_v1.md": {
-   "backend": "agy",
-   "commit": "dce9e0386e49f6abbced5b710dfbbc10d3b302c5",
+   "backend": "baseline",
+   "commit": "b02b789b2f4794f23dc56d5564725e666b0058f6",
    "doc_sha256": "0e4eaf7d7cf7d50c073dc0fb67942efe95145d601a39126af0172b87c5d3de41",
    "fingerprint": "ad3cceb47bf7aba38a0cd7ee8f955946c32ec43851da2bbca0a5c94b9b97a110",
-   "time": "20261023T060223"
+   "time": "20261023T102540"
   },
   "doc/production_readiness_audit_2026-09-19.md": {
-   "backend": "agy",
-   "commit": "eb747d4ad23c0f06042c401a85cea61c1c32f30b",
+   "backend": "baseline",
+   "commit": "b02b789b2f4794f23dc56d5564725e666b0058f6",
    "doc_sha256": "8370a8ccea4974dd130adb98c145192d22fa84f0196a058ee5074c56edde820e",
-   "fingerprint": "4c5081a229c3c235c586fa39a0a833de15b3be9d18dfb79d52445cd155c45a83",
-   "time": "20261023T054539"
+   "fingerprint": "18feedc675e38b49d0e1b4ebb3b63ceef30866e0f2a2858267960b51d332c3d2",
+   "time": "20261023T102540"
   },
   "doc/r1_signoff.md": {
-   "backend": "agy",
-   "commit": "da2ab81430966bdd810b5701c34b8c1a69e8f8ee",
+   "backend": "baseline",
+   "commit": "b02b789b2f4794f23dc56d5564725e666b0058f6",
    "doc_sha256": "bc79554a37f6cae3f7c804cb15cc5a53d69d0d9272d6853613452cefbb8e2423",
    "fingerprint": "6dfe04449bf1fd425822cf9e45c612130e06e720fefe4d9377ea4ba09c0ba9f0",
-   "time": "20261023T065857"
+   "time": "20261023T102540"
   },
   "doc/r1_status.md": {
-   "backend": "agy",
-   "commit": "0f9bc631678320edd8160a8ee718277f504323ce",
+   "backend": "baseline",
+   "commit": "b02b789b2f4794f23dc56d5564725e666b0058f6",
    "doc_sha256": "772d620e06c21e249f6e0db1da847e75a34794318d7b873a3436640607407975",
    "fingerprint": "d93cb9e53b075253b4ab3e775d969db19b11962918226ff8595df2163c38c9be",
-   "time": "20261023T070539"
+   "time": "20261023T102540"
   },
   "doc/r2_interfaces.md": {
-   "backend": "agy",
-   "commit": "0f6017cc40dfe010b593a43eba35cb5aaaac1213",
+   "backend": "baseline",
+   "commit": "b02b789b2f4794f23dc56d5564725e666b0058f6",
    "doc_sha256": "f39f6bcfb864a2c731d6e02f55e3ff327c5d4901f28343b166d77b82481a5f75",
-   "fingerprint": "18743b8d4bec2fb6574092e651ffa9bffd053420b6eb2d337d72af9e68c52384",
-   "time": "20261023T060652"
+   "fingerprint": "48def3231dbcbe9b00f8598b53cb5ee8ddef94cb68049dadbd7868040c36d8f2",
+   "time": "20261023T102540"
   },
   "doc/r2_status.md": {
-   "backend": "agy",
-   "commit": "6cebb7f44288adf2bd83a5fe2fa3785f22184e58",
+   "backend": "baseline",
+   "commit": "b02b789b2f4794f23dc56d5564725e666b0058f6",
    "doc_sha256": "983b1db896ac6ae99bbd01f396ec29be6bcd48f99d59b0a7e59ec19f0a1e21c1",
    "fingerprint": "54ef251169c84c3de4b77536a88c0cd95b68889498d211c6605b928251d35108",
-   "time": "20261023T071654"
+   "time": "20261023T102540"
   },
   "doc/r35_status.md": {
-   "backend": "agy",
-   "commit": "e2f5f50104079c160ad04601480dea8f292abf13",
+   "backend": "baseline",
+   "commit": "b02b789b2f4794f23dc56d5564725e666b0058f6",
    "doc_sha256": "ab86568e2541da7457f69da506030423099defb152894c887c7be10b1efc6f80",
    "fingerprint": "3cd4bb35fa9651ea1a6b07a879f41e4e6de4ba8f972fd53cf7e6f22b1bb86f97",
-   "time": "20261023T044425"
+   "time": "20261023T102540"
   },
   "doc/r36_handoff.md": {
-   "backend": "agy",
-   "commit": "6ede097cb715199e1a0c37c39e10f7c89c34c294",
+   "backend": "baseline",
+   "commit": "b02b789b2f4794f23dc56d5564725e666b0058f6",
    "doc_sha256": "70eafd592be28fe5e778f430a8c84aa9f0a516805d19ee0a2f2b590be81c4d6e",
-   "fingerprint": "180312b92b4c571d6ffd60b1fa0ea6f0879b78972c2cc17888ae0296422a10b9",
-   "time": "20261023T044858"
+   "fingerprint": "25cd3a49eb8e9c3c20e268ba735ad62282e89ae8035d9194bc0c57b1b8316532",
+   "time": "20261023T102540"
   },
   "doc/r36_open_questions.md": {
-   "backend": "agy",
-   "commit": "87fe8905a055aa1894401f7c151d65cd31a9f6f3",
+   "backend": "baseline",
+   "commit": "b02b789b2f4794f23dc56d5564725e666b0058f6",
    "doc_sha256": "a5c068e5f0c36f5164f0bf1228a276faf07afea5dfc149b4f480c31abc69275b",
    "fingerprint": "ab7af7556a901961c43f4a5b34d62494a78e862307bab19ce5e8cee2e5ad7d3b",
-   "time": "20261023T045417"
+   "time": "20261023T102540"
   },
   "doc/r36_status.md": {
-   "backend": "agy",
-   "commit": "d72ca64a25b215fcba0b8e26947a3359c20723ed",
+   "backend": "baseline",
+   "commit": "b02b789b2f4794f23dc56d5564725e666b0058f6",
    "doc_sha256": "a4242d1b047d788cdf27b5499b53052c34b90760739ec23e18ebdd42d37381f8",
    "fingerprint": "9527e20a996288541f29944c6eebc2b39948160a583712c8cae6b9b03aa85d86",
-   "time": "20261023T062924"
+   "time": "20261023T102540"
   },
   "doc/r37_isa_gaps.md": {
-   "backend": "agy",
-   "commit": "a8fbb3b8d3ded294b48435521c6d7d3dcf7278c4",
+   "backend": "baseline",
+   "commit": "b02b789b2f4794f23dc56d5564725e666b0058f6",
    "doc_sha256": "277a8cb8ef2942d348f95d32cbd8c5ab5859cf7f9915888446ec401c47f7ee64",
    "fingerprint": "82aa46db8ff14d207063dd638863db6dad13ec288854afaddc890674f2806005",
-   "time": "20261023T045820"
+   "time": "20261023T102540"
   },
   "doc/r37_validation.md": {
-   "backend": "agy",
-   "commit": "464519f0c1682198be59c9754c35d302ff1c7e0b",
+   "backend": "baseline",
+   "commit": "b02b789b2f4794f23dc56d5564725e666b0058f6",
    "doc_sha256": "ca3305378d4dc92592ded405efc3bb0e088bb9c9bff915d0f3b6c2f3f82e9895",
    "fingerprint": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-   "time": "20261023T050739"
+   "time": "20261023T102540"
   },
   "doc/r38_board_bringup.md": {
-   "backend": "agy",
-   "commit": "a2c8f3fdfe05062e7b26094029f8e39045839212",
+   "backend": "baseline",
+   "commit": "b02b789b2f4794f23dc56d5564725e666b0058f6",
    "doc_sha256": "7478657879b5f1f0104bc22d0119d2eb9df96ccf2bc50f2b2d8756550975c623",
-   "fingerprint": "01bcf28549b3540dafe0f58a111b5c5d92691e9bdaa3a12deb91280cbdcbd147",
-   "time": "20261023T075347"
+   "fingerprint": "945814cfcd9dd9f8ba40c65d361eaed9d3665354282880f1e80d5e999f8fb4e9",
+   "time": "20261023T102540"
   },
   "doc/r38_isca_roadmap.md": {
-   "backend": "agy",
-   "commit": "540780718f865edb28f7cdd9f4e2be8457e32a16",
+   "backend": "baseline",
+   "commit": "b02b789b2f4794f23dc56d5564725e666b0058f6",
    "doc_sha256": "bce78bb84b07ad2cdc217842a52a79172fef8cc9e80934f323e79cd1e1f3f82a",
    "fingerprint": "df59b461fcdbf72de9ff40130bff20bb942386e34f4f302a2ff7221fcbd29a12",
-   "time": "20261023T063338"
+   "time": "20261023T102540"
   },
   "doc/r38_pytorch_p1plus.md": {
-   "backend": "agy",
-   "commit": "36d939f2e54e549b2510f330714cdc878950f8b6",
+   "backend": "baseline",
+   "commit": "b02b789b2f4794f23dc56d5564725e666b0058f6",
    "doc_sha256": "be7070c88bb526b32605dc42a06d8addead5987fcd0c83a491d3faec1a9fa03c",
-   "fingerprint": "5f4b420288686de79b68229da026b82b8ceab28052204cef101d24af6e53fe9b",
-   "time": "20261023T064004"
+   "fingerprint": "edb4296065c96a6a9a6c081b36484379a89d6ed4b46becfe29f862199ae735a4",
+   "time": "20261023T102540"
   },
   "doc/r38_stage1_status.md": {
-   "backend": "agy",
-   "commit": "907d8314c88baba10866b57e5cd30d2309d71a06",
+   "backend": "baseline",
+   "commit": "b02b789b2f4794f23dc56d5564725e666b0058f6",
    "doc_sha256": "ee67455bc852304cc6069550c16238f91941423014a93497ec8094a0c0440b0e",
    "fingerprint": "c29c6c905a8ea70814ddb7aa1af85fc29c4945ceec285d3828416450cc1811d5",
-   "time": "20261023T064514"
+   "time": "20261023T102540"
   },
   "doc/r38_stage1_tasks_and_acceptance.md": {
-   "backend": "agy",
-   "commit": "a95435e690c4cdcd25d357bcc635d79c988fd84f",
+   "backend": "baseline",
+   "commit": "b02b789b2f4794f23dc56d5564725e666b0058f6",
    "doc_sha256": "7dc50f16938f97c4a76511cb3e9b822456f779a5f0a88eb8eb6665c25b5422ce",
    "fingerprint": "7076c2c6108d19f12cac12459e887584fb40f147cd36e4edd700d4f44a31971e",
-   "time": "20261023T065229"
+   "time": "20261023T102540"
   },
   "doc/r39_report.md": {
-   "backend": "agy",
-   "commit": "9e97d8d8eeb921477b1662c20ffa477c55d81504",
+   "backend": "baseline",
+   "commit": "b02b789b2f4794f23dc56d5564725e666b0058f6",
    "doc_sha256": "b9abe6efd4c3df40d8b983b543e1bc09b45a5c94526ece3046f8d9ec0aede2ce",
    "fingerprint": "9108ed67a36bde18a0fb22624798b0f078c374614559b146af7d7709342d7711",
-   "time": "20261023T073106"
+   "time": "20261023T102540"
   },
   "doc/r39_tasks_and_acceptance.md": {
-   "backend": "agy",
-   "commit": "2910e4b3ea7e57600eed5d22d1f7b114725c7eff",
+   "backend": "baseline",
+   "commit": "b02b789b2f4794f23dc56d5564725e666b0058f6",
    "doc_sha256": "fb522ae97c84dd0de18d615c2d5c7133309c010e99c9225a169137740a16a8b4",
-   "fingerprint": "55dc81ae9612ad7838ed9146399d4a1d2ccb3528fc7b3a0305109cef52c3c11d",
-   "time": "20261023T072120"
+   "fingerprint": "347c890cc51214981d101d33ad75e4ccf06fa5721b8fb7240961dac956e7a449",
+   "time": "20261023T102540"
   },
   "doc/r3_replan_review_2026-09-20.md": {
-   "backend": "agy",
-   "commit": "0a04dc55a78ec1e8f76d5e34992e587e985cb84a",
+   "backend": "baseline",
+   "commit": "b02b789b2f4794f23dc56d5564725e666b0058f6",
    "doc_sha256": "8b017d5abc0925698bae5a91a0c2c6d972bb27121592e1776239c43d191053f7",
    "fingerprint": "83cbf2a430b0b0749d68996a3423641bec721a7f3d2c1b3ecb0e6fa89350575b",
-   "time": "20261023T061154"
+   "time": "20261023T102540"
   },
   "doc/r3_status.md": {
-   "backend": "agy",
-   "commit": "2955ec134e585c7f6abe77513c2c9b01a3cf6394",
+   "backend": "baseline",
+   "commit": "b02b789b2f4794f23dc56d5564725e666b0058f6",
    "doc_sha256": "49a61d3a1ef9d4754a622de59bf90071e7b7b16f6a4d4c19c11a526d2d24a7f0",
    "fingerprint": "6a85a185de67b6eb671c3c4d6618b9cd92f167d36212e8b284459e9d7ff1c1c1",
-   "time": "20261023T073458"
+   "time": "20261023T102540"
   },
   "doc/r40_closeout_plan.md": {
-   "backend": "agy",
-   "commit": "5143a6f1a0223fbbb1380b30ac0937a247a329c3",
+   "backend": "baseline",
+   "commit": "b02b789b2f4794f23dc56d5564725e666b0058f6",
    "doc_sha256": "4e3e2b07429ac94c1632bfd2ba62e18ae1b8fab40cb704cbbf58b07665728206",
    "fingerprint": "a9f96ccc02bbc712c48bae316007ff4d5ac66fdffa9d89ae0ea3ee1f12803815",
-   "time": "20261023T083803"
+   "time": "20261023T102540"
   },
   "doc/r40_cold_call_audit.md": {
-   "backend": "agy",
-   "commit": "86bce2edc0580b9558b665a170e39532256d0236",
+   "backend": "baseline",
+   "commit": "b02b789b2f4794f23dc56d5564725e666b0058f6",
    "doc_sha256": "d634a05b740fd892baa0a23239fbf840bbe94f18da2101cfa073fca4d095c5a7",
    "fingerprint": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-   "time": "20261023T051142"
+   "time": "20261023T102540"
   },
   "doc/r40_hbm.md": {
-   "backend": "agy",
-   "commit": "791a241549d2c849c9130fb76cb78406fdab253c",
+   "backend": "baseline",
+   "commit": "b02b789b2f4794f23dc56d5564725e666b0058f6",
    "doc_sha256": "8e87579a626e36e99bdf7e399f81ff6c17dee2363b59872e7993edba87855f75",
    "fingerprint": "97659bb83e4470fa424e4a44529af8b71be2eb97f98d193ca154e4d6b62b8130",
-   "time": "20261023T051433"
+   "time": "20261023T102540"
   },
   "doc/r40_report.md": {
-   "backend": "agy",
-   "commit": "0e74ddb3a55b7b7f9b24af941bf2fac3600d4c47",
+   "backend": "baseline",
+   "commit": "b02b789b2f4794f23dc56d5564725e666b0058f6",
    "doc_sha256": "a1bacb1b599015aba1389fce8de5f15ce0f2ac6f84049ac9b0d1bd929f9c8de4",
    "fingerprint": "a96a35a692cc42b9824f05116bf62ce581c77e6a1ffc01654930ce79adfcc0b1",
-   "time": "20261023T085317"
+   "time": "20261023T102540"
   },
   "doc/r40_tasks_and_acceptance.md": {
-   "backend": "agy",
-   "commit": "85acde164d8d3c7a836edf54ff88c0324d1a6a82",
+   "backend": "baseline",
+   "commit": "b02b789b2f4794f23dc56d5564725e666b0058f6",
    "doc_sha256": "9e10adb2e57d054209c647aa711866c9059dd9a918fafcf7d444ec772e7c5f1f",
-   "fingerprint": "32d92eca913181ec09ca7f756ba7e68e105110065441a13f24d4c98b2beee7a9",
-   "time": "20261023T082734"
+   "fingerprint": "f44f87e33c2588d693c284e534d2e23b621dc11e0c3d0b185a4a8fe3e774f5f3",
+   "time": "20261023T102540"
   },
   "doc/r40_tasks_and_acceptance_v2.md": {
-   "backend": "agy",
-   "commit": "4499825a980041eb111b12c0b5ed0da6c179bacb",
+   "backend": "baseline",
+   "commit": "b02b789b2f4794f23dc56d5564725e666b0058f6",
    "doc_sha256": "a59636bae13c1aa3056dfe516d641e8498f6b4e1ab610f69d052b87502e55d92",
    "fingerprint": "ecb6ca8fa0a04b7375066ff713acf4fd20ee6a59a3384c7208097b208835cd67",
-   "time": "20261023T084126"
+   "time": "20261023T102540"
   },
   "doc/r40_tasks_and_acceptance_v3.md": {
-   "backend": "agy",
-   "commit": "e140aa4ceefb2540d188638462d35d4938280910",
+   "backend": "baseline",
+   "commit": "b02b789b2f4794f23dc56d5564725e666b0058f6",
    "doc_sha256": "9a257d2512ffb6065dd4f40d4a0ba0ac7542e13abadf64746971d03bced3ac23",
-   "fingerprint": "69ca8ada967dad8c4a00a99fc0c24a1c55c186f144ab11939a5cda69f262402b",
-   "time": "20261023T084817"
+   "fingerprint": "91cf7e0563920db03ae9a2566da560d6f704e113fdf7efb1f9b77d2981d1efcb",
+   "time": "20261023T102540"
   },
   "doc/r40_tnca_device.md": {
-   "backend": "agy",
-   "commit": "9ce1cdfdf05d660d0b365e8b367929c2b9c5d05b",
+   "backend": "baseline",
+   "commit": "b02b789b2f4794f23dc56d5564725e666b0058f6",
    "doc_sha256": "c65b5d90666880191cf3b176239af4320c16be447e0530bd92ed7ada40fa1c8a",
    "fingerprint": "4139ba055494420a9e541db9d95e6719c99f92374c7a8ccb0db9a2748f8e6d3c",
-   "time": "20261023T052204"
+   "time": "20261023T102540"
   },
   "doc/r41_execution_tasks.md": {
-   "backend": "agy",
-   "commit": "f2a33a8a86f90760241d52ed83adff39ebaeb85b",
+   "backend": "baseline",
+   "commit": "b02b789b2f4794f23dc56d5564725e666b0058f6",
    "doc_sha256": "19735a4b09a5ec2ad692ceb0d9f9594053ab838fc8cea6775fce1c8ed49276e2",
-   "fingerprint": "cd678d8c99b1106e60d824b671fb8129f23f8c55a156da5932bce602cf5db5b2",
-   "time": "20261023T053242"
+   "fingerprint": "b029a3ec1c6ced4c07d3f598140c093339a3d191bba6292d6a60cfc4b99d77d5",
+   "time": "20261023T102540"
   },
   "doc/r41_tasks_and_acceptance.md": {
-   "backend": "agy",
-   "commit": "ebfb3508cae116fffe127393307010a58c221fd4",
+   "backend": "baseline",
+   "commit": "b02b789b2f4794f23dc56d5564725e666b0058f6",
    "doc_sha256": "eaefbe86b0a136709a0dd57680ccc02914bc172bc123d12585b09fba5defba4f",
    "fingerprint": "b6a929db323aae2590d8a39f34bbe50be9a3c1beaa4ca7673911c9f5db530f3e",
-   "time": "20261023T052647"
+   "time": "20261023T102540"
   },
   "doc/support_matrix.md": {
-   "backend": "agy",
-   "commit": "55d9687adabef01e638b938befeaa37920ff3cca",
+   "backend": "baseline",
+   "commit": "b02b789b2f4794f23dc56d5564725e666b0058f6",
    "doc_sha256": "283dc4b8ae2e5d19672a459c5c32a596b12bdf3433b2b254ded5c17952ec1f18",
    "fingerprint": "df28c2bb83b2417bd250d5fabdedaf5cfcdc77bb19a1dc094581e04be1e616ea",
-   "time": "20261023T065757"
+   "time": "20261023T102540"
   },
   "doc/synthesis.md": {
-   "backend": "agy",
-   "commit": "af3c8563392269c3dc714f7cb46be9d529056578",
+   "backend": "baseline",
+   "commit": "b02b789b2f4794f23dc56d5564725e666b0058f6",
    "doc_sha256": "594f3bb30d380dae5987c5679d28eb0dc4d54970d74e3e750877cd1dda787e4d",
    "fingerprint": "3cc86f74c1f48f190558b3f321615d1a8812f480f8cd76872e373b272b184665",
-   "time": "20261023T053621"
+   "time": "20261023T102540"
   },
   "doc/xls.md": {
-   "backend": "agy",
-   "commit": "e5cde6688e40345524410d735fb3426e257846cb",
+   "backend": "baseline",
+   "commit": "b02b789b2f4794f23dc56d5564725e666b0058f6",
    "doc_sha256": "d4c3e8e4af6c88ca0f1c8cba636bde81e843adfc86beb60bf3bd0c38f167a50e",
    "fingerprint": "cba359393b8c31b6aeb83d597487ca4148c4872970c7d2185c0e596c5c0e46ba",
-   "time": "20261023T074102"
+   "time": "20261023T102540"
   },
   "flow/fpga/README.md": {
-   "backend": "agy",
-   "commit": "a4435dc6c5152ed6c77ab8ad0635f58053898769",
+   "backend": "baseline",
+   "commit": "b02b789b2f4794f23dc56d5564725e666b0058f6",
    "doc_sha256": "bf884ee5efe40c887bc0e35c0b6292758d8fd3533979ec8085cf74d1d744135f",
    "fingerprint": "e0e7ae5901040c2928b199a4a39ad88979c2cbe1988b7fa2d6adc5e48234acfa",
-   "time": "20261023T074811"
+   "time": "20261023T102540"
   },
   "tools/docmaint/README.md": {
-   "backend": "agy",
-   "commit": "e5059f7d63982600836556042a71cb80073fd7e4",
+   "backend": "baseline",
+   "commit": "b02b789b2f4794f23dc56d5564725e666b0058f6",
    "doc_sha256": "84492a765c52725fbaf1f495029e40dfe707c3ad46695ad6e089b709b23684fb",
    "fingerprint": "7851245f049c236ff4b0466cf536f13c943265e4ce7fb14796c8c364a199c2bd",
-   "time": "20261023T085948"
+   "time": "20261023T102540"
   },
   "tools/performance_harness/README.md": {
-   "backend": "agy",
-   "commit": "61e484eb8788e51ac7f1978232ac52861ebe4f60",
+   "backend": "baseline",
+   "commit": "b02b789b2f4794f23dc56d5564725e666b0058f6",
    "doc_sha256": "0ddb309b617b55a2abcce2e7663db750455a9d678404459819a5651b6d485346",
    "fingerprint": "4cf072e7ead2727d2527219bf3c69e339908a6c5aa0d293e4edfb6e9fb240825",
-   "time": "20261023T091304"
+   "time": "20261023T102541"
   },
   "tools/performance_harness/mmio_journal.md": {
-   "backend": "agy",
-   "commit": "e6eee06601a3fb53c2510d158ce9dc7dc7adc2fb",
+   "backend": "baseline",
+   "commit": "b02b789b2f4794f23dc56d5564725e666b0058f6",
    "doc_sha256": "e76576f7ce785891ca4718c3981e8b4d8d523a2171b95fa4cf9d6b41fa46dcca",
    "fingerprint": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-   "time": "20261023T090223"
+   "time": "20261023T102540"
   },
   "tools/performance_harness/systemc/README.md": {
-   "backend": "agy",
-   "commit": "021636ad7c6f2b04901bd41003f7aa7781fb5131",
+   "backend": "baseline",
+   "commit": "b02b789b2f4794f23dc56d5564725e666b0058f6",
    "doc_sha256": "7d222dd0ecd7e37694271aac7ea90e8871bfc46a27833575585b70f8ea886bd9",
-   "fingerprint": "e00e517f2fb3940c7cba859886928656ccb4fa7a3d06057f72b18bb1e8b66590",
-   "time": "20261023T090433"
+   "fingerprint": "a677feaa8d10cca72f1a86e589f2e9b435394b9a76dcaf3d4699e276391bdce2",
+   "time": "20261023T102541"
   },
   "tools/r36/downstream/README.md": {
-   "backend": "agy",
-   "commit": "864a9c5eaf31f612fb3f8c8bbc833b0f4187a762",
+   "backend": "baseline",
+   "commit": "b02b789b2f4794f23dc56d5564725e666b0058f6",
    "doc_sha256": "f8922984f2beb9de6d3541a4e7c0d8c81f679eb0649ca6bdad4486728a5a4122",
    "fingerprint": "9757b14daae776872089833016ddc79b06de3ec7db31d29dc48196d3f25557ba",
-   "time": "20261023T091857"
+   "time": "20261023T102541"
   },
   "tools/r37/README.md": {
-   "backend": "agy",
-   "commit": "d8b711dc1faa57f4efb2dbc796ab9a1e98210b33",
+   "backend": "baseline",
+   "commit": "b02b789b2f4794f23dc56d5564725e666b0058f6",
    "doc_sha256": "4fc95189c8897383bb25f2dbb10874480b701eced6a008f21e8b7da1662d46dc",
    "fingerprint": "4b67602cd1ea91e2e2e996ff60ba965813671f893517bddf5b8de1f68639a948",
-   "time": "20261023T092253"
+   "time": "20261023T102541"
   },
   "tutorial/01_first_kernel.md": {
-   "backend": "agy",
-   "commit": "70eb6bf28433207bf59e0b7da5860e1796a1b8fd",
+   "backend": "baseline",
+   "commit": "b02b789b2f4794f23dc56d5564725e666b0058f6",
    "doc_sha256": "60c08154722b5da08f952e549ceff4cedffc2b987b5a6c824991e56bf0a2144d",
    "fingerprint": "d65fe9cf7f57c837a84e56da50d815aa37ea263887549e1c3bd6a572a9aacd25",
-   "time": "20261023T101044"
+   "time": "20261023T102541"
   },
   "tutorial/02_optimisation_levels.md": {
-   "backend": "agy",
-   "commit": "e49863280de1ac4c699fc4e5780de11b209e8d2b",
+   "backend": "baseline",
+   "commit": "b02b789b2f4794f23dc56d5564725e666b0058f6",
    "doc_sha256": "06cb3a93729cb1297e9f2b1330f2bbdb65c352984b1d4117c85a7173c5ca1782",
    "fingerprint": "24bf28e8da796ac592fa7fbe586d4a28c6d2f602f2351a61ed420befc8a9e05c",
-   "time": "20261023T100430"
+   "time": "20261023T102541"
   },
   "tutorial/03_layout_views.md": {
-   "backend": "agy",
-   "commit": "68ec1be9971ce33e8c84e0821e4e50833533c8bc",
+   "backend": "baseline",
+   "commit": "b02b789b2f4794f23dc56d5564725e666b0058f6",
    "doc_sha256": "1dc5f7c661109379841c2ecfefe6a46a113f28f751ce5b1d1ace2a30da531aa8",
    "fingerprint": "75d50d7b95b139bbf2bbf862534cf3cc59af3d969f1089ff720d1e8ba35e117b",
-   "time": "20261023T100004"
+   "time": "20261023T102541"
   },
   "tutorial/04_reading_the_compile.md": {
-   "backend": "agy",
-   "commit": "edba11e01148d47235ed6602fb483e1e0c3eeea2",
+   "backend": "baseline",
+   "commit": "b02b789b2f4794f23dc56d5564725e666b0058f6",
    "doc_sha256": "e5c20d13e39beeb381691d9ea16da0c02eb9f519e699dccc2edcdba40d91323d",
    "fingerprint": "ce25b56640e9fae270dde4f40695704d7ccba449b889bea563cdea3861ce368d",
-   "time": "20261023T095740"
+   "time": "20261023T102541"
   },
   "tutorial/05_matrix_multiply.md": {
-   "backend": "agy",
-   "commit": "1322feb41ace574998a9c348434e010e79e4989e",
+   "backend": "baseline",
+   "commit": "b02b789b2f4794f23dc56d5564725e666b0058f6",
    "doc_sha256": "bf36bcde21f9c46f26444cbe513e70ce5966606b37c2b2f300910bc81785abe8",
    "fingerprint": "a25a1264bfe8a7b907cb62de09fc9bf64a7d008be642ebf974dc6d3c47945c63",
-   "time": "20261023T095422"
+   "time": "20261023T102541"
   },
   "tutorial/06_errors_and_faults.md": {
-   "backend": "agy",
-   "commit": "103355c6881cb66f1e524140b6ce46786a4e69bd",
+   "backend": "baseline",
+   "commit": "b02b789b2f4794f23dc56d5564725e666b0058f6",
    "doc_sha256": "d3b4317b103ed81e941ea702ea178e2b2ac92fcb4d8b7689c8ac6d7d74e35a01",
    "fingerprint": "e5946ae14824f2a73f0f086e5800b630f1e210fc08acf036ec0a67135ffdc460",
-   "time": "20261023T094956"
+   "time": "20261023T102541"
   },
   "tutorial/07_backends_and_cache.md": {
-   "backend": "agy",
-   "commit": "aea2b9bd8fcef0122b18717998f46578543a8d58",
+   "backend": "baseline",
+   "commit": "b02b789b2f4794f23dc56d5564725e666b0058f6",
    "doc_sha256": "55b55e8c2f34c0711afd89a22d8d9df02ac77dd42b42da1297c2575d359116f4",
    "fingerprint": "6331a0e2ffbae893d050b43db8fc3cca1817188d6cda5d7bf19157f2b0cc3c96",
-   "time": "20261023T094402"
+   "time": "20261023T102541"
   },
   "tutorial/08_triton_gemm.md": {
-   "backend": "agy",
-   "commit": "e1ac87e6bd4bc418af91efec368c596f770765ee",
+   "backend": "baseline",
+   "commit": "b02b789b2f4794f23dc56d5564725e666b0058f6",
    "doc_sha256": "b32130c3600928a00693bf743247b42cf66a26c7ae1491321c428f4c290d5582",
    "fingerprint": "1e2fdd5f0c9f4c8c341fd0cbc3deb47fed7dbae030bcce34c1d37dac24b9c988",
-   "time": "20261023T094153"
+   "time": "20261023T102541"
   },
   "tutorial/09_tensor_descriptors.md": {
-   "backend": "agy",
-   "commit": "2ffea07309745d24e689166629769c1c49572a9f",
+   "backend": "baseline",
+   "commit": "b02b789b2f4794f23dc56d5564725e666b0058f6",
    "doc_sha256": "024d339335aad559cad5b9436cb96de0fac1f352e7a93f95f1847c6ba9792da5",
    "fingerprint": "acbd7ef34f798f8d726e26c2592c2d56095e8d5cc2ce6532a31a3c690cad4131",
-   "time": "20261023T093540"
+   "time": "20261023T102541"
   },
   "tutorial/10_torch_compile.md": {
-   "backend": "agy",
-   "commit": "09b5596590813c40d8533e066234e3d4c96a41bf",
+   "backend": "baseline",
+   "commit": "b02b789b2f4794f23dc56d5564725e666b0058f6",
    "doc_sha256": "25aafd21f8a56107eda646453ef86c934fe62933fe9120b3657e0332759b7bf2",
    "fingerprint": "09d71e21129b331ae1c2818380a319db3b6e58480b17b0a5a6676509b7693b06",
-   "time": "20261023T093047"
+   "time": "20261023T102541"
   },
   "tutorial/11_running_on_the_u280.md": {
-   "backend": "agy",
-   "commit": "4f5d7670a236918dff8813d9c9a028f5611a36b7",
+   "backend": "baseline",
+   "commit": "b02b789b2f4794f23dc56d5564725e666b0058f6",
    "doc_sha256": "41b2e390150cd47add5205068409576143c99e2e3afed52a2a30c2806722aa5a",
    "fingerprint": "f12d26928d239d9f91a15d1b4611ba108b227f8653529c18ab736c325ca73fbc",
-   "time": "20261023T092456"
+   "time": "20261023T102541"
   },
   "tutorial/README.md": {
-   "backend": "agy",
-   "commit": "b17986ea31315bd4b681749f7b52d1b3e13ae294",
+   "backend": "baseline",
+   "commit": "b02b789b2f4794f23dc56d5564725e666b0058f6",
    "doc_sha256": "45f04ae79f2b8121f3b83cce2cbf5dc7dbbe079bb5a4d3b6ea0a2a816683fd16",
    "fingerprint": "cec2faee897df28cb7b668a137903b21bd5da93b30a892fdba31b06c3fc85a31",
-   "time": "20261023T101202"
+   "time": "20261023T102541"
   }
  }
 }

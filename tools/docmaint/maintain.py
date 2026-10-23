@@ -72,8 +72,12 @@ def fingerprint(work: Path, m: Manifest, doc: str, files: list[str], blobs: dict
     d = m.docs[doc]
     h = hashlib.sha256()
     inputs = []
+    state_file = str(Path(m.path).with_name("docmap.state.json"))
     for f in expand_sources(d.sources, files):
-        if f == doc:
+        # Maintained documents are ordered only through depends_on; a folder
+        # source that happens to contain other documents must not bypass the
+        # topological order (it would never converge).
+        if f == doc or f in m.docs or f == state_file:
             continue
         h.update(f"S {f} {blobs.get(f, '?')}\n".encode())
         inputs.append(f)

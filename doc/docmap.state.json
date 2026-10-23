@@ -62,6 +62,13 @@
    "doc_sha256": "ab86568e2541da7457f69da506030423099defb152894c887c7be10b1efc6f80",
    "fingerprint": "3cd4bb35fa9651ea1a6b07a879f41e4e6de4ba8f972fd53cf7e6f22b1bb86f97",
    "time": "20261023T044425"
+  },
+  "doc/r36_handoff.md": {
+   "backend": "agy",
+   "commit": "6ede097cb715199e1a0c37c39e10f7c89c34c294",
+   "doc_sha256": "70eafd592be28fe5e778f430a8c84aa9f0a516805d19ee0a2f2b590be81c4d6e",
+   "fingerprint": "180312b92b4c571d6ffd60b1fa0ea6f0879b78972c2cc17888ae0296422a10b9",
+   "time": "20261023T044858"
   }
  }
 }

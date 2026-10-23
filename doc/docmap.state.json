@@ -412,6 +412,13 @@
    "doc_sha256": "4fc95189c8897383bb25f2dbb10874480b701eced6a008f21e8b7da1662d46dc",
    "fingerprint": "4b67602cd1ea91e2e2e996ff60ba965813671f893517bddf5b8de1f68639a948",
    "time": "20261023T092253"
+  },
+  "tutorial/11_running_on_the_u280.md": {
+   "backend": "agy",
+   "commit": "4f5d7670a236918dff8813d9c9a028f5611a36b7",
+   "doc_sha256": "41b2e390150cd47add5205068409576143c99e2e3afed52a2a30c2806722aa5a",
+   "fingerprint": "f12d26928d239d9f91a15d1b4611ba108b227f8653529c18ab736c325ca73fbc",
+   "time": "20261023T092456"
   }
  }
 }

@@ -489,6 +489,13 @@
    "doc_sha256": "41b2e390150cd47add5205068409576143c99e2e3afed52a2a30c2806722aa5a",
    "fingerprint": "f12d26928d239d9f91a15d1b4611ba108b227f8653529c18ab736c325ca73fbc",
    "time": "20261023T092456"
+  },
+  "tutorial/README.md": {
+   "backend": "agy",
+   "commit": "b17986ea31315bd4b681749f7b52d1b3e13ae294",
+   "doc_sha256": "45f04ae79f2b8121f3b83cce2cbf5dc7dbbe079bb5a4d3b6ea0a2a816683fd16",
+   "fingerprint": "cec2faee897df28cb7b668a137903b21bd5da93b30a892fdba31b06c3fc85a31",
+   "time": "20261023T101202"
   }
  }
 }

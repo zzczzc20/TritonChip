@@ -104,6 +104,13 @@
    "doc_sha256": "8e87579a626e36e99bdf7e399f81ff6c17dee2363b59872e7993edba87855f75",
    "fingerprint": "97659bb83e4470fa424e4a44529af8b71be2eb97f98d193ca154e4d6b62b8130",
    "time": "20261023T051433"
+  },
+  "doc/r40_tnca_device.md": {
+   "backend": "agy",
+   "commit": "9ce1cdfdf05d660d0b365e8b367929c2b9c5d05b",
+   "doc_sha256": "c65b5d90666880191cf3b176239af4320c16be447e0530bd92ed7ada40fa1c8a",
+   "fingerprint": "4139ba055494420a9e541db9d95e6719c99f92374c7a8ccb0db9a2748f8e6d3c",
+   "time": "20261023T052204"
   }
  }
 }

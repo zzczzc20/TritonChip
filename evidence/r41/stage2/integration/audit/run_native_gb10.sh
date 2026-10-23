@@ -11,10 +11,10 @@ check_memory() {
     free -g
     test "$(free -g | awk '/^Mem:/ {print $7}')" -ge 40
 }
-    if [ "$#" -eq 0 ]; then set -- base int; fi
+if [ "$#" -eq 0 ]; then set -- base int; fi
 for name in "$@"; do
         if [ "$name" = int ]; then tree="$I"; else tree="$B"; fi
-        for row in features pair ports; do
+        for row in ${R41_NATIVE_ROWS:-features pair ports}; do
             if [ -f "$R/$name-$row.exit" ] && [ "$(cat "$R/$name-$row.exit")" = 0 ]; then continue; fi
             check_memory > "$R/$name-$row.memory.log"
             cache="$R/cache-$name-$row"

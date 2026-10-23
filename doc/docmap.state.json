@@ -14,6 +14,13 @@
    "fingerprint": "233a83a718af2b42c333228f8b1d1675566df05997624d37ff90758a6f7e0b44",
    "time": "20261023T030751"
   },
+  "compiler/README.md": {
+   "backend": "agy",
+   "commit": "3d31bddc012ff5405db3e29bfbb25a4a1bc335d5",
+   "doc_sha256": "6c1e5beebc6f94dbcdb1c072323526421efa93165f0051a837974e85c5aa079a",
+   "fingerprint": "fd50398cf1730d1ba2e704dd5476e372a4875fba49b3ab37804acefe3137ad2d",
+   "time": "20261023T080051"
+  },
   "doc/P0_P1_physical_convergence.md": {
    "backend": "agy",
    "commit": "d4d878fd227010881f098867003ac35c1c9bafb4",

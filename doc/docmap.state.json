@@ -287,6 +287,13 @@
    "fingerprint": "97659bb83e4470fa424e4a44529af8b71be2eb97f98d193ca154e4d6b62b8130",
    "time": "20261023T051433"
   },
+  "doc/r40_tasks_and_acceptance.md": {
+   "backend": "agy",
+   "commit": "85acde164d8d3c7a836edf54ff88c0324d1a6a82",
+   "doc_sha256": "9e10adb2e57d054209c647aa711866c9059dd9a918fafcf7d444ec772e7c5f1f",
+   "fingerprint": "32d92eca913181ec09ca7f756ba7e68e105110065441a13f24d4c98b2beee7a9",
+   "time": "20261023T082734"
+  },
   "doc/r40_tnca_device.md": {
    "backend": "agy",
    "commit": "9ce1cdfdf05d660d0b365e8b367929c2b9c5d05b",

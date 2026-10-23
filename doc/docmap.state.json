@@ -133,6 +133,13 @@
    "fingerprint": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
    "time": "20261023T050739"
   },
+  "doc/r3_replan_review_2026-09-20.md": {
+   "backend": "agy",
+   "commit": "0a04dc55a78ec1e8f76d5e34992e587e985cb84a",
+   "doc_sha256": "8b017d5abc0925698bae5a91a0c2c6d972bb27121592e1776239c43d191053f7",
+   "fingerprint": "83cbf2a430b0b0749d68996a3423641bec721a7f3d2c1b3ecb0e6fa89350575b",
+   "time": "20261023T061154"
+  },
   "doc/r40_cold_call_audit.md": {
    "backend": "agy",
    "commit": "86bce2edc0580b9558b665a170e39532256d0236",

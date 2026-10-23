@@ -6,6 +6,13 @@
    "doc_sha256": "f4d5b4df22887b91f8e7b6d9f1ebcaf2e63fdde28f7cc29db6daa6209d7bee87",
    "fingerprint": "b8ca7512c710a1779a5f90bba47ac980be7d49f32bf307b0d0f4b8b10d0e0b72",
    "time": "20261023T025959"
+  },
+  "archbench/README.md": {
+   "backend": "agy",
+   "commit": "21056871eb49e080ef88b4eb51c10138e02056bd",
+   "doc_sha256": "4e4c367b102593bce2e491082dd8b9bc710b2dc7b42095a13824086ae90cc8cd",
+   "fingerprint": "233a83a718af2b42c333228f8b1d1675566df05997624d37ff90758a6f7e0b44",
+   "time": "20261023T030751"
   }
  }
 }

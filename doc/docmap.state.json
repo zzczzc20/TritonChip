@@ -84,6 +84,13 @@
    "fingerprint": "1b2713548504fb0d907acc7b84ea092a5212596a2c521aec86a3b7a91743038e",
    "time": "20261023T061833"
   },
+  "doc/phase3_6_tasks_and_acceptance.md": {
+   "backend": "agy",
+   "commit": "136b934ac8bb4e5e9038ad69ac87bb474f235714",
+   "doc_sha256": "59f899749ab5e457db25f2de3a160d19d9d5430b2beab7ca6c6e34be5d3ea053",
+   "fingerprint": "67c8f8951090aaad3c7582e5b610efe42f45004ce3af18417b190c4e8f6a089e",
+   "time": "20261023T062532"
+  },
   "doc/phase3_tasks_and_acceptance.md": {
    "backend": "agy",
    "commit": "3fdba9a867d84983e1107d9e67ddd963dea2c366",

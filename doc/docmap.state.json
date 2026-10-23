@@ -413,6 +413,13 @@
    "fingerprint": "4b67602cd1ea91e2e2e996ff60ba965813671f893517bddf5b8de1f68639a948",
    "time": "20261023T092253"
   },
+  "tutorial/01_first_kernel.md": {
+   "backend": "agy",
+   "commit": "70eb6bf28433207bf59e0b7da5860e1796a1b8fd",
+   "doc_sha256": "60c08154722b5da08f952e549ceff4cedffc2b987b5a6c824991e56bf0a2144d",
+   "fingerprint": "d65fe9cf7f57c837a84e56da50d815aa37ea263887549e1c3bd6a572a9aacd25",
+   "time": "20261023T101044"
+  },
   "tutorial/02_optimisation_levels.md": {
    "backend": "agy",
    "commit": "e49863280de1ac4c699fc4e5780de11b209e8d2b",

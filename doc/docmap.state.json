@@ -168,6 +168,13 @@
    "fingerprint": "df59b461fcdbf72de9ff40130bff20bb942386e34f4f302a2ff7221fcbd29a12",
    "time": "20261023T063338"
   },
+  "doc/r38_pytorch_p1plus.md": {
+   "backend": "agy",
+   "commit": "36d939f2e54e549b2510f330714cdc878950f8b6",
+   "doc_sha256": "be7070c88bb526b32605dc42a06d8addead5987fcd0c83a491d3faec1a9fa03c",
+   "fingerprint": "5f4b420288686de79b68229da026b82b8ceab28052204cef101d24af6e53fe9b",
+   "time": "20261023T064004"
+  },
   "doc/r3_replan_review_2026-09-20.md": {
    "backend": "agy",
    "commit": "0a04dc55a78ec1e8f76d5e34992e587e985cb84a",

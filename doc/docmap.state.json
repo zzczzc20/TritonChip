@@ -384,6 +384,13 @@
    "doc_sha256": "e76576f7ce785891ca4718c3981e8b4d8d523a2171b95fa4cf9d6b41fa46dcca",
    "fingerprint": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
    "time": "20261023T090223"
+  },
+  "tools/performance_harness/systemc/README.md": {
+   "backend": "agy",
+   "commit": "021636ad7c6f2b04901bd41003f7aa7781fb5131",
+   "doc_sha256": "7d222dd0ecd7e37694271aac7ea90e8871bfc46a27833575585b70f8ea886bd9",
+   "fingerprint": "e00e517f2fb3940c7cba859886928656ccb4fa7a3d06057f72b18bb1e8b66590",
+   "time": "20261023T090433"
   }
  }
 }

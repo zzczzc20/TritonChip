@@ -214,7 +214,7 @@ run_graphs.py ... --config configs/r40-board-m3.cfg --dram-path fast      # the 
 
 `TNCA_DRAM_MAP=/absolute/path/map.txt` supplies an explicit AXI BO/physical-PC
 map to either path. `dram_address_map.py` derives it from image-bound actual
-allocation evidence; `experiments/physical-dram-map.json` gives the recorded
+allocation evidence; `spec/r41/stage1/experiments/physical-dram-map.json` gives the recorded
 B40 example. The model subtracts the actual local address limit, adds the
 BO physical base and looks up the physical PC tag/range. Its PC byte counters
 use the same translation. SRAM, gaps, overlaps and unsupported geometry

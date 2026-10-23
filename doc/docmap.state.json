@@ -231,6 +231,13 @@
    "fingerprint": "b6a929db323aae2590d8a39f34bbe50be9a3c1beaa4ca7673911c9f5db530f3e",
    "time": "20261023T052647"
   },
+  "doc/support_matrix.md": {
+   "backend": "agy",
+   "commit": "55d9687adabef01e638b938befeaa37920ff3cca",
+   "doc_sha256": "283dc4b8ae2e5d19672a459c5c32a596b12bdf3433b2b254ded5c17952ec1f18",
+   "fingerprint": "df28c2bb83b2417bd250d5fabdedaf5cfcdc77bb19a1dc094581e04be1e616ea",
+   "time": "20261023T065757"
+  },
   "doc/synthesis.md": {
    "backend": "agy",
    "commit": "af3c8563392269c3dc714f7cb46be9d529056578",

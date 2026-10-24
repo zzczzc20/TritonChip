@@ -1,0 +1,20 @@
+{
+ "base_commit": "21d09f3e6e33b877b7ed1f5d2ad88fb5115c90fe",
+ "qualification_code_commit": "27dfbf3b806f9861fb3323e2d98c7929c1d6115e",
+ "paths": [
+  "python",
+  "compiler",
+  "rtl",
+  "xls",
+  "archbench",
+  "isa",
+  "tools/asm",
+  "tools/r40",
+  "tools/performance_harness/default_change_audit.py",
+  "spec/r40/suites/hbm.json"
+ ],
+ "changed_files": [],
+ "original_points": 113,
+ "suite_sha256": "7cebc8d2c6e6cab8a688418ce16e36785cd603385bff1e6028a0657c89120dfd",
+ "scope": "source invariance only; no new 113-point compile campaign claimed"
+}

@@ -25,6 +25,14 @@ nothing else set (a knob the board left unset keeps its default, e.g. the
 image's three memory ports and eight outstanding lines). The source root must
 be a checkout of that tree. predictions.py turns the results into
 calibrate.py prediction rows.
+
+Each results row records the knobs actually in effect: the child's own
+record (platform.knobs, archbench's definition of a knob) is compared with
+the environment the parent gave it, and a mismatch refuses the row
+(status knob-mismatch). `knobs` holds the configuration knobs a board record
+can match; `model_knobs` the model-harness keys (TNCA_TLM_*, DRAM path/map,
+RTL cache); `requested_knobs` the suite/dataset/preflight configuration
+before --env/--active-cores overrides.
 """
 import argparse
 import concurrent.futures as cf
@@ -50,6 +58,34 @@ RUNTIME = dict(TNCA_TRANSFER_POLICY='per-kernel', TNCA_ACTIVE_CORES='1', TNCA_RT
                TNCA_DEADLINE='200000000000', TNCA_HOST_TIMEOUT='28800')
 B40N = dict(TNCA_MAX_BLOCK='16', TNCA_GEMM_TILE='16,16,16', TNCA_REDUCTION_ROWS='1', TNCA_BANK_ALLOC='0',
             TNCA_WINDOW_REUSE='0', TNCA_SDPA='decomposed', TNCA_PIPELINE='2', TNCA_TUNE='0')
+# What the model process is and where it writes: no board record carries
+# these, so they are kept apart from the configuration a prediction matches.
+MODEL_ONLY_PREFIXES = ('TNCA_TLM_',)
+MODEL_ONLY = frozenset({'TNCA_CACHE', 'TNCA_DRAM_PATH', 'TNCA_DRAM_MAP', 'TNCA_RAMULATOR2_CONFIG'})
+
+
+def model_only(name):
+    return name.startswith(MODEL_ONLY_PREFIXES) or name in MODEL_ONLY
+
+
+def knobs_in_effect(rec, env):
+    """(configuration knobs, model knobs, None) or (None, None, why not).
+
+    The record's platform.knobs is what the child actually ran with; it must
+    equal the TNCA_* environment the parent set, less the keys the child's
+    archbench does not count as knobs (reported in the record).
+    """
+    recorded = (rec.get('platform') or {}).get('knobs')
+    excluded = rec.get('harness_not_knobs')
+    if not isinstance(recorded, dict) or not isinstance(excluded, list):
+        return None, None, 'record lacks platform.knobs or the harness knob exclusions'
+    effective = {k: v for k, v in env.items() if k.startswith('TNCA_') and k not in set(excluded)}
+    if recorded != effective:
+        wrong = sorted(k for k in set(recorded) | set(effective) if recorded.get(k) != effective.get(k))
+        return None, None, ('record platform.knobs differ from the run environment: ' +
+                            '; '.join(f'{k} record={recorded.get(k)!r} run={effective.get(k)!r}' for k in wrong))
+    return ({k: v for k, v in sorted(recorded.items()) if not model_only(k)},
+            {k: v for k, v in sorted(recorded.items()) if model_only(k)}, None)
 
 
 def bounded_child(cmd, *, cwd, env, stderr, timeout):
@@ -106,6 +142,9 @@ def child(a):
     # exactly as the board campaign does.
     rec = tnca.run(point, profile=os.environ['TNCA_PROFILE'], opt_level=2, seed=0, warmup=a.warmup, timed=a.timed)
     rec['child_wall_s'] = round(time.monotonic() - t, 3)
+    # The parent verifies platform.knobs against what it set; it needs this
+    # archbench's own definition of which TNCA_* variables are not knobs.
+    rec['harness_not_knobs'] = sorted(tnca.NOT_KNOBS)
     instances = []
     for inst in tlm_backend.backend_class().instances:
         info = dict(identity=getattr(inst, 'identity', None), model_dir=str(inst.dir), launches=len(inst.launches),
@@ -298,6 +337,7 @@ def parent(a):
         for line in stdout.splitlines():
             if line.startswith('ARCHBENCH-RECORD '):
                 rec = json.loads(line[len('ARCHBENCH-RECORD '):])
+        config = model_knobs = None
         if rec is None:
             tail = (run_dir/'child.log').read_text(errors='replace')[-1500:]
             row = dict(point=point, status='harness-error', returncode=code, process_wall_s=round(wall, 2), tail=tail)
@@ -305,7 +345,13 @@ def parent(a):
             (run_dir/'record.json').write_text(json.dumps(rec, indent=1, default=str) + '\n')
             row = summarize(rec, wall)
             row['returncode'] = code
-        row.update(key=key, knobs=knobs)
+            row['record'] = str(run_dir/'record.json')
+            config, model_knobs, problem = knobs_in_effect(rec, env)
+            if problem:
+                # Never label a run with knobs it did not run: refuse the row.
+                row.update(status='knob-mismatch', knob_problem=problem)
+        row.update(key=key, requested_knobs=knobs, knobs=config, model_knobs=model_knobs,
+                   knobs_verified=config is not None)
         results[key] = row
         print(json.dumps({k: row.get(k) for k in ('key', 'status', 'launches', 'device_cycles', 'max_rel_err',
                                                   'process_wall_s', 'model_launch_host_s')}), flush=True)

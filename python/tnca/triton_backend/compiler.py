@@ -347,10 +347,21 @@ class TNCABackend(BaseBackend):
         # larger than that can never be loaded; refuse it here, as a
         # resource error, so a caller with a narrower configuration retiles
         # instead of failing at launch.
+        # The size comes from the execution resource plan, the one resource
+        # description admission, retile and tuning all read.
         from tnca.inductor import CODE_STORE_BYTES
-        if len(code) > CODE_STORE_BYTES:
+        from tnca_cc.execution_resources import admission, record_decision
+        measured, plan = aot.execution_plan(prov, asm_text, code, report, target,
+                                            code_limit=CODE_STORE_BYTES)
+        size = plan['resources']['code_bytes'] if plan is not None else measured['code_bytes']
+        if size > CODE_STORE_BYTES:
             from triton.runtime.errors import OutOfResources
-            raise OutOfResources(len(code), CODE_STORE_BYTES, 'TNCA code store bytes')
+            raise OutOfResources(size, CODE_STORE_BYTES, 'TNCA code store bytes')
+        if plan is not None:
+            over = [r for r in admission(plan, code_limit=CODE_STORE_BYTES) if r[0] != 'code_bytes']
+            record_decision(plan, 'code_store_admission', 'accepted',
+                            f'{size} code bytes within the {CODE_STORE_BYTES}-byte code store',
+                            over_profile_limits=over)
         # Aliasing. Triton lets pointer arguments overlap (PyTorch Inductor
         # passes one storage as input and output of an in-place op), and the
         # runtime refuses an overlap the manifest does not declare (ABI-05).
@@ -368,7 +379,7 @@ class TNCABackend(BaseBackend):
         os.close(fd)
         try:
             aot._seal(path, kernel_name, params, asm_text, code, report, target, pinfo,
-                      {}, compile_options, prov, 'triton')
+                      {}, compile_options, prov, 'triton', measured=measured)
             with open(path, 'rb') as fh:
                 blob = fh.read()
         finally:

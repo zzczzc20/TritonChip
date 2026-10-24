@@ -531,28 +531,39 @@ def compile_aot(source, *, kernel_name=None, signature=None, constexprs=None,
                          asm=dict(stages.stages), dumped=written)
 
 
-def _seal(output, kernel_name, params, asm_text, code, report, target, pinfo,
-          constexprs, options, prov, source_kind):
-    """Manifest and container for compiled code: shared by every entry point."""
+def execution_plan(prov, asm_text, code, report, target, *, code_limit=None):
+    """Measure the assembled code once and finalize the execution resource
+    plan (the sidecar `execution_resources`). Returns (measured, plan).
+
+    Bookkeeping only: the plan describes the code; it never changes it.
+    Admission and tuning decisions read their numbers from the plan.
+    """
     measured = measure_resources(asm_text, target, code=code,
                                  include_windows='window_lifetime' in prov.entries)
     # The emitter cannot see this one: it is a requirement the frontend
     # recorded, not a count of something in the assembly.
     if 'scratch_bytes' in report:
         measured['scratch_bytes'] = report['scratch_bytes']
+    plan = prov.entries.get('execution_resources')
+    if plan is not None:
+        from tnca_cc.execution_resources import finalize
+        finalize(plan, measured=measured, entries=prov.entries, code_limit=code_limit)
+    return measured, plan
+
+
+def plan_of(manifest):
+    """The execution resource plan sealed in an artifact manifest, or None."""
+    plan = ((manifest or {}).get('optional_metadata', {}).get('provenance', {})
+            .get('execution_resources'))
+    return plan if isinstance(plan, dict) and 'resources' in plan else None
+
+
+def _seal(output, kernel_name, params, asm_text, code, report, target, pinfo,
+          constexprs, options, prov, source_kind, *, measured=None):
+    """Manifest and container for compiled code: shared by every entry point."""
+    if measured is None:
+        measured, _plan = execution_plan(prov, asm_text, code, report, target)
     report['resources'] = measured
-    if 'execution_resources' in prov.entries:
-        plan = prov.entries['execution_resources']
-        plan['allocated_resources'] = measured
-        plan['logical_gemm_tiles'] = prov.entries.get('register_blocks', {}).get('gemm_tiles', [])
-        plan['mma_retiles'] = prov.entries.get('mma_retiles', [])
-        plan['window_lifetime'] = prov.entries.get('window_lifetime', {})
-        plan['bank_allocation'] = prov.entries.get('bank_allocation', {})
-        plan['layout'] = {k: prov.entries[k] for k in
-                          ('opt_views_renamed', 'opt_views_materialised', 'opt_layout_upstream')
-                          if k in prov.entries}
-        plan['selection_notes'] = {k: v for k, v in prov.entries.items()
-                                   if k.endswith(('_fallback', '_refused'))}
     man = _manifest(kernel_name, params, target, pinfo, constexprs, options,
                     prov, source_kind, report, measured=measured)
     return artifact.write(output, man, {'text': code}), measured

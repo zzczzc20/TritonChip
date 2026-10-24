@@ -264,22 +264,33 @@ CODE_STORE_BYTES = 0x20000
 WIDE_CODE_LIMIT = CODE_STORE_BYTES - 0x4000
 
 
-def _code_bytes(result):
-    """The text segment of a compiled TNCA kernel, or None."""
+def _resource_plan(result):
+    """The execution resource plan sealed with a compiled TNCA kernel, or None.
+
+    The common resource description (tnca_cc.execution_resources): retile,
+    refusal and tuning read their numbers here instead of recomputing them.
+    """
     import os
     import tempfile
     blob = (getattr(getattr(result, 'kernel', None), 'asm', None) or {}).get('tnca')
     if not blob:
         return None
     from . import artifact
+    from .aot import plan_of
     fd, path = tempfile.mkstemp(suffix='.tnca')
     try:
         with os.fdopen(fd, 'wb') as fh:
             fh.write(blob)
-        _, segments = artifact.load(path)
+        manifest, _segments = artifact.load(path)
     finally:
         os.unlink(path)
-    return len(segments.get('text') or b'')
+    return plan_of(manifest)
+
+
+def _code_bytes(result):
+    """The code bytes of a compiled TNCA kernel, from its resource plan, or None."""
+    plan = _resource_plan(result)
+    return None if plan is None else plan['resources']['code_bytes']
 
 
 def _install_block_fallback():
@@ -323,16 +334,19 @@ def _install_block_fallback():
                     raise
                 reasons.append(f'{config.kwargs}: {type(e).__name__}: {str(e)[:200]}')
                 continue
-            size = _code_bytes(result)
+            plan = _resource_plan(result)
+            size = None if plan is None else plan['resources']['code_bytes']
             if not last and size is not None and size > WIDE_CODE_LIMIT:
-                reasons.append(f'{config.kwargs}: code {size} B exceeds {WIDE_CODE_LIMIT} B')
+                reasons.append(f'{config.kwargs}: code {size} B exceeds {WIDE_CODE_LIMIT} B '
+                               f'(execution resource plan)')
                 continue
             self.compile_results = [result]
             self.configs = None
             self._tnca_baseline_compile_seconds = time.monotonic()-started
             if reasons:
                 _BLOCK_FALLBACKS.append(dict(kernel=self.inductor_meta.get('kernel_name'),
-                                             used=dict(config.kwargs), reasons=reasons))
+                                             used=dict(config.kwargs), reasons=reasons,
+                                             used_resources=None if plan is None else plan['resources']))
             return
     _precompile_worker._tnca = True
     H.CachingAutotuner._precompile_worker = _precompile_worker

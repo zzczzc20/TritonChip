@@ -5,6 +5,7 @@
 // configuration resolves (DRAM clock cycles).
 #include <cstdio>
 #include <cstdlib>
+#include <stdexcept>
 #include <string>
 #include <vector>
 
@@ -24,8 +25,12 @@ static void check(const char* name, bool ok, const std::string& detail) {
 // Offset of a line in (bank group, bank, row, column) per the bridge's mapping;
 // bg must be even (a line's second burst is in bank group bg+1).
 static std::uint64_t line(int bg, int bank, int row, int col) {
-  // bursts: [bg 2 bits][bank 2 bits][col 5 bits][row 14 bits]; a line = bursts 2k, 2k+1
-  std::uint64_t burst = std::uint64_t(bg) | (std::uint64_t(bank) << 2) | (std::uint64_t(col) << 4) | (std::uint64_t(row) << 9);
+  // The controller's ROW_BANK_COLUMN map with BG0 interleave (map_address):
+  // bursts [BG0][CA1..CA5][BA0 BA1][BG1][row 14 bits]; a line = bursts 2k, 2k+1,
+  // which differ in BG0, so `bg` names the line's even bank group.
+  if (bg & 1) throw std::runtime_error("a line starts in an even (BG0 = 0) bank group");
+  std::uint64_t burst = (std::uint64_t(col & 31) << 1) | (std::uint64_t(bank) << 6) | ((std::uint64_t(bg) >> 1) << 8) |
+                        (std::uint64_t(row) << 9);
   return burst << 5;
 }
 
@@ -78,6 +83,22 @@ int main(int argc, char** argv) {
           hit < miss && conflict >= miss + t.nRP - 2 && hit >= t.read_latency && r.pcs[0].row_hits == 2 &&
               r.pcs[0].row_conflicts == 2,
           buf);
+  }
+  // (2b) Address map: the fields of the controller's USER_MC0_ADDR_BIT order.
+  {
+    bool ok = true;
+    for (std::uint64_t burst = 0; burst < (1u << 10); ++burst) {
+      tnca_dram::Mapped m = tnca_dram::map_address(burst << 5);
+      int bg0 = int(burst & 1), ca = int((burst >> 1) & 31), ba = int((burst >> 6) & 3), bg1 = int((burst >> 8) & 1);
+      ok &= m.bankgroup == (bg0 | (bg1 << 1)) && m.column == ca && m.bank == ba && m.row == int(burst >> 9);
+    }
+    tnca_dram::Mapped a = tnca_dram::map_address(0), b = tnca_dram::map_address(32), c = tnca_dram::map_address(2047),
+                      d = tnca_dram::map_address(2048), e = tnca_dram::map_address(8192),
+                      f = tnca_dram::map_address(16384);
+    ok &= a.bankgroup != b.bankgroup && a.column == b.column;          // a 64-byte line spans BG0
+    ok &= c.bank == 0 && d.bank == 1 && c.row == 0;                     // 2 KiB per bank pair
+    ok &= e.bankgroup == 2 && e.bank == 0 && f.row == 1;                // BG1 at 8 KiB, next row at 16 KiB
+    check("controller_address_map", ok, "\"map\": \"ROW_BANK_COLUMN, BG0 interleave, USER_MC0_ADDR_BIT\"");
   }
   // (3) Bank parallelism: 16 lines at once to 8 distinct banks vs to one bank (distinct rows).
   {
@@ -195,7 +216,8 @@ int main(int argc, char** argv) {
       else off = (rnd() % (std::uint64_t(256) << 20)) & ~std::uint64_t(63);          // random lines
       q.push_back({0, off, (r % 3) == 0, at});
     }
-    auto a = tnca_dram::replay(cfg, 1, q, false), b = tnca_dram::replay(cfg, 1, q, true);
+    // a: every cycle ticked (no skipping at all); b: idle and busy skipping.
+    auto a = tnca_dram::replay(cfg, 1, q, false, false), b = tnca_dram::replay(cfg, 1, q, true, true);
     std::size_t differ = 0;
     for (std::size_t i = 0; i < q.size(); ++i) differ += a.completion[i] != b.completion[i];
     std::snprintf(buf, sizeof buf,

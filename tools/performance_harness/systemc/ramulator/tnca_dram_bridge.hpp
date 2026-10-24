@@ -49,12 +49,14 @@ struct Timing {
 
 // Replays `requests` (any order; ties keep their order) through one fresh
 // Ramulator2 memory system per pseudo channel (DRAM state starts idle,
-// refresh phase at cycle 0). Idle gaps are skipped, stopping at the last
+// refresh phase at cycle 0). Idle gaps are skipped, stopping at every
 // refresh due inside a gap so that its precharge and tRFC are modelled.
 // event_skip: also skip the ticks of a busy controller in which no command
-// can become legal (identical results, checked by tnca-dram-bridge-test).
+// can become legal. idle_skip=false ticks every cycle of the idle gaps too:
+// the reference both skips are checked against (identical completions,
+// tnca-dram-bridge-test); it is far slower and only for tests.
 Result replay(const std::string& yaml_path, unsigned pcs, const std::vector<Request>& requests,
-              bool event_skip = true);
+              bool event_skip = true, bool idle_skip = true);
 
 // The memory-lean form the model uses (tens of millions of requests): the
 // caller keeps the requests in its own layout, gives their arrivals (DRAM
@@ -68,9 +70,9 @@ struct Batch {
     void (*decode)(const void* context, std::size_t i, std::uint32_t& pc, std::uint64_t& offset, bool& write) = nullptr;
 };
 Result replay(const std::string& yaml_path, unsigned pcs, const Batch& batch, std::vector<std::uint32_t>& latency,
-              bool event_skip = true);
+              bool event_skip = true, bool idle_skip = true);
 Timing timing(const std::string& yaml_path);
-// The address mapping assumed inside one pseudo channel (see the .cpp).
+// The controller address mapping inside one pseudo channel (see the .cpp).
 struct Mapped {int bankgroup, bank, row, column;};
 Mapped map_address(std::uint64_t offset);
 // sha256 of a file (hex), for provenance; empty if unreadable.

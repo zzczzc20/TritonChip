@@ -52,7 +52,7 @@ cannot overwrite their evidence. Session counters include actual helper copies a
 Lowering time covers the actual TNCA backend calls, not Dynamo/Inductor's entire compilation.
 Cold compile-plus-execute walls are 6.915, 1.668 and 1.641 seconds respectively.
 These are representative graph sizes and actual process-local memory peaks, not a complete-model
-working-set bound. Complete-model TNCA peak/code working-set estimates remain outstanding.
+working-set bound. Complete-model TNCA compile, code working-set, IR and device-peak estimates are in `model_estimates.md` (all 24 layers compiled; six standard-path blockers B1-B6 recorded there).
 
 The additional `kickoff/language-meta-v1-evidence.tgz` analyzes all 24 official
 language layers using the pinned Transformers source and meta tensors. Every
@@ -86,6 +86,15 @@ simultaneously live activations and optional cache history must also fit.
 Duplicating the largest weight storage would already exceed 4 GiB with the above base live set.
 `model_capacity_estimate.py` records the formulas, individual buffer estimates and exclusions; the tail estimate
 uses 129+4. These are feasibility inputs, not a Stage 2 freeze or capacity PASS.
+
+The Stage 2 capacity margin already rules out the current 4 GiB window:
+even weights alone require `1.25 × 3,763,655,360 = 4,704,569,200` usable bytes.
+Adding the core state estimate and no-cache prefill ATen activation estimate
+gives `1.25 × (3,785,183,936 + 64,094,208) = 4,811,597,680` bytes, before
+packing, code and allocator costs. That latter sum is a feasibility scenario,
+not a proven runtime peak; the weights-only lower bound is sufficient to show
+that the 4 GiB window cannot satisfy the Stage 2 margin. The planned 6–8 GiB
+window still needs verification against the actual final runtime peak.
 
 ## Public interface and cache-adapter differences
 

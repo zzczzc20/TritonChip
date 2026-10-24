@@ -38,7 +38,7 @@ banks, deliberately non-arithmetic PC IDs, gaps, overlaps, tags and bounds.
 Mapped standard Torch mm/addmm graphs and a depthwise representative graph
 preserve their references; inconclusive timing remains distinct from PASS.
 
-Bank/row mapping remains **unverified**. AMD describes a default Row Bank
+**Update 2026-10-21:** the bank/row mapping is now taken from the image's own HBM IP configuration (`hbm_controller/`: `ROW_BANK_COLUMN`, BG interleave, `USER_MC0_ADDR_BIT`) and the bridge implements it; the paragraph below records the earlier state. Bank/row mapping remained **unverified**. AMD describes a default Row Bank
 Column layout with BG0 interleave and permits custom layouts. The bridge's
 synthetic layout is therefore not certified by citing the default.
 [AMD PG276 address-map discussion](https://docs.amd.com/r/en-US/pg276-axi-hbm/HBM-Address-Map-and-Protocol-Considerations).

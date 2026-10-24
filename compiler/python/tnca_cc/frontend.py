@@ -219,6 +219,9 @@ class TTIRImporter:
         self._control_seq = 0
         self._atomic_seq = 0      # unique labels for CAS retry loops
         self._lane0_mask = None     # the mask that selects only lane 0
+        # [R, 1] -> [R, C] broadcasts: lane 0 copied to every lane, or rows
+        # already proven replicated (Tile.replicated) and used as they are.
+        self._column_broadcasts = {'lane0': 0, 'replicated': 0}
         self.arg_names = []
         self.arg_abi_types = []   # parallel to arg_names, in dynamic mode
         self.dynamic_args = False  # set by run(); see _load_argument
@@ -1772,9 +1775,11 @@ class TTIRImporter:
             if elem.startswith('f'):
                 # `sm_scale` over the whole tile. Broadcast once; every
                 # row names the same register.
-                v = self._broadcast_scalar(self._value(src), elem)
+                held = self._value(src)
+                v = self._broadcast_scalar(held, elem)
+                # A scalar register is splatted; a vector one is used as held.
                 self._tiles[rid] = Tile('lazy', lambda r: v, shape[0],
-                                        shape[1], elem)
+                                        shape[1], elem, replicated=held.kind == SCALAR)
                 return
             if elem == 'i1':
                 # A condition over the whole tile -- `idx_q < BATCH` in
@@ -1783,6 +1788,7 @@ class TTIRImporter:
                 # came back as 0/1 integers, and ANDed into the mask they
                 # turned every lane off, so the tile was never stored.
                 v = self._value(src)
+                held = v.kind
                 if v.kind == PRED:
                     p = v
                 else:
@@ -1790,7 +1796,7 @@ class TTIRImporter:
                         v = self.b.splat(v, dtype='i32')
                     p = self.b.vcmp('ne', v, self.b.vmovi(0))
                 self._tiles[rid] = Tile('lazy', lambda r, p=p: p, shape[0],
-                                        shape[1], 'i1')
+                                        shape[1], 'i1', replicated=held == SCALAR)
                 return
             k = self._scalar_const(src.id())
             if k is not None:
@@ -2358,16 +2364,19 @@ class TTIRImporter:
         tile = self._tiles.get(src.id())
         if tile is not None:
             shape, elem = _parse_type(str(op.get_result(0).get_type()))
+            replicated = self._rows_replicated(src)
             if tile.kind == 'col':
                 # One value per row, stretched across the row.
                 get = self._tile_row_getter(tile, elem)
                 self._tiles[rid] = Tile('lazy', get, shape[0], shape[1],
-                                        elem)
+                                        elem, replicated=replicated)
                 return
-            if tile.cols == 1 and shape[1] > 1:
+            if tile.cols == 1 and shape[1] > 1 and not replicated:
                 # A loaded [R, 1] has data only in lane zero of each
                 # physical row. Changing its declared width would leave
                 # zeroes in every other lane, unlike a semantic broadcast.
+                # So does anything not proven replicated (Tile.replicated).
+                self._column_broadcasts['lane0'] += 1
                 get = self._tile_row_getter(tile, elem)
                 def row(r):
                     value = get(0 if tile.rows == 1 else r)
@@ -2376,11 +2385,16 @@ class TTIRImporter:
                         lane = self.b.vextract(value, 0)
                         return self.b.vcmp('ne', self.b.splat(lane), self.b.vmovi(0))
                     return self.b.splat(self.b.vextract(value, 0, dtype=elem), dtype=elem)
-                self._tiles[rid] = Tile('lazy', row, shape[0], shape[1], elem)
+                self._tiles[rid] = Tile('lazy', row, shape[0], shape[1], elem,
+                                        replicated=True)
                 return
+            if tile.cols == 1 and shape[1] > 1:
+                # Every lane already holds the row's value: the rows are the
+                # broadcast, renamed as they are.
+                self._column_broadcasts['replicated'] += 1
             if tile.rows == shape[0]:
                 self._tiles[rid] = Tile(tile.kind, tile.handle, shape[0],
-                                        shape[1], tile.dtype)
+                                        shape[1], tile.dtype, replicated=replicated)
                 return
             if tile.rows == 1:
                 # `q[None, :]` stretched down the tile: every row is the
@@ -2388,7 +2402,7 @@ class TTIRImporter:
                 # rather than copied sixteen times.
                 get = self._tile_row_getter(tile)
                 self._tiles[rid] = Tile('lazy', lambda r: get(0), shape[0],
-                                        shape[1], tile.dtype)
+                                        shape[1], tile.dtype, replicated=replicated)
                 return
             raise Unsupported(
                 f"a broadcast from {tile.rows} rows to {shape[0]}",
@@ -2838,7 +2852,9 @@ class TTIRImporter:
             result = self.b.splat(self.b.vextract(v, r), dtype=elem)
             return (self.b.vcmp('ne', result, self.b.vmovi(0))
                     if elem == 'i1' else result)
-        return Tile('lazy', row, rows or self.target.vlen, 1, elem, vector=v)
+        # Every row is a splat of one lane.
+        return Tile('lazy', row, rows or self.target.vlen, 1, elem, vector=v,
+                    replicated=True)
 
     def _col_to_vector(self, tile, elem):
         """One value per row, gathered into one vector register.
@@ -3681,6 +3697,28 @@ class TTIRImporter:
         raise Unsupported(
             f"a 2-D operand of type {value.get_type()} that is not a tile")
 
+    def _rows_replicated(self, value):
+        """Whether every row `_row_getter(value)` yields holds one value in
+        all of its lanes (Tile.replicated). Follows the getter's own cases;
+        anything not proven is False."""
+        tile = self._tiles.get(value.id())
+        if tile is not None:
+            if tile.kind == 'col':
+                # The getter splats a scalar handle and hands a vector one
+                # over as it is; only the first is proven here.
+                return all(getattr(h, 'kind', None) == SCALAR for h in tile.handle)
+            return tile.replicated
+        aff = self._affine_of(value)
+        if aff is not None:
+            # `_affine_row`: lane i is col_stride * i plus the row's base.
+            return aff.col_stride == 0
+        shape, _ = _parse_type(str(value.get_type()))
+        if not isinstance(shape, tuple):
+            return False
+        pending = self._pending_const.get(value.id())
+        # A dense constant: one `v.movi` serves every row.
+        return pending is not None and pending[0] == 'tile'
+
     def _shape_mask(self, width, mask=None):
         if width >= self.target.vlen:
             return mask
@@ -3857,13 +3895,20 @@ class TTIRImporter:
         rows, cols = math.prod(shape[:-1]), shape[-1]
         getters = [self._row_getter(op.get_operand(i), rows, elem)
                    for i in range(op.get_num_operands())]
+        # Every `build` is lane-wise, so replicated operand rows give a
+        # replicated result row.
+        replicated = all(self._rows_replicated(op.get_operand(i))
+                         for i in range(op.get_num_operands()))
         if self._deferrable(op):
             self._tiles[op.get_result(0).id()] = Tile(
-                'lazy', lambda r: build([g(r) for g in getters], elem), rows, cols, elem)
+                'lazy', lambda r: build([g(r) for g in getters], elem), rows, cols, elem,
+                replicated=replicated)
             return
-        self._tiles[op.get_result(0).id()] = self._materialise(
+        tile = self._materialise(
             lambda r: build([g(r) for g in getters], elem),
             rows, cols, elem)
+        tile.replicated = replicated
+        self._tiles[op.get_result(0).id()] = tile
 
     # Operations a deferred tile may not be computed across: they write
     # memory or an accumulator in place (`acc + tl.dot` accumulates into the
@@ -4124,13 +4169,15 @@ class TTIRImporter:
                 get = self._tile_row_getter(tile)
                 self._tiles[res.id()] = Tile(
                     'lazy', lambda r, get=get: self.b.vcvt(tile.store, rtype, get(r)),
-                    tile.rows, tile.cols, rtype)
+                    tile.rows, tile.cols, rtype, replicated=self._rows_replicated(src))
                 return
             else:
                 get = self._tile_row_getter(tile)
-                self._tiles[res.id()] = self._materialise(
+                converted = self._materialise(
                     lambda r: self.b.vcvt(tile.store, rtype, get(r)),
                     tile.rows, tile.cols, rtype)
+                converted.replicated = self._rows_replicated(src)
+                self._tiles[res.id()] = converted
             return
         _, elem, _bcast = self._float_shape(op)
         _, stype = _parse_type(str(src.get_type()))
@@ -4310,10 +4357,12 @@ class TTIRImporter:
                     if key not in memo:
                         memo[key] = self.b.vcmp(cc, x, y)
                     return memo[key]
-                self._tiles[op.get_result(0).id()] = self._materialise(row, rows, cols, 'i1')
-                return
-            self._tiles[op.get_result(0).id()] = self._materialise(
-                lambda r: self.b.vcmp(cc, xs(r), ys(r)), rows, cols, 'i1')
+                tile = self._materialise(row, rows, cols, 'i1')
+            else:
+                tile = self._materialise(
+                    lambda r: self.b.vcmp(cc, xs(r), ys(r)), rows, cols, 'i1')
+            tile.replicated = self._rows_replicated(a) and self._rows_replicated(b)
+            self._tiles[op.get_result(0).id()] = tile
             return
         if elem == 'i1' and not self._force_vector:
             # Comparing two masks. `(x == y)` on i1 is equality, which

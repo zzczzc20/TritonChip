@@ -32,10 +32,16 @@
 | `kickoff/pipeline-admission-v2-evidence.tgz`、strict 比较补充 tgz、`pipeline_admission.md` | 4 组模型、3 组 RTL 与比较全部完成；实际 ring/transfer/MMA 轨迹；第三层增加 overlap 但尾块更慢；缺项/重复项比较拒绝 | artifact/内存域不同，不能宣称匹配的跨域预测准确率；板上闭合未完成 |
 | `kickoff/host-handoff-v1-evidence.tgz` | 原生快慢路径均通过显式维护/local split/跨边界传输与三项拒绝；ABI 维护使模型流量更接近 RTL，残差仍保留 | 物理控制器等价、完整周期校准或 host latency 已预测准确 |
 | `kickoff/language-meta-v1-evidence.tgz`、`model_feasibility.md` | 官方 24 层、320 个参数 storage 的精确形状/dtype/tied alias 核对；128/129 prefill 全分支 ATen 图和别名存储分析 | TNCA 完整模型编译、机器码工作集、设备 allocator 峰值或数值执行通过 |
+| `kickoff/memory-service-v1-evidence.tgz`、`memory_service.md` | 三组 outlet/depth 的实际三核 MMIO RTL 全部数值通过；三套模型域与原始残差保留；维护/缓存几何解释、严格比较与拒绝检查完成 | 合成 AXI slave 等价于物理 HBM；更多出口必然获益；板上闭合或全局周期资格已经完成 |
+| `fragments/bitwise-k-order/`（`systemc-bitwise.json`、`rtl-bitwise.json` 与原始 tgz） | 标准 Torch mm/addmm，FP16/BF16、连续与非连续、M/N tail、K=7/33/48/65/113：16x32 双 fragment 输出与 16x16 输出逐位相同，且都与独立逐 K FP32 FMA 参考逐位相同；SystemC 80 行、单核 iverilog RTL 16 行，无容差。含精确抵消的输入下，16 块归约或逆序会改变 SystemC 37/47 行、RTL 2/5 行的输出（每图最多 1452 个元素），实际输出仍逐位等于逐 K 参考 | 宽 tile 更快；未测 shape/dtype；FP32 输入路径 |
+| `fragments/execution-plan-tests.log`、`kickoff/tuning-plan-v1-evidence.tgz` | execution resource plan v2：物理 fragment、有效/padding MAC（常量 TTIR 形状，按 launch）、K 循环 ACC 往返、VRF/window/ACC/barrier/code、descriptor/pointer 传输、transfer/MMA 命令与依赖、选择/拒绝原因；16x16、16x32、tail、mask 形状与手算值一致；Inductor retile/拒绝、code store 拒绝与 TNCA_TUNE 候选资源读取计划；公共 tuning 7 步（含两项 MMIO RTL）通过 | 计划是数值 oracle 或周期预测；运行时 mask 下的 MAC |
+| `default_change_audit_narrowed.json`、`default_change_audit.md`、`kickoff/narrowed-broadcast-v1-evidence.tgz` | `[R,1]` 列广播修复收窄为仅在未证明行复制时复制 lane 0（`Tile.replicated`）：113 个原始点代码与启动结构全部与 B40-OBS 相同，原 56 个变化点全部恢复；depthwise 图仍有 1-3 处 lane-0 复制，强制去掉后 SystemC 数值失败，收窄版 SystemC/RTL 通过；primitive 三图、80 行 K 顺序逐位检查、`compiler/test/test_column_broadcast.py`（含 RTL 对照）通过 | 收窄前的 56 点代价已上板测量 |
+| `default_change_audit.json` | 收窄前（bf6fd2b）记录：113 点中 57 点相同、56 点变化，全部由 `[R,1]` 列广播修复引起（消融还原）；predicate spill 与 pointwise retile 默认零影响；资源计划改动不改变代码 | 当前树状态（见上一行） |
+| `kickoff/compiler-regression-plan-v1.log`、`kickoff/compiler-regression-narrowed-broadcast.log` | 生成文件检查与 110 项（收窄后 113 项）compiler unit（Triton 环境无 skip）通过；`tnca-opt` 以 Ubuntu LLVM/MLIR 20.1.2（CI 所用发行版本）构建，IR suite 6/6 通过 | RTL compiler suite 或 e2e 通过 |
 
 谓词压力修复使用现有 `p.ballot`/`p.frombits` 保存精确 lane mask，不能增加架构容量。
 pointwise 超出资源时依次尝试较小 block，保留共同 TNCA 执行路径；已有合法配置仍优先使用。
-column broadcast 修复 `[R,1]` 加载后的每行 lane 0 复制语义，不按模型或算子名称特判。
+column broadcast 修复 `[R,1]` 加载后的每行 lane 0 复制语义，不按模型或算子名称特判；只对未被证明行复制（`Tile.replicated`）的来源执行复制。
 
 原始失败保留：`make compiler` 首次发现生成的 support matrix 落后于新增的两条可生成指令；
 由远端原生成器更新矩阵后复跑通过。depthwise 的初始 predicate/scalar 资源失败和 bias 仅首 lane 生效的诊断均未计作 PASS。
@@ -49,5 +55,6 @@ column broadcast 修复 `[R,1]` 加载后的每行 lane 0 复制语义，不按�
 卡上观测镜像曾为 UUID `428c00e5-6996-92c7-1f8f-ec41f2d037b3`、245 MHz，且有使用者；
 与 B40-OBS 的 90 MHz 镜像不同。`kickoff/restore90-check.log` 为只读检查，usage gate 未通过，未执行加载。
 恢复 R40 镜像须有明确授权、卡空闲且全部加载检查通过。当前不能把原 90 MHz 镜像当作仍在运行。
+`kickoff/restore90-check-20261021T0517Z.log` 再次确认同一外部 UUID、一个活动 context，usage gate 仍失败，未执行加载。
 
 模型保持 `uncalibrated`。sealed holdout 未用于开发或拟合；已有失配与负结果不删除。

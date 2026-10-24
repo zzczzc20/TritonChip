@@ -256,6 +256,14 @@ def import_ttir(module, func_name, arg_values, *, param_names, target,
                            where=f"TTIR function {func_name!r}",
                            detail={'diagnostic': str(d)})
     if prov is not None:
+        # The logical dot sites and their constant extents, for the
+        # execution resource plan. Inspection only; the kernel is lowered.
+        from tnca_cc.execution_resources import gemm_sites_or_error
+        prov.record('gemm_sites', gemm_sites_or_error(imp))
+        broadcasts = getattr(imp, '_column_broadcasts', None)
+        if broadcasts and any(broadcasts.values()):
+            # [R, 1] -> [R, C]: lane 0 copied, or proven-replicated rows renamed.
+            prov.record('column_broadcasts', dict(broadcasts))
         prov.record('frontend', 'tnca_cc.frontend.TTIRImporter')
         prov.record('bound_parameters', list(imp.arg_names))
         prov.record('argument_binding',

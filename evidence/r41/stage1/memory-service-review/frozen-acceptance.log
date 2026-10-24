@@ -1,0 +1,65 @@
+python3 tools/performance_harness/stage1_acceptance.py --root /tmp/r41-frozen-review-yz_tk2qw --json /tmp/r41-frozen-review-yz_tk2qw/sim/build/r41/stage1-acceptance.json
+ID                                                             STATUS        KINDS                  REASON
+S1-00.baseline_identity                                        pass          doc                    
+S1-00.original_inventory_and_hashes                            pass          compile,doc            
+S1-00.required_study_target_scope                              pass          doc                    
+S1-00.diagnostic_development_holdout_split                     pass          doc                    
+S1-00.budgets                                                  pass          doc                    
+S1-00.carryover                                                pass          doc                    
+S1-01.unified_experiment_resume_dedup_failures                 not-measured  compile                requires board evidence; model/RTL/compile evidence cannot stand for a board measurement
+S1-01.native_systemc_real_artifacts_common_session             pass          systemc                
+S1-01.off_aggregate_trace_architecture_invariance              pass          systemc                
+S1-01.fast_and_ramulator2_paths                                not-measured  doc,systemc            requires board evidence; model/RTL/compile evidence cannot stand for a board measurement
+S1-01.dependency_and_address_map_provenance                    not-measured  compile,doc,systemc    requires board evidence; model/RTL/compile evidence cannot stand for a board measurement
+S1-01.no_latency_double_counting                               pass          doc,systemc            
+S1-01.backpressure_completion_write_response                   pass          systemc                
+S1-01.calibration_validation_holdout_separation                not-measured  -                      requires board, systemc evidence
+S1-01.out_of_domain_refusal                                    pass          systemc                
+S1-01.clean_build_smoke                                        not-measured  -                      requires compile, systemc evidence
+S1-01.case_gemm_fragment                                       not-measured  systemc                requires board evidence; model/RTL/compile evidence cannot stand for a board measurement
+S1-01.case_memory_service                                      not-measured  rtl                    requires board evidence; model/RTL/compile evidence cannot stand for a board measurement
+S1-01.case_pipeline_admission                                  not-measured  rtl                    requires board evidence; model/RTL/compile evidence cannot stand for a board measurement
+S1-01.negative_case                                            pass          doc,rtl                
+S1-01.prospective_prediction_board_residual                    not-measured  doc,systemc            requires board evidence; model/RTL/compile evidence cannot stand for a board measurement
+S1-01.matched_rtl_speed_measurement                            pass          rtl,systemc            
+S1-01.retain_known_model_mismatches                            pass          doc,systemc            
+S1-02.two_resident_16x16_accumulators_for_16x32                pass          compile,systemc        
+S1-02.ordered_k_and_loop_residency                             pass          compile,rtl,systemc    
+S1-02.tails_masks_noncontiguous_and_resource_refusal           pass          compile,systemc        
+S1-02.resource_plan_layout_lifetime_bank_allocation            pass          compile,rtl            
+S1-02.two_standard_torch_graphs_execute                        pass          rtl,systemc            
+S1-02.numeric_ownership_resource_checks                        pass          compile,systemc        
+S1-02.code_and_dynamic_counters                                pass          systemc                
+S1-02.original_gemm_subset_retest                              not-measured  -                      requires board evidence
+S1-02.old_mapping_and_conservative_baseline_comparisons        not-measured  -                      requires board evidence
+S1-03.barrier_ordering_audit_and_negative_cases                pass          doc,rtl                
+S1-03.public_inductor_tnca_tuning_consumer                     pass          doc,rtl,systemc        
+S1-03.semantic_resource_candidates_and_conservative_fallback   pass          compile,rtl            
+S1-03.graph_budget_and_worker_termination                      pass          compile,systemc        
+S1-03.device_drain_recovery                                    not-measured  compile                requires board evidence; model/RTL/compile evidence cannot stand for a board measurement
+S1-03.isolated_tuning_samples                                  pass          compile,rtl            
+S1-03.identity_complete_cache                                  pass          compile,rtl            
+S1-03.device_endpoint_ranking                                  not-measured  rtl                    requires board evidence; model/RTL/compile evidence cannot stand for a board measurement
+S1-03.uncertainty_fallback                                     pass          compile                
+S1-03.locality_consumer_safety_and_board_design                pass          doc                    
+S1-04.M1_M4_regression                                         pass          rtl                    
+S1-04.critical_path_owners_candidates_validation               pass          compile,doc            
+S1-04.unit_ooc_and_region_resource_preflight                   pass          compile,doc,rtl        
+S1-04.fixed_next_implementation_candidate_list                 pass          doc                    
+S1-04.official_language_distinct_storage_inventory             pass          compile                
+S1-04.operator_state_dtype_inventory                           pass          compile,doc            
+S1-04.D256_depthwise_FP32_recurrence_compile_function          pass          rtl,systemc            
+S1-04.compile_code_IR_memory_estimates                         pass          compile,doc,systemc    
+S1-04.public_model_cache_adapter_difference_inventory          pass          doc                    
+S1-05.all_stage1_required                                      blocked       -                      13 of 51 prerequisites not passed
+S1-05.original_full_suite_on_90mhz                             not-measured  -                      requires board evidence
+S1-05.fragment_path_actually_used                              not-measured  -                      requires board evidence
+S1-05.tuning_and_fallback_integrated                           not-measured  -                      requires board evidence
+S1-05.three_harness_cases                                      blocked       -                      3 of 3 prerequisites not passed
+S1-05.new_default_nonregression                                not-measured  -                      requires board evidence
+S1-05.clean_archive_fresh_cache_rebuild                        not-measured  -                      requires board, compile evidence
+S1-05.frozen_board_anchor_reproduction                         not-measured  -                      requires board evidence
+S1-05.stage1_report                                            not-measured  -                      requires doc evidence
+S1-05.stage2_ready_blocker_list                                not-measured  -                      requires doc evidence
+61 required: pass 38, fail 0, not-measured 21, blocked 2 -> not-accepted (software tree files:6da4bd71b87e435e878a2b17bc83169912294ca197528b0b5cbdc4ff66154b5a)
+make: *** [Makefile:50: r41-stage1-acceptance] Error 1

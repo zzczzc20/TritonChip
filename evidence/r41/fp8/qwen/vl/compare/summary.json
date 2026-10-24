@@ -1,0 +1,152 @@
+{
+ "inductor": {
+  "vision_rel_l2": 0.043114841091234375,
+  "hidden_max_rel_l2": 0.10872330977292864,
+  "hidden_last_rel_l2": 0.10872330977292864,
+  "prefill_logits_rel_l2": 0.07406198382459725,
+  "prefill_argmax_agree": 0.9506172839506173,
+  "last_logits_rel_l2": 0.051042995613347436,
+  "decode_logits_max_rel_l2": 0.10756780213913515,
+  "decode_argmax_agree": [
+   19,
+   19
+  ],
+  "tokens_equal": true,
+  "common_prefix": 20
+ },
+ "official_cuda": {
+  "vision_rel_l2": null,
+  "hidden_max_rel_l2": 0.11649462255692102,
+  "hidden_last_rel_l2": 0.11649462255692102,
+  "prefill_logits_rel_l2": 0.08091516480616523,
+  "prefill_argmax_agree": 0.8888888888888888,
+  "last_logits_rel_l2": 0.07377478689234333,
+  "decode_logits_max_rel_l2": 1.396243671568803,
+  "decode_argmax_agree": [
+   1,
+   19
+  ],
+  "tokens_equal": false,
+  "common_prefix": 1
+ },
+ "ref_bf16": {
+  "vision_rel_l2": 0.0,
+  "hidden_max_rel_l2": 0.072993965196119,
+  "hidden_last_rel_l2": 0.072993965196119,
+  "prefill_logits_rel_l2": 0.05045655986749566,
+  "prefill_argmax_agree": 0.9506172839506173,
+  "last_logits_rel_l2": 0.04929742316162412,
+  "decode_logits_max_rel_l2": 0.07161860517065026,
+  "decode_argmax_agree": [
+   19,
+   19
+  ],
+  "tokens_equal": true,
+  "common_prefix": 20
+ },
+ "tf_bf16": {
+  "vision_rel_l2": 0.0,
+  "hidden_max_rel_l2": 0.072993965196119,
+  "hidden_last_rel_l2": 0.072993965196119,
+  "prefill_logits_rel_l2": 0.05045655986749566,
+  "prefill_argmax_agree": 0.9506172839506173,
+  "last_logits_rel_l2": 0.04929742316162412,
+  "decode_logits_max_rel_l2": 0.04848443226054423,
+  "decode_argmax_agree": [
+   19,
+   19
+  ],
+  "tokens_equal": true,
+  "common_prefix": 20
+ },
+ "tf_dotfp32": {
+  "vision_rel_l2": 0.0,
+  "hidden_max_rel_l2": 0.0872289598307732,
+  "hidden_last_rel_l2": 0.0872289598307732,
+  "prefill_logits_rel_l2": 0.06038340508736098,
+  "prefill_argmax_agree": 0.9259259259259259,
+  "last_logits_rel_l2": 0.047956715966312194,
+  "decode_logits_max_rel_l2": 0.06184544512920025,
+  "decode_argmax_agree": [
+   19,
+   19
+  ],
+  "tokens_equal": true,
+  "common_prefix": 20
+ },
+ "tf_fma": {
+  "vision_rel_l2": 0.0,
+  "hidden_max_rel_l2": 0.09193254941159831,
+  "hidden_last_rel_l2": 0.09193254941159831,
+  "prefill_logits_rel_l2": 0.06401422154466199,
+  "prefill_argmax_agree": 0.9629629629629629,
+  "last_logits_rel_l2": 0.05591561803210622,
+  "decode_logits_max_rel_l2": 0.07019295867746074,
+  "decode_argmax_agree": [
+   19,
+   19
+  ],
+  "tokens_equal": true,
+  "common_prefix": 20
+ },
+ "tf_inductor_epc": {
+  "vision_rel_l2": 0.03501623009654104,
+  "hidden_max_rel_l2": 0.0903697631726522,
+  "hidden_last_rel_l2": 0.0903697631726522,
+  "prefill_logits_rel_l2": 0.06431248323424325,
+  "prefill_argmax_agree": 0.9506172839506173,
+  "last_logits_rel_l2": 0.05554037683972993,
+  "decode_logits_max_rel_l2": 0.060029125117232775,
+  "decode_argmax_agree": [
+   19,
+   19
+  ],
+  "tokens_equal": true,
+  "common_prefix": 20
+ },
+ "tf_inductor": {
+  "vision_rel_l2": 0.043114841091234375,
+  "hidden_max_rel_l2": 0.09625131207488044,
+  "hidden_last_rel_l2": 0.09625131207488044,
+  "prefill_logits_rel_l2": 0.06641759200191424,
+  "prefill_argmax_agree": 0.9135802469135802,
+  "last_logits_rel_l2": 0.06623027190982231,
+  "decode_logits_max_rel_l2": 0.07943571264498739,
+  "decode_argmax_agree": [
+   19,
+   19
+  ],
+  "tokens_equal": true,
+  "common_prefix": 20
+ },
+ "tf_recip": {
+  "vision_rel_l2": 0.0,
+  "hidden_max_rel_l2": 0.09470110177993099,
+  "hidden_last_rel_l2": 0.09470110177993099,
+  "prefill_logits_rel_l2": 0.06521649228371579,
+  "prefill_argmax_agree": 0.9135802469135802,
+  "last_logits_rel_l2": 0.053593395689488454,
+  "decode_logits_max_rel_l2": 0.058131124728499683,
+  "decode_argmax_agree": [
+   19,
+   19
+  ],
+  "tokens_equal": true,
+  "common_prefix": 20
+ },
+ "tf_threads4": {
+  "vision_rel_l2": 0.0,
+  "hidden_max_rel_l2": 0.0,
+  "hidden_last_rel_l2": 0.0,
+  "prefill_logits_rel_l2": 0.0,
+  "prefill_argmax_agree": 1.0,
+  "last_logits_rel_l2": 0.0,
+  "decode_logits_max_rel_l2": 0.0,
+  "decode_argmax_agree": [
+   19,
+   19
+  ],
+  "tokens_equal": true,
+  "common_prefix": 20
+ }
+}

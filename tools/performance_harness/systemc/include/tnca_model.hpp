@@ -49,7 +49,10 @@ static u64 integer(const std::string& s) {
 }
 struct Config {
     std::map<std::string,u64> v;
-    explicit Config(const char* path) {
+    // physical_map: an explicit AXI BO/PC map (TNCA_DRAM_MAP, tnca_dram_map.hpp)
+    // translates every DRAM line, so the window is checked against that map's
+    // BO (Model::select_dram_path) instead of the contiguous logical PC map.
+    explicit Config(const char* path,bool physical_map=false) {
         std::ifstream f(path); require(bool(f),"cannot open configuration");
         std::string s;
         while (std::getline(f,s)) {
@@ -111,7 +114,7 @@ struct Config {
         require(get("memory_bytes")<=UINT64_MAX-get("memory_base"),"memory window overflow");
         require(get("memory_base")%64==0 && get("memory_bytes")%64==0,"line-aligned memory window required");
         require(get("pc_bytes")%64==0 && get("pc_first")<get("pc_count"),"invalid PC map");
-        require((get("memory_bytes")-1)/get("pc_bytes")<get("pc_count")-get("pc_first"),"window exceeds PC map");
+        require(physical_map || (get("memory_bytes")-1)/get("pc_bytes")<get("pc_count")-get("pc_first"),"window exceeds PC map");
     }
     u64 get(const std::string& k)const{return v.at(k);}
     // Hot-path copies of fixed geometry (set once by cache_hot()).

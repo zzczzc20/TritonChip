@@ -640,6 +640,11 @@ $(BUILD)/tb_core_r39sw5.vvp: $(RTL_DEPS) $(TB)/core/tb_tnca_core.v \
                              $(TB)/common/tnca_mem_model.v | dirs
 	$(IVERILOG) $(IVFLAGS) -y $(RTL)/core -y $(RTL)/common -y $(RTL)/gen -y $(TB)/common \
 	   $(R39_SW5) -o $@ $(TB)/core/tb_tnca_core.v
+# R41 X8: core-vrf-sync-v5-x8's bench (the 1-byte transposed write).
+$(BUILD)/tb_core_r39sw5x8.vvp: $(RTL_DEPS) $(TB)/core/tb_tnca_core.v \
+                               $(TB)/common/tnca_mem_model.v | dirs
+	$(IVERILOG) $(IVFLAGS) -y $(RTL)/core -y $(RTL)/common -y $(RTL)/gen -y $(TB)/common \
+	   $(subst HAS_TENSOR_XPOSE=1,HAS_TENSOR_XPOSE=2,$(R39_SW5)) -o $@ $(TB)/core/tb_tnca_core.v
 $(BUILD)/tb_core_r39sw5_ooo.vvp: $(RTL_DEPS) $(TB)/core/tb_tnca_core.v \
                                  $(TB)/common/tnca_mem_model.v | dirs
 	$(IVERILOG) $(IVFLAGS) -y $(RTL)/core -y $(RTL)/common -y $(RTL)/gen -y $(TB)/common \
@@ -957,6 +962,13 @@ $(BUILD)/tb_core_xpose.vvp: $(RTL_DEPS) $(TB)/core/tb_tnca_core.v \
                             $(TB)/common/tnca_mem_model.v | dirs
 	$(IVERILOG) $(IVFLAGS) -y $(RTL)/core -y $(RTL)/common -y $(RTL)/gen -y $(TB)/common \
 	   -P tb_tnca_core.HAS_TENSOR_XPOSE=1 \
+	   -o $@ $(TB)/core/tb_tnca_core.v
+
+# R41 X8: the transposed write for 16-bit and 1-byte elements.
+$(BUILD)/tb_core_xpose8.vvp: $(RTL_DEPS) $(TB)/core/tb_tnca_core.v \
+                            $(TB)/common/tnca_mem_model.v | dirs
+	$(IVERILOG) $(IVFLAGS) -y $(RTL)/core -y $(RTL)/common -y $(RTL)/gen -y $(TB)/common \
+	   -P tb_tnca_core.HAS_TENSOR_XPOSE=2 \
 	   -o $@ $(TB)/core/tb_tnca_core.v
 
 $(BUILD)/tb_core_slow.vvp: $(RTL_DEPS) $(TB)/core/tb_tnca_core.v \
@@ -1361,6 +1373,21 @@ r38-xpose-rtl: $(BUILD)/tb_core.vvp $(BUILD)/tb_core_xpose.vvp $(patsubst %,$(BU
 	@$(TOOLS)/run_test.sh t30_xpose "$(VVP) $(BUILD)/tb_core_xpose.vvp +hex=$(BUILD)/t30_xpose.hex +maxcycles=100000"
 	@$(TOOLS)/run_test.sh t31_xpose_illegal "$(VVP) $(BUILD)/tb_core.vvp +hex=$(BUILD)/t31_xpose_illegal.hex +maxcycles=100000 +expectfault=01"
 	@$(TOOLS)/run_test.sh t32_xpose_badsize "$(VVP) $(BUILD)/tb_core_xpose.vvp +hex=$(BUILD)/t32_xpose_badsize.hex +maxcycles=100000 +expectfault=04"
+
+XPOSE8_PROGS := t33_xpose8 t34_xpose8_old t35_xpose8_badrows t36_xpose8_badcol
+$(TB)/core/progs/t33_xpose8.s $(TB)/core/progs/t34_xpose8_old.s \
+$(TB)/core/progs/t35_xpose8_badrows.s $(TB)/core/progs/t36_xpose8_badcol.s: $(TB)/core/progs/gen_t30_xpose.py
+	@$(PYTHON) $<
+.PHONY: r41-xpose8-rtl
+r41-xpose8-rtl: $(BUILD)/tb_core.vvp $(BUILD)/tb_core_xpose.vvp $(BUILD)/tb_core_xpose8.vvp \
+                $(patsubst %,$(BUILD)/%.hex,$(XPOSE_PROGS) $(XPOSE8_PROGS))
+	@$(TOOLS)/run_test.sh "t30_xpose (x8)" "$(VVP) $(BUILD)/tb_core_xpose8.vvp +hex=$(BUILD)/t30_xpose.hex +maxcycles=100000"
+	@$(TOOLS)/run_test.sh "t32_xpose_badsize (x8)" "$(VVP) $(BUILD)/tb_core_xpose8.vvp +hex=$(BUILD)/t32_xpose_badsize.hex +maxcycles=100000 +expectfault=04"
+	@$(TOOLS)/run_test.sh t33_xpose8 "$(VVP) $(BUILD)/tb_core_xpose8.vvp +hex=$(BUILD)/t33_xpose8.hex +maxcycles=100000"
+	@$(TOOLS)/run_test.sh "t33_xpose8 (no xpose)" "$(VVP) $(BUILD)/tb_core.vvp +hex=$(BUILD)/t33_xpose8.hex +maxcycles=100000 +expectfault=01"
+	@$(TOOLS)/run_test.sh t34_xpose8_old "$(VVP) $(BUILD)/tb_core_xpose.vvp +hex=$(BUILD)/t34_xpose8_old.hex +maxcycles=100000 +expectfault=04"
+	@$(TOOLS)/run_test.sh t35_xpose8_badrows "$(VVP) $(BUILD)/tb_core_xpose8.vvp +hex=$(BUILD)/t35_xpose8_badrows.hex +maxcycles=100000 +expectfault=04"
+	@$(TOOLS)/run_test.sh t36_xpose8_badcol "$(VVP) $(BUILD)/tb_core_xpose8.vvp +hex=$(BUILD)/t36_xpose8_badcol.hex +maxcycles=100000 +expectfault=04"
 
 r38-l0: | dirs
 	@$(PYTHON) tools/r38/gen_counters.py --check

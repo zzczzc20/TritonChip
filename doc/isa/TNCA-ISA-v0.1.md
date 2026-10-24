@@ -1043,13 +1043,27 @@ requires, in addition to §9E.2:
 |---|---|
 | the engine was built with the capability | `ILLEGAL_INSTRUCTION` |
 | rank 2 | `DESCRIPTOR_FAULT` |
-| 16-bit elements (`mod[2:0] = 1`) | `DESCRIPTOR_FAULT` |
+| 16-bit elements (`mod[2:0] = 1`), or 1-byte elements (`mod[2:0] = 0`) on an engine with `tensor_transpose_8bit` | `DESCRIPTOR_FAULT` |
 | `R` is 4, 8 or 16 | `DESCRIPTOR_FAULT` |
 | base, row stride and contiguous coordinate on 8-byte boundaries, coordinate non-negative | `DESCRIPTOR_FAULT` |
 | a load (there is no transposed store) | `DESCRIPTOR_FAULT` |
 
 The last two keep each destination row whole lanes inside one register, which
 is what lets the engine write it through the lane enables it already has.
+
+**1-byte elements (capability `tensor_transpose_8bit`, R41 X8).** An engine
+built with `HAS_TENSOR_XPOSE = 2` also executes the transposed write for
+`mod[2:0] = 0` (`.b.t`): any 1-byte dtype (int8, FP8 E4M3, FP8 E5M2), since the
+engine moves bytes and never interprets them. The definition and every
+condition above are unchanged, with "8-byte boundary" now covering `C` whole
+8-byte units per source row (the contiguous extent of the box is a multiple of
+8 elements). A destination row is `R` bytes (4, 8 or 16: one, two or four
+lanes). The engine reads one 8-byte unit down every source row and then writes
+the 8 destination rows that column block completes, one a cycle — twice the
+rows per block of the 16-bit write. An engine without the capability
+(`HAS_TENSOR_XPOSE = 1`) raises `DESCRIPTOR_FAULT` for it, as before; the
+compiler emits it only on a target that declares the capability, so artifacts
+for older images keep gathering a column-major FP8 operand.
 
 Coordinates come from **consecutive scalar registers** starting at `Sb`, one per
 descriptor rank, in descriptor order (`Sb` holds `c_0`) (§12.11). The block

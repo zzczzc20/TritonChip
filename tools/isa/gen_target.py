@@ -102,6 +102,13 @@ def build_target(core, top, isa, name, description, profile=None):
         # untransposed). So the capability is this instance's parameter,
         # and on a profile without it asking remains a compile error.
         'tensor_transpose': bool(core.get('HAS_TENSOR_XPOSE', 0)),
+        # R41 X8: HAS_TENSOR_XPOSE=2 also executes the transposed write for
+        # 1-byte elements (e4m3, e5m2, int8). Emitted only where it is true,
+        # so every older target file is unchanged; TargetInfo.has() reads an
+        # absent key of this optional capability as False, which keeps the
+        # gather path on every image built before it.
+        **({'tensor_transpose_8bit': True}
+           if int(core.get('HAS_TENSOR_XPOSE', 0)) >= 2 else {}),
         'mbarrier': True,
         'packed_f16': False,
         'cache_hints': False,

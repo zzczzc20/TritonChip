@@ -1,0 +1,227 @@
+[
+ {
+  "repo": "Qwen/Qwen3-VL-2B-Instruct-FP8",
+  "revision": "46485250d8854c0a9be4f1adbc67ca47e5bb6fa5",
+  "last_modified": "2025-10-20 19:26:45+00:00",
+  "file": "generation_config.json",
+  "size": 241,
+  "sha256": null,
+  "git_blob": "0019000c8ac82edd292b884b9304d4d304af8ef3"
+ },
+ {
+  "repo": "Qwen/Qwen3-VL-2B-Instruct-FP8",
+  "revision": "46485250d8854c0a9be4f1adbc67ca47e5bb6fa5",
+  "last_modified": "2025-10-20 19:26:45+00:00",
+  "file": "video_preprocessor_config.json",
+  "size": 331,
+  "sha256": null,
+  "git_blob": "e7154d5e0491cdfb9ccb141a1c70c05df127f219"
+ },
+ {
+  "repo": "Qwen/Qwen3-VL-2B-Instruct-FP8",
+  "revision": "46485250d8854c0a9be4f1adbc67ca47e5bb6fa5",
+  "last_modified": "2025-10-20 19:26:45+00:00",
+  "file": "preprocessor_config.json",
+  "size": 336,
+  "sha256": null,
+  "git_blob": "4ae180b49f91e11d4da327d44edd9d4a909fe908"
+ },
+ {
+  "repo": "Qwen/Qwen3-VL-2B-Instruct-FP8",
+  "revision": "46485250d8854c0a9be4f1adbc67ca47e5bb6fa5",
+  "last_modified": "2025-10-20 19:26:45+00:00",
+  "file": "chat_template.json",
+  "size": 5497,
+  "sha256": null,
+  "git_blob": "e70949bd29403f4dfa7170b69e04379df01ecccb"
+ },
+ {
+  "repo": "Qwen/Qwen3-VL-2B-Instruct-FP8",
+  "revision": "46485250d8854c0a9be4f1adbc67ca47e5bb6fa5",
+  "last_modified": "2025-10-20 19:26:45+00:00",
+  "file": "README.md",
+  "size": 10440,
+  "sha256": null,
+  "git_blob": "c4022a673ec56ccdd7819a0f187c0900ca4e8260"
+ },
+ {
+  "repo": "Qwen/Qwen3-VL-2B-Instruct-FP8",
+  "revision": "46485250d8854c0a9be4f1adbc67ca47e5bb6fa5",
+  "last_modified": "2025-10-20 19:26:45+00:00",
+  "file": "tokenizer_config.json",
+  "size": 10868,
+  "sha256": null,
+  "git_blob": "d3d3763207692c78780f4bf42d4dadf49a5c8012"
+ },
+ {
+  "repo": "Qwen/Qwen3-VL-2B-Instruct-FP8",
+  "revision": "46485250d8854c0a9be4f1adbc67ca47e5bb6fa5",
+  "last_modified": "2025-10-20 19:26:45+00:00",
+  "file": "config.json",
+  "size": 11960,
+  "sha256": null,
+  "git_blob": "d6763f4c0e577e35c554fdf5432f390fa79ce902"
+ },
+ {
+  "repo": "Qwen/Qwen3-VL-2B-Instruct-FP8",
+  "revision": "46485250d8854c0a9be4f1adbc67ca47e5bb6fa5",
+  "last_modified": "2025-10-20 19:26:45+00:00",
+  "file": "model.safetensors.index.json",
+  "size": 76965,
+  "sha256": null,
+  "git_blob": "96fd01f06dbbf6823325d31cf16a11cd3722abe7"
+ },
+ {
+  "repo": "Qwen/Qwen3-VL-2B-Instruct-FP8",
+  "revision": "46485250d8854c0a9be4f1adbc67ca47e5bb6fa5",
+  "last_modified": "2025-10-20 19:26:45+00:00",
+  "file": "vocab.json",
+  "size": 4957462,
+  "sha256": null,
+  "git_blob": "e9be847b451c2364e1949ecfb4b030db89410563"
+ },
+ {
+  "repo": "Qwen/Qwen3-VL-2B-Instruct-FP8",
+  "revision": "46485250d8854c0a9be4f1adbc67ca47e5bb6fa5",
+  "last_modified": "2025-10-20 19:26:45+00:00",
+  "file": "tokenizer.json",
+  "size": 10179867,
+  "sha256": null,
+  "git_blob": "79b53cf927fccfa9990d490911045e7f34cfd388"
+ },
+ {
+  "repo": "Qwen/Qwen3-VL-2B-Instruct-FP8",
+  "revision": "46485250d8854c0a9be4f1adbc67ca47e5bb6fa5",
+  "last_modified": "2025-10-20 19:26:45+00:00",
+  "file": "model-00001-of-00001.safetensors",
+  "size": 3468553776,
+  "sha256": "da14428e061d80e3aa575bbcf911f48fda9be492b5a3e8be6a15e9d54313e57c",
+  "git_blob": "5aa9abde386ab08e659602e2a4a59ebbab80d16d"
+ },
+ {
+  "repo": "lovedheart/Qwen3.5-4B-FP8",
+  "revision": "752f65fd155dd34323cfc22d6143df1d48ce3c28",
+  "last_modified": "2026-03-03 08:33:30+00:00",
+  "file": "video_preprocessor_config.json",
+  "size": 385,
+  "sha256": null,
+  "git_blob": "3ba673a5ad7d4d13f54155ecd38b2a94a6dac8fe"
+ },
+ {
+  "repo": "lovedheart/Qwen3.5-4B-FP8",
+  "revision": "752f65fd155dd34323cfc22d6143df1d48ce3c28",
+  "last_modified": "2026-03-03 08:33:30+00:00",
+  "file": "preprocessor_config.json",
+  "size": 390,
+  "sha256": null,
+  "git_blob": "2ea84a437d448ff71b08df68fdd949d5cc4ebb64"
+ },
+ {
+  "repo": "lovedheart/Qwen3.5-4B-FP8",
+  "revision": "752f65fd155dd34323cfc22d6143df1d48ce3c28",
+  "last_modified": "2026-03-03 08:33:30+00:00",
+  "file": "chat_template.jinja",
+  "size": 7756,
+  "sha256": null,
+  "git_blob": "a585dec894e63da457d9440ec6aa7caa16d20860"
+ },
+ {
+  "repo": "lovedheart/Qwen3.5-4B-FP8",
+  "revision": "752f65fd155dd34323cfc22d6143df1d48ce3c28",
+  "last_modified": "2026-03-03 08:33:30+00:00",
+  "file": "LICENSE",
+  "size": 11544,
+  "sha256": null,
+  "git_blob": "f938136e3adacfd92be087f6e113b5d6d97f678f"
+ },
+ {
+  "repo": "lovedheart/Qwen3.5-4B-FP8",
+  "revision": "752f65fd155dd34323cfc22d6143df1d48ce3c28",
+  "last_modified": "2026-03-03 08:33:30+00:00",
+  "file": "tokenizer_config.json",
+  "size": 16710,
+  "sha256": null,
+  "git_blob": "eda48d3e75a8e59a8479ee4ec8b37f76e711d9c1"
+ },
+ {
+  "repo": "lovedheart/Qwen3.5-4B-FP8",
+  "revision": "752f65fd155dd34323cfc22d6143df1d48ce3c28",
+  "last_modified": "2026-03-03 08:33:30+00:00",
+  "file": "quant_report.csv",
+  "size": 24366,
+  "sha256": null,
+  "git_blob": "5e26251d688df26aee220f0897c483f2cc306a66"
+ },
+ {
+  "repo": "lovedheart/Qwen3.5-4B-FP8",
+  "revision": "752f65fd155dd34323cfc22d6143df1d48ce3c28",
+  "last_modified": "2026-03-03 08:33:30+00:00",
+  "file": "config.json",
+  "size": 33391,
+  "sha256": null,
+  "git_blob": "b5cd2b4634fcf8d8e7529180a03ab55ac1330ccc"
+ },
+ {
+  "repo": "lovedheart/Qwen3.5-4B-FP8",
+  "revision": "752f65fd155dd34323cfc22d6143df1d48ce3c28",
+  "last_modified": "2026-03-03 08:33:30+00:00",
+  "file": "model.safetensors.index.json",
+  "size": 104603,
+  "sha256": null,
+  "git_blob": "c94c51f67935a6f2e7dedcfab83656abd661410a"
+ },
+ {
+  "repo": "lovedheart/Qwen3.5-4B-FP8",
+  "revision": "752f65fd155dd34323cfc22d6143df1d48ce3c28",
+  "last_modified": "2026-03-03 08:33:30+00:00",
+  "file": "README.md",
+  "size": 130404,
+  "sha256": null,
+  "git_blob": "0a5e3926a0c8a11302c92b26fa252636f9e58da7"
+ },
+ {
+  "repo": "lovedheart/Qwen3.5-4B-FP8",
+  "revision": "752f65fd155dd34323cfc22d6143df1d48ce3c28",
+  "last_modified": "2026-03-03 08:33:30+00:00",
+  "file": "merges.txt",
+  "size": 3353259,
+  "sha256": null,
+  "git_blob": "a494e019ca1502219fd0128658b979e5f05ae8e8"
+ },
+ {
+  "repo": "lovedheart/Qwen3.5-4B-FP8",
+  "revision": "752f65fd155dd34323cfc22d6143df1d48ce3c28",
+  "last_modified": "2026-03-03 08:33:30+00:00",
+  "file": "vocab.json",
+  "size": 6722759,
+  "sha256": null,
+  "git_blob": "0aa0ce0658d60ac4a5d609f4eadb0e8e43514176"
+ },
+ {
+  "repo": "lovedheart/Qwen3.5-4B-FP8",
+  "revision": "752f65fd155dd34323cfc22d6143df1d48ce3c28",
+  "last_modified": "2026-03-03 08:33:30+00:00",
+  "file": "tokenizer.json",
+  "size": 12807982,
+  "sha256": "5f9e4d4901a92b997e463c1f46055088b6cca5ca61a6522d1b9f64c4bb81cb42",
+  "git_blob": "a73a846725794819aa6e1c9e97d8dc9671c2006d"
+ },
+ {
+  "repo": "lovedheart/Qwen3.5-4B-FP8",
+  "revision": "752f65fd155dd34323cfc22d6143df1d48ce3c28",
+  "last_modified": "2026-03-03 08:33:30+00:00",
+  "file": "model.safetensors-00002-of-00002.safetensors",
+  "size": 2347002232,
+  "sha256": "f2428aa0bc3f84fe2f750cd28ea574987587f47166417ebe89736adb74bbfd5a",
+  "git_blob": "a029ad021446768d93cfb114cbf8b548c8ba8c6b"
+ },
+ {
+  "repo": "lovedheart/Qwen3.5-4B-FP8",
+  "revision": "752f65fd155dd34323cfc22d6143df1d48ce3c28",
+  "last_modified": "2026-03-03 08:33:30+00:00",
+  "file": "model.safetensors-00001-of-00002.safetensors",
+  "size": 3300663624,
+  "sha256": "35b7391d7cd9231b6b88aaab920a2386f8813187ec94e4225616e940f64ea46b",
+  "git_blob": "57dbf9c39cef4f2385a7fa9276f83a60b2168faa"
+ }
+]

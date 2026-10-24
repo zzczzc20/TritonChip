@@ -31,17 +31,21 @@ from .ir import EVENT, PRED, SCALAR, TOKEN, VECTOR
 from .protocol import ProtocolModel
 
 # IR op -> mnemonic, for the plain arithmetic cases.
-_SBIN = {'add': 's.add', 'sub': 's.sub', 'mul': 's.mul', 'and': 's.and',
+_SBIN = {'add': 's.add', 'sub': 's.sub', 'mul': 's.mul', 'mulhu': 's.mulh.u', 'and': 's.and',
          'or': 's.or', 'xor': 's.xor', 'shl': 's.shl', 'lshr': 's.lshr',
-         'ashr': 's.ashr', 'min': 's.min.s', 'max': 's.max.s'}
+         'ashr': 's.ashr', 'min': 's.min.s', 'max': 's.max.s',
+         'mulhu': 's.mulh.u'}
 _SBINI = {'add': 's.addi', 'sub': 's.subi', 'mul': 's.muli',
           'and': 's.andi', 'or': 's.ori', 'xor': 's.xori',
           'shl': 's.shli', 'lshr': 's.lshri', 'ashr': 's.ashri'}
 _VBIN_INT = {'add': 'v.add', 'sub': 'v.sub', 'mul': 'v.mul',
+             'mulhu': 'v.mulh.u',
              'and': 'v.and', 'or': 'v.or', 'xor': 'v.xor',
              'andn': 'v.andn', 'shl': 'v.shl', 'lshr': 'v.lshr',
              'ashr': 'v.ashr', 'min': 'v.min.s', 'max': 'v.max.s',
              'minu': 'v.min.u', 'maxu': 'v.max.u'}
+# Integer lane unaries (ISA VINT): leading-zero count, 32 for a zero lane.
+_VUN_INT = {'clz': 'v.clz'}
 _VBIN_FP = {'add': 'vf.add', 'sub': 'vf.sub', 'mul': 'vf.mul',
             'min': 'vf.min', 'max': 'vf.max'}
 # Lane-local unaries. Float only: the ISA spells integer negation as a
@@ -115,6 +119,7 @@ class CodeGen:
         self._armed_ops = {}    # barrier index -> operations promised
         self._issued_ops = {}   # barrier index -> operations emitted
         self._mma_pending = {}  # barrier index -> fragment holds to release
+        self._dead_tokens = []  # scalar registers of tokens past their last use
 
     # ---- whole-program resources (sec 10.1) -------------------------------
     def assign_shared(self):
@@ -125,17 +130,45 @@ class CodeGen:
         would let one role's scratch sit inside another's window.
         """
         k, t = self.kernel, self.target
-        t.check_budget(barriers=len(k.barriers),
-                       accumulators=len(k.accumulators),
-                       windows=len(k.windows),
-                       descriptors=len(k.descriptors),
+        counts = dict(barriers=len(k.barriers), accumulators=len(k.accumulators),
+                      descriptors=len(k.descriptors))
+        limits = dict(barriers=t.num_barriers, accumulators=t.num_accumulators,
+                      descriptors=t.num_descriptors)
+        # A class that does not fit one slot per value is numbered by live
+        # range instead (resource_lifetime); one that fits keeps the fixed
+        # numbering below, as it always had.
+        renumbered = set()
+        if any(counts[c] > limits[c] for c in counts):
+            from .resource_lifetime import color
+            for cls, kind in (('barriers', 'barrier'), ('accumulators', 'accumulator'),
+                              ('descriptors', 'descriptor')):
+                if counts[cls] > limits[cls]:
+                    used = color(k, kind, limits[cls])
+                    if used is not None:
+                        counts[cls] = used
+                        renumbered.add(cls)
+        windows = len(k.windows)
+        if windows > t.num_windows:
+            from .resource_lifetime import color
+            used = color(k, 'window', t.num_windows)
+            if used is not None:
+                windows = used
+                renumbered.add('windows')
+        t.check_budget(barriers=counts['barriers'],
+                       accumulators=counts['accumulators'],
+                       windows=windows,
+                       descriptors=counts['descriptors'],
                        rctx=len(k.roles))
-        for i, b in enumerate(k.barriers):
-            b.reg = i
-        for i, a in enumerate(k.accumulators):
-            a.reg = i
-        for i, d in enumerate(k.descriptors):
-            d.reg = i
+        if 'barriers' not in renumbered:
+            for i, b in enumerate(k.barriers):
+                b.reg = i
+        if 'accumulators' not in renumbered:
+            for i, a in enumerate(k.accumulators):
+                a.reg = i
+        if 'descriptors' not in renumbered:
+            for i, d in enumerate(k.descriptors):
+                d.reg = i
+        self.renumbered = renumbered
 
         if self.window_reuse:
             from .window_lifetime import assign
@@ -205,6 +238,20 @@ class CodeGen:
 
     def _alloc(self, v):
         if v.reg is not None:
+            return v.reg
+        if v.kind in (SCALAR, EVENT, TOKEN):
+            try:
+                v.reg = self.alloc.scalar()
+            except ResourceError:
+                if not self._dead_tokens:
+                    raise
+                for reg in self._dead_tokens:
+                    try:
+                        self.alloc.free('s', reg)
+                    except Diagnostic:
+                        pass
+                self._dead_tokens = []
+                v.reg = self.alloc.scalar()
             return v.reg
         if v.kind == SCALAR:
             v.reg = self.alloc.scalar()
@@ -299,6 +346,12 @@ class CodeGen:
             if op.kind == 'window_reg':
                 continue    # an alias, not an allocation
             for v in op.results:
+                if v.kind in (EVENT, TOKEN) and v.reg is not None \
+                        and self._last_use.get(id(v)) == position:
+                    # A token past its last wait. Its register is returned only
+                    # if the scalars run out (_alloc), so a kernel that fits
+                    # keeps exactly the assignment it always had.
+                    self._dead_tokens.append(v.reg)
                 if v.kind in (VECTOR, SCALAR, PRED) and v.reg is not None \
                         and self._last_use.get(id(v)) == position:
                     kindc = {VECTOR: 'v', SCALAR: 's', PRED: 'p'}[v.kind]
@@ -337,7 +390,27 @@ class CodeGen:
                             neighbors[other_key] = (other, old[1] + 1)
             self._bank_reads = {key: tuple(values.values()) for key, values in edges.items()}
         for i, op in enumerate(ops):
-            getattr(self, f"_op_{op.kind}", self._unhandled)(op)
+            try:
+                getattr(self, f"_op_{op.kind}", self._unhandled)(op)
+            except ResourceError:
+                import os as _os
+                if _os.environ.get('TNCA_DEBUG_ALLOC'):
+                    held = {}
+                    for o in ops[:i + 1]:
+                        for v in list(o.results) + list(o.operands):
+                            if getattr(v, 'reg', None) is not None and getattr(v, 'kind', None) in (SCALAR, TOKEN, EVENT):
+                                held[id(v)] = v
+                    live = [v for v in held.values() if self._last_use.get(id(v), -1) >= i]
+                    print('free list', self.alloc._s_free, 'live set', sorted(self.alloc._live['s']))
+                    regs = {}
+                    for v in held.values():
+                        regs.setdefault(v.reg, []).append((v, self._last_use.get(id(v))))
+                    for r in sorted(self.alloc._live['s']):
+                        print('   s%d' % r, regs.get(r, [])[-2:])
+                    print('ALLOC FAIL at op', i, op.kind, 'live scalars', len(live))
+                    for v in live:
+                        print('  ', v, 'last', self._last_use.get(id(v)))
+                raise
             self._free_dead(i, ops)
         self._finish()
         return self.b
@@ -578,6 +651,11 @@ class CodeGen:
         if sfu is not None:
             self.target.require('sfu', f"emit {op.attrs['op']}")
             self._emit(sfu, f"v{v.reg}", f"v{a.reg}",
+                        comment=op.attrs.get('comment'))
+            return
+        integer = _VUN_INT.get(op.attrs['op'])
+        if integer is not None and not _is_fp(v.dtype):
+            self._emit(integer, f"v{v.reg}", f"v{a.reg}",
                         comment=op.attrs.get('comment'))
             return
         if not _is_fp(v.dtype):
@@ -910,6 +988,12 @@ class CodeGen:
                          f"#{op.attrs['expect']:#x}, #{op.attrs['ident']}")
 
     # ---- resources --------------------------------------------------------
+    def _window_id(self, w):
+        """The window's id: its index, or the slot resource_lifetime gave it
+        when the program names more windows than the target has."""
+        wid = getattr(w, 'wid', None)
+        return self.kernel.windows.index(w) if wid is None else wid
+
     def _op_window_def(self, op):
         w = op.results[0]
         if w.reg is None:
@@ -917,7 +1001,7 @@ class CodeGen:
                 f"window {w.name} has no register range",
                 because='whole-program resources are fixed before the walk '
                         '(sec 10.1); call assign_shared() first')
-        self._emit('w.def', f"w{self.kernel.windows.index(w)}",
+        self._emit('w.def', f"w{self._window_id(w)}",
                     f"#{w.reg}", f"#{w.length}",
                     comment=f"v{w.reg}..v{w.reg + w.length - 1}")
 
@@ -1074,7 +1158,7 @@ class CodeGen:
         self._count_operation(bar)
         suffix = {'f16': 'h', 'bf16': 'h', 'i16': 'h', 'f32': 'w', 'i32': 'w',
                   'i8': 'b', 'f8E4M3FN': 'b', 'f8E5M2': 'b'}[op.attrs['dtype']]
-        widx = self.kernel.windows.index(window)
+        widx = self._window_id(window)
         # ISA sec 9A.3: a fully predicated-off asynchronous command still
         # completes once, so the static operation count stays correct under
         # predication. The count above is therefore unconditional.
@@ -1088,6 +1172,11 @@ class CodeGen:
             # runtime trap.
             self.target.require('tensor_transpose',
                                 'emit a transposed t.ld.async')
+            if suffix == 'b':
+                # R41 X8 (HAS_TENSOR_XPOSE=2). An engine without it raises
+                # DESCRIPTOR_FAULT for a 1-byte transposed write.
+                self.target.require('tensor_transpose_8bit',
+                                    'emit a transposed 1-byte t.ld.async')
             suffix += '.t'
         self._emit(f"{mnem}.{suffix}", f"w{widx}", f"d{desc.reg}",
                     f"s{run[0]}", f"s{token.reg}",

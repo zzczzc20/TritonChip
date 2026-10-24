@@ -1,0 +1,2 @@
+tb_axi_bridge seed=41 n=20000 lat=1..40 reorder=1 bp=30% err=1 rst=1 dma=1: 6064 on-chip, 13351 AXI, 585 out of range, 1657 refused, 3035 atomics, 4 resets, 16 dmas, 1501 ARs, 1501 R beats, 185683 cycles: PASS
+tb/fpga/tb_axi_bridge.v:513: $finish called at 1900535000 (1ps)

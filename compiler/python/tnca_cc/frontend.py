@@ -29,6 +29,7 @@ from .diagnostics import Diagnostic
 from .ir import Builder, VECTOR, SCALAR, PRED, make_kernel
 from .tiles import (Affine2D, Tile, TileError, TENSORMAP_BYTES,
                     check_geometry, tensormap_words)
+from .separable import Sep2D, Emitter as _SepEmitter
 
 # TTIR arithmetic -> our binary op names.
 _INT_BIN = {'arith.addi': 'add', 'arith.subi': 'sub', 'arith.muli': 'mul',
@@ -142,6 +143,32 @@ class Unsupported(Diagnostic):
     """A TTIR construct with no TNCA lowering yet."""
 
 
+class _LaneTerm:
+    """The per-lane part of a loop-carried 1-D pointer, as a chain link.
+
+    A carried pointer is a scalar address in a register (`ptr_carry`).
+    What every lane adds to it -- the lane index of `p + arange`, or the
+    general offsets of `p + idx` -- does not fit in that register, and it
+    is loop-invariant unless the loop adds per-lane offsets. It stands in
+    the carried pointer's `_ptr_chain` as this value, which `_address`
+    reads like any other offset: an 'arange' entry for a contiguous
+    pointer, a held index vector for an indexed one.
+    """
+
+    _seq = 0
+
+    def __init__(self, width):
+        _LaneTerm._seq += 1
+        self._id = ('ptr-lane', _LaneTerm._seq)
+        self._type = f'tensor<{width}xi32>'
+
+    def id(self):
+        return self._id
+
+    def get_type(self):
+        return self._type
+
+
 # Integer operations a lane-uniform value keeps through (_uniform_scalar).
 _UNIFORM_SBIN = frozenset({'add', 'sub', 'mul', 'and', 'or', 'xor'})
 
@@ -205,6 +232,12 @@ class TTIRImporter:
         self._byte_offsets = {}   # (offset value, shift) -> byte offset Value
         self._fconst_cache = {}   # (f32 bit pattern, type) -> our Value
         self._affine = {}   # TTIR value id -> Affine2D, for a 2-D index
+        # The extended lowering (aot: a kernel the default lowering cannot
+        # compile is lowered again with this set). Separable indices
+        # (tnca_cc.separable) live here; the default path never makes one.
+        self.large_tiles = False
+        self.ieee_div = False   # option `ieee_div`: IEEE-exact arith.divf everywhere
+        self._sep = {}      # TTIR value id -> Sep2D
         self._ptr2d = {}    # TTIR value id -> (arg name, elem, Affine2D)
         self._tiles = {}    # TTIR value id -> Tile
         # Descriptor loads whose only use is tl.trans, lowered at the trans
@@ -276,6 +309,13 @@ class TTIRImporter:
         # anything that could be inside a loop.
         self._prologue_pos = len(self.b.region.ops)
         self._hoisted = {}
+        # The bases a hoisted map may name: values bound before the prologue.
+        # A pointer formed later (a 2-D splat of `p + k`, a loop-carried or
+        # selected pointer) is defined after it, so a map built at entry
+        # cannot read it; `_origin_const` says which of those are an argument
+        # plus a constant and can be rebuilt there.
+        self._entry_args = {n for n, _v in self._args.values()}
+        self._origin_const = {}
         # Where DCO's registrations go: after the arguments, before anything
         # the kernel loads.
         dco_mark = len(self.b.region.ops)
@@ -300,6 +340,8 @@ class TTIRImporter:
                 source='compiler_overview.md sec 11.1')
         self._float_constants(module, ops)
         self._value_users = self._users(ops)
+        self._value_def = {op.get_result(i).id(): op for op in ops
+                           for i in range(op.get_num_results())}
         self._all_ops = ops
         self._op_pos = {id(o): i for i, o in enumerate(ops)}
         records = [o for o in ops if o.get_name() == 'proton.record']
@@ -354,6 +396,17 @@ class TTIRImporter:
         current_block = None
         entry_caches = {n: dict(getattr(self, n)) for n in
                         ('_scalar_cache', '_fconst_cache', '_byte_offsets')}
+        self.row_split = None
+        if self.large_tiles and not cfg_blocks:
+            # Extended lowering: a program whose rows are independent runs as
+            # a loop over 16-row chunks (row_split), emitted once.
+            from .row_split import plan as _rs_plan, run as _rs_run
+            rs = _rs_plan(self, self._all_ops, self._bodies)
+            if rs is not None:
+                _rs_run(self, rs, [o for o in ops if o.get_name() not in
+                                   ('tt.func', 'builtin.module', 'tt.return')], self._dispatch)
+                ops = [o for o in ops if o.get_name() == 'tt.return']
+                self.row_split = rs.size
 
         for op in ops:
             name = op.get_name()
@@ -678,13 +731,42 @@ class TTIRImporter:
         iv = self._copy_value(lo)
         self._v[block.get_argument(0).id()] = iv
         carried = []
+        carried_lanes = {}      # result index -> (address kind, _LaneTerm)
+        sep_carries = {}        # result index -> (carried scalar, Sep2D of the carry)
+        scalar_shares, shared_scalars = {}, {}
         pointer_tiles = set()
         mask_tiles = set()
+        wide_carry = set()
         for i in range(op.get_num_results()):
             src = op.get_operand(3 + i)
             shape, elem = _parse_type(str(src.get_type()))
+            if elem == 'i64' and shape is not None:
+                # A 64-bit block carried round the loop (a looped int64 scan's
+                # running total, an int64 sum): its low and high words in two
+                # vector registers of their own, assigned by the yield exactly
+                # as any other carry (tnca_cc.wide holds 64-bit blocks so).
+                from .wide import carried_pair
+                pair = tuple(self._copy_value(x) for x in carried_pair(self, src))
+                for dest in (block.get_argument(i + 1), op.get_result(i)):
+                    self._wide[dest.id()] = pair
+                wide_carry.add(i)
+                carried.append(pair)
+                continue
             if isinstance(shape, tuple) and _pointee(elem):
                 name, pelem, offset = self._ptr2d[src.id()]
+                if self.large_tiles and isinstance(offset, (Affine2D, Sep2D)):
+                    # The lane and row parts are loop-invariant registers;
+                    # only what the loop adds is carried, one scalar shared by
+                    # every register chunk of the pointer (separable.py).
+                    result = op.get_result(i)
+                    share = (id(op if not hasattr(op, 'op') else op.op),
+                             getattr(result, 'value', result).id())
+                    sep, delta = self._sep_carry(offset, share)
+                    for dest in (block.get_argument(i + 1), result):
+                        self._ptr2d[dest.id()] = (name, pelem, sep)
+                    sep_carries[i] = (delta, sep, share)
+                    carried.append(delta)
+                    continue
                 val = self._materialise(self._offset_row(offset), shape[0], shape[1], 'i32')
                 for dest in (block.get_argument(i + 1), op.get_result(i)):
                     self._ptr2d[dest.id()] = (name, pelem, val)
@@ -726,12 +808,33 @@ class TTIRImporter:
                 self._tiles[op.get_result(i).id()] = val
             else:
                 pointer = _pointee(elem)
-                init = self._address(src)[0] if pointer else self._value(src)
+                lane = None
+                if pointer:
+                    init, _size, _pelem, akind, index = self._address(src)
+                    if akind in ('contiguous', 'indexed'):
+                        # A pointer tensor whose lanes differ: the scalar
+                        # carries the common address, and the lane offsets
+                        # ride along in the chain (_LaneTerm). Carrying the
+                        # scalar alone made every lane load lane 0's address.
+                        lane = (akind, index)
+                else:
+                    init = self._value(src)
                 if elem == 'i1':
                     # A mask is carried in a predicate register whatever its
                     # initial value arrived as (`dense<false>` is a vector).
                     init = self._as_pred(init)
-                val = self._copy_value(init)
+                share = None
+                if self.large_tiles and pointer and hasattr(op, 'op'):
+                    # Register chunks of one pointer with one scalar address
+                    # carry it once (their lane offsets differ, not it).
+                    result = op.get_result(i)
+                    share = ('ptr', id(op.op), getattr(result, 'value', result).id(), id(init))
+                    val = scalar_shares.get(share)
+                    if val is None:
+                        val = scalar_shares[share] = self._copy_value(init)
+                    shared_scalars[i] = share
+                else:
+                    val = self._copy_value(init)
                 self._v[block.get_argument(i + 1).id()] = val
                 self._v[op.get_result(i).id()] = val
                 if pointer:
@@ -739,6 +842,19 @@ class TTIRImporter:
                     self._args[len(self._args)] = (name, val)
                     for dest in (block.get_argument(i + 1), op.get_result(i)):
                         self._ptr_base[dest.id()] = (name, pointer)
+                    if lane is not None:
+                        akind, index = lane
+                        term = _LaneTerm(shape if isinstance(shape, int) else self.target.vlen)
+                        if akind == 'contiguous':
+                            self._offsets[term.id()] = ('arange', None)
+                            self._v[term.id()] = self.b.arange()
+                        else:
+                            # Loop-invariant unless the loop adds per-lane
+                            # offsets, which the yield refuses.
+                            self._v[term.id()] = index
+                        for dest in (block.get_argument(i + 1), op.get_result(i)):
+                            self._ptr_chain[dest.id()] = [term]
+                        carried_lanes[i] = (akind, term)
             carried.append(val)
         start, end = self._control_label('for'), self._control_label('endfor')
         # A loop may execute zero times. Constants cached inside its body
@@ -754,14 +870,33 @@ class TTIRImporter:
             if name == 'scf.yield':
                 # Snapshot every yielded value before assigning any carry;
                 # parallel SSA updates include swaps and cross-dependencies.
-                values = []
-                for i, dst in enumerate(carried):
+                values = [None] * len(carried)
+                lane_updates = []
+                yielded_shares = set()
+                order = range(len(carried))
+                if self.large_tiles:
+                    # Tiles first: the scalar snapshots then live for a few
+                    # instructions instead of across every tile's rows.
+                    order = sorted(order, key=lambda i: not isinstance(carried[i], Tile))
+                for i in order:
+                    dst = carried[i]
                     src = inner.get_operand(i)
+                    if i in wide_carry:
+                        from .wide import carried_pair
+                        values[i] = tuple(self._copy_value(x) for x in carried_pair(self, src))
+                        continue
+                    if i in sep_carries:
+                        delta, carried_sep, share = sep_carries[i]
+                        if share in yielded_shares:
+                            continue     # the same scalar, already advanced
+                        yielded_shares.add(share)
+                        values[i] = self._copy_value(
+                            self._sep_advance(self._ptr2d[src.id()][2], delta, carried_sep))
+                        continue
                     held = self._tiles.get(src.id())
                     if self.index_opt and isinstance(dst, Tile) and held is not None \
                             and held.kind == dst.kind == 'accumulator' and held.handle is dst.handle:
                         # Already where the carry lives (_fuse_dot_add).
-                        values.append(None)
                         continue
                     if isinstance(dst, Tile):
                         if i in pointer_tiles:
@@ -772,17 +907,45 @@ class TTIRImporter:
                                 self._as_pred(mget(r)), self.b.vmovi(1), self.b.vmovi(0)))
                         else:
                             get = self._tile_row_getter(self._tile_of(src))
-                        values.append(self._materialise(get, dst.rows, dst.cols, dst.dtype))
+                        values[i] = self._materialise(get, dst.rows, dst.cols, dst.dtype)
                     else:
                         _, elem = _parse_type(str(src.get_type()))
-                        v = self._address(src)[0] if _pointee(elem) else self._value(src)
+                        if _pointee(elem):
+                            v, _size, _pelem, akind, index = self._address(src)
+                            lane = carried_lanes.get(i)
+                            if lane is None and akind != 'broadcast':
+                                raise Unsupported(
+                                    'a loop-carried pointer that becomes lane-varying in the loop',
+                                    because='its initial value has the same address in every lane',
+                                    remedy='add the per-lane offsets before the loop')
+                            if lane is not None:
+                                if lane[0] == 'contiguous' and akind != 'contiguous':
+                                    raise Unsupported(
+                                        'a loop-carried contiguous pointer advanced by per-lane offsets',
+                                        remedy='advance it by a lane-uniform amount')
+                                held = self._v[lane[1].id()]
+                                if akind == 'indexed' and index is not held:
+                                    raise Unsupported(
+                                        'a loop-carried pointer advanced by per-lane offsets',
+                                        remedy='advance it by a lane-uniform amount')
+                        else:
+                            v = self._value(src)
                         if elem == 'i1':
                             v = self._as_pred(v)
-                        values.append(self._copy_value(v))
-                for dst, src in zip(carried, values):
+                        if i in shared_scalars:
+                            if shared_scalars[i] in yielded_shares:
+                                continue
+                            yielded_shares.add(shared_scalars[i])
+                        values[i] = self._copy_value(v)
+                for held, index in lane_updates:
+                    self.b._emit('assign', [], [held, index])
+                for i, (dst, src) in enumerate(zip(carried, values)):
                     if src is None:
                         continue
-                    if isinstance(dst, Tile):
+                    if i in wide_carry:
+                        for d, v in zip(dst, src):
+                            self.b._emit('assign', [], [d, v])
+                    elif isinstance(dst, Tile):
                         get = self._tile_row_getter(src)
                         for r in range(dst.rows):
                             if dst.kind == 'spilled':
@@ -1748,7 +1911,9 @@ class TTIRImporter:
         rid = op.get_result(0).id()
         self._offsets[rid] = ('arange' if not start else 'indexed', None)
         if start and self.index_opt and getattr(op, '_register_chunk', False):
-            self._uscalar[rid] = self._const_scalar(start)
+            # The extended lowering keeps the start as a number until an
+            # address or an index needs it (frontend._address folds it).
+            self._uscalar[rid] = start if self.large_tiles else self._const_scalar(start)
             self._offsets[rid] = ('contiguous', rid)
 
     def _op_tt_splat(self, op):
@@ -1768,15 +1933,25 @@ class TTIRImporter:
                     address, _, _, kind, _ = self._address(src)
                     if kind != 'broadcast':
                         raise Unsupported('2-D splat of a lane-varying pointer')
+                    origin = self._constant_origin(src.id(), name, pelem)
                     name = self._control_label('ptr_origin')
                     self._args[len(self._args)] = (name, address)
+                    if origin is not None:
+                        self._origin_const[name] = origin
                 self._ptr2d[rid] = (name, pelem, Affine2D())
                 return
             if elem.startswith('f'):
                 # `sm_scale` over the whole tile. Broadcast once; every
                 # row names the same register.
                 held = self._value(src)
-                v = self._broadcast_scalar(held, elem)
+                if self.large_tiles and held.kind == SCALAR:
+                    # One broadcast register for every register chunk.
+                    key = ('splat', id(held), elem)
+                    v = self._aff_cache.get(key)
+                    if v is None:
+                        v = self._aff_cache[key] = self._broadcast_scalar(held, elem)
+                else:
+                    v = self._broadcast_scalar(held, elem)
                 # A scalar register is splatted; a vector one is used as held.
                 self._tiles[rid] = Tile('lazy', lambda r: v, shape[0],
                                         shape[1], elem, replicated=held.kind == SCALAR)
@@ -1890,6 +2065,16 @@ class TTIRImporter:
         if self.index_opt and self._contiguous_div(op, remainder, divisor_const):
             return
         rshape, relem = _parse_type(str(op.get_result(0).get_type()))
+        if rshape is None and relem == 'i64':
+            # GEMM's INDEX_DTYPE also widens scalar grid arithmetic. Keep
+            # it in scalar registers; the vector divider is only 32 bits.
+            from .wide import _divide, _divide_dynamic
+            n = self._value(op.get_operand(0))
+            self._v[op.get_result(0).id()] = (
+                _divide(self.b, n, divisor_const, signed, remainder)
+                if divisor_const is not None and 0 < divisor_const < (1 << 63) else
+                _divide_dynamic(self, n, self._value(op.get_operand(1)), signed, remainder))
+            return
         if self.index_opt and rshape is None and relem in ('i32', 'i16', 'i8'):
             self._v[op.get_result(0).id()] = self._scalar_divide(
                 self._value(op.get_operand(0)), self._value(op.get_operand(1)),
@@ -2288,6 +2473,11 @@ class TTIRImporter:
             self._tiles[op.get_result(0).id()] = tile
             return
         kind, key = self._offsets.get(src.id(), (None, None))
+        if self.large_tiles and kind not in ('arange', 'contiguous'):
+            sep = self._sep_expand(src, op.get_int_attr('axis'))
+            if sep is not None:
+                self._sep[op.get_result(0).id()] = sep
+                return
         if self.index_opt and kind == 'contiguous':
             # `u + arange` along the new axis: an index, not data. Taking it
             # apart lane by lane (below) turned a matmul template's rows into
@@ -2361,6 +2551,9 @@ class TTIRImporter:
             else:
                 self._v[rid] = self.b.splat(self.b.vextract(v, 0, dtype=selem), dtype=selem)
             return
+        if self.large_tiles and src.id() in self._sep:
+            self._sep[rid] = self._sep[src.id()]
+            return
         tile = self._tiles.get(src.id())
         if tile is not None:
             shape, elem = _parse_type(str(op.get_result(0).get_type()))
@@ -2421,6 +2614,594 @@ class TTIRImporter:
                     'register across a tile, which is a real data movement '
                     'and not the index bookkeeping this recognises')
 
+    # ---- separable 2-D indices (extended lowering) -------------------------
+    def _sep_of(self, value):
+        """The Sep2D a 2-D integer value denotes, or None."""
+        sep = self._sep.get(value.id())
+        if sep is not None:
+            return sep
+        aff = self._affine_of(value)
+        return Sep2D.from_affine(aff) if aff is not None else None
+
+    def _sep_expand(self, src, axis):
+        """`v[:, None]` / `v[None, :]` of a 1-D integer value that is data
+        (a remainder, a gathered index): its lanes become the rows or the
+        columns of a separable index."""
+        _shape, elem = _parse_type(str(src.get_type()))
+        if not elem.startswith('i') or elem in ('i1', 'i64'):
+            return None
+        sc = self._uniform_scalar(src)
+        if sc is not None:
+            return Sep2D([('one', None, 1, (sc,))])
+        try:
+            v = self._value(src)
+        except Unsupported:
+            return None
+        if getattr(v, 'kind', None) != VECTOR:
+            return None
+        return Sep2D([('rowvec' if axis == 1 else 'colvec', v, 1, ())])
+
+    def _sep_factor(self, q):
+        """A scalar-only Sep2D as (int, runtime factors)."""
+        if len(q.terms) == 1:
+            _kind, _v, k, scalars = q.terms[0]
+            return k, scalars
+        total = _SepEmitter(self).scalar(q, 0)
+        return (total, ()) if isinstance(total, int) else (1, (total,))
+
+    def _try_sep(self, op, kind):
+        shape, _elem = _parse_type(str(op.get_result(0).get_type()))
+        if not isinstance(shape, tuple) or kind not in ('add', 'sub', 'mul'):
+            return False
+        x, y = op.get_operand(0), op.get_operand(1)
+        involved = x.id() in self._sep or y.id() in self._sep
+        if not involved and kind != 'mul':
+            return False
+        a, b = self._sep_of(x), self._sep_of(y)
+        if a is None or b is None:
+            return False
+        rid = op.get_result(0).id()
+        if kind == 'add':
+            self._sep[rid] = a.plus(b)
+            return True
+        if kind == 'sub':
+            self._sep[rid] = a.plus(b.scaled(-1))
+            return True
+        for p, q in ((a, b), (b, a)):
+            if q.scalar_only() and q.terms:
+                if not involved and not any(t[3] for t in q.terms):
+                    return False        # an affine index times a constant: Affine2D's
+                k, scalars = self._sep_factor(q)
+                self._sep[rid] = p.scaled(k, scalars)
+                return True
+        return False
+
+    def _try_sep_addptr(self, rid, base, offs):
+        add = self._sep.get(offs.id())
+        prev = self._ptr2d.get(base.id())
+        if add is None and not (prev is not None and isinstance(prev[2], Sep2D)):
+            return False
+        if prev is None:
+            spec = self._ptr_base.get(base.id())
+            if spec is None:
+                return False
+            name, elem = spec
+            acc = Sep2D()
+        else:
+            name, elem, acc = prev
+            if isinstance(acc, Affine2D):
+                acc = Sep2D.from_affine(acc)
+            elif not isinstance(acc, Sep2D):
+                return False
+        if add is None:
+            add = self._sep_of(offs)
+            if add is None:
+                return False
+        self._ptr2d[rid] = (name, elem, acc.plus(add))
+        return True
+
+    def _sep_address(self, em, base, sep, r, esize):
+        off = em.scalar(sep, r, scale=esize)
+        if isinstance(off, int):
+            return base if off == 0 else self.b.sbini('add', base, off)
+        return self.b.sbin('add', base, off)
+
+    def _sep_load(self, op, name, elem, sep, shape):
+        """A 2-D load through a separable index: per row, one scalar address,
+        then a predicated vector load (contiguous lanes) or a gather."""
+        rows, cols = shape
+        esize = self._ELEM_BYTES[elem]
+        em = _SepEmitter(self)
+        base = self._arg_value(name)
+        lanes = em.lanes(sep)
+        if lanes is not None:
+            self.target.require('gather_scatter', 'emit v.ld.gather')
+        get_mask = (self._row_getter(op.get_operand(1), rows, 'i1')
+                    if op.get_num_operands() > 1 else (lambda r: None))
+        other = self._const.get(op.get_operand(2).id(), 0) if op.get_num_operands() > 2 else 0
+        size = _load_suffix(_SIZE_SUFFIX[esize], elem)
+
+        loads = getattr(self, '_sep_loads', None)
+        if loads is None:
+            loads = self._sep_loads = {}
+        loads[op.get_result(0).id()] = (name, elem, sep)
+
+        def row(r):
+            at = self._sep_address(em, base, sep, r, esize)
+            mask = self._shape_mask(cols, get_mask(r))
+            if lanes is None:
+                return self.b.load(at, mask=mask, other=other, dtype=elem, size=size)
+            return self.b.gather(at, lanes, mask=mask, other=other, dtype=elem, size=size)
+        if self._deferrable(op):
+            return Tile('lazy', row, rows, cols, elem)
+        return self._materialise(row, rows, cols, elem)
+
+    def _sep_store(self, op, name, elem, sep, shape, tile):
+        rows, cols = shape
+        esize = self._ELEM_BYTES[elem]
+        em = _SepEmitter(self)
+        base = self._arg_value(name)
+        lanes = em.lanes(sep)
+        if lanes is not None:
+            self.target.require('gather_scatter', 'emit v.st.scatter')
+        get = self._tile_row_getter(tile)
+        get_mask = (self._row_getter(op.get_operand(2), rows, 'i1')
+                    if op.get_num_operands() > 2 else (lambda r: None))
+        for r in range(rows):
+            v = get(r)
+            if elem != tile.store:
+                v = self.b.vcvt(tile.store, elem, v)
+            at = self._sep_address(em, base, sep, r, esize)
+            mask = self._shape_mask(cols, get_mask(r))
+            if lanes is None:
+                self.b.store(at, v, mask=mask, size=_SIZE_SUFFIX[esize])
+            else:
+                self.b.scatter(at, lanes, v, mask=mask, size=_SIZE_SUFFIX[esize])
+
+    # ---- the swapped FP8 dot (extended lowering) ---------------------------
+    def _ttir_def(self, value):
+        return self._value_def.get(value.id())
+
+    def _row_index(self, v):
+        """(c, [scalar TTIR values]) with v[r] = r + c + sum(scalars) down the
+        rows of a [R, 1]/[R, C] or 1-D index, or None."""
+        d = self._ttir_def(v)
+        if d is None:
+            return None
+        name = d.get_name()
+        if name == 'tt.make_range':
+            return (d.get_int_attr('start') or 0, [])
+        if name == 'tt.broadcast' or (name == 'tt.expand_dims' and d.get_int_attr('axis') == 1):
+            return self._row_index(d.get_operand(0))
+        if name == 'arith.addi':
+            for x, y in ((d.get_operand(0), d.get_operand(1)), (d.get_operand(1), d.get_operand(0))):
+                ri, u = self._row_index(x), self._uniform_index(y)
+                if ri is not None and u is not None:
+                    return (ri[0] + u[0], ri[1] + u[1])
+        return None
+
+    def _uniform_index(self, v):
+        """(c, [scalar TTIR values]) for an integer tensor equal everywhere."""
+        k = self._scalar_const(v.id())
+        if k is not None:
+            return (k, [])
+        pending = self._pending_const.get(v.id())
+        if pending is not None and pending[0] in ('tile', 'vector') and str(pending[2]).startswith('i'):
+            return (int(pending[1]), [])
+        d = self._ttir_def(v)
+        if d is None:
+            return None
+        name = d.get_name()
+        if name == 'tt.splat':
+            src = d.get_operand(0)
+            k = self._scalar_const(src.id())
+            return (k, []) if k is not None else (0, [src])
+        if name in ('tt.broadcast', 'tt.expand_dims'):
+            return self._uniform_index(d.get_operand(0))
+        if name == 'arith.addi':
+            x, y = (self._uniform_index(d.get_operand(i)) for i in (0, 1))
+            if x is not None and y is not None:
+                return (x[0] + y[0], x[1] + y[1])
+        return None
+
+    def _row_limit(self, load):
+        """For a load masked by `row < bound` (any broadcast of it), the
+        scalar L with row r valid iff r < L; 'all' when unmasked; None when
+        the mask is anything else or `other` is not zero."""
+        if load.get_num_operands() < 2:
+            return 'all'
+        if load.get_num_operands() > 2:
+            other = load.get_operand(2)
+            val = self._const.get(other.id())
+            if val is None:
+                oid = other.id()
+                pend = (self._pending_const.get(oid) or
+                        self._pending_const.get(('register-chunk', oid, 0)) or
+                        self._pending_const.get(('register-row-chunk', oid, 0, 0)))
+                val = pend[1] if pend is not None else self._constant_value(self._ttir_def(other))
+            try:
+                if float(val) != 0.0:
+                    self._swap_no(('limit', 11)); return None
+            except (TypeError, ValueError):
+                self._swap_no(('limit', 12, repr(val), other.id() in self._pending_const)); return None
+        m = load.get_operand(1)
+        d = self._ttir_def(m)
+        while d is not None and d.get_name() == 'tt.broadcast':
+            m = d.get_operand(0)
+            d = self._ttir_def(m)
+        if d is None or d.get_name() != 'arith.cmpi':
+            self._swap_no(('limit', 2)); return None
+        pred = d.get_int_attr('predicate')
+        if pred not in (2, 3):                    # slt, sle
+            self._swap_no(('limit', 3)); return None
+        ri, bound = self._row_index(d.get_operand(0)), self._uniform_index(d.get_operand(1))
+        if ri is None or bound is None:
+            self._swap_no(('limit', 4)); return None
+        limit = self._const_scalar(bound[0] - ri[0] + (1 if pred == 3 else 0))
+        for x in bound[1]:
+            limit = self.b.sbin('add', limit, self._value(x))
+        for x in ri[1]:
+            limit = self.b.sbin('sub', limit, self._value(x))
+        return limit
+
+    def _swapped_dot(self, op):
+        """`tl.dot(a, b)` with FP8 operands, b a K-contiguous tile in memory
+        (a weight W[n, k] read as b[k, n]) and a computed: as C^T = B^T A^T.
+
+        A column-major FP8 B has no transposed transfer (the engine's
+        transposed write is 16-bit only), so as an MMA B operand it is one
+        gather and one byte store per K row. As the A operand of the
+        transposed product, each of its sixteen rows is one contiguous
+        64-byte vector load -- a fragment row is one register. A, computed
+        in the vector unit anyway, is scattered into the B-operand layout.
+        Every product is exact and each column of C^T accumulates in
+        ascending K, so C^T is C transposed bit for bit (sec 9C.1); it is
+        written back transposed into scratch rows. Returns False to leave
+        the dot to the ordinary lowering.
+        """
+        a_val, b_val, c_val = (op.get_operand(i) for i in range(3))
+        (m, k), ae = _parse_type(str(a_val.get_type()))
+        (k2, n), be = _parse_type(str(b_val.get_type()))
+        vlen = self.target.vlen
+        if (ae != be or ae not in _FP8_FORMATS or m != vlen or k != k2 or k <= vlen
+                or n % vlen):
+            return self._swap_no(1)
+        cz = self._pending_const.get(c_val.id()) or \
+            self._pending_const.get(('register-chunk', c_val.id(), 0))
+        if cz is None or float(cz[1]) != 0.0:
+            return self._swap_no('c')
+        # K32 steps: an A^T and a B^T fragment of eight registers each, so the
+        # two windows leave 48 vector registers to everything else.
+        steps = [int(x[1:]) for x in self.target.mma['k_steps']
+                 if k % int(x[1:]) == 0 and int(x[1:]) <= 32]
+        if not steps:
+            return self._swap_no(2)
+        step = max(steps)
+        load = self._ttir_def(b_val)
+        if load is None or load.get_name() != 'tt.load' or \
+                len(self._value_users.get(b_val.id(), [])) != 1:
+            return self._swap_no(3)
+        nchunks, kchunks = n // vlen, k // vlen
+        loads = getattr(self, '_sep_loads', {})
+
+        def b_sep(rc, j):
+            vid = ('register-row-chunk', b_val.id(), rc, j) if n > vlen else \
+                ('register-row-chunk', b_val.id(), rc, 0)
+            return loads.get(vid)
+        seps = {(rc, j): b_sep(rc, j) for rc in range(kchunks) for j in range(nchunks)}
+        if any(v is None for v in seps.values()):
+            return self._swap_no(4)
+        for (_rc, _j), (_name, _elem, sep) in seps.items():
+            if any(t[0] == 'rowvec' or (t[0] == 'row' and (t[2] != 1 or t[3])) for t in sep.row_terms()):
+                return self._swap_no(5)
+            if not any(t[0] == 'row' for t in sep.row_terms()):
+                return self._swap_no(6)
+        a_parts = [self._tiles.get(('register-chunk', a_val.id(), c)) for c in range(kchunks)]
+        if any(p is None for p in a_parts):
+            return self._swap_no(7)
+        limit = self._row_limit(load)
+        if limit is None:
+            return self._swap_no(8)
+        if (self.target.has('tensor_transpose_8bit')
+                and self._x8_dot(op, seps, a_parts, limit, ae, m, k, n, step)):
+            return True
+        b = self.b
+        em = _SepEmitter(self)
+        name = seps[(0, 0)][0]
+        base = self._arg_value(name)
+        self.b.comment(f"tl.dot {m}x{k} by {k}x{n} FP8 as (B^T A^T)^T: B^T rows are "
+                       "contiguous loads, A is scattered into the MMA B operand")
+        lane_vecs = [em.lanes(seps[(0, j)][2]) for j in range(nchunks)]
+        lane16 = b.vbin('mul', b.arange(), b.splat(b.const(16), dtype='i32'), dtype='i32')
+        # A B^T fragment row is `step` bytes: W words, R rows a register.
+        words = step // 4
+        per_reg = vlen // words
+        lane4 = b.vbin('shl', b.vbin('and', b.arange(), b.vmovi(words - 1), dtype='i32'),
+                       b.vmovi(2), dtype='i32')
+        sub_rows = [None] if per_reg == 1 else [
+            b.vcmp('eq', b.vbin('lshr', b.arange(), b.vmovi(words.bit_length() - 1), dtype='i32'),
+                   b.vmovi(q)) for q in range(per_reg)]
+        accs = []
+        for j in range(nchunks):
+            acc = b.accumulator(name=f"acc{len(self.kernel.accumulators)}")
+            b.acc_zero(acc)
+            accs.append(acc)
+        col_addr = {}
+        for s0 in range(0, k, step):
+            # A^T for this K step: element (k, m) at k*16 + m.
+            at_addr = self._spill_region(step * vlen)
+            for c in range(step // vlen):
+                part = a_parts[s0 // vlen + c]
+                get = self._tile_row_getter(part)
+                for r in range(vlen):
+                    v = get(r)
+                    if part.store != ae:
+                        v = b.vcvt(part.store, ae, v)
+                    b.scatter(b.sbini('add', at_addr, c * vlen * vlen + r), lane16, v, size='b')
+            b.fence()
+            at_win = self._window_for(step, vlen, ae)
+            for i in range(at_win.length):
+                b.window_put(at_win, i, b.load(at_addr if i == 0 else b.sbini('add', at_addr, i * 64),
+                                               dtype='i32', size='w'))
+            at_tile = Tile('window', at_win, step, vlen, ae)
+            # Rows s0 .. s0+step of the block that the mask keeps: whole words
+            # load, a partial last word is masked to its bytes.
+            if limit == 'all':
+                wmask = keep = None
+            else:
+                valid = b.sbini('add', limit, -s0)
+                d = b.vbin('sub', b.splat(valid, dtype='i32'), lane4, dtype='i32')
+                wmask = b.vcmp('gt', d, b.vmovi(0))
+                t = b.vbin('min', b.vbin('max', d, b.vmovi(0), dtype='i32'), b.vmovi(4), dtype='i32')
+                part_bits = b.vbin('sub', b.vbin('shl', b.vmovi(1),
+                                                 b.vbin('shl', t, b.vmovi(3), dtype='i32'), dtype='i32'),
+                                   b.vmovi(1), dtype='i32')
+                keep = b.vselect(b.vcmp('ge', t, b.vmovi(4)), b.vmovi(-1), part_bits)
+            for j in range(nchunks):
+                _name, _elem, sep = seps[(s0 // vlen, j)]
+                row0 = em.scalar(Sep2D(sep.row_terms()), 0, scale=1)
+                start = base if row0 == 0 else (b.sbini('add', base, row0) if isinstance(row0, int)
+                                               else b.sbin('add', base, row0))
+                bt_win = self._window_for(vlen, step, ae)
+                lv = lane_vecs[j]
+                for i in range(bt_win.length):
+                    v = None
+                    for q in range(per_reg):
+                        row = i * per_reg + q
+                        at = b.sbin('add', start, b.vextract(lv, row)) if lv is not None else \
+                            (start if row == 0 else b.sbini('add', start, row))
+                        if q:
+                            # lane l of this register reads word l - q*W of the row
+                            at = b.sbini('add', at, -4 * words * q)
+                        mask = sub_rows[q]
+                        if wmask is not None:
+                            mask = wmask if mask is None else b.pbin('and', mask, wmask)
+                        part = b.load(at, mask=mask, other=0, dtype='i32', size='w')
+                        v = part if v is None else b.vbin('or', v, part, dtype='i32')
+                    if keep is not None:
+                        v = b.vbin('and', v, keep, dtype='i32')
+                    b.window_put(bt_win, i, v)
+                self._mma_into(accs[j], Tile('window', bt_win, vlen, step, ae), at_tile)
+        for j, acc in enumerate(accs):
+            off = self._take_scratch(vlen * vlen * 4)
+            addr = b.sbini('add', self._scratch_base(), off)
+            for i in range(vlen):
+                b.scatter(addr if i == 0 else b.sbini('add', addr, 4 * i), lane16,
+                          b.acc_read(acc, b.const(i)), size='w')
+            b.fence()
+            rid = ('register-chunk', op.get_result(0).id(), j) if n > vlen else op.get_result(0).id()
+            self._tiles[rid] = Tile('spilled', off, vlen, vlen, 'f32')
+        self._swapped_dots = getattr(self, '_swapped_dots', 0) + 1
+        return True
+
+    def _x8_dot(self, op, seps, a_parts, limit, ae, m, k, n, step):
+        """The same FP8 dot as `_swapped_dot` -- a computed A, a K-contiguous
+        B (W[n, k] read as b[k, n]) -- on an engine with the 1-byte
+        transposed write (R41 X8, `tensor_transpose_8bit`), as C = A B.
+
+        W's rows are a plain tile U[n, k] (row stride S, contiguous); the
+        engine writes it transposed, which is the MMA B fragment, one
+        `t.ld.async.b.t` per K step and column chunk. A goes into the A
+        window row by row (contiguous byte stores, no scatter), and C comes
+        out of the accumulators row by row. Every product is exact and each
+        column accumulates in ascending K, exactly as in the swapped form,
+        so the result is bit for bit the same.
+
+        A chunk is one transfer only when its 16 column indices are c..c+15:
+        the index is data (`offs_bn % N` wraps in the last block), so that is
+        checked at run time, once per call and per chunk; a chunk that wraps
+        gathers its K rows into scratch instead (a guarded loop) and moves
+        that tile plainly. Masked K rows read as zero either way (extent /
+        masked gather). Returns False -- before emitting anything the
+        swapped form would not -- when the index is not of that form.
+        """
+        b, vlen = self.b, self.target.vlen
+        if step % vlen or k % step:
+            return False
+        nchunks = n // vlen
+        em = _SepEmitter(self)
+        # W[n, k] with n a column index vector times one row stride S.
+        lane = seps[(0, 0)][2].lane_terms()
+        if len(lane) != 1 or lane[0][0] != 'colvec':
+            return self._swap_no('x8 lanes')
+        cols = []
+        for j in range(nchunks):
+            t = seps[(0, j)][2].lane_terms()
+            if (len(t) != 1 or t[0][0] != 'colvec'
+                    or em._fold(t[0][2], t[0][3]) != em._fold(lane[0][2], lane[0][3])):
+                return self._swap_no('x8 lanes')
+            cols.append(t[0][1])
+        name = seps[(0, 0)][0]
+        base = self._arg_value(name)
+        stride = em._factor(lane[0][2], lane[0][3])         # W's row stride, bytes
+        # Everything a branch arm uses is computed here, before any branch:
+        # the importer's index caches must not hand an arm a value the other
+        # arm defined.
+        # Row 0 of chunk (rc, j) must be row 0 of chunk (0, 0) plus rc*vlen,
+        # symbolically (the swapped form assumes the same of its rows).
+        def terms(sep):
+            out = {}
+            for kind, v, c, sc in sep.row_terms():
+                c, sc = em._fold(c, sc)                      # known scalars are numbers
+                key = (kind, id(v), tuple(sorted(id(x) for x in sc)))
+                out[key] = out.get(key, 0) + c
+            return out
+        t00 = terms(seps[(0, 0)][2])
+        for rc in sorted({s0 // vlen for s0 in range(0, k, step)}):
+            for j in range(nchunks):
+                t = terms(seps[(rc, j)][2])
+                diff = {key: t.get(key, 0) - t00.get(key, 0) for key in set(t) | set(t00)}
+                one = ('one', id(None), ())
+                if any(c for key, c in diff.items() if key != one) or diff.get(one, 0) != rc * vlen:
+                    return self._swap_no(f'x8 rows {rc},{j}: {diff}')
+        lane_vecs = [em.lanes(seps[(0, j)][2]) for j in range(nchunks)]
+        if any(lv is None for lv in lane_vecs):
+            return False
+        self.b.comment(f"tl.dot {m}x{k} by {k}x{n} FP8, B as W's rows written transposed "
+                       "by the engine (ISA sec 9E, tensor_transpose_8bit)")
+        r00 = em.scalar(Sep2D(seps[(0, 0)][2].row_terms()), 0, scale=1)
+
+        def at(off):
+            return base if off == 0 else (b.sbini('add', base, off) if isinstance(off, int)
+                                          else b.sbin('add', base, off))
+        scratch = self._scratch_base()
+        # Run-time check, once per call: chunk j's lanes are column indices
+        # c_j + lane (W rows c_j .. c_j+15, so one transfer at row c_j) --
+        # false where `offs_bn % N` wraps inside the chunk. Lane j of `oks`
+        # says so, lane j of `rows` is c_j.
+        oks, rows = b.vmovi(0), b.vmovi(0)
+        ramp = b.arange()
+        ok_lim = None if limit == 'all' else b.scmp('ge', limit, b.const(0))
+        for j, v in enumerate(cols):
+            c0 = b.vextract(v, 0)
+            d = b.vbin('sub', v, b.vbin('add', b.splat(c0, dtype='i32'), ramp, dtype='i32'), dtype='i32')
+            ok = b.sbin('and', b.scmp('eq', b.reduce('or', d, dtype='i32'), b.const(0)),
+                        b.scmp('ge', c0, b.const(0)))
+            if ok_lim is not None:
+                ok = b.sbin('and', ok, ok_lim)
+            b.vinsert(oks, j, ok)
+            b.vinsert(rows, j, c0)
+        desc = self._build_descriptor(
+            base=at(r00), elem=ae, extents=[self._OPEN_EXTENT, k if limit == 'all' else limit],
+            byte_strides=[stride, 1], block_shape=[vlen, step],
+            what="W's rows for a transposed FP8 B", check=isinstance(stride, int))
+        fill_off = self._take_scratch(step * vlen)
+        fill_desc = self._build_descriptor(
+            base=b.sbini('add', scratch, fill_off), elem=ae, extents=[step, vlen], byte_strides=[vlen, 1],
+            block_shape=[step, vlen], what='the gathered fallback B tile')
+        accs = []
+        for j in range(nchunks):
+            acc = b.accumulator(name=f"acc{len(self.kernel.accumulators)}")
+            b.acc_zero(acc)
+            accs.append(acc)
+        for s0 in range(0, k, step):
+            rc = s0 // vlen
+            # A for this K step, row-major: element (m, k) at m*step + k.
+            a_addr = self._spill_region(step * vlen)
+            for c in range(step // vlen):
+                part = a_parts[rc + c]
+                get = self._tile_row_getter(part)
+                for r in range(vlen):
+                    v = get(r)
+                    if part.store != ae:
+                        v = b.vcvt(part.store, ae, v)
+                    b.store(b.sbini('add', a_addr, r * step + c * vlen), v, size='b')
+            b.fence()
+            a_win = self._window_for(vlen, step, ae)
+            for i in range(a_win.length):
+                b.window_put(a_win, i, b.load(a_addr if i == 0 else b.sbini('add', a_addr, i * 64),
+                                              dtype='i32', size='w'))
+            a_tile = Tile('window', a_win, vlen, step, ae)
+            for j in range(nchunks):
+                b_win = self._window_for(step, vlen, ae)
+                # Fallback, skipped when the rows are affine: B[kk, :] is one
+                # byte gather of W's column kk into scratch, then a plain
+                # tile transfer. Both transfers are issued, each predicated
+                # (a predicated-off command completes, ISA sec 9A.3).
+                ok = b.vextract(oks, j)
+                done = self._control_label('x8dot_done')
+                b.branch_nz(ok, done)
+                kk = self._copy_value(b.const(0))
+                # The arm's scalars are formed inside it, so none is live
+                # across the whole dot.
+                row = at(r00) if s0 == 0 else b.sbini('add', at(r00), s0)
+                fill = b.sbini('add', scratch, fill_off)
+                with b.loop(kk, step, self._control_label('x8dot_row')):
+                    src = b.sbin('add', row, kk)
+                    mask = None
+                    if limit != 'all':
+                        left = b.sbin('sub', b.sbini('add', limit, -s0), kk)
+                        mask = b.vcmp('gt', b.splat(left, dtype='i32'), b.vmovi(0))
+                    g = b.gather(src, lane_vecs[j], mask=mask, other=0, dtype='i32', size='b')
+                    b.store(b.sbin('add', fill, b.sbini('shl', kk, (vlen - 1).bit_length())), g, size='b')
+                    b.fence()
+                b.label(done)
+                bar = b.barrier(name=f"fill{len(self.kernel.barriers)}")
+                tok = b.barrier_arm(bar, arrivals=0, ops=2)
+                fast_p = b.vcmp('ne', b.splat(ok, dtype='i32'), b.vmovi(0))
+                slow_p = b.vcmp('eq', b.splat(ok, dtype='i32'), b.vmovi(0))
+                b.dma_load(b_win, fill_desc.value, [b.const(0), b.const(0)], tok, dtype=ae, mask=slow_p)
+                b.dma_load(b_win, desc.value, [b.vextract(rows, j), b.const(s0)], tok,
+                           dtype=ae, transpose=True, mask=fast_p)
+                b.barrier_wait(tok)
+                self._mma_into(accs[j], a_tile, Tile('window', b_win, step, vlen, ae))
+        for j, acc in enumerate(accs):
+            off = self._take_scratch(vlen * vlen * 4)
+            addr = b.sbini('add', scratch, off)
+            for i in range(vlen):
+                b.store(addr if i == 0 else b.sbini('add', addr, 4 * vlen * i),
+                        b.acc_read(acc, b.const(i)), size='w')
+            b.fence()
+            rid = ('register-chunk', op.get_result(0).id(), j) if n > vlen else op.get_result(0).id()
+            self._tiles[rid] = Tile('spilled', off, vlen, vlen, 'f32')
+        self._swapped_dots = getattr(self, '_swapped_dots', 0) + 1
+        self._x8_dots = getattr(self, '_x8_dots', 0) + 1
+        return True
+
+    def _swap_no(self, why):
+        import os
+        if os.environ.get('TNCA_DEBUG_SWAP'):
+            print('swapped dot refused at', why)
+        return False
+
+    def _sep_carry(self, offset, share):
+        """A carried 2-D pointer's offset at loop entry: the initial index and
+        one shared scalar for what the loop has added since (zero)."""
+        sep = Sep2D.from_affine(offset) if isinstance(offset, Affine2D) else offset
+        shared = getattr(self, '_sep_shared', None)
+        if shared is None:
+            shared = self._sep_shared = {}
+        delta = shared.get(share)
+        if delta is None:
+            delta = shared[share] = self._copy_value(self.b.const(0))
+        return sep.plus(Sep2D([('one', None, 1, (delta,))])), delta
+
+    def _sep_advance(self, yielded, delta, carried_sep):
+        """The carried scalar after one iteration: what the yielded pointer
+        adds to the carried one, which must be lane- and row-uniform."""
+        ysep = Sep2D.from_affine(yielded) if isinstance(yielded, Affine2D) else yielded
+        if not isinstance(ysep, Sep2D):
+            raise Unsupported('a carried 2-D pointer whose advance is not an index')
+        def key(t):
+            return (t[0], id(t[1]), t[2], tuple(id(x) for x in t[3]))
+        remaining = {}
+        for t in carried_sep.terms:
+            remaining[key(t)] = remaining.get(key(t), 0) + 1
+        added = []
+        for t in ysep.terms:
+            k = key(t)
+            if remaining.get(k):
+                remaining[k] -= 1
+            else:
+                added.append(t)
+        if any(remaining.values()) or any(t[0] != 'one' for t in added):
+            raise Unsupported('a carried 2-D pointer advanced by a per-row or per-lane amount',
+                              remedy='advance it by a scalar')
+        step = _SepEmitter(self).scalar(Sep2D(added), 0)
+        if isinstance(step, int):
+            return delta if step == 0 else self.b.sbini('add', delta, step)
+        return self.b.sbin('add', delta, step)
+
     def _try_affine(self, op, kind):
         """Track an integer operation on a 2-D index. True if handled."""
         shape, elem = _parse_type(str(op.get_result(0).get_type()))
@@ -2434,6 +3215,8 @@ class TTIRImporter:
                            tuple)
                        for i in range(op.get_num_operands())):
                 return False
+        if self.large_tiles and self._try_sep(op, kind):
+            return True
         a = self._affine_of(op.get_operand(0))
         b = self._affine_of(op.get_operand(1))
         if a is None or b is None:
@@ -2463,6 +3246,8 @@ class TTIRImporter:
         emitted: what the chain adds up to becomes a descriptor when the
         load at the end of it asks.
         """
+        if self.large_tiles and self._try_sep_addptr(rid, base, offs):
+            return True
         aff = self._affine_of(offs)
         offset_tile = self._tiles.get(offs.id())
         if aff is None and offset_tile is None:
@@ -2644,6 +3429,20 @@ class TTIRImporter:
     # an unmasked pointer load never is.
     _OPEN_EXTENT = (1 << 31) - 1
 
+    def _constant_origin(self, pid, name, elem):
+        """(argument, byte offset) when every link of pointer `pid`'s chain is
+        a compile-time element count -- `p + k`, Inductor's slice of an
+        argument -- else None."""
+        total = 0
+        for value in self._ptr_chain.get(pid, []):
+            known = self._scalar_const(value.id())
+            if known is None or self._offsets.get(value.id()) is not None:
+                return None
+            total += known
+        if name not in self._entry_args:
+            return None
+        return name, total * _DTYPE_BYTES[elem]
+
     def _hoisted_tile_descriptor(self, name, elem, aff, block, what):
         """A TensorMap built ONCE, at the kernel's entry, and the coordinates
         of this tile in it -- or None (index_opt).
@@ -2659,6 +3458,21 @@ class TTIRImporter:
         """
         if aff.col_stride != 1 or aff.row_stride <= 1 or not aff.dynamic:
             return None
+        origin = (name, 0)
+        if name not in getattr(self, '_entry_args', ()):
+            # A base formed after the prologue: rebuilt there from its
+            # argument when it is one plus a constant, else not hoisted (the
+            # caller builds the map where the base is defined).
+            origin = getattr(self, '_origin_const', {}).get(name)
+            if origin is None:
+                return None
+        elif not any(self._arg_value(name) is result
+                     for op in self.b.region.ops[:self._prologue_pos]
+                     for result in op.results):
+            # A sliced or loop-carried pointer is computed in the body. Its
+            # map must stay after that definition, rather than reading an
+            # undefined base at kernel entry (r41-fp8-ops B4).
+            return None
         rows, cols = [], []
         for v, c in aff.dynamic:
             if c % aff.row_stride == 0:
@@ -2667,7 +3481,7 @@ class TTIRImporter:
                 cols.append((v, 1))
             else:
                 return None
-        key = (name, elem, aff.row_stride, aff.const, tuple(block))
+        key = (origin, elem, aff.row_stride, aff.const, tuple(block))
         desc = self._hoisted.get(key)
         if desc is None:
             ops = self.b.region.ops
@@ -2679,7 +3493,10 @@ class TTIRImporter:
                 setattr(self, c, {})
             self._scratch = None
             esize = self._ELEM_BYTES[elem]
-            base = self._arg_value(name)
+            base = self._arg_value(origin[0])
+            if origin[1]:
+                base = self.b.sbini('add', base, origin[1],
+                                    comment=f"the pointer's constant offset ({origin[1]} bytes)")
             if aff.const:
                 base = self.b.sbini('add', base, aff.const * esize,
                                     comment=f"the constant part of the index ({aff.const} elements)")
@@ -3037,9 +3854,14 @@ class TTIRImporter:
 
     def _xpose_geometry_ok(self, d):
         """The engine's transposed-write rule (rtl/core/tnca_tensor.v S_TSETUP):
-        a 2-D tile of 16-bit elements with 4, 8 or 16 source rows."""
-        return (len(d.block) == 2 and d.elem in ('f16', 'bf16')
-                and d.block[0] in (4, 8, 16))
+        a 2-D tile of 16-bit elements with 4, 8 or 16 source rows -- or, on a
+        target with `tensor_transpose_8bit` (R41 X8), of FP8 elements whose
+        source row is whole 8-byte units."""
+        if len(d.block) != 2 or d.block[0] not in (4, 8, 16):
+            return False
+        if d.elem in _FP8_FORMATS:
+            return self.target.has('tensor_transpose_8bit') and d.block[1] % 8 == 0
+        return d.elem in ('f16', 'bf16')
 
     def _op_tt_descriptor_load(self, op):
         d = self._descs[op.get_operand(0).id()]
@@ -3376,6 +4198,27 @@ class TTIRImporter:
         if a.dtype == b.dtype == 'f32':
             self._dot_f32(op, a, b)
             return
+        if a.dtype != b.dtype and a.dtype in _FP8_FORMATS and b.dtype in _FP8_FORMATS:
+            # E4M3 x E5M2. ISA sec 9C's mod[3:2] names one input format for
+            # both operands. FP16 holds every value of both encodings
+            # exactly, and sec 9C.1 forms every product exactly and rounds
+            # once per K step whatever the input format, so an FP16 MMA of
+            # the converted operands is the same sum in the same order --
+            # for one 16-deep K block; a deeper dot of two encodings is not
+            # a native matrix operation (register_blocks._native_matrix).
+            k = _parse_type(str(getattr(op, 'op', op).get_operand(0).get_type()))[0][-1]
+            if k != a.cols or a.cols > self.target.vlen:
+                raise Unsupported(
+                    f'an E4M3 x E5M2 tl.dot with K={k}',
+                    because="ISA sec 9C's mod[3:2] names one input format for both operands, "
+                            'and the exact FP16 substitute is built for one K block of '
+                            f'{self.target.vlen}',
+                    remedy='one FP8 encoding for both operands, or a 16-deep K block '
+                           '(TNCA_GEMM_TILE with K16)')
+            self.b.comment('E4M3 x E5M2: both operands as FP16 fragments, exactly '
+                           '(ISA sec 9C.1)')
+            a, b = (self._rows_to_window(self._tile_row_getter(t), t.store, 'f16', t.cols,
+                                         nrows=t.rows) for t in (a, b))
         # ISA sec 9C reads A and B from vector registers in the fragment
         # layout. A value computed in the vector unit is not in it, and
         # sec 8.4 reserves the pack that would put it there -- so it
@@ -3458,6 +4301,11 @@ class TTIRImporter:
         from .footprints import fragment_registers
         logical = a.cols
         step = logical
+        if self.large_tiles and f'k{logical}' not in self.target.mma['k_steps']:
+            # K deeper than one command: the widest step that divides it, in
+            # ascending K into the same accumulator (register_blocks).
+            step = max(int(k[1:]) for k in self.target.mma['k_steps']
+                       if logical % int(k[1:]) == 0)
         if (getattr(self, '_window_reuse', False) and
                 a.dtype == b.dtype and a.dtype in ('f16', 'bf16') and
                 2 * fragment_registers(16, logical, 16) >= self.target.vregs_per_rctx):
@@ -3669,6 +4517,10 @@ class TTIRImporter:
         tile = self._tiles.get(value.id())
         if tile is not None:
             return self._tile_row_getter(tile, elem)
+        sep = self._sep.get(value.id())
+        if sep is not None:
+            em = _SepEmitter(self)
+            return lambda r: em.row_value(sep, r)
         aff = self._affine_of(value)
         if aff is not None:
             return lambda r: self._affine_row(aff, r)
@@ -3931,6 +4783,11 @@ class TTIRImporter:
         accumulator, loading the bias row and storing take 48."""
         if not self.index_opt:
             return False
+        if self.large_tiles:
+            # A register chunk (register_blocks) or row-chunk view of an
+            # operation: the TTIR operation's users and position decide.
+            while hasattr(op, 'op'):
+                op = op.op
         users = self._value_users.get(op.get_result(0).id(), [])
         if len(users) != 1:
             return False
@@ -4046,7 +4903,14 @@ class TTIRImporter:
         'math.log': 'log', 'math.log2': 'log2',
         'math.sqrt': 'sqrt', 'math.rsqrt': 'rsqrt',
         'math.absf': 'absf',
+        'math.sin': 'sin', 'math.cos': 'cos',
     }
+    # Functions with no TTIR operation of their own, which TNCA's libdevice
+    # (python/tnca/triton_backend/libdevice.py) reaches through
+    # `tt.extern_elementwise` under these symbols. Each is a mathlib
+    # function built without the SFU.
+    _EXTERN = {'tnca_log1pf': 'log1p', 'tnca_erff': 'erf'}
+    _NO_SFU = ('log1p', 'sin', 'cos', 'erf')
 
     def _fconst(self, value, elem='f32'):
         """A whole-vector float constant, emitted once per value.
@@ -4064,8 +4928,11 @@ class TTIRImporter:
         return v
 
     def _math(self, op, fname):
-        self.target.require('sfu', f"emit {fname}")
+        if fname not in self._NO_SFU:
+            self.target.require('sfu', f"emit {fname}")
         fn = getattr(mathlib, fname)
+        if fname in ('sin', 'cos'):
+            fn = self._sincos_of(fname)
         if self._is_2d(op):
             self._tile_binary(op, lambda xs, e: fn(
                 self.b, lambda c: self._fconst(c, e), xs[0], dtype=e))
@@ -4093,6 +4960,44 @@ class TTIRImporter:
     def _op_math_rsqrt(self, op):
         self._math(op, 'rsqrt')
 
+    def _sincos_of(self, fname):
+        """mathlib.sincos, once per input value: math.sin and math.cos of
+        the same value share the reduction and both polynomials. The pair
+        lives in `_fconst_cache` under its own key, so it is dropped at
+        every region boundary exactly as cached constants are."""
+        which = 0 if fname == 'sin' else 1
+
+        def fn(b, k, x, dtype='f32'):
+            key = ('sincos', id(x), dtype)
+            pair = self._fconst_cache.get(key)
+            if pair is None or pair[2] is not x:
+                s, c = mathlib.sincos(b, k, x, dtype=dtype)
+                pair = (s, c, x)
+                self._fconst_cache[key] = pair
+            return pair[which]
+        return fn
+
+    def _op_math_sin(self, op):
+        self._math(op, 'sin')
+
+    def _op_math_cos(self, op):
+        self._math(op, 'cos')
+
+    def _op_tt_extern_elementwise(self, op):
+        """A libdevice function with no TTIR operation (TNCA libdevice).
+
+        Only the symbols TNCA's own libdevice emits are known; any other
+        extern call -- a CUDA `__nv_*` symbol, say -- is refused by name.
+        """
+        symbol = op.get_str_attr('symbol')
+        fname = self._EXTERN.get(symbol)
+        if fname is None or op.get_num_operands() != 1:
+            raise Unsupported(f'no TNCA lowering for extern function {symbol!r}',
+                              because='only TNCA libdevice symbols have a lowering',
+                              remedy='use a function TNCA libdevice provides',
+                              source='python/tnca/triton_backend/libdevice.py')
+        self._math(op, fname)
+
     def _op_arith_divf(self, op):
         """IEEE division, which the ISA does not have (sec 8.2).
 
@@ -4101,13 +5006,17 @@ class TTIRImporter:
         the four-ulp approximation the SFU returns.
         """
         self.target.require('sfu', 'emit a float division')
+        # IEEE division (mathlib.div_ieee) in the extended lowering and where
+        # the `ieee_div` option asks for it; the default keeps the faithful
+        # quotient the frozen kernels were compiled with.
+        div = mathlib.div_ieee if (self.large_tiles or self.ieee_div) else mathlib.div
         if self._is_2d(op):
-            self._tile_binary(op, lambda xs, e: mathlib.div(
+            self._tile_binary(op, lambda xs, e: div(
                 self.b, lambda c: self._fconst(c, e), xs[0], xs[1],
                 dtype=e))
             return
         _, elem, _bcast = self._float_shape(op)
-        self._v[op.get_result(0).id()] = mathlib.div(
+        self._v[op.get_result(0).id()] = div(
             self.b, lambda c: self._fconst(c, elem),
             self._vec(op.get_operand(0), elem),
             self._vec(op.get_operand(1), elem), dtype=elem)
@@ -4152,37 +5061,174 @@ class TTIRImporter:
 
         Narrow values occupy the low bits of wide lanes in spill storage;
         widening must convert those bits before floating-point arithmetic.
+        A conversion with an FP8 end also gets PyTorch's NaN encoding
+        (_fp8_nan_rule): every other value is the instruction's own.
         """
         src, res = op.get_operand(0), op.get_result(0)
         tile = self._tiles.get(src.id())
         _, rtype = _parse_type(str(res.get_type()))
+        _, stype = _parse_type(str(src.get_type()))
+        rule = self._fp8_nan_rule(op, src, stype, rtype)
         if tile is not None:
             if rtype == tile.store:
                 self._tiles[res.id()] = tile
                 return
+            get = self._tile_row_getter(tile)
+            convert = lambda r, get=get: self.b.vcvt(tile.store, rtype, get(r))
+            if rule is not None:
+                root_get = (None if rule[1] is src else
+                            self._row_getter(rule[1], tile.rows, rule[2]))
+
+                def convert(r, get=get, root_get=root_get):
+                    x = get(r)
+                    y = self.b.vcvt(tile.store, rtype, x)
+                    return self._fp8_nan_fix(rule, y, tile.store, x,
+                                             x if root_get is None else root_get(r), rtype)
             users = self._value_users.get(res.id(), [])
             if (self.index_opt and tile.kind == 'accumulator' and len(users) == 1
                     and users[0][0].get_name() == 'tt.store') or self._deferrable(op):
                 # A matmul's epilogue (`acc.to(f16)` then a store): each row is
                 # converted on its way out, where materialising the tile first
                 # put sixteen rows through scratch and read them back.
-                get = self._tile_row_getter(tile)
                 self._tiles[res.id()] = Tile(
-                    'lazy', lambda r, get=get: self.b.vcvt(tile.store, rtype, get(r)),
+                    'lazy', convert,
                     tile.rows, tile.cols, rtype, replicated=self._rows_replicated(src))
                 return
             else:
-                get = self._tile_row_getter(tile)
-                converted = self._materialise(
-                    lambda r: self.b.vcvt(tile.store, rtype, get(r)),
-                    tile.rows, tile.cols, rtype)
+                converted = self._materialise(convert, tile.rows, tile.cols, rtype)
                 converted.replicated = self._rows_replicated(src)
                 self._tiles[res.id()] = converted
             return
         _, elem, _bcast = self._float_shape(op)
-        _, stype = _parse_type(str(src.get_type()))
-        self._v[res.id()] = self.b.vcvt(stype, rtype,
-                                        self._vec(src, stype))
+        x = self._vec(src, stype)
+        y = self.b.vcvt(stype, rtype, x)
+        if rule is not None:
+            root = x if rule[1] is src else self._vec(rule[1], rule[2])
+            y = self._fp8_nan_fix(rule, y, stype, x, root, rtype)
+        self._v[res.id()] = y
+
+    # ---- FP8 conversions: PyTorch's NaN encodings -------------------------
+    #
+    # ISA sec 8.4 converts every NUMBER the way PyTorch's CPU conversion
+    # does (c10 Float8_e4m3fn / Float8_e5m2 / Half / BFloat16, torch 2.14):
+    # round to nearest even, subnormals kept, E4M3 overflow and infinity
+    # saturating to +-448, E5M2 overflow to +-inf. It differs only in NaN.
+    # The instruction writes one positive NaN in every format (E4M3/E5M2
+    # S.1111111 with S = 0, binary32 0x7FC00000, FP16/BF16 0x7FFF); PyTorch
+    # keeps the sign when it narrows to FP8, keeps sign and payload when it
+    # widens FP8 to binary32 or FP16, and writes 0x7FC0 for a BF16 NaN. A
+    # tensor cast is a copy of bits, so those NaNs are results like any
+    # other, and the importer rewrites them here -- for conversions with an
+    # FP8 end only. A conversion between the wide formats keeps the
+    # instruction's NaN, as every arithmetic result does (an arithmetic
+    # NaN is canonical, ISA sec 8.2): rewriting those would change every
+    # FP16/BF16 kernel for a NaN payload.
+    #
+    # Inductor widens a 16-bit load to binary32 before it converts to FP8,
+    # and converts FP8 to binary32 before it stores BF16 or FP16. A
+    # widening is exact for every number, so the pair IS the one
+    # conversion PyTorch performs; the rule looks through it to the value
+    # it widened (`root`), whose bits still hold the NaN the instruction
+    # dropped.
+    _NAN_CANONICAL_USERS = ('arith.addf', 'arith.subf', 'arith.mulf', 'arith.divf',
+                            'math.fma', 'arith.cmpf', 'arith.maximumf', 'arith.minimumf',
+                            'arith.maxnumf', 'arith.minnumf')
+
+    def _defining_op(self, value):
+        """The operation that defines `value`, in `value`'s register chunk."""
+        original = getattr(value, 'value', value)
+        op = self._value_def.get(original.id()) if hasattr(self, '_value_def') else None
+        if op is None or original is value:
+            return op
+        from .register_blocks import view_like
+        return view_like(op, value)
+
+    def _fp8_nan_rule(self, op, src, stype, rtype):
+        """(kind, root, root type) for a conversion with an FP8 end, or None.
+
+        `narrow`: to FP8, NaN signed as `root` is. `widen`: from the FP8
+        `root` to binary32, FP16 or BF16, NaN encoded from it as PyTorch
+        does. A widening whose every user is arithmetic that makes its own
+        canonical NaN (ISA sec 8.2), or a conversion that looks through it,
+        needs no rule: nothing can read the NaN it wrote.
+        """
+        if stype == rtype:
+            return None
+        floats = ('f32', 'f16', 'bf16') + tuple(_FP8_FORMATS)
+        if stype not in floats or rtype not in floats:
+            return None
+        root, root_type = src, stype
+        defining = self._defining_op(src)
+        if (stype == 'f32' and defining is not None and
+                defining.get_name() in ('arith.extf', 'tt.fp_to_fp')):
+            inner = defining.get_operand(0)
+            _, itype = _parse_type(str(inner.get_type()))
+            if itype in ('f16', 'bf16') or itype in _FP8_FORMATS:
+                root, root_type = inner, itype
+        if rtype in _FP8_FORMATS:
+            return ('narrow', root, root_type)
+        if root_type not in _FP8_FORMATS:
+            return None
+        if rtype == 'f32':
+            result = op.get_result(0)
+            users = self._value_users.get(getattr(result, 'value', result).id(), [])
+            through = all(u.get_name() in self._NAN_CANONICAL_USERS or (
+                u.get_name() in ('arith.truncf', 'tt.fp_to_fp') and
+                _parse_type(str(u.get_result(0).get_type()))[1] in floats)
+                for u, _k in users)
+            if users and through:
+                return None
+        return ('widen', root, root_type)
+
+    def _iconst(self, value):
+        """A whole-vector integer constant, emitted once per value."""
+        key = (value, 'int')
+        v = self._fconst_cache.get(key)
+        if v is None:
+            v = self.b.vmovi(value, dtype='i32')
+            self._fconst_cache[key] = v
+        return v
+
+    def _fp8_nan_fix(self, rule, y, stype, x, root, rtype):
+        """`y`, the instruction's conversion of `x` (a `stype` value), with
+        PyTorch's encoding in its NaN lanes; `root` is the value the rule
+        looked through to (or `x`)."""
+        kind, _root_value, root_type = rule
+        b, k = self.b, self._iconst
+        if kind == 'narrow':
+            # Every non-NaN result already carries the sign of its source,
+            # and a NaN is S.1111111 in both FP8 formats, so ORing in the
+            # source's sign is exact everywhere and needs no comparison.
+            width = {'f32': 32, 'f16': 16, 'bf16': 16}.get(root_type, 8)
+            sign = root if width == 8 else b.vbin('lshr', root, k(width - 8), dtype='i32')
+            sign = b.vbin('and', sign, k(0x80), dtype='i32')
+            return b.vbin('or', y, sign, dtype=rtype,
+                          comment=f'{root_type} -> {rtype}: a NaN keeps its sign')
+        # Widening an FP8 NaN. The comparison needs a binary32 view of the
+        # value: the conversion's own operand or result when it is one.
+        if rtype == 'f32':
+            wide = y
+        elif stype == 'f32' and getattr(x, 'dtype', None) == 'f32':
+            wide = x
+        else:
+            wide = b.vcvt(root_type, 'f32', root)
+        ordered = b.vcmp('o', wide, wide)
+        e4m3 = root_type == 'f8E4M3FN'
+        if rtype == 'f32':
+            # sign | 0x7FC00000 | mantissa << (23 - M): the payload moved
+            # to the top of the fraction, as a quiet NaN.
+            top = b.vbin('shl', root, k(24), dtype='i32')
+            if e4m3:
+                nan = b.vbin('or', top, k(0x7FF00000), dtype='i32')
+            else:
+                nan = b.vbin('or', b.vbin('ashr', top, k(3), dtype='i32'),
+                             k(0x7FC00000), dtype='i32')
+        elif rtype == 'f16':
+            nan = b.vbin('or', b.vbin('shl', root, k(8), dtype='i32'),
+                         k(0x7F80 if e4m3 else 0x7E00), dtype='i32')
+        else:
+            nan = k(0x7FC0)
+        return b.vselect(ordered, y, nan)
 
     def _op_arith_sitofp(self, op):
         self._convert(op, 's32', 'f32')
@@ -4324,6 +5370,13 @@ class TTIRImporter:
             # (uniform + arange) + uniform: still the lane index plus one
             # lane-invariant amount, the sum of the two.
             con, uni = (a, b) if ka == 'contiguous' else (b, a)
+            start = self._uscalar.get(self._offsets[con.id()][1])
+            if isinstance(start, int):
+                # Extended lowering: a register chunk's start stays a number
+                # beside the shared uniform part (_address folds it).
+                self._uscalar[rid] = ('plus', self._offsets[uni.id()][1], start)
+                self._offsets[rid] = ('contiguous', rid)
+                return
             total = self.b.sbin('add', self._key_scalar(self._offsets[con.id()][1]),
                                 self._key_scalar(self._offsets[uni.id()][1]))
             self._uscalar[rid] = total
@@ -4423,6 +5476,12 @@ class TTIRImporter:
             off = value.id()
             okind, ouni = self._offsets.get(off, (None, None))
             known = self._scalar_const(off)
+            if known is None and self.large_tiles:
+                # A dense integer splat is one offset for every lane.
+                pend = self._pending_const.get(off)
+                if pend is not None and pend[0] == 'vector' and str(pend[2]).startswith('i') \
+                        and pend[2] != 'i1':
+                    known = int(pend[1])
             if known is not None and okind is None:
                 # A constant number of elements. `p + k * N + offs` with a
                 # constexpr k arrives here once Triton has folded `k * N`,
@@ -4438,7 +5497,16 @@ class TTIRImporter:
                 # scalar address and let the arange be the lane term.
                 pure_arange += 1
                 lane_terms.append(value)
-                scalar_terms.append(self._key_scalar(ouni))
+                held = self._uscalar.get(ouni)
+                if isinstance(held, int):
+                    # A register chunk's compile-time start (extended
+                    # lowering) folds into the address.
+                    const_elems += held
+                elif isinstance(held, tuple):
+                    const_elems += held[2]
+                    scalar_terms.append(self._key_scalar(held[1]))
+                else:
+                    scalar_terms.append(self._key_scalar(ouni))
             elif okind == 'uniform':
                 scalar_terms.append(self._key_scalar(ouni))
             elif off in self._v and getattr(self._v[off], 'kind',
@@ -4523,10 +5591,23 @@ class TTIRImporter:
         users = self._value_users.get(op.get_result(0).id(), [])
         if not users or any(u.get_name() != 'tt.dot' or k > 1 for u, k in users):
             return None
+        # R41 X8: an FP8 tile too, on a target whose engine transposes 1-byte
+        # elements (`tensor_transpose_8bit`; absent on older images, which
+        # keep the gather). Its K rows may be any whole number of vlen.
+        byte = elem in _FP8_FORMATS and self.target.has('tensor_transpose_8bit')
+        if byte and any(_parse_type(str(u.get_operand(0).get_type()))[1] !=
+                        _parse_type(str(u.get_operand(1).get_type()))[1] for u, _ in users):
+            # A mixed-format FP8 dot converts its operands in registers first
+            # (one MMA input format per command, ISA sec 9C), which a window
+            # tile cannot be; it keeps the row-per-vector form.
+            return None
         if (not self.target.has('tensor_transpose') or op.get_num_operands() > 1
-                or not isinstance(aff, Affine2D) or elem not in ('f16', 'bf16')
+                or not isinstance(aff, Affine2D)
+                or (elem not in ('f16', 'bf16') and not byte)
                 or aff.row_stride != 1 or aff.col_stride <= 1
-                or shape[0] != self.target.vlen or shape[1] not in (4, 8, 16)):
+                or (shape[0] % self.target.vlen or shape[0] > 256 if byte
+                    else shape[0] != self.target.vlen)
+                or shape[1] not in (4, 8, 16)):
             return None
         u = Affine2D(row_stride=aff.col_stride, col_stride=1, const=aff.const,
                      dynamic=aff.dynamic)
@@ -4562,6 +5643,26 @@ class TTIRImporter:
             return int(pending[1])
         return None
 
+    def _fp8_mma_operand(self, op, elem):
+        """An FP8 tile load whose only readers are `tl.dot`s of one encoding.
+
+        Such a tile is an MMA operand and nothing else, so it takes the
+        transfer engine like an FP16 one -- the engine moves bits, and ISA
+        sec 9D.3 gives both FP8 encodings a TensorMap code -- where an FP8
+        tile anything else reads keeps the row-per-vector-load form that
+        arithmetic wants (_load_tile_rows). The engine's transposed write
+        is 16-bit only (tnca_tensor.v S_TSETUP), so a column-major FP8 tile
+        is still gathered.
+        """
+        if elem not in _FP8_FORMATS:
+            return False
+        users = self._value_users.get(op.get_result(0).id(), [])
+        return bool(users) and all(
+            u.get_name() == 'tt.dot' and k in (0, 1) and
+            _parse_type(str(u.get_operand(0).get_type()))[1] ==
+            _parse_type(str(u.get_operand(1).get_type()))[1] == elem
+            for u, k in users)
+
     def _arg_value(self, name):
         for _, (n, v) in self._args.items():
             if n == name:
@@ -4581,6 +5682,9 @@ class TTIRImporter:
                             'describable as a TensorMap',
                     source='doc/isa/TNCA-ISA-v0.1.md sec 9E.2')
             name, elem, aff = spec
+            if isinstance(aff, Sep2D):
+                self._tiles[op.get_result(0).id()] = self._sep_load(op, name, elem, aff, shape2d)
+                return
             xt = self._transposed_tile_load(op, name, elem, aff, shape2d)
             if xt is not None:
                 self._tiles[op.get_result(0).id()] = xt
@@ -4615,10 +5719,17 @@ class TTIRImporter:
                         # are, and changing them changed its artifacts.)
                         v = self.b.splat(self.b.vextract(v, 0, dtype=elem), dtype=elem)
                     return v
+                if self._fp8_mma_operand(op, elem) and self._deferrable(op):
+                    # Gathered straight into the MMA repack (_rows_to_window):
+                    # materialising an 8-bit tile first stores and reloads
+                    # every row through scratch on the way to the same pack.
+                    self._tiles[op.get_result(0).id()] = Tile(
+                        'lazy', row, shape2d[0], shape2d[1], elem)
+                    return
                 self._tiles[op.get_result(0).id()] = self._materialise(
                     row, shape2d[0], shape2d[1], elem)
                 return
-            if elem not in self._TRANSFERABLE:
+            if elem not in self._TRANSFERABLE and not self._fp8_mma_operand(op, elem):
                 self._tiles[op.get_result(0).id()] = self._load_tile_rows(
                     name, elem, aff, shape2d)
                 return
@@ -4711,6 +5822,9 @@ class TTIRImporter:
                     source='doc/isa/TNCA-ISA-v0.1.md sec 9E.2')
             name, elem, aff = spec
             tile = self._tile_of(value)
+            if isinstance(aff, Sep2D):
+                self._sep_store(op, name, elem, aff, shape2d, tile)
+                return
             if self._contiguous_rows(op, aff, shape2d, 2):
                 self._masked_rows_store(op, name, elem, aff, shape2d, tile)
                 return
@@ -4805,6 +5919,11 @@ class TTIRImporter:
     def _key_scalar(self, key):
         """The scalar an `_offsets` 'uniform' or 'contiguous' entry names."""
         s = self._uscalar.get(key)
+        if isinstance(s, int):
+            return self._const_scalar(s)     # a register chunk's start, made on use
+        if isinstance(s, tuple):
+            _plus, uni, k = s
+            return self.b.sbini('add', self._key_scalar(uni), k)
         if s is not None:
             return s
         k = self._scalar_const(key)

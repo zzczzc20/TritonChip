@@ -254,6 +254,53 @@ def gather_plan(imp, d, coords, extents):
     return offset, imp._shape_mask(count, mask)
 
 
+def _wide_box(d):
+    """Can an in-bounds absolute element offset exceed a gather's i32?"""
+    es = d.byte_strides[-1]
+    return (d.extents is None or not isinstance(es, int) or es <= 0 or
+            any(not isinstance(x, int) for x in (*d.extents, *d.byte_strides)) or
+            any(s < 0 for s in d.byte_strides) or
+            sum((e - 1) * s for e, s in zip(d.extents, d.byte_strides)) // es >= (1 << 31))
+
+
+def _scalar_box(imp, d, coords, extents, *, value=None, other=0):
+    """A small descriptor box with exact scalar addresses, one lane at a time.
+
+    A small block need not have a small absolute offset (nor a small outer
+    stride). Never multiply descriptor coordinates in 32-bit vector lanes.
+    """
+    b = imp.b
+    count = math.prod(d.block)
+    zero, lanes = b.vmovi(0), b.arange()
+    coords = [c if c.dtype == 'i64' else b.sbini('ashr', b.sbini('shl', c, 32), 32)
+              for c in coords]
+    valid_lanes = b.vmovi(0)
+    result = None
+    load = value is None
+    sfx = suffix(imp, d.elem, load=load)
+    for lane in range(count):
+        rest, at = lane, []
+        for n in reversed(d.block):
+            at.append(rest % n)
+            rest //= n
+        addr, valid = d.base, b.const(1)
+        for c, i, e, stride in zip(coords, reversed(at), extents, d.byte_strides):
+            pos = c if i == 0 else b.sbini('add', c, i)
+            extent = b.const(e) if isinstance(e, int) else e
+            ok = b.sbin('and', b.scmp('ge', pos, b.const(0)), b.scmp('lt', pos, extent))
+            valid = b.sbin('and', valid, ok)
+            addr = imp._scaled_address(addr, pos, stride)
+        b.vinsert(valid_lanes, lane, valid)
+        select = b.vcmp('eq', lanes, b.splat(b.const(lane)))
+        mask = b.pbin('and', select, b.vcmp('ne', b.splat(valid), zero))
+        if load:
+            v = b.gather(addr, zero, mask=mask, other=other, dtype=d.elem, size=sfx)
+            result = v if result is None else b.vselect(select, v, result)
+        else:
+            b.scatter(addr, zero, value, mask=mask, size=sfx)
+    return result, b.vcmp('ne', valid_lanes, zero)
+
+
 # ---------------------------------------------------------------------------
 # Choosing the transfer engine
 # ---------------------------------------------------------------------------
@@ -363,6 +410,11 @@ def load(imp, op):
     if count <= vlen:
         # A small N-D box: every element in its row-major lane, one gather.
         imp.target.require('gather_scatter', 'emit v.ld.gather for a descriptor box')
+        if _wide_box(d):
+            v, mask = _scalar_box(imp, d, coords, extents, other=imm)
+            imp._v[rid] = _filled(imp, v, mask, fillv)
+            imp._packed.add(rid)
+            return
         offset, mask = gather_plan(imp, d, coords, extents)
         v = imp.b.gather(d.base, offset, mask=mask, other=imm, dtype=d.elem, size=sfx)
         imp._v[rid] = _filled(imp, v, mask, fillv)
@@ -452,6 +504,9 @@ def store(imp, op):
             imp.b.store(base, v, mask=mask, size=sfx)
             return
         imp.target.require('gather_scatter', 'emit v.st.scatter for a descriptor box')
+        if _wide_box(d):
+            _scalar_box(imp, d, coords, extents, value=v)
+            return
         offset, mask = gather_plan(imp, d, coords, extents)
         imp.b.scatter(d.base, offset, v, mask=mask, size=sfx)
         return

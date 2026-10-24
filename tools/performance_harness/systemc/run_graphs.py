@@ -121,6 +121,11 @@ def child(a):
     from archbench import registry
     from archbench.platforms import tnca
     import tlm_backend
+    if a.points_module:
+        # Extra points defined outside the frozen suites (registered by import).
+        import importlib.util
+        spec = importlib.util.spec_from_file_location('run_graphs_extra_points', a.points_module)
+        spec.loader.exec_module(importlib.util.module_from_spec(spec))
     tlm_backend.register()
     for name in tlm_backend.NAMES:
         tnca.EVIDENCE[name] = tlm_backend.EVIDENCE
@@ -133,6 +138,10 @@ def child(a):
         def timed_steady(*args, **kwargs):
             for inst in tlm_backend.backend_class().instances:
                 if inst.alive():
+                    # Counters at the switch: subtracting them from the final
+                    # snapshot leaves the measured (steady) calls alone.
+                    (inst.dir/'counters_untimed_cold.json').write_text(
+                        json.dumps(inst.counters_snapshot(), indent=1, sort_keys=True) + '\n')
                     inst.set_timing(True)
             return original(*args, **kwargs)
         tnca._steady = timed_steady
@@ -326,6 +335,8 @@ def parent(a):
                '--point', point, '--warmup', str(a.warmup), '--timed', str(timed)]
         if a.timed_auto and key in board_launches and timed == 0:
             cmd += ['--graph-launches', str(board_launches[key])]
+        if a.points_module:
+            cmd += ['--points-module', str(Path(a.points_module).resolve())]
         if a.untimed_cold and timed > 0:
             env['TNCA_TLM_UNTIMED_COLD'] = '1'
         t = time.monotonic()
@@ -400,6 +411,7 @@ def main():
     ap.add_argument('--warmup', type=int, default=0)
     ap.add_argument('--timed', type=int, default=1)
     ap.add_argument('--graph-launches', type=int, help=argparse.SUPPRESS)
+    ap.add_argument('--points-module', help='Python file registering extra ArchBench points (outside the frozen suites)')
     a = ap.parse_args()
     if a.child:
         child(a)

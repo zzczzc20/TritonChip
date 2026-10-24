@@ -278,6 +278,9 @@ struct Core : sc_module {
     // Timing constants (configuration, uncalibrated).
     u64 t_issue,t_scalar,t_mul,t_vint,t_vfp,t_cvt,t_cmp,t_pred,t_shuf,t_red,t_fred,t_sfu_occ,t_sfu,t_load,t_bar,t_acc,
         t_rf,t_mac,t_mac_unbuf,t_pipe,t_done,t_zero,t_row,t_launch;bool abuf;
+    // What-if packed MMA (m.mma.dp, hypothetical; Config optional keys):
+    // G consecutive k per lane per step, timing only (numerics stay per-K).
+    u64 dp_g16=1,dp_g8=1;bool dp_pf=false;u64* c_dp=nullptr;
     // Counter slots bound once.
     u64 *c_instr,*c_sfu_queue,*c_sleep,*c_dep_wait,*c_mtx_wait,*c_mtx_busy,*c_mtx_cmds,*c_mma,*c_lsu_wait,*c_arrive_wait,
         *c_fence_wait,*c_programs_issued,*c_programs_completed;
@@ -314,6 +317,9 @@ struct Core : sc_module {
         t_sfu=g("sfu_latency");t_load=g("load_latency");t_bar=g("barrier_latency");t_acc=g("acc_read_latency");
         t_rf=g("mtx_rf_read_cycles");t_mac=g("mtx_mac_cycles");t_mac_unbuf=g("mtx_mac_unbuffered_cycles");t_pipe=g("mtx_pipe_cycles");
         t_done=g("mtx_complete_cycles");t_zero=g("mtx_zero_cycles");t_row=g("mtx_row_cycles");t_launch=g("launch_cycles");abuf=g("mtx_abuf")!=0;
+        dp_g16=x.c.get_or("mtx_dp_group_16",1);dp_g8=x.c.get_or("mtx_dp_group_8",1);dp_pf=x.c.get_or("mtx_dp_b_prefetch",0)!=0;
+        // Bound only when a what-if key is active, so default counters are unchanged.
+        if(dp_g16>1 || dp_g8>1 || dp_pf)c_dp=&x.counts[key("matrix_dp_whatif_commands")];
         issue_time=x.cycles(t_issue);lsu_key=key("lsu");t_lsu_slots=g("lsu_slots");t_beat_slots=g("lsu_beat_slots");
         pipe=g("core_pipeline")!=0;t_branch=g("branch_taken_cycles");t_park=g("park_refetch_cycles");n_banks=g("vrf_banks");
         t_bank=g("vrf_bank_conflict_cycles");t_lsu_setup=g("lsu_setup_cycles");t_vload_extra=g("lsu_vector_load_extra");
@@ -464,6 +470,16 @@ struct Core : sc_module {
         tnca_matrix_ops::mma(acc[slot],A,B,K,dt);
         bool buffered=abuf && (bytes==1?K!=64:K==16);
         u64 sweep=(buffered?a_regs*t_rf:0)+K*(t_rf+16*(buffered?t_mac:t_mac_unbuf));
+        unsigned dp_g=unsigned(bytes==1?dp_g8:dp_g16);
+        if(dp_g>1 || dp_pf){
+            // WHAT-IF timing only (not built, numerics unchanged): K/G steps,
+            // one 64-byte B register read per step, B[k..k+G-1][0..15];
+            // with prefetch only the first step's read is exposed. The A term
+            // and the per-MAC cost (buffered or not) are unchanged.
+            u64 steps=K/dp_g,mac=16*(buffered?t_mac:t_mac_unbuf);
+            sweep=(buffered?a_regs*t_rf:0)+(dp_pf?t_rf+steps*mac:steps*(t_rf+mac));
+            ++*c_dp;
+        }
         u64 busy=sweep+t_pipe+1+t_done;
         engine_start(f,busy);++*c_mma;
         sc_time free_at=sc_time_stamp()+x.cycles(x.functional?0:sweep),done_at=mtx_free;

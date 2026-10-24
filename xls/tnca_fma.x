@@ -119,35 +119,46 @@ pub struct FmaNormalised {
     ftz: u1,
 }
 
-// First stage: unpack, classify, multiply, align.
-pub fn fma32_align(a: u32, b: u32, c: u32, sub_c: u1, mul_only: u1, ftz: u1) -> FmaAligned {
+// What the first stage's multiplier side hands its alignment side: the exact
+// product as a 48-bit significand, an exponent and the product's own special
+// cases. fma32_mul forms it from two binary32 factors; the packed dot-product
+// lane (xls/tnca_fdp.x, R41 feasibility study) forms one from a group of
+// narrow products, rounded to odd at 48 bits, with an exponent range beyond
+// binary32's. fma32_align_p takes either, so both share align, normalise and
+// round. Any pm in [0, 2^48) is valid, normalised or not, and xp may be any
+// value whose sums below stay in s12 (|xp| < ~700): the alignment works on
+// values, not on encodings (see "WHY THE RESULT IS UNCHANGED" in F03).
+pub struct FmaProduct {
+    pm: u48,          // value = pm * 2^(xp - 46), xp = xpb - 254
+    xpb: s12,         // the product's exponent biased by 254: ea + eb for binary32 factors
+    sp: u1,           // its sign, and the sign of an infinite product
+    p_zero: u1,       // the product is zero: it is never the reference operand
+    p_inf: u1,
+    p_nan: u1,        // a NaN factor, inf * 0 (or, in a dot product, inf - inf)
+}
+
+// First stage, multiplier side: unpack and classify a and b, multiply.
+pub fn fma32_mul(a: u32, b: u32, ftz: u1) -> FmaProduct {
 
     //------------------------------------------------------------------ unpack
     let sa = a[31+:u1];
     let sb = b[31+:u1];
-    let sc = c[31+:u1] ^ sub_c;
     let ea = a[23+:u8];
     let eb = b[23+:u8];
-    let ec = c[23+:u8];
     let fa = a[0+:u23];
     let fb = b[0+:u23];
-    let fc = c[0+:u23];
 
     let a_e0 = ea == u8:0;
     let b_e0 = eb == u8:0;
-    let c_e0 = ec == u8:0;
 
     // ftz flushes subnormal inputs before anything else looks at them
     let a_zero = a_e0 && (fa == u23:0 || ftz == u1:1);
     let b_zero = b_e0 && (fb == u23:0 || ftz == u1:1);
-    let c_zero = (c_e0 && (fc == u23:0 || ftz == u1:1)) || mul_only == u1:1;
 
     let a_inf = ea == u8:0xff && fa == u23:0;
     let b_inf = eb == u8:0xff && fb == u23:0;
-    let c_inf = ec == u8:0xff && fc == u23:0 && mul_only == u1:0;
     let a_nan = ea == u8:0xff && fa != u23:0;
     let b_nan = eb == u8:0xff && fb != u23:0;
-    let c_nan = ec == u8:0xff && fc != u23:0 && mul_only == u1:0;
 
     // Significands as 24-bit integers and exponents as the stored fields:
     // an operand is m * 2^(x - 23) with x = (biased exponent field) - 127, so
@@ -167,7 +178,6 @@ pub fn fma32_align(a: u32, b: u32, c: u32, sub_c: u1, mul_only: u1, ftz: u1) -> 
     // product still fits 48 bits.
     let ma = (!a_e0) ++ fa;
     let mb = (!b_e0) ++ fb;
-    let mc = if c_zero { u24:0 } else if c_e0 { (fc as u24) << u32:1 } else { u1:1 ++ fc };
 
     let sp = sa ^ sb;
     // a factor is zero exactly when it is a zero or an ftz-flushed subnormal
@@ -175,12 +185,41 @@ pub fn fma32_align(a: u32, b: u32, c: u32, sub_c: u1, mul_only: u1, ftz: u1) -> 
     let p_dbl = (a_e0 as u2) + (b_e0 as u2);
     let pm_raw = (ma as u48) * (mb as u48);
     let pm = if p_zero_mag { u48:0 } else { pm_raw << p_dbl };   // value = pm * 2^(xp-46)
+
+    let inf_times_zero = (a_inf && b_zero) || (b_inf && a_zero);
+    let p_inf = (a_inf || b_inf) && !inf_times_zero;
+
+    FmaProduct {
+        pm: pm,
+        xpb: (ea as s12) + (eb as s12),           // xp + 254
+        sp: sp,
+        p_zero: p_zero_mag as u1,
+        p_inf: p_inf as u1,
+        p_nan: (a_nan || b_nan || inf_times_zero) as u1,
+    }
+}
+
+// First stage, alignment side: the addend, the exponent difference, the
+// alignment shift with its sticky bit.
+pub fn fma32_align_p(p: FmaProduct, c: u32, sub_c: u1, mul_only: u1, ftz: u1) -> FmaAligned {
+    let sc = c[31+:u1] ^ sub_c;
+    let ec = c[23+:u8];
+    let fc = c[0+:u23];
+    let c_e0 = ec == u8:0;
+    let c_zero = (c_e0 && (fc == u23:0 || ftz == u1:1)) || mul_only == u1:1;
+    let c_inf = ec == u8:0xff && fc == u23:0 && mul_only == u1:0;
+    let c_nan = ec == u8:0xff && fc != u23:0 && mul_only == u1:0;
+    let mc = if c_zero { u24:0 } else if c_e0 { (fc as u24) << u32:1 } else { u1:1 ++ fc };
+
+    let sp = p.sp;
+    let pm = p.pm;
+    let p_zero_mag = p.p_zero == u1:1;
     let mcw = (mc as u47) << u32:23;             // value = mcw * 2^(xc-46)
 
-    // xp = xa + xb and xc from the stored fields; dexp = xp - xc and its
-    // magnitude, both differences side by side rather than a negation behind
-    // the subtraction.
-    let kab = (ea as s12) + (eb as s12);          // xp + 254
+    // xp and xc from the stored fields; dexp = xp - xc and its magnitude,
+    // both differences side by side rather than a negation behind the
+    // subtraction.
+    let kab = p.xpb;                              // xp + 254
     let kcb = (ec as s12) + s12:127;              // xc + 254
     let xp = kab - s12:254;
     let xc = (ec as s12) - s12:127;
@@ -201,10 +240,9 @@ pub fn fma32_align(a: u32, b: u32, c: u32, sub_c: u1, mul_only: u1, ftz: u1) -> 
     let s_big = if shift_c { sp } else { sc };
     let s_small = if shift_c { sc } else { sp };
 
-    let inf_times_zero = (a_inf && b_zero) || (b_inf && a_zero);
-    let p_inf = (a_inf || b_inf) && !inf_times_zero;
+    let p_inf = p.p_inf == u1:1;
     let inf_minus_inf = p_inf && c_inf && (sp != sc);
-    let nan_res = a_nan || b_nan || c_nan || inf_times_zero || inf_minus_inf;
+    let nan_res = p.p_nan == u1:1 || c_nan || inf_minus_inf;
     let inf_res = p_inf || c_inf;
     let inf_sign = if p_inf { sp } else { sc };
 
@@ -231,6 +269,11 @@ pub fn fma32_align(a: u32, b: u32, c: u32, sub_c: u1, mul_only: u1, ftz: u1) -> 
         mul_only: mul_only,
         ftz: ftz,
     }
+}
+
+// First stage: unpack, classify, multiply, align -- the two halves above.
+pub fn fma32_align(a: u32, b: u32, c: u32, sub_c: u1, mul_only: u1, ftz: u1) -> FmaAligned {
+    fma32_align_p(fma32_mul(a, b, ftz), c, sub_c, mul_only, ftz)
 }
 
 // Second stage: add or subtract, count leading zeros, and everything that

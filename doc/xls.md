@@ -17,13 +17,19 @@ which parts, why those and not others, and what the decision cost and bought.
 | `tnca_sfu_log2_xls` | `xls/tnca_sfu.x` | `v.log2.approx` | 7 | 6 |
 | `tnca_sfu_rcp_xls` | `xls/tnca_sfu.x` | `v.rcp.approx` | 7 | 6 |
 | `tnca_sfu_rsqrt_xls` | `xls/tnca_sfu.x` | `v.rsqrt.approx` | 7 | 6 |
-| `tnca_fma_xls` | `xls/tnca_fma.x` | binary32 FMA with subnormals (FP_LAT = 2) | 3 | 2 |
-| `tnca_fma_l3_xls` | `xls/tnca_fma.x` | the same, one stage deeper (FP_LAT = 3) | 4 | 3 |
+| `tnca_fma_align_xls` | `xls/tnca_fma.x` | binary32 FMA with subnormals (FP_LAT = 2), first stage: unpack, multiply, align | comb. | — |
+| `tnca_fma_norm_xls` | `xls/tnca_fma.x` | second stage: add, leading-zero count, normalising amounts | comb. | — |
+| `tnca_fma_round_xls` | `xls/tnca_fma.x` | third stage: normalising shift, RNE, pack | comb. | — |
+| `tnca_fma_l3_xls` | `xls/tnca_fma.x` | the whole FMA (`fma32`), four stages (FP_LAT = 3) | 4 | 3 |
 
-The two FMA instances are generated with `--flop_outputs=false`: N stages are
-N−1 registers, and the result is combinational from the last stage, because
-every consumer (the vector FP writeback, the accumulator file) registers it.
-`rtl/core/tnca_fp32_fma.v` picks the instance for the core's `FP_LAT`.
+The latency-2 FMA (the image's `FP_LAT`) is the three stage functions of
+`xls/tnca_fma.x`, generated combinational, with the two registers placed by
+`rtl/core/tnca_fp32_fma.v` between them (R41 Stage 2, below). The latency-3
+instance is `fma32`, the three composed, scheduled by XLS with
+`--flop_outputs=false`: four stages, three registers. In both the result is
+combinational from the last stage, because every consumer (the vector FP
+writeback, the accumulator file) registers it. `rtl/core/tnca_fp32_fma.v`
+picks the instance for the core's `FP_LAT`.
 
 The formats are binary32, bfloat16, binary16, OCP FP8 E5M2 and OCP FP8 E4M3.
 FP4 is deliberately absent.
@@ -73,36 +79,34 @@ instances against the same exact Fraction oracle (`tools/model/fp32.py`;
 composition with the five formats. The DSLX file also carries its own tests
 for the cases `apfloat` gets wrong.
 
-## The SFU: generated where flush-to-zero is required
+**R41 Stage 2: the latency-2 cuts are placed for the FPGA.** In the routed
+100 MHz census of attempt 3 each of the three XLS-placed stages of the
+latency-2 instance was a family of its own within 0.05 ns of the design's
+-0.92 ns WNS (F03: the vector FPU's `red_busy` into the first stage; F08: the
+first stage's sticky bit into the second's shift amount; F09: the second
+stage's shift amount into the accumulator file). XLS balances against asap7,
+which prices the 24×24 multiplier -- two cascaded DSP48E2 slices on the U280
+-- at several times its FPGA cost; once the arithmetic was rewritten to be
+short on the FPGA, XLS's three-stage schedule moved the alignment shifter
+into the middle stage, which then became the long one. So `xls/tnca_fma.x`
+is written as three stage functions whose results (`FmaAligned`,
+`FmaNormalised`) are the two cuts, and the arithmetic of each is re-expressed
+for the FPGA without changing a result bit: raw exponent fields with
+subnormal fractions doubled (no zero test in front of the exponent adders or
+the DSP), carry-select borrow and rounding, every quantity after the
+leading-zero count one step from it, one shifter for significand and guard.
+`evidence/r41/stage2/candidates/F03`, `F09` and `F08` have the OOC
+before/after, the verification and a Verilator miter of the new instances
+against the previous generated RTL.
 
-**The SFU is the opposite case from the FMA.** ISA §8.8 specifies those operations as
+## What is not generated, and why
+
+**The SFU is the opposite case.** ISA §8.8 specifies those operations as
 approximate, with a published error bound, and *requires* subnormal flushing.
 There XLS's behaviour is the required behaviour, and the four functions are the
 first implementation the design has had. `CAPABILITY0.SFU` read 0 precisely
 because Stage 1a shipped without them; it reads 1 now, and the measurement
 below is what earned that.
-
-## What is not generated, and why
-
-While the pure arithmetic pipelines and format conversions are generated with XLS,
-the surrounding control, multi-lane sequencing, and structural integration
-remain hand-written Verilog:
-
-- **The SFU multi-lane sequencer (`rtl/core/tnca_sfu.v`)**: Generating sixteen
-  parallel SFU pipelines would cost around 60 k gates × 16 ≈ 960 k gates,
-  dwarfing the rest of the vector datapath for operations off the GEMM inner loop
-  (ISA §6.2). Instead, XLS generates a single pipelined four-function slice, and a
-  hand-written sequencer streams VLEN lanes through it at one lane per cycle.
-- **The FMA latency selector (`rtl/core/tnca_fp32_fma.v`)**: Selects between the
-  generated latency-2 (`tnca_fma_xls`) and latency-3 (`tnca_fma_l3_xls`) instances
-  according to the core's `FP_LAT` parameter.
-- **The multi-precision MAC wrapper (`rtl/core/tnca_fpu_multi.v`)**: Composes
-  combinational widening (`tnca_widen_xls`) directly with `tnca_fp32_fma`,
-  with optional operand registers (`IN_REG`).
-- **Core vector and matrix integration**: Vector pipeline sequencing, reduction
-  state machines, accumulator storage, and register file access in
-  `rtl/core/tnca_vector_fpu.v` and `rtl/core/tnca_matrix.v` are tightly coupled
-  to core control and remain in hand-written RTL.
 
 ## Scheduling: one clock target, and what it cost
 
@@ -161,7 +165,7 @@ The wide version was correct and unshippable.
 `make synth` maps the same modules to generic gates with no PDK, so its numbers
 are a different proxy from the asap7 periods above and should disagree with
 them in detail — it has no carry-lookahead cells, so every addition is ripple
-carry (see [synthesis.md](synthesis.md) for the calibration). It agrees on the direction,
+carry (see doc/synthesis.md for the calibration). It agrees on the direction,
 which is the point of measuring twice:
 
 | Module | Combinational | | | Scheduled | | |
@@ -176,7 +180,7 @@ which is the point of measuring twice:
 | `tnca_sfu_exp2_xls` | *not measured* | | | 14,946 | 529 | 69 |
 | `tnca_sfu_log2_xls` | *not measured* | | | 13,246 | 447 | 72 |
 
-For scale, the calibration block in [synthesis.md](synthesis.md) puts a bare 32×32
+For scale, the calibration block in doc/synthesis.md puts a bare 32×32
 multiplier at 5,377 gates and 65 levels in this library, and `tnca_fp32_fma` at
 7,120 gates and 115 levels.
 
@@ -224,20 +228,20 @@ discovered.
 
 ## Where they end up in the core
 
-`rtl/core/tnca_fpu_multi.v` puts `tnca_widen_xls` in front of the binary32 FMA
-(`rtl/core/tnca_fp32_fma.v`, which instantiates the generated FMA), so FP8 and
-FP16 operands reach one verified multiplier. Because widening is combinational,
-that costs no extra cycle. **It is the matrix unit's MAC**: sixteen of them, with
-the format code from ISA §9C's `mod[3:2]`, which is how `m.mma.async` came to take
-E5M2 and E4M3 fragments as well as FP16 and BF16. An accumulator row op passes
-`f32`, and `widen(f32, x)` is `x`, so one MAC serves both without a bypass.
+`rtl/core/tnca_fpu_multi.v` puts `tnca_widen_xls` in front of the hand-written
+binary32 FMA, so FP8 and FP16 operands reach one verified multiplier. Because
+widening is combinational, that costs no extra cycle. **It is the matrix
+unit's MAC**: sixteen of them, with the format code from ISA §9C's `mod[3:2]`,
+which is how `m.mma.async` came to take E5M2 and E4M3 fragments as well as
+FP16 and BF16. An accumulator row op passes `f32`, and `widen(f32, x)` is `x`,
+so one MAC serves both without a bypass.
 
 That replaced the hand-written `tnca_cvt16_f32`, which did FP16 and BF16 to
 binary32 only. It was deleted rather than kept: two conversion implementations
 to keep in agreement is precisely what this document argues against, and the
 generated one is checked exhaustively where the hand-written one was checked
 over 131,072 vectors of two formats. Its last measurement — 140 gates and 14
-levels — stays in [synthesis.md](synthesis.md) as the comparison point.
+levels — stays in doc/synthesis.md as the comparison point.
 
 `tnca_cvt_comb_xls` is one per lane in `tnca_vector_fpu`, implementing
 `vf.cvt.<src>.<dst>` (ISA §8.4 `func = 0x04`): all twenty-five pairs among the
@@ -264,6 +268,11 @@ one FP reductions already used, carrying its own lane enable so a predicated
 `v.rcp.approx` leaves the inactive lanes alone. `CAPABILITY0.SFU` reads 1 as a
 result; a build with `HAS_SFU = 0` neither instantiates the slice nor sets the
 bit, which is what ISA §11 means by a capability bit.
+
+What is *not* wired up yet: the five-format converter has no ISA encoding — §8.4
+covers int↔FP32 and reserves the pack/unpack space — and `tnca_fpu_multi` is
+not yet the matrix unit's front end. Both are ISA additions rather than fixes,
+and the units are verified and waiting.
 
 ## Verification
 
@@ -335,7 +344,7 @@ and this is developed on macOS arm64, so `config.json`'s `remote` section
 names a host to run them on.
 
 `R1_STRICT=1` refuses the remote runner outright. The acceptance contract
-([phase1_tasks_and_acceptance.md](phase1_tasks_and_acceptance.md) R1-09) rules out depending on a personal
+(`doc/phase1_tasks_and_acceptance.md` R1-09) rules out depending on a personal
 SSH host, a private key or a remote `cur` directory, and a generation step that
 quietly fell back to one would make `make r1-check-generated` a check against
 somebody's home directory. An acceptance environment is Linux x86_64 by

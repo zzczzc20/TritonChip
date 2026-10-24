@@ -1,0 +1,64 @@
+{
+  "sha256": "afa04e0e732eb82a7b4d9963f5f8d57f4b752ee66234614e967c52dd0644bc87",
+  "identity": {
+    "observed_utc": "2026-10-18T02:33:26.955707+00:00",
+    "scope": "isolated fallback slice cycle miter plus independent oracle, not a full-image change or physical qualification",
+    "hardware_baseline_commit": "54249f7f7ac0cf8f5d1b82d8e63a3046d27522d3",
+    "hypothesis": "Capture immutable selected-MSHR set/way/bypass/tag on existing E_SEL arbitration edge to remove selected-field array muxes from RAM read addresses/fill controls; actual P6 path traverses RAM read, AMO ALU and RAM data input, including a fanout3031 address net2.608ns; does not claim to cut the whole AMO feedback path; addresses remaining P6 routed critical path18levels9.203ns(1.446logic7.757net). No service state or latency added.",
+    "geometry": {
+      "sets": 32,
+      "ways": 8,
+      "mshrs": 8,
+      "targets": 16,
+      "full_tag": 1,
+      "registered_owner": 1,
+      "victim_select": 1,
+      "victim_rank": 1,
+      "data_pipeline": 1,
+      "dram_latency": 400,
+      "memory_base": "0x0001000000000000"
+    },
+    "files": {
+      "runner.py": "c9ea558b4d1c2eb14d53e913f4a399f77c04577d05a29c0328c91affc9427ae9",
+      "tb/common/tnca_dram_model.v": "37401a0a88d48d8226e1a4e94dd818b2d37dfaab12829c767603a3982f9bd5ac",
+      "tb/nuca/service_snapshot.v": "88e66f54f08dca97215345de1e535be0f0f1afa60aee83c655f3dc2fa5d5a540",
+      "rtl/common/tnca_dco_owner_registered.vh": "a8d06b7cb702d9b54e14a7a0ec50eaeca1b4c34700a71adf46e12f3b2b4c340b",
+      "rtl/common/tnca_amo.vh": "1e18fa968eba2ff12e3df6b45c550a2a8b6797eb1300bfdee11beda77737b7cd",
+      "rtl/common/tnca_perf_sel.vh": "890eac0ece3c7377774db98f31a703ad93c43f80e70ad8456ba98ef5216fe6d1",
+      "rtl/common/tnca_defs.vh": "0d4eaa5507a74c45048dc7481a5bbb97ae92d8a5ac15b01c0f37e84783a80c89",
+      "rtl/common/tnca_perf_count.vh": "00499e52d3214453385fadbf553a795c252e301add8c42cfbb93321183329391",
+      "rtl/nuca/tnca_nuca_slice_before.v": "89a04ba88d17daaa88880babe08166c607528e3f20d36f9eaa655124561abf77",
+      "rtl/nuca/tnca_nuca_slice.v": "4994243e0a307b956efddac36a4e3693254ab42ef049892f23725baf4cbcb05f"
+    },
+    "physical_results": null,
+    "image_sha256": null,
+    "required_gate_promotions": [],
+    "runner_pid": 2099403
+  },
+  "summary": [
+    {
+      "name": "epoch0_policy46",
+      "status": "cycle-and-oracle-pass",
+      "log": "epoch0_policy46.log"
+    },
+    {
+      "name": "epoch0_policy78",
+      "status": "cycle-and-oracle-pass",
+      "log": "epoch0_policy78.log"
+    },
+    {
+      "name": "epoch3_policy46",
+      "status": "cycle-and-oracle-pass",
+      "log": "epoch3_policy46.log"
+    },
+    {
+      "name": "epoch3_policy78",
+      "status": "cycle-and-oracle-pass",
+      "log": "epoch3_policy78.log"
+    },
+    {
+      "name": "wrong_service_set",
+      "status": "mutation-detected"
+    }
+  ]
+}

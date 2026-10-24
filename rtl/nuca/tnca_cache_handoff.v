@@ -1,5 +1,11 @@
 // Broadcast a snapshotted ownership range, collect each home exactly once,
 // then wait for memory links and physical write responses to drain.
+//
+// The range registers follow base/size while idle and hold from acceptance
+// until done (R41 F10). That is the value the accepting edge captured before,
+// and nothing reads them while idle (home_valid is busy-gated, and the homes
+// sample on valid && ready), but their 128 enables no longer wait on the
+// global quiescence tree that `ready` carries across the SLRs.
 `default_nettype none
 module tnca_cache_handoff #(parameter N=3)(
  input wire clk,rst_n,
@@ -17,8 +23,9 @@ module tnca_cache_handoff #(parameter N=3)(
   if(!rst_n)begin busy<=0;done<=0;issued<=0;completed<=0;home_base<=0;home_size<=0;end
   else begin
    done<=0;
+   if(!busy)begin home_base<=base;home_size<=size;end
    if(valid && ready)begin
-    busy<=1;issued<=0;completed<=0;home_base<=base;home_size<=size;
+    busy<=1;issued<=0;completed<=0;
    end else if(busy)begin
     issued<=issued | (home_valid & home_ready);
     completed<=completed | (home_done & issued);

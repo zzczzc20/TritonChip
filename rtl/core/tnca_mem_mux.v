@@ -79,7 +79,11 @@ module tnca_mem_mux #(
     assign m_req_aop   = pick_b ? 4'd0 : a_req_aop;
     assign m_req_cmp   = pick_b ? {MEM_DW{1'b0}} : a_req_cmp;
 
-    assign b_req_ready = pick_b && m_req_ready;
+    // R41 T2: b is the priority client, so its ready is the port's ready.
+    // b_req_valid && b_req_ready is unchanged (pick_b IS b_req_valid); the
+    // engine's request valid -- a wide OR over its states' requests -- is no
+    // longer in front of its own handshake (u_txf -> xbuf family).
+    assign b_req_ready = m_req_ready;
     assign a_req_ready = !pick_b && m_req_ready;
 
     assign a_rsp_valid = m_rsp_valid && !m_rsp_tag[TAG_W-1];

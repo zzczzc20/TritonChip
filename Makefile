@@ -33,13 +33,25 @@
 SHELL      := /bin/bash
 
 # R41 stage inputs are checked with the Torch environment on a remote host.
-.PHONY: r41-freeze-check r41-harness-check
+# r41-freeze-check writes one JSON record (verification, command, software
+# tree, git identity) to R41_FREEZE_OUT; copy it into evidence deliberately.
+# r41-stage1-acceptance judges the frozen plan's 61 required items from
+# evidence/r41/stage1/required_index.json; it fails until every item passes.
+.PHONY: r41-freeze-check r41-harness-check r41-stage1-acceptance r41-harness-tests
 STAGE ?= 1
 R41_HARNESS_OUT ?= $(CURDIR)/sim/build/r41/harness-check
+R41_FREEZE_OUT ?= $(CURDIR)/sim/build/r41/freeze-check-stage$(STAGE).json
+R41_ACCEPTANCE_OUT ?= $(CURDIR)/sim/build/r41/stage1-acceptance.json
 r41-freeze-check:
-	$(TORCH_PYTHON) tools/performance_harness/stage_contract.py --stage $(STAGE)
+	$(TORCH_PYTHON) tools/performance_harness/stage_contract.py --stage $(STAGE) --out $(R41_FREEZE_OUT)
 r41-harness-check:
 	$(TORCH_PYTHON) tools/performance_harness/experiment.py spec/r41/stage1/experiments/harness-smoke.json --root $(CURDIR) --out $(R41_HARNESS_OUT) --python $(TORCH_PYTHON)
+r41-stage1-acceptance:
+	$(PYTHON) tools/performance_harness/stage1_acceptance.py --root $(CURDIR) --json $(R41_ACCEPTANCE_OUT)
+# Torch-free unit tests of the runner, board batches, residuals and acceptance.
+r41-harness-tests:
+	cd tools/performance_harness && $(PYTHON) test_experiment.py && $(PYTHON) test_board_tools.py && $(PYTHON) test_stage1_acceptance.py && $(PYTHON) test_stage_contract.py
+	cd tools/performance_harness/systemc && $(PYTHON) test_run_graphs.py
 # NOTE ON PIPELINES IN RECIPES
 #
 # `python ... | tail -4` reports tail's status, so a failing interpreter, a
@@ -166,7 +178,8 @@ $(foreach p,$(TDESC_FAULTS),$(eval export ARGS_$(p) := +expectfault=04))
 
 CORE_PROGS := t00_scalar t01_vector t02_mem t03_fp t04_roles t05_fault t06_alu \
               t11_matrix t12_tensor t13_share t14_caps t15_target t16_vecadd t17_descfault t18_squash t19_waitgen0 t20_sfu t21_cvt t22_atomic t23_amofault t25_mmasf t28_count t29_vrfbank t40_f2i \
-              t33_tdesc_load t34_tdesc_store t36_reduce t37_lsu_straddle t38_wbfreeze t39_freeze_drop t39_switch t39_isolate t39_slice $(TDESC_FAULTS)
+              t33_tdesc_load t34_tdesc_store t36_reduce t37_lsu_straddle t38_wbfreeze t39_freeze_drop t39_switch t39_isolate t39_slice $(TDESC_FAULTS) \
+              t41_boundary
 
 # Image size in 64-bit words; must match tb_tnca_core's WORDS parameter.
 IMAGE_WORDS := 16384
@@ -191,6 +204,8 @@ export ARGS_t39_isolate := +allroles
 # its own slice, where the core has RSLICE (core-r39sw, core-r39sw4); one
 # context elsewhere, where the names would really be shared.
 export ARGS_t39_slice := +roles=1
+# R41 Stage 2: the core's new timing boundaries, on every context at once.
+export ARGS_t41_boundary := +allroles
 
 .PHONY: all test unit core synth lint clean dirs help isa target compiler
 
@@ -222,7 +237,8 @@ lint: dirs
 #------------------------------------------------------------------------------
 # The FMA is generated (xls/tnca_fma.x); tnca_fp32_fma picks the instance for
 # its latency. Both latencies are tested against the same oracle.
-FMA_GEN := $(RTL)/gen/tnca_fma_xls.v $(RTL)/gen/tnca_fma_l3_xls.v
+FMA_GEN := $(RTL)/gen/tnca_fma_align_xls.v $(RTL)/gen/tnca_fma_norm_xls.v \
+           $(RTL)/gen/tnca_fma_round_xls.v $(RTL)/gen/tnca_fma_l3_xls.v
 $(BUILD)/tb_fp32_fma.vvp: $(TB)/core/tb_fp32_fma.v $(RTL)/core/tnca_fp32_fma.v \
                           $(FMA_GEN) $(RTL_COMMON) | dirs
 	$(IVERILOG) $(IVFLAGS) -o $@ $^
@@ -628,6 +644,11 @@ $(BUILD)/tb_core_r39sw5.vvp: $(RTL_DEPS) $(TB)/core/tb_tnca_core.v \
                              $(TB)/common/tnca_mem_model.v | dirs
 	$(IVERILOG) $(IVFLAGS) -y $(RTL)/core -y $(RTL)/common -y $(RTL)/gen -y $(TB)/common \
 	   $(R39_SW5) -o $@ $(TB)/core/tb_tnca_core.v
+# R41 X8: core-vrf-sync-v5-x8's bench (the 1-byte transposed write).
+$(BUILD)/tb_core_r39sw5x8.vvp: $(RTL_DEPS) $(TB)/core/tb_tnca_core.v \
+                               $(TB)/common/tnca_mem_model.v | dirs
+	$(IVERILOG) $(IVFLAGS) -y $(RTL)/core -y $(RTL)/common -y $(RTL)/gen -y $(TB)/common \
+	   $(subst HAS_TENSOR_XPOSE=1,HAS_TENSOR_XPOSE=2,$(R39_SW5)) -o $@ $(TB)/core/tb_tnca_core.v
 $(BUILD)/tb_core_r39sw5_ooo.vvp: $(RTL_DEPS) $(TB)/core/tb_tnca_core.v \
                                  $(TB)/common/tnca_mem_model.v | dirs
 	$(IVERILOG) $(IVFLAGS) -y $(RTL)/core -y $(RTL)/common -y $(RTL)/gen -y $(TB)/common \
@@ -656,6 +677,45 @@ core-r39sw5: $(patsubst %,$(BUILD)/%.hex,$(R39SW5_PROGS)) $(BUILD)/tb_core_r39sw
 	   $(TOOLS)/run_test.sh "$$p (r39 v5, ooo mem)" \
 	     "$(VVP) $(BUILD)/tb_core_r39sw5_ooo.vvp +hex=$(BUILD)/$$p.hex +maxcycles=400000 $$extra" \
 	     || exit 1; \
+	 done
+
+# R41 Stage 2 (F01/F02/F04/F05): t41_boundary on every core bench, with one
+# context (every instruction directly behind its producer, so operands
+# forward), two and all of them (contexts interleave, give way and wait on
+# each other's barriers), printing how often each new boundary's corner case
+# occurred (+r41cov). The core's own assertions check, every cycle, that the
+# registered operands, busy bits and physical registers equal what the old
+# combinational reads returned.
+R41_BENCHES := tb_core tb_core_vrf tb_core_slow tb_core_ooo tb_core4 tb_core4_slow \
+               tb_core4_ooo tb_core_r39hw tb_core_r39hw_ooo tb_core_r39sw \
+               tb_core_r39sw_ooo tb_core_r39sw4 tb_core_r39sw4_ooo tb_core_r39sw5 \
+               tb_core_r39sw5_ooo
+.PHONY: r41-core-boundary
+r41-core-boundary: $(patsubst %,$(BUILD)/%.vvp,$(R41_BENCHES)) $(BUILD)/t41_boundary.hex | dirs
+	@for b in $(R41_BENCHES); do for r in +roles=1 +roles=2 +allroles; do \
+	   $(TOOLS)/run_test.sh "t41_boundary $$b $$r" \
+	     "$(VVP) $(BUILD)/$$b.vvp +hex=$(BUILD)/t41_boundary.hex +maxcycles=400000 $$r +r41cov" \
+	     || exit 1; \
+	   $(VVP) $(BUILD)/$$b.vvp +hex=$(BUILD)/t41_boundary.hex +maxcycles=400000 $$r +r41cov \
+	     | grep '^r41cov' | sed 's/^/      /'; \
+	 done; done
+
+# R41 F10: the LSU pair's registered request boundary (REQ_REG=1) against the
+# R40 combinational port, as a miter (tb/core/tb_lsu_reqreg.v): random
+# programs under back-pressure, long stalls and reordered responses, one with
+# an always-ready in-order memory, one with long latency, and the directed
+# program that checks one beat per cycle and the one-cycle request latency.
+LSU_REQREG_RUNS := "-Ptb_lsu_reqreg.SEED=1" \
+  "-Ptb_lsu_reqreg.SEED=2 -Ptb_lsu_reqreg.STALL_PCT=60" \
+  "-Ptb_lsu_reqreg.SEED=3 -Ptb_lsu_reqreg.STALL_PCT=0 -Ptb_lsu_reqreg.HOLD_PCT=0 -Ptb_lsu_reqreg.REORDER=0" \
+  "-Ptb_lsu_reqreg.SEED=4 -Ptb_lsu_reqreg.MAXLAT=200" \
+  "-Ptb_lsu_reqreg.DIRECTED=1"
+.PHONY: lsu-reqreg
+lsu-reqreg: | dirs
+	@for args in $(LSU_REQREG_RUNS); do \
+	   $(IVERILOG) -g2012 -I $(INC) -s tb_lsu_reqreg $$args -o $(BUILD)/tb_lsu_reqreg.vvp \
+	     $(TB)/core/tb_lsu_reqreg.v $(RTL)/core/tnca_lsu_pair.v $(RTL)/core/tnca_lsu.v || exit $$?; \
+	   $(VVP) $(BUILD)/tb_lsu_reqreg.vvp || exit $$?; \
 	 done
 
 #------------------------------------------------------------------------------
@@ -945,6 +1005,13 @@ $(BUILD)/tb_core_xpose.vvp: $(RTL_DEPS) $(TB)/core/tb_tnca_core.v \
                             $(TB)/common/tnca_mem_model.v | dirs
 	$(IVERILOG) $(IVFLAGS) -y $(RTL)/core -y $(RTL)/common -y $(RTL)/gen -y $(TB)/common \
 	   -P tb_tnca_core.HAS_TENSOR_XPOSE=1 \
+	   -o $@ $(TB)/core/tb_tnca_core.v
+
+# R41 X8: the transposed write for 16-bit and 1-byte elements.
+$(BUILD)/tb_core_xpose8.vvp: $(RTL_DEPS) $(TB)/core/tb_tnca_core.v \
+                            $(TB)/common/tnca_mem_model.v | dirs
+	$(IVERILOG) $(IVFLAGS) -y $(RTL)/core -y $(RTL)/common -y $(RTL)/gen -y $(TB)/common \
+	   -P tb_tnca_core.HAS_TENSOR_XPOSE=2 \
 	   -o $@ $(TB)/core/tb_tnca_core.v
 
 $(BUILD)/tb_core_slow.vvp: $(RTL_DEPS) $(TB)/core/tb_tnca_core.v \
@@ -1349,6 +1416,21 @@ r38-xpose-rtl: $(BUILD)/tb_core.vvp $(BUILD)/tb_core_xpose.vvp $(patsubst %,$(BU
 	@$(TOOLS)/run_test.sh t30_xpose "$(VVP) $(BUILD)/tb_core_xpose.vvp +hex=$(BUILD)/t30_xpose.hex +maxcycles=100000"
 	@$(TOOLS)/run_test.sh t31_xpose_illegal "$(VVP) $(BUILD)/tb_core.vvp +hex=$(BUILD)/t31_xpose_illegal.hex +maxcycles=100000 +expectfault=01"
 	@$(TOOLS)/run_test.sh t32_xpose_badsize "$(VVP) $(BUILD)/tb_core_xpose.vvp +hex=$(BUILD)/t32_xpose_badsize.hex +maxcycles=100000 +expectfault=04"
+
+XPOSE8_PROGS := t33_xpose8 t34_xpose8_old t35_xpose8_badrows t36_xpose8_badcol
+$(TB)/core/progs/t33_xpose8.s $(TB)/core/progs/t34_xpose8_old.s \
+$(TB)/core/progs/t35_xpose8_badrows.s $(TB)/core/progs/t36_xpose8_badcol.s: $(TB)/core/progs/gen_t30_xpose.py
+	@$(PYTHON) $<
+.PHONY: r41-xpose8-rtl
+r41-xpose8-rtl: $(BUILD)/tb_core.vvp $(BUILD)/tb_core_xpose.vvp $(BUILD)/tb_core_xpose8.vvp \
+                $(patsubst %,$(BUILD)/%.hex,$(XPOSE_PROGS) $(XPOSE8_PROGS))
+	@$(TOOLS)/run_test.sh "t30_xpose (x8)" "$(VVP) $(BUILD)/tb_core_xpose8.vvp +hex=$(BUILD)/t30_xpose.hex +maxcycles=100000"
+	@$(TOOLS)/run_test.sh "t32_xpose_badsize (x8)" "$(VVP) $(BUILD)/tb_core_xpose8.vvp +hex=$(BUILD)/t32_xpose_badsize.hex +maxcycles=100000 +expectfault=04"
+	@$(TOOLS)/run_test.sh t33_xpose8 "$(VVP) $(BUILD)/tb_core_xpose8.vvp +hex=$(BUILD)/t33_xpose8.hex +maxcycles=100000"
+	@$(TOOLS)/run_test.sh "t33_xpose8 (no xpose)" "$(VVP) $(BUILD)/tb_core.vvp +hex=$(BUILD)/t33_xpose8.hex +maxcycles=100000 +expectfault=01"
+	@$(TOOLS)/run_test.sh t34_xpose8_old "$(VVP) $(BUILD)/tb_core_xpose.vvp +hex=$(BUILD)/t34_xpose8_old.hex +maxcycles=100000 +expectfault=04"
+	@$(TOOLS)/run_test.sh t35_xpose8_badrows "$(VVP) $(BUILD)/tb_core_xpose8.vvp +hex=$(BUILD)/t35_xpose8_badrows.hex +maxcycles=100000 +expectfault=04"
+	@$(TOOLS)/run_test.sh t36_xpose8_badcol "$(VVP) $(BUILD)/tb_core_xpose8.vvp +hex=$(BUILD)/t36_xpose8_badcol.hex +maxcycles=100000 +expectfault=04"
 
 r38-l0: | dirs
 	@$(PYTHON) tools/r38/gen_counters.py --check

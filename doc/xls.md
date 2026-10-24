@@ -17,13 +17,19 @@ which parts, why those and not others, and what the decision cost and bought.
 | `tnca_sfu_log2_xls` | `xls/tnca_sfu.x` | `v.log2.approx` | 7 | 6 |
 | `tnca_sfu_rcp_xls` | `xls/tnca_sfu.x` | `v.rcp.approx` | 7 | 6 |
 | `tnca_sfu_rsqrt_xls` | `xls/tnca_sfu.x` | `v.rsqrt.approx` | 7 | 6 |
-| `tnca_fma_xls` | `xls/tnca_fma.x` | binary32 FMA with subnormals (FP_LAT = 2) | 3 | 2 |
-| `tnca_fma_l3_xls` | `xls/tnca_fma.x` | the same, one stage deeper (FP_LAT = 3) | 4 | 3 |
+| `tnca_fma_align_xls` | `xls/tnca_fma.x` | binary32 FMA with subnormals (FP_LAT = 2), first stage: unpack, multiply, align | comb. | — |
+| `tnca_fma_norm_xls` | `xls/tnca_fma.x` | second stage: add, leading-zero count, normalising amounts | comb. | — |
+| `tnca_fma_round_xls` | `xls/tnca_fma.x` | third stage: normalising shift, RNE, pack | comb. | — |
+| `tnca_fma_l3_xls` | `xls/tnca_fma.x` | the whole FMA (`fma32`), four stages (FP_LAT = 3) | 4 | 3 |
 
-The two FMA instances are generated with `--flop_outputs=false`: N stages are
-N−1 registers, and the result is combinational from the last stage, because
-every consumer (the vector FP writeback, the accumulator file) registers it.
-`rtl/core/tnca_fp32_fma.v` picks the instance for the core's `FP_LAT`.
+The latency-2 FMA (the image's `FP_LAT`) is the three stage functions of
+`xls/tnca_fma.x`, generated combinational, with the two registers placed by
+`rtl/core/tnca_fp32_fma.v` between them (R41 Stage 2, below). The latency-3
+instance is `fma32`, the three composed, scheduled by XLS with
+`--flop_outputs=false`: four stages, three registers. In both the result is
+combinational from the last stage, because every consumer (the vector FP
+writeback, the accumulator file) registers it. `rtl/core/tnca_fp32_fma.v`
+picks the instance for the core's `FP_LAT`.
 
 The formats are binary32, bfloat16, binary16, OCP FP8 E5M2 and OCP FP8 E4M3.
 FP4 is deliberately absent.
@@ -72,6 +78,26 @@ instances against the same exact Fraction oracle (`tools/model/fp32.py`;
 41 240 and 516 240 vectors, 0 failures), and `tb_fpu_multi` checks the
 composition with the five formats. The DSLX file also carries its own tests
 for the cases `apfloat` gets wrong.
+
+**R41 Stage 2: the latency-2 cuts are placed for the FPGA.** In the routed
+100 MHz census of attempt 3 each of the three XLS-placed stages of the
+latency-2 instance was a family of its own within 0.05 ns of the design's
+-0.92 ns WNS (F03: the vector FPU's `red_busy` into the first stage; F08: the
+first stage's sticky bit into the second's shift amount; F09: the second
+stage's shift amount into the accumulator file). XLS balances against asap7,
+which prices the 24×24 multiplier -- two cascaded DSP48E2 slices on the U280
+-- at several times its FPGA cost; once the arithmetic was rewritten to be
+short on the FPGA, XLS's three-stage schedule moved the alignment shifter
+into the middle stage, which then became the long one. So `xls/tnca_fma.x`
+is written as three stage functions whose results (`FmaAligned`,
+`FmaNormalised`) are the two cuts, and the arithmetic of each is re-expressed
+for the FPGA without changing a result bit: raw exponent fields with
+subnormal fractions doubled (no zero test in front of the exponent adders or
+the DSP), carry-select borrow and rounding, every quantity after the
+leading-zero count one step from it, one shifter for significand and guard.
+`evidence/r41/stage2/candidates/F03`, `F09` and `F08` have the OOC
+before/after, the verification and a Verilator miter of the new instances
+against the previous generated RTL.
 
 ## What is not generated, and why
 

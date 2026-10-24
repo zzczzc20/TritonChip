@@ -1,0 +1,19 @@
+# TREE TAG PERIOD [FILES=a,b,...] GENERICS
+/home/zzhouch/r41-pmac-base V0 10 FILES=core/tnca_fpu_multi.v,core/tnca_fp32_fma.v,gen/tnca_widen_xls.v,gen/tnca_fma_align_xls.v,gen/tnca_fma_norm_xls.v,gen/tnca_fma_round_xls.v,gen/tnca_fma_l3_xls.v LANE=0
+/home/zzhouch/r41-pmac V1_c1100 10 LANE=1 VARIANT=1 CUTS=12
+/home/zzhouch/r41-pmac V3_c1100 10 LANE=1 VARIANT=3 CUTS=12
+/home/zzhouch/r41-pmac V2L_c1100 10 LANE=1 VARIANT=2 DSP2=0 CUTS=12
+/home/zzhouch/r41-pmac V2D_c1100 10 LANE=1 VARIANT=2 DSP2=1 CUTS=12
+/home/zzhouch/r41-pmac V1_c1110 10 LANE=1 VARIANT=1 CUTS=14
+/home/zzhouch/r41-pmac V3_c1110 10 LANE=1 VARIANT=3 CUTS=14
+/home/zzhouch/r41-pmac V2L_c1110 10 LANE=1 VARIANT=2 DSP2=0 CUTS=14
+/home/zzhouch/r41-pmac V2D_c1110 10 LANE=1 VARIANT=2 DSP2=1 CUTS=14
+/home/zzhouch/r41-pmac V1_c1101 10 LANE=1 VARIANT=1 CUTS=13
+/home/zzhouch/r41-pmac V3_c1101 10 LANE=1 VARIANT=3 CUTS=13
+/home/zzhouch/r41-pmac V2L_c1101 10 LANE=1 VARIANT=2 DSP2=0 CUTS=13
+/home/zzhouch/r41-pmac V2D_c1101 10 LANE=1 VARIANT=2 DSP2=1 CUTS=13
+/home/zzhouch/r41-pmac V1_c1111 10 LANE=1 VARIANT=1 CUTS=15
+/home/zzhouch/r41-pmac V3_c1111 10 LANE=1 VARIANT=3 CUTS=15
+/home/zzhouch/r41-pmac V2L_c1111 10 LANE=1 VARIANT=2 DSP2=0 CUTS=15
+/home/zzhouch/r41-pmac V2D_c1111 10 LANE=1 VARIANT=2 DSP2=1 CUTS=15
+/home/zzhouch/r41-pmac V0regen 10 LANE=0

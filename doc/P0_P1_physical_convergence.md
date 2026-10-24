@@ -1,84 +1,84 @@
-# R40 物理收敛方向（作者指令，P0/P1 优先级）
+# R40 Physical Convergence Directions (Author Directives, P0/P1 Priorities)
 
-## 一句话总结
+## Executive Summary
 
-现在要催的不是"赶快再综合一次"，而是**把占满 SLL 热点列的连线找出来，把九十多级的关键组合路径真正拆开**。这才是最可能缩短交付时间的工作。
-
----
-
-## P0：真正切断 tag → owner → victim → writeback 的组合链
-
-这是下一次 RTL 修改最应优先验证的候选，而不是继续仅做 cache 参数缩减。
-
-仓库已有的方向可以直接推进：
-
-### A. 每 way 的同步 tag bank
-- 在 E_SEL 接收请求时，用选中的 set 发起 tag read；
-- 在已有的 E_LOOK 阶段使用读回结果；
-- 检查是否实际映射成 RAM，而不是仍然变成 FF 和大 mux；
-- 专门验证 fill、同址读写、dirty eviction、maintenance 扫描和高位 tag。
-
-### B. victim-owner 结果寄存
-- 尝试在 E_LOOK 计算并保存各 way 的 owner；
-- 在 E_MISS 消费，不把全部分类、dead 判断、victim 优先级、写回准入压在同一周期；
-- metadata 在两阶段之间可能变化，必须有明确的版本检查/重查或等价序约束，不能直接寄存旧值然后假定仍有效。
-
-这两项应先做**独立功能检查**和**相同约束下的实际 TMU+slice 筛选**；它们目前是"有依据的修复假设"，不是"已证明会收敛的方案"。
-
-### P0 验收必答（只交"又少了多少 LUT"不够）
-1. 原来的长组合链究竟在哪个寄存器边界被切断？
-2. 新最差路径是什么？逻辑级数和 logic/net delay 各是多少？
-3. tag 存储最终映射成了什么器件资源？
+The immediate priority is not to "rush into another synthesis run," but to **isolate the nets saturating the SLL hotspot columns and genuinely break up the 90+ stage critical combinational path**. This is the work most likely to reduce delivery turnaround time.
 
 ---
 
-## P1：对 packing 和跨区流水做实际物理检查
+## P0: Genuinely Break the tag → owner → victim → writeback Combinational Chain
 
-旧失败设计的 **CLB occupancy 是 97.59% / 96.54% / 86.54%**，比只看 LUT utilization 更能说明局部布局有多紧。不要把 LUT 百分比当作"还能轻松放下"的依据。
+This is the top-priority candidate to validate in the next RTL iteration, rather than continuing to rely solely on cache parameter reductions.
 
-建议重点检查：
-- 临界存储/选择结构能否**改变实现方式**，而不是继续砍容量；
-- 跨区 data、valid、ready 三个方向是否都有合适的**时序边界**；
-- 物理队列保留是否仅施加在**必要对象**上；
-- 有没有大范围保护属性妨碍工具复制高扇出寄存器、重布局和优化。
+The repository's existing directions can be advanced directly:
 
-注意：不能简单说"把 DONT_TOUCH 全删掉"——之前队列被合并是**真问题**。应保留必要边界，同时避免过度保护。AMD 明确指出保护属性会限制后续物理优化，高扇出寄存器可按 SLR 和负载复制。
+### A. Synchronous Per-Way Tag Banks
+- Initiate the tag read with the selected set upon request reception in `E_SEL`.
+- Consume the read-back result in the existing `E_LOOK` stage.
+- Verify whether the storage actually infers dedicated RAM blocks rather than resolving into flip-flops and large multiplexer trees.
+- Specifically validate fills, same-address read/write hazard handling, dirty evictions, maintenance scanning, and upper tag bits.
 
----
+### B. Victim-Owner Result Registering
+- Compute and stage/register the per-way owner in `E_LOOK`.
+- Consume the result in `E_MISS`, avoiding packing all classification, dead detection, victim prioritization, and writeback admission into a single cycle.
+- Because metadata can change between stages, explicit version checks, re-queries, or equivalent ordering constraints are mandatory; do not simply register stale values and assume they remain valid.
 
-## P1：把 correctness 修复和当前实现身份彻底分开
+Both items must first undergo **independent functional verification** and **actual TMU + slice screening under identical constraints**. They are currently "well-founded candidate hypotheses," not "proven convergence solutions."
 
-最新 decoder 修复的原因很具体：一个 context 退出时，较年轻、已被杀掉的指令仍保留非法 opcode 的分类，进而污染共享 stall/fetch-valid，最终出现 reservation-X。这不是"随便把 X 清零"，而是在保留 illegal 标志的同时，让非法指令分类不再驱动错误的功能单元选择。
-
-但**当前 cf330dc 实现不包含这个修复**。因此：
-- 让另一路工作把修复后的 native 四配置回归完成；
-- **不能用最新软件/RTL 的仿真 PASS 给正在跑的旧硬件源背书**；
-- 下一候选冻结前，合并必要的 correctness 修复；
-- 若最终采用新的 RTL，就必须有对应的新镜像和验证。
-
----
-
-## 四、哪些事情现在不要继续绕
-
-1. **不要把"全接 HBM[0:31]"直接当作最大资源问题**——失败诊断里，kernel hierarchy 是 962,157 LUT，四个 HBM soft interconnect sibling 合计仅 9,999 LUT。至少从 LUT 规模看，HBM soft interconnect 不是主体。这不排除它的连线位置造成拥塞，但要靠跨区连线表证明，而不是看到 32 PC 就先砍 PC。
-2. **不要把缩 cache 等同于修复时序**——64→32 sets 是真实资源取舍，不等于缩 workload，也不能直接判作违规；但它对本地 WNS 改善只有约 0.226 ns，不能继续把这类参数变化当作"长组合链已解决"的证据。
-3. **不要再靠换 directive 消耗最后一次机会**——当前候选保留了 SSI_SpreadSLLs，不是纯 directive 轮盘；但今天仍出现约 203% 的局部需求。下一次若没有修改连线分布或关键结构、仅换一个 directive，依据不足。
-4. **不要因中间 WNS 直接杀当前 run，也不要无限等**——现有 detached observer 已能在终止后提取报告。让这一轮留下完整结果有诊断价值；同时可准备局部 RTL 筛选，不必继续开发更多启动/观察框架，也不要在运行中的 placer/router 旁再加载大 DCP 抢内存。
+### Mandatory P0 Acceptance Criteria (LUT Reductions Alone Are Insufficient)
+1. Exactly at which register boundary was the original long combinational chain severed?
+2. What is the new worst path? What are the resulting logic levels and respective logic vs. net delays?
+3. What target hardware primitive resources did the tag storage ultimately infer?
 
 ---
 
-## 五、直接执行清单（agent 反馈）
+## P1: Perform Concrete Physical Inspections on Packing and Cross-SLR Pipelining
 
-1. **主任务改为三 SLR 物理收敛**，不再以新增功能、文档和测试数量作为主要进度。
-2. 保留当前实现的完整终止日志和 DCP，**不自动重试**，不把中间 WNS 当最终结果。
-3. 在现有诊断工具上增加**两张表**：(a) 跨 SLR 总线/模块贡献排名及列级分布；(b) 去重后的临界组合路径排名。
-4. 重点核对：core 内部逻辑是否跨区、全局 TMU metadata 是否形成跨区高扇出路径、现有流水寄存器实际落在哪里。不要仅报告 assignment 属性通过。
-5. 优先实施并独立筛选同步 tag bank 和 victim-owner 阶段寄存方案；**证明关键链被切断，而不只是 LUT 下降**。
-6. 保持 metadata commit、dead hint、maintenance、dirty eviction 的语义；不要直接给全局 metadata 加一拍而不处理可见性。
-7. 完成 decoder 修复的实际配置回归。明确当前镜像源不包含该修复，**禁止跨版本借用 PASS**。
-8. 下一次完整实现前，提交**同约束下的资源、最差路径、逻辑级数、RAM 映射和功能结果**，以及针对热点 SLL 的具体修正依据。
-9. 不通过 false path、随意 multicycle、降频、减核或缩冻结 workload 掩盖问题。参数化资源取舍须在所有对应对照中一致。
-10. 暂缓文档润色、非必要工具框架和新增优化；保留必要回归。物理收敛与 correctness 分两条明确工作线。
-11. 如果局部筛选仍留下原来的主要问题，**先报告原因**，不因"还有一次预算"就启动整机实现。
+In the previous failed design, **CLB occupancy reached 97.59% / 96.54% / 86.54%**, which reflects local placement congestion far better than aggregate LUT utilization alone. Do not cite LUT utilization percentages as justification that the design "still fits easily."
 
-**预算状态**：额外两次完整实现预算已用一次、剩一次。这最后一次应留给"已证明改变了主要失败机制"的候选，而不是"面积更小所以再试试"的候选。
+Recommended key checks:
+- Can critical storage and selection structures **alter their implementation structure** rather than repeatedly slashing capacity?
+- Do cross-SLR signals in all three directions (`data`, `valid`, and `ready`) have proper **timing pipeline boundaries**?
+- Are physical queue preservation attributes restricted strictly to **essential objects**?
+- Are wide-scope preservation attributes preventing the tool from replicating high-fanout registers, re-placing cells, or running physical optimizations?
+
+Note: Do not simply declare "strip all `DONT_TOUCH` attributes"—unintended queue merging in previous runs was a **genuine defect**. Maintain essential boundaries while avoiding over-protection. AMD explicitly notes that preservation attributes restrict subsequent physical optimization; high-fanout registers should be replicated per SLR and per load.
+
+---
+
+## P1: Strictly Separate Correctness Fixes from Current Implementation Identity
+
+The root cause of the latest decoder fix is very specific: when a context exits, younger, killed instructions still retain an illegal opcode classification, contaminating the shared stall / fetch-valid logic and ultimately causing reservation-X. The fix is not to arbitrarily zero out X, but to preserve the illegal flag while preventing illegal instruction classifications from driving incorrect functional unit selection.
+
+However, the **current cf330dc implementation does not contain this fix**. Therefore:
+- Maintain a separate parallel track to complete the native four-configuration regression with the fix included.
+- **Never cite simulation PASS status on latest software/RTL to endorse an in-flight build running on an older hardware source**.
+- Merge all essential correctness fixes before freezing the next implementation candidate.
+- If a new RTL baseline is ultimately adopted, corresponding new bitstreams and verification runs are required.
+
+---
+
+## Practices and Anti-Patterns to Avoid
+
+1. **Do not treat connecting all HBM[0:31] pseudo-channels as the primary resource bottleneck**—In failure diagnostics, the kernel hierarchy accounted for 962,157 LUTs, while all four HBM soft interconnect siblings combined totaled only 9,999 LUTs. In terms of LUT footprint, the HBM soft interconnect is negligible. While its placement could still induce routing congestion, this must be demonstrated via cross-SLR net tables rather than preemptively stripping pseudo-channels simply because 32 PCs exist.
+2. **Do not equate cache reduction with timing closure**—Reducing 64 to 32 sets represents a legitimate resource trade-off; it does not shrink the benchmark workload and is not an invalid modification. However, it improved local WNS by only ~0.226 ns. Such parameter tweaks must not be presented as evidence that the long combinational path problem has been resolved.
+3. **Do not waste the final implementation attempt on directive roulette**—The current candidate preserved `SSI_SpreadSLLs` rather than randomly cycling directives, yet still encountered ~203% local routing demand. Launching the next run with a different directive without modifying wire distribution or critical microarchitectures lacks sufficient rationale.
+4. **Do not abort an active run solely due to intermediate WNS, nor wait indefinitely**—The existing detached observer captures diagnostic reports upon completion. Letting the current run finish yields valuable diagnostic data. Concurrently, prepare localized RTL screenings without building redundant launch/observation frameworks or loading large DCPs alongside active placers/routers to avoid memory starvation.
+
+---
+
+## Actionable Execution Checklist (Agent Feedback)
+
+1. **Reprioritize the primary objective to three-SLR physical convergence**; do not treat added features, documentation volume, or test counts as primary indicators of progress.
+2. Preserve complete termination logs and DCP checkpoints from the current implementation; **do not automatically retry**, and do not treat intermediate WNS as final results.
+3. Add **two diagnostic tables** to the current tooling: (a) cross-SLR bus/module contribution rankings and column-level distributions; (b) deduplicated critical combinational path rankings.
+4. Verify key placement details: check whether core-internal logic straddles SLR boundaries, whether global TMU metadata creates high-fanout cross-SLR paths, and where existing pipeline registers actually physically land. Do not rely solely on passing assignment attributes.
+5. Prioritize implementing and independently screening the synchronous tag bank and victim-owner stage-register solutions; **prove that the critical combinational chain has been severed, not just that LUT counts dropped**.
+6. Maintain exact semantics for metadata commit, dead hints, maintenance operations, and dirty evictions; do not arbitrarily add a pipeline stage to global metadata without resolving visibility.
+7. Complete configuration regressions for the decoder fix across all native configurations. Make explicit that the current running image lacks this fix; **strictly prohibit borrowing PASS status across mismatched revisions**.
+8. Prior to the next full implementation run, submit **resource usage, worst-case path, logic levels, RAM primitive mapping, and functional validation under identical constraints**, accompanied by concrete rationale targeting SLL hotspots.
+9. Do not mask timing violations using false paths, arbitrary multicycle constraints, clock frequency degradation, core reduction, or downscaled frozen workloads. Parametric resource trade-offs must remain consistent across all comparisons.
+10. Suspend documentation polishing, non-essential tooling frameworks, and speculative optimizations; maintain essential regressions. Keep physical convergence and correctness on two strictly separate tracks.
+11. If localized screening leaves the primary timing bottlenecks unresolved, **report root causes first**; do not initiate a full-chip implementation run simply because one attempt remains in the budget.
+
+**Budget Status**: Exactly one of the two additional full implementation budget attempts has been consumed; one remains. This final run must be reserved for a candidate that has **demonstrated elimination of the primary failure mechanisms**, rather than a candidate submitted merely because "its area is smaller, so let's try again."

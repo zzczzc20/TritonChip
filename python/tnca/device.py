@@ -55,6 +55,10 @@ BENCH_NAME = {
     # the architecture is v5's. Its timing is the AXI model's (+axi_* plusargs,
     # TNCA_DEVICE_PLUSARGS).
     'core-vrf-sync-v5/hbm': 'tnca_device_vrf5_hbm.vvp',
+    # R41 X8: v5 with the 1-byte transposed write.
+    'core-vrf-sync-v5-x8': 'tnca_device_vrf5x8.vvp',
+    'core-vrf-sync-v5-x8/slow': 'tnca_device_vrf5x8_slow.vvp',
+    'core-vrf-sync-v5-x8/hbm': 'tnca_device_vrf5x8_hbm.vvp',
 }
 
 # Parameters a profile's device is elaborated with. Both profiles come from
@@ -82,6 +86,7 @@ _FOUR = ['-P', 'tnca_device.NUM_RCTX=4', '-P', 'tnca_device.RCTX_W=2',
 _V5 = ['-P', 'tnca_device.HAS_TENSOR_XPOSE=1', '-P', 'tnca_device.RPAIR=1',
        '-P', 'tnca_device.MTX_ABUF=1']
 _R39_SW5 = [a.replace('RCTX_SWITCH=1', 'RCTX_SWITCH=2') for a in _R39_SW]
+_V5X8 = [a.replace('HAS_TENSOR_XPOSE=1', 'HAS_TENSOR_XPOSE=2') for a in _V5]
 # R40-04: the AXI window of the /hbm memory mode, in 64-bit words (32 MiB).
 HBM_SIM_WORDS = 1 << 22
 HBM_LOCAL_LIMIT = 0x20000
@@ -101,6 +106,10 @@ BENCH_PARAMS = {
     'core-vrf-sync-v5': _BANKED + _R39_SW5 + _FOUR + _V5,
     'core-vrf-sync-v5/slow': _BANKED + _R39_SW5 + _FOUR + _V5 + _SLOW,
     'core-vrf-sync-v5/hbm': _BANKED + _R39_SW5 + _FOUR + _V5 + _HBM,
+    # R41 X8: v5 with the 1-byte transposed write (HAS_TENSOR_XPOSE=2).
+    'core-vrf-sync-v5-x8': _BANKED + _R39_SW5 + _FOUR + _V5X8,
+    'core-vrf-sync-v5-x8/slow': _BANKED + _R39_SW5 + _FOUR + _V5X8 + _SLOW,
+    'core-vrf-sync-v5-x8/hbm': _BANKED + _R39_SW5 + _FOUR + _V5X8 + _HBM,
     'core-xpose-v1': ['-P', 'tnca_device.HAS_TENSOR_XPOSE=1'],
     'core-xpose-v1/slow': ['-P', 'tnca_device.HAS_TENSOR_XPOSE=1'] + _SLOW,
 }

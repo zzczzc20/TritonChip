@@ -52,7 +52,7 @@ cannot overwrite their evidence. Session counters include actual helper copies a
 Lowering time covers the actual TNCA backend calls, not Dynamo/Inductor's entire compilation.
 Cold compile-plus-execute walls are 6.915, 1.668 and 1.641 seconds respectively.
 These are representative graph sizes and actual process-local memory peaks, not a complete-model
-working-set bound. Complete-model TNCA peak/code working-set estimates remain outstanding.
+working-set bound. Complete-model TNCA compile, code working-set, IR and device-peak estimates are in `model_estimates.md` (all 24 layers compiled; six standard-path blockers B1-B6 recorded there).
 
 The additional `kickoff/language-meta-v1-evidence.tgz` analyzes all 24 official
 language layers using the pinned Transformers source and meta tensors. Every

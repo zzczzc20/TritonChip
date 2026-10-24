@@ -27,6 +27,14 @@ registering a device:
   TNCA_POLICY_LAYOUT      channels-last layout for a graph with convolutions,
                           as the CPU path always chooses (with MKLDNN present)
                           (`GraphLowering.decide_layout_opt`)
+  TNCA_POLICY_FP8_CONVERT float8_e4m3fn <-> float8_e5m2 lowered through
+                          binary32 (exact), where Inductor's Triton codegen
+                          refuses a direct FP8 -> FP8 cast on every device;
+                          and `_scaled_mm`'s `scale_result` applied to an FP8
+                          output, which Inductor's lowering drops; and
+                          blockwise (1x128 / 128x128) `_scaled_mm` and
+                          `_scaled_mm_v2`, whose only upstream lowering is
+                          a CUDA-TMA template (tnca/scaled_mm_blockwise.py)
   TNCA_POLICY_REALIZE     the CPU's realization and fusion heuristics: a
                           reused result of a heavy op (exp, log, ...) is
                           stored rather than recomputed, the CPU's opcount and
@@ -280,6 +288,78 @@ def _mm_decompositions():
         L.lowerings[key] = tuned_bmm
 
 
+def _fp8_cross_convert():
+    """float8_e4m3fn <-> float8_e5m2 through binary32, for tnca tensors.
+
+    Inductor's Triton code generation refuses a direct FP8 -> FP8 cast on
+    every device (TritonOverrides.to_dtype: Triton has no such conversion
+    on NVIDIA). PyTorch converts through float (c10), and binary32 holds
+    every value of both formats exactly, so the two-step conversion is the
+    same function -- the TNCA importer keeps a NaN's sign across it, as it
+    does for every conversion with an FP8 end. Other devices and every
+    other conversion keep upstream's lowering.
+    """
+    import torch
+    import torch._inductor.lowering as L
+    prims = torch.ops.prims
+    fp8 = (torch.float8_e4m3fn, torch.float8_e5m2)
+    for key in (prims.convert_element_type, prims.convert_element_type.default):
+        upstream = L.lowerings.get(key)
+        if upstream is None or getattr(upstream, '_tnca', False):
+            continue
+
+        def convert_element_type(x, dtype, upstream=upstream):
+            d = _device_of(x)
+            if (d is not None and d.type == NAME and dtype in fp8 and x.get_dtype() in fp8
+                    and x.get_dtype() != dtype):
+                return upstream(upstream(x, torch.float32), dtype)
+            return upstream(x, dtype)
+        convert_element_type._tnca = True
+        L.lowerings[key] = convert_element_type
+
+
+def _scaled_mm_result_scale():
+    """`torch._scaled_mm(..., scale_result=s, out_dtype=<FP8>)` divides by s.
+
+    Inductor's tuned_scaled_mm takes `scale_result` and never reads it
+    (torch 2.14): no template or epilogue applies it, so on a device with no
+    ATen fallback an FP8 result came out unscaled -- silently wrong. torch
+    applies it only to an FP8 output, as `out * (1 / scale_result)` before
+    the cast (ATen _scaled_mm_out_cpu_emulated; cuBLASLt's D scale). This
+    lowers exactly that for tnca: the same template with a binary32 output,
+    then the reciprocal multiply and the conversion. Every other
+    `_scaled_mm` keeps upstream's lowering.
+    """
+    import torch
+    import torch._inductor.lowering as L
+    key = torch.ops.aten._scaled_mm.default
+    fp8 = (torch.float8_e4m3fn, torch.float8_e5m2)
+    upstream = L.lowerings.get(key)
+    if upstream is None or getattr(upstream, '_tnca', False):
+        return
+
+    def scaled_mm(mat_a, mat_b, scale_a, scale_b, bias=None, scale_result=None, out_dtype=None,
+                  use_fast_accum=False, layout=None):
+        d = _device_of(mat_a)
+        if (d is not None and d.type == NAME and scale_result is not None and out_dtype in fp8
+                and layout is None):
+            wide = upstream(mat_a, mat_b, scale_a, scale_b, bias, None, torch.float32, use_fast_accum)
+            return L.to_dtype(L.mul(wide, L.reciprocal(scale_result)), out_dtype)
+        return upstream(mat_a, mat_b, scale_a, scale_b, bias, scale_result, out_dtype,
+                        use_fast_accum, layout)
+    scaled_mm._tnca = True
+    L.lowerings[key] = scaled_mm
+
+
+def _scaled_mm_blockwise():
+    """Blockwise (1x128 / 128x128) `_scaled_mm` and `_scaled_mm_v2` on tnca:
+    upstream's only lowering is a CUDA-TMA template, so the call had no
+    choice. A K-block Triton template instead (tnca/scaled_mm_blockwise.py);
+    every other `_scaled_mm` keeps its lowering."""
+    from .. import scaled_mm_blockwise
+    scaled_mm_blockwise.install(_device_of, NAME)
+
+
 def _realize_and_fusion():
     import torch._inductor.ir as ir
     import torch._inductor.scheduler as sch
@@ -354,6 +434,10 @@ def install():
         _mm_decompositions()
     if _on('TNCA_POLICY_DEPTHWISE'):
         _depthwise_convolution()
+    if _on('TNCA_POLICY_FP8_CONVERT'):
+        _fp8_cross_convert()
+        _scaled_mm_result_scale()
+        _scaled_mm_blockwise()
     if _on('TNCA_POLICY_REALIZE'):
         _realize_and_fusion()
     if _on('TNCA_POLICY_LAYOUT'):

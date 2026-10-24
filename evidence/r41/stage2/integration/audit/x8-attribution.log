@@ -1,0 +1,49 @@
+{
+  "scheduler_models": {
+    "v5": "banked2",
+    "x8": "flipflop"
+  },
+  "summary": {
+    "kernels": 479,
+    "tnir_same": 479,
+    "opt.tnir_same": 170,
+    "spmd.tnir_same": 433,
+    "sched.tnir_different": 479,
+    "t.ld.async.b.t_v5": 0,
+    "t.ld.async.b.t_x8": 0,
+    "v.ld.gather.b_v5": 0,
+    "v.ld.gather.b_x8": 0,
+    "opt.tnir_absent": 309,
+    "spmd.tnir_absent": 46,
+    "points": 113,
+    "source_same_kernels": 479,
+    "resource_changed_points": 47
+  }
+}
+| Family | Points with text changes | Points with resource changes |
+|---|---:|---:|
+| `model.gpt2_block` | 4 | 4 |
+| `model.llama_decode` | 5 | 5 |
+| `model.llama_prefill` | 5 | 5 |
+| `model.mlp` | 4 | 0 |
+| `model.resnet_block` | 4 | 0 |
+| `op.add` | 6 | 6 |
+| `op.argmax` | 4 | 0 |
+| `op.attention_decode` | 4 | 4 |
+| `op.attention_prefill` | 4 | 4 |
+| `op.bmm` | 4 | 3 |
+| `op.conv2d` | 4 | 0 |
+| `op.copy` | 1 | 1 |
+| `op.cumsum` | 3 | 3 |
+| `op.embedding` | 5 | 5 |
+| `op.gelu_tanh` | 4 | 0 |
+| `op.gemv` | 5 | 0 |
+| `op.layernorm` | 4 | 0 |
+| `op.linear` | 5 | 0 |
+| `op.matmul` | 9 | 0 |
+| `op.rmsnorm` | 5 | 0 |
+| `op.rope` | 4 | 4 |
+| `op.silu` | 5 | 0 |
+| `op.softmax` | 6 | 0 |
+| `op.swiglu` | 4 | 0 |
+| `op.transpose` | 5 | 3 |

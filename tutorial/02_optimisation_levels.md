@@ -60,7 +60,7 @@ From [04](04_reading_the_compile.md)'s dump of a similar kernel:
 opt_strength_reduced         1      pid * 16 became a shift
 opt_unobserved_load_other    1      a masked load's `other` nobody could observe
 opt_dead_pure_removed        1      a constant with no remaining user
-opt_ops_before / after      22 / 18 what upstream canonicalisation and CSE removed
+opt_ops_before / after      18 / 18 what upstream canonicalisation and CSE removed (none here)
 ```
 
 The first is TNCA's own lowering. The last is the pinned upstream MLIR

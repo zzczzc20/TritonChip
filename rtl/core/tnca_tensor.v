@@ -83,9 +83,10 @@ module tnca_tensor #(
     parameter MEM_BYTES = 8,
     parameter TAG_W     = 4,        // engine-local tag
     parameter NTAG      = 16,
-    // The transposed window write (ISA sec 9E mod[5], capability
-    // `tensor_transpose`). Off, the corner-turn buffer and its states are
-    // not built.
+    // The transposed window write (ISA sec 9E mod[5]). 0: not built (the
+    // corner-turn buffer and its states are removed); 1: 16-bit elements
+    // (capability `tensor_transpose`); 2: 16-bit and 1-byte elements
+    // (adds `tensor_transpose_8bit`, R41 Stage 2 X8).
     parameter HAS_XPOSE = 0
 ) (
     input  wire                     clk,
@@ -345,8 +346,15 @@ module tnca_tensor #(
         end
     endfunction
 
-    wire t_rowv = in_dim(t_c0, t_i0, t_e0) && in_dim(t_c1, t_i1, t_e1) &&
-                  in_dim(t_c2, t_i2, t_e2) && in_dim(t_c3, t_i3, t_e3);
+    // R41 T2: each position's in-bounds bit is a register, written with its
+    // index wherever the index is written (t_v*), so the row's validity is
+    // an AND of four flops rather than four 64-bit compares in front of the
+    // load/store requests, the odometer and the slot writes. t_rowv_c is
+    // the comparison it replaces; a bench assertion compares the two.
+    reg  [3:0] t_v;
+    wire t_rowv   = &t_v;
+    wire t_rowv_c = in_dim(t_c0, t_i0, t_e0) && in_dim(t_c1, t_i1, t_e1) &&
+                    in_dim(t_c2, t_i2, t_e2) && in_dim(t_c3, t_i3, t_e3);
 
     // The odometer's next step. Position 3 moves fastest.
     wire inc3 = (t_i3 + 32'd1 < t_b3);
@@ -363,9 +371,14 @@ module tnca_tensor #(
     // Where this row's box starts within an 8-byte word: (row address +
     // contiguous offset) mod 8. Constant along a row, and possibly different
     // from row to row (an outer stride need not be a multiple of 8).
-    wire [2:0]  r_m   = t_P3[2:0] + t_CB[2:0];
-    // The box's first byte rounded down to its word, relative to t_P3.
-    wire [63:0] t_CBa = t_CB - {61'd0, r_m};
+    // R41 T2: t_ps = t_P3 + t_CB, written with t_P3. r_m is its low three
+    // bits ((t_P3 + t_CB) mod 8, as before), and the box row's first word,
+    // t_P3 + t_CBa, is t_ps with them cleared -- so the request addresses
+    // are one add from registers, not four.
+    reg  [63:0] t_ps;
+    wire [2:0]  r_m   = t_ps[2:0];
+    // (The box's first byte rounded down to its word, relative to t_P3, was
+    // t_CBa = t_CB - r_m; t_P3 + t_CBa = t_ps & ~7.)
 
     // A byte j (0..7) of an 8-byte group starting at byte offset `g` is
     // valid when lo <= j < hi, with lo/hi computed once per group.
@@ -421,8 +434,6 @@ module tnca_tensor #(
     wire signed [63:0] w0 = $signed({29'd0, t_unit, 3'd0}) - $signed({61'd0, r_m});
 
     wire [63:0] ld_g    = t_CB  + {29'd0, t_unit, 3'd0};  // first byte of the unit
-    wire [63:0] ld_wlo  = t_CBa + {29'd0, t_unit, 3'd0};  // its low word
-    wire [63:0] ld_whi  = ld_wlo + 64'd8;
     wire        ld_nlo  = t_rowv && (w0 > q_k1) && (w0 < q_k2);
     wire        ld_nhi  = t_rowv && (r_m != 3'd0) && (w0 > q_k1h) && (w0 < q_k2h);
     wire [7:0]  ld_keep = t_rowv ? byte_range(64'd0 - ld_g, t_E - ld_g) : 8'd0;
@@ -434,7 +445,6 @@ module tnca_tensor #(
     // Word k is memory bytes [t_CBa + 8k, +8). Its bytes are written when
     // they are both inside the tensor and inside the box row.
     wire [31:0] st_nwords = t_row_units + ((r_m != 3'd0) ? 32'd1 : 32'd0);
-    wire [63:0] st_g    = t_CBa + {29'd0, t_unit, 3'd0};
     reg  [7:0]  st_be;
     integer bk;
     always @(*)
@@ -516,7 +526,9 @@ module tnca_tensor #(
     assign vr_idx  = st_vreg;
 
     //==========================================================================
-    // TRANSPOSED WRITE (ISA sec 9E mod[5]) -- rank 2, 16-bit, unchanged.
+    // TRANSPOSED WRITE (ISA sec 9E mod[5]) -- rank 2, 16-bit elements, and
+    // 1-byte elements when HAS_XPOSE >= 2 (R41 X8: e4m3, e5m2, int8 -- the
+    // engine moves bytes and never interprets them).
     //
     // A source tile of R rows x C columns lands as C rows x R columns, flat
     // row-major: window element (c, r) = source element (r, c). Memory
@@ -538,7 +550,21 @@ module tnca_tensor #(
     wire [31:0] x_cols_ok   = (x_cols_left >= {32'd0, t_b4}) ? t_b4 : x_cols_left[31:0];
     wire [31:0] x_valid_bytes = x_row_oob ? 32'd0 : (x_cols_ok << t_esz);
     wire [31:0] x_unit_off  = {t_unit[28:0], 3'd0};
-    wire        x_unit_oob  = x_row_oob || (x_unit_off >= x_valid_bytes);
+    wire        x_unit_oob_c = x_row_oob || (x_unit_off >= x_valid_bytes);
+    // R41 T2: x_unit_oob is a register, written with x_row and t_unit by
+    // the transposed walk from the same test on their new values (x_oob_f).
+    // It was t_c3/t_e3 -> in_dim -> compare -> the zero write's reset pins
+    // on all of xbuf (x8 tile-1 screen, 1,726 endpoints at +0.668 ns).
+    reg         x_oob_q;
+    wire        x_unit_oob = x_oob_q;
+    function x_oob_f;
+        input [31:0] row;
+        input [31:0] unit;
+        begin
+            x_oob_f = !in_dim(t_c3, row, t_e3) ||
+                      ({unit[28:0], 3'd0} >= (x_cols_ok << t_esz));
+        end
+    endfunction
     wire [31:0] x_rem       = x_valid_bytes - x_unit_off;
     wire [3:0]  x_nkeep     = (x_rem >= 32'd8) ? 4'd8 : x_rem[3:0];
     reg  [7:0]  x_keep_mask;
@@ -561,15 +587,30 @@ module tnca_tensor #(
             x_rsp_keep[xk*8 +: 8] = {8{x_rsp_kbits[xk]}};
     reg  [63:0] r_base0;
     reg  [3:0]  x_q;
-    // 16-bit elements only (the MMA operand types): a unit is four
-    // elements, so one column block is four destination rows, and a
-    // destination row of R elements is 2R bytes with R in {4, 8, 16}.
-    wire [3:0]  x_per_unit   = 4'd4;
-    wire [31:0] x_drow_bytes = t_b3 << 1;
-    wire [31:0] x_ddst  = ((t_unit << 2) + {28'd0, x_q}) * x_drow_bytes;
+    // R41 T2: S_XWRITE advances x_q every cycle, whether or not the register
+    // file takes the write, and x_held says it did not -- so x_q ran one
+    // ahead and x_qe, the row being written, is one less. x_q's enable no
+    // longer waits for vw_ready, which came from the bank write arbitration
+    // across the core (w_en -> wr_ok -> vw_hold -> x_q, x8 screens).
+    reg         x_held;
+    wire [3:0]  x_qe = x_q - {3'd0, x_held};
+    always @(posedge clk)
+        x_held <= rst_n && !flush && (st == S_XWRITE) && vw_hold;
+    // 16-bit elements: a unit is four elements, so one column block is four
+    // destination rows, and a destination row of R elements is 2R bytes
+    // with R in {4, 8, 16}. 1-byte elements (HAS_XPOSE >= 2, x_b): a unit
+    // is eight elements -- eight destination rows a block -- and a row is R
+    // bytes, still whole 32-bit lanes inside one register. x_b is a
+    // constant 0 on an engine built without it, so the 16-bit engine's
+    // logic is what it was.
+    localparam  X8 = (HAS_XPOSE >= 2);
+    wire        x_b = X8 && (t_esz == 3'd0);
+    wire [3:0]  x_per_unit   = x_b ? 4'd8 : 4'd4;
+    wire [31:0] x_drow_bytes = x_b ? t_b3 : (t_b3 << 1);
+    wire [31:0] x_ddst  = ((x_b ? (t_unit << 3) : (t_unit << 2)) + {28'd0, x_qe}) * x_drow_bytes;
     wire [7:0]  x_vreg  = t_wbase + x_ddst[13:6];
     wire [3:0]  x_lane0 = x_ddst[5:2];
-    wire        xrow_ok = (t_esz == 3'd1) &&
+    wire        xrow_ok = ((t_esz == 3'd1) || x_b) &&
                           ((t_b3 == 32'd4) || (t_b3 == 32'd8) || (t_b3 == 32'd16));
     reg  [VLEN-1:0]      x_lanes;
     reg  [VLEN*ELEN-1:0] x_data;
@@ -580,13 +621,23 @@ module tnca_tensor #(
             if ((xl >= x_lane0) && (xl < x_lane0 + (x_drow_bytes >> 2)))
                 x_lanes[xl] = 1'b1;
         x_data = {(VLEN*ELEN){1'b0}};
-        if (HAS_XPOSE != 0)
-            for (xh = 0; xh < 2*VLEN; xh = xh + 1)
-                case (t_b3[4:0])
-                5'd4:  x_data[xh*16 +: 16] = xbuf[((xh & 3)  * 64 + x_q * 16) +: 16];
-                5'd8:  x_data[xh*16 +: 16] = xbuf[((xh & 7)  * 64 + x_q * 16) +: 16];
-                default: x_data[xh*16 +: 16] = xbuf[((xh & 15) * 64 + x_q * 16) +: 16];
-                endcase
+        if (HAS_XPOSE != 0) begin
+            if (x_b)
+                // Byte (c, r) of the destination row: byte x_q of unit r.
+                for (xh = 0; xh < 4*VLEN; xh = xh + 1)
+                    case (t_b3[4:0])
+                    5'd4:  x_data[xh*8 +: 8] = xbuf[((xh & 3)  * 64 + x_qe * 8) +: 8];
+                    5'd8:  x_data[xh*8 +: 8] = xbuf[((xh & 7)  * 64 + x_qe * 8) +: 8];
+                    default: x_data[xh*8 +: 8] = xbuf[((xh & 15) * 64 + x_qe * 8) +: 8];
+                    endcase
+            else
+                for (xh = 0; xh < 2*VLEN; xh = xh + 1)
+                    case (t_b3[4:0])
+                    5'd4:  x_data[xh*16 +: 16] = xbuf[((xh & 3)  * 64 + x_qe * 16) +: 16];
+                    5'd8:  x_data[xh*16 +: 16] = xbuf[((xh & 7)  * 64 + x_qe * 16) +: 16];
+                    default: x_data[xh*16 +: 16] = xbuf[((xh & 15) * 64 + x_qe * 16) +: 16];
+                    endcase
+        end
     end
 
     //==========================================================================
@@ -597,7 +648,10 @@ module tnca_tensor #(
     wire        ld_issue_hi = t_half || !ld_nlo;
     wire        ld_req = (st == S_TRUN) && (ld_nlo || ld_nhi) &&
                          (t_half || have_slot);
-    wire [63:0] ld_addr = t_P3 + (ld_issue_hi ? ld_whi : ld_wlo);
+    // t_P3 + ld_wlo = (t_ps & ~7) + 8*t_unit, and + 8 for the high word.
+    wire [60:0] ld_alo  = t_ps[63:3] + {29'd0, t_unit};
+    wire [60:0] ld_ahi  = ld_alo + 61'd1;
+    wire [63:0] ld_addr = {(ld_issue_hi ? ld_ahi : ld_alo), 3'b000};
     wire [SLOT_W-1:0] ld_slot = t_half ? t_slot : free_slot;
 
     wire        st_req = (st == S_SRUN) && t_rowv && !st_need_reg &&
@@ -614,7 +668,7 @@ module tnca_tensor #(
     assign mem_req_valid = dl_issue || ld_req || st_req || x_req;
     assign mem_req_addr  = dl_issue      ? (dl_addr + {56'd0, dl_word, 3'd0})
                          : (st == S_TRUN) ? ld_addr
-                         : st_is_store    ? (t_P3 + st_g)
+                         : st_is_store    ? {ld_alo, 3'b000}   // t_P3 + st_g
                          :                  x_unit_addr;
     assign mem_req_we    = st_is_store;
     assign mem_req_be    = st_is_store ? st_be : {MEM_BYTES{1'b0}};
@@ -625,7 +679,16 @@ module tnca_tensor #(
                          : (st == S_TRUN) ? {ld_slot, ld_issue_hi}
                          :                  free_tag;
 
-    wire mem_fire = mem_req_valid && mem_req_ready;
+    // R41 T2: one handshake per state. Each request is valid only in its own
+    // state (dl_issue S_DLOAD, ld_req S_TRUN, st_req S_SRUN, x_req S_XRUN),
+    // so in each state its own fire equals mem_req_valid && mem_req_ready --
+    // without the other states' request logic (the load/store row bounds,
+    // t_rowv and st_be) in front of the transposed walk and its xbuf writes.
+    // mem_req_ready does not depend on mem_req_valid (tnca_mem_mux).
+    wire dl_fire = dl_issue && mem_req_ready;
+    wire ld_fire = ld_req   && mem_req_ready;
+    wire st_fire = st_req   && mem_req_ready;
+    wire x_fire  = x_req    && mem_req_ready;
 
     //==========================================================================
     // Descriptor parsing, once the 256 bytes are in (ISA sec 9D.3)
@@ -714,8 +777,8 @@ module tnca_tensor #(
         (t_s4 != (64'd1 << t_esz)) ||
         // ISA sec 9D.2: the window is the bounds check.
         (g_box > g_win) ||
-        // TRANSPOSED WRITE: a 2-D tile of 16-bit elements with 4, 8 or 16
-        // source rows, so every destination row is whole lanes inside ONE
+        // TRANSPOSED WRITE: a 2-D tile of 16-bit (or, with HAS_XPOSE >= 2,
+        // 1-byte) elements with 4, 8 or 16 source rows, so every destination row is whole lanes inside ONE
         // register, and every source row starting on an 8-byte boundary with
         // a non-negative contiguous coordinate (the corner turn copies whole
         // source units).
@@ -734,12 +797,44 @@ module tnca_tensor #(
         endcase
     end
     wire [63:0] mul_p = mul_c * mul_s;
+    // R41 T2: the product is registered before it is added (t_mp -> t_acc
+    // was the engine's deepest path after the xbuf family: mux, 64x64
+    // multiply and 64-bit add in one cycle). One more S_TMUL cycle per
+    // transfer of rank >= 2; the sum is the same.
+    reg  [63:0] mul_q;
+    reg         t_pv;            // mul_q holds a product still to be added
+    always @(posedge clk) mul_q <= mul_p;
 
     //==========================================================================
     // A window write the register file refused this cycle (vw_ready).
     wire vw_hold = vw_en && !vw_ready;
 
+    // R41 T2: the descriptor words and the corner-turn units are written a
+    // cycle after their response arrives, from a copy registered here
+    // (rq_*), so the network interface's response register is not in front
+    // of dl_buf's and xbuf's write enables and data (0-2 levels, routing:
+    // u_cni/rsp_* -> dl_buf/xbuf, +0.29 ... +1.42 ns across placements).
+    // Nothing reads them that early: S_DPARSE and the dl_boxel fold read
+    // words 0-13 only, at least a cycle after word 13 lands; S_XWRITE
+    // starts two cycles after the last unit's response (S_XDRAIN between).
+    // Written ahead of the flush branch, as the original write would have
+    // been in the response's own cycle.
+    reg         rq_dl, rq_x;
+    reg  [4:0]  rq_word;
+    reg  [3:0]  rq_row;
+    reg  [63:0] rq_keep, rq_data;
     always @(posedge clk) begin
+        rq_dl   <= rst_n && !flush && mem_rsp_valid && (st == S_DLOAD || st == S_DWAIT);
+        rq_x    <= rst_n && !flush && mem_rsp_valid && !(st == S_DLOAD || st == S_DWAIT) && t_xpose;
+        rq_word <= dl_word;
+        rq_row  <= x_rsp_row;
+        rq_keep <= x_rsp_keep;
+        rq_data <= mem_rsp_rdata;
+    end
+
+    always @(posedge clk) begin
+        if (rq_dl) dl_buf[rq_word] <= rq_data;
+        if (rq_x)  xbuf[rq_row*64 +: 64] <= rq_data & rq_keep;
         if (!rst_n || flush) begin
             st        <= S_IDLE;
             win_v     <= {WIN_N{1'b0}};
@@ -799,7 +894,6 @@ module tnca_tensor #(
                     // Into the corner-turn buffer, not the window: a unit
                     // holds one source row's slice of 8/esz columns, which
                     // is a slice of 8/esz DIFFERENT destination rows.
-                    xbuf[x_rsp_row*64 +: 64] <= mem_rsp_rdata & x_rsp_keep;
                     tg_v[mem_rsp_tag] <= 1'b0;
                 end else if (t_store) begin
                     // A write's response says it has been performed.
@@ -880,7 +974,7 @@ module tnca_tensor #(
             //---------------------------------------------------------------
             // A 256-byte TensorMap is 32 words; the snapshot is taken once.
             S_DLOAD: begin
-                if (mem_fire) st <= S_DWAIT;
+                if (dl_fire) st <= S_DWAIT;
             end
 
             S_DWAIT: begin
@@ -890,7 +984,6 @@ module tnca_tensor #(
                     if (dl_word >= 5'd14 && dl_word <= 5'd18)
                         dl_boxel <= (dl_word == 5'd14) ? box_factor(3'd0)
                                                        : box_mul(dl_boxel, box_factor(dl_word[2:0] - 3'd6));
-                    dl_buf[dl_word] <= mem_rsp_rdata;
                     if (dl_word == 5'd31) st <= S_DPARSE;
                     else begin
                         dl_word <= dl_word + 1'b1;
@@ -987,6 +1080,7 @@ module tnca_tensor #(
                 // Positions below 5 - rank are the identity; skip them.
                 t_mp        <= 3'd5 - t_rank[2:0];
                 t_acc       <= t_base;
+                t_pv        <= 1'b0;
                 if (g_bad)
                     st <= S_FAULT;
                 else
@@ -997,12 +1091,17 @@ module tnca_tensor #(
             // base + sum over the outer positions of coordinate * stride,
             // one multiply a cycle. The walk after this is adds only.
             S_TMUL: begin
+                if (t_pv) t_acc <= t_acc + mul_q;
                 if (t_mp < 3'd4) begin
-                    t_acc <= t_acc + mul_p;
                     t_mp  <= t_mp + 3'd1;
+                    t_pv  <= 1'b1;
+                end else if (t_pv) begin
+                    t_pv  <= 1'b0;            // the last product lands now
                 end else begin
-                    t_P0 <= t_acc; t_P1 <= t_acc; t_P2 <= t_acc; t_P3 <= t_acc;
+                    t_P0 <= t_acc; t_P1 <= t_acc; t_P2 <= t_acc; t_P3 <= t_acc; t_ps <= t_acc + t_CB;
                     t_i0 <= 32'd0; t_i1 <= 32'd0; t_i2 <= 32'd0; t_i3 <= 32'd0;
+                    t_v  <= {in_dim(t_c3, 32'd0, t_e3), in_dim(t_c2, 32'd0, t_e2),
+                             in_dim(t_c1, 32'd0, t_e1), in_dim(t_c0, 32'd0, t_e0)};
                     t_unit <= 32'd0;
                     t_flat <= 32'd0;
                     t_half <= 1'b0;
@@ -1015,6 +1114,7 @@ module tnca_tensor #(
                             x_q     <= 4'd0;
                         end
                         x_row <= 32'd0;
+                        x_oob_q <= x_oob_f(32'd0, 32'd0);
                         st <= S_XRUN;
                     end else
                         st <= t_store ? S_SRUN : S_TRUN;
@@ -1039,7 +1139,7 @@ module tnca_tensor #(
                         vw_data[ld_lane*32 +: 64] <= t_fill;
                         adv = 1'b1;
                     end
-                end else if (mem_fire) begin
+                end else if (ld_fire) begin
                     if (!t_half) begin
                         sl_v[free_slot]    <= 1'b1;
                         sl_nlo[free_slot]  <= ld_nlo;
@@ -1070,17 +1170,20 @@ module tnca_tensor #(
                         if (last_row) st <= S_TDRAIN;
                         else begin
                             if (inc3) begin
-                                t_i3 <= t_i3 + 32'd1; t_P3 <= t_P3 + t_s3;
+                                t_i3 <= t_i3 + 32'd1; t_v[3] <= in_dim(t_c3, t_i3 + 32'd1, t_e3); t_P3 <= t_P3 + t_s3; t_ps <= t_P3 + t_s3 + t_CB;
                             end else if (inc2) begin
                                 t_i2 <= t_i2 + 32'd1; t_i3 <= 32'd0;
-                                t_P2 <= t_P2 + t_s2; t_P3 <= t_P2 + t_s2;
+                                t_v[3:2] <= {in_dim(t_c3, 32'd0, t_e3), in_dim(t_c2, t_i2 + 32'd1, t_e2)};
+                                t_P2 <= t_P2 + t_s2; t_P3 <= t_P2 + t_s2; t_ps <= t_P2 + t_s2 + t_CB;
                             end else if (inc1) begin
                                 t_i1 <= t_i1 + 32'd1; t_i2 <= 32'd0; t_i3 <= 32'd0;
-                                t_P1 <= t_P1 + t_s1; t_P2 <= t_P1 + t_s1; t_P3 <= t_P1 + t_s1;
+                                t_v[3:1] <= {in_dim(t_c3, 32'd0, t_e3), in_dim(t_c2, 32'd0, t_e2), in_dim(t_c1, t_i1 + 32'd1, t_e1)};
+                                t_P1 <= t_P1 + t_s1; t_P2 <= t_P1 + t_s1; t_P3 <= t_P1 + t_s1; t_ps <= t_P1 + t_s1 + t_CB;
                             end else begin
                                 t_i0 <= t_i0 + 32'd1; t_i1 <= 32'd0; t_i2 <= 32'd0; t_i3 <= 32'd0;
+                                t_v <= {{in_dim(t_c3, 32'd0, t_e3), in_dim(t_c2, 32'd0, t_e2), in_dim(t_c1, 32'd0, t_e1)}, in_dim(t_c0, t_i0 + 32'd1, t_e0)};
                                 t_P0 <= t_P0 + t_s0; t_P1 <= t_P0 + t_s0;
-                                t_P2 <= t_P0 + t_s0; t_P3 <= t_P0 + t_s0;
+                                t_P2 <= t_P0 + t_s0; t_P3 <= t_P0 + t_s0; t_ps <= t_P0 + t_s0 + t_CB;
                             end
                         end
                     end else
@@ -1106,8 +1209,8 @@ module tnca_tensor #(
                     row_end = 1'b1;
                 end else if (st_need_reg) begin
                     st <= S_SREAD;
-                end else if (st_be == 8'd0 || mem_fire) begin
-                    if (mem_fire) tg_v[free_tag] <= 1'b1;
+                end else if (st_be == 8'd0 || st_fire) begin
+                    if (st_fire) tg_v[free_tag] <= 1'b1;
                     adv = 1'b1;
                 end
                 if (adv) begin
@@ -1122,17 +1225,20 @@ module tnca_tensor #(
                     if (last_row) st <= S_SDRAIN;
                     else begin
                         if (inc3) begin
-                            t_i3 <= t_i3 + 32'd1; t_P3 <= t_P3 + t_s3;
+                            t_i3 <= t_i3 + 32'd1; t_v[3] <= in_dim(t_c3, t_i3 + 32'd1, t_e3); t_P3 <= t_P3 + t_s3; t_ps <= t_P3 + t_s3 + t_CB;
                         end else if (inc2) begin
                             t_i2 <= t_i2 + 32'd1; t_i3 <= 32'd0;
-                            t_P2 <= t_P2 + t_s2; t_P3 <= t_P2 + t_s2;
+                                t_v[3:2] <= {in_dim(t_c3, 32'd0, t_e3), in_dim(t_c2, t_i2 + 32'd1, t_e2)};
+                            t_P2 <= t_P2 + t_s2; t_P3 <= t_P2 + t_s2; t_ps <= t_P2 + t_s2 + t_CB;
                         end else if (inc1) begin
                             t_i1 <= t_i1 + 32'd1; t_i2 <= 32'd0; t_i3 <= 32'd0;
-                            t_P1 <= t_P1 + t_s1; t_P2 <= t_P1 + t_s1; t_P3 <= t_P1 + t_s1;
+                                t_v[3:1] <= {in_dim(t_c3, 32'd0, t_e3), in_dim(t_c2, 32'd0, t_e2), in_dim(t_c1, t_i1 + 32'd1, t_e1)};
+                            t_P1 <= t_P1 + t_s1; t_P2 <= t_P1 + t_s1; t_P3 <= t_P1 + t_s1; t_ps <= t_P1 + t_s1 + t_CB;
                         end else begin
                             t_i0 <= t_i0 + 32'd1; t_i1 <= 32'd0; t_i2 <= 32'd0; t_i3 <= 32'd0;
+                                t_v <= {{in_dim(t_c3, 32'd0, t_e3), in_dim(t_c2, 32'd0, t_e2), in_dim(t_c1, 32'd0, t_e1)}, in_dim(t_c0, t_i0 + 32'd1, t_e0)};
                             t_P0 <= t_P0 + t_s0; t_P1 <= t_P0 + t_s0;
-                            t_P2 <= t_P0 + t_s0; t_P3 <= t_P0 + t_s0;
+                            t_P2 <= t_P0 + t_s0; t_P3 <= t_P0 + t_s0; t_ps <= t_P0 + t_s0 + t_CB;
                         end
                     end
                 end
@@ -1157,10 +1263,13 @@ module tnca_tensor #(
             // into xbuf[row]. Out-of-bounds units are zeros without an
             // access.
             S_XRUN: begin
-                if (x_unit_oob || mem_fire) begin
-                    if (x_unit_oob)
-                        xbuf[x_row[3:0]*64 +: 64] <= 64'd0;
-                    else begin
+                // The zero of an out-of-bounds unit is its own write, on
+                // x_unit_oob alone (it implies the step below), not under
+                // the handshake.
+                if (x_unit_oob)
+                    xbuf[x_row[3:0]*64 +: 64] <= 64'd0;
+                if (x_unit_oob || x_fire) begin
+                    if (!x_unit_oob) begin
                         tg_v[free_tag]    <= 1'b1;
                         xt_row[free_tag]  <= x_row[3:0];
                         xt_keep[free_tag] <= x_keep_mask;
@@ -1168,6 +1277,7 @@ module tnca_tensor #(
                     if (x_row == t_b3 - 1) st <= S_XDRAIN;
                     else begin
                         x_row      <= x_row + 1'b1;
+                        x_oob_q    <= x_oob_f(x_row + 1'b1, t_unit);
                         r_row_base <= r_row_base + t_s3;
                     end
                 end
@@ -1180,16 +1290,18 @@ module tnca_tensor #(
                 end
             end
 
-            // Destination row c = t_unit*(8/esz) + x_q holds element x_q of
+            // Destination row c = t_unit*(8/esize) + x_q holds element x_q of
             // every buffered unit, in source-row order: window element
             // (c, r) = source element (r, c). One whole-lane write per row.
-            S_XWRITE: if (!vw_hold) begin
+            S_XWRITE: begin
+              x_q <= x_qe + 1'b1;
+              if (!vw_hold) begin
                 vw_en      <= 1'b1;
                 vw_rctx    <= t_rctx;
                 vw_idx     <= x_vreg;
                 vw_lane_en <= x_lanes;
                 vw_data    <= x_data;
-                if (x_q == x_per_unit - 1) begin
+                if (x_qe == x_per_unit - 1) begin
                     if (t_unit == t_row_units - 1) st <= S_DONE;
                     else begin
                         t_unit     <= t_unit + 1'b1;
@@ -1202,9 +1314,10 @@ module tnca_tensor #(
                         if (HAS_XPOSE != 0)
                             r_row_base <= r_base0;
                         st         <= S_XRUN;
+                        x_oob_q    <= x_oob_f(32'd0, t_unit + 1'b1);
                     end
-                end else
-                    x_q <= x_q + 1'b1;
+                end
+              end
             end
 
             //---------------------------------------------------------------
@@ -1241,5 +1354,19 @@ module tnca_tensor #(
     end
 
     wire _unused = &{1'b0, d_dtype[0], 1'b0};
+
+`ifndef SYNTHESIS
+    // R41 T2: the registered walk state equals what it replaces. FAIL lines
+    // fail the run (tools/run_test.sh).
+    always @(posedge clk)
+        if (rst_n && !flush) begin
+            if ((st == S_TRUN || st == S_SRUN) && (t_rowv !== t_rowv_c))
+                $display("FAIL tnca_tensor assert @%0t: registered row bounds %b, comparison %b", $time, t_rowv, t_rowv_c);
+            if ((st == S_TRUN || st == S_SRUN) && (t_ps !== t_P3 + t_CB))
+                $display("FAIL tnca_tensor assert @%0t: t_ps %h is not t_P3 + t_CB", $time, t_ps);
+            if ((st == S_XRUN) && (x_oob_q !== x_unit_oob_c))
+                $display("FAIL tnca_tensor assert @%0t: registered unit bounds %b, comparison %b", $time, x_oob_q, x_unit_oob_c);
+        end
+`endif
 
 endmodule

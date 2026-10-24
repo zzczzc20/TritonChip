@@ -1,251 +1,251 @@
-# Phase 3.6：多后端工程整合与原型分支交接准备
+# Phase 3.6: Multi-Backend Engineering Integration and Prototype Branch Handover Preparation
 
-版本：1.0，2026-09-20。状态：**PLANNED / NOT ACCEPTED**。
-前提：**进入本阶段时，R3 v2 与 R3.5 已验收。**
-关联：[R3 v2](phase3_tasks_and_acceptance.md)、[R3.5](phase3_5_tasks_and_acceptance.md)、[架构设计](design/tnca_v1_architecture_draft.md)、[编译器设计](design/tnca_v1_compiler_draft.md)、[R2 接口](r2_interfaces.md)。
+Version: 1.0, 2026-09-20. Status: **PLANNED / NOT ACCEPTED**.
+Prerequisite: **Assumes R3 v2 and R3.5 are accepted upon entering this phase.**
+Associated: [R3 v2](phase3_tasks_and_acceptance.md), [R3.5](phase3_5_tasks_and_acceptance.md), [Architecture Design](design/tnca_v1_architecture_draft.md), [Compiler Design](design/tnca_v1_compiler_draft.md), [R2 Interfaces](r2_interfaces.md).
 
-**本阶段负责主线工程准备，不负责上板。** 板卡选型、厂商 IP、引脚/板级时钟约束、布局布线、bitstream、烧录和实板调试，由其他人在独立分支完成，不纳入 R3.6 验收。
+**This phase is responsible for mainline engineering preparation, not board bring-up.** Board selection, vendor IP, pin/board clock constraints, placement and routing, bitstreams, programming, and physical board debugging are executed by others in independent branches and are not included in R3.6 acceptance.
 
-目标是把此前分散的编译器、runtime、RTL、验证和构建成果串成一套可安装、可导出、可复验、可扩展的工程，使后续 FPGA/ASIC 适配能够沿明确接口开展，而无需复制整个项目或重写通用语义。
+The objective is to unify previously fragmented compiler, runtime, RTL, verification, and build artifacts into an installable, exportable, reproducible, and extensible engineering codebase, enabling subsequent FPGA/ASIC adaptations to proceed along well-defined interfaces without duplicating the entire project or rewriting common semantics.
 
-最终签收名：`R36_ENGINEERING_READY`。它不表示 FPGA 已运行、ASIC 已实现或项目已完成生产签核。
+Final sign-off milestone identifier: `R36_ENGINEERING_READY`. It does not indicate that an FPGA is running, an ASIC has been implemented, or the project has completed production sign-off.
 
-## 1. 最终应交付的结果
+## 1. Mandatory Deliverables
 
-1. 一套可追溯的集成基线：R3.5 优化编译器 → artifact → runtime → 已验收 RTL → 独立结果检查，能够从干净环境完整复现。
-2. 明确区分编译目标、执行后端、硬件实现技术和外部平台，解除当前仿真工具与通用产品逻辑之间的硬耦合。
-3. 一份完整的可移植硬件交付包：公共 top/端口、时序和复位合同、源文件依赖、生成物、配置及存储适配边界；不依赖 testbench 才具有运行语义。
-4. 一套设备无关的 runtime/协议接口，以及可由外部分支实现的 transport/platform adapter。
-5. 共用的能力描述、兼容性校验、conformance suite 和工程门禁，避免不同后端各自重新解释 ISA/ABI/完成语义。
-6. 面向 FPGA 和 ASIC 分支的交接文档、可执行接入样例、已知限制和回合主线规则。
+1. A traceable integration baseline: R3.5 optimizing compiler → artifact → runtime → accepted RTL → independent result checks, fully reproducible from a clean environment.
+2. Explicit separation among compilation targets, execution backends, hardware implementation technologies, and external platforms, decoupling current simulation tooling from generic product logic.
+3. A complete portable hardware delivery package: common top/ports, timing and reset contracts, source file dependencies, generated artifacts, configuration, and memory adaptation boundaries; having operational semantics without depending on a testbench.
+4. A set of device-agnostic runtime/protocol interfaces, alongside transport/platform adapters implementable by external branches.
+5. Shared capability descriptions, compatibility checks, conformance suite, and engineering gates, preventing different backends from reinterpreting ISA/ABI/completion semantics independently.
+6. Handover documentation, executable integration examples, known limitations, and upstreaming rules for FPGA and ASIC branches.
 
-“整理”必须能改变工程使用方式：外部开发者能在干净环境接入一个参考 adapter，使用公开产品入口执行小程序；只有目录移动、架构图或空接口不算完成。
+"Refactoring" must tangibly alter engineering usage: external developers must be able to attach a reference adapter in a clean environment and execute small programs through public product entry points; directory moves, architectural diagrams, or empty interfaces alone do not count as completion.
 
-## 2. 范围与责任
+## 2. Scope and Responsibilities
 
-| R3.6 主线必须完成 | FPGA 原型分支负责 | 后续 ASIC 分支负责 |
+| Mandatory for R3.6 Mainline | FPGA Prototype Branch Responsibilities | Subsequent ASIC Branch Responsibilities |
 |---|---|---|
-| 共用 ISA、ABI、target/profile、编译器与 runtime | 具体器件/板卡及工具链选择 | 具体工艺、标准单元库和物理工具 |
-| 硬件导出、公共接口、可综合边界检查 | 厂商存储/时钟/通信 IP 的实际接入 | SRAM macro、clock/reset/test 等工艺适配 |
-| 存储、时钟复位、host/device、外部内存的适配合同 | 引脚、电压、板级约束、外部存储控制器 | 综合映射、布局布线、STA、DFT、物理签核 |
-| 可运行参考 adapter 与共用 conformance suite | bitstream、烧录、实板联调与实际测量 | 真实 PPA 与流片交付 |
-| 配置、错误传播、诊断、证据和交接规则 | 板卡驱动/连接介质的实现 | 封装、硅后与量产工作 |
+| Common ISA, ABI, target/profile, compiler, and runtime | Concrete device/board and toolchain selection | Concrete process technology, standard cell libraries, and physical tools |
+| Hardware export, public interfaces, synthesizable boundary checks | Actual integration of vendor memory/clock/communication IP | Process adaptation for SRAM macros, clock/reset/test, etc. |
+| Adaptation contracts for storage, clock/reset, host/device, and external memory | Pins, voltages, board-level constraints, external memory controllers | Synthesis mapping, place and route, STA, DFT, physical sign-off |
+| Runnable reference adapter and shared conformance suite | Bitstream generation, programming, physical board bring-up, and actual measurement | Real PPA and tapeout delivery |
+| Configuration, error propagation, diagnostics, evidence, and handover rules | Implementation of board drivers / connection media | Packaging, post-silicon bring-up, and volume production |
 
-不指定 FPGA 型号、厂商、host 连接协议、总线标准或目标频率。也不要求取得板卡、厂商许可证或 PDK，才能通过本阶段。
+Does not specify FPGA models, vendors, host connection protocols, bus standards, or target operating frequencies. Nor does it require acquiring physical boards, vendor licenses, or PDKs to pass this phase.
 
-不以本阶段补完全部 R2 剩余任务。必须把“本次集成实际支持的能力”和“仍未交付的 grid/系统 runtime/其他功能”分开列出；阶段交接基线不能依赖其中尚未实现的部分。
+This phase does not serve to complete all remaining R2 tasks. "Capabilities actually supported in this integration" and "undelivered grid/system runtime/other features" must be listed separately; the phase handover baseline must not depend on any unimplemented parts.
 
-## 3. 多后端的工程模型
+## 3. Multi-Backend Engineering Model
 
-### 3.1 四种概念分离
+### 3.1 Four Concept Separations
 
-| 概念 | 负责描述 | 不能承担的职责 |
+| Concept | Describes | Prohibited Responsibilities |
 |---|---|---|
-| 编译 target/profile | ISA/ABI、能力、资源、布局和编译成本合同 | 不能等同于某个 simulator 可执行文件或某块板 |
-| 执行 backend | 设备生命周期、请求/完成、内存访问和故障处理 | 不能复制编译器、buffer/event 状态机或悄悄修改 kernel |
-| 硬件 implementation | RTL 实现、存储端口/延迟、资源配置和技术适配 | 不能在保留旧身份的同时改变能力或可见语义 |
-| platform binding | simulator、板级外壳、工艺/IP 和具体构建环境的绑定 | 不能渗透到通用 ISA/ABI/算法 lowering 中 |
+| Compilation target/profile | ISA/ABI, capabilities, resources, layout, and compilation cost contracts | Cannot be equated to a specific simulator executable or a specific board |
+| Execution backend | Device lifecycle, request/completion, memory access, and fault handling | Cannot duplicate compiler, buffer/event state machines, or silently mutate kernels |
+| Hardware implementation | RTL implementation, memory ports/latency, resource configurations, and technology adaptation | Cannot alter capabilities or visible semantics while retaining legacy identity |
+| Platform binding | Binding for simulator, board-level shell, process/IP, and concrete build environments | Cannot leak into generic ISA/ABI/algorithmic lowering |
 
-允许未来有多个仿真器、FPGA 平台或 ASIC 实现；不要求本阶段把它们全部实现。ASIC 构建目标也不等于一个现在就能被 runtime 打开的实体设备。
+Allows multiple future simulators, FPGA platforms, or ASIC implementations; this phase does not require implementing all of them. An ASIC build target is also not equivalent to a physical device that can be opened by runtime today.
 
-### 3.2 本阶段的后端交付深度
+### 3.2 Backend Delivery Depth in This Phase
 
-| 方向 | 本阶段验收范围 | 对外允许声明 |
+| Track | Acceptance Scope in This Phase | Permitted Public Claim |
 |---|---|---|
-| 现有仿真执行 | 产品入口、生命周期、数值、故障、安装与回归完整可用 | operational，并附测试范围 |
-| 外部 adapter 接入 | 与既有绑定不同的参考适配器，经过实际 RTL 集成或协议闭环，证明替换边界成立 | integration-tested；不能伪称实板执行 |
-| FPGA | 共享硬件包、实现接口、构建扩展点、接入测试和交接说明 | engineering-ready；具体平台未验证 |
-| ASIC | 同一共享硬件包、技术相关单元边界、存储/时钟复位合同和结构检查 | engineering-ready；未映射真实工艺 |
-| 可选功能模型 | 若交付，明确其数值/协议/性能适用范围 | 不能用功能模型冒充 RTL 或物理性能 |
+| Existing simulation execution | Product entry points, lifecycle, numerical correctness, faults, installation, and regressions fully operational | `operational`, with testing scope attached |
+| External adapter integration | Reference adapter distinct from existing bindings, validated via actual RTL integration or protocol closed-loop, proving the replacement boundary holds | `integration-tested`; must not falsely claim physical board execution |
+| FPGA | Shared hardware package, implementation interfaces, build extension points, integration tests, and handover instructions | `engineering-ready`; specific platform unverified |
+| ASIC | Same shared hardware package, technology-dependent unit boundaries, storage/clock/reset contracts, and structural checks | `engineering-ready`; not mapped to real process |
+| Optional functional model | If delivered, explicitly state its scope of numerical/protocol/performance applicability | Cannot substitute a functional model for RTL or physical performance |
 
-后端登记必须区分“接口已定义”“参考实现可用”“平台已验证”。未安装或未实现的 backend 被显式拒绝，不能自动转到仿真并返回成功。
+Backend registration must distinguish between "interface defined", "reference implementation available", and "platform verified". Uninstalled or unimplemented backends must be explicitly rejected, rather than silently falling back to simulation and returning success.
 
-## 4. 需要真正打通的接口
+## 4. Interfaces Requiring Genuine Integration
 
-### 4.1 编译器、artifact 与配置
+### 4.1 Compiler, Artifact, and Configuration
 
-沿用 R3.5 的优化路径和安全检查。平台选择通过版本化 target/implementation 描述进入编译和加载；不在 kernel 源或通用 pass 中散布 simulator/板卡判断。
+Retains R3.5's optimization path and safety checks. Platform selection enters compilation and loading via versioned target/implementation descriptions; simulator/board conditional logic must not be scattered throughout kernel sources or generic passes.
 
-至少区分：语义兼容身份、实现与资源身份、运行资产身份、平台构建身份。名称和字段设计由实施阶段决定，但含义、来源、hash 覆盖范围和兼容判定必须唯一。
+Distinguishes at minimum: semantic compatibility identity, implementation and resource identity, runtime asset identity, and platform build identity. Specific naming and field designs are determined during implementation, but semantics, provenance, hash coverage, and compatibility rules must be unambiguous.
 
-- 同一语义和实现的不同 transport binding，应能使用同一 artifact；不能只因连接介质变化要求重新编译。
-- 资源、布局、实现延迟假设或指令能力变化，必须影响相应身份和缓存判定；需要重编译时明确拒绝旧 artifact。
-- 不承诺任意 FPGA/ASIC 都能运行相同二进制。同源可重编译与二进制兼容必须分开记录。
-- ABI/manifest 如需演进，必须版本化，给出旧 artifact 的接受/拒绝矩阵。决定安全或兼容性的字段不能放入可忽略 metadata。
-- target、runtime device info、RTL elaboration、导出包和编译报告必须交叉核对，不能有多个独立手填的“真实配置”。
+- Different transport bindings sharing the same semantics and implementation must be able to use the same artifact; recompilation must not be required solely due to connection media changes.
+- Changes in resources, layout, implementation latency assumptions, or instruction capabilities must affect the corresponding identity and cache decisions; stale artifacts must be explicitly rejected when recompilation is required.
+- Does not promise that arbitrary FPGA/ASIC targets can run the same binary. Source-level re-compilability and binary compatibility must be recorded separately.
+- If ABI/manifest must evolve, it must be versioned, providing an accept/reject matrix for legacy artifacts. Fields determining safety or compatibility must not be placed in ignorable metadata.
+- Target definitions, runtime device info, RTL elaboration, export packages, and compilation reports must be cross-checked; multiple independent manually authored "ground truth configurations" are prohibited.
 
-### 4.2 runtime 与 transport
+### 4.2 Runtime and Transport
 
-通用 session/buffer/event 状态机不再直接承担启动特定仿真器、交换临时文件或操作平台资源的职责。现有仿真路径作为一个实现保留，外部 adapter 遵循同一生命周期与完成合同。
+The generic session/buffer/event state machine no longer directly bears the responsibility of launching specific simulators, exchanging temporary files, or operating platform resources. The existing simulation path is retained as one implementation; external adapters follow the same lifecycle and completion contracts.
 
-接口至少覆盖发现/能力查询、连接/关闭、分配可见范围、上传/下载、装载/发射、等待/状态、排空、错误与显式恢复。具体方法、连接方式和数据编码不在本文指定。
+Interfaces cover at minimum: discovery / capability query, connect / close, allocate visible range, upload / download, load / launch, wait / status, quiesce, error, and explicit recovery. Specific methods, connection mechanisms, and data encodings are not mandated in this document.
 
-必须明确：请求编号与 epoch、大小/对齐/权限检查、并发能力、超时、取消是否支持、错误后输出有效性、重试语义、恢复后的旧 handle 行为。尤其不能因超时自动重发 launch，造成执行两次。
+Must clearly define: request IDs and epochs, size/alignment/permission checks, concurrency capabilities, timeouts, whether cancellation is supported, output validity following errors, retry semantics, and post-recovery behavior of legacy handles. In particular, launch must never be automatically retried upon timeout, which could cause duplicate execution.
 
-参考 adapter 可以在仿真环境内运行，但必须走与外部分支相同的公开接口；仅用 mock 返回正确数值不能证明执行接入成功。
+The reference adapter may execute within a simulation environment, but must traverse the same public interface used by external branches; merely using a mock to return correct values does not prove successful execution integration.
 
-### 4.3 可移植硬件交付边界
+### 4.3 Portable Hardware Delivery Boundary
 
-导出的共享硬件必须有明确 top、端口和依赖闭包；包含实际运行所需的控制路径，而不是一个只有算术核的示意包。
+The exported shared hardware must possess an explicit top module, ports, and dependency closure; it must include control datapaths required for actual execution, rather than being an illustrative package containing only arithmetic cores.
 
-逐项定义 instruction delivery、host 控制、数据请求/返回、完成/错误、时钟复位、状态/性能观测接口的时序、有效/就绪条件、背压能力和最大在途量。若某接口采用固定延迟，也必须冻结并测试，不能依赖仿真时刚好同拍返回。
+Item-by-item definitions for timing, valid/ready conditions, backpressure capacity, and maximum inflight limits of instruction delivery, host control, data request/response, completion/error, clock/reset, and status/performance observation interfaces. If an interface adopts fixed latency, it must be frozen and tested rather than relying on fortuitous single-cycle simulation returns.
 
-硬件运行语义不得依赖 `$readmemh` 动态装载、文件轮询、testbench 层级写数组或 DPI 回调；这些可以存在于仿真 adapter，但不能是共享硬件的唯一控制途径。断言和诊断与可综合功能路径分离，不能用综合条件编译删掉必要行为。
+Hardware operational semantics must not depend on `$readmemh` dynamic loading, file polling, testbench hierarchical array writes, or DPI callbacks; while these may exist in simulation adapters, they must not serve as the sole control path for shared hardware. Assertions and diagnostics must be separated from synthesizable functional paths; necessary behaviors must not be stripped out by synthesis conditional compilation.
 
-后端外壳只适配平台接口，不复制 core、MMA、NUCA 等公共实现。未来平台如确实需要不同微架构，必须成为显式 implementation，而非一份失去回归关联的拷贝。
+Backend shells adapt only platform interfaces without duplicating core, MMA, NUCA, or other common implementations. If future platforms genuinely require distinct microarchitectures, they must become explicit implementations rather than unlinked copies divorced from regressions.
 
-### 4.4 存储、时钟与复位适配
+### 4.4 Storage, Clock, and Reset Adaptation
 
-为 VRF、ARF、指令存储、cache 数据/元数据及其他实际存储逐一列账：容量、粒度、端口、同步/异步读、延迟、mask、RDW、初始化、清零和错误行为。
+Account item-by-item for VRF, ARF, instruction memory, cache data/metadata, and other physical memories: capacity, granularity, ports, synchronous/asynchronous read, latency, byte masks, read-during-write (RDW), initialization, clearing, and error behavior.
 
-- 不能声称“换 RAM 宏即可”，却没有声明当前访问语义与实现约束。
-- 至少以一个独立参考存储/接口实现验证替换边界，覆盖合法延迟与背压；支持范围内的替换不能要求改 ISA 或算子源。
-- 当前仍是行为实现的存储必须明确列为限制。R3.6 不自动承担全部同步 ARF 改造，也不能将其标为已完成或保证一定映射到 FPGA RAM。
-- 如果某项限制意味着外部分支必须修改公共完成/所有权语义才能接入，就不能作为普通板级工作转交；必须在主线解决接口缺口，或收窄并明确交付 profile。
-- 复位、未初始化状态、在途请求、clock enable/跨域边界必须有合同。公共逻辑不能假设外部 IP 在 reset 后立即可用。
+- Cannot claim "just swap in a RAM macro" without declaring current access semantics and implementation constraints.
+- Validate replacement boundaries with at least one independent reference memory/interface implementation, covering legal latency and backpressure; replacements within the supported scope must not require altering ISA or operator sources.
+- Memories that currently remain behavioral implementations must be explicitly listed as limitations. R3.6 does not automatically undertake the complete synchronous ARF refactoring, nor may it mark ARF as completed or guarantee its mapping to FPGA RAM.
+- If a limitation implies that external branches must alter common completion/ownership semantics to integrate, it cannot be passed off as routine board-level work; interface gaps must be resolved in mainline, or the delivery profile must be narrowed and clearly specified.
+- Contracts must govern reset, uninitialized state, inflight requests, clock enable, and clock-domain crossing boundaries. Common logic must not assume external IP is immediately available post-reset.
 
-保持 **RF—NUCA—外部内存** 的架构原则，不因原型适配引入软件可寻址 SMEM。仿真中的外部存储模型、将来的片上原型 backing memory、cache 和 scratchpad 是不同概念，必须标清，不能凭存储物理上在 FPGA 内部就改变软件语义。
+Maintain the architectural principle of **RF — NUCA — External Memory**; do not introduce software-addressable SMEM for prototype adaptation. Simulation external memory models, future on-chip prototype backing memory, caches, and scratchpads are distinct concepts and must be clearly distinguished; software semantics must not change simply because storage physically resides on-chip in an FPGA.
 
-### 4.5 host 可见性和错误完成
+### 4.5 Host Visibility and Error Completion
 
-成功完成必须保证结果达到所声明的 host 可见范围，不能把“core idle”直接当作全部写入可见。如果经过 cache、排队写入或外部控制器，必须分别定义并验证排空、写确认和后续读取的关系。
+Successful completion must guarantee that results reach the declared host-visible scope; "core idle" cannot be equated directly to all writes being visible. If passing through caches, write queues, or external controllers, the relationships between draining, write acknowledgment, and subsequent reads must be individually defined and validated.
 
-上传覆盖先前缓存内容、下载脏数据、连续任务共享设备内存、部分传输、迟到回复、设备丢失和复位恢复，都必须有明确语义。当前只支持 host/device 串行访问可以接受，但必须由 runtime 强制；不能宣称未实现的 cache coherence 或 system atomics。
+Uploading overwriting prior cache contents, downloading dirty data, sequential tasks sharing device memory, partial transfers, late responses, device loss, and reset recovery must all have well-defined semantics. Supporting only serial host/device access at present is acceptable, but must be actively enforced by the runtime; unimplemented cache coherence or system atomics must not be claimed.
 
-## 5. 整合、回归和交接的完成标准
+## 5. Completion Standards for Integration, Regression, and Handover
 
-### 5.1 一套产品路径
+### 5.1 A Single Product Path
 
-从干净环境通过已安装包执行：
+Executed from a clean environment via installed packages:
 
 `source → R3.5 compiler → artifact → backend selection → upload/launch/wait/download → independent oracle`
 
-至少包含真实 Triton elementwise、masked tail、TNCA IR 小 GEMM、两 role pipeline、设备内任务依赖链以及一项故障恢复。保留实际 source_kind，不把 TNCA IR 样例写成通用 Triton GEMM。
+Includes at minimum real Triton elementwise, masked tail, TNCA IR small GEMM, two-role pipeline, intra-device task dependency chains, and a fault recovery case. Preserves actual `source_kind` without misrepresenting TNCA IR examples as generic Triton GEMM.
 
-复用已有小 workload；新增 GEMM 不超过 16×16×32，elementwise 不超过 32 元素，reduction 不超过一行16元素。不增加大模型、整机参数扫描或为“上板准备”扩张 RTL benchmark。
+Reuses existing small workloads; newly added GEMM must not exceed 16×16×32, elementwise must not exceed 32 elements, and reduction must not exceed a single 16-element row. Does not add large models, full system parameter sweeps, or expand RTL benchmarks under the guise of "board preparation".
 
-### 5.2 可复验的基线
+### 5.2 Reproducible Baseline
 
-R3/R3.5 的签收证明的是其冻结提交和实现。本阶段选择其中一个已验收基线，记录接口整理后的影响范围，重跑相应当前候选回归。不能只引用旧 ACCEPTED 判断重构没有退化。
+Sign-off of R3/R3.5 only proves their frozen commits and implementations. This phase selects one accepted baseline, records the blast radius after interface refactoring, and reruns the corresponding candidate regressions. One cannot merely cite historical ACCEPTED verdicts to conclude refactoring has not regressed.
 
-在相同硬件实现上，纯工程重构不得改变 R3.5 已冻结 workload 的机器码（忽略事先声明的非语义 metadata）和 device cycles；必要语义/实现变更必须单独标识，重新建立对应回归和性能证据，不与目录/接口整理混作一项“无行为变化”。
+On the same hardware implementation, pure engineering refactoring must not alter the machine code (disregarding declared non-semantic metadata) or device cycles of R3.5's frozen workloads; necessary semantic or implementation changes must be separately identified, re-establishing corresponding regression and performance evidence rather than being conflated with directory/interface refactoring as "zero behavioral change".
 
-RTL 慢，必须统一 run registry，复用同一 run 的多项检查，预算按实际子进程计账。阶段启动时冻结新增运行清单、次数、cycle/wall 上限和工具构建预算，预算不得留空；基于已有小测试测量制定，不在本文臆测新平台速度。超限保留失败，禁止补跑成功后覆盖。
+RTL simulation is slow; a unified run registry must be used to reuse multiple checks from the same run, with budgets accounted by actual subprocess counts. The newly added run inventory, iteration counts, cycle/wall limits, and tool build budgets must be frozen at phase initiation and must not be left empty; budgets must be established based on measurements of existing small tests without speculating about new platform speeds. Over-budget runs retain FAIL verdicts; overwriting them with subsequent successful reruns is strictly prohibited.
 
-### 5.3 分支交接演练
+### 5.3 Branch Handover Rehearsal
 
-从正式导出包和安装包建立独立的下游样例，不读取主仓库未导出的文件。沿声明的扩展点接入参考 adapter，编译或加载 artifact，执行真实 RTL 上的小程序，并通过共用 conformance suite。
+Establish an independent downstream example from formal export and installation packages without reading unexported files from the primary repository. Attach a reference adapter along declared extension points, compile or load artifacts, execute small programs on real RTL, and pass the shared conformance suite.
 
-接入过程不能修改通用编译器、runtime 状态机或计算核心；添加外部配置/adapter、使用公开扩展接口可以。演练发现的接口缺口在主线补齐，不能靠样例私下 patch 公共代码通过。
+The integration process must not modify the generic compiler, runtime state machines, or compute cores; adding external configurations/adapters or utilizing public extension interfaces is permitted. Interface gaps identified during rehearsal must be resolved in mainline, rather than bypassed by privately patching common code within downstream examples.
 
-交付给实际上板分支的内容必须包括：基线 commit、包/资产 hash、接口版本、已验证 profile、已知限制、接入指南、复现命令、错误诊断和回合主线规则。外部分支不需要重新猜测完成语义或复制一套测试 oracle。
+Deliverables to physical board branches must include: baseline commit, package/asset hashes, interface versions, verified profiles, known limitations, integration guides, reproduction commands, error diagnostics, and upstreaming rules. External branches must not be required to guess completion semantics or duplicate test oracles.
 
-## 6. 工作包与严格验收标准
+## 6. Work Packages and Strict Acceptance Criteria
 
-共 10 个工作包、30 条标准。负责人按角色列出，实施时填写实际责任人、提交和证据。初始全部 **NOT VERIFIED**。
+Total of 10 work packages and 30 criteria. Owners are listed by role; actual assignees, commits, and evidence are filled during execution. Initially all are **NOT VERIFIED**.
 
-### R36-01 — 集成基线与能力清单（维护者 / 验证）
+### R36-01: Integration Baseline and Capability Inventory (Maintainer / Verification)
 
-| ID | 验收标准 |
+| ID | Acceptance Criteria |
 |---|---|
-| R36-BASE-01 | R3/R3.5 前置证据有效，提交/实现/profile 可追溯；冻结本阶段交付 profile、完整功能清单、继承回归和运行预算，无未定义必需项 |
-| R36-BASE-02 | 每项已有能力标明已验证、受限、未实现及对应证据；R2 剩余工作和行为 ARF 等限制明确，无历史状态与当前声明矛盾 |
-| R36-BASE-03 | 干净环境用产品入口完成第 5.1 节链路；不导入测试 helper 作为产品逻辑、不依赖本地构建缓存或开发者路径 |
+| R36-BASE-01 | R3/R3.5 prerequisite evidence is valid, with traceable commits, implementations, and profiles; freeze the delivery profile, complete feature inventory, inherited regressions, and execution budgets for this phase, with no undefined required items |
+| R36-BASE-02 | Every existing capability is explicitly categorized as verified, restricted, or unimplemented alongside corresponding evidence; R2 remaining work and behavioral ARF limitations are clearly demarcated, with no contradictions between historical and current claims |
+| R36-BASE-03 | Complete the Section 5.1 chain using product entry points in a clean environment; do not import test helpers as product logic, and do not rely on local build caches or developer paths |
 
-### R36-02 — 后端抽象与依赖方向（架构 / runtime）
+### R36-02: Backend Abstraction and Dependency Direction (Architecture / Runtime)
 
-| ID | 验收标准 |
+| ID | Acceptance Criteria |
 |---|---|
-| R36-BE-01 | target、implementation、backend、platform 责任独立且可查询；通用编译器/runtime 不包含特定 simulator/板卡的启动与连接逻辑 |
-| R36-BE-02 | 现有仿真后端与独立参考 adapter 均通过公开接口工作；后者通过真实 RTL 或与真实 RTL 相连的协议闭环执行数值程序，不以 mock 正确答案代替 |
-| R36-BE-03 | 未知、缺失、版本不兼容或未实现的 backend 有稳定诊断；不自动切换后端、不把 engineering-ready 标为 platform-verified |
+| R36-BE-01 | Target, implementation, backend, and platform responsibilities are independent and queryable; generic compiler/runtime contains no simulator- or board-specific launch or connection logic |
+| R36-BE-02 | Existing simulation backend and independent reference adapter both operate through public interfaces; the latter executes numerical programs via real RTL or closed-loop protocols connected to real RTL, rather than mocking correct answers |
+| R36-BE-03 | Unknown, missing, version-incompatible, or unimplemented backends produce deterministic diagnostics; no automatic fallback to simulation, and no marking engineering-ready as platform-verified |
 
-### R36-03 — 配置、artifact 与兼容性（编译器 / runtime）
+### R36-03: Configuration, Artifact, and Compatibility (Compiler / Runtime)
 
-| ID | 验收标准 |
+| ID | Acceptance Criteria |
 |---|---|
-| R36-CFG-01 | 编译 target、设备查询、RTL 实例、导出描述和报告逐字段一致；改变 capability/resource/latency 假设会改变相应身份或明确触发重编译 |
-| R36-CFG-02 | 相同实现的两个 transport binding 使用同一 artifact 正确执行；能力不足、错误 ABI/profile、错误运行资产在 launch 前拒绝，零任务副作用 |
-| R36-CFG-03 | 配置和 schema 演进有版本/迁移矩阵；cache 不跨不兼容实现命中；安全必需字段不置于可忽略 metadata；已有 artifact 的处理明确且有测试 |
+| R36-CFG-01 | Compilation target, device query, RTL instance, export descriptions, and reports are field-by-field consistent; changes in capability, resource, or latency assumptions alter corresponding identities or explicitly trigger recompilation |
+| R36-CFG-02 | Two transport bindings for the same implementation execute correctly using the same artifact; insufficient capabilities, mismatched ABI/profiles, or incorrect runtime assets are rejected prior to launch with zero task side effects |
+| R36-CFG-03 | Configuration and schema evolution has a versioning/migration matrix; cache does not hit across incompatible implementations; safety-critical fields are not placed in ignorable metadata; legacy artifact handling is explicit and tested |
 
-### R36-04 — 公共 RTL 与完整导出（RTL / 构建）
+### R36-04: Common RTL and Complete Export (RTL / Build)
 
-| ID | 验收标准 |
+| ID | Acceptance Criteria |
 |---|---|
-| R36-RTL-01 | 从导出包独立 elaboration 并执行小程序；源列表、include、生成 RTL、参数与工具版本完整；无主仓库相对路径泄漏或未声明 blackbox |
-| R36-RTL-02 | 公共 top 的取指、控制、数据、状态/错误/计数接口全部有时序合同；实际背压/延迟/完成测试通过，不依赖 testbench 层级读写维持功能 |
-| R36-RTL-03 | 可综合功能路径不含运行期文件服务或 simulator-only 行为；结构检查无未解释 latch、组合环、多驱动、宽度问题；仿真绑定与未来平台外壳共用核心实现 |
+| R36-RTL-01 | Independent elaboration and execution of small programs directly from export packages; source lists, includes, generated RTL, parameters, and tool versions are complete; no main repository relative path leakage or undeclared blackboxes |
+| R36-RTL-02 | Instruction delivery, control, data, and status/error/counter interfaces on the public top all possess timing contracts; validated under actual backpressure/latency/completion tests without relying on testbench hierarchical reads/writes for operational functionality |
+| R36-RTL-03 | Synthesizable functional paths contain no runtime file services or simulator-only behaviors; structural checks reveal no unexplained latches, combinational loops, multi-drivers, or width mismatches; simulation bindings and future platform shells share the identical core implementation |
 
-### R36-05 — 存储和时钟复位适配边界（RTL）
+### R36-05: Storage and Clock/Reset Adaptation Boundaries (RTL)
 
-| ID | 验收标准 |
+| ID | Acceptance Criteria |
 |---|---|
-| R36-MEM-01 | 每类真实存储的容量、端口、延迟、mask、RDW、初始化和可替换范围逐项列账；未完成技术映射显式记录，不用 memory-inferred 冒充物理 RAM 已验证 |
-| R36-MEM-02 | 至少一个独立参考实现经公共存储/取指适配边界完成真实 RTL 回归；覆盖合同允许的延迟、背压、部分写与冲突；数值、所有权和排空正确 |
-| R36-RST-01 | 启动、reset 时在途请求、再次启动及外部未 ready 场景有定向测试；旧 epoch 数据不污染新任务；跨域责任和约束清单完整，无隐含板级假设 |
+| R36-MEM-01 | Itemized accounting of capacity, ports, latency, masks, RDW, initialization, and replaceable scope for each physical memory array; unmapped technology is explicitly recorded, without passing off memory-inferred arrays as verified physical RAM |
+| R36-MEM-02 | At least one independent reference implementation passes real RTL regressions through the common memory/instruction adaptation boundary; covers contract-permitted latency, backpressure, partial writes, and bank conflicts; numerical results, ownership, and draining are correct |
+| R36-RST-01 | Directed tests cover startup, inflight requests during reset, restart, and external not-ready scenarios; stale epoch data does not pollute subsequent tasks; clock-domain crossing responsibilities and constraint lists are complete without implicit board assumptions |
 
-### R36-06 — host 协议、完成与恢复（runtime / RTL）
+### R36-06: Host Protocol, Completion, and Recovery (Runtime / RTL)
 
-| ID | 验收标准 |
+| ID | Acceptance Criteria |
 |---|---|
-| R36-IO-01 | 上传/下载/launch/查询/排空/关闭及不支持操作的语义明确；检查大小、地址范围、对齐、顺序和重复请求，非法输入无设备任务副作用 |
-| R36-IO-02 | 写入延迟、cache 脏数据、连续任务共享内存下，SUCCEEDED 后下载得到正确结果；host/device 不允许的并发被实际拒绝，不依赖用户自行遵守 |
-| R36-IO-03 | 迟到/重复回复、部分传输、超时、设备丢失和 reset 各有测试；无重复 launch、无旧 handle 复活；可恢复错误与 session poisoned 分开处理 |
+| R36-IO-01 | Explicit semantics for upload, download, launch, query, quiesce, close, and unsupported operations; checks for size, address ranges, alignment, ordering, and duplicate requests, with invalid inputs producing zero device task side effects |
+| R36-IO-02 | Under write latency, dirty cache lines, and sequential tasks sharing memory, downloads after SUCCEEDED return correct results; disallowed host/device concurrency is actively rejected rather than relying on user discipline |
+| R36-IO-03 | Directed tests for late/duplicate responses, partial transfers, timeouts, device disconnection, and resets; no duplicate launches, no resurrected legacy handles; recoverable errors and session poisoning are handled separately |
 
-### R36-07 — 构建、安装与可移植交付（工程 / 构建）
+### R36-07: Build, Installation, and Portable Delivery (Engineering / Build)
 
-| ID | 验收标准 |
+| ID | Acceptance Criteria |
 |---|---|
-| R36-BUILD-01 | 一个公开构建入口能明确选择软件包、仿真运行资产、通用硬件导出及外部平台扩展；缺少可选 FPGA/ASIC 工具不阻塞主线包与仿真构建，也不伪报平台构建成功 |
-| R36-BUILD-02 | 非 editable 安装、任意 cwd、仓库不在搜索路径下可编译/运行；runtime-only 安装加载 artifact 不依赖 Triton/MLIR/编译器或测试工具 |
-| R36-BUILD-03 | 两个独立干净构建的公共代码/配置/导出清单可比较，规范化规则提前声明；依赖、生成物和第三方来源/许可证齐全，导出包通过只读完整性核验 |
+| R36-BUILD-01 | A single public build entry point explicitly selects software packages, simulation runtime assets, common hardware exports, and external platform extensions; missing optional FPGA/ASIC tooling does not block mainline packages or simulation builds, nor falsely report platform build success |
+| R36-BUILD-02 | Compiles and executes in non-editable installs, arbitrary current working directory, and with repository omitted from search paths; runtime-only installations load artifacts without dependencies on Triton, MLIR, compiler, or test tooling |
+| R36-BUILD-03 | Common code, configuration, and export manifests are comparable across two independent clean builds with normalization rules declared in advance; dependencies, generated files, and third-party sources/licenses are complete; export packages pass read-only integrity verification |
 
-### R36-08 — 共用 conformance 与回归门禁（验证 / CI）
+### R36-08: Common Conformance and Regression Gates (Verification / CI)
 
-| ID | 验收标准 |
+| ID | Acceptance Criteria |
 |---|---|
-| R36-TEST-01 | 同一份 backend conformance suite 覆盖生命周期、数据传输、兼容性、完成和故障；真实支持项必跑，不支持项验证受控拒绝；每项映射到协议日志和 oracle |
-| R36-TEST-02 | 冻结的 R1/R2/R3/R3.5 影响范围回归在本阶段候选全通过；第 5.2 节机器码/周期保真成立；新增小 workload 和预算不超限，无未解释 skip |
-| R36-TEST-03 | 定向变异分别破坏 capability、asset hash、返回 epoch、完成过早、存储延迟和导出依赖，均被相应 checker 检出；clean 对照通过，变异隔离且不污染源码 |
+| R36-TEST-01 | A unified backend conformance suite covers lifecycle, data transfer, compatibility, completion, and faults; truly supported features are executed, while unsupported features verify controlled rejection; each test maps to protocol logs and oracles |
+| R36-TEST-02 | Frozen R1/R2/R3/R3.5 blast-radius regressions pass completely on this phase's candidate; Section 5.2 machine code and cycle fidelity hold; newly added small workloads and budgets remain within limits without unexplained skips |
+| R36-TEST-03 | Directed mutations corrupting capabilities, asset hashes, return epochs, premature completion, memory latency, and export dependencies are each caught by corresponding checkers; clean controls pass, and mutations remain isolated without polluting source files |
 
-### R36-09 — 下游分支交接与扩展验证（维护者 / 平台接入）
+### R36-09: Downstream Branch Handover and Extension Verification (Maintainer / Platform Integration)
 
-| ID | 验收标准 |
+| ID | Acceptance Criteria |
 |---|---|
-| R36-HAND-01 | 第 5.3 节干净下游接入演练通过；只用公开扩展点和交付资产完成真实执行，无公共核心/状态机私有 patch |
-| R36-HAND-02 | FPGA/ASIC 各有适配责任表和限制清单；不指定器件或工艺，不把存储/接口语义缺口伪装成板级任务；接口负责人和变更流程明确 |
-| R36-HAND-03 | 交接包提供最小正确性程序、故障定位、事件/计数含义和复现命令；规定共用语义修复回主线、平台绑定留扩展层及接口版本升级方式 |
+| R36-HAND-01 | Section 5.3 clean downstream integration rehearsal passes; executes on real RTL using solely public extension points and delivered assets, with zero private patching of common cores or state machines |
+| R36-HAND-02 | FPGA and ASIC each have an adaptation responsibility matrix and limitation inventory; does not mandate specific devices or processes, nor disguises memory/interface semantic gaps as board-level tasks; interface owners and change procedures are explicit |
+| R36-HAND-03 | Handover package provides minimal correctness programs, fault diagnosis, event/counter definitions, and reproduction commands; specifies rules for upstreaming common semantic fixes, maintaining platform bindings in extension layers, and bumping interface versions |
 
-### R36-10 — 证据、状态与最终签收（维护者 / 验证）
+### R36-10: Evidence, Status, and Final Sign-off (Maintainer / Verification)
 
-| ID | 验收标准 |
+| ID | Acceptance Criteria |
 |---|---|
-| R36-EV-01 | 独立 verifier 按冻结必跑集合，从原始退出码、输出/计数、hash 与预算重算判决；拒绝缺项、篡改、混提交/实现、只改 summary PASS |
-| R36-EV-02 | 所有交付包绑定同一集成候选，源码与生成物状态可追溯；失败与重跑保留独立 run ID；全部 30 条标准及子条件有证据和负责人 |
-| R36-REL-01 | 10 个工作包全部通过，仿真执行与下游演练可复现；签收仅为 R36_ENGINEERING_READY；FPGA/ASIC 实板/物理验证明确为外部后续事项 |
+| R36-EV-01 | Independent verifier re-derives verdicts from raw exit codes, outputs/counters, hashes, and budgets against the frozen required suite; rejects omissions, tampering, mixed commits/implementations, or summary-only PASS alterations |
+| R36-EV-02 | All delivery packages bind to a single integration candidate, with traceable source and generated asset states; failures and reruns retain independent run IDs; all 30 criteria and sub-clauses have documented evidence and owners |
+| R36-REL-01 | All 10 work packages pass; simulation execution and downstream rehearsals are reproducible; sign-off identifier is strictly `R36_ENGINEERING_READY`; FPGA/ASIC physical board and physical silicon verification remain explicitly external follow-up items |
 
-## 7. 证据和阶段关口
+## 7. Evidence and Stage Gates
 
-不规定具体仓库目录重构方案。实现应提供以下可追溯内容，路径由工程方案确定：
+Does not mandate specific repository directory reorganization layouts. Implementations must provide the following traceable deliverables, with paths determined by the engineering plan:
 
-- 前置与当前集成基线、能力/限制矩阵、依赖和影响范围。
-- 版本化接口、配置/兼容规则、硬件源依赖与导出清单。
-- 安装包、运行资产、公共硬件包及其 hashes。
-- 参考 adapter、共用测试入口、独立 oracle、原始运行日志和预算。
-- 干净下游接入演练记录、交接指南和平台责任表。
-- 按本文件 ID 逐项推导的机器判决和状态记录。
+- Prerequisite and current integration baselines, capability/limitation matrices, dependencies, and blast radius.
+- Versioned interfaces, configuration/compatibility rules, hardware source dependencies, and export manifests.
+- Installation packages, runtime assets, common hardware packages, and their respective hashes.
+- Reference adapter, common test entry points, independent oracles, raw execution logs, and budgets.
+- Clean downstream integration rehearsal records, handover guides, and platform responsibility tables.
+- Machine-derived verdicts and status records corresponding item-by-item to the IDs in this document.
 
-| 关口 | 必须成立 | 完成后可声明 |
+| Gate | Prerequisite Conditions | Permitted Claim Upon Completion |
 |---|---|---|
-| A：基线与合同 | R36-01/02/03 | 工程边界和兼容规则已冻结 |
-| B：接口实际可替换 | R36-04/05/06 | 公共硬件与 host 接口经参考适配验证 |
-| C：可安装、可回归、可接入 | R36-07/08/09 | 主线可交付给独立平台分支 |
-| D：证据与状态 | R36-10 及全部前置 | R36_ENGINEERING_READY |
+| A: Baseline and Contracts | R36-01, R36-02, R36-03 | Engineering boundaries and compatibility rules frozen |
+| B: Interfaces Genuinely Replaceable | R36-04, R36-05, R36-06 | Common hardware and host interfaces validated via reference adapters |
+| C: Installable, Regressible, and Accessible | R36-07, R36-08, R36-09 | Mainline deliverable to independent platform branches |
+| D: Evidence and Status | R36-10 and all preceding gates | `R36_ENGINEERING_READY` |
 
-缺失实际板卡、厂商工具或 PDK 不是 R3.6 的失败项，因为它们不属于本合同。公共接口未实现、适配样例不能执行、包依赖开发环境、错误完成语义不明确，则是必须解决的主线缺口，不能通过标注“留给上板分支”签收。
+Absence of physical boards, vendor tools, or PDKs does not constitute a failure for R3.6, as they fall outside this contract. However, unimplemented public interfaces, non-functional adaptation examples, package dependencies on developer environments, or ambiguous error completion semantics represent mainline gaps that must be resolved, and cannot be signed off by deferring them as "left for board branches".
 
-## 8. 阶段完成后的项目形态
+## 8. Project State After Phase Completion
 
-项目具有一条稳定的公共产品链，仿真是已实现的执行后端；FPGA 和 ASIC 通过受测的工程边界扩展，尚未验证的平台保持明确状态。后续分支可以专注平台实现与物理验证，而不需要再建立一套编译、ABI、runtime、测试和证据体系。
+The project maintains a stable common product pipeline, with simulation serving as an operational execution backend; FPGA and ASIC extend via tested engineering boundaries, while unverified platforms maintain explicit status. Subsequent branches can focus on platform implementation and physical verification without needing to re-create another compiler, ABI, runtime, testing, and evidence framework.
 
-**本阶段以“可交接、可接入、可复验”为验收结果。它不生成必须烧录的交付物，也不以实际上板或物理 PPA 作为完成条件。**
+**This phase delivers "handoff-ready, integration-ready, and reproducible" as its acceptance outcome. It does not generate deliverables intended for immediate board programming, nor does it require physical board bring-up or physical silicon PPA as completion criteria.**

@@ -3,6 +3,12 @@
 `default_nettype none
 module tnca_multicore_board_regs;
  parameter N=3,PORTS=3,MEMORY_BYTES=1048576,STAGES=2,NOC_PIPE=0,DISPATCH_PIPE=0,HOME_PIPE=0,CODE_PIPE=0,MAINTENANCE=0,MEMORY_CONTROLS=0;
+ // Stand-in BO address and optional sparse backing (tb/common/tnca_sparse_map.vh):
+ // SPARSE=1 backs only SPARSE_MAP's ranges (SPARSE_LINES lines) of a window of
+ // MEMORY_BYTES, so an 8 GiB window can be simulated. Defaults keep the dense
+ // bench at 0x1_0000_0000 unchanged.
+ parameter [63:0] WIN_BASE=64'h100000000;
+ parameter SPARSE=0,SPARSE_LINES=0,SPARSE_MAP="none";
  // Cache geometry and convergence options; defaults keep the small, fast
  // bench. tools/r40/image_geometry_tests.py sets them from an image.tcl.
  parameter SETS=4,SET_W=2,WAYS=2,WAY_W=1,DCO_REGISTERED_RANGES=0,NUCA_REGISTER_VICTIM_SELECT=0,
@@ -155,7 +161,8 @@ module tnca_multicore_board_regs;
  .m_axi_hbm2_rresp(m_rresp[4+:2]),
  .m_axi_hbm2_rlast(m_rlast[2+:1]));
  generate for(genvar p=0;p<PORTS;p=p+1)begin:g_ram
-  tnca_axi_line_model #(.DATA_W(256),.OUT_N(8),.LINES((131072+MEMORY_BYTES)/64),.LATENCY(25+p*19)) ram(
+  tnca_axi_line_model #(.DATA_W(256),.OUT_N(8),.LINES(SPARSE ? SPARSE_LINES : (131072+MEMORY_BYTES)/64),.LATENCY(25+p*19),
+   .WIN_BASE(WIN_BASE),.SPARSE(SPARSE),.SPARSE_MAP(SPARSE_MAP)) ram(
   .clk(clk),.rst_n(rst_n_async),
  .m_awvalid(m_awvalid[p*(1)+:(1)]),
  .m_awready(m_awready[p*(1)+:(1)]),
@@ -270,6 +277,7 @@ module tnca_multicore_board_regs;
                             dma_wide=(kind=="B" || kind=="D");
                             if(dma_wide && (arg_off[2:0]!=0 || arg_off>MEMORY_BYTES-8))$fatal(1,"unaligned/past-end BO word");
                             dma_offset=arg_off;dma_word=arg_val;#1;
+                            if(dma_line<0)$fatal(1,"DMA at BO offset %h has no sparse backing",arg_off);
                             if(kind=="b" || kind=="B")begin
                                 dma_byte=arg_val[7:0];dma_write=1;
                                 #1;dma_write=0;

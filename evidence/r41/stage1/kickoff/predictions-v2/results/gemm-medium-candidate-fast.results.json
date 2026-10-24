@@ -1,0 +1,456 @@
+{
+ "schema": "tnca-systemc-graph-runs/1",
+ "backend": "systemc-tlm-grid",
+ "binary": "/home/zhongchun/r41s1-c2c96d3/model-build/tnca-chip",
+ "source_root": "/home/zhongchun/r41s1-c2c96d3/src",
+ "points": [
+  {
+   "point": "model.mlp/medium/fp16-t128-d128",
+   "status": "pass",
+   "problems": [],
+   "fallbacks": [],
+   "launches": 2,
+   "device_cycles": 21517523,
+   "first_call_device_cycles": 21526484,
+   "steady_request_s": 1.992799,
+   "timing": "serial-grid",
+   "max_rel_err": 0.00040567690352445176,
+   "tol": 0.05,
+   "first_call_wall_s": 10.2,
+   "child_wall_s": 15.423,
+   "process_wall_s": 19.27,
+   "model_launch_host_s": 4.115488,
+   "model_transfer_host_s": 0.046656,
+   "model_retired": 3920652,
+   "model_dirs": [
+    "/home/zhongchun/r41s1-c2c96d3/runs/gemm-medium-candidate-fast/runs/model.mlp__medium__fp16-t128-d128/model/model-85764-u3y9ytrk"
+   ],
+   "evidence": "model-prediction-uncalibrated",
+   "model_graph": {
+    "graph_cycles": 27325086,
+    "device_cycles": 21517523,
+    "measured_call": "steady",
+    "launches": [
+     {
+      "kernel": "triton_tem_fused_addmm_gelu_t_0",
+      "cycles": 14189714
+     },
+     {
+      "kernel": "triton_tem_fused_addmm_gelu_t_1",
+      "cycles": 7327809
+     }
+    ]
+   },
+   "model_timing_status": "uncalibrated",
+   "dram": {},
+   "cold_setup_only": false,
+   "returncode": 0,
+   "record": "/home/zhongchun/r41s1-c2c96d3/runs/gemm-medium-candidate-fast/runs/model.mlp__medium__fp16-t128-d128/record.json",
+   "key": "model.mlp/medium/fp16-t128-d128",
+   "requested_knobs": {
+    "TNCA_MAX_BLOCK": "16",
+    "TNCA_GEMM_TILE": "16,16,16",
+    "TNCA_REDUCTION_ROWS": "1",
+    "TNCA_BANK_ALLOC": "0",
+    "TNCA_WINDOW_REUSE": "0",
+    "TNCA_SDPA": "decomposed",
+    "TNCA_PIPELINE": "2",
+    "TNCA_TUNE": "0"
+   },
+   "knobs": {
+    "TNCA_ACTIVE_CORES": "1",
+    "TNCA_BANK_ALLOC": "0",
+    "TNCA_GEMM_TILE": "16,32,16",
+    "TNCA_MAX_BLOCK": "16",
+    "TNCA_PIPELINE": "1",
+    "TNCA_REDUCTION_ROWS": "1",
+    "TNCA_RTL_MEM_PORTS": "1",
+    "TNCA_RTL_OUTSTANDING": "1",
+    "TNCA_SDPA": "decomposed",
+    "TNCA_SUBMIT": "single",
+    "TNCA_TORCH_DEVICE": "native",
+    "TNCA_TRANSFER_POLICY": "per-kernel",
+    "TNCA_TUNE": "0",
+    "TNCA_WINDOW_REUSE": "0"
+   },
+   "model_knobs": {
+    "TNCA_DRAM_MAP": "/home/zhongchun/r41s1-c2c96d3/map.txt",
+    "TNCA_TLM_BINARY": "/home/zhongchun/r41s1-c2c96d3/model-build/tnca-chip",
+    "TNCA_TLM_CONFIG": "/home/zhongchun/r41s1-c2c96d3/src/tools/performance_harness/systemc/configs/r40-board-m2.cfg",
+    "TNCA_TLM_MONITOR": "aggregate",
+    "TNCA_TLM_OUT": "/home/zhongchun/r41s1-c2c96d3/runs/gemm-medium-candidate-fast/runs/model.mlp__medium__fp16-t128-d128/model"
+   },
+   "knobs_verified": true
+  },
+  {
+   "point": "op.bmm/medium/fp16-b16-m64-k32-n64",
+   "status": "pass",
+   "problems": [],
+   "fallbacks": [],
+   "launches": 1,
+   "device_cycles": 4503647,
+   "first_call_device_cycles": 4518751,
+   "steady_request_s": 0.585949,
+   "timing": "serial-grid",
+   "max_rel_err": 0.00026487573086833057,
+   "tol": 0.02,
+   "first_call_wall_s": 3.64,
+   "child_wall_s": 6.913,
+   "process_wall_s": 10.32,
+   "model_launch_host_s": 1.030864,
+   "model_transfer_host_s": 0.046798000000000006,
+   "model_retired": 895564,
+   "model_dirs": [
+    "/home/zhongchun/r41s1-c2c96d3/runs/gemm-medium-candidate-fast/runs/op.bmm__medium__fp16-b16-m64-k32-n64/model/model-85765-eg5qtnnk"
+   ],
+   "evidence": "model-prediction-uncalibrated",
+   "model_graph": {
+    "graph_cycles": 4503647,
+    "device_cycles": 4503647,
+    "measured_call": "steady",
+    "launches": [
+     {
+      "kernel": "triton_tem_fused_bmm_0",
+      "cycles": 4503647
+     }
+    ]
+   },
+   "model_timing_status": "uncalibrated",
+   "dram": {},
+   "cold_setup_only": false,
+   "returncode": 0,
+   "record": "/home/zhongchun/r41s1-c2c96d3/runs/gemm-medium-candidate-fast/runs/op.bmm__medium__fp16-b16-m64-k32-n64/record.json",
+   "key": "op.bmm/medium/fp16-b16-m64-k32-n64",
+   "requested_knobs": {
+    "TNCA_MAX_BLOCK": "16",
+    "TNCA_GEMM_TILE": "16,16,16",
+    "TNCA_REDUCTION_ROWS": "1",
+    "TNCA_BANK_ALLOC": "0",
+    "TNCA_WINDOW_REUSE": "0",
+    "TNCA_SDPA": "decomposed",
+    "TNCA_PIPELINE": "2",
+    "TNCA_TUNE": "0"
+   },
+   "knobs": {
+    "TNCA_ACTIVE_CORES": "1",
+    "TNCA_BANK_ALLOC": "0",
+    "TNCA_GEMM_TILE": "16,32,16",
+    "TNCA_MAX_BLOCK": "16",
+    "TNCA_PIPELINE": "1",
+    "TNCA_REDUCTION_ROWS": "1",
+    "TNCA_RTL_MEM_PORTS": "1",
+    "TNCA_RTL_OUTSTANDING": "1",
+    "TNCA_SDPA": "decomposed",
+    "TNCA_SUBMIT": "single",
+    "TNCA_TORCH_DEVICE": "native",
+    "TNCA_TRANSFER_POLICY": "per-kernel",
+    "TNCA_TUNE": "0",
+    "TNCA_WINDOW_REUSE": "0"
+   },
+   "model_knobs": {
+    "TNCA_DRAM_MAP": "/home/zhongchun/r41s1-c2c96d3/map.txt",
+    "TNCA_TLM_BINARY": "/home/zhongchun/r41s1-c2c96d3/model-build/tnca-chip",
+    "TNCA_TLM_CONFIG": "/home/zhongchun/r41s1-c2c96d3/src/tools/performance_harness/systemc/configs/r40-board-m2.cfg",
+    "TNCA_TLM_MONITOR": "aggregate",
+    "TNCA_TLM_OUT": "/home/zhongchun/r41s1-c2c96d3/runs/gemm-medium-candidate-fast/runs/op.bmm__medium__fp16-b16-m64-k32-n64/model"
+   },
+   "knobs_verified": true
+  },
+  {
+   "point": "op.gemv/medium/fp16-k320-n448",
+   "status": "pass",
+   "problems": [],
+   "fallbacks": [],
+   "launches": 1,
+   "device_cycles": 2085953,
+   "first_call_device_cycles": 2113283,
+   "steady_request_s": 0.301659,
+   "timing": "serial-grid",
+   "max_rel_err": 0.0002709982084379438,
+   "tol": 0.02,
+   "first_call_wall_s": 3.07,
+   "child_wall_s": 5.525,
+   "process_wall_s": 9.16,
+   "model_launch_host_s": 0.658825,
+   "model_transfer_host_s": 0.051485,
+   "model_retired": 411552,
+   "model_dirs": [
+    "/home/zhongchun/r41s1-c2c96d3/runs/gemm-medium-candidate-fast/runs/op.gemv__medium__fp16-k320-n448/model/model-85962-jzefkurj"
+   ],
+   "evidence": "model-prediction-uncalibrated",
+   "model_graph": {
+    "graph_cycles": 2085953,
+    "device_cycles": 2085953,
+    "measured_call": "steady",
+    "launches": [
+     {
+      "kernel": "triton_tem_fused_mm_t_0",
+      "cycles": 2085953
+     }
+    ]
+   },
+   "model_timing_status": "uncalibrated",
+   "dram": {},
+   "cold_setup_only": false,
+   "returncode": 0,
+   "record": "/home/zhongchun/r41s1-c2c96d3/runs/gemm-medium-candidate-fast/runs/op.gemv__medium__fp16-k320-n448/record.json",
+   "key": "op.gemv/medium/fp16-k320-n448",
+   "requested_knobs": {
+    "TNCA_MAX_BLOCK": "16",
+    "TNCA_GEMM_TILE": "16,16,16",
+    "TNCA_REDUCTION_ROWS": "1",
+    "TNCA_BANK_ALLOC": "0",
+    "TNCA_WINDOW_REUSE": "0",
+    "TNCA_SDPA": "decomposed",
+    "TNCA_PIPELINE": "2",
+    "TNCA_TUNE": "0"
+   },
+   "knobs": {
+    "TNCA_ACTIVE_CORES": "1",
+    "TNCA_BANK_ALLOC": "0",
+    "TNCA_GEMM_TILE": "16,32,16",
+    "TNCA_MAX_BLOCK": "16",
+    "TNCA_PIPELINE": "1",
+    "TNCA_REDUCTION_ROWS": "1",
+    "TNCA_RTL_MEM_PORTS": "1",
+    "TNCA_RTL_OUTSTANDING": "1",
+    "TNCA_SDPA": "decomposed",
+    "TNCA_SUBMIT": "single",
+    "TNCA_TORCH_DEVICE": "native",
+    "TNCA_TRANSFER_POLICY": "per-kernel",
+    "TNCA_TUNE": "0",
+    "TNCA_WINDOW_REUSE": "0"
+   },
+   "model_knobs": {
+    "TNCA_DRAM_MAP": "/home/zhongchun/r41s1-c2c96d3/map.txt",
+    "TNCA_TLM_BINARY": "/home/zhongchun/r41s1-c2c96d3/model-build/tnca-chip",
+    "TNCA_TLM_CONFIG": "/home/zhongchun/r41s1-c2c96d3/src/tools/performance_harness/systemc/configs/r40-board-m2.cfg",
+    "TNCA_TLM_MONITOR": "aggregate",
+    "TNCA_TLM_OUT": "/home/zhongchun/r41s1-c2c96d3/runs/gemm-medium-candidate-fast/runs/op.gemv__medium__fp16-k320-n448/model"
+   },
+   "knobs_verified": true
+  },
+  {
+   "point": "op.linear/medium/fp16-m128-k320-n256",
+   "status": "pass",
+   "problems": [],
+   "fallbacks": [],
+   "launches": 1,
+   "device_cycles": 9318383,
+   "first_call_device_cycles": 9324386,
+   "steady_request_s": 1.010906,
+   "timing": "serial-grid",
+   "max_rel_err": 0.00022744774532427184,
+   "tol": 0.02,
+   "first_call_wall_s": 3.8,
+   "child_wall_s": 7.513,
+   "process_wall_s": 10.89,
+   "model_launch_host_s": 2.174874,
+   "model_transfer_host_s": 0.043462,
+   "model_retired": 1707084,
+   "model_dirs": [
+    "/home/zhongchun/r41s1-c2c96d3/runs/gemm-medium-candidate-fast/runs/op.linear__medium__fp16-m128-k320-n256/model/model-86182-kigkgted"
+   ],
+   "evidence": "model-prediction-uncalibrated",
+   "model_graph": {
+    "graph_cycles": 9318383,
+    "device_cycles": 9318383,
+    "measured_call": "steady",
+    "launches": [
+     {
+      "kernel": "triton_tem_fused_addmm_t_0",
+      "cycles": 9318383
+     }
+    ]
+   },
+   "model_timing_status": "uncalibrated",
+   "dram": {},
+   "cold_setup_only": false,
+   "returncode": 0,
+   "record": "/home/zhongchun/r41s1-c2c96d3/runs/gemm-medium-candidate-fast/runs/op.linear__medium__fp16-m128-k320-n256/record.json",
+   "key": "op.linear/medium/fp16-m128-k320-n256",
+   "requested_knobs": {
+    "TNCA_MAX_BLOCK": "16",
+    "TNCA_GEMM_TILE": "16,16,16",
+    "TNCA_REDUCTION_ROWS": "1",
+    "TNCA_BANK_ALLOC": "0",
+    "TNCA_WINDOW_REUSE": "0",
+    "TNCA_SDPA": "decomposed",
+    "TNCA_PIPELINE": "2",
+    "TNCA_TUNE": "0"
+   },
+   "knobs": {
+    "TNCA_ACTIVE_CORES": "1",
+    "TNCA_BANK_ALLOC": "0",
+    "TNCA_GEMM_TILE": "16,32,16",
+    "TNCA_MAX_BLOCK": "16",
+    "TNCA_PIPELINE": "1",
+    "TNCA_REDUCTION_ROWS": "1",
+    "TNCA_RTL_MEM_PORTS": "1",
+    "TNCA_RTL_OUTSTANDING": "1",
+    "TNCA_SDPA": "decomposed",
+    "TNCA_SUBMIT": "single",
+    "TNCA_TORCH_DEVICE": "native",
+    "TNCA_TRANSFER_POLICY": "per-kernel",
+    "TNCA_TUNE": "0",
+    "TNCA_WINDOW_REUSE": "0"
+   },
+   "model_knobs": {
+    "TNCA_DRAM_MAP": "/home/zhongchun/r41s1-c2c96d3/map.txt",
+    "TNCA_TLM_BINARY": "/home/zhongchun/r41s1-c2c96d3/model-build/tnca-chip",
+    "TNCA_TLM_CONFIG": "/home/zhongchun/r41s1-c2c96d3/src/tools/performance_harness/systemc/configs/r40-board-m2.cfg",
+    "TNCA_TLM_MONITOR": "aggregate",
+    "TNCA_TLM_OUT": "/home/zhongchun/r41s1-c2c96d3/runs/gemm-medium-candidate-fast/runs/op.linear__medium__fp16-m128-k320-n256/model"
+   },
+   "knobs_verified": true
+  },
+  {
+   "point": "op.matmul/medium/fp16-m128-k192-n128",
+   "status": "pass",
+   "problems": [],
+   "fallbacks": [],
+   "launches": 1,
+   "device_cycles": 1655686,
+   "first_call_device_cycles": 1663456,
+   "steady_request_s": 0.198349,
+   "timing": "serial-grid",
+   "max_rel_err": 0.00030617475637429787,
+   "tol": 0.02,
+   "first_call_wall_s": 2.8,
+   "child_wall_s": 5.705,
+   "process_wall_s": 9.92,
+   "model_launch_host_s": 0.491474,
+   "model_transfer_host_s": 0.059484999999999996,
+   "model_retired": 335564,
+   "model_dirs": [
+    "/home/zhongchun/r41s1-c2c96d3/runs/gemm-medium-candidate-fast/runs/op.matmul__medium__fp16-m128-k192-n128/model/model-86183-tn325ukd"
+   ],
+   "evidence": "model-prediction-uncalibrated",
+   "model_graph": {
+    "graph_cycles": 1655686,
+    "device_cycles": 1655686,
+    "measured_call": "steady",
+    "launches": [
+     {
+      "kernel": "triton_tem_fused_mm_0",
+      "cycles": 1655686
+     }
+    ]
+   },
+   "model_timing_status": "uncalibrated",
+   "dram": {},
+   "cold_setup_only": false,
+   "returncode": 0,
+   "record": "/home/zhongchun/r41s1-c2c96d3/runs/gemm-medium-candidate-fast/runs/op.matmul__medium__fp16-m128-k192-n128/record.json",
+   "key": "op.matmul/medium/fp16-m128-k192-n128",
+   "requested_knobs": {
+    "TNCA_MAX_BLOCK": "16",
+    "TNCA_GEMM_TILE": "16,16,16",
+    "TNCA_REDUCTION_ROWS": "1",
+    "TNCA_BANK_ALLOC": "0",
+    "TNCA_WINDOW_REUSE": "0",
+    "TNCA_SDPA": "decomposed",
+    "TNCA_PIPELINE": "2",
+    "TNCA_TUNE": "0"
+   },
+   "knobs": {
+    "TNCA_ACTIVE_CORES": "1",
+    "TNCA_BANK_ALLOC": "0",
+    "TNCA_GEMM_TILE": "16,32,16",
+    "TNCA_MAX_BLOCK": "16",
+    "TNCA_PIPELINE": "1",
+    "TNCA_REDUCTION_ROWS": "1",
+    "TNCA_RTL_MEM_PORTS": "1",
+    "TNCA_RTL_OUTSTANDING": "1",
+    "TNCA_SDPA": "decomposed",
+    "TNCA_SUBMIT": "single",
+    "TNCA_TORCH_DEVICE": "native",
+    "TNCA_TRANSFER_POLICY": "per-kernel",
+    "TNCA_TUNE": "0",
+    "TNCA_WINDOW_REUSE": "0"
+   },
+   "model_knobs": {
+    "TNCA_DRAM_MAP": "/home/zhongchun/r41s1-c2c96d3/map.txt",
+    "TNCA_TLM_BINARY": "/home/zhongchun/r41s1-c2c96d3/model-build/tnca-chip",
+    "TNCA_TLM_CONFIG": "/home/zhongchun/r41s1-c2c96d3/src/tools/performance_harness/systemc/configs/r40-board-m2.cfg",
+    "TNCA_TLM_MONITOR": "aggregate",
+    "TNCA_TLM_OUT": "/home/zhongchun/r41s1-c2c96d3/runs/gemm-medium-candidate-fast/runs/op.matmul__medium__fp16-m128-k192-n128/model"
+   },
+   "knobs_verified": true
+  },
+  {
+   "point": "op.matmul/medium/fp32-m128-k192-n128",
+   "status": "pass",
+   "problems": [],
+   "fallbacks": [],
+   "launches": 1,
+   "device_cycles": 2935928,
+   "first_call_device_cycles": 2944920,
+   "steady_request_s": 0.265796,
+   "timing": "serial-grid",
+   "max_rel_err": 5.990480228345126e-07,
+   "tol": 0.0002,
+   "first_call_wall_s": 3.04,
+   "child_wall_s": 5.147,
+   "process_wall_s": 7.72,
+   "model_launch_host_s": 0.531154,
+   "model_transfer_host_s": 0.0065650000000000005,
+   "model_retired": 2239436,
+   "model_dirs": [
+    "/home/zhongchun/r41s1-c2c96d3/runs/gemm-medium-candidate-fast/runs/op.matmul__medium__fp32-m128-k192-n128/model/model-86392-6b0fmrhv"
+   ],
+   "evidence": "model-prediction-uncalibrated",
+   "model_graph": {
+    "graph_cycles": 2935928,
+    "device_cycles": 2935928,
+    "measured_call": "steady",
+    "launches": [
+     {
+      "kernel": "triton_tem_fused_mm_0",
+      "cycles": 2935928
+     }
+    ]
+   },
+   "model_timing_status": "uncalibrated",
+   "dram": {},
+   "cold_setup_only": false,
+   "returncode": 0,
+   "record": "/home/zhongchun/r41s1-c2c96d3/runs/gemm-medium-candidate-fast/runs/op.matmul__medium__fp32-m128-k192-n128/record.json",
+   "key": "op.matmul/medium/fp32-m128-k192-n128",
+   "requested_knobs": {
+    "TNCA_MAX_BLOCK": "16",
+    "TNCA_GEMM_TILE": "16,16,16",
+    "TNCA_REDUCTION_ROWS": "1",
+    "TNCA_BANK_ALLOC": "0",
+    "TNCA_WINDOW_REUSE": "0",
+    "TNCA_SDPA": "decomposed",
+    "TNCA_PIPELINE": "2",
+    "TNCA_TUNE": "0"
+   },
+   "knobs": {
+    "TNCA_ACTIVE_CORES": "1",
+    "TNCA_BANK_ALLOC": "0",
+    "TNCA_GEMM_TILE": "16,32,16",
+    "TNCA_MAX_BLOCK": "16",
+    "TNCA_PIPELINE": "1",
+    "TNCA_REDUCTION_ROWS": "1",
+    "TNCA_RTL_MEM_PORTS": "1",
+    "TNCA_RTL_OUTSTANDING": "1",
+    "TNCA_SDPA": "decomposed",
+    "TNCA_SUBMIT": "single",
+    "TNCA_TORCH_DEVICE": "native",
+    "TNCA_TRANSFER_POLICY": "per-kernel",
+    "TNCA_TUNE": "0",
+    "TNCA_WINDOW_REUSE": "0"
+   },
+   "model_knobs": {
+    "TNCA_DRAM_MAP": "/home/zhongchun/r41s1-c2c96d3/map.txt",
+    "TNCA_TLM_BINARY": "/home/zhongchun/r41s1-c2c96d3/model-build/tnca-chip",
+    "TNCA_TLM_CONFIG": "/home/zhongchun/r41s1-c2c96d3/src/tools/performance_harness/systemc/configs/r40-board-m2.cfg",
+    "TNCA_TLM_MONITOR": "aggregate",
+    "TNCA_TLM_OUT": "/home/zhongchun/r41s1-c2c96d3/runs/gemm-medium-candidate-fast/runs/op.matmul__medium__fp32-m128-k192-n128/model"
+   },
+   "knobs_verified": true
+  }
+ ]
+}

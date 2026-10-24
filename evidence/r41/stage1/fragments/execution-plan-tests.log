@@ -1,0 +1,47 @@
+# software tree files:a40bc877... (HEAD a0c9e72 + execution-plan change set), GB10 gx10-6646, 2026-10-21T09:20:36Z
+## compiler/test/test_execution_resources.py (Triton env)
+test_binary32_dot_is_not_counted_as_mma (__main__.ExecutionResourcePlanTests.test_binary32_dot_is_not_counted_as_mma) ... ok
+test_descriptor_and_pointer_transfers (__main__.ExecutionResourcePlanTests.test_descriptor_and_pointer_transfers) ... ok
+test_fragments_and_macs_for_full_wide_tail_and_masked_shapes (__main__.ExecutionResourcePlanTests.test_fragments_and_macs_for_full_wide_tail_and_masked_shapes) ... ok
+test_live_old_accumulator_round_trips_are_counted (__main__.ExecutionResourcePlanTests.test_live_old_accumulator_round_trips_are_counted) ... ok
+test_refusals_carry_their_reason (__main__.ExecutionResourcePlanTests.test_refusals_carry_their_reason) ... ok
+test_resident_k_loop_has_no_accumulator_round_trips (__main__.ExecutionResourcePlanTests.test_resident_k_loop_has_no_accumulator_round_trips) ... ok
+test_resources_admission_and_tuning_read_the_plan (__main__.ExecutionResourcePlanTests.test_resources_admission_and_tuning_read_the_plan) ... ok
+test_unstated_extents_stay_unknown (__main__.ExecutionResourcePlanTests.test_unstated_extents_stay_unknown) ... ok
+
+----------------------------------------------------------------------
+Ran 8 tests in 2.345s
+
+OK
+exit 0
+## tools/performance_harness/test_execution_plan_consumers.py (Torch env)
+test_block_retile_reads_the_plan (__main__.PlanConsumerTests.test_block_retile_reads_the_plan) ... ok
+test_plan_matches_the_sealed_code (__main__.PlanConsumerTests.test_plan_matches_the_sealed_code) ... ok
+test_tuning_admission_and_capacities_read_the_plan (__main__.PlanConsumerTests.test_tuning_admission_and_capacities_read_the_plan) ... ok
+
+----------------------------------------------------------------------
+Ran 3 tests in 2.092s
+
+OK
+exit 0
+## compiler/test/test_fragment_residency.py (Triton env)
+test_insufficient_accumulators_are_rejected_before_execution (__main__.FragmentResidencyTests.test_insufficient_accumulators_are_rejected_before_execution) ... ok
+test_live_old_accumulator_is_not_overwritten (__main__.FragmentResidencyTests.test_live_old_accumulator_is_not_overwritten) ... ok
+test_two_fragments_remain_resident_across_k (__main__.FragmentResidencyTests.test_two_fragments_remain_resident_across_k) ... ok
+
+----------------------------------------------------------------------
+Ran 3 tests in 0.125s
+
+OK
+exit 0
+## tools/performance_harness/test_fragment_bits.py (Torch env)
+test_any_difference_is_a_mismatch (__main__.CompareTests.test_any_difference_is_a_mismatch) ... ok
+test_identical_bits_pass (__main__.CompareTests.test_identical_bits_pass) ... ok
+test_other_k_orders_are_detectable (__main__.ReferenceTests.test_other_k_orders_are_detectable) ... ok
+test_reference_is_an_ordered_binary32_fma_chain (__main__.ReferenceTests.test_reference_is_an_ordered_binary32_fma_chain) ... ok
+
+----------------------------------------------------------------------
+Ran 4 tests in 1.019s
+
+OK
+exit 0

@@ -1,0 +1,1032 @@
+{
+ "schema": "tnca-r41s2-screen-families/1",
+ "margin_ns": 0.5,
+ "screens": {
+  "base_tile1_SLR1": {
+   "total": {
+    "paths_below_margin": 544,
+    "failing": 0,
+    "tns_ns": 0.0,
+    "worst_slack_ns": 0.015
+   },
+   "owners": {
+    "F04 (writeback)": {
+     "families": 6,
+     "paths_below_margin": 146,
+     "failing": 0,
+     "worst_slack_ns": 0.015
+    },
+    "F01/F02/F05 (W forward, operands)": {
+     "families": 2,
+     "paths_below_margin": 29,
+     "failing": 0,
+     "worst_slack_ns": 0.157
+    },
+    "F02/F05 (scoreboard, VRF)": {
+     "families": 5,
+     "paths_below_margin": 139,
+     "failing": 0,
+     "worst_slack_ns": 0.193
+    },
+    "F03/F08 (VFPU, FMA)": {
+     "families": 10,
+     "paths_below_margin": 68,
+     "failing": 0,
+     "worst_slack_ns": 0.222
+    },
+    "F09 (MTX, accumulator)": {
+     "families": 3,
+     "paths_below_margin": 9,
+     "failing": 0,
+     "worst_slack_ns": 0.285
+    },
+    "transfer engine (u_txf; X8 edits it)": {
+     "families": 3,
+     "paths_below_margin": 122,
+     "failing": 0,
+     "worst_slack_ns": 0.375
+    },
+    "other core": {
+     "families": 1,
+     "paths_below_margin": 27,
+     "failing": 0,
+     "worst_slack_ns": 0.38
+    },
+    "F01 (stall, front end)": {
+     "families": 2,
+     "paths_below_margin": 4,
+     "failing": 0,
+     "worst_slack_ns": 0.43
+    }
+   },
+   "families": [
+    {
+     "source_family": "u_core/x_pm_idx_reg[*]",
+     "destination_family": "u_core/w_sdata_reg[*]",
+     "owner": "F04 (writeback)",
+     "paths_below_margin": 16,
+     "failing": 0,
+     "tns_ns": 0.0,
+     "worst_slack_ns": 0.015,
+     "worst_levels": 24,
+     "worst_delay_ns": 9.964,
+     "worst_route_ns": 7.601,
+     "a3": {
+      "endpoints": 9,
+      "tns_ns": -2.743,
+      "worst_slack_ns": -0.712
+     }
+    },
+    {
+     "source_family": "u_core/x_pm_idx_reg[*]",
+     "destination_family": "u_core/w_vdata_reg[*]",
+     "owner": "F04 (writeback)",
+     "paths_below_margin": 126,
+     "failing": 0,
+     "tns_ns": 0.0,
+     "worst_slack_ns": 0.058,
+     "worst_levels": 23,
+     "worst_delay_ns": 9.922,
+     "worst_route_ns": 7.434,
+     "a3": {
+      "endpoints": 84,
+      "tns_ns": -32.488,
+      "worst_slack_ns": -0.856
+     }
+    },
+    {
+     "source_family": "u_core/w_class_reg[*]",
+     "destination_family": "u_core/w_vdata_reg[*]",
+     "owner": "F01/F02/F05 (W forward, operands)",
+     "paths_below_margin": 26,
+     "failing": 0,
+     "tns_ns": 0.0,
+     "worst_slack_ns": 0.157,
+     "worst_levels": 19,
+     "worst_delay_ns": 9.824,
+     "worst_route_ns": 7.88,
+     "a3": null
+    },
+    {
+     "source_family": "u_core/u_srf/valid_reg[*]",
+     "destination_family": "u_core/sb_s_reg[*]",
+     "owner": "F02/F05 (scoreboard, VRF)",
+     "paths_below_margin": 106,
+     "failing": 0,
+     "tns_ns": 0.0,
+     "worst_slack_ns": 0.193,
+     "worst_levels": 21,
+     "worst_delay_ns": 9.788,
+     "worst_route_ns": 8.082,
+     "a3": null
+    },
+    {
+     "source_family": "u_core/u_mtx/g_mac[*].u_mac/g_in_reg.b_q_reg[*]",
+     "destination_family": "u_core/u_mtx/g_mac[*].u_mac/u_fma/g_l2.u_xls/p0_res_sign_mag_reg",
+     "owner": "F03/F08 (VFPU, FMA)",
+     "paths_below_margin": 3,
+     "failing": 0,
+     "tns_ns": 0.0,
+     "worst_slack_ns": 0.222,
+     "worst_levels": 23,
+     "worst_delay_ns": 9.759,
+     "worst_route_ns": 6.162,
+     "a3": {
+      "endpoints": 1,
+      "tns_ns": -0.081,
+      "worst_slack_ns": -0.081
+     }
+    },
+    {
+     "source_family": "u_core/u_mtx/g_mac[*].u_mac/g_in_reg.b_q_reg[*]",
+     "destination_family": "u_core/u_mtx/g_mac[*].u_mac/u_fma/g_l2.u_xls/p0_small_wins_reg_rep",
+     "owner": "F03/F08 (VFPU, FMA)",
+     "paths_below_margin": 3,
+     "failing": 0,
+     "tns_ns": 0.0,
+     "worst_slack_ns": 0.228,
+     "worst_levels": 22,
+     "worst_delay_ns": 9.752,
+     "worst_route_ns": 6.207,
+     "a3": {
+      "endpoints": 1,
+      "tns_ns": -0.164,
+      "worst_slack_ns": -0.164
+     }
+    },
+    {
+     "source_family": "u_core/u_vfpu/red_busy_reg",
+     "destination_family": "u_core/u_vfpu/g_fma[*].u_fma/g_l2.u_xls/p0_small_wins_reg_rep",
+     "owner": "F03/F08 (VFPU, FMA)",
+     "paths_below_margin": 18,
+     "failing": 0,
+     "tns_ns": 0.0,
+     "worst_slack_ns": 0.229,
+     "worst_levels": 23,
+     "worst_delay_ns": 9.752,
+     "worst_route_ns": 6.153,
+     "a3": {
+      "endpoints": 125,
+      "tns_ns": -52.147,
+      "worst_slack_ns": -0.919
+     }
+    },
+    {
+     "source_family": "u_core/u_vfpu/red_busy_reg",
+     "destination_family": "u_core/u_vfpu/g_fma[*].u_fma/g_l2.u_xls/p0_res_sign_mag_reg",
+     "owner": "F03/F08 (VFPU, FMA)",
+     "paths_below_margin": 4,
+     "failing": 0,
+     "tns_ns": 0.0,
+     "worst_slack_ns": 0.235,
+     "worst_levels": 27,
+     "worst_delay_ns": 9.745,
+     "worst_route_ns": 5.71,
+     "a3": {
+      "endpoints": 27,
+      "tns_ns": -12.68,
+      "worst_slack_ns": -0.912
+     }
+    },
+    {
+     "source_family": "u_core/d_pf_va_idx_reg[*]",
+     "destination_family": "u_core/g_vrf_banked.u_vrf/g_bank[*].u_bank/s1_vld_reg[*]",
+     "owner": "F02/F05 (scoreboard, VRF)",
+     "paths_below_margin": 19,
+     "failing": 0,
+     "tns_ns": 0.0,
+     "worst_slack_ns": 0.255,
+     "worst_levels": 22,
+     "worst_delay_ns": 9.726,
+     "worst_route_ns": 7.304,
+     "a3": null
+    },
+    {
+     "source_family": "u_core/w_class_reg[*]",
+     "destination_family": "u_core/w_sdata_reg[*]",
+     "owner": "F01/F02/F05 (W forward, operands)",
+     "paths_below_margin": 3,
+     "failing": 0,
+     "tns_ns": 0.0,
+     "worst_slack_ns": 0.272,
+     "worst_levels": 18,
+     "worst_delay_ns": 9.708,
+     "worst_route_ns": 8.093,
+     "a3": null
+    },
+    {
+     "source_family": "u_core/x_fpctl_reg[*]",
+     "destination_family": "u_core/u_vfpu/g_fma[*].u_fma/g_l2.u_xls/p0_small_wins_reg_rep",
+     "owner": "F03/F08 (VFPU, FMA)",
+     "paths_below_margin": 10,
+     "failing": 0,
+     "tns_ns": 0.0,
+     "worst_slack_ns": 0.282,
+     "worst_levels": 24,
+     "worst_delay_ns": 9.7,
+     "worst_route_ns": 6.011,
+     "a3": {
+      "endpoints": 19,
+      "tns_ns": -7.706,
+      "worst_slack_ns": -0.874
+     }
+    },
+    {
+     "source_family": "u_core/g_vrf_banked.u_vrf/g_bank[*].u_bank/mem_reg_6",
+     "destination_family": "u_core/u_mtx/g_mac[*].u_mac/g_in_reg.a_q_reg[*]",
+     "owner": "F09 (MTX, accumulator)",
+     "paths_below_margin": 5,
+     "failing": 0,
+     "tns_ns": 0.0,
+     "worst_slack_ns": 0.285,
+     "worst_levels": 15,
+     "worst_delay_ns": 9.649,
+     "worst_route_ns": 7.659,
+     "a3": {
+      "endpoints": 29,
+      "tns_ns": -6.733,
+      "worst_slack_ns": -0.684
+     }
+    },
+    {
+     "source_family": "u_core/x_fpctl_reg[*]",
+     "destination_family": "u_core/u_vfpu/g_fma[*].u_fma/g_l2.u_xls/p0_res_sign_mag_reg",
+     "owner": "F03/F08 (VFPU, FMA)",
+     "paths_below_margin": 2,
+     "failing": 0,
+     "tns_ns": 0.0,
+     "worst_slack_ns": 0.293,
+     "worst_levels": 24,
+     "worst_delay_ns": 9.688,
+     "worst_route_ns": 5.796,
+     "a3": {
+      "endpoints": 3,
+      "tns_ns": -1.592,
+      "worst_slack_ns": -0.788
+     }
+    },
+    {
+     "source_family": "u_core/x_imm_reg[*]",
+     "destination_family": "u_core/w_vdata_reg[*]",
+     "owner": "F04 (writeback)",
+     "paths_below_margin": 1,
+     "failing": 0,
+     "tns_ns": 0.0,
+     "worst_slack_ns": 0.296,
+     "worst_levels": 23,
+     "worst_delay_ns": 9.685,
+     "worst_route_ns": 6.037,
+     "a3": {
+      "endpoints": 31,
+      "tns_ns": -6.359,
+      "worst_slack_ns": -0.688
+     }
+    },
+    {
+     "source_family": "u_core/u_srf/valid_reg[*]",
+     "destination_family": "u_core/w_vdata_reg[*]",
+     "owner": "F04 (writeback)",
+     "paths_below_margin": 1,
+     "failing": 0,
+     "tns_ns": 0.0,
+     "worst_slack_ns": 0.353,
+     "worst_levels": 18,
+     "worst_delay_ns": 9.627,
+     "worst_route_ns": 8.029,
+     "a3": {
+      "endpoints": 2,
+      "tns_ns": -0.045,
+      "worst_slack_ns": -0.03
+     }
+    },
+    {
+     "source_family": "u_core/g_vrf_banked.x_va_q_reg[*]",
+     "destination_family": "u_core/u_vfpu/dly_v_reg[*][*]",
+     "owner": "F03/F08 (VFPU, FMA)",
+     "paths_below_margin": 5,
+     "failing": 0,
+     "tns_ns": 0.0,
+     "worst_slack_ns": 0.368,
+     "worst_levels": 9,
+     "worst_delay_ns": 9.613,
+     "worst_route_ns": 8.674,
+     "a3": {
+      "endpoints": 71,
+      "tns_ns": -18.622,
+      "worst_slack_ns": -0.74
+     }
+    },
+    {
+     "source_family": "u_core/x_valu_imm_reg_replica",
+     "destination_family": "u_core/w_vdata_reg[*]",
+     "owner": "F04 (writeback)",
+     "paths_below_margin": 1,
+     "failing": 0,
+     "tns_ns": 0.0,
+     "worst_slack_ns": 0.371,
+     "worst_levels": 24,
+     "worst_delay_ns": 9.61,
+     "worst_route_ns": 5.583,
+     "a3": null
+    },
+    {
+     "source_family": "u_core/u_txf/t_e4_reg[*]",
+     "destination_family": "u_core/u_txf/xbuf_reg[*]",
+     "owner": "transfer engine (u_txf; X8 edits it)",
+     "paths_below_margin": 99,
+     "failing": 0,
+     "tns_ns": 0.0,
+     "worst_slack_ns": 0.375,
+     "worst_levels": 22,
+     "worst_delay_ns": 9.506,
+     "worst_route_ns": 7.481,
+     "a3": null
+    },
+    {
+     "source_family": "u_core/u_srf/valid_reg[*]",
+     "destination_family": "u_core/fb_insn_reg[*]",
+     "owner": "other core",
+     "paths_below_margin": 27,
+     "failing": 0,
+     "tns_ns": 0.0,
+     "worst_slack_ns": 0.38,
+     "worst_levels": 18,
+     "worst_delay_ns": 9.516,
+     "worst_route_ns": 7.979,
+     "a3": null
+    },
+    {
+     "source_family": "u_core/u_vfpu/red_busy_reg",
+     "destination_family": "u_core/u_vfpu/g_fma[*].u_fma/g_l2.u_xls/p0_sub_671_reg[*]",
+     "owner": "F03/F08 (VFPU, FMA)",
+     "paths_below_margin": 18,
+     "failing": 0,
+     "tns_ns": 0.0,
+     "worst_slack_ns": 0.4,
+     "worst_levels": 31,
+     "worst_delay_ns": 9.581,
+     "worst_route_ns": 5.56,
+     "a3": {
+      "endpoints": 1001,
+      "tns_ns": -177.361,
+      "worst_slack_ns": -0.691
+     }
+    },
+    {
+     "source_family": "u_core/u_txf/t_e4_reg[*]",
+     "destination_family": "u_core/u_txf/t_i1_reg[*]",
+     "owner": "transfer engine (u_txf; X8 edits it)",
+     "paths_below_margin": 15,
+     "failing": 0,
+     "tns_ns": 0.0,
+     "worst_slack_ns": 0.406,
+     "worst_levels": 24,
+     "worst_delay_ns": 9.475,
+     "worst_route_ns": 7.421,
+     "a3": null
+    },
+    {
+     "source_family": "u_core/d_pf_va_idx_reg[*]",
+     "destination_family": "u_core/g_vrf_banked.u_vrf/g_bank[*].u_bank/s1_byp_mask_reg[*]",
+     "owner": "F02/F05 (scoreboard, VRF)",
+     "paths_below_margin": 12,
+     "failing": 0,
+     "tns_ns": 0.0,
+     "worst_slack_ns": 0.412,
+     "worst_levels": 20,
+     "worst_delay_ns": 9.471,
+     "worst_route_ns": 7.108,
+     "a3": null
+    },
+    {
+     "source_family": "u_core/u_vfpu/g_fma[*].u_fma/g_l2.u_xls/p1_sh_mag_reg[*]",
+     "destination_family": "u_core/w_vdata_reg[*]",
+     "owner": "F04 (writeback)",
+     "paths_below_margin": 1,
+     "failing": 0,
+     "tns_ns": 0.0,
+     "worst_slack_ns": 0.42,
+     "worst_levels": 28,
+     "worst_delay_ns": 9.562,
+     "worst_route_ns": 6.769,
+     "a3": {
+      "endpoints": 92,
+      "tns_ns": -26.507,
+      "worst_slack_ns": -0.878
+     }
+    },
+    {
+     "source_family": "u_core/u_srf/valid_reg[*]",
+     "destination_family": "u_core/pc_reg[*][*]",
+     "owner": "F01 (stall, front end)",
+     "paths_below_margin": 3,
+     "failing": 0,
+     "tns_ns": 0.0,
+     "worst_slack_ns": 0.43,
+     "worst_levels": 20,
+     "worst_delay_ns": 9.466,
+     "worst_route_ns": 7.941,
+     "a3": null
+    },
+    {
+     "source_family": "u_core/x_major_reg[*]",
+     "destination_family": "u_core/u_vfpu/dly_v_reg[*][*]",
+     "owner": "F03/F08 (VFPU, FMA)",
+     "paths_below_margin": 2,
+     "failing": 0,
+     "tns_ns": 0.0,
+     "worst_slack_ns": 0.442,
+     "worst_levels": 3,
+     "worst_delay_ns": 9.54,
+     "worst_route_ns": 9.103,
+     "a3": {
+      "endpoints": 2,
+      "tns_ns": -0.239,
+      "worst_slack_ns": -0.2
+     }
+    },
+    {
+     "source_family": "u_core/d_pf_va_idx_reg[*]",
+     "destination_family": "u_core/g_vrf_banked.u_vrf/g_bank[*].u_bank/mem_reg_7",
+     "owner": "F02/F05 (scoreboard, VRF)",
+     "paths_below_margin": 1,
+     "failing": 0,
+     "tns_ns": 0.0,
+     "worst_slack_ns": 0.445,
+     "worst_levels": 18,
+     "worst_delay_ns": 9.255,
+     "worst_route_ns": 7.173,
+     "a3": null
+    },
+    {
+     "source_family": "u_core/u_txf/t_e4_reg[*]",
+     "destination_family": "u_core/u_txf/t_i2_reg[*]",
+     "owner": "transfer engine (u_txf; X8 edits it)",
+     "paths_below_margin": 8,
+     "failing": 0,
+     "tns_ns": 0.0,
+     "worst_slack_ns": 0.472,
+     "worst_levels": 24,
+     "worst_delay_ns": 9.409,
+     "worst_route_ns": 7.341,
+     "a3": null
+    },
+    {
+     "source_family": "u_core/x_fpctl_reg[*]",
+     "destination_family": "u_core/u_vfpu/g_fma[*].u_fma/g_l2.u_xls/p0_sub_671_reg[*]",
+     "owner": "F03/F08 (VFPU, FMA)",
+     "paths_below_margin": 3,
+     "failing": 0,
+     "tns_ns": 0.0,
+     "worst_slack_ns": 0.473,
+     "worst_levels": 30,
+     "worst_delay_ns": 9.51,
+     "worst_route_ns": 5.517,
+     "a3": {
+      "endpoints": 129,
+      "tns_ns": -20.45,
+      "worst_slack_ns": -0.31
+     }
+    },
+    {
+     "source_family": "u_core/x_sb_idx_reg[*]",
+     "destination_family": "u_core/u_mtx/g_mac[*].u_mac/g_in_reg.a_q_reg[*]",
+     "owner": "F09 (MTX, accumulator)",
+     "paths_below_margin": 3,
+     "failing": 0,
+     "tns_ns": 0.0,
+     "worst_slack_ns": 0.484,
+     "worst_levels": 18,
+     "worst_delay_ns": 9.497,
+     "worst_route_ns": 7.835,
+     "a3": null
+    },
+    {
+     "source_family": "u_core/u_srf/valid_reg[*]",
+     "destination_family": "u_core/fb_pc_reg[*]",
+     "owner": "F01 (stall, front end)",
+     "paths_below_margin": 1,
+     "failing": 0,
+     "tns_ns": 0.0,
+     "worst_slack_ns": 0.486,
+     "worst_levels": 18,
+     "worst_delay_ns": 9.41,
+     "worst_route_ns": 7.873,
+     "a3": null
+    },
+    {
+     "source_family": "u_core/g_vrf_banked.u_vrf/g_bank[*].u_bank/mem_reg_4",
+     "destination_family": "u_core/u_mtx/g_mac[*].u_mac/g_in_reg.a_q_reg[*]",
+     "owner": "F09 (MTX, accumulator)",
+     "paths_below_margin": 1,
+     "failing": 0,
+     "tns_ns": 0.0,
+     "worst_slack_ns": 0.489,
+     "worst_levels": 15,
+     "worst_delay_ns": 9.445,
+     "worst_route_ns": 7.243,
+     "a3": {
+      "endpoints": 7,
+      "tns_ns": -0.642,
+      "worst_slack_ns": -0.186
+     }
+    },
+    {
+     "source_family": "u_core/d_pf_va_idx_reg[*]",
+     "destination_family": "u_core/g_vrf_banked.u_vrf/g_bank[*].u_bank/mem_reg_3",
+     "owner": "F02/F05 (scoreboard, VRF)",
+     "paths_below_margin": 1,
+     "failing": 0,
+     "tns_ns": 0.0,
+     "worst_slack_ns": 0.496,
+     "worst_levels": 18,
+     "worst_delay_ns": 9.204,
+     "worst_route_ns": 7.122,
+     "a3": null
+    }
+   ]
+  },
+  "base_tile0_SLR0": {
+   "total": {
+    "paths_below_margin": 2000,
+    "failing": 0,
+    "tns_ns": 0.0,
+    "worst_slack_ns": 0.102
+   },
+   "owners": {
+    "F03/F08 (VFPU, FMA)": {
+     "families": 4,
+     "paths_below_margin": 82,
+     "failing": 0,
+     "worst_slack_ns": 0.102
+    },
+    "F01/F02/F05 (W forward, operands)": {
+     "families": 10,
+     "paths_below_margin": 1916,
+     "failing": 0,
+     "worst_slack_ns": 0.321
+    },
+    "F04 (writeback)": {
+     "families": 1,
+     "paths_below_margin": 2,
+     "failing": 0,
+     "worst_slack_ns": 0.353
+    }
+   },
+   "families": [
+    {
+     "source_family": "u_core/u_vfpu/red_busy_reg",
+     "destination_family": "u_core/u_vfpu/g_fma[*].u_fma/g_l2.u_xls/p0_sub_671_reg[*]",
+     "owner": "F03/F08 (VFPU, FMA)",
+     "paths_below_margin": 61,
+     "failing": 0,
+     "tns_ns": 0.0,
+     "worst_slack_ns": 0.102,
+     "worst_levels": 31,
+     "worst_delay_ns": 9.878,
+     "worst_route_ns": 5.808,
+     "a3": {
+      "endpoints": 1001,
+      "tns_ns": -177.361,
+      "worst_slack_ns": -0.691
+     }
+    },
+    {
+     "source_family": "u_core/u_vfpu/red_busy_reg",
+     "destination_family": "u_core/u_vfpu/g_fma[*].u_fma/g_l2.u_xls/p0_res_sign_mag_reg",
+     "owner": "F03/F08 (VFPU, FMA)",
+     "paths_below_margin": 6,
+     "failing": 0,
+     "tns_ns": 0.0,
+     "worst_slack_ns": 0.148,
+     "worst_levels": 25,
+     "worst_delay_ns": 9.833,
+     "worst_route_ns": 5.887,
+     "a3": {
+      "endpoints": 27,
+      "tns_ns": -12.68,
+      "worst_slack_ns": -0.912
+     }
+    },
+    {
+     "source_family": "u_core/u_vfpu/red_busy_reg",
+     "destination_family": "u_core/u_vfpu/g_fma[*].u_fma/g_l2.u_xls/p0_small_wins_reg_rep",
+     "owner": "F03/F08 (VFPU, FMA)",
+     "paths_below_margin": 10,
+     "failing": 0,
+     "tns_ns": 0.0,
+     "worst_slack_ns": 0.182,
+     "worst_levels": 24,
+     "worst_delay_ns": 9.799,
+     "worst_route_ns": 5.892,
+     "a3": {
+      "endpoints": 125,
+      "tns_ns": -52.147,
+      "worst_slack_ns": -0.919
+     }
+    },
+    {
+     "source_family": "u_core/x_fpctl_reg[*]",
+     "destination_family": "u_core/u_vfpu/g_fma[*].u_fma/g_l2.u_xls/p0_small_wins_reg_rep",
+     "owner": "F03/F08 (VFPU, FMA)",
+     "paths_below_margin": 5,
+     "failing": 0,
+     "tns_ns": 0.0,
+     "worst_slack_ns": 0.283,
+     "worst_levels": 26,
+     "worst_delay_ns": 9.698,
+     "worst_route_ns": 5.567,
+     "a3": {
+      "endpoints": 19,
+      "tns_ns": -7.706,
+      "worst_slack_ns": -0.874
+     }
+    },
+    {
+     "source_family": "u_core/w_idx_reg[*]",
+     "destination_family": "u_core/g_vrf_banked.x_vb_q_reg[*]",
+     "owner": "F01/F02/F05 (W forward, operands)",
+     "paths_below_margin": 315,
+     "failing": 0,
+     "tns_ns": 0.0,
+     "worst_slack_ns": 0.321,
+     "worst_levels": 12,
+     "worst_delay_ns": 9.575,
+     "worst_route_ns": 8.49,
+     "a3": null
+    },
+    {
+     "source_family": "u_core/w_idx_reg[*]",
+     "destination_family": "u_core/g_lsu_pair.u_lsu/g_unit[*].u/lane_wdata_reg[*][*]",
+     "owner": "F01/F02/F05 (W forward, operands)",
+     "paths_below_margin": 391,
+     "failing": 0,
+     "tns_ns": 0.0,
+     "worst_slack_ns": 0.328,
+     "worst_levels": 10,
+     "worst_delay_ns": 9.567,
+     "worst_route_ns": 8.644,
+     "a3": null
+    },
+    {
+     "source_family": "u_core/w_idx_reg[*]",
+     "destination_family": "u_core/g_lsu_pair.u_lsu/g_unit[*].u/lane_addr_reg[*][*]",
+     "owner": "F01/F02/F05 (W forward, operands)",
+     "paths_below_margin": 521,
+     "failing": 0,
+     "tns_ns": 0.0,
+     "worst_slack_ns": 0.332,
+     "worst_levels": 10,
+     "worst_delay_ns": 9.563,
+     "worst_route_ns": 8.64,
+     "a3": null
+    },
+    {
+     "source_family": "u_core/w_idx_reg[*]",
+     "destination_family": "u_core/g_lsu_pair.u_lsu/g_unit[*].u/nbytes_reg[*]_rep",
+     "owner": "F01/F02/F05 (W forward, operands)",
+     "paths_below_margin": 6,
+     "failing": 0,
+     "tns_ns": 0.0,
+     "worst_slack_ns": 0.334,
+     "worst_levels": 10,
+     "worst_delay_ns": 9.561,
+     "worst_route_ns": 8.638,
+     "a3": null
+    },
+    {
+     "source_family": "u_core/w_idx_reg[*]",
+     "destination_family": "u_core/g_lsu_pair.u_lsu/g_unit[*].u/lane_addr_reg[*][*]_rep",
+     "owner": "F01/F02/F05 (W forward, operands)",
+     "paths_below_margin": 29,
+     "failing": 0,
+     "tns_ns": 0.0,
+     "worst_slack_ns": 0.343,
+     "worst_levels": 10,
+     "worst_delay_ns": 9.552,
+     "worst_route_ns": 8.629,
+     "a3": null
+    },
+    {
+     "source_family": "u_core/w_idx_reg[*]",
+     "destination_family": "u_core/g_vrf_banked.x_va_q_reg[*]",
+     "owner": "F01/F02/F05 (W forward, operands)",
+     "paths_below_margin": 311,
+     "failing": 0,
+     "tns_ns": 0.0,
+     "worst_slack_ns": 0.344,
+     "worst_levels": 12,
+     "worst_delay_ns": 9.551,
+     "worst_route_ns": 8.466,
+     "a3": null
+    },
+    {
+     "source_family": "u_core/w_idx_reg[*]",
+     "destination_family": "u_core/g_vrf_banked.x_vc_q_reg[*]",
+     "owner": "F01/F02/F05 (W forward, operands)",
+     "paths_below_margin": 336,
+     "failing": 0,
+     "tns_ns": 0.0,
+     "worst_slack_ns": 0.346,
+     "worst_levels": 12,
+     "worst_delay_ns": 9.549,
+     "worst_route_ns": 8.464,
+     "a3": null
+    },
+    {
+     "source_family": "u_core/x_pm_idx_reg[*]",
+     "destination_family": "u_core/w_sdata_reg[*]",
+     "owner": "F04 (writeback)",
+     "paths_below_margin": 2,
+     "failing": 0,
+     "tns_ns": 0.0,
+     "worst_slack_ns": 0.353,
+     "worst_levels": 19,
+     "worst_delay_ns": 9.626,
+     "worst_route_ns": 7.708,
+     "a3": {
+      "endpoints": 9,
+      "tns_ns": -2.743,
+      "worst_slack_ns": -0.712
+     }
+    },
+    {
+     "source_family": "u_core/w_idx_reg[*]",
+     "destination_family": "u_core/g_lsu_pair.u_lsu/g_unit[*].u/r_cmp_reg[*]",
+     "owner": "F01/F02/F05 (W forward, operands)",
+     "paths_below_margin": 2,
+     "failing": 0,
+     "tns_ns": 0.0,
+     "worst_slack_ns": 0.382,
+     "worst_levels": 10,
+     "worst_delay_ns": 9.513,
+     "worst_route_ns": 8.59,
+     "a3": null
+    },
+    {
+     "source_family": "u_core/w_idx_reg[*]",
+     "destination_family": "u_core/g_lsu_pair.u_lsu/g_unit[*].u/r_aop_reg[*]",
+     "owner": "F01/F02/F05 (W forward, operands)",
+     "paths_below_margin": 1,
+     "failing": 0,
+     "tns_ns": 0.0,
+     "worst_slack_ns": 0.382,
+     "worst_levels": 10,
+     "worst_delay_ns": 9.513,
+     "worst_route_ns": 8.59,
+     "a3": null
+    },
+    {
+     "source_family": "u_core/w_idx_reg[*]",
+     "destination_family": "u_core/g_lsu_pair.u_lsu/g_unit[*].u/nbytes_reg[*]",
+     "owner": "F01/F02/F05 (W forward, operands)",
+     "paths_below_margin": 4,
+     "failing": 0,
+     "tns_ns": 0.0,
+     "worst_slack_ns": 0.386,
+     "worst_levels": 10,
+     "worst_delay_ns": 9.509,
+     "worst_route_ns": 8.586,
+     "a3": null
+    }
+   ]
+  },
+  "int_x1_tile1_SLR1": {
+   "total": {
+    "paths_below_margin": 29,
+    "failing": 0,
+    "tns_ns": 0.0,
+    "worst_slack_ns": 0.219
+   },
+   "owners": {
+    "F04 (writeback)": {
+     "families": 3,
+     "paths_below_margin": 17,
+     "failing": 0,
+     "worst_slack_ns": 0.219
+    },
+    "F10 (LSU, NoC)": {
+     "families": 1,
+     "paths_below_margin": 11,
+     "failing": 0,
+     "worst_slack_ns": 0.278
+    },
+    "F09 (MTX, accumulator)": {
+     "families": 1,
+     "paths_below_margin": 1,
+     "failing": 0,
+     "worst_slack_ns": 0.443
+    }
+   },
+   "families": [
+    {
+     "source_family": "u_core/g_vrf_banked.of_d1_reg[*]",
+     "destination_family": "u_core/w_vdata_reg[*]",
+     "owner": "F04 (writeback)",
+     "paths_below_margin": 15,
+     "failing": 0,
+     "tns_ns": 0.0,
+     "worst_slack_ns": 0.219,
+     "worst_levels": 23,
+     "worst_delay_ns": 9.761,
+     "worst_route_ns": 5.881,
+     "a3": null
+    },
+    {
+     "source_family": "u_core/g_vrf_banked.of_d0_reg[*]",
+     "destination_family": "u_core/w_vdata_reg[*]",
+     "owner": "F04 (writeback)",
+     "paths_below_margin": 1,
+     "failing": 0,
+     "tns_ns": 0.0,
+     "worst_slack_ns": 0.252,
+     "worst_levels": 15,
+     "worst_delay_ns": 9.73,
+     "worst_route_ns": 8.338,
+     "a3": null
+    },
+    {
+     "source_family": "u_core/u_txf/t_i0_reg[*]",
+     "destination_family": "u_core/g_lsu_pair.u_lsu/g_unit[*].u/q_hhi_reg[*]",
+     "owner": "F10 (LSU, NoC)",
+     "paths_below_margin": 11,
+     "failing": 0,
+     "tns_ns": 0.0,
+     "worst_slack_ns": 0.278,
+     "worst_levels": 18,
+     "worst_delay_ns": 9.705,
+     "worst_route_ns": 8.105,
+     "a3": null
+    },
+    {
+     "source_family": "u_core/x_func_reg[*]",
+     "destination_family": "u_core/w_vdata_reg[*]",
+     "owner": "F04 (writeback)",
+     "paths_below_margin": 1,
+     "failing": 0,
+     "tns_ns": 0.0,
+     "worst_slack_ns": 0.405,
+     "worst_levels": 17,
+     "worst_delay_ns": 9.575,
+     "worst_route_ns": 7.83,
+     "a3": null
+    },
+    {
+     "source_family": "u_core/g_vrf_banked.u_vrf/g_bank[*].u_bank/s1_vld_reg[*]",
+     "destination_family": "u_core/u_mtx/g_mac[*].u_mac/g_in_reg.a_q_reg[*]",
+     "owner": "F09 (MTX, accumulator)",
+     "paths_below_margin": 1,
+     "failing": 0,
+     "tns_ns": 0.0,
+     "worst_slack_ns": 0.443,
+     "worst_levels": 14,
+     "worst_delay_ns": 9.537,
+     "worst_route_ns": 7.995,
+     "a3": null
+    }
+   ]
+  },
+  "int_x1_tile0_SLR0": {
+   "total": {
+    "paths_below_margin": 2,
+    "failing": 0,
+    "tns_ns": 0.0,
+    "worst_slack_ns": 0.414
+   },
+   "owners": {
+    "F09 (MTX, accumulator)": {
+     "families": 1,
+     "paths_below_margin": 1,
+     "failing": 0,
+     "worst_slack_ns": 0.414
+    },
+    "F04 (writeback)": {
+     "families": 1,
+     "paths_below_margin": 1,
+     "failing": 0,
+     "worst_slack_ns": 0.461
+    }
+   },
+   "families": [
+    {
+     "source_family": "u_core/w_sdata_reg[*]",
+     "destination_family": "u_core/u_mtx/g_mac[*].u_mac/g_in_reg.a_q_reg[*]",
+     "owner": "F09 (MTX, accumulator)",
+     "paths_below_margin": 1,
+     "failing": 0,
+     "tns_ns": 0.0,
+     "worst_slack_ns": 0.414,
+     "worst_levels": 13,
+     "worst_delay_ns": 9.567,
+     "worst_route_ns": 8.253,
+     "a3": null
+    },
+    {
+     "source_family": "u_core/g_vrf_banked.of_d1_reg[*]",
+     "destination_family": "u_core/w_vdata_reg[*]",
+     "owner": "F04 (writeback)",
+     "paths_below_margin": 1,
+     "failing": 0,
+     "tns_ns": 0.0,
+     "worst_slack_ns": 0.461,
+     "worst_levels": 26,
+     "worst_delay_ns": 9.519,
+     "worst_route_ns": 5.855,
+     "a3": null
+    }
+   ]
+  },
+  "int_x8_tile1_SLR1": {
+   "total": {
+    "paths_below_margin": 178,
+    "failing": 0,
+    "tns_ns": 0.0,
+    "worst_slack_ns": 0.261
+   },
+   "owners": {
+    "F01/F02/F05 (W forward, operands)": {
+     "families": 2,
+     "paths_below_margin": 42,
+     "failing": 0,
+     "worst_slack_ns": 0.261
+    },
+    "transfer engine (u_txf; X8 edits it)": {
+     "families": 1,
+     "paths_below_margin": 133,
+     "failing": 0,
+     "worst_slack_ns": 0.291
+    },
+    "F04 (writeback)": {
+     "families": 1,
+     "paths_below_margin": 3,
+     "failing": 0,
+     "worst_slack_ns": 0.378
+    }
+   },
+   "families": [
+    {
+     "source_family": "u_core/w_class_reg[*]",
+     "destination_family": "u_core/g_vrf_banked.u_vrf/g_bank[*].u_bank/s1_vld_reg[*]",
+     "owner": "F01/F02/F05 (W forward, operands)",
+     "paths_below_margin": 35,
+     "failing": 0,
+     "tns_ns": 0.0,
+     "worst_slack_ns": 0.261,
+     "worst_levels": 19,
+     "worst_delay_ns": 9.72,
+     "worst_route_ns": 7.585,
+     "a3": null
+    },
+    {
+     "source_family": "u_core/u_txf/t_c1_reg[*]",
+     "destination_family": "u_core/u_txf/xbuf_reg[*]",
+     "owner": "transfer engine (u_txf; X8 edits it)",
+     "paths_below_margin": 133,
+     "failing": 0,
+     "tns_ns": 0.0,
+     "worst_slack_ns": 0.291,
+     "worst_levels": 19,
+     "worst_delay_ns": 9.593,
+     "worst_route_ns": 7.548,
+     "a3": null
+    },
+    {
+     "source_family": "u_core/w_class_reg[*]",
+     "destination_family": "u_core/g_vrf_banked.u_vrf/g_bank[*].u_bank/s1_byp_mask_reg[*]",
+     "owner": "F01/F02/F05 (W forward, operands)",
+     "paths_below_margin": 7,
+     "failing": 0,
+     "tns_ns": 0.0,
+     "worst_slack_ns": 0.347,
+     "worst_levels": 18,
+     "worst_delay_ns": 9.535,
+     "worst_route_ns": 7.396,
+     "a3": null
+    },
+    {
+     "source_family": "u_core/x_func_reg[*]",
+     "destination_family": "u_core/w_vdata_reg[*]",
+     "owner": "F04 (writeback)",
+     "paths_below_margin": 3,
+     "failing": 0,
+     "tns_ns": 0.0,
+     "worst_slack_ns": 0.378,
+     "worst_levels": 15,
+     "worst_delay_ns": 9.602,
+     "worst_route_ns": 8.222,
+     "a3": null
+    }
+   ]
+  },
+  "int_x8_tile0_SLR0": {
+   "total": {
+    "paths_below_margin": 0,
+    "failing": 0,
+    "tns_ns": 0.0,
+    "worst_slack_ns": null
+   },
+   "owners": {},
+   "families": []
+  }
+ }
+}

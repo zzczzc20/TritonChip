@@ -24,6 +24,8 @@ backend.available()
 
 ```
 backends this installation knows:
+  fpga-multicore-sim reference-available  explicit RTL stand-in for the multicore MMIO v2
+                                        board binding
   fpga-prototype   interface-defined    a future board. The interface is defined and
                                         nothing implements it; opening it is an error,
                                         not a redirection to the simulator.
@@ -31,6 +33,8 @@ backends this installation knows:
                                         and register port (rtl/fpga/tnca_fpga_top.v)
                                         built for the U280 shell, reached through the
                                         same U50Backend
+  fpga-u280-multicore reference-available  opt-in MMIO v2 physical-grid/AXI binding;
+                                        requires a matching board image
   fpga-u50         reference-available  the TNCA device on an Alveo U50:
                                         rtl/fpga/tnca_fpga_top.v reached over its
                                         register port. The host side is proven against
@@ -42,12 +46,14 @@ backends this installation knows:
                                         for the board
   sim-file         reference-available  the simulated device over a file rendezvous,
                                         which is what this repository has always used
+  sim-multicore    reference-available  physical-core coherent mesh over a persistent
+                                        mailbox
   sim-socket       reference-available  the same RTL, reached over a TCP socket through
                                         a relay process: a different connection medium
                                         for the same implementation
 ```
 
-The two board backends are real: `fpga-u280` is what
+The board backends are real: `fpga-u280` is what
 [11](11_running_on_the_u280.md) runs on. `fpga-u50-sim` is the same
 register protocol driven against the RTL in a simulator, which is how
 the board's host side is tested without a board — and how a board run
@@ -135,4 +141,4 @@ and you get a different artifact with a different key, and
 [06](06_errors_and_faults.md) shows what happens if you try to load it
 into the wrong session.
 
-Next: [08 — a GEMM written as a Triton kernel](08_triton_gemm.md).
+Next: [08 — Tiled Triton GEMM through AOT and Session](08_triton_gemm.md).

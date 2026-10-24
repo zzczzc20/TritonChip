@@ -214,12 +214,20 @@ run_graphs.py ... --config configs/r40-board-m3.cfg --dram-path fast      # the 
 
 `TNCA_DRAM_MAP=/absolute/path/map.txt` supplies an explicit AXI BO/physical-PC
 map to either path. `dram_address_map.py` derives it from image-bound actual
-allocation evidence; `experiments/physical-dram-map.json` gives the recorded
+allocation evidence; `spec/r41/stage1/experiments/physical-dram-map.json` gives the recorded
 B40 example. The model subtracts the actual local address limit, adds the
 BO physical base and looks up the physical PC tag/range. Its PC byte counters
 use the same translation. SRAM, gaps, overlaps and unsupported geometry
 refuse. A new BO allocation requires its own map. Without this input the
-model labels its legacy map `synthetic-logical`. Backend and standalone
+model labels its legacy map `synthetic-logical`. With a map, the model
+window (`memory_bytes`, the local region plus AXI addresses) is checked
+against the BO top (`local limit + BO size`) instead of the contiguous
+logical PC map, so an 8 GiB BO over PC0-PC31 runs with
+`memory_bytes=8590065664`; a window one line past the BO refuses.
+`--plan-bo-bytes N` exports a planned larger BO from a recorded window's
+connected memory group; it is marked planned, not measured, and must be
+replaced by an audit of the board's actual allocation
+(`evidence/r41/hbm8/tlm/`). Backend and standalone
 identities record mapping hashes. This does not establish bank/row mapping
 or controller equivalence; both remain unverified for the physical platform.
 

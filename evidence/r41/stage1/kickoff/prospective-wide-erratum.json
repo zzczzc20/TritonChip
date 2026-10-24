@@ -1,0 +1,70 @@
+{
+  "schema": "tnca-evidence-erratum/1",
+  "written_utc": "2026-10-21",
+  "subject": {
+    "path": "evidence/r41/stage1/kickoff/prospective-wide/results.json",
+    "sha256": "66aed57bf401b453a3f505ced20fd8478eddae9485b06356c6df5659faab7b5c",
+    "field": "points[0].knobs",
+    "point": "op.matmul/medium/fp16-m128-k192-n128",
+    "key": "op.matmul/medium/fp16-m128-k192-n128"
+  },
+  "statement": "prospective-wide/results.json states TNCA_GEMM_TILE=16,16,16, but the run used 16,32,16. run_graphs.py wrote the default (B40-N) knob set and dropped the --env overrides. The true knobs are the record's own platform.knobs, given below; the original file is preserved unchanged.",
+  "authoritative_record": {
+    "path": "evidence/r41/stage1/kickoff/prospective-wide/runs/op.matmul__medium__fp16-m128-k192-n128/record.json",
+    "sha256": "ecbb579d63e2eda54ddfb08c51c3b00626b7ea3a1c893b5405c9eb81b20f01e2",
+    "field": "platform.knobs",
+    "corroboration": {
+      "platform.inductor.gemm_tile": [
+        16,
+        32,
+        16
+      ]
+    }
+  },
+  "sealed_prediction": {
+    "path": "evidence/r41/stage1/kickoff/prospective-prediction.json",
+    "sha256": "b5c543b220266a8a7f8597a8eacc80f14b3cfd621d086fd789e43a2b7e740afb",
+    "binds_record_sha256": "ecbb579d63e2eda54ddfb08c51c3b00626b7ea3a1c893b5405c9eb81b20f01e2",
+    "note": "the sealed prediction states no knobs; it binds the record above, so its configuration is the record's"
+  },
+  "stated_but_not_run": {
+    "TNCA_GEMM_TILE": {
+      "stated": "16,16,16",
+      "ran": "16,32,16"
+    }
+  },
+  "in_effect_but_omitted": {
+    "TNCA_ACTIVE_CORES": "3",
+    "TNCA_RTL_MEM_PORTS": "1",
+    "TNCA_RTL_OUTSTANDING": "1",
+    "TNCA_SUBMIT": "single",
+    "TNCA_TORCH_DEVICE": "native",
+    "TNCA_TRANSFER_POLICY": "resident"
+  },
+  "true_configuration_knobs": {
+    "TNCA_ACTIVE_CORES": "3",
+    "TNCA_BANK_ALLOC": "0",
+    "TNCA_GEMM_TILE": "16,32,16",
+    "TNCA_MAX_BLOCK": "16",
+    "TNCA_PIPELINE": "2",
+    "TNCA_REDUCTION_ROWS": "1",
+    "TNCA_RTL_MEM_PORTS": "1",
+    "TNCA_RTL_OUTSTANDING": "1",
+    "TNCA_SDPA": "decomposed",
+    "TNCA_SUBMIT": "single",
+    "TNCA_TORCH_DEVICE": "native",
+    "TNCA_TRANSFER_POLICY": "resident",
+    "TNCA_TUNE": "0",
+    "TNCA_WINDOW_REUSE": "0"
+  },
+  "true_model_harness_knobs": {
+    "TNCA_TLM_BINARY": "/home/zhongchun/r41-stage1/model-build/tnca-chip",
+    "TNCA_TLM_CONFIG": "/home/zhongchun/r41-stage1/src/tools/performance_harness/systemc/configs/r40-board-m2.cfg",
+    "TNCA_TLM_MEMORY_BYTES": "16777216",
+    "TNCA_TLM_MONITOR": "aggregate",
+    "TNCA_TLM_OUT": "/home/zhongchun/r41-stage1/runs/prospective-wide/runs/op.matmul__medium__fp16-m128-k192-n128/model"
+  },
+  "cause": "tools/performance_harness/systemc/run_graphs.py row.update(key=key, knobs=knobs): the suite/B40-N configuration, before --env/--active-cores overrides",
+  "correction": "run_graphs.py now records the record's platform.knobs after checking them against the run environment, and refuses a mismatch; predictions.py refuses this preserved row (knob-mismatch)",
+  "board_use": "a board measurement compared with this prediction must run the true configuration knobs above (TNCA_OPERATING_CLOCK_EVIDENCE added by the board run)"
+}

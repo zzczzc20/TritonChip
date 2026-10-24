@@ -1,0 +1,18 @@
+30186ad1fd8da71cf2f870dc73e14401dc026809957a2f8bf33e67eef3babeb3  /home/zhongchun/r41-pmac/rtl/gen/tnca_fma_alignp_xls.v
+35dacaaa8ba50cabb8f5ba4eb141ac7f2dc1c9861f5c78875d77d17ea94e40f3  /home/zhongchun/r41-pmac/rtl/gen/tnca_fma_align_xls.v
+61da943c3f9943506020e6b06f457a332baf04b1690c8c589e03713ba8b7f7e5  /home/zhongchun/r41-pmac/rtl/gen/tnca_fma_l3_xls.v
+092a89235f8ef9f3f2da2686f32c9a845977ba4476df0165037e943e934557a0  /home/zhongchun/r41-pmac/rtl/gen/tnca_fma_norm_xls.v
+237dfb996a1b59730d6a5e33eca92343b7debfe47425df128c9357cde1ce9ccf  /home/zhongchun/r41-pmac/rtl/gen/tnca_fma_round_xls.v
+15106161b9f868047cfb87bce7a783527dd272c34548457279bfc973c12e2188  /home/zhongchun/r41-pmac/evidence/r41/pmac/lane/verify/ref/tnca_fma_align_xls_ref.v
+15d0ffe5ecd2e653d476d4ea9cca0448128e647455ae44d9285c012ba44c1953  /home/zhongchun/r41-pmac/evidence/r41/pmac/lane/verify/ref/tnca_fma_l3_xls_ref.v
+4b15eecb5687e63bacd6573012240adb3efe36014ad7fdd558aaa70c1737dee0  /home/zhongchun/r41-pmac/evidence/r41/pmac/lane/verify/ref/tnca_fma_norm_xls_ref.v
+b4a2b70e7da51db27665b95f7f715ea120f0e1f31d3ee61cdcdaa5d11d81efff  /home/zhongchun/r41-pmac/evidence/r41/pmac/lane/verify/ref/tnca_fma_round_xls_ref.v
+class 0: 30000000 vectors, 0 mismatches
+class 1: 30000000 vectors, 0 mismatches
+class 2: 30000000 vectors, 0 mismatches
+class 3: 30000000 vectors, 0 mismatches
+class 4: 30000000 vectors, 0 mismatches
+class 5: 30000000 vectors, 0 mismatches
+class 6: 30000000 vectors, 0 mismatches
+fma_miter: 210000000 vectors x 2 latencies, 0 mismatches
+PASS

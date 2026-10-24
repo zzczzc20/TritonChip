@@ -1,0 +1,820 @@
+{
+ "fp8_linears": 100,
+ "max_rel_l2": 0.026682434241580875,
+ "min_cosine": 0.9996439606571399,
+ "worst": {
+  "rel_l2": 0.026682434241580875,
+  "cosine": 0.9996439606571399,
+  "weight_scale": 0.000732421875,
+  "input_scale": 0.0904017835855484,
+  "w_absmax": 0.328125,
+  "source": "double_blocks.0.txt_attn.proj"
+ },
+ "unquantized_tensors": 69,
+ "unquantized_bitwise_equal": 69,
+ "unquantized_not_equal": [],
+ "bf16_keys_missing_in_fp8": [],
+ "model_dtype_attr": "torch.bfloat16",
+ "layers": {
+  "transformer_blocks.0.attn.to_q": {
+   "rel_l2": 0.026467103417851877,
+   "cosine": 0.9996502988054352,
+   "weight_scale": 0.000972747802734375,
+   "input_scale": 0.3120535612106323,
+   "w_absmax": 0.380859375,
+   "source": "double_blocks.0.img_attn.qkv"
+  },
+  "transformer_blocks.0.attn.to_k": {
+   "rel_l2": 0.026483410294583516,
+   "cosine": 0.999649888011172,
+   "weight_scale": 0.000972747802734375,
+   "input_scale": 0.3120535612106323,
+   "w_absmax": 0.435546875,
+   "source": "double_blocks.0.img_attn.qkv"
+  },
+  "transformer_blocks.0.attn.to_v": {
+   "rel_l2": 0.026471598461283732,
+   "cosine": 0.9996501350631926,
+   "weight_scale": 0.000972747802734375,
+   "input_scale": 0.3120535612106323,
+   "w_absmax": 0.1767578125,
+   "source": "double_blocks.0.img_attn.qkv"
+  },
+  "transformer_blocks.0.attn.to_out.0": {
+   "rel_l2": 0.026527161633071537,
+   "cosine": 0.9996481129803899,
+   "weight_scale": 0.000591278076171875,
+   "input_scale": 0.12455356866121292,
+   "w_absmax": 0.265625,
+   "source": "double_blocks.0.img_attn.proj"
+  },
+  "transformer_blocks.0.attn.add_q_proj": {
+   "rel_l2": 0.02645508790639331,
+   "cosine": 0.9996502891176516,
+   "weight_scale": 0.000934600830078125,
+   "input_scale": 0.09308035671710968,
+   "w_absmax": 0.416015625,
+   "source": "double_blocks.0.txt_attn.qkv"
+  },
+  "transformer_blocks.0.attn.add_k_proj": {
+   "rel_l2": 0.026438521078028705,
+   "cosine": 0.9996507040996516,
+   "weight_scale": 0.000934600830078125,
+   "input_scale": 0.09308035671710968,
+   "w_absmax": 0.41796875,
+   "source": "double_blocks.0.txt_attn.qkv"
+  },
+  "transformer_blocks.0.attn.add_v_proj": {
+   "rel_l2": 0.026450247111426864,
+   "cosine": 0.999650399961567,
+   "weight_scale": 0.000934600830078125,
+   "input_scale": 0.09308035671710968,
+   "w_absmax": 0.1259765625,
+   "source": "double_blocks.0.txt_attn.qkv"
+  },
+  "transformer_blocks.0.attn.to_add_out": {
+   "rel_l2": 0.026682434241580875,
+   "cosine": 0.9996439606571399,
+   "weight_scale": 0.000732421875,
+   "input_scale": 0.0904017835855484,
+   "w_absmax": 0.328125,
+   "source": "double_blocks.0.txt_attn.proj"
+  },
+  "transformer_blocks.0.ff.linear_in": {
+   "rel_l2": 0.026446567887527056,
+   "cosine": 0.9996502521679186,
+   "weight_scale": 0.000823974609375,
+   "input_scale": 0.0301339291036129,
+   "w_absmax": 0.369140625,
+   "source": "double_blocks.0.img_mlp.0"
+  },
+  "transformer_blocks.0.ff.linear_out": {
+   "rel_l2": 0.026500467914445342,
+   "cosine": 0.9996488236209213,
+   "weight_scale": 0.00151824951171875,
+   "input_scale": 0.27991071343421936,
+   "w_absmax": 0.6796875,
+   "source": "double_blocks.0.img_mlp.2"
+  },
+  "transformer_blocks.0.ff_context.linear_in": {
+   "rel_l2": 0.026472502076146404,
+   "cosine": 0.9996512324978066,
+   "weight_scale": 0.0004596710205078125,
+   "input_scale": 0.02410714328289032,
+   "w_absmax": 0.2060546875,
+   "source": "double_blocks.0.txt_mlp.0"
+  },
+  "transformer_blocks.0.ff_context.linear_out": {
+   "rel_l2": 0.02642266209343625,
+   "cosine": 0.9996508983909911,
+   "weight_scale": 0.000537872314453125,
+   "input_scale": 0.7607142925262451,
+   "w_absmax": 0.240234375,
+   "source": "double_blocks.0.txt_mlp.2"
+  },
+  "transformer_blocks.1.attn.to_q": {
+   "rel_l2": 0.026535916212286854,
+   "cosine": 0.9996478683964656,
+   "weight_scale": 0.0013427734375,
+   "input_scale": 0.21964286267757416,
+   "w_absmax": 0.6015625,
+   "source": "double_blocks.1.img_attn.qkv"
+  },
+  "transformer_blocks.1.attn.to_k": {
+   "rel_l2": 0.02653353514854832,
+   "cosine": 0.999647933097159,
+   "weight_scale": 0.0013427734375,
+   "input_scale": 0.21964286267757416,
+   "w_absmax": 0.314453125,
+   "source": "double_blocks.1.img_attn.qkv"
+  },
+  "transformer_blocks.1.attn.to_v": {
+   "rel_l2": 0.02654239735641293,
+   "cosine": 0.9996477011833149,
+   "weight_scale": 0.0013427734375,
+   "input_scale": 0.21964286267757416,
+   "w_absmax": 0.2041015625,
+   "source": "double_blocks.1.img_attn.qkv"
+  },
+  "transformer_blocks.1.attn.to_out.0": {
+   "rel_l2": 0.026462764013981357,
+   "cosine": 0.9996498729780845,
+   "weight_scale": 0.00058746337890625,
+   "input_scale": 0.08337053656578064,
+   "w_absmax": 0.263671875,
+   "source": "double_blocks.1.img_attn.proj"
+  },
+  "transformer_blocks.1.attn.add_q_proj": {
+   "rel_l2": 0.026516028044952206,
+   "cosine": 0.9996483894714592,
+   "weight_scale": 0.000614166259765625,
+   "input_scale": 0.10781250149011612,
+   "w_absmax": 0.275390625,
+   "source": "double_blocks.1.txt_attn.qkv"
+  },
+  "transformer_blocks.1.attn.add_k_proj": {
+   "rel_l2": 0.0265072678034935,
+   "cosine": 0.9996486209321642,
+   "weight_scale": 0.000614166259765625,
+   "input_scale": 0.10781250149011612,
+   "w_absmax": 0.1748046875,
+   "source": "double_blocks.1.txt_attn.qkv"
+  },
+  "transformer_blocks.1.attn.add_v_proj": {
+   "rel_l2": 0.02654643948658908,
+   "cosine": 0.9996475827017062,
+   "weight_scale": 0.000614166259765625,
+   "input_scale": 0.10781250149011612,
+   "w_absmax": 0.1396484375,
+   "source": "double_blocks.1.txt_attn.qkv"
+  },
+  "transformer_blocks.1.attn.to_add_out": {
+   "rel_l2": 0.026545948089389728,
+   "cosine": 0.9996476162185635,
+   "weight_scale": 0.000385284423828125,
+   "input_scale": 0.11651785671710968,
+   "w_absmax": 0.1728515625,
+   "source": "double_blocks.1.txt_attn.proj"
+  },
+  "transformer_blocks.1.ff.linear_in": {
+   "rel_l2": 0.02645654714371316,
+   "cosine": 0.9996499692823158,
+   "weight_scale": 0.00102996826171875,
+   "input_scale": 0.02645089291036129,
+   "w_absmax": 0.4609375,
+   "source": "double_blocks.1.img_mlp.0"
+  },
+  "transformer_blocks.1.ff.linear_out": {
+   "rel_l2": 0.02645643894494552,
+   "cosine": 0.9996500317182047,
+   "weight_scale": 0.00091552734375,
+   "input_scale": 0.25580358505249023,
+   "w_absmax": 0.41015625,
+   "source": "double_blocks.1.img_mlp.2"
+  },
+  "transformer_blocks.1.ff_context.linear_in": {
+   "rel_l2": 0.026536734580711933,
+   "cosine": 0.9996478392805169,
+   "weight_scale": 0.000614166259765625,
+   "input_scale": 0.02410714328289032,
+   "w_absmax": 0.275390625,
+   "source": "double_blocks.1.txt_mlp.0"
+  },
+  "transformer_blocks.1.ff_context.linear_out": {
+   "rel_l2": 0.026423658919955843,
+   "cosine": 0.9996508747514646,
+   "weight_scale": 0.00107574462890625,
+   "input_scale": 0.6267856955528259,
+   "w_absmax": 0.482421875,
+   "source": "double_blocks.1.txt_mlp.2"
+  },
+  "transformer_blocks.2.attn.to_q": {
+   "rel_l2": 0.02647755407635073,
+   "cosine": 0.9996494082889172,
+   "weight_scale": 0.0010223388671875,
+   "input_scale": 0.19151785969734192,
+   "w_absmax": 0.296875,
+   "source": "double_blocks.2.img_attn.qkv"
+  },
+  "transformer_blocks.2.attn.to_k": {
+   "rel_l2": 0.026486861785276556,
+   "cosine": 0.9996491615568996,
+   "weight_scale": 0.0010223388671875,
+   "input_scale": 0.19151785969734192,
+   "w_absmax": 0.458984375,
+   "source": "double_blocks.2.img_attn.qkv"
+  },
+  "transformer_blocks.2.attn.to_v": {
+   "rel_l2": 0.026471900484617623,
+   "cosine": 0.9996495578476128,
+   "weight_scale": 0.0010223388671875,
+   "input_scale": 0.19151785969734192,
+   "w_absmax": 0.205078125,
+   "source": "double_blocks.2.img_attn.qkv"
+  },
+  "transformer_blocks.2.attn.to_out.0": {
+   "rel_l2": 0.026531249496205892,
+   "cosine": 0.9996480043085146,
+   "weight_scale": 0.0003833770751953125,
+   "input_scale": 0.1104910746216774,
+   "w_absmax": 0.171875,
+   "source": "double_blocks.2.img_attn.proj"
+  },
+  "transformer_blocks.2.attn.add_q_proj": {
+   "rel_l2": 0.026473392335268648,
+   "cosine": 0.9996497877080925,
+   "weight_scale": 0.0004825592041015625,
+   "input_scale": 0.12187500298023224,
+   "w_absmax": 0.2158203125,
+   "source": "double_blocks.2.txt_attn.qkv"
+  },
+  "transformer_blocks.2.attn.add_k_proj": {
+   "rel_l2": 0.026466007456019656,
+   "cosine": 0.9996499790160639,
+   "weight_scale": 0.0004825592041015625,
+   "input_scale": 0.12187500298023224,
+   "w_absmax": 0.208984375,
+   "source": "double_blocks.2.txt_attn.qkv"
+  },
+  "transformer_blocks.2.attn.add_v_proj": {
+   "rel_l2": 0.02646469351956812,
+   "cosine": 0.9996500168212868,
+   "weight_scale": 0.0004825592041015625,
+   "input_scale": 0.12187500298023224,
+   "w_absmax": 0.1533203125,
+   "source": "double_blocks.2.txt_attn.qkv"
+  },
+  "transformer_blocks.2.attn.to_add_out": {
+   "rel_l2": 0.026565842887938344,
+   "cosine": 0.9996474410267893,
+   "weight_scale": 0.0004253387451171875,
+   "input_scale": 0.16339285671710968,
+   "w_absmax": 0.1904296875,
+   "source": "double_blocks.2.txt_attn.proj"
+  },
+  "transformer_blocks.2.ff.linear_in": {
+   "rel_l2": 0.026458966383538365,
+   "cosine": 0.999649908382805,
+   "weight_scale": 0.00095367431640625,
+   "input_scale": 0.0226004458963871,
+   "w_absmax": 0.427734375,
+   "source": "double_blocks.2.img_mlp.0"
+  },
+  "transformer_blocks.2.ff.linear_out": {
+   "rel_l2": 0.02649001203008805,
+   "cosine": 0.9996491600043973,
+   "weight_scale": 0.000629425048828125,
+   "input_scale": 0.23571428656578064,
+   "w_absmax": 0.28125,
+   "source": "double_blocks.2.img_mlp.2"
+  },
+  "transformer_blocks.2.ff_context.linear_in": {
+   "rel_l2": 0.026436318595448746,
+   "cosine": 0.999650499457376,
+   "weight_scale": 0.00051116943359375,
+   "input_scale": 0.02678571455180645,
+   "w_absmax": 0.2294921875,
+   "source": "double_blocks.2.txt_mlp.0"
+  },
+  "transformer_blocks.2.ff_context.linear_out": {
+   "rel_l2": 0.026518040911952694,
+   "cosine": 0.9996494379795713,
+   "weight_scale": 0.000911712646484375,
+   "input_scale": 1.8857142925262451,
+   "w_absmax": 0.408203125,
+   "source": "double_blocks.2.txt_mlp.2"
+  },
+  "transformer_blocks.3.attn.to_q": {
+   "rel_l2": 0.026493420631732552,
+   "cosine": 0.9996491687009761,
+   "weight_scale": 0.00098419189453125,
+   "input_scale": 0.1674107164144516,
+   "w_absmax": 0.439453125,
+   "source": "double_blocks.3.img_attn.qkv"
+  },
+  "transformer_blocks.3.attn.to_k": {
+   "rel_l2": 0.026505718284715353,
+   "cosine": 0.9996488304757848,
+   "weight_scale": 0.00098419189453125,
+   "input_scale": 0.1674107164144516,
+   "w_absmax": 0.421875,
+   "source": "double_blocks.3.img_attn.qkv"
+  },
+  "transformer_blocks.3.attn.to_v": {
+   "rel_l2": 0.026486558842876064,
+   "cosine": 0.9996493497001584,
+   "weight_scale": 0.00098419189453125,
+   "input_scale": 0.1674107164144516,
+   "w_absmax": 0.30078125,
+   "source": "double_blocks.3.img_attn.qkv"
+  },
+  "transformer_blocks.3.attn.to_out.0": {
+   "rel_l2": 0.026477903690334675,
+   "cosine": 0.9996494411987683,
+   "weight_scale": 0.000537872314453125,
+   "input_scale": 0.19017857313156128,
+   "w_absmax": 0.2412109375,
+   "source": "double_blocks.3.img_attn.proj"
+  },
+  "transformer_blocks.3.attn.add_q_proj": {
+   "rel_l2": 0.026427216362939168,
+   "cosine": 0.9996508460716849,
+   "weight_scale": 0.00104522705078125,
+   "input_scale": 0.11919642984867096,
+   "w_absmax": 0.2578125,
+   "source": "double_blocks.3.txt_attn.qkv"
+  },
+  "transformer_blocks.3.attn.add_k_proj": {
+   "rel_l2": 0.026436977587639705,
+   "cosine": 0.9996505892253041,
+   "weight_scale": 0.00104522705078125,
+   "input_scale": 0.11919642984867096,
+   "w_absmax": 0.466796875,
+   "source": "double_blocks.3.txt_attn.qkv"
+  },
+  "transformer_blocks.3.attn.add_v_proj": {
+   "rel_l2": 0.026441680217333403,
+   "cosine": 0.9996504584692556,
+   "weight_scale": 0.00104522705078125,
+   "input_scale": 0.11919642984867096,
+   "w_absmax": 0.154296875,
+   "source": "double_blocks.3.txt_attn.qkv"
+  },
+  "transformer_blocks.3.attn.to_add_out": {
+   "rel_l2": 0.026572710186225305,
+   "cosine": 0.999647046199202,
+   "weight_scale": 0.0004520416259765625,
+   "input_scale": 0.21160714328289032,
+   "w_absmax": 0.2021484375,
+   "source": "double_blocks.3.txt_attn.proj"
+  },
+  "transformer_blocks.3.ff.linear_in": {
+   "rel_l2": 0.026474711257862594,
+   "cosine": 0.9996494840873474,
+   "weight_scale": 0.000640869140625,
+   "input_scale": 0.02494419552385807,
+   "w_absmax": 0.287109375,
+   "source": "double_blocks.3.img_mlp.0"
+  },
+  "transformer_blocks.3.ff.linear_out": {
+   "rel_l2": 0.026496197062396008,
+   "cosine": 0.9996495756082463,
+   "weight_scale": 0.000667572021484375,
+   "input_scale": 0.36964285373687744,
+   "w_absmax": 0.298828125,
+   "source": "double_blocks.3.img_mlp.2"
+  },
+  "transformer_blocks.3.ff_context.linear_in": {
+   "rel_l2": 0.02645564044853083,
+   "cosine": 0.9996500789765861,
+   "weight_scale": 0.000560760498046875,
+   "input_scale": 0.04620535671710968,
+   "w_absmax": 0.251953125,
+   "source": "double_blocks.3.txt_mlp.0"
+  },
+  "transformer_blocks.3.ff_context.linear_out": {
+   "rel_l2": 0.02666238850610585,
+   "cosine": 0.9996444958529717,
+   "weight_scale": 0.000732421875,
+   "input_scale": 11.571428298950195,
+   "w_absmax": 0.328125,
+   "source": "double_blocks.3.txt_mlp.2"
+  },
+  "transformer_blocks.4.attn.to_q": {
+   "rel_l2": 0.026516042538447936,
+   "cosine": 0.9996484887032786,
+   "weight_scale": 0.000881195068359375,
+   "input_scale": 0.16808035969734192,
+   "w_absmax": 0.3046875,
+   "source": "double_blocks.4.img_attn.qkv"
+  },
+  "transformer_blocks.4.attn.to_k": {
+   "rel_l2": 0.026521599466447818,
+   "cosine": 0.9996483638425941,
+   "weight_scale": 0.000881195068359375,
+   "input_scale": 0.16808035969734192,
+   "w_absmax": 0.39453125,
+   "source": "double_blocks.4.img_attn.qkv"
+  },
+  "transformer_blocks.4.attn.to_v": {
+   "rel_l2": 0.026536561376683462,
+   "cosine": 0.9996479469090791,
+   "weight_scale": 0.000881195068359375,
+   "input_scale": 0.16808035969734192,
+   "w_absmax": 0.287109375,
+   "source": "double_blocks.4.img_attn.qkv"
+  },
+  "transformer_blocks.4.attn.to_out.0": {
+   "rel_l2": 0.02654800281691976,
+   "cosine": 0.9996475769448332,
+   "weight_scale": 0.000537872314453125,
+   "input_scale": 0.15937499701976776,
+   "w_absmax": 0.2412109375,
+   "source": "double_blocks.4.img_attn.proj"
+  },
+  "transformer_blocks.4.attn.add_q_proj": {
+   "rel_l2": 0.026543397999357485,
+   "cosine": 0.999647724425049,
+   "weight_scale": 0.000782012939453125,
+   "input_scale": 0.2919642925262451,
+   "w_absmax": 0.2373046875,
+   "source": "double_blocks.4.txt_attn.qkv"
+  },
+  "transformer_blocks.4.attn.add_k_proj": {
+   "rel_l2": 0.026524866348347022,
+   "cosine": 0.9996482076653637,
+   "weight_scale": 0.000782012939453125,
+   "input_scale": 0.2919642925262451,
+   "w_absmax": 0.349609375,
+   "source": "double_blocks.4.txt_attn.qkv"
+  },
+  "transformer_blocks.4.attn.add_v_proj": {
+   "rel_l2": 0.026520420795020823,
+   "cosine": 0.9996483315713935,
+   "weight_scale": 0.000782012939453125,
+   "input_scale": 0.2919642925262451,
+   "w_absmax": 0.1982421875,
+   "source": "double_blocks.4.txt_attn.qkv"
+  },
+  "transformer_blocks.4.attn.to_add_out": {
+   "rel_l2": 0.026529911413816568,
+   "cosine": 0.9996480637386173,
+   "weight_scale": 0.00049591064453125,
+   "input_scale": 0.35357141494750977,
+   "w_absmax": 0.2216796875,
+   "source": "double_blocks.4.txt_attn.proj"
+  },
+  "transformer_blocks.4.ff.linear_in": {
+   "rel_l2": 0.026493665491443493,
+   "cosine": 0.9996490240619208,
+   "weight_scale": 0.000751495361328125,
+   "input_scale": 0.02511160634458065,
+   "w_absmax": 0.3359375,
+   "source": "double_blocks.4.img_mlp.0"
+  },
+  "transformer_blocks.4.ff.linear_out": {
+   "rel_l2": 0.026459786841444084,
+   "cosine": 0.9996498929989559,
+   "weight_scale": 0.00064849853515625,
+   "input_scale": 0.3910714387893677,
+   "w_absmax": 0.291015625,
+   "source": "double_blocks.4.img_mlp.2"
+  },
+  "transformer_blocks.4.ff_context.linear_in": {
+   "rel_l2": 0.026500683059661325,
+   "cosine": 0.9996488843135785,
+   "weight_scale": 0.000896453857421875,
+   "input_scale": 0.1741071492433548,
+   "w_absmax": 0.40234375,
+   "source": "double_blocks.4.txt_mlp.0"
+  },
+  "transformer_blocks.4.ff_context.linear_out": {
+   "rel_l2": 0.026572272710819446,
+   "cosine": 0.9996469795551897,
+   "weight_scale": 0.000728607177734375,
+   "input_scale": 9.899999618530273,
+   "w_absmax": 0.326171875,
+   "source": "double_blocks.4.txt_mlp.2"
+  },
+  "single_transformer_blocks.0.attn.to_qkv_mlp_proj": {
+   "rel_l2": 0.026454607580411123,
+   "cosine": 0.9996500233869993,
+   "weight_scale": 0.001007080078125,
+   "input_scale": 0.16473214328289032,
+   "w_absmax": 0.451171875,
+   "source": "single_blocks.0.linear1"
+  },
+  "single_transformer_blocks.0.attn.to_out": {
+   "rel_l2": 0.026483843905853288,
+   "cosine": 0.9996492457391606,
+   "weight_scale": 0.00116729736328125,
+   "input_scale": 0.15000000596046448,
+   "w_absmax": 0.5234375,
+   "source": "single_blocks.0.linear2"
+  },
+  "single_transformer_blocks.1.attn.to_qkv_mlp_proj": {
+   "rel_l2": 0.026488203440628078,
+   "cosine": 0.9996491501033598,
+   "weight_scale": 0.00087738037109375,
+   "input_scale": 0.16205357015132904,
+   "w_absmax": 0.392578125,
+   "source": "single_blocks.1.linear1"
+  },
+  "single_transformer_blocks.1.attn.to_out": {
+   "rel_l2": 0.026523288876016512,
+   "cosine": 0.9996482373234994,
+   "weight_scale": 0.000751495361328125,
+   "input_scale": 0.17008928954601288,
+   "w_absmax": 0.3359375,
+   "source": "single_blocks.1.linear2"
+  },
+  "single_transformer_blocks.2.attn.to_qkv_mlp_proj": {
+   "rel_l2": 0.02646609458489453,
+   "cosine": 0.9996497447633268,
+   "weight_scale": 0.00101470947265625,
+   "input_scale": 0.16138392686843872,
+   "w_absmax": 0.453125,
+   "source": "single_blocks.2.linear1"
+  },
+  "single_transformer_blocks.2.attn.to_out": {
+   "rel_l2": 0.02654376641025029,
+   "cosine": 0.9996477080461617,
+   "weight_scale": 0.00080108642578125,
+   "input_scale": 0.1506696492433548,
+   "w_absmax": 0.359375,
+   "source": "single_blocks.2.linear2"
+  },
+  "single_transformer_blocks.3.attn.to_qkv_mlp_proj": {
+   "rel_l2": 0.026510394000379942,
+   "cosine": 0.9996486061321728,
+   "weight_scale": 0.0014190673828125,
+   "input_scale": 0.1607142835855484,
+   "w_absmax": 0.63671875,
+   "source": "single_blocks.3.linear1"
+  },
+  "single_transformer_blocks.3.attn.to_out": {
+   "rel_l2": 0.026450290967929578,
+   "cosine": 0.9996501680066531,
+   "weight_scale": 0.001068115234375,
+   "input_scale": 0.12857143580913544,
+   "w_absmax": 0.478515625,
+   "source": "single_blocks.3.linear2"
+  },
+  "single_transformer_blocks.4.attn.to_qkv_mlp_proj": {
+   "rel_l2": 0.02648513355570498,
+   "cosine": 0.9996492488042654,
+   "weight_scale": 0.001068115234375,
+   "input_scale": 0.16004464030265808,
+   "w_absmax": 0.478515625,
+   "source": "single_blocks.4.linear1"
+  },
+  "single_transformer_blocks.4.attn.to_out": {
+   "rel_l2": 0.02647609497036575,
+   "cosine": 0.9996496344301148,
+   "weight_scale": 0.00098419189453125,
+   "input_scale": 0.2209821492433548,
+   "w_absmax": 0.44140625,
+   "source": "single_blocks.4.linear2"
+  },
+  "single_transformer_blocks.5.attn.to_qkv_mlp_proj": {
+   "rel_l2": 0.026505993856517363,
+   "cosine": 0.9996486658726764,
+   "weight_scale": 0.0012969970703125,
+   "input_scale": 0.16004464030265808,
+   "w_absmax": 0.58203125,
+   "source": "single_blocks.5.linear1"
+  },
+  "single_transformer_blocks.5.attn.to_out": {
+   "rel_l2": 0.02651291931396775,
+   "cosine": 0.9996486055651139,
+   "weight_scale": 0.00141143798828125,
+   "input_scale": 0.23035714030265808,
+   "w_absmax": 0.6328125,
+   "source": "single_blocks.5.linear2"
+  },
+  "single_transformer_blocks.6.attn.to_qkv_mlp_proj": {
+   "rel_l2": 0.026463356118424198,
+   "cosine": 0.9996497879221962,
+   "weight_scale": 0.000949859619140625,
+   "input_scale": 0.15803571045398712,
+   "w_absmax": 0.42578125,
+   "source": "single_blocks.6.linear1"
+  },
+  "single_transformer_blocks.6.attn.to_out": {
+   "rel_l2": 0.026644471441798916,
+   "cosine": 0.999644974076126,
+   "weight_scale": 0.000732421875,
+   "input_scale": 0.13995535671710968,
+   "w_absmax": 0.328125,
+   "source": "single_blocks.6.linear2"
+  },
+  "single_transformer_blocks.7.attn.to_qkv_mlp_proj": {
+   "rel_l2": 0.02648577350985843,
+   "cosine": 0.9996492055236373,
+   "weight_scale": 0.00118255615234375,
+   "input_scale": 0.15937499701976776,
+   "w_absmax": 0.53125,
+   "source": "single_blocks.7.linear1"
+  },
+  "single_transformer_blocks.7.attn.to_out": {
+   "rel_l2": 0.02652010245242965,
+   "cosine": 0.9996482832238407,
+   "weight_scale": 0.00079345703125,
+   "input_scale": 0.18348214030265808,
+   "w_absmax": 0.35546875,
+   "source": "single_blocks.7.linear2"
+  },
+  "single_transformer_blocks.8.attn.to_qkv_mlp_proj": {
+   "rel_l2": 0.026460203269894757,
+   "cosine": 0.9996499814864029,
+   "weight_scale": 0.00104522705078125,
+   "input_scale": 0.1607142835855484,
+   "w_absmax": 0.466796875,
+   "source": "single_blocks.8.linear1"
+  },
+  "single_transformer_blocks.8.attn.to_out": {
+   "rel_l2": 0.026536522668551065,
+   "cosine": 0.9996478466526765,
+   "weight_scale": 0.00075531005859375,
+   "input_scale": 0.2075892835855484,
+   "w_absmax": 0.337890625,
+   "source": "single_blocks.8.linear2"
+  },
+  "single_transformer_blocks.9.attn.to_qkv_mlp_proj": {
+   "rel_l2": 0.02651840151406806,
+   "cosine": 0.9996489687246415,
+   "weight_scale": 0.00135040283203125,
+   "input_scale": 0.16004464030265808,
+   "w_absmax": 0.60546875,
+   "source": "single_blocks.9.linear1"
+  },
+  "single_transformer_blocks.9.attn.to_out": {
+   "rel_l2": 0.02643873851787136,
+   "cosine": 0.9996506400056375,
+   "weight_scale": 0.002166748046875,
+   "input_scale": 0.12455356866121292,
+   "w_absmax": 0.97265625,
+   "source": "single_blocks.9.linear2"
+  },
+  "single_transformer_blocks.10.attn.to_qkv_mlp_proj": {
+   "rel_l2": 0.026509736653823467,
+   "cosine": 0.9996485772313495,
+   "weight_scale": 0.000774383544921875,
+   "input_scale": 0.1607142835855484,
+   "w_absmax": 0.34765625,
+   "source": "single_blocks.10.linear1"
+  },
+  "single_transformer_blocks.10.attn.to_out": {
+   "rel_l2": 0.026479364219450616,
+   "cosine": 0.9996495611772166,
+   "weight_scale": 0.00096893310546875,
+   "input_scale": 0.10245535522699356,
+   "w_absmax": 0.43359375,
+   "source": "single_blocks.10.linear2"
+  },
+  "single_transformer_blocks.11.attn.to_qkv_mlp_proj": {
+   "rel_l2": 0.02647983578137482,
+   "cosine": 0.9996493677891944,
+   "weight_scale": 0.000885009765625,
+   "input_scale": 0.1607142835855484,
+   "w_absmax": 0.396484375,
+   "source": "single_blocks.11.linear1"
+  },
+  "single_transformer_blocks.11.attn.to_out": {
+   "rel_l2": 0.026542509499514595,
+   "cosine": 0.9996476896695101,
+   "weight_scale": 0.000743865966796875,
+   "input_scale": 0.1473214328289032,
+   "w_absmax": 0.333984375,
+   "source": "single_blocks.11.linear2"
+  },
+  "single_transformer_blocks.12.attn.to_qkv_mlp_proj": {
+   "rel_l2": 0.0264913810150472,
+   "cosine": 0.999649134813955,
+   "weight_scale": 0.00119781494140625,
+   "input_scale": 0.16004464030265808,
+   "w_absmax": 0.53515625,
+   "source": "single_blocks.12.linear1"
+  },
+  "single_transformer_blocks.12.attn.to_out": {
+   "rel_l2": 0.026534441181013443,
+   "cosine": 0.9996479005597452,
+   "weight_scale": 0.000614166259765625,
+   "input_scale": 0.15669642388820648,
+   "w_absmax": 0.275390625,
+   "source": "single_blocks.12.linear2"
+  },
+  "single_transformer_blocks.13.attn.to_qkv_mlp_proj": {
+   "rel_l2": 0.026479402926999736,
+   "cosine": 0.9996494623565098,
+   "weight_scale": 0.000827789306640625,
+   "input_scale": 0.16004464030265808,
+   "w_absmax": 0.37109375,
+   "source": "single_blocks.13.linear1"
+  },
+  "single_transformer_blocks.13.attn.to_out": {
+   "rel_l2": 0.026517101551327426,
+   "cosine": 0.9996484451603038,
+   "weight_scale": 0.00089263916015625,
+   "input_scale": 0.1372767835855484,
+   "w_absmax": 0.400390625,
+   "source": "single_blocks.13.linear2"
+  },
+  "single_transformer_blocks.14.attn.to_qkv_mlp_proj": {
+   "rel_l2": 0.026510771471476714,
+   "cosine": 0.9996485277872552,
+   "weight_scale": 0.00090789794921875,
+   "input_scale": 0.15803571045398712,
+   "w_absmax": 0.40625,
+   "source": "single_blocks.14.linear1"
+  },
+  "single_transformer_blocks.14.attn.to_out": {
+   "rel_l2": 0.02650619705987607,
+   "cosine": 0.9996486889636049,
+   "weight_scale": 0.000652313232421875,
+   "input_scale": 0.19285714626312256,
+   "w_absmax": 0.29296875,
+   "source": "single_blocks.14.linear2"
+  },
+  "single_transformer_blocks.15.attn.to_qkv_mlp_proj": {
+   "rel_l2": 0.02648468098181207,
+   "cosine": 0.9996492277954903,
+   "weight_scale": 0.0012664794921875,
+   "input_scale": 0.15535713732242584,
+   "w_absmax": 0.56640625,
+   "source": "single_blocks.15.linear1"
+  },
+  "single_transformer_blocks.15.attn.to_out": {
+   "rel_l2": 0.02646767570780901,
+   "cosine": 0.9996499568093293,
+   "weight_scale": 0.000934600830078125,
+   "input_scale": 0.2678571343421936,
+   "w_absmax": 0.41796875,
+   "source": "single_blocks.15.linear2"
+  },
+  "single_transformer_blocks.16.attn.to_qkv_mlp_proj": {
+   "rel_l2": 0.026474819403318063,
+   "cosine": 0.9996497941859415,
+   "weight_scale": 0.000957489013671875,
+   "input_scale": 0.1540178507566452,
+   "w_absmax": 0.4296875,
+   "source": "single_blocks.16.linear1"
+  },
+  "single_transformer_blocks.16.attn.to_out": {
+   "rel_l2": 0.02648943034140697,
+   "cosine": 0.9996491013974709,
+   "weight_scale": 0.0012664794921875,
+   "input_scale": 0.12187500298023224,
+   "w_absmax": 0.56640625,
+   "source": "single_blocks.16.linear2"
+  },
+  "single_transformer_blocks.17.attn.to_qkv_mlp_proj": {
+   "rel_l2": 0.026592923704562014,
+   "cosine": 0.9996463731664484,
+   "weight_scale": 0.0009765625,
+   "input_scale": 0.15133929252624512,
+   "w_absmax": 0.4375,
+   "source": "single_blocks.17.linear1"
+  },
+  "single_transformer_blocks.17.attn.to_out": {
+   "rel_l2": 0.02648841289855042,
+   "cosine": 0.999649161990759,
+   "weight_scale": 0.00150299072265625,
+   "input_scale": 0.15669642388820648,
+   "w_absmax": 0.671875,
+   "source": "single_blocks.17.linear2"
+  },
+  "single_transformer_blocks.18.attn.to_qkv_mlp_proj": {
+   "rel_l2": 0.026525073670836938,
+   "cosine": 0.999648148379491,
+   "weight_scale": 0.00121307373046875,
+   "input_scale": 0.14933036267757416,
+   "w_absmax": 0.54296875,
+   "source": "single_blocks.18.linear1"
+  },
+  "single_transformer_blocks.18.attn.to_out": {
+   "rel_l2": 0.026471549682505917,
+   "cosine": 0.9996495671952937,
+   "weight_scale": 0.002044677734375,
+   "input_scale": 0.3348214328289032,
+   "w_absmax": 0.91796875,
+   "source": "single_blocks.18.linear2"
+  },
+  "single_transformer_blocks.19.attn.to_qkv_mlp_proj": {
+   "rel_l2": 0.02647281678302747,
+   "cosine": 0.9996495494512401,
+   "weight_scale": 0.0015411376953125,
+   "input_scale": 0.1473214328289032,
+   "w_absmax": 0.69140625,
+   "source": "single_blocks.19.linear1"
+  },
+  "single_transformer_blocks.19.attn.to_out": {
+   "rel_l2": 0.026467187583248973,
+   "cosine": 0.9996500702470332,
+   "weight_scale": 0.000926971435546875,
+   "input_scale": 0.9589285850524902,
+   "w_absmax": 0.416015625,
+   "source": "single_blocks.19.linear2"
+  }
+ }
+}

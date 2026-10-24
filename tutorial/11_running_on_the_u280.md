@@ -56,12 +56,12 @@ board's host side is tested without a board.
 ## The clock
 
 The device runs at the kernel clock divided by `DEV_DIV`
-(`rtl/board/tnca_u50_xo.v`). The run above was on the image with a 150 MHz
+([`rtl/board/tnca_u50_xo.v`](../rtl/board/tnca_u50_xo.v)). The run above was on the image with a 150 MHz
 kernel clock and **`DEV_DIV = 2`, so the device ran at 75 MHz**. That was
 measured, not assumed:
 
 - the shell's frequency counter reads 150 MHz for the kernel clock;
-- `flow/fpga/measure_clock.py` times two spin kernels of different
+- [`flow/fpga/measure_clock.py`](../flow/fpga/measure_clock.py) times two spin kernels of different
   lengths on the host and divides the difference in device cycles by the
   difference in wall time: **74.97 and 75.02 MHz**.
 
@@ -71,7 +71,7 @@ all host and PCIe.
 The same day an undivided image followed: kernel clock 100 MHz,
 `DEV_DIV = 1`, measured at 100.07 and 100.01 MHz. It ran ArchBench with
 every cycle count equal to the simulator's. That is now the flow's default;
-`evidence/r38/u280_100mhz/` has the record. Cycle counts do not depend on
+[`evidence/r38/u280_100mhz/`](../evidence/r38/u280_100mhz/) has the record. Cycle counts do not depend on
 the clock, so the 7044 above is the same on either image. Only the time
 they take changes.
 
@@ -101,12 +101,14 @@ What each step does:
 ## Checking a board against the simulator, in bulk
 
 ArchBench runs the same points on the board and on `fpga-u50-sim`, and
-`tools/r38/board_vs_sim.py` compares them point by point. On the 75 MHz image
+[`tools/r38/board_vs_sim.py`](../tools/r38/board_vs_sim.py) compares them point by point. On the 75 MHz image
 all 27 tiny points matched the simulator to the cycle, from 1776 to
-5 323 042. The files are in `evidence/r38/u280_75mhz/`.
+5 323 042 ([`evidence/r38/u280_75mhz/`](../evidence/r38/u280_75mhz/)). On the default 100 MHz undivided image
+all 27 tiny points likewise matched the simulator to the cycle, from 1776 to
+5 314 018 ([`evidence/r38/u280_100mhz/`](../evidence/r38/u280_100mhz/)).
 
-`doc/r38_board_bringup.md` section 6 records how the device went from
-37.5 MHz to 75 MHz: what limited the clock, what was changed, and what
+[`doc/r38_board_bringup.md`](../doc/r38_board_bringup.md) section 6 records how the device went from
+37.5 MHz to 75 MHz and 100 MHz: what limited the clock, what was changed, and what
 each change cost or did not cost in cycles.
 
 Back to the [index](README.md).

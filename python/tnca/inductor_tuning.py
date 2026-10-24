@@ -74,7 +74,8 @@ def choose(tuner, args, *, stream, kwargs):
     from .torch_device import MEMORY
     from .torch_device.graph import active_capture
     from .errors import DeviceLost, SessionPoisoned
-    from .inductor import _code_bytes, WIDE_CODE_LIMIT
+    from .inductor import _resource_plan, WIDE_CODE_LIMIT
+    from tnca_cc.execution_resources import admission, tuning_resources
     if not tuner.launchers:
         tuner.precompile()
     baseline = getattr(tuner, '_tnca_baseline_result', tuner.compile_results[0])
@@ -141,10 +142,16 @@ def choose(tuner, args, *, stream, kwargs):
         try:
             result = compile_candidate(tuner, config, budget=budget,
                                        directory=directory/f'compile-{len(reasons)}')
-            if _code_bytes(result) > WIDE_CODE_LIMIT:
-                raise CandidateFailed('candidate exceeds code admission limit')
+            # Admission reads the candidate's execution resource plan.
+            plan = _resource_plan(result)
+            if plan is None:
+                raise CandidateFailed('candidate has no execution resource plan')
+            over = admission(plan, code_limit=WIDE_CODE_LIMIT)
+            if over:
+                raise CandidateFailed('candidate exceeds resource admission: '+', '.join(
+                    f'{name} {used} > {limit}' for name, used, limit in over))
             results.append(result)
-            reasons.append(dict(config=config.kwargs, status='compiled'))
+            reasons.append(dict(config=config.kwargs, status='compiled', resources=plan['resources']))
         except (CandidateFailed, CandidateTimedOut) as error:
             reasons.append(dict(config=config.kwargs, status='refused', reason=str(error)))
     row['compilation'] = reasons
@@ -154,9 +161,30 @@ def choose(tuner, args, *, stream, kwargs):
         row['tuning_seconds'] = budget.clock()-budget.started
         (directory/'selection.json').write_text(json.dumps(row, indent=2)+'\n')
         return
+    plans = [_resource_plan(result) for result in results]
+    if any(plan is None for plan in plans):
+        row['reason'] = 'a candidate has no execution resource plan; baseline retained'
+        row['tuning_seconds'] = budget.clock()-budget.started
+        (directory/'selection.json').write_text(json.dumps(row, indent=2)+'\n')
+        return
+    # Resources and their limits come from each candidate's plan; the
+    # selector refuses any candidate over a limit before measuring it.
+    planned = [tuning_resources(plan, code_limit=WIDE_CODE_LIMIT) for plan in plans]
+    capacities = {}
+    for _used, limits in planned:
+        for name, limit in limits.items():
+            capacities[name] = min(limit, capacities.get(name, limit))
     candidates = [dict(knobs=dict(result.config.kwargs),
                        artifact_sha256=hashlib.sha256(result.kernel.asm['tnca']).hexdigest(),
-                       resources={'code_bytes': _code_bytes(result)}) for result in results]
+                       resources=used) for result, (used, _limits) in zip(results, planned)]
+    row['candidate_plans'] = [dict(knobs=c['knobs'], resources=p['resources'],
+                                   gemm=[dict((k, s.get(k)) for k in ('logical_tile', 'physical_fragments',
+                                                                      'per_k_step', 'macs'))
+                                         for s in p.get('gemm', {}).get('sites', [])],
+                                   transfers=p.get('transfers'), commands=p.get('commands'),
+                                   accumulator_round_trips=p.get('accumulator_round_trips'),
+                                   decisions=p.get('decisions'))
+                              for c, p in zip(candidates, plans)]
     def measure(candidate):
         index = candidates.index(candidate)
         if budget.time_left() <= 0:
@@ -173,7 +201,7 @@ def choose(tuner, args, *, stream, kwargs):
                                               warmup=1 if sample == 0 else 0))
         return DeviceSamples(samples)
     try:
-        selected = select(identity, candidates, capacities={'code_bytes': WIDE_CODE_LIMIT},
+        selected = select(identity, candidates, capacities=capacities,
                           capabilities=hardware['capabilities'], budget=budget,
                           measure=measure, cache=PersistentCache(root/'cache'),
                           conservative=candidates[0])

@@ -1,0 +1,186 @@
+[
+ {
+  "repo": "black-forest-labs/FLUX.2-klein-4b-fp8",
+  "revision": "5b4408e59397a4a37ccb46afe426d8ed86379441",
+  "file": "README.md",
+  "size": 7778,
+  "sha256": null,
+  "git_blob": "f773543376b0bb8d2867865950f3bc26d9cc652c"
+ },
+ {
+  "repo": "black-forest-labs/FLUX.2-klein-4b-fp8",
+  "revision": "5b4408e59397a4a37ccb46afe426d8ed86379441",
+  "file": "LICENSE.md",
+  "size": 9584,
+  "sha256": null,
+  "git_blob": "0afa7632c1a195ea6627a3c53e6ebf18d1be3aa5"
+ },
+ {
+  "repo": "black-forest-labs/FLUX.2-klein-4b-fp8",
+  "revision": "5b4408e59397a4a37ccb46afe426d8ed86379441",
+  "file": "flux-2-klein-4b-fp8.safetensors",
+  "size": 4070624520,
+  "sha256": "97ed34fe0567e436200f2faee3939b88f2b5d99f8af2a4dc16532c4245c0ccb6",
+  "git_blob": "8d920e919019212c1c61b0fd6489a9a13b8128bd"
+ },
+ {
+  "repo": "black-forest-labs/FLUX.2-klein-4B",
+  "revision": "e7b7dc27f91deacad38e78976d1f2b499d76a294",
+  "file": "text_encoder/generation_config.json",
+  "size": 214,
+  "sha256": null,
+  "git_blob": "f5af93d0c7764fa38e3b1cd3aaba1b6307246d3b"
+ },
+ {
+  "repo": "black-forest-labs/FLUX.2-klein-4B",
+  "revision": "e7b7dc27f91deacad38e78976d1f2b499d76a294",
+  "file": "model_index.json",
+  "size": 446,
+  "sha256": null,
+  "git_blob": "554a39bf1019138dd0b28809b745df8ef33657c8"
+ },
+ {
+  "repo": "black-forest-labs/FLUX.2-klein-4B",
+  "revision": "e7b7dc27f91deacad38e78976d1f2b499d76a294",
+  "file": "scheduler/scheduler_config.json",
+  "size": 486,
+  "sha256": null,
+  "git_blob": "7e53605e2643440b310fa554f087641893883c5f"
+ },
+ {
+  "repo": "black-forest-labs/FLUX.2-klein-4B",
+  "revision": "e7b7dc27f91deacad38e78976d1f2b499d76a294",
+  "file": "transformer/config.json",
+  "size": 541,
+  "sha256": null,
+  "git_blob": "f21592ae2bc9f43052e78785bde7414f219ae369"
+ },
+ {
+  "repo": "black-forest-labs/FLUX.2-klein-4B",
+  "revision": "e7b7dc27f91deacad38e78976d1f2b499d76a294",
+  "file": "tokenizer/special_tokens_map.json",
+  "size": 613,
+  "sha256": null,
+  "git_blob": "ac23c0aaa2434523c494330aeb79c58395378103"
+ },
+ {
+  "repo": "black-forest-labs/FLUX.2-klein-4B",
+  "revision": "e7b7dc27f91deacad38e78976d1f2b499d76a294",
+  "file": "tokenizer/added_tokens.json",
+  "size": 707,
+  "sha256": null,
+  "git_blob": "b54f9135e44c1e81047e8d05cb027af8bc039eed"
+ },
+ {
+  "repo": "black-forest-labs/FLUX.2-klein-4B",
+  "revision": "e7b7dc27f91deacad38e78976d1f2b499d76a294",
+  "file": "vae/config.json",
+  "size": 821,
+  "sha256": null,
+  "git_blob": "c3f38eb4c188a96a462519159356bd0fcc28cd14"
+ },
+ {
+  "repo": "black-forest-labs/FLUX.2-klein-4B",
+  "revision": "e7b7dc27f91deacad38e78976d1f2b499d76a294",
+  "file": "text_encoder/config.json",
+  "size": 1536,
+  "sha256": null,
+  "git_blob": "86f951d170cfd1fdc1c8a57a041e05c27b7b789b"
+ },
+ {
+  "repo": "black-forest-labs/FLUX.2-klein-4B",
+  "revision": "e7b7dc27f91deacad38e78976d1f2b499d76a294",
+  "file": "tokenizer/chat_template.jinja",
+  "size": 4168,
+  "sha256": null,
+  "git_blob": "01be9b307daa2d425f7c168c9fb145a286e0afb4"
+ },
+ {
+  "repo": "black-forest-labs/FLUX.2-klein-4B",
+  "revision": "e7b7dc27f91deacad38e78976d1f2b499d76a294",
+  "file": "tokenizer/tokenizer_config.json",
+  "size": 5404,
+  "sha256": null,
+  "git_blob": "ddaf69808214a44fdd26d3785b66c1367c78277a"
+ },
+ {
+  "repo": "black-forest-labs/FLUX.2-klein-4B",
+  "revision": "e7b7dc27f91deacad38e78976d1f2b499d76a294",
+  "file": "LICENSE.md",
+  "size": 9584,
+  "sha256": null,
+  "git_blob": "0afa7632c1a195ea6627a3c53e6ebf18d1be3aa5"
+ },
+ {
+  "repo": "black-forest-labs/FLUX.2-klein-4B",
+  "revision": "e7b7dc27f91deacad38e78976d1f2b499d76a294",
+  "file": "README.md",
+  "size": 9991,
+  "sha256": null,
+  "git_blob": "7b3cca65056e19a6ef27bdd0be671a030f067942"
+ },
+ {
+  "repo": "black-forest-labs/FLUX.2-klein-4B",
+  "revision": "e7b7dc27f91deacad38e78976d1f2b499d76a294",
+  "file": "text_encoder/model.safetensors.index.json",
+  "size": 32855,
+  "sha256": null,
+  "git_blob": "b65d8063815c8679d85bb919337b36fae8de75cf"
+ },
+ {
+  "repo": "black-forest-labs/FLUX.2-klein-4B",
+  "revision": "e7b7dc27f91deacad38e78976d1f2b499d76a294",
+  "file": "tokenizer/merges.txt",
+  "size": 1671853,
+  "sha256": null,
+  "git_blob": "31349551d90c7606f325fe0f11bbb8bd5fa0d7c7"
+ },
+ {
+  "repo": "black-forest-labs/FLUX.2-klein-4B",
+  "revision": "e7b7dc27f91deacad38e78976d1f2b499d76a294",
+  "file": "tokenizer/vocab.json",
+  "size": 2776833,
+  "sha256": null,
+  "git_blob": "4783fe10ac3adce15ac8f358ef5462739852c569"
+ },
+ {
+  "repo": "black-forest-labs/FLUX.2-klein-4B",
+  "revision": "e7b7dc27f91deacad38e78976d1f2b499d76a294",
+  "file": "tokenizer/tokenizer.json",
+  "size": 11422654,
+  "sha256": "aeb13307a71acd8fe81861d94ad54ab689df773318809eed3cbe794b4492dae4",
+  "git_blob": "cd71f61a15a522601badb3dc960d800d9cb3766c"
+ },
+ {
+  "repo": "black-forest-labs/FLUX.2-klein-4B",
+  "revision": "e7b7dc27f91deacad38e78976d1f2b499d76a294",
+  "file": "vae/diffusion_pytorch_model.safetensors",
+  "size": 168120878,
+  "sha256": "ca70d2202afe6415bdbcb8793ba8cd99fd159cfe6192381504d6c4d3036e0f04",
+  "git_blob": "0654e1768dc02cdd4859d2a3548a80102252cc5d"
+ },
+ {
+  "repo": "black-forest-labs/FLUX.2-klein-4B",
+  "revision": "e7b7dc27f91deacad38e78976d1f2b499d76a294",
+  "file": "text_encoder/model-00002-of-00002.safetensors",
+  "size": 3077766632,
+  "sha256": "82f2bd839378541b0557bfabaf37c7d3d637071fdcb73302dedd7cf61162ce07",
+  "git_blob": "2ad5d9638d4cfb714242e21c74e7c152103bdd05"
+ },
+ {
+  "repo": "black-forest-labs/FLUX.2-klein-4B",
+  "revision": "e7b7dc27f91deacad38e78976d1f2b499d76a294",
+  "file": "text_encoder/model-00001-of-00002.safetensors",
+  "size": 4967215360,
+  "sha256": "8c0506e7f4936fa7e26183a4fd8da4e2bdbc5990ba64ae441f965d51228f36ea",
+  "git_blob": "7d53e0b41e362367b871a196418998993ca5f5c7"
+ },
+ {
+  "repo": "black-forest-labs/FLUX.2-klein-4B",
+  "revision": "e7b7dc27f91deacad38e78976d1f2b499d76a294",
+  "file": "transformer/diffusion_pytorch_model.safetensors",
+  "size": 7751109744,
+  "sha256": "9f29f9edcfdae452a653ffb51a534ca4decd389952c225724ff3b94042612a6e",
+  "git_blob": "31f2956c304ed56f3411305559c78db615beb577"
+ }
+]

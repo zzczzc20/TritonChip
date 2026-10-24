@@ -68,7 +68,7 @@ Descriptors follow the contract Triton exposes for TMA on NVIDIA GPUs:
 - **Atomic adds and maxes** through a descriptor.
 - **Row gather and scatter.**
 
-`tools/r38/tdesc_tests.py` (`make r38-tdesc`) runs one kernel per feature and
+[`tools/r38/tdesc_tests.py`](../tools/r38/tdesc_tests.py) (`make r38-tdesc`) runs one kernel per feature and
 compares the outputs bit for bit with a model computed from the definition.
 On the current RTL:
 
@@ -77,13 +77,15 @@ PASS atomic_add             add bit-exact; max bit-exact
 PASS gather_scatter         bit-exact
 PASS host_descriptor        bit-exact
 PASS rank1_copy             bit-exact; bit-exact; bit-exact
+PASS rank1_relabel_in_loop  max abs error 0
+PASS rank1_store_relabel    max abs error 0
 PASS rank2_nan_pad          bit-exact
 PASS rank3_dma              bit-exact
 PASS rank3_dot              max rel err 0.00e+00
 PASS rank3_small_trans      bit-exact
 PASS rank4_rows             bit-exact
 PASS rank5_fill             bit-exact
-tensor descriptors [core-sim]: 10/10 pass
+tensor descriptors [core-sim]: 12/12 pass
 ```
 
 The full output also counts each case's instructions, and they show that

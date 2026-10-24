@@ -93,6 +93,13 @@ def _window_reuse():
     return value
 
 
+def _ieee_div():
+    value = int(os.environ.get('TNCA_IEEE_DIV', '0'))
+    if value not in (0, 1):
+        raise ValueError('TNCA_IEEE_DIV must be 0 or 1')
+    return value
+
+
 def _packed_window_unpack():
     value = int(os.environ.get('TNCA_PACKED_WINDOW_UNPACK', '0'))
     if value not in (0, 1):
@@ -136,6 +143,7 @@ class TNCAOptions:
     bank_alloc: int = field(default_factory=_bank_alloc)
     window_reuse: int = field(default_factory=_window_reuse)
     packed_window_unpack: int = field(default_factory=_packed_window_unpack)
+    ieee_div: int = field(default_factory=_ieee_div)
 
     def __post_init__(self):
         if type(self.rctx_stages) is not int or self.rctx_stages not in (1, 2, 3):
@@ -261,6 +269,10 @@ class TNCABackend(BaseBackend):
         for k, v in list(args.items()):
             if isinstance(v, list):
                 args[k] = tuple(v)
+        # Warps and pipeline stages are GPU launch shapes; TNCA's lowering
+        # reads neither, so configs that differ only there are one compile.
+        args['num_warps'] = 1
+        args['num_stages'] = 1
         resolved = TNCAOptions(**args)
         if not isinstance(resolved.physical_chunks, int) or resolved.physical_chunks not in (0, 1):
             raise ValueError('physical_chunks must be 0 or 1')
@@ -319,7 +331,8 @@ class TNCABackend(BaseBackend):
                           ('sparse_tensormaps', 'TNCA_SPARSE_TENSORMAPS'),
                           ('rctx_roles', 'TNCA_RCTX_ROLES'), ('bank_alloc', 'TNCA_BANK_ALLOC'),
                           ('window_reuse', 'TNCA_WINDOW_REUSE'),
-                          ('packed_window_unpack', 'TNCA_PACKED_WINDOW_UNPACK')):
+                          ('packed_window_unpack', 'TNCA_PACKED_WINDOW_UNPACK'),
+                          ('ieee_div', 'TNCA_IEEE_DIV')):
             value = getattr(options, name)
             if value or int(os.environ.get(env, '0')) != value:
                 compile_options[name] = value
@@ -334,6 +347,13 @@ class TNCABackend(BaseBackend):
              _stages) = aot._lower_ttir(module, ctx, kernel_name, params, target, prov,
                                         compile_options, stages, options.opt_level)
         except Exception as e:
+            from .driver import _bench_local
+            if getattr(_bench_local, 'compile_only', False):
+                # triton.autotune is trying a config (driver.bench): one TNCA
+                # cannot lower is a config this device cannot run, which the
+                # tuner drops -- as it drops one out of GPU resources.
+                from triton.runtime.errors import OutOfResources
+                raise OutOfResources(0, 0, f'TNCA: {str(e).splitlines()[0][:200]}') from e
             if dump_to:
                 stages.write(dump_to, metadata={'entry_point': 'triton-backend', 'profile': options.profile,
                                                 'opt_level': options.opt_level,
@@ -347,10 +367,21 @@ class TNCABackend(BaseBackend):
         # larger than that can never be loaded; refuse it here, as a
         # resource error, so a caller with a narrower configuration retiles
         # instead of failing at launch.
+        # The size comes from the execution resource plan, the one resource
+        # description admission, retile and tuning all read.
         from tnca.inductor import CODE_STORE_BYTES
-        if len(code) > CODE_STORE_BYTES:
+        from tnca_cc.execution_resources import admission, record_decision
+        measured, plan = aot.execution_plan(prov, asm_text, code, report, target,
+                                            code_limit=CODE_STORE_BYTES)
+        size = plan['resources']['code_bytes'] if plan is not None else measured['code_bytes']
+        if size > CODE_STORE_BYTES:
             from triton.runtime.errors import OutOfResources
-            raise OutOfResources(len(code), CODE_STORE_BYTES, 'TNCA code store bytes')
+            raise OutOfResources(size, CODE_STORE_BYTES, 'TNCA code store bytes')
+        if plan is not None:
+            over = [r for r in admission(plan, code_limit=CODE_STORE_BYTES) if r[0] != 'code_bytes']
+            record_decision(plan, 'code_store_admission', 'accepted',
+                            f'{size} code bytes within the {CODE_STORE_BYTES}-byte code store',
+                            over_profile_limits=over)
         # Aliasing. Triton lets pointer arguments overlap (PyTorch Inductor
         # passes one storage as input and output of an in-place op), and the
         # runtime refuses an overlap the manifest does not declare (ABI-05).
@@ -368,7 +399,7 @@ class TNCABackend(BaseBackend):
         os.close(fd)
         try:
             aot._seal(path, kernel_name, params, asm_text, code, report, target, pinfo,
-                      {}, compile_options, prov, 'triton')
+                      {}, compile_options, prov, 'triton', measured=measured)
             with open(path, 'rb') as fh:
                 blob = fh.read()
         finally:

@@ -84,8 +84,16 @@ class TncaHBM12 final : public HBMControllerBase {
            !m_pending.empty();
   }
   std::uint64_t queued_rw() const { return m_read_buffer.size() + m_write_buffer.size(); }
+  // Each skipped tick has no ready command, so its column slot reaches
+  // pick_rw_if, which re-evaluates the read/write mode whenever the priority
+  // buffer is empty. The buffers do not change while ticks are skipped, and
+  // set_write_mode reaches its fixed point in one call, so one call stands
+  // for all of them. Without it a mode switch due just before a refresh was
+  // lost once the refresh filled the priority buffer.
   void skip_to(Clk_t c) {
-    if (c > m_clk) m_clk = c;
+    if (c <= m_clk) return;
+    if (m_priority_buffer.size() == 0) set_write_mode();
+    m_clk = c;
   }
   IRefreshManager* refresh() const { return m_refresh; }
   // A lower bound on the next clock at which this controller can do anything:
@@ -213,18 +221,21 @@ struct Instance {
 
 }  // namespace
 
-// Synthetic ROW_COLUMN_BANK-style mapping inside one pseudo channel; this
-// is not established as the installed platform's mapping. PG276 documents
-// a different default (Row Bank Column with BG0 interleave). The 32-byte burst
-// offset in bits [4:0], then bank group [6:5], bank [8:7], the column (32
-// bursts of a 1 KiB row) [13:9] and the row [27:14]. Consecutive bursts walk
-// the bank groups first, so a 64-byte line spans two bank groups.
+// The B40 image's HBM controller mapping inside one pseudo channel, read from
+// the image's own HBM IP configuration (A3 link project,
+// bd_85ad_hbm_inst_0.xci; evidence/r41/stage1/hbm_controller/):
+// USER_MC0_PRE_DEF_ADDR_MAP_SEL=ROW_BANK_COLUMN with USER_MC0_BG_INTERLEAVE_EN,
+// USER_MC0_ADDR_BIT = "NA,RA13..RA0,BG1,BA1,BA0,CA5..CA1,BG0" (MSB..LSB above
+// the 32-byte burst offset). In burst units: BG0 in bit 0, the column CA1-CA5
+// in bits [5:1] (32 bursts of a 1 KiB row), BA0-BA1 in [7:6], BG1 in bit 8 and
+// the row in [22:9]. A 64-byte line spans the two BG0 bank groups; a
+// sequential stream stays in one bank pair for 2 KiB.
 Mapped map_address(std::uint64_t offset) {
   std::uint64_t burst = offset >> 5;
   Mapped m;
-  m.bankgroup = static_cast<int>(burst & 3);
-  m.bank = static_cast<int>((burst >> 2) & 3);
-  m.column = static_cast<int>((burst >> 4) & 31);
+  m.bankgroup = static_cast<int>((burst & 1) | (((burst >> 8) & 1) << 1));
+  m.column = static_cast<int>((burst >> 1) & 31);
+  m.bank = static_cast<int>((burst >> 6) & 3);
   m.row = static_cast<int>((burst >> 9) & 16383);
   return m;
 }
@@ -290,7 +301,7 @@ Timing timing(const std::string& yaml_path) {
 }
 
 Result replay(const std::string& yaml_path, unsigned pcs, const Batch& batch, std::vector<std::uint32_t>& latency,
-              bool event_skip) {
+              bool event_skip, bool idle_skip) {
   Result r;
   r.pcs.resize(pcs);
   latency.assign(batch.n, 0);
@@ -321,7 +332,6 @@ Result replay(const std::string& yaml_path, unsigned pcs, const Batch& batch, st
       Instance inst(yaml_path);
       TncaHBM12* ctrl = inst.ctrl;
       const auto& spec = *ctrl->m_device.m_spec;
-      const Clk_t nrefi = spec.get_timing_value("nREFI");
       const Clk_t write_done = spec.get_timing_value("nCWL") + spec.get_timing_value("nBL");
       auto& st = r.pcs[pc];
       const std::size_t m = order.size();
@@ -393,12 +403,16 @@ Result replay(const std::string& yaml_path, unsigned pcs, const Batch& batch, st
           }
           ++next;
         }
-        // Idle until the next arrival: skip, stopping for a refresh due in the gap.
-        if (outstanding == 0 && !ctrl->busy() && next < m) {
+        // Idle until the next arrival: skip, stopping at the next refresh due in
+        // the gap. Every refresh is processed: the first one of a gap closes the
+        // rows left open, so the later ones issue REFab without a precharge;
+        // merging them into the last one charged that precharge (tRP) to the
+        // last refresh and delayed what followed.
+        if (idle_skip && outstanding == 0 && !ctrl->busy() && next < m) {
           Clk_t clk = ctrl->m_clk, target = static_cast<Clk_t>(arrival_of(next)) - 1;
           if (target > clk) {
-            Clk_t last_ref = (target / nrefi) * nrefi;
-            Clk_t to = (last_ref > clk && inst.refresh->m_next <= last_ref) ? last_ref - 1 : target;
+            Clk_t due = inst.refresh->m_next;
+            Clk_t to = (due > clk && due <= target) ? due - 1 : target;
             if (to > clk) {
               st.skipped += static_cast<std::uint64_t>(to - clk);
               ctrl->skip_to(to);
@@ -445,7 +459,8 @@ void decode_vector(const void* c, std::size_t i, std::uint32_t& pc, std::uint64_
 }
 }  // namespace
 
-Result replay(const std::string& yaml_path, unsigned pcs, const std::vector<Request>& requests, bool event_skip) {
+Result replay(const std::string& yaml_path, unsigned pcs, const std::vector<Request>& requests, bool event_skip,
+              bool idle_skip) {
   std::vector<std::uint64_t> arrival(requests.size());
   for (std::size_t i = 0; i < requests.size(); ++i) arrival[i] = requests[i].arrival;
   VectorContext ctx{&requests};
@@ -455,7 +470,7 @@ Result replay(const std::string& yaml_path, unsigned pcs, const std::vector<Requ
   b.context = &ctx;
   b.decode = decode_vector;
   std::vector<std::uint32_t> latency;
-  Result r = replay(yaml_path, pcs, b, latency, event_skip);
+  Result r = replay(yaml_path, pcs, b, latency, event_skip, idle_skip);
   r.completion.resize(requests.size());
   for (std::size_t i = 0; i < requests.size(); ++i) r.completion[i] = requests[i].arrival + latency[i];
   return r;

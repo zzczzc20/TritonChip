@@ -239,15 +239,21 @@ module tnca_matrix #(
     // FMA operand selection: a MAC during MAC_RUN, an accumulator row op
     // otherwise. One array serves both, because they contend for the same
     // accumulator port anyway.
-    wire row_mul = (st == S_ROW) && (r_rowop == 2'd1);
-    wire row_fma = (st == S_ROW) && (r_rowop == 2'd2);
+    // R41 T2 round 5: S_ROW and its row op as registered flags, set with the
+    // command that enters S_ROW (from S_IDLE, for one cycle) -- not decoded
+    // from st and r_rowop in front of every MAC's format and operand selects
+    // (st -> fmt -> MAC input registers, +0.81 ns tile-0 screen). A bench
+    // check compares them with the decode every cycle.
+    reg  row_q, row_mul_q, row_fma_q;
+    wire row_mul = row_mul_q;
+    wire row_fma = row_fma_q;
 
     // An accumulator row op is binary32 on both inputs, and widen(f32, x) is
     // x, so the same multi-precision MAC serves it with no bypass. The whole
     // S_ROW state takes this path, a.vwrite included: its FMA result is
     // discarded, and presenting a fragment format for an operand that is not
     // a fragment would only be confusing.
-    wire        row_any = (st == S_ROW);
+    wire        row_any = row_q;
     wire [2:0]  mac_fmt = row_any ? `TNCA_FMT_F32 : r_fmt;
 
     generate
@@ -327,6 +333,12 @@ module tnca_matrix #(
     wire acc_rd_used = (st == S_MAC && !vrf_wait) || (st == S_ROW && r_rowop != 2'd0);
     wire acc_collide = acc_rd_used && acc_w_en &&
                        ({acc_r_slot, acc_r_row} == {acc_w_slot, acc_w_row});
+    // R41 T2 round 5: the registered row flags are the decode they replace.
+    always @(posedge clk)
+        if (rst_n && ((row_q !== (st == S_ROW)) ||
+                      (row_q && ((row_mul_q !== (r_rowop == 2'd1)) || (row_fma_q !== (r_rowop == 2'd2))))))
+            $display("FAIL tnca_matrix assert @%0t: registered row flags %b%b%b, st %0d rowop %0d",
+                     $time, row_q, row_mul_q, row_fma_q, st, r_rowop);
     always @(posedge clk)
         if (rst_n && acc_collide) begin
             $display("FATAL: tnca_matrix read accumulator %0d row %0d in the cycle it was written",
@@ -346,6 +358,9 @@ module tnca_matrix #(
             done_bar_en <= 1'b0;
             z_en        <= 1'b0;
             direct_w    <= 1'b0;
+            row_q       <= 1'b0;
+            row_mul_q   <= 1'b0;
+            row_fma_q   <= 1'b0;
             for (i = 0; i < PIPE; i = i + 1) tg_v[i] <= 1'b0;
         end else begin
             done        <= 1'b0;
@@ -353,6 +368,17 @@ module tnca_matrix #(
             done_bar_en <= 1'b0;
             z_en        <= 1'b0;
             direct_w    <= 1'b0;
+            row_q       <= 1'b0;
+            row_mul_q   <= 1'b0;
+            row_fma_q   <= 1'b0;
+            // R41 T2 round 5: the a.vwrite payload is copied every cycle --
+            // it is read only under direct_w, the cycle after S_ROW, and r_*
+            // change only in S_IDLE -- so its enable is not r_rowop's decode
+            // routed to every bit (r_rowop -> direct_* CE, +1.054 ns tile 1).
+            direct_slot <= r_slot;
+            direct_row  <= r_row;
+            direct_mask <= r_mask;
+            direct_data <= r_vdata;
 
             // advance the result tag pipeline
             for (i = PIPE-1; i > 0; i = i - 1) begin
@@ -390,7 +416,12 @@ module tnca_matrix #(
                     case (cmd_op)
                     2'd0: st <= S_ZERO;
                     2'd1: st <= S_LOADB;
-                    default: st <= S_ROW;
+                    default: begin
+                        st        <= S_ROW;
+                        row_q     <= 1'b1;
+                        row_mul_q <= (cmd_rowop == 2'd1);
+                        row_fma_q <= (cmd_rowop == 2'd2);
+                    end
                     endcase
                     // r_k and r_dt are not latched yet: decide from the command.
                     if (cmd_op == 2'd1 && ABUF != 0 &&
@@ -471,10 +502,6 @@ module tnca_matrix #(
             S_ROW: begin
                 if (r_rowop == 2'd0) begin
                     direct_w    <= 1'b1;
-                    direct_slot <= r_slot;
-                    direct_row  <= r_row;
-                    direct_mask <= r_mask;
-                    direct_data <= r_vdata;
                     st <= S_DONE;
                 end else begin
                     tg_v[0]    <= 1'b1;

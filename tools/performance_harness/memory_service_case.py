@@ -32,6 +32,8 @@ def main():
         outstanding=args.outstanding,elements=args.elements,measurement_boundary=
         'one resident steady graph after warm graph; no explicit CPU download between calls; '
         'backend ABI uploads and their ownership handoffs remain inside the native call path',
+        cycle_metric='sum of completed launch device cycles; prelaunch uploads/maintenance are outside these launch windows; not whole-call latency',
+        counter_boundary='snapshots surround the native call and can include prelaunch ABI maintenance',
         performance_gate='not-measured')
     def save():(out/'report.json').write_text(json.dumps(report,indent=2)+'\n')
     save()

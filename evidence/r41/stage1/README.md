@@ -32,6 +32,7 @@
 | `kickoff/pipeline-admission-v2-evidence.tgz`、strict 比较补充 tgz、`pipeline_admission.md` | 4 组模型、3 组 RTL 与比较全部完成；实际 ring/transfer/MMA 轨迹；第三层增加 overlap 但尾块更慢；缺项/重复项比较拒绝 | artifact/内存域不同，不能宣称匹配的跨域预测准确率；板上闭合未完成 |
 | `kickoff/host-handoff-v1-evidence.tgz` | 原生快慢路径均通过显式维护/local split/跨边界传输与三项拒绝；ABI 维护使模型流量更接近 RTL，残差仍保留 | 物理控制器等价、完整周期校准或 host latency 已预测准确 |
 | `kickoff/language-meta-v1-evidence.tgz`、`model_feasibility.md` | 官方 24 层、320 个参数 storage 的精确形状/dtype/tied alias 核对；128/129 prefill 全分支 ATen 图和别名存储分析 | TNCA 完整模型编译、机器码工作集、设备 allocator 峰值或数值执行通过 |
+| `kickoff/memory-service-v1-evidence.tgz`、`memory_service.md` | 三组 outlet/depth 的实际三核 MMIO RTL 全部数值通过；三套模型域与原始残差保留；维护/缓存几何解释、严格比较与拒绝检查完成 | 合成 AXI slave 等价于物理 HBM；更多出口必然获益；板上闭合或全局周期资格已经完成 |
 
 谓词压力修复使用现有 `p.ballot`/`p.frombits` 保存精确 lane mask，不能增加架构容量。
 pointwise 超出资源时依次尝试较小 block，保留共同 TNCA 执行路径；已有合法配置仍优先使用。
@@ -49,5 +50,6 @@ column broadcast 修复 `[R,1]` 加载后的每行 lane 0 复制语义，不按�
 卡上观测镜像曾为 UUID `428c00e5-6996-92c7-1f8f-ec41f2d037b3`、245 MHz，且有使用者；
 与 B40-OBS 的 90 MHz 镜像不同。`kickoff/restore90-check.log` 为只读检查，usage gate 未通过，未执行加载。
 恢复 R40 镜像须有明确授权、卡空闲且全部加载检查通过。当前不能把原 90 MHz 镜像当作仍在运行。
+`kickoff/restore90-check-20261021T0517Z.log` 再次确认同一外部 UUID、一个活动 context，usage gate 仍失败，未执行加载。
 
 模型保持 `uncalibrated`。sealed holdout 未用于开发或拟合；已有失配与负结果不删除。

@@ -1,0 +1,1716 @@
+Copyright 1986-2022 Xilinx, Inc. All Rights Reserved. Copyright 2022-2023 Advanced Micro Devices, Inc. All Rights Reserved.
+--------------------------------------------------------------------------------------------------------------------------------------------------
+| Tool Version      : Vivado v.2023.2 (lin64) Build 4029153 Fri Oct 13 20:13:54 MDT 2023
+| Date              : Mon Oct 26 15:04:20 2026
+| Host              : acf3019 running 64-bit Ubuntu 22.04.5 LTS
+| Command           : report_timing -max_paths 30 -file /home/zzhouch/r41_hbmbw_stream_v1/period10/routed_paths.rpt
+| Design            : tnca_stream_axi
+| Device            : xcu280-fsvh2892
+| Speed File        : -2L  PRODUCTION 1.30 05-01-2022
+| Design State      : Routed
+| Temperature Grade : E
+--------------------------------------------------------------------------------------------------------------------------------------------------
+
+Timing Report
+
+Slack (MET) :             5.596ns  (required time - arrival time)
+  Source:                 mode_reg[0]/C
+                            (rising edge-triggered cell FDRE clocked by kernel  {rise@0.000ns fall@5.000ns period=10.000ns})
+  Destination:            m_wdata[359]
+                            (output port clocked by kernel  {rise@0.000ns fall@5.000ns period=10.000ns})
+  Path Group:             kernel
+  Path Type:              Max at Slow Process Corner
+  Requirement:            10.000ns  (kernel rise@10.000ns - kernel rise@0.000ns)
+  Data Path Delay:        3.139ns  (logic 0.351ns (11.182%)  route 2.788ns (88.818%))
+  Logic Levels:           2  (LUT2=1 LUT5=1)
+  Output Delay:           1.000ns
+  Clock Path Skew:        -0.030ns (DCD - SCD + CPR)
+    Destination Clock Delay (DCD):    0.000ns = ( 10.000 - 10.000 ) 
+    Source Clock Delay      (SCD):    0.030ns
+    Clock Pessimism Removal (CPR):    0.000ns
+  Clock Uncertainty:      0.235ns  ((TSJ^2 + TIJ^2)^1/2 + DJ) / 2 + PE + UU
+    Total System Jitter     (TSJ):    0.071ns
+    Total Input Jitter      (TIJ):    0.000ns
+    Discrete Jitter          (DJ):    0.000ns
+    Phase Error              (PE):    0.000ns
+    User Uncertainty         (UU):    0.200ns
+
+    Location             Delay type                Incr(ns)  Path(ns)    PBlock               Netlist Resource(s)
+  -------------------------------------------------------------------    ----------------------------------------
+                         (clock kernel rise edge)     0.000     0.000 r                       
+                                                      0.000     0.000 r                       clk (IN)
+                         net (fo=1698, unset)         0.030     0.030                         clk
+    SLICE_X129Y374       FDRE                                         r  stream_lane          mode_reg[0]/C
+  -------------------------------------------------------------------    ----------------------------------------
+    SLICE_X129Y374       FDRE (Prop_DFF2_SLICEM_C_Q)
+                                                      0.080     0.110 r  stream_lane          mode_reg[0]/Q
+                         net (fo=13, routed)          0.350     0.460                         copy_data/Q[0]
+    SLICE_X129Y375       LUT2 (Prop_D6LUT_SLICEM_I0_O)
+                                                      0.122     0.582 r  stream_lane          copy_data/m_wvalid_INST_0_i_1/O
+                         net (fo=514, routed)         2.438     3.020                         copy_data/mode_reg[0]
+    SLICE_X144Y373       LUT5 (Prop_A6LUT_SLICEL_I1_O)
+                                                      0.149     3.169 r  stream_lane          copy_data/m_wdata[359]_INST_0/O
+                         net (fo=0)                   0.000     3.169                         m_wdata[359]
+                                                                      r                       m_wdata[359] (OUT)
+  -------------------------------------------------------------------    ----------------------------------------
+
+                         (clock kernel rise edge)    10.000    10.000 r                       
+                         clock pessimism              0.000    10.000                           
+                         clock uncertainty           -0.235     9.765                           
+                         output delay                -1.000     8.765                           
+  -------------------------------------------------------------------
+                         required time                          8.765                           
+                         arrival time                          -3.169                           
+  -------------------------------------------------------------------
+                         slack                                  5.596                           
+
+Slack (MET) :             5.666ns  (required time - arrival time)
+  Source:                 mode_reg[0]/C
+                            (rising edge-triggered cell FDRE clocked by kernel  {rise@0.000ns fall@5.000ns period=10.000ns})
+  Destination:            m_wdata[263]
+                            (output port clocked by kernel  {rise@0.000ns fall@5.000ns period=10.000ns})
+  Path Group:             kernel
+  Path Type:              Max at Slow Process Corner
+  Requirement:            10.000ns  (kernel rise@10.000ns - kernel rise@0.000ns)
+  Data Path Delay:        3.069ns  (logic 0.348ns (11.339%)  route 2.721ns (88.661%))
+  Logic Levels:           2  (LUT2=1 LUT5=1)
+  Output Delay:           1.000ns
+  Clock Path Skew:        -0.030ns (DCD - SCD + CPR)
+    Destination Clock Delay (DCD):    0.000ns = ( 10.000 - 10.000 ) 
+    Source Clock Delay      (SCD):    0.030ns
+    Clock Pessimism Removal (CPR):    0.000ns
+  Clock Uncertainty:      0.235ns  ((TSJ^2 + TIJ^2)^1/2 + DJ) / 2 + PE + UU
+    Total System Jitter     (TSJ):    0.071ns
+    Total Input Jitter      (TIJ):    0.000ns
+    Discrete Jitter          (DJ):    0.000ns
+    Phase Error              (PE):    0.000ns
+    User Uncertainty         (UU):    0.200ns
+
+    Location             Delay type                Incr(ns)  Path(ns)    PBlock               Netlist Resource(s)
+  -------------------------------------------------------------------    ----------------------------------------
+                         (clock kernel rise edge)     0.000     0.000 r                       
+                                                      0.000     0.000 r                       clk (IN)
+                         net (fo=1698, unset)         0.030     0.030                         clk
+    SLICE_X129Y374       FDRE                                         r  stream_lane          mode_reg[0]/C
+  -------------------------------------------------------------------    ----------------------------------------
+    SLICE_X129Y374       FDRE (Prop_DFF2_SLICEM_C_Q)
+                                                      0.080     0.110 r  stream_lane          mode_reg[0]/Q
+                         net (fo=13, routed)          0.350     0.460                         copy_data/Q[0]
+    SLICE_X129Y375       LUT2 (Prop_D6LUT_SLICEM_I0_O)
+                                                      0.122     0.582 r  stream_lane          copy_data/m_wvalid_INST_0_i_1/O
+                         net (fo=514, routed)         2.371     2.953                         copy_data/mode_reg[0]
+    SLICE_X144Y373       LUT5 (Prop_D6LUT_SLICEL_I1_O)
+                                                      0.146     3.099 r  stream_lane          copy_data/m_wdata[263]_INST_0/O
+                         net (fo=0)                   0.000     3.099                         m_wdata[263]
+                                                                      r                       m_wdata[263] (OUT)
+  -------------------------------------------------------------------    ----------------------------------------
+
+                         (clock kernel rise edge)    10.000    10.000 r                       
+                         clock pessimism              0.000    10.000                           
+                         clock uncertainty           -0.235     9.765                           
+                         output delay                -1.000     8.765                           
+  -------------------------------------------------------------------
+                         required time                          8.765                           
+                         arrival time                          -3.099                           
+  -------------------------------------------------------------------
+                         slack                                  5.666                           
+
+Slack (MET) :             5.672ns  (required time - arrival time)
+  Source:                 mode_reg[0]/C
+                            (rising edge-triggered cell FDRE clocked by kernel  {rise@0.000ns fall@5.000ns period=10.000ns})
+  Destination:            m_wdata[313]
+                            (output port clocked by kernel  {rise@0.000ns fall@5.000ns period=10.000ns})
+  Path Group:             kernel
+  Path Type:              Max at Slow Process Corner
+  Requirement:            10.000ns  (kernel rise@10.000ns - kernel rise@0.000ns)
+  Data Path Delay:        3.063ns  (logic 0.292ns (9.533%)  route 2.771ns (90.467%))
+  Logic Levels:           2  (LUT2=1 LUT5=1)
+  Output Delay:           1.000ns
+  Clock Path Skew:        -0.030ns (DCD - SCD + CPR)
+    Destination Clock Delay (DCD):    0.000ns = ( 10.000 - 10.000 ) 
+    Source Clock Delay      (SCD):    0.030ns
+    Clock Pessimism Removal (CPR):    0.000ns
+  Clock Uncertainty:      0.235ns  ((TSJ^2 + TIJ^2)^1/2 + DJ) / 2 + PE + UU
+    Total System Jitter     (TSJ):    0.071ns
+    Total Input Jitter      (TIJ):    0.000ns
+    Discrete Jitter          (DJ):    0.000ns
+    Phase Error              (PE):    0.000ns
+    User Uncertainty         (UU):    0.200ns
+
+    Location             Delay type                Incr(ns)  Path(ns)    PBlock               Netlist Resource(s)
+  -------------------------------------------------------------------    ----------------------------------------
+                         (clock kernel rise edge)     0.000     0.000 r                       
+                                                      0.000     0.000 r                       clk (IN)
+                         net (fo=1698, unset)         0.030     0.030                         clk
+    SLICE_X129Y374       FDRE                                         r  stream_lane          mode_reg[0]/C
+  -------------------------------------------------------------------    ----------------------------------------
+    SLICE_X129Y374       FDRE (Prop_DFF2_SLICEM_C_Q)
+                                                      0.080     0.110 r  stream_lane          mode_reg[0]/Q
+                         net (fo=13, routed)          0.350     0.460                         copy_data/Q[0]
+    SLICE_X129Y375       LUT2 (Prop_D6LUT_SLICEM_I0_O)
+                                                      0.122     0.582 r  stream_lane          copy_data/m_wvalid_INST_0_i_1/O
+                         net (fo=514, routed)         2.421     3.003                         copy_data/mode_reg[0]
+    SLICE_X144Y373       LUT5 (Prop_H6LUT_SLICEL_I1_O)
+                                                      0.090     3.093 r  stream_lane          copy_data/m_wdata[313]_INST_0/O
+                         net (fo=0)                   0.000     3.093                         m_wdata[313]
+                                                                      r                       m_wdata[313] (OUT)
+  -------------------------------------------------------------------    ----------------------------------------
+
+                         (clock kernel rise edge)    10.000    10.000 r                       
+                         clock pessimism              0.000    10.000                           
+                         clock uncertainty           -0.235     9.765                           
+                         output delay                -1.000     8.765                           
+  -------------------------------------------------------------------
+                         required time                          8.765                           
+                         arrival time                          -3.093                           
+  -------------------------------------------------------------------
+                         slack                                  5.672                           
+
+Slack (MET) :             5.674ns  (required time - arrival time)
+  Source:                 mode_reg[0]/C
+                            (rising edge-triggered cell FDRE clocked by kernel  {rise@0.000ns fall@5.000ns period=10.000ns})
+  Destination:            m_wdata[345]
+                            (output port clocked by kernel  {rise@0.000ns fall@5.000ns period=10.000ns})
+  Path Group:             kernel
+  Path Type:              Max at Slow Process Corner
+  Requirement:            10.000ns  (kernel rise@10.000ns - kernel rise@0.000ns)
+  Data Path Delay:        3.061ns  (logic 0.291ns (9.507%)  route 2.770ns (90.493%))
+  Logic Levels:           2  (LUT2=1 LUT5=1)
+  Output Delay:           1.000ns
+  Clock Path Skew:        -0.030ns (DCD - SCD + CPR)
+    Destination Clock Delay (DCD):    0.000ns = ( 10.000 - 10.000 ) 
+    Source Clock Delay      (SCD):    0.030ns
+    Clock Pessimism Removal (CPR):    0.000ns
+  Clock Uncertainty:      0.235ns  ((TSJ^2 + TIJ^2)^1/2 + DJ) / 2 + PE + UU
+    Total System Jitter     (TSJ):    0.071ns
+    Total Input Jitter      (TIJ):    0.000ns
+    Discrete Jitter          (DJ):    0.000ns
+    Phase Error              (PE):    0.000ns
+    User Uncertainty         (UU):    0.200ns
+
+    Location             Delay type                Incr(ns)  Path(ns)    PBlock               Netlist Resource(s)
+  -------------------------------------------------------------------    ----------------------------------------
+                         (clock kernel rise edge)     0.000     0.000 r                       
+                                                      0.000     0.000 r                       clk (IN)
+                         net (fo=1698, unset)         0.030     0.030                         clk
+    SLICE_X129Y374       FDRE                                         r  stream_lane          mode_reg[0]/C
+  -------------------------------------------------------------------    ----------------------------------------
+    SLICE_X129Y374       FDRE (Prop_DFF2_SLICEM_C_Q)
+                                                      0.080     0.110 r  stream_lane          mode_reg[0]/Q
+                         net (fo=13, routed)          0.350     0.460                         copy_data/Q[0]
+    SLICE_X129Y375       LUT2 (Prop_D6LUT_SLICEM_I0_O)
+                                                      0.122     0.582 r  stream_lane          copy_data/m_wvalid_INST_0_i_1/O
+                         net (fo=514, routed)         2.420     3.002                         copy_data/mode_reg[0]
+    SLICE_X144Y373       LUT5 (Prop_G6LUT_SLICEL_I1_O)
+                                                      0.089     3.091 r  stream_lane          copy_data/m_wdata[345]_INST_0/O
+                         net (fo=0)                   0.000     3.091                         m_wdata[345]
+                                                                      r                       m_wdata[345] (OUT)
+  -------------------------------------------------------------------    ----------------------------------------
+
+                         (clock kernel rise edge)    10.000    10.000 r                       
+                         clock pessimism              0.000    10.000                           
+                         clock uncertainty           -0.235     9.765                           
+                         output delay                -1.000     8.765                           
+  -------------------------------------------------------------------
+                         required time                          8.765                           
+                         arrival time                          -3.091                           
+  -------------------------------------------------------------------
+                         slack                                  5.674                           
+
+Slack (MET) :             5.689ns  (required time - arrival time)
+  Source:                 mode_reg[0]/C
+                            (rising edge-triggered cell FDRE clocked by kernel  {rise@0.000ns fall@5.000ns period=10.000ns})
+  Destination:            m_wdata[212]
+                            (output port clocked by kernel  {rise@0.000ns fall@5.000ns period=10.000ns})
+  Path Group:             kernel
+  Path Type:              Max at Slow Process Corner
+  Requirement:            10.000ns  (kernel rise@10.000ns - kernel rise@0.000ns)
+  Data Path Delay:        3.046ns  (logic 0.351ns (11.525%)  route 2.695ns (88.475%))
+  Logic Levels:           2  (LUT2=1 LUT5=1)
+  Output Delay:           1.000ns
+  Clock Path Skew:        -0.030ns (DCD - SCD + CPR)
+    Destination Clock Delay (DCD):    0.000ns = ( 10.000 - 10.000 ) 
+    Source Clock Delay      (SCD):    0.030ns
+    Clock Pessimism Removal (CPR):    0.000ns
+  Clock Uncertainty:      0.235ns  ((TSJ^2 + TIJ^2)^1/2 + DJ) / 2 + PE + UU
+    Total System Jitter     (TSJ):    0.071ns
+    Total Input Jitter      (TIJ):    0.000ns
+    Discrete Jitter          (DJ):    0.000ns
+    Phase Error              (PE):    0.000ns
+    User Uncertainty         (UU):    0.200ns
+
+    Location             Delay type                Incr(ns)  Path(ns)    PBlock               Netlist Resource(s)
+  -------------------------------------------------------------------    ----------------------------------------
+                         (clock kernel rise edge)     0.000     0.000 r                       
+                                                      0.000     0.000 r                       clk (IN)
+                         net (fo=1698, unset)         0.030     0.030                         clk
+    SLICE_X129Y374       FDRE                                         r  stream_lane          mode_reg[0]/C
+  -------------------------------------------------------------------    ----------------------------------------
+    SLICE_X129Y374       FDRE (Prop_DFF2_SLICEM_C_Q)
+                                                      0.080     0.110 r  stream_lane          mode_reg[0]/Q
+                         net (fo=13, routed)          0.350     0.460                         copy_data/Q[0]
+    SLICE_X129Y375       LUT2 (Prop_D6LUT_SLICEM_I0_O)
+                                                      0.122     0.582 r  stream_lane          copy_data/m_wvalid_INST_0_i_1/O
+                         net (fo=514, routed)         2.345     2.927                         copy_data/mode_reg[0]
+    SLICE_X138Y360       LUT5 (Prop_A6LUT_SLICEL_I1_O)
+                                                      0.149     3.076 r  stream_lane          copy_data/m_wdata[212]_INST_0/O
+                         net (fo=0)                   0.000     3.076                         m_wdata[212]
+                                                                      r                       m_wdata[212] (OUT)
+  -------------------------------------------------------------------    ----------------------------------------
+
+                         (clock kernel rise edge)    10.000    10.000 r                       
+                         clock pessimism              0.000    10.000                           
+                         clock uncertainty           -0.235     9.765                           
+                         output delay                -1.000     8.765                           
+  -------------------------------------------------------------------
+                         required time                          8.765                           
+                         arrival time                          -3.076                           
+  -------------------------------------------------------------------
+                         slack                                  5.689                           
+
+Slack (MET) :             5.715ns  (required time - arrival time)
+  Source:                 mode_reg[0]/C
+                            (rising edge-triggered cell FDRE clocked by kernel  {rise@0.000ns fall@5.000ns period=10.000ns})
+  Destination:            m_wdata[184]
+                            (output port clocked by kernel  {rise@0.000ns fall@5.000ns period=10.000ns})
+  Path Group:             kernel
+  Path Type:              Max at Slow Process Corner
+  Requirement:            10.000ns  (kernel rise@10.000ns - kernel rise@0.000ns)
+  Data Path Delay:        3.020ns  (logic 0.298ns (9.869%)  route 2.722ns (90.131%))
+  Logic Levels:           2  (LUT2=1 LUT5=1)
+  Output Delay:           1.000ns
+  Clock Path Skew:        -0.030ns (DCD - SCD + CPR)
+    Destination Clock Delay (DCD):    0.000ns = ( 10.000 - 10.000 ) 
+    Source Clock Delay      (SCD):    0.030ns
+    Clock Pessimism Removal (CPR):    0.000ns
+  Clock Uncertainty:      0.235ns  ((TSJ^2 + TIJ^2)^1/2 + DJ) / 2 + PE + UU
+    Total System Jitter     (TSJ):    0.071ns
+    Total Input Jitter      (TIJ):    0.000ns
+    Discrete Jitter          (DJ):    0.000ns
+    Phase Error              (PE):    0.000ns
+    User Uncertainty         (UU):    0.200ns
+
+    Location             Delay type                Incr(ns)  Path(ns)    PBlock               Netlist Resource(s)
+  -------------------------------------------------------------------    ----------------------------------------
+                         (clock kernel rise edge)     0.000     0.000 r                       
+                                                      0.000     0.000 r                       clk (IN)
+                         net (fo=1698, unset)         0.030     0.030                         clk
+    SLICE_X129Y374       FDRE                                         r  stream_lane          mode_reg[0]/C
+  -------------------------------------------------------------------    ----------------------------------------
+    SLICE_X129Y374       FDRE (Prop_DFF2_SLICEM_C_Q)
+                                                      0.080     0.110 r  stream_lane          mode_reg[0]/Q
+                         net (fo=13, routed)          0.350     0.460                         copy_data/Q[0]
+    SLICE_X129Y375       LUT2 (Prop_D6LUT_SLICEM_I0_O)
+                                                      0.122     0.582 r  stream_lane          copy_data/m_wvalid_INST_0_i_1/O
+                         net (fo=514, routed)         2.372     2.954                         copy_data/mode_reg[0]
+    SLICE_X144Y361       LUT5 (Prop_C6LUT_SLICEL_I1_O)
+                                                      0.096     3.050 r  stream_lane          copy_data/m_wdata[184]_INST_0/O
+                         net (fo=0)                   0.000     3.050                         m_wdata[184]
+                                                                      r                       m_wdata[184] (OUT)
+  -------------------------------------------------------------------    ----------------------------------------
+
+                         (clock kernel rise edge)    10.000    10.000 r                       
+                         clock pessimism              0.000    10.000                           
+                         clock uncertainty           -0.235     9.765                           
+                         output delay                -1.000     8.765                           
+  -------------------------------------------------------------------
+                         required time                          8.765                           
+                         arrival time                          -3.050                           
+  -------------------------------------------------------------------
+                         slack                                  5.715                           
+
+Slack (MET) :             5.716ns  (required time - arrival time)
+  Source:                 mode_reg[0]/C
+                            (rising edge-triggered cell FDRE clocked by kernel  {rise@0.000ns fall@5.000ns period=10.000ns})
+  Destination:            m_wdata[206]
+                            (output port clocked by kernel  {rise@0.000ns fall@5.000ns period=10.000ns})
+  Path Group:             kernel
+  Path Type:              Max at Slow Process Corner
+  Requirement:            10.000ns  (kernel rise@10.000ns - kernel rise@0.000ns)
+  Data Path Delay:        3.018ns  (logic 0.326ns (10.801%)  route 2.692ns (89.200%))
+  Logic Levels:           2  (LUT2=1 LUT5=1)
+  Output Delay:           1.000ns
+  Clock Path Skew:        -0.030ns (DCD - SCD + CPR)
+    Destination Clock Delay (DCD):    0.000ns = ( 10.000 - 10.000 ) 
+    Source Clock Delay      (SCD):    0.030ns
+    Clock Pessimism Removal (CPR):    0.000ns
+  Clock Uncertainty:      0.235ns  ((TSJ^2 + TIJ^2)^1/2 + DJ) / 2 + PE + UU
+    Total System Jitter     (TSJ):    0.071ns
+    Total Input Jitter      (TIJ):    0.000ns
+    Discrete Jitter          (DJ):    0.000ns
+    Phase Error              (PE):    0.000ns
+    User Uncertainty         (UU):    0.200ns
+
+    Location             Delay type                Incr(ns)  Path(ns)    PBlock               Netlist Resource(s)
+  -------------------------------------------------------------------    ----------------------------------------
+                         (clock kernel rise edge)     0.000     0.000 r                       
+                                                      0.000     0.000 r                       clk (IN)
+                         net (fo=1698, unset)         0.030     0.030                         clk
+    SLICE_X129Y374       FDRE                                         r  stream_lane          mode_reg[0]/C
+  -------------------------------------------------------------------    ----------------------------------------
+    SLICE_X129Y374       FDRE (Prop_DFF2_SLICEM_C_Q)
+                                                      0.080     0.110 r  stream_lane          mode_reg[0]/Q
+                         net (fo=13, routed)          0.350     0.460                         copy_data/Q[0]
+    SLICE_X129Y375       LUT2 (Prop_D6LUT_SLICEM_I0_O)
+                                                      0.122     0.582 r  stream_lane          copy_data/m_wvalid_INST_0_i_1/O
+                         net (fo=514, routed)         2.343     2.924                         copy_data/mode_reg[0]
+    SLICE_X144Y361       LUT5 (Prop_B6LUT_SLICEL_I1_O)
+                                                      0.124     3.048 r  stream_lane          copy_data/m_wdata[206]_INST_0/O
+                         net (fo=0)                   0.000     3.048                         m_wdata[206]
+                                                                      r                       m_wdata[206] (OUT)
+  -------------------------------------------------------------------    ----------------------------------------
+
+                         (clock kernel rise edge)    10.000    10.000 r                       
+                         clock pessimism              0.000    10.000                           
+                         clock uncertainty           -0.235     9.765                           
+                         output delay                -1.000     8.765                           
+  -------------------------------------------------------------------
+                         required time                          8.765                           
+                         arrival time                          -3.048                           
+  -------------------------------------------------------------------
+                         slack                                  5.716                           
+
+Slack (MET) :             5.724ns  (required time - arrival time)
+  Source:                 mode_reg[0]/C
+                            (rising edge-triggered cell FDRE clocked by kernel  {rise@0.000ns fall@5.000ns period=10.000ns})
+  Destination:            m_wdata[20]
+                            (output port clocked by kernel  {rise@0.000ns fall@5.000ns period=10.000ns})
+  Path Group:             kernel
+  Path Type:              Max at Slow Process Corner
+  Requirement:            10.000ns  (kernel rise@10.000ns - kernel rise@0.000ns)
+  Data Path Delay:        3.011ns  (logic 0.326ns (10.828%)  route 2.685ns (89.172%))
+  Logic Levels:           2  (LUT2=1 LUT5=1)
+  Output Delay:           1.000ns
+  Clock Path Skew:        -0.030ns (DCD - SCD + CPR)
+    Destination Clock Delay (DCD):    0.000ns = ( 10.000 - 10.000 ) 
+    Source Clock Delay      (SCD):    0.030ns
+    Clock Pessimism Removal (CPR):    0.000ns
+  Clock Uncertainty:      0.235ns  ((TSJ^2 + TIJ^2)^1/2 + DJ) / 2 + PE + UU
+    Total System Jitter     (TSJ):    0.071ns
+    Total Input Jitter      (TIJ):    0.000ns
+    Discrete Jitter          (DJ):    0.000ns
+    Phase Error              (PE):    0.000ns
+    User Uncertainty         (UU):    0.200ns
+
+    Location             Delay type                Incr(ns)  Path(ns)    PBlock               Netlist Resource(s)
+  -------------------------------------------------------------------    ----------------------------------------
+                         (clock kernel rise edge)     0.000     0.000 r                       
+                                                      0.000     0.000 r                       clk (IN)
+                         net (fo=1698, unset)         0.030     0.030                         clk
+    SLICE_X129Y374       FDRE                                         r  stream_lane          mode_reg[0]/C
+  -------------------------------------------------------------------    ----------------------------------------
+    SLICE_X129Y374       FDRE (Prop_DFF2_SLICEM_C_Q)
+                                                      0.080     0.110 r  stream_lane          mode_reg[0]/Q
+                         net (fo=13, routed)          0.350     0.460                         copy_data/Q[0]
+    SLICE_X129Y375       LUT2 (Prop_D6LUT_SLICEM_I0_O)
+                                                      0.122     0.582 r  stream_lane          copy_data/m_wvalid_INST_0_i_1/O
+                         net (fo=514, routed)         2.335     2.917                         copy_data/mode_reg[0]
+    SLICE_X138Y360       LUT5 (Prop_B6LUT_SLICEL_I1_O)
+                                                      0.124     3.041 r  stream_lane          copy_data/m_wdata[20]_INST_0/O
+                         net (fo=0)                   0.000     3.041                         m_wdata[20]
+                                                                      r                       m_wdata[20] (OUT)
+  -------------------------------------------------------------------    ----------------------------------------
+
+                         (clock kernel rise edge)    10.000    10.000 r                       
+                         clock pessimism              0.000    10.000                           
+                         clock uncertainty           -0.235     9.765                           
+                         output delay                -1.000     8.765                           
+  -------------------------------------------------------------------
+                         required time                          8.765                           
+                         arrival time                          -3.041                           
+  -------------------------------------------------------------------
+                         slack                                  5.724                           
+
+Slack (MET) :             5.730ns  (required time - arrival time)
+  Source:                 mode_reg[0]/C
+                            (rising edge-triggered cell FDRE clocked by kernel  {rise@0.000ns fall@5.000ns period=10.000ns})
+  Destination:            m_wdata[174]
+                            (output port clocked by kernel  {rise@0.000ns fall@5.000ns period=10.000ns})
+  Path Group:             kernel
+  Path Type:              Max at Slow Process Corner
+  Requirement:            10.000ns  (kernel rise@10.000ns - kernel rise@0.000ns)
+  Data Path Delay:        3.005ns  (logic 0.324ns (10.782%)  route 2.681ns (89.218%))
+  Logic Levels:           2  (LUT2=1 LUT5=1)
+  Output Delay:           1.000ns
+  Clock Path Skew:        -0.030ns (DCD - SCD + CPR)
+    Destination Clock Delay (DCD):    0.000ns = ( 10.000 - 10.000 ) 
+    Source Clock Delay      (SCD):    0.030ns
+    Clock Pessimism Removal (CPR):    0.000ns
+  Clock Uncertainty:      0.235ns  ((TSJ^2 + TIJ^2)^1/2 + DJ) / 2 + PE + UU
+    Total System Jitter     (TSJ):    0.071ns
+    Total Input Jitter      (TIJ):    0.000ns
+    Discrete Jitter          (DJ):    0.000ns
+    Phase Error              (PE):    0.000ns
+    User Uncertainty         (UU):    0.200ns
+
+    Location             Delay type                Incr(ns)  Path(ns)    PBlock               Netlist Resource(s)
+  -------------------------------------------------------------------    ----------------------------------------
+                         (clock kernel rise edge)     0.000     0.000 r                       
+                                                      0.000     0.000 r                       clk (IN)
+                         net (fo=1698, unset)         0.030     0.030                         clk
+    SLICE_X129Y374       FDRE                                         r  stream_lane          mode_reg[0]/C
+  -------------------------------------------------------------------    ----------------------------------------
+    SLICE_X129Y374       FDRE (Prop_DFF2_SLICEM_C_Q)
+                                                      0.080     0.110 r  stream_lane          mode_reg[0]/Q
+                         net (fo=13, routed)          0.350     0.460                         copy_data/Q[0]
+    SLICE_X129Y375       LUT2 (Prop_D6LUT_SLICEM_I0_O)
+                                                      0.122     0.582 r  stream_lane          copy_data/m_wvalid_INST_0_i_1/O
+                         net (fo=514, routed)         2.331     2.913                         copy_data/mode_reg[0]
+    SLICE_X144Y361       LUT5 (Prop_D6LUT_SLICEL_I1_O)
+                                                      0.122     3.035 r  stream_lane          copy_data/m_wdata[174]_INST_0/O
+                         net (fo=0)                   0.000     3.035                         m_wdata[174]
+                                                                      r                       m_wdata[174] (OUT)
+  -------------------------------------------------------------------    ----------------------------------------
+
+                         (clock kernel rise edge)    10.000    10.000 r                       
+                         clock pessimism              0.000    10.000                           
+                         clock uncertainty           -0.235     9.765                           
+                         output delay                -1.000     8.765                           
+  -------------------------------------------------------------------
+                         required time                          8.765                           
+                         arrival time                          -3.035                           
+  -------------------------------------------------------------------
+                         slack                                  5.730                           
+
+Slack (MET) :             5.737ns  (required time - arrival time)
+  Source:                 mode_reg[0]/C
+                            (rising edge-triggered cell FDRE clocked by kernel  {rise@0.000ns fall@5.000ns period=10.000ns})
+  Destination:            m_wdata[327]
+                            (output port clocked by kernel  {rise@0.000ns fall@5.000ns period=10.000ns})
+  Path Group:             kernel
+  Path Type:              Max at Slow Process Corner
+  Requirement:            10.000ns  (kernel rise@10.000ns - kernel rise@0.000ns)
+  Data Path Delay:        2.998ns  (logic 0.300ns (10.008%)  route 2.698ns (89.992%))
+  Logic Levels:           2  (LUT2=1 LUT5=1)
+  Output Delay:           1.000ns
+  Clock Path Skew:        -0.030ns (DCD - SCD + CPR)
+    Destination Clock Delay (DCD):    0.000ns = ( 10.000 - 10.000 ) 
+    Source Clock Delay      (SCD):    0.030ns
+    Clock Pessimism Removal (CPR):    0.000ns
+  Clock Uncertainty:      0.235ns  ((TSJ^2 + TIJ^2)^1/2 + DJ) / 2 + PE + UU
+    Total System Jitter     (TSJ):    0.071ns
+    Total Input Jitter      (TIJ):    0.000ns
+    Discrete Jitter          (DJ):    0.000ns
+    Phase Error              (PE):    0.000ns
+    User Uncertainty         (UU):    0.200ns
+
+    Location             Delay type                Incr(ns)  Path(ns)    PBlock               Netlist Resource(s)
+  -------------------------------------------------------------------    ----------------------------------------
+                         (clock kernel rise edge)     0.000     0.000 r                       
+                                                      0.000     0.000 r                       clk (IN)
+                         net (fo=1698, unset)         0.030     0.030                         clk
+    SLICE_X129Y374       FDRE                                         r  stream_lane          mode_reg[0]/C
+  -------------------------------------------------------------------    ----------------------------------------
+    SLICE_X129Y374       FDRE (Prop_DFF2_SLICEM_C_Q)
+                                                      0.080     0.110 r  stream_lane          mode_reg[0]/Q
+                         net (fo=13, routed)          0.350     0.460                         copy_data/Q[0]
+    SLICE_X129Y375       LUT2 (Prop_D6LUT_SLICEM_I0_O)
+                                                      0.122     0.582 r  stream_lane          copy_data/m_wvalid_INST_0_i_1/O
+                         net (fo=514, routed)         2.348     2.930                         copy_data/mode_reg[0]
+    SLICE_X144Y373       LUT5 (Prop_B6LUT_SLICEL_I1_O)
+                                                      0.098     3.028 r  stream_lane          copy_data/m_wdata[327]_INST_0/O
+                         net (fo=0)                   0.000     3.028                         m_wdata[327]
+                                                                      r                       m_wdata[327] (OUT)
+  -------------------------------------------------------------------    ----------------------------------------
+
+                         (clock kernel rise edge)    10.000    10.000 r                       
+                         clock pessimism              0.000    10.000                           
+                         clock uncertainty           -0.235     9.765                           
+                         output delay                -1.000     8.765                           
+  -------------------------------------------------------------------
+                         required time                          8.765                           
+                         arrival time                          -3.028                           
+  -------------------------------------------------------------------
+                         slack                                  5.737                           
+
+Slack (MET) :             5.750ns  (required time - arrival time)
+  Source:                 mode_reg[0]/C
+                            (rising edge-triggered cell FDRE clocked by kernel  {rise@0.000ns fall@5.000ns period=10.000ns})
+  Destination:            m_wdata[190]
+                            (output port clocked by kernel  {rise@0.000ns fall@5.000ns period=10.000ns})
+  Path Group:             kernel
+  Path Type:              Max at Slow Process Corner
+  Requirement:            10.000ns  (kernel rise@10.000ns - kernel rise@0.000ns)
+  Data Path Delay:        2.984ns  (logic 0.299ns (10.019%)  route 2.685ns (89.981%))
+  Logic Levels:           2  (LUT2=1 LUT5=1)
+  Output Delay:           1.000ns
+  Clock Path Skew:        -0.030ns (DCD - SCD + CPR)
+    Destination Clock Delay (DCD):    0.000ns = ( 10.000 - 10.000 ) 
+    Source Clock Delay      (SCD):    0.030ns
+    Clock Pessimism Removal (CPR):    0.000ns
+  Clock Uncertainty:      0.235ns  ((TSJ^2 + TIJ^2)^1/2 + DJ) / 2 + PE + UU
+    Total System Jitter     (TSJ):    0.071ns
+    Total Input Jitter      (TIJ):    0.000ns
+    Discrete Jitter          (DJ):    0.000ns
+    Phase Error              (PE):    0.000ns
+    User Uncertainty         (UU):    0.200ns
+
+    Location             Delay type                Incr(ns)  Path(ns)    PBlock               Netlist Resource(s)
+  -------------------------------------------------------------------    ----------------------------------------
+                         (clock kernel rise edge)     0.000     0.000 r                       
+                                                      0.000     0.000 r                       clk (IN)
+                         net (fo=1698, unset)         0.030     0.030                         clk
+    SLICE_X129Y374       FDRE                                         r  stream_lane          mode_reg[0]/C
+  -------------------------------------------------------------------    ----------------------------------------
+    SLICE_X129Y374       FDRE (Prop_DFF2_SLICEM_C_Q)
+                                                      0.080     0.110 r  stream_lane          mode_reg[0]/Q
+                         net (fo=13, routed)          0.350     0.460                         copy_data/Q[0]
+    SLICE_X129Y375       LUT2 (Prop_D6LUT_SLICEM_I0_O)
+                                                      0.122     0.582 r  stream_lane          copy_data/m_wvalid_INST_0_i_1/O
+                         net (fo=514, routed)         2.336     2.917                         copy_data/mode_reg[0]
+    SLICE_X144Y361       LUT5 (Prop_G6LUT_SLICEL_I1_O)
+                                                      0.097     3.014 r  stream_lane          copy_data/m_wdata[190]_INST_0/O
+                         net (fo=0)                   0.000     3.014                         m_wdata[190]
+                                                                      r                       m_wdata[190] (OUT)
+  -------------------------------------------------------------------    ----------------------------------------
+
+                         (clock kernel rise edge)    10.000    10.000 r                       
+                         clock pessimism              0.000    10.000                           
+                         clock uncertainty           -0.235     9.765                           
+                         output delay                -1.000     8.765                           
+  -------------------------------------------------------------------
+                         required time                          8.765                           
+                         arrival time                          -3.014                           
+  -------------------------------------------------------------------
+                         slack                                  5.750                           
+
+Slack (MET) :             5.755ns  (required time - arrival time)
+  Source:                 mode_reg[0]/C
+                            (rising edge-triggered cell FDRE clocked by kernel  {rise@0.000ns fall@5.000ns period=10.000ns})
+  Destination:            m_wdata[24]
+                            (output port clocked by kernel  {rise@0.000ns fall@5.000ns period=10.000ns})
+  Path Group:             kernel
+  Path Type:              Max at Slow Process Corner
+  Requirement:            10.000ns  (kernel rise@10.000ns - kernel rise@0.000ns)
+  Data Path Delay:        2.979ns  (logic 0.292ns (9.801%)  route 2.687ns (90.199%))
+  Logic Levels:           2  (LUT2=1 LUT5=1)
+  Output Delay:           1.000ns
+  Clock Path Skew:        -0.030ns (DCD - SCD + CPR)
+    Destination Clock Delay (DCD):    0.000ns = ( 10.000 - 10.000 ) 
+    Source Clock Delay      (SCD):    0.030ns
+    Clock Pessimism Removal (CPR):    0.000ns
+  Clock Uncertainty:      0.235ns  ((TSJ^2 + TIJ^2)^1/2 + DJ) / 2 + PE + UU
+    Total System Jitter     (TSJ):    0.071ns
+    Total Input Jitter      (TIJ):    0.000ns
+    Discrete Jitter          (DJ):    0.000ns
+    Phase Error              (PE):    0.000ns
+    User Uncertainty         (UU):    0.200ns
+
+    Location             Delay type                Incr(ns)  Path(ns)    PBlock               Netlist Resource(s)
+  -------------------------------------------------------------------    ----------------------------------------
+                         (clock kernel rise edge)     0.000     0.000 r                       
+                                                      0.000     0.000 r                       clk (IN)
+                         net (fo=1698, unset)         0.030     0.030                         clk
+    SLICE_X129Y374       FDRE                                         r  stream_lane          mode_reg[0]/C
+  -------------------------------------------------------------------    ----------------------------------------
+    SLICE_X129Y374       FDRE (Prop_DFF2_SLICEM_C_Q)
+                                                      0.080     0.110 r  stream_lane          mode_reg[0]/Q
+                         net (fo=13, routed)          0.350     0.460                         copy_data/Q[0]
+    SLICE_X129Y375       LUT2 (Prop_D6LUT_SLICEM_I0_O)
+                                                      0.122     0.582 r  stream_lane          copy_data/m_wvalid_INST_0_i_1/O
+                         net (fo=514, routed)         2.338     2.919                         copy_data/mode_reg[0]
+    SLICE_X144Y361       LUT5 (Prop_E6LUT_SLICEL_I1_O)
+                                                      0.090     3.009 r  stream_lane          copy_data/m_wdata[24]_INST_0/O
+                         net (fo=0)                   0.000     3.009                         m_wdata[24]
+                                                                      r                       m_wdata[24] (OUT)
+  -------------------------------------------------------------------    ----------------------------------------
+
+                         (clock kernel rise edge)    10.000    10.000 r                       
+                         clock pessimism              0.000    10.000                           
+                         clock uncertainty           -0.235     9.765                           
+                         output delay                -1.000     8.765                           
+  -------------------------------------------------------------------
+                         required time                          8.765                           
+                         arrival time                          -3.009                           
+  -------------------------------------------------------------------
+                         slack                                  5.755                           
+
+Slack (MET) :             5.758ns  (required time - arrival time)
+  Source:                 mode_reg[0]/C
+                            (rising edge-triggered cell FDRE clocked by kernel  {rise@0.000ns fall@5.000ns period=10.000ns})
+  Destination:            m_wdata[305]
+                            (output port clocked by kernel  {rise@0.000ns fall@5.000ns period=10.000ns})
+  Path Group:             kernel
+  Path Type:              Max at Slow Process Corner
+  Requirement:            10.000ns  (kernel rise@10.000ns - kernel rise@0.000ns)
+  Data Path Delay:        2.977ns  (logic 0.326ns (10.951%)  route 2.651ns (89.049%))
+  Logic Levels:           2  (LUT2=1 LUT5=1)
+  Output Delay:           1.000ns
+  Clock Path Skew:        -0.030ns (DCD - SCD + CPR)
+    Destination Clock Delay (DCD):    0.000ns = ( 10.000 - 10.000 ) 
+    Source Clock Delay      (SCD):    0.030ns
+    Clock Pessimism Removal (CPR):    0.000ns
+  Clock Uncertainty:      0.235ns  ((TSJ^2 + TIJ^2)^1/2 + DJ) / 2 + PE + UU
+    Total System Jitter     (TSJ):    0.071ns
+    Total Input Jitter      (TIJ):    0.000ns
+    Discrete Jitter          (DJ):    0.000ns
+    Phase Error              (PE):    0.000ns
+    User Uncertainty         (UU):    0.200ns
+
+    Location             Delay type                Incr(ns)  Path(ns)    PBlock               Netlist Resource(s)
+  -------------------------------------------------------------------    ----------------------------------------
+                         (clock kernel rise edge)     0.000     0.000 r                       
+                                                      0.000     0.000 r                       clk (IN)
+                         net (fo=1698, unset)         0.030     0.030                         clk
+    SLICE_X129Y374       FDRE                                         r  stream_lane          mode_reg[0]/C
+  -------------------------------------------------------------------    ----------------------------------------
+    SLICE_X129Y374       FDRE (Prop_DFF2_SLICEM_C_Q)
+                                                      0.080     0.110 r  stream_lane          mode_reg[0]/Q
+                         net (fo=13, routed)          0.350     0.460                         copy_data/Q[0]
+    SLICE_X129Y375       LUT2 (Prop_D6LUT_SLICEM_I0_O)
+                                                      0.122     0.582 r  stream_lane          copy_data/m_wvalid_INST_0_i_1/O
+                         net (fo=514, routed)         2.301     2.883                         copy_data/mode_reg[0]
+    SLICE_X144Y372       LUT5 (Prop_B6LUT_SLICEL_I1_O)
+                                                      0.124     3.007 r  stream_lane          copy_data/m_wdata[305]_INST_0/O
+                         net (fo=0)                   0.000     3.007                         m_wdata[305]
+                                                                      r                       m_wdata[305] (OUT)
+  -------------------------------------------------------------------    ----------------------------------------
+
+                         (clock kernel rise edge)    10.000    10.000 r                       
+                         clock pessimism              0.000    10.000                           
+                         clock uncertainty           -0.235     9.765                           
+                         output delay                -1.000     8.765                           
+  -------------------------------------------------------------------
+                         required time                          8.765                           
+                         arrival time                          -3.007                           
+  -------------------------------------------------------------------
+                         slack                                  5.758                           
+
+Slack (MET) :             5.758ns  (required time - arrival time)
+  Source:                 mode_reg[0]/C
+                            (rising edge-triggered cell FDRE clocked by kernel  {rise@0.000ns fall@5.000ns period=10.000ns})
+  Destination:            m_wdata[337]
+                            (output port clocked by kernel  {rise@0.000ns fall@5.000ns period=10.000ns})
+  Path Group:             kernel
+  Path Type:              Max at Slow Process Corner
+  Requirement:            10.000ns  (kernel rise@10.000ns - kernel rise@0.000ns)
+  Data Path Delay:        2.977ns  (logic 0.326ns (10.951%)  route 2.651ns (89.049%))
+  Logic Levels:           2  (LUT2=1 LUT5=1)
+  Output Delay:           1.000ns
+  Clock Path Skew:        -0.030ns (DCD - SCD + CPR)
+    Destination Clock Delay (DCD):    0.000ns = ( 10.000 - 10.000 ) 
+    Source Clock Delay      (SCD):    0.030ns
+    Clock Pessimism Removal (CPR):    0.000ns
+  Clock Uncertainty:      0.235ns  ((TSJ^2 + TIJ^2)^1/2 + DJ) / 2 + PE + UU
+    Total System Jitter     (TSJ):    0.071ns
+    Total Input Jitter      (TIJ):    0.000ns
+    Discrete Jitter          (DJ):    0.000ns
+    Phase Error              (PE):    0.000ns
+    User Uncertainty         (UU):    0.200ns
+
+    Location             Delay type                Incr(ns)  Path(ns)    PBlock               Netlist Resource(s)
+  -------------------------------------------------------------------    ----------------------------------------
+                         (clock kernel rise edge)     0.000     0.000 r                       
+                                                      0.000     0.000 r                       clk (IN)
+                         net (fo=1698, unset)         0.030     0.030                         clk
+    SLICE_X129Y374       FDRE                                         r  stream_lane          mode_reg[0]/C
+  -------------------------------------------------------------------    ----------------------------------------
+    SLICE_X129Y374       FDRE (Prop_DFF2_SLICEM_C_Q)
+                                                      0.080     0.110 r  stream_lane          mode_reg[0]/Q
+                         net (fo=13, routed)          0.350     0.460                         copy_data/Q[0]
+    SLICE_X129Y375       LUT2 (Prop_D6LUT_SLICEM_I0_O)
+                                                      0.122     0.582 r  stream_lane          copy_data/m_wvalid_INST_0_i_1/O
+                         net (fo=514, routed)         2.301     2.883                         copy_data/mode_reg[0]
+    SLICE_X144Y372       LUT5 (Prop_A6LUT_SLICEL_I1_O)
+                                                      0.124     3.007 r  stream_lane          copy_data/m_wdata[337]_INST_0/O
+                         net (fo=0)                   0.000     3.007                         m_wdata[337]
+                                                                      r                       m_wdata[337] (OUT)
+  -------------------------------------------------------------------    ----------------------------------------
+
+                         (clock kernel rise edge)    10.000    10.000 r                       
+                         clock pessimism              0.000    10.000                           
+                         clock uncertainty           -0.235     9.765                           
+                         output delay                -1.000     8.765                           
+  -------------------------------------------------------------------
+                         required time                          8.765                           
+                         arrival time                          -3.007                           
+  -------------------------------------------------------------------
+                         slack                                  5.758                           
+
+Slack (MET) :             5.759ns  (required time - arrival time)
+  Source:                 mode_reg[0]/C
+                            (rising edge-triggered cell FDRE clocked by kernel  {rise@0.000ns fall@5.000ns period=10.000ns})
+  Destination:            m_wdata[248]
+                            (output port clocked by kernel  {rise@0.000ns fall@5.000ns period=10.000ns})
+  Path Group:             kernel
+  Path Type:              Max at Slow Process Corner
+  Requirement:            10.000ns  (kernel rise@10.000ns - kernel rise@0.000ns)
+  Data Path Delay:        2.975ns  (logic 0.291ns (9.780%)  route 2.684ns (90.220%))
+  Logic Levels:           2  (LUT2=1 LUT5=1)
+  Output Delay:           1.000ns
+  Clock Path Skew:        -0.030ns (DCD - SCD + CPR)
+    Destination Clock Delay (DCD):    0.000ns = ( 10.000 - 10.000 ) 
+    Source Clock Delay      (SCD):    0.030ns
+    Clock Pessimism Removal (CPR):    0.000ns
+  Clock Uncertainty:      0.235ns  ((TSJ^2 + TIJ^2)^1/2 + DJ) / 2 + PE + UU
+    Total System Jitter     (TSJ):    0.071ns
+    Total Input Jitter      (TIJ):    0.000ns
+    Discrete Jitter          (DJ):    0.000ns
+    Phase Error              (PE):    0.000ns
+    User Uncertainty         (UU):    0.200ns
+
+    Location             Delay type                Incr(ns)  Path(ns)    PBlock               Netlist Resource(s)
+  -------------------------------------------------------------------    ----------------------------------------
+                         (clock kernel rise edge)     0.000     0.000 r                       
+                                                      0.000     0.000 r                       clk (IN)
+                         net (fo=1698, unset)         0.030     0.030                         clk
+    SLICE_X129Y374       FDRE                                         r  stream_lane          mode_reg[0]/C
+  -------------------------------------------------------------------    ----------------------------------------
+    SLICE_X129Y374       FDRE (Prop_DFF2_SLICEM_C_Q)
+                                                      0.080     0.110 r  stream_lane          mode_reg[0]/Q
+                         net (fo=13, routed)          0.350     0.460                         copy_data/Q[0]
+    SLICE_X129Y375       LUT2 (Prop_D6LUT_SLICEM_I0_O)
+                                                      0.122     0.582 r  stream_lane          copy_data/m_wvalid_INST_0_i_1/O
+                         net (fo=514, routed)         2.335     2.916                         copy_data/mode_reg[0]
+    SLICE_X144Y361       LUT5 (Prop_F6LUT_SLICEL_I1_O)
+                                                      0.089     3.005 r  stream_lane          copy_data/m_wdata[248]_INST_0/O
+                         net (fo=0)                   0.000     3.005                         m_wdata[248]
+                                                                      r                       m_wdata[248] (OUT)
+  -------------------------------------------------------------------    ----------------------------------------
+
+                         (clock kernel rise edge)    10.000    10.000 r                       
+                         clock pessimism              0.000    10.000                           
+                         clock uncertainty           -0.235     9.765                           
+                         output delay                -1.000     8.765                           
+  -------------------------------------------------------------------
+                         required time                          8.765                           
+                         arrival time                          -3.005                           
+  -------------------------------------------------------------------
+                         slack                                  5.759                           
+
+Slack (MET) :             5.772ns  (required time - arrival time)
+  Source:                 mode_reg[0]/C
+                            (rising edge-triggered cell FDRE clocked by kernel  {rise@0.000ns fall@5.000ns period=10.000ns})
+  Destination:            m_wdata[180]
+                            (output port clocked by kernel  {rise@0.000ns fall@5.000ns period=10.000ns})
+  Path Group:             kernel
+  Path Type:              Max at Slow Process Corner
+  Requirement:            10.000ns  (kernel rise@10.000ns - kernel rise@0.000ns)
+  Data Path Delay:        2.962ns  (logic 0.325ns (10.971%)  route 2.637ns (89.029%))
+  Logic Levels:           2  (LUT2=1 LUT5=1)
+  Output Delay:           1.000ns
+  Clock Path Skew:        -0.030ns (DCD - SCD + CPR)
+    Destination Clock Delay (DCD):    0.000ns = ( 10.000 - 10.000 ) 
+    Source Clock Delay      (SCD):    0.030ns
+    Clock Pessimism Removal (CPR):    0.000ns
+  Clock Uncertainty:      0.235ns  ((TSJ^2 + TIJ^2)^1/2 + DJ) / 2 + PE + UU
+    Total System Jitter     (TSJ):    0.071ns
+    Total Input Jitter      (TIJ):    0.000ns
+    Discrete Jitter          (DJ):    0.000ns
+    Phase Error              (PE):    0.000ns
+    User Uncertainty         (UU):    0.200ns
+
+    Location             Delay type                Incr(ns)  Path(ns)    PBlock               Netlist Resource(s)
+  -------------------------------------------------------------------    ----------------------------------------
+                         (clock kernel rise edge)     0.000     0.000 r                       
+                                                      0.000     0.000 r                       clk (IN)
+                         net (fo=1698, unset)         0.030     0.030                         clk
+    SLICE_X129Y374       FDRE                                         r  stream_lane          mode_reg[0]/C
+  -------------------------------------------------------------------    ----------------------------------------
+    SLICE_X129Y374       FDRE (Prop_DFF2_SLICEM_C_Q)
+                                                      0.080     0.110 r  stream_lane          mode_reg[0]/Q
+                         net (fo=13, routed)          0.350     0.460                         copy_data/Q[0]
+    SLICE_X129Y375       LUT2 (Prop_D6LUT_SLICEM_I0_O)
+                                                      0.122     0.582 r  stream_lane          copy_data/m_wvalid_INST_0_i_1/O
+                         net (fo=514, routed)         2.288     2.869                         copy_data/mode_reg[0]
+    SLICE_X138Y360       LUT5 (Prop_C6LUT_SLICEL_I1_O)
+                                                      0.123     2.992 r  stream_lane          copy_data/m_wdata[180]_INST_0/O
+                         net (fo=0)                   0.000     2.992                         m_wdata[180]
+                                                                      r                       m_wdata[180] (OUT)
+  -------------------------------------------------------------------    ----------------------------------------
+
+                         (clock kernel rise edge)    10.000    10.000 r                       
+                         clock pessimism              0.000    10.000                           
+                         clock uncertainty           -0.235     9.765                           
+                         output delay                -1.000     8.765                           
+  -------------------------------------------------------------------
+                         required time                          8.765                           
+                         arrival time                          -2.992                           
+  -------------------------------------------------------------------
+                         slack                                  5.772                           
+
+Slack (MET) :             5.775ns  (required time - arrival time)
+  Source:                 mode_reg[0]/C
+                            (rising edge-triggered cell FDRE clocked by kernel  {rise@0.000ns fall@5.000ns period=10.000ns})
+  Destination:            m_wdata[295]
+                            (output port clocked by kernel  {rise@0.000ns fall@5.000ns period=10.000ns})
+  Path Group:             kernel
+  Path Type:              Max at Slow Process Corner
+  Requirement:            10.000ns  (kernel rise@10.000ns - kernel rise@0.000ns)
+  Data Path Delay:        2.960ns  (logic 0.252ns (8.513%)  route 2.708ns (91.487%))
+  Logic Levels:           2  (LUT2=1 LUT5=1)
+  Output Delay:           1.000ns
+  Clock Path Skew:        -0.030ns (DCD - SCD + CPR)
+    Destination Clock Delay (DCD):    0.000ns = ( 10.000 - 10.000 ) 
+    Source Clock Delay      (SCD):    0.030ns
+    Clock Pessimism Removal (CPR):    0.000ns
+  Clock Uncertainty:      0.235ns  ((TSJ^2 + TIJ^2)^1/2 + DJ) / 2 + PE + UU
+    Total System Jitter     (TSJ):    0.071ns
+    Total Input Jitter      (TIJ):    0.000ns
+    Discrete Jitter          (DJ):    0.000ns
+    Phase Error              (PE):    0.000ns
+    User Uncertainty         (UU):    0.200ns
+
+    Location             Delay type                Incr(ns)  Path(ns)    PBlock               Netlist Resource(s)
+  -------------------------------------------------------------------    ----------------------------------------
+                         (clock kernel rise edge)     0.000     0.000 r                       
+                                                      0.000     0.000 r                       clk (IN)
+                         net (fo=1698, unset)         0.030     0.030                         clk
+    SLICE_X129Y374       FDRE                                         r  stream_lane          mode_reg[0]/C
+  -------------------------------------------------------------------    ----------------------------------------
+    SLICE_X129Y374       FDRE (Prop_DFF2_SLICEM_C_Q)
+                                                      0.080     0.110 r  stream_lane          mode_reg[0]/Q
+                         net (fo=13, routed)          0.350     0.460                         copy_data/Q[0]
+    SLICE_X129Y375       LUT2 (Prop_D6LUT_SLICEM_I0_O)
+                                                      0.122     0.582 r  stream_lane          copy_data/m_wvalid_INST_0_i_1/O
+                         net (fo=514, routed)         2.358     2.940                         copy_data/mode_reg[0]
+    SLICE_X144Y373       LUT5 (Prop_C6LUT_SLICEL_I1_O)
+                                                      0.050     2.990 r  stream_lane          copy_data/m_wdata[295]_INST_0/O
+                         net (fo=0)                   0.000     2.990                         m_wdata[295]
+                                                                      r                       m_wdata[295] (OUT)
+  -------------------------------------------------------------------    ----------------------------------------
+
+                         (clock kernel rise edge)    10.000    10.000 r                       
+                         clock pessimism              0.000    10.000                           
+                         clock uncertainty           -0.235     9.765                           
+                         output delay                -1.000     8.765                           
+  -------------------------------------------------------------------
+                         required time                          8.765                           
+                         arrival time                          -2.990                           
+  -------------------------------------------------------------------
+                         slack                                  5.775                           
+
+Slack (MET) :             5.785ns  (required time - arrival time)
+  Source:                 mode_reg[0]/C
+                            (rising edge-triggered cell FDRE clocked by kernel  {rise@0.000ns fall@5.000ns period=10.000ns})
+  Destination:            m_wdata[148]
+                            (output port clocked by kernel  {rise@0.000ns fall@5.000ns period=10.000ns})
+  Path Group:             kernel
+  Path Type:              Max at Slow Process Corner
+  Requirement:            10.000ns  (kernel rise@10.000ns - kernel rise@0.000ns)
+  Data Path Delay:        2.950ns  (logic 0.324ns (10.983%)  route 2.626ns (89.017%))
+  Logic Levels:           2  (LUT2=1 LUT5=1)
+  Output Delay:           1.000ns
+  Clock Path Skew:        -0.030ns (DCD - SCD + CPR)
+    Destination Clock Delay (DCD):    0.000ns = ( 10.000 - 10.000 ) 
+    Source Clock Delay      (SCD):    0.030ns
+    Clock Pessimism Removal (CPR):    0.000ns
+  Clock Uncertainty:      0.235ns  ((TSJ^2 + TIJ^2)^1/2 + DJ) / 2 + PE + UU
+    Total System Jitter     (TSJ):    0.071ns
+    Total Input Jitter      (TIJ):    0.000ns
+    Discrete Jitter          (DJ):    0.000ns
+    Phase Error              (PE):    0.000ns
+    User Uncertainty         (UU):    0.200ns
+
+    Location             Delay type                Incr(ns)  Path(ns)    PBlock               Netlist Resource(s)
+  -------------------------------------------------------------------    ----------------------------------------
+                         (clock kernel rise edge)     0.000     0.000 r                       
+                                                      0.000     0.000 r                       clk (IN)
+                         net (fo=1698, unset)         0.030     0.030                         clk
+    SLICE_X129Y374       FDRE                                         r  stream_lane          mode_reg[0]/C
+  -------------------------------------------------------------------    ----------------------------------------
+    SLICE_X129Y374       FDRE (Prop_DFF2_SLICEM_C_Q)
+                                                      0.080     0.110 r  stream_lane          mode_reg[0]/Q
+                         net (fo=13, routed)          0.350     0.460                         copy_data/Q[0]
+    SLICE_X129Y375       LUT2 (Prop_D6LUT_SLICEM_I0_O)
+                                                      0.122     0.582 r  stream_lane          copy_data/m_wvalid_INST_0_i_1/O
+                         net (fo=514, routed)         2.276     2.858                         copy_data/mode_reg[0]
+    SLICE_X138Y360       LUT5 (Prop_D6LUT_SLICEL_I1_O)
+                                                      0.122     2.980 r  stream_lane          copy_data/m_wdata[148]_INST_0/O
+                         net (fo=0)                   0.000     2.980                         m_wdata[148]
+                                                                      r                       m_wdata[148] (OUT)
+  -------------------------------------------------------------------    ----------------------------------------
+
+                         (clock kernel rise edge)    10.000    10.000 r                       
+                         clock pessimism              0.000    10.000                           
+                         clock uncertainty           -0.235     9.765                           
+                         output delay                -1.000     8.765                           
+  -------------------------------------------------------------------
+                         required time                          8.765                           
+                         arrival time                          -2.980                           
+  -------------------------------------------------------------------
+                         slack                                  5.785                           
+
+Slack (MET) :             5.799ns  (required time - arrival time)
+  Source:                 mode_reg[0]/C
+                            (rising edge-triggered cell FDRE clocked by kernel  {rise@0.000ns fall@5.000ns period=10.000ns})
+  Destination:            m_wdata[278]
+                            (output port clocked by kernel  {rise@0.000ns fall@5.000ns period=10.000ns})
+  Path Group:             kernel
+  Path Type:              Max at Slow Process Corner
+  Requirement:            10.000ns  (kernel rise@10.000ns - kernel rise@0.000ns)
+  Data Path Delay:        2.936ns  (logic 0.350ns (11.923%)  route 2.586ns (88.077%))
+  Logic Levels:           2  (LUT2=1 LUT5=1)
+  Output Delay:           1.000ns
+  Clock Path Skew:        -0.030ns (DCD - SCD + CPR)
+    Destination Clock Delay (DCD):    0.000ns = ( 10.000 - 10.000 ) 
+    Source Clock Delay      (SCD):    0.030ns
+    Clock Pessimism Removal (CPR):    0.000ns
+  Clock Uncertainty:      0.235ns  ((TSJ^2 + TIJ^2)^1/2 + DJ) / 2 + PE + UU
+    Total System Jitter     (TSJ):    0.071ns
+    Total Input Jitter      (TIJ):    0.000ns
+    Discrete Jitter          (DJ):    0.000ns
+    Phase Error              (PE):    0.000ns
+    User Uncertainty         (UU):    0.200ns
+
+    Location             Delay type                Incr(ns)  Path(ns)    PBlock               Netlist Resource(s)
+  -------------------------------------------------------------------    ----------------------------------------
+                         (clock kernel rise edge)     0.000     0.000 r                       
+                                                      0.000     0.000 r                       clk (IN)
+                         net (fo=1698, unset)         0.030     0.030                         clk
+    SLICE_X129Y374       FDRE                                         r  stream_lane          mode_reg[0]/C
+  -------------------------------------------------------------------    ----------------------------------------
+    SLICE_X129Y374       FDRE (Prop_DFF2_SLICEM_C_Q)
+                                                      0.080     0.110 r  stream_lane          mode_reg[0]/Q
+                         net (fo=13, routed)          0.350     0.460                         copy_data/Q[0]
+    SLICE_X129Y375       LUT2 (Prop_D6LUT_SLICEM_I0_O)
+                                                      0.122     0.582 r  stream_lane          copy_data/m_wvalid_INST_0_i_1/O
+                         net (fo=514, routed)         2.236     2.818                         copy_data/mode_reg[0]
+    SLICE_X144Y367       LUT5 (Prop_B6LUT_SLICEL_I1_O)
+                                                      0.148     2.966 r  stream_lane          copy_data/m_wdata[278]_INST_0/O
+                         net (fo=0)                   0.000     2.966                         m_wdata[278]
+                                                                      r                       m_wdata[278] (OUT)
+  -------------------------------------------------------------------    ----------------------------------------
+
+                         (clock kernel rise edge)    10.000    10.000 r                       
+                         clock pessimism              0.000    10.000                           
+                         clock uncertainty           -0.235     9.765                           
+                         output delay                -1.000     8.765                           
+  -------------------------------------------------------------------
+                         required time                          8.765                           
+                         arrival time                          -2.966                           
+  -------------------------------------------------------------------
+                         slack                                  5.799                           
+
+Slack (MET) :             5.800ns  (required time - arrival time)
+  Source:                 cmd_dst[5]
+                            (input port clocked by kernel  {rise@0.000ns fall@5.000ns period=10.000ns})
+  Destination:            read_left_reg[0]/R
+                            (rising edge-triggered cell FDRE clocked by kernel  {rise@0.000ns fall@5.000ns period=10.000ns})
+  Path Group:             kernel
+  Path Type:              Setup (Max at Slow Process Corner)
+  Requirement:            10.000ns  (kernel rise@10.000ns - kernel rise@0.000ns)
+  Data Path Delay:        2.911ns  (logic 0.943ns (32.394%)  route 1.968ns (67.606%))
+  Logic Levels:           9  (CARRY8=4 LUT4=2 LUT6=3)
+  Input Delay:            1.000ns
+  Clock Path Skew:        0.020ns (DCD - SCD + CPR)
+    Destination Clock Delay (DCD):    0.020ns = ( 10.020 - 10.000 ) 
+    Source Clock Delay      (SCD):    0.000ns
+    Clock Pessimism Removal (CPR):    0.000ns
+  Clock Uncertainty:      0.235ns  ((TSJ^2 + TIJ^2)^1/2 + DJ) / 2 + PE + UU
+    Total System Jitter     (TSJ):    0.071ns
+    Total Input Jitter      (TIJ):    0.000ns
+    Discrete Jitter          (DJ):    0.000ns
+    Phase Error              (PE):    0.000ns
+    User Uncertainty         (UU):    0.200ns
+
+    Location             Delay type                Incr(ns)  Path(ns)    PBlock               Netlist Resource(s)
+  -------------------------------------------------------------------    ----------------------------------------
+                         (clock kernel rise edge)     0.000     0.000 r                       
+                         input delay                  1.000     1.000                         
+                                                      0.000     1.000 r                       cmd_dst[5] (IN)
+                         net (fo=5, unset)            0.065     1.065                         copy_data/cmd_dst[5]
+    SLICE_X123Y378       CARRY8 (Prop_CARRY8_SLICEL_S[0]_CO[7])
+                                                      0.190     1.255 r  stream_lane          copy_data/busy_reg_i_17/CO[7]
+                         net (fo=1, routed)           0.026     1.281                         copy_data/busy_reg_i_17_n_0
+    SLICE_X123Y379       CARRY8 (Prop_CARRY8_SLICEL_CI_CO[7])
+                                                      0.015     1.296 r  stream_lane          copy_data/busy_reg_i_16/CO[7]
+                         net (fo=1, routed)           0.026     1.322                         copy_data/busy_reg_i_16_n_0
+    SLICE_X123Y380       CARRY8 (Prop_CARRY8_SLICEL_CI_O[4])
+                                                      0.086     1.408 r  stream_lane          copy_data/busy_reg_i_8/O[4]
+                         net (fo=3, routed)           0.348     1.756                         copy_data/dst_end[25]
+    SLICE_X123Y377       LUT4 (Prop_E6LUT_SLICEL_I0_O)
+                                                      0.147     1.903 r  stream_lane          copy_data/busy_i_112/O
+                         net (fo=1, routed)           0.007     1.910                         copy_data/busy_i_112_n_0
+    SLICE_X123Y377       CARRY8 (Prop_CARRY8_SLICEL_S[4]_CO[6])
+                                                      0.110     2.020 f  stream_lane          copy_data/busy_reg_i_82/CO[6]
+                         net (fo=1, routed)           0.430     2.450                         copy_data/legal1
+    SLICE_X128Y378       LUT4 (Prop_D5LUT_SLICEM_I2_O)
+                                                      0.158     2.608 r  stream_lane          copy_data/busy_i_40/O
+                         net (fo=1, routed)           0.230     2.838                         copy_data/busy_i_40_n_0
+    SLICE_X132Y378       LUT6 (Prop_H6LUT_SLICEL_I2_O)
+                                                      0.150     2.988 r  stream_lane          copy_data/busy_i_12/O
+                         net (fo=1, routed)           0.039     3.027                         copy_data/busy_i_12_n_0
+    SLICE_X132Y378       LUT6 (Prop_G6LUT_SLICEL_I5_O)
+                                                      0.035     3.062 r  stream_lane          copy_data/busy_i_3/O
+                         net (fo=5, routed)           0.278     3.341                         copy_data_n_4
+    SLICE_X128Y382       LUT6 (Prop_G6LUT_SLICEM_I5_O)
+                                                      0.052     3.393 r  stream_lane          read_left[22]_i_1/O
+                         net (fo=23, routed)          0.518     3.911                         read_left[22]_i_1_n_0
+    SLICE_X132Y386       FDRE                                         r  stream_lane          read_left_reg[0]/R
+  -------------------------------------------------------------------    ----------------------------------------
+
+                         (clock kernel rise edge)    10.000    10.000 r                       
+                                                      0.000    10.000 r                       clk (IN)
+                         net (fo=1698, unset)         0.020    10.020                         clk
+    SLICE_X132Y386       FDRE                                         r  stream_lane          read_left_reg[0]/C
+                         clock pessimism              0.000    10.020                           
+                         clock uncertainty           -0.235     9.785                           
+    SLICE_X132Y386       FDRE (Setup_AFF_SLICEL_C_R)
+                                                     -0.074     9.711    stream_lane            read_left_reg[0]
+  -------------------------------------------------------------------
+                         required time                          9.711                           
+                         arrival time                          -3.911                           
+  -------------------------------------------------------------------
+                         slack                                  5.800                           
+
+Slack (MET) :             5.800ns  (required time - arrival time)
+  Source:                 cmd_dst[5]
+                            (input port clocked by kernel  {rise@0.000ns fall@5.000ns period=10.000ns})
+  Destination:            read_left_reg[1]/R
+                            (rising edge-triggered cell FDRE clocked by kernel  {rise@0.000ns fall@5.000ns period=10.000ns})
+  Path Group:             kernel
+  Path Type:              Setup (Max at Slow Process Corner)
+  Requirement:            10.000ns  (kernel rise@10.000ns - kernel rise@0.000ns)
+  Data Path Delay:        2.911ns  (logic 0.943ns (32.394%)  route 1.968ns (67.606%))
+  Logic Levels:           9  (CARRY8=4 LUT4=2 LUT6=3)
+  Input Delay:            1.000ns
+  Clock Path Skew:        0.020ns (DCD - SCD + CPR)
+    Destination Clock Delay (DCD):    0.020ns = ( 10.020 - 10.000 ) 
+    Source Clock Delay      (SCD):    0.000ns
+    Clock Pessimism Removal (CPR):    0.000ns
+  Clock Uncertainty:      0.235ns  ((TSJ^2 + TIJ^2)^1/2 + DJ) / 2 + PE + UU
+    Total System Jitter     (TSJ):    0.071ns
+    Total Input Jitter      (TIJ):    0.000ns
+    Discrete Jitter          (DJ):    0.000ns
+    Phase Error              (PE):    0.000ns
+    User Uncertainty         (UU):    0.200ns
+
+    Location             Delay type                Incr(ns)  Path(ns)    PBlock               Netlist Resource(s)
+  -------------------------------------------------------------------    ----------------------------------------
+                         (clock kernel rise edge)     0.000     0.000 r                       
+                         input delay                  1.000     1.000                         
+                                                      0.000     1.000 r                       cmd_dst[5] (IN)
+                         net (fo=5, unset)            0.065     1.065                         copy_data/cmd_dst[5]
+    SLICE_X123Y378       CARRY8 (Prop_CARRY8_SLICEL_S[0]_CO[7])
+                                                      0.190     1.255 r  stream_lane          copy_data/busy_reg_i_17/CO[7]
+                         net (fo=1, routed)           0.026     1.281                         copy_data/busy_reg_i_17_n_0
+    SLICE_X123Y379       CARRY8 (Prop_CARRY8_SLICEL_CI_CO[7])
+                                                      0.015     1.296 r  stream_lane          copy_data/busy_reg_i_16/CO[7]
+                         net (fo=1, routed)           0.026     1.322                         copy_data/busy_reg_i_16_n_0
+    SLICE_X123Y380       CARRY8 (Prop_CARRY8_SLICEL_CI_O[4])
+                                                      0.086     1.408 r  stream_lane          copy_data/busy_reg_i_8/O[4]
+                         net (fo=3, routed)           0.348     1.756                         copy_data/dst_end[25]
+    SLICE_X123Y377       LUT4 (Prop_E6LUT_SLICEL_I0_O)
+                                                      0.147     1.903 r  stream_lane          copy_data/busy_i_112/O
+                         net (fo=1, routed)           0.007     1.910                         copy_data/busy_i_112_n_0
+    SLICE_X123Y377       CARRY8 (Prop_CARRY8_SLICEL_S[4]_CO[6])
+                                                      0.110     2.020 f  stream_lane          copy_data/busy_reg_i_82/CO[6]
+                         net (fo=1, routed)           0.430     2.450                         copy_data/legal1
+    SLICE_X128Y378       LUT4 (Prop_D5LUT_SLICEM_I2_O)
+                                                      0.158     2.608 r  stream_lane          copy_data/busy_i_40/O
+                         net (fo=1, routed)           0.230     2.838                         copy_data/busy_i_40_n_0
+    SLICE_X132Y378       LUT6 (Prop_H6LUT_SLICEL_I2_O)
+                                                      0.150     2.988 r  stream_lane          copy_data/busy_i_12/O
+                         net (fo=1, routed)           0.039     3.027                         copy_data/busy_i_12_n_0
+    SLICE_X132Y378       LUT6 (Prop_G6LUT_SLICEL_I5_O)
+                                                      0.035     3.062 r  stream_lane          copy_data/busy_i_3/O
+                         net (fo=5, routed)           0.278     3.341                         copy_data_n_4
+    SLICE_X128Y382       LUT6 (Prop_G6LUT_SLICEM_I5_O)
+                                                      0.052     3.393 r  stream_lane          read_left[22]_i_1/O
+                         net (fo=23, routed)          0.518     3.911                         read_left[22]_i_1_n_0
+    SLICE_X132Y386       FDRE                                         r  stream_lane          read_left_reg[1]/R
+  -------------------------------------------------------------------    ----------------------------------------
+
+                         (clock kernel rise edge)    10.000    10.000 r                       
+                                                      0.000    10.000 r                       clk (IN)
+                         net (fo=1698, unset)         0.020    10.020                         clk
+    SLICE_X132Y386       FDRE                                         r  stream_lane          read_left_reg[1]/C
+                         clock pessimism              0.000    10.020                           
+                         clock uncertainty           -0.235     9.785                           
+    SLICE_X132Y386       FDRE (Setup_BFF_SLICEL_C_R)
+                                                     -0.074     9.711    stream_lane            read_left_reg[1]
+  -------------------------------------------------------------------
+                         required time                          9.711                           
+                         arrival time                          -3.911                           
+  -------------------------------------------------------------------
+                         slack                                  5.800                           
+
+Slack (MET) :             5.800ns  (required time - arrival time)
+  Source:                 cmd_dst[5]
+                            (input port clocked by kernel  {rise@0.000ns fall@5.000ns period=10.000ns})
+  Destination:            read_left_reg[2]/R
+                            (rising edge-triggered cell FDRE clocked by kernel  {rise@0.000ns fall@5.000ns period=10.000ns})
+  Path Group:             kernel
+  Path Type:              Setup (Max at Slow Process Corner)
+  Requirement:            10.000ns  (kernel rise@10.000ns - kernel rise@0.000ns)
+  Data Path Delay:        2.911ns  (logic 0.943ns (32.394%)  route 1.968ns (67.606%))
+  Logic Levels:           9  (CARRY8=4 LUT4=2 LUT6=3)
+  Input Delay:            1.000ns
+  Clock Path Skew:        0.020ns (DCD - SCD + CPR)
+    Destination Clock Delay (DCD):    0.020ns = ( 10.020 - 10.000 ) 
+    Source Clock Delay      (SCD):    0.000ns
+    Clock Pessimism Removal (CPR):    0.000ns
+  Clock Uncertainty:      0.235ns  ((TSJ^2 + TIJ^2)^1/2 + DJ) / 2 + PE + UU
+    Total System Jitter     (TSJ):    0.071ns
+    Total Input Jitter      (TIJ):    0.000ns
+    Discrete Jitter          (DJ):    0.000ns
+    Phase Error              (PE):    0.000ns
+    User Uncertainty         (UU):    0.200ns
+
+    Location             Delay type                Incr(ns)  Path(ns)    PBlock               Netlist Resource(s)
+  -------------------------------------------------------------------    ----------------------------------------
+                         (clock kernel rise edge)     0.000     0.000 r                       
+                         input delay                  1.000     1.000                         
+                                                      0.000     1.000 r                       cmd_dst[5] (IN)
+                         net (fo=5, unset)            0.065     1.065                         copy_data/cmd_dst[5]
+    SLICE_X123Y378       CARRY8 (Prop_CARRY8_SLICEL_S[0]_CO[7])
+                                                      0.190     1.255 r  stream_lane          copy_data/busy_reg_i_17/CO[7]
+                         net (fo=1, routed)           0.026     1.281                         copy_data/busy_reg_i_17_n_0
+    SLICE_X123Y379       CARRY8 (Prop_CARRY8_SLICEL_CI_CO[7])
+                                                      0.015     1.296 r  stream_lane          copy_data/busy_reg_i_16/CO[7]
+                         net (fo=1, routed)           0.026     1.322                         copy_data/busy_reg_i_16_n_0
+    SLICE_X123Y380       CARRY8 (Prop_CARRY8_SLICEL_CI_O[4])
+                                                      0.086     1.408 r  stream_lane          copy_data/busy_reg_i_8/O[4]
+                         net (fo=3, routed)           0.348     1.756                         copy_data/dst_end[25]
+    SLICE_X123Y377       LUT4 (Prop_E6LUT_SLICEL_I0_O)
+                                                      0.147     1.903 r  stream_lane          copy_data/busy_i_112/O
+                         net (fo=1, routed)           0.007     1.910                         copy_data/busy_i_112_n_0
+    SLICE_X123Y377       CARRY8 (Prop_CARRY8_SLICEL_S[4]_CO[6])
+                                                      0.110     2.020 f  stream_lane          copy_data/busy_reg_i_82/CO[6]
+                         net (fo=1, routed)           0.430     2.450                         copy_data/legal1
+    SLICE_X128Y378       LUT4 (Prop_D5LUT_SLICEM_I2_O)
+                                                      0.158     2.608 r  stream_lane          copy_data/busy_i_40/O
+                         net (fo=1, routed)           0.230     2.838                         copy_data/busy_i_40_n_0
+    SLICE_X132Y378       LUT6 (Prop_H6LUT_SLICEL_I2_O)
+                                                      0.150     2.988 r  stream_lane          copy_data/busy_i_12/O
+                         net (fo=1, routed)           0.039     3.027                         copy_data/busy_i_12_n_0
+    SLICE_X132Y378       LUT6 (Prop_G6LUT_SLICEL_I5_O)
+                                                      0.035     3.062 r  stream_lane          copy_data/busy_i_3/O
+                         net (fo=5, routed)           0.278     3.341                         copy_data_n_4
+    SLICE_X128Y382       LUT6 (Prop_G6LUT_SLICEM_I5_O)
+                                                      0.052     3.393 r  stream_lane          read_left[22]_i_1/O
+                         net (fo=23, routed)          0.518     3.911                         read_left[22]_i_1_n_0
+    SLICE_X132Y386       FDRE                                         r  stream_lane          read_left_reg[2]/R
+  -------------------------------------------------------------------    ----------------------------------------
+
+                         (clock kernel rise edge)    10.000    10.000 r                       
+                                                      0.000    10.000 r                       clk (IN)
+                         net (fo=1698, unset)         0.020    10.020                         clk
+    SLICE_X132Y386       FDRE                                         r  stream_lane          read_left_reg[2]/C
+                         clock pessimism              0.000    10.020                           
+                         clock uncertainty           -0.235     9.785                           
+    SLICE_X132Y386       FDRE (Setup_CFF_SLICEL_C_R)
+                                                     -0.074     9.711    stream_lane            read_left_reg[2]
+  -------------------------------------------------------------------
+                         required time                          9.711                           
+                         arrival time                          -3.911                           
+  -------------------------------------------------------------------
+                         slack                                  5.800                           
+
+Slack (MET) :             5.800ns  (required time - arrival time)
+  Source:                 cmd_dst[5]
+                            (input port clocked by kernel  {rise@0.000ns fall@5.000ns period=10.000ns})
+  Destination:            read_left_reg[3]/R
+                            (rising edge-triggered cell FDRE clocked by kernel  {rise@0.000ns fall@5.000ns period=10.000ns})
+  Path Group:             kernel
+  Path Type:              Setup (Max at Slow Process Corner)
+  Requirement:            10.000ns  (kernel rise@10.000ns - kernel rise@0.000ns)
+  Data Path Delay:        2.911ns  (logic 0.943ns (32.394%)  route 1.968ns (67.606%))
+  Logic Levels:           9  (CARRY8=4 LUT4=2 LUT6=3)
+  Input Delay:            1.000ns
+  Clock Path Skew:        0.020ns (DCD - SCD + CPR)
+    Destination Clock Delay (DCD):    0.020ns = ( 10.020 - 10.000 ) 
+    Source Clock Delay      (SCD):    0.000ns
+    Clock Pessimism Removal (CPR):    0.000ns
+  Clock Uncertainty:      0.235ns  ((TSJ^2 + TIJ^2)^1/2 + DJ) / 2 + PE + UU
+    Total System Jitter     (TSJ):    0.071ns
+    Total Input Jitter      (TIJ):    0.000ns
+    Discrete Jitter          (DJ):    0.000ns
+    Phase Error              (PE):    0.000ns
+    User Uncertainty         (UU):    0.200ns
+
+    Location             Delay type                Incr(ns)  Path(ns)    PBlock               Netlist Resource(s)
+  -------------------------------------------------------------------    ----------------------------------------
+                         (clock kernel rise edge)     0.000     0.000 r                       
+                         input delay                  1.000     1.000                         
+                                                      0.000     1.000 r                       cmd_dst[5] (IN)
+                         net (fo=5, unset)            0.065     1.065                         copy_data/cmd_dst[5]
+    SLICE_X123Y378       CARRY8 (Prop_CARRY8_SLICEL_S[0]_CO[7])
+                                                      0.190     1.255 r  stream_lane          copy_data/busy_reg_i_17/CO[7]
+                         net (fo=1, routed)           0.026     1.281                         copy_data/busy_reg_i_17_n_0
+    SLICE_X123Y379       CARRY8 (Prop_CARRY8_SLICEL_CI_CO[7])
+                                                      0.015     1.296 r  stream_lane          copy_data/busy_reg_i_16/CO[7]
+                         net (fo=1, routed)           0.026     1.322                         copy_data/busy_reg_i_16_n_0
+    SLICE_X123Y380       CARRY8 (Prop_CARRY8_SLICEL_CI_O[4])
+                                                      0.086     1.408 r  stream_lane          copy_data/busy_reg_i_8/O[4]
+                         net (fo=3, routed)           0.348     1.756                         copy_data/dst_end[25]
+    SLICE_X123Y377       LUT4 (Prop_E6LUT_SLICEL_I0_O)
+                                                      0.147     1.903 r  stream_lane          copy_data/busy_i_112/O
+                         net (fo=1, routed)           0.007     1.910                         copy_data/busy_i_112_n_0
+    SLICE_X123Y377       CARRY8 (Prop_CARRY8_SLICEL_S[4]_CO[6])
+                                                      0.110     2.020 f  stream_lane          copy_data/busy_reg_i_82/CO[6]
+                         net (fo=1, routed)           0.430     2.450                         copy_data/legal1
+    SLICE_X128Y378       LUT4 (Prop_D5LUT_SLICEM_I2_O)
+                                                      0.158     2.608 r  stream_lane          copy_data/busy_i_40/O
+                         net (fo=1, routed)           0.230     2.838                         copy_data/busy_i_40_n_0
+    SLICE_X132Y378       LUT6 (Prop_H6LUT_SLICEL_I2_O)
+                                                      0.150     2.988 r  stream_lane          copy_data/busy_i_12/O
+                         net (fo=1, routed)           0.039     3.027                         copy_data/busy_i_12_n_0
+    SLICE_X132Y378       LUT6 (Prop_G6LUT_SLICEL_I5_O)
+                                                      0.035     3.062 r  stream_lane          copy_data/busy_i_3/O
+                         net (fo=5, routed)           0.278     3.341                         copy_data_n_4
+    SLICE_X128Y382       LUT6 (Prop_G6LUT_SLICEM_I5_O)
+                                                      0.052     3.393 r  stream_lane          read_left[22]_i_1/O
+                         net (fo=23, routed)          0.518     3.911                         read_left[22]_i_1_n_0
+    SLICE_X132Y386       FDRE                                         r  stream_lane          read_left_reg[3]/R
+  -------------------------------------------------------------------    ----------------------------------------
+
+                         (clock kernel rise edge)    10.000    10.000 r                       
+                                                      0.000    10.000 r                       clk (IN)
+                         net (fo=1698, unset)         0.020    10.020                         clk
+    SLICE_X132Y386       FDRE                                         r  stream_lane          read_left_reg[3]/C
+                         clock pessimism              0.000    10.020                           
+                         clock uncertainty           -0.235     9.785                           
+    SLICE_X132Y386       FDRE (Setup_DFF_SLICEL_C_R)
+                                                     -0.074     9.711    stream_lane            read_left_reg[3]
+  -------------------------------------------------------------------
+                         required time                          9.711                           
+                         arrival time                          -3.911                           
+  -------------------------------------------------------------------
+                         slack                                  5.800                           
+
+Slack (MET) :             5.801ns  (required time - arrival time)
+  Source:                 cmd_dst[5]
+                            (input port clocked by kernel  {rise@0.000ns fall@5.000ns period=10.000ns})
+  Destination:            read_left_reg[4]/R
+                            (rising edge-triggered cell FDRE clocked by kernel  {rise@0.000ns fall@5.000ns period=10.000ns})
+  Path Group:             kernel
+  Path Type:              Setup (Max at Slow Process Corner)
+  Requirement:            10.000ns  (kernel rise@10.000ns - kernel rise@0.000ns)
+  Data Path Delay:        2.910ns  (logic 0.943ns (32.405%)  route 1.967ns (67.595%))
+  Logic Levels:           9  (CARRY8=4 LUT4=2 LUT6=3)
+  Input Delay:            1.000ns
+  Clock Path Skew:        0.020ns (DCD - SCD + CPR)
+    Destination Clock Delay (DCD):    0.020ns = ( 10.020 - 10.000 ) 
+    Source Clock Delay      (SCD):    0.000ns
+    Clock Pessimism Removal (CPR):    0.000ns
+  Clock Uncertainty:      0.235ns  ((TSJ^2 + TIJ^2)^1/2 + DJ) / 2 + PE + UU
+    Total System Jitter     (TSJ):    0.071ns
+    Total Input Jitter      (TIJ):    0.000ns
+    Discrete Jitter          (DJ):    0.000ns
+    Phase Error              (PE):    0.000ns
+    User Uncertainty         (UU):    0.200ns
+
+    Location             Delay type                Incr(ns)  Path(ns)    PBlock               Netlist Resource(s)
+  -------------------------------------------------------------------    ----------------------------------------
+                         (clock kernel rise edge)     0.000     0.000 r                       
+                         input delay                  1.000     1.000                         
+                                                      0.000     1.000 r                       cmd_dst[5] (IN)
+                         net (fo=5, unset)            0.065     1.065                         copy_data/cmd_dst[5]
+    SLICE_X123Y378       CARRY8 (Prop_CARRY8_SLICEL_S[0]_CO[7])
+                                                      0.190     1.255 r  stream_lane          copy_data/busy_reg_i_17/CO[7]
+                         net (fo=1, routed)           0.026     1.281                         copy_data/busy_reg_i_17_n_0
+    SLICE_X123Y379       CARRY8 (Prop_CARRY8_SLICEL_CI_CO[7])
+                                                      0.015     1.296 r  stream_lane          copy_data/busy_reg_i_16/CO[7]
+                         net (fo=1, routed)           0.026     1.322                         copy_data/busy_reg_i_16_n_0
+    SLICE_X123Y380       CARRY8 (Prop_CARRY8_SLICEL_CI_O[4])
+                                                      0.086     1.408 r  stream_lane          copy_data/busy_reg_i_8/O[4]
+                         net (fo=3, routed)           0.348     1.756                         copy_data/dst_end[25]
+    SLICE_X123Y377       LUT4 (Prop_E6LUT_SLICEL_I0_O)
+                                                      0.147     1.903 r  stream_lane          copy_data/busy_i_112/O
+                         net (fo=1, routed)           0.007     1.910                         copy_data/busy_i_112_n_0
+    SLICE_X123Y377       CARRY8 (Prop_CARRY8_SLICEL_S[4]_CO[6])
+                                                      0.110     2.020 f  stream_lane          copy_data/busy_reg_i_82/CO[6]
+                         net (fo=1, routed)           0.430     2.450                         copy_data/legal1
+    SLICE_X128Y378       LUT4 (Prop_D5LUT_SLICEM_I2_O)
+                                                      0.158     2.608 r  stream_lane          copy_data/busy_i_40/O
+                         net (fo=1, routed)           0.230     2.838                         copy_data/busy_i_40_n_0
+    SLICE_X132Y378       LUT6 (Prop_H6LUT_SLICEL_I2_O)
+                                                      0.150     2.988 r  stream_lane          copy_data/busy_i_12/O
+                         net (fo=1, routed)           0.039     3.027                         copy_data/busy_i_12_n_0
+    SLICE_X132Y378       LUT6 (Prop_G6LUT_SLICEL_I5_O)
+                                                      0.035     3.062 r  stream_lane          copy_data/busy_i_3/O
+                         net (fo=5, routed)           0.278     3.341                         copy_data_n_4
+    SLICE_X128Y382       LUT6 (Prop_G6LUT_SLICEM_I5_O)
+                                                      0.052     3.393 r  stream_lane          read_left[22]_i_1/O
+                         net (fo=23, routed)          0.517     3.910                         read_left[22]_i_1_n_0
+    SLICE_X132Y386       FDRE                                         r  stream_lane          read_left_reg[4]/R
+  -------------------------------------------------------------------    ----------------------------------------
+
+                         (clock kernel rise edge)    10.000    10.000 r                       
+                                                      0.000    10.000 r                       clk (IN)
+                         net (fo=1698, unset)         0.020    10.020                         clk
+    SLICE_X132Y386       FDRE                                         r  stream_lane          read_left_reg[4]/C
+                         clock pessimism              0.000    10.020                           
+                         clock uncertainty           -0.235     9.785                           
+    SLICE_X132Y386       FDRE (Setup_EFF_SLICEL_C_R)
+                                                     -0.074     9.711    stream_lane            read_left_reg[4]
+  -------------------------------------------------------------------
+                         required time                          9.711                           
+                         arrival time                          -3.910                           
+  -------------------------------------------------------------------
+                         slack                                  5.801                           
+
+Slack (MET) :             5.801ns  (required time - arrival time)
+  Source:                 cmd_dst[5]
+                            (input port clocked by kernel  {rise@0.000ns fall@5.000ns period=10.000ns})
+  Destination:            read_left_reg[5]/R
+                            (rising edge-triggered cell FDRE clocked by kernel  {rise@0.000ns fall@5.000ns period=10.000ns})
+  Path Group:             kernel
+  Path Type:              Setup (Max at Slow Process Corner)
+  Requirement:            10.000ns  (kernel rise@10.000ns - kernel rise@0.000ns)
+  Data Path Delay:        2.910ns  (logic 0.943ns (32.405%)  route 1.967ns (67.595%))
+  Logic Levels:           9  (CARRY8=4 LUT4=2 LUT6=3)
+  Input Delay:            1.000ns
+  Clock Path Skew:        0.020ns (DCD - SCD + CPR)
+    Destination Clock Delay (DCD):    0.020ns = ( 10.020 - 10.000 ) 
+    Source Clock Delay      (SCD):    0.000ns
+    Clock Pessimism Removal (CPR):    0.000ns
+  Clock Uncertainty:      0.235ns  ((TSJ^2 + TIJ^2)^1/2 + DJ) / 2 + PE + UU
+    Total System Jitter     (TSJ):    0.071ns
+    Total Input Jitter      (TIJ):    0.000ns
+    Discrete Jitter          (DJ):    0.000ns
+    Phase Error              (PE):    0.000ns
+    User Uncertainty         (UU):    0.200ns
+
+    Location             Delay type                Incr(ns)  Path(ns)    PBlock               Netlist Resource(s)
+  -------------------------------------------------------------------    ----------------------------------------
+                         (clock kernel rise edge)     0.000     0.000 r                       
+                         input delay                  1.000     1.000                         
+                                                      0.000     1.000 r                       cmd_dst[5] (IN)
+                         net (fo=5, unset)            0.065     1.065                         copy_data/cmd_dst[5]
+    SLICE_X123Y378       CARRY8 (Prop_CARRY8_SLICEL_S[0]_CO[7])
+                                                      0.190     1.255 r  stream_lane          copy_data/busy_reg_i_17/CO[7]
+                         net (fo=1, routed)           0.026     1.281                         copy_data/busy_reg_i_17_n_0
+    SLICE_X123Y379       CARRY8 (Prop_CARRY8_SLICEL_CI_CO[7])
+                                                      0.015     1.296 r  stream_lane          copy_data/busy_reg_i_16/CO[7]
+                         net (fo=1, routed)           0.026     1.322                         copy_data/busy_reg_i_16_n_0
+    SLICE_X123Y380       CARRY8 (Prop_CARRY8_SLICEL_CI_O[4])
+                                                      0.086     1.408 r  stream_lane          copy_data/busy_reg_i_8/O[4]
+                         net (fo=3, routed)           0.348     1.756                         copy_data/dst_end[25]
+    SLICE_X123Y377       LUT4 (Prop_E6LUT_SLICEL_I0_O)
+                                                      0.147     1.903 r  stream_lane          copy_data/busy_i_112/O
+                         net (fo=1, routed)           0.007     1.910                         copy_data/busy_i_112_n_0
+    SLICE_X123Y377       CARRY8 (Prop_CARRY8_SLICEL_S[4]_CO[6])
+                                                      0.110     2.020 f  stream_lane          copy_data/busy_reg_i_82/CO[6]
+                         net (fo=1, routed)           0.430     2.450                         copy_data/legal1
+    SLICE_X128Y378       LUT4 (Prop_D5LUT_SLICEM_I2_O)
+                                                      0.158     2.608 r  stream_lane          copy_data/busy_i_40/O
+                         net (fo=1, routed)           0.230     2.838                         copy_data/busy_i_40_n_0
+    SLICE_X132Y378       LUT6 (Prop_H6LUT_SLICEL_I2_O)
+                                                      0.150     2.988 r  stream_lane          copy_data/busy_i_12/O
+                         net (fo=1, routed)           0.039     3.027                         copy_data/busy_i_12_n_0
+    SLICE_X132Y378       LUT6 (Prop_G6LUT_SLICEL_I5_O)
+                                                      0.035     3.062 r  stream_lane          copy_data/busy_i_3/O
+                         net (fo=5, routed)           0.278     3.341                         copy_data_n_4
+    SLICE_X128Y382       LUT6 (Prop_G6LUT_SLICEM_I5_O)
+                                                      0.052     3.393 r  stream_lane          read_left[22]_i_1/O
+                         net (fo=23, routed)          0.517     3.910                         read_left[22]_i_1_n_0
+    SLICE_X132Y386       FDRE                                         r  stream_lane          read_left_reg[5]/R
+  -------------------------------------------------------------------    ----------------------------------------
+
+                         (clock kernel rise edge)    10.000    10.000 r                       
+                                                      0.000    10.000 r                       clk (IN)
+                         net (fo=1698, unset)         0.020    10.020                         clk
+    SLICE_X132Y386       FDRE                                         r  stream_lane          read_left_reg[5]/C
+                         clock pessimism              0.000    10.020                           
+                         clock uncertainty           -0.235     9.785                           
+    SLICE_X132Y386       FDRE (Setup_FFF_SLICEL_C_R)
+                                                     -0.074     9.711    stream_lane            read_left_reg[5]
+  -------------------------------------------------------------------
+                         required time                          9.711                           
+                         arrival time                          -3.910                           
+  -------------------------------------------------------------------
+                         slack                                  5.801                           
+
+Slack (MET) :             5.801ns  (required time - arrival time)
+  Source:                 cmd_dst[5]
+                            (input port clocked by kernel  {rise@0.000ns fall@5.000ns period=10.000ns})
+  Destination:            read_left_reg[6]/R
+                            (rising edge-triggered cell FDRE clocked by kernel  {rise@0.000ns fall@5.000ns period=10.000ns})
+  Path Group:             kernel
+  Path Type:              Setup (Max at Slow Process Corner)
+  Requirement:            10.000ns  (kernel rise@10.000ns - kernel rise@0.000ns)
+  Data Path Delay:        2.910ns  (logic 0.943ns (32.405%)  route 1.967ns (67.595%))
+  Logic Levels:           9  (CARRY8=4 LUT4=2 LUT6=3)
+  Input Delay:            1.000ns
+  Clock Path Skew:        0.020ns (DCD - SCD + CPR)
+    Destination Clock Delay (DCD):    0.020ns = ( 10.020 - 10.000 ) 
+    Source Clock Delay      (SCD):    0.000ns
+    Clock Pessimism Removal (CPR):    0.000ns
+  Clock Uncertainty:      0.235ns  ((TSJ^2 + TIJ^2)^1/2 + DJ) / 2 + PE + UU
+    Total System Jitter     (TSJ):    0.071ns
+    Total Input Jitter      (TIJ):    0.000ns
+    Discrete Jitter          (DJ):    0.000ns
+    Phase Error              (PE):    0.000ns
+    User Uncertainty         (UU):    0.200ns
+
+    Location             Delay type                Incr(ns)  Path(ns)    PBlock               Netlist Resource(s)
+  -------------------------------------------------------------------    ----------------------------------------
+                         (clock kernel rise edge)     0.000     0.000 r                       
+                         input delay                  1.000     1.000                         
+                                                      0.000     1.000 r                       cmd_dst[5] (IN)
+                         net (fo=5, unset)            0.065     1.065                         copy_data/cmd_dst[5]
+    SLICE_X123Y378       CARRY8 (Prop_CARRY8_SLICEL_S[0]_CO[7])
+                                                      0.190     1.255 r  stream_lane          copy_data/busy_reg_i_17/CO[7]
+                         net (fo=1, routed)           0.026     1.281                         copy_data/busy_reg_i_17_n_0
+    SLICE_X123Y379       CARRY8 (Prop_CARRY8_SLICEL_CI_CO[7])
+                                                      0.015     1.296 r  stream_lane          copy_data/busy_reg_i_16/CO[7]
+                         net (fo=1, routed)           0.026     1.322                         copy_data/busy_reg_i_16_n_0
+    SLICE_X123Y380       CARRY8 (Prop_CARRY8_SLICEL_CI_O[4])
+                                                      0.086     1.408 r  stream_lane          copy_data/busy_reg_i_8/O[4]
+                         net (fo=3, routed)           0.348     1.756                         copy_data/dst_end[25]
+    SLICE_X123Y377       LUT4 (Prop_E6LUT_SLICEL_I0_O)
+                                                      0.147     1.903 r  stream_lane          copy_data/busy_i_112/O
+                         net (fo=1, routed)           0.007     1.910                         copy_data/busy_i_112_n_0
+    SLICE_X123Y377       CARRY8 (Prop_CARRY8_SLICEL_S[4]_CO[6])
+                                                      0.110     2.020 f  stream_lane          copy_data/busy_reg_i_82/CO[6]
+                         net (fo=1, routed)           0.430     2.450                         copy_data/legal1
+    SLICE_X128Y378       LUT4 (Prop_D5LUT_SLICEM_I2_O)
+                                                      0.158     2.608 r  stream_lane          copy_data/busy_i_40/O
+                         net (fo=1, routed)           0.230     2.838                         copy_data/busy_i_40_n_0
+    SLICE_X132Y378       LUT6 (Prop_H6LUT_SLICEL_I2_O)
+                                                      0.150     2.988 r  stream_lane          copy_data/busy_i_12/O
+                         net (fo=1, routed)           0.039     3.027                         copy_data/busy_i_12_n_0
+    SLICE_X132Y378       LUT6 (Prop_G6LUT_SLICEL_I5_O)
+                                                      0.035     3.062 r  stream_lane          copy_data/busy_i_3/O
+                         net (fo=5, routed)           0.278     3.341                         copy_data_n_4
+    SLICE_X128Y382       LUT6 (Prop_G6LUT_SLICEM_I5_O)
+                                                      0.052     3.393 r  stream_lane          read_left[22]_i_1/O
+                         net (fo=23, routed)          0.517     3.910                         read_left[22]_i_1_n_0
+    SLICE_X132Y386       FDRE                                         r  stream_lane          read_left_reg[6]/R
+  -------------------------------------------------------------------    ----------------------------------------
+
+                         (clock kernel rise edge)    10.000    10.000 r                       
+                                                      0.000    10.000 r                       clk (IN)
+                         net (fo=1698, unset)         0.020    10.020                         clk
+    SLICE_X132Y386       FDRE                                         r  stream_lane          read_left_reg[6]/C
+                         clock pessimism              0.000    10.020                           
+                         clock uncertainty           -0.235     9.785                           
+    SLICE_X132Y386       FDRE (Setup_GFF_SLICEL_C_R)
+                                                     -0.074     9.711    stream_lane            read_left_reg[6]
+  -------------------------------------------------------------------
+                         required time                          9.711                           
+                         arrival time                          -3.910                           
+  -------------------------------------------------------------------
+                         slack                                  5.801                           
+
+Slack (MET) :             5.801ns  (required time - arrival time)
+  Source:                 cmd_dst[5]
+                            (input port clocked by kernel  {rise@0.000ns fall@5.000ns period=10.000ns})
+  Destination:            read_left_reg[7]/R
+                            (rising edge-triggered cell FDRE clocked by kernel  {rise@0.000ns fall@5.000ns period=10.000ns})
+  Path Group:             kernel
+  Path Type:              Setup (Max at Slow Process Corner)
+  Requirement:            10.000ns  (kernel rise@10.000ns - kernel rise@0.000ns)
+  Data Path Delay:        2.910ns  (logic 0.943ns (32.405%)  route 1.967ns (67.595%))
+  Logic Levels:           9  (CARRY8=4 LUT4=2 LUT6=3)
+  Input Delay:            1.000ns
+  Clock Path Skew:        0.020ns (DCD - SCD + CPR)
+    Destination Clock Delay (DCD):    0.020ns = ( 10.020 - 10.000 ) 
+    Source Clock Delay      (SCD):    0.000ns
+    Clock Pessimism Removal (CPR):    0.000ns
+  Clock Uncertainty:      0.235ns  ((TSJ^2 + TIJ^2)^1/2 + DJ) / 2 + PE + UU
+    Total System Jitter     (TSJ):    0.071ns
+    Total Input Jitter      (TIJ):    0.000ns
+    Discrete Jitter          (DJ):    0.000ns
+    Phase Error              (PE):    0.000ns
+    User Uncertainty         (UU):    0.200ns
+
+    Location             Delay type                Incr(ns)  Path(ns)    PBlock               Netlist Resource(s)
+  -------------------------------------------------------------------    ----------------------------------------
+                         (clock kernel rise edge)     0.000     0.000 r                       
+                         input delay                  1.000     1.000                         
+                                                      0.000     1.000 r                       cmd_dst[5] (IN)
+                         net (fo=5, unset)            0.065     1.065                         copy_data/cmd_dst[5]
+    SLICE_X123Y378       CARRY8 (Prop_CARRY8_SLICEL_S[0]_CO[7])
+                                                      0.190     1.255 r  stream_lane          copy_data/busy_reg_i_17/CO[7]
+                         net (fo=1, routed)           0.026     1.281                         copy_data/busy_reg_i_17_n_0
+    SLICE_X123Y379       CARRY8 (Prop_CARRY8_SLICEL_CI_CO[7])
+                                                      0.015     1.296 r  stream_lane          copy_data/busy_reg_i_16/CO[7]
+                         net (fo=1, routed)           0.026     1.322                         copy_data/busy_reg_i_16_n_0
+    SLICE_X123Y380       CARRY8 (Prop_CARRY8_SLICEL_CI_O[4])
+                                                      0.086     1.408 r  stream_lane          copy_data/busy_reg_i_8/O[4]
+                         net (fo=3, routed)           0.348     1.756                         copy_data/dst_end[25]
+    SLICE_X123Y377       LUT4 (Prop_E6LUT_SLICEL_I0_O)
+                                                      0.147     1.903 r  stream_lane          copy_data/busy_i_112/O
+                         net (fo=1, routed)           0.007     1.910                         copy_data/busy_i_112_n_0
+    SLICE_X123Y377       CARRY8 (Prop_CARRY8_SLICEL_S[4]_CO[6])
+                                                      0.110     2.020 f  stream_lane          copy_data/busy_reg_i_82/CO[6]
+                         net (fo=1, routed)           0.430     2.450                         copy_data/legal1
+    SLICE_X128Y378       LUT4 (Prop_D5LUT_SLICEM_I2_O)
+                                                      0.158     2.608 r  stream_lane          copy_data/busy_i_40/O
+                         net (fo=1, routed)           0.230     2.838                         copy_data/busy_i_40_n_0
+    SLICE_X132Y378       LUT6 (Prop_H6LUT_SLICEL_I2_O)
+                                                      0.150     2.988 r  stream_lane          copy_data/busy_i_12/O
+                         net (fo=1, routed)           0.039     3.027                         copy_data/busy_i_12_n_0
+    SLICE_X132Y378       LUT6 (Prop_G6LUT_SLICEL_I5_O)
+                                                      0.035     3.062 r  stream_lane          copy_data/busy_i_3/O
+                         net (fo=5, routed)           0.278     3.341                         copy_data_n_4
+    SLICE_X128Y382       LUT6 (Prop_G6LUT_SLICEM_I5_O)
+                                                      0.052     3.393 r  stream_lane          read_left[22]_i_1/O
+                         net (fo=23, routed)          0.517     3.910                         read_left[22]_i_1_n_0
+    SLICE_X132Y386       FDRE                                         r  stream_lane          read_left_reg[7]/R
+  -------------------------------------------------------------------    ----------------------------------------
+
+                         (clock kernel rise edge)    10.000    10.000 r                       
+                                                      0.000    10.000 r                       clk (IN)
+                         net (fo=1698, unset)         0.020    10.020                         clk
+    SLICE_X132Y386       FDRE                                         r  stream_lane          read_left_reg[7]/C
+                         clock pessimism              0.000    10.020                           
+                         clock uncertainty           -0.235     9.785                           
+    SLICE_X132Y386       FDRE (Setup_HFF_SLICEL_C_R)
+                                                     -0.074     9.711    stream_lane            read_left_reg[7]
+  -------------------------------------------------------------------
+                         required time                          9.711                           
+                         arrival time                          -3.910                           
+  -------------------------------------------------------------------
+                         slack                                  5.801                           
+
+Slack (MET) :             5.801ns  (required time - arrival time)
+  Source:                 mode_reg[0]/C
+                            (rising edge-triggered cell FDRE clocked by kernel  {rise@0.000ns fall@5.000ns period=10.000ns})
+  Destination:            m_wdata[192]
+                            (output port clocked by kernel  {rise@0.000ns fall@5.000ns period=10.000ns})
+  Path Group:             kernel
+  Path Type:              Max at Slow Process Corner
+  Requirement:            10.000ns  (kernel rise@10.000ns - kernel rise@0.000ns)
+  Data Path Delay:        2.934ns  (logic 0.352ns (11.999%)  route 2.582ns (88.001%))
+  Logic Levels:           2  (LUT2=1 LUT5=1)
+  Output Delay:           1.000ns
+  Clock Path Skew:        -0.030ns (DCD - SCD + CPR)
+    Destination Clock Delay (DCD):    0.000ns = ( 10.000 - 10.000 ) 
+    Source Clock Delay      (SCD):    0.030ns
+    Clock Pessimism Removal (CPR):    0.000ns
+  Clock Uncertainty:      0.235ns  ((TSJ^2 + TIJ^2)^1/2 + DJ) / 2 + PE + UU
+    Total System Jitter     (TSJ):    0.071ns
+    Total Input Jitter      (TIJ):    0.000ns
+    Discrete Jitter          (DJ):    0.000ns
+    Phase Error              (PE):    0.000ns
+    User Uncertainty         (UU):    0.200ns
+
+    Location             Delay type                Incr(ns)  Path(ns)    PBlock               Netlist Resource(s)
+  -------------------------------------------------------------------    ----------------------------------------
+                         (clock kernel rise edge)     0.000     0.000 r                       
+                                                      0.000     0.000 r                       clk (IN)
+                         net (fo=1698, unset)         0.030     0.030                         clk
+    SLICE_X129Y374       FDRE                                         r  stream_lane          mode_reg[0]/C
+  -------------------------------------------------------------------    ----------------------------------------
+    SLICE_X129Y374       FDRE (Prop_DFF2_SLICEM_C_Q)
+                                                      0.080     0.110 r  stream_lane          mode_reg[0]/Q
+                         net (fo=13, routed)          0.350     0.460                         copy_data/Q[0]
+    SLICE_X129Y375       LUT2 (Prop_D6LUT_SLICEM_I0_O)
+                                                      0.122     0.582 r  stream_lane          copy_data/m_wvalid_INST_0_i_1/O
+                         net (fo=514, routed)         2.232     2.814                         copy_data/mode_reg[0]
+    SLICE_X141Y359       LUT5 (Prop_A6LUT_SLICEM_I1_O)
+                                                      0.150     2.964 r  stream_lane          copy_data/m_wdata[192]_INST_0/O
+                         net (fo=0)                   0.000     2.964                         m_wdata[192]
+                                                                      r                       m_wdata[192] (OUT)
+  -------------------------------------------------------------------    ----------------------------------------
+
+                         (clock kernel rise edge)    10.000    10.000 r                       
+                         clock pessimism              0.000    10.000                           
+                         clock uncertainty           -0.235     9.765                           
+                         output delay                -1.000     8.765                           
+  -------------------------------------------------------------------
+                         required time                          8.765                           
+                         arrival time                          -2.964                           
+  -------------------------------------------------------------------
+                         slack                                  5.801                           
+
+Slack (MET) :             5.809ns  (required time - arrival time)
+  Source:                 mode_reg[0]/C
+                            (rising edge-triggered cell FDRE clocked by kernel  {rise@0.000ns fall@5.000ns period=10.000ns})
+  Destination:            m_wdata[304]
+                            (output port clocked by kernel  {rise@0.000ns fall@5.000ns period=10.000ns})
+  Path Group:             kernel
+  Path Type:              Max at Slow Process Corner
+  Requirement:            10.000ns  (kernel rise@10.000ns - kernel rise@0.000ns)
+  Data Path Delay:        2.926ns  (logic 0.324ns (11.073%)  route 2.602ns (88.927%))
+  Logic Levels:           2  (LUT2=1 LUT5=1)
+  Output Delay:           1.000ns
+  Clock Path Skew:        -0.030ns (DCD - SCD + CPR)
+    Destination Clock Delay (DCD):    0.000ns = ( 10.000 - 10.000 ) 
+    Source Clock Delay      (SCD):    0.030ns
+    Clock Pessimism Removal (CPR):    0.000ns
+  Clock Uncertainty:      0.235ns  ((TSJ^2 + TIJ^2)^1/2 + DJ) / 2 + PE + UU
+    Total System Jitter     (TSJ):    0.071ns
+    Total Input Jitter      (TIJ):    0.000ns
+    Discrete Jitter          (DJ):    0.000ns
+    Phase Error              (PE):    0.000ns
+    User Uncertainty         (UU):    0.200ns
+
+    Location             Delay type                Incr(ns)  Path(ns)    PBlock               Netlist Resource(s)
+  -------------------------------------------------------------------    ----------------------------------------
+                         (clock kernel rise edge)     0.000     0.000 r                       
+                                                      0.000     0.000 r                       clk (IN)
+                         net (fo=1698, unset)         0.030     0.030                         clk
+    SLICE_X129Y374       FDRE                                         r  stream_lane          mode_reg[0]/C
+  -------------------------------------------------------------------    ----------------------------------------
+    SLICE_X129Y374       FDRE (Prop_DFF2_SLICEM_C_Q)
+                                                      0.080     0.110 r  stream_lane          mode_reg[0]/Q
+                         net (fo=13, routed)          0.350     0.460                         copy_data/Q[0]
+    SLICE_X129Y375       LUT2 (Prop_D6LUT_SLICEM_I0_O)
+                                                      0.122     0.582 r  stream_lane          copy_data/m_wvalid_INST_0_i_1/O
+                         net (fo=514, routed)         2.252     2.834                         copy_data/mode_reg[0]
+    SLICE_X144Y366       LUT5 (Prop_D6LUT_SLICEL_I1_O)
+                                                      0.122     2.956 r  stream_lane          copy_data/m_wdata[304]_INST_0/O
+                         net (fo=0)                   0.000     2.956                         m_wdata[304]
+                                                                      r                       m_wdata[304] (OUT)
+  -------------------------------------------------------------------    ----------------------------------------
+
+                         (clock kernel rise edge)    10.000    10.000 r                       
+                         clock pessimism              0.000    10.000                           
+                         clock uncertainty           -0.235     9.765                           
+                         output delay                -1.000     8.765                           
+  -------------------------------------------------------------------
+                         required time                          8.765                           
+                         arrival time                          -2.956                           
+  -------------------------------------------------------------------
+                         slack                                  5.809                           
+
+Slack (MET) :             5.810ns  (required time - arrival time)
+  Source:                 mode_reg[0]/C
+                            (rising edge-triggered cell FDRE clocked by kernel  {rise@0.000ns fall@5.000ns period=10.000ns})
+  Destination:            m_wdata[158]
+                            (output port clocked by kernel  {rise@0.000ns fall@5.000ns period=10.000ns})
+  Path Group:             kernel
+  Path Type:              Max at Slow Process Corner
+  Requirement:            10.000ns  (kernel rise@10.000ns - kernel rise@0.000ns)
+  Data Path Delay:        2.924ns  (logic 0.238ns (8.139%)  route 2.686ns (91.861%))
+  Logic Levels:           2  (LUT2=1 LUT5=1)
+  Output Delay:           1.000ns
+  Clock Path Skew:        -0.030ns (DCD - SCD + CPR)
+    Destination Clock Delay (DCD):    0.000ns = ( 10.000 - 10.000 ) 
+    Source Clock Delay      (SCD):    0.030ns
+    Clock Pessimism Removal (CPR):    0.000ns
+  Clock Uncertainty:      0.235ns  ((TSJ^2 + TIJ^2)^1/2 + DJ) / 2 + PE + UU
+    Total System Jitter     (TSJ):    0.071ns
+    Total Input Jitter      (TIJ):    0.000ns
+    Discrete Jitter          (DJ):    0.000ns
+    Phase Error              (PE):    0.000ns
+    User Uncertainty         (UU):    0.200ns
+
+    Location             Delay type                Incr(ns)  Path(ns)    PBlock               Netlist Resource(s)
+  -------------------------------------------------------------------    ----------------------------------------
+                         (clock kernel rise edge)     0.000     0.000 r                       
+                                                      0.000     0.000 r                       clk (IN)
+                         net (fo=1698, unset)         0.030     0.030                         clk
+    SLICE_X129Y374       FDRE                                         r  stream_lane          mode_reg[0]/C
+  -------------------------------------------------------------------    ----------------------------------------
+    SLICE_X129Y374       FDRE (Prop_DFF2_SLICEM_C_Q)
+                                                      0.080     0.110 r  stream_lane          mode_reg[0]/Q
+                         net (fo=13, routed)          0.350     0.460                         copy_data/Q[0]
+    SLICE_X129Y375       LUT2 (Prop_D6LUT_SLICEM_I0_O)
+                                                      0.122     0.582 r  stream_lane          copy_data/m_wvalid_INST_0_i_1/O
+                         net (fo=514, routed)         2.337     2.918                         copy_data/mode_reg[0]
+    SLICE_X144Y361       LUT5 (Prop_H6LUT_SLICEL_I1_O)
+                                                      0.036     2.954 r  stream_lane          copy_data/m_wdata[158]_INST_0/O
+                         net (fo=0)                   0.000     2.954                         m_wdata[158]
+                                                                      r                       m_wdata[158] (OUT)
+  -------------------------------------------------------------------    ----------------------------------------
+
+                         (clock kernel rise edge)    10.000    10.000 r                       
+                         clock pessimism              0.000    10.000                           
+                         clock uncertainty           -0.235     9.765                           
+                         output delay                -1.000     8.765                           
+  -------------------------------------------------------------------
+                         required time                          8.765                           
+                         arrival time                          -2.954                           
+  -------------------------------------------------------------------
+                         slack                                  5.810                           
+
+
+
+

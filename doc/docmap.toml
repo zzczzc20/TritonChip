@@ -410,3 +410,8 @@ sources = ["tools/performance_harness/systemc/ramulator/", "evidence/r41/hbm_bw/
 path = "evidence/r41/hbm_bw/outlet/README.md"
 depends_on = ["evidence/r41/hbm_bw/model/README.md"]
 sources = ["rtl/fpga/tnca_line_axi.v", "tb/fpga/tb_line_axi.v", "tb/fpga/tb_line_axi_stream.v", "tools/r40/line_axi_tests.py", "flow/fpga/screen_r41_hbm_outlet.tcl", "evidence/r41/hbm_bw/outlet/"]
+
+[[doc]]
+path = "evidence/r41/hbm_bw/stream/README.md"
+depends_on = ["evidence/r41/hbm_bw/model/README.md", "evidence/r41/hbm_bw/outlet/README.md"]
+sources = ["rtl/fpga/tnca_stream_axi.v", "rtl/fpga/tnca_stream_fifo.v", "tb/fpga/tb_stream_axi.v", "tools/r41/hbm_stream_tests.py", "flow/fpga/screen_r41_hbm_stream.tcl", "evidence/r41/hbm_bw/stream/"]

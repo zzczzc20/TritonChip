@@ -515,3 +515,8 @@ sources = ["evidence/r41/acceptance/", "evidence/r41/stage1/board/acceptance.jso
 path = "evidence/r41/acceptance/STATUS.md"
 depends_on = ["doc/r41_tasks_and_acceptance.md"]
 sources = ["evidence/r41/acceptance/", "evidence/r41/stage1/board/acceptance.json", "tools/performance_harness/stage2_acceptance.py"]
+
+[[doc]]
+path = "evidence/r41/hbm_bw/wide_home/README.md"
+depends_on = ["evidence/r41/hbm_bw/hybrid_lsu/README.md", "evidence/r41/hbm_bw/wide_noc/README.md", "evidence/r41/SERVERS.md"]
+sources = ["rtl/nuca/tnca_nuca_slice.v", "tb/nuca/tb_nuca_wide.v", "tb/nuca/tb_nuca_wide_special.v", "tools/r41/wide_home_tests.py", "flow/fpga/screen_r41_wide_home.tcl", "evidence/r41/hbm_bw/wide_home/"]

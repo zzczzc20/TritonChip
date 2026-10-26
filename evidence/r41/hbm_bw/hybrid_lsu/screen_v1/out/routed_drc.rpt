@@ -1,0 +1,47 @@
+Copyright 1986-2022 Xilinx, Inc. All Rights Reserved. Copyright 2022-2023 Advanced Micro Devices, Inc. All Rights Reserved.
+---------------------------------------------------------------------------------------------------------------------------------------------
+| Tool Version : Vivado v.2023.2 (lin64) Build 4029153 Fri Oct 13 20:13:54 MDT 2023
+| Date         : Mon Oct 26 21:00:36 2026
+| Host         : acf3019 running 64-bit Ubuntu 22.04.5 LTS
+| Command      : report_drc -file /home/zzhouch/r41_hbmbw_hybrid_lsu_v1/out/routed_drc.rpt
+| Design       : tnca_lsu_hybrid
+| Device       : xcu280-fsvh2892-2L-e
+| Speed File   : -2L
+| Design State : Fully Routed
+---------------------------------------------------------------------------------------------------------------------------------------------
+
+Report DRC
+
+Table of Contents
+-----------------
+1. REPORT SUMMARY
+2. REPORT DETAILS
+
+1. REPORT SUMMARY
+-----------------
+            Netlist: tnca_lsu_hybrid
+          Floorplan: design_1
+      Design limits: <entire design considered>
+           Ruledeck: default
+             Max violations: <unlimited>
+             Violations found: 1
++-----------+----------+-------------------+------------+
+| Rule      | Severity | Description       | Violations |
++-----------+----------+-------------------+------------+
+| RTSTAT-10 | Warning  | No routable loads | 1          |
++-----------+----------+-------------------+------------+
+
+2. REPORT DETAILS
+-----------------
+RTSTAT-10#1 Warning
+No routable loads  
+1312 net(s) have no routable loads. The problem bus(es) and/or net(s) are cpl_dst_class[2:0], cpl_dst_idx[7:0], cpl_lane_en[15:0], cpl_rctx[1:0],
+cpl_sdata[63:8], cpl_vdata[511:0], fast/mem_req_tag[0],
+slow/g_unit[0].u/mem_req_valid, slow/g_unit[1].u/mem_req_addr[60:0],
+slow/g_unit[1].u/mem_req_amo, slow/g_unit[1].u/mem_req_aop[3:0],
+slow/g_unit[1].u/mem_req_be[63:0], slow/g_unit[1].u/mem_req_cmp[63:0],
+slow/g_unit[1].u/mem_req_hint[1:0], slow/g_unit[1].u/mem_req_wdata[511:0]
+ (the first 15 of 19 listed).
+Related violations: <none>
+
+

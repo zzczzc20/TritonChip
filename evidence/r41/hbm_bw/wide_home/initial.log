@@ -1,0 +1,8 @@
+---- nuca slice ----
+seed=20260918 trace_hash=ea05f2e1dce30825 writes=282
+issued=1200 reads_checked=918 inflight_left=0
+hit=344 miss=825 merge=31 wb=189 mshr_full=626 target_full=0 hit_past_block=419
+OWNER_EPOCH retries=0
+policy=0 bypass=0 evict=761 dead_evict=0 gear=0
+PASS
+tb/nuca/tb_nuca_wide.v:420: $finish called at 120586000 (1ps)

@@ -390,3 +390,13 @@ sources = ["evidence/r41/stage1/required_index.json", "evidence/r41/stage1/board
 path = "evidence/r41/stage2/x86_link/README.md"
 depends_on = []
 sources = ["flow/fpga/"]
+
+[[doc]]
+path = "evidence/r41/SERVERS.md"
+depends_on = []
+sources = ["flow/fpga/"]
+
+[[doc]]
+path = "evidence/r41/acceptance/HANDOFF.md"
+depends_on = []
+sources = ["flow/fpga/"]

@@ -1495,6 +1495,7 @@ archbench-gpu:
 # nothing missing passes a gate. Protocol/manifest checks need no torch or board.
 r40-protocol:
 	@$(PYTHON) tools/r40/contract_v2_tests.py
+	@$(PYTHON) tools/r40/contract_v3.py
 	@$(PYTHON) tools/r40/device_time_v2_tests.py
 	@$(PYTHON) tools/r40/acceptance_runner_tests.py
 	@$(PYTHON) tools/r40/audit_xo_sources_tests.py

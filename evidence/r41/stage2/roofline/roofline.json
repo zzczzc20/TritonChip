@@ -1,0 +1,272 @@
+{
+ "generated_by": "tools/performance_harness/roofline_report.py",
+ "axes": "x: FLOP/byte (required traffic); y: achieved FLOP/s = demand FLOP / device time",
+ "peaks": {
+  "tnca_100MHz": {
+   "flops": 6400000000.0,
+   "bytes_per_s": 800000000.0
+  },
+  "tnca_90MHz": {
+   "flops": 5760000000.0,
+   "bytes_per_s": 720000000.0
+  },
+  "gb10_fp32_simt": {
+   "flops": 36894000000000.0,
+   "bytes_per_s": 273056000000.0
+  },
+  "gb10_fp16_tensor": {
+   "flops": 155250000000000.0,
+   "bytes_per_s": 273056000000.0
+  }
+ },
+ "results": [
+  {
+   "name": "TNCA 100 MHz (Stage 2 image, board)",
+   "n": 102,
+   "ridge_flop_per_byte": 8.0,
+   "eta_geomean": 0.10342561402040824,
+   "eta_median": 0.12748046915879452,
+   "eta_max": 0.4977702916388159,
+   "gap_geomean": 9.678433386077783,
+   "memory_side_points": 64,
+   "compute_side_points": 38,
+   "gap_geomean_memory_side": 9.980495947785649,
+   "gap_geomean_compute_side": 9.190217944998151
+  },
+  {
+   "name": "TNCA 90 MHz (R40 delivery image, board)",
+   "n": 104,
+   "ridge_flop_per_byte": 8.0,
+   "eta_geomean": 0.10204268919309245,
+   "eta_median": 0.12082983343808505,
+   "eta_max": 0.5051436112381383,
+   "gap_geomean": 9.810851523353955,
+   "memory_side_points": 65,
+   "compute_side_points": 39,
+   "gap_geomean_memory_side": 9.911476630352798,
+   "gap_geomean_compute_side": 9.645408073667257
+  },
+  {
+   "name": "GB10 (CUDA graph, fp32 SIMT roof)",
+   "n": 104,
+   "ridge_flop_per_byte": 135.11514121645376,
+   "eta_geomean": 0.06379768526685209,
+   "eta_median": 0.09327817926495165,
+   "eta_max": 0.7243571603341467,
+   "gap_geomean": 10.278900965515273,
+   "memory_side_points": 93,
+   "compute_side_points": 11,
+   "gap_geomean_memory_side": 12.977344244827586,
+   "gap_geomean_compute_side": 1.4322398141917299
+  }
+ ],
+ "tnca100_by_family": {
+  "add": {
+   "n": 6,
+   "eta_geomean": 0.24098280236051103,
+   "gap_geomean": 4.149673712002057
+  },
+  "argmax": {
+   "n": 4,
+   "eta_geomean": 0.11315378966675903,
+   "gap_geomean": 8.837529904610593
+  },
+  "attention_decode": {
+   "n": 4,
+   "eta_geomean": 0.05538647174034436,
+   "gap_geomean": 18.054950398141802
+  },
+  "attention_prefill": {
+   "n": 4,
+   "eta_geomean": 0.012405296490886307,
+   "gap_geomean": 82.13589329037347
+  },
+  "bmm": {
+   "n": 4,
+   "eta_geomean": 0.0325774563217435,
+   "gap_geomean": 30.696073693530195
+  },
+  "conv2d": {
+   "n": 4,
+   "eta_geomean": 0.02298921443590999,
+   "gap_geomean": 43.498659024988854
+  },
+  "cumsum": {
+   "n": 3,
+   "eta_geomean": 0.1957266053358999,
+   "gap_geomean": 5.109167444476091
+  },
+  "gelu_tanh": {
+   "n": 4,
+   "eta_geomean": 0.1047373063091073,
+   "gap_geomean": 9.547696377150821
+  },
+  "gemv": {
+   "n": 5,
+   "eta_geomean": 0.12533404231474451,
+   "gap_geomean": 7.978678270734736
+  },
+  "gpt2_block": {
+   "n": 4,
+   "eta_geomean": 0.158950908306484,
+   "gap_geomean": 6.300710430224218
+  },
+  "layernorm": {
+   "n": 4,
+   "eta_geomean": 0.08403265607094237,
+   "gap_geomean": 11.900135575338428
+  },
+  "linear": {
+   "n": 5,
+   "eta_geomean": 0.4114318284411364,
+   "gap_geomean": 2.4361789824524296
+  },
+  "llama_decode": {
+   "n": 5,
+   "eta_geomean": 0.06847665719584667,
+   "gap_geomean": 14.603516598947731
+  },
+  "llama_prefill": {
+   "n": 5,
+   "eta_geomean": 0.13757115151668142,
+   "gap_geomean": 7.270795492278618
+  },
+  "matmul": {
+   "n": 9,
+   "eta_geomean": 0.22755909043094008,
+   "gap_geomean": 4.3944629858831386
+  },
+  "mlp": {
+   "n": 4,
+   "eta_geomean": 0.37306833737340617,
+   "gap_geomean": 2.685773485854145
+  },
+  "resnet_block": {
+   "n": 4,
+   "eta_geomean": 0.025125111766189385,
+   "gap_geomean": 39.80081797469612
+  },
+  "rmsnorm": {
+   "n": 5,
+   "eta_geomean": 0.11010833645270551,
+   "gap_geomean": 9.081964474411315
+  },
+  "rope": {
+   "n": 4,
+   "eta_geomean": 0.07864416825790933,
+   "gap_geomean": 12.715500998377326
+  },
+  "silu": {
+   "n": 5,
+   "eta_geomean": 0.13056366305561531,
+   "gap_geomean": 7.659098838043759
+  },
+  "softmax": {
+   "n": 6,
+   "eta_geomean": 0.06654399088897746,
+   "gap_geomean": 15.027652935159965
+  },
+  "swiglu": {
+   "n": 4,
+   "eta_geomean": 0.16202393659598907,
+   "gap_geomean": 6.171927562120195
+  }
+ },
+ "gb10_by_family": {
+  "add": {
+   "n": 6,
+   "eta_geomean": 0.09078579542403192
+  },
+  "argmax": {
+   "n": 4,
+   "eta_geomean": 0.0649117187653903
+  },
+  "attention_decode": {
+   "n": 5,
+   "eta_geomean": 0.08701211769130711
+  },
+  "attention_prefill": {
+   "n": 5,
+   "eta_geomean": 0.0568381033068405
+  },
+  "bmm": {
+   "n": 4,
+   "eta_geomean": 0.04858475929208859
+  },
+  "conv2d": {
+   "n": 4,
+   "eta_geomean": 0.009160889014195404
+  },
+  "cumsum": {
+   "n": 3,
+   "eta_geomean": 0.03582978923990327
+  },
+  "gelu_tanh": {
+   "n": 4,
+   "eta_geomean": 0.05112279728818658
+  },
+  "gemv": {
+   "n": 5,
+   "eta_geomean": 0.1831274400625025
+  },
+  "gpt2_block": {
+   "n": 4,
+   "eta_geomean": 0.06498952078706485
+  },
+  "layernorm": {
+   "n": 4,
+   "eta_geomean": 0.05674264987788248
+  },
+  "linear": {
+   "n": 5,
+   "eta_geomean": 0.1184569814663885
+  },
+  "llama_decode": {
+   "n": 5,
+   "eta_geomean": 0.12139676874164453
+  },
+  "llama_prefill": {
+   "n": 5,
+   "eta_geomean": 0.09813308156818386
+  },
+  "matmul": {
+   "n": 9,
+   "eta_geomean": 0.06972323352434114
+  },
+  "mlp": {
+   "n": 4,
+   "eta_geomean": 0.06558683750185285
+  },
+  "resnet_block": {
+   "n": 4,
+   "eta_geomean": 0.008813800656380653
+  },
+  "rmsnorm": {
+   "n": 5,
+   "eta_geomean": 0.08501230955566279
+  },
+  "rope": {
+   "n": 4,
+   "eta_geomean": 0.08518885649763855
+  },
+  "silu": {
+   "n": 5,
+   "eta_geomean": 0.08886698513101234
+  },
+  "softmax": {
+   "n": 6,
+   "eta_geomean": 0.03922499180850575
+  },
+  "swiglu": {
+   "n": 4,
+   "eta_geomean": 0.07495668628146954
+  }
+ },
+ "paired": {
+  "n": 102,
+  "tnca_eta_geomean": 0.10342561402040824,
+  "gb10_eta_geomean": 0.06155409785829728,
+  "tnca_over_gb10_eta_ratio_geomean": 1.6802392954974772,
+  "gb10_time_over_tnca_time_geomean": 0.0016266423892952046
+ }
+}

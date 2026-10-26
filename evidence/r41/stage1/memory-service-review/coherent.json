@@ -1,0 +1,410 @@
+{
+  "schema": "tnca-memory-service-study/1",
+  "domains": [
+    "model",
+    "rtl"
+  ],
+  "status": "screening-and-RTL-diagnostic-complete",
+  "rows": [
+    {
+      "label": "rtl-p1-d1",
+      "ports": 1,
+      "outstanding": 1,
+      "model_minus_board_over_board": null,
+      "device_cycles": 37429,
+      "cycle_ratio_to_domain_baseline": 1.0,
+      "actual_input_values_equal": true,
+      "same_shader_as_domain_baseline": true,
+      "shader_code_sha256": [
+        "80bf15f26eed5045a1f457dfd47011183b89d458d6dcf5c06687d2545fd44c42"
+      ],
+      "bindings_equal_to_domain_baseline": true,
+      "actual_outlet_line_deltas": [
+        {
+          "port": 0,
+          "read_lines": 862,
+          "write_lines": 257
+        },
+        {
+          "port": 1,
+          "read_lines": 0,
+          "write_lines": 0
+        },
+        {
+          "port": 2,
+          "read_lines": 0,
+          "write_lines": 0
+        }
+      ],
+      "model_accumulated_service_ledger": {},
+      "model_timing_status": null,
+      "host_dma_handoffs": null,
+      "high_water_scope": "raw before/after snapshots retain peak counters; peak deltas are not occupancy"
+    },
+    {
+      "label": "rtl-p1-d8",
+      "ports": 1,
+      "outstanding": 8,
+      "model_minus_board_over_board": null,
+      "device_cycles": 19132,
+      "cycle_ratio_to_domain_baseline": 0.511154452429934,
+      "actual_input_values_equal": true,
+      "same_shader_as_domain_baseline": true,
+      "shader_code_sha256": [
+        "80bf15f26eed5045a1f457dfd47011183b89d458d6dcf5c06687d2545fd44c42"
+      ],
+      "bindings_equal_to_domain_baseline": true,
+      "actual_outlet_line_deltas": [
+        {
+          "port": 0,
+          "read_lines": 863,
+          "write_lines": 258
+        },
+        {
+          "port": 1,
+          "read_lines": 0,
+          "write_lines": 0
+        },
+        {
+          "port": 2,
+          "read_lines": 0,
+          "write_lines": 0
+        }
+      ],
+      "model_accumulated_service_ledger": {},
+      "model_timing_status": null,
+      "host_dma_handoffs": null,
+      "high_water_scope": "raw before/after snapshots retain peak counters; peak deltas are not occupancy"
+    },
+    {
+      "label": "rtl-p3-d8",
+      "ports": 3,
+      "outstanding": 8,
+      "model_minus_board_over_board": null,
+      "device_cycles": 21623,
+      "cycle_ratio_to_domain_baseline": 0.5777071254909295,
+      "actual_input_values_equal": true,
+      "same_shader_as_domain_baseline": true,
+      "shader_code_sha256": [
+        "80bf15f26eed5045a1f457dfd47011183b89d458d6dcf5c06687d2545fd44c42"
+      ],
+      "bindings_equal_to_domain_baseline": true,
+      "actual_outlet_line_deltas": [
+        {
+          "port": 0,
+          "read_lines": 291,
+          "write_lines": 87
+        },
+        {
+          "port": 1,
+          "read_lines": 285,
+          "write_lines": 84
+        },
+        {
+          "port": 2,
+          "read_lines": 284,
+          "write_lines": 86
+        }
+      ],
+      "model_accumulated_service_ledger": {},
+      "model_timing_status": null,
+      "host_dma_handoffs": null,
+      "high_water_scope": "raw before/after snapshots retain peak counters; peak deltas are not occupancy"
+    },
+    {
+      "label": "model-p1-d1",
+      "ports": 1,
+      "outstanding": 1,
+      "model_minus_board_over_board": null,
+      "device_cycles": 14902,
+      "cycle_ratio_to_domain_baseline": 1.0,
+      "actual_input_values_equal": true,
+      "same_shader_as_domain_baseline": true,
+      "shader_code_sha256": [
+        "80bf15f26eed5045a1f457dfd47011183b89d458d6dcf5c06687d2545fd44c42"
+      ],
+      "bindings_equal_to_domain_baseline": true,
+      "actual_outlet_line_deltas": [
+        {
+          "port": 0,
+          "read_lines": 337,
+          "write_lines": 101
+        },
+        {
+          "port": 1,
+          "read_lines": 0,
+          "write_lines": 0
+        },
+        {
+          "port": 2,
+          "read_lines": 0,
+          "write_lines": 0
+        }
+      ],
+      "model_accumulated_service_ledger": {
+        "core_0_lsu_wait_cycles": 14304,
+        "core_1_lsu_wait_cycles": 13511,
+        "core_2_lsu_wait_cycles": 12957,
+        "home_0_engine_queue_cycles": 82824,
+        "home_0_engine_service_cycles": 10133,
+        "home_0_evictions": 110,
+        "home_0_hits": 1421,
+        "home_0_merges": 779,
+        "home_0_misses": 113,
+        "home_0_peak_mshrs": 0,
+        "home_0_resolution_cycles": 115778,
+        "home_0_writebacks": 33,
+        "home_1_engine_queue_cycles": 89607,
+        "home_1_engine_service_cycles": 9923,
+        "home_1_evictions": 99,
+        "home_1_hits": 1477,
+        "home_1_merges": 730,
+        "home_1_misses": 105,
+        "home_1_peak_mshrs": 0,
+        "home_1_resolution_cycles": 117638,
+        "home_1_writebacks": 31,
+        "home_2_engine_queue_cycles": 91018,
+        "home_2_engine_service_cycles": 10249,
+        "home_2_evictions": 113,
+        "home_2_hits": 1353,
+        "home_2_merges": 821,
+        "home_2_misses": 119,
+        "home_2_peak_mshrs": 0,
+        "home_2_resolution_cycles": 118017,
+        "home_2_writebacks": 37,
+        "link_0_1_bytes": 80016,
+        "link_0_1_queue_cycles": 0,
+        "link_0_1_service_cycles": 3349,
+        "link_1_0_bytes": 80736,
+        "link_1_0_queue_cycles": 284,
+        "link_1_0_service_cycles": 3349,
+        "link_1_2_bytes": 69776,
+        "link_1_2_queue_cycles": 241,
+        "link_1_2_service_cycles": 2901,
+        "link_2_1_bytes": 69472,
+        "link_2_1_queue_cycles": 0,
+        "link_2_1_service_cycles": 2901,
+        "outlet_0_peak_outstanding": 0,
+        "outlet_0_queue_cycles": 0,
+        "outlet_0_reads": 337,
+        "outlet_0_service_cycles": 977,
+        "outlet_0_wait_cycles": 19782,
+        "outlet_0_writes": 101,
+        "outlet_1_peak_outstanding": 0,
+        "outlet_1_queue_cycles": 0,
+        "outlet_1_reads": 0,
+        "outlet_1_service_cycles": 0,
+        "outlet_1_wait_cycles": 0,
+        "outlet_1_writes": 0,
+        "outlet_2_peak_outstanding": 0,
+        "outlet_2_queue_cycles": 0,
+        "outlet_2_reads": 0,
+        "outlet_2_service_cycles": 0,
+        "outlet_2_wait_cycles": 0,
+        "outlet_2_writes": 0
+      },
+      "model_timing_status": "uncalibrated",
+      "host_dma_handoffs": null,
+      "high_water_scope": "raw before/after snapshots retain peak counters; peak deltas are not occupancy"
+    },
+    {
+      "label": "model-p1-d8",
+      "ports": 1,
+      "outstanding": 8,
+      "model_minus_board_over_board": null,
+      "device_cycles": 13443,
+      "cycle_ratio_to_domain_baseline": 0.9020936787008456,
+      "actual_input_values_equal": true,
+      "same_shader_as_domain_baseline": true,
+      "shader_code_sha256": [
+        "80bf15f26eed5045a1f457dfd47011183b89d458d6dcf5c06687d2545fd44c42"
+      ],
+      "bindings_equal_to_domain_baseline": true,
+      "actual_outlet_line_deltas": [
+        {
+          "port": 0,
+          "read_lines": 339,
+          "write_lines": 104
+        },
+        {
+          "port": 1,
+          "read_lines": 0,
+          "write_lines": 0
+        },
+        {
+          "port": 2,
+          "read_lines": 0,
+          "write_lines": 0
+        }
+      ],
+      "model_accumulated_service_ledger": {
+        "core_0_lsu_wait_cycles": 13844,
+        "core_1_lsu_wait_cycles": 13071,
+        "core_2_lsu_wait_cycles": 12996,
+        "home_0_engine_queue_cycles": 108482,
+        "home_0_engine_service_cycles": 10155,
+        "home_0_evictions": 112,
+        "home_0_hits": 1393,
+        "home_0_merges": 793,
+        "home_0_misses": 115,
+        "home_0_peak_mshrs": 0,
+        "home_0_resolution_cycles": 78651,
+        "home_0_writebacks": 34,
+        "home_1_engine_queue_cycles": 87007,
+        "home_1_engine_service_cycles": 9961,
+        "home_1_evictions": 99,
+        "home_1_hits": 1489,
+        "home_1_merges": 730,
+        "home_1_misses": 105,
+        "home_1_peak_mshrs": 0,
+        "home_1_resolution_cycles": 65346,
+        "home_1_writebacks": 32,
+        "home_2_engine_queue_cycles": 112100,
+        "home_2_engine_service_cycles": 10251,
+        "home_2_evictions": 113,
+        "home_2_hits": 1353,
+        "home_2_merges": 821,
+        "home_2_misses": 119,
+        "home_2_peak_mshrs": 0,
+        "home_2_resolution_cycles": 85308,
+        "home_2_writebacks": 38,
+        "link_0_1_bytes": 74064,
+        "link_0_1_queue_cycles": 0,
+        "link_0_1_service_cycles": 3097,
+        "link_1_0_bytes": 74592,
+        "link_1_0_queue_cycles": 445,
+        "link_1_0_service_cycles": 3097,
+        "link_1_2_bytes": 71504,
+        "link_1_2_queue_cycles": 553,
+        "link_1_2_service_cycles": 2937,
+        "link_2_1_bytes": 69472,
+        "link_2_1_queue_cycles": 0,
+        "link_2_1_service_cycles": 2937,
+        "outlet_0_peak_outstanding": 1,
+        "outlet_0_queue_cycles": 178,
+        "outlet_0_reads": 339,
+        "outlet_0_service_cycles": 990,
+        "outlet_0_wait_cycles": 0,
+        "outlet_0_writes": 104,
+        "outlet_1_peak_outstanding": 0,
+        "outlet_1_queue_cycles": 0,
+        "outlet_1_reads": 0,
+        "outlet_1_service_cycles": 0,
+        "outlet_1_wait_cycles": 0,
+        "outlet_1_writes": 0,
+        "outlet_2_peak_outstanding": 0,
+        "outlet_2_queue_cycles": 0,
+        "outlet_2_reads": 0,
+        "outlet_2_service_cycles": 0,
+        "outlet_2_wait_cycles": 0,
+        "outlet_2_writes": 0
+      },
+      "model_timing_status": "uncalibrated",
+      "host_dma_handoffs": null,
+      "high_water_scope": "raw before/after snapshots retain peak counters; peak deltas are not occupancy"
+    },
+    {
+      "label": "model-p3-d8",
+      "ports": 3,
+      "outstanding": 8,
+      "model_minus_board_over_board": null,
+      "device_cycles": 13699,
+      "cycle_ratio_to_domain_baseline": 0.9192725808616293,
+      "actual_input_values_equal": true,
+      "same_shader_as_domain_baseline": true,
+      "shader_code_sha256": [
+        "80bf15f26eed5045a1f457dfd47011183b89d458d6dcf5c06687d2545fd44c42"
+      ],
+      "bindings_equal_to_domain_baseline": true,
+      "actual_outlet_line_deltas": [
+        {
+          "port": 0,
+          "read_lines": 114,
+          "write_lines": 36
+        },
+        {
+          "port": 1,
+          "read_lines": 104,
+          "write_lines": 31
+        },
+        {
+          "port": 2,
+          "read_lines": 117,
+          "write_lines": 37
+        }
+      ],
+      "model_accumulated_service_ledger": {
+        "core_0_lsu_wait_cycles": 15050,
+        "core_1_lsu_wait_cycles": 13167,
+        "core_2_lsu_wait_cycles": 13926,
+        "home_0_engine_queue_cycles": 100701,
+        "home_0_engine_service_cycles": 10167,
+        "home_0_evictions": 111,
+        "home_0_hits": 1413,
+        "home_0_merges": 786,
+        "home_0_misses": 114,
+        "home_0_peak_mshrs": 0,
+        "home_0_resolution_cycles": 80513,
+        "home_0_writebacks": 36,
+        "home_1_engine_queue_cycles": 91949,
+        "home_1_engine_service_cycles": 9895,
+        "home_1_evictions": 98,
+        "home_1_hits": 1485,
+        "home_1_merges": 723,
+        "home_1_misses": 104,
+        "home_1_peak_mshrs": 0,
+        "home_1_resolution_cycles": 71898,
+        "home_1_writebacks": 31,
+        "home_2_engine_queue_cycles": 102515,
+        "home_2_engine_service_cycles": 10193,
+        "home_2_evictions": 111,
+        "home_2_hits": 1369,
+        "home_2_merges": 807,
+        "home_2_misses": 117,
+        "home_2_peak_mshrs": 0,
+        "home_2_resolution_cycles": 84623,
+        "home_2_writebacks": 37,
+        "link_0_1_bytes": 77712,
+        "link_0_1_queue_cycles": 0,
+        "link_0_1_service_cycles": 3253,
+        "link_1_0_bytes": 78432,
+        "link_1_0_queue_cycles": 424,
+        "link_1_0_service_cycles": 3253,
+        "link_1_2_bytes": 69776,
+        "link_1_2_queue_cycles": 429,
+        "link_1_2_service_cycles": 2901,
+        "link_2_1_bytes": 69472,
+        "link_2_1_queue_cycles": 0,
+        "link_2_1_service_cycles": 2901,
+        "outlet_0_peak_outstanding": 0,
+        "outlet_0_queue_cycles": 36,
+        "outlet_0_reads": 114,
+        "outlet_0_service_cycles": 336,
+        "outlet_0_wait_cycles": 0,
+        "outlet_0_writes": 36,
+        "outlet_1_peak_outstanding": 0,
+        "outlet_1_queue_cycles": 31,
+        "outlet_1_reads": 104,
+        "outlet_1_service_cycles": 301,
+        "outlet_1_wait_cycles": 0,
+        "outlet_1_writes": 31,
+        "outlet_2_peak_outstanding": 0,
+        "outlet_2_queue_cycles": 36,
+        "outlet_2_reads": 117,
+        "outlet_2_service_cycles": 345,
+        "outlet_2_wait_cycles": 0,
+        "outlet_2_writes": 37
+      },
+      "model_timing_status": "uncalibrated",
+      "host_dma_handoffs": null,
+      "high_water_scope": "raw before/after snapshots retain peak counters; peak deltas are not occupancy"
+    }
+  ],
+  "scope": "resident standard Torch graph after warm call; no explicit inter-call CPU download; native ABI maintenance remains included",
+  "cycle_metric": "completed launch cycles only; prelaunch maintenance outside launch windows; raw service deltas surround the full native call",
+  "model_host_handoff_policy": "coherent-direct",
+  "cache_boundary": "physical DMA ownership handoffs and coherent model host access differ; cache warmth is not matched",
+  "model_scope": "uncalibrated; accumulated resource service/queue cycles may exceed elapsed makespan",
+  "board_closure": "not-measured",
+  "decision": "retain existing product defaults; diagnostic outlet/depth baselines do not select a physical policy"
+}

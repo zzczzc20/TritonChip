@@ -121,6 +121,7 @@ def stand_in(**kwargs):
                             journal=kwargs.pop('journal', False),
                             hybrid_lsu=kwargs.pop('hybrid_lsu', False),
                             sfu_lanes=kwargs.pop('sfu_lanes', 1),
+                            trace=kwargs.pop('trace', False),
                             host_timeout=kwargs.get('host_timeout', 30.0))
     return MulticoreMMIOBackend(link, core_count=core_count,
                                memory_ports=memory_ports, **kwargs)

@@ -80,3 +80,9 @@ The current integrated diagnostic geometry remains insufficient for 100 GB/s: it
 ## Standard torch RTL validation in progress
 
 The older 455-program mixed matrix has now passed all three configurations; its complete log is retained as hybrid_lsu/coupled/landing_matrix.log. The MMIO stand-in has explicit opt-in hybrid LSU and SFU-lane parameters in both register benches. A five-operator ordinary torch.compile functional test is running on the actual three-core/three-outlet wide RTL path (GB10 PID 349929, /tmp/r41-wide-coupled/torch_hybrid_retry.log, 33 float32 elements). The initial circular-import failure is preserved; the corrected run has elaborated and started vvp. Operator numerical outcomes and timings are pending. The x86 corrected kernel synthesis remains live (Vivado PID 10102). No full run or card operation was started.
+
+## Standard torch numerics and wide-kernel synthesis milestone
+
+The 33-element float32 standard torch add/mul/silu/gelu/clone-copy test passes all five numerical checks through actual three-core wide MMIO RTL. Raw output is hybrid_lsu/coupled/torch_hybrid_pass.log. The first add includes compiler tuning launches; no speed comparison is claimed. Matched legacy and one-element diagnostic controls remain live on GB10 (355234 and 357316), and a fresh observed 33-element run records internal path counts and per-launch device cycles (torch_observed33.log; PID recorded in the next continuation).
+
+Corrected wide-kernel synthesis completed: 907,599 LUTs, 264,242 FFs, 192 RAMB36, 180 RAMB18, 646 DSPs; synthesis WNS +3.809 ns / WHS +0.055 ns at 10 ns. Raw reports and remote source hashes are in kernel_wide/. This is not whole-image or routed timing. A free tile-0 SLR1 routed screen is live on x86 under ~/r41_hbmbw_wide_kernel_v1/tile0_slr1, tile0_screen.log (launcher 11282). The integrated diagnostic geometry still cannot establish 100 GB/s. No full run or card access occurred; full-run budget remains one of five used.

@@ -3,6 +3,29 @@
 `default_nettype none
 module tnca_multicore_regs;
  parameter N=3,PORTS=3,MEMORY_BYTES=1048576,STAGES=2,NOC_PIPE=0,DISPATCH_PIPE=0,HOME_PIPE=0,CODE_PIPE=0,MAINTENANCE=0,MEMORY_CONTROLS=0,HYBRID_LSU=0,SFU_LANES=1;
+ // Optional observation only: keep the register response protocol unchanged.
+ integer diag_cycle=0;
+ always @(posedge clk) begin
+  diag_cycle<=diag_cycle+1;
+  if($test$plusargs("trace") && reg_we && reg_addr==8'h48)
+   $display("MMIO DOORBELL cycle=%0d seq=%0d op=%0d a0=%h a1=%h",diag_cycle,dut.control.req_seq,dut.control.req_op,dut.control.a0,dut.control.a1);
+ end
+ generate for(genvar c=0;c<N;c=c+1)begin:g_diag
+  if(HYBRID_LSU)begin:g_hybrid
+   always @(posedge clk)if($test$plusargs("trace") && rst_n_async && (diag_cycle%10000==0 || dut.done_valid))
+    $display("HYBRID WATCH cycle=%0d core=%0d pc=%h x_valid=%b pending=%b fast=%0d slow=%0d retired=%0d fast_quiet=%b slow_idle=%b cpl=%b ack=%b",diag_cycle,c,
+     dut.system.shell.u_system.g_tile[c].u_tile.u_core.x_pc,
+     dut.system.shell.u_system.g_tile[c].u_tile.u_core.x_valid,
+     dut.system.shell.u_system.g_tile[c].u_tile.u_core.g_lsu_hybrid.pending,
+     dut.system.shell.u_system.g_tile[c].u_tile.u_core.g_lsu_hybrid.u_lsu.perf_fast_accepted,
+     dut.system.shell.u_system.g_tile[c].u_tile.u_core.g_lsu_hybrid.u_lsu.perf_slow_accepted,
+     dut.system.shell.u_system.g_tile[c].u_tile.u_core.g_lsu_hybrid.u_lsu.perf_retired,
+     dut.system.shell.u_system.g_tile[c].u_tile.u_core.g_lsu_hybrid.u_lsu.fast_quiet,
+     dut.system.shell.u_system.g_tile[c].u_tile.u_core.g_lsu_hybrid.u_lsu.slow_idle,
+     dut.system.shell.u_system.g_tile[c].u_tile.u_core.g_lsu_hybrid.u_lsu.cpl_valid,
+     dut.system.shell.u_system.g_tile[c].u_tile.u_core.g_lsu_hybrid.u_lsu.cpl_ack);
+  end
+ end endgenerate
  // Dense only; tb/fpga/tnca_multicore_dma.vh also serves the sparse board bench.
  localparam SPARSE=0,SPARSE_MAP="none";
  localparam NX=N>4?4:N,ADDR_BITS=(MEMORY_CONTROLS?9:8),WORDS=(131072+MEMORY_BYTES)/8;

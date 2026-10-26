@@ -1,0 +1,13 @@
+diff --git a/spec/devices/u280-3core-r40.json b/spec/devices/u280-3core-r40.json
+index 2ae4825..f8fb651 100644
+--- a/spec/devices/u280-3core-r40.json
++++ b/spec/devices/u280-3core-r40.json
+@@ -16,7 +16,7 @@
+   "uncore": {
+     "MEM_PORTS": 3,
+     "AXI_OUT_N": 8,
+-    "SETS": 32,
++    "SETS": 4,
+     "WAYS": 8,
+     "CODE_LINK_STAGES": 2,
+     "LINK_STAGES": 2,

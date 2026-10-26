@@ -1,0 +1,2 @@
+HYBRID RESET/BARRIER PASS full slots, atomic isolation, MMIO placement, held completion reset
+tb/core/tb_lsu_hybrid_reset.v:54: $finish called at 550000 (1ps)

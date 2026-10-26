@@ -465,3 +465,8 @@ sources = ["rtl/noc/tnca_core_ni.v", "rtl/noc/tnca_slice_ni.v", "rtl/noc/tnca_me
 path = "evidence/r41/hbm_bw/line_lsu/README.md"
 depends_on = ["evidence/r41/hbm_bw/lsu_bank/README.md", "evidence/r41/hbm_bw/wide_noc/README.md"]
 sources = ["rtl/core/tnca_lsu_line.v", "tb/core/tb_lsu_line.v", "tb/core/tb_lsu_line_reset.v", "tools/r41/lsu_line_tests.py", "flow/fpga/screen_r41_lsu_line.tcl", "evidence/r41/hbm_bw/line_lsu/"]
+
+[[doc]]
+path = "evidence/r41/hbm_bw/hybrid_lsu/README.md"
+depends_on = ["evidence/r41/hbm_bw/line_lsu/README.md", "evidence/r41/hbm_bw/wide_noc/README.md"]
+sources = ["rtl/core/tnca_lsu_hybrid.v", "rtl/core/tnca_word_line_adapter.v", "rtl/core/tnca_core.v", "rtl/core/tnca_lsu_line.v", "tb/core/tb_lsu_hybrid.v", "tb/core/tb_lsu_hybrid_reset.v", "tb/core/tb_core_hybrid.v", "tb/common/tnca_line_mem_model.v", "tools/r41/lsu_hybrid_tests.py", "tools/r41/hybrid_core_tests.py", "flow/fpga/screen_r41_lsu_hybrid.tcl", "evidence/r41/hbm_bw/hybrid_lsu/"]

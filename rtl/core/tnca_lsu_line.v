@@ -28,6 +28,7 @@ module tnca_lsu_line #(
     output wire [2:0] cpl_dst_class,
     output wire [7:0] cpl_dst_idx,
     output reg [511:0] cpl_vdata,
+    output wire [63:0] cpl_sdata,
     output wire [15:0] cpl_lane_en,
     output wire mem_req_valid,
     input wire mem_req_ready,
@@ -100,6 +101,7 @@ module tnca_lsu_line #(
     assign cpl_dst_class=store[pick] ? `TNCA_DST_NONE : dst_class[pick];
     assign cpl_dst_idx=dst_idx[pick];
     assign cpl_lane_en=store[pick] ? 16'd0 : mask[pick];
+    assign cpl_sdata={{32{signed_load[pick] && cpl_vdata[31]}},cpl_vdata[31:0]};
     reg [511:0] shifted;
     reg [31:0] value;
     always @* begin

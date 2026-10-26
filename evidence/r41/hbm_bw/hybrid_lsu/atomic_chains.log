@@ -1,0 +1,4 @@
+HYBRID COVERAGE fast=18 slow_beats=724
+HYBRID FAST PEAK 3
+HYBRID LSU MITER PASS seed=1 accesses=300 requests=789 stall=30% cycles REQ_REG=0 7205 REQ_REG=1 7935
+tb/core/tb_lsu_hybrid.v:304: $finish called at 79350000 (1ps)

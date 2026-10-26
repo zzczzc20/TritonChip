@@ -1,0 +1,4 @@
+HYBRID COVERAGE fast=19 slow_beats=750
+LSU BANK CAPACITY units=4 peak=3
+HYBRID LSU MITER PASS seed=1 accesses=300 requests=818 stall=30% cycles REQ_REG=0 6847 REQ_REG=1 8051
+tb/core/tb_lsu_hybrid.v:305: $finish called at 80510000 (1ps)

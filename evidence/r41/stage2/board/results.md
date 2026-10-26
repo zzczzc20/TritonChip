@@ -18,7 +18,7 @@ An `experiment.py` exit code of 0 only means that the commands finished. Everyth
 | `s2-hbm8` | Passed | 7 of 7 cases, 159 checks, 8 GiB window, PC0-PC31 covered, addresses up to 0x1fff10000 |
 | `s2-hbm8-big` | Passed | 2 of 2 cases, 14 checks, single storage above 2 GiB, offset beyond int32 |
 | `s2-original-suite` | Passed | 113 of 113 points pass (202 runs, none failed); 1.095x in device time against 96 matched Stage 1 points |
-| `s2-endurance` | **Failed (harness fault)** | 0 of 250 sessions accepted; all 240 ArchBench sessions were numerically correct but were rejected by a harness bug; all 10 FP8 sessions failed on a second harness bug |
+| `s2-endurance` | **Passed on second attempt; first failed (harness fault)** | After harness fixes, 250/250 sessions pass in 2.0611 h; first attempt retained below |
 | `s2-fp8-hub` | Not run | the FP8 virtual environment did not build |
 | `s2-qwen-fp8` | Not run | the FP8 virtual environment did not build |
 
@@ -90,7 +90,27 @@ Comparison with the Stage 1 B40 records (90 MHz, image `a88ebdf5`, `~/r41s1_boar
 
 ## Open items
 
-1. `s2-endurance`: rerun on branch `r41-board-fix` (the two fixes, tests, and `launches/endurance_rerun.sh`). It needs the 100 MHz image loaded again after 15 idle minutes; the load needs a separate approval. Not started.
+1. `s2-endurance`: completed on second attempt after the harness fixes; see the update below. The first failed attempt remains preserved.
 2. `s2-fp8-hub` and `s2-qwen-fp8` never ran; the FP8 virtual environment has to be rebuilt first.
 3. The stale `evidence: rtl-simulation` label in the FP8 case reports, and the unrecorded `result`/`residual`/`conclusion` fields of the `experiment.py` reports, remain to be fixed.
 4. Two tests in `test_stage2_board.py` fail on `r41-main` before and after this change: `test_every_manifest_completes_on_the_fake_board` (the `s2-identity` step fails on the fake board in this environment) and `test_image_source_matches_tree` (11 files differ from the recorded image source). They were not investigated here.
+
+## Endurance completion update, 2026-10-26 UTC
+
+The second attempt, commit `9bc8990`, ran on the same 100 MHz image from
+06:12:27 to 08:16:07 UTC (2.0611 h), and passed 250/250 sessions (240 ArchBench,
+10 FP8). Software tree: `files:a86af4ae352dd47d9910b35fbe411fcaef920c483bd6dcc7db330972584e1303`.
+The fixes bind the batch identity before direct `run_one` calls, avoid creating
+the FP8 output directory prematurely, and consume the report's `rows` field.
+The first attempt's harness failure is not erased or counted as a pass.
+
+The read-only archive `endurance-rerun.tgz` retains `report.json`,
+`mix/endurance.json`, `mix/sessions.jsonl` and `mix/host.jsonl` from
+`acf3019:/home/zzhouch/r41s2_endurance_9bc8990/out/s2-endurance/`.
+`endurance-rerun-index.json` records archive and member SHA256 values.
+Original-suite and endurance runs expose 4 GiB; the separate window cases
+establish 8 GiB functionality. This endurance result does not establish bandwidth
+or full Qwen inference.
+
+Stage 1 now has 113 completed original points; the 96-point performance comparison
+above remains the historical partial comparison and has not been recomputed here.

@@ -2343,3 +2343,10 @@ r40-attention-checks: $(R2_DATA_STAMP) | dirs
 
 r40-attention: r40-attention-checks
 	@$(PYTHON) tools/r40/acceptance.py --wp R40-08
+
+# R41 Stage 2: integrity-protected manual judgments; nonzero until all pass.
+.PHONY: r41-stage2-acceptance r41-acceptance
+r41-stage2-acceptance:
+	$(PYTHON) tools/performance_harness/stage2_acceptance.py --root $(CURDIR) --json $(CURDIR)/sim/build/r41/stage2-acceptance.json
+r41-acceptance:
+	$(PYTHON) tools/performance_harness/stage2_acceptance.py --root $(CURDIR) --overall --json $(CURDIR)/sim/build/r41/acceptance.json

@@ -17,6 +17,7 @@ assert software_tree(root)=='files:6da4bd71b87e435e878a2b17bc83169912294ca197528
 assert hashlib.sha256((root/'doc/r41_tasks_and_acceptance.md').read_bytes()).hexdigest()=='2e0e598b9331dca5e922ce901ccd0d801792cefb41ca7fbf9b7bc4a41de3ddfd'
 PY
 tar xzf "$repo/evidence/r41/stage1/board/finished.tgz" -C "$frozen/evidence/r41/stage1/board"
+tar xzf "$repo/evidence/r41/stage1/board/original-suite-rerun.tgz" -C "$frozen/evidence/r41/stage1/board"
 set +e
 make -C "$frozen" r41-stage1-acceptance PYTHON=python3 \
   R41_ACCEPTANCE_OUT="$repo/evidence/r41/stage1/board/acceptance.json" \

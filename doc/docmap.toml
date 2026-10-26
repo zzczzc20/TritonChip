@@ -369,12 +369,12 @@ sources = []
 [[doc]]
 path = "evidence/r41/stage1/board/README.md"
 depends_on = ["doc/r41_tasks_and_acceptance.md"]
-sources = ["evidence/r41/stage1/board/index.json", "evidence/r41/stage1/board/finished.tgz", "evidence/r41/stage1/board/host-raw.sha256"]
+sources = ["evidence/r41/stage1/board/index.json", "evidence/r41/stage1/board/finished.tgz", "evidence/r41/stage1/board/host-raw.sha256", "evidence/r41/stage1/board/original-suite-index.json", "evidence/r41/stage1/board/original-suite-comparison.json"]
 
 [[doc]]
 path = "evidence/r41/stage2/board/results.md"
 depends_on = ["doc/r41_tasks_and_acceptance.md"]
-sources = ["spec/r41/stage2/board/"]
+sources = ["spec/r41/stage2/board/", "evidence/r41/stage2/board/endurance-rerun-index.json", "evidence/r41/stage2/board/endurance-rerun.tgz"]
 
 [[doc]]
 path = "evidence/r41/stage1/stage2_readiness.md"
@@ -470,3 +470,48 @@ sources = ["rtl/core/tnca_lsu_line.v", "tb/core/tb_lsu_line.v", "tb/core/tb_lsu_
 path = "evidence/r41/hbm_bw/hybrid_lsu/README.md"
 depends_on = ["evidence/r41/hbm_bw/line_lsu/README.md", "evidence/r41/hbm_bw/wide_noc/README.md"]
 sources = ["rtl/core/tnca_lsu_hybrid.v", "rtl/core/tnca_word_line_adapter.v", "rtl/core/tnca_core.v", "rtl/core/tnca_lsu_line.v", "tb/core/tb_lsu_hybrid.v", "tb/core/tb_lsu_hybrid_reset.v", "tb/core/tb_core_hybrid.v", "tb/common/tnca_line_mem_model.v", "tools/r41/lsu_hybrid_tests.py", "tools/r41/hybrid_core_tests.py", "flow/fpga/screen_r41_lsu_hybrid.tcl", "evidence/r41/hbm_bw/hybrid_lsu/"]
+
+[[doc]]
+path = "evidence/r41/stage2/x86_link/README.md"
+depends_on = []
+sources = ["flow/fpga/"]
+
+[[doc]]
+path = "evidence/r41/SERVERS.md"
+depends_on = []
+sources = ["flow/fpga/"]
+
+[[doc]]
+path = "evidence/r41/acceptance/HANDOFF.md"
+depends_on = []
+sources = ["flow/fpga/"]
+
+[[doc]]
+path = "doc/r41_stage2_report.md"
+depends_on = ["doc/r41_tasks_and_acceptance.md"]
+sources = ["evidence/r41/acceptance/", "evidence/r41/stage1/board/acceptance.json", "tools/performance_harness/stage2_acceptance.py"]
+
+[[doc]]
+path = "doc/r41_report.md"
+depends_on = ["doc/r41_tasks_and_acceptance.md"]
+sources = ["evidence/r41/acceptance/", "evidence/r41/stage1/board/acceptance.json", "tools/performance_harness/stage2_acceptance.py"]
+
+[[doc]]
+path = "evidence/r41/acceptance/stage2_index.md"
+depends_on = ["doc/r41_tasks_and_acceptance.md"]
+sources = ["evidence/r41/acceptance/", "evidence/r41/stage1/board/acceptance.json", "tools/performance_harness/stage2_acceptance.py"]
+
+[[doc]]
+path = "evidence/r41/acceptance/identity.md"
+depends_on = ["doc/r41_tasks_and_acceptance.md"]
+sources = ["evidence/r41/acceptance/", "evidence/r41/stage1/board/acceptance.json", "tools/performance_harness/stage2_acceptance.py"]
+
+[[doc]]
+path = "evidence/r41/acceptance/closure_plan.md"
+depends_on = ["doc/r41_tasks_and_acceptance.md"]
+sources = ["evidence/r41/acceptance/", "evidence/r41/stage1/board/acceptance.json", "tools/performance_harness/stage2_acceptance.py"]
+
+[[doc]]
+path = "evidence/r41/acceptance/STATUS.md"
+depends_on = ["doc/r41_tasks_and_acceptance.md"]
+sources = ["evidence/r41/acceptance/", "evidence/r41/stage1/board/acceptance.json", "tools/performance_harness/stage2_acceptance.py"]

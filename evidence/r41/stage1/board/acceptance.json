@@ -1,13 +1,13 @@
 {
   "schema": "tnca-r41-stage1-acceptance/1",
   "plan_sha256": "6eb1a3d3d0a629ecf1db637689248177cbb1ea4382e3c5d62838ea5df90f8030",
-  "index_sha256": "df5c4710f2e275c3277e33a5d52d5063d3ea411b3e1cec83896b83dbee93e111",
+  "index_sha256": "472601c2108a298302ab93b0c2c2b3a5263eb85d6827240b034ea2f1f00f358f",
   "software_tree": "files:6da4bd71b87e435e878a2b17bc83169912294ca197528b0b5cbdc4ff66154b5a",
   "required": 61,
   "counts": {
-    "pass": 57,
+    "pass": 59,
     "fail": 0,
-    "not-measured": 3,
+    "not-measured": 1,
     "blocked": 1
   },
   "status": "not-accepted",
@@ -476,12 +476,11 @@
     },
     {
       "id": "S1-05.original_full_suite_on_90mhz",
-      "status": "not-measured",
-      "kinds": [],
-      "reasons": [
-        "requires board evidence",
-        "Original-suite first attempt interrupted by external card reload. Lead schedules rerun; ingest only after completion. No Stage 2 or historical measurement substitutes for the Stage 1 final suite."
-      ]
+      "status": "pass",
+      "kinds": [
+        "board"
+      ],
+      "reasons": []
     },
     {
       "id": "S1-05.fragment_path_actually_used",
@@ -507,12 +506,12 @@
     },
     {
       "id": "S1-05.new_default_nonregression",
-      "status": "not-measured",
-      "kinds": [],
-      "reasons": [
-        "requires board evidence",
-        "Original-suite first attempt interrupted by external card reload. Lead schedules rerun; ingest only after completion. No Stage 2 or historical measurement substitutes for the Stage 1 final suite."
-      ]
+      "status": "pass",
+      "kinds": [
+        "board",
+        "doc"
+      ],
+      "reasons": []
     },
     {
       "id": "S1-05.clean_archive_fresh_cache_rebuild",

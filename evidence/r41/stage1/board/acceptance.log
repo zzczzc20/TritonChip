@@ -53,15 +53,15 @@ S1-04.D256_depthwise_FP32_recurrence_compile_function          pass          rtl
 S1-04.compile_code_IR_memory_estimates                         pass          compile,doc,systemc    
 S1-04.public_model_cache_adapter_difference_inventory          pass          doc                    
 S1-05.all_stage1_required                                      blocked       -                      1 of 51 prerequisites not passed
-S1-05.original_full_suite_on_90mhz                             not-measured  -                      requires board evidence
+S1-05.original_full_suite_on_90mhz                             pass          board                  
 S1-05.fragment_path_actually_used                              pass          board                  
 S1-05.tuning_and_fallback_integrated                           pass          board                  
 S1-05.three_harness_cases                                      pass          -                      
-S1-05.new_default_nonregression                                not-measured  -                      requires board evidence
+S1-05.new_default_nonregression                                pass          board,doc              
 S1-05.clean_archive_fresh_cache_rebuild                        pass          board,compile          
 S1-05.frozen_board_anchor_reproduction                         pass          board                  
 S1-05.stage1_report                                            pass          doc                    
 S1-05.stage2_ready_blocker_list                                pass          doc                    
-61 required: pass 57, fail 0, not-measured 3, blocked 1 -> not-accepted (software tree files:6da4bd71b87e435e878a2b17bc83169912294ca197528b0b5cbdc4ff66154b5a)
+61 required: pass 59, fail 0, not-measured 1, blocked 1 -> not-accepted (software tree files:6da4bd71b87e435e878a2b17bc83169912294ca197528b0b5cbdc4ff66154b5a)
 make: *** [Makefile:50: r41-stage1-acceptance] Error 1
 make: Leaving directory '/home/ubuntu/r41s1-frozen-25094197f6e6'

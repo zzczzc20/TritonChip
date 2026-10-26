@@ -420,3 +420,8 @@ sources = ["rtl/fpga/tnca_stream_axi.v", "rtl/fpga/tnca_stream_fifo.v", "tb/fpga
 path = "evidence/r41/hbm_bw/layout/README.md"
 depends_on = ["evidence/r41/hbm_bw/stream/README.md"]
 sources = ["python/tnca/hbm_layout.py", "python/tnca/backends/multicore_mmio.py", "rtl/fpga/tnca_line_axi.v", "rtl/fpga/tnca_multicore_mmio.v", "tb/fpga/tb_hbm_stripe.v", "tools/r41/hbm_layout_tests.py", "evidence/r41/hbm_bw/layout/"]
+
+[[doc]]
+path = "evidence/r41/hbm_bw/bank/README.md"
+depends_on = ["evidence/r41/hbm_bw/layout/README.md", "evidence/r41/hbm_bw/stream/README.md"]
+sources = ["rtl/fpga/tnca_stream_bank.v", "tb/fpga/tb_stream_bank.v", "tools/r41/hbm_bank_tests.py", "flow/fpga/screen_r41_hbm_bank.tcl", "evidence/r41/hbm_bw/bank/"]

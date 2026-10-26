@@ -140,6 +140,7 @@ module tnca_core #(
     // mod[5] transfer ILLEGAL_INSTRUCTION (capability tensor_transpose).
     parameter HAS_TENSOR_XPOSE = 0,
     parameter FP_LAT         = 2,          // tnca_vector_fpu result delay, in cycles
+    parameter SFU_LANES      = 1,          // identical parallel SFU slices
     parameter SFU_LAT        = 6,          // rtl/gen/tnca_sfu_*_xls.v latency
     parameter MUL_LAT        = 3,          // tnca_mul64 result delay, in cycles
     parameter MEM_DW         = 64,
@@ -1455,7 +1456,7 @@ module tnca_core #(
     reg  [4:0] x_fpctl;
 
     tnca_vector_fpu #(.VLEN(VLEN), .ELEN(ELEN), .LW(LW), .FP_LAT(FP_LAT),
-                      .SFU_LAT(SFU_LAT), .HAS_SFU(HAS_SFU)) u_vfpu (
+                      .SFU_LAT(SFU_LAT), .SFU_LANES(SFU_LANES), .HAS_SFU(HAS_SFU)) u_vfpu (
         .clk(clk), .rst_n(rst_n),
         .major(x_major), .func(x_func), .mod(x_mod), .mask(lane_mask),
         .va(fpu_va), .vb(fpu_vb), .vc(fpu_vc), .fpctl(x_fpctl),

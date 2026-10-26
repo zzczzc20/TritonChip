@@ -290,10 +290,12 @@ struct Core : sc_module {
     // core_pipeline=1: the RTL's single in-order pipeline (tnca_core.v).
     bool pipe=false;u64 t_branch,t_park,n_banks,t_bank,t_lsu_setup,t_vload_extra,t_lsu_complete,t_lsu_wb,t_fcmp,t_shuf_s,t_red_vec,t_fred_vec;
     bool vrf_pf=false,r_reads=false;u64 last_issue=0;
-    // The two load/store units of tnca_lsu_pair: a unit is free once its
+    // Default: the two load/store units of tnca_lsu_pair. Optional
+    // tl_lsu_units is an exploratory replication hypothesis, not built RTL.
+    // A unit is free once its
     // last response is back (+lsu_complete_cycles); the second unit takes
     // an access only after the first has sent all of its beats.
-    struct LsuUnit {u64 free=0,drained=0;};std::array<LsuUnit,2> units{};
+    struct LsuUnit {u64 free=0,drained=0;};std::vector<LsuUnit> units;
     std::vector<u64> steals; // LSU completions taking the one writeback port
     unsigned holds=0;sc_event unhold; // a fence/arrive held in R freezes every context
     // time_quantum > 0: conservative lookahead. A context whose next wait
@@ -321,6 +323,7 @@ struct Core : sc_module {
         // Bound only when a what-if key is active, so default counters are unchanged.
         if(dp_g16>1 || dp_g8>1 || dp_pf)c_dp=&x.counts[key("matrix_dp_whatif_commands")];
         issue_time=x.cycles(t_issue);lsu_key=key("lsu");t_lsu_slots=g("lsu_slots");t_beat_slots=g("lsu_beat_slots");
+        units.resize(x.c.get_or("tl_lsu_units",2));
         pipe=g("core_pipeline")!=0;t_branch=g("branch_taken_cycles");t_park=g("park_refetch_cycles");n_banks=g("vrf_banks");
         t_bank=g("vrf_bank_conflict_cycles");t_lsu_setup=g("lsu_setup_cycles");t_vload_extra=g("lsu_vector_load_extra");
         t_lsu_complete=g("lsu_complete_cycles");t_lsu_wb=g("lsu_writeback_cycles");t_fcmp=g("fp_compare_latency");
@@ -622,7 +625,13 @@ struct Core : sc_module {
                     if(pipe){
                         // A busy unit holds the access in R: every context stalls.
                         u64 best=UINT64_MAX;
-                        for(unsigned i=0;i<2;++i){u64 at=std::max({now,units[i].free,units[1-i].drained});if(at<best){best=at;unit_index=i;}}
+                        for(unsigned i=0;i<units.size();++i){
+                            u64 at=std::max(now,units[i].free);
+                            // A shared issuing port: a new command waits for all
+                            // older command beats to leave, but not their replies.
+                            for(unsigned j=0;j<units.size();++j)if(j!=i)at=std::max(at,units[j].drained);
+                            if(at<best){best=at;unit_index=i;}
+                        }
                         if(best>now){*c_lsu_wait+=best-now;freeze(f,x.cycles(best));now=lnow(f);}
                     }else{
                     auto prune=[&](){lsu_inflight.erase(std::remove_if(lsu_inflight.begin(),lsu_inflight.end(),[&](u64 v){return v<=now;}),lsu_inflight.end());};

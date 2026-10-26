@@ -440,3 +440,13 @@ sources = ["rtl/noc/tnca_core_ni.v", "rtl/noc/tnca_noc_pkg.vh", "rtl/core/tnca_l
 path = "evidence/r41/hbm_bw/wide_model/README.md"
 depends_on = ["evidence/r41/hbm_bw/end_to_end.md"]
 sources = ["tools/r41/wide_path_model_tests.py", "tools/performance_harness/systemc/include/tnca_model.hpp", "tools/performance_harness/systemc/include/tnca_timeline_memory.hpp", "tools/performance_harness/systemc/src/chip.cpp", "evidence/r41/hbm_bw/wide_model/"]
+
+[[doc]]
+path = "evidence/r41/hbm_bw/vector_schedule/README.md"
+depends_on = ["evidence/r41/hbm_bw/wide_model/README.md"]
+sources = ["tools/r41/vector_schedule_model_tests.py", "tools/r41/operator_path_model_sweep.py", "tools/r41/wide_path_model_tests.py", "tools/performance_harness/systemc/src/chip.cpp", "evidence/r41/hbm_bw/vector_schedule/"]
+
+[[doc]]
+path = "evidence/r41/hbm_bw/sfu/README.md"
+depends_on = ["evidence/r41/hbm_bw/vector_schedule/README.md"]
+sources = ["rtl/core/tnca_sfu.v", "rtl/core/tnca_vector_fpu.v", "rtl/core/tnca_core.v", "tb/core/tb_sfu_parallel.v", "tools/r41/sfu_parallel_tests.py", "flow/fpga/screen_r41_sfu.tcl", "evidence/r41/hbm_bw/sfu/"]

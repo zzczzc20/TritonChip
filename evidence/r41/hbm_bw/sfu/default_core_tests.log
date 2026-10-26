@@ -1,0 +1,3 @@
+tb_sfu_core: 1042 batches of 16 lanes (16672 vectors), 0 failures
+PASS
+tb/core/tb_sfu_core.v:172: $finish called at 260526000 (1ps)

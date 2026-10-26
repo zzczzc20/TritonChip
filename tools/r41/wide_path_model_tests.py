@@ -40,11 +40,18 @@ def exploratory_run(binary, config, trace, out, *, mode):
             'returncode': result.returncode, 'summary': summary}
 
 
-def streaming_add(binary, out):
+def streaming_add(binary, out, unroll=1):
     # Three dispatched programs, disjoint 16 KiB slices, real native integer
     # vector arithmetic. This is a model microbenchmark, not standard torch.
+    assert unroll in (1, 2, 4, 8)
     code = out/'stream-add.hex'
-    validate_chip.assemble("""
+    body = []
+    for j in range(unroll):
+        body += [f'v.ld.w v{3*j}, [s1, #{64*j}]', f'v.ld.w v{3*j+1}, [s2, #{64*j}]']
+    for j in range(unroll):
+        body += [f'v.add v{3*j+2}, v{3*j}, v{3*j+1}', f'v.st.w [s3, #{64*j}], v{3*j+2}']
+    body = '\n'.join(body)
+    validate_chip.assemble(f"""
         s.rdspecial s8, pid.x
         .li s9, #16384
         s.mul s8, s8, s9
@@ -54,15 +61,12 @@ def streaming_add(binary, out):
         s.add s1, s1, s8
         s.add s2, s2, s8
         s.add s3, s3, s8
-        .li s4, #256
+        .li s4, #{256//unroll}
     loop:
-        v.ld.w v0, [s1, #0]
-        v.ld.w v1, [s2, #0]
-        v.add v2, v0, v1
-        v.st.w [s3, #0], v2
-        s.addi s1, s1, #64
-        s.addi s2, s2, #64
-        s.addi s3, s3, #64
+        {body}
+        s.addi s1, s1, #{64*unroll}
+        s.addi s2, s2, #{64*unroll}
+        s.addi s3, s3, #{64*unroll}
         s.addi s4, s4, #-1
         br.nz s4, loop
         exit

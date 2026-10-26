@@ -1,0 +1,92 @@
+{
+  "evidence": "model-prediction-uncalibrated",
+  "clock_hz_configured": 100000000,
+  "board_speedup_measured": false,
+  "scope": "two standard torch points only; no FPGA image or throughput qualification",
+  "rows": [
+    {
+      "variant": "baseline",
+      "lsu_units": 2,
+      "block": 16,
+      "sfu_slices": 1,
+      "points": [
+        {
+          "key": "op.add/small/fp16-n16384",
+          "status": "pass",
+          "launches": 1,
+          "device_cycles": 44505,
+          "max_rel_err": 0.00030330603579011223,
+          "process_wall_s": 3.19,
+          "model_launch_host_s": 0.045036,
+          "predicted_speedup_vs_model_baseline": 1.0
+        },
+        {
+          "key": "op.silu/small/fp16-n16384",
+          "status": "pass",
+          "launches": 1,
+          "device_cycles": 51741,
+          "max_rel_err": 0.00024085316383321473,
+          "process_wall_s": 3.15,
+          "model_launch_host_s": 0.057926,
+          "predicted_speedup_vs_model_baseline": 1.0
+        }
+      ]
+    },
+    {
+      "variant": "wide4",
+      "lsu_units": 4,
+      "block": 64,
+      "sfu_slices": 4,
+      "points": [
+        {
+          "key": "op.add/small/fp16-n16384",
+          "status": "pass",
+          "launches": 1,
+          "device_cycles": 15742,
+          "max_rel_err": 0.00030330603579011223,
+          "process_wall_s": 3.16,
+          "model_launch_host_s": 0.032178,
+          "predicted_speedup_vs_model_baseline": 2.82715029856435
+        },
+        {
+          "key": "op.silu/small/fp16-n16384",
+          "status": "pass",
+          "launches": 1,
+          "device_cycles": 21887,
+          "max_rel_err": 0.00024085316383321473,
+          "process_wall_s": 3.16,
+          "model_launch_host_s": 0.040456,
+          "predicted_speedup_vs_model_baseline": 2.3640060309772926
+        }
+      ]
+    },
+    {
+      "variant": "wide8",
+      "lsu_units": 8,
+      "block": 128,
+      "sfu_slices": 4,
+      "points": [
+        {
+          "key": "op.add/small/fp16-n16384",
+          "status": "pass",
+          "launches": 1,
+          "device_cycles": 13695,
+          "max_rel_err": 0.00030330603579011223,
+          "process_wall_s": 3.1,
+          "model_launch_host_s": 0.017303,
+          "predicted_speedup_vs_model_baseline": 3.249726177437021
+        },
+        {
+          "key": "op.silu/small/fp16-n16384",
+          "status": "pass",
+          "launches": 1,
+          "device_cycles": 17481,
+          "max_rel_err": 0.00024085316383321473,
+          "process_wall_s": 3.24,
+          "model_launch_host_s": 0.02174,
+          "predicted_speedup_vs_model_baseline": 2.9598421142955207
+        }
+      ]
+    }
+  ]
+}

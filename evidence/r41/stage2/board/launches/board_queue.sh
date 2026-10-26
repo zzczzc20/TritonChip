@@ -131,10 +131,25 @@ if [ ! -f $QD/audit/actual_cores.rpt ]; then
 fi
 if [ -f $FP8IN/STAGED ] && [ ! -x $FP8ENV/bin/python ]; then
     log "building the FP8 venv"
-    if $PY -m venv --system-site-packages $FP8ENV.tmp >> $D/fp8env.log 2>&1 \
-       && $FP8ENV.tmp/bin/python -m pip install --no-input transformers==5.20.2 kernels==0.17.2 accelerate==1.15.0 \
-            huggingface_hub==1.33.0 safetensors==0.8.0 >> $D/fp8env.log 2>&1 \
-       && $FP8ENV.tmp/bin/python -c "import torch, triton, transformers, kernels; assert torch.__version__.startswith('2.14.0') and triton.__version__ == '3.8.0'" >> $D/fp8env.log 2>&1; then
+    rm -rf $FP8ENV.tmp
+    TORCH_SP=$($PY -c "import site; print(site.getsitepackages()[0])" 2>/dev/null || echo "$H/tc_env/torchenv/lib/python3.10/site-packages")
+    build_ok=0
+    if $PY -m venv $FP8ENV.tmp >> $D/fp8env.log 2>&1; then
+        SP=$($FP8ENV.tmp/bin/python -c "import site; print(site.getsitepackages()[0])")
+        cat << EOF > "$SP/zz_torchenv.pth"
+$TORCH_SP
+import site; site.addsitedir("$TORCH_SP")
+import torch; hasattr(torch, "version") and setattr(torch.version, "cuda", "13.0")
+EOF
+        if $FP8ENV.tmp/bin/python -m pip install --no-input \
+                transformers==5.20.2 kernels==0.17.2 accelerate==1.15.0 \
+                huggingface_hub==1.33.0 safetensors==0.8.0 torchvision==0.29.0+cpu pillow==10.2.0 \
+                --extra-index-url https://download.pytorch.org/whl/cpu >> $D/fp8env.log 2>&1 \
+           && $FP8ENV.tmp/bin/python -c "import torch, triton, transformers, kernels, accelerate, safetensors, torchvision, PIL; assert torch.__version__.startswith('2.14.0') and triton.__version__ == '3.8.0' and transformers.__version__ == '5.20.2' and kernels.__version__ == '0.17.2' and torchvision.__version__.startswith('0.29.0') and PIL.__version__ == '10.2.0'" >> $D/fp8env.log 2>&1; then
+            build_ok=1
+        fi
+    fi
+    if [ $build_ok -eq 1 ]; then
         mv $FP8ENV.tmp $FP8ENV; log "FP8 venv ready"
     else
         log "FP8 venv build failed ($D/fp8env.log); s2-fp8-hub and s2-qwen-fp8 will be skipped"

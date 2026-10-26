@@ -377,6 +377,11 @@ depends_on = ["doc/r41_tasks_and_acceptance.md"]
 sources = ["spec/r41/stage2/board/", "evidence/r41/stage2/board/endurance-rerun-index.json", "evidence/r41/stage2/board/endurance-rerun.tgz"]
 
 [[doc]]
+path = "evidence/r41/stage2/board/fp8_env_and_hub_runs.md"
+depends_on = ["doc/r41_tasks_and_acceptance.md", "evidence/r41/stage2/board/results.md"]
+sources = ["spec/r41/stage2/board/s2-fp8-hub.json", "spec/r41/stage2/board/s2-qwen-fp8.json", "evidence/r41/stage2/board/launches/board_queue.sh"]
+
+[[doc]]
 path = "evidence/r41/stage1/stage2_readiness.md"
 depends_on = ["evidence/r41/stage1/board/README.md", "evidence/r41/stage2/board/results.md"]
 sources = ["evidence/r41/stage1/board/metrics.json", "evidence/r41/stage1/model_estimates.json"]

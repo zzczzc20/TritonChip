@@ -975,6 +975,13 @@ result.
 | 2026-10-18 | The RTL check also refuses, where the candidate adds them, synthesis pragmas, tool-macro branches, `defparam` and hierarchical references (§11) |
 | 2026-10-18 | `replay-mzero` is a test task (it validates the loop: `noop` 1.000, `reference` the known gain); its base commits stay on local branches. The formal tasks replace it, and their bases go to the remote. Decided by the user |
 | 2026-10-19 | The operator reviews the final candidate and result path before accepting its score (§10.5). P2.2 is optional automation for unattended scoring, not a blocker for the manually reviewed loop. Decided by the user |
+| 2026-10-27 | *Multicore (the three-core U280 device main has since R40, PR #10).* Decided by the user, question by question; the plan is outside the repository. The score of a multicore task is the evaluator's own RTL simulation of the three-core device; the card certifies the base and final candidates; the SystemC model is an estimate in the sandbox, to be aligned with the RTL later (a change then maps to both) |
+| 2026-10-27 | *Multicore.* The uncore is open to the agent from the start. A device is described as data, `spec/devices/<name>.json`: the per-core profile by name, the platform (fixed: core count 3, AXI data width, kernel clock, HBM window, the memory and cache-maintenance controls the runtime requires), the uncore (open: outlets 1..3, outstanding slots, sets and ways, the five pipeline depths, the DCO and NUCA switches), and derived fields (`SET_W`, `WAY_W`, `AXI_ID_W`, which follows the outstanding slots as R40's generator has it). The image config, the simulation's parameters, the board backend's arguments and the SystemC model's uncore keys are generated from it (`python/tnca/devices.py`) |
+| 2026-10-27 | *Multicore.* The scored simulation is the image's own top, `tnca_multicore_hbm_xo`, in the board-register bench, with every parameter from the description; the score is `device-cycles-serial-grid` (each launch spans the three cores; graph makespan is recorded, not scored); a launch's cycles are the evaluator-owned MMIO endpoints (`launch_end - launch_start`, `rtl/fpga/tnca_multicore_mmio.v`), not the device's `done_cycles`, and the bench checks at completion that every AXI port is drained and the device idle. A full multicore observer comes later |
+| 2026-10-27 | *Multicore.* A target fixes its own kernel clock (R40's machine 90 MHz, R41's 100 MHz); the score stays in cycles and a hardware candidate must close at the target's clock. Certification: every point correct on the card, each point's cycles within a tolerance calibrated on the base (card against simulation) and frozen with the target, and the same direction of speedup on the card as in simulation |
+| 2026-10-27 | *Multicore.* R40's base is rebuilt from its description at 90 MHz with Vivado 2023.2 on the collaborator's x86 build host, the only multicore build worker (its use agreed with the collaborator). In-run FPGA feedback: the quick tier synthesizes the changed modules out of context with the description's parameters; the one-tile place-and-route screen is an opt-in slow tier once its time is measured; a full link only certifies |
+| 2026-10-27 | *Multicore.* In the sandbox: the SystemC model's fast path (its configuration from the description, its output labelled an uncalibrated estimate, run only on the agent's own cases), the model's validators and RTL oracles, its diagnosis, and the analytical cost model. The calibration chain, sealed predictions, board datasets, `experiment.py` and the roofline stay with the evaluator; the board tools and `clock_qualify` with the FPGA harness. An agent's change to the model is not part of its submission until the alignment milestone |
+| 2026-10-27 | *Multicore.* The first multicore task is a pilot on R40's machine, validated before use by known-answer submissions: the base unchanged scores 1.000, and one outlet, a cache of four sets, or one outstanding slot each scores memory-bound points slower. R41's machine is added once `r41` is merged into `main`. The multicore P1 is made in the product files, as P1 was (the board-register bench and the multicore simulation backend), and the collaborator is asked to adopt the description in R41 |
 
 **Open.**
 
@@ -990,7 +997,7 @@ result.
 | O21 | How ArchBench splits into a public and a hidden package for delivery: by family, or by shape tables made data | collaborator |
 | O22 | Who migrates P1's remainder (the FPGA top first, then the core benches and `tnca_shell_tb`) | collaborator |
 | O24 | *Deferred with the screen.* The quick-tier screen's thresholds (share of SLR1, worst path at the declared clock), calibrated on the images that closed (v2, v4, v5) | us, with the collaborator |
-| O25 | *Deferred with the achieved clock.* How the flow takes a requested kernel clock (`link.sh`, `package_xo.tcl` and `ooc.xdc` fix 100 MHz, which the score now assumes), and where a candidate declares its clock. The named profile is built (`d1a00dd`); the collaborator to confirm that change | collaborator |
+| O25 | *Deferred with the achieved clock.* Where a candidate declares its clock. The flow's half is built: `TNCA_KERNEL_MHZ` sets the clock `link.sh` asks v++ for and checks, and the `FREQ_HZ` `package_xo.tcl` declares (unset, 100 MHz), and a target names its own (2026-10-27). The collaborator to confirm both changes | collaborator |
 
 ## 17. Progress
 
@@ -1055,7 +1062,17 @@ Status: **done** (built and verified), **in progress** (being built now),
 | Scoring | Board certification of a final candidate (`certify`) | done | §10.4; `tests/test_certify.py`; the v5 base `certified` on the card, every point equal to simulation (§19) |
 | Scoring | Latency at the achieved clock; the declared clock and the derated re-link; the screen, the diagnosis, the reference latency | deferred | §16 (2026-10-18); O24, O25 |
 | Flow | A named profile in the build (r40's `TNCA_IMAGE_CONFIG`, the U280 top's pass-through) | done | `d1a00dd`; packaged on the build worker: v5 gives r40's 17 parameters, the default package is unchanged (v2) |
-| Flow | A requested kernel clock | deferred | O25 |
+| Flow | A target's kernel clock: `TNCA_KERNEL_MHZ` in `link.sh` and `package_xo.tcl`, passed by the FPGA harness from the target | done | `bd5e080`; `tests/test_u50_flow_guard.py`, `tests/test_u50_adapter.py` |
+| Flow | The on-chip build links again (its variant is `none`) | done | `4e95772`; on the 2022.2 build worker the default U280 package reached v++ |
+| Multicore | `main` (R40, PR #10) merged into the harness branch | done | `42091c9`; harness tests pass |
+| Multicore | After the merge, the single-core device simulates exactly as `main`'s (profile header against `main`'s `-P` table; `/hbm`; an AXI ablation) | in progress | — |
+| Multicore | Device descriptions and their generator | done | `261405c`; `u280-3core-r40` generates the 39 parameters of image `a88ebdf5`; `tools/tritonchip_fpga_harness/tests/test_devices.py` |
+| Multicore | The board-register bench elaborated from a description; the simulation's speed measured | planned | — |
+| Multicore | Scoring from the MMIO endpoints, the drain check, the relay for a three-core session | planned | — |
+| Multicore | FPGA harness target for the three-core image at 90 MHz; the x86 build worker; the quick tier on changed modules | planned | — |
+| Multicore | R40's base rebuilt at 90 MHz and certified; tolerance calibrated | planned | — |
+| Multicore | SystemC fast path and the model's tools in the sandbox | planned | — |
+| Multicore | Multicore pilot task and its known-answer submissions | planned | — |
 | Device boundary | RTL check: pragmas, tool macros, `defparam`, hierarchical references, where the candidate adds them | done | `tests/test_certify.py` (`SplitRtl`); the base's 58 RTL files pass |
 
 ## 18. Quick start

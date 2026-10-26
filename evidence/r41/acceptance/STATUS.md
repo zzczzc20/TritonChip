@@ -44,3 +44,20 @@ merged acceptance worktree. judgment.json preserves the aggregate result.
 Final review retained the illegal-alias negative-test gate as not measured:
 high-bit anti-alias tests pass but do not establish overlapping-storage
 ownership refusal. The compound requirement is not upgraded from partial evidence.
+
+## Delivery continuation — P0 in progress
+
+The user authorized implementation on 2026-10-26, in order P0, P8, P1–P6.
+No board access or image builds are authorized for this agent. The lead starts
+all prepared waiting jobs. Prospective core/tail inputs, all eight XL definitions,
+candidate list, baseline boundaries and budgets are drafted in spec/r41/stage2.
+They are not yet claimed frozen: model_lock/lock await independent CPU numeric
+cross-validation of authentic Qwen3.5-2B checkpoint values. Historical process
+failures remain failures.
+
+GB10 units r41-accept-p0-fetch (2 GiB) and r41-accept-p0-reference (14 GiB,
+waiting for download then BF16/FP32 sequentially) use CPUs 0–5, no swap;
+combined maximum 16 GiB. Reference unit never opens TNCA or the card.
+Next step: inspect fetch/reference logs, resolve any reference failures,
+freeze numerical thresholds and identities only after independent validation,
+then run the Stage 2 freeze checker and proceed to P8.

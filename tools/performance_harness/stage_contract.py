@@ -25,8 +25,11 @@ def sha(path):
 
 
 def verify(root=ROOT, *, stage=1, registry_check=True):
+    if stage == 2:
+        from stage2_contract import verify as verify_stage2
+        return verify_stage2(root, registry_check=registry_check)
     if stage != 1:
-        raise ValueError('Stage 2 inputs have not been frozen')
+        raise ValueError('unsupported stage')
     lock_path = root/'spec/r41/stage1/lock.json'
     if sha(lock_path) != STAGE1_LOCK_SHA256:
         raise ValueError('Stage 1 lock identity changed')

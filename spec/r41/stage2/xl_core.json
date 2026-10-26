@@ -1,0 +1,160 @@
+{
+  "schema": "tnca-r41-xl-core/1",
+  "frozen_utc": "2026-10-26",
+  "scope": "Prospective remaining delivery; no observed TNCA candidate gains used",
+  "points": [
+    {
+      "id": "XL41-stream",
+      "operation": "stream",
+      "shape": [
+        1073741888
+      ],
+      "dtype": "bfloat16",
+      "seed": 20261026,
+      "input": "deterministic bounded values from index: ((index*17+3)%257-128)/128, rounded to dtype",
+      "reference": "independent CPU float32/float64 arithmetic from rounded inputs; no TNCA outputs",
+      "rtol": 0.02,
+      "atol": 0.02,
+      "storage_bytes": 2147483776,
+      "materialized": true,
+      "offsets": "first/last and 2GiB boundary; complete streaming checksum; no sampled-only pass",
+      "sha256": "60f2f19d959b8ec2517e718f776dffbad6cb2556c97debd3649e9f4341d4d269"
+    },
+    {
+      "id": "XL41-transpose",
+      "operation": "transpose",
+      "shape": [
+        16384,
+        16384
+      ],
+      "dtype": "bfloat16",
+      "seed": 20261026,
+      "input": "deterministic bounded values from index: ((index*17+3)%257-128)/128, rounded to dtype",
+      "reference": "independent CPU float32/float64 arithmetic from rounded inputs; no TNCA outputs",
+      "rtol": 0.02,
+      "atol": 0.02,
+      "strides": [
+        16384,
+        1
+      ],
+      "materialized": true,
+      "sha256": "e09eb6a3c4419687f172a7c582476b20cd425791536ce00b9d277c95b2e7eb41"
+    },
+    {
+      "id": "XL41-gemm",
+      "operation": "matmul",
+      "shape": [
+        512,
+        2048,
+        6144
+      ],
+      "dtype": "bfloat16",
+      "seed": 20261026,
+      "input": "deterministic bounded values from index: ((index*17+3)%257-128)/128, rounded to dtype",
+      "reference": "independent CPU float32/float64 arithmetic from rounded inputs; no TNCA outputs",
+      "rtol": 0.02,
+      "atol": 0.02,
+      "sha256": "bfbea158bb1e5318c7d48fd1ed410276dd6bce51295e336ef30d1077799cf6ec"
+    },
+    {
+      "id": "XL41-gemv",
+      "operation": "matmul",
+      "shape": [
+        1,
+        2048,
+        6144
+      ],
+      "dtype": "bfloat16",
+      "seed": 20261026,
+      "input": "deterministic bounded values from index: ((index*17+3)%257-128)/128, rounded to dtype",
+      "reference": "independent CPU float32/float64 arithmetic from rounded inputs; no TNCA outputs",
+      "rtol": 0.02,
+      "atol": 0.02,
+      "sha256": "4fc3f12b79ff75fc5cd70751b301317866fa38c9a82300d3d09fe7a6bc9d0b31"
+    },
+    {
+      "id": "XL41-projection",
+      "operation": "matmul",
+      "shape": [
+        1,
+        2048,
+        248320
+      ],
+      "dtype": "bfloat16",
+      "seed": 20261026,
+      "input": "deterministic bounded values from index: ((index*17+3)%257-128)/128, rounded to dtype",
+      "reference": "independent CPU float32/float64 arithmetic from rounded inputs; no TNCA outputs",
+      "rtol": 0.02,
+      "atol": 0.02,
+      "sha256": "f399ffcb957670cde6a4624991a4143396073386a95a31e13db57926fab33799"
+    },
+    {
+      "id": "XL41-gather",
+      "operation": "gather",
+      "shape": [
+        65536,
+        2048,
+        8193
+      ],
+      "dtype": "bfloat16",
+      "seed": 20261026,
+      "input": "deterministic bounded values from index: ((index*17+3)%257-128)/128, rounded to dtype",
+      "reference": "independent CPU float32/float64 arithmetic from rounded inputs; no TNCA outputs",
+      "rtol": 0.02,
+      "atol": 0.02,
+      "indices_dtype": "int64",
+      "indices": "((arange(8193)//2)*65521+7)%65536; consecutive duplicate pairs; include rows 0,32767,32768,65535",
+      "strides": [
+        2048,
+        1
+      ],
+      "sha256": "2ba3f7430464280044813353d099bc1fe3f840310ea2df5ce9c0d76ac4d0adbe"
+    },
+    {
+      "id": "XL41-attention",
+      "operation": "attention",
+      "shape": [
+        2,
+        8,
+        2,
+        129,
+        256
+      ],
+      "dtype": "bfloat16",
+      "seed": 20261026,
+      "input": "deterministic bounded values from index: ((index*17+3)%257-128)/128, rounded to dtype",
+      "reference": "independent CPU float32/float64 arithmetic from rounded inputs; no TNCA outputs",
+      "rtol": 0.02,
+      "atol": 0.02,
+      "causal": true,
+      "gqa": true,
+      "lengths": [
+        129,
+        127
+      ],
+      "masked_tail": true,
+      "sha256": "750f069b5f2a36eaa715164d16e05416a5f877c5991778bab03d0cb89b649c3b"
+    },
+    {
+      "id": "XL41-recurrence",
+      "operation": "gated_recurrence",
+      "shape": [
+        1,
+        2,
+        65,
+        128
+      ],
+      "dtype": "float32",
+      "seed": 20261026,
+      "input": "deterministic bounded values from index: ((index*17+3)%257-128)/128, rounded to dtype",
+      "reference": "independent CPU float32/float64 arithmetic from rounded inputs; no TNCA outputs",
+      "rtol": 0.0001,
+      "atol": 1e-05,
+      "chunk": 32,
+      "state_dtype": "float32",
+      "updates": 4,
+      "gates": "sigmoid(index-pattern) and decay exp(-softplus(index-pattern)); extreme values -20,0,20 included",
+      "sha256": "dbbf36b4b43b8f503a0fed13c3c3e2be2ed50e15657762f4c63eb4344e3fda00"
+    }
+  ]
+}

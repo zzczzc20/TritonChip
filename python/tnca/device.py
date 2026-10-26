@@ -92,8 +92,9 @@ RTL_SWITCHES = ('VRF_BYPASS', 'FE_NOBUBBLE', 'VRF_PREFETCH', 'RCTX_SWITCH', 'LSU
 # Of those, the ones that belong to the /hbm memory mode's bench rather than to
 # the device: they are parameters of tb/device/tnca_device.v (its AXI bridge),
 # so they go there by -P like the memory model's own, not into the header.
-BENCH_SWITCHES = ('AXI_RAM_CACHE', 'AXI_LOCAL_PIPE', 'AXI_LINE', 'AXI_LB_N', 'AXI_PF',
-                  'AXI_WAIT_N', 'AXI_OUT_N')
+# Derived, not listed again: an AXI switch added above and missed here would go
+# into the header and set nothing.
+BENCH_SWITCHES = tuple(k for k in RTL_SWITCHES if k.startswith('AXI_'))
 
 
 def rtl_overrides():

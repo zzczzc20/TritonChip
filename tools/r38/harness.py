@@ -31,14 +31,21 @@ def cases(source=TILEBENCH):
 
 
 def build_bench(profile, out, *, rtl=ROOT / 'rtl', tb=ROOT / 'tb'):
-    """Compile the device bench the way tnca.device.prepare does, from `rtl`."""
+    """Compile the device bench the way tnca.device.prepare does, from `rtl`.
+
+    The profile's machine reaches the core through the header prepare writes
+    (tnca_uarch.vh, before the bench); the `-P` table carries only the bench's
+    own switches. Without the header every bench here was core-sim."""
     out = Path(out)
     out.parent.mkdir(parents=True, exist_ok=True)
+    header = out.with_name(out.stem + '.tnca_uarch.vh')
+    header.write_text(device.uarch_header(profile))
     argv = (['iverilog', '-g2005', '-I', str(Path(rtl) / 'common'),
              '-y', str(Path(rtl) / 'core'), '-y', str(Path(rtl) / 'common'),
-             '-y', str(Path(rtl) / 'gen'), '-y', str(Path(tb) / 'common')]
+             '-y', str(Path(rtl) / 'gen'), '-y', str(Path(tb) / 'common'),
+             '-y', str(Path(rtl) / 'fpga')]
             + device.bench_params(profile)
-            + ['-o', str(out), str(Path(tb) / 'device' / 'tnca_device.v'),
+            + ['-o', str(out), str(header), str(Path(tb) / 'device' / 'tnca_device.v'),
                str(Path(rtl) / 'tnca_shell.v')])
     r = subprocess.run(argv, capture_output=True, text=True)
     if r.returncode != 0:

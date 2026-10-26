@@ -1,0 +1,78 @@
+{
+  "schema": "r40-followup-fragment-static/1",
+  "software_tree": "files:fe1b5199db515440d2d3407aed61ef1eed5edb627e5baf9cda10be5a7198cf75",
+  "records": [
+    {
+      "columns": 16,
+      "old_use": false,
+      "body_ops": {
+        "assign": 1,
+        "barrier_arm": 3,
+        "barrier_wait": 3,
+        "branch_nz": 2,
+        "comment": 3,
+        "const": 4,
+        "dma_load": 2,
+        "label": 1,
+        "mma_async": 1,
+        "sbin": 3,
+        "scmp": 1,
+        "window_def": 2
+      },
+      "whole_ir_sha256": "1a3e8a93320d5ac7a0573bed1d394ed36746aa19baf21189cd621fbe04580ea1"
+    },
+    {
+      "columns": 32,
+      "old_use": false,
+      "body_ops": {
+        "acc_read": 128,
+        "acc_write": 96,
+        "acc_zero": 2,
+        "assign": 1,
+        "barrier_arm": 5,
+        "barrier_wait": 5,
+        "branch_nz": 2,
+        "comment": 7,
+        "const": 227,
+        "dma_load": 3,
+        "label": 1,
+        "mma_async": 2,
+        "sbin": 3,
+        "scmp": 1,
+        "vbin": 32,
+        "window_def": 3
+      },
+      "whole_ir_sha256": "99fadb70bc1000da8800b060475b1b0c2278704a526ad2e793e034957d0e8b84"
+    },
+    {
+      "columns": 32,
+      "old_use": true,
+      "body_ops": {
+        "acc_read": 160,
+        "acc_write": 96,
+        "acc_zero": 2,
+        "assign": 1,
+        "barrier_arm": 5,
+        "barrier_wait": 5,
+        "branch_nz": 2,
+        "comment": 9,
+        "const": 289,
+        "dma_load": 3,
+        "label": 1,
+        "mma_async": 2,
+        "sbin": 34,
+        "sbini": 31,
+        "scmp": 1,
+        "store": 32,
+        "vbin": 32,
+        "window_def": 3
+      },
+      "whole_ir_sha256": "f6951fa11c83f1b508178d576029656e7bb9710cc6c22bff09de0e40ec121556"
+    }
+  ],
+  "not_measured": [
+    "numerics",
+    "latency",
+    "board performance"
+  ]
+}

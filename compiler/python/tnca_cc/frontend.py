@@ -3306,7 +3306,9 @@ class TTIRImporter:
         """
         if not self._is_zero_tensor(op.get_operand(2)):
             return None
-        users = self._value_users.get(op.get_result(0).id(), [])
+        value_users = getattr(op, 'value_users', None)
+        users = (value_users(self, op.get_result(0)) if value_users else
+                 self._value_users.get(op.get_result(0).id(), []))
         if len(users) != 1 or users[0][0].get_name() != 'arith.addf':
             return None
         add, k = users[0]
@@ -3315,7 +3317,9 @@ class TTIRImporter:
         if x is None or x.kind != 'accumulator' or (x.rows, x.cols) != (a.rows, b.cols) \
                 or x.store != 'f32':
             return None
-        if len(self._value_users.get(other.id(), [])) != 1:
+        other_users = (value_users(self, other) if value_users else
+                       self._value_users.get(other.id(), []))
+        if len(other_users) != 1:
             return None
         bar = self.b.barrier(name=f"mma{len(self.kernel.barriers)}")
         tok = self.b.barrier_arm(bar, arrivals=0, ops=1)

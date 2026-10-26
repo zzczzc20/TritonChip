@@ -1,0 +1,25 @@
+{
+  "started": 1793050799.410735,
+  "runs": [
+    {
+      "name": "gemm-v2-float16",
+      "command": [
+        "/home/zhongchun/tc_env/torchenv/bin/python",
+        "tools/r40/gemm_tiles_tests.py",
+        "--columns",
+        "32",
+        "--depth",
+        "16",
+        "--dtype",
+        "float16",
+        "--dump-dir",
+        "/home/zhongchun/r40_followup_fragment_20261026/gemm-v2-float16"
+      ],
+      "status": "running"
+    }
+  ],
+  "not_measured": [
+    "board performance",
+    "gate improvement"
+  ]
+}

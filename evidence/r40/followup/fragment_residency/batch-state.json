@@ -1,0 +1,37 @@
+{
+  "started": 1793050748.7270403,
+  "runs": [
+    {
+      "name": "compiler-unit",
+      "command": [
+        "/home/zhongchun/tc_env/torchenv/bin/python",
+        "compiler/test/run_tests.py",
+        "--no-rtl"
+      ],
+      "status": "pass",
+      "returncode": 0
+    },
+    {
+      "name": "gemm-float16",
+      "command": [
+        "/home/zhongchun/tc_env/torchenv/bin/python",
+        "tools/r40/gemm_tiles_tests.py",
+        "--columns",
+        "32",
+        "--depth",
+        "16",
+        "--dtype",
+        "float16",
+        "--dump-dir",
+        "/home/zhongchun/r40_followup_fragment_20261026/gemm-float16"
+      ],
+      "status": "fail",
+      "returncode": 1
+    }
+  ],
+  "not_measured": [
+    "board performance",
+    "gate improvement"
+  ],
+  "finished": 1793050764.0247064
+}

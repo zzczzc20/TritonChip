@@ -1,0 +1,86 @@
+{
+  "state.json": {
+    "source": "/home/zhongchun/r40_followup_fragment_20261026/state.json",
+    "sha256": "8f3eb67a40e1a422f21d378edb2998ce8767b56c3384d326230c50880de54c59"
+  },
+  "run.py": {
+    "source": "/home/zhongchun/r40_followup_fragment_20261026/run.py",
+    "sha256": "c7a1b09372a44d7e1033f36bd7e3768b55934eefe4bda0445121910e5bf8824d"
+  },
+  "baseline.log": {
+    "source": "/home/zhongchun/r40_followup_fragment_20261026/baseline.log",
+    "sha256": "d32125d9130ef178554e1185ada204c57d831ada529d20f79aee388ec0899964"
+  },
+  "candidate.log": {
+    "source": "/home/zhongchun/r40_followup_fragment_20261026/candidate.log",
+    "sha256": "bb94ea02eefcfb154a1b56c22f39ecd41e7f37ed5446169bb014a082df463c7c"
+  },
+  "candidate.patch": {
+    "source": "/home/zhongchun/r40_followup_fragment_20261026/candidate.patch",
+    "sha256": "e9a5f7738d7d6fd7a6cd95e80e952885b5d91d25a5c1a920bfdb9191f8c9a115"
+  },
+  "compiler-unit.log": {
+    "source": "/home/zhongchun/r40_followup_fragment_20261026/compiler-unit.log",
+    "sha256": "816a6e96f516aa33db2313927e0bef7f02e24a2821111aa6a2161301d5e2202d"
+  },
+  "batch.py": {
+    "source": "/home/zhongchun/r40_followup_fragment_20261026/batch.py",
+    "sha256": "5ae2b1694717b1d061036b71ed42433ceee8ece8d2860a1ac6c53709c3314731"
+  },
+  "batch-state.json": {
+    "source": "/home/zhongchun/r40_followup_fragment_20261026/batch-state.json",
+    "sha256": "aa80ce05f714824294525137474e14b901e63ffb1f2f0242f8717ed9a0194cb3"
+  },
+  "gemm-float16.log": {
+    "source": "/home/zhongchun/r40_followup_fragment_20261026/gemm-float16.log",
+    "sha256": "a5b195a6a66fdcd203658f028f4f1ff8cad0288d22f112ae6318a11752998347"
+  },
+  "batch-v2.py": {
+    "source": "/home/zhongchun/r40_followup_fragment_20261026/batch-v2.py",
+    "sha256": "9cc93de882cac4c29819dc5d0ef61cfbc82079add22dc6fbe2c9d0f42be69311"
+  },
+  "baseline-static.json": {
+    "source": "/home/zhongchun/r40_followup_fragment_20261026/baseline-static.json",
+    "sha256": "fe4b2d3bfacea6fd6f1e286ece878d90dbce0db5b99f16004cc7a21db97f1ea5"
+  },
+  "candidate-static.json": {
+    "source": "/home/zhongchun/r40_followup_fragment_20261026/candidate-static.json",
+    "sha256": "899cd90888cdaec07c891d46c8ad2981308c64bb85d241c8de2d2c90e9e6ba3b"
+  },
+  "fragment_summary.py": {
+    "source": "/home/zhongchun/r40_followup_fragment_20261026/fragment_summary.py",
+    "sha256": "bfdfd16ec3286292147f4ddddb9f2cccfb3ea6fd66bdfeb632a454c73ef5b27e"
+  },
+  "gemm-preflight/report.json": {
+    "source": "/home/zhongchun/r40_followup_fragment_20261026/gemm-preflight/report.json",
+    "sha256": "b9b8a3b1bf1bee7be2b96a6ade073e76bd21f099c1a441c10db14175958b67f4"
+  },
+  "gemm-preflight.log": {
+    "source": "/home/zhongchun/r40_followup_fragment_20261026/gemm-preflight.log",
+    "sha256": "6e1e59c392376f56099b9466a86cd3c36d073a7bf72ffb1b671143ed7f2232dd"
+  },
+  "gemm-preflight-command.json": {
+    "source": "/home/zhongchun/r40_followup_fragment_20261026/gemm-preflight-command.json",
+    "sha256": "dce33f1869cdf1e425a9e569a4e15609b2da14484fde9733e957ca5ad36ed47d"
+  },
+  "gemm-preflight-items.json": {
+    "source": "/home/zhongchun/r40_followup_fragment_20261026/gemm-preflight-items.json",
+    "sha256": "e4906d049660c727fe12277578fabdfe9895a2f966c353cbad69a49af6d0679d"
+  },
+  "linear-assembly/op.linear__medium__fp16-m128-k320-n256__base/triton_tem_fused_addmm_t_0.s": {
+    "source": "/home/zhongchun/r40_followup_fragment_20261026/gemm-preflight/runs/op.linear__medium__fp16-m128-k320-n256__base/dump/triton_tem_fused_addmm_t_0/triton_tem_fused_addmm_t_0.s",
+    "sha256": "c83e01d7a313cc4267aba0c89bf720bf7e32f4d91d57f5aa9384e5e31be18294"
+  },
+  "linear-assembly/op.linear__medium__fp16-m128-k320-n256__gemm_tile=16,32,16/triton_tem_fused_addmm_t_0.s": {
+    "source": "/home/zhongchun/r40_followup_fragment_20261026/gemm-preflight/runs/op.linear__medium__fp16-m128-k320-n256__gemm_tile=16,32,16/dump/triton_tem_fused_addmm_t_0/triton_tem_fused_addmm_t_0.s",
+    "sha256": "24b5f2c9eef8944d90c685933ccf23277e601f356a801426d87a512aad2d42c8"
+  },
+  "batch-v2-state.json": {
+    "source": "/home/zhongchun/r40_followup_fragment_20261026/batch-v2-state.json",
+    "sha256": "e92bd08b926b9aeaf0ba956b8baa6d7d86996f1f9e8f2539de61385805f79e2f"
+  },
+  "gemm-v2-float16.log": {
+    "source": "/home/zhongchun/r40_followup_fragment_20261026/gemm-v2-float16.log",
+    "sha256": "a254e14e8da50c060d1dfa8a5fcf9c7edc31aae7cc50ba1a9856f2018fb85b63"
+  }
+}

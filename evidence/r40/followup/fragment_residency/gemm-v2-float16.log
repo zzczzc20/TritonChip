@@ -1,0 +1,5 @@
+  building core-vrf-sync-v5 -> /home/zhongchun/r40_followup_fragment_20261026/device-cache/devices/core-vrf-sync-v5-a8f9e2a0291d254a-2f12bdd465ea/tnca_device_vrf5.vvp
+  built 17677354 bytes
+AUDIT logical K=16, physical MMA K=16, retiles=[]: {'accumulators': 2, 'barriers': 5, 'commands_outstanding': 'unknown', 'descriptors': 3, 'rf_private_per_role': {'role0': 15, 'role1': 15}, 'scratch_bytes': 14592, 'shared_windows': []}
+AUDIT logical GEMM tiles: [{'external_spill_bytes': 0, 'gemm_tiles': [[16, 32, 16]], 'mma_fragment_reuses': 1, 'predicate_rematerializations': 0, 'reductions': [], 'vlen': 16, 'widths': [32]}]
+PASS mm, logical 16x32x16, shape 17x65x33

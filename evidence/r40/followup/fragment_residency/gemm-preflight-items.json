@@ -1,0 +1,19 @@
+[
+  {
+    "item": 1,
+    "subset": "R40-03.gemm-reuse",
+    "experiment": "followup-R40-03.gemm-tile-compile-only",
+    "configs": [
+      {
+        "label": "base",
+        "knobs": {}
+      },
+      {
+        "label": "gemm_tile=16,32,16",
+        "knobs": {
+          "TNCA_GEMM_TILE": "16,32,16"
+        }
+      }
+    ]
+  }
+]

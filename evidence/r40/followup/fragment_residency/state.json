@@ -1,0 +1,13 @@
+{
+  "schema": "r40-followup-fragment/1",
+  "baseline_product": "files:fe1b5199db515440d2d3407aed61ef1eed5edb627e5baf9cda10be5a7198cf75",
+  "started": 1793050688.1844409,
+  "not_measured": [
+    "board performance",
+    "gate improvement"
+  ],
+  "baseline_returncode": 1,
+  "candidate_product": "files:4bfc9ca1fa8565bb6f8e4d38ef8a43c5845646634ae3921d60aee1af1bc1e1f1",
+  "candidate_returncode": 0,
+  "finished": 1793050688.789809
+}

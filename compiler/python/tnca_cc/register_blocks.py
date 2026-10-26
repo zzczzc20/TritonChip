@@ -62,6 +62,16 @@ class _OpView:
     def get_block(self):
         return _BlockView(self.op.get_block(), self.chunk, self.vlen)
 
+    def value_users(self, imp, value):
+        """Project all original users into this independent column chunk.
+
+        Retain external users as well: hiding an old accumulator reader
+        would incorrectly authorize destructive dot/add accumulation.
+        """
+        original = value.value if isinstance(value, _ValueView) else value
+        return [(_OpView(user, self.chunk, self.vlen), operand)
+                for user, operand in imp._value_users.get(original.id(), [])]
+
     def get_int_attr(self, name):
         value = self.op.get_int_attr(name)
         if (self.op.get_name() == 'tt.make_range' and name in ('start', 'end') and

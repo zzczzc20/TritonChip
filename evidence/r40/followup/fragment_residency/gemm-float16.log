@@ -1,0 +1,28 @@
+  building core-vrf-sync-v5 -> /home/zhongchun/.cache/tnca/devices/core-vrf-sync-v5-a8f9e2a0291d254a-2f12bdd465ea/tnca_device_vrf5.vvp
+  pruned 1 older build(s) of core-vrf-sync-v5
+  built 17677354 bytes
+Traceback (most recent call last):
+  File "/home/zhongchun/r40_followup_fragment_20261026/source/tools/r40/gemm_tiles_tests.py", line 104, in <module>
+    sys.exit(main())
+             ^^^^^^
+  File "/home/zhongchun/r40_followup_fragment_20261026/source/tools/r40/gemm_tiles_tests.py", line 52, in main
+    da,db,dc = (t.to('tnca') for t in (a,b,c))
+    ^^^^^^^^
+  File "/home/zhongchun/r40_followup_fragment_20261026/source/tools/r40/gemm_tiles_tests.py", line 52, in <genexpr>
+    da,db,dc = (t.to('tnca') for t in (a,b,c))
+                ^^^^^^^^^^^^
+torch.OutOfMemoryError: tnca: BackendError: [BACKEND_UNKNOWN] there is no backend named 'rtl'
+  known: ['fpga-multicore-sim', 'fpga-prototype', 'fpga-u280', 'fpga-u280-multicore', 'fpga-u50', 'fpga-u50-sim', 'sim-file', 'sim-multicore', 'sim-socket']
+  try: name one of the backends listed, or register yours before opening it. Nothing is substituted: a missing backend that silently became the simulator would report a platform working that was never there.
+
+At:
+  /home/zhongchun/r40_followup_fragment_20261026/source/python/tnca/backend.py(261): open_backend
+  /home/zhongchun/r40_followup_fragment_20261026/source/python/tnca/runtime.py(301): _open_device
+  /home/zhongchun/r40_followup_fragment_20261026/source/python/tnca/runtime.py(428): __init__
+  /home/zhongchun/r40_followup_fragment_20261026/source/python/tnca/triton_backend/driver.py(85): get
+  /home/zhongchun/r40_followup_fragment_20261026/source/python/tnca/torch_device/__init__.py(76): session
+  /home/zhongchun/r40_followup_fragment_20261026/source/python/tnca/torch_device/__init__.py(79): alloc
+  /home/zhongchun/r40_followup_fragment_20261026/source/tools/r40/gemm_tiles_tests.py(52): <genexpr>
+  /home/zhongchun/r40_followup_fragment_20261026/source/tools/r40/gemm_tiles_tests.py(52): main
+  /home/zhongchun/r40_followup_fragment_20261026/source/tools/r40/gemm_tiles_tests.py(104): <module>
+

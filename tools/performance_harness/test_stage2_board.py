@@ -31,6 +31,7 @@ import stage2_board           # noqa: E402
 
 UUID = stage2_board.UUID
 QUEUE = ROOT / 'evidence/r41/stage2/board/launches/board_queue.sh'
+RERUN = ROOT / 'evidence/r41/stage2/board/launches/endurance_rerun.sh'
 RUN1 = ROOT / 'evidence/r41/stage2/run1/run1-reports.tgz'
 
 STUB = r'''#!/usr/bin/env python3
@@ -237,6 +238,9 @@ class Endurance(unittest.TestCase):
             def check_card(self):
                 pass
 
+            def bind(self):
+                pass
+
             def run_one(self, cfg, tag, warmup, timed):
                 self.n += 1
                 if refuse_at and self.n >= refuse_at:
@@ -399,6 +403,55 @@ class Queue(unittest.TestCase):
             sleeper.wait()
         self.assertFalse((self.t / 'program.calls').exists())
         self.assertNotIn('card idle', self.log())
+
+
+class EnduranceRerun(unittest.TestCase):
+    """endurance_rerun.sh: idle rule, load only on approval, only s2-endurance, on a fake home and sysfs."""
+
+    def setUp(self):
+        Queue.setUp(self)
+        qd = self.t / 'tnca_build/r41s2_run1_c9f25787494a/r41s2-board'
+        qd.mkdir(parents=True)
+        (qd / 'qualified_clock.json').write_text('{}\n')
+        self.env.update(S2_TEST_CLKSHA=sha(qd / 'qualified_clock.json'))
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def rerun(self, **env):
+        return subprocess.run(['bash', str(RERUN), 'abc'], env=dict(self.env, **env), timeout=60,
+                              capture_output=True, text=True)
+
+    def log(self):
+        return (self.t / 'r41s2_endurance_abc.log').read_text()
+
+    def test_without_approval_nothing_is_loaded(self):
+        r = self.rerun()
+        self.assertEqual(r.returncode, 4, self.log())
+        self.assertFalse((self.t / 'program.calls').exists())
+        self.assertFalse((self.t / 'manifests').exists())
+        self.assertIn('S2_LOAD_APPROVED is not 1', self.log())
+
+    def test_approved_load_then_only_the_endurance_manifest(self):
+        r = self.rerun(S2_LOAD_APPROVED='1')
+        self.assertEqual(r.returncode, 0, self.log())
+        calls = (self.t / 'program.calls').read_text().splitlines()
+        self.assertEqual([c.split()[0] for c in calls], ['--check', '--go', '--status'])
+        self.assertEqual((self.t / 'manifests').read_text().split(), ['s2-endurance'])
+        self.assertIn('ENDURANCE-RERUN-DONE exit 0', self.log())
+        # A second attempt refuses to mix with the first one's output (the stub makes none, so make it).
+        (self.t / 'r41s2_endurance_abc/out').mkdir()
+        self.assertEqual(self.rerun(S2_LOAD_APPROVED='1').returncode, 3)
+
+    def test_wrong_clock_after_load_stops(self):
+        r = self.rerun(S2_LOAD_APPROVED='1', LOAD_MHZ='90')
+        self.assertEqual(r.returncode, 5, self.log())
+        self.assertFalse((self.t / 'manifests').exists())
+
+    def test_wrong_clock_evidence_refused(self):
+        r = self.rerun(S2_LOAD_APPROVED='1', S2_TEST_CLKSHA='0' * 64)
+        self.assertEqual(r.returncode, 3, self.log())
+        self.assertFalse((self.t / 'program.calls').exists())
 
 
 if __name__ == '__main__':

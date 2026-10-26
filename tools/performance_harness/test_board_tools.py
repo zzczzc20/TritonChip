@@ -11,12 +11,14 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import types
 import unittest
 
 HERE = Path(__file__).resolve().parent
 REPO = HERE.parents[1]
 sys.path.insert(0, str(HERE))
 import board_batch  # noqa: E402
+import endurance_mixed  # noqa: E402
 import experiment  # noqa: E402
 import prediction_residuals  # noqa: E402
 import prospective_residual  # noqa: E402
@@ -147,6 +149,81 @@ class BoardBatchTests(unittest.TestCase):
         again = self.run_batch(manifest, 'b')
         self.assertEqual(again['status'], 'complete')
         self.assertEqual(json.loads((self.out/'state.json').read_text())['runs'], runs)
+
+    def with_fake_board(self):
+        env = {'FAKE_BOARD': json.dumps(self.fake), 'TNCA_GEMM_TILE': '64,64,64'}
+        old = {k: os.environ.get(k) for k in env}
+        os.environ.update(env)
+        def restore():
+            for k, v in old.items():
+                if v is None:
+                    os.environ.pop(k, None)
+                else:
+                    os.environ[k] = v
+        self.addCleanup(restore)
+
+    def test_run_one_needs_bind_for_clock_identity(self):
+        """Regression: the first R41 Stage 2 endurance run failed all 250 sessions with
+        'qualified clock evidence identity' because it called run_one without the
+        binding that execute() makes (the digest in the batch state was None)."""
+        self.with_fake_board()
+        manifest = self.manifest(dict(b=dict(sampling='device-rule', configurations=self.configs('op.short/a'))))
+        cfg = self.batch(manifest, 'b').reg['configs']['op.short/a']
+        unbound = self.batch(manifest, 'b')
+        self.out.mkdir(parents=True)     # the endurance driver makes its output directory
+        entry = unbound.run_one(cfg, 't1', 0, 1)
+        self.assertFalse(entry['ok'])
+        self.assertEqual(entry['problems'], ['qualified clock evidence identity'])
+        shutil.rmtree(self.out)
+        bound = self.batch(manifest, 'b')
+        bound.bind()
+        self.assertEqual(bound.state['clock_evidence_sha256'], experiment.digest(self.root/'clock.json'))
+        entry = bound.run_one(cfg, 't1', 0, 1)
+        self.assertTrue(entry['ok'], entry['problems'])
+        bad_image = self.batch(manifest, 'b')
+        bad_image.reg['board']['image_sha256'] = '0'*64
+        with self.assertRaises(board_batch.Refused):
+            bad_image.bind()
+
+    def test_endurance_with_the_real_batch_passes(self):
+        """The endurance driver on the real Batch (fake ArchBench): every session is accepted."""
+        self.with_fake_board()
+        runner_path = self.runner_path
+
+        class FakeArchBenchBatch(board_batch.Batch):
+            def command(self, cfg, stem, warmup, timed):
+                raw, cmd = super().command(cfg, stem, warmup, timed)
+                i = cmd.index('-m')
+                return raw, cmd[:i] + [str(runner_path)] + cmd[i+2:]
+
+        manifest = self.manifest(dict(mix=dict(sampling='device-rule',
+                                               configurations=self.configs('op.short/a', 'op.short/b'))))
+        args = types.SimpleNamespace(manifest=manifest, batch='mix', root=self.root, out=self.out,
+                                     python=Path(sys.executable), duration=0.1, fp8_every=1, seed=1,
+                                     sample_seconds=0.2)
+        rec = endurance_mixed.run(args, probe=None, batch_cls=FakeArchBenchBatch,
+                                  fp8_runner=lambda *a: dict(ok=True, problems=[], cases=4))
+        sessions = [json.loads(l) for l in (self.out/'sessions.jsonl').read_text().splitlines()]
+        self.assertEqual([s['problems'] for s in sessions], [[]] * len(sessions))
+        self.assertGreaterEqual(len(sessions), 3)
+        self.assertEqual(rec['result'], 'pass')
+        self.assertTrue(all(s['serial_grid_cycles'] for s in sessions if s['kind'] == 'point'))
+
+    def test_endurance_fp8_session_leaves_the_output_directory_to_fp8_cases(self):
+        """Regression: fp8_cases.py refuses an existing --out; the log used to be made inside it.
+        It also writes 'rows', not 'cases'."""
+        root = Path(self.tmp.name)/'fp8root'
+        (root/'tools/performance_harness').mkdir(parents=True)
+        (root/'tools/performance_harness/fp8_cases.py').write_text(
+            'import argparse, json, pathlib\n'
+            'ap = argparse.ArgumentParser(); ap.add_argument("--out"); ap.add_argument("--quick", action="store_true")\n'
+            'ap.add_argument("--group"); a = ap.parse_args()\n'
+            'out = pathlib.Path(a.out); out.mkdir(parents=True, exist_ok=False)\n'
+            '(out/"report.json").write_text(json.dumps(dict(rows=[dict(case="c", status="pass")])))\n')
+        args = types.SimpleNamespace(python=Path(sys.executable))
+        row = endurance_mixed.run_fp8(args, root, Path(self.tmp.name)/'fp8out/r003', [])
+        self.assertEqual((row['ok'], row['problems'], row['cases']), (True, [], 1))
+        self.assertTrue((Path(self.tmp.name)/'fp8out/r003.log').is_file())
 
     def test_one_long_arm_keeps_both_qualification_records(self):
         self.fake['cycles']['op.short/b'] = 180000000

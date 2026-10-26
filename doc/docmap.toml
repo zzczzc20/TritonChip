@@ -390,3 +390,13 @@ sources = ["evidence/r41/stage1/required_index.json", "evidence/r41/stage1/board
 path = "evidence/r41/hbm_bw/HANDOFF.md"
 depends_on = []
 sources = ["rtl/nuca/", "rtl/fpga/", "rtl/board/"]
+
+[[doc]]
+path = "evidence/r41/hbm_bw/STATUS.md"
+depends_on = ["evidence/r41/hbm_bw/HANDOFF.md", "evidence/r41/hbm_bw/capacity_analysis.md"]
+sources = []
+
+[[doc]]
+path = "evidence/r41/hbm_bw/capacity_analysis.md"
+depends_on = []
+sources = ["rtl/core/tnca_mem_mux.v", "rtl/core/tnca_core.v", "rtl/fpga/tnca_line_axi.v", "rtl/board/tnca_multicore_hbm_xo.v"]

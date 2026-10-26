@@ -10,6 +10,12 @@
    "flops": 5760000000.0,
    "bytes_per_s": 720000000.0
   },
+  "tnca_3core_100MHz": {
+   "flops": 19200000000.0,
+   "core_port_bytes_per_s": 2400000000.0,
+   "axi_outlets_bytes_per_s": 9600000000.0,
+   "hbm_theoretical_bytes_per_s": 460000000000.0
+  },
   "gb10_fp32_simt": {
    "flops": 36894000000000.0,
    "bytes_per_s": 273056000000.0

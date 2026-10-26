@@ -97,6 +97,10 @@ def main():
     clk100, clk90 = 100e6, 90e6
     tnca100 = (2 * tpk['fp_lane'] * clk100, tpk['mem_bytes'] * clk100)
     tnca90 = (2 * tpk['fp_lane'] * clk90, tpk['mem_bytes'] * clk90)
+    # Three-core device ceilings (board: 3 cores, 3 AXI outlets of 256 bit, 32 HBM2 pseudo-channels)
+    tnca3 = (3 * tnca100[0], 3 * tnca100[1])            # 3 cores x single-core port
+    axi3 = 3 * 32 * clk100                                # 3 outlets x 32 B/cycle
+    hbm = 460e9                                           # U280 HBM2: 32 PC x 14.4 GB/s
     gpu_simt = (2 * gpk['fp32_fma'], gpk['dram_bytes'])
     gpu_tc = (2 * gpk['tensor_fp16_mac'], gpk['dram_bytes'])
 
@@ -105,6 +109,8 @@ def main():
         axes='x: FLOP/byte (required traffic); y: achieved FLOP/s = demand FLOP / device time',
         peaks=dict(tnca_100MHz=dict(flops=tnca100[0], bytes_per_s=tnca100[1]),
                    tnca_90MHz=dict(flops=tnca90[0], bytes_per_s=tnca90[1]),
+                   tnca_3core_100MHz=dict(flops=tnca3[0], core_port_bytes_per_s=tnca3[1],
+                                          axi_outlets_bytes_per_s=axi3, hbm_theoretical_bytes_per_s=hbm),
                    gb10_fp32_simt=dict(flops=gpu_simt[0], bytes_per_s=gpu_simt[1]),
                    gb10_fp16_tensor=dict(flops=gpu_tc[0], bytes_per_s=gpu_tc[1])),
         results=[summarize('TNCA 100 MHz (Stage 2 image, board)', t100, *tnca100),
@@ -149,6 +155,9 @@ def main():
 
     roof(a0, tnca100, '#c0392b', f'TNCA roofline @100 MHz  ({tnca100[0]/1e9:.1f} GFLOP/s, {tnca100[1]/1e9:.1f} GB/s)')
     roof(a0, tnca90, '#e67e22', f'TNCA roofline @90 MHz', ls='--')
+    roof(a0, (tnca3[0], tnca3[1]), '#8e44ad', f'TNCA 3 cores @100 MHz  ({tnca3[0]/1e9:.1f} GFLOP/s, core ports {tnca3[1]/1e9:.1f} GB/s)', ls='-.')
+    a0.plot(xs, np.minimum(tnca3[0], axi3 * xs), color='#16a085', lw=1.6, ls=':', label=f'TNCA 3 cores, AXI outlets ceiling ({axi3/1e9:.1f} GB/s)')
+    a0.plot(xs, np.minimum(tnca3[0], hbm * xs), color='#7f8c8d', lw=1.6, ls=':', label=f'U280 HBM2 theoretical ({hbm/1e9:.0f} GB/s)')
     roof(a0, gpu_simt, '#1f4e79', f'GB10 roofline, fp32 SIMT  ({gpu_simt[0]/1e12:.1f} TFLOP/s, {gpu_simt[1]/1e9:.0f} GB/s)')
     roof(a0, gpu_tc, '#2e86c1', f'GB10 roofline, fp16 tensor  ({gpu_tc[0]/1e12:.0f} TFLOP/s)', ls='--')
     a0.scatter([p['ai'] for p in gpts], [p['perf'] for p in gpts], s=16, c='#1f4e79', alpha=.55, label=f'GB10 measured ({len(gpts)} pts)')

@@ -25,9 +25,30 @@
 - Families where GB10 is further from its bound than TNCA: `matmul`, `linear`, `mlp`, `cumsum`, `add`, `gpt2_block`.
 - Families where TNCA is further from its bound: `attention_prefill`, `attention_decode`, `bmm`, `llama_decode`, `gemv`.
 
+## Which memory ceiling? (correction)
+The 0.8 GB/s roof is not the HBM bandwidth. It is ArchBench's per-core spec bound: one core, 8 B/cycle through its single memory port (`tnca_mem_mux.v`, 64-bit), at 100 MHz. The figure now shows all the ceilings of the 3-core board, from tightest to loosest:
+
+| Ceiling | Value at 100 MHz | Basis |
+|---|---:|---|
+| One core's port (ArchBench bound) | 0.8 GB/s | 8 B/cycle |
+| Three cores' ports | 2.4 GB/s | 3 × 8 B/cycle |
+| Three AXI outlets | 9.6 GB/s | 3 × 256-bit (32 B/cycle) |
+| U280 HBM2, theoretical | 460 GB/s | 32 pseudo-channels × 14.4 GB/s |
+
+The compute ceiling for three cores is 19.2 GFLOP/s (3 × 64 FLOP/cycle). Distance of the 102 TNCA 100 MHz points to the roofline of each ceiling (geometric mean; no point is above any roof):
+
+| Memory ceiling | Gap | Best | Worst |
+|---|---:|---:|---:|
+| One core (the ArchBench-bound roofline) | 9.7× | | |
+| Three cores' ports | 29.0× | 6.0× | 597× |
+| Three AXI outlets | 66.2× | 6.0× | 652× |
+| HBM2 theoretical | 128.4× | 6.0× | 1,982× |
+
+So the 9.7× gap above is relative to a one-core roof. Against the 3-core hardware, the gap is 29× to the core ports. The bottleneck is the core-side path, not HBM. R40's model attribution (`evidence/r40/v3/model_attribution`) says the same: the NUCA home-slice engine and the per-core memory path limit streaming, not the outlets or HBM. The HBM line is a theoretical ceiling that this design cannot reach with 3 outlets of 256 bits at 100 MHz (9.6 GB/s).
+
 ## What this does not say
 - **Absolute speed:** the GB10 is about 600× faster in time on the same points (geometric mean of device-time ratios, 1/0.0016). The two rooflines differ by about 6,000× in FLOP/s. Efficiency is comparable between the platforms; absolute performance is not.
-- **TNCA roofline:** it is the single-core spec bound that ArchBench uses for eta, although the board runs three cores. A three-core roofline would be higher, and TNCA's gap larger, except where the work cannot use all three cores. The memory roof is the core's 8 B/cycle port, not the HBM peak, so it is a conservative ceiling.
+- **TNCA roofline:** eta uses the single-core spec bound, although the board runs three cores; see the section above for the three-core ceilings.
 - **Dropped points:** 11 of the 113 points have zero FLOP demand (pure data movement such as `embedding` and `transpose`), so they have no place on a FLOP roofline. The GPU file has 115 records for the 113 points (two points appear twice); the same 11 zero-FLOP records are dropped, which leaves 104. The TNCA 90 MHz set also plots 104 points.
 - **Time basis:** TNCA time is the serial-grid device cycle count, the basis of eta. GB10 time is CUPTI device activity with a cold L2.
 - **Data:** the 100 MHz points are `s2-original-suite` from the Stage 2 board run. The 90 MHz points and the GB10 points are the R40 v3 delivery records (`evidence/r40/v3/gpu_comparison`). The Stage 1 `board-original-suite` rerun on the 90 MHz image has not finished.

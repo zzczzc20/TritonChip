@@ -1,6 +1,6 @@
 # Stage 2 and R41 acceptance item ledger
 
-Initial audit and delivery updates on 2026-10-26; run-1 candidate evidence plus prospective P0 freeze. Historical process failures remain.
+Initial audit plus P0 prospective freeze and P8 measured follow-up, 2026-10-26; historical process failures remain.
 
 Status is a manual evidence judgment, protected by the integrity checker. Passed candidate items do not imply final release acceptance. Study rows record mandatory study obligations; numerical and functional Required items cannot close through a negative result.
 
@@ -103,4 +103,11 @@ Each non-pass names a bounded plan in [closure_plan.md](closure_plan.md). Identi
 | Common.6.5 | Required | Final default nonregression budget and every >5% regression; >10% default veto | not measured | `evidence/r41/acceptance/board_metrics.json`; `evidence/r41/stage2/integration/audit/README.md`; `doc/r41_tasks_and_acceptance.md` — Migration comparison is not identical-image default A/B. Stage 1 wide-tile negative result remains; final mechanisms need scoped policy evidence. | P1 |
 | Common.7 | Required | Matched major-default A/B, primary-group LOO and relevant interaction matrices | not measured | `evidence/r41/acceptance/board_metrics.json`; `evidence/r41/stage2/integration/audit/README.md`; `doc/r41_tasks_and_acceptance.md` — No complete final-system board ablation bundle. X8 scheduling fallback is a documented confounder. | P1 |
 
-FP8 Hub/Qwen layer board campaigns remain **not measured**: the environment failed before execution. See P8. They cannot replace the mandatory BF16 Qwen3.5-2B full-model workload.
+## Supplementary delivery follow-ups
+
+| Follow-up | Judgment | Evidence and scope |
+|---|---|---|
+| P8.fp8_hub | passed | Lead-run 35/35 Hub/compile/FP8Linear cases pass on approved run-1 image; isolated environment verified. No new board run by this agent. `evidence/r41/acceptance/p8/metrics.json`; `evidence/r41/acceptance/p8/environment.json`; `evidence/r41/acceptance/p8/board-records.tgz` |
+| P8.qwen_fp8 | passed | Lead-run 14/14 linears and five two-layer prefill/decode states pass; steady state has no recompilation or host transfers. Different checkpoint/scope from required full BF16 model. `evidence/r41/acceptance/p8/metrics.json`; `evidence/r41/acceptance/p8/board-records.tgz` |
+
+FP8 layer campaigns do not replace the mandatory BF16 Qwen3.5-2B full-model workload.

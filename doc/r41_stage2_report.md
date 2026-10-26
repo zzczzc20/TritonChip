@@ -12,6 +12,21 @@ obligations without treating a negative study as a functional pass. Its
 uses passed, failed, not measured and blocked. A passed row applies only to
 its stated evidence identity. Aggregate final-release rows remain blocked.
 
+## Delivery update: P8 FPGA-host FP8
+
+P8 is closed from the lead's completed runs at `86a3d929cf3d_fp8`, retrieved
+read-only and independently checked by `evidence/r41/acceptance/p8/closeout.py`.
+Hub cases pass 35/35; layer linears pass 14/14 against device-order references;
+two-layer prefill plus four decode steps pass, with zero recompilations and
+zero host transfer calls in steady state. The isolated environment sees the
+original Torch 2.14.0+cpu and Triton 3.8.0, with pinned dependencies. Its
+CUDA 13.0 metadata compatibility setting selects the Hub's Triton namespace;
+actual CUDA availability is false. No shared base packages were modified by
+this check and no new board job was started. Raw archive/member hashes and
+environment versions are under `evidence/r41/acceptance/p8/`. Historical
+“not run” FP8 entries below are superseded for these two manifests only;
+the full BF16 Qwen3.5-2B requirement remains open. Next plan: P1.
+
 ## Delivery update: P0 prospective freeze
 
 P0 now locks the remaining scope in `spec/r41/stage2/plan.json`, `lock.json`,

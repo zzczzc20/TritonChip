@@ -2,7 +2,7 @@
   "schema": "tnca-r41-stage2-required-index/1",
   "contract": "doc/r41_tasks_and_acceptance.md",
   "contract_sha256": "eaefbe86b0a136709a0dd57680ccc02914bc172bc123d12585b09fba5defba4f",
-  "scope": "Initial audit and delivery updates on 2026-10-26; run-1 candidate evidence plus prospective P0 freeze. Historical process failures remain.",
+  "scope": "Initial audit plus P0 prospective freeze and P8 measured follow-up, 2026-10-26; historical process failures remain.",
   "statuses": [
     "passed",
     "failed",
@@ -1189,8 +1189,8 @@
     }
   ],
   "evidence_sha256": {
-    "doc/r41_report.md": "a20f21d2b5ab100661c4ca6e99992dc62c3bec86fad757ab8b3f5bf472ef34f8",
-    "doc/r41_stage2_report.md": "e8c0d2fec7e9a7a983bdfe24995aebc261b5d0e88442a5e7937b9fbe12008e1d",
+    "doc/r41_report.md": "2ea43482f7a80d9ecc1eab21700c8caa6225ef7ea725bfeebcb74e08c67ac039",
+    "doc/r41_stage2_report.md": "0691363a9caa6a96c8f2786b4d147ae6c41a4e88e53afd5e814d7a1422e06138",
     "doc/r41_tasks_and_acceptance.md": "eaefbe86b0a136709a0dd57680ccc02914bc172bc123d12585b09fba5defba4f",
     "evidence/r41/SERVERS.md": "04350417d681c7a3bd90fdbe5b0240c5ebf0e8b27d1c14a9b07e14a72ee59a7e",
     "evidence/r41/acceptance/board-records.tgz": "fda7873551903dc2cc1b6e489ab111f93d51757bd20c8127a632946f479a31a1",
@@ -1223,6 +1223,34 @@
     "spec/r41/stage2/lock.json": "5d9e4f6d41094c3492672229d0af5425425b5d9688aee276687a9be62c943f96",
     "spec/r41/stage2/model_lock.json": "3b4330efde6f6ea261e3939ce14e22c7e4e241ac12abbe77bb5fb3b2f3caaccf",
     "spec/r41/stage2/plan.json": "d32cd805baf16e32e8b511db3a4a9aa2f4d8686f5c2fdabe9911f9e03fa937ab",
-    "spec/r41/stage2/xl_core.json": "0b5d7d477bfd781bfef214c9256aeef7b319ce2571addcd91afdac8cf08bcbe6"
-  }
+    "spec/r41/stage2/xl_core.json": "0b5d7d477bfd781bfef214c9256aeef7b319ce2571addcd91afdac8cf08bcbe6",
+    "evidence/r41/acceptance/p8/board-records.tgz": "a44913d53a6a5e3edf26687628b88d7b7ebf881aef2ca877089ae6eb3631b671",
+    "evidence/r41/acceptance/p8/environment.json": "94f4dab5565c7e842dbe3d280266fec49b3037158968c75d06d84beb869fee58",
+    "evidence/r41/acceptance/p8/metrics.json": "e1bfe3a624aa8c98bf5f024f93fba4e4f572a7eca166fe4c5f951890317ef0b5"
+  },
+  "followups": [
+    {
+      "id": "P8.fp8_hub",
+      "status": "passed",
+      "classification": "Supplementary",
+      "reason": "Lead-run 35/35 Hub/compile/FP8Linear cases pass on approved run-1 image; isolated environment verified. No new board run by this agent.",
+      "evidence": [
+        "evidence/r41/acceptance/p8/metrics.json",
+        "evidence/r41/acceptance/p8/environment.json",
+        "evidence/r41/acceptance/p8/board-records.tgz"
+      ],
+      "closure_plan": null
+    },
+    {
+      "id": "P8.qwen_fp8",
+      "status": "passed",
+      "classification": "Supplementary",
+      "reason": "Lead-run 14/14 linears and five two-layer prefill/decode states pass; steady state has no recompilation or host transfers. Different checkpoint/scope from required full BF16 model.",
+      "evidence": [
+        "evidence/r41/acceptance/p8/metrics.json",
+        "evidence/r41/acceptance/p8/board-records.tgz"
+      ],
+      "closure_plan": null
+    }
+  ]
 }

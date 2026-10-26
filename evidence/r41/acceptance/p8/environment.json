@@ -1,0 +1,21 @@
+{
+  "status": "passed",
+  "versions": {
+    "torch": "2.14.0+cpu",
+    "triton": "3.8.0",
+    "transformers": "5.20.2",
+    "kernels": "0.17.2",
+    "accelerate": "1.15.0",
+    "huggingface_hub": "1.33.0",
+    "safetensors": "0.8.0",
+    "torchvision": "0.29.0+cpu",
+    "pillow": "10.2.0"
+  },
+  "python": "/home/zzhouch/r41s2_fp8env/bin/python",
+  "torch_file": "/home/zzhouch/tc_env/torchenv/lib/python3.10/site-packages/torch/__init__.py",
+  "triton_file": "/home/zzhouch/tc_env/torchenv/lib/python3.10/site-packages/triton/__init__.py",
+  "base_unchanged": true,
+  "torch_cuda_metadata": "13.0",
+  "actual_cuda_available": false,
+  "base_versions_before_after": "2.14.0+cpu 3.8.0"
+}

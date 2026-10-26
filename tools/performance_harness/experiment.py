@@ -175,13 +175,24 @@ def sysfs_probe(board):
         row['clock_counter_mhz'] = None
     fields = {}
     try:
+        client_lines = []
+        reading_clients = False
         for line in (base/'kdsstat').read_text().splitlines():
-            name, _, value = line.partition(':')
-            fields[name.strip()] = value.strip()
+            if ':' in line:
+                name, _, value = line.partition(':')
+                fields[name.strip()] = value.strip()
+                reading_clients = name.strip() == 'client pid'
+                if reading_clients and value.strip():
+                    client_lines.append(value.strip())
+            elif reading_clients and line.strip():
+                client_lines.append(line.strip())
+        fields['client pid'] = ' '.join(client_lines)
     except OSError:
         pass
     row['contexts'] = int(fields['contexts']) if fields.get('contexts', '').isdigit() else None
     row['client_pid'] = fields.get('client pid') or None
+    value = fields.get('outstanding execs', '')
+    row['outstanding_execs'] = int(value) if value.isdigit() else None
     return row
 
 
@@ -195,6 +206,10 @@ def board_refusal(identity, probe):
         return f'measured clock counter {mhz} MHz differs from the declared {identity["clock_hz"]} Hz'
     if probe.get('contexts') is None:
         return 'card use (kdsstat contexts) is unreadable'
+    if 'outstanding_execs' in probe and probe['outstanding_execs'] is None:
+        return 'card use (kdsstat outstanding execs) is unreadable'
+    if probe.get('outstanding_execs', 0) != 0:
+        return f'card in use: outstanding execs={probe["outstanding_execs"]}'
     if probe['contexts'] != 0 or probe.get('client_pid'):
         return f'card in use: contexts={probe["contexts"]} client={probe.get("client_pid")}'
     return None

@@ -1,5 +1,5 @@
 {
-  "scope": "Initial audit and delivery updates on 2026-10-26; run-1 candidate evidence plus prospective P0 freeze. Historical process failures remain.",
+  "scope": "Initial audit plus P0 prospective freeze and P8 measured follow-up, 2026-10-26; historical process failures remain.",
   "integrity": "passed",
   "status": "not accepted",
   "counts": {
@@ -1186,6 +1186,31 @@
       ],
       "reason": "No complete final-system board ablation bundle. X8 scheduling fallback is a documented confounder.",
       "closure_plan": "P1"
+    }
+  ],
+  "followups": [
+    {
+      "id": "P8.fp8_hub",
+      "status": "passed",
+      "classification": "Supplementary",
+      "reason": "Lead-run 35/35 Hub/compile/FP8Linear cases pass on approved run-1 image; isolated environment verified. No new board run by this agent.",
+      "evidence": [
+        "evidence/r41/acceptance/p8/metrics.json",
+        "evidence/r41/acceptance/p8/environment.json",
+        "evidence/r41/acceptance/p8/board-records.tgz"
+      ],
+      "closure_plan": null
+    },
+    {
+      "id": "P8.qwen_fp8",
+      "status": "passed",
+      "classification": "Supplementary",
+      "reason": "Lead-run 14/14 linears and five two-layer prefill/decode states pass; steady state has no recompilation or host transfers. Different checkpoint/scope from required full BF16 model.",
+      "evidence": [
+        "evidence/r41/acceptance/p8/metrics.json",
+        "evidence/r41/acceptance/p8/board-records.tgz"
+      ],
+      "closure_plan": null
     }
   ],
   "stage1_frozen_snapshot_counts": {

@@ -254,6 +254,21 @@ struct Launch {
 struct Outcome {unsigned status=STATUS_OK,code=0;u64 pc=0,retired=0;std::string why;};
 
 struct Core : sc_module {
+    // Core trace (tools/performance_harness/align/README.md section 2), the
+    // validation path's view of this core: TNCA_MODEL_CORE_TRACE names the
+    // file, TNCA_MODEL_CORE_TRACE_CORE (default 0) the core. Off otherwise.
+    std::ofstream core_trace;u64 trace_tag=0,trace_launches=0;
+    void trace_open(){
+        const char* path=std::getenv("TNCA_MODEL_CORE_TRACE");if(!path || !*path)return;
+        const char* which=std::getenv("TNCA_MODEL_CORE_TRACE_CORE");
+        if(unsigned(which && *which?std::strtoul(which,nullptr,10):0)!=id)return;
+        // "1": the run's own directory (tlm_backend's per-Session dir), so a
+        // driver that runs one point per Session finds one trace per point.
+        std::string file=std::string(path)=="1"?x.directory+"/core_trace.txt":std::string(path);
+        core_trace.open(file);require(bool(core_trace),"cannot create the core trace");
+        core_trace<<"TNCA_CORE_TRACE 1 core="<<id<<"\n";
+    }
+    ~Core(){if(core_trace){core_trace<<"END "<<trace_launches<<' '<<x.now()<<"\n";core_trace.close();}}
     tlm_utils::simple_initiator_socket<Core> memory;
     Context& x;unsigned id;CodeCache& code;sc_time cycle;Resource issue;Limit lsu;sc_time sfu_available=SC_ZERO_TIME;
     std::array<BarrierModel,32> barriers;
@@ -300,6 +315,7 @@ struct Core : sc_module {
         cycle(ctx.cycles(1)),lsu(unsigned(ctx.c.get("lsu_slots"))),
         tensor("tensor",ctx,i,[this](u64 token){verify_async_token(token);},[this](u64 token,bool error){complete_async(token,error);}),
         beats(unsigned(ctx.c.get("lsu_beat_slots"))){
+        trace_open();
         auto g=[&](const char* k){return x.c.get(k);};
         t_issue=g("issue_cycles");t_scalar=g("scalar_latency");t_mul=g("scalar_mul_latency");t_vint=g("vector_int_latency");
         t_vfp=g("vector_fp_latency");t_cvt=g("convert_latency");t_cmp=g("compare_latency");t_pred=g("predicate_latency");
@@ -406,9 +422,15 @@ struct Core : sc_module {
         tlm::tlm_generic_payload tx;tx.set_address(address);tx.set_command(store?tlm::TLM_WRITE_COMMAND:tlm::TLM_READ_COMMAND);
         tx.set_data_ptr(bytes.data());tx.set_data_length(8);tx.set_streaming_width(8);
         tx.set_byte_enable_ptr(enables.data());tx.set_byte_enable_length(8);tx.set_extension(&ext);
-        sc_time delay=SC_ZERO_TIME;memory->b_transport(tx,delay);tx.clear_extension<Request>();
+        sc_time delay=SC_ZERO_TIME;const u64 tag=trace_tag++;
+        if(core_trace){char line[96];std::snprintf(line,sizeof line,"Q %llu %u %016llx %02x %llu 0 %016llx\n",
+            (unsigned long long)x.now(),store?1U:0U,(unsigned long long)address,be,(unsigned long long)tag,(unsigned long long)data);core_trace<<line;}
+        memory->b_transport(tx,delay);tx.clear_extension<Request>();
         require(tx.is_response_ok() && delay==SC_ZERO_TIME,"core memory transport failed");
-        u64 result=0;for(unsigned b=0;b<8;++b)result|=u64(bytes[b])<<(b*8);return result;
+        u64 result=0;for(unsigned b=0;b<8;++b)result|=u64(bytes[b])<<(b*8);
+        if(core_trace){char line[64];std::snprintf(line,sizeof line,"P %llu %llu %016llx\n",
+            (unsigned long long)x.now(),(unsigned long long)tag,(unsigned long long)result);core_trace<<line;}
+        return result;
     }
     u64 special(unsigned spec,const Frame& f){
         switch(spec){case 0:return f.px;case 1:return f.py;case 2:return f.pz;case 4:return f.nx;case 5:return f.ny;case 6:return f.nz;
@@ -531,6 +553,8 @@ struct Core : sc_module {
             // No cycle polling: issue and dependencies reserve their next event.
             issue_slot(f);
             if(pipe)last_issue=lnow(f);
+            if(core_trace){char line[64];std::snprintf(line,sizeof line,"I %llu %u %016llx\n",
+                (unsigned long long)lnow(f),f.role,(unsigned long long)f.pc);core_trace<<line;}
             ++class_counts[unsigned(in.kind)];
             switch(in.kind){
             case K::Exit:drain_own(f);sync(f);++f.retired;++*c_instr;return;
@@ -627,6 +651,13 @@ struct Core : sc_module {
                         while(window.size()>=t_beat_slots){auto m=std::min_element(window.begin(),window.end());t=std::max(t,*m);window.erase(m);}
                         u64 at=port.reserve(t,1,gnow);t=at+1;u64 got=0;
                         u64 when=tm->word(id,beat.first,store,beat.second.first.first,store?beat.second.first.second:255,at,got);
+                        if(core_trace){ // the timeline memory's beat: issued at `at`, answered at `when`
+                            const u64 tag=trace_tag++;char line[160];
+                            std::snprintf(line,sizeof line,"Q %llu %u %016llx %02x %llu 0 %016llx\nP %llu %llu %016llx\n",
+                                (unsigned long long)at,store?1U:0U,(unsigned long long)beat.first,unsigned(store?beat.second.first.second:255),
+                                (unsigned long long)tag,(unsigned long long)beat.second.first.first,
+                                (unsigned long long)when,(unsigned long long)tag,(unsigned long long)got);
+                            core_trace<<line;}
                         window.push_back(when);complete=std::max(complete,when);
                         if(!store)for(auto& part:beat.second.second){
                             u64 part_mask=part.bytes==8?UINT64_MAX:((1ULL<<(part.bytes*8))-1);
@@ -852,6 +883,8 @@ struct Core : sc_module {
         aborting=false;fault=Outcome{};
         current=&l;role_active=unsigned(__builtin_popcount(l.roles));role_remaining=role_active;role_retired=0;
         ++*c_programs_issued;
+        if(core_trace){++trace_launches;char line[64];std::snprintf(line,sizeof line,"L %llu %016llx %u\n",
+            (unsigned long long)x.now(),(unsigned long long)l.pc,unsigned(l.roles));core_trace<<line;}
         for(unsigned role=0;role<4;++role)if(l.roles&(1<<role))role_start[role].notify();
         while(role_remaining)wait(role_done);
         u64 retired=role_retired;
@@ -860,6 +893,7 @@ struct Core : sc_module {
         tensor.drain();engine_wait();
         while(!completions.empty())wait(completions_drained);
         if(!aborting)++*c_programs_completed;
+        if(core_trace){core_trace<<"E "<<x.now()<<"\n";core_trace.flush();}
         Outcome out=aborting?fault:Outcome{};out.retired=retired;
         return out;
     }

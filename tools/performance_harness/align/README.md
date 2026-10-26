@@ -1,0 +1,132 @@
+# Core alignment: the trace gate between the model and the RTL
+
+This directory holds the **alignment gate** of the performance model: the
+evidence that the model counts the cycles the RTL counts, taken cycle by cycle
+on one core, and the tools that produce it. It is the validation path of the
+model. It is not a prediction path: nothing here feeds a measured RTL trace
+into a prediction (the model README's rule stands), and a replayed memory
+interface is used only to decide whether the core agrees with the RTL.
+
+## 1. What is compared
+
+The **observable set** is deliberately coarse (decided 2026-10-26): what a
+model of a different microstructure can still be held to.
+
+| Stream | One record per | Fields compared |
+|---|---|---|
+| launch `L` … `E` | program launch on the core | length in cycles (`E` minus `L`) |
+| issue `I` | instruction leaving the execute stage | cycle since launch, Role Context, pc |
+| request `Q` | memory request accepted at the core's port | cycle since launch, we, address, byte enables (data with `--data`) |
+| response `P` | memory response at the core's port | latency since its request (data with `--data`) |
+
+Not compared: tags (an allocation detail of each implementation), the
+instruction port, anything inside the core. Pipeline stage occupancy,
+scoreboards and register ports are the model's business; a divergence shows
+up as a shifted issue cycle, and the diff tool names the first one.
+
+Cycles are counted at the traced core's clock, from the first edge with reset
+released; every comparison is relative to the launch's `L` edge, so a launch
+that starts later in one trace (host time, dispatch) does not shift the next.
+
+## 2. Trace format (`TNCA_CORE_TRACE 1`)
+
+Text, one record per line, in cycle order. Numbers are decimal unless marked
+hex (fixed-width, lower case, no prefix).
+
+```
+TNCA_CORE_TRACE 1 core=<n>
+L <cycle> <pc:016x> <role_mask>            launch accepted by the core
+I <cycle> <rctx> <pc:016x>                  instruction retires its execute stage
+Q <cycle> <we> <addr:016x> <be:02x> <tag> <amo> <wdata:016x>   request accepted
+P <cycle> <tag> <rdata:016x>                response delivered
+E <cycle>                                   core idle again: the launch is complete
+END <launches> <cycles>
+```
+
+An `I` record is written on every cycle the execute stage holds a valid
+instruction (`x_valid`); an `mb.wait` that sleeps and re-executes appears once
+per execution, as the RTL's own `instret` counts it. A `Q` is written on a
+cycle with `mem_req_valid && mem_req_ready`; the response with that tag is
+the next `P` carrying it. The RTL writes both from the pre-edge values, which
+are the values its own clocked logic acts on at that edge.
+
+The RTL side is `tnca_core_trace.v`, a second simulation top compiled next to
+`tb/device/tnca_multicore_device.v`; it reaches core `TNCA_TRACE_CORE` (a
+compile-time define, 0 by default) by hierarchical reference and nothing in
+`rtl/` changes. The model writes the same format from its own clock (see the
+model README for the switch).
+
+## 3. Tools
+
+| Tool | Does | Runs where |
+|---|---|---|
+| `tnca_core_trace.v` | the RTL monitor | with the device bench, under Icarus |
+| `record_rtl.py` | builds the bench with the monitor, runs ArchBench points on `sim-multicore` with one active core, keeps one trace per point and the run records | a host with Icarus and the Torch/Triton environment |
+| `tracediff.py` | parses two traces (or two directories of them), pairs launches in order and reports the first divergence of every stream, per launch and per point | anywhere |
+| `tracediff.py gate` | the verdict over a point set: `alignment.json` | anywhere; the harness adapter calls this |
+
+### 3.1 Recording the RTL
+
+```sh
+python3 tools/performance_harness/align/record_rtl.py \
+    --python /path/to/torch-env/bin/python --out RUN_DIR \
+    --suite spec/r40/suites/existing.json --tier tiny --jobs 8
+```
+
+One ArchBench child per point, each with its own bench process, so one
+`+core_trace=` file per point. The child is the standard path (`archbench.run
+--platform tnca --backend sim-multicore`), with `TNCA_ACTIVE_CORES=1`, the
+monitor compiled into a private copy of the bench (`RUN_DIR/bench/`), and
+`TNCA_DEVICE_PLUSARGS` carrying the trace path. The run records
+(`RUN_DIR/records.jsonl`) keep every point's result and provenance as any
+ArchBench run does; `RUN_DIR/traces/<point>.trace` is the trace;
+`RUN_DIR/manifest.json` names the bench, its compiler and the source tree.
+
+### 3.2 Comparing
+
+```sh
+python3 tools/performance_harness/align/tracediff.py RTL.trace MODEL.trace
+python3 tools/performance_harness/align/tracediff.py gate --a RUN_RTL/traces --b RUN_MODEL/traces --out alignment.json
+```
+
+Options: `--data` also compares write data and read data; `--order-only`
+compares the sequences without cycles (the first question when a model is
+new: does it even execute the same instructions and requests?);
+`--max-report N` limits the divergences listed per point.
+
+## 4. The gate contract (for the agent harness)
+
+`tracediff.py gate` is the interface the agent harness binds to (PR #9's
+services take a candidate tree, run a measurement, and return aggregates).
+Its inputs are two directories of traces named by point; its output is
+`alignment.json`:
+
+```
+schema        tnca-core-alignment/1
+verdict       aligned | diverged | no-verdict
+reason        one line
+points        { <point>: { launches, aligned_launches, streams: {issue, request, response, length}: equal|<first divergence>, cycles_a, cycles_b } }
+aggregates    { points, aligned, diverged, missing, median_abs_cycle_error, p95_abs_cycle_error }
+options       { data, order_only }
+```
+
+| Verdict | When | Exit code |
+|---|---|---|
+| `aligned` | every point present on both sides, every launch equal in every compared stream | 0 |
+| `diverged` | at least one launch differs | 1 |
+| `no-verdict` | a point's trace is missing or malformed on either side | 2 |
+
+The harness adapter (to be added on the harness branch) produces the two
+directories from a candidate tree: the RTL side with `record_rtl.py` on the
+evaluator's bench, the model side from the model's own run, both on the
+validation points, and hands the agent the `aggregates` only. The `points`
+map names points and is for the evaluator's record, as `certification.json`
+is. Point names never reach the agent through this file.
+
+## 5. Scope of the first slice (decided 2026-10-26)
+
+One core. The model's core runs execute/commit cycle by cycle; the memory
+interface is replayed from the RTL's trace in the validation path. The NUCA,
+the NoC and the HBM path are the second slice; until then their effect enters
+the core only through the replayed response latencies. The base is the PR #10
+merge, `3e1a282` (three cores, NUCA, HBM, the U280 at 90 MHz).

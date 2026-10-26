@@ -364,3 +364,15 @@ timing validation on matched workloads.
 Unsupported cases remain refused until their semantics and timing assumptions
 have direct validation. Production timing error and complete-chip performance
 are **not-measured**. The frozen R40 v2 contract is unchanged.
+
+## Core trace: the alignment gate's view of a core
+
+`TNCA_MODEL_CORE_TRACE=<file>` makes one core (`TNCA_MODEL_CORE_TRACE_CORE`,
+default 0) write the core trace of
+[`tools/performance_harness/align/README.md`](../align/README.md) section 2:
+launch markers, one `I` record per instruction at its issue slot, one `Q`/`P`
+pair per memory beat at the TLM boundary, from the model's own clock. With the
+value `1` the file is `core_trace.txt` in the model process's run directory,
+which is what `align/record_model.py` collects per point. The trace is the
+validation path's evidence against the RTL's trace (`align/tracediff.py`); it
+is not read by anything that predicts. Off unless the variable is set.

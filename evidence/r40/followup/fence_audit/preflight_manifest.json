@@ -1,0 +1,10 @@
+{
+  "cpu": {
+    "source": "/home/zhongchun/r40v3_fix2/dt_cpu/report.json",
+    "sha256": "c2554bb79376224af2c81246eea6b544b8ef3c84c3ff02e8ac4f4f2bfc1dca45"
+  },
+  "native-stub": {
+    "source": "/home/zhongchun/r40v3_fix2/dt_native-stub/report.json",
+    "sha256": "542d5858fe1d54b06b21297cf9a21ef979750c1a18c24049b645fb26f01f6bb0"
+  }
+}

@@ -1,0 +1,937 @@
+{
+ "schema": "tnca-r40-v3-compile-preflight/1",
+ "status": "complete",
+ "software_tree": "files:fe1b5199db515440d2d3407aed61ef1eed5edb627e5baf9cda10be5a7198cf75",
+ "contract_lock_sha256": "49fc0e02733139707ae2292eff2ef893e76e73f0723d0d002b2e7e1864af71c8",
+ "source_root": "/home/zhongchun/r40v3_fix2src",
+ "host": "gx10-6646",
+ "harness": "/home/zhongchun/r40v3_fix2src/tools/r40/v3_compile_preflight.py",
+ "harness_sha256": "8c58f52c1a1e837e5e1d5130aaae55cef954fb94156572bfc89e936bacea97ca",
+ "device": "native-stub",
+ "harness_env": {
+  "CUDA_VISIBLE_DEVICES": "",
+  "TNCA_LAUNCH": "skip",
+  "TNCA_PROFILE": "core-vrf-sync-v5",
+  "TNCA_OPT_LEVEL": "2",
+  "TNCA_TRITON": "1",
+  "TNCA_KERNEL_DUMP": "1",
+  "TNCA_BACKEND": "fpga-u280-multicore",
+  "PYTHONDONTWRITEBYTECODE": "1",
+  "TNCA_TORCH_DEVICE": "native",
+  "TNCA_TRANSFER_POLICY": "per-kernel",
+  "TNCA_ACTIVE_CORES": "1",
+  "TNCA_RTL_MEM_PORTS": "1",
+  "TNCA_RTL_OUTSTANDING": "1",
+  "TNCA_SUBMIT": "single"
+ },
+ "base_knobs": {
+  "TNCA_MAX_BLOCK": "16",
+  "TNCA_GEMM_TILE": "16,16,16",
+  "TNCA_REDUCTION_ROWS": "1",
+  "TNCA_BANK_ALLOC": "0",
+  "TNCA_WINDOW_REUSE": "0",
+  "TNCA_SDPA": "decomposed",
+  "TNCA_PIPELINE": "1",
+  "TNCA_TUNE": "0"
+ },
+ "method": "compile-only: fresh process and fresh Triton/Inductor/tmp dirs per (point, config); torch.compile(fullgraph=True), TNCA_LAUNCH=skip, device sessions forbidden; tnca-device tensors over a host-memory stand-in session; pass = every kernel lowered and sealed, artifacts load, no host fallback, launch count equals the wrapper's",
+ "not_measured": [
+  "numerics",
+  "native execution",
+  "performance"
+ ],
+ "subsets": {
+  "existing": {
+   "path": "spec/r40/suites/existing.json",
+   "sha256": "65203911a59e6df88a342aec40c0500d739707e9b9b16310f9ec277ed6fea8da",
+   "file_sha256": "f3e4ba5f3a346d45d3289b4b58f380d0103f4a5edfe6c88abd6b136868154a0f",
+   "n": 77
+  }
+ },
+ "started": "2026-10-19T15:52:37+0000",
+ "runs": {
+  "op.gemv/tiny/fp16-k64-n64 @ TNCA_BANK_ALLOC=0|TNCA_GEMM_TILE=16,16,16|TNCA_MAX_BLOCK=16|TNCA_PIPELINE=2|TNCA_REDUCTION_ROWS=1|TNCA_SDPA=decomposed|TNCA_TUNE=0|TNCA_WINDOW_REUSE=0": {
+   "point": "op.gemv/tiny/fp16-k64-n64",
+   "config": "dt",
+   "knobs": {
+    "TNCA_MAX_BLOCK": "16",
+    "TNCA_GEMM_TILE": "16,16,16",
+    "TNCA_REDUCTION_ROWS": "1",
+    "TNCA_BANK_ALLOC": "0",
+    "TNCA_WINDOW_REUSE": "0",
+    "TNCA_SDPA": "decomposed",
+    "TNCA_PIPELINE": "2",
+    "TNCA_TUNE": "0"
+   },
+   "status": "pass",
+   "heavy": false,
+   "run_dir": "/home/zhongchun/r40v3_fix2/dt_native-stub/runs/op.gemv__tiny__fp16-k64-n64__dt",
+   "started": "15:52:37",
+   "exit": 0,
+   "process_wall_s": 3.7,
+   "result": {
+    "point": "op.gemv/tiny/fp16-k64-n64",
+    "point_sha256": "c03b40a0ee32d5743b0b51310f10486cbbbc18ed9467a5cecb856296f3bd86a4",
+    "config": "dt",
+    "knobs": {
+     "TNCA_BANK_ALLOC": "0",
+     "TNCA_GEMM_TILE": "16,16,16",
+     "TNCA_MAX_BLOCK": "16",
+     "TNCA_PACKED_WINDOW_UNPACK": null,
+     "TNCA_PIPELINE": "2",
+     "TNCA_REDUCTION_ROWS": "1",
+     "TNCA_SDPA": "decomposed",
+     "TNCA_TUNE": "0",
+     "TNCA_WINDOW_REUSE": "0"
+    },
+    "harness_env": {
+     "CUDA_VISIBLE_DEVICES": "",
+     "PYTHONDONTWRITEBYTECODE": "1",
+     "TNCA_BACKEND": "fpga-u280-multicore",
+     "TNCA_KERNEL_DUMP": "1",
+     "TNCA_LAUNCH": "skip",
+     "TNCA_OPT_LEVEL": "2",
+     "TNCA_PROFILE": "core-vrf-sync-v5",
+     "TNCA_TRITON": "1",
+     "TNCA_ACTIVE_CORES": "1",
+     "TNCA_RTL_MEM_PORTS": "1",
+     "TNCA_RTL_OUTSTANDING": "1",
+     "TNCA_SUBMIT": "single",
+     "TNCA_TRANSFER_POLICY": "per-kernel"
+    },
+    "status": "pass",
+    "pid": 3313084,
+    "wall_s": {
+     "setup": 1.29,
+     "make": 0.0,
+     "compile": 0.98,
+     "steady_call": 0.0,
+     "total": 2.89
+    },
+    "modules": {
+     "tnca": "/home/zhongchun/r40v3_fix2src/python/tnca/__init__.py",
+     "tnca_cc": "/home/zhongchun/r40v3_fix2src/compiler/python/tnca_cc/__init__.py",
+     "driver": "/home/zhongchun/r40v3_fix2src/python/tnca/triton_backend/driver.py",
+     "archbench": "/home/zhongchun/r40v3_fix2src/archbench/registry.py"
+    },
+    "software_tree": "files:fe1b5199db515440d2d3407aed61ef1eed5edb627e5baf9cda10be5a7198cf75",
+    "toolchain": {
+     "torch": "2.14.0+cu130",
+     "triton": "3.8.0",
+     "python": "3.12.3"
+    },
+    "device": "native-stub",
+    "stage": "done",
+    "inductor_config": {
+     "cpu_backend": "triton",
+     "max_block": 16,
+     "persistent_reductions": false,
+     "compile_threads": 1,
+     "max_autotune_gemm_backends": "TRITON",
+     "tensor_descriptors": true,
+     "no_x_dim": true,
+     "reduction_rows": 1,
+     "gemm_tile": [
+      16,
+      16,
+      16
+     ],
+     "device": "tnca"
+    },
+    "compile_target_properties": {
+     "max_shared_mem": 0,
+     "multiprocessor_count": 1,
+     "max_num_regs": 256,
+     "warpSize": 1,
+     "sm_clock_rate": 0,
+     "mem_clock_rate": 0,
+     "mem_bus_width": 64,
+     "max_threads_per_block": 16
+    },
+    "sdpa_fused_decomposition_installed": false,
+    "parameter_bytes": 8192,
+    "input_bytes": 128,
+    "cold_call": {
+     "launches": 27,
+     "kernels": {
+      "_copy_kernel": 26,
+      "triton_tem_fused_mm_t_0": 1
+     }
+    },
+    "launches": 1,
+    "expected_launches": 1,
+    "kernels_compiled": 2,
+    "kernels_launched": 1,
+    "graph_launchers": 1,
+    "wrapper_triton_kernels": 1,
+    "artifacts": 1,
+    "artifact_options": [
+     {
+      "index_opt": 1,
+      "opt_level": 2,
+      "physical_chunks": 1,
+      "rctx_spmd": 1,
+      "schedule": 1,
+      "sparse_tensormaps": 1
+     }
+    ],
+    "max_block_constexprs": {
+     "BLOCK_M": 16,
+     "BLOCK_N": 16,
+     "BLOCK_K": 16
+    },
+    "gemm_tiles": [
+     [
+      16,
+      16,
+      16
+     ]
+    ],
+    "sdpa_online_nodes": 0,
+    "host_fallbacks": [],
+    "max_launch_bytes": 8448,
+    "kernels": {
+     "triton_tem_fused_mm_t_0": {
+      "artifact": "7c840c834c64205af6ef7504609b04834e9fdc61e02f23924c16c4cef1dc6c9b",
+      "bytes": 7715,
+      "constexprs": {},
+      "roles": 2
+     }
+    },
+    "launcher_constexprs": [
+     {
+      "name": "triton_tem_fused_mm_t_0",
+      "constexprs": {},
+      "source_constexprs": {
+       "BLOCK_M": 16,
+       "BLOCK_N": 16,
+       "BLOCK_K": 16
+      }
+     }
+    ],
+    "problems": [],
+    "native_memory": {
+     "peak_bytes": 8448,
+     "live_bytes": 8448,
+     "allocations": 56,
+     "uploaded_bytes": 8528
+    },
+    "peak_rss_mib": 739.8
+   },
+   "finished": "15:52:41"
+  },
+  "op.silu/tiny/fp16-n256 @ TNCA_BANK_ALLOC=0|TNCA_GEMM_TILE=16,16,16|TNCA_MAX_BLOCK=16|TNCA_PIPELINE=2|TNCA_REDUCTION_ROWS=1|TNCA_SDPA=decomposed|TNCA_TUNE=0|TNCA_WINDOW_REUSE=0": {
+   "point": "op.silu/tiny/fp16-n256",
+   "config": "dt",
+   "knobs": {
+    "TNCA_MAX_BLOCK": "16",
+    "TNCA_GEMM_TILE": "16,16,16",
+    "TNCA_REDUCTION_ROWS": "1",
+    "TNCA_BANK_ALLOC": "0",
+    "TNCA_WINDOW_REUSE": "0",
+    "TNCA_SDPA": "decomposed",
+    "TNCA_PIPELINE": "2",
+    "TNCA_TUNE": "0"
+   },
+   "status": "pass",
+   "heavy": false,
+   "run_dir": "/home/zhongchun/r40v3_fix2/dt_native-stub/runs/op.silu__tiny__fp16-n256__dt",
+   "started": "15:52:37",
+   "exit": 0,
+   "process_wall_s": 3.6,
+   "result": {
+    "point": "op.silu/tiny/fp16-n256",
+    "point_sha256": "b2a22df9ad8d31575e015f32d569e81d9fe5fc5de5e2250c847f1271ad9909fd",
+    "config": "dt",
+    "knobs": {
+     "TNCA_BANK_ALLOC": "0",
+     "TNCA_GEMM_TILE": "16,16,16",
+     "TNCA_MAX_BLOCK": "16",
+     "TNCA_PACKED_WINDOW_UNPACK": null,
+     "TNCA_PIPELINE": "2",
+     "TNCA_REDUCTION_ROWS": "1",
+     "TNCA_SDPA": "decomposed",
+     "TNCA_TUNE": "0",
+     "TNCA_WINDOW_REUSE": "0"
+    },
+    "harness_env": {
+     "CUDA_VISIBLE_DEVICES": "",
+     "PYTHONDONTWRITEBYTECODE": "1",
+     "TNCA_BACKEND": "fpga-u280-multicore",
+     "TNCA_KERNEL_DUMP": "1",
+     "TNCA_LAUNCH": "skip",
+     "TNCA_OPT_LEVEL": "2",
+     "TNCA_PROFILE": "core-vrf-sync-v5",
+     "TNCA_TRITON": "1",
+     "TNCA_ACTIVE_CORES": "1",
+     "TNCA_RTL_MEM_PORTS": "1",
+     "TNCA_RTL_OUTSTANDING": "1",
+     "TNCA_SUBMIT": "single",
+     "TNCA_TRANSFER_POLICY": "per-kernel"
+    },
+    "status": "pass",
+    "pid": 3313082,
+    "wall_s": {
+     "setup": 1.27,
+     "make": 0.0,
+     "compile": 0.93,
+     "steady_call": 0.0,
+     "total": 2.77
+    },
+    "modules": {
+     "tnca": "/home/zhongchun/r40v3_fix2src/python/tnca/__init__.py",
+     "tnca_cc": "/home/zhongchun/r40v3_fix2src/compiler/python/tnca_cc/__init__.py",
+     "driver": "/home/zhongchun/r40v3_fix2src/python/tnca/triton_backend/driver.py",
+     "archbench": "/home/zhongchun/r40v3_fix2src/archbench/registry.py"
+    },
+    "software_tree": "files:fe1b5199db515440d2d3407aed61ef1eed5edb627e5baf9cda10be5a7198cf75",
+    "toolchain": {
+     "torch": "2.14.0+cu130",
+     "triton": "3.8.0",
+     "python": "3.12.3"
+    },
+    "device": "native-stub",
+    "stage": "done",
+    "inductor_config": {
+     "cpu_backend": "triton",
+     "max_block": 16,
+     "persistent_reductions": false,
+     "compile_threads": 1,
+     "max_autotune_gemm_backends": "TRITON",
+     "tensor_descriptors": true,
+     "no_x_dim": true,
+     "reduction_rows": 1,
+     "gemm_tile": [
+      16,
+      16,
+      16
+     ],
+     "device": "tnca"
+    },
+    "compile_target_properties": {
+     "max_shared_mem": 0,
+     "multiprocessor_count": 1,
+     "max_num_regs": 256,
+     "warpSize": 1,
+     "sm_clock_rate": 0,
+     "mem_clock_rate": 0,
+     "mem_bus_width": 64,
+     "max_threads_per_block": 16
+    },
+    "sdpa_fused_decomposition_installed": false,
+    "parameter_bytes": 0,
+    "input_bytes": 512,
+    "cold_call": {
+     "launches": 27,
+     "kernels": {
+      "_copy_kernel": 26,
+      "triton_poi_fused_silu_0": 1
+     }
+    },
+    "launches": 1,
+    "expected_launches": 1,
+    "kernels_compiled": 2,
+    "kernels_launched": 1,
+    "graph_launchers": 1,
+    "wrapper_triton_kernels": 1,
+    "artifacts": 1,
+    "artifact_options": [
+     {
+      "alias": [
+       [
+        "in_ptr0",
+        "out_ptr0"
+       ]
+      ],
+      "index_opt": 1,
+      "opt_level": 2,
+      "physical_chunks": 1,
+      "rctx_spmd": 1,
+      "schedule": 1,
+      "sparse_tensormaps": 1
+     }
+    ],
+    "max_block_constexprs": {
+     "XBLOCK": 16
+    },
+    "gemm_tiles": [],
+    "sdpa_online_nodes": 0,
+    "host_fallbacks": [],
+    "max_launch_bytes": 1024,
+    "kernels": {
+     "triton_poi_fused_silu_0": {
+      "artifact": "e19eaf815ac67fb4556dd898fba12c6d5499ad3c96ac4a2c41390bf073d8c0af",
+      "bytes": 4783,
+      "constexprs": {},
+      "roles": 4
+     }
+    },
+    "launcher_constexprs": [
+     {
+      "name": "triton_poi_fused_silu_0",
+      "constexprs": {
+       "XBLOCK": 16
+      },
+      "source_constexprs": {}
+     }
+    ],
+    "problems": [],
+    "native_memory": {
+     "peak_bytes": 1024,
+     "live_bytes": 1024,
+     "allocations": 55,
+     "uploaded_bytes": 720
+    },
+    "peak_rss_mib": 738.3
+   },
+   "finished": "15:52:41"
+  },
+  "op.softmax/medium/fp16-r80-c512 @ TNCA_BANK_ALLOC=0|TNCA_GEMM_TILE=16,16,16|TNCA_MAX_BLOCK=16|TNCA_PIPELINE=2|TNCA_REDUCTION_ROWS=1|TNCA_SDPA=decomposed|TNCA_TUNE=0|TNCA_WINDOW_REUSE=0": {
+   "point": "op.softmax/medium/fp16-r80-c512",
+   "config": "dt",
+   "knobs": {
+    "TNCA_MAX_BLOCK": "16",
+    "TNCA_GEMM_TILE": "16,16,16",
+    "TNCA_REDUCTION_ROWS": "1",
+    "TNCA_BANK_ALLOC": "0",
+    "TNCA_WINDOW_REUSE": "0",
+    "TNCA_SDPA": "decomposed",
+    "TNCA_PIPELINE": "2",
+    "TNCA_TUNE": "0"
+   },
+   "status": "pass",
+   "heavy": false,
+   "run_dir": "/home/zhongchun/r40v3_fix2/dt_native-stub/runs/op.softmax__medium__fp16-r80-c512__dt",
+   "started": "15:52:41",
+   "exit": 0,
+   "process_wall_s": 3.5,
+   "result": {
+    "point": "op.softmax/medium/fp16-r80-c512",
+    "point_sha256": "966020f31402593850ac045f3105fe20a58f0e27872ca7557a1c4329cad0c725",
+    "config": "dt",
+    "knobs": {
+     "TNCA_BANK_ALLOC": "0",
+     "TNCA_GEMM_TILE": "16,16,16",
+     "TNCA_MAX_BLOCK": "16",
+     "TNCA_PACKED_WINDOW_UNPACK": null,
+     "TNCA_PIPELINE": "2",
+     "TNCA_REDUCTION_ROWS": "1",
+     "TNCA_SDPA": "decomposed",
+     "TNCA_TUNE": "0",
+     "TNCA_WINDOW_REUSE": "0"
+    },
+    "harness_env": {
+     "CUDA_VISIBLE_DEVICES": "",
+     "PYTHONDONTWRITEBYTECODE": "1",
+     "TNCA_BACKEND": "fpga-u280-multicore",
+     "TNCA_KERNEL_DUMP": "1",
+     "TNCA_LAUNCH": "skip",
+     "TNCA_OPT_LEVEL": "2",
+     "TNCA_PROFILE": "core-vrf-sync-v5",
+     "TNCA_TRITON": "1",
+     "TNCA_ACTIVE_CORES": "1",
+     "TNCA_RTL_MEM_PORTS": "1",
+     "TNCA_RTL_OUTSTANDING": "1",
+     "TNCA_SUBMIT": "single",
+     "TNCA_TRANSFER_POLICY": "per-kernel"
+    },
+    "status": "pass",
+    "pid": 3313418,
+    "wall_s": {
+     "setup": 1.23,
+     "make": 0.0,
+     "compile": 0.98,
+     "steady_call": 0.0,
+     "total": 2.71
+    },
+    "modules": {
+     "tnca": "/home/zhongchun/r40v3_fix2src/python/tnca/__init__.py",
+     "tnca_cc": "/home/zhongchun/r40v3_fix2src/compiler/python/tnca_cc/__init__.py",
+     "driver": "/home/zhongchun/r40v3_fix2src/python/tnca/triton_backend/driver.py",
+     "archbench": "/home/zhongchun/r40v3_fix2src/archbench/registry.py"
+    },
+    "software_tree": "files:fe1b5199db515440d2d3407aed61ef1eed5edb627e5baf9cda10be5a7198cf75",
+    "toolchain": {
+     "torch": "2.14.0+cu130",
+     "triton": "3.8.0",
+     "python": "3.12.3"
+    },
+    "device": "native-stub",
+    "stage": "done",
+    "inductor_config": {
+     "cpu_backend": "triton",
+     "max_block": 16,
+     "persistent_reductions": false,
+     "compile_threads": 1,
+     "max_autotune_gemm_backends": "TRITON",
+     "tensor_descriptors": true,
+     "no_x_dim": true,
+     "reduction_rows": 1,
+     "gemm_tile": [
+      16,
+      16,
+      16
+     ],
+     "device": "tnca"
+    },
+    "compile_target_properties": {
+     "max_shared_mem": 0,
+     "multiprocessor_count": 1,
+     "max_num_regs": 256,
+     "warpSize": 1,
+     "sm_clock_rate": 0,
+     "mem_clock_rate": 0,
+     "mem_bus_width": 64,
+     "max_threads_per_block": 16
+    },
+    "sdpa_fused_decomposition_installed": false,
+    "parameter_bytes": 0,
+    "input_bytes": 81920,
+    "cold_call": {
+     "launches": 27,
+     "kernels": {
+      "_copy_kernel": 26,
+      "triton_red_fused__softmax_0": 1
+     }
+    },
+    "launches": 1,
+    "expected_launches": 1,
+    "kernels_compiled": 2,
+    "kernels_launched": 1,
+    "graph_launchers": 1,
+    "wrapper_triton_kernels": 1,
+    "artifacts": 1,
+    "artifact_options": [
+     {
+      "alias": [
+       [
+        "in_ptr0",
+        "out_ptr1"
+       ],
+       [
+        "in_ptr0",
+        "out_ptr3"
+       ],
+       [
+        "out_ptr1",
+        "out_ptr3"
+       ]
+      ],
+      "index_opt": 1,
+      "opt_level": 2,
+      "physical_chunks": 1,
+      "rctx_spmd": 1,
+      "schedule": 1,
+      "sparse_tensormaps": 1
+     }
+    ],
+    "max_block_constexprs": {
+     "R0_BLOCK": 16,
+     "XBLOCK": 1
+    },
+    "gemm_tiles": [],
+    "sdpa_online_nodes": 0,
+    "host_fallbacks": [],
+    "max_launch_bytes": 327680,
+    "kernels": {
+     "triton_red_fused__softmax_0": {
+      "artifact": "9697b361bc98d6a7208d33399f8b26b32abb38d27d8cabda8d12e34eeedb1a0f",
+      "bytes": 6319,
+      "constexprs": {},
+      "roles": 2
+     }
+    },
+    "launcher_constexprs": [
+     {
+      "name": "triton_red_fused__softmax_0",
+      "constexprs": {
+       "R0_BLOCK": 16
+      },
+      "source_constexprs": {
+       "XBLOCK": 1
+      }
+     }
+    ],
+    "problems": [],
+    "native_memory": {
+     "peak_bytes": 327680,
+     "live_bytes": 163840,
+     "allocations": 57,
+     "uploaded_bytes": 82128
+    },
+    "peak_rss_mib": 740.6
+   },
+   "finished": "15:52:44"
+  },
+  "op.softmax/small/fp16-r64-c512 @ TNCA_BANK_ALLOC=0|TNCA_GEMM_TILE=16,16,16|TNCA_MAX_BLOCK=16|TNCA_PIPELINE=2|TNCA_REDUCTION_ROWS=1|TNCA_SDPA=decomposed|TNCA_TUNE=0|TNCA_WINDOW_REUSE=0": {
+   "point": "op.softmax/small/fp16-r64-c512",
+   "config": "dt",
+   "knobs": {
+    "TNCA_MAX_BLOCK": "16",
+    "TNCA_GEMM_TILE": "16,16,16",
+    "TNCA_REDUCTION_ROWS": "1",
+    "TNCA_BANK_ALLOC": "0",
+    "TNCA_WINDOW_REUSE": "0",
+    "TNCA_SDPA": "decomposed",
+    "TNCA_PIPELINE": "2",
+    "TNCA_TUNE": "0"
+   },
+   "status": "pass",
+   "heavy": false,
+   "run_dir": "/home/zhongchun/r40v3_fix2/dt_native-stub/runs/op.softmax__small__fp16-r64-c512__dt",
+   "started": "15:52:41",
+   "exit": 0,
+   "process_wall_s": 3.7,
+   "result": {
+    "point": "op.softmax/small/fp16-r64-c512",
+    "point_sha256": "b9054caddd29ba4c026bb0db3c1df8b077b37a38050230c9849d0f87bc1bd9e5",
+    "config": "dt",
+    "knobs": {
+     "TNCA_BANK_ALLOC": "0",
+     "TNCA_GEMM_TILE": "16,16,16",
+     "TNCA_MAX_BLOCK": "16",
+     "TNCA_PACKED_WINDOW_UNPACK": null,
+     "TNCA_PIPELINE": "2",
+     "TNCA_REDUCTION_ROWS": "1",
+     "TNCA_SDPA": "decomposed",
+     "TNCA_TUNE": "0",
+     "TNCA_WINDOW_REUSE": "0"
+    },
+    "harness_env": {
+     "CUDA_VISIBLE_DEVICES": "",
+     "PYTHONDONTWRITEBYTECODE": "1",
+     "TNCA_BACKEND": "fpga-u280-multicore",
+     "TNCA_KERNEL_DUMP": "1",
+     "TNCA_LAUNCH": "skip",
+     "TNCA_OPT_LEVEL": "2",
+     "TNCA_PROFILE": "core-vrf-sync-v5",
+     "TNCA_TRITON": "1",
+     "TNCA_ACTIVE_CORES": "1",
+     "TNCA_RTL_MEM_PORTS": "1",
+     "TNCA_RTL_OUTSTANDING": "1",
+     "TNCA_SUBMIT": "single",
+     "TNCA_TRANSFER_POLICY": "per-kernel"
+    },
+    "status": "pass",
+    "pid": 3313423,
+    "wall_s": {
+     "setup": 1.49,
+     "make": 0.0,
+     "compile": 0.97,
+     "steady_call": 0.0,
+     "total": 2.96
+    },
+    "modules": {
+     "tnca": "/home/zhongchun/r40v3_fix2src/python/tnca/__init__.py",
+     "tnca_cc": "/home/zhongchun/r40v3_fix2src/compiler/python/tnca_cc/__init__.py",
+     "driver": "/home/zhongchun/r40v3_fix2src/python/tnca/triton_backend/driver.py",
+     "archbench": "/home/zhongchun/r40v3_fix2src/archbench/registry.py"
+    },
+    "software_tree": "files:fe1b5199db515440d2d3407aed61ef1eed5edb627e5baf9cda10be5a7198cf75",
+    "toolchain": {
+     "torch": "2.14.0+cu130",
+     "triton": "3.8.0",
+     "python": "3.12.3"
+    },
+    "device": "native-stub",
+    "stage": "done",
+    "inductor_config": {
+     "cpu_backend": "triton",
+     "max_block": 16,
+     "persistent_reductions": false,
+     "compile_threads": 1,
+     "max_autotune_gemm_backends": "TRITON",
+     "tensor_descriptors": true,
+     "no_x_dim": true,
+     "reduction_rows": 1,
+     "gemm_tile": [
+      16,
+      16,
+      16
+     ],
+     "device": "tnca"
+    },
+    "compile_target_properties": {
+     "max_shared_mem": 0,
+     "multiprocessor_count": 1,
+     "max_num_regs": 256,
+     "warpSize": 1,
+     "sm_clock_rate": 0,
+     "mem_clock_rate": 0,
+     "mem_bus_width": 64,
+     "max_threads_per_block": 16
+    },
+    "sdpa_fused_decomposition_installed": false,
+    "parameter_bytes": 0,
+    "input_bytes": 65536,
+    "cold_call": {
+     "launches": 27,
+     "kernels": {
+      "_copy_kernel": 26,
+      "triton_red_fused__softmax_0": 1
+     }
+    },
+    "launches": 1,
+    "expected_launches": 1,
+    "kernels_compiled": 2,
+    "kernels_launched": 1,
+    "graph_launchers": 1,
+    "wrapper_triton_kernels": 1,
+    "artifacts": 1,
+    "artifact_options": [
+     {
+      "alias": [
+       [
+        "in_ptr0",
+        "out_ptr1"
+       ],
+       [
+        "in_ptr0",
+        "out_ptr3"
+       ],
+       [
+        "out_ptr1",
+        "out_ptr3"
+       ]
+      ],
+      "index_opt": 1,
+      "opt_level": 2,
+      "physical_chunks": 1,
+      "rctx_spmd": 1,
+      "schedule": 1,
+      "sparse_tensormaps": 1
+     }
+    ],
+    "max_block_constexprs": {
+     "R0_BLOCK": 16,
+     "XBLOCK": 1
+    },
+    "gemm_tiles": [],
+    "sdpa_online_nodes": 0,
+    "host_fallbacks": [],
+    "max_launch_bytes": 262144,
+    "kernels": {
+     "triton_red_fused__softmax_0": {
+      "artifact": "cd6b760806b6c68e9c3ac93b2826c336b4ae729f5639417fd1d926bb7a3834df",
+      "bytes": 6319,
+      "constexprs": {},
+      "roles": 2
+     }
+    },
+    "launcher_constexprs": [
+     {
+      "name": "triton_red_fused__softmax_0",
+      "constexprs": {
+       "R0_BLOCK": 16
+      },
+      "source_constexprs": {
+       "XBLOCK": 1
+      }
+     }
+    ],
+    "problems": [],
+    "native_memory": {
+     "peak_bytes": 262144,
+     "live_bytes": 131072,
+     "allocations": 57,
+     "uploaded_bytes": 65744
+    },
+    "peak_rss_mib": 740.4
+   },
+   "finished": "15:52:45"
+  },
+  "op.softmax/tiny/fp32-r3-c37 @ TNCA_BANK_ALLOC=0|TNCA_GEMM_TILE=16,16,16|TNCA_MAX_BLOCK=16|TNCA_PIPELINE=2|TNCA_REDUCTION_ROWS=1|TNCA_SDPA=decomposed|TNCA_TUNE=0|TNCA_WINDOW_REUSE=0": {
+   "point": "op.softmax/tiny/fp32-r3-c37",
+   "config": "dt",
+   "knobs": {
+    "TNCA_MAX_BLOCK": "16",
+    "TNCA_GEMM_TILE": "16,16,16",
+    "TNCA_REDUCTION_ROWS": "1",
+    "TNCA_BANK_ALLOC": "0",
+    "TNCA_WINDOW_REUSE": "0",
+    "TNCA_SDPA": "decomposed",
+    "TNCA_PIPELINE": "2",
+    "TNCA_TUNE": "0"
+   },
+   "status": "pass",
+   "heavy": false,
+   "run_dir": "/home/zhongchun/r40v3_fix2/dt_native-stub/runs/op.softmax__tiny__fp32-r3-c37__dt",
+   "started": "15:52:44",
+   "exit": 0,
+   "process_wall_s": 3.4,
+   "result": {
+    "point": "op.softmax/tiny/fp32-r3-c37",
+    "point_sha256": "eac6279205bd4758485963c1ad7b2c1cee46c9d2023344ae3bd7b7ef68fc2434",
+    "config": "dt",
+    "knobs": {
+     "TNCA_BANK_ALLOC": "0",
+     "TNCA_GEMM_TILE": "16,16,16",
+     "TNCA_MAX_BLOCK": "16",
+     "TNCA_PACKED_WINDOW_UNPACK": null,
+     "TNCA_PIPELINE": "2",
+     "TNCA_REDUCTION_ROWS": "1",
+     "TNCA_SDPA": "decomposed",
+     "TNCA_TUNE": "0",
+     "TNCA_WINDOW_REUSE": "0"
+    },
+    "harness_env": {
+     "CUDA_VISIBLE_DEVICES": "",
+     "PYTHONDONTWRITEBYTECODE": "1",
+     "TNCA_BACKEND": "fpga-u280-multicore",
+     "TNCA_KERNEL_DUMP": "1",
+     "TNCA_LAUNCH": "skip",
+     "TNCA_OPT_LEVEL": "2",
+     "TNCA_PROFILE": "core-vrf-sync-v5",
+     "TNCA_TRITON": "1",
+     "TNCA_ACTIVE_CORES": "1",
+     "TNCA_RTL_MEM_PORTS": "1",
+     "TNCA_RTL_OUTSTANDING": "1",
+     "TNCA_SUBMIT": "single",
+     "TNCA_TRANSFER_POLICY": "per-kernel"
+    },
+    "status": "pass",
+    "pid": 3313734,
+    "wall_s": {
+     "setup": 1.21,
+     "make": 0.0,
+     "compile": 0.97,
+     "steady_call": 0.0,
+     "total": 2.67
+    },
+    "modules": {
+     "tnca": "/home/zhongchun/r40v3_fix2src/python/tnca/__init__.py",
+     "tnca_cc": "/home/zhongchun/r40v3_fix2src/compiler/python/tnca_cc/__init__.py",
+     "driver": "/home/zhongchun/r40v3_fix2src/python/tnca/triton_backend/driver.py",
+     "archbench": "/home/zhongchun/r40v3_fix2src/archbench/registry.py"
+    },
+    "software_tree": "files:fe1b5199db515440d2d3407aed61ef1eed5edb627e5baf9cda10be5a7198cf75",
+    "toolchain": {
+     "torch": "2.14.0+cu130",
+     "triton": "3.8.0",
+     "python": "3.12.3"
+    },
+    "device": "native-stub",
+    "stage": "done",
+    "inductor_config": {
+     "cpu_backend": "triton",
+     "max_block": 16,
+     "persistent_reductions": false,
+     "compile_threads": 1,
+     "max_autotune_gemm_backends": "TRITON",
+     "tensor_descriptors": true,
+     "no_x_dim": true,
+     "reduction_rows": 1,
+     "gemm_tile": [
+      16,
+      16,
+      16
+     ],
+     "device": "tnca"
+    },
+    "compile_target_properties": {
+     "max_shared_mem": 0,
+     "multiprocessor_count": 1,
+     "max_num_regs": 256,
+     "warpSize": 1,
+     "sm_clock_rate": 0,
+     "mem_clock_rate": 0,
+     "mem_bus_width": 64,
+     "max_threads_per_block": 16
+    },
+    "sdpa_fused_decomposition_installed": false,
+    "parameter_bytes": 0,
+    "input_bytes": 444,
+    "cold_call": {
+     "launches": 27,
+     "kernels": {
+      "_copy_kernel": 26,
+      "triton_red_fused__softmax_0": 1
+     }
+    },
+    "launches": 1,
+    "expected_launches": 1,
+    "kernels_compiled": 2,
+    "kernels_launched": 1,
+    "graph_launchers": 1,
+    "wrapper_triton_kernels": 1,
+    "artifacts": 1,
+    "artifact_options": [
+     {
+      "alias": [
+       [
+        "in_out_ptr0",
+        "in_ptr0"
+       ]
+      ],
+      "index_opt": 1,
+      "opt_level": 2,
+      "physical_chunks": 1,
+      "rctx_spmd": 1,
+      "schedule": 1,
+      "sparse_tensormaps": 1
+     }
+    ],
+    "max_block_constexprs": {
+     "R0_BLOCK": 16,
+     "XBLOCK": 1
+    },
+    "gemm_tiles": [],
+    "sdpa_online_nodes": 0,
+    "host_fallbacks": [],
+    "max_launch_bytes": 888,
+    "kernels": {
+     "triton_red_fused__softmax_0": {
+      "artifact": "8db6a6def131d71baf42cafaf9ada8a857ffc1b58d8f280437cac333a3e5b304",
+      "bytes": 5653,
+      "constexprs": {},
+      "roles": 4
+     }
+    },
+    "launcher_constexprs": [
+     {
+      "name": "triton_red_fused__softmax_0",
+      "constexprs": {
+       "R0_BLOCK": 16
+      },
+      "source_constexprs": {
+       "XBLOCK": 1
+      }
+     }
+    ],
+    "problems": [],
+    "native_memory": {
+     "peak_bytes": 896,
+     "live_bytes": 896,
+     "allocations": 55,
+     "uploaded_bytes": 656
+    },
+    "peak_rss_mib": 739.8
+   },
+   "finished": "15:52:48"
+  }
+ },
+ "items": [
+  {
+   "item": "DT",
+   "subset": "existing",
+   "experiment": "device-time diagnosis",
+   "config": "dt",
+   "knobs": {
+    "TNCA_MAX_BLOCK": "16",
+    "TNCA_GEMM_TILE": "16,16,16",
+    "TNCA_REDUCTION_ROWS": "1",
+    "TNCA_BANK_ALLOC": "0",
+    "TNCA_WINDOW_REUSE": "0",
+    "TNCA_SDPA": "decomposed",
+    "TNCA_PIPELINE": "2",
+    "TNCA_TUNE": "0"
+   },
+   "compiled": 5,
+   "total": 5,
+   "summary": "dt compiles 5/5",
+   "failures": []
+  }
+ ],
+ "software_tree_after": "files:fe1b5199db515440d2d3407aed61ef1eed5edb627e5baf9cda10be5a7198cf75",
+ "finished": "2026-10-19T15:52:48+0000"
+}

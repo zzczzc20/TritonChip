@@ -1,0 +1,98 @@
+{
+  "cpu/op.softmax__tiny__fp32-r3-c37__dt/triton_red_fused__softmax_0.opt.ttir": {
+    "source": "/home/zhongchun/r40v3_fix2/dt_cpu/runs/op.softmax__tiny__fp32-r3-c37__dt/dump/triton_red_fused__softmax_0/triton_red_fused__softmax_0.opt.ttir",
+    "sha256": "327c2dcb4a41659a19a059935714659522312e35f82bbcb560ab67a1bbc97297"
+  },
+  "cpu/op.softmax__tiny__fp32-r3-c37__dt/triton_red_fused__softmax_0.s": {
+    "source": "/home/zhongchun/r40v3_fix2/dt_cpu/runs/op.softmax__tiny__fp32-r3-c37__dt/dump/triton_red_fused__softmax_0/triton_red_fused__softmax_0.s",
+    "sha256": "ef1f18e295851879f522a04dce1b3a30caf2976b6f635490990fd25dbdf964f1"
+  },
+  "cpu/op.softmax__tiny__fp32-r3-c37__dt/triton_red_fused__softmax_0.tnir": {
+    "source": "/home/zhongchun/r40v3_fix2/dt_cpu/runs/op.softmax__tiny__fp32-r3-c37__dt/dump/triton_red_fused__softmax_0/triton_red_fused__softmax_0.tnir",
+    "sha256": "c851e60157557a9d450a09d3b8ef5e25a834ec9e3b128cf82e4faf684b3f7f29"
+  },
+  "cpu/op.softmax__tiny__fp32-r3-c37__dt/triton_red_fused__softmax_0.json": {
+    "source": "/home/zhongchun/r40v3_fix2/dt_cpu/runs/op.softmax__tiny__fp32-r3-c37__dt/dump/triton_red_fused__softmax_0/triton_red_fused__softmax_0.json",
+    "sha256": "7d469050643f5039735415057f8a23da42d04ed83848f52692657e1dec36e78e"
+  },
+  "cpu/op.softmax__medium__fp16-r80-c512__dt/triton_red_fused__softmax_0.opt.ttir": {
+    "source": "/home/zhongchun/r40v3_fix2/dt_cpu/runs/op.softmax__medium__fp16-r80-c512__dt/dump/triton_red_fused__softmax_0/triton_red_fused__softmax_0.opt.ttir",
+    "sha256": "0ca7d49932cfc4a677f86823f4088a6e15a432f48b7f34281d94cca6718cf7f9"
+  },
+  "cpu/op.softmax__medium__fp16-r80-c512__dt/triton_red_fused__softmax_0.s": {
+    "source": "/home/zhongchun/r40v3_fix2/dt_cpu/runs/op.softmax__medium__fp16-r80-c512__dt/dump/triton_red_fused__softmax_0/triton_red_fused__softmax_0.s",
+    "sha256": "0a0c4dce6fcddd847da63820023dc43d8086a5b8be466ee091bf0e9d7da4cef9"
+  },
+  "cpu/op.softmax__medium__fp16-r80-c512__dt/triton_red_fused__softmax_0.tnir": {
+    "source": "/home/zhongchun/r40v3_fix2/dt_cpu/runs/op.softmax__medium__fp16-r80-c512__dt/dump/triton_red_fused__softmax_0/triton_red_fused__softmax_0.tnir",
+    "sha256": "b1101e2b754cf47a89beda94a54c4e591cb9f809e0a7f506424e50d7de7683a9"
+  },
+  "cpu/op.softmax__medium__fp16-r80-c512__dt/triton_red_fused__softmax_0.json": {
+    "source": "/home/zhongchun/r40v3_fix2/dt_cpu/runs/op.softmax__medium__fp16-r80-c512__dt/dump/triton_red_fused__softmax_0/triton_red_fused__softmax_0.json",
+    "sha256": "7d469050643f5039735415057f8a23da42d04ed83848f52692657e1dec36e78e"
+  },
+  "cpu/op.softmax__small__fp16-r64-c512__dt/triton_red_fused__softmax_0.opt.ttir": {
+    "source": "/home/zhongchun/r40v3_fix2/dt_cpu/runs/op.softmax__small__fp16-r64-c512__dt/dump/triton_red_fused__softmax_0/triton_red_fused__softmax_0.opt.ttir",
+    "sha256": "731fd307e803105eeae0980f70084e72499bfb0fcfcd809e8ce94034ca8b57be"
+  },
+  "cpu/op.softmax__small__fp16-r64-c512__dt/triton_red_fused__softmax_0.s": {
+    "source": "/home/zhongchun/r40v3_fix2/dt_cpu/runs/op.softmax__small__fp16-r64-c512__dt/dump/triton_red_fused__softmax_0/triton_red_fused__softmax_0.s",
+    "sha256": "4a247adec14fc39864e27bc34859b7ef44762d82ef13e461edc4616b71ce006a"
+  },
+  "cpu/op.softmax__small__fp16-r64-c512__dt/triton_red_fused__softmax_0.tnir": {
+    "source": "/home/zhongchun/r40v3_fix2/dt_cpu/runs/op.softmax__small__fp16-r64-c512__dt/dump/triton_red_fused__softmax_0/triton_red_fused__softmax_0.tnir",
+    "sha256": "97ef21bd85a23093307d7956b590cbe7545c67a9671777aad47dd4272aeb7d49"
+  },
+  "cpu/op.softmax__small__fp16-r64-c512__dt/triton_red_fused__softmax_0.json": {
+    "source": "/home/zhongchun/r40v3_fix2/dt_cpu/runs/op.softmax__small__fp16-r64-c512__dt/dump/triton_red_fused__softmax_0/triton_red_fused__softmax_0.json",
+    "sha256": "7d469050643f5039735415057f8a23da42d04ed83848f52692657e1dec36e78e"
+  },
+  "native-stub/op.softmax__tiny__fp32-r3-c37__dt/triton_red_fused__softmax_0.opt.ttir": {
+    "source": "/home/zhongchun/r40v3_fix2/dt_native-stub/runs/op.softmax__tiny__fp32-r3-c37__dt/dump/triton_red_fused__softmax_0/triton_red_fused__softmax_0.opt.ttir",
+    "sha256": "a39e5ec66c4399f8b2066e7854eeca4dc8d86214c0ae90c8eb9750ae00215558"
+  },
+  "native-stub/op.softmax__tiny__fp32-r3-c37__dt/triton_red_fused__softmax_0.s": {
+    "source": "/home/zhongchun/r40v3_fix2/dt_native-stub/runs/op.softmax__tiny__fp32-r3-c37__dt/dump/triton_red_fused__softmax_0/triton_red_fused__softmax_0.s",
+    "sha256": "8069f0cc7bc0c2c8830b096df8fa56f7fc452bc755242a5a9db3e1d24ccf6e2a"
+  },
+  "native-stub/op.softmax__tiny__fp32-r3-c37__dt/triton_red_fused__softmax_0.tnir": {
+    "source": "/home/zhongchun/r40v3_fix2/dt_native-stub/runs/op.softmax__tiny__fp32-r3-c37__dt/dump/triton_red_fused__softmax_0/triton_red_fused__softmax_0.tnir",
+    "sha256": "1feec0c1da8aa40cbea5c46105a6996cc882a71529408f6d7b97620b4a209db7"
+  },
+  "native-stub/op.softmax__tiny__fp32-r3-c37__dt/triton_red_fused__softmax_0.json": {
+    "source": "/home/zhongchun/r40v3_fix2/dt_native-stub/runs/op.softmax__tiny__fp32-r3-c37__dt/dump/triton_red_fused__softmax_0/triton_red_fused__softmax_0.json",
+    "sha256": "7d469050643f5039735415057f8a23da42d04ed83848f52692657e1dec36e78e"
+  },
+  "native-stub/op.softmax__medium__fp16-r80-c512__dt/triton_red_fused__softmax_0.opt.ttir": {
+    "source": "/home/zhongchun/r40v3_fix2/dt_native-stub/runs/op.softmax__medium__fp16-r80-c512__dt/dump/triton_red_fused__softmax_0/triton_red_fused__softmax_0.opt.ttir",
+    "sha256": "9b6ab3894d4158ef89a29a1944eb6f8814d6afa85d0b4d70627f52db7319f81d"
+  },
+  "native-stub/op.softmax__medium__fp16-r80-c512__dt/triton_red_fused__softmax_0.s": {
+    "source": "/home/zhongchun/r40v3_fix2/dt_native-stub/runs/op.softmax__medium__fp16-r80-c512__dt/dump/triton_red_fused__softmax_0/triton_red_fused__softmax_0.s",
+    "sha256": "441a147ce4a67bfa580f642a50d609206272cd730e07196836e5798fc4484aa1"
+  },
+  "native-stub/op.softmax__medium__fp16-r80-c512__dt/triton_red_fused__softmax_0.tnir": {
+    "source": "/home/zhongchun/r40v3_fix2/dt_native-stub/runs/op.softmax__medium__fp16-r80-c512__dt/dump/triton_red_fused__softmax_0/triton_red_fused__softmax_0.tnir",
+    "sha256": "f8aee474f0d7590108735f0a04252bf3a6ba9a513420a85abe5cf8836621af46"
+  },
+  "native-stub/op.softmax__medium__fp16-r80-c512__dt/triton_red_fused__softmax_0.json": {
+    "source": "/home/zhongchun/r40v3_fix2/dt_native-stub/runs/op.softmax__medium__fp16-r80-c512__dt/dump/triton_red_fused__softmax_0/triton_red_fused__softmax_0.json",
+    "sha256": "7d469050643f5039735415057f8a23da42d04ed83848f52692657e1dec36e78e"
+  },
+  "native-stub/op.softmax__small__fp16-r64-c512__dt/triton_red_fused__softmax_0.opt.ttir": {
+    "source": "/home/zhongchun/r40v3_fix2/dt_native-stub/runs/op.softmax__small__fp16-r64-c512__dt/dump/triton_red_fused__softmax_0/triton_red_fused__softmax_0.opt.ttir",
+    "sha256": "7fbf6aa6028aaa2ca660d210c1a39bb04fa4d8f63a2bb3501fb4c4b8499c9753"
+  },
+  "native-stub/op.softmax__small__fp16-r64-c512__dt/triton_red_fused__softmax_0.s": {
+    "source": "/home/zhongchun/r40v3_fix2/dt_native-stub/runs/op.softmax__small__fp16-r64-c512__dt/dump/triton_red_fused__softmax_0/triton_red_fused__softmax_0.s",
+    "sha256": "0ac5ebdca47d93aee25c39cbca709dee60a79d359a9152f0126a85237c5049a7"
+  },
+  "native-stub/op.softmax__small__fp16-r64-c512__dt/triton_red_fused__softmax_0.tnir": {
+    "source": "/home/zhongchun/r40v3_fix2/dt_native-stub/runs/op.softmax__small__fp16-r64-c512__dt/dump/triton_red_fused__softmax_0/triton_red_fused__softmax_0.tnir",
+    "sha256": "9343b3b26466b57e9a1b1684220dc48ca457a18929e1c0056654ec5f41cad234"
+  },
+  "native-stub/op.softmax__small__fp16-r64-c512__dt/triton_red_fused__softmax_0.json": {
+    "source": "/home/zhongchun/r40v3_fix2/dt_native-stub/runs/op.softmax__small__fp16-r64-c512__dt/dump/triton_red_fused__softmax_0/triton_red_fused__softmax_0.json",
+    "sha256": "7d469050643f5039735415057f8a23da42d04ed83848f52692657e1dec36e78e"
+  }
+}

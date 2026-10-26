@@ -1,0 +1,148 @@
+{
+  "schema": "r40-followup-softmax-fence-audit/1",
+  "evidence_level": "historical-compile-only",
+  "reported_product_tree": "files:fe1b5199db515440d2d3407aed61ef1eed5edb627e5baf9cda10be5a7198cf75",
+  "artifact_hashes_verified": 24,
+  "points": [
+    {
+      "tier": "tiny",
+      "columns": 37,
+      "paths": {
+        "cpu": {
+          "ttir": "cpu/op.softmax__tiny__fp32-r3-c37__dt/triton_red_fused__softmax_0.opt.ttir",
+          "compile_knobs": {
+            "TNCA_MAX_BLOCK": "16",
+            "TNCA_GEMM_TILE": "16,16,16",
+            "TNCA_REDUCTION_ROWS": "1",
+            "TNCA_BANK_ALLOC": "0",
+            "TNCA_WINDOW_REUSE": "0",
+            "TNCA_SDPA": "decomposed",
+            "TNCA_PIPELINE": "2",
+            "TNCA_TUNE": "0"
+          },
+          "tnir_fences": 0,
+          "assembly_fences": [],
+          "final_loop_barriers_per_logical_row": 0,
+          "final_loop_has_load_and_store": true
+        },
+        "native-stub": {
+          "ttir": "native-stub/op.softmax__tiny__fp32-r3-c37__dt/triton_red_fused__softmax_0.opt.ttir",
+          "compile_knobs": {
+            "TNCA_MAX_BLOCK": "16",
+            "TNCA_GEMM_TILE": "16,16,16",
+            "TNCA_REDUCTION_ROWS": "1",
+            "TNCA_BANK_ALLOC": "0",
+            "TNCA_WINDOW_REUSE": "0",
+            "TNCA_SDPA": "decomposed",
+            "TNCA_PIPELINE": "2",
+            "TNCA_TUNE": "0"
+          },
+          "tnir_fences": 1,
+          "assembly_fences": [
+            "fence.acq_rel.device"
+          ],
+          "final_loop_barriers_per_logical_row": 3,
+          "final_loop_has_load_and_store": true
+        }
+      }
+    },
+    {
+      "tier": "small",
+      "columns": 512,
+      "paths": {
+        "cpu": {
+          "ttir": "cpu/op.softmax__small__fp16-r64-c512__dt/triton_red_fused__softmax_0.opt.ttir",
+          "compile_knobs": {
+            "TNCA_MAX_BLOCK": "16",
+            "TNCA_GEMM_TILE": "16,16,16",
+            "TNCA_REDUCTION_ROWS": "1",
+            "TNCA_BANK_ALLOC": "0",
+            "TNCA_WINDOW_REUSE": "0",
+            "TNCA_SDPA": "decomposed",
+            "TNCA_PIPELINE": "2",
+            "TNCA_TUNE": "0"
+          },
+          "tnir_fences": 0,
+          "assembly_fences": [
+            "fence.release.device"
+          ],
+          "final_loop_barriers_per_logical_row": 0,
+          "final_loop_has_load_and_store": true
+        },
+        "native-stub": {
+          "ttir": "native-stub/op.softmax__small__fp16-r64-c512__dt/triton_red_fused__softmax_0.opt.ttir",
+          "compile_knobs": {
+            "TNCA_MAX_BLOCK": "16",
+            "TNCA_GEMM_TILE": "16,16,16",
+            "TNCA_REDUCTION_ROWS": "1",
+            "TNCA_BANK_ALLOC": "0",
+            "TNCA_WINDOW_REUSE": "0",
+            "TNCA_SDPA": "decomposed",
+            "TNCA_PIPELINE": "2",
+            "TNCA_TUNE": "0"
+          },
+          "tnir_fences": 1,
+          "assembly_fences": [
+            "fence.release.device",
+            "fence.acq_rel.device"
+          ],
+          "final_loop_barriers_per_logical_row": 32,
+          "final_loop_has_load_and_store": true
+        }
+      }
+    },
+    {
+      "tier": "medium",
+      "columns": 512,
+      "paths": {
+        "cpu": {
+          "ttir": "cpu/op.softmax__medium__fp16-r80-c512__dt/triton_red_fused__softmax_0.opt.ttir",
+          "compile_knobs": {
+            "TNCA_MAX_BLOCK": "16",
+            "TNCA_GEMM_TILE": "16,16,16",
+            "TNCA_REDUCTION_ROWS": "1",
+            "TNCA_BANK_ALLOC": "0",
+            "TNCA_WINDOW_REUSE": "0",
+            "TNCA_SDPA": "decomposed",
+            "TNCA_PIPELINE": "2",
+            "TNCA_TUNE": "0"
+          },
+          "tnir_fences": 0,
+          "assembly_fences": [
+            "fence.release.device"
+          ],
+          "final_loop_barriers_per_logical_row": 0,
+          "final_loop_has_load_and_store": true
+        },
+        "native-stub": {
+          "ttir": "native-stub/op.softmax__medium__fp16-r80-c512__dt/triton_red_fused__softmax_0.opt.ttir",
+          "compile_knobs": {
+            "TNCA_MAX_BLOCK": "16",
+            "TNCA_GEMM_TILE": "16,16,16",
+            "TNCA_REDUCTION_ROWS": "1",
+            "TNCA_BANK_ALLOC": "0",
+            "TNCA_WINDOW_REUSE": "0",
+            "TNCA_SDPA": "decomposed",
+            "TNCA_PIPELINE": "2",
+            "TNCA_TUNE": "0"
+          },
+          "tnir_fences": 1,
+          "assembly_fences": [
+            "fence.release.device",
+            "fence.acq_rel.device"
+          ],
+          "final_loop_barriers_per_logical_row": 32,
+          "final_loop_has_load_and_store": true
+        }
+      }
+    }
+  ],
+  "decision": "Do not apply straight-line redundant-fence elimination.",
+  "reason": "The added fence is inside a loop with loads and stores; hoisting needs a separate inter-iteration dependence proof.",
+  "not_measured": [
+    "numerics",
+    "performance",
+    "board state",
+    "gate improvement"
+  ]
+}
